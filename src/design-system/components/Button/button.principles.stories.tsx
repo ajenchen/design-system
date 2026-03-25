@@ -178,10 +178,21 @@ export const IconRule: Story = {
 
       <Rule
         title="endIcon — 指示按鈕會開啟下一層（展開 / 選單）"
-        note="icon 不描述動作，而是告訴使用者「點這裡還有更多」。通常是 ChevronDown、ChevronRight"
+        note="icon 不描述動作，而是告訴使用者「點這裡還有更多」。通常是 ChevronDown、ChevronRight。variant 的選擇與 endIcon 無關，按正常規則決定"
       >
-        <Button variant="tertiary" endIcon={ChevronDown}>更多選項</Button>
-        <Button variant="primary" endIcon={ChevronDown}>新增項目</Button>
+        <Button variant="tertiary" endIcon={ChevronDown}>篩選條件</Button>
+      </Rule>
+
+      <Rule
+        title="溢出選單 — MoreHorizontal icon-only"
+        note="將低頻操作收進溢出選單時使用。永遠是 text variant、永遠在群組最右側"
+      >
+        <ButtonGroup>
+          <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
+          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+          <Button variant="text" size="sm" iconOnly startIcon={MoreHorizontal} aria-label="更多" />
+        </ButtonGroup>
+        <Label>↑ MoreHorizontal 永遠壓在最右</Label>
       </Rule>
 
       <Rule
