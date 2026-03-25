@@ -30,7 +30,12 @@
       "Bash(wc -l /Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/src/design-system/tokens/*/*.tsx /Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/src/design-system/tokens/*.tsx)",
       "Bash(/tmp/project_summary.txt:*)",
       "Read(//tmp/**)",
-      "Bash(chmod +x node_modules/.bin/tsc)"
+      "Bash(chmod +x node_modules/.bin/tsc)",
+      "Bash(gh auth:*)",
+      "Bash(brew install:*)",
+      "Bash(find . -type f \\\\\\(-name *.tsx -o -name *.ts -o -name *.css -o -name *.md -o -name *.json -o -name *.html -o -name *.jsx -o -name *.js \\\\\\) ! -path ./node_modules/* ! -path ./.git/*)",
+      "Bash(find \"/Users/alanchen/我的雲端硬碟/my-project\" -name \"Icon\" -not -path \"*/.git/*\" -not -path \"*/node_modules/*\" -delete)",
+      "Bash(find \"/Users/alanchen/我的雲端硬碟/my-project\" -name \"Icon?\" -not -path \"*/.git/*\" -not -path \"*/node_modules/*\" -delete)"
     ]
   }
 }

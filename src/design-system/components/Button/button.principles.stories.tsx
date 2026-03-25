@@ -199,6 +199,27 @@ export const IconRule: Story = {
         <Button variant="tertiary" endIcon={Download}>匯出</Button>
         <Label warn>↑ 右側 Download icon 讓人以為有獨立的下載動作，語意混淆</Label>
       </Rule>
+
+      <Rule
+        title="icon + 下拉指示 — 無文字 dropdown trigger"
+        note="不加 iconOnly，接受窄長形 [icon][▼]；startIcon 描述功能，endIcon 指示展開。必須設定 aria-label"
+      >
+        <Button variant="tertiary" startIcon={Settings} endIcon={ChevronDown} aria-label="設定選項" />
+        <Label>↑ 不加 iconOnly，保留 endIcon</Label>
+      </Rule>
+
+      <Rule
+        title="icon + overlay 角標 — 通知類按鈕"
+        note="角標用外部 relative 容器疊加，不用 Button 的 badge prop（inline badge 會破壞正方形）"
+      >
+        <div className="relative inline-flex">
+          <Button size="sm" iconOnly startIcon={Bell} aria-label="通知" />
+          <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-notification px-1 text-[10px] font-semibold text-white">
+            3
+          </span>
+        </div>
+        <Label>↑ 外部 relative 容器疊加角標，保持正方形</Label>
+      </Rule>
     </div>
   ),
 }
