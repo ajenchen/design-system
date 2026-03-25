@@ -268,19 +268,17 @@ export const OrderRule: Story = {
 
       <Rule
         title="Toolbar — 全部置右，左側放標題；由右至左：溢出 › 固定工具 › 業務邏輯"
-        note="業務邏輯群組主按鈕放最右。固定工具優先 text icon-only。切換按鈕依預設（text）狀態排列"
+        note="有框（primary/tertiary）→ 無框（text）視覺差異已完成分群，不加分隔線。MoreVertical 自然落在末端，通常也不需左側分隔線"
       >
         <div className="flex items-center justify-between w-full px-4 h-[52px] border border-border rounded-lg bg-surface">
           <span className="text-body font-bold text-foreground">專案名稱</span>
           <ButtonGroup>
             <Button variant="tertiary" startIcon={Save}>儲存</Button>
             <Button variant="primary" startIcon={Plus}>新增</Button>
-            <ButtonDivider />
             <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
             <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
             <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
             <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-            <ButtonDivider />
             <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
           </ButtonGroup>
         </div>
