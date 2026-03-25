@@ -22,6 +22,7 @@ Icon?
 # Editor
 .vscode/
 .idea/
+.claude/
 
 # Storybook build
 storybook-static/
