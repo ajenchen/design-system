@@ -167,17 +167,17 @@ export const WithEndIcon: Story = {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <p className="w-full text-caption text-fg-muted">endIcon only</p>
-        <Button size={args.size} variant="secondary" endIcon={ChevronDown}>展開選單</Button>
-        <Button size={args.size} variant="tertiary" endIcon={ChevronDown}>更多選項</Button>
+        <Button size={args.size} variant="tertiary" endIcon={ChevronDown}>展開選單</Button>
+        <Button size={args.size} variant="primary" endIcon={ChevronDown}>新增項目</Button>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <p className="w-full text-caption text-fg-muted">badge only</p>
-        <Button size={args.size} startIcon={Bell} badge={<BadgeCount count={3} />}>通知</Button>
+        <Button size={args.size} variant="tertiary" startIcon={Bell} badge={<BadgeCount count={3} />}>通知</Button>
         <Button size={args.size} variant="tertiary" badge={<BadgeCount count={12} />}>訊息</Button>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <p className="w-full text-caption text-fg-muted">badge + endIcon</p>
-        <Button size={args.size} badge={<BadgeCount count={5} />} endIcon={ChevronDown}>更多通知</Button>
+        <Button size={args.size} variant="tertiary" badge={<BadgeCount count={5} />} endIcon={ChevronDown}>更多通知</Button>
         <Button size={args.size} variant="tertiary" badge={<BadgeCount count={2} />} endIcon={ChevronDown}>待辦</Button>
       </div>
     </div>

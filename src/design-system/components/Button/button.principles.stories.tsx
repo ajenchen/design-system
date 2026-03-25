@@ -180,8 +180,8 @@ export const IconRule: Story = {
         title="endIcon — 指示按鈕會開啟下一層（展開 / 選單）"
         note="icon 不描述動作，而是告訴使用者「點這裡還有更多」。通常是 ChevronDown、ChevronRight"
       >
-        <Button variant="secondary" endIcon={ChevronDown}>更多選項</Button>
-        <Button variant="tertiary" endIcon={ChevronDown}>展開選單</Button>
+        <Button variant="tertiary" endIcon={ChevronDown}>更多選項</Button>
+        <Button variant="primary" endIcon={ChevronDown}>新增項目</Button>
       </Rule>
 
       <Rule
@@ -213,7 +213,7 @@ export const IconRule: Story = {
         note="角標用外部 relative 容器疊加，不用 Button 的 badge prop（inline badge 會破壞正方形）"
       >
         <div className="relative inline-flex">
-          <Button variant="text" size="sm" iconOnly startIcon={Bell} aria-label="通知" />
+          <Button variant="tertiary" size="sm" iconOnly startIcon={Bell} aria-label="通知" />
           <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-notification px-1 text-[10px] font-semibold text-white">
             3
           </span>
