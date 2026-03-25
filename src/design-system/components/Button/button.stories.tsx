@@ -319,6 +319,7 @@ export const Loading: Story = {
           <Button variant="secondary" startIcon={Download} loading>Secondary</Button>
           <Button variant="tertiary" startIcon={Download} loading>Tertiary</Button>
           <Button variant="text" startIcon={Download} loading>Text</Button>
+          <Button variant="checked" startIcon={Download} loading>Checked</Button>
           <Button variant="primary" danger startIcon={Trash2} loading>Danger</Button>
         </div>
       </div>
@@ -331,6 +332,7 @@ export const Loading: Story = {
           <Button variant="secondary" loading>Secondary</Button>
           <Button variant="tertiary" loading>Tertiary</Button>
           <Button variant="text" loading>Text</Button>
+          <Button variant="checked" loading>Checked</Button>
           <Button variant="primary" danger loading>Danger</Button>
         </div>
       </div>

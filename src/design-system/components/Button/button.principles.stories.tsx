@@ -148,9 +148,77 @@ export const DangerRule: Story = {
         <Button variant="secondary" danger>放棄變更</Button>
       </Rule>
 
+      <Rule
+        title="text + danger — 低強調的危險操作"
+        note="工具列刪除等有後續確認的場景；強調等級最低，視覺干擾最小"
+      >
+        <Button variant="text" danger startIcon={Trash2}>刪除</Button>
+        <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
+      </Rule>
+
       <Rule title="❌ 錯誤 — 在有後續確認的流程中使用 primary danger">
         <Button variant="primary" danger>移至垃圾桶</Button>
         <Label warn>移至垃圾桶還可以復原 → 不應用 primary danger</Label>
+      </Rule>
+    </div>
+  ),
+}
+
+export const CheckedRule: Story = {
+  name: 'Checked 開關',
+  render: () => (
+    <div>
+      <Rule
+        title="❌ checked 不適合用於多選一（視圖切換）"
+        note="list / board / timeline 三選一是 radio group 語意，應使用 Segmented Control，不是 Button checked"
+      >
+        <div className="flex gap-1">
+          <Button variant="checked" size="sm" iconOnly startIcon={List} aria-label="清單（誤用）" />
+          <Button variant="text" size="sm" iconOnly startIcon={LayoutGrid} aria-label="看板" />
+          <Button variant="text" size="sm" iconOnly startIcon={GanttChart} aria-label="時間軸" />
+        </div>
+        <Label warn>↑ 看起來像 checked，實際上是 radio group → 用 Segmented Control</Label>
+      </Rule>
+    </div>
+  ),
+}
+
+export const IconRule: Story = {
+  name: 'Icon 語意',
+  render: () => (
+    <div>
+      <Rule
+        title="startIcon — 描述這個按鈕做什麼（動詞圖示）"
+        note="icon 是 label 的圖示說明，與文字傳達同一個動作。選用動詞性圖示：Plus、Save、Download、Trash2"
+      >
+        <Button variant="primary" startIcon={Plus}>新增</Button>
+        <Button variant="tertiary" startIcon={Save}>儲存</Button>
+        <Button variant="tertiary" startIcon={Download}>匯出</Button>
+        <Button variant="tertiary" startIcon={RefreshCw}>重新整理</Button>
+      </Rule>
+
+      <Rule
+        title="endIcon — 指示按鈕會開啟下一層（展開 / 選單）"
+        note="icon 不描述動作，而是告訴使用者「點這裡還有更多」。通常是 ChevronDown、ChevronRight"
+      >
+        <Button variant="secondary" endIcon={ChevronDown}>更多選項</Button>
+        <Button variant="tertiary" endIcon={ChevronDown}>展開選單</Button>
+      </Rule>
+
+      <Rule
+        title="startIcon + endIcon 同時使用"
+        note="startIcon 描述功能，endIcon 說明可以展開。兩者語意不同，互不衝突"
+      >
+        <Button variant="primary" startIcon={Bell} endIcon={ChevronDown}>通知</Button>
+        <Button variant="tertiary" startIcon={Settings} endIcon={ChevronDown}>偏好設定</Button>
+      </Rule>
+
+      <Rule
+        title="❌ endIcon 不應使用動詞性圖示"
+        note="endIcon 的位置傳達「這裡可以展開」，放動詞圖示會讓使用者以為有第二個操作"
+      >
+        <Button variant="tertiary" endIcon={Download}>匯出</Button>
+        <Label warn>↑ 右側 Download icon 讓人以為有獨立的下載動作，語意混淆</Label>
       </Rule>
     </div>
   ),
@@ -244,90 +312,6 @@ export const GroupRule: Story = {
             <Button variant="tertiary">取消</Button>
           </ButtonGroup>
         </div>
-      </Rule>
-    </div>
-  ),
-}
-
-export const CheckedRule: Story = {
-  name: 'Checked 開關',
-  render: () => (
-    <div>
-      <Rule
-        title="checked — 單一功能的開/關（binary toggle）"
-        note="未啟用 = text，啟用中 = checked。描述「這個按鈕自己的功能是否開啟」"
-      >
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-caption text-fg-muted w-20">全螢幕關閉</span>
-            <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-caption text-fg-muted w-20">全螢幕開啟</span>
-            <Button variant="checked" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕（開啟中）" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-caption text-fg-muted w-20">釘選關閉</span>
-            <Button variant="text" size="sm" iconOnly startIcon={Pin} aria-label="釘選" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-caption text-fg-muted w-20">釘選開啟</span>
-            <Button variant="checked" size="sm" iconOnly startIcon={Pin} aria-label="釘選（開啟中）" />
-          </div>
-        </div>
-      </Rule>
-
-      <Rule
-        title="❌ checked 不適合用於多選一（視圖切換）"
-        note="list / board / timeline 三選一是 radio group 語意，應使用 Segmented Control，不是 Button checked"
-      >
-        <div className="flex gap-1">
-          <Button variant="checked" size="sm" iconOnly startIcon={List} aria-label="清單（誤用）" />
-          <Button variant="text" size="sm" iconOnly startIcon={LayoutGrid} aria-label="看板" />
-          <Button variant="text" size="sm" iconOnly startIcon={GanttChart} aria-label="時間軸" />
-        </div>
-        <Label warn>↑ 看起來像 checked，實際上是 radio group → 用 Segmented Control</Label>
-      </Rule>
-    </div>
-  ),
-}
-
-export const IconRule: Story = {
-  name: 'Icon 語意',
-  render: () => (
-    <div>
-      <Rule
-        title="startIcon — 描述這個按鈕做什麼（動詞圖示）"
-        note="icon 是 label 的圖示說明，與文字傳達同一個動作。選用動詞性圖示：Plus、Save、Download、Trash2"
-      >
-        <Button variant="primary" startIcon={Plus}>新增</Button>
-        <Button variant="tertiary" startIcon={Save}>儲存</Button>
-        <Button variant="tertiary" startIcon={Download}>匯出</Button>
-        <Button variant="tertiary" startIcon={RefreshCw}>重新整理</Button>
-      </Rule>
-
-      <Rule
-        title="endIcon — 指示按鈕會開啟下一層（展開 / 選單）"
-        note="icon 不描述動作，而是告訴使用者「點這裡還有更多」。通常是 ChevronDown、ChevronRight"
-      >
-        <Button variant="secondary" endIcon={ChevronDown}>更多選項</Button>
-        <Button variant="tertiary" endIcon={ChevronDown}>展開選單</Button>
-      </Rule>
-
-      <Rule
-        title="startIcon + endIcon 同時使用"
-        note="startIcon 描述功能，endIcon 說明可以展開。兩者語意不同，互不衝突"
-      >
-        <Button variant="primary" startIcon={Bell} endIcon={ChevronDown}>通知</Button>
-        <Button variant="tertiary" startIcon={Settings} endIcon={ChevronDown}>偏好設定</Button>
-      </Rule>
-
-      <Rule
-        title="❌ endIcon 不應使用動詞性圖示"
-        note="endIcon 的位置傳達「這裡可以展開」，放動詞圖示會讓使用者以為有第二個操作"
-      >
-        <Button variant="tertiary" endIcon={Download}>匯出</Button>
-        <Label warn>↑ 右側 Download icon 讓人以為有獨立的下載動作，語意混淆</Label>
       </Rule>
     </div>
   ),
