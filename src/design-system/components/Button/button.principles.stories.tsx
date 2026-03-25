@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   Plus, Trash2, Settings, Share2, RefreshCw,
-  MoreVertical, Save, Maximize2,
+  MoreVertical, Save, Maximize2, X,
   ChevronDown, Download, Bell,
 } from 'lucide-react'
 import { Button } from './button'
@@ -222,7 +222,7 @@ export const IconRule: Story = {
 
       <Rule
         title="溢出選單 — MoreVertical icon-only"
-        note="收納工具列所有區塊的低頻操作；variant 隨群組一致；永遠是工具列末端，左側不加分隔線（例外：工具列已有多條分隔線且此按鈕代表全域溢出時）"
+        note="低頻操作的入口，永遠是工具列末端；variant 隨群組一致，左側通常不加分隔線"
       >
         <ButtonGroup>
           <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
@@ -299,8 +299,8 @@ export const GroupRule: Story = {
       </Rule>
 
       <Rule
-        title="分隔線 — 功能性分群，與按鈕距離 12px"
-        note="性質不同的按鈕區塊之間加分隔線；同性質的操作不加"
+        title="分隔線 — 同視覺類型內的功能區隔，與按鈕距離 12px"
+        note="用於同為有框或同為無框的按鈕之間需要功能區隔時（此例：無框按鈕中，危險操作與一般操作分開）"
       >
         <ButtonGroup>
           <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
@@ -318,7 +318,7 @@ export const GroupRule: Story = {
           <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
           <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
           <ButtonDivider />
-          <Button variant="text" size="sm" iconOnly startIcon={Trash2} aria-label="關閉" />
+          <Button variant="text" size="sm" iconOnly startIcon={X} aria-label="關閉" />
         </ButtonGroup>
         <Label>↑ 關閉按鈕左側必有分隔線</Label>
       </Rule>
@@ -356,19 +356,20 @@ export const GroupRule: Story = {
             <ButtonGroup>
               <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
               <ButtonDivider />
-              <Button variant="tertiary" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-              <ButtonDivider />
               <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+              <ButtonDivider />
+              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
-            <Label warn>❌ 設定按鈕兩側都有分隔線，孤立感過重</Label>
+            <Label warn>❌ 分享按鈕兩側都有分隔線，被孤立</Label>
           </div>
           <div className="flex items-center gap-2">
             <ButtonGroup>
-              <Button variant="tertiary" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
               <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
               <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+              <ButtonDivider />
+              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
-            <Label>✅ 有框集中在前，無框接壤，移除多餘分隔線</Label>
+            <Label>✅ 重新分群，分享與刷新同組</Label>
           </div>
         </div>
       </Rule>
