@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   Plus, Trash2, Settings, Share2, RefreshCw,
-  MoreHorizontal, Save, Maximize2,
+  MoreVertical, Save, Maximize2,
   ChevronDown, Download, Bell,
 } from 'lucide-react'
 import { Button } from './button'
@@ -184,15 +184,15 @@ export const IconRule: Story = {
       </Rule>
 
       <Rule
-        title="溢出選單 — MoreHorizontal icon-only"
+        title="溢出選單 — MoreVertical icon-only"
         note="將低頻操作收進溢出選單時使用。永遠是 text variant、永遠在群組最右側"
       >
         <ButtonGroup>
           <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
           <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-          <Button variant="text" size="sm" iconOnly startIcon={MoreHorizontal} aria-label="更多" />
+          <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
         </ButtonGroup>
-        <Label>↑ MoreHorizontal 永遠壓在最右</Label>
+        <Label>↑ MoreVertical 永遠壓在最右</Label>
       </Rule>
 
       <Rule
@@ -282,7 +282,7 @@ export const OrderRule: Story = {
             <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
             <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             <ButtonDivider />
-            <Button variant="text" size="sm" iconOnly startIcon={MoreHorizontal} aria-label="更多" />
+            <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
           </ButtonGroup>
         </div>
       </Rule>
