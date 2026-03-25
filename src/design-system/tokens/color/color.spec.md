@@ -66,9 +66,9 @@ Tailwind utility 透過 `@theme inline` 橋接語義 token，元件寫 `bg-prima
 
 | Token | Utility | 色相 | 用途 |
 |-------|---------|------|------|
-| `--notification` | `bg-notification` | red | 未讀計數 badge、通知紅點 |
+| `--notification` | `bg-notification` | deep-orange | 未讀計數 badge、通知紅點 |
 
-`--notification` 使用 red-6（純紅，L≈0.46），與 `--error`（deep-orange，L≈0.58）色相與亮度皆不同，語義上區分「出了問題」和「有待處理的項目」。
+`--notification` 目前與 `--error` 使用同色（deep-orange-6），但語義獨立——`--error` 表示「系統出了問題」，`--notification` 表示「有待處理的項目」。兩者保持分離的 token，未來可單獨調整顏色。
 
 ```tsx
 <span className="bg-notification text-white">3</span>   // badge 計數

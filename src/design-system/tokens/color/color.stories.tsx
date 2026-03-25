@@ -86,7 +86,7 @@ export const Primitives: Story = {
       description: {
         story:
           '原始色票（Layer 1）。元件**不得直接使用**，一律透過語義 token。\n\n' +
-          '**已映射為語義 token 的色相：** blue → primary、deep-orange → error、green → success、yellow → warning、red → notification\n\n' +
+          '**已映射為語義 token 的色相：** blue → primary、deep-orange → error + notification、green → success、yellow → warning\n\n' +
           '**其餘色相（orange、amber、lime、turquoise、indigo、purple、magenta）** 保留給 data visualization、categorization tag、avatar 等需要多色區分的場景。',
       },
     },
@@ -94,10 +94,9 @@ export const Primitives: Story = {
   render: () => {
     const SEMANTIC_MAP: Record<string, string> = {
       blue: 'primary',
-      'deep-orange': 'error',
+      'deep-orange': 'error + notification',
       green: 'success',
       yellow: 'warning',
-      red: 'notification',
     }
     const HUES: Array<{ name: string; suffix?: string }> = [
       { name: 'neutral', suffix: '-opaque' },

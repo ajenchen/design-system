@@ -107,7 +107,7 @@
   --warning-foreground:   var(--black-a98);                  /* 黃色底永遠需深色文字，用 Layer 0 alpha 不隨主題切換 */
 
   /* === Indicator: Notification === */
-  --notification:         var(--color-red-6);               /* 通知 badge / 未讀計數；純紅 (red-6)，與 error (deep-orange) 視覺區分 */
+  --notification:         var(--color-deep-orange-6);        /* 通知 badge / 未讀計數；目前與 error 同色，語義獨立，未來可單獨調整 */
 
   /* === Border / Divider === */
   --border:               var(--color-neutral-5);            /* 元件邊框 */
