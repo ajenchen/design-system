@@ -55,7 +55,7 @@
      bg-canvas           bg-surface          bg-surface-raised
      bg-primary          bg-destructive      bg-success     bg-warning
      text-foreground     text-fg-secondary   text-fg-muted  text-fg-disabled
-     border-border
+     border-border       ring-ring
    選中邊框/文字 → border-[var(--primary-hover)] / text-[var(--primary-hover)]
    ═══════════════════════════════════════════════════════════════════════ */
 

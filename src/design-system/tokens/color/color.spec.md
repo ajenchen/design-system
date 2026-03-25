@@ -170,7 +170,7 @@ cursor 變化 + 細微色移疊加仍提供足夠互動回饋。
 | `border-border`  | 元件標準邊框 |
 | `border-divider` | 分隔線（比 border 更淡）|
 
-`border-input` 為 shadcn 內部使用，不在此列。
+`border-input` 為 shadcn 內部使用，自己寫的元件改用 `border-border`。
 
 選中狀態的邊框或文字使用 hover token：
 
@@ -231,6 +231,7 @@ cursor 變化 + 細微色移疊加仍提供足夠互動回饋。
 | `bg-muted`     | neutral-2 底色  |
 | `bg-accent`    | = neutral-hover |
 | `border-input` | = border-border（input 專用）|
+| `ring-ring`    | focus ring（= primary）|
 
 
 ## 禁止事項
