@@ -222,7 +222,7 @@ export const IconRule: Story = {
 
       <Rule
         title="溢出選單 — MoreVertical icon-only"
-        note="低頻操作的入口，永遠是工具列末端；variant 隨群組一致，左側通常不加分隔線"
+        note="永遠是所在區塊的最後一個按鈕，代表該區塊的低頻操作；左側不加分隔線，區塊右側邊界已自然標示範圍"
       >
         <ButtonGroup>
           <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
