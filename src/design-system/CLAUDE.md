@@ -7,8 +7,8 @@
 - **色彩**：`src/design-system/tokens/color/color.spec.md`
 - **字體**：`src/design-system/tokens/typography/typography.spec.md`
 - **密度系統**：`src/design-system/tokens/density/density.spec.md`
-- **元件尺寸**：`src/design-system/tokens/density/uiSize/uiSize.spec.md`
-- **版面間距**：`src/design-system/tokens/density/layoutSpace/layoutSpace.spec.md`
+- **元件尺寸**：`src/design-system/tokens/uiSize/uiSize.spec.md`
+- **版面間距**：`src/design-system/tokens/layoutSpace/layoutSpace.spec.md`
 - **陰影**：`src/design-system/tokens/elevation/elevation.spec.md`
 - **圓角**：`src/design-system/tokens/radius/radius.spec.md`
 
