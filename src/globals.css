@@ -20,9 +20,10 @@
   --opacity-disabled: 0.45;
 
   /* Font */
-  --font-sans: Roboto, "Segoe UI", Helvetica, Arial, sans-serif,
-               "Apple Color Emoji", "Segoe UI Emoji",
-               "PingFang TC", "Microsoft JhengHei";
+  --font-sans: Roboto, -apple-system, BlinkMacSystemFont,
+               "Segoe UI Variable", "Segoe UI", system-ui,
+               "PingFang TC", "Microsoft JhengHei UI", "Microsoft JhengHei",
+               sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
 /* ── Custom Utilities ── */
