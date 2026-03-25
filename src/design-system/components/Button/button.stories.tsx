@@ -116,6 +116,36 @@ export const Text: Story = {
   args: { variant: 'text', children: 'Text' },
 }
 
+export const Checked: Story = {
+  name: 'Checked (toggle)',
+  render: () => (
+    <div className="flex flex-col gap-3">
+      <p className="text-caption text-fg-muted">功能啟用中用 checked，未啟用可用任何較低 variant</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="tertiary" startIcon={Maximize2}>全螢幕（關閉）</Button>
+        <Button variant="checked"  startIcon={Maximize2}>全螢幕（開啟中）</Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕（關閉）" />
+        <Button variant="checked" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕（開啟中）" />
+      </div>
+    </div>
+  ),
+}
+
+export const Link: Story = {
+  name: 'Link',
+  render: () => (
+    <div className="flex flex-col gap-3">
+      <p className="text-caption text-fg-muted">樣式像連結的按鈕，本質仍是 button（不可嵌入段落文字）</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="link">前往設定</Button>
+        <Button variant="link" disabled>停用連結</Button>
+      </div>
+    </div>
+  ),
+}
+
 // ── danger prop ─────────────────────────────────────────────────
 
 export const Danger: Story = {
