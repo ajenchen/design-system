@@ -208,15 +208,16 @@ primary / primary+danger  >  secondary  >  tertiary  >  secondary+danger  >  tex
 ### ButtonGroup 與 ButtonDivider
 
 - 群組內按鈕間距：**8px**
-- 群組內若需視覺分類，使用 `<ButtonDivider />`（分隔線自身左右各留 4px，與按鈕形成 12px 視覺距離）
+- `<ButtonDivider />` 用於功能性分群；分隔線自身左右各留 4px，與按鈕形成 12px 視覺距離
 
-```tsx
-<ButtonGroup>
-  <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-  <ButtonDivider />
-  <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
-</ButtonGroup>
-```
+**分隔線使用規則：**
+
+| 規則 | 說明 |
+|------|------|
+| 功能分群 | 性質不同的按鈕區塊之間加分隔線（如業務邏輯 vs 固定工具） |
+| 關閉保護 | 群組最右側若是關閉 / 解除按鈕，左側**必須**加分隔線，防止誤觸 |
+| 有框 / 無框不加分隔線 | 有框（primary、secondary、tertiary、checked）與無框（text）視覺差異已足夠；接壤處不需分隔線，有框集中在一側，不與無框交錯 |
+| 避免孤立 | 單一按鈕不應兩側都有分隔線 |
 
 ### 垂直排列
 
@@ -236,32 +237,26 @@ primary / primary+danger  >  secondary  >  tertiary  >  secondary+danger  >  tex
 ```
 
 - 固定操作（變化少）盡量使用 `text` 類型
-- 業務邏輯區使用 `primary` / `tertiary` 等強調等級
-- 溢出按鈕（overflow menu）永遠在最右邊
+- 業務邏輯群組靠右，群組內主按鈕放**最右**（靠右對齊規則在子群組同樣適用）
+- 溢出按鈕（`MoreVertical` icon-only `text`）永遠在最右邊
 
 ### icon-only 群組一致性
 
-按鈕群組內的 icon-only 按鈕們應盡可能**統一是否帶有線框**，避免同一群組中有框與無框混用導致視覺雜亂。
+有框（tertiary、secondary、checked）與無框（text）icon-only 按鈕可以共存於同一群組，但必須**區塊集中，不能交錯**；兩者之間不需要分隔線，視覺差異已足夠。
 
 ```tsx
-// ✅ 全部 text（無線框，統一）
+// ✅ 有框在前、無框在後，接壤處不加分隔線
 <ButtonGroup>
-  <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+  <Button variant="checked" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
+  <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
   <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-  <ButtonDivider />
-  <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
 </ButtonGroup>
 
-// ✅ 全部 tertiary（有線框，統一）
+// ❌ 有框與無框交錯排列
 <ButtonGroup>
-  <Button variant="tertiary" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-  <Button variant="tertiary" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-</ButtonGroup>
-
-// ❌ 混用 text + tertiary → 視覺不一致
-<ButtonGroup>
-  <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-  <Button variant="tertiary" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+  <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
+  <Button variant="checked" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
+  <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
 </ButtonGroup>
 ```
 

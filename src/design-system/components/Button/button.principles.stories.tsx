@@ -184,18 +184,6 @@ export const IconRule: Story = {
       </Rule>
 
       <Rule
-        title="溢出選單 — MoreVertical icon-only"
-        note="將低頻操作收進溢出選單時使用。永遠是 text variant、永遠在群組最右側"
-      >
-        <ButtonGroup>
-          <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
-          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-          <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
-        </ButtonGroup>
-        <Label>↑ MoreVertical 永遠壓在最右</Label>
-      </Rule>
-
-      <Rule
         title="startIcon + endIcon 同時使用"
         note="startIcon 描述功能，endIcon 說明可以展開。兩者語意不同，互不衝突"
       >
@@ -230,6 +218,18 @@ export const IconRule: Story = {
           </span>
         </div>
         <Label>↑ 外部 relative 容器疊加角標，保持正方形</Label>
+      </Rule>
+
+      <Rule
+        title="溢出選單 — MoreVertical icon-only"
+        note="將低頻操作收進溢出選單時使用。永遠是 text variant、永遠在群組最右側"
+      >
+        <ButtonGroup>
+          <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
+          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+          <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+        </ButtonGroup>
+        <Label>↑ MoreVertical 永遠壓在最右</Label>
       </Rule>
     </div>
   ),
@@ -268,16 +268,15 @@ export const OrderRule: Story = {
 
       <Rule
         title="Toolbar — 全部置右，左側放標題；由右至左：溢出 › 固定工具 › 業務邏輯"
-        note="業務邏輯（主按鈕、次按鈕）排在固定工具的左側，優先順序仍然適用"
+        note="業務邏輯群組靠右，群組內主按鈕放最右。有框（checked）→ 無框（text）接壤處不加分隔線"
       >
         <div className="flex items-center justify-between w-full px-4 h-[52px] border border-border rounded-lg bg-surface">
           <span className="text-body font-bold text-foreground">專案名稱</span>
           <ButtonGroup>
-            <Button variant="primary" startIcon={Plus}>新增</Button>
             <Button variant="tertiary" startIcon={Save}>儲存</Button>
+            <Button variant="primary" startIcon={Plus}>新增</Button>
             <ButtonDivider />
             <Button variant="checked" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕（開啟中）" />
-            <ButtonDivider />
             <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
             <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
             <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
@@ -302,8 +301,8 @@ export const GroupRule: Story = {
       </Rule>
 
       <Rule
-        title="分隔線 — 群組內視覺分類，分隔線與按鈕距離 12px"
-        note="群組內 icon-only 按鈕應統一是否帶有線框（此處全部使用 text），避免有框與無框混用造成視覺雜亂"
+        title="分隔線 — 功能性分群，與按鈕距離 12px"
+        note="性質不同的按鈕區塊之間加分隔線；同性質的操作不加"
       >
         <ButtonGroup>
           <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
@@ -311,6 +310,69 @@ export const GroupRule: Story = {
           <ButtonDivider />
           <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
         </ButtonGroup>
+      </Rule>
+
+      <Rule
+        title="關閉保護 — 最右側是關閉按鈕時，左側必須加分隔線"
+        note="防止使用者誤觸關閉。關閉是解除性動作，需與其他操作明確分隔"
+      >
+        <ButtonGroup>
+          <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+          <ButtonDivider />
+          <Button variant="text" size="sm" iconOnly startIcon={Trash2} aria-label="關閉" />
+        </ButtonGroup>
+        <Label>↑ 關閉按鈕左側必有分隔線</Label>
+      </Rule>
+
+      <Rule
+        title="有框 / 無框接壤 — 不加分隔線，有框集中在一側"
+        note="視覺差異已足夠識別邊界；若加分隔線反而噪訊過多"
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <ButtonGroup>
+              <Button variant="checked" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
+              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+            </ButtonGroup>
+            <Label>✅ 有框在前，無框在後，接壤不加分隔線</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <ButtonGroup>
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
+              <Button variant="checked" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
+              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+            </ButtonGroup>
+            <Label warn>❌ 有框夾在無框之間，交錯排列</Label>
+          </div>
+        </div>
+      </Rule>
+
+      <Rule
+        title="❌ 避免孤立 — 單一按鈕不應兩側都有分隔線"
+        note="若某個按鈕左右都有分隔線，重新審視分組邏輯，通常是分隔線過多的訊號"
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <ButtonGroup>
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
+              <ButtonDivider />
+              <Button variant="checked" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
+              <ButtonDivider />
+              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+            </ButtonGroup>
+            <Label warn>❌ Maximize2 兩側都有分隔線，孤立感過重</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <ButtonGroup>
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
+              <Button variant="checked" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
+              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+            </ButtonGroup>
+            <Label>✅ 移除多餘分隔線，重新排列有框/無框</Label>
+          </div>
+        </div>
       </Rule>
 
       <Rule
