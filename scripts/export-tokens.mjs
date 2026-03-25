@@ -421,7 +421,7 @@ function buildOpacity() {
 function build() {
   const alphas = buildAlphaTokens()
 
-  const output = {
+  const tokenSets = {
     // Static tokens (don't change between themes)
     'primitive/static': {
       black: alphas.black,
@@ -467,7 +467,83 @@ function build() {
     opacity: buildOpacity(),
   }
 
-  return output
+  // Tokens Studio $themes — maps token sets to Figma Variable collection modes.
+  // Token sets with the same "group" become modes of the same Figma collection.
+  const themes = [
+    {
+      id: 'light',
+      name: 'light',
+      group: 'Theme',
+      selectedTokenSets: {
+        'primitive/static': 'enabled',
+        'primitive/light': 'enabled',
+        'primitive/dark': 'disabled',
+        'semantic/light': 'enabled',
+        'semantic/dark': 'disabled',
+        typography: 'enabled',
+        'density/md': 'enabled',
+        'density/lg': 'disabled',
+        radius: 'enabled',
+        opacity: 'enabled',
+      },
+    },
+    {
+      id: 'dark',
+      name: 'dark',
+      group: 'Theme',
+      selectedTokenSets: {
+        'primitive/static': 'enabled',
+        'primitive/light': 'disabled',
+        'primitive/dark': 'enabled',
+        'semantic/light': 'disabled',
+        'semantic/dark': 'enabled',
+        typography: 'enabled',
+        'density/md': 'enabled',
+        'density/lg': 'disabled',
+        radius: 'enabled',
+        opacity: 'enabled',
+      },
+    },
+    {
+      id: 'density-md',
+      name: 'md',
+      group: 'Density',
+      selectedTokenSets: {
+        'density/md': 'enabled',
+        'density/lg': 'disabled',
+      },
+    },
+    {
+      id: 'density-lg',
+      name: 'lg',
+      group: 'Density',
+      selectedTokenSets: {
+        'density/md': 'disabled',
+        'density/lg': 'enabled',
+      },
+    },
+  ]
+
+  const metadata = {
+    tokenSetOrder: [
+      'primitive/static',
+      'primitive/light',
+      'primitive/dark',
+      'semantic/light',
+      'semantic/dark',
+      'typography',
+      'density/md',
+      'density/lg',
+      'radius',
+      'opacity',
+    ],
+  }
+
+  return {
+    ...tokenSets,
+    $themes: themes,
+    $metadata: metadata,
+  }
 }
 
 // ─── Main ───────────────────────────────────────────────────────────────────
