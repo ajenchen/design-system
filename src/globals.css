@@ -25,6 +25,11 @@
                "PingFang TC", "Microsoft JhengHei";
 }
 
+/* ── Custom Utilities ── */
+@utility opacity-disabled {
+  opacity: var(--opacity-disabled);
+}
+
 /* ── Base ── */
 @layer base {
   *, ::before, ::after {

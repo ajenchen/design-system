@@ -132,7 +132,7 @@ export const Primitives: Story = {
               {[1,2,3,4,5,6,7,8,9].map(n => (
                 <div
                   key={n}
-                  className="h-6 rounded-sm border border-[var(--black-a06)]"
+                  className="h-6 rounded-md border border-[var(--black-a06)]"
                   style={{ background: `var(--color-${name}-${n}${suffix})` }}
                   title={`--color-${name}-${n}${suffix}`}
                 />
@@ -338,7 +338,7 @@ export const Interactive: Story = {
               className="flex items-center gap-3 rounded-md px-3 py-2 text-body"
               style={{ background: bg }}
             >
-              <span className="h-4 w-4 shrink-0 rounded-sm bg-[var(--neutral-selected)]" />
+              <span className="h-4 w-4 shrink-0 rounded-md bg-[var(--neutral-selected)]" />
               <span className="flex-1">{label}</span>
               {token && <code className="text-caption text-fg-muted">{token}</code>}
             </div>

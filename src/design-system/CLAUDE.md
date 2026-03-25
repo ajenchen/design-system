@@ -42,7 +42,6 @@
 
 | Utility class   | 值                         |
 |----------------|---------------------------|
-| `rounded-sm`   | 4px（--radius-md）    |
 | `rounded-md`   | 4px（--radius-md）    |
 | `rounded-lg`   | 8px（--radius-lg）    |
 | `rounded-full` | 9999px（--radius-full）|

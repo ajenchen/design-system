@@ -41,7 +41,7 @@
 ## 禁止事項
 
 ```tsx
-// ❌ 不要用 rounded-sm 以外的小圓角
+// ❌ 不要用非 token 的圓角（包含 rounded-sm、rounded 等）
 <div className="rounded" />        // 4px，但意圖不明
 <div className="rounded-xl" />     // 12px，超出 token 範圍
 <div className="rounded-2xl" />    // 16px，超出 token 範圍

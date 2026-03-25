@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/.claude/hooks/block_prototype_imports.py"
+            "command": "python3 /Users/alanchen/我的雲端硬碟/my-project/.claude/hooks/block_prototype_imports.py"
           }
         ]
       }
