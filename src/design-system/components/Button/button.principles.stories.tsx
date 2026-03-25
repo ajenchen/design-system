@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   Plus, Trash2, Settings, Share2, RefreshCw,
-  MoreHorizontal, Save, Maximize2, Pin,
-  List, LayoutGrid, GanttChart,
+  MoreHorizontal, Save, Maximize2,
   ChevronDown, Download, Bell,
 } from 'lucide-react'
 import { Button } from './button'
@@ -55,7 +54,7 @@ export const VariantRule: Story = {
         note="藍框藍字。當選項有正面與負面之分，正面那個用 secondary；若同時有 primary，secondary 表示「另一個重要選項」"
       >
         <Button variant="secondary">儲存草稿</Button>
-        <Button variant="secondary" danger>放棄變更</Button>
+        <Button variant="tertiary">取消</Button>
       </Rule>
 
       <Rule
@@ -85,6 +84,7 @@ export const VariantRule: Story = {
           <span className="text-footnote text-fg-muted">→ 啟用後 →</span>
           <Button variant="checked" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕（開啟中）" />
         </div>
+        <Label warn>⚠️ 多選一（視圖切換）不用 checked → 用 Segmented Control</Label>
       </Rule>
 
       <Rule
@@ -92,7 +92,6 @@ export const VariantRule: Story = {
         note="藍色文字，無底色無邊框。本質仍是 button（保留鍵盤與無障礙行為）。不嵌入段落文字（用 HTML <a> 或 React Router <Link> 代替）"
       >
         <Button variant="link">前往設定</Button>
-        <Button variant="link">了解更多</Button>
       </Rule>
     </div>
   ),
@@ -164,25 +163,6 @@ export const DangerRule: Story = {
   ),
 }
 
-export const CheckedRule: Story = {
-  name: 'Checked 開關',
-  render: () => (
-    <div>
-      <Rule
-        title="❌ checked 不適合用於多選一（視圖切換）"
-        note="list / board / timeline 三選一是 radio group 語意，應使用 Segmented Control，不是 Button checked"
-      >
-        <div className="flex gap-1">
-          <Button variant="checked" size="sm" iconOnly startIcon={List} aria-label="清單（誤用）" />
-          <Button variant="text" size="sm" iconOnly startIcon={LayoutGrid} aria-label="看板" />
-          <Button variant="text" size="sm" iconOnly startIcon={GanttChart} aria-label="時間軸" />
-        </div>
-        <Label warn>↑ 看起來像 checked，實際上是 radio group → 用 Segmented Control</Label>
-      </Rule>
-    </div>
-  ),
-}
-
 export const IconRule: Story = {
   name: 'Icon 語意',
   render: () => (
@@ -225,7 +205,7 @@ export const IconRule: Story = {
 }
 
 export const OrderRule: Story = {
-  name: '按鈕排序',
+  name: 'Button 排序',
   render: () => (
     <div>
       <Rule
@@ -280,7 +260,7 @@ export const OrderRule: Story = {
 }
 
 export const GroupRule: Story = {
-  name: '群組與分隔線',
+  name: 'ButtonGroup 用法',
   render: () => (
     <div>
       <Rule title="群組間距 — 8px，用 ButtonGroup 包裹">
