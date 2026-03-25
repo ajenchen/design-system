@@ -15,7 +15,7 @@ Button 是最基礎的互動元件，用於觸發操作或導覽。
 
 - `startIcon`：最多一個，放在最左側
 - `badge` 和 `endIcon` 可同時出現在右側
-- 所有 section 之間的 gap = 4px
+- 各元素間距 4px
 
 ```tsx
 <Button startIcon={Plus}>新增</Button>
@@ -213,7 +213,7 @@ primary / primary+danger  >  secondary  >  tertiary  >  secondary+danger  >  tex
 
 ### ButtonGroup 與 ButtonDivider
 
-- 群組內按鈕間距：**8px**
+- ButtonGroup 內按鈕間距：**8px**
 - `<ButtonDivider />` 用於功能性分群；分隔線自身左右各留 4px，與按鈕形成 12px 視覺距離
 
 **分隔線使用規則：**
@@ -237,6 +237,8 @@ primary / primary+danger  >  secondary  >  tertiary  >  secondary+danger  >  tex
 
 ### 排序
 
+以下為**靠右對齊 toolbar** 的慣例排序（最常見）。排序原則適用於任何對齊方向，方向相反時遵循通用規則（視覺重量高的按鈕靠近對齊側）。
+
 工具列按鈕全部置右，左側放頁面標題或麵包屑。由右至左排序：
 
 ```
@@ -245,12 +247,12 @@ primary / primary+danger  >  secondary  >  tertiary  >  secondary+danger  >  tex
 
 - 固定操作（刷新、分享、設定等）優先使用 `text` icon-only，前提是有清晰且廣泛辨識的對應圖示
 - 切換按鈕（如全螢幕）依**預設（text）狀態**排列，切換為 `checked` 時不影響位置與分隔線
-- 業務邏輯群組靠右，群組內主按鈕放**最右**（靠右對齊規則在子群組同樣適用）
+- 業務邏輯群組靠右，主按鈕放**最右**
 - 溢出按鈕（MoreVertical）：區塊溢出時是該區塊最後一個按鈕，左側不加分隔線；全域溢出時在 ButtonGroup 末端，可加左側分隔線
 
 ### icon-only 群組一致性
 
-有框（primary、secondary、tertiary、checked）與無框（text）icon-only 按鈕可以共存於同一群組，但必須**區塊集中，不能交錯**；兩者之間不需要分隔線，視覺差異已足夠。
+此規則適用於所有 ButtonGroup，toolbar 為最典型場景。有框（primary、secondary、tertiary、checked）與無框（text）icon-only 按鈕可以共存於同一群組，但必須**區塊集中，不能交錯**；兩者之間不需要分隔線，視覺差異已足夠。
 
 切換按鈕（text ↔ checked）的預設狀態通常是 text，應視為**無框**來安排位置，不因切換為 checked 而調整分隔線或移動位置。
 
@@ -307,7 +309,7 @@ import { Link } from 'react-router-dom'
 ## 禁止事項
 
 - ❌ 不得硬寫高度、padding、border-radius、顏色
-- ❌ 同一操作區塊不得出現超過一個 `primary` 按鈕
+- ❌ 同一操作區不得出現超過一個 `primary` 按鈕
 - ❌ 卡片清單的重複 CTA 不得使用 `primary`，應使用 `tertiary`
 - ❌ `variant="primary" danger` 前面不得有任何確認步驟（它本身就是最後一步）
 - ❌ Icon-only 按鈕不得省略 `aria-label` 與 tooltip

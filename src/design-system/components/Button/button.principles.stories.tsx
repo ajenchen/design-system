@@ -222,14 +222,30 @@ export const IconRule: Story = {
 
       <Rule
         title="溢出選單 — MoreVertical icon-only"
-        note="區塊溢出：所在區塊最後一個按鈕，左側不加分隔線。全域溢出：ButtonGroup 末端，替代所有區塊各自的溢出，可加左側分隔線標示"
+        note="variant 隨所在區塊一致。區塊溢出：所在區塊最後一個，左側不加分隔線。全域溢出：多個區塊統一收納，ButtonGroup 末端，可加左側分隔線"
       >
-        <ButtonGroup>
-          <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
-          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-          <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
-        </ButtonGroup>
-        <Label>↑ MoreVertical 永遠壓在最右</Label>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <ButtonGroup>
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
+              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+            </ButtonGroup>
+            <Label>區塊溢出 — 左側不加分隔線</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <ButtonGroup>
+              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
+              <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
+              <ButtonDivider />
+              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+              <ButtonDivider />
+              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
+            </ButtonGroup>
+            <Label>全域溢出 — 多個區塊統一收納，可加左側分隔線</Label>
+          </div>
+        </div>
       </Rule>
     </div>
   ),
@@ -268,7 +284,7 @@ export const OrderRule: Story = {
 
       <Rule
         title="Toolbar — 全部置右，左側放標題；由右至左：溢出 › 固定工具 › 業務邏輯"
-        note="有框（primary/tertiary）→ 無框（text）視覺差異已完成分群，不加分隔線。MoreVertical 自然落在末端，通常也不需左側分隔線"
+        note="有框（primary/tertiary）→ 無框（text）視覺差異已完成分群，不加分隔線。MoreVertical 為區塊溢出，左側不加分隔線"
       >
         <div className="flex items-center justify-between w-full px-4 h-[52px] border border-border rounded-lg bg-surface">
           <span className="text-body font-bold text-foreground">專案名稱</span>
