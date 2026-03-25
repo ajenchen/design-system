@@ -41,15 +41,15 @@ src/
 │   │   │   ├── typography.css         ← utilities（靜態 CSS）
 │   │   │   ├── typography.spec.md     ← 字體設計原則與使用規則
 │   │   │   └── typography.stories.tsx
-│   │   ├── uiSize/
-│   │   │   ├── uiSize.css             ← 元件尺寸 tokens（md/lg 兩種模式）
-│   │   │   └── uiSize.spec.md         ← 元件尺寸使用規則
-│   │   ├── layoutSpace/
-│   │   │   ├── layoutSpace.css        ← 版面間距 tokens（md/lg 兩種模式）
-│   │   │   └── layoutSpace.spec.md    ← 版面間距使用規則
 │   │   ├── density/
 │   │   │   ├── density.spec.md        ← Density 系統說明（data-density 統一控制）
-│   │   │   └── density.stories.tsx    ← UI Size + Layout Space 合併展示
+│   │   │   ├── density.stories.tsx    ← UI Size + Layout Space 合併展示
+│   │   │   ├── uiSize/
+│   │   │   │   ├── uiSize.css         ← 元件尺寸 tokens（md/lg 兩種模式）
+│   │   │   │   └── uiSize.spec.md     ← 元件尺寸使用規則
+│   │   │   └── layoutSpace/
+│   │   │       ├── layoutSpace.css    ← 版面間距 tokens（md/lg 兩種模式）
+│   │   │       └── layoutSpace.spec.md ← 版面間距使用規則
 │   │   ├── elevation/
 │   │   │   ├── elevation.spec.md      ← 陰影層級使用規則
 │   │   │   └── elevation.stories.tsx  ← 陰影層級展示

@@ -2,8 +2,8 @@
 @import "./design-system/tokens/color/primitives.css";
 @import "./design-system/tokens/color/semantic.css";
 @import "./design-system/tokens/typography/typography.css";
-@import "./design-system/tokens/uiSize/uiSize.css";
-@import "./design-system/tokens/layoutSpace/layoutSpace.css";
+@import "./design-system/tokens/density/uiSize/uiSize.css";
+@import "./design-system/tokens/density/layoutSpace/layoutSpace.css";
 
 /* ── Tailwind Theme ── */
 @theme inline {
