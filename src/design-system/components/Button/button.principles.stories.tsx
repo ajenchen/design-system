@@ -188,7 +188,7 @@ export const IconRule: Story = {
         title="startIcon + endIcon 同時使用"
         note="startIcon 描述功能，endIcon 說明可以展開。兩者語意不同，互不衝突"
       >
-        <Button variant="primary" startIcon={Bell} endIcon={ChevronDown}>通知</Button>
+        <Button variant="tertiary" startIcon={Bell} endIcon={ChevronDown}>通知</Button>
         <Button variant="tertiary" startIcon={Settings} endIcon={ChevronDown}>偏好設定</Button>
       </Rule>
 
