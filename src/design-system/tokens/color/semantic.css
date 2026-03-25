@@ -1,0 +1,265 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Semantic Tokens — Layer 2
+   ═══════════════════════════════════════════════════════════════════════
+
+   這個檔案是語意色彩的唯一來源。
+   元件應優先引用這裡的語意 token，而非直接使用 --color-blue-6 等 Layer 1 色票。
+
+   ┌─ 命名原則 ────────────────────────────────────────────────────────────┐
+   │  短名稱（無 --color- 前綴），對應到 Layer 1 原始色票                │
+   │  shadcn 慣例名稱（background / primary / destructive…）             │
+   │  保留為 compat aliases，避免破壞 shadcn 元件                        │
+   └─────────────────────────────────────────────────────────────────────┘
+
+   ┌─ Surface 分層（非常重要）────────────────────────────────────────────┐
+   │  --canvas        頁面最底層（HTML body 背景）                       │
+   │  --surface       非遮蓋型容器（card、sidebar、table 等）             │
+   │                  dark mode 使用半透明，可疊加在 canvas 上            │
+   │  --surface-raised 遮蓋型浮層（modal、popover、dropdown）             │
+   │                  必須不透明，避免底層內容透出                        │
+   │  --overlay       backdrop 遮罩（dialog 背後的半透明黑）              │
+   └─────────────────────────────────────────────────────────────────────┘
+
+   ┌─ 文字 / Icon 層級 ───────────────────────────────────────────────────┐
+   │  --foreground      一般資訊（neutral-9）                            │
+   │  --fg-secondary    較次要的資訊（neutral-8）                        │
+   │  --fg-muted        placeholder、弱化 icon 如 info（neutral-7）      │
+   │  --fg-disabled     disabled 文字（neutral-6）                       │
+   │                                                                     │
+   │  文字色一律使用 neutral alpha，透明度疊加在任何背景皆可維持對比      │
+   │  弱化 icon hover 後變 fg-secondary（neutral-8）                     │
+   └─────────────────────────────────────────────────────────────────────┘
+
+   ┌─ 互動狀態（引用色盤 step）─────────────────────────────────────────────┐
+   │  Light: hover = step -5（較亮），active = step -7（較暗）           │
+   │  Dark:  hover = step -7（較亮），active = step -5（較暗）           │
+   │                                                                     │
+   │  相對色階公式保證 -5 永遠比 base 亮、-7 永遠比 base 暗。           │
+   │  高亮度色相（yellow 等）的 hover gap 較小，這是物理事實——           │
+   │  cursor 變化 + 細微色移疊加仍提供足夠回饋。                         │
+   └─────────────────────────────────────────────────────────────────────┘
+
+   ┌─ 邊框 / 分隔 ─────────────────────────────────────────────────────────┐
+   │  --border    元件邊框（neutral-5）                                  │
+   │  --divider   分隔線（neutral-4，比 border 更淡）                    │
+   │  --ring      focus 輪廓（= primary）                               │
+   │  選中狀態的邊框或文字 → 直接使用 var(--primary-hover)              │
+   └─────────────────────────────────────────────────────────────────────┘
+
+   ┌─ 中性互動背景 ───────────────────────────────────────────────────────┐
+   │  --neutral-hover    低調 hover（list row、tree node）= neutral-1      │
+   │  --neutral-selected 低調 selected                      = neutral-2    │
+   └─────────────────────────────────────────────────────────────────────┘
+
+   Tailwind 使用方式（@theme inline 橋接）：
+     bg-canvas           bg-surface          bg-surface-raised
+     bg-primary          bg-destructive      bg-success     bg-warning
+     text-foreground     text-fg-secondary   text-fg-muted  text-fg-disabled
+     border-border       ring-ring
+   選中邊框/文字 → border-[var(--primary-hover)] / text-[var(--primary-hover)]
+   ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ── Layer 2 — Semantic Tokens · Light Mode ── */
+:root {
+
+  /* === Branding === */
+  --tsmc-logo:            #DF3232;                           /* TSMC 品牌紅，兩主題相同 */
+
+  /* === Surface === */
+  --canvas:               oklch(1 0 0);                      /* 頁面底層 */
+  --surface:              oklch(1 0 0);                      /* card / panel */
+  --surface-raised:       oklch(1 0 0);                      /* modal / popup */
+  --overlay:              var(--black-a45);                   /* backdrop */
+  --tooltip-bg:           var(--color-neutral-9-opaque);     /* tooltip 深色底，不透明，dark 另補 override */
+
+  /* === Text / Icon === */
+  --foreground:           var(--color-neutral-9);            /* 一般資訊 */
+  --fg-secondary:         var(--color-neutral-8);            /* 次要資訊 */
+  --fg-muted:             var(--color-neutral-7);            /* placeholder / info icon */
+  --fg-disabled:          var(--color-neutral-6);            /* disabled 文字 */
+
+  /* === Brand / Action === */
+  --primary:              var(--color-blue-6);
+  --primary-hover:        var(--color-blue-5);
+  --primary-active:       var(--color-blue-7);
+  --primary-subtle:       var(--color-blue-1);
+  /* foreground 不定義：primary / error / success 背景色夠深，一律用 white，
+     元件直接寫 text-white，不需要 token 這層間接 */
+
+  /* === Status: Error (Destructive) === */
+  --error:                var(--color-deep-orange-6);
+  --error-hover:          var(--color-deep-orange-5);
+  --error-active:         var(--color-deep-orange-7);
+  --error-subtle:         var(--color-deep-orange-1);
+
+  /* === Status: Success === */
+  --success:              var(--color-green-6);
+  --success-hover:        var(--color-green-5);
+  --success-active:       var(--color-green-7);
+  --success-subtle:       var(--color-green-1);
+
+  /* === Status: Warning === */
+  --warning:              var(--color-yellow-6);
+  --warning-hover:        var(--color-yellow-5);
+  --warning-active:       var(--color-yellow-7);
+  --warning-subtle:       var(--color-yellow-1);
+  --warning-foreground:   var(--black-a98);                  /* 黃色底永遠需深色文字，用 Layer 0 alpha 不隨主題切換 */
+
+  /* === Indicator: Notification === */
+  --notification:         var(--color-red-6);               /* 通知 badge / 未讀計數；純紅 (red-6)，與 error (deep-orange) 視覺區分 */
+
+  /* === Border / Divider === */
+  --border:               var(--color-neutral-5);            /* 元件邊框 */
+  --divider:              var(--color-neutral-4);            /* 分隔線 */
+  /* 選中狀態的邊框或文字直接使用 var(--primary-hover)，不另設 alias */
+  --input:                var(--border);                     /* input 邊框色，shadcn 慣例名稱，目前與 --border 同值 */
+  --ring:                 var(--primary);                    /* focus 輪廓，跟著 primary 走 */
+
+  /* === Neutral Interactive Background === */
+  --neutral-hover:          var(--color-neutral-1);            /* 低調 hover（list row 等）*/
+  --neutral-selected:       var(--color-neutral-2);            /* 低調 selected */
+
+  /* ─── shadcn Compat Aliases ─── */
+  /*
+     這些名稱是為了讓 shadcn 元件（Badge、Button、Dropdown、Calendar 等）
+     能直接套用而不需修改它們的原始碼。不是給自己寫的元件用的。
+     - --background  ← shadcn body 背景，對應到 --canvas
+     - --card        ← shadcn <Card>，對應到 --surface
+     - --popover     ← shadcn <Popover> / <Select>，對應到 --surface-raised
+     - --secondary   ← shadcn <Badge variant="secondary"> 底色
+     - --muted       ← shadcn 靜音區塊底色（code block、disabled 區域）
+     - --accent      ← shadcn dropdown item 的 hover 背景
+  */
+  --background:           var(--canvas);
+  --card:                 var(--surface);
+  --card-foreground:      var(--foreground);   /* shadcn Card 用，值永遠 = --foreground */
+  --popover:              var(--surface-raised);
+  --popover-foreground:   var(--foreground);   /* shadcn Popover 用，值永遠 = --foreground */
+  --secondary:            var(--color-neutral-2);            /* badge 底色 */
+  --secondary-foreground: var(--foreground);   /* shadcn Button secondary 用 */
+  --muted:                var(--color-neutral-1);            /* skeleton / tab 容器 */
+  --muted-foreground:     var(--fg-muted);
+  --accent:               var(--neutral-hover);                /* item hover = neutral-1 */
+  --accent-foreground:    var(--foreground);   /* shadcn DropdownMenuItem 用 */
+}
+
+
+/* ── Layer 2 — Dark Mode Overrides ── */
+[data-theme="dark"] {
+
+  /* === Surface === */
+  --canvas:               var(--color-neutral-1-opaque);     /* #0A0A0A */
+  --surface:              var(--white-a08);                  /* 半透明，疊加在 canvas */
+  --surface-raised:       var(--color-neutral-3-opaque);     /* 不透明，modal/popup */
+  --overlay:              var(--black-a65);                  /* dark 需更深的遮罩 */
+  --tooltip-bg:           var(--color-neutral-4-opaque);     /* ≈ 0.19，與 light 的 neutral-9-opaque 接近 */
+
+  /* === Hover / Active — dark mode 方向反轉：hover = -7（較亮），active = -5（較暗）=== */
+  --primary-hover:        var(--color-blue-7);
+  --primary-active:       var(--color-blue-5);
+  --error-hover:          var(--color-deep-orange-7);
+  --error-active:         var(--color-deep-orange-5);
+  --success-hover:        var(--color-green-7);
+  --success-active:       var(--color-green-5);
+  --warning-hover:        var(--color-yellow-7);
+  --warning-active:       var(--color-yellow-5);
+
+  /* === Subtle — dark mode 改為 alpha + 亮度自動補償 ===
+     公式 α = 0.12 / l：亮度越高的色相 alpha 越低，
+     在 dark canvas (L≈0.06) 上感知亮度一致（≈0.17）。
+     基於 var(--base) 語義 token，dark 色票自動適配。                         */
+  --primary-subtle:       oklch(from var(--primary) l c h / calc(0.12 / l));
+  --error-subtle:         oklch(from var(--error)   l c h / calc(0.12 / l));
+  --success-subtle:       oklch(from var(--success) l c h / calc(0.12 / l));
+  --warning-subtle:       oklch(from var(--warning) l c h / calc(0.12 / l));
+
+  /* --card / --popover 不需覆寫：它們已指向 --surface / --surface-raised，
+     而 --surface / --surface-raised 在這裡已被覆寫，自動生效。
+     --secondary / --muted / --accent 不需覆寫：使用 neutral alpha token，
+     primitives.css 已處理 light/dark 切換。 */
+}
+
+
+/* ── Tailwind Utility Bridge ── */
+/*
+   命名遵循 shadcn 慣例：Tailwind utility = bg-{name}，
+   CSS token = --color-{name}（由 @theme inline 產生）。
+   新增 canvas / surface 系列供本設計系統使用。
+*/
+@theme inline {
+
+  /* Canvas / Surface */
+  --color-canvas:                var(--canvas);
+  --color-surface:               var(--surface);
+  --color-surface-raised:        var(--surface-raised);
+
+  /* shadcn compat */
+  --color-background:            var(--background);
+  --color-foreground:            var(--foreground);
+  --color-card:                  var(--card);
+  --color-card-foreground:       var(--card-foreground);
+  --color-popover:               var(--popover);
+  --color-popover-foreground:    var(--popover-foreground);
+
+  /* Primary */
+  --color-primary:               var(--primary);
+  --color-primary-foreground:    oklch(1 0 0);  /* white，供 shadcn 元件使用 */
+
+  /* Secondary / Muted / Accent */
+  --color-secondary:             var(--secondary);
+  --color-secondary-foreground:  var(--secondary-foreground);
+  --color-muted:                 var(--muted);
+  --color-muted-foreground:      var(--muted-foreground);
+  --color-accent:                var(--accent);
+  --color-accent-foreground:     var(--accent-foreground);
+
+  /* Destructive（= error，對應 shadcn 命名）*/
+  --color-destructive:           var(--error);
+  --color-destructive-foreground: oklch(1 0 0);  /* white，供 shadcn 元件使用 */
+
+  /* Status */
+  --color-error:                 var(--error);
+  --color-success:               var(--success);
+  --color-warning:               var(--warning);
+  --color-warning-foreground:    var(--warning-foreground);
+  --color-notification:          var(--notification);
+
+  /* Hover / Active */
+  --color-primary-hover:         var(--primary-hover);
+  --color-primary-active:        var(--primary-active);
+  --color-error-hover:           var(--error-hover);
+  --color-error-active:          var(--error-active);
+  --color-success-hover:         var(--success-hover);
+  --color-success-active:        var(--success-active);
+  --color-warning-hover:         var(--warning-hover);
+  --color-warning-active:        var(--warning-active);
+
+  /* Subtle */
+  --color-primary-subtle:        var(--primary-subtle);
+  --color-error-subtle:          var(--error-subtle);
+  --color-success-subtle:        var(--success-subtle);
+  --color-warning-subtle:        var(--warning-subtle);
+
+  /* Neutral Interaction */
+  --color-neutral-hover:         var(--neutral-hover);
+  --color-neutral-selected:      var(--neutral-selected);
+
+  /* Surface Utility */
+  --color-overlay:               var(--overlay);
+  --color-tooltip-bg:            var(--tooltip-bg);
+  --color-divider:               var(--divider);
+
+  /* Text / Icon levels */
+  --color-fg-secondary:          var(--fg-secondary);
+  --color-fg-muted:              var(--fg-muted);
+  --color-fg-disabled:           var(--fg-disabled);
+
+  /* Border / Ring / Input — shadcn 慣例命名 */
+  --color-border:                var(--border);
+  --color-input:                 var(--input);
+  --color-ring:                  var(--ring);
+
+  /* Branding */
+  --color-tsmc-logo:             var(--tsmc-logo);
+}

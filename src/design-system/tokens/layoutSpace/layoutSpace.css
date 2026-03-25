@@ -1,0 +1,14 @@
+/* Layout Space Tokens — md 為預設，lg 透過 attribute 覆寫 */
+
+:root {
+  --layout-space-loose:  16px;
+  --layout-space-tight:  12px;
+  --layout-space-bottom: 48px;
+}
+
+[data-layout-space="lg"],
+[data-density="lg"] {
+  --layout-space-loose:  24px;
+  --layout-space-tight:  16px;
+  --layout-space-bottom: 48px;
+}

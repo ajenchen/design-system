@@ -1,0 +1,47 @@
+@import "tailwindcss";
+@import "./design-system/tokens/color/primitives.css";
+@import "./design-system/tokens/color/semantic.css";
+@import "./design-system/tokens/typography/typography.css";
+@import "./design-system/tokens/uiSize/uiSize.css";
+@import "./design-system/tokens/layoutSpace/layoutSpace.css";
+
+/* ── Tailwind Theme ── */
+@theme inline {
+  /* White — 明確納入 token 系統，供 text-white / bg-white 使用 */
+  --color-white: oklch(1 0 0);
+
+  /* Radius — 對應 radius.spec.md 的命名 */
+  --radius-sm:   4px;
+  --radius-md:   4px;
+  --radius-lg:   8px;
+  --radius-full: 9999px;
+
+  /* Opacity */
+  --opacity-disabled: 0.45;
+
+  /* Font */
+  --font-sans: Roboto, "Segoe UI", Helvetica, Arial, sans-serif,
+               "Apple Color Emoji", "Segoe UI Emoji",
+               "PingFang TC", "Microsoft JhengHei";
+}
+
+/* ── Base ── */
+@layer base {
+  *, ::before, ::after {
+    box-sizing: border-box;
+    border-color: var(--color-neutral-5);
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}

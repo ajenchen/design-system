@@ -1,0 +1,416 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Primitive Tokens — Layer 0 + Layer 1
+   ═══════════════════════════════════════════════════════════════════════
+
+   這個檔案是調色盤的唯一來源。
+   AI 讀這個檔案可以知道所有可用的原始色票。
+
+   架構：
+   ┌─ Layer 0 ─ Static Alpha ────────────────────────────────────────────┐
+   │  --black-aN / --white-aN                                            │
+   │  命名即透明度，永不隨主題切換                                        │
+   └─────────────────────────────────────────────────────────────────────┘
+   ┌─ Layer 1 ─ Primitive Colors ────────────────────────────────────────┐
+   │  --color-{hue}-{1~10}                                               │
+   │  只需管理 -6（品牌基底色），其餘由 CSS relative color 自動推導       │
+   │  更換色調：只改 H 值。更換亮度：只改 L 值。                          │
+   │                                                                     │
+   │  Hues: neutral, blue, deep-orange, orange, amber, yellow,           │
+   │        lime, green, turquoise, indigo, purple, magenta, red         │
+   └─────────────────────────────────────────────────────────────────────┘
+
+   使用方式：
+   - 直接引用：var(--color-blue-6)
+   - 在 semantic.css 中建立語意別名後，透過 var(--color-primary) 使用
+   - 禁止在元件中直接硬寫色票，一律透過 CSS 變數引用
+
+   Scale 推導規則（相對公式，確保任何 base-6 亮度都能產生單調色階）：
+   較亮方向: L = l + (1 − l) × F   F: 1=0.90  2=0.75  3=0.58  4=0.40  5=0.20
+   較暗方向: L = l × D             D: 7=0.82  8=0.62  9=0.44  10=0.28  (dark 1=0.18)
+   C×（不變）:
+     lighter: 1=0.14  2=0.22  3=0.45  4=0.75  5=0.90
+     darker:  7=0.93  8=0.82  9=0.65  10=0.48  (dark 5=0.98, dark 7=0.88)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ── Layer 0 — Static Alpha Tokens ── */
+:root {
+  --black-a02: oklch(0 0 0 / 0.02);
+  --black-a04: oklch(0 0 0 / 0.04);
+  --black-a06: oklch(0 0 0 / 0.06);
+  --black-a09: oklch(0 0 0 / 0.09);
+  --black-a15: oklch(0 0 0 / 0.15);
+  --black-a25: oklch(0 0 0 / 0.25);
+  --black-a37: oklch(0 0 0 / 0.37);
+  --black-a45: oklch(0 0 0 / 0.45);
+  --black-a65: oklch(0 0 0 / 0.65);
+  --black-a85: oklch(0 0 0 / 0.85);
+  --black-a98: oklch(0 0 0 / 0.98);
+
+  --white-a04: oklch(1 0 0 / 0.04);
+  --white-a08: oklch(1 0 0 / 0.08);
+  --white-a12: oklch(1 0 0 / 0.12);
+  --white-a15: oklch(1 0 0 / 0.15);
+  --white-a20: oklch(1 0 0 / 0.20);
+  --white-a30: oklch(1 0 0 / 0.30);
+  --white-a37: oklch(1 0 0 / 0.37);
+  --white-a45: oklch(1 0 0 / 0.45);
+  --white-a85: oklch(1 0 0 / 0.85);
+  --white-a98: oklch(1 0 0 / 0.98);
+}
+
+
+/* ── Layer 1 — Primitive Colors · Light Mode ── */
+:root {
+
+  /* Neutral — Alpha (light = black-alpha) */
+  --color-neutral-1: var(--black-a02);
+  --color-neutral-2: var(--black-a04);
+  --color-neutral-3: var(--black-a06);
+  --color-neutral-4: var(--black-a09);
+  --color-neutral-5: var(--black-a15);
+  --color-neutral-6: var(--black-a25);
+  --color-neutral-7: var(--black-a45);
+  --color-neutral-8: var(--black-a85);
+  --color-neutral-9: var(--black-a98);
+
+  /* Neutral — Opaque */
+  --color-neutral-1-opaque: oklch(0.98 0 0);
+  --color-neutral-2-opaque: oklch(0.96 0 0);
+  --color-neutral-3-opaque: oklch(0.94 0 0);
+  --color-neutral-4-opaque: oklch(0.91 0 0);
+  --color-neutral-5-opaque: oklch(0.85 0 0);
+  --color-neutral-6-opaque: oklch(0.78 0 0);
+  --color-neutral-7-opaque: oklch(0.55 0 0);
+  --color-neutral-8-opaque: oklch(0.36 0 0);
+  --color-neutral-9-opaque: oklch(0.18 0 0);
+
+  /* Blue */
+  --color-blue-6:  oklch(0.54 0.22 258);
+  --color-blue-1:  oklch(from var(--color-blue-6) calc(l + (1 - l) * 0.90) calc(c * 0.14) h);
+  --color-blue-2:  oklch(from var(--color-blue-6) calc(l + (1 - l) * 0.75) calc(c * 0.22) h);
+  --color-blue-3:  oklch(from var(--color-blue-6) calc(l + (1 - l) * 0.58) calc(c * 0.45) h);
+  --color-blue-4:  oklch(from var(--color-blue-6) calc(l + (1 - l) * 0.40) calc(c * 0.75) h);
+  --color-blue-5:  oklch(from var(--color-blue-6) calc(l + (1 - l) * 0.20) calc(c * 0.90) h);
+  --color-blue-7:  oklch(from var(--color-blue-6) calc(l * 0.82) calc(c * 0.93) h);
+  --color-blue-8:  oklch(from var(--color-blue-6) calc(l * 0.62) calc(c * 0.82) h);
+  --color-blue-9:  oklch(from var(--color-blue-6) calc(l * 0.44) calc(c * 0.65) h);
+  --color-blue-10: oklch(from var(--color-blue-6) calc(l * 0.28) calc(c * 0.48) h);
+
+  /* Deep Orange */
+  --color-deep-orange-6:  oklch(0.58 0.19 38);
+  --color-deep-orange-1:  oklch(from var(--color-deep-orange-6) calc(l + (1 - l) * 0.90) calc(c * 0.14) h);
+  --color-deep-orange-2:  oklch(from var(--color-deep-orange-6) calc(l + (1 - l) * 0.75) calc(c * 0.22) h);
+  --color-deep-orange-3:  oklch(from var(--color-deep-orange-6) calc(l + (1 - l) * 0.58) calc(c * 0.45) h);
+  --color-deep-orange-4:  oklch(from var(--color-deep-orange-6) calc(l + (1 - l) * 0.40) calc(c * 0.75) h);
+  --color-deep-orange-5:  oklch(from var(--color-deep-orange-6) calc(l + (1 - l) * 0.20) calc(c * 0.90) h);
+  --color-deep-orange-7:  oklch(from var(--color-deep-orange-6) calc(l * 0.82) calc(c * 0.93) h);
+  --color-deep-orange-8:  oklch(from var(--color-deep-orange-6) calc(l * 0.62) calc(c * 0.82) h);
+  --color-deep-orange-9:  oklch(from var(--color-deep-orange-6) calc(l * 0.44) calc(c * 0.65) h);
+  --color-deep-orange-10: oklch(from var(--color-deep-orange-6) calc(l * 0.28) calc(c * 0.48) h);
+
+  /* Orange */
+  --color-orange-6:  oklch(0.73 0.17 57);
+  --color-orange-1:  oklch(from var(--color-orange-6) calc(l + (1 - l) * 0.90) calc(c * 0.14) h);
+  --color-orange-2:  oklch(from var(--color-orange-6) calc(l + (1 - l) * 0.75) calc(c * 0.22) h);
+  --color-orange-3:  oklch(from var(--color-orange-6) calc(l + (1 - l) * 0.58) calc(c * 0.45) h);
+  --color-orange-4:  oklch(from var(--color-orange-6) calc(l + (1 - l) * 0.40) calc(c * 0.75) h);
+  --color-orange-5:  oklch(from var(--color-orange-6) calc(l + (1 - l) * 0.20) calc(c * 0.90) h);
+  --color-orange-7:  oklch(from var(--color-orange-6) calc(l * 0.82) calc(c * 0.93) h);
+  --color-orange-8:  oklch(from var(--color-orange-6) calc(l * 0.62) calc(c * 0.82) h);
+  --color-orange-9:  oklch(from var(--color-orange-6) calc(l * 0.44) calc(c * 0.65) h);
+  --color-orange-10: oklch(from var(--color-orange-6) calc(l * 0.28) calc(c * 0.48) h);
+
+  /* Amber */
+  --color-amber-6:  oklch(0.79 0.16 76);
+  --color-amber-1:  oklch(from var(--color-amber-6) calc(l + (1 - l) * 0.90) calc(c * 0.14) h);
+  --color-amber-2:  oklch(from var(--color-amber-6) calc(l + (1 - l) * 0.75) calc(c * 0.22) h);
+  --color-amber-3:  oklch(from var(--color-amber-6) calc(l + (1 - l) * 0.58) calc(c * 0.45) h);
+  --color-amber-4:  oklch(from var(--color-amber-6) calc(l + (1 - l) * 0.40) calc(c * 0.75) h);
+  --color-amber-5:  oklch(from var(--color-amber-6) calc(l + (1 - l) * 0.20) calc(c * 0.90) h);
+  --color-amber-7:  oklch(from var(--color-amber-6) calc(l * 0.82) calc(c * 0.93) h);
+  --color-amber-8:  oklch(from var(--color-amber-6) calc(l * 0.62) calc(c * 0.82) h);
+  --color-amber-9:  oklch(from var(--color-amber-6) calc(l * 0.44) calc(c * 0.65) h);
+  --color-amber-10: oklch(from var(--color-amber-6) calc(l * 0.28) calc(c * 0.48) h);
+
+  /* Yellow */
+  --color-yellow-6:  oklch(0.87 0.17 90);
+  --color-yellow-1:  oklch(from var(--color-yellow-6) calc(l + (1 - l) * 0.90) calc(c * 0.14) h);
+  --color-yellow-2:  oklch(from var(--color-yellow-6) calc(l + (1 - l) * 0.75) calc(c * 0.22) h);
+  --color-yellow-3:  oklch(from var(--color-yellow-6) calc(l + (1 - l) * 0.58) calc(c * 0.45) h);
+  --color-yellow-4:  oklch(from var(--color-yellow-6) calc(l + (1 - l) * 0.40) calc(c * 0.75) h);
+  --color-yellow-5:  oklch(from var(--color-yellow-6) calc(l + (1 - l) * 0.20) calc(c * 0.90) h);
+  --color-yellow-7:  oklch(from var(--color-yellow-6) calc(l * 0.82) calc(c * 0.93) h);
+  --color-yellow-8:  oklch(from var(--color-yellow-6) calc(l * 0.62) calc(c * 0.82) h);
+  --color-yellow-9:  oklch(from var(--color-yellow-6) calc(l * 0.44) calc(c * 0.65) h);
+  --color-yellow-10: oklch(from var(--color-yellow-6) calc(l * 0.28) calc(c * 0.48) h);
+
+  /* Lime */
+  --color-lime-6:  oklch(0.81 0.20 122);
+  --color-lime-1:  oklch(from var(--color-lime-6) calc(l + (1 - l) * 0.90) calc(c * 0.14) h);
+  --color-lime-2:  oklch(from var(--color-lime-6) calc(l + (1 - l) * 0.75) calc(c * 0.22) h);
+  --color-lime-3:  oklch(from var(--color-lime-6) calc(l + (1 - l) * 0.58) calc(c * 0.45) h);
+  --color-lime-4:  oklch(from var(--color-lime-6) calc(l + (1 - l) * 0.40) calc(c * 0.75) h);
+  --color-lime-5:  oklch(from var(--color-lime-6) calc(l + (1 - l) * 0.20) calc(c * 0.90) h);
+  --color-lime-7:  oklch(from var(--color-lime-6) calc(l * 0.82) calc(c * 0.93) h);
+  --color-lime-8:  oklch(from var(--color-lime-6) calc(l * 0.62) calc(c * 0.82) h);
+  --color-lime-9:  oklch(from var(--color-lime-6) calc(l * 0.44) calc(c * 0.65) h);
+  --color-lime-10: oklch(from var(--color-lime-6) calc(l * 0.28) calc(c * 0.48) h);
+
+  /* Green */
+  --color-green-6:  oklch(0.70 0.23 142);
+  --color-green-1:  oklch(from var(--color-green-6) calc(l + (1 - l) * 0.90) calc(c * 0.14) h);
+  --color-green-2:  oklch(from var(--color-green-6) calc(l + (1 - l) * 0.75) calc(c * 0.22) h);
+  --color-green-3:  oklch(from var(--color-green-6) calc(l + (1 - l) * 0.58) calc(c * 0.45) h);
+  --color-green-4:  oklch(from var(--color-green-6) calc(l + (1 - l) * 0.40) calc(c * 0.75) h);
+  --color-green-5:  oklch(from var(--color-green-6) calc(l + (1 - l) * 0.20) calc(c * 0.90) h);
+  --color-green-7:  oklch(from var(--color-green-6) calc(l * 0.82) calc(c * 0.93) h);
+  --color-green-8:  oklch(from var(--color-green-6) calc(l * 0.62) calc(c * 0.82) h);
+  --color-green-9:  oklch(from var(--color-green-6) calc(l * 0.44) calc(c * 0.65) h);
+  --color-green-10: oklch(from var(--color-green-6) calc(l * 0.28) calc(c * 0.48) h);
+
+  /* Turquoise */
+  --color-turquoise-6:  oklch(0.64 0.09 196);
+  --color-turquoise-1:  oklch(from var(--color-turquoise-6) calc(l + (1 - l) * 0.90) calc(c * 0.14) h);
+  --color-turquoise-2:  oklch(from var(--color-turquoise-6) calc(l + (1 - l) * 0.75) calc(c * 0.22) h);
+  --color-turquoise-3:  oklch(from var(--color-turquoise-6) calc(l + (1 - l) * 0.58) calc(c * 0.45) h);
+  --color-turquoise-4:  oklch(from var(--color-turquoise-6) calc(l + (1 - l) * 0.40) calc(c * 0.75) h);
+  --color-turquoise-5:  oklch(from var(--color-turquoise-6) calc(l + (1 - l) * 0.20) calc(c * 0.90) h);
+  --color-turquoise-7:  oklch(from var(--color-turquoise-6) calc(l * 0.82) calc(c * 0.93) h);
+  --color-turquoise-8:  oklch(from var(--color-turquoise-6) calc(l * 0.62) calc(c * 0.82) h);
+  --color-turquoise-9:  oklch(from var(--color-turquoise-6) calc(l * 0.44) calc(c * 0.65) h);
+  --color-turquoise-10: oklch(from var(--color-turquoise-6) calc(l * 0.28) calc(c * 0.48) h);
+
+  /* Indigo */
+  --color-indigo-6:  oklch(0.52 0.26 265);
+  --color-indigo-1:  oklch(from var(--color-indigo-6) calc(l + (1 - l) * 0.90) calc(c * 0.14) h);
+  --color-indigo-2:  oklch(from var(--color-indigo-6) calc(l + (1 - l) * 0.75) calc(c * 0.22) h);
+  --color-indigo-3:  oklch(from var(--color-indigo-6) calc(l + (1 - l) * 0.58) calc(c * 0.45) h);
+  --color-indigo-4:  oklch(from var(--color-indigo-6) calc(l + (1 - l) * 0.40) calc(c * 0.75) h);
+  --color-indigo-5:  oklch(from var(--color-indigo-6) calc(l + (1 - l) * 0.20) calc(c * 0.90) h);
+  --color-indigo-7:  oklch(from var(--color-indigo-6) calc(l * 0.82) calc(c * 0.93) h);
+  --color-indigo-8:  oklch(from var(--color-indigo-6) calc(l * 0.62) calc(c * 0.82) h);
+  --color-indigo-9:  oklch(from var(--color-indigo-6) calc(l * 0.44) calc(c * 0.65) h);
+  --color-indigo-10: oklch(from var(--color-indigo-6) calc(l * 0.28) calc(c * 0.48) h);
+
+  /* Purple */
+  --color-purple-6:  oklch(0.52 0.20 294);
+  --color-purple-1:  oklch(from var(--color-purple-6) calc(l + (1 - l) * 0.90) calc(c * 0.14) h);
+  --color-purple-2:  oklch(from var(--color-purple-6) calc(l + (1 - l) * 0.75) calc(c * 0.22) h);
+  --color-purple-3:  oklch(from var(--color-purple-6) calc(l + (1 - l) * 0.58) calc(c * 0.45) h);
+  --color-purple-4:  oklch(from var(--color-purple-6) calc(l + (1 - l) * 0.40) calc(c * 0.75) h);
+  --color-purple-5:  oklch(from var(--color-purple-6) calc(l + (1 - l) * 0.20) calc(c * 0.90) h);
+  --color-purple-7:  oklch(from var(--color-purple-6) calc(l * 0.82) calc(c * 0.93) h);
+  --color-purple-8:  oklch(from var(--color-purple-6) calc(l * 0.62) calc(c * 0.82) h);
+  --color-purple-9:  oklch(from var(--color-purple-6) calc(l * 0.44) calc(c * 0.65) h);
+  --color-purple-10: oklch(from var(--color-purple-6) calc(l * 0.28) calc(c * 0.48) h);
+
+  /* Magenta */
+  --color-magenta-6:  oklch(0.57 0.24 342);
+  --color-magenta-1:  oklch(from var(--color-magenta-6) calc(l + (1 - l) * 0.90) calc(c * 0.14) h);
+  --color-magenta-2:  oklch(from var(--color-magenta-6) calc(l + (1 - l) * 0.75) calc(c * 0.22) h);
+  --color-magenta-3:  oklch(from var(--color-magenta-6) calc(l + (1 - l) * 0.58) calc(c * 0.45) h);
+  --color-magenta-4:  oklch(from var(--color-magenta-6) calc(l + (1 - l) * 0.40) calc(c * 0.75) h);
+  --color-magenta-5:  oklch(from var(--color-magenta-6) calc(l + (1 - l) * 0.20) calc(c * 0.90) h);
+  --color-magenta-7:  oklch(from var(--color-magenta-6) calc(l * 0.82) calc(c * 0.93) h);
+  --color-magenta-8:  oklch(from var(--color-magenta-6) calc(l * 0.62) calc(c * 0.82) h);
+  --color-magenta-9:  oklch(from var(--color-magenta-6) calc(l * 0.44) calc(c * 0.65) h);
+  --color-magenta-10: oklch(from var(--color-magenta-6) calc(l * 0.28) calc(c * 0.48) h);
+
+  /* Red */
+  --color-red-6:  oklch(0.46 0.22 25);
+  --color-red-1:  oklch(from var(--color-red-6) calc(l + (1 - l) * 0.90) calc(c * 0.14) h);
+  --color-red-2:  oklch(from var(--color-red-6) calc(l + (1 - l) * 0.75) calc(c * 0.22) h);
+  --color-red-3:  oklch(from var(--color-red-6) calc(l + (1 - l) * 0.58) calc(c * 0.45) h);
+  --color-red-4:  oklch(from var(--color-red-6) calc(l + (1 - l) * 0.40) calc(c * 0.75) h);
+  --color-red-5:  oklch(from var(--color-red-6) calc(l + (1 - l) * 0.20) calc(c * 0.90) h);
+  --color-red-7:  oklch(from var(--color-red-6) calc(l * 0.82) calc(c * 0.93) h);
+  --color-red-8:  oklch(from var(--color-red-6) calc(l * 0.62) calc(c * 0.82) h);
+  --color-red-9:  oklch(from var(--color-red-6) calc(l * 0.44) calc(c * 0.65) h);
+  --color-red-10: oklch(from var(--color-red-6) calc(l * 0.28) calc(c * 0.48) h);
+
+  /* Elevation */
+  --elevation-100:        0 8px  16px var(--black-a02);
+  --elevation-100-hover: 0 8px  16px var(--black-a04);
+  --elevation-200:        0 16px 32px var(--black-a04);
+  --elevation-200-hover: 0 16px 32px var(--black-a06);
+
+}
+
+
+/* ── Layer 1 — Dark Mode Overrides ── */
+[data-theme="dark"] {
+
+  /* Neutral Alpha */
+  --color-neutral-1: var(--white-a04);
+  --color-neutral-2: var(--white-a08);
+  --color-neutral-3: var(--white-a12);
+  --color-neutral-4: var(--white-a15);
+  --color-neutral-5: var(--white-a20);
+  --color-neutral-6: var(--white-a37);
+  --color-neutral-7: var(--white-a45);
+  --color-neutral-8: var(--white-a85);
+  --color-neutral-9: var(--white-a98);
+
+  /* Neutral Opaque */
+  --color-neutral-1-opaque: oklch(0.06 0 0);
+  --color-neutral-2-opaque: oklch(0.10 0 0);
+  --color-neutral-3-opaque: oklch(0.15 0 0);
+  --color-neutral-4-opaque: oklch(0.19 0 0);
+  --color-neutral-5-opaque: oklch(0.25 0 0);
+  --color-neutral-6-opaque: oklch(0.37 0 0);
+  --color-neutral-7-opaque: oklch(0.49 0 0);
+  --color-neutral-8-opaque: oklch(0.87 0 0);
+  --color-neutral-9-opaque: oklch(0.98 0 0);
+
+  /* Blue */
+  --color-blue-6:  oklch(0.60 0.22 258);
+  --color-blue-1:  oklch(from var(--color-blue-6) calc(l * 0.18) calc(c * 0.48) h);
+  --color-blue-2:  oklch(from var(--color-blue-6) calc(l * 0.28) calc(c * 0.65) h);
+  --color-blue-3:  oklch(from var(--color-blue-6) calc(l * 0.44) calc(c * 0.82) h);
+  --color-blue-4:  oklch(from var(--color-blue-6) calc(l * 0.62) calc(c * 0.93) h);
+  --color-blue-5:  oklch(from var(--color-blue-6) calc(l * 0.82) calc(c * 0.98) h);
+  --color-blue-7:  oklch(from var(--color-blue-6) calc(l + (1 - l) * 0.20) calc(c * 0.88) h);
+  --color-blue-8:  oklch(from var(--color-blue-6) calc(l + (1 - l) * 0.40) calc(c * 0.65) h);
+  --color-blue-9:  oklch(from var(--color-blue-6) calc(l + (1 - l) * 0.58) calc(c * 0.35) h);
+  --color-blue-10: oklch(from var(--color-blue-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
+
+  /* Deep Orange */
+  --color-deep-orange-6:  oklch(0.63 0.18 38);
+  --color-deep-orange-1:  oklch(from var(--color-deep-orange-6) calc(l * 0.18) calc(c * 0.48) h);
+  --color-deep-orange-2:  oklch(from var(--color-deep-orange-6) calc(l * 0.28) calc(c * 0.65) h);
+  --color-deep-orange-3:  oklch(from var(--color-deep-orange-6) calc(l * 0.44) calc(c * 0.82) h);
+  --color-deep-orange-4:  oklch(from var(--color-deep-orange-6) calc(l * 0.62) calc(c * 0.93) h);
+  --color-deep-orange-5:  oklch(from var(--color-deep-orange-6) calc(l * 0.82) calc(c * 0.98) h);
+  --color-deep-orange-7:  oklch(from var(--color-deep-orange-6) calc(l + (1 - l) * 0.20) calc(c * 0.88) h);
+  --color-deep-orange-8:  oklch(from var(--color-deep-orange-6) calc(l + (1 - l) * 0.40) calc(c * 0.65) h);
+  --color-deep-orange-9:  oklch(from var(--color-deep-orange-6) calc(l + (1 - l) * 0.58) calc(c * 0.35) h);
+  --color-deep-orange-10: oklch(from var(--color-deep-orange-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
+
+  /* Orange */
+  --color-orange-6:  oklch(0.76 0.16 57);
+  --color-orange-1:  oklch(from var(--color-orange-6) calc(l * 0.18) calc(c * 0.48) h);
+  --color-orange-2:  oklch(from var(--color-orange-6) calc(l * 0.28) calc(c * 0.65) h);
+  --color-orange-3:  oklch(from var(--color-orange-6) calc(l * 0.44) calc(c * 0.82) h);
+  --color-orange-4:  oklch(from var(--color-orange-6) calc(l * 0.62) calc(c * 0.93) h);
+  --color-orange-5:  oklch(from var(--color-orange-6) calc(l * 0.82) calc(c * 0.98) h);
+  --color-orange-7:  oklch(from var(--color-orange-6) calc(l + (1 - l) * 0.20) calc(c * 0.88) h);
+  --color-orange-8:  oklch(from var(--color-orange-6) calc(l + (1 - l) * 0.40) calc(c * 0.65) h);
+  --color-orange-9:  oklch(from var(--color-orange-6) calc(l + (1 - l) * 0.58) calc(c * 0.35) h);
+  --color-orange-10: oklch(from var(--color-orange-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
+
+  /* Amber */
+  --color-amber-6:  oklch(0.82 0.15 76);
+  --color-amber-1:  oklch(from var(--color-amber-6) calc(l * 0.18) calc(c * 0.48) h);
+  --color-amber-2:  oklch(from var(--color-amber-6) calc(l * 0.28) calc(c * 0.65) h);
+  --color-amber-3:  oklch(from var(--color-amber-6) calc(l * 0.44) calc(c * 0.82) h);
+  --color-amber-4:  oklch(from var(--color-amber-6) calc(l * 0.62) calc(c * 0.93) h);
+  --color-amber-5:  oklch(from var(--color-amber-6) calc(l * 0.82) calc(c * 0.98) h);
+  --color-amber-7:  oklch(from var(--color-amber-6) calc(l + (1 - l) * 0.20) calc(c * 0.88) h);
+  --color-amber-8:  oklch(from var(--color-amber-6) calc(l + (1 - l) * 0.40) calc(c * 0.65) h);
+  --color-amber-9:  oklch(from var(--color-amber-6) calc(l + (1 - l) * 0.58) calc(c * 0.35) h);
+  --color-amber-10: oklch(from var(--color-amber-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
+
+  /* Yellow */
+  --color-yellow-6:  oklch(0.89 0.17 90);
+  --color-yellow-1:  oklch(from var(--color-yellow-6) calc(l * 0.18) calc(c * 0.48) h);
+  --color-yellow-2:  oklch(from var(--color-yellow-6) calc(l * 0.28) calc(c * 0.65) h);
+  --color-yellow-3:  oklch(from var(--color-yellow-6) calc(l * 0.44) calc(c * 0.82) h);
+  --color-yellow-4:  oklch(from var(--color-yellow-6) calc(l * 0.62) calc(c * 0.93) h);
+  --color-yellow-5:  oklch(from var(--color-yellow-6) calc(l * 0.82) calc(c * 0.98) h);
+  --color-yellow-7:  oklch(from var(--color-yellow-6) calc(l + (1 - l) * 0.20) calc(c * 0.88) h);
+  --color-yellow-8:  oklch(from var(--color-yellow-6) calc(l + (1 - l) * 0.40) calc(c * 0.65) h);
+  --color-yellow-9:  oklch(from var(--color-yellow-6) calc(l + (1 - l) * 0.58) calc(c * 0.35) h);
+  --color-yellow-10: oklch(from var(--color-yellow-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
+
+  /* Lime */
+  --color-lime-6:  oklch(0.84 0.19 122);
+  --color-lime-1:  oklch(from var(--color-lime-6) calc(l * 0.18) calc(c * 0.48) h);
+  --color-lime-2:  oklch(from var(--color-lime-6) calc(l * 0.28) calc(c * 0.65) h);
+  --color-lime-3:  oklch(from var(--color-lime-6) calc(l * 0.44) calc(c * 0.82) h);
+  --color-lime-4:  oklch(from var(--color-lime-6) calc(l * 0.62) calc(c * 0.93) h);
+  --color-lime-5:  oklch(from var(--color-lime-6) calc(l * 0.82) calc(c * 0.98) h);
+  --color-lime-7:  oklch(from var(--color-lime-6) calc(l + (1 - l) * 0.20) calc(c * 0.88) h);
+  --color-lime-8:  oklch(from var(--color-lime-6) calc(l + (1 - l) * 0.40) calc(c * 0.65) h);
+  --color-lime-9:  oklch(from var(--color-lime-6) calc(l + (1 - l) * 0.58) calc(c * 0.35) h);
+  --color-lime-10: oklch(from var(--color-lime-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
+
+  /* Green */
+  --color-green-6:  oklch(0.73 0.23 142);
+  --color-green-1:  oklch(from var(--color-green-6) calc(l * 0.18) calc(c * 0.48) h);
+  --color-green-2:  oklch(from var(--color-green-6) calc(l * 0.28) calc(c * 0.65) h);
+  --color-green-3:  oklch(from var(--color-green-6) calc(l * 0.44) calc(c * 0.82) h);
+  --color-green-4:  oklch(from var(--color-green-6) calc(l * 0.62) calc(c * 0.93) h);
+  --color-green-5:  oklch(from var(--color-green-6) calc(l * 0.82) calc(c * 0.98) h);
+  --color-green-7:  oklch(from var(--color-green-6) calc(l + (1 - l) * 0.20) calc(c * 0.88) h);
+  --color-green-8:  oklch(from var(--color-green-6) calc(l + (1 - l) * 0.40) calc(c * 0.65) h);
+  --color-green-9:  oklch(from var(--color-green-6) calc(l + (1 - l) * 0.58) calc(c * 0.35) h);
+  --color-green-10: oklch(from var(--color-green-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
+
+  /* Turquoise */
+  --color-turquoise-6:  oklch(0.57 0.10 225);
+  --color-turquoise-1:  oklch(from var(--color-turquoise-6) calc(l * 0.18) calc(c * 0.48) h);
+  --color-turquoise-2:  oklch(from var(--color-turquoise-6) calc(l * 0.28) calc(c * 0.65) h);
+  --color-turquoise-3:  oklch(from var(--color-turquoise-6) calc(l * 0.44) calc(c * 0.82) h);
+  --color-turquoise-4:  oklch(from var(--color-turquoise-6) calc(l * 0.62) calc(c * 0.93) h);
+  --color-turquoise-5:  oklch(from var(--color-turquoise-6) calc(l * 0.82) calc(c * 0.98) h);
+  --color-turquoise-7:  oklch(from var(--color-turquoise-6) calc(l + (1 - l) * 0.20) calc(c * 0.88) h);
+  --color-turquoise-8:  oklch(from var(--color-turquoise-6) calc(l + (1 - l) * 0.40) calc(c * 0.65) h);
+  --color-turquoise-9:  oklch(from var(--color-turquoise-6) calc(l + (1 - l) * 0.58) calc(c * 0.35) h);
+  --color-turquoise-10: oklch(from var(--color-turquoise-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
+
+  /* Indigo */
+  --color-indigo-6:  oklch(0.57 0.25 265);
+  --color-indigo-1:  oklch(from var(--color-indigo-6) calc(l * 0.18) calc(c * 0.48) h);
+  --color-indigo-2:  oklch(from var(--color-indigo-6) calc(l * 0.28) calc(c * 0.65) h);
+  --color-indigo-3:  oklch(from var(--color-indigo-6) calc(l * 0.44) calc(c * 0.82) h);
+  --color-indigo-4:  oklch(from var(--color-indigo-6) calc(l * 0.62) calc(c * 0.93) h);
+  --color-indigo-5:  oklch(from var(--color-indigo-6) calc(l * 0.82) calc(c * 0.98) h);
+  --color-indigo-7:  oklch(from var(--color-indigo-6) calc(l + (1 - l) * 0.20) calc(c * 0.88) h);
+  --color-indigo-8:  oklch(from var(--color-indigo-6) calc(l + (1 - l) * 0.40) calc(c * 0.65) h);
+  --color-indigo-9:  oklch(from var(--color-indigo-6) calc(l + (1 - l) * 0.58) calc(c * 0.35) h);
+  --color-indigo-10: oklch(from var(--color-indigo-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
+
+  /* Purple */
+  --color-purple-6:  oklch(0.57 0.19 294);
+  --color-purple-1:  oklch(from var(--color-purple-6) calc(l * 0.18) calc(c * 0.48) h);
+  --color-purple-2:  oklch(from var(--color-purple-6) calc(l * 0.28) calc(c * 0.65) h);
+  --color-purple-3:  oklch(from var(--color-purple-6) calc(l * 0.44) calc(c * 0.82) h);
+  --color-purple-4:  oklch(from var(--color-purple-6) calc(l * 0.62) calc(c * 0.93) h);
+  --color-purple-5:  oklch(from var(--color-purple-6) calc(l * 0.82) calc(c * 0.98) h);
+  --color-purple-7:  oklch(from var(--color-purple-6) calc(l + (1 - l) * 0.20) calc(c * 0.88) h);
+  --color-purple-8:  oklch(from var(--color-purple-6) calc(l + (1 - l) * 0.40) calc(c * 0.65) h);
+  --color-purple-9:  oklch(from var(--color-purple-6) calc(l + (1 - l) * 0.58) calc(c * 0.35) h);
+  --color-purple-10: oklch(from var(--color-purple-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
+
+  /* Magenta */
+  --color-magenta-6:  oklch(0.62 0.23 342);
+  --color-magenta-1:  oklch(from var(--color-magenta-6) calc(l * 0.18) calc(c * 0.48) h);
+  --color-magenta-2:  oklch(from var(--color-magenta-6) calc(l * 0.28) calc(c * 0.65) h);
+  --color-magenta-3:  oklch(from var(--color-magenta-6) calc(l * 0.44) calc(c * 0.82) h);
+  --color-magenta-4:  oklch(from var(--color-magenta-6) calc(l * 0.62) calc(c * 0.93) h);
+  --color-magenta-5:  oklch(from var(--color-magenta-6) calc(l * 0.82) calc(c * 0.98) h);
+  --color-magenta-7:  oklch(from var(--color-magenta-6) calc(l + (1 - l) * 0.20) calc(c * 0.88) h);
+  --color-magenta-8:  oklch(from var(--color-magenta-6) calc(l + (1 - l) * 0.40) calc(c * 0.65) h);
+  --color-magenta-9:  oklch(from var(--color-magenta-6) calc(l + (1 - l) * 0.58) calc(c * 0.35) h);
+  --color-magenta-10: oklch(from var(--color-magenta-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
+
+  /* Red */
+  --color-red-6:  oklch(0.51 0.21 25);
+  --color-red-1:  oklch(from var(--color-red-6) calc(l * 0.18) calc(c * 0.48) h);
+  --color-red-2:  oklch(from var(--color-red-6) calc(l * 0.28) calc(c * 0.65) h);
+  --color-red-3:  oklch(from var(--color-red-6) calc(l * 0.44) calc(c * 0.82) h);
+  --color-red-4:  oklch(from var(--color-red-6) calc(l * 0.62) calc(c * 0.93) h);
+  --color-red-5:  oklch(from var(--color-red-6) calc(l * 0.82) calc(c * 0.98) h);
+  --color-red-7:  oklch(from var(--color-red-6) calc(l + (1 - l) * 0.20) calc(c * 0.88) h);
+  --color-red-8:  oklch(from var(--color-red-6) calc(l + (1 - l) * 0.40) calc(c * 0.65) h);
+  --color-red-9:  oklch(from var(--color-red-6) calc(l + (1 - l) * 0.58) calc(c * 0.35) h);
+  --color-red-10: oklch(from var(--color-red-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
+
+  /* Elevation */
+  --elevation-100:        0 8px  16px var(--black-a37);
+  --elevation-100-hover: 0 8px  16px var(--black-a45);
+  --elevation-200:        0 16px 32px var(--black-a45);
+  --elevation-200-hover: 0 16px 32px var(--black-a65);
+
+}

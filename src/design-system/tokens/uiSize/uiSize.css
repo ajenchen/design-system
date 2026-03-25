@@ -1,0 +1,31 @@
+/* UI Size Tokens — md 為預設，名稱編碼 md 的值 */
+
+:root {
+  --ui-height-64: 64px;
+  --ui-height-56: 56px;
+  --ui-height-48: 48px;
+  --ui-height-40: 40px;
+  --ui-height-36: 36px;
+  --ui-height-32: 32px;
+  --ui-height-28: 28px;
+  --ui-space-8: 8px;
+  --ui-space-6: 6px;
+  --ui-space-4: 4px;
+  --ui-space-2: 2px;
+}
+
+[data-ui-size="lg"],
+[data-density="lg"] {
+  --ui-height-64: 72px;
+  --ui-height-56: 64px;
+  --ui-height-48: 56px;
+  --ui-height-40: 48px;
+  --ui-height-36: 40px;
+  --ui-height-32: 36px;
+  --ui-height-28: 32px;
+
+  --ui-space-8: 10px;
+  --ui-space-6: 8px;
+  --ui-space-4: 6px;
+  --ui-space-2: 4px;
+}

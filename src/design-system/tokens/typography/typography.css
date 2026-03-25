@@ -1,0 +1,70 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Typography Tokens
+   ═══════════════════════════════════════════════════════════════════════
+
+   ┌─ 設計原則 ────────────────────────────────────────────────────────────┐
+   │  font-size 與預設 line-height 烤進 token。                           │
+   │  font-weight 永遠由使用端疊加，不寫死在 token。                      │
+   │                                                                      │
+   │  line-height 的選擇基於「是否適合多行閱讀」：                        │
+   │    lh 1.5  → 適合閱讀的連續段落（14px / 16px）                     │
+   │    lh 1.3  → 標題、短文字、不需閱讀行距的場景                       │
+   │                                                                      │
+   │  12px 以下不適合作為連續閱讀內文，一律 lh 1.3。                     │
+   └──────────────────────────────────────────────────────────────────────┘
+
+   ┌─ Heading scale  全部 lh 1.3 ────────────────────────────────────────┐
+   │  text-h1   48px   頁面主標題                                        │
+   │  text-h2   32px   區塊標題                                          │
+   │  text-h3   24px   子區塊標題                                        │
+   │  text-h4   20px   小節標題                                          │
+   │  text-h5   16px   元件層級標題                                      │
+   │  text-h6   14px   最小層級標題                                      │
+   └──────────────────────────────────────────────────────────────────────┘
+
+   ┌─ Body scale  lh 1.5，可用 leading-compact 覆蓋為 1.3 ──────────────┐
+   │  text-body-lg  16px   16px 為主版面的段落內文                       │
+   │  text-body     14px   ★ 主要內文基準                                │
+   └──────────────────────────────────────────────────────────────────────┘
+
+   ┌─ Supplementary scale  全部 lh 1.3 ──────────────────────────────────┐
+   │  text-caption   12px   圖表附註、元件 helper text、標籤文字         │
+   │  text-footnote  10px   法律文字、來源標注（極少用）                 │
+   └──────────────────────────────────────────────────────────────────────┘
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --font-h1-size:       48px;
+  --font-h2-size:       32px;
+  --font-h3-size:       24px;
+  --font-h4-size:       20px;
+  --font-h5-size:       16px;
+  --font-h6-size:       14px;
+
+  --font-body-lg-size:  16px;
+  --font-body-size:     14px;
+
+  --font-caption-size:  12px;
+  --font-footnote-size: 10px;
+}
+
+
+/* ── Tailwind Utility Bridge ── */
+
+@utility text-h1      { font-size: var(--font-h1-size);      line-height: 1.3; }
+@utility text-h2      { font-size: var(--font-h2-size);      line-height: 1.3; }
+@utility text-h3      { font-size: var(--font-h3-size);      line-height: 1.3; }
+@utility text-h4      { font-size: var(--font-h4-size);      line-height: 1.3; }
+@utility text-h5      { font-size: var(--font-h5-size);      line-height: 1.3; }
+@utility text-h6      { font-size: var(--font-h6-size);      line-height: 1.3; }
+
+@utility text-body-lg { font-size: var(--font-body-lg-size); line-height: 1.5; }
+@utility text-body    { font-size: var(--font-body-size);    line-height: 1.5; }
+
+@utility text-caption  { font-size: var(--font-caption-size);  line-height: 1.3; }
+@utility text-footnote { font-size: var(--font-footnote-size); line-height: 1.3; }
+
+
+/* ── line-height override
+   leading-normal (1.5) 已是 Tailwind 內建，只補 leading-compact ── */
+@utility leading-compact { line-height: 1.3; }
