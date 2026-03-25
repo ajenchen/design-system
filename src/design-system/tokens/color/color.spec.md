@@ -206,25 +206,6 @@ cursor 變化 + 細微色移疊加仍提供足夠互動回饋。
 ```
 
 
-## Elevation
-
-兩個層級，**不要用 Tailwind 的 `shadow-*`**，改用 CSS 變數：
-
-```tsx
-<div style={{ boxShadow: 'var(--elevation-100)' }} />
-<div style={{ boxShadow: 'var(--elevation-200)' }} />
-```
-
-| Token | 用途 | 對應元件 |
-|-------|------|----------|
-| `--elevation-100` | 頁面內容層 | Card |
-| `--elevation-100-hover` | Card 的 hover / 拖拽 | 可拖拽 card |
-| `--elevation-200` | 浮層 | Modal、popover、dropdown、overlay drawer |
-| `--elevation-200-hover` | 浮層 hover | — |
-
-> **⚠️ `--elevation-200` 的容器必須使用 `bg-surface-raised`**（不透明）。
-
-
 ## Utility Tokens
 
 | Token | 用途 |

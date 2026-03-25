@@ -47,8 +47,12 @@ src/
 │   │   ├── layoutSpace/
 │   │   │   ├── layoutSpace.css        ← 版面間距 tokens（md/lg 兩種模式）
 │   │   │   └── layoutSpace.spec.md    ← 版面間距使用規則
-│   │   ├── density.stories.tsx        ← UI Size + Layout Space 合併展示（因共用 data-density）
-│   │   ├── elevation.stories.tsx      ← 陰影層級展示
+│   │   ├── density/
+│   │   │   ├── density.spec.md        ← Density 系統說明（data-density 統一控制）
+│   │   │   └── density.stories.tsx    ← UI Size + Layout Space 合併展示
+│   │   ├── elevation/
+│   │   │   ├── elevation.spec.md      ← 陰影層級使用規則
+│   │   │   └── elevation.stories.tsx  ← 陰影層級展示
 │   │   └── radius/
 │   │       ├── radius.spec.md         ← 圓角使用規則
 │   │       └── radius.stories.tsx

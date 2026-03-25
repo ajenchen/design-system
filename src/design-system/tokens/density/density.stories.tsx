@@ -56,7 +56,7 @@ function TokenRow({
       {/* md */}
       <div {...{ [attr]: 'md' }}>
         <div
-          className={`rounded-md ${isSolid ? 'bg-primary opacity-70' : 'bg-[var(--primary-subtle)]'}`}
+          className={`rounded-md ${isSolid ? 'bg-primary opacity-70' : 'bg-primary-subtle'}`}
           style={isSolid
             ? { height: `var(${token})`, width: '100%' }
             : { height: '20px', width: `var(${token})` }
@@ -67,7 +67,7 @@ function TokenRow({
       {/* lg */}
       <div {...{ [attr]: 'lg' }}>
         <div
-          className={`rounded-md ${isSolid ? 'bg-primary' : 'bg-[var(--primary-subtle)]'}`}
+          className={`rounded-md ${isSolid ? 'bg-primary' : 'bg-primary-subtle'}`}
           style={isSolid
             ? { height: `var(${token})`, width: '100%' }
             : { height: '20px', width: `var(${token})` }
@@ -99,13 +99,13 @@ export const Overview: Story = {
           <code className="text-caption font-medium text-fg-secondary">{label}</code>
           <div data-density="md">
             <div
-              className={`rounded-md ${isSolid ? 'bg-primary opacity-70' : 'bg-[var(--primary-subtle)]'}`}
+              className={`rounded-md ${isSolid ? 'bg-primary opacity-70' : 'bg-primary-subtle'}`}
               style={{ height: isSolid ? `var(${token})` : '16px', width: isSolid ? '100%' : `var(${token})` }}
             />
           </div>
           <div data-density="lg">
             <div
-              className={`rounded-md ${isSolid ? 'bg-primary' : 'bg-[var(--primary-subtle)]'}`}
+              className={`rounded-md ${isSolid ? 'bg-primary' : 'bg-primary-subtle'}`}
               style={{ height: isSolid ? `var(${token})` : '16px', width: isSolid ? '100%' : `var(${token})` }}
             />
           </div>
@@ -223,7 +223,7 @@ export const PageLayout: Story = {
         <div style={{ padding: `var(--layout-space-tight) var(--layout-space-loose)` }}>
           <div className="space-y-2">
             {[1, 2, 3].map(i => (
-              <div key={i} className="h-8 rounded-md bg-[var(--neutral-hover)]" />
+              <div key={i} className="h-8 rounded-md bg-neutral-hover" />
             ))}
           </div>
         </div>
