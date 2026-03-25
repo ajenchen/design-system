@@ -201,7 +201,7 @@ export const IconRule: Story = {
 
       <Rule
         title="icon + 下拉指示 — 無文字 dropdown trigger"
-        note="不加 iconOnly，接受窄長形 [icon][▼]；startIcon 描述功能，endIcon 指示展開。必須設定 aria-label"
+        note="不加 iconOnly；必須設定 aria-label"
       >
         <Button variant="tertiary" startIcon={Settings} endIcon={ChevronDown} aria-label="設定選項" />
         <Label>↑ 不加 iconOnly，保留 endIcon</Label>
@@ -319,7 +319,7 @@ export const GroupRule: Story = {
         note="用於同為有框或同為無框的按鈕之間需要功能區隔時（此例：無框按鈕中，危險操作與一般操作分開）"
       >
         <ButtonGroup>
-          <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+          <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
           <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
           <ButtonDivider />
           <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
@@ -331,7 +331,7 @@ export const GroupRule: Story = {
         note="防止使用者誤觸關閉。關閉是解除性動作，需與其他操作明確分隔"
       >
         <ButtonGroup>
-          <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+          <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
           <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
           <ButtonDivider />
           <Button variant="text" size="sm" iconOnly startIcon={X} aria-label="關閉" />
