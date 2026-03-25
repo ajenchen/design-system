@@ -51,19 +51,19 @@ export const VariantRule: Story = {
 
       <Rule
         title="secondary — 正面與負面選項並存時的配對"
-        note="藍框藍字。當選項有正面與負面之分，正面那個用 secondary；若同時有 primary，secondary 表示「另一個重要選項」"
+        note="藍框藍字。兩個並列選項時使用：正面選項用 secondary，負面選項加 danger。若只有一個主要動作，改用 primary。"
       >
         <Button variant="secondary">儲存草稿</Button>
-        <Button variant="tertiary">取消</Button>
+        <Button variant="secondary" danger>放棄變更</Button>
       </Rule>
 
       <Rule
         title="tertiary — 最常用的非主要按鈕（日常預設選擇）"
         note="灰框灰字。確認/取消配對的取消方、工具列輔助操作、卡片 CTA 幾乎都用 tertiary"
       >
-        <Button variant="primary">確認</Button>
         <Button variant="tertiary">取消</Button>
         <Button variant="tertiary" startIcon={Settings}>設定</Button>
+        <Button variant="tertiary" startIcon={RefreshCw}>重新整理</Button>
       </Rule>
 
       <Rule
@@ -169,10 +169,9 @@ export const IconRule: Story = {
     <div>
       <Rule
         title="startIcon — 描述這個按鈕做什麼（動詞圖示）"
-        note="icon 是 label 的圖示說明，與文字傳達同一個動作。選用動詞性圖示：Plus、Save、Download、Trash2"
+        note="icon 是 label 的圖示說明，與文字傳達同一個動作。選用動詞性圖示：Plus、Download、Trash2、RefreshCw"
       >
         <Button variant="primary" startIcon={Plus}>新增</Button>
-        <Button variant="tertiary" startIcon={Save}>儲存</Button>
         <Button variant="tertiary" startIcon={Download}>匯出</Button>
         <Button variant="tertiary" startIcon={RefreshCw}>重新整理</Button>
       </Rule>
