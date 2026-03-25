@@ -55,7 +55,7 @@
      bg-canvas           bg-surface          bg-surface-raised
      bg-primary          bg-destructive      bg-success     bg-warning
      text-foreground     text-fg-secondary   text-fg-muted  text-fg-disabled
-     border-border       ring-ring
+     border-border
    選中邊框/文字 → border-[var(--primary-hover)] / text-[var(--primary-hover)]
    ═══════════════════════════════════════════════════════════════════════ */
 
@@ -136,9 +136,9 @@
   --card-foreground:      var(--foreground);   /* shadcn Card 用，值永遠 = --foreground */
   --popover:              var(--surface-raised);
   --popover-foreground:   var(--foreground);   /* shadcn Popover 用，值永遠 = --foreground */
-  --secondary:            var(--color-neutral-2);            /* badge 底色 */
+  --secondary:            var(--color-neutral-3);            /* badge 底色 */
   --secondary-foreground: var(--foreground);   /* shadcn Button secondary 用 */
-  --muted:                var(--color-neutral-1);            /* skeleton / tab 容器 */
+  --muted:                var(--color-neutral-2);            /* skeleton / tab 容器 */
   --muted-foreground:     var(--fg-muted);
   --accent:               var(--neutral-hover);                /* item hover = neutral-1 */
   --accent-foreground:    var(--foreground);   /* shadcn DropdownMenuItem 用 */
