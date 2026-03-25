@@ -259,7 +259,7 @@ export const Semantic: Story = {
       <div>
         <SectionLabel>Brand</SectionLabel>
         <div className="max-w-xs mt-3">
-          <SwatchBg bg="var(--tsmc-logo)" label="bg-tsmc-logo" desc="品牌紅 #DF3232，固定色" />
+          <SwatchBg bg="var(--brand)" label="bg-brand" desc="品牌色 #DF3232，固定色" />
         </div>
       </div>
 

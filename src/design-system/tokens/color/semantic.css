@@ -64,7 +64,7 @@
 :root {
 
   /* === Branding === */
-  --tsmc-logo:            #DF3232;                           /* TSMC 品牌紅，兩主題相同 */
+  --brand:                #DF3232;                           /* 品牌色，固定色，兩主題相同 */
 
   /* === Surface === */
   --canvas:               oklch(1 0 0);                      /* 頁面底層 */
@@ -261,5 +261,5 @@
   --color-ring:                  var(--ring);
 
   /* Branding */
-  --color-tsmc-logo:             var(--tsmc-logo);
+  --color-brand:                 var(--brand);
 }

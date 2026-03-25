@@ -78,7 +78,7 @@ Tailwind utility 透過 `@theme inline` 橋接語義 token，元件寫 `bg-prima
 
 | Token | 用途 |
 |-------|------|
-| `--tsmc-logo` | TSMC 品牌紅，固定色 #DF3232，兩主題相同 |
+| `--brand` | 品牌色，固定色 #DF3232，兩主題相同 |
 
 
 ### Subtle 背景（淡色填充）
