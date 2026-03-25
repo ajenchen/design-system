@@ -4,22 +4,7 @@ import { Button } from './button'
 
 // ── 輕量 Badge helper（stories 內部用，非正式 Badge 元件）──────────
 const BadgeCount = ({ count }: { count: number }) => (
-  <span
-    style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minWidth: '16px',
-      height: '16px',
-      padding: '0 4px',
-      borderRadius: '99px',
-      backgroundColor: 'var(--notification)',
-      color: 'white',
-      fontSize: '10px',
-      fontWeight: 600,
-      lineHeight: 1,
-    }}
-  >
+  <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-notification text-white text-[10px] font-semibold leading-none">
     {count}
   </span>
 )

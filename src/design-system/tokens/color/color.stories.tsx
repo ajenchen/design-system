@@ -158,7 +158,7 @@ export const Surface: Story = {
       description: {
         story:
           'Surface = 空間容器（內容坐在上面的背景），不帶語義。' +
-          'canvas → surface → surface-raised 三層由底到高疊加。overlay / tooltip-bg 也屬於 surface（空間用途）。',
+          'canvas → surface → surface-raised 三層由底到高疊加。overlay / tooltip 也屬於 surface（空間用途）。',
       },
     },
   },
@@ -176,10 +176,10 @@ export const Surface: Story = {
           <span className="block text-caption text-fg-muted">dialog backdrop 遮罩</span>
         </div>
         <div className="space-y-1.5">
-          <div className="h-14 w-full rounded-md flex items-center justify-center" style={{ background: 'var(--tooltip-bg)' }}>
+          <div className="h-14 w-full rounded-md flex items-center justify-center" style={{ background: 'var(--tooltip)' }}>
             <span className="text-caption text-white">tooltip</span>
           </div>
-          <code className="block text-caption font-medium">bg-tooltip-bg</code>
+          <code className="block text-caption font-medium">bg-tooltip</code>
           <span className="block text-caption text-fg-muted">tooltip 深色底（不透明）</span>
         </div>
       </div>
@@ -203,8 +203,8 @@ export const Text: Story = {
   render: () => (
     <div className="max-w-xl">
       <SwatchText className="text-foreground"   label="text-foreground"   desc="主要文字、一般資訊" />
-      <SwatchText className="text-fg-secondary" label="text-fg-secondary" desc="次要資訊" />
-      <SwatchText className="text-fg-muted"     label="text-fg-muted"     desc="placeholder、弱化 icon" />
+      <SwatchText className="text-fg-secondary" label="text-fg-secondary" desc="次要資訊、helper text" />
+      <SwatchText className="text-fg-muted"     label="text-fg-muted"     desc="placeholder、caption、弱化 icon" />
       <SwatchText className="text-fg-disabled"  label="text-fg-disabled"  desc="disabled 文字" />
     </div>
   ),
@@ -219,46 +219,49 @@ export const Semantic: Story = {
     docs: {
       description: {
         story:
-          '所有語義 token 一覽：Action、Status、Brand、Border。' +
-          'subtle 為淡底填充，用於 tag、banner、checked 背景。',
+          'Primary = 互動入口（按鈕、連結）。Info = 系統狀態（in-progress、active）。subtle 為淡底填充，用於 tag、banner、checked 背景。',
       },
     },
   },
   render: () => (
     <div className="max-w-2xl space-y-8">
+
       {/* Action */}
       <div>
-        <SectionLabel>Action — Primary（操作 + 進程指示）</SectionLabel>
-        <p className="mt-1 mb-3 text-caption text-fg-muted">
-          primary 同時服務 Action（按鈕、連結）和 Progress（進度條、active nav、step indicator）兩種語義。
-        </p>
-        <div className="grid grid-cols-2 gap-4 max-w-sm">
-          <SwatchBg bg="var(--primary)"        label="bg-primary"        desc="主要操作色 / 進程色" />
-          <SwatchBg bg="var(--primary-subtle)" bordered label="bg-primary-subtle" desc="淡底填充 / checked 底" />
+        <SectionLabel>Action — Primary</SectionLabel>
+        <div className="mt-3 grid grid-cols-2 gap-3 max-w-xs">
+          <SwatchBg bg="var(--primary)"        label="bg-primary"        desc="按鈕、連結、focus ring" />
+          <SwatchBg bg="var(--primary-subtle)" bordered label="bg-primary-subtle" desc="淡底 / checked 底" />
         </div>
       </div>
 
       {/* Status */}
       <div>
         <SectionLabel>Status</SectionLabel>
-        <div className="mt-3 grid grid-cols-4 gap-4">
-          <SwatchBg bg="var(--error)"        label="bg-error"        desc="錯誤 / 危險" />
-          <SwatchBg bg="var(--success)"      label="bg-success"      desc="成功" />
-          <SwatchBg bg="var(--warning)"      label="bg-warning"      desc="警告" />
-          <SwatchBg bg="var(--notification)" label="bg-notification" desc="未讀計數 / 通知紅點" />
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-4">
+        <div className="mt-3" style={{ display: 'grid', gridTemplateColumns: '44px 1fr 1fr 1fr 1fr', gap: '8px', alignItems: 'start' }}>
+          <div />
+          {['Info', 'Error', 'Success', 'Warning'].map(n => (
+            <span key={n} className="text-caption text-fg-muted text-center block">{n}</span>
+          ))}
+          <span className="text-caption text-fg-muted self-center">Base</span>
+          <SwatchBg bg="var(--info)"    label="bg-info"    desc="資訊 / 進行中 / active" />
+          <SwatchBg bg="var(--error)"   label="bg-error"   desc="錯誤 / 危險" />
+          <SwatchBg bg="var(--success)" label="bg-success" desc="成功" />
+          <SwatchBg bg="var(--warning)" label="bg-warning" desc="警告" />
+          <span className="text-caption text-fg-muted self-center">Subtle</span>
+          <SwatchBg bg="var(--info-subtle)"    bordered label="bg-info-subtle"    desc="淡底" />
           <SwatchBg bg="var(--error-subtle)"   bordered label="bg-error-subtle"   desc="淡底" />
           <SwatchBg bg="var(--success-subtle)" bordered label="bg-success-subtle" desc="淡底" />
           <SwatchBg bg="var(--warning-subtle)" bordered label="bg-warning-subtle" desc="淡底" />
         </div>
       </div>
 
-      {/* Brand */}
+      {/* Other */}
       <div>
-        <SectionLabel>Brand</SectionLabel>
-        <div className="max-w-xs mt-3">
-          <SwatchBg bg="var(--brand)" label="bg-brand" desc="品牌色 #DF3232，固定色" />
+        <SectionLabel>Other</SectionLabel>
+        <div className="mt-3 grid grid-cols-2 gap-3 max-w-xs">
+          <SwatchBg bg="var(--notification)" label="bg-notification" desc="未讀計數 / 通知紅點" />
+          <SwatchBg bg="var(--brand)"        label="bg-brand"        desc="品牌色，固定色" />
         </div>
       </div>
 
@@ -268,7 +271,7 @@ export const Semantic: Story = {
         <div className="mt-3 space-y-2.5">
           {[
             { label: 'border-border',  desc: '元件標準邊框',   style: { border: '2px solid var(--border)' } },
-            { label: 'border-divider', desc: '分隔線（更淡）', style: { borderBottom: '2px solid var(--divider)' } },
+            { label: 'border-divider', desc: '分隔線（比 border 更淡）', style: { borderBottom: '2px solid var(--divider)' } },
           ].map(({ label, desc, style }) => (
             <div key={label} className="flex items-center gap-4">
               <div className="h-10 w-24 rounded-md bg-surface" style={style} />
@@ -280,6 +283,7 @@ export const Semantic: Story = {
           ))}
         </div>
       </div>
+
     </div>
   ),
 }
@@ -310,6 +314,7 @@ export const Interactive: Story = {
       {/* Colored interactive states */}
       {[
         { name: 'Primary', prefix: 'primary', hover: '--primary-hover', base: '--primary', active: '--primary-active' },
+        { name: 'Info',    prefix: 'info',    hover: '--info-hover',    base: '--info',    active: '--info-active' },
         { name: 'Error',   prefix: 'error',   hover: '--error-hover',   base: '--error',   active: '--error-active' },
         { name: 'Success', prefix: 'success', hover: '--success-hover', base: '--success', active: '--success-active' },
         { name: 'Warning', prefix: 'warning', hover: '--warning-hover', base: '--warning', active: '--warning-active' },
@@ -329,9 +334,10 @@ export const Interactive: Story = {
         <SectionLabel>Neutral Interaction — 低調互動背景（list row、tree node）</SectionLabel>
         <div className="mt-3 space-y-1">
           {[
-            { label: '正常狀態（無背景）', bg: 'transparent',           token: '' },
-            { label: 'Hover 狀態',         bg: 'var(--neutral-hover)',     token: 'bg-neutral-hover' },
-            { label: 'Selected 狀態',      bg: 'var(--neutral-selected)', token: 'bg-neutral-selected' },
+            { label: '正常狀態（無背景）', bg: 'transparent',              token: '' },
+            { label: 'Hover 狀態',         bg: 'var(--neutral-hover)',      token: 'bg-neutral-hover' },
+            { label: 'Selected 狀態',      bg: 'var(--neutral-selected)',   token: 'bg-neutral-selected' },
+            { label: 'Disabled 狀態',      bg: 'var(--bg-disabled)',        token: 'bg-disabled' },
           ].map(({ label, bg, token }) => (
             <div
               key={label}
@@ -339,7 +345,7 @@ export const Interactive: Story = {
               style={{ background: bg }}
             >
               <span className="h-4 w-4 shrink-0 rounded-md bg-[var(--neutral-selected)]" />
-              <span className="flex-1">{label}</span>
+              <span className="flex-1 text-fg-disabled">{label}</span>
               {token && <code className="text-caption text-fg-muted">{token}</code>}
             </div>
           ))}

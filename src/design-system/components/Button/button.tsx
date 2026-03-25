@@ -61,7 +61,7 @@ const buttonVariants = cva(
           'bg-primary text-white',
           'hover:bg-primary-hover',
           'active:bg-primary-active',
-          'disabled:bg-[var(--color-neutral-2)] disabled:text-fg-disabled disabled:border-transparent',
+          'disabled:bg-disabled disabled:text-fg-disabled disabled:border-transparent',
         ],
         secondary: [
           'bg-surface text-primary border-primary',
@@ -85,7 +85,7 @@ const buttonVariants = cva(
           'bg-primary-subtle text-primary border-transparent',
           'hover:text-primary-hover',
           'active:text-primary-active',
-          'disabled:bg-[var(--color-neutral-2)] disabled:text-fg-disabled disabled:border-transparent',
+          'disabled:bg-disabled disabled:text-fg-disabled disabled:border-transparent',
         ],
         link: [
           'bg-transparent text-primary border-transparent',

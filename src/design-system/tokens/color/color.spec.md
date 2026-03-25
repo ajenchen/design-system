@@ -25,8 +25,8 @@ Tailwind utility 透過 `@theme inline` 橋接語義 token，元件寫 `bg-prima
 | Utility            | 用途 |
 |--------------------|------|
 | `text-foreground`  | 主要文字（一般資訊）|
-| `text-fg-secondary`| 次要資訊 |
-| `text-fg-muted`    | placeholder、弱化 icon |
+| `text-fg-secondary`| 次要資訊、helper text |
+| `text-fg-muted`    | placeholder、caption、弱化 icon |
 | `text-fg-disabled` | disabled 文字 |
 
 文字色一律使用 neutral alpha token，疊加在任何背景都能維持對比。
@@ -37,30 +37,49 @@ Tailwind utility 透過 `@theme inline` 橋接語義 token，元件寫 `bg-prima
 
 ### Action — Primary
 
-`--primary` 服務兩個語義角色：
+`--primary` 只用於互動入口，代表「使用者可以執行的操作」。
 
-| 角色 | 用途 | 範例 |
-|------|------|------|
-| **Action** | 互動元件的主操作色 | 按鈕、連結、focus ring |
-| **Progress** | 表達「進行中」的視覺線索 | 進度條填充、active nav、step indicator |
-
-兩者使用同一個 token，因為在品牌層面它們代表相同的「系統正在為你做事」語義。
+| 用途 | 範例 |
+|------|------|
+| 主要按鈕 | `bg-primary` |
+| 文字連結 | `text-primary` |
+| Focus ring | `ring-ring` |
 
 ```tsx
-<Button variant="primary">確認</Button>           // action
-<ProgressBar className="bg-primary" value={60} />  // progress
+<Button variant="primary">確認</Button>
+<a className="text-primary hover:text-primary-hover">查看詳情</a>
 ```
 
-### Status — 操作反饋
+### Status
 
-| Token | Utility | 色相 | 用途 |
-|-------|---------|------|------|
-| `--error` | `bg-error` / `bg-destructive`(shadcn) | deep-orange | 錯誤 / 危險 |
-| `--success` | `bg-success` | green | 成功 |
-| `--warning` | `bg-warning` | yellow | 警告 |
+狀態色表達系統回饋，代表「系統在告訴你什麼」，不用於互動操作。
+
+| Token | 色相 | 用途 |
+|-------|------|------|
+| `--info` | blue | 資訊提示、進行中（in-progress）、active 指示、step indicator |
+| `--error` | deep-orange | 錯誤 / 危險 |
+| `--success` | green | 成功 |
+| `--warning` | yellow | 警告 |
+
+雖然 `--info` 與 `--primary` 目前同色（blue），**語義截然不同，不可混用**：
+
+> 只要是「呈現狀態」就用 `--info`，只要是「互動入口」就用 `--primary`。
+> 尤其在同一個 UI 脈絡中可能出現多種 status 色時（如任務列表、step indicator），一律使用 status 色系，絕不混入 `--primary`，否則使用者無法建立一致的色彩解讀框架。
+
+```tsx
+// ✅ 正確
+<ProgressBar className="bg-info" value={60} />
+<Badge className="bg-info-subtle text-info">進行中</Badge>
+<p className="text-error">此操作無法復原</p>
+
+// ❌ 錯誤——progress bar 不是互動操作
+<ProgressBar className="bg-primary" value={60} />
+```
+
+每個語義色的 bridge 同時產出 `bg-xxx`、`text-xxx`、`border-xxx` 三組 utility，視場景選用。
 
 - `bg-error` 為本系統命名，`bg-destructive` 僅供 shadcn 元件內部 compat
-- warning 背景上的文字使用 `text-warning-foreground`（深色，非 white）
+- warning 背景上的文字使用 `text-warning-foreground`（深色，非 white）；純文字顏色則直接 `text-warning`
 
 ### Indicator — Notification
 
@@ -129,6 +148,7 @@ cursor 變化 + 細微色移疊加仍提供足夠互動回饋。
 | Token | base | hover (light/dark) | active (light/dark) | subtle |
 |-------|------|--------------------|---------------------|--------|
 | primary | blue-6 | blue-5 / blue-7 | blue-7 / blue-5 | blue-1 |
+| info | = primary | = primary-hover | = primary-active | = primary-subtle |
 | error | deep-orange-6 | deep-orange-5 / -7 | deep-orange-7 / -5 | deep-orange-1 |
 | success | green-6 | green-5 / -7 | green-7 / -5 | green-1 |
 | warning | yellow-6 | yellow-5 / -7 | yellow-7 / -5 | yellow-1 |
@@ -161,6 +181,13 @@ cursor 變化 + 細微色移疊加仍提供足夠互動回饋。
 |---------|------|
 | `bg-neutral-hover`    | list row、tree node 的 hover |
 | `bg-neutral-selected` | 選中狀態背景 |
+
+這兩個背景都是極淺的 neutral，上面的文字一律使用 `text-foreground`（neutral-9）以維持對比。不需要特別的 foreground token，直接沿用預設文字色即可。
+
+```tsx
+<div className="bg-neutral-hover text-foreground">...</div>
+<div className="bg-neutral-selected text-foreground">...</div>
+```
 
 
 ## 邊框 / 分隔
@@ -203,7 +230,7 @@ cursor 變化 + 細微色移疊加仍提供足夠互動回饋。
 | Token | 用途 |
 |-------|------|
 | `--overlay` | dialog backdrop 遮罩 |
-| `--tooltip-bg` | tooltip 深色底（不透明）|
+| `--tooltip` | tooltip 深色底（不透明）|
 | `opacity-disabled` | disabled 元件整體透明度（0.45），用於無法改寫內部色彩的第三方元件 |
 
 `opacity-disabled` 適用場景：包裝第三方元件（如圖表、地圖）的 disabled 狀態，無法逐一替換內部顏色時，直接對容器套用透明度：
@@ -214,7 +241,7 @@ cursor 變化 + 細微色移疊加仍提供足夠互動回饋。
 </div>
 ```
 
-自己寫的元件優先用具體的 disabled 色彩（如 `text-fg-disabled`、`bg-[var(--color-neutral-2)]`），不要用 opacity。
+自己寫的元件優先用具體的 disabled 色彩（如 `text-fg-disabled`、`bg-[var(--bg-disabled)]`）。`opacity-disabled` 僅作為逃生艙，適用於無法逐一替換內部顏色的場景（第三方元件、複雜多層結構如 Switch）。
 
 
 ## shadcn Compat Aliases（僅供 shadcn 元件內部使用）

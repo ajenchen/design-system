@@ -22,8 +22,8 @@
 
    ┌─ 文字 / Icon 層級 ───────────────────────────────────────────────────┐
    │  --foreground      一般資訊（neutral-9）                            │
-   │  --fg-secondary    較次要的資訊（neutral-8）                        │
-   │  --fg-muted        placeholder、弱化 icon 如 info（neutral-7）      │
+   │  --fg-secondary    較次要的資訊、helper text（neutral-8）            │
+   │  --fg-muted        placeholder、caption、弱化 icon（neutral-7）     │
    │  --fg-disabled     disabled 文字（neutral-6）                       │
    │                                                                     │
    │  文字色一律使用 neutral alpha，透明度疊加在任何背景皆可維持對比      │
@@ -47,14 +47,17 @@
    └─────────────────────────────────────────────────────────────────────┘
 
    ┌─ 中性互動背景 ───────────────────────────────────────────────────────┐
-   │  --neutral-hover    低調 hover（list row、tree node）= neutral-1      │
-   │  --neutral-selected 低調 selected                      = neutral-2    │
+   │  --neutral-hover     低調 hover（list row、tree node）  = neutral-1   │
+   │  --neutral-selected  低調 selected                      = neutral-2   │
+   │  --bg-disabled        互動元件 disabled 背景             = neutral-2   │
    └─────────────────────────────────────────────────────────────────────┘
 
    Tailwind 使用方式（@theme inline 橋接）：
      bg-canvas           bg-surface          bg-surface-raised
+     bg-overlay          bg-tooltip          bg-disabled
      bg-primary          bg-destructive      bg-success     bg-warning
      text-foreground     text-fg-secondary   text-fg-muted  text-fg-disabled
+     text-primary        text-error          text-success   text-warning   text-info
      border-border       ring-ring
    選中邊框/文字 → border-[var(--primary-hover)] / text-[var(--primary-hover)]
    ═══════════════════════════════════════════════════════════════════════ */
@@ -71,12 +74,12 @@
   --surface:              oklch(1 0 0);                      /* card / panel */
   --surface-raised:       oklch(1 0 0);                      /* modal / popup */
   --overlay:              var(--black-a45);                   /* backdrop */
-  --tooltip-bg:           var(--color-neutral-9-opaque);     /* tooltip 深色底，不透明，dark 另補 override */
+  --tooltip:              var(--color-neutral-9-opaque);     /* tooltip 深色底，不透明，dark 另補 override */
 
   /* === Text / Icon === */
   --foreground:           var(--color-neutral-9);            /* 一般資訊 */
-  --fg-secondary:         var(--color-neutral-8);            /* 次要資訊 */
-  --fg-muted:             var(--color-neutral-7);            /* placeholder / info icon */
+  --fg-secondary:         var(--color-neutral-8);            /* 次要資訊、helper text */
+  --fg-muted:             var(--color-neutral-7);            /* 低調輔助文字：placeholder、caption、弱化 icon */
   --fg-disabled:          var(--color-neutral-6);            /* disabled 文字 */
 
   /* === Brand / Action === */
@@ -86,6 +89,12 @@
   --primary-subtle:       var(--color-blue-1);
   /* foreground 不定義：primary / error / success 背景色夠深，一律用 white，
      元件直接寫 text-white，不需要 token 這層間接 */
+
+  /* === Status: Info === */
+  --info:                 var(--primary);                    /* 資訊狀態色：in-progress、active nav、step indicator；與 primary 同色但語義獨立 */
+  --info-hover:           var(--primary-hover);
+  --info-active:          var(--primary-active);
+  --info-subtle:          var(--primary-subtle);
 
   /* === Status: Error (Destructive) === */
   --error:                var(--color-deep-orange-6);
@@ -119,6 +128,7 @@
   /* === Neutral Interactive Background === */
   --neutral-hover:          var(--color-neutral-1);            /* 低調 hover（list row 等）*/
   --neutral-selected:       var(--color-neutral-2);            /* 低調 selected */
+  --bg-disabled:            var(--color-neutral-2);            /* 互動元件 disabled 狀態的背景（button、input 等）*/
 
   /* ─── shadcn Compat Aliases ─── */
   /*
@@ -137,8 +147,8 @@
   --popover:              var(--surface-raised);
   --popover-foreground:   var(--foreground);   /* shadcn Popover 用，值永遠 = --foreground */
   --secondary:            var(--color-neutral-3);            /* badge 底色 */
-  --secondary-foreground: var(--foreground);   /* shadcn Button secondary 用 */
-  --muted:                var(--color-neutral-2);            /* skeleton / tab 容器 */
+  --secondary-foreground: var(--fg-muted);     /* badge 文字，neutral-7，不與主內容競爭 */
+  --muted:                var(--color-neutral-2);            /* skeleton、code block、tab 容器等靜態裝飾性低調背景（非互動停用狀態）*/
   --muted-foreground:     var(--fg-muted);
   --accent:               var(--neutral-hover);                /* item hover = neutral-1 */
   --accent-foreground:    var(--foreground);   /* shadcn DropdownMenuItem 用 */
@@ -153,7 +163,7 @@
   --surface:              var(--white-a08);                  /* 半透明，疊加在 canvas */
   --surface-raised:       var(--color-neutral-3-opaque);     /* 不透明，modal/popup */
   --overlay:              var(--black-a65);                  /* dark 需更深的遮罩 */
-  --tooltip-bg:           var(--color-neutral-4-opaque);     /* ≈ 0.19，與 light 的 neutral-9-opaque 接近 */
+  --tooltip:              var(--color-neutral-4-opaque);     /* ≈ 0.19，與 light 的 neutral-9-opaque 接近 */
 
   /* === Hover / Active — dark mode 方向反轉：hover = -7（較亮），active = -5（較暗）=== */
   --primary-hover:        var(--color-blue-7);
@@ -219,6 +229,7 @@
   --color-destructive-foreground: oklch(1 0 0);  /* white，供 shadcn 元件使用 */
 
   /* Status */
+  --color-info:                  var(--info);
   --color-error:                 var(--error);
   --color-success:               var(--success);
   --color-warning:               var(--warning);
@@ -228,6 +239,8 @@
   /* Hover / Active */
   --color-primary-hover:         var(--primary-hover);
   --color-primary-active:        var(--primary-active);
+  --color-info-hover:            var(--info-hover);
+  --color-info-active:           var(--info-active);
   --color-error-hover:           var(--error-hover);
   --color-error-active:          var(--error-active);
   --color-success-hover:         var(--success-hover);
@@ -236,6 +249,7 @@
   --color-warning-active:        var(--warning-active);
 
   /* Subtle */
+  --color-info-subtle:           var(--info-subtle);
   --color-primary-subtle:        var(--primary-subtle);
   --color-error-subtle:          var(--error-subtle);
   --color-success-subtle:        var(--success-subtle);
@@ -244,10 +258,11 @@
   /* Neutral Interaction */
   --color-neutral-hover:         var(--neutral-hover);
   --color-neutral-selected:      var(--neutral-selected);
+  --color-disabled:              var(--bg-disabled);
 
   /* Surface Utility */
   --color-overlay:               var(--overlay);
-  --color-tooltip-bg:            var(--tooltip-bg);
+  --color-tooltip:               var(--tooltip);
   --color-divider:               var(--divider);
 
   /* Text / Icon levels */
