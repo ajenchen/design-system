@@ -336,7 +336,7 @@ export const Interactive: Story = {
           {[
             { label: '正常狀態（無背景）', bg: 'transparent',              token: '' },
             { label: 'Hover 狀態',         bg: 'var(--neutral-hover)',      token: 'bg-neutral-hover' },
-            { label: 'Selected 狀態',      bg: 'var(--neutral-selected)',   token: 'bg-neutral-selected' },
+            { label: 'Active / Selected',   bg: 'var(--neutral-active)',     token: 'bg-neutral-active' },
             { label: 'Disabled 狀態',      bg: 'var(--bg-disabled)',        token: 'bg-disabled' },
           ].map(({ label, bg, token }) => (
             <div
@@ -344,7 +344,7 @@ export const Interactive: Story = {
               className="flex items-center gap-3 rounded-md px-3 py-2 text-body"
               style={{ background: bg }}
             >
-              <span className="h-4 w-4 shrink-0 rounded-md bg-[var(--neutral-selected)]" />
+              <span className="h-4 w-4 shrink-0 rounded-md bg-[var(--neutral-active)]" />
               <span className="flex-1 text-fg-disabled">{label}</span>
               {token && <code className="text-caption text-fg-muted">{token}</code>}
             </div>

@@ -46,9 +46,9 @@
    │  選中狀態的邊框或文字 → 直接使用 var(--primary-hover)              │
    └─────────────────────────────────────────────────────────────────────┘
 
-   ┌─ 中性互動背景 ───────────────────────────────────────────────────────┐
-   │  --neutral-hover     低調 hover（list row、tree node）  = neutral-1   │
-   │  --neutral-selected  低調 selected                      = neutral-2   │
+   ┌─ 中性互動背景（視覺深度遞進：無 → neutral-1 → neutral-2）─────────┐
+   │  --neutral-hover     hover 回饋                         = neutral-1   │
+   │  --neutral-active    active（按下）+ selected（選中）   = neutral-2   │
    │  --bg-disabled        互動元件 disabled 背景             = neutral-2   │
    └─────────────────────────────────────────────────────────────────────┘
 
@@ -127,7 +127,7 @@
 
   /* === Neutral Interactive Background === */
   --neutral-hover:          var(--color-neutral-1);            /* 低調 hover（list row 等）*/
-  --neutral-selected:       var(--color-neutral-2);            /* 低調 selected */
+  --neutral-active:         var(--color-neutral-2);            /* active（按下）+ selected（選中），比 hover 深一階 */
   --bg-disabled:            var(--color-neutral-2);            /* 互動元件 disabled 狀態的背景（button、input 等）*/
 
   /* ─── shadcn Compat Aliases ─── */
@@ -257,7 +257,7 @@
 
   /* Neutral Interaction */
   --color-neutral-hover:         var(--neutral-hover);
-  --color-neutral-selected:      var(--neutral-selected);
+  --color-neutral-active:        var(--neutral-active);
   --color-disabled:              var(--bg-disabled);
 
   /* Surface Utility */

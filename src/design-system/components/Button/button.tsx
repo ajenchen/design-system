@@ -78,7 +78,7 @@ const buttonVariants = cva(
         text: [
           'bg-transparent text-foreground border-transparent',
           'hover:bg-neutral-hover',
-          'active:bg-neutral-selected',
+          'active:bg-neutral-active',
           'disabled:bg-transparent disabled:text-fg-disabled',
         ],
         checked: [
@@ -132,7 +132,7 @@ const buttonVariants = cva(
         class: [
           'text-error',
           'hover:bg-neutral-hover hover:text-error-hover',
-          'active:bg-neutral-selected active:text-error-active',
+          'active:bg-neutral-active active:text-error-active',
         ],
       },
     ],

@@ -177,16 +177,18 @@ cursor 變化 + 細微色移疊加仍提供足夠互動回饋。
 
 ## Neutral Interaction
 
+中性互動背景按深度遞進：
+
 | Utility | 用途 |
 |---------|------|
-| `bg-neutral-hover`    | list row、tree node 的 hover |
-| `bg-neutral-selected` | 選中狀態背景 |
+| `bg-neutral-hover` | hover |
+| `bg-neutral-active` | active（按下）、selected（選中） |
 
-這兩個背景都是極淺的 neutral，上面的文字一律使用 `text-foreground`（neutral-9）以維持對比。不需要特別的 foreground token，直接沿用預設文字色即可。
+文字一律用 `text-foreground`。
 
 ```tsx
-<div className="bg-neutral-hover text-foreground">...</div>
-<div className="bg-neutral-selected text-foreground">...</div>
+<div className="hover:bg-neutral-hover active:bg-neutral-active">list row</div>
+<div className="bg-neutral-active">selected row</div>
 ```
 
 

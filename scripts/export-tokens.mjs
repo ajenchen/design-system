@@ -297,7 +297,7 @@ function buildSemantic(mode) {
 
   const interaction = {
     'neutral-hover':    tok('{neutral.alpha.1}'),
-    'neutral-selected': tok('{neutral.alpha.2}'),
+    'neutral-active':   tok('{neutral.alpha.2}'),
     'bg-disabled':      tok('{neutral.alpha.2}'),
   }
 
