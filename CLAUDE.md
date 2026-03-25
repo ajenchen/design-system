@@ -30,7 +30,6 @@ src/
 ├── lib/
 │   └── utils.ts                       ← cn() 工具（clsx + tailwind-merge）
 ├── design-system/
-│   ├── CLAUDE.md                      ← Design system 使用規則（必讀）
 │   ├── tokens/
 │   │   ├── color/
 │   │   │   ├── primitives.css         ← 原始色票（靜態 CSS）
@@ -70,8 +69,6 @@ src/
 
 # Token 系統運作方式
 
-色彩與字體 token 分為靜態與動態兩種：
-
 **所有 token 均為純 CSS（不需 JavaScript）：**
 - `color/primitives.css`：原始色票
 - `color/semantic.css`：語義色彩，用 CSS selector 處理 dark mode
@@ -100,6 +97,187 @@ document.documentElement.setAttribute('data-density', 'lg')  // 同時切換 uiS
 element.style.color = 'var(--color-neutral-4)'
 element.style.backgroundColor = 'var(--primary)'
 ```
+
+
+# 建立 UI 前必讀
+
+建立任何 UI 前，必須先讀對應的 spec：
+
+- **色彩**：`src/design-system/tokens/color/color.spec.md`
+- **字體**：`src/design-system/tokens/typography/typography.spec.md`
+- **密度系統**：`src/design-system/tokens/density/density.spec.md`
+- **元件尺寸**：`src/design-system/tokens/uiSize/uiSize.spec.md`
+- **版面間距**：`src/design-system/tokens/layoutSpace/layoutSpace.spec.md`
+- **陰影**：`src/design-system/tokens/elevation/elevation.spec.md`
+- **圓角**：`src/design-system/tokens/radius/radius.spec.md`
+
+並檢查以下資料夾確認可用元件：
+
+- `src/design-system/components/`（shadcn 積木元件）
+- `src/design-system/patterns/`（已定案的 UI 流程）
+
+不要依賴 CLAUDE.md 列出的固定元件名稱，以實際目錄內容為準。
+
+
+# UI 開發規則
+
+- 必須優先重用 `src/design-system/components/` 內已存在的元件
+- 必須使用 design tokens（透過 Tailwind utilities 或 CSS 變數）
+- 不要硬寫顏色、font-size、spacing、radius
+- 建立新 UI 前，必須先檢查是否已有對應 pattern
+- 若缺少元件，請明確指出，不要假裝元件已存在
+- 使用 `cn()` 合併 Tailwind class（來自 `@/lib/utils`）
+
+
+# Tailwind 使用規則
+
+**間距與尺寸**：Tailwind 預設間距（`p-4`、`gap-2`、`mt-6` 等）可正常使用。
+需對應 token 時使用任意值：
+
+```tsx
+<div className="p-[var(--layout-space-loose)]" />
+<div className="h-[var(--ui-height-36)]" />
+```
+
+**圓角**：
+
+| Utility class   | 值                         |
+|----------------|---------------------------|
+| `rounded-md`   | 4px（--radius-md）    |
+| `rounded-lg`   | 8px（--radius-lg）    |
+| `rounded-full` | 9999px（--radius-full）|
+
+
+# shadcn 元件規範
+
+元件位置：`src/design-system/components/{ComponentName}/`
+
+每個元件一個資料夾：
+- `{name}.tsx` — 元件本體
+- `{name}.spec.md` — 使用原則與設計規範
+- `{name}.stories.tsx` — Storybook 展示
+
+新增 shadcn 元件：
+
+```bash
+npx shadcn add card
+npx shadcn add input
+```
+
+元件結構範例：
+
+```tsx
+import * as React from 'react'
+import { cva, type VariantProps } from 'class-variance-authority'
+import { cn } from '@/lib/utils'
+
+const componentVariants = cva('base-classes', {
+  variants: {
+    variant: { /* ... */ },
+    size: { /* ... */ },
+  },
+  defaultVariants: { /* ... */ },
+})
+
+interface ComponentProps extends React.HTMLAttributes<HTMLDivElement>,
+  VariantProps<typeof componentVariants> {}
+
+const Component = React.forwardRef<HTMLDivElement, ComponentProps>(
+  ({ className, variant, size, ...props }, ref) => (
+    <div className={cn(componentVariants({ variant, size, className }))} ref={ref} {...props} />
+  )
+)
+Component.displayName = 'Component'
+
+export { Component, componentVariants }
+```
+
+Import 路徑：
+
+```tsx
+import { Button } from '@/design-system/components/Button/button'
+import { cn } from '@/lib/utils'
+// 不再有 tokens.ts — 顏色與字體直接用 CSS 變數或 Tailwind class
+```
+
+
+# Pattern 規則
+
+`src/design-system/patterns/` 用於已定案的 UI 流程與元件組合。
+
+- 建立新 UI 前必須先檢查是否已有對應 pattern
+- 不得跳過 patterns 直接重新設計
+- 若 exploration 已定案，應整理後升級為 pattern
+
+每個 pattern 可包含：`*.pattern.md`、`*.example.tsx`、`*.stories.tsx`
+
+
+# 元件完成清單
+
+每個元件在進入 design-system 前必須逐項對照。這是品質閘門，不可跳過。
+
+## Spec（`{name}.spec.md`）
+
+**定義**
+- 元件定位一句話說清楚（是什麼、不是什麼）
+- 所有 props / variants 都有明確的「何時用 / 何時不用」
+- 互斥規則寫清楚（哪些 props 不能並用、哪些組合無效）
+- 每個規則都有「為什麼」，不只寫「怎麼做」
+
+**文字品質**
+- 沒有描述視覺形狀或實作細節（如「窄長形」「會變寬」「zero layout shift」）
+- 術語一致，沒有同一概念用兩種名稱
+- 禁止事項（❌）列出所有常見誤用
+
+**邊界案例**
+- 有 disabled / loading / empty 狀態的說明（如適用）
+- 有 dark mode / density 行為的說明（如適用）
+- 有 icon-only 的使用規則（如適用）
+
+## Code（`{name}.tsx`）
+
+**shadcn 結構規則（優先）**
+- 以 shadcn 原始碼為基底，不從零重寫
+- `React.forwardRef` + `ref` 傳到底層 DOM 元素
+- `...props` spread 到底層元素，保留所有原生 HTML 屬性
+- `displayName` 設定
+- variants 用 `cva()` 管理，不用條件字串拼接
+- 同時 export 元件本體與 `cva` 物件（供外部組合使用）
+- 支援 `asChild`（透過 Radix `Slot`）
+- 不移除 Radix UI 的 `data-state`、`data-disabled`、`data-orientation` 等屬性
+- 樣式優先用 `data-*` attribute selector，而非自訂 class 模擬狀態
+
+**Design Token 規則**
+- 不硬寫顏色、字體、padding、border-radius、高度
+- 所有尺寸使用 design token（CSS 變數或對應 Tailwind utility）
+- 使用 `cn()` 合併 class
+
+**Accessibility**
+- 所有互動元素有正確的 ARIA 屬性
+- icon-only 元素必須有 `aria-label`
+
+## Stories（`{name}.stories.tsx` + `{name}.principles.stories.tsx`）
+
+**範例正確性**
+- 每個範例的 variant / props 語意正確（不為了填版面而用錯 variant）
+- 同類型場景的 icon 維持一致順序
+- 範例中的文字 / icon 能清楚傳達使用情境，不用「按鈕一」「按鈕二」佔位
+
+**完整性**
+- 每個重要規則都有正確範例
+- 常見誤用都有錯誤範例（對比呈現）
+- Rule note 只寫規則與原因，不描述視覺細節
+
+**Accessibility**
+- 所有 icon-only 按鈕有 `aria-label`
+- 互動範例可以用鍵盤操作
+
+## 上線前
+
+- 本地 `npm run storybook` 確認所有 stories 正常渲染
+- 沒有 TypeScript 錯誤
+- import 路徑正確（`@/design-system/...`）
+- 元件加入 `CLAUDE.md` 的目錄結構（如有異動）
 
 
 # 正式系統與探索區的區別

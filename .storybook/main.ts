@@ -6,7 +6,6 @@ const config: StorybookConfig = {
   
   addons: [
     "@storybook/addon-essentials", // 核心：包含 Controls, Actions, Viewport 等
-    "@storybook/addon-interactions",
     "@storybook/addon-a11y",         // 無障礙檢查 (對設計系統很重要)
     "@storybook/addon-docs",         // 自動生成文件
   ],
