@@ -23,6 +23,8 @@ const config: StorybookConfig = {
     autodocs: "tag", // 支援在 .stories.tsx 中使用 tags: ["autodocs"]
   },
 
+  outputDir: "/Users/alanchen/Desktop/storybook-static",
+
   // 2. 如果你的 Token 檔案很大，這能幫助 Vite 預熱
   typescript: {
     reactDocgen: "react-docgen-typescript",

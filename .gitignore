@@ -14,8 +14,12 @@ build/
 *.log
 npm-debug.log*
 
-# Editor
+# macOS
 .DS_Store
+Icon
+Icon?
+
+# Editor
 .vscode/
 .idea/
 
