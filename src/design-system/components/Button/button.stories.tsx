@@ -116,12 +116,12 @@ export const Text: Story = {
   args: { variant: 'text', children: 'Text' },
 }
 
-export const Checked: Story = {
-  args: { variant: 'checked', children: 'Checked' },
-}
-
 export const Link: Story = {
   args: { variant: 'link', children: 'Link' },
+}
+
+export const Checked: Story = {
+  args: { variant: 'checked', children: 'Checked' },
 }
 
 // ── danger prop ─────────────────────────────────────────────────
