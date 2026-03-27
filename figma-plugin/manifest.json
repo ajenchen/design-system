@@ -1,0 +1,9 @@
+{
+  "name": "Design System — Button Generator",
+  "id": "design-system-button-gen",
+  "api": "1.0.0",
+  "main": "code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": ["figma"]
+}
