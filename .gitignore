@@ -24,6 +24,9 @@ Icon?
 .idea/
 .claude/
 
+# Figma plugin (local dev only)
+figma-plugin/
+
 # Storybook build
 storybook-static/
 storybook-static */
