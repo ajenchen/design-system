@@ -10,7 +10,7 @@ const BadgeCount = ({ count }: { count: number }) => (
 )
 
 const meta: Meta<typeof Button> = {
-  title: 'Design System/Button/展示',
+  title: 'Design System/Components/Button/展示',
   component: Button,
   tags: ['autodocs'],
   parameters: {
@@ -184,9 +184,9 @@ export const IconOnly: Story = {
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <p className="w-full text-caption text-fg-muted">danger — size="sm"</p>
-        <Button size="sm" iconOnly variant="primary"  danger startIcon={Trash2} aria-label="永久刪除" />
-        <Button size="sm" iconOnly variant="tertiary" danger startIcon={Trash2} aria-label="刪除" />
-        <Button size="sm" iconOnly variant="text"     danger startIcon={Trash2} aria-label="刪除" />
+        <Button size="sm" iconOnly variant="primary"    danger startIcon={Trash2} aria-label="永久刪除" />
+        <Button size="sm" iconOnly variant="secondary" danger startIcon={Trash2} aria-label="刪除（有確認）" />
+        <Button size="sm" iconOnly variant="text"      danger startIcon={Trash2} aria-label="刪除" />
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <p className="w-full text-caption text-fg-muted">sizes — variant="text"</p>

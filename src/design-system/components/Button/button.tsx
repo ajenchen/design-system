@@ -4,6 +4,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { Loader2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
 /**
  * Button — shadcn 風格，橋接設計系統 token
@@ -220,7 +221,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     //   無 prefix icon → spinner 加在文字左邊（按鈕略微變寬，可接受）
     const hasSuffix = badge != null || EndIcon !== undefined
 
-    return (
+    // icon-only 自動 tooltip：從 props 提取 aria-label，同時保留在 DOM
+    const { 'aria-label': ariaLabel, ...restProps } = props
+
+    const buttonEl = (
       <Comp
         className={cn(
           buttonVariants({ variant: resolvedVariant, danger: resolvedDanger, size, className }),
@@ -231,7 +235,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         type="button"
         disabled={disabled || loading}
         aria-busy={loading || undefined}
-        {...props}
+        aria-label={ariaLabel}
+        {...restProps}
       >
         {loading
           ? <Loader2 size={iconSize} className="animate-spin" aria-hidden />
@@ -246,6 +251,20 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
       </Comp>
     )
+
+    // icon-only + aria-label → 自動包 Tooltip（tooltip 是元件保證的行為）
+    if (iconOnly && typeof ariaLabel === 'string' && !asChild) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>{buttonEl}</TooltipTrigger>
+            <TooltipContent>{ariaLabel}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    }
+
+    return buttonEl
   }
 )
 Button.displayName = 'Button'

@@ -62,7 +62,10 @@ src/
 │   │       ├── button.spec.md
 │   │       ├── button.stories.tsx
 │   │       └── button.principles.stories.tsx
-│   └── patterns/                      ← 複合元件 / 已定案的 UI 流程
+│   └── patterns/                      ← 複合元件 / 已定案的 UI 流程（依互動領域分資料夾）
+│       └── action-bar/                ← 工具列、操作列
+│           ├── action-bar.spec.md
+│           └── action-bar.stories.tsx
 └── explorations/                      ← 未定案的 prototype 比稿
 ```
 
@@ -97,6 +100,15 @@ document.documentElement.setAttribute('data-density', 'lg')  // 同時切換 uiS
 element.style.color = 'var(--color-neutral-4)'
 element.style.backgroundColor = 'var(--primary)'
 ```
+
+
+# Spec 規則
+
+- **回答任何設計問題前，必須先讀取所有相關的 spec.md**，以實際內容為基礎，不憑記憶回答
+- **每次回答必須有邏輯、有架構、符合世界級設計水準**——不提出未經深思的建議，不為了回答而回答
+- **編輯 spec.md 時，必須交叉比對所有相關的 spec.md 與 Storybook 範例**，確認無矛盾、無術語不一致、無重複定義
+- **若結論與既有 spec.md 有邏輯衝突或概念混淆，必須主動提出討論**，不默默修改、不迴避矛盾
+- **所有元件必須遵循 shadcn 框架**，確保保留 shadcn 的結構優勢（forwardRef、Slot、data-* attributes、cva 等），不從零重寫
 
 
 # 建立 UI 前必讀
@@ -208,8 +220,9 @@ import { cn } from '@/lib/utils'
 - 建立新 UI 前必須先檢查是否已有對應 pattern
 - 不得跳過 patterns 直接重新設計
 - 若 exploration 已定案，應整理後升級為 pattern
+- `patterns/` 目前保持平坦結構（一個 pattern 一個資料夾）。同一領域累積三個以上 pattern 時，再建領域子資料夾
 
-每個 pattern 可包含：`*.pattern.md`、`*.example.tsx`、`*.stories.tsx`
+每個 pattern 可包含：`*.spec.md`、`*.stories.tsx`、`*.example.tsx`
 
 
 # 元件完成清單
@@ -267,6 +280,20 @@ import { cn } from '@/lib/utils'
 - 每個重要規則都有正確範例
 - 常見誤用都有錯誤範例（對比呈現）
 - Rule note 只寫規則與原因，不描述視覺細節
+- **Rule note 必須傳達原則，讓讀者能舉一反三**——寫「為什麼」而不只是「是什麼」。例如：不寫「禁止 primary」，而寫「工具層必須是視覺重量最低的一層，否則搶走業務焦點」；不寫「全程 icon-only」，而寫「這些 icon 在此脈絡下約定成俗，使用者不需 label 就能辨識」
+
+**視覺品質**
+- Toolbar 範例統一使用 `ToolbarFrame`（滿版 + 短標題），不用裸 `ButtonGroup` 漂在半空
+- `ToolbarFrame` 標題模擬真實產品（2–4 字如「文件」「專案」），說明放在下方 `Label`，不塞進標題導致文字與按鈕碰撞
+- 同一個 story 內的範例容器必須一致，不混用不同寬度
+- ❌/✅ 判斷放在 `Label`（如 `❌ 設定是工具操作...`），不放在 ToolbarFrame 標題內
+- **排版層級清晰**：主標用 `h3`（深色、正常大小），副標用 `text-caption`（灰色、限寬 720px），Label 用 `text-footnote`（最小字、範例解說）。三層必須視覺上有明顯區隔，讀者一眼能分辨標題、說明、範例註解
+
+**文案品質**
+- 所有文案必須是「任何設計師或開發者都能看懂」的語言，不用只有作者和 AI 才懂的術語
+- 避免：spec 內部代號（如 Rule A/B）、抽象符號表達式（如 `│─ 業務 ─│`）、未經解釋的概念名稱
+- Label 用口語描述現象，不用代號引用規則。例如：不寫「角色接壤」，寫「業務操作接工具操作，同為無框，邊界不可見」
+- Storybook 是公開文件，寫法標準是「新加入的設計師打開就能看懂」
 
 **Accessibility**
 - 所有 icon-only 按鈕有 `aria-label`

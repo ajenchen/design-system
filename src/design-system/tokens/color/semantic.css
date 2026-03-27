@@ -74,7 +74,7 @@
   --surface:              oklch(1 0 0);                      /* card / panel */
   --surface-raised:       oklch(1 0 0);                      /* modal / popup */
   --overlay:              var(--black-a45);                   /* backdrop */
-  --tooltip:              var(--color-neutral-9-opaque);     /* tooltip 深色底，不透明，dark 另補 override */
+  --tooltip:              var(--color-neutral-9-opaque);     /* tooltip 深色底（≈#333），不透明，dark 另補 override */
 
   /* === Text / Icon === */
   --foreground:           var(--color-neutral-9);            /* 一般資訊 */
@@ -113,7 +113,7 @@
   --warning-hover:        var(--color-yellow-5);
   --warning-active:       var(--color-yellow-7);
   --warning-subtle:       var(--color-yellow-1);
-  --warning-foreground:   var(--black-a98);                  /* 黃色底永遠需深色文字，用 Layer 0 alpha 不隨主題切換 */
+  --warning-foreground:   var(--black-a85);                  /* 黃色底永遠需深色文字，用 Layer 0 alpha 不隨主題切換 */
 
   /* === Indicator: Notification === */
   --notification:         var(--color-deep-orange-6);        /* 通知 badge / 未讀計數；目前與 error 同色，語義獨立，未來可單獨調整 */
@@ -163,7 +163,7 @@
   --surface:              var(--white-a08);                  /* 半透明，疊加在 canvas */
   --surface-raised:       var(--color-neutral-3-opaque);     /* 不透明，modal/popup */
   --overlay:              var(--black-a65);                  /* dark 需更深的遮罩 */
-  --tooltip:              var(--color-neutral-4-opaque);     /* ≈ 0.19，與 light 的 neutral-9-opaque 接近 */
+  --tooltip:              var(--color-neutral-5-opaque);     /* tooltip（≈#333 最近色）；neutral-3（0.12）被 surface-raised 佔用 */
 
   /* === Hover / Active — dark mode 方向反轉：hover = -7（較亮），active = -5（較暗）=== */
   --primary-hover:        var(--color-blue-7);

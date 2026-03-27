@@ -1,39 +1,31 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import {
-  Plus, Trash2, Settings, Share2, RefreshCw,
-  MoreVertical, Save, Maximize2, X,
+  Plus, Trash2, Settings, RefreshCw,
+  MoreVertical, Save, Maximize2, Share2,
   ChevronDown, Download, Bell,
 } from 'lucide-react'
 import { Button } from './button'
-import { ButtonGroup, ButtonDivider } from './button-group'
+import { ButtonGroup } from './button-group'
 
 const meta: Meta = {
-  title: 'Design System/Button/使用原則',
+  title: 'Design System/Components/Button/使用原則',
   parameters: { layout: 'padded' },
 }
 export default meta
 type Story = StoryObj
 
-// ── Helper ────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const Rule = ({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) => (
   <div className="mb-10">
-    <p className="text-footnote font-bold uppercase tracking-wider text-fg-muted mb-1">
-      {title}
-    </p>
-    {note && (
-      <p className="text-caption text-fg-muted mb-3">{note}</p>
-    )}
-    <div className="flex flex-wrap gap-2 items-center">
-      {children}
-    </div>
+    <p className="text-footnote font-bold uppercase tracking-wider text-fg-muted mb-1">{title}</p>
+    {note && <p className="text-caption text-fg-muted mb-3">{note}</p>}
+    <div className="flex flex-wrap gap-2 items-center">{children}</div>
   </div>
 )
 
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <span className={`text-footnote ml-1 ${warn ? 'text-error' : 'text-fg-muted'}`}>
-    {children}
-  </span>
+  <span className={`text-footnote ml-1 ${warn ? 'text-error' : 'text-fg-muted'}`}>{children}</span>
 )
 
 // ── Stories ───────────────────────────────────────────────────────────────────
@@ -51,7 +43,7 @@ export const VariantRule: Story = {
 
       <Rule
         title="secondary — 正面與負面選項並存時的配對"
-        note="藍框藍字。兩個並列選項時使用：正面選項用 secondary，負面選項加 danger。若只有一個主要動作，改用 primary。"
+        note="藍框藍字。兩個並列選項時使用：正面選項用 secondary，負面選項加 danger。若只有一個主要動作，改用 primary"
       >
         <Button variant="secondary">儲存草稿</Button>
         <Button variant="secondary" danger>放棄變更</Button>
@@ -59,11 +51,11 @@ export const VariantRule: Story = {
 
       <Rule
         title="tertiary — 最常用的非主要按鈕（日常預設選擇）"
-        note="灰框灰字。確認/取消配對的取消方、工具列輔助操作、卡片 CTA 幾乎都用 tertiary"
+        note="灰框灰字。確認/取消配對的取消方、輔助操作、卡片 CTA 幾乎都用 tertiary"
       >
         <Button variant="tertiary">取消</Button>
-        <Button variant="tertiary" startIcon={Settings}>設定</Button>
-        <Button variant="tertiary" startIcon={RefreshCw}>重新整理</Button>
+        <Button variant="tertiary" startIcon={Save}>另存草稿</Button>
+        <Button variant="tertiary" startIcon={Download}>匯出</Button>
       </Rule>
 
       <Rule
@@ -77,7 +69,7 @@ export const VariantRule: Story = {
 
       <Rule
         title="checked — 單一功能目前啟用中（binary toggle）"
-        note="淡藍底藍字。功能關閉時可以是 secondary 以下任何 variant（text、tertiary 等），功能開啟後換成 checked。僅描述「這個按鈕自己的功能是否開啟」"
+        note="淡藍底藍字。功能關閉時可以是任何 variant（text、tertiary 等），功能開啟後換成 checked。僅描述「這個按鈕自己的功能是否開啟」，不表達多選一"
       >
         <div className="flex items-center gap-2">
           <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕（關閉）" />
@@ -88,8 +80,8 @@ export const VariantRule: Story = {
       </Rule>
 
       <Rule
-        title="link — 樣式像連結的按鈕"
-        note="藍色文字，無底色無邊框。本質仍是 button（保留鍵盤與無障礙行為）。不嵌入段落文字（用 HTML <a> 或 React Router <Link> 代替）"
+        title="link — 帶使用者前往其他頁面的按鈕"
+        note="藍色文字，無底色無邊框。視覺上像連結但需要 button 行為（React Router、事件處理）。放在內容區，不用於操作列，不嵌入段落文字（段落內用 HTML <a> 代替）"
       >
         <Button variant="link">前往設定</Button>
       </Rule>
@@ -178,33 +170,26 @@ export const IconRule: Story = {
 
       <Rule
         title="endIcon — 指示按鈕會開啟下一層（展開 / 選單）"
-        note="icon 不描述動作，而是告訴使用者「點這裡還有更多」。通常是 ChevronDown、ChevronRight。variant 的選擇與 endIcon 無關，按正常規則決定"
+        note="icon 不描述動作，而是告訴使用者「點這裡還有更多」。通常是 ChevronDown、ChevronRight"
       >
         <Button variant="tertiary" endIcon={ChevronDown}>篩選條件</Button>
-      </Rule>
-
-      <Rule
-        title="startIcon + endIcon 同時使用"
-        note="startIcon 描述功能，endIcon 說明可以展開。兩者語意不同，互不衝突"
-      >
         <Button variant="tertiary" startIcon={Bell} endIcon={ChevronDown}>通知</Button>
-        <Button variant="tertiary" startIcon={Settings} endIcon={ChevronDown}>偏好設定</Button>
       </Rule>
 
       <Rule
         title="❌ endIcon 不應使用動詞性圖示"
-        note="endIcon 的位置傳達「這裡可以展開」，放動詞圖示會讓使用者以為有第二個操作"
+        note="endIcon 的位置傳達「這裡可以展開」，放動詞圖示會讓使用者以為有第二個獨立操作"
       >
         <Button variant="tertiary" endIcon={Download}>匯出</Button>
-        <Label warn>↑ 右側 Download icon 讓人以為有獨立的下載動作，語意混淆</Label>
+        <Label warn>↑ 右側 Download 讓人以為可以直接下載，與展開選單的意圖衝突</Label>
       </Rule>
 
       <Rule
         title="icon + 下拉指示 — 無文字 dropdown trigger"
-        note="不加 iconOnly；必須設定 aria-label"
+        note="不加 iconOnly（保留 endIcon 展開指示）；必須設定 aria-label"
       >
         <Button variant="tertiary" startIcon={Settings} endIcon={ChevronDown} aria-label="設定選項" />
-        <Label>↑ 不加 iconOnly，保留 endIcon</Label>
+        <Label>↑ startIcon 描述功能，endIcon 指示展開，兩者並存</Label>
       </Rule>
 
       <Rule
@@ -217,182 +202,64 @@ export const IconRule: Story = {
             3
           </span>
         </div>
-        <Label>↑ 外部 relative 容器疊加角標，保持正方形</Label>
+        <Label>↑ 角標外掛，Button 本身保持正方形</Label>
       </Rule>
 
       <Rule
-        title="溢出選單 — MoreVertical icon-only"
-        note="variant 隨所在區塊一致。區塊溢出：所在區塊最後一個，左側不加分隔線。全域溢出：多個區塊統一收納，ButtonGroup 末端，可加左側分隔線"
+        title="溢出選單 — 一律 MoreVertical，放在群組末端"
+        note="variant 隨所在群組一致；左側不加分隔線（它是群組的一部分，不是獨立層）。末端溢出與群組溢出的判斷規則見 Patterns / 操作列"
       >
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
-              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
-            </ButtonGroup>
-            <Label>區塊溢出 — 左側不加分隔線</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
-              <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
-              <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-              <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
-            </ButtonGroup>
-            <Label>全域溢出 — 多個區塊統一收納，可加左側分隔線</Label>
-          </div>
-        </div>
+        <ButtonGroup>
+          <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" />
+          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+          <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+        </ButtonGroup>
+        <Label>↑ MoreVertical 在群組末端，左側不加分隔線</Label>
       </Rule>
     </div>
   ),
 }
 
 export const OrderRule: Story = {
-  name: 'Button 排序',
+  name: '排序與對齊',
   render: () => (
     <div>
       <Rule
-        title="排序優先順序 — 視覺重量高的在前"
-        note="primary / primary+danger  >  secondary  >  tertiary  >  secondary+danger  >  text"
+        title="視覺重量序列 — 決定按鈕在群組中的相對位置"
+        note="按視覺重量由高至低排列，最強視覺吸引力的動作放在「起點」位置。序列：primary > secondary > tertiary > text。danger 是顏色疊加，不影響排序位置；同 variant 內 danger 排在非 danger 之後（遠離主要焦點）"
       >
         <Button variant="primary">Primary</Button>
         <Button variant="secondary">Secondary</Button>
-        <Button variant="tertiary">Tertiary</Button>
         <Button variant="secondary" danger>Secondary danger</Button>
+        <Button variant="tertiary">Tertiary</Button>
         <Button variant="text">Text</Button>
       </Rule>
 
-      <Rule title="靠左對齊 — 主按鈕在最左">
-        <ButtonGroup align="start">
-          <Button variant="primary">確認</Button>
-          <Button variant="tertiary">取消</Button>
-        </ButtonGroup>
-      </Rule>
-
-      <Rule title="靠右對齊 — 主按鈕在最右">
-        <div className="w-full flex justify-end">
-          <ButtonGroup align="end">
-            <Button variant="tertiary">取消</Button>
-            <Button variant="primary">確認</Button>
-          </ButtonGroup>
-        </div>
-      </Rule>
-
       <Rule
-        title="Toolbar — 全部置右，左側放標題；由右至左：溢出 › 固定工具 › 業務邏輯"
-        note="有框（primary/tertiary）→ 無框（text）視覺差異已完成分群，不加分隔線。MoreVertical 為區塊溢出，左側不加分隔線"
+        title="水平排列 — 對齊方向鏡像排序，主按鈕永遠在「起點」"
+        note="靠左：動作由左發起（表單送出、連續流程），primary 在最左。靠右：動作是確認補充（對話框底部），primary 在最右。排序規則不因對齊方向改變，只是方向鏡像"
       >
-        <div className="flex items-center justify-between w-full px-4 h-[52px] border border-border rounded-lg bg-surface">
-          <span className="text-body font-bold text-foreground">專案名稱</span>
-          <ButtonGroup>
-            <Button variant="tertiary" startIcon={Save}>儲存</Button>
-            <Button variant="primary" startIcon={Plus}>新增</Button>
-            <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
-            <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
-            <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-            <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-            <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
-          </ButtonGroup>
-        </div>
-      </Rule>
-    </div>
-  ),
-}
-
-export const GroupRule: Story = {
-  name: 'ButtonGroup 用法',
-  render: () => (
-    <div>
-      <Rule title="群組間距 — 8px，用 ButtonGroup 包裹">
-        <ButtonGroup>
-          <Button variant="primary" startIcon={Plus}>新增</Button>
-          <Button variant="tertiary" startIcon={Save}>儲存</Button>
-        </ButtonGroup>
-      </Rule>
-
-      <Rule
-        title="分隔線 — 同視覺類型內的功能區隔，與按鈕距離 12px"
-        note="用於同為有框或同為無框的按鈕之間需要功能區隔時（此例：無框按鈕中，危險操作與一般操作分開）"
-      >
-        <ButtonGroup>
-          <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
-          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-          <ButtonDivider />
-          <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
-        </ButtonGroup>
-      </Rule>
-
-      <Rule
-        title="關閉保護 — 最右側是關閉按鈕時，左側必須加分隔線"
-        note="防止使用者誤觸關閉。關閉是解除性動作，需與其他操作明確分隔"
-      >
-        <ButtonGroup>
-          <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
-          <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-          <ButtonDivider />
-          <Button variant="text" size="sm" iconOnly startIcon={X} aria-label="關閉" />
-        </ButtonGroup>
-        <Label>↑ 關閉按鈕左側必有分隔線</Label>
-      </Rule>
-
-      <Rule
-        title="有框 / 無框接壤 — 不加分隔線，有框集中在一側"
-        note="視覺差異已足夠識別邊界。切換按鈕（text ↔ checked）依預設（text）狀態排列，視為無框"
-      >
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <ButtonGroup>
-              <Button variant="tertiary" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
-              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+        <div className="flex flex-col gap-4 w-full">
+          <div className="flex items-center gap-3">
+            <ButtonGroup align="start">
+              <Button variant="primary">確認</Button>
+              <Button variant="tertiary">取消</Button>
             </ButtonGroup>
-            <Label>✅ 有框在前，無框在後，接壤不加分隔線</Label>
+            <Label>靠左 — primary 最左，動作從左發起</Label>
           </div>
-          <div className="flex items-center gap-2">
-            <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
-              <Button variant="tertiary" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
+          <div className="flex items-center justify-between w-full">
+            <Label>靠右 — primary 最右，對話框確認場景</Label>
+            <ButtonGroup align="end">
+              <Button variant="tertiary">取消</Button>
+              <Button variant="primary">確認</Button>
             </ButtonGroup>
-            <Label warn>❌ 有框夾在無框之間，交錯排列</Label>
           </div>
         </div>
       </Rule>
 
       <Rule
-        title="❌ 避免孤立 — 單一按鈕不應兩側都有分隔線"
-        note="若某個按鈕左右都有分隔線，重新審視分組邏輯，通常是分隔線過多的訊號"
-      >
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
-              <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-              <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-            </ButtonGroup>
-            <Label warn>❌ 分享按鈕兩側都有分隔線，被孤立</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <ButtonGroup>
-              <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="刷新" />
-              <Button variant="text" size="sm" iconOnly startIcon={Share2} aria-label="分享" />
-              <ButtonDivider />
-              <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-            </ButtonGroup>
-            <Label>✅ 重新分群，分享與刷新同組</Label>
-          </div>
-        </div>
-      </Rule>
-
-      <Rule
-        title="垂直排列 — 最希望被點擊的按鈕放最上方，所有按鈕撐滿容器寬度"
-        note="視覺動線由上往下，primary 放第一個，使用者最先看到"
+        title="垂直排列 — primary 最上，視覺動線由上往下"
+        note="垂直群組中使用者眼睛最先掃到最上方，最希望被點擊的動作放第一個。所有按鈕撐滿容器寬度"
       >
         <div className="w-[200px]">
           <ButtonGroup direction="vertical">
@@ -401,6 +268,14 @@ export const GroupRule: Story = {
           </ButtonGroup>
         </div>
       </Rule>
+
+      <Rule
+        title="Toolbar 場景"
+        note="Toolbar 中業務操作與工具操作的全局排序、分隔線規則、溢出機制見 Patterns / 操作列"
+      >
+        <span className="text-caption text-fg-muted">→ Design System / Patterns / 操作列</span>
+      </Rule>
     </div>
   ),
 }
+
