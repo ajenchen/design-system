@@ -78,10 +78,14 @@ export const RoleIdentification: Story = {
         title="業務操作（Operations）— 使用者完成目標所需"
         note="判斷：移除這個操作，使用者是否無法完成他來這裡要做的事？是 → 業務操作。允許所有 variant（primary、secondary、tertiary、text、checked），決定位置與視覺重量"
       >
-        <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
-        <Button variant="tertiary" size="sm" startIcon={Download}>匯出</Button>
-        <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
-        <Button variant="text" size="sm" danger iconOnly startIcon={Trash2} aria-label="刪除" />
+        <ToolbarFrame title="文件管理">
+          <ButtonGroup>
+            <Button variant="text" size="sm" danger iconOnly startIcon={Trash2} aria-label="刪除" />
+            <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
+            <Button variant="tertiary" size="sm" startIcon={Download}>匯出</Button>
+            <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
+          </ButtonGroup>
+        </ToolbarFrame>
         <Label>移除任一個，使用者就無法完成任務</Label>
       </Rule>
 
@@ -89,10 +93,14 @@ export const RoleIdentification: Story = {
         title="工具操作（Utilities）— 服務環境，與任務本身無關"
         note="判斷：這個操作跟「現在在做什麼任務」無關，任何頁面都可能有它？是 → 工具操作。工具層必須是操作列中視覺重量最低的一層，否則會搶走業務操作的焦點，所以只用 text（預設）與 checked（啟用中）。⚙ ↺ ⤢ ? 等 icon 跨頁面意義固定，使用者靠位置記憶辨識，不需要 label"
       >
-        <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
-        <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
-        <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
-        <Button variant="text" size="sm" iconOnly startIcon={HelpCircle} aria-label="說明" />
+        <ToolbarFrame title="文件管理">
+          <ButtonGroup>
+            <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
+            <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕" />
+            <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
+            <Button variant="text" size="sm" iconOnly startIcon={HelpCircle} aria-label="說明" />
+          </ButtonGroup>
+        </ToolbarFrame>
         <Label>與當前任務無關，一律 text icon-only，永遠在業務層右側末端</Label>
       </Rule>
 
