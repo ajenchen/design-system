@@ -163,7 +163,14 @@ function DataTableInner<TData>(
           {/* ── Header ── */}
           <div
             role="rowgroup"
-            className={cn('bg-muted', useVirtual && 'sticky top-0 z-10')}
+            className={cn(
+              useVirtual ? 'sticky top-0 z-10' : 'bg-muted',
+            )}
+            style={useVirtual ? {
+              // sticky 時自帶不透明底：canvas（不透明）+ muted（半透明疊加）
+              // 避免 body rows 滑到底下時透出
+              background: 'linear-gradient(var(--muted), var(--muted)) var(--canvas)',
+            } : undefined}
           >
             {table.getHeaderGroups().map(headerGroup => (
               <div
