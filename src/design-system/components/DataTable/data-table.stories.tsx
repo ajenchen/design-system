@@ -214,6 +214,7 @@ export const VirtualScroll: Story = {
         data={largeData}
         height="500px"
         overscan={10}
+        bordered
       />
     )
   },

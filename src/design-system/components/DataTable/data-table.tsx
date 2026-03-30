@@ -88,6 +88,9 @@ function DataTableInner<TData>(
   const isEmpty = rows.length === 0
   const useVirtual = height !== 'auto' && !isEmpty
 
+  // 固定高度 = 有隱藏內容 = 自動加邊框
+  const resolvedBordered = bordered || useVirtual
+
   // Virtual scrolling (only when height is fixed)
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const virtualizer = useVirtualizer({
@@ -137,7 +140,7 @@ function DataTableInner<TData>(
       data-table-size={size}
       className={cn(
         'bg-surface rounded-md overflow-hidden',
-        bordered && 'border border-border',
+        resolvedBordered && 'border border-border',
         className,
       )}
       role="table"
@@ -213,7 +216,7 @@ function DataTableInner<TData>(
               {virtualizer.getVirtualItems().map(virtualRow => {
                 const row = rows[virtualRow.index]
                 const isLastRow = virtualRow.index === rows.length - 1
-                const showBottomBorder = bordered ? !isLastRow : true
+                const showBottomBorder = resolvedBordered ? !isLastRow : true
 
                 return (
                   <div
@@ -240,7 +243,7 @@ function DataTableInner<TData>(
           ) : (
             rows.map((row, index) => {
               const isLastRow = index === rows.length - 1
-              const showBottomBorder = bordered ? !isLastRow : true
+              const showBottomBorder = resolvedBordered ? !isLastRow : true
 
               return (
                 <div
