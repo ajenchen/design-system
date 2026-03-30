@@ -222,7 +222,7 @@ function DataTableInner<TData>(
               {emptyState ?? '沒有資料'}
             </div>
           ) : useVirtual ? (
-            <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+            <div style={{ height: virtualizer.getTotalSize(), width: table.getTotalSize(), position: 'relative' }}>
               {virtualizer.getVirtualItems().map(virtualRow => {
                 const row = rows[virtualRow.index]
                 const isLastRow = virtualRow.index === rows.length - 1
