@@ -91,7 +91,7 @@ function DataTableInner<TData>(
   // 固定高度 = 有隱藏內容 = 自動加邊框
   const resolvedBordered = bordered || useVirtual
 
-  // Virtual scrolling (only when height is fixed)
+  // Scroll container ref — handles both horizontal + vertical (virtual mode) scrolling
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const virtualizer = useVirtualizer({
     count: useVirtual ? rows.length : 0,
@@ -143,14 +143,28 @@ function DataTableInner<TData>(
       role="table"
       aria-rowcount={rows.length + 1}
     >
-      {/* Scroll wrapper — horizontal scroll for header + body together */}
-      <div className="overflow-x-auto">
-        {/* Inner wrapper — inline-block ensures width = max(container, content),
-            so borders/backgrounds span the full scrollable width */}
+      {/*
+        Single scroll container:
+        - overflow-x-auto: horizontal scroll (header + body move together)
+        - overflow-y-auto (virtual mode): vertical scroll
+        - Header uses sticky top-0 to stay visible during vertical scroll
+        - inline-block min-w-full inner wrapper ensures width = max(container, content)
+      */}
+      <div
+        ref={scrollRef}
+        className={cn(
+          'overflow-x-auto',
+          useVirtual && 'overflow-y-auto',
+        )}
+        style={useVirtual ? { height } : undefined}
+      >
         <div className="inline-block min-w-full">
 
           {/* ── Header ── */}
-          <div role="rowgroup" className="bg-muted">
+          <div
+            role="rowgroup"
+            className={cn('bg-muted', useVirtual && 'sticky top-0 z-10')}
+          >
             {table.getHeaderGroups().map(headerGroup => (
               <div
                 key={headerGroup.id}
@@ -201,12 +215,7 @@ function DataTableInner<TData>(
           </div>
 
           {/* ── Body ── */}
-          <div
-            ref={scrollRef}
-            role="rowgroup"
-            className={cn(useVirtual && 'overflow-y-auto')}
-            style={useVirtual ? { height } : undefined}
-          >
+          <div role="rowgroup">
             {isEmpty ? (
               <div className="flex items-center justify-center text-fg-muted text-body py-12">
                 {emptyState ?? '沒有資料'}
