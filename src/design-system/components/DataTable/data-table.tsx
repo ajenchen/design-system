@@ -108,11 +108,11 @@ function DataTableInner<TData>(
   }, [])
 
   // ── Row + cell styles based on mode ──
-
-  // 固定行高：min-height + center
-  // 自動行高：no min-height + flex-start + py padding
-  const rowClass = autoRowHeight ? 'flex items-start' : 'flex items-center'
+  // Row 永遠 items-stretch（cell 撐滿 row 高度，divider 才能正確定位）
+  // 固定行高：row 有 min-height，cell 用 items-center 居中，只有水平 padding
+  // 自動行高：row 無 min-height，cell 用 items-start 頂對齊，有垂直 + 水平 padding
   const rowStyle: React.CSSProperties = autoRowHeight ? {} : { minHeight: 'var(--table-row-height)' }
+  const cellAlign = autoRowHeight ? 'items-start' : 'items-center'
 
   const cellPadding: React.CSSProperties = autoRowHeight
     ? {
@@ -138,9 +138,8 @@ function DataTableInner<TData>(
           key={cell.id}
           role="cell"
           className={cn(
-            'text-foreground text-body font-normal shrink-0',
-            !wrap && 'truncate',
-            wrap && 'break-words',
+            `flex ${cellAlign} text-foreground text-body font-normal shrink-0`,
+            'overflow-hidden',
             align === 'right' && 'text-right',
             align === 'center' && 'text-center',
           )}
@@ -151,7 +150,9 @@ function DataTableInner<TData>(
             ...cellPadding,
           }}
         >
-          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          <span className={cn(!wrap ? 'truncate' : 'break-words', 'min-w-0')}>
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          </span>
         </div>
       )
     })
@@ -179,7 +180,7 @@ function DataTableInner<TData>(
             <div
               key={headerGroup.id}
               role="row"
-              className={cn(rowClass, 'border-b border-divider')}
+              className="flex items-stretch border-b border-divider"
               style={rowStyle}
             >
               {headerGroup.headers.map((header, idx) => {
@@ -194,8 +195,8 @@ function DataTableInner<TData>(
                       'none'
                     }
                     className={cn(
-                      'relative flex items-center text-fg-secondary text-body font-normal shrink-0',
-                      'truncate select-none',
+                      `relative flex ${cellAlign} text-fg-secondary text-body font-normal shrink-0`,
+                      'overflow-hidden select-none',
                     )}
                     style={{
                       width: header.getSize(),
@@ -204,10 +205,12 @@ function DataTableInner<TData>(
                       ...cellPadding,
                     }}
                   >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())
-                    }
+                    <span className="truncate">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())
+                      }
+                    </span>
                     {!isLast && (
                       <span
                         className="absolute right-0 w-px bg-divider"
@@ -254,7 +257,7 @@ function DataTableInner<TData>(
                     role="row"
                     aria-rowindex={virtualRow.index + 2}
                     className={cn(
-                      rowClass, 'absolute w-full',
+                      'flex items-stretch absolute w-full',
                       showBottomBorder && 'border-b border-divider',
                       enableHover && 'hover:bg-neutral-hover transition-colors',
                     )}
@@ -276,7 +279,7 @@ function DataTableInner<TData>(
                   role="row"
                   aria-rowindex={index + 2}
                   className={cn(
-                    rowClass,
+                    'flex items-stretch',
                     showBottomBorder && 'border-b border-divider',
                     enableHover && 'hover:bg-neutral-hover transition-colors',
                   )}
