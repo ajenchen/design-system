@@ -112,8 +112,6 @@ function DataTableInner<TData>(
   // 固定行高：row 有 min-height，cell 用 items-center 居中，只有水平 padding
   // 自動行高：row 無 min-height，cell 用 items-start 頂對齊，有垂直 + 水平 padding
   const rowStyle: React.CSSProperties = autoRowHeight ? {} : { minHeight: 'var(--table-row-height)' }
-  const cellAlign = autoRowHeight ? 'items-start' : 'items-center'
-
   const cellPadding: React.CSSProperties = autoRowHeight
     ? {
         paddingTop: 'var(--table-cell-py)',
@@ -138,7 +136,8 @@ function DataTableInner<TData>(
           key={cell.id}
           role="cell"
           className={cn(
-            `flex ${cellAlign} text-foreground text-body font-normal shrink-0`,
+            'flex text-foreground text-body font-normal shrink-0',
+            autoRowHeight ? 'items-start' : 'items-center',
             'overflow-hidden',
             align === 'right' && 'text-right',
             align === 'center' && 'text-center',
@@ -195,7 +194,8 @@ function DataTableInner<TData>(
                       'none'
                     }
                     className={cn(
-                      `relative flex ${cellAlign} text-fg-secondary text-body font-normal shrink-0`,
+                      'relative flex text-fg-secondary text-body font-normal shrink-0',
+                      autoRowHeight ? 'items-start' : 'items-center',
                       'overflow-hidden select-none',
                     )}
                     style={{
