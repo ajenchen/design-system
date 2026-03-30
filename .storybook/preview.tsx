@@ -1,7 +1,20 @@
 import type { Preview } from "@storybook/react";
-import React from "react";
+import React, { useEffect } from "react";
 import "../src/globals.css";
 import { TooltipProvider } from "../src/design-system/components/Tooltip/tooltip";
+
+function ThemeDecorator({ theme, density, children }: {
+  theme: string; density: string; children: React.ReactNode
+}) {
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-density', density);
+    document.body.style.backgroundColor = 'var(--canvas)';
+    document.body.style.color = 'var(--foreground)';
+  }, [theme, density]);
+
+  return <>{children}</>;
+}
 
 const preview: Preview = {
   globalTypes: {
@@ -45,15 +58,14 @@ const preview: Preview = {
 
   decorators: [
     (Story, context) => {
-      const theme = context.globals.theme ?? 'light';
-      const density = context.globals.density ?? 'md';
-      document.documentElement.setAttribute('data-theme', theme);
-      document.documentElement.setAttribute('data-density', density);
-      document.body.style.background = 'var(--canvas)';
+      const theme = (context.globals.theme ?? 'light') as string;
+      const density = (context.globals.density ?? 'md') as string;
       return (
-        <TooltipProvider delayDuration={500} skipDelayDuration={300}>
-          <Story />
-        </TooltipProvider>
+        <ThemeDecorator theme={theme} density={density}>
+          <TooltipProvider delayDuration={500} skipDelayDuration={300}>
+            <Story />
+          </TooltipProvider>
+        </ThemeDecorator>
       );
     },
   ],
