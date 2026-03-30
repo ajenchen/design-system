@@ -16,17 +16,7 @@ const meta: Meta<typeof Button> = {
   parameters: {
     docs: {
       description: {
-        component: `
-shadcn 風格 Button，橋接設計系統 token，支援 lucide-react icon。
-
-**Variants：** \`primary\` · \`secondary\` · \`tertiary\` · \`text\` · \`checked\` · \`link\`
-
-**danger prop：** 疊加在任何 variant 上，將顏色改為紅色。
-
-**Sizes：** \`xs\`(24px 固定) · \`sm\`(28px 預設) · \`md\`(32px) · \`lg\`(36px)
-
-**Icons：** \`startIcon\`（左側）· \`endIcon\`（右側）· \`iconOnly\` prop 讓任何尺寸變正方形
-        `,
+        component: '觸發操作或導覽的基礎互動元件。支援六種視覺強調等級（variant）、danger 語意疊加、四種尺寸、icon-only 模式。',
       },
     },
   },
@@ -43,11 +33,11 @@ shadcn 風格 Button，橋接設計系統 token，支援 lucide-react icon。
     size: {
       control: 'select',
       options: ['xs', 'sm', 'md', 'lg'],
-      description: '`xs` 固定 24px；`sm`（預設）/ `md` / `lg` 會隨 `data-ui-size="lg"` 自動縮放。',
+      description: '`xs` 固定尺寸；`sm`（預設）/ `md` / `lg` 會隨 density 自動縮放。',
     },
     startIcon: {
       control: false,
-      description: '左側 icon（`LucideIcon`），最多一個。`loading` 時自動替換為 spinner，位置不變（零 layout shift）。',
+      description: '左側 icon（`LucideIcon`），最多一個。`loading` 時自動替換為 spinner。',
     },
     endIcon: {
       control: false,
@@ -206,10 +196,10 @@ export const AllSizes: Story = {
   render: () => (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
-        <Button size="xs" startIcon={Plus}>xs (24px 固定)</Button>
-        <Button size="sm" startIcon={Plus}>sm (28px) ← 預設</Button>
-        <Button size="md" startIcon={Plus}>md (32px)</Button>
-        <Button size="lg" startIcon={Plus}>lg (36px)</Button>
+        <Button size="xs" startIcon={Plus}>xs（固定）</Button>
+        <Button size="sm" startIcon={Plus}>sm ← 預設</Button>
+        <Button size="md" startIcon={Plus}>md</Button>
+        <Button size="lg" startIcon={Plus}>lg</Button>
       </div>
       <div className="flex flex-wrap items-end gap-3">
         <p className="w-full text-caption text-fg-muted">icon-only（同樣四種尺寸）</p>

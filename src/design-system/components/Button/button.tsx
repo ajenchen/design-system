@@ -4,7 +4,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { Loader2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
 /**
  * Button — shadcn 風格，橋接設計系統 token
@@ -253,14 +253,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     )
 
     // icon-only + aria-label → 自動包 Tooltip（tooltip 是元件保證的行為）
+    // 不建立獨立 TooltipProvider——依賴全域 Provider，
+    // 這樣所有 tooltip 共享同一組 delay 參數和 warm-up 機制
     if (iconOnly && typeof ariaLabel === 'string' && !asChild) {
       return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>{buttonEl}</TooltipTrigger>
-            <TooltipContent>{ariaLabel}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>{buttonEl}</TooltipTrigger>
+          <TooltipContent>{ariaLabel}</TooltipContent>
+        </Tooltip>
       )
     }
 

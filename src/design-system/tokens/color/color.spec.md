@@ -192,6 +192,21 @@ cursor 變化 + 細微色移疊加仍提供足夠互動回饋。
 ```
 
 
+## Static Subtle Background
+
+| Utility | 用途 |
+|---------|------|
+| `bg-muted` | 靜態裝飾性低調背景（非互動狀態）|
+
+適用場景：table header、tab 容器、code block、skeleton loading 等需要與主內容區做出微弱層級區分但不具備互動意義的區域。
+
+與 `bg-neutral-hover` / `bg-neutral-active` 的區別：neutral 系列表達互動狀態（hover / 選中），`bg-muted` 表達結構性的靜態層級——即使沒有互動，它永遠是這個顏色。
+
+```tsx
+<div className="bg-muted">table header / tab bar</div>
+```
+
+
 ## 邊框 / 分隔
 
 | Utility | 用途 |
@@ -238,7 +253,6 @@ cursor 變化 + 細微色移疊加仍提供足夠互動回饋。
 | `bg-popover`   | = `bg-surface-raised` |
 | `bg-destructive`| = `bg-error`   |
 | `bg-secondary` | neutral-3 底色  |
-| `bg-muted`     | neutral-2 底色  |
 | `bg-accent`    | = neutral-hover |
 | `border-input` | = border-border（input 專用）|
 | `ring-ring`    | focus ring（= primary）|

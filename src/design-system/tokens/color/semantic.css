@@ -54,7 +54,7 @@
 
    Tailwind 使用方式（@theme inline 橋接）：
      bg-canvas           bg-surface          bg-surface-raised
-     bg-overlay          bg-tooltip          bg-disabled
+     bg-overlay          bg-tooltip          bg-disabled     bg-muted
      bg-primary          bg-destructive      bg-success     bg-warning
      text-foreground     text-fg-secondary   text-fg-muted  text-fg-disabled
      text-primary        text-error          text-success   text-warning   text-info
@@ -130,6 +130,10 @@
   --neutral-active:         var(--color-neutral-2);            /* active（按下）+ selected（選中），比 hover 深一階 */
   --bg-disabled:            var(--color-neutral-2);            /* 互動元件 disabled 狀態的背景（button、input 等）*/
 
+  /* === Static Subtle Background === */
+  --muted:                var(--color-neutral-2);            /* 靜態裝飾性低調背景：table header、tab 容器、code block、skeleton */
+  --muted-foreground:     var(--fg-muted);
+
   /* ─── shadcn Compat Aliases ─── */
   /*
      這些名稱是為了讓 shadcn 元件（Badge、Button、Dropdown、Calendar 等）
@@ -138,8 +142,8 @@
      - --card        ← shadcn <Card>，對應到 --surface
      - --popover     ← shadcn <Popover> / <Select>，對應到 --surface-raised
      - --secondary   ← shadcn <Badge variant="secondary"> 底色
-     - --muted       ← shadcn 靜音區塊底色（code block、disabled 區域）
      - --accent      ← shadcn dropdown item 的 hover 背景
+     （--muted 已升級為正式語義 token，不再只是 compat alias）
   */
   --background:           var(--canvas);
   --card:                 var(--surface);
@@ -148,8 +152,6 @@
   --popover-foreground:   var(--foreground);   /* shadcn Popover 用，值永遠 = --foreground */
   --secondary:            var(--color-neutral-3);            /* badge 底色 */
   --secondary-foreground: var(--fg-muted);     /* badge 文字，neutral-7，不與主內容競爭 */
-  --muted:                var(--color-neutral-2);            /* skeleton、code block、tab 容器等靜態裝飾性低調背景（非互動停用狀態）*/
-  --muted-foreground:     var(--fg-muted);
   --accent:               var(--neutral-hover);                /* item hover = neutral-1 */
   --accent-foreground:    var(--foreground);   /* shadcn DropdownMenuItem 用 */
 }

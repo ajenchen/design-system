@@ -4,6 +4,7 @@
 @import "./design-system/tokens/typography/typography.css";
 @import "./design-system/tokens/uiSize/uiSize.css";
 @import "./design-system/tokens/layoutSpace/layoutSpace.css";
+@import "./design-system/components/DataTable/data-table.css";
 
 /* ── Tailwind Theme ── */
 @theme inline {

@@ -1,0 +1,31 @@
+/* DataTable Size Tokens
+   ─────────────────────────────────────────────────────────
+   目標行高 — 靜態基準，用於推導垂直 padding
+   cell-py — 推導自 (目標行高 - 文字行高) / 2，製造置中效果同時保持頂部對齊
+   cell-px — 引用 ui-space token，隨 density 響應
+   header divider — 上下內縮 = cell-py，divider 高度 = 文字行高
+   ───────────────────────────────────────────────────────── */
+
+/* 共用推導公式：垂直 padding = (目標行高 - 14px * 1.5) / 2 */
+
+/* ── sm ── */
+[data-table-size="sm"] {
+  --table-row-height: 32px;
+  --table-cell-py: calc((var(--table-row-height) - var(--font-body-size) * 1.5) / 2);
+  --table-cell-px: var(--ui-space-4);
+}
+
+/* ── md（預設）── */
+:root,
+[data-table-size="md"] {
+  --table-row-height: 36px;
+  --table-cell-py: calc((var(--table-row-height) - var(--font-body-size) * 1.5) / 2);
+  --table-cell-px: var(--ui-space-6);
+}
+
+/* ── lg ── */
+[data-table-size="lg"] {
+  --table-row-height: 40px;
+  --table-cell-py: calc((var(--table-row-height) - var(--font-body-size) * 1.5) / 2);
+  --table-cell-px: var(--ui-space-8);
+}

@@ -40,14 +40,14 @@ export const VariantRule: Story = {
     <div>
       <Rule
         title="primary — 最高視覺重量，每個操作區最多一個"
-        note="藍底白字。這個畫面或操作區最重要的單一主要動作，超過一個主要動作時改用 secondary"
+        note="這個畫面或操作區最重要的單一主要動作，超過一個主要動作時改用 secondary"
       >
         <Button variant="primary" startIcon={Plus}>新增</Button>
       </Rule>
 
       <Rule
         title="secondary — 正面與負面選項並存時的配對"
-        note="藍框藍字。兩個並列選項時使用：正面選項用 secondary，負面選項加 danger。若只有一個主要動作，改用 primary"
+        note="兩個並列選項時使用：正面選項用 secondary，負面選項加 danger。若只有一個主要動作，改用 primary"
       >
         <Button variant="secondary">儲存草稿</Button>
         <Button variant="secondary" danger>放棄變更</Button>
@@ -55,7 +55,7 @@ export const VariantRule: Story = {
 
       <Rule
         title="tertiary — 最常用的非主要按鈕（日常預設選擇）"
-        note="灰框灰字。確認/取消配對的取消方、輔助操作、卡片 CTA 幾乎都用 tertiary"
+        note="確認/取消配對的取消方、輔助操作、卡片 CTA 幾乎都用 tertiary"
       >
         <Button variant="tertiary">取消</Button>
         <Button variant="tertiary" startIcon={Save}>另存草稿</Button>
@@ -64,7 +64,7 @@ export const VariantRule: Story = {
 
       <Rule
         title="text — 低視覺重量輔助動作"
-        note="透明無框。不需特別強調的操作；工具列 icon-only 按鈕常用 text"
+        note="不需特別強調的操作；工具列 icon-only 按鈕常用 text"
       >
         <Button variant="text" startIcon={RefreshCw}>重新整理</Button>
         <Button variant="text">查看更多</Button>
@@ -73,7 +73,7 @@ export const VariantRule: Story = {
 
       <Rule
         title="checked — 單一功能目前啟用中（binary toggle）"
-        note="淡藍底藍字。功能關閉時可以是任何 variant（text、tertiary 等），功能開啟後換成 checked。僅描述「這個按鈕自己的功能是否開啟」，不表達多選一"
+        note="功能關閉時可以是任何 variant（text、tertiary 等），功能開啟後換成 checked。僅描述「這個按鈕自己的功能是否開啟」，不表達多選一"
       >
         <div className="flex items-center gap-2">
           <Button variant="text" size="sm" iconOnly startIcon={Maximize2} aria-label="全螢幕（關閉）" />
@@ -85,7 +85,7 @@ export const VariantRule: Story = {
 
       <Rule
         title="link — 帶使用者前往其他頁面的按鈕"
-        note="藍色文字，無底色無邊框。視覺上像連結但需要 button 行為（React Router、事件處理）。放在內容區，不用於操作列，不嵌入段落文字（段落內用 HTML <a> 代替）"
+        note="視覺上像連結但需要 button 行為（React Router、事件處理）。放在內容區，不用於操作列，不嵌入段落文字（段落內用 HTML <a> 代替）"
       >
         <Button variant="link">前往設定</Button>
       </Rule>
@@ -110,7 +110,7 @@ export const PrimaryRule: Story = {
 
       <Rule
         title="✅ 卡片清單 CTA 用 tertiary"
-        note="重複出現的 CTA（如每張卡片上的按鈕）應使用 tertiary，避免頁面充斥藍色填滿按鈕"
+        note="重複出現的 CTA 應使用 tertiary，避免頁面充斥填滿按鈕，稀釋 primary 的信號強度"
       >
         {['專案 A', '專案 B', '專案 C'].map(name => (
           <div key={name} className="border border-border rounded-lg px-4 py-3 flex items-center gap-3 min-w-40">
@@ -145,7 +145,7 @@ export const DangerRule: Story = {
 
       <Rule
         title="text + danger — 低強調的危險操作"
-        note="工具列刪除等有後續確認的場景；強調等級最低，視覺干擾最小"
+        note="工具列刪除等有後續確認的場景；視覺干擾最小"
       >
         <Button variant="text" danger startIcon={Trash2}>刪除</Button>
         <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
@@ -165,7 +165,7 @@ export const IconRule: Story = {
     <div>
       <Rule
         title="startIcon — 描述這個按鈕做什麼（動詞圖示）"
-        note="icon 是 label 的圖示說明，與文字傳達同一個動作。選用動詞性圖示：Plus、Download、Trash2、RefreshCw"
+        note="icon 是 label 的圖示說明，與文字傳達同一個動作"
       >
         <Button variant="primary" startIcon={Plus}>新增</Button>
         <Button variant="tertiary" startIcon={Download}>匯出</Button>
@@ -174,7 +174,7 @@ export const IconRule: Story = {
 
       <Rule
         title="endIcon — 指示按鈕會開啟下一層（展開 / 選單）"
-        note="icon 不描述動作，而是告訴使用者「點這裡還有更多」。通常是 ChevronDown、ChevronRight"
+        note="告訴使用者「點這裡還有更多」，不描述動作本身"
       >
         <Button variant="tertiary" endIcon={ChevronDown}>篩選條件</Button>
         <Button variant="tertiary" startIcon={Bell} endIcon={ChevronDown}>通知</Button>
@@ -211,7 +211,7 @@ export const IconRule: Story = {
 
       <Rule
         title="溢出選單 — 一律 MoreVertical，放在群組末端"
-        note="variant 隨所在群組一致；左側不加分隔線（它是群組的一部分，不是獨立層）。末端溢出與群組溢出的判斷規則見 Patterns / 操作列"
+        note="溢出按鈕是群組的一部分，不是獨立操作層。末端溢出與群組溢出的判斷規則見 Patterns / 操作列"
       >
         <ButtonGroup>
           <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="匯出" />
@@ -230,7 +230,7 @@ export const OrderRule: Story = {
     <div>
       <Rule
         title="視覺重量序列 — 決定按鈕在群組中的相對位置"
-        note="按視覺重量由高至低排列，最強視覺吸引力的動作放在「起點」位置。序列：primary > secondary > tertiary > text。danger 是顏色疊加，不影響排序位置；同 variant 內 danger 排在非 danger 之後（遠離主要焦點）"
+        note="按視覺重量由高至低排列，最強吸引力的動作放在「起點」位置。danger 是顏色疊加，不影響排序位置；同 variant 內 danger 排在非 danger 之後（遠離主要焦點）"
       >
         <Button variant="primary">Primary</Button>
         <Button variant="secondary">Secondary</Button>
@@ -241,7 +241,7 @@ export const OrderRule: Story = {
 
       <Rule
         title="水平排列 — 對齊方向鏡像排序，主按鈕永遠在「起點」"
-        note="靠左：動作由左發起（表單送出、連續流程），primary 在最左。靠右：動作是確認補充（對話框底部），primary 在最右。排序規則不因對齊方向改變，只是方向鏡像"
+        note="靠左：動作由左發起（表單送出），primary 在最左。靠右：動作是確認補充（對話框底部），primary 在最右。排序規則不因對齊方向改變，只是方向鏡像"
       >
         <div className="flex flex-col gap-4 w-full">
           <div className="flex items-center gap-3">
@@ -263,7 +263,7 @@ export const OrderRule: Story = {
 
       <Rule
         title="垂直排列 — primary 最上，視覺動線由上往下"
-        note="垂直群組中使用者眼睛最先掃到最上方，最希望被點擊的動作放第一個。所有按鈕撐滿容器寬度"
+        note="使用者眼睛最先掃到最上方，最希望被點擊的動作放第一個。所有按鈕撐滿容器寬度"
       >
         <div className="w-[200px]">
           <ButtonGroup direction="vertical">
@@ -282,4 +282,3 @@ export const OrderRule: Story = {
     </div>
   ),
 }
-

@@ -1,6 +1,7 @@
 import type { Preview } from "@storybook/react";
 import React from "react";
 import "../src/globals.css";
+import { TooltipProvider } from "../src/design-system/components/Tooltip/tooltip";
 
 const preview: Preview = {
   globalTypes: {
@@ -49,7 +50,11 @@ const preview: Preview = {
       document.documentElement.setAttribute('data-theme', theme);
       document.documentElement.setAttribute('data-density', density);
       document.body.style.background = 'var(--canvas)';
-      return React.createElement(Story);
+      return (
+        <TooltipProvider delayDuration={500} skipDelayDuration={300}>
+          <Story />
+        </TooltipProvider>
+      );
     },
   ],
 };
