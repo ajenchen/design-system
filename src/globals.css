@@ -39,17 +39,16 @@
     border-color: var(--color-neutral-5);
   }
 
+  body {
+    background-color: var(--canvas);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
-}
-
-/* html + body 背景，放在 @layer 外面避免被覆蓋 */
-html, body {
-  background-color: var(--canvas) !important;
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }

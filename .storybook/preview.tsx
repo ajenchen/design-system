@@ -53,17 +53,17 @@ const preview: Preview = {
         document.documentElement.setAttribute('data-density', density);
       }, [theme, density]);
 
+      // Storybook iframe 的背景由 wrapper div 控制，
+      // 確保 dark mode 時背景跟隨 --canvas
       return (
         <TooltipProvider delayDuration={500} skipDelayDuration={300}>
-          <div
-            style={{
-              backgroundColor: 'var(--canvas)',
-              color: 'var(--foreground)',
-              minHeight: '100vh',
-              margin: '-1rem',
-              padding: '1rem',
-            }}
-          >
+          <div style={{
+            backgroundColor: 'var(--canvas)',
+            color: 'var(--foreground)',
+            minHeight: '100vh',
+            margin: '-1rem',
+            padding: '1rem',
+          }}>
             <Story />
           </div>
         </TooltipProvider>

@@ -70,16 +70,17 @@
   --color-neutral-8: var(--black-a65);
   --color-neutral-9: var(--black-a85);
 
-  /* Neutral — Opaque（light = black-alpha on white；L = 1 − alpha）*/
-  --color-neutral-1-opaque: oklch(from var(--color-neutral-1) calc(1 - alpha) 0 0);
-  --color-neutral-2-opaque: oklch(from var(--color-neutral-2) calc(1 - alpha) 0 0);
-  --color-neutral-3-opaque: oklch(from var(--color-neutral-3) calc(1 - alpha) 0 0);
-  --color-neutral-4-opaque: oklch(from var(--color-neutral-4) calc(1 - alpha) 0 0);
-  --color-neutral-5-opaque: oklch(from var(--color-neutral-5) calc(1 - alpha) 0 0);
-  --color-neutral-6-opaque: oklch(from var(--color-neutral-6) calc(1 - alpha) 0 0);
-  --color-neutral-7-opaque: oklch(from var(--color-neutral-7) calc(1 - alpha) 0 0);
-  --color-neutral-8-opaque: oklch(from var(--color-neutral-8) calc(1 - alpha) 0 0);
-  --color-neutral-9-opaque: oklch(from var(--color-neutral-9) calc(1 - alpha) 0 0);
+  /* Neutral — Opaque（light = black-alpha composited on white in sRGB）
+     rgb(255 × (1 − alpha)) — 簡單 sRGB 線性插值，不用 oklch(from) 避免色空間錯誤 */
+  --color-neutral-1-opaque: #FAFAFA;  /* black-a02 on white */
+  --color-neutral-2-opaque: #F5F5F5;  /* black-a04 on white */
+  --color-neutral-3-opaque: #F0F0F0;  /* black-a06 on white */
+  --color-neutral-4-opaque: #E8E8E8;  /* black-a09 on white */
+  --color-neutral-5-opaque: #D9D9D9;  /* black-a15 on white */
+  --color-neutral-6-opaque: #BFBFBF;  /* black-a25 on white */
+  --color-neutral-7-opaque: #8C8C8C;  /* black-a45 on white */
+  --color-neutral-8-opaque: #595959;  /* black-a65 on white */
+  --color-neutral-9-opaque: #262626;  /* black-a85 on white */
 
   /* Blue */
   --color-blue-6:  oklch(0.54 0.22 258);
@@ -248,16 +249,17 @@
   --color-neutral-8: var(--white-a85);
   --color-neutral-9: oklch(1 0 0);              /* pure white，100% opacity */
 
-  /* Neutral Opaque（dark = white-alpha on black；L = alpha）*/
-  --color-neutral-1-opaque: oklch(from var(--color-neutral-1) alpha 0 0);
-  --color-neutral-2-opaque: oklch(from var(--color-neutral-2) alpha 0 0);
-  --color-neutral-3-opaque: oklch(from var(--color-neutral-3) alpha 0 0);
-  --color-neutral-4-opaque: oklch(from var(--color-neutral-4) alpha 0 0);
-  --color-neutral-5-opaque: oklch(from var(--color-neutral-5) alpha 0 0);
-  --color-neutral-6-opaque: oklch(from var(--color-neutral-6) alpha 0 0);
-  --color-neutral-7-opaque: oklch(from var(--color-neutral-7) alpha 0 0);
-  --color-neutral-8-opaque: oklch(from var(--color-neutral-8) alpha 0 0);
-  --color-neutral-9-opaque: oklch(from var(--color-neutral-9) alpha 0 0);
+  /* Neutral Opaque（dark = white-alpha composited on black in sRGB）
+     rgb(255 × alpha) — 簡單 sRGB 線性插值 */
+  --color-neutral-1-opaque: #0A0A0A;  /* white-a04 on black */
+  --color-neutral-2-opaque: #141414;  /* white-a08 on black */
+  --color-neutral-3-opaque: #1F1F1F;  /* white-a12 on black */
+  --color-neutral-4-opaque: #262626;  /* white-a15 on black */
+  --color-neutral-5-opaque: #404040;  /* white-a25 on black */
+  --color-neutral-6-opaque: #737373;  /* white-a45 on black */
+  --color-neutral-7-opaque: #A6A6A6;  /* white-a65 on black */
+  --color-neutral-8-opaque: #D9D9D9;  /* white-a85 on black */
+  --color-neutral-9-opaque: #FFFFFF;  /* white on black */
 
   /* Blue */
   --color-blue-6:  oklch(0.60 0.22 258);
