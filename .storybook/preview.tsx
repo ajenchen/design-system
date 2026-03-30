@@ -9,8 +9,6 @@ function ThemeDecorator({ theme, density, children }: {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.setAttribute('data-density', density);
-    document.body.style.backgroundColor = 'var(--canvas)';
-    document.body.style.color = 'var(--foreground)';
   }, [theme, density]);
 
   return <>{children}</>;

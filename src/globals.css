@@ -39,16 +39,17 @@
     border-color: var(--color-neutral-5);
   }
 
-  body {
-    background-color: var(--canvas);
-    color: var(--foreground);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
+}
+
+/* body 樣式放在 @layer 外面，確保不被 Storybook 等外部 CSS 覆蓋 */
+body {
+  background-color: var(--canvas);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
