@@ -24,8 +24,8 @@ export interface DataTableProps<TData> {
   size?: TableSize
   /**
    * 行高模式：
-   * - false（預設）：固定行高，內容垂直置中，文字截斷。適合大多數場景
-   * - true：自動行高，內容頂部對齊，wrap 欄位可撐高 row。適合有描述欄位的場景
+   * - false（預設）：內容垂直置中，文字截斷。適合大多數場景
+   * - true：內容頂部對齊，wrap 欄位可撐高 row。適合有描述欄位的場景
    */
   autoRowHeight?: boolean
   /** Fixed height for virtual scrolling (CSS value, e.g. '400px'). Use 'auto' to disable virtual scrolling. */
@@ -44,6 +44,18 @@ export interface DataTableProps<TData> {
   tableOptions?: Partial<Omit<TableOptions<TData>, 'data' | 'columns' | 'getCoreRowModel'>>
   /** Container className */
   className?: string
+}
+
+// ── Shared cell padding ──────────────────────────────────────────────────────
+// 兩種模式都用 cell-py + cell-px
+// cell-py = (target-row-height - line-height) / 2，純文字 row 的高度由 padding 自然決定
+// 非文字內容（avatar, tag）比文字高時，flex 自動撐高 row，其他 cell 居中或頂對齊
+
+const cellPadding: React.CSSProperties = {
+  paddingTop: 'var(--table-cell-py)',
+  paddingBottom: 'var(--table-cell-py)',
+  paddingLeft: 'var(--table-cell-px)',
+  paddingRight: 'var(--table-cell-px)',
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -107,23 +119,6 @@ function DataTableInner<TData>(
     }
   }, [])
 
-  // ── Row + cell styles based on mode ──
-  // Row 永遠 items-stretch（cell 撐滿 row 高度，divider 才能正確定位）
-  // 固定行高：row 有 min-height，cell 用 items-center 居中，只有水平 padding
-  // 自動行高：row 無 min-height，cell 用 items-start 頂對齊，有垂直 + 水平 padding
-  const rowStyle: React.CSSProperties = { minHeight: 'var(--table-row-height)' }
-  const cellPadding: React.CSSProperties = autoRowHeight
-    ? {
-        paddingTop: 'var(--table-cell-py)',
-        paddingBottom: 'var(--table-cell-py)',
-        paddingLeft: 'var(--table-cell-px)',
-        paddingRight: 'var(--table-cell-px)',
-      }
-    : {
-        paddingLeft: 'var(--table-cell-px)',
-        paddingRight: 'var(--table-cell-px)',
-      }
-
   // ── Render cells for a row ──
   const renderCells = (row: (typeof rows)[number]) =>
     row.getVisibleCells().map(cell => {
@@ -168,7 +163,7 @@ function DataTableInner<TData>(
       role="table"
       aria-rowcount={rows.length + 1}
     >
-      {/* ── Header ── */}
+      {/* ── Header ── always items-center (header is always single-line) */}
       <div
         ref={headerRef}
         role="rowgroup"
@@ -180,7 +175,6 @@ function DataTableInner<TData>(
               key={headerGroup.id}
               role="row"
               className="flex items-stretch border-b border-divider"
-              style={rowStyle}
             >
               {headerGroup.headers.map((header, idx) => {
                 const isLast = idx === headerGroup.headers.length - 1
@@ -193,11 +187,7 @@ function DataTableInner<TData>(
                       header.column.getIsSorted() === 'desc' ? 'descending' :
                       'none'
                     }
-                    className={cn(
-                      'relative flex text-fg-secondary text-body font-normal shrink-0',
-                      autoRowHeight ? 'items-start' : 'items-center',
-                      'overflow-hidden select-none',
-                    )}
+                    className="relative flex items-center text-fg-secondary text-body font-normal shrink-0 overflow-hidden select-none"
                     style={{
                       width: header.getSize(),
                       minWidth: header.column.columnDef.minSize,
@@ -261,7 +251,7 @@ function DataTableInner<TData>(
                       showBottomBorder && 'border-b border-divider',
                       enableHover && 'hover:bg-neutral-hover transition-colors',
                     )}
-                    style={{ ...rowStyle, transform: `translateY(${virtualRow.start}px)` }}
+                    style={{ transform: `translateY(${virtualRow.start}px)` }}
                   >
                     {renderCells(row)}
                   </div>
@@ -283,7 +273,6 @@ function DataTableInner<TData>(
                     showBottomBorder && 'border-b border-divider',
                     enableHover && 'hover:bg-neutral-hover transition-colors',
                   )}
-                  style={rowStyle}
                 >
                   {renderCells(row)}
                 </div>

@@ -1,17 +1,10 @@
 /* DataTable Size Tokens
    ─────────────────────────────────────────────────────────
-   兩種行高模式共用同一組 token：
-
-   固定行高（預設）：
-     row 使用 min-height + align-items: center
-     cell 使用 cell-px 做水平 padding，垂直由 center 處理
-     文字截斷，不換行
-
-   自動行高（autoRowHeight）：
-     row 不設 min-height，高度由內容決定
-     cell 使用 cell-px + cell-py
-     cell-py 推導自 (row-height - line-height) / 2，製造置中效果同時保持頂部對齊
-     可換行欄位撐高 row
+   row-height — 設計輸入值：純文字 row 的目標高度，用於推導 cell-py
+   cell-py — 推導自 (row-height - line-height) / 2
+             純文字 row: cell-py + text + cell-py = row-height（自然置中）
+             非文字內容（avatar, tag）比文字高時 flex 自動撐高 row
+   cell-px — 引用 ui-space token，隨 density 響應
    ───────────────────────────────────────────────────────── */
 
 /* ── sm ── */
