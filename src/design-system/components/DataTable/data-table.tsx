@@ -46,16 +46,9 @@ export interface DataTableProps<TData> {
   className?: string
 }
 
-// ── Shared cell padding ──────────────────────────────────────────────────────
-// 兩種模式都用 cell-py + cell-px
-// cell-py = (target-row-height - line-height) / 2，純文字 row 的高度由 padding 自然決定
-// 非文字內容（avatar, tag）比文字高時，flex 自動撐高 row，其他 cell 居中或頂對齊
-
+// ── Shared cell padding (from Figma: padding-cell = ui-space) ────────────────
 const cellPadding: React.CSSProperties = {
-  paddingTop: 'var(--table-cell-py)',
-  paddingBottom: 'var(--table-cell-py)',
-  paddingLeft: 'var(--table-cell-px)',
-  paddingRight: 'var(--table-cell-px)',
+  padding: 'var(--table-cell-padding)',
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -205,8 +198,8 @@ function DataTableInner<TData>(
                       <span
                         className="absolute right-0 w-px bg-divider"
                         style={{
-                          top: 'var(--table-cell-py)',
-                          bottom: 'var(--table-cell-py)',
+                          top: 'var(--table-cell-padding)',
+                          bottom: 'var(--table-cell-padding)',
                         }}
                         aria-hidden
                       />

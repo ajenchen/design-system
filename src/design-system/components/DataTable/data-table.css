@@ -1,30 +1,21 @@
 /* DataTable Size Tokens
    ─────────────────────────────────────────────────────────
-   row-height — 設計輸入值：純文字 row 的目標高度，用於推導 cell-py
-   cell-py — 推導自 (row-height - line-height) / 2
-             純文字 row: cell-py + text + cell-py = row-height（自然置中）
-             非文字內容（avatar, tag）比文字高時 flex 自動撐高 row
-   cell-px — 引用 ui-space token，隨 density 響應
+   cell-padding — 引用 ui-space token，隨 density 響應
+                  四邊統一，row height 由 padding + 最高內容自然決定
    ───────────────────────────────────────────────────────── */
 
 /* ── sm ── */
 [data-table-size="sm"] {
-  --table-row-height: 32px;
-  --table-cell-py: calc((var(--table-row-height) - var(--font-body-size) * 1.5) / 2);
-  --table-cell-px: var(--ui-space-4);
+  --table-cell-padding: var(--ui-space-4);
 }
 
 /* ── md（預設）── */
 :root,
 [data-table-size="md"] {
-  --table-row-height: 36px;
-  --table-cell-py: calc((var(--table-row-height) - var(--font-body-size) * 1.5) / 2);
-  --table-cell-px: var(--ui-space-6);
+  --table-cell-padding: var(--ui-space-6);
 }
 
 /* ── lg ── */
 [data-table-size="lg"] {
-  --table-row-height: 40px;
-  --table-cell-py: calc((var(--table-row-height) - var(--font-body-size) * 1.5) / 2);
-  --table-cell-px: var(--ui-space-8);
+  --table-cell-padding: var(--ui-space-8);
 }
