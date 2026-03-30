@@ -103,13 +103,6 @@ const meta: Meta<typeof DataTable> = {
 export default meta
 type Story = StoryObj
 
-/* ── 基本用法 ── */
-export const Default: Story = {
-  render: () => (
-    <DataTable columns={baseColumns} data={sampleData} height="auto" />
-  ),
-}
-
 /* ── 三種尺寸 ── */
 export const Sizes: Story = {
   name: '尺寸',
@@ -184,23 +177,48 @@ export const Bordered: Story = {
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">無外框（預設）</h3>
+        <h3 className="text-body font-bold text-foreground mb-2">有外框（預設）</h3>
         <DataTable columns={baseColumns} data={sampleData.slice(0, 3)} height="auto" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">有外框</h3>
-        <p className="text-caption text-fg-muted mb-3">當內容溢出、有 frozen column 或全表 inline edit 時加外框</p>
-        <DataTable columns={baseColumns} data={sampleData.slice(0, 3)} height="auto" bordered />
-      </div>
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">水平溢出 + 外框</h3>
-        <p className="text-caption text-fg-muted mb-3">欄位總寬超過容器，水平捲動時邊框標記容器邊界</p>
-        <div className="max-w-[500px]">
-          <DataTable columns={columnsWithPrice} data={sampleData.slice(0, 3)} height="auto" bordered />
-        </div>
+        <h3 className="text-body font-bold text-foreground mb-2">無外框</h3>
+        <p className="text-caption text-fg-muted mb-3">少數嵌入式場景可關閉外框</p>
+        <DataTable columns={baseColumns} data={sampleData.slice(0, 3)} height="auto" bordered={false} />
       </div>
     </div>
   ),
+}
+
+/* ── 高度模式 ── */
+export const HeightModes: Story = {
+  name: '高度模式',
+  render: () => {
+    const manyRows = React.useMemo(() => generateLargeData(50), [])
+    return (
+      <div className="flex flex-col gap-10">
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-1">無約束</h3>
+          <p className="text-caption text-fg-muted mb-3">height="auto"，table 高度完全取決於內容，不出現捲軸</p>
+          <DataTable columns={baseColumns} data={sampleData} height="auto" />
+        </div>
+
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-1">有約束</h3>
+          <p className="text-caption text-fg-muted mb-3">height="300px"，兩張 table 在同樣的高度上限內。資料少時只佔內容高度，資料多時撐到上限後出現捲軸</p>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="bg-neutral-active rounded-lg p-4">
+              <p className="text-footnote text-fg-muted mb-3">3 筆資料</p>
+              <DataTable columns={baseColumns} data={sampleData.slice(0, 3)} height="300px" />
+            </div>
+            <div className="bg-neutral-active rounded-lg p-4">
+              <p className="text-footnote text-fg-muted mb-3">50 筆資料</p>
+              <DataTable columns={baseColumns} data={manyRows} height="300px" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  },
 }
 
 /* ── 虛擬捲動（大量資料）── */
@@ -214,7 +232,6 @@ export const VirtualScroll: Story = {
         data={largeData}
         height="500px"
         overscan={10}
-        bordered
       />
     )
   },

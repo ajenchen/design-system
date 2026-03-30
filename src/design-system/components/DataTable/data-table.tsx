@@ -100,7 +100,7 @@ function DataTableInner<TData>(
     overscan = 5,
     emptyState,
     enableHover = true,
-    bordered = false,
+    bordered = true,
     estimateRowHeight = 36,
     tableOptions,
     className,
@@ -126,8 +126,9 @@ function DataTableInner<TData>(
 
   const { rows } = table.getRowModel()
   const isEmpty = rows.length === 0
-  const useVirtual = height !== 'auto' && !isEmpty
-  const resolvedBordered = bordered || useVirtual
+  const hasHeightConstraint = height !== 'auto'
+  const useVirtual = hasHeightConstraint && !isEmpty
+  const resolvedBordered = bordered
 
   // Refs for scroll sync
   const headerRef = React.useRef<HTMLDivElement>(null)
@@ -205,7 +206,7 @@ function DataTableInner<TData>(
         role="rowgroup"
         className="bg-muted overflow-hidden"
       >
-        <div className="inline-block min-w-full">
+        <div className="w-max min-w-full">
           {table.getHeaderGroups().map(headerGroup => (
             <div
               key={headerGroup.id}
@@ -260,10 +261,10 @@ function DataTableInner<TData>(
         ref={bodyRef}
         role="rowgroup"
         className="overflow-x-auto"
-        style={useVirtual ? { height, overflowY: 'auto' } : undefined}
+        style={hasHeightConstraint ? { maxHeight: height, overflowY: 'auto' } : undefined}
         onScroll={onBodyScroll}
       >
-        <div className="inline-block min-w-full">
+        <div className="w-max min-w-full">
           {isEmpty ? (
             <div className="flex items-center justify-center text-fg-muted text-body py-12">
               {emptyState ?? '沒有資料'}

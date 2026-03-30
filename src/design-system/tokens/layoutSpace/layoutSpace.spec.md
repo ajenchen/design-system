@@ -36,3 +36,7 @@ document.documentElement.setAttribute('data-density', 'lg')
 ```ts
 document.documentElement.setAttribute('data-layout-space', 'lg')
 ```
+
+## 元件與容器的間距
+
+元件不貼齊容器邊緣——容器負責提供內距（padding），元件本身不加外距（margin）來推開容器。這讓同一個元件在不同容器中都有一致的行為，間距的控制權在容器端。
