@@ -22,6 +22,12 @@ export interface DataTableProps<TData> {
   data: TData[]
   /** Table density size */
   size?: TableSize
+  /**
+   * 行高模式：
+   * - false（預設）：固定行高，內容垂直置中，文字截斷。適合大多數場景
+   * - true：自動行高，內容頂部對齊，wrap 欄位可撐高 row。適合有描述欄位的場景
+   */
+  autoRowHeight?: boolean
   /** Fixed height for virtual scrolling (CSS value, e.g. '400px'). Use 'auto' to disable virtual scrolling. */
   height?: string
   /** Overscan rows for virtual scrolling */
@@ -32,21 +38,12 @@ export interface DataTableProps<TData> {
   enableHover?: boolean
   /** Show outer border */
   bordered?: boolean
-  /** Estimated row height hint for virtualizer (px), actual height measured dynamically */
+  /** Estimated row height hint for virtualizer (px) */
   estimateRowHeight?: number
   /** Additional TanStack Table options */
   tableOptions?: Partial<Omit<TableOptions<TData>, 'data' | 'columns' | 'getCoreRowModel'>>
   /** Container className */
   className?: string
-}
-
-// ── Shared cell style ────────────────────────────────────────────────────────
-
-const cellPadding: React.CSSProperties = {
-  paddingTop: 'var(--table-cell-py)',
-  paddingBottom: 'var(--table-cell-py)',
-  paddingLeft: 'var(--table-cell-px)',
-  paddingRight: 'var(--table-cell-px)',
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -56,6 +53,7 @@ function DataTableInner<TData>(
     columns,
     data,
     size = 'md',
+    autoRowHeight = false,
     height = '400px',
     overscan = 5,
     emptyState,
@@ -109,11 +107,30 @@ function DataTableInner<TData>(
     }
   }, [])
 
+  // ── Row + cell styles based on mode ──
+
+  // 固定行高：min-height + center
+  // 自動行高：no min-height + flex-start + py padding
+  const rowClass = autoRowHeight ? 'flex items-start' : 'flex items-center'
+  const rowStyle: React.CSSProperties = autoRowHeight ? {} : { minHeight: 'var(--table-row-height)' }
+
+  const cellPadding: React.CSSProperties = autoRowHeight
+    ? {
+        paddingTop: 'var(--table-cell-py)',
+        paddingBottom: 'var(--table-cell-py)',
+        paddingLeft: 'var(--table-cell-px)',
+        paddingRight: 'var(--table-cell-px)',
+      }
+    : {
+        paddingLeft: 'var(--table-cell-px)',
+        paddingRight: 'var(--table-cell-px)',
+      }
+
   // ── Render cells for a row ──
   const renderCells = (row: (typeof rows)[number]) =>
     row.getVisibleCells().map(cell => {
       const meta = cell.column.columnDef.meta as Record<string, any> | undefined
-      const wrap = meta?.wrap === true
+      const wrap = autoRowHeight && meta?.wrap === true
       const align = meta?.align as string | undefined
 
       return (
@@ -151,7 +168,7 @@ function DataTableInner<TData>(
       role="table"
       aria-rowcount={rows.length + 1}
     >
-      {/* ── Header ── outside scroll container, bg-muted naturally composites on bg-surface */}
+      {/* ── Header ── */}
       <div
         ref={headerRef}
         role="rowgroup"
@@ -162,7 +179,8 @@ function DataTableInner<TData>(
             <div
               key={headerGroup.id}
               role="row"
-              className="flex items-stretch border-b border-divider"
+              className={cn(rowClass, 'border-b border-divider')}
+              style={rowStyle}
             >
               {headerGroup.headers.map((header, idx) => {
                 const isLast = idx === headerGroup.headers.length - 1
@@ -176,7 +194,7 @@ function DataTableInner<TData>(
                       'none'
                     }
                     className={cn(
-                      'relative flex items-start text-fg-secondary text-body font-normal shrink-0',
+                      'relative flex items-center text-fg-secondary text-body font-normal shrink-0',
                       'truncate select-none',
                     )}
                     style={{
@@ -208,7 +226,7 @@ function DataTableInner<TData>(
         </div>
       </div>
 
-      {/* ── Body ── scrolls both directions, header syncs horizontally via JS */}
+      {/* ── Body ── */}
       <div
         ref={bodyRef}
         role="rowgroup"
@@ -236,11 +254,11 @@ function DataTableInner<TData>(
                     role="row"
                     aria-rowindex={virtualRow.index + 2}
                     className={cn(
-                      'flex items-stretch absolute w-full',
+                      rowClass, 'absolute w-full',
                       showBottomBorder && 'border-b border-divider',
                       enableHover && 'hover:bg-neutral-hover transition-colors',
                     )}
-                    style={{ transform: `translateY(${virtualRow.start}px)` }}
+                    style={{ ...rowStyle, transform: `translateY(${virtualRow.start}px)` }}
                   >
                     {renderCells(row)}
                   </div>
@@ -258,10 +276,11 @@ function DataTableInner<TData>(
                   role="row"
                   aria-rowindex={index + 2}
                   className={cn(
-                    'flex items-stretch',
+                    rowClass,
                     showBottomBorder && 'border-b border-divider',
                     enableHover && 'hover:bg-neutral-hover transition-colors',
                   )}
+                  style={rowStyle}
                 >
                   {renderCells(row)}
                 </div>

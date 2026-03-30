@@ -133,20 +133,20 @@ export const NumberAlignment: Story = {
   ),
 }
 
-/* ── 文字截斷 vs 換行 ── */
-export const TextTruncation: Story = {
-  name: '截斷 vs 換行',
+/* ── 行高模式 ── */
+export const RowHeightModes: Story = {
+  name: '行高模式',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">預設截斷（ellipsis）</h3>
-        <p className="text-caption text-fg-muted mb-3">Title 欄位超出寬度會以 … 截斷</p>
+        <h3 className="text-body font-bold text-foreground mb-2">固定行高（預設）</h3>
+        <p className="text-caption text-fg-muted mb-3">所有內容垂直置中，文字截斷。文字、tag、avatar 等不同高度的內容都能自然置中</p>
         <DataTable columns={baseColumns} data={sampleData} height="auto" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">多行換行（wrap）</h3>
-        <p className="text-caption text-fg-muted mb-3">Description 欄位設定 wrap: true，內容自然換行</p>
-        <DataTable columns={columnsWithWrap} data={longDescriptionData} height="auto" />
+        <h3 className="text-body font-bold text-foreground mb-2">自動行高（autoRowHeight）</h3>
+        <p className="text-caption text-fg-muted mb-3">內容頂部對齊，wrap 欄位可撐高 row。適合有描述、備註等需要完整顯示的欄位</p>
+        <DataTable columns={columnsWithWrap} data={longDescriptionData} height="auto" autoRowHeight />
       </div>
     </div>
   ),

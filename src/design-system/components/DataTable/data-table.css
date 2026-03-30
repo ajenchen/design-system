@@ -1,12 +1,18 @@
 /* DataTable Size Tokens
    ─────────────────────────────────────────────────────────
-   目標行高 — 靜態基準，用於推導垂直 padding
-   cell-py — 推導自 (目標行高 - 文字行高) / 2，製造置中效果同時保持頂部對齊
-   cell-px — 引用 ui-space token，隨 density 響應
-   header divider — 上下內縮 = cell-py，divider 高度 = 文字行高
-   ───────────────────────────────────────────────────────── */
+   兩種行高模式共用同一組 token：
 
-/* 共用推導公式：垂直 padding = (目標行高 - 14px * 1.5) / 2 */
+   固定行高（預設）：
+     row 使用 min-height + align-items: center
+     cell 使用 cell-px 做水平 padding，垂直由 center 處理
+     文字截斷，不換行
+
+   自動行高（autoRowHeight）：
+     row 不設 min-height，高度由內容決定
+     cell 使用 cell-px + cell-py
+     cell-py 推導自 (row-height - line-height) / 2，製造置中效果同時保持頂部對齊
+     可換行欄位撐高 row
+   ───────────────────────────────────────────────────────── */
 
 /* ── sm ── */
 [data-table-size="sm"] {
