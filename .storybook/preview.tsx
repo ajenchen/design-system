@@ -3,17 +3,6 @@ import React, { useEffect } from "react";
 import "../src/globals.css";
 import { TooltipProvider } from "../src/design-system/components/Tooltip/tooltip";
 
-function ThemeDecorator({ theme, density, children }: {
-  theme: string; density: string; children: React.ReactNode
-}) {
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    document.documentElement.setAttribute('data-density', density);
-  }, [theme, density]);
-
-  return <>{children}</>;
-}
-
 const preview: Preview = {
   globalTypes: {
     theme: {
@@ -58,12 +47,26 @@ const preview: Preview = {
     (Story, context) => {
       const theme = (context.globals.theme ?? 'light') as string;
       const density = (context.globals.density ?? 'md') as string;
+
+      useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.setAttribute('data-density', density);
+      }, [theme, density]);
+
       return (
-        <ThemeDecorator theme={theme} density={density}>
-          <TooltipProvider delayDuration={500} skipDelayDuration={300}>
+        <TooltipProvider delayDuration={500} skipDelayDuration={300}>
+          <div
+            style={{
+              backgroundColor: 'var(--canvas)',
+              color: 'var(--foreground)',
+              minHeight: '100vh',
+              margin: '-1rem',
+              padding: '1rem',
+            }}
+          >
             <Story />
-          </TooltipProvider>
-        </ThemeDecorator>
+          </div>
+        </TooltipProvider>
       );
     },
   ],
