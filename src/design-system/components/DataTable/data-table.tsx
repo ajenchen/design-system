@@ -111,7 +111,7 @@ function DataTableInner<TData>(
   // Row 永遠 items-stretch（cell 撐滿 row 高度，divider 才能正確定位）
   // 固定行高：row 有 min-height，cell 用 items-center 居中，只有水平 padding
   // 自動行高：row 無 min-height，cell 用 items-start 頂對齊，有垂直 + 水平 padding
-  const rowStyle: React.CSSProperties = autoRowHeight ? {} : { minHeight: 'var(--table-row-height)' }
+  const rowStyle: React.CSSProperties = { minHeight: 'var(--table-row-height)' }
   const cellPadding: React.CSSProperties = autoRowHeight
     ? {
         paddingTop: 'var(--table-cell-py)',
