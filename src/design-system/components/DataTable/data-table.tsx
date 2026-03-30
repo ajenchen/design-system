@@ -167,9 +167,13 @@ function DataTableInner<TData>(
               useVirtual ? 'sticky top-0 z-10' : 'bg-muted',
             )}
             style={useVirtual ? {
-              // sticky 時自帶不透明底：canvas（不透明）+ muted（半透明疊加）
-              // 避免 body rows 滑到底下時透出
-              background: 'linear-gradient(var(--muted), var(--muted)) var(--canvas)',
+              // sticky 時需自帶完整的色彩堆疊，避免 body rows 透出
+              // 順序：muted → surface → canvas，與非 sticky 時的 DOM 疊加一致
+              background: [
+                'linear-gradient(var(--muted), var(--muted))',
+                'linear-gradient(var(--surface), var(--surface))',
+                'var(--canvas)',
+              ].join(', '),
             } : undefined}
           >
             {table.getHeaderGroups().map(headerGroup => (
