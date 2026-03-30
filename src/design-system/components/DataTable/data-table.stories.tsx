@@ -106,7 +106,7 @@ type Story = StoryObj
 /* ── 基本用法 ── */
 export const Default: Story = {
   render: () => (
-    <DataTable columns={baseColumns} data={sampleData} />
+    <DataTable columns={baseColumns} data={sampleData} height="auto" />
   ),
 }
 

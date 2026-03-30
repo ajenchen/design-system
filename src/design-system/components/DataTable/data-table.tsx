@@ -101,8 +101,8 @@ function DataTableInner<TData>(
     enabled: useVirtual,
   })
 
-  // Total column width for horizontal scrolling
-  const totalColumnWidth = table.getTotalSize()
+  // Row min-width style: fills container when wider, overflows when narrower
+  const rowStyle: React.CSSProperties = { minWidth: '100%' }
 
   // ── Render cells for a row ──
   const renderCells = (row: (typeof rows)[number]) =>
@@ -149,13 +149,13 @@ function DataTableInner<TData>(
       {/* Horizontal scroll wrapper — header and body scroll together */}
       <div className="overflow-x-auto">
         {/* ── Header ── */}
-        <div role="rowgroup" className="bg-muted">
+        <div role="rowgroup" className="bg-muted inline-flex flex-col min-w-full">
           {table.getHeaderGroups().map(headerGroup => (
             <div
               key={headerGroup.id}
               role="row"
               className="flex items-stretch border-b border-divider"
-              style={{ width: totalColumnWidth }}
+              style={rowStyle}
             >
               {headerGroup.headers.map((header, idx) => {
                 const isLast = idx === headerGroup.headers.length - 1
@@ -231,7 +231,7 @@ function DataTableInner<TData>(
                       enableHover && 'hover:bg-neutral-hover transition-colors',
                     )}
                     style={{
-                      width: totalColumnWidth,
+                      ...rowStyle,
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
                   >
@@ -255,7 +255,7 @@ function DataTableInner<TData>(
                     showBottomBorder && 'border-b border-divider',
                     enableHover && 'hover:bg-neutral-hover transition-colors',
                   )}
-                  style={{ width: totalColumnWidth }}
+                  style={rowStyle}
                 >
                   {renderCells(row)}
                 </div>
