@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,42 @@ export interface DataTableProps<TData> {
 // ── Shared cell padding (from Figma: padding-cell = ui-space) ────────────────
 const cellPadding: React.CSSProperties = {
   padding: 'var(--table-cell-padding)',
+}
+
+// ── Truncate with auto tooltip ───────────────────────────────────────────────
+// 只有文字實際被截斷時才顯示 tooltip（scrollWidth > clientWidth）
+function TruncateCell({ children, className }: { children: React.ReactNode; className?: string }) {
+  const ref = React.useRef<HTMLSpanElement>(null)
+  const [isTruncated, setIsTruncated] = React.useState(false)
+
+  const checkTruncation = React.useCallback(() => {
+    const el = ref.current
+    if (el) {
+      setIsTruncated(el.scrollWidth > el.clientWidth)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    checkTruncation()
+    const observer = new ResizeObserver(checkTruncation)
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [checkTruncation])
+
+  const span = (
+    <span ref={ref} className={cn('truncate min-w-0', className)}>
+      {children}
+    </span>
+  )
+
+  if (!isTruncated) return span
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{span}</TooltipTrigger>
+      <TooltipContent>{children}</TooltipContent>
+    </Tooltip>
+  )
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -137,9 +174,15 @@ function DataTableInner<TData>(
             ...cellPadding,
           }}
         >
-          <span className={cn(!wrap ? 'truncate' : 'break-words', 'min-w-0')}>
-            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-          </span>
+          {wrap ? (
+            <span className="break-words min-w-0">
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </span>
+          ) : (
+            <TruncateCell>
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </TruncateCell>
+          )}
         </div>
       )
     })
@@ -188,12 +231,12 @@ function DataTableInner<TData>(
                       ...cellPadding,
                     }}
                   >
-                    <span className="truncate">
+                    <TruncateCell>
                       {header.isPlaceholder
                         ? null
                         : flexRender(header.column.columnDef.header, header.getContext())
                       }
-                    </span>
+                    </TruncateCell>
                     {!isLast && (
                       <span
                         className="absolute right-0 w-px bg-divider"
