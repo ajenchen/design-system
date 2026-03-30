@@ -40,7 +40,7 @@ export interface DataTableProps<TData> {
   className?: string
 }
 
-// ── Shared cell style helper ─────────────────────────────────────────────────
+// ── Shared cell style ────────────────────────────────────────────────────────
 
 const cellPadding = {
   paddingTop: 'var(--table-cell-py)',
@@ -89,21 +89,21 @@ function DataTableInner<TData>(
   const useVirtual = height !== 'auto' && !isEmpty
 
   // Virtual scrolling (only when height is fixed)
-  const parentRef = React.useRef<HTMLDivElement>(null)
+  const scrollRef = React.useRef<HTMLDivElement>(null)
   const virtualizer = useVirtualizer({
     count: useVirtual ? rows.length : 0,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => scrollRef.current,
     estimateSize: () => estimateRowHeight,
     overscan,
     enabled: useVirtual,
   })
 
-  // ── Render a single row ──
-  const renderRow = (row: (typeof rows)[number], index: number) => {
-    const isLastRow = index === rows.length - 1
-    const showBottomBorder = bordered ? !isLastRow : true
+  // Total column width for horizontal scrolling
+  const totalColumnWidth = table.getTotalSize()
 
-    return row.getVisibleCells().map(cell => {
+  // ── Render cells for a row ──
+  const renderCells = (row: (typeof rows)[number]) =>
+    row.getVisibleCells().map(cell => {
       const meta = cell.column.columnDef.meta as Record<string, any> | undefined
       const wrap = meta?.wrap === true
       const align = meta?.align as string | undefined
@@ -113,7 +113,7 @@ function DataTableInner<TData>(
           key={cell.id}
           role="cell"
           className={cn(
-            'text-foreground text-body font-normal',
+            'text-foreground text-body font-normal shrink-0',
             !wrap && 'truncate',
             wrap && 'break-words',
             align === 'right' && 'text-right',
@@ -130,7 +130,6 @@ function DataTableInner<TData>(
         </div>
       )
     })
-  }
 
   return (
     <div
@@ -144,117 +143,123 @@ function DataTableInner<TData>(
       role="table"
       aria-rowcount={rows.length + 1}
     >
-      {/* ── Header ── */}
-      <div role="rowgroup" className="bg-muted">
-        {table.getHeaderGroups().map(headerGroup => (
-          <div
-            key={headerGroup.id}
-            role="row"
-            className="flex items-stretch border-b border-divider"
-          >
-            {headerGroup.headers.map((header, idx) => {
-              const isLast = idx === headerGroup.headers.length - 1
-              return (
-                <div
-                  key={header.id}
-                  role="columnheader"
-                  aria-sort={
-                    header.column.getIsSorted() === 'asc' ? 'ascending' :
-                    header.column.getIsSorted() === 'desc' ? 'descending' :
-                    'none'
-                  }
-                  className={cn(
-                    'relative flex items-start text-fg-secondary text-body font-normal',
-                    'truncate select-none',
-                  )}
-                  style={{
-                    width: header.getSize(),
-                    minWidth: header.column.columnDef.minSize,
-                    maxWidth: header.column.columnDef.maxSize,
-                    ...cellPadding,
-                  }}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())
-                  }
-                  {!isLast && (
-                    <span
-                      className="absolute right-0 w-px bg-divider"
-                      style={{
-                        top: 'var(--table-cell-py)',
-                        bottom: 'var(--table-cell-py)',
-                      }}
-                      aria-hidden
-                    />
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        ))}
-      </div>
+      {/* Horizontal scroll wrapper — header and body scroll together */}
+      <div className="overflow-x-auto">
+        {/* ── Header ── */}
+        <div role="rowgroup" className="bg-muted">
+          {table.getHeaderGroups().map(headerGroup => (
+            <div
+              key={headerGroup.id}
+              role="row"
+              className="flex items-stretch border-b border-divider"
+              style={{ width: totalColumnWidth }}
+            >
+              {headerGroup.headers.map((header, idx) => {
+                const isLast = idx === headerGroup.headers.length - 1
+                return (
+                  <div
+                    key={header.id}
+                    role="columnheader"
+                    aria-sort={
+                      header.column.getIsSorted() === 'asc' ? 'ascending' :
+                      header.column.getIsSorted() === 'desc' ? 'descending' :
+                      'none'
+                    }
+                    className={cn(
+                      'relative flex items-start text-fg-secondary text-body font-normal shrink-0',
+                      'truncate select-none',
+                    )}
+                    style={{
+                      width: header.getSize(),
+                      minWidth: header.column.columnDef.minSize,
+                      maxWidth: header.column.columnDef.maxSize,
+                      ...cellPadding,
+                    }}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())
+                    }
+                    {!isLast && (
+                      <span
+                        className="absolute right-0 w-px bg-divider"
+                        style={{
+                          top: 'var(--table-cell-py)',
+                          bottom: 'var(--table-cell-py)',
+                        }}
+                        aria-hidden
+                      />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+        </div>
 
-      {/* ── Body ── */}
-      <div
-        ref={parentRef}
-        role="rowgroup"
-        className={cn(useVirtual && 'overflow-auto')}
-        style={useVirtual ? { height } : undefined}
-      >
-        {isEmpty ? (
-          <div className="flex items-center justify-center text-fg-muted text-body py-12">
-            {emptyState ?? '沒有資料'}
-          </div>
-        ) : useVirtual ? (
-          /* Virtual rows */
-          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-            {virtualizer.getVirtualItems().map(virtualRow => {
-              const row = rows[virtualRow.index]
-              const isLastRow = virtualRow.index === rows.length - 1
+        {/* ── Body ── */}
+        <div
+          ref={scrollRef}
+          role="rowgroup"
+          className={cn(useVirtual && 'overflow-y-auto')}
+          style={useVirtual ? { height } : undefined}
+        >
+          {isEmpty ? (
+            <div className="flex items-center justify-center text-fg-muted text-body py-12">
+              {emptyState ?? '沒有資料'}
+            </div>
+          ) : useVirtual ? (
+            <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+              {virtualizer.getVirtualItems().map(virtualRow => {
+                const row = rows[virtualRow.index]
+                const isLastRow = virtualRow.index === rows.length - 1
+                const showBottomBorder = bordered ? !isLastRow : true
+
+                return (
+                  <div
+                    key={row.id}
+                    ref={virtualizer.measureElement}
+                    data-index={virtualRow.index}
+                    role="row"
+                    aria-rowindex={virtualRow.index + 2}
+                    className={cn(
+                      'flex items-stretch absolute w-full',
+                      showBottomBorder && 'border-b border-divider',
+                      enableHover && 'hover:bg-neutral-hover transition-colors',
+                    )}
+                    style={{
+                      width: totalColumnWidth,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    {renderCells(row)}
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            rows.map((row, index) => {
+              const isLastRow = index === rows.length - 1
               const showBottomBorder = bordered ? !isLastRow : true
 
               return (
                 <div
                   key={row.id}
-                  ref={virtualizer.measureElement}
-                  data-index={virtualRow.index}
                   role="row"
-                  aria-rowindex={virtualRow.index + 2}
+                  aria-rowindex={index + 2}
                   className={cn(
-                    'flex items-stretch absolute w-full',
+                    'flex items-stretch',
                     showBottomBorder && 'border-b border-divider',
                     enableHover && 'hover:bg-neutral-hover transition-colors',
                   )}
-                  style={{ transform: `translateY(${virtualRow.start}px)` }}
+                  style={{ width: totalColumnWidth }}
                 >
-                  {renderRow(row, virtualRow.index)}
+                  {renderCells(row)}
                 </div>
               )
-            })}
-          </div>
-        ) : (
-          /* Static rows (height="auto") */
-          rows.map((row, index) => {
-            const isLastRow = index === rows.length - 1
-            const showBottomBorder = bordered ? !isLastRow : true
-
-            return (
-              <div
-                key={row.id}
-                role="row"
-                aria-rowindex={index + 2}
-                className={cn(
-                  'flex items-stretch',
-                  showBottomBorder && 'border-b border-divider',
-                  enableHover && 'hover:bg-neutral-hover transition-colors',
-                )}
-              >
-                {renderRow(row, index)}
-              </div>
-            )
-          })
-        )}
+            })
+          )}
+        </div>
       </div>
     </div>
   )

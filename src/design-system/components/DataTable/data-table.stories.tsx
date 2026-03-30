@@ -178,7 +178,7 @@ export const EmptyState: Story = {
   ),
 }
 
-/* ── 有外框 ── */
+/* ── 外框規則 ── */
 export const Bordered: Story = {
   name: '外框',
   render: () => (
@@ -189,8 +189,15 @@ export const Bordered: Story = {
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">有外框</h3>
-        <p className="text-caption text-fg-muted mb-3">適用於有 frozen column 或全表 inline edit 的場景</p>
+        <p className="text-caption text-fg-muted mb-3">當內容溢出、有 frozen column 或全表 inline edit 時加外框</p>
         <DataTable columns={baseColumns} data={sampleData.slice(0, 3)} height="auto" bordered />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">水平溢出 + 外框</h3>
+        <p className="text-caption text-fg-muted mb-3">欄位總寬超過容器，水平捲動時邊框標記容器邊界</p>
+        <div className="max-w-[500px]">
+          <DataTable columns={columnsWithAmount} data={sampleData.slice(0, 3)} height="auto" bordered />
+        </div>
       </div>
     </div>
   ),
