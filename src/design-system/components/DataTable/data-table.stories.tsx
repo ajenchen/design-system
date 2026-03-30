@@ -5,65 +5,65 @@ import { DataTable } from './data-table'
 
 // ── Sample Data ──────────────────────────────────────────────────────────────
 
-interface Task {
-  id: string
-  title: string
-  status: string
-  priority: string
-  assignee: string
-  dueDate: string
-  amount?: number
-  description?: string
+interface Product {
+  sku: string
+  name: string
+  category: string
+  stock: string
+  seller: string
+  updatedAt: string
+  price?: number
+  note?: string
 }
 
-const sampleData: Task[] = [
-  { id: 'TASK-1', title: 'Sticker feature needed', status: 'To do', priority: 'Low', assignee: 'Jeff Lin', dueDate: '2024/12/16', amount: 1200 },
-  { id: 'TASK-2', title: 'Need to know who reported', status: 'To do', priority: 'Medium', assignee: 'Jeff Lin', dueDate: '2024/12/16', amount: 3400 },
-  { id: 'TASK-3', title: 'Need to view task details', status: 'In progress', priority: 'High', assignee: 'Amy Chen', dueDate: '2024/12/18', amount: 560 },
-  { id: 'TASK-4', title: 'Need priority column', status: 'To do', priority: 'Low', assignee: 'Jeff Lin', dueDate: '2024/12/20', amount: 8900 },
-  { id: 'TASK-5', title: 'Need tag type column', status: 'Done', priority: 'Medium', assignee: 'Amy Chen', dueDate: '2024/12/22', amount: 230 },
-  { id: 'TASK-6', title: 'Need to know who reported this issue and track it', status: 'To do', priority: 'Low', assignee: 'Jeff Lin', dueDate: '2024/12/16', amount: 4500 },
+const sampleData: Product[] = [
+  { sku: 'PRD-001', name: 'Wireless Bluetooth Headphones', category: 'Electronics', stock: 'In stock', seller: 'Alice Wang', updatedAt: '2025/03/12', price: 2490 },
+  { sku: 'PRD-002', name: 'Ergonomic Office Chair with Lumbar Support', category: 'Furniture', stock: 'Low stock', seller: 'Bob Chen', updatedAt: '2025/03/14', price: 8900 },
+  { sku: 'PRD-003', name: 'Organic Green Tea 100 Bags', category: 'Food', stock: 'In stock', seller: 'Carol Liu', updatedAt: '2025/03/15', price: 350 },
+  { sku: 'PRD-004', name: 'USB-C Hub 7-in-1 Adapter', category: 'Electronics', stock: 'Out of stock', seller: 'Alice Wang', updatedAt: '2025/03/16', price: 1290 },
+  { sku: 'PRD-005', name: 'Stainless Steel Water Bottle 750ml', category: 'Lifestyle', stock: 'In stock', seller: 'David Wu', updatedAt: '2025/03/18', price: 680 },
+  { sku: 'PRD-006', name: 'Mechanical Keyboard with Cherry MX Brown Switches and RGB Backlight', category: 'Electronics', stock: 'In stock', seller: 'Bob Chen', updatedAt: '2025/03/20', price: 3200 },
 ]
 
-const longDescriptionData: Task[] = sampleData.map((t, i) => ({
-  ...t,
-  description: i % 2 === 0
-    ? '這是一段較長的描述文字，用來測試多行換行的情境。當內容超過欄位寬度時應該自然換行而非截斷。'
-    : '短描述',
+const dataWithNotes: Product[] = sampleData.map((p, i) => ({
+  ...p,
+  note: i % 2 === 0
+    ? 'This product requires special packaging for international shipping. Please verify customs documentation before dispatch.'
+    : 'Standard delivery.',
 }))
 
-function generateLargeData(count: number): Task[] {
-  const statuses = ['To do', 'In progress', 'Done', 'Cancelled']
-  const priorities = ['Low', 'Medium', 'High', 'Critical']
-  const assignees = ['Jeff Lin', 'Amy Chen', 'Bob Wang', 'Lisa Wu']
+function generateLargeData(count: number): Product[] {
+  const categories = ['Electronics', 'Furniture', 'Food', 'Lifestyle']
+  const stocks = ['In stock', 'Low stock', 'Out of stock', 'Pre-order']
+  const sellers = ['Alice Wang', 'Bob Chen', 'Carol Liu', 'David Wu']
   return Array.from({ length: count }, (_, i) => ({
-    id: `TASK-${i + 1}`,
-    title: `Task item ${i + 1} — ${priorities[i % 4]} priority work`,
-    status: statuses[i % 4],
-    priority: priorities[i % 4],
-    assignee: assignees[i % 4],
-    dueDate: `2024/12/${String(16 + (i % 15)).padStart(2, '0')}`,
-    amount: Math.round(Math.random() * 10000),
+    sku: `PRD-${String(i + 1).padStart(4, '0')}`,
+    name: `Product item ${i + 1} — ${categories[i % 4]}`,
+    category: categories[i % 4],
+    stock: stocks[i % 4],
+    seller: sellers[i % 4],
+    updatedAt: `2025/03/${String(1 + (i % 28)).padStart(2, '0')}`,
+    price: Math.round(100 + Math.random() * 9900),
   }))
 }
 
 // ── Column Definitions ───────────────────────────────────────────────────────
 
-const col = createColumnHelper<Task>()
+const col = createColumnHelper<Product>()
 
 const baseColumns = [
-  col.accessor('id', { header: 'ID', size: 100, minSize: 80 }),
-  col.accessor('title', { header: 'Title', size: 280, minSize: 120 }),
-  col.accessor('status', { header: 'Status', size: 120 }),
-  col.accessor('priority', { header: 'Priority', size: 100 }),
-  col.accessor('assignee', { header: 'Assignee', size: 120 }),
-  col.accessor('dueDate', { header: 'Due date', size: 120 }),
+  col.accessor('sku', { header: 'SKU', size: 100, minSize: 80 }),
+  col.accessor('name', { header: 'Product', size: 280, minSize: 120 }),
+  col.accessor('category', { header: 'Category', size: 120 }),
+  col.accessor('stock', { header: 'Stock', size: 110 }),
+  col.accessor('seller', { header: 'Seller', size: 120 }),
+  col.accessor('updatedAt', { header: 'Updated', size: 120 }),
 ]
 
-const columnsWithAmount = [
+const columnsWithPrice = [
   ...baseColumns,
-  col.accessor('amount', {
-    header: 'Amount',
+  col.accessor('price', {
+    header: 'Price',
     size: 120,
     meta: { align: 'right' },
     cell: (info) => {
@@ -73,16 +73,16 @@ const columnsWithAmount = [
   }),
 ]
 
-const columnsWithWrap = [
-  col.accessor('id', { header: 'ID', size: 100 }),
-  col.accessor('title', { header: 'Title', size: 200 }),
-  col.accessor('description', {
-    header: 'Description',
+const columnsWithNote = [
+  col.accessor('sku', { header: 'SKU', size: 100 }),
+  col.accessor('name', { header: 'Product', size: 200 }),
+  col.accessor('note', {
+    header: 'Note',
     size: 300,
     meta: { wrap: true },
   }),
-  col.accessor('status', { header: 'Status', size: 120 }),
-  col.accessor('assignee', { header: 'Assignee', size: 120 }),
+  col.accessor('category', { header: 'Category', size: 120 }),
+  col.accessor('seller', { header: 'Seller', size: 120 }),
 ]
 
 // ── Stories ───────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ export const Sizes: Story = {
 export const NumberAlignment: Story = {
   name: '數字靠右對齊',
   render: () => (
-    <DataTable columns={columnsWithAmount} data={sampleData} height="auto" />
+    <DataTable columns={columnsWithPrice} data={sampleData} height="auto" />
   ),
 }
 
@@ -140,13 +140,13 @@ export const RowHeightModes: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">固定行高（預設）</h3>
-        <p className="text-caption text-fg-muted mb-3">所有內容垂直置中，文字截斷。文字、tag、avatar 等不同高度的內容都能自然置中</p>
+        <p className="text-caption text-fg-muted mb-3">所有內容垂直置中，文字截斷</p>
         <DataTable columns={baseColumns} data={sampleData} height="auto" />
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">自動行高（autoRowHeight）</h3>
-        <p className="text-caption text-fg-muted mb-3">內容頂部對齊，wrap 欄位可撐高 row。適合有描述、備註等需要完整顯示的欄位</p>
-        <DataTable columns={columnsWithWrap} data={longDescriptionData} height="auto" autoRowHeight />
+        <p className="text-caption text-fg-muted mb-3">內容頂部對齊，wrap 欄位可撐高 row</p>
+        <DataTable columns={columnsWithNote} data={dataWithNotes} height="auto" autoRowHeight />
       </div>
     </div>
   ),
@@ -168,7 +168,7 @@ export const EmptyState: Story = {
           data={[]}
           emptyState={
             <div className="text-center">
-              <p className="text-body text-fg-muted mb-1">尚無任務</p>
+              <p className="text-body text-fg-muted mb-1">尚無商品</p>
               <p className="text-caption text-fg-muted">點擊上方「新增」開始建立</p>
             </div>
           }
@@ -196,7 +196,7 @@ export const Bordered: Story = {
         <h3 className="text-body font-bold text-foreground mb-2">水平溢出 + 外框</h3>
         <p className="text-caption text-fg-muted mb-3">欄位總寬超過容器，水平捲動時邊框標記容器邊界</p>
         <div className="max-w-[500px]">
-          <DataTable columns={columnsWithAmount} data={sampleData.slice(0, 3)} height="auto" bordered />
+          <DataTable columns={columnsWithPrice} data={sampleData.slice(0, 3)} height="auto" bordered />
         </div>
       </div>
     </div>
@@ -210,7 +210,7 @@ export const VirtualScroll: Story = {
     const largeData = React.useMemo(() => generateLargeData(10000), [])
     return (
       <DataTable
-        columns={columnsWithAmount}
+        columns={columnsWithPrice}
         data={largeData}
         height="500px"
         overscan={10}
