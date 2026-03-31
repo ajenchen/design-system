@@ -66,11 +66,7 @@ const columnsWithPrice = [
   col.accessor('price', {
     header: 'Price',
     size: 120,
-    meta: { type: 'number' },
-    cell: (info) => {
-      const val = info.getValue()
-      return val != null ? `$${val.toLocaleString()}` : '—'
-    },
+    meta: { type: 'currency', prefix: '$' },
   }),
 ]
 

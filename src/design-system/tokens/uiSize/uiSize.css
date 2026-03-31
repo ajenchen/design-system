@@ -1,31 +1,42 @@
-/* UI Size Tokens — md 為預設，名稱編碼 md 的值 */
+/* ═══════════════════════════════════════════════════════════════════════
+   Component Size — Semantic Tokens
+   ═══════════════════════════════════════════════════════════════════════
+
+   元件高度的語義 token。rem 單位，尊重使用者瀏覽器字體設定（WCAG）。
+   透過 data-density 切換 md / lg 模式。
+
+   ┌─ Field Height ────────────────────────────────────────────────────┐
+   │  Button、TextField、Checkbox/Radio SelectionItem 等互動元件      │
+   │  xs 固定不隨 density 縮放（密集 UI、Button xs）                   │
+   │  sm / md / lg 隨 density 響應                                    │
+   └─────────────────────────────────────────────────────────────────┘
+
+   ┌─ Table Row ───────────────────────────────────────────────────────┐
+   │  DataTable 行高                                                  │
+   │  sm / md / lg 三種尺寸，density 切換統一 +0.5rem (+8px)          │
+   └─────────────────────────────────────────────────────────────────┘
+   ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --ui-height-64: 64px;
-  --ui-height-56: 56px;
-  --ui-height-48: 48px;
-  --ui-height-40: 40px;
-  --ui-height-36: 36px;
-  --ui-height-32: 32px;
-  --ui-height-28: 28px;
-  --ui-space-8: 8px;
-  --ui-space-6: 6px;
-  --ui-space-4: 4px;
-  --ui-space-2: 2px;
+  /* Field Height — Button、TextField、SelectionItem */
+  --field-height-xs: 1.5rem;    /* 24px — 固定，不隨 density 縮放 */
+  --field-height-sm: 1.75rem;   /* 28px */
+  --field-height-md: 2rem;      /* 32px */
+  --field-height-lg: 2.25rem;   /* 36px */
+
+  /* Table Row Height — DataTable */
+  --table-row-sm: 2rem;         /* 32px */
+  --table-row-md: 2.5rem;       /* 40px */
+  --table-row-lg: 3rem;         /* 48px */
 }
 
 [data-ui-size="lg"],
 [data-density="lg"] {
-  --ui-height-64: 72px;
-  --ui-height-56: 64px;
-  --ui-height-48: 56px;
-  --ui-height-40: 48px;
-  --ui-height-36: 40px;
-  --ui-height-32: 36px;
-  --ui-height-28: 32px;
+  --field-height-sm: 2rem;      /* 32px */
+  --field-height-md: 2.25rem;   /* 36px */
+  --field-height-lg: 2.5rem;    /* 40px */
 
-  --ui-space-8: 10px;
-  --ui-space-6: 8px;
-  --ui-space-4: 6px;
-  --ui-space-2: 4px;
+  --table-row-sm: 2.5rem;       /* 40px */
+  --table-row-md: 3rem;         /* 48px */
+  --table-row-lg: 3.5rem;       /* 56px */
 }

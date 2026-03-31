@@ -13,6 +13,11 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { columnTypeDefaults, type ColumnType } from './column-types'
+import { TextFieldDisplay } from '@/design-system/components/fields/TextField/text-field'
+import { NumberFieldDisplay } from '@/design-system/components/fields/NumberField/number-field'
+import { BooleanFieldDisplay } from '@/design-system/components/fields/BooleanField/boolean-field'
+import { SelectFieldDisplay } from '@/design-system/components/fields/SelectField/select-field'
+import { MultiSelectFieldDisplay } from '@/design-system/components/fields/MultiSelectField/multi-select-field'
 
 // ── Variants ─────────────────────────────────────────────────────────────────
 
@@ -61,9 +66,41 @@ export interface DataTableProps<TData>
   tableOptions?: Partial<Omit<TableOptions<TData>, 'data' | 'columns' | 'getCoreRowModel'>>
 }
 
-// ── Shared cell padding (from Figma: padding-cell = ui-space) ────────────────
+// ── Type → Display auto-resolve ─────────────────────────────────────────────
+// 當 column 沒有自訂 cell renderer 時，根據 meta.type 自動選擇 Display 元件。
+// 有自訂 cell 時完全跳過，不干涉。
+
+function renderTypedValue(value: unknown, meta?: Record<string, any>): React.ReactNode {
+  const type = meta?.type as ColumnType | undefined
+  switch (type) {
+    case 'number':
+    case 'currency':
+      return (
+        <NumberFieldDisplay
+          value={value as number | null}
+          prefix={type === 'currency' ? (meta?.prefix ?? '$') : meta?.prefix}
+          suffix={meta?.suffix}
+          precision={meta?.precision}
+          locale={meta?.locale}
+        />
+      )
+    case 'boolean':
+      return <BooleanFieldDisplay value={value as boolean | null} />
+    case 'select':
+      return <SelectFieldDisplay value={value as string | null} options={meta?.options} />
+    case 'multiSelect':
+      return <MultiSelectFieldDisplay value={value as string[] | null} options={meta?.options} />
+    default:
+      return <TextFieldDisplay value={value != null ? String(value) : null} />
+  }
+}
+
+// ── Cell padding ────────────────────────────────────────────────────────────
+// py = (table-row - 1lh) / 2（CSS 變數，定義在 data-table.css）
+// px = 12px（固定，不隨 density 變）
 const cellPadding: React.CSSProperties = {
-  padding: 'var(--table-cell-padding)',
+  paddingBlock: 'var(--table-cell-py)',
+  paddingInline: '0.75rem',
 }
 
 // ── Truncate with auto tooltip ───────────────────────────────────────────────
@@ -189,15 +226,20 @@ function DataTableInner<TData>(
             ...cellPadding,
           }}
         >
-          {wrap ? (
-            <span className="break-words min-w-0">
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            </span>
-          ) : (
-            <TruncateCell>
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            </TruncateCell>
-          )}
+          {(() => {
+            // 有 meta.type → 用 Display 自動渲染
+            // 需要完全自訂 cell 的 column 不設 meta.type，直接用 cell function
+            const colType = meta?.type as ColumnType | undefined
+            const content = colType
+              ? renderTypedValue(cell.getValue(), meta)
+              : flexRender(cell.column.columnDef.cell, cell.getContext())
+
+            return wrap ? (
+              <span className="break-words min-w-0">{content}</span>
+            ) : (
+              <TruncateCell>{content}</TruncateCell>
+            )
+          })()}
         </div>
       )
     })
@@ -260,8 +302,8 @@ function DataTableInner<TData>(
                       <span
                         className="absolute right-0 w-px bg-divider"
                         style={{
-                          top: 'var(--table-cell-padding)',
-                          bottom: 'var(--table-cell-padding)',
+                          top: 'var(--table-cell-py)',
+                          bottom: 'var(--table-cell-py)',
                         }}
                         aria-hidden
                       />

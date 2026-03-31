@@ -120,13 +120,14 @@ export const Overview: Story = {
           <span className="text-caption text-fg-muted">md（預設）</span>
           <span className="text-caption text-fg-muted">lg</span>
         </div>
-        <p className="py-2 text-caption font-medium text-fg-muted">UI Size — 元件高度</p>
-        <Row label="--ui-height-36" token="--ui-height-36" isSolid />
-        <Row label="--ui-height-32" token="--ui-height-32" isSolid />
-        <Row label="--ui-height-28" token="--ui-height-28" isSolid />
-        <p className="py-2 text-caption font-medium text-fg-muted">UI Size — 元件內距</p>
-        <Row label="--ui-space-8" token="--ui-space-8" isSolid={false} />
-        <Row label="--ui-space-4" token="--ui-space-4" isSolid={false} />
+        <p className="py-2 text-caption font-medium text-fg-muted">Field Height</p>
+        <Row label="--field-height-lg" token="--field-height-lg" isSolid />
+        <Row label="--field-height-md" token="--field-height-md" isSolid />
+        <Row label="--field-height-sm" token="--field-height-sm" isSolid />
+        <p className="py-2 text-caption font-medium text-fg-muted">Table Row</p>
+        <Row label="--table-row-lg" token="--table-row-lg" isSolid />
+        <Row label="--table-row-md" token="--table-row-md" isSolid />
+        <Row label="--table-row-sm" token="--table-row-sm" isSolid />
         <p className="py-2 text-caption font-medium text-fg-muted">Layout Space — 版面間距</p>
         <Row label="--layout-space-loose" token="--layout-space-loose" isSolid={false} />
         <Row label="--layout-space-tight" token="--layout-space-tight" isSolid={false} />
@@ -143,30 +144,26 @@ export const UISize: Story = {
   parameters: {
     docs: {
       description: {
-        story: '元件高度與內距 token。用於 button、input、select 等互動元件。',
+        story: '元件高度 semantic token。Field height 用於 Button、TextField 等互動元件。Table row 用於 DataTable。',
       },
     },
   },
   render: () => (
     <div className="max-w-2xl space-y-6">
       <div>
-        <p className="mb-2 text-caption font-medium text-fg-muted">Heights</p>
+        <p className="mb-2 text-caption font-medium text-fg-muted">Field Height（Button、TextField、SelectionItem）</p>
         <ColHeader />
-        <TokenRow attr="data-ui-size" token="--ui-height-64" md="64px" lg="72px" />
-        <TokenRow attr="data-ui-size" token="--ui-height-56" md="56px" lg="64px" />
-        <TokenRow attr="data-ui-size" token="--ui-height-48" md="48px" lg="56px" />
-        <TokenRow attr="data-ui-size" token="--ui-height-40" md="40px" lg="48px" />
-        <TokenRow attr="data-ui-size" token="--ui-height-36" md="36px" lg="40px" />
-        <TokenRow attr="data-ui-size" token="--ui-height-32" md="32px" lg="36px" />
-        <TokenRow attr="data-ui-size" token="--ui-height-28" md="28px" lg="32px" />
+        <TokenRow attr="data-ui-size" token="--field-height-xs" md="24px" lg="24px" />
+        <TokenRow attr="data-ui-size" token="--field-height-sm" md="28px" lg="32px" />
+        <TokenRow attr="data-ui-size" token="--field-height-md" md="32px" lg="36px" />
+        <TokenRow attr="data-ui-size" token="--field-height-lg" md="36px" lg="40px" />
       </div>
       <div>
-        <p className="mb-2 text-caption font-medium text-fg-muted">Spaces</p>
+        <p className="mb-2 text-caption font-medium text-fg-muted">Table Row（DataTable）</p>
         <ColHeader />
-        <TokenRow attr="data-ui-size" token="--ui-space-8" md="8px" lg="10px" isSolid={false} />
-        <TokenRow attr="data-ui-size" token="--ui-space-6" md="6px" lg="8px" isSolid={false} />
-        <TokenRow attr="data-ui-size" token="--ui-space-4" md="4px" lg="6px" isSolid={false} />
-        <TokenRow attr="data-ui-size" token="--ui-space-2" md="2px" lg="4px" isSolid={false} />
+        <TokenRow attr="data-ui-size" token="--table-row-sm" md="32px" lg="40px" />
+        <TokenRow attr="data-ui-size" token="--table-row-md" md="40px" lg="48px" />
+        <TokenRow attr="data-ui-size" token="--table-row-lg" md="48px" lg="56px" />
       </div>
     </div>
   ),

@@ -1,21 +1,19 @@
-/* DataTable Size Tokens
+/* DataTable Cell Padding
    ─────────────────────────────────────────────────────────
-   cell-padding — 引用 ui-space token，隨 density 響應
-                  四邊統一，row height 由 padding + 最高內容自然決定
+   py = (table-row-height - 1lh) / 2 — 單行時行高 = table-row token
+   px = 12px（固定，不隨 density 變）
+   1lh 在使用時解析，跟隨元素的 computed line-height
    ───────────────────────────────────────────────────────── */
 
-/* ── sm ── */
 [data-table-size="sm"] {
-  --table-cell-padding: var(--ui-space-4);
+  --table-cell-py: calc((var(--table-row-sm) - 1lh) / 2);
 }
 
-/* ── md（預設）── */
 :root,
 [data-table-size="md"] {
-  --table-cell-padding: var(--ui-space-6);
+  --table-cell-py: calc((var(--table-row-md) - 1lh) / 2);
 }
 
-/* ── lg ── */
 [data-table-size="lg"] {
-  --table-cell-padding: var(--ui-space-8);
+  --table-cell-py: calc((var(--table-row-lg) - 1lh) / 2);
 }

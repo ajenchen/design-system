@@ -35,7 +35,7 @@ export const Overview: Story = {
         </div>
         <div className="flex flex-wrap gap-3 items-center">
           <Button variant="primary" startIcon={Plus}>Button</Button>
-          <div className="rounded-md border border-input bg-surface px-3 h-[var(--ui-height-28)] flex items-center text-body text-fg-muted w-40">Input</div>
+          <div className="rounded-md border border-input bg-surface px-3 h-field-sm flex items-center text-body text-fg-muted w-40">Input</div>
           <div className="rounded-md bg-[var(--neutral-active)] px-2 h-6 flex items-center text-caption font-medium">Tag</div>
           <div className="rounded-md border border-border bg-surface p-3 text-caption text-fg-muted">Card</div>
         </div>

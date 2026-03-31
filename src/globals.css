@@ -20,6 +20,15 @@
   /* Opacity */
   --opacity-disabled: 0.45;
 
+  /* Component Size — field height + table row */
+  --spacing-field-xs: var(--field-height-xs);
+  --spacing-field-sm: var(--field-height-sm);
+  --spacing-field-md: var(--field-height-md);
+  --spacing-field-lg: var(--field-height-lg);
+  --spacing-table-row-sm: var(--table-row-sm);
+  --spacing-table-row-md: var(--table-row-md);
+  --spacing-table-row-lg: var(--table-row-lg);
+
   /* Font */
   --font-sans: Roboto, -apple-system, BlinkMacSystemFont,
                "Segoe UI Variable", "Segoe UI", system-ui,

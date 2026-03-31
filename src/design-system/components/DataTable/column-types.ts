@@ -35,7 +35,7 @@ export const columnTypeDefaults: Record<ColumnType, ColumnTypeConfig> = {
   select:      { align: 'left' },
   multiSelect: { align: 'left' },
   person:      { align: 'left' },
-  boolean:     { align: 'center' },
+  boolean:     { align: 'left' },
   link:        { align: 'left' },
 }
 
@@ -49,5 +49,12 @@ declare module '@tanstack/react-table' {
     align?: 'left' | 'right' | 'center'
     /** Allow text wrapping (only effective when autoRowHeight is true) */
     wrap?: boolean
+    /** Number/currency formatting options */
+    prefix?: string
+    suffix?: string
+    precision?: number
+    locale?: string
+    /** Select/multiSelect options — maps value to display label */
+    options?: Array<{ value: string; label: string }>
   }
 }

@@ -24,10 +24,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/compone
  *   <Button variant="secondary" danger>移至垃圾桶</Button>    → 紅框紅字（點下去還可反悔）
  *
  * ── Sizes（預設 sm）──
- *   xs   h-6（24px 固定），8px padding，12px 字，不隨模式縮放
- *   sm   h-[--ui-height-28]，md=28px / lg=32px  ← 預設
- *   md   h-[--ui-height-32]，md=32px / lg=36px
- *   lg   h-[--ui-height-36]，md=36px / lg=40px
+ *   xs   h-field-xs（24px 固定），不隨 density 縮放
+ *   sm   h-field-sm，md=28px / lg=32px  ← 預設
+ *   md   h-field-md，md=32px / lg=36px
+ *   lg   h-field-lg，md=36px / lg=40px
  *   icon-only 不是獨立尺寸 — 加 iconOnly prop 讓任何尺寸變正方形
  *
  * ── 內部結構 ──
@@ -99,10 +99,10 @@ const buttonVariants = cva(
         true: '', // 實際樣式由 compoundVariants 提供
       },
       size: {
-        xs: 'h-6 px-2 text-caption leading-compact gap-1',
-        sm: 'h-[var(--ui-height-28)] px-3 min-w-14 text-body leading-compact gap-2',
-        md: 'h-[var(--ui-height-32)] px-3 min-w-16 text-body leading-compact gap-2',
-        lg: 'h-[var(--ui-height-36)] px-3 min-w-20 text-body-lg leading-compact gap-2',
+        xs: 'h-field-xs px-2 text-caption leading-compact gap-1',
+        sm: 'h-field-sm px-3 min-w-14 text-body leading-compact gap-2',
+        md: 'h-field-md px-3 min-w-16 text-body leading-compact gap-2',
+        lg: 'h-field-lg px-3 min-w-20 text-body-lg leading-compact gap-2',
       },
     },
     compoundVariants: [
