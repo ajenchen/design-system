@@ -30,6 +30,7 @@ const badgeVariants = cva(
         outline: "border-border bg-transparent text-foreground",
       },
       size: {
+        sm: "h-5 px-1 text-caption font-medium",     /* 20px = md alias */
         md: "h-5 px-1 text-caption font-medium",     /* 20px, badge-px=4px */
         lg: "h-6 px-2 text-body font-normal",         /* 24px, badge-px=8px */
       },
