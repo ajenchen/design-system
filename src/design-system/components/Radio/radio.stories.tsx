@@ -17,16 +17,22 @@ export const States: Story = {
   name: '狀態',
   render: () => (
     <div className="flex flex-col gap-6">
-      {(['sm', 'md', 'lg'] as const).map(size => (
-        <div key={size}>
-          <p className="text-caption text-fg-muted mb-3">{size}</p>
-          <RadioGroup defaultValue="a" className="flex items-center gap-6">
-            <RadioGroupItem value="a" size={size} />
-            <RadioGroupItem value="b" size={size} />
-            <RadioGroupItem value="c" size={size} disabled />
-          </RadioGroup>
-        </div>
-      ))}
+      <div>
+        <p className="text-caption text-fg-muted mb-3">md（16px，預設）</p>
+        <RadioGroup defaultValue="a" className="flex items-center gap-6">
+          <RadioGroupItem value="a" />
+          <RadioGroupItem value="b" />
+          <RadioGroupItem value="c" disabled />
+        </RadioGroup>
+      </div>
+      <div>
+        <p className="text-caption text-fg-muted mb-3">lg（20px）</p>
+        <RadioGroup defaultValue="a" className="flex items-center gap-6">
+          <RadioGroupItem value="a" size="lg" />
+          <RadioGroupItem value="b" size="lg" />
+          <RadioGroupItem value="c" size="lg" disabled />
+        </RadioGroup>
+      </div>
     </div>
   ),
 }

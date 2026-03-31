@@ -17,17 +17,24 @@ export const States: Story = {
   name: '狀態',
   render: () => (
     <div className="flex flex-col gap-6">
-      {(['sm', 'md', 'lg'] as const).map(size => (
-        <div key={size}>
-          <p className="text-caption text-fg-muted mb-3">{size}</p>
-          <div className="flex items-center gap-6">
-            <Checkbox size={size} />
-            <Checkbox size={size} defaultChecked />
-            <Checkbox size={size} disabled />
-            <Checkbox size={size} disabled defaultChecked />
-          </div>
+      <div>
+        <p className="text-caption text-fg-muted mb-3">md（16px，預設）</p>
+        <div className="flex items-center gap-6">
+          <Checkbox />
+          <Checkbox defaultChecked />
+          <Checkbox disabled />
+          <Checkbox disabled defaultChecked />
         </div>
-      ))}
+      </div>
+      <div>
+        <p className="text-caption text-fg-muted mb-3">lg（20px）</p>
+        <div className="flex items-center gap-6">
+          <Checkbox size="lg" />
+          <Checkbox size="lg" defaultChecked />
+          <Checkbox size="lg" disabled />
+          <Checkbox size="lg" disabled defaultChecked />
+        </div>
+      </div>
     </div>
   ),
 }
