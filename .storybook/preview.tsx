@@ -60,7 +60,6 @@ const preview: Preview = {
           <div style={{
             backgroundColor: 'var(--canvas)',
             color: 'var(--foreground)',
-            minHeight: '100vh',
             margin: '-1rem',
             padding: '1rem',
           }}>
