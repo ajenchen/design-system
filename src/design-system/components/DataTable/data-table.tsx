@@ -9,14 +9,31 @@ import {
   type TableOptions,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
+
+// ── Variants ─────────────────────────────────────────────────────────────────
+
+const dataTableVariants = cva('bg-surface rounded-md overflow-hidden', {
+  variants: {
+    bordered: {
+      true: 'border border-border',
+      false: '',
+    },
+  },
+  defaultVariants: {
+    bordered: true,
+  },
+})
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type TableSize = 'sm' | 'md' | 'lg'
 
-export interface DataTableProps<TData> {
+export interface DataTableProps<TData>
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'>,
+    VariantProps<typeof dataTableVariants> {
   /** Column definitions (TanStack Table ColumnDef) */
   columns: ColumnDef<TData, any>[]
   /** Data array */
@@ -25,11 +42,11 @@ export interface DataTableProps<TData> {
   size?: TableSize
   /**
    * 行高模式：
-   * - false（預設）：內容垂直置中，文字截斷。適合大多數場景
-   * - true：內容頂部對齊，wrap 欄位可撐高 row。適合有描述欄位的場景
+   * - false（預設）：內容垂直置中，文字截斷
+   * - true：內容頂部對齊，wrap 欄位可撐高 row
    */
   autoRowHeight?: boolean
-  /** Fixed height for virtual scrolling (CSS value, e.g. '400px'). Use 'auto' to disable virtual scrolling. */
+  /** Height constraint for body scrolling (CSS value, e.g. '400px'). Use 'auto' for no constraint. */
   height?: string
   /** Overscan rows for virtual scrolling */
   overscan?: number
@@ -37,14 +54,10 @@ export interface DataTableProps<TData> {
   emptyState?: React.ReactNode
   /** Enable row hover highlight */
   enableHover?: boolean
-  /** Show outer border */
-  bordered?: boolean
   /** Estimated row height hint for virtualizer (px) */
   estimateRowHeight?: number
   /** Additional TanStack Table options */
   tableOptions?: Partial<Omit<TableOptions<TData>, 'data' | 'columns' | 'getCoreRowModel'>>
-  /** Container className */
-  className?: string
 }
 
 // ── Shared cell padding (from Figma: padding-cell = ui-space) ────────────────
@@ -53,7 +66,6 @@ const cellPadding: React.CSSProperties = {
 }
 
 // ── Truncate with auto tooltip ───────────────────────────────────────────────
-// 只有文字實際被截斷時才顯示 tooltip（scrollWidth > clientWidth）
 function TruncateCell({ children, className }: { children: React.ReactNode; className?: string }) {
   const ref = React.useRef<HTMLSpanElement>(null)
   const [isTruncated, setIsTruncated] = React.useState(false)
@@ -100,10 +112,11 @@ function DataTableInner<TData>(
     overscan = 5,
     emptyState,
     enableHover = true,
-    bordered = true,
+    bordered,
     estimateRowHeight = 36,
     tableOptions,
     className,
+    ...props
   }: DataTableProps<TData>,
   ref: React.ForwardedRef<HTMLDivElement>
 ) {
@@ -128,7 +141,6 @@ function DataTableInner<TData>(
   const isEmpty = rows.length === 0
   const hasHeightConstraint = height !== 'auto'
   const useVirtual = hasHeightConstraint && !isEmpty
-  const resolvedBordered = bordered
 
   // Refs for scroll sync
   const headerRef = React.useRef<HTMLDivElement>(null)
@@ -192,15 +204,12 @@ function DataTableInner<TData>(
     <div
       ref={ref}
       data-table-size={size}
-      className={cn(
-        'bg-surface rounded-md overflow-hidden',
-        resolvedBordered && 'border border-border',
-        className,
-      )}
+      className={cn(dataTableVariants({ bordered }), className)}
       role="table"
       aria-rowcount={rows.length + 1}
+      {...props}
     >
-      {/* ── Header ── always items-center (header is always single-line) */}
+      {/* ── Header ── */}
       <div
         ref={headerRef}
         role="rowgroup"
@@ -274,7 +283,7 @@ function DataTableInner<TData>(
               {virtualizer.getVirtualItems().map(virtualRow => {
                 const row = rows[virtualRow.index]
                 const isLastRow = virtualRow.index === rows.length - 1
-                const showBottomBorder = resolvedBordered ? !isLastRow : true
+                const showBottomBorder = bordered !== false ? !isLastRow : true
 
                 return (
                   <div
@@ -298,7 +307,7 @@ function DataTableInner<TData>(
           ) : (
             rows.map((row, index) => {
               const isLastRow = index === rows.length - 1
-              const showBottomBorder = resolvedBordered ? !isLastRow : true
+              const showBottomBorder = bordered !== false ? !isLastRow : true
 
               return (
                 <div
@@ -328,3 +337,5 @@ export const DataTable = React.forwardRef(DataTableInner) as <TData>(
 ) => React.ReactElement
 
 (DataTable as any).displayName = 'DataTable'
+
+export { dataTableVariants }
