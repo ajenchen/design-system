@@ -12,6 +12,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
+import { columnTypeDefaults, type ColumnType } from './column-types'
 
 // ── Variants ─────────────────────────────────────────────────────────────────
 
@@ -165,9 +166,10 @@ function DataTableInner<TData>(
   // ── Render cells for a row ──
   const renderCells = (row: (typeof rows)[number]) =>
     row.getVisibleCells().map(cell => {
-      const meta = cell.column.columnDef.meta as Record<string, any> | undefined
+      const meta = cell.column.columnDef.meta
       const wrap = autoRowHeight && meta?.wrap === true
-      const align = meta?.align as string | undefined
+      const colType = meta?.type as ColumnType | undefined
+      const align = meta?.align ?? (colType ? columnTypeDefaults[colType].align : undefined)
 
       return (
         <div
@@ -177,8 +179,8 @@ function DataTableInner<TData>(
             'flex text-foreground text-body font-normal shrink-0',
             autoRowHeight ? 'items-start' : 'items-center',
             'overflow-hidden',
-            align === 'right' && 'text-right',
-            align === 'center' && 'text-center',
+            align === 'right' && 'justify-end text-right',
+            align === 'center' && 'justify-center text-center',
           )}
           style={{
             width: cell.column.getSize(),
@@ -224,6 +226,9 @@ function DataTableInner<TData>(
             >
               {headerGroup.headers.map((header, idx) => {
                 const isLast = idx === headerGroup.headers.length - 1
+                const headerMeta = header.column.columnDef.meta
+                const headerType = headerMeta?.type as ColumnType | undefined
+                const headerAlign = headerMeta?.align ?? (headerType ? columnTypeDefaults[headerType].align : undefined)
                 return (
                   <div
                     key={header.id}
@@ -233,7 +238,11 @@ function DataTableInner<TData>(
                       header.column.getIsSorted() === 'desc' ? 'descending' :
                       'none'
                     }
-                    className="relative flex items-center text-fg-secondary text-body font-normal shrink-0 overflow-hidden select-none"
+                    className={cn(
+                      'relative flex items-center text-fg-secondary text-body font-normal shrink-0 overflow-hidden select-none',
+                      headerAlign === 'right' && 'text-right',
+                      headerAlign === 'center' && 'text-center',
+                    )}
                     style={{
                       width: header.getSize(),
                       minWidth: header.column.columnDef.minSize,

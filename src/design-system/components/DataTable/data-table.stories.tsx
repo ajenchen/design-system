@@ -2,6 +2,7 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { DataTable } from './data-table'
+import './column-types' // ColumnMeta declaration merging
 
 // ── Sample Data ──────────────────────────────────────────────────────────────
 
@@ -52,12 +53,12 @@ function generateLargeData(count: number): Product[] {
 const col = createColumnHelper<Product>()
 
 const baseColumns = [
-  col.accessor('sku', { header: 'SKU', size: 100, minSize: 80 }),
-  col.accessor('name', { header: 'Product', size: 280, minSize: 120 }),
-  col.accessor('category', { header: 'Category', size: 120 }),
-  col.accessor('stock', { header: 'Stock', size: 110 }),
-  col.accessor('seller', { header: 'Seller', size: 120 }),
-  col.accessor('updatedAt', { header: 'Updated', size: 120 }),
+  col.accessor('sku', { header: 'SKU', size: 100, minSize: 80, meta: { type: 'text' } }),
+  col.accessor('name', { header: 'Product', size: 280, minSize: 120, meta: { type: 'text' } }),
+  col.accessor('category', { header: 'Category', size: 120, meta: { type: 'select' } }),
+  col.accessor('stock', { header: 'Stock', size: 110, meta: { type: 'select' } }),
+  col.accessor('seller', { header: 'Seller', size: 120, meta: { type: 'person' } }),
+  col.accessor('updatedAt', { header: 'Updated', size: 120, meta: { type: 'date' } }),
 ]
 
 const columnsWithPrice = [
@@ -65,7 +66,7 @@ const columnsWithPrice = [
   col.accessor('price', {
     header: 'Price',
     size: 120,
-    meta: { align: 'right' },
+    meta: { type: 'number' },
     cell: (info) => {
       const val = info.getValue()
       return val != null ? `$${val.toLocaleString()}` : '—'
@@ -74,15 +75,15 @@ const columnsWithPrice = [
 ]
 
 const columnsWithNote = [
-  col.accessor('sku', { header: 'SKU', size: 100 }),
-  col.accessor('name', { header: 'Product', size: 200 }),
+  col.accessor('sku', { header: 'SKU', size: 100, meta: { type: 'text' } }),
+  col.accessor('name', { header: 'Product', size: 200, meta: { type: 'text' } }),
   col.accessor('note', {
     header: 'Note',
     size: 300,
-    meta: { wrap: true },
+    meta: { type: 'text', wrap: true },
   }),
-  col.accessor('category', { header: 'Category', size: 120 }),
-  col.accessor('seller', { header: 'Seller', size: 120 }),
+  col.accessor('category', { header: 'Category', size: 120, meta: { type: 'select' } }),
+  col.accessor('seller', { header: 'Seller', size: 120, meta: { type: 'person' } }),
 ]
 
 // ── Stories ───────────────────────────────────────────────────────────────────
@@ -102,6 +103,49 @@ const meta: Meta<typeof DataTable> = {
 
 export default meta
 type Story = StoryObj
+
+/* ── Column Types ── */
+export const ColumnTypes: Story = {
+  name: 'Column Types',
+  render: () => {
+    interface TypeDemo {
+      label: string
+      textVal: string
+      numberVal: number
+      currencyVal: number
+      dateVal: string
+      boolVal: boolean
+    }
+
+    const typeCol = createColumnHelper<TypeDemo>()
+    const typeCols = [
+      typeCol.accessor('label', { header: 'Label', size: 120, meta: { type: 'text' } }),
+      typeCol.accessor('textVal', { header: 'Text', size: 180, meta: { type: 'text' } }),
+      typeCol.accessor('numberVal', { header: 'Number', size: 100, meta: { type: 'number' } }),
+      typeCol.accessor('currencyVal', {
+        header: 'Currency', size: 120, meta: { type: 'currency' },
+        cell: (info) => `$${info.getValue().toLocaleString()}`,
+      }),
+      typeCol.accessor('dateVal', { header: 'Date', size: 120, meta: { type: 'date' } }),
+      typeCol.accessor('boolVal', {
+        header: 'Active', size: 80, meta: { type: 'boolean' },
+        cell: (info) => info.getValue() ? '✓' : '—',
+      }),
+    ]
+    const typeData: TypeDemo[] = [
+      { label: 'Row A', textVal: 'Wireless Headphones', numberVal: 142, currencyVal: 2490, dateVal: '2025/03/12', boolVal: true },
+      { label: 'Row B', textVal: 'Office Chair', numberVal: 38, currencyVal: 8900, dateVal: '2025/03/14', boolVal: false },
+      { label: 'Row C', textVal: 'Green Tea 100 Bags', numberVal: 520, currencyVal: 350, dateVal: '2025/03/15', boolVal: true },
+    ]
+
+    return (
+      <div>
+        <p className="text-caption text-fg-muted mb-3">每個欄位指定 type，對齊由 type 自動決定（text 靠左、number/currency 靠右、boolean 置中）</p>
+        <DataTable columns={typeCols} data={typeData} height="auto" />
+      </div>
+    )
+  },
+}
 
 /* ── 三種尺寸 ── */
 export const Sizes: Story = {
