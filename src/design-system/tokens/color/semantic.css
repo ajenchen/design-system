@@ -173,14 +173,15 @@
   --secondary:            var(--color-neutral-3);  /* Badge low 底色、shadcn secondary 元件 */
   --secondary-foreground: var(--fg-muted);
 
-  /* shadcn Compat — 僅供 shadcn 元件內部使用，自己寫的元件用語義 token */
-  --background:           var(--canvas);           /* → bg-canvas */
-  --card:                 var(--surface);           /* → bg-surface */
-  --card-foreground:      var(--foreground);        /* → text-foreground */
-  --popover:              var(--surface-raised);    /* → bg-surface-raised */
-  --popover-foreground:   var(--foreground);        /* → text-foreground */
-  --accent:               var(--neutral-hover);     /* → bg-neutral-hover */
-  --accent-foreground:    var(--foreground);        /* → text-foreground */
+  /* shadcn Compat — 僅供 shadcn 元件內部使用，自己寫的元件用語義 token
+     標註 shadcn 原始用途 → 本系統對應 */
+  --background:           var(--canvas);           /* shadcn 頁面背景 → bg-canvas */
+  --card:                 var(--surface);           /* shadcn Card 底色 → bg-surface */
+  --card-foreground:      var(--foreground);        /* shadcn Card 文字 → text-foreground */
+  --popover:              var(--surface-raised);    /* shadcn Popover/DropdownMenu 底色 → bg-surface-raised */
+  --popover-foreground:   var(--foreground);        /* shadcn Popover 文字 → text-foreground */
+  --accent:               var(--neutral-hover);     /* shadcn Menu/Select item hover 底色 → bg-neutral-hover */
+  --accent-foreground:    var(--foreground);        /* shadcn Menu/Select item hover 文字 → text-foreground */
 }
 
 
