@@ -309,7 +309,7 @@ function MultiSelectField({
         ],
         className,
       )}
-      style={{ gap: 12, paddingRight: '0.75rem', ...(wrap ? { height: 'auto' } : undefined) }}
+      style={{ gap: 8, paddingRight: '0.75rem', ...(wrap ? { height: 'auto' } : undefined) }}
       data-field-mode="edit"
       data-error={error ? '' : undefined}
       onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}
