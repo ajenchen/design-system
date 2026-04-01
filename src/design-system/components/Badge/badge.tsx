@@ -61,17 +61,21 @@ const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
       const el = internalRef.current
       if (!el) return
       const check = () => {
-        // 暫時移除所有寬度限制，量自然寬度，再還原比對
-        const prevMax = el.style.maxWidth
-        const prevW = el.style.width
-        const prevOv = el.style.overflow
-        el.style.maxWidth = 'none'
-        el.style.width = 'max-content'
-        el.style.overflow = 'visible'
+        // 暫時脫離 flex flow + 移除所有寬度限制，量自然寬度
+        const s = el.style
+        const prev = { maxWidth: s.maxWidth, width: s.width, overflow: s.overflow, position: s.position, flexShrink: s.flexShrink }
+        s.maxWidth = 'none'
+        s.width = 'max-content'
+        s.overflow = 'visible'
+        s.position = 'absolute'
+        s.flexShrink = '0'
         const naturalWidth = el.offsetWidth
-        el.style.maxWidth = prevMax
-        el.style.width = prevW
-        el.style.overflow = prevOv
+        // 還原
+        s.maxWidth = prev.maxWidth
+        s.width = prev.width
+        s.overflow = prev.overflow
+        s.position = prev.position
+        s.flexShrink = prev.flexShrink
         const actualWidth = el.offsetWidth
         setIsTruncated(naturalWidth > actualWidth + 1)
       }
