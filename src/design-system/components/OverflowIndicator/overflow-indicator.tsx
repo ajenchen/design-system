@@ -36,32 +36,35 @@ export interface OverflowIndicatorProps {
 // flex-wrap 容器，mount 後量測每行實際寬度，收縮到最寬行。
 // 邏輯來自消費端驗證過的 calculateContainerWidth 演算法。
 
+const MAX_TOOLTIP_W = 280
+
 function ShrinkWrapList({ children }: { children: React.ReactNode }) {
   const ref = React.useCallback((container: HTMLDivElement | null) => {
     if (!container) return
 
-    // 重置讓 flex-wrap 以原始 max-width 排列
-    container.style.maxWidth = ''
+    // Step 1: 移除 max-width，讓所有 item 排成一行以量測自然寬度
+    container.style.maxWidth = 'none'
 
-    // requestAnimationFrame 確保 layout 完成
     requestAnimationFrame(() => {
       const cs = getComputedStyle(container)
       const padL = parseFloat(cs.paddingLeft) || 0
       const padR = parseFloat(cs.paddingRight) || 0
       const gap = parseFloat(cs.gap) || parseFloat(cs.columnGap) || 0
-      const available = container.offsetWidth - padL - padR
+      const maxAvailable = MAX_TOOLTIP_W - padL - padR
 
       const items = Array.from(container.children) as HTMLElement[]
       if (items.length === 0) return
 
+      // Step 2: 量測每個 item 的自然寬度（此時未被 wrap 壓縮）
+      const widths = items.map(el => el.offsetWidth)
+
+      // Step 3: 模擬在 maxAvailable 下的 wrap，找最寬行
       let currentRow = 0
       let maxRow = 0
 
-      items.forEach((item, i) => {
-        const w = item.offsetWidth
+      widths.forEach(w => {
         const withGap = currentRow > 0 ? gap + w : w
-
-        if (currentRow + withGap > available && currentRow > 0) {
+        if (currentRow + withGap > maxAvailable && currentRow > 0) {
           maxRow = Math.max(maxRow, currentRow)
           currentRow = w
         } else {
@@ -70,12 +73,13 @@ function ShrinkWrapList({ children }: { children: React.ReactNode }) {
       })
       maxRow = Math.max(maxRow, currentRow)
 
+      // Step 4: 設定 maxWidth = 最寬行 + padding + 1px buffer
       container.style.maxWidth = `${Math.ceil(maxRow) + padL + padR + 1}px`
     })
   }, [children])
 
   return (
-    <div ref={ref} className="flex flex-wrap gap-1 p-2 max-w-[280px]">
+    <div ref={ref} className="flex flex-wrap gap-1 p-2">
       {children}
     </div>
   )
