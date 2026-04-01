@@ -1,13 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react'
+import { PersonField } from '@/design-system/components/fields/PersonField/person-field'
 import { PersonDisplay, MultiPersonDisplay } from './person-display'
+import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta = {
   title: 'Design System/Components/Fields/PersonField',
-  tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
-        component: '人員顯示元件。單人顯示 avatar + 名字；多人堆疊 avatar，第一人在最上層，溢出 +N 可 hover 查看。',
+        component: '人員選擇元件。外觀同 SelectField，value 前面多 avatar。多人時 avatar 堆疊。',
       },
     },
   },
@@ -29,50 +30,62 @@ const samplePeople = [
 export const Single: Story = {
   name: '單人',
   render: () => (
-    <div className="flex flex-col gap-4">
-      <PersonDisplay value={{ name: 'Alice Chen', avatarUrl: 'https://i.pravatar.cc/48?u=alice' }} />
-      <PersonDisplay value="Bob Lin" />
-      <PersonDisplay value={null} />
-      <p className="text-caption text-fg-muted">無 avatar 圖片時顯示 User icon（neutral 底色）</p>
+    <div className="flex flex-col gap-6 max-w-xs">
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">edit（有值）</h3>
+        <PersonField value={samplePeople[0]} />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">edit（無 avatar）</h3>
+        <PersonField value="Bob Lin" />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">edit（空）</h3>
+        <PersonField value={null} />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+        <PersonField mode="readonly" value={samplePeople[0]} />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
+        <PersonField mode="disabled" value={samplePeople[0]} />
+      </div>
     </div>
   ),
 }
 
-/* ── 多人堆疊 ── */
+/* ── 多人 ── */
 export const Multi: Story = {
-  name: '多人堆疊',
+  name: '多人',
   render: () => (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 max-w-xs">
       <div>
-        <p className="text-caption text-fg-muted mb-2">2 人</p>
-        <MultiPersonDisplay value={samplePeople.slice(0, 2)} />
+        <h3 className="text-body font-bold text-foreground mb-2">edit（3 人）</h3>
+        <PersonField value={samplePeople.slice(0, 3)} />
       </div>
       <div>
-        <p className="text-caption text-fg-muted mb-2">3 人（max=3，剛好不溢出）</p>
-        <MultiPersonDisplay value={samplePeople.slice(0, 3)} />
+        <h3 className="text-body font-bold text-foreground mb-2">edit（6 人，溢出 +3）</h3>
+        <PersonField value={samplePeople} />
       </div>
       <div>
-        <p className="text-caption text-fg-muted mb-2">4 人（溢出 +1）— hover +1 查看</p>
-        <MultiPersonDisplay value={samplePeople.slice(0, 4)} />
-      </div>
-      <div>
-        <p className="text-caption text-fg-muted mb-2">6 人（溢出 +3）</p>
-        <MultiPersonDisplay value={samplePeople} />
+        <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
+        <PersonField mode="readonly" value={samplePeople} />
       </div>
     </div>
   ),
 }
 
-/* ── 尺寸 ── */
-export const Sizes: Story = {
+/* ── 尺寸與 Button 對齊 ── */
+export const SizeAlignment: Story = {
   name: '尺寸',
   render: () => (
     <div className="flex flex-col gap-4">
       {(['sm', 'md', 'lg'] as const).map(size => (
-        <div key={size} className="flex items-center gap-4">
-          <span className="text-caption text-fg-muted w-8">{size}</span>
-          <PersonDisplay value={{ name: 'Alice Chen', avatarUrl: 'https://i.pravatar.cc/48?u=alice' }} size={size} />
-          <MultiPersonDisplay value={samplePeople.slice(0, 4)} size={size} />
+        <div key={size} className="flex items-center gap-3">
+          <PersonField size={size} value={samplePeople[0]} className="max-w-xs" />
+          <Button size={size}>送出</Button>
+          <span className="text-caption text-fg-muted">size="{size}"</span>
         </div>
       ))}
     </div>

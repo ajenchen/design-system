@@ -126,7 +126,7 @@ function TagInner(
       {...props}
     >
       {Icon && <Icon size={16} aria-hidden />}
-      {avatar}
+      {avatar && <span className="shrink-0 w-4 h-4 rounded-full overflow-hidden inline-grid place-content-center [&>*]:w-full [&>*]:h-full">{avatar}</span>}
       <span data-tag-text="" className="px-1 truncate min-w-0">{children}</span>
       {onDismiss && <TagDismiss onDismiss={onDismiss} label={label} />}
     </div>

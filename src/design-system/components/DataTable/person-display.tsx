@@ -114,11 +114,7 @@ function MultiPersonDisplay({
                   variant="neutral"
                   size="sm"
                   className="max-w-none"
-                  avatar={
-                    person.avatarUrl
-                      ? <img src={person.avatarUrl} alt="" className="shrink-0 w-4 h-4 rounded-full object-cover" />
-                      : <span className="shrink-0 w-4 h-4 rounded-full inline-grid place-content-center bg-muted text-fg-muted"><User size={10} aria-hidden /></span>
-                  }
+                  avatar={<Avatar person={person} />}
                 >
                   {person.name}
                 </Tag>

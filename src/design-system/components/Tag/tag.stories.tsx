@@ -84,15 +84,16 @@ export const WithAvatar: Story = {
   render: () => (
     <div className="flex flex-wrap gap-2">
       <Tag variant="neutral" avatar={
-        <img src="https://i.pravatar.cc/32?u=alice" alt="" className="w-4 h-4 rounded-full object-cover" />
+        <img src="https://i.pravatar.cc/32?u=alice" alt="" className="rounded-full object-cover" />
       }>
         Alice Chen
       </Tag>
       <Tag variant="neutral" avatar={
-        <span className="w-4 h-4 rounded-full bg-muted text-foreground inline-grid place-content-center text-[10px] font-medium">BL</span>
+        <img src="https://i.pravatar.cc/32?u=bob" alt="" className="rounded-full object-cover" />
       }>
         Bob Lin
       </Tag>
+      <p className="w-full text-caption text-fg-muted">Tag 內部統一 avatar 為 16px（跟 icon 一致），消費端不用指定尺寸</p>
     </div>
   ),
 }
