@@ -87,27 +87,6 @@ function useOverflowCount(
   return state
 }
 
-// ── DismissButton ───────────────────────────────────────────────────────────
-
-function DismissButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group/action relative grid place-content-center text-fg-muted hover:text-foreground active:text-foreground transition-colors cursor-pointer"
-      style={{ width: 16, height: 16 }}
-      aria-label={`移除 ${label}`}
-    >
-      <span
-        className="absolute rounded-sm pointer-events-none bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active transition-colors"
-        style={{ width: 18, height: 18, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-        aria-hidden
-      />
-      <X size={16} className="relative" aria-hidden />
-    </button>
-  )
-}
-
 // ── OverflowTagList ───────────────────────────────────────────────────────
 // 單行：所有 tag 渲染為 shrink-0，DOM hidden 控制超出的。
 // wrap：全部顯示，不量測。
@@ -360,7 +339,7 @@ function MultiSelectField({
               size={size}
               className="shrink-0 relative z-10"
               onClick={() => { selectRef.current?.showPicker?.(); selectRef.current?.focus() }}
-              suffix={<DismissButton label={item.label} onClick={() => handleRemove(item.value)} />}
+              onDismiss={() => handleRemove(item.value)}
             >
               {item.label}
             </Tag>

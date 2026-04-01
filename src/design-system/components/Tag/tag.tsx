@@ -1,5 +1,7 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
+import { X } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/design-system/components/Tooltip/tooltip"
@@ -52,12 +54,38 @@ const tagVariants = cva(
 export interface TagProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'prefix'>,
     VariantProps<typeof tagVariants> {
-  prefix?: React.ReactNode
-  suffix?: React.ReactNode
+  /** 左側 icon（LucideIcon），由 Tag 統一 16px。與 avatar 互斥。 */
+  icon?: LucideIcon
+  /** 左側 avatar（ReactNode），與 icon 互斥。 */
+  avatar?: React.ReactNode
+  /** 可移除——Tag 自動渲染 dismiss 按鈕並控制尺寸與互動樣式 */
+  onDismiss?: () => void
+}
+
+// ── Dismiss（internal）────────────────────────────────────────────────────
+// Inline action：16px icon，18px hover 背景，由 Tag 內部渲染。
+
+function TagDismiss({ onDismiss, label }: { onDismiss: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onDismiss() }}
+      className="group/action relative grid place-content-center text-fg-muted hover:text-foreground active:text-foreground transition-colors cursor-pointer"
+      style={{ width: 16, height: 16 }}
+      aria-label={`移除 ${label}`}
+    >
+      <span
+        className="absolute rounded-sm pointer-events-none bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active transition-colors"
+        style={{ width: 18, height: 18, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+        aria-hidden
+      />
+      <X size={16} className="relative" aria-hidden />
+    </button>
+  )
 }
 
 function TagInner(
-  { className, variant, size, prefix, suffix, children, ...props }: TagProps,
+  { className, variant, size, icon: Icon, avatar, onDismiss, children, ...props }: TagProps,
   forwardedRef: React.ForwardedRef<HTMLDivElement>,
 ) {
   const ownRef = React.useRef<HTMLDivElement>(null)
@@ -68,7 +96,7 @@ function TagInner(
     if (!el) return
     const ctx = getMeasureCtx()
     const check = () => {
-      const textSpan = el.querySelector('span')
+      const textSpan = el.querySelector('[data-tag-text]')
       if (!textSpan || !ctx) return
       const text = textSpan.textContent || ''
       const cs = getComputedStyle(textSpan)
@@ -77,13 +105,15 @@ function TagInner(
       const padL = parseFloat(cs.paddingLeft) || 0
       const padR = parseFloat(cs.paddingRight) || 0
       const needed = textWidth + padL + padR
-      setIsTruncated(needed > textSpan.clientWidth + 1)
+      setIsTruncated(needed > (textSpan as HTMLElement).clientWidth + 1)
     }
     check()
     const obs = new ResizeObserver(check)
     obs.observe(el)
     return () => obs.disconnect()
   }, [children])
+
+  const label = typeof children === 'string' ? children : ''
 
   const tag = (
     <div
@@ -95,9 +125,10 @@ function TagInner(
       className={cn(tagVariants({ variant, size }), 'min-w-0 max-w-40 overflow-hidden', className)}
       {...props}
     >
-      {prefix}
-      <span className="px-1 truncate min-w-0">{children}</span>
-      {suffix}
+      {Icon && <Icon size={16} aria-hidden />}
+      {avatar}
+      <span data-tag-text="" className="px-1 truncate min-w-0">{children}</span>
+      {onDismiss && <TagDismiss onDismiss={onDismiss} label={label} />}
     </div>
   )
 

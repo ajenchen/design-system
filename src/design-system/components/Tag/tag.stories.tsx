@@ -1,5 +1,6 @@
+import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { X } from 'lucide-react'
+import { Hash, Circle, Star } from 'lucide-react'
 import { Tag } from './tag'
 
 const meta: Meta<typeof Tag> = {
@@ -65,29 +66,53 @@ export const Sizes: Story = {
   ),
 }
 
-/* ── Prefix / Suffix ── */
-export const WithPrefixSuffix: Story = {
-  name: 'Prefix / Suffix',
+/* ── Icon ── */
+export const WithIcon: Story = {
+  name: 'Icon',
   render: () => (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-2">
-        <Tag variant="blue" suffix={
-          <button type="button" className="grid place-content-center text-fg-muted hover:text-foreground transition-colors" style={{ width: 16, height: 16 }} aria-label="移除">
-            <X size={16} />
-          </button>
-        }>
-          可移除
-        </Tag>
-        <Tag variant="green" suffix={
-          <button type="button" className="grid place-content-center text-fg-muted hover:text-foreground transition-colors" style={{ width: 16, height: 16 }} aria-label="移除">
-            <X size={16} />
-          </button>
-        }>
-          Electronics
-        </Tag>
-      </div>
+    <div className="flex flex-wrap gap-2">
+      <Tag variant="blue" icon={Hash}>channel</Tag>
+      <Tag variant="purple" icon={Circle}>design</Tag>
+      <Tag variant="green" icon={Star}>featured</Tag>
     </div>
   ),
+}
+
+/* ── Avatar ── */
+export const WithAvatar: Story = {
+  name: 'Avatar',
+  render: () => (
+    <div className="flex flex-wrap gap-2">
+      <Tag variant="blue" avatar={
+        <img src="https://i.pravatar.cc/32?u=alice" alt="" className="w-4 h-4 rounded-full object-cover" />
+      }>
+        Alice Chen
+      </Tag>
+      <Tag variant="green" avatar={
+        <span className="w-4 h-4 rounded-full bg-primary-subtle text-primary inline-grid place-content-center text-[10px] font-medium">BL</span>
+      }>
+        Bob Lin
+      </Tag>
+    </div>
+  ),
+}
+
+/* ── Dismiss ── */
+export const Dismissable: Story = {
+  name: '可移除',
+  render: () => {
+    const [tags, setTags] = React.useState(['Electronics', 'Furniture', 'Food'])
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap gap-1">
+          {tags.map(t => (
+            <Tag key={t} variant="blue" onDismiss={() => setTags(prev => prev.filter(x => x !== t))}>{t}</Tag>
+          ))}
+        </div>
+        {tags.length === 0 && <p className="text-caption text-fg-muted">全部移除了，重新整理頁面可恢復</p>}
+      </div>
+    )
+  },
 }
 
 /* ── 截斷 + Tooltip ── */
