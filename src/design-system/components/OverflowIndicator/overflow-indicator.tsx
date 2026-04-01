@@ -51,7 +51,7 @@ function OverflowIndicator({ count, size = 'md', children, className }: Overflow
           +{count}
         </span>
       </TooltipTrigger>
-      <TooltipContent>
+      <TooltipContent className="px-2 py-2">
         <div className="flex flex-wrap gap-1">{children}</div>
       </TooltipContent>
     </Tooltip>
