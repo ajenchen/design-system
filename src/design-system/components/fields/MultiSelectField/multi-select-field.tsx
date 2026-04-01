@@ -126,7 +126,7 @@ function OverflowTagList({ containerRef, items, size, wrap, renderTag, trailing 
           </div>
         ))}
         <div ref={overflowEl} className="shrink-0">
-          <OverflowIndicator count={overflow} size={size}>
+          <OverflowIndicator count={overflow} shape="tag" size={size}>
             {hiddenItems.map(item => (
               <Tag key={item.value} size="sm">{item.label}</Tag>
             ))}
