@@ -66,6 +66,13 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
     const resolvedMode = disabled ? 'disabled' : mode
     const iconSize = size === 'lg' ? 20 : 16
     const showClear = clearable && value && resolvedMode === 'edit'
+    const selectRef = React.useRef<HTMLSelectElement>(null)
+    const setSelectRef = React.useCallback((el: HTMLSelectElement | null) => {
+      selectRef.current = el
+      if (typeof ref === 'function') ref(el)
+      else if (ref) (ref as React.MutableRefObject<HTMLSelectElement | null>).current = el
+    }, [ref])
+    const openSelect = () => { selectRef.current?.showPicker?.(); selectRef.current?.focus() }
 
     // readonly / disabled
     if (resolvedMode !== 'edit') {
@@ -103,7 +110,7 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
         data-error={error ? '' : undefined}
       >
         <select
-          ref={ref}
+          ref={setSelectRef}
           value={value ?? ''}
           onChange={onChange ? (e) => onChange(e.target.value) : undefined}
           disabled={disabled}
@@ -148,7 +155,7 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
             <TooltipContent>清除選取</TooltipContent>
           </Tooltip>
         )}
-        <ChevronDown size={iconSize} className="shrink-0 text-fg-muted pointer-events-none" aria-hidden />
+        <ChevronDown size={iconSize} className="shrink-0 text-fg-muted cursor-pointer" onClick={openSelect} aria-hidden />
       </div>
     )
   }

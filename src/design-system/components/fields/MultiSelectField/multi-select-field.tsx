@@ -356,8 +356,9 @@ function MultiSelectField({
           renderBadge={(item) => (
             <Badge
               size={size}
-              className="shrink-0 relative z-10 pointer-events-none"
-              suffix={<span className="pointer-events-auto"><DismissButton label={item.label} onClick={() => handleRemove(item.value)} /></span>}
+              className="shrink-0 relative z-10"
+              onClick={() => { selectRef.current?.showPicker?.(); selectRef.current?.focus() }}
+              suffix={<DismissButton label={item.label} onClick={() => handleRemove(item.value)} />}
             >
               {item.label}
             </Badge>
@@ -393,7 +394,7 @@ function MultiSelectField({
             <TooltipContent>清除全部</TooltipContent>
           </Tooltip>
         )}
-        <ChevronDown size={iconSize} className="shrink-0 text-fg-muted pointer-events-none" aria-hidden />
+        <ChevronDown size={iconSize} className="shrink-0 text-fg-muted cursor-pointer pointer-events-auto" onClick={() => { selectRef.current?.showPicker?.(); selectRef.current?.focus() }} aria-hidden />
       </div>
     </div>
   )

@@ -15,7 +15,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/design-system/compone
 // 截斷：max-w-40（160px），超出時文字 truncate + 自動 tooltip。
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-md border border-transparent transition-colors",
+  "inline-flex items-center rounded-md border border-transparent transition-colors cursor-text",
   {
     variants: {
       variant: {
@@ -60,8 +60,13 @@ const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
     React.useEffect(() => {
       const el = internalRef.current
       if (!el) return
-      // overflow-hidden 讓 scrollWidth 正確反映完整內容寬度
-      const check = () => setIsTruncated(el.scrollWidth > el.clientWidth + 1)
+      const check = () => {
+        // 暫時移除 overflow 讓 scrollWidth 反映完整內容寬度
+        el.style.overflow = 'visible'
+        const full = el.scrollWidth
+        el.style.overflow = ''
+        setIsTruncated(full > el.clientWidth + 1)
+      }
       check()
       const obs = new ResizeObserver(check)
       obs.observe(el)
