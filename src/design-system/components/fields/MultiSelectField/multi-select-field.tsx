@@ -356,8 +356,8 @@ function MultiSelectField({
           renderBadge={(item) => (
             <Badge
               size={size}
-              className="shrink-0 relative z-10"
-              suffix={<DismissButton label={item.label} onClick={() => handleRemove(item.value)} />}
+              className="shrink-0 relative z-10 pointer-events-none"
+              suffix={<span className="pointer-events-auto"><DismissButton label={item.label} onClick={() => handleRemove(item.value)} /></span>}
             >
               {item.label}
             </Badge>

@@ -42,17 +42,23 @@ export const Modes: Story = {
 /* ── 尺寸與 Button 對齊 ── */
 export const SizeAlignment: Story = {
   name: '尺寸與 Button 對齊',
-  render: () => (
-    <div className="flex flex-col gap-4">
-      {(['sm', 'md', 'lg'] as const).map(size => (
-        <div key={size} className="flex items-center gap-3">
-          <NumberField size={size} value={2490} prefix="$" mode="readonly" className="max-w-xs" />
-          <Button size={size}>送出</Button>
-          <span className="text-caption text-fg-muted">size="{size}"</span>
-        </div>
-      ))}
-    </div>
-  ),
+  render: () => {
+    const [sm, setSm] = React.useState<number | null>(2490)
+    const [md, setMd] = React.useState<number | null>(2490)
+    const [lg, setLg] = React.useState<number | null>(2490)
+    const states: Record<string, [number | null, (v: number | null) => void]> = { sm: [sm, setSm], md: [md, setMd], lg: [lg, setLg] }
+    return (
+      <div className="flex flex-col gap-4">
+        {(['sm', 'md', 'lg'] as const).map(size => (
+          <div key={size} className="flex items-center gap-3">
+            <NumberField size={size} value={states[size][0]} onChange={states[size][1]} prefix="$" className="max-w-xs" />
+            <Button size={size}>送出</Button>
+            <span className="text-caption text-fg-muted">size="{size}"</span>
+          </div>
+        ))}
+      </div>
+    )
+  },
 }
 
 /* ── 格式化選項 ── */
