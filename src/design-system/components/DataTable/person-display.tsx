@@ -106,7 +106,7 @@ function MultiPersonDisplay({
               +{overflow}
             </span>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="px-1 py-1">
             <div className="flex flex-col gap-1">
               {hidden.map((person, i) => (
                 <Tag
@@ -114,7 +114,11 @@ function MultiPersonDisplay({
                   variant="neutral"
                   size="sm"
                   className="max-w-none"
-                  avatar={<Avatar person={person} size="sm" />}
+                  avatar={
+                    person.avatarUrl
+                      ? <img src={person.avatarUrl} alt="" className="shrink-0 w-4 h-4 rounded-full object-cover" />
+                      : <span className="shrink-0 w-4 h-4 rounded-full inline-grid place-content-center bg-muted text-fg-muted"><User size={10} aria-hidden /></span>
+                  }
                 >
                   {person.name}
                 </Tag>
