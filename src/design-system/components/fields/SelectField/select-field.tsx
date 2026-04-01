@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { X } from 'lucide-react'
+import { X, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode } from '@/design-system/components/fields/field-types'
 import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-system/components/fields/field-wrapper'
@@ -148,6 +148,7 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
             <TooltipContent>清除選取</TooltipContent>
           </Tooltip>
         )}
+        <ChevronDown size={iconSize} className="shrink-0 text-fg-muted pointer-events-none" aria-hidden />
       </div>
     )
   }

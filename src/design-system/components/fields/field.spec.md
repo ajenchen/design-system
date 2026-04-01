@@ -82,6 +82,14 @@ Form wrapper 可透過 context 注入 `error` prop，消費者不需要在每個
 
 ---
 
+## Icon 色彩原則
+
+Field 內的 icon 色彩取決於它的角色：
+
+- **指示用途的 icon**（startIcon、ChevronDown 下拉箭頭）：`fg-muted`——它描述 input 的性質，不是 value 本身，視覺上退到背景
+- **代表 value 或屬性的 icon**：繼承文字色——當 icon 本身就是 value 的一部分（如狀態 icon），不需要弱化
+- **disabled 時**：所有 icon 統一 `fg-disabled`
+
 ## startIcon
 
 左側靜態 icon，輔助使用者理解 input 的用途（如 Search icon）。屬於 input 的視覺提示，不屬於 value。
@@ -89,6 +97,14 @@ Form wrapper 可透過 context 注入 `error` prop，消費者不需要在每個
 - 顏色 `fg-muted`（disabled 時 `fg-disabled`）
 - `aria-hidden`——純裝飾
 - 命名與 Button 的 `startIcon` 一致
+
+## 下拉箭頭（Select / MultiSelect）
+
+Select 和 MultiSelect 的最右側固定顯示 ChevronDown icon，指示可下拉選擇。
+
+- 顏色 `fg-muted`——指示意圖，不是 value
+- 不可互動（`pointer-events-none`）——下拉由 select 元素本身觸發
+- clearable 有值時：clear X 在左，ChevronDown 在右
 
 ---
 

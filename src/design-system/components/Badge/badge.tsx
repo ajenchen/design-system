@@ -2,6 +2,7 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/design-system/components/Tooltip/tooltip"
 
 // ── Badge（= Tag in other systems）──────────────────────────────────────────
 // inline label，用於分類標籤、狀態標記、多選已選值。
@@ -53,13 +54,37 @@ export interface BadgeProps
 }
 
 const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
-  ({ className, variant, size, prefix, suffix, children, ...props }, ref) => (
-    <div ref={ref} className={cn(badgeVariants({ variant, size }), 'min-w-0 max-w-40', className)} {...props}>
-      {prefix}
-      <span className="px-1 truncate">{children}</span>
-      {suffix}
-    </div>
-  )
+  ({ className, variant, size, prefix, suffix, children, ...props }, ref) => {
+    const textRef = React.useRef<HTMLSpanElement>(null)
+    const [isTruncated, setIsTruncated] = React.useState(false)
+
+    React.useEffect(() => {
+      const el = textRef.current
+      if (!el) return
+      const check = () => setIsTruncated(el.scrollWidth > el.clientWidth)
+      check()
+      const obs = new ResizeObserver(check)
+      obs.observe(el)
+      return () => obs.disconnect()
+    }, [children])
+
+    const badge = (
+      <div ref={ref} className={cn(badgeVariants({ variant, size }), 'min-w-0 max-w-40', className)} {...props}>
+        {prefix}
+        <span ref={textRef} className="px-1 truncate">{children}</span>
+        {suffix}
+      </div>
+    )
+
+    if (!isTruncated) return badge
+
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{badge}</TooltipTrigger>
+        <TooltipContent>{children}</TooltipContent>
+      </Tooltip>
+    )
+  }
 )
 Badge.displayName = 'Badge'
 

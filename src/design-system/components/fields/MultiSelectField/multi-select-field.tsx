@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { X } from 'lucide-react'
+import { X, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode } from '@/design-system/components/fields/field-types'
 import { fieldWrapperStyles, EMPTY_DISPLAY } from '@/design-system/components/fields/field-wrapper'
@@ -229,6 +229,7 @@ export interface MultiSelectFieldProps {
   className?: string
   disabled?: boolean
   wrap?: boolean
+  clearable?: boolean
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -244,10 +245,13 @@ function MultiSelectField({
   className,
   disabled,
   wrap = false,
+  clearable = false,
 }: MultiSelectFieldProps) {
   const resolvedMode = disabled ? 'disabled' : mode
   const isEditable = resolvedMode === 'edit'
   const containerRef = React.useRef<HTMLDivElement>(null)
+  const iconSize = size === 'lg' ? 20 : 16
+  const showClear = clearable && value.length > 0 && isEditable
 
   const handleRemove = (v: string) => onChange?.(value.filter(x => x !== v))
   const handleAdd = (v: string) => {
@@ -310,13 +314,14 @@ function MultiSelectField({
     </select>
   ) : null
 
+  // badges 區域的 ref（overflow 量測用這個，不是 field wrapper）
+  const badgeAreaRef = React.useRef<HTMLDivElement>(null)
+
   return (
     <div
-      ref={containerRef}
       className={cn(
         fieldWrapperStyles({ mode: 'edit', size }),
         tagPadding[size],
-        wrap ? 'flex-wrap py-1' : 'overflow-hidden',
         error && [
           'border-error hover:border-error-hover',
           'focus-within:border-error focus-within:hover:border-error',
@@ -327,22 +332,52 @@ function MultiSelectField({
       data-field-mode="edit"
       data-error={error ? '' : undefined}
     >
-      <OverflowBadgeList
-        containerRef={containerRef}
-        items={items}
-        size={size}
-        wrap={wrap}
-        renderBadge={(item) => (
-          <Badge
-            size={size}
-            className="shrink-0"
-            suffix={<DismissButton label={item.label} onClick={() => handleRemove(item.value)} />}
-          >
-            {item.label}
-          </Badge>
-        )}
-        trailing={selectDropdown}
-      />
+      {/* badges 區域：flex-1 佔剩餘空間，獨立處理 overflow */}
+      <div
+        ref={badgeAreaRef}
+        className={cn('flex-1 min-w-0 flex items-center', wrap ? 'flex-wrap' : 'overflow-hidden')}
+        style={{ gap: GAP }}
+      >
+        <OverflowBadgeList
+          containerRef={badgeAreaRef}
+          items={items}
+          size={size}
+          wrap={wrap}
+          renderBadge={(item) => (
+            <Badge
+              size={size}
+              className="shrink-0"
+              suffix={<DismissButton label={item.label} onClick={() => handleRemove(item.value)} />}
+            >
+              {item.label}
+            </Badge>
+          )}
+          trailing={selectDropdown}
+        />
+      </div>
+      {/* 右側固定元素：不隨 badge 數量移動 */}
+      {showClear && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => onChange?.([])}
+              className="group/action relative grid place-content-center shrink-0 text-fg-muted hover:text-foreground active:text-foreground transition-colors"
+              style={{ width: iconSize, height: iconSize }}
+              aria-label="清除全部"
+            >
+              <span
+                className={cn('absolute rounded-sm pointer-events-none bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active transition-colors', size === 'lg' && 'rounded-md')}
+                style={{ width: iconSize + 2, height: iconSize + 2, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+                aria-hidden
+              />
+              <X size={iconSize} className="relative" aria-hidden />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>清除全部</TooltipContent>
+        </Tooltip>
+      )}
+      <ChevronDown size={iconSize} className="shrink-0 text-fg-muted pointer-events-none" aria-hidden />
     </div>
   )
 }
