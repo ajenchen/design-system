@@ -27,7 +27,7 @@ function LinkDisplay({ value, label }: LinkDisplayProps) {
       href={value}
       target="_blank"
       rel="noopener noreferrer"
-      className="truncate text-primary hover:text-primary-hover hover:underline transition-colors"
+      className="block truncate min-w-0 text-primary hover:text-primary-hover hover:underline transition-colors"
     >
       {displayText}
     </a>
