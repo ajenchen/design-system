@@ -156,11 +156,11 @@
   --notification:         var(--color-deep-orange-6);
 
   /* Border / Divider */
-  --border:               var(--color-neutral-5);  /* shadcn border → 元件預設邊框 */
+  --border:               var(--color-neutral-5);  /* shadcn 元件邊框 */
   --border-hover:         var(--color-neutral-6);  /* input、checkbox、radio hover 邊框 */
   --divider:              var(--color-neutral-4);  /* 分隔線，比 border 更淡 */
-  --input:                var(--border);           /* shadcn input 邊框 → = border */
-  --ring:                 var(--primary);           /* shadcn focus ring → = primary */
+  --input:                var(--border);           /* shadcn input 邊框 */
+  --ring:                 var(--primary);           /* shadcn focus ring */
 
   /* Neutral Interactive */
   --neutral-hover:        var(--color-neutral-1);
@@ -169,20 +169,20 @@
 
   /* Static Subtle — 靜態弱化背景
      muted / secondary 原為 shadcn 定義的 token，本系統沿用並賦予明確用途 */
-  --muted:                var(--color-neutral-2);  /* shadcn Badge/skeleton 底色 → Tag neutral、table header、skeleton */
-  --muted-foreground:     var(--fg-muted);         /* shadcn muted 文字色 → = fg-muted */
-  --secondary:            var(--color-neutral-3);  /* shadcn Button secondary 底色 → Badge low 底色 */
-  --secondary-foreground: var(--fg-muted);         /* shadcn secondary 文字色 → = fg-muted */
+  --muted:                var(--color-neutral-2);  /* shadcn Badge/skeleton 底色 */
+  --muted-foreground:     var(--fg-muted);         /* shadcn muted 文字色 */
+  --secondary:            var(--color-neutral-3);  /* shadcn Button secondary 底色 */
+  --secondary-foreground: var(--fg-muted);         /* shadcn secondary 文字色 */
 
   /* shadcn Compat — 僅供 shadcn 元件內部使用，自己寫的元件用語義 token
      標註 shadcn 原始用途 → 本系統對應 */
-  --background:           var(--canvas);           /* shadcn 頁面背景 → bg-canvas */
-  --card:                 var(--surface);           /* shadcn Card 底色 → bg-surface */
-  --card-foreground:      var(--foreground);        /* shadcn Card 文字 → text-foreground */
-  --popover:              var(--surface-raised);    /* shadcn Popover/DropdownMenu 底色 → bg-surface-raised */
-  --popover-foreground:   var(--foreground);        /* shadcn Popover 文字 → text-foreground */
-  --accent:               var(--neutral-hover);     /* shadcn Menu/Select item hover 底色 → bg-neutral-hover */
-  --accent-foreground:    var(--foreground);        /* shadcn Menu/Select item hover 文字 → text-foreground */
+  --background:           var(--canvas);           /* shadcn 頁面背景 */
+  --card:                 var(--surface);           /* shadcn Card 底色 */
+  --card-foreground:      var(--foreground);        /* shadcn Card 文字 */
+  --popover:              var(--surface-raised);    /* shadcn Popover/DropdownMenu 底色 */
+  --popover-foreground:   var(--foreground);        /* shadcn Popover 文字 */
+  --accent:               var(--neutral-hover);     /* shadcn Menu/Select item hover 底色 */
+  --accent-foreground:    var(--foreground);        /* shadcn Menu/Select item hover 文字 */
 }
 
 
