@@ -56,11 +56,19 @@ function BadgeInner(
   React.useLayoutEffect(() => {
     const el = ownRef.current
     if (!el) return
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
     const check = () => {
       const textSpan = el.querySelector('span')
-      if (!textSpan) return
-      const truncated = textSpan.scrollWidth > textSpan.clientWidth + 1
-      setIsTruncated(truncated)
+      if (!textSpan || !ctx) return
+      const text = textSpan.textContent || ''
+      const cs = getComputedStyle(textSpan)
+      ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
+      const textWidth = ctx.measureText(text).width
+      const padL = parseFloat(cs.paddingLeft) || 0
+      const padR = parseFloat(cs.paddingRight) || 0
+      const needed = textWidth + padL + padR
+      setIsTruncated(needed > textSpan.clientWidth + 1)
     }
     check()
     const obs = new ResizeObserver(check)
