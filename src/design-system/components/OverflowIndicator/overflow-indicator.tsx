@@ -62,8 +62,8 @@ function OverflowIndicator({ count, shape = 'circle', size = 'md', children, cla
           </span>
         )}
       </TooltipTrigger>
-      <TooltipContent className="!overflow-visible w-fit px-2 py-2">
-        <div className="flex flex-wrap gap-1">{children}</div>
+      <TooltipContent className="w-fit px-2 py-2">
+        <span className="inline [&>*]:mb-1 [&>*]:mr-1 [&>*:last-child]:mr-0 -mb-1">{children}</span>
       </TooltipContent>
     </Tooltip>
   )
