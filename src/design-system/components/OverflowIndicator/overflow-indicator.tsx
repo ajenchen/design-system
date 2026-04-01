@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
+import { tagVariants } from '@/design-system/components/Tag/tag'
 
 // ── OverflowIndicator ───────────────────────────────────────────────────────
 // 溢出指示器：+N 觸發器 + tooltip 顯示隱藏內容。
@@ -45,15 +46,19 @@ function OverflowIndicator({ count, shape = 'circle', size = 'md', children, cla
       <TooltipTrigger asChild>
         <span
           className={cn(
-            'shrink-0 inline-grid place-content-center',
-            'bg-muted text-foreground font-medium leading-none cursor-default',
-            shape === 'circle' ? 'rounded-full' : 'rounded-md px-1',
-            triggerSize[size],
-            triggerText[size],
+            shape === 'tag'
+              ? tagVariants({ variant: 'neutral', size })
+              : [
+                  'shrink-0 rounded-full inline-grid place-content-center',
+                  'bg-muted text-foreground font-medium leading-none',
+                  triggerSize[size],
+                  triggerText[size],
+                ],
+            'cursor-default',
             className,
           )}
         >
-          +{count}
+          {shape === 'tag' ? <span className="px-1">+{count}</span> : `+${count}`}
         </span>
       </TooltipTrigger>
       <TooltipContent className="w-fit max-w-[280px] px-2 py-2">
