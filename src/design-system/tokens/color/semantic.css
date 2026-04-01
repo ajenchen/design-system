@@ -173,14 +173,14 @@
   --secondary:            var(--color-neutral-3);  /* Badge low 底色、shadcn secondary 元件 */
   --secondary-foreground: var(--fg-muted);
 
-  /* shadcn Compat */
-  --background:           var(--canvas);
-  --card:                 var(--surface);
-  --card-foreground:      var(--foreground);
-  --popover:              var(--surface-raised);
-  --popover-foreground:   var(--foreground);
-  --accent:               var(--neutral-hover);
-  --accent-foreground:    var(--foreground);
+  /* shadcn Compat — 僅供 shadcn 元件內部使用，自己寫的元件用語義 token */
+  --background:           var(--canvas);           /* → bg-canvas */
+  --card:                 var(--surface);           /* → bg-surface */
+  --card-foreground:      var(--foreground);        /* → text-foreground */
+  --popover:              var(--surface-raised);    /* → bg-surface-raised */
+  --popover-foreground:   var(--foreground);        /* → text-foreground */
+  --accent:               var(--neutral-hover);     /* → bg-neutral-hover */
+  --accent-foreground:    var(--foreground);        /* → text-foreground */
 }
 
 
