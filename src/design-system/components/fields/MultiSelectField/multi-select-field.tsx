@@ -309,7 +309,7 @@ function MultiSelectField({
         ],
         className,
       )}
-      style={{ gap: 8, paddingRight: '0.75rem', ...(wrap ? { height: 'auto' } : undefined) }}
+      style={{ paddingRight: '0.75rem', ...(wrap ? { height: 'auto' } : undefined) }}
       data-field-mode="edit"
       data-error={error ? '' : undefined}
       onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}
@@ -343,8 +343,8 @@ function MultiSelectField({
       {value.length > 0 && selectDropdown}
       {/* 右側固定：single-line 置中，wrap 時 self-start 固定在第一行 */}
       <div
-        className={cn('flex items-center shrink-0 relative z-10 pointer-events-none', wrap && 'self-start')}
-        style={wrap ? { height: tagHeight, gap: 8 } : { gap: 8 }}
+        className={cn('flex items-center gap-2 shrink-0 relative z-10 pointer-events-none', wrap && 'self-start')}
+        style={wrap ? { height: tagHeight } : undefined}
       >
         {showClear && (
           <Tooltip>
