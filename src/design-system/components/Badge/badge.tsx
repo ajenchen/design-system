@@ -13,6 +13,13 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/design-system/compone
 //   lg — 24px = md alias（配 field lg，子元件補齊原則）
 //
 // 截斷：max-w-40（160px），超出時文字 truncate + 自動 tooltip。
+// 用 Canvas measureText 偵測截斷（scrollWidth 在 flex 內不可靠）。
+
+let _measureCtx: CanvasRenderingContext2D | null = null
+function getMeasureCtx() {
+  if (!_measureCtx) _measureCtx = document.createElement('canvas').getContext('2d')
+  return _measureCtx
+}
 
 const badgeVariants = cva(
   "inline-flex items-center rounded-md border border-transparent transition-colors cursor-text",
@@ -56,8 +63,7 @@ function BadgeInner(
   React.useLayoutEffect(() => {
     const el = ownRef.current
     if (!el) return
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
+    const ctx = getMeasureCtx()
     const check = () => {
       const textSpan = el.querySelector('span')
       if (!textSpan || !ctx) return
