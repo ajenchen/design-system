@@ -142,15 +142,22 @@ const LinkField = React.forwardRef<HTMLInputElement, LinkFieldProps>(
       }
     }
 
-    // readonly / disabled — 直接用 Display
+    // readonly — 顯示藍色連結（可點擊）
+    // disabled — 顯示純文字 fg-disabled（不可點擊）
     if (!isEditable) {
+      const displayText = value ? (label || formatHostname(value)) : null
       return (
         <div
           className={cn(fieldWrapperStyles({ mode: resolvedMode, size }), className)}
           data-field-mode={resolvedMode}
         >
-          <span className={cn('flex-1 min-w-0', resolvedMode === 'disabled' && 'text-fg-disabled opacity-disabled')}>
-            <LinkFieldDisplay value={value} label={label} />
+          <span className="flex-1 min-w-0 truncate">
+            {resolvedMode === 'disabled'
+              ? (displayText
+                  ? <span className="text-fg-disabled">{displayText}</span>
+                  : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>)
+              : <LinkFieldDisplay value={value} label={label} />
+            }
           </span>
         </div>
       )

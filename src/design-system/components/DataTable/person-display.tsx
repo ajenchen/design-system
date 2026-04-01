@@ -1,14 +1,7 @@
+import type React from 'react'
+import { User } from 'lucide-react'
 import { EMPTY_DISPLAY } from '@/design-system/components/fields/field-wrapper'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
-import { Tag } from '@/design-system/components/Tag/tag'
-
-// ── Initials ────────────────────────────────────────────────────────────────
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-  return name.slice(0, 2).toUpperCase()
-}
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -21,28 +14,29 @@ function resolvePerson(value: PersonValue): { name: string; avatarUrl?: string }
 // ── Avatar Size ─────────────────────────────────────────────────────────────
 // 與 Tag 高度對齊：sm=20px, md/lg=24px
 
-const avatarSizePx: Record<string, number> = { sm: 20, md: 24, lg: 24 }
 const avatarSizeClass: Record<string, string> = { sm: 'w-5 h-5', md: 'w-6 h-6', lg: 'w-6 h-6' }
-const initialsText: Record<string, string> = { sm: 'text-[10px]', md: 'text-caption', lg: 'text-caption' }
+const iconSize: Record<string, number> = { sm: 12, md: 14, lg: 14 }
 
 // ── Avatar（共用）────────────────────────────────────────────────────────────
+// 有圖片 → 圖片。無圖片 → neutral 圓 + User icon（不用文字 initials）。
 
-function Avatar({ person, size = 'md', className = '' }: { person: { name: string; avatarUrl?: string }; size?: string; className?: string }) {
-  const { name, avatarUrl } = person
-  if (avatarUrl) {
+function Avatar({ person, size = 'md', className = '', style }: { person: { name: string; avatarUrl?: string }; size?: string; className?: string; style?: React.CSSProperties }) {
+  if (person.avatarUrl) {
     return (
       <img
-        src={avatarUrl}
+        src={person.avatarUrl}
         alt=""
         className={`shrink-0 ${avatarSizeClass[size]} rounded-full object-cover ${className}`}
+        style={style}
       />
     )
   }
   return (
     <span
-      className={`shrink-0 ${avatarSizeClass[size]} rounded-full inline-grid place-content-center ${initialsText[size]} font-medium leading-none bg-muted text-foreground ${className}`}
+      className={`shrink-0 ${avatarSizeClass[size]} rounded-full inline-grid place-content-center bg-muted text-fg-muted ${className}`}
+      style={style}
     >
-      {getInitials(name)}
+      <User size={iconSize[size]} aria-hidden />
     </span>
   )
 }
@@ -65,7 +59,8 @@ PersonDisplay.displayName = 'PersonDisplay'
 
 // ── Multi Person Display ────────────────────────────────────────────────────
 // 多人堆疊：avatar 重疊（-2px），不顯示人名。
-// 溢出時顯示 +N 指示器，hover 出 tooltip 列出溢出的人（avatar + 人名 tag）。
+// 第一個 avatar z-index 最高（在最上面），依此類推。
+// 溢出時顯示 +N 指示器，hover 出 tooltip 列出溢出的人（avatar + 人名）。
 
 function MultiPersonDisplay({
   value,
@@ -84,7 +79,6 @@ function MultiPersonDisplay({
   const visible = people.slice(0, resolvedMax)
   const hidden = people.slice(resolvedMax)
   const overflow = hidden.length
-  const px = avatarSizePx[size]
 
   // 單人回退到 PersonDisplay（顯示名字）
   if (people.length === 1) {
@@ -99,13 +93,14 @@ function MultiPersonDisplay({
           person={person}
           size={size}
           className={`ring-2 ring-[var(--surface)] ${i > 0 ? '-ml-0.5' : ''}`}
+          style={{ zIndex: visible.length - i }}
         />
       ))}
       {overflow > 0 && (
         <Tooltip>
           <TooltipTrigger asChild>
             <span
-              className={`shrink-0 ${avatarSizeClass[size]} rounded-full inline-grid place-content-center ${initialsText[size]} font-medium leading-none bg-muted text-foreground ring-2 ring-[var(--surface)] -ml-0.5 cursor-default`}
+              className={`shrink-0 ${avatarSizeClass[size]} rounded-full inline-grid place-content-center text-[10px] font-medium leading-none bg-muted text-foreground ring-2 ring-[var(--surface)] -ml-0.5 cursor-default`}
             >
               +{overflow}
             </span>
@@ -113,15 +108,10 @@ function MultiPersonDisplay({
           <TooltipContent>
             <div className="flex flex-col gap-1">
               {hidden.map((person, i) => (
-                <Tag
-                  key={person.name + i}
-                  variant="neutral"
-                  size="sm"
-                  className="max-w-none"
-                  avatar={<Avatar person={person} size="sm" className="!w-4 !h-4" />}
-                >
-                  {person.name}
-                </Tag>
+                <span key={person.name + i} className="inline-flex items-center gap-2 min-w-0">
+                  <Avatar person={person} size="sm" />
+                  <span className="text-caption">{person.name}</span>
+                </span>
               ))}
             </div>
           </TooltipContent>
