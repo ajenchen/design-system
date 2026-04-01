@@ -70,7 +70,7 @@ function ShrinkWrapList({ children }: { children: React.ReactNode }) {
       })
       maxRow = Math.max(maxRow, currentRow)
 
-      container.style.maxWidth = `${Math.ceil(maxRow) + padL + padR}px`
+      container.style.maxWidth = `${Math.ceil(maxRow) + padL + padR + 1}px`
     })
   }, [children])
 
