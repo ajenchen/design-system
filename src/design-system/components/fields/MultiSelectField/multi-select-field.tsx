@@ -341,12 +341,14 @@ function MultiSelectField({
       style={{ gap: GAP, paddingRight: '0.75rem', ...(wrap ? { height: 'auto' } : undefined) }}
       data-field-mode="edit"
       data-error={error ? '' : undefined}
+      onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}
     >
       {/* badges 區域 */}
       <div
         ref={badgeAreaRef}
         className={cn('flex-1 min-w-0 flex items-center relative', wrap ? 'flex-wrap' : 'overflow-hidden')}
         style={{ gap: GAP }}
+        onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}
       >
         <OverflowBadgeList
           containerRef={badgeAreaRef}

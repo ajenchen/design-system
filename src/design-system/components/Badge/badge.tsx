@@ -61,11 +61,19 @@ const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
       const el = internalRef.current
       if (!el) return
       const check = () => {
-        // 暫時移除 overflow 讓 scrollWidth 反映完整內容寬度
+        // 暫時移除所有寬度限制，量自然寬度，再還原比對
+        const prevMax = el.style.maxWidth
+        const prevW = el.style.width
+        const prevOv = el.style.overflow
+        el.style.maxWidth = 'none'
+        el.style.width = 'max-content'
         el.style.overflow = 'visible'
-        const full = el.scrollWidth
-        el.style.overflow = ''
-        setIsTruncated(full > el.clientWidth + 1)
+        const naturalWidth = el.offsetWidth
+        el.style.maxWidth = prevMax
+        el.style.width = prevW
+        el.style.overflow = prevOv
+        const actualWidth = el.offsetWidth
+        setIsTruncated(naturalWidth > actualWidth + 1)
       }
       check()
       const obs = new ResizeObserver(check)
