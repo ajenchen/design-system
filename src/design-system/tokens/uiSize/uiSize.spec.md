@@ -40,13 +40,13 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 
 當子元件被父元件透過 size prop 消費時，子元件必須補齊父元件的所有 size 選項，即使值重複。消費端直接透傳 size，不做 mapping。
 
-已套用此原則的元件：Checkbox（sm=md=16px）、Radio（sm=md=16px）、Badge（lg=md=24px）。
+已套用此原則的元件：Checkbox（sm=md=16px）、Radio（sm=md=16px）、Tag（lg=md=24px）。
 
 ### 元件高度地板
 
 **field-height-xs（24px）是獨立互動元件的最小高度。** 任何可獨立存在的互動元件（Button、TextField 等）不得使用比 field-height-xs 更小的高度。若空間不足以容納 24px，應重新檢視容器佈局，而非縮小元件。
 
-比 24px 更小的互動區域只存在於元件內部的 Inline Action（如 Badge dismiss、Field endAction），由宿主元件的 spec 定義規格。
+比 24px 更小的互動區域只存在於元件內部的 Inline Action（如 Tag dismiss、Field endAction），由宿主元件的 spec 定義規格。
 
 ### Icon 尺寸 Tier
 
@@ -61,11 +61,11 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 
 **Stroke icon 尺寸的下限是 12px**（出現在 Checkbox 等指示器容器內部）。Filled indicator（如 Radio 的實心圓點）不受此限制——實心形狀在任何尺寸都清晰可辨。
 
-### Badge ↔ Field 配對
+### Tag ↔ Field 配對
 
-Badge 有自己的尺寸定義（見 `badge.spec.md`），與 Field 的配對透過 size 直接對應：
+Tag 有自己的尺寸定義（見 `tag.spec.md`），與 Field 的配對透過 size 直接對應：
 
-| Field size | Badge size | Badge 高度 | Tag padding (四邊等距) |
+| Field size | Tag size | Tag 高度 | Tag padding (四邊等距) |
 |---|---|---|---|
 | sm | sm | 20px | (field-height-sm - 1.25rem) / 2 |
 | md | md | 24px | (field-height-md - 1.5rem) / 2 |
@@ -75,7 +75,7 @@ Badge 有自己的尺寸定義（見 `badge.spec.md`），與 Field 的配對透
 
 ## Inline Action
 
-嵌入在其他元件內部的互動觸發點（Badge dismiss、Field endAction 等）。不是獨立的 Button，由宿主元件渲染和控制。
+嵌入在其他元件內部的互動觸發點（Tag dismiss、Field endAction 等）。不是獨立的 Button，由宿主元件渲染和控制。
 
 ### 視覺規則
 
@@ -103,8 +103,8 @@ Badge 有自己的尺寸定義（見 `badge.spec.md`），與 Field 的配對透
 
 | 宿主 | Icon 視覺 | Hover 背景 | 圓角 | 排版佔位 |
 |---|---|---|---|---|
-| Badge sm (20px) | 16px | 18px | rounded-sm | 16px |
-| Badge md/lg (24px) | 16px | 18px | rounded-sm | 16px |
+| Tag sm (20px) | 16px | 18px | rounded-sm | 16px |
+| Tag md/lg (24px) | 16px | 18px | rounded-sm | 16px |
 | Field sm/md | 16px | 18px | rounded-sm | 16px |
 | Field lg | 20px | 22px | rounded-md | 20px |
 

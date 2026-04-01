@@ -17,7 +17,7 @@
 
 適用於大多數互動元件，視覺上「有圓角但不搶眼」：
 
-- Button、Input、Select、Checkbox、Tag、Badge
+- Button、Input、Select、Checkbox、Tag
 - Card（非浮層，不需 elevation 層級感）
 - Table cell、list item 的 hover 背景
 - Tooltip

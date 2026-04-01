@@ -4,12 +4,12 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/design-system/components/Tooltip/tooltip"
 
-// ── Badge（= Tag in other systems）──────────────────────────────────────────
-// inline label，用於分類標籤、狀態標記、多選已選值。
+// ── Tag（inline label）─────────────────────────────────────────────────────
+// 用於分類標籤、狀態標記、多選已選值。
 //
 // 三種尺寸（子元件補齊原則——消費端直接透傳 size，不做 mapping）：
-//   sm — 20px 高, 12px 字, 4px badge-px, font-medium（配 field sm）
-//   md — 24px 高, 14px 字, 4px badge-px, font-normal（配 field md）— 預設
+//   sm — 20px 高, 12px 字, 4px tag-px, font-medium（配 field sm）
+//   md — 24px 高, 14px 字, 4px tag-px, font-normal（配 field md）— 預設
 //   lg — 24px = md alias（配 field lg，子元件補齊原則）
 //
 // 截斷：max-w-40（160px），超出時文字 truncate + 自動 tooltip。
@@ -21,7 +21,7 @@ function getMeasureCtx() {
   return _measureCtx
 }
 
-const badgeVariants = cva(
+const tagVariants = cva(
   "inline-flex items-center rounded-md border border-transparent transition-colors cursor-text",
   {
     variants: {
@@ -46,15 +46,15 @@ const badgeVariants = cva(
   }
 )
 
-export interface BadgeProps
+export interface TagProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'prefix'>,
-    VariantProps<typeof badgeVariants> {
+    VariantProps<typeof tagVariants> {
   prefix?: React.ReactNode
   suffix?: React.ReactNode
 }
 
-function BadgeInner(
-  { className, variant, size, prefix, suffix, children, ...props }: BadgeProps,
+function TagInner(
+  { className, variant, size, prefix, suffix, children, ...props }: TagProps,
   forwardedRef: React.ForwardedRef<HTMLDivElement>,
 ) {
   const ownRef = React.useRef<HTMLDivElement>(null)
@@ -82,14 +82,14 @@ function BadgeInner(
     return () => obs.disconnect()
   }, [children])
 
-  const badge = (
+  const tag = (
     <div
       ref={(el) => {
         ownRef.current = el
         if (typeof forwardedRef === 'function') forwardedRef(el)
         else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
       }}
-      className={cn(badgeVariants({ variant, size }), 'min-w-0 max-w-40 overflow-hidden', className)}
+      className={cn(tagVariants({ variant, size }), 'min-w-0 max-w-40 overflow-hidden', className)}
       {...props}
     >
       {prefix}
@@ -98,17 +98,17 @@ function BadgeInner(
     </div>
   )
 
-  if (!isTruncated) return badge
+  if (!isTruncated) return tag
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>{badge}</TooltipTrigger>
+      <TooltipTrigger asChild>{tag}</TooltipTrigger>
       <TooltipContent>{children}</TooltipContent>
     </Tooltip>
   )
 }
 
-const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(BadgeInner)
-Badge.displayName = 'Badge'
+const Tag = React.forwardRef<HTMLDivElement, TagProps>(TagInner)
+Tag.displayName = 'Tag'
 
-export { Badge, badgeVariants }
+export { Tag, tagVariants }

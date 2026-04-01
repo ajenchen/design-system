@@ -256,7 +256,7 @@ function DataTableInner<TData>(
               ? renderTypedValue(cell.getValue(), meta, autoRowHeight, size)
               : flexRender(cell.column.columnDef.cell, cell.getContext())
 
-            // compound 類型：Badge 自帶截斷 tooltip，不需 wrapper
+            // compound 類型：Tag 自帶截斷 tooltip，不需 wrapper
             const isCompound = colType === 'select' || colType === 'multiSelect' || colType === 'person' || colType === 'link'
 
             return wrap ? (

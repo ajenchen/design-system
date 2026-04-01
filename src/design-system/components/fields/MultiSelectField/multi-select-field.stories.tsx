@@ -135,7 +135,7 @@ export const InDataTable: Story = {
 
     return (
       <div>
-        <p className="text-caption text-fg-muted mb-3">multiSelect 欄位自動用多個 Badge 渲染</p>
+        <p className="text-caption text-fg-muted mb-3">multiSelect 欄位自動用多個 Tag 渲染</p>
         <DataTable columns={columns} data={data} height="auto" />
       </div>
     )

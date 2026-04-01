@@ -45,7 +45,7 @@ const meta: Meta<typeof Button> = {
     },
     badge: {
       control: false,
-      description: '右側 badge 內容（`ReactNode`），通常傳入 Badge 元件。',
+      description: '右側 badge 內容（`ReactNode`），通常傳入計數指示器。',
     },
     iconOnly: {
       control: 'boolean',

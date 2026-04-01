@@ -38,7 +38,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/compone
  *   <Button variant="tertiary">取消</Button>
  *   <Button variant="primary" danger>永久刪除</Button>
  *   <Button variant="secondary" danger>移至垃圾桶</Button>
- *   <Button badge={<Badge>3</Badge>} endIcon={ChevronDown}>通知</Button>
+ *   <Button badge={<Badge count={3} />} endIcon={ChevronDown}>通知</Button>
  *   <Button size="sm" iconOnly startIcon={Plus} aria-label="新增" />
  *
  * ── asChild ──
@@ -168,7 +168,7 @@ export interface ButtonProps
   danger?: boolean
   /** 左側 icon（LucideIcon），最多一個，loading 時自動替換為 spinner */
   startIcon?: LucideIcon
-  /** 右側 badge，通常傳入 Badge 元件（ReactNode） */
+  /** 右側 badge（ReactNode），通常傳入計數指示器 */
   badge?: React.ReactNode
   /** 右側 icon（LucideIcon），放在 badge 右邊，通常用於 ChevronDown 等方向指示 */
   endIcon?: LucideIcon
@@ -244,7 +244,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         }
         {children != null && <span className="px-1">{children}</span>}
         {hasSuffix && (
-          <span className="inline-flex items-center gap-1 pr-1">
+          <span className="inline-flex items-center gap-1">
             {badge}
             {EndIcon && <EndIcon size={iconSize} aria-hidden />}
           </span>

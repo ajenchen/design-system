@@ -69,7 +69,7 @@ Tailwind utility 透過 `@theme inline` 橋接語義 token，元件寫 `bg-prima
 ```tsx
 // ✅ 正確
 <ProgressBar className="bg-info" value={60} />
-<Badge className="bg-info-subtle text-info">進行中</Badge>
+<Tag className="bg-info-subtle text-info">進行中</Tag>
 <p className="text-error">此操作無法復原</p>
 
 // ❌ 錯誤——progress bar 不是互動操作
@@ -288,7 +288,7 @@ CSS 變數在定義元素上解析。`:root` 的 `--foreground: var(--color-neut
 
 // 任何容器都可以局部切換 theme
 <div data-theme="dark">
-  <Badge>dark mode badge</Badge>
+  <Tag>dark mode tag</Tag>
 </div>
 ```
 
@@ -313,7 +313,7 @@ CSS 變數在定義元素上解析。`:root` 的 `--foreground: var(--color-neut
 
 // ❌ 不要在深色容器上硬寫 text-white 給子元件——用 data-theme="dark"
 <TooltipContent>
-  <Badge className="text-white" />  // 改用 data-theme="dark" wrapper
+  <Tag className="text-white" />  // 改用 data-theme="dark" wrapper
 </TooltipContent>
 ```
 

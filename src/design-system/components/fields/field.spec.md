@@ -88,8 +88,8 @@ Form wrapper 可透過 context 注入 `error` prop，消費者不需要在每個
 
 Field 內部所有不會觸發獨立 action 的元素必須 `pointer-events-none`，讓點擊穿透到底層的 input/select，確保使用者點擊 Field 內任何位置都能 focus/activate。
 
-穿透（`pointer-events-none`）：startIcon、ChevronDown 下拉箭頭、badge 文字區域。
-不穿透：endAction（clear、toggle password）、badge dismiss button——這些有自己的 action。
+穿透（`pointer-events-none`）：startIcon、ChevronDown 下拉箭頭、tag 文字區域。
+不穿透：endAction（clear、toggle password）、tag dismiss button——這些有自己的 action。
 
 ### 游標指引
 

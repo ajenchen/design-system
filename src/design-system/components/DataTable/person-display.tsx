@@ -35,7 +35,7 @@ function resolvePerson(value: PersonValue): { name: string; avatarUrl?: string }
 }
 
 // ── Avatar Size ─────────────────────────────────────────────────────────────
-// 與 Badge 高度對齊：sm=20px, md/lg=24px
+// 與 Tag 高度對齊：sm=20px, md/lg=24px
 
 const avatarSize: Record<string, string> = { sm: 'w-5 h-5', md: 'w-6 h-6', lg: 'w-6 h-6' }
 const initialsText: Record<string, string> = { sm: 'text-[10px]', md: 'text-caption', lg: 'text-caption' }

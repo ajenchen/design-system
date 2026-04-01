@@ -128,7 +128,7 @@ export const InDataTable: Story = {
     return (
       <div>
         <p className="text-caption text-fg-muted mb-3">
-          select 欄位自動用 Badge 渲染——meta.options 提供 value → label 對應
+          select 欄位自動用 Tag 渲染——meta.options 提供 value → label 對應
         </p>
         <DataTable columns={columns} data={data} height="auto" />
       </div>

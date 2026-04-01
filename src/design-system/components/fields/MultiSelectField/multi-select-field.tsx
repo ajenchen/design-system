@@ -3,7 +3,7 @@ import { X, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode } from '@/design-system/components/fields/field-types'
 import { fieldWrapperStyles, EMPTY_DISPLAY } from '@/design-system/components/fields/field-wrapper'
-import { Badge } from '@/design-system/components/Badge/badge'
+import { Tag } from '@/design-system/components/Tag/tag'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
 
 // ── constants ───────────────────────────────────────────────────────────────
@@ -19,13 +19,13 @@ const tagPadding: Record<string, string> = {
 export interface SelectOption { value: string; label: string }
 
 // ── useOverflowCount ────────────────────────────────────────────────────────
-// 量測容器可用寬度與每個 badge 的自然寬度，計算多少個放得下。
-// badge 全部渲染為 shrink-0，容器 overflow-hidden 裁切。
+// 量測容器可用寬度與每個 tag 的自然寬度，計算多少個放得下。
+// tag 全部渲染為 shrink-0，容器 overflow-hidden 裁切。
 // 初次量測前 opacity:0，量測後 opacity:1，避免閃爍。
 
 function useOverflowCount(
   containerRef: React.RefObject<HTMLDivElement | null>,
-  badgeEls: React.MutableRefObject<(HTMLDivElement | null)[]>,
+  tagEls: React.MutableRefObject<(HTMLDivElement | null)[]>,
   overflowEl: React.RefObject<HTMLDivElement | null>,
   totalCount: number,
   enabled: boolean,
@@ -46,8 +46,8 @@ function useOverflowCount(
         - (parseFloat(cs.paddingLeft) || 0)
         - (parseFloat(cs.paddingRight) || 0)
 
-      // 讓所有 badge 可見以量測自然寬度
-      for (const el of badgeEls.current) if (el) el.hidden = false
+      // 讓所有 tag 可見以量測自然寬度
+      for (const el of tagEls.current) if (el) el.hidden = false
 
       // overflow 指示器：暫時可見以量測
       const ofEl = overflowEl.current
@@ -57,7 +57,7 @@ function useOverflowCount(
       let used = 0
       let count = 0
       for (let i = 0; i < totalCount; i++) {
-        const el = badgeEls.current[i]
+        const el = tagEls.current[i]
         if (!el) continue
         const w = el.offsetWidth
         const next = used + (count > 0 ? GAP : 0) + w
@@ -68,9 +68,9 @@ function useOverflowCount(
         count++
       }
 
-      // 套用結果：隱藏超出的 badge，控制 overflow 指示器
-      for (let i = 0; i < badgeEls.current.length; i++) {
-        const el = badgeEls.current[i]
+      // 套用結果：隱藏超出的 tag，控制 overflow 指示器
+      for (let i = 0; i < tagEls.current.length; i++) {
+        const el = tagEls.current[i]
         if (el) el.hidden = i >= count
       }
       if (ofEl) ofEl.hidden = count >= totalCount
@@ -108,29 +108,29 @@ function DismissButton({ label, onClick }: { label: string; onClick: () => void 
   )
 }
 
-// ── OverflowBadgeList ───────────────────────────────────────────────────────
-// 單行：所有 badge 渲染為 shrink-0，DOM hidden 控制超出的。
+// ── OverflowTagList ───────────────────────────────────────────────────────
+// 單行：所有 tag 渲染為 shrink-0，DOM hidden 控制超出的。
 // wrap：全部顯示，不量測。
 
-interface OverflowBadgeListProps {
+interface OverflowTagListProps {
   containerRef: React.RefObject<HTMLDivElement | null>
   items: { value: string; label: string }[]
   size: 'sm' | 'md' | 'lg'
   wrap: boolean
-  renderBadge: (item: { value: string; label: string }, index: number) => React.ReactNode
+  renderTag: (item: { value: string; label: string }, index: number) => React.ReactNode
   trailing?: React.ReactNode
 }
 
-function OverflowBadgeList({ containerRef, items, size, wrap, renderBadge, trailing }: OverflowBadgeListProps) {
-  const badgeEls = React.useRef<(HTMLDivElement | null)[]>([])
+function OverflowTagList({ containerRef, items, size, wrap, renderTag, trailing }: OverflowTagListProps) {
+  const tagEls = React.useRef<(HTMLDivElement | null)[]>([])
   const overflowEl = React.useRef<HTMLDivElement>(null)
-  const { visibleCount, ready } = useOverflowCount(containerRef, badgeEls, overflowEl, items.length, !wrap)
+  const { visibleCount, ready } = useOverflowCount(containerRef, tagEls, overflowEl, items.length, !wrap)
 
   // 清理舊 refs
-  badgeEls.current.length = items.length
+  tagEls.current.length = items.length
 
   if (wrap) {
-    return <>{items.map((item, i) => renderBadge(item, i))}{trailing}</>
+    return <>{items.map((item, i) => renderTag(item, i))}{trailing}</>
   }
 
   const overflow = items.length - visibleCount
@@ -141,21 +141,21 @@ function OverflowBadgeList({ containerRef, items, size, wrap, renderBadge, trail
       {/* opacity:0 直到量測完成 */}
       <span className="contents" style={{ opacity: ready ? 1 : 0 }}>
         {items.map((item, i) => (
-          <div key={item.value} ref={el => { badgeEls.current[i] = el }} className="shrink-0">
-            {renderBadge(item, i)}
+          <div key={item.value} ref={el => { tagEls.current[i] = el }} className="shrink-0">
+            {renderTag(item, i)}
           </div>
         ))}
         <div ref={overflowEl} className="shrink-0">
           <Tooltip>
             <TooltipTrigger asChild>
               <span>
-                <Badge size={size} className="shrink-0 cursor-default">+ {overflow} …</Badge>
+                <Tag size={size} className="shrink-0 cursor-default">+ {overflow} …</Tag>
               </span>
             </TooltipTrigger>
             <TooltipContent>
               <div className="flex flex-wrap gap-1">
                 {hiddenItems.map(item => (
-                  <Badge key={item.value} size="sm" className="max-w-none">{item.label}</Badge>
+                  <Tag key={item.value} size="sm" className="max-w-none">{item.label}</Tag>
                 ))}
               </div>
             </TooltipContent>
@@ -170,12 +170,12 @@ function OverflowBadgeList({ containerRef, items, size, wrap, renderBadge, trail
 // ── Display ─────────────────────────────────────────────────────────────────
 
 function MultiSelectFieldDisplay({
-  value, options, badgeSize = 'md', wrap = false,
+  value, options, tagSize = 'md', wrap = false,
   containerRef: externalRef, disabled = false,
 }: {
   value?: string[] | null
   options?: SelectOption[]
-  badgeSize?: 'sm' | 'md' | 'lg'
+  tagSize?: 'sm' | 'md' | 'lg'
   wrap?: boolean
   containerRef?: React.RefObject<HTMLDivElement | null>
   disabled?: boolean
@@ -195,13 +195,13 @@ function MultiSelectFieldDisplay({
   const disabledClass = disabled ? 'bg-disabled text-fg-disabled' : undefined
 
   const content = (
-    <OverflowBadgeList
+    <OverflowTagList
       containerRef={externalRef ?? ownRef}
       items={items}
-      size={badgeSize}
+      size={tagSize}
       wrap={wrap}
-      renderBadge={(item) => (
-        <Badge size={badgeSize} className={cn('shrink-0', disabledClass)}>{item.label}</Badge>
+      renderTag={(item) => (
+        <Tag size={tagSize} className={cn('shrink-0', disabledClass)}>{item.label}</Tag>
       )}
     />
   )
@@ -282,7 +282,7 @@ function MultiSelectField({
           <MultiSelectFieldDisplay
             value={value}
             options={options}
-            badgeSize={size}
+            tagSize={size}
             wrap={wrap}
             containerRef={containerRef}
             disabled={resolvedMode === 'disabled'}
@@ -299,7 +299,7 @@ function MultiSelectField({
   // edit
   const unselected = options.filter(o => !value.includes(o.value))
   // 有值時 select 覆蓋整個 field（absolute inset-0），
-  // 無值時正常顯示 placeholder。badges 和右側控件用 z-10 蓋在 select 上方。
+  // 無值時正常顯示 placeholder。tags 和右側控件用 z-10 蓋在 select 上方。
   const selectRef = React.useRef<HTMLSelectElement>(null)
   const selectDropdown = unselected.length > 0 ? (
     <select
@@ -320,10 +320,10 @@ function MultiSelectField({
     </select>
   ) : null
 
-  // badges 區域的 ref（overflow 量測用這個，不是 field wrapper）
-  const badgeAreaRef = React.useRef<HTMLDivElement>(null)
+  // tags 區域的 ref（overflow 量測用這個，不是 field wrapper）
+  const tagAreaRef = React.useRef<HTMLDivElement>(null)
 
-  const badgeHeight = size === 'sm' ? 20 : 24
+  const tagHeight = size === 'sm' ? 20 : 24
 
   return (
     <div
@@ -343,27 +343,27 @@ function MultiSelectField({
       data-error={error ? '' : undefined}
       onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}
     >
-      {/* badges 區域 */}
+      {/* tags 區域 */}
       <div
-        ref={badgeAreaRef}
+        ref={tagAreaRef}
         className={cn('flex-1 min-w-0 flex items-center relative', wrap ? 'flex-wrap' : 'overflow-hidden')}
         style={{ gap: GAP }}
         onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}
       >
-        <OverflowBadgeList
-          containerRef={badgeAreaRef}
+        <OverflowTagList
+          containerRef={tagAreaRef}
           items={items}
           size={size}
           wrap={wrap}
-          renderBadge={(item) => (
-            <Badge
+          renderTag={(item) => (
+            <Tag
               size={size}
               className="shrink-0 relative z-10"
               onClick={() => { selectRef.current?.showPicker?.(); selectRef.current?.focus() }}
               suffix={<DismissButton label={item.label} onClick={() => handleRemove(item.value)} />}
             >
               {item.label}
-            </Badge>
+            </Tag>
           )}
           trailing={value.length === 0 ? selectDropdown : undefined}
         />
@@ -373,7 +373,7 @@ function MultiSelectField({
       {/* 右側固定：single-line 置中，wrap 時 self-start 固定在第一行 */}
       <div
         className={cn('flex items-center shrink-0 relative z-10 pointer-events-none', wrap && 'self-start')}
-        style={wrap ? { height: badgeHeight, gap: GAP } : { gap: GAP }}
+        style={wrap ? { height: tagHeight, gap: GAP } : { gap: GAP }}
       >
         {showClear && (
           <Tooltip>

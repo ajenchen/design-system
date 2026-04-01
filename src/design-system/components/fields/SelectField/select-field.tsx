@@ -3,12 +3,12 @@ import { X, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode } from '@/design-system/components/fields/field-types'
 import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-system/components/fields/field-wrapper'
-import { Badge } from '@/design-system/components/Badge/badge'
+import { Tag } from '@/design-system/components/Tag/tag'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
-// tag 四邊等距：p = (field-height - badge-height) / 2
-// sm 用 badge-sm (20px=1.25rem)，md/lg 用 badge-md/lg (24px=1.5rem)
+// tag 四邊等距：p = (field-height - tag-height) / 2
+// sm 用 tag-sm (20px=1.25rem)，md/lg 用 tag-md/lg (24px=1.5rem)
 const tagPadding: Record<string, string> = {
   sm: 'px-[calc((var(--field-height-sm)_-_1.25rem)_/_2)]',
   md: 'px-[calc((var(--field-height-md)_-_1.5rem)_/_2)]',
@@ -25,7 +25,7 @@ export interface SelectOption {
 function SelectFieldDisplay({ value, options, size }: { value?: string | null; options?: SelectOption[]; size?: 'sm' | 'md' | 'lg' }) {
   if (!value) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
   const label = options?.find(o => o.value === value)?.label ?? value
-  return <Badge size={size}>{label}</Badge>
+  return <Tag size={size}>{label}</Tag>
 }
 SelectFieldDisplay.displayName = 'SelectFieldDisplay'
 
@@ -87,7 +87,7 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
         >
           <span className={cn(resolvedMode === 'disabled' && 'bg-disabled text-fg-disabled')}>
             {value
-              ? <Badge size={size}>{options?.find(o => o.value === value)?.label ?? value}</Badge>
+              ? <Tag size={size}>{options?.find(o => o.value === value)?.label ?? value}</Tag>
               : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
             }
           </span>
