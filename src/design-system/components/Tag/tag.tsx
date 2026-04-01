@@ -122,7 +122,7 @@ function TagInner(
         if (typeof forwardedRef === 'function') forwardedRef(el)
         else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
       }}
-      className={cn(tagVariants({ variant, size }), 'min-w-0 max-w-40 overflow-hidden', className)}
+      className={cn(tagVariants({ variant, size }), 'w-fit min-w-0 max-w-40 overflow-hidden', className)}
       {...props}
     >
       {Icon && <Icon size={16} aria-hidden />}

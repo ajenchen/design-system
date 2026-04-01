@@ -119,7 +119,7 @@ export const Dismissable: Story = {
 export const Truncation: Story = {
   name: '截斷 + Tooltip',
   render: () => (
-    <div className="flex flex-col items-start gap-3" style={{ maxWidth: 300 }}>
+    <div className="flex flex-col gap-3" style={{ maxWidth: 300 }}>
       <Tag variant="neutral">Short</Tag>
       <Tag variant="blue">This is a very long tag label that should truncate</Tag>
       <p className="text-caption text-fg-muted">超過 160px 自動截斷，hover 顯示完整文字 tooltip</p>

@@ -2,6 +2,7 @@ import type React from 'react'
 import { User } from 'lucide-react'
 import { EMPTY_DISPLAY } from '@/design-system/components/fields/field-wrapper'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
+import { Tag } from '@/design-system/components/Tag/tag'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -108,10 +109,15 @@ function MultiPersonDisplay({
           <TooltipContent>
             <div className="flex flex-col gap-1">
               {hidden.map((person, i) => (
-                <span key={person.name + i} className="inline-flex items-center gap-2 min-w-0">
-                  <Avatar person={person} size="sm" />
-                  <span className="text-caption">{person.name}</span>
-                </span>
+                <Tag
+                  key={person.name + i}
+                  variant="neutral"
+                  size="sm"
+                  className="max-w-none"
+                  avatar={<Avatar person={person} size="sm" />}
+                >
+                  {person.name}
+                </Tag>
               ))}
             </div>
           </TooltipContent>
