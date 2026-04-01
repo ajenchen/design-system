@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { Button } from './button'
 import { ButtonGroup } from './button-group'
+import { Badge } from '@/design-system/components/Badge/badge'
 
 const meta: Meta = {
   title: 'Design System/Components/Button/使用原則',
@@ -202,9 +203,7 @@ export const IconRule: Story = {
       >
         <div className="relative inline-flex">
           <Button variant="tertiary" size="sm" iconOnly startIcon={Bell} aria-label="通知" />
-          <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-notification px-1 text-[10px] font-semibold text-white">
-            3
-          </span>
+          <Badge count={3} className="absolute -top-1 -right-1" />
         </div>
         <Label>↑ 角標外掛，Button 本身保持正方形</Label>
       </Rule>

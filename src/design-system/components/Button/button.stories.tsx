@@ -1,13 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { Plus, Trash2, Search, ChevronDown, Settings, Download, Bell, RefreshCw, Maximize2 } from 'lucide-react'
 import { Button } from './button'
-
-// ── 輕量 Badge helper（stories 內部用，非正式 Badge 元件）──────────
-const BadgeCount = ({ count }: { count: number }) => (
-  <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-notification text-white text-[10px] font-semibold leading-none">
-    {count}
-  </span>
-)
+import { Badge } from '@/design-system/components/Badge/badge'
 
 const meta: Meta<typeof Button> = {
   title: 'Design System/Components/Button/展示',
@@ -147,13 +141,13 @@ export const WithEndIcon: Story = {
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <p className="w-full text-caption text-fg-muted">badge only</p>
-        <Button size={args.size} variant="tertiary" startIcon={Bell} badge={<BadgeCount count={3} />}>通知</Button>
-        <Button size={args.size} variant="tertiary" badge={<BadgeCount count={12} />}>訊息</Button>
+        <Button size={args.size} variant="tertiary" startIcon={Bell} badge={<Badge count={3} />}>通知</Button>
+        <Button size={args.size} variant="tertiary" badge={<Badge count={12} />}>訊息</Button>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <p className="w-full text-caption text-fg-muted">badge + endIcon</p>
-        <Button size={args.size} variant="tertiary" badge={<BadgeCount count={5} />} endIcon={ChevronDown}>更多通知</Button>
-        <Button size={args.size} variant="tertiary" badge={<BadgeCount count={2} />} endIcon={ChevronDown}>待辦</Button>
+        <Button size={args.size} variant="tertiary" badge={<Badge count={5} />} endIcon={ChevronDown}>更多通知</Button>
+        <Button size={args.size} variant="tertiary" badge={<Badge count={2} />} endIcon={ChevronDown}>待辦</Button>
       </div>
     </div>
   ),
