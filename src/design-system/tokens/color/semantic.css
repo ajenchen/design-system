@@ -40,10 +40,16 @@
    └─────────────────────────────────────────────────────────────────────┘
 
    ┌─ 邊框 / 分隔 ─────────────────────────────────────────────────────────┐
-   │  --border    元件邊框（neutral-5）                                  │
-   │  --divider   分隔線（neutral-4，比 border 更淡）                    │
-   │  --ring      focus 輪廓（= primary）                               │
+   │  --border        元件邊框（neutral-5）                              │
+   │  --border-hover  input/checkbox/radio hover 邊框（neutral-6）       │
+   │  --divider       分隔線（neutral-4，比 border 更淡）                │
+   │  --ring          focus 輪廓（= primary）                           │
    │  選中狀態的邊框或文字 → 直接使用 var(--primary-hover)              │
+   └─────────────────────────────────────────────────────────────────────┘
+
+   ┌─ Static Subtle ─────────────────────────────────────────────────────┐
+   │  --muted          弱化底色 Tag neutral（neutral-2）                 │
+   │  --secondary      Badge low 底色（neutral-3，比 muted 深一階）      │
    └─────────────────────────────────────────────────────────────────────┘
 
    ┌─ 中性互動背景（視覺深度遞進：無 → neutral-1 → neutral-2）─────────┐
@@ -134,7 +140,9 @@
   --warning-active:       var(--color-yellow-7);
   --warning-subtle:       var(--color-yellow-1);
 
-  /* Categorical — 分類色，用於 Tag 等需要多色區分的場景 */
+  /* Categorical — 分類色，用於 Tag、avatar 等需要多色區分的場景
+     無固定語義，消費端自行決定用途（專案標籤、團隊分類等）
+     文字色 = -6（base），subtle 底色 = -1（light）/ alpha（dark） */
   --turquoise:            var(--color-turquoise-6);
   --turquoise-subtle:     var(--color-turquoise-1);
   --purple:               var(--color-purple-6);
@@ -148,9 +156,9 @@
   --notification:         var(--color-deep-orange-6);
 
   /* Border / Divider */
-  --border:               var(--color-neutral-5);
-  --border-hover:         var(--color-neutral-6);
-  --divider:              var(--color-neutral-4);
+  --border:               var(--color-neutral-5);  /* 元件預設邊框 */
+  --border-hover:         var(--color-neutral-6);  /* input、checkbox、radio hover 邊框 */
+  --divider:              var(--color-neutral-4);  /* 分隔線，比 border 更淡 */
   --input:                var(--border);
   --ring:                 var(--primary);
 
@@ -159,9 +167,11 @@
   --neutral-active:       var(--color-neutral-2);
   --bg-disabled:          var(--color-neutral-2);
 
-  /* Static Subtle */
-  --muted:                var(--color-neutral-2);
+  /* Static Subtle — 靜態弱化背景 */
+  --muted:                var(--color-neutral-2);  /* Tag neutral、一般弱化底色 */
   --muted-foreground:     var(--fg-muted);
+  --secondary:            var(--color-neutral-3);  /* Badge low 底色、shadcn secondary 元件 */
+  --secondary-foreground: var(--fg-muted);
 
   /* shadcn Compat */
   --background:           var(--canvas);
@@ -169,8 +179,6 @@
   --card-foreground:      var(--foreground);
   --popover:              var(--surface-raised);
   --popover-foreground:   var(--foreground);
-  --secondary:            var(--color-neutral-3);
-  --secondary-foreground: var(--fg-muted);
   --accent:               var(--neutral-hover);
   --accent-foreground:    var(--foreground);
 }
