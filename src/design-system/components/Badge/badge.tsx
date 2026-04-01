@@ -46,67 +46,55 @@ export interface BadgeProps
   suffix?: React.ReactNode
 }
 
-const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
-  ({ className, variant, size, prefix, suffix, children, ...props }, forwardedRef) => {
-    const internalRef = React.useRef<HTMLDivElement>(null)
-    const [isTruncated, setIsTruncated] = React.useState(false)
+function BadgeInner(
+  { className, variant, size, prefix, suffix, children, ...props }: BadgeProps,
+  forwardedRef: React.ForwardedRef<HTMLDivElement>,
+) {
+  const ownRef = React.useRef<HTMLDivElement>(null)
+  const [isTruncated, setIsTruncated] = React.useState(false)
 
-    const setRef = React.useCallback((el: HTMLDivElement | null) => {
-      internalRef.current = el
-      if (typeof forwardedRef === 'function') forwardedRef(el)
-      else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
-    }, [forwardedRef])
+  React.useLayoutEffect(() => {
+    const el = ownRef.current
+    if (!el) return
+    const check = () => {
+      const textSpan = el.querySelector('span')
+      if (!textSpan) return
+      const truncated = textSpan.scrollWidth > textSpan.clientWidth + 1
+      setIsTruncated(truncated)
+    }
+    check()
+    const obs = new ResizeObserver(check)
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [children])
 
-    React.useEffect(() => {
-      const el = internalRef.current
-      if (!el) return
-      const check = () => {
-        // 暫時脫離 flex flow + 移除所有寬度限制，量自然寬度
-        const s = el.style
-        const prev = { maxWidth: s.maxWidth, width: s.width, overflow: s.overflow, position: s.position, flexShrink: s.flexShrink }
-        s.maxWidth = 'none'
-        s.width = 'max-content'
-        s.overflow = 'visible'
-        s.position = 'absolute'
-        s.flexShrink = '0'
-        const naturalWidth = el.offsetWidth
-        // 還原
-        s.maxWidth = prev.maxWidth
-        s.width = prev.width
-        s.overflow = prev.overflow
-        s.position = prev.position
-        s.flexShrink = prev.flexShrink
-        const actualWidth = el.offsetWidth
-        setIsTruncated(naturalWidth > actualWidth + 1)
-      }
-      check()
-      const obs = new ResizeObserver(check)
-      obs.observe(el)
-      return () => obs.disconnect()
-    }, [children])
+  const badge = (
+    <div
+      ref={(el) => {
+        ownRef.current = el
+        if (typeof forwardedRef === 'function') forwardedRef(el)
+        else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
+      }}
+      className={cn(badgeVariants({ variant, size }), 'min-w-0 max-w-40 overflow-hidden', className)}
+      {...props}
+    >
+      {prefix}
+      <span className="px-1 truncate min-w-0">{children}</span>
+      {suffix}
+    </div>
+  )
 
-    const badge = (
-      <div
-        ref={setRef}
-        className={cn(badgeVariants({ variant, size }), 'min-w-0 max-w-40 overflow-hidden', className)}
-        {...props}
-      >
-        {prefix}
-        <span className="px-1 truncate min-w-0">{children}</span>
-        {suffix}
-      </div>
-    )
+  if (!isTruncated) return badge
 
-    if (!isTruncated) return badge
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{badge}</TooltipTrigger>
+      <TooltipContent>{children}</TooltipContent>
+    </Tooltip>
+  )
+}
 
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>{badge}</TooltipTrigger>
-        <TooltipContent>{children}</TooltipContent>
-      </Tooltip>
-    )
-  }
-)
+const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(BadgeInner)
 Badge.displayName = 'Badge'
 
 export { Badge, badgeVariants }
