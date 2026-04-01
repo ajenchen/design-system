@@ -60,13 +60,13 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
   ) => {
     const resolvedMode = disabled ? 'disabled' : mode
 
-    // readonly / disabled：固定高度 + tag padding
+    // readonly / disabled：有 badge 時用 tagPadding，空值時用標準 px-3
     if (resolvedMode !== 'edit') {
       return (
         <div
           className={cn(
             fieldWrapperStyles({ mode: resolvedMode, size }),
-            tagPadding[size],
+            value && tagPadding[size],
             className,
           )}
           data-field-mode={resolvedMode}

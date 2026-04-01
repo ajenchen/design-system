@@ -11,19 +11,19 @@ interface Product {
   name: string
   category: string
   stock: string
-  seller: string
+  seller: { name: string; avatarUrl: string }
   updatedAt: string
   price?: number
   note?: string
 }
 
 const sampleData: Product[] = [
-  { sku: 'PRD-001', name: 'Wireless Bluetooth Headphones', category: 'Electronics', stock: 'In stock', seller: 'Alice Wang', updatedAt: '2025/03/12', price: 2490 },
-  { sku: 'PRD-002', name: 'Ergonomic Office Chair with Lumbar Support', category: 'Furniture', stock: 'Low stock', seller: 'Bob Chen', updatedAt: '2025/03/14', price: 8900 },
-  { sku: 'PRD-003', name: 'Organic Green Tea 100 Bags', category: 'Food', stock: 'In stock', seller: 'Carol Liu', updatedAt: '2025/03/15', price: 350 },
-  { sku: 'PRD-004', name: 'USB-C Hub 7-in-1 Adapter', category: 'Electronics', stock: 'Out of stock', seller: 'Alice Wang', updatedAt: '2025/03/16', price: 1290 },
-  { sku: 'PRD-005', name: 'Stainless Steel Water Bottle 750ml', category: 'Lifestyle', stock: 'In stock', seller: 'David Wu', updatedAt: '2025/03/18', price: 680 },
-  { sku: 'PRD-006', name: 'Mechanical Keyboard with Cherry MX Brown Switches and RGB Backlight', category: 'Electronics', stock: 'In stock', seller: 'Bob Chen', updatedAt: '2025/03/20', price: 3200 },
+  { sku: 'PRD-001', name: 'Wireless Bluetooth Headphones', category: 'Electronics', stock: 'In stock', seller: { name: 'Alice Wonderland Wang', avatarUrl: 'https://i.pravatar.cc/40?u=alice' }, updatedAt: '2025/03/12', price: 2490 },
+  { sku: 'PRD-002', name: 'Ergonomic Office Chair with Lumbar Support', category: 'Furniture', stock: 'Low stock', seller: { name: 'Bob Christopher Chen', avatarUrl: 'https://i.pravatar.cc/40?u=bob' }, updatedAt: '2025/03/14', price: 8900 },
+  { sku: 'PRD-003', name: 'Organic Green Tea 100 Bags', category: 'Food', stock: 'In stock', seller: { name: 'Carol Liu', avatarUrl: 'https://i.pravatar.cc/40?u=carol' }, updatedAt: '2025/03/15', price: 350 },
+  { sku: 'PRD-004', name: 'USB-C Hub 7-in-1 Adapter', category: 'Electronics', stock: 'Out of stock', seller: { name: 'Alexander Hamilton Zhang', avatarUrl: 'https://i.pravatar.cc/40?u=alex' }, updatedAt: '2025/03/16', price: 1290 },
+  { sku: 'PRD-005', name: 'Stainless Steel Water Bottle 750ml', category: 'Lifestyle', stock: 'In stock', seller: { name: 'David Wu', avatarUrl: 'https://i.pravatar.cc/40?u=david' }, updatedAt: '2025/03/18', price: 680 },
+  { sku: 'PRD-006', name: 'Mechanical Keyboard with Cherry MX Brown Switches and RGB Backlight', category: 'Electronics', stock: 'In stock', seller: { name: 'Elizabeth Montgomery Johnson', avatarUrl: 'https://i.pravatar.cc/40?u=elizabeth' }, updatedAt: '2025/03/20', price: 3200 },
 ]
 
 const dataWithNotes: Product[] = sampleData.map((p, i) => ({
@@ -36,7 +36,12 @@ const dataWithNotes: Product[] = sampleData.map((p, i) => ({
 function generateLargeData(count: number): Product[] {
   const categories = ['Electronics', 'Furniture', 'Food', 'Lifestyle']
   const stocks = ['In stock', 'Low stock', 'Out of stock', 'Pre-order']
-  const sellers = ['Alice Wang', 'Bob Chen', 'Carol Liu', 'David Wu']
+  const sellers = [
+    { name: 'Alice Wang', avatarUrl: 'https://i.pravatar.cc/40?u=alice' },
+    { name: 'Bob Chen', avatarUrl: 'https://i.pravatar.cc/40?u=bob' },
+    { name: 'Carol Liu', avatarUrl: 'https://i.pravatar.cc/40?u=carol' },
+    { name: 'David Wu', avatarUrl: 'https://i.pravatar.cc/40?u=david' },
+  ]
   return Array.from({ length: count }, (_, i) => ({
     sku: `PRD-${String(i + 1).padStart(4, '0')}`,
     name: `Product item ${i + 1} — ${categories[i % 4]}`,
@@ -57,7 +62,7 @@ const baseColumns = [
   col.accessor('name', { header: 'Product', size: 280, minSize: 120, meta: { type: 'text' } }),
   col.accessor('category', { header: 'Category', size: 120, meta: { type: 'select' } }),
   col.accessor('stock', { header: 'Stock', size: 110, meta: { type: 'select' } }),
-  col.accessor('seller', { header: 'Seller', size: 120, meta: { type: 'person' } }),
+  col.accessor('seller', { header: 'Seller', size: 150, meta: { type: 'person' } }),
   col.accessor('updatedAt', { header: 'Updated', size: 120, meta: { type: 'date' } }),
 ]
 
@@ -79,7 +84,7 @@ const columnsWithNote = [
     meta: { type: 'text', wrap: true },
   }),
   col.accessor('category', { header: 'Category', size: 120, meta: { type: 'select' } }),
-  col.accessor('seller', { header: 'Seller', size: 120, meta: { type: 'person' } }),
+  col.accessor('seller', { header: 'Seller', size: 150, meta: { type: 'person' } }),
 ]
 
 // ── Stories ───────────────────────────────────────────────────────────────────
@@ -105,38 +110,48 @@ export const ColumnTypes: Story = {
   name: 'Column Types',
   render: () => {
     interface TypeDemo {
-      label: string
-      textVal: string
-      numberVal: number
-      currencyVal: number
-      dateVal: string
-      boolVal: boolean
+      name: string
+      quantity: number
+      price: number
+      date: string
+      active: boolean
+      status: string
+      tags: string[]
+      seller: { name: string; avatarUrl: string }
+      url: string
     }
 
     const typeCol = createColumnHelper<TypeDemo>()
+    const statusOptions = [
+      { value: 'in_stock', label: 'In stock' },
+      { value: 'low_stock', label: 'Low stock' },
+      { value: 'out_of_stock', label: 'Out of stock' },
+    ]
+    const tagOptions = [
+      { value: 'electronics', label: 'Electronics' },
+      { value: 'lifestyle', label: 'Lifestyle' },
+      { value: 'food', label: 'Food' },
+    ]
     const typeCols = [
-      typeCol.accessor('label', { header: 'Label', size: 120, meta: { type: 'text' } }),
-      typeCol.accessor('textVal', { header: 'Text', size: 180, meta: { type: 'text' } }),
-      typeCol.accessor('numberVal', { header: 'Number', size: 100, meta: { type: 'number' } }),
-      typeCol.accessor('currencyVal', {
-        header: 'Currency', size: 120, meta: { type: 'currency' },
-        cell: (info) => `$${info.getValue().toLocaleString()}`,
-      }),
-      typeCol.accessor('dateVal', { header: 'Date', size: 120, meta: { type: 'date' } }),
-      typeCol.accessor('boolVal', {
-        header: 'Active', size: 80, meta: { type: 'boolean' },
-        cell: (info) => info.getValue() ? '✓' : '—',
-      }),
+      typeCol.accessor('name', { header: 'Text', size: 160, meta: { type: 'text' } }),
+      typeCol.accessor('quantity', { header: 'Number', size: 90, meta: { type: 'number' } }),
+      typeCol.accessor('price', { header: 'Currency', size: 100, meta: { type: 'currency', prefix: '$' } }),
+      typeCol.accessor('date', { header: 'Date', size: 110, meta: { type: 'date' } }),
+      typeCol.accessor('active', { header: 'Boolean', size: 80, meta: { type: 'boolean' } }),
+      typeCol.accessor('status', { header: 'Select', size: 110, meta: { type: 'select', options: statusOptions } }),
+      typeCol.accessor('tags', { header: 'MultiSelect', size: 180, meta: { type: 'multiSelect', options: tagOptions, maxVisible: 2 } }),
+      typeCol.accessor('seller', { header: 'Person', size: 140, meta: { type: 'person' } }),
+      typeCol.accessor('url', { header: 'Link', size: 160, meta: { type: 'link' } }),
     ]
     const typeData: TypeDemo[] = [
-      { label: 'Row A', textVal: 'Wireless Headphones', numberVal: 142, currencyVal: 2490, dateVal: '2025/03/12', boolVal: true },
-      { label: 'Row B', textVal: 'Office Chair', numberVal: 38, currencyVal: 8900, dateVal: '2025/03/14', boolVal: false },
-      { label: 'Row C', textVal: 'Green Tea 100 Bags', numberVal: 520, currencyVal: 350, dateVal: '2025/03/15', boolVal: true },
+      { name: 'Wireless Headphones', quantity: 142, price: 2490, date: '2025-03-12', active: true, status: 'in_stock', tags: ['electronics', 'lifestyle'], seller: { name: 'Alice Wang', avatarUrl: 'https://i.pravatar.cc/40?u=alice' }, url: 'https://example.com/headphones' },
+      { name: 'Office Chair', quantity: 38, price: 8900, date: '2025-03-14', active: false, status: 'low_stock', tags: ['lifestyle'], seller: { name: 'Bob Chen', avatarUrl: 'https://i.pravatar.cc/40?u=bob' }, url: 'https://example.com/chair' },
+      { name: 'Green Tea 100 Bags', quantity: 520, price: 350, date: '2025-03-15', active: true, status: 'in_stock', tags: ['food', 'lifestyle', 'electronics'], seller: { name: 'Carol Liu', avatarUrl: 'https://i.pravatar.cc/40?u=carol' }, url: 'https://example.com/tea' },
     ]
 
     return (
       <div>
-        <p className="text-caption text-fg-muted mb-3">每個欄位指定 type，對齊由 type 自動決定（text 靠左、number/currency 靠右、boolean 置中）</p>
+        <p className="text-caption text-fg-muted mb-3">所有 9 種 column type 的自動渲染——指定 meta.type 即可，不需要自訂 cell renderer</p>
         <DataTable columns={typeCols} data={typeData} height="auto" />
       </div>
     )

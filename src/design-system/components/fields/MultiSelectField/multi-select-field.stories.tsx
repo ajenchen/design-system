@@ -1,7 +1,7 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
-import { MultiSelectField } from './multi-select-field'
+import { MultiSelectField, MultiSelectFieldDisplay } from './multi-select-field'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
 
@@ -44,6 +44,37 @@ export const Modes: Story = {
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">readonly (empty)</h3>
           <MultiSelectField mode="readonly" options={categoryOptions} value={[]} />
+        </div>
+      </div>
+    )
+  },
+}
+
+/* ── 單行 vs 換行 ── */
+export const WrapModes: Story = {
+  name: '單行 vs 換行',
+  render: () => {
+    const [values, setValues] = React.useState(['electronics', 'food', 'lifestyle', 'clothing', 'furniture'])
+    return (
+      <div className="flex flex-col gap-6 max-w-xs">
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">單行（預設）</h3>
+          <p className="text-caption text-fg-muted mb-3">固定高度，badges 超出時 truncate</p>
+          <MultiSelectField options={categoryOptions} value={values} onChange={setValues} />
+        </div>
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">單行 + maxVisible=2</h3>
+          <p className="text-caption text-fg-muted mb-3">最多顯示 2 個 badge，其餘 +N</p>
+          <MultiSelectField options={categoryOptions} value={values} onChange={setValues} maxVisible={2} />
+        </div>
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">換行（wrap）</h3>
+          <p className="text-caption text-fg-muted mb-3">高度隨內容長，badges 自動換行</p>
+          <MultiSelectField options={categoryOptions} value={values} onChange={setValues} wrap />
+        </div>
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">換行 readonly</h3>
+          <MultiSelectField mode="readonly" options={categoryOptions} value={values} wrap />
         </div>
       </div>
     )

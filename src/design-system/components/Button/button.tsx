@@ -99,10 +99,10 @@ const buttonVariants = cva(
         true: '', // 實際樣式由 compoundVariants 提供
       },
       size: {
-        xs: 'h-field-xs px-2 text-caption leading-compact gap-1',
-        sm: 'h-field-sm px-3 min-w-14 text-body leading-compact gap-2',
-        md: 'h-field-md px-3 min-w-16 text-body leading-compact gap-2',
-        lg: 'h-field-lg px-3 min-w-20 text-body-lg leading-compact gap-2',
+        xs: 'h-field-xs px-2 text-caption leading-compact gap-0',
+        sm: 'h-field-sm px-3 min-w-14 text-body leading-compact gap-1',
+        md: 'h-field-md px-3 min-w-16 text-body leading-compact gap-1',
+        lg: 'h-field-lg px-3 min-w-20 text-body-lg leading-compact gap-1',
       },
     },
     compoundVariants: [

@@ -56,5 +56,11 @@ declare module '@tanstack/react-table' {
     locale?: string
     /** Select/multiSelect options — maps value to display label */
     options?: Array<{ value: string; label: string }>
+    /** multiSelect: 固定行高時最多顯示幾個 badge，超出顯示 +N */
+    maxVisible?: number
+    /** Date: Intl.DateTimeFormat options */
+    formatOptions?: Intl.DateTimeFormatOptions
+    /** Link: 自訂顯示文字（不設則自動從 URL 提取 hostname） */
+    linkLabel?: string
   }
 }
