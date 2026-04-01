@@ -106,7 +106,7 @@ function MultiPersonDisplay({
               +{overflow}
             </span>
           </TooltipTrigger>
-          <TooltipContent className="px-1 py-1">
+          <TooltipContent>
             <div className="flex flex-col gap-1">
               {hidden.map((person, i) => (
                 <Tag
