@@ -1,8 +1,10 @@
 import * as React from 'react'
+import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode } from '@/design-system/components/fields/field-types'
 import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-system/components/fields/field-wrapper'
 import { Badge } from '@/design-system/components/Badge/badge'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
 // tag 四邊等距：p = (field-height - badge-height) / 2
@@ -38,6 +40,8 @@ export interface SelectFieldProps
   value?: string | null
   onChange?: (value: string) => void
   placeholder?: string
+  /** 允許清空已選值 */
+  clearable?: boolean
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -54,13 +58,16 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
       placeholder,
       className,
       disabled,
+      clearable = false,
       ...props
     },
     ref
   ) => {
     const resolvedMode = disabled ? 'disabled' : mode
+    const iconSize = size === 'lg' ? 20 : 16
+    const showClear = clearable && value && resolvedMode === 'edit'
 
-    // readonly / disabled：有 badge 時用 tagPadding，空值時用標準 px-3
+    // readonly / disabled
     if (resolvedMode !== 'edit') {
       return (
         <div
@@ -71,7 +78,7 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
           )}
           data-field-mode={resolvedMode}
         >
-          <span className={cn(resolvedMode === 'disabled' && 'opacity-disabled')}>
+          <span className={cn(resolvedMode === 'disabled' && 'bg-disabled text-fg-disabled')}>
             {value
               ? <Badge size={size}>{options?.find(o => o.value === value)?.label ?? value}</Badge>
               : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
@@ -81,7 +88,7 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
       )
     }
 
-    // edit：原生 select
+    // edit
     return (
       <div
         className={cn(
@@ -115,6 +122,32 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
+        {showClear && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => onChange?.('')}
+                className="group/action relative grid place-content-center shrink-0 text-fg-muted hover:text-foreground active:text-foreground transition-colors"
+                style={{ width: iconSize, height: iconSize }}
+                aria-label="清除選取"
+              >
+                <span
+                  className={cn(
+                    'absolute rounded-sm pointer-events-none',
+                    'bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active',
+                    'transition-colors',
+                    size === 'lg' && 'rounded-md',
+                  )}
+                  style={{ width: iconSize + 2, height: iconSize + 2, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+                  aria-hidden
+                />
+                <X size={iconSize} className="relative" aria-hidden />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>清除選取</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     )
   }

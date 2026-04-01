@@ -54,7 +54,7 @@ export interface BadgeProps
 
 const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
   ({ className, variant, size, prefix, suffix, children, ...props }, ref) => (
-    <div ref={ref} className={cn(badgeVariants({ variant, size }), 'min-w-0 max-w-full', className)} {...props}>
+    <div ref={ref} className={cn(badgeVariants({ variant, size }), 'min-w-0 max-w-40', className)} {...props}>
       {prefix}
       <span className="px-1 truncate">{children}</span>
       {suffix}

@@ -2,6 +2,7 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { SelectField } from './select-field'
+import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
 
@@ -50,6 +51,42 @@ export const Modes: Story = {
           <h3 className="text-body font-bold text-foreground mb-2">readonly (null)</h3>
           <SelectField mode="readonly" options={statusOptions} value={null} />
         </div>
+      </div>
+    )
+  },
+}
+
+/* ── 尺寸與 Button 對齊 ── */
+export const SizeAlignment: Story = {
+  name: '尺寸與 Button 對齊',
+  render: () => (
+    <div className="flex flex-col gap-4">
+      {(['sm', 'md', 'lg'] as const).map(size => (
+        <div key={size} className="flex items-center gap-3">
+          <SelectField size={size} options={statusOptions} value="in_stock" className="max-w-xs" />
+          <Button size={size}>送出</Button>
+          <span className="text-caption text-fg-muted">size="{size}"</span>
+        </div>
+      ))}
+    </div>
+  ),
+}
+
+/* ── 可清除 ── */
+export const Clearable: Story = {
+  name: '可清除',
+  render: () => {
+    const [value, setValue] = React.useState<string>('in_stock')
+    return (
+      <div className="flex flex-col gap-4 max-w-xs">
+        <p className="text-caption text-fg-muted">有值時右側出現清除按鈕</p>
+        <SelectField
+          options={statusOptions}
+          value={value}
+          onChange={setValue}
+          clearable
+          placeholder="選擇狀態"
+        />
       </div>
     )
   },

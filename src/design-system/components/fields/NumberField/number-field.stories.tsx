@@ -2,6 +2,7 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { NumberField } from './number-field'
+import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
 
@@ -36,6 +37,22 @@ export const Modes: Story = {
       </div>
     )
   },
+}
+
+/* ── 尺寸與 Button 對齊 ── */
+export const SizeAlignment: Story = {
+  name: '尺寸與 Button 對齊',
+  render: () => (
+    <div className="flex flex-col gap-4">
+      {(['sm', 'md', 'lg'] as const).map(size => (
+        <div key={size} className="flex items-center gap-3">
+          <NumberField size={size} value={2490} prefix="$" mode="readonly" className="max-w-xs" />
+          <Button size={size}>送出</Button>
+          <span className="text-caption text-fg-muted">size="{size}"</span>
+        </div>
+      ))}
+    </div>
+  ),
 }
 
 /* ── 格式化選項 ── */

@@ -139,7 +139,7 @@ export const ColumnTypes: Story = {
       typeCol.accessor('date', { header: 'Date', size: 110, meta: { type: 'date' } }),
       typeCol.accessor('active', { header: 'Boolean', size: 80, meta: { type: 'boolean' } }),
       typeCol.accessor('status', { header: 'Select', size: 110, meta: { type: 'select', options: statusOptions } }),
-      typeCol.accessor('tags', { header: 'MultiSelect', size: 180, meta: { type: 'multiSelect', options: tagOptions, maxVisible: 2 } }),
+      typeCol.accessor('tags', { header: 'MultiSelect', size: 180, meta: { type: 'multiSelect', options: tagOptions } }),
       typeCol.accessor('seller', { header: 'Person', size: 140, meta: { type: 'person' } }),
       typeCol.accessor('url', { header: 'Link', size: 160, meta: { type: 'link' } }),
     ]

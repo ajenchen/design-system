@@ -106,7 +106,6 @@ function renderTypedValue(value: unknown, meta?: Record<string, any>, autoRowHei
           value={value as string[] | null}
           options={meta?.options}
           wrap={wrap}
-          maxVisible={meta?.maxVisible}
         />
       )
     case 'person':

@@ -258,6 +258,43 @@ cursor 變化 + 細微色移疊加仍提供足夠互動回饋。
 | `ring-ring`    | focus ring（= primary）|
 
 
+## Nested Theme
+
+任何容器都可以透過 `data-theme="dark"` 或 `data-theme="light"` 切換子元素的色彩語境。最常見的場景是 **Tooltip**——底色是深色，子元素需要 dark token 才可讀。
+
+### 運作原理
+
+CSS 變數在定義元素上解析。`:root` 的 `--foreground: var(--color-neutral-9)` 在 `:root` 就解析成 light 值，子孫繼承的是結果，不是 `var()` 表達式。
+
+為了讓 nested theme 正確重新解析，`semantic.css` 的所有語義 token 定義在 `:root, [data-theme]`。任何帶 `data-theme` 的元素都會重新解析所有語義 token，子元素自動跟隨。
+
+### CSS 結構
+
+```
+① :root               — 固定值（--brand，不隨 theme 變）
+② :root, [data-theme] — 所有語義 token（default = light 值）
+③ [data-theme="dark"] — 只覆寫跟 light 不同的值
+```
+
+判斷標準：「這個 token 在 dark 要不要變？」要 → ③ 覆寫。不要 → 只寫在 ②。
+
+### 使用方式
+
+```tsx
+// Tooltip：子元素永遠 dark token
+<TooltipContent>
+  <div data-theme="dark" className="contents">{children}</div>
+</TooltipContent>
+
+// 任何容器都可以局部切換 theme
+<div data-theme="dark">
+  <Badge>dark mode badge</Badge>
+</div>
+```
+
+容器自身的樣式（如 tooltip 的 `bg-tooltip`）不受子 div 的 `data-theme` 影響——`data-theme` 在子 div 上，只影響子元素。
+
+
 ## 禁止事項
 
 ```tsx
@@ -273,6 +310,11 @@ cursor 變化 + 細微色移疊加仍提供足夠互動回饋。
 // ❌ 自己寫的元件不要用 shadcn alias
 <div className="bg-background" />  // 改用 bg-canvas
 <div className="bg-destructive" /> // 改用 bg-error
+
+// ❌ 不要在深色容器上硬寫 text-white 給子元件——用 data-theme="dark"
+<TooltipContent>
+  <Badge className="text-white" />  // 改用 data-theme="dark" wrapper
+</TooltipContent>
 ```
 
 ```tsx

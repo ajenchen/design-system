@@ -2,6 +2,7 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { MultiSelectField, MultiSelectFieldDisplay } from './multi-select-field'
+import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
 
@@ -50,31 +51,53 @@ export const Modes: Story = {
   },
 }
 
+/* ── 尺寸與 Button 對齊 ── */
+export const SizeAlignment: Story = {
+  name: '尺寸與 Button 對齊',
+  render: () => (
+    <div className="flex flex-col gap-4">
+      {(['sm', 'md', 'lg'] as const).map(size => (
+        <div key={size} className="flex items-center gap-3">
+          <MultiSelectField
+            size={size}
+            options={categoryOptions}
+            value={['electronics', 'food', 'lifestyle']}
+            className="max-w-xs"
+          />
+          <Button size={size}>送出</Button>
+          <span className="text-caption text-fg-muted">size="{size}"</span>
+        </div>
+      ))}
+    </div>
+  ),
+}
+
 /* ── 單行 vs 換行 ── */
 export const WrapModes: Story = {
   name: '單行 vs 換行',
   render: () => {
-    const [values, setValues] = React.useState(['electronics', 'food', 'lifestyle', 'clothing', 'furniture'])
+    const init = ['electronics', 'food', 'lifestyle', 'clothing', 'furniture']
+    const [v1, setV1] = React.useState(init)
+    const [v2, setV2] = React.useState(init)
     return (
-      <div className="flex flex-col gap-6 max-w-xs">
+      <div className="flex flex-col gap-6 w-72">
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">單行（預設）</h3>
-          <p className="text-caption text-fg-muted mb-3">固定高度，badges 超出時 truncate</p>
-          <MultiSelectField options={categoryOptions} value={values} onChange={setValues} />
+          <p className="text-caption text-fg-muted mb-3">塞不下的自動收進 +N，hover 顯示隱藏項</p>
+          <MultiSelectField options={categoryOptions} value={v1} onChange={setV1} />
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">單行 + maxVisible=2</h3>
-          <p className="text-caption text-fg-muted mb-3">最多顯示 2 個 badge，其餘 +N</p>
-          <MultiSelectField options={categoryOptions} value={values} onChange={setValues} maxVisible={2} />
+          <h3 className="text-body font-bold text-foreground mb-2">單行 readonly</h3>
+          <MultiSelectField mode="readonly" options={categoryOptions} value={init} />
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">換行（wrap）</h3>
           <p className="text-caption text-fg-muted mb-3">高度隨內容長，badges 自動換行</p>
-          <MultiSelectField options={categoryOptions} value={values} onChange={setValues} wrap />
+          <MultiSelectField options={categoryOptions} value={v2} onChange={setV2} wrap />
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">換行 readonly</h3>
-          <MultiSelectField mode="readonly" options={categoryOptions} value={values} wrap />
+          <MultiSelectField mode="readonly" options={categoryOptions} value={init} wrap />
         </div>
       </div>
     )

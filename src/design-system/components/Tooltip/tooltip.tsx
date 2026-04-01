@@ -12,7 +12,7 @@ const TooltipTrigger = TooltipPrimitive.Trigger
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = 8, style, ...props }, ref) => (
+>(({ className, sideOffset = 8, style, children, ...props }, ref) => (
   <TooltipPrimitive.Portal>
     <TooltipPrimitive.Content
       ref={ref}
@@ -26,7 +26,9 @@ const TooltipContent = React.forwardRef<
       )}
       style={{ boxShadow: 'var(--elevation-200)', ...style }}
       {...props}
-    />
+    >
+      <div data-theme="dark" className="contents">{children}</div>
+    </TooltipPrimitive.Content>
   </TooltipPrimitive.Portal>
 ))
 TooltipContent.displayName = TooltipPrimitive.Content.displayName
