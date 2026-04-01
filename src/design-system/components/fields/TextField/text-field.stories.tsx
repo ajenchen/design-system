@@ -72,30 +72,26 @@ export const WithStartIcon: Story = {
   ),
 }
 
-/* ── endAction ── */
+/* ── endAction（Inline Action 宣告式 API） ── */
 export const EndAction: Story = {
   name: 'endAction',
   render: () => {
     const [showPwd, setShowPwd] = React.useState(false)
     const [query, setQuery] = React.useState('Bluetooth')
+    const [queryLg, setQueryLg] = React.useState('Bluetooth')
 
     return (
-      <div className="flex flex-col gap-4 max-w-sm">
+      <div className="flex flex-col gap-6 max-w-sm">
         <div>
-          <p className="text-caption text-fg-muted mb-1">顯示/隱藏密碼</p>
+          <p className="text-caption text-fg-muted mb-1">顯示/隱藏密碼 — 宣告式 API，Field 自動決定 icon 尺寸和 hover 背景</p>
           <TextField
             type={showPwd ? 'text' : 'password'}
             defaultValue="my-secret-123"
-            endAction={
-              <Button
-                variant="text"
-                size="xs"
-                iconOnly
-                startIcon={showPwd ? EyeOff : Eye}
-                aria-label={showPwd ? '隱藏密碼' : '顯示密碼'}
-                onClick={() => setShowPwd(!showPwd)}
-              />
-            }
+            endAction={{
+              icon: showPwd ? EyeOff : Eye,
+              label: showPwd ? '隱藏密碼' : '顯示密碼',
+              onClick: () => setShowPwd(!showPwd),
+            }}
           />
         </div>
         <div>
@@ -104,18 +100,17 @@ export const EndAction: Story = {
             startIcon={Search}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            endAction={
-              query ? (
-                <Button
-                  variant="text"
-                  size="xs"
-                  iconOnly
-                  startIcon={X}
-                  aria-label="清除搜尋"
-                  onClick={() => setQuery('')}
-                />
-              ) : undefined
-            }
+            endAction={query ? { icon: X, label: '清除搜尋', onClick: () => setQuery('') } : undefined}
+          />
+        </div>
+        <div>
+          <p className="text-caption text-fg-muted mb-1">Size lg — endAction icon 自動放大到 20px，與 startIcon 對稱</p>
+          <TextField
+            size="lg"
+            startIcon={Search}
+            value={queryLg}
+            onChange={(e) => setQueryLg(e.target.value)}
+            endAction={queryLg ? { icon: X, label: '清除搜尋', onClick: () => setQueryLg('') } : undefined}
           />
         </div>
       </div>

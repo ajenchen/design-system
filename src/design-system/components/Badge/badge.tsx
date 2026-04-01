@@ -7,13 +7,14 @@ import { cn } from "@/lib/utils"
 // inline label，用於分類標籤、狀態標記、多選已選值。
 // 尺寸在元件內定義（不引用 field-height token，獨立於 Button 尺寸系統）。
 //
-// 兩種尺寸：
-//   md — 20px 高, 12px 字, 4px badge-px, font-medium（配 field sm/md）— 預設
-//   lg — 24px 高, 14px 字, 8px badge-px, font-normal（配 field lg）
+// 三種尺寸（子元件補齊原則——消費端直接透傳 size，不做 mapping）：
+//   sm — 20px 高, 12px 字, 4px badge-px, font-medium（配 field sm）
+//   md — 24px 高, 14px 字, 4px badge-px, font-normal（配 field md）— 預設
+//   lg — 24px = md alias（配 field lg，子元件補齊原則）
 //
 // 內部結構：
 //   [badge-px] [prefix?] [text-px TEXT text-px] [suffix?] [badge-px]
-//   badge-px = 外層呼吸空間（md=4, lg=8）
+//   badge-px = 外層呼吸空間（統一 4px）
 //   text-px  = 文字自身 padding（固定 4px），同時作為與 prefix/suffix 的間距
 //   不用 gap——text padding 自然拉開
 
@@ -30,9 +31,9 @@ const badgeVariants = cva(
         outline: "border-border bg-transparent text-foreground",
       },
       size: {
-        sm: "h-5 px-1 text-caption font-medium",     /* 20px = md alias */
-        md: "h-5 px-1 text-caption font-medium",     /* 20px, badge-px=4px */
-        lg: "h-6 px-2 text-body font-normal",         /* 24px, badge-px=8px */
+        sm: "h-5 px-1 text-caption font-medium",     /* 20px, badge-px=4px */
+        md: "h-6 px-1 text-body font-normal",         /* 24px, badge-px=4px — 預設 */
+        lg: "h-6 px-1 text-body font-normal",         /* 24px = md alias，子元件補齊 */
       },
     },
     defaultVariants: {
@@ -51,14 +52,15 @@ export interface BadgeProps
   suffix?: React.ReactNode
 }
 
-function Badge({ className, variant, size, prefix, suffix, children, ...props }: BadgeProps) {
-  return (
-    <div className={cn(badgeVariants({ variant, size }), className)} {...props}>
+const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
+  ({ className, variant, size, prefix, suffix, children, ...props }, ref) => (
+    <div ref={ref} className={cn(badgeVariants({ variant, size }), className)} {...props}>
       {prefix}
       <span className="px-1">{children}</span>
       {suffix}
     </div>
   )
-}
+)
+Badge.displayName = 'Badge'
 
 export { Badge, badgeVariants }

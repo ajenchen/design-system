@@ -1,8 +1,9 @@
 import * as React from 'react'
 import { type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
-import type { FieldMode } from '@/design-system/components/fields/field-types'
+import type { FieldMode, InlineActionConfig } from '@/design-system/components/fields/field-types'
 import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-system/components/fields/field-wrapper'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
 
 // ── Format ──────────────────────────────────────────────────────────────────
 
@@ -56,8 +57,8 @@ export interface NumberFieldProps
   value?: number | null
   /** 數值變更 */
   onChange?: (value: number | null) => void
-  /** 右側可互動元素 — Button xs iconOnly。 */
-  endAction?: React.ReactNode
+  /** 右側 inline action — 宣告式 API，Field 根據 size 自動渲染。 */
+  endAction?: InlineActionConfig
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -118,6 +119,9 @@ const NumberField = React.forwardRef<HTMLInputElement, NumberFieldProps>(
       }
     }
 
+    const iconSize = size === 'lg' ? 20 : 16
+    const actionHoverSize = iconSize + 2
+
     return (
       <div
         className={cn(
@@ -141,7 +145,41 @@ const NumberField = React.forwardRef<HTMLInputElement, NumberFieldProps>(
           className={bareInputStyles}
           {...props}
         />
-        {endAction}
+        {endAction && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={endAction.onClick}
+                className={cn(
+                  'group/action relative grid place-content-center shrink-0',
+                  'text-fg-muted hover:text-foreground active:text-foreground transition-colors',
+                )}
+                style={{ width: iconSize, height: iconSize }}
+                aria-label={endAction.label}
+              >
+                <span
+                  className={cn(
+                    'absolute rounded-sm pointer-events-none',
+                    'bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active',
+                    'transition-colors',
+                    size === 'lg' && 'rounded-md',
+                  )}
+                  style={{
+                    width: actionHoverSize,
+                    height: actionHoverSize,
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                  aria-hidden
+                />
+                <endAction.icon size={iconSize} className="relative" aria-hidden />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{endAction.label}</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     )
   }

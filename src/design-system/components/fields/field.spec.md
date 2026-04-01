@@ -92,14 +92,23 @@ Form wrapper 可透過 context 注入 `error` prop，消費者不需要在每個
 
 ---
 
-## endAction
+## endAction（Inline Action）
 
-右側可互動元素，用於操作動作（顯示密碼、清除內容）。
+右側可互動元素，用於操作動作（清除內容、顯示密碼等）。
 
-- **必須是 `<Button size="xs" iconOnly>`**——保證 Tab 可聚焦、hover 回饋、screen reader 支援，且不超過容器高度
-- **必須有 `aria-label`**——Button iconOnly 自動產生 Tooltip
-- **條件渲染即可**——消失後不佔位，input 自然擴展填滿空間
-- 下拉箭頭不屬於 TextField，屬於 Select / Combobox
+使用宣告式 API：
+
+```tsx
+<TextField endAction={{ icon: X, label: '清除', onClick: handleClear }} />
+```
+
+Field 內部根據 size tier 自動決定 icon 尺寸和 hover 背景大小，消費者不需要指定。共用規則見 `uiSize.spec.md` 的 Inline Action 段落。
+
+Icon 色彩遵循 Inline Action 統一規則：預設 `fg-muted`，hover 時 `foreground`。
+
+- disabled / readonly 模式不渲染 endAction
+- 條件渲染即可——消失後不佔位，input 自然擴展
+- 下拉箭頭不屬於 endAction，屬於 Select / Combobox
 
 ---
 
@@ -143,8 +152,7 @@ col.accessor('status', {
 
 - ❌ 不在 disabled input 內放 info icon——停用原因由外部 Tooltip 或 Form help text 承擔
 - ❌ 不在 input 尾部放 error 狀態 icon——邊框顏色已傳達 error
-- ❌ endAction 不可用 span + onClick——必須是 `<button>` 元素
-- ❌ endAction 不可用 `Button size` 大於 `xs`——會超過容器高度
-- ❌ endAction 的 icon-only 按鈕不可省略 `aria-label`——Tooltip 依賴它
+- ❌ endAction 不可傳入 ReactNode——使用 InlineActionConfig 宣告式 API
+- ❌ endAction 的 inline action 不可省略 `aria-label`（即 `label` 欄位）
 - ❌ Display 的 null 值不可顯示空白——統一使用 `—`（em dash）+ `text-fg-muted`
 - ❌ Field 的 readonly 模式不可用於 DataTable cell——readonly 有底色和 wrapper 開銷，table cell 用 Display 元件

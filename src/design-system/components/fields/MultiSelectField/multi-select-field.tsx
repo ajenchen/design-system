@@ -6,9 +6,11 @@ import { fieldWrapperStyles, EMPTY_DISPLAY } from '@/design-system/components/fi
 import { Badge } from '@/design-system/components/Badge/badge'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
+// tag 四邊等距：p = (field-height - badge-height) / 2
+// sm 用 badge-sm (20px=1.25rem)，md/lg 用 badge-md/lg (24px=1.5rem)
 const tagPadding: Record<string, string> = {
   sm: 'px-[calc((var(--field-height-sm)_-_1.25rem)_/_2)]',
-  md: 'px-[calc((var(--field-height-md)_-_1.25rem)_/_2)]',
+  md: 'px-[calc((var(--field-height-md)_-_1.5rem)_/_2)]',
   lg: 'px-[calc((var(--field-height-lg)_-_1.5rem)_/_2)]',
 }
 
@@ -28,7 +30,7 @@ function MultiSelectFieldDisplay({
 }: {
   value?: string[] | null
   options?: SelectOption[]
-  badgeSize?: 'md' | 'lg'
+  badgeSize?: 'sm' | 'md' | 'lg'
 }) {
   if (!value || value.length === 0) {
     return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
@@ -74,7 +76,6 @@ function MultiSelectField({
 }: MultiSelectFieldProps) {
   const resolvedMode = disabled ? 'disabled' : mode
   const isEditable = resolvedMode === 'edit'
-  const badgeSize = size === 'lg' ? 'lg' : 'md'
 
   const handleRemove = (removeValue: string) => {
     onChange?.(value.filter(v => v !== removeValue))
@@ -99,7 +100,7 @@ function MultiSelectField({
         data-field-mode={resolvedMode}
       >
         <span className={cn(resolvedMode === 'disabled' && 'opacity-disabled')}>
-          <MultiSelectFieldDisplay value={value} options={options} badgeSize={badgeSize} />
+          <MultiSelectFieldDisplay value={value} options={options} badgeSize={size} />
         </span>
       </div>
     )
@@ -128,15 +129,27 @@ function MultiSelectField({
         return (
           <Badge
             key={v}
-            size={badgeSize}
+            size={size}
             suffix={
               <button
                 type="button"
                 onClick={() => handleRemove(v)}
-                className="h-4 w-4 grid place-content-center rounded-sm hover:bg-neutral-active transition-colors"
+                className="group/action relative grid place-content-center text-fg-muted hover:text-foreground active:text-foreground transition-colors"
+                style={{ width: 16, height: 16 }}
                 aria-label={`移除 ${label}`}
               >
-                <X className="h-3 w-3" />
+                <span
+                  className="absolute rounded-sm pointer-events-none bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active transition-colors"
+                  style={{
+                    width: 18,
+                    height: 18,
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                  aria-hidden
+                />
+                <X size={16} className="relative" aria-hidden />
               </button>
             }
           >
@@ -159,5 +172,7 @@ function MultiSelectField({
     </div>
   )
 }
+
+MultiSelectField.displayName = 'MultiSelectField'
 
 export { MultiSelectField, MultiSelectFieldDisplay }

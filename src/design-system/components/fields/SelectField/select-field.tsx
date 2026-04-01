@@ -6,10 +6,10 @@ import { Badge } from '@/design-system/components/Badge/badge'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
 // tag 四邊等距：p = (field-height - badge-height) / 2
-// sm/md 用 badge-md (20px=1.25rem)，lg 用 badge-lg (24px=1.5rem)
+// sm 用 badge-sm (20px=1.25rem)，md/lg 用 badge-md/lg (24px=1.5rem)
 const tagPadding: Record<string, string> = {
   sm: 'px-[calc((var(--field-height-sm)_-_1.25rem)_/_2)]',
-  md: 'px-[calc((var(--field-height-md)_-_1.25rem)_/_2)]',
+  md: 'px-[calc((var(--field-height-md)_-_1.5rem)_/_2)]',
   lg: 'px-[calc((var(--field-height-lg)_-_1.5rem)_/_2)]',
 }
 
@@ -59,7 +59,6 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
     ref
   ) => {
     const resolvedMode = disabled ? 'disabled' : mode
-    const badgeSize = size === 'lg' ? 'lg' : 'md'
 
     // readonly / disabled：固定高度 + tag padding
     if (resolvedMode !== 'edit') {
@@ -74,7 +73,7 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
         >
           <span className={cn(resolvedMode === 'disabled' && 'opacity-disabled')}>
             {value
-              ? <Badge size={badgeSize}>{options?.find(o => o.value === value)?.label ?? value}</Badge>
+              ? <Badge size={size}>{options?.find(o => o.value === value)?.label ?? value}</Badge>
               : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
             }
           </span>

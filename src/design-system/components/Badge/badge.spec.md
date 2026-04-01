@@ -8,12 +8,15 @@ Badge（= Tag）是 inline label，用於分類標籤、狀態標記、多選已
 
 ## 尺寸
 
-兩種尺寸，不隨 density 變化。尺寸在元件內定義，不引用 field-height token——Badge 和 Button 尺寸是獨立的設計決策。
+三種尺寸（子元件補齊原則），不隨 density 變化。尺寸在元件內定義，不引用 field-height token——Badge 和 Button 尺寸是獨立的設計決策。
 
 | Size | 高度 | 字體 | 字重 | Badge px | Text px | 配對 field |
 |------|------|------|------|----------|---------|-----------|
-| md（預設） | 20px | text-caption (12px) | font-medium | 4px | 4px | field sm / md |
-| lg | 24px | text-body (14px) | font-normal | 8px | 4px | field lg |
+| sm | 20px | text-caption (12px) | font-medium | 4px | 4px | field sm |
+| md（預設） | 24px | text-body (14px) | font-normal | 4px | 4px | field md |
+| lg | 24px | text-body (14px) | font-normal | 4px | 4px | field lg（與 md 同值，子元件補齊原則） |
+
+**Badge 內 icon 統一 16px**，不分 Badge 尺寸。prefix icon 和 suffix icon（含 dismiss）都是 16px。
 
 ## 內部結構
 
@@ -52,6 +55,19 @@ Field 內包含 Badge 時，Field 的 padding 改為 `(field-height - badge-heig
 | outline | 邊框風格 |
 
 灰階 variant 的文字色是 `text-foreground`（neutral-9），不是降階色。
+
+---
+
+## Dismiss（Inline Action）
+
+可移除的 Badge 在 suffix 位置放置 dismiss inline action。共用規則見 `uiSize.spec.md` 的 Inline Action 段落。
+
+Icon 色彩遵循 Inline Action 統一規則：預設 `fg-muted`，hover 時 `foreground`。
+
+| Badge size | Icon | Hover 背景 | 上下呼吸空間 |
+|---|---|---|---|
+| sm (20px) | 16px | 18px | 1px |
+| md/lg (24px) | 16px | 18px | 3px |
 
 ---
 

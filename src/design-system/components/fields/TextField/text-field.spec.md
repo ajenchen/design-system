@@ -25,6 +25,20 @@ startIcon 不隨 value 變化——它描述的是 input 的用途，不是 valu
 
 ## endAction 的常見模式
 
+使用宣告式 API（`InlineActionConfig`），Field 自動根據 size 渲染：
+
+```tsx
+// 顯示/隱藏密碼
+<TextField
+  endAction={{ icon: showPwd ? EyeOff : Eye, label: showPwd ? '隱藏密碼' : '顯示密碼', onClick: () => setShowPwd(!showPwd) }}
+/>
+
+// 清除內容（有值時才顯示）
+<TextField
+  endAction={query ? { icon: X, label: '清除搜尋', onClick: () => setQuery('') } : undefined}
+/>
+```
+
 | 模式 | Icon | 行為 |
 |------|------|------|
 | 顯示/隱藏密碼 | `Eye` / `EyeOff` | toggle `type="password"` ↔ `type="text"` |

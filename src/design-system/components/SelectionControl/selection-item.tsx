@@ -32,7 +32,7 @@ export const selectionItemStyles = cva(
 // 通用 item 行：control（checkbox/radio）+ label + description。
 // control 包在 h-[1lh] 容器內，自動對齊第一行文字中心。
 
-export interface SelectionItemProps extends VariantProps<typeof selectionItemStyles> {
+export interface SelectionItemProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof selectionItemStyles> {
   /** Checkbox 或 RadioGroupItem 元素 */
   control: React.ReactNode
   /** Label 文字 */
@@ -46,17 +46,9 @@ export interface SelectionItemProps extends VariantProps<typeof selectionItemSty
   className?: string
 }
 
-function SelectionItem({
-  control,
-  label,
-  description,
-  htmlFor,
-  disabled,
-  size,
-  className,
-}: SelectionItemProps) {
-  return (
-    <div className={cn(selectionItemStyles({ size }), className)}>
+const SelectionItem = React.forwardRef<HTMLDivElement, SelectionItemProps>(
+  ({ control, label, description, htmlFor, disabled, size, className, ...props }, ref) => (
+    <div ref={ref} className={cn(selectionItemStyles({ size }), className)} {...props}>
       <div className="h-[1lh] flex items-center shrink-0">
         {control}
       </div>
@@ -78,6 +70,7 @@ function SelectionItem({
       </div>
     </div>
   )
-}
+)
+SelectionItem.displayName = 'SelectionItem'
 
 export { SelectionItem }

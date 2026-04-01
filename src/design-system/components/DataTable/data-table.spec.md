@@ -36,7 +36,7 @@ DataTable 有三種尺寸（`sm`、`md`、`lg`），透過 `size` prop 控制。
 
 **Size 不等於 density。** Size 是這張表格的結構決策（需要多緊湊），density 是全域的使用者偏好。同一頁可以有不同 size 的表格，density 全頁一致。
 
-水平 padding 隨 density 響應（觸控模式自動加大），垂直方向由行高模式決定（見第四節）。
+水平 padding 統一 12px，不隨 size 或 density 變化。垂直方向由行高模式決定（見第四節）。
 
 ### 二、高度模式
 

@@ -2,8 +2,9 @@ import * as React from 'react'
 import { type VariantProps } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldMode } from '@/design-system/components/fields/field-types'
+import type { FieldMode, InlineActionConfig } from '@/design-system/components/fields/field-types'
 import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-system/components/fields/field-wrapper'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -16,8 +17,8 @@ export interface TextFieldProps
   error?: boolean
   /** 左側靜態 icon — 輔助理解 input 用途（如 Search）。fg-muted。 */
   startIcon?: LucideIcon
-  /** 右側可互動元素 — Button xs iconOnly。條件渲染即可，不佔位。 */
-  endAction?: React.ReactNode
+  /** 右側 inline action — 宣告式 API，Field 根據 size 自動渲染。 */
+  endAction?: InlineActionConfig
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -41,6 +42,7 @@ const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
     const isEditable = resolvedMode === 'edit'
     const iconSize = size === 'lg' ? 20 : 16
     const iconColor = resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted'
+    const actionHoverSize = iconSize + 2
 
     return (
       <div
@@ -74,7 +76,41 @@ const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
           )}
           {...props}
         />
-        {endAction}
+        {endAction && isEditable && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={endAction.onClick}
+                className={cn(
+                  'group/action relative grid place-content-center shrink-0',
+                  'text-fg-muted hover:text-foreground active:text-foreground transition-colors',
+                )}
+                style={{ width: iconSize, height: iconSize }}
+                aria-label={endAction.label}
+              >
+                <span
+                  className={cn(
+                    'absolute rounded-sm pointer-events-none',
+                    'bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active',
+                    'transition-colors',
+                    size === 'lg' && 'rounded-md',
+                  )}
+                  style={{
+                    width: actionHoverSize,
+                    height: actionHoverSize,
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                  aria-hidden
+                />
+                <endAction.icon size={iconSize} className="relative" aria-hidden />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{endAction.label}</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     )
   }

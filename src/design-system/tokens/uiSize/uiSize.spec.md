@@ -33,26 +33,101 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 |---|---|---|
 | **Field 高度** | 24 / 28 / 32px | **36px** |
 | **Icon 尺寸** | 16px | **20px** |
-| **Badge 尺寸** | md (20px) | **lg (24px)** |
 | **Checkbox / Radio** | sm/md (16px) | **lg (20px)** |
 | **字體** | text-body (14px) | **text-body-lg (16px)** |
 
-### Icon-in-Container 規則
+### 子元件補齊原則
 
-容器 ≤ 20px（指示器類：Checkbox、Radio、Badge suffix button）：
-- **icon = 容器 - 4px**——icon 填充容器，保證可見性
+當子元件被父元件透過 size prop 消費時，子元件必須補齊父元件的所有 size 選項，即使值重複。消費端直接透傳 size，不做 mapping。
 
-容器 > 20px（互動元件：Button、TextField）：
-- **icon 固定 16px 或 20px**——多出的空間是觸控區域，不是放大 icon
-- xs / sm / md = 16px，lg = 20px
+已套用此原則的元件：Checkbox（sm=md=16px）、Radio（sm=md=16px）、Badge（lg=md=24px）。
+
+### 元件高度地板
+
+**field-height-xs（24px）是獨立互動元件的最小高度。** 任何可獨立存在的互動元件（Button、TextField 等）不得使用比 field-height-xs 更小的高度。若空間不足以容納 24px，應重新檢視容器佈局，而非縮小元件。
+
+比 24px 更小的互動區域只存在於元件內部的 Inline Action（如 Badge dismiss、Field endAction），由宿主元件的 spec 定義規格。
+
+### Icon 尺寸 Tier
+
+系統有兩個 icon tier，由元件引用的 field-height token 決定：
+
+| 元件引用 | Icon | 控件（Checkbox/Radio） | 字體 |
+|---|---|---|---|
+| `field-height-xs / sm / md` | 16px | 16px（內部 icon 12px） | text-body |
+| `field-height-lg` | 20px | 20px（內部 icon 16px） | text-body-lg |
+
+這是離散的兩組配對，不存在中間值，不需要公式推導。判斷依據是元件自身的 size prop 對應到哪個 field-height token，與全域 density 設定無關（density 只負責等比放大 field-height 的 px 值）。
+
+**Stroke icon 尺寸的下限是 12px**（出現在 Checkbox 等指示器容器內部）。Filled indicator（如 Radio 的實心圓點）不受此限制——實心形狀在任何尺寸都清晰可辨。
 
 ### Badge ↔ Field 配對
 
+Badge 有自己的尺寸定義（見 `badge.spec.md`），與 Field 的配對透過 size 直接對應：
+
 | Field size | Badge size | Badge 高度 | Tag padding (四邊等距) |
 |---|---|---|---|
-| sm | md | 20px | (field-height-sm - 1.25rem) / 2 |
-| md | md | 20px | (field-height-md - 1.25rem) / 2 |
+| sm | sm | 20px | (field-height-sm - 1.25rem) / 2 |
+| md | md | 24px | (field-height-md - 1.5rem) / 2 |
 | lg | lg | 24px | (field-height-lg - 1.5rem) / 2 |
+
+---
+
+## Inline Action
+
+嵌入在其他元件內部的互動觸發點（Badge dismiss、Field endAction 等）。不是獨立的 Button，由宿主元件渲染和控制。
+
+### 視覺規則
+
+1. **Icon 視覺尺寸跟隨宿主 tier**，排版以 icon 為準
+2. **平時透明**，視覺上等同靜態 icon
+3. **Hover 時顯示背景色區域**，提示可點擊。背景色區域 = icon + 2px（直徑，即每邊 +1px），不影響排版（用 absolute positioning 或 negative margin 溢出）
+
+### 互動狀態
+
+與 Button text variant 一致：
+
+| 狀態 | 背景 | 過渡 |
+|---|---|---|
+| 預設 | transparent | — |
+| hover | `bg-neutral-hover` | transition-colors |
+| active | `bg-neutral-active` | transition-colors |
+| focus-visible | `outline: 2px solid var(--ring)` | — |
+| 宿主 disabled | 不渲染 inline action | — |
+
+### Icon 色彩
+
+所有 inline action 統一行為：預設 `fg-muted`，hover / active 時變 `foreground`。不區分層級——utility icon 本質上都是輔助操作，預設退到背景，hover 時提示可操作。
+
+### 尺寸對照
+
+| 宿主 | Icon 視覺 | Hover 背景 | 圓角 | 排版佔位 |
+|---|---|---|---|---|
+| Badge sm (20px) | 16px | 18px | rounded-sm | 16px |
+| Badge md/lg (24px) | 16px | 18px | rounded-sm | 16px |
+| Field sm/md | 16px | 18px | rounded-sm | 16px |
+| Field lg | 20px | 22px | rounded-md | 20px |
+
+### API 設計
+
+Inline action 由宿主元件渲染，消費者只需宣告 intent：
+
+```tsx
+// ❌ 舊：消費者自行決定 Button size、icon size
+<TextField endAction={<Button size="xs" iconOnly startIcon={X} aria-label="清除" onClick={...} />} />
+
+// ✅ 新：宣告式，Field 自己根據 size tier 渲染
+<TextField endAction={{ icon: X, label: '清除', onClick: handleClear }} />
+```
+
+Field 內部根據自己的 size 決定 icon 尺寸、hover 背景大小、視覺層級。消費者不需要知道這些。
+
+### 實作要求
+
+- 必須是 `<button>` 元素，不是 `<span>` + onClick
+- 必須有 `aria-label`
+- 必須有 Tooltip（`label` 欄位同時作為 `aria-label` 和 tooltip 內容）——icon-only 控件沒有可見文字，tooltip 是使用者理解功能的唯一視覺提示
+- 宿主 disabled 時不渲染（不可操作就不該暗示可以操作）
 
 ---
 
