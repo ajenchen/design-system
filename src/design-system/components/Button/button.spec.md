@@ -15,6 +15,7 @@ Button 是最基礎的互動元件，用於觸發操作或導覽。
 
 - `startIcon`：最多一個，放在最左側
 - `badge` 和 `endIcon` 可同時出現在右側
+- `badge` 傳入 Badge 元件（通知計數指示器）。Badge 層級應匹配按鈕的視覺重量——深色底按鈕（primary、checked、secondary+danger）只適合 `critical`，詳見 `badge.spec.md`
 
 ---
 

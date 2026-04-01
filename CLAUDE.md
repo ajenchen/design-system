@@ -56,6 +56,14 @@ src/
 │   │       ├── radius.spec.md         ← 圓角使用規則
 │   │       └── radius.stories.tsx
 │   ├── components/                    ← shadcn 積木元件（一個元件一個資料夾）
+│   │   ├── Badge/                     ← 通知計數指示器（紅點 / 計數膠囊）
+│   │   │   ├── badge.tsx
+│   │   │   ├── badge.spec.md
+│   │   │   └── badge.stories.tsx
+│   │   ├── Tag/                       ← inline label（分類標籤 / 狀態標記）
+│   │   │   ├── tag.tsx
+│   │   │   ├── tag.spec.md
+│   │   │   └── tag.stories.tsx
 │   │   └── Button/
 │   │       ├── button.tsx
 │   │       ├── button-group.tsx
@@ -160,6 +168,16 @@ element.style.backgroundColor = 'var(--primary)'
 | `rounded-md`   | 4px（--radius-md）    |
 | `rounded-lg`   | 8px（--radius-lg）    |
 | `rounded-full` | 9999px（--radius-full）|
+
+
+# 元件 Props 命名原則
+
+**按「是什麼」命名，不按「在哪裡」命名。** 參考 Material（Chip: avatar / icon / deleteIcon）、Ant Design（Tag: icon / closeIcon）等世界級設計系統。
+
+- slot 只接受 icon → 命名帶 `icon`（如 `startIcon`、`endIcon`），型別用 `LucideIcon`，元件內部控制尺寸
+- slot 接受任意視覺元素 → 命名描述內容類型（如 `avatar`），型別用 `ReactNode`
+- slot 是行為 → 用 callback（如 `onDismiss`），元件內部渲染互動元素並控制尺寸與樣式
+- ❌ 不用 `prefix` / `suffix` / `left` / `right` 等純位置名——這些不傳達內容本質，也無法約束型別
 
 
 # shadcn 元件規範

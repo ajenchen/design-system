@@ -36,18 +36,26 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 | md（預設） | 24px | text-body (14px) | font-normal | 4px | 4px | field md |
 | lg | 24px | text-body (14px) | font-normal | 4px | 4px | field lg（與 md 同值，子元件補齊原則） |
 
-**Tag 內 icon 統一 16px**，不分 Tag 尺寸。prefix icon 和 suffix icon（含 dismiss）都是 16px。
+**Tag 內 icon 統一 16px**，不分 Tag 尺寸。
 
 ## 內部結構
 
 ```
-[tag-px] [prefix?] [text-px TEXT text-px] [suffix?] [tag-px]
+[tag-px] [icon? | avatar?] [text-px TEXT text-px] [dismiss?] [tag-px]
 ```
 
 - tag-px：外層呼吸空間
-- text-px：文字自身 padding（固定 4px），同時作為與 prefix/suffix 的間距
+- text-px：文字自身 padding（固定 4px），同時作為與 icon/avatar 和 dismiss 的間距
 - 不用 gap——text padding 自然拉開
-- 前後綴顏色繼承文字色
+- icon / dismiss 顏色繼承文字色
+
+### Props
+
+| Prop | 類型 | 說明 |
+|------|------|------|
+| `icon` | `LucideIcon` | 左側 icon，Tag 統一 16px。與 avatar 互斥 |
+| `avatar` | `ReactNode` | 左側 avatar。與 icon 互斥 |
+| `onDismiss` | `() => void` | 可移除——Tag 自動渲染 dismiss 按鈕並控制尺寸與互動樣式 |
 
 ## 圓角
 
@@ -65,7 +73,9 @@ Field 內包含 Tag 時，Field 的 padding 改為 `(field-height - tag-height) 
 
 ## Dismiss（Inline Action）
 
-可移除的 Tag 在 suffix 位置放置 dismiss inline action。共用規則見 `uiSize.spec.md` 的 Inline Action 段落。
+傳入 `onDismiss` callback 時，Tag 自動渲染 dismiss 按鈕。消費端不需要自行建構 dismiss 按鈕或知道 inline action 的尺寸規格。
+
+共用規則見 `uiSize.spec.md` 的 Inline Action 段落。
 
 Icon 色彩遵循 Inline Action 統一規則：預設 `fg-muted`，hover 時 `foreground`。
 
@@ -79,6 +89,7 @@ Icon 色彩遵循 Inline Action 統一規則：預設 `fg-muted`，hover 時 `fo
 ## 禁止事項
 
 - ❌ Tag 尺寸不引用 field-height token——兩者獨立
-- ❌ 不用 gap 處理 prefix/suffix 間距——text padding 已拉開
+- ❌ 不用 gap 處理 icon/dismiss 間距——text padding 已拉開
 - ❌ 不用 Tag 做 overlay 通知圓點——那是不同元件（Badge）
 - ❌ 不用 variant 名稱傳達語義（例：不靠 `red` = 錯誤）——variant 是顏色，語義由消費端的內容和上下文決定
+- ❌ 不用 prefix/suffix 傳入 dismiss 按鈕——用 `onDismiss` callback，Tag 內部控制渲染
