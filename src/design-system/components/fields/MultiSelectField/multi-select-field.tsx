@@ -5,6 +5,7 @@ import type { FieldMode } from '@/design-system/components/fields/field-types'
 import { fieldWrapperStyles, EMPTY_DISPLAY } from '@/design-system/components/fields/field-wrapper'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
+import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
 
 // ── constants ───────────────────────────────────────────────────────────────
 
@@ -125,20 +126,11 @@ function OverflowTagList({ containerRef, items, size, wrap, renderTag, trailing 
           </div>
         ))}
         <div ref={overflowEl} className="shrink-0">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Tag size={size} className="shrink-0 cursor-default">+ {overflow} …</Tag>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <div className="flex flex-wrap gap-1">
-                {hiddenItems.map(item => (
-                  <Tag key={item.value} size="sm" className="max-w-none">{item.label}</Tag>
-                ))}
-              </div>
-            </TooltipContent>
-          </Tooltip>
+          <OverflowIndicator count={overflow} size={size}>
+            {hiddenItems.map(item => (
+              <Tag key={item.value} size="sm">{item.label}</Tag>
+            ))}
+          </OverflowIndicator>
         </div>
         {trailing}
       </span>

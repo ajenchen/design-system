@@ -1,8 +1,8 @@
 import type React from 'react'
 import { User } from 'lucide-react'
 import { EMPTY_DISPLAY } from '@/design-system/components/fields/field-wrapper'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
 import { Tag } from '@/design-system/components/Tag/tag'
+import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -98,30 +98,22 @@ function MultiPersonDisplay({
         />
       ))}
       {overflow > 0 && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span
-              className={`shrink-0 ${avatarSizeClass[size]} rounded-full inline-grid place-content-center text-[10px] font-medium leading-none bg-muted text-foreground ring-2 ring-[var(--surface)] -ml-0.5 cursor-default`}
+        <OverflowIndicator
+          count={overflow}
+          size={size}
+          className="ring-2 ring-[var(--surface)] -ml-0.5"
+        >
+          {hidden.map((person, i) => (
+            <Tag
+              key={person.name + i}
+              variant="neutral"
+              size="sm"
+              avatar={<Avatar person={person} />}
             >
-              +{overflow}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>
-            <div className="flex flex-col gap-1">
-              {hidden.map((person, i) => (
-                <Tag
-                  key={person.name + i}
-                  variant="neutral"
-                  size="sm"
-                  className="max-w-none"
-                  avatar={<Avatar person={person} />}
-                >
-                  {person.name}
-                </Tag>
-              ))}
-            </div>
-          </TooltipContent>
-        </Tooltip>
+              {person.name}
+            </Tag>
+          ))}
+        </OverflowIndicator>
       )}
     </span>
   )
