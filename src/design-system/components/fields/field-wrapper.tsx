@@ -21,7 +21,7 @@ export const fieldWrapperStyles = cva(
       mode: {
         edit: [
           'bg-surface border border-border',
-          'hover:border-[var(--color-neutral-6)]',
+          'hover:border-border-hover',
           'focus-within:border-primary focus-within:hover:border-primary',
         ],
         readonly: 'bg-disabled border border-transparent',

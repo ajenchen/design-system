@@ -27,7 +27,7 @@ const radioItemVariants = cva(
     'grid place-content-center shrink-0 rounded-full',
     'border border-border bg-surface',
     'transition-colors duration-150',
-    'hover:border-[var(--color-neutral-6)]',
+    'hover:border-border-hover',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     'data-[state=checked]:border-primary data-[state=checked]:text-primary',
     'data-[state=checked]:hover:border-primary-hover data-[state=checked]:hover:text-primary-hover',

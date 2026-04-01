@@ -23,7 +23,7 @@ const badgeVariants = cva(
         critical: 'bg-notification text-white',
         high: 'bg-primary text-white',
         medium: 'bg-primary-subtle text-primary',
-        low: 'bg-[var(--color-neutral-3-opaque)] text-[var(--color-neutral-7-opaque)]',
+        low: 'bg-secondary text-fg-muted',
       },
       dot: {
         true: 'w-1.5 h-1.5',

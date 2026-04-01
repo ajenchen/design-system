@@ -134,11 +134,22 @@
   --warning-active:       var(--color-yellow-7);
   --warning-subtle:       var(--color-yellow-1);
 
+  /* Categorical — 分類色，用於 Tag 等需要多色區分的場景 */
+  --turquoise:            var(--color-turquoise-6);
+  --turquoise-subtle:     var(--color-turquoise-1);
+  --purple:               var(--color-purple-6);
+  --purple-subtle:        var(--color-purple-1);
+  --magenta:              var(--color-magenta-6);
+  --magenta-subtle:       var(--color-magenta-1);
+  --indigo:               var(--color-indigo-6);
+  --indigo-subtle:        var(--color-indigo-1);
+
   /* Notification */
   --notification:         var(--color-deep-orange-6);
 
   /* Border / Divider */
   --border:               var(--color-neutral-5);
+  --border-hover:         var(--color-neutral-6);
   --divider:              var(--color-neutral-4);
   --input:                var(--border);
   --ring:                 var(--primary);
@@ -191,6 +202,12 @@
   --error-subtle:         oklch(from var(--error)   l c h / calc(0.12 / l));
   --success-subtle:       oklch(from var(--success) l c h / calc(0.12 / l));
   --warning-subtle:       oklch(from var(--warning) l c h / calc(0.12 / l));
+
+  /* Categorical subtle — 同公式 */
+  --turquoise-subtle:     oklch(from var(--turquoise) l c h / calc(0.12 / l));
+  --purple-subtle:        oklch(from var(--purple)    l c h / calc(0.12 / l));
+  --magenta-subtle:       oklch(from var(--magenta)   l c h / calc(0.12 / l));
+  --indigo-subtle:        oklch(from var(--indigo)    l c h / calc(0.12 / l));
 }
 
 
@@ -270,8 +287,19 @@
 
   /* Border / Ring / Input */
   --color-border:                var(--border);
+  --color-border-hover:          var(--border-hover);
   --color-input:                 var(--input);
   --color-ring:                  var(--ring);
+
+  /* Categorical */
+  --color-turquoise:             var(--turquoise);
+  --color-turquoise-subtle:      var(--turquoise-subtle);
+  --color-purple:                var(--purple);
+  --color-purple-subtle:         var(--purple-subtle);
+  --color-magenta:               var(--magenta);
+  --color-magenta-subtle:        var(--magenta-subtle);
+  --color-indigo:                var(--indigo);
+  --color-indigo-subtle:         var(--indigo-subtle);
 
   /* Branding */
   --color-brand:                 var(--brand);
