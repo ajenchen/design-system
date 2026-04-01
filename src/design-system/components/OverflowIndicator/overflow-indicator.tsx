@@ -10,7 +10,7 @@ import { Tag } from '@/design-system/components/Tag/tag'
 //   circle — avatar 堆疊溢出（rounded-full）
 //   tag    — tag 溢出（用 Tag component，與 Tag 外觀一致）
 //
-// Tooltip 用 flex-wrap 排列，JS 量測後收縮寬度到最寬行。
+// Tooltip 用 flex-wrap 排列，JS 量測後收縮容器寬度到最寬行。
 
 const triggerSize: Record<string, string> = {
   sm: 'h-5 min-w-5',
@@ -25,65 +25,63 @@ const triggerText: Record<string, string> = {
 }
 
 export interface OverflowIndicatorProps {
-  /** 溢出數量 */
   count: number
-  /** 觸發器外觀：circle = avatar 溢出，tag = tag 溢出 */
   shape?: 'circle' | 'tag'
-  /** 尺寸，與 Tag/Avatar 高度對齊 */
   size?: 'sm' | 'md' | 'lg'
-  /** tooltip 內容（通常是 Tag 列表） */
   children: React.ReactNode
-  /** 額外 className（套用在 +N 觸發器上） */
   className?: string
 }
 
-// ── Shrink-wrap hook ────────────────────────────────────────────────────────
-// flex-wrap + fit-content 無法 shrink（CSS 規格限制）。
-// 先以 max-width 渲染讓 flex-wrap 自然換行，再量測每行實際寬度，
-// 將容器 max-width 收縮到最寬行 + padding。
+// ── ShrinkWrapList ──────────────────────────────────────────────────────────
+// flex-wrap 容器，mount 後量測每行實際寬度，收縮到最寬行。
+// 邏輯來自消費端驗證過的 calculateContainerWidth 演算法。
 
-function useShrinkWrap(ref: React.RefObject<HTMLDivElement | null>) {
-  React.useLayoutEffect(() => {
-    const el = ref.current
-    if (!el) return
+function ShrinkWrapList({ children }: { children: React.ReactNode }) {
+  const ref = React.useCallback((container: HTMLDivElement | null) => {
+    if (!container) return
 
-    // 重置，讓 flex-wrap 以原始 max-width 計算
-    el.style.maxWidth = ''
+    // 重置讓 flex-wrap 以原始 max-width 排列
+    container.style.maxWidth = ''
 
-    const cs = getComputedStyle(el)
-    const padL = parseFloat(cs.paddingLeft) || 0
-    const padR = parseFloat(cs.paddingRight) || 0
-    const available = el.clientWidth - padL - padR
+    // requestAnimationFrame 確保 layout 完成
+    requestAnimationFrame(() => {
+      const cs = getComputedStyle(container)
+      const padL = parseFloat(cs.paddingLeft) || 0
+      const padR = parseFloat(cs.paddingRight) || 0
+      const gap = parseFloat(cs.gap) || parseFloat(cs.columnGap) || 0
+      const available = container.offsetWidth - padL - padR
 
-    const children = Array.from(el.querySelector('[data-overflow-list]')?.children ?? []) as HTMLElement[]
-    if (children.length === 0) return
+      const items = Array.from(container.children) as HTMLElement[]
+      if (items.length === 0) return
 
-    const gap = parseFloat(getComputedStyle(el.querySelector('[data-overflow-list]')!).gap) || 0
+      let currentRow = 0
+      let maxRow = 0
 
-    let currentRow = 0
-    let maxRow = 0
+      items.forEach((item, i) => {
+        const w = item.offsetWidth
+        const withGap = currentRow > 0 ? gap + w : w
 
-    children.forEach((child, i) => {
-      const w = child.offsetWidth
-      const next = currentRow + (i > 0 && currentRow > 0 ? gap : 0) + w
+        if (currentRow + withGap > available && currentRow > 0) {
+          maxRow = Math.max(maxRow, currentRow)
+          currentRow = w
+        } else {
+          currentRow += withGap
+        }
+      })
+      maxRow = Math.max(maxRow, currentRow)
 
-      if (next > available && currentRow > 0) {
-        maxRow = Math.max(maxRow, currentRow)
-        currentRow = w
-      } else {
-        currentRow = next
-      }
+      container.style.maxWidth = `${Math.ceil(maxRow) + padL + padR}px`
     })
-    maxRow = Math.max(maxRow, currentRow)
+  }, [children])
 
-    el.style.maxWidth = `${Math.ceil(maxRow) + padL + padR}px`
-  })
+  return (
+    <div ref={ref} className="flex flex-wrap gap-1 p-2 max-w-[280px]">
+      {children}
+    </div>
+  )
 }
 
 function OverflowIndicator({ count, shape = 'circle', size = 'md', children, className }: OverflowIndicatorProps) {
-  const contentRef = React.useRef<HTMLDivElement>(null)
-  useShrinkWrap(contentRef)
-
   if (count <= 0) return null
 
   return (
@@ -107,8 +105,8 @@ function OverflowIndicator({ count, shape = 'circle', size = 'md', children, cla
           </span>
         )}
       </TooltipTrigger>
-      <TooltipContent ref={contentRef} className="px-2 py-2">
-        <div data-overflow-list className="flex flex-wrap gap-1">{children}</div>
+      <TooltipContent className="!p-0">
+        <ShrinkWrapList>{children}</ShrinkWrapList>
       </TooltipContent>
     </Tooltip>
   )
