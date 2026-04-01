@@ -60,7 +60,7 @@ const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
         {StartIcon && (
           <StartIcon
             size={iconSize}
-            className={cn('shrink-0', iconColor)}
+            className={cn('shrink-0 pointer-events-none', iconColor)}
             aria-hidden
           />
         )}
@@ -83,7 +83,7 @@ const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(
                 type="button"
                 onClick={endAction.onClick}
                 className={cn(
-                  'group/action relative grid place-content-center shrink-0',
+                  'group/action relative grid place-content-center shrink-0 cursor-pointer',
                   'text-fg-muted hover:text-foreground active:text-foreground transition-colors',
                 )}
                 style={{ width: iconSize, height: iconSize }}

@@ -82,6 +82,22 @@ Form wrapper 可透過 context 注入 `error` prop，消費者不需要在每個
 
 ---
 
+## 點擊與游標原則
+
+### 點擊穿透
+
+Field 內部所有不會觸發獨立 action 的元素必須 `pointer-events-none`，讓點擊穿透到底層的 input/select，確保使用者點擊 Field 內任何位置都能 focus/activate。
+
+穿透（`pointer-events-none`）：startIcon、ChevronDown 下拉箭頭、badge 文字區域。
+不穿透：endAction（clear、toggle password）、badge dismiss button——這些有自己的 action。
+
+### 游標指引
+
+可點擊的元素必須有明確的 cursor 變化：
+- endAction、dismiss button → `cursor-pointer`
+- input / select → `cursor-text` / `cursor-pointer`（原生行為）
+- disabled → `cursor-not-allowed`
+
 ## Icon 色彩原則
 
 Field 內的 icon 色彩取決於它的角色：

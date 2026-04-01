@@ -22,10 +22,10 @@ export interface SelectOption {
   label: string
 }
 
-function SelectFieldDisplay({ value, options }: { value?: string | null; options?: SelectOption[] }) {
+function SelectFieldDisplay({ value, options, size }: { value?: string | null; options?: SelectOption[]; size?: 'sm' | 'md' | 'lg' }) {
   if (!value) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
   const label = options?.find(o => o.value === value)?.label ?? value
-  return <Badge>{label}</Badge>
+  return <Badge size={size}>{label}</Badge>
 }
 SelectFieldDisplay.displayName = 'SelectFieldDisplay'
 
@@ -128,7 +128,7 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
               <button
                 type="button"
                 onClick={() => onChange?.('')}
-                className="group/action relative grid place-content-center shrink-0 text-fg-muted hover:text-foreground active:text-foreground transition-colors"
+                className="group/action relative grid place-content-center shrink-0 cursor-pointer text-fg-muted hover:text-foreground active:text-foreground transition-colors"
                 style={{ width: iconSize, height: iconSize }}
                 aria-label="清除選取"
               >

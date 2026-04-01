@@ -54,22 +54,23 @@ export const Modes: Story = {
 /* ── 尺寸與 Button 對齊 ── */
 export const SizeAlignment: Story = {
   name: '尺寸與 Button 對齊',
-  render: () => (
-    <div className="flex flex-col gap-4">
-      {(['sm', 'md', 'lg'] as const).map(size => (
-        <div key={size} className="flex items-center gap-3">
-          <MultiSelectField
-            size={size}
-            options={categoryOptions}
-            value={['electronics', 'food', 'lifestyle']}
-            className="max-w-xs"
-          />
-          <Button size={size}>送出</Button>
-          <span className="text-caption text-fg-muted">size="{size}"</span>
-        </div>
-      ))}
-    </div>
-  ),
+  render: () => {
+    const [sm, setSm] = React.useState(['electronics', 'food', 'lifestyle'])
+    const [md, setMd] = React.useState(['electronics', 'food', 'lifestyle'])
+    const [lg, setLg] = React.useState(['electronics', 'food', 'lifestyle'])
+    const states: Record<string, [string[], (v: string[]) => void]> = { sm: [sm, setSm], md: [md, setMd], lg: [lg, setLg] }
+    return (
+      <div className="flex flex-col gap-4">
+        {(['sm', 'md', 'lg'] as const).map(size => (
+          <div key={size} className="flex items-center gap-3">
+            <MultiSelectField size={size} options={categoryOptions} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" />
+            <Button size={size}>送出</Button>
+            <span className="text-caption text-fg-muted">size="{size}"</span>
+          </div>
+        ))}
+      </div>
+    )
+  },
 }
 
 /* ── 單行 vs 換行 ── */

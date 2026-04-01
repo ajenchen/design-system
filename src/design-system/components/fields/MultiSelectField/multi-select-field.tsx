@@ -94,7 +94,7 @@ function DismissButton({ label, onClick }: { label: string; onClick: () => void 
     <button
       type="button"
       onClick={onClick}
-      className="group/action relative grid place-content-center text-fg-muted hover:text-foreground active:text-foreground transition-colors"
+      className="group/action relative grid place-content-center text-fg-muted hover:text-foreground active:text-foreground transition-colors cursor-pointer"
       style={{ width: 16, height: 16 }}
       aria-label={`移除 ${label}`}
     >
@@ -298,13 +298,19 @@ function MultiSelectField({
 
   // edit
   const unselected = options.filter(o => !value.includes(o.value))
+  // 有值時 select 覆蓋整個 field（absolute inset-0），
+  // 無值時正常顯示 placeholder。badges 和右側控件用 z-10 蓋在 select 上方。
+  const selectRef = React.useRef<HTMLSelectElement>(null)
   const selectDropdown = unselected.length > 0 ? (
     <select
+      ref={selectRef}
       value=""
       onChange={(e) => handleAdd(e.target.value)}
       className={cn(
         'bg-transparent outline-none border-none p-0 text-[inherit] font-[inherit] leading-[inherit] text-fg-muted cursor-pointer appearance-none',
-        value.length > 0 ? 'flex-1 min-w-0 opacity-0' : 'flex-1 min-w-20',
+        value.length > 0
+          ? 'absolute inset-0 w-full h-full opacity-0 z-0 cursor-pointer'
+          : 'relative z-10 flex-1 min-w-20',
       )}
     >
       <option value="" disabled>{placeholder ?? '選擇...'}</option>
@@ -317,25 +323,29 @@ function MultiSelectField({
   // badges 區域的 ref（overflow 量測用這個，不是 field wrapper）
   const badgeAreaRef = React.useRef<HTMLDivElement>(null)
 
+  const badgeHeight = size === 'sm' ? 20 : 24
+
   return (
     <div
       className={cn(
         fieldWrapperStyles({ mode: 'edit', size }),
         tagPadding[size],
+        'relative',
+        wrap && 'items-start py-1',
         error && [
           'border-error hover:border-error-hover',
           'focus-within:border-error focus-within:hover:border-error',
         ],
         className,
       )}
-      style={{ gap: GAP, ...(wrap ? { height: 'auto' } : undefined) }}
+      style={{ gap: GAP, paddingRight: '0.75rem', ...(wrap ? { height: 'auto' } : undefined) }}
       data-field-mode="edit"
       data-error={error ? '' : undefined}
     >
-      {/* badges 區域：flex-1 佔剩餘空間，獨立處理 overflow */}
+      {/* badges 區域 */}
       <div
         ref={badgeAreaRef}
-        className={cn('flex-1 min-w-0 flex items-center', wrap ? 'flex-wrap' : 'overflow-hidden')}
+        className={cn('flex-1 min-w-0 flex items-center relative', wrap ? 'flex-wrap' : 'overflow-hidden')}
         style={{ gap: GAP }}
       >
         <OverflowBadgeList
@@ -346,38 +356,45 @@ function MultiSelectField({
           renderBadge={(item) => (
             <Badge
               size={size}
-              className="shrink-0"
+              className="shrink-0 relative z-10"
               suffix={<DismissButton label={item.label} onClick={() => handleRemove(item.value)} />}
             >
               {item.label}
             </Badge>
           )}
-          trailing={selectDropdown}
+          trailing={value.length === 0 ? selectDropdown : undefined}
         />
       </div>
-      {/* 右側固定元素：不隨 badge 數量移動 */}
-      {showClear && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={() => onChange?.([])}
-              className="group/action relative grid place-content-center shrink-0 text-fg-muted hover:text-foreground active:text-foreground transition-colors"
-              style={{ width: iconSize, height: iconSize }}
-              aria-label="清除全部"
-            >
-              <span
-                className={cn('absolute rounded-sm pointer-events-none bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active transition-colors', size === 'lg' && 'rounded-md')}
-                style={{ width: iconSize + 2, height: iconSize + 2, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-                aria-hidden
-              />
-              <X size={iconSize} className="relative" aria-hidden />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>清除全部</TooltipContent>
-        </Tooltip>
-      )}
-      <ChevronDown size={iconSize} className="shrink-0 text-fg-muted pointer-events-none" aria-hidden />
+      {/* 有值時 select 覆蓋整個 field */}
+      {value.length > 0 && selectDropdown}
+      {/* 右側固定：single-line 置中，wrap 時 self-start 固定在第一行 */}
+      <div
+        className={cn('flex items-center shrink-0 relative z-10 pointer-events-none', wrap && 'self-start')}
+        style={wrap ? { height: badgeHeight, gap: GAP } : { gap: GAP }}
+      >
+        {showClear && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => onChange?.([])}
+                className="group/action relative grid place-content-center shrink-0 text-fg-muted hover:text-foreground active:text-foreground transition-colors pointer-events-auto"
+                style={{ width: iconSize, height: iconSize }}
+                aria-label="清除全部"
+              >
+                <span
+                  className={cn('absolute rounded-sm pointer-events-none bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active transition-colors', size === 'lg' && 'rounded-md')}
+                  style={{ width: iconSize + 2, height: iconSize + 2, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+                  aria-hidden
+                />
+                <X size={iconSize} className="relative" aria-hidden />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>清除全部</TooltipContent>
+          </Tooltip>
+        )}
+        <ChevronDown size={iconSize} className="shrink-0 text-fg-muted pointer-events-none" aria-hidden />
+      </div>
     </div>
   )
 }

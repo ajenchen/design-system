@@ -152,7 +152,7 @@ const NumberField = React.forwardRef<HTMLInputElement, NumberFieldProps>(
                 type="button"
                 onClick={endAction.onClick}
                 className={cn(
-                  'group/action relative grid place-content-center shrink-0',
+                  'group/action relative grid place-content-center shrink-0 cursor-pointer',
                   'text-fg-muted hover:text-foreground active:text-foreground transition-colors',
                 )}
                 style={{ width: iconSize, height: iconSize }}

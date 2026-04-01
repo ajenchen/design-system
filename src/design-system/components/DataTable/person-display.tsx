@@ -34,10 +34,15 @@ function resolvePerson(value: PersonValue): { name: string; avatarUrl?: string }
   return typeof value === 'string' ? { name: value } : value
 }
 
-// ── Display ─────────────────────────────────────────────────────────────────
-// Avatar 尺寸 = Badge md 高度 (24px = h-6)，與 Badge 對齊。
+// ── Avatar Size ─────────────────────────────────────────────────────────────
+// 與 Badge 高度對齊：sm=20px, md/lg=24px
 
-function PersonDisplay({ value }: { value?: PersonValue | null }) {
+const avatarSize: Record<string, string> = { sm: 'w-5 h-5', md: 'w-6 h-6', lg: 'w-6 h-6' }
+const initialsText: Record<string, string> = { sm: 'text-[10px]', md: 'text-caption', lg: 'text-caption' }
+
+// ── Display ─────────────────────────────────────────────────────────────────
+
+function PersonDisplay({ value, size = 'md' }: { value?: PersonValue | null; size?: 'sm' | 'md' | 'lg' }) {
   if (!value) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
 
   const { name, avatarUrl } = resolvePerson(value)
@@ -48,11 +53,11 @@ function PersonDisplay({ value }: { value?: PersonValue | null }) {
         <img
           src={avatarUrl}
           alt=""
-          className="shrink-0 w-6 h-6 rounded-full object-cover"
+          className={`shrink-0 ${avatarSize[size]} rounded-full object-cover`}
         />
       ) : (
         <span
-          className={`shrink-0 w-6 h-6 rounded-full inline-grid place-content-center text-caption font-medium leading-none ${nameToColor(name)}`}
+          className={`shrink-0 ${avatarSize[size]} rounded-full inline-grid place-content-center ${initialsText[size]} font-medium leading-none ${nameToColor(name)}`}
         >
           {getInitials(name)}
         </span>

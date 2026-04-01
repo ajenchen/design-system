@@ -73,7 +73,7 @@ export interface DataTableProps<TData>
 // 當 column 沒有自訂 cell renderer 時，根據 meta.type 自動選擇 Display 元件。
 // 有自訂 cell 時完全跳過，不干涉。
 
-function renderTypedValue(value: unknown, meta?: Record<string, any>, autoRowHeight?: boolean): React.ReactNode {
+function renderTypedValue(value: unknown, meta?: Record<string, any>, autoRowHeight?: boolean, tableSize?: 'sm' | 'md' | 'lg'): React.ReactNode {
   const type = meta?.type as ColumnType | undefined
   const wrap = autoRowHeight && meta?.wrap === true
   switch (type) {
@@ -99,7 +99,7 @@ function renderTypedValue(value: unknown, meta?: Record<string, any>, autoRowHei
     case 'boolean':
       return <BooleanFieldDisplay value={value as boolean | null} />
     case 'select':
-      return <SelectFieldDisplay value={value as string | null} options={meta?.options} />
+      return <SelectFieldDisplay value={value as string | null} options={meta?.options} size={tableSize} />
     case 'multiSelect':
       return (
         <MultiSelectFieldDisplay
@@ -109,7 +109,7 @@ function renderTypedValue(value: unknown, meta?: Record<string, any>, autoRowHei
         />
       )
     case 'person':
-      return <PersonDisplay value={value as PersonValue | null} />
+      return <PersonDisplay value={value as PersonValue | null} size={tableSize} />
     case 'link':
       return <LinkDisplay value={value as string | null} label={meta?.linkLabel} />
     default:
@@ -253,12 +253,10 @@ function DataTableInner<TData>(
             // 需要完全自訂 cell 的 column 不設 meta.type，直接用 cell function
             const colType = meta?.type as ColumnType | undefined
             const content = colType
-              ? renderTypedValue(cell.getValue(), meta, autoRowHeight)
+              ? renderTypedValue(cell.getValue(), meta, autoRowHeight, size)
               : flexRender(cell.column.columnDef.cell, cell.getContext())
 
-            // compound 類型（Badge/person/link）自行處理內部 truncation，
-            // 不用 TruncateCell——text-overflow:ellipsis 對 flex 子元素無效。
-            // 直接渲染，不加 wrapper——cell div 已有 flex items-center + overflow-hidden。
+            // compound 類型：Badge 自帶截斷 tooltip，不需 wrapper
             const isCompound = colType === 'select' || colType === 'multiSelect' || colType === 'person' || colType === 'link'
 
             return wrap ? (
