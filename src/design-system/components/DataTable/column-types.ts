@@ -10,6 +10,7 @@ export const columnTypes = [
   'select',
   'multiSelect',
   'person',
+  'multiPerson',
   'boolean',
   'link',
 ] as const
@@ -35,6 +36,7 @@ export const columnTypeDefaults: Record<ColumnType, ColumnTypeConfig> = {
   select:      { align: 'left' },
   multiSelect: { align: 'left' },
   person:      { align: 'left' },
+  multiPerson: { align: 'left' },
   boolean:     { align: 'left' },
   link:        { align: 'left' },
 }

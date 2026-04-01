@@ -64,12 +64,23 @@ src/
 │   │   │   ├── tag.tsx
 │   │   │   ├── tag.spec.md
 │   │   │   └── tag.stories.tsx
-│   │   └── Button/
-│   │       ├── button.tsx
-│   │       ├── button-group.tsx
-│   │       ├── button.spec.md
-│   │       ├── button.stories.tsx
-│   │       └── button.principles.stories.tsx
+│   │   ├── Button/
+│   │   │   ├── button.tsx
+│   │   │   ├── button-group.tsx
+│   │   │   ├── button.spec.md
+│   │   │   ├── button.stories.tsx
+│   │   │   └── button.principles.stories.tsx
+│   │   └── fields/                    ← 資料輸入 / 顯示元件
+│   │       ├── field-types.ts         ← FieldMode、InlineActionConfig 共用型別
+│   │       ├── field-wrapper.tsx      ← 共用 wrapper 樣式
+│   │       ├── field.spec.md          ← Field 共用設計原則（含驗證標準）
+│   │       ├── TextField/
+│   │       ├── NumberField/
+│   │       ├── BooleanField/
+│   │       ├── DateField/
+│   │       ├── SelectField/
+│   │       ├── MultiSelectField/
+│   │       └── LinkField/             ← URL 輸入，藍色連結 + Pencil 編輯
 │   └── patterns/                      ← 複合元件 / 已定案的 UI 流程（依互動領域分資料夾）
 │       └── action-bar/                ← 工具列、操作列
 │           ├── action-bar.spec.md

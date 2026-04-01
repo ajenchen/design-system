@@ -19,8 +19,8 @@ import { BooleanFieldDisplay } from '@/design-system/components/fields/BooleanFi
 import { SelectFieldDisplay } from '@/design-system/components/fields/SelectField/select-field'
 import { MultiSelectFieldDisplay } from '@/design-system/components/fields/MultiSelectField/multi-select-field'
 import { DateFieldDisplay } from '@/design-system/components/fields/DateField/date-field'
-import { PersonDisplay, type PersonValue } from './person-display'
-import { LinkDisplay } from './link-display'
+import { PersonDisplay, MultiPersonDisplay, type PersonValue } from './person-display'
+import { LinkFieldDisplay } from '@/design-system/components/fields/LinkField/link-field'
 
 // ── Variants ─────────────────────────────────────────────────────────────────
 
@@ -110,8 +110,10 @@ function renderTypedValue(value: unknown, meta?: Record<string, any>, autoRowHei
       )
     case 'person':
       return <PersonDisplay value={value as PersonValue | null} size={tableSize} />
+    case 'multiPerson':
+      return <MultiPersonDisplay value={value as PersonValue[] | null} size={tableSize} />
     case 'link':
-      return <LinkDisplay value={value as string | null} label={meta?.linkLabel} />
+      return <LinkFieldDisplay value={value as string | null} label={meta?.linkLabel} />
     default:
       return <TextFieldDisplay value={value != null ? String(value) : null} />
   }
@@ -257,7 +259,7 @@ function DataTableInner<TData>(
               : flexRender(cell.column.columnDef.cell, cell.getContext())
 
             // compound 類型：Tag 自帶截斷 tooltip，不需 wrapper
-            const isCompound = colType === 'select' || colType === 'multiSelect' || colType === 'person' || colType === 'link'
+            const isCompound = colType === 'select' || colType === 'multiSelect' || colType === 'person' || colType === 'multiPerson' || colType === 'link'
 
             return wrap ? (
               <span className="break-words min-w-0">{content}</span>
