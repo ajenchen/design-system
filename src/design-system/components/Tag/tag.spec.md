@@ -6,6 +6,26 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 
 ---
 
+## Variant
+
+以色名命名，語義由消費端決定。建議用法與色彩系統的語義定義對齊。
+
+| Variant | 建議用法 |
+|---------|----------|
+| `neutral`（預設） | 通用分類、草稿、無特定語義 |
+| `blue` | 進行中、資訊提示、active 狀態（對應 `--info`） |
+| `red` | 錯誤、已封鎖、危險（對應 `--error`） |
+| `green` | 成功、已完成、已核准（對應 `--success`） |
+| `yellow` | 警告、待審核、注意（對應 `--warning`） |
+| `turquoise` | 分類色（無固定語義） |
+| `purple` | 分類色（無固定語義） |
+| `magenta` | 分類色（無固定語義） |
+| `indigo` | 分類色（無固定語義） |
+
+前五個色（neutral ~ yellow）有對應的語義 token；後四個色（turquoise ~ indigo）使用原始色票，專供需要多色區分的場景（專案標籤、團隊分類等）。
+
+---
+
 ## 尺寸
 
 三種尺寸（子元件補齊原則），不隨 density 變化。尺寸在元件內定義，不引用 field-height token——Tag 和 Button 尺寸是獨立的設計決策。
@@ -43,21 +63,6 @@ Field 內包含 Tag 時，Field 的 padding 改為 `(field-height - tag-height) 
 
 ---
 
-## 色彩 Variant
-
-| Variant | 用途 |
-|---------|------|
-| default | 灰階分類標籤（bg-muted, text-foreground） |
-| primary | 主要操作相關 |
-| error | 錯誤狀態 |
-| success | 成功狀態 |
-| warning | 警告狀態 |
-| outline | 邊框風格 |
-
-灰階 variant 的文字色是 `text-foreground`（neutral-9），不是降階色。
-
----
-
 ## Dismiss（Inline Action）
 
 可移除的 Tag 在 suffix 位置放置 dismiss inline action。共用規則見 `uiSize.spec.md` 的 Inline Action 段落。
@@ -76,3 +81,4 @@ Icon 色彩遵循 Inline Action 統一規則：預設 `fg-muted`，hover 時 `fo
 - ❌ Tag 尺寸不引用 field-height token——兩者獨立
 - ❌ 不用 gap 處理 prefix/suffix 間距——text padding 已拉開
 - ❌ 不用 Tag 做 overlay 通知圓點——那是不同元件（Badge）
+- ❌ 不用 variant 名稱傳達語義（例：不靠 `red` = 錯誤）——variant 是顏色，語義由消費端的內容和上下文決定

@@ -26,12 +26,15 @@ const tagVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-muted text-foreground",
-        primary: "bg-primary-subtle text-primary",
-        error: "bg-error-subtle text-error",
-        success: "bg-success-subtle text-success",
-        warning: "bg-warning-subtle text-warning-foreground",
-        outline: "border-border bg-transparent text-foreground",
+        neutral: "bg-muted text-foreground",
+        blue: "bg-[var(--info-subtle)] text-[var(--info)]",
+        red: "bg-error-subtle text-error",
+        green: "bg-success-subtle text-success",
+        yellow: "bg-warning-subtle text-warning-foreground",
+        turquoise: "bg-[var(--color-turquoise-1)] text-[var(--color-turquoise-6)]",
+        purple: "bg-[var(--color-purple-1)] text-[var(--color-purple-6)]",
+        magenta: "bg-[var(--color-magenta-1)] text-[var(--color-magenta-6)]",
+        indigo: "bg-[var(--color-indigo-1)] text-[var(--color-indigo-6)]",
       },
       size: {
         sm: "h-5 px-1 text-caption font-medium",
@@ -40,7 +43,7 @@ const tagVariants = cva(
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: "neutral",
       size: "md",
     },
   }
