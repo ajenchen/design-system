@@ -180,6 +180,20 @@ col.accessor('status', {
 
 ---
 
+## 驗證標準（Blur Validation）
+
+所有 Field 統一使用 blur validation——使用者離開 field 時驗證，不在打字過程中即時驗證。
+
+1. **blur 時驗證**——使用者離開 field 後才顯示 error
+2. **開始編輯時清除 error**——focus 或開始打字時立即移除 error 狀態，給使用者修正的空間
+3. **Enter 等同 blur**——觸發驗證並離開編輯（適用於單行 field）
+4. **Escape 取消**——回復原值，不觸發驗證
+5. **Submit 時再次驗證**——Form 層級統一在 submit 時驗證所有 field，不依賴個別 field 的 blur 狀態
+
+格式驗證（如 URL、email）由 Field 自身處理；業務驗證（如「名稱不可重複」）由 Form 層處理。兩者都透過 `error` prop 呈現。
+
+---
+
 ## 禁止事項
 
 - ❌ 不在 disabled input 內放 info icon——停用原因由外部 Tooltip 或 Form help text 承擔

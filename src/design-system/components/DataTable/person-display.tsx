@@ -12,14 +12,7 @@ function getInitials(name: string): string {
 // 用名字 hash 穩定選色，不隨 render 變化。
 
 const avatarColors = [
-  'bg-[var(--info-subtle)] text-[var(--info)]',
-  'bg-error-subtle text-error',
-  'bg-success-subtle text-success',
-  'bg-warning-subtle text-warning-foreground',
-  'bg-[var(--color-turquoise-1)] text-[var(--color-turquoise-6)]',
-  'bg-[var(--color-purple-1)] text-[var(--color-purple-6)]',
-  'bg-[var(--color-magenta-1)] text-[var(--color-magenta-6)]',
-  'bg-[var(--color-indigo-1)] text-[var(--color-indigo-6)]',
+  'bg-muted text-foreground',
 ] as const
 
 function nameToColor(name: string): string {

@@ -83,13 +83,13 @@ export const WithAvatar: Story = {
   name: 'Avatar',
   render: () => (
     <div className="flex flex-wrap gap-2">
-      <Tag variant="blue" avatar={
+      <Tag variant="neutral" avatar={
         <img src="https://i.pravatar.cc/32?u=alice" alt="" className="w-4 h-4 rounded-full object-cover" />
       }>
         Alice Chen
       </Tag>
-      <Tag variant="green" avatar={
-        <span className="w-4 h-4 rounded-full bg-primary-subtle text-primary inline-grid place-content-center text-[10px] font-medium">BL</span>
+      <Tag variant="neutral" avatar={
+        <span className="w-4 h-4 rounded-full bg-muted text-foreground inline-grid place-content-center text-[10px] font-medium">BL</span>
       }>
         Bob Lin
       </Tag>
@@ -106,7 +106,7 @@ export const Dismissable: Story = {
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-1">
           {tags.map(t => (
-            <Tag key={t} variant="blue" onDismiss={() => setTags(prev => prev.filter(x => x !== t))}>{t}</Tag>
+            <Tag key={t} variant="neutral" onDismiss={() => setTags(prev => prev.filter(x => x !== t))}>{t}</Tag>
           ))}
         </div>
         {tags.length === 0 && <p className="text-caption text-fg-muted">全部移除了，重新整理頁面可恢復</p>}
@@ -119,7 +119,7 @@ export const Dismissable: Story = {
 export const Truncation: Story = {
   name: '截斷 + Tooltip',
   render: () => (
-    <div className="flex flex-col gap-3" style={{ maxWidth: 300 }}>
+    <div className="flex flex-col items-start gap-3" style={{ maxWidth: 300 }}>
       <Tag variant="neutral">Short</Tag>
       <Tag variant="blue">This is a very long tag label that should truncate</Tag>
       <p className="text-caption text-fg-muted">超過 160px 自動截斷，hover 顯示完整文字 tooltip</p>

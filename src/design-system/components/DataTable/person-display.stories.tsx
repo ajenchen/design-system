@@ -8,7 +8,7 @@ const meta: Meta<typeof PersonDisplay> = {
   parameters: {
     docs: {
       description: {
-        component: '人員顯示元件，支援 avatar 圖片或自動產生的 initials。用於 DataTable cell。',
+        component: '人員顯示元件，支援 avatar 圖片或 neutral 底色 initials。用於 DataTable cell 和 SelectField-like 的 PersonField。',
       },
     },
   },
@@ -58,15 +58,15 @@ export const Sizes: Story = {
   ),
 }
 
-/* ── Initials 色彩 ── */
-export const InitialsColors: Story = {
-  name: 'Initials 自動配色',
+/* ── Initials ── */
+export const Initials: Story = {
+  name: 'Initials（neutral 底色）',
   render: () => (
     <div className="flex flex-col gap-2">
-      {['Alice Chen', 'Bob Lin', 'Charlie Wu', 'Diana Huang', 'Eric Tsai', 'Fiona Lee', 'George Wang', 'Helen Chu'].map(name => (
+      {['Alice Chen', 'Bob Lin', 'Charlie Wu', 'Diana Huang', 'Eric Tsai', 'Fiona Lee'].map(name => (
         <PersonDisplay key={name} value={name} />
       ))}
-      <p className="text-caption text-fg-muted mt-2">用名字 hash 穩定選色，同一名字每次相同顏色</p>
+      <p className="text-caption text-fg-muted mt-2">無 avatar 圖片時顯示 initials，統一 neutral 底色</p>
     </div>
   ),
 }
