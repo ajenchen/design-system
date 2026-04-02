@@ -209,10 +209,11 @@ function DataTableInner<TData>(
             role="row"
             aria-rowindex={idx + 2}
             className={cn(
-              'flex items-stretch',
+              'flex items-center',
               opts?.virtual && 'absolute w-full',
               showBorder && 'border-b border-divider',
               'transition-colors data-[hovered]:bg-neutral-hover',
+              !autoRowHeight && `h-table-row-${size}`,
             )}
             style={opts?.virtual ? { transform: `translateY(${opts.start}px)` } : undefined}
             {...hoverProps(idx)}
@@ -266,7 +267,7 @@ function DataTableInner<TData>(
         {/* Header */}
         <div role="rowgroup" className={cn('sticky top-0 z-[2]', HEADER_BG)}>
           <div className={cn(isCenter && 'w-max min-w-full')}>
-            <div role="row" className="flex items-stretch border-b border-divider">
+            <div role="row" className={cn('flex items-center border-b border-divider', `h-table-row-${size}`)}>
               {regionHeaders.map((header, idx) => {
                 const meta = header.column.columnDef.meta
                 const colType = meta?.type as ColumnType | undefined
