@@ -184,9 +184,10 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
           {value ? (
             <Tag size={size} className="shrink-0 relative z-10 pointer-events-none">{label}</Tag>
           ) : (
-            <span className="text-fg-muted flex-1">{placeholder ?? '選擇...'}</span>
+            <span className="text-fg-muted">{placeholder ?? '選擇...'}</span>
           )}
           {selectEl}
+          <span className="flex-1" />
           {clearEl}
           {chevronEl}
         </div>
