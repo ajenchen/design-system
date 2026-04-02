@@ -233,12 +233,12 @@ function DataTableInner<TData>(
     }
   }, [])
 
-  // ── Row Actions cell ──
+  // ── Row Actions cell（frozen right column）──
   const renderRowActions = rowActions ? (row: (typeof rows)[number]) => (
     <div
       role="cell"
       className={cn(
-        'flex items-center justify-end shrink-0 gap-1',
+        'flex items-center justify-end shrink-0 gap-1 border-l border-divider',
         !rowActionsAlwaysVisible && 'opacity-0 group-hover:opacity-1 transition-opacity',
       )}
       style={{ ...cellPadding, width: 'auto', paddingLeft: 4 }}
@@ -363,8 +363,8 @@ function DataTableInner<TData>(
                   </div>
                 )
               })}
-              {/* Row actions header spacer */}
-              {rowActions && <div className="flex-1" />}
+              {/* Row actions header spacer（frozen right boundary） */}
+              {rowActions && <div className="flex-1 border-l border-divider" />}
             </div>
           ))}
         </div>
