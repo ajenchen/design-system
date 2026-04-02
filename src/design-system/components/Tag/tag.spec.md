@@ -24,6 +24,12 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 
 前五個色（neutral ~ yellow）有對應的語義 token；後四個色（turquoise ~ indigo）使用原始色票，專供需要多色區分的場景（專案標籤、團隊分類等）。
 
+### 文字色
+
+所有有色 variant 的文字一律使用色盤 **step-7**（非 step-6），優先辨識度。Tag 以呈現資訊為主，小面積色塊文字需要更高對比才能舒適閱讀。neutral variant 用 `text-foreground`（不適用此規則）。
+
+見 `color.spec.md` 的「文字色 Step 原則」。
+
 ---
 
 ## 尺寸

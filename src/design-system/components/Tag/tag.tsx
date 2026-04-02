@@ -28,15 +28,16 @@ const tagVariants = cva(
   {
     variants: {
       variant: {
+        // 有顏色的 Tag 文字一律用 step-7（非 step-6），優先辨識度
         neutral: "bg-muted text-foreground",
-        blue: "bg-[var(--info-subtle)] text-[var(--info)]",
-        red: "bg-error-subtle text-error",
-        green: "bg-success-subtle text-success",
-        yellow: "bg-warning-subtle text-warning-foreground",
-        turquoise: "bg-turquoise-subtle text-turquoise",
-        purple: "bg-purple-subtle text-purple",
-        magenta: "bg-magenta-subtle text-magenta",
-        indigo: "bg-indigo-subtle text-indigo",
+        blue: "bg-[var(--info-subtle)] text-[var(--color-blue-7)]",
+        red: "bg-error-subtle text-[var(--color-deep-orange-7)]",
+        green: "bg-success-subtle text-[var(--color-green-7)]",
+        yellow: "bg-warning-subtle text-[var(--color-yellow-7)]",
+        turquoise: "bg-turquoise-subtle text-[var(--color-turquoise-7)]",
+        purple: "bg-purple-subtle text-[var(--color-purple-7)]",
+        magenta: "bg-magenta-subtle text-[var(--color-magenta-7)]",
+        indigo: "bg-indigo-subtle text-[var(--color-indigo-7)]",
       },
       size: {
         sm: "h-5 px-1 text-caption font-medium",

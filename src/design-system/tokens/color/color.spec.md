@@ -79,7 +79,12 @@ Tailwind utility 透過 `@theme inline` 橋接語義 token，元件寫 `bg-prima
 每個語義色的 bridge 同時產出 `bg-xxx`、`text-xxx`、`border-xxx` 三組 utility，視場景選用。
 
 - `bg-error` 為本系統命名，`bg-destructive` 僅供 shadcn 元件內部 compat
-- warning 背景上的文字使用 `text-warning-foreground`（深色，非 white）；純文字顏色則直接 `text-warning`
+- warning 的文字色取決於底色：
+
+  | 底色 | 文字色 | 原因 |
+  |------|--------|------|
+  | `bg-warning`（yellow-6，滿版） | `text-warning-foreground`（`black-a85`，深色） | 黃色亮度高，白字對比不足，必須用深色 |
+  | `bg-warning-subtle`（淡黃） | `text-[yellow-7]`（step-7） | subtle 底色夠淺，深一階的黃色文字可辨識（見「文字色 Step 原則」） |
 
 ### Indicator — Notification
 
@@ -112,6 +117,20 @@ Tailwind utility 透過 `@theme inline` 橋接語義 token，元件寫 `bg-prima
 | `--indigo` / `--indigo-subtle` | indigo | `text-indigo` / `bg-indigo-subtle` |
 
 與 status 色的差別：status 色（info/error/success/warning）有固定語義，分類色沒有。兩者不混用。
+
+### 文字色 Step 原則
+
+色彩用於文字時，step 的選擇取決於元素的角色：
+
+| 角色 | Step | 原因 |
+|------|------|------|
+| **互動入口**（Button、Link） | step-6（base） | 鮮豔度吸引注意力，引導操作 |
+| **資訊呈現**（Tag、狀態標記） | step-7（深一階） | 辨識度優先——小面積色塊文字需要更高對比才能舒適閱讀 |
+| **hover / active** | step-5 / step-7（見互動狀態推導） | 回饋使用者操作 |
+
+Tag 的所有有色 variant 一律用 step-7。neutral variant 用 `text-foreground`（不適用此規則，因為 neutral 沒有色相）。
+
+**例外：`bg-warning`（step-6 滿版底色）上的文字用 `warning-foreground`（`black-a85`）**——黃色亮度極高，step-7 仍不足以提供對比，必須使用深色文字。此例外只在底色是 step-6 時觸發，`bg-warning-subtle` 上仍用 step-7。
 
 ### Subtle 背景（淡色填充）
 
