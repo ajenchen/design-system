@@ -137,6 +137,23 @@ function DataTableInner<TData>(
   const bodyRef = React.useRef<HTMLDivElement>(null)
   const centerHeaderRef = React.useRef<HTMLDivElement>(null)
   const centerBodyRef = React.useRef<HTMLDivElement>(null)
+  const leftHeaderRef = React.useRef<HTMLDivElement>(null)
+  const rightHeaderRef = React.useRef<HTMLDivElement>(null)
+
+  // Header 寬度 → body virtual container 同步（解決 virtual mode 寬度問題）
+  const [leftWidth, setLeftWidth] = React.useState(0)
+  const [rightWidth, setRightWidth] = React.useState(0)
+  React.useEffect(() => {
+    const measure = () => {
+      if (leftHeaderRef.current) setLeftWidth(leftHeaderRef.current.offsetWidth)
+      if (rightHeaderRef.current) setRightWidth(rightHeaderRef.current.offsetWidth)
+    }
+    measure()
+    const obs = new ResizeObserver(measure)
+    if (leftHeaderRef.current) obs.observe(leftHeaderRef.current)
+    if (rightHeaderRef.current) obs.observe(rightHeaderRef.current)
+    return () => obs.disconnect()
+  }, [hasLeft, hasRight, rows.length])
 
   const virtualizer = useVirtualizer({
     count: useVirtual ? rows.length : 0,
@@ -232,7 +249,7 @@ function DataTableInner<TData>(
   }
 
   // ── Render body rows for a region ──
-  const renderBodyRows = (cols: Column<TData, unknown>[], isCenter: boolean, isRight: boolean) => {
+  const renderBodyRows = (cols: Column<TData, unknown>[], isCenter: boolean, isRight: boolean, regionWidth?: number) => {
     if (isEmpty && isCenter) {
       return <div className="flex items-center justify-center text-fg-muted text-body py-12">{emptyState ?? '沒有資料'}</div>
     }
@@ -253,9 +270,11 @@ function DataTableInner<TData>(
     }
 
     if (useVirtual) {
-      const totalWidth = cols.reduce((a, c) => a + c.getSize(), 0)
+      const colsWidth = cols.reduce((a, c) => a + c.getSize(), 0)
+      // 用 header 量測的寬度（包含 actions 佔位），或 fallback 到 column 寬度合計
+      const containerWidth = regionWidth || colsWidth
       return (
-        <div style={{ height: virtualizer.getTotalSize(), position: 'relative', minWidth: totalWidth }}>
+        <div style={{ height: virtualizer.getTotalSize(), position: 'relative', minWidth: containerWidth }}>
           {virtualizer.getVirtualItems().map(vr => rowEl(rows[vr.index], vr.index, { virtual: true, start: vr.start, isLast: vr.index === rows.length - 1 }))}
         </div>
       )
@@ -274,7 +293,7 @@ function DataTableInner<TData>(
       {/* ══ HEADER（固定頂部，不在 scroll 內）══ */}
       <div role="rowgroup" className="flex">
         {hasLeft && (
-          <div className="shrink-0 overflow-hidden border-r border-divider">
+          <div ref={leftHeaderRef} className="shrink-0 overflow-hidden border-r border-divider">
             {renderHeaderRow(leftCols, false)}
           </div>
         )}
@@ -284,7 +303,7 @@ function DataTableInner<TData>(
           </div>
         </div>
         {hasRight && (
-          <div className="shrink-0 overflow-hidden border-l border-divider">
+          <div ref={rightHeaderRef} className="shrink-0 overflow-hidden border-l border-divider">
             {renderHeaderRow(rightCols, true)}
           </div>
         )}
@@ -293,8 +312,8 @@ function DataTableInner<TData>(
       {/* ══ BODY（唯一的垂直 scroll container）══ */}
       <div ref={bodyRef} className="flex items-start" style={hasHeightConstraint ? { maxHeight: height, overflowY: 'auto' } : undefined}>
         {hasLeft && (
-          <div className="shrink-0 overflow-hidden border-r border-divider">
-            {renderBodyRows(leftCols, false, false)}
+          <div className="shrink-0 overflow-hidden border-r border-divider" style={leftWidth ? { width: leftWidth } : undefined}>
+            {renderBodyRows(leftCols, false, false, leftWidth)}
           </div>
         )}
         <div ref={centerBodyRef} className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden" onScroll={onCenterBodyScroll}>
@@ -303,8 +322,8 @@ function DataTableInner<TData>(
           </div>
         </div>
         {hasRight && (
-          <div className="shrink-0 overflow-hidden border-l border-divider">
-            {renderBodyRows(rightCols, false, true)}
+          <div className="shrink-0 overflow-hidden border-l border-divider" style={rightWidth ? { width: rightWidth } : undefined}>
+            {renderBodyRows(rightCols, false, true, rightWidth)}
           </div>
         )}
       </div>
