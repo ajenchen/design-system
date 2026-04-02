@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { cva, type VariantProps } from 'class-variance-authority'
+import { ChevronDown, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { columnTypeDefaults, type ColumnType } from './column-types'
@@ -50,6 +51,8 @@ export interface DataTableProps<TData>
   rowActions?: (row: TData) => React.ReactNode
   pinnedLeftColumns?: string[]
   pinnedRightColumns?: string[]
+  /** Inline edit 視覺模式：body cell 間加垂直分隔線，select 類欄位顯示指示器 */
+  inlineEdit?: boolean
 }
 
 // ── Type → Display ──────────────────────────────────────────────────────────
@@ -110,7 +113,7 @@ function DataTableInner<TData>(
     columns, data, size = 'md', autoRowHeight = false, height = '400px',
     overscan = 5, emptyState, enableHover = true, bordered,
     estimateRowHeight = 36, tableOptions, rowActions,
-    pinnedLeftColumns, pinnedRightColumns,
+    pinnedLeftColumns, pinnedRightColumns, inlineEdit = false,
     className, ...props
   }: DataTableProps<TData>,
   ref: React.ForwardedRef<HTMLDivElement>
@@ -197,13 +200,40 @@ function DataTableInner<TData>(
     return wrap ? <span className="break-words min-w-0">{content}</span> : isCompound ? content : <TruncateCell>{content}</TruncateCell>
   }
 
-  const cellEl = (cell: ReturnType<typeof rows[number]['getVisibleCells']>[number]) => {
+  const iconSize = size === 'lg' ? 20 : 16
+
+  // inline edit 指示器：select 類顯示 ChevronDown，date 顯示 Calendar
+  const getEditIndicator = (colType?: ColumnType) => {
+    if (!inlineEdit) return null
+    if (colType === 'select' || colType === 'multiSelect' || colType === 'person' || colType === 'multiPerson')
+      return <ChevronDown size={iconSize} className="shrink-0 text-fg-muted ml-auto" aria-hidden />
+    if (colType === 'date')
+      return <Calendar size={iconSize} className="shrink-0 text-fg-muted ml-auto" aria-hidden />
+    return null
+  }
+
+  const cellEl = (cell: ReturnType<typeof rows[number]['getVisibleCells']>[number], isLastInRow = false) => {
     const meta = cell.column.columnDef.meta
     const colType = meta?.type as ColumnType | undefined
     const align = meta?.align ?? (colType ? columnTypeDefaults[colType].align : undefined)
+    const indicator = getEditIndicator(colType)
     return (
-      <div key={cell.id} role="cell" className={cn('flex text-foreground text-body font-normal shrink-0 overflow-hidden', autoRowHeight ? 'items-start' : 'items-center', align === 'right' && 'justify-end text-right', align === 'center' && 'justify-center text-center')} style={{ width: cell.column.getSize(), minWidth: cell.column.columnDef.minSize, maxWidth: cell.column.columnDef.maxSize, ...cellPadding }}>
-        {renderCellContent(cell)}
+      <div
+        key={cell.id}
+        role="cell"
+        className={cn(
+          'flex text-foreground text-body font-normal shrink-0 overflow-hidden',
+          autoRowHeight ? 'items-start' : 'items-center',
+          align === 'right' && 'justify-end text-right',
+          align === 'center' && 'justify-center text-center',
+          inlineEdit && !isLastInRow && 'border-r border-divider',
+        )}
+        style={{ width: cell.column.getSize(), minWidth: cell.column.columnDef.minSize, maxWidth: cell.column.columnDef.maxSize, ...cellPadding }}
+      >
+        <span className={cn('flex-1 min-w-0 flex items-center', autoRowHeight ? 'items-start' : 'items-center')}>
+          {renderCellContent(cell)}
+        </span>
+        {indicator}
       </div>
     )
   }
@@ -259,7 +289,7 @@ function DataTableInner<TData>(
       const showBorder = bordered !== false ? !opts?.isLast : true
       return (
         <div key={row.id} ref={isCenter && opts?.virtual ? virtualizer.measureElement : undefined} data-index={isCenter && opts?.virtual ? idx : undefined} data-row-index={idx} role="row" aria-rowindex={idx + 2} className={cn('flex items-center', !autoRowHeight && rowHeight, opts?.virtual && 'absolute w-full', showBorder && 'border-b border-divider', 'transition-colors data-[hovered]:bg-neutral-hover')} style={opts?.virtual ? { transform: `translateY(${opts.start}px)` } : undefined} {...hoverProps(idx)}>
-          {getRegionCells(row, cols).map(cell => cellEl(cell))}
+          {getRegionCells(row, cols).map((cell, ci, arr) => cellEl(cell, ci === arr.length - 1 && !(isRight && hasRowActions)))}
           {isRight && hasRowActions && (
             <div role="cell" className="flex items-center justify-end shrink-0 gap-2 flex-1" style={cellPadding}>
               {rowActions!(row.original)}

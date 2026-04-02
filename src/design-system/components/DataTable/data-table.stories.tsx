@@ -365,6 +365,30 @@ export const PinnedColumns: Story = {
   },
 }
 
+/* ── Inline Edit（視覺模式）── */
+export const InlineEdit: Story = {
+  name: 'Inline Edit（視覺）',
+  render: () => (
+    <div className="flex flex-col gap-8">
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">Inline Edit 模式</h3>
+        <p className="text-caption text-fg-muted mb-3">Cell 間有垂直分隔線，select 類欄位顯示 ChevronDown / Calendar 指示器。</p>
+        <DataTable
+          columns={columnsWithPrice}
+          data={sampleData}
+          height="auto"
+          inlineEdit
+          rowActions={(row) => (
+            <>
+              <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+            </>
+          )}
+        />
+      </div>
+    </div>
+  ),
+}
+
 /* ── 虛擬捲動（大量資料）── */
 export const VirtualScroll: Story = {
   name: '虛擬捲動（10,000 行）',
