@@ -359,14 +359,7 @@ function DataTableInner<TData>(
                 </div>
               )
             })}
-            {/* Row actions header */}
-            {hasRowActions && (
-              <div
-                role="columnheader"
-                className="sticky right-0 z-[1] bg-muted border-l border-divider shrink-0"
-                style={cellPadding}
-              />
-            )}
+            {/* Row actions header — 不渲染在 scroll 內，避免 sticky 在 overflow:hidden 失效 */}
           </div>
         ))}
       </div>
