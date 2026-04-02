@@ -291,7 +291,7 @@ function DataTableInner<TData>(
       </div>
 
       {/* ══ BODY（唯一的垂直 scroll container）══ */}
-      <div ref={bodyRef} className="flex" style={hasHeightConstraint ? { maxHeight: height, overflowY: 'auto' } : undefined}>
+      <div ref={bodyRef} className="flex items-start" style={hasHeightConstraint ? { maxHeight: height, overflowY: 'auto' } : undefined}>
         {hasLeft && (
           <div className="shrink-0 overflow-hidden border-r border-divider">
             {renderBodyRows(leftCols, false, false)}
