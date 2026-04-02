@@ -238,10 +238,10 @@ function DataTableInner<TData>(
     <div
       role="cell"
       className={cn(
-        'flex items-center justify-end shrink-0 gap-1',
+        'flex items-center justify-end shrink-0 gap-2',
         'border-l border-divider',
         'sticky right-0 z-[1] bg-surface group-hover:bg-neutral-hover transition-colors',
-        !rowActionsAlwaysVisible && 'opacity-0 group-hover:opacity-1 transition-opacity',
+        !rowActionsAlwaysVisible && 'opacity-0 group-hover:opacity-100 transition-opacity',
       )}
       style={{ paddingBlock: 'var(--table-cell-py)', paddingInline: '0.75rem' }}
     >
