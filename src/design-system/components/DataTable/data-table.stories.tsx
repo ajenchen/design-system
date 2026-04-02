@@ -1,7 +1,9 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
+import { Pencil, Trash2, Copy, MoreVertical } from 'lucide-react'
 import { DataTable } from './data-table'
+import { Button } from '@/design-system/components/Button/button'
 import './column-types' // ColumnMeta declaration merging
 
 // ── Sample Data ──────────────────────────────────────────────────────────────
@@ -274,6 +276,61 @@ export const HeightModes: Story = {
       </div>
     )
   },
+}
+
+/* ── Row Actions ── */
+export const RowActions: Story = {
+  name: 'Row Actions',
+  render: () => (
+    <div className="flex flex-col gap-8">
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">Hover 顯示（預設）</h3>
+        <p className="text-caption text-fg-muted mb-3">hover row 時出現操作按鈕，離開後消失。固定寬度欄位、零 layout shift。</p>
+        <DataTable
+          columns={baseColumns}
+          data={sampleData}
+          height="auto"
+          rowActions={(row) => (
+            <>
+              <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
+              <Button variant="text" size="xs" iconOnly startIcon={Trash2} aria-label="刪除" danger />
+            </>
+          )}
+        />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">3+ actions：收納到 MoreVertical</h3>
+        <p className="text-caption text-fg-muted mb-3">前 2 個高頻 action inline，其餘收進 dropdown</p>
+        <DataTable
+          columns={baseColumns}
+          data={sampleData.slice(0, 3)}
+          height="auto"
+          rowActions={(row) => (
+            <>
+              <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
+              <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+            </>
+          )}
+        />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">常駐顯示</h3>
+        <p className="text-caption text-fg-muted mb-3">高頻操作場景，actions 永遠可見</p>
+        <DataTable
+          columns={baseColumns}
+          data={sampleData.slice(0, 3)}
+          height="auto"
+          rowActionsAlwaysVisible
+          rowActions={(row) => (
+            <>
+              <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
+              <Button variant="text" size="xs" iconOnly startIcon={Copy} aria-label="複製" />
+            </>
+          )}
+        />
+      </div>
+    </div>
+  ),
 }
 
 /* ── 虛擬捲動（大量資料）── */

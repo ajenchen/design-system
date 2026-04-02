@@ -114,11 +114,23 @@ Header 的對齊永遠與該欄 body cell 一致。
 
 ### 九、Row Actions
 
-每列最右側可配置操作選單（編輯、刪除、複製等）：
+每列最右側可配置操作（編輯、刪除、複製等）。
 
-- 預設 hover 時才顯示——減少視覺雜訊，使用者不需要時不佔注意力
-- 可配置為常駐顯示（適合操作頻率極高的場景）
-- Row actions 永遠固定在最右側，不參與水平捲動
+**元件：** `Button variant="text" size="xs" iconOnly`——Row action 是獨立的 Button，不是 Inline Action（Inline Action 是嵌入在其他元件內部的，如 Tag dismiss）。
+
+**佔位方式：** 固定寬度欄位 + opacity 切換。actions 永遠在 DOM 佔空間（不用 display:none），用 `opacity-0 → group-hover:opacity-1` 控制可見性。Row 設為 `group`，CSS hover 驅動，不需 JS state。零 layout shift。
+
+| 配置 | hover 前 | hover 後 |
+|------|----------|----------|
+| 1 action | 不可見 | 1 個 icon button |
+| 2 actions | 不可見 | 2 個 icon button |
+| 3+ actions | 不可見（或 MoreVertical 常駐） | 前 1-2 個 inline + MoreVertical dropdown |
+
+MoreVertical dropdown 包含所有操作（含 inline 顯示的），確保鍵盤可存取全部。
+
+**位置：** 永遠固定在最右側，不參與水平捲動。欄寬 = padding + (可見 action 數 × 24px) + gaps。
+
+**可配置常駐：** 高頻操作場景可移除 opacity toggle，actions 永遠可見。
 
 ### 十、與 Toolbar 的關係
 

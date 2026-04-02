@@ -67,6 +67,13 @@ export interface DataTableProps<TData>
   estimateRowHeight?: number
   /** Additional TanStack Table options */
   tableOptions?: Partial<Omit<TableOptions<TData>, 'data' | 'columns' | 'getCoreRowModel'>>
+  /**
+   * Row actions — 每列右側操作按鈕。
+   * 回傳 Button 陣列，DataTable 自動處理佔位、hover 顯示、固定位置。
+   */
+  rowActions?: (row: TData) => React.ReactNode
+  /** Row actions 常駐顯示（不用 hover） */
+  rowActionsAlwaysVisible?: boolean
 }
 
 // ── Type → Display auto-resolve ─────────────────────────────────────────────
@@ -177,6 +184,8 @@ function DataTableInner<TData>(
     bordered,
     estimateRowHeight = 36,
     tableOptions,
+    rowActions,
+    rowActionsAlwaysVisible = false,
     className,
     ...props
   }: DataTableProps<TData>,
@@ -223,6 +232,20 @@ function DataTableInner<TData>(
       headerRef.current.scrollLeft = bodyRef.current.scrollLeft
     }
   }, [])
+
+  // ── Row Actions cell ──
+  const renderRowActions = rowActions ? (row: (typeof rows)[number]) => (
+    <div
+      role="cell"
+      className={cn(
+        'flex items-center justify-end shrink-0 gap-1',
+        !rowActionsAlwaysVisible && 'opacity-0 group-hover:opacity-1 transition-opacity',
+      )}
+      style={{ ...cellPadding, width: 'auto', paddingLeft: 4 }}
+    >
+      {rowActions(row.original)}
+    </div>
+  ) : null
 
   // ── Render cells for a row ──
   const renderCells = (row: (typeof rows)[number]) =>
@@ -296,7 +319,7 @@ function DataTableInner<TData>(
               className="flex items-stretch border-b border-divider"
             >
               {headerGroup.headers.map((header, idx) => {
-                const isLast = idx === headerGroup.headers.length - 1
+                const isLast = idx === headerGroup.headers.length - 1 && !rowActions
                 const headerMeta = header.column.columnDef.meta
                 const headerType = headerMeta?.type as ColumnType | undefined
                 const headerAlign = headerMeta?.align ?? (headerType ? columnTypeDefaults[headerType].align : undefined)
@@ -340,6 +363,8 @@ function DataTableInner<TData>(
                   </div>
                 )
               })}
+              {/* Row actions header spacer */}
+              {rowActions && <div className="flex-1" />}
             </div>
           ))}
         </div>
@@ -373,13 +398,14 @@ function DataTableInner<TData>(
                     role="row"
                     aria-rowindex={virtualRow.index + 2}
                     className={cn(
-                      'flex items-stretch absolute w-full',
+                      'flex items-stretch absolute w-full group',
                       showBottomBorder && 'border-b border-divider',
                       enableHover && 'hover:bg-neutral-hover transition-colors',
                     )}
                     style={{ transform: `translateY(${virtualRow.start}px)` }}
                   >
                     {renderCells(row)}
+                    {renderRowActions?.(row)}
                   </div>
                 )
               })}
@@ -395,12 +421,13 @@ function DataTableInner<TData>(
                   role="row"
                   aria-rowindex={index + 2}
                   className={cn(
-                    'flex items-stretch',
+                    'flex items-stretch group',
                     showBottomBorder && 'border-b border-divider',
                     enableHover && 'hover:bg-neutral-hover transition-colors',
                   )}
                 >
                   {renderCells(row)}
+                  {renderRowActions?.(row)}
                 </div>
               )
             })
