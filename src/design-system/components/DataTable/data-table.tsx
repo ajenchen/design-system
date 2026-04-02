@@ -221,7 +221,12 @@ function DataTableInner<TData>(
     return (
       <div role="row" className={cn('flex items-center border-b border-divider', rowHeight, HEADER_BG)}>
         {headers.map((h, i) => headerCellEl(h, i < headers.length - 1 && !(isRight && i === headers.length - 1)))}
-        {isRight && hasRowActions && <div role="columnheader" className="flex-1" style={cellPadding} />}
+        {isRight && hasRowActions && (
+          <div role="columnheader" className="flex items-center justify-end shrink-0 gap-2 invisible" style={cellPadding}>
+            {/* 渲染一個假 row 的 actions 來佔位，確保 header 和 body 同寬 */}
+            {rows[0] && rowActions!(rows[0].original)}
+          </div>
+        )}
       </div>
     )
   }
