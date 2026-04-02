@@ -265,9 +265,9 @@ function DataTableInner<TData>(
         isRight && 'border-l border-divider',
       )}>
         {/* Header */}
-        <div role="rowgroup" className={cn('sticky top-0 z-[2]', HEADER_BG)}>
+        <div role="rowgroup" className="sticky top-0 z-[2]">
           <div className={cn(isCenter && 'w-max min-w-full')}>
-            <div role="row" className={cn('flex items-center border-b border-divider', `h-table-row-${size}`)}>
+            <div role="row" className={cn('flex items-center border-b border-divider', `h-table-row-${size}`, HEADER_BG)}>
               {regionHeaders.map((header, idx) => {
                 const meta = header.column.columnDef.meta
                 const colType = meta?.type as ColumnType | undefined
