@@ -139,21 +139,8 @@ function DataTableInner<TData>(
   const centerBodyRef = React.useRef<HTMLDivElement>(null)
   const leftHeaderRef = React.useRef<HTMLDivElement>(null)
   const rightHeaderRef = React.useRef<HTMLDivElement>(null)
-
-  // Header 寬度 → body virtual container 同步（解決 virtual mode 寬度問題）
   const [leftWidth, setLeftWidth] = React.useState(0)
   const [rightWidth, setRightWidth] = React.useState(0)
-  React.useEffect(() => {
-    const measure = () => {
-      if (leftHeaderRef.current) setLeftWidth(leftHeaderRef.current.offsetWidth)
-      if (rightHeaderRef.current) setRightWidth(rightHeaderRef.current.offsetWidth)
-    }
-    measure()
-    const obs = new ResizeObserver(measure)
-    if (leftHeaderRef.current) obs.observe(leftHeaderRef.current)
-    if (rightHeaderRef.current) obs.observe(rightHeaderRef.current)
-    return () => obs.disconnect()
-  }, [hasLeft, hasRight, rows.length])
 
   const virtualizer = useVirtualizer({
     count: useVirtual ? rows.length : 0,
@@ -175,6 +162,19 @@ function DataTableInner<TData>(
   const rightCols = table.getRightVisibleLeafColumns()
   const hasLeft = leftCols.length > 0
   const hasRight = rightCols.length > 0 || hasRowActions
+
+  // Header 寬度 → body region 同步（virtual mode 需要明確寬度）
+  React.useEffect(() => {
+    const measure = () => {
+      if (leftHeaderRef.current) setLeftWidth(leftHeaderRef.current.offsetWidth)
+      if (rightHeaderRef.current) setRightWidth(rightHeaderRef.current.offsetWidth)
+    }
+    measure()
+    const obs = new ResizeObserver(measure)
+    if (leftHeaderRef.current) obs.observe(leftHeaderRef.current)
+    if (rightHeaderRef.current) obs.observe(rightHeaderRef.current)
+    return () => obs.disconnect()
+  }, [hasLeft, hasRight, rows.length])
 
   const rowHeight = `h-table-row-${size}`
 
