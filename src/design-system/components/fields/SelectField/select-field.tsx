@@ -118,68 +118,96 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
       )
     }
 
-    // edit
+    // edit — 共用的 select + clear + chevron
+    const selectEl = (
+      <select
+        ref={setSelectRef}
+        value={value ?? ''}
+        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+        disabled={disabled}
+        aria-invalid={error || undefined}
+        className={cn(
+          bareInputStyles,
+          'cursor-pointer appearance-none',
+          !value && 'text-fg-muted',
+          // tag 模式：select 覆蓋整個 field（跟 MultiSelect 同模式）
+          !isTextDisplay && value && 'absolute inset-0 w-full h-full opacity-0 z-0',
+        )}
+        {...props}
+      >
+        {placeholder && <option value="" disabled>{placeholder}</option>}
+        {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+      </select>
+    )
+
+    const clearEl = showClear ? (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => onChange?.('')}
+            className="group/action relative grid place-content-center shrink-0 cursor-pointer text-fg-muted hover:text-foreground active:text-foreground transition-colors relative z-10"
+            style={{ width: iconSize, height: iconSize }}
+            aria-label="清除選取"
+          >
+            <span
+              className={cn('absolute rounded-sm pointer-events-none bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active transition-colors', size === 'lg' && 'rounded-md')}
+              style={{ width: iconSize + 2, height: iconSize + 2, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+              aria-hidden
+            />
+            <X size={iconSize} className="relative" aria-hidden />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>清除選取</TooltipContent>
+      </Tooltip>
+    ) : null
+
+    const chevronEl = <ChevronDown size={iconSize} className="shrink-0 text-fg-muted cursor-pointer relative z-10" onClick={openSelect} aria-hidden />
+
+    const label = options?.find(o => o.value === value)?.label ?? value
+
+    // edit: tag 模式 — Tag + 隱藏 select overlay
+    if (!isTextDisplay) {
+      return (
+        <div
+          className={cn(
+            fieldWrapperStyles({ mode: 'edit', size }),
+            tagPadding[size],
+            'relative',
+            error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'],
+            className,
+          )}
+          style={{ gap: 4 }}
+          data-field-mode="edit"
+          data-error={error ? '' : undefined}
+        >
+          {value ? (
+            <Tag size={size} className="shrink-0 relative z-10 pointer-events-none">{label}</Tag>
+          ) : (
+            <span className="text-fg-muted flex-1">{placeholder ?? '選擇...'}</span>
+          )}
+          {selectEl}
+          {clearEl}
+          {chevronEl}
+        </div>
+      )
+    }
+
+    // edit: text 模式 — 原生 select 顯示文字
     return (
       <div
         className={cn(
           fieldWrapperStyles({ mode: 'edit', size }),
-          error && [
-            'border-error hover:border-error-hover',
-            'focus-within:border-error focus-within:hover:border-error',
-          ],
+          error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'],
           className,
         )}
         data-field-mode="edit"
         data-error={error ? '' : undefined}
       >
         {StartIcon && <StartIcon size={iconSize} className="shrink-0 text-fg-muted pointer-events-none" aria-hidden />}
-        <select
-          ref={setSelectRef}
-          value={value ?? ''}
-          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-          disabled={disabled}
-          aria-invalid={error || undefined}
-          className={cn(
-            bareInputStyles,
-            'cursor-pointer appearance-none',
-            !value && 'text-fg-muted',
-          )}
-          {...props}
-        >
-          {placeholder && (
-            <option value="" disabled>{placeholder}</option>
-          )}
-          {options.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
-        {showClear && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => onChange?.('')}
-                className="group/action relative grid place-content-center shrink-0 cursor-pointer text-fg-muted hover:text-foreground active:text-foreground transition-colors"
-                style={{ width: iconSize, height: iconSize }}
-                aria-label="清除選取"
-              >
-                <span
-                  className={cn(
-                    'absolute rounded-sm pointer-events-none',
-                    'bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active',
-                    'transition-colors',
-                    size === 'lg' && 'rounded-md',
-                  )}
-                  style={{ width: iconSize + 2, height: iconSize + 2, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-                  aria-hidden
-                />
-                <X size={iconSize} className="relative" aria-hidden />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>清除選取</TooltipContent>
-          </Tooltip>
-        )}
-        <ChevronDown size={iconSize} className="shrink-0 text-fg-muted cursor-pointer" onClick={openSelect} aria-hidden />
+        {selectEl}
+        {clearEl}
+        {chevronEl}
       </div>
     )
   }
