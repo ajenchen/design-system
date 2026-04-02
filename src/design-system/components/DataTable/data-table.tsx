@@ -233,15 +233,17 @@ function DataTableInner<TData>(
     }
   }, [])
 
-  // ── Row Actions cell（frozen right column）──
+  // ── Row Actions cell（frozen right column, sticky）──
   const renderRowActions = rowActions ? (row: (typeof rows)[number]) => (
     <div
       role="cell"
       className={cn(
-        'flex items-center justify-end shrink-0 gap-1 border-l border-divider',
+        'flex items-center justify-end shrink-0 gap-1',
+        'border-l border-divider',
+        'sticky right-0 z-[1] bg-surface group-hover:bg-neutral-hover transition-colors',
         !rowActionsAlwaysVisible && 'opacity-0 group-hover:opacity-1 transition-opacity',
       )}
-      style={{ ...cellPadding, width: 'auto', paddingLeft: 4 }}
+      style={{ paddingBlock: 'var(--table-cell-py)', paddingInline: '0.75rem' }}
     >
       {rowActions(row.original)}
     </div>
@@ -319,7 +321,8 @@ function DataTableInner<TData>(
               className="flex items-stretch border-b border-divider"
             >
               {headerGroup.headers.map((header, idx) => {
-                const isLast = idx === headerGroup.headers.length - 1 && !rowActions
+                const isLastDataCol = idx === headerGroup.headers.length - 1
+                const isLast = isLastDataCol // 最後一個 data column 不顯示短分隔線（有 rowActions 時由 actions 的 border-l 取代）
                 const headerMeta = header.column.columnDef.meta
                 const headerType = headerMeta?.type as ColumnType | undefined
                 const headerAlign = headerMeta?.align ?? (headerType ? columnTypeDefaults[headerType].align : undefined)
@@ -363,8 +366,14 @@ function DataTableInner<TData>(
                   </div>
                 )
               })}
-              {/* Row actions header spacer（frozen right boundary） */}
-              {rowActions && <div className="flex-1 border-l border-divider" />}
+              {/* Row actions header（frozen right, sticky） */}
+              {rowActions && (
+                <div
+                  role="columnheader"
+                  className="sticky right-0 z-[1] bg-muted border-l border-divider shrink-0"
+                  style={{ paddingBlock: 'var(--table-cell-py)', paddingInline: '0.75rem', width: 'auto' }}
+                />
+              )}
             </div>
           ))}
         </div>
