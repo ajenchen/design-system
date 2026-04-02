@@ -333,6 +333,33 @@ export const RowActions: Story = {
   ),
 }
 
+/* ── Pinned Columns ── */
+export const PinnedColumns: Story = {
+  name: 'Pinned Columns',
+  render: () => (
+    <div className="flex flex-col gap-8">
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">Left pinned + Row Actions</h3>
+        <p className="text-caption text-fg-muted mb-3">SKU 固定在左側，row actions 固定在右側。中間欄位水平捲動。全高分隔線標示 frozen 邊界。</p>
+        <div style={{ maxWidth: 700 }}>
+          <DataTable
+            columns={columnsWithPrice}
+            data={sampleData}
+            height="auto"
+            pinnedLeftColumns={['sku']}
+            rowActions={(row) => (
+              <>
+                <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
+                <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+              </>
+            )}
+          />
+        </div>
+      </div>
+    </div>
+  ),
+}
+
 /* ── 虛擬捲動（大量資料）── */
 export const VirtualScroll: Story = {
   name: '虛擬捲動（10,000 行）',
