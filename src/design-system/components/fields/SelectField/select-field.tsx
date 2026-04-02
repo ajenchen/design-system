@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { X, ChevronDown } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode } from '@/design-system/components/fields/field-types'
 import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-system/components/fields/field-wrapper'
@@ -42,6 +43,10 @@ export interface SelectFieldProps
   placeholder?: string
   /** 允許清空已選值 */
   clearable?: boolean
+  /** 顯示模式：text = 純文字（像 TextField），tag = Tag 標籤。預設 text */
+  display?: 'text' | 'tag'
+  /** 左側 icon（display="text" 時，代表 value 的圖示） */
+  startIcon?: LucideIcon
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -59,6 +64,8 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
       className,
       disabled,
       clearable = false,
+      display = 'text',
+      startIcon: StartIcon,
       ...props
     },
     ref
@@ -66,6 +73,7 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
     const resolvedMode = disabled ? 'disabled' : mode
     const iconSize = size === 'lg' ? 20 : 16
     const showClear = clearable && value && resolvedMode === 'edit'
+    const isTextDisplay = display === 'text'
     const selectRef = React.useRef<HTMLSelectElement>(null)
     const setSelectRef = React.useCallback((el: HTMLSelectElement | null) => {
       selectRef.current = el
@@ -76,18 +84,33 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
 
     // readonly / disabled
     if (resolvedMode !== 'edit') {
+      const label = options?.find(o => o.value === value)?.label ?? value
+      const iconColor = resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted'
+
+      if (isTextDisplay) {
+        // text 模式：跟 TextField readonly/disabled 一致
+        return (
+          <div
+            className={cn(fieldWrapperStyles({ mode: resolvedMode, size }), className)}
+            data-field-mode={resolvedMode}
+          >
+            {StartIcon && <StartIcon size={iconSize} className={cn('shrink-0 pointer-events-none', iconColor)} aria-hidden />}
+            <span className={cn('flex-1 min-w-0 truncate', resolvedMode === 'disabled' && 'text-fg-disabled')}>
+              {value ? label : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>}
+            </span>
+          </div>
+        )
+      }
+
+      // tag 模式
       return (
         <div
-          className={cn(
-            fieldWrapperStyles({ mode: resolvedMode, size }),
-            value && tagPadding[size],
-            className,
-          )}
+          className={cn(fieldWrapperStyles({ mode: resolvedMode, size }), value && tagPadding[size], className)}
           data-field-mode={resolvedMode}
         >
           <span className={cn(resolvedMode === 'disabled' && 'bg-disabled text-fg-disabled')}>
             {value
-              ? <Tag size={size}>{options?.find(o => o.value === value)?.label ?? value}</Tag>
+              ? <Tag size={size}>{label}</Tag>
               : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
             }
           </span>
@@ -109,6 +132,7 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
         data-field-mode="edit"
         data-error={error ? '' : undefined}
       >
+        {StartIcon && <StartIcon size={iconSize} className="shrink-0 text-fg-muted pointer-events-none" aria-hidden />}
         <select
           ref={setSelectRef}
           value={value ?? ''}

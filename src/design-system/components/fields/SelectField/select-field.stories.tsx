@@ -56,6 +56,30 @@ export const Modes: Story = {
   },
 }
 
+/* ── 顯示模式 ── */
+export const DisplayMode: Story = {
+  name: '顯示模式',
+  render: () => {
+    const [value, setValue] = React.useState('in_stock')
+    return (
+      <div className="flex flex-col gap-6 max-w-xs">
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">text（預設）</h3>
+          <p className="text-caption text-fg-muted mb-2">純文字，readonly/disabled 跟 TextField 一致</p>
+          <SelectField options={statusOptions} value={value} onChange={setValue} />
+          <div className="mt-2"><SelectField mode="readonly" options={statusOptions} value={value} /></div>
+        </div>
+        <div>
+          <h3 className="text-body font-bold text-foreground mb-2">tag</h3>
+          <p className="text-caption text-fg-muted mb-2">Tag 標籤，readonly/disabled 用 tagPadding</p>
+          <SelectField display="tag" options={statusOptions} value={value} onChange={setValue} />
+          <div className="mt-2"><SelectField display="tag" mode="readonly" options={statusOptions} value={value} /></div>
+        </div>
+      </div>
+    )
+  },
+}
+
 /* ── 尺寸與 Button 對齊 ── */
 export const SizeAlignment: Story = {
   name: '尺寸與 Button 對齊',
