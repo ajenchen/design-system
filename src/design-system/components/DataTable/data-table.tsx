@@ -206,9 +206,9 @@ function DataTableInner<TData>(
   const getEditIndicator = (colType?: ColumnType) => {
     if (!inlineEdit) return null
     if (colType === 'select' || colType === 'multiSelect' || colType === 'person' || colType === 'multiPerson')
-      return <ChevronDown size={iconSize} className="shrink-0 text-fg-muted ml-auto" aria-hidden />
+      return <ChevronDown size={iconSize} className="shrink-0 text-fg-muted" aria-hidden />
     if (colType === 'date')
-      return <Calendar size={iconSize} className="shrink-0 text-fg-muted ml-auto" aria-hidden />
+      return <Calendar size={iconSize} className="shrink-0 text-fg-muted" aria-hidden />
     return null
   }
 
@@ -227,10 +227,11 @@ function DataTableInner<TData>(
           align === 'right' && 'justify-end text-right',
           align === 'center' && 'justify-center text-center',
           inlineEdit && !isLastInRow && 'border-r border-divider',
+          indicator && 'gap-2',
         )}
         style={{ width: cell.column.getSize(), minWidth: cell.column.columnDef.minSize, maxWidth: cell.column.columnDef.maxSize, ...cellPadding }}
       >
-        <span className={cn('flex-1 min-w-0 flex items-center', autoRowHeight ? 'items-start' : 'items-center')}>
+        <span className={cn('flex-1 min-w-0 overflow-hidden', align === 'right' && 'text-right')}>
           {renderCellContent(cell)}
         </span>
         {indicator}
