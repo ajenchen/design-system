@@ -231,7 +231,7 @@ function DataTableInner<TData>(
         )}
         style={{ width: cell.column.getSize(), minWidth: cell.column.columnDef.minSize, maxWidth: cell.column.columnDef.maxSize, ...cellPadding }}
       >
-        <span className={cn('flex-1 min-w-0 overflow-hidden', align === 'right' && 'text-right')}>
+        <span className={cn('flex-1 min-w-0 overflow-hidden flex items-center', align === 'right' && 'justify-end')}>
           {renderCellContent(cell)}
         </span>
         {indicator}
