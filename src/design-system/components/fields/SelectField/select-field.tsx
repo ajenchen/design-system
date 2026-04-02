@@ -177,7 +177,7 @@ const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>(
             error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'],
             className,
           )}
-          style={{ gap: 4 }}
+          style={{ paddingRight: '0.75rem' }}
           data-field-mode="edit"
           data-error={error ? '' : undefined}
         >
