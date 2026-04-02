@@ -7,9 +7,6 @@ import {
   type ColumnDef,
   type SortingState,
   type TableOptions,
-  type Header,
-  type Cell,
-  type Row,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { cva, type VariantProps } from 'class-variance-authority'
@@ -58,13 +55,11 @@ export interface DataTableProps<TData>
   tableOptions?: Partial<Omit<TableOptions<TData>, 'data' | 'columns' | 'getCoreRowModel'>>
   rowActions?: (row: TData) => React.ReactNode
   rowActionsAlwaysVisible?: boolean
-  /** Columns to pin to the left (by column id) */
   pinnedLeftColumns?: string[]
-  /** Columns to pin to the right (by column id) */
   pinnedRightColumns?: string[]
 }
 
-// ── Type → Display auto-resolve ─────────────────────────────────────────────
+// ── Type → Display ──────────────────────────────────────────────────────────
 
 function renderTypedValue(value: unknown, meta?: Record<string, any>, autoRowHeight?: boolean, tableSize?: TableSize): React.ReactNode {
   const type = meta?.type as ColumnType | undefined
@@ -72,35 +67,15 @@ function renderTypedValue(value: unknown, meta?: Record<string, any>, autoRowHei
   switch (type) {
     case 'number':
     case 'currency':
-      return (
-        <NumberFieldDisplay
-          value={value as number | null}
-          prefix={type === 'currency' ? (meta?.prefix ?? '$') : meta?.prefix}
-          suffix={meta?.suffix}
-          precision={meta?.precision}
-          locale={meta?.locale}
-        />
-      )
+      return <NumberFieldDisplay value={value as number | null} prefix={type === 'currency' ? (meta?.prefix ?? '$') : meta?.prefix} suffix={meta?.suffix} precision={meta?.precision} locale={meta?.locale} />
     case 'date':
-      return (
-        <DateFieldDisplay
-          value={value as string | number | Date | null}
-          formatOptions={meta?.formatOptions}
-          locale={meta?.locale}
-        />
-      )
+      return <DateFieldDisplay value={value as string | number | Date | null} formatOptions={meta?.formatOptions} locale={meta?.locale} />
     case 'boolean':
       return <BooleanFieldDisplay value={value as boolean | null} />
     case 'select':
       return <SelectFieldDisplay value={value as string | null} options={meta?.options} size={tableSize} />
     case 'multiSelect':
-      return (
-        <MultiSelectFieldDisplay
-          value={value as string[] | null}
-          options={meta?.options}
-          wrap={wrap}
-        />
-      )
+      return <MultiSelectFieldDisplay value={value as string[] | null} options={meta?.options} wrap={wrap} />
     case 'person':
       return <PersonDisplay value={value as PersonValue | null} size={tableSize} />
     case 'multiPerson':
@@ -137,14 +112,8 @@ function TruncateCell({ children, className }: { children: React.ReactNode; clas
     return () => observer.disconnect()
   }, [checkTruncation])
 
-  const span = (
-    <span ref={ref} className={cn('truncate min-w-0', className)}>
-      {children}
-    </span>
-  )
-
+  const span = <span ref={ref} className={cn('truncate min-w-0', className)}>{children}</span>
   if (!isTruncated) return span
-
   return (
     <Tooltip>
       <TooltipTrigger asChild>{span}</TooltipTrigger>
@@ -153,27 +122,26 @@ function TruncateCell({ children, className }: { children: React.ReactNode; clas
   )
 }
 
+// ── Pinned cell helpers ──────────────────────────────────────────────────────
+
+function getPinnedStyle(pinned: 'left' | 'right' | false, offset: number): React.CSSProperties | undefined {
+  if (!pinned) return undefined
+  return {
+    position: 'sticky',
+    [pinned]: offset,
+    zIndex: 1,
+  }
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 function DataTableInner<TData>(
   {
-    columns,
-    data,
-    size = 'md',
-    autoRowHeight = false,
-    height = '400px',
-    overscan = 5,
-    emptyState,
-    enableHover = true,
-    bordered,
-    estimateRowHeight = 36,
-    tableOptions,
-    rowActions,
-    rowActionsAlwaysVisible = false,
-    pinnedLeftColumns,
-    pinnedRightColumns,
-    className,
-    ...props
+    columns, data, size = 'md', autoRowHeight = false, height = '400px',
+    overscan = 5, emptyState, enableHover = true, bordered,
+    estimateRowHeight = 36, tableOptions, rowActions,
+    rowActionsAlwaysVisible = false, pinnedLeftColumns, pinnedRightColumns,
+    className, ...props
   }: DataTableProps<TData>,
   ref: React.ForwardedRef<HTMLDivElement>
 ) {
@@ -186,10 +154,7 @@ function DataTableInner<TData>(
     columns,
     state: {
       sorting,
-      columnPinning: {
-        left: pinnedLeftColumns ?? [],
-        right: pinnedRightColumns ?? [],
-      },
+      columnPinning: { left: pinnedLeftColumns ?? [], right: pinnedRightColumns ?? [] },
       ...tableOptions?.state,
     },
     onSortingChange: setSorting,
@@ -202,44 +167,60 @@ function DataTableInner<TData>(
   const isEmpty = rows.length === 0
   const hasHeightConstraint = height !== 'auto'
   const useVirtual = hasHeightConstraint && !isEmpty
+  const hasRowActions = !!rowActions
 
-  // 三區域欄位分組
-  const leftCols = table.getLeftVisibleLeafColumns()
-  const centerCols = table.getCenterVisibleLeafColumns()
-  const rightCols = table.getRightVisibleLeafColumns()
-  const hasLeft = leftCols.length > 0
-  const hasRight = rightCols.length > 0 || !!rowActions
+  // Refs
+  const headerRef = React.useRef<HTMLDivElement>(null)
+  const bodyRef = React.useRef<HTMLDivElement>(null)
 
-  // 共用垂直 scroll container
-  const scrollRef = React.useRef<HTMLDivElement>(null)
-  const tableRef = React.useRef<HTMLDivElement>(null)
-
-  // Virtual scrolling — 指向共用垂直 scroll container
+  // Virtual scrolling
   const virtualizer = useVirtualizer({
     count: useVirtual ? rows.length : 0,
-    getScrollElement: () => scrollRef.current,
+    getScrollElement: () => bodyRef.current,
     estimateSize: () => estimateRowHeight,
     overscan,
     enabled: useVirtual,
   })
 
-  // ── Cross-region row hover（ref-based, zero re-render）──
-  const hoveredRowRef = React.useRef<number | null>(null)
-
-  const onRowEnter = React.useCallback((index: number) => {
-    hoveredRowRef.current = index
-    tableRef.current?.querySelectorAll(`[data-row-index="${index}"]`)
-      .forEach(el => (el as HTMLElement).dataset.hovered = '')
+  // Sync header horizontal scroll with body
+  const onBodyScroll = React.useCallback(() => {
+    if (headerRef.current && bodyRef.current) {
+      headerRef.current.scrollLeft = bodyRef.current.scrollLeft
+    }
   }, [])
 
-  const onRowLeave = React.useCallback((index: number) => {
-    hoveredRowRef.current = null
-    tableRef.current?.querySelectorAll(`[data-row-index="${index}"]`)
-      .forEach(el => delete (el as HTMLElement).dataset.hovered)
-  }, [])
+  // ── Calculate pinned offsets ──
+  const leftPinnedOffsets = React.useMemo(() => {
+    const cols = table.getLeftVisibleLeafColumns()
+    const offsets: Record<string, number> = {}
+    let acc = 0
+    for (const col of cols) {
+      offsets[col.id] = acc
+      acc += col.getSize()
+    }
+    return offsets
+  }, [table, pinnedLeftColumns])
 
-  // ── Render a single cell ──
-  const renderCell = (cell: Cell<TData, unknown>) => {
+  const rightPinnedOffsets = React.useMemo(() => {
+    const cols = table.getRightVisibleLeafColumns()
+    const offsets: Record<string, number> = {}
+    let acc = hasRowActions ? 72 : 0 // reserve space for row actions
+    for (let i = cols.length - 1; i >= 0; i--) {
+      offsets[cols[i].id] = acc
+      acc += cols[i].getSize()
+    }
+    return offsets
+  }, [table, pinnedRightColumns, hasRowActions])
+
+  // ── Frozen boundary detection ──
+  const leftPinnedIds = new Set(pinnedLeftColumns ?? [])
+  const rightPinnedIds = new Set(pinnedRightColumns ?? [])
+  const allHeaders = table.getHeaderGroups()[0]?.headers ?? []
+  const lastLeftPinnedIdx = allHeaders.findLastIndex(h => leftPinnedIds.has(h.id))
+  const firstRightPinnedIdx = allHeaders.findIndex(h => rightPinnedIds.has(h.id))
+
+  // ── Render cell ──
+  const renderCell = (cell: ReturnType<typeof rows[number]['getVisibleCells']>[number]) => {
     const meta = cell.column.columnDef.meta
     const wrap = autoRowHeight && meta?.wrap === true
     const colType = meta?.type as ColumnType | undefined
@@ -249,6 +230,11 @@ function DataTableInner<TData>(
     const content = colType
       ? renderTypedValue(cell.getValue(), meta, autoRowHeight, size)
       : flexRender(cell.column.columnDef.cell, cell.getContext())
+
+    const pinned = cell.column.getIsPinned()
+    const pinnedOffset = pinned === 'left' ? leftPinnedOffsets[cell.column.id] ?? 0
+      : pinned === 'right' ? rightPinnedOffsets[cell.column.id] ?? 0
+      : 0
 
     return (
       <div
@@ -260,266 +246,173 @@ function DataTableInner<TData>(
           'overflow-hidden',
           align === 'right' && 'justify-end text-right',
           align === 'center' && 'justify-center text-center',
+          pinned && 'bg-[inherit]',
         )}
         style={{
           width: cell.column.getSize(),
           minWidth: cell.column.columnDef.minSize,
           maxWidth: cell.column.columnDef.maxSize,
           ...cellPadding,
+          ...getPinnedStyle(pinned, pinnedOffset),
         }}
       >
         {wrap ? (
           <span className="break-words min-w-0">{content}</span>
-        ) : isCompound ? (
-          content
-        ) : (
+        ) : isCompound ? content : (
           <TruncateCell>{content}</TruncateCell>
         )}
       </div>
     )
   }
 
-  // ── Render header cell ──
-  const renderHeaderCell = (header: Header<TData, unknown>, isLast: boolean) => {
-    const headerMeta = header.column.columnDef.meta
-    const headerType = headerMeta?.type as ColumnType | undefined
-    const headerAlign = headerMeta?.align ?? (headerType ? columnTypeDefaults[headerType].align : undefined)
-
-    return (
-      <div
-        key={header.id}
-        role="columnheader"
-        aria-sort={
-          header.column.getIsSorted() === 'asc' ? 'ascending' :
-          header.column.getIsSorted() === 'desc' ? 'descending' :
-          'none'
-        }
-        className={cn(
-          'relative flex items-center text-fg-secondary text-body font-normal shrink-0 overflow-hidden select-none',
-          headerAlign === 'right' && 'text-right',
-          headerAlign === 'center' && 'text-center',
-        )}
-        style={{
-          width: header.getSize(),
-          minWidth: header.column.columnDef.minSize,
-          maxWidth: header.column.columnDef.maxSize,
-          ...cellPadding,
-        }}
-      >
-        <TruncateCell>
-          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-        </TruncateCell>
-        {!isLast && (
-          <span
-            className="absolute right-0 w-px bg-divider"
-            style={{ top: 'var(--table-cell-py)', bottom: 'var(--table-cell-py)' }}
-            aria-hidden
-          />
-        )}
-      </div>
-    )
-  }
-
-  // ── Render a region (header + body) ──
-  const renderRegion = (
-    regionType: 'left' | 'center' | 'right',
-    regionHeaders: Header<TData, unknown>[],
-    getCellsForRow: (row: Row<TData>) => Cell<TData, unknown>[],
-  ) => {
-    const isCenter = regionType === 'center'
-    const isRight = regionType === 'right'
-
-    // 計算 total width for center（確保 min-width 撐滿）
-    const totalWidth = regionHeaders.reduce((acc, h) => acc + h.getSize(), 0)
-
-    const rowHoverProps = (index: number) => enableHover ? ({
-      onMouseEnter: () => onRowEnter(index),
-      onMouseLeave: () => onRowLeave(index),
-    }) : {}
-
-    const renderRows = () => {
-      if (isEmpty && isCenter) {
-        return (
-          <div className="flex items-center justify-center text-fg-muted text-body py-12">
-            {emptyState ?? '沒有資料'}
-          </div>
-        )
-      }
-
-      if (useVirtual) {
-        return (
-          <div style={{ height: virtualizer.getTotalSize(), position: 'relative', ...(isCenter ? { minWidth: totalWidth } : {}) }}>
-            {virtualizer.getVirtualItems().map(virtualRow => {
-              const row = rows[virtualRow.index]
-              const isLastRow = virtualRow.index === rows.length - 1
-              const showBottomBorder = bordered !== false ? !isLastRow : true
-
-              return (
-                <div
-                  key={row.id}
-                  ref={isCenter ? virtualizer.measureElement : undefined}
-                  data-index={isCenter ? virtualRow.index : undefined}
-                  data-row-index={virtualRow.index}
-                  role="row"
-                  aria-rowindex={virtualRow.index + 2}
-                  className={cn(
-                    'flex items-stretch absolute w-full',
-                    showBottomBorder && 'border-b border-divider',
-                    'transition-colors data-[hovered]:bg-neutral-hover',
-                  )}
-                  style={{ transform: `translateY(${virtualRow.start}px)` }}
-                  {...rowHoverProps(virtualRow.index)}
-                >
-                  {getCellsForRow(row).map(cell => renderCell(cell))}
-                  {isRight && rowActions && renderRowActionsCell(row)}
-                </div>
-              )
-            })}
-          </div>
-        )
-      }
-
-      // Non-virtual
-      return (
-        <>
-          {rows.map((row, index) => {
-            const isLastRow = index === rows.length - 1
-            const showBottomBorder = bordered !== false ? !isLastRow : true
-
-            return (
-              <div
-                key={row.id}
-                data-row-index={index}
-                role="row"
-                aria-rowindex={index + 2}
-                className={cn(
-                  'flex items-stretch',
-                  showBottomBorder && 'border-b border-divider',
-                  'transition-colors data-[hovered]:bg-neutral-hover',
-                )}
-                {...rowHoverProps(index)}
-              >
-                {getCellsForRow(row).map(cell => renderCell(cell))}
-                {isRight && rowActions && renderRowActionsCell(row)}
-              </div>
-            )
-          })}
-        </>
-      )
-    }
-
-    return (
-      <div
-        className={cn(
-          isCenter ? 'flex-1 min-w-0 overflow-x-auto overflow-y-hidden' : 'shrink-0 overflow-hidden',
-          regionType === 'left' && hasLeft && 'border-r border-divider',
-          isRight && 'border-l border-divider',
-        )}
-      >
-        {/* Header */}
-        <div role="rowgroup" className="sticky top-0 z-[2] bg-muted">
-          <div className={cn(isCenter && 'w-max min-w-full')}>
-            <div role="row" className="flex items-stretch border-b border-divider">
-              {regionHeaders.map((header, idx) => {
-                const isLastInRegion = idx === regionHeaders.length - 1
-                // frozen region 的最後一個 header 不需要短分隔線（region border 已處理）
-                const isLast = isLastInRegion
-                return renderHeaderCell(header, isLast)
-              })}
-              {/* Row actions header placeholder */}
-              {isRight && rowActions && (
-                <div role="columnheader" className="shrink-0" style={cellPadding} />
-              )}
-            </div>
-          </div>
-        </div>
-        {/* Body */}
-        <div role="rowgroup" className={cn(isCenter && 'w-max min-w-full')}>
-          {renderRows()}
-        </div>
-      </div>
-    )
-  }
-
-  // ── Row Actions cell ──
-  const renderRowActionsCell = (row: Row<TData>) => (
+  // ── Row actions cell ──
+  const renderRowActionsCell = (row: typeof rows[number]) => (
     <div
       role="cell"
       className={cn(
-        'flex items-center justify-end shrink-0 gap-2',
-        !rowActionsAlwaysVisible && 'opacity-0 transition-opacity',
+        'flex items-center justify-end shrink-0 gap-2 bg-surface',
+        'sticky right-0 z-[1]',
+        'border-l border-divider',
       )}
-      // data-hovered 驅動的 opacity 需要在 JS hover handler 處理
       style={cellPadding}
     >
       {rowActions!(row.original)}
     </div>
   )
 
-  // ── 取得 header groups 中各 region 的 headers ──
-  const headerGroups = table.getHeaderGroups()
-  const firstHeaderGroup = headerGroups[0]
-  const leftHeaders = firstHeaderGroup?.headers.filter(h => leftCols.some(c => c.id === h.id)) ?? []
-  const centerHeaders = firstHeaderGroup?.headers.filter(h => centerCols.some(c => c.id === h.id)) ?? []
-  const rightHeaders = firstHeaderGroup?.headers.filter(h => rightCols.some(c => c.id === h.id)) ?? []
+  // ── Render row ──
+  const renderRow = (row: typeof rows[number], index: number, opts?: { virtual?: boolean; start?: number; isLast?: boolean }) => {
+    const showBottomBorder = bordered !== false ? !opts?.isLast : true
 
-  // Row actions 的 opacity 需要跟 hover 連動
-  React.useEffect(() => {
-    if (!rowActions || rowActionsAlwaysVisible) return
-    const table = tableRef.current
-    if (!table) return
+    return (
+      <div
+        key={row.id}
+        ref={opts?.virtual ? virtualizer.measureElement : undefined}
+        data-index={opts?.virtual ? index : undefined}
+        role="row"
+        aria-rowindex={index + 2}
+        className={cn(
+          'flex items-stretch',
+          opts?.virtual && 'absolute w-full',
+          showBottomBorder && 'border-b border-divider',
+          enableHover && 'hover:bg-neutral-hover transition-colors group',
+        )}
+        style={opts?.virtual ? { transform: `translateY(${opts.start}px)` } : undefined}
+      >
+        {row.getVisibleCells().map(cell => renderCell(cell))}
+        {hasRowActions && renderRowActionsCell(row)}
+      </div>
+    )
+  }
 
-    const observer = new MutationObserver(() => {
-      table.querySelectorAll('[data-row-index]').forEach(row => {
-        const isHovered = (row as HTMLElement).dataset.hovered !== undefined
-        const actionsCell = row.querySelector('[role="cell"]:last-child')
-        if (actionsCell) {
-          (actionsCell as HTMLElement).style.opacity = isHovered ? '1' : '0'
-        }
-      })
-    })
-    observer.observe(table, { attributes: true, subtree: true, attributeFilter: ['data-hovered'] })
-    return () => observer.disconnect()
-  }, [rowActions, rowActionsAlwaysVisible])
+  // ── Render header ──
+  const renderHeader = () => (
+    <div ref={headerRef} role="rowgroup" className="bg-muted overflow-hidden">
+      <div className="w-max min-w-full">
+        {table.getHeaderGroups().map(headerGroup => (
+          <div key={headerGroup.id} role="row" className="flex items-stretch border-b border-divider">
+            {headerGroup.headers.map((header, idx) => {
+              const headerMeta = header.column.columnDef.meta
+              const headerType = headerMeta?.type as ColumnType | undefined
+              const headerAlign = headerMeta?.align ?? (headerType ? columnTypeDefaults[headerType].align : undefined)
+              const pinned = header.column.getIsPinned()
+              const pinnedOffset = pinned === 'left' ? leftPinnedOffsets[header.column.id] ?? 0
+                : pinned === 'right' ? rightPinnedOffsets[header.column.id] ?? 0
+                : 0
+
+              // frozen 邊界：full-height border 取代 header 短線
+              const isLastLeftPinned = idx === lastLeftPinnedIdx
+              const isFirstRightPinned = firstRightPinnedIdx >= 0 && idx === firstRightPinnedIdx
+              const isLast = idx === headerGroup.headers.length - 1 && !hasRowActions
+              const showShortDivider = !isLast && !isLastLeftPinned
+
+              return (
+                <div
+                  key={header.id}
+                  role="columnheader"
+                  aria-sort={
+                    header.column.getIsSorted() === 'asc' ? 'ascending' :
+                    header.column.getIsSorted() === 'desc' ? 'descending' : 'none'
+                  }
+                  className={cn(
+                    'relative flex items-center text-fg-secondary text-body font-normal shrink-0 overflow-hidden select-none',
+                    headerAlign === 'right' && 'text-right',
+                    headerAlign === 'center' && 'text-center',
+                    pinned && 'bg-muted',
+                    isLastLeftPinned && 'border-r border-divider',
+                    isFirstRightPinned && 'border-l border-divider',
+                  )}
+                  style={{
+                    width: header.getSize(),
+                    minWidth: header.column.columnDef.minSize,
+                    maxWidth: header.column.columnDef.maxSize,
+                    ...cellPadding,
+                    ...getPinnedStyle(pinned, pinnedOffset),
+                  }}
+                >
+                  <TruncateCell>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TruncateCell>
+                  {showShortDivider && (
+                    <span className="absolute right-0 w-px bg-divider" style={{ top: 'var(--table-cell-py)', bottom: 'var(--table-cell-py)' }} aria-hidden />
+                  )}
+                </div>
+              )
+            })}
+            {/* Row actions header */}
+            {hasRowActions && (
+              <div
+                role="columnheader"
+                className="sticky right-0 z-[1] bg-muted border-l border-divider shrink-0"
+                style={cellPadding}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 
   return (
     <div
-      ref={(el) => {
-        tableRef.current = el
-        if (typeof ref === 'function') ref(el)
-        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = el
-      }}
+      ref={ref}
       data-table-size={size}
       className={cn(dataTableVariants({ bordered }), className)}
       role="table"
       aria-rowcount={rows.length + 1}
       {...props}
     >
+      {renderHeader()}
+
+      {/* Body */}
       <div
-        ref={scrollRef}
-        className="flex"
+        ref={bodyRef}
+        role="rowgroup"
+        className="overflow-x-auto"
         style={hasHeightConstraint ? { maxHeight: height, overflowY: 'auto' } : undefined}
+        onScroll={onBodyScroll}
       >
-        {/* Left pinned region */}
-        {hasLeft && renderRegion('left', leftHeaders, (row) =>
-          row.getVisibleCells().filter(c => leftCols.some(lc => lc.id === c.column.id))
-        )}
-
-        {/* Center scrollable region */}
-        {renderRegion('center', centerHeaders, (row) =>
-          row.getVisibleCells().filter(c => centerCols.some(cc => cc.id === c.column.id))
-        )}
-
-        {/* Right pinned region */}
-        {hasRight && renderRegion('right', rightHeaders, (row) =>
-          row.getVisibleCells().filter(c => rightCols.some(rc => rc.id === c.column.id))
-        )}
+        <div className="w-max min-w-full">
+          {isEmpty ? (
+            <div className="flex items-center justify-center text-fg-muted text-body py-12">
+              {emptyState ?? '沒有資料'}
+            </div>
+          ) : useVirtual ? (
+            <div style={{ height: virtualizer.getTotalSize(), width: table.getTotalSize(), position: 'relative' }}>
+              {virtualizer.getVirtualItems().map(vr => {
+                const row = rows[vr.index]
+                return renderRow(row, vr.index, { virtual: true, start: vr.start, isLast: vr.index === rows.length - 1 })
+              })}
+            </div>
+          ) : (
+            rows.map((row, i) => renderRow(row, i, { isLast: i === rows.length - 1 }))
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-// forwardRef with generics
 export const DataTable = React.forwardRef(DataTableInner) as <TData>(
   props: DataTableProps<TData> & { ref?: React.ForwardedRef<HTMLDivElement> }
 ) => React.ReactElement
