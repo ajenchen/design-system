@@ -255,7 +255,7 @@ function DataTableInner<TData>(
     if (useVirtual) {
       const totalWidth = cols.reduce((a, c) => a + c.getSize(), 0)
       return (
-        <div style={{ height: virtualizer.getTotalSize(), position: 'relative', ...(isCenter ? { minWidth: totalWidth } : {}) }}>
+        <div style={{ height: virtualizer.getTotalSize(), position: 'relative', minWidth: totalWidth }}>
           {virtualizer.getVirtualItems().map(vr => rowEl(rows[vr.index], vr.index, { virtual: true, start: vr.start, isLast: vr.index === rows.length - 1 }))}
         </div>
       )
