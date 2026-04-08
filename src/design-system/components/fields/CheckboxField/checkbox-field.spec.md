@@ -1,10 +1,10 @@
-# BooleanField 設計原則
+# CheckboxField 設計原則
 
 ## 定位
 
-BooleanField 是布林值的輸入與顯示元件。Edit 模式用 Checkbox，readonly 模式用文字符號。
+CheckboxField 是布林值的輸入與顯示元件。Edit 模式用 Checkbox，readonly 模式用文字符號。
 
-共用規則見 `field.spec.md`。本文件只記錄 BooleanField 特有的原則。
+共用規則見 `field.spec.md`。本文件只記錄 CheckboxField 特有的原則。
 
 ---
 

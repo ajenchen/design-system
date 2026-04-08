@@ -1,6 +1,6 @@
 import * as React from "react"
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
-import { Check } from "lucide-react"
+import { Check, Minus } from "lucide-react"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
@@ -17,8 +17,11 @@ const checkboxVariants = cva(
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     'data-[state=checked]:bg-primary data-[state=checked]:text-white data-[state=checked]:border-primary',
     'data-[state=checked]:hover:bg-primary-hover data-[state=checked]:hover:border-primary-hover',
+    'data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-white data-[state=indeterminate]:border-primary',
+    'data-[state=indeterminate]:hover:bg-primary-hover data-[state=indeterminate]:hover:border-primary-hover',
     'disabled:cursor-not-allowed disabled:bg-disabled disabled:border-transparent disabled:hover:border-transparent',
     'disabled:data-[state=checked]:bg-disabled disabled:data-[state=checked]:text-fg-disabled disabled:data-[state=checked]:border-transparent',
+    'disabled:data-[state=indeterminate]:bg-disabled disabled:data-[state=indeterminate]:text-fg-disabled disabled:data-[state=indeterminate]:border-transparent',
   ],
   {
     variants: {
@@ -52,7 +55,10 @@ const Checkbox = React.forwardRef<
       {...props}
     >
       <CheckboxPrimitive.Indicator className="grid place-content-center text-current">
-        <Check style={{ width: iconPx, height: iconPx }} />
+        {props.checked === 'indeterminate'
+          ? <Minus style={{ width: iconPx, height: iconPx }} />
+          : <Check style={{ width: iconPx, height: iconPx }} />
+        }
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   )

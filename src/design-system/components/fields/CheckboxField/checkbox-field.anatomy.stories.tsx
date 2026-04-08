@@ -1,9 +1,9 @@
 import type { Meta } from '@storybook/react'
 import { useState } from 'react'
-import { BooleanField } from './boolean-field'
+import { CheckboxField } from './checkbox-field'
 
 const meta: Meta = {
-  title: 'Design System/Components/Fields/BooleanField/設計規格',
+  title: 'Design System/Components/Fields/CheckboxField/設計規格',
   parameters: { layout: 'padded' },
 }
 export default meta
@@ -162,7 +162,7 @@ export const Overview = {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <H3>結構（Anatomy）</H3>
-          <Desc>BooleanField 根據 mode 渲染完全不同的元素：edit / disabled 用 Checkbox 元件，readonly 用純文字符號。沒有 error、clearable、placeholder — 布林值只有兩種答案。</Desc>
+          <Desc>CheckboxField 根據 mode 渲染完全不同的元素：edit / disabled 用 Checkbox 元件，readonly 用純文字符號。沒有 error、clearable、placeholder — 布林值只有兩種答案。</Desc>
         </div>
 
         <div className="flex gap-12">
@@ -171,11 +171,11 @@ export const Overview = {
             <span className="text-[11px] text-fg-muted font-medium">edit（Checkbox）</span>
             <div className="flex gap-6">
               <div className="flex flex-col items-center gap-1.5">
-                <BooleanField mode="edit" value={true} />
+                <CheckboxField mode="edit" value={true} />
                 <span className="text-[10px] text-fg-muted font-mono">checked</span>
               </div>
               <div className="flex flex-col items-center gap-1.5">
-                <BooleanField mode="edit" value={false} />
+                <CheckboxField mode="edit" value={false} />
                 <span className="text-[10px] text-fg-muted font-mono">unchecked</span>
               </div>
             </div>
@@ -186,11 +186,11 @@ export const Overview = {
             <span className="text-[11px] text-fg-muted font-medium">readonly（純文字）</span>
             <div className="flex gap-6">
               <div className="flex flex-col items-center gap-1.5">
-                <BooleanField mode="readonly" value={true} />
+                <CheckboxField mode="readonly" value={true} />
                 <span className="text-[10px] text-fg-muted font-mono">true → ✓</span>
               </div>
               <div className="flex flex-col items-center gap-1.5">
-                <BooleanField mode="readonly" value={false} />
+                <CheckboxField mode="readonly" value={false} />
                 <span className="text-[10px] text-fg-muted font-mono">false/null → —</span>
               </div>
             </div>
@@ -202,11 +202,11 @@ export const Overview = {
             <span className="text-[11px] text-fg-muted font-medium">disabled（Checkbox disabled）</span>
             <div className="flex gap-6">
               <div className="flex flex-col items-center gap-1.5">
-                <BooleanField mode="disabled" value={true} />
+                <CheckboxField mode="disabled" value={true} />
                 <span className="text-[10px] text-fg-muted font-mono">checked</span>
               </div>
               <div className="flex flex-col items-center gap-1.5">
-                <BooleanField mode="disabled" value={false} />
+                <CheckboxField mode="disabled" value={false} />
                 <span className="text-[10px] text-fg-muted font-mono">unchecked</span>
               </div>
             </div>
@@ -304,7 +304,7 @@ const InspectorInner = () => {
         {/* Left: preview */}
         <div className="flex flex-col gap-5 min-w-[280px]">
           <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
-            <BooleanField
+            <CheckboxField
               mode={mode}
               value={value}
               size={size}
@@ -436,7 +436,7 @@ export const ColorMatrix = {
                 <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{mode}</td>
                 {(['checked', 'unchecked'] as const).map((val) => (
                   <td key={val} className="p-3 border-b border-divider align-top min-w-[180px]">
-                    <BooleanField
+                    <CheckboxField
                       mode={mode}
                       value={val === 'checked'}
                     />
@@ -571,11 +571,11 @@ export const SizeMatrix = {
               {SIZES.map((sz) => (
                 <tr key={sz}>
                   <Td mono>{sz}</Td>
-                  <Td><BooleanField mode="edit" value={true} size={sz} /></Td>
-                  <Td><BooleanField mode="edit" value={false} size={sz} /></Td>
-                  <Td><BooleanField mode="readonly" value={true} size={sz} /></Td>
-                  <Td><BooleanField mode="readonly" value={false} size={sz} /></Td>
-                  <Td><BooleanField mode="disabled" value={true} size={sz} /></Td>
+                  <Td><CheckboxField mode="edit" value={true} size={sz} /></Td>
+                  <Td><CheckboxField mode="edit" value={false} size={sz} /></Td>
+                  <Td><CheckboxField mode="readonly" value={true} size={sz} /></Td>
+                  <Td><CheckboxField mode="readonly" value={false} size={sz} /></Td>
+                  <Td><CheckboxField mode="disabled" value={true} size={sz} /></Td>
                 </tr>
               ))}
             </tbody>

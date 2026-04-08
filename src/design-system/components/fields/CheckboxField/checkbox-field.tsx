@@ -8,16 +8,16 @@ import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 // Table cell 和 readonly 共用。純文字呈現，不暗示可編輯。
 // null = false = unchecked，三者視覺一致。
 
-function BooleanFieldDisplay({ value }: { value?: boolean | null }) {
+function CheckboxFieldDisplay({ value }: { value?: boolean | null }) {
   return value
     ? <span className="text-foreground">✓</span>
     : <span className="text-fg-muted">—</span>
 }
-BooleanFieldDisplay.displayName = 'BooleanFieldDisplay'
+CheckboxFieldDisplay.displayName = 'CheckboxFieldDisplay'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
-export interface BooleanFieldProps {
+export interface CheckboxFieldProps {
   /** Field display mode */
   mode?: FieldMode
   /** 布林值 */
@@ -36,7 +36,7 @@ export interface BooleanFieldProps {
 
 // ── Component ───────────────────────────────────────────────────────────────
 
-const BooleanField = React.forwardRef<HTMLButtonElement, BooleanFieldProps>(
+const CheckboxField = React.forwardRef<HTMLButtonElement, CheckboxFieldProps>(
   (
     {
       mode = 'edit',
@@ -58,7 +58,7 @@ const BooleanField = React.forwardRef<HTMLButtonElement, BooleanFieldProps>(
           className={cn(fieldWrapperStyles({ mode: 'readonly', size }), className)}
           data-field-mode="readonly"
         >
-          <BooleanFieldDisplay value={value} />
+          <CheckboxFieldDisplay value={value} />
         </div>
       )
     }
@@ -78,6 +78,6 @@ const BooleanField = React.forwardRef<HTMLButtonElement, BooleanFieldProps>(
     )
   }
 )
-BooleanField.displayName = 'BooleanField'
+CheckboxField.displayName = 'CheckboxField'
 
-export { BooleanField, BooleanFieldDisplay }
+export { CheckboxField, CheckboxFieldDisplay }

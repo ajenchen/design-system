@@ -57,34 +57,37 @@ src/
 │   │       └── radius.stories.tsx
 │   ├── components/                    ← shadcn 積木元件（一個元件一個資料夾）
 │   │   ├── Badge/                     ← 通知計數指示器（紅點 / 計數膠囊）
-│   │   │   ├── badge.tsx
-│   │   │   ├── badge.spec.md
-│   │   │   └── badge.stories.tsx
 │   │   ├── Tag/                       ← inline label（分類標籤 / 狀態標記）
-│   │   │   ├── tag.tsx
-│   │   │   ├── tag.spec.md
-│   │   │   └── tag.stories.tsx
-│   │   ├── Button/
-│   │   │   ├── button.tsx
-│   │   │   ├── button-group.tsx
-│   │   │   ├── button.spec.md
-│   │   │   ├── button.stories.tsx
-│   │   │   └── button.principles.stories.tsx
+│   │   ├── Button/                    ← 觸發操作或導覽
+│   │   ├── Checkbox/                  ← 選擇控件（方形，含 indeterminate）
+│   │   ├── Radio/                     ← 選擇控件（圓形，互斥）
+│   │   ├── Tooltip/                   ← hover 短文字提示
+│   │   ├── SelectionControl/          ← Checkbox/Radio 共用的 SelectionItem 佈局
+│   │   ├── Command/                   ← shadcn Command（cmdk 搜尋 + 鍵盤導覽）
+│   │   ├── Popover/                   ← shadcn Popover（浮動容器）
+│   │   ├── Dialog/                    ← shadcn Dialog
+│   │   ├── ScrollArea/                ← shadcn ScrollArea
+│   │   ├── SelectMenu/                ← 下拉選單浮層
+│   │   │   ├── select-menu.tsx        ← SelectMenu（Popover + Command 組合）
+│   │   │   ├── select-menu-item.tsx   ← MenuItem + Group + Footer
+│   │   │   └── select-menu-item.spec.md ← 設計原則（含 searchIn 規則）
 │   │   └── fields/                    ← 資料輸入 / 顯示元件
 │   │       ├── field-types.ts         ← FieldMode、InlineActionConfig 共用型別
 │   │       ├── field-wrapper.tsx      ← 共用 wrapper 樣式
 │   │       ├── field.spec.md          ← Field 共用設計原則（含驗證標準）
 │   │       ├── TextField/
 │   │       ├── NumberField/
-│   │       ├── BooleanField/
+│   │       ├── CheckboxField/
 │   │       ├── DateField/
 │   │       ├── SelectField/
 │   │       ├── MultiSelectField/
 │   │       └── LinkField/             ← URL 輸入，藍色連結 + Pencil 編輯
 │   └── patterns/                      ← 複合元件 / 已定案的 UI 流程（依互動領域分資料夾）
-│       └── action-bar/                ← 工具列、操作列
-│           ├── action-bar.spec.md
-│           └── action-bar.stories.tsx
+│       ├── action-bar/                ← 工具列、操作列
+│       │   ├── action-bar.spec.md
+│       │   └── action-bar.stories.tsx
+│       └── item-layout/               ← prefix + content 佈局原則（掃描/閱讀兩種模式）
+│           └── item-layout.spec.md
 └── explorations/                      ← 未定案的 prototype 比稿
 ```
 

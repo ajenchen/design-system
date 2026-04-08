@@ -1,18 +1,18 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
-import { BooleanField } from './boolean-field'
+import { CheckboxField } from './checkbox-field'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
 
-const meta: Meta<typeof BooleanField> = {
-  title: 'Design System/Components/Fields/BooleanField/展示',
-  component: BooleanField,
+const meta: Meta<typeof CheckboxField> = {
+  title: 'Design System/Components/Fields/CheckboxField/展示',
+  component: CheckboxField,
   tags: ['autodocs'],
 }
 
 export default meta
-type Story = StoryObj<typeof BooleanField>
+type Story = StoryObj<typeof CheckboxField>
 
 /* ── 三種模式 ── */
 export const Modes: Story = {
@@ -23,19 +23,19 @@ export const Modes: Story = {
       <div className="flex flex-col gap-6 max-w-xs">
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
-          <BooleanField value={checked} onChange={setChecked} />
+          <CheckboxField value={checked} onChange={setChecked} />
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">readonly (true)</h3>
-          <BooleanField mode="readonly" value={true} />
+          <CheckboxField mode="readonly" value={true} />
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">readonly (false)</h3>
-          <BooleanField mode="readonly" value={false} />
+          <CheckboxField mode="readonly" value={false} />
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
-          <BooleanField mode="disabled" value={true} />
+          <CheckboxField mode="disabled" value={true} />
         </div>
       </div>
     )
@@ -72,7 +72,7 @@ export const InDataTable: Story = {
 
     return (
       <div>
-        <p className="text-caption text-fg-muted mb-3">boolean 欄位靠左對齊，自動用 BooleanFieldDisplay 渲染（✓ 或 —）</p>
+        <p className="text-caption text-fg-muted mb-3">boolean 欄位靠左對齊，自動用 CheckboxFieldDisplay 渲染（✓ 或 —）</p>
         <DataTable columns={columns} data={data} height="auto" />
       </div>
     )

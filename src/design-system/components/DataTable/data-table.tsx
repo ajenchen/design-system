@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/compone
 import { columnTypeDefaults, type ColumnType } from './column-types'
 import { TextFieldDisplay } from '@/design-system/components/fields/TextField/text-field'
 import { NumberFieldDisplay } from '@/design-system/components/fields/NumberField/number-field'
-import { BooleanFieldDisplay } from '@/design-system/components/fields/BooleanField/boolean-field'
+import { CheckboxFieldDisplay } from '@/design-system/components/fields/CheckboxField/checkbox-field'
 import { SelectFieldDisplay } from '@/design-system/components/fields/SelectField/select-field'
 import { MultiSelectFieldDisplay } from '@/design-system/components/fields/MultiSelectField/multi-select-field'
 import { DateFieldDisplay } from '@/design-system/components/fields/DateField/date-field'
@@ -64,7 +64,7 @@ function renderTypedValue(value: unknown, meta?: Record<string, any>, autoRowHei
     case 'number': case 'currency':
       return <NumberFieldDisplay value={value as number | null} prefix={type === 'currency' ? (meta?.prefix ?? '$') : meta?.prefix} suffix={meta?.suffix} precision={meta?.precision} locale={meta?.locale} />
     case 'date': return <DateFieldDisplay value={value as string | number | Date | null} formatOptions={meta?.formatOptions} locale={meta?.locale} />
-    case 'boolean': return <BooleanFieldDisplay value={value as boolean | null} />
+    case 'boolean': return <CheckboxFieldDisplay value={value as boolean | null} />
     case 'select': return <SelectFieldDisplay value={value as string | null} options={meta?.options} size={tableSize} />
     case 'multiSelect': return <MultiSelectFieldDisplay value={value as string[] | null} options={meta?.options} wrap={wrap} />
     case 'person': return <PersonDisplay value={value as PersonValue | null} size={tableSize} />

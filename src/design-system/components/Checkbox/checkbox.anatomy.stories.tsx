@@ -13,13 +13,13 @@ export default meta
    Types & Data
    ═══════════════════════════════════════════════════════════════════════════ */
 
-type CheckedState = 'unchecked' | 'checked'
+type CheckedState = 'unchecked' | 'checked' | 'indeterminate'
 type InteractionState = 'default' | 'hover' | 'disabled'
 type SizeKey = 'sm' | 'md' | 'lg'
 type ColorSpec = { bg: string; border: string; indicator: string }
 
 const SIZES: SizeKey[] = ['sm', 'md', 'lg']
-const CHECKED_STATES: CheckedState[] = ['unchecked', 'checked']
+const CHECKED_STATES: CheckedState[] = ['unchecked', 'checked', 'indeterminate']
 const INTERACTION_STATES: InteractionState[] = ['default', 'hover', 'disabled']
 
 const TOKEN_MAP: Record<CheckedState, Record<InteractionState, ColorSpec>> = {
@@ -29,6 +29,11 @@ const TOKEN_MAP: Record<CheckedState, Record<InteractionState, ColorSpec>> = {
     disabled: { bg: '--bg-disabled', border: 'transparent',    indicator: 'none' },
   },
   checked: {
+    default:  { bg: '--primary',       border: '--primary',       indicator: 'white' },
+    hover:    { bg: '--primary-hover',  border: '--primary-hover', indicator: 'white' },
+    disabled: { bg: '--bg-disabled',   border: 'transparent',    indicator: '--fg-disabled' },
+  },
+  indeterminate: {
     default:  { bg: '--primary',       border: '--primary',       indicator: 'white' },
     hover:    { bg: '--primary-hover',  border: '--primary-hover', indicator: 'white' },
     disabled: { bg: '--bg-disabled',   border: 'transparent',    indicator: '--fg-disabled' },
@@ -276,7 +281,7 @@ const InspectorInner = () => {
                   <Checkbox
                     id="inspector-cb"
                     size={size}
-                    checked={checkedState === 'checked'}
+                    checked={checkedState === 'checked' ? true : checkedState === 'indeterminate' ? 'indeterminate' : false}
                     disabled={interaction === 'disabled'}
                   />
                 }
@@ -287,7 +292,7 @@ const InspectorInner = () => {
             ) : (
               <Checkbox
                 size={size}
-                checked={checkedState === 'checked'}
+                checked={checkedState === 'checked' ? true : checkedState === 'indeterminate' ? 'indeterminate' : false}
                 disabled={interaction === 'disabled'}
               />
             )}
@@ -404,7 +409,7 @@ export const ColorMatrix = {
                   <td key={st} className="p-3 border-b border-divider align-top min-w-[160px]">
                     <Checkbox
                       size="md"
-                      checked={cs === 'checked'}
+                      checked={cs === 'checked' ? true : cs === 'indeterminate' ? 'indeterminate' : false}
                       disabled={st === 'disabled'}
                     />
                     <TokenAnnotation colors={TOKEN_MAP[cs][st]} />
@@ -543,7 +548,7 @@ export const StateBehavior = {
           {(['md', 'lg'] as const).map((sz) => (
             <div key={sz} className="flex flex-col gap-1">
               <span className="text-[11px] text-fg-muted font-medium">size="{sz}"</span>
-              <div className="grid border border-dashed border-divider rounded-md">
+              <div className="grid border border-dashed border-divider rounded-md p-2">
                 <SelectionItem size={sz} control={<Checkbox id={`vg-${sz}-a`} size={sz} />} label="Option A" htmlFor={`vg-${sz}-a`} />
                 <SelectionItem size={sz} control={<Checkbox id={`vg-${sz}-b`} size={sz} />} label="Option B" description="附帶說明文字" htmlFor={`vg-${sz}-b`} />
                 <SelectionItem size={sz} control={<Checkbox id={`vg-${sz}-c`} size={sz} />} label="Option C" htmlFor={`vg-${sz}-c`} />

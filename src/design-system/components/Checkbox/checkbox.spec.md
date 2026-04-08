@@ -46,6 +46,7 @@ Checkbox/Radio 不內建 label。Label 組合使用 `SelectionItem` 元件。
 |---|---|---|
 | Item 間距 | 0（padding 處理） | 24px（gap-6） |
 | Item padding | `py = (field-height - 1lh) / 2` | 同左 |
+| Label ↔ Description | 2px（`mt-0.5`） | 同左 |
 | 單行高度 | = field-height（對齊 TextField） | 同左 |
 | 多行高度 | padding 不變，自然撐高 | — |
 
@@ -59,10 +60,21 @@ Checkbox/Radio 不內建 label。Label 組合使用 `SelectionItem` 元件。
 |------|------|------|--------|
 | unchecked | border | surface | 無 |
 | checked | primary | primary | white check |
+| indeterminate | primary | primary | white minus |
 | hover unchecked | neutral-6 | surface | 無 |
 | hover checked | primary-hover | primary-hover | white check |
+| hover indeterminate | primary-hover | primary-hover | white minus |
 | disabled unchecked | 無 | neutral-2 | 無 |
 | disabled checked | 無 | neutral-2 | fg-disabled check |
+| disabled indeterminate | 無 | neutral-2 | fg-disabled minus |
+
+### Indeterminate（半選）
+
+`checked="indeterminate"` 表示「部分子項被選中」。視覺上與 checked 相同（藍底白圖示），只是圖示從 Check 換成 Minus。
+
+典型場景：SelectMenu 的「全選」checkbox——當部分選項被勾選時顯示 indeterminate。
+
+Indeterminate 是由父層邏輯控制的狀態，Checkbox 本身不會自動進入 indeterminate——必須明確傳入 `checked="indeterminate"`。
 
 ### Radio
 

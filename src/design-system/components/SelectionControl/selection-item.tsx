@@ -63,7 +63,7 @@ const SelectionItem = React.forwardRef<HTMLDivElement, SelectionItemProps>(
           {label}
         </label>
         {description && (
-          <p className={disabled ? 'text-fg-disabled' : 'text-fg-secondary'}>
+          <p className={cn('mt-0.5', disabled ? 'text-fg-disabled' : 'text-fg-secondary')}>
             {description}
           </p>
         )}

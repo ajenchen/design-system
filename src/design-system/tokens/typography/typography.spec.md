@@ -33,7 +33,7 @@ Typography 由三個獨立維度組成，分開疊加：
 | `text-h6`      | 14px      | 1.3         | 最小層級標題 |
 | `text-body-lg` | 16px      | 1.5         | 16px 為主版面的段落內文 |
 | `text-body`    | 14px      | 1.5         | ★ 主要內文基準 |
-| `text-caption` | 12px      | 1.3         | 圖表附註、helper text、標籤文字 |
+| `text-caption` | 12px      | 1.3         | 圖表附註、標籤文字、元件內次要說明 |
 | `text-footnote`| 10px      | 1.3         | 法律文字、來源標注（極少用）|
 
 **h5（16px）vs body-lg（16px）**：同尺寸，line-height 不同，靠這個區分標題與段落角色。

@@ -22,8 +22,18 @@ export const States: Story = {
         <div className="flex items-center gap-4">
           <Checkbox />
           <Checkbox defaultChecked />
+          <Checkbox checked="indeterminate" />
           <Checkbox disabled />
           <Checkbox disabled defaultChecked />
+          <Checkbox disabled checked="indeterminate" />
+        </div>
+        <div className="flex items-center gap-4 mt-1 text-[10px] text-fg-muted">
+          <span className="w-4 text-center">off</span>
+          <span className="w-4 text-center">on</span>
+          <span className="w-4 text-center">—</span>
+          <span className="w-4 text-center">off</span>
+          <span className="w-4 text-center">on</span>
+          <span className="w-4 text-center">—</span>
         </div>
       </div>
       <div>
@@ -31,8 +41,10 @@ export const States: Story = {
         <div className="flex items-center gap-4">
           <Checkbox size="lg" />
           <Checkbox size="lg" defaultChecked />
+          <Checkbox size="lg" checked="indeterminate" />
           <Checkbox size="lg" disabled />
           <Checkbox size="lg" disabled defaultChecked />
+          <Checkbox size="lg" disabled checked="indeterminate" />
         </div>
       </div>
     </div>

@@ -37,3 +37,29 @@ elevation-100 < elevation-200，數字越大浮起越高。
 // ❌ 錯誤——浮層用了半透明 bg-surface
 <div className="bg-surface rounded-lg" style={{ boxShadow: 'var(--elevation-200)' }} />
 ```
+
+
+## 浮層間距（sideOffset）
+
+所有從觸發元件彈出的浮層（Tooltip、Popover、SelectMenu、Dropdown 等）與觸發元件的間距統一 **8px**（`sideOffset={8}`）。
+
+不因浮層類型或位置而異——一致的間距讓使用者建立穩定的空間預期。
+
+| 浮層類型 | sideOffset | 說明 |
+|---------|-----------|------|
+| Tooltip | 8px | TooltipContent 預設值 |
+| SelectMenu | 8px | PopoverContent sideOffset |
+| Dropdown | 8px | 未來元件 |
+| Popover | 8px | 通用浮層 |
+
+## 浮層共用樣式
+
+所有 elevation-200 浮層共用：
+
+| 屬性 | Token | 值 |
+|------|-------|-----|
+| 背景 | `bg-surface-raised` | 不透明，避免底層透出 |
+| 陰影 | `--elevation-200` | 浮層陰影 |
+| 圓角 | `rounded-lg` | 8px |
+| 邊框 | `border border-border` | 1px |
+| sideOffset | 8px | 與觸發元件的間距 |
