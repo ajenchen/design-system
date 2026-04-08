@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils'
  * ── 狀態 ──
  *   OFF: track fg-disabled (neutral-6), thumb 白色無 border 無 check
  *   ON:  track primary, thumb 白色 + 2px primary border + primary check icon
- *   disabled: opacity-40（整體透明度）
+ *   disabled: opacity-disabled（整體透明度）
  */
 
 const switchVariants = cva(
@@ -26,7 +26,7 @@ const switchVariants = cva(
     'group peer inline-flex shrink-0 cursor-pointer items-center rounded-full',
     'transition-colors duration-150',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-    'disabled:cursor-not-allowed disabled:opacity-40',
+    'disabled:cursor-not-allowed disabled:opacity-disabled',
     // OFF → ON 背景色
     'data-[state=unchecked]:bg-border',
     'data-[state=checked]:bg-primary',

@@ -78,7 +78,7 @@ Image 模式不顯示背景色（圖片填滿）。
 
 ## Disabled
 
-Avatar 在 disabled 元件內使用 `opacity-40`（由宿主元件控制，非 Avatar 自身 prop）。詳見 `color.spec.md` 的 Disabled 狀態。
+Avatar 在 disabled 元件內使用 `opacity-disabled`（由宿主元件控制，非 Avatar 自身 prop）。詳見 `color.spec.md` 的 Disabled 狀態。
 
 ---
 

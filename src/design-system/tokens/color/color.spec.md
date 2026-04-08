@@ -41,7 +41,7 @@ disabled 元件內的所有子元素必須呈現 disabled 狀態：
 |---|---|
 | 文字 | `text-fg-disabled` |
 | Icon（stroke） | `text-fg-disabled` |
-| 圖片 / Avatar | `opacity-40`——圖片無法套用語義色，用透明度弱化 |
+| 圖片 / Avatar | `opacity-disabled`——圖片無法套用語義色，用透明度弱化 |
 | Checkbox / Radio | 元件自身的 disabled 樣式 |
 | 背景色 | `bg-disabled`（如適用） |
 
