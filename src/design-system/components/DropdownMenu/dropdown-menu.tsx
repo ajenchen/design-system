@@ -1,40 +1,20 @@
 import * as React from "react"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
-import { ChevronRight } from "lucide-react"
-import { cva, type VariantProps } from "class-variance-authority"
+import { ChevronRight, type LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Checkbox } from "@/design-system/components/Checkbox/checkbox"
+import { SelectMenuItem } from "@/design-system/components/SelectMenu/select-menu-item"
 
 /**
- * DropdownMenu — Radix DropdownMenu + 設計系統 token
+ * DropdownMenu — Radix DropdownMenu + SelectMenuItem visual layer
  *
- * 樣式遵循 item-layout 設計原則：
- * - padding: (field-height - 1lh) / 2
- * - prefix / suffix 對齊: h-[1lh]
- * - 浮層: elevation-200, bg-surface-raised, rounded-lg, sideOffset=8
+ * 架構分工：
+ * - Radix primitives：behavior（keyboard nav, focus management, aria roles）
+ * - SelectMenuItem：visual（layout, padding, icon alignment, typography）
+ *
+ * Radix primitive 是外層容器，控制 focus:bg-neutral-hover。
+ * SelectMenuItem 內層只負責佈局，不加互動樣式。
  */
-
-// ── Item size variants（共用 item-layout padding 公式）──
-const menuItemVariants = cva(
-  [
-    'relative flex items-start gap-2 px-3 w-full',
-    'cursor-pointer select-none',
-    'outline-none transition-colors duration-150',
-    'focus:bg-neutral-hover',
-    'data-[disabled]:pointer-events-none data-[disabled]:text-fg-disabled data-[disabled]:cursor-default',
-  ],
-  {
-    variants: {
-      size: {
-        sm: 'text-body leading-compact py-[calc((var(--field-height-sm)-1lh)/2)]',
-        md: 'text-body leading-compact py-[calc((var(--field-height-md)-1lh)/2)]',
-        lg: 'text-body-lg leading-compact py-[calc((var(--field-height-lg)-1lh)/2)]',
-      },
-    },
-    defaultVariants: { size: 'md' },
-  }
-)
 
 // ── Floating layer 共用樣式 ──
 const floatingLayerClass = [
@@ -51,7 +31,14 @@ const floatingLayerClass = [
 type SizeKey = 'sm' | 'md' | 'lg'
 const SizeContext = React.createContext<SizeKey>('md')
 const ICON_SIZE: Record<SizeKey, number> = { sm: 16, md: 16, lg: 20 }
-const CHECKBOX_SIZE: Record<SizeKey, 'sm' | 'md' | 'lg'> = { sm: 'sm', md: 'md', lg: 'lg' }
+
+// ── Shared item classes on Radix primitive ──
+const radixItemClass = [
+  'relative cursor-pointer select-none outline-none',
+  'transition-colors duration-150',
+  'focus:bg-neutral-hover',
+  'data-[disabled]:pointer-events-none data-[disabled]:text-fg-disabled data-[disabled]:cursor-default',
+].join(' ')
 
 // ── Root ──
 const DropdownMenu = DropdownMenuPrimitive.Root
@@ -111,7 +98,7 @@ DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName
 const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
->(({ className, ...props }, ref) => {
+>(({ className, children, ...props }, ref) => {
   const size = React.useContext(SizeContext)
   return (
     <DropdownMenuPrimitive.SubContent
@@ -120,24 +107,88 @@ const DropdownMenuSubContent = React.forwardRef<
       className={cn(floatingLayerClass, 'py-2', className)}
       style={{ boxShadow: 'var(--elevation-200)', minWidth: 180 }}
       {...props}
-    />
+    >
+      <SizeContext.Provider value={size}>
+        {children}
+      </SizeContext.Provider>
+    </DropdownMenuPrimitive.SubContent>
   )
 })
 DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayName
 
+// ── Helper: build endContent from badge + endIcon + shortcut ──
+function buildEndContent(
+  size: SizeKey,
+  badge?: React.ReactNode,
+  endIcon?: LucideIcon,
+  shortcut?: string,
+): React.ReactNode | undefined {
+  const EndIcon = endIcon
+  if (!badge && !EndIcon && !shortcut) return undefined
+  const iconPx = ICON_SIZE[size]
+  return (
+    <>
+      {badge}
+      {EndIcon && <EndIcon size={iconPx} className="text-fg-muted" aria-hidden />}
+      {shortcut && <span className="text-caption text-fg-muted">{shortcut}</span>}
+    </>
+  )
+}
+
 // ── Item ──
+interface DropdownMenuItemProps
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>, 'children'> {
+  children: React.ReactNode
+  /** 左側 icon */
+  startIcon?: LucideIcon
+  /** 左側頭像/視覺元素（ReactNode），與 startIcon 互斥 */
+  avatar?: React.ReactNode
+  /** 次要說明文字 */
+  description?: React.ReactNode
+  /** 後綴 Tag（ReactNode） */
+  tag?: React.ReactNode
+  /** 後綴 Badge（ReactNode） */
+  badge?: React.ReactNode
+  /** 後綴指示型 icon（LucideIcon），fg-muted */
+  endIcon?: LucideIcon
+  /** 鍵盤快捷鍵 */
+  shortcut?: string
+  /** 單選選中（bg-neutral-active） */
+  selected?: boolean
+}
+
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>
->(({ className, children, ...props }, ref) => {
+  DropdownMenuItemProps
+>(({ className, children, startIcon, avatar, description, tag, badge, endIcon, shortcut, selected, disabled, ...props }, ref) => {
   const size = React.useContext(SizeContext)
+  const endContent = buildEndContent(size, badge, endIcon, shortcut)
+
   return (
     <DropdownMenuPrimitive.Item
       ref={ref}
-      className={cn(menuItemVariants({ size }), className)}
+      disabled={disabled}
+      className={cn(
+        radixItemClass,
+        selected && 'bg-neutral-active',
+        className,
+      )}
       {...props}
     >
-      {children}
+      <SelectMenuItem
+        size={size}
+        startIcon={startIcon}
+        avatar={avatar}
+        description={description}
+        tag={tag}
+        endContent={endContent}
+        disabled={disabled}
+        // Pure visual — Radix parent handles role/aria/interaction
+        role="presentation"
+        className="!bg-transparent hover:!bg-transparent pointer-events-none"
+      >
+        {children}
+      </SelectMenuItem>
     </DropdownMenuPrimitive.Item>
   )
 })
@@ -145,8 +196,11 @@ DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
 
 // ── SubTrigger（子選單觸發器，自動附加 ChevronRight）──
 interface DropdownMenuSubTriggerProps
-  extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> {
-  /** 子選單目前狀態值文字（如 "深色"），顯示在 ChevronRight 前方 */
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger>, 'children'> {
+  children: React.ReactNode
+  /** 左側 icon */
+  startIcon?: LucideIcon
+  /** 子選單目前狀態值文字（如 "深色"） */
   value?: string
   /** 子選單狀態 badge */
   badge?: React.ReactNode
@@ -155,90 +209,106 @@ interface DropdownMenuSubTriggerProps
 const DropdownMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
   DropdownMenuSubTriggerProps
->(({ className, children, value, badge, ...props }, ref) => {
+>(({ className, children, startIcon, value, badge, ...props }, ref) => {
   const size = React.useContext(SizeContext)
   const iconPx = ICON_SIZE[size]
+
+  // SubTrigger suffix: [value?] [badge?] [ChevronRight] with gap-1
+  const endContent = (
+    <div className="flex items-center gap-1">
+      {value && <span className="text-fg-muted">{value}</span>}
+      {badge}
+      <ChevronRight size={iconPx} className="text-fg-muted" />
+    </div>
+  )
+
   return (
     <DropdownMenuPrimitive.SubTrigger
       ref={ref}
-      className={cn(menuItemVariants({ size }), 'data-[state=open]:bg-neutral-hover', className)}
+      className={cn(
+        radixItemClass,
+        'data-[state=open]:bg-neutral-hover',
+        className,
+      )}
       {...props}
     >
-      {children}
-      <div className="h-[1lh] flex items-center gap-1 ml-auto shrink-0">
-        {value && <span className="text-fg-muted">{value}</span>}
-        {badge}
-        <ChevronRight size={iconPx} className="text-fg-muted" />
-      </div>
+      <SelectMenuItem
+        size={size}
+        startIcon={startIcon}
+        endContent={endContent}
+        role="presentation"
+        className="!bg-transparent hover:!bg-transparent pointer-events-none"
+      >
+        {children}
+      </SelectMenuItem>
     </DropdownMenuPrimitive.SubTrigger>
   )
 })
 DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName
 
 // ── CheckboxItem ──
+interface DropdownMenuCheckboxItemProps
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>, 'children'> {
+  children: React.ReactNode
+  /** 左側 icon */
+  startIcon?: LucideIcon
+  /** 次要說明文字 */
+  description?: React.ReactNode
+}
+
 const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
->(({ className, children, checked, ...props }, ref) => {
+  DropdownMenuCheckboxItemProps
+>(({ className, children, startIcon, description, checked, disabled, ...props }, ref) => {
   const size = React.useContext(SizeContext)
-  const iconPx = ICON_SIZE[size]
+
   return (
     <DropdownMenuPrimitive.CheckboxItem
       ref={ref}
-      className={cn(menuItemVariants({ size }), className)}
       checked={checked}
+      disabled={disabled}
       onSelect={(e) => e.preventDefault()}
+      className={cn(radixItemClass, className)}
       {...props}
     >
-      <div className="h-[1lh] flex items-center shrink-0">
-        <Checkbox
-          size={CHECKBOX_SIZE[size]}
-          checked={!!checked}
-          disabled={props.disabled}
-          tabIndex={-1}
-          className="pointer-events-none"
-        />
-      </div>
-      {children}
+      <SelectMenuItem
+        size={size}
+        checkbox
+        checked={!!checked}
+        startIcon={startIcon}
+        description={description}
+        disabled={disabled}
+        role="presentation"
+        className="!bg-transparent hover:!bg-transparent pointer-events-none"
+      >
+        {children}
+      </SelectMenuItem>
     </DropdownMenuPrimitive.CheckboxItem>
   )
 })
 DropdownMenuCheckboxItem.displayName = DropdownMenuPrimitive.CheckboxItem.displayName
 
-// ── RadioItem（單選，選中 = bg-neutral-active，與 SelectMenu 統一）──
-const DropdownMenuRadioItem = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
->(({ className, children, ...props }, ref) => {
-  const size = React.useContext(SizeContext)
-  return (
-    <DropdownMenuPrimitive.RadioItem
-      ref={ref}
-      className={cn(
-        menuItemVariants({ size }),
-        'data-[state=checked]:bg-neutral-active',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </DropdownMenuPrimitive.RadioItem>
-  )
-})
-DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName
-
 // ── Label（群組標題）──
 const DropdownMenuLabel = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label>
->(({ className, ...props }, ref) => {
+>(({ className, children, ...props }, ref) => {
   const size = React.useContext(SizeContext)
   return (
     <DropdownMenuPrimitive.Label
       ref={ref}
-      className={cn(menuItemVariants({ size }), 'font-medium text-fg-muted cursor-default', className)}
+      className={cn('outline-none', className)}
       {...props}
-    />
+    >
+      <SelectMenuItem
+        size={size}
+        header
+        role="presentation"
+        className="pointer-events-none"
+      >
+        {children}
+      </SelectMenuItem>
+    </DropdownMenuPrimitive.Label>
   )
 })
 DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName
@@ -256,37 +326,21 @@ const DropdownMenuSeparator = React.forwardRef<
 ))
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName
 
-// ── Shortcut（鍵盤快捷鍵提示）──
-const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => (
-  <span className={cn("h-[1lh] flex items-center ml-auto text-caption text-fg-muted shrink-0", className)} {...props} />
-)
-DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
-
-// ── Icon wrapper（item 前綴 icon 的 h-[1lh] 對齊容器）──
-const DropdownMenuItemIcon = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-  <div className={cn("h-[1lh] flex items-center shrink-0", className)}>
-    {children}
-  </div>
-)
-DropdownMenuItemIcon.displayName = "DropdownMenuItemIcon"
-
 export {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuCheckboxItem,
-  DropdownMenuRadioItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuGroup,
   DropdownMenuPortal,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
-  DropdownMenuItemIcon,
-  menuItemVariants,
+  floatingLayerClass,
   SizeContext,
 }
+export type { SizeKey, DropdownMenuItemProps }

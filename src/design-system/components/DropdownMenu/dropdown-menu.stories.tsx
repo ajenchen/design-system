@@ -3,10 +3,9 @@ import { useState } from 'react'
 import { Mail, Settings, User, LogOut, Plus, Trash2, Copy, Pencil, ExternalLink, Moon, Sun, Monitor, ChevronDown, FileText } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuCheckboxItem, DropdownMenuRadioItem, DropdownMenuRadioGroup,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut,
+  DropdownMenuCheckboxItem, DropdownMenuRadioGroup,
+  DropdownMenuLabel, DropdownMenuSeparator,
   DropdownMenuGroup, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
-  DropdownMenuItemIcon,
 } from './dropdown-menu'
 import { Button } from '@/design-system/components/Button/button'
 import { Badge } from '@/design-system/components/Badge/badge'
@@ -27,21 +26,15 @@ export const Basic: StoryObj = {
         <Button variant="tertiary" endIcon={ChevronDown}>操作</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem>
-          <DropdownMenuItemIcon><Copy size={16} /></DropdownMenuItemIcon>
+        <DropdownMenuItem startIcon={Copy} shortcut="⌘C">
           複製
-          <DropdownMenuShortcut>⌘C</DropdownMenuShortcut>
         </DropdownMenuItem>
-        <DropdownMenuItem>
-          <DropdownMenuItemIcon><Pencil size={16} /></DropdownMenuItemIcon>
+        <DropdownMenuItem startIcon={Pencil} shortcut="⌘E">
           編輯
-          <DropdownMenuShortcut>⌘E</DropdownMenuShortcut>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-error">
-          <DropdownMenuItemIcon><Trash2 size={16} /></DropdownMenuItemIcon>
+        <DropdownMenuItem startIcon={Trash2} shortcut="⌘⌫" className="text-error">
           刪除
-          <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -60,18 +53,15 @@ export const Groups: StoryObj = {
       <DropdownMenuContent>
         <DropdownMenuGroup>
           <DropdownMenuLabel>我的帳號</DropdownMenuLabel>
-          <DropdownMenuItem>
-            <DropdownMenuItemIcon><User size={16} /></DropdownMenuItemIcon>
+          <DropdownMenuItem startIcon={User}>
             個人資料
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <DropdownMenuItemIcon><Settings size={16} /></DropdownMenuItemIcon>
+          <DropdownMenuItem startIcon={Settings}>
             設定
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <DropdownMenuItemIcon><LogOut size={16} /></DropdownMenuItemIcon>
+        <DropdownMenuItem startIcon={LogOut}>
           登出
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -89,22 +79,13 @@ export const WithSuffix: StoryObj = {
         <Button variant="tertiary" endIcon={ChevronDown}>操作</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem>
-          <DropdownMenuItemIcon><Mail size={16} /></DropdownMenuItemIcon>
+        <DropdownMenuItem startIcon={Mail} badge={<Badge count={12} />}>
           收件匣
-          <div className="h-[1lh] flex items-center ml-auto shrink-0">
-            <Badge count={12} />
-          </div>
         </DropdownMenuItem>
-        <DropdownMenuItem>
-          <DropdownMenuItemIcon><FileText size={16} /></DropdownMenuItemIcon>
+        <DropdownMenuItem startIcon={FileText} endIcon={ExternalLink}>
           說明文件
-          <div className="h-[1lh] flex items-center ml-auto shrink-0">
-            <ExternalLink size={16} className="text-fg-muted" />
-          </div>
         </DropdownMenuItem>
-        <DropdownMenuItem disabled>
-          <DropdownMenuItemIcon><Plus size={16} /></DropdownMenuItemIcon>
+        <DropdownMenuItem startIcon={Plus} disabled>
           新增（已停用）
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -117,6 +98,7 @@ export const WithSuffix: StoryObj = {
 const SubMenuDemo = () => {
   const [theme, setTheme] = useState('dark')
   const themeLabels: Record<string, string> = { light: '淺色', dark: '深色', system: '跟隨系統' }
+  const themeIcons: Record<string, typeof Sun> = { light: Sun, dark: Moon, system: Monitor }
 
   return (
     <DropdownMenu>
@@ -124,35 +106,30 @@ const SubMenuDemo = () => {
         <Button variant="tertiary" endIcon={ChevronDown}>設定</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem>
-          <DropdownMenuItemIcon><User size={16} /></DropdownMenuItemIcon>
+        <DropdownMenuItem startIcon={User}>
           個人資料
         </DropdownMenuItem>
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger value={themeLabels[theme]}>
-            <DropdownMenuItemIcon><Monitor size={16} /></DropdownMenuItemIcon>
+          <DropdownMenuSubTrigger startIcon={Monitor} value={themeLabels[theme]}>
             主題
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
             <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
-              <DropdownMenuRadioItem value="light">
-                <DropdownMenuItemIcon><Sun size={16} /></DropdownMenuItemIcon>
-                淺色
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="dark">
-                <DropdownMenuItemIcon><Moon size={16} /></DropdownMenuItemIcon>
-                深色
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="system">
-                <DropdownMenuItemIcon><Monitor size={16} /></DropdownMenuItemIcon>
-                跟隨系統
-              </DropdownMenuRadioItem>
+              {(['light', 'dark', 'system'] as const).map((t) => (
+                <DropdownMenuItem
+                  key={t}
+                  startIcon={themeIcons[t]}
+                  selected={theme === t}
+                  onSelect={() => setTheme(t)}
+                >
+                  {themeLabels[t]}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuRadioGroup>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <DropdownMenuItemIcon><LogOut size={16} /></DropdownMenuItemIcon>
+        <DropdownMenuItem startIcon={LogOut}>
           登出
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -197,10 +174,15 @@ export const CheckboxItems: StoryObj = {
   render: () => <CheckboxDemo />,
 }
 
-// ── Radio Items ──
+// ── 單選（RadioGroup + selected + bg-neutral-active）──
 
 const RadioDemo = () => {
   const [sort, setSort] = useState('name')
+  const options = [
+    { value: 'name', label: '名稱' },
+    { value: 'date', label: '日期' },
+    { value: 'size', label: '大小' },
+  ]
 
   return (
     <DropdownMenu>
@@ -210,9 +192,15 @@ const RadioDemo = () => {
       <DropdownMenuContent>
         <DropdownMenuLabel>排序方式</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={sort} onValueChange={setSort}>
-          <DropdownMenuRadioItem value="name">名稱</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="date">日期</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="size">大小</DropdownMenuRadioItem>
+          {options.map((opt) => (
+            <DropdownMenuItem
+              key={opt.value}
+              selected={sort === opt.value}
+              onSelect={() => setSort(opt.value)}
+            >
+              {opt.label}
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -236,17 +224,14 @@ export const Sizes: StoryObj = {
             <Button variant="tertiary" size={sz} endIcon={ChevronDown}>{sz}</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent size={sz}>
-            <DropdownMenuItem>
-              <DropdownMenuItemIcon><Copy size={sz === 'lg' ? 20 : 16} /></DropdownMenuItemIcon>
+            <DropdownMenuItem startIcon={Copy}>
               複製
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <DropdownMenuItemIcon><Pencil size={sz === 'lg' ? 20 : 16} /></DropdownMenuItemIcon>
+            <DropdownMenuItem startIcon={Pencil}>
               編輯
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-error">
-              <DropdownMenuItemIcon><Trash2 size={sz === 'lg' ? 20 : 16} /></DropdownMenuItemIcon>
+            <DropdownMenuItem startIcon={Trash2} className="text-error">
               刪除
             </DropdownMenuItem>
           </DropdownMenuContent>

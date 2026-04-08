@@ -105,6 +105,8 @@ export interface SelectMenuItemProps
   selected?: boolean
   /** 後綴 Tag（ReactNode），靠右對齊 */
   tag?: React.ReactNode
+  /** 後綴自訂內容（ReactNode），用於 DropdownMenu 的 badge/endIcon/shortcut 等 */
+  endContent?: React.ReactNode
   /** 停用 */
   disabled?: boolean
   /** 作為群組標題（不可選，font-medium，fg-muted） */
@@ -122,6 +124,7 @@ const SelectMenuItem = React.forwardRef<HTMLDivElement, SelectMenuItemProps>(
       checked,
       selected,
       tag,
+      endContent,
       disabled,
       header,
       size,
@@ -233,10 +236,11 @@ const SelectMenuItem = React.forwardRef<HTMLDivElement, SelectMenuItemProps>(
           )}
         </div>
 
-        {/* Suffix：tag，靠右對齊，跟 prefix 同對齊高度 */}
-        {tag && (
-          <div className={cn(prefixAlignVariants({ align: prefixAlign }), 'ml-auto')}>
+        {/* Suffix：tag / endContent，靠右對齊，跟 prefix 同對齊高度 */}
+        {(tag || endContent) && (
+          <div className={cn(prefixAlignVariants({ align: prefixAlign }), 'ml-auto gap-2')}>
             {tag}
+            {endContent}
           </div>
         )}
       </div>

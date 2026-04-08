@@ -1,15 +1,11 @@
 import type { Meta } from '@storybook/react'
 import { useState } from 'react'
-import { Copy, Pencil, Trash2, Mail, Settings, User, LogOut, ExternalLink, Moon, Sun, Monitor, ChevronDown, ChevronRight, FileText, Plus } from 'lucide-react'
+import { Copy, Pencil, Trash2, Monitor, ChevronDown, ChevronRight } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuCheckboxItem, DropdownMenuRadioItem, DropdownMenuRadioGroup,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut,
-  DropdownMenuGroup, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
-  DropdownMenuItemIcon,
+  DropdownMenuSeparator,
 } from './dropdown-menu'
 import { Button } from '@/design-system/components/Button/button'
-import { Badge } from '@/design-system/components/Badge/badge'
 
 const meta: Meta = {
   title: 'Design System/Components/DropdownMenu/設計規格',
@@ -21,30 +17,24 @@ export default meta
    Types & Data
    ═══════════════════════════════════════════════════════════════════════════ */
 
-type ItemTypeKey = 'item' | 'checkbox' | 'radio' | 'subTrigger' | 'label' | 'separator'
+type ItemTypeKey = 'item' | 'checkbox' | 'subTrigger' | 'label' | 'separator'
 type StateKey = 'default' | 'hover' | 'active/selected' | 'disabled'
 type SizeKey = 'sm' | 'md' | 'lg'
 type ColorSpec = { bg: string; text: string; border: string }
 
 const STATES: StateKey[] = ['default', 'hover', 'active/selected', 'disabled']
 
-const ITEM_TOKEN_MAP: Record<'item' | 'checkbox' | 'radio', Record<StateKey, ColorSpec>> = {
+const ITEM_TOKEN_MAP: Record<'item' | 'checkbox', Record<StateKey, ColorSpec>> = {
   item: {
     default:          { bg: '--surface-raised', text: '--foreground', border: 'transparent' },
     hover:            { bg: '--neutral-hover', text: '--foreground', border: 'transparent' },
-    'active/selected': { bg: '--neutral-hover', text: '--foreground', border: 'transparent' },
+    'active/selected': { bg: '--neutral-active', text: '--foreground', border: 'transparent' },
     disabled:         { bg: '--surface-raised', text: '--fg-disabled', border: 'transparent' },
   },
   checkbox: {
     default:          { bg: '--surface-raised', text: '--foreground', border: 'transparent' },
     hover:            { bg: '--neutral-hover', text: '--foreground', border: 'transparent' },
     'active/selected': { bg: '--neutral-hover', text: '--foreground', border: 'transparent' },
-    disabled:         { bg: '--surface-raised', text: '--fg-disabled', border: 'transparent' },
-  },
-  radio: {
-    default:          { bg: '--surface-raised', text: '--foreground', border: 'transparent' },
-    hover:            { bg: '--neutral-hover', text: '--foreground', border: 'transparent' },
-    'active/selected': { bg: '--neutral-active', text: '--foreground', border: 'transparent' },
     disabled:         { bg: '--surface-raised', text: '--fg-disabled', border: 'transparent' },
   },
 }
@@ -72,9 +62,8 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
 }
 
 const ITEM_TYPE_DESC: Record<ItemTypeKey, string> = {
-  item: '執行一次性動作（複製、刪除），選完即關',
+  item: '執行一次性動作（複製、刪除），選完即關。selected=true 時作為單選項目（bg-neutral-active）',
   checkbox: '切換開關狀態（顯示/隱藏），選單保持開啟',
-  radio: '互斥選項中選一（排序方式），選中底色 neutral-active',
   subTrigger: '展開下一層選單，自動附加 ChevronRight',
   label: '群組標題，不可互動',
   separator: '視覺分隔線，my-2 h-px',
@@ -157,14 +146,14 @@ export const Overview = {
   name: '1. 元件總覽',
   render: () => (
     <div className="flex flex-col gap-8">
-      {/* Anatomy — Trigger → Content → Items */}
+      {/* Anatomy — Trigger -> Content -> Items */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <H3>結構（Anatomy）</H3>
-          <Desc>Trigger 觸發浮層 Content，Content 內含各類 Item。浮層由 SizeContext 統一控制所有子項目尺寸。</Desc>
+          <Desc>Trigger 觸發浮層 Content，Content 內含各類 Item。浮層由 SizeContext 統一控制所有子項目尺寸。所有 Item 類型內部使用 SelectMenuItem 進行視覺渲染，Radix primitive 只處理行為。</Desc>
         </div>
         <div className="flex gap-8 items-start">
-          {/* Trigger → Content flow */}
+          {/* Trigger -> Content flow */}
           <div className="flex flex-col gap-3">
             <span className="text-[11px] text-fg-muted font-medium">觸發流程</span>
             <div className="flex items-center gap-3">
@@ -178,7 +167,6 @@ export const Overview = {
                 {[
                   { name: 'Item', color: 'success' },
                   { name: 'CheckboxItem', color: 'warning' },
-                  { name: 'RadioItem', color: 'magenta' },
                   { name: 'SubTrigger', color: 'info' },
                   { name: 'Label', color: 'neutral' as const },
                   { name: 'Separator', color: 'neutral' as const },
@@ -195,7 +183,7 @@ export const Overview = {
           </div>
           {/* Item layout */}
           <div className="flex flex-col gap-3">
-            <span className="text-[11px] text-fg-muted font-medium">Item 佈局（item-layout）</span>
+            <span className="text-[11px] text-fg-muted font-medium">Item 佈局（via SelectMenuItem）</span>
             <div className="border-2 border-dashed border-primary/30 rounded-md px-3 py-2 flex items-center gap-2">
               {[
                 { name: 'prefix', color: 'info' },
@@ -207,9 +195,9 @@ export const Overview = {
               ))}
             </div>
             <div className="text-[10px] text-fg-muted font-mono flex flex-col gap-0.5">
-              <span>prefix: DropdownMenuItemIcon (h-[1lh]) or Checkbox</span>
-              <span>label: flex-1, text content</span>
-              <span>suffix: Shortcut (ml-auto) or custom suffix</span>
+              <span>prefix: startIcon (h-[1lh]) or Checkbox</span>
+              <span>label: flex-1, text content + description</span>
+              <span>suffix: tag / badge / endIcon / shortcut (h-[1lh] ml-auto)</span>
             </div>
           </div>
         </div>
@@ -241,10 +229,19 @@ export const Overview = {
                 ['Content', 'align', "'start'|'center'|'end'", "'start'", '浮層對齊方式'],
                 ['Content', 'minWidth', 'number', 'max(180px, trigger-width)', '浮層最小寬度 (px)'],
                 ['Content', 'maxHeight', 'number', '—', '浮層最大高度，超過時捲動'],
+                ['Item', 'startIcon', 'LucideIcon', '—', '左側 icon，與 label 同色'],
+                ['Item', 'avatar', 'ReactNode', '—', '左側頭像，與 startIcon 互斥'],
+                ['Item', 'description', 'ReactNode', '—', '次要說明文字'],
+                ['Item', 'tag', 'ReactNode', '—', '後綴 Tag'],
+                ['Item', 'badge', 'ReactNode', '—', '後綴 Badge'],
+                ['Item', 'endIcon', 'LucideIcon', '—', '後綴指示 icon（fg-muted）'],
+                ['Item', 'shortcut', 'string', '—', '鍵盤快捷鍵'],
+                ['Item', 'selected', 'boolean', '—', '單選選中（bg-neutral-active）'],
+                ['SubTrigger', 'startIcon', 'LucideIcon', '—', '左側 icon'],
                 ['SubTrigger', 'value', 'string', '—', '子選單目前狀態文字（如 "深色"）'],
                 ['SubTrigger', 'badge', 'ReactNode', '—', '子選單狀態 badge'],
                 ['CheckboxItem', 'checked', 'boolean', '—', '勾選狀態'],
-                ['RadioItem', 'value', 'string', '—', '單選值'],
+                ['CheckboxItem', 'startIcon', 'LucideIcon', '—', '左側 icon'],
               ].map(([comp, p, t, d, desc], i) => (
                 <tr key={i}><Td>{comp}</Td><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -329,7 +326,7 @@ const InspectorInner = () => {
       <div className="flex gap-6 items-start">
         {/* Left: preview + blueprint */}
         <div className="flex flex-col gap-5 min-w-[380px]">
-          {/* Live preview */}
+          {/* Live preview (static rendering — no Radix context needed) */}
           <div className="px-10 py-6 rounded-lg bg-canvas border border-divider">
             <div className="rounded-lg border border-border bg-surface-raised py-2" style={{ boxShadow: 'var(--elevation-200)', minWidth: 220 }}>
               {itemMode === 'item' && (
@@ -351,10 +348,7 @@ const InspectorInner = () => {
                 </>
               )}
               {itemMode === 'subTrigger' && (
-                <>
-                  <SubTriggerPreview size={size} label="主題" value="深色" state={state} />
-                  <ItemPreview size={size} danger={false} state="default" icon={Settings} label="設定" />
-                </>
+                <ItemPreview size={size} danger={false} state={state} icon={Monitor} label="主題" isSubTrigger triggerValue="深色" />
               )}
             </div>
           </div>
@@ -456,8 +450,8 @@ const InspectorInner = () => {
 }
 
 /** Static item preview for inspector (not interactive) */
-const ItemPreview = ({ size, danger, state, icon: Icon, label, shortcut }: {
-  size: SizeKey; danger: boolean; state: StateKey; icon: React.ComponentType<{ size: number }>; label: string; shortcut?: string
+const ItemPreview = ({ size, danger, state, icon: Icon, label, shortcut, isSubTrigger, triggerValue }: {
+  size: SizeKey; danger: boolean; state: StateKey; icon: React.ComponentType<{ size: number }>; label: string; shortcut?: string; isSubTrigger?: boolean; triggerValue?: string
 }) => {
   const iconPx = SIZE_SPECS[size].icon
   const bgClass = state === 'hover' || state === 'active/selected' ? 'bg-neutral-hover' : ''
@@ -469,6 +463,12 @@ const ItemPreview = ({ size, danger, state, icon: Icon, label, shortcut }: {
       <div className="h-[1lh] flex items-center shrink-0"><Icon size={iconPx} /></div>
       <span>{label}</span>
       {shortcut && <span className="h-[1lh] flex items-center ml-auto text-caption text-fg-muted shrink-0">{shortcut}</span>}
+      {isSubTrigger && (
+        <div className="h-[1lh] flex items-center gap-1 ml-auto shrink-0">
+          {triggerValue && <span className="text-fg-muted">{triggerValue}</span>}
+          <ChevronRight size={iconPx} className="text-fg-muted" />
+        </div>
+      )}
     </div>
   )
 }
@@ -487,25 +487,6 @@ const CheckboxPreview = ({ size, label, checked, state }: {
         </div>
       </div>
       <span>{label}</span>
-    </div>
-  )
-}
-
-const SubTriggerPreview = ({ size, label, value, state }: {
-  size: SizeKey; label: string; value: string; state: StateKey
-}) => {
-  const iconPx = SIZE_SPECS[size].icon
-  const bgClass = state === 'hover' || state === 'active/selected' ? 'bg-neutral-hover' : ''
-  const fontClass = size === 'lg' ? 'text-body-lg' : 'text-body'
-  return (
-    <div className={`flex items-start gap-2 px-3 ${fontClass} leading-compact ${bgClass}`}
-      style={{ paddingTop: `calc((var(--field-height-${size}) - 1lh) / 2)`, paddingBottom: `calc((var(--field-height-${size}) - 1lh) / 2)` }}>
-      <div className="h-[1lh] flex items-center shrink-0"><Monitor size={iconPx} /></div>
-      <span>{label}</span>
-      <div className="h-[1lh] flex items-center gap-1 ml-auto shrink-0">
-        <span className="text-fg-muted">{value}</span>
-        <ChevronRight size={iconPx} className="text-fg-muted" />
-      </div>
     </div>
   )
 }
@@ -536,12 +517,12 @@ export const ColorMatrix = {
         <Desc>不同 item 類型在各狀態下的背景與文字色 token。色塊即時渲染，切 dark mode 自動更新。</Desc>
       </div>
 
-      {/* Item / Checkbox / Radio */}
+      {/* Item / Checkbox */}
       <div className="overflow-x-auto">
         <table className="border-collapse">
           <thead><tr><Th>Item 類型</Th>{STATES.map((st) => <Th key={st}>{st}</Th>)}</tr></thead>
           <tbody>
-            {(['item', 'checkbox', 'radio'] as const).map((type) => (
+            {(['item', 'checkbox'] as const).map((type) => (
               <tr key={type}>
                 <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{type}</td>
                 {STATES.map((st) => (
@@ -551,7 +532,7 @@ export const ColorMatrix = {
                         backgroundColor: `var(${ITEM_TOKEN_MAP[type][st].bg})`,
                         color: `var(${ITEM_TOKEN_MAP[type][st].text})`,
                       }}>
-                      {type === 'radio' && st === 'active/selected' ? 'selected' : type}
+                      {st === 'active/selected' ? 'selected' : type}
                     </div>
                     <TokenAnnotation colors={ITEM_TOKEN_MAP[type][st]} />
                   </td>
@@ -600,9 +581,9 @@ export const ColorMatrix = {
               {[
                 ['prefix icon (content)', '--foreground', 'Mail, Settings, Copy — follows label color'],
                 ['prefix icon (danger)', '--error', 'Trash2 — follows label text-error'],
-                ['suffix icon (direction)', '--fg-muted', 'ChevronRight, ExternalLink'],
+                ['suffix icon (direction)', '--fg-muted', 'ChevronRight, ExternalLink — via endIcon prop'],
                 ['suffix value text', '--fg-muted', '"深色", "已啟用"'],
-                ['shortcut text', '--fg-muted', '⌘C, ⌘E'],
+                ['shortcut text', '--fg-muted', '⌘C, ⌘E — via shortcut prop'],
                 ['all icons (disabled)', '--fg-disabled', 'unified'],
               ].map(([role, token, ex], i) => (
                 <tr key={i}>
@@ -648,7 +629,7 @@ export const SizeMatrix = {
               { label: 'Label 字體', key: 'fontToken' as const, subFn: (s: SizeSpec) => s.font },
               { label: '行高', key: 'lineHeight' as const, sub: undefined },
               { label: 'Icon', key: undefined, subFn: (s: SizeSpec) => `${s.icon}px` },
-              { label: 'Checkbox/Radio 控件', key: 'checkboxSize' as const, sub: undefined },
+              { label: 'Checkbox 控件', key: 'checkboxSize' as const, sub: undefined },
             ].map((row) => (
               <tr key={row.label}>
                 <Td>{row.label}</Td>
@@ -705,18 +686,14 @@ export const SizeMatrix = {
                   <Button variant="tertiary" size={sz} endIcon={ChevronDown}>操作</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent size={sz}>
-                  <DropdownMenuItem>
-                    <DropdownMenuItemIcon><Copy size={sz === 'lg' ? 20 : 16} /></DropdownMenuItemIcon>
+                  <DropdownMenuItem startIcon={Copy}>
                     複製
-                    <DropdownMenuShortcut>⌘C</DropdownMenuShortcut>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <DropdownMenuItemIcon><Pencil size={sz === 'lg' ? 20 : 16} /></DropdownMenuItemIcon>
+                  <DropdownMenuItem startIcon={Pencil}>
                     編輯
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-error">
-                    <DropdownMenuItemIcon><Trash2 size={sz === 'lg' ? 20 : 16} /></DropdownMenuItemIcon>
+                  <DropdownMenuItem startIcon={Trash2} className="text-error">
                     刪除
                   </DropdownMenuItem>
                 </DropdownMenuContent>
