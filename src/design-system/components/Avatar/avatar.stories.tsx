@@ -1,5 +1,5 @@
 import type { Meta } from '@storybook/react'
-import { User, Building2, Folder, Globe, Rocket, Briefcase, Shield, Zap, Heart } from 'lucide-react'
+import { User, Building2, Folder, Briefcase, Shield, Zap, Heart } from 'lucide-react'
 import { Avatar } from './avatar'
 import { SelectMenuItem } from '@/design-system/components/SelectMenu/select-menu-item'
 

@@ -51,13 +51,6 @@ const AVATAR_PX = {
 
 const ICON_SIZE: Record<SizeKey, number> = { sm: 16, md: 16, lg: 20 }
 
-const avatarSizeClasses: Record<number, string> = {
-  20: 'w-5 h-5',
-  24: 'w-6 h-6',
-  32: 'w-8 h-8',
-  40: 'w-10 h-10',
-}
-
 // ── Block 對齊容器 ──
 // reading mode: desc 永遠 14px (var(--font-body-size) * 1.5)
 const blockAlignClass: Record<SizeKey, string> = {

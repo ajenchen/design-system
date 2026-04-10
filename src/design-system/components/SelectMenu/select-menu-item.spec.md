@@ -91,7 +91,7 @@ prefix icon 跟 label 同色（foreground），不是 fg-muted。詳見 item-lay
 
 | | `startIcon` | `avatar` |
 |---|---|---|
-| 型別 | `LucideIcon` | `ReactNode` |
+| 型別 | `LucideIcon` | `AvatarData` |
 | 角色 | **描述**選項的性質（形容詞） | **代表**選項的身份（名詞） |
 | 尺寸 | 16/20px（icon tier，元件控制） | 由 description 決定：無 desc → 20/24/24px，有 desc → 32/32/40px |
 | 對齊 | 永遠 inline（≤ 24px） | 無 desc → inline；有 desc → block |

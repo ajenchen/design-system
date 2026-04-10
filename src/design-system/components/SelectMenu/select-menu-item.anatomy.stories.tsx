@@ -278,7 +278,7 @@ export const Overview = {
                 ['children', 'ReactNode', '(required)', 'Label 文字'],
                 ['description', 'ReactNode', '—', '次要說明，顯示在 label 下方'],
                 ['startIcon', 'LucideIcon', '—', '左側 icon，與 avatar 互斥'],
-                ['avatar', 'ReactNode', '—', '左側頭像，與 startIcon 互斥'],
+                ['avatar', 'AvatarData', '—', '左側頭像資料（{ src?, alt, color? }），元件內部渲染 Avatar。與 startIcon 互斥'],
                 ['checkbox', 'boolean', 'false', '顯示 checkbox（多選模式）'],
                 ['checked', "boolean | 'indeterminate'", 'false', 'checkbox 選中狀態'],
                 ['selected', 'boolean', 'false', '單選選中（bg-neutral-active 背景）'],

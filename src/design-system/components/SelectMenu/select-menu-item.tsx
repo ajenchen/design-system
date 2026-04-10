@@ -77,14 +77,6 @@ const prefixAlignVariants = cva(
   }
 )
 
-// ── Avatar container sizes (Tailwind classes) ──
-const avatarSizeClasses: Record<number, string> = {
-  20: 'w-5 h-5',
-  24: 'w-6 h-6',
-  32: 'w-8 h-8',
-  40: 'w-10 h-10',
-}
-
 // ── Component ──
 
 export interface SelectMenuItemProps
