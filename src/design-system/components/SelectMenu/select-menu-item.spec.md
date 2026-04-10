@@ -237,12 +237,12 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 
 | 屬性 | 值 | 理由 |
 |---|---|---|
-| 高度 | `py-2`(group padding) + `h-field-{size}`(一個 item 高度) | 空狀態跟「只有一個選項的 group」一樣高——不會太擠(一行)也不會太空(整片留白) |
-| 字體 | `text-body`(跟 item 一致) | 空狀態文字不該比旁邊的選項更小,否則看起來像 footnote |
+| 最小高度 | `min-height = 3 × field-height + 16px` | 至少顯示 3 行選項的等效高度,避免浮層塌陷成一行造成視覺跳動 |
+| 文字定位 | 垂直水平居中(`absolute inset-0`,flex center) | 空狀態文字在整個可用區域的正中心,不靠頂 |
+| 字體 | `text-body`(sm/md)/ `text-body-lg`(lg)+ `leading-compact` | 跟對應 size 的 item label 一致 |
 | 顏色 | `text-fg-muted` | 灰色,不搶焦點 |
-| 對齊 | `text-center` | 居中 |
 
-**Footer(「全部」checkbox）在空狀態時不顯示** — 沒有選項就沒有「全選」的意義。已程式化在 SelectMenu 內(`selectableOptions.length > 0`)。
+**Footer(「全部」checkbox)在空狀態時不顯示** — 沒有選項就沒有「全選」的意義。已程式化在 SelectMenu 內(`selectableOptions.length > 0`)。
 
 ---
 

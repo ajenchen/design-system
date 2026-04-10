@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import {
   Folder, FileText, FileCode, Image, Settings, Users,
   LayoutDashboard, ShieldCheck, Bell, MoreHorizontal, Plus, Trash2,
-  CheckCircle2, Circle, Minus,
+  CheckCircle2, Circle, Minus, SlidersHorizontal,
 } from 'lucide-react'
 import { TreeView, TreeItem } from './tree-view'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
@@ -65,7 +65,7 @@ export const SidebarNav: Story = {
             label="Settings"
             actions={<><TreeAction icon={Plus} label="新增" /><TreeAction icon={MoreHorizontal} label="更多" /></>}
           >
-            <TreeItem id="general" icon={Settings} label="General" actions={<TreeAction icon={MoreHorizontal} label="更多" />} />
+            <TreeItem id="general" icon={SlidersHorizontal} label="General" actions={<TreeAction icon={MoreHorizontal} label="更多" />} />
             <TreeItem id="security" icon={ShieldCheck} label="Security" actions={<TreeAction icon={MoreHorizontal} label="更多" />} />
             <TreeItem id="billing" icon={FileText} label="Billing" actions={<TreeAction icon={MoreHorizontal} label="更多" />} />
           </TreeItem>

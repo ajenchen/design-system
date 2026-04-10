@@ -332,29 +332,41 @@ TreeItem 右側的 `actions` slot **只在 hover 該列時出現**(opacity 0 →
 
 ---
 
-## Drag and Drop(v2 規劃)
+## Drag and Drop
 
-初版不含 drag。規劃方向:
+TreeView 支援 Figma 風格的拖曳排序。`draggable` prop 啟用後,整列可拖(無 grip handle),靠 `PointerSensor` 的 `distance: 5` 區分 click 與 drag。
 
 ### 互動模型
 
 | 功能 | 說明 |
 |---|---|
-| Drag handle | 列左側的 grip icon,或整列拖曳 |
-| Drop position | 三種:above(同層插入上方)、below(同層插入下方)、inside(成為子項) |
-| Drop indicator | 藍色線(above/below)或藍色背景(inside) |
-| Keyboard drag | `Ctrl+↑↓` 移動 node 位置 |
+| 拖曳觸發 | 整列拖曳(Figma 風格),無 grip handle。滑鼠按住移動 5px 後啟動 |
+| X + Y 雙軸偵測 | Y 軸決定在哪個 item 附近(上 25% = before,中 50% = inside,下 25% = after);X 軸決定 nesting 深度(越左越淺層,越右越深層) |
+| Drop position | 三種:`before`(同層上方)、`after`(同層下方)、`inside`(成為子 node) |
+| Drop indicator | 藍色細線(`bg-primary`,before/after)+ `bg-primary-subtle` 背景(inside folder) |
+| Ghost | 半透明複本(`opacity-90`)+ 浮動陰影,含 icon + label |
 
 ### 依賴
 
-- `@dnd-kit/core` + `@dnd-kit/sortable`(或類似 library)
-- State management:reorder callback,consumer 負責更新 data
+- `@dnd-kit/core`(`useDraggable` + `useDroppable` + `DragOverlay`)
+- State management:consumer 透過 `onDragEnd` callback 接收 `{ sourceId, targetId, position }`,自行更新 data
 
-### 預留的設計約束
+### X 軸 nesting 邏輯
 
-- Drag handle 放在 chevron 之前(indent 之後、chevron 之前)
-- 拖曳中的 node 用 elevation-200 陰影 + 半透明
-- Drop inside 的目標 node 用 `bg-primary-subtle` 背景
+滑鼠 X 座標相對於 tree 容器左邊界,除以 `indentStep` 得到 indent level:
+
+- 指標在 folder 深度或更淺 → `after`(同層插入)
+- 指標比 folder 更深 → `inside`(放進 folder)
+- Leaf node 的 `after`:若指標比 target 更淺,自動提升到 parent 的 `after`
+
+### 視覺狀態
+
+| 元素 | 狀態 |
+|---|---|
+| 被拖曳的 node(原位) | `opacity-30`(半透明殘影) |
+| Drop indicator(before/after) | `h-0.5 bg-primary`,left 跟隨 indent |
+| Drop target(inside) | `bg-primary-subtle` 全行背景 |
+| DragOverlay ghost | 圓角容器 + icon + label,`opacity-90` + shadow |
 
 ---
 
