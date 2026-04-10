@@ -44,18 +44,12 @@ import { cn } from '@/lib/utils'
  * 時降為 fg-disabled。也可在個別 FieldLabel 覆寫。
  */
 
-// ── Types & Context (從 field-context.ts re-export,打斷 circular import) ──
-// Button / Input / Checkbox 等都需要 useFieldContext,直接 import field.tsx 會造成
-// circular dependency(Field stories → Button → field.tsx → ...)。
-// 把 context 抽到 field-context.ts,所有 consumer 從那裡 import。
-
-export type { FieldMode, FieldOrientation, FieldSize, FieldControlLayout, FieldContextValue } from './field-context'
-export { useFieldContext } from './field-context'
+// ── Types & Context ──
+// Context 定義在 field-context.ts(打斷 circular import)。
+// field.tsx 只 import 不 re-export——consumer 直接從 field-context.ts import useFieldContext。
 
 import type { FieldMode, FieldOrientation, FieldSize, FieldControlLayout, FieldContextValue } from './field-context'
-import { FieldContext, useFieldContext } from './field-context'
-
-// (以下 FieldContextValue 改用 import 版本，不再重複定義)
+import { FieldContext } from './field-context'
 
 // ── Internal helpers ────────────────────────────────────────────────────────
 

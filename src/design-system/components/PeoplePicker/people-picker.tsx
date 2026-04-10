@@ -37,7 +37,7 @@ function PeoplePicker({
     >
       <span className={cn('flex-1 min-w-0 inline-flex items-center', resolvedMode === 'disabled' && 'text-fg-disabled')}>
         {isEmpty
-          ? <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
+          ? <span className="text-fg-muted">{isEditable ? '選擇...' : EMPTY_DISPLAY}</span>
           : isMulti
             ? <MultiPersonDisplay value={value as PersonValue[]} size={size} />
             : <PersonDisplay value={value as PersonValue} size={size} />
