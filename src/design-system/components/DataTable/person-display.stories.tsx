@@ -20,12 +20,12 @@ export default meta
 type Story = StoryObj
 
 const samplePeople = [
-  { name: 'Alice Chen', avatarUrl: 'https://i.pravatar.cc/48?u=alice' },
-  { name: 'Bob Lin', avatarUrl: 'https://i.pravatar.cc/48?u=bob' },
-  { name: 'Charlie Wu', avatarUrl: 'https://i.pravatar.cc/48?u=charlie' },
-  { name: 'Diana Huang', avatarUrl: 'https://i.pravatar.cc/48?u=diana' },
-  { name: 'Eric Tsai' },
-  { name: 'Fiona Lee', avatarUrl: 'https://i.pravatar.cc/48?u=fiona' },
+  { name: 'Alice Chen', avatarUrl: 'https://i.pravatar.cc/48?u=alice', description: 'Design Team' },
+  { name: 'Bob Lin', avatarUrl: 'https://i.pravatar.cc/48?u=bob', description: 'Engineering' },
+  { name: 'Charlie Wu', avatarUrl: 'https://i.pravatar.cc/48?u=charlie', description: 'Product' },
+  { name: 'Diana Huang', avatarUrl: 'https://i.pravatar.cc/48?u=diana', description: 'Marketing' },
+  { name: 'Eric Tsai', description: 'Engineering' },
+  { name: 'Fiona Lee', avatarUrl: 'https://i.pravatar.cc/48?u=fiona', description: 'Design Team' },
 ]
 
 /* ── 單人（互動） ── */
@@ -83,7 +83,7 @@ export const SizeAlignment: Story = {
     <div className="flex flex-col gap-4">
       {(['sm', 'md', 'lg'] as const).map(size => (
         <div key={size} className="flex items-center gap-3">
-          <PeoplePicker size={size} value={samplePeople[0]} className="max-w-xs" />
+          <PeoplePicker size={size} value={samplePeople[0]} people={samplePeople} className="max-w-xs" />
           <Button size={size}>送出</Button>
           <span className="text-caption text-fg-muted">size="{size}"</span>
         </div>

@@ -17,6 +17,7 @@ function personToMenuOption(person: PersonValue): SelectMenuOption {
   return {
     value: p.name,
     label: p.name,
+    description: (person as { description?: string }).description,
     avatar: <Avatar person={p} size="md" />,
   }
 }

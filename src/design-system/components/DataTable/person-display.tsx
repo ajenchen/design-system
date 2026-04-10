@@ -6,7 +6,7 @@ import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
-export type PersonValue = string | { name: string; avatarUrl?: string }
+export type PersonValue = string | { name: string; avatarUrl?: string; description?: string }
 
 function resolvePerson(value: PersonValue): { name: string; avatarUrl?: string } {
   return typeof value === 'string' ? { name: value } : value
