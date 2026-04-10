@@ -76,6 +76,11 @@ src/
 │   │   ├── DropdownMenu/              ← 操作選單（由 Button 觸發）
 │   │   │   ├── dropdown-menu.tsx      ← Radix DropdownMenu + 設計系統 token
 │   │   │   └── dropdown-menu.spec.md
+│   │   ├── TreeView/                  ← 階層結構遞迴元件（expand/collapse + drag + keyboard）
+│   │   ├── Sidebar/                   ← 佈局外殼（Provider + Header + Content + Footer + Trigger）
+│   │   ├── Field/                     ← shadcn Field（Label + Control + Description + Message）
+│   │   │   ├── field.tsx
+│   │   │   └── field-context.ts       ← FieldContext + useFieldContext（獨立檔案避免循環引用）
 │   │   └── fields/                    ← 資料輸入 / 顯示元件
 │   │       ├── field-types.ts         ← FieldMode、InlineActionConfig 共用型別
 │   │       ├── field-wrapper.tsx      ← 共用 wrapper 樣式

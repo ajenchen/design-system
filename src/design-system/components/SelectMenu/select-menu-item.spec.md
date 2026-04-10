@@ -237,7 +237,7 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 
 | 屬性 | 值 | 理由 |
 |---|---|---|
-| 最小高度 | `min-height = 3 × field-height + 16px` | 至少顯示 3 行選項的等效高度,避免浮層塌陷成一行造成視覺跳動 |
+| 最小高度 | `min-height = minRows × field-height + 16px`（`minRows` 預設 3） | 至少顯示 N 行選項的等效高度,避免浮層塌陷造成視覺跳動。consumer 可透過 `minRows` prop 調整 |
 | 文字定位 | 垂直水平居中(`absolute inset-0`,flex center) | 空狀態文字在整個可用區域的正中心,不靠頂 |
 | 字體 | `text-body`(sm/md)/ `text-body-lg`(lg)+ `leading-compact` | 跟對應 size 的 item label 一致 |
 | 顏色 | `text-fg-muted` | 灰色,不搶焦點 |

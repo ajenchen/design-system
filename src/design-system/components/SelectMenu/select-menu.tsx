@@ -82,6 +82,8 @@ export interface SelectMenuProps {
   size?: SizeKey
   /** 對齊方式 */
   align?: 'start' | 'end'
+  /** 列表最少顯示幾行選項高度（預設 3），影響空狀態最小高度 */
+  minRows?: number
   /** 最小寬度（px），預設跟隨觸發元件 */
   minWidth?: number
 
@@ -108,6 +110,7 @@ export function SelectMenu({
   emptyText = '沒有符合的選項',
   size = 'md',
   align = 'start',
+  minRows = 3,
   minWidth,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
@@ -230,13 +233,13 @@ export function SelectMenu({
               />
             </div>
           )}
-          {/* min-height = 3 個 item 高度,確保空狀態跟有選項時視覺一致 */}
-          <CommandList className={cn(
-            'relative',
-            size === 'sm' && 'min-h-[calc(var(--field-height-sm)*3+16px)]',
-            size === 'lg' && 'min-h-[calc(var(--field-height-lg)*3+16px)]',
-            (!size || size === 'md') && 'min-h-[calc(var(--field-height-md)*3+16px)]',
-          )}>
+          {/* min-height = minRows 個 item 高度,確保空狀態跟有選項時視覺一致 */}
+          <CommandList
+            className="relative"
+            style={{
+              minHeight: `calc(var(--field-height-${size === 'lg' ? 'lg' : size === 'sm' ? 'sm' : 'md'}) * ${minRows} + 16px)`,
+            }}
+          >
             {/* 空狀態:absolute 填滿 CommandList,文案垂直 + 水平居中 */}
             <CommandEmpty className={cn(
               'absolute inset-0 flex items-center justify-center leading-compact text-fg-muted',
