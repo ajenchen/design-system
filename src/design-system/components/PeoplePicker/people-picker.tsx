@@ -123,7 +123,8 @@ function PeoplePicker({
       tabIndex={0}
       className={cn(
         fieldWrapperStyles({ mode: 'edit', size }),
-        'cursor-pointer',
+        // Radix Popover 在 trigger 上寫 data-state="open",用它顯示 focus border
+        'cursor-pointer data-[state=open]:border-primary',
         className,
       )}
       data-field-mode="edit"

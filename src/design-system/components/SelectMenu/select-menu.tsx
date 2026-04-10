@@ -300,8 +300,10 @@ export function SelectMenu({
             )}
           </CommandList>
 
-          {/* Multi-select footer: Select All — 只在有可見選項時顯示(空狀態不該有「全部」) */}
-          {multiple && selectableOptions.length > 0 && (
+          {/* Multi-select footer: Select All
+              - 沒有選項時不顯示(selectableOptions.length === 0)
+              - 搜尋有文字時不顯示(search 非空 = 使用者在找特定項目,「全選」沒意義) */}
+          {multiple && selectableOptions.length > 0 && !search && (
             <SelectMenuFooter>
               <SelectMenuItem
                 size={size}
