@@ -15,7 +15,7 @@ function resolvePerson(value: PersonValue): { name: string; avatarUrl?: string }
 // ── Avatar Size ─────────────────────────────────────────────────────────────
 // 與 Tag 高度對齊：sm=20px, md/lg=24px
 
-const avatarSizeClass: Record<string, string> = { sm: 'w-5 h-5', md: 'w-6 h-6', lg: 'w-6 h-6' }
+const avatarSizeClass: Record<string, string> = { sm: 'w-5 h-5', md: 'w-6 h-6', lg: 'w-6 h-6', fill: 'w-full h-full' }
 const iconSize: Record<string, number> = { sm: 12, md: 14, lg: 14 }
 
 // ── Avatar（共用）────────────────────────────────────────────────────────────
