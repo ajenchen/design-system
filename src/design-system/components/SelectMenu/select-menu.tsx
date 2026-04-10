@@ -230,8 +230,8 @@ export function SelectMenu({
             </div>
           )}
           <CommandList>
-            {/* 空狀態:高度 = 一個 item 的 field-height,字體跟 item 一致(text-body) */}
-            <CommandEmpty className="flex items-center justify-center h-field-md text-body text-fg-muted">
+            {/* 空狀態:py-12(48px)寬鬆呼吸,字體跟 item 一致(text-body) */}
+            <CommandEmpty className="py-12 text-center text-body text-fg-muted">
               {emptyText}
             </CommandEmpty>
 

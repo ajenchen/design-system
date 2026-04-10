@@ -231,6 +231,21 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 
 ---
 
+## 空狀態
+
+搜尋無結果或選項為空時的視覺:
+
+| 屬性 | 值 | 理由 |
+|---|---|---|
+| 上下間距 | `py-12`(48px) | 寬鬆呼吸,空狀態不該擠在角落;48px 上下 = 視覺上「這裡確實空了」的明確感 |
+| 字體 | `text-body`(跟 item 一致) | 空狀態文字不該比旁邊的選項更小,否則看起來像 footnote |
+| 顏色 | `text-fg-muted` | 灰色,不搶焦點 |
+| 對齊 | `text-center` | 居中 |
+
+**Footer(「全部」checkbox）在空狀態時不顯示** — 沒有選項就沒有「全選」的意義。已程式化在 SelectMenu 內(`selectableOptions.length > 0`)。
+
+---
+
 ## 禁止事項
 
 - ❌ `startIcon` 和 `avatar` 不可同時使用
