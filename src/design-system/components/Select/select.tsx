@@ -298,7 +298,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
           onOpenAutoFocus={(e) => { if (searchable) { e.preventDefault(); inputRef.current?.focus() } }}
         >
           <Command shouldFilter={false}>
-            <CommandList>
+            <CommandList className="relative" style={{ minHeight: `calc(var(--field-height-${size === 'lg' ? 'lg' : 'md'}) * 3 + 16px)` }}>
               <CommandEmpty className="absolute inset-0 flex items-center justify-center">
                 <Empty description="沒有符合的選項" />
               </CommandEmpty>
