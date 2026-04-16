@@ -231,7 +231,7 @@ const MenuChipGroup = React.forwardRef<
     [children]
   )
 
-  const groupType = (props as { type?: 'single' | 'multiple' }).type ?? 'multiple'
+  const groupType = (props as { type?: 'single' | 'multiple' }).type ?? 'single'
   const groupValue = (props as { value?: string | string[] }).value
   const groupOnValueChange = (
     props as { onValueChange?: (value: string | string[]) => void }

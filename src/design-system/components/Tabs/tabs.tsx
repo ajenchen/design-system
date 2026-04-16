@@ -331,7 +331,7 @@ const tabsTriggerVariants = cva(
     'relative inline-flex items-center justify-center',
     'gap-2',
     'whitespace-nowrap',
-    'text-fg-secondary',
+    'font-medium text-fg-secondary',
     'transition-colors duration-150',
     'cursor-pointer select-none',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',

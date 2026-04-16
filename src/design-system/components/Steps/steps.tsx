@@ -151,8 +151,7 @@ const stepsRootVariants = cva('list-none p-0 m-0', {
   variants: {
     orientation: {
       vertical: 'flex flex-col',
-      // pb-10:預留 description(absolute top-full,脫離 flow 掛在 label 下方)的空間
-      horizontal: 'flex flex-row items-start gap-3 pb-10',
+      horizontal: 'flex flex-row items-start gap-3',
     },
   },
   defaultVariants: { orientation: 'vertical' },
@@ -320,9 +319,11 @@ const stepItemVariants = cva('group/step-item outline-none', {
     orientation: {
       // pb-6 on li provides spacing for next item; connector is absolute within li
       vertical: 'relative flex flex-col',
-      // Items shrink-0:自然寬度由 label 決定(description 是 absolute 不參與)。
-      // Connectors flex-1 均分剩餘空間 → 所有 connector 等長。
-      horizontal: 'flex shrink-0 min-w-0 relative',
+      // flex-[3]:比例分配(items 3:connector 1)。Description 在 flow 裡自然
+      // wrap 到 item 的分配寬度內,永遠不超過 item 右邊界(= connector 之前)。
+      // 跟垂直版完全鏡射:label + description 在同一個 text col flex-col 裡,
+      // 結構與 item-layout 原則一致。
+      horizontal: 'flex-[3] min-w-0',
     },
     size: {
       sm: 'text-body',
@@ -549,21 +550,19 @@ function HorizontalLayout({
   //
   // 效果:connector flex-1 均分剩餘空間,長度只取決於 label 末端到下個 circle
   // 的距離,跟 description 長度無關。
-  // Text col 用 `relative` 讓 description 的 absolute 定位對齊 label 左邊(不是 li 左邊)。
-  // Description `top-full left-0`:label 正下方、左邊跟 label 齊。
-  // `whitespace-nowrap`:大多數 horizontal desc 是短文字,不 wrap 延伸到右邊空間。
+  // ── 跟垂直版完全鏡射的 item 結構 ──
+  // indicator + gap-3 + text col(label + description flex-col)。
+  // 垂直版的 text col 是 `flex-1 min-w-0`,水平版也一樣——差別只在 item 的
+  // 寬度來源(垂直版由容器寬度決定,水平版由 flex-[3] 比例分配決定)。
+  // Description 在 text col 裡自然 wrap,不用 absolute hack。
   return (
-    <StepItemHeader className="flex items-start gap-3">
+    <StepItemHeader className="flex items-start gap-3 w-full">
       <div className="h-[1lh] flex items-center shrink-0">
         <StepIndicator />
       </div>
-      <div className="relative min-w-0">
+      <div className="flex-1 min-w-0 flex flex-col">
         {label}
-        {description && (
-          <div className="absolute top-full left-0 max-w-48 truncate">
-            {description}
-          </div>
-        )}
+        {description}
       </div>
     </StepItemHeader>
   )
