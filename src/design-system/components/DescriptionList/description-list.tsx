@@ -5,16 +5,16 @@ import { cn } from '@/lib/utils'
  * DescriptionList — 唯讀 label + value 展示
  *
  * HTML 語義：dl + dt + dd（跟 Atlassian、Shopify Polaris 對齊）。
- * 跟 Field（表單 input）不同——DescriptionList 是純展示，無互動。
  *
- * ── 元件 ──
- * DescriptionList: 容器（dl），管 layout（grid cols、gap）
- * DescriptionItem: 單個 label + value（dt + dd）
+ * ── Typography（閱讀模式）──
+ * label (dt): text-body (14px) text-fg-secondary (neutral-8)
+ * value (dd): text-body (14px) text-foreground (neutral-9)
+ * 兩者都是 14px × 1.5 行高——層級靠色彩區分，不靠字體大小。
  *
- * ── Typography ──
- * label (dt): text-caption text-fg-muted (12px)
- * value (dd): text-body (14px)
- * label → value: mt-0.5 (2px)
+ * ── 間距 ──
+ * label → value（同 item 內）: mt-0.5 (2px)
+ * items 之間垂直 gap: layout-space-tight（density-aware）
+ * columns 之間水平 gap: gap-x-4 (16px)
  */
 
 export interface DescriptionListProps extends React.HTMLAttributes<HTMLDListElement> {
@@ -32,7 +32,7 @@ const DescriptionList = React.forwardRef<HTMLDListElement, DescriptionListProps>
   ({ cols = 1, className, ...props }, ref) => (
     <dl
       ref={ref}
-      className={cn('grid gap-x-4 gap-y-2', colsClass[cols], className)}
+      className={cn('grid gap-x-4 gap-y-[var(--layout-space-tight)]', colsClass[cols], className)}
       {...props}
     />
   ),
@@ -47,7 +47,7 @@ export interface DescriptionItemProps extends React.HTMLAttributes<HTMLDivElemen
 const DescriptionItem = React.forwardRef<HTMLDivElement, DescriptionItemProps>(
   ({ label, children, className, ...props }, ref) => (
     <div ref={ref} className={cn('flex flex-col', className)} {...props}>
-      <dt className="text-caption text-fg-muted">{label}</dt>
+      <dt className="text-body text-fg-secondary">{label}</dt>
       <dd className="text-body mt-0.5">{children}</dd>
     </div>
   ),

@@ -78,7 +78,7 @@ const NameCard = React.forwardRef<HTMLDivElement, NameCardProps>(
     return (
       <div ref={ref} className={cn('w-[320px]', className)} {...props}>
         {/* ── Profile header: avatar + name ── */}
-        <div className="flex items-start gap-3 px-4 py-2">
+        <div className="flex items-start gap-3 px-4 py-3">
           <Avatar
             src={avatar?.src}
             alt={avatar?.alt ?? name}
@@ -100,14 +100,14 @@ const NameCard = React.forwardRef<HTMLDivElement, NameCardProps>(
 
         {/* ── Action buttons ── */}
         {actions && (
-          <div className="flex items-center gap-2 px-4 pb-2">
+          <div className="flex items-center gap-2 px-4 pb-3">
             {actions}
           </div>
         )}
 
         {/* ── Status ── */}
         {hasStatus && (
-          <div className="border-t border-divider px-4 py-2">
+          <div className="border-t border-divider px-4 py-3">
             <div className="flex items-center gap-1.5 text-body">
               <StatusDot status={status!} />
               <span>{STATUS_LABEL[status!]}</span>
@@ -124,7 +124,7 @@ const NameCard = React.forwardRef<HTMLDivElement, NameCardProps>(
 
         {/* ── Info fields ── */}
         {hasFields && (
-          <div className="border-t border-divider px-4 py-2">
+          <div className="border-t border-divider px-4 py-3">
             <DescriptionList cols={2}>
               {fields!.map((f) => (
                 <DescriptionItem key={f.label} label={f.label}>{f.value}</DescriptionItem>
