@@ -42,6 +42,7 @@ function NameCardHover({ name, src, subtitle, minimal }: { name: string; src: st
             ],
             onViewMore: noop,
           } : {
+            status: undefined,
             onViewMore: noop,
           })}
         />
