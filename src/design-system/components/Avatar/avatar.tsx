@@ -80,10 +80,12 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   color?: ColorKey
   /** 深底白字模式（step-6 背景 + 白色前景，warning 例外），預設 false */
   solid?: boolean
+  /** 在線狀態指示器，顯示在 avatar 右下角 */
+  status?: 'available' | 'away' | 'busy' | 'offline'
 }
 
 const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
-  ({ size = 32, shape = 'circle', src, alt, icon: Icon, color = 'neutral', solid = false, className, style, ...props }, ref) => {
+  ({ size = 32, shape = 'circle', src, alt, icon: Icon, color = 'neutral', solid = false, status, className, style, ...props }, ref) => {
     const [imgError, setImgError] = React.useState(false)
     const isFill = size === 'fill'
     // Fill 模式下 icon 用 60% 寬高、text 用 50cqi（container query inline-size）；
@@ -102,13 +104,22 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
 
     const FallbackIcon = Icon ?? User
 
-    return (
+    // Status dot 尺寸：avatar 的 25%，最小 8px 最大 14px
+    const dotSize = isFill ? 10 : Math.max(8, Math.min(14, Math.round(numSize * 0.25)))
+    const dotBorder = dotSize >= 12 ? 3 : 2
+
+    const STATUS_DOT_COLOR: Record<string, string> = {
+      available: 'var(--success)',
+      away: 'var(--warning)',
+      busy: 'var(--error)',
+      offline: 'var(--fg-muted)',
+    }
+
+    const avatarEl = (
       <div
-        ref={ref}
         className={cn(
           'inline-flex items-center justify-center shrink-0 overflow-hidden select-none',
           isFill && 'w-full h-full',
-          className,
         )}
         style={{
           ...(isFill
@@ -117,10 +128,8 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
           borderRadius: radius,
           backgroundColor: showImage ? undefined : colors.bg,
           color: showImage ? undefined : colors.text,
-          ...style,
         }}
         data-avatar-size={isFill ? 'fill' : numSize}
-        {...props}
       >
         {showImage && (
           <img
@@ -144,6 +153,28 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
             {getInitial(alt!)}
           </span>
         )}
+      </div>
+    )
+
+    if (!status) {
+      return <div ref={ref} className={cn('inline-flex shrink-0', className)} style={style} {...props}>{avatarEl}</div>
+    }
+
+    return (
+      <div ref={ref} className={cn('relative inline-flex shrink-0', className)} style={style} {...props}>
+        {avatarEl}
+        <span
+          className="absolute block rounded-full"
+          style={{
+            width: dotSize,
+            height: dotSize,
+            bottom: 0,
+            right: 0,
+            backgroundColor: STATUS_DOT_COLOR[status],
+            boxShadow: `0 0 0 ${dotBorder}px var(--surface-raised, var(--canvas))`,
+          }}
+          aria-label={status}
+        />
       </div>
     )
   }
