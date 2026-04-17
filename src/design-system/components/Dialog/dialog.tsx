@@ -14,12 +14,11 @@ import { ItemInlineActionButton } from "@/design-system/patterns/item-layout/ite
  * data-density="lg" 讓所有 token 解析為 lg。
  *
  * ── Viewport Inset ──
- * Modal 與 viewport 四邊保持 DIALOG_VIEWPORT_INSET (32px) 最小間距。
- * maxWidth / maxHeight 預設填滿 viewport（扣除 inset），consumer 可覆寫。
+ * Modal 與 viewport 四邊保持 layout-space-bottom (48px) 最小間距。
  *
  * ── 高度行為 ──
- * 預設：填滿 viewport 有最大高度，body 捲動。防止動態內容跳動。
- * maxHeight="auto"：高度隨內容（極簡靜態 Modal）。
+ * 預設：height 填滿 viewport（扣除 inset），body 捲動。防止動態內容跳動。
+ * height="auto"：高度隨內容，超過 viewport 時 max-height 安全帽。
  */
 
 const Dialog = DialogPrimitive.Root
@@ -27,8 +26,8 @@ const DialogTrigger = DialogPrimitive.Trigger
 const DialogPortal = DialogPrimitive.Portal
 const DialogClose = DialogPrimitive.Close
 
-// Modal 與 viewport 四邊的最小間距
-const DIALOG_VIEWPORT_INSET = 32
+// Modal 與 viewport 四邊的最小間距 = layout-space-bottom (48px)
+const DIALOG_INSET_VAR = 'var(--layout-space-bottom)'
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -48,20 +47,26 @@ const DialogOverlay = React.forwardRef<
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 interface DialogContentProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
-  /** 最大寬度。預設 512px。寬度填滿 viewport（扣除 inset），受 maxWidth 限制。 */
+  /** 最大寬度。預設 512px。 */
   maxWidth?: string
-  /** 最大高度。預設填滿 viewport（扣除 inset）。傳 "auto" = 高度隨內容。 */
-  maxHeight?: string | 'auto'
+  /**
+   * 高度模式。
+   * - 不傳（預設）：填滿 viewport（height = 100vh - inset*2），body 捲動。防止內容跳動。
+   * - true：高度隨內容，超過 viewport 時捲動（max-height 安全帽）。
+   */
+  autoHeight?: boolean
 }
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, maxWidth = '512px', maxHeight, children, style, ...props }, ref) => {
-  const inset2 = DIALOG_VIEWPORT_INSET * 2
-  const resolvedMaxHeight = maxHeight === 'auto'
-    ? undefined
-    : (maxHeight ?? `calc(100vh - ${inset2}px)`)
+>(({ className, maxWidth = '512px', autoHeight, children, style, ...props }, ref) => {
+  const insetCalc = `${DIALOG_INSET_VAR} * 2`
+  const viewportH = `calc(100vh - ${insetCalc})`
+
+  const heightStyle: React.CSSProperties = autoHeight
+    ? { maxHeight: viewportH }
+    : { height: viewportH }
 
   return (
     <DialogPortal>
@@ -81,8 +86,8 @@ const DialogContent = React.forwardRef<
         )}
         style={{
           boxShadow: 'var(--elevation-200)',
-          maxWidth: `min(${maxWidth}, calc(100vw - ${inset2}px))`,
-          maxHeight: resolvedMaxHeight,
+          maxWidth: `min(${maxWidth}, calc(100vw - ${insetCalc}))`,
+          ...heightStyle,
           ...style,
         }}
         {...props}
