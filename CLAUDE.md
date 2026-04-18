@@ -715,6 +715,29 @@ import { cn } from '@/lib/utils'
 // 不再有 tokens.ts — 顏色與字體直接用 CSS 變數或 Tailwind class
 ```
 
+## cva 的適用範圍（何時用、何時不用）
+
+`cva()` 是系統管理 **className 變體**的標準工具,但**不是所有變體都該用 cva**。合法的**非 cva** 實作模式：
+
+| 變體類型 | 實作方式 | 範例 |
+|---------|---------|------|
+| className 變體（bg / text / border / size / state） | **`cva()`** | Button / SegmentedControl / Chip / Tag / Field Controls 等絕大多數 |
+| **Style prop 驅動的 variant**（需要 `style={{ backgroundColor: 'var(--...)' }}`）| **Object map / lookup table**（world-class:Material / Ant / Polaris 同樣做法） | **Avatar** 的 color variants 驅動 inline style;cva 無法產 style object |
+| **結構性變體**（不同 mode 是不同 layout,不只 class swap） | **Conditional rendering / sub-components** | **FileItem** 的 `compact / rich` mode 有不同 flex 結構 |
+
+**判斷法**：
+- 變體差異只有 className（同一棵 JSX 樹）→ cva
+- 變體差異要 inline style 物件 → object map + `style={{ ... }}`
+- 變體差異是不同 JSX 樹（不同 children layout / 不同 wrapper）→ conditional rendering
+
+**禁止**：
+- ❌ 為了「一律用 cva」硬把 style prop 變體塞進 cva(無法優雅產出 style object)
+- ❌ 為了「一律用 cva」把不同結構的 mode 強制壓到同一棵 JSX 配 className 切換(code 會長滿 `{mode === 'rich' && ...}` hacks)
+
+**當前系統 documented 例外**：
+- `Avatar`: color variants 用 object map(原因:inline style prop)
+- `FileItem`: mode variants 用 if-branches(原因:結構性差異,不是 class swap)
+
 ## 元件不得自包 Provider
 
 **Tooltip / Theme / Toast / Portal 等 Provider 一律由應用層**（`main.tsx`、Storybook `preview.tsx`）**統一設定**。元件本體**禁止自包 `TooltipProvider` / `ThemeProvider` / `ToastProvider` 等 Provider**。
