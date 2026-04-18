@@ -4,6 +4,8 @@
 
 Avatar 是視覺身份標識——代表一個人、一個實體（專案、組織、App）。不是裝飾。
 
+**Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
+
 **實作基礎**：純視覺 atom——img + 文字 fallback 組合，無 external primitive base。Radix 有 Avatar primitive 但只提供 fallback 邏輯，本 DS 直接用 native `<img>` + CSS + 錯誤處理已足夠，避免多一層依賴。
 
 ---

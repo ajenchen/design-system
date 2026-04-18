@@ -2,6 +2,8 @@
 
 **載入中視覺 primitive**——整個設計系統唯一的 loading 旋轉圖示,任何要表達「進行中」的元件都從這裡消費。
 
+**Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
+
 **實作基礎**：純 CSS 旋轉動畫（rotating SVG），無 external primitive base。
 
 > 一個最薄的 primitive。沒有 variant、沒有速度調節、沒有 color prop。單一職責:顯示「東西在轉」。

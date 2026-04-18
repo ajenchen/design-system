@@ -4,6 +4,8 @@
 
 Badge 是通知計數指示器，用於未讀數量、待辦計數、狀態紅點。不是分類標籤（那是 Tag）。
 
+**Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
+
 **實作基礎**：純視覺 atom——styled span，無 external primitive base。
 
 ---

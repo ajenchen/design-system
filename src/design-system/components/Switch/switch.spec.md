@@ -4,6 +4,8 @@
 
 Switch 是**即時套用的布林開關**——切換即生效，心智模型是「實體開關」（牆上 light switch、iPhone settings 開關）。
 
+**Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
+
 **實作基礎**：基於 Radix Switch（shadcn 包裝）+ 橋接 DS token。
 
 ---

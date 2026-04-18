@@ -4,6 +4,8 @@
 
 RadioGroup 是**互斥單選且全選項可見**的表單控件——從 2-5 個選項中挑恰好一個，每個選項一行獨立呈現（支援 label + description + 完整閱讀）。
 
+**Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
+
 **實作基礎**：基於 Radix RadioGroup（shadcn 包裝）+ 橋接 DS token。
 
 共用規則見 `../Checkbox/checkbox.spec.md`（Checkbox & RadioGroup 設計原則，含 SelectionItem 佈局與 clamp 政策）。

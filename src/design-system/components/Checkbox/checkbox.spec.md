@@ -4,6 +4,8 @@
 
 Checkbox 和 Radio 是**表單內的選擇控件**，視覺語言完全一致，差異只有形狀和語意。兩者都綁在 form state、隨 submit 才生效（非即時套用——這是與 Switch 的根本差異，見下「與 Switch 的分界」）。
 
+**Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
+
 **實作基礎**：Checkbox 基於 Radix Checkbox、Radio 基於 Radix RadioGroup（皆 shadcn 包裝 + 橋接 DS token）。
 
 | | Checkbox | Radio |

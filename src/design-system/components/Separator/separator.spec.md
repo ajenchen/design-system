@@ -2,6 +2,8 @@
 
 Separator 是語意分隔元件，用於標示內容群組之間的邊界。
 
+**Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
+
 **實作基礎**：基於 Radix Separator（shadcn passthrough）——提供正確的 ARIA `role="separator"` + orientation 語意。
 
 ## 定位

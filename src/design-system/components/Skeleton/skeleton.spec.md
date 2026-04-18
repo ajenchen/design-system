@@ -4,6 +4,8 @@
 
 Skeleton 是**載入中的內容佔位符**——在資料載入完成前，用灰色色塊模擬真實內容的形狀與排版，讓使用者預期即將出現的佈局。
 
+**Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
+
 **實作基礎**：shadcn passthrough——純 CSS animated gradient div。本 DS 保留 shadcn 原結構 + 橋接 DS token。
 
 ---
