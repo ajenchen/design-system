@@ -379,7 +379,7 @@ src/
 │   │   ├── elevation/                 ← elevation.spec.md + elevation.stories.tsx
 │   │   ├── radius/                    ← radius.spec.md + radius.stories.tsx
 │   │   └── opacity/                   ← opacity.css + opacity.spec.md
-│   ├── components/                    ← 以實際目錄內容為準（目前 55 個元件資料夾）
+│   ├── components/                    ← 以實際目錄內容為準（目前 56 個元件資料夾）
 │   │   │
 │   │   │  ⚙ internal primitive（不直接使用，由其他元件消費）
 │   │   ├── Menu/                      ← menu item 共用佈局層（→ SelectMenu / DropdownMenu）
