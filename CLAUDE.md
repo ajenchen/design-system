@@ -3,7 +3,7 @@
 這 5 條是本專案所有規則背後的**態度**。接到任務先複習一遍，再看具體規則。
 
 1. **對標世界級**——每個設計決策都要能回答「Polaris / Material / Atlassian / Ant / Carbon / Apple HIG 怎麼做？我們為什麼一樣 / 為什麼不同？」。沒對齊又說不出不同的理由 = 設計 bug。**視覺上也必須跟世界級一樣整齊**：用我們的 token / 元件換掉第三方樣式時，不能讓視覺比原版鬆散、錯位、比例失調——「符合我們的設計語言」和「視覺整齊度不輸原版」是**同時成立**的要求，不是二選一。
-2. **不憑直覺發明**——新增任何值 / 名 / pattern 前先 `grep` 既有。專案已有的 gap、padding、font-size、命名慣例優先沿用；不是「看起來順」就能造新值。
+2. **不憑直覺發明**——新增任何值 / 名 / pattern / 視覺結構前先 `grep` 既有,**也包含 layout primitive**(見 `# 建立 UI 前必讀` 的「既有 layout primitives 清單」)。若新元件的視覺結構命中既有 primitive(item-layout / overlay-surface / Empty 等),必消費不重寫。專案已有的 gap、padding、font-size、命名慣例優先沿用；不是「看起來順」就能造新值。
 3. **改一處必看三處**——code / spec / story 三方聯動是常態，不是例外。改 cva `defaultVariants`、改 variant、改 token 前先 grep 該元件所有檔案，一次改完。
 4. **範例必須是真實業務場景**——Jira / Stripe / Notion / Figma 等可辨識的情境；禁止 `Option A/B/C`、「按鈕一」、極端不現實、ASCII art。Storybook 的受眾是任何打開它的人，不是作者。
 5. **猶豫就問，不往前推**——遇到無前例的設計決策：(a) 先 grep 既有 pattern，(b) 讀近親元件 spec，(c) 仍不確定就停下問使用者。**禁止憑直覺造新 pattern**——這是本專案最常被糾正的錯誤。
@@ -379,7 +379,7 @@ src/
 │   │   ├── elevation/                 ← elevation.spec.md + elevation.stories.tsx
 │   │   ├── radius/                    ← radius.spec.md + radius.stories.tsx
 │   │   └── opacity/                   ← opacity.css + opacity.spec.md
-│   ├── components/                    ← 以實際目錄內容為準（目前 48 個元件資料夾）
+│   ├── components/                    ← 以實際目錄內容為準（目前 49 個元件資料夾）
 │   │   │
 │   │   │  ⚙ internal primitive（不直接使用，由其他元件消費）
 │   │   ├── Menu/                      ← menu item 共用佈局層（→ SelectMenu / DropdownMenu）
@@ -407,12 +407,14 @@ src/
 │   │   │
 │   │   │  其餘為 public-facing 元件，各有獨立資料夾
 │   │   │  （DatePicker/ 內含 calendar.tsx —— react-day-picker 包裝成本 DS token Calendar primitive）
+│   │   │  （FileUpload 是拖放上傳區塊;FileItem 是已上傳 row 顯示,兩者配對使用;
+│   │   │   FileUpload 預設 children 直接消費 <Empty> 元件,共用 icon+title+desc SSOT）
 │   │   └── ...                        ← Accordion, Alert, Avatar, Badge, Breadcrumb, Button,
 │   │                                     Chart, Checkbox, Chip, Combobox, DataTable, DatePicker,
 │   │                                     DescriptionList, Dialog, DropdownMenu, Empty, FileItem,
-│   │                                     Input, LinkInput, NameCard, NumberInput, PeoplePicker,
-│   │                                     RadioGroup, SegmentedControl, Select, Sidebar, Slider,
-│   │                                     Spinner, Steps, Switch, Tabs, Tag, Textarea, Toast,
+│   │                                     FileUpload, Input, LinkInput, NameCard, NumberInput,
+│   │                                     PeoplePicker, RadioGroup, SegmentedControl, Select, Sidebar,
+│   │                                     Slider, Spinner, Steps, Switch, Tabs, Tag, Textarea, Toast,
 │   │                                     Tooltip, TreeView
 │   │
 │   └── patterns/                      ← 跨元件共用的佈局 / 互動公式
@@ -536,11 +538,31 @@ element.style.backgroundColor = 'var(--primary)'
 | Row primitive 共用規則 | `patterns/item-layout/item-layout.spec.md` | MenuItem / SidebarMenuButton / TreeItem / DropdownMenuItem / SelectMenu |
 | 工具列 / 操作列 | `patterns/action-bar/action-bar.spec.md` | 任何有按鈕列的頁面 |
 | 水平溢出處理 | `patterns/horizontal-overflow/horizontal-overflow.spec.md` | Tabs / Chip / 未來 Steps |
+| 浮層外殼 Header/Body/Footer | `patterns/overlay-surface/overlay-surface.spec.md` | Dialog / Popover(padding SSOT) |
 | Field 佈局容器 | `components/Field/field.spec.md` | 所有表單元件 |
 | Field Controls 共用規則 | `components/Field/field-controls.spec.md` | Input / NumberInput / DatePicker / Select / Combobox / LinkInput / Textarea |
 | 表單驗證標準 | `components/Field/form-validation.spec.md` | 所有表單元件 |
 | 選擇 / 狀態視覺 | `patterns/item-layout/item-layout.spec.md`「選擇 / 狀態視覺規則」節 | 任何有選中態的元件 |
 | 分隔線 vs CSS border | `components/Separator/separator.spec.md` | 任何有分隔線的元件 |
+
+## 既有 layout primitives 清單（建立新元件前 mechanical 掃這張表）
+
+**規則**:建立**任何**新元件之前,先掃以下表。若新元件的視覺結構命中任一 row 的 pattern → **必消費該 primitive**,不自己重寫一套。漏掉 = 雙邊漂移 bug(改一邊另一邊失效)。
+
+| 視覺 pattern | 既有 primitive | 典型觸發情境 |
+|------|---------|---------|
+| 單列 row:prefix(icon/avatar) + content + suffix(action) | `patterns/item-layout/` — `MenuItem` 或 `ItemLayout` | 任何「列表項目」元件(Menu/Tree/Sidebar/TableRow/StepItem/FileItem...) |
+| 浮層容器的 Header + Body + Footer(border-b/t + padding token) | `patterns/overlay-surface/` — `SurfaceHeader/Body/Footer` | Dialog / Popover / Drawer / Sheet / 任何 elevation-200 浮層的結構化 sub-components |
+| **垂直居中 icon + title + description(+ action)** | `components/Empty/` — `<Empty>` 元件 | **「告訴使用者狀態」的 surface**:空資料 / 拖放邀請(FileUpload)/ 錯誤 / 首次引導 / 無權限 / 載入佔位(非 Skeleton)|
+| 橫向操作按鈕列（gap-2 分組）| `patterns/action-bar/` | Toolbar、page header actions、form footer buttons |
+| 水平溢出處理(捲動/收合)| `patterns/horizontal-overflow/` | Tabs / ChipGroup / 未來 Steps 的溢出 |
+| Field wrapper（border + padding + startIcon + endAction 結構) | `components/Field/field-wrapper.tsx` + `field-controls.spec.md` | 所有單行可編輯欄位元件 |
+
+**自我檢查腳本**:
+- 新元件有 icon+text 垂直堆疊? → 用 `<Empty>`,不自己畫 icon + title + desc
+- 新元件有橫向 row 結構(prefix/content/suffix)? → 用 `item-layout`
+- 新元件是浮層 + 有 header/body/footer? → 用 `overlay-surface`
+- 以上都沒命中 → 才可自建,但 **建完要立刻回來加行**(防下一個人又重造輪子)
 
 ## Pattern 規則（建立 UI 前檢查）
 

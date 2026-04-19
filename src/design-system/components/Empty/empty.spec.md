@@ -137,6 +137,7 @@ Empty 只管**水平居中**。垂直定位由 consumer 的容器決定:
 - `../Avatar/avatar.tsx` — Icon 渲染實作
 - `../Spinner/spinner.spec.md` — Loading 狀態（非「空」而是「還沒來」）
 - `../Alert/alert.spec.md` — Error 狀態（非中性空，是需處理的問題）
+- `../FileUpload/file-upload.spec.md` — **本元件 consumer**:FileUpload 預設 children 直接渲染 `<Empty icon={Upload} title description />`,共用 icon+title+desc SSOT
 - `../../tokens/typography/typography.spec.md` — Typography tier
 - `../../tokens/layoutSpace/layoutSpace.spec.md` — Layout-space token
 - `../../patterns/item-layout/item-layout.spec.md` — label → desc gap `mt-0.5`
