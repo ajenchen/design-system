@@ -63,8 +63,10 @@ const ScrollBar = React.forwardRef<
     )}
     {...props}
   >
+    {/* Thumb 用 fg-muted(neutral-7,foreground 灰階 tier)而非 border(語意是邊框,
+         視覺偏淡、scrollbar 可見度不足)。hover 升到 fg-secondary(neutral-8)。 */}
     <ScrollAreaPrimitive.ScrollAreaThumb
-      className={cn('relative flex-1 rounded-full bg-border hover:bg-border-hover transition-colors')}
+      className={cn('relative flex-1 rounded-full bg-fg-muted hover:bg-fg-secondary transition-colors')}
     />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
 ))

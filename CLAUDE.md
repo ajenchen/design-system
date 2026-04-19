@@ -556,14 +556,22 @@ element.style.backgroundColor = 'var(--primary)'
 | 浮層容器的 Header + Body + Footer(border-b/t + padding token) | `patterns/overlay-surface/` — `SurfaceHeader/Body/Footer` | Dialog / Popover / Drawer / Sheet / 任何 elevation-200 浮層的結構化 sub-components |
 | **垂直居中 icon + title + description(+ action)** | `components/Empty/` — `<Empty>` 元件 | **「告訴使用者狀態」的 surface**:空資料 / 拖放邀請(FileUpload)/ 錯誤 / 首次引導 / 無權限 / 載入佔位(非 Skeleton)|
 | 橫向操作按鈕列（gap-2 分組）| `patterns/action-bar/` | Toolbar、page header actions、form footer buttons |
-| 水平溢出處理(捲動/收合)| `patterns/horizontal-overflow/` | Tabs / ChipGroup / 未來 Steps 的溢出 |
+| 水平溢出處理(捲動/收合,**隱藏捲軸+ fade-mask** UX)| `patterns/horizontal-overflow/` | Tabs / ChipGroup / 未來 Steps 的溢出(刻意隱藏 scrollbar) |
+| **跨 OS 一致 overlay 捲軸(顯示捲軸但不吃寬度)** | `components/ScrollArea/` | DataTable 水平捲動 / Sheet / Dialog body / Sidebar 長 nav 等需要使用者知道有捲軸又要跨 OS 視覺一致 |
 | Field wrapper（border + padding + startIcon + endAction 結構) | `components/Field/field-wrapper.tsx` + `field-controls.spec.md` | 所有單行可編輯欄位元件 |
 
 **自我檢查腳本**:
 - 新元件有 icon+text 垂直堆疊? → 用 `<Empty>`,不自己畫 icon + title + desc
 - 新元件有橫向 row 結構(prefix/content/suffix)? → 用 `item-layout`
 - 新元件是浮層 + 有 header/body/footer? → 用 `overlay-surface`
+- 新元件內容**可能溢出容器且需要使用者捲動**? → 用 `ScrollArea`(跨 OS 一致 overlay 捲軸);若是刻意隱藏捲軸 + fade-mask → 用 `horizontal-overflow` pattern
 - 以上都沒命中 → 才可自建,但 **建完要立刻回來加行**(防下一個人又重造輪子)
+
+**overflow 使用三規則(避免跨 OS 跑版)**:
+1. Design-system 元件 `.tsx` 內**禁止** raw `overflow-auto / overflow-scroll / overflow-{x,y}-{auto,scroll}`(hook `check_token_hygiene.sh` check #4 守衛)
+2. 需捲軸且跨 OS 一致 → 用 `ScrollArea`
+3. 刻意隱藏捲軸 + fade-mask → 用 `horizontal-overflow` pattern
+4. 例外:`overlay-surface` spec 明文允許 Dialog body `flex-1 overflow-y-auto`(viewport-fill 特殊 context);若未來此場景需跨 OS 一致,遷移 ScrollArea 再更新 spec
 
 ## Pattern 規則（建立 UI 前檢查）
 
