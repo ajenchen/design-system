@@ -383,6 +383,17 @@ Description 在 error state 下維持 `text-fg-secondary`(跟其他 state 一樣
 
 ---
 
+## 為何無 Inspector / StateBehavior(canonical 命名)
+
+Steps 是**進度序列**元件,關鍵決策維度是 `orientation`(horizontal / vertical)× color token × size × indent alignment——已由 `OrientationMatrix` / `ColorMatrix`(含 4 狀態色:completed / current / upcoming / error) / `SizeMatrix` / 元件特有 `IndentAlignment` 四張 story 完整覆蓋。
+
+- **無 Inspector**:Steps 的決策是「展示所有步驟進度」,需要一整條鏈才能呈現設計——單互動切換 value 不如 side-by-side 矩陣清楚。
+- **無 StateBehavior**(canonical 命名):Steps 的「狀態」是**內容狀態**(completed / current / upcoming / error)不是使用者**互動狀態**(hover / focus / disabled)——前者已在 `ColorMatrix` 作為結構性 state-driven 色彩矩陣完整呈現(三個 indicator 形狀 + 四種語意色)。focus ring 由 `IndentAlignment` / `Overview` 中的 focus marker 段覆蓋(正交 focus pattern,見 spec「Focus marker」段)。
+
+對應 anatomy story:保留 `Overview`(含三狀態對照表) + 元件特有 `OrientationMatrix` / `IndentAlignment` + `ColorMatrix`(4 state 色) + `SizeMatrix`。
+
+---
+
 ## 相關
 
 - `../../patterns/element-anatomy/item-anatomy.spec.md` — Row primitive 繼承規則（字體 / icon tier / hit area 地板）

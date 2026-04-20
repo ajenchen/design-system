@@ -15,15 +15,15 @@ export default meta
    Types & Data (與 progress.tsx 的 cva 對應表一致)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-type StatusKey = 'primary' | 'success' | 'error'
+type StatusKey = 'inProgress' | 'success' | 'error'
 type SizeKey = 'sm' | 'md' | 'lg'
 type AffixKey = 'none' | 'value' | 'status-icon'
 
-const STATUSES: StatusKey[] = ['primary', 'success', 'error']
+const STATUSES: StatusKey[] = ['inProgress', 'success', 'error']
 const SIZES: SizeKey[] = ['sm', 'md', 'lg']
 
 const STATUS_TOKEN: Record<StatusKey, { fill: string; desc: string; affixIcon?: string }> = {
-  primary: { fill: '--primary', desc: '進行中 / 未完成 ratio' },
+  inProgress: { fill: '--primary', desc: '進行中 / 未完成 ratio' },
   success: { fill: '--success', desc: '完成 / 成功', affixIcon: '--success' },
   error:   { fill: '--error',   desc: '失敗 / 中斷', affixIcon: '--error' },
 }
@@ -118,7 +118,7 @@ export const Overview = {
             <tbody>
               {[
                 ['value', 'number (0-100)', '—', '當前進度,超出自動 clamp'],
-                ['status', "'primary' | 'success' | 'error'", "'primary'", 'fill 色語意'],
+                ['status', "'inProgress' | 'success' | 'error'", "'inProgress'", 'fill 色語意'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", 'track 高度(2 / 4 / 6 px)'],
                 ['affix', "'value' | 'status-icon' | ReactNode", '—', '右側附加:百分比文字 / 狀態 icon / 客製內容'],
               ].map(([p, t, d, desc]) => (
@@ -161,7 +161,7 @@ const PropRow = ({ label, children }: { label: string; children: React.ReactNode
 )
 
 const InspectorInner = () => {
-  const [status, setStatus] = useState<StatusKey>('primary')
+  const [status, setStatus] = useState<StatusKey>('inProgress')
   const [size, setSize] = useState<SizeKey>('md')
   const [affix, setAffix] = useState<AffixKey>('value')
   const [value, setValue] = useState(45)
@@ -245,7 +245,7 @@ const InspectorInner = () => {
             </div>
             <PropRow label="Fill"><TokenCell token={sTok.fill} /></PropRow>
             <PropRow label="Track"><TokenCell token="--secondary" /></PropRow>
-            {affix === 'status-icon' && status !== 'primary' && (
+            {affix === 'status-icon' && status !== 'inProgress' && (
               <PropRow label="Affix"><TokenCell token={sTok.affixIcon!} /></PropRow>
             )}
           </div>
@@ -346,7 +346,7 @@ export const ColorMatrix = {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">含 affix 預覽</span>
         <div className="flex flex-col gap-3 max-w-[420px]">
-          <Progress value={42} status="primary" size="md" affix="value" />
+          <Progress value={42} status="inProgress" size="md" affix="value" />
           <Progress value={100} status="success" size="md" affix="status-icon" />
           <Progress value={68} status="error" size="md" affix="status-icon" />
         </div>
@@ -447,7 +447,7 @@ export const AffixBehavior = {
             配額使用率、下載進度等需要精確數字時使用。
           </p>
           <div className="w-[360px]">
-            <Progress value={45} status="primary" size="md" affix="value" />
+            <Progress value={45} status="inProgress" size="md" affix="value" />
           </div>
         </div>
 
@@ -462,7 +462,7 @@ export const AffixBehavior = {
           <div className="flex flex-col gap-2 w-[360px]">
             <Progress value={100} status="success" size="md" affix="status-icon" />
             <Progress value={72} status="error" size="md" affix="status-icon" />
-            <Progress value={50} status="primary" size="md" affix="status-icon" />
+            <Progress value={50} status="inProgress" size="md" affix="status-icon" />
             <span className="text-footnote text-fg-muted">↑ primary 傳 status-icon 時不渲染 icon(仍保留 wrapper gap)</span>
           </div>
         </div>
@@ -476,7 +476,7 @@ export const AffixBehavior = {
           <div className="flex flex-col gap-3 w-[360px]">
             <Progress
               value={42}
-              status="primary"
+              status="inProgress"
               size="md"
               affix={
                 <Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消上傳" />
@@ -484,7 +484,7 @@ export const AffixBehavior = {
             />
             <Progress
               value={66}
-              status="primary"
+              status="inProgress"
               size="md"
               affix={<span className="text-caption text-fg-muted tabular-nums shrink-0">1.3 / 2.0 MB</span>}
             />
@@ -498,7 +498,7 @@ export const AffixBehavior = {
             不包 wrapper,Progress 本身就是整個元件。適合 FileItem 的 compact mode(上方已有檔名文字)。
           </p>
           <div className="w-[360px]">
-            <Progress value={55} status="primary" size="sm" />
+            <Progress value={55} status="inProgress" size="sm" />
           </div>
         </div>
       </div>

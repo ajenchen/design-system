@@ -74,6 +74,16 @@ Consumer 無需額外處理 a11y，保留 Radix `data-state` 屬性即可。
 
 ---
 
+## 為何無 Inspector
+
+Popover 是**浮層容器 primitive**——關鍵決策是 `side` × `align` × `sideOffset`,以及內部 Header / Body / Footer 結構。`PlacementMatrix` 是完整的 side × align 12-cell 矩陣,比互動 Inspector(切單一 side/align)更能呈現所有定位組合。Header / Body / Footer padding 屬 `overlay-surface` SSOT,已由 `ColorMatrix` 的 token 表 + 該 pattern spec 覆蓋。
+
+Popover 內容完全由 consumer 決定,無自己的 variant/size/disabled 等可試玩 prop——Inspector 對 container 類元件價值低。
+
+對應 anatomy story:保留 `Overview` + 元件特有 `PlacementMatrix`(12-cell side × align 矩陣) + `ColorMatrix` + `SizeMatrix` + `StateBehavior`(open / close / animation)。
+
+---
+
 ## 相關
 
 - `../HoverCard/hover-card.spec.md` — hover 觸發的對應浮層

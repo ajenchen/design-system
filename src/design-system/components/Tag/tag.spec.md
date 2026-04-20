@@ -197,6 +197,17 @@ Icon 色彩遵循 Inline Action 統一規則：預設 `fg-muted`，hover 時 `fo
 
 ---
 
+## 為何無 StateBehavior
+
+Tag 是**純顯示 indicator**(非互動 — 見「與 Button 的差異」段),本身**無互動狀態**:
+
+- 無 hover / focus / active / selected / disabled——Tag 是 Family 3 indicator variant(非 Pill button)。若要 hover / selected 語意,改用 `Chip`(可互動版本)。
+- 僅有的「行為」是 dismiss(`onDismiss` callback 觸發,Tag 本身不管 dismiss 動畫),close icon 的 hover 狀態屬 Inline Action pattern(item-anatomy.spec.md「Inline Action 設計規格」SSOT),非 Tag 自有。
+
+對應 anatomy story:保留 `Overview` + `Inspector` + `ColorMatrix`(variant solid/subtle) + `SizeMatrix`。互動狀態 → 改用 Chip(見「與 Button 的差異」段)。
+
+---
+
 ## 相關
 
 - `../Badge/badge.spec.md` — 通知計數 / 狀態紅點（overlay 場景）

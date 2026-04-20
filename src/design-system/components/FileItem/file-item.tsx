@@ -31,10 +31,10 @@ const STATUS_ICON = {
   error: { icon: XCircle, color: 'text-error' },
 } as const
 
-// Progress status 映射:uploading=primary(藍) / completed=success(綠) / error=error(紅)
+// Progress status 映射:uploading=inProgress(藍) / completed=success(綠) / error=error(紅)
 // 與 Progress 元件的 status prop 對齊,不需再維護 PROGRESS_COLOR 本地 map。
 const PROGRESS_STATUS_MAP = {
-  uploading: 'primary',
+  uploading: 'inProgress',
   completed: 'success',
   error: 'error',
 } as const
@@ -181,6 +181,21 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
       </div>
     )
 
+    // a11y: clickable row — 行是可點互動 surface 時補 button role + keyboard。
+    // 只在 consumer 傳入 onClick 時啟用,否則保持 presentational(純展示不搶焦點)。
+    const rowA11y = onClick
+      ? {
+          role: 'button' as const,
+          tabIndex: 0,
+          onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onClick()
+            }
+          },
+        }
+      : {}
+
     // ── rich（含縮圖完整呈現）──
     if (isRich) {
       return (
@@ -188,6 +203,7 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
           ref={ref}
           className={cn('group/row flex items-start gap-3 px-3 py-2 w-full text-body transition-colors', hoverClass, className)}
           onClick={onClick}
+          {...rowA11y}
           {...props}
         >
           <Avatar src={thumbnailSrc} alt={name} size={AVATAR_SIZE} shape="square" className="shrink-0" />
@@ -208,6 +224,7 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
         ref={ref}
         className={cn('group/row relative flex items-start gap-2 px-3 py-2 w-full text-body transition-colors', hoverClass, className)}
         onClick={onClick}
+        {...rowA11y}
         {...props}
       >
         <span className="h-[1lh] shrink-0 flex items-center">

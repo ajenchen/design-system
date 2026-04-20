@@ -247,8 +247,8 @@ export const IndentMatrix: Story = {
   ),
 }
 
-export const StateMatrix: Story = {
-  name: '狀態(selected / expanded / hover)',
+export const StateBehavior: Story = {
+  name: '狀態行為(selected / expanded / hover)',
   render: () => {
     const [selected, setSelected] = React.useState<Set<string>>(new Set(['resume']))
     return (

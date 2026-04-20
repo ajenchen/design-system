@@ -67,6 +67,18 @@
 
 ---
 
+## 為何無 Inspector / ColorMatrix / SizeMatrix
+
+DescriptionList 是**唯讀 label / value 資料呈現**(非互動 / 非 variant 驅動):
+
+- **無 Inspector**:DL 的決策維度是 columns(單欄 / 雙欄 / 多欄)已在 `ColsMatrix` 覆蓋。互動 Inspector 無進一步 prop(value 呈現由資料決定,非 prop 切換)。
+- **無 ColorMatrix**:DL 固定 semantic token(label `text-fg-secondary` / value `text-foreground`),無自己的色彩變體,dark mode 由 semantic token 自動切換。加 color variant 不符語意(DL 是資訊展示,非狀態載體)。
+- **無 SizeMatrix**:DL 無 size prop——垂直間距隨 `layout-space` token 感知 density(見「間距」段),但 label / value typography 走 reading mode 固定 tier,不提供 sm / md / lg 變體。不同 density 由 token 自動處理,非 prop 切換。
+
+對應 anatomy story:保留 `Overview` + `ColsMatrix`(元件特有 1 / 2 / auto 欄對照) + `StateBehavior`(空值 `—` / 長值 / 多行)。
+
+---
+
 ## 相關
 
 - `../Field/field.spec.md` — 表單輸入（需要編輯的對應元件）

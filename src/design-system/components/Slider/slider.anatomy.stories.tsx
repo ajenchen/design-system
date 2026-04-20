@@ -55,8 +55,8 @@ export const Overview: Story = {
   ),
 }
 
-export const VisualSpecs: Story = {
-  name: '視覺規格(一組,不隨 size 變)',
+export const ColorMatrix: Story = {
+  name: '色彩對照表(track / range / thumb)',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
@@ -106,8 +106,8 @@ export const SizeMatrix: Story = {
   ),
 }
 
-export const StatesMatrix: Story = {
-  name: '狀態(default / hover / active / focus / disabled)',
+export const StateBehavior: Story = {
+  name: '狀態行為(default / hover / active / focus / disabled)',
   render: () => (
     <div className="flex flex-col gap-6 max-w-md">
       <div>

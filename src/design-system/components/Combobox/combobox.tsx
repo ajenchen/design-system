@@ -7,7 +7,7 @@ import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
 import { SelectMenu, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
-import { useIsMobile } from '@/design-system/hooks/use-is-mobile'
+import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 
 // ── constants ───────────────────────────────────────────────────────────────
 
@@ -350,7 +350,7 @@ function CustomCombobox({
 
 const Combobox = React.forwardRef<HTMLDivElement, ComboboxProps>(
   (props, _ref) => {
-    const isMobile = useIsMobile()
+    const isMobile = useIsTouchDevice()
     if (isMobile) return <NativeCombobox {...props} />
     return <CustomCombobox {...props} />
   }

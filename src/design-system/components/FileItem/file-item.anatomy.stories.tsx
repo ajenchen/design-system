@@ -170,8 +170,8 @@ export const SizeMatrix: Story = {
   ),
 }
 
-export const StatusMatrix: Story = {
-  name: '狀態(uploading / completed / error / 靜態)',
+export const StateBehavior: Story = {
+  name: '狀態行為(uploading / completed / error / 靜態)',
   render: () => (
     <div className="flex flex-col gap-4 max-w-lg">
       <div>

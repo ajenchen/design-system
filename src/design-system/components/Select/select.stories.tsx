@@ -172,7 +172,7 @@ export const InDataTable: Story = {
     const col = createColumnHelper<Product>()
 
     const columns = [
-      col.accessor('name', { header: 'Product', size: 200, meta: { type: 'text' } }),
+      col.accessor('name', { header: 'Product', size: 200, meta: { type: 'string' } }),
       col.accessor('category', { header: 'Category', size: 120, meta: { type: 'select', options: categoryOptions } }),
       col.accessor('stock', { header: 'Stock', size: 120, meta: { type: 'select', options: statusOptions } }),
       col.accessor('price', { header: 'Price', size: 100, meta: { type: 'currency', prefix: '$' } }),

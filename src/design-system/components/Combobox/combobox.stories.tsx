@@ -156,7 +156,7 @@ export const InDataTable: Story = {
 
     const col = createColumnHelper<Product>()
     const columns = [
-      col.accessor('name', { header: 'Product', size: 200, meta: { type: 'text' } }),
+      col.accessor('name', { header: 'Product', size: 200, meta: { type: 'string' } }),
       col.accessor('categories', {
         header: 'Categories',
         size: 200,

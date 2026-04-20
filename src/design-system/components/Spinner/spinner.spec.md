@@ -146,6 +146,19 @@ Spinner 的 stroke 顏色是 `currentColor`(繼承父層的 text color)。消費
 
 ---
 
+## 為何無 Inspector / ColorMatrix / SizeMatrix / StateBehavior
+
+Spinner 是**最薄的 primitive**(單一職責:顯示「東西在轉」),設計上刻意避免多維度變體:
+
+- **無 Inspector**:Spinner 無 variant / state / 可切換的 prop(size 是自由 number,不是 enum),互動切換式 Inspector 無法呈現它的決策點——該討論的是「何時用」而不是「參數怎麼調」,這已由 `UsageInButton` / `UsageInline` 兩個 consumer context story 覆蓋。
+- **無 ColorMatrix**:Spinner 色彩刻意走 `currentColor` 繼承父層 text color(Button primary → 白 / text variant → 深色 / Field → fg-muted),**無自己的色彩決策**。加 `color` variant 會製造「傳 `color="muted"` 還是 `className="text-fg-muted"`?」的選擇焦慮(本 spec 「顏色策略」段明述)。
+- **無 SizeMatrix**:Spinner 無 sm/md/lg enum,尺寸是自由 `number` px,跨度極大(16px button / 24px inline / 48px overlay),由 consumer 依 context 傳入。建立 SizeMatrix 等於強制成 enum,違背刻意保留自由度的設計(見本 spec「尺寸策略」段)。
+- **無 StateBehavior**:Spinner 本身無 hover / focus / active / selected / disabled——「轉」是唯一狀態,「不轉」= 不渲染 Spinner。載入結束後父層 swap 成其他 icon(Button loading → icon)。
+
+對應 anatomy story:保留 `Overview` + consumer context `UsageInButton` / `UsageInline`(真實 Spinner 使用場景)。
+
+---
+
 ## 相關
 
 - **Avatar 自由 size 策略** — `components/Avatar/avatar.tsx`(同一個 pattern 的先例)

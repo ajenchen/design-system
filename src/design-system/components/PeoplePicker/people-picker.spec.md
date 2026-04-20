@@ -104,6 +104,14 @@ type PersonValue = string | { name: string; avatarUrl?: string; description?: st
 
 ---
 
+## 為何無 Inspector
+
+PeoplePicker 是 **composite Field Control**(Field shell + Avatar + SelectMenu),關鍵決策維度是 `mode`(single / multi)× `size` × search behavior × value type——已由 `ModeMatrix` / `SizeMatrix` / `ColorMatrix` / `StateBehavior` / `PersonValueType` 五張矩陣完整覆蓋。互動 Inspector 對 composite 元件較弱:「傳 PersonValue 陣列」需要真實資料 fixture 展示,單組合試玩無法呈現——改以 `StateBehavior` 的真實 Assignee picker 場景取代。
+
+對應 anatomy story:保留 `Overview` + 元件特有 `ModeMatrix` / `PersonValueType` + `SizeMatrix` + `ColorMatrix` + `StateBehavior`。
+
+---
+
 ## 相關
 
 - `./person-display.tsx` — PersonValue 的顯示元件（Avatar + Name，readonly / DataTable cell 用）

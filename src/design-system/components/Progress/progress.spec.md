@@ -6,7 +6,7 @@
 
 **實作基礎**：基於 Radix `@radix-ui/react-progress` primitive（原生提供 `role="progressbar"` + `aria-valuenow` / `aria-valuemin` / `aria-valuemax` / `aria-valuetext`），外包本 DS 的 status / size / affix 語意與 token。
 
-> 最薄的 determinate progress primitive。沒有 indeterminate animation（那屬 Spinner 職責）、沒有 buffered fill（目前無 streaming 場景）、沒有自訂色（只能走 primary / success / error 三狀態）。
+> 最薄的 determinate progress primitive。沒有 indeterminate animation（那屬 Spinner 職責）、沒有 buffered fill（目前無 streaming 場景）、沒有自訂色（只能走 inProgress / success / error 三狀態）。
 
 ---
 
@@ -24,7 +24,7 @@ Progress 是**量化進度** primitive——consumer 必須能回答「目前進
 
 ## 何時用
 
-- **檔案上傳 / 下載進度**：上傳中顯示 primary、完成顯示 success、失敗顯示 error（Dropbox / Google Drive / Slack 檔案上傳模式）
+- **檔案上傳 / 下載進度**：上傳中顯示 inProgress、完成顯示 success、失敗顯示 error（Dropbox / Google Drive / Slack 檔案上傳模式）
 - **批次任務進度**：CSV 匯入、批量同步、報表生成（Linear batch action / Jira bulk edit / Airtable import）
 - **多步驟流程的整體進度**：表單 wizard「步驟 3/5 = 60%」（但**步驟結構本身**用 `Steps` 元件,Progress 只表達整體完成比例）
 - **Table cell / row 內的 inline 進度**：DataTable 裡「配額使用率 45%」、「完成度 78%」等單列靜態指標
@@ -37,7 +37,7 @@ Progress 是**量化進度** primitive——consumer 必須能回答「目前進
 | <1 秒的短暫操作 | `Spinner` 或不顯示 | Progress 動畫（300ms transition）在極短操作反而造成閃爍 |
 | 骨架載入（預期內容形狀） | `Skeleton` | Skeleton 保留 layout,Progress 只傳達「執行中量化」 |
 | 步驟導覽（顯示 step 1/2/3 結構） | `Steps` | Steps 強調 step 本身是什麼、Progress 只看整體百分比 |
-| 容量 / 配額靜態顯示（非動態進行中） | 可用 Progress（不傳 status,預設 primary 即可） | 可接受——Progress 也能表達靜態 ratio,但若只是裝飾比例、非「進行中」語意,考慮 Chart bar 類元件 |
+| 容量 / 配額靜態顯示（非動態進行中） | 可用 Progress（不傳 status,預設 inProgress 即可） | 可接受——Progress 也能表達靜態 ratio,但若只是裝飾比例、非「進行中」語意,考慮 Chart bar 類元件 |
 | 評分顯示（5 顆星 80%） | `Rating` | Rating 有離散刻度語意 |
 
 ---
@@ -81,8 +81,8 @@ Progress 是**量化進度** primitive——consumer 必須能回答「目前進
 export interface ProgressProps {
   /** 當前進度 0-100,超出範圍自動 clamp */
   value: number
-  /** primary=進行中 / success=完成 / error=失敗 */
-  status?: 'primary' | 'success' | 'error'
+  /** inProgress=進行中 / success=完成 / error=失敗 */
+  status?: 'inProgress' | 'success' | 'error'
   /** sm=2px / md=4px / lg=6px */
   size?: 'sm' | 'md' | 'lg'
   /** 右側附加:value=顯示 `{value}%` / status-icon=顯示狀態圖示 / ReactNode=客製 */
@@ -94,7 +94,7 @@ export interface ProgressProps {
 
 | Status | 語意 | fill token | 使用時機 |
 |--------|------|-----------|---------|
-| `primary`（預設）| 進行中 / 未完成 ratio | `--primary` | 上傳中、處理中、靜態比例顯示 |
+| `inProgress`(預設) | 進行中 / 未完成 ratio | `--primary` | 上傳中、處理中、靜態比例顯示 |
 | `success` | 完成 / 成功 | `--success` | value 到 100% 且操作成功完成 |
 | `error` | 失敗 / 中斷 | `--error` | 上傳失敗、處理中斷、配額超出警示 |
 
@@ -159,6 +159,14 @@ Radix `Progress.Root` 自動提供：
 - 如需客製 announce（e.g.「上傳中 45%」）,在 parent 傳 `aria-valuetext="上傳中 45%"` override
 
 **Consumer 需補**：若此 Progress 代表特定語境任務,在 parent 加 `aria-label`（e.g.「檔案上傳進度」）讓螢幕閱讀器能辨認。
+
+---
+
+## 為何無 StateBehavior
+
+Progress 是**純視覺百分比指示**,本身**無互動狀態**(見「狀態與邊界」段:無 disabled,不接受互動事件)。唯一的「行為」是 value 變化時 fill 寬度動畫——那是 controlled prop 的資料更新,不是 UI state 切換。color variant(primary / success / error)依 value 狀態切換的行為已在 `ColorMatrix` + 元件特有 `AffixBehavior`(percent / icon-on-complete 驅動邏輯)覆蓋。
+
+對應 anatomy story:保留 `Overview` + `Inspector`(value 試玩) + `ColorMatrix` + `SizeMatrix` + 元件特有 `AffixBehavior`。
 
 ---
 

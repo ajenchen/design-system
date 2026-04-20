@@ -6,10 +6,11 @@ import { H3, Desc, Td, Th } from '@/design-system/components/_anatomy/anatomy-ut
 /**
  * AspectRatio 設計規格——固定長寬比容器 primitive。
  *
- * 本元件極薄(Radix AspectRatio passthrough),無 variant / size / color token,
- * 結構僅:container 鎖 ratio + children 填滿。因此設計規格以 Overview + Inspector
- * + 標準 ratio 視覺對照為主;Color / Size 段落標示「本元件無此維度」並說明
- * consumer 如何決定色彩與寬度。完整設計規則見 `aspect-ratio.spec.md`。
+ * 本元件極薄(Radix AspectRatio passthrough),無 variant / size / color token。
+ * 結構僅:container 鎖 ratio + children 填滿。因此 anatomy 保留 Overview + Inspector
+ * + 元件特有 StandardRatios(DS 慣用 5 ratio)——無 ColorMatrix / SizeMatrix /
+ * StateBehavior,rationale 詳見 `aspect-ratio.spec.md`「為何無 ColorMatrix /
+ * SizeMatrix / StateBehavior」段。
  */
 
 const meta: Meta = {
@@ -143,77 +144,9 @@ export const Inspector: Story = {
   ),
 }
 
-// ── Color ─────────────────────────────────────────────────────────────────────
-
-export const Color: Story = {
-  name: '色彩(不適用)',
-  render: () => (
-    <div>
-      <H3>本元件無色彩 token</H3>
-      <Desc>
-        AspectRatio 是 pure layout primitive,自身不帶任何色彩。背景色由 consumer 透過 className 決定——**慣例是 `bg-muted`** 作為圖片未載入前的 placeholder 色(灰底)。
-      </Desc>
-
-      <div className="grid grid-cols-3 gap-4 max-w-[720px]">
-        <div>
-          <AspectRatio ratio={16 / 9} className="bg-muted rounded-md" />
-          <div className="text-footnote text-fg-muted mt-1 font-mono">bg-muted(慣例)</div>
-        </div>
-        <div>
-          <AspectRatio ratio={16 / 9} className="bg-surface-raised rounded-md border border-border" />
-          <div className="text-footnote text-fg-muted mt-1 font-mono">bg-surface-raised(卡片用)</div>
-        </div>
-        <div>
-          <AspectRatio ratio={16 / 9} className="bg-primary-subtle rounded-md" />
-          <div className="text-footnote text-fg-muted mt-1 font-mono">bg-primary-subtle(特例)</div>
-        </div>
-      </div>
-
-      <div className="text-caption text-fg-muted mt-6 max-w-[600px] leading-relaxed">
-        與 Skeleton 疊用:`&lt;AspectRatio&gt;&lt;Skeleton className="w-full h-full" /&gt;&lt;/AspectRatio&gt;` 作為更高保真的 loading state(形狀 + 脈動)。
-      </div>
-    </div>
-  ),
-}
-
-// ── Size ──────────────────────────────────────────────────────────────────────
-
-export const Size: Story = {
-  name: '尺寸(不適用)',
-  render: () => (
-    <div>
-      <H3>本元件無 size prop</H3>
-      <Desc>
-        AspectRatio 的比例由 `ratio` 數值決定;**寬度由 parent / className 控制**,高度由比例公式自動推導(`height = width / ratio`)。因此不提供 sm/md/lg size——不同尺寸透過外層容器寬度達成。
-      </Desc>
-
-      <div className="flex flex-col gap-6 max-w-[720px]">
-        <div>
-          <div className="text-footnote text-fg-muted mb-1 font-mono">寬度 200px</div>
-          <div className="w-[200px]">
-            <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden">
-              <img src="https://picsum.photos/seed/size-s/400/225" alt="" className="w-full h-full object-cover" />
-            </AspectRatio>
-          </div>
-        </div>
-        <div>
-          <div className="text-footnote text-fg-muted mb-1 font-mono">寬度 400px</div>
-          <div className="w-[400px]">
-            <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden">
-              <img src="https://picsum.photos/seed/size-m/800/450" alt="" className="w-full h-full object-cover" />
-            </AspectRatio>
-          </div>
-        </div>
-        <div>
-          <div className="text-footnote text-fg-muted mb-1 font-mono">寬度 100%(撐滿容器)</div>
-          <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden">
-            <img src="https://picsum.photos/seed/size-l/1200/675" alt="" className="w-full h-full object-cover" />
-          </AspectRatio>
-        </div>
-      </div>
-    </div>
-  ),
-}
+// NOTE: 本元件無 ColorMatrix / SizeMatrix / StateBehavior——
+// rationale 詳見 aspect-ratio.spec.md「為何無 ColorMatrix / SizeMatrix / StateBehavior」段。
+// 僅保留 StandardRatios 作為元件特有的 DS ratio 視覺對照。
 
 // ── 標準 ratio 對照 ──────────────────────────────────────────────────────────
 

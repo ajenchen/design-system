@@ -210,8 +210,8 @@ export const ColorMatrix: Story = {
   ),
 }
 
-export const StatesMatrix: Story = {
-  name: '狀態(selected / hover / disabled)',
+export const StateBehavior: Story = {
+  name: '狀態行為(selected / hover / disabled)',
   render: () => (
     <div className="flex flex-col gap-10">
       <div>

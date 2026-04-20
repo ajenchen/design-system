@@ -65,7 +65,7 @@ export const Overview: Story = {
   ),
 }
 
-export const VariantMatrix: Story = {
+export const ScenarioMatrix: Story = {
   name: '常見場景',
   render: () => (
     <div className="flex flex-col gap-6">
@@ -98,7 +98,7 @@ export const VariantMatrix: Story = {
   ),
 }
 
-export const StateMatrix: Story = {
+export const SlotCombinations: Story = {
   name: 'Slot 組合(description only → full)',
   render: () => (
     <div className="flex flex-col gap-10">

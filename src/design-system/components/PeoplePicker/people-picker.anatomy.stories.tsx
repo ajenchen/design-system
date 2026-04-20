@@ -250,7 +250,7 @@ export const ColorMatrix: Story = {
   ),
 }
 
-export const StateMatrix: Story = {
+export const StateBehavior: Story = {
   name: '狀態行為(open / search / selected / empty)',
   render: () => (
     <div className="flex flex-col gap-10 max-w-md">

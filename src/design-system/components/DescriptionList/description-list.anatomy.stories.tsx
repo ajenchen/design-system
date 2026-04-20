@@ -109,8 +109,8 @@ export const ColsMatrix: Story = {
   ),
 }
 
-export const StateMatrix: Story = {
-  name: '資料邊界狀態(空值 / 長值 / 多行 value)',
+export const StateBehavior: Story = {
+  name: '狀態行為(空值 / 長值 / 多行 value)',
   render: () => (
     <div className="flex flex-col gap-10">
       <div>

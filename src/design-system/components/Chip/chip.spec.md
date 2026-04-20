@@ -178,6 +178,15 @@ Chip 的 overflow 處理有三種模式：
 - ❌ 把 Chip 塞進 Field 當 form control——規模語意不對，用 SegmentedControl
 - ❌ Menu 模式搭配 uncontrolled（只給 `defaultValue`）——menu items 無法同步狀態，TS 不擋但 runtime 會看到 menu 勾選失效
 
+## 為何無 Inspector / ColorMatrix
+
+- **無 Inspector**:Chip 決策維度是「selection 行為(single / multi / menu)」× layout(連體 / 間隔)× overflow——已在 `SelectionMatrix` / `LayoutMatrix` 兩張結構矩陣覆蓋。互動 Inspector 無法呈現 selection model 的差異(需要 side-by-side 對照)。
+- **無 ColorMatrix**:Chip 只有一套色彩(default / hover / selected / disabled),完全鏡射 Button tertiary variant(見「內部結構(鏡射 Button)」段)。狀態色已在 `StateBehavior` 的四狀態對照覆蓋。重寫 ColorMatrix = 複製 Button tertiary ColorMatrix + StateBehavior。
+
+對應 anatomy story:保留 `Overview` + 元件特有 `SelectionMatrix` + `SizeMatrix` + `StateBehavior` + `LayoutMatrix`。
+
+---
+
 ## 相關
 
 - Button (`button.spec.md`) — Chip 內部結構對標的來源

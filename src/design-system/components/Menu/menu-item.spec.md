@@ -214,6 +214,16 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 
 ---
 
+## 為何無獨立 StateBehavior story
+
+MenuItem 的狀態色(default / hover / selected / disabled)是**結構性的**——透過 variant(single / multi)× state 的二維矩陣呈現比時序互動更清楚。已在 `ColorMatrix` 用 TOKEN_MAP 完整矩陣覆蓋(單選 multi / 多選 single 各自的 4 state × bg / text / icon / desc token 對照)。
+
+獨立 StateBehavior story 會複製 ColorMatrix 內容——MenuItem 的 state 本身就是色彩表達,無額外「時序 / 動畫」可獨立呈現(不像 Accordion 有 expand/collapse 行為)。Inspector 已互動式展示 selected / disabled 單一 variant 的切換。
+
+對應 anatomy story:保留 `Overview` + `Inspector` + `ColorMatrix`(含完整狀態色矩陣) + `SizeMatrix`。
+
+---
+
 ## 相關
 
 - `../../patterns/element-anatomy/item-anatomy.spec.md` — MenuItem 的 row primitive 繼承規則（prefix / label / suffix 對齊）

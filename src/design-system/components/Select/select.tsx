@@ -7,7 +7,7 @@ import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-sys
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { SelectMenu, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
-import { useIsMobile } from '@/design-system/hooks/use-is-mobile'
+import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
 const tagPadding: Record<string, string> = {
@@ -331,7 +331,7 @@ CustomSelect.displayName = 'CustomSelect'
 
 const Select = React.forwardRef<HTMLSelectElement | HTMLDivElement, SelectProps>(
   (props, ref) => {
-    const isMobile = useIsMobile()
+    const isMobile = useIsTouchDevice()
 
     if (isMobile) {
       return <NativeSelect ref={ref as React.Ref<HTMLSelectElement>} {...props} />

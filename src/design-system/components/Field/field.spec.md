@@ -415,6 +415,16 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 
 ---
 
+## 為何無 Inspector
+
+Field 是**表單欄位容器**(label + helper + control + error 的佈局包裝),設計決策維度是 `orientation`(vertical / horizontal)× `size`(sm/md/lg)× `state`(required / invalid / disabled / readonly)× `color`——已由 `OrientationMatrix` / `SizeMatrix` / `StateBehavior` / `ColorMatrix` + 元件特有 `FieldGroupBehavior` 五張結構矩陣完整覆蓋。
+
+Inspector 對 container 類元件沒有對應教學價值——Field 本身不產生互動 affordance(互動由 Field Control 例如 Input / Select 處理),該 Inspect 的是 Field Control layer(已有各自元件的 Inspector)。重寫 Inspector = 複製 Input / Select 的 Inspector。
+
+對應 anatomy story:保留 `Overview` + `OrientationMatrix` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + 元件特有 `FieldGroupBehavior`。
+
+---
+
 ## 相關
 
 - `./field-controls.spec.md` — Field Controls（Input/Select/etc.）共用規則：三 mode、size、focus、endAction、Display

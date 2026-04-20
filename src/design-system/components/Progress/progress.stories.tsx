@@ -34,7 +34,7 @@ const SectionDesc = ({ children }: { children: React.ReactNode }) => (
 // ── Default(基本範例) ──────────────────────────────────────────────────
 
 export const Default: Story = {
-  args: { value: 45, status: 'primary', size: 'md', affix: 'value' },
+  args: { value: 45, status: 'inProgress', size: 'md', affix: 'value' },
   render: (args) => (
     <div className="w-[360px]">
       <Progress {...args} />
@@ -60,7 +60,7 @@ export const FileUpload: Story = {
             <span className="flex-1 truncate">Q1_財報分析.xlsx</span>
             <span className="text-caption text-fg-muted tabular-nums">1.2 / 2.8 MB</span>
           </div>
-          <Progress value={42} status="primary" size="md" affix="value" />
+          <Progress value={42} status="inProgress" size="md" affix="value" />
         </div>
         {/* Completed */}
         <div className="flex flex-col gap-2">
@@ -101,7 +101,7 @@ export const BatchTask: Story = {
           <span className="text-body-lg font-medium flex-1">匯入客戶名單</span>
           <span className="text-caption text-fg-muted tabular-nums">812 / 1,250 筆</span>
         </div>
-        <Progress value={65} status="primary" size="lg" affix="value" />
+        <Progress value={65} status="inProgress" size="lg" affix="value" />
         <p className="text-footnote text-fg-muted">
           處理中,請勿關閉此視窗。預計剩餘 28 秒。
         </p>
@@ -116,10 +116,10 @@ export const InlineTableCell: Story = {
   name: 'DataTable cell 內進度',
   render: () => {
     const rows = [
-      { name: 'Acme Corp 專案', quota: 45, status: 'primary' as const },
-      { name: 'Globex 整合', quota: 78, status: 'primary' as const },
+      { name: 'Acme Corp 專案', quota: 45, status: 'inProgress' as const },
+      { name: 'Globex 整合', quota: 78, status: 'inProgress' as const },
       { name: 'Initech 改版', quota: 100, status: 'success' as const },
-      { name: 'Umbrella 導入', quota: 12, status: 'primary' as const },
+      { name: 'Umbrella 導入', quota: 12, status: 'inProgress' as const },
       { name: 'Wonka 客製化', quota: 95, status: 'error' as const },
     ]
     return (

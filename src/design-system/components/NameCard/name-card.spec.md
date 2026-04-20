@@ -67,6 +67,15 @@ NameCard 固定 **320px 寬**（見 `.tsx` 的 `w-[320px]`）——HoverCard 浮
 
 ---
 
+## 為何無 Inspector / SizeMatrix
+
+- **無 Inspector**:NameCard 的決策維度是「section 組合」(avatar + profile / status / info / viewMore 的開關)——互動 Inspector 切換 toggle 可以做,但 `SectionMatrix` 的 side-by-side 矩陣(最簡 → 中 → full)對 consumer 的判斷更直接(「什麼 section 組合適合什麼 context」)。多維組合用矩陣呈現比單組合互動玩耍有效。
+- **無 SizeMatrix**:NameCard 固定 **280px 寬**(元件級常數,見本 spec「寬度」段),跨 consumer / variant 不變——人員資訊卡的 canonical width 屬於元件自身,不抽為 token。Section 高度由內容撐開,無 size tier。
+
+對應 anatomy story:保留 `Overview` + `SectionMatrix` + `ColorMatrix`(Status 色) + 元件特有 `HoverCardIntegration`(canonical usage pattern) + `StateBehavior`(空值 / 過長文字邊界)。
+
+---
+
 ## 相關
 
 - `../HoverCard/hover-card.spec.md` — NameCard 的浮層容器（觸發與定位由 HoverCard 負責）

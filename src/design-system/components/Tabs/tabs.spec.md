@@ -270,6 +270,16 @@ Size 建議在這些容器內用 `sm`（32/40），避免 header 過高。
 
 ---
 
+## 為何無 Inspector
+
+Tabs 決策維度是 `size` × `variant` × overflow 模式 × 寬度行為——已由 `SizeMatrix` / `ColorMatrix` / `StateBehavior`(selected / hover / disabled) / 元件特有 `OverflowMatrix`(scroll / menu / fade 三模式) / `SpacingTokens` 五張結構 story 完整覆蓋。
+
+互動 Inspector 切單一 tab 不如 `OverflowMatrix` 的三種 overflow 模式 side-by-side 比較有效——「tabs 放不下時怎麼處理」是設計決策題,需要同時看三個方案。同樣 `SizeMatrix` / `StateBehavior` 是結構性對照,單 tab 互動無法呈現 underline / selected border 與 TabsList border 的視覺關係(見「Underline 與 TabsList border 的視覺關係」段)。
+
+對應 anatomy story:保留 `Overview` + `SizeMatrix` + `ColorMatrix` + `StateBehavior` + 元件特有 `OverflowMatrix` + `SpacingTokens`。
+
+---
+
 ## 相關
 
 - SegmentedControl（`segmented-control.spec.md`）——切 value 的 radio 群組

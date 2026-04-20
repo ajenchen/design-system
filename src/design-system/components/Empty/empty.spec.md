@@ -132,6 +132,19 @@ Empty 只管**水平居中**。垂直定位由 consumer 的容器決定:
 | SelectMenu | — | `<Empty description="無選項" className="py-6" />` |
 | Combobox | — | `<Empty description="找不到結果" className="py-6" />` |
 
+## 為何無 Inspector / ColorMatrix / SizeMatrix / StateBehavior
+
+Empty 是 **pure layout primitive**(排列 icon / title / description / action 成居中垂直堆疊),不是互動元件,也不是 variant-driven 元件:
+
+- **無 Inspector**:Empty 的「關鍵決策」是 slot 組合(description only → full),已在 `SlotCombinations` story 呈現四種組合對照(最簡 → 輕引導 → 中引導 → full)。互動切換式 Inspector 不會比 slot composition 對照更有教學價值——consumer 需要的是「這四種場景怎麼選」。
+- **無 ColorMatrix**:Empty 自身不帶任何色彩,bg transparent,text color 全部走 semantic token(`text-foreground` / `text-fg-muted`)。Avatar icon 的色彩由 consumer 透過 `<Avatar color="...">` 決定,非 Empty 層級 variant。
+- **無 SizeMatrix**:Empty 無 `size` prop,垂直 padding 由 consumer 容器決定(Table `py-12` / SelectMenu `py-6` / Page `py-16`),固定間距不隨 density 變(展示性元件,見本 spec「間距」段)。
+- **無 StateBehavior**:Empty 是非互動展示元件,無 hover / focus / active / selected / disabled。CTA button 的互動狀態屬 Button 層級,不屬 Empty。
+
+對應 anatomy story:保留 `Overview` + 元件特有 `ScenarioMatrix`(常見業務場景) + 元件特有 `SlotCombinations`(slot 組合對照)。
+
+---
+
 ## 相關
 
 - `../Avatar/avatar.tsx` — Icon 渲染實作

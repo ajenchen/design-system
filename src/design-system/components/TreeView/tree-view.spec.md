@@ -513,6 +513,16 @@ TreeItem 透過 props 提供 slots,讓不同 consumer 決定 node 的視覺:
 
 ---
 
+## 為何無 Inspector
+
+TreeView 是**階層樹元件**,關鍵決策維度是 selection × expanded × indent × size × context(sidebar / panel / dialog),已由 `SizeMatrix` / `ColorMatrix` / 元件特有 `IndentMatrix`(縮排規則) / `StateBehavior`(selected vs expanded 語意分離) / `KeyboardMatrix` 五張 story 完整覆蓋。
+
+TreeView 真實展示需要**多層巢狀結構**才有意義(單節點無法體現樹形設計),互動 Inspector 切換單一 prop 無法呈現 `IndentMatrix`(縮排與 guide line 規則)、`StateBehavior`(selected + expanded 正交語意)這類需要完整樹形視覺才能傳達的設計。改以 `Overview` 的完整樹範例 + 各結構矩陣覆蓋。
+
+對應 anatomy story:保留 `Overview` + `SizeMatrix` + `ColorMatrix` + 元件特有 `IndentMatrix` + `StateBehavior` + `KeyboardMatrix`。
+
+---
+
 ## 相關
 
 - `../Sidebar/sidebar.spec.md` — 常見的 TreeView 消費者（導覽場景）

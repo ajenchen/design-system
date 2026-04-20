@@ -70,7 +70,7 @@ function renderTypedValue(value: unknown, meta?: Record<string, any>, autoRowHei
     case 'multiSelect': return <ComboboxDisplay value={value as string[] | null} options={meta?.options} wrap={wrap} />
     case 'person': return <PersonDisplay value={value as PersonValue | null} size={tableSize} />
     case 'multiPerson': return <MultiPersonDisplay value={value as PersonValue[] | null} size={tableSize} />
-    case 'link': return <LinkInputDisplay value={value as string | null} label={meta?.linkLabel} />
+    case 'url': return <LinkInputDisplay value={value as string | null} label={meta?.linkLabel} />
     default: return <InputDisplay value={value != null ? String(value) : null} />
   }
 }
@@ -196,7 +196,7 @@ function DataTableInner<TData>(
     const meta = cell.column.columnDef.meta
     const colType = meta?.type as ColumnType | undefined
     const wrap = autoRowHeight && meta?.wrap === true
-    const isCompound = colType === 'select' || colType === 'multiSelect' || colType === 'person' || colType === 'multiPerson' || colType === 'link'
+    const isCompound = colType === 'select' || colType === 'multiSelect' || colType === 'person' || colType === 'multiPerson' || colType === 'url'
     const content = colType ? renderTypedValue(cell.getValue(), meta, autoRowHeight, size) : flexRender(cell.column.columnDef.cell, cell.getContext())
     return wrap ? <span className="break-words min-w-0">{content}</span> : isCompound ? content : <TruncateCell>{content}</TruncateCell>
   }

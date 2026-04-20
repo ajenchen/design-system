@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import type { LucideIcon } from "lucide-react"
 import { ChevronDown, PanelLeft } from "lucide-react"
 
-import { useIsMobile } from "@/hooks/use-mobile"
+import { useIsNarrowViewport } from "@/design-system/hooks/use-is-narrow-viewport"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/design-system/components/Badge/badge"
 import { Button } from "@/design-system/components/Button/button"
@@ -156,7 +156,7 @@ const SidebarProvider = React.forwardRef<
       },
       [activeIdProp, onActiveChange]
     )
-    const isMobile = useIsMobile()
+    const isMobile = useIsNarrowViewport()
     const [openMobile, setOpenMobile] = React.useState(false)
 
     const [_open, _setOpen] = React.useState(defaultOpen)

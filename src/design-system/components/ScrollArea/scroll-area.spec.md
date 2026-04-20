@@ -97,6 +97,14 @@ Consumer 無需額外處理 a11y。
 
 ---
 
+## 為何無 StateBehavior
+
+ScrollArea 是**捲動容器 primitive**,本身**無互動狀態**(見「邊界案例」段:無 disabled,內容捲動由瀏覽器原生處理)。唯一的 state 是「scrollbar visible / hidden」,但這由 Radix 依 overflow 自動偵測,非 consumer 或元件 prop 可控。重寫 StateBehavior 會讓 consumer 誤以為有 hover / focus / disabled prop 可切。orientation(水平 / 垂直 / 雙向)的結構變化由元件特有 `OrientationBehavior` own。
+
+對應 anatomy story:保留 `Overview` + `Inspector` + `ColorMatrix`(scrollbar track / thumb 色) + `SizeMatrix` + 元件特有 `OrientationBehavior`。
+
+---
+
 ## 相關
 
 - `../DataTable/data-table.spec.md` — 主要 consumer(橫向捲動跑版問題的解法來源)

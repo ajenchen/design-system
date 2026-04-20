@@ -47,8 +47,8 @@ export const Overview: Story = {
   ),
 }
 
-export const VariantMatrix: Story = {
-  name: 'Variant × Appearance 矩陣',
+export const ColorMatrix: Story = {
+  name: '色彩對照表(Variant × Appearance)',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
@@ -87,6 +87,49 @@ export const VariantMatrix: Story = {
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  ),
+}
+
+export const StateBehavior: Story = {
+  name: '狀態行為(dismiss / static)',
+  render: () => (
+    <div className="flex flex-col gap-8">
+      <div>
+        <H3>Dismissible(右側 close icon)</H3>
+        <Desc>
+          Alert 預設 `dismissible=true`,右上角顯示 close button。按 close 觸發 `onDismiss` 由 consumer 控制移除(Alert 本身不 own unmount 狀態——inline 通知通常需要 consumer 記住「使用者已關閉」狀態)。
+        </Desc>
+        <div className="flex flex-col gap-3 max-w-xl">
+          <Alert variant="info" title="可關閉" description="右上角有 close icon,按下觸發 onDismiss" />
+          <Alert variant="warning" title="不可關閉" description="永久性警告,設 dismissible={false} 隱藏 close icon" dismissible={false} />
+        </div>
+      </div>
+
+      <div>
+        <H3>Close button 互動狀態</H3>
+        <Desc>
+          Close icon 使用 Inline Action pattern(16px icon + 24px hover bg)——對齊 `item-anatomy.spec.md`「Inline Action 設計規格」。hover 時 bg `neutral-hover`,focus 時 ring。
+        </Desc>
+        <div className="overflow-x-auto">
+          <table className="text-caption border-collapse">
+            <thead><tr><Th>State</Th><Th>視覺</Th><Th>Token</Th></tr></thead>
+            <tbody>
+              <tr><Td>default</Td><Td>16px X icon, fg-muted</Td><Td mono>text-fg-muted</Td></tr>
+              <tr><Td>hover</Td><Td>24px bg circle + icon fg 變 foreground</Td><Td mono>bg-neutral-hover / text-foreground</Td></tr>
+              <tr><Td>focus</Td><Td>2px ring(鍵盤導航)</Td><Td mono>ring-ring ring-offset-1</Td></tr>
+              <tr><Td>solid appearance</Td><Td>icon 用白字(繼承 data-theme foreground)</Td><Td mono>text-foreground(inverse)</Td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <H3>非互動 Alert(無內建 open/close state)</H3>
+        <Desc>
+          Alert 本身無 open/closed state——它是 inline 容器,「顯示」= consumer 把 Alert render 進 tree,「關閉」= consumer 從 tree 移除。與 Toast(有 open 動畫 + auto-dismiss timer)語意不同。
+        </Desc>
       </div>
     </div>
   ),

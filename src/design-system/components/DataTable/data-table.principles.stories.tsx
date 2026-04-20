@@ -60,7 +60,7 @@ export const ColumnTypeRule: Story = {
   render: () => {
     const col = createColumnHelper<Product>()
     const columns = [
-      col.accessor('name', { header: 'Product', size: 180, meta: { type: 'text' } }),
+      col.accessor('name', { header: 'Product', size: 180, meta: { type: 'string' } }),
       col.accessor('category', { header: 'Category', size: 140, meta: { type: 'select', options: CATEGORY_OPTIONS } }),
       col.accessor('stock', { header: 'Stock', size: 140, meta: { type: 'select', options: STATUS_OPTIONS } }),
       col.accessor('price', { header: 'Price', size: 120, meta: { type: 'currency', prefix: '$' } }),
@@ -99,7 +99,7 @@ export const AlignmentRule: Story = {
   render: () => {
     const col = createColumnHelper<Product>()
     const columns = [
-      col.accessor('name', { header: 'Product(text → 左)', size: 200, meta: { type: 'text' } }),
+      col.accessor('name', { header: 'Product(text → 左)', size: 200, meta: { type: 'string' } }),
       col.accessor('price', { header: 'Price(currency → 右)', size: 160, meta: { type: 'currency', prefix: '$' } }),
       col.accessor('available', { header: 'Available(boolean → 中)', size: 140, meta: { type: 'boolean' } }),
     ]
@@ -135,7 +135,7 @@ export const VirtualScrollRule: Story = {
   render: () => {
     const col = createColumnHelper<Product>()
     const columns = [
-      col.accessor('name', { header: 'Product', size: 200, meta: { type: 'text' } }),
+      col.accessor('name', { header: 'Product', size: 200, meta: { type: 'string' } }),
       col.accessor('category', { header: 'Category', size: 140, meta: { type: 'select', options: CATEGORY_OPTIONS } }),
       col.accessor('price', { header: 'Price', size: 120, meta: { type: 'currency', prefix: '$' } }),
     ]
@@ -181,7 +181,7 @@ export const EmptyStateRule: Story = {
   render: () => {
     const col = createColumnHelper<Product>()
     const columns = [
-      col.accessor('name', { header: 'Product', size: 200, meta: { type: 'text' } }),
+      col.accessor('name', { header: 'Product', size: 200, meta: { type: 'string' } }),
       col.accessor('price', { header: 'Price', size: 120, meta: { type: 'currency', prefix: '$' } }),
     ]
     return (

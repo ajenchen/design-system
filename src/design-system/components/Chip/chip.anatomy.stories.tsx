@@ -120,8 +120,8 @@ export const SizeMatrix: Story = {
   ),
 }
 
-export const StateMatrix: Story = {
-  name: '狀態對照(default / hover / selected / disabled)',
+export const StateBehavior: Story = {
+  name: '狀態行為(default / hover / selected / disabled)',
   render: () => (
     <div className="flex flex-col gap-10">
       <div>

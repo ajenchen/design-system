@@ -2,8 +2,13 @@ import type { RowData } from '@tanstack/react-table'
 
 // ── Column Types ─────────────────────────────────────────────────────────────
 
+// ── Column Types ─────────────────────────────────────────────────────────────
+//
+// 命名原則:描述**資料型別**本身,不是視覺變體。命名要避開撞 Button `variant` 值。
+// `string` / `url` 是世界級 DS(Atlassian / Notion / Ant Table)的資料型別用語,
+// 跟 Button 的視覺變體 `text` / `link` 在 consumer 心智不會混淆。
 export const columnTypes = [
-  'text',
+  'string',      // 前身為 'text',因撞 Button variant="text"(文字樣式按鈕)改名
   'number',
   'currency',
   'date',
@@ -12,7 +17,7 @@ export const columnTypes = [
   'person',
   'multiPerson',
   'boolean',
-  'link',
+  'url',         // 前身為 'link',因撞 Button variant="link"(連結樣式按鈕)改名
 ] as const
 
 export type ColumnType = (typeof columnTypes)[number]
@@ -29,7 +34,7 @@ export interface ColumnTypeConfig {
 
 /** Default config per column type */
 export const columnTypeDefaults: Record<ColumnType, ColumnTypeConfig> = {
-  text:        { align: 'left' },
+  string:      { align: 'left' },
   number:      { align: 'right' },
   currency:    { align: 'right' },
   date:        { align: 'left' },
@@ -38,7 +43,7 @@ export const columnTypeDefaults: Record<ColumnType, ColumnTypeConfig> = {
   person:      { align: 'left' },
   multiPerson: { align: 'left' },
   boolean:     { align: 'left' },
-  link:        { align: 'left' },
+  url:         { align: 'left' },
 }
 
 // ── Extend TanStack Table ColumnMeta ─────────────────────────────────────────

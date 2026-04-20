@@ -86,8 +86,8 @@ export const ContainerArchitecture: Story = {
   ),
 }
 
-export const VariantThemeStrategy: Story = {
-  name: 'Variant × Theme 策略',
+export const ColorMatrix: Story = {
+  name: '色彩對照表(Variant × Theme 策略)',
   render: () => (
     <div className="flex flex-col gap-6">
       <div>

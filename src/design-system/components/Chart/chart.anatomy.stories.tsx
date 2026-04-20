@@ -148,8 +148,8 @@ export const CategoryTokens: Story = {
   ),
 }
 
-export const VisualTokens: Story = {
-  name: '視覺 token(Tooltip / Legend / Grid)',
+export const ColorMatrix: Story = {
+  name: '色彩對照表(Tooltip / Legend / Grid)',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>

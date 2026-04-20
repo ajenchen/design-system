@@ -260,8 +260,8 @@ export const ColorMatrix: Story = {
   ),
 }
 
-export const SizeSpec: Story = {
-  name: '尺寸(本元件無 size)',
+export const SizeMatrix: Story = {
+  name: '尺寸對照表',
   render: () => (
     <div className="flex flex-col gap-6">
       <div>

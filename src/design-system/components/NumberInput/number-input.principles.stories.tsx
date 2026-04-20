@@ -46,7 +46,7 @@ export const AlignmentRule: Story = {
     ]
     const col = createColumnHelper<Row>()
     const columns = [
-      col.accessor('product', { header: 'Product', size: 160, meta: { type: 'text' } }),
+      col.accessor('product', { header: 'Product', size: 160, meta: { type: 'string' } }),
       col.accessor('price', { header: 'Price', size: 120, meta: { type: 'currency', prefix: '$' } }),
       col.accessor('stock', { header: 'Stock', size: 100, meta: { type: 'number' } }),
     ]

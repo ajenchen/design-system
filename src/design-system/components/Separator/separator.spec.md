@@ -64,6 +64,19 @@ Consumer 在 JSX 裡明確放置分隔線的場景：
 - ❌ 用 `--border` token 做分隔線（應該用 `--divider`）
 - ❌ 用 `bg-border` 做 ButtonDivider 等 consumer 放置的分隔線
 
+## 為何無 Inspector / ColorMatrix / SizeMatrix / StateBehavior
+
+Separator 是**視覺分隔 primitive**(一條 1px 線),結構極薄:
+
+- **無 Inspector**:Separator 唯一變因是 `orientation`(horizontal / vertical),已在 `TokenMatrix` 對照呈現。互動 Inspector 無進一步可調 prop。
+- **無 ColorMatrix**:Separator 固定用 `--divider` token(比 border 更淡的語意分隔色),dark mode 由 semantic token 自動切換。無變體。加 color variant 會誤用成「狀態訊號」(分隔應是中性的)。
+- **無 SizeMatrix**:Separator 固定 1px 厚度(線應該是線),長度由 container 決定(`w-full` / `h-full`)。無 sm/md/lg tier。
+- **無 StateBehavior**:非互動元件,無 hover / focus / active / selected / disabled。
+
+對應 anatomy story:保留 `Overview` + `TokenMatrix`(horizontal × vertical + `--divider` vs `--border` 用法對照)。
+
+---
+
 ## 相關
 
 - `../../tokens/color/color.spec.md` — `--divider` / `--border` token 定義（「邊框 / 分隔」節）

@@ -134,6 +134,14 @@ Consumer 必須保留 `<DialogTitle>`——即使視覺不顯示，也要用 `Vi
 
 ---
 
+## 為何無 Inspector
+
+Dialog 是 modal 浮層元件,關鍵決策維度是 `maxWidth`(400/480/560/720)× `autoHeight` × `destructive` × open/close 行為——已由 `SizeMatrix`(maxWidth 4 檔) / `HeightBehavior`(viewport-fill vs autoHeight) / `DestructiveMatrix` / `StateBehavior`(open / close / ESC / overlay click) 四張矩陣 + `ColorMatrix`(layout + 視覺 token)完整覆蓋。互動 Inspector 切單一 open/close 不如結構性矩陣對照——Dialog 的正確用法是「照情境選 size / 選 autoHeight」,需要 side-by-side 比對決策。
+
+對應 anatomy story:保留 `Overview` + 元件特有 `HeightBehavior` / `DestructiveMatrix` + `SizeMatrix` + `StateBehavior` + `ColorMatrix`。
+
+---
+
 ## 相關
 
 - `../Sheet/sheet.spec.md` — 側邊滑入的輕量替代（共用 Radix Dialog base）

@@ -104,6 +104,18 @@ const config = {
 
 ---
 
+## 為何無 Inspector / SizeMatrix / StateBehavior
+
+Chart 是 **composite data-visualization** 元件,不是單一互動 primitive:
+
+- **無 Inspector**:chart 的「決定性 props」是資料(`data`)與配色(`ChartConfig`),不是單一 variant/size 切換;Inspect 面板無法呈現資料本身。改以 `Overview`(多種 chart 類型實例)+ `CategoryTokens` + `ColorMatrix` 展示 token blueprint。
+- **無 SizeMatrix**:chart 無 sm/md/lg size prop,高度由 `aspect-video`(預設)或 consumer 包 `AspectRatio` 覆寫決定(見本 spec「定位」段)。尺寸屬 container 職責,不是 chart 的變體維度。
+- **無 StateBehavior**:chart 是 passive 視覺化層,本身無 hover / focus / active / selected / disabled 互動狀態——資料點 hover 由 Recharts tooltip 處理(色彩規則已在 `ColorMatrix` 覆蓋),非 chart 元件層級的 state。
+
+對應 anatomy story:保留 `Overview` + `CategoryTokens`(元件特有 5 色 categorical token)+ `ColorMatrix`(tooltip/legend/grid 視覺 token)。
+
+---
+
 ## A11y 預設
 
 - **顏色非唯一語義**：不只靠色彩區分類別,配合 icon / label / pattern（Recharts 的 `strokeDasharray` 等）讓色盲 / 黑白列印仍可辨識

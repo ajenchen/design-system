@@ -153,6 +153,17 @@ Passive status icon(16 px)置中於 button-sized 容器,hover 時 active Button 
 | compact（預設） | Button xs = 24px ≤ 24px | — | `h-[1lh]` inline |
 | rich | Button sm = 28px > 24px | block | `h-[calc(1lh+2px+desc_lh)]` |
 
+## 為何無 Inspector / ColorMatrix
+
+FileItem 是 Family 2 List item 消費者,結構 / 色彩繼承 `item-anatomy.spec.md`:
+
+- **無 Inspector**:FileItem 決策維度是 `mode`(compact / rich)× `status`(uploading / completed / error / static)× `size`——已在 `ModeMatrix` / `SizeMatrix` / `StateBehavior` 三張矩陣完整覆蓋。互動 Inspector 不會比結構性矩陣對照更有教學價值——「選 mode 的 test / 選 status 的 test」是需要 side-by-side 比對的決策,不是單值試玩。
+- **無 ColorMatrix**:FileItem 自身無色彩變體(不像 Button / Chip 有 variant),結構色彩完全走 item-anatomy row 共用 token(`text-foreground` / `text-fg-secondary` / `bg-neutral-hover`)。只有 status 驅動的 progress bar + status icon 有色(`bg-primary` / `bg-success` / `bg-error`),已在 `StateBehavior` 的 progress bar 色彩對照表呈現。重寫 ColorMatrix = 複製 item-anatomy + StateBehavior 內容。
+
+對應 anatomy story:保留 `Overview` + `ModeMatrix`(compact vs rich 結構分歧) + `SizeMatrix` + `StateBehavior`(status 驅動的 progress + hover-swap)。
+
+---
+
 ## 相關
 
 - `../../patterns/element-anatomy/item-anatomy.spec.md` — 閱讀模式（compact / rich）

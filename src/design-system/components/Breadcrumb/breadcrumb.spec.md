@@ -131,6 +131,15 @@ Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快
 
 ---
 
+## 為何無 Inspector / ColorMatrix
+
+- **無 Inspector**:Breadcrumb 決策維度是 collapse 策略 × size × 當前頁狀態,已在 `CollapseMatrix` / `SizeMatrix` / `StateBehavior` 三張結構矩陣覆蓋。互動 Inspector(切換 size / truncate)無法呈現「路徑深度 + 斷點」這類真實場景決策——`UsageExamples` 展示實際業務路徑更直接。
+- **無 ColorMatrix**:Breadcrumb 自身無色彩變體,三種節點狀態(Link / Page / Hover)的色彩對照已完整寫在 `StateBehavior` story(視覺 token 本身就是 state 驅動)。重寫 ColorMatrix = 複製 StateBehavior。
+
+對應 anatomy story:保留 `Overview` + `CollapseMatrix` + `SizeMatrix` + `StateBehavior` + 元件特有 `UsageExamples`。
+
+---
+
 ## 相關
 
 - `Tabs` — 切換平行 view 的導覽（不同層級的 problem，breadcrumb 是階層內，Tabs 是同層切換）

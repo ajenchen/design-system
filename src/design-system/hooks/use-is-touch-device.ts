@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
  * 使用 `pointer: coarse` media query，正確區分觸控 vs 精確指標裝置。
  * 用途：Select 等元件在 mobile 退回原生 picker。
  */
-export function useIsMobile() {
+export function useIsTouchDevice() {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {

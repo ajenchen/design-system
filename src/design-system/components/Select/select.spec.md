@@ -196,6 +196,14 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 ---
 
+## 為何無 StateBehavior
+
+Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / disabled / readonly)完全繼承 `../Field/field-controls.spec.md` SSOT「Mode 狀態」。dropdown 開啟時的 MenuItem hover / selected 狀態由 MenuItem primitive own(`patterns/element-anatomy/item-anatomy.spec.md`)。Select 層級無自有 state 行為。重寫 StateBehavior = 複製 Field Controls + MenuItem SSOT 內容,雙邊漂移風險。
+
+對應 anatomy story:保留 `Overview` + `Inspector` + `ColorMatrix` + `SizeMatrix`。Field-level state 見 Input `StateBehavior` + field-controls.spec.md;item-level state 見 MenuItem `ColorMatrix`。
+
+---
+
 ## 相關
 
 - `segmented-control.spec.md` — 2-5 個緊湊互斥切換；「何時不用」的主要去處

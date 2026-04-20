@@ -221,6 +221,15 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 
 ---
 
+## 為何無 Inspector / ColorMatrix
+
+- **無 Inspector**:SegmentedControl 決策維度是 `size` × `fullWidth` × `iconOnly`,已在 `SizeMatrix` / `FullWidthMatrix` / `IconOnlyMatrix` 三張矩陣完整覆蓋。互動 Inspector 切單組合不如矩陣對照——「fullWidth 三種尺寸」「iconOnly 單例 vs 整組」這類設計決策是結構性並排比較題,不是單組合試玩題。
+- **無 ColorMatrix**:SegmentedControl 繼承 Button family 的視覺系統(見「與 Button 的血緣」段),**selected segment 走 tertiary Button 底色**(`bg-surface-raised` + `border`),非 selected segment 走 text Button 底色(透明 + hover `neutral-hover`)——色彩完全由 Button variant 決定,非 SegmentedControl 自有變體。重寫 ColorMatrix = 複製 Button tertiary/text 的 ColorMatrix。狀態色已在 `StateBehavior` 覆蓋。
+
+對應 anatomy story:保留 `Overview` + `SizeMatrix` + `StateBehavior` + 元件特有 `FullWidthMatrix` + `IconOnlyMatrix`。
+
+---
+
 ## 相關
 
 - `../Button/button.spec.md` — item 內部結構與 size 系統的來源

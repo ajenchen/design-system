@@ -54,7 +54,7 @@ export const VsSpinnerRule: Story = {
             <span className="text-body flex-1">產品路線圖.pdf</span>
             <span className="text-caption text-fg-muted tabular-nums">1.4 / 3.0 MB</span>
           </div>
-          <Progress value={47} status="primary" size="md" />
+          <Progress value={47} status="inProgress" size="md" />
         </Frame>
         <Label>✅ 檔案上傳:bytes 已知 / 總大小已知 → Progress</Label>
 
@@ -74,7 +74,7 @@ export const VsSpinnerRule: Story = {
             <FileText size={16} className="text-fg-muted" />
             <span className="text-body flex-1">產生季度報表中...</span>
           </div>
-          <Progress value={0} status="primary" size="md" />
+          <Progress value={0} status="inProgress" size="md" />
         </Frame>
         <Label warn>❌ 若無法量化卻硬用 Progress(永遠卡 0% 或亂跳):使用者會以為壞掉 → 改用 Spinner</Label>
       </Rule>
@@ -95,7 +95,7 @@ export const StatusRule: Story = {
             <Paperclip size={16} className="text-fg-muted" />
             <span className="text-body flex-1">Q1_財報.xlsx</span>
           </div>
-          <Progress value={42} status="primary" size="md" affix="value" />
+          <Progress value={42} status="inProgress" size="md" affix="value" />
         </Frame>
         <Label>✅ 上傳中用 primary,affix 顯示進度百分比</Label>
 
@@ -149,7 +149,7 @@ export const SizeRule: Story = {
             <FileText size={16} className="text-fg-muted shrink-0" />
             <span className="text-body flex-1">Acme Corp 客戶報表</span>
             <div className="w-[180px]">
-              <Progress value={72} status="primary" size="sm" affix="value" />
+              <Progress value={72} status="inProgress" size="sm" affix="value" />
             </div>
           </div>
         </Frame>
@@ -160,7 +160,7 @@ export const SizeRule: Story = {
             <Paperclip size={16} className="text-fg-muted" />
             <span className="text-body flex-1">附件_會議記錄.docx</span>
           </div>
-          <Progress value={58} status="primary" size="md" affix="value" />
+          <Progress value={58} status="inProgress" size="md" affix="value" />
         </Frame>
         <Label>✅ 上傳列表每筆用 md(預設),一般資訊密度</Label>
 
@@ -170,7 +170,7 @@ export const SizeRule: Story = {
             <span className="text-body-lg font-medium flex-1">匯入客戶名單</span>
             <span className="text-caption text-fg-muted tabular-nums">812 / 1,250</span>
           </div>
-          <Progress value={65} status="primary" size="lg" affix="value" />
+          <Progress value={65} status="inProgress" size="lg" affix="value" />
           <p className="text-footnote text-fg-muted mt-2">處理中,預計剩餘 28 秒</p>
         </Frame>
         <Label>✅ 整頁的 prominent import 流程用 lg,使用者正在盯著看</Label>
@@ -191,7 +191,7 @@ export const AffixRule: Story = {
           <div className="flex items-center gap-2 mb-2">
             <span className="text-body flex-1">儲存空間</span>
           </div>
-          <Progress value={78} status="primary" size="md" affix="value" />
+          <Progress value={78} status="inProgress" size="md" affix="value" />
         </Frame>
         <Label>✅ 配額顯示:affix=value,使用者要知道確切百分比</Label>
 
@@ -216,7 +216,7 @@ export const AffixRule: Story = {
           </div>
           <Progress
             value={42}
-            status="primary"
+            status="inProgress"
             size="md"
             affix={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消上傳" />}
           />
@@ -230,7 +230,7 @@ export const AffixRule: Story = {
           </div>
           <Progress
             value={66}
-            status="primary"
+            status="inProgress"
             size="md"
             affix={<span className="text-caption text-fg-muted tabular-nums shrink-0">3.3 / 5.0 MB</span>}
           />
@@ -248,7 +248,7 @@ export const AffixRule: Story = {
             <span className="text-body flex-1">附件.zip</span>
             <span className="text-caption text-fg-muted tabular-nums">55%</span>
           </div>
-          <Progress value={55} status="primary" size="sm" />
+          <Progress value={55} status="inProgress" size="sm" />
         </Frame>
         <Label>✅ 上方已有 55% 文字 → bar 不加 affix,避免重複</Label>
       </Rule>
@@ -304,14 +304,14 @@ export const DontRule: Story = {
                 <Paperclip size={16} className="text-fg-muted" />
                 <span className="text-body flex-1 truncate">簡報素材.zip</span>
               </div>
-              <Progress value={62} status="primary" size="md" affix="value" />
+              <Progress value={62} status="inProgress" size="md" affix="value" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Paperclip size={16} className="text-fg-muted" />
                 <span className="text-body flex-1 truncate">截圖.png</span>
               </div>
-              <Progress value={0} status="primary" size="md" />
+              <Progress value={0} status="inProgress" size="md" />
             </div>
           </div>
         </Frame>
@@ -323,7 +323,7 @@ export const DontRule: Story = {
         note="status 三選一是系統決定的語意。consumer 要紅、綠、藍以外的色 → 提到系統層討論是否新增 status,不要每個消費者自己用 className override fill 色。"
       >
         <Frame>
-          <Progress value={55} status="primary" size="md" />
+          <Progress value={55} status="inProgress" size="md" />
         </Frame>
         <Label>✅ 走 status token(primary / success / error),不 override 色值</Label>
       </Rule>

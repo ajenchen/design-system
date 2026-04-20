@@ -211,11 +211,11 @@ export const SectionMatrix: Story = {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   3. StatusColorMatrix — 4 status × avatar dot + bg color mapping
+   3. ColorMatrix — 4 status × avatar dot + bg color mapping
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export const StatusColorMatrix: Story = {
-  name: 'Status 色彩對照',
+export const ColorMatrix: Story = {
+  name: '色彩對照表(Status)',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>

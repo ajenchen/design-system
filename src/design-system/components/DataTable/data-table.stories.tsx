@@ -61,8 +61,8 @@ function generateLargeData(count: number): Product[] {
 const col = createColumnHelper<Product>()
 
 const baseColumns = [
-  col.accessor('sku', { header: 'SKU', size: 100, minSize: 80, meta: { type: 'text' } }),
-  col.accessor('name', { header: 'Product', size: 280, minSize: 120, meta: { type: 'text' } }),
+  col.accessor('sku', { header: 'SKU', size: 100, minSize: 80, meta: { type: 'string' } }),
+  col.accessor('name', { header: 'Product', size: 280, minSize: 120, meta: { type: 'string' } }),
   col.accessor('category', { header: 'Category', size: 120, meta: { type: 'select' } }),
   col.accessor('stock', { header: 'Stock', size: 110, meta: { type: 'select' } }),
   col.accessor('seller', { header: 'Seller', size: 150, meta: { type: 'person' } }),
@@ -79,12 +79,12 @@ const columnsWithPrice = [
 ]
 
 const columnsWithNote = [
-  col.accessor('sku', { header: 'SKU', size: 100, meta: { type: 'text' } }),
-  col.accessor('name', { header: 'Product', size: 200, meta: { type: 'text' } }),
+  col.accessor('sku', { header: 'SKU', size: 100, meta: { type: 'string' } }),
+  col.accessor('name', { header: 'Product', size: 200, meta: { type: 'string' } }),
   col.accessor('note', {
     header: 'Note',
     size: 300,
-    meta: { type: 'text', wrap: true },
+    meta: { type: 'string', wrap: true },
   }),
   col.accessor('category', { header: 'Category', size: 120, meta: { type: 'select' } }),
   col.accessor('seller', { header: 'Seller', size: 150, meta: { type: 'person' } }),
@@ -136,7 +136,7 @@ export const ColumnTypes: Story = {
       { value: 'food', label: 'Food' },
     ]
     const typeCols = [
-      typeCol.accessor('name', { header: 'Text', size: 160, meta: { type: 'text' } }),
+      typeCol.accessor('name', { header: 'Text', size: 160, meta: { type: 'string' } }),
       typeCol.accessor('quantity', { header: 'Number', size: 90, meta: { type: 'number' } }),
       typeCol.accessor('price', { header: 'Currency', size: 100, meta: { type: 'currency', prefix: '$' } }),
       typeCol.accessor('date', { header: 'Date', size: 110, meta: { type: 'date' } }),
@@ -144,7 +144,7 @@ export const ColumnTypes: Story = {
       typeCol.accessor('status', { header: 'Select', size: 110, meta: { type: 'select', options: statusOptions } }),
       typeCol.accessor('tags', { header: 'MultiSelect', size: 180, meta: { type: 'multiSelect', options: tagOptions } }),
       typeCol.accessor('seller', { header: 'Person', size: 140, meta: { type: 'person' } }),
-      typeCol.accessor('url', { header: 'Link', size: 160, meta: { type: 'link' } }),
+      typeCol.accessor('url', { header: 'Link', size: 160, meta: { type: 'url' } }),
     ]
     const typeData: TypeDemo[] = [
       { name: 'Wireless Headphones', quantity: 142, price: 2490, date: '2025-03-12', active: true, status: 'in_stock', tags: ['electronics', 'lifestyle'], seller: { name: 'Alice Wang', avatarUrl: 'https://i.pravatar.cc/40?u=alice' }, url: 'https://example.com/headphones' },

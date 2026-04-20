@@ -15,19 +15,22 @@ import { cn } from '@/lib/utils'
  * 兩者視覺與語意都不同,consumer 依「是否有進度可量化」擇一。
  *
  * ── 3 狀態 × 3 size ──
- * status: primary(進行中藍) / success(完成綠) / error(失敗紅)
+ * status: inProgress(進行中藍) / success(完成綠) / error(失敗紅)
+ *   ^ 命名理由:`status` 是 lifecycle(在途 / 終態),不是視覺 emphasis 階。前身
+ *   `primary` 會撞 Button `variant="primary"`(emphasis 最高階),改用世界級
+ *   lifecycle 慣例(Polaris `inProgress` / Ant Progress `active`)。
  * size:   sm=2px / md=4px / lg=6px(track 高度;bar fill 等高)
  *
  * ── affix(右側附加) ──
  * `affix="value"` → 顯示 `{value}%` 文字
- * `affix="status-icon"` → 顯示狀態 icon(success ✓ / error ✗;primary 時無 icon)
+ * `affix="status-icon"` → 顯示狀態 icon(success ✓ / error ✗;inProgress 時無 icon)
  * `affix={<custom />}` → consumer 客製
  * 不傳 → 純 bar
  */
 
 const TRACK_H = { sm: 2, md: 4, lg: 6 } as const
 const STATUS_FILL = {
-  primary: 'bg-primary',
+  inProgress: 'bg-primary',
   success: 'bg-success',
   error: 'bg-error',
 } as const
@@ -39,8 +42,8 @@ const STATUS_ICON = {
 export interface ProgressProps extends Omit<React.ComponentProps<typeof ProgressPrimitive.Root>, 'value'> {
   /** 當前進度 0-100 */
   value: number
-  /** 狀態色 */
-  status?: 'primary' | 'success' | 'error'
+  /** 狀態色(lifecycle,非 emphasis 階) */
+  status?: 'inProgress' | 'success' | 'error'
   /** bar 高度:sm=2 / md=4 / lg=6 */
   size?: 'sm' | 'md' | 'lg'
   /** 右側附加 */
@@ -51,7 +54,7 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
   (
     {
       value,
-      status = 'primary',
+      status = 'inProgress',
       size = 'md',
       affix,
       className,
@@ -72,7 +75,7 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
         </span>
       )
     } else if (affix === 'status-icon') {
-      const s = status !== 'primary' ? STATUS_ICON[status] : null
+      const s = status !== 'inProgress' ? STATUS_ICON[status] : null
       if (s) affixNode = <s.Icon size={16} className={cn('shrink-0', s.className)} aria-hidden />
     } else if (React.isValidElement(affix) || typeof affix === 'string' || typeof affix === 'number') {
       affixNode = affix

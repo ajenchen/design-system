@@ -20,21 +20,56 @@ const twMerge = extendTailwindMerge({
         'text-h1', 'text-h2', 'text-h3', 'text-h4', 'text-h5', 'text-h6',
         'text-body-lg', 'text-body', 'text-caption', 'text-footnote',
       ],
-      // 自訂 text-color utilities(對應 globals.css 的 --color-* @theme bridge)
-      // 任何新增的 text-{semantic-name} color utility 都必須在這裡登記,
-      // 否則 tailwind-merge 會誤判成 font-size 與 typography classes 衝突
+      // 自訂 text-color utilities(對應 semantic.css 的 `@theme inline --color-*` bridge)。
+      //
+      // 任何新增的 text-{semantic-name} color utility 都必須在這裡登記,否則
+      // tailwind-merge 會誤判成 font-size 與 typography 衝突(歷史 bug:
+      // text-body + text-fg-secondary 被 strip)。
+      //
+      // 完整家族對齊 semantic.css: 5 狀態色(primary/error/success/warning/info)
+      // × 3 互動階(base/hover/active)+ text(on-subtle-bg)+ subtle(含 primary)
+      // + notification(紅 badge)+ neutral foreground 四階。
       'text-color': [
+        // Neutral foreground 家族
         'text-foreground',
         'text-fg-secondary',
         'text-fg-muted',
         'text-fg-disabled',
         'text-inverse-fg',
-        // 未來需 text-inverse-fg-secondary/muted 時,先在 semantic.css 加 token 再註冊這裡,避免 ghost registration
+
+        // Status 基色(base)
+        'text-primary',
+        'text-error',
+        'text-success',
+        'text-warning',
+        'text-info',
+        'text-notification',
+
+        // Status 互動階(hover / active)
+        'text-primary-hover',
+        'text-primary-active',
+        'text-error-hover',
+        'text-error-active',
+        'text-success-hover',
+        'text-success-active',
+        'text-warning-hover',
+        'text-warning-active',
+        'text-info-hover',
+        'text-info-active',
+
+        // on-subtle-bg 版本(深色文字配淺色底)
+        'text-primary-text',
         'text-error-text',
         'text-success-text',
         'text-warning-text',
         'text-info-text',
-        'text-primary-text',
+
+        // Subtle 文字(少用,保持完整家族一致)
+        'text-primary-subtle',
+        'text-error-subtle',
+        'text-success-subtle',
+        'text-warning-subtle',
+        'text-info-subtle',
       ],
     },
   },

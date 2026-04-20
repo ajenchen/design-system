@@ -128,7 +128,7 @@ const SidebarPreview = ({
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const Overview: Story = {
-  name: '1. 元件總覽',
+  name: '元件總覽',
   render: () => (
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-2">
@@ -253,8 +253,8 @@ export const Overview: Story = {
 // 2. Size 對照
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const Sizes: Story = {
-  name: '2. Size 對照（sm / md / lg）',
+export const SizeMatrix: Story = {
+  name: '尺寸對照表',
   render: () => (
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-2">
@@ -336,8 +336,8 @@ export const Sizes: Story = {
 // 3. 色彩 / 狀態對照
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const Colors: Story = {
-  name: '3. 色彩 × 狀態對照',
+export const ColorMatrix: Story = {
+  name: '色彩對照表',
   render: () => (
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-2">
@@ -426,8 +426,8 @@ export const Colors: Story = {
 // 4. 尺寸 / 寬度 token
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const Tokens: Story = {
-  name: '4. 寬度與 Chrome Token',
+export const ChromeTokens: Story = {
+  name: '寬度與 Chrome Token',
   render: () => (
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-2">

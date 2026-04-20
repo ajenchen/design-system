@@ -78,6 +78,19 @@ Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>`
 
 ---
 
+## 為何無 Inspector / ColorMatrix / SizeMatrix / StateBehavior
+
+Command 是 **internal primitive**(SelectMenu 底層消費,app 不直接使用,見本 spec「分類」段),結構規格完全繼承既有 primitive:
+
+- **無 Inspector**:Command 無自己的決策性 prop(variant / size / severity),behavior 全部由 cmdk library 處理。該讓消費者 inspect 的是 **SelectMenu**(公開消費入口),不是 Command 本身。
+- **無 ColorMatrix**:Command 的視覺(`CommandItem` / `CommandGroup` / `CommandInput` / `CommandEmpty`)全部繼承既有 DS primitive 的 token(MenuItem row / Input field / Empty layout),無自己的色彩決策——色彩漂移由 primitive layer 控制。
+- **無 SizeMatrix**:Command 搜尋框與 list items 的尺寸由 **Menu block tier**(consumer SelectMenu 決定 compact / reading),Command 自身無 size prop(見本 spec「禁止事項」:Command 搜尋框不對齊 Field size token)。
+- **無 StateBehavior**:Command item 的 selected / hover / disabled 走 MenuItem primitive state(`patterns/element-anatomy/item-anatomy.spec.md`);Command 層級僅處理 search 過濾與鍵盤導覽,那是 cmdk behavior 不是視覺 state。
+
+對應 anatomy story:保留 `Overview`(展示 internal primitive 的 API surface——CommandInput / CommandList / CommandGroup / CommandItem / CommandEmpty)。深度視覺 / 尺寸對照請查 SelectMenu(consumer)與 MenuItem(item primitive)的 anatomy。
+
+---
+
 ## 相關
 
 - `../SelectMenu/select-menu.spec.md` — 主要消費者（Select / Combobox / PeoplePicker 的 searchable 浮層）

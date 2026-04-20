@@ -337,8 +337,8 @@ export const StateBehavior: Story = {
   ),
 }
 
-export const TokenMatrix: Story = {
-  name: 'Token 對照',
+export const ColorMatrix: Story = {
+  name: '色彩對照表(layout + 視覺 token)',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>

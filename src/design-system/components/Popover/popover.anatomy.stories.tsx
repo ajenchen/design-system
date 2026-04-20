@@ -89,8 +89,8 @@ export const PlacementMatrix: Story = {
   ),
 }
 
-export const VisualTokens: Story = {
-  name: '色彩對照',
+export const ColorMatrix: Story = {
+  name: '色彩對照表',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
@@ -117,8 +117,8 @@ export const VisualTokens: Story = {
   ),
 }
 
-export const SizeBehavior: Story = {
-  name: '尺寸行為',
+export const SizeMatrix: Story = {
+  name: '尺寸對照表',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>

@@ -13,7 +13,7 @@ import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avata
 import { cn } from '@/lib/utils'
 
 const meta: Meta = {
-  title: 'Design System/Patterns/Item Layout',
+  title: 'Design System/Patterns/Item Anatomy',
   parameters: { layout: 'padded' },
 }
 export default meta

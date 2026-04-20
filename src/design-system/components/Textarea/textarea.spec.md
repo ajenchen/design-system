@@ -84,6 +84,17 @@ sm 與 md 視覺相同（純命名 mapping，對齊 Field family）。
 
 ---
 
+## 為何無 Inspector / StateBehavior
+
+Textarea 是 **Field Controls family 的多行變體**,共用規則由 `../Field/field-controls.spec.md` own:
+
+- **無 Inspector**:多行輸入的關鍵決策是「行數(rows)」與「resize 行為」,互動 Inspector 無法呈現「使用者輸入長文」的真實感——已由 `SizeMatrix`(各 size × rows 組合) + `RowsResizeMatrix`(auto-resize vs fixed rows vs resize-y)完整覆蓋。其他 prop(disabled / readonly / invalid)由 Field family 共用 pattern 管理。
+- **無 StateBehavior**:Textarea 的互動狀態(focus ring / invalid / disabled / readonly)完全繼承 Field Controls SSOT(`field-controls.spec.md`「Mode 狀態」),無 Textarea 特有的 state 行為。重寫 StateBehavior = 與 Field family 漂移風險。
+
+對應 anatomy story:保留 `Overview` + `SizeMatrix` + `ModeMatrix`(edit/readonly/disabled continuation of Field) + `ColorMatrix` + 元件特有 `RowsResizeMatrix`。
+
+---
+
 ## 相關
 
 - `../Input/input.spec.md` — 單行文字的對應元件

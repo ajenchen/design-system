@@ -270,6 +270,16 @@ Slider 的 `readonly` 等同於 `disabled`——一個不能操作的 slider 本
 
 ---
 
+## 為何無 Inspector
+
+Slider 決策維度是 `size`(容器外高)× `range mode`(single / range)× track / range / thumb 的色彩綁定規則——已由 `SizeMatrix` / `StateBehavior` / `ColorMatrix` / 元件特有 `ColorBindingRule`(range ↔ thumb border 綁定規則) / `KeyboardMatrix`(Radix 原生鍵盤) 五張 story 完整覆蓋。
+
+互動 Inspector 拉動 thumb 無法呈現「range 色和 thumb border 永遠同 token」這類設計綁定規則——這是 side-by-side 對照題,不是單值拉動題。鍵盤互動已由 `KeyboardMatrix` 以對照表呈現比 Inspector 試玩更完整。
+
+對應 anatomy story:保留 `Overview` + `ColorMatrix` + `SizeMatrix` + `StateBehavior` + 元件特有 `ColorBindingRule` + `KeyboardMatrix`。
+
+---
+
 ## 相關
 
 - `../NumberInput/number-input.spec.md` — 精確數字輸入的對應元件

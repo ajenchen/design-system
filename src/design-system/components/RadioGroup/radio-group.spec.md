@@ -44,6 +44,14 @@ RadioGroup 是**互斥單選且全選項可見**的表單控件——從 2-5 個
 
 ---
 
+## 為何無 StateBehavior
+
+RadioGroup 的互動狀態(default / hover / checked / disabled / focus)**與 Checkbox 共用同一套 SelectionItem 佈局 + 狀態規則**(見「與 Checkbox 的差異」段表格描述),由 Checkbox 的 StateBehavior story own。RadioGroup 只改 selection model(互斥),不改 state 視覺。重寫 StateBehavior = 與 Checkbox 漂移風險(圓圈 vs 方框形狀差異已由 cva 控制,state 色完全共用)。
+
+對應 anatomy story:保留 `Overview` + `Inspector` + `ColorMatrix` + `SizeMatrix`。互動 state 見 Checkbox 的 `StateBehavior`。
+
+---
+
 ## 相關
 
 - `../Checkbox/checkbox.spec.md` — 共用規則（SelectionItem 佈局 / clamp 政策 / 視覺語言）

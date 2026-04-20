@@ -83,8 +83,8 @@ export const SizeMatrix: Story = {
   ),
 }
 
-export const StateMatrix: Story = {
-  name: '狀態(ON / OFF / disabled / readonly)',
+export const StateBehavior: Story = {
+  name: '狀態行為(ON / OFF / disabled / readonly)',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
