@@ -54,6 +54,7 @@ const ARGS_KV = Object.fromEntries(
 )
 const AUTO_START = ARGS_SET.has('--auto-start')
 const HEADED = ARGS_SET.has('--headed')
+const RETINA = ARGS_SET.has('--retina') // 預設 1x,Layer B AI 可讀(2x 超 2000px 限制);--retina opt-in for debug
 const SCOPE = ARGS_KV['--scope'] ?? 'changed' // changed | all | component:<name>
 const URLS = ARGS_KV['--urls'] // CSV of URLs,overrides scenario mode
 
@@ -288,10 +289,14 @@ async function runGeometryAssertions(page, assertions) {
 
 // ── Main ────────────────────────────────────────────────────────────────────
 
-async function auditScenario(browser, scenario) {
+async function auditScenario(browser, scenario, opts = {}) {
+  // deviceScaleFactor 預設 1(非 retina)— 2x retina 會讓 snapshot 寬度達 2880px,
+  // 超過 AI sub-agent 的 image-dimension 限制(2000px),導致 Layer B 跑不了。
+  // Mechanical Layer A 用 1x 夠用(contrast / geometry 量測與 DPI 無關)。
+  // 若真需 retina debug,傳 opts.retina=true。
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
-    deviceScaleFactor: 2,
+    deviceScaleFactor: opts.retina ? 2 : 1,
   })
   const page = await context.newPage()
   // scenario 可有 .url(任意 URL,for product app routes)或 .id(Storybook story id)
@@ -437,7 +442,7 @@ async function main() {
 
   for (const scenario of scopedScenarios) {
     console.log(`[visual-audit] 稽核 ${scenario.id ?? scenario.url}`)
-    const r = await auditScenario(browser, scenario)
+    const r = await auditScenario(browser, scenario, { retina: RETINA })
     results.push(r)
     if (r.contrast?.violations?.length) totalContrastViolations += r.contrast.violations.length
     if (r.geometryViolations?.length) totalGeometryViolations += r.geometryViolations.length

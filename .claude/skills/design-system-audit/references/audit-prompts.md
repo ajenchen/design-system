@@ -4,8 +4,27 @@ Each prompt is self-contained — designed to paste into an `Agent` call with `r
 
 All prompts start with:
 ```
-Working directory: /Users/alanchen/我的雲端硬碟/my-project
+Working directory: /Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project
 ```
+
+## ⚠️ 必先讀的 canonical(所有 sub-agent 跑前強制)
+
+**sub-agent 最常見失誤:不讀 scope defaults + rationale 就判 violation,造成 ~60% false positive**。每個 prompt 執行前**強制**先讀:
+
+1. `CLAUDE.md` 的 `# Meta-Pattern 預警`(M1-M6 meta-principles)
+2. `CLAUDE.md` 的 `# SSOT 消費 canonical`(做 X 前必查 Y 對照表)
+3. `CLAUDE.md` 的 `# 稽核 vs 執行 分權 canonical`(flag 是提議,不是 auto-fix)
+4. `CLAUDE.md` 的 `# Spec 規則` 的「Scope 預設」節(Field 家族 / pure wrapper / semantic token 自動 scope 豁免)
+5. 每個 Consistency 類 dim:flag violation 前**必先 grep 元件 spec.md 整個檔案**找 rationale;有任何一段明文(`##`/`###`/「為什麼」/「rationale」/「對照」)觸及 deviation 原因 → 不是 violation 是 `deviation ✓`
+
+### 常見 false positive(記憶)
+
+- **「缺 dark mode 覆蓋」** → 若 spec 寫「semantic token 自動處理(見 color.spec.md)」或元件用 `--primary` / `--fg` 等 semantic token = **自動豁免**
+- **「缺 empty state」** → 若 spec 寫「empty 由 consumer 用 `<Empty>`」= **豁免**
+- **「SSOT reciprocal 缺」** → SSOT pointer 可是 inline prose 不一定是 `##` heading(例:RadioGroup line 24 prose pointer 就足夠)。flag 前 grep 對方 spec 完整,**找不到 target 的 anchor 才是 violation**
+- **「7-dim 7 維度不足」** → scope defaults 豁免「Internal 類 / wrapper 類 / 互動極少類」;flag 前驗證 scope default 是否適用
+- **「anatomy 缺 Inspector / SizeMatrix」** → applicable-where-meaningful policy(見 `.claude/skills/story-writing/references/anatomy-standard.md`);AspectRatio 沒 Inspector / Badge 沒 SizeMatrix 都可能是 N/A + 有 rationale。**先 grep spec 是否有「無 X story,因為...」段**
+- **「ARIA / tabIndex 不對」** → Radix primitives 內建 roving-tabindex / focus management。flag 前驗證該元件是否 wrap Radix;wrap 就豁免
 
 ## Dimension Type Taxonomy (CLAUDE.md「Consistency Audit 原則」)
 
@@ -16,7 +35,10 @@ Every dimension below is tagged **Absolute** or **Consistency** so sub-agents ap
 | **Absolute** | Violation = bug regardless of context. No rationale exempts. Fix required. | `actual == canonical` else VIOLATION |
 | **Consistency** | Canonical behavior defined; deviation allowed IF documented rationale in designated home. | `actual == canonical OR (actual != canonical AND rationale present)` else VIOLATION |
 
-**Sub-agent protocol**: Before reporting a finding as VIOLATION on a Consistency dim, you **must** search the designated rationale home (usually element `spec.md`). Finding a rationale paragraph referencing the deviation = NOT a violation; report as "deviation with rationale ✓" instead.
+**Sub-agent protocol(強化,2026-04-21)**: Consistency 類 finding 必走 3 步 before 回報 VIOLATION:
+1. Grep 元件 spec.md 全文(不只 anchor 區)— 找 deviation 對應的 rationale prose
+2. 檢查 scope defaults 是否適用(Field 家族 / semantic token / wrapper 類 / Radix 包)
+3. 兩者皆不豁免 → VIOLATION;任一豁免 → `deviation ✓`(仍列出但不 block)
 
 Every dimension header below has three lines:
 - **Type**: Absolute / Consistency
