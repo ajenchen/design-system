@@ -12,10 +12,13 @@ export default meta
 
 const noop = () => {}
 
-// FileItem 不用 field-height，24px/37px = 65% ≤ 75% → Button
-// rich 用 sm，compact 用 xs
-const deleteBtn = <Button variant="text" size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={noop} />
-const deleteBtnXs = <Button variant="text" size="xs" iconOnly startIcon={Trash2} aria-label="刪除" onClick={noop} />
+// FileItem row dedicated action region(2026-04-22 canonical):Button size-pair row tier
+// (rich=sm, compact=xs)。Delete 屬 dismiss 視覺類,用 `dismiss` prop 自動套:
+//   - variant="text" + iconOnly(強制)
+//   - Icon 色 override fg-muted → hover foreground(跟 Inline Action dismiss 視覺一致)
+// 詳 button.spec.md「Dismiss 視覺類」+ patterns/element-anatomy/item-anatomy.spec.md
+const deleteBtn = <Button size="sm" dismiss startIcon={Trash2} aria-label="刪除" onClick={noop} />
+const deleteBtnXs = <Button size="xs" dismiss startIcon={Trash2} aria-label="刪除" onClick={noop} />
 
 export const Rich = {
   name: 'Rich（上傳狀態）',

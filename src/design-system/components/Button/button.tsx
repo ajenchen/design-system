@@ -211,6 +211,25 @@ export interface ButtonProps
   endIcon?: LucideIcon
   /** Icon-only 模式：移除 padding，變為正方形（必須同時設定 aria-label） */
   iconOnly?: boolean
+  /**
+   * Dismiss 視覺類(cross-implementation dimming canonical)。用於 row dedicated region 的 close / delete /
+   * remove / clear 按鈕(callback 語意為 onClose / onDismiss / onRemove / onClear)。
+   *
+   * 自動套用:
+   * - `variant="text"`(強制,即使傳其他 variant 也 override)
+   * - `iconOnly=true`(強制)
+   * - Icon 色 override 為 `fg-muted` → hover `foreground`(跟 Inline Action dismiss 視覺一致)
+   *
+   * 目的:dismiss 視覺弱化不管實作(Inline Action 或 Button),cross-implementation 一致 —
+   * user 不該感受到 dismiss 視覺差異。
+   *
+   * 典型 case:FileItem / DataTable row 內的 delete / remove(row dedicated region 用 Button,
+   * 非 Inline Action)。
+   *
+   * 詳見 button.spec.md「Dismiss 視覺類」段 + patterns/element-anatomy/item-anatomy.spec.md
+   * 「Dismiss 按鈕 canonical」段。
+   */
+  dismiss?: boolean
   /** 載入中狀態：startIcon 替換為 spinner，自動 disabled；badge / endIcon 維持顯示以避免 layout shift */
   loading?: boolean
   /** 撐滿父容器寬度 */
@@ -247,6 +266,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       overlayBadge,
       endIcon: EndIcon,
       iconOnly = false,
+      dismiss = false,
       loading = false,
       fullWidth = false,
       pressed,
@@ -259,6 +279,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // ── FieldContext：在 Field 內時自動讀 size，讓 Button 跟 Input 同高 ──
     const fieldCtx = useFieldContext?.()
     const resolvedSize = size ?? (fieldCtx?.size as typeof size) ?? 'md'
+
+    // ── Dismiss 視覺類 override(2026-04-22 cross-implementation dimming canonical) ──
+    // dismiss=true 強制:variant="text" + iconOnly=true + icon 色弱化(fg-muted → hover foreground)
+    // 跟 Inline Action dismiss 視覺一致。詳見 button.spec.md「Dismiss 視覺類」。
+    const resolvedIconOnly = iconOnly || dismiss
 
     // ── Dev-mode warning:overlayBadge 只適用 iconOnly ──
     // 有 label 的 Button 傳入 overlayBadge 會被忽略(只 render icon / 不渲染 overlay slot),
@@ -273,7 +298,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // shadcn compat:AlertDialog、Toast 等元件內部會傳入這些 alias,
     // 在此靜默轉換,不暴露到型別或自動完成。
+    // dismiss=true 強制 variant=text(dismiss canonical);override 其他 variant 傳入。
     const resolvedVariant: InternalVariant =
+      dismiss ? 'text' :
       (variantProp as string) === 'destructive' ? 'primary' :
       (variantProp as string) === 'ghost'        ? 'text'    :
       (variantProp as InternalVariant) ?? 'primary'
@@ -311,7 +338,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           // iconOnly 鐵律:width === height(即使 children / badge / loading 被誤傳,
           // aspect-square 仍強制方形)。padding 用 calc 保 icon 在正中心,aspect-square
           // 只是雙重保險,不影響 padding 計算。
-          iconOnly && cn(ICON_ONLY_PX[resolvedSize], 'aspect-square min-w-0 gap-0'),
+          resolvedIconOnly && cn(ICON_ONLY_PX[resolvedSize], 'aspect-square min-w-0 gap-0'),
+          // Dismiss 視覺弱化:override Button text variant 預設 foreground 為 fg-muted → hover foreground
+          // 跟 Inline Action dismiss 視覺一致(cross-implementation dimming canonical)
+          dismiss && 'text-fg-muted hover:text-foreground',
           resolvedFullWidth && 'w-full',
         )}
         ref={ref}
@@ -325,7 +355,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {loading ? (
           <CircularProgress size={iconSize} className="text-current" />
         ) : StartIcon ? (
-          iconOnly && overlayBadge ? (
+          resolvedIconOnly && overlayBadge ? (
             // Overlay badge canonical:wrapper 貼 icon 尺寸,badge 中心對齊 icon top-right corner
             // (Material BadgedBox / iOS App icon),不是 button chrome 角。
             //
@@ -359,7 +389,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // icon-only + aria-label → 自動包 Tooltip（tooltip 是元件保證的行為）
     // 不建立獨立 TooltipProvider——依賴全域 Provider，
     // 這樣所有 tooltip 共享同一組 delay 參數和 warm-up 機制
-    if (iconOnly && typeof ariaLabel === 'string' && !asChild) {
+    if (resolvedIconOnly && typeof ariaLabel === 'string' && !asChild) {
       return (
         <Tooltip>
           <TooltipTrigger asChild>{buttonEl}</TooltipTrigger>

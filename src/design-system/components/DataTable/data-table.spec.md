@@ -163,7 +163,17 @@ Header 的對齊永遠與該欄 body cell 一致。
 
 每列最右側可配置操作（編輯、刪除、複製等）。位於 right-pinned region，不參與水平捲動。
 
-**元件：** `Button variant="text" size="xs" iconOnly`——Row action 是獨立的 Button，不是 Inline Action（Inline Action 是嵌入在其他元件內部的，如 Tag dismiss）。
+**元件 canonical(2026-04-22 精化)**:Row actions 位於 row 的 **dedicated action region**(frozen column + `border-divider` 分隔),按 `patterns/element-anatomy/item-anatomy.spec.md` predicate 屬「row dedicated region」→ **Button iconOnly, variant="text", size 對稱 row tier**:
+
+| Row size | Button size |
+|----------|-------------|
+| `sm`(28px) | `sm`(28 box,16 icon) |
+| `md`(32px,預設) | `md`(32 box,16 icon) |
+| `lg`(40px) | `lg`(36 box,20 icon) |
+
+**為什麼 size-pair row tier**:row 內其他元件(InputDisplay / Badge / 自訂 cell render)都是按 row size 用 sm/md/lg 變體,action button 尺寸需同步對稱,row 視覺連貫一致。**過去固定用 `size="xs"` 不論 row size 不對**。
+
+**Dismiss action 特殊樣式**:若 action callback 是 `onRemove` / `onDelete` / 語意是 dismiss,依 Button `## 狀態` 的「Dismiss 視覺類」節:variant="text" + icon 色 override `fg-muted → foreground`(弱化,跟 Inline Action dismiss 一致)。
 
 **常駐顯示。** Row actions 有獨立的 frozen right region，不佔資料欄位空間，永遠可見。Region 邊界用全高度 `border-divider` 標示。
 
@@ -171,12 +181,12 @@ Header 的對齊永遠與該欄 body cell 一致。
 
 | 數量 | 顯示方式 |
 |------|----------|
-| 1-2 | icon buttons 並排 |
-| 3+ | 前 1-2 個 inline + MoreVertical dropdown |
+| 1-2 | icon buttons 並排(size 同 row tier)|
+| 3+ | 前 1-2 個 inline + MoreVertical dropdown(同 size) |
 
 MoreVertical dropdown 包含所有操作，確保鍵盤可存取全部。
 
-**Header/body 寬度同步：** Header 渲染 invisible buttons 佔位，確保 header 和 body 的 right region 同寬。
+**Header/body 寬度同步：** Header 渲染 invisible buttons 佔位(同 size),確保 header 和 body 的 right region 同寬。
 
 ### 十、與 Toolbar 的關係
 

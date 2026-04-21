@@ -106,19 +106,25 @@ ProgressBar 底部對齊 avatar 底部。justify-between 自動分配 gap(有 de
 
 改動進度條視覺(高度 / 色 / 動畫) → 去 ProgressBar 改,**本元件無本地 bar 實作**。
 
-## Actions（suffix）
+## Actions（suffix,row dedicated region canonical）
 
-Consumer 自行組合：
+Consumer 自行組合。按 `patterns/element-anatomy/item-anatomy.spec.md`「Predicate」,FileItem actions 位於 row dedicated region(右側獨立 slot),用 **Button iconOnly size-pair row tier**:
+
+- `mode="rich"` → Button `size="sm"`(28/32 pair row)
+- `mode="compact"` → Button `size="xs"`(24 pair row)
+
+**Delete 屬 dismiss 視覺類**(callback `onRemove` / 語意 delete),用 `dismiss` prop 自動套 variant="text" + icon fg-muted → foreground(跟 Inline Action dismiss 視覺一致,cross-implementation dimming canonical):
 
 ```tsx
 <FileItem actions={<>
-  <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="下載" />
-  <Button variant="text" size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
+  <Button variant="text" size="sm" iconOnly startIcon={Download} aria-label="下載" onClick={dl} />
+  <Button size="sm" dismiss startIcon={Trash2} aria-label="刪除" onClick={del} />
 </>} />
 ```
 
-用 Button（不是 Inline Action）——FileItem 的 action 是始終可見的獨立操作。
-詳見 CLAUDE.md「互動元素三層級」。
+**為什麼 Button 非 Inline Action**:FileItem action region 位於 row 內獨立 slot(跟 content 視覺並列),按 predicate「row dedicated action region」→ Button size-pair row tier。Inline Action 保留給 host chrome 內 / row inline suffix(Menu/TreeView suffix ⋯)。詳 item-anatomy.spec.md 完整 predicate。
+
+**Dismiss 視覺弱化**:不管實作走 Button(如本 case)還是 Inline Action(如 Dialog close),dismiss icon 色都弱化。Button `dismiss` prop 自動 override;Inline Action 本來就 fg-muted。
 
 ## Status ↔ Action hover-swap（passive → active affordance）
 
@@ -150,7 +156,7 @@ Passive status icon 置中於 button-sized 容器,hover 時 active Button 填滿
   name="report.pdf"
   status="completed"
   onDownload={() => downloadFile(id)}   // hover ✓ → ↓
-  actions={<ItemInlineActionButton icon={Trash2} onClick={del} aria-label="刪除" />}
+  actions={<Button size="sm" dismiss startIcon={Trash2} onClick={del} aria-label="刪除" />}
 />
 
 <FileItem
@@ -158,7 +164,7 @@ Passive status icon 置中於 button-sized 容器,hover 時 active Button 填滿
   status="error"
   description="There's something wrong."
   onRetry={() => retryUpload(id)}        // hover ✗ → ⟲
-  actions={<ItemInlineActionButton icon={Trash2} onClick={del} aria-label="刪除" />}
+  actions={<Button size="sm" dismiss startIcon={Trash2} onClick={del} aria-label="刪除" />}
 />
 ```
 

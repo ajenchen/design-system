@@ -290,8 +290,8 @@ export const RowActions: Story = {
           height="auto"
           rowActions={() => (
             <>
-              <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
-              <Button variant="text" size="xs" iconOnly startIcon={Trash2} aria-label="刪除" danger />
+              <Button variant="text" size="md" iconOnly startIcon={Pencil} aria-label="編輯" />
+              <Button size="md" dismiss startIcon={Trash2} aria-label="刪除" />
             </>
           )}
         />
@@ -305,8 +305,8 @@ export const RowActions: Story = {
           height="auto"
           rowActions={() => (
             <>
-              <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
-              <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+              <Button variant="text" size="md" iconOnly startIcon={Pencil} aria-label="編輯" />
+              <Button variant="text" size="md" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
             </>
           )}
         />
@@ -333,8 +333,8 @@ export const PinnedColumns: Story = {
               pinnedLeftColumns={['sku']}
               rowActions={() => (
                 <>
-                  <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
-                  <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+                  <Button variant="text" size="md" iconOnly startIcon={Pencil} aria-label="編輯" />
+                  <Button variant="text" size="md" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
                 </>
               )}
             />
@@ -351,8 +351,8 @@ export const PinnedColumns: Story = {
               pinnedLeftColumns={['sku']}
               rowActions={() => (
                 <>
-                  <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
-                  <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+                  <Button variant="text" size="md" iconOnly startIcon={Pencil} aria-label="編輯" />
+                  <Button variant="text" size="md" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
                 </>
               )}
             />
@@ -378,7 +378,7 @@ export const InlineEdit: Story = {
           inlineEdit
           rowActions={() => (
             <>
-              <Button variant="text" size="xs" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
+              <Button variant="text" size="md" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
             </>
           )}
         />
