@@ -245,6 +245,49 @@ export const OpenSnapshot: StoryObj = {
   ),
 }
 
+// ── ItemHover(視覺稽核用 — 互動狀態 pilot)──
+// defaultOpen 展開後,play() hover 第一個 item,讓 Playwright 截圖抓到
+// hover highlight(bg-neutral-hover)+ 相鄰未 hover item 的視覺對比。
+// 這是 Layer A 預設抓不到的 post-interaction state。
+// 詳見 .claude/skills/visual-audit/SKILL.md 的「Layer A interactive state coverage」。
+
+export const ItemHover: StoryObj = {
+  name: 'Item Hover 高亮(視覺稽核用)',
+  tags: ['!autodocs'],
+  render: () => (
+    <DropdownMenu defaultOpen>
+      <DropdownMenuTrigger asChild>
+        <Button variant="tertiary" endIcon={ChevronDown}>操作</Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem startIcon={Copy} shortcut="⌘C" data-testid="item-hover-target">
+          複製
+        </DropdownMenuItem>
+        <DropdownMenuItem startIcon={Pencil} shortcut="⌘E">
+          編輯
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem startIcon={Trash2} shortcut="⌘⌫" className="text-error">
+          刪除
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ),
+  play: async () => {
+    const { userEvent } = await import('@storybook/test')
+    // Radix DropdownMenu 走 Portal 到 document.body,不在 canvasElement 內;
+    // 用 document.querySelector 找 menu item。
+    // 等 Radix 動畫 + Portal render 完畢(~300ms)。
+    await new Promise((r) => setTimeout(r, 400))
+    const target = document.querySelector<HTMLElement>('[data-testid="item-hover-target"]')
+    if (target) {
+      await userEvent.hover(target)
+      // 等 hover bg transition 完成
+      await new Promise((r) => setTimeout(r, 300))
+    }
+  },
+}
+
 // ── 尺寸 ──
 
 export const Sizes: StoryObj = {

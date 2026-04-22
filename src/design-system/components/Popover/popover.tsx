@@ -96,8 +96,18 @@ const PopoverHeader = React.forwardRef<HTMLDivElement, PopoverHeaderProps>(
 )
 PopoverHeader.displayName = "PopoverHeader"
 
-const PopoverBody = SurfaceBody
-const PopoverFooter = SurfaceFooter
+// PopoverBody / PopoverFooter: wrap SurfaceBody / SurfaceFooter with data-popover-*
+// attributes so handlePopoverOpenAutoFocus 可正確定位 body 內第一個 interactive 元素
+// (autoFocus consistency — 不 focus 到 chrome close X)。
+const PopoverBody = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ ...props }, ref) => <SurfaceBody ref={ref} data-popover-body {...props} />
+)
+PopoverBody.displayName = "PopoverBody"
+
+const PopoverFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ ...props }, ref) => <SurfaceFooter ref={ref} data-popover-footer {...props} />
+)
+PopoverFooter.displayName = "PopoverFooter"
 
 const PopoverTitle = React.forwardRef<
   HTMLHeadingElement,

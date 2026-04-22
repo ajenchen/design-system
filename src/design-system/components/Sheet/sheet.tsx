@@ -140,16 +140,25 @@ SheetHeader.displayName = "SheetHeader"
 // 捲軸必用 ScrollArea(跨 OS 一致、不吃寬度)— 不自寫 overflow-y-auto。
 // padding 搬進 viewport inner div:px-loose / pt-tight / pb-bottom。
 // data-sheet-body:讓 SheetContent onOpenAutoFocus 找得到 body 第一個互動元素
-const SheetBody = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, children, ...props }, ref) => (
-  <ScrollArea ref={ref} data-sheet-body className={cn("flex-1 min-h-0", className)} {...props}>
-    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
-      {children}
-    </div>
-  </ScrollArea>
-))
+// `variant="list"`:body 只放 list 時移除 padding,list item 自己 px/py(對齊 DialogBody)
+interface SheetBodyProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "default" | "list"
+}
+const SheetBody = React.forwardRef<HTMLDivElement, SheetBodyProps>(
+  ({ className, children, variant = "default", ...props }, ref) => (
+    <ScrollArea ref={ref} data-sheet-body className={cn("flex-1 min-h-0", className)} {...props}>
+      <div
+        className={cn(
+          variant === "list"
+            ? ""
+            : "px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]",
+        )}
+      >
+        {children}
+      </div>
+    </ScrollArea>
+  ),
+)
 SheetBody.displayName = "SheetBody"
 
 // ── SheetFooter:SurfaceFooter wrap 加 data-sheet-footer(autoFocus fallback target)──

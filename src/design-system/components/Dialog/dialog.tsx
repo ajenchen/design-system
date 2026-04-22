@@ -148,16 +148,34 @@ DialogHeader.displayName = "DialogHeader"
 // 捲軸必用 ScrollArea(跨 OS 一致、不吃寬度)— 不自寫 overflow-y-auto。
 // padding 搬進 viewport inner div:px-loose / pt-tight / pb-bottom(Dialog 「大容器」底部多一拍呼吸)。
 // data-dialog-body:讓 DialogContent onOpenAutoFocus 找得到 body 第一個有意義互動元素(避免 focus 到 close X)
-const DialogBody = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, children, ...props }, ref) => (
-  <ScrollArea ref={ref} data-dialog-body className={cn("flex-1 min-h-0", className)} {...props}>
-    <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]">
-      {children}
-    </div>
-  </ScrollArea>
-))
+//
+// **`variant="list"`**(2026-04-22 新增,對齊 Material / Polaris / Atlassian list-in-dialog canonical):
+// body 只放 list 時移除 vertical padding(list item 自己的 py 是節奏來源,list 接頂接底 flush)。
+// 水平 padding 也移除讓 item 自己的 hover bg 可以全寬。
+interface DialogBodyProps extends React.HTMLAttributes<HTMLDivElement> {
+  /**
+   * Body 佈局模式。
+   * - `default`(預設):body 有 px-loose / pt-tight / pb-bottom,適合 form 或一般內容
+   * - `list`:移除 body padding,list item 自己負責 py,list 接頂接底 flush(避免 body padding + item py 雙層堆疊過鬆)
+   */
+  variant?: "default" | "list"
+}
+const DialogBody = React.forwardRef<HTMLDivElement, DialogBodyProps>(
+  ({ className, children, variant = "default", ...props }, ref) => (
+    <ScrollArea ref={ref} data-dialog-body className={cn("flex-1 min-h-0", className)} {...props}>
+      <div
+        className={cn(
+          variant === "list"
+            ? // list mode:無 padding,list item 自己 px/py
+              ""
+            : "px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]",
+        )}
+      >
+        {children}
+      </div>
+    </ScrollArea>
+  ),
+)
 DialogBody.displayName = "DialogBody"
 
 // DialogFooter: SurfaceFooter wrap 加 data-dialog-footer(autoFocus fallback target)

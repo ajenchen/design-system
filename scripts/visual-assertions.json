@@ -43,10 +43,13 @@
     { "id": "design-system-components-button-設計規格--color-matrix", "file": "button-color-matrix.png" },
     { "id": "design-system-components-button-設計規格--size-matrix", "file": "button-size-matrix.png" },
     { "id": "design-system-components-button-設計規格--state-behavior", "file": "button-state-behavior.png" },
+    { "id": "design-system-components-button-展示--hover-focus-state", "file": "button-hover-focus-state.png", "rationale": "Interactive state capture — play() 觸發 userEvent.hover() + element.focus() 讓 Layer A 抓到 hover bg / focus-visible ring post-interaction 視覺,補靜態 snapshot gap(見 SKILL.md「Layer A interactive state coverage」)" },
+    { "id": "design-system-components-button-展示--tooltip-visible", "file": "button-tooltip-visible.png", "rationale": "Interactive state capture — play() focus 觸發 iconOnly Button 自動 tooltip(Radix warm-up + content render 需 ~1000ms),補靜態 snapshot 看不到 tooltip 的 gap" },
 
     { "id": "design-system-components-dialog-展示--basic", "file": "dialog-basic.png" },
     { "id": "design-system-components-dialog-展示--with-form", "file": "dialog-form.png" },
     { "id": "design-system-components-dialog-展示--destructive", "file": "dialog-destructive.png" },
+    { "id": "design-system-components-dialog-展示--list-body", "file": "dialog-list-body.png", "rationale": "Body 放 list canonical — variant='list' 移除 body vertical padding(對齊 Material M3 / Polaris / Linear Cmd+K 共識);3 item 尺寸 tier 示範(大 avatar+desc / 中 icon+desc / 小 text-only)" },
     { "id": "design-system-components-dialog-展示--open-snapshot", "file": "dialog-open-snapshot.png", "rationale": "開啟狀態 snapshot — visual-audit 專用,用 defaultOpen 讓 Playwright 抓到 Dialog chrome(Header/Body/Footer),補 Layer A/B 先前只抓到 trigger 按鈕的 MINOR gap" },
 
     { "id": "design-system-components-popover-展示--filter-panel", "file": "popover-filter-panel.png" },
@@ -69,6 +72,7 @@
     { "id": "design-system-components-dropdownmenu-展示--basic", "file": "dropdownmenu-basic.png" },
     { "id": "design-system-components-dropdownmenu-展示--groups", "file": "dropdownmenu-groups.png" },
     { "id": "design-system-components-dropdownmenu-展示--open-snapshot", "file": "dropdownmenu-open-snapshot.png", "rationale": "開啟狀態 snapshot — visual-audit 專用,用 defaultOpen 讓 Playwright 抓到 Dropdown chrome(item / icon / shortcut / separator),補 Layer A/B 先前只抓到 trigger 按鈕的 MINOR gap" },
+    { "id": "design-system-components-dropdownmenu-展示--item-hover", "file": "dropdownmenu-item-hover.png", "rationale": "Interactive state capture — defaultOpen + play() hover 第一個 item 讓 Playwright 抓到 hover highlight(bg-neutral-hover);Radix Portal 外 DOM 需 document.querySelector 找(見 SKILL.md「Layer A interactive state coverage」)" },
 
     { "id": "design-system-patterns-item-anatomy--icon-action-primitive-decision", "file": "item-anatomy-icon-action-decision.png" },
     { "id": "design-system-patterns-item-anatomy--inspector", "file": "item-anatomy-inspector.png" },

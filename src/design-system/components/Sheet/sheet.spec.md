@@ -54,6 +54,12 @@ Sheet 是**側邊滑入 modal 容器**,關鍵決策維度是 `side`(top / right 
 
 ---
 
+## Padding SSOT
+
+Sheet 的 `SheetHeader` / `SheetBody` / `SheetFooter` 對應 `SurfaceHeader` / `SurfaceBody` / `SurfaceFooter` primitive——padding + 分隔線由 `patterns/overlay-surface/overlay-surface.spec.md` own,Sheet 與 Dialog / Popover 共用同一套 primitive,避免 token 漂移。Sheet 特有行為:side variant(`top` / `right` / `bottom` / `left`)決定滑入方向 + height/width 響應式策略,padding 本身對齊 overlay-surface canonical。
+
+---
+
 ## 關閉按鈕
 
 永遠存在於 SheetHeader 右側(對齊 DialogHeader canonical)。使用 `<Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />`,不可移除——使用者永遠需要明確的關閉手段。

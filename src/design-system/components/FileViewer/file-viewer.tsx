@@ -357,7 +357,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           size="sm"
           iconOnly
           startIcon={Info}
-          aria-label={infoOpen ? '關閉詳細資訊' : '顯示詳細資訊'}
+          aria-label={infoOpen ? '收合詳細資訊面板' : '展開詳細資訊面板'}
           pressed={infoOpen}
           onClick={onInfoToggle}
         />

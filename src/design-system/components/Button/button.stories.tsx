@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { Plus, Trash2, Search, ChevronDown, Settings, Download, Bell, RefreshCw, Maximize2 } from 'lucide-react'
+import { Plus, Trash2, Search, ChevronDown, Settings, Download, Bell, RefreshCw, Maximize2, Save } from 'lucide-react'
 import { Button } from './button'
 import { Badge } from '@/design-system/components/Badge/badge'
 
@@ -349,5 +349,50 @@ export const FullWidth: Story = {
       <Button variant="primary" danger fullWidth startIcon={Trash2}>永久刪除</Button>
     </div>
   ),
+}
+
+// ── Interactive State Pilot(視覺稽核用)─────────────────────────────
+// 用 play() + @storybook/test 觸發 hover / focus / tooltip 等互動狀態,
+// 讓 Playwright 截圖抓到 post-interaction 視覺(而非靜態 className 模擬)。
+// 詳見 .claude/skills/visual-audit/SKILL.md 的「Layer A interactive state coverage」。
+
+export const HoverFocusState: Story = {
+  name: 'Hover / Focus 狀態(視覺稽核用)',
+  tags: ['!autodocs'],
+  render: () => (
+    <div className="flex gap-4">
+      <Button variant="primary" data-testid="hover-target">Hover 我</Button>
+      <Button variant="primary" data-testid="focus-target">Focus 我</Button>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const { userEvent, within } = await import('@storybook/test')
+    const canvas = within(canvasElement)
+    const hoverEl = await canvas.findByTestId('hover-target')
+    const focusEl = await canvas.findByTestId('focus-target')
+    await userEvent.hover(hoverEl)
+    focusEl.focus()
+    // Wait transitions settle (hover bg ~150ms + focus ring render)
+    await new Promise((r) => setTimeout(r, 400))
+  },
+}
+
+export const TooltipVisible: Story = {
+  name: 'Tooltip 顯示(icon-only 自動 tooltip,視覺稽核用)',
+  tags: ['!autodocs'],
+  render: () => (
+    <div className="p-12">
+      <Button iconOnly startIcon={Save} aria-label="儲存" data-testid="tooltip-target" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const { within } = await import('@storybook/test')
+    const canvas = within(canvasElement)
+    const btn = await canvas.findByTestId('tooltip-target')
+    btn.focus()
+    // Tooltip open delay(Radix 預設 ~700ms warm-up / instant after warm);
+    // 給足 1000ms 確保 content 已 render 到 Portal
+    await new Promise((r) => setTimeout(r, 1000))
+  },
 }
 

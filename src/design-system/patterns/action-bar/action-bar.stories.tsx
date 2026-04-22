@@ -569,3 +569,44 @@ export const CommonMistakes: Story = {
     </div>
   ),
 }
+
+export const DismissVsDanger: Story = {
+  name: 'Dismiss vs Destructive 語意區分',
+  render: () => (
+    <div>
+      <Rule
+        title="Dismiss(關閉 / 忽略) — 弱化 X close icon"
+        note="`<Button iconOnly dismiss />` 表達「關閉此浮層 / 忽略此訊息」語意(對應 onClose / onDismiss callback)。視覺走 dismiss 弱化 treatment(fg-muted icon,低存在感),不搶走 body 主要內容焦點。Dialog / Sheet / Popover / Alert / Toast 的 corner close X 屬此類"
+      >
+          <ToolbarFrame title="通知訊息">
+            <Button iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉通知" />
+          </ToolbarFrame>
+          <Label>✅ dismiss prop 弱化 X，語意是「關閉此訊息」</Label>
+      </Rule>
+
+      <Rule
+        title="Destructive(破壞性動作) — 紅色警示"
+        note="Button iconOnly variant text + danger prop + Trash2 icon 表達「刪除資料 / 移除項目」語意(對應 onRemove / onDelete callback)。視覺走 danger treatment(error 色系),警示使用者此動作會破壞資料。Row actions / 批次刪除 / 永久移除按鈕屬此類"
+      >
+          <ToolbarFrame title="專案 ACME-1234">
+            <Button iconOnly variant="text" danger size="sm" startIcon={Trash2} aria-label="刪除專案" />
+          </ToolbarFrame>
+          <Label>✅ danger prop 紅色警示，語意是「破壞性動作」</Label>
+      </Rule>
+
+      <Rule
+        title="❌ 不可混用 — dismiss 語意不可用 danger，destructive 不可用 dismiss"
+        note="兩者語意互斥:dismiss 是「關掉 surface」(資料不變),destructive 是「移除資料」(不可逆)。視覺也完全不同:dismiss 弱化、destructive 紅色警示。混用會讓 user 誤判點擊後果 — 原本以為只是關閉,結果刪了資料;或原本以為是刪除警示,結果只是關閉浮層"
+      >
+          <ToolbarFrame title="❌ 錯用 1:刪除按鈕套 dismiss prop">
+            <Button iconOnly dismiss size="sm" startIcon={Trash2} aria-label="刪除" />
+          </ToolbarFrame>
+          <Label warn>❌ Trash2 是破壞性動作，不可用 dismiss 弱化(應 variant="text" danger)</Label>
+          <ToolbarFrame title="❌ 錯用 2:關閉 X 套 danger">
+            <Button iconOnly variant="text" danger size="sm" startIcon={XIcon} aria-label="關閉" />
+          </ToolbarFrame>
+          <Label warn>❌ X close 是 dismiss 語意，不該紅色警示(應用 dismiss prop)</Label>
+      </Rule>
+    </div>
+  ),
+}

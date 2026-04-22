@@ -90,6 +90,69 @@ node scripts/visual-audit.mjs   # 假設 storybook 已在 :6006 跑
 
 **Chromatic / Percy / reg-suit**接入為 post-Layer-A 增量,做跨 branch pixel diff。現階段 Layer A 夠 gate 99% 視覺 bug;pixel regression 等 DS 穩定再接(列 post-v1 tech debt)。
 
+---
+
+## Layer A interactive state coverage canonical
+
+**核心事實**:當前 `visual-audit.mjs` 只抓「頁面 render 完 + blur activeElement + 800ms wait」後的**靜態 snapshot**——**hover / focus-visible / active / pressed / tooltip-visible / menu-open / dropdown-open 等 post-interaction state 預設不被抓到**。
+
+### 當前覆蓋 vs Gap
+
+| 狀態 | 當前 Layer A 覆蓋? | 抓法 |
+|------|------------------|------|
+| **Default render state** | ✓ 抓 | scenario 載入後直接 screenshot |
+| **Overlay open**(Dialog / Popover / DropdownMenu chrome) | ✓ 抓 | 用 `defaultOpen` pattern(Radix Portal 自動生效) |
+| **Hover state**(cursor-over 視覺) | ✗ 不抓 | 需 `play()` + `userEvent.hover()` |
+| **Focus-visible**(ring / outline) | ✗ 不抓 | 需 `play()` + `element.focus()` |
+| **Active / pressed**(按下瞬間) | ✗ 不抓 | 需 `play()` + `userEvent.pointer()` |
+| **Tooltip visible**(iconOnly Button hover tooltip) | ✗ 不抓 | 需 `play()` + focus 觸發器 + 等 delay |
+| **Menu item hover highlight** | ✗ 不抓 | 需 `play()` + hover first item after `defaultOpen` |
+| **Combobox / Select 展開後 listbox** | 部分 | 靠 `defaultOpen` 可抓 listbox,但 hover highlight 需 play |
+
+### 解法:Storybook `play()` + `@storybook/test`
+
+Storybook v8 的 `play()` 在 story 渲染後執行,可觸發互動狀態。`@storybook/test` 提供 `userEvent` / `within` / `expect` 等 API:
+
+```tsx
+import type { StoryObj } from '@storybook/react'
+
+export const HoverState: StoryObj = {
+  name: 'Hover 狀態(視覺稽核用)',
+  tags: ['!autodocs'],
+  render: () => <Button data-testid="target">Hover 我</Button>,
+  play: async ({ canvasElement }) => {
+    const { userEvent, within } = await import('@storybook/test')
+    const canvas = within(canvasElement)
+    const el = await canvas.findByTestId('target')
+    await userEvent.hover(el)
+  },
+}
+```
+
+`scripts/visual-audit.mjs` 用 Playwright 載入 story,play() 自動執行,screenshot 自然包含 post-interaction 視覺。**play() 後需 wait**:tooltip 有 open delay(~500ms),hover transition 有 animation(~150ms)——故事 play() 內最後 `await new Promise(r => setTimeout(r, 600))` 讓 state 穩定。
+
+### World-class 對照
+
+- **Polaris / Material / Atlassian**:用 Chromatic / Storybook interaction testing,`play()` 是標準 pattern
+- **Ant Design**:rc-testing + Storybook scenarios,同樣靠 `play()` + `userEvent`
+- **本 DS 選擇**:跟世界級對齊,用 Storybook native `play()`(不引入 Chromatic 額外 SaaS 依賴)
+
+### 本 DS 的 canonical
+
+**每元件的 `StateBehavior` anatomy story(slot 5)應包含 interactive state via `play()`**——目前多數元件的 StateBehavior 是**靜態並列**展示(把 hover / focus / active 視覺寫死用 className 模擬);理想狀態是用真實互動觸發,讓 visual audit 抓到的是**真實 rendered state**,不是「設計師寫的擬真」。
+
+**升級範圍**(tech debt):漸進式把 StateBehavior story 改成 `play()`-driven。Pilot 先做 Button / Tooltip / MenuItem,驗證 pattern,再擴散。
+
+### 豁免(不必 play())
+
+- **State 已在 stories 靜態可視**(e.g. StateBehavior 用 className 模擬 hover = `hover:bg-...` 手動開啟)→ 已足夠 Layer A scan contrast / geometry,豁免
+- **Overlay 用 `defaultOpen` 已足**(Dialog / Popover / DropdownMenu chrome)→ 豁免(見既有 OpenSnapshot pattern)
+- **純裝飾性 state**(decorative motion)→ 不納入 audit scope
+
+### 剩餘 tech debt
+
+**Pilot 之外**(Button / Tooltip / MenuItem)的 interactive state coverage 仍為 tech debt — 全 DS hover / focus / active / pressed 全覆蓋需系統性擴 `play()` 到所有元件 StateBehavior anatomy slot 5。記在 `memory/project_pending_tasks` 或對應元件 spec。
+
 ## Skill 生態位
 
 ```

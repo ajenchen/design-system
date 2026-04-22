@@ -218,6 +218,7 @@ Ant Design / Carbon / Apple HIG / VS Code / Figma。對每個 example,至少查 
 - **Benchmark 粒度匹配 predicate 粒度**(2026-04-22 D6e scan 自測發現)— per-variant / per-category predicate 需 per-variant benchmark,不是整體兜底一句
   - 例:Button 5 variant 選擇 predicate 需 per-variant world-class mapping(不只 L74 整體「Material / Polaris 共識」兜底)
   - flag 時區分「predicate 粒度 vs benchmark 粒度」不匹配 = P1 補 pointer
+- **Overlay autoFocus canonical**(2026-04-22 新增)— Portal overlay 元件需檢 autoFocus 行為是否對齊 DS-wide canonical(body first interactive,不是 chrome close X)。詳見下方「Overlay autoFocus canonical」section。
 
 ---
 
@@ -291,6 +292,29 @@ Ant Design / Carbon / Apple HIG / VS Code / Figma。對每個 example,至少查 
 
 每次 audit 結束,若 sub-agent 回報「某 finding 經驗證為 FP」→ main agent 在此節追加一行:
 `- **{FP pattern}** → FALSE,{豁免條件}`
+
+---
+
+## Overlay autoFocus canonical(2026-04-22)
+
+**所有 Portal overlay**(Dialog / Sheet / Popover / Coachmark / DropdownMenu)開啟時:
+- **必 avoid** focus 到 chrome close X(否則 tooltip leak bug — user-hostile,opening overlay 就彈 tooltip)
+- **必 focus** body 第一個有意義互動元素(primary input / primary button),若無 → content root(overlay container)
+
+**違反 → tooltip leak bug**(user-hostile):chrome close X 多半帶 aria-label tooltip,開 overlay 就顯示 tooltip 搶焦點,語意錯位(user 是來跟 overlay body 互動,不是關掉它)。
+
+**D6e scan memory**:跑 D6e predicate coherence check 時,對所有 overlay 元件 spec 額外檢:
+- 有無聲明 autoFocus 行為?
+- 聲明是否對齊此 canonical(body first interactive,不是 chrome X)?
+- Storybook 實作是否對齊 spec?
+
+**世界級對照**:
+- Radix `onOpenAutoFocus` 預設 focus 到 content root 第一個 interactive,不是 close trigger
+- Material Dialog 有 `disableAutoFocus` 但預設走 first tab stop inside content
+- Polaris Modal focus 到 title + tab 到 primary action,不預設 close X
+- iOS sheet 開啟不 focus 到 dismiss handle
+
+**實例**(2026-04-22 Coachmark):Coachmark 原預設 autoFocus 到 chrome close X → 開 coachmark 立即彈「關閉」tooltip,打擾 user。修法:改走 body first interactive。此類行為應 DS-wide 強制。
 
 ---
 
