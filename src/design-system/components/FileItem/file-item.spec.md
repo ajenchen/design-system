@@ -152,13 +152,61 @@ ProgressBar 底部對齊 avatar 底部。justify-between 自動分配 gap(有 de
 
 ## List wrapper canonical(多 item 間距)
 
-`FileItem` 連續排列時,**list wrapper 的 gap 取決於 item 永久視覺層是否為 standalone card/pill**(詳 `patterns/element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性 v2」公式)。
+`FileItem` 連續排列時,**list wrapper 的 gap 取決於 list 內是否可能出現 standalone card/pill**(公式詳 `patterns/element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」)。
 
-| 情境 | 永久視覺層分類 | List wrapper gap | 為什麼 |
-|------|--------------|----------------|--------|
-| **Rich**(任何 status,永遠 border card) | standalone card(`border + bg-surface + rounded-md + inset`)| `gap-2`(8px) | Card 邊框會相黏融合成一張大 card → 必 gap |
-| **Compact + bg-neutral-3**(Type B form attachment 靜態) | standalone pill(`bg-neutral-3 + rounded-md + inset`)| `gap-1`(4px) | 底色塊連續會合成一塊大 bg |
-| **Compact + 有 progress bar**(Type A upload manager) | flush + 底部 progress bar(分隔線型 affordance) | **0 gap 合法** | Progress bar 同 DataTable border-b 邏輯——是分隔線型 affordance,非 card 容器(user 2026-04-22 確認)|
+### 單一類型 list
+
+| List 內容 | 永久視覺層分類 | gap | 為什麼 |
+|----------|--------------|-----|--------|
+| 全 rich | standalone card(`border + bg-surface + rounded-md + inset`) | **`gap-2`**(8px) | Card 邊框融合 |
+| 全 compact Type B(無 status,`bg-neutral-3`) | standalone pill(`bg + rounded + inset`) | **`gap-1`**(4px) | bg 塊融合 |
+| 全 compact Type A(有 status,有 progress bar) | flush + 底部 progress bar 分隔線 | **0 gap 合法** | progress bar = 分隔線型 affordance |
+
+### 混合類型 list(real-world:email 草稿 / 多步驟 upload flow)
+
+取**最保守(最大)gap**,因為任意相鄰組合一定不出事:
+
+| Mixed 組合 | gap 決策 | rationale |
+|-----------|---------|-----------|
+| Rich + Compact 任意混用 | **`gap-2`** | rich 永遠必 gap-2,取 max |
+| Compact Type A + Type B 混用 | **`gap-1`** | 兩個 Type B 相鄰時會 bg 融合 → 必防 |
+| Compact Type A only(可確定全 progress bar) | 0 gap 合法 | 同「全 Type A」 |
+
+**判斷流程**(consumer 寫 list 時):
+1. 若 list 只有 compact 且**所有 item 保證有 status**(e.g., Google Drive upload box 只顯示上傳中 / 剛完成的檔案)→ 0 gap
+2. 若 list 可能包含 compact Type B(`bg-neutral-3` 靜態 item,如表單附件、留言附件)→ `gap-1`
+3. 若 list 含 rich → `gap-2`
+
+### List wrapper 本身不加視覺
+
+- **無 border / 無 rounded / 無 overflow-hidden**:FileItem rich 自帶 card,list 若再加外框 → 雙重 card / 強制邊框合併(user 2026-04-22 指出的 `border rounded-lg overflow-hidden` 反例)
+
+```tsx
+// ✅ Rich list
+<div className="flex flex-col gap-2">
+  {files.map(f => <FileItem key={f.id} mode="rich" {...f} />)}
+</div>
+
+// ✅ Compact Type B(form attachment,靜態灰底)
+<div className="flex flex-col gap-1">
+  {files.map(f => <FileItem key={f.id} mode="compact" {...f} />)}
+</div>
+
+// ✅ Compact Type A only(upload manager,全有 status)
+<div className="flex flex-col">
+  {files.map(f => <FileItem key={f.id} mode="compact" status={f.status} progress={f.progress} {...f} />)}
+</div>
+
+// ✅ Compact mixed Type A + Type B(email 草稿、舊附件 + 新上傳)
+<div className="flex flex-col gap-1">
+  {allFiles.map(f => <FileItem key={f.id} mode="compact" status={f.isUploading ? 'uploading' : undefined} {...f} />)}
+</div>
+
+// ❌ 反例:list 加外框 + overflow-hidden
+<div className="flex flex-col border rounded-lg overflow-hidden">
+  {files.map(f => <FileItem key={f.id} mode="rich" {...f} />)}
+</div>
+```
 
 **List wrapper 本身的視覺**(2026-04-22 user 直指):
 - **不應該有外框**(無 `border` / 無 `rounded-*` / 無 `overflow-hidden`)
