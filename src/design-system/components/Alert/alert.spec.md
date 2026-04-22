@@ -99,11 +99,9 @@ Alert chrome corner 可承載多個 action(close 左側並排):
 - **VS Code editor tab** window corner(close + pin + split,全部同 size IconButton)
 - **Figma panel corner**(close + collapse 同 group,Separator 分隔)
 
-### `cornerActions` API(future work)
+### Multi corner action 場景
 
-目前 Alert 只透過 `dismissible` 渲染單一 close X;若要在 close 左側塞 refresh / share 等額外 action,**短期作法**是 consumer 自己外層 wrap(把 Alert 跟 extra Button 組在同一 flex container);**未來**考慮在 Alert API 加 `cornerActions?: ReactNode` slot(接 Button array),內部統一插入 Separator + close X。
-
-加 `cornerActions` 前須滿足:(1) 至少 2 個 consumer 有實際需求;(2) 跟 Notice primitive 討論是否往下搬(Toast 也會需要)。
+目前 Alert API 只透過 `dismissible` 渲染單一 close X。多 corner action 場景目前不支援;若未來 consumer 有需求,走 Checkpoint 3 決策(M8 benchmark + consumer survey),不預先投機擴 API。
 
 ---
 

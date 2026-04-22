@@ -74,7 +74,7 @@ export const CornerActionGroup = {
       <span className="text-caption text-fg-muted">
         Chrome corner 是 action group region(Cat 3)。Close X 左側可並排 refresh / share 等
         額外 action + Separator,全部同 size Button iconOnly sm。目前 Alert API 只渲染單一
-        close X,多 action 時 consumer 暫時以 wrapper 疊 overlay 呈現(future work:`cornerActions` slot)。
+        close X,多 action 時 consumer 自疊 wrapper 呈現(Alert 不 native 支援多 corner action)。
       </span>
 
       <div className="relative">

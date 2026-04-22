@@ -52,6 +52,72 @@ Dialog 和 Popover 的**結構化 sub-components 共用 primitive**——提供 
 
 **Coachmark 例外**:Coachmark 內容短(media + 2 行 title/description),不設計 body 捲動;不適用本規則。
 
+---
+
+## Body 放 List 時的 padding canonical(2026-04-22 新增)
+
+當 overlay body(Dialog / Sheet / Popover)**只放一個 list**(contact picker / settings menu / command palette 類)時,**上下 padding 必對稱**,list 本身**不加**上下 padding — list 內每個 item 自己的 py 就是節奏來源。
+
+### 世界級對照
+
+| DS | Body pad vs List handling |
+|----|-----|
+| Material M3 Dialog with List | Body 移除 pt/pb,list 內 item 自己 py-3 |
+| Polaris Modal with ResourceList | Body padding 僅 px(水平),list 接頂接底 |
+| Atlassian Dialog + OptionList | Body padding 全移除,list 直接貼 Body 邊界 |
+| Linear Cmd+K | Body padding 0,list item pad 密集 |
+| Notion @mention list | Body padding 極小(`p-1`),item 自己有 py |
+| VS Code Quick Pick | Body 零 padding,item padding dense |
+
+**共識**:overlay body 裝 list 時,**body 不再加 vertical padding**,list 自己的 item padding 負責視覺節奏;body 水平 padding 保留(視覺 gutter)或根據 list item 自己有 px。
+
+### Canonical(我們 DS)
+
+**規則 1 — body 放 list 時移除 body 的 pt/pb**:
+- 消費者 wrap list 用 `<DialogBody className="!py-0">...</DialogBody>`(override DialogBody 的 default py)
+- 或 DialogBody API 加 `unpadded={true}` / `variant="list"` prop(future work)
+
+**規則 2 — list 本身不加上下 padding**:
+- `<div className="flex flex-col">` wrap list items(不加 `py-*`)
+- 第一個 item 的 pt = 其他 items 的 pt(平等);最後一個 item 的 pb = 其他 items 的 pb
+- 禁止 list 外再 wrap `py-2` / `py-4` 等(重複 padding 造成上下過鬆)
+
+**規則 3 — list item 本身有 py,由 item 決定節奏**:
+- 小 item(icon + label):item `py-1.5 px-3`(6px 垂直,符合 MenuItem canonical)
+- 中 item(icon + title + description 2 行):item `py-2 px-3`(8px 垂直)
+- 大 item(avatar + title + description):item `py-3 px-3`(12px 垂直,符合 FileItem rich)
+- Item size 對齊 `patterns/element-anatomy/item-anatomy.spec.md`(Family 1 Menu item / Family 2 List item)
+
+**規則 4 — 對稱**:
+- 對稱 pt=pb(避免「頂貼邊、底留空」非對稱斷裂)
+- 例外:scrollable list(>= viewport 80%) 可接受 pb 略大於 pt(breathing tail)— 但需 rationale
+
+### ❌ 禁止
+
+- Body 外層 `py-4` + list 再 `py-2` + items 各 `py-2`(三層堆疊過鬆,Image 3 類 FileItem rich 就會太高)
+- Body `py-loose(寬)` + list 沒 flush → 頂底留白大於 item 本身,視覺結構斷裂
+- 不對稱 padding(頂 tight / 底 loose)無 rationale
+
+### Consumer 範例
+
+```tsx
+// ✅ canonical:Dialog 放 contact picker
+<Dialog>
+  <DialogContent>
+    <DialogHeader>...</DialogHeader>
+    <DialogBody className="!py-0">  {/* override body pt/pb */}
+      <div className="flex flex-col">
+        {contacts.map(c => (
+          <button className="flex items-center gap-3 px-3 py-2 hover:bg-muted">
+            <Avatar /> <div>{c.name}<p>{c.org}</p></div>
+          </button>
+        ))}
+      </div>
+    </DialogBody>
+  </DialogContent>
+</Dialog>
+```
+
 ### SurfaceFooter
 - `border-t border-divider`
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
