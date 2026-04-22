@@ -36,6 +36,41 @@
     { "id": "design-system-components-datatable-展示--pinned-columns", "file": "datatable-pinned.png" },
 
     { "id": "design-system-components-sheet-展示--create-project-right", "file": "sheet-create-project.png" },
-    { "id": "design-system-components-sheet-展示--edit-user-right", "file": "sheet-edit-user.png" }
+    { "id": "design-system-components-sheet-展示--edit-user-right", "file": "sheet-edit-user.png" },
+
+    { "id": "design-system-components-button-展示--icon-only", "file": "button-icon-only.png" },
+    { "id": "design-system-components-button-展示--all-sizes", "file": "button-sizes.png" },
+    { "id": "design-system-components-button-設計規格--color-matrix", "file": "button-color-matrix.png" },
+    { "id": "design-system-components-button-設計規格--size-matrix", "file": "button-size-matrix.png" },
+    { "id": "design-system-components-button-設計規格--state-behavior", "file": "button-state-behavior.png" },
+
+    { "id": "design-system-components-dialog-展示--basic", "file": "dialog-basic.png" },
+    { "id": "design-system-components-dialog-展示--with-form", "file": "dialog-form.png" },
+    { "id": "design-system-components-dialog-展示--destructive", "file": "dialog-destructive.png" },
+
+    { "id": "design-system-components-popover-展示--filter-panel", "file": "popover-filter-panel.png" },
+    { "id": "design-system-components-popover-設計規格--color-matrix", "file": "popover-color-matrix.png" },
+
+    { "id": "design-system-components-alert-展示--corner-action-group", "file": "alert-corner-action-group.png" },
+    { "id": "design-system-components-alert-展示--subtle-with-description", "file": "alert-subtle.png" },
+    { "id": "design-system-components-alert-設計規格--color-matrix", "file": "alert-color-matrix.png" },
+
+    { "id": "design-system-internal-notice-展示--inline-variants", "file": "notice-inline-variants.png" },
+    { "id": "design-system-internal-notice-展示--deployment-success", "file": "notice-deployment.png" },
+
+    { "id": "design-system-components-fileitem-展示--rich", "file": "fileitem-rich.png" },
+    { "id": "design-system-components-fileitem-展示--compact", "file": "fileitem-compact.png" },
+    { "id": "design-system-components-fileitem-展示--hover-swap", "file": "fileitem-hover-swap.png" },
+    { "id": "design-system-components-fileitem-設計規格--color-matrix", "file": "fileitem-color-matrix.png" },
+    { "id": "design-system-components-fileitem-設計規格--state-behavior", "file": "fileitem-state-behavior.png" },
+
+    { "id": "design-system-components-dropdownmenu-展示--basic", "file": "dropdownmenu-basic.png" },
+    { "id": "design-system-components-dropdownmenu-展示--groups", "file": "dropdownmenu-groups.png" },
+
+    { "id": "design-system-patterns-item-anatomy--icon-action-primitive-decision", "file": "item-anatomy-icon-action-decision.png" },
+    { "id": "design-system-patterns-item-anatomy--inspector", "file": "item-anatomy-inspector.png" },
+
+    { "id": "design-system-components-combobox-展示--modes", "file": "combobox-modes.png" },
+    { "id": "design-system-components-combobox-展示--searchable", "file": "combobox-searchable.png" }
   ]
 }

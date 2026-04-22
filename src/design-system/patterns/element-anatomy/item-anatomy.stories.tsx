@@ -196,14 +196,17 @@ const PropRow = ({ label, dot, children }: { label: string; dot?: string; childr
   </div>
 )
 
-/** Blueprint zone colors */
+/** Blueprint zone colors
+ * Text colors darkened 2026-04-22 to pass WCAG 4.5:1 contrast on 0.6-alpha tint bgs
+ * (previous text 3.41-4.25 ratio failed Layer A audit — `pad/icon/gap/label`).
+ */
 const Z = {
-  pad:     { bg: 'rgba(194,225,154,0.6)', border: 'rgba(139,179,91,0.9)', text: '#5a7a2e' },
+  pad:     { bg: 'rgba(194,225,154,0.6)', border: 'rgba(139,179,91,0.9)', text: '#3d5520' },
   /** Control slot(SelectionItem 的 Checkbox / RadioGroupItem,永遠 inline) */
-  control: { bg: 'rgba(170,222,180,0.6)', border: 'rgba(85,165,110,0.9)', text: '#2f6a40' },
-  icon:    { bg: 'rgba(166,208,245,0.6)', border: 'rgba(80,145,210,0.9)', text: '#2d6a9f' },
-  gap:     { bg: 'rgba(253,218,158,0.6)', border: 'rgba(218,165,60,0.9)', text: '#8a6010' },
-  label:   { bg: 'rgba(199,178,230,0.6)', border: 'rgba(138,103,190,0.9)', text: '#6035a8' },
+  control: { bg: 'rgba(170,222,180,0.6)', border: 'rgba(85,165,110,0.9)', text: '#1f5030' },
+  icon:    { bg: 'rgba(166,208,245,0.6)', border: 'rgba(80,145,210,0.9)', text: '#1f4d82' },
+  gap:     { bg: 'rgba(253,218,158,0.6)', border: 'rgba(218,165,60,0.9)', text: '#664500' },
+  label:   { bg: 'rgba(199,178,230,0.6)', border: 'rgba(138,103,190,0.9)', text: '#452578' },
   dim:     { text: '#d04040' },
   suffix:  { bg: 'rgba(253,186,186,0.5)', border: 'rgba(210,80,80,0.7)', text: '#a03030' },
   /** flex-1 spacer:把 suffix 推到右邊的可擴展區域。用斜紋背景表達「會撐開」的性質,跟其他固定寬度的彩色區塊區隔 */
