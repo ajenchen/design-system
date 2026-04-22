@@ -30,11 +30,19 @@ prefix icon 跟 label 同色（foreground），不是 fg-muted。詳見 item-ana
 | prefix 最大高度 | 容器 | 對齊目標 |
 |---|---|---|
 | ≤ 24px | `h-[1lh]` | 第一行 label 的垂直中心 |
-| > 24px | `h-[calc(1lh+2px+desc_1lh)]` | label + gap + description 文字塊的垂直中心 |
+| > 24px | `h-[calc(1lh+var(--item-gap-label-desc)+desc_1lh)]` | label + gap + description 文字塊的垂直中心 |
 
-**24px 是物理限制**——16px icon 在 24px 圓內仍可辨識（內部 icon 下限 12px），但在更小的容器中 icon 會低於可讀閾值。
+**SSOT**:公式實作在 `patterns/element-anatomy/item-anatomy.tsx` 的 `itemPrefixAlignVariants`
+cva(2026-04-23 重構)。MenuItem 直接 import 消費,不自建 cva:
+```tsx
+import { itemPrefixAlignVariants } from '@/design-system/patterns/element-anatomy/item-anatomy'
+<div className={cn(itemPrefixAlignVariants({ align: 'block-md' }))}>
+```
+改 gap token(`--item-gap-label-desc`)或 font-size token 一處 → MenuItem 自動同步。
 
-**無 description 時 prefix 上限 24px**——沒有文字塊可對齊，強制 inline。
+**24px 是物理限制**——16px icon 在 24px 圓內仍可辨識(內部 icon 下限 12px),但在更小的容器中 icon 會低於可讀閾值。
+
+**無 description 時 prefix 上限 24px**——沒有文字塊可對齊,強制 inline。
 
 多行文字超過參考高度時，外層 `items-start` 讓 prefix Y 不隨文字下移。
 

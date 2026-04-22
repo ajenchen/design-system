@@ -1,5 +1,6 @@
 import * as React from "react"
 import type { LucideIcon } from "lucide-react"
+import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Avatar, type AvatarProps } from "@/design-system/components/Avatar/avatar"
 import {
@@ -156,6 +157,52 @@ export const ItemPrefix = React.forwardRef<
   />
 ))
 ItemPrefix.displayName = "ItemPrefix"
+
+/**
+ * `itemPrefixAlignVariants` — Prefix 對齊高度的 cva SSOT(for 複雜 prefix 結構)。
+ *
+ * ── 存在的理由 ──
+ * `<ItemPrefix>` primitive 預設單一 child(icon / avatar 任一)+ inline 對齊。
+ * 但**複雜 prefix 結構**(e.g. MenuItem 可同時含 checkbox + icon/avatar 多 child)
+ * 或**block mode**(大 prefix + description 對齊塊中心)需要自建 wrapper cva。
+ * 本 cva 把 block formula SSOT 化,讓 MenuItem 等 consumer 共用,
+ * 改值一處(token or cva)→ 所有 block-prefix consumer 同步。
+ *
+ * ── Align 變體(對齊 item-anatomy.spec.md「24px 閾值對齊規則」) ──
+ * - `"inline"`:`h-[1lh]`,小 prefix(≤ 24px)對齊 label 第一行
+ * - `"block-sm"` / `"block-md"`:大 prefix + scanning desc(sm/md menu),
+ *   高度 = label(1lh) + gap(token) + desc(caption × 1.3)
+ * - `"block-lg"`:大 prefix + scanning desc(lg menu),desc 改為 body × 1.3
+ *
+ * ── Consumer ──
+ * MenuItem(inline / block-sm / block-md / block-lg)。其他 row primitive 簡單情境
+ * 直接用 `<ItemPrefix>` 就好,不需此 cva。
+ *
+ * ── SSOT 傳播 ──
+ * gap 用 `var(--item-gap-label-desc)` token;font-size 用 token-awareness
+ * (`var(--font-caption-size)` / `var(--font-body-size)`)。改 token → 公式同步。
+ */
+export const itemPrefixAlignVariants = cva(
+  "flex items-center gap-2 shrink-0",
+  {
+    variants: {
+      align: {
+        inline: "h-[1lh]",
+        // sm/md desc = text-caption (12px × 1.3 = 15.6px)
+        "block-sm":
+          "h-[calc(1lh+var(--item-gap-label-desc)+var(--font-caption-size)*1.3)]",
+        "block-md":
+          "h-[calc(1lh+var(--item-gap-label-desc)+var(--font-caption-size)*1.3)]",
+        // lg desc = text-body (14px) + leading-compact (1.3) = 18.2px
+        "block-lg":
+          "h-[calc(1lh+var(--item-gap-label-desc)+var(--font-body-size)*1.3)]",
+      },
+    },
+    defaultVariants: {
+      align: "inline",
+    },
+  }
+)
 
 /**
  * `<ItemLabel>` — Row primitive 的 label span。

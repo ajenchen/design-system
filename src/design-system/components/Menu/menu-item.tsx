@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avatar'
 // Row primitive 共用常數——統一從 item-layout pattern module 引入
-import { ICON_SIZE, AVATAR_SIZE } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ICON_SIZE, AVATAR_SIZE, itemPrefixAlignVariants } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 /**
  * MenuItem — 所有 menu 類元件的共用視覺佈局層
@@ -52,26 +52,9 @@ const menuItemVariants = cva(
 )
 
 // ── Prefix alignment container ──
-// inline：h-[1lh]，對齊第一行 label
-// block：h-[calc(1lh + 2px + desc_1lh)]，對齊 label + description 文字塊
-const prefixAlignVariants = cva(
-  'flex items-center gap-2 shrink-0',
-  {
-    variants: {
-      align: {
-        inline: 'h-[1lh]',
-        // sm/md desc = text-caption (12px * 1.3 = 15.6px)
-        // lg desc = text-body leading-compact (14px * 1.3 = 18.2px)
-        'block-sm': 'h-[calc(1lh+var(--item-gap-label-desc)+var(--font-caption-size)*1.3)]',
-        'block-md': 'h-[calc(1lh+var(--item-gap-label-desc)+var(--font-caption-size)*1.3)]',
-        'block-lg': 'h-[calc(1lh+var(--item-gap-label-desc)+var(--font-body-size)*1.3)]',
-      },
-    },
-    defaultVariants: {
-      align: 'inline',
-    },
-  }
-)
+// 消費 `itemPrefixAlignVariants`(SSOT from patterns/element-anatomy/item-anatomy.tsx)
+// 原本 MenuItem 自管 cva 造成 drift 風險(block formula 改動需同步);改為共用 SSOT
+// 讓公式只有一份,改 item-anatomy 一處 → MenuItem 自動同步。
 
 // ── Component ──
 
@@ -217,7 +200,7 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
       >
         {/* Prefix 對齊容器 */}
         {hasPrefix && (
-          <div className={cn(prefixAlignVariants({ align: prefixAlign }))}>
+          <div className={cn(itemPrefixAlignVariants({ align: prefixAlign }))}>
             {checkbox && (
               <Checkbox
                 size={CHECKBOX_SIZE[sizeKey]}
