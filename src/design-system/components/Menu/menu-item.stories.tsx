@@ -3,6 +3,13 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { Mail, Star, Bell, Settings, Plus, Folder, FileText, BarChart3 } from 'lucide-react'
 import { MenuItem, MenuGroup, MenuFooter } from './menu-item'
+import { NameCard, NameCardDefaultActions } from '@/design-system/components/NameCard/name-card'
+
+// DS-wide canonical:person avatar 必 hover → NameCard(含 onViewMore)。
+// 見 `avatar.spec.md`「Avatar HoverCard 原則」。demo helper:
+const personHover = (name: string, subtitle?: string) => (
+  <NameCard name={name} subtitle={subtitle} actions={<NameCardDefaultActions />} onViewMore={() => {}} />
+)
 
 const meta: Meta<typeof MenuItem> = {
   title: 'Design System/Internal/Menu/展示',
@@ -63,25 +70,25 @@ export const WithDescription: Story = {
 // ── Avatar（無 description → inline 20/24px）──
 
 export const AvatarInline: Story = {
-  name: 'Avatar（inline）',
+  name: 'Avatar（inline)',
   render: () => (
     <MenuContainer><MenuGroup>
-      <MenuItem avatar={{ alt: "Alice", color: "indigo" }}>Alice Chen</MenuItem>
-      <MenuItem avatar={{ alt: "Bob", color: "magenta" }}>Bob Wang</MenuItem>
-      <MenuItem avatar={{ alt: "Carol", color: "green" }}>Carol Lin</MenuItem>
+      <MenuItem avatar={{ alt: "Alice Chen", color: "indigo", hoverCard: personHover('Alice Chen') }}>Alice Chen</MenuItem>
+      <MenuItem avatar={{ alt: "Bob Wang", color: "magenta", hoverCard: personHover('Bob Wang') }}>Bob Wang</MenuItem>
+      <MenuItem avatar={{ alt: "Carol Lin", color: "green", hoverCard: personHover('Carol Lin') }}>Carol Lin</MenuItem>
     </MenuGroup></MenuContainer>
   ),
 }
 
-// ── Avatar + description（block 32/40px）──
+// ── Avatar + description（block 32/40px) ──
 
 export const AvatarBlock: Story = {
-  name: 'Avatar + description（block）',
+  name: 'Avatar + description(block)',
   render: () => (
     <MenuContainer><MenuGroup>
-      <MenuItem avatar={{ alt: "Alice", color: "indigo" }} description="設計部門">Alice Chen</MenuItem>
-      <MenuItem avatar={{ alt: "Bob", color: "magenta" }} description="工程部門">Bob Wang</MenuItem>
-      <MenuItem avatar={{ alt: "Carol", color: "green" }} description="行銷部門">Carol Lin</MenuItem>
+      <MenuItem avatar={{ alt: "Alice Chen", color: "indigo", hoverCard: personHover('Alice Chen', '設計部門') }} description="設計部門">Alice Chen</MenuItem>
+      <MenuItem avatar={{ alt: "Bob Wang", color: "magenta", hoverCard: personHover('Bob Wang', '工程部門') }} description="工程部門">Bob Wang</MenuItem>
+      <MenuItem avatar={{ alt: "Carol Lin", color: "green", hoverCard: personHover('Carol Lin', '行銷部門') }} description="行銷部門">Carol Lin</MenuItem>
     </MenuGroup></MenuContainer>
   ),
 }

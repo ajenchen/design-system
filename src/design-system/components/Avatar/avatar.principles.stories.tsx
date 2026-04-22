@@ -173,6 +173,7 @@ export const HoverCardIntegrationRule: Story = {
               name="Ada Chen"
               subtitle="Design Engineer · 台北"
               actions={<NameCardDefaultActions />}
+              onViewMore={() => {}}
             />
           }
         />
@@ -187,7 +188,7 @@ export const HoverCardIntegrationRule: Story = {
           <div className="flex flex-col gap-2">
             <Avatar alt="Alex Wang" size={48}
               hoverCard={
-                <NameCard name="Alex Wang" subtitle="Engineer · 已離職" />
+                <NameCard name="Alex Wang" subtitle="Engineer · 已離職" onViewMore={() => {}} />
               }
             />
             <Label warn>❌ 「已離職」只出現在 hover 內 — 觸控使用者看不到,可能誤發訊息給已離職成員</Label>

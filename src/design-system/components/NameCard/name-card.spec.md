@@ -31,7 +31,7 @@ NameCard 為固定寬度的垂直 section 堆疊：
 - **Action buttons**（選用）— 快速動作列
 - **Status section**（選用）— 狀態標籤 + 訊息
 - **Info fields**（選用）— 透過 DescriptionList 呈現結構化欄位
-- **View more**（選用）— 導向 profile 頁的 link
+- **View more** — 導向 profile 頁的 link。**Hover context(HoverCard / Popover 浮層)必含**;standalone page-level NameCard(profile panel / directory card 等非 hover 情境)可省略。詳「View more canonical」節
 
 Section 之間用 `border-t border-divider` 固定分隔（見 `separator.spec.md`「元件固定結構 → CSS border-t/b」）。詳細 class / padding token 見 `name-card.tsx`。
 

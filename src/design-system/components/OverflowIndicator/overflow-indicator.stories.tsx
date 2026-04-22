@@ -4,9 +4,9 @@ import { Tag } from '@/design-system/components/Tag/tag'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { NameCard, NameCardDefaultActions } from '@/design-system/components/NameCard/name-card'
 
-/** Person avatar hover canonical helper — 對齊 avatar.spec.md DS-wide rule:person avatar 必 hover → NameCard */
+/** Person avatar hover canonical helper — 對齊 avatar.spec.md DS-wide rule:person avatar 必 hover → NameCard,必含 onViewMore */
 const personHoverCard = (p: { name: string }) => (
-  <NameCard name={p.name} actions={<NameCardDefaultActions />} />
+  <NameCard name={p.name} actions={<NameCardDefaultActions />} onViewMore={() => {}} />
 )
 
 const meta: Meta<typeof OverflowIndicator> = {

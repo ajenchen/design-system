@@ -13,9 +13,9 @@ import { Tag } from '@/design-system/components/Tag/tag'
 import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avatar'
 import { NameCard, NameCardDefaultActions } from '@/design-system/components/NameCard/name-card'
 
-/** Person avatar hover canonical helper — avatar.spec.md DS-wide rule */
+/** Person avatar hover canonical helper — avatar.spec.md DS-wide rule(含 onViewMore 必含) */
 const personHover = (name: string, subtitle?: string) => (
-  <NameCard name={name} subtitle={subtitle} actions={<NameCardDefaultActions />} />
+  <NameCard name={name} subtitle={subtitle} actions={<NameCardDefaultActions />} onViewMore={() => {}} />
 )
 import { Button } from '@/design-system/components/Button/button'
 import { Separator } from '@/design-system/components/Separator/separator'

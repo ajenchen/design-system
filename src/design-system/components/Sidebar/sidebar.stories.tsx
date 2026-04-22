@@ -73,7 +73,7 @@ const UserFooter = () => (
           <ItemAvatar
             alt="Alan Chen"
             color="blue"
-            hoverCard={<NameCard name="Alan Chen" subtitle="Design｜D-0042" actions={<NameCardDefaultActions />} />}
+            hoverCard={<NameCard name="Alan Chen" subtitle="Design｜D-0042" actions={<NameCardDefaultActions />} onViewMore={() => {}} />}
           />
           <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">Alan Chen</span>
         </button>

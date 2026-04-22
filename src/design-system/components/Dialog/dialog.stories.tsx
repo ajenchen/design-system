@@ -223,6 +223,7 @@ export const LongContent = {
                         avatar={{ src: `https://i.pravatar.cc/80?u=${m.empNum}`, alt: m.name }}
                         subtitle={`${roles[i % roles.length]}｜${m.empId}`}
                         actions={<NameCardDefaultActions />}
+                        onViewMore={() => {}}
                       />
                     }
                   />
@@ -328,6 +329,7 @@ export const ListBody = {
                         avatar={{ src: `https://i.pravatar.cc/80?u=${m.empNum}`, alt: m.name }}
                         subtitle={`${m.role}｜${m.empId}`}
                         actions={<NameCardDefaultActions />}
+                        onViewMore={() => {}}
                       />
                     }
                   />

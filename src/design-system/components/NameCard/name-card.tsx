@@ -15,8 +15,8 @@ import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anato
  * 跨 consumer(avatar.principles / name-card.stories / future product code)應該用
  * 同一組預設,避免每個範例各自發明 action 組合,讓 reader 誤以為 action 會隨情境自動變。
  *
- * ── 使用方式 ──
- *   <NameCard name="..." actions={<NameCardDefaultActions />} />
+ * ── 使用方式(hover context 必含 onViewMore,見 name-card.spec.md 「View more」節)──
+ *   <NameCard name="..." actions={<NameCardDefaultActions />} onViewMore={...} />
  *
  * ── 何時要換成自訂 action ──
  * - Single-action 情境(只要「傳訊息」)→ consumer 傳 `<Button>傳訊息</Button>`

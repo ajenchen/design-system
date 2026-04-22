@@ -50,6 +50,12 @@ function PersonAvatar({
           subtitle={person.description}
           avatar={{ src: person.avatarUrl, alt: person.name }}
           actions={<NameCardDefaultActions />}
+          // DS-wide canonical(2026-04-23):hover NameCard 必含 `onViewMore`
+          // (對齊 Slack / Linear / Notion / Figma / Gmail 「hover → view profile」
+          // 世界級 pattern — preview 必有 escape hatch 到完整資料)。
+          // 此處 noop 作 placeholder,consumer layer 透過 PersonValue 擴充或
+          // parent wrapper 覆寫為真 profile navigation handler。
+          onViewMore={() => {}}
         />
       }
     />

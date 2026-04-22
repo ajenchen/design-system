@@ -5,7 +5,7 @@ import { Tag } from '@/design-system/components/Tag/tag'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { NameCard, NameCardDefaultActions } from '@/design-system/components/NameCard/name-card'
 
-const personHover = (name: string) => <NameCard name={name} actions={<NameCardDefaultActions />} />
+const personHover = (name: string) => <NameCard name={name} actions={<NameCardDefaultActions />} onViewMore={() => {}} />
 const P = { A: 'Alan Chen', B: 'Betty Wu', C: 'Charlie Lee' } as const
 import { H3, Desc, Td, Th, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
