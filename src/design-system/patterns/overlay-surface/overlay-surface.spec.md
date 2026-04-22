@@ -97,7 +97,7 @@ Dialog 和 Popover 的**結構化 sub-components 共用 primitive**——提供 
 **3 個 invariant 同時成立,缺一不可**:
 1. **Hover bg 貼邊 chrome**:hover bg 左右邊緣 flush chrome 外殼內邊(Linear / Cmd+K idiom;無 chrome-to-bg gutter)
 2. **Content 對齊 header / footer**:content(avatar / text)左邊位置 = `SurfaceHeader` 的 `px-loose` 位置 = loose from chrome(垂直對齊 title)
-3. **Content 在 hover bg 內有 breathing**:content 離 hover bg 邊緣有 loose 距離,**不觸 bg 邊**
+3. **Content 在 hover bg 內有 breathing**:content 離 hover bg 邊緣有 loose 距離,**不觸 bg 邊**(本條是 DS-wide「視覺容器 breathing invariant」的 overlay list 應用;上游 canonical 見 `patterns/element-anatomy/element-anatomy.spec.md`)
 
 **幾何推導**(三 invariant 的 unique 解):
 ```
