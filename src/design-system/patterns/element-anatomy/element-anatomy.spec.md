@@ -1,13 +1,13 @@
 # Element Anatomy 設計原則(4-Family Model Taxonomy)
 
-本檔是 design system 中 **element-level 結構分類系統**的頂層 governance doc——跨 pattern / cross-component,不屬任何單一 folder。每個元件 spec 第一段**必須聲明 Layout Family**(1/2/3/4 或「非 family,self-contained / composite」)。
+本檔是 design system 中 **element-level 結構分類系統**的頂層 governance doc——跨 pattern / cross-component。每個元件 spec 第一段**必須聲明 Layout Family**(1/2/3/4 或「非 family,self-contained / composite」)。
 
-**為什麼在頂層而非 patterns/**:4-family taxonomy 橫跨 patterns + components 兩個家:
-- Family 1+2(row 結構)→ runtime primitive 在 `patterns/element-anatomy/item-anatomy/`
-- Family 3(pill 結構)→ SSOT 在 `components/Button/button.spec.md`
-- Family 4(field control 結構)→ SSOT 在 `components/Field/field-controls.spec.md`
+**為什麼住 `patterns/element-anatomy/` 而非 DS 根目錄**:taxonomy 橫跨 patterns + components 兩個家:
+- Family 1+2(row 結構)→ runtime primitive 在同 folder `item-anatomy.{spec.md, tsx, stories.tsx}`
+- Family 3(pill 結構)→ SSOT pointer 到 `components/Button/button.spec.md`
+- Family 4(field control 結構)→ SSOT pointer 到 `components/Field/field-controls.spec.md`
 
-Taxonomy 放任一 folder 都會 scope 不對等。放頂層 `src/design-system/` 表達正確 scope:跨家 governance。
+Taxonomy 跟 F1+F2 runtime primitive **co-locate 在同 folder** 是 `src/design-system/README.md` L17 的 home governance 決策:**「即使跨 pattern 的 taxonomy(如 4-Family Model)也住在最相關的 pattern topic 資料夾內,folder = topic home,不需要頂層 flat 檔案」**。co-location 讓新 element 查 taxonomy 時,runtime primitive 就在隔壁,查閱效率最高。
 
 **與「layout」命名分家**:「anatomy」= element-level 結構分類;「layout」= page-level 版面(未來頁面設計原則的家)。世界級 DS 一致如此(Material Foundations > Layout = page grid / Polaris / Atlassian / Carbon 皆然)。
 

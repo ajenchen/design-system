@@ -10,7 +10,7 @@
 - F1 + F2 共用結構骨架:`[prefix] [content] [suffix]` + `items-start` + `h-[1lh]` wrapper + 24px 閾值 / card header 規則
 
 **不包含**(去其他 SSOT):
-- **4-Family Model 頂層 taxonomy** → `src/design-system/ELEMENT-ANATOMY.md`(cross-pattern/cross-component governance doc)
+- **4-Family Model taxonomy** → 同 folder `element-anatomy.spec.md`(cross-pattern/cross-component governance doc)
 - **Family 3: Pill anatomy** → `components/Button/button.spec.md`「Pill Layout」章節
 - **Family 4: Field control anatomy** → `components/Field/field-controls.spec.md`
 
