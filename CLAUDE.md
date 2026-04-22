@@ -7,12 +7,12 @@
 3. **改一處必看三處**——code / spec / story 三方聯動是常態,不是例外。改 cva `defaultVariants`、改 variant、改 token 前先 grep 該元件所有檔案,一次改完。
 4. **範例必須是真實業務場景**——Jira / Stripe / Notion / Figma 等可辨識的情境;禁止 `Option A/B/C`、「按鈕一」、極端不現實、ASCII art。Storybook 的受眾是任何打開它的人,不是作者。
 5. **猶豫就問,不往前推**——遇到無前例的設計決策:(a) 先 grep 既有 pattern,(b) 讀近親元件 spec,(c) 仍不確定就停下問使用者。**禁止憑直覺造新 pattern**——這是本專案最常被糾正的錯誤。
-6. **大原則吸收瑣碎,記憶索引不該長**——同類 bug 反覆被糾正 = 規則寫太細、meta 層沒抓住。真正該寫的是「哪一類 meta-pattern 誤用」,不是「哪一個具體 bug」。失敗記憶索引應該長**不大**;若一直長,代表 meta-principle 漏寫或沒執行。見 `# Meta-Pattern 預警` 的 13 條大原則。**AI 不需要被 user 提醒才去找 root invariant**——rule 震盪(寫成 A → 被糾 → 寫成 not A)發生時 AI 必**自己**停下,跑 M12 benchmark + invariant test。**User 就同主題第 2 次問 → 必主動截圖 verify**(M13),不靠第 3 次才醒。**User 說「所有 X」= DS-wide 聲明,當下做完 + 建 hook 防線,不拖 tech debt**。使用者 tell me once,我不該要 tell me twice。
+6. **大原則吸收瑣碎,記憶索引不該長**——同類 bug 反覆被糾正 = 規則寫太細、meta 層沒抓住。真正該寫的是「哪一類 meta-pattern 誤用」,不是「哪一個具體 bug」。失敗記憶索引應該長**不大**;若一直長,代表 meta-principle 漏寫或沒執行。見 `# Meta-Pattern 預警` 的 14 條大原則。**AI 不需要被 user 提醒才去找 root invariant**——rule 震盪(寫成 A → 被糾 → 寫成 not A)發生時 AI 必**自己**停下,跑 M12 benchmark + invariant test。**User 就同主題第 2 次問 → 必主動截圖 verify**(M13),不靠第 3 次才醒。**User 說「所有 X」= DS-wide 聲明,當下做完 + 建 hook 防線,不拖 tech debt**。**每次對話達成 canonical 結論 → AUTO 跑整合 pipeline**(M14:world-class benchmark → spec → code → hook → CLAUDE.md → memory → 驗證,5 層至少 3 層,不等 user 催)。使用者 tell me once,我不該要 tell me twice。
 
 每條規則展開請讀後面對應章節(`# Spec 規則`、`# UI 開發規則`、`# Story`、`# 命名與語言一致性` 等)。
 
 
-# Meta-Pattern 預警(13 條大原則)
+# Meta-Pattern 預警(14 條大原則)
 
 **mindset #6 的具體化**。每條能吸收數十個具體 bug,是失敗記憶索引的上游。接到任務先過這 11 條,再跑 `# 任務導航表`。
 
@@ -33,6 +33,8 @@
 | **M12** | **Binary strict rule(「必 X」/「禁 Y」)前必 benchmark + invariant test**。使用者單次視覺 preference、單次觀察 → **不是** canonical;canonical 是 **invariant across context**。強化 rule 前必 3 題自測:(a) **≥3 家世界級 DS 一致**(Polaris / Material / Atlassian / Ant / Carbon / Apple HIG 取 3 比對;有差異 = variance 不是 canonical);(b) **Counter-example scan**:能舉出 legal 的反例嗎?能 → 不該寫 strict rule,rule 寫錯 layer;(c) **Root invariant vs surface observation**:「flush bg」是表象(bg 邊位置),真實 invariant 通常比表象深一層(例:真正規則在 **content 與 bg 的關係** — content 必在 bg 內有 breathing,與 bg 邊位置無關)。**震盪症狀**:同一概念的 rule 被 A → not A → A 糾正 = meta invariant 沒抓到,**停下 present,自己跑 3 題 benchmark + invariant test,不要寫第 3 版**。**禁止**把「我這 case 偏好 X」機械升級成「canonical must X」。**AI 不該靠 user 提醒才 benchmark** — rule 寫強(必 / 禁)的瞬間就要觸發本條 self-check。 | 2026-04-22 hover bg 四次震盪:v1 寫「bg 不貼邊」→ user 糾 Image 22 inset 錯 / 23 flush 對 → v2 寫「必 flush」→ user 糾「flush 本來就合法,不一定要 flush」→ v3 又寫「bg 邊自由、content 有 spacing 即可」→ user 再糾 Image 24「content 貼 bg 邊」仍違規,Image 25「bg 比 content 寬」才對 → **真 invariant = content 必在 bg 內有 padding,bg 邊位置是 variance**。根因 4 層:(1) AI 把 user 單次 preference 升級 strict rule(沒 benchmark);(2) 寫 rule 層級錯(在 bg-edge layer 糾結,真 invariant 在 content-padding layer);(3) 震盪被糾 3 次才醒,CLAUDE.md 已寫「同類 bug 糾正 3 次 = meta 漏寫」AI 仍沒自覺;(4) 需要 user 反覆提醒才啟動 meta-reflection,違反「自我升級機制」精神 |
 
 | **M13** | **User 第 2 次提起相關問題 → 自動觸發截圖 verify,不靠第 3 次提醒**。當 user 就同一視覺 / 行為主題 **第 2 次**問 / 糾正(even 用不同角度),AI **必自動 invoke 截圖 verify**(`node scripts/visual-audit.mjs --scope=component:XXX` + `Read snapshots/*.png`),用視覺證據 compare user image vs 當前狀態。**禁止靠記憶 / 推論回答**。第 3 次才 verify = 已違反本條。**Scope = 任何 UI / 視覺 / interaction pattern** 的問答。**Corollary(大規模 migration)**:user 指定「所有 X 都要 Y」(e.g.「所有 avatar hover NameCard」),不可分批 / 拖延 / 留 tech debt — 同 session 全部做完 + 建 hook 防線。 | 2026-04-22 hover bg 震盪 4 次 + avatar-NameCard migration 拖延:user 說「我說所有」明示 DS-wide,但 AI 第一次只改 2 處 dialog stories,15+ 處放 tech debt 留到下次。user 第 2 次提起才完成。根因:AI「做完」標準太鬆(視 user 明示為「提醒」而非「canonical 聲明」),截圖比對工具已存在但 AI 不主動用。本條防線:第 2 次相關訊息 = 觸發器,不等第 3 次 |
+
+| **M14** | **對話結論 → AUTO integrate pipeline**(不等 user 催)。每次對話達成 canonical / 設計決策 / 新 rule 結論時,AI **必自動執行**整合 pipeline,5 層至少 3 層落地:(1) **World-class benchmark**(≥3 家對照,M8 已規定);(2) **SSOT home 識別**(哪 spec / code / token / pattern 該收這條?);(3) **Spec**:canonical text + rationale + 世界級對照表(primary home);(4) **Code**:programmable 部分落地(新增 prop / CSS rule / API signature,避免 canonical 只留在文字層);(5) **Hook** `.claude/hooks/*.sh`:auto-detectable 違規(regression prevention);(6) **CLAUDE.md navigation**:如 SSOT 消費清單 / 任務導航表要 cross-link;(7) **Memory**:跨 session 記憶 `project_*.md` + 更新 MEMORY.md 索引;(8) **驗證**:`tsc --noEmit` + `visual-audit --scope=component:X` + hook smoke test。**違反 trigger**:user 問「你有沒有整合到 X spec」/「還有沒有要做的」/「是不是該程式化」 → 代表 pipeline 沒自動跑 = M14 violation。**為什麼自動**:canonical decisions without integration 會隨時間 drift;session 結束後無 spec anchor = 下 session 忘記;mindset #6「meta 吸收瑣碎」的具體執行形式。 | 2026-04-22 本 session 每個 canonical(chrome-header / dismiss 分家 / avatar hoverCard / popover 14px)都是 user 提醒才整合,AI 只做 code 改動但忘記 spec / CLAUDE.md / memory / hook 同步。根因:AI「做完」的標準只含 code,缺「整合多層」的 procedural rule。M14 若存在,每次 code change 後自動觸發 pipeline,不等 user 第 2 次問 |
 
 **判斷 meta-principle 是否漏寫的 test**:
 - 同類 bug 一年內被糾正 3 次 → meta-principle 漏寫或沒執行,檢討本清單
@@ -218,6 +220,7 @@ mindset #2 的**機械化執行清單**。寫任何視覺 code 前,對照本表*
 | **Header 高度 / chrome padding**| `tokens/uiSize/uiSize.spec.md`(`--chrome-header-height`)+ `tokens/layoutSpace/layoutSpace.spec.md` |
 | **Chrome header 選型**(fixed-h vs padding-based)| `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」— DS-wide SSOT entry,含 decision tree + 8 家世界級對照 + 本 DS 分類查核表 + 新元件 checklist |
 | **Overlay chrome dismiss / unbounded button**| `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical v5」— v5 data-unbounded layout-slot trick 實作細節 |
+| **Overlay title size**(modal 16 vs non-modal 14)| `patterns/overlay-surface/overlay-surface.spec.md`「Overlay title typography canonical」— modal(Dialog/Sheet text-body-lg 16px)vs non-modal(Popover/Coachmark text-body 14px);7 家世界級對照 + 跟 density 鎖 md 同源 rationale |
 | **Form field gap**| `components/Field/field.spec.md` +「layoutSpace 規則 3:fw↔non-fw = tight」 |
 | **Icon 選擇 / 尺寸**| `# 元件 Props 命名原則` 的「常用 icon canonical」+ `# UI 開發規則` 的「Icon size 來源分層規則」 |
 | **浮層 header / body / footer**| `patterns/overlay-surface/overlay-surface.spec.md` |
