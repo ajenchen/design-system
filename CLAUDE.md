@@ -80,17 +80,68 @@
 
 **流程**:Mechanical assertion → 查 rationale → 有 = `deviation ✓`,無 = P0;AI judgement → 必先讀元件 spec.md,spec 當 hard constraint,世界級當 reference 不 override。WCAG 法規硬底;DS spec 是 design language 存在意義;世界級是參考(mindset #1 允許「對齊 or 說為什麼」)。
 
+## Consistency audit 三件套
+
+宣稱「跨元件要一致」必三件套齊全,否則是風格偏好不是 canonical:
+1. **Canonical 明確指向**(CLAUDE.md / spec.md / skill reference,非口頭 / 直覺)
+2. **偏離元件在自己 spec.md 記 rationale**(不寫 = drift,不是故意設計)
+3. **Audit 公式**:`actual == canonical OR (actual != canonical AND rationale ✓)`
+
+**Why**:DS 品質 ≠「元件都長一樣」,而是「差異可追」。沒 canonical 無一致性可言;沒 rationale 機制一致性會僵化。新增前 test:能指 canonical 一段?偏離能記 rationale?兩題皆 YES 才寫規則。
+
+## 稽核 vs 執行 分權(auto-mode 邊界)
+
+**稽核 = 提議,執行 = 人 sign-off**。核心公式:
+
+```
+動 canonical 的 substantive meaning → STOP(提議,等 user sign-off)
+對齊 canonical / 表達統一 / 補 pointer → AUTO(直接修)
+```
+
+**Substantive keyword**:「canonical / 聲明 / 必須 / SSOT / rationale / 為什麼 / 不允許 / 禁止」— 觸及 + 動 meaning → STOP。
+
+| AUTO-fix | STOP(提議等 sign-off) |
+|----------|----------------------|
+| spec ↔ tsx / cva 不同步(tsx = source of truth) | 原則 / 世界級對照有疑 |
+| 用詞不一致但 meaning 同 | 跨 spec 矛盾(兩邊都有 rationale) |
+| SSOT pointer 缺 / reciprocal 缺 / dead link | 新增 / 刪 canonical rule |
+| 編號 / 格式 / 排序 | 命名決策(新 prop value / 術語) |
+| 術語 drift 修(對齊既有 canonical) | 原則 scope 擴充 / 收緊 |
+| hardcoded class / px → token 名 / pointer | 擴 SSOT 納入新 branch |
+| Rule A prose 移除 class → 遷 anatomy | Rationale 疑似過時 |
+
+**Why**:Canonical 是共識產物,非個人判斷。AI 自改 canonical 造成 session 標準漂移。D6 scan 走 `design-system-audit/references/principle-audit-protocol.md`;audit skill report 必含「提議討論(待 user sign-off)」專區 + Phase F「Self-improvement capture」。
 
 
-# 資訊治理 canonical(anti-bloat)
 
-Governance 自身遵循 SSOT + anti-bloat。3 層 pipeline 確保知識可壓縮可 retire:
+# 資訊治理 canonical(8 home + anti-bloat)
+
+Governance 自身遵循 SSOT + anti-bloat。**寫新規則前先決定放哪個 home**,不全塞 CLAUDE.md。
+
+## 8 home 分層
+
+| Level | Home | 收什麼 |
+|-------|------|--------|
+| 1 | `CLAUDE.md` | 每 session signal 的 DS 規則 / 技術陷阱 / 架構框架 |
+| 2 | `{name}.spec.md` | 單元件「何時用 / 為什麼」 |
+| 3 | Pattern `spec.md` | **runtime** 跨元件 primitive |
+| 4 | Code(`.tsx` / `.css`)| cva / 型別等機械強制 |
+| 5 | Skill(`.claude/skills/`)| invoke 情境的多步驟 workflow + checkpoint |
+| 6 | Memory(`~/.claude/.../memory/`)| 跨 session 狀態 |
+| 7 | Hook(`.claude/hooks/`)| 機械化 pre/post tool 檢查 |
+| 8 | Slash Command(`.claude/commands/`)| 一次性單步 action |
+
+**決策 flowchart**(Q1 YES 即家):Q1 設計規則 → Level 1-4 / Q2 invoke 情境 → Skill or Command / Q3 隨時間變化 → Memory / Q4 機械化 → Hook / Q5 深層細節 → Skill references 或 spec.md。搬動規則必在原位留一行 pointer。完整 flowchart → `.claude/skills/design-system-audit/references/rule-placement.md`。
+
+**硬規則**:Write 新檔到 `src/design-system/patterns|components|tokens/` / `.claude/skills|hooks|commands|agents/` 前,**必先 Read 該 dir 的 `README.md` charter**。`enforce_home_charter.sh` hook 自動注入 charter + 三題 verification。
+
+## Anti-bloat pipeline(L1-L3)
 
 | Layer | 觸發 | Artifact |
 |-------|------|---------|
-| **L1 — Pre-write** | PreToolUse hook | `pre_write_subsumption_check.sh` / `check_file_size_budget.sh` / `check_governance_compliance.sh`(7 題 self-audit — 防 M7 violation) |
+| **L1 — Pre-write** | PreToolUse hook | `pre_write_subsumption_check.sh` / `check_file_size_budget.sh` / `check_governance_compliance.sh`(7 題 self-audit)|
 | **L2 — Per-commit** | PostToolUse | `log_governance_fires.sh` → `.claude/logs/hook-fires.jsonl` |
-| **L3 — Periodic deep**(季度 / audit --deep) | `/knowledge-prune` skill(retire ≥ 5%)| Phase F report |
+| **L3 — Periodic deep**(季度 / audit --deep)| `/knowledge-prune` skill(retire ≥ 5%)| Phase F report |
 
 **行數預算**(hook 攔):CLAUDE.md 400(過渡 800)/ spec 300(過渡 500,**foundational SSOT 類 800**)/ SKILL 250(過渡 400)/ memory 100。過渡期至 2026-07-24 收斂到 400。
 
@@ -118,39 +169,6 @@ Governance 自身遵循 SSOT + anti-bloat。3 層 pipeline 確保知識可壓縮
 ```
 
 **User 糾正回填 home 判斷**:個人偏好 → `memory/feedback_*.md`;DS 本質 → CLAUDE.md;audit skill 改進 → `skills/*/references/`。
-
-
-# 稽核 vs 執行 分權 canonical
-
-**稽核 = 提議,執行 = 人 sign-off**。Auto-mode 下最易混淆的邊界。
-
-## 核心公式
-
-```
-動 canonical 的 substantive meaning → STOP(提議,等 user sign-off)
-對齊 canonical / 表達統一 / 補 pointer → AUTO(直接修)
-```
-
-**Substantive keyword**:「canonical / 聲明 / 必須 / SSOT / rationale / 為什麼 / 不允許 / 禁止」— 觸及 + 動 meaning → STOP。
-
-## AUTO vs STOP 判斷(速查)
-
-| AUTO-fix | STOP(提議等 sign-off) |
-|----------|----------------------|
-| spec ↔ tsx / cva 不同步(tsx = source of truth) | 原則 / 世界級對照有疑 |
-| 用詞不一致但 meaning 同 | 跨 spec 矛盾(兩邊都有 rationale) |
-| SSOT pointer 缺 / reciprocal 缺 / dead link | 新增 / 刪 canonical rule |
-| 編號 / 格式 / 排序 | 命名決策(新 prop value / 術語) |
-| 術語 drift 修(對齊既有 canonical) | 原則 scope 擴充 / 收緊 |
-| hardcoded class / px → token 名 / pointer | 擴 SSOT 納入新 branch |
-| Rule A prose 移除 class → 遷 anatomy | Rationale 疑似過時 |
-| Scope default pointer 缺 | |
-
-## Why
-
-Canonical 是共識產物,非個人判斷。AI 自改 canonical 造成 session 標準漂移 → 失去 DS 一致性 anchor。Auto-mode 是常規執行,不是改共識規則。
-
-D6 scan 走 `design-system-audit/references/principle-audit-protocol.md`;audit skill report 必含「提議討論(待 user sign-off)」專區 + Phase F「Self-improvement capture」step。
 
 
 # SSOT 消費 canonical(做 X 前必查 Y)
@@ -238,32 +256,6 @@ mindset #2 的**機械化執行清單**。寫任何視覺 code 前,對照本表*
 若缺少上述檔案，請先建立再進行其他修改。
 
 
-# 規則分層(8 個 home)
-
-寫新規則 / 文件 / 協議前,**先決定放哪個 home**。不全塞 CLAUDE.md。
-
-| Level | Home | 收什麼 |
-|-------|------|--------|
-| 1 | `CLAUDE.md` | 每 session signal 的 DS 規則 / 技術陷阱 / 架構框架 |
-| 2 | `{name}.spec.md` | 單元件「何時用 / 為什麼」 |
-| 3 | Pattern `spec.md` | **runtime** 跨元件 primitive |
-| 4 | Code(`.tsx` / `.css`)| cva / 型別等機械強制 |
-| 5 | Skill(`.claude/skills/`)| invoke 情境的多步驟 workflow + checkpoint |
-| 6 | Memory(`~/.claude/.../memory/`)| 跨 session 狀態 |
-| 7 | Hook(`.claude/hooks/`)| 機械化 pre/post tool 檢查 |
-| 8 | Slash Command(`.claude/commands/`)| 一次性單步 action |
-
-**決策 flowchart**(Q1 YES 即家): Q1 設計規則 → Level 1-4 / Q2 invoke 情境 → Skill or Command / Q3 隨時間變化 → Memory / Q4 機械化 → Hook / Q5 深層細節 → Skill references 或 spec.md。
-
-**CLAUDE.md vs Skill signal-to-noise**:CLAUDE.md 每 session 載入(signal 必要);Skill 只 invoke 時載(audit / workflow 類)。放錯家 = 噪音 or 遺失 signal。
-
-**搬動規則的雙向處理**:搬後**原位留一行指標**(「詳見 X」),有家也有路標。
-
-完整 flowchart + 8 home 詳細 scope + 歷史放置 + 搬家紀錄 → `.claude/skills/design-system-audit/references/rule-placement.md`。
-
-## 硬規則:classification-sensitive dir 的 charter gate
-
-Write 新檔到 `src/design-system/patterns|components|tokens/` / `.claude/skills|hooks|commands|agents/` 前,**必先 Read 該 dir 的 `README.md` charter**。`enforce_home_charter.sh` hook 自動注入 charter,AI 依三題 verification(收?不收?過 criteria?)判斷後 proceed。**misclassification 在 tool 時攔截,不靠 AI 記憶**。
 
 
 # 遇不確定時的協議(Ambiguity Protocol)
@@ -363,28 +355,6 @@ Internal primitive vs public-facing 元件的分類 test 見 `components/README.
 ## SSOT + 邊界案例覆蓋 + 職責分離
 
 詳 `.claude/references/spec-rules.md` — SSOT 深度判斷 / reciprocal 規則 / 目前 6 個 SSOT anchors / 邊界案例 scope 預設(Field 家族 / dark mode / density / 純 wrapper)/ spec 與 tsx 職責分離 / calc() 公式表達。
-
-
-# Consistency Audit 原則（canonical + rationale-for-deviation）
-
-**任何宣稱「跨元件要一致的事」必須三件套齊全:**
-
-1. **Canonical 要明確指向**——CLAUDE.md 某段、某 spec.md、某 skill reference。不可只存在於口頭或直覺。
-2. **偏離 canonical 的元件要在自己 spec.md 記 rationale**——不是每個元件都必須一致，但「不一致」必須可追溯為什麼。沒寫 rationale = drift，不是故意設計。
-3. **Audit 檢查公式**：`actual == canonical OR (actual != canonical AND spec.md 有 rationale)`。任一 audit 只要它在查「X 是否跨元件一致」，都必須按這個公式走。
-
-**為什麼**：設計系統的品質不是「所有元件都長一樣」，而是「任何差異都有原因可追」。沒有 canonical 就沒有一致性可言；沒有 rationale 機制，一致性會變成僵化。
-
-**已套用 canonical 的面向**：
-- Anatomy story `export const` 名稱 → `/story-writing` anatomy-standard.md
-- Spec.md 七維度 → `# Spec 規則`
-- cva defaultVariants 三方標記 → anatomy-standard.md 高風險漂移段
-- Token 命名 namespace + role → `# Token 命名原則`
-
-**新增 consistency 類訴求前的判斷**：
-- 能在 CLAUDE.md / spec.md / skill 某處清楚指一段當 canonical?→ 可以寫成規則
-- 偏離的元件能在自己 spec.md 說清楚為什麼?→ 可以寫成規則
-- 兩者任一做不到 → 這不是 canonical，是風格偏好，不要寫進 governance
 
 
 # 建立 UI 前必讀
