@@ -43,7 +43,14 @@ CORRECTIONS=$(tail -500 "$TRANSCRIPT_PATH" 2>/dev/null \
 
 [ -z "$CORRECTIONS" ] && exit 0
 
-# Append summary line
+# Dedup by session:only log latest per session(avoid re-harvest same session 爆炸 log)
+# 2026-04-24 dogfood 發現:同 session Stop event 每次重掃同 transcript,
+# 產生 N 筆相同 sample。改 dedup:grep 本 session 既有 line 刪除再 append latest。
+if [ -f "$LOG_FILE" ]; then
+  grep -v "\"session\":\"$SESSION_ID\"" "$LOG_FILE" > "$LOG_FILE.tmp" 2>/dev/null && mv "$LOG_FILE.tmp" "$LOG_FILE" || true
+fi
+
+# Append summary line(latest per session)
 COUNT=$(echo "$CORRECTIONS" | wc -l | tr -d ' ')
 ESCAPED_SAMPLE=$(echo "$CORRECTIONS" | head -2 | jq -Rs .)
 printf '{"ts":"%s","session":"%s","count":%s,"sample":%s}\n' \

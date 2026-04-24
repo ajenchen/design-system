@@ -160,6 +160,15 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/log_governance_fires.sh\""
           }
         ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/log_skill_invokes.sh\""
+          }
+        ]
       }
     ],
     "Stop": [
