@@ -691,8 +691,11 @@ export interface FileViewerProps
   > {
   files: FileInfo[]
   initialIndex?: number
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  /** Controlled open state。與 `defaultOpen` 二擇一。 */
+  open?: boolean
+  /** Uncontrolled open 預設(2026-04-25 加,對齊 Dialog/Sheet/Popover dual-mode canonical)。 */
+  defaultOpen?: boolean
+  onOpenChange?: (open: boolean) => void
   /** 當前索引(controlled);consumer 想自己控制 active file 時傳。不傳則 shell 管理。 */
   index?: number
   onIndexChange?: (index: number) => void
@@ -714,6 +717,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
   files,
   initialIndex = 0,
   open,
+  defaultOpen,
   onOpenChange,
   index: indexProp,
   onIndexChange,
@@ -862,7 +866,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
   const showArrows = files.length > 1
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         {/* Overlay — FileViewer 固定深色氛圍,與 Dialog 共用 bg-overlay */}
         <DialogPrimitive.Overlay
@@ -905,7 +909,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
               onInfoToggle={() => setInfoOpen((o) => !o)}
               onDownload={handleDownload}
               allowDownload={allowDownload}
-              onClose={() => onOpenChange(false)}
+              onClose={() => onOpenChange?.(false)}
               labels={labels}
             />
 

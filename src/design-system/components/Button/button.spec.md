@@ -61,16 +61,14 @@ Button 是最基礎的互動元件，用於觸發操作或導覽。
 [startIcon? 16/20px] [<span px-1>label</span>] [<span gap-1>badge? + endIcon?</span>]
 ```
 
-- 單行（`whitespace-nowrap`）
-- Label 包在 `<span className="px-1">` 產生 4px 隱性呼吸
-- 右側 suffix 用 `<span className="inline-flex items-center gap-1">` 包住（badge + endIcon 之間 4px）
-- 最外層 `gap-0` 或 `gap-1`（由 size 決定——詳見下）
-- Items centered (`items-center`)
+- 單行不 wrap
+- Label 兩側隱性 4px 呼吸(icon ↔ label / label ↔ suffix 對稱)
+- 右側 suffix(badge + endIcon)內部 4px
 
-**為什麼 label 用 span px-1 而非外層 gap**：
-- Icon-only 模式（無 label）：外層 padding 公式 `(field-height - icon)/2` 自然對齊無需 gap
-- Has-label 模式：label 的 `px-1` 給 icon 跟文字之間的隱性 4px，同時給兩邊 suffix 也是 4px——**單一規則產生兩側 symmetric spacing**
-- 若用外層 gap-1，icon-only 時要再加條件移除 gap；用 span px-1 機制更穩
+**為什麼用 label 兩側隱性呼吸而非外層 gap**:
+- Icon-only(無 label)→ 外層 padding 公式 `(field-height - icon)/2` 自然對齊,無需 gap
+- Has-label → label 兩側隱性 4px 給 icon 跟文字之間 / label 跟 suffix 之間,**單一規則產生兩側 symmetric spacing**
+- 若用外層 gap-1,icon-only 時要再加條件移除;label 兩側機制更穩(實作 class 細節詳 `button.tsx`)
 
 ### Sub-profile 1: Action trigger（canonical: Button）
 
