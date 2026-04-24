@@ -94,3 +94,10 @@ LinkInput 是 **Field Controls family 成員**——互動狀態(focus / invalid
 - `../Input/input.spec.md` — 純文字 / slug / email 等非 URL 場景
 - `../Field/field-controls.spec.md` — Field Control 共用規則（mode / size / endAction / error）
 - `../Field/form-validation.spec.md` — blur 驗證標準
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `file-item.spec.md`
+- `textarea.spec.md`

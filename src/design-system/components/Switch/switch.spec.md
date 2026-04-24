@@ -168,3 +168,11 @@ Switch 可透過 `label` / `description` props 內部直接渲染緊鄰文字：
 - `../Field/field.spec.md` — Switch 作為 Field control 的整合（label/description 由 Field 接管）
 - `../Field/field-controls.spec.md` — Field Control 共用規則
 - `../Button/button.spec.md` — `pressed` 狀態的 toggle button（非單純布林，有 label/icon 的情況改用 pressed Button）
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `combobox.spec.md`
+- `radio-group.spec.md`
+- `select.spec.md`

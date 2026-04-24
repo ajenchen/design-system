@@ -224,3 +224,10 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 - `combobox.spec.md` — 多選的對應元件
 - `../Switch/switch.spec.md` — 布林切換
 - `../Field/field-controls.spec.md` — Select 作為 Field control 時的共用規則（mode、size、endAction）
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `people-picker.spec.md`
+- `select-menu.spec.md`

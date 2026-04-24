@@ -10,6 +10,7 @@ import {
 } from '@/design-system/components/Field/field-wrapper'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
+import { useFieldContext } from '@/design-system/components/Field/field-context'
 import { Button } from '@/design-system/components/Button/button'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 
@@ -237,13 +238,13 @@ const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
   (
     {
       mode = 'edit',
-      error = false,
+      error: errorProp = false,
       size = 'md',
       value,
       onChange,
       placeholder,
       className,
-      disabled,
+      disabled: disabledProp,
       clearable = false,
       showSeconds = false,
       minuteStep = 1,
@@ -252,10 +253,16 @@ const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
       startIcon,
       formatOptions,
       locale,
+      id: idProp,
+      'aria-describedby': ariaDescribedByProp,
+      'aria-errormessage': ariaErrorMessageProp,
       ...props
     },
     ref,
   ) => {
+    const fieldCtx = useFieldContext()
+    const error = errorProp || (fieldCtx?.invalid ?? false)
+    const disabled = disabledProp ?? fieldCtx?.disabled
     const resolvedMode = disabled ? 'disabled' : mode
     const isEditable = resolvedMode === 'edit'
     const iconSize = size === 'lg' ? 20 : 16
@@ -353,9 +360,13 @@ const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
         <PopoverTrigger asChild>
           <button
             ref={ref}
+            id={idProp ?? fieldCtx?.id}
             type="button"
             disabled={disabled}
             aria-invalid={error || undefined}
+            aria-required={fieldCtx?.required || undefined}
+            aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
+            aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
             aria-haspopup="dialog"
             aria-expanded={open}
             data-field-mode="edit"

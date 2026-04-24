@@ -192,3 +192,10 @@ ColorMatrix 已建:展示 default / hover / selected / disabled 四狀態的 bg 
 - SegmentedControl (`segmented-control.spec.md`) — compact 連體單選變體
 - Tag — 純顯示 / dismissible tag
 - `useOverflowItems` hook (`src/design-system/hooks/use-overflow-items.ts`) — scroll / menu 的共用追蹤邏輯，Tabs 也消費同一個 hook
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `badge.spec.md`
+- `tag.spec.md`

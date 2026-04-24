@@ -103,3 +103,9 @@ AspectRatio export 為 `const AspectRatio = AspectRatioPrimitive.Root`(**直接 
 - `../Carousel/carousel.spec.md` — 未來 consumer(item image 統一 ratio)
 - Radix AspectRatio — `@radix-ui/react-aspect-ratio`
 - shadcn AspectRatio — 參考實作
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `file-viewer.spec.md`

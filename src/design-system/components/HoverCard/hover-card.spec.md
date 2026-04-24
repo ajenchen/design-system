@@ -106,3 +106,11 @@ HoverCard 是**純行為 primitive**(只提供 hover 觸發邏輯 + 定位 + 動
 - `../NameCard/name-card.spec.md` — 人員資訊卡（HoverCard 最常見 content）
 - `../Avatar/avatar.spec.md` — 人員 Avatar 自動 hoverCard 整合
 - Popover（`components/Popover/`，shadcn passthrough 無 spec）— 點擊觸發的浮層
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `carousel.spec.md`
+- `coachmark.spec.md`
+- `overflow-indicator.spec.md`

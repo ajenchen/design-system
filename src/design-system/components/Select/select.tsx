@@ -6,6 +6,7 @@ import type { FieldMode } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { useFieldContext } from '@/design-system/components/Field/field-context'
 import { SelectMenu, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 
@@ -92,7 +93,10 @@ function ReadonlyDisplay({
 // ── Native Select (mobile) ─────────────────────────────────────────────
 
 const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ mode = 'edit', error = false, size = 'md', options, value, onChange, placeholder, className, disabled, clearable = false, display = 'text', startIcon: StartIcon, ...props }, ref) => {
+  ({ mode = 'edit', error: errorProp = false, size = 'md', options, value, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'text', startIcon: StartIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, ...props }, ref) => {
+    const fieldCtx = useFieldContext()
+    const error = errorProp || (fieldCtx?.invalid ?? false)
+    const disabled = disabledProp ?? fieldCtx?.disabled
     const resolvedMode = disabled ? 'disabled' : mode
     const iconSize = getIconSize(size)
     const showClear = clearable && value && resolvedMode === 'edit'
@@ -111,10 +115,14 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     const selectEl = (
       <select
         ref={setSelectRef}
+        id={idProp ?? fieldCtx?.id}
         value={value ?? ''}
         onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         disabled={disabled}
         aria-invalid={error || undefined}
+        aria-required={fieldCtx?.required || undefined}
+        aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
+        aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
         className={cn(bareInputStyles, 'cursor-pointer appearance-none', !value && 'text-fg-muted', !isTextDisplay && value && 'absolute inset-0 w-full h-full opacity-0 z-0')}
         {...props}
       >
@@ -170,7 +178,10 @@ NativeSelect.displayName = 'NativeSelect'
 // ── Custom Select (desktop — consumes SelectMenu) ────────────────────────
 
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode = 'edit', error = false, size = 'md', options, value, onChange, placeholder, className, disabled, clearable = false, display = 'text', startIcon: StartIcon, searchable = false }, ref) => {
+  ({ mode = 'edit', error: errorProp = false, size = 'md', options, value, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'text', startIcon: StartIcon, searchable = false, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp }, ref) => {
+    const fieldCtx = useFieldContext()
+    const error = errorProp || (fieldCtx?.invalid ?? false)
+    const disabled = disabledProp ?? fieldCtx?.disabled
     const resolvedMode = disabled ? 'disabled' : mode
     const iconSize = getIconSize(size)
     const showClear = clearable && value && resolvedMode === 'edit'
@@ -280,9 +291,14 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     const trigger = (
       <div
         ref={ref}
+        id={idProp ?? fieldCtx?.id}
         role="combobox"
         aria-expanded={open}
         aria-haspopup="listbox"
+        aria-invalid={error || undefined}
+        aria-required={fieldCtx?.required || undefined}
+        aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
+        aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
         tabIndex={0}
         className={cn(
           fieldWrapperStyles({ mode: 'edit', size }),

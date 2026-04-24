@@ -301,3 +301,9 @@ Slider 決策維度是 `size`(容器外高)× `range mode`(single / range)× tra
 - `../../tokens/color/color.spec.md` — Primary / muted / fg-disabled token
 - `../Field/field.spec.md` — Field 容器整合規則
 - Radix Slider primitive API — `@radix-ui/react-slider`
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `switch.spec.md`

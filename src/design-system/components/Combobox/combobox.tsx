@@ -3,6 +3,7 @@ import { X, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'
+import { useFieldContext } from '@/design-system/components/Field/field-context'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
@@ -256,12 +257,15 @@ function NativeCombobox({
 // ── Custom Combobox (desktop — consumes SelectMenu) ───────────────────
 
 function CustomCombobox({
-  mode = 'edit', error = false, size = 'md', options, value = [], onChange, placeholder,
-  className, disabled, wrap = false, clearable = false, searchable = false, searchIn = 'menu',
+  mode = 'edit', error: errorProp = false, size = 'md', options, value = [], onChange, placeholder,
+  className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, searchIn = 'menu',
   searchPlaceholder = '搜尋…', // i18n-allow: DS default
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default
   emptyPlaceholder = '選擇…', // i18n-allow: DS default
 }: ComboboxProps) {
+  const fieldCtx = useFieldContext()
+  const error = errorProp || (fieldCtx?.invalid ?? false)
+  const disabled = disabledProp ?? fieldCtx?.disabled
   const resolvedMode = disabled ? 'disabled' : mode
   const iconSize = getIconSize(size)
   const showClear = clearable && value.length > 0 && resolvedMode === 'edit'
@@ -295,7 +299,12 @@ function CustomCombobox({
 
   const trigger = (
     <div
+      id={fieldCtx?.id}
       role="combobox" aria-expanded={open} tabIndex={0}
+      aria-invalid={error || undefined}
+      aria-required={fieldCtx?.required || undefined}
+      aria-describedby={fieldCtx?.descriptionId}
+      aria-errormessage={error ? fieldCtx?.errorId : undefined}
       className={cn(fieldWrapperStyles({ mode: 'edit', size }), value.length > 0 && tagPadding[size], 'relative cursor-pointer',
         wrap && 'items-start py-1',
         open && !error && 'border-primary',

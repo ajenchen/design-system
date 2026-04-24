@@ -208,3 +208,9 @@ disabled / density 繼承 Popover(density 鎖 md,見 `../Popover/popover.spec.md
 - `../HoverCard/hover-card.spec.md` — hover 觸發互動浮層
 - `../Notice/notice.spec.md` — 系統通知 / 錯誤訊息
 - Apple HIG Coachmarks / Ant Design `<Tour>` / Shepherd.js — 世界級對照
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `aspect-ratio.spec.md`

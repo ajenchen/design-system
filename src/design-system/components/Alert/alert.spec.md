@@ -148,3 +148,10 @@ Subtle vs Solid 的完整 variant × theme class 對照見 anatomy `ColorMatrix`
 - `../Notice/notice.spec.md` — Alert 消費的 layout primitive（與 Toast 共用）
 - `../Toast/toast.spec.md` — 非阻斷短暫通知（同一套視覺策略）
 - `../Dialog/dialog.spec.md` — 需要阻斷背景的警告改用 Dialog
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `empty.spec.md`
+- `skeleton.spec.md`

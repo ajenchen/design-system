@@ -794,3 +794,15 @@ CSS 變數在定義元素上解析。`:root` 的 `--foreground: var(--color-neut
 // ✅ Tag / Avatar 直接用 primitive
 <Tag style={{ backgroundColor: 'var(--color-blue-1)', color: 'var(--color-blue-7)' }} />
 ```
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `chart.spec.md`
+- `date-grid.spec.md`
+- `file-item.spec.md`
+- `notice.spec.md`
+- `progress-bar.spec.md`
+- `separator.spec.md`
+- `skeleton.spec.md`

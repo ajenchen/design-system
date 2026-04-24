@@ -6,6 +6,7 @@ import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-sys
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
 import { DateGrid } from '@/design-system/components/DateGrid/date-grid'
+import { useFieldContext } from '@/design-system/components/Field/field-context'
 
 // ── Format ──────────────────────────────────────────────────────────────────
 
@@ -85,20 +86,26 @@ const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
   (
     {
       mode = 'edit',
-      error = false,
+      error: errorProp = false,
       size = 'md',
       value,
       onChange,
       placeholder = 'YYYY-MM-DD',
       className,
-      disabled,
+      disabled: disabledProp,
       clearable = false,
       formatOptions,
       locale,
+      id: idProp,
+      'aria-describedby': ariaDescribedByProp,
+      'aria-errormessage': ariaErrorMessageProp,
       ...props
     },
     ref
   ) => {
+    const fieldCtx = useFieldContext()
+    const error = errorProp || (fieldCtx?.invalid ?? false)
+    const disabled = disabledProp ?? fieldCtx?.disabled
     const resolvedMode = disabled ? 'disabled' : mode
     const isEditable = resolvedMode === 'edit'
     const iconSize = size === 'lg' ? 20 : 16
@@ -134,9 +141,13 @@ const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
         <PopoverTrigger asChild>
           <button
             ref={ref}
+            id={idProp ?? fieldCtx?.id}
             type="button"
             disabled={disabled}
             aria-invalid={error || undefined}
+            aria-required={fieldCtx?.required || undefined}
+            aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
+            aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
             aria-haspopup="dialog"
             aria-expanded={open}
             data-field-mode="edit"
@@ -217,20 +228,26 @@ const DatePickerRange = React.forwardRef<HTMLButtonElement, DatePickerRangeProps
   (
     {
       mode = 'edit',
-      error = false,
+      error: errorProp = false,
       size = 'md',
       value,
       onChange,
       placeholder = ['Start date', 'End date'],
       className,
-      disabled,
+      disabled: disabledProp,
       clearable = false,
       formatOptions,
       locale,
+      id: idProp,
+      'aria-describedby': ariaDescribedByProp,
+      'aria-errormessage': ariaErrorMessageProp,
       ...props
     },
     ref,
   ) => {
+    const fieldCtx = useFieldContext()
+    const error = errorProp || (fieldCtx?.invalid ?? false)
+    const disabled = disabledProp ?? fieldCtx?.disabled
     const resolvedMode = disabled ? 'disabled' : mode
     const isEditable = resolvedMode === 'edit'
     const iconSize = size === 'lg' ? 20 : 16
@@ -275,9 +292,13 @@ const DatePickerRange = React.forwardRef<HTMLButtonElement, DatePickerRangeProps
         <PopoverTrigger asChild>
           <button
             ref={ref}
+            id={idProp ?? fieldCtx?.id}
             type="button"
             disabled={disabled}
             aria-invalid={error || undefined}
+            aria-required={fieldCtx?.required || undefined}
+            aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
+            aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
             aria-haspopup="dialog"
             aria-expanded={open}
             data-field-mode="edit"

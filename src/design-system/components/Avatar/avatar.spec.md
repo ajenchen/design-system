@@ -282,3 +282,13 @@ Avatar 是**身份視覺 primitive**(顯示人 / 組織 / 物件的代表視覺)
 ## 空值 / 驗證
 
 N/A(非互動 primitive,consumer 決定何時渲染;`src` 為 null / 載入失敗時 fallback 到 initials)。
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `file-item.spec.md`
+- `hover-card.spec.md`
+- `menu-item.spec.md`
+- `overflow-indicator.spec.md`
+- `people-picker.spec.md`

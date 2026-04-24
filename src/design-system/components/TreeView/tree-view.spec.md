@@ -536,3 +536,10 @@ TreeView 真實展示需要**多層巢狀結構**才有意義(單節點無法體
 - `../DropdownMenu/dropdown-menu.spec.md` — 彈出式 sub-menu（TreeView 是 persistent）
 - `../Empty/empty.spec.md` — no-data state 的 canonical placeholder
 - `../../patterns/element-anatomy/item-anatomy.spec.md` — TreeItem 內部佈局共用規則
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `accordion.spec.md`
+- `combobox.spec.md`

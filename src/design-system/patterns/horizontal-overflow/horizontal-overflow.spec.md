@@ -168,3 +168,10 @@ return (
 - `CLAUDE.md`「選擇 / 狀態視覺」規則 — 為什麼 overflow trigger 不該用 selection-like 視覺
 - `components/Button/button.tsx` — text variant 的 canonical 樣式
 - `components/DropdownMenu/dropdown-menu.spec.md` — menu item 的 selection 指示器規則
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `file-viewer.spec.md`
+- `overflow-indicator.spec.md`

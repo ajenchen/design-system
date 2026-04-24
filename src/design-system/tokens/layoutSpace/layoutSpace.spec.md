@@ -264,3 +264,11 @@ className="pb-[var(--layout-space-bottom)]"
 className="gap-2"   // 8px 緊密
 className="gap-4"   // 16px 非緊密
 ```
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `description-list.spec.md`
+- `empty.spec.md`
+- `overlay-surface.spec.md`

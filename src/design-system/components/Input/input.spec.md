@@ -140,3 +140,9 @@ Input 有兩個 visual chrome variant,**獨立於 mode**(mode 是 state,variant 
 - `../LinkInput/link-input.spec.md` — URL + 預覽 / 外開
 - `../Textarea/textarea.spec.md` — 多行文字
 - `../Field/field-controls.spec.md` — Field Control 共用規則（mode / size / endAction / error）
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `time-picker.spec.md`

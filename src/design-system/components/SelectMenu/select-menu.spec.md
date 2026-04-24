@@ -154,3 +154,10 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 - `../Combobox/combobox.spec.md` — 主要消費者之一（searchable 多選時切換到 SelectMenu）
 - `../PeoplePicker/people-picker.spec.md` — 永遠使用 SelectMenu 的消費者
 - `../../patterns/element-anatomy/item-anatomy.spec.md` — item-layout pattern（MenuItem 繼承）
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `command.spec.md`
+- `dropdown-menu.spec.md`

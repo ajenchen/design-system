@@ -422,3 +422,11 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 ## 關聯文件
 
 - `button.spec.md`：Button 元件層的設計原則
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `calendar.spec.md`
+- `data-table.spec.md`
+- `file-viewer.spec.md`

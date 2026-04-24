@@ -279,3 +279,25 @@ col.accessor('status', {
 - ❌ endAction 的 inline action 不可省略 `aria-label`（即 `label` 欄位）
 - ❌ Display 的 null 值不可顯示空白——統一使用 `—`（em dash）+ `text-fg-muted`
 - ❌ Field 的 readonly 模式不可用於 DataTable cell——readonly 有底色和 wrapper 開銷，table cell 用 Display 元件
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `checkbox.spec.md`
+- `circular-progress.spec.md`
+- `combobox.spec.md`
+- `data-table.spec.md`
+- `date-picker.spec.md`
+- `element-anatomy.spec.md`
+- `input.spec.md`
+- `link-input.spec.md`
+- `number-input.spec.md`
+- `people-picker.spec.md`
+- `rating.spec.md`
+- `segmented-control.spec.md`
+- `select.spec.md`
+- `slider.spec.md`
+- `switch.spec.md`
+- `textarea.spec.md`
+- `time-picker.spec.md`

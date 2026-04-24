@@ -444,3 +444,11 @@ const CHROME_UNBOUNDED_SLOT =
 - `../../components/Dialog/dialog.spec.md` — modal 浮層 consumer
 - `../../components/Popover/popover.spec.md` — non-modal 浮層 consumer
 - `../../tokens/layoutSpace/layoutSpace.spec.md` — padding token 來源(`--layout-space-loose` / `--layout-space-tight` / `--layout-space-bottom`)
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `coachmark.spec.md`
+- `notice.spec.md`
+- `sheet.spec.md`

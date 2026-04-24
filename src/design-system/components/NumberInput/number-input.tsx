@@ -3,6 +3,7 @@ import { type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, InlineActionConfig } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'
+import { useFieldContext } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 // ── Format ──────────────────────────────────────────────────────────────────
@@ -67,8 +68,8 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
   (
     {
       mode = 'edit',
-      error = false,
-      size,
+      error: errorProp = false,
+      size: sizeProp,
       value,
       onChange,
       precision,
@@ -77,12 +78,19 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
       locale,
       endAction,
       className,
-      disabled,
+      disabled: disabledProp,
       readOnly,
+      id: idProp,
+      'aria-describedby': ariaDescribedByProp,
+      'aria-errormessage': ariaErrorMessageProp,
       ...props
     },
     ref
   ) => {
+    const fieldCtx = useFieldContext()
+    const error = errorProp || (fieldCtx?.invalid ?? false)
+    const size = sizeProp ?? fieldCtx?.size ?? 'md'
+    const disabled = disabledProp ?? fieldCtx?.disabled
     const resolvedMode = disabled ? 'disabled' : readOnly ? 'readonly' : mode
 
     // readonly / disabled 顯示格式化值
@@ -136,9 +144,13 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
           ref={ref}
           type="text"
           inputMode="decimal"
+          id={idProp ?? fieldCtx?.id}
           value={value ?? ''}
           onChange={handleChange}
           aria-invalid={error || undefined}
+          aria-required={fieldCtx?.required || undefined}
+          aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
+          aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
           className={bareInputStyles}
           {...props}
         />

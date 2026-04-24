@@ -128,3 +128,12 @@ Combobox 內部結構有多個 `<div>` / `<Tag>` 帶 `onClick`（tag 容器、Ch
 - `../TreeView/tree-view.spec.md` — 階層式選擇
 - `../Switch/switch.spec.md` — 布林開關群組
 - `../Field/field-controls.spec.md` — Field Control 共用規則（mode / size / endAction / error）
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `overflow-indicator.spec.md`
+- `people-picker.spec.md`
+- `select-menu.spec.md`
+- `tag.spec.md`

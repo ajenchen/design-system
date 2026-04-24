@@ -4,6 +4,7 @@ import type { VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'
+import { useFieldContext } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 // ── URL Validation ──────────────────────────────────────────────────────────
@@ -70,17 +71,23 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     {
       mode = 'edit',
       error: errorProp = false,
-      size = 'md',
+      size: sizeProp = 'md',
       value,
       onChange,
       placeholder = 'https://',
       className,
-      disabled,
+      disabled: disabledProp,
       label,
+      id: idProp,
+      'aria-describedby': ariaDescribedByProp,
+      'aria-errormessage': ariaErrorMessageProp,
       ...props
     },
     ref
   ) => {
+    const fieldCtx = useFieldContext()
+    const size = sizeProp ?? fieldCtx?.size ?? 'md'
+    const disabled = disabledProp ?? fieldCtx?.disabled
     const resolvedMode = disabled ? 'disabled' : mode
     const isEditable = resolvedMode === 'edit'
 
@@ -198,12 +205,16 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         <input
           ref={setRef}
           type="url"
+          id={idProp ?? fieldCtx?.id}
           value={localValue}
           onChange={handleChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          aria-invalid={error || undefined}
+          aria-invalid={(error || fieldCtx?.invalid) || undefined}
+          aria-required={fieldCtx?.required || undefined}
+          aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
+          aria-errormessage={ariaErrorMessageProp ?? ((error || fieldCtx?.invalid) ? fieldCtx?.errorId : undefined)}
           className={bareInputStyles}
           {...props}
         />

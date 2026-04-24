@@ -339,3 +339,11 @@ DataTable 是**composite multi-section 元件**(header / body / row / cell / too
 - `../../tokens/color/color.spec.md` — 語義色彩
 - `../../tokens/elevation/elevation.spec.md` — 固定欄陰影
 - `../Field/field-controls.spec.md` — cell editable 時的 Field Control 共用規則
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `carousel.spec.md`
+- `circular-progress.spec.md`
+- `scroll-area.spec.md`

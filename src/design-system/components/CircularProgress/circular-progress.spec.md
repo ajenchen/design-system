@@ -235,3 +235,10 @@ CircularProgress 是**最薄的 circular progress primitive**,刻意避免多維
 - 新增能力:`<CircularProgress value={N}/>` 支援 determinate
 
 遷移理由:世界級命名對齊 Material / Chakra,支援 determinate 需求(user 2026-04-20 提出),元件數減少(廢除重複的 Spinner 名稱)。
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `badge.spec.md`
+- `skeleton.spec.md`

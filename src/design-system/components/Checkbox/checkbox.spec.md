@@ -293,3 +293,10 @@ Horizontal 需 `gap-4` 因 row 的 py 不擴散到左右。
 - `../RadioGroup/radio-group.spec.md` — Radio 的 group 容器 + 結構對稱 reciprocal
 - `../SelectionControl/selection-item.spec.md` — Checkbox / Radio 共用的 SelectionItem 佈局 primitive（本 spec 的 Clamp 政策為其 SSOT）
 - `../Field/field-controls.spec.md` — Field Control 共用規則
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `menu-item.spec.md`
+- `segmented-control.spec.md`

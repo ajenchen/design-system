@@ -80,6 +80,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       className,
       disabled,
       readOnly,
+      id: idProp,
+      'aria-describedby': ariaDescribedByProp,
+      'aria-errormessage': ariaErrorMessageProp,
       ...props
     },
     ref
@@ -127,9 +130,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           type="text"
+          id={idProp ?? fieldCtx?.id}
           readOnly={resolvedMode === 'readonly'}
           disabled={resolvedMode === 'disabled'}
           aria-invalid={resolvedError || undefined}
+          aria-required={fieldCtx?.required || undefined}
+          aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
+          aria-errormessage={ariaErrorMessageProp ?? (resolvedError ? fieldCtx?.errorId : undefined)}
           className={cn(
             bareInputStyles,
             resolvedMode === 'disabled' && 'text-fg-disabled placeholder:text-fg-disabled cursor-not-allowed',

@@ -193,3 +193,12 @@ Item-level default / hover / focused / selected / disabled **色彩**由 MenuIte
 - `../SelectMenu/select-menu.spec.md` — 選值（選完留在 field 裡）的對應元件
 - `../Button/button.spec.md` — 通常作為 DropdownMenuTrigger
 - `../Dialog/dialog.spec.md` — 複雜流程時的改用選擇
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `command.spec.md`
+- `sheet.spec.md`
+- `sidebar.spec.md`
+- `tree-view.spec.md`

@@ -129,3 +129,9 @@ Toast 的 public API 是 `toast()` 函式(imperative 觸發)+ `<Toaster />` Prov
 - `../Alert/alert.spec.md` — 持久性通知（同一套視覺策略）
 - `../Dialog/dialog.spec.md` — 需要阻斷或確認的通知改用 Dialog
 - [sonner](https://sonner.emilkowal.ski/) — 浮動管理 library
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `sheet.spec.md`

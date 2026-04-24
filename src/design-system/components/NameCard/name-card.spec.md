@@ -140,3 +140,10 @@ NameCard 的 default actions **是 `Chat + Audio call`**(chat app 標配,對齊 
 - `../Tooltip/tooltip.spec.md` — 純文字 hover 提示（NameCard 是可互動 hover content）
 - `../DescriptionList/description-list.spec.md` — Info fields 的 label / value 佈局
 - `../Button/button.spec.md` — Action button（Message / Invite 等 CTA）
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `people-picker.spec.md`
+- `tag.spec.md`
