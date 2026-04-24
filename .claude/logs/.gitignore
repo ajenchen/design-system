@@ -1,3 +1,4 @@
 *.jsonl
+*.jsonl.*
 !.gitignore
 !.gitkeep
