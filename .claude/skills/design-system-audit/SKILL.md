@@ -286,6 +286,29 @@ chain `.claude/skills/design-system-audit/references/principle-audit-protocol.md
 - 本次 audit commits 都是 spec.md 純文字修正(無 tsx / token 改動)→ D3-D5 無變,可跳 Phase 3.5
 - 高效模式:只跑 Phase 3.5a(D5),跳 3.5b / 3.5c
 
+### Phase 4.5 — Governance sprawl check(進階模式強制 chain `/knowledge-prune`)
+
+對齊 CLAUDE.md `# 資訊治理 canonical`:進階模式 DS audit 結束後,若治理文件(CLAUDE.md / specs / skills / MEMORY.md)有膨脹信號,chain `/knowledge-prune`。
+
+**Trigger 判定**(任一命中就 chain):
+- CLAUDE.md > 800 行(讀 `wc -l CLAUDE.md`)
+- MEMORY.md > 20 entries
+- 本次 audit commits 動過 `# Meta-Pattern 預警` 條目(新增 meta → 必檢討下游冗餘,「上游加 = 下游減」)
+- `.claude/logs/hook-fires.jsonl` 有 6 月 0 fire 的 hook(死 hook 提名)
+- `.claude/logs/user-corrections.jsonl` 有 > 10 條未 codify pending
+
+**流程**:
+1. Main agent 跑上述 trigger 判定
+2. 命中 → invoke `/knowledge-prune` skill,scope = full 8-home
+3. `/knowledge-prune` 自身有 checkpoint,遇 P2(動 canonical 意思)STOP 等 user
+4. Prune 完成 → 回到本 audit 的 Phase 4 Final report 繼續
+
+**不 trigger 的條件**:
+- 高效模式(scope=changed / component)— governance 改動範圍小,不值得全掃
+- 本次 audit 無新增 Meta-Pattern + 所有 file size 在 budget 內 + logs 無 dead 指標
+
+**為什麼在 Phase 4.5**:Phase 3-4 改完 DS code / spec,此時是 governance 最新狀態,可準確判斷哪些 rule 被 consolidation 後冗餘。先 prune 再 final report,避免下次 audit 又撞同樣 sprawl。
+
 ### Phase 4 — Final report + memory update + Self-improvement capture(強制)
 
 After all commits:
