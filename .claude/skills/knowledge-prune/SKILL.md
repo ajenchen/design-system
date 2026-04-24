@@ -1,6 +1,6 @@
 ---
 name: knowledge-prune
-description: Prune governance sprawl across CLAUDE.md / specs / skills / hooks / memory / settings. Finds duplicate rules, dead hooks (6mo 0 fire), stale memories, over-concrete bug case studies that should abstract to meta, and contradictions across homes. Enforces per-file budget (CLAUDE.md ≤ 400 lines, spec ≤ 300, SKILL ≤ 250, memory ≤ 100) and retire rate ≥ 5% / quarter. Invoke via /knowledge-prune quarterly or when CLAUDE.md > 800 / MEMORY.md > 20 entries / audit Phase F reports sprawl. Auto-chained by /design-system-audit --deep Phase 4.5.
+description: Prune governance sprawl across CLAUDE.md / specs / skills / hooks / memory / settings. Finds duplicate rules (Rule-of-3), stale memories, over-concrete bug case studies that should abstract to meta, and contradictions across homes. Dead-hook detection currently uses manual code review (per-hook fire log not yet instrumented). Enforces per-file budget (CLAUDE.md ≤ 400 lines, spec ≤ 300, SKILL ≤ 250, memory ≤ 100) and retire rate ≥ 5% / quarter. Invoke via /knowledge-prune quarterly or when CLAUDE.md > 800 / MEMORY.md > 20 entries / audit Phase F reports sprawl. Auto-chained by /design-system-audit --deep Phase 4.5.
 ---
 
 # Knowledge Prune — 治理反膨脹 skill
@@ -52,7 +52,7 @@ memory files      N              per-file ≤100
 
 讀 `.claude/logs/` + `.claude/benchmarks/`(Commit 5 後):
 
-- `hook-fires.jsonl` — 過去 6 月每個 hook fire 次數(0 = retire 提名)
+- `hook-fires.jsonl` — **目前實際記的是 governance-file edits(tool/path per event),非 per-hook fires**(2026-04-24 發現);dead-hook 檢測目前無 instrumentation。要啟用需每個 hook.sh 自行 append log,見 D2 fallback。可用的是「hot governance files」分析
 - `skill-invokes.jsonl`(若存在)— 過去 3 月每 skill invoke 次數
 - `user-corrections.jsonl`(若存在)— pending codification 清單
 - `benchmarks/claude-code-features.jsonl` — 新 CC feature 採用提議
@@ -76,7 +76,7 @@ Example violations:
 
 #### D2 — Dead & stale(fire / edit recency)
 
-- **Dead hooks**:讀 `.claude/logs/hook-fires.jsonl`,6 月 0 fire 的 hook 名 → retire 提名
+- **Dead hooks**:⚠️ 2026-04-24 發現無 instrumentation(`hook-fires.jsonl` 只記 tool+file,非 per-hook)→ fallback 走「code review + settings.json matcher 清單」手動判斷。未來啟用 per-hook logging 後可自動化
 - **Stale memories**:`ls -la ~/.claude/.../memory/*.md`,6 月無 git log 變動且不在 MEMORY.md index head = stale
 - **Unused skills**:`skill-invokes.jsonl` 3 月 0 invoke(除非是 rare-event skill,例 `delivery-handoff`)
 
@@ -213,7 +213,7 @@ Phase 1 D3 發現 5+ 條下游條目可被新 meta 吸收 → 提議新 Meta-Pat
 
 | 項目 | Retire criteria |
 |------|-----------------|
-| Hook | 6 月 `hook-fires.jsonl` 0 fire + 無 future-planned consumer |
+| Hook | 手動 code review(per-hook fire log 未 instrumentation,見 Phase 0.5 note)+ 無 future-planned consumer |
 | Skill | 3 月 0 invoke + 非 rare-event skill(release-cut 類可例外) |
 | Meta-Pattern 條目 | 被新上游 meta 完全吸收 + grep 無引用 |
 | Memory file | 6 月未更新 + 現況已不符 + MEMORY.md 無 head pointer |
