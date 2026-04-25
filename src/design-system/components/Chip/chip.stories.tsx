@@ -54,16 +54,33 @@ export const States: Story = {
 }
 
 // ── With icon ────────────────────────────────────────────────────────────────
+// Manual story 拆分原則(CLAUDE.md `# Story`):startIcon / endIcon 同 slot rule
+// (LucideIcon prop slot,size 由元件控)→ 合併為 WithIcon 對照 grid。
+// 對齊 Polaris pattern(單一 `icon` prop + Controls 切方向)。
 
-export const WithStartIcon: Story = {
+export const WithIcon: Story = {
   render: () => {
-    const [value, setValue] = useState<string[]>(['react'])
+    const [filter, setFilter] = useState<string[]>(['react'])
+    const [sort, setSort] = useState<string[]>([])
     return (
-      <ChipGroup type="multiple" value={value} onValueChange={setValue}>
-        <Chip value="react" startIcon={Star}>React</Chip>
-        <Chip value="vue" startIcon={Star}>Vue</Chip>
-        <Chip value="svelte" startIcon={Star}>Svelte</Chip>
-      </ChipGroup>
+      <div className="flex flex-col gap-3">
+        <div>
+          <div className="text-caption text-fg-muted mb-2">startIcon — 主題分類 / 標記</div>
+          <ChipGroup type="multiple" value={filter} onValueChange={setFilter}>
+            <Chip value="react" startIcon={Star}>React</Chip>
+            <Chip value="vue" startIcon={Star}>Vue</Chip>
+            <Chip value="svelte" startIcon={Star}>Svelte</Chip>
+          </ChipGroup>
+        </div>
+        <div>
+          <div className="text-caption text-fg-muted mb-2">endIcon — 篩選器 / 下拉提示</div>
+          <ChipGroup type="multiple" value={sort} onValueChange={setSort}>
+            <Chip value="sort" endIcon={ChevronDown}>Sort</Chip>
+            <Chip value="filter" endIcon={ChevronDown}>Filter</Chip>
+            <Chip value="group" endIcon={ChevronDown}>Group</Chip>
+          </ChipGroup>
+        </div>
+      </div>
     )
   },
 }
@@ -78,21 +95,6 @@ export const WithBadge: Story = {
         <Chip value="all" badge={<Badge count={24} />}>全部</Chip>
         <Chip value="active" badge={<Badge count={3} />}>進行中</Chip>
         <Chip value="done" badge={<Badge count={21} />}>已完成</Chip>
-      </ChipGroup>
-    )
-  },
-}
-
-// ── With endIcon ────────────────────────────────────────────────────────────
-
-export const WithEndIcon: Story = {
-  render: () => {
-    const [value, setValue] = useState<string[]>([])
-    return (
-      <ChipGroup type="multiple" value={value} onValueChange={setValue}>
-        <Chip value="sort" endIcon={ChevronDown}>Sort</Chip>
-        <Chip value="filter" endIcon={ChevronDown}>Filter</Chip>
-        <Chip value="group" endIcon={ChevronDown}>Group</Chip>
       </ChipGroup>
     )
   },

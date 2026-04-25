@@ -135,6 +135,12 @@ Grouped by theme. Each runs as an independent subagent; many can parallelize.
 |---|-------|-----------------|
 | 27 | **Clean code 量化**(auto-chain `/code-quality-audit`)| `any` 使用(無 `// any-allow` escape) / dead export / tsx file-size budget 500(cap 800) / long function > 80 行 / circular dep / magic number(與 `check_token_hygiene.sh` 正交)。進階模式 `--deep` 必 chain `node scripts/code-quality-audit.mjs --scope=all`;其他模式 scope=changed |
 
+### Group L — Story splitting principle(2026-04-26 新增)
+
+| # | Audit | What it catches |
+|---|-------|-----------------|
+| 28 | **Manual story 拆分原則 alignment**(對齊 Polaris / Carbon / Storybook 官方)| Per-component grep `*.stories.tsx`(non-anatomy/principles)反 pattern:(1) `WithStartIcon`+`WithEndIcon` 拆兩 story(同 slot rule 違規,該 `WithIcon` 對照 grid)(2) `Default`+`AllVariants` 同檔(冗餘)(3) ≥2 個 variant 拆細(`Primary`+`Secondary`+`Tertiary` 各自 — 該合 `AllVariants`)。`// @story-split-rationale: <reason>` 檔首 allowlist 例外。Hook `check_story_slot_split.sh` write-time block 同源,本 dim 對既有元件 batch verify。對應 CLAUDE.md `# Story` 「Manual story 拆分原則」+ `/story-writing` skill Phase 0 |
+
 ---
 
 ## Workflow

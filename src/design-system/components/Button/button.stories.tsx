@@ -134,25 +134,32 @@ export const Danger: Story = {
 // principles story(含視覺 + do/don't + 規則註解),display 層重複教相同原則 = noise。
 // 需要 startIcon / endIcon 的 quick reference → 參考 `.principles.stories.tsx`。
 
-// ── endIcon / badge（右側）────────────────────────────────────
+// ── icon / badge slots(start + end + badge 對照,對齊 Polaris)──────────
 
-export const WithEndIcon: Story = {
-  name: 'endIcon / badge',
+export const WithIcon: Story = {
+  // Manual story 拆分原則(CLAUDE.md `# Story`)— startIcon / endIcon / badge 同
+  // 元件不同 slot rules,各自 section 對照展示。對齊 Polaris pattern。
+  name: 'icon / badge slots',
   args: { size: 'sm' },
   render: (args) => (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <p className="w-full text-caption text-fg-muted">endIcon only</p>
+        <p className="w-full text-caption text-fg-muted">startIcon — 動作前綴</p>
+        <Button size={args.size} variant="primary" startIcon={Bell}>通知設定</Button>
+        <Button size={args.size} variant="tertiary" startIcon={Bell}>查看通知</Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="w-full text-caption text-fg-muted">endIcon — 後綴提示(常用 ChevronDown 表展開)</p>
         <Button size={args.size} variant="tertiary" endIcon={ChevronDown}>展開選單</Button>
         <Button size={args.size} variant="primary" endIcon={ChevronDown}>新增項目</Button>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <p className="w-full text-caption text-fg-muted">badge only</p>
+        <p className="w-full text-caption text-fg-muted">badge — inline 計數(可獨立 / 配 startIcon)</p>
         <Button size={args.size} variant="tertiary" startIcon={Bell} badge={<Badge count={3} />}>通知</Button>
         <Button size={args.size} variant="tertiary" badge={<Badge count={12} />}>訊息</Button>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <p className="w-full text-caption text-fg-muted">badge + endIcon</p>
+        <p className="w-full text-caption text-fg-muted">badge + endIcon compound</p>
         <Button size={args.size} variant="tertiary" badge={<Badge count={5} />} endIcon={ChevronDown}>更多通知</Button>
         <Button size={args.size} variant="tertiary" badge={<Badge count={2} />} endIcon={ChevronDown}>待辦</Button>
       </div>
