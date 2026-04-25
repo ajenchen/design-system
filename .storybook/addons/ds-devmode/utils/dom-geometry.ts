@@ -10,6 +10,7 @@ export function measureElement(el: Element): InspectPayload {
   const r = el.getBoundingClientRect()
   const parent = el.parentElement
   const pr = parent ? parent.getBoundingClientRect() : null
+  const parentCs = parent ? getComputedStyle(parent) : null
 
   const padding = {
     top: pxFromStyle(cs.paddingTop),
@@ -37,12 +38,17 @@ export function measureElement(el: Element): InspectPayload {
     left: cs.left,
   }
 
-  const distancesToParent = pr
+  // Distance to parent's CONTENT area(2026-04-25 v2 — Figma / Sketch / Zeplin idiom):
+  //   element.boundingRect.left - (parent.boundingRect.left + parent.border-left + parent.padding-left)
+  // 等同元件 CSS 的 margin-left / position-offset-left,redline tool 直接顯 CSS 實際值,
+  // 對齊產品定位「看見 CSS」。原 raw boundingRect(outer-to-outer)是視覺 gap,跟 CSS
+  // 屬性不直接對應,user 看了不知道怎麼複製。
+  const distancesToParent = pr && parentCs
     ? {
-        top: Math.round(r.top - pr.top),
-        right: Math.round(pr.right - r.right),
-        bottom: Math.round(pr.bottom - r.bottom),
-        left: Math.round(r.left - pr.left),
+        top: Math.round(r.top - pr.top - pxFromStyle(parentCs.borderTopWidth) - pxFromStyle(parentCs.paddingTop)),
+        right: Math.round(pr.right - r.right - pxFromStyle(parentCs.borderRightWidth) - pxFromStyle(parentCs.paddingRight)),
+        bottom: Math.round(pr.bottom - r.bottom - pxFromStyle(parentCs.borderBottomWidth) - pxFromStyle(parentCs.paddingBottom)),
+        left: Math.round(r.left - pr.left - pxFromStyle(parentCs.borderLeftWidth) - pxFromStyle(parentCs.paddingLeft)),
       }
     : null
 

@@ -308,7 +308,17 @@ export function drawOverlay({ element, mode, label, sibling }: DrawOptions) {
   const rect = element.getBoundingClientRect()
   const siblingRect = sibling && sibling !== element ? sibling.getBoundingClientRect() : null
   // 當 sibling 存在時,不畫 parent distance(避免視覺混亂),專注 A↔B 測量
-  const parent = siblingRect ? null : (element.parentElement?.getBoundingClientRect() ?? null)
+  const parentEl = siblingRect ? null : element.parentElement
+  const parentRaw = parentEl?.getBoundingClientRect() ?? null
+  const parentCs = parentEl ? getComputedStyle(parentEl) : null
+  // Parent's CONTENT AREA edges(2026-04-25 v2):redline 終點到 parent's 內側,
+  // 距離 = 元件 CSS margin / position offset(對齊 Figma idiom + 產品定位「看見 CSS」)。
+  const parent = parentRaw && parentCs ? {
+    left: parentRaw.left + (parseFloat(parentCs.borderLeftWidth) || 0) + (parseFloat(parentCs.paddingLeft) || 0),
+    top: parentRaw.top + (parseFloat(parentCs.borderTopWidth) || 0) + (parseFloat(parentCs.paddingTop) || 0),
+    right: parentRaw.right - (parseFloat(parentCs.borderRightWidth) || 0) - (parseFloat(parentCs.paddingRight) || 0),
+    bottom: parentRaw.bottom - (parseFloat(parentCs.borderBottomWidth) || 0) - (parseFloat(parentCs.paddingBottom) || 0),
+  } : null
   const cs = getComputedStyle(element)
   const pad = {
     top: parseFloat(cs.paddingTop) || 0,
@@ -405,10 +415,13 @@ export function drawOverlay({ element, mode, label, sibling }: DrawOptions) {
         )
       }
     }
-    // parent outline (faint dashed)
+    // Parent content area outline(2026-04-25 v2)— 對齊 Figma idiom:redline 終點 = 此邊界。
+    // 不畫 parent outer border + padding(避免 user 誤以為 distance 算到 outer);只畫 content
+    // edge dashed line 標記「distance 量到這條線」。
     root.appendChild(
       makeDiv(
-        `position:absolute;left:${parent.left}px;top:${parent.top}px;width:${parent.width}px;height:${parent.height}px;
+        `position:absolute;left:${parent.left}px;top:${parent.top}px;
+         width:${parent.right - parent.left}px;height:${parent.bottom - parent.top}px;
          border:1px dashed rgba(182,104,255,0.4);pointer-events:none;box-sizing:border-box;`,
       ),
     )
