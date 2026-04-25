@@ -64,6 +64,9 @@ const buttonVariants = cva(
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     'disabled:pointer-events-none',
     'rounded-md',
+    // Defensive:SVG 不被 flex shrink 擠扁(防 inner-area 計算誤差導致 icon 被擠成
+    // width<intrinsic 的 asymmetric 顯示)。詳 ICON_ONLY_PX 段 rationale。
+    '[&_svg]:shrink-0',
   ],
   {
     variants: {
@@ -248,11 +251,16 @@ export interface ButtonProps
  *
  * 用 CSS var 讓 density 切換時 padding 自動跟著算(field-height 會變)。
  */
+// 公式扣 2px border(Button base 有 `border border-transparent`,box-sizing border-box):
+//   inner-width = field-height - 2px(border)- 2*padding-x = icon-size
+//   ⟹ padding-x = (field-height - icon-size - 2px) / 2
+// 不扣 border 會讓 inner area 比 icon 小 2px,SVG 被 flex `min-w-0` 擠成
+// width=14×height=16(垂直無 padding 不受擠)。詳 button.spec.md「iconOnly 鐵律」。
 const ICON_ONLY_PX: Record<string, string> = {
-  xs: 'px-[calc((var(--field-height-xs)-16px)/2)]',
-  sm: 'px-[calc((var(--field-height-sm)-16px)/2)]',
-  md: 'px-[calc((var(--field-height-md)-16px)/2)]',
-  lg: 'px-[calc((var(--field-height-lg)-20px)/2)]',
+  xs: 'px-[calc((var(--field-height-xs)-16px-2px)/2)]',
+  sm: 'px-[calc((var(--field-height-sm)-16px-2px)/2)]',
+  md: 'px-[calc((var(--field-height-md)-16px-2px)/2)]',
+  lg: 'px-[calc((var(--field-height-lg)-20px-2px)/2)]',
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
