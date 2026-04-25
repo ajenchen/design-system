@@ -18,7 +18,7 @@
 |---|---|
 | **Click-to-pin / hover-live** | Toolbar toggle / `Alt+I` / Touch tap-to-pin |
 | **Source-first token display** | Author 寫 `padding: calc((var(--field-height-sm) - 16px) / 2)` → panel 完整顯 raw expression(token 高亮)→ resolved 值,**公式不丟** |
-| **Anatomy box(4-rect 完整 box model)** | Margin / Border / Padding / Content,4 邊距離 label 完整 |
+| **Anatomy box(5-rect 完整 box model)** | Position(non-static)/ Margin / Border / Padding / Content,4 邊距離 label 完整(Chrome `MetricsSidebarPane.ts` 同源)|
 | **Redline overlay** | 紫 outline + 藍 padding 斜紋 + 紅距離(2px solid + halo + T-cap 端點 + dimension extension lines) |
 | **Sibling distance** | Pin 後 hover 其他元素 → edge-to-edge gap(Figma-style)|
 | **Auto-layout(flex/grid)** | Container 自動顯 gap / direction / justify / align |
@@ -137,7 +137,9 @@ padding-inline: calc((var(--field-height-sm) - 16px - 2px) / 2)  → 5px
 | **Purple solid outline 2px + white halo** | Pinned element bounds |
 | **Cyan solid outline 2px + white halo** | Sibling hover(Figma-style distance target) |
 | **Purple dashed outline** | Immediate parent bounds |
-| **Blue 45° hatching** | Computed padding(drawn inside 4 edges) |
+| **Green 45° hatching** | Computed padding — color 對齊 Chrome `Common.Color.PageHighlight.Padding`(`#93C47D`)|
+| **Yellow dashed** | Border layer(對齊 Chrome PageHighlight.Border `#FFE599`)|
+| **Orange diagonal stripes** | Margin layer(對齊 Chrome PageHighlight.Margin `#F6B26B`)|
 | **Red 2px line + T-cap stubs + extension lines** | Distance from element edge to target edge,T-cap 兩端標位 unambiguous |
 | **Red label with halo** | Distance value(px,< 12px 自動隱藏只留線 + T-cap)|
 | **Purple top badge** | Element selector(< 18×12 元件自動隱藏)|
