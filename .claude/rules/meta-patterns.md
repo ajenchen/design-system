@@ -1,0 +1,35 @@
+# Meta-Pattern 預警(20 條大原則)
+
+**mindset #6 的具體化**。每條吸收數十個具體 bug,是失敗記憶索引上游。任務前先過這 20 條。
+
+| # | Meta-Principle | 能吸收的 bug 類型(舉例,非窮舉) |
+|---|---|---|
+| **M1** | **視覺決策前必消費 SSOT**(元件 / token / pattern / spec)。強制跑 `# SSOT 消費 canonical` 清單,沒列出 = 自創。 | `variant="bare"` 自發明 / chrome-header token 漏用 / Row 沒用 item-anatomy(詳 historical-bugs.md) |
+| **M2** | **消費 3rd-party lib 必驗 rendered DOM**(不信 docs)。任何 `[&\[data-...\]]:` attribute selector 針對第三方元件前,inspect 真實 DOM 有無該 attribute。Library API(fit / zoom / wheel step)先寫 3 行 POC 驗證行為,再寫到元件裡。 | react-day-picker `data-range-*` 不存在 / react-zoom-pan-pinch fit-to-page 算錯(詳 historical-bugs.md) |
+| **M3** | **Portal 逃逸 subtree context**(theme / density / provider)。任何 overlay 元件(DropdownMenu / Popover / Dialog)走 Portal 到 document body,**不繼承觸發點的 subtree attribute**;顯式 forward `data-theme`;`data-density` 部分 overlay 刻意 lock `md`(詳 `density.spec.md`)。 | DropdownMenu 在 dark subtree 變亮(詳 historical-bugs.md) |
+| **M4** | **`_Group` 元件必隔離單 item 的 fieldCtx**。當 Group 元件(CheckboxGroup / RadioGroup / SwitchGroup)包在 Field 內,其 child items **不可共用 fieldCtx.id / fieldCtx.hasFieldWrapper**;Group 必建自己的 Context 告訴 items「你在 group 裡」。 | CheckboxGroup 共 fieldCtx.id,label 全抑制 / 點擊只 toggle 第一個(詳 historical-bugs.md) |
+| **M5** | **視覺 canonical 必 spec 聲明所有 state 疊加組合**。單一 state(today / selected / hover / disabled)有視覺定義不夠;**所有兩兩疊加、三疊加組合也要在 spec 有明文**。 | DatePicker today+selected 隱形 / hover+disabled ring 仍顯示(詳 historical-bugs.md) |
+| **M6** | **Stakeholder-visible 產出 → 強制進階稽核才出稿**(不是 merge 後補)。任何「有視覺可以給 stakeholder 看」的產出(新元件 / 元件新功能 / 新產品頁 / 比稿)**必過進階完整稽核**(6 維 + 全截圖視覺驗證)。日常 dev 可用高效模式,stakeholder gate 不可。 | FileViewer 初版 8+ 項給人看才發現(詳 historical-bugs.md) |
+| **M7** | **新 protocol / skill / rule 寫完,必反向 cross-check 既有 Meta-Principle 是否該套用**。尤其:consistency-class 的 protocol 必走「一致性類稽核必先全掃再判」(本章節);audit skill 必加「Self-improvement capture」Phase F step;Rule 觸及「canonical」「SSOT」「rationale」keyword → 必明示 substantive vs 表達層分權。 | principle-audit-protocol v1 漏套既有 Phase 0 全掃(詳 historical-bugs.md) |
+| **M8** | **訂立 / 修改 cross-component canonical 前必 world-class benchmark**。任何 predicate / decision tree / taxonomy 類 spec,**必先 grep 至少 3 家世界級 DS**(Polaris / Material / Atlassian / Ant Design / Carbon / Apple HIG / VS Code / Figma 等)列對照表,再訂 rule。**絕對禁止**憑直覺開場寫 predicate,user 問才補對照。每個 category / variant / case 必附世界級 reference(實作名或 API 指向),沒有對照的 rule 視同未成熟,走 Checkpoint 3。 | item-anatomy Inline Action 疊代 4 次才有世界級對照 |
+| **M9** | **Predicate / decision tree 寫完,present 前必 4 題自測**,防 membership drift。(a) 每 example 回跑決策樹;(b) cap / constraint cross-check;(c) 每 example 對 ≥3 家 world-class DS;(d) 每 category ≥1 example。任一題失敗 → 重收斂,**禁止 present**。 | Cat 1 IA 塞 endAction / FileItem sm 違 ≤24 cap |
+| **M10** | **Proactive exhaustive scan**:canonical migration 完成前禁止只改「直覺相關」元件;final report 前禁止省略「我知道但沒講」的 tech debt。**Mechanical 落地**:每 fix commit 後 `/scan-similar-bugs` skill 強制 grep DS-wide。 | dismiss migration 漏 FileViewer / 7 題 silent tech debt user 一次炸 |
+| **M11** | **User-perspective interactive state walk**:改完 UI 後 present 前必親自走 7 題 self-test(static / hover / focus-visible / active / keyboard / 範例真實性 / CSS 對稱)。每 UI 改動未跑 7 題就 commit = 違反。 | ListBody 修完 user 連抓 5 波 |
+| **M12** | **Binary strict rule(「必 X」/「禁 Y」)前必 benchmark + invariant test**。3 題自測:≥3 家世界級一致 / counter-example scan / root invariant vs surface observation。震盪症狀(A→not A→A)= meta invariant 沒抓到,**停下 present**。 | hover bg 震盪 4 次(bg-edge vs content-padding invariant) |
+| **M13** | **User 第 2 次提相關問題 → 自動截圖 verify**。當 user 就同一視覺 / 行為主題第 2 次問 / 糾正,AI 必 invoke 截圖 verify(`visual-audit.mjs --scope=component:XXX`)。第 3 次才 verify = 違反。**Corollary**:user 指定「所有 X 都要 Y」,同 session 全部做完 + 建 hook 防線。 | avatar-NameCard migration 分批拖延 user 第 2 次催才全改 |
+| **M14** | **對話結論 → AUTO integrate pipeline**(不等 user 催)。每次 canonical / 設計決策 / 新 rule 結論時必執行 5-layer pipeline ≥ 3 層落地:M8 benchmark / SSOT home 識別 / spec / code / hook / CLAUDE.md / memory / 驗證。User 問「有沒有整合到 X」= M14 violation。 | chrome-header / dismiss / hoverCard 每個都 user 提醒才整合 |
+| **M15** | **Product UI flow 必須 visual-audit coverable**。任何 stakeholder-facing flow 必含 OpenSnapshot 類 stories(`defaultOpen` / `useState(true)` / `play()`)。禁留「需真人點擊才能看到的 state」未截圖。 | Sheet / FileViewer 只截 trigger 缺 OpenSnapshot |
+| **M16** | **訂 standalone card/pill 容器 canonical 必同步訂 multi-instance gap canonical**。3 條公式:同類 standalone → 必 gap;同類 permanent flush → 0 gap OK;混合語言 → 必取最保守 gap。Hook `check_item_list_gap.sh` 預警 + audit dim verify。 | FileItem rich card + compact bg 連續相連 |
+| **M17** | **SSOT 必可傳播**(非僅 markdown)。同值 / 同公式 hard-code 在 3+ consumer = 必抽成 token / primitive / utility class。**兩層 SSOT 架構**:底層 token(值可調)+ primitive(結構封裝 + 消費 token);世界級對照 Material/Carbon/Ant/Polaris 共識。 | mt-0.5 canonical 13 consumer hard-code 假 SSOT |
+| **M18** | **Propose-time 4 題自檢 gate**。列 option / 建議前必 inline 跑 Q1 M8 benchmark / Q2 M17 SSOT / Q3 Rule-of-3 / Q4 M10 下游吸收。Reject 不列出,通過寫 4-Q 證據表。SSOT → `.claude/skills/propose-options/SKILL.md`。 | c hook + d M18-inner-area propose-time 沒 4-Q,user 撤回 |
+| **M19** | **Trigger phrase auto-pipeline**。「確保 / 一定 / 永不漂移 / ensure / always」trigger → 自動 5-layer ≥ 3 層落地 + M8 + M17 + M10。Substantive 走 STOP。SSOT → `.claude/skills/ensure-canonical/SKILL.md`。 | story splitting 2026-04-26 user 第 N 次強調才落地 |
+| **M20** | **AI 自問 best-practice + 自動 self-improve**(不靠 user 提醒)。Stop hook `stop_meta_self_audit.sh` 每 turn 跑 score → < 80 / regression ≥ 5 inject MAXIMUM-strength prompt → AI must act before user reply。**Note(2026-04-26 external benchmark)**:score formula 已對齊 Anthropic 官方 thresholds(CLAUDE.md ≤ 200 / hooks ≤ 15 / subagents > 0 / path-scoped rules used)。 | user 10 次問「best-practice 嗎」直到外部 benchmark 確認真 gap |
+
+## 判斷 meta-principle 是否漏寫的 test
+
+- 同類 bug 一年內被糾正 3 次 → meta-principle 漏寫或沒執行,檢討本清單
+- 某 bug 跟 20 條中任一條對不上 → 可能要新增第 21 條(跟 user 討論)
+
+## 與失敗記憶索引的關係
+
+Meta-principle 是**上游**(預防);具體 bug 歷史詳解移到 `.claude/skills/design-system-audit/references/historical-bugs.md`。CLAUDE.md 只留 meta-principle one-liner anchor + pointer。

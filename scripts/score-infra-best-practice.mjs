@@ -22,11 +22,14 @@ function listFiles(dir, pattern) {
 
 const dimensions = [];
 
-// === D1: CLAUDE.md size discipline(target ≤ 400, transition cap 800)===
+// === D1: CLAUDE.md size(Anthropic target ≤ 200,本 commit 對齊外部 benchmark)===
+// Anthropic best-practices: "target under 200 lines" + warns "Bloated CLAUDE.md
+// causes Claude to ignore actual instructions". Updated formula:
+//   ≤ 200 → 100,201-400 → 70,401-600 → 40,> 600 → 10
 {
   const lines = safeWc('CLAUDE.md');
-  const score = lines <= 400 ? 100 : lines <= 600 ? 80 : lines <= 800 ? 60 : 30;
-  dimensions.push({ dim: 'D1 CLAUDE.md size', value: `${lines} lines`, score, max: 100 });
+  const score = lines <= 200 ? 100 : lines <= 400 ? 70 : lines <= 600 ? 40 : 10;
+  dimensions.push({ dim: 'D1 CLAUDE.md size(Anthropic target ≤ 200)', value: `${lines} lines`, score, max: 100 });
 }
 
 // === D2: Skill SKILL.md size discipline ===
@@ -91,7 +94,34 @@ const dimensions = [];
   dimensions.push({ dim: 'D7 Principle generator skill', value: exists ? 'present' : 'missing', score, max: 100 });
 }
 
-// === D8: tsc + storybook build state(actual mechanical pass)===
+// === D8a: Hook count discipline(Anthropic / community benchmark)===
+// claude-code-hooks-mastery 13 hooks(comprehensive lifecycle reference)
+// Anthropic plugins 0-1 hooks each. Industry typical < 15。
+//   ≤ 15 → 100,16-25 → 70,26-35 → 40,> 35 → 10
+{
+  const hooks = listFiles('.claude/hooks', /\.sh$/).filter(f => f !== '_log-fire.sh');
+  const count = hooks.length;
+  const score = count <= 15 ? 100 : count <= 25 ? 70 : count <= 35 ? 40 : 10;
+  dimensions.push({ dim: 'D8a Hook count(target ≤ 15)', value: `${count} hooks`, score, max: 100 });
+}
+
+// === D8b: Subagent presence(Anthropic best-practices: "one of the most powerful tools")===
+{
+  const agentDir = '.claude/agents';
+  const agents = existsSync(agentDir) ? readdirSync(agentDir).filter(f => f.endsWith('.md') && f !== 'README.md') : [];
+  const score = agents.length === 0 ? 0 : agents.length <= 5 ? 100 : 80;
+  dimensions.push({ dim: 'D8b Subagent presence', value: `${agents.length} agents`, score, max: 100 });
+}
+
+// === D8c: Path-scoped rules(2026 Anthropic recommended primitive)===
+{
+  const rulesDir = '.claude/rules';
+  const rules = existsSync(rulesDir) ? readdirSync(rulesDir).filter(f => f.endsWith('.md')) : [];
+  const score = rules.length === 0 ? 0 : rules.length >= 3 ? 100 : 60;
+  dimensions.push({ dim: 'D8c Path-scoped rules', value: `${rules.length} rules`, score, max: 100 });
+}
+
+// === D9: tsc + storybook build state ===
 {
   let tscPass = false;
   try {
@@ -101,7 +131,7 @@ const dimensions = [];
   // Don't run storybook build (slow) — just check storybook-static existence as proxy
   const sbStatic = existsSync('storybook-static');
   const score = (tscPass ? 70 : 0) + (sbStatic ? 30 : 0);
-  dimensions.push({ dim: 'D8 Build state', value: `tsc ${tscPass ? '✓' : '✗'} / storybook-static ${sbStatic ? '✓' : '✗'}`, score, max: 100 });
+  dimensions.push({ dim: 'D9 Build state', value: `tsc ${tscPass ? '✓' : '✗'} / storybook-static ${sbStatic ? '✓' : '✗'}`, score, max: 100 });
 }
 
 // === Aggregate ===
