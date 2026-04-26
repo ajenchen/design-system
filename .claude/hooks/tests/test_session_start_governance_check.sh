@@ -53,8 +53,8 @@ echo "Test 2: CLAUDE.md strong-warn threshold (601)"
 setup_proj
 yes '.' | head -650 > "$TMP_PROJ/CLAUDE.md"
 run_hook
-if [ "$EXIT" = "0" ] && echo "$STDOUT_TEXT" | grep -q "strongly recommended" && ! echo "$STDOUT_TEXT" | grep -q "BLOCKER"; then
-  echo "  PASS  Test 2 strong-warn 600 reminder"; PASS=$((PASS+1))
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ]; then
+  echo "  PASS  Test 2 silent on soft (601 lines, noise reduction 2026-04-26)"; PASS=$((PASS+1))
 else
   echo "  FAIL  Test 2 (output: $STDOUT_TEXT)"
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 2"
@@ -96,8 +96,8 @@ for i in $(seq 1 150); do
 done > "$TMP_PROJ/.claude/logs/hook-fires-per-hook.jsonl"
 # foo has no test (tests dir is empty)
 run_hook
-if [ "$EXIT" = "0" ] && echo "$STDOUT_TEXT" | grep -q "Fire-weighted test gap" && echo "$STDOUT_TEXT" | grep -q "foo"; then
-  echo "  PASS  Test 5 fire-weighted gap surfaced"; PASS=$((PASS+1))
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ]; then
+  echo "  PASS  Test 5 silent on soft fire-weighted gap (noise reduction)"; PASS=$((PASS+1))
 else
   echo "  FAIL  Test 5 (output: $STDOUT_TEXT)"
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 5"

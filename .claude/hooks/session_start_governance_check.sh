@@ -151,14 +151,25 @@ if [ -f "$FIRES_LOG" ] && [ -d "$TESTS_DIR" ]; then
   fi
 fi
 
-# Silent on pass — only inject if HARD BLOCKERS(soft reminders 不 inject
-# 給 user 看,2026-04-26 user noise-reduction directive)。
-[ -z "$BLOCKERS" ] && exit 0
+# Inject if HARD BLOCKERS(must)or quarterly-prune-overdue soft reminder
+# (90 days,跨 session 但 throttled — 只 ≥ 90 days fire,< 90 silent)。
+# Other soft reminders 不 inject(noise reduction)。
+QUARTERLY_DUE=""
+if [ -f .claude/logs/.last-prune ]; then
+  PRUNE_DAYS=$(( ( $(date +%s) - $(stat -f %m .claude/logs/.last-prune 2>/dev/null || stat -c %Y .claude/logs/.last-prune 2>/dev/null || echo 0) ) / 86400 ))
+  [ "$PRUNE_DAYS" -ge 90 ] && QUARTERLY_DUE="\n- Last /knowledge-prune ${PRUNE_DAYS} days ago(quarterly target ≤ 90 days). Invoke /knowledge-prune this session if convenient."
+fi
 
-# Hard-tier only:must-address-first framing
-MSG="🚨 BLOCKER — governance hard thresholds breached (SessionStart):${BLOCKERS}\n\n"
-MSG="${MSG}⚠️ REQUIRED_FIRST_ACTION:先 invoke 上述 skill(/knowledge-prune 或 /codify-corrections)"
-MSG="${MSG}把 governance 帶回健康區間,再處理 user 的實際請求。"
+[ -z "$BLOCKERS" ] && [ -z "$QUARTERLY_DUE" ] && exit 0
+
+if [ -n "$BLOCKERS" ]; then
+  MSG="🚨 BLOCKER — governance hard thresholds breached (SessionStart):${BLOCKERS}\n\n"
+  MSG="${MSG}⚠️ REQUIRED_FIRST_ACTION:先 invoke 上述 skill(/knowledge-prune 或 /codify-corrections)"
+  MSG="${MSG}把 governance 帶回健康區間,再處理 user 的實際請求。"
+  [ -n "$QUARTERLY_DUE" ] && MSG="${MSG}\n${QUARTERLY_DUE}"
+else
+  MSG="🧭 Governance hygiene reminder (SessionStart):${QUARTERLY_DUE}\nNot blocking — address inline when convenient."
+fi
 ESCAPED=$(printf '%b' "$MSG" | jq -Rs .)
 printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":%s}}\n' "$ESCAPED"
 exit 0
