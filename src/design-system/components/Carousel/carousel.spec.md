@@ -3,6 +3,9 @@ component: Carousel
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isStructural
 ---
 
 # Carousel 設計原則

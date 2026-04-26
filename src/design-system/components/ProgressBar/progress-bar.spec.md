@@ -1,6 +1,8 @@
 ---
 component: ProgressBar
 family: null
+traits:
+  - isInternal
 variants: {}
 sizes: {}
 ---

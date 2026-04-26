@@ -3,6 +3,8 @@ component: Tooltip
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isOverlay
 ---
 
 # Tooltip 設計原則

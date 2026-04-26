@@ -3,6 +3,9 @@ component: DropdownMenu
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isOverlay
 ---
 
 # DropdownMenu 設計原則

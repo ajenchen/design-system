@@ -3,6 +3,9 @@ component: TimePicker
 family: 4
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isInputLike
 ---
 
 # TimePicker 設計原則

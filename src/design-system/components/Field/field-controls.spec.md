@@ -1,3 +1,12 @@
+---
+component: field-controls
+traits:
+  - hasVariants
+  - hasSizes
+  - hasInteractiveStates
+  - isStructural
+---
+
 # Field Controls 設計原則
 
 > **Foundational SSOT rationale**(cap 800,2026-04-25 approved):

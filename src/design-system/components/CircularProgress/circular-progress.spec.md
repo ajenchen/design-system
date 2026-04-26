@@ -3,6 +3,8 @@ component: CircularProgress
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isMatrixHeavy
 ---
 
 # CircularProgress 設計原則

@@ -3,6 +3,8 @@ component: Calendar
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
 ---
 
 # Calendar 設計原則

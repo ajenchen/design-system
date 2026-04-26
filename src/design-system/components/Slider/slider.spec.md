@@ -3,6 +3,10 @@ component: Slider
 family: 4
 variants: {}
 sizes: {}
+traits:
+  - hasSizes
+  - hasInteractiveStates
+  - isMatrixHeavy
 ---
 
 # Slider 設計原則

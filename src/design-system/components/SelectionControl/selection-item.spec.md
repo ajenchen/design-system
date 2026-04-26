@@ -6,6 +6,10 @@ sizes:
   sm: {}
   md: {}
   lg: {}
+traits:
+  - hasSizes
+  - isStructural
+  - isInternal
 ---
 
 # SelectionItem 設計原則

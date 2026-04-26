@@ -9,6 +9,10 @@ sizes:
     when: "default general UI"
   lg:
     when: "touch / prominent CTA / stakeholder-facing surface"
+traits:
+  - hasSizes
+  - hasInteractiveStates
+  - isSelectionSingle
 ---
 
 # Switch 設計原則

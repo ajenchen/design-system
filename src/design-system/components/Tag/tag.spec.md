@@ -36,6 +36,10 @@ sizes:
     when: "default general UI"
   lg:
     when: "touch / prominent CTA / stakeholder-facing surface"
+traits:
+  - hasVariants
+  - hasSizes
+  - hasInteractiveStates
 ---
 
 # Tag 設計原則

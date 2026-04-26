@@ -9,6 +9,10 @@ sizes:
     when: "default general UI"
   lg:
     when: "text-body-lg（16px）"
+traits:
+  - hasSizes
+  - hasInteractiveStates
+  - isInputLike
 ---
 
 # Textarea 設計原則

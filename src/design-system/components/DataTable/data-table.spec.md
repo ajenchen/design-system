@@ -3,6 +3,8 @@ component: DataTable
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isStructural
 ---
 
 # DataTable 設計原則

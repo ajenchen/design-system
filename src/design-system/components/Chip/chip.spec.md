@@ -3,6 +3,8 @@ component: Chip
 family: 3
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
 ---
 
 # Chip 設計原則

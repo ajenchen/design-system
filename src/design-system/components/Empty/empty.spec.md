@@ -3,6 +3,8 @@ component: Empty
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isStructural
 ---
 
 # Empty 設計原則

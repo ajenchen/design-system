@@ -3,6 +3,8 @@ component: Chart
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isStructural
 ---
 
 # Chart 設計原則

@@ -3,6 +3,8 @@ component: Popover
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isOverlay
 ---
 
 # Popover 設計原則

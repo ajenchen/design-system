@@ -3,6 +3,11 @@ component: Sidebar
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasVariants
+  - hasSizes
+  - hasInteractiveStates
+  - isStructural
 ---
 
 # Sidebar 設計原則

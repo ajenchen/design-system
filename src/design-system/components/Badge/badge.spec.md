@@ -15,6 +15,9 @@ variants:
     when: "低強度指示 — 使用者切 tab 才看（Slack sidebar 靜默標記 / VS Code tab modified dot）"
     world-class: ["Polaris Badge tone=new", "GitHub subtle count"]
 sizes: {}
+traits:
+  - hasVariants
+  - isMatrixHeavy
 ---
 
 # Badge 設計原則

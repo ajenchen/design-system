@@ -3,6 +3,9 @@ component: Accordion
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isStructural
 ---
 
 # Accordion 設計原則

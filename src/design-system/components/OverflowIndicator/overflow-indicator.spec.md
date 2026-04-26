@@ -3,6 +3,8 @@ component: OverflowIndicator
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isInternal
 ---
 
 # OverflowIndicator 設計原則

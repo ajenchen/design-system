@@ -3,6 +3,8 @@ component: FileUpload
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
 ---
 
 # FileUpload 設計原則

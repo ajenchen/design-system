@@ -3,6 +3,9 @@ component: LinkInput
 family: 4
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isInputLike
 ---
 
 # LinkInput 設計原則

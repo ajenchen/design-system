@@ -3,6 +3,8 @@ component: PeoplePicker
 family: 4
 variants: {}
 sizes: {}
+traits:
+  - isInputLike
 ---
 
 # PeoplePicker 設計原則

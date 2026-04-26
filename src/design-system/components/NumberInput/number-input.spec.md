@@ -3,6 +3,9 @@ component: NumberInput
 family: 4
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isInputLike
 ---
 
 # NumberInput 設計原則

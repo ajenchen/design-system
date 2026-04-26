@@ -9,6 +9,8 @@ sizes:
     when: "default general UI"
   lg:
     when: "touch / prominent CTA / stakeholder-facing surface"
+traits:
+  - isSelectionMulti
 ---
 
 # Checkbox 設計原則

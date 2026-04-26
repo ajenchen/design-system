@@ -3,6 +3,9 @@ component: TreeView
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isStructural
 ---
 
 # TreeView 設計原則

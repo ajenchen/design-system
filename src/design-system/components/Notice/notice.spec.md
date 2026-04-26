@@ -3,6 +3,8 @@ component: Notice
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isInternal
 ---
 
 # Notice 設計原則

@@ -3,6 +3,8 @@ component: ScrollArea
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
 ---
 
 # ScrollArea 設計原則

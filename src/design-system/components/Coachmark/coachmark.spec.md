@@ -1,6 +1,8 @@
 ---
 component: Coachmark
 family: null
+traits:
+  - isOverlay
 variants: {}
 sizes: {}
 ---

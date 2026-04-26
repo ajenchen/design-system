@@ -3,6 +3,9 @@ component: Rating
 family: 4
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isMatrixHeavy
 ---
 
 # Rating 設計原則

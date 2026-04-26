@@ -3,6 +3,8 @@ component: DescriptionList
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isStructural
 ---
 
 # DescriptionList 設計原則

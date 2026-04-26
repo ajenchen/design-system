@@ -3,6 +3,8 @@ component: Sheet
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isOverlay
 ---
 
 # Sheet 設計原則

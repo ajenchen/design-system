@@ -3,6 +3,9 @@ component: SelectMenu
 family: 4
 variants: {}
 sizes: {}
+traits:
+  - isInputLike
+  - isInternal
 ---
 
 # SelectMenu 設計原則

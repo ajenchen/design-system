@@ -3,6 +3,9 @@ component: Select
 family: 4
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isInputLike
 ---
 
 # Select 設計原則

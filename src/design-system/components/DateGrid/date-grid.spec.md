@@ -3,6 +3,9 @@ component: DateGrid
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isInternal
 ---
 
 # DateGrid 設計原則

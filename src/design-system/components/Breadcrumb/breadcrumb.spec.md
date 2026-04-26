@@ -3,6 +3,9 @@ component: Breadcrumb
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isStructural
 ---
 
 # Breadcrumb 設計原則

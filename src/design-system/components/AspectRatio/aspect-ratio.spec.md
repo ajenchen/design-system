@@ -3,6 +3,8 @@ component: AspectRatio
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isMatrixHeavy
 ---
 
 # AspectRatio 設計原則

@@ -3,6 +3,9 @@ component: Combobox
 family: 4
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isInputLike
 ---
 
 # Combobox 設計原則

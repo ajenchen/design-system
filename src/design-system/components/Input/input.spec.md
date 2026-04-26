@@ -3,6 +3,9 @@ component: Input
 family: 4
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isInputLike
 ---
 
 # Input 設計原則

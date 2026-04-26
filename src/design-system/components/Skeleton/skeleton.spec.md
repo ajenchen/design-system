@@ -3,6 +3,8 @@ component: Skeleton
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isMatrixHeavy
 ---
 
 # Skeleton 設計原則

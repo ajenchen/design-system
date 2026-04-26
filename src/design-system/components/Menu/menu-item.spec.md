@@ -6,6 +6,9 @@ sizes:
   sm: {}
   md: {}
   lg: {}
+traits:
+  - hasInteractiveStates
+  - isInternal
 ---
 
 # MenuItem 設計原則

@@ -3,6 +3,8 @@ component: FileItem
 family: 2
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
 ---
 
 # FileItem 設計原則

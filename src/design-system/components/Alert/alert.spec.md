@@ -1,6 +1,9 @@
 ---
 component: Alert
 family: null
+traits:
+  - hasVariants
+  - hasInteractiveStates
 variants: {}
 sizes: {}
 ---

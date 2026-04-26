@@ -3,6 +3,9 @@ component: SegmentedControl
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasSizes
+  - hasInteractiveStates
 ---
 
 # SegmentedControl 設計原則

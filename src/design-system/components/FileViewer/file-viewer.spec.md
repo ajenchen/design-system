@@ -3,6 +3,9 @@ component: FileViewer
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isOverlay
 ---
 
 # FileViewer 設計原則

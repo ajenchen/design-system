@@ -3,6 +3,9 @@ component: HoverCard
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isOverlay
+  - isInternal
 ---
 
 # HoverCard 設計原則

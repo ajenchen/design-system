@@ -3,6 +3,9 @@ component: Avatar
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isMatrixHeavy
 ---
 
 # Avatar 設計原則

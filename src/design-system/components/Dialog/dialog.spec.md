@@ -3,6 +3,8 @@ component: Dialog
 family: null
 variants: {}
 sizes: {}
+traits:
+  - isOverlay
 ---
 
 # Dialog 設計原則

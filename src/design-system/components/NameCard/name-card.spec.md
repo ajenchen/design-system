@@ -1,6 +1,8 @@
 ---
 component: NameCard
 family: null
+traits:
+  - isInternal
 variants: {}
 sizes: {}
 ---

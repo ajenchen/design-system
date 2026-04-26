@@ -3,6 +3,10 @@
 # Keys 必跟 button.tsx buttonMeta + cva buttonVariants 對齊(compile-time 驗)。
 component: Button
 family: 3  # Pill Layout
+traits:
+  - hasVariants
+  - hasSizes
+  - hasInteractiveStates
 variants:
   primary:
     when: "主要 action / CTA"

@@ -3,6 +3,9 @@ component: Command
 family: null
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isInternal
 ---
 
 # Command 設計原則

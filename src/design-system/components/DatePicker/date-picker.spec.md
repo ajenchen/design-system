@@ -3,6 +3,9 @@ component: DatePicker
 family: 4
 variants: {}
 sizes: {}
+traits:
+  - hasInteractiveStates
+  - isInputLike
 ---
 
 # DatePicker 設計原則
