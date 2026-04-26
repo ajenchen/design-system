@@ -118,14 +118,24 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 
 採 **Polaris-aligned 中等**(避免 Carbon-style 過細 + Ant-style 過薄)+ 接受既有 project naming(`VsXRule` 對齊 Carbon「X versus Y」)。
 
-## Universal core(每元件 ≥ 2)
+## Universal core(每元件 ≥ 1)— 2026-04-26 v3 整合
+
+**重要**:WhenToUse + WhenNotToUse + VsXRule 都教「何時用 X」decision tree,**過度切割造成 noise**。對齊 Polaris/Material/Ant 共識(ONE integrated section),預設整合成單一 story。
 
 | Story name(canonical)| 教什麼 | 世界級 anchor |
 |---------------------|--------|---------------|
-| `WhenToUse` | 真實場景何時該用此元件(Jira/Stripe/Notion 1-3 個)| Carbon `When to use` H3 + Ant `When To Use` H2 + Polaris intro |
-| `WhenNotToUse` | 反 pattern 何時不該用 + 該用什麼替代 | Carbon `When not to use` H3 |
-| `Vs{Sibling}Rule` | 跟近親元件分界(若 spec.md「近親」段有列)| Carbon `X versus Y` H3 + Polaris `Related components` |
-| `ContentGuidelines` | 文案 do/don't(若元件 render 使用者文案,如 Modal title / Button label)| Polaris `Content guidelines` H2 + Carbon `Content` H2 |
+| **`UsageGuidance`**(預設,整合)| **何時用 + 何時不用 + 替代元件 / sibling comparison** 統一 decision tree | Polaris `Best practices` / Material `Usage` / Ant `When To Use`(共識) |
+| `Vs{Sibling}Rule` | 視覺 deep-dive 對照(若需要 visual matrix 比較,deep-dive 才用)| Carbon `X versus Y` H3 |
+| `ContentGuidelines` | 文案 do/don't(若元件 render 使用者文案)| Polaris `Content guidelines` H2 |
+
+**判斷整合 vs split**:
+- 對 80% 元件:**ONE `UsageGuidance`** 涵蓋 何時用 / 何時不用 / sibling 已足夠 — 對齊 Polaris/Material/Ant
+- 對 20% 元件(超複雜 sibling matrix,如 Toast vs Alert vs Dialog):integrate 後加 `VsXRule` deep-dive(視覺 do/don't 對照,文字無法表達)
+- `ContentGuidelines` 永遠獨立(文案 vs 元件選擇 是不同主題)
+
+**Legacy aliases 接受**(不強制 rename 既存 stories):
+- `WhenToUse` / `WhenNotToUse` / `Vs*Rule` 任 1 已存在 = 算「has core」
+- 新元件用 `UsageGuidance` 整合單一 story
 
 **規則**:每元件 principles 至少 **2 個 stories**(任意 combo:canonical 4 + component-specific `*Rule` + 描述性名稱如 `BlueConnectorLogic` / `ParentControlled` 都算 valid)。**全 4 個必有** = over-engineer(Polaris 4/4,但 Carbon Ant 都不到);**少於 2 stories** = principles 太薄無教學價值。Audit `audit-content-quality.mjs` 採寬鬆 ≥ 2 exports 標準(承認既有 component-specific naming idiom)。
 

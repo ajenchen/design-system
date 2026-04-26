@@ -242,10 +242,9 @@ for (const file of walk(COMPONENTS_DIR)) {
     }
   }
 
-  // === Check 5e: Principles 缺 ≥ 2 stories(periodic verify)===
-  // Per category-templates.md「至少 2 個 teaching units」— accept 任 ≥ 2 exports
-  // (canonical 4 + component-specific *Rule + descriptive names like
-  // `BlueConnectorLogic` / `ParentControlled` 都算 valid principle story).
+  // === Check 5e: Principles ≥ 1 decision-related story(2026-04-26 v3 integrated)===
+  // 對齊 Polaris/Material/Ant 共識:ONE integrated `UsageGuidance` 已足夠(80% 元件)
+  // Legacy(WhenToUse / WhenNotToUse / Vs*Rule)接受 + ≥ 2 exports total。
   if (file.endsWith('.principles.stories.tsx')) {
     const exportMatches = [...content.matchAll(/^export const ([A-Z]\w+)/gm)].map(m => m[1]);
     if (exportMatches.length < 2 && exportMatches.length > 0) {
