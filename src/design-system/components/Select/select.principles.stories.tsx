@@ -1,3 +1,7 @@
+// @principles-rationale: Merged WhenToUse + WhenNotToUse(已是 vs 近親 — RadioGroup /
+// SegmentedControl / Combobox / Switch)into a single `UsageGuidance` story (3 sections)
+// per 2026-04-26 user mandate. DisplayModeRule / ImmediateVsSubmitRule / SearchableRule
+// / NativeSelectRule kept as separate principles.
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -12,6 +16,13 @@ export default meta
 type Story = StoryObj
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="mb-12">
+    <h2 className="text-body-lg font-semibold text-foreground mb-3 pb-1 border-b border-divider">{title}</h2>
+    <div>{children}</div>
+  </section>
+)
 
 const Rule = ({
   title, note, children,
@@ -45,33 +56,101 @@ const categoryOptions = [
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
-// ── WhenToUse — 何時使用 Select ──────────────────────
+export const UsageGuidance: Story = {
+  name: '使用指引',
+  render: () => {
+    const [status, setStatus] = React.useState('in_stock')
+    return (
+      <div>
+        <Section title="何時用">
+          <div className="prose prose-sm max-w-prose">
+            <p>適合 Select 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+            <ul className="space-y-1">
+              <li>
+                <LinkTo kind="Design System/Components/Select/展示" name="三種模式"><span className="text-primary hover:underline font-medium cursor-pointer">三種模式</span></LinkTo>
+              </li>
+              <li>
+                <LinkTo kind="Design System/Components/Select/展示" name="顯示模式"><span className="text-primary hover:underline font-medium cursor-pointer">顯示模式</span></LinkTo>
+              </li>
+              <li>
+                <LinkTo kind="Design System/Components/Select/展示" name="尺寸與 Button 對齊"><span className="text-primary hover:underline font-medium cursor-pointer">尺寸與 Button 對齊</span></LinkTo>
+              </li>
+              <li>
+                <LinkTo kind="Design System/Components/Select/展示" name="可清除"><span className="text-primary hover:underline font-medium cursor-pointer">可清除</span></LinkTo>
+              </li>
+              <li>
+                <LinkTo kind="Design System/Components/Select/展示" name="搜尋"><span className="text-primary hover:underline font-medium cursor-pointer">搜尋</span></LinkTo>
+              </li>
+            </ul>
+            <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+          </div>
+        </Section>
 
-export const WhenToUse: Story = {
-  name: '何時使用',
-  render: () => (
-    <div className="prose prose-sm max-w-prose">
-      <p>適合 Select 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/Select/展示" name="三種模式"><span className="text-primary hover:underline font-medium cursor-pointer">三種模式</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Select/展示" name="顯示模式"><span className="text-primary hover:underline font-medium cursor-pointer">顯示模式</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Select/展示" name="尺寸與 Button 對齊"><span className="text-primary hover:underline font-medium cursor-pointer">尺寸與 Button 對齊</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Select/展示" name="可清除"><span className="text-primary hover:underline font-medium cursor-pointer">可清除</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Select/展示" name="搜尋"><span className="text-primary hover:underline font-medium cursor-pointer">搜尋</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
-  ),
+        <Section title="何時不用 + 替代">
+          <Rule
+            title="Select 的 sweet spot — 3+ 選項、空間受限、不需一眼全看"
+            note="表單欄位、toolbar filter、table cell。使用者先看 label,點開才瀏覽選項"
+          >
+            <Select display="tag" options={statusOptions} value={status} onChange={setStatus} />
+          </Rule>
+
+          <Rule
+            title="❌ 多選:用 Combobox"
+            note="Select 永遠單選。需要多選(categories、tags、assignees)必須用 Combobox"
+          >
+            <Select options={categoryOptions} value="electronics" onChange={() => {}} />
+            <Label warn>↑ 需要「同時選 Electronics + Furniture」就不能用 Select</Label>
+          </Rule>
+
+          <Rule
+            title="❌ 布林 on/off:用 Switch"
+            note="on/off 不需要「選一個」的心智模型。Switch 視覺直接表達開關狀態,一次點擊完成切換"
+          >
+            <Select
+              options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
+              value="on"
+              onChange={() => {}}
+            />
+            <Label warn>↑ On/Off 用 Select → 多餘的 dropdown 互動、不如 Switch 直觀</Label>
+          </Rule>
+        </Section>
+
+        <Section title="vs 近親 — Select / RadioGroup / SegmentedControl / Combobox">
+          <Rule
+            title="❌ 決策節點(使用者需要對比評估):用 RadioGroup"
+            note="付款方式、訂閱方案、票種、權限角色——使用者必須看完所有選項才能決定,通常連帶 description / 價格 / feature list。RadioGroup 全露選項支援對比;Select 把選項藏起來,強迫使用者打開 → 讀 → 收起 → 再打開才能比較。判準不是數量,是「選擇本身是不是決策動作」,完整對照見 select.spec.md 的「與 RadioGroup 的分界」"
+          >
+            <Select
+              options={[
+                { value: 'credit', label: '信用卡(手續費 2.5%,即時)' },
+                { value: 'bank', label: '銀行轉帳(無手續費,1-2 工作日)' },
+                { value: 'cash', label: '貨到付款(手續費 NT$30,到貨時付)' },
+              ]}
+              value="credit"
+              onChange={() => {}}
+            />
+            <Label warn>↑ 付款方式是決策節點 + 需要對比手續費 / 處理時間 → 用 RadioGroup 讓選項全露</Label>
+          </Rule>
+
+          <Rule
+            title="❌ 緊湊切換 / filter:用 SegmentedControl"
+            note="SegmentedControl 是 compact control(pill 尺寸),能跟 Button / Input 並排不違和。適合 toolbar 的 view mode、filter tab、chart 時間維度切換。詳見 segmented-control.spec.md"
+          >
+            <Select
+              options={[
+                { value: 'all', label: '全部' },
+                { value: 'active', label: '進行中' },
+                { value: 'done', label: '已完成' },
+              ]}
+              value="active"
+              onChange={() => {}}
+            />
+            <Label warn>↑ Toolbar filter 放 Select → 佔空間、視覺重量比旁邊 Button 重</Label>
+          </Rule>
+        </Section>
+      </div>
+    )
+  },
 }
 
 export const DisplayModeRule: Story = {
@@ -83,22 +162,22 @@ export const DisplayModeRule: Story = {
     return (
       <div>
         <Rule
-          title="text — 純文字選項（預設）"
-          note="選項沒有色彩語意、僅靠文字就能識別時使用。常見場景：類別、地區、語言、角色等"
+          title="text — 純文字選項(預設)"
+          note="選項沒有色彩語意、僅靠文字就能識別時使用。常見場景:類別、地區、語言、角色等"
         >
           <Select options={categoryOptions} value={category} onChange={setCategory} />
         </Rule>
 
         <Rule
           title="tag — 需要色彩識別的選項"
-          note="選項帶有類別或狀態語意，顏色能加速掃視（庫存狀態、優先級、標籤）。options 裡用 tagVariant 指定顏色，edit / readonly / disabled 都用同一顆 Tag 呈現"
+          note="選項帶有類別或狀態語意,顏色能加速掃視(庫存狀態、優先級、標籤)。options 裡用 tagVariant 指定顏色,edit / readonly / disabled 都用同一顆 Tag 呈現"
         >
           <Select display="tag" options={statusOptions} value={status} onChange={setStatus} />
         </Rule>
 
         <Rule
           title="❌ tag 模式不加 startIcon"
-          note="Tag 本身就是視覺標記（顏色 + 形狀），再加 startIcon 是雙重傳達——視覺冗餘且爭奪焦點"
+          note="Tag 本身就是視覺標記(顏色 + 形狀),再加 startIcon 是雙重傳達——視覺冗餘且爭奪焦點"
         >
           <Select
             display="tag"
@@ -108,75 +187,6 @@ export const DisplayModeRule: Story = {
             onChange={setBadExample}
           />
           <Label warn>↑ 左側 Flag icon 和右邊 Tag 都在傳達「這是狀態」——去掉 startIcon</Label>
-        </Rule>
-      </div>
-    )
-  },
-}
-
-export const WhenNotToUse: Story = {
-  name: '何時用 Select vs 近親元件',
-  render: () => {
-    const [status, setStatus] = React.useState('in_stock')
-    return (
-      <div>
-        <Rule
-          title="Select 的 sweet spot — 3+ 選項、空間受限、不需一眼全看"
-          note="表單欄位、toolbar filter、table cell。使用者先看 label，點開才瀏覽選項"
-        >
-          <Select display="tag" options={statusOptions} value={status} onChange={setStatus} />
-        </Rule>
-
-        <Rule
-          title="❌ 決策節點（使用者需要對比評估）：用 RadioGroup"
-          note="付款方式、訂閱方案、票種、權限角色——使用者必須看完所有選項才能決定，通常連帶 description / 價格 / feature list。RadioGroup 全露選項支援對比；Select 把選項藏起來，強迫使用者打開 → 讀 → 收起 → 再打開才能比較。判準不是數量，是「選擇本身是不是決策動作」，完整對照見 select.spec.md 的「與 RadioGroup 的分界」"
-        >
-          <Select
-            options={[
-              { value: 'credit', label: '信用卡（手續費 2.5%，即時）' },
-              { value: 'bank', label: '銀行轉帳（無手續費，1-2 工作日）' },
-              { value: 'cash', label: '貨到付款（手續費 NT$30，到貨時付）' },
-            ]}
-            value="credit"
-            onChange={() => {}}
-          />
-          <Label warn>↑ 付款方式是決策節點 + 需要對比手續費 / 處理時間 → 用 RadioGroup 讓選項全露</Label>
-        </Rule>
-
-        <Rule
-          title="❌ 緊湊切換 / filter：用 SegmentedControl"
-          note="SegmentedControl 是 compact control（pill 尺寸），能跟 Button / Input 並排不違和。適合 toolbar 的 view mode、filter tab、chart 時間維度切換。詳見 segmented-control.spec.md"
-        >
-          <Select
-            options={[
-              { value: 'all', label: '全部' },
-              { value: 'active', label: '進行中' },
-              { value: 'done', label: '已完成' },
-            ]}
-            value="active"
-            onChange={() => {}}
-          />
-          <Label warn>↑ Toolbar filter 放 Select → 佔空間、視覺重量比旁邊 Button 重</Label>
-        </Rule>
-
-        <Rule
-          title="❌ 多選：用 Combobox"
-          note="Select 永遠單選。需要多選（categories、tags、assignees）必須用 Combobox"
-        >
-          <Select options={categoryOptions} value="electronics" onChange={() => {}} />
-          <Label warn>↑ 需要「同時選 Electronics + Furniture」就不能用 Select</Label>
-        </Rule>
-
-        <Rule
-          title="❌ 布林 on/off：用 Switch"
-          note="on/off 不需要「選一個」的心智模型。Switch 視覺直接表達開關狀態，一次點擊完成切換"
-        >
-          <Select
-            options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
-            value="on"
-            onChange={() => {}}
-          />
-          <Label warn>↑ On/Off 用 Select → 多餘的 dropdown 互動、不如 Switch 直觀</Label>
         </Rule>
       </div>
     )
@@ -195,15 +205,15 @@ export const ImmediateVsSubmitRule: Story = {
           note="Jira status、Linear priority、filter、theme 切換。改了立刻寫 DB / 送 API / 改 URL。onChange 通常呼叫 mutation 或 setState 更新父層。沒有「取消」的概念"
         >
           <div>
-            <p className="text-caption text-fg-muted mb-1">Task status（改了立刻寫 DB）</p>
+            <p className="text-caption text-fg-muted mb-1">Task status(改了立刻寫 DB)</p>
             <Select display="tag" options={statusOptions} value={immediate} onChange={setImmediate} />
           </div>
-          <Label>↑ 視覺上是獨立的 inline control，旁邊沒有 submit button</Label>
+          <Label>↑ 視覺上是獨立的 inline control,旁邊沒有 submit button</Label>
         </Rule>
 
         <Rule
           title="隨 form 送出 — onChange 只更新 local state"
-          note="建立/編輯表單、對話框設定。onChange 寫進 React state，直到 submit button 被按才送出。有「取消」可回復"
+          note="建立/編輯表單、對話框設定。onChange 寫進 React state,直到 submit button 被按才送出。有「取消」可回復"
         >
           <div className="border border-border rounded-lg p-4 space-y-3">
             <div>
@@ -215,12 +225,12 @@ export const ImmediateVsSubmitRule: Story = {
               <button className="h-field-md px-3 text-body rounded-md border border-border">取消</button>
             </div>
           </div>
-          <Label>↑ 包在 Form 容器內 + submit / cancel button，使用者清楚儲存時機</Label>
+          <Label>↑ 包在 Form 容器內 + submit / cancel button,使用者清楚儲存時機</Label>
         </Rule>
 
         <Rule
           title="❌ 讓使用者搞不清楚是哪種"
-          note="最常見的失敗：inline 放一個 Select 但 onChange 只改 local state，旁邊卻沒有 submit button。使用者以為改了就套用，離開頁面才發現沒存。這是 DS 最常見的信任破壞點"
+          note="最常見的失敗:inline 放一個 Select 但 onChange 只改 local state,旁邊卻沒有 submit button。使用者以為改了就套用,離開頁面才發現沒存。這是 DS 最常見的信任破壞點"
         >
           <Select options={categoryOptions} value={draft} onChange={setDraft} />
           <Label warn>↑ 沒有 Form 容器、沒有 submit button、又是獨立的 inline control——使用者無法判斷是即時還是要送出</Label>
@@ -235,8 +245,8 @@ export const SearchableRule: Story = {
   render: () => (
     <div>
       <Rule
-        title="主判準：label 性質——獨特關鍵字 / 代碼 / 非自然語言 → 開 searchable"
-        note="使用者無法靠眼睛或 type-to-jump 快速定位時才需要搜尋。產品代碼（SKU-4837）、機場代碼（TPE / NRT）、使用者 ID、ticket number——這類 label 沒有記憶點，必須輸入才能找"
+        title="主判準:label 性質——獨特關鍵字 / 代碼 / 非自然語言 → 開 searchable"
+        note="使用者無法靠眼睛或 type-to-jump 快速定位時才需要搜尋。產品代碼(SKU-4837)、機場代碼(TPE / NRT)、使用者 ID、ticket number——這類 label 沒有記憶點,必須輸入才能找"
       >
         <Select
           searchable
@@ -248,12 +258,12 @@ export const SearchableRule: Story = {
           value="sku-4837"
           onChange={() => {}}
         />
-        <Label>↑ 即使只有 3 個選項，產品代碼 label 仍需要 searchable</Label>
+        <Label>↑ 即使只有 3 個選項,產品代碼 label 仍需要 searchable</Label>
       </Rule>
 
       <Rule
-        title="❌ 流暢自然語言 label：不開 searchable"
-        note="Electronics / Furniture / Food 這類 label，native select 的 type-to-jump（按 E 跳到 Electronics）夠快。多加 searchable 等於多一層不必要的互動"
+        title="❌ 流暢自然語言 label:不開 searchable"
+        note="Electronics / Furniture / Food 這類 label,native select 的 type-to-jump(按 E 跳到 Electronics)夠快。多加 searchable 等於多一層不必要的互動"
       >
         <Select
           searchable
@@ -265,10 +275,10 @@ export const SearchableRule: Story = {
       </Rule>
 
       <Rule
-        title="次要啟發：數量 > 50 幾乎必開（但仍看 label 性質）"
-        note="100 個 a/b/c 不需要搜尋（type-to-jump 直達），5 個產品代碼需要搜尋。純數量 threshold 會誤判這兩端，詳見 spec"
+        title="次要啟發:數量 > 50 幾乎必開(但仍看 label 性質)"
+        note="100 個 a/b/c 不需要搜尋(type-to-jump 直達),5 個產品代碼需要搜尋。純數量 threshold 會誤判這兩端,詳見 spec"
       >
-        <Label>判斷優先序：label 性質 → 數量次要啟發</Label>
+        <Label>判斷優先序:label 性質 → 數量次要啟發</Label>
       </Rule>
     </div>
   ),
@@ -282,7 +292,7 @@ export const NativeSelectRule: Story = {
       <div>
         <Rule
           title="用原生 <select> —— 不自建 dropdown menu"
-          note="原生 select 免費提供：mobile 上的原生 picker UI、完整的鍵盤導覽（↑↓ 跳選項、字母鍵跳首字）、screen reader 正確朗讀、作業系統層級的無障礙支援。自建 dropdown 任何一樣都要自己做一遍且不一定做好"
+          note="原生 select 免費提供:mobile 上的原生 picker UI、完整的鍵盤導覽(↑↓ 跳選項、字母鍵跳首字)、screen reader 正確朗讀、作業系統層級的無障礙支援。自建 dropdown 任何一樣都要自己做一遍且不一定做好"
         >
           <Select options={categoryOptions} value={value} onChange={setValue} />
           <Label>↑ 打開 mobile 模擬器或用 VoiceOver 測試——原生行為直接可用</Label>
@@ -290,10 +300,10 @@ export const NativeSelectRule: Story = {
 
         <Rule
           title="tag 模式也是原生 select"
-          note="Tag 視覺疊在隱藏的原生 select 上（absolute inset-0 opacity-0），Tag 本身 pointer-events-none 讓點擊穿透到 select。視覺客製 + 原生行為兩者兼得"
+          note="Tag 視覺疊在隱藏的原生 select 上(absolute inset-0 opacity-0),Tag 本身 pointer-events-none 讓點擊穿透到 select。視覺客製 + 原生行為兩者兼得"
         >
           <Select display="tag" options={statusOptions} value="in_stock" onChange={() => {}} />
-          <Label>↑ 點擊 Tag 會打開原生 picker，看起來客製實際上走原生路徑</Label>
+          <Label>↑ 點擊 Tag 會打開原生 picker,看起來客製實際上走原生路徑</Label>
         </Rule>
       </div>
     )

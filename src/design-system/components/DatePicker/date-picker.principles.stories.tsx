@@ -1,3 +1,4 @@
+// @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse into single 使用指引 story per refactor task (2026-04-26)
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -28,70 +29,78 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
 
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="mb-12">
+    <h2 className="text-heading-3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+    {children}
+  </section>
+)
+
 // ── Stories ───────────────────────────────────────────────────────────────────
-
-// ── WhenToUse — 何時使用 DatePicker ──────────────────────
-
-// ── UsageGuidance — 整合何時用 / 何時不用 / vs 近親(Polaris/Material/Ant 共識)
-// 合併自舊 WhenToUse / WhenNotToUse(2026-04-26 v3 canonical)
 
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
-      <p>適合 DatePicker 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/DatePicker/展示" name="三種模式"><span className="text-primary hover:underline font-medium cursor-pointer">三種模式</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/DatePicker/展示" name="可清除"><span className="text-primary hover:underline font-medium cursor-pointer">可清除</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/DatePicker/展示" name="尺寸"><span className="text-primary hover:underline font-medium cursor-pointer">尺寸</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/DatePicker/展示" name="Range:訂房 / 訂機票情境"><span className="text-primary hover:underline font-medium cursor-pointer">Range:訂房 / 訂機票情境</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/DatePicker/展示" name="Display"><span className="text-primary hover:underline font-medium cursor-pointer">Display</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
+    <div>
+      <Section title="何時用">
+        <div className="prose prose-sm max-w-prose mb-8">
+          <p>適合 DatePicker 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          <ul className="space-y-1">
+            <li><LinkTo kind="Design System/Components/DatePicker/展示" name="三種模式"><span className="text-primary hover:underline font-medium cursor-pointer">三種模式</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/DatePicker/展示" name="可清除"><span className="text-primary hover:underline font-medium cursor-pointer">可清除</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/DatePicker/展示" name="尺寸"><span className="text-primary hover:underline font-medium cursor-pointer">尺寸</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/DatePicker/展示" name="Range:訂房 / 訂機票情境"><span className="text-primary hover:underline font-medium cursor-pointer">Range:訂房 / 訂機票情境</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/DatePicker/展示" name="Display"><span className="text-primary hover:underline font-medium cursor-pointer">Display</span></LinkTo></li>
+          </ul>
+          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+        </div>
+      </Section>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div>
-      <Rule
-        title="❌ 不用 DatePicker 選擇日期範圍（from-to）"
-        note="日期範圍用 DatePicker.Range（雙 input + 共用 calendar，對齊 Ant DatePicker.RangePicker）。Stripe 的 date range filter 用雙 picker"
-      >
-        <Label warn>日期範圍 → DatePicker.Range，不是單一 DatePicker × 2</Label>
-      </Rule>
+      <Section title="何時不用 + 替代方案">
+        <Rule
+          title="❌ 不用 DatePicker 做純文字日期輸入(API debug)"
+          note="API 表單不需 picker 互動 → 用 Input type='text'。開發者工具的日期欄用純文字"
+        >
+          <Label warn>純文字 ISO date → Input,不需 picker UI</Label>
+        </Rule>
 
-      <Rule
-        title="❌ 不用 DatePicker 選時間（時 / 分 / 秒）"
-        note="時間改用 TimePicker。如需同時選日期 + 時間 → DatePicker + TimePicker 並列。Notion calendar event 的 time 欄是獨立 TimePicker"
-      >
-        <Label warn>時間用 TimePicker，日期 + 時間用並列組合</Label>
-      </Rule>
+        <Rule
+          title="❌ 不用其他 calendar library 平行實作"
+          note="未來若需要 Date Range / DateTime,擴充本 Calendar(`./calendar.tsx`)而非引入第二個 library——避免兩套視覺語言在同一系統並存"
+        >
+          <Label>實作細節見 Design System / Components / DatePicker / 設計規格</Label>
+        </Rule>
 
-      <Rule
-        title="❌ 不用 DatePicker 做月檢視 event calendar"
-        note="Event 檢視（看某月有哪些事件）改用 Calendar 元件（是頁面 canvas 不是 form field）。Notion calendar 檢視用 Calendar，不用 DatePicker"
-      >
-        <Label warn>Event calendar 檢視 → Calendar 元件，DatePicker 只選日期</Label>
-      </Rule>
+        <Rule
+          title="❌ 不覆寫 Calendar token 為非 DS 色"
+          note="Calendar 視覺 token(bg-primary / ring-primary / neutral-hover 等)必須來自 semantic token。硬寫 #xxx / bg-blue-500 會破壞 dark mode 聯動、跟其他浮層語言分岔"
+        >
+          <Label>token 表見設計規格 → Calendar 內部 token</Label>
+        </Rule>
+      </Section>
 
-      <Rule
-        title="❌ 不用 DatePicker 做純文字日期輸入（API debug）"
-        note="API 表單不需 picker 互動 → 用 Input type='text'。開發者工具的日期欄用純文字"
-      >
-        <Label warn>純文字 ISO date → Input，不需 picker UI</Label>
-      </Rule>
-    </div>
+      <Section title="vs 近親元件">
+        <Rule
+          title="❌ 不用 DatePicker 選擇日期範圍(from-to)→ DatePicker.Range"
+          note="日期範圍用 DatePicker.Range(雙 input + 共用 calendar,對齊 Ant DatePicker.RangePicker)。Stripe 的 date range filter 用雙 picker"
+        >
+          <Label warn>日期範圍 → DatePicker.Range,不是單一 DatePicker × 2</Label>
+        </Rule>
+
+        <Rule
+          title="❌ 不用 DatePicker 選時間(時 / 分 / 秒)→ TimePicker"
+          note="時間改用 TimePicker。如需同時選日期 + 時間 → DatePicker + TimePicker 並列。Notion calendar event 的 time 欄是獨立 TimePicker"
+        >
+          <Label warn>時間用 TimePicker,日期 + 時間用並列組合</Label>
+        </Rule>
+
+        <Rule
+          title="❌ 不用 DatePicker 做月檢視 event calendar → Calendar 元件"
+          note="Event 檢視(看某月有哪些事件)改用 Calendar 元件(是頁面 canvas 不是 form field)。Notion calendar 檢視用 Calendar,不用 DatePicker"
+        >
+          <Label warn>Event calendar 檢視 → Calendar 元件,DatePicker 只選日期</Label>
+        </Rule>
+      </Section>
     </div>
   ),
 }
@@ -117,20 +126,6 @@ export const CalendarRule: Story = {
         >
           <DatePicker value={releaseDate} onChange={setReleaseDate} />
           <Label>↑ 發佈日:Calendar 所有視覺 token 來自 semantic.css</Label>
-        </Rule>
-
-        <Rule
-          title="❌ 不用其他 calendar library 平行實作"
-          note="未來若需要 Date Range / DateTime,擴充本 Calendar(`./calendar.tsx`)而非引入第二個 library——避免兩套視覺語言在同一系統並存"
-        >
-          <Label>實作細節見 Design System / Components / DatePicker / 設計規格</Label>
-        </Rule>
-
-        <Rule
-          title="❌ 不覆寫 Calendar token 為非 DS 色"
-          note="Calendar 視覺 token(bg-primary / ring-primary / neutral-hover 等)必須來自 semantic token。硬寫 #xxx / bg-blue-500 會破壞 dark mode 聯動、跟其他浮層語言分岔"
-        >
-          <Label>token 表見設計規格 → Calendar 內部 token</Label>
         </Rule>
       </div>
     )
@@ -207,4 +202,3 @@ export const ClearableRule: Story = {
     )
   },
 }
-

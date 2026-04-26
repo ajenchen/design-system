@@ -1,3 +1,6 @@
+// @principles-rationale: Merged WhenToUse + CalendarVsDatePickerRule + NotAnEventViewRule
+// into a single `UsageGuidance` story (3 sections) per 2026-04-26 user mandate to
+// consolidate decision-related stories. ModeRule / VisualTokenRule / LocaleRule kept.
 import type { Meta, StoryObj } from '@storybook/react'
 import LinkTo from '@storybook/addon-links/react'
 import { useState } from 'react'
@@ -14,6 +17,13 @@ export default meta
 type Story = StoryObj
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="mb-12">
+    <h2 className="text-body-lg font-semibold text-foreground mb-3 pb-1 border-b border-divider">{title}</h2>
+    <div>{children}</div>
+  </section>
+)
 
 const Rule = ({
   title,
@@ -48,30 +58,111 @@ const Demo = ({ title, children }: { title: string; children: React.ReactNode })
 
 // ── Stories ──────────────────────────────────────────────────────────────────
 
-// ── WhenToUse — 何時使用 DateGrid ──────────────────────
+export const UsageGuidance: Story = {
+  name: '使用指引',
+  render: () => {
+    const [date, setDate] = useState<string | null>('2026-04-20')
+    const [inline, setInline] = useState<Date | undefined>(new Date(2026, 3, 20))
 
-export const WhenToUse: Story = {
-  name: '何時使用',
-  render: () => (
-    <div className="prose prose-sm max-w-prose">
-      <p>適合 DateGrid 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Internal/DateGrid/展示" name="Single — 生日 / 到期日"><span className="text-primary hover:underline font-medium cursor-pointer">Single — 生日 / 到期日</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Internal/DateGrid/展示" name="Multiple — 活動可參加日期"><span className="text-primary hover:underline font-medium cursor-pointer">Multiple — 活動可參加日期</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Internal/DateGrid/展示" name="Range — 分析時段 / 訂單範圍"><span className="text-primary hover:underline font-medium cursor-pointer">Range — 分析時段 / 訂單範圍</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Internal/DateGrid/展示" name="Inline — Dashboard 小卡"><span className="text-primary hover:underline font-medium cursor-pointer">Inline — Dashboard 小卡</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
-  ),
+    return (
+      <div>
+        <Section title="何時用">
+          <div className="prose prose-sm max-w-prose">
+            <p>適合 DateGrid 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+            <ul className="space-y-1">
+              <li>
+                <LinkTo kind="Design System/Internal/DateGrid/展示" name="Single — 生日 / 到期日"><span className="text-primary hover:underline font-medium cursor-pointer">Single — 生日 / 到期日</span></LinkTo>
+              </li>
+              <li>
+                <LinkTo kind="Design System/Internal/DateGrid/展示" name="Multiple — 活動可參加日期"><span className="text-primary hover:underline font-medium cursor-pointer">Multiple — 活動可參加日期</span></LinkTo>
+              </li>
+              <li>
+                <LinkTo kind="Design System/Internal/DateGrid/展示" name="Range — 分析時段 / 訂單範圍"><span className="text-primary hover:underline font-medium cursor-pointer">Range — 分析時段 / 訂單範圍</span></LinkTo>
+              </li>
+              <li>
+                <LinkTo kind="Design System/Internal/DateGrid/展示" name="Inline — Dashboard 小卡"><span className="text-primary hover:underline font-medium cursor-pointer">Inline — Dashboard 小卡</span></LinkTo>
+              </li>
+            </ul>
+            <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+          </div>
+        </Section>
+
+        <Section title="何時不用 + 替代">
+          <Rule
+            title="DateGrid 是「日期 picker」,不是「事件日曆」"
+            note="本元件只處理日期選擇(選一天、多天、範圍)。若需求是「顯示一個月內的事件清單、拖曳事件、切換 week / month / agenda view」——那是事件行事曆,需要專用元件(Google Calendar / Outlook 類),不屬於本元件範疇。"
+          >
+            <Demo title="✅ 正確用途:選日">
+              <DateGrid mode="single" defaultMonth={new Date()} locale={zhTW} />
+            </Demo>
+          </Rule>
+
+          <Rule
+            title="事件行事曆需要的能力(本元件沒有)"
+            note="判斷需求時看這幾個指標:一格日內要顯示多個事件、事件可拖曳移動、需要 week / day / agenda 視圖切換、事件跨多日的視覺連線。任一命中 → 需要專用行事曆元件。"
+          >
+            <Label warn>
+              ❌ 事件 overlay(一格顯示「09:00 Standup · 14:00 Design review」)<br />
+              ❌ Week / Day 視圖切換<br />
+              ❌ 拖曳事件改時間<br />
+              ❌ 跨日事件的連線 bar
+            </Label>
+          </Rule>
+
+          <Rule
+            title="判斷法 — 問「使用者產生的輸出是什麼」"
+            note="輸出是「一個日期值 / 多個日期值 / 一段日期範圍」→ DateGrid;輸出是「操作了某個事件(建立 / 移動 / 編輯)」→ 事件行事曆。"
+          >
+            <Label>
+              報表查詢時段、活動 RSVP 日、個資生日、訂房日期 → DateGrid<br />
+              會議日程、任務日曆、月曆視圖瀏覽 → 事件行事曆(專用元件)
+            </Label>
+          </Rule>
+        </Section>
+
+        <Section title="vs 近親 — Calendar(inline) vs DatePicker(field trigger)">
+          <Rule
+            title="Calendar — inline 月曆,頁面上常駐可見"
+            note="dashboard 小卡、側欄 widget、日期 filter bar。使用者一眼就看到整月,不需點開。Calendar 是純 primitive,不自包 Popover。"
+          >
+            <Demo title="Linear 專案截止日 widget">
+              <div className="flex flex-col gap-2 w-fit">
+                <span className="text-caption text-fg-muted px-1">Project deadline</span>
+                <DateGrid
+                  mode="single"
+                  selected={inline}
+                  onSelect={setInline}
+                  defaultMonth={inline}
+                  locale={zhTW}
+                />
+              </div>
+            </Demo>
+          </Rule>
+
+          <Rule
+            title="DatePicker — field 風格 trigger,點開才顯示月曆"
+            note="表單欄位、設定頁、table cell 編輯。使用者先看到日期值,需要改時才展開選擇器。DatePicker 內部消費 DateGrid 作為 popup 內容。"
+          >
+            <Demo title="Notion 設定頁:訂閱續約日">
+              <div className="w-[220px]">
+                <DatePicker value={date} onChange={setDate} clearable />
+              </div>
+            </Demo>
+          </Rule>
+
+          <Rule
+            title="判斷法 — 看「頁面是否常駐顯示整月」"
+            note="常駐(月曆是主要內容)→ Calendar;輔助(主要是一個欄位,偶爾改)→ DatePicker。空間有限的表單永遠用 DatePicker,不要塞整個月曆進表單。"
+          >
+            <Label>
+              常駐月曆 = 使用者「在選日的脈絡中」(排班、活動、分析時段篩選);
+              DatePicker = 使用者「順手填一個日」(個資、發票、提醒)
+            </Label>
+          </Rule>
+        </Section>
+      </div>
+    )
+  },
 }
 
 export const ModeRule: Story = {
@@ -156,57 +247,6 @@ export const ModeRule: Story = {
   },
 }
 
-export const CalendarVsDatePickerRule: Story = {
-  name: 'Calendar vs DatePicker',
-  render: () => {
-    const [date, setDate] = useState<string | null>('2026-04-20')
-    const [inline, setInline] = useState<Date | undefined>(new Date(2026, 3, 20))
-
-    return (
-      <div>
-        <Rule
-          title="Calendar — inline 月曆,頁面上常駐可見"
-          note="dashboard 小卡、側欄 widget、日期 filter bar。使用者一眼就看到整月,不需點開。Calendar 是純 primitive,不自包 Popover。"
-        >
-          <Demo title="Linear 專案截止日 widget">
-            <div className="flex flex-col gap-2 w-fit">
-              <span className="text-caption text-fg-muted px-1">Project deadline</span>
-              <DateGrid
-                mode="single"
-                selected={inline}
-                onSelect={setInline}
-                defaultMonth={inline}
-                locale={zhTW}
-              />
-            </div>
-          </Demo>
-        </Rule>
-
-        <Rule
-          title="DatePicker — field 風格 trigger,點開才顯示月曆"
-          note="表單欄位、設定頁、table cell 編輯。使用者先看到日期值,需要改時才展開選擇器。DatePicker 內部消費 Calendar 作為 popup 內容。"
-        >
-          <Demo title="Notion 設定頁:訂閱續約日">
-            <div className="w-[220px]">
-              <DatePicker value={date} onChange={setDate} clearable />
-            </div>
-          </Demo>
-        </Rule>
-
-        <Rule
-          title="判斷法 — 看「頁面是否常駐顯示整月」"
-          note="常駐(月曆是主要內容)→ Calendar;輔助(主要是一個欄位,偶爾改)→ DatePicker。空間有限的表單永遠用 DatePicker,不要塞整個月曆進表單。"
-        >
-          <Label>
-            常駐月曆 = 使用者「在選日的脈絡中」(排班、活動、分析時段篩選);
-            DatePicker = 使用者「順手填一個日」(個資、發票、提醒)
-          </Label>
-        </Rule>
-      </div>
-    )
-  },
-}
-
 export const VisualTokenRule: Story = {
   name: '視覺 token 統一',
   render: () => (
@@ -258,51 +298,13 @@ export const VisualTokenRule: Story = {
   ),
 }
 
-export const NotAnEventViewRule: Story = {
-  name: '不是事件行事曆(日程本)',
-  render: () => (
-    <div>
-      <Rule
-        title="Calendar 是「日期 picker」,不是「事件日曆」"
-        note="本元件只處理日期選擇(選一天、多天、範圍)。若需求是「顯示一個月內的事件清單、拖曳事件、切換 week / month / agenda view」——那是事件行事曆,需要專用元件(Google Calendar / Outlook 類),不屬於本元件範疇。"
-      >
-        <Demo title="✅ 正確用途:選日">
-          <DateGrid mode="single" defaultMonth={new Date()} locale={zhTW} />
-        </Demo>
-      </Rule>
-
-      <Rule
-        title="事件行事曆需要的能力(本元件沒有)"
-        note="判斷需求時看這幾個指標:一格日內要顯示多個事件、事件可拖曳移動、需要 week / day / agenda 視圖切換、事件跨多日的視覺連線。任一命中 → 需要專用行事曆元件。"
-      >
-        <Label warn>
-          ❌ 事件 overlay(一格顯示「09:00 Standup · 14:00 Design review」)<br />
-          ❌ Week / Day 視圖切換<br />
-          ❌ 拖曳事件改時間<br />
-          ❌ 跨日事件的連線 bar
-        </Label>
-      </Rule>
-
-      <Rule
-        title="判斷法 — 問「使用者產生的輸出是什麼」"
-        note="輸出是「一個日期值 / 多個日期值 / 一段日期範圍」→ Calendar;輸出是「操作了某個事件(建立 / 移動 / 編輯)」→ 事件行事曆。"
-      >
-        <Label>
-          報表查詢時段、活動 RSVP 日、個資生日、訂房日期 → Calendar<br />
-          會議日程、任務日曆、月曆視圖瀏覽 → 事件行事曆(專用元件)
-        </Label>
-      </Rule>
-    </div>
-  ),
-}
-
 export const LocaleRule: Story = {
   name: 'Locale 與週首日',
   render: () => (
     <div>
       <Rule
         title="locale prop 控制週首日與星期標頭語言"
-        note="react-day-picker 接受 date-fns locale 物件。繁中用 zhTW(週首為週日)、英文用 enUS(週首為週日)、德 / 法系國家週首為週一。Consumer 決定傳哪個 locale,Calendar 不內建語言。"
+        note="react-day-picker 接受 date-fns locale 物件。繁中用 zhTW(週首為週日)、英文用 enUS(週首為週日)、德 / 法系國家週首為週一。Consumer 決定傳哪個 locale,DateGrid 不內建語言。"
       >
         <Demo title="zhTW(繁體中文 · 週日起)">
           <DateGrid mode="single" defaultMonth={new Date(2026, 3, 1)} locale={zhTW} />
@@ -314,11 +316,11 @@ export const LocaleRule: Story = {
 
       <Rule
         title="不自訂 i18n layer"
-        note="Calendar 不包 i18n context、不讀 app-level locale 設定。原因:date-fns locale 已是事實標準(Vercel / Stripe / Linear 都用),重新發明會綁架消費端的國際化策略。想全站同步週首日 → app 層統一傳 locale prop。"
+        note="DateGrid 不包 i18n context、不讀 app-level locale 設定。原因:date-fns locale 已是事實標準(Vercel / Stripe / Linear 都用),重新發明會綁架消費端的國際化策略。想全站同步週首日 → app 層統一傳 locale prop。"
       >
         <Label>
-          ✅ 全站統一:app 層 createContext(locale) → 所有 Calendar 消費端讀 context → 傳 locale prop<br />
-          ❌ Calendar 自包 i18nProvider(劫持 app-level 配置,違反「元件不自包 Provider」原則)
+          ✅ 全站統一:app 層 createContext(locale) → 所有 DateGrid 消費端讀 context → 傳 locale prop<br />
+          ❌ DateGrid 自包 i18nProvider(劫持 app-level 配置,違反「元件不自包 Provider」原則)
         </Label>
       </Rule>
 

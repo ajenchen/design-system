@@ -1,3 +1,7 @@
+// @principles-rationale: Merged WhenToUse + WhenNotToUse + NotLoadingNotErrorRule
+// into a single `UsageGuidance` story (3 sections — 何時用 / 何時不用 + 替代 / vs 近親)
+// per 2026-04-26 user mandate. NextActionRule / StructureRule / CopyRule kept as
+// separate principles.
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -15,6 +19,13 @@ export default meta
 type Story = StoryObj
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="mb-12">
+    <h2 className="text-body-lg font-semibold text-foreground mb-3 pb-1 border-b border-divider">{title}</h2>
+    <div>{children}</div>
+  </section>
+)
 
 const Rule = ({
   title, note, children,
@@ -38,68 +49,113 @@ const Frame = ({ children, className }: { children: React.ReactNode; className?:
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
-// ── WhenToUse — 何時使用 Empty ──────────────────────
-
-// ── UsageGuidance — 整合何時用 / 何時不用 / vs 近親(Polaris/Material/Ant 共識)
-// 合併自舊 WhenToUse / WhenNotToUse(2026-04-26 v3 canonical)
-
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
-      <p>適合 Empty 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/Empty/展示" name="搜尋無結果"><span className="text-primary hover:underline font-medium cursor-pointer">搜尋無結果</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Empty/展示" name="空清單"><span className="text-primary hover:underline font-medium cursor-pointer">空清單</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Empty/展示" name="空清單"><span className="text-primary hover:underline font-medium cursor-pointer">空清單</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Empty/展示" name="錯誤無法載入"><span className="text-primary hover:underline font-medium cursor-pointer">錯誤無法載入</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Empty/展示" name="權限不足"><span className="text-primary hover:underline font-medium cursor-pointer">權限不足</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
+    <div>
+      <Section title="何時用">
+        <div className="prose prose-sm max-w-prose">
+          <p>適合 Empty 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          <ul className="space-y-1">
+            <li>
+              <LinkTo kind="Design System/Components/Empty/展示" name="搜尋無結果"><span className="text-primary hover:underline font-medium cursor-pointer">搜尋無結果</span></LinkTo>
+            </li>
+            <li>
+              <LinkTo kind="Design System/Components/Empty/展示" name="空清單"><span className="text-primary hover:underline font-medium cursor-pointer">空清單</span></LinkTo>
+            </li>
+            <li>
+              <LinkTo kind="Design System/Components/Empty/展示" name="錯誤無法載入"><span className="text-primary hover:underline font-medium cursor-pointer">錯誤無法載入</span></LinkTo>
+            </li>
+            <li>
+              <LinkTo kind="Design System/Components/Empty/展示" name="權限不足"><span className="text-primary hover:underline font-medium cursor-pointer">權限不足</span></LinkTo>
+            </li>
+          </ul>
+          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+        </div>
+      </Section>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div>
-      <Rule
-        title="❌ 不用 Empty 做載入中狀態"
-        note="Empty 是「確定沒有」。載入中 → Skeleton / CircularProgress。Notion 首次開啟資料庫時先 Skeleton，載完才變 Empty 或有資料"
-      >
-        <Label warn>載入中 → Skeleton / CircularProgress，不是 Empty</Label>
-      </Rule>
+      <Section title="何時不用 + 替代">
+        <Rule
+          title="❌ 不用 Empty 做載入中狀態"
+          note="Empty 是「確定沒有」。載入中 → Skeleton / CircularProgress。Notion 首次開啟資料庫時先 Skeleton,載完才變 Empty 或有資料"
+        >
+          <Label warn>載入中 → Skeleton / CircularProgress,不是 Empty</Label>
+        </Rule>
 
-      <Rule
-        title="❌ 不用 Empty 做錯誤或失敗狀態"
-        note="Empty 是中性提示。錯誤改用 Alert + 重試按鈕。Stripe 付款失敗用 Alert，不用 Empty"
-      >
-        <Label warn>錯誤狀態 → Alert + 重試，Empty 是中性</Label>
-      </Rule>
+        <Rule
+          title="❌ 不用 Empty 做錯誤或失敗狀態"
+          note="Empty 是中性提示。錯誤改用 Alert + 重試按鈕。Stripe 付款失敗用 Alert,不用 Empty"
+        >
+          <Frame>
+            <Empty
+              icon={WifiOff}
+              title="沒有資料"
+              description="無法載入"
+              action={<Button variant="secondary">重新載入</Button>}
+            />
+          </Frame>
+          <Label warn>↑ 錯誤用 Empty 傳達不出「這是問題」的緊迫感 → 應改用 Alert variant=error</Label>
+        </Rule>
 
-      <Rule
-        title="❌ 不用 Empty 做整頁級 404 / 無權限"
-        note="整頁錯誤需要完整頁面佈局（navigation + hero 錯誤訊息）。Empty 是容器內提示。GitHub 的 404 頁是整頁設計"
-      >
-        <Label warn>整頁 404 → 專屬錯誤頁面設計，Empty 只用容器內</Label>
-      </Rule>
+        <Rule
+          title="❌ 不用 Empty 做整頁級 404 / 無權限"
+          note="整頁錯誤需要完整頁面佈局(navigation + hero 錯誤訊息)。Empty 是容器內提示。GitHub 的 404 頁是整頁設計"
+        >
+          <Label warn>整頁 404 → 專屬錯誤頁面設計,Empty 只用容器內</Label>
+        </Rule>
 
-      <Rule
-        title="❌ 不用 Empty 表達 disabled 狀態"
-        note="Disabled 是「禁用元件」的視覺，不是「沒內容」的提示。改用禁用該元件本身。Toggle off 的搜尋結果不用 Empty，而是禁用 SearchInput"
-      >
-        <Label warn>禁用 → disable 元件本身，不用 Empty</Label>
-      </Rule>
-    </div>
+        <Rule
+          title="❌ 不用 Empty 表達 disabled 狀態"
+          note="Disabled 是「禁用元件」的視覺,不是「沒內容」的提示。改用禁用該元件本身。Toggle off 的搜尋結果不用 Empty,而是禁用 SearchInput"
+        >
+          <Label warn>禁用 → disable 元件本身,不用 Empty</Label>
+        </Rule>
+      </Section>
+
+      <Section title="vs 近親 — Empty / Skeleton / Alert">
+        <Rule
+          title="Skeleton — 短暫 loading,不是 Empty"
+          note="Empty 代表「已經查過、確定沒有」;loading 是「還沒查完、不確定有沒有」。直接顯示 Empty 會讓使用者以為資料真的沒有,然後一秒後內容跳出來,視覺跳動破壞信任"
+        >
+          <Frame>
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+            </div>
+          </Frame>
+          <Label>↑ 資料還在載入 → Skeleton 保留版面輪廓,不誤導「這裡沒東西」</Label>
+        </Rule>
+
+        <Rule
+          title="Alert — 錯誤 / 失敗,不是 Empty"
+          note="錯誤需要明確說明「發生什麼問題」+「如何解決」,並傳達可處理的語意。Empty 是中性的「暫時沒有」,沒辦法傳達錯誤的嚴重性"
+        >
+          <div className="max-w-md">
+            <Alert
+              variant="error"
+              title="連線中斷,無法載入最新資料"
+              description="請檢查網路連線後重試。你看到的是快取資料。"
+            />
+          </div>
+          <Label>↑ 錯誤用 Alert (variant=error) 明確標示問題 + 解決路徑</Label>
+        </Rule>
+
+        <Rule
+          title="判斷法"
+          note="使用者卡住但確定沒資料 → Empty;還在載入 → Skeleton;發生錯誤需要明確處理 → Alert"
+        >
+          <Frame>
+            <Empty
+              icon={SearchX}
+              title="找不到相符的任務"
+              description="試試其他關鍵字,或調整篩選條件"
+              action={<Button variant="tertiary">清除所有篩選</Button>}
+            />
+          </Frame>
+          <Label>↑ Empty 的代表案例:有結果預期、沒有結果、需要明確下一步</Label>
+        </Rule>
+      </Section>
     </div>
   ),
 }
@@ -213,58 +269,6 @@ export const StructureRule: Story = {
   ),
 }
 
-export const NotLoadingNotErrorRule: Story = {
-  name: 'Loading / Error 不用 Empty',
-  render: () => (
-    <div>
-      <Rule
-        title="短暫 loading → Skeleton,不是 Empty"
-        note="Empty 代表「已經查過、確定沒有」;loading 是「還沒查完、不確定有沒有」。直接顯示 Empty 會讓使用者以為資料真的沒有,然後一秒後內容跳出來,視覺跳動破壞信任"
-      >
-        <Frame>
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-5 w-2/3" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-          </div>
-        </Frame>
-        <Label>↑ 資料還在載入 → Skeleton 保留版面輪廓,不誤導「這裡沒東西」</Label>
-      </Rule>
-
-      <Rule
-        title="錯誤 / 失敗 → Alert,不是 Empty"
-        note="錯誤需要明確說明「發生什麼問題」+「如何解決」,並傳達可處理的語意。Empty 是中性的「暫時沒有」,沒辦法傳達錯誤的嚴重性"
-      >
-        <div className="max-w-md">
-          <Alert
-            variant="error"
-            title="連線中斷,無法載入最新資料"
-            description="請檢查網路連線後重試。你看到的是快取資料。"
-          />
-        </div>
-        <Label>↑ 錯誤用 Alert (variant=error) 明確標示問題 + 解決路徑</Label>
-      </Rule>
-
-      <Rule
-        title="❌ 用 Empty 代替 Error 狀態"
-        note="雖然 Empty 可以放 icon=WifiOff、action=重新載入,但它是「中性提示」的元件語意 — 使用者看到時會誤以為「正常的空,不是錯誤」"
-      >
-        <Frame>
-          <Empty
-            icon={WifiOff}
-            title="沒有資料"
-            description="無法載入"
-            action={<Button variant="secondary">重新載入</Button>}
-          />
-        </Frame>
-        <Label warn>
-          ↑ 錯誤用 Empty 傳達不出「這是問題」的緊迫感 → 應改用 Alert variant=error
-        </Label>
-      </Rule>
-    </div>
-  ),
-}
-
 export const CopyRule: Story = {
   name: '文案具體化 — 不用 generic 字',
   render: () => (
@@ -313,4 +317,3 @@ export const CopyRule: Story = {
     </div>
   ),
 }
-

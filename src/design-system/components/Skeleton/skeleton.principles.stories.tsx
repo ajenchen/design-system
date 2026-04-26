@@ -1,3 +1,4 @@
+// @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -29,124 +30,115 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
 
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="mb-12">
+    <h2 className="text-heading-3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+    {children}
+  </section>
+)
+
 // ── Stories ───────────────────────────────────────────────────────────────────
-
-// ── WhenToUse — 何時使用 Skeleton ──────────────────────
-
-// ── UsageGuidance — 整合何時用 / 何時不用 / vs 近親(Polaris/Material/Ant 共識)
-// 合併自舊 WhenToUse / WhenNotToUse / SkeletonVsCircularProgressRule(2026-04-26 v3 canonical)
 
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
-      <p>適合 Skeleton 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/Skeleton/展示" name="個人資料卡載入"><span className="text-primary hover:underline font-medium cursor-pointer">個人資料卡載入</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Skeleton/展示" name="Task 列表載入"><span className="text-primary hover:underline font-medium cursor-pointer">Task 列表載入</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Skeleton/展示" name="表格列載入"><span className="text-primary hover:underline font-medium cursor-pointer">表格列載入</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Skeleton/展示" name="文件載入"><span className="text-primary hover:underline font-medium cursor-pointer">文件載入</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Skeleton/展示" name="卡片網格載入"><span className="text-primary hover:underline font-medium cursor-pointer">卡片網格載入</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
-
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div>
-      <Rule
-        title="❌ 不用 Skeleton 做裝飾"
-        note="Skeleton 是 loading 語意,不是視覺裝飾元件。把它當灰色色塊用會混淆使用者對「載入中」的認知"
-      >
-        <div className="flex items-center gap-3 border border-border rounded-lg p-3 w-72">
-          <Skeleton className="h-8 w-8 rounded-full" />
-          <span className="text-body">分隔用的灰色圓點</span>
+    <div>
+      <Section title="何時用">
+        <div className="prose prose-sm max-w-prose mb-8">
+          <p>適合 Skeleton 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          <ul className="space-y-1">
+            <li><LinkTo kind="Design System/Components/Skeleton/展示" name="個人資料卡載入"><span className="text-primary hover:underline font-medium cursor-pointer">個人資料卡載入</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Skeleton/展示" name="Task 列表載入"><span className="text-primary hover:underline font-medium cursor-pointer">Task 列表載入</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Skeleton/展示" name="表格列載入"><span className="text-primary hover:underline font-medium cursor-pointer">表格列載入</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Skeleton/展示" name="文件載入"><span className="text-primary hover:underline font-medium cursor-pointer">文件載入</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Skeleton/展示" name="卡片網格載入"><span className="text-primary hover:underline font-medium cursor-pointer">卡片網格載入</span></LinkTo></li>
+          </ul>
+          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
-        <Label warn>Skeleton 不是 decoration — 裝飾用 bg-muted div,不要用 Skeleton</Label>
-      </Rule>
+      </Section>
 
-      <Rule
-        title="❌ 不要 nested skeleton"
-        note="Skeleton 裡包 Skeleton 視覺上會疊加 animation,造成閃爍感。如果需要複合結構,用多個並列 Skeleton 各自模擬一塊"
-      >
-        <div className="border border-border rounded-lg p-3 w-72">
-          <Skeleton className="h-20 w-full p-3">
-            <Skeleton className="h-4 w-1/2" />
-          </Skeleton>
-        </div>
-        <Label warn>外層 Skeleton 包內層 Skeleton → 動畫疊加閃爍</Label>
-      </Rule>
-
-      <Rule
-        title="❌ 不要 mix 資料跟 skeleton 在同一 row"
-        note="同一個 row 裡一半顯示真實資料、一半顯示 skeleton,視覺上會像「半載入」狀態,使用者不知道這筆資料到底算不算讀完。Row 是原子單位,要嘛全 skeleton 要嘛全真實"
-      >
-        <div className="flex items-center gap-3 border border-border rounded-lg p-3 w-72">
-          <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary text-on-emphasis text-body font-medium">陳</div>
-          <div className="flex flex-col gap-2 flex-1">
-            <span className="text-body">陳小明</span>
-            <Skeleton className="h-3 w-24" />
+      <Section title="何時不用 + 替代方案">
+        <Rule
+          title="❌ 不用 Skeleton 做裝飾"
+          note="Skeleton 是 loading 語意,不是視覺裝飾元件。把它當灰色色塊用會混淆使用者對「載入中」的認知"
+        >
+          <div className="flex items-center gap-3 border border-border rounded-lg p-3 w-72">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <span className="text-body">分隔用的灰色圓點</span>
           </div>
-        </div>
-        <Label warn>Avatar + name 已載,email 還在 skeleton → 使用者困惑「這筆好了沒」</Label>
-      </Rule>
+          <Label warn>Skeleton 不是 decoration — 裝飾用 bg-muted div,不要用 Skeleton</Label>
+        </Rule>
 
-      <Rule
-        title="❌ 不用 Skeleton 取代 Empty 或 Error"
-        note="確定沒有資料 → Empty;載入失敗 → Alert + 重試按鈕。Skeleton 的語意是「還沒來」,不是「沒有」也不是「壞了」"
-      >
-        <Label warn>Skeleton 無錯誤語意 → 使用者會一直等,不會重試</Label>
-      </Rule>
-    </div>
+        <Rule
+          title="❌ 不要 nested skeleton"
+          note="Skeleton 裡包 Skeleton 視覺上會疊加 animation,造成閃爍感。如果需要複合結構,用多個並列 Skeleton 各自模擬一塊"
+        >
+          <div className="border border-border rounded-lg p-3 w-72">
+            <Skeleton className="h-20 w-full p-3">
+              <Skeleton className="h-4 w-1/2" />
+            </Skeleton>
+          </div>
+          <Label warn>外層 Skeleton 包內層 Skeleton → 動畫疊加閃爍</Label>
+        </Rule>
 
-      {/* vs 近親 — SkeletonVsCircularProgressRule — 原 SkeletonVsCircularProgressRule */}
-      <div>
-      <Rule
-        title="Skeleton — 佈局已知,等資料填入即成最終樣貌"
-        note="初次載入 list / table / card grid 時使用。Skeleton 的形狀貼近真實內容,資料回來後版面不跳動,使用者預期不被打破"
-      >
-        <div className="flex flex-col gap-2 w-72 border border-border rounded-lg p-3">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-10 w-10 rounded-full" />
+        <Rule
+          title="❌ 不要 mix 資料跟 skeleton 在同一 row"
+          note="同一個 row 裡一半顯示真實資料、一半顯示 skeleton,視覺上會像「半載入」狀態,使用者不知道這筆資料到底算不算讀完。Row 是原子單位,要嘛全 skeleton 要嘛全真實"
+        >
+          <div className="flex items-center gap-3 border border-border rounded-lg p-3 w-72">
+            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary text-on-emphasis text-body font-medium">陳</div>
             <div className="flex flex-col gap-2 flex-1">
-              <Skeleton className="h-4 w-3/5" />
-              <Skeleton className="h-3 w-1/3" />
+              <span className="text-body">陳小明</span>
+              <Skeleton className="h-3 w-24" />
             </div>
           </div>
-        </div>
-        <Label>Linear 專案成員列表:佈局固定,只等資料填入</Label>
-      </Rule>
+          <Label warn>Avatar + name 已載,email 還在 skeleton → 使用者困惑「這筆好了沒」</Label>
+        </Rule>
 
-      <Rule
-        title="CircularProgress — 不可預期時長 / 不知佈局的操作"
-        note="Button loading、form submitting、小區塊 inline 等待——當「會出現什麼」不確定,或根本不是內容佔位而是行為回饋時,用 CircularProgress(indeterminate)"
-      >
-        <div className="flex items-center gap-2 border border-border rounded-md px-3 py-2 w-72">
-          <CircularProgress />
-          <span className="text-body text-fg-muted">正在送出訂單...</span>
-        </div>
-        <Label>Stripe 結帳送出中:沒有「佈局」可佔位,只是行為回饋</Label>
-      </Rule>
+        <Rule
+          title="❌ 不用 Skeleton 取代 Empty 或 Error"
+          note="確定沒有資料 → Empty;載入失敗 → Alert + 重試按鈕。Skeleton 的語意是「還沒來」,不是「沒有」也不是「壞了」"
+        >
+          <Label warn>Skeleton 無錯誤語意 → 使用者會一直等,不會重試</Label>
+        </Rule>
+      </Section>
 
-      <Rule
-        title="判準——先問「佈局已知嗎?」"
-        note="能描述「資料回來後會是什麼樣」→ Skeleton;只知道「有事情在進行」→ CircularProgress"
-      >
-        <Label>佈局已知 → Skeleton(內容佔位)</Label>
-        <Label>佈局未知 → CircularProgress(行為回饋)</Label>
-      </Rule>
-    </div>
+      <Section title="vs 近親元件">
+        <Rule
+          title="Skeleton — 佈局已知,等資料填入即成最終樣貌"
+          note="初次載入 list / table / card grid 時使用。Skeleton 的形狀貼近真實內容,資料回來後版面不跳動,使用者預期不被打破"
+        >
+          <div className="flex flex-col gap-2 w-72 border border-border rounded-lg p-3">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="flex flex-col gap-2 flex-1">
+                <Skeleton className="h-4 w-3/5" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </div>
+          </div>
+          <Label>Linear 專案成員列表:佈局固定,只等資料填入</Label>
+        </Rule>
+
+        <Rule
+          title="CircularProgress — 不可預期時長 / 不知佈局的操作"
+          note="Button loading、form submitting、小區塊 inline 等待——當「會出現什麼」不確定,或根本不是內容佔位而是行為回饋時,用 CircularProgress(indeterminate)"
+        >
+          <div className="flex items-center gap-2 border border-border rounded-md px-3 py-2 w-72">
+            <CircularProgress />
+            <span className="text-body text-fg-muted">正在送出訂單...</span>
+          </div>
+          <Label>Stripe 結帳送出中:沒有「佈局」可佔位,只是行為回饋</Label>
+        </Rule>
+
+        <Rule
+          title="判準——先問「佈局已知嗎?」"
+          note="能描述「資料回來後會是什麼樣」→ Skeleton;只知道「有事情在進行」→ CircularProgress"
+        >
+          <Label>佈局已知 → Skeleton(內容佔位)</Label>
+          <Label>佈局未知 → CircularProgress(行為回饋)</Label>
+        </Rule>
+      </Section>
     </div>
   ),
 }
@@ -227,4 +219,3 @@ export const DurationRule: Story = {
     </div>
   ),
 }
-

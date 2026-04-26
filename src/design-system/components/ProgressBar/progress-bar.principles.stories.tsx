@@ -1,3 +1,6 @@
+// @principles-rationale: Merged WhenToUse + WhenNotToUse + VsCircularProgressRule
+// + FileItemBoundaryRule into a single `UsageGuidance` story (3 sections — 何時用 /
+// 何時不用 + 替代 / vs 近親) per 2026-04-26 user mandate. StatusRule + AffixRule kept.
 import type { Meta, StoryObj } from '@storybook/react'
 import LinkTo from '@storybook/addon-links/react'
 import { Paperclip, X, FileText, Table as TableIcon } from 'lucide-react'
@@ -13,6 +16,13 @@ export default meta
 type Story = StoryObj
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="mb-12">
+    <h2 className="text-body-lg font-semibold text-foreground mb-3 pb-1 border-b border-divider">{title}</h2>
+    <div>{children}</div>
+  </section>
+)
 
 const Rule = ({
   title, note, children,
@@ -39,139 +49,159 @@ const Frame = ({ children, width = 400 }: { children: React.ReactNode; width?: n
   </div>
 )
 
-// ── Rules ─────────────────────────────────────────────────────────────────────
-
-// ── WhenToUse — 何時使用 ProgressBar ──────────────────────
-
-// ── UsageGuidance — 整合何時用 / 何時不用 / vs 近親(Polaris/Material/Ant 共識)
-// 合併自舊 WhenToUse / WhenNotToUse / VsCircularProgressRule(2026-04-26 v3 canonical)
+// ── Stories ───────────────────────────────────────────────────────────────────
 
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
-      <p>適合 ProgressBar 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/ProgressBar/展示" name="批次任務進度"><span className="text-primary hover:underline font-medium cursor-pointer">批次任務進度</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/ProgressBar/展示" name="DataTable cell 內進度"><span className="text-primary hover:underline font-medium cursor-pointer">DataTable cell 內進度</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
+    <div>
+      <Section title="何時用">
+        <div className="prose prose-sm max-w-prose">
+          <p>適合 ProgressBar 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          <ul className="space-y-1">
+            <li>
+              <LinkTo kind="Design System/Components/ProgressBar/展示" name="批次任務進度"><span className="text-primary hover:underline font-medium cursor-pointer">批次任務進度</span></LinkTo>
+            </li>
+            <li>
+              <LinkTo kind="Design System/Components/ProgressBar/展示" name="DataTable cell 內進度"><span className="text-primary hover:underline font-medium cursor-pointer">DataTable cell 內進度</span></LinkTo>
+            </li>
+          </ul>
+          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
+        </div>
+      </Section>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div>
-      <Rule
-        title="❌ 未知進度不要用 ProgressBar(永遠卡 0% 或亂跳)"
-        note="使用者看到進度條預期會推進。若無法量化,任何假進度(隨機加 % 撐場面)都會讓使用者懷疑 app 壞掉。未知進度一律改用 CircularProgress(indeterminate)。"
-      >
-        <Frame>
-          <div className="flex items-center gap-3">
-            <CircularProgress aria-label="計算中" />
-            <span className="text-body">計算統計報表中...</span>
-          </div>
-        </Frame>
-        <Label>✅ 未知時長用 CircularProgress(indeterminate),不假裝有進度</Label>
-      </Rule>
+      <Section title="何時不用 + 替代">
+        <Rule
+          title="❌ 未知進度不要用 ProgressBar(永遠卡 0% 或亂跳)"
+          note="使用者看到進度條預期會推進。若無法量化,任何假進度(隨機加 % 撐場面)都會讓使用者懷疑 app 壞掉。未知進度一律改用 CircularProgress(indeterminate)。"
+        >
+          <Frame>
+            <div className="flex items-center gap-3">
+              <CircularProgress aria-label="計算中" />
+              <span className="text-body">計算統計報表中...</span>
+            </div>
+          </Frame>
+          <Label>✅ 未知時長用 CircularProgress(indeterminate),不假裝有進度</Label>
+        </Rule>
 
-      <Rule
-        title="❌ < 1 秒的短暫操作不要用 ProgressBar"
-        note="ProgressBar fill 有 300ms transition,在極短操作反而閃爍不自然。< 1 秒的非同步通常不需要任何 loading 視覺(結果直接呈現即可)。"
-      >
-        <Frame>
-          <div className="flex items-center gap-2">
-            <span className="text-body">已儲存</span>
-            <span className="text-footnote text-fg-muted">· 剛才</span>
-          </div>
-        </Frame>
-        <Label>✅ 極短操作完成後直接顯示結果,不插入進度視覺</Label>
-      </Rule>
+        <Rule
+          title="❌ < 1 秒的短暫操作不要用 ProgressBar"
+          note="ProgressBar fill 有 300ms transition,在極短操作反而閃爍不自然。< 1 秒的非同步通常不需要任何 loading 視覺(結果直接呈現即可)。"
+        >
+          <Frame>
+            <div className="flex items-center gap-2">
+              <span className="text-body">已儲存</span>
+              <span className="text-footnote text-fg-muted">· 剛才</span>
+            </div>
+          </Frame>
+          <Label>✅ 極短操作完成後直接顯示結果,不插入進度視覺</Label>
+        </Rule>
 
-      <Rule
-        title="❌ 不要在多檔上傳列表上方再加「總進度」bar"
-        note="每個檔案一條 ProgressBar 已足夠表達整體狀態(使用者自然從完成數量推算),再加一條總 bar 會造成視覺重複與同步邏輯漂移。Dropbox / Google Drive 都只顯示每檔 bar。"
-      >
-        <Frame width={480}>
-          <div className="flex flex-col gap-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Paperclip size={16} className="text-fg-muted" />
-                <span className="text-body flex-1 truncate">會議記錄_0418.docx</span>
+        <Rule
+          title="❌ 不要在多檔上傳列表上方再加「總進度」bar"
+          note="每個檔案一條 ProgressBar 已足夠表達整體狀態(使用者自然從完成數量推算),再加一條總 bar 會造成視覺重複與同步邏輯漂移。Dropbox / Google Drive 都只顯示每檔 bar。"
+        >
+          <Frame width={480}>
+            <div className="flex flex-col gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Paperclip size={16} className="text-fg-muted" />
+                  <span className="text-body flex-1 truncate">會議記錄_0418.docx</span>
+                </div>
+                <ProgressBar value={100} status="success" affix="status-icon" />
               </div>
-              <ProgressBar value={100} status="success" affix="status-icon" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Paperclip size={16} className="text-fg-muted" />
-                <span className="text-body flex-1 truncate">簡報素材.zip</span>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Paperclip size={16} className="text-fg-muted" />
+                  <span className="text-body flex-1 truncate">簡報素材.zip</span>
+                </div>
+                <ProgressBar value={62} status="inProgress" affix="value" />
               </div>
-              <ProgressBar value={62} status="inProgress" affix="value" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Paperclip size={16} className="text-fg-muted" />
-                <span className="text-body flex-1 truncate">截圖.png</span>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Paperclip size={16} className="text-fg-muted" />
+                  <span className="text-body flex-1 truncate">截圖.png</span>
+                </div>
+                <ProgressBar value={0} status="inProgress" />
               </div>
-              <ProgressBar value={0} status="inProgress" />
             </div>
-          </div>
-        </Frame>
-        <Label>✅ 每檔一條,整體進度由使用者自然感知(2/3 完成)</Label>
-      </Rule>
+          </Frame>
+          <Label>✅ 每檔一條,整體進度由使用者自然感知(2/3 完成)</Label>
+        </Rule>
 
-      <Rule
-        title="❌ 不要硬寫色值繞過 status"
-        note="status 三選一是系統決定的語意。consumer 要紅、綠、藍以外的色 → 提到系統層討論是否新增 status,不要每個消費者自己用 className override fill 色。"
-      >
-        <Frame>
-          <ProgressBar value={55} status="inProgress" />
-        </Frame>
-        <Label>✅ 走 status token(primary / success / error),不 override 色值</Label>
-      </Rule>
-    </div>
+        <Rule
+          title="❌ 不要硬寫色值繞過 status"
+          note="status 三選一是系統決定的語意。consumer 要紅、綠、藍以外的色 → 提到系統層討論是否新增 status,不要每個消費者自己用 className override fill 色。"
+        >
+          <Frame>
+            <ProgressBar value={55} status="inProgress" />
+          </Frame>
+          <Label>✅ 走 status token(primary / success / error),不 override 色值</Label>
+        </Rule>
+      </Section>
 
-      {/* vs 近親 — VsCircularProgressRule — 原 VsCircularProgressRule */}
-      <div>
-      <Rule
-        title="能告訴使用者「剩下 X%」嗎?能 + 大區塊 → ProgressBar;不能或小空間 → CircularProgress"
-        note="determinate(已知進度) vs indeterminate(不知時長)是最核心的分界。使用者對這兩種視覺的預期不同:ProgressBar 暗示「可估算完成時間 + 大區塊水平」,CircularProgress(無 value)暗示「等一下,我也不知道要多久」。選錯會讓使用者一直盯著看以為快好了,或以為卡住。"
-      >
-        <Frame>
-          <div className="flex items-center gap-2 mb-2">
-            <TableIcon size={16} className="text-fg-muted" />
-            <span className="text-body flex-1">匯出客戶名單 CSV</span>
-            <span className="text-caption text-fg-muted tabular-nums">812 / 1,250 筆</span>
-          </div>
-          <ProgressBar value={65} status="inProgress" />
-        </Frame>
-        <Label>✅ CSV 匯出 / 批次處理:總量已知 → ProgressBar(檔案上傳改用 FileItem,見 spec「與 FileItem 的分界」)</Label>
-
-        <Frame>
-          <div className="flex items-center gap-3">
-            <CircularProgress aria-label="驗證信用卡中" />
-            <div className="flex flex-col">
-              <span className="text-body">驗證信用卡中...</span>
-              <span className="text-caption text-fg-muted">連線至金流服務商</span>
+      <Section title="vs 近親 — ProgressBar vs CircularProgress vs FileItem">
+        <Rule
+          title="能告訴使用者「剩下 X%」嗎?能 + 大區塊 → ProgressBar;不能或小空間 → CircularProgress"
+          note="determinate(已知進度) vs indeterminate(不知時長)是最核心的分界。使用者對這兩種視覺的預期不同:ProgressBar 暗示「可估算完成時間 + 大區塊水平」,CircularProgress(無 value)暗示「等一下,我也不知道要多久」。選錯會讓使用者一直盯著看以為快好了,或以為卡住。"
+        >
+          <Frame>
+            <div className="flex items-center gap-2 mb-2">
+              <TableIcon size={16} className="text-fg-muted" />
+              <span className="text-body flex-1">匯出客戶名單 CSV</span>
+              <span className="text-caption text-fg-muted tabular-nums">812 / 1,250 筆</span>
             </div>
-          </div>
-        </Frame>
-        <Label>✅ 第三方金流驗證:不知道要多久,無進度可量化 → CircularProgress(indeterminate)</Label>
+            <ProgressBar value={65} status="inProgress" />
+          </Frame>
+          <Label>✅ CSV 匯出 / 批次處理:總量已知 → ProgressBar(檔案上傳改用 FileItem,見下方)</Label>
 
-        <Frame>
-          <div className="flex items-center gap-2 mb-2">
-            <FileText size={16} className="text-fg-muted" />
-            <span className="text-body flex-1">產生季度報表中...</span>
-          </div>
-          <ProgressBar value={0} status="inProgress" />
-        </Frame>
-        <Label warn>❌ 若無法量化卻硬用 ProgressBar(永遠卡 0% 或亂跳):使用者會以為壞掉 → 改用 CircularProgress(indeterminate)</Label>
-      </Rule>
-    </div>
+          <Frame>
+            <div className="flex items-center gap-3">
+              <CircularProgress aria-label="驗證信用卡中" />
+              <div className="flex flex-col">
+                <span className="text-body">驗證信用卡中...</span>
+                <span className="text-caption text-fg-muted">連線至金流服務商</span>
+              </div>
+            </div>
+          </Frame>
+          <Label>✅ 第三方金流驗證:不知道要多久,無進度可量化 → CircularProgress(indeterminate)</Label>
+
+          <Frame>
+            <div className="flex items-center gap-2 mb-2">
+              <FileText size={16} className="text-fg-muted" />
+              <span className="text-body flex-1">產生季度報表中...</span>
+            </div>
+            <ProgressBar value={0} status="inProgress" />
+          </Frame>
+          <Label warn>❌ 若無法量化卻硬用 ProgressBar(永遠卡 0% 或亂跳):使用者會以為壞掉 → 改用 CircularProgress(indeterminate)</Label>
+        </Rule>
+
+        <Rule
+          title="檔案上傳 UI → 用 FileItem,不直接組 ProgressBar + 檔名 + icon"
+          note="FileItem 是檔案情境的 canonical consumer-facing primitive(檔名 / icon / 進度 / status / actions 一條龍),內部自己會消費 ProgressBar。自組 raw ProgressBar + 檔名 + Paperclip + 狀態 icon 會讓 consumer 每次重覆發明一套檔案列表 layout,視覺/行為漂移無可避免。世界級對照:Ant Design Upload 內部用 Progress,consumer 不直接拼裝。"
+        >
+          <Frame>
+            <div className="flex items-center gap-2 mb-2">
+              <Paperclip size={16} className="text-fg-muted" />
+              <span className="text-body flex-1">附件_會議記錄.docx</span>
+              <span className="text-caption text-fg-muted">58%</span>
+            </div>
+            <ProgressBar value={58} status="inProgress" />
+          </Frame>
+          <Label warn>❌ Consumer 自組檔名 + Paperclip + ProgressBar 做上傳列表 → 應該用 FileItem</Label>
+
+          <Frame width={440}>
+            <div className="flex items-center gap-2 mb-3">
+              <FileText size={18} className="text-primary" />
+              <span className="text-body-lg font-medium flex-1">匯入客戶名單</span>
+              <span className="text-caption text-fg-muted tabular-nums">812 / 1,250 筆</span>
+            </div>
+            <ProgressBar value={65} status="inProgress" affix="value" />
+            <p className="text-footnote text-fg-muted mt-2">處理中,預計剩餘 28 秒</p>
+          </Frame>
+          <Label>✅ CSV 批次匯入 / 報表生成 → 直接用 ProgressBar(非檔案情境,FileItem 不適用)</Label>
+        </Rule>
+      </Section>
     </div>
   ),
 }
@@ -230,39 +260,6 @@ export const StatusRule: Story = {
   ),
 }
 
-export const FileItemBoundaryRule: Story = {
-  name: '與 FileItem 的分界',
-  render: () => (
-    <div>
-      <Rule
-        title="檔案上傳 UI → 用 FileItem,不直接組 ProgressBar + 檔名 + icon"
-        note="FileItem 是檔案情境的 canonical consumer-facing primitive(檔名 / icon / 進度 / status / actions 一條龍),內部自己會消費 ProgressBar。自組 raw ProgressBar + 檔名 + Paperclip + 狀態 icon 會讓 consumer 每次重覆發明一套檔案列表 layout,視覺/行為漂移無可避免。世界級對照:Ant Design Upload 內部用 Progress,consumer 不直接拼裝。"
-      >
-        <Frame>
-          <div className="flex items-center gap-2 mb-2">
-            <Paperclip size={16} className="text-fg-muted" />
-            <span className="text-body flex-1">附件_會議記錄.docx</span>
-            <span className="text-caption text-fg-muted">58%</span>
-          </div>
-          <ProgressBar value={58} status="inProgress" />
-        </Frame>
-        <Label warn>❌ Consumer 自組檔名 + Paperclip + ProgressBar 做上傳列表 → 應該用 FileItem</Label>
-
-        <Frame width={440}>
-          <div className="flex items-center gap-2 mb-3">
-            <FileText size={18} className="text-primary" />
-            <span className="text-body-lg font-medium flex-1">匯入客戶名單</span>
-            <span className="text-caption text-fg-muted tabular-nums">812 / 1,250 筆</span>
-          </div>
-          <ProgressBar value={65} status="inProgress" affix="value" />
-          <p className="text-footnote text-fg-muted mt-2">處理中,預計剩餘 28 秒</p>
-        </Frame>
-        <Label>✅ CSV 批次匯入 / 報表生成 → 直接用 ProgressBar(非檔案情境,FileItem 不適用)</Label>
-      </Rule>
-    </div>
-  ),
-}
-
 export const AffixRule: Story = {
   name: 'Affix 選擇',
   render: () => (
@@ -301,7 +298,6 @@ export const AffixRule: Story = {
           <ProgressBar
             value={42}
             status="inProgress"
-           
             affix={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消上傳" />}
           />
         </Frame>
@@ -315,7 +311,6 @@ export const AffixRule: Story = {
           <ProgressBar
             value={66}
             status="inProgress"
-           
             affix={<span className="text-caption text-fg-muted tabular-nums shrink-0">3.3 / 5.0 MB</span>}
           />
         </Frame>
@@ -339,4 +334,3 @@ export const AffixRule: Story = {
     </div>
   ),
 }
-

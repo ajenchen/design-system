@@ -1,3 +1,4 @@
+// @principles-rationale: UsageGuidance merges WhenToUse + Vs*Rule into single 使用指引 story per refactor task (2026-04-26)
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -26,28 +27,75 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
 
-// ── WhenToUse — 何時使用 RadioGroup ──────────────────────
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="mb-12">
+    <h2 className="text-heading-3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+    {children}
+  </section>
+)
 
-export const WhenToUse: Story = {
-  name: '何時使用',
-  render: () => (
-    <div className="prose prose-sm max-w-prose">
-      <p>適合 RadioGroup 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/RadioGroup/展示" name="垂直 Group"><span className="text-primary hover:underline font-medium cursor-pointer">垂直 Group</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/RadioGroup/展示" name="水平排列"><span className="text-primary hover:underline font-medium cursor-pointer">水平排列</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
-  ),
+// ── Stories ───────────────────────────────────────────────────────────────────
+
+export const UsageGuidance: Story = {
+  name: '使用指引',
+  render: () => {
+    const [status, setStatus] = React.useState('in_stock')
+    return (
+      <div>
+        <Section title="何時用">
+          <div className="prose prose-sm max-w-prose mb-8">
+            <p>適合 RadioGroup 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+            <ul className="space-y-1">
+              <li><LinkTo kind="Design System/Components/RadioGroup/展示" name="垂直 Group"><span className="text-primary hover:underline font-medium cursor-pointer">垂直 Group</span></LinkTo></li>
+              <li><LinkTo kind="Design System/Components/RadioGroup/展示" name="水平排列"><span className="text-primary hover:underline font-medium cursor-pointer">水平排列</span></LinkTo></li>
+            </ul>
+            <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+          </div>
+        </Section>
+
+        <Section title="何時不用 + 替代方案">
+          <Rule
+            title="❌ label 自帶語意 + 空間受限:用 Select"
+            note="「庫存狀態」「類別」這類 label 本身夠清楚、使用者知道要選什麼 → Select 下拉節省空間。RadioGroup 全露反而浪費垂直空間"
+          >
+            <RadioGroup value={status} onValueChange={setStatus}>
+              <RadioGroupItem value="in_stock" label="In stock" />
+              <RadioGroupItem value="low_stock" label="Low stock" />
+              <RadioGroupItem value="out_of_stock" label="Out of stock" />
+            </RadioGroup>
+            <Label warn>↑ 庫存狀態 label 自帶語意 → 用 Select 一格就夠,不需要 3 行 RadioGroup</Label>
+          </Rule>
+
+          <Rule
+            title="❌ 單個 Radio 假裝 Checkbox"
+            note="想用「radio 形狀」當勾選提示 → 錯。Radio 的視覺是「從多選一」的承諾,單個不符合這個語意。yes/no 用 Checkbox 或 Switch"
+          >
+            <Label warn>單個同意框用 Checkbox,不用 Radio 假裝</Label>
+          </Rule>
+        </Section>
+
+        <Section title="vs 近親元件">
+          <Rule
+            title="判斷三角度(完整 SSOT 在 Select spec)"
+            note="1. Progressive disclosure 成本(Select 藏 vs RadioGroup 露)2. 視覺重量(O(1) vs O(n))3. 評估深度(使用者需對比嗎)。完整對照詳見 select.spec.md「與 RadioGroup 的分界」"
+          >
+            <Label>SSOT owner: Select spec(通用預設元件 own 此比較)</Label>
+          </Rule>
+
+          <Rule
+            title="Fallback heuristic"
+            note="「使用者看一眼 label 就能下決定嗎?」能 → Select;不能、需要閱讀 description → RadioGroup"
+          >
+            <Label>灰色地帶時用這句話判斷</Label>
+          </Rule>
+        </Section>
+      </div>
+    )
+  },
 }
 
 export const DecisionNodeRule: Story = {
-  name: '決策節點（需對比評估）',
+  name: '決策節點(需對比評估)',
   render: () => {
     const [payment, setPayment] = React.useState('credit')
     const [plan, setPlan] = React.useState('pro')
@@ -93,42 +141,6 @@ export const DecisionNodeRule: Story = {
   },
 }
 
-export const VsSelectRule: Story = {
-  name: '與 Select 的分界',
-  render: () => {
-    const [status, setStatus] = React.useState('in_stock')
-    return (
-      <div>
-        <Rule
-          title="❌ label 自帶語意 + 空間受限：用 Select"
-          note="「庫存狀態」「類別」這類 label 本身夠清楚、使用者知道要選什麼 → Select 下拉節省空間。RadioGroup 全露反而浪費垂直空間"
-        >
-          <RadioGroup value={status} onValueChange={setStatus}>
-            <RadioGroupItem value="in_stock" label="In stock" />
-            <RadioGroupItem value="low_stock" label="Low stock" />
-            <RadioGroupItem value="out_of_stock" label="Out of stock" />
-          </RadioGroup>
-          <Label warn>↑ 庫存狀態 label 自帶語意 → 用 Select 一格就夠,不需要 3 行 RadioGroup</Label>
-        </Rule>
-
-        <Rule
-          title="判斷三角度（完整 SSOT 在 Select spec）"
-          note="1. Progressive disclosure 成本(Select 藏 vs RadioGroup 露)2. 視覺重量(O(1) vs O(n))3. 評估深度(使用者需對比嗎)。完整對照詳見 select.spec.md「與 RadioGroup 的分界」"
-        >
-          <Label>SSOT owner: Select spec(通用預設元件 own 此比較)</Label>
-        </Rule>
-
-        <Rule
-          title="Fallback heuristic"
-          note="「使用者看一眼 label 就能下決定嗎？」能 → Select;不能、需要閱讀 description → RadioGroup"
-        >
-          <Label>灰色地帶時用這句話判斷</Label>
-        </Rule>
-      </div>
-    )
-  },
-}
-
 export const MustBeInGroupRule: Story = {
   name: 'Radio 不可單獨使用',
   render: () => {
@@ -136,7 +148,7 @@ export const MustBeInGroupRule: Story = {
     return (
       <div>
         <Rule
-          title="Radio 必須在 RadioGroup 內（TS 層強制）"
+          title="Radio 必須在 RadioGroup 內(TS 層強制)"
           note="Radio 的語意是「從 N 個選項選一個」——N ≥ 2 才有意義。單個 Radio 無法表達互斥選擇,若只是 yes/no 用 Checkbox 或 Switch"
         >
           <RadioGroup value={accept} onValueChange={setAccept}>
@@ -147,17 +159,10 @@ export const MustBeInGroupRule: Story = {
         </Rule>
 
         <Rule
-          title="❌ 單個 Radio 假裝 Checkbox"
-          note="想用「radio 形狀」當勾選提示 → 錯。Radio 的視覺是「從多選一」的承諾,單個不符合這個語意"
-        >
-          <Label warn>單個同意框用 Checkbox,不用 Radio 假裝</Label>
-        </Rule>
-
-        <Rule
           title="RadioGroup 必須有 default value"
           note="Radio 的語意不允許「都沒選」——沒有預設值使用者看到一組全空的 radio 會困惑「我要選什麼」。必須指定 defaultValue 或 value"
         >
-          <Label>若真的「可以不選」（選填）→ 用 Select + clearable 或 Checkbox stack</Label>
+          <Label>若真的「可以不選」(選填)→ 用 Select + clearable 或 Checkbox stack</Label>
         </Rule>
       </div>
     )

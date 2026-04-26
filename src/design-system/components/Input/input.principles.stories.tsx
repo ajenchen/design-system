@@ -1,3 +1,4 @@
+// @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse into single 使用指引 story per refactor task (2026-04-26)
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -32,80 +33,74 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
 
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="mb-12">
+    <h2 className="text-heading-3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+    {children}
+  </section>
+)
+
 // ── Stories ───────────────────────────────────────────────────────────────────
-
-// ── WhenToUse — 何時使用 Input ──────────────────────
-
-// ── UsageGuidance — 整合何時用 / 何時不用 / vs 近親(Polaris/Material/Ant 共識)
-// 合併自舊 WhenToUse / WhenNotToUse(2026-04-26 v3 canonical)
 
 export const UsageGuidance: Story = {
   name: '使用指引',
   render: () => (
-    <div className="flex flex-col gap-12">
-      {/* 何時用 — 原 WhenToUse */}
-      <div className="prose prose-sm max-w-prose">
-      <p>適合 Input 的真實業務場景(點擊跳轉「展示」頁範例):</p>
-      <ul className="space-y-1">
-        <li>
-          <LinkTo kind="Design System/Components/Input/展示" name="三種模式"><span className="text-primary hover:underline font-medium cursor-pointer">三種模式</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Input/展示" name="尺寸與 Button 對齊"><span className="text-primary hover:underline font-medium cursor-pointer">尺寸與 Button 對齊</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Input/展示" name="End Action"><span className="text-primary hover:underline font-medium cursor-pointer">End Action</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Input/展示" name="Error"><span className="text-primary hover:underline font-medium cursor-pointer">Error</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Input/展示" name="邊框互動狀態"><span className="text-primary hover:underline font-medium cursor-pointer">邊框互動狀態</span></LinkTo>
-        </li>
-      </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
-    </div>
+    <div>
+      <Section title="何時用">
+        <div className="prose prose-sm max-w-prose mb-8">
+          <p>適合 Input 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          <ul className="space-y-1">
+            <li><LinkTo kind="Design System/Components/Input/展示" name="三種模式"><span className="text-primary hover:underline font-medium cursor-pointer">三種模式</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Input/展示" name="尺寸與 Button 對齊"><span className="text-primary hover:underline font-medium cursor-pointer">尺寸與 Button 對齊</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Input/展示" name="End Action"><span className="text-primary hover:underline font-medium cursor-pointer">End Action</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Input/展示" name="Error"><span className="text-primary hover:underline font-medium cursor-pointer">Error</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Input/展示" name="邊框互動狀態"><span className="text-primary hover:underline font-medium cursor-pointer">邊框互動狀態</span></LinkTo></li>
+          </ul>
+          <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
+        </div>
+      </Section>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
-      <div>
-      <Rule
-        title="❌ 不用 Input 輸入需要格式化的數值"
-        note="Input 是 identity formatter（value → value）。金額、數量、百分比用 NumberInput。Stripe 的金額欄會自動加千分位，不是 Input"
-      >
-        <div className="flex gap-4 flex-col">
+      <Section title="何時不用 + 替代方案">
+        <Rule
+          title="❌ 不用 Input variant='bare' 在表單主區域"
+          note="bare 是 toolbar inline edit 專用(適合外層已有 affordance)。表單需要明確 field chrome → 用 variant='default'。Notion 的 property inline edit 用 bare"
+        >
           <div>
-            <Input placeholder="金額" />
-            <Label warn>❌ 無法格式化 → 改用 NumberInput</Label>
+            <Input variant="bare" placeholder="搜尋..." />
+            <Label warn>❌ 表單用 default,bare 只用 toolbar</Label>
           </div>
-        </div>
-      </Rule>
+        </Rule>
 
-      <Rule
-        title="❌ 不用 Input 做日期選擇"
-        note="日期需要 picker UI + locale-aware 顯示。改用 DatePicker。Notion 的日期欄都是 calendar picker"
-      >
-        <div>
-          <Label warn>日期用 DatePicker，自動提供 calendar 互動 + locale 格式</Label>
-        </div>
-      </Rule>
+        <Rule
+          title="❌ 不用 Input startIcon 表達狀態(有效 / 無效)"
+          note="startIcon 是「欄位用途」識別符(郵件、搜尋、網址)。狀態用邊框 + help text。Stripe 信卡欄的有效狀態由邊框顏色傳達"
+        >
+          <Label warn>startIcon = 欄位身份,狀態由邊框 + help text 傳達</Label>
+        </Rule>
+      </Section>
 
-      <Rule
-        title="❌ 不用 Input variant='bare' 在表單主區域"
-        note="bare 是 toolbar inline edit 專用（適合外層已有 affordance）。表單需要明確 field chrome → 用 variant='default'。Notion 的 property inline edit 用 bare"
-      >
-        <div>
-          <Input variant="bare" placeholder="搜尋..." />
-          <Label warn>❌ 表單用 default，bare 只用 toolbar</Label>
-        </div>
-      </Rule>
+      <Section title="vs 近親元件">
+        <Rule
+          title="❌ 不用 Input 顯示需要格式化的資料 → NumberInput / DatePicker"
+          note="數字、日期、金額都需要格式化(千分位、時區、幣別符號)。每種資料類型有專屬元件,擁有該類型的格式化邏輯(唯一真實來源),同時服務 Form 和 DataTable"
+        >
+          <Input defaultValue="1234567" placeholder="金額" />
+          <Label warn>↑ 金額 → 用 NumberInput + currency mode(自動 $1,234,567)</Label>
+          <Input defaultValue="2026-04-18" placeholder="日期" />
+          <Label warn>↑ 日期 → 用 DatePicker(in-locale 顯示、避免時區誤判)</Label>
+          <Input defaultValue="1234567" placeholder="數量" />
+          <Label warn>↑ 數字 → 用 NumberInput(千分位、min/max、step)</Label>
+        </Rule>
 
-      <Rule
-        title="❌ 不用 Input startIcon 表達狀態（有效 / 無效）"
-        note="startIcon 是「欄位用途」識別符（郵件、搜尋、網址）。狀態用邊框 + help text。Stripe 信卡欄的有效狀態由邊框顏色傳達"
-      >
-        <Label warn>startIcon = 欄位身份，狀態由邊框 + help text 傳達</Label>
-      </Rule>
-    </div>
+        <Rule
+          title="✅ Input 只用於純文字——沒有格式化需求的 value"
+          note="姓名、URL、搜尋字串、email。格式化邏輯是 identity(value → value)"
+        >
+          <Input placeholder="姓名" defaultValue="Ada Chen" />
+          <Input startIcon={Globe} defaultValue="https://example.com" />
+          <Input startIcon={Search} placeholder="搜尋..." />
+        </Rule>
+      </Section>
     </div>
   ),
 }
@@ -115,22 +110,22 @@ export const ModeRule: Story = {
   render: () => (
     <div>
       <Rule
-        title="edit — 表單中可編輯的欄位（預設）"
-        note="Focus 時邊框變 primary，使用者正在輸入或修改"
+        title="edit — 表單中可編輯的欄位(預設)"
+        note="Focus 時邊框變 primary,使用者正在輸入或修改"
       >
         <Input defaultValue="Wireless Bluetooth Headphones" />
       </Rule>
 
       <Rule
         title="readonly — 表單中顯示但當下不可編輯"
-        note="同 edit 高度（neutral-2 底色、無邊框），確保與其他欄位並排對齊。常見場景：viewing mode、送出後鎖定但仍在表單脈絡"
+        note="同 edit 高度(neutral-2 底色、無邊框),確保與其他欄位並排對齊。常見場景:viewing mode、送出後鎖定但仍在表單脈絡"
       >
         <Input mode="readonly" defaultValue="alice@example.com" />
       </Rule>
 
       <Rule
         title="disabled — 外部條件造成無法編輯"
-        note="停用原因不在 input 內放 info icon——由外部 Tooltip 或 Form help text 承擔。視覺：灰化文字 + cursor-not-allowed"
+        note="停用原因不在 input 內放 info icon——由外部 Tooltip 或 Form help text 承擔。視覺:灰化文字 + cursor-not-allowed"
       >
         <Tooltip>
           <TooltipTrigger asChild>
@@ -144,7 +139,7 @@ export const ModeRule: Story = {
 
       <Rule
         title="❌ 不用 readonly 作為 DataTable cell"
-        note="readonly 仍然有 wrapper 高度和 padding，密集列表會顯得鬆散。Table cell 用 InputDisplay（純文字，無 wrapper）"
+        note="readonly 仍然有 wrapper 高度和 padding,密集列表會顯得鬆散。Table cell 用 InputDisplay(純文字,無 wrapper)"
       >
         <Input mode="readonly" defaultValue="alice@example.com" />
         <Label warn>↑ 在 table cell 中會過高且有多餘 padding → 用 &lt;InputDisplay /&gt;</Label>
@@ -158,8 +153,8 @@ export const StartIconRule: Story = {
   render: () => (
     <div>
       <Rule
-        title="startIcon 描述 input 的「用途」，不是 value 的類型"
-        note="icon 幫助使用者一眼辨識這個欄位要填什麼——搜尋、Email、密碼、網址等。與 Button 的 startIcon 同理（描述動作），這裡描述欄位身份"
+        title="startIcon 描述 input 的「用途」,不是 value 的類型"
+        note="icon 幫助使用者一眼辨識這個欄位要填什麼——搜尋、Email、密碼、網址等。與 Button 的 startIcon 同理(描述動作),這裡描述欄位身份"
       >
         <Input startIcon={Search} placeholder="搜尋商品..." />
         <Input startIcon={Mail} defaultValue="alice@example.com" />
@@ -169,11 +164,11 @@ export const StartIconRule: Story = {
 
       <Rule
         title="❌ startIcon 不可隨 value 變化"
-        note="icon 是「身份」不是「狀態」——value 變了但欄位用途沒變，icon 不該跟著跳動。狀態回饋用 error border 或 Form help text"
+        note="icon 是「身份」不是「狀態」——value 變了但欄位用途沒變,icon 不該跟著跳動。狀態回饋用 error border 或 Form help text"
       >
         <Input startIcon={AlertCircle} defaultValue="invalid-email" />
         <Input startIcon={CheckCircle2} defaultValue="alice@example.com" />
-        <Label warn>↑ 用 icon 切換暗示「有效/無效」——status 應該走邊框和 help text，不佔 startIcon 語意槽</Label>
+        <Label warn>↑ 用 icon 切換暗示「有效/無效」——status 應該走邊框和 help text,不佔 startIcon 語意槽</Label>
       </Rule>
     </div>
   ),
@@ -188,7 +183,7 @@ export const EndActionRule: Story = {
       <div>
         <Rule
           title="endAction 是「可點擊的動作」——不是狀態指示"
-          note="典型場景：顯示/隱藏密碼、清除內容。都是「使用者可以按下」的操作。狀態指示（error、loading、valid）不屬於這個槽位"
+          note="典型場景:顯示/隱藏密碼、清除內容。都是「使用者可以按下」的操作。狀態指示(error、loading、valid)不屬於這個槽位"
         >
           <Input
             type={showPwd ? 'text' : 'password'}
@@ -208,8 +203,8 @@ export const EndActionRule: Story = {
         </Rule>
 
         <Rule
-          title="清除按鈕只在有值時出現，消失後不佔位"
-          note="條件渲染 endAction，input 寬度自然擴展。避免永遠保留一個看起來可按但沒作用的 icon"
+          title="清除按鈕只在有值時出現,消失後不佔位"
+          note="條件渲染 endAction,input 寬度自然擴展。避免永遠保留一個看起來可按但沒作用的 icon"
         >
           <Input
             startIcon={Search}
@@ -226,14 +221,14 @@ export const EndActionRule: Story = {
 
         <Rule
           title="❌ endAction 不放狀態 / error icon"
-          note="狀態資訊由邊框顏色 + Form help text 傳達。如果放 AlertCircle 在 endAction，使用者會以為可以點擊處理錯誤"
+          note="狀態資訊由邊框顏色 + Form help text 傳達。如果放 AlertCircle 在 endAction,使用者會以為可以點擊處理錯誤"
         >
           <Input
             error
             defaultValue="invalid-email@"
             endAction={{ icon: AlertCircle, label: '錯誤', onClick: () => {} }}
           />
-          <Label warn>↑ 錯誤已由紅邊框傳達，endAction 放 AlertCircle 會讓使用者誤以為可點擊解決</Label>
+          <Label warn>↑ 錯誤已由紅邊框傳達,endAction 放 AlertCircle 會讓使用者誤以為可點擊解決</Label>
         </Rule>
       </div>
     )
@@ -246,7 +241,7 @@ export const ErrorRule: Story = {
     <div>
       <Rule
         title="Error 只用邊框 + 外部 help text"
-        note="紅色邊框已足夠傳達「這個欄位有問題」，具體訊息由 Form 層的 help text 補充。Input 尾部不放 ⚠️ 狀態 icon"
+        note="紅色邊框已足夠傳達「這個欄位有問題」,具體訊息由 Form 層的 help text 補充。Input 尾部不放 ⚠️ 狀態 icon"
       >
         <div>
           <Input error defaultValue="invalid-email@" />
@@ -256,14 +251,14 @@ export const ErrorRule: Story = {
 
       <Rule
         title="❌ 不在 input 尾部放 ⚠️ / ✅ 狀態 icon"
-        note="這個位置是 endAction（可點擊動作），放 icon 既無法點擊又稀釋了 action 槽的語意"
+        note="這個位置是 endAction(可點擊動作),放 icon 既無法點擊又稀釋了 action 槽的語意"
       >
         <Input
           error
           defaultValue="invalid-email@"
           endAction={{ icon: AlertCircle, label: '錯誤', onClick: () => {} }}
         />
-        <Label warn>↑ 邊框已紅，再加尾部 icon = 雙重傳達 + 佔用 action 槽</Label>
+        <Label warn>↑ 邊框已紅,再加尾部 icon = 雙重傳達 + 佔用 action 槽</Label>
       </Rule>
     </div>
   ),
@@ -275,7 +270,7 @@ export const DataTypeRule: Story = {
     <div>
       <Rule
         title="Input 只用於純文字——沒有格式化需求的 value"
-        note="姓名、URL、搜尋字串、email。格式化邏輯是 identity（value → value）"
+        note="姓名、URL、搜尋字串、email。格式化邏輯是 identity(value → value)"
       >
         <Input placeholder="姓名" defaultValue="Ada Chen" />
         <Input startIcon={Globe} defaultValue="https://example.com" />
@@ -284,16 +279,15 @@ export const DataTypeRule: Story = {
 
       <Rule
         title="❌ 不用 Input 顯示需要格式化的資料"
-        note="數字、日期、金額都需要格式化（千分位、時區、幣別符號）。每種資料類型有專屬元件，擁有該類型的格式化邏輯（唯一真實來源），同時服務 Form 和 DataTable"
+        note="數字、日期、金額都需要格式化(千分位、時區、幣別符號)。每種資料類型有專屬元件,擁有該類型的格式化邏輯(唯一真實來源),同時服務 Form 和 DataTable"
       >
         <Input defaultValue="1234567" placeholder="金額" />
-        <Label warn>↑ 金額 → 用 NumberInput + currency mode（自動 $1,234,567）</Label>
+        <Label warn>↑ 金額 → 用 NumberInput + currency mode(自動 $1,234,567)</Label>
         <Input defaultValue="2026-04-18" placeholder="日期" />
-        <Label warn>↑ 日期 → 用 DatePicker（in-locale 顯示、避免時區誤判）</Label>
+        <Label warn>↑ 日期 → 用 DatePicker(in-locale 顯示、避免時區誤判)</Label>
         <Input defaultValue="1234567" placeholder="數量" />
-        <Label warn>↑ 數字 → 用 NumberInput（千分位、min/max、step）</Label>
+        <Label warn>↑ 數字 → 用 NumberInput(千分位、min/max、step)</Label>
       </Rule>
     </div>
   ),
 }
-
