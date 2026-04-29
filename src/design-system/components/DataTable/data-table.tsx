@@ -646,12 +646,11 @@ function DataTableInner<TData>(
             <SortIcon size={14} aria-hidden className="shrink-0 text-fg-secondary" />
           )}
         </div>
-        {/* 右區:⌄ menu(hover/focus-within 顯,reserve 1 slot 寬度避免 indicator push)
-            ── 對齊 inline-action canonical(data-table.spec.md「九之二、Cell action primitive 分類」)──
-            Header cell internal action(sort/⌄/filter/pin)走 Inline Action 派,跟 label 一體 16+18px hover bg。
-            ItemInlineActionButton 是 asChild-compatible button(直接塞 DropdownMenuTrigger asChild),
-            size="md" 因 header 不在 RowSizeProvider 樹內。 */}
-        <div className="shrink-0 ml-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex items-center justify-center" style={{ width: 24, height: 24 }}>
+        {/* 右區:⌄ menu(hover/focus-within 顯,reserve = inline-action 排版佔位 16,對齊
+            inline-action.spec.md「尺寸對照」表 sm/md = 16px;NOT 24)。
+            data-table.spec.md「九之二、Cell action primitive 分類」對齊。
+            ItemInlineActionButton asChild-compatible,size="md" 因 header 不在 RowSizeProvider。 */}
+        <div className="shrink-0 ml-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <ItemInlineActionButton
