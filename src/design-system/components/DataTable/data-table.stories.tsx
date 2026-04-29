@@ -1,8 +1,11 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
-import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, Download, Plus } from 'lucide-react'
+import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, Download, Plus, ArrowUpDown } from 'lucide-react'
 import { DataTable } from './data-table'
+import { DataTableSortManager } from './data-table-sort-manager'
+import { DataTableFilterPanel, dataTableFilterMatch } from './data-table-filter-panel'
+import { getFilteredRowModel, type SortingState, type ColumnFiltersState } from '@tanstack/react-table'
 import { Button } from '@/design-system/components/Button/button'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { Input } from '@/design-system/components/Input/input'
@@ -418,6 +421,10 @@ export const WithBulkActions: Story = {
     const [search, setSearch] = React.useState('')
     const [columnVisibility, setColumnVisibility] = React.useState<Record<string, boolean>>({})
     const [columnSearch, setColumnSearch] = React.useState('')
+    const [sorting, setSorting] = React.useState<SortingState>([])
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+    const [filterPrefilledId, setFilterPrefilledId] = React.useState<string | undefined>(undefined)
+    const [filterOpen, setFilterOpen] = React.useState(false)
     const TOTAL = 5370
     const filteredData = React.useMemo(
       () => search ? sampleData.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase())) : sampleData,
@@ -444,7 +451,36 @@ export const WithBulkActions: Story = {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
+            {/* L3 Filter:global panel(ClickUp / Airtable / Notion 派 — flat conditions MVP) */}
+            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-auto p-0">
+                <DataTableFilterPanel
+                  columns={baseColumns}
+                  filters={columnFilters}
+                  onFiltersChange={setColumnFilters}
+                  prefilledColumnId={filterPrefilledId}
+                  onPrefillConsumed={() => setFilterPrefilledId(undefined)}
+                  onClose={() => setFilterOpen(false)}
+                />
+              </PopoverContent>
+            </Popover>
+            {/* L3 Sort:global panel(Notion-style 多欄條件) */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="text" size="sm" iconOnly startIcon={ArrowUpDown} aria-label="排序" />
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-auto p-0">
+                <DataTableSortManager
+                  columns={baseColumns}
+                  sorting={sorting}
+                  onSortingChange={setSorting}
+                  onReset={() => setSorting([])}
+                />
+              </PopoverContent>
+            </Popover>
             {/* L3 column visibility:Popover panel(對齊 Notion / Airtable column-settings panel)
                 標題 / search input / column list with Checkbox / Show all
                 drag-reorder 留 A.4(跟 column reorder 一起做)*/}
@@ -529,6 +565,21 @@ export const WithBulkActions: Story = {
             columnVisibility={columnVisibility}
             onColumnVisibilityChange={setColumnVisibility}
             getRowId={(row) => row.sku}
+            onColumnFilterTrigger={(columnId) => {
+              setFilterPrefilledId(columnId)
+              setFilterOpen(true)
+            }}
+            tableOptions={{
+              state: { sorting, columnFilters },
+              onSortingChange: (updater) => {
+                setSorting(typeof updater === 'function' ? updater(sorting) : updater)
+              },
+              onColumnFiltersChange: (updater) => {
+                setColumnFilters(typeof updater === 'function' ? updater(columnFilters) : updater)
+              },
+              getFilteredRowModel: getFilteredRowModel(),
+              defaultColumn: { filterFn: (row, columnId, filterValue) => dataTableFilterMatch(row.getValue(columnId), filterValue) },
+            }}
           />
         </div>
 

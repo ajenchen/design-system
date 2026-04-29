@@ -13,9 +13,11 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { ChevronDown, Calendar, ArrowUp, ArrowDown } from 'lucide-react'
+import { ChevronDown, Calendar, ArrowUp, ArrowDown, Filter as FilterIcon, EyeOff, X as XIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
+import { Button } from '@/design-system/components/Button/button'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { columnTypeDefaults, type ColumnType } from './column-types'
 import { InputDisplay } from '@/design-system/components/Input/input'
 import { NumberInputDisplay } from '@/design-system/components/NumberInput/number-input'
@@ -85,6 +87,15 @@ export interface DataTableProps<TData>
   defaultColumnVisibility?: Record<string, boolean>
   /** 顯隱變更 callback */
   onColumnVisibilityChange?: (next: Record<string, boolean>) => void
+
+  // ── L3 Sort(排序)──
+  /** 啟用多欄排序(shift+click 加 secondary;單擊仍 replace);default true,對齊 AG Grid / Material */
+  enableMultiSort?: boolean
+
+  // ── L3 Filter trigger(callback only — UI in consumer)──
+  /** Cell ⌄ menu「Filter by this」點擊,emit columnId 讓 consumer 開 global filter panel + prefill。
+   *  對齊 ClickUp / Airtable / Notion 派 — filter 永遠 global,不 per-cell inline。 */
+  onColumnFilterTrigger?: (columnId: string) => void
 }
 
 // ── Type → Display ──────────────────────────────────────────────────────────
@@ -189,6 +200,8 @@ function DataTableInner<TData>(
     selectable = false, isRowSelectable, getRowId, getRowAriaLabel,
     preserveSelectionOnFilter = false,
     columnVisibility: columnVisibilityProp, defaultColumnVisibility, onColumnVisibilityChange,
+    enableMultiSort = true,
+    onColumnFilterTrigger,
     className, ...props
   }: DataTableProps<TData>,
   ref: React.ForwardedRef<HTMLDivElement>
@@ -238,6 +251,7 @@ function DataTableInner<TData>(
   const table = useReactTable({
     data, columns: columnsWithSelection,
     state: { sorting, columnVisibility, columnPinning: { left: effectivePinnedLeft, right: pinnedRightColumns ?? [] }, ...tableOptions?.state },
+    enableMultiSort,
     onSortingChange: setSorting,
     onColumnVisibilityChange: (updater) => {
       const next = typeof updater === 'function' ? updater(columnVisibility) : updater
@@ -613,7 +627,7 @@ function DataTableInner<TData>(
         )}
         style={{ width: header.getSize(), minWidth: header.column.columnDef.minSize, maxWidth: header.column.columnDef.maxSize, ...cellPadding }}
       >
-        {/* 左區:label + sort indicator(整區 click → toggle sort) */}
+        {/* 左區:label + sort indicator(整區 click → toggle sort;Shift+click 加 secondary,enableMultiSort 啟用時) */}
         <div
           role={canSort ? 'button' : undefined}
           tabIndex={canSort ? 0 : undefined}
@@ -632,7 +646,30 @@ function DataTableInner<TData>(
             <SortIcon size={14} aria-hidden className="shrink-0 text-fg-secondary" />
           )}
         </div>
-        {/* 右區 reserve:未來 ⌄ menu / 已套用 filter indicator slot — A.x 加 */}
+        {/* 右區:⌄ menu(hover/focus-within 顯,reserve 1 slot 寬度避免 indicator push) */}
+        <div className="shrink-0 ml-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" style={{ width: 24 }}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="text" size="sm" iconOnly startIcon={ChevronDown} aria-label={`${typeof header.column.columnDef.header === 'string' ? header.column.columnDef.header : header.column.id} 欄位選單`} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canSort && (
+                <>
+                  <DropdownMenuItem startIcon={ArrowUp} onClick={() => header.column.toggleSorting(false, false)}>升冪排序</DropdownMenuItem>
+                  <DropdownMenuItem startIcon={ArrowDown} onClick={() => header.column.toggleSorting(true, false)}>降冪排序</DropdownMenuItem>
+                  {sortDir && <DropdownMenuItem startIcon={XIcon} onClick={() => header.column.clearSorting()}>取消排序</DropdownMenuItem>}
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              {onColumnFilterTrigger && (
+                <DropdownMenuItem startIcon={FilterIcon} onClick={() => onColumnFilterTrigger(header.column.id)}>依此欄篩選…</DropdownMenuItem>
+              )}
+              {header.column.getCanHide() && (
+                <DropdownMenuItem startIcon={EyeOff} onClick={() => header.column.toggleVisibility(false)}>隱藏欄位</DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         {showDivider && <span className="absolute right-0 w-px bg-divider" style={{ top: 'var(--table-cell-py)', bottom: 'var(--table-cell-py)' }} aria-hidden />}
       </div>
     )
