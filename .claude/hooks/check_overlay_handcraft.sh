@@ -84,6 +84,23 @@ if [ "$CB_COUNT" -ge 2 ] && [ "$CBG_COUNT" -eq 0 ]; then
   fi
 fi
 
+# ── Check 4: Panel-style Popover + MenuItem co-occur(2026-04-29) ──
+# Pattern:同檔出現 <PopoverHeader> 且 <MenuItem>(不是 DropdownMenu / SelectMenu primitive 自身)
+# → panel-style popover 不該硬塞 menu specialization。MenuItem 預設 `px-3` 不對齊 panel chrome
+# `loose`,且 startIcon 色彩無 override → 該用視覺 primitive(ItemPrefix/ItemLabel/ItemSuffix)自組。
+HAS_POP_HEADER=$(grep -c '<PopoverHeader' "$FILE_PATH" 2>/dev/null | head -1)
+HAS_MENU_ITEM=$(grep -c '<MenuItem\b' "$FILE_PATH" 2>/dev/null | head -1)
+HAS_POP_HEADER=${HAS_POP_HEADER:-0}
+HAS_MENU_ITEM=${HAS_MENU_ITEM:-0}
+# Skip:DropdownMenu/SelectMenu primitive impl 本身(他們 import MenuItem 是合法 menu-style)
+IS_MENU_PRIMITIVE=$(echo "$FILE_PATH" | grep -cE '(DropdownMenu|SelectMenu|Combobox)/.*\.tsx$' | head -1)
+IS_MENU_PRIMITIVE=${IS_MENU_PRIMITIVE:-0}
+if [ "$HAS_POP_HEADER" -ge 1 ] && [ "$HAS_MENU_ITEM" -ge 1 ] && [ "$IS_MENU_PRIMITIVE" -eq 0 ]; then
+  if ! grep -qE 'panel-menuitem-allow:' "$FILE_PATH" 2>/dev/null; then
+    VIOLATIONS="${VIOLATIONS}\n⚠️ Panel-style Popover(<PopoverHeader>)+ <MenuItem> 同檔(${HAS_MENU_ITEM} hits):\n  → MenuItem 是 menu specialization(px-3 menu-style + icon 色繼承),不適 panel chrome loose。\n  → 改用視覺 primitive 自組:ItemPrefix + ItemLabel + ItemSuffix(item-anatomy.tsx)+ ROW_PADDING_BY_SIZE.md\n  Why:panel-style 需對齊 chrome \`loose\` + utility chrome icon color(neutral-7 / fg-muted),MenuItem 兩處 workaround = 錯 layer。\n  Escape hatch:加 \`// panel-menuitem-allow: <reason>\` 在檔頭。"
+  fi
+fi
+
 if [ -n "$VIOLATIONS" ]; then
   ESCAPED=$(printf "%b" "$VIOLATIONS" | jq -Rs .)
   cat <<EOJSON

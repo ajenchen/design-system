@@ -1,7 +1,7 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
-import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, EyeOff, Lock, GripVertical, RotateCcw, Download, Plus, ArrowUpDown } from 'lucide-react'
+import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, EyeOff, Lock, RotateCcw, Download, Plus, ArrowUpDown, X as XIcon } from 'lucide-react'
 import { DataTable } from './data-table'
 import { DataTableSortManager } from './data-table-sort-manager'
 import { DataTableFilterPanel, dataTableFilterMatch } from './data-table-filter-panel'
@@ -11,10 +11,11 @@ import { Empty } from '@/design-system/components/Empty/empty'
 import { Input } from '@/design-system/components/Input/input'
 import { BulkActionBar } from '@/design-system/components/BulkActionBar/bulk-action-bar'
 import { Alert } from '@/design-system/components/Alert/alert'
-import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverFooter, PopoverTitle } from '@/design-system/components/Popover/popover'
+import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverFooter, PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
-import { MenuItem } from '@/design-system/components/Menu/menu-item'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
+import { ItemPrefix, ItemLabel, ROW_PADDING_BY_SIZE } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { cn } from '@/lib/utils'
 import './column-types' // ColumnMeta declaration merging
 
 // ── Sample Data ──────────────────────────────────────────────────────────────
@@ -492,15 +493,15 @@ export const WithBulkActions: Story = {
                 <Button variant="text" size="sm" iconOnly startIcon={Eye} aria-label="欄位顯示" />
               </PopoverTrigger>
               <PopoverContent align="end" className="w-72 p-0">
-                {/* B 派(Notion-style)消費 MenuItem primitive:
-                    locked → startIcon=Lock(取代 drag,單 slot 對齊 ref)
-                    unlocked → startIcon=GripVertical(A.4 phase 接 DnD)
-                    endContent = Eye/EyeOff toggle Button
-                    disabled = locked(Button disabled 自帶 cursor-not-allowed) */}
-                <PopoverHeader>
-                  {/* PopoverHeader children 全被包進 flex-1 div → 多 children 必自帶 flex
-                      對齊 Alert/Dialog header chrome corner canonical(inline-action.spec.md L162):
-                      title 占左,refresh + ButtonDivider 接 close X 形成「reset action 群 | dismiss」分群 */}
+                {/* B 派(Notion-style):視覺 primitive 自組 panel list row(非 MenuItem)
+                    依據:MenuItem 是 menu specialization(px-3 menu-style + icon 色繼承),
+                    panel list 需對齊 chrome `loose` + drag/lock icon utility-color(neutral-7)。
+                    對齊 user 洞察「panel 場景繼承視覺 primitive 而非 MenuItem」。
+                    Row click ≠ Eye click(對齊 Notion / ClickUp / Linear,row 不互動 = 不顯 hover bg)。
+                    Drag 暫隱 — A.4 phase 接 DnD 才 show(避免騙人視覺)。 */}
+                <PopoverHeader hideClose>
+                  {/* hideClose + 自管 close X 進同一 flex 容器 → ButtonDivider 兩側 mx-1 對稱
+                      對齊 button-group.tsx ButtonDivider canonical「自身左右各 4px 對稱距離」 */}
                   <div className="flex items-center gap-1 w-full min-w-0">
                     <PopoverTitle className="flex-1">欄位顯示</PopoverTitle>
                     {Object.values(columnVisibility).some(v => v === false) && (
@@ -513,9 +514,13 @@ export const WithBulkActions: Story = {
                         <ButtonDivider />
                       </>
                     )}
+                    <PopoverClose asChild>
+                      <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" />
+                    </PopoverClose>
                   </div>
                 </PopoverHeader>
-                {/* Q2 對稱:控件 wrapper pt-tight 省 pb,list py-2 + item py-1.5 接管下方 */}
+                {/* Q2 對稱:控件 wrapper pt-tight 省 pb,list py-2 + item py-1.5 接管下方
+                    (layoutSpace.spec.md 規則 3 補充:List 場景 inline → block 累加) */}
                 <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)]">
                   <Input
                     size="sm"
@@ -526,7 +531,10 @@ export const WithBulkActions: Story = {
                   />
                 </div>
                 <ScrollArea className="max-h-72">
-                  <div className="py-2 flex flex-col">
+                  {/* uniform prefix slot 16px:讓 locked row(有 Lock)跟 unlocked row(空 prefix)
+                      label 起始 x 一致(item-anatomy.tsx ItemPrefix「Uniform prefix slot」)。
+                      Drag handle 在 A.4 phase 接 DnD 時 fill empty slot,屆時 visual 自然 aligned。 */}
+                  <div className="py-2 flex flex-col" style={{ '--item-prefix-slot': '16px' } as React.CSSProperties}>
                     {baseColumns
                       .map((col) => {
                         const id = (col as any).accessorKey ?? (col as any).id
@@ -538,25 +546,31 @@ export const WithBulkActions: Story = {
                       )
                       .map(({ id, headerLabel }) => {
                         const visible = columnVisibility[id] !== false
-                        const locked = id === 'sku' // demo:SKU 為 primary identifier 鎖定不可隱藏
+                        const locked = id === 'sku'
                         return (
-                          <MenuItem
+                          // l3-primitive-allow: panel list row hand-composed via visual primitive
+                          // (item-anatomy ItemPrefix/ItemLabel/ROW_PADDING_BY_SIZE)。
+                          // 不用 MenuItem(menu specialization 不適 panel chrome loose + icon 色限制)。
+                          <div
                             key={id}
-                            startIcon={locked ? Lock : GripVertical}
-                            disabled={locked}
-                            onClick={locked ? undefined : () => setColumnVisibility(prev => ({ ...prev, [id]: !visible }))}
-                            endContent={
-                              <Button
-                                variant="text" size="sm" iconOnly
-                                startIcon={visible ? Eye : EyeOff}
-                                aria-label={visible ? '隱藏此欄' : '顯示此欄'}
-                                disabled={locked}
-                                onClick={(e) => { e.stopPropagation(); setColumnVisibility(prev => ({ ...prev, [id]: !visible })) }}
-                              />
-                            }
+                            className={cn(
+                              'flex items-start gap-2 w-full px-[var(--layout-space-loose)]',
+                              ROW_PADDING_BY_SIZE.md,
+                              // row 不可 click — 不顯 hover bg(對齊 Notion / ClickUp:Eye 才是 toggle)
+                            )}
                           >
-                            {headerLabel}
-                          </MenuItem>
+                            <ItemPrefix>
+                              {locked && <Lock size={14} className="text-fg-muted" aria-hidden />}
+                            </ItemPrefix>
+                            <ItemLabel className={locked ? 'text-fg-disabled' : undefined}>{headerLabel}</ItemLabel>
+                            <Button
+                              variant="text" size="sm" iconOnly
+                              startIcon={visible ? Eye : EyeOff}
+                              aria-label={visible ? '隱藏此欄' : '顯示此欄'}
+                              disabled={locked}
+                              onClick={() => setColumnVisibility(prev => ({ ...prev, [id]: !visible }))}
+                            />
+                          </div>
                         )
                       })}
                   </div>

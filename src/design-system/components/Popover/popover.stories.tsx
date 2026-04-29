@@ -11,6 +11,7 @@ import {
 } from './popover'
 import { Button } from '@/design-system/components/Button/button'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
 
 const meta: Meta = {
   title: 'Design System/Components/Popover/展示',
@@ -31,31 +32,16 @@ export const FilterPanel: Story = {
           <PopoverTitle>依狀態篩選</PopoverTitle>
         </PopoverHeader>
         <PopoverBody>
-          {/*
-           * Checkbox 直接消費 `label` prop(不手刻 `<label><Checkbox/>...</label>`)——
-           * Checkbox 內部用 SelectionItem 包裝,提供 proper touch target 高度
-           * (py = (field-height - 1lh)/2,行高自然撐足 32px md 高度)+ a11y(label
-           * 自動 bind to input)。
-           *
-           * gap-2(8px)是 consumer-decided 鬆緊度——filter 情境偏密集,gap-2 在 md
-           * item 間留呼吸不擠 / 不鬆散。未來若 DS 新增 `<CheckboxGroup>`(tech debt —
-           * 對齊 RadioGroup),間距走 group 內建 canonical,consumer 不再自訂 gap。
-           *
-           * 此 Popover 是「多選 + footer save CTA」模式 — 使用者勾多項但未立即 commit,
-           * 按「套用」才儲存 filter state(見 spec「合法但少見:Popover 內含可選 item
-           * 列 + footer save CTA」)。區別於 DropdownMenu 的「click 即觸發」模式。
-           */}
-          {/*
-           * 外層不加 gap — SelectionItem 自己的 py(= (field-height - 1lh)/2,tied to
-           * ui-size)就是 Checkbox group 的 canonical 間距。手動加 gap-2 會疊加成
-           * 比 canonical 鬆散的視覺,破壞跟 DS Checkbox VerticalGroup story 的一致性。
-           */}
-          <div className="grid">
+          {/* 此 Popover 是「多選 + footer save CTA」模式 — 勾多項按「套用」才 commit。
+              區別於 DropdownMenu「click 即觸發」。CheckboxGroup canonical 自帶 zero-gap
+              + Context 隔離,取代既有手刻 grid div(2026-04-29 migration)。 */}
+          {/* CheckboxGroup zero-gap canonical(checkbox.spec.md L225)— 取代既有手刻 grid div */}
+          <CheckboxGroup>
             <Checkbox defaultChecked label="待處理" />
             <Checkbox defaultChecked label="進行中" />
             <Checkbox label="已完成" />
             <Checkbox label="已封存" />
-          </div>
+          </CheckboxGroup>
         </PopoverBody>
         <PopoverFooter>
           <Button variant="tertiary" size="sm" className="flex-1">清除</Button>
@@ -91,12 +77,13 @@ export const OpenSnapshot: Story = {
           <PopoverTitle>依狀態篩選</PopoverTitle>
         </PopoverHeader>
         <PopoverBody>
-          <div className="grid">
+          {/* CheckboxGroup zero-gap canonical(checkbox.spec.md L225)— 取代既有手刻 grid div */}
+          <CheckboxGroup>
             <Checkbox defaultChecked label="待處理" />
             <Checkbox defaultChecked label="進行中" />
             <Checkbox label="已完成" />
             <Checkbox label="已封存" />
-          </div>
+          </CheckboxGroup>
         </PopoverBody>
         <PopoverFooter>
           <Button variant="tertiary" size="sm" className="flex-1">清除</Button>
