@@ -322,8 +322,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
   return (
     <div
       className={cn(
-        // Surface layer = overlay chrome(non-interactive header strip)
-        'flex items-center gap-2 shrink-0 h-[var(--chrome-header-height)] bg-surface border-b border-divider',
+        // Chrome layer — bg-canvas 對齊 dark lightbox 派(Apple Photos / Drive)opaque 暗。
+        // 不用 bg-surface(dark = white α8 半透明,outer 透明時失去 backdrop 而洗白)。
+        'flex items-center gap-2 shrink-0 h-[var(--chrome-header-height)] bg-canvas border-b border-divider',
         'px-[var(--layout-space-loose)]',
       )}
     >
@@ -438,7 +439,8 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   return (
     <aside
       className={cn(
-        'w-80 shrink-0 flex flex-col bg-surface border-l border-divider',
+        // Chrome — bg-canvas 同 Toolbar / Filmstrip,opaque dark 跟 mask 半透明區分
+        'w-80 shrink-0 flex flex-col bg-canvas border-l border-divider',
         'h-full',
       )}
       aria-label={labels.detailPanel}
@@ -541,7 +543,8 @@ const Filmstrip: React.FC<FilmstripProps> = ({ files, activeIndex, onSelect, lab
   return (
     <div
       className={cn(
-        'relative shrink-0 h-24 bg-surface border-t border-divider',
+        // Chrome — bg-canvas 同 Toolbar / InfoPanel,opaque dark 跟 mask 半透明區分
+        'relative shrink-0 h-24 bg-canvas border-t border-divider',
         'flex items-center',
         'px-[var(--layout-space-loose)]',
       )}
@@ -898,8 +901,11 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
               ── Q1 mask 透明度(2026-04-30)──
               outer **不**設 bg → Overlay(`bg-overlay` α45/α65)透出 image 周圍區域,
               對齊 Notion / Dropbox / Slack lightbox idiom 跟 Dialog mask 同 token 一致。
-              chrome(Toolbar / Filmstrip / InfoPanel)各自有 `bg-surface` 維持 opaque
-              dark surface,不繼承透明。 */}
+              chrome(Toolbar / Filmstrip / InfoPanel)各自 `bg-canvas` opaque dark
+              (對齊 Apple Photos / Drive lightbox 派 — chrome opaque vs mask 半透明,
+              清楚區分 backdrop click 區 vs 互動區)。
+              **不**用 bg-surface — dark mode `--surface = white α8` 半透明,outer 透明時
+              無 dark backdrop 撐 → 視覺洗白。 */}
           <div
             data-theme="dark"
             className="w-full h-full flex flex-col text-foreground"
