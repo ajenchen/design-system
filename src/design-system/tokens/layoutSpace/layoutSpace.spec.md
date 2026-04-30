@@ -46,12 +46,12 @@ Layout Space 定義頁面與容器的巨觀間距 token,隨 density 自動縮放
 
 ### Region 數量 invariant(2026-04-30 codified)
 
-**Container body(vertical stack)內最多 1 個 region**。理由:
-- region 多為 `flex-1` 撐剩餘空間 → 兩個 region 競爭 flex space 矛盾
-- Multi-functional-group → 用 list group 切分(`item-anatomy.spec.md` group separator)/ 多個 elements,**不另增 region**
-- **Unbounded + bounded 並存邏輯矛盾**:unbounded 無邊界但 region 可能 overflow 需 scroll,內部 scroll 必須 bounded chrome 讓 user 知道可捲 → 兩者並存違 affordance 規則
+**Container body(vertical stack)通常最多 1 個 region — 罕見會多**。理由:
+- region 多為 `flex-1` 撐剩餘 → 兩個並存競爭 flex space
+- Multi-functional-group 慣用 **list group 切分**(`item-anatomy.spec.md` group separator)或多個 element,不另增 region
+- **Unbounded + bounded 並存違 scroll affordance**:unbounded 無邊界 vs 內部 scroll 必須 bounded chrome 讓 user 知道可捲
 
-**Multi-region only in horizontal layout**(left-right panes / grid columns,如 Sidebar + Main + InfoPanel),**不在 vertical stack**。
+**多 region 慣用 horizontal layout**(left-right panes / grid columns,Sidebar + Main + InfoPanel)。Vertical 多 region 罕見場景 → 走規則 3 親疏判 + consumer compose。
 
 ---
 
