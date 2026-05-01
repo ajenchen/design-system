@@ -16,18 +16,24 @@
  * 這個 script 是 drift defense — 推薦 commit 前跑一次。
  */
 
-import { execSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, copyFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 
 const REVERSE = process.argv.includes('--reverse')
 
+// Compute Claude Code harness path dynamically from cwd
+// Encoding rule(對齊 Claude Code 內建 harness 規律):non-alphanumeric → `-`
+// 例:`/Users/chenqiren/Library/...` → `-Users-chenqiren-Library-...`
+//     `/home/user/design-system` → `-home-user-design-system`(cloud sandbox)
+//     `/我的雲端硬碟/` 中 6 個 Chinese char → 6 個 `-`
+const harnessEncode = (cwd) => cwd.replace(/[^A-Za-z0-9]/g, '-')
+
 const HARNESS_DIR = join(
   homedir(),
   '.claude',
   'projects',
-  '-Users-chenqiren-Library-CloudStorage-GoogleDrive-qijenchen-gmail-com--------my-project',
+  harnessEncode(process.cwd()),
   'memory',
 )
 const REPO_DIR = '.claude/memory'

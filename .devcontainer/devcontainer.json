@@ -9,7 +9,7 @@
     "6006": { "label": "Storybook", "onAutoForward": "openPreview" },
     "5173": { "label": "Vite Dev", "onAutoForward": "notify" }
   },
-  "postCreateCommand": "npm ci && cp -rn .claude/memory/* ~/.claude/projects/$(pwd | shasum | cut -c1-40)/memory/ 2>/dev/null || true",
+  "postCreateCommand": "npm ci && node scripts/sync-memory.mjs --reverse",
   "customizations": {
     "vscode": {
       "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
