@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/design-system/components/Tooltip/tooltip"
+import { ItemInlineActionButton } from "@/design-system/patterns/element-anatomy/item-anatomy"
 
 // ── Tag（inline label）─────────────────────────────────────────────────────
 // 用於分類標籤、狀態標記、多選已選值。
@@ -99,45 +100,32 @@ const SOLID_DISMISS_HOVER: Record<string, { hover: string; active: string }> = {
 }
 
 // ── Dismiss（internal）────────────────────────────────────────────────────
-// Inline action：16px icon，18px hover 背景，由 Tag 內部渲染。
+// 走 `ItemInlineActionButton`(item-anatomy SSOT)+ `hoverBgClassName` override prop
+// (2026-05-01 整合,消除原 Tag 自刻 `<button>` 繞 DS infra 的 tech debt)。
 //
-// **為什麼不用 `ItemInlineAction` 共用元件**:
-// Tag 的 solid variant(blue/green/red 等)需要 hover bg 跟 tag 色相一致(用 SOLID_DISMISS_HOVER
-// 查表的 chromatic hover token),不是中性的 neutral-hover。`ItemInlineAction` 預設用 neutral
-// hover bg,改成支援色相 override 會增加 helper 的 API 複雜度。Tag dismiss 的 chromatic
-// 約束是 component-specific,屬於合理的特例,不該為單一 case 拖累 helper。
-//
-// 未來 option:`ItemInlineActionButton` 加 `hoverBgClassName` override prop,讓 Tag 也能用。
+// 視覺對齊:`size="md"` → icon 16 / hover-bg 18,跟 Tag 既有手刻幾何完全相等。
+// Solid variant(blue/green/red 等)透過 `hoverBgClassName` 套色相 override token;
+// Subtle variant 落用 ItemInlineActionButton 預設 neutral-hover。
+// 圖標色繼承 Tag 文字色 → `text-current` 三態覆寫。
 
 function TagDismiss({ onDismiss, label, solid, variant }: { onDismiss: () => void; label: string; solid?: boolean; variant?: string }) {
-  // dismiss icon 繼承 Tag 文字色（跟 label 同色）
-  // subtle: hover bg = neutral-hover
-  // solid: hover bg = 色相自己的 hover/active token
   const solidColors = solid && variant ? SOLID_DISMISS_HOVER[variant] : undefined
 
   return (
-    <button
-      type="button"
+    <ItemInlineActionButton
+      icon={X}
+      size="md"
       onClick={(e) => { e.stopPropagation(); onDismiss() }}
-      className="group/action relative grid place-content-center cursor-pointer"
-      style={{
-        width: 16, height: 16,
-        ...(solidColors ? { '--dismiss-hover': solidColors.hover, '--dismiss-active': solidColors.active } as React.CSSProperties : {}),
-      }}
       aria-label={`移除 ${label}`}
-    >
-      <span
-        className={cn(
-          'absolute rounded-md pointer-events-none transition-colors',
-          solidColors
-            ? 'bg-transparent group-hover/action:bg-[var(--dismiss-hover)] group-active/action:bg-[var(--dismiss-active)]'
-            : 'bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active',
-        )}
-        style={{ width: 18, height: 18, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-        aria-hidden
-      />
-      <X size={16} className="relative" aria-hidden />
-    </button>
+      style={solidColors ? ({ '--dismiss-hover': solidColors.hover, '--dismiss-active': solidColors.active } as React.CSSProperties) : undefined}
+      hoverBgClassName={
+        solidColors
+          ? 'group-hover/action:bg-[var(--dismiss-hover)] group-active/action:bg-[var(--dismiss-active)]'
+          : undefined
+      }
+      // Override default fg-muted → 繼承 Tag 文字色(label 同色)
+      className="text-current hover:text-current active:text-current"
+    />
   )
 }
 

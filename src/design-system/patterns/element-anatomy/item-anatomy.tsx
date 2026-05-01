@@ -569,12 +569,25 @@ export interface ItemInlineActionButtonProps
    * - Field / Tag(自有 size 系統,沒包 RowSizeProvider)→ **必傳** `size={hostSize}`
    */
   size?: RowSize
+  /**
+   * Hover / active bg className override(chromatic host 專用,如 Tag solid variant)。
+   *
+   * 預設 `group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active`。
+   * 提供後**完全取代** hover + active 雙態 className,但**不影響** rest 態(永遠 bg-transparent)
+   * 與 overlay-trigger 態(`group-data-[state=open]:bg-neutral-selected`)。
+   *
+   * Consumer 須**同時**包含 hover + active 兩態 selector,例:
+   * `'group-hover/action:bg-[var(--my-hover)] group-active/action:bg-[var(--my-active)]'`
+   *
+   * Use case:Tag solid(blue/green/red 等)需 hover bg 跟 host 色相一致(非 neutral)。
+   */
+  hoverBgClassName?: string
 }
 
 export const ItemInlineActionButton = React.forwardRef<
   HTMLButtonElement,
   ItemInlineActionButtonProps
->(({ icon: Icon, className, iconClassName, style, type = "button", size: sizeProp, ...rest }, ref) => {
+>(({ icon: Icon, className, iconClassName, style, type = "button", size: sizeProp, hoverBgClassName, ...rest }, ref) => {
   const contextSize = useRowSize()
   const size = sizeProp ?? contextSize
   const iconPx = ICON_SIZE[size]
@@ -600,7 +613,8 @@ export const ItemInlineActionButton = React.forwardRef<
         className={cn(
           "absolute pointer-events-none",
           "rounded-md",
-          "bg-transparent group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active",
+          "bg-transparent",
+          hoverBgClassName ?? "group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active",
           // Overlay 開啟時用 selected token(4% vs hover 2%,持續態語義對應 toggle pressed 同 family)
           "group-data-[state=open]/action:bg-neutral-selected",
           "transition-colors"

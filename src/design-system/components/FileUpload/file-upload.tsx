@@ -172,9 +172,12 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
               thumbnailSrc={f.thumbnailSrc}
               actions={
                 onRemove ? (
+                  // Collection remove(per-file)— 不是 dismiss surface,故不套 `dismiss` prop。
+                  // 視覺與 dismiss 一致(text variant + fg-muted dim)— 對齊 inline-action.spec.md
+                  // 「Dismiss canonical — X close only」L249-251:onRemove callback 不觸發 dismiss prop。
                   <Button
                     iconOnly
-                    dismiss
+                    variant="text"
                     size="xs"
                     startIcon={X}
                     aria-label={removeAriaLabel(f.name)}
@@ -182,6 +185,7 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
                       e.stopPropagation()
                       onRemove(f.id)
                     }}
+                    className="text-fg-muted hover:text-foreground"
                   />
                 ) : undefined
               }
