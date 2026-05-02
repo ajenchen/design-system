@@ -14,6 +14,22 @@
       "file": "datepicker-sizes.png"
     },
     {
+      "id": "design-system-components-datepicker-展示--with-error",
+      "file": "datepicker-error.png"
+    },
+    {
+      "id": "design-system-components-datepicker-展示--show-time",
+      "file": "datepicker-show-time.png"
+    },
+    {
+      "id": "design-system-components-datepicker-展示--show-time-range",
+      "file": "datepicker-show-time-range.png"
+    },
+    {
+      "id": "design-system-components-datepicker-展示--range-popover-open",
+      "file": "datepicker-range-popover-open.png"
+    },
+    {
       "id": "design-system-components-calendar-展示--team-calendar",
       "file": "calendar-event-team.png"
     },
@@ -420,30 +436,6 @@
       "file": "selectioncontrol-notification-preferences.png"
     },
     {
-      "id": "design-system-components-datetimepicker-展示--default",
-      "file": "datetime-picker-default.png"
-    },
-    {
-      "id": "design-system-components-datetimepicker-展示--with-seconds",
-      "file": "datetime-picker-with-seconds.png"
-    },
-    {
-      "id": "design-system-components-datetimepicker-展示--clearable",
-      "file": "datetime-picker-clearable.png"
-    },
-    {
-      "id": "design-system-components-datetimepicker-展示--range",
-      "file": "datetime-picker-range.png"
-    },
-    {
-      "id": "design-system-components-datetimepicker-展示--single-popover-open",
-      "file": "datetime-picker-single-open.png"
-    },
-    {
-      "id": "design-system-components-datetimepicker-展示--range-popover-open",
-      "file": "datetime-picker-range-open.png"
-    },
-    {
       "id": "design-system-components-datatablefilterpanel-展示--flat-empty",
       "file": "filter-panel-flat-empty.png"
     },
@@ -466,22 +458,6 @@
     {
       "id": "design-system-components-datatablefilterpanel-展示--relative-date-filter",
       "file": "filter-panel-relative-date.png"
-    },
-    {
-      "id": "design-system-components-datetimepicker-設計規格--overview",
-      "file": "datetime-anatomy-overview.png"
-    },
-    {
-      "id": "design-system-components-datetimepicker-設計規格--state-behavior",
-      "file": "datetime-anatomy-state.png"
-    },
-    {
-      "id": "design-system-components-datatablefilterpanel-設計規格--overview",
-      "file": "filter-anatomy-overview.png"
-    },
-    {
-      "id": "design-system-components-datatablefilterpanel-設計規格--state-behavior",
-      "file": "filter-anatomy-state.png"
     }
   ]
 }

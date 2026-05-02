@@ -28,9 +28,16 @@ import { cn } from '@/lib/utils'
  * | disabled | 灰底圓圈 + disabled 字色(跟 Button disabled 一致) | [&>button]:bg-disabled [&>button]:text-fg-disabled rounded-full |
  * | outside(非本月) | text-fg-muted(neutral-7) | [&>button]:text-fg-muted |
  * | selected / range 端點 | 藍底白字圓 | [&>button]:bg-primary [&>button]:text-on-emphasis rounded-full |
- * | range middle | 灰底矩形 track(neutral-3) | bg-[var(--color-neutral-3)],button 透明 |
- * | range start/end 半圓 track | 左/右半圓 neutral-3 + selected 圓疊在上 | bg-[var(--color-neutral-3)] rounded-l-full / rounded-r-full |
+ * | range middle | 灰底矩形 track(neutral-3),**高度 = button 高度**(28×28 @ md) | before pseudo: `inset-y-0.5 inset-x-0` |
+ * | range start/end 半圓 track | 左/右半圓 + selected 圓疊在上,**圓半徑 = button 半徑** | before pseudo: `rounded-l/r-full` 加 `left-0.5` / `right-0.5` |
  * | hover(未選中) | 藍圈 outline | hover:ring-1 hover:ring-primary |
+ *
+ * ── Range track 高度 canonical(2026-05-02 Q8 修正,M8 4 家對照)──
+ * Ant Design / Material X DateRangePicker / Apple Calendar / Google Calendar 共識:
+ * **range track 高度 = button 高度**(不是 cell 高度)— track 跟 selected 圓緊貼,
+ * 不留 2px「fat」邊距(舊版 cell-level bg 在 button 上下留 2px 空白看起來「胖」)。
+ * 實作:bg 走 `before:` pseudo 走 `inset-y-0.5`(top/bottom 2px 內縮),`inset-x-0`
+ * 維持完整 cell 寬度 → 相鄰 cell 的 pseudo 在 cell 邊界相接 = 橫向連貫。
  *
  * ── 為什麼 neutral-3 不 neutral-2(AR 新版 canonical)──
  * neutral-2 在 light mode 太淡(OKLCH L≈0.97),range track 跟 white bg 幾乎無對比。
@@ -111,7 +118,8 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         ),
         day_button: cn(
           // absolute 定位 + inset-0.5(四邊 2px 內縮)→ button 28×28 @ md / 32×32 @ lg
-          'absolute inset-0.5 flex items-center justify-center',
+          // z-[1] 讓 button 疊在 range track `before:` pseudo 之上(canonical 2026-05-02)
+          'absolute inset-0.5 z-[1] flex items-center justify-center',
           'font-normal text-body rounded-full transition-colors',
           // Hover 藍圈:**ring-[1.5px]** 對齊 Apple HIG / Ant 慣例(1.5px = 薄 + 可見)
           'hover:ring-[1.5px] hover:ring-primary hover:bg-transparent',
@@ -151,13 +159,25 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           '[&>button]:bg-disabled [&>button]:text-fg-disabled [&>button]:cursor-not-allowed',
           '[&>button]:hover:ring-0 [&>button]:hover:bg-disabled',
         ),
-        // range 端點 cell:半圓 neutral-3 track + selected 圓疊在上
-        range_start: 'bg-[var(--color-neutral-3)] rounded-l-full',
-        range_end: 'bg-[var(--color-neutral-3)] rounded-r-full',
+        // ── Range track:button 高度版(canonical 2026-05-02 Q8,M8 4 家共識)──
+        // bg 用 before pseudo:`inset-y-0.5`(top/bottom 內縮 2px → 高度 = button 28px)
+        // + `inset-x-0`(維持 cell 寬度 = 32px,相鄰 cell pseudo 接合 → 橫向連貫)
+        // 半圓 round 的 left/right 收 0.5(2px)讓圓弧半徑跟 button 圓對齊。
+        // **必含 `before:content-['']`** — Tailwind 的 `before:` modifier 不自動 set content,
+        // 沒寫的話 pseudo 不渲染。
+        range_start: cn(
+          "before:content-[''] before:absolute before:inset-y-0.5 before:left-0.5 before:right-0",
+          'before:bg-[var(--color-neutral-3)] before:rounded-l-full',
+        ),
+        range_end: cn(
+          "before:content-[''] before:absolute before:inset-y-0.5 before:left-0 before:right-0.5",
+          'before:bg-[var(--color-neutral-3)] before:rounded-r-full',
+        ),
         // range 中段 cell:neutral-3 矩形 track,button 透明;
         // **hover 仍顯示藍圈 outline**(對齊 user AR:「滑到區間的日期灰底一樣 hover 會出現藍色框框」)
         range_middle: cn(
-          'bg-[var(--color-neutral-3)]',
+          "before:content-[''] before:absolute before:inset-y-0.5 before:inset-x-0",
+          'before:bg-[var(--color-neutral-3)]',
           '[&>button]:!bg-transparent [&>button]:!text-foreground',
         ),
         hidden: 'invisible',

@@ -120,8 +120,8 @@ DatePickerDisplay.displayName = 'DatePickerDisplay'
 export interface DatePickerProps
   extends DateFormatOptions,
     Omit<
-      React.ButtonHTMLAttributes<HTMLButtonElement>,
-      'value' | 'onChange' | 'placeholder' | 'disabled'
+      React.HTMLAttributes<HTMLDivElement>,
+      'value' | 'onChange' | 'placeholder' | 'defaultValue'
     > {
   mode?: FieldMode
   error?: boolean
@@ -150,7 +150,11 @@ export interface DatePickerProps
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
-const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
+//
+// Trigger uses `<div role="combobox" tabIndex={...}>` instead of `<button>` —
+// 對齊 Combobox / Select / TimePicker 同 pattern,避免 ItemInlineAction(內部 button)
+// 構成 nested-interactive(axe serious)。Radix Popover asChild 仍處理 Enter/Space 鍵盤觸發。
+const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
   (
     {
       mode = 'edit',
@@ -170,6 +174,8 @@ const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
       secondStep = 1,
       needConfirm: needConfirmProp,
       id: idProp,
+      'aria-label': ariaLabelProp,
+      'aria-labelledby': ariaLabelledByProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
       ...props
@@ -187,6 +193,8 @@ const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
     const [open, setOpen] = React.useState(false)
     const [draft, setDraft] = React.useState<string | null>(value ?? null)
     const resolvedPlaceholder = placeholder ?? (showTime ? 'YYYY-MM-DD HH:MM' : 'YYYY-MM-DD')
+    // a11y:role="combobox" 必須有 accessible name(aria-label / labelledby / fieldCtx label)
+    const accessibleName = ariaLabelProp ?? (ariaLabelledByProp ? undefined : (fieldCtx?.id ? undefined : resolvedPlaceholder))
 
     // Sync draft on value / open change
     React.useEffect(() => { setDraft(value ?? null) }, [value, open])
@@ -233,11 +241,14 @@ const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
     return (
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <button
+          <div
             ref={ref}
             id={idProp ?? fieldCtx?.id}
-            type="button"
-            disabled={disabled}
+            role="combobox"
+            tabIndex={disabled ? -1 : 0}
+            aria-disabled={disabled || undefined}
+            aria-label={accessibleName}
+            aria-labelledby={ariaLabelledByProp ?? fieldCtx?.labelId}
             aria-invalid={error || undefined}
             aria-required={fieldCtx?.required || undefined}
             aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
@@ -275,7 +286,7 @@ const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
               />
             )}
             <CalendarIcon size={iconSize} className="shrink-0 text-fg-muted pointer-events-none" aria-hidden />
-          </button>
+          </div>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <div className="flex flex-row" role="dialog">
