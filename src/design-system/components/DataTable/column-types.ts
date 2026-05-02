@@ -65,6 +65,17 @@ declare module '@tanstack/react-table' {
     options?: Array<{ value: string; label: string }>
     /** Date: Intl.DateTimeFormat options */
     formatOptions?: Intl.DateTimeFormatOptions
+    /**
+     * Date: 是否含時間部分(datetime mode)。對齊 Notion idiom — 不另設 datetime column type。
+     *
+     * - `false`(default):cell 顯示與 filter 比對僅日期(day-level 精度)
+     * - `true`:cell 渲 date+time;filter 比對走 ms 精度(避開 Airtable 著名地雷)
+     *
+     * 在 advanced filter 中,`date` columnType 配 `includeTime=true` 時,
+     * `date_*` ValueShape 自動 promote 到 `datetime_*`,渲 `<DateTimePicker>` /
+     * `<DateTimeRangePicker>`(詳 `filter-operators.ts` `getValueShape`)。
+     */
+    includeTime?: boolean
     /** Link: 自訂顯示文字（不設則自動從 URL 提取 hostname） */
     linkLabel?: string
   }
