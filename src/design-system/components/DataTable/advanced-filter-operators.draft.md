@@ -90,11 +90,20 @@
 | `has_any_of` | 含其中之一 | has any of | `select_multi` | ✓ | ✓ | — |
 | `has_all_of` | 全部包含 | has all of | `select_multi` | ✓ | ✓ | — |
 | `has_none_of` | 不含其中任一 | has none of | `select_multi` | ✓ | ✓ | ✓ |
-| `is_exactly` | 完全等於 | is exactly | `select_multi` | — | ✓ | — |
 | `is_empty` | 為空 | is empty | `none` | ✓ | ✓ | ✓ |
 | `is_not_empty` | 不為空 | is not empty | `none` | ✓ | ✓ | ✓ |
 
-**default op**:`has_any_of`。
+**default op**:`has_any_of`。**`is_exactly` 已砍**(user 確認 v1 不需,實務 edge case)。
+
+### `select` vs `multiSelect` op set 為何不同(關鍵差異)
+
+| | `select`(cell = 單一字串) | `multiSelect`(cell = 字串陣列) |
+|---|---|---|
+| 1-to-1 比對 | ✓ `is` / `is_not` | ✗ 不適用(陣列比單值 ambiguous) |
+| 集合屬於 | ✓ `is_any_of` / `is_none_of` | ✗ 用 `has_*` 取代 |
+| 集合運算 | ✗ 不適用(單值無法「全含」) | ✓ `has_any_of` / `has_all_of` / `has_none_of` |
+
+差異**根源於 cell 資料形狀**,不是 picker 不同。Value picker 兩者都共用 `Select`(單值)/ `SelectMenu`(多值)DS 既有元件。
 
 ### `person`(單一人員)
 | op key | 中 | en | shape | CU | AT | NT |
@@ -158,34 +167,50 @@ export const OPERATOR_REGISTRY: Record<ColumnType, OperatorSpec[]> = { ... }
 export const DEFAULT_OPERATOR: Record<ColumnType, string> = { ... }
 ```
 
-## 4. 待 user 拍板
+## 4. 拍板紀錄(2026-05-02 user 確認)
 
-| # | 議題 | 我的傾向 | 為什麼 |
-|---|---|---|---|
-| 1 | `string` 是否包 `starts_with` / `ends_with` | **包** | CU + NT 都有,AT 沒有但用戶實務常用(URL prefix / file extension 場景) |
-| 2 | `number` 是否包 `between` | **包** | CU 有,且配合 InputSurface split input 同時驗證 |
-| 3 | `select` 是否包 `is_any_of` / `is_none_of`(單選欄位多選比對) | **包** | CU + AT 都有。實務:「Status is one of [Open, In Progress, Review]」 |
-| 4 | `multiSelect` 的 `is_exactly`(完全等於) | **不包(v1 砍)** | 只有 AT 有,語意 edge case,先砍簡化 |
-| 5 | `date_relative` 預設選項 | **11 個常用集** | 對齊 ClickUp 子集。完整版約 30 項,v1 太雜 |
-| 6 | label 是否硬編中文 | **暫硬編,留 i18n hook** | DS 既有元件多硬編繁中,本 draft 跟風;之後若 i18n 統一改 |
-| 7 | op 命名 snake_case vs camelCase | **snake_case** | 對齊 SQL / ClickUp / Airtable API 命名 idiom,跟 column types(camelCase)區分 |
+| # | 議題 | 決議 |
+|---|---|---|
+| 1 | `string` 包 `starts_with` / `ends_with` | ✅ 包 |
+| 2 | `number` 包 `between` | ✅ 包 |
+| 3 | `select` 包 `is_any_of` / `is_none_of` | ✅ 包 |
+| 4 | `multiSelect` 的 `is_exactly` | ❌ 砍(user 確認 v1 不需) |
+| 5 | `date_relative` 預設選項 | ✅ 11 個常用集 |
+| 6 | label 硬編繁中 | ✅ 暫硬編,留 i18n hook |
+| 7 | op 命名 snake_case | ✅ 採用 |
 
-## 5. 出現次數統計(M8 信心指標)
+## 5. 同 field 可重複加 condition(關鍵設計約束)
+
+對齊 ClickUp idiom — 同一 field 可加多筆 condition,例:
+
+```
+(Status is Open OR Status is Review) AND Priority is High
+```
+
+我們的 FilterTree model 天然支援(condition 沒 dedup by field)。
+
+**技術坑**:TanStack `ColumnFiltersState` 是 per-column 一筆 filter value,**不能塞 N 條同 column**。實作時需要:
+- Panel 自己管 FilterTree state
+- 求值時整棵 tree 對 row 求 boolean(透過 `globalFilter` 或 client-side 聚合)
+- 棄用 TanStack 的 `columnFilters` 自動聚合
+
+此約束會影響 panel ↔ DataTable 的 API 設計,**Phase B spec.md 處理**。
+
+## 6. 出現次數統計(M8 信心指標)
 
 3 家共出現 op(計入別名統一)後:
 - **3/3 家共識**:46 個 op-cell(高信心)
-- **2/3 家共識**:8 個 op-cell(`starts_with` / `ends_with` / `is_any_of` / `is_none_of` / `has_any_of` / `has_all_of` / `is_on_or_before` / `is_on_or_after`)— 中信心,但實務常用,保留
-- **1/3 家獨有**:2 個 op-cell(`number.between` 只 CU、`is_exactly` 只 AT)— 低信心,前者保留(配 InputSurface 自然)、後者砍
+- **2/3 家共識**:8 個 op-cell(`starts_with` / `ends_with` / `is_any_of` / `is_none_of` / `has_any_of` / `has_all_of` / `is_on_or_before` / `is_on_or_after`)— 中信心,實務常用保留
+- **1/3 家獨有**:1 個 op-cell(`number.between` 只 CU)— 配 InputSurface 自然,保留
 
 ---
 
-## 6. Review checklist(請 user 確認)
+## 7. Phase A 結案 — Phase B 銜接
 
-- [ ] ValueShape 11 種 OK(沒漏)
-- [ ] 每個 columnType 的 op set OK(沒多餘 / 沒漏關鍵)
-- [ ] 中文 label 措辭 OK(尤其 `is_set` 譯「已設定」、`is_empty` 譯「為空」的差異)
-- [ ] default op 選擇 OK
-- [ ] 待拍板 7 題決議
-- [ ] op 命名 snake_case 風格 OK
+Phase B 啟動項:
+- [ ] ValueShape × DS 元件視覺驗證(SelectMenu / PeoplePicker / DatePicker / NumberInput / InputSurface)
+- [ ] advanced-filter spec.md draft(data model / props / 與 DataTable 耦合 / FilterTree 求值策略)
+- [ ] InputSurface pattern vs component 決定
+- [ ] i18n 策略確認
 
 確認後升正式 spec 並開始 Phase 1 code。
