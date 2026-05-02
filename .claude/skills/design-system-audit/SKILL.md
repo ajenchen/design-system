@@ -148,6 +148,7 @@ Grouped by theme. Each runs as an independent subagent; many can parallelize.
 | # | Audit | What it catches |
 |---|-------|-----------------|
 | 31 | **Overlay body 無 stripped-padding boolean variant**(對齊 Material/Atlassian/Mantine/shadcn 主流;Polaris flush API 例外但 scope 極窄)| Per-overlay grep `components/(Dialog\|Sheet\|Popover)/*.tsx`(非 stories)反 pattern:`(flush\|naked\|bare\|stripped\|unpadded\|noPadding\|paddingless)\?:\s*boolean` 在 body component。違反 = list-as-region 場景該由 consumer 用 className override(`!px-0 !pt-0 !pb-0`)+ 自管 list outer wrapper 處理,不該加 body variant。Rationale:variant 不解決底層脆弱(加 1 row search/banner 就破功)+ 把 1 surface decision 拆兩 API。對應 hook `check_overlay_handcraft.sh` Check 6 + `overlay-surface.spec.md`「List-as-region in overlay body」+ memory `feedback_layout_v6_canonical.md`。Hook 是 write-time block,本 dim 對既有 overlay 元件 + 未來新增 overlay primitive(Drawer / FileViewer body 等)batch verify。`// overlay-body-stripped-variant-allow:` 檔頭 allowlist 例外(必含 ≥3 家世界級對照 + multi-row hold 保證)|
+| 32 | **Filter operator registry SSOT consumption**(對齊 ClickUp/Airtable/Notion API + M17)| Per-consumer grep:反 pattern(a)hardcode op 字串 array 不 import `OPERATOR_REGISTRY`;(b)inline switch on op derive ValueShape(該走 `getValueShape`)。SSOT:`DataTable/filter-operators.ts`。`// filter-op-inline-allow:` 檔頭 escape |
 
 ---
 

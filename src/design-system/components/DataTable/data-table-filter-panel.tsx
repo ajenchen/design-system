@@ -1,14 +1,15 @@
 // same-row-mixed-allow: header chrome corner buttons(close)跟 row inline actions(trash)不在同 row
 import * as React from 'react'
-import { Plus, Trash2, X as XIcon } from 'lucide-react'
+import { Plus, Trash2, X as XIcon, RotateCcw } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { cn } from '@/lib/utils'
 import { Button } from '@/design-system/components/Button/button'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
-import { SelectMenu, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { Input } from '@/design-system/components/Input/input'
 import { NumberInput } from '@/design-system/components/NumberInput/number-input'
 import { DatePicker, DatePickerRange } from '@/design-system/components/DatePicker/date-picker'
+import { DateTimePicker, DateTimeRangePicker } from './date-time-picker'
 import { SurfaceHeader, SurfaceBody, SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -185,11 +186,44 @@ export interface DataTableFilterPanelProps<TData> {
   value: FilterTree
   /** state 變更 callback */
   onChange: (next: FilterTree) => void
+  /**
+   * 管理員 set-as-default 的 baseline(refresh icon 顯示判定用)。
+   * 當 `value` ≠ `defaultValue`(deep equal)→ panel header 顯示 refresh icon,
+   * click → reset 回 defaultValue。對齊 sort 邏輯(相同 modified-from-default UX)。
+   */
+  defaultValue?: FilterTree
   /** Cell ⌄ menu「Filter by this」帶入的 column id(自動 add 一條 condition) */
   prefilledColumnId?: string
   onPrefillConsumed?: () => void
   onClose?: () => void
   className?: string
+}
+
+/**
+ * Deep-equal compare for FilterTree(structural,忽略 row id 因 refresh-detection
+ * 不應該被內部 id 干擾)。
+ */
+function isFilterTreeEqual(a: FilterTree, b: FilterTree): boolean {
+  if (a.mode !== b.mode || a.conjunction !== b.conjunction) return false
+  if (a.children.length !== b.children.length) return false
+  if (a.mode === 'flat' && b.mode === 'flat') {
+    return a.children.every((c, i) => isConditionEqual(c, b.children[i]))
+  }
+  if (a.mode === 'nested' && b.mode === 'nested') {
+    return a.children.every((g, i) => isGroupEqual(g, b.children[i]))
+  }
+  return false
+}
+
+function isGroupEqual(a: FilterGroup, b: FilterGroup): boolean {
+  if (a.conjunction !== b.conjunction) return false
+  if (a.children.length !== b.children.length) return false
+  return a.children.every((c, i) => isConditionEqual(c, b.children[i]))
+}
+
+function isConditionEqual(a: FilterCondition, b: FilterCondition): boolean {
+  if (a.field !== b.field || a.op !== b.op) return false
+  return JSON.stringify(a.value) === JSON.stringify(b.value)
 }
 
 // ── Main Component ──────────────────────────────────────────────────────
@@ -199,6 +233,7 @@ export function DataTableFilterPanel<TData>({
   columns,
   value,
   onChange,
+  defaultValue,
   prefilledColumnId,
   onPrefillConsumed,
   onClose,
@@ -332,6 +367,14 @@ export function DataTableFilterPanel<TData>({
       <SurfaceHeader>
         <div className="flex items-center gap-1 w-full min-w-0">
           <PopoverTitle className="flex-1">篩選</PopoverTitle>
+          {/* Refresh icon — 只在 value ≠ defaultValue 時顯示(對齊 sort modified-from-default UX) */}
+          {defaultValue && !isFilterTreeEqual(value, defaultValue) && (
+            <Button
+              variant="text" size="sm" iconOnly startIcon={RotateCcw}
+              aria-label="恢復預設"
+              onClick={() => onChange(defaultValue)}
+            />
+          )}
           {onClose && (
             <PopoverClose asChild>
               <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={onClose} />
@@ -573,23 +616,36 @@ function ValuePicker({
       return <Select size="md" options={opts} value={String(value ?? '')} onChange={(v) => onChange(v)} placeholder="選擇值" />
     }
     case 'select_multi': {
-      const opts: SelectMenuOption[] = (colInfo?.options ?? []).map((o) => ({ value: o.value, label: o.label }))
+      const opts = (colInfo?.options ?? []).map((o) => ({ value: o.value, label: o.label }))
       const arr = Array.isArray(value) ? (value as string[]) : []
       return (
-        <SelectMenu
+        <Combobox
           size="md"
-          multiple
           options={opts}
           value={arr}
-          onValueChange={(v) => onChange(v)}
+          onChange={(v) => onChange(v)}
           placeholder="選擇值…"
         />
       )
     }
-    // datetime_* / person_* — Phase D 接 DateTimePicker / PeoplePicker filter mode
-    // v1 fallback:text input,功能可用但視覺非最終版
     case 'datetime_single':
+      return (
+        <DateTimePicker
+          size="md"
+          value={typeof value === 'string' ? value : null}
+          onChange={(v) => onChange(v ?? '')}
+        />
+      )
     case 'datetime_range':
+      return (
+        <DateTimeRangePicker
+          size="md"
+          value={Array.isArray(value) && value.length === 2 ? (value as [string | null, string | null]) : null}
+          onChange={(v) => onChange(v)}
+        />
+      )
+    // person_* — Phase E 後續可接 PeoplePicker filter mode
+    // v1 fallback:Combobox 文字 input(功能可用,視覺非 person-card)
     case 'person_single':
     case 'person_multi':
       return (
@@ -597,7 +653,7 @@ function ValuePicker({
           size="md"
           value={typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="(暫時 — Phase D 接專用 picker)"
+          placeholder="(person picker 預留)"
         />
       )
     default:
