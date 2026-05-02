@@ -20,9 +20,30 @@ import {
   DATE_RELATIVE_OPTIONS,
   getOperatorSpec,
   getValueShape,
-  type OperatorSpec,
   type ValueShape,
 } from './filter-operators'
+import {
+  createEmptyFilterTree,
+  isFilterTreeActive,
+  isFilterTreeEqual,
+  evaluateTree,
+  dataTableFilterMatch,
+  type Conjunction,
+  type FilterCondition,
+  type FilterGroup,
+  type FilterTree,
+  type FilterTreeFlat,
+  type FilterTreeNested,
+} from './filter-tree'
+
+// Re-export public API from filter-tree(consumer 既有 import path 不變)
+export {
+  createEmptyFilterTree,
+  isFilterTreeActive,
+  evaluateTree,
+  dataTableFilterMatch,
+}
+export type { Conjunction, FilterCondition, FilterGroup, FilterTree, FilterTreeFlat, FilterTreeNested }
 
 /**
  * DataTableFilterPanel — ClickUp-style 進階篩選 panel
@@ -41,83 +62,10 @@ import {
  * 詳:`./advanced-filter.draft.md` + `./advanced-filter-operators.draft.md`
  */
 
-// ── Types ────────────────────────────────────────────────────────────────
-
-export type Conjunction = 'and' | 'or'
-
-export interface FilterCondition {
-  kind: 'cond'
-  /** 唯一 row id(stable across renders) */
-  id: string
-  /** 對應 column id;空字串 = 尚未選 field(operator/value picker disabled) */
-  field: string
-  /** OperatorSpec.op key — 對齊 OPERATOR_REGISTRY */
-  op: string
-  /** 依 ValueShape 解讀的值 */
-  value: unknown
-}
-
-export interface FilterGroup {
-  kind: 'group'
-  id: string
-  /** group 內 children 共用的 join(全 AND 或全 OR;不允許混) */
-  conjunction: Conjunction
-  /** ⚠️ 型別鎖死:children 只能 condition,不可再 nested group(1-level cap) */
-  children: FilterCondition[]
-}
-
-export type FilterTreeFlat = {
-  mode: 'flat'
-  conjunction: Conjunction
-  children: FilterCondition[]
-}
-
-export type FilterTreeNested = {
-  mode: 'nested'
-  conjunction: Conjunction
-  children: FilterGroup[]
-}
-
-export type FilterTree = FilterTreeFlat | FilterTreeNested
-
-// ── Helpers — public API ────────────────────────────────────────────────
+// ── Internal — id seed ──────────────────────────────────────────────────
 
 let _idSeed = 0
 const newId = () => `f${++_idSeed}-${Date.now().toString(36)}`
-
-/** Empty FilterTree — consumer 用來 init useState */
-export function createEmptyFilterTree(mode: 'flat'): FilterTreeFlat
-export function createEmptyFilterTree(mode: 'nested'): FilterTreeNested
-export function createEmptyFilterTree(mode: 'flat' | 'nested'): FilterTree {
-  if (mode === 'flat') return { mode: 'flat', conjunction: 'and', children: [] }
-  return { mode: 'nested', conjunction: 'and', children: [] }
-}
-
-/** 是否有任何 active filter — DataTable trigger button checked state 用 */
-export function isFilterTreeActive(tree: FilterTree): boolean {
-  if (tree.mode === 'flat') {
-    return tree.children.some((c) => isConditionComplete(c))
-  }
-  return tree.children.some((g) => g.children.some((c) => isConditionComplete(c)))
-}
-
-/** Condition 是否「已填齊」可參與 filter 求值 */
-function isConditionComplete(c: FilterCondition): boolean {
-  if (!c.field || !c.op) return false
-  const spec = getOperatorSpec_loose(c.field, c.op)
-  if (!spec) return false
-  if (spec.valueShape === 'none') return true
-  return c.value !== '' && c.value !== null && c.value !== undefined
-}
-
-/** loose lookup — field 用 column id,我們不知 columnType,試所有 type */
-function getOperatorSpec_loose(_field: string, op: string): OperatorSpec | null {
-  for (const list of Object.values(OPERATOR_REGISTRY)) {
-    const found = list.find((o) => o.op === op)
-    if (found) return found
-  }
-  return null
-}
 
 // ── Helpers — internal types ────────────────────────────────────────────
 
@@ -197,33 +145,6 @@ export interface DataTableFilterPanelProps<TData> {
   onPrefillConsumed?: () => void
   onClose?: () => void
   className?: string
-}
-
-/**
- * Deep-equal compare for FilterTree(structural,忽略 row id 因 refresh-detection
- * 不應該被內部 id 干擾)。
- */
-function isFilterTreeEqual(a: FilterTree, b: FilterTree): boolean {
-  if (a.mode !== b.mode || a.conjunction !== b.conjunction) return false
-  if (a.children.length !== b.children.length) return false
-  if (a.mode === 'flat' && b.mode === 'flat') {
-    return a.children.every((c, i) => isConditionEqual(c, b.children[i]))
-  }
-  if (a.mode === 'nested' && b.mode === 'nested') {
-    return a.children.every((g, i) => isGroupEqual(g, b.children[i]))
-  }
-  return false
-}
-
-function isGroupEqual(a: FilterGroup, b: FilterGroup): boolean {
-  if (a.conjunction !== b.conjunction) return false
-  if (a.children.length !== b.children.length) return false
-  return a.children.every((c, i) => isConditionEqual(c, b.children[i]))
-}
-
-function isConditionEqual(a: FilterCondition, b: FilterCondition): boolean {
-  if (a.field !== b.field || a.op !== b.op) return false
-  return JSON.stringify(a.value) === JSON.stringify(b.value)
 }
 
 // ── Main Component ──────────────────────────────────────────────────────
@@ -661,123 +582,3 @@ function ValuePicker({
   }
 }
 
-// ── Tree Evaluation(globalFilter approach) ───────────────────────────
-
-/**
- * 整棵 FilterTree 對 row 求 boolean。
- * 配合 useReactTable `globalFilterFn`:
- *
- *   const tree = useState<FilterTree>(createEmptyFilterTree('flat'))
- *   useReactTable({
- *     state: { globalFilter: tree },
- *     onGlobalFilterChange: setTree,
- *     globalFilterFn: (row, _, t: FilterTree) => evaluateTree(t, row.original),
- *     getFilteredRowModel: getFilteredRowModel(),
- *   })
- */
-export function evaluateTree(tree: FilterTree, row: any): boolean {
-  if (tree.children.length === 0) return true
-
-  if (tree.mode === 'flat') {
-    const completed = tree.children.filter(isConditionComplete)
-    if (completed.length === 0) return true
-    const results = completed.map((c) => evaluateCondition(c, row))
-    return tree.conjunction === 'and' ? results.every(Boolean) : results.some(Boolean)
-  }
-
-  // nested
-  const groupResults = tree.children.map((g) => evaluateGroup(g, row))
-  // group 沒任何 complete condition 的視為 pass-through(true)
-  const meaningful = groupResults.filter((_, i) => tree.children[i].children.some(isConditionComplete))
-  if (meaningful.length === 0) return true
-  return tree.conjunction === 'and' ? meaningful.every(Boolean) : meaningful.some(Boolean)
-}
-
-function evaluateGroup(group: FilterGroup, row: any): boolean {
-  const completed = group.children.filter(isConditionComplete)
-  if (completed.length === 0) return true
-  const results = completed.map((c) => evaluateCondition(c, row))
-  return group.conjunction === 'and' ? results.every(Boolean) : results.some(Boolean)
-}
-
-function evaluateCondition(cond: FilterCondition, row: any): boolean {
-  if (!cond.field || !cond.op) return true
-  const cellValue = row?.[cond.field]
-  return matchOperator(cond.op, cellValue, cond.value)
-}
-
-function matchOperator(op: string, cellValue: unknown, filterValue: unknown): boolean {
-  // 不需 value 的 op
-  switch (op) {
-    case 'is_set':     return cellValue !== null && cellValue !== undefined && cellValue !== ''
-    case 'is_not_set': return cellValue === null || cellValue === undefined || cellValue === ''
-    case 'is_true':    return cellValue === true
-    case 'is_false':   return cellValue === false
-  }
-
-  // 需 value 但 value 空 → 視為 incomplete,pass-through
-  if (filterValue === null || filterValue === undefined || filterValue === '') return true
-  if (Array.isArray(filterValue) && filterValue.length === 0) return true
-
-  switch (op) {
-    case 'contains':         return String(cellValue ?? '').toLowerCase().includes(String(filterValue).toLowerCase())
-    case 'does_not_contain': return !String(cellValue ?? '').toLowerCase().includes(String(filterValue).toLowerCase())
-    case 'is':               return String(cellValue ?? '').toLowerCase() === String(filterValue).toLowerCase()
-    case 'is_not':           return String(cellValue ?? '').toLowerCase() !== String(filterValue).toLowerCase()
-    case 'starts_with':      return String(cellValue ?? '').toLowerCase().startsWith(String(filterValue).toLowerCase())
-    case 'ends_with':        return String(cellValue ?? '').toLowerCase().endsWith(String(filterValue).toLowerCase())
-
-    case 'equals':     return Number(cellValue) === Number(filterValue)
-    case 'not_equals': return Number(cellValue) !== Number(filterValue)
-    case 'gt':         return Number(cellValue) > Number(filterValue)
-    case 'gte':        return Number(cellValue) >= Number(filterValue)
-    case 'lt':         return Number(cellValue) < Number(filterValue)
-    case 'lte':        return Number(cellValue) <= Number(filterValue)
-
-    case 'is_before': return new Date(String(cellValue)).getTime() < new Date(String(filterValue)).getTime()
-    case 'is_after':  return new Date(String(cellValue)).getTime() > new Date(String(filterValue)).getTime()
-    case 'is_on_or_before': return new Date(String(cellValue)).getTime() <= new Date(String(filterValue)).getTime()
-    case 'is_on_or_after':  return new Date(String(cellValue)).getTime() >= new Date(String(filterValue)).getTime()
-    case 'is_between': {
-      if (!Array.isArray(filterValue) || filterValue.length !== 2) return true
-      const cv = new Date(String(cellValue)).getTime()
-      const start = filterValue[0] ? new Date(String(filterValue[0])).getTime() : -Infinity
-      const end = filterValue[1] ? new Date(String(filterValue[1])).getTime() : Infinity
-      return cv >= start && cv <= end
-    }
-    case 'is_relative':
-      // Phase D 完整實作(today/this_week/...)— v1 fallback pass
-      return true
-
-    case 'has_any_of': {
-      if (!Array.isArray(filterValue)) return true
-      if (Array.isArray(cellValue)) return cellValue.some((c) => filterValue.includes(c))
-      return filterValue.includes(cellValue)
-    }
-    case 'has_all_of': {
-      if (!Array.isArray(filterValue)) return true
-      if (Array.isArray(cellValue)) return filterValue.every((v) => cellValue.includes(v))
-      return false
-    }
-    case 'has_none_of': {
-      if (!Array.isArray(filterValue)) return true
-      if (Array.isArray(cellValue)) return !cellValue.some((c) => filterValue.includes(c))
-      return !filterValue.includes(cellValue)
-    }
-
-    default: return true
-  }
-}
-
-/**
- * @deprecated v0.x — old per-column filterFn integration。
- * 新版用 `evaluateTree` 配 TanStack `globalFilter`。
- * 保留為了過渡期 backward-compat,新 consumer 不要用。
- */
-export function dataTableFilterMatch(cellValue: unknown, filterValue: unknown): boolean {
-  if (typeof filterValue === 'object' && filterValue !== null && 'operator' in filterValue && 'value' in filterValue) {
-    const fv = filterValue as { operator: string; value: unknown }
-    return matchOperator(fv.operator, cellValue, fv.value)
-  }
-  return String(cellValue ?? '').toLowerCase().includes(String(filterValue ?? '').toLowerCase())
-}
