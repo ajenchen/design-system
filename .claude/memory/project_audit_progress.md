@@ -55,3 +55,11 @@ originSessionId: 7fa6c876-f1f7-4537-8cb3-1c97212e5a80
 - DS Devmode addon:`.claude/planning/ds-devmode.md`
 
 **Tech debt**:清空(stop hook telemetry / build artifact 不算)。
+
+## Next-session pickup(2026-05-01 session ended here)
+
+**Pending major work**:Team distribution setup(架構已決,6 phases planned,0 started)。
+
+→ 詳細 plan 在 `.claude/planning/team-distribution-roadmap.md`
+→ User 開新 session 講「繼續 team distribution / Phase 1 開做 / 拆 npm package」trigger 接續
+→ AI 必先 read planning doc 全文,verify Status,逐 phase 跑(禁跳)
