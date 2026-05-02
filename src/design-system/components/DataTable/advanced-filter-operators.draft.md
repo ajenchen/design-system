@@ -1,11 +1,20 @@
-# Advanced Filter — Operator × ColumnType × ValueShape SSOT(DRAFT v2)
+# Advanced Filter — Operator × ColumnType × ValueShape SSOT(DRAFT v3)
 
-> **狀態**:Draft for review。Phase A 結案版。確認後升 `filter-operators.spec.md` + 寫成 `filter-operators.ts` registry。
-> **M8 benchmark**:對照 ClickUp(CU)/ Airtable(AT)/ Notion(NT)三家。**v2 經 web research 重新驗證 op set,修正 v1 憑記憶誤差**。
-> **設計路線**:**ClickUp 為 baseline**,合理 + 不衝突 + 真實用的擴充採納(string +2 ops, url 獨立 +4, date +2)。
+> **狀態**:Draft for review。Phase A 結案版 + datetime 擴充。確認後升 `filter-operators.spec.md` + 寫成 `filter-operators.ts` registry。
+> **M8 benchmark**:對照 ClickUp(CU)/ Airtable(AT)/ Notion(NT)三家。**v3 加 datetime / includeTime + 砍 number.between(2/3 業界共識)**。
+> **設計路線**:**ClickUp 為 baseline**,合理 + 不衝突 + 真實用的擴充採納。
 > **檔位**:暫放 DataTable/,若決定抽 `patterns/advanced-filter/` 再搬。
 
-## 1. ValueShape canonical(11 種)
+## v3 變動 changelog
+
+- **砍 `number.between`**(9→8 ops)— Notion + Airtable 共識,同 field 重複 condition 可組合 `gte X AND lte Y`,無自然視覺也無業界 NumberRangeInput 元件
+- **加 `column.meta.includeTime: boolean` 旗標** — 對齊 Notion idiom,不另設 datetime column type
+- **加 ValueShape `datetime_single` / `datetime_range`** — `includeTime=true` 時切到這兩個 shape
+- **加 ValueShape `datetime_relative`**(同 date_relative,relative 邏輯不變)
+- **filter 比對精度**:`includeTime=true` 走 ms 精度(避開 Airtable 著名地雷:filter 忽略 time)
+- **不新增 `time-only` column type**(業界沒人做,罕見場景)
+
+## 1. ValueShape canonical(12 種)
 
 每個 operator 的「值該用什麼 picker」由 ValueShape 決定 — panel 只認 ValueShape,不認 op。新增 op 只需 map 到既有 shape。
 
@@ -14,17 +23,20 @@
 | `none` | (不渲) | `is_set / is_not_set / is_true / is_false` 純 predicate |
 | `text` | `<Input>` | 單行文字 |
 | `number` | `<NumberInput>` | 單一數字 |
-| `number_range` | `<InputSurface>` 內 2× NumberInput + `→` | 數值介於 |
-| `date_single` | `<DatePicker>` 單選 | 特定日期 |
-| `date_range` | `<InputSurface>` 內 DatePicker range | 日期介於 |
+| `date_single` | `<DatePicker>` 單選 | 特定日期(`includeTime=false`) |
+| `date_range` | `<DatePickerRange>`(已是 Ant-style split-input) | 日期介於(`includeTime=false`) |
 | `date_relative` | `<Select>` 預設選項 | 相對日期 |
-| `select_single` | `<Select>` from `column.meta.options` | 單選(罕用,目前無 op 採用) |
-| `select_multi` | `<SelectMenu>` from `column.meta.options` | 多選(`select.is` 也走這個 — OR 語意) |
-| `person_single` | `<PeoplePicker>` 單選 | 罕用,目前無 op 採用 |
-| `person_multi` | `<PeoplePicker multiple>` | `person.is` 也走這 — OR 語意 |
+| `datetime_single` | **新** `<DateTimePicker>` | 特定 datetime(`includeTime=true`) |
+| `datetime_range` | **新** `<DateTimeRangePicker>` | datetime 介於(`includeTime=true`) |
+| `select_multi` | `<SelectMenu multiple>` from `column.meta.options` | 多選(`select.is` 也走這 — OR 語意) |
+| `person_multi` | `<PeoplePicker multiple>` | 多人員(`person.is` 也走這 — OR 語意) |
+| `select_single` | `<Select>` from `column.meta.options` | (預留)罕用 |
+| `person_single` | `<PeoplePicker>` 單選 | (預留)罕用 |
 
 **date_relative 預設選項**(11 個):
 `today / yesterday / tomorrow / this_week / last_week / next_week / this_month / last_month / next_month / past_7_days / past_30_days`
+
+**`number_range` 已砍**(配合 `number.between` 砍除)。
 
 ## 2. Operator Registry — 各 columnType 完整 op set
 
@@ -56,7 +68,7 @@
 **default op**:`contains`。
 **為何獨立 string**:URL filtering 場景 prefix / suffix 匹配是強剛需(`starts_with "https://"` / `ends_with ".pdf"`)。string 場景則否。語意分流避免 over-extension。
 
-### `number` / `currency`(9 ops)
+### `number` / `currency`(8 ops — v3 砍 between)
 | op key | 中 | en | valueShape | CU | AT | NT |
 |---|---|---|---|---|---|---|
 | `equals` | 等於 | = | `number` | ✓ | ✓ | ✓ |
@@ -65,28 +77,28 @@
 | `gte` | 大於等於 | ≥ | `number` | ✓ | ✓ | ✓ |
 | `lt` | 小於 | < | `number` | ✓ | ✓ | ✓ |
 | `lte` | 小於等於 | ≤ | `number` | ✓ | ✓ | ✓ |
-| `between` | 介於 | between | `number_range` | ✓ | — | — |
 | `is_set` | 已設定 | is set | `none` | ✓ | ✓ | ✓ |
 | `is_not_set` | 未設定 | is not set | `none` | ✓ | ✓ | ✓ |
 
 **default op**:`equals`。`currency` 共用同 set,渲染依 `column.meta.precision/prefix` 格式化。
-**`between`**:對應 CU 的 RANGE,配合 InputSurface split input 自然好用。
+**`between` 已砍**:2/3 業界共識(Notion + Airtable 沒做)+ 同 field 重複 condition 可組 `gte X AND lte Y` + 沒有任何主流 DS 做 NumberRangeInput 元件。
 
-### `date`(9 ops)
-| op key | 中 | en | valueShape | CU | AT | NT |
+### `date` / `datetime`(9 ops — `includeTime` 旗標切 ValueShape)
+| op key | 中 | en | valueShape(includeTime=false → true) | CU | AT | NT |
 |---|---|---|---|---|---|---|
-| `is` | 是 | is | `date_single` | — | ✓ | ✓ |
-| `is_before` | 早於 | before | `date_single` | ✓ | ✓ | ✓ |
-| `is_after` | 晚於 | after | `date_single` | ✓ | ✓ | ✓ |
-| `is_on_or_before` | 不晚於 | on or before | `date_single` | — | ✓ | ✓ |
-| `is_on_or_after` | 不早於 | on or after | `date_single` | — | ✓ | ✓ |
-| `is_between` | 介於 | between | `date_range` | ✓ | ✓ | — |
-| `is_relative` | 相對 | relative | `date_relative` | ✓ | ✓ | ✓ |
+| `is` | 是 | is | `date_single` → `datetime_single` | — | ✓ | ✓ |
+| `is_before` | 早於 | before | `date_single` → `datetime_single` | ✓ | ✓ | ✓ |
+| `is_after` | 晚於 | after | `date_single` → `datetime_single` | ✓ | ✓ | ✓ |
+| `is_on_or_before` | 不晚於 | on or before | `date_single` → `datetime_single` | — | ✓ | ✓ |
+| `is_on_or_after` | 不早於 | on or after | `date_single` → `datetime_single` | — | ✓ | ✓ |
+| `is_between` | 介於 | between | `date_range` → `datetime_range` | ✓ | ✓ | — |
+| `is_relative` | 相對 | relative | `date_relative`(不變,relative 仍 day-level) | ✓ | ✓ | ✓ |
 | `is_set` | 已設定 | is set | `none` | ✓ | ✓ | ✓ |
 | `is_not_set` | 未設定 | is not set | `none` | ✓ | ✓ | ✓ |
 
 **default op**:`is`。
 **擴充說明**:`is_on_or_before` / `is_on_or_after` 為 v2 擴充(CU 沒,AT + NT 有)— 實務「截止 ≤ 今天(含當天)」不能用嚴格 `before` 表達,語意上是 CU 的 gap。
+**`includeTime` 行為**:`column.meta.includeTime=true` 時 ValueShape 切 datetime_*,filter 比對走 ms 精度。`is_relative` 不受影響(relative 本質仍 day-level,`today` = 從今天 00:00 到 23:59:59)。
 
 ### `select`(4 ops — CU UX 派,不另設 is_any_of)
 | op key | 中 | en | valueShape | CU | AT | NT |
@@ -152,20 +164,23 @@
 
 **default op**:`is_true`。**沒有 `is_set`**(boolean 在 DB 通常 default false,語意上不存在 unset 狀態)。
 
-## 3. 數量總覽
+## 3. 數量總覽(v3)
 
 | Type | ops 數 | CU 派 / 擴充 |
 |---|---|---|
 | `string` | 6 | CU 4 + 擴 `is` / `is_not` |
 | `url` | 8 | CU 4 + 擴 `is` / `is_not` / `starts_with` / `ends_with`(獨立 type) |
-| `number` / `currency` | 9 | 純 CU |
-| `date` | 9 | CU 7 + 擴 `is_on_or_before` / `is_on_or_after` |
+| `number` / `currency` | **8**(v3 砍 between) | 純 CU(無擴充) |
+| `date` | 9 | CU 7 + 擴 `is_on_or_before` / `is_on_or_after`(`includeTime` 切 ValueShape) |
 | `select` | 4 | 純 CU |
 | `multiSelect` | 5 | 純 CU |
 | `person` | 4 | 純 CU |
 | `multiPerson` | 5 | 純 CU |
 | `boolean` | 2 | 純 CU |
-| **總計** | **52 ops, 9 types** | 6 ops 擴充 / 46 ops CU 對齊 |
+| **總計** | **51 ops, 9 types** | 6 ops 擴充 / 45 ops CU 對齊 |
+
+**ColumnType meta 擴充**:`includeTime?: boolean`(date 用)。
+**ValueShape 12 種**(加 `datetime_single` / `datetime_range`,砍 `number_range`)。
 
 ## 4. 設計語言一致性自查(對齊 CU,M8 自我比對 web-researched docs)
 
@@ -199,8 +214,9 @@ export const OPERATOR_REGISTRY: Record<ColumnType, OperatorSpec[]> = { ... }
 export const DEFAULT_OPERATOR: Record<ColumnType, string> = { ... }
 ```
 
-## 6. 拍板紀錄(2026-05-02 user 確認)
+## 6. 拍板紀錄
 
+### 2026-05-02 v2 拍板
 | # | 議題 | 決議 |
 |---|---|---|
 | 1 | 設計路線 | **走 ClickUp 派**,合理擴充採納 |
@@ -212,6 +228,18 @@ export const DEFAULT_OPERATOR: Record<ColumnType, string> = { ... }
 | 7 | label 暫硬編繁中 + 留 i18n hook | ✅ |
 | 8 | op 命名 snake_case | ✅ |
 | 9 | 統一 `is_set` / `is_not_set`(不混 `is_empty`) | ✅ |
+
+### 2026-05-02 v3 datetime 拍板
+| # | 議題 | 決議 |
+|---|---|---|
+| 10 | `number.between` | ❌ 砍(2/3 業界共識 + composability) |
+| 11 | `date` 加 `includeTime` 旗標,不另設 datetime column type | ✅ 對齊 Notion |
+| 12 | `includeTime=true` 時 filter 走 ms 精度 | ✅ 避開 Airtable 地雷 |
+| 13 | `time-only` 場景 v1 不做 | ✅ 業界沒人做 |
+| 14 | DateTimePicker 走 Ant idiom + 借 React Aria a11y | ✅ |
+| 15 | DateTimeRangePicker layout = single calendar + time panel(showTime 模式)| ✅ 對齊 Ant 實際行為 |
+| 16 | 先做 advanced filter 主架構,DateTimePicker 排 phase D 平行 track | ✅ |
+| 17 | filter 範圍 Input 不需新變體 | ✅ |
 
 ## 7. 同 field 可重複加 condition(設計約束)
 
@@ -225,13 +253,14 @@ export const DEFAULT_OPERATOR: Record<ColumnType, string> = { ... }
 
 **技術坑(信心 85%,Phase B spec.md 詳)**:TanStack `ColumnFiltersState` per-column 一筆 filter value,N 條同 column 會 AND-chain 不能 OR。**業界標準解法**:棄用 `columnFilters`,改自管 FilterTree state + 用 `globalFilter` + 自訂 `globalFilterFn` 走樹求 boolean。
 
-## 8. Phase A 結案 — Phase B 銜接
+## 8. Phase B 進度
 
-Phase B 啟動項:
-- [ ] ValueShape × DS 元件視覺驗證(`SelectMenu` / `PeoplePicker` / `DatePicker` / `NumberInput` / `Input` 是否能直接套)
-- [ ] InputSurface(split input)pattern vs component 決定
-- [ ] advanced-filter spec.md draft(data model / props / 與 DataTable 耦合 / FilterTree 求值策略)
-- [ ] i18n 策略確認(對照 DS 既有元件)
+- [x] ValueShape × DS 元件對照 — 完成,coverage 8/12 直接消費 + 4 預留 + 2 新建(DateTimePicker / DateTimeRangePicker)
+- [x] InputSurface 議題消失(配合砍 `number.between`)
+- [→] `advanced-filter.draft.md` — FilterTree data model + DataTable 耦合(本 turn 同步寫)
+- [→] `datetime-picker.draft.md` — DateTimePicker / Range spec(本 turn 同步寫)
+- [x] i18n 策略 — 暫硬編繁中,留 i18n hook(對齊 DS 既有元件慣例)
+- [→] Phase B.5 lock canonical via `/ensure-canonical`(spec 全收斂後)
 
 ## Sources(M8 benchmark)
 
