@@ -173,6 +173,47 @@ export const RangePopoverOpen: Story = {
   },
 }
 
+/* ── OpenSnapshot:showTime popover 內 TimePicker side panel(M15)── */
+export const ShowTimePopoverOpen: Story = {
+  name: 'OpenSnapshot:showTime popover',
+  parameters: { docs: { description: { story: 'Visual-audit OpenSnapshot — popover 內 DateGrid + TimePickerSidePanel(header + 滾選欄)+ footer。Verify TimePicker 高度 = calendar 高度,header 對齊 calendar 的「年月」(canonical 2026-05-02)。' } } },
+  render: () => {
+    const [v, setV] = React.useState<string>('2026-04-15T14:30:00')
+    return (
+      <div style={{ paddingBottom: 480 }}>
+        <DatePicker showTime value={v} onChange={setV} className="max-w-xs" />
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const trigger = canvasElement.querySelector<HTMLElement>('[role="combobox"]')
+    trigger?.click()
+    await new Promise((r) => setTimeout(r, 200))
+  },
+}
+
+/* ── OpenSnapshot:showTime Range popover(activeEnd='start')── */
+export const ShowTimeRangePopoverOpen: Story = {
+  name: 'OpenSnapshot:showTime Range popover',
+  parameters: { docs: { description: { story: 'Visual-audit — Range showTime popover:numberOfMonths=1(只渲 active end 月份)+ TimePickerSidePanel + footer。Verify Ant idiom「一次 edit 一端」(canonical 2026-05-02)。' } } },
+  render: () => {
+    const [range, setRange] = React.useState<[string | null, string | null]>([
+      '2026-04-15T09:00:00',
+      '2026-04-20T18:00:00',
+    ])
+    return (
+      <div style={{ paddingBottom: 480 }}>
+        <DatePicker.Range showTime value={range} onChange={setRange} className="max-w-md" />
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const inputs = canvasElement.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')
+    inputs[0]?.click()  // start input
+    await new Promise((r) => setTimeout(r, 200))
+  },
+}
+
 /* ── showTime + Range:活動時段 ── */
 export const ShowTimeRange: Story = {
   name: 'showTime Range:活動時段',

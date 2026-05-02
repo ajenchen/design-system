@@ -30,6 +30,14 @@
       "file": "datepicker-range-popover-open.png"
     },
     {
+      "id": "design-system-components-datepicker-展示--show-time-popover-open",
+      "file": "datepicker-show-time-popover-open.png"
+    },
+    {
+      "id": "design-system-components-datepicker-展示--show-time-range-popover-open",
+      "file": "datepicker-show-time-range-popover-open.png"
+    },
+    {
       "id": "design-system-components-calendar-展示--team-calendar",
       "file": "calendar-event-team.png"
     },

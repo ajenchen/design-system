@@ -26,17 +26,27 @@ export interface DateFormatOptions {
   locale?: string
 }
 
+/**
+ * Default format:**YYYY/MM/DD**(對齊 Ant Design 順序,year-first ISO-like)。
+ * 棄 `en-US` `MM/DD/YYYY`(month-first 美式)— 美式順序在 international DS 反直覺
+ * (跟 ISO date 視覺對不上,跟 sort 順序也對不上)。Ant / Material X / Apple HIG
+ * 一致 year-first。Consumer 想自訂可傳 `formatOptions` + `locale`。
+ */
 function formatDate(
   value: string | number | Date,
   options: DateFormatOptions = {},
 ): string {
-  const {
-    formatOptions = { year: 'numeric', month: '2-digit', day: '2-digit' },
-    locale = 'en-US',
-  } = options
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) return String(value)
-  return new Intl.DateTimeFormat(locale, formatOptions).format(date)
+  // 若 consumer 顯式傳 formatOptions / locale → 走 Intl.DateTimeFormat
+  if (options.formatOptions || options.locale) {
+    return new Intl.DateTimeFormat(options.locale ?? 'en-US', options.formatOptions ?? { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+  }
+  // 預設:YYYY/MM/DD(直接組,locale-independent + 視覺穩定)
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}/${m}/${d}`
 }
 
 /** 顯示用:date 或 datetime,根據 showTime / showSeconds 切換 */
@@ -94,6 +104,95 @@ function nowIsoDateTime(): string {
     minutes: d.getMinutes(),
     seconds: d.getSeconds(),
   })
+}
+
+function addDays(date: Date, n: number): Date {
+  const next = new Date(date)
+  next.setDate(next.getDate() + n)
+  return next
+}
+
+// ── TimePickerSidePanel ────────────────────────────────────────────────
+//
+// DatePicker showTime / Range showTime 內共用的右側時間 panel。
+// 結構對齊 reference image + Ant Design:
+//   - p-3 padding(對齊左側 DateGrid 的 p-3)
+//   - Header(h-field-xs 24px + mb-3 12px)裝 "Time" title 水平+垂直置中
+//     → 12px (top pad) + 24px (header) + 12px (mb-3) = 跟 DateGrid 的 caption row
+//        水平對齊(DateGrid 的 caption row 也是同樣結構)
+//   - 下方裝 TimeColumns,flex-1 撐滿剩餘高度
+
+interface TimePickerSidePanelProps {
+  value?: TimeParts
+  onChange: (next: TimeParts) => void
+  showSeconds?: boolean
+  minuteStep?: TimeStep
+  secondStep?: TimeStep
+}
+
+/**
+ * 用 absolute positioning(`absolute top-0 right-0 bottom-0`)讓 TimePicker
+ * **不影響 popover row 高度** — DateGrid 主導 height,TimePicker 撐滿那個高度。
+ * 否則 TimeColumns 自然高 ~800px > DateGrid ~300px → flex row 跟著撐高,
+ * 造成 user 看到的 layout bug。Sibling 的 spacer div 佔 layout 寬度。
+ */
+function TimePickerSidePanel({
+  value,
+  onChange,
+  showSeconds = false,
+  minuteStep = 1,
+  secondStep = 1,
+  className,
+}: TimePickerSidePanelProps & { className?: string }) {
+  return (
+    <div className={cn('flex flex-col p-3 h-full', className)}>
+      {/* Header: 對齊 DateGrid 的 month_caption(h-field-xs + mb-3),title 水平+垂直置中 */}
+      <div className="h-field-xs flex items-center justify-center mb-3">
+        <span className="text-body font-medium">Time</span>
+      </div>
+      {/* TimeColumns flex-1 撐滿剩餘高度;內部 ScrollArea h-full(parent absolute 給定高度) */}
+      <div className="flex-1 min-h-0 flex">
+        <TimeColumns
+          value={value}
+          onChange={onChange}
+          showSeconds={showSeconds}
+          minuteStep={minuteStep}
+          secondStep={secondStep}
+        />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * showTime panel container — 包 DateGrid + TimePicker side panel,DateGrid 主導 row 高度,
+ * TimePicker absolute 撐滿同高,不影響 layout。Spacer div 留 layout 寬度給 absolute panel。
+ */
+const TIME_PANEL_WIDTH = (showSeconds: boolean) => showSeconds ? 'w-60' : 'w-40'
+
+interface CalendarTimeContainerProps {
+  showTime: boolean
+  showSeconds: boolean
+  calendar: React.ReactNode
+  timePanel?: React.ReactNode
+}
+
+function CalendarTimeContainer({ showTime, showSeconds, calendar, timePanel }: CalendarTimeContainerProps) {
+  if (!showTime) return <>{calendar}</>
+  return (
+    <div className="relative">
+      <div className="flex flex-row">
+        {calendar}
+        {/* Spacer 佔 layout 寬度給 absolute TimePicker;border-l 在這層,不在 absolute 層
+            (避免 stacking + border 雙繪) */}
+        <div className={cn('shrink-0 border-l border-divider', TIME_PANEL_WIDTH(showSeconds))} />
+      </div>
+      {/* TimePicker absolute 撐滿 DateGrid 高度(top-0 bottom-0),right-0 對齊 spacer */}
+      <div className={cn('absolute top-0 right-0 bottom-0', TIME_PANEL_WIDTH(showSeconds))}>
+        {timePanel}
+      </div>
+    </div>
+  )
 }
 
 // ── Display ─────────────────────────────────────────────────────────────────
@@ -188,22 +287,32 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     const resolvedMode = disabled ? 'disabled' : mode
     const isEditable = resolvedMode === 'edit'
     const iconSize = size === 'lg' ? 20 : 16
-    const showClear = clearable && value && isEditable
     const needConfirm = needConfirmProp ?? showTime  // datetime 預設需確認
     const [open, setOpen] = React.useState(false)
     const [draft, setDraft] = React.useState<string | null>(value ?? null)
-    const resolvedPlaceholder = placeholder ?? (showTime ? 'YYYY-MM-DD HH:MM' : 'YYYY-MM-DD')
+    const resolvedPlaceholder = placeholder ?? (showTime ? 'YYYY/MM/DD HH:MM' : 'YYYY/MM/DD')
     // a11y:role="combobox" 必須有 accessible name(aria-label / labelledby / fieldCtx label)
     const accessibleName = ariaLabelProp ?? (ariaLabelledByProp ? undefined : (fieldCtx?.id ? undefined : resolvedPlaceholder))
 
-    // Sync draft on value / open change
-    React.useEffect(() => { setDraft(value ?? null) }, [value, open])
+    // Sync draft from value ONLY on open false→true(避免 popover 開啟期間 value 改變
+    // clobber user 的編輯。Popover 關閉後下次再開時自動同步最新 value。)
+    const lastOpenRef = React.useRef(open)
+    React.useEffect(() => {
+      if (!lastOpenRef.current && open) setDraft(value ?? null)
+      lastOpenRef.current = open
+    }, [open, value])
 
-    const selected = React.useMemo(() => isoToDate(value), [value])
+    // Display value canonical(2026-05-02 fix):
+    //   needConfirm=true(showTime 預設)→ trigger 讀 draft,user 點 calendar 看到 input 即時更新
+    //   needConfirm=false → trigger 讀 value(committed,符合非確認流程)
+    const displayValue = needConfirm ? draft : (value ?? null)
+    const displayDate = React.useMemo(() => isoToDate(displayValue), [displayValue])
     const draftDate = React.useMemo(() => isoToDate(draft), [draft])
     const draftTime = isoToTimeParts(draft) ?? { hours: 0, minutes: 0, seconds: 0 }
+    const showClear = clearable && (needConfirm ? draft : value) && isEditable
 
     const displayCommitted = formatDateOrDateTime(value, showTime, showSeconds, { formatOptions, locale })
+    const displayLive = formatDateOrDateTime(displayValue, showTime, showSeconds, { formatOptions, locale })
 
     // readonly / disabled
     if (!isEditable) {
@@ -224,8 +333,8 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       )
     }
 
-    const triggerText = value
-      ? displayCommitted
+    const triggerText = displayValue
+      ? displayLive
       : <span className="text-fg-muted">{resolvedPlaceholder}</span>
 
     const commitDraft = (next: string | null) => {
@@ -269,7 +378,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
             )}
             {...props}
           >
-            <span className={cn(bareInputStyles, 'truncate', !value && 'text-fg-muted')}>
+            <span className={cn(bareInputStyles, 'truncate', !displayValue && 'text-fg-muted')}>
               {triggerText}
             </span>
             {showClear && (
@@ -289,49 +398,54 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
           </div>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <div className="flex flex-row" role="dialog">
-            <DateGrid
-              mode="single"
-              selected={needConfirm ? draftDate : selected}
-              onSelect={(date) => {
-                if (!date) return
-                if (showTime) {
-                  commitDraft(combineDateAndTime(date, draftTime))
-                } else {
-                  commitDraft(dateToIso(date))
-                  if (!needConfirm) setOpen(false)
-                }
-              }}
-              defaultMonth={(needConfirm ? draftDate : selected) ?? undefined}
-              autoFocus
+          <div role="dialog">
+            <CalendarTimeContainer
+              showTime={showTime}
+              showSeconds={showSeconds}
+              calendar={
+                <DateGrid
+                  mode="single"
+                  selected={displayDate}
+                  onSelect={(date) => {
+                    if (!date) return
+                    if (showTime) {
+                      commitDraft(combineDateAndTime(date, draftTime))
+                    } else {
+                      commitDraft(dateToIso(date))
+                      if (!needConfirm) setOpen(false)
+                    }
+                  }}
+                  defaultMonth={displayDate ?? undefined}
+                  autoFocus
+                />
+              }
+              timePanel={
+                <TimePickerSidePanel
+                  value={draftTime}
+                  onChange={(time) => {
+                    const target = draftDate ?? new Date()
+                    commitDraft(combineDateAndTime(target, time))
+                  }}
+                  showSeconds={showSeconds}
+                  minuteStep={minuteStep}
+                  secondStep={secondStep}
+                />
+              }
             />
             {showTime && (
-              <TimeColumns
-                leadingDivider
-                value={draftTime}
-                onChange={(time) => {
-                  const target = draftDate ?? new Date()
-                  commitDraft(combineDateAndTime(target, time))
-                }}
-                showSeconds={showSeconds}
-                minuteStep={minuteStep}
-                secondStep={secondStep}
-              />
+              <>
+                <Separator />
+                <div className="flex items-center justify-between p-2">
+                  <Button variant="tertiary" size="sm" onClick={handleNow}>此刻</Button>
+                  {needConfirm ? (
+                    <Button variant="primary" size="sm" onClick={handleConfirm} disabled={!draft}>確定</Button>
+                  ) : (
+                    <Button variant="tertiary" size="sm" onClick={() => setOpen(false)}>關閉</Button>
+                  )}
+                </div>
+              </>
             )}
           </div>
-          {showTime && (
-            <>
-              <Separator />
-              <div className="flex items-center justify-between p-2">
-                <Button variant="tertiary" size="sm" onClick={handleNow}>此刻</Button>
-                {needConfirm ? (
-                  <Button variant="primary" size="sm" onClick={handleConfirm} disabled={!draft}>確定</Button>
-                ) : (
-                  <Button variant="tertiary" size="sm" onClick={() => setOpen(false)}>關閉</Button>
-                )}
-              </div>
-            </>
-          )}
         </PopoverContent>
       </Popover>
     )
@@ -341,17 +455,16 @@ DatePicker.displayName = 'DatePicker'
 
 // ── DatePickerRange ─────────────────────────────────────────────────────────
 //
-// Active-end mechanism(canonical 2026-05-02,對齊 Ant Design RangePicker):
+// Active-end mechanism(canonical 2026-05-02 v3,對齊 Ant Design RangePicker):
 //   - Trigger 是兩個獨立 <button> 輸入(start + end),點擊 input 設定 activeEnd。
 //   - 任一 input 點擊 → 開 popover,activeEnd 跟著切換(同一浮層內維持狀態)。
-//   - DateGrid range mode 的 onSelect 只更新 activeEnd 對應端點。
-//   - Auto-advance:選 start 完成 → 自動切 activeEnd='end'(配合 user 預期流向);
-//     end 也填好且 needConfirm=false → close popover。
-//   - showTime=true 時 TimeColumns 套 active end 的 time(Ant idiom);footer 顯示確定按鈕。
-//
-// 跟 footer toggle / radio button 切換的對照(都不採):
-//   - footer toggle 違反 Ant / Material / Carbon 既有慣例,user 還要分心找按鈕
-//   - input-click 視覺上 active end input 高亮(ring-primary),認知最自然
+//   - DateGrid 用 `mode="single"` + manual `modifiers`(rangeStart / rangeMiddle /
+//     rangeEnd)— 不用 RDP 內建 `mode="range"` 因為它的 click 配對邏輯會跟我們的
+//     activeEnd 衝突(造成「點一次沒反應 / 要點兩次」bug,canonical 2026-05-02 v3 修)。
+//   - Auto-advance(date-only Range):選 start 完成 → 自動切 activeEnd='end'。
+//   - showTime Range:numberOfMonths=1(只渲 active end 的月份)+ TimePickerSidePanel
+//     編 active end 的時間;footer「確定」commit。對齊 Ant 「showTime range 一次 edit
+//     一端」共識,**不**像 date-only Range 顯示 2 個月。
 
 export interface DatePickerRangeProps
   extends DateFormatOptions,
@@ -420,9 +533,14 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     const [draft, setDraft] = React.useState<[string | null, string | null]>(value ?? [null, null])
     const [activeEnd, setActiveEnd] = React.useState<'start' | 'end'>('start')
 
+    // Sync draft from value ONLY on open false→true(canonical 2026-05-02 v3):
+    // 之前用 `[value, open]` 雙 dep,popover 開啟期間 value 任何 reference 變更 → useEffect
+    // 觸發 → 直接 clobber user 的 draft 編輯。改成只在 open 從 false→true 同步。
+    const lastOpenRef = React.useRef(open)
     React.useEffect(() => {
-      setDraft(value ?? [null, null])
-    }, [value, open])
+      if (!lastOpenRef.current && open) setDraft(value ?? [null, null])
+      lastOpenRef.current = open
+    }, [open, value])
 
     const startIso = (needConfirm ? draft[0] : value?.[0]) ?? null
     const endIso = (needConfirm ? draft[1] : value?.[1]) ?? null
@@ -439,7 +557,26 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       : resolvedPlaceholder[1]
 
     const activeIso = activeEnd === 'start' ? startIso : endIso
+    const activeDate = activeEnd === 'start' ? startDate : endDate
     const activeTime = isoToTimeParts(activeIso) ?? { hours: 0, minutes: 0, seconds: 0 }
+
+    // Range visual modifiers(自管,不靠 RDP mode='range'):
+    //   rangeStart:start 那天 → 圓底白字
+    //   rangeEnd:end 那天 → 圓底白字
+    //   rangeMiddle:start+1 ~ end-1 之間的所有天 → 灰底矩形 track
+    const rangeModifiers = React.useMemo(() => {
+      const mods: Record<string, Date | { from: Date; to: Date } | undefined> = {}
+      if (startDate) mods.rangeStart = startDate
+      if (endDate) mods.rangeEnd = endDate
+      if (startDate && endDate) {
+        const middleStart = addDays(startDate, 1)
+        const middleEnd = addDays(endDate, -1)
+        if (middleEnd >= middleStart) {
+          mods.rangeMiddle = { from: middleStart, to: middleEnd }
+        }
+      }
+      return mods
+    }, [startDate, endDate])
 
     const commitRange = (next: [string | null, string | null]) => {
       if (needConfirm) setDraft(next)
@@ -556,55 +693,66 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
           </div>
         </PopoverAnchor>
         <PopoverContent className="w-auto p-0" align="start">
-          <div className="flex flex-row" role="dialog" aria-label="日期區間選擇">
-            <DateGrid
-              mode="range"
-              numberOfMonths={2}
-              selected={
-                startDate || endDate
-                  ? { from: startDate, to: endDate }
-                  : undefined
+          <div role="dialog" aria-label="日期區間選擇">
+            <CalendarTimeContainer
+              showTime={showTime}
+              showSeconds={showSeconds}
+              calendar={
+                <DateGrid
+                  // mode='single' + manual modifiers(canonical 2026-05-02 v3):
+                  // 不用 RDP 內建 mode='range'(它的 click 配對邏輯跟我們的 activeEnd 衝突,
+                  // 造成「點一次沒反應 / 要點兩次」bug)。改自管 modifiers 控視覺。
+                  mode="single"
+                  selected={activeDate}
+                  onSelect={(date) => {
+                    if (!date) return
+                    const preservedTime = isoToTimeParts(activeEnd === 'start' ? draft[0] : draft[1]) ?? activeTime
+                    const nextIso = showTime
+                      ? combineDateAndTime(date, preservedTime)
+                      : dateToIso(date)
+                    const nextDraft: [string | null, string | null] = activeEnd === 'start'
+                      ? [nextIso, draft[1]]
+                      : [draft[0], nextIso]
+                    commitRange(nextDraft)
+                    // Auto-advance(date-only Range only):選 start → 切到 end。
+                    // showTime Range 不 auto-advance(讓 user 編 time 後再手動切換或按確定)。
+                    if (!showTime && activeEnd === 'start') {
+                      setActiveEnd('end')
+                      if (!needConfirm && nextDraft[0] && nextDraft[1]) {
+                        setOpen(false)
+                      }
+                    } else if (!showTime && !needConfirm && nextDraft[0] && nextDraft[1]) {
+                      setOpen(false)
+                    }
+                  }}
+                  modifiers={rangeModifiers}
+                  modifiersClassNames={{
+                    rangeStart: '[&>button]:!bg-primary [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
+                    rangeEnd: '[&>button]:!bg-primary [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
+                    rangeMiddle: cn(
+                      "before:content-[''] before:absolute before:inset-y-0 before:-inset-x-[2px]",
+                      'before:bg-[var(--color-neutral-3)] before:pointer-events-none',
+                      '[&>button]:!bg-transparent [&>button]:!text-foreground',
+                    ),
+                  }}
+                  numberOfMonths={showTime ? 1 : 2}
+                  defaultMonth={activeDate ?? startDate ?? endDate ?? undefined}
+                  autoFocus
+                />
               }
-              onSelect={(range) => {
-                if (!range) return
-                // 取出 activeEnd 對應端點的 target date(react-day-picker 會自動推 from/to,
-                // 我們只看自己關心的那個欄位):
-                //   activeEnd='start' → 用 range.from
-                //   activeEnd='end'   → 用 range.to(若 from < to 還沒成立則 fallback range.from)
-                const targetDate = activeEnd === 'start' ? range.from : (range.to ?? range.from)
-                if (!targetDate) return
-                const preservedTime = isoToTimeParts(activeEnd === 'start' ? draft[0] : draft[1]) ?? activeTime
-                const nextIso = showTime
-                  ? combineDateAndTime(targetDate, preservedTime)
-                  : dateToIso(targetDate)
-                const nextDraft: [string | null, string | null] = activeEnd === 'start'
-                  ? [nextIso, draft[1]]
-                  : [draft[0], nextIso]
-                commitRange(nextDraft)
-                // Auto-advance:選 start → 切到 end 等待選 end(Ant idiom)
-                if (activeEnd === 'start') {
-                  setActiveEnd('end')
-                } else if (!showTime && !needConfirm && nextDraft[0] && nextDraft[1]) {
-                  // date-only 兩端皆填 + 不需確認 → 自動關閉
-                  setOpen(false)
-                }
-              }}
-              defaultMonth={startDate ?? endDate ?? undefined}
-              autoFocus
+              timePanel={
+                <TimePickerSidePanel
+                  value={activeTime}
+                  onChange={(time) => {
+                    const target = activeDate ?? new Date()
+                    setActive(combineDateAndTime(target, time))
+                  }}
+                  showSeconds={showSeconds}
+                  minuteStep={minuteStep}
+                  secondStep={secondStep}
+                />
+              }
             />
-            {showTime && (
-              <TimeColumns
-                leadingDivider
-                value={activeTime}
-                onChange={(time) => {
-                  const target = (activeEnd === 'start' ? startDate : endDate) ?? new Date()
-                  setActive(combineDateAndTime(target, time))
-                }}
-                showSeconds={showSeconds}
-                minuteStep={minuteStep}
-                secondStep={secondStep}
-              />
-            )}
           </div>
           {(showTime || needConfirm) && (
             <>
