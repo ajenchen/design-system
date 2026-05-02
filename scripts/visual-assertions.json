@@ -436,27 +436,27 @@
       "file": "selectioncontrol-notification-preferences.png"
     },
     {
-      "id": "design-system-components-datatablefilterpanel-展示--flat-empty",
+      "id": "design-system-components-datatable-進階篩選--flat-empty",
       "file": "filter-panel-flat-empty.png"
     },
     {
-      "id": "design-system-components-datatablefilterpanel-展示--flat-with-conditions",
+      "id": "design-system-components-datatable-進階篩選--flat-with-conditions",
       "file": "filter-panel-flat-conditions.png"
     },
     {
-      "id": "design-system-components-datatablefilterpanel-展示--nested-two-groups",
+      "id": "design-system-components-datatable-進階篩選--nested-two-groups",
       "file": "filter-panel-nested.png"
     },
     {
-      "id": "design-system-components-datatablefilterpanel-展示--modified-from-default",
+      "id": "design-system-components-datatable-進階篩選--modified-from-default",
       "file": "filter-panel-refresh-icon.png"
     },
     {
-      "id": "design-system-components-datatablefilterpanel-展示--datetime-column",
+      "id": "design-system-components-datatable-進階篩選--datetime-column",
       "file": "filter-panel-datetime-column.png"
     },
     {
-      "id": "design-system-components-datatablefilterpanel-展示--relative-date-filter",
+      "id": "design-system-components-datatable-進階篩選--relative-date-filter",
       "file": "filter-panel-relative-date.png"
     }
   ]

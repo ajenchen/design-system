@@ -44,8 +44,11 @@ const columns: ColumnDef<Product>[] = [
   },
 ]
 
+// Title 走 `DataTable/進階篩選` 子 namespace(canonical 2026-05-02):FilterPanel 是 DataTable
+// 的 sub-file primitive(同 SortManager pattern),不該以 first-class component 呈現於 Storybook sidebar。
+// spec 段在 `data-table.spec.md` 「L4:Advanced Filter」。
 const meta: Meta<typeof DataTableFilterPanel<Product>> = {
-  title: 'Design System/Components/DataTableFilterPanel/展示',
+  title: 'Design System/Components/DataTable/進階篩選',
   component: DataTableFilterPanel<Product>,
   tags: ['autodocs'],
   parameters: {
@@ -53,7 +56,7 @@ const meta: Meta<typeof DataTableFilterPanel<Product>> = {
       description: {
         component:
           'DataTable 進階 filter panel — flat 或 1-level nested boolean expression builder。' +
-          '對齊 ClickUp / Notion / Airtable AND/OR 多 condition idiom。詳 spec 同名 .spec.md。',
+          '對齊 ClickUp / Notion / Airtable AND/OR 多 condition idiom。詳 `data-table.spec.md` L4 段。',
       },
     },
     layout: 'padded',
