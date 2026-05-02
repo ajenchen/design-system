@@ -56,6 +56,14 @@ originSessionId: 7fa6c876-f1f7-4537-8cb3-1c97212e5a80
 
 **Tech debt**:清空(stop hook telemetry / build artifact 不算)。
 
+## Story auto-compile migration verified(2026-05-01)
+
+`node scripts/compile-stories.mjs --all --check` → **60/60 aligned,0 skipped**。
+
+Trait migration 真實 work = 0。Prior C-3 「41 P0」+「58/59 未跑」皆 audit
+hallucination,實況 100% aligned。未來「做 migration」trigger 直接跑 Phase
+0 scan 即可 confirm 0 backlog,不假設有 work。
+
 ## Next-session pickup(2026-05-01 session ended here)
 
 **Pending major work**:Team distribution setup(架構已決,6 phases planned,0 started)。

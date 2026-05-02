@@ -1,6 +1,6 @@
 # Story Auto-Compile 系統(C)— 完整規劃
 
-**Status**:Phase 1-4 完成 2026-04-25(57/59 aligned 0 drift);Phase 5 由實際使用驅動,尚無 consumer 需求不動。
+**Status**:Phase 1-4 完成 2026-04-25(57/59 aligned 0 drift);**2026-05-01 verified 60/60 aligned 0 skipped**(全元件 phase 1+2 structure done);Phase 5 由實際使用驅動,尚無 consumer 需求不動。
 - Phase 1(tsx `componentMeta`):56 元件 migrate 完成 + 2 已完成合規 + Button 手動 world-class refs
 - Phase 2(spec YAML frontmatter):variants / sizes auto-fill + Badge/Tag world-class refs 填 + `componentMeta.tokens` 自動 grep 填(2026-04-25)
 - Phase 3(compile script):`scripts/compile-stories.mjs --all --check` 0 drift
