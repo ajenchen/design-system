@@ -418,6 +418,50 @@
     {
       "id": "design-system-internal-selectioncontrol-展示--notification-preferences",
       "file": "selectioncontrol-notification-preferences.png"
+    },
+    {
+      "id": "design-system-components-datetimepicker-展示--default",
+      "file": "datetime-picker-default.png"
+    },
+    {
+      "id": "design-system-components-datetimepicker-展示--with-seconds",
+      "file": "datetime-picker-with-seconds.png"
+    },
+    {
+      "id": "design-system-components-datetimepicker-展示--clearable",
+      "file": "datetime-picker-clearable.png"
+    },
+    {
+      "id": "design-system-components-datetimepicker-展示--range",
+      "file": "datetime-picker-range.png"
+    },
+    {
+      "id": "design-system-components-datetimepicker-展示--single-popover-open",
+      "file": "datetime-picker-single-open.png"
+    },
+    {
+      "id": "design-system-components-datetimepicker-展示--range-popover-open",
+      "file": "datetime-picker-range-open.png"
+    },
+    {
+      "id": "design-system-components-datatablefilterpanel-展示--flat-empty",
+      "file": "filter-panel-flat-empty.png"
+    },
+    {
+      "id": "design-system-components-datatablefilterpanel-展示--flat-with-conditions",
+      "file": "filter-panel-flat-conditions.png"
+    },
+    {
+      "id": "design-system-components-datatablefilterpanel-展示--nested-two-groups",
+      "file": "filter-panel-nested.png"
+    },
+    {
+      "id": "design-system-components-datatablefilterpanel-展示--modified-from-default",
+      "file": "filter-panel-refresh-icon.png"
+    },
+    {
+      "id": "design-system-components-datatablefilterpanel-展示--datetime-column",
+      "file": "filter-panel-datetime-column.png"
     }
   ]
 }

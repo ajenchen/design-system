@@ -5,11 +5,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { cn } from '@/lib/utils'
 import { Button } from '@/design-system/components/Button/button'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
-import { Combobox } from '@/design-system/components/Combobox/combobox'
-import { Input } from '@/design-system/components/Input/input'
-import { NumberInput } from '@/design-system/components/NumberInput/number-input'
-import { DatePicker, DatePickerRange } from '@/design-system/components/DatePicker/date-picker'
-import { DateTimePicker, DateTimeRangePicker } from './date-time-picker'
+import { FilterValuePicker } from './filter-value-picker'
 import { SurfaceHeader, SurfaceBody, SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -17,7 +13,6 @@ import type { ColumnType } from './column-types'
 import {
   OPERATOR_REGISTRY,
   DEFAULT_OPERATOR,
-  DATE_RELATIVE_OPTIONS,
   getOperatorSpec,
   getValueShape,
   type ValueShape,
@@ -367,11 +362,19 @@ function ConjunctionLabel({
   index, conjunction, onChange,
 }: { index: number; conjunction: Conjunction; onChange: (c: Conjunction) => void }) {
   if (index === 0) {
-    return <div className="w-16 shrink-0 text-body text-fg-muted px-2">Where</div>
+    // 「Where」靜態 label;w-20 對齊 row 2+ 的 Select 寬度
+    return <div className="w-20 shrink-0 text-body text-fg-muted px-2">Where</div>
   }
   return (
-    <div className="w-16 shrink-0">
-      <Select size="md" options={CONJ_OPTIONS} value={conjunction} onChange={(v) => onChange(v as Conjunction)} />
+    // w-20(80px)— 容納「And ⌄」/「Or ⌄」label + chevron 不被截斷
+    <div className="w-20 shrink-0">
+      <Select
+        size="md"
+        options={CONJ_OPTIONS}
+        value={conjunction}
+        onChange={(v) => onChange(v as Conjunction)}
+        aria-label="連接詞 — 同 group 共用"
+      />
     </div>
   )
 }
@@ -405,7 +408,14 @@ function FilterRow({
     <div className="flex items-center gap-2">
       <ConjunctionLabel index={index} conjunction={conjunction} onChange={onChangeConjunction} />
       <div className="w-40 shrink-0">
-        <Select size="md" options={fieldOptions} value={condition.field} onChange={onChangeField} placeholder="選擇欄位" />
+        <Select
+          size="md"
+          options={fieldOptions}
+          value={condition.field}
+          onChange={onChangeField}
+          placeholder="選擇欄位"
+          aria-label="篩選欄位"
+        />
       </div>
       <div className="w-32 shrink-0">
         <Select
@@ -414,15 +424,17 @@ function FilterRow({
           value={condition.op}
           onChange={onChangeOp}
           disabled={!hasField}
+          aria-label="篩選運算子"
         />
       </div>
       <div className="flex-1 min-w-0">
-        <ValuePicker
+        <FilterValuePicker
           shape={valueShape}
           value={condition.value}
           onChange={onChangeValue}
           colInfo={colInfo}
           disabled={!hasField}
+          ariaLabel={colInfo ? `${colInfo.label} 篩選值` : '篩選值'}
         />
       </div>
       <ItemInlineActionButton icon={Trash2} size="md" aria-label="刪除" onClick={onRemove} />
@@ -454,7 +466,8 @@ function GroupBlock({
       <div className="pt-2">
         <ConjunctionLabel index={index} conjunction={rootConjunction} onChange={onChangeRootConjunction} />
       </div>
-      <div className="flex-1 min-w-0 rounded-md bg-[var(--surface-3)] p-2 flex flex-col gap-2">
+      {/* Group container 灰底 — 用 --color-neutral-1 對齊 token canonical(non-existent --surface-3 改 ✓) */}
+      <div className="flex-1 min-w-0 rounded-md bg-[var(--color-neutral-1)] p-2 flex flex-col gap-2">
         {group.children.map((cond, cIdx) => (
           <FilterRow
             key={cond.id}
@@ -483,102 +496,3 @@ function GroupBlock({
     </div>
   )
 }
-
-// ── ValuePicker(data-driven by ValueShape) ───────────────────────────
-
-function ValuePicker({
-  shape, value, onChange, colInfo, disabled,
-}: {
-  shape: ValueShape | null
-  value: unknown
-  onChange: (v: unknown) => void
-  colInfo: FilterColumn | undefined
-  disabled?: boolean
-}) {
-  if (!shape || disabled) {
-    return <Input size="md" value="" onChange={() => {}} placeholder="輸入值…" disabled />
-  }
-  switch (shape) {
-    case 'none':
-      return null
-    case 'text':
-      return <Input size="md" value={String(value ?? '')} onChange={(e) => onChange(e.target.value)} placeholder="輸入值…" />
-    case 'number':
-      return (
-        <NumberInput
-          size="md"
-          value={typeof value === 'number' ? value : null}
-          onChange={(v) => onChange(v ?? '')}
-          placeholder="輸入數字…"
-        />
-      )
-    case 'date_single':
-      return (
-        <DatePicker
-          size="md"
-          value={typeof value === 'string' ? value : null}
-          onChange={(v) => onChange(v ?? '')}
-        />
-      )
-    case 'date_range':
-      return (
-        <DatePickerRange
-          size="md"
-          value={Array.isArray(value) && value.length === 2 ? (value as [string | null, string | null]) : null}
-          onChange={(v) => onChange(v)}
-        />
-      )
-    case 'date_relative': {
-      const opts: SelectOption[] = DATE_RELATIVE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))
-      return <Select size="md" options={opts} value={String(value ?? '')} onChange={(v) => onChange(v)} placeholder="選擇相對日期" />
-    }
-    case 'select_single': {
-      const opts: SelectOption[] = (colInfo?.options ?? []).map((o) => ({ value: o.value, label: o.label }))
-      return <Select size="md" options={opts} value={String(value ?? '')} onChange={(v) => onChange(v)} placeholder="選擇值" />
-    }
-    case 'select_multi': {
-      const opts = (colInfo?.options ?? []).map((o) => ({ value: o.value, label: o.label }))
-      const arr = Array.isArray(value) ? (value as string[]) : []
-      return (
-        <Combobox
-          size="md"
-          options={opts}
-          value={arr}
-          onChange={(v) => onChange(v)}
-          placeholder="選擇值…"
-        />
-      )
-    }
-    case 'datetime_single':
-      return (
-        <DateTimePicker
-          size="md"
-          value={typeof value === 'string' ? value : null}
-          onChange={(v) => onChange(v ?? '')}
-        />
-      )
-    case 'datetime_range':
-      return (
-        <DateTimeRangePicker
-          size="md"
-          value={Array.isArray(value) && value.length === 2 ? (value as [string | null, string | null]) : null}
-          onChange={(v) => onChange(v)}
-        />
-      )
-    // person_* — Phase E 後續可接 PeoplePicker filter mode
-    // v1 fallback:Combobox 文字 input(功能可用,視覺非 person-card)
-    case 'person_single':
-    case 'person_multi':
-      return (
-        <Input
-          size="md"
-          value={typeof value === 'string' ? value : ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="(person picker 預留)"
-        />
-      )
-    default:
-      return null
-  }
-}
-

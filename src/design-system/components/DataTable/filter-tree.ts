@@ -7,7 +7,35 @@
  * 詳:./advanced-filter.draft.md
  */
 
+import {
+  startOfDay, endOfDay,
+  startOfWeek, endOfWeek,
+  startOfMonth, endOfMonth,
+  addDays, addWeeks, addMonths, subDays,
+} from 'date-fns'
 import { OPERATOR_REGISTRY, type OperatorSpec } from './filter-operators'
+
+/**
+ * 把 relative key 轉成 [start, end] 時間區間(local time,inclusive)。
+ * 對齊 Notion / ClickUp idiom — 以「今天」為錨點計算。
+ */
+function relativeKeyToRange(key: string, now: Date = new Date()): [number, number] | null {
+  const today = startOfDay(now)
+  switch (key) {
+    case 'today':        return [today.getTime(), endOfDay(now).getTime()]
+    case 'yesterday':    return [startOfDay(subDays(now, 1)).getTime(), endOfDay(subDays(now, 1)).getTime()]
+    case 'tomorrow':     return [startOfDay(addDays(now, 1)).getTime(), endOfDay(addDays(now, 1)).getTime()]
+    case 'this_week':    return [startOfWeek(now, { weekStartsOn: 1 }).getTime(), endOfWeek(now, { weekStartsOn: 1 }).getTime()]
+    case 'last_week':    return [startOfWeek(addWeeks(now, -1), { weekStartsOn: 1 }).getTime(), endOfWeek(addWeeks(now, -1), { weekStartsOn: 1 }).getTime()]
+    case 'next_week':    return [startOfWeek(addWeeks(now, 1), { weekStartsOn: 1 }).getTime(), endOfWeek(addWeeks(now, 1), { weekStartsOn: 1 }).getTime()]
+    case 'this_month':   return [startOfMonth(now).getTime(), endOfMonth(now).getTime()]
+    case 'last_month':   return [startOfMonth(addMonths(now, -1)).getTime(), endOfMonth(addMonths(now, -1)).getTime()]
+    case 'next_month':   return [startOfMonth(addMonths(now, 1)).getTime(), endOfMonth(addMonths(now, 1)).getTime()]
+    case 'past_7_days':  return [startOfDay(subDays(now, 7)).getTime(), endOfDay(now).getTime()]
+    case 'past_30_days': return [startOfDay(subDays(now, 30)).getTime(), endOfDay(now).getTime()]
+    default: return null
+  }
+}
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -197,9 +225,15 @@ function matchOperator(op: string, cellValue: unknown, filterValue: unknown): bo
       const end = filterValue[1] ? new Date(String(filterValue[1])).getTime() : Infinity
       return cv >= start && cv <= end
     }
-    case 'is_relative':
-      // Phase D 完整實作(today/this_week/...)— v1 fallback pass
-      return true
+    case 'is_relative': {
+      // Phase D 完整實作 — relative key → time range → in-range test
+      const range = relativeKeyToRange(String(filterValue))
+      if (!range) return true  // unknown key,pass-through
+      const cv = new Date(String(cellValue)).getTime()
+      if (Number.isNaN(cv)) return false  // invalid cellValue → 不命中
+      const [start, end] = range
+      return cv >= start && cv <= end
+    }
 
     case 'has_any_of': {
       if (!Array.isArray(filterValue)) return true

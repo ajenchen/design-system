@@ -20,7 +20,13 @@ import { DateGrid } from '@/design-system/components/DateGrid/date-grid'
 import { Button } from '@/design-system/components/Button/button'
 import { Separator } from '@/design-system/components/Separator/separator'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { TimeColumns, isoToTimeParts, timePartsToString, type TimeParts } from './time-columns'
+import {
+  TimeColumns,
+  isoToTimeParts,
+  timePartsToString,
+  type TimeParts,
+  type TimeStep,
+} from '@/design-system/components/TimePicker/time-columns'
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -72,8 +78,8 @@ export interface DateTimePickerProps {
   /** default true — datetime 預設需 OK 才提交(對齊 Ant) */
   needConfirm?: boolean
   showSeconds?: boolean
-  minuteStep?: number
-  secondStep?: number
+  minuteStep?: TimeStep
+  secondStep?: TimeStep
   clearable?: boolean
   error?: boolean
   disabled?: boolean
@@ -159,13 +165,22 @@ export function DateTimePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        {/* a11y: trigger 用 <div role='combobox'> 而非 <button> — 對齊 TimePicker /
+            Select / Combobox 同 pattern,避免 ItemInlineActionButton 構成 nested-interactive。
+            Radix Popover 在 trigger asChild 下會自動 inject keyboard handler(Enter/Space 開啟)。 */}
+        <div
+          role="combobox"
+          tabIndex={disabled ? -1 : 0}
+          aria-disabled={disabled || undefined}
           aria-label={ariaLabel ?? placeholder}
           aria-haspopup="dialog"
           aria-expanded={open}
           data-error={error || undefined}
-          className={cn(fieldWrapperStyles({ mode: 'edit', size }), 'cursor-pointer', className)}
+          className={cn(
+            fieldWrapperStyles({ mode: 'edit', size }),
+            'cursor-pointer focus-visible:outline-none',
+            className,
+          )}
         >
           <span className={cn('flex-1 min-w-0 truncate text-left', !display && 'text-fg-muted')}>
             {display || placeholder}
@@ -179,7 +194,7 @@ export function DateTimePicker({
             />
           )}
           <CalendarIcon size={iconSize} className="shrink-0 text-fg-muted pointer-events-none" aria-hidden />
-        </button>
+        </div>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto p-0">
         <div className="flex flex-row" role="dialog" aria-label={ariaLabel ?? placeholder}>
@@ -187,6 +202,7 @@ export function DateTimePicker({
             <DateGrid
               mode="single"
               selected={draftDate}
+              defaultMonth={draftDate}
               onSelect={(d) => {
                 if (!d) return
                 commit(combineDateAndTime(d, draftTime))
@@ -194,6 +210,7 @@ export function DateTimePicker({
             />
           </div>
           <TimeColumns
+            leadingDivider
             value={draftTime}
             onChange={(time) => {
               if (!draftDate) {
@@ -236,8 +253,8 @@ export interface DateTimeRangePickerProps {
   placeholder?: [string, string]
   needConfirm?: boolean
   showSeconds?: boolean
-  minuteStep?: number
-  secondStep?: number
+  minuteStep?: TimeStep
+  secondStep?: TimeStep
   clearable?: boolean
   error?: boolean
   disabled?: boolean
@@ -326,13 +343,20 @@ export function DateTimeRangePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        {/* a11y:role=combobox(避 nested-interactive — 同 single 元件 fix)*/}
+        <div
+          role="combobox"
+          tabIndex={disabled ? -1 : 0}
+          aria-disabled={disabled || undefined}
           aria-label={ariaLabel ?? '選擇日期時間區間'}
           aria-haspopup="dialog"
           aria-expanded={open}
           data-error={error || undefined}
-          className={cn(fieldWrapperStyles({ mode: 'edit', size }), 'cursor-pointer', className)}
+          className={cn(
+            fieldWrapperStyles({ mode: 'edit', size }),
+            'cursor-pointer focus-visible:outline-none',
+            className,
+          )}
         >
           <span className={cn('flex-1 min-w-0 truncate text-left', !value?.[0] && 'text-fg-muted')}>{valueDisplay}</span>
           <ArrowRight size={iconSize} className="shrink-0 text-fg-muted mx-2" aria-hidden />
@@ -346,7 +370,7 @@ export function DateTimeRangePicker({
             />
           )}
           <CalendarIcon size={iconSize} className="shrink-0 text-fg-muted pointer-events-none" aria-hidden />
-        </button>
+        </div>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto p-0">
         <div className="flex flex-row" role="dialog" aria-label={ariaLabel ?? '選擇日期時間區間'}>
@@ -354,6 +378,7 @@ export function DateTimeRangePicker({
             <DateGrid
               mode="range"
               selected={{ from: rangeFrom, to: rangeTo }}
+              defaultMonth={rangeFrom ?? rangeTo ?? undefined}
               onSelect={(range) => {
                 if (!range) return
                 const target = activeEnd === 'start' ? range.from : range.to
@@ -363,6 +388,7 @@ export function DateTimeRangePicker({
             />
           </div>
           <TimeColumns
+            leadingDivider
             value={activeTime}
             onChange={(time) => {
               if (!activeDate) {
