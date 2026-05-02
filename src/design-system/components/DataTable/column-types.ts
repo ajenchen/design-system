@@ -50,12 +50,24 @@ export const columnTypeDefaults: Record<ColumnType, ColumnTypeConfig> = {
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends RowData, TValue> {
-    /** Column data type — determines default alignment, rendering, sorting, filtering */
+    /**
+     * Column data type — determines default alignment, rendering, sorting, filtering.
+     *
+     * **Filterable column 必須設此 prop**(filter UI 只列有 `type` 的 column,
+     * 對齊 Notion / Airtable / Linear:每 property 強制有 type)。
+     */
     type?: ColumnType
     /** Override default alignment from column type */
     align?: 'left' | 'right' | 'center'
     /** Allow text wrapping (only effective when autoRowHeight is true) */
     wrap?: boolean
+    /**
+     * Explicit opt-out from filter UI(預設 accessor column 有 type 即 filterable)。
+     *
+     * 用於:有 `type` 但不想在 filter UI 出現的 accessor column
+     * (例如:internal sorting key、composite display 用的 hidden column)。
+     */
+    filterable?: boolean
     /** Number/currency formatting options */
     prefix?: string
     suffix?: string

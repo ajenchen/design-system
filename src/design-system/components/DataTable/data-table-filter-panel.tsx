@@ -12,25 +12,28 @@ import { Input } from '@/design-system/components/Input/input'
 import { SurfaceHeader, SurfaceBody, SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import type { ColumnType } from './column-types'
+import { OPERATOR_REGISTRY, DEFAULT_OPERATOR } from './filter-operators'
 
 /**
  * DataTableFilterPanel — ClickUp-style 篩選 panel(MVP flat conditions)
  *
  * 對齊 ClickUp / Airtable / Notion 派 — filter 永遠 global,不 per-cell inline。
- * MVP: flat conditions(field + operator + value);phase 2 加 boolean group nesting。
+ * MVP: flat conditions(field + operator + value);Phase C.3 加 nested boolean group。
  *
- * Source-of-truth: TanStack `ColumnFiltersState`(同 `useReactTable.state.columnFilters`)。
+ * Source-of-truth:
+ * - Operator definitions:`./filter-operators.ts` `OPERATOR_REGISTRY`(SSOT,禁 hardcode op 字串)
+ * - Filter state:TanStack `ColumnFiltersState`(同 `useReactTable.state.columnFilters`,
+ *   Phase C.4 改 globalFilter approach 支援 N 條同 field + tree 求值)
  *
- * Operator 集合 MVP 簡化(對齊 column meta type 自動推斷):
- *   string → contains(default)/ equals
- *   number / date → equals / gt / lt
- *   select → equals
+ * Phase 6 partial(2026-05-02):consume OPERATOR_REGISTRY,棄 inline ops。
+ * Mode/Group/data-driven picker/auto-add row 等大重構排 Phase C.3 後續。
  */
 
 interface FilterColumn {
   id: string
   label: string
-  type?: string
+  type?: ColumnType
 }
 
 export interface FilterCondition {
@@ -50,28 +53,18 @@ export interface DataTableFilterPanelProps<TData> {
   className?: string
 }
 
-const STRING_OPS: SelectOption[] = [
-  { value: 'contains', label: '包含' },
-  { value: 'equals', label: '等於' },
-]
-const NUMBER_OPS: SelectOption[] = [
-  { value: 'equals', label: '等於' },
-  { value: 'gt', label: '大於' },
-  { value: 'lt', label: '小於' },
-]
-const SELECT_OPS: SelectOption[] = [{ value: 'equals', label: '等於' }]
+/**
+ * Operator options derived from `OPERATOR_REGISTRY` SSOT.
+ * Falls back to `string` ops if columnType missing or unknown.
+ */
+function getOperatorOptions(type?: ColumnType): SelectOption[] {
+  const registry = type && OPERATOR_REGISTRY[type] ? OPERATOR_REGISTRY[type] : OPERATOR_REGISTRY.string
+  return registry.map((op) => ({ value: op.op, label: op.label }))
+}
 
-function getOperatorOptions(type?: string): SelectOption[] {
-  switch (type) {
-    case 'number':
-    case 'currency':
-    case 'date':
-      return NUMBER_OPS
-    case 'select':
-      return SELECT_OPS
-    default:
-      return STRING_OPS
-  }
+/** Default op for given columnType — from SSOT, fallback `contains`(string default) */
+function getDefaultOperator(type?: ColumnType): string {
+  return (type && DEFAULT_OPERATOR[type]) || DEFAULT_OPERATOR.string
 }
 
 function extractColumns<TData>(columns: ColumnDef<TData, any>[]): FilterColumn[] {
@@ -79,9 +72,14 @@ function extractColumns<TData>(columns: ColumnDef<TData, any>[]): FilterColumn[]
   for (const col of columns) {
     const id = (col as any).id ?? (col as any).accessorKey
     if (!id || id === '__select__') continue
+    // Filterable iff: accessor column + meta.type set + meta.filterable !== false
+    // (對齊 advanced-filter.draft.md Section 6.5 + Notion/Airtable/Linear idiom)
+    const meta = (col as any).meta
+    const type: ColumnType | undefined = meta?.type
+    if (!type) continue                             // 無 type 不列(無法決定 op set)
+    if (meta?.filterable === false) continue        // 顯式 opt-out
     const headerVal = (col as any).header
     const label = typeof headerVal === 'string' ? headerVal : String(id)
-    const type = (col as any).meta?.type
     out.push({ id: String(id), label, type })
   }
   return out
@@ -132,10 +130,9 @@ export function DataTableFilterPanel<TData>({
     if (!exists) {
       const colInfo = filterableColumns.find((c) => c.id === prefilledColumnId)
       if (colInfo) {
-        const ops = getOperatorOptions(colInfo.type)
         const next: FilterCondition[] = [
           ...conditions,
-          { id: prefilledColumnId, operator: ops[0].value, value: '' },
+          { id: prefilledColumnId, operator: getDefaultOperator(colInfo.type), value: '' },
         ]
         onFiltersChange(wrapFilters(next))
       }
@@ -154,8 +151,7 @@ export function DataTableFilterPanel<TData>({
   const addCondition = () => {
     const firstCol = filterableColumns[0]
     if (!firstCol) return
-    const ops = getOperatorOptions(firstCol.type)
-    setConditions([...conditions, { id: firstCol.id, operator: ops[0].value, value: '' }])
+    setConditions([...conditions, { id: firstCol.id, operator: getDefaultOperator(firstCol.type), value: '' }])
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -201,8 +197,7 @@ export function DataTableFilterPanel<TData>({
                     operatorOptions={operatorOptions}
                     onChangeField={(v) => {
                       const newCol = filterableColumns.find((c) => c.id === v)
-                      const newOps = getOperatorOptions(newCol?.type)
-                      updateAt(index, { id: v, operator: newOps[0].value, value: '' })
+                      updateAt(index, { id: v, operator: getDefaultOperator(newCol?.type), value: '' })
                     }}
                     onChangeOperator={(v) => updateAt(index, { operator: v })}
                     onChangeValue={(v) => updateAt(index, { value: v })}

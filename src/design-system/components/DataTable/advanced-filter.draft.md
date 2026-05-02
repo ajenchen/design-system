@@ -229,6 +229,59 @@ export interface DataTableFilterPanelProps<TData> {
 - **Trigger button checked**:讓 user 知道「資料被過濾、不完整」
 - **Refresh icon**:讓 user 知道「目前不是管理員預設,可一鍵 reset」
 
+## 6.5 Filterable column 判定 + Composite column
+
+對齊 Notion / Airtable / Linear 派 + TanStack 內建 accessor vs display column 區分。
+
+### Filterable column 判定規則
+
+| Column 條件 | 是否出現在 filter UI |
+|---|---|
+| Display column(無 `accessorKey` / `accessorFn`)| ❌ 永不(TanStack 內建限制) |
+| Accessor column + 有 `meta.type` | ✅ 預設出現 |
+| Accessor column + 有 `meta.type` + `meta.filterable: false` | ❌ 顯式 opt-out |
+| Accessor column + 無 `meta.type` | ❌ 不列(無 type 無法決定 op set) |
+
+**強制**:**filterable column 必須設 `meta.type`**。對齊 Notion / Airtable / Linear:每 property 強制有 type(創建時必選)。
+**強制**:filter UI 列 column 邏輯一句話 — `accessorKey && meta.type && meta.filterable !== false`。
+
+### Composite column(兩 field 合一欄,如換行顯示)
+
+對齊 TanStack 官方 idiom + Notion / Airtable / Linear:**資料保持 atomic,僅 render 層 composite**。
+
+#### Pattern A(推薦,clean)— atomic columns + display column 合成
+
+```ts
+// 3 個 accessor column 給 filter 用,1 個 display column 給視覺合成
+{ accessorKey: 'name',     meta: { type: 'string' } }                  // filter target
+{ accessorKey: 'email',    meta: { type: 'string' } }                  // filter target
+{ accessorKey: 'avatar',   meta: { filterable: false } }               // accessor but opt-out
+{
+  id: 'person',                                                        // display only(無 accessorKey)
+  cell: ({ row }) => <NameCard {...row.original} />,                   // 視覺合 3 field
+  // 自動不出現在 filter UI(TanStack 內建限制)
+}
+```
+
+Filter UI:列 `name` / `email`(`avatar` opt-out,`person` 是 display 不列)。User 加 2 條 condition 對 atomic field 過濾。
+
+#### Pattern B(compact)— 1 column 帶 type + 物件 accessor
+
+```ts
+{
+  id: 'person',
+  accessorFn: (row) => row,                                            // accessor function 回傳 user 物件
+  meta: { type: 'person' },                                            // filter UI 用 PeoplePicker
+  cell: ({ row }) => <NameCard {...row.original} />,
+}
+```
+
+Filter UI:列 `person` 用 PeoplePicker。對「整個 person 物件」比對。**細顆粒**(只 by name)→ 退回 Pattern A。
+
+#### 為什麼不另設 composite-column 機制
+
+業界共識(Notion / Airtable / Linear / TanStack)— **filter 永遠對 atomic field**,composite 屬 cell render 範疇。另設機制會違反 TanStack 內建模型 + 增加複雜度,**不採用**。
+
 ## 7. A11y
 
 | 面向 | 規範 |
