@@ -207,6 +207,10 @@ export interface DateTimeRangePickerProps {
 - ❌ 沒 OK button auto-commit datetime(time scroll 沒明確結束訊號)
 - ❌ 同 popover 同時編 start + end(state machine ambiguous;active end 切換明確)
 
+## Known limitations
+
+- **Mobile responsive(< 480px viewport)**:popover 內容(calendar ~316px + time columns ~160-240px = 480-560px 總寬)在 mobile 會溢出 viewport 右側。這是 desktop-first 設計取捨(對齊 Ant DatePicker showTime — Ant 在 mobile 走 full-screen drawer 派,我們無 drawer fallback)。consumer 若需 mobile 支援應另外接 `<Sheet>` 派 picker(屬 product UX 決策,DS 不預設)
+
 ## 相關 links
 
 - `DatePicker/date-picker.spec.md` — date-only 單值 / range

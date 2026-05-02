@@ -280,7 +280,9 @@ function DataTableFilterPanelInner<TData>({
   }
 
   return (
-    <div ref={ref} className={cn('w-[680px]', className)}>
+    // 寬度策略:desktop 680px;mobile 縮到 viewport 內留 32px 邊(避溢出 popover 切右半)。
+    // 對齊 Notion / Airtable 的 advanced filter 在 mobile 走 full-width 邊處理。
+    <div ref={ref} className={cn('w-[min(680px,calc(100vw-2rem))]', className)}>
       <SurfaceHeader>
         <div className="flex items-center gap-1 w-full min-w-0">
           <PopoverTitle className="flex-1">篩選</PopoverTitle>

@@ -70,7 +70,7 @@ export const FlatEmpty: Story = {
   render: () => {
     const [value, setValue] = React.useState<FilterTree>(() => createEmptyFilterTree('flat'))
     return (
-      <div className="w-[640px]">
+      <div className="w-full max-w-[640px]">
         <DataTableFilterPanel<Product>
           mode="flat"
           columns={columns}
@@ -96,7 +96,7 @@ export const FlatWithConditions: Story = {
       ],
     }))
     return (
-      <div className="w-[640px]">
+      <div className="w-full max-w-[640px]">
         <DataTableFilterPanel<Product>
           mode="flat"
           columns={columns}
@@ -138,7 +138,7 @@ export const NestedTwoGroups: Story = {
       ],
     }))
     return (
-      <div className="w-[680px]">
+      <div className="w-full max-w-[680px]">
         <DataTableFilterPanel<Product>
           mode="nested"
           columns={columns}
@@ -171,7 +171,7 @@ export const ModifiedFromDefault: Story = {
     }
     const [value, setValue] = React.useState<FilterTree>(modified)
     return (
-      <div className="w-[640px]">
+      <div className="w-full max-w-[640px]">
         <DataTableFilterPanel<Product>
           mode="flat"
           columns={columns}
@@ -200,7 +200,7 @@ export const DatetimeColumn: Story = {
       ],
     }))
     return (
-      <div className="w-[680px]">
+      <div className="w-full max-w-[680px]">
         <DataTableFilterPanel<Product>
           mode="flat"
           columns={columns}
@@ -239,7 +239,7 @@ export const RelativeDateFilter: Story = {
       [value],
     )
     return (
-      <div className="flex flex-col gap-4 w-[680px]">
+      <div className="flex flex-col gap-4 w-full max-w-[680px]">
         <DataTableFilterPanel<Product>
           mode="flat"
           columns={columns}

@@ -186,6 +186,11 @@ export interface DataTableFilterPanelProps<TData> {
 - ❌ `is_set` / `is_not_set` 配 value picker(邏輯衝突)
 - ❌ Composite column 直接 filter(拆 atomic column)
 
+## Known limitations
+
+- **Mobile responsive(< 480px viewport)**:row 內控制元件固定寬(`conjunction 80 + field 160 + op 128 + value 1fr + trash 32 = 432px+`),mobile viewport 切右側。對齊 ClickUp / Notion / Airtable advanced filter idiom — mobile 走 full-screen modal/sheet 派,我們無 sheet fallback。consumer 若需 mobile 支援應另外接 `<Sheet>` 派 picker(屬 product UX 決策,DS 不預設)
+- Panel root 已 fluid `w-[min(680px,calc(100vw-2rem))]` — 但 row internals 固定寬無 responsive shrink
+
 ## 相關 links
 
 - `filter-operators.ts` — operator registry(per columnType op set + ValueShape)
