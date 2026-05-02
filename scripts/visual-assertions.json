@@ -462,6 +462,26 @@
     {
       "id": "design-system-components-datatablefilterpanel-展示--datetime-column",
       "file": "filter-panel-datetime-column.png"
+    },
+    {
+      "id": "design-system-components-datatablefilterpanel-展示--relative-date-filter",
+      "file": "filter-panel-relative-date.png"
+    },
+    {
+      "id": "design-system-components-datetimepicker-設計規格--overview",
+      "file": "datetime-anatomy-overview.png"
+    },
+    {
+      "id": "design-system-components-datetimepicker-設計規格--state-behavior",
+      "file": "datetime-anatomy-state.png"
+    },
+    {
+      "id": "design-system-components-datatablefilterpanel-設計規格--overview",
+      "file": "filter-anatomy-overview.png"
+    },
+    {
+      "id": "design-system-components-datatablefilterpanel-設計規格--state-behavior",
+      "file": "filter-anatomy-state.png"
     }
   ]
 }

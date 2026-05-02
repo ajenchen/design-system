@@ -87,7 +87,7 @@ export interface DateTimePickerProps {
   'aria-label'?: string
 }
 
-export function DateTimePicker({
+export const DateTimePicker = React.forwardRef<HTMLDivElement, DateTimePickerProps>(({
   mode = 'edit',
   size = 'md',
   value,
@@ -102,7 +102,7 @@ export function DateTimePicker({
   disabled = false,
   className,
   'aria-label': ariaLabel,
-}: DateTimePickerProps) {
+}, ref) => {
   const [open, setOpen] = React.useState(false)
   // 暫存 — needConfirm=true 時,user 編輯先暫存,按 OK 才 commit
   const [draft, setDraft] = React.useState<string | null>(value ?? null)
@@ -169,6 +169,7 @@ export function DateTimePicker({
             Select / Combobox 同 pattern,避免 ItemInlineActionButton 構成 nested-interactive。
             Radix Popover 在 trigger asChild 下會自動 inject keyboard handler(Enter/Space 開啟)。 */}
         <div
+          ref={ref}
           role="combobox"
           tabIndex={disabled ? -1 : 0}
           aria-disabled={disabled || undefined}
@@ -179,6 +180,10 @@ export function DateTimePicker({
           className={cn(
             fieldWrapperStyles({ mode: 'edit', size }),
             'cursor-pointer focus-visible:outline-none',
+            error && [
+              'border-error hover:border-error-hover',
+              'focus-within:border-error focus-within:hover:border-error',
+            ],
             className,
           )}
         >
@@ -238,7 +243,7 @@ export function DateTimePicker({
       </PopoverContent>
     </Popover>
   )
-}
+})
 
 DateTimePicker.displayName = 'DateTimePicker'
 
@@ -262,7 +267,7 @@ export interface DateTimeRangePickerProps {
   'aria-label'?: string
 }
 
-export function DateTimeRangePicker({
+export const DateTimeRangePicker = React.forwardRef<HTMLDivElement, DateTimeRangePickerProps>(({
   mode = 'edit',
   size = 'md',
   value,
@@ -277,7 +282,7 @@ export function DateTimeRangePicker({
   disabled = false,
   className,
   'aria-label': ariaLabel,
-}: DateTimeRangePickerProps) {
+}, ref) => {
   const [open, setOpen] = React.useState(false)
   const [draft, setDraft] = React.useState<[string | null, string | null]>(value ?? [null, null])
   const [activeEnd, setActiveEnd] = React.useState<'start' | 'end'>('start')
@@ -345,6 +350,7 @@ export function DateTimeRangePicker({
       <PopoverTrigger asChild>
         {/* a11y:role=combobox(避 nested-interactive — 同 single 元件 fix)*/}
         <div
+          ref={ref}
           role="combobox"
           tabIndex={disabled ? -1 : 0}
           aria-disabled={disabled || undefined}
@@ -355,6 +361,10 @@ export function DateTimeRangePicker({
           className={cn(
             fieldWrapperStyles({ mode: 'edit', size }),
             'cursor-pointer focus-visible:outline-none',
+            error && [
+              'border-error hover:border-error-hover',
+              'focus-within:border-error focus-within:hover:border-error',
+            ],
             className,
           )}
         >
@@ -406,7 +416,16 @@ export function DateTimeRangePicker({
         <Separator />
         <div className="flex items-center justify-between p-2 gap-2">
           {/* Editing indicator — start | end 切換 */}
-          <div role="radiogroup" aria-label="編輯端" className="flex gap-1 text-caption text-fg-muted">
+          {/*
+           * aria-live="polite" — active end auto-advance(start 選完 → 自動切 end)時 SR 讀。
+           * radiogroup + role=radio + aria-checked 是視覺/操作 semantic;aria-live 補上「自動切換」的 announce。
+           */}
+          <div
+            role="radiogroup"
+            aria-label="編輯端"
+            aria-live="polite"
+            className="flex gap-1 text-caption text-fg-muted"
+          >
             <button
               type="button"
               role="radio"
@@ -452,6 +471,6 @@ export function DateTimeRangePicker({
       </PopoverContent>
     </Popover>
   )
-}
+})
 
 DateTimeRangePicker.displayName = 'DateTimeRangePicker'

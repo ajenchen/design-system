@@ -144,7 +144,8 @@ export interface DataTableFilterPanelProps<TData> {
 
 // ── Main Component ──────────────────────────────────────────────────────
 
-export function DataTableFilterPanel<TData>({
+// 內部 fn — generic + ref 轉發。export 走 cast(對齊 DataTable 同 pattern)
+function DataTableFilterPanelInner<TData>({
   mode,
   columns,
   value,
@@ -154,7 +155,7 @@ export function DataTableFilterPanel<TData>({
   onPrefillConsumed,
   onClose,
   className,
-}: DataTableFilterPanelProps<TData>) {
+}: DataTableFilterPanelProps<TData>, ref: React.ForwardedRef<HTMLDivElement>): React.ReactElement {
   const filterableColumns = React.useMemo(() => extractColumns(columns), [columns])
   const fieldOptions: SelectOption[] = React.useMemo(
     () => filterableColumns.map((c) => ({ value: c.id, label: c.label })),
@@ -279,7 +280,7 @@ export function DataTableFilterPanel<TData>({
   }
 
   return (
-    <div className={cn('w-[680px]', className)}>
+    <div ref={ref} className={cn('w-[680px]', className)}>
       <SurfaceHeader>
         <div className="flex items-center gap-1 w-full min-w-0">
           <PopoverTitle className="flex-1">篩選</PopoverTitle>
@@ -349,7 +350,12 @@ export function DataTableFilterPanel<TData>({
   )
 }
 
-DataTableFilterPanel.displayName = 'DataTableFilterPanel'
+// Generic + ref forward 套 cast 的 idiom — 對齊 DataTable(同檔家)。
+// React.forwardRef 對 generic component 會丟掉 type param,改 cast 成 generic-preserving signature。
+export const DataTableFilterPanel = React.forwardRef(DataTableFilterPanelInner) as <TData>(
+  props: DataTableFilterPanelProps<TData> & { ref?: React.ForwardedRef<HTMLDivElement> }
+) => React.ReactElement
+;(DataTableFilterPanel as { displayName?: string }).displayName = 'DataTableFilterPanel'
 
 // ── ConjunctionLabel ───────────────────────────────────────────────────
 

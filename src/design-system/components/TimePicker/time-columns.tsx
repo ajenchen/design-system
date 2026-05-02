@@ -101,6 +101,35 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
     item.scrollIntoView({ block: 'center', behavior: 'auto' })
   }, [values, selected])
 
+  // WAI-ARIA listbox keyboard pattern:ArrowUp/Down 切 option / Home / End 跳邊界。
+  // 對標 Ant TimePicker / Material TimePicker。Tab 跳離 listbox(走預設行為,不 stopPropagation)。
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const idx = values.indexOf(selected)
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      const next = values.find((_, i) => i > idx && !disabledSet?.has(values[i])) ?? values[idx]
+      onSelect(next)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      // 反向找第一個 enabled
+      let i = idx - 1
+      while (i >= 0 && disabledSet?.has(values[i])) i--
+      if (i >= 0) onSelect(values[i])
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      const first = values.find((v) => !disabledSet?.has(v))
+      if (first !== undefined) onSelect(first)
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      for (let i = values.length - 1; i >= 0; i--) {
+        if (!disabledSet?.has(values[i])) {
+          onSelect(values[i])
+          break
+        }
+      }
+    }
+  }
+
   // WAI-ARIA listbox pattern:role=listbox 直接包 role=option(button),不另用 li 包
   // (li role=option + 內含 button 會被 axe 抓 nested-interactive)
   return (
@@ -109,7 +138,9 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
         ref={listRef}
         role="listbox"
         aria-label={label}
-        className="flex flex-col py-2"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        className="flex flex-col py-2 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[-2px]"
       >
         {values.map((v) => {
           const isSelected = v === selected
@@ -121,6 +152,9 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
               role="option"
               aria-selected={isSelected}
               disabled={isDisabled}
+              // tabIndex=-1:listbox 自身 tabbable + 用 ArrowUp/Down 切 option(WAI-ARIA roving),
+              // 不讓每個 option 都進 Tab order(會 Tab 84 次過完 hours+minutes)
+              tabIndex={-1}
               onClick={() => onSelect(v)}
               className={cn(
                 'w-full h-field-sm text-body tabular-nums',

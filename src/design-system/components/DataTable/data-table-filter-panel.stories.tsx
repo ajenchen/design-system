@@ -5,7 +5,7 @@ import {
   DataTableFilterPanel,
   type FilterTree,
 } from './data-table-filter-panel'
-import { createEmptyFilterTree } from './filter-tree'
+import { createEmptyFilterTree, evaluateTree } from './filter-tree'
 
 interface Product {
   sku: string
@@ -207,6 +207,57 @@ export const DatetimeColumn: Story = {
           value={value}
           onChange={setValue}
         />
+      </div>
+    )
+  },
+}
+
+/* ── Relative date(today / this_week / last_30_days)+ live row count ── */
+
+export const RelativeDateFilter: Story = {
+  name: 'Relative date — today / this_week / last_30_days',
+  render: () => {
+    // 含「今天 / 上週 / 30 天前」3 種樣本(以今天 = 2026-05-02 為錨點)
+    const sampleRows: Product[] = [
+      { sku: 'PRD-001', name: 'Released today',     category: 'Electronics', stock: 10, price: 1000, active: true,  releasedAt: '2026-05-02T10:00:00' },
+      { sku: 'PRD-002', name: 'Released yesterday', category: 'Electronics', stock: 5,  price: 2000, active: true,  releasedAt: '2026-05-01T15:00:00' },
+      { sku: 'PRD-003', name: 'Released this week', category: 'Electronics', stock: 8,  price: 3000, active: true,  releasedAt: '2026-04-29T09:00:00' },
+      { sku: 'PRD-004', name: 'Released last week', category: 'Electronics', stock: 3,  price: 4000, active: true,  releasedAt: '2026-04-22T11:00:00' },
+      { sku: 'PRD-005', name: 'Released 20 days ago', category: 'Electronics', stock: 2, price: 5000, active: false, releasedAt: '2026-04-12T14:00:00' },
+      { sku: 'PRD-006', name: 'Released 60 days ago', category: 'Electronics', stock: 1, price: 6000, active: false, releasedAt: '2026-03-03T08:00:00' },
+    ]
+    const [value, setValue] = React.useState<FilterTree>(() => ({
+      mode: 'flat',
+      conjunction: 'and',
+      children: [
+        { kind: 'cond', id: 'c1', field: 'releasedAt', op: 'is_relative', value: 'past_7_days' },
+      ],
+    }))
+    // Live evaluate 套樣本 row 數
+    const matched = React.useMemo(
+      () => sampleRows.filter((r) => evaluateTree(value, r)),
+      [value],
+    )
+    return (
+      <div className="flex flex-col gap-4 w-[680px]">
+        <DataTableFilterPanel<Product>
+          mode="flat"
+          columns={columns}
+          value={value}
+          onChange={setValue}
+        />
+        <div className="text-caption text-fg-muted">
+          切「今天 / 本週 / 上週 / 過去 7 天 / 過去 30 天」應分別命中對應的 row。
+        </div>
+        <ul className="text-body border border-divider rounded-md p-3">
+          <li className="font-bold mb-1">命中 {matched.length} / {sampleRows.length} 筆:</li>
+          {matched.map((r) => (
+            <li key={r.sku} className="text-fg-muted">
+              {r.sku} — {r.name}({r.releasedAt})
+            </li>
+          ))}
+          {matched.length === 0 && <li className="text-fg-muted italic">(無符合 row)</li>}
+        </ul>
       </div>
     )
   },
