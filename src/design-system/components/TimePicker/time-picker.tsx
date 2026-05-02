@@ -312,8 +312,11 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           {/* Panel 對齊 ref/timepicker.png:2-3 個 SelectMenu 式欄位並排,分隔線分開。
-              Width 依欄數由 TimeColumns 決定:2 欄 w-40 / 3 欄 w-60。 */}
-          <div className="flex flex-col">
+              Width 依欄數由 TimeColumns 決定:2 欄 w-40 / 3 欄 w-60。
+              Height 由 wrapper 控:216px 預設(~7 items)。
+              TimeColumns 本身 h-full,parent 控 height — 讓 DatePicker showTime / Range 可
+              用 flex-row items-stretch 自動同 calendar 高。 */}
+          <div className="flex flex-col h-[216px]">
             <TimeColumns
               value={draft}
               onChange={commitDraft}

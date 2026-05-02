@@ -28,6 +28,7 @@ import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING } from "@/design-system/
 
 const Popover = PopoverPrimitive.Root
 const PopoverTrigger = PopoverPrimitive.Trigger
+const PopoverAnchor = PopoverPrimitive.Anchor
 const PopoverClose = PopoverPrimitive.Close
 
 // AutoFocus canonical(對齊 Dialog / Sheet / Material / Polaris)—
@@ -162,6 +163,7 @@ export const popoverMeta = {
 export {
   Popover,
   PopoverTrigger,
+  PopoverAnchor,
   PopoverContent,
   PopoverClose,
   PopoverHeader,

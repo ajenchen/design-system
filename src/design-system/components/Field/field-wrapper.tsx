@@ -38,6 +38,10 @@ export const fieldWrapperStyles = cva(
       },
     },
     // mode x variant 交叉:visual chrome 由 compoundVariants 決定
+    //
+    // Overlay trigger active state(canonical 2026-05-02):當 Field 是 Popover/DropdownMenu/
+    // Combobox trigger 用 asChild,Radix 自動 set `data-state="open"` on trigger root → trigger
+    // 視覺維持 hover 樣式直到浮層關閉(對齊 inline-action.spec.md「狀態極簡派」)。
     compoundVariants: [
       // default variant chrome by mode
       {
@@ -47,6 +51,7 @@ export const fieldWrapperStyles = cva(
           'bg-surface border border-border',
           'hover:border-border-hover',
           'focus-within:border-primary focus-within:hover:border-primary',
+          'data-[state=open]:border-border-hover',
         ],
       },
       {
@@ -67,6 +72,7 @@ export const fieldWrapperStyles = cva(
           'bg-transparent border border-transparent',
           'hover:border-border',
           'focus-within:border-primary focus-within:hover:border-primary',
+          'data-[state=open]:border-border',
         ],
       },
       {

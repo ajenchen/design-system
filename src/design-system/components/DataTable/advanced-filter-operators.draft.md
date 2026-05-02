@@ -26,8 +26,8 @@
 | `date_single` | `<DatePicker>` 單選 | 特定日期(`includeTime=false`) |
 | `date_range` | `<DatePickerRange>`(已是 Ant-style split-input) | 日期介於(`includeTime=false`) |
 | `date_relative` | `<Select>` 預設選項 | 相對日期 |
-| `datetime_single` | **新** `<DateTimePicker>` | 特定 datetime(`includeTime=true`) |
-| `datetime_range` | **新** `<DateTimeRangePicker>` | datetime 介於(`includeTime=true`) |
+| `datetime_single` | `<DatePicker showTime>` | 特定 datetime(`includeTime=true`) |
+| `datetime_range` | `<DatePickerRange showTime>` | datetime 介於(`includeTime=true`) |
 | `select_multi` | `<SelectMenu multiple>` from `column.meta.options` | 多選(`select.is` 也走這 — OR 語意) |
 | `person_multi` | `<PeoplePicker multiple>` | 多人員(`person.is` 也走這 — OR 語意) |
 | `select_single` | `<Select>` from `column.meta.options` | (預留)罕用 |

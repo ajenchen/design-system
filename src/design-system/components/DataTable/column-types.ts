@@ -84,8 +84,8 @@ declare module '@tanstack/react-table' {
      * - `true`:cell 渲 date+time;filter 比對走 ms 精度(避開 Airtable 著名地雷)
      *
      * 在 advanced filter 中,`date` columnType 配 `includeTime=true` 時,
-     * `date_*` ValueShape 自動 promote 到 `datetime_*`,渲 `<DateTimePicker>` /
-     * `<DateTimeRangePicker>`(詳 `filter-operators.ts` `getValueShape`)。
+     * `date_*` ValueShape 自動 promote 到 `datetime_*`,渲 `<DatePicker showTime>` /
+     * `<DatePickerRange showTime>`(詳 `filter-operators.ts` `getValueShape`)。
      */
     includeTime?: boolean
     /** Link: 自訂顯示文字（不設則自動從 URL 提取 hostname） */

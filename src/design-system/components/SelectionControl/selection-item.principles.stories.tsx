@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import LinkTo from '@storybook/addon-links/react'
 
 const meta: Meta = {
-  title: 'Design System/Components/SelectionControl/設計原則',
+  title: 'Design System/Internal/SelectionControl/設計原則',
   parameters: { layout: 'padded' },
 }
 export default meta

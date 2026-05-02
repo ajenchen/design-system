@@ -3,8 +3,8 @@
  *
  * 共用消費者:
  * - `TimePicker`(本元件家)
- * - `DataTable/<DateTimePicker>`(date + time)
- * - `DataTable/<DateTimeRangePicker>`(range with time)
+ * - `DatePicker showTime`(date + time)
+ * - `DatePickerRange showTime`(range with time)
  *
  * 抽出原因:三個 picker 共用 H/M/S column scroll-pick 行為,公式重覆 = M17 違反。
  * 抽到 TimePicker/(time scroll selector 的 canonical 家)。
@@ -132,8 +132,12 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
 
   // WAI-ARIA listbox pattern:role=listbox 直接包 role=option(button),不另用 li 包
   // (li role=option + 內含 button 會被 axe 抓 nested-interactive)
+  // 高度策略:本 primitive 不鎖死 height(對齊 ScrollArea / Combobox 同 idiom)。
+  // ScrollArea 用 h-full,parent flex container 控高 — 讓 consumer:
+  //   - TimePicker:wrap in h-[216px] container(預設 ~7 items)
+  //   - DatePicker showTime / Range:flex-row items-stretch + calendar 一起決定高度(自動同高)
   return (
-    <ScrollArea className={cn('flex-1 h-[216px]', withDivider && 'border-r border-divider')}>
+    <ScrollArea className={cn('flex-1 h-full', withDivider && 'border-r border-divider')}>
       <div
         ref={listRef}
         role="listbox"
@@ -185,7 +189,7 @@ export interface TimeColumnsProps {
   /** 動態 disabled 各欄位 value 子集 */
   disabled?: TimeColumnsDisabled
   className?: string
-  /** 是否在最左側加 border-l(配 DateTimePicker date+time 拼接時用) */
+  /** 是否在最左側加 border-l(配 DatePicker showTime / Range date+time 拼接時用) */
   leadingDivider?: boolean
 }
 

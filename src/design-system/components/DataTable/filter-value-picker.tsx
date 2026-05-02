@@ -12,7 +12,6 @@ import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { Input } from '@/design-system/components/Input/input'
 import { NumberInput } from '@/design-system/components/NumberInput/number-input'
 import { DatePicker, DatePickerRange } from '@/design-system/components/DatePicker/date-picker'
-import { DateTimePicker, DateTimeRangePicker } from './date-time-picker'
 import { DATE_RELATIVE_OPTIONS, type ValueShape } from './filter-operators'
 
 export interface FilterColumnInfo {
@@ -145,8 +144,9 @@ export function FilterValuePicker({
 
     case 'datetime_single':
       return (
-        <DateTimePicker
+        <DatePicker
           size="md"
+          showTime
           value={typeof value === 'string' ? value : null}
           onChange={(v) => onChange(v ?? '')}
           aria-label={ariaLabel}
@@ -155,8 +155,9 @@ export function FilterValuePicker({
 
     case 'datetime_range':
       return (
-        <DateTimeRangePicker
+        <DatePickerRange
           size="md"
+          showTime
           value={Array.isArray(value) && value.length === 2
             ? (value as [string | null, string | null])
             : null}

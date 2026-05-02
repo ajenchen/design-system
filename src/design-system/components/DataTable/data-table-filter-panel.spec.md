@@ -7,7 +7,7 @@ DataTable 的 advanced filter panel — **flat 或 1-level nested boolean expres
 - `mode="flat"`:root 下只能裝 condition(無 group 概念)
 - `mode="nested"`:root 下裝 1+ group,每個 group 內 1+ condition,**剛好 1 層 nest**
 
-**實作基礎**:自建 + 消費 `Popover` / `Select` / `Combobox` / `Input` / `NumberInput` / `DatePicker` / `DateTimePicker` 等 DS primitive。底層求值用 TanStack `globalFilter` + 自訂 `globalFilterFn`(棄 `columnFilters`,因 N 條同 column AND-chain 不能 OR)。
+**實作基礎**:自建 + 消費 `Popover` / `Select` / `Combobox` / `Input` / `NumberInput` / `DatePicker`(`showTime` 開啟即 datetime,Ant idiom)等 DS primitive。底層求值用 TanStack `globalFilter` + 自訂 `globalFilterFn`(棄 `columnFilters`,因 N 條同 column AND-chain 不能 OR)。
 
 **Layout Family**:self-contained(panel 為複合 UI;非 Family 1-4)。
 
@@ -197,5 +197,5 @@ export interface DataTableFilterPanelProps<TData> {
 - `filter-tree.ts` — FilterTree types + evaluator + relative date matcher
 - `filter-value-picker.tsx` — ValueShape → DS picker 元件 dispatch
 - `column-types.ts` — `ColumnType` + `meta.includeTime` / `meta.filterable`
-- `date-time-picker.tsx` — DateTimePicker / DateTimeRangePicker(`includeTime=true` 用)
+- `../DatePicker/date-picker.tsx` — `<DatePicker showTime>` / `<DatePickerRange showTime>`(`includeTime=true` 對應)
 - `advanced-filter-operators.draft.md` — operator registry 對照表 + benchmark 紀錄

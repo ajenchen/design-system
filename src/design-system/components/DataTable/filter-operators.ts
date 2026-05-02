@@ -25,8 +25,8 @@ export type ValueShape =
   | 'date_single'       // <DatePicker> single date
   | 'date_range'        // <DatePickerRange> Ant-style split-input
   | 'date_relative'     // <Select> 預設選項(today/yesterday/this_week/...)
-  | 'datetime_single'   // <DateTimePicker>(includeTime=true)
-  | 'datetime_range'    // <DateTimeRangePicker>(includeTime=true)
+  | 'datetime_single'   // <DatePicker showTime>(includeTime=true)
+  | 'datetime_range'    // <DatePickerRange showTime>(includeTime=true)
   | 'select_single'     // <Select>(預留,目前無 op 採用)
   | 'select_multi'      // <SelectMenu multiple>(select.is 也走這)
   | 'person_single'     // <PeoplePicker>(預留)
