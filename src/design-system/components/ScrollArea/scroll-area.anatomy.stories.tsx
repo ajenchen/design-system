@@ -1,4 +1,4 @@
-// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-rationale:
 //   StateBehavior represented as OrientationBehavior — ScrollArea 是 OS chrome
 //     類功能性 primitive,thumb 唯一狀態(default / hover)已於 ColorMatrix 展示。

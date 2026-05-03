@@ -14,7 +14,8 @@
 #     - Marked `@benchmark-unverified`(顯式撤回)
 #
 # 允許 escape:
-#   檔頭加 `// @benchmark-citation-allow: <reason>` 整檔豁免
+#   檔頭加 `// @benchmark-citation-allow: <reason>` 整檔豁免(legacy,M22 hook 上線過渡期)
+#   檔頭加 `// @benchmark-unverified-blanket: <reason>` 整檔 M22 (d) 撤回(file-level unverified)
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
@@ -45,12 +46,12 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '
 
 # File-level allowlist
 FIRST_LINES=$(printf '%s\n' "$NEW_CONTENT" | sed -n '1,5p')
-if echo "$FIRST_LINES" | grep -qE '@benchmark-citation-allow:'; then
+if echo "$FIRST_LINES" | grep -qE '@benchmark-citation-allow:|@benchmark-unverified-blanket:'; then
   exit 0
 fi
 if [ -f "$FILE_PATH" ]; then
   ON_DISK_FIRST=$(sed -n '1,5p' "$FILE_PATH" 2>/dev/null || true)
-  if echo "$ON_DISK_FIRST" | grep -qE '@benchmark-citation-allow:'; then
+  if echo "$ON_DISK_FIRST" | grep -qE '@benchmark-citation-allow:|@benchmark-unverified-blanket:'; then
     exit 0
   fi
 fi
@@ -93,7 +94,9 @@ M22 canonical(2026-05-02):**寫 spec / code 含「Ant / Material / Polaris / ...
   - 我 claim「Ant showTime range = 2 calendars」憑印象 → 實證是 1 calendar,白忙一場
   - User: 「下次到底該如何完全避免你自己不斷說鬼話?」→ M22 + 本 hook
 
-整檔豁免:檔頭加 \`// @benchmark-citation-allow: <reason>\`
+整檔豁免:
+  - \`// @benchmark-citation-allow: <reason>\`(legacy 過渡期暫掛)
+  - \`// @benchmark-unverified-blanket: <reason>\`(M22 (d) file-level 撤回)
 EOF
   # Soft warning(P1)— print to stderr, don't block(exit 1 vs exit 2)
   exit 1

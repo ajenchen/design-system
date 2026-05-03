@@ -1,4 +1,4 @@
-// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @principles-rationale: Merged WhenToUse + WhenNotToUse + VsCircularProgressRule
 // + FileItemBoundaryRule into a single `UsageGuidance` story (3 sections — 何時用 /
 // 何時不用 + 替代 / vs 近親) per 2026-04-26 user mandate. StatusRule + AffixRule kept.

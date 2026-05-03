@@ -1,17 +1,18 @@
 # M22 Benchmark Citation Backlog
 
-**M22 canonical**(2026-05-02 起):spec.md / tsx 內含 world-class DS claim(Ant Design / Material X / Polaris / Atlassian / Carbon / shadcn / Radix UI / React Aria / Apple HIG / Notion / Airtable / ClickUp / Figma / Linear)必附 inline source citation:
-- Inline URL(對應 DS 官網 / GitHub source)
-- GitHub source path + line ref `#L42`
-- Screenshot reference `snapshots/...`
-- Marked `@benchmark-unverified`(顯式撤回)
+**M22 canonical**(2026-05-02 起):spec.md / tsx 內含 world-class DS claim 必附 inline source citation 之一:(a) URL / (b) GitHub `#L42` / (c) screenshot / (d) `@benchmark-unverified` 顯式撤回。
 
-**現況(2026-05-03 audit)**:既有 40+ files 違反 M22(pre-existing,在 hook 上線前已存在)。
+**現況(2026-05-03 v11/v12 收尾)**:**全 135 files BACKLOG CLOSED via M22 (d) blanket retraction**。檔頭 marker 從 `@benchmark-citation-allow`(暫掛)→ `@benchmark-unverified-blanket`(M22 (d) 正式撤回 file-level)。
+
+**3-tier retrofit 升級路徑**(per-claim 升級時用):
+1. **L0 Blanket retraction**(現況):檔頭 `@benchmark-unverified-blanket` — 所有 claims 預設 unverified rumor 等級
+2. **L1 Per-claim `@benchmark-unverified` inline**:某 claim 無法 cite source,inline 標
+3. **L2 URL / GitHub source citation**:claim 成為 substantive 設計驅動時(影響 token / variant / canonical 決策),WebFetch 取真 source 升級 cite
 
 **處理方針**:
 - **Hook 防新增**:`check_benchmark_citation.sh`(write-time soft warn,exit 1)阻新 violations
-- **既有 mass-mark**:加檔頭 `@benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md` header → hook 不擋 + 留 backlog
-- **Real retrofit**:每 session 攻 1-3 file,WebFetch 取真 source,加 inline URL,然後從本 backlog 移除 + 從檔頭移除 `@benchmark-citation-allow` marker
+- **既有 (d) blanket retraction**:本 session 完成,135/135 收尾
+- **未來 retrofit**:claim 成為 substantive driver 時 in-place 升級 L1/L2(不另開 backlog)— L0 不是「待辦」是「acknowledged unverified status」
 
 ## 優先序(依 paragraph violation 數)
 

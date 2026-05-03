@@ -1,4 +1,4 @@
-// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // code-quality-allow: file-size — foundational composite(Steps + StepItem + orientation/state/connector 邏輯緊密耦合,拆檔會讓 props drilling 複雜化超過可讀 gain)
 import * as React from 'react'
 import { Check, ChevronDown, X } from 'lucide-react'

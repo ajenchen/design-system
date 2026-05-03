@@ -1,4 +1,4 @@
-// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-rationale:
 //   SizeMatrix N/A — Track 高度固定 4px(無 size prop),與 Material / Carbon /
 //     Atlassian 共識一致(progress bar 是 micro-indicator,size 由 affix 文字 /
