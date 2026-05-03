@@ -1,3 +1,4 @@
+// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
 // code-quality-allow: file-size — foundational composite(Steps + StepItem + orientation/state/connector 邏輯緊密耦合,拆檔會讓 props drilling 複雜化超過可讀 gain)
 import * as React from 'react'
 import { Check, ChevronDown, X } from 'lucide-react'

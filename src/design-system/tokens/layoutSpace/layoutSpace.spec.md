@@ -1,3 +1,5 @@
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # LayoutSpace 設計原則
 
 Layout Space 定義頁面與容器的巨觀間距 token,隨 density 自動縮放(透過 `data-density` 或 `data-layout-space`)。

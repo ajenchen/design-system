@@ -7,6 +7,8 @@ traits:
   - hasInteractiveStates
 ---
 
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # ScrollArea 設計原則
 
 ScrollArea 是**跨 OS 視覺一致的自訂捲動容器**——用 overlay 捲軸取代原生 scrollbar,解決 macOS / Windows / Linux 之間的跑版落差。

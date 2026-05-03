@@ -1,3 +1,5 @@
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # Density 設計原則
 
 Density 由**兩個獨立維度**構成,並配合一個 convenience attribute 同時控制兩者:

@@ -1,3 +1,5 @@
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # Item Anatomy 設計原則(Family 1 + Family 2 row 結構 SSOT)
 
 > **Super-foundational SSOT rationale**(2026-04-24 approved,cap 1200 例外):

@@ -1,3 +1,5 @@
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # Radius 設計原則
 
 圓角系統提供四個語意層級，對應不同元件類型。

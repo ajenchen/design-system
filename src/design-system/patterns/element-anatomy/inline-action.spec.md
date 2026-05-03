@@ -1,3 +1,5 @@
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # Inline Action 設計規格(SSOT)
 
 **定位**:嵌入在其他元件內部的互動觸發點(Tag dismiss / Field endAction / Row suffix action)。不是獨立 Button,由宿主元件渲染 + 控制。

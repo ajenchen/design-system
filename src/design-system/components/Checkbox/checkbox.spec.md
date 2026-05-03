@@ -13,6 +13,8 @@ traits:
   - isSelectionMulti
 ---
 
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # Checkbox 設計原則
 
 (Radio 共用本規格,詳見 `../RadioGroup/radio-group.spec.md`;本文件通用於兩者視覺與行為,名稱保留 Checkbox 為主體)

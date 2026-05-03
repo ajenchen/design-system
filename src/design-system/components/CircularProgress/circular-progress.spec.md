@@ -7,6 +7,8 @@ traits:
   - isMatrixHeavy
 ---
 
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # CircularProgress 設計原則
 
 **圓形進度指示(determinate + indeterminate 雙模式)**——整個設計系統 circular 形式進度的 SSOT。

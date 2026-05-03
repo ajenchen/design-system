@@ -7,6 +7,8 @@ traits:
   - isStructural
 ---
 
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # Empty 設計原則
 
 **空狀態視覺元件**——容器內沒有內容時的居中提示。Table、SelectMenu、Combobox、Page section 等所有需要空狀態的元件統一消費。

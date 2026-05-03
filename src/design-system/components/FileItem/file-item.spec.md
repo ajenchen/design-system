@@ -7,6 +7,8 @@ traits:
   - hasInteractiveStates
 ---
 
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # FileItem 設計原則
 
 **檔案上傳列表項目**——顯示檔案名稱、上傳進度、狀態（uploading / completed / error）。

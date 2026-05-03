@@ -1,3 +1,4 @@
+// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
 // code-quality-allow: file-size — foundational composite — 拆檔會複雜化 context / ref / state 同步
 import * as React from 'react'
 import { Empty } from '@/design-system/components/Empty/empty'

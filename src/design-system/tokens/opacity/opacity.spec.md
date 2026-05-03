@@ -1,3 +1,5 @@
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # Opacity 設計原則
 
 Opacity 定義元件停用狀態的透明度，確保全系統 disabled 視覺一致。

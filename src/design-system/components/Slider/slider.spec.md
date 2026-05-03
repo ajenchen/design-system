@@ -9,6 +9,8 @@ traits:
   - isMatrixHeavy
 ---
 
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # Slider 設計原則
 
 **數值範圍選取器**——基於 Radix Slider primitive,橋接設計系統 token。

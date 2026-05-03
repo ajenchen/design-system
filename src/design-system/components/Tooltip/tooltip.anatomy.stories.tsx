@@ -1,3 +1,4 @@
+// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
 // @anatomy-rationale:
 //   ColorMatrix N/A — Tooltip 色彩固定(--tooltip bg + white text,內部 wrapper
 //     強制 data-theme="dark"),無 variant × state 色彩矩陣。所有色彩 token 已

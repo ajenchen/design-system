@@ -7,6 +7,8 @@ traits:
   - isInternal
 ---
 
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # Notice 設計原則
 
 **Toast / Alert 共用的視覺佈局層**——跟 MenuItem 為 SelectMenu / DropdownMenu 共用是同一個架構概念。Notice 只負責 layout 和 icon 選擇，色彩由消費者透過 `data-theme` 控制。

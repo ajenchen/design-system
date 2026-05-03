@@ -1,3 +1,5 @@
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # Element Anatomy 設計原則(4-Family Model Taxonomy)
 
 本檔是 design system 中 **element-level 結構分類系統**的頂層 governance doc——跨 pattern / cross-component。每個元件 spec 第一段**必須聲明 Layout Family**(1/2/3/4 或「非 family,self-contained / composite」)。

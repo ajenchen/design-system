@@ -9,6 +9,8 @@ traits:
   - isStructural
 ---
 
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # Steps 設計原則
 
 **流程進度指示器**:把多步驟任務的「現在走到哪、完成了哪些、還剩哪些」視覺化為一條有序的 indicator + label 序列。

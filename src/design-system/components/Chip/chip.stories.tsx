@@ -1,3 +1,4 @@
+// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { Star, ChevronDown } from 'lucide-react'

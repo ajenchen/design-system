@@ -1,3 +1,4 @@
+// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
 // @anatomy-exempt: inspector 規格表格(token / prop 對照)用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 // @anatomy-rationale:
 //   ColorMatrix N/A — 純 typography 元件,色彩固定為 fg-secondary(label)+

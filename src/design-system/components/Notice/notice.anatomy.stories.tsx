@@ -1,3 +1,4 @@
+// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
 // @anatomy-rationale:
 //   ColorMatrix represented as VariantIconMap — Notice 不擁有底色 / 邊框,只
 //     負責 layout + status icon 選擇。色彩由消費方(Alert subtle shell、Toast

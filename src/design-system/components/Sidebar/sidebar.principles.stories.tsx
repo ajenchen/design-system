@@ -1,3 +1,4 @@
+// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
 // @principles-rationale: Merged WhenToUse + WhenNotToUse into a single
 // `UsageGuidance` story (3 sections — 何時用 / 何時不用 + 替代 / vs 近親) per 2026-04-26
 // user mandate. Sidebar has no formal Vs*Rule(ContentTypeChoice 為 internal taxonomy

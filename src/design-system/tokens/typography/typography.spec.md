@@ -1,3 +1,5 @@
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # Typography 設計原則
 
 Typography 定義字體尺寸與行高的 token 系統，確保全系統文字層級一致。

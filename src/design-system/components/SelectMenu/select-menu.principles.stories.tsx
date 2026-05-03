@@ -1,3 +1,4 @@
+// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
 // v3 canonical(2026-05-01):≥ 2 stories(UsageGuidance + CompositionRules)取代原
 // escape rationale,對齊 Polaris/Material/Ant 共識 internal primitive 仍應教 consumer pattern。
 import type { Meta, StoryObj } from '@storybook/react'

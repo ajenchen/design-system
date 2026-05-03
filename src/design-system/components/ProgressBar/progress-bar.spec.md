@@ -7,6 +7,8 @@ variants: {}
 sizes: {}
 ---
 
+<!-- @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)-->
+
 # ProgressBar 設計原則
 
 **水平進度條(linear determinate progress)**——表達「已完成 X%、還剩 Y%」的量化進度視覺 primitive。0–100% 的已知進度、單向推進、可預期終點。circular 形式(含 indeterminate)走 `CircularProgress`。
