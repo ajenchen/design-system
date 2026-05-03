@@ -39,6 +39,14 @@ description: Auto-invoke when about to list options / 建議 / 候選方案 to u
 - ✅ "Polaris IconButton padding-free / Atlassian button-iconOnly p:0 / Material UI MuiSvgIcon flex-shrink:0"
 - ❌ "感覺合理 / 可能對 / 沒查"
 
+### Q1' — **M23 DS internal canonical 優先 grep**(2026-05-03 加,chevron 事件後)
+**先 grep DS 既有 token / variant / pattern 命中?有 → 必對齊,Q1 外部 benchmark 只是輔證。**
+**問**:propose 的 visual decision(color / size / spacing / typography / state)是否已 grep `src/design-system/tokens/` + 近親 component spec/tsx 確認沒命中既有?
+**Fail**:跳過 grep 直接搬 world-class → M23 違反(本 conv chevron 用 Ant 5 家 muted 覆蓋 DS 內 icon-only Button = neutral-9 canonical → user 4 輪糾正)
+**例**:
+- ✅ "grep `text-foreground` 已是 icon-only Button 預設(neutral-9 / 85%)→ 對齊;Ant cite 為輔證"
+- ❌ "Ant / Material muted → 直接套(沒 grep 內部 canonical)"
+
 ### Q2 — M17 SSOT 必可傳播
 **問**:本 option 動到的 canonical 有真正可執行 SSOT 嗎(token / primitive / utility)?還是只在 markdown 文字?
 **Fail**:只增加 markdown 文字、沒提供 mechanical enforcement → 假 SSOT
@@ -67,11 +75,11 @@ description: Auto-invoke when about to list options / 建議 / 候選方案 to u
 對 user 回覆中的 option list 必含 **inline 4-Q 表**:
 
 ```markdown
-| 選項 | M8 benchmark | M17 SSOT | Rule-of-3 | M10 下游 | 結論 |
-|---|---|---|---|---|---|
-| A | Polaris/Atlassian/Material(列實作名) | 抽 utility 共用 | 0 處 SSOT 新增 OK | 可刪 X 條冗餘 | **PASS,推薦** |
-| B | 只查 1 家 | 純 markdown rule | 已 3 處,無新 SSOT 動 | 純 append 沒 retire | **REJECT** |
-| C | 4 家 2:2 split 無共識 | n/a | n/a | n/a | **REJECT(M8 無共識)** |
+| 選項 | M23 DS grep | M8 benchmark | M17 SSOT | Rule-of-3 | M10 下游 | 結論 |
+|---|---|---|---|---|---|---|
+| A | DS 已有 X token,對齊 | Polaris/Atlassian/Material 輔證 | 抽 utility 共用 | 0 處 SSOT 新增 OK | 可刪 X 條冗餘 | **PASS,推薦** |
+| B | 沒 grep | 只查 1 家 | 純 markdown rule | 已 3 處,無新 SSOT 動 | 純 append 沒 retire | **REJECT(M23+M8 雙 fail)** |
+| C | DS 已有 Y 但 option 違 | 4 家 2:2 split 無共識 | n/a | n/a | n/a | **REJECT(M23 違反 → 自開新 tier)** |
 ```
 
 **所有 fail 過 4-Q 的 option 必明示 reject + 原因**,不只 list 不過的。User 看見 reject 過程才能信 propose 過原則。
