@@ -1,5 +1,9 @@
 #!/bin/bash
-set -uo pipefail
+# Note: This file is SOURCED by other hooks. Do NOT add `set -u` / `set -e` /
+# `pipefail` here — `source` runs in caller shell and propagates flags,
+# breaking caller code that legitimately reads unset vars (e.g. ${VIOLATIONS}
+# accumulator pattern). Caller hooks set their own flags as standalone scripts.
+#
 # Shared helper: log per-hook fire to .claude/logs/hook-fires-per-hook.jsonl
 #
 # Why: enables /knowledge-prune D2 dead-hook detection(6 月 0 fire → retire 提名)。
