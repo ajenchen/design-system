@@ -40,14 +40,14 @@
 | `components/Field/form-validation.spec.md` | 8 | ⏳ |
 | `components/DatePicker/date-picker.spec.md` | 8 | **✅ DONE 2026-05-03**(本 turn retrofit) |
 | `components/DataTable/data-table.spec.md` | 7 | ⏳ |
-| `components/TimePicker/time-picker.spec.md` | 5 | ⏳ |
+| `components/TimePicker/time-picker.spec.md` | 5 | **✅ DONE 2026-05-03 v11**(retrofit + remove mass-mark) |
 | `components/Slider/slider.spec.md` | 5 | ⏳ |
 | `components/ProgressBar/progress-bar.spec.md` | 5 | ⏳ |
 | `components/FileUpload/file-upload.spec.md` | 5 | ⏳ |
 | `components/Field/field.spec.md` | 5 | ⏳ |
 | `components/Chip/chip.spec.md` | 5 | ⏳ |
 | `components/Tabs/tabs.spec.md` | 4 | ⏳ |
-| `components/DateGrid/date-grid.spec.md` | 4 | ⏳ |
+| `components/DateGrid/date-grid.spec.md` | 4 | **✅ DONE 2026-05-03 v11**(retrofit + remove mass-mark) |
 | `components/Button/button.spec.md` | 4 | ⏳ |
 | `components/BulkActionBar/bulk-action-bar.spec.md` | 4 | ⏳ |
 | `components/SegmentedControl/*.spec.md` + tsx + principles | 3 | ⏳ |

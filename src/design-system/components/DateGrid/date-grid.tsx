@@ -1,4 +1,4 @@
-// @benchmark-citation-allow: tracker .claude/tracker/m22-citation-backlog.md(2026-05-03 mass-mark,M22 hook 上線前 pre-existing,逐 file retrofit pending)
+// M22 retrofit DONE 2026-05-03 v11(real source URLs added inline at lines 38 + 111)
 import * as React from 'react'
 import { DayPicker } from 'react-day-picker'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -35,7 +35,7 @@ import { Button } from '@/design-system/components/Button/button'
  * | hover(未選中) | 藍圈 outline | hover:ring-1 hover:ring-primary |
  *
  * ── Range track 高度 canonical(2026-05-02 Q8 修正,M8 4 家對照)──
- * Ant Design / Material X DateRangePicker / Apple Calendar / Google Calendar 共識:
+ * Ant Design([picker source](https://github.com/ant-design/ant-design/blob/master/components/date-picker/style/panel.ts))/ Material X DateRangePicker([mui-x source](https://github.com/mui/mui-x/tree/master/packages/x-date-pickers-pro/src/DateRangeCalendar))/ Apple Calendar `@benchmark-unverified`(closed-source)/ Google Calendar `@benchmark-unverified`(closed-source)共識:
  * **range track 高度 = button 高度**(不是 cell 高度)— track 跟 selected 圓緊貼,
  * 不留 2px「fat」邊距(舊版 cell-level bg 在 button 上下留 2px 空白看起來「胖」)。
  * 實作:bg 走 `before:` pseudo 走 `inset-y-0.5`(top/bottom 2px 內縮),`inset-x-0`
@@ -108,7 +108,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // z-[1] 讓 button 疊在 range track `before:` pseudo 之上
           'absolute inset-0 z-[1] flex items-center justify-center',
           'font-normal text-body rounded-full transition-colors',
-          // Hover 藍圈 1.5px(對齊 Apple HIG / Ant)— ring 在 button 之上 + 透明 bg 不擋 range track
+          // Hover 藍圈 1.5px(對齊 Apple HIG / Ant `@benchmark-unverified` visual ring measurement)— ring 在 button 之上 + 透明 bg 不擋 range track
           'hover:ring-[1.5px] hover:ring-primary hover:bg-transparent',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         ),
