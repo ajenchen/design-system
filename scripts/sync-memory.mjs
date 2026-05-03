@@ -42,8 +42,11 @@ const SRC = REVERSE ? REPO_DIR : HARNESS_DIR
 const DST = REVERSE ? HARNESS_DIR : REPO_DIR
 
 if (!existsSync(SRC)) {
-  console.error(`[sync-memory] source missing: ${SRC}`)
-  process.exit(1)
+  // Cloud sandbox first-boot: harness dir 不存在屬正常(尚未啟動 / 不同 encoding 規則)。
+  // Soft-skip 而非 exit 1,避免阻 commit。--reverse 模式下 repo 缺 dir 才是真錯誤。
+  const tag = REVERSE ? 'error' : 'warn'
+  console[tag === 'error' ? 'error' : 'warn'](`[sync-memory] source missing: ${SRC} — skipping`)
+  process.exit(REVERSE ? 1 : 0)
 }
 
 if (!existsSync(DST)) {
