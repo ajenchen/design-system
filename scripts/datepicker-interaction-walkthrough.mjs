@@ -197,6 +197,33 @@ async function main() {
     }
   }
 
+  // ── Test 5d: showTime+needConfirm popover-open clear sync(2026-05-03 v10 bug fix)─
+  // Bug:needConfirm=true(showTime 預設)時 clear 只 update value,沒 setDraft(null),
+  // displayValue=draft 仍顯示舊值 → trigger 看起來「沒清」。修法 setDraft 同步。
+  console.log('\n[Test 5d] showTime clear syncs draft (popover-open path)')
+  await page.goto(`${STORYBOOK_URL}/iframe.html?id=design-system-components-datepicker-展示--show-time&viewMode=story`)
+  await page.waitForLoadState('networkidle')
+  await page.waitForTimeout(500)
+  const trigger5d = page.locator('[role="combobox"]').first()
+  const before5d = (await trigger5d.textContent())?.trim()
+  await trigger5d.click() // open popover
+  await page.waitForTimeout(300)
+  const clearBtn5d = page.locator('button[aria-label="清除日期"]').first()
+  if (!(await clearBtn5d.isVisible())) {
+    fail('showTime clear sync', `X button not visible on showTime story trigger`)
+  } else {
+    await clearBtn5d.click()
+    await page.waitForTimeout(200)
+    const after5d = (await trigger5d.textContent())?.trim()
+    await snap(page, 'test5d-showtime-clear-sync')
+    // After clear,trigger 應顯示 placeholder(YYYY/MM/DD HH:MM 類)而非保留原 datetime
+    if (after5d && !after5d.match(/\d{4}\/\d{2}\/\d{2}/)) {
+      pass(`showTime clear empties trigger: "${before5d}" → "${after5d}"`)
+    } else {
+      fail('showTime clear sync', `expected placeholder, trigger still shows "${after5d}" (draft 未同步 bug)`)
+    }
+  }
+
   // ── Test 5: Range cell disable when out-of-order ────────────────────────
   console.log('\n[Test 5] Range cell disable when out-of-order')
   await page.goto(`${STORYBOOK_URL}/iframe.html?id=design-system-components-datepicker-展示--range-picker&viewMode=story`)

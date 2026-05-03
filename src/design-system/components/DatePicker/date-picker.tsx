@@ -129,9 +129,17 @@ function addDays(date: Date, n: number): Date {
 // ⚠️ 若改 DateGrid p-3(例如 p-2)→ 必同步改 TimePicker pt-3,否則 caption 行錯位。
 // 兩處共識在 spec.md「Spacing canonical」段 + 本 comment 雙鎖。
 //
-// ── columns 填滿容器 canonical ──
-// columns 區只有 flex-1 min-h-0 flex,**無 horizontal padding**(對齊 user 「填滿容器」spec),
-// 也無垂直 padding(由 root pb-3 提供 bottom 12px 對齊 DateGrid p-3 bottom)。
+// ── Header divider canonical(無 border-b)──
+// Header 下方無 divider,對齊 DateGrid month_caption(無 border-b,只 mb-3 gap)。
+// DS internal canonical(M23)優先於 Ant time-picker header divider 慣例 — 兩 panel
+// 同層級 caption 視覺對稱,引入 divider 會破對稱。
+//
+// ── Bottom padding canonical(0)──
+// Root 用 pt-3 而非 py-3:bottom = 0,讓 columns 連續延伸到 SurfaceFooter border-t。
+// Ant / Material time picker idiom — time list 視覺感「continuous scroll」延伸到 footer
+// divider,bottom padding 12px 反而讓 list 看起來「截斷」。
+// 此處與 DateGrid p-3(bottom 12)有意 asymmetric:Calendar cells 不該撞 footer divider
+// (cells 是離散 grid),time list 是 scroll list 撞 divider 反而合理。
 
 interface TimePickerSidePanelProps {
   value?: TimeParts
@@ -155,7 +163,7 @@ function TimePickerSidePanel({
     : (showSeconds ? '--:--:--' : '--:--')
 
   return (
-    <div className={cn('flex flex-col h-full py-3', className)}>
+    <div className={cn('flex flex-col h-full pt-3', className)}>
       {/* Header 純結構:h-field-xs (24px) + flex 水平+垂直置中 + mb-3 (12px gap) */}
       <div className="h-field-xs flex items-center justify-center mb-3">
         <span className="text-body font-medium tabular-nums">{headerText}</span>
@@ -397,9 +405,14 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                 action={{
                   icon: X,
                   label: '清除日期', // i18n-allow: DS default inline-action label
+                  // Clear = 立刻 commit + 同步 draft(對齊 user 體感 / Ant trigger X 慣例)
+                  // 不走 needConfirm「等確定」語義 — X 在 trigger 上是 standard clear affordance,
+                  // 應立刻清空。dual-state 必同步:value('') + draft(null),否則 popover 開
+                  // 著時 displayValue=draft 仍顯示舊值(see line 318: displayValue = needConfirm ? draft : value)。
                   onClick: (e) => {
                     e?.stopPropagation()
                     onChange?.('')
+                    setDraft(null)
                   },
                 }}
               />
@@ -628,7 +641,10 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     }
     const handleClearRange = (e?: React.MouseEvent) => {
       e?.stopPropagation()
+      // Clear = 立刻 commit + 同步 draft(對齊 single mode + user 體感)
+      // dual-state 同步,否則 popover 開著時 displayValue=draft 仍顯示舊 [start, end]
       onChange?.([null, null])
+      setDraft([null, null])
     }
     const openWithActive = (which: 'start' | 'end') => {
       setActiveEnd(which)
