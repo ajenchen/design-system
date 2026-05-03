@@ -40,3 +40,4 @@ log_hook_fire() {
     "$hook_name" \
     >> "$log_file" 2>/dev/null || true
 }
+
