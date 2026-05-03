@@ -114,13 +114,13 @@ function addDays(date: Date, n: number): Date {
 
 // ── TimePickerSidePanel ────────────────────────────────────────────────
 //
-// DatePicker showTime / Range showTime 內共用的右側時間 panel。
-// 結構對齊 reference image + Ant Design:
-//   - p-3 padding(對齊左側 DateGrid 的 p-3)
-//   - Header(h-field-xs 24px + mb-3 12px)裝 "Time" title 水平+垂直置中
-//     → 12px (top pad) + 24px (header) + 12px (mb-3) = 跟 DateGrid 的 caption row
-//        水平對齊(DateGrid 的 caption row 也是同樣結構)
-//   - 下方裝 TimeColumns,flex-1 撐滿剩餘高度
+// DatePicker showTime / Range showTime 共用的右側時間 panel(canonical 2026-05-02 v4)。
+// 結構規格(對齊 user spec + DateGrid caption row 水平對齊):
+//   - **無 outer p-3**(撤銷 v3 — user 明確說「不要沒來由加」;outer padding 來自 popover content,
+//     不是 side panel)
+//   - Header:`pt-3 + h-field-xs + mb-3 = 12+24+12 = 48px`(對齊 DateGrid 12 + caption 24 + 12 = 48px)
+//   - Header 內 dynamic 顯示當前 active time `HH:MM`(對齊 user Q4 — 撤銷 v3 static "Time")
+//   - TimeColumns 填滿剩餘高度(flex-1),**無 horizontal padding**(columns 直接靠齊容器邊界)
 
 interface TimePickerSidePanelProps {
   value?: TimeParts
@@ -130,12 +130,6 @@ interface TimePickerSidePanelProps {
   secondStep?: TimeStep
 }
 
-/**
- * 用 absolute positioning(`absolute top-0 right-0 bottom-0`)讓 TimePicker
- * **不影響 popover row 高度** — DateGrid 主導 height,TimePicker 撐滿那個高度。
- * 否則 TimeColumns 自然高 ~800px > DateGrid ~300px → flex row 跟著撐高,
- * 造成 user 看到的 layout bug。Sibling 的 spacer div 佔 layout 寬度。
- */
 function TimePickerSidePanel({
   value,
   onChange,
@@ -144,13 +138,18 @@ function TimePickerSidePanel({
   secondStep = 1,
   className,
 }: TimePickerSidePanelProps & { className?: string }) {
+  // V5:Dynamic header text — 顯示當前選擇的 HH:MM(對齊 user Q4)
+  const headerText = value
+    ? timePartsToString(value, showSeconds)
+    : (showSeconds ? '--:--:--' : '--:--')
+
   return (
-    <div className={cn('flex flex-col p-3 h-full', className)}>
-      {/* Header: 對齊 DateGrid 的 month_caption(h-field-xs + mb-3),title 水平+垂直置中 */}
-      <div className="h-field-xs flex items-center justify-center mb-3">
-        <span className="text-body font-medium">Time</span>
+    <div className={cn('flex flex-col h-full', className)}>
+      {/* Header:12+24+12 = 48px(pt-3 + h-field-xs + mb-3),title 水平+垂直置中 */}
+      <div className="pt-3 mb-3 h-field-xs flex items-center justify-center">
+        <span className="text-body font-medium tabular-nums">{headerText}</span>
       </div>
-      {/* TimeColumns flex-1 撐滿剩餘高度;內部 ScrollArea h-full(parent absolute 給定高度) */}
+      {/* TimeColumns:flex-1 填滿剩餘高度,內部 ScrollArea h-full */}
       <div className="flex-1 min-h-0 flex">
         <TimeColumns
           value={value}
@@ -435,13 +434,17 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
             {showTime && (
               <>
                 <Separator />
-                <div className="flex items-center justify-between p-2">
+                {/* Footer split layout(對齊 Ant `marginInlineStart: auto` on OK button)
+                    Single DateTimePicker:左 此刻 / 右 確定(canonical 跟 TimePicker 一致) */}
+                <div className="flex items-center p-2">
                   <Button variant="tertiary" size="sm" onClick={handleNow}>此刻</Button>
-                  {needConfirm ? (
-                    <Button variant="primary" size="sm" onClick={handleConfirm} disabled={!draft}>確定</Button>
-                  ) : (
-                    <Button variant="tertiary" size="sm" onClick={() => setOpen(false)}>關閉</Button>
-                  )}
+                  <div className="ml-auto">
+                    {needConfirm ? (
+                      <Button variant="primary" size="sm" onClick={handleConfirm} disabled={!draft}>確定</Button>
+                    ) : (
+                      <Button variant="tertiary" size="sm" onClick={() => setOpen(false)}>關閉</Button>
+                    )}
+                  </div>
                 </div>
               </>
             )}
@@ -455,16 +458,24 @@ DatePicker.displayName = 'DatePicker'
 
 // ── DatePickerRange ─────────────────────────────────────────────────────────
 //
-// Active-end mechanism(canonical 2026-05-02 v3,對齊 Ant Design RangePicker):
-//   - Trigger 是兩個獨立 <button> 輸入(start + end),點擊 input 設定 activeEnd。
-//   - 任一 input 點擊 → 開 popover,activeEnd 跟著切換(同一浮層內維持狀態)。
-//   - DateGrid 用 `mode="single"` + manual `modifiers`(rangeStart / rangeMiddle /
-//     rangeEnd)— 不用 RDP 內建 `mode="range"` 因為它的 click 配對邏輯會跟我們的
-//     activeEnd 衝突(造成「點一次沒反應 / 要點兩次」bug,canonical 2026-05-02 v3 修)。
-//   - Auto-advance(date-only Range):選 start 完成 → 自動切 activeEnd='end'。
-//   - showTime Range:numberOfMonths=1(只渲 active end 的月份)+ TimePickerSidePanel
-//     編 active end 的時間;footer「確定」commit。對齊 Ant 「showTime range 一次 edit
-//     一端」共識,**不**像 date-only Range 顯示 2 個月。
+// Canonical 2026-05-02 v4 — 全對齊 Ant Design RangePicker(WebFetch 實證):
+//
+// **showTime Range**(rc-picker `multiplePanel = false` 證實):
+//   - **1 calendar + 1 time panel**(等同 single DateTimePicker layout)
+//   - 沒 range track 視覺(計算上跟 single 一樣)
+//   - footer **無「此刻」按鈕**(rc-picker `showNow={multiple ? false : showNow}` 證實)
+//   - Click flow:click input → open popup for activeEnd → 編 → 點「確定」commit activeEnd
+//     → if start: switch activeEnd='end' + popup 維持 open;if end: close popup
+//   - Cell disable(rc-picker useRangeDisabledDate 證實):
+//     activeEnd='end' + start 已選 → date < start disabled
+//     activeEnd='start' + end 已選 → date > end disabled
+//
+// **date-only Range**(rc-picker `multiplePanel = true`):
+//   - **2 calendars 並列**(showTime=false 時)
+//   - Full range track 視覺(start / middle / end)
+//   - 走原 RDP mode='range' 配對 click 邏輯 + auto-swap
+//
+// **Trigger**:2 input button,active end blue underline 標示
 
 export interface DatePickerRangeProps
   extends DateFormatOptions,
@@ -588,7 +599,23 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
         : ([draft[0], iso] as [string | null, string | null])
       commitRange(nextDraft)
     }
-    const handleConfirm = () => { onChange?.(draft); setOpen(false) }
+    /**
+     * Click「確定」canonical(2026-05-02 v4,對齊 Ant Design 序列流程):
+     *   showTime Range:
+     *     - activeEnd='start' → commit start to draft + switch activeEnd='end' + popup 維持 open
+     *     - activeEnd='end'   → commit final draft to value + close popup
+     *   date-only Range(沒有 footer,不會走這 path):— N/A
+     */
+    const handleConfirm = () => {
+      if (showTime && activeEnd === 'start' && draft[0]) {
+        // Start 已填 → switch to end,popup 維持 open
+        setActiveEnd('end')
+      } else {
+        // End 也填好(or non-showTime needConfirm)→ final commit + close
+        onChange?.(draft)
+        setOpen(false)
+      }
+    }
     const handleNow = () => {
       setActive(showTime ? nowIsoDateTime() : dateToIso(new Date()))
     }
@@ -600,6 +627,26 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       setActiveEnd(which)
       setOpen(true)
     }
+    /**
+     * Cell disable(對齊 Ant rc-picker `useRangeDisabledDate`):
+     *   activeEnd='end' + start 已選 → date < start 被 disable(同日 OK)
+     *   activeEnd='start' + end 已選 → date > end 被 disable(同日 OK)
+     * 防 user 點下違反順序的日期(start > end / end < start)。
+     */
+    const isOutOfRangeOrder = React.useCallback((date: Date): boolean => {
+      // ⚠️ 必先 clone(new Date(...)),否則 setHours 會 mutate useMemo'd date 物件
+      if (activeEnd === 'end' && startDate) {
+        const startMidnight = new Date(startDate.getTime())
+        startMidnight.setHours(0, 0, 0, 0)
+        return date.getTime() < startMidnight.getTime()
+      }
+      if (activeEnd === 'start' && endDate) {
+        const endEndOfDay = new Date(endDate.getTime())
+        endEndOfDay.setHours(23, 59, 59, 999)
+        return date.getTime() > endEndOfDay.getTime()
+      }
+      return false
+    }, [activeEnd, startDate, endDate])
 
     // readonly / disabled view — plain wrapper,no popover
     if (!isEditable) {
@@ -702,10 +749,12 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   // mode='single' + manual modifiers(canonical 2026-05-02 v3):
                   // 不用 RDP 內建 mode='range'(它的 click 配對邏輯跟我們的 activeEnd 衝突,
                   // 造成「點一次沒反應 / 要點兩次」bug)。改自管 modifiers 控視覺。
+                  // showTime Range:rangeModifiers 為空(不顯示 range track,對齊 Ant)
                   mode="single"
                   selected={activeDate}
                   onSelect={(date) => {
                     if (!date) return
+                    if (isOutOfRangeOrder(date)) return  // 防護:disable 邏輯內 click 已被 RDP 擋,但雙保險
                     const preservedTime = isoToTimeParts(activeEnd === 'start' ? draft[0] : draft[1]) ?? activeTime
                     const nextIso = showTime
                       ? combineDateAndTime(date, preservedTime)
@@ -714,27 +763,47 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                       ? [nextIso, draft[1]]
                       : [draft[0], nextIso]
                     commitRange(nextDraft)
-                    // Auto-advance(date-only Range only):選 start → 切到 end。
-                    // showTime Range 不 auto-advance(讓 user 編 time 後再手動切換或按確定)。
-                    if (!showTime && activeEnd === 'start') {
-                      setActiveEnd('end')
-                      if (!needConfirm && nextDraft[0] && nextDraft[1]) {
+                    // Auto-advance / close logic:
+                    if (!showTime) {
+                      // date-only Range:選完 start 自動切 end;兩端皆填 + 不需確認 → 關閉
+                      if (activeEnd === 'start') {
+                        setActiveEnd('end')
+                        if (!needConfirm && nextDraft[0] && nextDraft[1]) setOpen(false)
+                      } else if (!needConfirm && nextDraft[0] && nextDraft[1]) {
                         setOpen(false)
                       }
-                    } else if (!showTime && !needConfirm && nextDraft[0] && nextDraft[1]) {
-                      setOpen(false)
                     }
+                    // showTime Range:不 auto-advance,讓 user 編 time 後手動按確定 commit
+                    // (對齊 Ant 序列流程 — 確定 button 切 activeEnd)
                   }}
-                  modifiers={rangeModifiers}
+                  // showTime Range:不渲 range visualization(對齊 Ant — 整個 popup 等同 single
+                  // DateTimePicker,沒 range 視覺概念);date-only Range 才顯示
+                  modifiers={showTime ? {} : rangeModifiers}
                   modifiersClassNames={{
-                    rangeStart: '[&>button]:!bg-primary [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
-                    rangeEnd: '[&>button]:!bg-primary [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
+                    // Range start/end:button 圓 + bg pseudo 延伸內側(bridge 4px gap to middle)
+                    // 無 -z-[1](會讓 pseudo 跑到 popover bg 後面變透明);button z-[1] 已壓在 pseudo 之上
+                    rangeStart: cn(
+                      '[&>button]:!bg-primary [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
+                      // pseudo: 從 button 中心延伸到 cell 右邊外 2px(bridge gap)
+                      "before:content-[''] before:absolute before:inset-y-0",
+                      'before:left-1/2 before:-right-[2px]',
+                      'before:bg-[var(--color-neutral-3)] before:pointer-events-none',
+                    ),
+                    rangeEnd: cn(
+                      '[&>button]:!bg-primary [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
+                      "before:content-[''] before:absolute before:inset-y-0",
+                      'before:-left-[2px] before:right-1/2',
+                      'before:bg-[var(--color-neutral-3)] before:pointer-events-none',
+                    ),
                     rangeMiddle: cn(
                       "before:content-[''] before:absolute before:inset-y-0 before:-inset-x-[2px]",
                       'before:bg-[var(--color-neutral-3)] before:pointer-events-none',
                       '[&>button]:!bg-transparent [&>button]:!text-foreground',
                     ),
                   }}
+                  // Cell disable:防 user 點下違反順序的日期(對齊 Ant useRangeDisabledDate)
+                  disabled={isOutOfRangeOrder}
+                  // showTime → 1 cal(對齊 Ant `multiplePanel=false`);date-only → 2 cal(`multiplePanel=true`)
                   numberOfMonths={showTime ? 1 : 2}
                   defaultMonth={activeDate ?? startDate ?? endDate ?? undefined}
                   autoFocus
@@ -757,20 +826,34 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
           {(showTime || needConfirm) && (
             <>
               <Separator />
-              <div className="flex items-center justify-end p-2 gap-2">
-                <Button variant="tertiary" size="sm" onClick={handleNow}>此刻</Button>
-                {needConfirm ? (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleConfirm}
-                    disabled={!draft[0] || !draft[1]}
-                  >
-                    確定
-                  </Button>
-                ) : (
-                  <Button variant="tertiary" size="sm" onClick={() => setOpen(false)}>關閉</Button>
+              {/* Footer split layout(對齊 Ant `marginInlineStart: auto` on OK):
+                    左 此刻(Range showTime 無)/ 右 確定(`ml-auto` 推到右側)
+                  Range showTime 對齊 Ant `showNow={multiple ? false : showNow}` — 無此刻
+                  → 確定獨佔右側。Single DateTimePicker(非 Range)有此刻。 */}
+              <div className="flex items-center p-2">
+                {/* 此刻 only on date-only Range (sequential needConfirm flow without time) */}
+                {!showTime && (
+                  <Button variant="tertiary" size="sm" onClick={handleNow}>此刻</Button>
                 )}
+                <div className="ml-auto">
+                  {needConfirm ? (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleConfirm}
+                      // showTime Range serial flow:start mode 只需 start filled;end mode 兩端皆 filled
+                      disabled={
+                        showTime
+                          ? (activeEnd === 'start' ? !draft[0] : !draft[0] || !draft[1])
+                          : !draft[0] || !draft[1]
+                      }
+                    >
+                      確定
+                    </Button>
+                  ) : (
+                    <Button variant="tertiary" size="sm" onClick={() => setOpen(false)}>關閉</Button>
+                  )}
+                </div>
               </div>
             </>
           )}

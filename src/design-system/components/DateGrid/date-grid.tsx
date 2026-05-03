@@ -104,13 +104,15 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         month_grid: 'flex flex-col gap-y-1',
         weekdays: 'grid grid-cols-7 gap-x-1',
         weekday: cn(
-          'text-fg-secondary text-caption font-normal',
-          'h-7 flex items-center justify-center',  // 28px tall = button 高度,不留 dead space
+          // text-body 跟 date 同 size(撤銷 v3 我擅自改的 text-caption)
+          'text-fg-secondary text-body font-normal',
+          'h-7 flex items-center justify-center',
         ),
         week: 'grid grid-cols-7 gap-x-1',
         // Cell **就是** button 容器(28×28 @ md / 32×32 @ lg),`relative` 讓 before pseudo 定位
+        // ── h-field-sm 對齊 user spec(28×28 @ md)— v3 用 h-field-md (32×32) 是錯的
         day: cn(
-          'h-field-md w-[var(--field-height-md)] p-0 text-center relative',
+          'h-field-sm w-[var(--field-height-sm)] p-0 text-center relative',
         ),
         day_button: cn(
           // absolute inset-0 = 完全填滿 cell(naked button,無 inset 4px 空隙)
