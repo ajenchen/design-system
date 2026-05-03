@@ -171,11 +171,13 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         //   - Material X `<IconButton color="default">` (muted grey[500])
         //   - Apple Calendar SF Symbol secondaryLabel color
         // 我們套 `text-fg-muted` 直接 className 給 Button。
-        PreviousMonthButton: ({ className, ...props }) => (
+        // ⚠️ children: _ 必丟棄(RDP 把 <Chevron> 當 children 傳給 button → 跟 Button 自己的
+        // startIcon 重疊變 double chevron。canonical 2026-05-03 v8 修)
+        PreviousMonthButton: ({ className, children: _children, ...props }) => (
           <Button variant="text" size="xs" iconOnly startIcon={ChevronLeft}
             className={cn('text-fg-muted', className)} {...props} />
         ),
-        NextMonthButton: ({ className, ...props }) => (
+        NextMonthButton: ({ className, children: _children, ...props }) => (
           <Button variant="text" size="xs" iconOnly startIcon={ChevronRight}
             className={cn('text-fg-muted', className)} {...props} />
         ),

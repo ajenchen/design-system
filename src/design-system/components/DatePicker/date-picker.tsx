@@ -8,7 +8,7 @@ import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-
 import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from '@/design-system/components/Popover/popover'
 import { DateGrid } from '@/design-system/components/DateGrid/date-grid'
 import { Button } from '@/design-system/components/Button/button'
-import { Separator } from '@/design-system/components/Separator/separator'
+import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { useFieldContext } from '@/design-system/components/Field/field-context'
 import {
   TimeColumns,
@@ -115,13 +115,23 @@ function addDays(date: Date, n: number): Date {
 
 // ── TimePickerSidePanel ────────────────────────────────────────────────
 //
-// DatePicker showTime / Range showTime 共用的右側時間 panel(canonical 2026-05-02 v4)。
-// 結構規格(對齊 user spec + DateGrid caption row 水平對齊):
-//   - **無 outer p-3**(撤銷 v3 — user 明確說「不要沒來由加」;outer padding 來自 popover content,
-//     不是 side panel)
-//   - Header:`pt-3 + h-field-xs + mb-3 = 12+24+12 = 48px`(對齊 DateGrid 12 + caption 24 + 12 = 48px)
-//   - Header 內 dynamic 顯示當前 active time `HH:MM`(對齊 user Q4 — 撤銷 v3 static "Time")
-//   - TimeColumns 填滿剩餘高度(flex-1),**無 horizontal padding**(columns 直接靠齊容器邊界)
+// DatePicker showTime / Range showTime 共用的右側時間 panel(canonical 2026-05-03 v8)。
+//
+// ── Caption row alignment canonical(永遠跟 calendar 年月對齊)──
+// 結構必須符合 DateGrid month_caption 同樣的 pt-3 + h-field-xs + mb-3 規格,讓 title
+// 跟 calendar 「April 2026」字 baseline 在同一 Y 座標(垂直對齊)。
+// Y 座標推導:
+//   - panel root pt-3 = 12px top 對齊 DateGrid p-3 top
+//   - h-field-xs = 24px header,title 純 flex items-center justify-center → 真正水平+垂直置中
+//   - mb-3 = 12px gap 對齊 DateGrid month_caption mb-3
+//   → title text center Y = 12 + 12 = 24px(from CalendarTimeContainer top)
+//   → calendar caption text center Y = 12(p-3 top)+ 12(caption row half)= 24px ✓ 同一 Y
+// ⚠️ 若改 DateGrid p-3(例如 p-2)→ 必同步改 TimePicker pt-3,否則 caption 行錯位。
+// 兩處共識在 spec.md「Spacing canonical」段 + 本 comment 雙鎖。
+//
+// ── columns 填滿容器 canonical ──
+// columns 區只有 flex-1 min-h-0 flex,**無 horizontal padding**(對齊 user 「填滿容器」spec),
+// 也無垂直 padding(由 root pb-3 提供 bottom 12px 對齊 DateGrid p-3 bottom)。
 
 interface TimePickerSidePanelProps {
   value?: TimeParts
@@ -139,18 +149,18 @@ function TimePickerSidePanel({
   secondStep = 1,
   className,
 }: TimePickerSidePanelProps & { className?: string }) {
-  // V5:Dynamic header text — 顯示當前選擇的 HH:MM(對齊 user Q4)
+  // Dynamic header text — 顯示當前選擇的 HH:MM(對齊 user Q4 + Ant idiom)
   const headerText = value
     ? timePartsToString(value, showSeconds)
     : (showSeconds ? '--:--:--' : '--:--')
 
   return (
-    <div className={cn('flex flex-col h-full', className)}>
-      {/* Header:12+24+12 = 48px(pt-3 + h-field-xs + mb-3),title 水平+垂直置中 */}
-      <div className="pt-3 mb-3 h-field-xs flex items-center justify-center">
+    <div className={cn('flex flex-col h-full py-3', className)}>
+      {/* Header 純結構:h-field-xs (24px) + flex 水平+垂直置中 + mb-3 (12px gap) */}
+      <div className="h-field-xs flex items-center justify-center mb-3">
         <span className="text-body font-medium tabular-nums">{headerText}</span>
       </div>
-      {/* TimeColumns:flex-1 填滿剩餘高度,內部 ScrollArea h-full */}
+      {/* Columns:flex-1 填滿剩餘 height,無 horizontal padding(填滿容器寬度) */}
       <div className="flex-1 min-h-0 flex">
         <TimeColumns
           value={value}
@@ -433,21 +443,17 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               }
             />
             {showTime && (
-              <>
-                <Separator />
-                {/* Footer split layout(對齊 Ant `marginInlineStart: auto` on OK button)
-                    Single DateTimePicker:左 此刻 / 右 確定(canonical 跟 TimePicker 一致) */}
-                <div className="flex items-center p-2">
-                  <Button variant="tertiary" size="sm" onClick={handleNow}>此刻</Button>
-                  <div className="ml-auto">
-                    {needConfirm ? (
-                      <Button variant="primary" size="sm" onClick={handleConfirm} disabled={!draft}>確定</Button>
-                    ) : (
-                      <Button variant="tertiary" size="sm" onClick={() => setOpen(false)}>關閉</Button>
-                    )}
-                  </div>
-                </div>
-              </>
+              // Footer:消費 SurfaceFooter SSOT(border-t + canonical px-loose py-tight padding,
+              // 不再 hand-coded p-2 / Separator / ml-auto wrapper 三層垃圾)。
+              // 「此刻」加 mr-auto 把後面 button 推右(對齊 Ant `marginInlineStart: auto` on OK)。
+              <SurfaceFooter>
+                <Button variant="tertiary" size="sm" onClick={handleNow} className="mr-auto">此刻</Button>
+                {needConfirm ? (
+                  <Button variant="primary" size="sm" onClick={handleConfirm} disabled={!draft}>確定</Button>
+                ) : (
+                  <Button variant="tertiary" size="sm" onClick={() => setOpen(false)}>關閉</Button>
+                )}
+              </SurfaceFooter>
             )}
           </div>
         </PopoverContent>
@@ -781,26 +787,28 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   // DateTimePicker,沒 range 視覺概念);date-only Range 才顯示
                   modifiers={showTime ? {} : rangeModifiers}
                   modifiersClassNames={{
-                    // ── Range visual canonical(2026-05-03 v5,根治 white 破圖)──
-                    // 之前 bug:rangeStart pseudo 只蓋 right half(left-1/2),button 圓
-                    // 左 corner triangle 是透明 → 漏出 popover white。
-                    // Fix:pseudo 蓋**全 cell**,button 圓 sit on top → button 圓 corner triangle
-                    // 看到 pseudo bg(無 white)。對齊 Ant cell-touching pattern,只是我們有 4px gap
-                    // 所以 +2px bridge 連續。
-                    // 顏色從 neutral-3 改 `bg-neutral-selected`(semantic token,= var(--color-neutral-2))
-                    // 對齊 TimePicker 選中 item 的樣式(user 2026-05-03 指示)。
+                    // ── Range visual canonical(2026-05-03 v8 stadium pattern)──
+                    // v5 修「白色破圖」用 pseudo 蓋全 cell 矩形,但新副作用:button 圓比矩形小,
+                    // 4 corner triangle 區域 grey 凸出圓外(user 2026-05-03 抓到「凸出去」)。
+                    // v8 對齊 Ant `cell-range-start::before { border-radius: 9999px 0 0 9999px }`:
+                    // rangeStart pseudo 加 `rounded-l-full` → pseudo 變「左半圓 + 右矩形」stadium
+                    // 左半圓 EXACTLY OVERLAY button 圓的左半弧(同 center 同 radius 14)→ 無縫
+                    // 右側矩形 bridge 2px to middle → 跟 middle pseudo 連續
+                    // Cell 的 top-left + bottom-left corner triangle:pseudo 不蓋 + button 不蓋 →
+                    // popover white 顯露(乾淨 breathing)
                     rangeStart: cn(
                       '[&>button]:!bg-primary [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
-                      // pseudo: 全 cell + 2px bridge right(toward middle)— 撤銷 v3 的 left-1/2(只蓋右半)
                       "before:content-[''] before:absolute before:inset-y-0",
                       'before:left-0 before:-right-[2px]',
                       'before:bg-neutral-selected before:pointer-events-none',
+                      'before:rounded-l-full',  // ← stadium 左半圓 matches button 圓的左半弧
                     ),
                     rangeEnd: cn(
                       '[&>button]:!bg-primary [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
                       "before:content-[''] before:absolute before:inset-y-0",
                       'before:-left-[2px] before:right-0',
                       'before:bg-neutral-selected before:pointer-events-none',
+                      'before:rounded-r-full',  // ← 鏡像
                     ),
                     rangeMiddle: cn(
                       "before:content-[''] before:absolute before:inset-y-0 before:-inset-x-[2px]",
@@ -831,38 +839,31 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             />
           </div>
           {(showTime || needConfirm) && (
-            <>
-              <Separator />
-              {/* Footer split layout(對齊 Ant `marginInlineStart: auto` on OK):
-                    左 此刻(Range showTime 無)/ 右 確定(`ml-auto` 推到右側)
-                  Range showTime 對齊 Ant `showNow={multiple ? false : showNow}` — 無此刻
-                  → 確定獨佔右側。Single DateTimePicker(非 Range)有此刻。 */}
-              <div className="flex items-center p-2">
-                {/* 此刻 only on date-only Range (sequential needConfirm flow without time) */}
-                {!showTime && (
-                  <Button variant="tertiary" size="sm" onClick={handleNow}>此刻</Button>
-                )}
-                <div className="ml-auto">
-                  {needConfirm ? (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={handleConfirm}
-                      // showTime Range serial flow:start mode 只需 start filled;end mode 兩端皆 filled
-                      disabled={
-                        showTime
-                          ? (activeEnd === 'start' ? !draft[0] : !draft[0] || !draft[1])
-                          : !draft[0] || !draft[1]
-                      }
-                    >
-                      確定
-                    </Button>
-                  ) : (
-                    <Button variant="tertiary" size="sm" onClick={() => setOpen(false)}>關閉</Button>
-                  )}
-                </div>
-              </div>
-            </>
+            // Footer 消費 SurfaceFooter SSOT(border-t + canonical px-loose py-tight)。
+            // showTime Range 無「此刻」(對齊 Ant `showNow={multiple ? false : showNow}`)→ 只有 確定 走 justify-end。
+            // date-only Range needConfirm:左 此刻(mr-auto)+ 右 確定。
+            <SurfaceFooter>
+              {!showTime && (
+                <Button variant="tertiary" size="sm" onClick={handleNow} className="mr-auto">此刻</Button>
+              )}
+              {needConfirm ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleConfirm}
+                  // showTime Range serial flow:start mode 只需 start filled;end mode 兩端皆 filled
+                  disabled={
+                    showTime
+                      ? (activeEnd === 'start' ? !draft[0] : !draft[0] || !draft[1])
+                      : !draft[0] || !draft[1]
+                  }
+                >
+                  確定
+                </Button>
+              ) : (
+                <Button variant="tertiary" size="sm" onClick={() => setOpen(false)}>關閉</Button>
+              )}
+            </SurfaceFooter>
           )}
         </PopoverContent>
       </Popover>

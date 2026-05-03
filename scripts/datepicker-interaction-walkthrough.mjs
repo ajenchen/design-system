@@ -150,6 +150,53 @@ async function main() {
     fail('Range click', `start should show 8, got "${startTextAfter4}"`)
   }
 
+  // ── Test 5b: Single Clearable click X clears value ──────────────────────
+  console.log('\n[Test 5b] Single clearable X clears value')
+  await page.goto(`${STORYBOOK_URL}/iframe.html?id=design-system-components-datepicker-展示--clearable&viewMode=story`)
+  await page.waitForLoadState('networkidle')
+  await page.waitForTimeout(500)
+  const trigger5b = page.locator('[role="combobox"]').first()
+  const before5b = await trigger5b.textContent()
+  // Find X button(ItemInlineAction with X icon — aria-label="清除日期")
+  const clearBtn = page.locator('button[aria-label="清除日期"]').first()
+  if (!(await clearBtn.isVisible().catch(() => false))) {
+    fail('Single clear', `X button (aria-label="清除日期") not visible`)
+  } else {
+    await clearBtn.click()
+    await page.waitForTimeout(300)
+    const after5b = await trigger5b.textContent()
+    await snap(page, 'test5b-after-clear')
+    if (after5b !== before5b && (after5b?.includes('YYYY') || after5b?.includes('—') || after5b?.trim() === '')) {
+      pass(`Single clear empties value: "${before5b}" → "${after5b}"`)
+    } else {
+      fail('Single clear', `expected empty/placeholder, got "${after5b}"`)
+    }
+  }
+
+  // ── Test 5c: Range Clearable X clears both ends ─────────────────────────
+  console.log('\n[Test 5c] Range clearable X clears both ends')
+  await page.goto(`${STORYBOOK_URL}/iframe.html?id=design-system-components-datepicker-展示--range-picker&viewMode=story`)
+  await page.waitForLoadState('networkidle')
+  await page.waitForTimeout(500)
+  // RangePicker story 第 1 instance has clearable + value
+  const startBefore5c = await page.locator('button[aria-haspopup="dialog"]').first().textContent()
+  const rangeClear = page.locator('button[aria-label="清除日期區間"]').first()
+  if (!(await rangeClear.isVisible().catch(() => false))) {
+    fail('Range clear', `X button (aria-label="清除日期區間") not visible`)
+  } else {
+    await rangeClear.click()
+    await page.waitForTimeout(300)
+    const startAfter5c = await page.locator('button[aria-haspopup="dialog"]').first().textContent()
+    const endAfter5c = await page.locator('button[aria-haspopup="dialog"]').nth(1).textContent()
+    await snap(page, 'test5c-after-range-clear')
+    // Both ends should show placeholder text now
+    if (startAfter5c !== startBefore5c && (startAfter5c?.includes('Start') || startAfter5c?.includes('日期'))) {
+      pass(`Range clear empties both ends: start="${startBefore5c}" → "${startAfter5c}", end="${endAfter5c}"`)
+    } else {
+      fail('Range clear', `expected placeholders, start="${startAfter5c}" end="${endAfter5c}"`)
+    }
+  }
+
   // ── Test 5: Range cell disable when out-of-order ────────────────────────
   console.log('\n[Test 5] Range cell disable when out-of-order')
   await page.goto(`${STORYBOOK_URL}/iframe.html?id=design-system-components-datepicker-展示--range-picker&viewMode=story`)
