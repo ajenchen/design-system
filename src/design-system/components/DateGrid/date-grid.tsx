@@ -91,8 +91,10 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         month_grid: 'border-separate border-spacing-1',
         weekdays: '',  // thead default
         weekday: cn(
-          'text-fg-secondary text-body font-normal',
-          // td 預設 vertical-align=baseline,改 middle 對齊 weekday text 跟 date row
+          // text-foreground + font-medium 對齊 DS 一致設計語言(2026-05-03 user audit):
+          // weekday 列標跟 caption「April 2026」同視覺權重(都屬 calendar header 區),
+          // 不弱化(撤銷 v3 fg-secondary 的 mistake)。對齊 icon-only Button 預設 neutral-9 一致。
+          'text-foreground text-body font-medium',
           'h-7 align-middle text-center',
         ),
         week: '',  // tr default
@@ -161,25 +163,19 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         ...classNames,
       }}
       components={{
-        // ── Prev/Next nav(canonical 2026-05-03 v6,DS Button consumption)──
-        // User 2026-05-03 audit:「該用 Button 元件,為何 hand-coded?」用 RDP v9
-        // `PreviousMonthButton / NextMonthButton` override(`node_modules/react-day-picker/dist/esm/components/Nav.js`
-        // 證實 RDP 支援)。Button variant=text size=xs iconOnly = DS chrome icon 共識。
-        //
-        // Icon 顏色 muted 對齊 world-class consensus(secondary affordance):
-        //   - Ant `.ant-picker-header-prev-btn { color: rgba(0,0,0,0.25) }`
-        //   - Material X `<IconButton color="default">` (muted grey[500])
-        //   - Apple Calendar SF Symbol secondaryLabel color
-        // 我們套 `text-fg-muted` 直接 className 給 Button。
-        // ⚠️ children: _ 必丟棄(RDP 把 <Chevron> 當 children 傳給 button → 跟 Button 自己的
-        // startIcon 重疊變 double chevron。canonical 2026-05-03 v8 修)
+        // ── Prev/Next nav(canonical 2026-05-03 v9,DS 一致設計語言)──
+        // User 2026-05-03 audit:「icon-only Button icon 都用 neutral-9,只有 dismiss 用 45%」
+        // → chevron 不是 dismiss,**走 Button 預設 text-foreground**(neutral-9 85%),
+        // 不開新 tier 自打嘴(撤銷 v6-v8 用 fg-muted override 的 mistake)。
+        // RDP v9 `PreviousMonthButton / NextMonthButton` override(node_modules/react-day-picker/dist/esm/components/Nav.js)
+        // ⚠️ children: _ 必丟棄(RDP 把 <Chevron> 當 children 傳 → 跟 Button startIcon 重疊變 double chevron)
         PreviousMonthButton: ({ className, children: _children, ...props }) => (
           <Button variant="text" size="xs" iconOnly startIcon={ChevronLeft}
-            className={cn('text-fg-muted', className)} {...props} />
+            className={className} {...props} />
         ),
         NextMonthButton: ({ className, children: _children, ...props }) => (
           <Button variant="text" size="xs" iconOnly startIcon={ChevronRight}
-            className={cn('text-fg-muted', className)} {...props} />
+            className={className} {...props} />
         ),
       }}
       {...props}
