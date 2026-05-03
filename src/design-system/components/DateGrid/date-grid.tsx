@@ -143,25 +143,25 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           '[&>button]:bg-disabled [&>button]:text-fg-disabled [&>button]:cursor-not-allowed',
           '[&>button]:hover:ring-0 [&>button]:hover:bg-disabled',
         ),
-        // ── Range track(canonical 2026-05-02 v3,連貫 + naked + gap)──
-        // before pseudo `inset-y-0`(button 高度全滿)+ `-inset-x-[2px]`(左右各延伸 2px)
-        // → 相鄰 cell 的 pseudo 在 4px gap 中間相接 → **連貫 track**(對齊 Ant)。
-        // pointer-events-none 確保 hover 事件直接到 button(不被 pseudo 攔)。
-        // 半圓 round:start 只延伸右側(left 從 1/2 起,跟 button 圓銜接),end 反之。
+        // ── Range track(canonical 2026-05-03 v5)──
+        // bg pseudo 蓋**全 cell**(對齊 Ant cell-touching pattern)避免 button 圓的 corner
+        // triangle 漏出 popover white(v3 只蓋半邊的 bug)。`-inset-x-[2px]` bridge 4px gap。
+        // 色用 `bg-neutral-selected`(semantic,= neutral-2)對齊 TimePicker 選中項目樣式。
+        // pointer-events-none 確保 hover 事件直接到 button。
         range_start: cn(
           "before:content-[''] before:absolute before:inset-y-0",
-          'before:left-1/2 before:-right-[2px]',
-          'before:bg-[var(--color-neutral-3)] before:pointer-events-none',
+          'before:left-0 before:-right-[2px]',
+          'before:bg-neutral-selected before:pointer-events-none',
         ),
         range_end: cn(
           "before:content-[''] before:absolute before:inset-y-0",
-          'before:-left-[2px] before:right-1/2',
-          'before:bg-[var(--color-neutral-3)] before:pointer-events-none',
+          'before:-left-[2px] before:right-0',
+          'before:bg-neutral-selected before:pointer-events-none',
         ),
         range_middle: cn(
           "before:content-[''] before:absolute before:inset-y-0 before:-inset-x-[2px]",
-          'before:bg-[var(--color-neutral-3)] before:pointer-events-none',
-          // button 透明顯露 track,但 hover ring 仍顯示(對齊 user AR)
+          'before:bg-neutral-selected before:pointer-events-none',
+          // button 透明顯露 track,但 hover ring 仍顯示
           '[&>button]:!bg-transparent [&>button]:!text-foreground',
         ),
         hidden: 'invisible',

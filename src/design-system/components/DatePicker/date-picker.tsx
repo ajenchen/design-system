@@ -780,24 +780,30 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   // DateTimePicker,沒 range 視覺概念);date-only Range 才顯示
                   modifiers={showTime ? {} : rangeModifiers}
                   modifiersClassNames={{
-                    // Range start/end:button 圓 + bg pseudo 延伸內側(bridge 4px gap to middle)
-                    // 無 -z-[1](會讓 pseudo 跑到 popover bg 後面變透明);button z-[1] 已壓在 pseudo 之上
+                    // ── Range visual canonical(2026-05-03 v5,根治 white 破圖)──
+                    // 之前 bug:rangeStart pseudo 只蓋 right half(left-1/2),button 圓
+                    // 左 corner triangle 是透明 → 漏出 popover white。
+                    // Fix:pseudo 蓋**全 cell**,button 圓 sit on top → button 圓 corner triangle
+                    // 看到 pseudo bg(無 white)。對齊 Ant cell-touching pattern,只是我們有 4px gap
+                    // 所以 +2px bridge 連續。
+                    // 顏色從 neutral-3 改 `bg-neutral-selected`(semantic token,= var(--color-neutral-2))
+                    // 對齊 TimePicker 選中 item 的樣式(user 2026-05-03 指示)。
                     rangeStart: cn(
                       '[&>button]:!bg-primary [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
-                      // pseudo: 從 button 中心延伸到 cell 右邊外 2px(bridge gap)
+                      // pseudo: 全 cell + 2px bridge right(toward middle)— 撤銷 v3 的 left-1/2(只蓋右半)
                       "before:content-[''] before:absolute before:inset-y-0",
-                      'before:left-1/2 before:-right-[2px]',
-                      'before:bg-[var(--color-neutral-3)] before:pointer-events-none',
+                      'before:left-0 before:-right-[2px]',
+                      'before:bg-neutral-selected before:pointer-events-none',
                     ),
                     rangeEnd: cn(
                       '[&>button]:!bg-primary [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
                       "before:content-[''] before:absolute before:inset-y-0",
-                      'before:-left-[2px] before:right-1/2',
-                      'before:bg-[var(--color-neutral-3)] before:pointer-events-none',
+                      'before:-left-[2px] before:right-0',
+                      'before:bg-neutral-selected before:pointer-events-none',
                     ),
                     rangeMiddle: cn(
                       "before:content-[''] before:absolute before:inset-y-0 before:-inset-x-[2px]",
-                      'before:bg-[var(--color-neutral-3)] before:pointer-events-none',
+                      'before:bg-neutral-selected before:pointer-events-none',
                       '[&>button]:!bg-transparent [&>button]:!text-foreground',
                     ),
                   }}
