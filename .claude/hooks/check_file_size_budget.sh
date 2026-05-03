@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # PreToolUse Edit/Write: enforce per-file line budgets for governance files.
 #
 # Budgets (from CLAUDE.md # 資訊治理 canonical):

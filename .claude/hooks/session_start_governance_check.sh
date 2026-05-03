@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # SessionStart hook: check if governance hygiene actions are overdue; if so,
 # inject reminder into session context so Claude proactively addresses them.
 #

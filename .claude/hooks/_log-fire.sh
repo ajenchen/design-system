@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # Shared helper: log per-hook fire to .claude/logs/hook-fires-per-hook.jsonl
 #
 # Why: enables /knowledge-prune D2 dead-hook detection(6 月 0 fire → retire 提名)。

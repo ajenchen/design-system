@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # PreToolUse hook:阻止建立「應該是 prop variant 而非新元件」的元件。
 #
 # Bug 史(2026-05-02 user audit):

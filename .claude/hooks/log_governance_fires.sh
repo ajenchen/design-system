@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # PostToolUse: log governance-relevant file writes to .claude/logs/hook-fires.jsonl
 #
 # Why: Meta-Pattern M18 — governance must be instrumented, not hoped for.

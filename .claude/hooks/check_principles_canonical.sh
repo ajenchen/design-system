@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # Pre-write hook: enforce principles.stories.tsx canonical structure
 # (per `.claude/skills/story-writing/references/category-templates.md` Principles canonical 節)。
 #

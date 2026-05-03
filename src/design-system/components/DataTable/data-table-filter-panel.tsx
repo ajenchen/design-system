@@ -10,6 +10,7 @@ import { SurfaceHeader, SurfaceBody, SurfaceFooter } from '@/design-system/patte
 import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import type { ColumnType } from './column-types'
+import { getColumnId, getColumnLabel, getColumnMeta } from './lib/column-meta'
 import {
   OPERATOR_REGISTRY,
   DEFAULT_OPERATOR,
@@ -75,17 +76,15 @@ interface FilterColumn {
 function extractColumns<TData>(columns: ColumnDef<TData, any>[]): FilterColumn[] {
   const out: FilterColumn[] = []
   for (const col of columns) {
-    const id = (col as any).id ?? (col as any).accessorKey
+    const id = getColumnId(col)
     if (!id || id === '__select__') continue
-    const meta = (col as any).meta
+    const meta = getColumnMeta(col)
     const type: ColumnType | undefined = meta?.type
     if (!type) continue
     if (meta?.filterable === false) continue
-    const headerVal = (col as any).header
-    const label = typeof headerVal === 'string' ? headerVal : String(id)
     out.push({
-      id: String(id),
-      label,
+      id,
+      label: getColumnLabel(col, id),
       type,
       options: meta?.options,
       includeTime: meta?.includeTime,

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # PreToolUse hook: 阻止在 SSOT primitive 外加 padding wrapper(M1 SSOT 消費紀律)。
 #
 # Motivation(2026-05-02 訂):

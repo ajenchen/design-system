@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # PreToolUse hook:阻止 sibling stories 檔的 title namespace(Components/ XOR Internal/)不一致。
 #
 # Bug 史(2026-05-02):

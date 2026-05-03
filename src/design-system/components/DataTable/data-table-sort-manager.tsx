@@ -12,6 +12,7 @@ import { SurfaceHeader, SurfaceBody, SurfaceFooter } from '@/design-system/patte
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { getColumnId, getColumnLabel } from './lib/column-meta'
 
 /**
  * DataTableSortManager — Notion-style 多欄排序管理 panel
@@ -49,12 +50,10 @@ export interface DataTableSortManagerProps<TData> {
 function extractColumns<TData>(columns: ColumnDef<TData, any>[]): SortColumn[] {
   const out: SortColumn[] = []
   for (const col of columns) {
-    const id = (col as any).id ?? (col as any).accessorKey
+    const id = getColumnId(col)
     if (!id || id === '__select__') continue
     if (col.enableSorting === false) continue
-    const headerVal = (col as any).header
-    const label = typeof headerVal === 'string' ? headerVal : String(id)
-    out.push({ id: String(id), label, enableSorting: true })
+    out.push({ id, label: getColumnLabel(col, id), enableSorting: true })
   }
   return out
 }

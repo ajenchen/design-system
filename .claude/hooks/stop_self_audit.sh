@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # Stop hook: AI self-audit — detect 3 anti-patterns + inject corrective context.
 #
 # 1. Claim-verification gap:assistant claimed「verified / done / 全部 / pass / 完成」

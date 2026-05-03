@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # UserPromptSubmit hook: 把上 turn Stop hook 累積的 warnings inject 到 next turn additionalContext.
 #
 # 修補 known issue:Stop hook silent-log 沒 inject → AI 看不到 self-audit warnings → reactive 模式持續。

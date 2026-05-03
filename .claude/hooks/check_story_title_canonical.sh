@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # PreToolUse hook:阻止 stories 加 non-canonical English-only `name:` 字段。
 #
 # Bug 史(2026-05-03):

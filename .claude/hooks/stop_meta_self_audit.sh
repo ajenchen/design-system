@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # Stop hook: META-LEVEL self-audit — auto-question「現在還是 best-practice 嗎?」
 # 取代 user 必須親問。User mandate「我希望我可以再也不用問你這個問題,你可以
 # 自己問自己並自我自動改善」(2026-04-26)。

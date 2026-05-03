@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # PreToolUse hook: 阻止 app-code import L3 internal primitives from
 # `@/design-system/patterns/element-anatomy/item-anatomy`.
 #

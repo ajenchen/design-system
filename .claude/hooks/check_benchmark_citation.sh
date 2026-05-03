@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # PreToolUse hook:阻止「沒 source citation 的 world-class benchmark claim」(對齊 M22)。
 #
 # Bug 史(2026-05-02):

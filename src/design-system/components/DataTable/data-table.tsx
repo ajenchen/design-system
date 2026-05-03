@@ -676,6 +676,7 @@ function DataTableInner<TData>(
           role={canSort ? 'button' : undefined}
           tabIndex={canSort ? 0 : undefined}
           onClick={sortHandler}
+          // code-quality-allow: any-event — TanStack getToggleSortingHandler 內部會 narrow,接受 KeyboardEvent
           onKeyDown={canSort ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sortHandler?.(e as any) } } : undefined}
           className={cn(
             'flex items-center min-w-0 flex-1 gap-1 outline-none',

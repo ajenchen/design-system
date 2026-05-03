@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # PostToolUse Skill: log each skill invocation to .claude/logs/skill-invokes.jsonl
 #
 # 對齊 Meta-Pattern M14(AUTO integrate pipeline instrumentation)+ M10(proactive scan)。
