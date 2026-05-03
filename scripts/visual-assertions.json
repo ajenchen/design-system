@@ -38,6 +38,11 @@
       "file": "datepicker-show-time-range-popover-open.png"
     },
     {
+      "id": "design-system-components-datepicker-展示--range-middle-hover-state",
+      "file": "datepicker-range-middle-hover-state.png",
+      "rationale": "Hover state capture — play() hover range_middle date,verify 藍色 ring(1.5px primary)顯示在 grey track 上。Bug C 真實截圖驗證。"
+    },
+    {
       "id": "design-system-components-calendar-展示--team-calendar",
       "file": "calendar-event-team.png"
     },

@@ -214,6 +214,47 @@ export const ShowTimeRangePopoverOpen: Story = {
   },
 }
 
+/* ── HoverState:Range middle hover blue ring 驗證(M11 + Bug C 真實截圖)── */
+export const RangeMiddleHoverState: Story = {
+  name: 'HoverState:Range middle hover ring',
+  parameters: { docs: { description: { story: 'Visual-audit — 開 range popover 並 userEvent.hover 一個 range_middle date,verify 藍色 1.5px ring 顯示在 grey track 之上(Bug C canonical 2026-05-02)。CSS :hover 需真實 pointer event,用 storybook/test userEvent.hover 觸發。' } } },
+  render: () => {
+    const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
+    return (
+      <div style={{ paddingBottom: 480 }}>
+        <DatePicker.Range value={range} onChange={setRange} className="max-w-md" />
+      </div>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const { userEvent } = await import('@storybook/test')
+    // 1. Open popover via click on start input
+    const trigger = canvasElement.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]')
+    if (!trigger) return
+    await userEvent.click(trigger)
+    await new Promise((r) => setTimeout(r, 250))
+    // 2. Hover a range_middle date(May 7,between May 4 start and May 12 end)
+    // Popover 在 Portal — query document 而非 canvasElement
+    const dayButtons = document.querySelectorAll<HTMLButtonElement>('.rdp-day_button')
+    let target: HTMLButtonElement | null = null
+    for (const btn of dayButtons) {
+      if (btn.textContent?.trim() === '7') {
+        const cell = btn.closest('td, [class*="rdp-day"]')
+        if (cell?.className.includes('range_middle') || cell?.className.includes('rangeMiddle')) {
+          target = btn
+          break
+        }
+      }
+    }
+    // fallback:即使沒匹配到 range_middle class,也 hover 某個 May 7
+    if (!target) {
+      target = Array.from(dayButtons).find((b) => b.textContent?.trim() === '7') ?? null
+    }
+    if (target) await userEvent.hover(target)
+    await new Promise((r) => setTimeout(r, 400))
+  },
+}
+
 /* ── showTime + Range:活動時段 ── */
 export const ShowTimeRange: Story = {
   name: 'showTime Range:活動時段',
