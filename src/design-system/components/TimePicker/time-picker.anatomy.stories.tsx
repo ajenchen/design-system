@@ -1,3 +1,4 @@
+// M22 retrofit DONE 2026-05-03 v11(spec.md SSOT bears full citations; anatomy claim「Ant Design / Google Calendar TimePicker」line 150 = spec-derived `@benchmark-unverified` visual)
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 // @anatomy-rationale:
 //   StateBehavior covered by ColorMatrix「Trigger Field family + Panel item

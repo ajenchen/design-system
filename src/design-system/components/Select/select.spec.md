@@ -8,6 +8,8 @@ traits:
   - isInputLike
 ---
 
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # Select 設計原則
 
 ## 定位

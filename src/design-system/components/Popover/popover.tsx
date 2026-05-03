@@ -1,3 +1,4 @@
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 import { X as XIcon } from "lucide-react"
@@ -28,6 +29,7 @@ import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING } from "@/design-system/
 
 const Popover = PopoverPrimitive.Root
 const PopoverTrigger = PopoverPrimitive.Trigger
+const PopoverAnchor = PopoverPrimitive.Anchor
 const PopoverClose = PopoverPrimitive.Close
 
 // AutoFocus canonical(對齊 Dialog / Sheet / Material / Polaris)—
@@ -162,6 +164,7 @@ export const popoverMeta = {
 export {
   Popover,
   PopoverTrigger,
+  PopoverAnchor,
   PopoverContent,
   PopoverClose,
   PopoverHeader,

@@ -1,3 +1,5 @@
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # Opacity 設計原則
 
 Opacity 定義元件停用狀態的透明度，確保全系統 disabled 視覺一致。

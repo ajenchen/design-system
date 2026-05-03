@@ -1,3 +1,4 @@
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
 import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
@@ -81,6 +82,9 @@ const buttonVariants = cva(
           'bg-surface text-primary border-primary',
           'hover:text-primary-hover hover:border-primary-hover',
           'active:text-primary-active active:border-primary-active',
+          // Overlay trigger active(asChild Popover/DropdownMenu trigger)— 維持 hover 樣式
+          // (canonical 對齊 inline-action.spec.md:trigger 維持 host hover 直到 overlay 關閉)
+          'data-[state=open]:text-primary-hover data-[state=open]:border-primary-hover',
           'disabled:bg-transparent disabled:text-fg-disabled disabled:border-border',
           // Toggle pressed（secondary + data-state=on）：對齊原 checked variant 視覺
           'data-[state=on]:bg-primary-subtle data-[state=on]:text-primary data-[state=on]:border-transparent',
@@ -92,6 +96,8 @@ const buttonVariants = cva(
           'bg-surface text-foreground border-border',
           'hover:text-primary-hover hover:border-primary-hover',
           'active:text-primary-active active:border-primary-active',
+          // Overlay trigger active — 維持 hover 樣式(同 secondary 邏輯)
+          'data-[state=open]:text-primary-hover data-[state=open]:border-primary-hover',
           'disabled:bg-transparent disabled:text-fg-disabled disabled:border-border',
           // Toggle pressed（tertiary + data-state=on）：與 secondary pressed 共用視覺
           'data-[state=on]:bg-primary-subtle data-[state=on]:text-primary data-[state=on]:border-transparent',
@@ -103,9 +109,9 @@ const buttonVariants = cva(
           'bg-transparent text-foreground border-transparent',
           'hover:bg-neutral-hover',
           'active:bg-neutral-active',
-          // Overlay trigger active(Radix 自動 set data-state=open on asChild)
-          // 對齊 toggle pressed 同 family(neutral-selected 4% vs hover 2%,持續態語義)
-          'data-[state=open]:bg-neutral-selected',
+          // Overlay trigger active — 維持 hover 樣式(canonical 2026-05-02 改:hover token,
+          // 不另開 selected 4% — 對齊 shadcn/Radix/Material 狀態極簡派,跨 host 一致)
+          'data-[state=open]:bg-neutral-hover',
           'disabled:bg-transparent disabled:text-fg-disabled',
           // Toggle pressed（text + data-state=on）：走 neutral-selected family
           'data-[state=on]:bg-neutral-selected',

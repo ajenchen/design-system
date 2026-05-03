@@ -8,6 +8,8 @@ variants: {}
 sizes: {}
 ---
 
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # Alert 設計原則
 
 ## 定位

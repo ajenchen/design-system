@@ -1,3 +1,5 @@
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # Item Anatomy 設計原則(Family 1 + Family 2 row 結構 SSOT)
 
 > **Super-foundational SSOT rationale**(2026-04-24 approved,cap 1200 例外):

@@ -7,6 +7,8 @@ traits:
   - hasInteractiveStates
 ---
 
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # FileItem 設計原則
 
 **檔案上傳列表項目**——顯示檔案名稱、上傳進度、狀態（uploading / completed / error）。

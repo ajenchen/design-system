@@ -12,7 +12,14 @@ import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-
 import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
 import { useFieldContext } from '@/design-system/components/Field/field-context'
 import { Button } from '@/design-system/components/Button/button'
-import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
+import {
+  TimeColumns,
+  isoToTimeParts,
+  timePartsToString,
+  type TimeParts,
+  type TimeStep,
+  type TimeColumnsDisabled,
+} from '@/design-system/components/TimePicker/time-columns'
 
 /**
  * TimePicker — 單一時間(時/分/秒)輸入與顯示元件
@@ -39,35 +46,7 @@ import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 // ── Time ISO <-> parts conversion ───────────────────────────────────────────
 // Value 用 ISO time string(HH:mm 或 HH:mm:ss),local-time 語義(不帶時區/日期)。
 // 跟 DatePicker 的 ISO date string 策略一致。
-
-interface TimeParts {
-  h: number
-  m: number
-  s: number
-}
-
-function isoToParts(iso: string | null | undefined): TimeParts | undefined {
-  if (!iso) return undefined
-  const match = /^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/.exec(iso)
-  if (!match) return undefined
-  const h = Number(match[1])
-  const m = Number(match[2])
-  const s = match[3] !== undefined ? Number(match[3]) : 0
-  if (
-    Number.isNaN(h) || h < 0 || h > 23 ||
-    Number.isNaN(m) || m < 0 || m > 59 ||
-    Number.isNaN(s) || s < 0 || s > 59
-  ) return undefined
-  return { h, m, s }
-}
-
-function partsToIso(parts: TimeParts, showSeconds: boolean): string {
-  const hh = String(parts.h).padStart(2, '0')
-  const mm = String(parts.m).padStart(2, '0')
-  if (!showSeconds) return `${hh}:${mm}`
-  const ss = String(parts.s).padStart(2, '0')
-  return `${hh}:${mm}:${ss}`
-}
+// `isoToTimeParts` / `timePartsToString` 改 import from time-columns(M17 SSOT)。
 
 // ── Display formatting ──────────────────────────────────────────────────────
 
@@ -82,7 +61,7 @@ function formatTime(
   iso: string,
   options: TimeFormatOptions = {},
 ): string {
-  const parts = isoToParts(iso)
+  const parts = isoToTimeParts(iso)
   if (!parts) return iso
   const {
     formatOptions = { hour: '2-digit', minute: '2-digit', hour12: false },
@@ -90,7 +69,7 @@ function formatTime(
   } = options
   // 借用 Date 讓 Intl.DateTimeFormat 處理 locale / 12h-24h
   const d = new Date()
-  d.setHours(parts.h, parts.m, parts.s, 0)
+  d.setHours(parts.hours, parts.minutes, parts.seconds, 0)
   return new Intl.DateTimeFormat(locale, formatOptions).format(d)
 }
 
@@ -107,92 +86,8 @@ function TimePickerDisplay({ value, ...formatOptions }: TimePickerDisplayProps) 
 }
 TimePickerDisplay.displayName = 'TimePickerDisplay'
 
-// ── Column list helpers ─────────────────────────────────────────────────────
-
-type Step = 1 | 5 | 10 | 15 | 30
-
-function buildRange(max: number, step: number): number[] {
-  const arr: number[] = []
-  for (let v = 0; v < max; v += step) arr.push(v)
-  return arr
-}
-
-// ── Time column(scrollable list of 2-digit values)──────────────────────────
-
-interface TimeColumnProps {
-  values: number[]
-  selected: number
-  /** 由 disabledTime 回傳的 disabled 值集 */
-  disabledSet?: Set<number>
-  label: string
-  onSelect: (value: number) => void
-  /** 右側是否加分隔線(對齊 ref/timepicker.png 多欄之間用 border-r 分隔) */
-  withDivider?: boolean
-}
-
-function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivider }: TimeColumnProps) {
-  const listRef = React.useRef<HTMLUListElement>(null)
-
-  // 打開時滾到 selected 位置(在 ScrollArea viewport 中置中)
-  React.useEffect(() => {
-    const list = listRef.current
-    if (!list) return
-    const viewport = list.parentElement
-    if (!viewport) return
-    const idx = values.indexOf(selected)
-    if (idx < 0) return
-    const item = list.children[idx] as HTMLElement | undefined
-    if (!item) return
-    viewport.scrollTop = item.offsetTop - viewport.clientHeight / 2 + item.clientHeight / 2
-  }, [values, selected])
-
-  return (
-    // flex-1 均分 panel 寬度;withDivider 時右側加 border-r 分隔(對齊 ref 多欄樣式)
-    <ScrollArea
-      className={cn('flex-1 h-[216px]', withDivider && 'border-r border-divider')}
-    >
-      <ul
-        ref={listRef}
-        role="listbox"
-        aria-label={label}
-        // `py-2` (8px 上下 padding):對齊 SelectMenu CommandGroup canonical(select-menu.tsx line 261, 296)——
-        // 無分組時整個 listbox 上下 8px 呼吸;items 填滿欄寬(無水平 padding,對齊 ref SelectMenu 風格)。
-        className="flex flex-col py-2"
-      >
-        {values.map((v) => {
-          const isSelected = v === selected
-          const isDisabled = disabledSet?.has(v) ?? false
-          return (
-            <li key={v} role="option" aria-selected={isSelected}>
-              <button
-                type="button"
-                disabled={isDisabled}
-                onClick={() => onSelect(v)}
-                className={cn(
-                  // h-field-sm 對齊 DatePicker date cell(28/32px 統一 field-sm,user AR11)
-                  // **無 rounded** — item 填滿欄寬(對齊 ref 圖 SelectMenu 樣式,column-wide hover/selected)
-                  'w-full h-field-sm text-body tabular-nums',
-                  'flex items-center justify-center',
-                  'cursor-pointer transition-colors',
-                  'hover:bg-neutral-hover',
-                  // selected 走 bg-neutral-selected 對齊 SelectMenu canonical
-                  // (TimePicker 選項是「列表選中」語意 — 跟 SelectMenu / MenuItem 一致;
-                  // DatePicker 的 selected 是「最終選定日期」,語意不同故仍 bg-primary)
-                  isSelected && 'bg-neutral-selected text-foreground hover:bg-neutral-selected',
-                  isDisabled && 'text-fg-disabled cursor-not-allowed hover:bg-transparent',
-                )}
-              >
-                {String(v).padStart(2, '0')}
-              </button>
-            </li>
-          )
-        })}
-      </ul>
-    </ScrollArea>
-  )
-}
-
 // ── Disabled time callback ──────────────────────────────────────────────────
+// `Step` / `buildRange` / `TimeColumn`(內部欄位實作)拔掉,改 import `TimeColumns` primitive。
 
 // code-quality-allow: dead-export — public API surface — consumer-exposed for future use
 export interface DisabledTimeResult {
@@ -226,11 +121,11 @@ export interface TimePickerProps
    */
   showSeconds?: boolean
   /** 分鐘步進(會議常用 15)。預設 1 */
-  minuteStep?: Step
+  minuteStep?: TimeStep
   /** 秒步進。預設 1。僅 showSeconds=true 有效 */
-  secondStep?: Step
+  secondStep?: TimeStep
   /** 動態 disabled 某些時/分/秒(基於已選其他欄位)。 */
-  disabledTime?: (parts: Partial<TimeParts>) => DisabledTimeResult
+  disabledTime?: (parts: TimeParts) => DisabledTimeResult
   /** 左側 startIcon,預設 Clock。傳 null 可關閉 */
   startIcon?: LucideIcon | null
 }
@@ -275,33 +170,32 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     const showClear = clearable && !!value && isEditable
     const [open, setOpen] = React.useState(false)
 
-    const currentParts = React.useMemo(() => isoToParts(value), [value])
+    const currentParts = React.useMemo(() => isoToTimeParts(value), [value])
     // draft 僅在 panel 開啟時用來處理 commit(OK button)的暫存
-    const [draft, setDraft] = React.useState<TimeParts>(() => currentParts ?? { h: 0, m: 0, s: 0 })
+    const [draft, setDraft] = React.useState<TimeParts>(
+      () => currentParts ?? { hours: 0, minutes: 0, seconds: 0 },
+    )
 
     // 每次 popover 開啟時以當前 value 初始化 draft
     React.useEffect(() => {
       if (open) {
-        setDraft(currentParts ?? { h: 0, m: 0, s: 0 })
+        setDraft(currentParts ?? { hours: 0, minutes: 0, seconds: 0 })
       }
     }, [open, currentParts])
 
-    const hourValues = React.useMemo(() => buildRange(24, 1), [])
-    const minuteValues = React.useMemo(() => buildRange(60, minuteStep), [minuteStep])
-    const secondValues = React.useMemo(() => buildRange(60, secondStep), [secondStep])
-
-    const disabledSets = React.useMemo(() => {
-      const res = disabledTime?.({ h: draft.h, m: draft.m, s: draft.s }) ?? {}
+    const disabledForColumns: TimeColumnsDisabled | undefined = React.useMemo(() => {
+      if (!disabledTime) return undefined
+      const res = disabledTime(draft)
       return {
-        hours: res.disabledHours ? new Set(res.disabledHours) : undefined,
-        minutes: res.disabledMinutes ? new Set(res.disabledMinutes) : undefined,
-        seconds: res.disabledSeconds ? new Set(res.disabledSeconds) : undefined,
+        hours: res.disabledHours,
+        minutes: res.disabledMinutes,
+        seconds: res.disabledSeconds,
       }
-    }, [disabledTime, draft.h, draft.m, draft.s])
+    }, [disabledTime, draft])
 
     const commitDraft = (next: TimeParts) => {
       setDraft(next)
-      onChange?.(partsToIso(next, showSeconds))
+      onChange?.(timePartsToString(next, showSeconds))
     }
 
     const handleNow = () => {
@@ -312,9 +206,9 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
         ? Math.round(now.getSeconds() / secondStep) * secondStep
         : 0
       const next: TimeParts = {
-        h: now.getHours(),
-        m: Math.min(m, 59),
-        s: Math.min(s, 59),
+        hours: now.getHours(),
+        minutes: Math.min(m, 59),
+        seconds: Math.min(s, 59),
       }
       commitDraft(next)
       setOpen(false)
@@ -417,37 +311,20 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
           </div>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          {/* Panel 對齊 ref/timepicker.png:2-3 個 SelectMenu 式欄位並排,分隔線分開,
-              欄均分 panel 寬度。Panel width 依欄數:2 欄 w-40(160px)/ 3 欄 w-60(240px) */}
-          <div className={cn('flex flex-col', showSeconds ? 'w-60' : 'w-40')}>
-            {/* Column picker:flex-1 均分,**每欄之間用 border-r 分隔線**(對齊 ref 圖) */}
-            <div className="flex items-stretch">
-              <TimeColumn
-                label="hours"
-                values={hourValues}
-                selected={draft.h}
-                disabledSet={disabledSets.hours}
-                onSelect={(h) => commitDraft({ ...draft, h })}
-                withDivider
-              />
-              <TimeColumn
-                label="minutes"
-                values={minuteValues}
-                selected={draft.m}
-                disabledSet={disabledSets.minutes}
-                onSelect={(m) => commitDraft({ ...draft, m })}
-                withDivider={showSeconds}
-              />
-              {showSeconds && (
-                <TimeColumn
-                  label="seconds"
-                  values={secondValues}
-                  selected={draft.s}
-                  disabledSet={disabledSets.seconds}
-                  onSelect={(s) => commitDraft({ ...draft, s })}
-                />
-              )}
-            </div>
+          {/* Panel 對齊 ref/timepicker.png:2-3 個 SelectMenu 式欄位並排,分隔線分開。
+              Width 依欄數由 TimeColumns 決定:2 欄 w-40 / 3 欄 w-60。
+              Height 由 wrapper 控:216px 預設(~7 items)。
+              TimeColumns 本身 h-full,parent 控 height — 讓 DatePicker showTime / Range 可
+              用 flex-row items-stretch 自動同 calendar 高。 */}
+          <div className="flex flex-col h-[216px]">
+            <TimeColumns
+              value={draft}
+              onChange={commitDraft}
+              showSeconds={showSeconds}
+              minuteStep={minuteStep}
+              secondStep={secondStep}
+              disabled={disabledForColumns}
+            />
             {/* Footer:Now + OK */}
             <div
               className={cn(

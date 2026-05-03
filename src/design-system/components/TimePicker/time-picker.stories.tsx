@@ -1,7 +1,8 @@
+// M22 retrofit DONE 2026-05-03 v11(spec.md SSOT bears full citations; stories cite via spec.md ref line 15)
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { TimePicker } from './time-picker'
-import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/field'
 
 const meta: Meta<typeof TimePicker> = {
   title: 'Design System/Components/TimePicker/展示',
@@ -126,6 +127,39 @@ export const EmployeeShiftSchedule: Story = {
             disabledHours: [0, 1, 2, 3, 4, 5],
           })}
         />
+      </Field>
+    )
+  },
+}
+
+/**
+ * Disabled 整體禁用 — 例如表單在 read-only 階段,整個 TimePicker
+ * 走 `disabled` prop(不只 disabledTime 部分時段),trigger 不可開 popover。
+ * 對照:Salesforce / Workday read-only state、訂位確認頁的提交後鎖定。
+ */
+export const Disabled: Story = {
+  name: '整體禁用',
+  render: () => (
+    <Field>
+      <FieldLabel>面試時段(已確認,不可改)</FieldLabel>
+      <TimePicker value="14:00" onChange={() => {}} disabled />
+    </Field>
+  ),
+}
+
+/**
+ * WithError 驗證錯誤 — Field error 狀態 + TimePicker 套紅框。對照
+ * Material `<TextField error helperText>` / Ant `<Form.Item validateStatus="error">`。
+ */
+export const WithError: Story = {
+  name: '驗證錯誤',
+  render: () => {
+    const [time, setTime] = React.useState<string>('')
+    return (
+      <Field invalid={!time}>
+        <FieldLabel required>會議時段</FieldLabel>
+        <TimePicker value={time} onChange={setTime} placeholder="尚未選擇時段" />
+        {!time && <FieldError>請選擇會議時段才能預約</FieldError>}
       </Field>
     )
   },

@@ -1,77 +1,75 @@
-// same-row-mixed-allow: header chrome corner buttons(close)跟 row inline actions(drag/trash)不在同 row
+// same-row-mixed-allow: header chrome corner buttons(close)跟 row inline actions(trash)不在同 row
 import * as React from 'react'
-import { Plus, Trash2, X as XIcon, GripVertical } from 'lucide-react'
-import type { ColumnDef, ColumnFiltersState } from '@tanstack/react-table'
-import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { Plus, Trash2, X as XIcon, RotateCcw } from 'lucide-react'
+import type { ColumnDef } from '@tanstack/react-table'
 import { cn } from '@/lib/utils'
 import { Button } from '@/design-system/components/Button/button'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
-import { Input } from '@/design-system/components/Input/input'
+import { FilterValuePicker } from './filter-value-picker'
 import { SurfaceHeader, SurfaceBody, SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import type { ColumnType } from './column-types'
+import {
+  OPERATOR_REGISTRY,
+  DEFAULT_OPERATOR,
+  getOperatorSpec,
+  getValueShape,
+  type ValueShape,
+} from './filter-operators'
+import {
+  createEmptyFilterTree,
+  isFilterTreeActive,
+  isFilterTreeEqual,
+  evaluateTree,
+  dataTableFilterMatch,
+  type Conjunction,
+  type FilterCondition,
+  type FilterGroup,
+  type FilterTree,
+  type FilterTreeFlat,
+  type FilterTreeNested,
+} from './filter-tree'
+
+// Re-export public API from filter-tree(consumer 既有 import path 不變)
+export {
+  createEmptyFilterTree,
+  isFilterTreeActive,
+  evaluateTree,
+  dataTableFilterMatch,
+}
+export type { Conjunction, FilterCondition, FilterGroup, FilterTree, FilterTreeFlat, FilterTreeNested }
 
 /**
- * DataTableFilterPanel — ClickUp-style 篩選 panel(MVP flat conditions)
+ * DataTableFilterPanel — ClickUp-style 進階篩選 panel
  *
- * 對齊 ClickUp / Airtable / Notion 派 — filter 永遠 global,不 per-cell inline。
- * MVP: flat conditions(field + operator + value);phase 2 加 boolean group nesting。
+ * 對齊 ClickUp / Airtable / Notion / Coda / Linear advanced-filter 派 —
+ * parenthesized boolean expression builder。
  *
- * Source-of-truth: TanStack `ColumnFiltersState`(同 `useReactTable.state.columnFilters`)。
+ * 兩種 mode 由 consumer 拍板:
+ * - `flat`:root 下只能裝 condition,無 group
+ * - `nested`:root 下裝 1+ group(灰底框),每個 group 內裝 1+ condition,**剛好 1 層**
  *
- * Operator 集合 MVP 簡化(對齊 column meta type 自動推斷):
- *   string → contains(default)/ equals
- *   number / date → equals / gt / lt
- *   select → equals
+ * Source-of-truth:
+ * - Operator definitions:`./filter-operators.ts` `OPERATOR_REGISTRY`(SSOT,禁 hardcode op 字串)
+ * - Filter state:**FilterTree**(本檔自管;搭配 TanStack `globalFilter` 求值)
+ *
+ * 詳:`./advanced-filter.draft.md` + `./advanced-filter-operators.draft.md`
  */
+
+// ── Internal — id seed ──────────────────────────────────────────────────
+
+let _idSeed = 0
+const newId = () => `f${++_idSeed}-${Date.now().toString(36)}`
+
+// ── Helpers — internal types ────────────────────────────────────────────
 
 interface FilterColumn {
   id: string
   label: string
-  type?: string
-}
-
-export interface FilterCondition {
-  id: string         // column id
-  operator: string   // contains | equals | gt | lt
-  value: unknown
-}
-
-export interface DataTableFilterPanelProps<TData> {
-  columns: ColumnDef<TData, any>[]
-  filters: ColumnFiltersState
-  onFiltersChange: (next: ColumnFiltersState) => void
-  /** Cell ⌄ menu「Filter by this」帶入的 column id;trigger 後清空 */
-  prefilledColumnId?: string
-  onPrefillConsumed?: () => void
-  onClose?: () => void
-  className?: string
-}
-
-const STRING_OPS: SelectOption[] = [
-  { value: 'contains', label: '包含' },
-  { value: 'equals', label: '等於' },
-]
-const NUMBER_OPS: SelectOption[] = [
-  { value: 'equals', label: '等於' },
-  { value: 'gt', label: '大於' },
-  { value: 'lt', label: '小於' },
-]
-const SELECT_OPS: SelectOption[] = [{ value: 'equals', label: '等於' }]
-
-function getOperatorOptions(type?: string): SelectOption[] {
-  switch (type) {
-    case 'number':
-    case 'currency':
-    case 'date':
-      return NUMBER_OPS
-    case 'select':
-      return SELECT_OPS
-    default:
-      return STRING_OPS
-  }
+  type: ColumnType
+  options?: Array<{ value: string; label: string }>
+  includeTime?: boolean
 }
 
 function extractColumns<TData>(columns: ColumnDef<TData, any>[]): FilterColumn[] {
@@ -79,102 +77,223 @@ function extractColumns<TData>(columns: ColumnDef<TData, any>[]): FilterColumn[]
   for (const col of columns) {
     const id = (col as any).id ?? (col as any).accessorKey
     if (!id || id === '__select__') continue
+    const meta = (col as any).meta
+    const type: ColumnType | undefined = meta?.type
+    if (!type) continue
+    if (meta?.filterable === false) continue
     const headerVal = (col as any).header
     const label = typeof headerVal === 'string' ? headerVal : String(id)
-    const type = (col as any).meta?.type
-    out.push({ id: String(id), label, type })
+    out.push({
+      id: String(id),
+      label,
+      type,
+      options: meta?.options,
+      includeTime: meta?.includeTime,
+    })
   }
   return out
 }
 
-// ColumnFilter value:封裝 { operator, value } 以共存 — TanStack value 是 unknown,我們塞 object
-type WrappedValue = { operator: string; value: unknown }
-const isWrappedValue = (v: unknown): v is WrappedValue =>
-  typeof v === 'object' && v !== null && 'operator' in v && 'value' in v
-
-function unwrapFilters(filters: ColumnFiltersState): FilterCondition[] {
-  return filters.map((f) => {
-    if (isWrappedValue(f.value)) {
-      return { id: f.id, operator: f.value.operator, value: f.value.value }
-    }
-    // legacy / external set:預設 contains
-    return { id: f.id, operator: 'contains', value: f.value }
-  })
-}
-function wrapFilters(conditions: FilterCondition[]): ColumnFiltersState {
-  return conditions.map((c) => ({
-    id: c.id,
-    value: { operator: c.operator, value: c.value } as WrappedValue,
-  }))
+function getOperatorOptions(type?: ColumnType): SelectOption[] {
+  const registry = type && OPERATOR_REGISTRY[type] ? OPERATOR_REGISTRY[type] : OPERATOR_REGISTRY.string
+  return registry.map((op) => ({ value: op.op, label: op.label }))
 }
 
-export function DataTableFilterPanel<TData>({
+function getDefaultOperator(type?: ColumnType): string {
+  return (type && DEFAULT_OPERATOR[type]) || DEFAULT_OPERATOR.string
+}
+
+const newCondition = (firstCol: FilterColumn | undefined): FilterCondition => ({
+  kind: 'cond',
+  id: newId(),
+  field: firstCol?.id ?? '',
+  op: firstCol ? getDefaultOperator(firstCol.type) : '',
+  value: '',
+})
+
+const newGroup = (firstCol: FilterColumn | undefined): FilterGroup => ({
+  kind: 'group',
+  id: newId(),
+  conjunction: 'or',                                // group 內 default OR(對齊 ref 圖)
+  children: [newCondition(firstCol)],
+})
+
+// ── Component Props ─────────────────────────────────────────────────────
+
+export interface DataTableFilterPanelProps<TData> {
+  /** flat(無 group)or nested(1-level group)— consumer 拍板 */
+  mode: 'flat' | 'nested'
+  /** 可被 filter 的 columns */
+  columns: ColumnDef<TData, any>[]
+  /** 當前 FilterTree(controlled) */
+  value: FilterTree
+  /** state 變更 callback */
+  onChange: (next: FilterTree) => void
+  /**
+   * 管理員 set-as-default 的 baseline(refresh icon 顯示判定用)。
+   * 當 `value` ≠ `defaultValue`(deep equal)→ panel header 顯示 refresh icon,
+   * click → reset 回 defaultValue。對齊 sort 邏輯(相同 modified-from-default UX)。
+   */
+  defaultValue?: FilterTree
+  /** Cell ⌄ menu「Filter by this」帶入的 column id(自動 add 一條 condition) */
+  prefilledColumnId?: string
+  onPrefillConsumed?: () => void
+  onClose?: () => void
+  className?: string
+}
+
+// ── Main Component ──────────────────────────────────────────────────────
+
+// 內部 fn — generic + ref 轉發。export 走 cast(對齊 DataTable 同 pattern)
+function DataTableFilterPanelInner<TData>({
+  mode,
   columns,
-  filters,
-  onFiltersChange,
+  value,
+  onChange,
+  defaultValue,
   prefilledColumnId,
   onPrefillConsumed,
   onClose,
   className,
-}: DataTableFilterPanelProps<TData>) {
+}: DataTableFilterPanelProps<TData>, ref: React.ForwardedRef<HTMLDivElement>): React.ReactElement {
   const filterableColumns = React.useMemo(() => extractColumns(columns), [columns])
   const fieldOptions: SelectOption[] = React.useMemo(
     () => filterableColumns.map((c) => ({ value: c.id, label: c.label })),
-    [filterableColumns]
+    [filterableColumns],
   )
+  const firstCol = filterableColumns[0]
 
-  const conditions = React.useMemo(() => unwrapFilters(filters), [filters])
+  // 對齊 ref 圖 — 開啟時若空,自動加 1 條空 row(flat)or 1 個 group 含 1 條空 row(nested)
+  React.useEffect(() => {
+    if (filterableColumns.length === 0) return
+    if (value.mode !== mode) return                  // mode 不一致時 consumer 須先修
+    if (value.children.length > 0) return
+    if (value.mode === 'flat') {
+      onChange({ ...value, children: [newCondition(firstCol)] })
+    } else {
+      onChange({ ...value, children: [newGroup(firstCol)] })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  // Prefill:cell ⌄ menu「Filter by this」帶入 column id → 自動加一條空 condition for that field
+  // Prefill from cell ⌄ menu「Filter by this」
   React.useEffect(() => {
     if (!prefilledColumnId) return
-    const exists = conditions.some((c) => c.id === prefilledColumnId)
-    if (!exists) {
-      const colInfo = filterableColumns.find((c) => c.id === prefilledColumnId)
-      if (colInfo) {
-        const ops = getOperatorOptions(colInfo.type)
-        const next: FilterCondition[] = [
-          ...conditions,
-          { id: prefilledColumnId, operator: ops[0].value, value: '' },
-        ]
-        onFiltersChange(wrapFilters(next))
+    const colInfo = filterableColumns.find((c) => c.id === prefilledColumnId)
+    if (colInfo) {
+      const cond: FilterCondition = {
+        kind: 'cond',
+        id: newId(),
+        field: prefilledColumnId,
+        op: getDefaultOperator(colInfo.type),
+        value: '',
+      }
+      if (value.mode === 'flat') {
+        onChange({ ...value, children: [...value.children, cond] })
+      } else {
+        // nested mode:add 到第 1 個 group(若無則新建)
+        if (value.children.length === 0) {
+          onChange({ ...value, children: [{ ...newGroup(colInfo), children: [cond] }] })
+        } else {
+          const updatedGroups = value.children.map((g, i) =>
+            i === 0 ? { ...g, children: [...g.children, cond] } : g
+          )
+          onChange({ ...value, children: updatedGroups })
+        }
       }
     }
     onPrefillConsumed?.()
-  }, [prefilledColumnId])  // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefilledColumnId])
 
-  const setConditions = (next: FilterCondition[]) => onFiltersChange(wrapFilters(next))
+  // ── flat-mode mutators ──
+  const flatTree = value.mode === 'flat' ? value : null
+  const updateFlatCondition = (id: string, patch: Partial<FilterCondition>) => {
+    if (!flatTree) return
+    onChange({
+      ...flatTree,
+      children: flatTree.children.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    })
+  }
+  const removeFlatCondition = (id: string) => {
+    if (!flatTree) return
+    onChange({ ...flatTree, children: flatTree.children.filter((c) => c.id !== id) })
+  }
+  const addFlatCondition = () => {
+    if (!flatTree) return
+    onChange({ ...flatTree, children: [...flatTree.children, newCondition(firstCol)] })
+  }
+  const setFlatConjunction = (conj: Conjunction) => {
+    if (!flatTree) return
+    onChange({ ...flatTree, conjunction: conj })
+  }
 
-  const updateAt = (index: number, patch: Partial<FilterCondition>) => {
-    setConditions(conditions.map((c, i) => (i === index ? { ...c, ...patch } : c)))
+  // ── nested-mode mutators ──
+  const nestedTree = value.mode === 'nested' ? value : null
+  const updateGroup = (groupId: string, patch: Partial<FilterGroup>) => {
+    if (!nestedTree) return
+    onChange({
+      ...nestedTree,
+      children: nestedTree.children.map((g) => (g.id === groupId ? { ...g, ...patch } : g)),
+    })
   }
-  const removeAt = (index: number) => {
-    setConditions(conditions.filter((_, i) => i !== index))
+  const updateGroupCondition = (groupId: string, condId: string, patch: Partial<FilterCondition>) => {
+    if (!nestedTree) return
+    onChange({
+      ...nestedTree,
+      children: nestedTree.children.map((g) =>
+        g.id === groupId
+          ? { ...g, children: g.children.map((c) => (c.id === condId ? { ...c, ...patch } : c)) }
+          : g
+      ),
+    })
   }
-  const addCondition = () => {
-    const firstCol = filterableColumns[0]
-    if (!firstCol) return
-    const ops = getOperatorOptions(firstCol.type)
-    setConditions([...conditions, { id: firstCol.id, operator: ops[0].value, value: '' }])
+  const removeGroupCondition = (groupId: string, condId: string) => {
+    if (!nestedTree) return
+    onChange({
+      ...nestedTree,
+      children: nestedTree.children.map((g) =>
+        g.id === groupId ? { ...g, children: g.children.filter((c) => c.id !== condId) } : g
+      ),
+    })
   }
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-    const oldIndex = conditions.findIndex((c) => c.id === active.id)
-    const newIndex = conditions.findIndex((c) => c.id === over.id)
-    if (oldIndex < 0 || newIndex < 0) return
-    const next = [...conditions]
-    const [moved] = next.splice(oldIndex, 1)
-    next.splice(newIndex, 0, moved)
-    setConditions(next)
+  const addConditionToGroup = (groupId: string) => {
+    if (!nestedTree) return
+    onChange({
+      ...nestedTree,
+      children: nestedTree.children.map((g) =>
+        g.id === groupId ? { ...g, children: [...g.children, newCondition(firstCol)] } : g
+      ),
+    })
+  }
+  const removeGroup = (groupId: string) => {
+    if (!nestedTree) return
+    onChange({ ...nestedTree, children: nestedTree.children.filter((g) => g.id !== groupId) })
+  }
+  const addGroup = () => {
+    if (!nestedTree) return
+    onChange({ ...nestedTree, children: [...nestedTree.children, newGroup(firstCol)] })
+  }
+  const setRootConjunction = (conj: Conjunction) => {
+    if (!nestedTree) return
+    onChange({ ...nestedTree, conjunction: conj })
   }
 
   return (
-    <div className={cn('w-[560px]', className)}>
+    // 寬度策略:desktop 680px;mobile 縮到 viewport 內留 32px 邊(避溢出 popover 切右半)。
+    // 對齊 Notion / Airtable 的 advanced filter 在 mobile 走 full-width 邊處理。
+    <div ref={ref} className={cn('w-[min(680px,calc(100vw-2rem))]', className)}>
       <SurfaceHeader>
         <div className="flex items-center gap-1 w-full min-w-0">
           <PopoverTitle className="flex-1">篩選</PopoverTitle>
+          {/* Refresh icon — 只在 value ≠ defaultValue 時顯示(對齊 sort modified-from-default UX) */}
+          {defaultValue && !isFilterTreeEqual(value, defaultValue) && (
+            <Button
+              variant="text" size="sm" iconOnly startIcon={RotateCcw}
+              aria-label="恢復預設"
+              onClick={() => onChange(defaultValue)}
+            />
+          )}
           {onClose && (
             <PopoverClose asChild>
               <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={onClose} />
@@ -184,127 +303,204 @@ export function DataTableFilterPanel<TData>({
       </SurfaceHeader>
 
       <SurfaceBody className="flex flex-col gap-2">
-        {conditions.length === 0 ? (
-          <div className="text-body text-fg-muted py-2">尚未設定篩選條件</div>
-        ) : (
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={conditions.map(c => `${c.id}-${conditions.indexOf(c)}`)} strategy={verticalListSortingStrategy}>
-              {conditions.map((condition, index) => {
-                const colInfo = filterableColumns.find((c) => c.id === condition.id)
-                const operatorOptions = getOperatorOptions(colInfo?.type)
-                return (
-                  <FilterRow
-                    key={`${condition.id}-${index}`}
-                    rowId={`${condition.id}-${index}`}
-                    condition={condition}
-                    fieldOptions={fieldOptions}
-                    operatorOptions={operatorOptions}
-                    onChangeField={(v) => {
-                      const newCol = filterableColumns.find((c) => c.id === v)
-                      const newOps = getOperatorOptions(newCol?.type)
-                      updateAt(index, { id: v, operator: newOps[0].value, value: '' })
-                    }}
-                    onChangeOperator={(v) => updateAt(index, { operator: v })}
-                    onChangeValue={(v) => updateAt(index, { value: v })}
-                    onRemove={() => removeAt(index)}
-                  />
-                )
-              })}
-            </SortableContext>
-          </DndContext>
-        )}
+        {flatTree && flatTree.children.map((cond, idx) => (
+          <FilterRow
+            key={cond.id}
+            index={idx}
+            condition={cond}
+            conjunction={flatTree.conjunction}
+            filterableColumns={filterableColumns}
+            fieldOptions={fieldOptions}
+            onChangeConjunction={setFlatConjunction}
+            onChangeField={(v) => {
+              const newCol = filterableColumns.find((c) => c.id === v)
+              updateFlatCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '' })
+            }}
+            onChangeOp={(v) => updateFlatCondition(cond.id, { op: v, value: '' })}
+            onChangeValue={(v) => updateFlatCondition(cond.id, { value: v })}
+            onRemove={() => removeFlatCondition(cond.id)}
+          />
+        ))}
+
+        {nestedTree && nestedTree.children.map((group, gIdx) => (
+          <GroupBlock
+            key={group.id}
+            index={gIdx}
+            group={group}
+            rootConjunction={nestedTree.conjunction}
+            filterableColumns={filterableColumns}
+            fieldOptions={fieldOptions}
+            onChangeRootConjunction={setRootConjunction}
+            onChangeGroupConjunction={(c) => updateGroup(group.id, { conjunction: c })}
+            onChangeCondition={(condId, patch) => updateGroupCondition(group.id, condId, patch)}
+            onRemoveCondition={(condId) => removeGroupCondition(group.id, condId)}
+            onAddCondition={() => addConditionToGroup(group.id)}
+            onRemoveGroup={() => removeGroup(group.id)}
+          />
+        ))}
       </SurfaceBody>
 
       <SurfaceFooter className="justify-start">
-        <Button variant="tertiary" size="sm" startIcon={Plus} onClick={addCondition}>加條件</Button>
+        <Button
+          variant="tertiary" size="sm" startIcon={Plus}
+          onClick={mode === 'flat' ? addFlatCondition : addGroup}
+        >
+          {mode === 'nested' ? '加入篩選器' : '加條件'}
+        </Button>
       </SurfaceFooter>
     </div>
   )
 }
 
-// FilterRow:DnD-enabled row,GripVertical 為 drag handle。
-function FilterRow({
-  rowId, condition, fieldOptions, operatorOptions,
-  onChangeField, onChangeOperator, onChangeValue, onRemove,
-}: {
-  rowId: string
-  condition: FilterCondition
-  fieldOptions: SelectOption[]
-  operatorOptions: SelectOption[]
-  onChangeField: (v: string) => void
-  onChangeOperator: (v: string) => void
-  onChangeValue: (v: string) => void
-  onRemove: () => void
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: rowId })
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+// Generic + ref forward 套 cast 的 idiom — 對齊 DataTable(同檔家)。
+// React.forwardRef 對 generic component 會丟掉 type param,改 cast 成 generic-preserving signature。
+export const DataTableFilterPanel = React.forwardRef(DataTableFilterPanelInner) as <TData>(
+  props: DataTableFilterPanelProps<TData> & { ref?: React.ForwardedRef<HTMLDivElement> }
+) => React.ReactElement
+;(DataTableFilterPanel as { displayName?: string }).displayName = 'DataTableFilterPanel'
+
+// ── ConjunctionLabel ───────────────────────────────────────────────────
+
+const CONJ_OPTIONS: SelectOption[] = [
+  { value: 'and', label: 'And' },
+  { value: 'or', label: 'Or' },
+]
+
+function ConjunctionLabel({
+  index, conjunction, onChange,
+}: { index: number; conjunction: Conjunction; onChange: (c: Conjunction) => void }) {
+  if (index === 0) {
+    // 「Where」靜態 label;w-20 對齊 row 2+ 的 Select 寬度
+    return <div className="w-20 shrink-0 text-body text-fg-muted px-2">Where</div>
   }
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2">
-      <ItemInlineActionButton
-        icon={GripVertical}
+    // w-20(80px)— 容納「And ⌄」/「Or ⌄」label + chevron 不被截斷
+    <div className="w-20 shrink-0">
+      <Select
         size="md"
-        aria-label="拖曳重排"
-        className="cursor-grab active:cursor-grabbing"
-        {...attributes}
-        {...listeners}
+        options={CONJ_OPTIONS}
+        value={conjunction}
+        onChange={(v) => onChange(v as Conjunction)}
+        aria-label="連接詞 — 同 group 共用"
       />
+    </div>
+  )
+}
+
+// ── FilterRow(flat 用 + group 內共用) ──────────────────────────────
+
+function FilterRow({
+  index, condition, conjunction, filterableColumns, fieldOptions,
+  onChangeConjunction, onChangeField, onChangeOp, onChangeValue, onRemove,
+}: {
+  index: number
+  condition: FilterCondition
+  conjunction: Conjunction
+  filterableColumns: FilterColumn[]
+  fieldOptions: SelectOption[]
+  onChangeConjunction: (c: Conjunction) => void
+  onChangeField: (v: string) => void
+  onChangeOp: (v: string) => void
+  onChangeValue: (v: unknown) => void
+  onRemove: () => void
+}) {
+  const colInfo = filterableColumns.find((c) => c.id === condition.field)
+  const operatorOptions = getOperatorOptions(colInfo?.type)
+  const hasField = !!condition.field
+  const opSpec = colInfo ? getOperatorSpec(colInfo.type, condition.op) : null
+  const valueShape: ValueShape | null = colInfo && opSpec
+    ? getValueShape(opSpec, colInfo.type, colInfo.includeTime)
+    : null
+
+  return (
+    <div className="flex items-center gap-2">
+      <ConjunctionLabel index={index} conjunction={conjunction} onChange={onChangeConjunction} />
       <div className="w-40 shrink-0">
-        <Select size="md" options={fieldOptions} value={condition.id} onChange={onChangeField} />
-      </div>
-      <div className="w-28 shrink-0">
-        <Select size="md" options={operatorOptions} value={condition.operator} onChange={onChangeOperator} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <Input
+        <Select
           size="md"
-          value={String(condition.value ?? '')}
-          onChange={(e) => onChangeValue(e.target.value)}
-          placeholder="輸入值…"
+          options={fieldOptions}
+          value={condition.field}
+          onChange={onChangeField}
+          placeholder="選擇欄位"
+          aria-label="篩選欄位"
         />
       </div>
-      {/* Trash 走 ItemInlineActionButton(same-row consistency canonical)*/}
+      <div className="w-32 shrink-0">
+        <Select
+          size="md"
+          options={operatorOptions}
+          value={condition.op}
+          onChange={onChangeOp}
+          disabled={!hasField}
+          aria-label="篩選運算子"
+        />
+      </div>
+      <div className="flex-1 min-w-0">
+        <FilterValuePicker
+          shape={valueShape}
+          value={condition.value}
+          onChange={onChangeValue}
+          colInfo={colInfo}
+          disabled={!hasField}
+          ariaLabel={colInfo ? `${colInfo.label} 篩選值` : '篩選值'}
+        />
+      </div>
       <ItemInlineActionButton icon={Trash2} size="md" aria-label="刪除" onClick={onRemove} />
     </div>
   )
 }
 
-DataTableFilterPanel.displayName = 'DataTableFilterPanel'
+// ── GroupBlock(nested 用) ────────────────────────────────────────────
 
-/**
- * Filter helper:適用 TanStack `getFilteredRowModel` 的 filterFn 推斷。
- *
- * 在 useReactTable consumer 處,把 column 的 filterFn 設為:
- *   filterFn: (row, columnId, filterValue) => dataTableFilterMatch(row.getValue(columnId), filterValue)
- *
- * 對齊 wrapFilters 的 WrappedValue 格式。
- */
-export function dataTableFilterMatch(cellValue: unknown, filterValue: unknown): boolean {
-  if (!isWrappedValue(filterValue)) {
-    // legacy:fallback contains
-    return String(cellValue ?? '').toLowerCase().includes(String(filterValue ?? '').toLowerCase())
-  }
-  const { operator, value } = filterValue
-  const v = String(value ?? '').trim()
-  if (v === '') return true
-  const cv = cellValue
-  switch (operator) {
-    case 'contains':
-      return String(cv ?? '').toLowerCase().includes(v.toLowerCase())
-    case 'equals':
-      return String(cv ?? '').toLowerCase() === v.toLowerCase()
-    case 'gt': {
-      const n1 = Number(cv); const n2 = Number(v)
-      return Number.isFinite(n1) && Number.isFinite(n2) && n1 > n2
-    }
-    case 'lt': {
-      const n1 = Number(cv); const n2 = Number(v)
-      return Number.isFinite(n1) && Number.isFinite(n2) && n1 < n2
-    }
-    default:
-      return true
-  }
+function GroupBlock({
+  index, group, rootConjunction, filterableColumns, fieldOptions,
+  onChangeRootConjunction, onChangeGroupConjunction,
+  onChangeCondition, onRemoveCondition, onAddCondition, onRemoveGroup,
+}: {
+  index: number
+  group: FilterGroup
+  rootConjunction: Conjunction
+  filterableColumns: FilterColumn[]
+  fieldOptions: SelectOption[]
+  onChangeRootConjunction: (c: Conjunction) => void
+  onChangeGroupConjunction: (c: Conjunction) => void
+  onChangeCondition: (condId: string, patch: Partial<FilterCondition>) => void
+  onRemoveCondition: (condId: string) => void
+  onAddCondition: () => void
+  onRemoveGroup: () => void
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <div className="pt-2">
+        <ConjunctionLabel index={index} conjunction={rootConjunction} onChange={onChangeRootConjunction} />
+      </div>
+      {/* Group container 灰底 — 用 --color-neutral-1 對齊 token canonical(non-existent --surface-3 改 ✓) */}
+      <div className="flex-1 min-w-0 rounded-md bg-[var(--color-neutral-1)] p-2 flex flex-col gap-2">
+        {group.children.map((cond, cIdx) => (
+          <FilterRow
+            key={cond.id}
+            index={cIdx}
+            condition={cond}
+            conjunction={group.conjunction}
+            filterableColumns={filterableColumns}
+            fieldOptions={fieldOptions}
+            onChangeConjunction={onChangeGroupConjunction}
+            onChangeField={(v) => {
+              const newCol = filterableColumns.find((c) => c.id === v)
+              onChangeCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '' })
+            }}
+            onChangeOp={(v) => onChangeCondition(cond.id, { op: v, value: '' })}
+            onChangeValue={(v) => onChangeCondition(cond.id, { value: v })}
+            onRemove={() => onRemoveCondition(cond.id)}
+          />
+        ))}
+        <div className="flex items-center justify-between">
+          <Button variant="tertiary" size="sm" startIcon={Plus} onClick={onAddCondition}>加入巢狀篩選</Button>
+          {group.children.length === 0 && (
+            <Button variant="tertiary" size="sm" startIcon={Trash2} onClick={onRemoveGroup}>移除空群組</Button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }

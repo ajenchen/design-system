@@ -14,6 +14,35 @@
       "file": "datepicker-sizes.png"
     },
     {
+      "id": "design-system-components-datepicker-展示--with-error",
+      "file": "datepicker-error.png"
+    },
+    {
+      "id": "design-system-components-datepicker-展示--show-time",
+      "file": "datepicker-show-time.png"
+    },
+    {
+      "id": "design-system-components-datepicker-展示--show-time-range",
+      "file": "datepicker-show-time-range.png"
+    },
+    {
+      "id": "design-system-components-datepicker-展示--range-popover-open",
+      "file": "datepicker-range-popover-open.png"
+    },
+    {
+      "id": "design-system-components-datepicker-展示--show-time-popover-open",
+      "file": "datepicker-show-time-popover-open.png"
+    },
+    {
+      "id": "design-system-components-datepicker-展示--show-time-range-popover-open",
+      "file": "datepicker-show-time-range-popover-open.png"
+    },
+    {
+      "id": "design-system-components-datepicker-展示--range-middle-hover-state",
+      "file": "datepicker-range-middle-hover-state.png",
+      "rationale": "Hover state capture — play() hover range_middle date,verify 藍色 ring(1.5px primary)顯示在 grey track 上。Bug C 真實截圖驗證。"
+    },
+    {
       "id": "design-system-components-calendar-展示--team-calendar",
       "file": "calendar-event-team.png"
     },
@@ -418,6 +447,30 @@
     {
       "id": "design-system-internal-selectioncontrol-展示--notification-preferences",
       "file": "selectioncontrol-notification-preferences.png"
+    },
+    {
+      "id": "design-system-components-datatable-進階篩選--flat-empty",
+      "file": "filter-panel-flat-empty.png"
+    },
+    {
+      "id": "design-system-components-datatable-進階篩選--flat-with-conditions",
+      "file": "filter-panel-flat-conditions.png"
+    },
+    {
+      "id": "design-system-components-datatable-進階篩選--nested-two-groups",
+      "file": "filter-panel-nested.png"
+    },
+    {
+      "id": "design-system-components-datatable-進階篩選--modified-from-default",
+      "file": "filter-panel-refresh-icon.png"
+    },
+    {
+      "id": "design-system-components-datatable-進階篩選--datetime-column",
+      "file": "filter-panel-datetime-column.png"
+    },
+    {
+      "id": "design-system-components-datatable-進階篩選--relative-date-filter",
+      "file": "filter-panel-relative-date.png"
     }
   ]
 }

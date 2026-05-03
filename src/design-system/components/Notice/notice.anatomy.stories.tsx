@@ -1,3 +1,4 @@
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-rationale:
 //   ColorMatrix represented as VariantIconMap — Notice 不擁有底色 / 邊框,只
 //     負責 layout + status icon 選擇。色彩由消費方(Alert subtle shell、Toast

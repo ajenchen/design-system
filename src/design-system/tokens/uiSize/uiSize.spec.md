@@ -1,3 +1,5 @@
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # UiSize 設計原則
 
 > **Foundational SSOT rationale**(cap 800,2026-04-25 approved):

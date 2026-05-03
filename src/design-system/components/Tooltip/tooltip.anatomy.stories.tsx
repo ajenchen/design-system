@@ -1,3 +1,4 @@
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-rationale:
 //   ColorMatrix N/A — Tooltip 色彩固定(--tooltip bg + white text,內部 wrapper
 //     強制 data-theme="dark"),無 variant × state 色彩矩陣。所有色彩 token 已

@@ -1,9 +1,11 @@
+// M22 retrofit DONE 2026-05-03 v11(real source URLs added inline at lines 38 + 111)
 import * as React from 'react'
 import { DayPicker } from 'react-day-picker'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import 'react-day-picker/style.css'
 
 import { cn } from '@/lib/utils'
+import { Button } from '@/design-system/components/Button/button'
 
 /**
  * DateGrid — DayPicker 包裝,用本 DS token 覆寫預設視覺。
@@ -28,9 +30,16 @@ import { cn } from '@/lib/utils'
  * | disabled | 灰底圓圈 + disabled 字色(跟 Button disabled 一致) | [&>button]:bg-disabled [&>button]:text-fg-disabled rounded-full |
  * | outside(非本月) | text-fg-muted(neutral-7) | [&>button]:text-fg-muted |
  * | selected / range 端點 | 藍底白字圓 | [&>button]:bg-primary [&>button]:text-on-emphasis rounded-full |
- * | range middle | 灰底矩形 track(neutral-3) | bg-[var(--color-neutral-3)],button 透明 |
- * | range start/end 半圓 track | 左/右半圓 neutral-3 + selected 圓疊在上 | bg-[var(--color-neutral-3)] rounded-l-full / rounded-r-full |
+ * | range middle | 灰底矩形 track(neutral-3),**高度 = button 高度**(28×28 @ md) | before pseudo: `inset-y-0.5 inset-x-0` |
+ * | range start/end 半圓 track | 左/右半圓 + selected 圓疊在上,**圓半徑 = button 半徑** | before pseudo: `rounded-l/r-full` 加 `left-0.5` / `right-0.5` |
  * | hover(未選中) | 藍圈 outline | hover:ring-1 hover:ring-primary |
+ *
+ * ── Range track 高度 canonical(2026-05-02 Q8 修正,M8 4 家對照)──
+ * Ant Design([picker source](https://github.com/ant-design/ant-design/blob/master/components/date-picker/style/panel.ts))/ Material X DateRangePicker([mui-x source](https://github.com/mui/mui-x/tree/master/packages/x-date-pickers-pro/src/DateRangeCalendar))/ Apple Calendar `@benchmark-unverified`(closed-source)/ Google Calendar `@benchmark-unverified`(closed-source)共識:
+ * **range track 高度 = button 高度**(不是 cell 高度)— track 跟 selected 圓緊貼,
+ * 不留 2px「fat」邊距(舊版 cell-level bg 在 button 上下留 2px 空白看起來「胖」)。
+ * 實作:bg 走 `before:` pseudo 走 `inset-y-0.5`(top/bottom 2px 內縮),`inset-x-0`
+ * 維持完整 cell 寬度 → 相鄰 cell 的 pseudo 在 cell 邊界相接 = 橫向連貫。
  *
  * ── 為什麼 neutral-3 不 neutral-2(AR 新版 canonical)──
  * neutral-2 在 light mode 太淡(OKLCH L≈0.97),range track 跟 white bg 幾乎無對比。
@@ -61,7 +70,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
       // navLayout="around" = 每個 month caption 兩側渲染 prev / next 按鈕(inline row)
       // 取代先前 absolute 定位覆蓋整個 months 容器導致箭頭垂直置中於中段的 bug
       navLayout="around"
-      // p-3 = 12px 四邊對稱;整個 popover padding 對齊 layout-space-tight
+      // p-3 = 12px 四邊對稱(canonical 不可動)
       className={cn('p-3', className)}
       classNames={{
         months: 'flex flex-col sm:flex-row gap-4',
@@ -70,104 +79,104 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         // Month caption:單行置中 h-field-xs,prev/next 按鈕 absolute 從兩側貼齊
         month_caption: 'flex items-center justify-center h-field-xs mb-3',
         caption_label: 'text-body font-medium',
-        // navLayout="around" 下 button_previous / button_next 是 Month 內 sibling — absolute 定位到 caption 行兩端
-        button_previous: cn(
-          'absolute top-0 left-0 z-[1]',
-          'inline-flex items-center justify-center h-field-xs w-[var(--field-height-xs)] rounded-md',
-          'text-fg-muted hover:text-foreground hover:bg-neutral-hover',
-          // nav button 是單一 text-style icon button → semantic `text-fg-disabled`(對齊 Button variant=text disabled)
-          // 非 composite 整塊 disabled,故**不**用 opacity token
-          'disabled:text-fg-disabled disabled:pointer-events-none',
-          'transition-colors',
+        // ── Prev/Next button(canonical 2026-05-03 v6,user audit fix)──
+        // RDP 把這 className apply 到 <Button> 本身(不是 wrapper),所以用 className 直接套
+        // 定位類(absolute top/left/right-0)。muted 色透過 Button override 內部加,不用 [&>button] 黑魔法。
+        button_previous: 'absolute top-0 left-0 z-[1]',
+        button_next: 'absolute top-0 right-0 z-[1]',
+        // ── Grid layout(canonical 2026-05-03 v7,純 table-native)──
+        // RDP v9 month_grid = <table>。v6 試 grid 在 tr 上但 break border-spacing(grid 蓋掉
+        // table-row layout)。乾淨修:**純 table layout** + `border-spacing-1`(4px H+V,table-native)。
+        // 所有 cells 自動同寬同高(td 的 w/h-field-sm),無 grid hack。
+        month_grid: 'border-separate border-spacing-1',
+        weekdays: '',  // thead default
+        weekday: cn(
+          // text-foreground + font-medium 對齊 DS 一致設計語言(2026-05-03 user audit):
+          // weekday 列標跟 caption「April 2026」同視覺權重(都屬 calendar header 區),
+          // 不弱化(撤銷 v3 fg-secondary 的 mistake)。對齊 icon-only Button 預設 neutral-9 一致。
+          'text-foreground text-body font-medium',
+          'h-7 align-middle text-center',
         ),
-        button_next: cn(
-          'absolute top-0 right-0 z-[1]',
-          'inline-flex items-center justify-center h-field-xs w-[var(--field-height-xs)] rounded-md',
-          'text-fg-muted hover:text-foreground hover:bg-neutral-hover',
-          // nav button 是單一 text-style icon button → semantic `text-fg-disabled`(對齊 Button variant=text disabled)
-          // 非 composite 整塊 disabled,故**不**用 opacity token
-          'disabled:text-fg-disabled disabled:pointer-events-none',
-          'transition-colors',
-        ),
-        // Grid:flex flex-col,row 間距 mt-1(4px)垂直 between weeks(用 week 的 mt-1 或 grid gap-y-1)
-        month_grid: 'flex flex-col gap-y-1',
-        // Weekday row:14px(text-body)neutral-8 = fg-secondary
-        weekdays: 'flex',
-        weekday: 'text-fg-secondary text-body font-normal w-[var(--field-height-md)] h-field-md flex items-center justify-center',
-        // Week row:flex cells 緊貼(no gap)→ cell 內 padding 產生 4px 視覺分離;
-        // range bg 畫在 cell 完整寬度上,相鄰 cells 的 bg 於邊界接合 → **range track 連貫**
-        week: 'flex w-full',
-        // ── react-day-picker v9 classNames 對應 ──
-        // `classNames[key]` 在對應 modifier 為 true 時附加到 Day CELL(td)。
-        // DayButton 只拿 `classNames.day_button`。所以 `[&>button]:xxx` 從 cell 向內選 button。
-        //
-        // ── Cell / Button 尺寸策略(2026-04-21)──
-        // Cell:h-field-md w-[field-height-md](32px @ md / 36 @ lg),**無 padding**
-        // Button(內部):`inset-0.5`(absolute 定位,四邊 2px 內縮)→ 比 cell 小 4px
-        //   視覺結果:相鄰 button 之間有 4px gap(2+2);Cell 本身緊貼相鄰 cell
-        //   Range bg 畫在 Cell 上 → 連貫橫跨(不受 button 縮小影響)
+        week: '',  // tr default
+        // Cell **就是** button 容器(28×28 @ md / 32×32 @ lg),`relative` 讓 before pseudo 定位
+        // ── h-field-sm 對齊 user spec(28×28 @ md)— v3 用 h-field-md (32×32) 是錯的
         day: cn(
-          'h-field-md w-[var(--field-height-md)] p-0 text-center relative',
+          'h-field-sm w-[var(--field-height-sm)] p-0 text-center relative',
         ),
         day_button: cn(
-          // absolute 定位 + inset-0.5(四邊 2px 內縮)→ button 28×28 @ md / 32×32 @ lg
-          'absolute inset-0.5 flex items-center justify-center',
+          // absolute inset-0 = 完全填滿 cell(naked button,無 inset 4px 空隙)
+          // z-[1] 讓 button 疊在 range track `before:` pseudo 之上
+          'absolute inset-0 z-[1] flex items-center justify-center',
           'font-normal text-body rounded-full transition-colors',
-          // Hover 藍圈:**ring-[1.5px]** 對齊 Apple HIG / Ant 慣例(1.5px = 薄 + 可見)
+          // Hover 藍圈 1.5px(對齊 Apple HIG / Ant `@benchmark-unverified` visual ring measurement)— ring 在 button 之上 + 透明 bg 不擋 range track
           'hover:ring-[1.5px] hover:ring-primary hover:bg-transparent',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         ),
-        // today:button 下方藍色 rounded bar(1.5px 厚 + rounded-full 端點)
-        // Button 已經是 `absolute inset-0.5`(absolute 本身就是 positioning context,
-        // ::after 相對 button 定位 — 不要再加 `relative` 覆蓋,那會破壞尺寸)。
-        //
-        // ── bottom 定位:貼近數字(不貼 button 邊)──
-        // Button md = 28×28(inset-0.5 於 32px cell)。text-body line-height ≈ 20px
-        // 垂直置中 → 文字底到 button 底 ≈ 4px。bar 放 bottom-[5px] 剛好貼在文字底下一像素。
-        // 避免 2px 看起來「黏 button 邊」的 optical flaw。
-        //
-        // ── Selected + today:bar 轉 on-emphasis 白色 ──
-        // 選中 cell 走 `data-selected="true"` → button bg 變 primary 藍底。此時藍 bar 隱形。
-        // 用 `[&[data-selected=true]>button]` 組合選到「當前 cell selected + today」的 button,
-        // 切換 after:bg 為 on-emphasis(白)保視覺可見。
+        // today:藍色 underline bar 貼近數字
         today: cn(
           "[&>button]:after:content-['']",
           '[&>button]:after:absolute',
           '[&>button]:after:bottom-[5px] [&>button]:after:left-1/2 [&>button]:after:-translate-x-1/2',
           '[&>button]:after:w-[40%] [&>button]:after:h-[1.5px] [&>button]:after:rounded-full',
           '[&>button]:after:bg-primary',
-          // today + selected:藍底藍 bar 隱形 → 切到 on-emphasis(白)
+          // today + selected:bar 切 on-emphasis(白)
           '[&[data-selected=true]>button]:after:bg-on-emphasis',
         ),
-        // outside(非本月):text-fg-muted = neutral-7
         outside: '[&>button]:text-fg-muted',
         // Selected(single 或 range 端點):button 藍底白字圓
         selected: cn(
           '[&>button]:bg-primary [&>button]:text-on-emphasis',
           '[&>button]:hover:bg-primary-hover [&>button]:hover:ring-0',
         ),
-        // disabled:跟 Button disabled 一致(bg-disabled + fg-disabled),rounded-full
         disabled: cn(
           '[&>button]:bg-disabled [&>button]:text-fg-disabled [&>button]:cursor-not-allowed',
           '[&>button]:hover:ring-0 [&>button]:hover:bg-disabled',
         ),
-        // range 端點 cell:半圓 neutral-3 track + selected 圓疊在上
-        range_start: 'bg-[var(--color-neutral-3)] rounded-l-full',
-        range_end: 'bg-[var(--color-neutral-3)] rounded-r-full',
-        // range 中段 cell:neutral-3 矩形 track,button 透明;
-        // **hover 仍顯示藍圈 outline**(對齊 user AR:「滑到區間的日期灰底一樣 hover 會出現藍色框框」)
+        // ── Range track(canonical 2026-05-03 v6,Ant stadium pattern)──
+        // v5 用 pseudo 矩形蓋全 cell 修「白色破圖」,但新副作用:button 圓比矩形小,4 個
+        // corner triangle 區域 pseudo grey 凸出圓外(user 2026-05-03 抓到「凸出去」)。
+        // 對齊 Ant 實證(`cell-range-start::before { border-radius: 9999px 0 0 9999px }`):
+        // rangeStart pseudo 加 `rounded-l-full` → pseudo 變「左半圓 + 右矩形」stadium
+        // 左半圓 EXACTLY OVERLAY button 圓的左半圓(同 center,同 radius 14)→ 邊界無縫
+        // 右側矩形 bridge 2px to middle → 跟 middle pseudo 連續
+        // Cell 的 top-left + bottom-left corner triangle:pseudo 不蓋 + button 不蓋 →
+        // popover white 顯露(乾淨 breathing,跟 outside-of-range cells 一致視覺)
+        range_start: cn(
+          "before:content-[''] before:absolute before:inset-y-0",
+          'before:left-0 before:-right-[2px]',
+          'before:bg-neutral-selected before:pointer-events-none',
+          'before:rounded-l-full',  // ← stadium 左半圓 matches button 圓的左半弧
+        ),
+        range_end: cn(
+          "before:content-[''] before:absolute before:inset-y-0",
+          'before:-left-[2px] before:right-0',
+          'before:bg-neutral-selected before:pointer-events-none',
+          'before:rounded-r-full',  // ← 鏡像
+        ),
         range_middle: cn(
-          'bg-[var(--color-neutral-3)]',
+          "before:content-[''] before:absolute before:inset-y-0 before:-inset-x-[2px]",
+          'before:bg-neutral-selected before:pointer-events-none',
+          // button 透明顯露 track,但 hover ring 仍顯示
           '[&>button]:!bg-transparent [&>button]:!text-foreground',
         ),
         hidden: 'invisible',
         ...classNames,
       }}
       components={{
-        Chevron: ({ orientation }) => {
-          const Icon = orientation === 'left' ? ChevronLeft : ChevronRight
-          return <Icon size={16} />
-        },
+        // ── Prev/Next nav(canonical 2026-05-03 v9,DS 一致設計語言)──
+        // User 2026-05-03 audit:「icon-only Button icon 都用 neutral-9,只有 dismiss 用 45%」
+        // → chevron 不是 dismiss,**走 Button 預設 text-foreground**(neutral-9 85%),
+        // 不開新 tier 自打嘴(撤銷 v6-v8 用 fg-muted override 的 mistake)。
+        // RDP v9 `PreviousMonthButton / NextMonthButton` override(node_modules/react-day-picker/dist/esm/components/Nav.js)
+        // ⚠️ children: _ 必丟棄(RDP 把 <Chevron> 當 children 傳 → 跟 Button startIcon 重疊變 double chevron)
+        PreviousMonthButton: ({ className, children: _children, ...props }) => (
+          <Button variant="text" size="xs" iconOnly startIcon={ChevronLeft}
+            className={className} {...props} />
+        ),
+        NextMonthButton: ({ className, children: _children, ...props }) => (
+          <Button variant="text" size="xs" iconOnly startIcon={ChevronRight}
+            className={className} {...props} />
+        ),
       }}
       {...props}
     />

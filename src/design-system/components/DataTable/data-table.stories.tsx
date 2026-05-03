@@ -1,3 +1,4 @@
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // same-row-mixed-allow: file 含 toolbar Button iconOnly + row ItemInlineActionButton,但兩者在不同 row(toolbar 跟 panel row 分離)
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -5,8 +6,8 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, EyeOff, Lock, GripVertical, RotateCcw, Download, Plus, ArrowUpDown, X as XIcon } from 'lucide-react'
 import { DataTable } from './data-table'
 import { DataTableSortManager } from './data-table-sort-manager'
-import { DataTableFilterPanel, dataTableFilterMatch } from './data-table-filter-panel'
-import { getFilteredRowModel, type SortingState, type ColumnFiltersState } from '@tanstack/react-table'
+import { DataTableFilterPanel, evaluateTree, createEmptyFilterTree, isFilterTreeActive, type FilterTree } from './data-table-filter-panel'
+import { getFilteredRowModel, type SortingState } from '@tanstack/react-table'
 import { Button } from '@/design-system/components/Button/button'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { Input } from '@/design-system/components/Input/input'
@@ -483,7 +484,7 @@ export const WithBulkActions: Story = {
       baseColumns.map((c) => (c as any).accessorKey ?? (c as any).id)
     )
     const [sorting, setSorting] = React.useState<SortingState>([])
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+    const [filterTree, setFilterTree] = React.useState<FilterTree>(() => createEmptyFilterTree('flat'))
     const [filterPrefilledId, setFilterPrefilledId] = React.useState<string | undefined>(undefined)
     const [filterOpen, setFilterOpen] = React.useState(false)
     const [sortOpen, setSortOpen] = React.useState(false)
@@ -517,13 +518,14 @@ export const WithBulkActions: Story = {
                 pressed prop:套用條件後 trigger 維持 active 視覺(toggle pressed,Button canonical) */}
             <Popover open={filterOpen} onOpenChange={setFilterOpen}>
               <PopoverTrigger asChild>
-                <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={columnFilters.length > 0} />
+                <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" pressed={isFilterTreeActive(filterTree)} />
               </PopoverTrigger>
               <PopoverContent align="end" className="w-auto p-0">
                 <DataTableFilterPanel
+                  mode="flat"
                   columns={baseColumns}
-                  filters={columnFilters}
-                  onFiltersChange={setColumnFilters}
+                  value={filterTree}
+                  onChange={setFilterTree}
                   prefilledColumnId={filterPrefilledId}
                   onPrefillConsumed={() => setFilterPrefilledId(undefined)}
                   onClose={() => setFilterOpen(false)}
@@ -690,18 +692,16 @@ export const WithBulkActions: Story = {
               setFilterOpen(true)
             }}
             tableOptions={{
-              state: { sorting, columnFilters, columnOrder },
+              state: { sorting, globalFilter: filterTree, columnOrder },
               onColumnOrderChange: (updater) => {
                 setColumnOrder(typeof updater === 'function' ? updater(columnOrder) : updater)
               },
               onSortingChange: (updater) => {
                 setSorting(typeof updater === 'function' ? updater(sorting) : updater)
               },
-              onColumnFiltersChange: (updater) => {
-                setColumnFilters(typeof updater === 'function' ? updater(columnFilters) : updater)
-              },
+              onGlobalFilterChange: setFilterTree,
+              globalFilterFn: (row, _columnId, t: FilterTree) => evaluateTree(t, row.original),
               getFilteredRowModel: getFilteredRowModel(),
-              defaultColumn: { filterFn: (row, columnId, filterValue) => dataTableFilterMatch(row.getValue(columnId), filterValue) },
             }}
           />
         </div>

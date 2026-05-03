@@ -7,6 +7,8 @@ traits:
   - isMatrixHeavy
 ---
 
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # CircularProgress 設計原則
 
 **圓形進度指示(determinate + indeterminate 雙模式)**——整個設計系統 circular 形式進度的 SSOT。

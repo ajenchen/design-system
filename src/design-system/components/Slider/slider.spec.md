@@ -9,6 +9,8 @@ traits:
   - isMatrixHeavy
 ---
 
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # Slider 設計原則
 
 **數值範圍選取器**——基於 Radix Slider primitive,橋接設計系統 token。

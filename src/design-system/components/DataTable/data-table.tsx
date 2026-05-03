@@ -1,3 +1,4 @@
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // code-quality-allow: file-size — foundational composite — 拆檔會複雜化 context / ref / state 同步
 import * as React from 'react'
 import { Empty } from '@/design-system/components/Empty/empty'

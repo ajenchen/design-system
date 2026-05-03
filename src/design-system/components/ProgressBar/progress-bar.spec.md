@@ -7,6 +7,8 @@ variants: {}
 sizes: {}
 ---
 
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # ProgressBar 設計原則
 
 **水平進度條(linear determinate progress)**——表達「已完成 X%、還剩 Y%」的量化進度視覺 primitive。0–100% 的已知進度、單向推進、可預期終點。circular 形式(含 indeterminate)走 `CircularProgress`。

@@ -1,3 +1,4 @@
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-rationale:
 //   SizeMatrix N/A — Track 高度固定 4px(無 size prop),與 Material / Carbon /
 //     Atlassian 共識一致(progress bar 是 micro-indicator,size 由 affix 文字 /

@@ -1,3 +1,5 @@
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # Typography 設計原則
 
 Typography 定義字體尺寸與行高的 token 系統，確保全系統文字層級一致。

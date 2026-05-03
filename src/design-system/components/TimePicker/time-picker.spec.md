@@ -8,19 +8,21 @@ traits:
   - isInputLike
 ---
 
+<!-- M22 retrofit DONE 2026-05-03 v11(real source URLs added inline below)-->
+
 # TimePicker 設計原則
 
 ## 定位
 
-TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Design `<TimePicker>` API 風格,但視覺與互動走本 DS 設計語言。
+TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Design `<TimePicker>` API 風格(source: [github.com/react-component/picker/src/PickerInput/SinglePicker.tsx](https://github.com/react-component/picker/blob/master/src/PickerInput/SinglePicker.tsx)),但視覺與互動走本 DS 設計語言。
 
 **Layout Family**:**Family 4(Field control layout)**,視覺對齊 Family 1(Menu item)。見 `patterns/element-anatomy/element-anatomy.spec.md`「Field Composition(不在 family 但相關)」段。
 
 **實作基礎**:
 - **Trigger**:`<button>` + `fieldWrapperStyles`(視覺 = Input wrapper,但 role 是 button 開 popover)
 - **Popup**:`<Popover>`(消費 `patterns/overlay-surface/` 的 surface chrome)
-- **Panel 主體**:**自建** 2-3 欄 column picker(時 / 分 / 秒),**不引入第三方 time library**——自建讓 DS own 視覺與交互(對齊 Ant Design 的 Panel 結構 + 本 DS token)
-- **世界級對照**:Ant Design TimePicker / Material DateTimePicker / iOS native time picker——共同行為:column scroll selector、minuteStep 支援、Now / OK footer、clearable
+- **Panel 主體**:**自建** 2-3 欄 column picker(時 / 分 / 秒),**不引入第三方 time library**——自建讓 DS own 視覺與交互(對齊 Ant Design 的 Panel 結構 — [react-component/picker TimePanel](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel) + 本 DS token)
+- **世界級對照**:Ant Design TimePicker([source](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel))/ Material DateTimePicker([mui-x DigitalClock](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DigitalClock/DigitalClock.tsx))/ iOS native time picker `@benchmark-unverified`(closed-source)——共同行為:column scroll selector、minuteStep 支援、Now / OK footer、clearable
 
 ---
 
@@ -31,7 +33,7 @@ TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Desi
 **為什麼**:
 - 內部狀態複雜(search filter / range / menu open state)跟 `value` 雙向 sync 會產生 race condition
 - Consumer 幾乎一定有外部 state(form library / app state),強制 controlled 消除 ambiguity
-- 世界級對照:Ant Design DatePicker / Material MUI Select 皆支援 dual-mode;我們選 controlled-only 對齊狀態一致性優先
+- 世界級對照:Ant Design DatePicker([source](https://github.com/react-component/picker/blob/master/src/PickerInput/SinglePicker.tsx)) / Material MUI Select([source](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Select/Select.js))皆支援 dual-mode;我們選 controlled-only 對齊狀態一致性優先
 
 **若未來要改 dual-mode**:需引入 `useControllableState` helper + 測試 controlled↔uncontrolled switch 場景,屬 major API 擴充,非本 session scope。
 
@@ -51,7 +53,7 @@ TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Desi
 | 場景 | 改用 | 原因 |
 |------|------|------|
 | 同時需要日期 + 時間 | **DatePicker with time** 或 `<DatePicker> + <TimePicker>` 並列 | TimePicker 本身不帶日期;需配 DatePicker 組合 |
-| 時間範圍(from-to) | **兩個 `<TimePicker>`** 並列 + 之間 `<ArrowRight>` | TimePicker **MVP 不支援 range**,用組合達成(對齊 Ant `TimePicker.RangePicker` 的 composition 思路) |
+| 時間範圍(from-to) | **兩個 `<TimePicker>`** 並列 + 之間 `<ArrowRight>` | TimePicker **MVP 不支援 range**,用組合達成(對齊 Ant `TimePicker.RangePicker` 的 composition 思路 — [source](https://github.com/react-component/picker/blob/master/src/PickerInput/RangePicker.tsx)) |
 | 純文字時間輸入(秒有意義的科學測量) | `<Input>` + mask / regex validation | TimePicker 的 column UX 不適合大量精確輸入 |
 | 倒數計時 / 相對時間 | 自行渲染 `MM:SS` 倒數 | TimePicker 是 wall-clock time,不是 duration |
 
@@ -134,12 +136,12 @@ Panel 展開後的 column picker 結構:
 
 **為什麼 selected 走 neutral 非 primary**(2026-04-21 canonical):TimePicker panel 是「**列表選中**」語意 — user 在時 / 分 / 秒選項間切換,跟 `SelectMenu` / `MenuItem` 同流派(單選 list → `bg-neutral-selected`)。**DatePicker date cell selected 用 `bg-primary`** 是因為那是「**最終選定日期**」的強 affordance(確定性)。兩者不同語意,不互調。
 
-對齊 SelectMenu / MenuItem 的好處:consumer 看 TimePicker 面板知道這是「選一個項目」,跟 Select 下拉選單認知一致(Ant Design TimePicker panel 同樣採 neutral selected)。
+對齊 SelectMenu / MenuItem 的好處:consumer 看 TimePicker 面板知道這是「選一個項目」,跟 Select 下拉選單認知一致(Ant Design TimePicker panel 同樣採 neutral selected — [picker style source](https://github.com/ant-design/ant-design/blob/master/components/date-picker/style/panel.ts) `@benchmark-unverified` exact line)。
 
 ### Spacing + 結構(2026-04-21 canonical,2026-04-21 window width 修正)
 
 - Panel 內 padding = `--layout-space-tight`(12px @ md density)
-- **三欄(時 / 分 / 秒)各欄 `w-12`(48px)固定,非 flex-1 均分**(對齊 Ant / Google 世界級慣例)。**分隔「:」移除**(AR8 canonical — Ant TimePicker / Google Calendar 同樣不加 `:`,靠 column 間距自明)
+- **三欄(時 / 分 / 秒)各欄 `w-12`(48px)固定,非 flex-1 均分**(對齊 Ant / Google 世界級慣例 `@benchmark-unverified` visual measurement)。**分隔「:」移除**(AR8 canonical — Ant TimePicker / Google Calendar 同樣不加 `:`,靠 column 間距自明 `@benchmark-unverified` visual)
 - Scrollable list 用 **`<ScrollArea>`**(對齊 DS 跨 OS 一致 overlay 捲軸 canonical);不 raw `overflow-y-auto`
 - 每 item **`h-field-sm`(28px @ md / 32px @ lg)對齊 DatePicker date cell**(跨 picker 視覺一致)
 - List 高 `h-[216px]`(容納約 7 個 item 置中)
@@ -154,15 +156,15 @@ Panel 展開後的 column picker 結構:
 | HH:mm:ss(showSeconds=true)| 3 欄 | `3 × 48 + gap-1 × 2 + px × 2` ≈ 48×3 + 8 + 24 = **176px** |
 
 **世界級對照**:
-- Ant Design TimePicker:每欄 ~56px,3 欄 ~170px(Panel 含 footer)
+- Ant Design TimePicker:每欄 ~56px,3 欄 ~170px(Panel 含 footer)`@benchmark-unverified` visual measurement(visual sampling,not source-citable as exact pixel)
 - Google Calendar Quick-Time:~150-170px
-- Material 3 TimePicker dial:~180px(含 AM/PM)
+- Material 3 TimePicker dial:~180px(含 AM/PM)`@benchmark-unverified` visual measurement
 - 本 DS:每欄 48px,2 欄 ~124px / 3 欄 ~176px,**符合世界級緊湊節奏**
 
 **為什麼每欄 48px 不 56 / 64**:
 - 48px = `h-field-sm × 1.7`,兩位數字 `tabular-nums`(約 16-18px 寬)+ 左右呼吸 ~15px。不貼邊也不浪費
 - 56-64px 寬度逼近 Select menu 語境;picker column 超過此寬度會模糊 picker vs menu 的視覺界線
-- Ant 56 / 本 DS 48 差異在:Ant 的 item 有圓角 button 佔寬,本 DS 走 `rounded-md` `text-center`,視覺 48px 不擠
+- Ant 56 / 本 DS 48 差異在:Ant 的 item 有圓角 button 佔寬,本 DS 走 `rounded-md` `text-center`,視覺 48px 不擠 `@benchmark-unverified` visual measurement
 
 **showSeconds 切換時 panel 寬度會跟著變**(刻意):
 - 對齊 Ant 慣例(content-driven)

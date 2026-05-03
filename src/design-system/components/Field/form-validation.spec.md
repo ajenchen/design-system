@@ -1,3 +1,5 @@
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # Form Validation 設計原則
 
 > **本 spec = 跨表單的 validation 方法論 rules,非 UI 元件 spec,不適用 Layout Family 分類**(Dim 16 豁免)。

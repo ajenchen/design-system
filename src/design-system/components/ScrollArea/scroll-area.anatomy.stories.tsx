@@ -1,3 +1,4 @@
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-rationale:
 //   StateBehavior represented as OrientationBehavior — ScrollArea 是 OS chrome
 //     類功能性 primitive,thumb 唯一狀態(default / hover)已於 ColorMatrix 展示。

@@ -1,3 +1,5 @@
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # Inline Action 設計規格(SSOT)
 
 **定位**:嵌入在其他元件內部的互動觸發點(Tag dismiss / Field endAction / Row suffix action)。不是獨立 Button,由宿主元件渲染 + 控制。
@@ -19,15 +21,11 @@
 | 預設 | transparent | — |
 | hover | `bg-neutral-hover` | transition-colors |
 | active(mouse down) | `bg-neutral-active` | transition-colors |
-| **overlay 開啟**(`data-state=open`,當 inline action 是 DropdownMenu / Popover trigger)| `bg-neutral-selected`(持續態,4% vs hover 2% 更明顯)| transition-colors |
+| **overlay 開啟**(`data-state=open`)| **同 host hover**(該元件 hover 什麼樣就維持) | transition-colors |
 | focus-visible | `outline: 2px solid var(--ring)` | — |
 | 宿主 disabled | 不渲染 inline action | — |
 
-**Overlay trigger active state canonical**(2026-04-29):當 inline action 透過 `asChild` 作為 DropdownMenu / Popover / Tooltip trigger,Radix 自動 set `data-state="open"` on trigger element。為對齊世界級(Material / Polaris / Radix 共識),trigger 視覺**維持持續態**直到浮層關閉。
-
-**Token 選擇 rationale**:用 `bg-neutral-selected`(4%)而非 `bg-neutral-hover`(2%)— hover 是「轉瞬反饋」設計刻意 subtle,持續 active 需要 2x 更明顯的視覺回饋(對齊 Button toggle pressed `data-state=on` 同 family,跨 DS 一致)。
-
-`ItemInlineActionButton` 已內建 `data-[state=open]:text-foreground` + `group-data-[state=open]/action:bg-neutral-selected`;Button text variant 同樣 `data-[state=open]:bg-neutral-selected`。
+**Overlay trigger canonical**(2026-04-29 訂 / 2026-05-02 改):trigger 透過 `asChild` 作 DropdownMenu / Popover / Tooltip trigger 時,Radix 自動 set `data-state="open"`,**trigger 維持 host hover 樣式**直到浮層關閉。對齊**狀態極簡派**(shadcn / Radix Themes / Material — 不另開 4th token);避免 state 增生 + 跨 host(neutral / colored)規則同步。落實:`ItemInlineActionButton` / Button text/secondary/tertiary / `fieldWrapperStyles` `data-[state=open]` 全走「等同 hover」。
 
 ### Icon 色彩（按 host 分兩類,2026-04-21 D6 矛盾解）
 
@@ -179,49 +177,16 @@ Row action 的 affordance 是「次要功能」,不是 primary CTA。Button chro
 
 ### Inline action 共用元件(`ItemInlineAction` / `ItemSuffix`)
 
-**過去每個 host(Input / NumberInput / Tag / LinkInput / Combobox)自己複製 ~18 行 JSX** 來渲染——重複、易漂移、任何規格調整都要改 5+ 處。
-
-Canonical 實作搬到 `item-layout.tsx`,匯出兩個元件:
+Canonical 實作於 `item-anatomy.tsx`,匯出 `ItemInlineAction` / `ItemSuffix`(從 `RowSizeContext` 自動查 icon size / hover bg / tooltip / aria-label / fg-muted → foreground 全內建)。
 
 ```tsx
-import { ItemInlineAction, ItemSuffix, type InlineActionConfig } from "@/design-system/patterns/element-anatomy/item-anatomy"
-
 // 單一 action
 <ItemInlineAction action={{ icon: X, label: '清除', onClick: handleClear }} />
-
-// 多個 action + hover-reveal(TreeView 模式)
-<ItemSuffix hoverReveal>
-  <ItemInlineAction action={{ icon: MoreVertical, label: '更多', onClick: ... }} />
-  <ItemInlineAction action={{ icon: Plus, label: '新增', onClick: ... }} />
-</ItemSuffix>
+// 多個 + hover-reveal
+<ItemSuffix hoverReveal>{actions.map((a) => <ItemInlineAction action={a} />)}</ItemSuffix>
 ```
 
-`ItemInlineAction` 自動從 `RowSizeContext` 查:
-
-- Icon 尺寸 = `ICON_SIZE[size]`(16/16/20)
-- Hover bg 尺寸 = `INLINE_ACTION_HOVER_BG_SIZE[size]`(18/18/22)
-- 圓角 = `rounded-md` (sm/md) / `rounded-md` (lg)
-- Tooltip / aria-label / cursor-pointer / fg-muted → foreground 全部內建
-
-**Host 的責任**(宣告式 API,不自己渲染 button JSX):
-
-```tsx
-// ✅ 正確:consumer 宣告 intent,host 用 ItemInlineAction 渲染
-<SidebarMenuButton inlineActions={[{ icon: X, label: '...', onClick: ... }]} />
-
-// ❌ 錯誤:host 自己複製 18 行 JSX
-<button className="...">
-  <span className="absolute ..." />
-  <X size={16} />
-</button>
-```
-
-**現況**:`SidebarMenuButton` 已遷移。**未來 refactor target**:Input、NumberInput、Tag、LinkInput、Combobox 都有同一段重複 JSX,應該逐步改用 `ItemInlineAction`,讓 canonical 實作成為**單一 source of truth**。
-
-任何 row primitive 要支援 suffix inline action,只要:
-1. 接收 `inlineActions?: InlineActionConfig[]` prop
-2. 在 suffix slot 用 `ItemInlineAction` 渲染
-3. 用 `RowSizeProvider`(已由 SidebarProvider 等容器提供)確保 descendant 讀到對的 size
+**Host 走宣告式 API**(`inlineActions?: InlineActionConfig[]` prop)— 不自刻 button JSX。已遷移:`SidebarMenuButton`。Pending refactor:`Input` / `NumberInput` / `Tag` / `LinkInput` / `Combobox`。
 
 ### Dismiss canonical — X close only
 

@@ -1,3 +1,5 @@
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # Element Anatomy 設計原則(4-Family Model Taxonomy)
 
 本檔是 design system 中 **element-level 結構分類系統**的頂層 governance doc——跨 pattern / cross-component。每個元件 spec 第一段**必須聲明 Layout Family**(1/2/3/4 或「非 family,self-contained / composite」)。

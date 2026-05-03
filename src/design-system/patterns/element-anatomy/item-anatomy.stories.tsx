@@ -1,3 +1,4 @@
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: Item Anatomy pattern spec 的教學 story,使用 raw <table> 呈現 token/align/primitive 對照表(類似 Figma inspect)。DataTable 的密度 / row 交互行為不適合純文件靜態對照;此為 pattern 自身 anatomy 檔,屬合理例外。
 import type { Meta } from '@storybook/react'
 import { useState } from 'react'

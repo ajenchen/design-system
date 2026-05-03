@@ -8,6 +8,8 @@ traits:
   - isInputLike
 ---
 
+<!-- @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved. -->
+
 # DatePicker 設計原則
 
 ## 定位
@@ -50,7 +52,7 @@ DatePicker 是**單一日期**的輸入與顯示元件。Edit 用**本 DS 自建
 | 場景 | 改用 | 原因 |
 |------|------|------|
 | 日期範圍（from → to） | **`<DatePicker.Range>`**(本檔下「DatePicker.Range」段,2026-04-21 新增) | 仿 Ant `DatePicker.RangePicker` 架構:雙 input + 箭頭 + 共用 calendar icon,Popover 展開兩月份並列 |
-| 日期 + 時間（含時分） | `<DatePicker>` + `<TimePicker>` 並列(見 TimePicker spec) | 單元件只管日期;時間部分透過 composition 達成(對齊 Ant 家族慣例) |
+| 日期 + 時間（含時分） | **本元件加 `showTime` prop**(canonical 2026-05-02,Ant idiom) | DatePicker `showTime` / DatePickerRange `showTime` 內建 TimeColumns + 此刻/確定 footer;value 變 ISO datetime |
 | 相對時間（「3 天前」「昨天」）| 自訂 Display 元件 | DatePicker 的 Display 是絕對日期；相對時間需要計算 + locale 格式化 |
 | 純文字 YYYY-MM-DD（不需要 picker）| `Input` | 如 API debug 介面、不需互動的純記錄 |
 | 生日等「只有月日、不需要年」的欄位 | 目前用 DatePicker 忍受年份 | 多數情境可接受；要極致可自訂 MonthDayPicker |
@@ -128,6 +130,10 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
   clearable                             // 一次清空兩端點
   formatOptions                         // Intl.DateTimeFormatOptions,與 single 共用
   locale
+  showTime                              // 啟用時間欄位 → value 變 [datetime, datetime]
+  showSeconds                           // showTime 時是否顯示秒
+  minuteStep={15}
+  needConfirm                           // 預設 showTime=true 時為 true
 />
 ```
 
@@ -139,18 +145,35 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 └───────────────────────────────────────────────┘
  │               │                │              │
  │               │                │              └─ CalendarIcon(固定右側,視覺指示)
- │               │                └─ End date 文字 / placeholder
+ │               │                └─ End date(獨立 button,點擊 activeEnd='end')
  │               └─ ArrowRight icon(`mx-2`,text-fg-muted)
- └─ Start date 文字 / placeholder
+ └─ Start date(獨立 button,點擊 activeEnd='start')
 ```
 
-外層是**一個** `fieldWrapperStyles` trigger button(整個區塊點開啟單一 Popover);**不是**兩個獨立 input 黏在一起。點擊任何位置都開啟 Popover 顯示 Calendar range 選擇器(month grid × 2 並列)。
+外層是 `fieldWrapperStyles` 容器,內含**兩個獨立 button**(start / end input),點任一個都開 Popover **並設定 activeEnd**。Active 端點視覺以 `data-active-end="true"` underline 標示(對齊 Ant RangePicker active input 視覺)。
+
+### Active-end 機制(canonical 2026-05-02,對齊 Ant Design RangePicker)
+
+對齊 Ant Design 實證(WebFetch react-component/picker source code 2026-05-03):**input-click 切換 activeEnd**,而**非** footer toggle / radio 按鈕。
+
+**Source citations**:
+- Ant `activeIndex` tracking + `getActiveRange`:`https://github.com/react-component/picker/blob/master/src/PickerInput/RangePicker.tsx`(`function getActiveRange(activeIndex) { return activeIndex === 1 ? 'end' : 'start' }`)
+- Ant `useRangeDisabledDate`:`https://github.com/react-component/picker/blob/master/src/PickerInput/hooks/useRangeDisabledDate.ts`(activeIndex=1 + start 已選 → date < start disabled)
+- Material X DateRangePicker docs:`https://mui.com/x/react-date-pickers/date-range-picker/`(同 input-driven activeEnd 派)
+- Atlassian DateRangePicker:`https://atlassian.design/components/datetime-picker/`
+
+- 點 start input → `activeEnd='start'` + 開 popover;DateGrid range 選的端點落到 start
+- 點 end input → `activeEnd='end'` + 開 popover;同理只更新 end
+- **Auto-advance**:選完 start → 自動切 `activeEnd='end'` 等待 user 選 end(Ant idiom)
+- **showTime=true 時 TimeColumns 套 active end 的 time**(只能編一端的時間,符合單一焦點原則)
+- 視覺指示:active input 加 `decoration-primary underline-offset-4 decoration-2`(對齊 Field focus 語意)
 
 ### Popover 行為
 
 - `mode="range"` + `numberOfMonths={2}`(兩月並列,對齊 Airbnb / Booking / Ant Design)
-- 第一次點 → 設 `range.from`,Popover 不關
-- 第二次點 → 設 `range.to`(若早於 from 自動 swap),Popover **自動關閉**
+- 點 date → 依 `activeEnd` 更新對應端點(start | end);auto-advance 至 end 等選
+- showTime=false:兩端點都填好 → Popover **自動關閉**
+- showTime=true:`needConfirm=true`(default),user 按「確定」才 commit + close
 - 期間 user 可 hover 未來端點預覽 range track 視覺(Calendar 內建)
 - Clear 按鈕清空兩端點 `onChange([null, null])`
 
@@ -167,6 +190,57 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 - ❌ 不自刻「兩個 `<Input>` + 中間箭頭」繞過 `DatePicker.Range`(canonical 本元件提供)
 - ❌ 不讓 Popover 在選第一個端點後就關閉(違反 range selection UX)
 - ❌ value 用單字串 `"2026-01-01/2026-01-07"`——必 `[string | null, string | null]`,語意清楚 + 避免 parse 錯誤
+- ❌ Range active-end **不**用 footer toggle / radio 切換(違反 Ant / Material / Atlassian 慣例);必走 input-click
+
+---
+
+## showTime(2026-05-02 新增,Ant idiom 整合 datetime)
+
+### API
+
+```tsx
+<DatePicker
+  showTime                              // 啟用時間欄位 → value 變 ISO datetime
+  showSeconds={false}                   // 是否顯示秒(預設 false,對齊 Ant)
+  minuteStep={15}                       // 分鐘步進,會議常用 15
+  secondStep={1}
+  needConfirm                           // 預設 showTime=true 時為 true(Ant idiom)
+  value={iso}                           // 'YYYY-MM-DDTHH:MM:SS'
+  onChange={...}
+/>
+
+<DatePicker.Range showTime ... />       // Range 同樣 props
+```
+
+### 行為
+
+- showTime=true:popover 右側出現 `<TimePickerSidePanel>`(內部消費 TimeColumns),通過 `<CalendarTimeContainer>` absolute positioning 讓 DateGrid 主導 row 高度(TimeColumns 不撐高)
+- TimePickerSidePanel **header dynamic 顯示當前 active time**(`HH:MM` / `HH:MM:SS`),對齊 Ant `<DatePicker showTime />` panel header(canonical 2026-05-03 v9)
+- TimePickerSidePanel 結構:**pt-3 + h-field-xs flex center + mb-3**(top 對齊 DateGrid month_caption 同 Y baseline;**bottom = 0,讓 time list 連續延伸到 SurfaceFooter border-t**,對齊 Ant / Material time-picker 「continuous scroll」idiom — canonical 2026-05-03 v10)
+- TimePickerSidePanel header **下方無 divider**(對齊 DateGrid month_caption 也無 border-b),DS internal canonical M23 優先於 Ant time-picker header divider 慣例 — 兩 panel 同層級 caption 視覺對稱(canonical 2026-05-03 v10)
+- 底部 footer **消費 SurfaceFooter SSOT**(`patterns/overlay-surface`)— border-t + canonical px-loose py-tight padding,**不**自寫 Separator + p-2 + ml-auto wrapper(canonical 2026-05-03 v8)
+- Footer 排版(對齊 Ant `marginInlineStart: auto` on OK):左「此刻」(`mr-auto` push)、右「確定」(needConfirm)或「關閉」
+- Range showTime footer **無「此刻」**(對齊 Ant `showNow={multiple ? false : showNow}`)— 只「確定」走 SurfaceFooter justify-end
+- value 格式:`'YYYY-MM-DDTHH:MM:SS'`(local-time 語意,不帶 timezone)
+- needConfirm=true 時 user 編輯先暫存 draft,trigger text 即時讀 draft(canonical 2026-05-03 v8 修);按確定才 onChange;false 時邊編邊 commit
+- showSeconds=false(default)→ TimeColumns 只顯示 H/M(對齊 Ant 預設)
+- Range cell disable(對齊 Ant `useRangeDisabledDate`):activeEnd='start' + end 已選 → date > end disabled;activeEnd='end' + start 已選 → date < start disabled
+- Range stadium pattern(canonical 2026-05-03 v8):rangeStart/End cell pseudo `before:rounded-l-full / rounded-r-full` 跟 button 圓的左/右半弧 EXACTLY OVERLAY → 無「凸出」(對齊 Ant `cell-range-start::before { border-radius: 9999px 0 0 9999px }`)
+
+### 為什麼用 prop 而非分離 `<DateTimePicker>` 元件
+
+世界級對照:**Ant Design / Material X / Atlassian / Carbon 全採 prop 模式**(`showTime` / `withTime` / `granularity`),非分離元件。Source:
+- Ant `<DatePicker showTime />`:`https://ant.design/components/date-picker#datepicker-demo-time`(`showTime: true | object`)
+- Material X `views={['day','hours','minutes']}` / `format`:`https://mui.com/x/react-date-pickers/date-time-picker/`
+- Atlassian `<DateTimePicker>`:`https://atlassian.design/components/datetime-picker/`
+- React Aria `granularity`:`https://react-spectrum.adobe.com/react-aria/DatePicker.html#granularity`
+
+理由:
+- API surface 一致(同 props 結構,只多 4 個 time-related prop)
+- 避免 DateTimePicker / DateTimeRangePicker / DatePicker / DatePickerRange 4 個元件 cross-product
+- consumer 從 date-only 升級 datetime 只加 prop,不換元件
+
+歷史(2026-04-21~05-01):曾分離為 `<DateTimePicker>` 在 DataTable 內,2026-05-02 user audit 發現抽象不對(M17 SSOT 違反 + API surface 不一致),合併回 DatePicker showTime。
 
 ---
 
@@ -187,6 +261,7 @@ Display 模式（readonly / disabled / DataTable cell）使用 `Intl.DateTimeFor
 
 - 只在 edit 模式顯示
 - 清除後 value 變為 `null`（Display 顯示 —）
+- **Dual-state sync canonical**(2026-05-03 v10):X 點擊必同時 `onChange?.('')` + `setDraft(null)`(Range 同),否則 `needConfirm=true`(showTime 預設)且 popover 開著時 `displayValue=draft` 仍顯示舊值,trigger 看起來「沒清」。X 在 trigger 上是 standard clear affordance,不走 needConfirm「等確定」語義 — 立刻 commit + 同步 draft
 
 ---
 
