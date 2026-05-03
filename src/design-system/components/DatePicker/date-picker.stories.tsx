@@ -102,13 +102,13 @@ export const RangePicker: Story = {
     return (
       <div className="flex flex-col gap-4 max-w-md">
         <p className="text-caption text-fg-muted">
-          雙 input + 中間箭頭。點 start input 開 popover + activeEnd='start';點 end input 同理。Auto-advance:選完 start 自動切 end。
+          雙 input + 中間箭頭。點 start input 開 popover + activeEnd='start';點 end input 同理。Auto-advance:選完 start 自動切 end。clearable=true → trigger 顯示 X 清空按鈕。
         </p>
-        <DatePicker.Range value={range} onChange={setRange} />
+        <DatePicker.Range value={range} onChange={setRange} clearable />
         <p className="text-caption text-fg-muted">
           目前值:from={range[0] ?? '(空)'} / to={range[1] ?? '(空)'}
         </p>
-        <p className="text-caption text-fg-muted">Empty 初始狀態:</p>
+        <p className="text-caption text-fg-muted">Empty 初始狀態(無 X 因為沒值):</p>
         <DatePicker.Range
           value={[null, null]}
           onChange={() => {}}
@@ -155,7 +155,7 @@ export const ShowTime: Story = {
 
 /* ── OpenSnapshot:Range popover 內 range track 視覺驗證(M15)── */
 export const RangePopoverOpen: Story = {
-  name: 'OpenSnapshot:Range popover',
+  name: 'Range:浮層展開狀態',
   parameters: { docs: { description: { story: 'Visual-audit OpenSnapshot — popover 內 DateGrid mode=range,verify range track 高度 = button 高度(28×28 @ md),不留 cell 上下 2px 多餘空白(Q8 canonical 2026-05-02)。' } } },
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
@@ -175,7 +175,7 @@ export const RangePopoverOpen: Story = {
 
 /* ── OpenSnapshot:showTime popover 內 TimePicker side panel(M15)── */
 export const ShowTimePopoverOpen: Story = {
-  name: 'OpenSnapshot:showTime popover',
+  name: 'showTime:浮層展開狀態',
   parameters: { docs: { description: { story: 'Visual-audit OpenSnapshot — popover 內 DateGrid + TimePickerSidePanel(header + 滾選欄)+ footer。Verify TimePicker 高度 = calendar 高度,header 對齊 calendar 的「年月」(canonical 2026-05-02)。' } } },
   render: () => {
     const [v, setV] = React.useState<string>('2026-04-15T14:30:00')
@@ -194,7 +194,7 @@ export const ShowTimePopoverOpen: Story = {
 
 /* ── OpenSnapshot:showTime Range popover(activeEnd='start')── */
 export const ShowTimeRangePopoverOpen: Story = {
-  name: 'OpenSnapshot:showTime Range popover',
+  name: 'showTime Range:浮層展開狀態',
   parameters: { docs: { description: { story: 'Visual-audit — Range showTime popover:numberOfMonths=1(只渲 active end 月份)+ TimePickerSidePanel + footer。Verify Ant idiom「一次 edit 一端」(canonical 2026-05-02)。' } } },
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>([
@@ -216,7 +216,7 @@ export const ShowTimeRangePopoverOpen: Story = {
 
 /* ── HoverState:Range middle hover blue ring 驗證(M11 + Bug C 真實截圖)── */
 export const RangeMiddleHoverState: Story = {
-  name: 'HoverState:Range middle hover ring',
+  name: 'Range middle:hover 狀態',
   parameters: { docs: { description: { story: 'Visual-audit — 開 range popover 並 userEvent.hover 一個 range_middle date,verify 藍色 1.5px ring 顯示在 grey track 之上(Bug C canonical 2026-05-02)。CSS :hover 需真實 pointer event,用 storybook/test userEvent.hover 觸發。' } } },
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])

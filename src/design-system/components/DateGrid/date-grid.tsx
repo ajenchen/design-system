@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import 'react-day-picker/style.css'
 
 import { cn } from '@/lib/utils'
+import { Button } from '@/design-system/components/Button/button'
 
 /**
  * DateGrid — DayPicker 包裝,用本 DS token 覆寫預設視覺。
@@ -78,38 +79,23 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         // Month caption:單行置中 h-field-xs,prev/next 按鈕 absolute 從兩側貼齊
         month_caption: 'flex items-center justify-center h-field-xs mb-3',
         caption_label: 'text-body font-medium',
-        // navLayout="around" 下 button_previous / button_next 是 Month 內 sibling — absolute 定位到 caption 行兩端
-        button_previous: cn(
-          'absolute top-0 left-0 z-[1]',
-          'inline-flex items-center justify-center h-field-xs w-[var(--field-height-xs)] rounded-md',
-          'text-fg-muted hover:text-foreground hover:bg-neutral-hover',
-          'disabled:text-fg-disabled disabled:pointer-events-none',
-          'transition-colors',
-        ),
-        button_next: cn(
-          'absolute top-0 right-0 z-[1]',
-          'inline-flex items-center justify-center h-field-xs w-[var(--field-height-xs)] rounded-md',
-          'text-fg-muted hover:text-foreground hover:bg-neutral-hover',
-          'disabled:text-fg-disabled disabled:pointer-events-none',
-          'transition-colors',
-        ),
-        // ── Grid layout(canonical 2026-05-02 v3,naked button + gap-1)──
-        // 之前用 wrap 32×32 cell + button absolute inset-0.5 是為了 range bg 連貫,但
-        // 留下兩個 anti-pattern:(1) cell wrap 多 4px 視覺保留區 (2) weekday row 也卡 32px
-        // 高造成上下 dead space。
-        //
-        // 現改:cells 用 `grid grid-cols-7 gap-1`(4px gap)+ cell **就是** button(28×28 @ md)。
-        // Range track 連貫透過 cell 的 `before:` pseudo `before:-inset-x-[2px]` 兩側
-        // 各延伸 2px → 跨過 4px gap → 視覺連續(對齊 Ant DateRange track 連貫共識)。
-        // popover 整體 padding `p-3`(12px,canonical 不變)。
-        month_grid: 'flex flex-col gap-y-1',
-        weekdays: 'grid grid-cols-7 gap-x-1',
+        // ── Prev/Next button(canonical 2026-05-03 v6,user audit fix)──
+        // RDP 把這 className apply 到 <Button> 本身(不是 wrapper),所以用 className 直接套
+        // 定位類(absolute top/left/right-0)。muted 色透過 Button override 內部加,不用 [&>button] 黑魔法。
+        button_previous: 'absolute top-0 left-0 z-[1]',
+        button_next: 'absolute top-0 right-0 z-[1]',
+        // ── Grid layout(canonical 2026-05-03 v7,純 table-native)──
+        // RDP v9 month_grid = <table>。v6 試 grid 在 tr 上但 break border-spacing(grid 蓋掉
+        // table-row layout)。乾淨修:**純 table layout** + `border-spacing-1`(4px H+V,table-native)。
+        // 所有 cells 自動同寬同高(td 的 w/h-field-sm),無 grid hack。
+        month_grid: 'border-separate border-spacing-1',
+        weekdays: '',  // thead default
         weekday: cn(
-          // text-body 跟 date 同 size(撤銷 v3 我擅自改的 text-caption)
           'text-fg-secondary text-body font-normal',
-          'h-7 flex items-center justify-center',
+          // td 預設 vertical-align=baseline,改 middle 對齊 weekday text 跟 date row
+          'h-7 align-middle text-center',
         ),
-        week: 'grid grid-cols-7 gap-x-1',
+        week: '',  // tr default
         // Cell **就是** button 容器(28×28 @ md / 32×32 @ lg),`relative` 讓 before pseudo 定位
         // ── h-field-sm 對齊 user spec(28×28 @ md)— v3 用 h-field-md (32×32) 是錯的
         day: cn(
@@ -144,20 +130,26 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           '[&>button]:bg-disabled [&>button]:text-fg-disabled [&>button]:cursor-not-allowed',
           '[&>button]:hover:ring-0 [&>button]:hover:bg-disabled',
         ),
-        // ── Range track(canonical 2026-05-03 v5)──
-        // bg pseudo 蓋**全 cell**(對齊 Ant cell-touching pattern)避免 button 圓的 corner
-        // triangle 漏出 popover white(v3 只蓋半邊的 bug)。`-inset-x-[2px]` bridge 4px gap。
-        // 色用 `bg-neutral-selected`(semantic,= neutral-2)對齊 TimePicker 選中項目樣式。
-        // pointer-events-none 確保 hover 事件直接到 button。
+        // ── Range track(canonical 2026-05-03 v6,Ant stadium pattern)──
+        // v5 用 pseudo 矩形蓋全 cell 修「白色破圖」,但新副作用:button 圓比矩形小,4 個
+        // corner triangle 區域 pseudo grey 凸出圓外(user 2026-05-03 抓到「凸出去」)。
+        // 對齊 Ant 實證(`cell-range-start::before { border-radius: 9999px 0 0 9999px }`):
+        // rangeStart pseudo 加 `rounded-l-full` → pseudo 變「左半圓 + 右矩形」stadium
+        // 左半圓 EXACTLY OVERLAY button 圓的左半圓(同 center,同 radius 14)→ 邊界無縫
+        // 右側矩形 bridge 2px to middle → 跟 middle pseudo 連續
+        // Cell 的 top-left + bottom-left corner triangle:pseudo 不蓋 + button 不蓋 →
+        // popover white 顯露(乾淨 breathing,跟 outside-of-range cells 一致視覺)
         range_start: cn(
           "before:content-[''] before:absolute before:inset-y-0",
           'before:left-0 before:-right-[2px]',
           'before:bg-neutral-selected before:pointer-events-none',
+          'before:rounded-l-full',  // ← stadium 左半圓 matches button 圓的左半弧
         ),
         range_end: cn(
           "before:content-[''] before:absolute before:inset-y-0",
           'before:-left-[2px] before:right-0',
           'before:bg-neutral-selected before:pointer-events-none',
+          'before:rounded-r-full',  // ← 鏡像
         ),
         range_middle: cn(
           "before:content-[''] before:absolute before:inset-y-0 before:-inset-x-[2px]",
@@ -169,10 +161,24 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         ...classNames,
       }}
       components={{
-        Chevron: ({ orientation }) => {
-          const Icon = orientation === 'left' ? ChevronLeft : ChevronRight
-          return <Icon size={16} />
-        },
+        // ── Prev/Next nav(canonical 2026-05-03 v6,DS Button consumption)──
+        // User 2026-05-03 audit:「該用 Button 元件,為何 hand-coded?」用 RDP v9
+        // `PreviousMonthButton / NextMonthButton` override(`node_modules/react-day-picker/dist/esm/components/Nav.js`
+        // 證實 RDP 支援)。Button variant=text size=xs iconOnly = DS chrome icon 共識。
+        //
+        // Icon 顏色 muted 對齊 world-class consensus(secondary affordance):
+        //   - Ant `.ant-picker-header-prev-btn { color: rgba(0,0,0,0.25) }`
+        //   - Material X `<IconButton color="default">` (muted grey[500])
+        //   - Apple Calendar SF Symbol secondaryLabel color
+        // 我們套 `text-fg-muted` 直接 className 給 Button。
+        PreviousMonthButton: ({ className, ...props }) => (
+          <Button variant="text" size="xs" iconOnly startIcon={ChevronLeft}
+            className={cn('text-fg-muted', className)} {...props} />
+        ),
+        NextMonthButton: ({ className, ...props }) => (
+          <Button variant="text" size="xs" iconOnly startIcon={ChevronRight}
+            className={cn('text-fg-muted', className)} {...props} />
+        ),
       }}
       {...props}
     />
