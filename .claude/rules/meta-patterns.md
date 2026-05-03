@@ -24,11 +24,14 @@
 | **M18** | **Propose-time 4 題自檢 gate**。列 option / 建議前必 inline 跑 Q1 M8 benchmark / Q2 M17 SSOT / Q3 Rule-of-3 / Q4 M10 下游吸收。Reject 不列出,通過寫 4-Q 證據表。SSOT → `.claude/skills/propose-options/SKILL.md`。 | c hook + d M18-inner-area propose-time 沒 4-Q,user 撤回 |
 | **M19** | **Trigger phrase auto-pipeline**。「確保 / 一定 / 永不漂移 / ensure / always」trigger → 自動 5-layer ≥ 3 層落地 + M8 + M17 + M10。Substantive 走 STOP。SSOT → `.claude/skills/ensure-canonical/SKILL.md`。 | story splitting 2026-04-26 user 第 N 次強調才落地 |
 | **M20** | **AI 自問 best-practice + 自動 self-improve**(不靠 user 提醒)。Stop hook `stop_meta_self_audit.sh` 每 turn 跑 score → < 80 / regression ≥ 5 inject MAXIMUM-strength prompt → AI must act before user reply。**Note(2026-04-26 external benchmark)**:score formula 已對齊 Anthropic 官方 thresholds(CLAUDE.md ≤ 200 / hooks ≤ 15 / subagents > 0 / path-scoped rules used)。 | user 10 次問「best-practice 嗎」直到外部 benchmark 確認真 gap |
+| **M21** | **新元件 / 新 sub-component 抽象前必過 prop variant test**。當新元件名 = `<Existing>+suffix`(Time / Range / Color / Light / Dark / Filled / Outline / Compact / Rich)→ 強烈 signal 應為 prop variant on `<Existing>`。3-test 通過才能分(全失敗 → prop):(1) `<Existing>` 加 prop 無法達成同 DOM/behavior?(2) ≥3 家 world-class DS 用分離元件而非 prop(必 cite source)?(3) value 結構或 contract 真的不同(如 Range = [start, end])?Hook `check_premature_abstraction.sh` 機械化攔截。 | DateTimePicker 從 DatePicker 拆 → 撤回合併 `<DatePicker showTime>`(2026-05-02);DataTableFilterPanel 5-file → 撤回 sub-file pattern |
+| **M22** | **Benchmark claim 必附 inline source citation**(不可憑印象)。寫 spec / tsx 含「Ant / Material / Polaris / Atlassian / Carbon / shadcn / Radix」等 world-class DS claim,必同段附:(a) inline URL(domain 對應 DS 官網 / GitHub source);(b) GitHub source path + line ref `#L42`;(c) screenshot reference `snapshots/...`;(d) 顯式撤回 `@benchmark-unverified`。Hook `check_benchmark_citation.sh` 機械化警告(P1 soft)。每次 implement 前跑 WebFetch 取真 source,不憑印象解碼。 | claim「Ant showTime range = 2 calendars」憑印象,實證 source code `multiplePanel = false` = 1 calendar(2026-05-02 鬼話事件)|
+| **M23** | **DS 內既有 canonical 優先於外部 benchmark**。寫 visual decision(color / size / spacing / typography / state)前必先 grep DS 既有 codified token / variant / pattern;命中 → 必對齊;沒命中 → 才引 world-class + 同步補 canonical。**禁止**:外部 benchmark(M22 cite OK)直接覆蓋 DS 內已有 canonical。Mindset #2「優先消費既有」的 visual layer。判斷流程:(a) grep 該屬性既有 token/variant(如 `text-foreground` vs `fg-muted` vs 各 Button variant);(b) 命中 canonical?有 → 用,沒 → 走 M22 cite 然後 codify。 | 2026-05-03 chevron color 事件:grep `text-foreground` 是 icon-only Button 預設(neutral-9 / 85%),`fg-muted` 嚴格 = dismiss only。我憑「Ant 5 家世界級 muted」覆蓋 → 自開新 tier 違反 DS 一致設計語言,user 4 輪後才糾出 |
 
 ## 判斷 meta-principle 是否漏寫的 test
 
 - 同類 bug 一年內被糾正 3 次 → meta-principle 漏寫或沒執行,檢討本清單
-- 某 bug 跟 20 條中任一條對不上 → 可能要新增第 21 條(跟 user 討論)
+- 某 bug 跟 23 條中任一條對不上 → 可能要新增第 24 條(跟 user 討論)
 
 ## 與失敗記憶索引的關係
 

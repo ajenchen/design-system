@@ -7,45 +7,27 @@ description: Systematic audit of this design system for world-class quality. Run
 
 Purpose: catch every bug class this project has shipped historically PLUS structural gaps relative to Polaris / Material / Atlassian / Ant / Carbon / Apple HIG. Each audit has a clear rubric tied to CLAUDE.md rules. The skill reports findings and **explicitly stops at checkpoints** for user decisions before large-scope fixes.
 
-## Skill 生態位
+## Skill 生態位 + 6 維對齊
 
-本 skill audit **DS 本身**(`src/design-system/` 內部的 spec / cva / SSOT / layout primitives 等)。若要 audit **consumer 層 UI code**(`src/app/` / `src/explorations/` 用 DS 的地方是否正確),走 `/product-ui-audit`。兩 skill scope 正交,不重疊。
+本 skill audit **DS 本身**(`src/design-system/` 內部 spec / cva / SSOT / layout primitives)。Consumer 層 UI(`src/app/` / `src/explorations/`)走 `/product-ui-audit`。兩 scope 正交。
 
-```
-/design-system-audit    audit DS 本身(本 skill)— Phase 1-4 統籌,Phase 3 chain 各維 skill
-/product-ui-audit       audit consumer UI 對 DS 的消費
-/prototype              建 exploration(Phase 3.5 強制進階 6 維)
-/delivery-handoff       產品 final 後的交付文件包
-```
+對齊 CLAUDE.md `# 稽核 canonical` 6 維,本 skill 是 **D1 設計語言 + D2 程式語言** home;D3-D6 chain:
 
-## 對齊 CLAUDE.md `# 稽核 canonical` — 本 skill 是 6 維的 D1 + D2 home
+| 維 | Skill |
+|---|---|
+| D1 / D2 | 本 skill Audits 1-33 |
+| D3 效能 | `/performance-audit` |
+| D4 UX | `/ux-audit` |
+| D5 視覺 | `/visual-audit`(Layer A mechanical + B AI) |
+| D6 原則自檢 | Phase 4 報告「提議討論」區 |
 
-CLAUDE.md 定義 6 維:D1 設計語言 / D2 程式語言 / D3 效能 / D4 UX / D5 視覺 / D6 原則自檢。本 skill 的 27 audits 覆蓋 **D1 + D2**(spec hygiene / code correctness / SSOT / cva / naming / tokens / patterns)。**D3-D5 由對應 skill 處理**:
+**進階 `--deep`**:Phase 3.5 chain D3-D5 完整 6 維 sweep。
 
-| 維度 | 對應 skill |
-|------|-----------|
-| D1 設計語言 | 本 skill Audits 1-27(Groups A–K)|
-| D2 程式語言 | 本 skill(cva / types / imports 部分)+ tsc / lint |
-| D3 元件效能 | `/performance-audit`(render / memo / bundle) |
-| D4 UX 行為 | `/ux-audit`(keyboard / focus / ARIA / animation) |
-| D5 視覺品質 | `/visual-audit`(Layer A mechanical + Layer B AI) |
-| D6 原則自檢 | 本 skill Phase 4 報告含「提議討論」區(對齊 `# 稽核 canonical`「Audit-vs-execute 分權」) |
+## When to run / preconditions
 
-**進階模式 scope=all**(全 DS 健檢 / release cut):本 skill Phase 3 chain `/performance-audit --scope=all` + `/ux-audit --scope=all` + `/visual-audit` 完整 6 維 sweep。
-
-## When to run
-
-- User asks to audit / re-audit / 檢查 / verify design system
-- Before major release or version bump
-- After large refactor that touched specs, cva defaults, or tokens
-- Periodic health check (monthly-ish)
-- User mentions "world-class" or quality concerns
-
-## Preconditions
-
-- Working directory is project root (verify `src/design-system/` exists)
-- `CLAUDE.md` read fully at start (rules evolve; don't audit from memory)
-- Current branch clean OR user acknowledges changes will be reviewed before commit
+- User 說 audit / 檢查 / verify / world-class / release / token 大改
+- Working dir = project root,branch clean(或 user 同意 review)
+- `CLAUDE.md` 必先 fully read(規則隨時間變,不憑記憶)
 
 ---
 
@@ -148,6 +130,8 @@ Grouped by theme. Each runs as an independent subagent; many can parallelize.
 | # | Audit | What it catches |
 |---|-------|-----------------|
 | 31 | **Overlay body 無 stripped-padding boolean variant**(對齊 Material/Atlassian/Mantine/shadcn 主流;Polaris flush API 例外但 scope 極窄)| Per-overlay grep `components/(Dialog\|Sheet\|Popover)/*.tsx`(非 stories)反 pattern:`(flush\|naked\|bare\|stripped\|unpadded\|noPadding\|paddingless)\?:\s*boolean` 在 body component。違反 = list-as-region 場景該由 consumer 用 className override(`!px-0 !pt-0 !pb-0`)+ 自管 list outer wrapper 處理,不該加 body variant。Rationale:variant 不解決底層脆弱(加 1 row search/banner 就破功)+ 把 1 surface decision 拆兩 API。對應 hook `check_overlay_handcraft.sh` Check 6 + `overlay-surface.spec.md`「List-as-region in overlay body」+ memory `feedback_layout_v6_canonical.md`。Hook 是 write-time block,本 dim 對既有 overlay 元件 + 未來新增 overlay primitive(Drawer / FileViewer body 等)batch verify。`// overlay-body-stripped-variant-allow:` 檔頭 allowlist 例外(必含 ≥3 家世界級對照 + multi-row hold 保證)|
+| 32 | **Filter operator registry SSOT consumption**(對齊 ClickUp/Airtable/Notion API + M17)| Per-consumer grep:反 pattern(a)hardcode op 字串 array 不 import `OPERATOR_REGISTRY`;(b)inline switch on op derive ValueShape(該走 `getValueShape`)。SSOT:`DataTable/filter-operators.ts`。`// filter-op-inline-allow:` 檔頭 escape |
+| 33 | **Component classification + abstraction discipline**(對齊 M21 + M22 + M23)| Per-component verify 5 子維:(a) **Internal vs Components 一致性**;(b) **Premature abstraction** rationale + cite;(c) **Sub-component 5-file 結構過度**;(d) **Benchmark claim 缺 source**(M22);(e) **DS internal canonical 優先**(M23)— spec / tsx 含 world-class DS keyword 但 visual decision(color / size / spacing / typography / state)未先 grep DS 既有 token / variant / pattern 命中 → flag。Sub-agent 對每 benchmark cite 反查:該屬性在 `tokens/` / 近親 spec 已有 codified canonical 嗎?有 → 該 cite 應為**輔證**(內部 canonical 主)而非**主導**(外部覆蓋內部)。違反 = M23 自開新 tier(2026-05-03 chevron 事件:Ant 5 家 muted 覆蓋 DS icon-only Button neutral-9 預設)|
 
 ---
 
@@ -155,19 +139,17 @@ Grouped by theme. Each runs as an independent subagent; many can parallelize.
 
 ### Phase 0 — Setup + Build Baseline
 
-1. Read `CLAUDE.md` completely
-2. Run `git status --short` — baseline
-3. **Build baseline — if any fail, STOP and report (see Checkpoint 5)**:
-   - `npx tsc -b 2>&1 | grep -c "error TS"` — must be `0`
-   - `npx vite build 2>&1 | tail -3` — must show `✓ built in`
-   - `lsof -i :6006 -t` OR `npm run build-storybook 2>&1 | tail -3` — storybook must build clean
-   - `grep -rE '\.stories\.tsx$' src/design-system/components` + syntax-check each via quick `npx tsc --noEmit <file>` sample — catches stories that index but type-fail
-4. **Mechanical content-quality baseline**(2026-04-26 整合,16 cat 涵蓋本 conv 發現的所有 storybook drift):
-   - `node scripts/audit-content-quality.mjs --check` — must show `✅ No content drift detected`(16 categories:anatomy numbering / non-anatomy numbering / LinkTo missing / stub pattern / missing zh-CN name / placeholder content / empty render / English placeholder / anatomy canonical names / numbering gap / showcase missing / per-size split / principles ≥ 2 / ASCII art / abstract names / thin description)
-   - `node scripts/extract-canonical-rules.mjs` — must show `✅ All extracted rule keywords covered`(rules-vs-audit coverage gap detection)
-   - **violation 在 Phase 0 出現**:Phase 1 開跑前先列入 P0 待修(mechanical 不 judgment)
-5. **If any baseline fails**: do NOT run the 20 dimensions yet. Audit quality assumes the code compiles. Report build status and ask user whether to fix build first OR proceed anyway (audit on broken code has limited value — many dimensions can't run meaningfully)
-6. Create TaskList entries for each audit you plan to run
+1. Read `CLAUDE.md` fully + `git status --short`
+2. **Build baseline(任一 fail STOP → Checkpoint 5)**:
+   - `npx tsc -b` — 0 errors
+   - `npx vite build` — `✓ built in`
+   - `npm run build-storybook` — clean
+3. **Mechanical content-quality baseline**:
+   - `node scripts/audit-content-quality.mjs --check` — `✅ No content drift`(16 cat)
+   - `node scripts/extract-canonical-rules.mjs` — `✅ All extracted rule keywords covered`
+   - violation → 列 P0
+4. Build fail → 不跑 33 dims;報 user 決定先修 OR 繼續(broken code audit 多 dim 跑不動)
+5. TaskList entries 建好
 
 ### Phase 1 — Parallel audit execution
 
@@ -196,80 +178,23 @@ Consolidate into priority matrix:
 | **P1 (batch-fix + review)** | Rule A / 人話 / shadcn passthrough holes / a11y missing aria-label / anatomy missing section | 每組一個 commit，改完立刻 review |
 | **P2 (MUST ASK)** | Rule B scope / new rule proposals / Internal vs Components reclassification / cross-cutting refactors (helper extraction 41 files) | 需 user 決策 scope |
 
-### ⚠️ Checkpoint 1 — ALWAYS ASK before P2
+### ⚠️ Checkpoints — STOP-and-ASK 場景(detail in [references/checkpoints.md](references/checkpoints.md))
 
-Present to user:
-```
-Found: N P0, M P1, K P2.
-P0 + P1 I'll auto-fix (grouped commits).
-P2 decisions needed:
-- [list each P2 finding + proposed options]
-Proceed with P0+P1? Then discuss P2?
-```
+| # | When | Action |
+|---|------|--------|
+| 1 | Triage 完(P0+P1 auto / P2 decision)| present + 等 user approve P2 scope |
+| 2 | Audit surfaces pattern 未在 CLAUDE.md | propose 新 rule draft + 等 approve |
+| 3 | Classification ambiguous(Internal/Components / SSOT home / primitive vs semantic)| present options + rationale |
+| 4 | Cross-cutting refactor > 10 檔 | execution strategy options(1 commit / N / defer) |
+| 5 | 環境 / 建置 issue | 報 user,不在 audit scope 修 env |
+| 6 | spec 與 code 衝突 | 不 silent pick,present options + git log context |
+| 7 | 「先不管」vs「之後再處理」semantic | **「先不管」= 完全忽略**(不入 tech debt);**「之後再處理」= park to memory**;絕不混淆 |
 
-**Do NOT skip this step.** Previous audit runs failed when I mechanically applied fixes to 46 specs without scope discussion.
+**Naming proposal**:Checkpoint 2 前必過 CLAUDE.md `## 命名必過三重 test`(SSOT in CLAUDE.md,不 re-spec)。
 
 ### Phase 3 — Apply fixes (grouped commits)
 
-For each fix group:
-1. Apply fixes surgically (Edit, not Write)
-2. Run `npx tsc --noEmit` — must pass
-3. Commit with descriptive message listing what changed
-
-Typical commit groups:
-- `fix: cva three-way drift — X components`
-- `docs: Spec Rule A cleanup — remove visual pollution from N specs`
-- `feat: a11y — add aria-label to icon-only buttons (X components)`
-- `docs: Anatomy — live color swatches + complete missing sections`
-- `docs: CLAUDE.md — resolve internal contradiction in X`
-
-### ⚠️ Checkpoint 2 — ALWAYS ASK when audit reveals a gap in CLAUDE.md
-
-If any audit surfaces a pattern NOT covered by an existing CLAUDE.md rule (e.g., "a11y audit found 7 components missing focus-visible — no explicit rule about focus ring"), STOP:
-
-```
-Audit found a pattern not codified in CLAUDE.md:
-[describe pattern]
-Proposed new rule for CLAUDE.md: [draft]
-Approve adding to CLAUDE.md? Or different phrasing?
-```
-
-### ⚠️ Checkpoint 3 — ALWAYS ASK when classification is ambiguous
-
-Audits may find:
-- Component that's borderline `Internal/` vs `Components/`
-- Pattern that could be SSOT-owned by either of two spec files
-- Token that could be primitive vs semantic
-
-STOP and present options with rationale — don't decide unilaterally.
-
-### ⚠️ Checkpoint 4 — Cross-cutting refactor（影響 > 10 檔）
-
-When a fix touches 10+ files (e.g., helper extraction across 41 anatomy files, token rename across 71 utility usages), STOP and present execution-strategy options (one commit / N commits / defer). Full template in [references/checkpoints.md](references/checkpoints.md).
-
-### ⚠️ Checkpoint 5 — 環境 / 建置問題
-
-If audit encounters env / build issue (node_modules broken, storybook module-not-found), DO NOT attempt to fix env within audit scope. Report separately. Full template in [references/checkpoints.md](references/checkpoints.md).
-
-### ⚠️ Checkpoint 6 — 發現 spec 與 code 衝突
-
-When audit finds spec.md describes behavior different from tsx actual, STOP — don't silently pick one. Present options + git log context. Full template in [references/checkpoints.md](references/checkpoints.md).
-
-### ⚠️ Checkpoint 7 — HANDLE「先不管」correctly（user directive semantic）
-
-**本 checkpoint 是 Skill 自身 SSOT**（CLAUDE.md 規則分層決定:對話 protocol 屬 skill 層,非設計規則層）:
-
-| User phrasing | Meaning | Action |
-|---------------|---------|--------|
-| 「先不管」/「這個先跳過」 | **Completely ignore** — not a tech debt | Do NOT add to memory, failure index, or next-audit surface. Act as if topic never existed. |
-| 「之後再處理」/「先記下來」 | Park as tech debt | Add to `memory/project_audit_progress.md` 「仍待未來處理」 |
-| 「全部做完」/「馬不停蹄」| Execute now | Proceed |
-
-**Never conflate the two**: adding a 「先不管」 item to tech debt violates user's explicit directive (it re-surfaces on next audit, creating noise).
-
-### ⚠️ Naming proposal — RUN 3-test BEFORE Checkpoint 2 approval
-
-Any new naming proposal MUST pass CLAUDE.md `## 命名必過三重 test` before Checkpoint 2. Tests defined in CLAUDE.md (SSOT) — **do not re-spec here**. Historical example:`text/picture` failed test 3(collides with Button `variant="text"`)→ changed to `compact/rich`。
+每 fix group:Edit(非 Write)→ `npx tsc --noEmit` pass → commit 描述性 message。Typical groups:cva drift / Spec Rule A / a11y / Anatomy / CLAUDE.md contradiction。
 
 ### Phase 3.5 — 進階 6 維稽核 D3-D6(對齊 CLAUDE.md `# 稽核 canonical`)
 
@@ -288,51 +213,22 @@ Phase 1-3 覆蓋 D1+D2;D3-D6 chain 專門 skill。**模式**:高效(default)scop
 
 **Trigger**:CLAUDE.md > 800 / MEMORY > 20 / 動 Meta-Pattern / hook-fires 6 月 0 fire / corrections > 10 — 任一 chain `/knowledge-prune` scope=full;P2 STOP 等 user;prune 完回 Phase 4。**不 trigger**:高效模式 / 無 Meta + sizes OK + logs 無 dead。Phase 3-4 後跑因 governance 已最新狀態。
 
-### Phase 4 — Final report + memory update + Self-improvement capture(強制)
+### Phase 4 — Final report + memory + Self-improvement(強制)
 
-After all commits:
-- Update `memory/project_audit_progress.md`:
-  - Date + audit coverage (which of the 20 + 6 dims)
-  - Findings + resolved counts
-  - Known remaining gaps (deferred P2)
-- Short final report:
-  - Commits created
-  - Deferred items with reasons
-  - Next re-audit trigger
+Update `memory/project_audit_progress.md`(date / coverage / findings / deferred P2)+ short report(commits / deferred / next trigger)。
 
-**Self-improvement capture(強制,CLAUDE.md `# 資訊治理 canonical` → Audit skill Phase F 節)**:
-
-```markdown
-## Self-improvement capture
-- 新發現 FP pattern: {描述 + 已回填到 principle-audit-protocol.md 或 audit-prompts.md} OR "無新 FP"
-- 新確立 meta-pattern: {描述 + 已提議加到 CLAUDE.md Meta-Pattern 預警 / patterns spec} OR "無新 pattern"
-- 修完的矛盾 / user 糾正: {list + 回填位置(memory / CLAUDE.md / spec)} OR "無糾正"
-```
-
-**規則**:
-- 無 learning 的 audit 要寫 "無新 pattern"(不省略)
-- 發現 FP → **session 結束前必回填** principle-audit-protocol.md 的「常見 FP 記憶」節
-- 發現 meta-pattern → **STOP 提議**(動 canonical substantive)
-- User 糾正 → 寫入對應 home(memory feedback / CLAUDE.md / skill reference)
+**Self-improvement capture(強制)**:每 audit 寫 3 行(無發現也寫「無」,不省略):
+- 新 FP pattern + 回填位置(`principle-audit-protocol.md`「常見 FP 記憶」)OR「無」
+- 新 meta-pattern + STOP 提議(動 canonical substantive)OR「無」
+- 修完矛盾 / user 糾正 + 回填 home(memory / CLAUDE.md / spec)OR「無」
 
 ---
 
-## Non-goals
+## Non-goals + common failure modes
 
-- Don't rewrite specs / stories from scratch (surgical only)
-- Don't fix pre-existing env issues (node_modules / storybook module-not-found)
-- Don't add new components / features (separate work)
-- **Don't skip checkpoints** — user decides P2 and new-rule scope
-- Don't collapse audit output into summaries before presenting — user needs file:line details
+**Non-goals**:不 rewrite spec/story / 不修 env / 不加 feature / 不 skip checkpoint / 不 collapse output(user 要 file:line)。
 
-## Common failure modes (watch for these)
-
-- **Agent hallucinates a fix** → always cross-check file:line before editing
-- **Rule B gaps are mostly scope-N/A** → apply CLAUDE.md scope defaults; don't stub 46 specs
-- **cva audit false positive** → only report if spec/anatomy make a claim that contradicts code
-- **Story audit flags aria-label / cva values** → exclude these from violation criteria
-- **a11y audit over-flags** → Radix primitives handle most ARIA; check if Radix base already provides before flagging wrapper
-- **Skipping Checkpoint 1** → history shows this leads to mechanical changes with unclear scope; always present triage to user first
+**Common FP**:Agent hallucinate fix → cross-check file:line;Rule B 多 scope-N/A → 套 CLAUDE.md 預設不 stub;cva FP → 只在 spec/anatomy 與 code 矛盾才報;Story aria-label/cva → 排除;a11y over-flag → Radix 已處理,wrapper 不重複;Skip Checkpoint 1 → mechanical change scope 不清。
 
 ## References
 
