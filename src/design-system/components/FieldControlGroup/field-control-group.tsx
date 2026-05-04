@@ -92,13 +92,15 @@ const FieldControlGroup = React.forwardRef<HTMLDivElement, FieldControlGroupProp
           '[&>*:not(:first-child):not(:last-child)]:rounded-none',
           '[&>*:first-child:not(:last-child)]:rounded-r-none',
           '[&>*:last-child:not(:first-child)]:rounded-l-none',
-          // K12 fix(2026-05-04 v5):FCG 內 disabled cell border:
+          // K12 fix(2026-05-04 v6 — opaque token cleanest fix,user 提議):FCG 內 disabled cell border:
           //   ✓ 保留 global `bg-disabled`(neutral-2 灰底,disabled state 視覺主要承載)
-          //   ✓ 用 `border-divider`(9% alpha,token 明文「比 border 更淡」)取代 `border-border`(15%)
-          //   v4 用 border-border 在灰底上視覺顯深(0.15 alpha 在 grey bg 對比放大);
-          //   改用 divider token(專為「分隔線比邊框淡」設計)直接降低 disabled 灰底 divider 視覺重量
-          //   World-class 對齊 Bootstrap input-group / Ant Space.Compact disabled 用淡色 idiom
-          '[&>*[data-field-mode="disabled"]]:border-divider',
+          //   ✓ 用 `--color-neutral-5-opaque`(solid color)取代 `--border`(alpha)
+          //   v4 用 border-border / v5 用 border-divider — 兩者皆 alpha 會跟 cell bg 做 compositing
+          //   → 灰底上略深(物理對比結果,世界級 Ant/Bootstrap 不嘗試補償只接受)
+          //   v6 改用 opaque variant(`color-mix(black 15%, white)` = solid #D9D9D9,token 系統明文設計)
+          //   → divider 不分 bg 永遠同色(white bg 跟 grey bg 上看起來一致)
+          //   → 解決「灰底 divider 比較深」perception,且不破壞 cell state inheritance
+          '[&>*[data-field-mode="disabled"]]:border-[var(--color-neutral-5-opaque)]',
           className,
         )}
         data-field-control-group=""

@@ -130,15 +130,17 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 
 **Disabled border integrity canonical(K12,2026-05-04)**:全域 disabled = `border-transparent`(讓 standalone field 視覺輕量),但**FCG context 下,disabled child 強制 `border-input`** — 確保:(a) FCG 整體外圈 border 健在,(b) inner divider 健在(不會因兩相鄰 disabled cells 都 transparent 而消失)。bg-disabled 仍區分狀態,border 維護群組視覺整合性。對齊 Bootstrap input-group / Ant Space.Compact disabled idiom。
 
-實作(v5 — divider token 對齊):
+實作(v6 — opaque token,cleanest 解):
 ```tsx
-[&>*[data-field-mode="disabled"]]:border-divider  // 9% alpha (--divider 明文「比 border 更淡」)
+[&>*[data-field-mode="disabled"]]:border-[var(--color-neutral-5-opaque)]
 ```
 保留 global `bg-disabled`(neutral-2 灰底)— disabled state 視覺主要由 bg 承載。
 
-**為什麼用 `--divider` 而非 `--border`**:`--border` (15% alpha) 在 grey bg 上 composite 顯著(物理對比);`--divider` (9% alpha) 是 token 系統明文「比 border 更淡」設計,專為分隔線弱化視覺。在 disabled 灰底上產生更輕量的分隔線,不破壞 group integrity。對齊 Bootstrap input-group / Ant Space.Compact disabled 淡色 idiom。
+**為什麼用 opaque variant 而非 alpha token**:`--border`(neutral-5 = 15% alpha)會跟 cell bg compositing — 灰底上 composite 略深(物理對比結果)。**opaque variant**(`color-mix(black 15%, white)` = solid #D9D9D9)不分 bg 永遠同色,divider 在 white edit cell 跟 grey disabled cell 上視覺完全一致。
 
 **為什麼不 override bg**:user 明確要求 disabled cells 有底色(辨識 state)。bg 灰底是 disabled state 的主要視覺載體,FCG context 不應抹除。
+
+**Token 來源**:`tokens/color/primitives.css L84` `--color-neutral-5-opaque`(系統明文 opaque variant 設計)。對齊 Bootstrap input-group / Ant Space.Compact disabled idiom 但用 token 系統的 opaque 變體解 alpha compositing 物理問題。
 | error(子)| 該 child border-error | 3(error 視覺在最上)|
 
 **整 row error**:目前 v1 不支援 row-level error(走 cell-level)。未來若需可走 outer border-error wrapper,但 v1 follow Ant 不做。
