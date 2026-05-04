@@ -113,6 +113,38 @@ export const UsageGuidance: Story = {
   ),
 }
 
+export const VsToastRule: Story = {
+  name: 'BulkActionBar vs Toast — 角色區分',
+  render: () => (
+    <div>
+      <Rule
+        title="✅ BulkActionBar = stateful selection action;Toast = transient feedback"
+        note="兩者都浮在底部,但語意完全不同。BulkActionBar 隨 selection state 決定顯示(state-driven),容納多 action,使用者主動操作;Toast 是事件後 transient 通知(event-driven),自動消失,僅 1-2 action(undo / dismiss)。對齊 Polaris BulkActions vs Toast / Material BulkActionsBar vs Snackbar 共識。"
+      >
+        <Label>BulkActionBar</Label>
+        <BulkActionBar
+          selection={['a', 'b', 'c']}
+          actions={
+            <>
+              <Button variant="tertiary" size="sm" startIcon={Archive}>封存</Button>
+              <Button variant="tertiary" size="sm" startIcon={Trash2} danger>刪除</Button>
+            </>
+          }
+        />
+      </Rule>
+      <Rule
+        title="❌ 不要用 BulkActionBar 顯示「3 個項目已封存,Undo」這類事件後通知"
+      >
+        <Label warn>Should be Toast</Label>
+        <p className="text-fg-muted text-body">
+          事件後通知 → 用 Toast(sonner Toaster)。
+          BulkActionBar 是「選了 N 項要做什麼」的選取後 toolbar,不是「我做完了」的回饋。
+        </p>
+      </Rule>
+    </div>
+  ),
+}
+
 export const ActionVariantRule: Story = {
   name: 'Action variant 規則(不用 primary)',
   render: () => (
