@@ -245,6 +245,16 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
       }
     }, [isTextDisplay, options, size])
 
+    // **React #310 fix v2(2026-05-04)**:`handleValueChange` useCallback 也必在 early return 前
+    //   原本 L306(early return 後)→ disabled→edit 切換時 hook count 仍變 → #310 持續
+    const handleValueChange = React.useCallback(
+      (newValue: string | string[]) => {
+        const v = Array.isArray(newValue) ? newValue[0] : newValue
+        onChange?.(v)
+      },
+      [onChange]
+    )
+
     // Early return AFTER all hooks(disabled / readonly mode 走 ReadonlyDisplay)
     if (resolvedMode !== 'edit') {
       return <ReadonlyDisplay mode={resolvedMode} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} />
@@ -301,15 +311,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
       </>
     )
 
-    // filteredOptions / menuOptions / renderLabel 已在 early-return 前 hoist(React #310 fix)
-
-    const handleValueChange = React.useCallback(
-      (newValue: string | string[]) => {
-        const v = Array.isArray(newValue) ? newValue[0] : newValue
-        onChange?.(v)
-      },
-      [onChange]
-    )
+    // hooks(filteredOptions / menuOptions / renderLabel / handleValueChange)已全 hoist(React #310 fix v2)
 
     const trigger = (
       <div
