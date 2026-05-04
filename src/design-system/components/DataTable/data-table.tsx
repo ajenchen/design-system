@@ -112,6 +112,26 @@ export interface DataTableProps<TData>
    * 啟用條件:該 column `meta.editable` 為 true 或 fn 回傳 true。詳 `column-types.ts`。
    */
   onCellCommit?: (rowId: string, columnId: string, value: unknown) => void
+
+  // ── L4 Row drag(Jira-style reorder)──
+  /**
+   * 啟用 row drag reorder。為 true 時,row 最左出 GripVertical handle(hover-revealed),
+   * 拖曳改 default order via `onRowReorder` callback。
+   *
+   * Sort × Drag 互斥:`sorting.length > 0` 時 drag handle 視覺 disabled + Tooltip
+   * 「排序中無法拖曳,清除排序後可重排」。對齊 Notion / Airtable 共識。
+   *
+   * **v1 限制**:non-virtualized 模式 only。virtualization + 3-panel pinned 整合留 v2。
+   * 詳 `data-table.spec.md`「L4 Row drag」段。
+   */
+  enableRowDrag?: boolean
+  /**
+   * Row reorder callback。User 拖曳完成觸發。
+   * @param sourceId 拖曳的 row id
+   * @param targetId 放下的目標 row id
+   * @param position 'before' | 'after' — 放在 target 前 OR 後
+   */
+  onRowReorder?: (sourceId: string, targetId: string, position: 'before' | 'after') => void
 }
 
 // ── Type → Display ──────────────────────────────────────────────────────────
@@ -365,6 +385,8 @@ function DataTableInner<TData>(
     enableMultiSort = true,
     onColumnFilterTrigger,
     onCellCommit,
+    enableRowDrag = false,
+    onRowReorder,
     className, ...props
   }: DataTableProps<TData>,
   ref: React.ForwardedRef<HTMLDivElement>
