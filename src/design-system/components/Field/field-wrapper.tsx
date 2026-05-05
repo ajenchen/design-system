@@ -114,9 +114,13 @@ export const fieldWrapperStyles = cva(
       },
       // naked variant — cell-as-input substrate(Notion / Airtable / Excel canonical)
       //   - `!h-full`: Field 框框 = host cell box(frame 填 cell)
-      //   - `!px-0 !gap-0`: host cell padding 為唯一 padding source(切 mode 文字無偏移)
+      //   - **edit mode 自帶 cell padding**(`!py-[var(--table-cell-py)] !px-[var(--table-cell-px)]`):
+      //     host cell 在 editing 時 padding=0(讓 Field 邊框與 table divider 無縫接軌),
+      //     Field 內部反向接管 padding → 內容 Y / X 位置 = display mode(切 mode 文字 0 px shift)。
+      //     對齊 user canonical「框框跟 cell 一樣大並取代 cell 的框且與 table 隔線無縫接軌」。
+      //   - display / readonly / disabled `!px-0 !py-0`:host cell 仍有 padding,Field 不重複加。
       //   - **edit mode 自帶 state ring**(user reminder「狀態樣式取決於原輸入框」):
-      //     hover / focus-within / data-[state=open] 各自 fire border 變化
+      //     hover / focus-within / data-[state=open] 各自 fire border 變化(取代 cell border-r divider)
       //   - **內 alignment 從 host cell 取**(group-data-[row-mode]/cell):
       //     autoRowHeight (row-mode=auto) → !items-start(頂對齊 per spec)
       //     fixed       (row-mode=fixed) → 預設 items-center(置中 per spec)
@@ -125,7 +129,8 @@ export const fieldWrapperStyles = cva(
         mode: 'edit',
         variant: 'naked',
         className: [
-          'bg-transparent border border-transparent !px-0 !gap-0 !h-full',
+          'bg-transparent border border-transparent !gap-0 !h-full',
+          '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
           'group-data-[row-mode=auto]/cell:!items-start',
           'hover:border-border',
           'focus-within:border-primary focus-within:hover:border-primary',
@@ -136,7 +141,7 @@ export const fieldWrapperStyles = cva(
         mode: 'display',
         variant: 'naked',
         className: [
-          'bg-transparent border border-transparent !px-0 !gap-0 !h-full',
+          'bg-transparent border border-transparent !px-0 !py-0 !gap-0 !h-full',
           'group-data-[row-mode=auto]/cell:!items-start',
         ],
       },
@@ -144,7 +149,7 @@ export const fieldWrapperStyles = cva(
         mode: 'readonly',
         variant: 'naked',
         className: [
-          'bg-transparent border border-transparent !px-0 !gap-0 !h-full',
+          'bg-transparent border border-transparent !px-0 !py-0 !gap-0 !h-full',
           'group-data-[row-mode=auto]/cell:!items-start',
         ],
       },
@@ -152,7 +157,7 @@ export const fieldWrapperStyles = cva(
         mode: 'disabled',
         variant: 'naked',
         className: [
-          'bg-transparent border border-transparent cursor-not-allowed opacity-disabled !px-0 !gap-0 !h-full',
+          'bg-transparent border border-transparent cursor-not-allowed opacity-disabled !px-0 !py-0 !gap-0 !h-full',
           'group-data-[row-mode=auto]/cell:!items-start',
         ],
       },
@@ -171,6 +176,11 @@ export const bareInputStyles = [
   'flex-1 min-w-0 bg-transparent',
   'outline-none border-none p-0',
   'text-[inherit] font-[inherit] leading-[inherit]',
+  // A3 fix(2026-05-05):`<input>` UA stylesheet 強制 `text-align: start`,阻斷 parent 的
+  //   `text-right`/`text-center` 繼承。顯式 `text-align: inherit` 復原(對齊 NumberCell /
+  //   CurrencyCell right-align canonical:column meta.align='right' → cell text-right →
+  //   input 跟著 right-align)。
+  '[text-align:inherit]',
   'placeholder:text-fg-muted',
   // K10 fix(2026-05-04):wrapper data-field-mode=disabled 時,placeholder/text 都切 fg-disabled
   //   依賴 fieldWrapperStyles 的 `group/field` + 各 Field 元件 wrapper 加 `data-field-mode={resolvedMode}`

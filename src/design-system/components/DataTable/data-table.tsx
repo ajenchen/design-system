@@ -600,9 +600,16 @@ function DataTableInner<TData>(
       const ext = defaultRangeExtractor(range)
       const id = activeDragIdRef.current
       if (!id) return ext
-      const idx = rowsRef.current.findIndex(r => r.id === id)
-      if (idx < 0 || ext.includes(idx)) return ext
-      return [idx, ...ext].sort((a, b) => a - b)
+      // B3 fix(2026-05-05 v5):drag 進行中,user scroll past viewport → virtualizer range 重算 →
+      // 新 ext 與舊 ext 差集 rows mount/unmount → useSortable subscription 變動 → 下游 rows
+      // transform 重算 → 視覺閃爍(user reports「下方 table row 不斷閃動」)。
+      // Pragmatic fix:drag 期間 return all indices(禁用 virtualization)。對齊 Notion / Airtable
+      // 共識(drag 期間不 virtualize,user 通常拖幾秒不會 perf 痛點)。Drag 結束 → revert virtualize。
+      // SSOT-vs-DragOverlay:DragOverlay portal 才是 canonical(虛擬化 + drag 解耦),但需要
+      // 跨 3-region(left/center/right)portal-render full row + sticky pin column 跟動 — 大改。
+      // 此 pragmatic fix 0 侵入,先消閃爍;後續若 row count > 10k 才走 DragOverlay。
+      const total = rowsRef.current.length
+      return Array.from({ length: total }, (_, i) => i)
     },
     []
   )
@@ -903,16 +910,21 @@ function DataTableInner<TData>(
         // Field API 不變;每個 mode 內 display↔edit 同 alignment(同 Field, 同 group → 同 items)。
         data-row-mode={autoRowHeight ? 'auto' : 'fixed'}
         className={cn(
-          // Cell box(2026-05-05 v5 — 設計原則超簡單:cell IS input box):
-          //   - `self-stretch`: cell 永遠填 row 高(border-r divider 跨 row border-b seamless)
-          //   - `items-stretch`: 讓 Field naked(`!h-full`)真實填 cell — frame 視覺 = cell box
-          //     (對齊 user「框框填滿 cell + 整 cell 都是 input focus 狀態」+ Notion canonical)
+          // Cell box(2026-05-05 v6 — A4 canonical: Field frame seamlessly replaces cell border):
+          //   - `self-stretch`: cell 永遠填 row 高
+          //   - **vertical alignment by row-mode**: autoRow=items-start(top per spec) /
+          //     fixed=items-center(centered per spec)。indicator + 非 Field 內容跟 cell 走。
+          //   - **editing cell**: padding=0 + 無 right divider → Field naked(`!h-full !px-[cell-px]
+          //     !py-[cell-py]`)邊框與 table divider 無縫接軌,seamlessly replace cell border。
+          //     Adjacent cell padding+divider 仍在,只 editing cell 自己改觀。對齊 user reminder
+          //     「框框跟 cell 一樣大並取代 cell 的框且與 table 隔線無縫接軌」(2026-05-05)。
           //   - **沒有** cell 自己 box-shadow ring — focus / hover / open ring 由 Field naked 自帶
           //     state machine 提供(對齊 user「狀態樣式取決於原輸入框」reminder)
-          'group/cell flex text-foreground text-body font-normal shrink-0 overflow-hidden relative self-stretch items-stretch',
+          'group/cell flex text-foreground text-body font-normal shrink-0 overflow-hidden relative self-stretch',
+          autoRowHeight ? 'items-start' : 'items-center',
           align === 'right' && 'justify-end text-right',
           align === 'center' && 'justify-center text-center',
-          inlineEdit && !isLastInRow && 'border-r border-divider',
+          inlineEdit && !isLastInRow && !isEditingThisCell && 'border-r border-divider',
           indicator && 'gap-2',
           onEditableCellClick && 'cursor-pointer',
           isEditingThisCell && 'z-10',
@@ -921,7 +933,7 @@ function DataTableInner<TData>(
           width: cell.column.getSize(),
           minWidth: cell.column.columnDef.minSize,
           maxWidth: cell.column.columnDef.maxSize,
-          ...cellPadding,
+          ...(isEditingThisCell ? {} : cellPadding),
         }}
         onClick={onEditableCellClick}
       >
@@ -949,10 +961,10 @@ function DataTableInner<TData>(
             )}
           </span>
         )}
-        {/* `items-stretch`:Textarea naked(`!h-full`)在 autoRowHeight 場景才能填滿 cell 高
-            (block flow multi-line wrap 自然頂對齊)。其他 Field 是 intrinsic 高,items-stretch 對
-            explicit-height child 無效(CSS spec),仍維持原 size token。 */}
-        <span className={cn('flex-1 min-w-0 flex items-stretch', align === 'right' && 'justify-end')}>
+        {/* `self-stretch`:span 強制填 cell 全高(覆蓋 cell items-center / items-start 對 span
+            的 cross-axis 約束),Field naked `!h-full` 才有 definite parent height 解析。
+            indicator 是 sibling,跟 cell items-X 走(fixed=center / autoRow=start per spec)。 */}
+        <span className={cn('flex-1 min-w-0 self-stretch flex', align === 'right' && 'justify-end')}>
           {renderCellContent(cell)}
         </span>
         {indicator}
@@ -1149,7 +1161,7 @@ function DataTableInner<TData>(
             開啟後仍可見(has-[[data-state=open]])因 cursor 已移到 menu。對齊 Notion / Linear /
             Airtable column header pattern。
             ItemInlineActionButton asChild-compatible,size="md" 因 header 不在 RowSizeProvider。 */}
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 has-[[data-state=open]]:opacity-100 transition-opacity bg-muted rounded-sm">
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 has-[[data-state=open]]:opacity-100 transition-opacity">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <ItemInlineActionButton

@@ -146,21 +146,27 @@ function NumberCell({ value, meta, mode, size, onCommit, onCancel }: CellCompone
       />
     )
   }
-  const parseNum = (raw: string): number | null => {
-    const n = parseFloat(raw)
-    return Number.isFinite(n) ? n : null
-  }
+  // Edit mode value pre-fill canonical(2026-05-05):NumberInput edit 強制 controlled
+  // (`value={value ?? ''}`)— 若 NumberCell 以 `defaultValue` 傳入,NumberInput value=undefined → ''
+  // empty。對齊 cell-as-input「edit mode 自動帶入 display 值」(對齊 Notion / Airtable 共識),
+  // 改用 local state controlled。User typing → setLocalValue;blur/Enter → onCommit(localValue)。
+  const initial = typeof value === 'number' ? value : null
+  const [localValue, setLocalValue] = React.useState<number | null>(initial)
   return (
     <NumberInput
       autoFocus
       variant="naked"
       size={sizeForInput(size)}
-      defaultValue={typeof value === 'number' ? value : undefined}
+      value={localValue}
+      onChange={setLocalValue}
       prefix={prefix}
       suffix={meta?.suffix}
       precision={meta?.precision}
-      onBlur={(e) => onCommit?.(parseNum(e.target.value))}
-      onKeyDown={makeKeyHandler(onCommit, onCancel, parseNum)}
+      onBlur={() => onCommit?.(localValue)}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') { e.preventDefault(); onCancel?.() }
+        if (e.key === 'Enter') { e.preventDefault(); onCommit?.(localValue) }
+      }}
     />
   )
 }

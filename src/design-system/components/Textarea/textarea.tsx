@@ -114,13 +114,19 @@ const textareaVariants = cva(
         className: 'bg-transparent border border-transparent cursor-not-allowed opacity-disabled text-fg-disabled',
       },
       // naked chrome × mode — cell-as-input substrate(對齊 fieldWrapperStyles naked 規則)。
-      //   `!h-full !resize-none !px-0 !py-0`:fill cell box(host cell 控高,user 不該手動 resize)。
+      //   `!h-full !resize-none`:fill cell box(host cell 控高,user 不該手動 resize)。
+      //   **edit mode 反向接管 cell padding**(`!py-[var(--table-cell-py)] !px-[var(--table-cell-px)]`):
+      //     host cell editing 時 padding=0(讓 Textarea 邊框與 table divider 無縫接軌),
+      //     Textarea 內部加回相同 padding → 內容 Y / X 位置 = display mode(切 mode 文字 0 px shift)。
+      //     A4 canonical「框框跟 cell 一樣大並取代 cell 的框且與 table 隔線無縫接軌」(2026-05-05)。
+      //   display / readonly / disabled `!px-0 !py-0`:host cell 仍有 padding,Textarea 不重複加。
       //   edit mode 自帶 state ring(focus-within → border-primary)— 對齊 user「狀態樣式取決於原輸入框」。
       {
         mode: 'edit',
         variant: 'naked',
         className: [
-          'bg-transparent border border-transparent !h-full !resize-none !px-0 !py-0',
+          'bg-transparent border border-transparent !h-full !resize-none',
+          '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
           'hover:border-border',
           'focus-visible:border-primary focus-visible:hover:border-primary',
         ],

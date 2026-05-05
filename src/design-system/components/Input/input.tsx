@@ -131,6 +131,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <span
             className={cn(
               bareInputStyles,
+              // B1 fix(2026-05-05):display mode 單行 ellipsis 截斷(對齊 Notion / Airtable / Linear
+              //   cell display canonical:single-line value 過長 → ellipsis。Textarea display 走 wrap path,
+              //   不在此處;Input display 永遠 single-line。)
+              'truncate',
               displayValue == null && 'text-fg-muted',
             )}
           >
