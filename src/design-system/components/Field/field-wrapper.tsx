@@ -116,6 +116,8 @@ export const fieldWrapperStyles = cva(
       // host(cell)自管 visual + padding。`!px-0 !gap-0` override size variant 預設的 `px-3 gap-2`,
       // 讓 cell-as-input(Airtable / Notion / Excel canonical)在 display ↔ edit 切換時
       // 文字位置完全不偏移(host cell padding 是唯一 padding source)。
+      // 高度:**保持 intrinsic h-field-{size}**(不 override),讓文字在 display ↔ edit 位置 invariant。
+      // 「frame 填 cell」視覺由 host cell 的 `box-shadow inset` 提供(cell self-stretch 已等於 row 高)。
       {
         mode: 'edit',
         variant: 'naked',

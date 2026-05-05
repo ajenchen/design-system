@@ -172,6 +172,11 @@ export interface ComboboxProps {
   emptyPlaceholder?: string
   /** a11y:無 Field wrapper 時提供 role='combobox' 的 accessible name(axe aria-input-field-name) */
   'aria-label'?: string
+  /** Initial open state(uncontrolled)— 對齊 Select.defaultOpen / Radix Popover canonical。
+   *  DataTable cell-as-input 1-step open 用 */
+  defaultOpen?: boolean
+  /** open state 變更 callback。DataTable cell-as-input 用:open=false → cell exit edit */
+  onOpenChange?: (open: boolean) => void
 }
 
 const getIconSize = (size: string) => size === 'lg' ? 20 : 16
@@ -283,6 +288,8 @@ function CustomCombobox({
   searchPlaceholder = '搜尋…', // i18n-allow: DS default
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default
   emptyPlaceholder = '選擇…', // i18n-allow: DS default
+  defaultOpen = false,
+  onOpenChange,
   'aria-label': ariaLabel,
 }: ComboboxProps) {
   const fieldCtx = useFieldContext()
@@ -292,7 +299,7 @@ function CustomCombobox({
   const variant: FieldVariant = variantProp ?? fieldCtx?.variant ?? 'default'
   const iconSize = getIconSize(size)
   const showClear = clearable && value.length > 0 && resolvedMode === 'edit'
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(defaultOpen)
   const [search, setSearch] = React.useState('')
   // a11y: 為 listbox 容器(SelectMenu 內 PopoverContent)建立穩定 id,讓 trigger 的
   // aria-controls 能指向它(WAI-ARIA combobox pattern 要求)。React.useId 在 SSR/CSR 都穩定。
@@ -390,7 +397,7 @@ function CustomCombobox({
       searchable={searchable && searchIn === 'menu'}
       size={size}
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
       onOpenAutoFocus={searchIn === 'trigger' ? (e) => e.preventDefault() : undefined}
       contentId={listboxId}
     >

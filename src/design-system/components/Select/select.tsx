@@ -58,6 +58,13 @@ export interface SelectProps
   searchable?: boolean
   /** Menu list 最小列數(空狀態 / 選項少時的視覺一致 reserve)。預設 3 — 選項 < 3 時顯式縮(如 And/Or 兩選項) */
   minRows?: number
+  /** Initial open state(uncontrolled)。對齊 Radix Popover defaultOpen canonical;DataTable cell-as-input
+   *  click → 1 step open menu(Airtable / Notion canonical),consumer pass `defaultOpen` 達成。
+   *  Note:Native Select(mobile)無 popover 概念,此 prop 僅 Custom path 生效。 */
+  defaultOpen?: boolean
+  /** open state 變更 callback(對齊 Radix Popover onOpenChange canonical)。
+   *  DataTable cell-as-input 用:open=false 時 cell 自動 exit edit mode(避免 dismiss 後卡住)。 */
+  onOpenChange?: (open: boolean) => void
 }
 
 // ── Icon / size helpers ─────────────────────────────────────────────────────
@@ -310,7 +317,7 @@ NativeSelect.displayName = 'NativeSelect'
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode = 'edit', variant: variantProp, error: errorProp = false, size = 'md', options, groups, value, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, minRows, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel }, ref) => {
+  ({ mode = 'edit', variant: variantProp, error: errorProp = false, size = 'md', options, groups, value, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, minRows, defaultOpen = false, onOpenChange, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel }, ref) => {
     const fieldCtx = useFieldContext()
     const error = errorProp || (fieldCtx?.invalid ?? false)
     const disabled = disabledProp ?? fieldCtx?.disabled
@@ -320,7 +327,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     const showClear = clearable && value && resolvedMode === 'edit'
     const isTextDisplay = display === 'plain'
 
-    const [open, setOpen] = React.useState(false)
+    const [open, setOpen] = React.useState(defaultOpen)
     const [search, setSearch] = React.useState('')
     const inputRef = React.useRef<HTMLInputElement>(null)
 
@@ -449,7 +456,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         size={size}
         minRows={minRows}
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
         renderLabel={renderLabel}
         onOpenAutoFocus={searchable ? (e) => { e.preventDefault(); inputRef.current?.focus() } : undefined}
       >

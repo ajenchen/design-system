@@ -899,9 +899,11 @@ function DataTableInner<TData>(
         key={cell.id}
         role="cell"
         className={cn(
-          // self-stretch:cell box 永遠填 row 高(autoRowHeight 模式下 row items-start 不 stretch,
-          // cell content 短時 cell box 仍要全高,確保 border-r divider 全高銜接 row border-b
-          // 不留 vertical gap)。對齊「table grid line 連續」world-class canonical(Airtable / Notion / Excel)。
+          // Cell box canonical(spec.md「固定行高內容置中 / 自動行高頂對齊」+ Notion frame-fill canonical):
+          //   - `self-stretch`: cell box 永遠填 row 高(border-r divider 跨 row border-b seamless)
+          //   - alignment 跟 autoRowHeight,**不**因 editing 改變 — 確保文字 display↔edit 位置一致
+          //   - editing 時的「frame 填 cell」視覺由 cell 本身的 `box-shadow inset primary 1px` 提供
+          //     (見 style 區塊),Field naked 維持 intrinsic 高保證文字位置 invariant
           'flex text-foreground text-body font-normal shrink-0 overflow-hidden relative self-stretch',
           autoRowHeight ? 'items-start' : 'items-center',
           align === 'right' && 'justify-end text-right',
@@ -949,7 +951,10 @@ function DataTableInner<TData>(
             )}
           </span>
         )}
-        <span className={cn('flex-1 min-w-0 flex items-center', align === 'right' && 'justify-end')}>
+        {/* `items-stretch`:Textarea naked(`!h-full`)在 autoRowHeight 場景才能填滿 cell 高
+            (block flow multi-line wrap 自然頂對齊)。其他 Field 是 intrinsic 高,items-stretch 對
+            explicit-height child 無效(CSS spec),仍維持原 size token。 */}
+        <span className={cn('flex-1 min-w-0 flex items-stretch', align === 'right' && 'justify-end')}>
           {renderCellContent(cell)}
         </span>
         {indicator}

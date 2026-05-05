@@ -20,6 +20,7 @@ import { Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ColumnType } from './column-types'
 import { Input } from '@/design-system/components/Input/input'
+import { Textarea } from '@/design-system/components/Textarea/textarea'
 import { NumberInput } from '@/design-system/components/NumberInput/number-input'
 import { Select } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
@@ -76,14 +77,46 @@ const sizeForInput = (size: CellSize): CellSize => size
 
 // ── Cell Components ──────────────────────────────────────────────────────────
 
-function StringCell({ value, mode, size, onCommit, onCancel }: CellComponentProps) {
-  if (mode === 'display') return <Input variant="naked" mode="display" value={value != null ? String(value) : ''} />
+function StringCell({ value, mode, size, autoRowHeight, onCommit, onCancel }: CellComponentProps) {
+  // string type canonical(2026-05-05 v2 user 校正:input space ≥ display space):
+  //   - autoRowHeight: Textarea(display + edit)— display wrap text 撐高 row,edit textarea
+  //     多行輸入、`!h-full` 填 cell。對齊 Notion long-text cell canonical。
+  //   - fixed: Input(display + edit)— 單行 truncate display,單行 input edit;Field naked intrinsic
+  //     高 = cell 高 = h-field-md,文字位置 display↔edit 完全一致。對齊 AG Grid / Material X-Grid。
+  //   - autoRowHeight 是 table 框架決定(consumer 不需 per-column 設 meta.wrap)。
+  //   - 互動(Textarea):Esc cancel / Cmd|Ctrl+Enter commit / blur commit;Enter 保留換行
+  //   - 互動(Input):Esc cancel / Enter commit / blur commit
+  const v = value != null ? String(value) : ''
+  if (mode === 'display') {
+    return autoRowHeight
+      ? <Textarea variant="naked" mode="display" value={v} />
+      : <Input variant="naked" mode="display" value={v} />
+  }
+  if (autoRowHeight) {
+    return (
+      <Textarea
+        autoFocus
+        variant="naked"
+        size={sizeForInput(size)}
+        rows={1}
+        defaultValue={v}
+        onBlur={(e) => onCommit?.((e.target as HTMLTextAreaElement).value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') { e.preventDefault(); onCancel?.() }
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault()
+            onCommit?.((e.target as HTMLTextAreaElement).value)
+          }
+        }}
+      />
+    )
+  }
   return (
     <Input
       autoFocus
       variant="naked"
       size={sizeForInput(size)}
-      defaultValue={value != null ? String(value) : ''}
+      defaultValue={v}
       onBlur={(e) => onCommit?.(e.target.value)}
       onKeyDown={makeKeyHandler(onCommit, onCancel)}
     />
@@ -126,10 +159,22 @@ function NumberCell({ value, meta, mode, size, onCommit, onCancel }: CellCompone
   )
 }
 
-function DateCell({ value, meta, mode, size, onCommit }: CellComponentProps) {
+// Cell-as-input dismiss canonical(2026-05-05):defaultOpen=true 開始 → user click 外 popover 關
+// → 元件 fire onOpenChange(false) → cell call onCancel exit edit。否則 cell 卡 edit mode 不可 re-trigger
+// (對齊 Airtable / Notion canonical:click 外即關)。
+const dismissOnClose = (onCancel?: () => void) => (open: boolean) => { if (!open) onCancel?.() }
+
+// Mode-keyed remount canonical(2026-05-05):display↔edit 切換時,因 React reconciliation 同 type 同
+// position 會重用 instance,導致 `useState(defaultOpen)` 只在首次 mount 跑(那時 mode='display'
+// defaultOpen 沒給→預設 false)。後續 mode='edit' 即使傳 defaultOpen=true 也無效。
+// Fix:`key={mode}` 強制 React unmount + remount,每次切 mode 都重跑 useState init。
+// 對齊 Notion / Airtable cell-as-input「display 跟 edit 是不同 mount cycle」語義。
+
+function DateCell({ value, meta, mode, size, onCommit, onCancel }: CellComponentProps) {
   if (mode === 'display') {
     return (
       <DatePicker
+        key="display"
         variant="naked"
         mode="display"
         value={value as string | null}
@@ -140,20 +185,24 @@ function DateCell({ value, meta, mode, size, onCommit }: CellComponentProps) {
   }
   return (
     <DatePicker
+      key="edit"
       autoFocus
       variant="naked"
       size={sizeForInput(size)}
       value={typeof value === 'string' ? value : null}
       showTime={meta?.includeTime === true}
       onChange={(v) => onCommit?.(v)}
+      defaultOpen
+      onOpenChange={dismissOnClose(onCancel)}
     />
   )
 }
 
-function TimeCell({ value, meta, mode, size, onCommit }: CellComponentProps) {
+function TimeCell({ value, meta, mode, size, onCommit, onCancel }: CellComponentProps) {
   if (mode === 'display') {
     return (
       <TimePicker
+        key="display"
         variant="naked"
         mode="display"
         value={value as string | null}
@@ -164,6 +213,7 @@ function TimeCell({ value, meta, mode, size, onCommit }: CellComponentProps) {
   }
   return (
     <TimePicker
+      key="edit"
       variant="naked"
       size={sizeForInput(size)}
       value={typeof value === 'string' ? value : null}
@@ -171,11 +221,13 @@ function TimeCell({ value, meta, mode, size, onCommit }: CellComponentProps) {
       minuteStep={meta?.minuteStep}
       secondStep={meta?.secondStep}
       onChange={(v) => onCommit?.(v)}
+      defaultOpen
+      onOpenChange={dismissOnClose(onCancel)}
     />
   )
 }
 
-function SelectCell({ value, meta, mode, size, onCommit }: CellComponentProps) {
+function SelectCell({ value, meta, mode, size, onCommit, onCancel }: CellComponentProps) {
   // Display canonical(2026-05-05):cell IS variant,default plain text(no Tag pill 疊在 cell border 內)。
   // Consumer 可在 column meta.display='tag' opt-in 內容導向的 Tag 視覺(category 含色彩標籤等)。
   // 對齊 JTable / AG Grid「renderer/editor 視覺一致」canonical。
@@ -183,6 +235,7 @@ function SelectCell({ value, meta, mode, size, onCommit }: CellComponentProps) {
   if (mode === 'display') {
     return (
       <Select
+        key="display"
         variant="naked"
         mode="display"
         value={value as string | null}
@@ -194,6 +247,7 @@ function SelectCell({ value, meta, mode, size, onCommit }: CellComponentProps) {
   }
   return (
     <Select
+      key="edit"
       autoFocus
       variant="naked"
       size={sizeForInput(size)}
@@ -204,15 +258,18 @@ function SelectCell({ value, meta, mode, size, onCommit }: CellComponentProps) {
       // 「沿用既有輸入框互動」原則)。Default false,consumer 在 meta.searchable 開啟。
       searchable={meta?.searchable === true}
       display={displayMode}
+      defaultOpen
+      onOpenChange={dismissOnClose(onCancel)}
     />
   )
 }
 
-function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommit }: CellComponentProps) {
+function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel }: CellComponentProps) {
   const wrap = autoRowHeight && meta?.wrap === true
   if (mode === 'display') {
     return (
       <Combobox
+        key="display"
         variant="naked"
         mode="display"
         value={(value as string[] | null) ?? []}
@@ -224,43 +281,52 @@ function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommit }: C
   }
   return (
     <Combobox
+      key="edit"
       variant="naked"
       size={sizeForInput(size)}
       options={meta?.options ?? []}
       value={Array.isArray(value) ? (value as string[]) : []}
       onChange={(v) => onCommit?.(v)}
+      defaultOpen
+      onOpenChange={dismissOnClose(onCancel)}
     />
   )
 }
 
-function PersonCell({ value, mode, size, onCommit, meta }: CellComponentProps) {
+function PersonCell({ value, mode, size, onCommit, onCancel, meta }: CellComponentProps) {
   if (mode === 'display') {
     // PeoplePicker mode='display' 自動依 value 是否為 array 切 PersonDisplay vs MultiPersonDisplay
-    return <PeoplePicker variant="naked" mode="display" value={value as PersonValue | null} size={size} />
+    return <PeoplePicker key="display" variant="naked" mode="display" value={value as PersonValue | null} size={size} />
   }
   return (
     <PeoplePicker
+      key="edit"
       variant="naked"
       size={sizeForInput(size)}
       value={value as PersonValue | null}
       people={meta?.people ?? []}
       // PeoplePicker onChange 永遠 emit array(API contract);single mode commit 取首位
       onChange={(next) => onCommit?.(next[0] ?? null)}
+      defaultOpen
+      onOpenChange={dismissOnClose(onCancel)}
     />
   )
 }
 
-function MultiPersonCell({ value, mode, size, onCommit, meta }: CellComponentProps) {
+function MultiPersonCell({ value, mode, size, onCommit, onCancel, meta }: CellComponentProps) {
   if (mode === 'display') {
-    return <PeoplePicker variant="naked" mode="display" value={(value as PersonValue[]) ?? []} size={size} />
+    return <PeoplePicker key="display" variant="naked" mode="display" value={(value as PersonValue[]) ?? []} size={size} />
   }
   return (
     <PeoplePicker
+      key="edit"
       variant="naked"
       size={sizeForInput(size)}
       value={Array.isArray(value) ? (value as PersonValue[]) : []}
       people={meta?.people ?? []}
       onChange={(next) => onCommit?.(next)}
+      defaultOpen
+      onOpenChange={dismissOnClose(onCancel)}
     />
   )
 }

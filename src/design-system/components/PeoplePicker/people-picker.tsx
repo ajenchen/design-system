@@ -63,6 +63,10 @@ export interface PeoplePickerProps
   emptyText?: string
   className?: string
   disabled?: boolean
+  /** Initial open state(uncontrolled)— DataTable cell-as-input 1-step open canonical */
+  defaultOpen?: boolean
+  /** open state 變更 callback。DataTable cell-as-input 用:open=false → cell exit edit */
+  onOpenChange?: (open: boolean) => void
 }
 
 const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(function PeoplePicker({
@@ -76,6 +80,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   emptyText = '沒有符合的人員', // i18n-allow: DS default; consumer override via emptyText prop
   className,
   disabled,
+  defaultOpen = false,
+  onOpenChange,
   ...props
 }, ref) {
   const fieldCtx = useFieldContext()
@@ -148,8 +154,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   )
 
   // ── Edit mode trigger ──
-  // 不自己管 open state——讓 SelectMenu 內部的 Popover 管理
-  // (controlled open 容易跟 Radix Popover 衝突)
+  // open state:default uncontrolled,但 defaultOpen=true 時取 controlled path 注入 initial true
+  // (對齊 Radix Popover defaultOpen canonical;DataTable cell-as-input 1-step open 用)。
+  const [open, setOpen] = React.useState(defaultOpen)
   const trigger = (
     <div
       ref={ref}
@@ -198,6 +205,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       searchPlaceholder={searchPlaceholder}
       emptyText={emptyText}
       size={size}
+      open={open}
+      onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
     >
       {trigger}
     </SelectMenu>

@@ -248,6 +248,10 @@ export interface DatePickerProps
    * — datetime picker user 習慣編完才 commit,避免 calendar 點到就關。
    */
   needConfirm?: boolean
+  /** Initial open state(uncontrolled)— DataTable cell-as-input 1-step open canonical */
+  defaultOpen?: boolean
+  /** open state 變更 callback。DataTable cell-as-input 用:open=false → cell exit edit */
+  onOpenChange?: (open: boolean) => void
 }
 
 // Trigger uses `<div role="combobox" tabIndex={...}>` instead of `<button>` —
@@ -274,6 +278,8 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       minuteStep = 1,
       secondStep = 1,
       needConfirm: needConfirmProp,
+      defaultOpen = false,
+      onOpenChange,
       id: idProp,
       'aria-label': ariaLabelProp,
       'aria-labelledby': ariaLabelledByProp,
@@ -291,7 +297,8 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     const isEditable = resolvedMode === 'edit'
     const iconSize = size === 'lg' ? 20 : 16
     const needConfirm = needConfirmProp ?? showTime  // datetime 預設需確認
-    const [open, setOpen] = React.useState(false)
+    const [open, setOpenState] = React.useState(defaultOpen)
+    const setOpen = React.useCallback((next: boolean) => { setOpenState(next); onOpenChange?.(next) }, [onOpenChange])
     const [draft, setDraft] = React.useState<string | null>(value ?? null)
     const resolvedPlaceholder = placeholder ?? (showTime ? 'YYYY/MM/DD HH:MM' : 'YYYY/MM/DD')
     // a11y:role="combobox" 必須有 accessible name(aria-label / labelledby / fieldCtx label)

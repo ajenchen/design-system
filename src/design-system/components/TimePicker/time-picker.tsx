@@ -117,6 +117,10 @@ export interface TimePickerProps
   disabledTime?: (parts: TimeParts) => DisabledTimeResult
   /** 左側 startIcon,預設 Clock。傳 null 可關閉 */
   startIcon?: LucideIcon | null
+  /** Initial open state(uncontrolled)— DataTable cell-as-input 1-step open canonical */
+  defaultOpen?: boolean
+  /** open state 變更 callback。DataTable cell-as-input 用:open=false → cell exit edit */
+  onOpenChange?: (open: boolean) => void
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -140,6 +144,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
       startIcon,
       formatOptions,
       locale,
+      defaultOpen = false,
+      onOpenChange,
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
@@ -159,7 +165,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     const defaultPlaceholder = showSeconds ? 'HH:MM:SS' : 'HH:MM'
     const resolvedPlaceholder = placeholder ?? defaultPlaceholder
     const showClear = clearable && !!value && isEditable
-    const [open, setOpen] = React.useState(false)
+    const [open, setOpenState] = React.useState(defaultOpen)
+    const setOpen = React.useCallback((next: boolean) => { setOpenState(next); onOpenChange?.(next) }, [onOpenChange])
 
     const currentParts = React.useMemo(() => isoToTimeParts(value), [value])
     // draft 僅在 panel 開啟時用來處理 commit(OK button)的暫存
