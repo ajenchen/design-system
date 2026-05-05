@@ -838,13 +838,17 @@ function DataTableInner<TData>(
         key={cell.id}
         role="cell"
         className={cn(
-          'flex text-foreground text-body font-normal shrink-0 overflow-hidden',
+          'flex text-foreground text-body font-normal shrink-0 overflow-hidden relative',
           autoRowHeight ? 'items-start' : 'items-center',
           align === 'right' && 'justify-end text-right',
           align === 'center' && 'justify-center text-center',
           inlineEdit && !isLastInRow && 'border-r border-divider',
           indicator && 'gap-2',
           onEditableCellClick && 'cursor-pointer',
+          // Cell-as-input(2026-05-05):editing 時 cell 本體扮演 input frame —
+          // outline ring(inset)取代內部 wrapper border,避免兩層 frame stacking(派 B 翻車)。
+          // 對齊 Airtable / Notion / Excel cell editing canonical。
+          isEditingThisCell && 'outline outline-2 outline-primary -outline-offset-2 z-10',
         )}
         style={{ width: cell.column.getSize(), minWidth: cell.column.columnDef.minSize, maxWidth: cell.column.columnDef.maxSize, ...cellPadding }}
         onClick={onEditableCellClick}

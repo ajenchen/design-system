@@ -50,10 +50,11 @@ const textareaVariants = cva(
         readonly: '',
         disabled: '',
       },
-      // chrome 對齊 fieldWrapperStyles.variant(default / bare)。
+      // chrome 對齊 fieldWrapperStyles.variant(default / bare / naked)。
       variant: {
         default: '',
         bare: '',
+        naked: '',
       },
       size: {
         sm: 'text-body',
@@ -112,6 +113,11 @@ const textareaVariants = cva(
         variant: 'bare',
         className: 'bg-transparent border border-transparent cursor-not-allowed opacity-disabled text-fg-disabled',
       },
+      // naked chrome × mode — 完全無 wrapper border / 無 focus ring(host 自管 visual,cell-as-input)
+      { mode: 'edit', variant: 'naked', className: 'bg-transparent border border-transparent' },
+      { mode: 'display', variant: 'naked', className: 'bg-transparent border border-transparent' },
+      { mode: 'readonly', variant: 'naked', className: 'bg-transparent border border-transparent' },
+      { mode: 'disabled', variant: 'naked', className: 'bg-transparent border border-transparent cursor-not-allowed opacity-disabled text-fg-disabled' },
     ],
     defaultVariants: {
       mode: 'edit',

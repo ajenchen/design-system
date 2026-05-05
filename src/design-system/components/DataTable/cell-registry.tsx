@@ -7,7 +7,7 @@
 //
 // 設計原則:
 //   - 每個 cell component 接同一組 props(`CellComponentProps`)
-//   - 用 `chrome="bare"` — DataTable cell-as-input substrate(對齊 Field B1 chrome=bare)
+//   - 用 `chrome="naked"` — DataTable cell-as-input substrate(對齊 Field B1 chrome=bare)
 //   - 消費 full Field 家族 primitive(無 stub)
 //   - 不再用 `meta._editable` 私有 flag — `isEditable` 直接顯式入參(消除 M1 hack)
 //
@@ -81,7 +81,7 @@ function StringCell({ value, mode, size, onCommit, onCancel }: CellComponentProp
   return (
     <Input
       autoFocus
-      chrome="bare"
+      chrome="naked"
       size={sizeForInput(size)}
       defaultValue={value != null ? String(value) : ''}
       onBlur={(e) => onCommit?.(e.target.value)}
@@ -113,7 +113,7 @@ function NumberCell({ value, meta, mode, size, onCommit, onCancel }: CellCompone
   return (
     <NumberInput
       autoFocus
-      chrome="bare"
+      chrome="naked"
       size={sizeForInput(size)}
       defaultValue={typeof value === 'number' ? value : undefined}
       prefix={prefix}
@@ -139,7 +139,7 @@ function DateCell({ value, meta, mode, size, onCommit }: CellComponentProps) {
   return (
     <DatePicker
       autoFocus
-      chrome="bare"
+      chrome="naked"
       size={sizeForInput(size)}
       value={typeof value === 'string' ? value : null}
       showTime={meta?.includeTime === true}
@@ -161,7 +161,7 @@ function TimeCell({ value, meta, mode, size, onCommit }: CellComponentProps) {
   }
   return (
     <TimePicker
-      chrome="bare"
+      chrome="naked"
       size={sizeForInput(size)}
       value={typeof value === 'string' ? value : null}
       showSeconds={meta?.showSeconds === true}
@@ -187,7 +187,7 @@ function SelectCell({ value, meta, mode, size, onCommit }: CellComponentProps) {
   return (
     <Select
       autoFocus
-      chrome="bare"
+      chrome="naked"
       size={sizeForInput(size)}
       options={meta?.options ?? []}
       value={value as string | null | undefined}
@@ -211,7 +211,7 @@ function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommit }: C
   }
   return (
     <Combobox
-      chrome="bare"
+      chrome="naked"
       size={sizeForInput(size)}
       options={meta?.options ?? []}
       value={Array.isArray(value) ? (value as string[]) : []}
@@ -227,7 +227,7 @@ function PersonCell({ value, mode, size, onCommit, meta }: CellComponentProps) {
   }
   return (
     <PeoplePicker
-      chrome="bare"
+      chrome="naked"
       size={sizeForInput(size)}
       value={value as PersonValue | null}
       people={meta?.people ?? []}
@@ -243,7 +243,7 @@ function MultiPersonCell({ value, mode, size, onCommit, meta }: CellComponentPro
   }
   return (
     <PeoplePicker
-      chrome="bare"
+      chrome="naked"
       size={sizeForInput(size)}
       value={Array.isArray(value) ? (value as PersonValue[]) : []}
       people={meta?.people ?? []}
@@ -303,7 +303,7 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
   return (
     <LinkInput
       autoFocus
-      chrome="bare"
+      chrome="naked"
       size={sizeForInput(size)}
       defaultValue={value != null ? String(value) : ''}
       label={meta?.linkLabel}

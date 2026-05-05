@@ -22,11 +22,13 @@ export type FieldMode = 'edit' | 'display' | 'readonly' | 'disabled'
 //
 // 視覺外殼(2026-05-05):
 //   default — 含 border + bg(一般 form input)
-//   bare    — 透明 chrome,hover/focus 才 reveal(cell-as-input substrate;VS Code/Figma toolbar idiom)
+//   bare    — 透明 chrome,hover/focus 才 reveal inner border(VS Code/Figma toolbar inline editing idiom)
+//   naked   — 完全無 chrome / 無 focus ring on wrapper(cell-as-input — host cell 提供 border + focus visual)
+//             對齊 Airtable / Notion / Excel cell editing — cell 本身扮演 input frame,內無 wrapper
 //
 // 透傳機制:Field 透過 FieldContext.chrome 一次宣告,所有 child Field control 自動繼承。
 // per-control prop override 可覆寫 context。
-export type FieldChrome = 'default' | 'bare'
+export type FieldChrome = 'default' | 'bare' | 'naked'
 
 // ── Menu List Min Height ─────────────────────────────────────────────────────
 // SelectMenu / Select / Combobox 共用的 CommandList minHeight 計算。

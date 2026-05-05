@@ -38,10 +38,13 @@ export const fieldWrapperStyles = cva(
         // default — 完整 Field wrapper chrome(bg-surface、明顯 border、hover/focus 回饋)
         default: '',
         // bare — 透明 chrome,hover / focus 才出現 border。適用 Toolbar inline editing
-        // (FileViewer zoom input / chart config / rich text toolbar number input 等)+
-        // DataTable cell-as-input(2026-05-05)。
+        // (FileViewer zoom input / chart config / rich text toolbar number input 等)。
         // 世界級對照:VS Code settings / Figma toolbar number / Notion prop input。
         bare: '',
+        // naked — 完全無 chrome,hover/focus 也不出 border。適用 cell-as-input
+        // (host cell 自管 border + focus visual,內部 input 純文字承載)。
+        // 世界級對照:Airtable / Notion / Excel / Google Sheets cell editing。
+        naked: '',
       },
       size: {
         sm: 'text-body h-field-sm px-3 gap-2',
@@ -107,6 +110,27 @@ export const fieldWrapperStyles = cva(
       {
         mode: 'disabled',
         variant: 'bare',
+        className: 'bg-transparent border border-transparent cursor-not-allowed opacity-disabled',
+      },
+      // naked variant chrome by mode — 完全無 wrapper border / 無 focus ring,host(cell)自管 visual
+      {
+        mode: 'edit',
+        variant: 'naked',
+        className: 'bg-transparent border border-transparent',
+      },
+      {
+        mode: 'display',
+        variant: 'naked',
+        className: 'bg-transparent border border-transparent',
+      },
+      {
+        mode: 'readonly',
+        variant: 'naked',
+        className: 'bg-transparent border border-transparent',
+      },
+      {
+        mode: 'disabled',
+        variant: 'naked',
         className: 'bg-transparent border border-transparent cursor-not-allowed opacity-disabled',
       },
     ],
