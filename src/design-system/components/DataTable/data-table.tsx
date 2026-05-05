@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // code-quality-allow: file-size — foundational composite — 拆檔會複雜化 context / ref / state 同步
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { Empty } from '@/design-system/components/Empty/empty'
 import {
   useReactTable,
@@ -269,20 +270,78 @@ function SortableRowProvider({
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
 }
 
-/** Row drag handle — absolute positioned 貼齊 row 左 border(Jira canonical @benchmark-unverified)。
- *  - 不佔 column 空間;hover-revealed 浮現在 row 最左
- *  - Button variant="tertiary" iconOnly size="xs"(24px chip)→ bg-surface + border + foreground icon,
- *    elevated chip 視覺浮在 row 左緣,不撞 cell 內容(若走 inline action 透明會撞 table border line)
+/** Row drag handle — Portal-rendered, position:fixed 真正水平置中於 table outer border line(Jira canonical)。
+ *
+ *  Why Portal + position:fixed(2026-05-05 v4):
+ *    DataTable 結構含三層 overflow-hidden(outer wrapper / leftBody / row),用 absolute + translate-x:-50%
+ *    凸出 row 左 border 會被三層任一裁切。position:fixed escape 所有 ancestor overflow constraint。
+ *    座標來自 row.getBoundingClientRect() + table outer.getBoundingClientRect(),scroll/resize 同步。
+ *
+ *  - 不佔 column 空間;hover-revealed 透過 row.dataset.hovered MutationObserver 觸發
+ *  - Button variant="tertiary" iconOnly size="xs"(24px chip)→ bg-surface + border + foreground icon
  *  - 透過 SortableRowCtx 拿 listeners(nested rows 子層 ctx=null → 不 render)
  *  - sort active 時 disabled(visual + listeners 移除 + Tooltip 解釋)
  *  - invalidDrop(cross-parent over)→ cursor-not-allowed + text-error 警示
- *  - hover-revealed:opacity-0 → group-hover/row:opacity-100(group/row 在 row 層級設定)*/
+ *  - drag 進行中(ctx.isDragging)強制可見(即使 cursor 移開 row)*/
 function RowDragHandle({ disabled }: { disabled: boolean }) {
   const ctx = React.useContext(SortableRowCtx)
-  // 只 primary region 走 listener attach;mirror region 不 render(避免雙觸發 + 重複視覺)
-  if (!ctx || ctx.role !== 'primary') return null
+  const [rowEl, setRowEl] = React.useState<HTMLDivElement | null>(null)
+  const [portalTarget, setPortalTarget] = React.useState<HTMLElement | null>(null)
+  const [pos, setPos] = React.useState<{ top: number; left: number; visible: boolean } | null>(null)
+
+  // Anchor span ref callback finds the parent row element(自身位置 = row 內部,parentElement = row div)。
+  // 用 useState 觸發 effect re-run(child ref callback 會 fire 在 commit phase,early enough for layout effect)
+  const anchorRef = React.useCallback((node: HTMLSpanElement | null) => {
+    setRowEl((node?.parentElement as HTMLDivElement) ?? null)
+  }, [])
+
+  React.useLayoutEffect(() => {
+    if (!rowEl || !ctx || ctx.role !== 'primary') return
+
+    // Portal target = table outer 的 parent(保持 CSS variable / theme scope 繼承,
+    // 不 portal 到 document.body — body 沒 theme tokens 會使 Button tertiary 變透明)
+    const tableEl = rowEl.closest<HTMLElement>('[data-data-table-outer]')
+    setPortalTarget(tableEl?.parentElement ?? null)
+
+    const update = () => {
+      if (!tableEl) return
+      const rRect = rowEl.getBoundingClientRect()
+      const tRect = tableEl.getBoundingClientRect()
+      const isHovered = rowEl.hasAttribute('data-hovered') || !!ctx.isDragging
+      setPos({
+        top: rRect.top + rRect.height / 2,
+        left: tRect.left, // table outer 左 border line position(viewport coords)
+        visible: isHovered,
+      })
+    }
+
+    update()
+
+    // Observe row data-hovered changes(cross-region hover delegation 設置 dataset.hovered)
+    const observer = new MutationObserver(update)
+    observer.observe(rowEl, { attributes: true, attributeFilter: ['data-hovered'] })
+
+    // Update on scroll(capture phase 抓所有 scroll container)+ resize
+    const onScroll = () => requestAnimationFrame(update)
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('resize', onScroll)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [rowEl, ctx])
+
+  // 永遠 render anchor span(讓 anchorRef 可拿到 row element)
+  // ctx 為 null 或 mirror role 時 anchor 仍渲染但不渲 handle Portal
+  const anchor = <span ref={anchorRef} aria-hidden style={{ position: 'absolute', width: 0, height: 0 }} />
+
+  if (!ctx || ctx.role !== 'primary' || !pos) return anchor
+
   const canDrag = !disabled
   const showInvalid = !!ctx.invalidDrop && !!ctx.isDragging
+
   const handle = (
     <Button
       variant="tertiary"
@@ -293,13 +352,18 @@ function RowDragHandle({ disabled }: { disabled: boolean }) {
       aria-disabled={!canDrag || undefined}
       tabIndex={canDrag ? 0 : -1}
       disabled={!canDrag}
+      style={{
+        position: 'fixed',
+        top: pos.top,
+        left: pos.left,
+        transform: 'translate(-50%, -50%)',
+        zIndex: 50,
+        // hover-reveal:opacity 切換取代 visibility(動畫平順)
+        opacity: pos.visible ? 1 : 0,
+        pointerEvents: pos.visible ? 'auto' : 'none',
+        transition: 'opacity 150ms ease',
+      }}
       className={cn(
-        // 絕對定位:水平 inset 4px 貼齊左 border(視覺如 elevated chip 浮在 row 左緣 + table border 上),
-        // 垂直置中。避開 leftBody / outer container 的 overflow-hidden 裁切(若用 -translate-x-1/2
-        // 凸出 row 邊界 → 被 leftBody overflow-hidden 切半);Jira / Notion idiom 同走 inset 派。
-        'absolute left-1 top-1/2 -translate-y-1/2 z-10',
-        // hover-reveal(group/row 在 row 層級設定)
-        'opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity',
         canDrag && !showInvalid && 'cursor-grab active:cursor-grabbing',
         canDrag && showInvalid && 'cursor-not-allowed !text-error !border-error',
       )}
@@ -307,15 +371,20 @@ function RowDragHandle({ disabled }: { disabled: boolean }) {
       {...(canDrag ? ctx.handleAttributes ?? {} : {})}
     />
   )
-  if (disabled) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>{handle}</TooltipTrigger>
-        <TooltipContent>排序中無法拖曳,清除排序後可重排</TooltipContent>
-      </Tooltip>
-    )
-  }
-  return handle
+
+  const wrapped = disabled ? (
+    <Tooltip>
+      <TooltipTrigger asChild>{handle}</TooltipTrigger>
+      <TooltipContent>排序中無法拖曳,清除排序後可重排</TooltipContent>
+    </Tooltip>
+  ) : handle
+
+  return (
+    <>
+      {anchor}
+      {portalTarget && createPortal(wrapped, portalTarget)}
+    </>
+  )
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1190,6 +1259,7 @@ function DataTableInner<TData>(
     <div
       ref={(el) => { tableRef.current = el; if (typeof ref === 'function') ref(el); else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = el }}
       data-table-size={size}
+      data-data-table-outer  // anchor for RowDragHandle Portal getBoundingClientRect (M25 invariant: outer 一定存在)
       className={cn(dataTableVariants({ bordered }), isFillHeight && 'flex flex-col', className)}
       // isFillHeight:`maxHeight: 100%`(不是 height:100%)— content 小 → outer = intrinsic
       // (hug rows);content 大或 window 縮 < content → outer cap 到 100% of parent。
