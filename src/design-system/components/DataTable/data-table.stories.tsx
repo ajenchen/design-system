@@ -1227,15 +1227,16 @@ export const FilterPanelLongTagOverflow: Story = {
   },
 }
 
-/* ── 列拖曳重排(Jira-style)─────────────────────────────────────────────
-   enableRowDrag + onRowReorder 整合範例:
+/* ── 列拖曳重排(Jira-style + 3-panel pinned columns)──────────────────────
+   enableRowDrag + onRowReorder 整合範例(v2):
    - hover row → 最左 GripVertical 浮現(opacity 0 → 100)
-   - 拖曳 row → 透過 @dnd-kit/sortable 重排;放下 → onRowReorder(sourceId, targetId, 'before' | 'after')
+   - 拖曳 row → @dnd-kit/sortable 重排;放下 → onRowReorder(sourceId, targetId, 'before' | 'after')
    - consumer 自管 data array mutation(同 Notion / Airtable / Linear pattern)
    - sort 啟用時 drag handle 自動 disabled + Tooltip 解釋
-   - v1 限制:non-virtualized + 單 panel(無 pinnedLeft/Right)時最佳;3-panel 整合 v2 */
+   - v2:pinned-left + pinned-right 同時存在 → mirror regions 跟動 transform(per-region useSortable
+     共享同 SortableContext state) */
 export const RowDragInteractive: Story = {
-  name: '列拖曳重排',
+  name: '列拖曳重排（含釘選欄）',
   render: () => {
     const [list, setList] = React.useState<Product[]>(sampleData)
     const handleReorder = (sourceId: string, targetId: string, position: 'before' | 'after') => {
@@ -1255,12 +1256,55 @@ export const RowDragInteractive: Story = {
     return (
       <div className="flex flex-col gap-3 max-w-3xl">
         <p className="text-caption text-fg-muted">
-          Hover 任一列 → 最左浮現 GripVertical handle → 按住拖曳重排。Consumer 透過 onRowReorder 收到 (sourceId, targetId, position) 自管 data mutation。
+          v2:pinned-left（SKU）+ pinned-right（Updated）+ center 中段欄。拖曳任一列時,三個 region 的 row
+          會同步跟動 transform（per-region <code>useSortable</code> 共享同 SortableContext state)。
+        </p>
+        <DataTable
+          columns={columnsWithPrice}
+          data={list}
+          height="auto"
+          getRowId={(row) => row.sku}
+          pinnedLeftColumns={['sku']}
+          pinnedRightColumns={['updatedAt']}
+          enableRowDrag
+          onRowReorder={handleReorder}
+        />
+      </div>
+    )
+  },
+}
+
+/* ── 列拖曳 × 虛擬捲動（200 列）────────────────────────────────────────────
+   v2 fix #1:被拖 row 略過 virtualizer.measureElement(transform 干擾測量會在 > 50 列時累積錯位)。
+   - 200 列 + 固定高度 → virtualizer 啟用
+   - 拖曳長距離 → 視覺位置仍對齊,放下後 onRowReorder 收到正確 sourceId / targetId */
+export const RowDragWithVirtualization: Story = {
+  name: '列拖曳 × 虛擬捲動',
+  render: () => {
+    const [list, setList] = React.useState<Product[]>(() => generateLargeData(200))
+    const handleReorder = (sourceId: string, targetId: string, position: 'before' | 'after') => {
+      setList((prev) => {
+        const sourceIdx = prev.findIndex((r) => r.sku === sourceId)
+        const targetIdx = prev.findIndex((r) => r.sku === targetId)
+        if (sourceIdx === -1 || targetIdx === -1) return prev
+        const next = [...prev]
+        const [moved] = next.splice(sourceIdx, 1)
+        const adjustedTarget = next.findIndex((r) => r.sku === targetId)
+        const insertAt = position === 'before' ? adjustedTarget : adjustedTarget + 1
+        next.splice(insertAt, 0, moved)
+        return next
+      })
+    }
+    return (
+      <div className="flex flex-col gap-3 max-w-3xl">
+        <p className="text-caption text-fg-muted">
+          200 列 + 虛擬捲動。v2 修正:被拖 row 在拖曳期間略過 measureElement,避免 transform 干擾長 list
+          量測累積錯位。
         </p>
         <DataTable
           columns={baseColumns}
           data={list}
-          height="auto"
+          height="500px"
           getRowId={(row) => row.sku}
           enableRowDrag
           onRowReorder={handleReorder}
