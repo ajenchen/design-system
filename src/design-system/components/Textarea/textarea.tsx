@@ -46,6 +46,8 @@ const textareaVariants = cva(
           'hover:border-border-hover',
           'focus-visible:border-primary focus-visible:hover:border-primary',
         ],
+        // 純展示:無 input chrome,無 affordance(對齊 fieldWrapperStyles display mode)
+        display: 'bg-transparent border border-transparent',
         readonly: 'bg-disabled border border-transparent',
         disabled: 'bg-disabled border border-transparent cursor-not-allowed text-fg-disabled',
       },

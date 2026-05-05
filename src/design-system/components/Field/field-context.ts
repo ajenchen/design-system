@@ -1,8 +1,8 @@
 import * as React from 'react'
-import type { FieldMode } from './field-types'
+import type { FieldMode, FieldChrome } from './field-types'
 
 // ── Types ──
-export type { FieldMode }
+export type { FieldMode, FieldChrome }
 export type FieldOrientation = 'vertical' | 'horizontal'
 export type FieldSize = 'sm' | 'md' | 'lg'
 export type FieldControlLayout = 'inline' | 'block'
@@ -17,6 +17,9 @@ export interface FieldContextValue {
   descriptionId: string
   errorId: string
   mode: FieldMode
+  /** 視覺外殼透傳(2026-05-05)。default = 含 border+bg;bare = 透明 chrome,hover/focus reveal。
+   *  child Field control 自動繼承,per-control prop override 可覆寫。詳 field-types.ts。 */
+  chrome: FieldChrome
   disabled: boolean
   required: boolean
   invalid: boolean

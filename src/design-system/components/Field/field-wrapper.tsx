@@ -3,12 +3,18 @@ import { cva } from 'class-variance-authority'
 // ── Field Wrapper Styles ────────────────────────────────────────────────────
 // 所有 Field 元件共用的 input wrapper 樣式。
 //
-// 三種模式：
-//   edit     — bg-surface, border, hover/focus 回饋
-//   readonly — bg-disabled(neutral-2), 無邊框, 文字正常色
+// 4 種模式(2026-05-05 expand):
+//   edit     — bg-surface, border, hover/focus 回饋(可編輯 input)
+//   display  — 純展示(無 input chrome、無 affordance);語意「read-only 內容,展示給人看」。
+//              對齊 Carbon read-only / PatternFly inline-edit hidden-input。
+//   readonly — bg-disabled(neutral-2), 無邊框, 文字正常色(input chrome 但鎖定)
 //   disabled — bg-disabled(neutral-2), 無邊框, 文字灰化
 //
-// 高度：固定 h = field-height token（rem），與 Button 共用同一組 token。
+// 2 種視覺外殼(variant):
+//   default — 完整 chrome(form input 場景)
+//   bare    — 透明 chrome(cell-as-input substrate / Toolbar inline editing)
+//
+// 高度:固定 h = field-height token(rem),與 Button 共用同一組 token。
 
 export const fieldWrapperStyles = cva(
   [
@@ -24,6 +30,7 @@ export const fieldWrapperStyles = cva(
     variants: {
       mode: {
         edit: '',
+        display: '',
         readonly: '',
         disabled: '',
       },
@@ -31,7 +38,8 @@ export const fieldWrapperStyles = cva(
         // default — 完整 Field wrapper chrome(bg-surface、明顯 border、hover/focus 回饋)
         default: '',
         // bare — 透明 chrome,hover / focus 才出現 border。適用 Toolbar inline editing
-        // (FileViewer zoom input / chart config / rich text toolbar number input 等)。
+        // (FileViewer zoom input / chart config / rich text toolbar number input 等)+
+        // DataTable cell-as-input(2026-05-05)。
         // 世界級對照:VS Code settings / Figma toolbar number / Notion prop input。
         bare: '',
       },
@@ -59,6 +67,12 @@ export const fieldWrapperStyles = cva(
         ],
       },
       {
+        mode: 'display',
+        variant: 'default',
+        // 純展示:無 input chrome,無 hover/focus affordance(語意 = 純內容展示)
+        className: 'bg-transparent border border-transparent',
+      },
+      {
         mode: 'readonly',
         variant: 'default',
         className: 'bg-disabled border border-transparent',
@@ -78,6 +92,12 @@ export const fieldWrapperStyles = cva(
           'focus-within:border-primary focus-within:hover:border-primary',
           'data-[state=open]:border-border',
         ],
+      },
+      {
+        mode: 'display',
+        variant: 'bare',
+        // bare + display:cell-as-input default state(無 chrome,完全融入 cell;hover/focus 才有 affordance 等 user 點下去切 edit mode)
+        className: 'bg-transparent border border-transparent',
       },
       {
         mode: 'readonly',

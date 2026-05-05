@@ -19,12 +19,13 @@ type StateKey = 'default' | 'hover' | 'focus' | 'error' | 'disabled'
 type SizeKey = 'sm' | 'md' | 'lg'
 type ColorSpec = { bg: string; text: string; border: string }
 
-const MODES: ModeKey[] = ['edit', 'readonly', 'disabled']
+const MODES: ModeKey[] = ['edit', 'display', 'readonly', 'disabled']
 const SIZES: SizeKey[] = ['sm', 'md', 'lg']
 
 const MODE_DESC: Record<ModeKey, string> = {
   edit: '表單可編輯欄位，有邊框、hover / focus 回饋',
-  readonly: '表單中不可編輯但可見，灰底、無邊框',
+  display: '純展示（read-only 內容），無 input chrome、無互動 affordance',
+  readonly: '表單中不可編輯但可見，灰底、無邊框（input chrome 但鎖定）',
   disabled: '停用狀態，灰底、灰字、cursor-not-allowed',
 }
 
@@ -35,6 +36,13 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
     focus:    { bg: '--surface',      text: '--foreground',   border: '--primary' },
     error:    { bg: '--surface',      text: '--foreground',   border: '--error' },
     disabled: { bg: '--bg-disabled',  text: '--fg-disabled',  border: 'transparent' },
+  },
+  display: {
+    default:  { bg: 'transparent',    text: '--foreground',   border: 'transparent' },
+    hover:    { bg: 'transparent',    text: '--foreground',   border: 'transparent' },
+    focus:    { bg: 'transparent',    text: '--foreground',   border: 'transparent' },
+    error:    { bg: 'transparent',    text: '--foreground',   border: 'transparent' },
+    disabled: { bg: 'transparent',    text: '--fg-disabled',  border: 'transparent' },
   },
   readonly: {
     default:  { bg: '--bg-disabled',  text: '--foreground',   border: 'transparent' },
