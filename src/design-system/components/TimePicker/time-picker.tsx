@@ -2,7 +2,7 @@ import * as React from 'react'
 import { X, Clock } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldMode } from '@/design-system/components/Field/field-types'
+import type { FieldMode, FieldChrome } from '@/design-system/components/Field/field-types'
 import {
   fieldWrapperStyles,
   bareInputStyles,
@@ -73,19 +73,6 @@ function formatTime(
   return new Intl.DateTimeFormat(locale, formatOptions).format(d)
 }
 
-// ── Display sub-component(DataTable cell 用)────────────────────────────────
-
-export interface TimePickerDisplayProps extends TimeFormatOptions {
-  value?: string | null
-}
-
-function TimePickerDisplay({ value, ...formatOptions }: TimePickerDisplayProps) {
-  if (value == null || value === '')
-    return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
-  return <>{formatTime(value, formatOptions)}</>
-}
-TimePickerDisplay.displayName = 'TimePickerDisplay'
-
 // ── Disabled time callback ──────────────────────────────────────────────────
 // `Step` / `buildRange` / `TimeColumn`(內部欄位實作)拔掉,改 import `TimeColumns` primitive。
 
@@ -105,6 +92,8 @@ export interface TimePickerProps
       'onChange' | 'placeholder'
     > {
   mode?: FieldMode
+  /** Field chrome variant. Default = context.chrome ?? 'default'. Per-prop override. */
+  chrome?: FieldChrome
   error?: boolean
   size?: 'sm' | 'md' | 'lg'
   /** ISO time string("HH:mm" 或 "HH:mm:ss") */
@@ -135,6 +124,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
   (
     {
       mode = 'edit',
+      chrome: chromeProp,
       error: errorProp = false,
       size = 'md',
       value,
@@ -161,6 +151,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     const error = errorProp || (fieldCtx?.invalid ?? false)
     const disabled = disabledProp ?? fieldCtx?.disabled
     const resolvedMode = disabled ? 'disabled' : mode
+    const chrome: FieldChrome = chromeProp ?? fieldCtx?.chrome ?? 'default'
     const isEditable = resolvedMode === 'edit'
     const iconSize = size === 'lg' ? 20 : 16
     const StartIconCmp: LucideIcon | null =
@@ -214,11 +205,18 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
       setOpen(false)
     }
 
+    // mode='display'(Phase B2 2026-05-05):純內容輸出 — 對齊原 TimePickerDisplay sub-component(retired)。
+    //   無 Field wrapper / 無 Clock icon / 無 input affordance。
+    if (resolvedMode === 'display') {
+      if (!value) return <span className={cn('text-fg-muted', className)}>{EMPTY_DISPLAY}</span>
+      return <span className={cn('truncate', className)}>{formatTime(value, { formatOptions, locale })}</span>
+    }
+
     // readonly / disabled
     if (!isEditable) {
       return (
         <div
-          className={cn(fieldWrapperStyles({ mode: resolvedMode, size }), className)}
+          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: chrome, size }), className)}
           data-field-mode={resolvedMode}
           {...(props as React.HTMLAttributes<HTMLDivElement>)}
         >
@@ -274,7 +272,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             data-field-mode="edit"
             data-error={error ? '' : undefined}
             className={cn(
-              fieldWrapperStyles({ mode: 'edit', size }),
+              fieldWrapperStyles({ mode: 'edit', variant: chrome, size }),
               'text-left cursor-pointer',
               'focus-visible:outline-none',
               error && [
@@ -352,7 +350,6 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
 )
 TimePicker.displayName = 'TimePicker'
 
-// code-quality-allow: dead-export — sub-component (display variant) — consumer 可 compose 自行渲染
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const timePickerMeta = {
@@ -372,5 +369,4 @@ export const timePickerMeta = {
   },
 } as const
 
-// code-quality-allow: dead-export — sub-component (display variant) — consumer 可 compose 自行渲染
-export { TimePicker, TimePickerDisplay, formatTime }
+export { TimePicker, formatTime }

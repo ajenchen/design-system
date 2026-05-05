@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { X, Calendar as CalendarIcon, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldMode } from '@/design-system/components/Field/field-types'
+import type { FieldMode, FieldChrome } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from '@/design-system/components/Popover/popover'
@@ -214,25 +214,6 @@ function CalendarTimeContainer({ showTime, showSeconds, calendar, timePanel }: C
   )
 }
 
-// ── Display ─────────────────────────────────────────────────────────────────
-// Table cell 和 Form readonly 共用。DataTable 透過 column type 查到這個元件。
-
-export interface DatePickerDisplayProps extends DateFormatOptions {
-  value?: string | number | Date | null
-  /** 顯示時間部分(配合 showTime DatePicker 的 readonly view) */
-  showTime?: boolean
-  showSeconds?: boolean
-}
-
-function DatePickerDisplay({ value, showTime = false, showSeconds = false, ...formatOptions }: DatePickerDisplayProps) {
-  if (value == null) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
-  if (showTime && typeof value === 'string') {
-    return <>{formatDateOrDateTime(value, true, showSeconds, formatOptions)}</>
-  }
-  return <>{formatDate(value, formatOptions)}</>
-}
-DatePickerDisplay.displayName = 'DatePickerDisplay'
-
 // ── DatePicker(single)──────────────────────────────────────────────────
 
 export interface DatePickerProps
@@ -242,6 +223,8 @@ export interface DatePickerProps
       'value' | 'onChange' | 'placeholder' | 'defaultValue'
     > {
   mode?: FieldMode
+  /** Field chrome variant. Default = context.chrome ?? 'default'. Per-prop override. */
+  chrome?: FieldChrome
   error?: boolean
   size?: 'sm' | 'md' | 'lg'
   /** ISO date(YYYY-MM-DD)或 ISO datetime(YYYY-MM-DDTHH:MM:SS,當 showTime=true) */
@@ -275,6 +258,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
   (
     {
       mode = 'edit',
+      chrome: chromeProp,
       error: errorProp = false,
       size = 'md',
       value,
@@ -303,6 +287,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     const error = errorProp || (fieldCtx?.invalid ?? false)
     const disabled = disabledProp ?? fieldCtx?.disabled
     const resolvedMode = disabled ? 'disabled' : mode
+    const chrome: FieldChrome = chromeProp ?? fieldCtx?.chrome ?? 'default'
     const isEditable = resolvedMode === 'edit'
     const iconSize = size === 'lg' ? 20 : 16
     const needConfirm = needConfirmProp ?? showTime  // datetime 預設需確認
@@ -332,11 +317,18 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     const displayCommitted = formatDateOrDateTime(value, showTime, showSeconds, { formatOptions, locale })
     const displayLive = formatDateOrDateTime(displayValue, showTime, showSeconds, { formatOptions, locale })
 
+    // mode='display'(Phase B2 2026-05-05):純內容輸出 — 對齊原 DatePickerDisplay sub-component(retired)。
+    //   無 Field wrapper chrome / 無 Calendar icon / 無 input affordance。
+    if (resolvedMode === 'display') {
+      if (!value) return <span className={cn('text-fg-muted', className)}>{EMPTY_DISPLAY}</span>
+      return <span className={cn('truncate', className)}>{displayCommitted}</span>
+    }
+
     // readonly / disabled
     if (!isEditable) {
       return (
         <div
-          className={cn(fieldWrapperStyles({ mode: resolvedMode, size }), className)}
+          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: chrome, size }), className)}
           data-field-mode={resolvedMode}
           {...(props as React.HTMLAttributes<HTMLDivElement>)}
         >
@@ -385,7 +377,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
             data-field-mode="edit"
             data-error={error ? '' : undefined}
             className={cn(
-              fieldWrapperStyles({ mode: 'edit', size }),
+              fieldWrapperStyles({ mode: 'edit', variant: chrome, size }),
               'text-left cursor-pointer',
               'focus-visible:outline-none',
               error && [
@@ -504,6 +496,8 @@ export interface DatePickerRangeProps
       'value' | 'onChange' | 'placeholder' | 'defaultValue'
     > {
   mode?: FieldMode
+  /** Field chrome variant. Default = context.chrome ?? 'default'. Per-prop override. */
+  chrome?: FieldChrome
   error?: boolean
   size?: 'sm' | 'md' | 'lg'
   /** 區間值:[start ISO, end ISO]。任一 null 代表尚未選。 */
@@ -527,6 +521,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
   (
     {
       mode = 'edit',
+      chrome: chromeProp,
       error: errorProp = false,
       size = 'md',
       value,
@@ -553,6 +548,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     const error = errorProp || (fieldCtx?.invalid ?? false)
     const disabled = disabledProp ?? fieldCtx?.disabled
     const resolvedMode = disabled ? 'disabled' : mode
+    const chrome: FieldChrome = chromeProp ?? fieldCtx?.chrome ?? 'default'
     const isEditable = resolvedMode === 'edit'
     const iconSize = size === 'lg' ? 20 : 16
     const needConfirm = needConfirmProp ?? showTime
@@ -671,12 +667,29 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       return false
     }, [activeEnd, startDate, endDate])
 
+    // mode='display'(Phase B2 2026-05-05):純內容輸出 — 無 Field wrapper / 無 Calendar icon。
+    if (resolvedMode === 'display') {
+      const hasAny = !!(startIso || endIso)
+      if (!hasAny) return <span className={cn('text-fg-muted', className)}>{EMPTY_DISPLAY}</span>
+      return (
+        <span className={cn('inline-flex items-center min-w-0', className)}>
+          <span className={cn('truncate', !startIso && 'text-fg-muted')}>
+            {startIso ? formatDateOrDateTime(startIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[0]}
+          </span>
+          <ArrowRight size={iconSize} className="shrink-0 text-fg-muted mx-2" aria-hidden />
+          <span className={cn('truncate', !endIso && 'text-fg-muted')}>
+            {endIso ? formatDateOrDateTime(endIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[1]}
+          </span>
+        </span>
+      )
+    }
+
     // readonly / disabled view — plain wrapper,no popover
     if (!isEditable) {
       return (
         <div
           ref={ref}
-          className={cn(fieldWrapperStyles({ mode: resolvedMode, size }), className)}
+          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: chrome, size }), className)}
           data-field-mode={resolvedMode}
           {...props}
         >
@@ -913,7 +926,6 @@ export const datePickerMeta = {
 
 export {
   DatePickerWithRange as DatePicker,
-  DatePickerDisplay,
   DatePickerRange,
   formatDate,
 }

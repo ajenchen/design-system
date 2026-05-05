@@ -1,7 +1,7 @@
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 import type { Meta } from '@storybook/react'
 import { useState, useEffect } from 'react'
-import { DatePicker, DatePickerDisplay } from './date-picker'
+import { DatePicker } from './date-picker'
 import { DateGrid as DSDateGrid } from '@/design-system/components/DateGrid/date-grid'
 
 const meta: Meta = {
@@ -712,7 +712,7 @@ export const StateBehavior = {
                 <tr>
                   <Td>預設（MM/DD/YYYY）</Td>
                   <td className="p-2 border-b border-divider"><DatePicker mode="readonly" value="2026-04-02" /></td>
-                  <td className="p-2 border-b border-divider"><DatePickerDisplay value="2026-04-02" /></td>
+                  <td className="p-2 border-b border-divider"><DatePicker mode="display" value="2026-04-02" /></td>
                 </tr>
                 <tr>
                   <Td mono>month: 'short'</Td>
@@ -720,7 +720,7 @@ export const StateBehavior = {
                     <DatePicker mode="readonly" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
                   </td>
                   <td className="p-2 border-b border-divider">
-                    <DatePickerDisplay value="2026-04-02" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
+                    <DatePicker mode="display" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
                   </td>
                 </tr>
                 <tr>
@@ -729,7 +729,7 @@ export const StateBehavior = {
                     <DatePicker mode="readonly" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
                   </td>
                   <td className="p-2 border-b border-divider">
-                    <DatePickerDisplay value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+                    <DatePicker mode="display" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
                   </td>
                 </tr>
                 <tr>
@@ -738,7 +738,7 @@ export const StateBehavior = {
                     <DatePicker mode="readonly" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
                   </td>
                   <td className="p-2 border-b border-divider">
-                    <DatePickerDisplay value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+                    <DatePicker mode="display" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
                   </td>
                 </tr>
               </tbody>
@@ -761,7 +761,7 @@ export const StateBehavior = {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-[11px] text-fg-muted w-20 shrink-0">Display</span>
-              <DatePickerDisplay value={null} />
+              <DatePicker mode="display" value={null} />
             </div>
           </div>
         </div>

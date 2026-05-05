@@ -2,7 +2,7 @@ import * as React from 'react'
 import { X, ChevronDown } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldMode } from '@/design-system/components/Field/field-types'
+import type { FieldMode, FieldChrome } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -36,20 +36,13 @@ export interface SelectGroupConfig {
   label: string
 }
 
-function SelectDisplay({ value, options, size }: { value?: string | null; options?: SelectOption[]; size?: 'sm' | 'md' | 'lg' }) {
-  if (!value) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
-  const opt = options?.find(o => o.value === value)
-  const label = opt?.label ?? value
-  const variant = opt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
-  return <Tag size={size} variant={variant}>{label}</Tag>
-}
-SelectDisplay.displayName = 'SelectDisplay'
-
 // ── Types ───────────────────────────────────────────────────────────────────
 
 export interface SelectProps
   extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size' | 'value' | 'onChange'> {
   mode?: FieldMode
+  /** Field chrome variant. Default = context.chrome ?? 'default'. Per-prop override. */
+  chrome?: FieldChrome
   error?: boolean
   size?: 'sm' | 'md' | 'lg'
   options: SelectOption[]
@@ -183,11 +176,12 @@ function CustomSelectTriggerContent({
 }
 CustomSelectTriggerContent.displayName = 'CustomSelectTriggerContent'
 
-// ── Shared readonly/disabled render ─────────────────────────────────────────
+// ── Shared readonly/disabled/display render ─────────────────────────────────
 function ReadonlyDisplay({
-  mode, size, options, value, display, startIcon: StartIcon, className, placeholder,
-}: Pick<SelectProps, 'mode' | 'size' | 'options' | 'value' | 'display' | 'startIcon' | 'className' | 'placeholder'>) {
+  mode, chrome, size, options, value, display, startIcon: StartIcon, className, placeholder,
+}: Pick<SelectProps, 'mode' | 'chrome' | 'size' | 'options' | 'value' | 'display' | 'startIcon' | 'className' | 'placeholder'>) {
   const resolvedMode = mode ?? 'readonly'
+  const variant = chrome ?? 'default'
   const sz = size ?? 'md'
   const iconSize = getIconSize(sz)
   const label = options?.find(o => o.value === value)?.label ?? value
@@ -198,9 +192,20 @@ function ReadonlyDisplay({
   const emptyColorCls = resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted'
   const emptyText = placeholder ?? EMPTY_DISPLAY
 
+  // mode='display'(Phase B2 2026-05-05):純內容輸出,無 Field wrapper chrome / 無 input affordance。
+  //   對齊原 SelectDisplay sub-component(retired) — Tag mode → 純 <Tag>;text mode → 純 text。
+  //   readonly / disabled 仍走下方 fieldWrapperStyles(input chrome 鎖定的 a11y signal)。
+  if (resolvedMode === 'display') {
+    if (!value) return <span className={cn('text-fg-muted', className)}>{emptyText}</span>
+    if (isTextDisplay) return <span className={cn('truncate', className)}>{label}</span>
+    const selOpt = options?.find(o => o.value === value)
+    const tVariant = selOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
+    return <Tag size={sz} variant={tVariant} className={className}>{label}</Tag>
+  }
+
   if (isTextDisplay) {
     return (
-      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, size: sz }), className)} data-field-mode={resolvedMode}>
+      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, size: sz }), className)} data-field-mode={resolvedMode}>
         {StartIcon && <StartIcon size={iconSize} className={cn('shrink-0 pointer-events-none', iconColor)} aria-hidden />}
         <span className={cn('flex-1 min-w-0 truncate', resolvedMode === 'disabled' && 'text-fg-disabled')}>
           {value ? label : <span className={emptyColorCls}>{emptyText}</span>}
@@ -213,7 +218,7 @@ function ReadonlyDisplay({
   const tagVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
 
   return (
-    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, size: sz }), value && tagPadding[sz], className)} data-field-mode={resolvedMode}>
+    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, size: sz }), value && tagPadding[sz], className)} data-field-mode={resolvedMode}>
       {value ? <Tag size={sz} variant={tagVariant}>{label}</Tag> : <span className={emptyColorCls}>{emptyText}</span>}
     </div>
   )
@@ -223,11 +228,12 @@ function ReadonlyDisplay({
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ mode = 'edit', error: errorProp = false, size = 'md', options, value, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, ...props }, ref) => {
+  ({ mode = 'edit', chrome: chromeProp, error: errorProp = false, size = 'md', options, value, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, ...props }, ref) => {
     const fieldCtx = useFieldContext()
     const error = errorProp || (fieldCtx?.invalid ?? false)
     const disabled = disabledProp ?? fieldCtx?.disabled
     const resolvedMode = disabled ? 'disabled' : mode
+    const chrome: FieldChrome = chromeProp ?? fieldCtx?.chrome ?? 'default'
     const iconSize = getIconSize(size)
     const showClear = clearable && value && resolvedMode === 'edit'
     const isTextDisplay = display === 'plain'
@@ -239,7 +245,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     }, [ref])
 
     if (resolvedMode !== 'edit') {
-      return <ReadonlyDisplay mode={resolvedMode} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} />
+      return <ReadonlyDisplay mode={resolvedMode} chrome={chrome} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} />
     }
 
     const selectEl = (
@@ -273,7 +279,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
 
     if (!isTextDisplay) {
       return (
-        <div className={cn(fieldWrapperStyles({ mode: 'edit', size }), value && tagPadding[size], 'relative',
+        <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: chrome, size }), value && tagPadding[size], 'relative',
           error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'], className)}
           style={{ paddingRight: '0.75rem' }} data-field-mode="edit" data-error={error ? '' : undefined}>
           {value ? <Tag size={size} variant={nativeTagVariant} className="shrink-0 relative z-10 pointer-events-none">{label}</Tag> : <span className="text-fg-muted">{placeholder ?? '選擇...'}</span>}
@@ -286,7 +292,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     }
 
     return (
-      <div className={cn(fieldWrapperStyles({ mode: 'edit', size }),
+      <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: chrome, size }),
         error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'], className)}
         data-field-mode="edit" data-error={error ? '' : undefined}>
         {StartIcon && <StartIcon size={iconSize} className="shrink-0 text-fg-muted pointer-events-none" aria-hidden />}
@@ -304,11 +310,12 @@ NativeSelect.displayName = 'NativeSelect'
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode = 'edit', error: errorProp = false, size = 'md', options, groups, value, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, minRows, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel }, ref) => {
+  ({ mode = 'edit', chrome: chromeProp, error: errorProp = false, size = 'md', options, groups, value, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, minRows, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel }, ref) => {
     const fieldCtx = useFieldContext()
     const error = errorProp || (fieldCtx?.invalid ?? false)
     const disabled = disabledProp ?? fieldCtx?.disabled
     const resolvedMode = disabled ? 'disabled' : mode
+    const chrome: FieldChrome = chromeProp ?? fieldCtx?.chrome ?? 'default'
     const iconSize = getIconSize(size)
     const showClear = clearable && value && resolvedMode === 'edit'
     const isTextDisplay = display === 'plain'
@@ -363,9 +370,9 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
       [onChange]
     )
 
-    // Early return AFTER all hooks(disabled / readonly mode 走 ReadonlyDisplay)
+    // Early return AFTER all hooks(disabled / readonly / display mode 走 ReadonlyDisplay)
     if (resolvedMode !== 'edit') {
-      return <ReadonlyDisplay mode={resolvedMode} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} />
+      return <ReadonlyDisplay mode={resolvedMode} chrome={chrome} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} />
     }
 
     const clearEl = showClear ? (
@@ -409,7 +416,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
         tabIndex={0}
         className={cn(
-          fieldWrapperStyles({ mode: 'edit', size }),
+          fieldWrapperStyles({ mode: 'edit', variant: chrome, size }),
           !isTextDisplay && value && !searchable && tagPadding[size],
           open && !error && 'border-primary',
           error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'],
@@ -487,4 +494,4 @@ export const selectMeta = {
   },
 } as const
 
-export { Select, SelectDisplay }
+export { Select }
