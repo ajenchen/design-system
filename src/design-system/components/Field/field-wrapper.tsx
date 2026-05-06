@@ -130,24 +130,44 @@ export const fieldWrapperStyles = cva(
       },
       // naked variant — cell-as-input substrate(Notion / Airtable / Excel canonical)
       //
-      // ── 2026-05-06 v14:revert v12 → v9 baseline + keep v13.3 ──
-      // v12 `!absolute -inset-px` autoRowHeight 不相容(Field 抽 layout flow → cell 塌 42px;
-      // user production 報「Field 沒撐滿 cell, 比沒改之前還糟糕一百萬倍」)→ revert。
+      // ── 2026-05-06 v15 prototype:multi-layer box-shadow ring + CSS var seamless border ──
+      // 約束:(a) SSOT 留 Field state machine,(b) ring 顏色自動跟 border state 同步。
       //
-      // v14 = v9 baseline border-based state machine + v13.3 focus !important。
-      // 暫接受視覺:Field.border-l 跟 prev cell.border-r 視覺 2px 雙線(待另案研究 seamless
-      // 方案,約束:SSOT 留 Field state machine + ring 顏色自動跟 border state 同步)。
+      // Architecture:
+      //   - state machine 透過 `--field-ring` CSS var 統一輸出顏色(rest=border / hover=border-hover
+      //     / focus-within=primary / data-state=open=border-hover)
+      //   - `border border-transparent` 留 1px 給 layout(Field text 位置不 shift)
+      //   - `box-shadow: 0 0 0 1px var(--field-ring)` 1px ring 畫在 Field box 外緣 + 1px 外擴
+      //     spread 1px → ring rectangle = Field 外緣 + 1px 各方向
+      //   - host cell editing 必 `overflow-visible`(data-table.tsx 配合)讓 shadow 能 paint 到
+      //     cell.border-r 位置 + 鄰居 grid line 位置
+      //
+      // Pixel math(基於 debug-v14-hover-edit-truth.mjs 實測):
+      //   editing 時 cell padding=0,Field flex stretch 填 cell content area。
+      //   Field.outer rect = [cell.left, cell.right - 1, cell.top, cell.bottom](右 -1 因 cell.border-r)
+      //   Shadow 1px 外擴後:
+      //     - LEFT  edge: [cell.left-1, cell.left]      → 蓋 prev cell.border-r ✓
+      //     - RIGHT edge: [cell.right-1, cell.right]    → 蓋 cell.border-r 自己 ✓
+      //     - TOP   edge: [cell.top-1, cell.top]        → 蓋 prev row.border-b ✓
+      //     - BOTTOM edge: [cell.bottom, cell.bottom+1] → 蓋 row.border-b(若 row 用 border-b 在 row.bottom-1 to row.bottom,需 field.bottom = row.bottom-1)
+      //
+      // box-shadow paint 順序在 Field 之上,parent cell 的 border-r 之下也蓋過(child > parent paint)。
       {
         mode: 'edit',
         variant: 'naked',
         className: [
           'bg-transparent !rounded-none !gap-0 !h-full',
           '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
-          'border border-border',
-          'hover:border-border-hover',
-          // v13.3 SSOT canonical:focus-within !important(同 default + bare)
-          'focus-within:!border-primary focus-within:hover:!border-primary',
-          'data-[state=open]:border-border-hover',
+          // CSS var state machine — 顏色 SSOT 在這幾行
+          '[--field-ring:var(--border)]',
+          'hover:[--field-ring:var(--border-hover)]',
+          // focus !important(v13.3 dominates everything)
+          'focus-within:![--field-ring:var(--primary)]',
+          'focus-within:hover:![--field-ring:var(--primary)]',
+          'data-[state=open]:[--field-ring:var(--border-hover)]',
+          // 透明 border 留 layout(text 位置不偏)+ box-shadow 1px ring 提供視覺 ring
+          'border border-transparent',
+          '[box-shadow:0_0_0_1px_var(--field-ring)]',
           'group-data-[row-mode=auto]/cell:!items-start',
         ],
       },

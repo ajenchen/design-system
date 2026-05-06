@@ -220,7 +220,7 @@ export const ColumnResize: Story = {
           <br />
           - Hover handle:分隔線從 divider(淡灰)變 border-hover(深灰),cursor: col-resize
           <br />
-          - 拖動中:分隔線變 primary(藍)
+          - 拖動中:column 即時跟動 cursor(<code>columnResizeMode: 'onChange'</code>),分隔線變 primary(藍)
           <br />
           - more 選單「自動調整寬度」:scan column 內容 max scrollWidth + buffer 自動 fit
           <br />
@@ -234,6 +234,56 @@ export const ColumnResize: Story = {
           height="auto"
           enableColumnResize
           onColumnResize={(id, w) => setWidths(prev => ({ ...prev, [id]: w }))}
+        />
+      </div>
+    )
+  },
+}
+
+/* ── 欄拖曳重排 — enableColumnReorder + columnDef.meta.locked ──
+   對齊 Notion / Linear / Airtable canonical:header 任一 reorderable cell 可拖,
+   drop indicator 在 target column 邊緣。SKU 標 `meta.locked=true` 鎖定不可拖,亦不可
+   接受 drop(Notion 「primary column」pattern)。System column(__select__)永遠鎖。
+   Pinned column 仍可 reorder 但只在自己 region 內(left/center/right 不跨 region)。 */
+export const ColumnReorder: Story = {
+  name: '欄位拖曳重排',
+  render: () => {
+    const initialOrder = ['sku', 'name', 'category', 'price', 'stock', 'updatedAt']
+    const [columnOrder, setColumnOrder] = React.useState<string[]>(initialOrder)
+    const lockedCols = columnsWithPrice.map((c) => {
+      const ak = (c as { accessorKey?: string }).accessorKey
+      return ak === 'sku' ? { ...c, meta: { ...(c.meta ?? {}), locked: true } } : c
+    }) as ColumnDef<Product>[]
+    const handleColumnReorder = (sourceId: string, targetId: string, position: 'before' | 'after') => {
+      setColumnOrder((prev) => {
+        const next = prev.filter((id) => id !== sourceId)
+        const targetIdx = next.indexOf(targetId)
+        if (targetIdx === -1) return prev
+        const insertAt = position === 'before' ? targetIdx : targetIdx + 1
+        next.splice(insertAt, 0, sourceId)
+        return next
+      })
+    }
+    return (
+      <div className="flex flex-col gap-3 max-w-5xl">
+        <p className="text-caption text-fg-muted">
+          enableColumnReorder=true:hover header → grab cursor;拖曳期間 DragOverlay portal 顯示 ghost,
+          target column 邊緣顯 drop indicator(before/after 由 cursor 位置判定)。
+          <br />
+          - <strong>SKU 鎖定</strong>(<code>meta.locked=true</code>):無 grab cursor、被拖過不顯 drop
+          indicator(Notion primary column pattern)
+          <br />
+          - System columns(__select__)永遠鎖
+          <br />
+          目前 order:{columnOrder.join(' → ')}
+        </p>
+        <DataTable
+          columns={lockedCols}
+          data={sampleData}
+          height="auto"
+          tableOptions={{ state: { columnOrder } }}
+          enableColumnReorder
+          onColumnReorder={handleColumnReorder}
         />
       </div>
     )
