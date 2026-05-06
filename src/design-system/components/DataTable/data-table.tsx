@@ -401,7 +401,7 @@ function DraggableHeaderCell({
   const childProps = (children as React.ReactElement<{ style?: React.CSSProperties; className?: string; role?: string }>).props
   // useSortable.attributes 含 `role="button"` + `tabIndex` 等 — 全部 spread 會蓋掉 header 原 `role="columnheader"`
   // (a11y 必保 columnheader 語意)。strip role + 保留 aria-* / tabIndex / aria-roledescription:
-  const { role: _sortableRole, ...sortableAttrs } = attributes as Record<string, unknown>
+  const { role: _sortableRole, ...sortableAttrs } = attributes as unknown as Record<string, unknown>
   return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
     ref: setNodeRef,
     style: { ...(childProps.style ?? {}), ...dragStyle },
