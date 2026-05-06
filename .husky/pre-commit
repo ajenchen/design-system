@@ -3,3 +3,20 @@
 # Why: avoid drift between two memory locations(see CLAUDE.md「Memory」row + memory README)
 node scripts/sync-memory.mjs
 git add .claude/memory/
+
+# 2026-05-06 v14.3 L3 防線:DataTable invariants 必過(width/edit-stability/Field-fills-cell)
+# 只在 data-table.tsx / cell-registry.tsx / column-types.ts 改動時跑(避免每 commit 都跑慢)
+CHANGED_DATATABLE=$(git diff --cached --name-only | grep -E "DataTable/(data-table\.tsx|cell-registry\.tsx|column-types\.ts)$" || true)
+if [ -n "$CHANGED_DATATABLE" ]; then
+  echo "→ DataTable core 檔案有改 → 跑 invariant test 守 spec.md L4 不變條件"
+  if [ ! -d storybook-static ]; then
+    echo "  ⚠️  storybook-static 不存在,跳過 invariant test(commit 前自行跑 npm run build-storybook + npm run test:datatable-invariants 驗)"
+  else
+    if ! npm run test:datatable-invariants --silent; then
+      echo ""
+      echo "✗ DataTable invariants 失敗,改動破壞 spec.md L4 不變條件 — 阻 commit。"
+      echo "  詳見 data-table.spec.md「六之二、Column 寬度 API」+ scripts/data-table-invariants.mjs"
+      exit 1
+    fi
+  fi
+fi

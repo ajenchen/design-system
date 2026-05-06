@@ -1,4 +1,4 @@
-# Meta-Pattern 預警(26 條大原則)
+# Meta-Pattern 預警(27 條大原則)
 
 **mindset #6 的具體化**。每條吸收數十個具體 bug,是失敗記憶索引上游。任務前先過這 26 條。
 
@@ -30,11 +30,12 @@
 | **M24** | **State 顯著性 precedence:disabled > muted > emphasis**。元件在 disabled state 時,內部所有文字載體(label / value / placeholder / icon)統一切 disabled token(`text-fg-disabled` neutral-6),**不**繼續 muted token(`text-fg-muted` neutral-7)。muted 是裝飾,disabled 是語意 state — state 勝 emphasis。同理:error / warning state 內 placeholder 應對應 state token。Hook `check_disabled_placeholder_color.sh` 機械化攔截。 | 2026-05-04 5+ violation:`bareInputStyles` 永遠 muted / `select.tsx` 3 處 plain&tag empty 不分 mode / `textarea.tsx` 同;Input.tsx 唯一做對。User 5+ 次糾正才 codify |
 | **M25** | **Layered chain invariant 必整鏈 forward(viewport-aware overlay scroll 範例)**。Overlay surface(Popover / HoverCard / Dialog / Sheet)的 viewport-aware scroll 機制要求 root → SurfaceBody 之間**所有中間 wrapper 都 forward `flex flex-col h-full`**;任何中間 div 沒 forward → SurfaceBody flex-1 失效 → body 不 scroll。同類 chain pattern:density 透傳 / fieldCtx 鏈 / theme subtree(M3 portal 逃逸對偶)。Hook `check_overlay_panel_scroll_chain.sh` 機械化攔截。 | 2026-05-04:Filter / Sort panel root `<div w-[640px]>` 無 flex-col → user 縮 viewport 時 body 不 scroll。NameCard 因自設 max-h flex-col 才繞過(無中間 wrapper) |
 | **M26** | **Behavior / visual canonical decision 前必跑 WebFetch + WebSearch 取 ≥ 3 source,不可憑印象 propose**。M22 升級版 — M22 管「寫 spec / tsx 含 claim 必附 cite」(實作後),M26 管「propose / 決策前必先 fetch」(實作前)。Pipeline:(1) WebFetch 3 家世界級 source(Atlassian / Material / Polaris / Ant / Carbon / Apple HIG / shadcn / Radix);(2) 全 403 → WebSearch fallback 用 snippet,**明示「search-only confidence」**;(3) WebFetch + WebSearch 都失敗 → STOP propose,告知 user「無法 verify,要看 screenshot/實機」。Hook `check_propose_without_benchmark.sh`(PreToolUse Edit/Write 攔截 visual decision keywords + 近 N turn 無 fetch tool call → BLOCKER)。 | 2026-05-05:user 反覆糾「為什麼每次都沒 webfetch 只憑印象」— Jira drag handle / cell display 兩題我憑印象 propose 多輪;升級成硬規範 |
+| **M27** | **DS prop name 跨元件 namespace 衝突檢查**(M23 子規則)。引入 / 暴露外部 framework prop name(TanStack `size` / Radix `disabled` / dnd-kit attrs 等)前必 grep DS 既有 prop;同字 prop 不同語意 → 強制 wrap-and-rename,本 DS API 永遠用 DS-internal naming。判斷流程:(a) grep `${propName}:` 在 src/design-system/components/ 出現 ≥ 5 次?(b) 既有意義跟新引入框架 prop 同?(c) 不同 → wrap layer(類似 ColumnMeta extension)+ pre-process map 到框架 prop。 | 2026-05-06 column width:DS 內 49+ 處 `size: 'sm'\|'md'\|'lg'` density,我直推薦 TanStack `size: 280` px = M23 違反。Wrap 解 — `meta.width` DS-internal 命名,internal pre-process copy 到 TanStack root size。Hook `check_data_table_size_num_to_meta_width.sh` 機械化警告 |
 
 ## 判斷 meta-principle 是否漏寫的 test
 
 - 同類 bug 一年內被糾正 3 次 → meta-principle 漏寫或沒執行,檢討本清單
-- 某 bug 跟 23 條中任一條對不上 → 可能要新增第 24 條(跟 user 討論)
+- 某 bug 跟 27 條中任一條對不上 → 可能要新增第 28 條(跟 user 討論)
 
 ## 與失敗記憶索引的關係
 

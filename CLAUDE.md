@@ -7,7 +7,7 @@
 3. **改一處必看三處**——code / spec / story 三方聯動。改 cva `defaultVariants` / variant / token 前先 grep 該元件所有檔案,一次改完。
 4. **範例必真實業務場景**——Jira / Stripe / Notion / Figma 可辨識情境;禁 `Option A/B/C`、「按鈕一」、極端不現實、ASCII art。
 5. **猶豫就問**——無前例的決策:grep 既有 → 讀近親 spec → 仍不確定停下問。**禁止憑直覺造新 pattern**。
-6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住。見 `.claude/rules/meta-patterns.md` 26 條大原則(M1-M26)。**AI 不需 user 提醒才找 root invariant**——rule 震盪 → AI 自跑 M12 benchmark + invariant test。User 第 2 次問 → 必截圖 verify(M13)。對話結論 → AUTO 5-layer pipeline(M14)。Visual / behavior decision 前必先 WebFetch ≥ 3 source(M26)。使用者 tell me once 不該要 tell me twice。
+6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住。見 `.claude/rules/meta-patterns.md` 27 條大原則(M1-M27)。**AI 不需 user 提醒才找 root invariant**——rule 震盪 → AI 自跑 M12 benchmark + invariant test。User 第 2 次問 → 必截圖 verify(M13)。對話結論 → AUTO 5-layer pipeline(M14)。Visual / behavior decision 前必先 WebFetch ≥ 3 source(M26)。使用者 tell me once 不該要 tell me twice。
 
 完整 M-rules 詳 `.claude/rules/meta-patterns.md`(always loads)。
 
@@ -135,7 +135,7 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 
 # 失敗記憶索引(技術沉默陷阱 only)
 
-設計判斷類已被 M1-M26 吸收(見 `.claude/rules/meta-patterns.md`);具體歷史詳 `.claude/skills/design-system-audit/references/historical-bugs.md`。
+設計判斷類已被 M1-M27 吸收(見 `.claude/rules/meta-patterns.md`);具體歷史詳 `.claude/skills/design-system-audit/references/historical-bugs.md`。
 
 | 技術陷阱 | 一行 anchor |
 |--------|-----------|
@@ -157,7 +157,7 @@ Vite + React + TypeScript + Tailwind v4 + shadcn/ui + Storybook + 自訂 Design 
 
 僅在相關檔案打開時載入,降低本檔 token 成本:
 
-- `.claude/rules/meta-patterns.md` — 26 M-rules(always loads,fundamental)
+- `.claude/rules/meta-patterns.md` — 27 M-rules(always loads,fundamental)
 - `.claude/rules/spec-rules.md` — paths: `**/*.spec.md` + `src/design-system/**`
 - `.claude/rules/ui-development.md` — paths: `**/*.tsx` + `**/*.ts`(含 Tailwind / Token / Props 命名 / shadcn)
 - `.claude/rules/story-rules.md` — paths: `**/*.stories.tsx`(三層定位 + Title + 範例最高準則)

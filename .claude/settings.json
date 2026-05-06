@@ -242,6 +242,10 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_data_table_row_drag_get_row_id.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_data_table_size_num_to_meta_width.sh\""
           }
         ]
       }

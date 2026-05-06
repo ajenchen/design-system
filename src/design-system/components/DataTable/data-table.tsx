@@ -380,11 +380,14 @@ function DraggableHeaderCell({
   id,
   disabled,
   isLocked,
+  dropIndicatorSide,
   children,
 }: {
   id: string
   disabled: boolean
   isLocked: boolean
+  /** Notion blue line drop indicator(2026-05-06 v14.4):'before' = 左邊緣藍線 / 'after' = 右邊緣藍線 / null = 無 */
+  dropIndicatorSide: 'before' | 'after' | null
   children: React.ReactElement
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -402,13 +405,19 @@ function DraggableHeaderCell({
   // useSortable.attributes 含 `role="button"` + `tabIndex` 等 — 全部 spread 會蓋掉 header 原 `role="columnheader"`
   // (a11y 必保 columnheader 語意)。strip role + 保留 aria-* / tabIndex / aria-roledescription:
   const { role: _sortableRole, ...sortableAttrs } = attributes as unknown as Record<string, unknown>
+  // Drop indicator(Notion canonical):2px primary blue inline pseudo-border at target column edge
+  const indicatorClass = dropIndicatorSide === 'before'
+    ? 'before:absolute before:left-[-1px] before:top-0 before:bottom-0 before:w-[2px] before:bg-primary before:z-10 before:pointer-events-none'
+    : dropIndicatorSide === 'after'
+    ? 'after:absolute after:right-[-1px] after:top-0 after:bottom-0 after:w-[2px] after:bg-primary after:z-10 after:pointer-events-none'
+    : ''
   return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
     ref: setNodeRef,
     style: { ...(childProps.style ?? {}), ...dragStyle },
     'data-column-id': id,
     'data-column-locked': isLocked || undefined,
     ...(disabled ? {} : { ...sortableAttrs, ...listeners }),
-    className: cn(childProps.className, !disabled && !isDragging && 'cursor-grab', isDragging && 'cursor-grabbing'),
+    className: cn(childProps.className, !disabled && !isDragging && 'cursor-grab', isDragging && 'cursor-grabbing', indicatorClass),
   })
 }
 
@@ -1471,6 +1480,12 @@ function DataTableInner<TData>(
     return row.getVisibleCells().filter(c => ids.has(c.column.id))
   }
 
+  // 2026-05-06 v14.4 Notion blue line drop indicator(column reorder visual canonical)
+  // 必須宣告在 renderHeaderRow 之前(closure 引用,避 minified bundler TDZ false-positive)
+  const [dropIndicator, setDropIndicator] = React.useState<{ columnId: string; side: 'before' | 'after' } | null>(null)
+  // ref for stable lookup in handleDragOver(避免 closure 抓舊值)
+  const reorderableColumnIdsRef = React.useRef<string[]>([])
+
   // ── Render header row for a region ──
   const renderHeaderRow = (cols: Column<TData, unknown>[], isRight: boolean) => {
     const headers = getRegionHeaders(cols)
@@ -1492,12 +1507,14 @@ function DataTableInner<TData>(
           // as long as headers count consistent;column reorder/hide 整 row reflow 自然觸發 React reconcile)。
           // disabled=true 時仍 call hook 不啟動 listeners。
           const isDraggable = enableColumnReorder && !isLocked && !isSystem
+          const indicatorSide = dropIndicator?.columnId === colId ? dropIndicator.side : null
           return (
             <DraggableHeaderCell
               key={h.id}
               id={colId}
               disabled={!isDraggable}
               isLocked={isLocked}
+              dropIndicatorSide={indicatorSide}
             >
               {headerCellEl(h, showDivider)}
             </DraggableHeaderCell>
@@ -1829,15 +1846,29 @@ function DataTableInner<TData>(
     }
   }, [])
 
-  const handleDragOver = React.useCallback((e: { active: { id: string | number }; over: { id: string | number } | null }) => {
+  const handleDragOver = React.useCallback((e: { active: { id: string | number; data?: { current?: { type?: 'row' | 'column' } } }; over: { id: string | number } | null }) => {
     const { active, over } = e
     if (!active) return
     if (!over) {
       // 無 valid same-parent over → invalid drop signal(配合 v2 cross-parent visual)
       if (!invalidRef.current) setInvalidDropActive(true)
+      setDropIndicator(null)
       return
     }
     if (invalidRef.current) setInvalidDropActive(false)
+    // Column drag:算 drop indicator(before / after target column)
+    const dragType = active.data?.current?.type
+    if (dragType === 'column' && active.id !== over.id) {
+      // 用 active vs over 在 reorderableColumnIds 的相對位置判 before/after
+      // (Notion canonical:source 在 target 之前 → drop after / source 在 target 之後 → drop before)
+      const activeIdx = reorderableColumnIdsRef.current.indexOf(String(active.id))
+      const overIdx = reorderableColumnIdsRef.current.indexOf(String(over.id))
+      if (activeIdx === -1 || overIdx === -1) { setDropIndicator(null); return }
+      const side: 'before' | 'after' = activeIdx < overIdx ? 'after' : 'before'
+      setDropIndicator({ columnId: String(over.id), side })
+    } else {
+      setDropIndicator(null)
+    }
   }, [])
 
   const handleDragCancel = React.useCallback(() => {
@@ -1847,6 +1878,7 @@ function DataTableInner<TData>(
     setInvalidDropActive(false)
     setDragOverlayHtml(null)
     setDragOverlayWidth(null)
+    setDropIndicator(null)
   }, [])
 
   // Reorderable column ids(non-locked,non-system) — 計算一次 cached
@@ -1859,6 +1891,8 @@ function DataTableInner<TData>(
         return !((def?.meta as { locked?: boolean } | undefined)?.locked)
       })
   }, [columnsWithSelection])
+  // Sync ref(handleDragOver closure 抓不到最新 reorderableColumnIds)
+  React.useEffect(() => { reorderableColumnIdsRef.current = reorderableColumnIds }, [reorderableColumnIds])
 
   const handleDragEnd = React.useCallback((e: DragEndEvent) => {
     const { active, over } = e
@@ -1869,6 +1903,7 @@ function DataTableInner<TData>(
     setInvalidDropActive(false)
     setDragOverlayHtml(null)
     setDragOverlayWidth(null)
+    setDropIndicator(null)
     if (!over || active.id === over.id) return
     const sourceId = String(active.id)
     const targetId = String(over.id)
