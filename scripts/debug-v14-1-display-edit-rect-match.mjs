@@ -20,7 +20,7 @@ const server = http.createServer((req, res) => {
 await new Promise(r => server.listen(7100, r))
 
 const browser = await chromium.launch({ headless: true })
-const page = await browser.newPage({ viewport: { width: 1400, height: 800 } })
+const page = await browser.newPage({ viewport: { width: 2600, height: 800 } })
 
 // Test 2 stories sequentially:
 // (1) RowAutoHeightInlineEdit — autoRow stories(7 cell types)
@@ -106,6 +106,7 @@ await page.waitForTimeout(500)
 // __select__ idx 0,then SKU idx 1(readonly),Product idx 2,Qty idx 3,Category idx 4,
 // Stock idx 5,Tags idx 6,Owner idx 7,Reviewers idx 8,In(boolean)idx 9,URL idx 10,
 // Price idx 11,Release idx 12,Reminder idx 13
+// 2600px viewport 把所有 13 columns 都納入(SKU readonly 跳過,boolean 跟 url 不是 click-to-edit pattern)
 const inlineEditTypes = [
   { row: 0, col: 2, label: '[fixed] Product (string)' },
   { row: 0, col: 3, label: '[fixed] Qty (number)' },
@@ -114,8 +115,6 @@ const inlineEditTypes = [
   { row: 0, col: 6, label: '[fixed] Tags (multiSelect)' },
   { row: 0, col: 7, label: '[fixed] Owner (person)' },
   { row: 0, col: 8, label: '[fixed] Reviewers (multiPerson)' },
-  // boolean (col 9) skipped — not click-to-edit, click toggles
-  // url (col 10) skipped — hover Pencil pattern
   { row: 0, col: 11, label: '[fixed] Price (currency)' },
   { row: 0, col: 12, label: '[fixed] Release (date)' },
   { row: 0, col: 13, label: '[fixed] Reminder (time)' },
