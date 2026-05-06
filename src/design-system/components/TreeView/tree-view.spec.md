@@ -262,7 +262,7 @@ Icon 尺寸跟 size tier(sm/md=16, lg=20);色 `fg-muted` → hover `foreground`;
 - **Auto-expand**:拖曳停留收合 folder 500ms → 自動展開(Figma 行為);離開或結束取消計時
 - **依賴**:`@dnd-kit/core`(`useDraggable` + `useDroppable` + `DragOverlay`);state 由 consumer `onDragEnd({sourceId, targetId, position})` callback 自行更新
 
-**視覺**:被拖 node 原位半透明殘影 / before-after drop indicator 為 primary 細線(left 跟 indent 深度) / inside drop target `primary-subtle` 全行背景 / DragOverlay ghost 圓角 + icon + label + 半透明 + elevation shadow。完整 class 由 `tree-view.tsx` cva own;視覺校驗見 story `DragAndDrop`。
+**視覺**(2026-05-06 v14.5 SSOT 抽 `lib/drag-visual.ts`):被拖 node 原位 `opacity-30` 半透明殘影 / before-after drop indicator 為 2px primary 細線(`bg-primary` `h-0.5`,left 跟 indent 深度)/ inside drop target `bg-primary-subtle` 全行背景 / DragOverlay ghost 圓角 + icon + label + 半透明 + elevation shadow。**TreeView 是 DS 內最早 codified 的 drag canonical**,DataTable row drag + column reorder 都 inherit 此 pattern via `drag-visual.ts` SSOT module。視覺校驗見 story `DragAndDrop`。
 
 ---
 

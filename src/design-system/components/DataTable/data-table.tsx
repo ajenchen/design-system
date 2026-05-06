@@ -21,6 +21,7 @@ import { DndContext, DragOverlay, closestCenter, useSensor, useSensors, PointerS
 import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { CSS as DndCSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
+import { dragSourceStyle, dropIndicatorColumn, dragHandleCursor, dragActiveCursor } from '@/design-system/lib/drag-visual'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -339,12 +340,14 @@ function SortableRowProvider({
   children: (ctx: SortableRowCtxValue) => React.ReactNode
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled })
-  // 2026-05-06 v10 DragOverlay portal:source row drag 中 invisible(opacity:0)— 視覺 by DragOverlay
-  // (前 v9 用 0.5 半透明殘影,跟 overlay 重疊 = 雙重影)。對齊 dnd-kit canonical for virtualized lists。
+  // 2026-05-06 v14.5 drag visual SSOT(對齊 TreeView canonical):source `opacity:0.3` 半透
+  // (不是 `opacity:0` 全隱形)— user 拖長距離仍看得到原位,不迷失方向。Ghost via DragOverlay portal
+  // (前 v9 用 `opacity:0.5` 跟 overlay 重疊看雙影是因 50% 太亮;30% 已 recede 至背景視覺。對齊 TreeView /
+  // Notion / Atlassian canonical。SSOT consume `dragSourceStyle` from drag-visual.ts。
   const style: React.CSSProperties = {
     transform: DndCSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0 : undefined,
+    ...dragSourceStyle(isDragging),
     zIndex: isDragging ? 1 : undefined,
     position: 'relative',
   }
@@ -398,18 +401,20 @@ function DraggableHeaderCell({
   const dragStyle: React.CSSProperties = {
     transform: DndCSS.Transform.toString(transform),
     transition,
-    ...(isDragging ? { opacity: 0 } : {}),
+    ...dragSourceStyle(isDragging),  // 2026-05-06 v14.5 SSOT 對齊 TreeView opacity 0.3 半透
   }
   // cloneElement 注入 — 不額外加 wrapper div(避免破壞 flex / column width 計算)
   const childProps = (children as React.ReactElement<{ style?: React.CSSProperties; className?: string; role?: string }>).props
   // useSortable.attributes 含 `role="button"` + `tabIndex` 等 — 全部 spread 會蓋掉 header 原 `role="columnheader"`
   // (a11y 必保 columnheader 語意)。strip role + 保留 aria-* / tabIndex / aria-roledescription:
   const { role: _sortableRole, ...sortableAttrs } = attributes as unknown as Record<string, unknown>
-  // Drop indicator(Notion canonical):2px primary blue inline pseudo-border at target column edge
+  // Drop indicator(2026-05-06 v14.5 SSOT 對齊 TreeView):2px primary line via pseudo-element
+  // (cloneElement 不能加 child → 用 before:/after: variant,視覺等同 absolute div 但不需 child)。
+  // SSOT consume `dropIndicatorColumn.pseudoBefore/After` from drag-visual.ts。
   const indicatorClass = dropIndicatorSide === 'before'
-    ? 'before:absolute before:left-[-1px] before:top-0 before:bottom-0 before:w-[2px] before:bg-primary before:z-10 before:pointer-events-none'
+    ? dropIndicatorColumn.pseudoBefore
     : dropIndicatorSide === 'after'
-    ? 'after:absolute after:right-[-1px] after:top-0 after:bottom-0 after:w-[2px] after:bg-primary after:z-10 after:pointer-events-none'
+    ? dropIndicatorColumn.pseudoAfter
     : ''
   return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
     ref: setNodeRef,
@@ -417,7 +422,7 @@ function DraggableHeaderCell({
     'data-column-id': id,
     'data-column-locked': isLocked || undefined,
     ...(disabled ? {} : { ...sortableAttrs, ...listeners }),
-    className: cn(childProps.className, !disabled && !isDragging && 'cursor-grab', isDragging && 'cursor-grabbing', indicatorClass),
+    className: cn(childProps.className, !disabled && !isDragging && dragHandleCursor, isDragging && dragActiveCursor, indicatorClass),
   })
 }
 

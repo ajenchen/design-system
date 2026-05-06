@@ -16,6 +16,7 @@ import {
 import { ChevronRight } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
+import { dragSourceClass, dropIndicatorRow, dropIndicatorInside } from '@/design-system/lib/drag-visual'
 import { cn } from '@/lib/utils'
 // Row primitive 共用常數——單一 source of truth
 import {
@@ -882,12 +883,13 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
           data-tree-parent-id={parentId ?? ''}
           data-tree-has-children={hasChildren}
           tabIndex={-1}
-          className={cn('w-full min-w-0 relative', isDragging && 'opacity-30')}
+          className={cn('w-full min-w-0 relative', isDragging && dragSourceClass)}
         >
-          {/* Drop indicator — before: 藍色細線(indent 跟隨 depth) */}
+          {/* Drop indicator — before:水平 2px primary line(指 SSOT drag-visual.ts);
+              indent 跟隨 depth(left 由 inline style override class 的 left-0)*/}
           {isDropTarget && dropTarget?.position === 'before' && (
             <div
-              className="absolute top-0 right-0 h-0.5 bg-primary z-10"
+              className={dropIndicatorRow.before}
               style={{ left: `calc(var(--tree-px) + ${indentPx}px)` }}
             />
           )}
@@ -908,7 +910,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               !disabled && !isSelected && 'text-fg-secondary',
               !disabled && isSelected && 'text-foreground',
               // inside: 資料夾背景高亮(Figma 風格),不用 ring/border
-              isDropTarget && dropTarget?.position === 'inside' && 'bg-primary-subtle',
+              isDropTarget && dropTarget?.position === 'inside' && dropIndicatorInside,
               !disabled && 'hover:bg-neutral-hover hover:text-foreground',
               !disabled && isSelected && selectionMode === 'single' && 'bg-neutral-selected',
               showRing && 'ring-2 ring-ring ring-inset',
@@ -968,10 +970,10 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             ) : null}
           </div>
 
-          {/* Drop indicator — after: 藍色細線 */}
+          {/* Drop indicator — after:同 before mirror 到 bottom edge(SSOT drag-visual.ts)*/}
           {isDropTarget && dropTarget?.position === 'after' && (
             <div
-              className="absolute bottom-0 right-0 h-0.5 bg-primary z-10"
+              className={dropIndicatorRow.after}
               style={{ left: `calc(var(--tree-px) + ${indentPx}px)` }}
             />
           )}

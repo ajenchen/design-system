@@ -435,6 +435,10 @@ tableOptions={{ getSubRows, getRowCanExpand, state: { expanded }, onExpandedChan
 - a11y:row `aria-expanded` / `aria-level`
 - Selection cascade:default OFF;`selectionCascade` opt-in 待 v2
 
+### Drag visual SSOT(2026-05-06 v14.5)
+
+Row drag + column reorder 跟 TreeView 共用 `lib/drag-visual.ts`:source `opacity-30` 半透 + DragOverlay ghost + 2px primary drop indicator。Column 用 pseudo variant(`cloneElement` 不能加 child);row drop indicator deferred(rows 已 transform shift 提供 feedback)。
+
 ### Row drag(Jira canonical,v3 已 ship)
 
 `enableRowDrag?: boolean` + `onRowReorder?: (sourceId, targetId, 'before' | 'after')`。Library:@dnd-kit/sortable + @dnd-kit/core。**必填 `getRowId`**(否則 dnd 用 row.index reorder 後錯位)。
