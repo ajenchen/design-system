@@ -698,6 +698,72 @@ export const NestedRows: Story = {
   },
 }
 
+/* ── 巢狀 row × 拖曳重排(tree-table drag)──
+   Tree drag canonical(2026-05-06 v14.7,對齊 spec.md「Cross-parent drop 禁止」)
+   - **Top-level rows**:有 drag handle(absolute pinned to row left edge),可拖重排
+   - **Sub-rows**(`row.depth > 0`):**無 handle**,不可拖(設計保守對齊 Notion)
+   - **Cross-parent drop**:過濾,顯 invalid signal(handle cursor `not-allowed`)
+   - **Drop indicator**:水平 2px primary line(top/bottom)— SSOT 對齊 TreeView */
+export const NestedRowsWithDrag: Story = {
+  name: '巢狀 row × 拖曳重排',
+  render: () => {
+    const [expanded, setExpanded] = React.useState<Record<string, boolean>>({ 'task-1': true })
+    const [list, setList] = React.useState<TaskRow[]>(NESTED_DATA)
+    const STATUS_OPTIONS = [
+      { value: 'Not started', label: 'Not started' },
+      { value: 'In progress', label: 'In progress' },
+      { value: 'Blocked', label: 'Blocked' },
+      { value: 'Done', label: 'Done' },
+    ]
+    const taskCol = createColumnHelper<TaskRow>()
+    const taskColumns = React.useMemo(
+      () => [
+        taskCol.accessor('task', { header: '任務', meta: { type: 'string', width: 360 } }),
+        taskCol.accessor('owner', { header: '負責人', meta: { type: 'string', width: 160 } }),
+        taskCol.accessor('status', { header: '狀態', meta: { type: 'select', options: STATUS_OPTIONS, width: 140 } }),
+      ],
+      []
+    )
+    const handleReorder = (sourceId: string, targetId: string, position: 'before' | 'after') => {
+      setList((prev) => {
+        // top-level reorder only(sub-rows 不可拖)
+        const sourceIdx = prev.findIndex((r) => r.id === sourceId)
+        const targetIdx = prev.findIndex((r) => r.id === targetId)
+        if (sourceIdx === -1 || targetIdx === -1) return prev
+        const next = [...prev]
+        const [moved] = next.splice(sourceIdx, 1)
+        const adjustedTarget = next.findIndex((r) => r.id === targetId)
+        const insertAt = position === 'before' ? adjustedTarget : adjustedTarget + 1
+        next.splice(insertAt, 0, moved)
+        return next
+      })
+    }
+    return (
+      <div className="flex flex-col gap-3 max-w-3xl">
+        <p className="text-caption text-fg-muted">
+          Tree-table drag canonical:**top-level rows 可拖**(handle 浮在 row 左緣),
+          **sub-rows 無 handle 不可拖**(對齊 Notion 保守)。Cross-parent drop 過濾,
+          顯 invalid signal。Drop indicator 水平 2px primary line — SSOT 對齊 TreeView。
+        </p>
+        <DataTable
+          columns={taskColumns}
+          data={list}
+          height="auto"
+          getRowId={(row) => row.id}
+          enableRowDrag
+          onRowReorder={handleReorder}
+          tableOptions={{
+            getSubRows: (row: TaskRow) => row.children,
+            getRowCanExpand: (row) => Boolean(row.original.children?.length),
+            state: { expanded },
+            onExpandedChange: setExpanded as any,
+          }}
+        />
+      </div>
+    )
+  },
+}
+
 /* ── 虛擬捲動（大量資料）── */
 export const VirtualScroll: Story = {
   name: '大量資料',
