@@ -33,16 +33,30 @@ import type * as React from 'react'
 
 // ── Source element styling(被拖中的 source row/column)─────────────────────
 
-/** Source element 拖中的 opacity className(consume DS token `--opacity-drag-source` = 0.30)*/
-export const dragSourceClass = 'opacity-drag-source' as const
+/**
+ * Source element 拖中的 opacity className。
+ *
+ * **Reuse `opacity-disabled` token**(2026-05-06 v14.5.2 對齊 Atlassian Pragmatic):
+ * Atlassian dnd guidelines 也用 `opacity.disabled` token 給 drag source dim(他們值 0.40,
+ * 我們值 0.45,role 一致)。不另開 drag-source 專屬 token — single-role-per-value 哲學
+ * + DS internal SSOT。
+ */
+export const dragSourceClass = 'opacity-disabled' as const
 
-/** Source element 拖中的 inline style(consume DS token `--opacity-drag-source`)*/
+/** Source element 拖中的 inline style(consume DS token `--opacity-disabled`)*/
 export function dragSourceStyle(isDragging: boolean): React.CSSProperties {
-  return isDragging ? { opacity: 'var(--opacity-drag-source)' } : {}
+  return isDragging ? { opacity: 'var(--opacity-disabled)' } : {}
 }
 
-/** DragOverlay ghost element 半透(consume DS token `--opacity-drag-ghost` = 0.90)*/
-export const dragGhostClass = 'opacity-drag-ghost' as const
+/**
+ * DragOverlay ghost 視覺 canonical(2026-05-06 v14.5.2 對齊 dnd-kit / Atlassian / Material):
+ * **不 dim**(opacity:1)+ elevation shadow `shadow-[var(--elevation-200)]` + 顯式 bg
+ * (`bg-surface` 或 `bg-surface-raised`)+ border。Lifted preview pattern,跟 surface 拉開
+ * 視覺距離靠 shadow 不靠 opacity。
+ *
+ * Consumer 自己組 className(因 ghost 結構各自不同 — TreeView 是 icon+label compact pill,
+ * DataTable 是 cloned row HTML wrapper),這裡只 codify 規則 不導出 class string。
+ */
 
 // ── Drop indicator className(target row/column edge 顯藍細線)──────────────
 

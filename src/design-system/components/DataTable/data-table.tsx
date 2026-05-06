@@ -1987,7 +1987,7 @@ function DataTableInner<TData>(
           {dragOverlayHtml ? (
             <div
               style={{ width: dragOverlayWidth ?? undefined }}
-              className="bg-surface-raised shadow-[var(--elevation-200)] rounded-md border border-border pointer-events-none opacity-drag-ghost"
+              className="bg-surface-raised shadow-[var(--elevation-200)] rounded-md border border-border pointer-events-none"
               dangerouslySetInnerHTML={{ __html: dragOverlayHtml }}
             />
           ) : null}

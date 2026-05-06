@@ -633,7 +633,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
                 return (
                   <div className={cn(
                     'flex items-center gap-2 rounded-lg bg-surface border border-border pointer-events-none',
-                    'opacity-drag-ghost shadow-[var(--elevation-200)]',
+                    'shadow-[var(--elevation-200)]',
                     size === 'lg' ? 'text-body-lg leading-compact px-4 py-2' : 'text-body leading-compact px-3 py-1.5',
                   )}>
                     {IconComp && <IconComp size={ICON_SIZE[size]} className="shrink-0" aria-hidden />}

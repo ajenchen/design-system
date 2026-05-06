@@ -72,14 +72,9 @@ const twMerge = extendTailwindMerge({
         'text-warning-subtle',
         'text-info-subtle',
       ],
-      // Custom opacity utilities(對應 tokens/opacity/opacity.css `@utility`)。
-      // 三個 single-role tokens: opacity-disabled / opacity-drag-source / opacity-drag-ghost。
+      // Custom opacity utility(對應 tokens/opacity/opacity.css `@utility opacity-disabled`)。
       // 不註冊 group → tailwind-merge 用 default opacity-N heuristic,可能誤判 class 衝突。
-      'opacity': [
-        'opacity-disabled',
-        'opacity-drag-source',
-        'opacity-drag-ghost',
-      ],
+      'opacity': ['opacity-disabled'],
     },
   },
 })

@@ -1,18 +1,17 @@
 #!/bin/bash
 set -uo pipefail
-# Opacity token enforcement hook(2026-05-06 v14.5):
+# Opacity token enforcement hook(2026-05-06 v14.5.2):
 #   偵測 *.tsx 寫 `opacity-{N}`(N 是 0-99 數字)非 token utility → soft warn 用 DS opacity token。
 #
-# DS opacity tokens(`tokens/opacity/opacity.css`):
+# DS opacity 慣例(`tokens/opacity/opacity.css` + drag-visual.ts):
 #   - `opacity-0` / `opacity-100` — visibility toggle(允許,純 show/hide 不算 dim)
-#   - `opacity-disabled`(0.45)— 元件 disabled 狀態
-#   - `opacity-drag-source`(0.30)— drag-and-drop source 半透
-#   - `opacity-drag-ghost`(0.90)— DragOverlay ghost 半透 elevated preview
+#   - `opacity-disabled`(0.45)— 元件 disabled 狀態 + drag source 半透殘影 reuse
+#                                 (對齊 Atlassian Pragmatic 用 opacity.disabled token)
+#   - DragOverlay ghost — 不 dim(opacity:1)+ `shadow-[var(--elevation-200)]` 表 lifted
+#                         (對齊 dnd-kit / Atlassian / Material canonical)
 #
 # 任何其他 `opacity-{N}` Tailwind utility = M23 violation,自開 opacity tier。
-#
-# 修法:加新 token 到 `opacity.css` + `opacity.spec.md`(走 token PR 流程),
-#       或 reuse existing token(disabled / drag-source / drag-ghost)。
+# 修法:reuse `opacity-disabled` 或加 alpha 色階(`--white-aN` / `--black-aN`)。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
@@ -51,15 +50,12 @@ EOF_HEAD
   echo "$HITS_FMT" >&2
   cat >&2 <<'EOF_BODY'
 
-   DS opacity tokens(tokens/opacity/opacity.css):
-     opacity-0 / opacity-100        ← visibility toggle(允許)
-     opacity-disabled(0.45)         ← 元件 disabled 狀態
-     opacity-drag-source(0.30)      ← drag source 半透
-     opacity-drag-ghost(0.90)       ← DragOverlay ghost 半透
+   DS opacity 慣例:
+     opacity-0 / opacity-100  ← visibility toggle(允許)
+     opacity-disabled(0.45)   ← 元件 disabled 狀態 + drag source dim reuse
+     ghost / overlay          ← 不 dim,用 shadow-[var(--elevation-*)] 表 lifted
 
-   修法:reuse existing token(若用途相符)或加新 token 到 opacity.css + spec.md
-   (走 token PR,single-role-per-value 哲學,捨棄 Tailwind multi-tier ladder)。
-
+   修法:reuse `opacity-disabled` 或用 alpha 色階(--white-aN / --black-aN)。
    詳 tokens/opacity/opacity.spec.md + M23 「DS 內既有 canonical 優先」。
 EOF_BODY
 fi
