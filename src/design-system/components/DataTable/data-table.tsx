@@ -21,7 +21,7 @@ import { DndContext, DragOverlay, closestCenter, useSensor, useSensors, PointerS
 import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { CSS as DndCSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
-import { dragSourceStyle, dropIndicatorColumn, dragHandleCursor, dragActiveCursor } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragHandleCursor, dragActiveCursor } from '@/design-system/lib/drag-visual'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -1487,7 +1487,7 @@ function DataTableInner<TData>(
 
   // 2026-05-06 v14.4 Notion blue line drop indicator(column reorder visual canonical)
   // 必須宣告在 renderHeaderRow 之前(closure 引用,避 minified bundler TDZ false-positive)
-  const [dropIndicator, setDropIndicator] = React.useState<{ columnId: string; side: 'before' | 'after' } | null>(null)
+  const [dropIndicator, setDropIndicator] = React.useState<{ id: string; side: 'before' | 'after'; type: 'row' | 'column' } | null>(null)
   // ref for stable lookup in handleDragOver(避免 closure 抓舊值)
   const reorderableColumnIdsRef = React.useRef<string[]>([])
 
@@ -1512,7 +1512,7 @@ function DataTableInner<TData>(
           // as long as headers count consistent;column reorder/hide 整 row reflow 自然觸發 React reconcile)。
           // disabled=true 時仍 call hook 不啟動 listeners。
           const isDraggable = enableColumnReorder && !isLocked && !isSystem
-          const indicatorSide = dropIndicator?.columnId === colId ? dropIndicator.side : null
+          const indicatorSide = dropIndicator?.type === 'column' && dropIndicator.id === colId ? dropIndicator.side : null
           return (
             <DraggableHeaderCell
               key={h.id}
@@ -1595,11 +1595,18 @@ function DataTableInner<TData>(
           {...hoverProps(idx)}
         >
           {showDragHandle && <RowDragHandle disabled={dragDisabled} />}
+          {/* 2026-05-06 v14.6 row drop indicator(SSOT 對齊 TreeView):水平 2px primary line at top/bottom edge */}
+          {dropIndicator?.type === 'row' && dropIndicator.id === row.id && dropIndicator.side === 'before' && (
+            <div className={dropIndicatorRow.before} aria-hidden />
+          )}
           {getRegionCells(row, cols).map((cell, ci, arr) => cellEl(cell, ci === arr.length - 1 && !(isRight && hasRowActions)))}
           {isRight && hasRowActions && (
             <div role="cell" className="flex items-center justify-end shrink-0 gap-2 flex-1" style={cellPadding}>
               {rowActions!(row.original)}
             </div>
+          )}
+          {dropIndicator?.type === 'row' && dropIndicator.id === row.id && dropIndicator.side === 'after' && (
+            <div className={dropIndicatorRow.after} aria-hidden />
           )}
         </div>
       )
@@ -1861,20 +1868,26 @@ function DataTableInner<TData>(
       return
     }
     if (invalidRef.current) setInvalidDropActive(false)
-    // Column drag:算 drop indicator(before / after target column)
-    const dragType = active.data?.current?.type
-    if (dragType === 'column' && active.id !== over.id) {
-      // 用 active vs over 在 reorderableColumnIds 的相對位置判 before/after
-      // (Notion canonical:source 在 target 之前 → drop after / source 在 target 之後 → drop before)
+    if (active.id === over.id) { setDropIndicator(null); return }
+    // Drop indicator(2026-05-06 v14.6 row + column 統一 SSOT pattern):
+    // 用 active vs over 在 sortable items 的相對位置判 before/after。
+    // (Notion canonical:source 在 target 之前 → drop after / source 在 target 之後 → drop before)
+    const dragType = active.data?.current?.type ?? 'row'
+    if (dragType === 'column') {
       const activeIdx = reorderableColumnIdsRef.current.indexOf(String(active.id))
       const overIdx = reorderableColumnIdsRef.current.indexOf(String(over.id))
       if (activeIdx === -1 || overIdx === -1) { setDropIndicator(null); return }
       const side: 'before' | 'after' = activeIdx < overIdx ? 'after' : 'before'
-      setDropIndicator({ columnId: String(over.id), side })
+      setDropIndicator({ id: String(over.id), side, type: 'column' })
     } else {
-      setDropIndicator(null)
+      // Row drag — 用 allRowIds 算位置(只 same-parent siblings,跨 parent collisionDetection 已過濾)
+      const activeIdx = allRowIds.indexOf(String(active.id))
+      const overIdx = allRowIds.indexOf(String(over.id))
+      if (activeIdx === -1 || overIdx === -1) { setDropIndicator(null); return }
+      const side: 'before' | 'after' = activeIdx < overIdx ? 'after' : 'before'
+      setDropIndicator({ id: String(over.id), side, type: 'row' })
     }
-  }, [])
+  }, [allRowIds])
 
   const handleDragCancel = React.useCallback(() => {
     setActiveDragId(null)

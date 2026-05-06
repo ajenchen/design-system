@@ -437,7 +437,7 @@ tableOptions={{ getSubRows, getRowCanExpand, state: { expanded }, onExpandedChan
 
 ### Drag visual SSOT(2026-05-06 v14.5)
 
-Row drag + column reorder 跟 TreeView 共用 `lib/drag-visual.ts`:source `opacity-30` 半透 + DragOverlay ghost + 2px primary drop indicator。Column 用 pseudo variant(`cloneElement` 不能加 child);row drop indicator deferred(rows 已 transform shift 提供 feedback)。
+Row drag + column reorder + TreeView 共用 `lib/drag-visual.ts`:source `opacity-disabled` 半透(reuse Atlassian Pragmatic 慣例,不 split token)+ DragOverlay ghost(`bg-surface-raised` + `shadow-[var(--elevation-200)]`,**不 dim**)+ 2px primary drop indicator(row 水平 / column 垂直,皆 `bg-primary` `h-0.5` 或 `w-0.5`)。Column 用 pseudo variant(`cloneElement` 不能加 child);row 用 absolute div(2026-05-06 v14.6)。
 
 ### Row drag(Jira canonical,v3 已 ship)
 
