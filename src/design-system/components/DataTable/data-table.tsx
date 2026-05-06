@@ -21,7 +21,7 @@ import { DndContext, DragOverlay, pointerWithin, rectIntersection, useSensor, us
 import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { CSS as DndCSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
-import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragHandleCursor, dragActiveCursor } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor } from '@/design-system/lib/drag-visual'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -340,13 +340,14 @@ function SortableRowProvider({
   children: (ctx: SortableRowCtxValue) => React.ReactNode
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled })
-  // 2026-05-06 v14.5 drag visual SSOT(對齊 TreeView canonical):source `opacity:0.3` 半透
-  // (不是 `opacity:0` 全隱形)— user 拖長距離仍看得到原位,不迷失方向。Ghost via DragOverlay portal
-  // (前 v9 用 `opacity:0.5` 跟 overlay 重疊看雙影是因 50% 太亮;30% 已 recede 至背景視覺。對齊 TreeView /
-  // Notion / Atlassian canonical。SSOT consume `dragSourceStyle` from drag-visual.ts。
+  // 2026-05-06 v14.9 Jira/Atlassian canonical(對齊 dnd-kit DragOverlay docs):
+  // **DragOverlay mode 下 source NOT 跟 cursor 移動** — source 留原位 opacity-disabled 半透,
+  // DragOverlay portal 顯 ghost。對 active source `transform: 'none'` 強制鎖位(否則 useSortable
+  // 預設 transform 讓 source 跟 cursor 滑動 = user 報「source 直接移動目標位置 = 喪失 source 意義」)。
+  // 對齊 Jira / Notion / Linear / TreeView「source-stays-in-place」pattern。
   const style: React.CSSProperties = {
-    transform: DndCSS.Transform.toString(transform),
-    transition,
+    transform: isDragging ? 'none' : DndCSS.Transform.toString(transform),
+    transition: isDragging ? 'none' : transition,
     ...dragSourceStyle(isDragging),
     zIndex: isDragging ? 1 : undefined,
     position: 'relative',
@@ -398,10 +399,16 @@ function DraggableHeaderCell({
     disabled,
     data: { type: 'column', columnId: id },
   })
+  // 2026-05-06 v14.9 Jira/Atlassian canonical(對齊 dnd-kit DragOverlay docs):
+  // **DragOverlay mode 下 source NOT 跟 cursor 移動** — DragOverlay portal 顯 ghost,
+  // source 留原位 opacity-disabled 半透。dnd-kit `useSortable` 仍給 transform(for items
+  // shifting to make space),但對 active source 我們強制 'none' 鎖位。
+  // user 報「source 直接移動到目標位置 = 喪失 source 意義」,Jira / Notion / Linear 全
+  // 走「source 留原位」pattern,這裡對齊。
   const dragStyle: React.CSSProperties = {
-    transform: DndCSS.Transform.toString(transform),
-    transition,
-    ...dragSourceStyle(isDragging),  // 2026-05-06 v14.5 SSOT 對齊 TreeView opacity 0.3 半透
+    transform: isDragging ? 'none' : DndCSS.Transform.toString(transform),
+    transition: isDragging ? 'none' : transition,
+    ...dragSourceStyle(isDragging),
   }
   // cloneElement 注入 — 不額外加 wrapper div(避免破壞 flex / column width 計算)
   const childProps = (children as React.ReactElement<{ style?: React.CSSProperties; className?: string; role?: string }>).props
@@ -422,7 +429,11 @@ function DraggableHeaderCell({
     'data-column-id': id,
     'data-column-locked': isLocked || undefined,
     ...(disabled ? {} : { ...sortableAttrs, ...listeners }),
-    className: cn(childProps.className, !disabled && !isDragging && dragHandleCursor, isDragging && dragActiveCursor, indicatorClass),
+    // 2026-05-06 v14.9 cursor canonical(對齊 Notion / Jira):
+    // **idle hover NOT 顯 cursor-grab** — header click 觸發 sort,grab cursor 會誤導 user 以為「點 = 拖」;
+    // **drag activation 後**(isDragging=true,過 8px activationConstraint)才顯 cursor-grabbing。
+    // user 點 = sort / 長壓 = drag,兩語意分開不互踩。
+    className: cn(childProps.className, isDragging && dragActiveCursor, indicatorClass),
   })
 }
 
@@ -1909,25 +1920,21 @@ function DataTableInner<TData>(
     setDropIndicator(null)
   }, [])
 
-  // Reorderable column ids(non-locked,non-system) — 計算一次 cached
-  // **Bug fix(2026-05-06 v14.8)**:`accessor()` columns 無 explicit `id` field
-  // (TanStack 從 accessorKey runtime 推導)→ 必 fallback 到 accessorKey,否則 ids 全空。
-  // 對齊 dnd-kit 用的 colId(= header.column.id,即 TanStack runtime id)。
+  // Reorderable column ids(non-locked,non-system) — 用 TanStack runtime visible order
+  // **v14.10 fix**:之前用 columnsWithSelection 的 declaration order,user 控的 columnOrder
+  // state(tableOptions.state.columnOrder)被忽略 → side('before'/'after')算錯 → drop 落
+  // 在錯誤位置(user 報「Stock 移不到 Category/Price 之間」root cause)。
+  // 改用 `table.getVisibleLeafColumns()` 拿 live visual order(已套 columnPinning + columnOrder)。
   const reorderableColumnIds = React.useMemo(() => {
-    return columnsWithSelection
-      .map((c) => {
-        const cAny = c as { id?: string; accessorKey?: string }
-        return cAny.id ?? cAny.accessorKey ?? ''
-      })
+    return table.getVisibleLeafColumns()
+      .map(c => c.id)
       .filter(id => id && !isSystemColumn(id))
       .filter(id => {
-        const def = columnsWithSelection.find((c) => {
-          const cAny = c as { id?: string; accessorKey?: string }
-          return (cAny.id ?? cAny.accessorKey) === id
-        })
-        return !((def?.meta as { locked?: boolean } | undefined)?.locked)
+        const meta = table.getColumn(id)?.columnDef.meta as { locked?: boolean } | undefined
+        return !meta?.locked
       })
-  }, [columnsWithSelection])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table, columnsWithSelection, tableOptions?.state?.columnOrder])
   // Sync ref(handleDragOver closure 抓不到最新 reorderableColumnIds)
   React.useEffect(() => { reorderableColumnIdsRef.current = reorderableColumnIds }, [reorderableColumnIds])
 
