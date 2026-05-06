@@ -243,7 +243,14 @@ function columnSizeStyle(
   // → `col.columnDef.minSize` 永遠不 undefined → `?? baseSize` 不 fall back。
   // 解法:直接用 baseSize(若 user 要明示 shrink-below-size,改 `enableColumnResize=true` 或別自設
   // `minSize` < size)。
-  return { flex: '1 1 0%', minWidth: baseSize, maxWidth: maxSize }
+  //
+  // **flex-basis: baseSize(2026-05-06 v14.2)**:把 baseSize 當 explicit basis(不是 `0%`)。
+  // 為什麼:flex item base = basis + padding(box-sizing: border-box content-box 行為)。前 `0%`
+  // basis → cell padding 變 base 一部分。display(padding 12)vs edit(padding 0,Field 接管)
+  // 兩態 base 不同 → flex 重分配 → user 報「Price cell 進 edit 寬度縮 12px」(verify by
+  // debug-v14-1-display-edit-rect-match.mjs:Price display 130.5 → edit 118.5 = -12px)。
+  // explicit basis = baseSize 讓 padding 不參與 base 計算 → display↔edit 寬度穩定。
+  return { flex: `1 1 ${baseSize}px`, minWidth: baseSize, maxWidth: maxSize }
 }
 
 const SYSTEM_COL_IDS = new Set([SELECT_COL_ID, '__drag__', '__actions__'])
@@ -352,6 +359,57 @@ function SortableRowProvider({
     invalidDrop,
   }
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
+}
+
+/** DraggableHeaderCell — wrap header cell 跟 dnd-kit useSortable 接軌(2026-05-06 v14.2)。
+ *
+ *  Why wrap-not-rewrite:`headerCellEl` 既有邏輯複雜(sort / resize / select column / right region 等),
+ *  改 inline useSortable 入侵性高。本 wrapper cloneElement 注入 ref / style / listeners → 既有 render
+ *  保持 untouched,單一職責 = 加 drag affordance。
+ *
+ *  Behavior:
+ *    - useSortable 永遠 call(Rules of Hooks)— `disabled=true` 時不啟動 listeners
+ *    - `data: { type: 'column', columnId }` 餵 dnd-kit handleDragStart / handleDragEnd 區分 row/column drag
+ *    - 注入 ref(setNodeRef)+ transform style + transition + opacity(drag 時 source invisible,DragOverlay 顯 ghost)
+ *    - draggable 時注入 attributes + listeners + cursor:grab / `data-column-id` (DragOverlay snapshot 用)
+ *    - locked column / system column → disabled,無 grab cursor / 不啟動 drag
+ *
+ *  對齊 TanStack Column DnD canonical(<https://tanstack.com/table/latest/docs/framework/react/examples/column-dnd>)
+ *  + Notion / Airtable header drag UX。 */
+function DraggableHeaderCell({
+  id,
+  disabled,
+  isLocked,
+  children,
+}: {
+  id: string
+  disabled: boolean
+  isLocked: boolean
+  children: React.ReactElement
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled,
+    data: { type: 'column', columnId: id },
+  })
+  const dragStyle: React.CSSProperties = {
+    transform: DndCSS.Transform.toString(transform),
+    transition,
+    ...(isDragging ? { opacity: 0 } : {}),
+  }
+  // cloneElement 注入 — 不額外加 wrapper div(避免破壞 flex / column width 計算)
+  const childProps = (children as React.ReactElement<{ style?: React.CSSProperties; className?: string; role?: string }>).props
+  // useSortable.attributes 含 `role="button"` + `tabIndex` 等 — 全部 spread 會蓋掉 header 原 `role="columnheader"`
+  // (a11y 必保 columnheader 語意)。strip role + 保留 aria-* / tabIndex / aria-roledescription:
+  const { role: _sortableRole, ...sortableAttrs } = attributes as Record<string, unknown>
+  return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
+    ref: setNodeRef,
+    style: { ...(childProps.style ?? {}), ...dragStyle },
+    'data-column-id': id,
+    'data-column-locked': isLocked || undefined,
+    ...(disabled ? {} : { ...sortableAttrs, ...listeners }),
+    className: cn(childProps.className, !disabled && !isDragging && 'cursor-grab', isDragging && 'cursor-grabbing'),
+  })
 }
 
 /** Row drag handle — Portal-rendered, position:fixed 真正水平置中於 table outer border line(Jira canonical)。
@@ -1405,7 +1463,27 @@ function DataTableInner<TData>(
     const rowRole = hasVisibleChildren ? 'row' : undefined
     return (
       <RowTag role={rowRole} className={cn('flex items-center border-b border-divider', rowHeight, HEADER_BG)}>
-        {headers.map((h, i) => headerCellEl(h, i < headers.length - 1 && !(isRight && i === headers.length - 1)))}
+        {headers.map((h, i) => {
+          const showDivider = i < headers.length - 1 && !(isRight && i === headers.length - 1)
+          const colId = h.column.id
+          const meta = h.column.columnDef.meta as { locked?: boolean } | undefined
+          const isLocked = meta?.locked === true
+          const isSystem = isSystemColumn(colId)
+          // useSortable per header(Rules of Hooks compliant — same hook count per render
+          // as long as headers count consistent;column reorder/hide 整 row reflow 自然觸發 React reconcile)。
+          // disabled=true 時仍 call hook 不啟動 listeners。
+          const isDraggable = enableColumnReorder && !isLocked && !isSystem
+          return (
+            <DraggableHeaderCell
+              key={h.id}
+              id={colId}
+              disabled={!isDraggable}
+              isLocked={isLocked}
+            >
+              {headerCellEl(h, showDivider)}
+            </DraggableHeaderCell>
+          )
+        })}
         {isRight && hasRowActions && (
           <div className="flex items-center justify-end shrink-0 gap-2 invisible" aria-hidden="true" style={cellPadding}>
             {/* 渲染一個假 row 的 actions 來佔位,確保 header 和 body 同寬(aria-hidden 避免 screen reader 讀出 invisible 內容)*/}
