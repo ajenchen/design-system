@@ -157,19 +157,15 @@ Row actions 欄本質上是 frozen right column，左邊界也使用 full-height
 
 **Prop**：`bordered`（boolean，預設 `true`）。多數場景（有高度約束的虛擬捲動 / frozen column / inline edit 表）都應保持預設；只在**資料量極少、無溢出、嵌在 Card / Section 內已有外框**的展示型場景傳 `bordered={false}` 讓最外層視覺收尾。
 
+### 六之二、Column 寬度 API + 不變條件(2026-05-06 v14.3)
+
+**命名**:`meta.width` / `meta.minWidth` / `meta.maxWidth`(px)。**不用 TanStack `size`** — DS 內 `size` 既定為 `'sm'|'md'|'lg'` density(49+ 處),避 namespace 衝突。內部 pre-process copy 到 TanStack root,resize feature 正常。No-resize default:`width` = reserve(cell ≥ width,flex 可 grow,不可 shrink)。`enableColumnResize=true`:`width` = 初始,`minWidth` = 拖拉下限(default 80)。
+
+**不變條件(invariants,L2 test + hook 守)**:(1) cell width = column width(跟 padding/state/mode 無關)(2) display↔edit cell width 0 delta (3) display↔edit cell height 0 delta(textarea `field-sizing:content`)(4) Field 填滿 cell 高度(1px 容差於 cell.border-r)(5) No-resize column ≥ meta.width。對應 `scripts/data-table-invariants.mjs`。改 `columnSizeStyle` / 切 layout 必跑 invariant test 才 commit。
+
 ### 七、Column Type
 
-**Column type 是資料行為的預設合約。** 指定 type 就自動獲得該類型的對齊、渲染、排序、篩選行為，不需要逐一配置。
-
-每種 type 回答四個問題：
-1. **Cell 呈現方式**——純文字、tag、avatar、checkbox 等
-2. **對齊**——跟隨資料的閱讀方式（文字靠左、數字靠右、checkbox 置中）
-3. **排序**——字母序、數值、時間
-4. **篩選**——文字搜尋、範圍、多選
-
-Type 提供合理的預設，但每個問題都可以在 column definition 層級覆寫。
-
-Header 的對齊永遠與該欄 body cell 一致。
+**Column type 是資料行為的預設合約。** 指定 type 自動獲得對齊 / 渲染 / 排序 / 篩選行為,可在 column 層級覆寫。Header 對齊永遠跟該欄 body cell 一致。
 
 ### 八、Row 狀態
 

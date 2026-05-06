@@ -296,16 +296,18 @@ export const RowAutoHeightInlineEdit: Story = {
   render: () => {
     const [list, setList] = React.useState<Product[]>(generateLargeData(4))
     const cols: ColumnDef<Product & { note: string }>[] = [
-      { accessorKey: 'sku', header: 'SKU', size: 100, meta: { type: 'string' } },
-      { accessorKey: 'name', header: 'Product', size: 240, meta: { type: 'string', editable: true } },
-      { accessorKey: 'category', header: 'Category', size: 160, meta: { type: 'select', editable: true, options: [
+      // 2026-05-06 v14.3 DS canonical: column 寬度走 `meta.width`(避開 `size: 'sm'|'md'|'lg'`
+      // density 命名衝突)。內部 pre-process copy 到 TanStack root size,resize feature 仍正常。
+      { accessorKey: 'sku', header: 'SKU', meta: { type: 'string', width: 100 } },
+      { accessorKey: 'name', header: 'Product', meta: { type: 'string', editable: true, width: 240 } },
+      { accessorKey: 'category', header: 'Category', meta: { type: 'select', editable: true, width: 160, options: [
         { value: 'Electronics', label: 'Electronics' },
         { value: 'Furniture', label: 'Furniture' },
         { value: 'Food', label: 'Food' },
         { value: 'Lifestyle', label: 'Lifestyle' },
       ] } },
-      { accessorKey: 'note', header: 'Note (wrap text)', size: 360, meta: { type: 'string', editable: true } },
-      { accessorKey: 'price', header: 'Price', size: 100, meta: { type: 'currency', editable: true } },
+      { accessorKey: 'note', header: 'Note (wrap text)', meta: { type: 'string', editable: true, width: 360 } },
+      { accessorKey: 'price', header: 'Price', meta: { type: 'currency', editable: true, width: 100 } },
     ]
     const dataWithNotes = list.map((r, i) => ({
       ...r,

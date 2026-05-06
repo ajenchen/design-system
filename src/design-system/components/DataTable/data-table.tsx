@@ -633,8 +633,27 @@ function DataTableInner<TData>(
   // **Column resizable canonical**(2026-05-05 user E rule):per-column `enableResizing` flag
   //   決定 width 行為(getCanResize=true → fixed / false → flex 1 1 0%)。**無 auto-default**
   //   "last column !resizable" — consumer 顯式設(對齊 user 拒絕「autoFillLastColumn」決策)。
+  //
+  // **2026-05-06 v14.3 DS canonical width API**:consumer 寫 `meta.width` / `meta.minWidth` /
+  //   `meta.maxWidth`(DS-internal naming,避開跟 `size: 'sm'|'md'|'lg'` density 命名衝突)。
+  //   此 pre-process 把 meta 值 copy 到 root size/minSize/maxSize,確保 TanStack column
+  //   resize state 正常運作。**Back-compat**:consumer 寫 root `size` 仍 work(meta.width 沒設則
+  //   不覆蓋 root)。新 code 一律用 meta.width。
+  const dsProcessedColumns = React.useMemo<ColumnDef<TData>[]>(() => {
+    return columns.map((c) => {
+      const meta = c.meta as { width?: number; minWidth?: number; maxWidth?: number } | undefined
+      if (!meta) return c
+      const cAny = c as { size?: number; minSize?: number; maxSize?: number }
+      const updates: { size?: number; minSize?: number; maxSize?: number } = {}
+      if (meta.width !== undefined && cAny.size === undefined) updates.size = meta.width
+      if (meta.minWidth !== undefined && cAny.minSize === undefined) updates.minSize = meta.minWidth
+      if (meta.maxWidth !== undefined && cAny.maxSize === undefined) updates.maxSize = meta.maxWidth
+      return Object.keys(updates).length > 0 ? ({ ...c, ...updates } as ColumnDef<TData>) : c
+    })
+  }, [columns])
+
   const columnsWithSelection = React.useMemo(() => {
-    if (!enabled) return columns
+    if (!enabled) return dsProcessedColumns
     const selectCol: ColumnDef<TData, any> = {
       id: SELECT_COL_ID,
       size: 40,
@@ -644,8 +663,8 @@ function DataTableInner<TData>(
       header: 'Select',  // header cell 由下方自訂 render 取代
       cell: () => null,  // body cell 由下方自訂 render 取代
     }
-    return [selectCol, ...columns]
-  }, [columns, enabled])
+    return [selectCol, ...dsProcessedColumns]
+  }, [dsProcessedColumns, enabled])
 
   // pinned-left 自動加 __select__(__select__ 永遠最左)
   const effectivePinnedLeft = React.useMemo(() => {

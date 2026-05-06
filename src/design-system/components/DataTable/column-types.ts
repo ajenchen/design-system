@@ -64,6 +64,32 @@ declare module '@tanstack/react-table' {
     /** Allow text wrapping (only effective when autoRowHeight is true) */
     wrap?: boolean
     /**
+     * Column 寬度(px)— DS canonical 命名(2026-05-06 v14.3)。
+     *
+     * **為何不用 TanStack 的 `size`** — DS 內 `size` 既定意為元件 density string
+     * `'sm' | 'md' | 'lg'`(Field / Button / Input 等 49+ 處 use case)。Column 寬
+     * 是 px 數字,跟 density 概念衝突 → 走 DS-internal 命名 `width`/`minWidth`/`maxWidth`
+     * (對齊 CSS 原生 + AG Grid 的命名共識)。
+     *
+     * 內部 pre-process 會把 `meta.width` copy 到 TanStack 的 root `size`,確保 column
+     * resize feature(`enableColumnResize=true` 拖拉 + columnSizing state)正常運作。
+     *
+     * - **No resize mode**(default): `width` = column 寬度 reserve(cell ≥ width,
+     *   flex 可 grow,**不可 shrink** 低於 width)。對齊 user 預期「我設多寬就多寬」。
+     * - **Resize mode**(`enableColumnResize=true`):`width` = 初始寬度,user 可拖拉
+     *   到 `minWidth` 為止。
+     */
+    width?: number
+    /**
+     * Column 最小寬度(px)— resize 模式下的拖拉下限。No resize 模式不使用(`width` 即下限)。
+     * Default(resize mode 沒明示時)= 80px(`MIN_COLUMN_WIDTH`)。
+     */
+    minWidth?: number
+    /**
+     * Column 最大寬度(px)— resize 模式下的拖拉上限。預設無上限。
+     */
+    maxWidth?: number
+    /**
      * Explicit opt-out from filter UI(預設 accessor column 有 type 即 filterable)。
      *
      * 用於:有 `type` 但不想在 filter UI 出現的 accessor column
@@ -107,6 +133,11 @@ declare module '@tanstack/react-table' {
      * Esc cancel / blur or Enter commit。Commit 觸發 `onCellCommit`。
      */
     editable?: boolean | ((row: TData) => boolean)
+    /**
+     * Locked column — column reorder 不可拖,Notion 「primary column」 pattern。
+     * 對齊 SKU / ID 等不可移欄位。
+     */
+    locked?: boolean
     /** Person/multiPerson edit mode: people pool for picker(2026-05-05 v4 type-augmentation)。 */
     people?: Array<{ name: string; avatarUrl?: string; description?: string }>
   }

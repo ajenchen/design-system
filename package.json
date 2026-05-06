@@ -15,6 +15,7 @@
     "icons:scan": "node scripts/scan-asymmetric-icons.mjs",
     "devmode:test": "node scripts/test-devmode-visual.mjs",
     "hooks:test": "bash .claude/hooks/tests/run-all.sh",
+    "test:datatable-invariants": "node scripts/data-table-invariants.mjs",
     "sync-memory": "node scripts/sync-memory.mjs",
     "postinstall": "node scripts/ensure-playwright-browsers.mjs",
     "prepare": "husky"
