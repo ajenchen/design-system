@@ -93,7 +93,8 @@ for (const t of cellTypes) {
     if (!field) return null
     const cr = cell.getBoundingClientRect()
     const fr = field.getBoundingClientRect()
-    return { cellWidth: cr.width, cellHeight: cr.height, fieldHeight: fr.height }
+    const cellBorderR = parseFloat(window.getComputedStyle(cell).borderRightWidth) || 0
+    return { cellWidth: cr.width, cellHeight: cr.height, fieldWidth: fr.width, fieldHeight: fr.height, cellBorderR }
   }, t)
 
   await page.keyboard.press('Escape')
