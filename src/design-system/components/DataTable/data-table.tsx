@@ -340,14 +340,25 @@ function SortableRowProvider({
   children: (ctx: SortableRowCtxValue) => React.ReactNode
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled })
-  // 2026-05-06 v14.9 Jira/Atlassian canonical(對齊 dnd-kit DragOverlay docs):
-  // **DragOverlay mode 下 source NOT 跟 cursor 移動** — source 留原位 opacity-disabled 半透,
-  // DragOverlay portal 顯 ghost。對 active source `transform: 'none'` 強制鎖位(否則 useSortable
-  // 預設 transform 讓 source 跟 cursor 滑動 = user 報「source 直接移動目標位置 = 喪失 source 意義」)。
-  // 對齊 Jira / Notion / Linear / TreeView「source-stays-in-place」pattern。
+  // **2026-05-06 v14.11 dnd-kit canonical revert**:
+  // 撤回 v14.9 的 `transform: 'none'` — 該 fix 破壞 dnd-kit DragOverlay 跟 useSortable 的
+  // coordinate system,導致 ghost 跟 cursor 位置脫節 + 其他 rows shift 動畫亂跳。
+  //
+  // dnd-kit canonical with `useSortable + SortableContext + DragOverlay`:
+  //   - useSortable transform 給每 item(source + others)讓他們視覺 reorder
+  //   - DragOverlay 顯 ghost(clean clone)follow cursor
+  //   - 我們的 dragSourceStyle = `opacity-disabled` 半透 source(45%)
+  //
+  // **目前限制**(=dnd-kit + useSortable 內建 visual):drag 時 source 跟其他 rows 視覺
+  // shift,反映 drop 位置。**這跟 Jira「source 完全留原位」 pattern 有差**(Jira 用
+  // Atlassian Pragmatic 不是 dnd-kit;Pragmatic 不做 sortable list visual shift)。
+  //
+  // 真要 Jira 風 source-stays-still:架構要改 useDraggable + useDroppable(放棄 sortable
+  // 自動 shift,自管 drop indicator),deferred 為 future Phase。本 commit 對齊 dnd-kit
+  // 基礎 canonical(對齊 shadcn community impls + Notion / Linear)。
   const style: React.CSSProperties = {
-    transform: isDragging ? 'none' : DndCSS.Transform.toString(transform),
-    transition: isDragging ? 'none' : transition,
+    transform: DndCSS.Transform.toString(transform),
+    transition,
     ...dragSourceStyle(isDragging),
     zIndex: isDragging ? 1 : undefined,
     position: 'relative',
@@ -399,15 +410,12 @@ function DraggableHeaderCell({
     disabled,
     data: { type: 'column', columnId: id },
   })
-  // 2026-05-06 v14.9 Jira/Atlassian canonical(對齊 dnd-kit DragOverlay docs):
-  // **DragOverlay mode 下 source NOT 跟 cursor 移動** — DragOverlay portal 顯 ghost,
-  // source 留原位 opacity-disabled 半透。dnd-kit `useSortable` 仍給 transform(for items
-  // shifting to make space),但對 active source 我們強制 'none' 鎖位。
-  // user 報「source 直接移動到目標位置 = 喪失 source 意義」,Jira / Notion / Linear 全
-  // 走「source 留原位」pattern,這裡對齊。
+  // 2026-05-06 v14.11 dnd-kit canonical revert(同 SortableRowProvider rationale):
+  // 撤回 v14.9 `transform: 'none'` — 破壞 DragOverlay coordinate system。useSortable
+  // transform 該套就套,只在 source 套 opacity-disabled 半透即可。
   const dragStyle: React.CSSProperties = {
-    transform: isDragging ? 'none' : DndCSS.Transform.toString(transform),
-    transition: isDragging ? 'none' : transition,
+    transform: DndCSS.Transform.toString(transform),
+    transition,
     ...dragSourceStyle(isDragging),
   }
   // cloneElement 注入 — 不額外加 wrapper div(避免破壞 flex / column width 計算)
