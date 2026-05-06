@@ -125,6 +125,12 @@ const textareaVariants = cva(
         variant: 'naked',
         className: [
           'bg-transparent !rounded-none !resize-none !h-full',
+          // 2026-05-06 v15.1 shrink fix:`field-sizing: content` 讓 textarea 自動依內容 wrap
+          // 行數 adjust 高度 — 解 v9/v14 pre-existing「autoRow cell 進 edit 縮 147→84」bug
+          // (estimateRows divisor=40 對應 ~300px column,實 render 被 squeeze 到 185px → 估算
+          // 3 rows 實 wrap 7 rows → textarea intrinsic 短 → cell shrink)。
+          // Browser support: Chrome 123+ / Firefox 137+ / Safari 17+(modern OK)。
+          '[field-sizing:content]',
           '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
           // CSS var state machine — 顏色 SSOT(同 Field naked v15)
           '[--field-ring:var(--border)]',
