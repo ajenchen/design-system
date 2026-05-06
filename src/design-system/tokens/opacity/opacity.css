@@ -2,16 +2,27 @@
    Opacity Tokens
    ═══════════════════════════════════════════════════════════════════════
 
-   系統內唯一的 opacity token（disabled 狀態）。其他所有透明度需求
-   應透過 alpha 色階（--white-aN / --black-aN）解決，不另開 opacity token。
+   3 個 semantic opacity token,各自 single role:
+     - `--opacity-disabled` (0.45):元件 disabled 狀態
+     - `--opacity-drag-source` (0.30):drag-and-drop source 半透殘影(TreeView / DataTable row drag / column reorder)
+     - `--opacity-drag-ghost` (0.90):drag-and-drop DragOverlay ghost 半透 elevated preview
+   其他所有透明度需求應透過 alpha 色階(--white-aN / --black-aN)解決,不另開 opacity token。
    ═══════════════════════════════════════════════════════════════════════ */
 
 @theme inline {
   --opacity-disabled: 0.45;
+  --opacity-drag-source: 0.30;
+  --opacity-drag-ghost: 0.90;
 }
 
 
-/* ── Custom Utility ── */
+/* ── Custom Utilities ── */
 @utility opacity-disabled {
   opacity: var(--opacity-disabled);
+}
+@utility opacity-drag-source {
+  opacity: var(--opacity-drag-source);
+}
+@utility opacity-drag-ghost {
+  opacity: var(--opacity-drag-ghost);
 }

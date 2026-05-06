@@ -33,13 +33,16 @@ import type * as React from 'react'
 
 // ── Source element styling(被拖中的 source row/column)─────────────────────
 
-/** Source element 拖中的 opacity className(consumer apply on source element)*/
-export const dragSourceClass = 'opacity-30' as const
+/** Source element 拖中的 opacity className(consume DS token `--opacity-drag-source` = 0.30)*/
+export const dragSourceClass = 'opacity-drag-source' as const
 
-/** Source element 拖中的 inline style(對需要 conditional 的 use case)*/
+/** Source element 拖中的 inline style(consume DS token `--opacity-drag-source`)*/
 export function dragSourceStyle(isDragging: boolean): React.CSSProperties {
-  return isDragging ? { opacity: 0.3 } : {}
+  return isDragging ? { opacity: 'var(--opacity-drag-source)' } : {}
 }
+
+/** DragOverlay ghost element 半透(consume DS token `--opacity-drag-ghost` = 0.90)*/
+export const dragGhostClass = 'opacity-drag-ghost' as const
 
 // ── Drop indicator className(target row/column edge 顯藍細線)──────────────
 
