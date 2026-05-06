@@ -212,6 +212,48 @@ if (hasChildren) {
 
 ---
 
+---
+
+## 8. TreeView library landscape(2026-05-06 v14.9 webfetch update)
+
+**重要發現**:**Radix / shadcn 都沒官方 TreeView**,community 自寫:
+
+| Library | Status | Drag/drop | Virtualization | Notes |
+|---|---|---|---|---|
+| **Radix UI Tree primitive** | issue #1456 feature request,未做 | N/A | N/A | 沒 |
+| **shadcn TreeView** | issue #4642 feature request,未做 | N/A | N/A | 沒 |
+| **react-arborist** | mature canonical | ✓ built-in | ✓ | 最 cited reference,但 opinionated full-featured |
+| **react-complex-tree** | mature | ✓ | partial | flex props-based |
+| **MrLightful/shadcn-tree-view** | community shadcn-style | partial | ✗ | shadcn-styled,輕 |
+| **ggoggam/shadcn-treeview** | community shadcn-style | ✓ + cross-tree | ✗ | 跨 tree drag |
+| **neigebaie/shadcn-ui-tree-view** | community shadcn-style | ✓ + multi-select | ✗ | range select / drag select |
+
+**結論**:**我們 TreeView 不是 reinventing**(沒官方可抄)。但有 3 個 community shadcn 風 impls 可參考。考慮:
+- Path A 維持現 custom impl(features 對齊我們 DS,但每個 drag bug 自修)
+- Path B 換 react-arborist(mature 但 opinionated,失去 visual customization 自由度)
+- Path C 借 community shadcn TreeView code 為 base,migrate 到我們 visual SSOT
+- Path D 維持自寫 + 每次 bug 對齊 react-arborist canonical(實際我們現在做的)
+
+---
+
+## 9. Drag SSOT 收斂 audit(本 round 重點)
+
+**現況**:`drag-visual.ts` 已 SSOT 視覺。drag 行為邏輯散在 3 處:
+
+| 邏輯 | TreeView | DataTable row | DataTable column |
+|---|---|---|---|
+| Drop position 計算(cursor Y → before/after/inside) | TreeView 自寫 0-25/25-75/75-100 | 用 active vs over index 算 before/after | 同 row drag |
+| Collision detection 策略 | 不傳 `collisionDetection`(default rectIntersection)| pointerWithin + rectIntersection composite(v14.8 fix) | 同 row drag |
+| Cycle prevention | TreeView 自寫 walk descendant | 沒(top-level only) | 沒(無 nesting) |
+| Cross-parent rule | TreeView 自由 | 過濾 same-parent only | N/A |
+
+**抽 SSOT 機會**:
+- ✓ **`lib/drag-collision.ts`**:`pointerWithinComposite(args)` helper — TreeView + DataTable 都 consume
+- ✓ **`lib/drag-position.ts`**:`computeDropPosition(cursorY, targetRect, hasChildren)` helper — TreeView + Phase 2 DataTable advanced drag 都 consume
+- ⚠️ **Collision 內部 filter logic**(same-parent / drag-type)各自有業務語意,不抽
+
+---
+
 ## Sources(M26 webfetch,search-only confidence)
 
 - [Atlassian Pragmatic D&D core](https://atlassian.design/components/pragmatic-drag-and-drop)
@@ -226,3 +268,9 @@ if (hasChildren) {
 - [react-complex-tree](https://rct.lukasbach.com/docs/guides/drag-and-drop/)
 - [DevExtreme Tree List Local Reordering](https://js.devexpress.com/Demos/WidgetsGallery/Demo/TreeList/LocalReordering/React/Light/)
 - [Jira backlog drag subtasks](https://jira.atlassian.com/browse/JRACLOUD-24547)
+- [Radix UI Tree primitive feature request #1456](https://github.com/radix-ui/primitives/issues/1456)
+- [shadcn TreeView feature request #4642](https://github.com/shadcn-ui/ui/issues/4642)
+- [react-arborist canonical tree library](https://github.com/jameskerr/react-arborist)
+- [MrLightful/shadcn-tree-view](https://github.com/MrLightful/shadcn-tree-view)
+- [ggoggam/shadcn-treeview cross-tree drag](https://github.com/ggoggam/shadcn-treeview)
+- [neigebaie/shadcn-ui-tree-view multi-select](https://github.com/neigebaie/shadcn-ui-tree-view)
