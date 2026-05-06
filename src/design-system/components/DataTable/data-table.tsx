@@ -17,7 +17,7 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { ChevronDown, Calendar, Clock, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, EyeOff, X as XIcon, GripVertical } from 'lucide-react'
-import { DndContext, DragOverlay, closestCenter, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
+import { DndContext, DragOverlay, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { CSS as DndCSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
@@ -1784,12 +1784,20 @@ function DataTableInner<TData>(
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  // v2 fix #3:custom collisionDetection — 過濾出與 active 同 parent 的 sortable items。
-  // 跨 parent 的 candidate 全部排除 → over 為 null → DragHandleCell 切 cursor-not-allowed。
-  // closestCenter 仍是 base alg(對齊既有行為);只是 droppable 集合先過濾。
+  // **2026-05-06 v14.8 collision detection canonical(對齊 dnd-kit official best practice)**:
+  // 從 closestCenter 換 `pointerWithin + rectIntersection` composite。
+  // **Why**:closestCenter 永遠返回最近 droppable → over 永遠非 null → 釋放任何位置都觸發
+  // onRowReorder 強制 reorder(user 報「拉動就強制 reorder 不能 snap back」)。
+  // pointerWithin 要求 pointer 真在 droppable rect 內才返回 → release 在 gap 自然 over=null →
+  // 不觸發 reorder → snap back 自然成立(對齊 Notion / TreeView 行為)。
+  // rectIntersection fallback 給 keyboard sensor(無 pointer)。
+  // 詳 .claude/references/drag-canonical.md。
   const sameParentCollisionDetection: CollisionDetection = React.useCallback((args) => {
     const activeId = args.active?.id != null ? String(args.active.id) : null
-    if (!activeId) return closestCenter(args)
+    if (!activeId) {
+      const pointer = pointerWithin(args)
+      return pointer.length > 0 ? pointer : rectIntersection(args)
+    }
     const activeParent = parentMap.get(activeId)
     // 過濾 droppable container collection — 只保留 same parent siblings(且不含 active 本身)
     const filtered = args.droppableContainers.filter(c => {
@@ -1799,7 +1807,9 @@ function DataTableInner<TData>(
       if (cParent === undefined) return false // 非 row droppable
       return cParent === activeParent
     })
-    return closestCenter({ ...args, droppableContainers: filtered })
+    const filteredArgs = { ...args, droppableContainers: filtered }
+    const pointer = pointerWithin(filteredArgs)
+    return pointer.length > 0 ? pointer : rectIntersection(filteredArgs)
   }, [parentMap])
 
   // 2026-05-06 v10 DragOverlay canonical:drag start 時 snapshot source row outerHTML(strip
@@ -1900,12 +1910,21 @@ function DataTableInner<TData>(
   }, [])
 
   // Reorderable column ids(non-locked,non-system) — 計算一次 cached
+  // **Bug fix(2026-05-06 v14.8)**:`accessor()` columns 無 explicit `id` field
+  // (TanStack 從 accessorKey runtime 推導)→ 必 fallback 到 accessorKey,否則 ids 全空。
+  // 對齊 dnd-kit 用的 colId(= header.column.id,即 TanStack runtime id)。
   const reorderableColumnIds = React.useMemo(() => {
     return columnsWithSelection
-      .map(c => (c.id as string | undefined) ?? '')
+      .map((c) => {
+        const cAny = c as { id?: string; accessorKey?: string }
+        return cAny.id ?? cAny.accessorKey ?? ''
+      })
       .filter(id => id && !isSystemColumn(id))
       .filter(id => {
-        const def = columnsWithSelection.find(c => c.id === id)
+        const def = columnsWithSelection.find((c) => {
+          const cAny = c as { id?: string; accessorKey?: string }
+          return (cAny.id ?? cAny.accessorKey) === id
+        })
         return !((def?.meta as { locked?: boolean } | undefined)?.locked)
       })
   }, [columnsWithSelection])
@@ -1961,6 +1980,8 @@ function DataTableInner<TData>(
 
   // 2026-05-06 v11:column reorder collision detection — drag column 時 droppable filter
   // 只保留 column id(避免 over 觸發 row);drag row 走 sameParent canonical。
+  // v14.8:換 pointerWithin + rectIntersection composite(對齊 dnd-kit official canonical)
+  // 解 user 報「ghost 出來但 indicator 沒 / 不能 reorder」snap-back 同類問題。
   const dndCollisionDetection: CollisionDetection = React.useCallback((args) => {
     const activeData = args.active?.data?.current as { type?: 'row' | 'column' } | undefined
     if (activeData?.type === 'column') {
@@ -1968,7 +1989,9 @@ function DataTableInner<TData>(
         const cData = c.data?.current as { type?: 'row' | 'column' } | undefined
         return cData?.type === 'column' && c.id !== args.active?.id
       })
-      return closestCenter({ ...args, droppableContainers: filtered })
+      const filteredArgs = { ...args, droppableContainers: filtered }
+      const pointer = pointerWithin(filteredArgs)
+      return pointer.length > 0 ? pointer : rectIntersection(filteredArgs)
     }
     return sameParentCollisionDetection(args)
   }, [sameParentCollisionDetection])

@@ -85,13 +85,18 @@ const collisionDetection = (args) => {
 
 ### Bug 1:Column drag — ghost 出來但 column 不動 + 無 indicator
 
-**疑點**:
-1. **closestCenter 永遠返回 over** → handleDragOver 應該 fire setDropIndicator,但 user 看不到視覺
-2. 可能 cause:Tailwind v4 `before:content-['']` pseudo-class 在 cloneElement 注入後 React reconcile 沒重新 apply(已驗證 CSS 有 compile,但 runtime 沒掛上 dropIndicatorSide prop?)
-3. 也可能:`indicatorSide` 計算 `dropIndicator?.type === 'column' && dropIndicator.id === colId` 在 React strict mode 下 batched state update 慢一拍?
-4. **更可能 root cause**:DraggableHeaderCell 用 `cloneElement` 注入 className,但 useSortable hook 的 `setNodeRef` 和 `transform` 是 INSIDE component。cloneElement 從 parent re-render 觸發 child re-render 時,className 重算,但 indicator state 變化需要 component re-render,我用 `cloneElement` pattern 可能造成 React 找不到正確元件 instance。
+**Root cause CONFIRMED**(2026-05-06 v14.8 runtime debug):
+`reorderableColumnIds` 計算用 `c.id`,但 TanStack `accessor()` columns 沒 explicit `id` field
+(runtime 從 accessorKey 推導)→ map 結果全 ''  → filter 全濾掉 → `reorderableColumnIds = []`
+→ handleDragOver 中 `activeIdx === -1 || overIdx === -1` 永遠成立 → `setDropIndicator(null)`
+早 return → 永遠不 set indicator state → pseudo class 永不 apply。
 
-**TreeView vs DataTable column 差別**:TreeView 直接 render `<div>` 接收 props,DataTable column 用 cloneElement wrap headerCellEl 結果。**這個 indirection 可能是 root cause**。
+dnd-kit 本身沒問題:`over.id` 是正確的 'name' / 'category' / 'price'(從 useSortable id 來)。
+**問題 only in our reorderable lookup**。
+
+**Fix**:`reorderableColumnIds` map 加 fallback `cAny.accessorKey ?? ''`。同時 lookup `def`
+也用 same fallback。Verify 後 `reorderable= [name, category, stock, seller, updatedAt, price]` ✓
+indicator pseudo class apply ✓。
 
 ### Bug 2:Nested row — 拉動就強制 reorder 不能 snap back
 
