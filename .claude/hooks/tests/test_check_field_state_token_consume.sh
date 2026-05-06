@@ -118,6 +118,30 @@ function Foo() {
 '
 expect_pass "7. allowlist → pass"
 
+# 8. v13.5 NEW rule B: per-control `open && "border-primary"` → block
+run_hook "/repo/src/design-system/components/Combobox/combobox.tsx" '
+function Foo({ open, error }) {
+  return <div className={cn(fieldWrapperStyles({mode:"edit"}), open && !error && "border-primary")} />
+}
+'
+expect_block "8. per-control open && border-primary → block" "M19 BLOCKER(rule B"
+
+# 9. v13.5 NEW rule B: per-control `data-[state=open]:border-primary` → block
+run_hook "/repo/src/design-system/components/PeoplePicker/people-picker.tsx" '
+function Foo() {
+  return <div className="cursor-pointer data-[state=open]:border-primary" />
+}
+'
+expect_block "9. per-control data-[state=open]:border-primary → block" "M19 BLOCKER(rule B"
+
+# 10. v13.5 rule B should NOT block Field default state machine class
+run_hook "/repo/src/design-system/components/Good/good.tsx" '
+function Foo() {
+  return <div className="border border-border hover:border-border-hover focus-within:!border-primary data-[state=open]:border-border-hover" />
+}
+'
+expect_pass "10. Field default v13.3 state machine (focus-within !important) → pass"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"
