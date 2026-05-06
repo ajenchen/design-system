@@ -219,7 +219,13 @@ function columnSizeStyle(
   opts: { resize: boolean; isSystemCol: boolean },
 ): React.CSSProperties {
   const baseSize = col.getSize()
-  const minSize = col.columnDef.minSize ?? MIN_COLUMN_WIDTH
+  // **Regression fix(2026-05-06 v14.1)**:default fallback 從 `MIN_COLUMN_WIDTH (80)` 改回
+  // `baseSize`(等於 v9 行為)。前 v11 column resize commit 改 fallback 為 80 後,enableColumnResize=false
+  // 的 default flex case 全 column 可 shrink 到 80 → flex 均分忽視 `size` prop → Note 360 被擠到 204
+  // → text wrap 行數爆增 → autoRow cell 變高 → edit textarea rows=3 估算更不準 → shrink 看起來壞掉。
+  // v9 直覺:沒明示 minSize 預設不 shrink 低於 size。enableColumnResize=true 仍 honour `MIN_COLUMN_WIDTH`
+  // (因 user 主動拖拉時要能縮)。
+  const minSize = col.columnDef.minSize ?? (opts.resize ? MIN_COLUMN_WIDTH : baseSize)
   const maxSize = col.columnDef.maxSize
   // System columns 永遠 fixed(checkbox / drag handle 等內建欄位,不在 resize 集合)
   if (opts.isSystemCol) {
@@ -229,8 +235,15 @@ function columnSizeStyle(
   if (opts.resize) {
     return { width: baseSize, minWidth: minSize, maxWidth: maxSize }
   }
-  // Data columns:enableColumnResize=false → flex 均分(default)
-  return { flex: '1 1 0%', minWidth: minSize, maxWidth: maxSize }
+  // Data columns:enableColumnResize=false → flex grow but NOT shrink below `size` prop。
+  // 對齊 v9 行為:column 沒明示 minSize 時固定 ≥ baseSize(尊重 user `size` 設定),table 寬不夠
+  // 觸發 H scroll(預期)。前 v11 換 MIN_COLUMN_WIDTH=80 fallback 讓 columns 全擠等寬,違 user
+  // 預期。
+  // **Tanstack default 干擾**:tanstack v8 `defaultColumn.minSize=20` 會 merge 進 column.columnDef
+  // → `col.columnDef.minSize` 永遠不 undefined → `?? baseSize` 不 fall back。
+  // 解法:直接用 baseSize(若 user 要明示 shrink-below-size,改 `enableColumnResize=true` 或別自設
+  // `minSize` < size)。
+  return { flex: '1 1 0%', minWidth: baseSize, maxWidth: maxSize }
 }
 
 const SYSTEM_COL_IDS = new Set([SELECT_COL_ID, '__drag__', '__actions__'])
