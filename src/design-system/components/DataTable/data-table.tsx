@@ -625,14 +625,16 @@ function DataTableInner<TData>(
     // L4 nested rows:啟用 expanded row model(consumer 透過 tableOptions.getSubRows + state.expanded forward)
     getExpandedRowModel: getExpandedRowModel(),
     getRowId: getRowId,
-    // 2026-05-06 v13.2 column resize:tanstack 內部管 columnSizing state(uncontrolled),`onEnd` mode
-    // → user 拖完才 commit 一次。`columnSizingState` 變動透過 useEffect 觀測 + 呼 callback。
+    // 2026-05-06 v14 column resize:`onChange` mode → drag 中 column 即時跟動 cursor(world-class
+    // canonical:TanStack docs / AG Grid / Excel / Google Sheets 全部 live resize)。前 v13.2
+    // 用 `onEnd` 拖完才 jump,user 報「感覺超頓像 bug」。tanstack 內部管 columnSizing state
+    // (uncontrolled);`columnSizingState` 變動透過 useEffect 觀測 + 呼 callback。
     //
     // 前 v11 用 `onColumnSizingChange` 接管 updater 但忘了 setColumnSizing,導致 state 永遠不變動 →
     // column.getSize() 永遠回初始值 → drag visual 完全沒效果(user 報 "drag 沒反應")。本 v13.2 改回
     // tanstack uncontrolled state(預設行為)+ useEffect 觀測 columnSizing 變動 fire callback。
     enableColumnResizing: enableColumnResize,
-    columnResizeMode: 'onEnd',
+    columnResizeMode: 'onChange',
   })
 
   // v13.2:onColumnResize callback 透過 useEffect 觀測 columnSizing state 變動 fire(uncontrolled state pattern)
@@ -1005,17 +1007,13 @@ function DataTableInner<TData>(
           //     「框框跟 cell 一樣大並取代 cell 的框且與 table 隔線無縫接軌」(2026-05-05)。
           //   - **沒有** cell 自己 box-shadow ring — focus / hover / open ring 由 Field naked 自帶
           //     state machine 提供(對齊 user「狀態樣式取決於原輸入框」reminder)
-          'group/cell flex text-foreground text-body font-normal shrink-0 relative self-stretch',
-          // 2026-05-06 v12:editing cell 必 `overflow-visible` 才允許 Field naked absolute 1px 外溢繪
-          // (-top-px / -left-px → border-t/-l overlap prev row.border-b / prev cell.border-r)。
-          // 非 editing cell 維持 `overflow-hidden` 防 content 外溢。
-          isEditingThisCell ? 'overflow-visible' : 'overflow-hidden',
+          'group/cell flex text-foreground text-body font-normal shrink-0 relative self-stretch overflow-hidden',
           autoRowHeight ? 'items-start' : 'items-center',
           align === 'right' && 'justify-end text-right',
           align === 'center' && 'justify-center text-center',
-          // 2026-05-06 v12:retire `!isEditingThisCell` 條件 — Field naked v12 right edge 在
-          // [cell.right-1, cell.right] 跟 cell.border-r 同位置完全 overlap(child paint 後贏),
-          // 視覺仍 1px,不再需要 editing-time remove cell.border-r workaround。4 邊統一處理。
+          // 2026-05-06 v14:revert v12 absolute(autoRowHeight 不相容)→ Field 留 layout flow,
+          // 視覺接受 cell border-r grid + Field border 2px 雙線。永遠 keep border-r divider
+          // (user 確認 cell 右邊 border 不必移除)。
           inlineEdit && !isLastInRow && 'border-r border-divider',
           indicator && 'gap-2',
           onEditableCellClick && ['cursor-pointer', nakedCellEditableDisplayHover],  // editable cell display hover affordance(對齊 Notion / Airtable hover-cell-shows-border canonical)

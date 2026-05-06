@@ -113,18 +113,14 @@ const textareaVariants = cva(
         variant: 'bare',
         className: 'bg-transparent border border-transparent cursor-not-allowed opacity-disabled text-fg-disabled',
       },
-      // naked chrome × mode — cell-as-input substrate(2026-05-06 v12 position-overlap fix)。
-      //   同 field-wrapper.tsx Field naked v12 一致:**state machine 100% 沿用 v9 border-based
-      //   (focus-visible:border-primary)**,只改 Field box 物理位置 absolute + inset(-1, 0)讓
-      //   4 邊 border 精確 overlap 相鄰 grid stripe(prev cell.border-r / prev row.border-b /
-      //   editing row.border-b)。host cell editing 時 overflow-visible 配合外溢 1px 繪。
-      //   focus-visible 仍用 textarea 自身 selector(focusable element,DOM 層級不同寫法不同)。
+      // naked chrome × mode — cell-as-input substrate(2026-05-06 v14 revert v12)。
+      //   v12 `!absolute -inset-px` autoRowHeight 不相容 → revert v9 baseline + 保留 v13.3
+      //   focus !important。focus-visible 用 textarea 自身 selector(focusable element)。
       {
         mode: 'edit',
         variant: 'naked',
         className: [
-          'bg-transparent !rounded-none !resize-none',
-          '!absolute -top-px -left-px -right-px -bottom-px !h-auto !w-auto',
+          'bg-transparent !rounded-none !resize-none !h-full',
           '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
           'border border-border',
           'hover:border-border-hover',

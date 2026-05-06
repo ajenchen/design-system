@@ -130,43 +130,18 @@ export const fieldWrapperStyles = cva(
       },
       // naked variant — cell-as-input substrate(Notion / Airtable / Excel canonical)
       //
-      // ── 2026-05-06 v12 — 4 邊位置 overlap 修(seam fix,state machine 100% v9 不動)──
-      // user 報「上下左都 2px,只右邊 1px」+「我希望各 control state 各自繼承不被 wrapper 寫死」。
-      // DOM 量測證實:Field.border-l 跟 prev cell.border-r 兩 1px stripe **adjacent 不 overlap**
-      // (gap=0)→ 視覺 2px;顏色也不同(`--divider` 0.09 alpha grid vs `--border` 0.25 alpha Field)。
+      // ── 2026-05-06 v14:revert v12 → v9 baseline + keep v13.3 ──
+      // v12 `!absolute -inset-px` autoRowHeight 不相容(Field 抽 layout flow → cell 塌 42px;
+      // user production 報「Field 沒撐滿 cell, 比沒改之前還糟糕一百萬倍」)→ revert。
       //
-      // v12 fix(只動位置不動 state machine):
-      //   - `absolute -top-px -left-px right-0 bottom-0`:Field box 整體 shift 1px 到上 + 左
-      //     → border-t/-l 位置精確 overlap prev row.border-b / prev cell.border-r
-      //     → border-r/-b 位置 overlap editing row.border-b / cell.border-r(child paint 後贏)
-      //   - `!h-auto`:absolute + inset 4 sides 已決定 dimensions,override 既有 !h-full
-      //   - host cell **editing 時必 `overflow-visible`** 才允許 Field 1px 外溢繪(data-table.tsx 配合)
-      //
-      // SSOT 保留證明:
-      //   - state machine token(`border-border` / `border-border-hover` / `border-primary` /
-      //     `border-border-hover` 等)100% 沿用 v9
-      //   - 各 control 在 cn() 自己 append `open && 'border-primary'` etc 的 SSOT 100% work
-      //     (Select cell open=primary 藍 / Input cell focus=primary 藍 / 各 control 各自 inherit)
-      //   - 改的只是 Field box 的物理位置(absolute + inset),**state semantic 完全不動**
-      //
-      // 對齊 v9 user 認可的「99% complete,差 4 邊 seam」反饋,minimal-change 補完。
+      // v14 = v9 baseline border-based state machine + v13.3 focus !important。
+      // 暫接受視覺:Field.border-l 跟 prev cell.border-r 視覺 2px 雙線(待另案研究 seamless
+      // 方案,約束:SSOT 留 Field state machine + ring 顏色自動跟 border state 同步)。
       {
         mode: 'edit',
         variant: 'naked',
         className: [
-          'bg-transparent !rounded-none !gap-0',
-          // !important 強制 override:Select / Combobox per-control trigger 後續 cn() append `relative`
-          // (for Tag z-layering 等),tailwind-merge 預設後 wins 會蓋掉 `absolute`。`!absolute`
-          // 強制 position 為 absolute(Tag z-layering 仍 work,因 Field 本身 positioned ancestor)。
-          //
-          // 4 邊 inset:-1px(`-top-px -left-px -right-px -bottom-px`)→ Field box = cell + 2px。
-          //   - Field.border-t at [cell.top-1, cell.top] = OVERLAP prev row.border-b
-          //   - Field.border-l at [cell.left-1, cell.left] = OVERLAP prev cell.border-r
-          //   - Field.border-r at [cell.right-1, cell.right] = OVERLAP cell.border-r
-          //     (right: -1px 因 cell 有 border-r:1 padding-right edge = cell.right - 1)
-          //   - Field.border-b at [row.bottom-1, row.bottom] = OVERLAP editing row.border-b
-          //     (bottom: -1px 因 cell 無 border-b 但 row 有,padding-bottom edge = cell.bottom = row.bottom - 1)
-          '!absolute -top-px -left-px -right-px -bottom-px !h-auto !w-auto',
+          'bg-transparent !rounded-none !gap-0 !h-full',
           '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
           'border border-border',
           'hover:border-border-hover',
