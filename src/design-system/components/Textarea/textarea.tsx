@@ -113,35 +113,21 @@ const textareaVariants = cva(
         variant: 'bare',
         className: 'bg-transparent border border-transparent cursor-not-allowed opacity-disabled text-fg-disabled',
       },
-      // naked chrome × mode — cell-as-input substrate(2026-05-06 v15 prototype)。
-      //   同 field-wrapper.tsx Field naked v15 一致:CSS var `--field-ring` 統一輸出 state 顏色,
-      //   `border-transparent` 留 layout,`[box-shadow:0_0_0_1px_var(--field-ring)]` 1px ring 1px
-      //   外擴 → 蓋過鄰居 grid line(prev cell.border-r / prev row.border-b / cell.border-r 自己 /
-      //   row.border-b)。host cell editing 必 `overflow-visible` 配合(data-table.tsx)。
-      //   textarea 是 focusable element 本身,用 `focus-visible:` selector(Field wrapper 用
-      //   `focus-within:` 因 input 是 child)。
+      // naked chrome × mode — cell-as-input substrate(2026-05-06 v14 revert v12)。
+      //   v12 `!absolute -inset-px` autoRowHeight 不相容 → revert v9 baseline + 保留 v13.3
+      //   focus !important。focus-visible 用 textarea 自身 selector(focusable element)。
       {
         mode: 'edit',
         variant: 'naked',
         className: [
           'bg-transparent !rounded-none !resize-none !h-full',
-          // 2026-05-06 v15.1 shrink fix:`field-sizing: content` 讓 textarea 自動依內容 wrap
-          // 行數 adjust 高度 — 解 v9/v14 pre-existing「autoRow cell 進 edit 縮 147→84」bug
-          // (estimateRows divisor=40 對應 ~300px column,實 render 被 squeeze 到 185px → 估算
-          // 3 rows 實 wrap 7 rows → textarea intrinsic 短 → cell shrink)。
-          // Browser support: Chrome 123+ / Firefox 137+ / Safari 17+(modern OK)。
-          '[field-sizing:content]',
           '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
-          // CSS var state machine — 顏色 SSOT(同 Field naked v15)
-          '[--field-ring:var(--border)]',
-          'hover:[--field-ring:var(--border-hover)]',
-          'focus-visible:![--field-ring:var(--primary)]',
-          'focus-visible:hover:![--field-ring:var(--primary)]',
-          'data-[state=open]:[--field-ring:var(--border-hover)]',
-          'border border-transparent',
-          '[box-shadow:0_0_0_1px_var(--field-ring)]',
-          // textarea UA stylesheet 預設 line-height: normal(1.2-1.5 不定),跟 display `<div>`
-          // text-body line-height: 1.5 不一致 → cell 進 edit 後 height shift。顯式 leading 對齊。
+          'border border-border',
+          'hover:border-border-hover',
+          'focus-visible:!border-primary focus-visible:hover:!border-primary',
+          // textarea UA stylesheet 預設 line-height: normal(1.2-1.5 不定),會跟 display
+          // `<div>` text-body line-height: 1.5(21px @ 14px)不一致 → cell 進 edit 後 height
+          // shift。顯式 leading 對齊 div 行為。
           '!leading-[1.5]',
         ],
       },
