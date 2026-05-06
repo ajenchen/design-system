@@ -84,34 +84,32 @@ function generateLargeData(count: number): Product[] {
 
 const col = createColumnHelper<Product>()
 
+// 2026-05-06 v14.3 DS canonical:column 寬度走 `meta.width` / `meta.minWidth`
+// (避開 `size: 'sm'|'md'|'lg'` density 命名衝突)。內部 pre-process copy 到 TanStack root size。
 const baseColumns = [
-  col.accessor('sku', { header: 'SKU', size: 100, minSize: 80, meta: { type: 'string' } }),
-  col.accessor('name', { header: 'Product', size: 280, minSize: 120, meta: { type: 'string' } }),
-  col.accessor('category', { header: 'Category', size: 120, meta: { type: 'select' } }),
-  col.accessor('stock', { header: 'Stock', size: 110, meta: { type: 'select' } }),
-  col.accessor('seller', { header: 'Seller', size: 150, meta: { type: 'person' } }),
-  col.accessor('updatedAt', { header: 'Updated', size: 120, meta: { type: 'date' } }),
+  col.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 100, minWidth: 80 } }),
+  col.accessor('name', { header: 'Product', meta: { type: 'string', width: 280, minWidth: 120 } }),
+  col.accessor('category', { header: 'Category', meta: { type: 'select', width: 120 } }),
+  col.accessor('stock', { header: 'Stock', meta: { type: 'select', width: 110 } }),
+  col.accessor('seller', { header: 'Seller', meta: { type: 'person', width: 150 } }),
+  col.accessor('updatedAt', { header: 'Updated', meta: { type: 'date', width: 120 } }),
 ]
 
 const columnsWithPrice = [
   ...baseColumns,
   col.accessor('price', {
     header: 'Price',
-    size: 120,
-    meta: { type: 'currency', prefix: '$' },
+    meta: { type: 'currency', prefix: '$', width: 120 },
   }),
 ]
 
 const columnsWithNote = [
-  col.accessor('sku', { header: 'SKU', size: 100, meta: { type: 'string' } }),
-  col.accessor('name', { header: 'Product', size: 200, meta: { type: 'string' } }),
+  col.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 100 } }),
+  col.accessor('name', { header: 'Product', meta: { type: 'string', width: 200 } }),
   col.accessor('note', {
-    header: 'Note',
-    size: 300,
-    meta: { type: 'string', wrap: true },
-  }),
-  col.accessor('category', { header: 'Category', size: 120, meta: { type: 'select' } }),
-  col.accessor('seller', { header: 'Seller', size: 150, meta: { type: 'person' } }),
+    header: 'Note', meta: { type: 'string', wrap: true, width: 300 } }),
+  col.accessor('category', { header: 'Category', meta: { type: 'select', width: 120 } }),
+  col.accessor('seller', { header: 'Seller', meta: { type: 'person', width: 150 } }),
 ]
 
 // ── Stories ───────────────────────────────────────────────────────────────────
@@ -160,15 +158,15 @@ export const ColumnTypes: Story = {
       { value: 'food', label: 'Food' },
     ]
     const typeCols = [
-      typeCol.accessor('name', { header: 'Text', size: 160, meta: { type: 'string' } }),
-      typeCol.accessor('quantity', { header: 'Number', size: 90, meta: { type: 'number' } }),
-      typeCol.accessor('price', { header: 'Currency', size: 100, meta: { type: 'currency', prefix: '$' } }),
-      typeCol.accessor('date', { header: 'Date', size: 110, meta: { type: 'date' } }),
-      typeCol.accessor('active', { header: 'Boolean', size: 80, meta: { type: 'boolean' } }),
-      typeCol.accessor('status', { header: 'Select', size: 110, meta: { type: 'select', options: statusOptions } }),
-      typeCol.accessor('tags', { header: 'MultiSelect', size: 180, meta: { type: 'multiSelect', options: tagOptions } }),
-      typeCol.accessor('seller', { header: 'Person', size: 140, meta: { type: 'person' } }),
-      typeCol.accessor('url', { header: 'Link', size: 160, meta: { type: 'url' } }),
+      typeCol.accessor('name', { header: 'Text', meta: { type: 'string', width: 160 } }),
+      typeCol.accessor('quantity', { header: 'Number', meta: { type: 'number', width: 90 } }),
+      typeCol.accessor('price', { header: 'Currency', meta: { type: 'currency', prefix: '$', width: 100 } }),
+      typeCol.accessor('date', { header: 'Date', meta: { type: 'date', width: 110 } }),
+      typeCol.accessor('active', { header: 'Boolean', meta: { type: 'boolean', width: 80 } }),
+      typeCol.accessor('status', { header: 'Select', meta: { type: 'select', options: statusOptions, width: 110 } }),
+      typeCol.accessor('tags', { header: 'MultiSelect', meta: { type: 'multiSelect', options: tagOptions, width: 180 } }),
+      typeCol.accessor('seller', { header: 'Person', meta: { type: 'person', width: 140 } }),
+      typeCol.accessor('url', { header: 'Link', meta: { type: 'url', width: 160 } }),
     ]
     const typeData: TypeDemo[] = [
       { name: 'Wireless Headphones', quantity: 142, price: 2490, date: '2025-03-12', active: true, status: 'in_stock', tags: ['electronics', 'lifestyle'], seller: SELLERS[0], url: 'https://example.com/headphones' },
@@ -578,19 +576,19 @@ export const InlineEdit: Story = {
     const editCol = createColumnHelper<EditableProduct>()
     const editableColumns = React.useMemo(
       () => [
-        editCol.accessor('sku', { header: 'SKU', size: 100, meta: { type: 'string' } }),  // 唯讀
-        editCol.accessor('name', { header: 'Product (string)', size: 200, meta: { type: 'string', editable: true } }),
-        editCol.accessor('qty', { header: 'Qty (number)', size: 110, meta: { type: 'number', editable: true } }),
-        editCol.accessor('category', { header: 'Category (select)', size: 150, meta: { type: 'select', options: CATEGORY_OPTIONS, editable: true } }),
-        editCol.accessor('stock', { header: 'Stock (select)', size: 140, meta: { type: 'select', options: STOCK_OPTIONS, editable: true } }),
-        editCol.accessor('tags', { header: 'Tags (multiSelect)', size: 180, meta: { type: 'multiSelect', options: TAG_OPTIONS, editable: true } }),
-        editCol.accessor('owner', { header: 'Owner (person)', size: 160, meta: { type: 'person', people: SAMPLE_PEOPLE, editable: true } }),
-        editCol.accessor('reviewers', { header: 'Reviewers (multiPerson)', size: 180, meta: { type: 'multiPerson', people: SAMPLE_PEOPLE, editable: true } }),
-        editCol.accessor('inStock', { header: 'In (boolean)', size: 90, meta: { type: 'boolean', editable: true } }),
-        editCol.accessor('url', { header: 'URL', size: 180, meta: { type: 'url', editable: true } }),
-        editCol.accessor('price', { header: 'Price (currency)', size: 130, meta: { type: 'currency', prefix: '$', editable: true } }),
-        editCol.accessor('releaseDate', { header: 'Release (date)', size: 140, meta: { type: 'date', editable: true } }),
-        editCol.accessor('reminderTime', { header: 'Reminder (time)', size: 130, meta: { type: 'time', editable: true } }),
+        editCol.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 100 } }),  // 唯讀
+        editCol.accessor('name', { header: 'Product (string)', meta: { type: 'string', editable: true, width: 200 } }),
+        editCol.accessor('qty', { header: 'Qty (number)', meta: { type: 'number', editable: true, width: 110 } }),
+        editCol.accessor('category', { header: 'Category (select)', meta: { type: 'select', options: CATEGORY_OPTIONS, editable: true, width: 150 } }),
+        editCol.accessor('stock', { header: 'Stock (select)', meta: { type: 'select', options: STOCK_OPTIONS, editable: true, width: 140 } }),
+        editCol.accessor('tags', { header: 'Tags (multiSelect)', meta: { type: 'multiSelect', options: TAG_OPTIONS, editable: true, width: 180 } }),
+        editCol.accessor('owner', { header: 'Owner (person)', meta: { type: 'person', people: SAMPLE_PEOPLE, editable: true, width: 160 } }),
+        editCol.accessor('reviewers', { header: 'Reviewers (multiPerson)', meta: { type: 'multiPerson', people: SAMPLE_PEOPLE, editable: true, width: 180 } }),
+        editCol.accessor('inStock', { header: 'In (boolean)', meta: { type: 'boolean', editable: true, width: 90 } }),
+        editCol.accessor('url', { header: 'URL', meta: { type: 'url', editable: true, width: 180 } }),
+        editCol.accessor('price', { header: 'Price (currency)', meta: { type: 'currency', prefix: '$', editable: true, width: 130 } }),
+        editCol.accessor('releaseDate', { header: 'Release (date)', meta: { type: 'date', editable: true, width: 140 } }),
+        editCol.accessor('reminderTime', { header: 'Reminder (time)', meta: { type: 'time', editable: true, width: 130 } }),
       ],
       []
     )
@@ -671,9 +669,9 @@ export const NestedRows: Story = {
     const taskCol = createColumnHelper<TaskRow>()
     const taskColumns = React.useMemo(
       () => [
-        taskCol.accessor('task', { header: '任務', size: 360, meta: { type: 'string' } }),
-        taskCol.accessor('owner', { header: '負責人', size: 160, meta: { type: 'string' } }),
-        taskCol.accessor('status', { header: '狀態', size: 140, meta: { type: 'select', options: STATUS_OPTIONS } }),
+        taskCol.accessor('task', { header: '任務', meta: { type: 'string', width: 360 } }),
+        taskCol.accessor('owner', { header: '負責人', meta: { type: 'string', width: 160 } }),
+        taskCol.accessor('status', { header: '狀態', meta: { type: 'select', options: STATUS_OPTIONS, width: 140 } }),
       ],
       []
     )

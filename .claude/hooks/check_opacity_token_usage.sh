@@ -35,7 +35,7 @@ esac
 
 NEW_CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // .tool_input.new_string // ""')
 
-# 偵測 opacity-{N} 但排除允許的:opacity-0, opacity-100, opacity-disabled, opacity-drag-source, opacity-drag-ghost
+# 偵測 opacity-{N} 但排除允許的:opacity-0, opacity-100, opacity-disabled
 # 注意 lookahead/lookbehind 在 grep -E 不一定支援,改用 grep -oE 配 grep -v 過濾
 HITS=$(echo "$NEW_CONTENT" | grep -oE "opacity-[0-9]+" | grep -vE "^opacity-(0|100)$" | sort -u || true)
 
