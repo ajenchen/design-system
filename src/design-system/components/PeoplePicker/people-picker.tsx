@@ -1,49 +1,51 @@
 import * as React from 'react'
+import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, EMPTY_DISPLAY, nakedCellRowModeAlign } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext } from '@/design-system/components/Field/field-context'
+import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
+import { SelectMenu, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { PersonDisplay, MultiPersonDisplay, buildPersonNameCard, resolvePerson, type PersonValue } from './person-display'
 
-// ── PeoplePicker = thin wrapper ─────────────────────────────────────────────
-// **2026-05-07 v15.5 SSOT 重構**(Task 2 P2-2):
-//   - **single mode** wraps `<Select searchable selectedItemRenderer>`
-//   - **multi mode**  wraps `<Combobox searchable tagRenderer>`
-// 之前直接 wrap `<SelectMenu>` low-level primitive 跟 Select / Combobox 平行。
-// 重構後 PeoplePicker 是 Select/Combobox 的「person-specific」 specialization,
-// person-only 邏輯(PersonValue ↔ option mapping、avatar trigger / tag 渲染)集中在
-// PeoplePicker,Select/Combobox 的搜尋 / open state / a11y / overflow 全部繼承。
-
 // ── helpers ─────────────────────────────────────────────────────────────────
-function personToOption(person: PersonValue): SelectOption {
+function personToSelectOption(person: PersonValue): SelectOption {
   const p = resolvePerson(person)
   return { value: p.name, label: p.name }
 }
+function personToMenuOption(person: PersonValue): SelectMenuOption {
+  const p = resolvePerson(person)
+  return {
+    value: p.name,
+    label: p.name,
+    description: p.description,
+    avatar: { src: p.avatarUrl, alt: p.name, hoverCard: buildPersonNameCard(p) },
+  }
+}
 function findPerson(people: PersonValue[], name: string): PersonValue {
-  const found = people.find(p => resolvePerson(p).name === name)
-  return found ?? name
-}
-function namesOf(value: PeoplePickerProps['value']): string[] {
-  if (!value) return []
-  if (Array.isArray(value)) return value.map(v => resolvePerson(v).name)
-  return [resolvePerson(value).name]
+  return people.find(p => resolvePerson(p).name === name) ?? name
 }
 
-// ── Component ───────────────────────────────────────────────────────────────
+// ── PeoplePicker ────────────────────────────────────────────────────────────
+// **2026-05-07 v15.6 SSOT 重構 v2**:
+//
+//   - **single mode** wraps `<Select searchable selectedItemRenderer>`
+//   - **multi mode** 兩種 displayMode(consumer 自選):
+//       - **'stack'**(default,baseline 既有視覺)— Avatar 疊合 + `+N` overflow indicator,
+//         不可 wrap。Trigger 自組 + 直接 wrap `<SelectMenu multiple>` primitive,
+//         trigger 內 render `<MultiPersonDisplay>` reuse baseline primitive(SSOT)。
+//         對齊 Notion / Linear / Atlassian / Slack 多人 quick-glance idiom。
+//       - **'pill'**(opt-in)— 每人 Tag pill,可 wrap。Wrap `<Combobox tagRenderer>`,
+//         tagRenderer 用 Tag 元件 `avatar` prop SSOT(不塞 children)。
+//         `pillShowAvatar` 控 pill 內是否顯 avatar prefix(default true,false → 純文字 pill)。
+//         對齊 GitHub Reviewers / Combobox tag-input idiom。
 
-export interface PeoplePickerProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
-  /**
-   * Field mode:
-   *   edit     — Popover 搜尋(預設)
-   *   display  — 純展示(reuse PersonDisplay / MultiPersonDisplay,無 input chrome)
-   *   readonly — input chrome + 鎖互動,Avatar 視覺保留
-   *   disabled — input chrome + disabled 降色
-   */
+export interface PeoplePickerProps {
+  /** Field mode(edit / display / readonly / disabled),默認 inherit Field context 或 'edit' */
   mode?: FieldMode
   /** Field chrome variant(對齊 Select / Combobox)*/
   variant?: FieldVariant
@@ -60,10 +62,25 @@ export interface PeoplePickerProps
   emptyText?: string
   className?: string
   disabled?: boolean
-  /** Initial open state(uncontrolled)— DataTable cell-as-input 1-step open canonical */
+  /** Initial open state(uncontrolled)*/
   defaultOpen?: boolean
-  /** open state 變更 callback。DataTable cell-as-input 用:open=false → cell exit edit */
+  /** open state 變更 callback */
   onOpenChange?: (open: boolean) => void
+  /**
+   * Multi mode 顯示樣式(default 'stack')。Single mode 此 prop 忽略。
+   * - 'stack' — Avatar 疊合 + `+N`(空間省、不可 wrap;default)
+   * - 'pill'  — 每人 Tag pill(可 wrap)
+   */
+  multiDisplay?: 'stack' | 'pill'
+  /**
+   * `multiDisplay='pill'` 模式下是否顯示 avatar prefix(default true)。
+   * 設 false → 純文字 pill,進一步節省空間。對齊 Tag 元件 `avatar` prop SSOT。
+   */
+  pillShowAvatar?: boolean
+  /** Pill 模式下是否允許 wrap(default true)— 對齊 Combobox `wrap` prop */
+  pillWrap?: boolean
+  /** a11y label */
+  'aria-label'?: string
 }
 
 const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(function PeoplePicker({
@@ -77,9 +94,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   emptyText = '沒有符合的人員', // i18n-allow: DS default
   className,
   disabled,
-  defaultOpen,
+  defaultOpen = false,
   onOpenChange,
-  ...props
+  multiDisplay = 'stack',
+  pillShowAvatar = true,
+  pillWrap = true,
+  'aria-label': ariaLabel,
 }, ref) {
   const fieldCtx = useFieldContext()
   const mode: FieldMode = modeProp ?? fieldCtx?.mode ?? 'edit'
@@ -87,9 +107,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   const resolvedVariant: FieldVariant = variantProp ?? fieldCtx?.variant ?? 'default'
   const isMulti = Array.isArray(value)
   const isEmpty = !value || (isMulti && value.length === 0)
+  const iconSize = size === 'lg' ? 20 : 16
 
   // ── mode='display' ────────────────────────────────────────────────────────
-  // 純展示:無 fieldWrapperStyles 容器、無 chevron affordance。
   if (resolvedMode === 'display') {
     if (isEmpty) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
     return isMulti
@@ -97,14 +117,14 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       : <PersonDisplay value={value as PersonValue} size={size} />
   }
 
-  // ── readonly / disabled — 沿用 Field wrapper chrome,但 Avatar 仍渲染 ─────
+  // ── readonly / disabled — Field wrapper chrome,Avatar 視覺保留 ───────────
   if (resolvedMode !== 'edit') {
     return (
       <div
         ref={ref}
         className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, size }), className)}
         data-field-mode={resolvedMode}
-        {...props}
+        aria-label={ariaLabel}
       >
         <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign, resolvedMode === 'disabled' && 'text-fg-disabled')}>
           {isEmpty
@@ -117,12 +137,37 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     )
   }
 
-  // ── edit mode:options + selected mapping(both single + multi 共用)────────
-  const options: SelectOption[] = people.map(personToOption)
-  const selectedNames = namesOf(value)
+  // ── edit mode ─────────────────────────────────────────────────────────────
+  const selectedNames: string[] = !value
+    ? []
+    : Array.isArray(value)
+      ? value.map(v => resolvePerson(v).name)
+      : [resolvePerson(value).name]
 
-  // ── multi mode → wraps Combobox ────────────────────────────────────────────
-  if (isMulti) {
+  // ── single mode → wraps Select ────────────────────────────────────────────
+  if (!isMulti) {
+    const handleSingleChange = (name: string) => onChange?.([findPerson(people, name)])
+    return (
+      <Select
+        ref={ref as React.Ref<HTMLDivElement>}
+        size={size}
+        variant={resolvedVariant}
+        options={people.map(personToSelectOption)}
+        value={selectedNames[0] ?? null}
+        onChange={handleSingleChange}
+        searchable
+        placeholder={emptyText}
+        defaultOpen={defaultOpen}
+        onOpenChange={onOpenChange}
+        className={className}
+        aria-label={ariaLabel}
+        selectedItemRenderer={(opt) => <PersonDisplay value={findPerson(people, opt.value)} size={size} />}
+      />
+    )
+  }
+
+  // ── multi 'pill' → wraps Combobox(對齊 GitHub Reviewers / Combobox idiom)────
+  if (multiDisplay === 'pill') {
     const handleMultiChange = (next: string[]) => {
       onChange?.(next.map(name => findPerson(people, name)))
     }
@@ -131,30 +176,32 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         ref={ref as React.Ref<HTMLDivElement>}
         size={size}
         variant={resolvedVariant}
-        options={options}
+        options={people.map(personToSelectOption)}
         value={selectedNames}
         onChange={handleMultiChange}
         searchable
         searchPlaceholder={searchPlaceholder}
         emptyPlaceholder={emptyText}
+        wrap={pillWrap}
         defaultOpen={defaultOpen}
         onOpenChange={onOpenChange}
         className={className}
-        aria-label={(props as { 'aria-label'?: string })['aria-label']}
-        // 每個 selected pill 換 avatar+name pill(對齊原 PeoplePicker multi visual)
+        aria-label={ariaLabel}
+        // **Tag SSOT canonical**:用 `avatar` prop(不塞 children),Tag 內部統一
+        // wrap 進 16×16 圓形 mask container(per Tag tsx line 175)。
         tagRenderer={(item, onRemove) => {
-          const person = findPerson(people, item.value)
-          const p = resolvePerson(person)
+          const p = resolvePerson(findPerson(people, item.value))
           return (
             <Tag
               key={item.value}
               size={size}
-              className="shrink-0 relative z-10 inline-flex items-center gap-1.5"
+              variant="neutral"
+              avatar={pillShowAvatar
+                ? <Avatar src={p.avatarUrl} alt={p.name} size={16} hoverCard={buildPersonNameCard(p)} />
+                : undefined}
               onDismiss={onRemove}
             >
-              {/* Avatar size:px,對齊 Tag 內 Avatar 慣用尺寸(sm/md=16, lg=20)*/}
-              <Avatar size={size === 'lg' ? 20 : 16} src={p.avatarUrl} alt={p.name} hoverCard={buildPersonNameCard(p)} />
-              <span className="truncate">{p.name}</span>
+              {p.name}
             </Tag>
           )
         }}
@@ -162,35 +209,65 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     )
   }
 
-  // ── single mode → wraps Select ─────────────────────────────────────────────
-  const handleSingleChange = (name: string) => {
-    onChange?.([findPerson(people, name)])
+  // ── multi 'stack' (default) → wraps SelectMenu primitive,trigger 內走
+  //    MultiPersonDisplay reuse(SSOT 對齊 baseline + Notion/Slack/Atlassian canonical)
+  const menuOptions: SelectMenuOption[] = people.map(personToMenuOption)
+  const [open, setOpen] = React.useState(defaultOpen)
+  const handleStackChange = (newValue: string | string[]) => {
+    if (!onChange) return
+    const names = Array.isArray(newValue) ? newValue : [newValue]
+    onChange(names.map(name => findPerson(people, name)))
   }
+  const handleStackRemove = (person: PersonValue) => {
+    if (!onChange) return
+    const arr = value as PersonValue[]
+    onChange(arr.filter(v => resolvePerson(v).name !== resolvePerson(person).name))
+  }
+  const trigger = (
+    <div
+      ref={ref}
+      role="combobox"
+      aria-haspopup="listbox"
+      aria-expanded={open}
+      aria-label={ariaLabel}
+      tabIndex={0}
+      className={cn(
+        fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size }),
+        'cursor-pointer',
+        className,
+      )}
+      data-field-mode="edit"
+    >
+      <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign)}>
+        {isEmpty
+          ? <span className="text-fg-muted">{emptyText}</span>
+          : <MultiPersonDisplay value={value as PersonValue[]} size={size} onRemove={handleStackRemove} />}
+      </span>
+      <ItemSuffix>
+        <ChevronDown size={iconSize} className="text-fg-muted" aria-hidden />
+      </ItemSuffix>
+    </div>
+  )
   return (
-    <Select
-      ref={ref as React.Ref<HTMLDivElement>}
-      size={size}
-      variant={resolvedVariant}
-      options={options}
-      value={selectedNames[0] ?? null}
-      onChange={handleSingleChange}
+    <SelectMenu
+      options={menuOptions}
+      value={selectedNames}
+      onValueChange={handleStackChange}
+      multiple
       searchable
-      placeholder={emptyText}
-      defaultOpen={defaultOpen}
-      onOpenChange={onOpenChange}
-      className={className}
-      aria-label={(props as { 'aria-label'?: string })['aria-label']}
-      // single trigger 內 selected display 換 PersonDisplay(avatar + name)
-      selectedItemRenderer={(selectedOpt) => {
-        const person = findPerson(people, selectedOpt.value)
-        return <PersonDisplay value={person} size={size} />
-      }}
-    />
+      searchPlaceholder={searchPlaceholder}
+      emptyText={emptyText}
+      size={size}
+      open={open}
+      onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
+    >
+      {trigger}
+    </SelectMenu>
   )
 })
 PeoplePicker.displayName = 'PeoplePicker'
 
-// Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)
+// Story auto-compile metadata
 export const peoplePickerMeta = {
   component: 'PeoplePicker',
   family: 4,

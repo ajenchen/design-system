@@ -315,13 +315,20 @@ interface SortableRowCtxValue {
   style: React.CSSProperties
   attributes: Record<string, unknown>
   isDragging: boolean
-  /** 整列 listeners + attributes — 只 primary 提供,spread 在 row div 上(對齊 TreeView SSOT
-   *  「整列可拖」)。捨棄 v15.0 的「listeners 在 portal'd Button」pattern — 該 pattern 因為
-   *  Button position:fixed 跑出 row 邊界,activator rect / source rect 不對齊,導致 ghost 永遠
-   *  偏移、source 在 drag 期間又被 dnd-kit transform。改 v15.2:listeners 在 row div,activator =
-   *  source = row,ghost 跟 cursor 自然對齊。Button 純視覺 affordance(無 listeners)。 */
+  /** **v15.6 button-only drag**(對齊 Notion / Linear / Jira canonical):
+   *  整列拖 + ghost 跟 cursor 在 multi-instance same-id pinned column 場景互相矛盾——
+   *  唯一 single-source-of-activation = visible RowDragHandle Button。
+   *  Source DOM = primary row(`setNodeRef`),activator = button(`handleSetActivatorNodeRef`),
+   *  listeners = button(`handleListeners`)。User 從哪個 region 都看見 portal'd button → 點下啟動。
+   *  Row click 不觸發 drag(允許 row click → select / open detail 等別的 UX)。
+   *  保留 `rowListeners`/`rowAttributes` field 但 button-only mode 為 undefined。 */
   rowListeners: Record<string, unknown> | undefined
   rowAttributes: Record<string, unknown>
+  /** RowDragHandle Button 用:接 setActivatorNodeRef → button rect 當 activator;
+   *  primary 才提供(mirror 不需要,RowDragHandle 只在 primary region 渲染) */
+  handleSetActivatorNodeRef: ((el: HTMLElement | null) => void) | undefined
+  handleListeners: Record<string, unknown> | undefined
+  handleAttributes: Record<string, unknown>
   /** drag 進行中且當前 over target 與 active 不同 parent → invalid signal */
   invalidDrop: boolean
 }
@@ -363,11 +370,12 @@ function SourceRowProvider({
 }) {
   const draggable = useDraggable({ id, disabled, data: { type: 'row' } })
   const droppable = useDroppable({ id, disabled, data: { type: 'row' } })
+  // **v15.6 button-only drag**:setActivatorNodeRef 不接 row,改由 RowDragHandle Button 接(via ctx)。
+  // setNodeRef = primary row(source DOM,ghost 抓這個);droppable.setNodeRef = same row(droppable target)。
   const setRefs = React.useCallback((el: HTMLElement | null) => {
     draggable.setNodeRef(el)
-    draggable.setActivatorNodeRef(el)
     droppable.setNodeRef(el)
-  }, [draggable.setNodeRef, draggable.setActivatorNodeRef, droppable.setNodeRef])
+  }, [draggable.setNodeRef, droppable.setNodeRef])
   const isDragging = draggable.isDragging
   const style: React.CSSProperties = { ...dragSourceStyle(isDragging) }
   // a11y:strip `role` from dnd-kit attributes(否則 row div 的 role="row" 被覆蓋成 role="button")
@@ -379,8 +387,15 @@ function SourceRowProvider({
     style,
     attributes: rowAttrs,
     isDragging,
-    rowListeners: draggable.listeners as unknown as Record<string, unknown> | undefined,
+    // row 不接 listeners(button-only),baseRowDiv `{...(extra?.listeners ?? {})}` 自動 noop
+    rowListeners: undefined,
     rowAttributes: rowAttrs,
+    // Button activator + listener:portal'd RowDragHandle Button 走這條 ctx,
+    // user 從任何 region 看見 button → 點下啟動 drag,activator rect = button DOM(24×24),
+    // ghost 起點 = button 位置(table outer 左 12px),cursor 在 ghost 左前段(自然視覺)。
+    handleSetActivatorNodeRef: draggable.setActivatorNodeRef,
+    handleListeners: draggable.listeners as unknown as Record<string, unknown> | undefined,
+    handleAttributes: rowAttrs,
     invalidDrop,
   }
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
@@ -401,6 +416,8 @@ function MirrorRowProvider({
 }) {
   // Mirror region(left / right pinned)只 mount useDroppable — 接受 drop target,
   // 但不參與 drag source(避免 multi-instance same-id 衝突)。
+  // RowDragHandle Button 只在 primary region 渲染(per `showDragHandle = ... && isPrimaryRegion`),
+  // mirror ctx 不需要 handle listeners / activator,相關 field 為 undefined。
   const droppable = useDroppable({ id, disabled, data: { type: 'row' } })
   const ctxValue: SortableRowCtxValue = {
     setNodeRef: droppable.setNodeRef,
@@ -410,6 +427,9 @@ function MirrorRowProvider({
     isDragging: false,
     rowListeners: undefined,
     rowAttributes: {},
+    handleSetActivatorNodeRef: undefined,
+    handleListeners: undefined,
+    handleAttributes: {},
     invalidDrop,
   }
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
@@ -574,18 +594,19 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
 
   const handle = (
     <Button
+      // **v15.6 button-only drag activator**:
+      //   ref → setActivatorNodeRef(button DOM = 24×24 portal'd)
+      //   listeners + attributes → spread(button 是 drag activator)
+      //   pointer-events: visible=auto → 接 pointer events 觸發 drag
+      ref={canDrag ? ctx.handleSetActivatorNodeRef : undefined}
       variant="tertiary"
       iconOnly
       size="xs"
       startIcon={GripVertical}
       aria-label={canDrag ? '拖曳重排此列' : '排序中無法拖曳'}
       aria-disabled={!canDrag || undefined}
-      tabIndex={-1}
+      tabIndex={canDrag ? 0 : -1}
       disabled={!canDrag}
-      // visual-only:點 Button 不觸發 drag(listeners 在 row div 上),也不需 receive click
-      // event。設 pointer-events:none 在 visible=false 時避免吃 click;visible=true 時保留
-      // 讓 user 看見 hover 狀態,但點下去仍是 row pointerdown 觸發 drag(button 在 row 內,
-      // pointer 透過 anchor span 仍 hit row)。
       onMouseEnter={() => setButtonHovered(true)}
       onMouseLeave={() => setButtonHovered(false)}
       style={{
@@ -594,16 +615,17 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
         left: pos.left,
         transform: 'translate(-50%, -50%)',
         zIndex: 50,
-        // hover-reveal:opacity 切換取代 visibility(動畫平順)
         opacity: visible ? 1 : 0,
-        // 永遠 pointer-events: none — Button 純視覺,點擊穿透到 row 觸發整列 drag。
-        pointerEvents: 'none',
+        // visible=true → auto(接 pointer events 觸發 drag activator);invisible → none(避免 click 落空)
+        pointerEvents: visible ? 'auto' : 'none',
         transition: 'opacity 150ms ease',
       }}
       className={cn(
-        canDrag && !showInvalid && 'cursor-grab',
+        canDrag && !showInvalid && 'cursor-grab active:cursor-grabbing',
         canDrag && showInvalid && 'cursor-not-allowed !text-error !border-error',
       )}
+      {...(canDrag ? ctx.handleListeners ?? {} : {})}
+      {...(canDrag ? ctx.handleAttributes ?? {} : {})}
     />
   )
 
