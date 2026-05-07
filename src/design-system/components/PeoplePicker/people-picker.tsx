@@ -211,10 +211,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   }
 
   // ── multi 'stack' (default) → wraps Combobox 跟 pill mode 同 SSOT,差別只在
-  //    tagRenderer 把 Tag pill 換成 Avatar overlap 視覺(2026-05-07 v15.11 user directive
-  //    「avatar = tag 概念,把 combobox 的 tags 換成 stack avatar,其後即是 inline edit」)。
-  //    結果:stack mode 跟 pill mode 都拿到 inline edit + 統一 SSOT(只 visual 不同)。
-  //    `wrap=false` 鎖單行(avatar overlap 視覺前提),Combobox 自動處理 +N overflow。
+  //    tagRenderer 把 Tag pill 換成 Avatar overlap 視覺(2026-05-07 v15.13)。
+  //    `wrap=false` 鎖單行;`tagWrapperClassName` 把 overlap (`-ml-0.5`) + group/avatar
+  //    parent 拉到 Combobox 內部 measurement wrapper 上 — 既保留 useOverflowCount 量測
+  //    必要 wrapper,又達成 sibling-level negative margin overlap + dismiss group selector。
+  //    Q2 known tradeoff:`-ml-0.5` 不改 wrapper.offsetWidth → +N indicator 偏保守(視覺
+  //    還有空間但已顯 +N)。當前接受;若窄 trigger + 多人嚴重不對,future 可加 `overlapPx` prop。
   const handleMultiChange = (next: string[]) => {
     onChange?.(next.map(name => findPerson(people, name)))
   }
@@ -234,6 +236,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       onOpenChange={onOpenChange}
       className={className}
       aria-label={ariaLabel}
+      tagWrapperClassName="-ml-0.5 first:ml-0 relative inline-flex group/avatar"
+      tagAreaGapPx={0}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {...(rest as any)}
       tagRenderer={(item, onRemove) => {

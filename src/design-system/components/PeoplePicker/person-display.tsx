@@ -250,9 +250,13 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
 // ── PersonAvatarTag(Combobox tagRenderer SSOT for stack mode)─────────────
 // PeoplePicker `multiDisplay='stack'` 模式 wraps Combobox,tagRenderer 不能用 Tag pill
 // (那是 pill mode),改 render 此元件 — Avatar overlap 視覺 + AvatarDismissOverlay。
-// 對齊 user directive「avatar = tag 概念,差別只在視覺,SSOT 一致」(2026-05-07 v15.11)。
+// 對齊 user directive「avatar = tag 概念,差別只在視覺,SSOT 一致」(2026-05-07 v15.13)。
 //
-// `-ml-0.5` overlap + `ring-2 ring-[var(--surface)]` 跟 MultiPersonDisplay 同 SSOT。
+// **架構**(v15.13 重構):本元件**不自包** `group/avatar` / `-ml-0.5` overlap wrapper,
+// 因 Combobox `tagRenderer` 結果會被內部 `<div shrink-0>` 包成 measurement wrapper
+// (useOverflowCount 必要)。把 overlap + group 拉到 Combobox 的 `tagWrapperClassName`
+// 上,sibling-level overlap + group selector 才能正確 chain → AvatarDismissOverlay 的
+// `group-hover/avatar:opacity-100` 才會通。
 function PersonAvatarTag({
   person, size = 'md', onRemove,
 }: {
@@ -261,10 +265,10 @@ function PersonAvatarTag({
   onRemove?: () => void
 }) {
   return (
-    <span className="relative inline-flex group/avatar -ml-0.5 first:ml-0">
+    <>
       <PersonAvatar person={person} size={size} className="ring-2 ring-[var(--surface)]" />
       {onRemove && <AvatarDismissOverlay onRemove={onRemove} label={person.name} />}
-    </span>
+    </>
   )
 }
 PersonAvatarTag.displayName = 'PersonAvatarTag'
