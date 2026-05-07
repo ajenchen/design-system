@@ -84,7 +84,7 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
 
 `mcp__github__subscribe_pr_activity` → 等 webhook event,**不 poll**(Anthropic best-practice,等推送)。
 
-### Step 4:Codex 回覆 → Claude 自檢
+### Step 4:Codex 回覆 → Claude 自檢(M22/M23/M27/M8)
 
 收到 codex reply 必跑 4 題自檢(避免 codex 也犯 M1/M22 錯):
 1. **M22 cite check**:codex 引的 benchmark 有 inline source?無 → reply 要求補
@@ -92,19 +92,56 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
 3. **M27 namespace**:codex 建議 prop name 是否撞 DS 既有?
 4. **M8 ≥3 source**:codex 只引 1 家 → reply 要求補到 3 家
 
-任一題失敗 → Step 5 不送 user,先回 codex 補。
+任一題失敗 → Step 4.5 仍要跑(自檢結果記下),Step 5 一併 report。
 
-### Step 5:Synthesize → report user
+### Step 4.5:**獨立 verify codex 具體 claim**(不可省 — anti-pass-through)
 
-格式:
+**Why this exists**:Step 4 只 check 表面 cite / namespace,**不 verify codex 結論本身對不對**。
+歷史:2026-05-07 codex infra audit reply 給「7 anti-bloat 機制重疊」結論,我直接列 A/B/C 給 user 拍板,沒 grep verify → user 發現我退化成 pass-through。**Step 4.5 強制 verify 阻止這個 anti-pattern**。
+
+**強制動作**(逐條 codex 具體 claim 過):
+1. **Grep DS-internal**:codex 指的 file / token / pattern 真存在?用 `grep -rn "${claim}"` 確認
+2. **WebFetch external**(若 codex cite world-class):URL 真有寫 codex 引用的內容?(對 high-stakes claim 必跑)
+3. **Run script**(若 codex 給數字):codex 給「28→16 hooks」這種具體 target,我自己跑分析腳本核對 reachable 數字
+4. **Counter-example scan**:codex 說「X 是 anti-pattern」→ 我 grep 看 DS 是否已用此 pattern 且 work fine(反證)
+5. **記錄 verification result**:每條 claim 標 `✅ verified` / `❌ FALSE` / `⚠️ partial`,理由附旁
+
+**禁止**:跳過 Step 4.5 直接列 A/B/C 給 user 拍板 = pass-through 退化,違反本 SKILL invariant。
+
+### Step 5:**Synthesize 我自己的 recommendation**(不是 paste codex)
+
+**Anti-pattern**:把 codex reply 整段 paste 給 user 然後問「拍 A/B/C?」。這是 pass-through,不是 collab。
+
+**強制 format**(每次 reply 都用):
+
 ```
-## Codex 討論結論(主題)
+## Step 4 self-check
+| 檢查 | 結果 | 理由 |
+| M22 cite | ✅/❌ | ... |
+| M23 DS-first | ... | ... |
+| M27 namespace | ... | ... |
+| M8 ≥3 | ... | ... |
 
-**Claude initial hypothesis**:...
-**Codex feedback**:... (cite codex comment URL)
-**Cross-check**:M22 ✓ / M23 ✓ / M27 ✓ / M8 ✓ (or 哪題失敗)
-**Recommended action**:...
-**還未 commit。等你 approve.**
+## Step 4.5 codex claim verification(逐條 grep + WebFetch + run script)
+| Codex claim | Verify 動作 | 結果 |
+| 「X is anti-pattern」 | `grep -rn "X"` 找 N 處 | ✅/❌ |
+| 「target should be N」 | 跑 analysis script 核對 reachable | ✅/❌ |
+| 「cite source Y」 | WebFetch URL | ✅/❌ |
+
+## Step 5 我的 synthesized recommendation
+**接受**:codex 哪幾條建議(verified ✅)
+**拒絕**:codex 哪幾條建議(verified ❌ + 理由)
+**修正**:codex 哪幾條建議在我的 verify 後 scope 不同(eg. codex「-12 hooks」我「-5 hooks」)
+**Final action plan**:具體實作步驟(不只「採用 B 案」這種高層敘述)
+**等你拍**:只在真有歧義或 user-side decision(eg. revert vs forward-fix)時才列 options
+```
+
+**Example好例**(本 SKILL.md 寫完後 user 應看到的格式):
+
+```
+Step 4: M22 ❌(codex 沒給 URL)/ 其他 ✅
+Step 4.5: codex「7 anti-bloat 機制重疊」→ grep 後 FALSE(各 lifecycle 點 distinct,SKILL desc 自己寫 complementary)
+Step 5: 拒絕「7 機制重疊」claim;接受「6 stop hooks 該合併」(verified distinct purpose 但同 event 可序列);修正 codex「-12 hooks」為「-5 hooks」(只合併 stop)
 ```
 
 ### Step 6:User approve → Claude 實作
