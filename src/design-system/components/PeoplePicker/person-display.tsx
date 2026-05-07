@@ -232,11 +232,23 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
       onClick={(e) => { e.stopPropagation(); onRemove() }}
       aria-label={`移除 ${label}`}
       className={[
-        'absolute top-0 right-0 z-10',
+        // **Position(2026-05-07 v15.15 user-confirmed)**:asymmetric `-top-px -right-1`
+        // (top -1px / right -4px)— field padding-y(4px sm/md)緊 → top 只 -1px 安全;
+        // padding-x 12px 寬鬆 → right 凸 4px 達 badge canonical visual。對齊 ClickUp
+        // 世界級 idiom(asymmetric offset by avatar/field size constraint)。
+        'absolute -top-px -right-1 z-10',
         'inline-flex items-center justify-center',
-        'w-3 h-3 rounded-full',  // 12×12
-        'bg-surface-strong text-on-emphasis',
-        'hover:bg-surface-strong-hover',
+        // **12×12 + 2px white ring**(SSOT match stacked avatar,Slack/Material/iOS
+        // notification badge 2px ring canonical)。改用 `[box-shadow:...]` 而非 `ring-2`
+        // 避免跟下方 `focus-visible:ring-2` 在 tailwind-merge 衝突(同 ring family
+        // override 互殺)。Box-shadow inset 0 不影響 layout,也不被 focus-visible ring
+        // 蓋掉(focus 那邊另一條 outline ring 不同 layer)。
+        'w-3 h-3 rounded-full [box-shadow:0_0_0_2px_var(--surface)]',
+        // bg-surface-strong = neutral-6-opaque / hover = neutral-7-opaque(both modes,
+        // step-7 dark 公式自動 lighter → engaged 跨 mode 對稱)
+        'bg-surface-strong text-on-emphasis hover:bg-surface-strong-hover',
+        // a11y(codex P1 fix):opacity 而非 display:none — element 在 DOM/tab-order,
+        // keyboard 可達。Hover / focus-within / focus-visible 三條件之一觸發。
         'opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100 focus-visible:opacity-100',
         'transition-opacity duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
