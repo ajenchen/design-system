@@ -359,18 +359,27 @@ function SortableRowProvider({
     droppable.setNodeRef(el)
   }, [draggable.setNodeRef, droppable.setNodeRef])
   const isDragging = draggable.isDragging
+  // v15.2.1 critical fix:**不**強加 `position: 'relative'`。
+  // 原因:virtual mode 的 row className 含 `absolute`,inline style position:relative 會
+  // 覆蓋 → row 退回 flow layout 但仍套 transform:translateY(start) → 視覺上每 row 多疊
+  // 一份高度 → 巨大空隙(user 報「row 高度不合規」root cause)。
+  // Row 的 position 由 baseRowDiv className 自管(virtual=absolute / non-virtual=relative)。
   const style: React.CSSProperties = {
     ...dragSourceStyle(isDragging),
-    position: 'relative',
   }
+  // v15.2.1 a11y fix:dnd-kit 的 `attributes` 含 `role: 'button'` + `tabIndex: 0` 等,
+  // spread 到 row div 會把 `role="row"` 蓋成 `role="button"` → table semantic 失效。
+  // 過濾掉 role,保留 aria-roledescription / aria-describedby / tabIndex 等。
+  const rawAttrs = draggable.attributes as unknown as Record<string, unknown>
+  const { role: _draggableRole, ...rowAttrs } = rawAttrs
   const ctxValue: SortableRowCtxValue = {
     setNodeRef: setRefs,
     role,
     style,
-    attributes: draggable.attributes as unknown as Record<string, unknown>,
+    attributes: rowAttrs,
     isDragging,
     rowListeners: role === 'primary' ? (draggable.listeners as unknown as Record<string, unknown> | undefined) : undefined,
-    rowAttributes: draggable.attributes as unknown as Record<string, unknown>,
+    rowAttributes: rowAttrs,
     invalidDrop,
   }
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
