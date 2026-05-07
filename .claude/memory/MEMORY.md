@@ -19,3 +19,4 @@
 - [project_story_canonical_2026_04_26.md](project_story_canonical_2026_04_26.md) — Storybook 三層(展示 trait v2 + anatomy + principles)5-layer pipeline 全落地索引(合併 typology + principles)
 - [project_datatable_l1_l7_roadmap.md](project_datatable_l1_l7_roadmap.md) — DataTable L1-L7 階段 roadmap(target = agGrid 級):L1 ✓ / L2 L5 設計已定實作待做 / L3 L4 L6 L7 待定。下次接續從 L2 實作或 L3/L4 設計起跳
 - [feedback_datatable_f3_row_drag_v1_limits.md](feedback_datatable_f3_row_drag_v1_limits.md) — F3 Row Drag v1 ship + 三項 v2 待修(virtualizer × transform / 3-panel mirror sync / cross-parent drop)+ getRowId 必填防呆 hook
+- [feedback_codex_dual_track_synthesizer.md](feedback_codex_dual_track_synthesizer.md) — Codex collab 永遠 dual-track 比稿(我跑一版 + codex 跑一版 → 比稿 final);**deep brief 不打折**(永久禁短 format / 限字 reply / 3-line 結論模板);**投遞成功率 invariant**(brief 間隔 ≥ 2-3 min 避 codex Cloud queue dedup,新 comment 不 edit,opener `@codex DISCUSS-ONLY`/`IMPLEMENT`)。Trigger:「比稿 / 2nd opinion / dual-track / 不打折 / 不省工」
