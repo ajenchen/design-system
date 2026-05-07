@@ -111,6 +111,12 @@ export const dropIndicatorInside = 'bg-primary-subtle' as const
 export const dragHandleCursor = 'cursor-grab' as const
 /** Draggable element 拖中時的 cursor(grabbing)*/
 export const dragActiveCursor = 'cursor-grabbing' as const
+/**
+ * Combined drag handle cursor canonical:hover=grab + active(:active)=grabbing。
+ * **必用字面量整字串**(不用 template literal concat),Tailwind JIT scanner 才會 pick up
+ * `active:cursor-grabbing` 字面 generate CSS。Consumer 直接 cn(...)。
+ */
+export const dragHandleCursorClass = 'cursor-grab active:cursor-grabbing' as const
 
 // ── Reorder noop helper(SSOT 對齊 row + column reorder canonical) ────────
 

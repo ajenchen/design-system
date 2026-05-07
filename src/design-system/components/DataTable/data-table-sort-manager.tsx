@@ -6,6 +6,7 @@ import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
+import { dragSourceStyle, dragHandleCursorClass } from '@/design-system/lib/drag-visual'
 import { Button } from '@/design-system/components/Button/button'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { SurfaceHeader, SurfaceBody } from '@/design-system/patterns/overlay-surface/overlay-surface'
@@ -175,10 +176,11 @@ function SortRow({
   onRemove: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sort.id })
+  // 對齊 lib/drag-visual.ts SSOT:source dim 用 `--opacity-disabled` token(不 hardcode 0.5)
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    ...dragSourceStyle(isDragging),
   }
   // **#5 fix(2026-05-04)**:row 內水平 gap = gap-2 (8px),layoutSpace 規則 5 緊密相關
   // SurfaceBody row↔row vertical 仍 tight(12)— 不同 row 不緊密
@@ -188,7 +190,7 @@ function SortRow({
         icon={GripVertical}
         size="sm"
         aria-label="拖曳重排"
-        className="cursor-grab active:cursor-grabbing"
+        className={dragHandleCursorClass}
         {...attributes}
         {...listeners}
       />
