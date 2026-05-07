@@ -53,3 +53,25 @@ User 若在新 session 看到我:
 ## Trigger phrases for cross-session memory
 
 當 user 提到「比稿 / 2nd opinion / dual-track / 不打折 / 不省工」→ 自動 invoke 本 SKILL 流程 + 跑 ensure-canonical 5-layer 確認 propagation 完整。
+
+## 2026-05-07 update — Deep brief format 強制(撤回短 format)
+
+**Trigger**:user 反問「你確保 codex 回覆有確保品質且完全沒打折嗎?」+ 後續確認:
+> 「但我認為我要你找他的時候都是希望他完全深度評估並用自己的模型給出完整的 2nd opinion」
+
+**Anti-pattern history**(violation):
+- 2026-05-07 我為了「加速 codex reply」採用短 format(brief ≤220 字 / reply ≤200 字 / 「結論→原因→下一步」模板)
+- 反例:速度 1-2 min ≪ 15-20 min,但**品質打折**:
+  - M22 cite 廣度失(只 fit 1-2 cite,canonical 要求 ≥3)
+  - A/B/C trade-off matrix 失
+  - C1-C7 逐條 architectural blocker 評估 collapse 成 1 句
+  - Counter-example / alternative path 探討失
+- User 糾正:「我要 codex 完全深度評估給完整 2nd opinion」,撤回短 format
+
+**Invariant(永久禁)**:
+- ❌ 短 format brief / 短 reply 限字 / 3-line 結論模板
+- ✅ Deep brief 不限字 + Q1-Q5+ + ≥3 cite + A/B/C + counter-example + counter-proposal request
+- ✅ 接受 15-30 min wait per reply(品質優先)
+- ✅ 序列發送(避免 codex 並送被 skip,但每條都 deep)
+
+**Routing rule**:無論問題類型(simple verdict / deep architectural)— 一律 deep brief。User 不接受 routing 妥協,因為「2nd opinion 的價值在 codex 自己的 model 深度評估」,不是只拿 verdict 收斂。

@@ -62,6 +62,26 @@ User 說「跟 codex 討論 X」或本 skill 自動 trigger condition 滿足。
 
 ### Step 1:Claude 草擬 Discussion Brief(以 Step 0.5 own-version 為基礎)
 
+**Brief format invariant(2026-05-07 user 拍板,絕對禁短 format)**:
+
+> 「我要你找他的時候都是希望他完全深度評估並用自己的模型給出完整的 2nd opinion」
+> 「品質 100% 不打折 + 不以省工為前提」
+
+**禁止**(violates user invariant):
+- ❌ Brief ≤ 220 字 1-Q 短 format(品質打折:cite 廣度 / counter-example / A/B/C trade-off 全失)
+- ❌ Reply ≤ 200 字限字(codex 模型沒空間給深度)
+- ❌ 「結論→原因→下一步」3-line 模板(失去 architectural depth)
+- ❌ 為了 codex Cloud 速度刻意 truncate(用戶接受 15-30 min 等)
+
+**強制**:
+- ✅ Deep brief 不限字 + Q1-Q5+ multi-question if needed
+- ✅ ≥ 3 world-class DS source cite per benchmark Q(M22 mandate)
+- ✅ A/B/C trade-off matrix + counter-example scan(M9)
+- ✅ Counter-proposal request(挑戰我的 hypothesis,要 codex 提第 4 條路)
+- ✅ Reply 不限字 + DS-first verify(M23)+ namespace check(M27)
+
+歷史錨點:2026-05-07 我嘗試「短 format 加速 codex」(brief ≤220 字 / reply ≤200 字),user 糾正:「我要 codex 完全深度評估給完整 2nd opinion,即使慢」。撤回短 format,本 SKILL 永久禁。
+
 格式(必含 6 段,**禁略**):
 
 ```markdown
