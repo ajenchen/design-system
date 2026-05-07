@@ -18,7 +18,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Match local dev container (node 22). Node 20 had compile-stories
+          # exit 1 mismatch vs local pass — likely vm.runInNewContext / yaml
+          # lib parse difference. Pin to 22 to align.
+          node-version: 22
           cache: npm
 
       - name: Install
