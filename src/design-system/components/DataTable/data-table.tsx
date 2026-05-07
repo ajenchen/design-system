@@ -315,13 +315,13 @@ interface SortableRowCtxValue {
   style: React.CSSProperties
   attributes: Record<string, unknown>
   isDragging: boolean
-  /** 只 primary 提供 listeners — render 在 __drag__ column body cell */
-  handleListeners: Record<string, unknown> | undefined
-  handleAttributes: Record<string, unknown>
-  /** dnd-kit setActivatorNodeRef — 接到 drag handle Button,讓 dnd-kit 用 button bounds(24x24)
-   *  算 cursor 相對 activator 的初始 offset。沒設 → 預設用 setNodeRef(=row,1200x40)做 activator,
-   *  cursor 在 row 左外緣的 button 上 → relative offset 為負值 → ghost 偏移到 cursor 右側 ~1200px。 */
-  handleSetActivatorNodeRef: ((el: HTMLElement | null) => void) | undefined
+  /** 整列 listeners + attributes — 只 primary 提供,spread 在 row div 上(對齊 TreeView SSOT
+   *  「整列可拖」)。捨棄 v15.0 的「listeners 在 portal'd Button」pattern — 該 pattern 因為
+   *  Button position:fixed 跑出 row 邊界,activator rect / source rect 不對齊,導致 ghost 永遠
+   *  偏移、source 在 drag 期間又被 dnd-kit transform。改 v15.2:listeners 在 row div,activator =
+   *  source = row,ghost 跟 cursor 自然對齊。Button 純視覺 affordance(無 listeners)。 */
+  rowListeners: Record<string, unknown> | undefined
+  rowAttributes: Record<string, unknown>
   /** drag 進行中且當前 over target 與 active 不同 parent → invalid signal */
   invalidDrop: boolean
 }
@@ -344,16 +344,14 @@ function SortableRowProvider({
   invalidDrop: boolean
   children: (ctx: SortableRowCtxValue) => React.ReactNode
 }) {
-  // **2026-05-06 v15.0 Path B refactor — useDraggable + useDroppable(對齊 TreeView SSOT)**:
-  // user 明確 directive:source 留原位 + indicator 為 drop preview,兩者 separate purpose,
-  // 不要 dnd-kit useSortable 的 auto-shift visual reorder。
-  // - **棄 useSortable + SortableContext**(會 auto-shift 預覽 drop 位置)
-  // - **改 useDraggable + useDroppable 分離 hooks**(對齊 TreeView 已用此 pattern)
-  // - 同 ID 共享 OK(dnd-kit 內部 draggable / droppable store 分離)
-  // - combine refs via setNodeRef wrapper(同 TreeView pattern)
-  // - source dragSourceStyle = `opacity-disabled` 半透,DOM 留原位(無 transform)
-  // - DragOverlay 顯 ghost 跟 cursor(canonical)
-  // - drop indicator 自管(我們已有 dropIndicatorRow SSOT)
+  // **2026-05-07 v15.2 — TreeView SSOT 整列可拖**:
+  // 捨棄 v15.0/v15.1 portal'd Button activator pattern(造成 ghost 偏移 + source 在 drag 期間被
+  // dnd-kit transform)。改成 TreeView canonical:listeners 在 row div,activator = source = row,
+  // 整列當 drag affordance(handle Button 純視覺)。
+  // - source row 留原位(無 transform)+ opacity-disabled
+  // - ghost 跟 cursor 自然對齊(activator = row,cursor 點在 row 內某處 → ghost 同位置)
+  // - dnd-kit PointerSensor 對 native interactive elements(<input>/<textarea>/<select>/<button>)
+  //   有預設過濾,不會干擾 inline edit 互動
   const draggable = useDraggable({ id, disabled, data: { type: 'row' } })
   const droppable = useDroppable({ id, disabled, data: { type: 'row' } })
   const setRefs = React.useCallback((el: HTMLElement | null) => {
@@ -371,9 +369,8 @@ function SortableRowProvider({
     style,
     attributes: draggable.attributes as unknown as Record<string, unknown>,
     isDragging,
-    handleListeners: role === 'primary' ? (draggable.listeners as unknown as Record<string, unknown> | undefined) : undefined,
-    handleAttributes: draggable.attributes as unknown as Record<string, unknown>,
-    handleSetActivatorNodeRef: role === 'primary' ? draggable.setActivatorNodeRef : undefined,
+    rowListeners: role === 'primary' ? (draggable.listeners as unknown as Record<string, unknown> | undefined) : undefined,
+    rowAttributes: draggable.attributes as unknown as Record<string, unknown>,
     invalidDrop,
   }
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
@@ -446,18 +443,18 @@ function DraggableHeaderCell({
 
 /** Row drag handle — Portal-rendered, position:fixed 真正水平置中於 table outer border line(Jira canonical)。
  *
+ *  v15.2 重構:**Button 純視覺 affordance**,不再 spread drag listeners — 改由 row div 整列接 listeners
+ *  (TreeView SSOT)。Button 只負責顯示「此 row 可拖」的視覺暗示。
+ *
  *  Why Portal + position:fixed(2026-05-05 v4):
  *    DataTable 結構含三層 overflow-hidden(outer wrapper / leftBody / row),用 absolute + translate-x:-50%
  *    凸出 row 左 border 會被三層任一裁切。position:fixed escape 所有 ancestor overflow constraint。
- *    座標來自 row.getBoundingClientRect() + table outer.getBoundingClientRect(),scroll/resize 同步。
  *
  *  - 不佔 column 空間;hover-revealed 透過 row.dataset.hovered MutationObserver 觸發
- *  - Button variant="tertiary" iconOnly size="xs"(24px chip)→ bg-surface + border + foreground icon
- *  - 透過 SortableRowCtx 拿 listeners(nested rows 子層 ctx=null → 不 render)
- *  - sort active 時 disabled(visual + listeners 移除 + Tooltip 解釋)
- *  - invalidDrop(cross-parent over)→ cursor-not-allowed + text-error 警示
- *  - drag 進行中(ctx.isDragging)強制可見(即使 cursor 移開 row)*/
-function RowDragHandle({ disabled }: { disabled: boolean }) {
+ *  - Button variant="tertiary" iconOnly size="xs"(24px chip)
+ *  - 任何 row drag 進行時(activeDragId != null)整體隱藏 — 對齊 user directive:
+ *    drag 期間「INDICATOR + GHOST」就夠了,所有 row 不顯 hover bg / drag button */
+function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDragActive: boolean }) {
   const ctx = React.useContext(SortableRowCtx)
   const [rowEl, setRowEl] = React.useState<HTMLDivElement | null>(null)
   const [portalTarget, setPortalTarget] = React.useState<HTMLElement | null>(null)
@@ -529,25 +526,26 @@ function RowDragHandle({ disabled }: { disabled: boolean }) {
 
   const canDrag = !disabled
   const showInvalid = !!ctx.invalidDrop && !!ctx.isDragging
-  // Visibility canonical(2026-05-07 v15.1):
+  // Visibility canonical v15.2(對齊 user directive「drag 時 row 不應 hover / drag button 不應出現」):
   //   - idle:rowHovered || buttonHovered → 顯示
-  //   - drag 進行中:**隱藏 source button**(只留 DragOverlay ghost + drop indicator,
-  //     對齊 user 明確 directive「INDICATOR 和 GHOST 兩個就夠了,不要多 button 跟 cursor 走」)
-  // 之前 v14:`|| !!ctx.isDragging` 強制可見 → user 看到「source button 在原位 + ghost 跟 cursor」
-  // 視覺像「兩個 button」。改 v15.1:drag 期間 source button 直接隱藏(opacity 0)。
-  const visible = !ctx.isDragging && (pos.rowHovered || buttonHovered)
+  //   - 任何 row drag 進行(anyDragActive)→ 全部 row 的 button 隱藏
+  // Listeners 已搬到 row div(TreeView SSOT 整列可拖),Button 純視覺,no listeners spread。
+  const visible = !anyDragActive && (pos.rowHovered || buttonHovered)
 
   const handle = (
     <Button
-      ref={ctx.handleSetActivatorNodeRef}
       variant="tertiary"
       iconOnly
       size="xs"
       startIcon={GripVertical}
       aria-label={canDrag ? '拖曳重排此列' : '排序中無法拖曳'}
       aria-disabled={!canDrag || undefined}
-      tabIndex={canDrag ? 0 : -1}
+      tabIndex={-1}
       disabled={!canDrag}
+      // visual-only:點 Button 不觸發 drag(listeners 在 row div 上),也不需 receive click
+      // event。設 pointer-events:none 在 visible=false 時避免吃 click;visible=true 時保留
+      // 讓 user 看見 hover 狀態,但點下去仍是 row pointerdown 觸發 drag(button 在 row 內,
+      // pointer 透過 anchor span 仍 hit row)。
       onMouseEnter={() => setButtonHovered(true)}
       onMouseLeave={() => setButtonHovered(false)}
       style={{
@@ -558,15 +556,14 @@ function RowDragHandle({ disabled }: { disabled: boolean }) {
         zIndex: 50,
         // hover-reveal:opacity 切換取代 visibility(動畫平順)
         opacity: visible ? 1 : 0,
-        pointerEvents: visible ? 'auto' : 'none',
+        // 永遠 pointer-events: none — Button 純視覺,點擊穿透到 row 觸發整列 drag。
+        pointerEvents: 'none',
         transition: 'opacity 150ms ease',
       }}
       className={cn(
-        canDrag && !showInvalid && 'cursor-grab active:cursor-grabbing',
+        canDrag && !showInvalid && 'cursor-grab',
         canDrag && showInvalid && 'cursor-not-allowed !text-error !border-error',
       )}
-      {...(canDrag ? ctx.handleListeners ?? {} : {})}
-      {...(canDrag ? ctx.handleAttributes ?? {} : {})}
     />
   )
 
@@ -904,6 +901,8 @@ function DataTableInner<TData>(
     }
     return {
       onMouseOver: (e: React.MouseEvent) => {
+        // v15.2:drag 進行中不註記 data-hovered(對齊 user directive「drag 期間 row 不應 hover」)。
+        if (activeDragIdRef.current != null) return
         const idx = findRowIndex(e.target)
         if (idx == null) return
         tableRef.current?.querySelectorAll(`[data-row-index="${idx}"]`).forEach((el) => ((el as HTMLElement).dataset.hovered = ''))
@@ -1587,7 +1586,10 @@ function DataTableInner<TData>(
       // 只在 primary region(left 若有,否則 center)+ depth===0 render — RowDragHandle
       // 內部再用 ctx.role === 'primary' 守門避免 mirror region 重複 render。
       const showDragHandle = enableRowDrag && (row.depth ?? 0) === 0 && isPrimaryRegion
-      const baseRowDiv = (extra?: { ref?: (el: HTMLElement | null) => void; style?: React.CSSProperties; isDragging?: boolean }) => (
+      // v15.2 SSOT 對齊 TreeView:drag 期間 suppress 全表 hover state
+      // (user directive「drag 時 row 不應 hover / drag button 不應出現」)
+      const anyDragActive = activeDragId != null
+      const baseRowDiv = (extra?: { ref?: (el: HTMLElement | null) => void; style?: React.CSSProperties; isDragging?: boolean; listeners?: Record<string, unknown>; attributes?: Record<string, unknown> }) => (
         <div
           key={row.id}
           ref={(el) => {
@@ -1611,16 +1613,21 @@ function DataTableInner<TData>(
             !autoRowHeight && 'overflow-hidden',
             opts?.virtual && 'absolute w-full',
             showBorder && 'border-b border-divider',
-            'transition-colors data-[hovered]:bg-neutral-hover',
+            // hover bg:drag 中全表 suppress(對齊 TreeView SSOT,user directive)
+            !anyDragActive && 'transition-colors data-[hovered]:bg-neutral-hover',
             extra?.isDragging && 'bg-neutral-hover',
+            // 整列可拖時 hover cursor 顯 grab(對齊 TreeView)
+            enableRowDrag && !dragDisabled && !anyDragActive && 'cursor-grab',
           )}
           style={{
             ...(opts?.virtual ? { transform: `translateY(${opts.start}px)` } : {}),
             ...(extra?.style ?? {}),
           }}
           {...hoverProps(idx)}
+          {...(extra?.attributes ?? {})}
+          {...(extra?.listeners ?? {})}
         >
-          {showDragHandle && <RowDragHandle disabled={dragDisabled} />}
+          {showDragHandle && <RowDragHandle disabled={dragDisabled} anyDragActive={anyDragActive} />}
           {/* 2026-05-06 v14.6 row drop indicator(SSOT 對齊 TreeView):水平 2px primary line at top/bottom edge */}
           {dropIndicator?.type === 'row' && dropIndicator.id === row.id && dropIndicator.side === 'before' && (
             <div className={dropIndicatorRow.before} aria-hidden />
@@ -1648,6 +1655,10 @@ function DataTableInner<TData>(
               ref: ctx.setNodeRef,
               style: ctx.style,
               isDragging: ctx.isDragging,
+              // v15.2 整列可拖:listeners + attributes spread 在 row div 上(只 primary,
+              // mirror region 沒 listeners 避免 a11y 重複 announce / pointer 雙觸發)
+              listeners: ctx.rowListeners,
+              attributes: ctx.rowAttributes,
             })}
           </SortableRowProvider>
         )
@@ -1855,6 +1866,8 @@ function DataTableInner<TData>(
     const type = e.active.data?.current?.type ?? 'row'
     setDragType(type)
     setInvalidDropActive(false)
+    // v15.2:drag 啟動立刻清掉所有 data-hovered(避免 row hover bg 殘留 + drag handle button 仍顯)
+    tableRef.current?.querySelectorAll<HTMLElement>('[data-hovered]').forEach((el) => delete el.dataset.hovered)
     if (type === 'column') {
       // Column drag:snapshot header cell visual,strip transform/inline-styles
       const colId = e.active.data?.current?.columnId ?? id
