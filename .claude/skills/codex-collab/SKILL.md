@@ -116,6 +116,24 @@ User 說「跟 codex 討論 X」或本 skill 自動 trigger condition 滿足。
 
 target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 head=current branch)。
 
+**投遞成功率 invariant(2026-05-07 codex 自診斷,絕對遵守)**:
+
+歷史錨點:同日我送 5 條 brief 連發 → codex Cloud queue dedup skip 4 條(只回 1 條)。Codex 自己診斷 root cause = **interval too short**(短時間連送 → 後端 dedup)。
+
+**強制規則**:
+- ✅ **Brief 間隔 ≥ 2-3 min**(避免 codex Cloud queue dedup;我用 `mcp__github__add_issue_comment` 連送不違反 GitHub API 限制,但違反 codex 後端 routing dedup)
+- ✅ **每條 brief 用新 `add_issue_comment`,不要 edit 既有 comment**(webhook 不把 edit 當新 task)
+- ✅ **Opener canonical**:`@codex DISCUSS-ONLY` 或 `@codex IMPLEMENT`(明確 mode signal)
+- ✅ Brief content **保留 deep format**(unchanged, per L1 Step 1 invariant)— interval rule 跟 depth invariant 不衝突
+- ✅ 漏接補救:**新 comment** with `@codex follow-up to brief <id> ...`(不要只「請看上面」)
+
+**禁止**:
+- ❌ 連續 < 2-3 min 內送多條 brief(會被 dedup skip)
+- ❌ Edit 既有 comment 期待重 trigger(webhook 不把 edit 當新 task)
+- ❌ 為了「依 codex 建議短 brief 提高投遞」就 truncate 深度(L1 Step 1 invariant 優先 — brief 內容深度不打折,只 timing 變)
+
+**現實接受**:嚴格說沒有 100% 保證投遞,但 deep brief + 2-3 min 間隔 + 新 comment + 明確 opener + 漏接補送 = 最高成功率組合。
+
 ### Step 3:Subscribe + wait
 
 `mcp__github__subscribe_pr_activity` → 等 webhook event,**不 poll**(Anthropic best-practice,等推送)。
