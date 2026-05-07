@@ -318,6 +318,10 @@ interface SortableRowCtxValue {
   /** 只 primary 提供 listeners — render 在 __drag__ column body cell */
   handleListeners: Record<string, unknown> | undefined
   handleAttributes: Record<string, unknown>
+  /** dnd-kit setActivatorNodeRef — 接到 drag handle Button,讓 dnd-kit 用 button bounds(24x24)
+   *  算 cursor 相對 activator 的初始 offset。沒設 → 預設用 setNodeRef(=row,1200x40)做 activator,
+   *  cursor 在 row 左外緣的 button 上 → relative offset 為負值 → ghost 偏移到 cursor 右側 ~1200px。 */
+  handleSetActivatorNodeRef: ((el: HTMLElement | null) => void) | undefined
   /** drag 進行中且當前 over target 與 active 不同 parent → invalid signal */
   invalidDrop: boolean
 }
@@ -369,6 +373,7 @@ function SortableRowProvider({
     isDragging,
     handleListeners: role === 'primary' ? (draggable.listeners as unknown as Record<string, unknown> | undefined) : undefined,
     handleAttributes: draggable.attributes as unknown as Record<string, unknown>,
+    handleSetActivatorNodeRef: role === 'primary' ? draggable.setActivatorNodeRef : undefined,
     invalidDrop,
   }
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
@@ -479,7 +484,9 @@ function RowDragHandle({ disabled }: { disabled: boolean }) {
       if (!tableEl) return
       const rRect = rowEl.getBoundingClientRect()
       const tRect = tableEl.getBoundingClientRect()
-      const rowHovered = rowEl.hasAttribute('data-hovered') || !!ctx.isDragging
+      // v15.1:drag 期間 source button hide(visible 邏輯已 guard isDragging),
+      // 此處只報「真實 hover」狀態,不疊 isDragging mask。
+      const rowHovered = rowEl.hasAttribute('data-hovered')
       setPos({
         top: rRect.top + rRect.height / 2,
         left: tRect.left, // table outer 左 border line position(viewport coords)
@@ -522,12 +529,17 @@ function RowDragHandle({ disabled }: { disabled: boolean }) {
 
   const canDrag = !disabled
   const showInvalid = !!ctx.invalidDrop && !!ctx.isDragging
-  // Visibility = rowHovered || buttonHovered || isDragging — button-level hover 補上 portal 逃逸後
-  // 「cursor 移到 button → row mouseleave」造成的閃爍。對齊 React Portal hover canonical(Radix HoverCard)。
-  const visible = pos.rowHovered || buttonHovered || !!ctx.isDragging
+  // Visibility canonical(2026-05-07 v15.1):
+  //   - idle:rowHovered || buttonHovered → 顯示
+  //   - drag 進行中:**隱藏 source button**(只留 DragOverlay ghost + drop indicator,
+  //     對齊 user 明確 directive「INDICATOR 和 GHOST 兩個就夠了,不要多 button 跟 cursor 走」)
+  // 之前 v14:`|| !!ctx.isDragging` 強制可見 → user 看到「source button 在原位 + ghost 跟 cursor」
+  // 視覺像「兩個 button」。改 v15.1:drag 期間 source button 直接隱藏(opacity 0)。
+  const visible = !ctx.isDragging && (pos.rowHovered || buttonHovered)
 
   const handle = (
     <Button
+      ref={ctx.handleSetActivatorNodeRef}
       variant="tertiary"
       iconOnly
       size="xs"
