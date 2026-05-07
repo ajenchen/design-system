@@ -44,7 +44,23 @@ description: Structured discussion-mode collaboration with OpenAI Codex (via @co
 
 User 說「跟 codex 討論 X」或本 skill 自動 trigger condition 滿足。
 
-### Step 1:Claude 草擬 Discussion Brief
+### Step 0.5:**Claude 自己先跑一遍完整版**(不可省 — anti-pass-through invariant)
+
+**User 拍板 directive(2026-05-07)**:「**我跑一版 → codex 跑一版 → 我比稿 → 取優棄劣 → final 最佳方案**。每次 collab 都這樣,不可只當守門員」。
+
+**Why this exists**:之前 SKILL 只有「draft brief → send codex → self-check reply」,我容易退化成 pass-through(直接 paste codex 結論問 user 拍 A/B/C)。User invariant:
+- 品質 100% 不打折 + 要完美 + 世界級 + 符合 DS SSOT
+- **不以省工為前提**(2-AI dual-track 是 cost,不是 cost reduction tool)
+- 我要當 synthesizer 不是 dispatcher
+
+**強制動作**(在 Step 1 寫 brief 前必跑):
+1. **我自己跑一版完整分析**(eg. 同題若是 audit → 我自己跑 /knowledge-prune 全 phase,grep / read / verify 走完;若是 design decision → 我自己跑 propose-options 4-Q + WebFetch 3 source)
+2. **記錄 my own findings** 在 brief 內(讓 codex 知道我已查到什麼,他補我沒查到的角度,不重複 grep)
+3. **明確列我自己的 hypothesis + recommendation**(不只 question)— codex 回時針對我具體 propose challenge
+
+**禁止**:用「請 codex 幫我看 X」的問句送 brief,沒附我自己的 own-version 結論。違反 = pass-through 退化。
+
+### Step 1:Claude 草擬 Discussion Brief(以 Step 0.5 own-version 為基礎)
 
 格式(必含 6 段,**禁略**):
 
@@ -108,9 +124,20 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
 
 **禁止**:跳過 Step 4.5 直接列 A/B/C 給 user 拍板 = pass-through 退化,違反本 SKILL invariant。
 
-### Step 5:**Synthesize 我自己的 recommendation**(不是 paste codex)
+### Step 5:**比稿 my own-version vs codex-version → final synthesized 方案**
 
 **Anti-pattern**:把 codex reply 整段 paste 給 user 然後問「拍 A/B/C?」。這是 pass-through,不是 collab。
+
+**User directive(2026-05-07)**:「**比稿** — 取優點去缺點 → final 最佳方案。確保品質 100% 不打折」。
+
+**強制比稿過程**:
+1. 把 Step 0.5 own-version + Step 4.5 verified codex-version 並列成 matrix
+2. 逐條決定:
+   - **接受 codex**(我沒想到 + verified 對)
+   - **接受我自己**(codex 漏掉 / 過度激進 / verified FALSE)
+   - **修正(取兩邊優點)**(eg. codex 提 -12 hooks,我 verify 只 -5 reachable → final -8 兼顧 codex aggressive 跟我 conservative)
+   - **重啟**(兩邊都不對 → 重新做)
+3. 列 final 方案,不再列 A/B/C 給 user 拍 unless 真歧義
 
 **強制 format**(每次 reply 都用):
 
