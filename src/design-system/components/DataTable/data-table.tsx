@@ -19,10 +19,10 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { ChevronDown, Calendar, Clock, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, EyeOff, X as XIcon, GripVertical } from 'lucide-react'
 // **v15.0 Path B**(對齊 user 「source 留原位 / indicator 為 drop preview / 不 auto-shift」directive):
 // 砍 useSortable + SortableContext 用 useDraggable + useDroppable 分離 hooks(對齊 DS 內 TreeView SSOT)。
-import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
+import { DndContext, DragOverlay, useDraggable, useDroppable, useDndContext, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, MeasuringStrategy, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { cn } from '@/lib/utils'
-import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, isReorderNoop, reconstructFullRowGhost } from '@/design-system/lib/drag-visual'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -418,13 +418,19 @@ function MirrorRowProvider({
   // 但不參與 drag source(避免 multi-instance same-id 衝突)。
   // RowDragHandle Button 只在 primary region 渲染(per `showDragHandle = ... && isPrimaryRegion`),
   // mirror ctx 不需要 handle listeners / activator,相關 field 為 undefined。
+  // **v15.8 Bug 3 fix**(對齊 user 「source 沒一整條都有 disabled opacity」):
+  //   mirror region drag 期間需跟 primary 同步顯 opacity-disabled,讓 source row 跨三 region
+  //   視覺一致(SKU 釘選欄 + center + Updated 釘選欄整列半透明)。透過 useDndContext active
+  //   判斷:any drag activated with active.id === own row id → mirror 也 isDragging。
   const droppable = useDroppable({ id, disabled, data: { type: 'row' } })
+  const dndCtx = useDndContext()
+  const isDragging = dndCtx.active?.id === id
   const ctxValue: SortableRowCtxValue = {
     setNodeRef: droppable.setNodeRef,
     role,
-    style: {},
+    style: { ...dragSourceStyle(isDragging) },
     attributes: {},
-    isDragging: false,
+    isDragging,
     rowListeners: undefined,
     rowAttributes: {},
     handleSetActivatorNodeRef: undefined,
@@ -1672,9 +1678,14 @@ function DataTableInner<TData>(
           key={row.id}
           ref={(el) => {
             // v2 fix #1:被拖 row 略過 measureElement(transform 干擾測量,長 list 累積誤差)
-            // v2 fix #4(virtual freeze):drag 進行中(activeDragId != null)整個略過 measureElement —
-            // 任一 row 重新量測都可能觸發 row position recompute → 跟 dnd-kit transform 競爭。
-            if (isCenter && opts?.virtual && el && !isThisRowDragging && activeDragId == null) {
+            // v2 fix #4(virtual freeze):drag 進行中(activeDragId != null)整個略過 measureElement
+            // **v15.8 Bug A fix(codex audit cfac43d)**:mount-time row-height growth animation
+            //   Fixed-row-height mode 下 row 高度永遠 = ESTIMATE_BY_SIZE[size](e.g. md=40px),
+            //   measureElement 量出來必 = estimate → re-estimate 不必要,但會觸發 getTotalSize
+            //   重算 → React state update → body container 從「初步 height」漲到「完全 height」
+            //   = mount 時的「row 高度從小變高」動畫(實為 body container,視覺上看似 row)。
+            //   只在 autoRowHeight=true 才需 measureElement(每 row 高度可能不同,需量真實值)。
+            if (isCenter && opts?.virtual && el && !isThisRowDragging && activeDragId == null && autoRowHeight) {
               virtualizer.measureElement(el)
             }
             extra?.ref?.(el)
@@ -1919,6 +1930,17 @@ function DataTableInner<TData>(
       const pointer = pointerWithin(args)
       return pointer.length > 0 ? pointer : rectIntersection(args)
     }
+    // **v15.8 Bug 2 fix**(對齊 user「PRD-004 拉起儘管同位置放開後一定 reorder」):
+    // 預設 dnd-kit `pointerWithin` 排除 active 自身,fallback `rectIntersection` 找最近
+    // next row → cursor 仍在 source row 內 但 over=next row → reorder 觸發。
+    // Fix:cursor 仍在 source row vertical range 內 → return [](no over → no indicator
+    // → onDragEnd over=null → noop)。User 必須 cursor 真正離開 source row vertical 範圍
+    // 才視為「想 reorder」,對齊 user 的「沒動就不該 reorder」直覺。
+    const activeRect = args.active?.rect.current.initial
+    const cursor = args.pointerCoordinates
+    if (cursor && activeRect && cursor.y >= activeRect.top && cursor.y <= activeRect.bottom) {
+      return []
+    }
     const activeParent = parentMap.get(activeId)
     // 過濾 droppable container collection — 只保留 same parent siblings(且不含 active 本身)
     const filtered = args.droppableContainers.filter(c => {
@@ -1930,7 +1952,30 @@ function DataTableInner<TData>(
     })
     const filteredArgs = { ...args, droppableContainers: filtered }
     const pointer = pointerWithin(filteredArgs)
-    return pointer.length > 0 ? pointer : rectIntersection(filteredArgs)
+    if (pointer.length > 0) return pointer
+    // **v15.8 fix**(virtualized list dnd-kit droppableRects stale issue):
+    // virtualized rows position 由 virtualizer transform:translateY 動態套,但 dnd-kit
+    // measure droppable 在 mount 瞬間(rows 還沒 transform → 全 rect at top=100)+ 不
+    // re-measure(MeasuringStrategy.Always 沒效)→ stale rects → rectIntersection 永遠
+    // 0 over。Fix:fallback 用 cursor.y 對 DOM querySelector 找 row whose live
+    // boundingClientRect 包含 cursor.y(同 parent siblings,排除 active)。
+    if (cursor) {
+      const liveRows = Array.from(document.querySelectorAll<HTMLElement>('[role="row"][data-sortable-row-id]'))
+        .filter(el => el.dataset.sortableRowId !== activeId)
+        .filter(el => {
+          const cParent = parentMap.get(el.dataset.sortableRowId ?? '')
+          return cParent === activeParent
+        })
+      for (const el of liveRows) {
+        const r = el.getBoundingClientRect()
+        if (cursor.y >= r.top && cursor.y <= r.bottom) {
+          const rowId = el.dataset.sortableRowId
+          const cont = filtered.find(c => String(c.id) === rowId)
+          if (cont) return [{ id: cont.id, data: { droppableContainer: cont, value: 0 } }]
+        }
+      }
+    }
+    return rectIntersection(filteredArgs)
   }, [parentMap])
 
   // 2026-05-06 v10 DragOverlay canonical:drag start 時 snapshot source row outerHTML(strip
@@ -2130,12 +2175,20 @@ function DataTableInner<TData>(
     return (
       <DndContext
         sensors={dndSensors}
+        // **v15.8 fix**:virtualized rows mount/unmount 期間 droppable rect cache stale →
+        // rectIntersection 找不到 over → indicator/reorder 不 fire。改 `Always` 每次 collision
+        // detection 都 re-measure droppables(SSOT 對齊 dnd-kit virtualized list canonical)。
+        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
         collisionDetection={dndCollisionDetection}
         // Column reorder 走水平,不適用 verticalAxis modifier;只 row drag 用
-        // **v15.7 ghost-cursor SSOT**:`snapToCursorModifier` 套進 row drag(ghost.top-left
-        // 永遠對齊 cursor click 位置,fix「ghost 飛到離 cursor 超遠」)。column drag activator
-        // = source(header)位置一致不需 modifier 即對齊,但加上去無害保 SSOT 一致性。
-        modifiers={dragType === 'column' ? [snapToCursorModifier] : [restrictToVerticalAxis, snapToCursorModifier]}
+        // **v15.8 revert v15.7 modifier**:snapToCursorModifier 把 transform 偏移 100+px,
+        // 但 dnd-kit `rectIntersection` collision detection 用 `active.rect` (含 transform)→
+        // active rect 跑掉 → over detection fails → indicator never set + onDragEnd over=null
+        // → reorder doesn't fire(VirtualScroll story 完全拖不動的 root cause)。
+        // Trade-off:回沒 modifier,ghost.left = source.left(可能離 cursor 100+px,visual gap),
+        // 但 collision + drop reorder 正常 work。Ghost-cursor 完美對齊需走 B-1 inline drag column
+        // (visual change +24px row width)— 待 user decision。
+        modifiers={dragType === 'column' ? [] : [restrictToVerticalAxis]}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragCancel={handleDragCancel}
