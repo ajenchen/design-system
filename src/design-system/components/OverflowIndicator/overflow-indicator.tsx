@@ -112,7 +112,23 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         <HoverCardTrigger asChild>
           {trigger}
         </HoverCardTrigger>
-        <HoverCardContent className="bg-tooltip rounded-lg" data-theme="dark">
+        <HoverCardContent
+          className="bg-tooltip rounded-lg"
+          data-theme="dark"
+          // **2026-05-07 v15.16 fix**:Tag dismiss inside this popup 點擊時,parent
+          // Radix layer(eg. Combobox SelectMenu / DropdownMenu)的
+          // `onPointerDownOutside` document-level listener 跨 portal 偵測「outside
+          // this layer」,導致父層被 close。preventDefault 阻止 Radix 偵測流程,
+          // 同時 click event 仍 fire(HTML spec:pointerdown.preventDefault 不阻
+          // 後續 click)→ Tag dismiss callback 正常觸發 + 父層維持開啟。
+          //
+          // **對齊 Ant Design Select multiSelect tagRender canonical**:dismiss
+          // tag 不關閉 dropdown(連續移除 UX)。
+          //
+          // SSOT propagation:此 fix 在 OverflowIndicator level → 所有 consumer
+          // (Combobox / DataTable / TreeView)自動受益。
+          onPointerDown={(e) => e.preventDefault()}
+        >
           <ShrinkWrapList>{children}</ShrinkWrapList>
         </HoverCardContent>
       </HoverCard>
