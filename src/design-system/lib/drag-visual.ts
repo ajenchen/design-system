@@ -30,6 +30,7 @@
  */
 
 import type * as React from 'react'
+import type { Modifier } from '@dnd-kit/core'
 
 // ── Source element styling(被拖中的 source row/column)─────────────────────
 
@@ -112,11 +113,44 @@ export const dragHandleCursor = 'cursor-grab' as const
 /** Draggable element 拖中時的 cursor(grabbing)*/
 export const dragActiveCursor = 'cursor-grabbing' as const
 /**
- * Combined drag handle cursor canonical:hover=grab + active(:active)=grabbing。
- * **必用字面量整字串**(不用 template literal concat),Tailwind JIT scanner 才會 pick up
- * `active:cursor-grabbing` 字面 generate CSS。Consumer 直接 cn(...)。
+ * Combined drag handle cursor canonical(2026-05-07 v15.7 user directive):
+ * **只 cursor-grab,不變 grabbing**。對齊 Material / Carbon / Polaris canonical —
+ * drag affordance 由 visible button 提供,cursor 變化反而干擾 indicator+ghost 視覺焦點。
+ * Consumer 直接 cn(...)。
  */
-export const dragHandleCursorClass = 'cursor-grab active:cursor-grabbing' as const
+export const dragHandleCursorClass = 'cursor-grab' as const
+
+// ── Modifier:Ghost 跟 cursor 維持初始相對位置 SSOT(v15.7 user directive) ─
+
+/**
+ * Ghost 跟 cursor 維持「cursor 在 ghost 點下時相對位置」SSOT(對齊 user directive
+ * 「ghost 和 cursor 要確保相對位置是合理的而且有 ssot」)。
+ *
+ * **Why need this**:dnd-kit DragOverlay 預設 ghost.top-left = source rect (`setNodeRef`)
+ * 的 top-left。當 source ≠ activator 位置不同(e.g. activator = portal'd Button 在
+ * table outer 邊緣;source = primary row 在 table 內 column region),cursor 點下
+ * activator → cursor 落在 source rect 的 negative offset → ghost 永遠相對 source rect
+ * 起算 → cursor 跟 ghost 起始就有大 offset(e.g. 100+ px),drag 期間維持錯位。
+ *
+ * **本 modifier**:把 (cursor.initial - source.left, cursor.initial - source.top)
+ * 加進 transform → ghost.top-left 永遠對齊 cursor 位置(cursor 在 ghost 左前角)。
+ * Consumer 套進 DndContext.modifiers array,所有 drag scenario 套用 = SSOT。
+ *
+ * **對齊世界級**:Linear / Notion / Jira / AG Grid 的 row drag ghost 都跟 cursor
+ * 維持初始相對位置(整列拖時 cursor 在 click 點;button 拖時 cursor 在 button 位置)—
+ * 這個 modifier 把「整列拖 + 整列 ghost」UX 在 button-only / 多 region 場景下也達到。
+ */
+export const snapToCursorModifier: Modifier = ({ transform, activatorEvent, draggingNodeRect }) => {
+  if (!activatorEvent || !draggingNodeRect) return transform
+  const ev = activatorEvent as PointerEvent | MouseEvent
+  const offsetX = ev.clientX - draggingNodeRect.left
+  const offsetY = ev.clientY - draggingNodeRect.top
+  return {
+    ...transform,
+    x: transform.x + offsetX,
+    y: transform.y + offsetY,
+  }
+}
 
 // ── Reorder noop helper(SSOT 對齊 row + column reorder canonical) ────────
 

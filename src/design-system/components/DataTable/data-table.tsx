@@ -22,7 +22,7 @@ import { ChevronDown, Calendar, Clock, ArrowUp, ArrowDown, ArrowUpDown, Filter a
 import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { cn } from '@/lib/utils'
-import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, isReorderNoop, reconstructFullRowGhost } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier } from '@/design-system/lib/drag-visual'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -621,7 +621,11 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
         transition: 'opacity 150ms ease',
       }}
       className={cn(
-        canDrag && !showInvalid && 'cursor-grab active:cursor-grabbing',
+        // **v15.7 cursor canonical**(對齊 user directive「拖動時 cursor 不要變 grabbing」):
+        // 只 hover 時 cursor-grab 提示「可拖」,drag 期間維持 cursor-grab 不變 grabbing
+        // (對齊 Material / Carbon / Polaris canonical:drag affordance 由 visible button 提供,
+        // cursor 變化反而干擾 indicator+ghost 視覺焦點)。
+        canDrag && !showInvalid && 'cursor-grab',
         canDrag && showInvalid && 'cursor-not-allowed !text-error !border-error',
       )}
       {...(canDrag ? ctx.handleListeners ?? {} : {})}
@@ -2128,7 +2132,10 @@ function DataTableInner<TData>(
         sensors={dndSensors}
         collisionDetection={dndCollisionDetection}
         // Column reorder 走水平,不適用 verticalAxis modifier;只 row drag 用
-        modifiers={dragType === 'column' ? [] : [restrictToVerticalAxis]}
+        // **v15.7 ghost-cursor SSOT**:`snapToCursorModifier` 套進 row drag(ghost.top-left
+        // 永遠對齊 cursor click 位置,fix「ghost 飛到離 cursor 超遠」)。column drag activator
+        // = source(header)位置一致不需 modifier 即對齊,但加上去無害保 SSOT 一致性。
+        modifiers={dragType === 'column' ? [snapToCursorModifier] : [restrictToVerticalAxis, snapToCursorModifier]}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragCancel={handleDragCancel}
