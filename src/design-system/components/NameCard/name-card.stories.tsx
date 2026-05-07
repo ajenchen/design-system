@@ -31,10 +31,7 @@ function NameCardHover({ name, src, subtitle }: { name: string; src: string; sub
             status="online"
             statusMessage="Out of Office: Back on Monday! For urgent matters please contact @Wei-Lun Cheng in the meantime."
             actions={<NameCardDefaultActions />}
-            fields={[
-              { label: 'ID', value: 'YHANAX' },
-              { label: 'Employee number', value: '1234567' },
-            ]}
+            defaultFieldValues={{ id: 'YHANAX', employeeNumber: '1234567' }}
             onViewMore={noop}
           />
         }

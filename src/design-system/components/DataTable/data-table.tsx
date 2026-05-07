@@ -855,7 +855,14 @@ function DataTableInner<TData>(
   // Fill-parent mode:height='100%' / '100vh' / 'fill' 等百分比 / 視口語義 → outer flex column + body flex-1 撐滿。
   // 固定 px/rem 仍維持 maxHeight cap 行為(資料少 = 內容高度,資料多 = 上限後 scroll)— 對齊既有 stories 預期。
   const isFillHeight = hasHeightConstraint && /^(100%|100vh|fill)$/.test(height)
-  const useVirtual = hasHeightConstraint && !isEmpty
+  // **Virtualization threshold(2026-05-07 v15.9 Bug G fix)**:小資料集 skip 虛擬化。
+  // Root cause:虛擬化器(TanStack Virtual)`getVirtualItems()` 在 scrollElement
+  // 還沒 mount(first render,centerBodyRef = null)時會返回空陣列 →「0 row → N row」
+  // 跨 frame transition,user 看到「table 從矮長高 + 資料慢慢露出」。≤ 30 rows
+  // direct render 完全 bypass 此 race,且小資料下虛擬化沒效益(浪費 reflow)。
+  // 對齊 AG Grid `suppressVirtualization` / TanStack Table virtualization-when-needed idiom。
+  const VIRTUAL_THRESHOLD = 30
+  const useVirtual = hasHeightConstraint && !isEmpty && rows.length > VIRTUAL_THRESHOLD
   const hasRowActions = !!rowActions
 
   // Refs

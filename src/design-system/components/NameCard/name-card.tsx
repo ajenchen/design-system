@@ -147,13 +147,38 @@ const NameCard = React.forwardRef<HTMLDivElement, NameCardProps>(
     // v11 always-render canonical:default fields 永遠 render(缺資料顯 placeholder),
     // consumer 自訂 fields 在 default 之後 append。Status section 也永遠 render(無 status
     // 顯「Status not set」placeholder),統一視覺結構。
+    //
+    // **Dedup canonical(2026-05-07 v15.8 fix Bug E)**:consumer 的 `fields` array 若含
+    // label 撞 default(eg. 「ID」「Employee number」),consumer 值 win — defaults 那一行
+    // 跳過(否則 same label 連 render 兩次,如 default placeholder `—` + consumer 真值)。
+    // 這是遷移期 forgiving 行為:DEV warn 提示應改用 `defaultFieldValues`,但 production
+    // 不破壞既有 consumer。對齊 React `key` 唯一性 + Linear / Slack profile card 一 label
+    // 一 row idiom。
     const allFields = React.useMemo(() => {
-      const defaults = NAMECARD_DEFAULT_FIELD_KEYS.map((key) => ({
-        label: DEFAULT_FIELD_LABEL[key],
-        value: defaultFieldValues?.[key] ?? FIELD_PLACEHOLDER,
-      }))
+      const consumerLabels = new Set((fields ?? []).map((f) => f.label))
+      const defaults = NAMECARD_DEFAULT_FIELD_KEYS
+        .map((key) => ({
+          label: DEFAULT_FIELD_LABEL[key],
+          value: defaultFieldValues?.[key] ?? FIELD_PLACEHOLDER,
+        }))
+        .filter((d) => !consumerLabels.has(d.label))
       return fields && fields.length > 0 ? [...defaults, ...fields] : defaults
     }, [defaultFieldValues, fields])
+
+    // Dev warn:consumer 透過 `fields` 傳 default key label(legacy pattern)→ 應改 `defaultFieldValues`
+    if (process.env.NODE_ENV !== 'production' && fields) {
+      const legacyEntry = fields.find((f) =>
+        Object.values(DEFAULT_FIELD_LABEL).includes(f.label as string),
+      )
+      if (legacyEntry) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[NameCard] "${name}":legacy pattern — fields[].label="${legacyEntry.label}" ` +
+          `is a default field. Migrate to defaultFieldValues={{ id, employeeNumber }} prop ` +
+          `to align with NAMECARD_DEFAULT_FIELD_KEYS canonical.`,
+        )
+      }
+    }
 
     // Dev mode warn:consumer 沒傳 default field 任何 key → 提示補完(避免漂移成 placeholder-only)
     if (process.env.NODE_ENV !== 'production' && !defaultFieldValues) {

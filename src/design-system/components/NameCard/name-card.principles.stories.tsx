@@ -61,10 +61,7 @@ function InlineHoverExample() {
           subtitle="Product Designer｜D-0042"
           status="online"
           actions={sampleActions}
-          fields={[
-            { label: 'ID', value: 'YHANAX' },
-            { label: 'Employee', value: '1234567' },
-          ]}
+          defaultFieldValues={{ id: 'YHANAX', employeeNumber: '1234567' }}
           onViewMore={() => {}}
         />
       </HoverCardContent>
@@ -144,10 +141,7 @@ export const TriggerContextRule: Story = {
             avatar={{ src: AVATAR_URL, alt: 'Alice' }}
             subtitle="Product Designer｜D-0042"
             status="online"
-            fields={[
-              { label: 'ID', value: 'YHANAX' },
-              { label: 'Employee', value: '1234567' },
-            ]}
+            defaultFieldValues={{ id: 'YHANAX', employeeNumber: '1234567' }}
           />
         </div>
         <Label>↑ 「關於作者」section：NameCard 直接嵌入頁面</Label>
@@ -177,10 +171,7 @@ export const FixedWidthRule: Story = {
               subtitle="Product Designer｜Design Systems Lead"
               status="busy"
               statusMessage="In back-to-back meetings until 4pm. Please DM for urgent matters."
-              fields={[
-                { label: 'ID', value: 'YHANAX' },
-                { label: 'Employee', value: '1234567' },
-              ]}
+              defaultFieldValues={{ id: 'YHANAX', employeeNumber: '1234567' }}
               onViewMore={() => {}}
             />
           </div>
