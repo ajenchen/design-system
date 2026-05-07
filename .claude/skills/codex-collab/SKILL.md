@@ -193,41 +193,36 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
    - **重啟**(兩邊都不對 → 重新做)
 3. 列 final 方案,不再列 A/B/C 給 user 拍 unless 真歧義
 
-**強制 format**(每次 reply 都用):
-
-```
-## Step 4 self-check
-| 檢查 | 結果 | 理由 |
-| M22 cite | ✅/❌ | ... |
-| M23 DS-first | ... | ... |
-| M27 namespace | ... | ... |
-| M8 ≥3 | ... | ... |
-
-## Step 4.5 codex claim verification(逐條 grep + WebFetch + run script)
-| Codex claim | Verify 動作 | 結果 |
-| 「X is anti-pattern」 | `grep -rn "X"` 找 N 處 | ✅/❌ |
-| 「target should be N」 | 跑 analysis script 核對 reachable | ✅/❌ |
-| 「cite source Y」 | WebFetch URL | ✅/❌ |
-
-## Step 5 我的 synthesized recommendation
-**接受**:codex 哪幾條建議(verified ✅)
-**拒絕**:codex 哪幾條建議(verified ❌ + 理由)
-**修正**:codex 哪幾條建議在我的 verify 後 scope 不同(eg. codex「-12 hooks」我「-5 hooks」)
-**Final action plan**:具體實作步驟(不只「採用 B 案」這種高層敘述)
-**等你拍**:只在真有歧義或 user-side decision(eg. revert vs forward-fix)時才列 options
-```
-
-**Example好例**(本 SKILL.md 寫完後 user 應看到的格式):
-
-```
-Step 4: M22 ❌(codex 沒給 URL)/ 其他 ✅
-Step 4.5: codex「7 anti-bloat 機制重疊」→ grep 後 FALSE(各 lifecycle 點 distinct,SKILL desc 自己寫 complementary)
-Step 5: 拒絕「7 機制重疊」claim;接受「6 stop hooks 該合併」(verified distinct purpose 但同 event 可序列);修正 codex「-12 hooks」為「-5 hooks」(只合併 stop)
-```
+**強制 format**(每次 reply):3 段 Step 4 self-check(M22/M23/M27/M8 ✅/❌)+ Step 4.5 codex claim verification 表(claim / verify 動作 / 結果)+ Step 5 接受/拒絕/修正 + final action plan(只真歧義才列 options)。歷史錨例:codex「7 anti-bloat 機制重疊」→ grep FALSE → 拒絕該 claim;接受「6 stop hooks 合併」修正 codex「-12 hooks」為「-5 hooks」。
 
 ### Step 6:User approve → Claude 實作
 
 由我(非 codex)實作,跑完整 stop hook (`stop_meta_self_audit.sh`)+ M14 5-layer pipeline。
+
+**Joint test case planning(D-class architectural change 必走,2026-05-07 user 拍板)**:
+
+當實作屬「architectural change 加新 primitive / 動 layer 系統 / 動 SSOT owner」(eg. P1 D 路徑 `<CellInteractiveOverlay>`),Step 6 升級成 **dual-track 實作** + **joint test case planning**:
+
+> 「到時候要做的時候你跟 codex 一起協作實作,然後兩者同時一起列 test case 確保所有情境都能被驗證無誤」
+
+**強制流程**:
+1. **Implementation dual-track**:Claude 寫 v1 + codex 寫 v1 → 比稿 final
+2. **Test case 同時列**(joint planning,**非依序**):
+   - Claude 列 Q1-QN test scenarios
+   - Codex 列 Q1-QN test scenarios(獨立)
+   - 比稿合併 → final test plan(union — 防漏單邊)
+3. **Min coverage 框架**(per architectural change scope):
+   - 4 大 stories regression(virtual / autoRow / inline / pinned)若觸 DataTable
+   - State combinations(size × mode × pinned 狀態)
+   - Visual pixel-level Playwright probe
+   - Hit test(pointer-events 不破 click chain)
+   - Z-index / portal context(DragOverlay / HoverCard popup 不破)
+
+**禁止**:
+- ❌ 只 Claude 列 test case(防漏)
+- ❌ 只 codex 列 test case(防 codex bias)
+- ❌ 依序列 test(必須兩邊獨立 → 比稿 union)
+- ❌ skip joint planning 直接 implement(architectural change 規模需要 test case 全 coverage)
 
 ### Step 7:Implementation 完 → 回 codex 結案
 
@@ -244,21 +239,8 @@ PR comment:`@codex 結論已 land at <commit>. 感謝 review.`
 - 跳過 Step 4 自檢直接送 user codex 原文
 - 把 codex reply 當 ground truth(我仍是 gatekeeper)
 
-**Self-improvement(M20)**:每跑完一輪 codex-collab,若 codex 抓出我漏的 M-rule violation → 該 rule 沒落地好,加進 `.claude/memory/codex-caught-violations.md`(L6 home),讓下次 prune 升級成 hook。
+**Self-improvement(M20)**:codex 抓出我漏的 M-rule violation → 加 `.claude/memory/codex-caught-violations.md`,下次 prune 升 hook。
 
----
+## Deep Audit 整合 + Cross-session persistence
 
-## Deep Audit 整合
-
-`/design-system-audit --deep` Phase 4.5 自動 invoke 本 skill:
-- Brief 內容:「請 review 本次 audit Phase 1-4 findings,有遺漏的 systemic issue 嗎?」
-- Codex reply 進 Phase 5 報告
-- 對齊 M14:不靠 user 催,deep audit 自動 chain
-
----
-
-## Cross-session persistence
-
-新 session 開啟,只要 user 說「跟 codex 討論」→ 我必查本 SKILL.md → 按 Step 0-7 走。本 SSOT 是 single source of truth,**禁止憑記憶簡化流程**。
-
-CLAUDE.md「任務導航表」已 anchor「**跟 codex 討論 / 多輪震盪**」row → 本 SKILL.md。
+`/design-system-audit --deep` Phase 4.5 自動 invoke 本 skill(brief「review Phase 1-4 findings,有 systemic issue 嗎?」→ Codex reply 進 Phase 5,M14 chain)。新 session user 說「跟 codex 討論」→ 必查本 SKILL.md 按 Step 0-7 走;CLAUDE.md 任務導航表已 anchor;**禁憑記憶簡化流程**。

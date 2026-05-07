@@ -407,7 +407,7 @@ User 需求「Field 邊框跟 grid 無縫接軌」(4 邊都 1px 不雙線)→ Fi
 | **L1 Slot** | `patterns/element-anatomy/item-anatomy.tsx` | `<ItemPrefix>` / `<ItemSuffix>`(永遠 `h-[1lh]` 對齊第 1 行) |
 | **L2 Align** | `field-wrapper.tsx` `nakedCellRowModeAlign` | host cell `data-row-mode` propagate(autoRow→items-start / fixed→items-center)|
 | **L3 State machine** | **繼承 Field default v13.3**(↑ 上方 SSOT)| 不重定義 |
-| **L4 Display hover** | `field-wrapper.tsx` `nakedCellEditableDisplayHover` | editable cell display mode `outline-1 outline-offset-[-1px] outline-[var(--border-hover)]`(cell wrapper outline,數學位置同 edit mode Field border at cell-edge - 1px;v15.12 revert v15.10 SSOT 嘗試,wrap path selector 失敗)|
+| **L4 Display hover** | `field-wrapper.tsx` `nakedCellEditableDisplayHover` | editable cell display mode `outline-1 outline-offset-[-1px] outline-[var(--border-hover)]`(cell wrapper outline)。**Invariant(2026-05-07 user-accepted)**:hover ring 跟 edit mode Field border 在 right edge 差 **1px**(因 cell `border-r border-divider` 1px 讓 cell.outer 比 Field 寬;divider-owner / editor-owner 分離為 enterprise canonical pattern,對齊 AG Grid 分層 theme idiom)。Future D 路徑改 `<CellInteractiveOverlay>` primitive 達 pixel-perfect 對齊 → 詳 `.claude/memory/project_cell_interactive_overlay_plan.md` |
 | **L5 Position(v12)** | naked compoundVariant inline | `!absolute -top-px -left-px -right-px -bottom-px !h-auto !w-auto`(seamless grid)|
 
 **前身 retire**:v4-v8 `outline-2` 平行 state(已下沉 L3)/ v9 border-only(focus 跟 open specificity tie)/ per-control `open && 'border-primary'`(v13.3 retire)/ `nakedCell{Hover,Focus,Open}Ring` 三 const / `nakedCell{Prefix,Suffix}Slot`(下沉 L1)。
