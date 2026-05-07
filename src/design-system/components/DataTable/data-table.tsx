@@ -950,6 +950,7 @@ function DataTableInner<TData>(
           autoRowHeight={autoRowHeight}
           isEditable={editable}
           onCommit={(next) => commitCell(rowId, colId, next)}
+          onCommitLive={(next) => onCellCommit?.(rowId, colId, next)}
           onCancel={exitEdit}
           onRequestEdit={() => setEditingCellId(cellEditId(rowId, colId))}
         />

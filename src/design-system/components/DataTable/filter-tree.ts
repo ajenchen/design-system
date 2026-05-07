@@ -188,6 +188,18 @@ function evaluateCondition(cond: FilterCondition, row: any): boolean {
   return matchOperator(cond.op, cellValue, cond.value)
 }
 
+// PersonValue identity helper(2026-05-07):
+// person/multiPerson cell value 是 `{ name, avatarUrl?, description? }` 物件 — 比對時用 `name`
+// 當 stable id(PeoplePicker SSOT 沒有 id field,name 是唯一身分標識)。對齊 Notion / Linear /
+// Asana 的 person filter 比對 idiom(都用 name/email 當 id)。
+function personId(v: unknown): string {
+  if (v && typeof v === 'object' && 'name' in v) return String((v as { name: unknown }).name ?? '')
+  return String(v ?? '')
+}
+function isPersonObject(v: unknown): v is { name: string } {
+  return !!v && typeof v === 'object' && 'name' in v
+}
+
 function matchOperator(op: string, cellValue: unknown, filterValue: unknown): boolean {
   // 不需 value 的 op
   switch (op) {
@@ -200,6 +212,23 @@ function matchOperator(op: string, cellValue: unknown, filterValue: unknown): bo
   // 需 value 但 value 空 → 視為 incomplete,pass-through
   if (filterValue === null || filterValue === undefined || filterValue === '') return true
   if (Array.isArray(filterValue) && filterValue.length === 0) return true
+
+  // Person-aware specialization(person_single / person_multi)— 物件透過 name 比對。
+  // 偵測:cellValue 或 filterValue 任一是 Person object(或包 Person 的陣列)→ 走 personId path。
+  const cellIsPerson = isPersonObject(cellValue) || (Array.isArray(cellValue) && cellValue.some(isPersonObject))
+  const filterIsPerson = isPersonObject(filterValue) || (Array.isArray(filterValue) && filterValue.some(isPersonObject))
+  if (cellIsPerson || filterIsPerson) {
+    const cellIds = Array.isArray(cellValue) ? cellValue.map(personId) : [personId(cellValue)]
+    const filterIds = Array.isArray(filterValue) ? filterValue.map(personId) : [personId(filterValue)]
+    switch (op) {
+      case 'is':         return cellIds.length === 1 && filterIds.length >= 1 && filterIds.includes(cellIds[0])
+      case 'is_not':     return !(cellIds.length === 1 && filterIds.length >= 1 && filterIds.includes(cellIds[0]))
+      case 'has_any_of': return cellIds.some((c) => filterIds.includes(c))
+      case 'has_all_of': return filterIds.every((f) => cellIds.includes(f))
+      case 'has_none_of':return !cellIds.some((c) => filterIds.includes(c))
+      default:           return true
+    }
+  }
 
   switch (op) {
     case 'contains':         return String(cellValue ?? '').toLowerCase().includes(String(filterValue).toLowerCase())

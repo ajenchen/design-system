@@ -10,6 +10,8 @@ import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { Input } from '@/design-system/components/Input/input'
 import { NumberInput } from '@/design-system/components/NumberInput/number-input'
 import { DatePicker, DatePickerRange } from '@/design-system/components/DatePicker/date-picker'
+import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
+import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
 import { SurfaceHeader, SurfaceBody } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
@@ -77,6 +79,8 @@ interface FilterColumn {
   label: string
   type: ColumnType
   options?: Array<{ value: string; label: string }>
+  /** People pool for person/multiPerson filter picker(對齊 cell-registry meta.people SSOT)*/
+  people?: Array<{ name: string; avatarUrl?: string; description?: string }>
   includeTime?: boolean
 }
 
@@ -94,6 +98,7 @@ function extractColumns<TData>(columns: ColumnDef<TData, any>[]): FilterColumn[]
       label: getColumnLabel(col, id),
       type,
       options: meta?.options,
+      people: meta?.people,
       includeTime: meta?.includeTime,
     })
   }
@@ -151,6 +156,8 @@ interface FilterValuePickerColInfo {
   id: string
   label: string
   options?: Array<{ value: string; label: string }>
+  /** Person pool — person/multiPerson filter picker 用(2026-05-07 升級,SSOT 對齊 cell-registry) */
+  people?: Array<{ name: string; avatarUrl?: string; description?: string }>
 }
 
 interface FilterValuePickerProps {
@@ -315,21 +322,36 @@ function FilterValuePicker({
         />
       )
 
-    // person_* — v1 fallback Input 文字。後續若需 PeoplePicker `pickerMode` variant
-    // 再升級。目前 multi-select 用 Combobox 是 Notion / Asana / ClickUp 通行 idiom。
-    case 'person_single':
-    case 'person_multi':
+    // person_single / person_multi — 走 PeoplePicker(2026-05-07 升級,對齊 cell-registry SSOT)。
+    // colInfo.people 來自 column meta.people。Filter value:
+    //   - person_single:存 PersonValue | null(picker emit array,我們取 [0])
+    //   - person_multi:存 PersonValue[]
+    case 'person_single': {
+      const v = value as PersonValue | null | undefined
       return (
-        <Input
+        <PeoplePicker
           size="sm"
-          value={typeof value === 'string' ? value : ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="(person picker 預留)"
+          value={v ?? null}
+          people={colInfo?.people ?? []}
+          onChange={(next) => onChange(next[0] ?? null)}
           aria-label={ariaLabel}
           className={className}
         />
       )
-
+    }
+    case 'person_multi': {
+      const v = Array.isArray(value) ? (value as PersonValue[]) : []
+      return (
+        <PeoplePicker
+          size="sm"
+          value={v}
+          people={colInfo?.people ?? []}
+          onChange={(next) => onChange(next)}
+          aria-label={ariaLabel}
+          className={className}
+        />
+      )
+    }
     default:
       return null
   }

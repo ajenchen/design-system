@@ -47,8 +47,13 @@ export interface CellComponentProps {
   autoRowHeight: boolean
   /** 該 cell 是否可編。replaces 舊 `meta._editable` 私有 flag(Phase C M1 hack 移除)。 */
   isEditable?: boolean
-  /** Cell 進 edit mode → 提交新值(blur / Enter / option select 都觸發)。 */
+  /** Cell 進 edit mode → 提交新值(blur / Enter / option select 都觸發)— 提交後**自動 exit edit**。
+   *  適用 single-shot commit:string / number / select(single)/ person(single)/ date / time / boolean / url。 */
   onCommit?: (next: unknown) => void
+  /** Live commit — 提交新值但 **不 exit edit**(popover 持續開)。
+   *  適用 multi-select 類:multiSelect / multiPerson — user 連續勾選,直到點外面才關。
+   *  對齊 Notion / Linear / Airtable canonical:multi-pick popover 不在每次 toggle 後關閉。 */
+  onCommitLive?: (next: unknown) => void
   /** Esc 取消編輯,不 commit。 */
   onCancel?: () => void
   /** URL cell 專用:hover 顯示的 Pencil 鈕 → 進 edit mode(read mode 保留 link click 語意)。 */
@@ -279,7 +284,7 @@ function SelectCell({ value, meta, mode, size, onCommit, onCancel }: CellCompone
   )
 }
 
-function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel }: CellComponentProps) {
+function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommitLive, onCancel }: CellComponentProps) {
   const wrap = autoRowHeight && meta?.wrap === true
   if (mode === 'display') {
     return (
@@ -294,6 +299,8 @@ function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommit, onC
       />
     )
   }
+  // Multi 用 onCommitLive(commit 但不 exit edit)— 每勾一項即時生效,popover 持續開
+  // 直到點外面;onOpenChange(false) → onCancel exit edit。對齊 Notion / Linear / Airtable canonical。
   return (
     <Combobox
       key="edit"
@@ -301,7 +308,7 @@ function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommit, onC
       size={sizeForInput(size)}
       options={meta?.options ?? []}
       value={Array.isArray(value) ? (value as string[]) : []}
-      onChange={(v) => onCommit?.(v)}
+      onChange={(v) => onCommitLive?.(v)}
       defaultOpen
       onOpenChange={dismissOnClose(onCancel)}
     />
@@ -328,10 +335,12 @@ function PersonCell({ value, mode, size, onCommit, onCancel, meta }: CellCompone
   )
 }
 
-function MultiPersonCell({ value, mode, size, onCommit, onCancel, meta }: CellComponentProps) {
+function MultiPersonCell({ value, mode, size, onCommitLive, onCancel, meta }: CellComponentProps) {
   if (mode === 'display') {
     return <PeoplePicker key="display" variant="naked" mode="display" value={(value as PersonValue[]) ?? []} size={size} />
   }
+  // Multi 用 onCommitLive(commit 但不 exit edit)— 每勾一人即時生效,popover 持續開
+  // 直到點外面;onOpenChange(false) → onCancel exit edit。對齊 multiSelect canonical。
   return (
     <PeoplePicker
       key="edit"
@@ -339,7 +348,7 @@ function MultiPersonCell({ value, mode, size, onCommit, onCancel, meta }: CellCo
       size={sizeForInput(size)}
       value={Array.isArray(value) ? (value as PersonValue[]) : []}
       people={meta?.people ?? []}
-      onChange={(next) => onCommit?.(next)}
+      onChange={(next) => onCommitLive?.(next)}
       defaultOpen
       onOpenChange={dismissOnClose(onCancel)}
     />
