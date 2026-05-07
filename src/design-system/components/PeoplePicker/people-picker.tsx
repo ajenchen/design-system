@@ -44,7 +44,11 @@ function findPerson(people: PersonValue[], name: string): PersonValue {
 //         `pillShowAvatar` 控 pill 內是否顯 avatar prefix(default true,false → 純文字 pill)。
 //         對齊 GitHub Reviewers / Combobox tag-input idiom。
 
-export interface PeoplePickerProps {
+// **codex P2 fix(2026-05-07 v15.10)**:`extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'>`
+// 讓 consumer 可傳 `id` / `data-testid` / `onBlur` / `onFocus` / `aria-*` 等 HTML root props,
+// component 內部 `...rest` forward 到 trigger 容器(對齊 DS 既有 Combobox / Select 慣例)。
+// `onChange` 衝突走 Omit(本 component 用 PersonValue[] custom signature)。
+export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
   /** Field mode(edit / display / readonly / disabled),默認 inherit Field context 或 'edit' */
   mode?: FieldMode
   /** Field chrome variant(對齊 Select / Combobox)*/
@@ -100,6 +104,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   pillShowAvatar = true,
   pillWrap = true,
   'aria-label': ariaLabel,
+  ...rest
 }, ref) {
   const fieldCtx = useFieldContext()
   const mode: FieldMode = modeProp ?? fieldCtx?.mode ?? 'edit'
@@ -125,6 +130,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, size }), className)}
         data-field-mode={resolvedMode}
         aria-label={ariaLabel}
+        {...rest}
       >
         <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign, resolvedMode === 'disabled' && 'text-fg-disabled')}>
           {isEmpty
@@ -162,6 +168,11 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         className={className}
         aria-label={ariaLabel}
         selectedItemRenderer={(opt) => <PersonDisplay value={findPerson(people, opt.value)} size={size} />}
+        // **codex P2 forward**:Select extends `SelectHTMLAttributes<HTMLSelectElement>`,
+        // event handler element 型別跟 PeoplePicker `HTMLAttributes<HTMLDivElement>` 不一致
+        // (`onCopy` / `onChange` 等)。Runtime spread 等效 — DOM 收到 attrs 不挑剔。
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        {...(rest as any)}
       />
     )
   }
@@ -187,6 +198,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         onOpenChange={onOpenChange}
         className={className}
         aria-label={ariaLabel}
+        // codex P2 forward(see Select branch comment for type-cast rationale)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        {...(rest as any)}
         // **Tag SSOT canonical**:用 `avatar` prop(不塞 children),Tag 內部統一
         // wrap 進 16×16 圓形 mask container(per Tag tsx line 175)。
         tagRenderer={(item, onRemove) => {
@@ -237,6 +251,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         className,
       )}
       data-field-mode="edit"
+      {...rest}
     >
       <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign)}>
         {isEmpty

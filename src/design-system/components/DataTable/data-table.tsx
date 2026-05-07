@@ -28,7 +28,6 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { ItemInlineActionButton, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
 import { resolveCellComponent } from './cell-registry'
-import { nakedCellEditableDisplayHover } from '@/design-system/components/Field/field-wrapper'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
@@ -378,24 +377,28 @@ function SourceRowProvider({
   }, [draggable.setNodeRef, droppable.setNodeRef])
   const isDragging = draggable.isDragging
   const style: React.CSSProperties = { ...dragSourceStyle(isDragging) }
-  // a11y:strip `role` from dnd-kit attributes(否則 row div 的 role="row" 被覆蓋成 role="button")
-  const rawAttrs = draggable.attributes as unknown as Record<string, unknown>
-  const { role: _ignored, ...rowAttrs } = rawAttrs
+  // a11y(2026-05-07 v15.10 codex P1 fix):button-only drag mode 下,row 本身不該成為
+  // keyboard tab stop。dnd-kit `useDraggable.attributes` 含 `role="button" tabIndex=0
+  // aria-roledescription="..."` 全給 activator 用,套到 row div 會讓每筆 row tabbable
+  // (large table 累積上百 inert focus stops,grid navigation 體驗壞)。
+  // **拆分**:rowAttributes 留空(row 是 passive container)/ handleAttributes 全給
+  // RowDragHandle Button(它是真 activator,Button 自帶 role/tabIndex 完全相容)。
+  const handleAttrs = draggable.attributes as unknown as Record<string, unknown>
   const ctxValue: SortableRowCtxValue = {
     setNodeRef: setRefs,
     role,
     style,
-    attributes: rowAttrs,
+    attributes: {},
     isDragging,
     // row 不接 listeners(button-only),baseRowDiv `{...(extra?.listeners ?? {})}` 自動 noop
     rowListeners: undefined,
-    rowAttributes: rowAttrs,
+    rowAttributes: {},
     // Button activator + listener:portal'd RowDragHandle Button 走這條 ctx,
     // user 從任何 region 看見 button → 點下啟動 drag,activator rect = button DOM(24×24),
     // ghost 起點 = button 位置(table outer 左 12px),cursor 在 ghost 左前段(自然視覺)。
     handleSetActivatorNodeRef: draggable.setActivatorNodeRef,
     handleListeners: draggable.listeners as unknown as Record<string, unknown> | undefined,
-    handleAttributes: rowAttrs,
+    handleAttributes: handleAttrs,
     invalidDrop,
   }
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
@@ -1210,6 +1213,10 @@ function DataTableInner<TData>(
         // Field API 不變;每個 mode 內 display↔edit 同 alignment(同 Field, 同 group → 同 items)。
         data-row-mode={autoRowHeight ? 'auto' : 'fixed'}
         data-column-id={cell.column.id}
+        // v15.10 Bug F fix:editable 屬性由 cell wrapper 標記,Field naked display
+        // 用 `group-data-[editable]/cell:hover:border-border-hover` 變色 — ring 範圍
+        // 跟 edit mode focus border 同 DOM 同 box,切 mode 不再 sub-pixel mismatch。
+        data-editable={onEditableCellClick ? '' : undefined}
         className={cn(
           // Cell box(2026-05-05 v6 — A4 canonical: Field frame seamlessly replaces cell border):
           //   - `self-stretch`: cell 永遠填 row 高
@@ -1230,12 +1237,18 @@ function DataTableInner<TData>(
           // (user 確認 cell 右邊 border 不必移除)。
           inlineEdit && !isLastInRow && 'border-r border-divider',
           indicator && 'gap-2',
-          onEditableCellClick && ['cursor-pointer', nakedCellEditableDisplayHover],  // editable cell display hover affordance(對齊 Notion / Airtable hover-cell-shows-border canonical)
+          // **v15.10 Bug F fix**:editable cell hover ring 從 cell wrapper outline 搬到
+          // Field naked display border(field-wrapper.tsx)— display + edit 兩 mode 都
+          // 走 Field border 同 DOM 同機制,ring 範圍 sub-pixel 一致。Cell 只剩 cursor。
+          onEditableCellClick && 'cursor-pointer',
           isEditingThisCell && 'z-10',
         )}
         style={{
           ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id) }),
-          ...(isEditingThisCell ? {} : cellPadding),
+          // **v15.10 Bug F fix**:editable cell 永遠 padding=0(原本只在 edit mode 設 0,
+          // display mode 套 cellPadding)。Field 接管 padding 渲染,cell 不重複。
+          // Non-editable cell 保留 cellPadding。
+          ...(onEditableCellClick || isEditingThisCell ? {} : cellPadding),
         }}
         onClick={onEditableCellClick}
       >
