@@ -7,7 +7,9 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const OUT = join(__dirname, '..', '.claude/snapshots/people-picker-baseline')
+// .claude/snapshots-baseline/ 是 COMMITTED baseline path(對齊 visual-audit canonical
+// — `snapshots/` 路徑被 gitignore line 35 吃掉,`snapshots-baseline/` 不 match)
+const OUT = join(__dirname, '..', '.claude/snapshots-baseline/people-picker')
 mkdirSync(OUT, { recursive: true })
 
 const STORIES = [
