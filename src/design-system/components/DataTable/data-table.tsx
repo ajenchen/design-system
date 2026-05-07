@@ -17,9 +17,10 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { ChevronDown, Calendar, Clock, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, EyeOff, X as XIcon, GripVertical } from 'lucide-react'
-import { DndContext, DragOverlay, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
-import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import { CSS as DndCSS } from '@dnd-kit/utilities'
+// **v15.0 Path B**(對齊 user 「source 留原位 / indicator 為 drop preview / 不 auto-shift」directive):
+// 砍 useSortable + SortableContext 用 useDraggable + useDroppable 分離 hooks(對齊 DS 內 TreeView SSOT)。
+import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { cn } from '@/lib/utils'
 import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor } from '@/design-system/lib/drag-visual'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
@@ -339,38 +340,35 @@ function SortableRowProvider({
   invalidDrop: boolean
   children: (ctx: SortableRowCtxValue) => React.ReactNode
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled })
-  // **2026-05-06 v14.11 dnd-kit canonical revert**:
-  // 撤回 v14.9 的 `transform: 'none'` — 該 fix 破壞 dnd-kit DragOverlay 跟 useSortable 的
-  // coordinate system,導致 ghost 跟 cursor 位置脫節 + 其他 rows shift 動畫亂跳。
-  //
-  // dnd-kit canonical with `useSortable + SortableContext + DragOverlay`:
-  //   - useSortable transform 給每 item(source + others)讓他們視覺 reorder
-  //   - DragOverlay 顯 ghost(clean clone)follow cursor
-  //   - 我們的 dragSourceStyle = `opacity-disabled` 半透 source(45%)
-  //
-  // **目前限制**(=dnd-kit + useSortable 內建 visual):drag 時 source 跟其他 rows 視覺
-  // shift,反映 drop 位置。**這跟 Jira「source 完全留原位」 pattern 有差**(Jira 用
-  // Atlassian Pragmatic 不是 dnd-kit;Pragmatic 不做 sortable list visual shift)。
-  //
-  // 真要 Jira 風 source-stays-still:架構要改 useDraggable + useDroppable(放棄 sortable
-  // 自動 shift,自管 drop indicator),deferred 為 future Phase。本 commit 對齊 dnd-kit
-  // 基礎 canonical(對齊 shadcn community impls + Notion / Linear)。
+  // **2026-05-06 v15.0 Path B refactor — useDraggable + useDroppable(對齊 TreeView SSOT)**:
+  // user 明確 directive:source 留原位 + indicator 為 drop preview,兩者 separate purpose,
+  // 不要 dnd-kit useSortable 的 auto-shift visual reorder。
+  // - **棄 useSortable + SortableContext**(會 auto-shift 預覽 drop 位置)
+  // - **改 useDraggable + useDroppable 分離 hooks**(對齊 TreeView 已用此 pattern)
+  // - 同 ID 共享 OK(dnd-kit 內部 draggable / droppable store 分離)
+  // - combine refs via setNodeRef wrapper(同 TreeView pattern)
+  // - source dragSourceStyle = `opacity-disabled` 半透,DOM 留原位(無 transform)
+  // - DragOverlay 顯 ghost 跟 cursor(canonical)
+  // - drop indicator 自管(我們已有 dropIndicatorRow SSOT)
+  const draggable = useDraggable({ id, disabled, data: { type: 'row' } })
+  const droppable = useDroppable({ id, disabled, data: { type: 'row' } })
+  const setRefs = React.useCallback((el: HTMLElement | null) => {
+    draggable.setNodeRef(el)
+    droppable.setNodeRef(el)
+  }, [draggable.setNodeRef, droppable.setNodeRef])
+  const isDragging = draggable.isDragging
   const style: React.CSSProperties = {
-    transform: DndCSS.Transform.toString(transform),
-    transition,
     ...dragSourceStyle(isDragging),
-    zIndex: isDragging ? 1 : undefined,
     position: 'relative',
   }
   const ctxValue: SortableRowCtxValue = {
-    setNodeRef,
+    setNodeRef: setRefs,
     role,
     style,
-    attributes: attributes as unknown as Record<string, unknown>,
+    attributes: draggable.attributes as unknown as Record<string, unknown>,
     isDragging,
-    handleListeners: role === 'primary' ? (listeners as unknown as Record<string, unknown> | undefined) : undefined,
-    handleAttributes: attributes as unknown as Record<string, unknown>,
+    handleListeners: role === 'primary' ? (draggable.listeners as unknown as Record<string, unknown> | undefined) : undefined,
+    handleAttributes: draggable.attributes as unknown as Record<string, unknown>,
     invalidDrop,
   }
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
@@ -405,38 +403,34 @@ function DraggableHeaderCell({
   dropIndicatorSide: 'before' | 'after' | null
   children: React.ReactElement
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id,
-    disabled,
-    data: { type: 'column', columnId: id },
-  })
-  // 2026-05-06 v14.11 dnd-kit canonical revert(同 SortableRowProvider rationale):
-  // 撤回 v14.9 `transform: 'none'` — 破壞 DragOverlay coordinate system。useSortable
-  // transform 該套就套,只在 source 套 opacity-disabled 半透即可。
+  // **v15.0 Path B refactor**(對齊 TreeView SSOT):分離 useDraggable + useDroppable,不 auto-shift
+  const draggable = useDraggable({ id, disabled, data: { type: 'column', columnId: id } })
+  const droppable = useDroppable({ id, disabled, data: { type: 'column', columnId: id } })
+  const setRefs = React.useCallback((el: HTMLElement | null) => {
+    draggable.setNodeRef(el)
+    droppable.setNodeRef(el)
+  }, [draggable.setNodeRef, droppable.setNodeRef])
+  const isDragging = draggable.isDragging
   const dragStyle: React.CSSProperties = {
-    transform: DndCSS.Transform.toString(transform),
-    transition,
     ...dragSourceStyle(isDragging),
   }
   // cloneElement 注入 — 不額外加 wrapper div(避免破壞 flex / column width 計算)
   const childProps = (children as React.ReactElement<{ style?: React.CSSProperties; className?: string; role?: string }>).props
-  // useSortable.attributes 含 `role="button"` + `tabIndex` 等 — 全部 spread 會蓋掉 header 原 `role="columnheader"`
+  // useDraggable.attributes 含 `role="button"` + `tabIndex` 等 — 全部 spread 會蓋掉 header 原 `role="columnheader"`
   // (a11y 必保 columnheader 語意)。strip role + 保留 aria-* / tabIndex / aria-roledescription:
-  const { role: _sortableRole, ...sortableAttrs } = attributes as unknown as Record<string, unknown>
-  // Drop indicator(2026-05-06 v14.5 SSOT 對齊 TreeView):2px primary line via pseudo-element
-  // (cloneElement 不能加 child → 用 before:/after: variant,視覺等同 absolute div 但不需 child)。
-  // SSOT consume `dropIndicatorColumn.pseudoBefore/After` from drag-visual.ts。
+  const { role: _draggableRole, ...draggableAttrs } = draggable.attributes as unknown as Record<string, unknown>
+  // Drop indicator(SSOT 對齊 TreeView):2px primary line via pseudo-element
   const indicatorClass = dropIndicatorSide === 'before'
     ? dropIndicatorColumn.pseudoBefore
     : dropIndicatorSide === 'after'
     ? dropIndicatorColumn.pseudoAfter
     : ''
   return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
-    ref: setNodeRef,
+    ref: setRefs,
     style: { ...(childProps.style ?? {}), ...dragStyle },
     'data-column-id': id,
     'data-column-locked': isLocked || undefined,
-    ...(disabled ? {} : { ...sortableAttrs, ...listeners }),
+    ...(disabled ? {} : { ...draggableAttrs, ...(draggable.listeners as unknown as Record<string, unknown>) }),
     // 2026-05-06 v14.9 cursor canonical(對齊 Notion / Jira):
     // **idle hover NOT 顯 cursor-grab** — header click 觸發 sort,grab cursor 會誤導 user 以為「點 = 拖」;
     // **drag activation 後**(isDragging=true,過 8px activationConstraint)才顯 cursor-grabbing。
@@ -2024,14 +2018,9 @@ function DataTableInner<TData>(
         onDragCancel={handleDragCancel}
         onDragEnd={handleDragEnd}
       >
-        {/* 兩個 SortableContext 並列(非 nested):dnd-kit 允許單 DnDContext 內多 SortableContext,
-            useSortable 透過 enclosing context 找 items。Row drag = vertical strategy / column reorder
-            = horizontal strategy。Active item 透過 data.type 區分。 */}
-        <SortableContext items={enableColumnReorder ? reorderableColumnIds : []} strategy={horizontalListSortingStrategy}>
-          <SortableContext items={enableRowDrag ? allRowIds : []} strategy={verticalListSortingStrategy}>
-            {node}
-          </SortableContext>
-        </SortableContext>
+        {/* v15.0 Path B:無 SortableContext(useDraggable + useDroppable 各自獨立,不需 sort context)。
+            無 auto-shift visual reorder — source 留原位,indicator 顯 drop preview。 */}
+        {node}
         {/* DragOverlay portal — row 跟 column 都用同一個 overlay state(dragOverlayHtml /
             dragOverlayWidth),onDragStart 依 type 截不同 source DOM 寫入 state。 */}
         <DragOverlay dropAnimation={null}>
