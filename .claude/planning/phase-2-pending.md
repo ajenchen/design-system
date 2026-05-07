@@ -1,6 +1,19 @@
 # Phase 2 Planning Docs(2026-05-06 v15.0+)
 
-3 個 deferred 任務的完整 plan,任一 session 任一時間都能無痛接軌。每條都有:context / current state / scope / impl steps / verify criteria / where to start。
+本 doc 收 v15.0 後 deferred 任務。**任一 session 任一時間都能無痛接軌**。每條都有:context / current state / scope / impl steps / verify criteria / where to start。
+
+## Cross-reference:Planning dir 全貌
+
+本 doc 是 v15.0+ 系列的子集。Planning dir 還有其他長線未開工 plans:
+
+| Plan | 狀態 | Trigger |
+|------|------|--------|
+| **本 doc(`phase-2-pending.md`)** | v15.0 完成後 deferred 任務(P2-1~P2-4)| 「P2-X 開做 / 上述 deferred 開始」 |
+| **`team-distribution-roadmap.md`** | **Architecture decided 2026-05-01,6 phases NOT STARTED**(npm workspaces 拆 / Storybook 拆 / Claude plugin / release pipeline / product-workspace template / onboarding doc)| 「開始 team distribution / 拆 npm package」 |
+| **`story-auto-compile.md`** | Phase 1-3 done,**Phase 4 migration 58/59 元件未跑** | 「做 migration / phase 4」 |
+| `row-primitive-consolidation.md.rejected` | 2026-04-24 declined(over-engineering)| 歷史 archive |
+
+**任一 session 重接,先 `ls .claude/planning/` 看哪些 plan 在進行 / 待開工**。
 
 ---
 
