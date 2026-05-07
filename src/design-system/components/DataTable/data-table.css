@@ -24,12 +24,20 @@
 }
 
 /* ────────────────────────────────────────────────────────────
-   DataTable 水平捲軸永遠可見(AG Grid 流派,AR44 canonical)
+   DataTable scrollbar canonical(2026-05-07 v15.13 Bug H interim CSS parity)
    ────────────────────────────────────────────────────────────
-   macOS 預設捲軸「滾動時才顯示」—— 在 overflow 容器上看不到 scrollbar,
-   觸控 / keyboard 使用者完全不知道有 overflow 內容。AG Grid 流派強制顯示 H 軸。
-   用 data attribute 精準鎖定 DataTable 內部 overflow-x-scroll 容器,不影響其他
-   元件的 scroll area。
+   **Problem**:Windows 原生 V scrollbar (~17px) + 圓角 outer wrapper (`rounded-md
+   overflow-hidden`)→ scrollbar 一半被圓角 mask 裁切;corner(V/H 交叉處)用
+   browser default 灰色,跟 table surface 不一致 → user 看到「scrollbar 溢出 table」。
+   macOS overlay scrollbar(0px)沒這問題。
+
+   **Interim fix**(non-ScrollArea 路徑;ScrollArea migration 是獨立 RFC,本案不上):
+   - V scrollbar 也 customize(width 10px 對稱 H)
+   - `::-webkit-scrollbar-corner` themed(跟 track 同色,消除 cross-OS 視覺差)
+   - Firefox `scrollbar-width: thin` + `scrollbar-color`(已 set,line 55-56)
+
+   **對齊**:AG Grid theme-level scrollbar customization / MUI DataGrid scrollbar override
+   / Polaris IndexTable native+CSS pattern(world-class 派 native+CSS,非 ScrollArea)。
 
    ── 關鍵 fix(2026-04-30):scope 只給 :horizontal ──
    原本 `::-webkit-scrollbar { display:block }` 套到雙軸 → V 軸也被強制顯
@@ -41,6 +49,10 @@
   height: 10px;
   /* 移 display:block — 讓 browser overflow 時自動顯,不顯示空 bar */
 }
+[data-datatable-hscroll]::-webkit-scrollbar:vertical {
+  width: 10px;
+  /* 對稱 H,Windows native ~17px → 10px,跟 table 圓角 outer 兼容 */
+}
 [data-datatable-hscroll]::-webkit-scrollbar-track {
   background: var(--color-neutral-2);
 }
@@ -50,6 +62,10 @@
 }
 [data-datatable-hscroll]::-webkit-scrollbar-thumb:hover {
   background: var(--color-neutral-6);
+}
+[data-datatable-hscroll]::-webkit-scrollbar-corner {
+  background: var(--color-neutral-2);
+  /* V/H 交叉 corner 跟 track 同色,消除 Windows default 灰格 */
 }
 [data-datatable-hscroll] {
   scrollbar-width: thin; /* Firefox */
