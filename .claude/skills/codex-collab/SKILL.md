@@ -22,13 +22,19 @@ description: Structured discussion-mode collaboration with OpenAI Codex (via @co
 
 ## When to invoke
 
-明確 trigger:
-1. **User 要求**:「跟 codex 討論」/「與 codex 確認」/「let's get codex's take on X」
-2. **Visual / SSOT / canonical 多輪震盪**:同一視覺主題被糾正 ≥ 2 次(M13 trigger 升級成 codex 介入)
-3. **Deep audit (`/design-system-audit --deep`)**:Phase 4.5 必呼叫 codex 做 second-pass
+**主原則(2026-05-07 user directive)**:**Claude 自己先嘗試解**,確認自己解不好 / 不確定 root cause 時才 invoke codex。**禁止**「user 提了新 bug → 自動丟 codex」,user 沒明確說「跟 codex 討論」就不塞給他。
+
+明確 trigger(滿足任一才 invoke):
+1. **User 明確要求**:「跟 codex 討論 X」/「與 codex 確認」/「let's get codex's take on X」
+2. **Claude 自認 stuck**:investigate root cause 後仍不確定 / 多 hypothesis 沒 evidence 收斂 / 跨 framework 不熟悉(eg. Windows-specific bug 但本地是 Linux)
+3. **Deep audit (`/design-system-audit --deep`)**:Phase 4.5 second-pass(audit 是 explicit benchmark 場景)
 4. **Cross-component canonical 訂立**(M8 benchmark 後)需獨立 reviewer
 
-**禁止 invoke**:單純 typo / 機械 lint / user 已給明確指示的 implementation
+**禁止 invoke**:
+- 單純 typo / 機械 lint
+- User 已給明確指示的 implementation
+- User 提新 bug 但沒說「跟 codex 討論」(預設 Claude 自己處理)
+- Claude 還沒做 grep / read source 就丟 codex(等於把工作外包,違反主原則)
 
 ---
 
