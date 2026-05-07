@@ -112,6 +112,72 @@ export const dragHandleCursor = 'cursor-grab' as const
 /** Draggable element 拖中時的 cursor(grabbing)*/
 export const dragActiveCursor = 'cursor-grabbing' as const
 
+// ── Reorder noop helper(SSOT 對齊 row + column reorder canonical) ────────
+
+/**
+ * Drop position 等同 source 原位 → noop。對齊 Linear / Notion / Jira / TreeView SSOT:
+ * user 拉到 source 鄰近(視覺等同原位)應 cancel,不 commit reorder 也不顯 indicator。
+ *
+ * Consumer 在 onDragOver 用此判斷是否畫 indicator;onDragEnd 用同一函數判斷是否
+ * 觸發 reorder callback —— 兩處共享一個 invariant,避免「indicator 顯示但 commit 不 fire」
+ * 或反向 drift。
+ *
+ * 規則:
+ *   - source idx N,drop on idx N (self) → noop
+ *   - source idx N,drop on idx N-1 with side='after'  = N(原位)→ noop
+ *   - source idx N,drop on idx N+1 with side='before' = N(原位)→ noop
+ */
+export function isReorderNoop(activeIdx: number, overIdx: number, side: 'before' | 'after'): boolean {
+  if (activeIdx === overIdx) return true
+  if (side === 'after' && overIdx + 1 === activeIdx) return true
+  if (side === 'before' && overIdx - 1 === activeIdx) return true
+  return false
+}
+
+// ── Ghost reconstruction(跨 region table row → 完整橫跨 ghost) ───────────
+
+/**
+ * 為 dnd-kit DragOverlay 抓 source row clone(primary region only)。
+ *
+ * **Why**:Pinned column DataTable 結構 = 三 region(left / center / right)各 mount 一個
+ * row div(同 row.id),但 listeners 只在 primary region(center)。Ghost 必須來自 primary
+ * region row(= activator rect 對應的那個 DOM)→ DragOverlay 起始位置 + ghost width 才會
+ * 跟 cursor 對齊(對齊 user directive「ghost 跟 cursor 維持固定相對位置」SSOT)。
+ *
+ * **What**:優先抓 `[data-row-drag-source="true"]` marker 的 row(consumer 在 primary region
+ * 標此 attr);fallback `[data-sortable-row-id="${id}"]` 第一個 match(single-region 場景)。
+ *
+ * **Returns** `{ html, width }` 或 `null`(若找不到 row)。
+ */
+export function reconstructFullRowGhost(rowId: string): { html: string; width: number } | null {
+  const sourceEl = document.querySelector<HTMLElement>(
+    `[role="row"][data-sortable-row-id="${rowId}"][data-row-drag-source="true"]`,
+  ) ?? document.querySelector<HTMLElement>(
+    `[role="row"][data-sortable-row-id="${rowId}"]`,
+  )
+  if (!sourceEl) return null
+  const clone = sourceEl.cloneNode(true) as HTMLElement
+  sanitizeGhostClone(clone, sourceEl.offsetWidth)
+  return { html: clone.outerHTML, width: sourceEl.offsetWidth }
+}
+
+/**
+ * Reset ghost clone inline styles + strip 干擾 attributes(transform/opacity/data-row-index 等)。
+ * Internal helper, not exported.
+ */
+function sanitizeGhostClone(el: HTMLElement, width: number): void {
+  el.style.position = 'static'
+  el.style.transform = 'none'
+  el.style.transition = 'none'
+  el.style.opacity = '1'
+  el.style.zIndex = ''
+  el.style.width = `${width}px`
+  el.removeAttribute('data-row-index')
+  el.removeAttribute('aria-rowindex')
+  el.removeAttribute('data-hovered')
+  el.querySelectorAll('[data-drag-handle-portal]').forEach((n) => n.remove())
+}
+
 // ── Type exports for consumer ─────────────────────────────────────────────
 
 export type DropPosition = 'before' | 'after' | 'inside'
