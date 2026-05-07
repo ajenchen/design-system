@@ -1,62 +1,58 @@
 import * as React from 'react'
-import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, EMPTY_DISPLAY, nakedCellRowModeAlign } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext } from '@/design-system/components/Field/field-context'
-import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { Tag } from '@/design-system/components/Tag/tag'
+import { Select, type SelectOption } from '@/design-system/components/Select/select'
+import { Combobox } from '@/design-system/components/Combobox/combobox'
 import { PersonDisplay, MultiPersonDisplay, buildPersonNameCard, resolvePerson, type PersonValue } from './person-display'
-import { SelectMenu, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+// ── PeoplePicker = thin wrapper ─────────────────────────────────────────────
+// **2026-05-07 v15.5 SSOT 重構**(Task 2 P2-2):
+//   - **single mode** wraps `<Select searchable selectedItemRenderer>`
+//   - **multi mode**  wraps `<Combobox searchable tagRenderer>`
+// 之前直接 wrap `<SelectMenu>` low-level primitive 跟 Select / Combobox 平行。
+// 重構後 PeoplePicker 是 Select/Combobox 的「person-specific」 specialization,
+// person-only 邏輯(PersonValue ↔ option mapping、avatar trigger / tag 渲染)集中在
+// PeoplePicker,Select/Combobox 的搜尋 / open state / a11y / overflow 全部繼承。
 
-function personToMenuOption(person: PersonValue): SelectMenuOption {
+// ── helpers ─────────────────────────────────────────────────────────────────
+function personToOption(person: PersonValue): SelectOption {
   const p = resolvePerson(person)
-  return {
-    value: p.name,
-    label: p.name,
-    description: p.description,
-    // avatar 傳資料,MenuItem 內部用 Avatar 元件渲染。
-    // hoverCard 共用 `buildPersonNameCard` helper(避免顯示資訊跟 PersonAvatar 不一致)。
-    avatar: {
-      src: p.avatarUrl,
-      alt: p.name,
-      hoverCard: buildPersonNameCard(p),
-    },
-  }
+  return { value: p.name, label: p.name }
+}
+function findPerson(people: PersonValue[], name: string): PersonValue {
+  const found = people.find(p => resolvePerson(p).name === name)
+  return found ?? name
+}
+function namesOf(value: PeoplePickerProps['value']): string[] {
+  if (!value) return []
+  if (Array.isArray(value)) return value.map(v => resolvePerson(v).name)
+  return [resolvePerson(value).name]
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
-// 外觀同 Select，value 前面多 avatar。
-// edit mode：Popover + Command 搜尋選人（使用 SelectMenu）。
-// readonly / disabled：靜態顯示。
 
 export interface PeoplePickerProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
   /**
-   * Field mode(2026-05-05 Phase B3 align):
-   *   edit     — Popover + Command 搜尋(預設)
-   *   display  — **純展示**:單選 → PersonDisplay(Avatar + NameCard hoverCard);
-   *              多選 → MultiPersonDisplay(Avatar stack + OverflowIndicator)。無 input chrome、無互動 Popover。
-   *              對齊 Carbon read-only / DataTable person cell read mode。
-   *   readonly — input chrome + 鎖互動,Avatar 視覺保留(留 a11y signal「這是 input 但鎖了」)
+   * Field mode:
+   *   edit     — Popover 搜尋(預設)
+   *   display  — 純展示(reuse PersonDisplay / MultiPersonDisplay,無 input chrome)
+   *   readonly — input chrome + 鎖互動,Avatar 視覺保留
    *   disabled — input chrome + disabled 降色
    */
   mode?: FieldMode
-  /**
-   * Visual chrome(2026-05-05 Phase B3)。對齊 FieldContext.variant 透傳。
-   * - `'default'` — 完整 Field wrapper chrome(form / Field 內嵌)
-   * - `'bare'` — 透明 variant,hover/focus 才現 border(DataTable cell-as-input)
-   *
-   * mode='display' 時 chrome 無視覺意義(display 完全無 wrapper);chrome 僅作用於 edit / readonly / disabled。
-   */
+  /** Field chrome variant(對齊 Select / Combobox)*/
   variant?: FieldVariant
   size?: 'sm' | 'md' | 'lg'
-  /** 當前已選的人（單選 PersonValue，多選 PersonValue[]） */
+  /** 當前已選的人(單選 PersonValue,多選 PersonValue[])*/
   value?: PersonValue | PersonValue[] | null
-  /** 值變更 callback */
+  /** 值變更 callback(永遠 emit array — single mode 取 [0] 即 single value)*/
   onChange?: (value: PersonValue[]) => void
-  /** 可選人員清單（edit mode 下拉顯示） */
+  /** 可選人員清單(edit mode 下拉顯示)*/
   people?: PersonValue[]
   /** 搜尋框 placeholder */
   searchPlaceholder?: string
@@ -77,28 +73,23 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   value,
   onChange,
   people = [],
-  searchPlaceholder = '搜尋人員…', // i18n-allow: DS default; consumer override via searchPlaceholder prop
-  emptyText = '沒有符合的人員', // i18n-allow: DS default; consumer override via emptyText prop
+  searchPlaceholder = '搜尋人員…', // i18n-allow: DS default
+  emptyText = '沒有符合的人員', // i18n-allow: DS default
   className,
   disabled,
-  defaultOpen = false,
+  defaultOpen,
   onOpenChange,
   ...props
 }, ref) {
   const fieldCtx = useFieldContext()
   const mode: FieldMode = modeProp ?? fieldCtx?.mode ?? 'edit'
   const resolvedMode: FieldMode = disabled ? 'disabled' : mode
-  // chrome resolution:per-prop > context > 'default'
   const resolvedVariant: FieldVariant = variantProp ?? fieldCtx?.variant ?? 'default'
-  const isEditable = resolvedMode === 'edit'
-  const iconSize = size === 'lg' ? 20 : 16
   const isMulti = Array.isArray(value)
   const isEmpty = !value || (isMulti && value.length === 0)
 
-  // ── mode='display' ──────────────────────────────────────────────────────
+  // ── mode='display' ────────────────────────────────────────────────────────
   // 純展示:無 fieldWrapperStyles 容器、無 chevron affordance。
-  // 直接 reuse 既有 PersonDisplay / MultiPersonDisplay primitive(該 primitive 同時供 NameCard /
-  // DataTable / 其他 cross-component 場景使用,不在本 phase retire — 保留 standalone export)。
   if (resolvedMode === 'display') {
     if (isEmpty) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
     return isMulti
@@ -106,8 +97,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       : <PersonDisplay value={value as PersonValue} size={size} />
   }
 
-  // ── Readonly / disabled ──
-  if (!isEditable) {
+  // ── readonly / disabled — 沿用 Field wrapper chrome,但 Avatar 仍渲染 ─────
+  if (resolvedMode !== 'edit') {
     return (
       <div
         ref={ref}
@@ -120,112 +111,91 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
             ? <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
             : isMulti
               ? <MultiPersonDisplay value={value as PersonValue[]} size={size} />
-              : <PersonDisplay value={value as PersonValue} size={size} />
-          }
+              : <PersonDisplay value={value as PersonValue} size={size} />}
         </span>
       </div>
     )
   }
 
-  // ── Build SelectMenu options from people list ──
-  const menuOptions: SelectMenuOption[] = React.useMemo(
-    () => people.map(personToMenuOption),
-    [people]
-  )
+  // ── edit mode:options + selected mapping(both single + multi 共用)────────
+  const options: SelectOption[] = people.map(personToOption)
+  const selectedNames = namesOf(value)
 
-  // ── Current selected values as string[] ──
-  const selectedValues: string[] = React.useMemo(() => {
-    if (!value) return []
-    if (Array.isArray(value)) return value.map(v => resolvePerson(v).name)
-    return [resolvePerson(value).name]
-  }, [value])
+  // ── multi mode → wraps Combobox ────────────────────────────────────────────
+  if (isMulti) {
+    const handleMultiChange = (next: string[]) => {
+      onChange?.(next.map(name => findPerson(people, name)))
+    }
+    return (
+      <Combobox
+        ref={ref as React.Ref<HTMLDivElement>}
+        size={size}
+        variant={resolvedVariant}
+        options={options}
+        value={selectedNames}
+        onChange={handleMultiChange}
+        searchable
+        searchPlaceholder={searchPlaceholder}
+        emptyPlaceholder={emptyText}
+        defaultOpen={defaultOpen}
+        onOpenChange={onOpenChange}
+        className={className}
+        aria-label={(props as { 'aria-label'?: string })['aria-label']}
+        // 每個 selected pill 換 avatar+name pill(對齊原 PeoplePicker multi visual)
+        tagRenderer={(item, onRemove) => {
+          const person = findPerson(people, item.value)
+          const p = resolvePerson(person)
+          return (
+            <Tag
+              key={item.value}
+              size={size}
+              className="shrink-0 relative z-10 inline-flex items-center gap-1.5"
+              onDismiss={onRemove}
+            >
+              {/* Avatar size:px,對齊 Tag 內 Avatar 慣用尺寸(sm/md=16, lg=20)*/}
+              <Avatar size={size === 'lg' ? 20 : 16} src={p.avatarUrl} alt={p.name} hoverCard={buildPersonNameCard(p)} />
+              <span className="truncate">{p.name}</span>
+            </Tag>
+          )
+        }}
+      />
+    )
+  }
 
-  const handleValueChange = React.useCallback(
-    (newValue: string | string[]) => {
-      if (!onChange) return
-      const names = Array.isArray(newValue) ? newValue : [newValue]
-      // Map back to PersonValue objects from people list
-      const result = names.map(name => {
-        const found = people.find(p => resolvePerson(p).name === name)
-        return found ?? name
-      })
-      onChange(result)
-    },
-    [onChange, people]
-  )
-
-  // ── Edit mode trigger ──
-  // open state:default uncontrolled,但 defaultOpen=true 時取 controlled path 注入 initial true
-  // (對齊 Radix Popover defaultOpen canonical;DataTable cell-as-input 1-step open 用)。
-  const [open, setOpen] = React.useState(defaultOpen)
-  const trigger = (
-    <div
-      ref={ref}
-      role="combobox"
-      aria-haspopup="listbox"
-      tabIndex={0}
-      className={cn(
-        fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size }),
-        // 2026-05-06 v13.3 SSOT retire:per-control `data-[state=open]:border-primary` 移除。
-        // Field default state machine 統一處理 — open=灰深 / focus=藍 (focus-within !important)。
-        // 對齊全 DS focus dominates everything 共識。
-        'cursor-pointer',
-        className,
-      )}
-      data-field-mode="edit"
-      {...props}
-    >
-      <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign)}>
-        {isEmpty
-          ? <span className="text-fg-muted">選擇...</span>
-          : isMulti
-            ? <MultiPersonDisplay
-                value={value as PersonValue[]}
-                size={size}
-                onRemove={onChange ? (person) => {
-                  const arr = value as PersonValue[]
-                  onChange(arr.filter(v => resolvePerson(v).name !== resolvePerson(person).name))
-                } : undefined}
-              />
-            : <PersonDisplay value={value as PersonValue} size={size} />
-        }
-      </span>
-      <ItemSuffix>
-        <ChevronDown size={iconSize} className="text-fg-muted" aria-hidden />
-      </ItemSuffix>
-    </div>
-  )
-
+  // ── single mode → wraps Select ─────────────────────────────────────────────
+  const handleSingleChange = (name: string) => {
+    onChange?.([findPerson(people, name)])
+  }
   return (
-    <SelectMenu
-      options={menuOptions}
-      value={isMulti ? selectedValues : selectedValues[0] ?? null}
-      onValueChange={handleValueChange}
-      multiple={isMulti}
-      searchable
-      searchPlaceholder={searchPlaceholder}
-      emptyText={emptyText}
+    <Select
+      ref={ref as React.Ref<HTMLDivElement>}
       size={size}
-      open={open}
-      onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
-    >
-      {trigger}
-    </SelectMenu>
+      variant={resolvedVariant}
+      options={options}
+      value={selectedNames[0] ?? null}
+      onChange={handleSingleChange}
+      searchable
+      placeholder={emptyText}
+      defaultOpen={defaultOpen}
+      onOpenChange={onOpenChange}
+      className={className}
+      aria-label={(props as { 'aria-label'?: string })['aria-label']}
+      // single trigger 內 selected display 換 PersonDisplay(avatar + name)
+      selectedItemRenderer={(selectedOpt) => {
+        const person = findPerson(people, selectedOpt.value)
+        return <PersonDisplay value={person} size={size} />
+      }}
+    />
   )
 })
 PeoplePicker.displayName = 'PeoplePicker'
 
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)
-// Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const peoplePickerMeta = {
   component: 'PeoplePicker',
   family: 4,
-  variants: {
-
-  },
-  sizes: {
-
-  },
+  variants: {},
+  sizes: {},
   states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
   tokens: {
     bg: [],
