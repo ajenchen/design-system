@@ -48,15 +48,17 @@ jobs:
 
       - name: Story compile-drift check
         run: |
-          # Drift = "DRIFT" / "MISSING" / "❌" in output. Skipped count is baseline
-          # state(component 尚未 migrate 到 auto-compile),非 drift,不應 fail CI。
-          OUT=$(node scripts/compile-stories.mjs --all --check 2>&1)
-          echo "$OUT" | tail -20
-          if echo "$OUT" | grep -qE "DRIFT|MISSING|❌"; then
-            echo "❌ compile-stories drift detected"
-            exit 1
+          # 直接用 compile-stories.mjs 的 exit code:script 內部 `--check` mode 已正確
+          # 區分 drift(exit 1)vs aligned-only(exit 0)。skipped count 不算 drift。
+          # 印完整 output 方便 CI log 查問題,exit code 作為唯一 source of truth。
+          set +e
+          node scripts/compile-stories.mjs --all --check
+          ec=$?
+          if [ "$ec" -ne 0 ]; then
+            echo "❌ compile-stories exited with code $ec — drift detected"
+            exit "$ec"
           fi
-          echo "✅ compile-stories: no drift (skipped count is baseline)"
+          echo "✅ compile-stories: no drift"
 
       - name: Storybook build
         run: npm run build-storybook 2>&1 | tail -20
