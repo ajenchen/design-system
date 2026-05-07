@@ -22,7 +22,7 @@ import { ChevronDown, Calendar, Clock, ArrowUp, ArrowDown, ArrowUpDown, Filter a
 import { DndContext, DragOverlay, useDraggable, useDroppable, useDndContext, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, MeasuringStrategy, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { cn } from '@/lib/utils'
-import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, isReorderNoop, reconstructFullRowGhost } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier } from '@/design-system/lib/drag-visual'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -2186,17 +2186,16 @@ function DataTableInner<TData>(
         // detection 都 re-measure droppables(SSOT 對齊 dnd-kit virtualized list canonical)。
         measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
         collisionDetection={dndCollisionDetection}
-        // **v15.9 Bug C fix — Ghost viewport boundary SSOT 一致**:
-        // 撤回 `restrictToVerticalAxis` row drag modifier。三 drag scenario 共享 SSOT:
-        //   - Column reorder: 無 modifier(自由 X+Y follow cursor)
-        //   - TreeView drag : 無 modifier(自由 X+Y follow cursor)
-        //   - Row drag      : 無 modifier(自由 X+Y follow cursor)
-        // 對齊 Linear / Notion / Jira / AG Grid:row drag ghost 視覺自由 follow cursor,
-        // reorder 邏輯只看 Y 軸 row collision(dndCollisionDetection 內已實作);user 拖到
-        // 表外 → 無 row collision → over=null → drop=cancel(預期行為)。
-        // 移除 restrictToVerticalAxis 後 ghost 跨表移動體驗跟 column / treeview 一致,
-        // 沒有「為何 row drag 才被鎖在 table 內」的隱藏不對稱。
-        modifiers={[]}
+        // **v15.11 Ghost-cursor SSOT 復活**:
+        // - `snapToCursorModifier`(drag-visual.ts):ghost top-left 永遠對齊 cursor 位置,
+        //   保證「ghost 跟 cursor 維持初始 mousedown 時的相對位置」(M17 SSOT idea)。
+        //   v15.7 → v15.8 撤回原因是 `rectIntersection` collision 用 transform 後的
+        //   active.rect 找不到 over → 拖不動。v15.10 collision 改用 **DOM-based 直查
+        //   live row rects(忽略 active.rect)**,modifier 偏移 transform 不再影響
+        //   collision detection,可安全再用。
+        // - 三 drag scenario(row / column / TreeView)現在都 ghost-跟-cursor 對齊,
+        //   user directive「ghost-cursor SSOT」一致。
+        modifiers={[snapToCursorModifier]}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragCancel={handleDragCancel}

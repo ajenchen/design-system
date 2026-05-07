@@ -1,30 +1,18 @@
 import * as React from 'react'
-import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, EMPTY_DISPLAY, nakedCellRowModeAlign } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext } from '@/design-system/components/Field/field-context'
-import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { Combobox } from '@/design-system/components/Combobox/combobox'
-import { SelectMenu, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
-import { PersonDisplay, MultiPersonDisplay, buildPersonNameCard, resolvePerson, type PersonValue } from './person-display'
+import { PersonDisplay, MultiPersonDisplay, PersonAvatarTag, buildPersonNameCard, resolvePerson, type PersonValue } from './person-display'
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 function personToSelectOption(person: PersonValue): SelectOption {
   const p = resolvePerson(person)
   return { value: p.name, label: p.name }
-}
-function personToMenuOption(person: PersonValue): SelectMenuOption {
-  const p = resolvePerson(person)
-  return {
-    value: p.name,
-    label: p.name,
-    description: p.description,
-    avatar: { src: p.avatarUrl, alt: p.name, hoverCard: buildPersonNameCard(p) },
-  }
 }
 function findPerson(people: PersonValue[], name: string): PersonValue {
   return people.find(p => resolvePerson(p).name === name) ?? name
@@ -112,7 +100,6 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   const resolvedVariant: FieldVariant = variantProp ?? fieldCtx?.variant ?? 'default'
   const isMulti = Array.isArray(value)
   const isEmpty = !value || (isMulti && value.length === 0)
-  const iconSize = size === 'lg' ? 20 : 16
 
   // ── mode='display' ────────────────────────────────────────────────────────
   if (resolvedMode === 'display') {
@@ -223,61 +210,44 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     )
   }
 
-  // ── multi 'stack' (default) → wraps SelectMenu primitive,trigger 內走
-  //    MultiPersonDisplay reuse(SSOT 對齊 baseline + Notion/Slack/Atlassian canonical)
-  const menuOptions: SelectMenuOption[] = people.map(personToMenuOption)
-  const [open, setOpen] = React.useState(defaultOpen)
-  const handleStackChange = (newValue: string | string[]) => {
-    if (!onChange) return
-    const names = Array.isArray(newValue) ? newValue : [newValue]
-    onChange(names.map(name => findPerson(people, name)))
+  // ── multi 'stack' (default) → wraps Combobox 跟 pill mode 同 SSOT,差別只在
+  //    tagRenderer 把 Tag pill 換成 Avatar overlap 視覺(2026-05-07 v15.11 user directive
+  //    「avatar = tag 概念,把 combobox 的 tags 換成 stack avatar,其後即是 inline edit」)。
+  //    結果:stack mode 跟 pill mode 都拿到 inline edit + 統一 SSOT(只 visual 不同)。
+  //    `wrap=false` 鎖單行(avatar overlap 視覺前提),Combobox 自動處理 +N overflow。
+  const handleMultiChange = (next: string[]) => {
+    onChange?.(next.map(name => findPerson(people, name)))
   }
-  const handleStackRemove = (person: PersonValue) => {
-    if (!onChange) return
-    const arr = value as PersonValue[]
-    onChange(arr.filter(v => resolvePerson(v).name !== resolvePerson(person).name))
-  }
-  const trigger = (
-    <div
-      ref={ref}
-      role="combobox"
-      aria-haspopup="listbox"
-      aria-expanded={open}
-      aria-label={ariaLabel}
-      tabIndex={0}
-      className={cn(
-        fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size }),
-        'cursor-pointer',
-        className,
-      )}
-      data-field-mode="edit"
-      {...rest}
-    >
-      <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign)}>
-        {isEmpty
-          ? <span className="text-fg-muted">{emptyText}</span>
-          : <MultiPersonDisplay value={value as PersonValue[]} size={size} onRemove={handleStackRemove} />}
-      </span>
-      <ItemSuffix>
-        <ChevronDown size={iconSize} className="text-fg-muted" aria-hidden />
-      </ItemSuffix>
-    </div>
-  )
   return (
-    <SelectMenu
-      options={menuOptions}
+    <Combobox
+      ref={ref as React.Ref<HTMLDivElement>}
+      size={size}
+      variant={resolvedVariant}
+      options={people.map(personToSelectOption)}
       value={selectedNames}
-      onValueChange={handleStackChange}
-      multiple
+      onChange={handleMultiChange}
       searchable
       searchPlaceholder={searchPlaceholder}
-      emptyText={emptyText}
-      size={size}
-      open={open}
-      onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
-    >
-      {trigger}
-    </SelectMenu>
+      emptyPlaceholder={emptyText}
+      wrap={false}
+      defaultOpen={defaultOpen}
+      onOpenChange={onOpenChange}
+      className={className}
+      aria-label={ariaLabel}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      {...(rest as any)}
+      tagRenderer={(item, onRemove) => {
+        const p = resolvePerson(findPerson(people, item.value))
+        return (
+          <PersonAvatarTag
+            key={item.value}
+            person={p}
+            size={size}
+            onRemove={onRemove}
+          />
+        )
+      }}
+    />
   )
 })
 PeoplePicker.displayName = 'PeoplePicker'

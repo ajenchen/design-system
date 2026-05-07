@@ -155,11 +155,10 @@ function MultiPersonDisplay({
   return (
     <span className="inline-flex items-center min-w-0">
       {visible.map((person, i) => {
-        // **2026-05-07 v15.10 Bug D fix — visible avatar 也支援 inline dismiss**:
-        // 對齊 user directive「avatar = tag 概念,SSOT 一致」+ Notion / Linear / Slack
-        // hover-shows-dismiss canonical。`onRemove` 傳入時(edit mode)hover 顯紅 X icon,
-        // 點擊呼叫 onRemove。display / readonly mode(無 onRemove)avatar 純展示,維持
-        // 既有 hover → NameCard 行為(buildPersonNameCard 在 PersonAvatar 內)。
+        // **2026-05-07 v15.11 Bug D 升級 SSOT**:visible avatar 也支援 inline dismiss
+        // (對齊 user directive「avatar = tag」)。Dismiss overlay 走 `AvatarDismissOverlay`
+        // 共用 SSOT(下方 export),Combobox tagRenderer / 此處 / 任何 future avatar consumer
+        // 都用同一視覺 — 紅圈 X 對齊 avatar 右上,hover/focus-visible 才顯。
         const handleDismiss = onRemove ? () => onRemove(value![i]) : undefined
         return (
           <span key={person.name + i} className={`relative inline-flex group/avatar ${i > 0 ? '-ml-0.5' : ''}`} style={{ zIndex: visible.length - i }}>
@@ -168,16 +167,7 @@ function MultiPersonDisplay({
               size={size}
               className="ring-2 ring-[var(--surface)]"
             />
-            {handleDismiss && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); handleDismiss() }}
-                aria-label={`Remove ${person.name}`}
-                className="absolute -top-1 -right-1 hidden group-hover/avatar:inline-flex focus-visible:inline-flex items-center justify-center w-4 h-4 rounded-full bg-fg-secondary text-surface hover:bg-fg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-              >
-                <X size={10} aria-hidden />
-              </button>
-            )}
+            {handleDismiss && <AvatarDismissOverlay onRemove={handleDismiss} label={person.name} />}
           </span>
         )
       })}
@@ -216,4 +206,59 @@ function MultiPersonDisplay({
 }
 MultiPersonDisplay.displayName = 'MultiPersonDisplay'
 
-export { PersonDisplay, MultiPersonDisplay, PersonAvatar, buildPersonNameCard, resolvePerson }
+// ── AvatarDismissOverlay ────────────────────────────────────────────────────
+// SSOT for「person avatar overlay dismiss」(2026-05-07 v15.11)。
+//
+// **Visual canonical**(對齊 DS token + Slack/Linear/Atlassian person-pick dismiss idiom):
+//   - 14×14 circular button(對齊 Tag dismiss `ItemInlineActionButton size="md"` icon-only 容器尺寸)
+//   - bg-error(deep-orange-6,user-confirmed 紅圈樣式)
+//   - text-on-emphasis(白 X,確保飽和色底對比)
+//   - 偏移 `-top-1 -right-1` 略凸出 avatar 圓邊(對齊 Notification badge 偏移 idiom)
+//   - hover/focus-visible 才顯(避免 idle state 視覺噪音 — DS dismiss canonical)
+//
+// **Why centralize**:Combobox tagRenderer (PeoplePicker stack mode) +
+// MultiPersonDisplay 自帶 dismiss 都走這個 overlay → consumer 一致視覺,
+// 改 1 處全 sync(M17 SSOT propagation)。
+function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onRemove() }}
+      aria-label={`移除 ${label}`}
+      className={[
+        'absolute -top-1 -right-1 z-10',
+        'hidden group-hover/avatar:inline-flex focus-visible:inline-flex',
+        'items-center justify-center w-3.5 h-3.5 rounded-full',
+        'bg-error text-on-emphasis',
+        'hover:bg-error-hover',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
+      ].join(' ')}
+    >
+      <X size={10} strokeWidth={2.5} aria-hidden />
+    </button>
+  )
+}
+
+// ── PersonAvatarTag(Combobox tagRenderer SSOT for stack mode)─────────────
+// PeoplePicker `multiDisplay='stack'` 模式 wraps Combobox,tagRenderer 不能用 Tag pill
+// (那是 pill mode),改 render 此元件 — Avatar overlap 視覺 + AvatarDismissOverlay。
+// 對齊 user directive「avatar = tag 概念,差別只在視覺,SSOT 一致」(2026-05-07 v15.11)。
+//
+// `-ml-0.5` overlap + `ring-2 ring-[var(--surface)]` 跟 MultiPersonDisplay 同 SSOT。
+function PersonAvatarTag({
+  person, size = 'md', onRemove,
+}: {
+  person: PersonData
+  size?: 'sm' | 'md' | 'lg'
+  onRemove?: () => void
+}) {
+  return (
+    <span className="relative inline-flex group/avatar -ml-0.5 first:ml-0">
+      <PersonAvatar person={person} size={size} className="ring-2 ring-[var(--surface)]" />
+      {onRemove && <AvatarDismissOverlay onRemove={onRemove} label={person.name} />}
+    </span>
+  )
+}
+PersonAvatarTag.displayName = 'PersonAvatarTag'
+
+export { PersonDisplay, MultiPersonDisplay, PersonAvatar, PersonAvatarTag, buildPersonNameCard, resolvePerson }
