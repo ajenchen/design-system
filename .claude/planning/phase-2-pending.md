@@ -102,68 +102,98 @@ Start at Step 1(drop position 算法),最 self-contained。其他 steps depend o
 
 ---
 
-## P2-2:PeoplePicker SSOT alignment(searchIn: 'trigger' mode)
+## P2-2:PeoplePicker SSOT alignment(consume Select / Combobox as base)
 
 ### Context
 
-User directive(2026-05-06):
-> 「people picker 不管單人還多人應該都會像 select/combobox 一樣可以支援在輸入框內直接輸入搜尋」
-> 「兩者都有用槍時機」(指 trigger-search vs menu-search 都有適用情境)
+User directive(2026-05-06,精準版):
+> 「多人的 inline edit 樣式也跟 combobox 一樣,反正在 people picker 就只是把 tag 變成 avatar 而已,其他都是以此類推」
+> 「單人的 inline edit 就是跟 select 一樣,應該都是效仿的要」
+> 「所以都要 SSOT」
+
+PeoplePicker 不該自開新 trigger pattern,應該:
+- **single mode** → consume Select(只換 selected-display item renderer)
+- **multi mode** → consume Combobox(只換 selected-tag pill renderer)
+- 共用 trigger 行為(searchable input / search-in-trigger / popover open / focus return)
 
 ### Current state(SSOT gap confirmed)
 
-| 元件 | `searchable` | `searchIn: 'trigger'` | `searchIn: 'menu'` |
-|------|------------|---------------------|--------------------|
-| Select | ✓ opt-in | ✓ trigger 變 input | ✓ |
-| Combobox | ✓ opt-in | ✓ | ✓ |
-| **PeoplePicker** | **永遠 true(line 205 hardcoded)** | **✗ 沒** | ✓ |
+| 元件 | `searchable` | `searchIn: 'trigger'` | `searchIn: 'menu'` | Selected display |
+|------|------------|---------------------|--------------------|-----------------|
+| Select | ✓ opt-in | ✓ trigger 變 input | ✓ | text |
+| Combobox | ✓ opt-in | ✓ | ✓ | Tag pill |
+| **PeoplePicker** | **永遠 true(line 205 hardcoded)** | **✗ 沒** | ✓ only | Avatar+name(custom)|
 
-PeoplePicker 只 popover-menu-search。Cell-as-input(table inline edit)時希望像 Combobox 在 trigger 直接打字。
+PeoplePicker 自寫一套 popover+search,**沒繼承 Select / Combobox trigger 行為**。
 
-### Phase 2 scope
+### Phase 2 scope(對齊 user directive 「以 Select / Combobox 為 base」)
 
-加 `searchIn: 'menu' | 'trigger'` prop 給 PeoplePicker(對齊 Select / Combobox API SSOT)。
+**Architecture**:PeoplePicker 拆 single / multi 兩 mode 各自 consume base:
 
-| 場景 | searchIn 預設 | 視覺 |
-|------|------------|-----|
-| Form 內 PeoplePicker(空間夠)| `'menu'`(現狀)| 點 trigger 開 popover,popover 內搜尋 |
-| **Cell-as-input PeoplePicker** | `'trigger'`(對齊 multiPerson cell 期望)| trigger 變 input,直接打字 filter |
+```
+PeoplePicker (single)
+├── 內部 render <Select searchable {...}>
+│     ├── 共用 trigger 行為(search-in-trigger / popover / focus)
+│     └── selected display slot 改 render <PersonDisplay avatar={...} name={...} />
+└── value: PersonValue | null
+
+PeoplePicker (multi)
+├── 內部 render <Combobox searchable {...}>
+│     ├── 共用 trigger 行為(search-in-trigger / multi-tag inline / popover / focus)
+│     └── tag renderer slot 改 render <PersonTag avatar={...} name={...} />
+└── value: PersonValue[]
+```
+
+**Key principle**:PeoplePicker 退化成 thin wrapper +「item renderer override」slot。所有 trigger 互動 / search / popover canonical 由 Select / Combobox SSOT 提供。
 
 ### Impl steps
 
-**Step 1**:Audit Select / Combobox `searchIn` impl
-- File:`select.tsx` line 109-228(Trigger content branches)
-- Note 三 mode(searchable+open / text / tag),抽 logic 對齊 PeoplePicker 也適用
+**Step 1**:Audit Select / Combobox API 完整性
+- File:`select.tsx` + `combobox.tsx`
+- 確認都有 `searchable + searchIn` + `selectedItemRenderer` slot(或可加)
+- 若沒 slot,加(對齊 SSOT extension point)
 
-**Step 2**:PeoplePicker tsx 加 `searchIn` prop
+**Step 2**:抽 Select / Combobox shared trigger primitive
+- 評估是否抽 `lib/searchable-trigger.ts`(Select / Combobox / PeoplePicker 都用)
+- 若 Select / Combobox 已 90% 一致,抽一層 helper;若差異大,各自留 own impl + PeoplePicker 各 mode 對應 consume
+
+**Step 3**:PeoplePicker(single mode)→ wrapper around Select
 - File:`people-picker.tsx`
-- 預設 `'menu'`(back-compat 現有 consumer)
-- 當 `'trigger'` 時,trigger 渲染 `<input>` 取代 read-only display
-- 當 trigger input focus 時 popover open + 直接打字 filter
-- 對齊 Combobox `searchIn: 'trigger'` impl pattern
+- single mode 砍自寫 popover,改 render `<Select searchable searchIn={...}>` + `selectedItemRenderer={({value}) => <PersonDisplay person={value} />}`
+- API 不變,內部 delegated
 
-**Step 3**:PeoplePicker spec.md 更新
-- 加 `searchIn` prop description
-- 對照 Select / Combobox SSOT,文檔化 cell-as-input use case
+**Step 4**:PeoplePicker(multi mode)→ wrapper around Combobox
+- File:`people-picker.tsx`
+- multi mode 砍自寫,改 render `<Combobox searchable searchIn={...} multi>` + `tagRenderer={({value}) => <PersonTag person={value} />}`
+- API 不變,內部 delegated
 
-**Step 4**:DataTable cell-registry MultiPersonCell + PersonCell update
-- File:`cell-registry.tsx` line 313-347
-- 設 `searchIn='trigger'`(cell 內希望 inline 編輯)
-- multiPerson edit pattern 從 popover-only → trigger-search-with-popover-options
-- Reviewers cell 終於支援 inline-edit(解之前 invariants test 找不到 `[data-field-mode="edit"]` 之困)
+**Step 5**:DataTable cell-registry update
+- File:`cell-registry.tsx` `MultiPersonCell` / `PersonCell`
+- 設 `searchIn='trigger'`(對齊 cell-as-input 期望)
+- multiPerson cell 終於可 inline-edit(解之前 invariants test 困)
 
-**Step 5**:`data-table-invariants.mjs` test logic update
-- multiPerson 加進 invariant test(現在可以走 inline-edit 了)
-- I2/I3/I4 invariants 全 cell type 完整覆蓋
+**Step 6**:`data-table-invariants.mjs` 加 multiPerson / person 進 test
+- 已可走 `[data-field-mode="edit"]` selector(因 PeoplePicker 內部 = Select / Combobox 提供 Field-like 行為)
+- I2/I3/I4 全 cell type 完整覆蓋
+
+**Step 7**:PeoplePicker spec.md 更新
+- 「定位」段:**基於 Select(single)+ Combobox(multi)**(對齊 spec-rules canonical:每元件 spec 必明確宣告實作基礎)
+- 移除 popover-search-only 自寫描述
+- 對照 Select / Combobox SSOT
 
 ### Verify criteria
 
 - ✓ Select / Combobox / PeoplePicker API 三家 `searchable + searchIn` 對齊
-- ✓ MultiPersonCell 在 cell-as-input 走 `searchIn='trigger'` 模式
+- ✓ PeoplePicker single / multi 各自 delegate 到 Select / Combobox
+- ✓ DataTable MultiPersonCell 在 cell-as-input 走 `searchIn='trigger'` 模式
 - ✓ Reviewers cell 進 invariants test 也 pass
+- ✓ Trigger 行為(search / focus / popover open-close)Select / Combobox / PeoplePicker 完全一致
 
 ### Where to start
-Step 1 audit Combobox `searchIn: 'trigger'` 實作(取代我們 PeoplePicker 自寫)— 然後 mirror 到 PeoplePicker。
+Step 1 audit Select / Combobox API completeness。確認他們已有 `selectedItemRenderer` slot OR 加上去後,PeoplePicker 變 thin wrapper 才有可能。
+
+### M23 alignment
+本 plan 完全對齊 M23「DS 內既有 canonical 優先於外部 benchmark」— PeoplePicker 不另開 popover-search 架構,consume DS 內既有 Select / Combobox SSOT。
 
 ---
 
