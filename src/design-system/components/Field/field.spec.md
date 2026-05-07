@@ -407,10 +407,10 @@ User 需求「Field 邊框跟 grid 無縫接軌」(4 邊都 1px 不雙線)→ Fi
 | **L1 Slot** | `patterns/element-anatomy/item-anatomy.tsx` | `<ItemPrefix>` / `<ItemSuffix>`(永遠 `h-[1lh]` 對齊第 1 行) |
 | **L2 Align** | `field-wrapper.tsx` `nakedCellRowModeAlign` | host cell `data-row-mode` propagate(autoRow→items-start / fixed→items-center)|
 | **L3 State machine** | **繼承 Field default v13.3**(↑ 上方 SSOT)| 不重定義 |
-| **L4 Display hover** | naked-display compoundVariant inline | editable cell display mode `group-data-[editable]/cell:hover:border-border-hover`(Field DOM border,跟 edit mode focus border SSOT 同 DOM 同機制 → ring 範圍 sub-pixel 一致)|
+| **L4 Display hover** | `field-wrapper.tsx` `nakedCellEditableDisplayHover` | editable cell display mode `outline-1 outline-offset-[-1px] outline-[var(--border-hover)]`(cell wrapper outline,數學位置同 edit mode Field border at cell-edge - 1px;v15.12 revert v15.10 SSOT 嘗試,wrap path selector 失敗)|
 | **L5 Position(v12)** | naked compoundVariant inline | `!absolute -top-px -left-px -right-px -bottom-px !h-auto !w-auto`(seamless grid)|
 
-**前身 retire**:v4-v8 `outline-2` 平行 state(已下沉 L3)/ v9 border-only(focus 跟 open specificity tie)/ per-control `open && 'border-primary'`(v13.3 retire)/ `nakedCell{Hover,Focus,Open}Ring` 三 const / `nakedCell{Prefix,Suffix}Slot`(下沉 L1)/ **v15.10 `nakedCellEditableDisplayHover` outline 機制**(下沉 L4 同 DOM border SSOT — display hover + edit focus 同 box,sub-pixel 一致)。
+**前身 retire**:v4-v8 `outline-2` 平行 state(已下沉 L3)/ v9 border-only(focus 跟 open specificity tie)/ per-control `open && 'border-primary'`(v13.3 retire)/ `nakedCell{Hover,Focus,Open}Ring` 三 const / `nakedCell{Prefix,Suffix}Slot`(下沉 L1)。
 
 **反模式 ❌**:naked 自寫 `outline-*` / `box-shadow inset` state ring(用 L3) / hardcode `<span h-[1lh]>` slot(用 L1)/ hardcode `items-center`(用 L2)/ per-control `open && 'border-primary'`(用 L3 SSOT)。
 

@@ -23,6 +23,7 @@ import { DndContext, DragOverlay, useDraggable, useDroppable, useDndContext, poi
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { cn } from '@/lib/utils'
 import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier } from '@/design-system/lib/drag-visual'
+import { nakedCellEditableDisplayHover } from '@/design-system/components/Field/field-wrapper'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -1213,10 +1214,6 @@ function DataTableInner<TData>(
         // Field API 不變;每個 mode 內 display↔edit 同 alignment(同 Field, 同 group → 同 items)。
         data-row-mode={autoRowHeight ? 'auto' : 'fixed'}
         data-column-id={cell.column.id}
-        // v15.10 Bug F fix:editable 屬性由 cell wrapper 標記,Field naked display
-        // 用 `group-data-[editable]/cell:hover:border-border-hover` 變色 — ring 範圍
-        // 跟 edit mode focus border 同 DOM 同 box,切 mode 不再 sub-pixel mismatch。
-        data-editable={onEditableCellClick ? '' : undefined}
         className={cn(
           // Cell box(2026-05-05 v6 — A4 canonical: Field frame seamlessly replaces cell border):
           //   - `self-stretch`: cell 永遠填 row 高
@@ -1237,18 +1234,12 @@ function DataTableInner<TData>(
           // (user 確認 cell 右邊 border 不必移除)。
           inlineEdit && !isLastInRow && 'border-r border-divider',
           indicator && 'gap-2',
-          // **v15.10 Bug F fix**:editable cell hover ring 從 cell wrapper outline 搬到
-          // Field naked display border(field-wrapper.tsx)— display + edit 兩 mode 都
-          // 走 Field border 同 DOM 同機制,ring 範圍 sub-pixel 一致。Cell 只剩 cursor。
-          onEditableCellClick && 'cursor-pointer',
+          onEditableCellClick && ['cursor-pointer', nakedCellEditableDisplayHover],  // editable cell display hover affordance(對齊 Notion / Airtable hover-cell-shows-border canonical)
           isEditingThisCell && 'z-10',
         )}
         style={{
           ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id) }),
-          // **v15.10 Bug F fix**:editable cell 永遠 padding=0(原本只在 edit mode 設 0,
-          // display mode 套 cellPadding)。Field 接管 padding 渲染,cell 不重複。
-          // Non-editable cell 保留 cellPadding。
-          ...(onEditableCellClick || isEditingThisCell ? {} : cellPadding),
+          ...(isEditingThisCell ? {} : cellPadding),
         }}
         onClick={onEditableCellClick}
       >

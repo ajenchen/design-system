@@ -207,18 +207,24 @@ function MultiPersonDisplay({
 MultiPersonDisplay.displayName = 'MultiPersonDisplay'
 
 // ── AvatarDismissOverlay ────────────────────────────────────────────────────
-// SSOT for「person avatar overlay dismiss」(2026-05-07 v15.11)。
+// SSOT for「person avatar overlay dismiss」(2026-05-07 v15.12,user spec confirmed)。
 //
-// **Visual canonical**(對齊 DS token + Slack/Linear/Atlassian person-pick dismiss idiom):
-//   - 14×14 circular button(對齊 Tag dismiss `ItemInlineActionButton size="md"` icon-only 容器尺寸)
-//   - bg-error(deep-orange-6,user-confirmed 紅圈樣式)
-//   - text-on-emphasis(白 X,確保飽和色底對比)
-//   - 偏移 `-top-1 -right-1` 略凸出 avatar 圓邊(對齊 Notification badge 偏移 idiom)
-//   - hover/focus-visible 才顯(避免 idle state 視覺噪音 — DS dismiss canonical)
+// **Visual canonical**(對齊 DS new token `--surface-strong`):
+//   - **12×12 圓**(固定,不隨 field size 變)
+//   - **bg `--surface-strong`**(neutral-6),hover → `--surface-strong-hover`
+//     (light=neutral-5 / dark=neutral-7,跨 mode 對稱)
+//   - **X icon size=12 strokeWidth=3.5**(icon 跟底色一樣大,對齊 checkbox checkmark
+//     sm/md stroke 規格)
+//   - **text-on-emphasis**(白 X,確保飽和色底對比)
+//   - **位置 `absolute top-0 right-0`**(button 右上角貼齊 avatar 右上角,完全在 avatar
+//     內 — user-confirmed canonical)
 //
-// **Why centralize**:Combobox tagRenderer (PeoplePicker stack mode) +
-// MultiPersonDisplay 自帶 dismiss 都走這個 overlay → consumer 一致視覺,
-// 改 1 處全 sync(M17 SSOT propagation)。
+// **a11y**(codex P1 fix):`opacity-0` 而非 `display:none` — element 在 DOM/tab-order,
+// keyboard tab 可達,觸控 focus-within 也顯。Hover / focus-within / focus-visible
+// 三條件之一觸發 `opacity-100`。
+//
+// **Why centralize**:Combobox tagRenderer (PeoplePicker stack mode) + MultiPersonDisplay
+// dismiss 共用 SSOT,改 1 處全 sync(M17 propagation)。
 function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label: string }) {
   return (
     <button
@@ -226,15 +232,17 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
       onClick={(e) => { e.stopPropagation(); onRemove() }}
       aria-label={`移除 ${label}`}
       className={[
-        'absolute -top-1 -right-1 z-10',
-        'hidden group-hover/avatar:inline-flex focus-visible:inline-flex',
-        'items-center justify-center w-3.5 h-3.5 rounded-full',
-        'bg-error text-on-emphasis',
-        'hover:bg-error-hover',
+        'absolute top-0 right-0 z-10',
+        'inline-flex items-center justify-center',
+        'w-3 h-3 rounded-full',  // 12×12
+        'bg-surface-strong text-on-emphasis',
+        'hover:bg-surface-strong-hover',
+        'opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100 focus-visible:opacity-100',
+        'transition-opacity duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
       ].join(' ')}
     >
-      <X size={10} strokeWidth={2.5} aria-hidden />
+      <X size={12} strokeWidth={3.5} aria-hidden />
     </button>
   )
 }

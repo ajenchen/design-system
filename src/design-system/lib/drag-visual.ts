@@ -142,7 +142,13 @@ export const dragHandleCursorClass = 'cursor-grab' as const
  */
 export const snapToCursorModifier: Modifier = ({ transform, activatorEvent, draggingNodeRect }) => {
   if (!activatorEvent || !draggingNodeRect) return transform
+  // **codex P1 fix(2026-05-07 v15.12)**:KeyboardSensor 走 KeyboardEvent,沒
+  // `clientX/clientY` → `offsetX/offsetY = NaN` → ghost transform 變 NaN/NaN →
+  // overlay 定位+collision 全 corrupt → keyboard-initiated drag 直接壞。Guard 條件:
+  // 只 pointer/mouse event 才平移,keyboard 走 dnd-kit 預設(無 modifier 偏移)。
+  if (!('clientX' in activatorEvent) || !('clientY' in activatorEvent)) return transform
   const ev = activatorEvent as PointerEvent | MouseEvent
+  if (typeof ev.clientX !== 'number' || typeof ev.clientY !== 'number') return transform
   const offsetX = ev.clientX - draggingNodeRect.left
   const offsetY = ev.clientY - draggingNodeRect.top
   return {

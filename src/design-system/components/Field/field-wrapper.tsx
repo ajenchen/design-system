@@ -152,22 +152,19 @@ export const fieldWrapperStyles = cva(
         ],
       },
       {
-        // **2026-05-07 v15.10 Bug F fix — Display mode 跟 Edit mode SSOT 一致**:
-        // Display mode 也用 cell-px/py + h-full + border-based hover ring(以前是
-        // cell wrapper outline + Field !p-0,兩個 ring 在不同 DOM/不同 CSS 機制,
-        // sub-pixel 對齊不保證)。現在 display + edit 都在 Field DOM 上用 border,
-        // 切換 mode 時 ring 範圍 100% 一致。**搭配 cell wrapper 的 cellPadding 在 editable
-        // display mode 也設 0**(data-table.tsx:1238)— Field 撐滿 cell,padding 落在 Field 內部。
+        // **2026-05-07 v15.12 revert Bug F**:Display mode 改回 baseline canonical —
+        // Field naked-display 透明 border,padding=0(host cell 自帶 cellPadding),hover
+        // ring 由 cell wrapper outline (`nakedCellEditableDisplayHover`) 提供。
+        // 為何不走 Field DOM border SSOT(v15.10 嘗試):wrap path(`<span break-words>`
+        // 包 Field)使 `group-data-[editable]/cell:hover:` selector 命中失敗 → 整個 hover
+        // ring 在 autoRowHeight wrap text 場景失蹤。Edit mode focus ring 維持 Field DOM
+        // border canonical(L3 state machine),hover 跟 focus 雖不同 DOM 但都在 column-edge
+        // - 1px 同位置(數學等價,1px outline-offset:-1px 等同 1px border on cell-edge)。
         mode: 'display',
         variant: 'naked',
         className: [
-          'bg-transparent !rounded-none !gap-0 !h-full',
-          '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
+          'bg-transparent !rounded-none !px-0 !py-0 !gap-0 !h-full',
           'border border-transparent',
-          // Hover ring(對齊 Notion / Airtable editable cell hover affordance):
-          // border 機制跟 edit mode 同 token 同 DOM → 切 mode 時 ring 範圍不變。
-          // 條件:cell wrapper 標 `data-editable` 才 hover 變色(non-editable cell 不該 hover)。
-          'group-data-[editable]/cell:hover:border-border-hover',
           'group-data-[row-mode=auto]/cell:!items-start',
         ],
       },
@@ -236,14 +233,24 @@ export const bareInputStyles = [
 // Audit:design-system-audit Group N M27(periodic batch verify)
 export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-start'
 
-// ── Cell-as-input Display Hover Ring(2026-05-07 v15.10 retire)──
-// 之前 `nakedCellEditableDisplayHover` 用 `outline` 在 cell wrapper 上做 hover ring,
-// 跟 Field naked edit mode 用 `border` 在 Field DOM 上做 focus ring 是不同 CSS 機制 +
-// 不同 DOM,sub-pixel 對齊不保證(Bug F)。**已下沉到 Field naked DISPLAY mode 自帶
-// `group-data-[editable]/cell:hover:border-border-hover`**(field-wrapper.tsx 上方
-// compoundVariants),hover + focus ring 同 DOM 同 box,範圍 100% 一致。
-// Cell wrapper 配合改 padding=0(by data-table.tsx editable cell logic),Field 接管
-// padding 渲染 → Field outer = cell outer → border at cell edge,跟 edit 模式 SSOT。
+// ── Cell-as-input Display Hover Ring(2026-05-05 v9 — sole remaining ring const)─
+// editable cell **display mode hover 提示**(「這 cell 可編,點 → 進 edit」affordance 信號)。
+// 對齊 Notion / Airtable hover-cell-shows-border canonical。
+//
+// **為何只剩這一個**:Field naked **edit/focus/open state ring 已下沉到 Field default state
+// machine**(border-based,2026-05-05 v9 architectural rewrite),不需 outline 平行系統;
+// 但 display mode 沒 Field state(display = 純展示無互動),hover 提示需 cell wrapper 自加。
+//
+// **2026-05-07 v15.12 revert v15.10 SSOT 嘗試**:v15.10 試把 hover ring 搬到 Field DOM
+// 用 `group-data-[editable]/cell:hover:border-border-hover` 統一 SSOT,但 wrap text 路徑
+// (`<span break-words>` 包 Field)Tailwind selector 命中失敗 → hover ring 完全失蹤
+// (Playwright 截圖驗證確認)。Revert 回 cell wrapper outline 機制 — 雖然 hover/focus 不同
+// DOM 不同 CSS 屬性,但**數學等價**:outline-offset:-1px outline-1 = border-1 at cell-edge
+// 都在 column-edge - 1px 同位置;Edit mode focus ring 仍掛 Field DOM(L3 state machine 不變)。
+//
+// 1px outline straddle cell edge:offset:[-1px] 起點,outline-1 1px 厚 → 完全 inside element
+// edge,不破 row layout。Color `--border-hover` 對齊 Field default hover state token。
+export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hover:outline-offset-[-1px] hover:outline-[var(--border-hover)]'
 
 // ── Cell-as-input Edge Slot SSOT(2026-05-05 v8 — retire 平行 SSOT,改 L1 消費)───
 //
