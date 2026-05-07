@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { X } from 'lucide-react'
 import { EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
@@ -153,15 +154,33 @@ function MultiPersonDisplay({
 
   return (
     <span className="inline-flex items-center min-w-0">
-      {visible.map((person, i) => (
-        <PersonAvatar
-          key={person.name + i}
-          person={person}
-          size={size}
-          className={`ring-2 ring-[var(--surface)] ${i > 0 ? '-ml-0.5' : ''}`}
-          style={{ zIndex: visible.length - i }}
-        />
-      ))}
+      {visible.map((person, i) => {
+        // **2026-05-07 v15.10 Bug D fix — visible avatar 也支援 inline dismiss**:
+        // 對齊 user directive「avatar = tag 概念,SSOT 一致」+ Notion / Linear / Slack
+        // hover-shows-dismiss canonical。`onRemove` 傳入時(edit mode)hover 顯紅 X icon,
+        // 點擊呼叫 onRemove。display / readonly mode(無 onRemove)avatar 純展示,維持
+        // 既有 hover → NameCard 行為(buildPersonNameCard 在 PersonAvatar 內)。
+        const handleDismiss = onRemove ? () => onRemove(value![i]) : undefined
+        return (
+          <span key={person.name + i} className={`relative inline-flex group/avatar ${i > 0 ? '-ml-0.5' : ''}`} style={{ zIndex: visible.length - i }}>
+            <PersonAvatar
+              person={person}
+              size={size}
+              className="ring-2 ring-[var(--surface)]"
+            />
+            {handleDismiss && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); handleDismiss() }}
+                aria-label={`Remove ${person.name}`}
+                className="absolute -top-1 -right-1 hidden group-hover/avatar:inline-flex focus-visible:inline-flex items-center justify-center w-4 h-4 rounded-full bg-fg-secondary text-surface hover:bg-fg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                <X size={10} aria-hidden />
+              </button>
+            )}
+          </span>
+        )
+      })}
       {overflow > 0 && (
         <OverflowIndicator
           count={overflow}
