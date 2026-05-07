@@ -149,7 +149,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         value={selectedNames[0] ?? null}
         onChange={handleSingleChange}
         searchable
-        placeholder={emptyText}
+        // codex P2 fix(2026-05-07):不傳 `placeholder=emptyText`。emptyText 是
+        // 「empty results」搜尋無結果訊息,不該當 trigger placeholder。Select 自帶
+        // 預設 trigger placeholder,移除這 line 恢復舊行為(「選擇...」trigger 文字)。
         defaultOpen={defaultOpen}
         onOpenChange={onOpenChange}
         className={className}

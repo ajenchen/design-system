@@ -70,7 +70,7 @@ function useOverflowCount(
     const obs = new ResizeObserver(calc)
     obs.observe(container)
     return () => obs.disconnect()
-  }, [containerRef, totalCount, enabled])
+  }, [containerRef, totalCount, enabled, gap])  // codex P2 fix(2026-05-07):gap 入 deps,runtime 改 tagAreaGapPx 才會 recalc
 
   return state
 }
