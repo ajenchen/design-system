@@ -26,8 +26,9 @@
 | 6 | Memory(`~/.claude/.../memory/` SSOT + repo `.claude/memory/` mirror)| 跨 session 狀態。本機編完跑 `npm run sync-memory` 推回 repo(讓 cloud sandbox 看得到) |
 | 7 | Hook(`.claude/hooks/`) | 機械化 pre/post tool 檢查 |
 | 8 | Slash Command(`.claude/commands/`) | 一次性單步 action |
+| 9 | Plan doc(`.claude/planning/`)| 完整 plan / RFC / spec 草稿 SSOT;memory file 是短 index pointer 指向 plan doc(對齊 ds-devmode / story-auto-compile pattern) |
 
-**Q1 設計規則 → Level 1-4 / Q2 invoke 情境 → Skill or Command / Q3 隨時間變化 → Memory / Q4 機械化 → Hook**。完整 flowchart → `.claude/skills/design-system-audit/references/rule-placement.md`。
+**Q1 設計規則 → Level 1-4 / Q2 invoke 情境 → Skill or Command / Q3 隨時間變化 → Memory(short index)+ Plan doc(完整 spec)/ Q4 機械化 → Hook**。完整 flowchart → `.claude/skills/design-system-audit/references/rule-placement.md`。
 
 ## 行數預算(Anthropic 對齊)
 

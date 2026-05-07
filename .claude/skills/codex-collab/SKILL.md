@@ -241,6 +241,8 @@ PR comment:`@codex 結論已 land at <commit>. 感謝 review.`
 
 **Self-improvement(M20)**:codex 抓出我漏的 M-rule violation → 加 `.claude/memory/codex-caught-violations.md`,下次 prune 升 hook。
 
+**Auto-codify codex collab insight(2026-05-07 user invariant)**:任何跟 codex 協作的新發現(format / interval / 投遞 / verify / 比稿 / 工作模式 / planning location)→ **立刻 5-layer 落地**(本 SKILL + memory + CLAUDE.md row + planning doc if applicable),user 不該需要在新 session 重講同件事。Trigger phrases:「確保記錄起來」「不需要再對你耳提面命」「自然就知道」。
+
 ## Deep Audit 整合 + Cross-session persistence
 
 `/design-system-audit --deep` Phase 4.5 自動 invoke 本 skill(brief「review Phase 1-4 findings,有 systemic issue 嗎?」→ Codex reply 進 Phase 5,M14 chain)。新 session user 說「跟 codex 討論」→ 必查本 SKILL.md 按 Step 0-7 走;CLAUDE.md 任務導航表已 anchor;**禁憑記憶簡化流程**。
