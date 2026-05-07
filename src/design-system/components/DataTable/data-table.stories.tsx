@@ -517,26 +517,52 @@ const TAG_OPTIONS = [
 // SAMPLE_PEOPLE 完整 PersonData(2026-05-06 v11):每筆都有 default field values(email/phone/
 // department/location)+ status + statusMessage,讓 NameCard hoverCard 永遠完整顯示一致。
 // 對齊 NameCard always-render canonical(NAMECARD_DEFAULT_FIELD_KEYS SSOT)。
+// **2026-05-07 v15.7**:NameCard default fields 改 ['id', 'employeeNumber'] only。
+// Email / Phone / Department / Location 透過 `fields` array opt-in。
 const SAMPLE_PEOPLE: PersonData[] = [
   {
     name: 'Alice Chen', avatarUrl: 'https://i.pravatar.cc/48?u=alice', description: 'Design',
-    email: 'alice.chen@example.com', phone: '+886-2-2700-0001', department: 'Design / APAC', location: 'Taipei',
+    id: 'AC001', employeeNumber: 'EMP-1001',
     status: 'online', statusMessage: '本週設計評審,週四前 standup 移到 4pm',
+    fields: [
+      { label: 'Email', value: 'alice.chen@example.com' },
+      { label: 'Phone', value: '+886-2-2700-0001' },
+      { label: 'Department', value: 'Design / APAC' },
+      { label: 'Location', value: 'Taipei' },
+    ],
   },
   {
     name: 'Bob Lin', avatarUrl: 'https://i.pravatar.cc/48?u=bob', description: 'Engineering',
-    email: 'bob.lin@example.com', phone: '+886-2-2700-0002', department: 'Engineering / Platform', location: 'Taipei',
+    id: 'BL002', employeeNumber: 'EMP-1002',
     status: 'busy', statusMessage: 'Code review 中,訊息我會晚點回',
+    fields: [
+      { label: 'Email', value: 'bob.lin@example.com' },
+      { label: 'Phone', value: '+886-2-2700-0002' },
+      { label: 'Department', value: 'Engineering / Platform' },
+      { label: 'Location', value: 'Taipei' },
+    ],
   },
   {
     name: 'Charlie Wu', avatarUrl: 'https://i.pravatar.cc/48?u=charlie', description: 'Product',
-    email: 'charlie.wu@example.com', phone: '+852-2700-0003', department: 'Product / Growth', location: 'Hong Kong',
+    id: 'CWU003', employeeNumber: 'EMP-1003',
     status: 'online', statusMessage: '今日 OKR 規劃日,可線上協助',
+    fields: [
+      { label: 'Email', value: 'charlie.wu@example.com' },
+      { label: 'Phone', value: '+852-2700-0003' },
+      { label: 'Department', value: 'Product / Growth' },
+      { label: 'Location', value: 'Hong Kong' },
+    ],
   },
   {
     name: 'Diana Huang', avatarUrl: 'https://i.pravatar.cc/48?u=diana', description: 'Marketing',
-    email: 'diana.huang@example.com', phone: '+65-6700-0004', department: 'Marketing / Brand', location: 'Singapore',
+    id: 'DH004', employeeNumber: 'EMP-1004',
     status: 'away', statusMessage: '客戶會議中,週四上午回辦公室',
+    fields: [
+      { label: 'Email', value: 'diana.huang@example.com' },
+      { label: 'Phone', value: '+65-6700-0004' },
+      { label: 'Department', value: 'Marketing / Brand' },
+      { label: 'Location', value: 'Singapore' },
+    ],
   },
 ]
 interface EditableProduct {

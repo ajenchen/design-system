@@ -21,12 +21,13 @@ export interface PersonData {
   status?: 'online' | 'away' | 'busy' | 'offline'
   /** Status 訊息(NameCard status section)。缺則顯 `—` */
   statusMessage?: React.ReactNode
-  /** Default field values — NameCard always render(缺顯 `—`)。對齊 NAMECARD_DEFAULT_FIELD_KEYS */
-  email?: string
-  phone?: string
-  department?: string
-  location?: string
-  /** 自訂額外 fields(在 default fields 之後 append) */
+  /** **2026-05-07 v15.7 user directive**:NameCard default 只 render `id` + `employeeNumber`,
+   *  其他 description 一律 opt-in by consumer 透過 `fields` array prop。對齊
+   *  `NAMECARD_DEFAULT_FIELD_KEYS = ['id', 'employeeNumber']`。 */
+  id?: string
+  employeeNumber?: string
+  /** 自訂額外 fields(在 default fields 之後 append)。Email / Phone / Department / Location
+   *  / 任何其他 description 一律走這個 prop(opt-in,consumer 自選)。 */
   fields?: { label: string; value: string }[]
   /** 跳至完整 profile 頁的 handler(hover NameCard 必含,不傳時 fallback noop placeholder) */
   onViewProfile?: () => void
@@ -40,8 +41,11 @@ function resolvePerson(value: PersonValue): PersonData {
 
 // buildPersonNameCard — DS 全域 person avatar hoverCard 的 canonical NameCard JSX 建構器。
 // SSOT for「avatar hover NameCard 一致視覺」— 任何 person avatar consumer 都走這個 helper,
-// 不可繞道直接 build NameCard。v11(2026-05-06):default field values(email/phone/department/
-// location)透過 `defaultFieldValues` 統一傳入,NameCard always render 這些 sections。
+// 不可繞道直接 build NameCard。
+//
+// **2026-05-07 v15.7 user directive**:default field values 只 `id` + `employeeNumber`,
+// 對齊 NAMECARD_DEFAULT_FIELD_KEYS。其他 description(email/phone/department/location/etc)
+// consumer 想顯式透過 `person.fields` opt-in 傳入。
 function buildPersonNameCard(person: PersonData): React.ReactNode {
   return (
     <NameCard
@@ -51,10 +55,8 @@ function buildPersonNameCard(person: PersonData): React.ReactNode {
       status={person.status}
       statusMessage={person.statusMessage}
       defaultFieldValues={{
-        email: person.email,
-        phone: person.phone,
-        department: person.department,
-        location: person.location,
+        id: person.id,
+        employeeNumber: person.employeeNumber,
       }}
       fields={person.fields}
       actions={<NameCardDefaultActions />}

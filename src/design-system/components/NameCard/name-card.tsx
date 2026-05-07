@@ -90,14 +90,15 @@ const STATUS_LABEL: Record<StatusType, string> = {
  * Hide → consumer 不知道少傳 → 視覺漂移;Placeholder → 永遠看到「該欄該有」+ dev-warn 提示
  * consumer 補資料,自動防漂移(M19 ensure-canonical 對齊)。
  */
-export const NAMECARD_DEFAULT_FIELD_KEYS = ['email', 'phone', 'department', 'location'] as const
+// **2026-05-07 v15.7 user directive**:default render 只 `id` + `employeeNumber` 兩個。
+// Email / Phone / Department / Location 等其他 description 一律 opt-in by consumer 透過
+// `fields` array prop。對齊 user 明確「應該確保所有都只有這兩個,因為我並沒有要求你要選其他的」。
+export const NAMECARD_DEFAULT_FIELD_KEYS = ['id', 'employeeNumber'] as const
 export type NameCardDefaultFieldKey = typeof NAMECARD_DEFAULT_FIELD_KEYS[number]
 
 const DEFAULT_FIELD_LABEL: Record<NameCardDefaultFieldKey, string> = {
-  email: 'Email',
-  phone: 'Phone',
-  department: 'Department',
-  location: 'Location',
+  id: 'ID',
+  employeeNumber: 'Employee number',
 }
 
 const FIELD_PLACEHOLDER = '—'
@@ -159,7 +160,8 @@ const NameCard = React.forwardRef<HTMLDivElement, NameCardProps>(
       // eslint-disable-next-line no-console
       console.warn(
         `[NameCard] "${name}":no defaultFieldValues passed — sections will render placeholders. ` +
-        `Pass at least { email, phone, department, location } via PersonData or defaultFieldValues prop.`,
+        `Pass at least { id, employeeNumber } via defaultFieldValues prop. ` +
+        `For other description items (email/phone/department/location etc),use \`fields\` prop array.`,
       )
     }
 
