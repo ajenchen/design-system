@@ -181,6 +181,16 @@ export interface ComboboxProps {
   defaultOpen?: boolean
   /** open state 變更 callback。DataTable cell-as-input 用:open=false → cell exit edit */
   onOpenChange?: (open: boolean) => void
+  /**
+   * Selected tag pill 客製 render(2026-05-07 v15.5)。
+   *
+   * 設了 → 每個 selected tag pill 走 consumer 提供的 ReactNode(收 item={value, label}
+   * + onRemove,consumer 自己組 onDismiss);沒設 → 走預設 `<Tag>` text-only pill。
+   *
+   * 用例:PeoplePicker(multi)用此 slot 把 selected tag 換成 avatar + name pill,而非
+   * 純文字 Tag。對齊 PeoplePicker = Combobox wrapper SSOT。
+   */
+  tagRenderer?: (item: { value: string; label: string }, onRemove: () => void) => React.ReactNode
 }
 
 const getIconSize = (size: string) => size === 'lg' ? 20 : 16
@@ -294,6 +304,7 @@ function CustomCombobox({
   emptyPlaceholder = '選擇…', // i18n-allow: DS default
   defaultOpen = false,
   onOpenChange,
+  tagRenderer,
   'aria-label': ariaLabel,
 }: ComboboxProps) {
   const fieldCtx = useFieldContext()
@@ -360,8 +371,10 @@ function CustomCombobox({
         {value.length > 0 ? (
           <OverflowTagList containerRef={tagAreaRef} items={items} size={size} wrap={wrap}
             renderTag={(item) => (
-              <Tag size={size} className="shrink-0 relative z-10"
-                onDismiss={() => handleRemove(item.value)}>{item.label}</Tag>
+              tagRenderer
+                ? tagRenderer(item, () => handleRemove(item.value))
+                : <Tag size={size} className="shrink-0 relative z-10"
+                    onDismiss={() => handleRemove(item.value)}>{item.label}</Tag>
             )}
             onRemove={handleRemove}
             trailing={searchable && searchIn === 'trigger' ? (

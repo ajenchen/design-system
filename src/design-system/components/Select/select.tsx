@@ -65,6 +65,16 @@ export interface SelectProps
   /** open state 變更 callback(對齊 Radix Popover onOpenChange canonical)。
    *  DataTable cell-as-input 用:open=false 時 cell 自動 exit edit mode(避免 dismiss 後卡住)。 */
   onOpenChange?: (open: boolean) => void
+  /**
+   * Trigger 內「已選項目」客製 render(2026-05-07 v15.5)。
+   *
+   * 設了 → trigger 不走純文字 / Tag 預設 path,改用 consumer 提供的 ReactNode(收 selectedOpt)。
+   * Searchable+open 仍走 input(搜尋優先)。Empty value(no selection)仍走 placeholder。
+   *
+   * 用例:PeoplePicker 用此 slot 把 single 選中的 person render 成 PersonDisplay
+   * (avatar + name)而非純文字 label。對齊 PeoplePicker = Select wrapper SSOT。
+   */
+  selectedItemRenderer?: (selectedOpt: SelectOption) => React.ReactNode
 }
 
 // ── Icon / size helpers ─────────────────────────────────────────────────────
@@ -124,6 +134,7 @@ function CustomSelectTriggerContent({
   search,
   setSearch,
   inputRef,
+  selectedItemRenderer,
 }: {
   searchable: boolean
   open: boolean
@@ -139,6 +150,7 @@ function CustomSelectTriggerContent({
   search: string
   setSearch: (v: string) => void
   inputRef: React.RefObject<HTMLInputElement | null>
+  selectedItemRenderer?: (selectedOpt: SelectOption) => React.ReactNode
 }): React.ReactNode {
   // Searchable + open: 顯示搜尋 input
   if (searchable && open) {
@@ -153,6 +165,17 @@ function CustomSelectTriggerContent({
           className={cn(bareInputStyles, 'cursor-text')}
           autoFocus
         />
+      </>
+    )
+  }
+  // **selectedItemRenderer slot**(2026-05-07 v15.5):consumer 客製 selected display(e.g.
+  // PeoplePicker 接 PersonDisplay)。優先於 isTextDisplay / Tag 預設 path,但 empty value
+  // 仍走 placeholder。對齊 PeoplePicker = Select wrapper SSOT。
+  if (selectedItemRenderer && value && selectedOpt) {
+    return (
+      <>
+        {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
+        <span className="flex-1 min-w-0 inline-flex items-center">{selectedItemRenderer(selectedOpt)}</span>
       </>
     )
   }
@@ -321,7 +344,7 @@ NativeSelect.displayName = 'NativeSelect'
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode = 'edit', variant: variantProp, error: errorProp = false, size = 'md', options, groups, value, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, minRows, defaultOpen = false, onOpenChange, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel }, ref) => {
+  ({ mode = 'edit', variant: variantProp, error: errorProp = false, size = 'md', options, groups, value, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, minRows, defaultOpen = false, onOpenChange, selectedItemRenderer, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel }, ref) => {
     const fieldCtx = useFieldContext()
     const error = errorProp || (fieldCtx?.invalid ?? false)
     const disabled = disabledProp ?? fieldCtx?.disabled
@@ -416,6 +439,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         search={search}
         setSearch={setSearch}
         inputRef={inputRef}
+        selectedItemRenderer={selectedItemRenderer}
       />
     )
 
