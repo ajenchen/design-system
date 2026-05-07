@@ -1690,13 +1690,21 @@ function DataTableInner<TData>(
           ref={(el) => {
             // v2 fix #1:被拖 row 略過 measureElement(transform 干擾測量,長 list 累積誤差)
             // v2 fix #4(virtual freeze):drag 進行中(activeDragId != null)整個略過 measureElement
-            // **v15.8 Bug A fix(codex audit cfac43d)**:mount-time row-height growth animation
-            //   Fixed-row-height mode 下 row 高度永遠 = ESTIMATE_BY_SIZE[size](e.g. md=40px),
-            //   measureElement 量出來必 = estimate → re-estimate 不必要,但會觸發 getTotalSize
-            //   重算 → React state update → body container 從「初步 height」漲到「完全 height」
-            //   = mount 時的「row 高度從小變高」動畫(實為 body container,視覺上看似 row)。
-            //   只在 autoRowHeight=true 才需 measureElement(每 row 高度可能不同,需量真實值)。
-            if (isCenter && opts?.virtual && el && !isThisRowDragging && activeDragId == null && autoRowHeight) {
+            // **2026-05-07 v15.17 A 路徑 — revert autoRowHeight guard**:
+            //   v15.8 加 `&& autoRowHeight` guard 為了解 R4 mount-time row growth animation
+            //   (假設 measureElement 在 fixed mode 觸發 getTotalSize 重算 → React re-render →
+            //   mount 時看起來 row height 在變)。但 codex P2 audit (`6d5188e` line 1699)指出
+            //   此 guard 副作用:consumer 傳 custom `estimateRowHeight` 或 CSS theme override
+            //   row height 時,fixed mode 不再 reconcile estimate vs reality → getTotalSize 錯
+            //   → scroll 範圍截斷或末端留白。
+            //
+            //   Codex deep R4 eval (`4399272774` follow-up reply) 認為 R4 真因更可能是
+            //   「首幀樣式未齊 / 字型 async load / paint stagger」,不是 measureElement。
+            //   故先 revert guard 觀察 R4 是否真回歸:
+            //   - R4 不重現(我 + codex 推論對)→ guard mis-fix,永久撤,P2 自動解
+            //   - R4 重現(measureElement 真因)→ 補 dampening (差異 <1px 不 setState /
+            //     一幀只 update 一次)+ low-freq sampling per codex 雙模式方案
+            if (isCenter && opts?.virtual && el && !isThisRowDragging && activeDragId == null) {
               virtualizer.measureElement(el)
             }
             extra?.ref?.(el)

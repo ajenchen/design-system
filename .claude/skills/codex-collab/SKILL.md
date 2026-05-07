@@ -121,7 +121,7 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
 歷史錨點:同日我送 5 條 brief 連發 → codex Cloud queue dedup skip 4 條(只回 1 條)。Codex 自己診斷 root cause = **interval too short**(短時間連送 → 後端 dedup)。
 
 **強制規則**:
-- ✅ **Brief 間隔 ≥ 2-3 min**(避免 codex Cloud queue dedup;我用 `mcp__github__add_issue_comment` 連送不違反 GitHub API 限制,但違反 codex 後端 routing dedup)
+- ✅ **Brief 間隔 ≥ 5 min**(2026-05-07 user-tuned;codex 自己原建議 2-3 min 但實證 R4 需 4 次 follow-up + ScrollArea 18:21 沒 reply 證明 3 min 不夠。5 min safer baseline,real-world dedup window 可能比 codex 認知更寬。trade-off:7 條 brief × 5 min = 35 min sequencing,接受)
 - ✅ **每條 brief 用新 `add_issue_comment`,不要 edit 既有 comment**(webhook 不把 edit 當新 task)
 - ✅ **Opener canonical**:`@codex DISCUSS-ONLY` 或 `@codex IMPLEMENT`(明確 mode signal)
 - ✅ Brief content **保留 deep format**(unchanged, per L1 Step 1 invariant)— interval rule 跟 depth invariant 不衝突
