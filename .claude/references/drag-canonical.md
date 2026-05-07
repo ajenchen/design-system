@@ -254,7 +254,60 @@ if (hasChildren) {
 
 ---
 
-## Sources(M26 webfetch,search-only confidence)
+---
+
+## 10. Modern table drag impl 完整對照(2026-05-06 v14.12 webfetch)
+
+### 三大 paradigm
+
+| Paradigm | Library | Source 行為 | 其他 rows | Sortable list 自動 shift | 我們的元件 |
+|---|---|---|---|---|---|
+| **A. dnd-kit useSortable + SortableContext + DragOverlay** | `@dnd-kit/core` + `@dnd-kit/sortable` | source 跟 cursor 預測 drop 位置(dnd-kit 算 transform 給 source 跟 others 預示 drop) | shift transform 自動讓 space | ✓ free | **DataTable row + column** |
+| **B. dnd-kit useDraggable + useDroppable + DragOverlay**(分離 hook)| `@dnd-kit/core` 純 | source 留原位(transform 不套)| 不自動 shift,自管 | ✗ 需自管 | **TreeView** ✓ |
+| **C. Atlassian Pragmatic(native HTML5)**| `@atlassian/pragmatic-drag-and-drop` | source 留原位(browser native drag preview 跟 cursor)| 不自動 shift,自管 | ✗ 自管 | Jira / Trello / Confluence 用 |
+
+### dnd-kit 官方 docs 重點(direct quote 摘錄)
+
+> "For keeping the drag source element in place while dragging (rather than having it follow the cursor),
+> **use a drag overlay rather than transforming the original draggable source** element that is connected
+> to the useDraggable hook. You can update the position of the draggable source while dragging without
+> affecting the drag overlay."
+
+> "when implementing table row reordering with dnd-kit, you can use **two separate hooks with the same
+> id** — useDraggable + useDroppable — which gives the behavior of the row only becoming draggable from
+> the handle, AND source stays still."
+
+**= 我們 TreeView 已經用這 pattern。DataTable 要跟同模式 = paradigm B refactor**。
+
+### Atlassian Pragmatic Jira 真實視覺(深 dive 後修正前理解)
+
+Pragmatic 用 native HTML5 drag preview:
+- **Browser native drag preview** opacity 0.95 + box-shadow(無法 disable,瀏覽器 control)
+- **Source 不主動 transform** — 留 DOM 原位
+- **Drop indicator** 自管 render(line / border)
+- **Trello shadow indicator** = drop placeholder pattern(複雜,scale 不好)
+
+**= Source 留原位確實是 Jira pattern,但靠的是 native HTML5 drag preview + 不套 source transform**。
+
+---
+
+## 11. 我們 DataTable 走 Path 比較
+
+| Path | 改動 | 視覺結果 | Cost | Trade-off |
+|---|---|---|---|---|
+| **A 維持 v14.11**(dnd-kit useSortable canonical)| 0(現狀)| Source 跟其他 rows 都 shift 預測 drop 位置 | 0 | ✗ 不像 Jira;✓ free auto-shift visual |
+| **B 重構 useDraggable + useDroppable**(TreeView pattern)| ~150-250 行 refactor:砍 SortableContext / 重寫 collisionDetection / 自管 drop animation | Source 完全留原位;Ghost 跟 cursor;自管 indicator | 中-大 | ✓ 對齊 Jira / TreeView 一致;✗ 失 dnd-kit free shift,要自管 visual reorder |
+| **C 換 Atlassian Pragmatic** | 完全砍 dnd-kit + 重 onboard Pragmatic 全 API | Native HTML5 drag preview;Source 完全留原位 | 大(全 refactor)| ✓ Jira 同 stack;✗ 換 lib + 重學 + 跨 column / row / tree 重寫 |
+
+### 我推薦 **Path B**(對齊 DS 內 TreeView):
+- TreeView 已用 `useDraggable + useDroppable` 同 stack
+- DataTable 換同 pattern → DS 內所有 drag 同 paradigm
+- Cost 中等(~200 行),對齊我們已有的 SSOT(`drag-visual.ts`)
+- 結果:Jira 風 source-stays-still + 我們 DS 一致設計語言
+
+---
+
+## Sources(M26 webfetch update)
 
 - [Atlassian Pragmatic D&D core](https://atlassian.design/components/pragmatic-drag-and-drop)
 - [Atlassian Pragmatic D&D design guidelines](https://atlassian.design/components/pragmatic-drag-and-drop/design-guidelines/)
