@@ -142,8 +142,9 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
 - ✅ **TodoWrite 列每條 sent brief**(brief id + sent time + 預期 reply ETA + 狀態)
 - ✅ **每送一條 brief 立刻 update todo state**(in_progress vs pending vs replied)
 - ✅ 收到 codex reply 立刻 mark 完成 + 跑 Step 4 + Step 5 比稿
-- ✅ **超 3 分鐘無新 brief 送 + 還有 pending → 自動連送下一條**(per 3-min interval rule);user 不該需要追問「下一條何時送?」
-- ✅ 漏接(15+ min 無 reply)→ 自動送 follow-up `@codex follow-up to brief <id>`(不等 user 提)
+- ✅ **滿 5 分鐘 interval 還有 pending → 自動連送下一條**(user 不該需要追問「下一條何時送?」)
+- ✅ **漏單判定:15 min 無任何 reply** → 自動 new mention follow-up `@codex follow-up to brief <id>`(不等 user 提;對齊 codex 自己 meta 建議 10-15 min 判定 missed)
+- ✅ **品質 fail 判定**(reply received 但有以下任一):commit / doc file 沒 push / Missing Q 部分回答 / M22 fail 無 cite URL / Off-topic 搞錯 brief / 短 format truncate → 自動 new mention「previous reply quality issue,需要 X」(逐條列 fail 點 + 重申 deep / cite ≥3 / Q1-QN 完整答)
 
 **禁止**:
 - ❌ Send brief 後 forget,不 mark todo,user 要追問才想起

@@ -69,9 +69,10 @@ User 若在新 session 看到我:
 - ✅ 漏接 15+ min 自動送 follow-up new mention 不 edit
 - 深度 vs timing 不衝突:深度不變,只 timing 加長
 
-**Brief queue 自主追蹤**(trigger:「都自動排程,但你也要自主記起來」):
+**Brief queue 自主追蹤**(trigger:「都自動排程,但你也要自主記起來」+「自動 new mention 機制」):
 - TodoWrite 列每條 sent brief(id + sent time + ETA + 狀態)
 - 每送一條立刻 update todo
-- 滿 5 min interval 還有 pending 自動連送(user 不需追問)
-- 漏接 15+ min 自動 follow-up(不等 user 提)
-- Avoid「forget after send」anti-pattern
+- 滿 **5 min interval** 還有 pending 自動連送(user 不需追問)
+- **漏單判定**:**15 min 無任何 reply** → auto new mention follow-up(codex 自己 meta 建議閾值)
+- **品質 fail 判定**(reply received 但 commit-no-push / Missing Q / M22 no URL / off-topic / short truncate) → auto new mention「previous reply quality issue」+ 逐條 fail 點 + 重申要求
+- Avoid「forget after send / silent quality compromise」anti-pattern
