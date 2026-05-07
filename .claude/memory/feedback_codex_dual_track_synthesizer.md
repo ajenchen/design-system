@@ -93,3 +93,15 @@ User 若在新 session 看到我:
 - ✅ Deep format 不變(深度 invariant 優先,只 timing 變)
 
 **不衝突 deep invariant**:codex 同回建議「8-12 行短 brief」用於投遞穩,但 user invariant 是 deep。Reconcile:**深度不變,只 timing 加 2-3 min 間隔**(投遞成功率根因是 interval 不是 length,codex 自己也承認這是「最常見原因」)。
+
+## 2026-05-07 update — Brief queue 自主追蹤
+
+User 拍板:「都自動排程,但你也要自主記起來有哪些排進去了需要你來追蹤」。
+
+**Invariant**:
+- TodoWrite 列每條 sent brief(id + sent time + ETA + 狀態)
+- 每送一條立刻 update todo
+- 超 3 min interval 還有 pending 自動連送下一條(user 不需追問下一條何時送)
+- 漏接 15+ min 自動送 follow-up(不等 user 提)
+
+**Why**:Avoid「我送 brief 後 forget,user 要追問才想起」反 pattern。配合「投遞 ≥ 2-3 min interval」自然形成 throttled pipeline,user 不需手動排程。

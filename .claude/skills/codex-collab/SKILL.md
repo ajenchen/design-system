@@ -134,6 +134,22 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
 
 **現實接受**:嚴格說沒有 100% 保證投遞,但 deep brief + 2-3 min 間隔 + 新 comment + 明確 opener + 漏接補送 = 最高成功率組合。
 
+**Brief queue 自主追蹤 invariant(2026-05-07 user 拍板)**:
+
+> 「都自動排程,但你也要自主記起來有哪些排進去了需要你來追蹤」
+
+我必須:
+- ✅ **TodoWrite 列每條 sent brief**(brief id + sent time + 預期 reply ETA + 狀態)
+- ✅ **每送一條 brief 立刻 update todo state**(in_progress vs pending vs replied)
+- ✅ 收到 codex reply 立刻 mark 完成 + 跑 Step 4 + Step 5 比稿
+- ✅ **超 3 分鐘無新 brief 送 + 還有 pending → 自動連送下一條**(per 3-min interval rule);user 不該需要追問「下一條何時送?」
+- ✅ 漏接(15+ min 無 reply)→ 自動送 follow-up `@codex follow-up to brief <id>`(不等 user 提)
+
+**禁止**:
+- ❌ Send brief 後 forget,不 mark todo,user 要追問才想起
+- ❌ 只 send 一條等回覆,reply 來才 send 下一條(浪費並行 throughput,3 min interval 已是 throttle)
+- ❌ 漏接後 silent wait,沒 follow-up
+
 ### Step 3:Subscribe + wait
 
 `mcp__github__subscribe_pr_activity` → 等 webhook event,**不 poll**(Anthropic best-practice,等推送)。
