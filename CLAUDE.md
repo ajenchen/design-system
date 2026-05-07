@@ -101,6 +101,7 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 | **Tailwind 出怪事** | `.claude/rules/ui-development.md`「Tailwind 5 條核心」+ `# 失敗記憶索引` |
 | **Stakeholder 產出 / 稽核** | `# 稽核 canonical` |
 | **User 糾正後** | `# 治理 canonical`(home 判斷) |
+| **跟 codex 討論 / 多輪震盪 / deep audit second-pass** | `.claude/skills/codex-collab/SKILL.md`(Claude=synthesizer, codex=reviewer, 純討論不 commit) |
 
 **找不到** → 進 `# 遇不確定時的協議`,不自決定。
 
