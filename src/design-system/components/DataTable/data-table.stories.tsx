@@ -1239,6 +1239,9 @@ const FILTER_COLUMNS = [
       { value: 'Out of stock', label: 'Out of stock' },
     ],
   }}),
+  // 2026-05-07 v15.3:加 seller(person column)demo,讓 user 在 FilterPanel demo 中
+  // 看見 PeoplePicker filter UI 真實渲染(否則 picker render 但 people pool=undefined → 選項空)。
+  col.accessor('seller',    { header: '負責人',   meta: { type: 'person', filterable: true, people: SELLERS } }),
   col.accessor('updatedAt', { header: '更新時間', meta: { type: 'date', filterable: true, includeTime: true } }),
 ] as const
 

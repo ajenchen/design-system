@@ -535,11 +535,12 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
 
   const canDrag = !disabled
   const showInvalid = !!ctx.invalidDrop && !!ctx.isDragging
-  // Visibility canonical v15.2(對齊 user directive「drag 時 row 不應 hover / drag button 不應出現」):
+  // Visibility canonical v15.3(對齊 Linear / Jira 世界級 + user directive
+  // 「source 的 drag button 反倒是可以留在原本的位置維持被壓住的狀態」):
   //   - idle:rowHovered || buttonHovered → 顯示
-  //   - 任何 row drag 進行(anyDragActive)→ 全部 row 的 button 隱藏
-  // Listeners 已搬到 row div(TreeView SSOT 整列可拖),Button 純視覺,no listeners spread。
-  const visible = !anyDragActive && (pos.rowHovered || buttonHovered)
+  //   - drag 進行中:**source row 強制顯示 + active 視覺**(讓 user 知道哪個被壓住)
+  //                  其他 row 的 button 隱藏(由 anyDragActive guard)
+  const visible = ctx.isDragging || (!anyDragActive && (pos.rowHovered || buttonHovered))
 
   const handle = (
     <Button
@@ -910,8 +911,14 @@ function DataTableInner<TData>(
     }
     return {
       onMouseOver: (e: React.MouseEvent) => {
-        // v15.2:drag 進行中不註記 data-hovered(對齊 user directive「drag 期間 row 不應 hover」)。
-        if (activeDragIdRef.current != null) return
+        // v15.3:drag 進行中只允許 source row 自己被標 hover(維持 active 視覺
+        // 對齊 Linear / Jira「source 維持 pressed 狀態」canonical)。其他 row 抑制。
+        if (activeDragIdRef.current != null) {
+          const target = e.target instanceof HTMLElement ? e.target : null
+          const rowEl = target?.closest<HTMLElement>('[data-sortable-row-id]')
+          const isSource = rowEl?.dataset.sortableRowId === activeDragIdRef.current
+          if (!isSource) return
+        }
         const idx = findRowIndex(e.target)
         if (idx == null) return
         tableRef.current?.querySelectorAll(`[data-row-index="${idx}"]`).forEach((el) => ((el as HTMLElement).dataset.hovered = ''))
@@ -1622,8 +1629,10 @@ function DataTableInner<TData>(
             !autoRowHeight && 'overflow-hidden',
             opts?.virtual && 'absolute w-full',
             showBorder && 'border-b border-divider',
-            // hover bg:drag 中全表 suppress(對齊 TreeView SSOT,user directive)
-            !anyDragActive && 'transition-colors data-[hovered]:bg-neutral-hover',
+            // v15.3 hover bg canonical:hover class 永遠生效,但 onMouseOver delegate
+            // 在 drag 期間只允許 source row 寫 data-hovered → 其他 row 自然不顯 bg。
+            // (對齊 Linear / Jira:source 維持 active 視覺,其他 row 完全靜止)
+            'transition-colors data-[hovered]:bg-neutral-hover',
             extra?.isDragging && 'bg-neutral-hover',
             // 整列可拖時 hover cursor 顯 grab(對齊 TreeView)
             enableRowDrag && !dragDisabled && !anyDragActive && 'cursor-grab',
@@ -1875,8 +1884,16 @@ function DataTableInner<TData>(
     const type = e.active.data?.current?.type ?? 'row'
     setDragType(type)
     setInvalidDropActive(false)
-    // v15.2:drag 啟動立刻清掉所有 data-hovered(避免 row hover bg 殘留 + drag handle button 仍顯)
-    tableRef.current?.querySelectorAll<HTMLElement>('[data-hovered]').forEach((el) => delete el.dataset.hovered)
+    // v15.3:drag 啟動清掉非 source row 的 data-hovered(避免其他 row 殘留 hover bg + drag button)。
+    // **保留 source row 的 hover** — 對齊 Linear / Jira「source 維持 active 視覺」world-class canonical。
+    if (type === 'row') {
+      tableRef.current?.querySelectorAll<HTMLElement>('[data-hovered]').forEach((el) => {
+        const rowId = el.dataset.sortableRowId
+        if (rowId !== id) delete el.dataset.hovered
+      })
+    } else {
+      tableRef.current?.querySelectorAll<HTMLElement>('[data-hovered]').forEach((el) => delete el.dataset.hovered)
+    }
     if (type === 'column') {
       // Column drag:snapshot header cell visual,strip transform/inline-styles
       const colId = e.active.data?.current?.columnId ?? id
@@ -1995,6 +2012,12 @@ function DataTableInner<TData>(
       const newIdx = reorderableColumnIds.indexOf(targetId)
       if (oldIdx === -1 || newIdx === -1) return
       const position: 'before' | 'after' = oldIdx < newIdx ? 'after' : 'before'
+      // **v15.3 noop guard**(對齊 TreeView SSOT + Linear / Notion / Jira canonical):
+      // drop position 等同 source 原位 → cancel,不呼叫 reorder。
+      // - source 在 idx N,drop 在 idx N-1 with 'after' = N(原位)
+      // - source 在 idx N,drop 在 idx N+1 with 'before' = N(原位)
+      if (position === 'after' && newIdx + 1 === oldIdx) return
+      if (position === 'before' && newIdx - 1 === oldIdx) return
       onColumnReorder?.(sourceId, targetId, position)
       return
     }
@@ -2007,6 +2030,9 @@ function DataTableInner<TData>(
     const newIdx = siblings.indexOf(targetId)
     if (oldIdx === -1 || newIdx === -1) return
     const position: 'before' | 'after' = oldIdx < newIdx ? 'after' : 'before'
+    // **v15.3 noop guard**(同 column 邏輯):drop 在 source 鄰近 = 原位 → cancel
+    if (position === 'after' && newIdx + 1 === oldIdx) return
+    if (position === 'before' && newIdx - 1 === oldIdx) return
     onRowReorder?.(sourceId, targetId, position)
   }, [allRowIds, parentMap, onRowReorder, onColumnReorder, reorderableColumnIds])
 
