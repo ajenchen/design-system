@@ -240,6 +240,31 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         align={align}
         sideOffset={OVERLAY_SIDE_OFFSET}
         onOpenAutoFocus={onOpenAutoFocus}
+        // **2026-05-07 v15.16 nested portal fix**:Tag dismiss inside trigger
+        // 區的 OverflowIndicator HoverCard popup(獨立 Radix portal,DOM 不在
+        // PopoverContent 內)— Radix DismissableLayer document-level outside
+        // detection 跨 portal 視為「outside」→ SelectMenu 被誤關閉。
+        // 攔 `onPointerDownOutside`,檢查 click target 是否在另一個 Radix portal
+        // 內,是 → preventDefault 取消 close。對齊 Ant Design Select multiSelect
+        // tagRender 行為(連續移除不關 dropdown)。
+        // SSOT propagation:fix 在 SelectMenu level → Combobox / 其他 SelectMenu
+        // consumer 自動受益。
+        // **2026-05-07 v15.16 nested portal fix**:Tag dismiss inside trigger 區的
+        // OverflowIndicator HoverCard popup(獨立 Radix portal,DOM 不在 SelectMenu
+        // PopoverContent 內)— Radix DismissableLayer document-level pointerdown +
+        // focusin 偵測「outside」→ SelectMenu 被誤關閉。
+        // 攔 `onInteractOutside`(統一 pointerdown + focusin),檢查 click target 是否
+        // 在另一個 Radix portal wrapper(`[data-radix-popper-content-wrapper]`),
+        // 是 → preventDefault 取消 close。對齊 Ant Design Select multiSelect tagRender
+        // 行為(連續移除不關 dropdown)。
+        // SSOT propagation:fix 在 SelectMenu level → Combobox / 所有 SelectMenu
+        // consumer 自動受益。
+        onInteractOutside={(e) => {
+          const target = e.detail.originalEvent.target as HTMLElement | null
+          if (target?.closest('[data-radix-popper-content-wrapper]')) {
+            e.preventDefault()
+          }
+        }}
       >
         <Command shouldFilter={searchable} className="bg-transparent">
           {searchable && (
