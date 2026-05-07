@@ -841,193 +841,29 @@ function VisibilityRow({
   )
 }
 
-/* ── Sprint task management playground —— v15.0 全功能驗證 ──
-   業務場景:Q2 Product Launch sprint 任務面板(Linear / Jira / Notion idiom),
-   包含 design / engineering / marketing 三條 epic 與其下 sub-task / sub-sub-task。
-   Coverage:11 cell type 全 / 全 editable / row drag / column drag / column resize /
-   tree view(getSubRows)/ 進階 filter cover 全型別 / selection + BulkActionBar。 */
-interface SprintTask {
-  id: string
-  title: string                        // string(primary,locked)
-  estimateHours: number                // number
-  budget: number                       // currency
-  dueDate: string                      // date(YYYY-MM-DD)
-  reminder: string                     // time(HH:mm)
-  status: 'Not started' | 'In progress' | 'Blocked' | 'Done'   // select
-  tags: string[]                       // multiSelect
-  assignee: PersonData | null          // person
-  reviewers: PersonData[]              // multiPerson
-  done: boolean                        // boolean
-  docUrl: string                       // url
-  children?: SprintTask[]
-}
-const SPRINT_STATUS_OPTIONS = [
-  { value: 'Not started', label: '未開始' },
-  { value: 'In progress', label: '進行中' },
-  { value: 'Blocked', label: '阻塞' },
-  { value: 'Done', label: '完成' },
-]
-const SPRINT_TAG_OPTIONS = [
-  { value: 'urgent',     label: '緊急' },
-  { value: 'review',     label: '待審' },
-  { value: 'research',   label: '研究' },
-  { value: 'tech-debt',  label: '技術債' },
-  { value: 'launch',     label: '上線' },
-]
-const SPRINT_TASKS: SprintTask[] = [
-  {
-    id: 'epic-design', title: '設計系統 token v3 升級', estimateHours: 24, budget: 80000,
-    dueDate: '2026-05-21', reminder: '09:30', status: 'In progress',
-    tags: ['urgent', 'tech-debt'], assignee: SAMPLE_PEOPLE[0],
-    reviewers: [SAMPLE_PEOPLE[1], SAMPLE_PEOPLE[2]], done: false,
-    docUrl: 'https://notion.so/design-token-v3-spec',
-    children: [
-      {
-        id: 'design-1', title: 'Color semantic 重構提案', estimateHours: 8, budget: 24000,
-        dueDate: '2026-05-12', reminder: '10:00', status: 'Done',
-        tags: ['review'], assignee: SAMPLE_PEOPLE[0], reviewers: [SAMPLE_PEOPLE[1]],
-        done: true, docUrl: 'https://figma.com/file/color-rfc',
-      },
-      {
-        id: 'design-2', title: 'Density token cross-component 套用', estimateHours: 12, budget: 36000,
-        dueDate: '2026-05-18', reminder: '14:00', status: 'In progress',
-        tags: ['urgent'], assignee: SAMPLE_PEOPLE[0], reviewers: [SAMPLE_PEOPLE[2], SAMPLE_PEOPLE[3]],
-        done: false, docUrl: 'https://notion.so/density-rollout',
-        children: [
-          {
-            id: 'design-2-1', title: 'Field family 套 sm/md/lg', estimateHours: 4, budget: 12000,
-            dueDate: '2026-05-15', reminder: '11:00', status: 'Done',
-            tags: ['review'], assignee: SAMPLE_PEOPLE[1], reviewers: [SAMPLE_PEOPLE[0]],
-            done: true, docUrl: 'https://github.com/example/pr/421',
-          },
-          {
-            id: 'design-2-2', title: 'Button family migration', estimateHours: 4, budget: 12000,
-            dueDate: '2026-05-17', reminder: '11:00', status: 'In progress',
-            tags: [], assignee: SAMPLE_PEOPLE[1], reviewers: [SAMPLE_PEOPLE[0], SAMPLE_PEOPLE[3]],
-            done: false, docUrl: 'https://github.com/example/pr/425',
-          },
-        ],
-      },
-      {
-        id: 'design-3', title: '設計原則文件補完', estimateHours: 4, budget: 8000,
-        dueDate: '2026-05-19', reminder: '15:30', status: 'Blocked',
-        tags: ['research'], assignee: SAMPLE_PEOPLE[2], reviewers: [SAMPLE_PEOPLE[0]],
-        done: false, docUrl: 'https://notion.so/principles-doc',
-      },
-    ],
-  },
-  {
-    id: 'epic-eng', title: 'DataTable v15 release', estimateHours: 40, budget: 120000,
-    dueDate: '2026-05-30', reminder: '10:00', status: 'In progress',
-    tags: ['urgent', 'launch'], assignee: SAMPLE_PEOPLE[1],
-    reviewers: [SAMPLE_PEOPLE[0], SAMPLE_PEOPLE[2], SAMPLE_PEOPLE[3]], done: false,
-    docUrl: 'https://github.com/example/data-table',
-    children: [
-      {
-        id: 'eng-1', title: 'Path B drag refactor(useDraggable + useDroppable)', estimateHours: 16, budget: 48000,
-        dueDate: '2026-05-22', reminder: '09:00', status: 'Done',
-        tags: ['tech-debt'], assignee: SAMPLE_PEOPLE[1], reviewers: [SAMPLE_PEOPLE[0]],
-        done: true, docUrl: 'https://github.com/example/pr/430',
-      },
-      {
-        id: 'eng-2', title: 'Inline edit 11 cell type 整合測試', estimateHours: 8, budget: 24000,
-        dueDate: '2026-05-25', reminder: '14:30', status: 'In progress',
-        tags: ['review'], assignee: SAMPLE_PEOPLE[1], reviewers: [SAMPLE_PEOPLE[3]],
-        done: false, docUrl: 'https://github.com/example/issue/512',
-      },
-      {
-        id: 'eng-3', title: 'Column meta.width API 推全 DS', estimateHours: 6, budget: 18000,
-        dueDate: '2026-05-27', reminder: '10:30', status: 'Not started',
-        tags: ['tech-debt'], assignee: SAMPLE_PEOPLE[3], reviewers: [SAMPLE_PEOPLE[1]],
-        done: false, docUrl: 'https://github.com/example/issue/520',
-      },
-    ],
-  },
-  {
-    id: 'epic-mkt', title: '上線發表會與素材', estimateHours: 18, budget: 60000,
-    dueDate: '2026-06-05', reminder: '11:00', status: 'Not started',
-    tags: ['launch'], assignee: SAMPLE_PEOPLE[3],
-    reviewers: [SAMPLE_PEOPLE[0], SAMPLE_PEOPLE[2]], done: false,
-    docUrl: 'https://notion.so/launch-comms',
-    children: [
-      {
-        id: 'mkt-1', title: 'Release note 草稿', estimateHours: 6, budget: 18000,
-        dueDate: '2026-06-01', reminder: '13:00', status: 'In progress',
-        tags: ['review'], assignee: SAMPLE_PEOPLE[3], reviewers: [SAMPLE_PEOPLE[0]],
-        done: false, docUrl: 'https://notion.so/release-notes',
-      },
-      {
-        id: 'mkt-2', title: 'Demo video 拍攝', estimateHours: 8, budget: 30000,
-        dueDate: '2026-06-03', reminder: '09:30', status: 'Not started',
-        tags: [], assignee: SAMPLE_PEOPLE[2], reviewers: [SAMPLE_PEOPLE[3]],
-        done: false, docUrl: 'https://drive.example.com/launch-video',
-      },
-    ],
-  },
-]
-
-// Sprint columns:11 cell type 全覆蓋。`title` locked(primary column,Notion 派)。
-const sprintCol = createColumnHelper<SprintTask>()
-const sprintColumns = [
-  sprintCol.accessor('title',         { header: '任務名稱',   meta: { type: 'string',      width: 320, minWidth: 200, editable: true, locked: true, filterable: true } }),
-  sprintCol.accessor('status',        { header: '狀態',       meta: { type: 'select',      width: 120, options: SPRINT_STATUS_OPTIONS, editable: true, filterable: true } }),
-  sprintCol.accessor('assignee',      { header: '負責人',     meta: { type: 'person',      width: 160, people: SAMPLE_PEOPLE, editable: true, filterable: true } }),
-  sprintCol.accessor('reviewers',     { header: '審核者',     meta: { type: 'multiPerson', width: 200, people: SAMPLE_PEOPLE, editable: true, filterable: true } }),
-  sprintCol.accessor('tags',          { header: '標籤',       meta: { type: 'multiSelect', width: 200, options: SPRINT_TAG_OPTIONS, editable: true, filterable: true } }),
-  sprintCol.accessor('estimateHours', { header: '預估(h)',  meta: { type: 'number',      width: 110, suffix: ' h', editable: true, filterable: true } }),
-  sprintCol.accessor('budget',        { header: '預算',       meta: { type: 'currency',    width: 130, prefix: 'NT$', editable: true, filterable: true } }),
-  sprintCol.accessor('dueDate',       { header: '截止日',     meta: { type: 'date',        width: 130, editable: true, filterable: true } }),
-  sprintCol.accessor('reminder',      { header: '提醒時間',   meta: { type: 'time',        width: 110, editable: true, filterable: true } }),
-  sprintCol.accessor('done',          { header: '已完成',     meta: { type: 'boolean',     width: 90,  editable: true, filterable: true } }),
-  sprintCol.accessor('docUrl',        { header: '文件',       meta: { type: 'url',         width: 200, editable: true, filterable: true } }),
-] as ColumnDef<SprintTask>[]
-
-// Tree-aware deep-search:命中 child 時保留整條 ancestor chain(對齊 Notion / Linear)
-function filterSprintTree(rows: SprintTask[], query: string): SprintTask[] {
-  if (!query) return rows
-  const q = query.toLowerCase()
-  const walk = (list: SprintTask[]): SprintTask[] => {
-    const out: SprintTask[] = []
-    for (const r of list) {
-      const selfHit = r.title.toLowerCase().includes(q)
-      const kids = r.children ? walk(r.children) : []
-      if (selfHit || kids.length) {
-        out.push({ ...r, children: kids.length ? kids : r.children })
-      }
-    }
-    return out
-  }
-  return walk(rows)
-}
-function flattenSprintTree(rows: SprintTask[]): SprintTask[] {
-  const out: SprintTask[] = []
-  const walk = (list: SprintTask[]) => list.forEach((r) => { out.push(r); if (r.children) walk(r.children) })
-  walk(rows)
-  return out
-}
-
 export const WithBulkActions: Story = {
   name: '選取 + 批次操作',
   parameters: { layout: 'fullscreen' },
   render: () => {
-    const [tasks, setTasks] = React.useState<SprintTask[]>(SPRINT_TASKS)
     const [selection, setSelection] = React.useState<string[]>([])
     const [allSelected, setAllSelected] = React.useState(false)
     const [search, setSearch] = React.useState('')
     const [columnVisibility, setColumnVisibility] = React.useState<Record<string, boolean>>({})
     const [columnSearch, setColumnSearch] = React.useState('')
-    const [expanded, setExpanded] = React.useState<Record<string, boolean>>({ 'epic-design': true, 'epic-eng': true, 'epic-mkt': true })
     const [columnOrder, setColumnOrder] = React.useState<string[]>(() =>
-      sprintColumns.map((c) => (c as any).accessorKey ?? (c as any).id)
+      baseColumns.map((c) => (c as any).accessorKey ?? (c as any).id)
     )
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [filterTree, setFilterTree] = React.useState<FilterTree>(() => createEmptyFilterTree('flat'))
     const [filterPrefilledId, setFilterPrefilledId] = React.useState<string | undefined>(undefined)
     const [filterOpen, setFilterOpen] = React.useState(false)
     const [sortOpen, setSortOpen] = React.useState(false)
-    const TOTAL = React.useMemo(() => flattenSprintTree(tasks).length, [tasks])
-    const filteredData = React.useMemo(() => filterSprintTree(tasks, search), [tasks, search])
-    const VISIBLE = React.useMemo(() => flattenSprintTree(filteredData).length, [filteredData])
+    const TOTAL = 5370
+    const filteredData = React.useMemo(
+      () => search ? sampleData.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase())) : sampleData,
+      [search]
+    )
+    const VISIBLE = filteredData.length
     // **NEW fix(2026-05-04)**:showHint 必含 selection.length > 0 前提,否則「清除選取」後 allSelected
     // 還是 true 邏輯走「: true」branch → Alert 仍 render「已選取全部 N 個」 → 怪 state
     const showHint = selection.length > 0 && (
@@ -1045,7 +881,7 @@ export const WithBulkActions: Story = {
           <div className="flex-1 max-w-sm">
             <Input
               size="sm"
-              placeholder="搜尋任務名稱"
+              placeholder="搜尋商品 / SKU"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               startIcon={Search}
@@ -1061,7 +897,7 @@ export const WithBulkActions: Story = {
               <PopoverContent align="end" className="w-auto p-0">
                 <DataTableFilterPanel
                   mode="flat"
-                  columns={sprintColumns}
+                  columns={baseColumns}
                   value={filterTree}
                   onChange={setFilterTree}
                   prefilledColumnId={filterPrefilledId}
@@ -1078,7 +914,7 @@ export const WithBulkActions: Story = {
               </PopoverTrigger>
               <PopoverContent align="end" className="w-auto p-0">
                 <DataTableSortManager
-                  columns={sprintColumns}
+                  columns={baseColumns}
                   sorting={sorting}
                   onSortingChange={setSorting}
                   onReset={() => setSorting([])}
@@ -1141,18 +977,18 @@ export const WithBulkActions: Story = {
                       const oldIdx = columnOrder.indexOf(active.id as string)
                       const newIdx = columnOrder.indexOf(over.id as string)
                       if (oldIdx < 0 || newIdx < 0) return
-                      // title(primary, locked)鎖在第一位,不允許 reorder 動到
-                      if (columnOrder[0] === 'title' && (oldIdx === 0 || newIdx === 0)) return
+                      // SKU(locked)鎖在第一位,不允許 reorder 動到
+                      if (columnOrder[0] === 'sku' && (oldIdx === 0 || newIdx === 0)) return
                       const next = [...columnOrder]
                       const [m] = next.splice(oldIdx, 1)
                       next.splice(newIdx, 0, m)
                       setColumnOrder(next)
                     }}>
-                      <SortableContext items={columnOrder.filter(id => id !== 'title')} strategy={verticalListSortingStrategy}>
+                      <SortableContext items={columnOrder.filter(id => id !== 'sku')} strategy={verticalListSortingStrategy}>
                         {columnOrder
                           .map((id) => {
-                            const c = sprintColumns.find(c => ((c as any).accessorKey ?? (c as any).id) === id)
-                            const headerLabel = typeof (c as any)?.header === 'string' ? (c as any).header : id
+                            const col = baseColumns.find(c => ((c as any).accessorKey ?? (c as any).id) === id)
+                            const headerLabel = typeof (col as any)?.header === 'string' ? (col as any).header : id
                             return { id, headerLabel }
                           })
                           .filter(({ headerLabel }) =>
@@ -1160,7 +996,7 @@ export const WithBulkActions: Story = {
                           )
                           .map(({ id, headerLabel }) => {
                             const visible = columnVisibility[id] !== false
-                            const locked = id === 'title'
+                            const locked = id === 'sku'
                             return (
                               <VisibilityRow
                                 key={id}
@@ -1181,9 +1017,9 @@ export const WithBulkActions: Story = {
                     Notion 派(disabled when all visible)語義較弱,Linear 派教育性更高。 */}
                 <PopoverFooter className="justify-start">
                   {(() => {
-                    const togglableIds = sprintColumns
+                    const togglableIds = baseColumns
                       .map((c) => ((c as any).accessorKey ?? (c as any).id) as string)
-                      .filter((id) => id !== 'title')
+                      .filter((id) => id !== 'sku')
                     const allVisible = togglableIds.every((id) => columnVisibility[id] !== false)
                     return (
                       <Button
@@ -1206,18 +1042,17 @@ export const WithBulkActions: Story = {
                 </PopoverFooter>
               </PopoverContent>
             </Popover>
-            <Button variant="primary" size="sm" startIcon={Plus}>新增任務</Button>
+            <Button variant="primary" size="sm" startIcon={Plus}>新增商品</Button>
             <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多" />
           </div>
         </div>
 
-        {/* DataTable — 全功能 playground:11 cell type / 全 editable / row+column drag /
-            column resize / tree view(getSubRows + expanded)/ filter cover 全型別 /
-            selection + BulkActionBar。height="100%" 為垂直滾動 trigger(per spec line 150)。
-            mx-loose:水平 padding(規則 1)/ mb-loose:底部呼吸(規則 4)— 永遠保留底部呼吸,不貼邊 */}
+        {/* DataTable — bordered=true(height 約束 = 垂直滾動 trigger,per spec line 150)
+            mx-loose:水平 padding(規則 1)
+            mb-loose:fw → 容器底 / viewport 底 / 底部 chrome 都是 loose(規則 4)— 永遠保留底部呼吸,不貼邊 */}
         <div className="flex-1 min-h-0 mx-[var(--layout-space-loose)] mb-[var(--layout-space-loose)]">
           <DataTable
-            columns={sprintColumns}
+            columns={baseColumns}
             data={filteredData}
             height="100%"
             selectable
@@ -1225,50 +1060,13 @@ export const WithBulkActions: Story = {
             onSelectionChange={setSelection}
             columnVisibility={columnVisibility}
             onColumnVisibilityChange={setColumnVisibility}
-            getRowId={(row) => row.id}
-            inlineEdit
-            enableColumnResize
-            enableColumnReorder
-            enableRowDrag
-            onColumnReorder={(sourceId, targetId, position) => {
-              setColumnOrder((prev) => {
-                const next = prev.filter((id) => id !== sourceId)
-                const idx = next.indexOf(targetId)
-                if (idx === -1) return prev
-                next.splice(position === 'before' ? idx : idx + 1, 0, sourceId)
-                return next
-              })
-            }}
-            onRowReorder={(sourceId, targetId, position) => {
-              // Top-level reorder only(對齊 NestedRowsWithDrag 保守,sub-rows 不可拖)
-              setTasks((prev) => {
-                const sourceIdx = prev.findIndex((r) => r.id === sourceId)
-                const targetIdx = prev.findIndex((r) => r.id === targetId)
-                if (sourceIdx === -1 || targetIdx === -1) return prev
-                const next = [...prev]
-                const [moved] = next.splice(sourceIdx, 1)
-                const adjusted = next.findIndex((r) => r.id === targetId)
-                next.splice(position === 'before' ? adjusted : adjusted + 1, 0, moved)
-                return next
-              })
-            }}
-            onCellCommit={(rowId, columnId, value) => {
-              const patch = (list: SprintTask[]): SprintTask[] => list.map((r) => {
-                if (r.id === rowId) return { ...r, [columnId]: value as never }
-                if (r.children) return { ...r, children: patch(r.children) }
-                return r
-              })
-              setTasks((prev) => patch(prev))
-            }}
+            getRowId={(row) => row.sku}
             onColumnFilterTrigger={(columnId) => {
               setFilterPrefilledId(columnId)
               setFilterOpen(true)
             }}
             tableOptions={{
-              state: { sorting, globalFilter: filterTree, columnOrder, expanded },
-              onExpandedChange: setExpanded as any,
-              getSubRows: (row: SprintTask) => row.children,
-              getRowCanExpand: (row) => Boolean(row.original.children?.length),
+              state: { sorting, globalFilter: filterTree, columnOrder },
               onColumnOrderChange: (updater) => {
                 setColumnOrder(typeof updater === 'function' ? updater(columnOrder) : updater)
               },
