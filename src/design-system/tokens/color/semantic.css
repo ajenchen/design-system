@@ -156,12 +156,14 @@
   --canvas:               oklch(1 0 0);
   --surface:              oklch(1 0 0);
   --surface-raised:       oklch(1 0 0);
-  /* --surface-strong:強 emphasis 中性 surface(2026-05-07 v15.12)。Material 3
-     `surface-container-high` / Atlassian `color.background.neutral.bold` 對應。
+  /* --surface-strong:強 emphasis 中性 surface(2026-05-07 v15.12 / v15.14 改 opaque)。
+     Material 3 `surface-container-high` / Atlassian `color.background.neutral.bold` 對應。
      用途:avatar overlay dismiss button bg / overflow indicator badge / 強調中性 surface。
-     hover 走一階(light → 變淺 neutral-5;dark → 變深 neutral-7,跨 mode 對稱)。 */
-  --surface-strong:       var(--color-neutral-6);
-  --surface-strong-hover: var(--color-neutral-5);
+     hover 走一階(light → 變淺 neutral-5;dark → 變深 neutral-7,跨 mode 對稱)。
+     **用 -opaque variant**(對齊 `--surface-raised` 既有 opaque convention):surface 是
+     視覺底色 layer,alpha 跟下層 bg compositing 致視覺位移 + colorMix accuracy 不可靠。 */
+  --surface-strong:       var(--color-neutral-6-opaque);
+  --surface-strong-hover: var(--color-neutral-5-opaque);
   --overlay:              var(--black-a45);
   --tooltip:              var(--color-neutral-9-opaque);
 
@@ -346,9 +348,9 @@
   --canvas:               var(--color-neutral-1-opaque);
   --surface:              var(--white-a08);
   --surface-raised:       var(--color-neutral-3-opaque);
-  /* --surface-strong:dark mode hover 走深一階(neutral-7),跟 light 對稱 */
-  --surface-strong:       var(--color-neutral-6);
-  --surface-strong-hover: var(--color-neutral-7);
+  /* --surface-strong:dark mode hover 走深一階(neutral-7),跟 light 對稱;-opaque 用法見 light 區註解 */
+  --surface-strong:       var(--color-neutral-6-opaque);
+  --surface-strong-hover: var(--color-neutral-7-opaque);
   --overlay:              var(--black-a65);
   --tooltip:              var(--color-neutral-5-opaque);
 
