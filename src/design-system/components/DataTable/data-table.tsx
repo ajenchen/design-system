@@ -1995,12 +1995,12 @@ function DataTableInner<TData>(
   const [dragOverlayHtml, setDragOverlayHtml] = React.useState<string | null>(null)
   const [dragOverlayWidth, setDragOverlayWidth] = React.useState<number | null>(null)
   // 2026-05-06 v11:column reorder 共用 drag overlay state — `dragType` 區分 row vs column
-  const [dragType, setDragType] = React.useState<'row' | 'column' | null>(null)
+  // **v15.9 移除 dragType state**:之前用來條件套 row drag modifier,現在三 scenario
+  // 都無 modifier(SSOT 一致),drag type 只在 handler 內部用 active.data.current.type 取即可。
   const [, setActiveDragColId] = React.useState<string | null>(null)
   const handleDragStart = React.useCallback((e: { active: { id: string | number; data: { current?: { type?: 'row' | 'column'; columnId?: string } } } }) => {
     const id = String(e.active.id)
     const type = e.active.data?.current?.type ?? 'row'
-    setDragType(type)
     setInvalidDropActive(false)
     // v15.3:drag 啟動清掉非 source row 的 data-hovered(避免其他 row 殘留 hover bg + drag button)。
     // **保留 source row 的 hover** — 對齊 Linear / Jira「source 維持 active 視覺」world-class canonical。
@@ -2083,7 +2083,6 @@ function DataTableInner<TData>(
   const handleDragCancel = React.useCallback(() => {
     setActiveDragId(null)
     setActiveDragColId(null)
-    setDragType(null)
     setInvalidDropActive(false)
     setDragOverlayHtml(null)
     setDragOverlayWidth(null)
@@ -2113,7 +2112,6 @@ function DataTableInner<TData>(
     const type = (active.data?.current as { type?: 'row' | 'column' } | undefined)?.type ?? 'row'
     setActiveDragId(null)
     setActiveDragColId(null)
-    setDragType(null)
     setInvalidDropActive(false)
     setDragOverlayHtml(null)
     setDragOverlayWidth(null)
@@ -2147,18 +2145,6 @@ function DataTableInner<TData>(
     onRowReorder?.(sourceId, targetId, position)
   }, [allRowIds, parentMap, onRowReorder, onColumnReorder, reorderableColumnIds, isReorderNoop])
 
-  // v2 fix #5(2026-05-05):custom modifier — 鎖 Y 軸,排除 X 抖動。
-  // Row drag 是垂直 reorder 語義(同 parent siblings 上下移),X 軸抖動會觸發水平 transform
-  // → 進而 row width / measureElement loop → 視覺錯位。等同 @dnd-kit/modifiers `restrictToVerticalAxis`
-  // 行為(那 package 沒裝;inline 實作避免新增 dep)。
-  const restrictToVerticalAxis = React.useCallback(
-    ({ transform }: { transform: { x: number; y: number; scaleX: number; scaleY: number } }) => ({
-      ...transform,
-      x: 0,
-    }),
-    []
-  )
-
   // 2026-05-06 v11:column reorder collision detection — drag column 時 droppable filter
   // 只保留 column id(避免 over 觸發 row);drag row 走 sameParent canonical。
   // v14.8:換 pointerWithin + rectIntersection composite(對齊 dnd-kit official canonical)
@@ -2187,15 +2173,17 @@ function DataTableInner<TData>(
         // detection 都 re-measure droppables(SSOT 對齊 dnd-kit virtualized list canonical)。
         measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
         collisionDetection={dndCollisionDetection}
-        // Column reorder 走水平,不適用 verticalAxis modifier;只 row drag 用
-        // **v15.8 revert v15.7 modifier**:snapToCursorModifier 把 transform 偏移 100+px,
-        // 但 dnd-kit `rectIntersection` collision detection 用 `active.rect` (含 transform)→
-        // active rect 跑掉 → over detection fails → indicator never set + onDragEnd over=null
-        // → reorder doesn't fire(VirtualScroll story 完全拖不動的 root cause)。
-        // Trade-off:回沒 modifier,ghost.left = source.left(可能離 cursor 100+px,visual gap),
-        // 但 collision + drop reorder 正常 work。Ghost-cursor 完美對齊需走 B-1 inline drag column
-        // (visual change +24px row width)— 待 user decision。
-        modifiers={dragType === 'column' ? [] : [restrictToVerticalAxis]}
+        // **v15.9 Bug C fix — Ghost viewport boundary SSOT 一致**:
+        // 撤回 `restrictToVerticalAxis` row drag modifier。三 drag scenario 共享 SSOT:
+        //   - Column reorder: 無 modifier(自由 X+Y follow cursor)
+        //   - TreeView drag : 無 modifier(自由 X+Y follow cursor)
+        //   - Row drag      : 無 modifier(自由 X+Y follow cursor)
+        // 對齊 Linear / Notion / Jira / AG Grid:row drag ghost 視覺自由 follow cursor,
+        // reorder 邏輯只看 Y 軸 row collision(dndCollisionDetection 內已實作);user 拖到
+        // 表外 → 無 row collision → over=null → drop=cancel(預期行為)。
+        // 移除 restrictToVerticalAxis 後 ghost 跨表移動體驗跟 column / treeview 一致,
+        // 沒有「為何 row drag 才被鎖在 table 內」的隱藏不對稱。
+        modifiers={[]}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragCancel={handleDragCancel}

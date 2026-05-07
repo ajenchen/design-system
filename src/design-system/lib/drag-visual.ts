@@ -177,28 +177,65 @@ export function isReorderNoop(activeIdx: number, overIdx: number, side: 'before'
 // ── Ghost reconstruction(跨 region table row → 完整橫跨 ghost) ───────────
 
 /**
- * 為 dnd-kit DragOverlay 抓 source row clone(primary region only)。
+ * 為 dnd-kit DragOverlay 重建跨 region 的完整 row ghost(2026-05-07 v15.9 Bug A+B 修)。
  *
- * **Why**:Pinned column DataTable 結構 = 三 region(left / center / right)各 mount 一個
- * row div(同 row.id),但 listeners 只在 primary region(center)。Ghost 必須來自 primary
- * region row(= activator rect 對應的那個 DOM)→ DragOverlay 起始位置 + ghost width 才會
- * 跟 cursor 對齊(對齊 user directive「ghost 跟 cursor 維持固定相對位置」SSOT)。
+ * **Why cross-region**:Pinned column DataTable 結構 = 三 region(left / center / right)
+ * 各 mount 一個 row div(同 `row.id`),listeners 只在 primary(center)。之前 ghost 只
+ * 抓 primary region row → cells 只有 center 欄(missing pinned SKU / Updated)→ user 看
+ * 到 ghost「跟 source 不一樣」(Bug B)。virtualized + 無 pinning 下亦可能因 region 多
+ * 個 mount 衍生不可預期(Bug A)。
  *
- * **What**:優先抓 `[data-row-drag-source="true"]` marker 的 row(consumer 在 primary region
- * 標此 attr);fallback `[data-sortable-row-id="${id}"]` 第一個 match(single-region 場景)。
+ * **Algorithm**:
+ *   1. 收集 `[role="row"][data-sortable-row-id="${id}"]` 所有 match(可能 1-3 個 region)
+ *   2. DOM 文檔順序剛好是 left → center → right(因 body region 排列順序)
+ *   3. 從每個 region row 的 children(role=cell)抽出 outerHTML,串成單一 flex row
+ *   4. 總寬 = sum(region offsetWidth)
+ *   5. Wrap 用 primary region 的 className(視覺一致)+ inline `display:flex; width:total`
  *
- * **Returns** `{ html, width }` 或 `null`(若找不到 row)。
+ * **Single-region case**(無 pinning,常見):退化成 single row clone + sanitize,行為跟舊版同。
+ *
+ * **Returns** `{ html, width }` 或 `null`(找不到 row)。
  */
 export function reconstructFullRowGhost(rowId: string): { html: string; width: number } | null {
-  const sourceEl = document.querySelector<HTMLElement>(
-    `[role="row"][data-sortable-row-id="${rowId}"][data-row-drag-source="true"]`,
-  ) ?? document.querySelector<HTMLElement>(
-    `[role="row"][data-sortable-row-id="${rowId}"]`,
+  const escaped = rowId.replace(/(["\\])/g, '\\$1')
+  const allRows = Array.from(
+    document.querySelectorAll<HTMLElement>(
+      `[role="row"][data-sortable-row-id="${escaped}"]`,
+    ),
   )
-  if (!sourceEl) return null
-  const clone = sourceEl.cloneNode(true) as HTMLElement
-  sanitizeGhostClone(clone, sourceEl.offsetWidth)
-  return { html: clone.outerHTML, width: sourceEl.offsetWidth }
+  if (allRows.length === 0) return null
+
+  // Single-region:直接 clone 整 row + sanitize(無 pinning 場景,跟舊版一致)
+  if (allRows.length === 1) {
+    const sourceEl = allRows[0]
+    const clone = sourceEl.cloneNode(true) as HTMLElement
+    sanitizeGhostClone(clone, sourceEl.offsetWidth)
+    return { html: clone.outerHTML, width: sourceEl.offsetWidth }
+  }
+
+  // Multi-region:抽 cells 串接。Primary region(`data-row-drag-source="true"`)的
+  // className + role 給 outer wrapper,確保 hover bg / border / row-height token 一致。
+  const primaryRow =
+    allRows.find((r) => r.dataset.rowDragSource === 'true') ?? allRows[0]
+  const cellsHtml: string[] = []
+  let totalWidth = 0
+  for (const regionRow of allRows) {
+    totalWidth += regionRow.offsetWidth
+    for (const cell of Array.from(
+      regionRow.querySelectorAll<HTMLElement>('[role="cell"],[role="gridcell"]'),
+    )) {
+      const cellClone = cell.cloneNode(true) as HTMLElement
+      // Strip drag handle portal(只在 primary region)+ inline transform 殘餘
+      cellClone.querySelectorAll('[data-drag-handle-portal]').forEach((n) => n.remove())
+      cellClone.style.transform = 'none'
+      cellsHtml.push(cellClone.outerHTML)
+    }
+  }
+  // 套 primary row 的 class(cn 結果含 hover/border/sizing token)+ display:flex 顯式
+  // 容納 cells,inline style override transform/position/opacity 避免 stale 殘餘
+  const inlineStyle = `display:flex; width:${totalWidth}px; transform:none; position:static; opacity:1; transition:none;`
+  const html = `<div role="row" class="${primaryRow.className}" style="${inlineStyle}">${cellsHtml.join('')}</div>`
+  return { html, width: totalWidth }
 }
 
 /**
