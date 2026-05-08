@@ -174,6 +174,20 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
 
 **禁止**:跳過 Step 4.5 直接列 A/B/C 給 user 拍板 = pass-through 退化,違反本 SKILL invariant。
 
+### Step 4.6:**Regression / 連動 scan on 我自己 proposed fix**(2026-05-08 user 拍板,絕對禁省)
+
+**Why this exists**:Step 4.5 只 verify codex 的 claim 真不真;不 verify **我自己 propose 的 fix 是否會造成連動非預期錯誤**。歷史:2026-05-07 commit `775d879` 我把 `tableRoot` 改 optional + document fallback,自以為 backward-compatible 但**沒 grep callers** + 沒想 future caller 不傳會仍 cross-instance — codex round 2 抓出來才修成 strict required(`f24998f`)。Step 4.6 強制 regression scan 阻 anti-pattern。
+
+**強制動作**(逐條 propose 動 code 前必過):
+1. **Grep all callers / consumers**:動 API / symbol / token / hook / variant → grep DS-wide 找所有 consumer,每個 consumer 行為變化?有 break case?
+2. **Type contract impact**:optional → required 是 breaking;default value 改 是 breaking;param order 改 是 breaking;return type 縮窄 是 breaking — 列出每條 breaking change 的 mitigation
+3. **Edge cases**:boundary conditions / null path / empty input / race / concurrent state / a11y(keyboard / screen-reader) / dark mode / density / RWD viewport — 至少跑 5 條
+4. **Cross-component impact**:這 fix 動的東西其他 sibling component / pattern / token 有間接消費?(SSOT chain 反向)
+5. **Run existing tests**:`npx tsc -b` + `node scripts/data-table-invariants.mjs`(若動 DataTable)+ 相關 stories 互動驗
+6. **記錄 scan result**:每項標 ✅ safe / ⚠️ partial / ❌ break + 證據;任一 ❌ → re-design 不 commit
+
+**禁止**:propose fix 後直接 Edit / Write / commit 沒跑 4.6;靠「應該沒問題」直覺 ship — 違反 = anti-pattern。
+
 ### Step 5:**比稿 my own-version vs codex-version → final synthesized 方案**
 
 **Anti-pattern**:把 codex reply 整段 paste 給 user 然後問「拍 A/B/C?」。這是 pass-through,不是 collab。
@@ -189,7 +203,7 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
    - **重啟**(兩邊都不對 → 重新做)
 3. 列 final 方案,不再列 A/B/C 給 user 拍 unless 真歧義
 
-**強制 format**(每次 reply):3 段 Step 4 self-check(M22/M23/M27/M8 ✅/❌)+ Step 4.5 codex claim verification 表(claim / verify 動作 / 結果)+ Step 5 接受/拒絕/修正 + final action plan(只真歧義才列 options)。歷史錨例:codex「7 anti-bloat 機制重疊」→ grep FALSE → 拒絕該 claim;接受「6 stop hooks 合併」修正 codex「-12 hooks」為「-5 hooks」。
+**強制 reply format**:Step 4 self-check(M22/M23/M27/M8)+ 4.5 verify 表 + 4.6 regression scan 表 + 5 接受/拒絕/修正 + final action(僅真歧義列 options)。錨例 `029b647` `f24998f` `775d879`。
 
 ### Step 6:User approve → Claude 實作
 
@@ -228,16 +242,7 @@ PR comment:`@codex 結論已 land at <commit>. 感謝 review.`
 
 ## Guardrails
 
-**Hook 檢查**:本 skill 不需新 hook,沿用既有 `check_benchmark_citation.sh` / `stop_meta_self_audit.sh`。Codex reply 只是 input 不入 commit,所有 hook 仍對 Claude 的 final commit 強制。
-
-**禁止**:
-- Codex commit 直接 push(本 workflow 純討論)
-- 跳過 Step 4 自檢直接送 user codex 原文
-- 把 codex reply 當 ground truth(我仍是 gatekeeper)
-
-**Self-improvement(M20)**:codex 抓出我漏的 M-rule violation → 加 `.claude/memory/codex-caught-violations.md`,下次 prune 升 hook。
-
-**Auto-codify codex collab insight(2026-05-07 user invariant)**:任何跟 codex 協作的新發現(format / interval / 投遞 / verify / 比稿 / 工作模式 / planning location)→ **立刻 5-layer 落地**(本 SKILL + memory + CLAUDE.md row + planning doc if applicable),user 不該需要在新 session 重講同件事。Trigger phrases:「確保記錄起來」「不需要再對你耳提面命」「自然就知道」。
+沿用既有 hook(`check_benchmark_citation.sh` / `stop_meta_self_audit.sh`),codex reply 不入 commit,hook 對 final commit 強制。**禁止**:codex commit 直接 push / 跳過 Step 4 送 user 原文 / 把 codex reply 當 ground truth。**M20 self-improvement**:codex 抓的 M-rule violation → 加 `.claude/memory/codex-caught-violations.md`。**Auto-codify(2026-05-07)**:任何 collab 新發現 → 立刻 5-layer(SKILL + memory + CLAUDE.md + planning),trigger「確保記錄起來」「不需要再對你耳提面命」「自然就知道」。
 
 ## Deep Audit 整合 + Cross-session persistence
 
