@@ -20,7 +20,6 @@ import { ChevronDown, Calendar, Clock, ArrowUp, ArrowDown, ArrowUpDown, Filter a
 // **v15.0 Path B**(對齊 user 「source 留原位 / indicator 為 drop preview / 不 auto-shift」directive):
 // 砍 useSortable + SortableContext 用 useDraggable + useDroppable 分離 hooks(對齊 DS 內 TreeView SSOT)。
 import { DndContext, DragOverlay, useDraggable, useDroppable, useDndContext, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, MeasuringStrategy, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { cn } from '@/lib/utils'
 import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier } from '@/design-system/lib/drag-visual'
 import { nakedCellEditableDisplayHover } from '@/design-system/components/Field/field-wrapper'
@@ -1930,9 +1929,16 @@ function DataTableInner<TData>(
   // 同 parent level 限制由「sub-rows 不在 items 內」自然成立。
   // DragEnd:active.id / over.id → 算 position(active vs over 視覺位置),呼叫 onRowReorder。
   // hooks 必呼叫(rules-of-hooks)— 即使 enableRowDrag=false 也走 useSensors;wrap 才條件化。
+  // **codex P1 fix(2026-05-07 v15.13)**:KeyboardSensor 不傳 `coordinateGetter`,用
+  // dnd-kit 預設 25px 箭頭 stepping。`sortableKeyboardCoordinates` 是 `@dnd-kit/sortable`
+  // preset,需 `<SortableContext>` 才正確 resolve 下一個 sortable target — 但 v15.0
+  // path B 已 explicit 砍 SortableContext 改用 useDraggable+useDroppable(line 21),
+  // 此 getter 在無 context 下 keyboard nav 無法 reliable resolve target → keyboard
+  // drag/reorder regression。Default getter(arrow-key Δ25px)在 useDraggable 場景是
+  // dnd-kit canonical(`@dnd-kit/core/src/sensors/keyboard/defaults.ts` 預設行為)。
   const dndSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor),
   )
 
   // **2026-05-06 v14.8 collision detection canonical(對齊 dnd-kit official best practice)**:

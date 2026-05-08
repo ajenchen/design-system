@@ -204,16 +204,16 @@ export function isReorderNoop(activeIdx: number, overIdx: number, side: 'before'
  */
 export function reconstructFullRowGhost(
   rowId: string,
-  tableRoot?: HTMLElement | null,
+  tableRoot: HTMLElement | null,
 ): { html: string; width: number } | null {
+  // **codex P1 fix(2026-05-07 v15.13)**:tableRoot 強制 required(non-optional)。
+  // 之前 fallback document 仍允許多 DataTable 同頁 row.id reuse(default index-based)→
+  // cross-instance ghost 污染。strict-scope canonical:caller 必傳 tableRef.current
+  // (`[data-data-table-outer]`),null 直接 return null(caller 該守 ref 已 mount)。
+  if (!tableRoot) return null
   const escaped = rowId.replace(/(["\\])/g, '\\$1')
-  // **codex P2 fix(2026-05-07)**:scope 到 active table root,避免多 DataTable 同頁
-  // row.id reuse(default index-based)→ document-wide query 把別 table 的 row 也拼進
-  // ghost 造成 cross-instance 污染。Caller 必傳 tableRef.current(`[data-data-table-outer]`)。
-  // tableRoot 缺(legacy caller / TreeView 等非 multi-region 場景)→ fallback document。
-  const scope: ParentNode = tableRoot ?? document
   const allRows = Array.from(
-    scope.querySelectorAll<HTMLElement>(
+    tableRoot.querySelectorAll<HTMLElement>(
       `[role="row"][data-sortable-row-id="${escaped}"]`,
     ),
   )
