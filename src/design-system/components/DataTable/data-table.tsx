@@ -1979,7 +1979,13 @@ function DataTableInner<TData>(
     // 0 over。Fix:fallback 用 cursor.y 對 DOM querySelector 找 row whose live
     // boundingClientRect 包含 cursor.y(同 parent siblings,排除 active)。
     if (cursor) {
-      const liveRows = Array.from(document.querySelectorAll<HTMLElement>('[role="row"][data-sortable-row-id]'))
+      // **codex P2 fix(2026-05-07)**:scope 到 active table root + 同時驗 X 邊界。
+      // 之前 document-wide query + cursor.y-only match → 多 DataTable 同頁(side-by-side
+      // panels with overlapping Y ranges)會把 cursor 不在當前 table 卻 Y 帶相同的 row
+      // 認成 over,觸發錯誤 reorder indicator/commit。Fix:limit 到 tableRef.current 的
+      // sortable rows + 同時驗 cursor 在 row's X bounds 內。
+      const tableScope = tableRef.current ?? document
+      const liveRows = Array.from(tableScope.querySelectorAll<HTMLElement>('[role="row"][data-sortable-row-id]'))
         .filter(el => el.dataset.sortableRowId !== activeId)
         .filter(el => {
           const cParent = parentMap.get(el.dataset.sortableRowId ?? '')
@@ -1987,7 +1993,10 @@ function DataTableInner<TData>(
         })
       for (const el of liveRows) {
         const r = el.getBoundingClientRect()
-        if (cursor.y >= r.top && cursor.y <= r.bottom) {
+        if (
+          cursor.y >= r.top && cursor.y <= r.bottom &&
+          cursor.x >= r.left && cursor.x <= r.right
+        ) {
           const rowId = el.dataset.sortableRowId
           const cont = filtered.find(c => String(c.id) === rowId)
           if (cont) return [{ id: cont.id, data: { droppableContainer: cont, value: 0 } }]
@@ -2047,7 +2056,7 @@ function DataTableInner<TData>(
       // **v15.4 SSOT**:reconstructFullRowGhost 跨 pinned 區域(left/center/right)
       // 重組完整 row ghost,確保 cursor 在 ghost 內部維持與 mousedown 時相對位置一致
       // (對齊 user directive「ghost 跟 cursor 維持固定相對位置」+ Linear / Notion / Jira)
-      const ghost = reconstructFullRowGhost(id)
+      const ghost = reconstructFullRowGhost(id, tableRef.current)
       if (ghost) {
         setDragOverlayHtml(ghost.html)
         setDragOverlayWidth(ghost.width)

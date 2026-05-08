@@ -202,10 +202,18 @@ export function isReorderNoop(activeIdx: number, overIdx: number, side: 'before'
  *
  * **Returns** `{ html, width }` 或 `null`(找不到 row)。
  */
-export function reconstructFullRowGhost(rowId: string): { html: string; width: number } | null {
+export function reconstructFullRowGhost(
+  rowId: string,
+  tableRoot?: HTMLElement | null,
+): { html: string; width: number } | null {
   const escaped = rowId.replace(/(["\\])/g, '\\$1')
+  // **codex P2 fix(2026-05-07)**:scope 到 active table root,避免多 DataTable 同頁
+  // row.id reuse(default index-based)→ document-wide query 把別 table 的 row 也拼進
+  // ghost 造成 cross-instance 污染。Caller 必傳 tableRef.current(`[data-data-table-outer]`)。
+  // tableRoot 缺(legacy caller / TreeView 等非 multi-region 場景)→ fallback document。
+  const scope: ParentNode = tableRoot ?? document
   const allRows = Array.from(
-    document.querySelectorAll<HTMLElement>(
+    scope.querySelectorAll<HTMLElement>(
       `[role="row"][data-sortable-row-id="${escaped}"]`,
     ),
   )
