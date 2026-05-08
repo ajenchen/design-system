@@ -18,6 +18,9 @@ description: Structured discussion-mode collaboration with OpenAI Codex (via @co
 
 **核心原則**:Codex 不直接 commit。所有結論由 Claude 收斂、跑完 M1-M27 自檢、user approve 後由我落地。
 
+**Codex 輸出全來源 invariant(2026-05-07 user 拍板)**:
+任何 codex 輸出 — **DISCUSS-ONLY 深 reply / bot 自動 PR review(`chatgpt-codex-connector[bot]`)/ PR comment / inline review thread** — 統一視為 **2nd-opinion 輸入,非 directive**。任何來源都必過完整 Step 4.5 verify + Step 5 比稿 才動 code。**禁止「bot review = 直接修」短路**。歷史錨例:2026-05-07 commit `775d879` 我把 codex bot 兩條 P2 直接修沒做 own-version + 比稿,user 糾正 → commit `f24998f` 補上完整 own-version + 比稿 documentation。本 invariant 永久 codified。
+
 ---
 
 ## When to invoke
