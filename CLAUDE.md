@@ -103,8 +103,22 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 | **Stakeholder 產出 / 稽核** | `# 稽核 canonical` |
 | **User 糾正後** | `# 治理 canonical`(home 判斷) |
 | **跟 codex 討論 / 多輪震盪 / 任何 codex 輸出** | `.claude/skills/codex-collab/SKILL.md`。**3-step discipline 鐵律(動 code 前必過)**:(1) Step 4.5 verify codex claim 真不真;(2) Step 4.6 regression / 連動 scan 自己 fix(grep callers / type contract / edge / cross-component / 跑 tsc + invariants);(3) Step 5 比稿 my own-version vs codex 取優棄劣。**禁** pass-through / 直覺 ship / 短 format。Queue SSOT → `.claude/memory/codex-brief-queue.jsonl`(每 session start 必讀,3 min 間隔 / 1 in-flight serial / 10 min auto-followup) |
+| **PR merge 後 / session start branch 健檢** | `# Git solo-work canonical` |
 
 **找不到** → 進 `# 遇不確定時的協議`,不自決定。
+
+# Git solo-work canonical(2026-05-08 codified — solo work 不該累積 branch)
+
+**單 active feature branch + main**;PR merge 完**立刻**清,不留 stale。
+
+| 步驟 | 動作 |
+|------|------|
+| 1 Local main 對齊 | `git fetch origin && git checkout main && git reset --hard origin/main`(sandbox 累積的 unpushed 都是 stop-hook / sync-memory 殘留可棄)|
+| 2 砍 local feature branch | `git branch -d <feature>`(已 merge 的 lowercase `-d` 安全) |
+| 3 砍 remote feature branch | `git push origin --delete <feature>` ;sandbox proxy HTTP 403 攔 → 提醒 user **GitHub UI 手動刪** |
+| 4 Session start 健檢 | `git branch -a` 應只有 `main` + 0-1 active feature(本 session 的);> 1 active feature → 立刻清 |
+
+**禁止**:留 merged 但 remote 未刪的 branch / local main 跟 origin/main divergent / 並行多 active feature 不收斂。Solo work = 1-active 法則,違反 = governance bug。
 
 # 命名與語言一致性
 
