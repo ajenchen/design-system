@@ -102,7 +102,7 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 | **Tailwind 出怪事** | `.claude/rules/ui-development.md`「Tailwind 5 條核心」+ `# 失敗記憶索引` |
 | **Stakeholder 產出 / 稽核** | `# 稽核 canonical` |
 | **User 糾正後** | `# 治理 canonical`(home 判斷) |
-| **跟 codex 討論 / 多輪震盪 / deep audit second-pass** | `.claude/skills/codex-collab/SKILL.md`(**dual-track 比稿** + **永遠 deep brief 禁短 format**:我跑一版 + codex deep 跑一版 → 比稿取優棄劣 → final;不可 pass-through;不可 truncate 換速度) |
+| **跟 codex 討論 / 多輪震盪 / deep audit second-pass** | `.claude/skills/codex-collab/SKILL.md`(**dual-track 比稿** + **永遠 deep brief 禁短 format**:我跑一版 + codex deep 跑一版 → 比稿取優棄劣 → final;不可 pass-through;不可 truncate 換速度);queue SSOT → `.claude/memory/codex-brief-queue.jsonl`(每 session start 必讀,3 min 間隔 / 1 in-flight serial / 10 min auto-followup) |
 
 **找不到** → 進 `# 遇不確定時的協議`,不自決定。
 

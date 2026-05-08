@@ -123,36 +123,28 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
 
 歷史錨點:同日我送 5 條 brief 連發 → codex Cloud queue dedup skip 4 條(只回 1 條)。Codex 自己診斷 root cause = **interval too short**(短時間連送 → 後端 dedup)。
 
-**強制規則**:
-- ✅ **Brief 間隔 ≥ 5 min**(2026-05-07 user-tuned;codex 自己原建議 2-3 min 但實證 R4 需 4 次 follow-up + ScrollArea 18:21 沒 reply 證明 3 min 不夠。5 min safer baseline,real-world dedup window 可能比 codex 認知更寬。trade-off:7 條 brief × 5 min = 35 min sequencing,接受)
+**強制規則(2026-05-08 user-tuned interval + serial gating)**:
+- ✅ **Brief 間隔 ≥ 3 min**(2026-05-08 改;前 5 min 過保守,user 拍板對齊 codex 原建議 2-3 min 中位)。trade-off:dedup window 風險微增,由下一條 serial gating 補強。
+- ✅ **Serial gating — 同時最多 1 brief in-flight**:有 pending(未 reply / 未 exhausted)brief 時,**禁止送新 brief**;其他排隊到 queue file,前一條 reply / exhausted 才送下一條。避免 codex queue 兩條混淆 / dedup window 撞。
+- ✅ **Auto-followup 10 min**(前 15 min):pending brief 過 10 min 無 reply → 自動 new comment `@codex follow-up to brief <id>`。第 2 次 followup 再 +10 min(20 min mark)。第 3 次 +10 min(30 min mark)。3 次 followup 仍無 reply → mark `exhausted`,user-handoff,不再自動送。
 - ✅ **每條 brief 用新 `add_issue_comment`,不要 edit 既有 comment**(webhook 不把 edit 當新 task)
 - ✅ **Opener canonical**:`@codex DISCUSS-ONLY` 或 `@codex IMPLEMENT`(明確 mode signal)
 - ✅ Brief content **保留 deep format**(unchanged, per L1 Step 1 invariant)— interval rule 跟 depth invariant 不衝突
 - ✅ 漏接補救:**新 comment** with `@codex follow-up to brief <id> ...`(不要只「請看上面」)
 
-**禁止**:
-- ❌ 連續 < 2-3 min 內送多條 brief(會被 dedup skip)
-- ❌ Edit 既有 comment 期待重 trigger(webhook 不把 edit 當新 task)
-- ❌ 為了「依 codex 建議短 brief 提高投遞」就 truncate 深度(L1 Step 1 invariant 優先 — brief 內容深度不打折,只 timing 變)
+**Queue 跨 session 持久化(2026-05-08 user 拍板)**:
+- SSOT:`.claude/memory/codex-brief-queue.jsonl`,JSONL 一行一 brief
+- Schema:`{ id, url, topic, sentAt, status: 'pending'|'replied'|'exhausted', followupCount, lastFollowupAt?, repliedAt?, queuedAfter? }`
+- **每 session start 必讀**(本 SKILL invariant — load 時掃 queue → 找 pending → resume tracking)
+- send 新 brief 時:append entry + 寫回
+- reply 來時:update status='replied' + repliedAt,unblock 下一條 queued brief
+- followup 自動觸發時:update followupCount + lastFollowupAt
+- 3 followup 仍無 reply → status='exhausted',inject user-handoff prompt
+- TodoWrite 仍用(session-scoped 視覺呈現),但 ground truth 在此 file
 
-**現實接受**:嚴格說沒有 100% 保證投遞,但 deep brief + 2-3 min 間隔 + 新 comment + 明確 opener + 漏接補送 = 最高成功率組合。
+**Quality-fail re-mention**:reply 來但有 commit / doc 沒 push / Missing Q / M22 無 cite URL / Off-topic / 短 format truncate 任一 → 自動 new comment「previous reply quality issue,需要 X」(逐條列 fail + 重申 deep / cite ≥3 / Q1-QN)。
 
-**Brief queue 自主追蹤 invariant(2026-05-07 user 拍板)**:
-
-> 「都自動排程,但你也要自主記起來有哪些排進去了需要你來追蹤」
-
-我必須:
-- ✅ **TodoWrite 列每條 sent brief**(brief id + sent time + 預期 reply ETA + 狀態)
-- ✅ **每送一條 brief 立刻 update todo state**(in_progress vs pending vs replied)
-- ✅ 收到 codex reply 立刻 mark 完成 + 跑 Step 4 + Step 5 比稿
-- ✅ **滿 5 分鐘 interval 還有 pending → 自動連送下一條**(user 不該需要追問「下一條何時送?」)
-- ✅ **漏單判定:15 min 無任何 reply** → 自動 new mention follow-up `@codex follow-up to brief <id>`(不等 user 提;對齊 codex 自己 meta 建議 10-15 min 判定 missed)
-- ✅ **品質 fail 判定**(reply received 但有以下任一):commit / doc file 沒 push / Missing Q 部分回答 / M22 fail 無 cite URL / Off-topic 搞錯 brief / 短 format truncate → 自動 new mention「previous reply quality issue,需要 X」(逐條列 fail 點 + 重申 deep / cite ≥3 / Q1-QN 完整答)
-
-**禁止**:
-- ❌ Send brief 後 forget,不 mark todo,user 要追問才想起
-- ❌ 只 send 一條等回覆,reply 來才 send 下一條(浪費並行 throughput,3 min interval 已是 throttle)
-- ❌ 漏接後 silent wait,沒 follow-up
+**禁止**:Send brief 後 forget(queue file 是 SSOT)/ Edit 既有 comment 期待重 trigger / 為投遞率 truncate 深度。
 
 ### Step 3:Subscribe + wait
 
