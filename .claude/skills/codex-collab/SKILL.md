@@ -134,12 +134,9 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
 
 **Queue 跨 session 持久化(2026-05-08 user 拍板)**:
 - SSOT:`.claude/memory/codex-brief-queue.jsonl`,JSONL 一行一 brief
-- Schema:`{ id, url, topic, sentAt, status: 'pending'|'replied'|'exhausted', followupCount, lastFollowupAt?, repliedAt?, queuedAfter? }`
-- **每 session start 必讀**(本 SKILL invariant — load 時掃 queue → 找 pending → resume tracking)
-- send 新 brief 時:append entry + 寫回
-- reply 來時:update status='replied' + repliedAt,unblock 下一條 queued brief
-- followup 自動觸發時:update followupCount + lastFollowupAt
-- 3 followup 仍無 reply → status='exhausted',inject user-handoff prompt
+- Schema:`{ id, url, topic, sentAt, status, followupCount, lastFollowupAt?, repliedAt?, deferredAt?, deferReason?, planRef?, queuedAfter? }` — status ∈ `pending` (active 等 reply 可 auto-followup) / `deferred` (user 明示「之後再/晚點/先放著」**不 auto-followup**,等 explicit re-invoke 轉 pending)/ `replied` / `exhausted`
+- **每 session start 必讀**(本 SKILL invariant — 載入掃 queue 找 pending resume tracking;`deferred` 不送 followup)
+- 事件:send brief = append;reply 來 = `replied` + repliedAt + unblock queued;followup auto = ++count + lastFollowupAt;3 round 無 reply = `exhausted` + handoff prompt;user defer trigger = `deferred` + deferredAt + deferReason + planRef
 - TodoWrite 仍用(session-scoped 視覺呈現),但 ground truth 在此 file
 
 **Quality-fail re-mention**:reply 來但有 commit / doc 沒 push / Missing Q / M22 無 cite URL / Off-topic / 短 format truncate 任一 → 自動 new comment「previous reply quality issue,需要 X」(逐條列 fail + 重申 deep / cite ≥3 / Q1-QN)。
