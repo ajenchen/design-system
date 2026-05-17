@@ -124,7 +124,8 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "$LAST_USER_LINE"
     # Signal (a)/(b): grep / tsc / hook tests / src/ Read
     VERIFY_SIG_RE='(Bash.*grep|Bash.*npx tsc|Bash.*bash .claude/hooks/tests|Read.*src/design-system)'
     # Signal (d): retract phrase in last assistant message
-    RETRACT_CODEX_RE='(撤回採納|撤回 claim|未採納 codex|不採用 codex|skip codex|codex.*未 verify)'
+    # 2026-05-17 expanded: cover all FP patterns(historical cite / pure git / pure verify / 0 codex)
+    RETRACT_CODEX_RE='(撤回採納|撤回 claim|未採納 codex|不採用 codex|skip codex|codex.*未 verify|0 條新 codex|0 codex|沒啟 codex|沒要啟 codex|純 git|純 verify|純文字|本 turn 純|本 turn 無 codex|引用 prior|cite previous|描述 prior|歷史 codex|historical reference)'
     HAS_VERIFY=$(echo "$THIS_TURN_FULL" | grep -cE "$VERIFY_SIG_RE" 2>/dev/null)
     HAS_VERIFY=${HAS_VERIFY:-0}
     HAS_RETRACT=$(echo "$LAST_ASSISTANT" | grep -cE "$RETRACT_CODEX_RE" 2>/dev/null)
@@ -215,14 +216,18 @@ fi
 # 機械化偵測:本 turn 含 codex collab 意圖 keyword AND 無 discovery cmd trace AND 無撤回 → BLOCKER。
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
   THIS_TURN_RAW=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null)
-  CODEX_INTENT_RE='跟 codex|dual-track|比稿|cite battle|找 codex 確認|codex collab|@codex DISCUSS'
-  CODEX_INTENT=$(echo "$THIS_TURN_RAW" | grep -ciE "$CODEX_INTENT_RE" 2>/dev/null)
+  # 2026-05-17 fix:CODEX_INTENT scope 改 LAST_ASSISTANT 而非 THIS_TURN_RAW —
+  # 排除 bash commit message / tool input / status report cite 觸發 FP。
+  # Active intent 必出現在 assistant prose(「我派 codex / 找 codex 比稿」)。
+  CODEX_INTENT_RE='跟 codex|dual-track|@codex DISCUSS|派 codex|啟 codex|dispatch codex|invoke codex|送 brief.*codex'
+  CODEX_INTENT=$(echo "$LAST_ASSISTANT" | grep -ciE "$CODEX_INTENT_RE" 2>/dev/null)
   CODEX_INTENT=${CODEX_INTENT:-0}
   if [ "$CODEX_INTENT" -gt 0 ]; then
     DISCOVERY_RE='node_modules/\.bin/codex|which codex|\.codex/auth\.json'
     HAS_DISCOVERY=$(echo "$THIS_TURN_RAW" | grep -cE "$DISCOVERY_RE" 2>/dev/null)
     HAS_DISCOVERY=${HAS_DISCOVERY:-0}
-    RETRACT_TRANSPORT_RE='(撤回 codex|改用 cloud|Explore 替身|未走 Step 0\.4|未跑 discovery|codex 通道斷)'
+    # 2026-05-17 expanded:cover all FP retract patterns
+    RETRACT_TRANSPORT_RE='(撤回 codex|改用 cloud|Explore 替身|未走 Step 0\.4|未跑 discovery|codex 通道斷|0 codex collab|沒要啟 codex|沒啟 codex|本 turn 純|純 git|純 verify|純文字|歷史 codex|cite previous|cite prior|引用 prior|描述 prior)'
     HAS_RETRACT_TRANSPORT=$(echo "$LAST_ASSISTANT" | grep -cE "$RETRACT_TRANSPORT_RE" 2>/dev/null)
     HAS_RETRACT_TRANSPORT=${HAS_RETRACT_TRANSPORT:-0}
     if [ "$HAS_DISCOVERY" -eq 0 ] && [ "$HAS_RETRACT_TRANSPORT" -eq 0 ]; then
