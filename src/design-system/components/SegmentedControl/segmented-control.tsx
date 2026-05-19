@@ -6,6 +6,7 @@ import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFieldContext } from '@/design-system/components/Field/field-context'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 /**
  * SegmentedControl — 互斥多選一的 value 選擇器
@@ -220,7 +221,10 @@ const SegmentedControlItem = React.forwardRef<
   SegmentedControlItemProps
 >(({ className, startIcon: StartIcon, badge, children, 'aria-label': ariaLabel, ...restProps }, ref) => {
   const { size, fullWidth, iconOnly: groupIconOnly } = React.useContext(SegmentedControlContext)
-  const iconSize = size === 'lg' ? 20 : size === 'xs' ? 14 : 16
+  // 2026-05-18 改 per user 拍板「沒機械化導致偏移」+「做完」approval(對齊 Button xs / uiSize Icon Tier):
+  // 原 xs=14 跟 Button xs=16 不一致,xs/sm/md 統一 16 對齊 uiSize.spec.md(xs/sm/md→16, lg→20)。
+  // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
+  const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
   const hasSuffix = badge != null
 
   // Dev-mode 語意契約檢查：group iconOnly = true 時，item 必須有 startIcon + aria-label

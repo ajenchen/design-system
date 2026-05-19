@@ -12,6 +12,7 @@ import { ItemInlineAction, ItemPrefix, ItemSuffix } from '@/design-system/patter
 import { useFieldContext } from '@/design-system/components/Field/field-context'
 import { SelectMenu, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
 const tagPadding: Record<string, string> = {
@@ -106,7 +107,8 @@ export interface SelectProps
 }
 
 // ── Icon / size helpers ─────────────────────────────────────────────────────
-const getIconSize = (size: string) => size === 'lg' ? 20 : 16
+// 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反)
+const getIconSize = (size: string) => ICON_SIZE[size as 'sm' | 'md' | 'lg']
 
 // ── Shared sub-components ───────────────────────────────────────────────────
 

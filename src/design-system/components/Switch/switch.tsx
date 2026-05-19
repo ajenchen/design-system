@@ -75,8 +75,10 @@ const SPECS: Record<string, { thumb: number; check: number; checkStroke: number;
   // 見 checkbox.tsx 的 checkStrokeWidth 註解)。12px 用 3.5(render ≈ 1.75px 線寬,比 Lucide
   // 預設的 1px render 明顯更粗,視覺跟 16px 預設 stroke 的 1.33px 有足夠區別),16px 用 2.5
   // (render ≈ 1.67px,比預設 1.33px 稍粗讓 toggle check 夠顯眼)。跨 size 配對值由 checkbox.tsx 共用。
-  sm: { thumb: 20, check: 12, checkStroke: 3.5, translate: 'translateX(20px)' },
-  md: { thumb: 20, check: 12, checkStroke: 3.5, translate: 'translateX(20px)' },
+  // 2026-05-18 簡化 per user 視覺證 + Checkbox 同步(3.5 → 3 sm/md):effective render 差
+  // 0.08px 視覺看不出,保留 compensation 主旨但不過度差異化。
+  sm: { thumb: 20, check: 12, checkStroke: 3, translate: 'translateX(20px)' },
+  md: { thumb: 20, check: 12, checkStroke: 3, translate: 'translateX(20px)' },
   lg: { thumb: 24, check: 16, checkStroke: 2.5, translate: 'translateX(24px)' },
 }
 

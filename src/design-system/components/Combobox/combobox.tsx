@@ -12,6 +12,7 @@ import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-a
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
 import { SelectMenu, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 // ── constants ───────────────────────────────────────────────────────────────
 
@@ -466,7 +467,8 @@ export interface ComboboxProps {
   showDisplayEndIcon?: boolean
 }
 
-const getIconSize = (size: string) => size === 'lg' ? 20 : 16
+// 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反)
+const getIconSize = (size: string) => ICON_SIZE[size as 'sm' | 'md' | 'lg']
 
 // ── Shared readonly/disabled/display render ─────────────────────────────────
 

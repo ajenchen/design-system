@@ -18,6 +18,7 @@ import {
   type TimeParts,
   type TimeStep,
 } from '@/design-system/components/TimePicker/time-columns'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 // ── Format ──────────────────────────────────────────────────────────────────
 
@@ -379,7 +380,8 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     const resolvedMode = disabled ? 'disabled' : mode
     const variant: FieldVariant = variantProp ?? fieldCtx?.variant ?? 'default'
     const isEditable = resolvedMode === 'edit'
-    const iconSize = size === 'lg' ? 20 : 16
+    // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
+  const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const needConfirm = needConfirmProp ?? showTime  // datetime 預設需確認
     const [open, setOpenState] = React.useState(defaultOpen)
     const setOpen = React.useCallback((next: boolean) => { setOpenState(next); onOpenChange?.(next) }, [onOpenChange])
@@ -723,7 +725,8 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     const resolvedMode = disabled ? 'disabled' : mode
     const variant: FieldVariant = variantProp ?? fieldCtx?.variant ?? 'default'
     const isEditable = resolvedMode === 'edit'
-    const iconSize = size === 'lg' ? 20 : 16
+    // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
+  const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const needConfirm = needConfirmProp ?? showTime
     const resolvedPlaceholder: [string, string] = placeholder ?? (
       showTime ? ['Start date time', 'End date time'] : ['Start date', 'End date']

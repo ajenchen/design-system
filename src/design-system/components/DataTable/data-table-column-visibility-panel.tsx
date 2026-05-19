@@ -233,8 +233,9 @@ function VisibilityRow({
       )}
     >
       <ItemPrefix>
+        {/* 2026-05-18 改 per user「做完」approval:14 → 16 對齊 uiSize.spec.md Icon Tier */}
         {locked ? (
-          <Lock size={14} className="text-fg-muted" aria-hidden />
+          <Lock size={16} className="text-fg-muted" aria-hidden />
         ) : draggable ? (
           <ItemInlineActionButton
             icon={GripVertical}

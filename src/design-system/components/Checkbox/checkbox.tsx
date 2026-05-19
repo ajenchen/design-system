@@ -63,7 +63,12 @@ const checkIconSize: Record<string, number> = { sm: 12, md: 12, lg: 16 }
 // 為什麼不用 Lucide absoluteStrokeWidth:那保持「絕對 px 粗細」,我們反而要「小尺寸比例更粗」。
 //
 // Check 與 Minus(indeterminate)共用此規則;Switch 的 SPECS.checkStroke 採同樣值。
-const checkStrokeWidth: Record<string, number> = { sm: 3.5, md: 3.5, lg: 2.5 }
+// 2026-05-18 簡化 per user 視覺證「sm/md 3.5 vs lg 2.5 看不出差別」(image #64 + 2nd round
+// 圖一 video proof)+「做完」approval:
+// - 原 {3.5, 3.5, 2.5} → effective render thickness 1.75 / 1.75 / 1.67 = 跨 size 差 0.08px(視覺看不出)
+// - 改 {3, 3, 2.5} 保留 sm/md 小尺寸 legibility insurance(per iOS HIG / Material 3 cite)
+//   + lg 仍稍粗於 Lucide default 2(保留 compensation 主旨,但不過度差異化)
+const checkStrokeWidth: Record<string, number> = { sm: 3, md: 3, lg: 2.5 }
 
 // ── Types ───────────────────────────────────────────────────────────────────
 

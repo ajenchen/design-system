@@ -22,6 +22,7 @@ import { ChevronDown, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, Eye
 // 砍 useSortable + SortableContext 用 useDraggable + useDroppable 分離 hooks(對齊 DS 內 TreeView SSOT)。
 import { DndContext, DragOverlay, useDraggable, useDroppable, useDndContext, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, MeasuringStrategy, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
 import { cn } from '@/lib/utils'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier } from '@/design-system/lib/drag-visual'
 import { nakedCellEditableDisplayHover } from '@/design-system/components/Field/field-wrapper'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
@@ -1288,7 +1289,8 @@ function DataTableInner<TData>(
       : <TruncateCell>{content}</TruncateCell>
   }
 
-  const iconSize = size === 'lg' ? 20 : 16
+  // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
+  const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
 
   // 2026-05-09 D-path retired:`getEditIndicator(colType)` parallel system 移除。
   // Indicator authority 從 DataTable cellEl 移交 **Field naked-display branch via `showDisplayEndIcon` opt-in**
@@ -1875,7 +1877,10 @@ function DataTableInner<TData>(
             {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
           </TruncateCell>
           {canSort && sortDir && !isMultiSort && (
-            <SortIcon size={14} aria-hidden className="shrink-0 text-fg-secondary" />
+            // 2026-05-18 改 per user 拍板「DataTable sort 跟 row size 變」+「做完」approval:
+            // 原固定 14 違反 uiSize.spec.md Icon Tier(sm/md→16, lg→20)。改 ICON_SIZE[size]
+            // 隨 DataTable size prop 變。
+            <SortIcon size={ICON_SIZE[size]} aria-hidden className="shrink-0 text-fg-secondary" />
           )}
         </div>
         {/* 右區:⌄ menu(hover/focus-within 才顯;**不顯示時不佔位**)

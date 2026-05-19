@@ -14,6 +14,7 @@ import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-ge
 import { getMenuListMinHeight } from '@/design-system/components/Field/field-types'
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 /**
  * SelectMenu — Popover + Command 組成的完整下拉選單
@@ -298,7 +299,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                 : size === 'sm' ? 'min-h-[calc(var(--field-height-sm)+8px)]'
                 : 'min-h-[calc(var(--field-height-md)+8px)]',
             )}>
-              <Search size={size === 'lg' ? 20 : 16} className="shrink-0 text-fg-muted" aria-hidden />
+              <Search size={ICON_SIZE[size as 'sm' | 'md' | 'lg']} className="shrink-0 text-fg-muted" aria-hidden />
               <CommandPrimitive.Input
                 placeholder={searchPlaceholder}
                 value={search}

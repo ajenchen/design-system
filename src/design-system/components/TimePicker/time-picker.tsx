@@ -22,6 +22,7 @@ import {
   type TimeStep,
   type TimeColumnsDisabled,
 } from '@/design-system/components/TimePicker/time-columns'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 /**
  * TimePicker — 單一時間(時/分/秒)輸入與顯示元件
@@ -173,7 +174,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     const resolvedMode = disabled ? 'disabled' : mode
     const variant: FieldVariant = variantProp ?? fieldCtx?.variant ?? 'default'
     const isEditable = resolvedMode === 'edit'
-    const iconSize = size === 'lg' ? 20 : 16
+    // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
+  const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const EndIconCmp: LucideIcon | null =
       endIcon === null ? null : (endIcon ?? Clock)
     const defaultPlaceholder = showSeconds ? 'HH:MM:SS' : 'HH:MM'

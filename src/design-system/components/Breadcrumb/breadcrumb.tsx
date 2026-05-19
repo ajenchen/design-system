@@ -127,11 +127,14 @@ const BREADCRUMB_TEXT_CLASS: Record<BreadcrumbSize, string> = {
   lg: 'text-body-lg',
 }
 
-// Separator / ellipsis icon 尺寸 — 跟文字對齊
+// Separator / ellipsis icon 尺寸 — 對齊 uiSize.spec.md「Icon Size Tier」(field-height-sm/md→16,lg→20)
+// 2026-05-18 改 per user 拍板「A 先改 16/16/20」+「做完」approval:
+// 撤回 text-flow 例外設計,Breadcrumb chevron 跟其他 chrome icon 同 tier。
+// World-class 對齊:Atlassian Breadcrumb chevron 16 default / Material 3 / Ant Design 同。
 const BREADCRUMB_ICON_SIZE: Record<BreadcrumbSize, number> = {
-  sm: 14,
-  md: 14,
-  lg: 16,
+  sm: 16,
+  md: 16,
+  lg: 20,
 }
 
 // ── Breadcrumb (nav root) ────────────────────────────────────────────────────

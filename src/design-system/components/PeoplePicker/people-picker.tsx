@@ -28,6 +28,7 @@ import {
   personToSelectOption,
   findPerson,
 } from './people-picker-helpers'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 export { PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS, getPeoplePickerTagWrapperClass }
 
 // ── PeoplePicker ────────────────────────────────────────────────────────────
@@ -147,7 +148,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         ? <MultiPersonDisplay value={value as PersonValue[]} size={size} measured />
         : <PersonDisplay value={value as PersonValue} size={size} />
     }
-    const iconSize = size === 'lg' ? 20 : 16
+    // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
+  const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     return (
       <div
         className={cn(fieldWrapperStyles({ mode: 'display', variant: resolvedVariant, size }), className)}

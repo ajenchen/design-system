@@ -142,6 +142,24 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 
 **Stroke icon 尺寸的下限是 12px**（出現在 Checkbox 等指示器容器內部）。Filled indicator（如 Radio 的實心圓點）不受此限制——實心形狀在任何尺寸都清晰可辨。
 
+### 跨 regime pointer index(2026-05-18 codify per user audit「確保 SSOT 不偏移」)
+
+本 Icon Size Tier 段是 DS-wide icon size SSOT 的**主索引**。下列 7 個 carve-out 是別律 owner:
+
+| Carve-out owner | File | Rule | Rationale cite |
+|---|---|---|---|
+| Rating star | `components/Rating/rating.spec.md:84` | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20 / Material 24 / Airbnb 24 |
+| Avatar 內 icon | `components/Avatar/avatar.spec.md:165` | `round_even(size × 0.6)` formula | Material / Apple HIG |
+| Empty illustration | `components/Empty/empty.tsx:48` | Avatar 48 wrap → icon 28(Avatar formula derived)| Empty-state canonical |
+| FileViewer thumb | `components/FileViewer/file-viewer.tsx:621` | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |
+| CircularProgress | `components/CircularProgress/circular-progress.tsx:87` | `strokeWidth = max(2, size/10)` stroke ring 厚度非 icon | Geometric scaling |
+| Steps indicator icon | `components/Steps/steps.tsx:24` | `INDICATOR_ICON_SIZE {sm:0, md:16, lg:20}`(sm 因圓圈 8px 太小)| Indicator-internal |
+| Checkbox/Switch check | `components/Checkbox/checkbox.tsx:49` + `components/Switch/switch.tsx:73` | `{sm:12, md:12, lg:16}` form-control internal + stroke 下限 12 | iOS HIG / Material 3 / Polaris |
+
+**程式化 SSOT**:`patterns/element-anatomy/item-anatomy.tsx:66` `ICON_SIZE = {sm:16, md:16, lg:20}` 是本 tier 的 type-safe const。**Form control 透過 `tokens/uiSize/icon-size.ts` re-export entry import**(避 components→patterns 反向 dependency)。
+
+**新加 carve-out 流程**:必同時(1)在 owner spec 內部宣告 + cite(2)補本表 row。Audit dim 30 cross-doc consistency 抓 drift。
+
 ### Tag ↔ Field 配對
 
 Tag 有自己的尺寸定義（見 `tag.spec.md`），與 Field 的配對透過 size 直接對應：

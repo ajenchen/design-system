@@ -18,6 +18,7 @@ import {
   OverflowScrollArrow,
   OverflowMenuTriggerButton,
 } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 /**
  * Tabs — 基於 Radix Tabs，橋接設計系統 token
@@ -407,7 +408,8 @@ const TabsTrigger = React.forwardRef<
   TabsTriggerProps
 >(({ className, startIcon: StartIcon, badge, endIcon: EndIcon, children, ...props }, ref) => {
   const { size } = React.useContext(TabsContext)
-  const iconSize = size === 'lg' ? 20 : 16
+  // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
+  const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
   const hasSuffix = badge != null || EndIcon !== undefined
 
   return (

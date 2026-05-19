@@ -8,6 +8,7 @@ import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-sys
 import { useFieldContext } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction, ItemPrefix, type InlineActionConfig } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -106,7 +107,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const isDisplay = resolvedMode === 'display'
     // error 合併:自身 error prop OR Field context invalid
     const resolvedError = error || (fieldCtx?.invalid ?? false)
-    const iconSize = size === 'lg' ? 20 : 16
+    // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
+  const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const iconColor = resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted'
 
     // ── display mode:純展示,渲染 <span> 取代 <input> ──
