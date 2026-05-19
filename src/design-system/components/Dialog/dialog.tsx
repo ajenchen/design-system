@@ -139,9 +139,13 @@ const DialogHeader = React.forwardRef<
   HTMLDivElement,
   SurfaceHeaderProps
 >(({ className, children, ...props }, ref) => (
+  // 2026-05-18:className 不再硬加 justify-between(冗餘:row 1 是 flex items-center gap-2,
+  // 第一 child flex-1 grow 自然 push close X 靠右,跟 justify-between 同視覺)。
+  // 並且 column mode(tabsSlot 提供)justify-between 會把 row 1 / row 2 上下推開 = 破裂。
+  // tabsSlot via `...props` spread 自動 forward(type 來自 SurfaceHeaderProps)。
   <SurfaceHeader
     ref={ref}
-    className={cn("justify-between", className)}
+    className={className}
     {...props}
   >
     <div className="flex-1 min-w-0">{children}</div>

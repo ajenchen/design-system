@@ -424,12 +424,13 @@ SidebarInput.displayName = "SidebarInput"
 // 會隨 density 變大。Chrome 如果不跟著放大,lg density 下 padding 會被擠壓。
 const SidebarHeader = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div"> & { withTabs?: boolean }
->(({ className, withTabs, ...props }, ref) => {
+  React.ComponentProps<"div"> & { withTabs?: boolean; tabsSlot?: React.ReactNode }
+>(({ className, withTabs, tabsSlot, ...props }, ref) => {
   return (
     <ChromeHeader
       ref={ref}
       withTabs={withTabs}
+      tabsSlot={tabsSlot}
       data-sidebar="header"
       className={cn(
         // Icon 模式:拿掉水平 padding 讓內容(Avatar 24px)置中於 48px 正方形

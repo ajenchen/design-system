@@ -63,35 +63,81 @@ export interface SurfaceHeaderProps
   extends React.HTMLAttributes<HTMLDivElement> {
   /**
    * 是否內含 Tabs。
-   * true → 移除自身 border-b,讓 TabsList border 接管 paint。
+   * true(無 tabsSlot)→ 移除自身 border-b。
+   * 若提供 tabsSlot,自動 column mode + auto suppress border(不需手動傳 withTabs=true)。
    * 對齊 patterns/header-canonical/header-canonical.spec.md W1
    * 「Header semantic owner / TabsList paint owner in withTabs state」。
    */
   withTabs?: boolean
+  /**
+   * Tabs row slot(2026-05-18 加 per header-canonical.spec.md W2/W4 真實能用 + user-mandated fix)。
+   * 提供時 SurfaceHeader 自動 column 結構:
+   *   row 1 = children(title + actions/dismiss,px-loose py-tight)
+   *   row 2 = tabsSlot 包在 `<div px-loose border-b border-divider>`
+   *           ↑ wrapper 提供 W2 padding inheritance + 全寬 paint(W1 視覺一條線)
+   *
+   * Consumer 傳:`tabsSlot={<TabsList>...</TabsList>}`,TabsContent 仍放 DialogBody 內。
+   * `<Tabs>` root 必須 wrap 整 DialogContent(Radix TabsList ↔ TabsContent 同 root 連動)。
+   *
+   * 提供 tabsSlot 自動 withTabs=true,不需另傳 prop。
+   */
+  tabsSlot?: React.ReactNode
 }
 
 export const SurfaceHeader = React.forwardRef<
   HTMLDivElement,
   SurfaceHeaderProps
->(({ className, withTabs = false, ...props }, ref) => (
+>(({ className, withTabs, tabsSlot, children, ...props }, ref) => {
+  // tabsSlot 提供 → 自動 withTabs(consumer 不需手動兩個 prop)
+  const hasTabs = tabsSlot != null || withTabs === true
+
+  // Column mode(tabsSlot 提供時)— 對應 header-canonical.spec.md W2 + W4
+  if (tabsSlot != null) {
+    return (
+      <div
+        ref={ref}
+        className={cn('flex flex-col shrink-0', className)}
+        {...props}
+      >
+        {/* Row 1:header content row(原 single-row behavior 不變,但 border-b 撤掉,row 2 wrapper 接管 paint)*/}
+        <div
+          className={cn(
+            'flex items-center gap-2',
+            'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',
+            CHROME_UNBOUNDED_SLOT,
+          )}
+        >
+          {children}
+        </div>
+        {/* Row 2:tabsSlot wrapper — 提供 W2 padding inheritance + W1 全寬 paint */}
+        <div className="px-[var(--layout-space-loose)] border-b border-divider">
+          {tabsSlot}
+        </div>
+      </div>
+    )
+  }
+
   // Padding-based(預設) — Dialog/Sheet 用 body-lg title (16/24)，自然撐 max(24 title, 24 button slot) = 24
   // → header = 24 + py-tight 12×2 = 48 chrome-header-height ✓ 穩定無需 min-h
   // Popover 等輕量 chrome 走 PopoverHeader override(min-h-10 + py-2 = 40,內 24 匹配 button slot)
   //
-  // withTabs=true(per header-canonical.spec.md W1):
-  //   移除 border-b,讓 TabsList 自身的 border-b border-border 接管 paint
-  <div
-    ref={ref}
-    className={cn(
-      'flex items-center gap-2 shrink-0',
-      !withTabs && 'border-b border-divider',
-      'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',
-      CHROME_UNBOUNDED_SLOT,
-      className,
-    )}
-    {...props}
-  />
-))
+  // withTabs=true(無 tabsSlot,backward compat):移除 border-b,consumer 自畫
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        'flex items-center gap-2 shrink-0',
+        !hasTabs && 'border-b border-divider',
+        'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',
+        CHROME_UNBOUNDED_SLOT,
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+})
 SurfaceHeader.displayName = 'SurfaceHeader'
 
 export const SurfaceBody = React.forwardRef<

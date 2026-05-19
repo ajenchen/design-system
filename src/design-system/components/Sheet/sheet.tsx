@@ -128,9 +128,10 @@ const SheetHeader = React.forwardRef<
   HTMLDivElement,
   SurfaceHeaderProps
 >(({ className, children, ...props }, ref) => (
+  // 2026-05-18:className 不再硬加 justify-between(同 DialogHeader 邏輯,避 column mode 破裂)。
   <SurfaceHeader
     ref={ref}
-    className={cn("justify-between", className)}
+    className={className}
     {...props}
   >
     <div className="flex-1 min-w-0">{children}</div>

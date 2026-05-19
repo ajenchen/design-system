@@ -80,10 +80,42 @@ benchmark:
 
 **規則**:TabsList **不設自己的左右 padding**,**繼承** parent header 的 `var(--layout-space-loose)` padding。視覺結果 = tabs 第一個 trigger 從 header 內邊起 = 跟 header content row 對齊。
 
-**實作機制(codified in code)**:
-- ChromeHeader/SurfaceHeader 都已含 `px-[var(--layout-space-loose)]`(`chrome-header.tsx:51` / `overlay-surface.tsx:73`)
-- TabsList **不設** `px-*`(`tabs.tsx:107` `TABS_LIST_BASE` 只含 `gap-[var(--layout-space-loose)]` 跟 `border-b border-border`,**無 px**)— 自然繼承 parent header
-- Consumer **禁** 在 TabsList 上加 `className="px-*"`(會與 header padding 疊加,破對齊)
+**實作機制(2026-05-18 真實能用 — `tabsSlot` prop)**:
+
+ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自動 **column mode**:
+- Row 1:children(title + close X / actions)— 跟 single-row 模式同 padding,但 border-b 撤掉
+- Row 2:tabsSlot 包在 `<div className="px-[var(--layout-space-loose)] border-b border-divider">`
+  - wrapper 提供 W2 padding inheritance(TabsList 自然從 px-loose 內邊起)
+  - wrapper 提供 W1 全寬 paint(視覺一條線)
+  - TabsList 本身保留 `border-b border-border`(支援 selected underline 從 1px gray 長出 2px primary 的 idiom)— 跟 wrapper border 同 y 位置 = 視覺仍一條線
+
+**Consumer 用法**(Dialog 範例):
+```tsx
+<Tabs defaultValue="general">           {/* Radix Tabs root,wrap 整 DialogContent */}
+  <DialogHeader
+    tabsSlot={
+      <TabsList>
+        <TabsTrigger value="general">一般</TabsTrigger>
+        <TabsTrigger value="members">成員</TabsTrigger>
+      </TabsList>
+    }
+  >
+    <DialogTitle>專案設定</DialogTitle>
+  </DialogHeader>
+  <DialogBody>                          {/* DialogBody 自管 px-loose + scroll */}
+    <TabsContent value="general">一般設定內容</TabsContent>
+    <TabsContent value="members">成員管理內容</TabsContent>
+  </DialogBody>
+</Tabs>
+```
+
+**禁忌**:
+- ❌ 把 `<Tabs>` 放在 `<DialogContent>` 外(Radix TabsList ↔ TabsContent 必同 Tabs root)
+- ❌ 在 TabsList 上加 `className="px-*"`(會與 wrapper padding 疊加)
+- ❌ 在 TabsContent 上加 padding(會跟 DialogBody canonical px-loose pt-tight pb-bottom 重複)
+- ❌ Backward-compat `withTabs={true}` 無 tabsSlot 場景:header 自己抑制 border-b,但 consumer 需自管 Tabs row layout — 不推薦(除非從 layout template 來)
+
+**Verify**:`scripts/runtime-verify-header-canonical-tabs.mjs` playwright probe W1/W2/W4 pixel-quantified(title vs first tab left Δ ≤ 1px / flush gap ≤ 1px / row 2 border = 1px)。
 
 **Rationale**:對齊 Carbon verbatim「first label should always align to other content in the space」(`carbondesignsystem.com/components/tabs/usage`)。「by inheritance 不重複設」是 GitHub Primer + Material UI 隱含 idiom — tabs container 不主動畫 padding,讓外層 container 統一管。
 
