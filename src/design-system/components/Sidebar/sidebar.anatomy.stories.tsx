@@ -712,9 +712,14 @@ export const ChromeTokens: Story = {
               <Td>最小寬度限制(即使 consumer 覆寫也不可低於此值)</Td>
             </tr>
             <tr>
-              <Td><TkVal token="--sidebar-width-icon" value="3rem (48px)" /></Td>
-              <Td mono>3rem</Td>
-              <Td>icon 收合模式寬度</Td>
+              <Td><TkVal token="--sidebar-width-icon" value="calc(2 × loose + icon)" /></Td>
+              <Td mono>calc()</Td>
+              <Td>icon 收合模式寬度(2026-05-21 v3 改 geometry formula;md=48 / lg=64,保證 icon center x 展開/收合一致)</Td>
+            </tr>
+            <tr>
+              <Td><TkVal token="--sidebar-menu-icon-size" value="1rem (16px)" /></Td>
+              <Td mono>1rem</Td>
+              <Td>menu icon 大小(per ICON_SIZE.sm/md=16);size=lg 罕見 case override</Td>
             </tr>
             <tr>
               <Td><TkVal token="--sidebar-width-mobile" value="18rem (288px)" /></Td>

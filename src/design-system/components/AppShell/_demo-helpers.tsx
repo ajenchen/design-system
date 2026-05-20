@@ -156,6 +156,7 @@ export function GlobalHeader({ rightSlot }: { rightSlot?: React.ReactNode } = {}
 export function PageHeader({
   title,
   tabsSlot,
+  includeSidebarTrigger = true,
 }: {
   title: string
   /**
@@ -163,10 +164,16 @@ export function PageHeader({
    * 提供時 ChromeHeader 自動 column mode + suppress border + delegate paint 給 TabsList。
    */
   tabsSlot?: React.ReactNode
+  /**
+   * 是否含 SidebarTrigger(2026-05-21 加 per user「primary-header mode 的 sidebar toggle 應該只放在 primary header 才對」)。
+   * - `primary-sidebar` mode = true(預設):PageHeader 是 chrome 第一層,trigger 自然在這
+   * - `primary-header` mode = false:SidebarTrigger 已在 GlobalHeader,PageHeader 不該重複
+   */
+  includeSidebarTrigger?: boolean
 }) {
   return (
     <ChromeHeader className="bg-surface" tabsSlot={tabsSlot}>
-      <SidebarTrigger />
+      {includeSidebarTrigger && <SidebarTrigger />}
       <h1 className="text-body-lg font-medium flex-1 truncate">{title}</h1>
     </ChromeHeader>
   )

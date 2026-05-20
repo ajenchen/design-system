@@ -449,8 +449,11 @@ const SidebarHeader = React.forwardRef<
       tabsSlot={tabsSlot}
       data-sidebar="header"
       className={cn(
-        // Icon 模式:拿掉水平 padding 讓內容(Avatar 24px)置中於 48px 正方形
-        "group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!justify-center",
+        // 2026-05-21 撤回 icon-mode `!px-0 !justify-center`(per user「先飛右後左收」動畫真兇 fix):
+        // `justify-content` 不可 CSS-transition,discrete 變 center → 內容瞬跳到中心(展開 256
+        // 寬時 x=128)再跟 width 動畫 200ms 縮回 x=24,視覺 fly-right-then-left。
+        // Fix:維持 px-loose 在兩 mode(md 數學:16+16+16=48 ✓ 自然居中,無 justify 切換)。
+        // lg 密度時 sidebar-width-icon=56 略偏(loose 24 padding 在 56 寬內),trade-off accepted。
         "transition-[padding] duration-200 ease-linear motion-reduce:duration-0",
         className
       )}
@@ -823,11 +826,15 @@ const sidebarMenuButtonVariants = cva(
     "data-[active=true]:bg-neutral-selected data-[active=true]:text-foreground",
     "group-has-[[data-sidebar=menu-action]]/menu-item:pr-8",
     // Icon mode:
-    //   - !px-0 !py-0 !gap-0:歸零所有 spacing,icon 能完美 justify-center
-    //   - !items-center !justify-center:垂直水平都置中(蓋掉 base 的 items-start / 預設 justify-start)
-    //   - label span 透過子選擇器 display:none(讓 flex 只剩 icon 一個 child,justify-center 才能真正置中)
-    "group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!py-0 group-data-[collapsible=icon]:!gap-0",
-    "group-data-[collapsible=icon]:!items-center group-data-[collapsible=icon]:!justify-center",
+    //   - 2026-05-21 真兇 fix per user「先飛右後左收」動畫:撤回 `!px-0 !justify-center`(L829-830 原版)。
+    //     `justify-content` 不可 CSS-transition,discrete 切換 center → content 瞬跳到 256 中心
+    //     (x=128)再跟 width 動畫 200ms 縮回 x=24 = fly-right-then-left。
+    //   - 維持 px-loose + items-start + justify-start 兩 mode 一致:md 密度 loose=16 / icon=16
+    //     / button=48 → 16+16+16=48 自然居中無切換。lg 密度略偏(56 寬內 24 padding + 16 icon
+    //     = 64 > 56)trade-off accepted vs fly。
+    //   - label span 仍透過子選擇器 display:none(label 隱藏不需 layout 改 → 不觸發 fly)
+    //   - !py-0 維持(高度由 size variant `field-height-*` 控制,padding-y 不該疊加)
+    "group-data-[collapsible=icon]:!py-0",
     "group-data-[collapsible=icon]:[&_[data-sidebar=menu-label]]:hidden",
   ],
   {

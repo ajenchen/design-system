@@ -37,9 +37,21 @@
      不寫成 calc() 公式因為 lg 無法完美遵守(54 → 56 為了 8px grid 取整),hardcode 比假公式誠實。*/
   --chrome-header-height: 3rem;  /* 48px */
 
-  /* Icon rail 寬度永遠等於 chrome header 高度——讓 icon 模式下的 SidebarHeader 是正方形
-     (寬=高),Avatar 置中 padding 上下左右對稱。也自動跟著 density 變,不用單獨維護 */
-  --sidebar-width-icon: var(--chrome-header-height);
+  /* Sidebar menu icon size — tokenize per codex M31 Layer C(2026-05-21 比稿後採納):
+     default 1rem(16px)對應 sm/md row size(per uiSize/icon-size.ts ICON_SIZE.sm/md=16)。
+     Sidebar 用 size=lg(罕見)時 consumer override `--sidebar-menu-icon-size: 1.25rem`(20px)。
+     避免 hardcode `1rem` 進 calc → 未來 row size 需 size 變更時容易漂移。 */
+  --sidebar-menu-icon-size: 1rem;
+
+  /* Icon rail 寬度 = 2 × layout-space-loose + sidebar-menu-icon-size(2026-05-21 v3 per user
+     抓「icon center x 展開/收合應一致」+ codex M31 比稿確認:VS Code activity-bar-width
+     48px 固定 rail / shadcn canonical 無 justify-center switch / MUI MiniDrawer width=calc(spacing*7+1px))。
+     原 formula `var(--chrome-header-height)` 在 lg 密度(56)時 24+16+24=64 不 fit。
+     新 formula 數學保證 icon center x = loose + icon/2 兩 mode 一致:
+       md: 2×16 + 16 = 48 ✓
+       lg: 2×24 + 16 = 64(取代原 56,符合幾何)
+     副作用:sidebar-width-icon 跟 chrome-header-height 解耦(原綁定為巧合,概念上不同維度)。 */
+  --sidebar-width-icon: calc(2 * var(--layout-space-loose) + var(--sidebar-menu-icon-size));
 }
 
 [data-density="lg"] {

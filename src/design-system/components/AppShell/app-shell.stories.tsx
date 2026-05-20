@@ -403,7 +403,12 @@ export const PrimaryHeader: Story = {
             />
           }
           globalHeader={<GlobalHeader />}
-          header={<PageHeader title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Inbox'} />}
+          header={
+            <PageHeader
+              title={MAIN_NAV.find((n) => n.id === activeId)?.label ?? 'Inbox'}
+              includeSidebarTrigger={false}
+            />
+          }
           aside={
             <AppShellAside title={selected ? selected.id : '詳情'} width={360}>
               <IssueDetail issue={selected} />
