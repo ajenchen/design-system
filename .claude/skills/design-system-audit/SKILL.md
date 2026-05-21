@@ -31,7 +31,7 @@ Purpose: catch every bug class this project has shipped historically PLUS struct
 
 ---
 
-## The 53 audit dimensions(2026-05-17 升 from 46:Group P World-class tier 47-51 + Header canonical 52 + Reverse drift 53)
+## The audit dimensions(Group A–P,full list per below;count canonical 不 hardcode per `check_dim_count_drift.sh`)
 
 Grouped by theme. Each runs as an independent subagent; many can parallelize.
 

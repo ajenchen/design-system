@@ -198,7 +198,7 @@ Previous(可選)→ Skip(可選)→ Next / Done。對齊 Ant Tour / Intercom con
 
 ---
 
-## A11y
+## A11y 預設
 
 - **焦點管理**:由 Popover(Radix)處理——開啟移焦點進 content,關閉 return to trigger
 - **Esc 關閉**:預設啟用(= Skip 行為)——user 按 Esc 等同 skip,尊重退出意願

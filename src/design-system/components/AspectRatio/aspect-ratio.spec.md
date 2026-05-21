@@ -104,7 +104,7 @@ AspectRatio 是 pure layout primitive(container 鎖比例),本身:
 
 ---
 
-## A11y
+## A11y 預設
 
 元件本身不引入 a11y 干預,consumer 對 children(如 img)負責 `alt` / `aria-label`。
 

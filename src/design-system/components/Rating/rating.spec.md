@@ -171,7 +171,7 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設有 1.5px outline
 
 ---
 
-## A11y
+## A11y 預設
 
 - **interactive**：`role="slider"` + `aria-valuenow={value}` + `aria-valuemin={0}` + `aria-valuemax={max}` + `tabIndex={0}`，鍵盤 Arrow Left/Right/Up/Down 改值（precision=half 時 step=0.5，否則 step=1）
 - **readOnly**：`role="img"` + `aria-label`（**必填**），例：`aria-label="平均評分 4.7 星，共 5 星"`。無 tabIndex

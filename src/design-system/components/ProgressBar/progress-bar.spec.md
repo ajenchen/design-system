@@ -187,7 +187,7 @@ export interface ProgressBarProps {
 
 ---
 
-## A11y
+## A11y 預設
 
 Radix `Progress.Root` 自動提供：
 - `role="progressbar"`
