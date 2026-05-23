@@ -12,7 +12,7 @@
 
 | Rule | Paths | Scope |
 |------|-------|-------|
-| [meta-patterns.md](meta-patterns.md) | always(fundamental)| 32 active M-rules(M1-M33,M27 retired)|
+| [meta-patterns.md](meta-patterns.md) | always(fundamental)| 31 active M-rules(M1-M32,M27/M33/M34/M35 retired)|
 | [spec-rules.md](spec-rules.md) | `**/*.spec.md` + `packages/design-system/src/**` | Spec 撰寫紀律 + SSOT / 邊界案例 / 職責分離 |
 | [ui-development.md](ui-development.md) | `**/*.tsx` + `**/*.ts` | 建 UI 前必讀 / Tailwind 5 條 / Token 4 條 / Props 命名 / shadcn |
 | [story-rules.md](story-rules.md) | `**/*.stories.tsx` | 三層 stories canonical + Title / 範例 / 撰寫紀律 |

@@ -1,5 +1,5 @@
 // Shared Storybook addons preset(2026-05-22 Phase 2 team-distribution-roadmap)
-// Consumer product workspace use:`addons: ['@your-org/storybook-config/preset']`
+// Consumer product workspace use:`addons: ['@qijenchen/storybook-config/preset']`
 // DS repo dogfood:`.storybook/main.ts` 直接 import 此 array spread
 
 export const sharedAddons = [

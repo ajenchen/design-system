@@ -51,7 +51,7 @@ jobs:
         run: npm ci
 
       - name: Build ${{ matrix.app }}
-        run: npm -w @your-org/${{ matrix.app }} run build
+        run: npm -w @qijenchen/${{ matrix.app }} run build
 
       # Netlify deploy(per-app site,設定一次)
       # Pre-requisite secrets(per app)in GitHub repo Settings → Secrets:

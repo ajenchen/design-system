@@ -17,12 +17,12 @@
 ### Chosen: 雙包 distribution + Team monorepo for products
 
 ```
-your-org GitHub:
+qijenchen GitHub:
 ├── design-system            ← 你 own,他們無 push 權
 │   ├── packages/
-│   │   ├── design-system/                 → publish @your-org/design-system (npm)
-│   │   └── storybook-config/              → publish @your-org/storybook-config (npm)
-│   ├── .claude-plugin/marketplace.json    → publish design-system@your-org (Claude plugin)
+│   │   ├── design-system/                 → publish @qijenchen/design-system (npm)
+│   │   └── storybook-config/              → publish @qijenchen/storybook-config (npm)
+│   ├── .claude-plugin/marketplace.json    → publish design-system@qijenchen (Claude plugin)
 │   └── .claude/                            ← skills + hooks + commands + rules
 │       └── (透過 plugin marketplace distribute)
 │
@@ -33,9 +33,9 @@ your-org GitHub:
     │   └── admin-console/
     ├── packages/                          ← 跨 product shared utility
     │   └── shared-utils/
-    ├── package.json: workspaces + @your-org/design-system + plugin enable
-    ├── .claude/settings.json: enabledPlugins: { "design-system@your-org": true }
-    ├── .storybook/                        ← shared(import @your-org/storybook-config)
+    ├── package.json: workspaces + @qijenchen/design-system + plugin enable
+    ├── .claude/settings.json: enabledPlugins: { "design-system@qijenchen": true }
+    ├── .storybook/                        ← shared(import @qijenchen/storybook-config)
     └── .github/{CODEOWNERS, workflows/}
 ```
 
@@ -92,7 +92,7 @@ your-org GitHub:
 **Goal**: `packages/design-system/src/` → `packages/design-system/`,build pipeline ready for `npm publish`
 
 **Deliverable**:
-- `packages/design-system/package.json`(name: `@your-org/design-system`,exports field)
+- `packages/design-system/package.json`(name: `@qijenchen/design-system`,exports field)
 - Root `package.json` workspaces config
 - `tsconfig.json` paths update(workspace import)
 - `npm run build` outputs `packages/design-system/dist/`
@@ -130,10 +130,10 @@ your-org GitHub:
 **Goal**: `.storybook/` 內 main.ts / preview.ts / DS Devmode addon → `packages/storybook-config/`
 
 **Deliverable**:
-- `packages/storybook-config/package.json`(name: `@your-org/storybook-config`)
+- `packages/storybook-config/package.json`(name: `@qijenchen/storybook-config`)
 - 抽 main config + addons + decorators 到此 package
 - DS repo 自己 `.storybook/main.ts` 改 import 此 package(dogfood)
-- README 寫他們 product repo 怎麼用(`addons: ['@your-org/storybook-config']`)
+- README 寫他們 product repo 怎麼用(`addons: ['@qijenchen/storybook-config']`)
 
 **Acceptance**:
 - DS repo 自己 storybook 跑同樣
@@ -142,7 +142,7 @@ your-org GitHub:
 **World-class ref**: `@vercel/style-guide` / `@shopify/polaris-icons` 拆 package model
 
 **Status**: **DONE 2026-05-22**:
-- `packages/storybook-config/package.json`(name `@your-org/storybook-config`)
+- `packages/storybook-config/package.json`(name `@qijenchen/storybook-config`)
 - `packages/storybook-config/addons-preset.ts`(shared addons / framework / docs / typescript / story globs)
 - `packages/storybook-config/preview.tsx`(shared globalTypes / parameters / decorators / TooltipProvider wrapper)
 - DS repo dogfood:`.storybook/main.ts` + `preview.tsx` 改 import 此 package
@@ -161,7 +161,7 @@ your-org GitHub:
 - **數值動態**(以 `governance-counters.json` 跑出為準,**不在本 roadmap 寫死**避免 drift):
   - 2026-05-22 snapshot:**22 skills / 37 top-level hooks / 10 lib/ subs / 31 active M-rules**
   - Phase 3 開做前重跑 `node scripts/sync-governance-counters.mjs` 取最新
-- Plugin name: `design-system@your-org`,version 跟 npm package 同步
+- Plugin name: `design-system@qijenchen`,version 跟 npm package 同步
 - Local test:DS repo 自己 enable 此 plugin(自我消費 dogfood)
 
 **Acceptance**:
@@ -172,7 +172,7 @@ your-org GitHub:
 
 **Status**: **DONE(scaffold)2026-05-22**:
 - `.claude-plugin/marketplace.json` 新建 — plugin manifest 含 exports / pathScopedRules / manifest / consumerSetup
-- Plugin name `design-system@your-org`,version 跟 npm package 同步
+- Plugin name `design-system@qijenchen`,version 跟 npm package 同步
 - DS repo dogfood:`.claude/` 物理檔目前直接 active(plugin host 等 Phase 4 release pipeline 配)
 - pathScopedRules 對齊 `.claude/rules/{meta-patterns,spec-rules,ui-development,story-rules,self-verify}.md`
 
@@ -196,7 +196,7 @@ your-org GitHub:
 
 **Acceptance**:
 - Mock `v0.1.0-beta.1` tag → CI 自動跑完 publish 到 internal registry
-- Wendy 在 product repo `npm install @your-org/design-system@beta` 拉得到
+- Wendy 在 product repo `npm install @qijenchen/design-system@beta` 拉得到
 
 **World-class ref**: changesets/changesets GitHub repo / Vercel `pkg.pr.new` pre-release model
 
@@ -208,7 +208,7 @@ your-org GitHub:
 
 **Mock release 仍需 user run**(when ready):
 - `git tag v0.1.0-beta.1 && git push origin v0.1.0-beta.1` → CI 自動跑 audit gates → publish to `@beta` dist-tag
-- Verify `npm install @your-org/design-system@beta` 拉得到
+- Verify `npm install @qijenchen/design-system@beta` 拉得到
 - NPM_TOKEN secret 需 user 設定 in GitHub repo settings
 
 ---
@@ -217,11 +217,11 @@ your-org GitHub:
 
 **Goal**: 給 team 用的 monorepo template(他們 clone 即可開工)
 
-**Deliverable**(GitHub repo `your-org/product-workspace`):
+**Deliverable**(GitHub repo `qijenchen/product-workspace`):
 - Root `package.json`:workspaces apps/* packages/* + 4 deps(DS / storybook-config / Claude plugin enable in settings)
 - `apps/_template/`:single-app boilerplate + `npm run create-app <name>` generator
-- `.claude/settings.json`:`enabledPlugins: { "design-system@your-org": true }` + `defaultMode: "auto"`
-- `.storybook/main.ts`:`import preset from '@your-org/storybook-config'`
+- `.claude/settings.json`:`enabledPlugins: { "design-system@qijenchen": true }` + `defaultMode: "auto"`
+- `.storybook/main.ts`:`import preset from '@qijenchen/storybook-config'`
 - `.github/CODEOWNERS`:全部 `* @team`(team 內互相 review)
 - `.github/workflows/audit.yml`:tsc + build + storybook + audit-content-quality + code-quality + visual-audit + **audit-orphan-tokens(2026-05-21 新)** + **audit-preflight(2026-05-15 新)** + **sync-governance-counters --check(2026-05-18 新)**
 - `.github/workflows/deploy.yml`:per-app Vercel/Netlify deploy(matrix on apps/*)
@@ -235,10 +235,10 @@ your-org GitHub:
 
 **World-class ref**: Vercel `create-next-app` template / shadcn `next.js` starter / Stripe Engineering monorepo internal docs
 
-**Status**: **DEFERRED — needs separate repo `your-org/product-workspace`**(per `.claude/planning/phase-5-6-product-workspace-setup.md` handoff doc)
+**Status**: **DEFERRED — needs separate repo `qijenchen/product-workspace`**(per `.claude/planning/phase-5-6-product-workspace-setup.md` handoff doc)
 
 User pre-requisite(GitHub UI / CLI,不在 Claude session 範圍):
-1. Create new GitHub repo `your-org/product-workspace`
+1. Create new GitHub repo `qijenchen/product-workspace`
 2. Team collaborators add(write access)
 3. Branch protection main(1 reviewer approval)
 4. CI secrets(NPM_TOKEN / Netlify or Vercel token)
@@ -286,11 +286,11 @@ docs/ 寫在 product-workspace,非本 DS repo。User 完成 Phase 5 pre-req 後 
 
 ```bash
 # Day 0 — 15 min
-git clone github.com/your-org/product-workspace
+git clone github.com/qijenchen/product-workspace
 cd product-workspace
-npm install                    # → 自動拉 @your-org/design-system + storybook-config
+npm install                    # → 自動拉 @qijenchen/design-system + storybook-config
 claude                          # Claude session 啟動
-                                # → auto detect plugin design-system@your-org
+                                # → auto detect plugin design-system@qijenchen
                                 # → load 27 skills / 19 hooks / rules / CLAUDE.md
                                 # → her dev environment 跟你 100% 一致
 
@@ -317,7 +317,7 @@ User 在 session 內逐 step 詰問 + 我答對齊 world-class benchmark:
 
 1. **「他們完全不能改 DS」** → 同 repo CODEOWNERS 不夠(local 改可),必須拆 repo + npm package(他們 node_modules read-only)
 2. **「Claude 技能 + 自動化要跟著」** → Claude Plugin Marketplace(Anthropic 2025 官方)
-3. **「他們也用 Storybook 看成果 + 我的 addons」** → addons 抽 npm package(`@your-org/storybook-config`)
+3. **「他們也用 Storybook 看成果 + 我的 addons」** → addons 抽 npm package(`@qijenchen/storybook-config`)
 4. **「他們有共編場景」** → Team monorepo(apps/*),不要一 repo per product
 5. **「無痛升級」** → semver + changesets + codemods + console deprecation
 6. **「我幫他們建 repo 統一」** → 你 own template,他們 clone 用,governance 一致
@@ -362,7 +362,7 @@ User 在 session 內逐 step 詰問 + 我答對齊 world-class benchmark:
 
 **Acceptance**:
 - DS repo 自己 enable plugin(self-dogfood)同樣全 skill / hook fire
-- 新 product-workspace `/plugin marketplace add github:your-org/design-system && /plugin install design-system@your-org-ds` 後,Claude session detect 全 DS skill / hook / CLAUDE.md instructions
+- 新 product-workspace `/plugin marketplace add github:qijenchen/design-system && /plugin install design-system@qijenchen-ds` 後,Claude session detect 全 DS skill / hook / CLAUDE.md instructions
 
 **Migration risk(high)**:
 - 動 `.claude/` 結構 = 整 session governance ecosystem 重組,要謹慎

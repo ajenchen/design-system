@@ -31,7 +31,7 @@ Brief format invariant(2026-05-07 user 拍板,禁短 format)。
 N. <SSOT 是否該抽到更上層 primitive?>
 
 ## Constraints
-- DS 原則 M1-M33 全適用(尤其 M8 / M17 / M22 / M23 / M27)
+- DS 原則 M1-M32 全適用(31 active;M27/M33/M34/M35 retired,折入 M20/M7/M23(c)(d);尤其 M8 / M17 / M22 / M23)
 - 不可 commit,純文字討論
 - 程式碼建議須 cite world-class DS source
 - Counter-proposal request:挑戰我的 hypothesis,提第 4 條路

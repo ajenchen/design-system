@@ -1,4 +1,4 @@
-// 2026-05-22 Phase 2 team-distribution-roadmap:dogfood `@your-org/storybook-config`
+// 2026-05-22 Phase 2 team-distribution-roadmap:dogfood `@qijenchen/storybook-config`
 // 共用 addons + framework + docs config 從 package import,本檔只加 DS-internal addon(ds-devmode)
 import type { StorybookConfig } from '@storybook/react-vite'
 import {

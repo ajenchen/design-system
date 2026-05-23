@@ -1,5 +1,5 @@
 {
-  "name": "@your-org/storybook-config",
+  "name": "@qijenchen/storybook-config",
   "version": "0.0.0",
   "private": false,
   "description": "Shared Storybook config (addons preset + preview parameters + decorators) for design-system + consumer products. Single SSOT for storybook UX.",

@@ -4,16 +4,16 @@
 
 ## Why deferred
 
-Phase 5+6 deliverables 屬 **獨立 GitHub repo `your-org/product-workspace`**(per roadmap L182):
+Phase 5+6 deliverables 屬 **獨立 GitHub repo `qijenchen/product-workspace`**(per roadmap L182):
 
 ```
-your-org GitHub:
+qijenchen GitHub:
 ├── design-system        ← 本 repo(Phase 1-4 已完成)
 └── product-workspace    ← NEW repo,team 全員 collaborator
 ```
 
 DS repo internal autonomous work 無法跨 repo create / clone / configure。Phase 5+6 需要:
-- 創 GitHub repo(`your-org/product-workspace`)
+- 創 GitHub repo(`qijenchen/product-workspace`)
 - Setup org-level permissions(team collaborators)
 - Configure CI/CD secrets(NPM_TOKEN / Netlify / Vercel)
 - 這些是 user-driven 一次性 GitHub UI / CLI ops,不在 Claude session 自動執行範圍
@@ -22,10 +22,10 @@ DS repo internal autonomous work 無法跨 repo create / clone / configure。Pha
 
 ### User 需手動做(GitHub UI / CLI):
 
-1. **Create new GitHub repo** `your-org/product-workspace`
+1. **Create new GitHub repo** `qijenchen/product-workspace`
 2. **Team collaborators**:add 全 team(write access)
 3. **Branch protection**:main 要 1 reviewer approval(同 team 互審)
-4. **CI secrets**:NPM_TOKEN(consume `@your-org/design-system`)/ Netlify Vercel token(deploy preview)
+4. **CI secrets**:NPM_TOKEN(consume `@qijenchen/design-system`)/ Netlify Vercel token(deploy preview)
 
 ### Claude session 可協助生 boilerplate(等 user trigger):
 
@@ -34,17 +34,17 @@ DS repo internal autonomous work 無法跨 repo create / clone / configure。Pha
 ```
 product-workspace/
 ├── package.json            workspaces: ["apps/*", "packages/*"]
-│                           dependencies: @your-org/design-system / @your-org/storybook-config
+│                           dependencies: @qijenchen/design-system / @qijenchen/storybook-config
 ├── .claude/
-│   └── settings.json       enabledPlugins: { "design-system@your-org": true }
+│   └── settings.json       enabledPlugins: { "design-system@qijenchen": true }
 │                           defaultMode: "auto"
 ├── apps/
 │   └── _template/          single-app boilerplate(src/main.tsx + Vite + Storybook)
 ├── packages/
 │   └── shared-utils/       跨 product utility(若 team 之後抽出)
 ├── .storybook/
-│   └── main.ts             import preset from '@your-org/storybook-config/preset'
-│   └── preview.tsx         import preview from '@your-org/storybook-config/preview'
+│   └── main.ts             import preset from '@qijenchen/storybook-config/preset'
+│   └── preview.tsx         import preview from '@qijenchen/storybook-config/preview'
 ├── .github/
 │   ├── CODEOWNERS          * @team
 │   ├── workflows/

@@ -1,5 +1,5 @@
 {
-  "name": "@your-org/__APP_NAME__",
+  "name": "@qijenchen/__APP_NAME__",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@your-org/design-system": "^0.1.0",
+    "@qijenchen/design-system": "^0.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwindcss": "^4.2.2"

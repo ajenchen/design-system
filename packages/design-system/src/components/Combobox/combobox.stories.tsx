@@ -1,4 +1,6 @@
 // @story-trait-rationale: D3 mechanical migration (size:N → meta.width) — preexisting Default/WithError trait gap unrelated to this edit; tracked separately
+// @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions
+// Combobox 為主元件;當 stories 內 wrap DataTable 演示 cell-context,baseline = DataTable WithBulkActions(per .claude/references/story-baseline-registry.json#DataTable)
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'

@@ -226,6 +226,18 @@ if git -C "$PROJECT_DIR" rev-parse origin/main >/dev/null 2>&1; then
   fi
 fi
 
+# Check 10: SSOT auto-sync drift(2026-05-23 — sync-governance-counters drift report)
+SSOT_DRIFT=""
+if command -v node >/dev/null 2>&1 && [ -f scripts/sync-governance-counters.mjs ]; then
+  DRIFT_OUT=$(node scripts/sync-governance-counters.mjs --quiet 2>&1 || true)
+  if echo "$DRIFT_OUT" | grep -q "Hardcoded drift detected"; then
+    SSOT_DRIFT=$(echo "$DRIFT_OUT" | sed -n '/Hardcoded drift detected/,/^Log:/p' | grep '^  - ' | head -8)
+    if [ -n "$SSOT_DRIFT" ]; then
+      PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- SSOT drift detected:\n${SSOT_DRIFT}\n  → 跑 node scripts/sync-governance-counters.mjs 看完整 + 對齊 SSOT 數字 / npm scope / plugin manifest。"
+    fi
+  fi
+fi
+
 # Inject if HARD BLOCKERS(must)or auto-prune-triggers or quarterly-prune-overdue
 QUARTERLY_DUE=""
 if [ -f .claude/logs/.last-prune ]; then

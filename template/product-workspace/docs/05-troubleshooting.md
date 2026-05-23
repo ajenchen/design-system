@@ -4,21 +4,21 @@
 
 ## Install 階段
 
-### `npm install` 拉不到 `@your-org/design-system`
+### `npm install` 拉不到 `@qijenchen/design-system`
 
 ```
-npm error 404 Not Found - GET https://registry.npmjs.org/@your-org/design-system
+npm error 404 Not Found - GET https://registry.npmjs.org/@qijenchen/design-system
 ```
 
 **Cause**:
 - 該 package 還沒 publish OR npm 沒 login OR `.npmrc` 沒設 internal registry
 
 **Fix**:
-- 確認 DS owner 已 publish:`npm view @your-org/design-system`
-- npm login:`npm login` 或 `npm login --registry=https://npm.your-org.internal`
+- 確認 DS owner 已 publish:`npm view @qijenchen/design-system`
+- npm login:`npm login` 或 `npm login --registry=https://npm.qijenchen.internal`
 - `.npmrc` 設 scope registry:
   ```
-  @your-org:registry=https://npm.pkg.github.com  # GitHub Packages
+  @qijenchen:registry=https://npm.pkg.github.com  # GitHub Packages
   //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
   ```
 
@@ -29,7 +29,7 @@ npm warn config production Use `--omit=dev` instead.
 npm warn EBADENGINE Unsupported engine
 ```
 
-通常忽略 OK。但若 `peerDependencies` 衝突(react 18 vs 19 等)→ 對齊 `@your-org/design-system` 的 peer range。
+通常忽略 OK。但若 `peerDependencies` 衝突(react 18 vs 19 等)→ 對齊 `@qijenchen/design-system` 的 peer range。
 
 ## Claude session 階段
 
@@ -45,8 +45,8 @@ Claude:I don't see any custom skills or hooks loaded
 - 改透過 CLI(per Anthropic plugin spec 2026,enabledPlugins settings.json 機制已 deprecated):
   ```bash
   claude  # start session
-  /plugin marketplace add github:your-org/design-system
-  /plugin install design-system@your-org-ds
+  /plugin marketplace add github:qijenchen/design-system
+  /plugin install design-system@qijenchen-ds
   /plugin marketplace update  # later refresh
   ```
 - 確認 marketplace URL set 在 user-level `~/.claude/settings.json` 或 GitHub 存取 token 有效
@@ -62,18 +62,18 @@ If found,issue DS repo 修(對應 hook script)。
 
 ## Build / dev 階段
 
-### `import { X } from '@your-org/design-system'` 報 missing
+### `import { X } from '@qijenchen/design-system'` 報 missing
 
 ```
-Cannot find module '@your-org/design-system' or its corresponding type declarations.
+Cannot find module '@qijenchen/design-system' or its corresponding type declarations.
 ```
 
 **Cause**:
-- `npm install` 沒跑成功 OR `node_modules/@your-org/design-system/dist/index.d.ts` 不存在
+- `npm install` 沒跑成功 OR `node_modules/@qijenchen/design-system/dist/index.d.ts` 不存在
 
 **Fix**:
 - `rm -rf node_modules package-lock.json && npm install`
-- 確認 package 真有 dist:`ls node_modules/@your-org/design-system/dist/`
+- 確認 package 真有 dist:`ls node_modules/@qijenchen/design-system/dist/`
 
 ### Tailwind class 不認得 DS token
 
@@ -81,12 +81,12 @@ Cannot find module '@your-org/design-system' or its corresponding type declarati
 Class `bg-surface` not found
 ```
 
-**Cause**:`@your-org/design-system/styles/globals.css` 沒 import
+**Cause**:`@qijenchen/design-system/styles/globals.css` 沒 import
 
 **Fix**:
 - root `src/main.tsx` 或 `src/globals.css`:
   ```css
-  @import "@your-org/design-system/styles/globals.css";
+  @import "@qijenchen/design-system/styles/globals.css";
   ```
 
 ### Storybook 看不到 DS 元件
@@ -106,13 +106,13 @@ Class `bg-surface` not found
 - `renovate.json` syntax error
 
 **Fix**:
-- GitHub Marketplace 加 Renovate app to org `your-org`
+- GitHub Marketplace 加 Renovate app to org `qijenchen`
 - `npx --package renovate -- renovate-config-validator` 驗 config
 
 ### `audit.yml` workflow 紅
 
 依紅燈 step debug:
-- tsc fail → 看 PR diff `@your-org/design-system` 升 major 嗎?跑 codemod
+- tsc fail → 看 PR diff `@qijenchen/design-system` 升 major 嗎?跑 codemod
 - content-quality fail → consumer 通常 N/A,加 `continue-on-error: true`(已在 audit.yml)
 - build fail → check 新版 DS API 改動(看 changelog)
 
@@ -141,4 +141,4 @@ Class `bg-surface` not found
 
 ## 還是不行?
 
-開 issue 在 `your-org/product-workspace`(team 互助)或 ping team-leads。
+開 issue 在 `qijenchen/product-workspace`(team 互助)或 ping team-leads。

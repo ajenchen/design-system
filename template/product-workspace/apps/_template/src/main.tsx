@@ -1,9 +1,9 @@
 // __APP_PASCAL__ — entry point
-// Consumes @your-org/design-system via npm workspace
+// Consumes @qijenchen/design-system via npm workspace
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { Button, Avatar } from '@your-org/design-system'
-import '@your-org/design-system/styles/globals.css'
+import { Button, Avatar } from '@qijenchen/design-system'
+import '@qijenchen/design-system/styles/globals.css'
 
 function App() {
   return (

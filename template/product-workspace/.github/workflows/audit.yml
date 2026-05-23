@@ -24,16 +24,16 @@ jobs:
       - name: Install
         run: npm ci
 
-      # DS-provided audit scripts(via @your-org/design-system package's scripts/)
+      # DS-provided audit scripts(via @qijenchen/design-system package's scripts/)
       - name: TypeScript strict
         run: npx tsc -b
 
       - name: Content quality(spec.md drift)
-        run: node node_modules/@your-org/design-system/scripts/audit-content-quality.mjs --check
+        run: node node_modules/@qijenchen/design-system/scripts/audit-content-quality.mjs --check
         continue-on-error: true # consumer apps 通常無 spec.md,non-critical
 
       - name: Code quality
-        run: node node_modules/@your-org/design-system/scripts/code-quality-audit.mjs --scope=apps
+        run: node node_modules/@qijenchen/design-system/scripts/code-quality-audit.mjs --scope=apps
 
       # Build verify
       - name: Build app

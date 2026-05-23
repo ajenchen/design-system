@@ -1,5 +1,5 @@
-// Consumer storybook preview — dogfood @your-org/storybook-config shared preview
-import '@your-org/design-system/styles/globals.css'
-import preview from '@your-org/storybook-config/preview'
+// Consumer storybook preview — dogfood @qijenchen/storybook-config shared preview
+import '@qijenchen/design-system/styles/globals.css'
+import preview from '@qijenchen/storybook-config/preview'
 
 export default preview

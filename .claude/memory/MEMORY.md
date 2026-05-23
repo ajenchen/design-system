@@ -16,6 +16,7 @@
 - [feedback_codex_local_transport_node_modules.md](feedback_codex_local_transport_node_modules.md) — 地端 codex 走 `node_modules/.bin/codex`(npm dep),不是全域 PATH;3-test discovery 順序固定(2026-05-17)
 - [feedback_push_always_call.md](feedback_push_always_call.md) — 每 substantive turn 結尾必 call PushNotification,不自我 suppress(harness 自決),user verbatim「先強制推」(2026-05-17)
 - [feedback_audit_preflight_全盤查.md](feedback_audit_preflight_全盤查.md) — `/design-system-audit --deep` Phase 1 前必跑 Phase 0.5 Preflight(全 DS file enum + 全原則 enum + coverage matrix)。`scripts/audit-preflight.mjs` SSOT
+- [feedback_autonomous_default_triple_verify_2026_05_23.md](feedback_autonomous_default_triple_verify_2026_05_23.md) — ASK gate 只收斂 SSOT-UI/UX 增刪改;其他 autonomous 7 軸;所有 finding/codex 問題 triple-verify before bothering user;SSOT auto-sync 機械強制(2026-05-23 user 永久 directive)
 
 ## Feedback (DS canonical / 視覺判斷)
 > **2026-05-15 prune D3 retired 4 entries**(已完全被上游吸收,SSOT pointer):
@@ -25,7 +26,6 @@
 > - `feedback_overlay_chrome_token_semantic` → `semantic.css` token 註解 + DropdownMenuContent line 244 既有 canonical 先例
 
 ## Project (active state)
-- [project_bug_h_windows_scrollbar_2026_05_08.md](project_bug_h_windows_scrollbar_2026_05_08.md) — Windows scrollbar interim landed;ScrollArea full migration deferred (post-v1 RFC)
 - [project_hover_overlay_decisions_2026_05_09.md](project_hover_overlay_decisions_2026_05_09.md) — Hover overlay Q1-Q7 已決 + cell picker D-path 已完成 + 路 B 拍板 spreadsheet target;Q3.6 send codex Q-A/Q-B/Q-C 比稿中
 - [codex_collab_backfill_2026-05-19.md](codex_collab_backfill_2026-05-19.md) — 14 條 codex reply 7-column audit table(3 DONE / 4 DEEP-VERIFY-PENDING / 7 TRIAGE-PENDING),Q3.1 last-verdict gate SSOT
 - [feedback_story_baseline_reference.md](feedback_story_baseline_reference.md) — 寫 stories wrap primitive 必 reference 既有完整佈局 baseline(per 2026-05-20 AppShell-vs-Sidebar drift)

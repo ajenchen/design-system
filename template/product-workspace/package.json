@@ -1,5 +1,5 @@
 {
-  "name": "@your-org/product-workspace",
+  "name": "@qijenchen/product-workspace",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,19 +8,19 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "echo 'pick an app:npm -w @your-org/<app-name> run dev'",
+    "dev": "echo 'pick an app:npm -w @qijenchen/<app-name> run dev'",
     "build": "npm run build --workspaces --if-present",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build --output-dir storybook-static",
     "create-app": "node scripts/create-app.mjs",
     "audit:tsc": "npx tsc -b",
-    "audit:content": "node node_modules/@your-org/design-system/scripts/audit-content-quality.mjs --check",
-    "audit:code": "node node_modules/@your-org/design-system/scripts/code-quality-audit.mjs --scope=apps",
+    "audit:content": "node node_modules/@qijenchen/design-system/scripts/audit-content-quality.mjs --check",
+    "audit:code": "node node_modules/@qijenchen/design-system/scripts/code-quality-audit.mjs --scope=apps",
     "audit:all": "npm run audit:tsc && npm run audit:content && npm run audit:code"
   },
   "dependencies": {
-    "@your-org/design-system": "^0.1.0",
-    "@your-org/storybook-config": "^0.1.0",
+    "@qijenchen/design-system": "^0.1.0",
+    "@qijenchen/storybook-config": "^0.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwindcss": "^4.2.2"

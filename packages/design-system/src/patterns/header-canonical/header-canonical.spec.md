@@ -20,7 +20,7 @@ benchmark:
 
 | Family | 實作 | Consumer | Spec home |
 |---|---|---|---|
-| **A. Padding-based**(overlay)| `py-[--layout-space-tight]` + `data-unbounded` slot trick;高度由內容決定但對齊 `--chrome-header-height` | DialogHeader / SheetHeader / PopoverHeader / 未來 Drawer | `patterns/overlay-surface/overlay-surface.spec.md`(L1 SSOT)+ 本 spec(cross-family canonical) |
+| **A. Padding-based**(overlay)| `py-[var(--layout-space-tight)]` + `data-unbounded` slot trick;高度由內容決定但對齊 `--chrome-header-height` | DialogHeader / SheetHeader / PopoverHeader / 未來 Drawer | `patterns/overlay-surface/overlay-surface.spec.md`(L1 SSOT)+ 本 spec(cross-family canonical) |
 | **B. Fixed-height**(chrome)| `h-[var(--chrome-header-height)]` + `items-center`,剛性高度 | SidebarHeader / FileViewer Toolbar / FileViewer InfoPanel / Page top bar | `tokens/uiSize/uiSize.spec.md` L242(`Fixed-height` 段)+ 本 spec(cross-family canonical) |
 
 **為什麼兩家族?** 因 overlay 內 slot 可能塞 multi-line content(`HoverCard` title + description)— 剛性高度會切掉。Chrome 家族 永遠 single-row(toolbar / nav)— 剛性高度給 layout 預測性。兩 pattern 並存(對齊 `tokens/uiSize/uiSize.spec.md` L240-260「Padding-based vs Fixed-h decision tree」)。

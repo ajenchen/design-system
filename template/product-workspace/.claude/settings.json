@@ -3,8 +3,8 @@
     "purpose": "Product workspace settings. DS plugin install 透過 `/plugin marketplace add` + `/plugin install` CLI(per Anthropic plugin docs code.claude.com/docs/en/plugins),不在 settings.json 寫 enabledPlugins。",
     "consumerSetup": [
       "claude                                                  # start session",
-      "/plugin marketplace add github:your-org/design-system",
-      "/plugin install design-system@your-org-ds",
+      "/plugin marketplace add github:qijenchen/design-system",
+      "/plugin install design-system@qijenchen-ds",
       "/plugin marketplace update    # refresh catalog later",
       "/plugin update design-system  # bump to new version"
     ],

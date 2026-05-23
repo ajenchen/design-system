@@ -25,7 +25,7 @@
 
 DS 端有 breaking change → `package.json` 跟動 → 跑 codemod(若有):
 ```bash
-npx @your-org/design-system codemod v0-to-v1 apps/<name>/src
+npx @qijenchen/design-system codemod v0-to-v1 apps/<name>/src
 ```
 
 無 codemod 但有 conflict → manual fix + 加 `docs/migration-notes-v<N>.md` 給後續 team member。
@@ -39,6 +39,6 @@ npx @your-org/design-system codemod v0-to-v1 apps/<name>/src
 ## DS 不准 fork-edit
 
 ```
-❌ 你打開 node_modules/@your-org/design-system/.../button.tsx 改它 → 下次 npm install 被覆蓋
+❌ 你打開 node_modules/@qijenchen/design-system/.../button.tsx 改它 → 下次 npm install 被覆蓋
 ✅ 開 issue 給 DS repo,DS owner ship 新版,team renovate auto-update
 ```

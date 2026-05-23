@@ -298,7 +298,7 @@ export const MultipleExpansion: Story = {
           <StepContent>
             <div className="max-w-full overflow-x-auto rounded-md bg-muted">
               <pre className="text-caption p-3 whitespace-pre w-max">
-              npm install @your-org/design-system
+              npm install @qijenchen/design-system
             </pre>
             </div>
           </StepContent>

@@ -4,7 +4,7 @@
 
 ### 治理 home(always-load + path-scoped)
 - `CLAUDE.md` 全文
-- `.claude/rules/meta-patterns.md`(32 active M-rules)
+- `.claude/rules/meta-patterns.md`(31 active M-rules,M1-M32 with M27/M33/M34/M35 retired)
 - `.claude/rules/spec-rules.md`
 - `.claude/rules/ui-development.md`
 - `.claude/rules/story-rules.md`
@@ -43,7 +43,7 @@ A.0 結束時 output `.claude/planning/<date>-phaseA-preflight.md`(session-local
 
 ## 讀完
 - CLAUDE.md(<N> lines)
-- meta-patterns.md(32 M-rules verify list)
+- meta-patterns.md(31 active M-rules verify list)
 - spec.md ×<N>(file list)
 - tokens spec.md ×<N>
 - patterns spec.md ×<N>

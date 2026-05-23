@@ -16,10 +16,10 @@
 
 ```bash
 # 1. Create new GitHub repo(必 --private,per security posture)
-gh repo create your-org/product-workspace --private --confirm
+gh repo create qijenchen/product-workspace --private --confirm
 
 # 2. Clone empty
-git clone github.com/your-org/product-workspace
+git clone github.com/qijenchen/product-workspace
 cd product-workspace
 
 # 3. Copy template content
@@ -27,7 +27,7 @@ cp -r /path/to/this-ds-repo/template/product-workspace/. .
 # Note:dot . at end 包含 hidden files(.claude / .storybook / .github / .gitignore)
 
 # 4. Edit placeholders
-sed -i '' 's/your-org/<YOUR_ORG>/g' package.json .github/CODEOWNERS renovate.json README.md
+sed -i '' 's/qijenchen/<YOUR_ORG>/g' package.json .github/CODEOWNERS renovate.json README.md
 # (or use IDE find-replace)
 
 # 5. Install + first commit
@@ -53,9 +53,9 @@ template/product-workspace/
 ├── .gitignore
 ├── renovate.json                         ← auto DS bump PR
 ├── .claude/
-│   └── settings.json                     ← enable design-system@your-org plugin
+│   └── settings.json                     ← enable design-system@qijenchen plugin
 ├── .storybook/
-│   ├── main.ts                           ← import from @your-org/storybook-config
+│   ├── main.ts                           ← import from @qijenchen/storybook-config
 │   └── preview.tsx                       ← import shared preview
 ├── .github/
 │   ├── CODEOWNERS                        ← team review
@@ -86,8 +86,8 @@ template/product-workspace/
 
 ## DS side preconditions(must be satisfied first)
 
-1. `@your-org/design-system` published to npm(or internal registry consumer can pull from)
-2. `@your-org/storybook-config` published(same as DS)
-3. `design-system@your-org` Claude plugin published to marketplace(per host decision)
+1. `@qijenchen/design-system` published to npm(or internal registry consumer can pull from)
+2. `@qijenchen/storybook-config` published(same as DS)
+3. `design-system@qijenchen` Claude plugin published to marketplace(per host decision)
 4. NPM_TOKEN(or alternative auth)distributed to product-workspace as CI secret
-5. Renovate app installed to `your-org` GitHub org
+5. Renovate app installed to `qijenchen` GitHub org

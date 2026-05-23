@@ -1,15 +1,15 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "design-system",
-  "description": "World-class DS governance — skills + hooks + rules + CLAUDE.md instructions + 31 active M-rules + 56 audit dims. Source-of-truth for product workspaces consuming @your-org/design-system npm package.",
+  "description": "World-class DS governance — skills + hooks + rules + CLAUDE.md instructions + 31 active M-rules + 56 audit dims. Source-of-truth for product workspaces consuming @qijenchen/design-system npm package.",
   "version": "0.1.0",
   "author": {
     "name": "Your-Org DS Owner"
   },
-  "homepage": "https://github.com/your-org/design-system",
+  "homepage": "https://github.com/qijenchen/design-system",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/your-org/design-system.git"
+    "url": "git+ssh://git@github.com/qijenchen/design-system.git"
   },
   "license": "UNLICENSED",
   "_metadata": {

@@ -7,7 +7,7 @@
 3. **改一處必看三處**——code / spec / story 三方聯動。改 cva `defaultVariants` / variant / token 前先 grep 該元件所有檔案,一次改完。
 4. **範例必真實業務場景**——Jira / Stripe / Notion / Figma 可辨識情境;禁 `Option A/B/C`、「按鈕一」、極端不現實、ASCII art。
 5. **猶豫就問**——無前例的決策:grep 既有 → 讀近親 spec → 仍不確定停下問。**禁止憑直覺造新 pattern**。
-6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住。見 `.claude/rules/meta-patterns.md` 32 active M-rules(M1-M33,M27 retired 2026-05-15 → M23(c) child)。**AI 不需 user 提醒才找 root invariant**——rule 震盪 → AI 自跑 M12 benchmark + invariant test。User 第 2 次問 → 必截圖 verify(M13)。對話結論 → AUTO 5-layer pipeline(M14)。Visual / behavior decision 前必先 WebFetch ≥ 3 source(M26)。Solo-work git ops 必先 grep canonical(M28)。**視覺/結構 propose 前必 grep DS spec.md 找 owner SSOT(M29)— 出 3-column 表;否則提案不被接受**。使用者 tell me once 不該要 tell me twice。
+6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住。見 `.claude/rules/meta-patterns.md` 31 active M-rules(M1-M32,M27/M33/M34/M35 retired,折入 M20/M7/M23(c)(d))。**AI 不需 user 提醒才找 root invariant**——rule 震盪 → AI 自跑 M12 benchmark + invariant test。User 第 2 次問 → 必截圖 verify(M13)。對話結論 → AUTO 5-layer pipeline(M14)。Visual / behavior decision 前必先 WebFetch ≥ 3 source(M26)。Solo-work git ops 必先 grep canonical(M28)。**視覺/結構 propose 前必 grep DS spec.md 找 owner SSOT(M29)— 出 3-column 表;否則提案不被接受**。使用者 tell me once 不該要 tell me twice。
 
 完整 M-rules 詳 `.claude/rules/meta-patterns.md`(always loads)。
 
@@ -150,6 +150,12 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 **反 pattern**(禁):「省工」/「下次再做」/「下個 session」(M33)/「OK 嗎?」過度 ASK / shortcut 避 verify / 不對齊 mindset #1。
 
 **Trigger phrase auto-pipeline**(M19 升級):「依原則自主」/「不需問」/「馬不停蹄」/「全部做完」/「自動」→ 進 autonomous mode,僅 SSOT-affecting UI/UX 停下 ASK。
+
+**2026-05-23 永久 reinforcement(user verbatim directive)**:
+- **ASK gate 收斂為「會影響 SSOT 的 UI/UX 增刪改」唯一條件**;其餘(bug fix / refactor / clean / test / audit / verify / perf / a11y / governance / hook / skill / spec 內部 / SSOT auto-sync / propagation) 一律 autonomous,**不以省工為前提**,依 7 軸(言簡意賅 / 效率 + 效能 / SSOT 鐵律 / 易懂 / 維護 / 擴充 / 世界級 + 一致設計語言)做到完整、完美
+- **Triple-verify before bothering user(M18 Q0 升級為 universal pre-propose gate)**:任何 propose / 列 option / 發現「問題」**包括** codex 抓的問題、deep audit 抓的 P0/P1/P2 finding,**propose 前必先 inline 跑** (1) `grep` DS-wide consumer / spec / hook (2) Read 對應 `*.spec.md` / `*.tsx` 確認 problem 真存在 (3) 對照 既有 canonical 確認非 false positive。Triple-verify 三題全過才 propose;任一 NO → 自動撤回 finding,**不煩 user**。對應 hook `check_propose_pre_grep_verify.sh` 機械強制。Anchor:2026-05-18 Sheet/inline-action/SurfaceBody 三題 propose 全是 false positive、2026-05-23 Badge `text-[10px]` 被誤判為 drift(實際是 spec L161-167 documented sub-footnote exception)
+- **永遠不需 user 耳提面命**:Trigger phrase / 預設 ASK gate / Triple-verify gate 全 hook 機械強制(`check_substantive_edit_approval_preflight.sh` / `stop_self_audit.sh` / `check_propose_pre_grep_verify.sh`)。SSOT 自動同步走 `scripts/sync-governance-counters.mjs` + `scripts/ssot-sync-check.mjs`(M-rule count / hook count / dim count / npm scope / version 機械對齊,session-start hook 偵測 drift → 自動 propose update)
+- **SSOT auto-sync invariant**:所有跨 file 同概念數字(M-rule count / hook count / audit dim count / npm package scope / version / pluginName / pluginRoot)**禁止** hardcode 多處;有 SSOT(`session_start_governance_check.sh:173` for hook count / `meta-patterns.md` count for M-rule / `design-system-audit/SKILL.md` for dim / `package.json` for version / `.claude-plugin/plugin.json` for plugin name);其他 file 必 reference 或由 `sync-governance-counters.mjs` 機械對齊。Drift 偵測 → 自動 fix + commit,無需 user trigger
 
 # 遇不確定時的協議
 

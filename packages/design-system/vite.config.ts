@@ -1,8 +1,8 @@
-// 2026-05-22 Phase 1 team-distribution-roadmap:Vite library build for @your-org/design-system
+// 2026-05-22 Phase 1 team-distribution-roadmap:Vite library build for @qijenchen/design-system
 // Per Decision A2(user 2026-05-22「照你建議做啊 我要世界級的」):vite build --lib(復用既有 Vite)
 //
 // Output:dist/index.{js,mjs,cjs} + dist/index.d.ts(via tsc emit separately, see tsconfig.json declaration:true)
-// Consumer:`import { Button } from '@your-org/design-system'` 走 barrel,or subpath per package.json exports
+// Consumer:`import { Button } from '@qijenchen/design-system'` 走 barrel,or subpath per package.json exports
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'

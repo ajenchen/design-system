@@ -1,13 +1,13 @@
-# @your-org/product-workspace
+# @qijenchen/product-workspace
 
-Team monorepo consuming `@your-org/design-system`(via npm)+ `design-system@your-org`(via Claude plugin marketplace)。
+Team monorepo consuming `@qijenchen/design-system`(via npm)+ `design-system@qijenchen`(via Claude plugin marketplace)。
 
 ## Quick start(5 命令上線)
 
 ```bash
-git clone github.com/your-org/product-workspace
+git clone github.com/qijenchen/product-workspace
 cd product-workspace
-npm install                    # → 自動拉 @your-org/design-system + storybook-config + Claude plugin enable
+npm install                    # → 自動拉 @qijenchen/design-system + storybook-config + Claude plugin enable
 claude                          # Claude session 啟動 → auto detect plugin → 27 skills / 37 hooks / rules / CLAUDE.md
 npm run create-app order-dashboard   # 生新 product 在 apps/order-dashboard/
 npm run storybook              # localhost:6006
@@ -23,8 +23,8 @@ product-workspace/
 │   └── analytics-portal/
 ├── packages/                          ← 跨 product shared utility
 │   └── shared-utils/
-├── .storybook/                        ← shared(import @your-org/storybook-config)
-├── .claude/settings.json              ← enable design-system@your-org plugin
+├── .storybook/                        ← shared(import @qijenchen/storybook-config)
+├── .claude/settings.json              ← enable design-system@qijenchen plugin
 ├── .github/{CODEOWNERS, workflows/}   ← team review + audit + deploy
 ├── codemods/                          ← DS major bump migration scripts
 ├── docs/                              ← onboarding(see docs/01-first-time-setup.md)
@@ -33,13 +33,13 @@ product-workspace/
 
 ## DS 自動跟版
 
-Renovate 每週一 6am 掃 `@your-org/design-system` 新版 → 開 PR(label `ds-bump`)→ CI 全綠 → team merge:
+Renovate 每週一 6am 掃 `@qijenchen/design-system` 新版 → 開 PR(label `ds-bump`)→ CI 全綠 → team merge:
 
 | Bump type | Strategy |
 |---|---|
 | **Patch / Minor** | Renovate 開 PR,audit 全綠,team review merge |
 | **Major** | Renovate 開 PR + label `needs-codemod` → 跑 `codemods/v<N>-to-v<N+1>/transform.ts`(jscodeshift)→ merge |
-| **Pre-release(@beta)** | Renovate 不自動,consumer manually pin `@your-org/design-system@beta` 試 |
+| **Pre-release(@beta)** | Renovate 不自動,consumer manually pin `@qijenchen/design-system@beta` 試 |
 
 詳細 upgrade 流程 → [docs/04-ds-upgrade.md](docs/04-ds-upgrade.md)
 
@@ -50,7 +50,7 @@ Renovate 每週一 6am 掃 `@your-org/design-system` 新版 → 開 PR(label `ds
 
 ## 不准改的
 
-DS 在 `node_modules/@your-org/design-system/` read-only。需 component 改動 → 開 issue 給 DS owner repo。需自己組件 → 寫在 `apps/<your-app>/src/components/` 不污染 DS。
+DS 在 `node_modules/@qijenchen/design-system/` read-only。需 component 改動 → 開 issue 給 DS owner repo。需自己組件 → 寫在 `apps/<your-app>/src/components/` 不污染 DS。
 
 ## Docs
 

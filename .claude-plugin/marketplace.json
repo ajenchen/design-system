@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
-  "name": "your-org-ds",
+  "name": "qijenchen-ds",
   "description": "Your-org Design System marketplace — distribute DS governance plugin to product workspaces",
   "owner": {
     "name": "Your-Org DS Owner"
@@ -18,7 +18,7 @@
       "author": {
         "name": "Your-Org DS Owner"
       },
-      "tags": ["design-system", "governance", "world-class", "ssot", "your-org"],
+      "tags": ["design-system", "governance", "world-class", "ssot", "qijenchen"],
       "category": "design-system"
     }
   ]

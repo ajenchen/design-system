@@ -14,7 +14,7 @@ npm run create-app order-dashboard
 
 ```
 apps/order-dashboard/
-├── package.json         (name: @your-org/order-dashboard,deps DS + react)
+├── package.json         (name: @qijenchen/order-dashboard,deps DS + react)
 ├── tsconfig.json
 ├── vite.config.ts
 ├── index.html
@@ -34,8 +34,8 @@ Claude session(workspace root)看到 apps/order-dashboard/ 後跟你共事。問
 ## 用 DS 元件
 
 ```tsx
-import { Button, Avatar, DataTable } from '@your-org/design-system'
-import '@your-org/design-system/styles/globals.css'  // 全 token
+import { Button, Avatar, DataTable } from '@qijenchen/design-system'
+import '@qijenchen/design-system/styles/globals.css'  // 全 token
 
 // 用即可,DS 自動處理 theme / density / a11y
 ```

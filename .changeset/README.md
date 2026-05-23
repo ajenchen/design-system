@@ -1,12 +1,12 @@
 # Changesets
 
 2026-05-22 Phase 4 team-distribution-roadmap ship。Changesets-driven semver release pipeline for
-`@your-org/design-system` + `@your-org/storybook-config`(linked versions per `config.json`)。
+`@qijenchen/design-system` + `@qijenchen/storybook-config`(linked versions per `config.json`)。
 
 ## 何時加 changeset
 
 每個 PR 修 `packages/*` substantive code → 必加一個 `*.md` 到此目錄,描述:
-- 影響哪 package(`@your-org/design-system` / `@your-org/storybook-config`)
+- 影響哪 package(`@qijenchen/design-system` / `@qijenchen/storybook-config`)
 - patch / minor / major(per semver)
 - 用戶可見 change summary
 

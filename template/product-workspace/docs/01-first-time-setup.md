@@ -15,7 +15,7 @@ Day 0 上工流程(~15 min)。
 ### 1. Clone
 
 ```bash
-git clone github.com/your-org/product-workspace
+git clone github.com/qijenchen/product-workspace
 cd product-workspace
 ```
 
@@ -26,7 +26,7 @@ npm install
 ```
 
 預期 output:
-- `@your-org/design-system` + `@your-org/storybook-config` from npm
+- `@qijenchen/design-system` + `@qijenchen/storybook-config` from npm
 - 35 sub-deps(@radix-ui / @dnd-kit / lucide-react / ... 全 auto)
 - `peerDependencies`:react / react-dom / tailwindcss already 在 root
 
@@ -38,8 +38,8 @@ Per Anthropic Claude Code plugin spec(`code.claude.com/docs/en/plugins`):
 claude                                                  # 啟動 session
 
 # 一次性 setup(per workspace,只跑一次)
-/plugin marketplace add github:your-org/design-system  # add marketplace catalog
-/plugin install design-system@your-org-ds              # install plugin from catalog
+/plugin marketplace add github:qijenchen/design-system  # add marketplace catalog
+/plugin install design-system@qijenchen-ds              # install plugin from catalog
 ```
 
 之後 session 自動 detect plugin,load skills + hooks + rules + CLAUDE.md instructions。
@@ -78,8 +78,8 @@ npm run build-storybook
 ## Common issue
 
 - **claude detect 不到 plugin**:check `.claude/settings.json` 存在 + `enabledPlugins` 條目正確
-- **npm install 拉不到 @your-org/...**:check 你 npm 已 login + `.npmrc` 設 internal registry(若用 GitHub Packages 或 Verdaccio)
-- **Storybook 看不到元件**:check `node_modules/@your-org/design-system/dist/` 存在 + `.storybook/main.ts` glob 正確
+- **npm install 拉不到 @qijenchen/...**:check 你 npm 已 login + `.npmrc` 設 internal registry(若用 GitHub Packages 或 Verdaccio)
+- **Storybook 看不到元件**:check `node_modules/@qijenchen/design-system/dist/` 存在 + `.storybook/main.ts` glob 正確
 - **TypeScript path 找不到**:check `tsconfig.json` paths 沒覆寫 npm resolver
 
 → [05-troubleshooting.md](05-troubleshooting.md) 完整排查

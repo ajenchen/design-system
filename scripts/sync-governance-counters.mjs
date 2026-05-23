@@ -102,6 +102,88 @@ if (skillDimHeaderMatch) {
   if (declared !== dimCount) drifts.push(`SKILL.md "The ${declared} audit dimensions" != actual table rows ${dimCount}`)
 }
 
+// 2026-05-23 升級:M-rule count text drift 跨多 file
+// SSOT pattern:`N active M-rules` 或 `N M-rules`(loose match,排 historical / planning / scratch / tmp)
+const mRuleTextFiles = [
+  'CLAUDE.md',
+  '.claude/rules/README.md',
+  '.claude/rules/meta-patterns.md',
+  '.claude/skills/codex-collab/references/brief-template.md',
+  '.claude/skills/deep-audit-cross-codex/references/phase-a-workflow.md',
+  '.claude/skills/deep-audit-cross-codex/references/phase-b-codex-brief.md',
+  '.claude-plugin/plugin.json',
+  '.claude-plugin/marketplace.json',
+]
+for (const rel of mRuleTextFiles) {
+  const p = path.join(ROOT, rel)
+  if (!fs.existsSync(p)) continue
+  const c = fs.readFileSync(p, 'utf-8')
+  const matches = [...c.matchAll(/(\d+)\s+(?:active\s+)?M-rules?/g)]
+  for (const m of matches) {
+    const declared = parseInt(m[1])
+    if (declared !== mRuleCount) {
+      drifts.push(`${rel} states "${m[0]}" but actual = ${mRuleCount}`)
+    }
+  }
+}
+
+// 2026-05-23:npm scope leftover detection(qijenchen SSOT — your-org 應 0 references)
+const scopeCheckRoots = ['packages', 'template', '.claude', '.claude-plugin', '.github', 'scripts']
+const scopeLeftovers = []
+for (const root of scopeCheckRoots) {
+  if (!fs.existsSync(path.join(ROOT, root))) continue
+  const files = globSync(`${root}/**/*.{json,md,ts,tsx,mjs,yml,yaml}`, { cwd: ROOT })
+  for (const f of files) {
+    if (f.includes('node_modules/') || f.includes('storybook-static/') || f.includes('/dist/') || f.includes('.claude/planning/') || f.includes('.claude/scratch/') || f.includes('.claude/tmp/')) continue
+    if (f === 'scripts/sync-governance-counters.mjs') continue // self-skip drift detector references
+    if (f.includes('.claude/logs/')) continue // self-skip log output (contains drift report text)
+    const c = fs.readFileSync(path.join(ROOT, f), 'utf-8')
+    if (/@your-org\//.test(c) || /your-org\b/.test(c)) {
+      scopeLeftovers.push(f)
+    }
+  }
+}
+if (scopeLeftovers.length) {
+  drifts.push(`@qijenchen scope drift — your-org leftover in ${scopeLeftovers.length} file(s):\n  ${scopeLeftovers.join('\n  ')}`)
+}
+
+// 2026-05-23:Plugin manifest consistency (.claude-plugin/plugin.json + marketplace.json)
+const pluginJsonPath = path.join(ROOT, '.claude-plugin/plugin.json')
+const marketplaceJsonPath = path.join(ROOT, '.claude-plugin/marketplace.json')
+if (fs.existsSync(pluginJsonPath) && fs.existsSync(marketplaceJsonPath)) {
+  try {
+    const plugin = JSON.parse(fs.readFileSync(pluginJsonPath, 'utf-8'))
+    const market = JSON.parse(fs.readFileSync(marketplaceJsonPath, 'utf-8'))
+    const marketPlugin = market.plugins?.find(p => p.name === plugin.name)
+    if (!marketPlugin) {
+      drifts.push(`marketplace.json plugins[] missing entry for "${plugin.name}"`)
+    } else if (marketPlugin.version !== plugin.version) {
+      drifts.push(`plugin.json version "${plugin.version}" != marketplace.json plugins[].version "${marketPlugin.version}"`)
+    }
+  } catch (e) {
+    drifts.push(`Plugin manifest JSON parse error: ${e.message}`)
+  }
+}
+
+// 2026-05-23:npm workspace package version consistency vs root changeset
+const rootPkgPath = path.join(ROOT, 'package.json')
+const dsPkgPath = path.join(ROOT, 'packages/design-system/package.json')
+const sbPkgPath = path.join(ROOT, 'packages/storybook-config/package.json')
+if (fs.existsSync(dsPkgPath) && fs.existsSync(sbPkgPath)) {
+  try {
+    const dsPkg = JSON.parse(fs.readFileSync(dsPkgPath, 'utf-8'))
+    const sbPkg = JSON.parse(fs.readFileSync(sbPkgPath, 'utf-8'))
+    if (dsPkg.name !== '@qijenchen/design-system') {
+      drifts.push(`packages/design-system/package.json name="${dsPkg.name}" != "@qijenchen/design-system"`)
+    }
+    if (sbPkg.name !== '@qijenchen/storybook-config') {
+      drifts.push(`packages/storybook-config/package.json name="${sbPkg.name}" != "@qijenchen/storybook-config"`)
+    }
+  } catch (e) {
+    drifts.push(`Package JSON parse error: ${e.message}`)
+  }
+}
+
 // ── Output ───────────────────────────────────────────────────────────
 
 const report = {

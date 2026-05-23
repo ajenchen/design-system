@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "_comment_purpose": "2026-05-23 ship per team-distribution-roadmap Phase 5+ auto-update propagation:Renovate 自動開 PR when @your-org/design-system / @your-org/storybook-config 有新版,team 看 PR diff + storybook preview deploy + audit pipeline 全綠 → merge",
+  "_comment_purpose": "2026-05-23 ship per team-distribution-roadmap Phase 5+ auto-update propagation:Renovate 自動開 PR when @qijenchen/design-system / @qijenchen/storybook-config 有新版,team 看 PR diff + storybook preview deploy + audit pipeline 全綠 → merge",
   "extends": ["config:base"],
   "schedule": ["before 6am on monday"],
   "timezone": "Asia/Taipei",
@@ -9,9 +9,9 @@
   "packageRules": [
     {
       "_comment": "DS 內部 packages 走 grouped PR(每週一次 batch)+ 自動 approve patch + minor 等 team review",
-      "matchPackagePatterns": ["^@your-org/"],
-      "groupName": "your-org packages",
-      "groupSlug": "your-org-bump",
+      "matchPackagePatterns": ["^@qijenchen/"],
+      "groupName": "qijenchen packages",
+      "groupSlug": "qijenchen-bump",
       "schedule": ["before 6am on monday"],
       "automerge": false,
       "minor": {
@@ -28,7 +28,7 @@
     },
     {
       "_comment": "Pre-release tags(@beta / @next)— consumer 可選擇試版",
-      "matchPackagePatterns": ["^@your-org/"],
+      "matchPackagePatterns": ["^@qijenchen/"],
       "matchUpdateTypes": ["bump"],
       "respectLatest": false
     }

@@ -92,8 +92,8 @@ jobs:
 
       # Claude plugin marketplace distribution(Phase 7 — 2026-05-23 ship per real Anthropic spec)
       # Distribution model:**GitHub-direct**(不走 Anthropic public marketplace)
-      #   - Consumers add this repo as marketplace:`/plugin marketplace add github:your-org/design-system`
-      #   - Plugin install:`/plugin install design-system@your-org-ds`
+      #   - Consumers add this repo as marketplace:`/plugin marketplace add github:qijenchen/design-system`
+      #   - Plugin install:`/plugin install design-system@qijenchen-ds`
       #   - Version pinning:tag v0.x.x → marketplace.json + plugin.json `version` field bumped manually pre-tag
       #     OR omit version → commit SHA used(per Anthropic plugin spec auto-versioning)
       # No CLI publish step needed for GitHub-direct — GitHub repo IS the marketplace.

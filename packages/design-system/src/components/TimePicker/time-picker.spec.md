@@ -206,7 +206,10 @@ Panel 展開後的 column picker 結構:
 ### Loading
 N/A — TimePicker 是純同步輸入,無 async 狀態。
 
-### a11y
+---
+
+## A11y 預設
+
 - trigger 需 `aria-label`(若沒外部 `<label>`)
 - Panel 開啟時 trigger `aria-expanded="true"`
 - 每欄 `role="listbox"`,item `role="option" aria-selected`

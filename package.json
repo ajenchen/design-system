@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:lib": "npm -w @your-org/design-system run build && npm -w @your-org/design-system run build:dts",
+    "build:lib": "npm -w @qijenchen/design-system run build && npm -w @qijenchen/design-system run build:dts",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build --output-dir storybook-static",

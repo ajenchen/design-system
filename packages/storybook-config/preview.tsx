@@ -1,5 +1,5 @@
 // Shared Storybook preview config(2026-05-22 Phase 2 team-distribution-roadmap)
-// Consumer product workspace use:`.storybook/preview.tsx` import { sharedPreview } from '@your-org/storybook-config'
+// Consumer product workspace use:`.storybook/preview.tsx` import { sharedPreview } from '@qijenchen/storybook-config'
 // DS repo dogfood:`.storybook/preview.tsx` 直接 import 此 default export
 
 import type { Preview } from '@storybook/react'

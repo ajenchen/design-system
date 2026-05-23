@@ -39,7 +39,7 @@ CI fail if missing changeset(blocked merge)。
 ```bash
 git tag v0.1.0-beta.1
 git push origin v0.1.0-beta.1
-# CI 自動 detect `-beta` suffix → publish to `@beta` dist-tag(consumer:`npm install @your-org/design-system@beta`)
+# CI 自動 detect `-beta` suffix → publish to `@beta` dist-tag(consumer:`npm install @qijenchen/design-system@beta`)
 ```
 
 對齊 Vercel `pkg.pr.new` pre-release model — instant publish,easy rollback。
@@ -74,7 +74,7 @@ packages/design-system/codemods/
 Consumer migrate:
 
 ```bash
-npx @your-org/design-system codemod v0-to-v1 ./src
+npx @qijenchen/design-system codemod v0-to-v1 ./src
 ```
 
 對齊 Material UI / Next.js / Storybook canonical(jscodeshift idiom)。

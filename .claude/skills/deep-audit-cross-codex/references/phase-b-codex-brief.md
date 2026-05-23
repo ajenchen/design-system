@@ -22,7 +22,7 @@ ls -la ~/.codex/auth.json                                              # 3 Auth(
 ## Claude Phase A 結果摘要
 
 ### 全盤閱讀
-- 讀完:CLAUDE.md / 32 M-rules / spec.md ×<N> / tokens / patterns / memory active
+- 讀完:CLAUDE.md / 31 active M-rules / spec.md ×<N> / tokens / patterns / memory active
 
 ### 全 dim NO-SAMPLE deep audit findings
 - P0: <列具體 file:line + 違反 spec / rule>
