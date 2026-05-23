@@ -5,7 +5,6 @@
 - [project_goal.md](project_goal.md) — World-class DS where CLAUDE.md + specs ensure AI faithfully executes design principles
 
 ## Feedback (workflow / collaboration discipline)
-- [feedback_concrete_not_vague.md](feedback_concrete_not_vague.md) — P2 / finding 必含 file:line + 片段 + 具體問題;禁 topic-level generic
 - [feedback_skill_trigger_precision.md](feedback_skill_trigger_precision.md) — Skill trigger 必精確 user vocabulary;loose 語句 clarify-first
 - [feedback_codex_dual_track_synthesizer.md](feedback_codex_dual_track_synthesizer.md) — Codex collab 永遠 dual-track:Claude own + codex own + 比稿 synthesize
 - [feedback_solo_dev_workflow.md](feedback_solo_dev_workflow.md) — 1 chat = 1 working branch;Netlify preview = user gate;user 拍板才 push main(M28)
@@ -17,6 +16,7 @@
 - [feedback_audit_preflight_全盤查.md](feedback_audit_preflight_全盤查.md) — `/design-system-audit --deep` Phase 1 前必跑 Phase 0.5 Preflight(全 DS file enum + 全原則 enum + coverage matrix)。`scripts/audit-preflight.mjs` SSOT
 - [feedback_autonomous_default_triple_verify_2026_05_23.md](feedback_autonomous_default_triple_verify_2026_05_23.md) — ASK gate 只收斂 SSOT-UI/UX 增刪改;其他 autonomous 7 軸;所有 finding/codex 問題 triple-verify before bothering user;SSOT auto-sync 機械強制(2026-05-23 user 永久 directive)
 - [feedback_audit_deterministic_script_not_subagent.md](feedback_audit_deterministic_script_not_subagent.md) — Dim 40/41/42 content-quality 必 chain audit-story-quality.mjs deterministic 全掃,禁 sub-agent 抽樣(2026-05-23 anchor:user 抓「你又再抽樣?」)
+- [feedback_codex_collab_real_intent.md](feedback_codex_collab_real_intent.md) — 「trust 自己 / 不需要 codex 比稿」真意 = M31 adversarial dual-track + triple-verify,**禁** 解讀 skip Phase B(2026-05-23 anchor:user 怒糾「你搞錯我意思,你是低能兒嗎?」)
 
 ## Feedback (DS canonical / 視覺判斷)
 > **2026-05-15 prune D3 retired 4 entries**(已完全被上游吸收,SSOT pointer):
