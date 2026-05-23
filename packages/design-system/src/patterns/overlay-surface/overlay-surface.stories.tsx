@@ -7,7 +7,7 @@ import { SurfaceHeader, SurfaceBody, SurfaceFooter } from './overlay-surface'
 import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta = {
-  title: 'Design System/Patterns/Overlay Surface',
+  title: 'Design System/Internal Patterns/Overlay Surface',
   parameters: { layout: 'centered' },
 }
 export default meta

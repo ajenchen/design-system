@@ -1,3 +1,9 @@
+---
+pattern: horizontal-overflow
+internal: true
+scope: utility primitives module (useOverflowItems hook + fade-mask + scroll-arrow helper components) — DS-internal consumer only(Tabs / ChipGroup wrap)
+---
+
 <!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Horizontal Overflow 設計原則

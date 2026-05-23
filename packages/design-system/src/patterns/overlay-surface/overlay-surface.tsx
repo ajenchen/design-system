@@ -2,6 +2,9 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /**
+ * @internal — DS-internal primitive(2026-05-23 per `.claude/rules/ui-development.md` Public vs Internal canonical)。
+ * end-user app 直接 import 無 functioning UI;由 Dialog / Sheet / Popover / HoverCard / Coachmark 等 DS overlay 元件 wrap 消費。
+ *
  * Overlay Surface primitives — Dialog / Popover / Sheet 共用結構化 sub-components。
  *
  * 抽象這層避免各自硬寫 padding / border 導致漂移。有特殊行為(Dialog Close 按鈕 /

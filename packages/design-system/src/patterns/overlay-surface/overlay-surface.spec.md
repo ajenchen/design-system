@@ -1,3 +1,9 @@
+---
+pattern: overlay-surface
+internal: true
+scope: overlay shell sub-components (SurfaceHeader / SurfaceBody / SurfaceFooter + padding SSOT) — DS-internal consumer only(Dialog / Sheet / Popover / HoverCard / Coachmark wrap)
+---
+
 <!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Overlay Surface 設計原則

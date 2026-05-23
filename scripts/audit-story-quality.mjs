@@ -37,7 +37,7 @@ const CHECK = process.argv.includes('--check')
 const storyFiles = globSync('packages/design-system/src/**/*.stories.tsx', { cwd: ROOT }).map(f => path.join(ROOT, f))
 const manualStoryFiles = storyFiles.filter(f => !f.includes('.anatomy.stories.tsx') && !f.includes('.principles.stories.tsx'))
 
-const TITLE_CANONICAL = /^(['"])Design System\/(Components|Internal)\/[^/]+\/(展示|設計規格|設計原則)\1$|^(['"])Design System\/(Tokens|Patterns)\/[^'"]+\4$/
+const TITLE_CANONICAL = /^(['"])Design System\/(Components|Internal)\/[^/]+\/(展示|設計規格|設計原則)\1$|^(['"])Design System\/(Tokens|Patterns|Internal Patterns)\/[^'"]+\4$/
 const JARGON_PATTERNS = [
   { name: 'layer-code', re: /\bL[1-9]\b/ },
   { name: 'canonical-leak', re: /\bcanonical\b/i },

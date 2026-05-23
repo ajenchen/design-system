@@ -7,7 +7,7 @@ import { ChromeHeader } from './chrome-header'
 import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta<typeof ChromeHeader> = {
-  title: 'Design System/Patterns/Header Canonical',
+  title: 'Design System/Internal Patterns/Header Canonical',
   component: ChromeHeader,
   parameters: { layout: 'fullscreen' },
 }

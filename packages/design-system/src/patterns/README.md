@@ -10,6 +10,14 @@
 
 **核心特徵**:元件 code 會 `import` 這個 pattern 使用,或遵循它畫出相同視覺結構。
 
+## Public pattern vs Internal pattern(2026-05-23 user 永久拍板 SSOT)
+
+詳定義 → `.claude/rules/ui-development.md`「Public component vs Internal primitive canonical」段。
+
+- **Public pattern**:end-user app 可直接 `<X />` render(`action-bar` / `resize-handle` / `element-anatomy` MenuItem)。Storybook title `Design System/Patterns/<Name>`。
+- **Internal pattern**:end-user app 直接 render 無 functioning UI,需 DS 內部其他元件 wrap(`header-canonical/ChromeHeader` / `horizontal-overflow useOverflowItems` / `overlay-surface SurfaceHeader/Body/Footer`)。Storybook title `Design System/Internal Patterns/<Name>`。Frontmatter `internal: true`。Export jsDoc `@internal`。
+- 下方 "當前居民" 表「Consumer」欄 = **DS-internal consumer**(不是 end-user app)— 若 Consumer 全是 other DS components → internal pattern。
+
 ## 當前居民
 
 | Pattern | 提供什麼 runtime primitive | Consumer |

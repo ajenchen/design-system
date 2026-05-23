@@ -1,5 +1,6 @@
 ---
 pattern: header-canonical
+internal: true
 scope: cross-component header SSOT (chrome + overlay families)
 benchmark:
   - GitHub Primer PageHeader: https://primer.style/components/page-header/react — hasBorder auto-suppress when Navigation slot contains UnderlineNav

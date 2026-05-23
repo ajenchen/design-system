@@ -2,6 +2,9 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /**
+ * @internal — DS-internal primitive(2026-05-23 per `.claude/rules/ui-development.md` Public vs Internal canonical)。
+ * end-user app 直接 render `<ChromeHeader />` 無 functioning UI;由 Sidebar / FileViewer / Dialog / Sheet / Popover 等 DS 元件 wrap 消費。
+ *
  * ChromeHeader — Fixed-height chrome header primitive(Layout Family B,header-canonical.spec.md)
  *
  * ── 定位 ──

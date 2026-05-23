@@ -6,7 +6,7 @@ import * as React from 'react'
 import { OverflowScrollArrow, OverflowMenuTriggerButton, buildFadeMask } from './horizontal-overflow'
 
 const meta: Meta = {
-  title: 'Design System/Patterns/Horizontal Overflow',
+  title: 'Design System/Internal Patterns/Horizontal Overflow',
   parameters: { layout: 'centered' },
 }
 export default meta

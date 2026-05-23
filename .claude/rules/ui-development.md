@@ -11,6 +11,24 @@ paths:
 
 僅在編 `.tsx` / `.ts` 或 DS / explorations / app code 時 load。
 
+## Public component vs Internal primitive canonical(SSOT,2026-05-23 user 永久拍板)
+
+**Public component**(consumer-facing):**end-user app 直接寫 `<X />` 就能 render 出有意義的 UI**,不需要再 wrap / 不需要再 compose 其他 DS 元件。Examples:`<Button>` / `<Avatar>` / `<Dialog>` / `<DataTable>` / `<MenuItem>` / `<ActionBar>` / `<ResizeHandle>`。
+
+**Internal primitive**:**供 DS 內部其他元件 wrap / compose 用**。end-user app 直接 render 無 functioning UI,或必須先 import 多個 DS 元件一起組才有結果。Examples:`<ChromeHeader>`(Sidebar 內部消費)/ `<SurfaceHeader/Body/Footer>`(Dialog 內部)/ `useOverflowItems` hook / `<ItemIcon>` / `<ItemAvatar>`(MenuItem 內部 slot)。
+
+**Mechanical test(verifiable)**:
+- 問:end-user app `<X />`(空 children / 無 props / 無 wrapper context)render → 有 functioning visible UI 嗎?
+  - YES → **public**
+  - NO → **internal**
+
+**Folder + storybook canonical**:
+- public:`components/<Name>/` OR `patterns/<name>/`(frontmatter 無 `internal: true`),storybook title `Design System/Components/<Name>/...` OR `Design System/Patterns/<Name>`
+- internal:`components/Internal/<Name>/` OR `patterns/<name>/`(frontmatter `internal: true`),storybook title `Design System/Internal/<Name>/...` OR `Design System/Internal Patterns/<Name>`(end-user 設計師 default 過濾掉,DS contributor 看 reference 用)
+- export jsDoc 加 `@internal` marker(IDE intellisense 警示 end-user)
+
+**對齊世界級**:Polaris 「Building blocks」(public) vs「layout primitives」(internal)/ Material UI `@mui/material`(public)vs `@mui/utils` `@mui/system`(internal hooks/primitives)/ Atlassian `@atlaskit/<component>`(public)vs internal `<unstyled>` primitives / Carbon turnkey components + internal utilities / Apple HIG「Presented controls」vs「implementation primitives」 共識。
+
 ## 建立 UI 前必讀
 
 **先 `ls packages/design-system/src/{components,patterns}/`**。必查 spec:Tokens(`tokens/{color|typography|density|uiSize|layoutSpace|elevation|radius}/*.spec.md`)/ Row + List item(`item-anatomy.spec.md` Family 1+2 SSOT)/ Action bar / Overflow / Overlay(`patterns/{action-bar,horizontal-overflow,overlay-surface}/*.spec.md`)/ Field(`components/Field/*.spec.md`)。
