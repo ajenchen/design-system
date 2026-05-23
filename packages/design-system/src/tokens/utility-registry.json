@@ -34,14 +34,20 @@
         "allowed_utilities": ["text-xs", "text-sm"],
         "rationale": "Code sample 區塊用 <pre><code> + monospace font,需小字呈現程式碼 — 跟 DS prose 不同層級。Polaris / Carbon storybook code blocks 同樣使用 smaller font。"
       },
-      "production_layout_positioning_anchor": {
-        "scope": "Production tsx where `leading-none` is used as **layout positioning anchor**, NOT typography line-height",
+      "icon_as_text_and_numeric_in_circle": {
+        "scope": "Production tsx — icon-as-text / numeric-in-circle / single-line short text in fixed-h container",
         "allowed_utilities": ["leading-none"],
-        "explicit_allowlist": [
-          "packages/design-system/src/components/Button/button.tsx:465 — overlayBadge positioning anchor(`inline-block` + 明確 width/height + `leading-none`)避免 inline-flex 撐寬,2026-04-20 bug fix documented inline",
-          "packages/design-system/src/components/Chart/chart.tsx:247 — recharts tooltip tight layout(non-fixed-box flex container,跟 BoxedSpot 並排)"
+        "rule_one_liner": "icon-as-text / numeric-in-circle 一律用 `leading-none`(不用 `leading-compact`)",
+        "rationale": "2026-05-23 Path B codify per user verbatim「或是其實根本不用分?」+「照你建議」:統一 leading-none,不分 fixed-box vs derived-h。對齊 Material UI Avatar `line-height: 1` / Polaris Badge `line-height: 1` / Carbon Tag(不顯式設,等效 1)世界級共識。視覺驗證:固定高度容器 + items-center 主導,line-height 1.0 vs 1.3 vs 1.5 視覺零差別(playwright probe `scripts/probe-leading-migration.mjs` Steps step-number box delta = 0px)。廢除原 2026-05-21 F1 Badge 從 leading-none → leading-compact migration(over-engineered,違 mindset #1 不取巧不發明)+ 原 production_layout_positioning_anchor exception(改 affirmative canonical 不需 exception)。",
+        "current_consumers": [
+          "Badge/badge.tsx — count badge in fixed h-4 circle",
+          "Avatar/avatar.tsx — initial letter in fixed w-N h-N circle",
+          "OverflowIndicator/overflow-indicator.tsx — `+N` numeric in fixed h-5/h-6 circle",
+          "Steps/steps.tsx — step-number in fixed-diameter circle",
+          "Button/button.tsx:465 — overlayBadge inline-block positioning anchor(documented 2026-04-20)",
+          "Chart/chart.tsx:247 — recharts tooltip tight flex layout"
         ],
-        "rationale": "2026-05-23 deep-audit Decision 3 codify per user verbatim「之前 Badge 的修正是否怎樣?何時要改 compact 何時要用 none?明確定義是什麼?」:Badge canonical(2026-05-21 F1)= 固定 box height + 顯式 fontSize + numeric/short-text → 用 `leading-compact` token(1.3 line-height,跟 DS typography 系列一致)。剩下兩例外 = layout positioning anchor / non-fixed-box flex 對齊,不在 typography token scope 內。"
+        "non_goal": "本 canonical 不適用 body / paragraph / heading typography(那些走 typography.allow `leading-compact` / `leading-normal` token)"
       }
     }
   },

@@ -107,7 +107,7 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         data-overflow-indicator=""
         className={cn(
           'shrink-0 rounded-full inline-grid place-content-center',
-          'bg-muted text-foreground font-medium leading-compact cursor-default',
+          'bg-muted text-foreground font-medium leading-none cursor-default',
           triggerSize[size],
           triggerText[size],
           className,

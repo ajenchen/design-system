@@ -18,11 +18,11 @@ import { cn } from '@/lib/utils'
 // 規則：default low, escalate with reason。見 badge.spec.md「選 level 的流程」。
 
 const badgeVariants = cva(
-  // 2026-05-21 F1 fix(user verbatim「決策一改leading compact不會影響badge高度的話就改，反正要確保badge高度不變」+「都給我做到好」):
-  // leading-none → leading-compact token(utility-registry.json block.leading_numeric)。
-  // 高度不變保證:Badge container 顯式 `h-4 (16px)` + `flex items-center`,內部 text-[10px] × leading-compact(1.3) = 13px line-box
-  // < 16px container → 不會撐高;dot variant `w-1.5 h-1.5` 無文字內容 leading 無關。
-  'inline-flex items-center justify-center rounded-full leading-compact',
+  // 2026-05-23 Path B revert:icon-as-text / numeric-in-circle 用 leading-none canonical(對齊 Material Avatar `line-height: 1` / Polaris Badge / Carbon Tag 共識)。
+  // 視覺等效驗證:Badge container 顯式 `h-4 (16px)` + `flex items-center` 主導,text 被 items-center 置中,line-height 1.0 vs 1.3 視覺零差別。
+  // user 2026-05-23「或是其實根本不用分?」+「照你建議」path B:統一 leading-none,不分。
+  // 廢除 2026-05-21 F1 fix 的 leading-compact migration(那次 anchor「不影響高度的話就改」core constraint 是高度不變,Path B 同樣滿足且更簡單)。
+  'inline-flex items-center justify-center rounded-full leading-none',
   {
     variants: {
       variant: {
