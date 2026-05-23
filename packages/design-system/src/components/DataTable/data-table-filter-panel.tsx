@@ -716,8 +716,11 @@ function FilterRow({
           important 強制 override(`!w-[160px]` / `!w-[120px]`),value 用 `!flex-1 !min-w-0`。
           Select 元件本身沒 destructure `style` prop 所以 inline style flex-basis 行不通,只能用 className。 */}
       <FieldControlGroup block className="flex-1 min-w-0">
+        {/* 2026-05-23 Phase A.4 Decision 2:`!w-[160px]` / `!w-[120px]` → tokens
+            `--data-table-filter-field-width` / `--data-table-filter-op-width`(SSOT in uiSize.css)
+            Behavior preserved 完好如初:flat + nested 同 width(token 是 design constant) */}
         <Select
-          className="!w-[160px] flex-shrink-0"
+          className="!w-[var(--data-table-filter-field-width)] flex-shrink-0"
           size="sm"
           options={fieldOptions}
           value={condition.field}
@@ -726,7 +729,7 @@ function FilterRow({
           aria-label="篩選欄位"
         />
         <Select
-          className={hasValueCell ? '!w-[120px] flex-shrink-0' : '!flex-1 !min-w-0'}
+          className={hasValueCell ? '!w-[var(--data-table-filter-op-width)] flex-shrink-0' : '!flex-1 !min-w-0'}
           size="sm"
           options={operatorOptions}
           value={condition.op}

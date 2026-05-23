@@ -43,6 +43,14 @@
   --tree-indent-sm: 1.5rem;     /* 24px */
   --tree-indent-md: 1.5rem;     /* 24px */
   --tree-indent-lg: 1.75rem;    /* 28px */
+
+  /* DataTable Panel Widths — Sort manager / Filter panel cells(SSOT,2026-05-23 deep-audit Phase A.4 Decision 2 codify per user verbatim「決策二照你建議做」+「確保最SSOT最簡潔」)
+     Consumer:data-table-sort-manager.tsx / data-table-filter-panel.tsx
+     不 density-scale(panels 是 floating layout,不該跟密度走)
+     Naming aligned to family `--<component>-<part>-<size>`(per --field-height-* / --table-row-* / --tab-height-* precedent)*/
+  --data-table-sort-panel-width: 30rem;       /* 480px — sort manager root container width */
+  --data-table-filter-field-width: 10rem;     /* 160px — filter cell column selector(flat + nested 同 width) */
+  --data-table-filter-op-width: 7.5rem;       /* 120px — filter cell operator selector(when value cell exists) */
 }
 
 [data-ui-size="lg"],

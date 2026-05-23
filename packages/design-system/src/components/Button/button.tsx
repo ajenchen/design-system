@@ -376,6 +376,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       )
     }
 
+    // 2026-05-23 deep-audit Phase A.4 Decision 1(user verbatim「決策ㄧ照你建議做」):dev-warn `iconOnly + (endIcon|badge)` 並用。
+    // Spec SSOT:button.spec.md「iconOnly 嚴格定義為『只有一個 icon,正方形』,不可與 endIcon 或 badge 並用」。
+    // 例外:overlayBadge 跟 iconOnly 並用 canonical(L372 反向 warn 已 cover)。
+    // 不擋 image canonical「icon + 下拉指示 = 不加 iconOnly + startIcon + endIcon + aria-label」(那 case iconOnly=false 不 trigger)。
+    if (process.env.NODE_ENV !== 'production' && iconOnly && (EndIcon !== undefined || badge != null)) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[DS Button] `iconOnly` 嚴格定義為「只有一個 icon,正方形」,不可與 `endIcon` 或 `badge` 並用。若需 icon + 下拉指示 → 不加 iconOnly + startIcon + endIcon + aria-label;若需 icon + 角標 → iconOnly + overlayBadge。SSOT:button.spec.md `iconOnly 的邊界` 節 + `badge.spec.md` Overlay 適用元件 canonical。'
+      )
+    }
+
     // shadcn compat:AlertDialog、Toast 等元件內部會傳入這些 alias,
     // 在此靜默轉換,不暴露到型別或自動完成。
     // dismiss=true 強制 variant=text(dismiss canonical);override 其他 variant 傳入。

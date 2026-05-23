@@ -36,7 +36,10 @@ if ! echo "$PROMPT" | grep -qE 'audit|Dim [0-9]+|DS-wide|sub-agent|sweep'; then
 fi
 
 # Detect sample escape clause keyword
-ESCAPE_HITS=$(echo "$PROMPT" | grep -oE 'sample evidence allowed|sample-N|sample-only|sample top [0-9]+|pick top [0-9]+|top hot|sampled (components|elements|files)|heavy agent needed|full sweep deferred|defer.*heavy|cite.*heavy agent' | sort -u)
+# 2026-05-23 M34 fix per user verbatim「抽樣幾百次了到底要怎樣才能百分百避免」+「我要你他媽所有稽核都不能抽樣」:
+# 原 regex 太窄(narrow) 漏抓 my own dispatch keyword「Sample-based scan OK」+「cover 20+ random samples」+「too many components for exhaustive」。
+# 升 grep -i case-insensitive + 廣 pattern coverage(spec wording「NO-SAMPLE」是 broad category)。
+ESCAPE_HITS=$(echo "$PROMPT" | grep -oiE 'sample[ -]?based|sample-N|sample-only|sample evidence|sample top [0-9]+|sample[s]?[[:space:]]+(scan|OK|allowed|fine|enough|sufficient|recommended|sub|covering)|covering[[:space:]]+[0-9]+\+?[[:space:]]*sample|covers[[:space:]]+[0-9]+\+?[[:space:]]*sample|cover[[:space:]]+[0-9]+\+?[[:space:]]*(random[[:space:]]+)?sample|pick top [0-9]+|top hot|sampled[[:space:]]*(components|elements|files)|sample-?based|sampling[[:space:]]+(scan|approach|method)|heavy agent needed|full sweep deferred|defer.*heavy|cite.*heavy agent|exhaustive[[:space:]]+too[[:space:]]+(many|much)|too[[:space:]]+many[[:space:]]+for[[:space:]]+exhaustive|random[[:space:]]+sample|skip[[:space:]]+rest|skip[[:space:]]+remaining' | sort -u)
 
 if [ -n "$ESCAPE_HITS" ]; then
   printf '🚨 AUDIT NO-SAMPLE ESCAPE CLAUSE BLOCKER(audit canonical 2026-05-17 user-mandated):\n' >&2
