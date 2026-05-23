@@ -64,7 +64,7 @@ Grouped by theme. Each runs as an independent subagent; many can parallelize.
 
 | # | Audit | What it catches |
 |---|-------|-----------------|
-| 11 | **Story 三層齊全 + pattern demo coverage**(2026-05-18 升 / 2026-05-23 retract internal-infra)| (a) Every `Components/` (public) component has all 3 stories layers;(b) Every public-visual `patterns/<name>/` 必 ≥ 1 visual demo stories.tsx — **EXCEPT internal-infra patterns**(`header-canonical` / `horizontal-overflow` / `overlay-surface` — demo IS consumer 元件 stories;detail → `references/patterns-internal-vs-public.md`)|
+| 11 | **Story 三層齊全 + pattern demo coverage**(2026-05-18 升)| (a) Every `Components/` (public) component has all 3 stories layers;(b) Every `patterns/<name>/` 必 ≥ 1 visual demo stories.tsx per `patterns/README.md` charter L5「每 pattern 提供 `.stories.tsx` 展示」(2026-05-23 codex Phase B 抓 Claude 前一輪錯誤 retract,charter cite + package.json `./patterns/*` exports + index.ts barrel exports 證明 patterns 是 public-API,撤回 internal exempt)|
 | 12 | **Story 人話範例** | Placeholder / abstract codes / extreme scenarios / variant names as labels |
 | 13 | **Anatomy Figma-inspect 完整度** | 5 mandatory sections present / token-first / dev language / no density dual / live swatches |
 

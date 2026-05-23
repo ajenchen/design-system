@@ -162,6 +162,15 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_codex_brief_invariants.sh\""
+          }
+        ]
+      },
+      {
         "matcher": "Write",
         "hooks": [
           {
