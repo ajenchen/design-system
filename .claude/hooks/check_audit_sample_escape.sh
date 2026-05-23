@@ -16,14 +16,29 @@ set -uo pipefail
 
 INPUT=$(cat)
 TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""')
+EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // ""')
 
 case "${TOOL:-}" in
   Agent) ;;
   *) exit 0 ;;
 esac
 
-# Read dispatch prompt
-PROMPT=$(echo "$INPUT" | jq -r '.tool_input.prompt // ""')
+# 2026-05-23 P0 升級 per user verbatim「幹你娘就叫你他媽所有稽核都要完整執行不要再抽樣,到底要講幾次?...把全部要稽核的東西都給我避免抽樣」:
+# - PreToolUse:scan tool_input.prompt(dispatch prompt)阻 escape clause
+# - PostToolUse:scan tool_response.content(sub-agent OUTPUT)阻 sub-agent 自報「I sampled / spot-check / representative」admission
+case "${EVENT:-}" in
+  PostToolUse)
+    # Sub-agent OUTPUT scan — catch post-fact admission
+    OUTPUT=$(echo "$INPUT" | jq -r '.tool_response.content // .tool_response // ""' 2>/dev/null)
+    # Only fire on audit-related agent runs(by output keyword)
+    if ! echo "$OUTPUT" | grep -qiE 'audit|Dim [0-9]+|D[0-9]+ CLEAN|DS-wide|sub-agent'; then exit 0; fi
+    PROMPT="$OUTPUT" # reuse PROMPT var for downstream grep
+    ;;
+  *)
+    # PreToolUse(default existing logic):scan dispatch prompt
+    PROMPT=$(echo "$INPUT" | jq -r '.tool_input.prompt // ""')
+    ;;
+esac
 
 # Allow escape(極罕見)
 if echo "$PROMPT" | grep -qE '@audit-sample-allow:'; then
@@ -39,7 +54,7 @@ fi
 # 2026-05-23 M34 fix per user verbatim「抽樣幾百次了到底要怎樣才能百分百避免」+「我要你他媽所有稽核都不能抽樣」:
 # 原 regex 太窄(narrow) 漏抓 my own dispatch keyword「Sample-based scan OK」+「cover 20+ random samples」+「too many components for exhaustive」。
 # 升 grep -i case-insensitive + 廣 pattern coverage(spec wording「NO-SAMPLE」是 broad category)。
-ESCAPE_HITS=$(echo "$PROMPT" | grep -oiE 'sample[ -]?based|sample-N|sample-only|sample evidence|sample top [0-9]+|sample[s]?[[:space:]]+(scan|OK|allowed|fine|enough|sufficient|recommended|sub|covering)|covering[[:space:]]+[0-9]+\+?[[:space:]]*sample|covers[[:space:]]+[0-9]+\+?[[:space:]]*sample|cover[[:space:]]+[0-9]+\+?[[:space:]]*(random[[:space:]]+)?sample|pick top [0-9]+|top hot|sampled[[:space:]]*(components|elements|files)|sample-?based|sampling[[:space:]]+(scan|approach|method)|heavy agent needed|full sweep deferred|defer.*heavy|cite.*heavy agent|exhaustive[[:space:]]+too[[:space:]]+(many|much)|too[[:space:]]+many[[:space:]]+for[[:space:]]+exhaustive|random[[:space:]]+sample|skip[[:space:]]+rest|skip[[:space:]]+remaining' | sort -u)
+ESCAPE_HITS=$(echo "$PROMPT" | grep -oiE 'sample[ -]?based|sample-N|sample-only|sample evidence|sample top [0-9]+|sample[s]?[[:space:]]+(scan|OK|allowed|fine|enough|sufficient|recommended|sub|covering)|covering[[:space:]]+[0-9]+\+?[[:space:]]*sample|covers[[:space:]]+[0-9]+\+?[[:space:]]*sample|cover[[:space:]]+[0-9]+\+?[[:space:]]*(random[[:space:]]+)?sample|pick top [0-9]+|top hot|sampled[[:space:]]*(components|elements|files|Button|button|story|stories)|sample-?based|sampling[[:space:]]+(scan|approach|method)|heavy agent needed|full sweep deferred|defer.*heavy|cite.*heavy agent|exhaustive[[:space:]]+too[[:space:]]+(many|much)|too[[:space:]]+many[[:space:]]+for[[:space:]]+exhaustive|random[[:space:]]+sample|skip[[:space:]]+rest|skip[[:space:]]+remaining|spot[[:space:]]*[-]?[[:space:]]*check(ed|ing)?|spot[[:space:]]*sample|representative[[:space:]]+(sample|subset)|i[[:space:]]+sampled|only[[:space:]]+sampled|sampled[[:space:]]+only|sample[[:space:]]+sized?|sub-agent[[:space:]]+self-judg|self-judgment[[:space:]]+per[[:space:]]+Dim|AI[[:space:]]+judgment[[:space:]]+per[[:space:]]+Dim|sample-based[[:space:]]+AI[[:space:]]+judgment|sampled[[:space:]]+(Button|button|first|few|several)' | sort -u)
 
 if [ -n "$ESCAPE_HITS" ]; then
   printf '🚨 AUDIT NO-SAMPLE ESCAPE CLAUSE BLOCKER(audit canonical 2026-05-17 user-mandated):\n' >&2

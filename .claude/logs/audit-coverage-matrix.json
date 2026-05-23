@@ -1,0 +1,238 @@
+{
+  "ts": "2026-05-23T07:08:50.849Z",
+  "expected_dims": 56,
+  "classified": 56,
+  "tier_counts": {
+    "DETERMINISTIC": 13,
+    "HOOK-ENFORCED": 19,
+    "PURE-JUDGMENT": 24,
+    "UNKNOWN": 0
+  },
+  "gaps": [],
+  "coverage_by_dim": {
+    "1": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "cva 三方漂移 — story-auto-compile-migrate + compile-stories.mjs --check chain"
+    },
+    "2": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "SSOT dead link — grep + spec-rules reciprocal pointer audit;sub-agent must DS-wide 全掃 spec.md pointers"
+    },
+    "3": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/add-reciprocal-pointers.mjs(auto-maintained,Dim 3 SSOT reciprocal)"
+    },
+    "4": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_opacity_token_usage.sh + utility-registry.json — write-time block"
+    },
+    "5": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/audit-orphan-tokens.mjs --check(0 真孤兒 verdict)"
+    },
+    "6": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Spec 文字品質 AI judgment;dispatch 必 DS-wide 全 spec.md(82 files),禁 sample;含 file:line per finding"
+    },
+    "7": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Spec 邊界案例 AI judgment;dispatch 必 DS-wide 全 spec.md 每 spec 過 7-dim 覆蓋"
+    },
+    "8": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "7-維對標 AI judgment;dispatch 必 DS-wide 全 spec.md;每 spec 7-dim per row"
+    },
+    "9": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_codex_collab_5step.sh + shadcn passthrough grep(forwardRef / displayName)— dispatch 全 components/*.tsx 全掃"
+    },
+    "10": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "a11y aria-label DS-wide AI judgment + scripts/audit-a11y.mjs(axe-core deterministic);dispatch 必 全 components grep aria-label coverage"
+    },
+    "11": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_story_anatomy.sh + 3-layer file existence DS-wide grep"
+    },
+    "12": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Story 人話 AI judgment;dispatch 必 DS-wide 全 stories 過 placeholder/jargon test"
+    },
+    "13": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_story_anatomy.sh 5-section structural enforce"
+    },
+    "14": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "命名一致性 cross-component AI judgment;dispatch 必 grep DS-wide prop value semantic conflicts"
+    },
+    "15": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/audit-content-quality.mjs --check(cross-doc drift)"
+    },
+    "16": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Layout Family DS-wide frontmatter audit — dispatch 必 grep 全 spec.md frontmatter `family:` 宣告"
+    },
+    "17": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Prop value cross-component semantic conflict — dispatch 必 grep prop literal DS-wide"
+    },
+    "18": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_shadcn_alias.sh write-time block + DS-wide grep audit-time(zero hit)"
+    },
+    "19": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Home-name-vs-scope AI judgment;dispatch 必 DS-wide enumerate folder vs actual scope"
+    },
+    "20": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Spec 硬寫機械化值 — dispatch 必 grep DS-wide spec.md 找 px / hex / Tailwind class lists"
+    },
+    "21": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_item_list_gap.sh write-time"
+    },
+    "22": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_container_breathing.sh write-time"
+    },
+    "23": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/compile-stories.mjs --all --check(drift / migration pending)"
+    },
+    "24": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Story 範例重複性 AI judgment;dispatch 必 per-component DS-wide 列 stories scenario matrix"
+    },
+    "25": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Story 必要性 grounding DS-wide AI judgment;dispatch 必 per-component 全掃 過 2-test(spec-tied / removal-degrade)"
+    },
+    "26": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Controlled/Uncontrolled dual-mode AI judgment;dispatch 必 DS-wide form-like + overlay-like enumerate dual-mode pair check"
+    },
+    "27": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/code-quality-audit.mjs --scope=all(any/dead-export/long-fn/magic-number)"
+    },
+    "28": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Manual story split principle DS-wide AI judgment;dispatch 必 per-component grep stories.tsx WithStartIcon/WithEndIcon split anti-pattern"
+    },
+    "29": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_story_category.sh trait-based DS-wide enforce"
+    },
+    "30": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_principles_canonical.sh DS-wide enforce"
+    },
+    "31": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_overlay_handcraft.sh + grep ban stripped-padding boolean variant"
+    },
+    "32": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Filter operator registry SSOT consumption — dispatch 必 grep consumer hardcode op string DS-wide"
+    },
+    "33": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Component classification + abstraction discipline DS-wide AI judgment;5 sub-dims per-component 全掃"
+    },
+    "34": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_disabled_placeholder_color.sh"
+    },
+    "35": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_overlay_panel_scroll_chain.sh"
+    },
+    "36": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Naked variant cell-as-input row-mode propagation DS-wide — dispatch 必 grep consumer wrapper apply"
+    },
+    "37": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Field state machine focus-dominates — dispatch 必 grep per-control border-primary pattern DS-wide"
+    },
+    "38": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Inline-action gap canonical — dispatch 必 grep ItemInlineAction sibling gap DS-wide"
+    },
+    "39": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Row-layout slot primitive consumption — dispatch 必 grep handcraft slot wrapper DS-wide"
+    },
+    "40": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/audit-story-quality.mjs --check(title canonical 全 196 stories deterministic)"
+    },
+    "41": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/audit-story-quality.mjs --check(name jargon 全 350 names deterministic)"
+    },
+    "42": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/audit-story-quality.mjs --check(placeholder 全 stories deterministic)"
+    },
+    "43": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Rule note 品質 AI judgment;dispatch 必 DS-wide 全 principles.stories rule notes per-component sample-free read"
+    },
+    "44": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Internal vs Components 三 test DS-wide — dispatch 必 enumerate ALL Internal folder + components,3-test per row"
+    },
+    "45": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/compile-stories.mjs --all + grep generated rows full coverage"
+    },
+    "46": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "Manual vs Mechanical boundary — dispatch 必 grep DS-wide stories trait-derived hand-written exports"
+    },
+    "47": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_tailwind_token_registry.sh + utility-registry.json SSOT"
+    },
+    "48": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/audit-orphan-tokens.mjs --check(0 真孤兒 structural-keep classifier)"
+    },
+    "49": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/audit-a11y.mjs(axe-core WCAG 2A+AA all stories deterministic;separate workflow .github/workflows/a11y-and-size.yml)"
+    },
+    "50": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "size-limit npx + package.json per-component manifest(deterministic CI gate)"
+    },
+    "51": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/visual-audit.mjs --matrix=theme-density-rtl 6-cell baseline diff"
+    },
+    "52": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_tab_lg_chrome_header_equal.sh + check_header_with_tabs_border.sh + check_chrome_header_handcraft.sh"
+    },
+    "53": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_spec_class_drift.sh write-time"
+    },
+    "54": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_story_invariants.sh R8 story_archetype_registry + .claude/references/story-baseline-registry.json"
+    },
+    "55": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "Token cross-namespace mapping integrity(semantic.css L246-273 12-hue verify)"
+    },
+    "56": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_app_shell_primary_header_consistency.sh"
+    }
+  }
+}

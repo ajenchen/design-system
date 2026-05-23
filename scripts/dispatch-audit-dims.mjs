@@ -65,6 +65,26 @@ if (heavyMatch) {
     .filter((n) => !isNaN(n) && n > 0 && n <= 999)
 }
 
+// 2026-05-23 anti-sample contract per user verbatim「幹你娘就叫你他媽所有稽核都要完整執行不要再抽樣」
+// Inject mandatory per-dim contract into every sub-agent dispatch:
+const antiSampleContract = `
+🚨 MANDATORY ANTI-SAMPLE CONTRACT(2026-05-23 user verbatim「所有稽核都要完整執行不要再抽樣」):
+
+每 dim 必走 anti-sample 機制(tier per scripts/audit-coverage-matrix.mjs):
+
+1. DETERMINISTIC tier:**MUST chain** 對應 script,output 含「N files scanned / 0 violations」cite。**禁** sub-agent 自寫 grep 替代 script。
+2. HOOK-ENFORCED tier:write-time hook 已 enforce。Audit-time report 必 grep DS-wide 確認 0 hook fire residue。
+3. PURE-JUDGMENT tier:LLM 必 DS-wide ALL files enumerate(eg. 全 82 spec.md / 全 196 stories / 全 62 components),report header 必含「Total file scanned: N」+ per-finding file:line cite。
+
+**絕對禁**(任一觸發 = audit incomplete,需 reject + restart):
+- ❌「sampled Button only」/「spot-checked」/「representative sample」/「I sampled」 sub-agent admission
+- ❌ Audit report claim「Dim N CLEAN」無 N-files-scanned cite + 無 deterministic script chain output
+- ❌「too many for exhaustive」/「heavy too many」/「context budget」 deferral excuse
+- ❌「sample top N」 dispatch prompt clause
+
+**通過 contract test**:report 必含 per-dim 2 行 — 「Tier: DETERMINISTIC/HOOK/JUDGMENT」+「Coverage: N files / scope」。
+`
+
 const output = {
   generated: new Date().toISOString(),
   ssotSource: '.claude/skills/design-system-audit/SKILL.md',
@@ -72,8 +92,10 @@ const output = {
   groups,
   dims,
   heavyDims,
+  antiSampleContract,
   dispatchPlan: {
     note: 'Phase A.1 sub-agent dispatch recommended grouping(dynamic per current SKILL.md):',
+    mandatoryAntiSampleContract: antiSampleContract,
     suggestedBatches: deriveBatches(dims, heavyDims),
   },
 }
