@@ -1,0 +1,597 @@
+{
+  "generated": "2026-05-23T03:19:44.367Z",
+  "ssotSource": ".claude/skills/design-system-audit/SKILL.md",
+  "total": 56,
+  "groups": {
+    "A": {
+      "name": "Correctness (bug-class guards, P0 priority)",
+      "dims": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    "B": {
+      "name": "Spec hygiene (world-class DS rubric, P1 priority)",
+      "dims": [
+        6,
+        7,
+        8
+      ]
+    },
+    "C": {
+      "name": "Code conformance (P1 priority)",
+      "dims": [
+        9,
+        10
+      ]
+    },
+    "D": {
+      "name": "Story layer (designer-facing, P1 priority)",
+      "dims": [
+        11,
+        12,
+        13
+      ]
+    },
+    "E": {
+      "name": "System-level consistency (P1 priority)",
+      "dims": [
+        14,
+        15
+      ]
+    },
+    "F": {
+      "name": "Architecture compliance (P1 priority, session-learned)",
+      "dims": [
+        16,
+        17,
+        18
+      ]
+    },
+    "G": {
+      "name": "Home governance + spec hygiene (P1 priority)",
+      "dims": [
+        19,
+        20
+      ]
+    },
+    "H": {
+      "name": "Consumer-layer consistency (P0 / P1,2026-04-22 新增)",
+      "dims": [
+        21,
+        22
+      ]
+    },
+    "I": {
+      "name": "Story auto-compile drift(2026-04-24 新增 C Phase 4)",
+      "dims": [
+        23,
+        24,
+        25
+      ]
+    },
+    "J": {
+      "name": "Form & state integrity(2026-04-24 新增,補 24-checklist #3+#12 gap)",
+      "dims": [
+        26
+      ]
+    },
+    "K": {
+      "name": "Code quality hygiene(2026-04-24 新增,補 clean code 缺口)",
+      "dims": [
+        27
+      ]
+    },
+    "L": {
+      "name": "Story splitting principle(2026-04-26 新增)",
+      "dims": [
+        28,
+        29,
+        30
+      ]
+    },
+    "M": {
+      "name": "Overlay body API discipline(2026-05-01 新增)",
+      "dims": [
+        31,
+        32,
+        33
+      ]
+    },
+    "N": {
+      "name": "State precedence + chain invariants(2026-05-04 新增,M24/M25 codify)",
+      "dims": [
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    },
+    "O": {
+      "name": "Storybook content quality(2026-05-15 user-mandated,gap 補)",
+      "dims": [
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46
+      ]
+    },
+    "P": {
+      "name": "World-class tier(2026-05-17 加,codex 共識)",
+      "dims": [
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56
+      ]
+    }
+  },
+  "dims": [
+    {
+      "n": 1,
+      "title": "cva defaultVariants 三方漂移",
+      "group": "A",
+      "groupName": "Correctness (bug-class guards, P0 priority)"
+    },
+    {
+      "n": 2,
+      "title": "SSOT dead link",
+      "group": "A",
+      "groupName": "Correctness (bug-class guards, P0 priority)"
+    },
+    {
+      "n": 3,
+      "title": "SSOT reciprocal",
+      "group": "A",
+      "groupName": "Correctness (bug-class guards, P0 priority)"
+    },
+    {
+      "n": 4,
+      "title": "Tailwind v4 / tailwind-merge grep",
+      "group": "A",
+      "groupName": "Correctness (bug-class guards, P0 priority)"
+    },
+    {
+      "n": 5,
+      "title": "Token 消費紀律",
+      "group": "A",
+      "groupName": "Correctness (bug-class guards, P0 priority)"
+    },
+    {
+      "n": 6,
+      "title": "Spec Rule A 文字品質",
+      "group": "B",
+      "groupName": "Spec hygiene (world-class DS rubric, P1 priority)"
+    },
+    {
+      "n": 7,
+      "title": "Spec Rule B 邊界案例",
+      "group": "B",
+      "groupName": "Spec hygiene (world-class DS rubric, P1 priority)"
+    },
+    {
+      "n": 8,
+      "title": "7-維度 對標覆蓋",
+      "group": "B",
+      "groupName": "Spec hygiene (world-class DS rubric, P1 priority)"
+    },
+    {
+      "n": 9,
+      "title": "shadcn passthrough 完整度",
+      "group": "C",
+      "groupName": "Code conformance (P1 priority)"
+    },
+    {
+      "n": 10,
+      "title": "a11y 基本覆蓋",
+      "group": "C",
+      "groupName": "Code conformance (P1 priority)"
+    },
+    {
+      "n": 11,
+      "title": "Story 三層齊全 + pattern demo coverage",
+      "group": "D",
+      "groupName": "Story layer (designer-facing, P1 priority)"
+    },
+    {
+      "n": 12,
+      "title": "Story 人話範例",
+      "group": "D",
+      "groupName": "Story layer (designer-facing, P1 priority)"
+    },
+    {
+      "n": 13,
+      "title": "Anatomy Figma-inspect 完整度",
+      "group": "D",
+      "groupName": "Story layer (designer-facing, P1 priority)"
+    },
+    {
+      "n": 14,
+      "title": "命名一致性",
+      "group": "E",
+      "groupName": "System-level consistency (P1 priority)"
+    },
+    {
+      "n": 15,
+      "title": "Cross-doc 一致性",
+      "group": "E",
+      "groupName": "System-level consistency (P1 priority)"
+    },
+    {
+      "n": 16,
+      "title": "Layout Family 宣告",
+      "group": "F",
+      "groupName": "Architecture compliance (P1 priority, session-learned)"
+    },
+    {
+      "n": 17,
+      "title": "Prop value 跨元件認知衝突",
+      "group": "F",
+      "groupName": "Architecture compliance (P1 priority, session-learned)"
+    },
+    {
+      "n": 18,
+      "title": "shadcn compat alias 回流檢查",
+      "group": "F",
+      "groupName": "Architecture compliance (P1 priority, session-learned)"
+    },
+    {
+      "n": 19,
+      "title": "Home-name-vs-scope 一致性",
+      "group": "G",
+      "groupName": "Home governance + spec hygiene (P1 priority)"
+    },
+    {
+      "n": 20,
+      "title": "Spec 硬寫機械化值檢查",
+      "group": "G",
+      "groupName": "Home governance + spec hygiene (P1 priority)"
+    },
+    {
+      "n": 21,
+      "title": "連續 item list wrapper gap",
+      "group": "H",
+      "groupName": "Consumer-layer consistency (P0 / P1,2026-04-22 新增)"
+    },
+    {
+      "n": 22,
+      "title": "視覺容器 inner breathing",
+      "group": "H",
+      "groupName": "Consumer-layer consistency (P0 / P1,2026-04-22 新增)"
+    },
+    {
+      "n": 23,
+      "title": "Story canonical-drift + Migration coverage",
+      "group": "I",
+      "groupName": "Story auto-compile drift(2026-04-24 新增 C Phase 4)"
+    },
+    {
+      "n": 24,
+      "title": "Story 範例重複性",
+      "group": "I",
+      "groupName": "Story auto-compile drift(2026-04-24 新增 C Phase 4)"
+    },
+    {
+      "n": 25,
+      "title": "Story 必要性 grounding",
+      "group": "I",
+      "groupName": "Story auto-compile drift(2026-04-24 新增 C Phase 4)"
+    },
+    {
+      "n": 26,
+      "title": "Controlled / Uncontrolled dual-mode coherence",
+      "group": "J",
+      "groupName": "Form & state integrity(2026-04-24 新增,補 24-checklist #3+#12 gap)"
+    },
+    {
+      "n": 27,
+      "title": "Clean code 量化",
+      "group": "K",
+      "groupName": "Code quality hygiene(2026-04-24 新增,補 clean code 缺口)"
+    },
+    {
+      "n": 28,
+      "title": "Manual story 拆分原則 alignment",
+      "group": "L",
+      "groupName": "Story splitting principle(2026-04-26 新增)"
+    },
+    {
+      "n": 29,
+      "title": "Trait-based展示 stories compliance",
+      "group": "L",
+      "groupName": "Story splitting principle(2026-04-26 新增)"
+    },
+    {
+      "n": 30,
+      "title": "Principles canonical compliance",
+      "group": "L",
+      "groupName": "Story splitting principle(2026-04-26 新增)"
+    },
+    {
+      "n": 31,
+      "title": "Overlay body 無 stripped-padding boolean variant",
+      "group": "M",
+      "groupName": "Overlay body API discipline(2026-05-01 新增)"
+    },
+    {
+      "n": 32,
+      "title": "Filter operator registry SSOT consumption",
+      "group": "M",
+      "groupName": "Overlay body API discipline(2026-05-01 新增)"
+    },
+    {
+      "n": 33,
+      "title": "Component classification + abstraction discipline",
+      "group": "M",
+      "groupName": "Overlay body API discipline(2026-05-01 新增)"
+    },
+    {
+      "n": 34,
+      "title": "Disabled state 顯著性 precedence",
+      "group": "N",
+      "groupName": "State precedence + chain invariants(2026-05-04 新增,M24/M25 codify)"
+    },
+    {
+      "n": 35,
+      "title": "Layered chain invariant — overlay scroll",
+      "group": "N",
+      "groupName": "State precedence + chain invariants(2026-05-04 新增,M24/M25 codify)"
+    },
+    {
+      "n": 36,
+      "title": "Naked variant cell-as-input row-mode propagation",
+      "group": "N",
+      "groupName": "State precedence + chain invariants(2026-05-04 新增,M24/M25 codify)"
+    },
+    {
+      "n": 37,
+      "title": "Field state machine 「focus dominates everything」",
+      "group": "N",
+      "groupName": "State precedence + chain invariants(2026-05-04 新增,M24/M25 codify)"
+    },
+    {
+      "n": 38,
+      "title": "Inline-action gap canonical",
+      "group": "N",
+      "groupName": "State precedence + chain invariants(2026-05-04 新增,M24/M25 codify)"
+    },
+    {
+      "n": 39,
+      "title": "Row-layout slot primitive consumption",
+      "group": "N",
+      "groupName": "State precedence + chain invariants(2026-05-04 新增,M24/M25 codify)"
+    },
+    {
+      "n": 40,
+      "title": "Title 命名 quality",
+      "group": "O",
+      "groupName": "Storybook content quality(2026-05-15 user-mandated,gap 補)"
+    },
+    {
+      "n": 41,
+      "title": "Story name jargon",
+      "group": "O",
+      "groupName": "Storybook content quality(2026-05-15 user-mandated,gap 補)"
+    },
+    {
+      "n": 42,
+      "title": "範例佔位符 / 抽象代號",
+      "group": "O",
+      "groupName": "Storybook content quality(2026-05-15 user-mandated,gap 補)"
+    },
+    {
+      "n": 43,
+      "title": "Rule note 品質",
+      "group": "O",
+      "groupName": "Storybook content quality(2026-05-15 user-mandated,gap 補)"
+    },
+    {
+      "n": 44,
+      "title": "Internal vs Components 分類三 test",
+      "group": "O",
+      "groupName": "Storybook content quality(2026-05-15 user-mandated,gap 補)"
+    },
+    {
+      "n": 45,
+      "title": "Mechanical output structural validation",
+      "group": "O",
+      "groupName": "Storybook content quality(2026-05-15 user-mandated,gap 補)"
+    },
+    {
+      "n": 46,
+      "title": "Manual vs Mechanical boundary",
+      "group": "O",
+      "groupName": "Storybook content quality(2026-05-15 user-mandated,gap 補)"
+    },
+    {
+      "n": 47,
+      "title": "Tailwind utility registry compliance",
+      "group": "P",
+      "groupName": "World-class tier(2026-05-17 加,codex 共識)"
+    },
+    {
+      "n": 48,
+      "title": "Unused / orphan token detector",
+      "group": "P",
+      "groupName": "World-class tier(2026-05-17 加,codex 共識)"
+    },
+    {
+      "n": 49,
+      "title": "a11y axe-core 自動跑 + contrast ratio",
+      "group": "P",
+      "groupName": "World-class tier(2026-05-17 加,codex 共識)"
+    },
+    {
+      "n": 50,
+      "title": "Bundle size budget per component",
+      "group": "P",
+      "groupName": "World-class tier(2026-05-17 加,codex 共識)"
+    },
+    {
+      "n": 51,
+      "title": "Theme / density visual matrix",
+      "group": "P",
+      "groupName": "World-class tier(2026-05-17 加,codex 共識)"
+    },
+    {
+      "n": 52,
+      "title": "Header canonical cross-family invariants",
+      "group": "P",
+      "groupName": "World-class tier(2026-05-17 加,codex 共識)"
+    },
+    {
+      "n": 53,
+      "title": "Code-to-spec reverse drift check",
+      "group": "P",
+      "groupName": "World-class tier(2026-05-17 加,codex 共識)"
+    },
+    {
+      "n": 54,
+      "title": "M35 Nearest same-purpose canonical compliance",
+      "group": "P",
+      "groupName": "World-class tier(2026-05-17 加,codex 共識)"
+    },
+    {
+      "n": 55,
+      "title": "Token cross-namespace mapping integrity",
+      "group": "P",
+      "groupName": "World-class tier(2026-05-17 加,codex 共識)"
+    },
+    {
+      "n": 56,
+      "title": "AppShell primary-header consistency",
+      "group": "P",
+      "groupName": "World-class tier(2026-05-17 加,codex 共識)"
+    }
+  ],
+  "heavyDims": [
+    12,
+    24,
+    25,
+    40,
+    41,
+    42,
+    43,
+    45,
+    49,
+    50,
+    51,
+    52,
+    53
+  ],
+  "dispatchPlan": {
+    "note": "Phase A.1 sub-agent dispatch recommended grouping(dynamic per current SKILL.md):",
+    "suggestedBatches": [
+      {
+        "range": "1-19",
+        "count": 19,
+        "dimNumbers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "heavyDimsInBatch": [
+          12
+        ],
+        "groupSpan": "A+B+C+D+E+F+G"
+      },
+      {
+        "range": "20-38",
+        "count": 19,
+        "dimNumbers": [
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38
+        ],
+        "heavyDimsInBatch": [
+          24,
+          25
+        ],
+        "groupSpan": "G+H+I+J+K+L+M+N"
+      },
+      {
+        "range": "39-56",
+        "count": 18,
+        "dimNumbers": [
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56
+        ],
+        "heavyDimsInBatch": [
+          40,
+          41,
+          42,
+          43,
+          45,
+          49,
+          50,
+          51,
+          52,
+          53
+        ],
+        "groupSpan": "N+O+P"
+      }
+    ]
+  }
+}

@@ -48,6 +48,11 @@ arguments: scope?=full|changed focus?=「ssot|visual|behavior|all」
 
 ### A.1 — 跑全 dim NO-SAMPLE deep audit(chain `/design-system-audit --deep` SSOT)
 
+**Dispatch plan auto-pickup**(2026-05-23 ship per user verbatim「infra 增刪改 audit 自動跟最新」):
+必先跑 `node scripts/dispatch-audit-dims.mjs --summary` 取**動態 dim 列**(non-hardcoded),從 `.claude/logs/audit-dims-dispatch.json` 讀 sub-agent batch 分組。Heavy dims 自動標,新加 dim 自動 included,retire 自動排除。
+
+**禁** hardcode dim range numbers(eg.「Dims 1-15」/「Dims 34-56」)在 sub-agent prompt — 用 dispatch-audit-dims.mjs output 的 `dispatchPlan.suggestedBatches[].dimNumbers` 動態填。
+
 完整跑,**no sample / no escape**(對齊 `feedback_audit_full_sweep_not_sample.md` + `check_audit_sample_escape.sh` BLOCKER)。
 每 dim sub-agent prompt 必含「DS-wide 全盤,禁 sample top N」。
 
