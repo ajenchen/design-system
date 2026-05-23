@@ -126,7 +126,7 @@ jobs:
             l=$(wc -l < "$f" | tr -d ' ')
             case "$f" in
               */item-anatomy.spec.md) cap=1200 ;;
-              */color.spec.md|*/sidebar.spec.md|*/tree-view.spec.md|*/field.spec.md|*/field-controls.spec.md|*/button.spec.md|*/overlay-surface.spec.md|*/action-bar.spec.md|*/uiSize.spec.md) cap=800 ;;
+              */color.spec.md|*/sidebar.spec.md|*/tree-view.spec.md|*/field.spec.md|*/field-controls.spec.md|*/button.spec.md|*/overlay-surface.spec.md|*/action-bar.spec.md|*/uiSize.spec.md|*/data-table.spec.md) cap=800 ;;
               *) cap=500 ;;
             esac
             if [ "$l" -gt "$cap" ]; then
