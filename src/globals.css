@@ -38,8 +38,9 @@
      ── 為什麼是 48 / 56(hardcode,非公式) ──
      世界級 app 的 header 高度集中在 40–64px,甜蜜點 48–56(Linear / Atlassian / Material small)。
      兩個值都 snap 到 8px grid。anchor 是 field-height-md(容納 md Button + 上下呼吸空間)。
-     不寫成 calc() 公式因為 lg 無法完美遵守(54 → 56 為了 8px grid 取整),hardcode 比假公式誠實。*/
-  --chrome-header-height: 3rem;  /* 48px */
+     不寫成 calc() 公式因為 lg 無法完美遵守(54 → 56 為了 8px grid 取整),hardcode 比假公式誠實。
+     ── 2026-05-23 SSOT-home 遷移 ── --chrome-header-height 已搬到 packages/design-system/src/tokens/uiSize/uiSize.css
+     此處不再宣告,DS package 自包(允許 npm-package consumer install 後直接運作,符 M17 SSOT 鐵律) */
 
   /* Sidebar menu icon size — tokenize per codex M31 Layer C(2026-05-21 比稿後採納):
      default 1rem(16px)對應 sm/md row size(per uiSize/icon-size.ts ICON_SIZE.sm/md=16)。
@@ -58,9 +59,7 @@
   --sidebar-width-icon: calc(2 * var(--layout-space-loose) + var(--sidebar-menu-icon-size));
 }
 
-[data-density="lg"] {
-  --chrome-header-height: 3.5rem;  /* 56px */
-}
+/* 2026-05-23 --chrome-header-height lg override 也已搬到 packages/design-system/src/tokens/uiSize/uiSize.css */
 
 /* ── Base reset ── */
 @layer base {

@@ -709,7 +709,7 @@ function MdLgIndicator({
       aria-hidden
       className={cn(
         'relative inline-flex items-center justify-center shrink-0 rounded-full',
-        'font-medium leading-none transition-colors',
+        'font-medium leading-compact transition-colors',
         disabled && 'opacity-disabled',
       )}
       style={{

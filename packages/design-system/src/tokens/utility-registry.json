@@ -33,6 +33,15 @@
         "scope": "*.principles.stories.tsx — <pre><code> code sample blocks",
         "allowed_utilities": ["text-xs", "text-sm"],
         "rationale": "Code sample 區塊用 <pre><code> + monospace font,需小字呈現程式碼 — 跟 DS prose 不同層級。Polaris / Carbon storybook code blocks 同樣使用 smaller font。"
+      },
+      "production_layout_positioning_anchor": {
+        "scope": "Production tsx where `leading-none` is used as **layout positioning anchor**, NOT typography line-height",
+        "allowed_utilities": ["leading-none"],
+        "explicit_allowlist": [
+          "packages/design-system/src/components/Button/button.tsx:465 — overlayBadge positioning anchor(`inline-block` + 明確 width/height + `leading-none`)避免 inline-flex 撐寬,2026-04-20 bug fix documented inline",
+          "packages/design-system/src/components/Chart/chart.tsx:247 — recharts tooltip tight layout(non-fixed-box flex container,跟 BoxedSpot 並排)"
+        ],
+        "rationale": "2026-05-23 deep-audit Decision 3 codify per user verbatim「之前 Badge 的修正是否怎樣?何時要改 compact 何時要用 none?明確定義是什麼?」:Badge canonical(2026-05-21 F1)= 固定 box height + 顯式 fontSize + numeric/short-text → 用 `leading-compact` token(1.3 line-height,跟 DS typography 系列一致)。剩下兩例外 = layout positioning anchor / non-fixed-box flex 對齊,不在 typography token scope 內。"
       }
     }
   },

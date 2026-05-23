@@ -220,7 +220,7 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
         )}
         {showText && (
           <span
-            className="font-medium leading-none"
+            className="font-medium leading-compact"
             style={{ fontSize: isFill ? '50cqi' : fontSizePx }}
             aria-hidden
           >

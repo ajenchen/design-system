@@ -64,7 +64,7 @@ Grouped by theme. Each runs as an independent subagent; many can parallelize.
 
 | # | Audit | What it catches |
 |---|-------|-----------------|
-| 11 | **Story 三層齊全 + pattern demo coverage**(2026-05-18 升:scope 涵蓋 `patterns/`)| (a) Every `Components/` (public) component has all 3: `.stories.tsx` / `.anatomy.stories.tsx` / `.principles.stories.tsx`;(b) Every `patterns/<name>/<name>.spec.md` 訂 canonical 給 ≥ 2 consumer 的 pattern 必有 `<name>.stories.tsx` ≥ 1 visual demo,展示 spec 核心契約。Anchor:2026-05-18 deep audit 抓 `header-canonical/` 訂 W1-W6 跨 6 consumer 但 0 stories,人類看不到示範 — 升 Dim 11 scope mechanical 攔 |
+| 11 | **Story 三層齊全 + pattern demo coverage**(2026-05-18 升 / 2026-05-23 retract internal-infra)| (a) Every `Components/` (public) component has all 3 stories layers;(b) Every public-visual `patterns/<name>/` 必 ≥ 1 visual demo stories.tsx — **EXCEPT internal-infra patterns**(`header-canonical` / `horizontal-overflow` / `overlay-surface` — demo IS consumer 元件 stories;detail → `references/patterns-internal-vs-public.md`)|
 | 12 | **Story 人話範例** | Placeholder / abstract codes / extreme scenarios / variant names as labels |
 | 13 | **Anatomy Figma-inspect 完整度** | 5 mandatory sections present / token-first / dev language / no density dual / live swatches |
 

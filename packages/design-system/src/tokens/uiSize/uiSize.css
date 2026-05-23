@@ -37,6 +37,18 @@
   --tab-height-md: 2.5rem;      /* 40px — future tier(無 recommended use case,2026-05-17 從 default 降級) */
   --tab-height-lg: 3rem;        /* 48px — 獨立 tabs 取代 chrome header(= --chrome-header-height) */
 
+  /* Chrome Header Height — Sidebar / FileViewer Toolbar+InfoPanel / app top bar / page header
+     + Overlay family chrome (Dialog/Sheet/Popover/Coachmark header+footer via overlay-surface SurfaceHeader/SurfaceFooter)
+     (SSOT,2026-05-23 deep-audit Phase A Decision 1 codify per user verbatim「決策一照你建議」 —
+     從 src/globals.css 搬到 DS tokens 因 npm-package consumer 沒 src/globals.css 會崩 header 高度,違 M17 SSOT 鐵律)
+     consumer:patterns/header-canonical/chrome-header.tsx、overlay-surface.tsx、dialog.tsx 等
+     世界級對照:Linear 48px / Atlassian 48-56 / Material small AppBar 48-56 / VS Code activity-bar 48
+     ── 為什麼是 48 / 56(hardcode,非公式) ──
+     世界級 app 的 header 高度集中在 40–64px,甜蜜點 48–56。
+     兩個值都 snap 到 8px grid。anchor 是 field-height-md(容納 md Button + 上下呼吸空間)。
+     不寫成 calc() 公式因為 lg 無法完美遵守(54 → 56 為了 8px grid 取整),hardcode 比假公式誠實。 */
+  --chrome-header-height: 3rem; /* 48px */
+
   /* Tree Indent — TreeView + DataTable nested rows(SSOT,2026-05-04)
      公式:chevronSize + gap-2 = 16+8(sm/md)/ 20+8(lg)
      Consumer:TreeView depth indent / DataTable nested row depth indent */
@@ -66,6 +78,8 @@
   --tab-height-sm: 2.5rem;      /* 40px */
   --tab-height-md: 3rem;        /* 48px */
   --tab-height-lg: 3.5rem;      /* 56px */
+
+  --chrome-header-height: 3.5rem; /* 56px(lg density) */
 }
 
 /* 2026-04-22:md reset selector — 當祖先層級(e.g. html[data-density="lg"])已 cascading
