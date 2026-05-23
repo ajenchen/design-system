@@ -102,6 +102,26 @@ if (skillDimHeaderMatch) {
   if (declared !== dimCount) drifts.push(`SKILL.md "The ${declared} audit dimensions" != actual table rows ${dimCount}`)
 }
 
+// 2026-05-23 codex 抓 detector 漏 title pattern `# Design System Audit (N dimensions, ...)`:
+// 廣 capture 任何 SKILL.md / hook / spec.md 含「N dimensions」/「N audit dims」/「N M-rules」 hardcoded stale
+const titlePattern = /^#\s+Design System Audit\s*\((\d+)\s+dimensions/m
+const titleMatch = skillContent.match(titlePattern)
+if (titleMatch) {
+  const declared = parseInt(titleMatch[1])
+  if (declared !== dimCount) drifts.push(`SKILL.md title "${declared} dimensions" != actual ${dimCount}`)
+}
+
+// Hook session_start text drift(per codex finding 2026-05-23):
+const sessStartContent = fs.existsSync(sessStartPath) ? fs.readFileSync(sessStartPath, 'utf-8') : ''
+for (const m of sessStartContent.matchAll(/(\d+)\s+audit\s+dims/g)) {
+  const declared = parseInt(m[1])
+  if (declared !== dimCount) drifts.push(`session_start_governance_check.sh text "${m[0]}" != actual ${dimCount}`)
+}
+for (const m of sessStartContent.matchAll(/(\d+)\s+active\s+M-rules/g)) {
+  const declared = parseInt(m[1])
+  if (declared !== mRuleCount) drifts.push(`session_start_governance_check.sh text "${m[0]}" != actual ${mRuleCount}`)
+}
+
 // 2026-05-23 升級:M-rule count text drift 跨多 file
 // SSOT pattern:`N active M-rules` 或 `N M-rules`(loose match,排 historical / planning / scratch / tmp)
 const mRuleTextFiles = [

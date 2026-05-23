@@ -1,6 +1,6 @@
-// Visual pixel-quantified probe — verify leading-none → leading-compact 視覺零差別 claim
+// Visual pixel-quantified probe — verify leading-none → leading-none (2026-05-23 Path B 更新:現狀已是 leading-none,本 probe 變 sanity check 而非 migration verification) 視覺零差別 claim
 // 用 chromium 量 Avatar / OverflowIndicator / Steps 的 inner text getBoundingClientRect()
-// 三點對照:(A) 當前 leading-compact / (B) 模擬 leading-none / (C) 模擬 leading-normal
+// 三點對照:(A) 當前 leading-none (2026-05-23 Path B 更新:現狀已是 leading-none,本 probe 變 sanity check 而非 migration verification) / (B) 模擬 leading-none / (C) 模擬 leading-normal
 // 若 A vs B 像素 delta = 0 → 確認視覺零差別,migration 是 token-hygiene rebranding 無視覺影響
 
 import { chromium } from 'playwright'
@@ -75,8 +75,8 @@ for (const t of targets) {
   try {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 })
     await page.waitForTimeout(500)
-    // Probe 3 modes(本身 leading-compact = current state 從 css cascade)
-    const current = await probe(page, '')          // 不 override = 現狀(leading-compact)
+    // Probe 3 modes(本身 leading-none (2026-05-23 Path B 更新:現狀已是 leading-none,本 probe 變 sanity check 而非 migration verification) = current state 從 css cascade)
+    const current = await probe(page, '')          // 不 override = 現狀(leading-none (2026-05-23 Path B 更新:現狀已是 leading-none,本 probe 變 sanity check 而非 migration verification))
     const none = await probe(page, '1')             // 模擬 leading-none
     const normal = await probe(page, '1.5')          // 模擬 leading-normal(對照)
     results[t.name] = { current, none, normal }

@@ -186,7 +186,7 @@ Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
 
 ## Chrome Header Height
 
-應用程式 chrome 區域(Sidebar header、app top bar、主內容 page header)的高度。定義在 `globals.css`(不在 uiSize.css),因為它是**佈局層級**的 token,不是元件層級。
+應用程式 chrome 區域(Sidebar header、app top bar、主內容 page header)的高度。**定義在 DS package `packages/design-system/src/tokens/uiSize/uiSize.css`**(2026-05-23 per Phase A Decision 1 從 consumer-app `src/globals.css` 搬入,user verbatim「決策一照你建議」— 為了 npm-package install 後 consumer 不需自設 token,符 M17 SSOT 鐵律)。雖然它是**跨佈局層級**的 token(跨多元件而非單一 component scope),DS package 自包避免 consumer 漏設造成 header 高度崩潰。
 
 **Cross-family canonical SSOT pointer**:chrome + overlay 兩 header 家族的完整視覺契約(border / padding / withTabs lockstep / size 對應 / Token equality enforcement)詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify token 本身定義 + consumer 清單。
 
