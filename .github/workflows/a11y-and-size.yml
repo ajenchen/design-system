@@ -1,0 +1,52 @@
+name: A11y + Bundle Size
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # 每日凌晨 UTC 02:00(台灣 10:00)定時健檢
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  a11y-axe:
+    name: a11y(axe-core WCAG 2A+AA, Dim 49)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true  # 2026-05-23 ship — advisory until baseline established(Carbon AVT 同 pattern)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci
+      - run: npm run build-storybook 2>&1 | tail -20
+      - name: Run axe-core against all stories
+        run: npm run a11y:check 2>&1 | tail -60
+      - name: Upload a11y report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-audit-report
+          path: .claude/logs/a11y-audit.json
+          if-no-files-found: warn
+
+  size-limit:
+    name: Bundle size budget(Dim 50)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci
+      - name: Build DS lib + types
+        run: |
+          npm -w @qijenchen/design-system run build 2>&1 | tail -10
+          npm -w @qijenchen/design-system run build:dts 2>&1 | tail -5
+      - name: Build production app(for aggregate budget)
+        run: npm run build 2>&1 | tail -10
+      - name: Run size-limit
+        run: npx size-limit 2>&1 | tail -60

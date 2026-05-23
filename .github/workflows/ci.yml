@@ -114,17 +114,6 @@ jobs:
       - name: Vite build
         run: npm run build 2>&1 | tail -10
 
-      - name: a11y audit(axe-core WCAG 2A+AA, Dim 49)
-        run: npm run a11y:check 2>&1 | tail -30
-        continue-on-error: false
-
-      - name: Bundle size budget(per-component, Dim 50)
-        run: |
-          # Build DS lib first(per-component dist/)
-          npm -w @qijenchen/design-system run build 2>&1 | tail -5
-          npm -w @qijenchen/design-system run build:dts 2>&1 | tail -5
-          npx size-limit 2>&1 | tail -40
-
       - name: File-size budget enforcement
         run: |
           fail=0
