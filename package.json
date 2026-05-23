@@ -21,6 +21,8 @@
     "hooks:test": "bash .claude/hooks/tests/run-all.sh",
     "size": "size-limit",
     "size:why": "size-limit --why",
+    "a11y:check": "node scripts/audit-a11y.mjs",
+    "a11y:check:tag": "node scripts/audit-a11y.mjs --tag",
     "test:datatable-invariants": "node scripts/data-table-invariants.mjs",
     "sync-memory": "node scripts/sync-memory.mjs",
     "sync-counters": "node scripts/sync-governance-counters.mjs",
@@ -108,6 +110,60 @@
       "name": "DS CSS(globals + tokens)",
       "path": "dist/assets/index-*.css",
       "limit": "30 KB",
+      "gzip": true
+    },
+    {
+      "name": "Button(foundation primitive)",
+      "path": "packages/design-system/dist/components/Button/button.js",
+      "limit": "8 KB",
+      "gzip": true
+    },
+    {
+      "name": "DataTable(heaviest — filter+sort+drag+virtual)",
+      "path": "packages/design-system/dist/components/DataTable/data-table.js",
+      "limit": "60 KB",
+      "gzip": true
+    },
+    {
+      "name": "FileViewer(complex composition)",
+      "path": "packages/design-system/dist/components/FileViewer/file-viewer.js",
+      "limit": "30 KB",
+      "gzip": true
+    },
+    {
+      "name": "Calendar(date grid + a11y)",
+      "path": "packages/design-system/dist/components/Calendar/calendar.js",
+      "limit": "20 KB",
+      "gzip": true
+    },
+    {
+      "name": "Chart(recharts wrapper)",
+      "path": "packages/design-system/dist/components/Chart/chart.js",
+      "limit": "25 KB",
+      "gzip": true
+    },
+    {
+      "name": "Sidebar(compound + collapse + tooltip)",
+      "path": "packages/design-system/dist/components/Sidebar/sidebar.js",
+      "limit": "20 KB",
+      "gzip": true
+    },
+    {
+      "name": "Combobox(input + listbox + filter)",
+      "path": "packages/design-system/dist/components/Combobox/combobox.js",
+      "limit": "15 KB",
+      "gzip": true
+    },
+    {
+      "name": "AppShell(layout primitive)",
+      "path": "packages/design-system/dist/components/AppShell/app-shell.js",
+      "limit": "10 KB",
+      "gzip": true
+    },
+    {
+      "name": "Dialog(modal overlay)",
+      "path": "packages/design-system/dist/components/Dialog/dialog.js",
+      "limit": "10 KB",
       "gzip": true
     }
   ]

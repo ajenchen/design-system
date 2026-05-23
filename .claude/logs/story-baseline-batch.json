@@ -1,0 +1,95 @@
+{
+  "ts": "2026-05-23T05:10:10.537Z",
+  "applyMode": true,
+  "files": {
+    "tagged": [
+      {
+        "file": "packages/design-system/src/components/Select/select.stories.tsx",
+        "primary": "DataTable",
+        "wrapped": [
+          "DataTable"
+        ]
+      },
+      {
+        "file": "packages/design-system/src/components/NumberInput/number-input.stories.tsx",
+        "primary": "DataTable",
+        "wrapped": [
+          "DataTable"
+        ]
+      },
+      {
+        "file": "packages/design-system/src/components/CircularProgress/circular-progress.stories.tsx",
+        "primary": "DataTable",
+        "wrapped": [
+          "DataTable"
+        ]
+      }
+    ],
+    "skipped_already_marked": [
+      "packages/design-system/src/components/Combobox/combobox.stories.tsx",
+      "packages/design-system/src/components/AppShell/app-shell.stories.tsx"
+    ],
+    "skipped_self_baseline": [
+      "packages/design-system/src/components/Sidebar/sidebar.stories.tsx",
+      "packages/design-system/src/components/DataTable/data-table.stories.tsx"
+    ],
+    "skipped_no_wrap": [
+      "packages/design-system/src/components/TreeView/tree-view.stories.tsx",
+      "packages/design-system/src/components/Tooltip/tooltip.stories.tsx",
+      "packages/design-system/src/components/Toast/toast.stories.tsx",
+      "packages/design-system/src/components/TimePicker/time-picker.stories.tsx",
+      "packages/design-system/src/components/Textarea/textarea.stories.tsx",
+      "packages/design-system/src/components/Tag/tag.stories.tsx",
+      "packages/design-system/src/components/Tabs/tabs.stories.tsx",
+      "packages/design-system/src/components/Switch/switch.stories.tsx",
+      "packages/design-system/src/components/Steps/steps.stories.tsx",
+      "packages/design-system/src/components/Slider/slider.stories.tsx",
+      "packages/design-system/src/components/Skeleton/skeleton.stories.tsx",
+      "packages/design-system/src/components/Sheet/sheet.stories.tsx",
+      "packages/design-system/src/components/Separator/separator.stories.tsx",
+      "packages/design-system/src/components/SelectionControl/selection-item.stories.tsx",
+      "packages/design-system/src/components/SelectMenu/select-menu.stories.tsx",
+      "packages/design-system/src/components/SegmentedControl/segmented-control.stories.tsx",
+      "packages/design-system/src/components/ScrollArea/scroll-area.stories.tsx",
+      "packages/design-system/src/components/Rating/rating.stories.tsx",
+      "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx",
+      "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx",
+      "packages/design-system/src/components/Popover/popover.stories.tsx",
+      "packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx",
+      "packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx",
+      "packages/design-system/src/components/Notice/notice.stories.tsx",
+      "packages/design-system/src/components/NameCard/name-card.stories.tsx",
+      "packages/design-system/src/components/Menu/menu-item.stories.tsx",
+      "packages/design-system/src/components/LinkInput/link-input.stories.tsx",
+      "packages/design-system/src/components/Input/input.stories.tsx",
+      "packages/design-system/src/components/HoverCard/hover-card.stories.tsx",
+      "packages/design-system/src/components/FileViewer/file-viewer.stories.tsx",
+      "packages/design-system/src/components/FileUpload/file-upload.stories.tsx",
+      "packages/design-system/src/components/FileItem/file-item.stories.tsx",
+      "packages/design-system/src/components/FieldControlGroup/field-control-group.stories.tsx",
+      "packages/design-system/src/components/Field/field.stories.tsx",
+      "packages/design-system/src/components/Empty/empty.stories.tsx",
+      "packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx",
+      "packages/design-system/src/components/Dialog/dialog.stories.tsx",
+      "packages/design-system/src/components/DescriptionList/description-list.stories.tsx",
+      "packages/design-system/src/components/DatePicker/date-picker.stories.tsx",
+      "packages/design-system/src/components/DateGrid/date-grid.stories.tsx",
+      "packages/design-system/src/components/Command/command.stories.tsx",
+      "packages/design-system/src/components/Coachmark/coachmark.stories.tsx",
+      "packages/design-system/src/components/Chip/chip.stories.tsx",
+      "packages/design-system/src/components/Checkbox/checkbox.stories.tsx",
+      "packages/design-system/src/components/Chart/chart.stories.tsx",
+      "packages/design-system/src/components/Carousel/carousel.stories.tsx",
+      "packages/design-system/src/components/Calendar/calendar.stories.tsx",
+      "packages/design-system/src/components/Button/button.stories.tsx",
+      "packages/design-system/src/components/BulkActionBar/bulk-action-bar.stories.tsx",
+      "packages/design-system/src/components/Breadcrumb/breadcrumb.stories.tsx",
+      "packages/design-system/src/components/Badge/badge.stories.tsx",
+      "packages/design-system/src/components/Avatar/avatar.stories.tsx",
+      "packages/design-system/src/components/AspectRatio/aspect-ratio.stories.tsx",
+      "packages/design-system/src/components/Alert/alert.stories.tsx",
+      "packages/design-system/src/components/Accordion/accordion.stories.tsx"
+    ],
+    "errored": []
+  }
+}

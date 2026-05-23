@@ -1,4 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+// @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions
+// (per .claude/references/story-baseline-registry.json#DataTable)
 import type { Meta, StoryObj } from '@storybook/react'
 import { Search, Upload } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
