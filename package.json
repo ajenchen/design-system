@@ -23,6 +23,7 @@
     "size:why": "size-limit --why",
     "a11y:check": "node scripts/audit-a11y.mjs",
     "a11y:check:tag": "node scripts/audit-a11y.mjs --tag",
+    "story-quality:check": "node scripts/audit-story-quality.mjs --check",
     "test:datatable-invariants": "node scripts/data-table-invariants.mjs",
     "sync-memory": "node scripts/sync-memory.mjs",
     "sync-counters": "node scripts/sync-governance-counters.mjs",

@@ -114,6 +114,9 @@ jobs:
       - name: Vite build
         run: npm run build 2>&1 | tail -10
 
+      - name: Story quality DS-wide(Dim 40/41/42 anti-sample deterministic scan)
+        run: npm run story-quality:check 2>&1 | tail -20
+
       - name: File-size budget enforcement
         run: |
           fail=0
