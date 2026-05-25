@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @story-trait-rationale: Breadcrumb 是純結構導覽元件,disabled/states 由 BreadcrumbLink 內部 :focus-visible / :hover / :active 處理(spec.md 互動狀態段已 cover),無 element-level disabled mode(spec.md L107「通常 breadcrumb link 不會 disabled」)。互動行為示範由 InteractiveEllipsis story + anatomy StateBehavior 完整覆蓋。AllSizes retired per F migration 2026-05-15(anatomy auto-compile SizeMatrix owns size showcase)。
 import type { Meta, StoryObj } from '@storybook/react'
+import { House } from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -250,20 +251,114 @@ export const TwoLevels: Story = {
   ),
 }
 
-// ── asChild (整合 router Link) ─────────────────────────────────────────────
+// ── 首項 Home icon(Material / Atlassian 業界慣例,spec.md startIcon prop)──
 
-export const AsChildRouterLink: Story = {
-  name: 'asChild 組合（替換 trigger 元素）',
+export const WithHomeIcon: Story = {
+  name: '首項配 Home icon',
+  parameters: {
+    docs: {
+      description: {
+        story: '首項用 House icon 強化視覺錨點,對齊 Material / Atlassian / Ant Design 慣例。Consumer 只傳 LucideIcon,DS 內部消費 BREADCRUMB_ICON_SIZE SSOT 統一管 size(sm/md=16, lg=20),禁傳 size prop 避免 drift。',
+      },
+    },
+  },
+  render: () => (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink href="/" startIcon={House}>首頁</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbLink href="/projects">專案</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>新增專案</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+  ),
+}
+
+// ── 配對頁面標題(spec.md size canonical:sm→h4 / md→h3 / lg→h2)─────────
+
+export const PairedWithPageTitle: Story = {
+  name: '與頁面標題配對',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Breadcrumb size 必對應頁面標題層級(spec.md size canonical)。sm 配 h4(Dialog/Panel),md 配 h3(一般頁面 header,預設),lg 配 h2(Detail page hero)。階層視覺維持平衡,breadcrumb 不搶 title 視覺權重。',
+      },
+    },
+  },
+  render: () => (
+    <div className="flex flex-col gap-12">
+      <section>
+        <Breadcrumb>
+          <BreadcrumbList size="sm">
+            <BreadcrumbItem><BreadcrumbLink href="/" startIcon={House}>首頁</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem><BreadcrumbLink href="/settings">設定</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem><BreadcrumbPage>個人偏好</BreadcrumbPage></BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <h4 className="text-h4 text-foreground mt-2">個人偏好</h4>
+        <p className="text-caption text-fg-muted mt-1">size="sm" 配 text-h4 — Dialog / Panel / Drawer header</p>
+      </section>
+
+      <section>
+        <Breadcrumb>
+          <BreadcrumbList size="md">
+            <BreadcrumbItem><BreadcrumbLink href="/" startIcon={House}>首頁</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem><BreadcrumbLink href="/projects">專案</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem><BreadcrumbPage>Q1 行銷活動</BreadcrumbPage></BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <h3 className="text-h3 text-foreground mt-2">Q1 行銷活動</h3>
+        <p className="text-caption text-fg-muted mt-1">size="md"(預設)配 text-h3 — 一般頁面 header</p>
+      </section>
+
+      <section>
+        <Breadcrumb>
+          <BreadcrumbList size="lg">
+            <BreadcrumbItem><BreadcrumbLink href="/" startIcon={House}>首頁</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem><BreadcrumbLink href="/products">產品</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem><BreadcrumbPage>2026 春季新品</BreadcrumbPage></BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <h2 className="text-h2 text-foreground mt-2">2026 春季新品</h2>
+        <p className="text-caption text-fg-muted mt-1">size="lg" 配 text-h2 — Detail page hero / Landing</p>
+      </section>
+    </div>
+  ),
+}
+
+// ── 整合 React Router / Next.js Link(asChild slot,replace anchor element)──
+
+export const IntegrateRouterLink: Story = {
+  name: '整合 React Router / Next.js Link',
+  parameters: {
+    docs: {
+      description: {
+        story: '需把 BreadcrumbLink 的樣式與行為套到 router 自帶的 Link 元件(React Router Link / Next.js Link / TanStack Link),用 asChild prop 把 anchor 元素替換成 router Link,樣式 / hover / focus 全自動繼承。常見場景:SPA 不希望 default <a> 觸發整頁 reload。',
+      },
+    },
+  },
   render: () => (
     <div className="flex flex-col gap-2">
       <div className="text-caption text-fg-muted">
-        BreadcrumbLink 支援 asChild, 可把 React Router / Next.js Link 塞進來, 繼承樣式:
+        以下用 native &lt;a onClick prevent&gt; 模擬 router Link 行為:
       </div>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              {/* 模擬 <Link to="/"> 用 a 代替 */}
               <a href="/" onClick={(e) => e.preventDefault()}>首頁</a>
             </BreadcrumbLink>
           </BreadcrumbItem>

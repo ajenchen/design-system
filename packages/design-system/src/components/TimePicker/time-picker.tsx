@@ -294,11 +294,11 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
 
     return (
       <Popover open={open} onOpenChange={setOpen}>
+        {/* a11y(2026-04-25 nested-interactive fix):trigger 改 <div role='combobox'>
+            (對齊 Select / Combobox 同 pattern),原 <button> 會與內層 ItemInlineAction
+            清除 button 構成 nested-interactive。Radix Popover 在 trigger asChild 下會
+            自動 inject keyboard handler(Enter / Space 開啟)+ 正確 aria attributes。 */}
         <PopoverTrigger asChild>
-          {/* a11y(2026-04-25 nested-interactive fix):trigger 改 <div role='combobox'>
-              (對齊 Select / Combobox 同 pattern),原 <button> 會與內層 ItemInlineAction
-              清除 button 構成 nested-interactive。Radix Popover 在 trigger asChild 下會
-              自動 inject keyboard handler(Enter / Space 開啟)+ 正確 aria attributes。 */}
           <div
             ref={ref}
             id={idProp ?? fieldCtx?.id}

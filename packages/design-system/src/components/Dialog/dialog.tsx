@@ -149,11 +149,11 @@ const DialogHeader = React.forwardRef<
     {...props}
   >
     <div className="flex-1 min-w-0">{children}</div>
+    {/* Dismiss X(chrome-slot canonical,v5):Button 本身 native sm(28 md / 32 lg,touch target 亦同),
+        但 data-dismiss attribute 讓 SurfaceHeader CSS rule 套負 my 讓 layout 佔位 = 24,
+        header = 24 + 2×tight = 48 / 56 chrome-header-height ✓。
+        詳 overlay-surface.spec.md「Chrome dismiss size canonical」*/}
     <DialogPrimitive.Close asChild>
-      {/* Dismiss X(chrome-slot canonical,v5):Button 本身 native sm(28 md / 32 lg,touch target 亦同),
-          但 `data-dismiss` attribute 讓 SurfaceHeader CSS rule 套負 my 讓 layout 佔位 = 24,
-          header = 24 + 2×tight = 48 / 56 chrome-header-height ✓。
-          詳 overlay-surface.spec.md「Chrome dismiss size canonical」*/}
       <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" />
     </DialogPrimitive.Close>
   </SurfaceHeader>

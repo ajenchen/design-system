@@ -99,8 +99,8 @@ const PopoverHeader = React.forwardRef<HTMLDivElement, PopoverHeaderProps>(
     >
       <div className="flex-1 min-w-0">{children}</div>
       {!hideClose && (
+        // Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位 24 → 匹配 inner 24
         <PopoverPrimitive.Close asChild>
-          {/* Dismiss X = native sm,SurfaceHeader 負 my trick 讓 layout 佔位 24 → 匹配 inner 24 */}
           <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" />
         </PopoverPrimitive.Close>
       )}

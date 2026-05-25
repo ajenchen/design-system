@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 import type { Meta, StoryObj } from '@storybook/react'
+import { House } from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -13,6 +14,7 @@ import {
 import { H3, Desc, Td, Th, TokenCell, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 type InspectorArgs = {
+  showHomeIcon: boolean
   size: 'sm' | 'md' | 'lg'
   useEllipsis: boolean
   depth: 3 | 4 | 5
@@ -76,12 +78,13 @@ export const Inspector: InspectorStory = {
   parameters: {
     docs: {
       description: {
-        story: '在右側 Controls 面板切換 size / useEllipsis / depth,即時查看 Breadcrumb 在不同字級與路徑深度下的呈現。世界級 DS 的 Inspector = Figma inspect 替代。',
+        story: '右側 Controls 面板切換 size / showHomeIcon / useEllipsis / depth,即時查看 Breadcrumb 在不同字級 / 首項 icon / 路徑深度下的呈現。世界級 DS 的 Inspector = Figma inspect 替代,涵蓋全 prop 組合 visual matrix。',
       },
     },
   },
   args: {
     size: 'md',
+    showHomeIcon: true,
     useEllipsis: false,
     depth: 4,
   },
@@ -91,9 +94,13 @@ export const Inspector: InspectorStory = {
       options: ['sm', 'md', 'lg'],
       description: '字體尺寸 — 對齊配對的 page title(sm→h4 / md→h3 / lg→h2)',
     },
+    showHomeIcon: {
+      control: 'boolean',
+      description: '首項是否帶 Home icon(Material / Atlassian 慣例)。Icon size 自動跟著 BREADCRUMB_ICON_SIZE SSOT(sm/md=16, lg=20)',
+    },
     useEllipsis: {
       control: 'boolean',
-      description: '是否在中間插入 Ellipsis 收合(模擬長路徑場景)',
+      description: '是否在中間插入 Ellipsis 收合(模擬長路徑場景,首+⋯+末)',
     },
     depth: {
       control: { type: 'radio' },
@@ -102,18 +109,19 @@ export const Inspector: InspectorStory = {
     },
   },
   render: (args) => {
-    const path = ['專案', 'Q1 行銷活動', '電子報', '圖檔資產', 'hero-banner.png'].slice(0, args.depth)
+    const path = ['首頁', '專案', 'Q1 行銷活動', '電子報', '圖檔資產', 'hero-banner.png'].slice(0, args.depth + 1)
+    const root = path[0]
+    const middle = path.slice(1, -1)
     const last = path[path.length - 1]
-    const middle = path.slice(0, -1)
     return (
       <Breadcrumb>
         <BreadcrumbList size={args.size}>
-          {args.useEllipsis && middle.length > 2 ? (
+          <BreadcrumbItem>
+            <BreadcrumbLink href="#" startIcon={args.showHomeIcon ? House : undefined}>{root}</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          {args.useEllipsis && middle.length > 1 ? (
             <>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="#">{middle[0]}</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbEllipsis />
               </BreadcrumbItem>
@@ -122,23 +130,18 @@ export const Inspector: InspectorStory = {
                 <BreadcrumbLink href="#">{middle[middle.length - 1]}</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{last}</BreadcrumbPage>
-              </BreadcrumbItem>
             </>
           ) : (
-            <>
-              {middle.flatMap((label, i) => [
-                <BreadcrumbItem key={`item-${i}`}>
-                  <BreadcrumbLink href="#">{label}</BreadcrumbLink>
-                </BreadcrumbItem>,
-                <BreadcrumbSeparator key={`sep-${i}`} />,
-              ])}
-              <BreadcrumbItem>
-                <BreadcrumbPage>{last}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </>
+            middle.flatMap((label, i) => [
+              <BreadcrumbItem key={`item-${i}`}>
+                <BreadcrumbLink href="#">{label}</BreadcrumbLink>
+              </BreadcrumbItem>,
+              <BreadcrumbSeparator key={`sep-${i}`} />,
+            ])
           )}
+          <BreadcrumbItem>
+            <BreadcrumbPage>{last}</BreadcrumbPage>
+          </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
     )

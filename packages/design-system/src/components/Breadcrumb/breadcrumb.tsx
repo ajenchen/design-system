@@ -441,7 +441,6 @@ interface BreadcrumbLinkProps extends React.ComponentPropsWithoutRef<'a'> {
 
 const BreadcrumbLink = React.forwardRef<HTMLAnchorElement, BreadcrumbLinkProps>(
   ({ asChild, className, children, startIcon: StartIcon, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'a'
     const { size } = React.useContext(BreadcrumbContext)
     // 2026-05-12 fix(user 抓 image 2 Deep story 麵包屑沒符合 single-line + truncate canonical):
     // 純文字 children → auto-wrap TruncatedLabel(canonical「single-line + ellipsis + tooltip
@@ -450,24 +449,35 @@ const BreadcrumbLink = React.forwardRef<HTMLAnchorElement, BreadcrumbLinkProps>(
     const wrappedChildren = typeof children === 'string'
       ? <TruncatedLabel fullText={children}>{children}</TruncatedLabel>
       : children
+    const sharedClassName = cn(
+      'inline-flex items-center gap-2',
+      'min-w-0 max-w-full',
+      'text-fg-secondary',
+      'hover:text-primary-hover',
+      'transition-colors duration-150',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+      'rounded-md',
+      className
+    )
+    // 2026-05-25 fix(user 抓 Breadcrumb asChild story React.Children.only runtime fail):
+    // Radix Slot 規範 children 必為單 element;原 unified Comp render 在 asChild path 內
+    // 仍輸出「{StartIcon && ...} + {wrappedChildren}」雙 JSX expression → Slot 收到 array
+    // → React.Children.only(array) throws「expected to receive a single React element child」。
+    // 分支 render 解 — asChild path 只傳 consumer-supplied child(icon 由 consumer 自管,
+    // 對齊 Radix Slot canonical「single child contract」);非 asChild path 維持原 native
+    // <a> + DS-controlled icon + wrapped label。
+    if (asChild) {
+      return (
+        <Slot ref={ref} className={sharedClassName} {...props}>
+          {wrappedChildren}
+        </Slot>
+      )
+    }
     return (
-      <Comp
-        ref={ref}
-        className={cn(
-          'inline-flex items-center gap-2',
-          'min-w-0 max-w-full',
-          'text-fg-secondary',
-          'hover:text-primary-hover',
-          'transition-colors duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-          'rounded-md',
-          className
-        )}
-        {...props}
-      >
+      <a ref={ref} className={sharedClassName} {...props}>
         {StartIcon && <StartIcon size={BREADCRUMB_ICON_SIZE[size]} aria-hidden className="shrink-0" />}
         {wrappedChildren}
-      </Comp>
+      </a>
     )
   }
 )
