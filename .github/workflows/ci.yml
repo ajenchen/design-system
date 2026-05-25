@@ -117,6 +117,9 @@ jobs:
       - name: Story quality DS-wide(Dim 40/41/42 anti-sample deterministic scan)
         run: npm run story-quality:check 2>&1 | tail -20
 
+      - name: Figma Make artifacts(SSOT propagation check)
+        run: node scripts/gen-figma-make-artifacts.mjs --check
+
       - name: File-size budget enforcement
         run: |
           fail=0

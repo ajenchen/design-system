@@ -1,6 +1,6 @@
 {
   "name": "@qijenchen/design-system",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.4",
   "private": false,
   "description": "World-class design system — components, patterns, tokens, hooks (single source of truth for team distribution).",
   "type": "module",
@@ -35,7 +35,9 @@
       "types": "./dist/hooks/*.d.ts",
       "import": "./dist/hooks/*.js"
     },
-    "./styles/globals.css": "./dist/globals.css"
+    "./styles/globals.css": "./dist/globals.css",
+    "./styles/tokens.css": "./src/styles/tokens.css",
+    "./styles/tokens": "./src/styles/tokens.css"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
