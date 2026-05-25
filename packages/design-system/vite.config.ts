@@ -52,6 +52,15 @@ export default defineConfig({
         preserveModules: true,
         preserveModulesRoot: 'src',
         entryFileNames: '[name].js',
+        // P1.3 Phase 4.8 fix(Figma audit):rename default 'style.css' bundle
+        // (來自 date-grid.tsx 的 `import 'react-day-picker/style.css'` side-effect)
+        // 避免 consumer 看到 dist/style.css 誤以為是 DS bundle entry。
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name === 'style.css' || assetInfo.names?.includes('style.css')) {
+            return 'react-day-picker.css'
+          }
+          return '[name][extname]'
+        },
       },
     },
     outDir: 'dist',

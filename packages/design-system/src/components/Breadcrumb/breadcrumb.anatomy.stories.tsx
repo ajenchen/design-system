@@ -14,10 +14,12 @@ import {
 import { H3, Desc, Td, Th, TokenCell, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 type InspectorArgs = {
-  showHomeIcon: boolean
   size: 'sm' | 'md' | 'lg'
-  useEllipsis: boolean
-  depth: 3 | 4 | 5
+  showHomeIcon: boolean
+  pathLength: 3 | 4 | 5 | 6 | 7
+  maxItems: number
+  itemsBeforeCollapse: number
+  itemsAfterCollapse: number
 }
 
 const meta: Meta = {
@@ -85,8 +87,10 @@ export const Inspector: InspectorStory = {
   args: {
     size: 'md',
     showHomeIcon: true,
-    useEllipsis: false,
-    depth: 4,
+    pathLength: 5,
+    maxItems: 4,
+    itemsBeforeCollapse: 1,
+    itemsAfterCollapse: 1,
   },
   argTypes: {
     size: {
@@ -96,53 +100,47 @@ export const Inspector: InspectorStory = {
     },
     showHomeIcon: {
       control: 'boolean',
-      description: '首項是否帶 Home icon(Material / Atlassian 慣例)。Icon size 自動跟著 BREADCRUMB_ICON_SIZE SSOT(sm/md=16, lg=20)',
+      description: '首項是否帶 Home icon(Material / Atlassian 慣例)。Icon size 自動跟著 BREADCRUMB_ICON_SIZE SSOT(sm/md=16, lg=20)。',
     },
-    useEllipsis: {
-      control: 'boolean',
-      description: '是否在中間插入 Ellipsis 收合(模擬長路徑場景,首+⋯+末)',
-    },
-    depth: {
+    pathLength: {
       control: { type: 'radio' },
-      options: [3, 4, 5],
-      description: '路徑層數(含當前頁)',
+      options: [3, 4, 5, 6, 7],
+      description: '模擬路徑總層數(含首頁 + 當前頁)。配合 maxItems 觀察 collapse 行為。',
+    },
+    maxItems: {
+      control: { type: 'range', min: 2, max: 8, step: 1 },
+      description: 'Auto-collapse 閾值(BreadcrumbList prop)。items.length > maxItems 時觸發中段收合。Material UI source 預設 8,DS 收嚴預設 4。',
+    },
+    itemsBeforeCollapse: {
+      control: { type: 'range', min: 0, max: 3, step: 1 },
+      description: 'Collapse 後保留首 N(BreadcrumbList prop)。預設 1。',
+    },
+    itemsAfterCollapse: {
+      control: { type: 'range', min: 1, max: 3, step: 1 },
+      description: 'Collapse 後保留末 N(BreadcrumbList prop)。預設 1。末位永遠 ≥ 1(current page)。',
     },
   },
   render: (args) => {
-    const path = ['首頁', '專案', 'Q1 行銷活動', '電子報', '圖檔資產', 'hero-banner.png'].slice(0, args.depth + 1)
-    const root = path[0]
-    const middle = path.slice(1, -1)
-    const last = path[path.length - 1]
+    // Inspector 用 BreadcrumbList items API(declarative mode)1:1 暴露 public props。
+    // Consumer 在這頁玩 controls = production 寫 props 體驗一致(對齊 Material UI Storybook canonical)。
+    const labels = ['首頁', '專案', 'Q1 行銷活動', '電子報', '圖檔資產', 'hero-banner.png', '_thumbnails']
+    const items = labels.slice(0, args.pathLength).map((label, i) => {
+      const isLast = i === args.pathLength - 1
+      return {
+        label,
+        href: isLast ? undefined : '#', // 末位無 href → 自動 BreadcrumbPage(per spec.md Title-breadcrumb-end SSOT)
+        startIcon: i === 0 && args.showHomeIcon ? House : undefined,
+      }
+    })
     return (
       <Breadcrumb>
-        <BreadcrumbList size={args.size}>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="#" startIcon={args.showHomeIcon ? House : undefined}>{root}</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          {args.useEllipsis && middle.length > 1 ? (
-            <>
-              <BreadcrumbItem>
-                <BreadcrumbEllipsis />
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink href="#">{middle[middle.length - 1]}</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-            </>
-          ) : (
-            middle.flatMap((label, i) => [
-              <BreadcrumbItem key={`item-${i}`}>
-                <BreadcrumbLink href="#">{label}</BreadcrumbLink>
-              </BreadcrumbItem>,
-              <BreadcrumbSeparator key={`sep-${i}`} />,
-            ])
-          )}
-          <BreadcrumbItem>
-            <BreadcrumbPage>{last}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
+        <BreadcrumbList
+          size={args.size}
+          items={items}
+          maxItems={args.maxItems}
+          itemsBeforeCollapse={args.itemsBeforeCollapse}
+          itemsAfterCollapse={args.itemsAfterCollapse}
+        />
       </Breadcrumb>
     )
   },

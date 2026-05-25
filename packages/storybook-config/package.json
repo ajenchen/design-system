@@ -1,6 +1,6 @@
 {
   "name": "@qijenchen/storybook-config",
-  "version": "0.1.0-beta.6",
+  "version": "0.1.0-beta.7",
   "private": false,
   "description": "Shared Storybook config (addons preset + preview parameters + decorators) for design-system + consumer products. Single SSOT for storybook UX.",
   "type": "module",
@@ -18,8 +18,8 @@
   },
   "main": "./preview.tsx",
   "peerDependencies": {
-    "@storybook/react": ">=8.0.0",
-    "@storybook/react-vite": ">=8.0.0",
+    "@storybook/react": "^9.0.0",
+    "@storybook/react-vite": "^9.0.0",
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
   }
