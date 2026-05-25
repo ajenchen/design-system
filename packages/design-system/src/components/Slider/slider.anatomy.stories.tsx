@@ -18,7 +18,7 @@ export const Overview: Story = {
         <H3>Anatomy</H3>
         <Desc>Slider = Track(軌道)+ Range(填滿段)+ Thumb(白色圓 + 2px border)。基於 Radix Slider primitive,橋接 DS token。</Desc>
         <div className="max-w-md border border-border rounded-lg p-6">
-          <Slider defaultValue={[60]} />
+          <Slider defaultValue={[60]} aria-label="Volume" />
         </div>
       </div>
 
@@ -26,7 +26,7 @@ export const Overview: Story = {
         <H3>Range mode(雙 thumb)</H3>
         <Desc>Radix Slider 原生支援多 thumb——只要 `value` / `defaultValue` 傳 array 長度 &gt; 1,自動渲染對應 thumb,range 落在最小和最大 thumb 之間。</Desc>
         <div className="max-w-md border border-border rounded-lg p-6">
-          <Slider defaultValue={[20, 80]} />
+          <Slider defaultValue={[20, 80]} aria-label="Price range" />
         </div>
       </div>
 
