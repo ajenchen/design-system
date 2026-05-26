@@ -914,7 +914,13 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               // inside: 資料夾背景高亮(Figma 風格),不用 ring/border
               isDropTarget && dropTarget?.position === 'inside' && dropIndicatorInside,
               !disabled && 'hover:bg-neutral-hover hover:text-foreground',
-              !disabled && isSelected && selectionMode === 'single' && 'bg-neutral-selected',
+              // 2026-05-26 fix(SSOT drift):移除 `selectionMode === 'single'` condition。
+              // 原本只 single 套 bg-neutral-selected,multiple selected 只字色變化視覺殘缺(無 bg)。
+              // 世界級對照(macOS Finder / Gmail / MUI X Tree / Atlassian Tree):
+              //   multi-select 必有 bg 反白(強 signal),checkbox 為 optional addon。
+              //   「只字色變」no precedent,canonical 違反。
+              // Inspector multiple toggle 從此跟 WithCheckbox visual 對齊。
+              !disabled && isSelected && 'bg-neutral-selected',
               showRing && 'ring-2 ring-ring ring-inset',
               disabled && 'pointer-events-none text-fg-disabled cursor-default',
               className,

@@ -131,10 +131,13 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 
 ### 多選(file browser)
 
-- 用 checkbox 表達選取,不用背景色
+- **視覺 SSOT(2026-05-26 fix per 世界級 alignment)**:多選 selected node 跟 single 一樣用 `bg-neutral-selected` 為**主視覺信號**。Checkbox 為**加強信號**(file-browser / permission-picker variant),不取代 bg
+  - 對齊:macOS Finder(bg only)/ Gmail(checkbox + bg)/ MUI X Tree multi-select(checkbox + bg)/ Figma layers(bg only)/ Atlassian Tree(checkbox + bg)
+  - 反例(歷史 bug 2026-05-26):原 spec「不用背景色」+ code `selectionMode === 'single'` condition → multi-select 只字色變化視覺殘缺,世界級無此先例
 - `Shift+Click` 範圍選取
 - `Ctrl/Cmd+Click` 切換個別選取
 - `aria-multiselectable="true"` 在 TreeView 上
+- Checkbox(when present)反映**內建 `selectedIds`** state(consumer 不該繞過 built-in selection 自管 `checked` Record);參考 `WithCheckbox` story
 
 ### 無選取(純展開/收合)
 
