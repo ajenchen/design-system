@@ -10,7 +10,7 @@ set -uo pipefail
 #
 # 對齊 M31 codex 比稿 Step 5「保留 duplicated literals + audit hook assert equality」decision。
 
-source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+source "$(dirname "$0")/../_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -euo pipefail
 

@@ -12,7 +12,7 @@
 #
 # Allow escape:檔頭 `// @header-withtabs-allow:` 整檔豁免。
 
-source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+source "$(dirname "$0")/../_log-fire.sh" 2>/dev/null && log_hook_fire
 
 INPUT=$(cat)
 TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""')

@@ -18,7 +18,7 @@
 # Exception escape:`// @app-shell-primary-header-allow: <reason>` 檔頭。
 
 set -uo pipefail
-source "$(dirname "$0")/_log-fire.sh"
+source "$(dirname "$0")/../_log-fire.sh"
 
 # 只看 Edit / Write tool
 TOOL_NAME=$(echo "${CLAUDE_TOOL_INPUT:-}" | python3 -c "import sys,json; d=json.load(sys.stdin) if sys.stdin.isatty()==False else {}; print(d.get('tool_name',''))" 2>/dev/null || echo "")

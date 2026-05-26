@@ -15,7 +15,7 @@ set -uo pipefail
 # 不適合用 primitive 的 case);本 hook 本身與 ChromeHeader / SurfaceHeader / SidebarHeader.tsx
 # 不攔(那些是 primitive 自己)。
 
-source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+source "$(dirname "$0")/../_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -euo pipefail
 
