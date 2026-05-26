@@ -29,7 +29,20 @@ set -euo pipefail
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 cd "$PROJECT_DIR" || exit 0
 
-REMINDERS=""
+# 2026-05-26 folded auto_sync_memory.sh in here(retire that hook for D8a budget):
+# Per CLAUDE.md governance hook count budget,SessionStart-only utility helper inline
+# under main governance hook 比 separate hook 更合 anti-bloat。
+# Memory sync = harness ↔ repo mirror auto-fix-up,not blocking,always exit 0。
+if [ -f scripts/sync-memory.mjs ]; then
+  SYNC_OUT=$(node scripts/sync-memory.mjs 2>&1 || true)
+  COPIED=$(echo "$SYNC_OUT" | grep -oE 'copied: [0-9]+' | grep -oE '[0-9]+' | head -1)
+  # COPIED > 0 → 加入 REMINDERS(下面 main flow inject)
+  if [ -n "$COPIED" ] && [ "$COPIED" -gt 0 ]; then
+    MEMSYNC_NOTE="\n- 🔄 auto sync-memory(SessionStart): harness → repo mirrored ${COPIED} memory file(s)。"
+  fi
+fi
+
+REMINDERS="${MEMSYNC_NOTE:-}"
 BLOCKERS=""
 
 # Check 1: CLAUDE.md size(soft 800 / hard 1000)

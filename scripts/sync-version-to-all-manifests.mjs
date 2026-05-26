@@ -46,5 +46,17 @@ if (mpChanged) {
   console.log(`✓ ${mpPath} already ${newVersion}`)
 }
 
+// storybook-config(2026-05-26 fix:plugin-structure-validate 5-manifest check 含 storybook-config,
+// 漏 sync 會 BLOCKER release。version 跟 DS 同步,monorepo 共版本 canonical)
+const sbConfigPath = 'packages/storybook-config/package.json'
+const sbConfig = JSON.parse(readFileSync(sbConfigPath, 'utf8'))
+if (sbConfig.version !== newVersion) {
+  sbConfig.version = newVersion
+  writeFileSync(sbConfigPath, JSON.stringify(sbConfig, null, 2) + '\n')
+  console.log(`✓ ${sbConfigPath} → ${newVersion}`)
+} else {
+  console.log(`✓ ${sbConfigPath} already ${newVersion}`)
+}
+
 console.log('')
 console.log('Done. Commit + tag + push to trigger release.yml.')
