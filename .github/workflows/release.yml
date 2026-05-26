@@ -51,10 +51,11 @@ jobs:
         run: npm ci
       - name: Install Playwright chromium
         run: npx playwright install --with-deps chromium
-      - name: Build storybook-config dist
-        run: npm -w @qijenchen/storybook-config run build
+      - name: Build DS lib + storybook-config dist(chained correct order)
+        # 2026-05-26 fix:storybook-config 需 DS dist/ 先 build(preview.tsx import @qijenchen/design-system types)
+        # `build:lib` script chain DS build → DS dts → storybook-config build,順序保證 type resolution OK
+        run: npm run build:lib
       - name: Build Storybook
-        # 2026-05-26 surface 完整 error(beta.16 fail 因 `| tail -5` 把 tsc error 切掉看不到 root cause)
         run: npm run build-storybook
       - name: Run smoke shard ${{ matrix.shard }}/4(FULL 947 stories sharded)
         run: node scripts/storybook-smoke-test.mjs --full --shard=${{ matrix.shard }}/4
