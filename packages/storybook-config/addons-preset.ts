@@ -12,6 +12,8 @@ export const sharedAddons = [
   '@storybook/addon-a11y',
   '@storybook/addon-docs',
   '@storybook/addon-links',
+  // 2026-05-27 ship ds-devmode addon as part of storybook-config (per user 「fork user storybook 自動安裝 dev mode」directive)
+  '@qijenchen/storybook-config/addons/ds-devmode/preset',
   // 2026-05-26 fix:`@whitespace/storybook-addon-html` 移出 shared preset(DS-internal only)
   // 該 addon 有 peer deps `react-syntax-highlighter` + `prettier` 不在 storybook-config dependencies,
   // consumer install 後 bundler resolve fail。DS dogfood 仍可在 `.storybook/main.ts` 加為 internal addon。

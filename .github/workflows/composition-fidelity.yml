@@ -1,0 +1,119 @@
+name: Composition Fidelity (DS canonical vs PW consumer visual diff)
+
+# 2026-05-27 ship per user 「mechanical 機制讓未來所有 DS components 在
+# product-workspace 渲染必跟 DS canonical 一致 可被驗證(byte-identity 不夠,visual diff)」
+#
+# 機制:
+# 1. Checkout DS + PW(via gh CLI or remote ref)
+# 2. Build DS storybook-static
+# 3. Build PW storybook-static
+# 4. Run `scripts/composition-fidelity-visual-diff.mjs`(v2 with G1-G5 fixes)
+# 5. Fail-on-drift > per-mapping threshold
+#
+# 對齊 Chromatic / Percy / shadcn-ui registry visual snapshot CI canonical.
+#
+# Trigger:DS push main(SSOT bump 觸發 PR repo dispatch fires composition diff)
+#         OR PR to main in this DS repo(防 ship 破 consumer 的 DS canonical 改動)
+#
+# Skip:commit msg / PR title 含「[skip-composition-fidelity]」(emergency only)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  composition-fidelity:
+    name: Composition Fidelity Diff
+    if: "!contains(github.event.head_commit.message, '[skip-composition-fidelity]') && !contains(github.event.pull_request.title, '[skip-composition-fidelity]')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout DS
+        uses: actions/checkout@v4
+        with:
+          path: design-system
+
+      - name: Checkout consumer (ds-product-template)
+        uses: actions/checkout@v4
+        with:
+          repository: ajenchen/ds-product-template
+          path: product-workspace
+          # If private, gh PAT — for public template, none needed.
+          # token: ${{ secrets.PW_REPO_PAT }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            design-system/package-lock.json
+            product-workspace/package-lock.json
+
+      - name: Install DS deps
+        working-directory: design-system
+        run: npm ci --legacy-peer-deps
+
+      - name: Install PW deps
+        working-directory: product-workspace
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright chromium (DS)
+        working-directory: design-system
+        run: npx playwright install --with-deps chromium
+
+      - name: Build DS storybook-static
+        working-directory: design-system
+        run: npm run build-storybook
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Build PW storybook-static
+        working-directory: product-workspace
+        run: npm run build-storybook
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Run composition-fidelity diff
+        working-directory: design-system
+        run: |
+          node scripts/composition-fidelity-visual-diff.mjs \
+            --ds-static=storybook-static \
+            --consumer-static=../product-workspace/storybook-static \
+            --consumer-root=../product-workspace \
+            --threshold-pct=0.5 \
+            --out=.claude/snapshots/composition-fidelity
+
+      - name: Upload diff artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: composition-fidelity-artifacts
+          path: |
+            design-system/.claude/snapshots/composition-fidelity/baseline/
+            design-system/.claude/snapshots/composition-fidelity/consumer/
+            design-system/.claude/snapshots/composition-fidelity/diff/
+            design-system/.claude/snapshots/composition-fidelity/report.json
+          retention-days: 14
+
+      - name: Comment PR with drift summary
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const reportPath = 'design-system/.claude/snapshots/composition-fidelity/report.json'
+            if (!fs.existsSync(reportPath)) return
+            const report = JSON.parse(fs.readFileSync(reportPath, 'utf-8'))
+            const fails = (report.results || []).filter(r => r.status === 'FAIL' || r.status === 'SIZE_MISMATCH' || r.status === 'TIMEOUT')
+            if (fails.length === 0) return
+            const rows = fails.map(r => `| \`${r.consumerStoryId}\` | \`${r.baselineStoryId}\` | ${r.status} | ${r.diffPct ?? '—'}% | ${r.threshold ?? '—'}% |`).join('\n')
+            const body = `## ⚠️ Composition fidelity drift detected (${fails.length} mapping(s))\n\n| Consumer story | DS baseline | Status | Diff % | Threshold |\n|---|---|---|---|---|\n${rows}\n\n**Action**:download \`composition-fidelity-artifacts\` from this run to view baseline/consumer/diff PNGs. Fix consumer composition (or update threshold if intentional via \`@composition-fidelity-threshold: <pct>\` marker).`
+            github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body })

@@ -56,9 +56,9 @@ if [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
    Local installed: $LOCAL_VERSION
    Latest published: $REMOTE_VERSION
 
-Run in Claude Code to refresh:
-  /plugin marketplace update github:ajenchen/design-system
-  /plugin install design-system@qijenchen-ds
+Run in terminal (1 command):
+  npm run sync-all  # npm + plugin marketplace + plugin install + restart prompt
+
 
 (Per user 2026-05-27 directive「DS 增刪改自動同步」— this hook detects staleness on session start.)
 
