@@ -1,8 +1,8 @@
 {
   "name": "@qijenchen/design-system",
-  "version": "0.1.0-beta.25",
+  "version": "0.1.0-beta.26",
   "private": false,
-  "description": "World-class design system \u2014 components, patterns, tokens, hooks (single source of truth for team distribution).",
+  "description": "World-class design system — components, patterns, tokens, hooks (single source of truth for team distribution).",
   "type": "module",
   "license": "UNLICENSED",
   "files": [
