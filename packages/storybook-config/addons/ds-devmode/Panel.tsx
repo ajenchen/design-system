@@ -21,6 +21,16 @@ const ThemeStyleInjector: React.FC = () => (
   `}</style>
 )
 
+const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
+  padding: '3px 10px',
+  cursor: 'pointer',
+  background: active ? 'rgba(0,101,234,0.15)' : 'transparent',
+  color: active ? '#0065EA' : 'var(--dm-fg, #1F2532)',
+  border: 0,
+  fontWeight: active ? 600 : 400,
+  fontFamily: 'inherit',
+})
+
 const styles: Record<string, React.CSSProperties> = {
   root: {
     padding: '12px 16px',
@@ -106,15 +116,6 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     fontSize: 11,
   },
-  toggleBtn: (active: boolean): React.CSSProperties => ({
-    padding: '3px 10px',
-    cursor: 'pointer',
-    background: active ? 'rgba(0,101,234,0.15)' : 'transparent',
-    color: active ? '#0065EA' : 'var(--dm-fg, #1F2532)',
-    border: 0,
-    fontWeight: active ? 600 : 400,
-    fontFamily: 'inherit',
-  }),
   code: {
     background: 'var(--sb-bg-subtle, rgba(0,0,0,0.04))',
     border: '1px solid rgba(128,128,128,0.2)',
@@ -623,9 +624,9 @@ export const DsDevmodePanel: React.FC<{ active: boolean }> = ({ active }) => {
       <div style={styles.modeRow}>
         <strong style={{ fontSize: 12 }}>DS Devmode</strong>
         <div style={styles.toggle} role="group" aria-label="Inspect mode">
-          <button style={styles.toggleBtn(mode === 'off')} onClick={() => setModeAndBroadcast('off')}>Off</button>
-          <button style={styles.toggleBtn(mode === 'live')} onClick={() => setModeAndBroadcast('live')}>Live</button>
-          <button style={styles.toggleBtn(mode === 'pin')} onClick={() => setModeAndBroadcast('pin')} disabled={!payload}>Pin</button>
+          <button style={toggleBtnStyle(mode === 'off')} onClick={() => setModeAndBroadcast('off')}>Off</button>
+          <button style={toggleBtnStyle(mode === 'live')} onClick={() => setModeAndBroadcast('live')}>Live</button>
+          <button style={toggleBtnStyle(mode === 'pin')} onClick={() => setModeAndBroadcast('pin')} disabled={!payload}>Pin</button>
         </div>
         <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--dm-fg-muted, #65727F)' }}>
           Alt+I toggle · Esc unpin · ↑↓←→ DOM · <b style={{ color: '#EC4436' }}>hover 別元素 = 量距</b> · H 暫清 · 觸控 tap pin
@@ -648,7 +649,7 @@ export const DsDevmodePanel: React.FC<{ active: boolean }> = ({ active }) => {
           {payload.breadcrumb && payload.breadcrumb.length > 1 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginBottom: 8, fontSize: 10, color: 'var(--dm-fg-muted, #65727F)' }}>
               {payload.breadcrumb.map((crumb, i) => {
-                const isLast = i === payload.breadcrumb.length - 1
+                const isLast = i === (payload.breadcrumb?.length ?? 0) - 1
                 const label = `${crumb.tag}${crumb.id ? `#${crumb.id}` : ''}${crumb.className ? `.${String(crumb.className).split(/\s+/).filter(Boolean)[0]}` : ''}`
                 return (
                   <React.Fragment key={i}>
@@ -719,10 +720,10 @@ export const DsDevmodePanel: React.FC<{ active: boolean }> = ({ active }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 10, color: 'var(--dm-fg-muted, #65727F)' }}>:state</span>
               <div style={styles.toggle} role="group" aria-label="Force pseudo-class state">
-                <button style={styles.toggleBtn(forceState === 'none')} onClick={() => setForceStateAndBroadcast('none')}>none</button>
-                <button style={styles.toggleBtn(forceState === 'hover')} onClick={() => setForceStateAndBroadcast('hover')}>:hover</button>
-                <button style={styles.toggleBtn(forceState === 'focus')} onClick={() => setForceStateAndBroadcast('focus')}>:focus</button>
-                <button style={styles.toggleBtn(forceState === 'active')} onClick={() => setForceStateAndBroadcast('active')}>:active</button>
+                <button style={toggleBtnStyle(forceState === 'none')} onClick={() => setForceStateAndBroadcast('none')}>none</button>
+                <button style={toggleBtnStyle(forceState === 'hover')} onClick={() => setForceStateAndBroadcast('hover')}>:hover</button>
+                <button style={toggleBtnStyle(forceState === 'focus')} onClick={() => setForceStateAndBroadcast('focus')}>:focus</button>
+                <button style={toggleBtnStyle(forceState === 'active')} onClick={() => setForceStateAndBroadcast('active')}>:active</button>
               </div>
               {forceState !== 'none' && (
                 <span
@@ -779,7 +780,7 @@ export const DsDevmodePanel: React.FC<{ active: boolean }> = ({ active }) => {
                 }}
               />
               <button
-                style={{ ...styles.toggleBtn(false), padding: '3px 8px' }}
+                style={{ ...toggleBtnStyle(false), padding: '3px 8px' }}
                 onClick={(e) => {
                   const input = (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement)
                   const v = input?.value.trim()
@@ -787,7 +788,7 @@ export const DsDevmodePanel: React.FC<{ active: boolean }> = ({ active }) => {
                 }}
               >Highlight</button>
               <button
-                style={{ ...styles.toggleBtn(false), padding: '3px 8px' }}
+                style={{ ...toggleBtnStyle(false), padding: '3px 8px' }}
                 onClick={() => emit(EVENTS.HOTMAP_CLEAR)}
               >Clear</button>
             </div>
@@ -831,8 +832,8 @@ export const DsDevmodePanel: React.FC<{ active: boolean }> = ({ active }) => {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14 }}>
             <div style={styles.toggle} role="group" aria-label="View">
-              <button style={styles.toggleBtn(view === 'list')} onClick={() => setView('list')}>List</button>
-              <button style={styles.toggleBtn(view === 'code')} onClick={() => setView('code')}>Code</button>
+              <button style={toggleBtnStyle(view === 'list')} onClick={() => setView('list')}>List</button>
+              <button style={toggleBtnStyle(view === 'code')} onClick={() => setView('code')}>Code</button>
             </div>
             <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--dm-fg-muted, #65727F)' }}>CSS</span>
           </div>
@@ -845,7 +846,7 @@ export const DsDevmodePanel: React.FC<{ active: boolean }> = ({ active }) => {
                 <button
                   style={styles.copy}
                   onClick={() => {
-                    const text = payload.authorCss
+                    const text = (payload.authorCss ?? [])
                       .map(d => d.rawValue === d.resolved ? `${d.property}: ${d.rawValue};` : `${d.property}: ${d.rawValue}; /* → ${d.resolved} */`)
                       .join('\n')
                     copyText(text)

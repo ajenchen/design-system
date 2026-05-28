@@ -1,14 +1,13 @@
 {
   "name": "@qijenchen/storybook-config",
-  "version": "0.1.0-beta.27",
+  "version": "0.1.0-beta.28",
   "private": false,
   "description": "Shared Storybook config (addons preset + preview parameters + decorators) for design-system + consumer products. Single SSOT for storybook UX.",
   "type": "module",
   "license": "UNLICENSED",
   "files": [
     "dist",
-    "README.md",
-    "addons"
+    "README.md"
   ],
   "exports": {
     ".": {
@@ -29,9 +28,24 @@
       "require": "./dist/preview.js",
       "default": "./dist/preview.js"
     },
-    "./addons/ds-devmode/preset": "./addons/ds-devmode/preset.ts",
-    "./addons/ds-devmode/manager": "./addons/ds-devmode/manager.tsx",
-    "./addons/ds-devmode/preview": "./addons/ds-devmode/preview.ts"
+    "./addons/ds-devmode/preset": {
+      "types": "./dist/addons/ds-devmode/preset.d.ts",
+      "import": "./dist/addons/ds-devmode/preset.js",
+      "require": "./dist/addons/ds-devmode/preset.js",
+      "default": "./dist/addons/ds-devmode/preset.js"
+    },
+    "./addons/ds-devmode/manager": {
+      "types": "./dist/addons/ds-devmode/manager.d.ts",
+      "import": "./dist/addons/ds-devmode/manager.js",
+      "require": "./dist/addons/ds-devmode/manager.js",
+      "default": "./dist/addons/ds-devmode/manager.js"
+    },
+    "./addons/ds-devmode/preview": {
+      "types": "./dist/addons/ds-devmode/preview.d.ts",
+      "import": "./dist/addons/ds-devmode/preview.js",
+      "require": "./dist/addons/ds-devmode/preview.js",
+      "default": "./dist/addons/ds-devmode/preview.js"
+    }
   },
   "main": "./dist/preview.js",
   "types": "./dist/preview.d.ts",

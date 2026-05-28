@@ -51,8 +51,9 @@ export interface InspectPayload {
     /** 'author' = 從 source stylesheet/inline 抓的(可信);'speculative' = reverse-lookup 候選(同值多 token 推測,可能 misleading) */
     source: 'author' | 'speculative'
   }>
-  /** Element ancestor chain(html → body → ... → element)。Click 任一 breadcrumb 可 pin parent。Chrome DevTools idiom。 */
-  breadcrumb: Array<{
+  /** Element ancestor chain(html → body → ... → element)。Click 任一 breadcrumb 可 pin parent。Chrome DevTools idiom。
+   * Optional: filled in Stage 2 by preview build pipeline,measureElement raw geometry pass 不填。 */
+  breadcrumb?: Array<{
     tag: string
     id: string
     className: string
@@ -64,7 +65,7 @@ export interface InspectPayload {
    * Property → { rawValue (author 原文)/ resolved (browser computed) / tokens
    * (var token names) / fromSelector (哪 rule)}。
    */
-  authorCss: Array<{
+  authorCss?: Array<{
     property: string
     rawValue: string
     resolved: string
@@ -74,9 +75,9 @@ export interface InspectPayload {
   /** Sibling-to-sibling 距離(pin mode hover 另一元素時填)— 對齊 Panel canonical
    * invariant:canvas 小距離 hide label 時,user 仍能在 panel 讀數。null = 無 sibling
    * hover OR 兩元素 overlap / contain(不適用測距)。 */
-  siblingDistance: { horizontal: number | null; vertical: number | null } | null
+  siblingDistance?: { horizontal: number | null; vertical: number | null } | null
   /** Auto-layout context — element 是 flex / grid container 時填,讓 inspector 顯示 layout intent(對齊 Figma Inspect / Chrome layout panel idiom)。 */
-  autoLayout: {
+  autoLayout?: {
     display: 'flex' | 'grid' | null
     flexDirection?: string
     gap?: string

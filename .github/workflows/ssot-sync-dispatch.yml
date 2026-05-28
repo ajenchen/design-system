@@ -54,7 +54,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
           echo "Changed files since last push:"
           echo "$DIFF"
-      - name: Dispatch ds-ssot-changed event to product-workspace
+      - name: Dispatch ds-ssot-changed event to ds-product-template
         env:
           GH_TOKEN: ${{ secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
         run: |

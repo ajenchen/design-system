@@ -159,16 +159,16 @@ jobs:
           prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-next') }}
 
       # 2026-05-27 Q3 — Immediate cross-repo sync(per user 2026-05-27 codex collab Q3):
-      # Renovate weekly 不夠 → DS publish 後 repository_dispatch immediate trigger product-workspace
+      # Renovate weekly 不夠 → DS publish 後 repository_dispatch immediate trigger ds-product-template
       # → fork user 24h 內收到 new beta auto-PR(非 weekly cron)
-      - name: Dispatch product-workspace sync(immediate cross-repo propagation)
+      - name: Dispatch ds-product-template sync(immediate cross-repo propagation)
         if: startsWith(github.ref, 'refs/tags/v') && success()
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
-          echo "Dispatching ds-published event to product-workspace, version=$VERSION"
+          echo "Dispatching ds-published event to ds-product-template, version=$VERSION"
           gh api repos/ajenchen/ds-product-template/dispatches \
             -f "event_type=ds-published" \
             -f "client_payload[version]=$VERSION" \
@@ -223,14 +223,14 @@ jobs:
   notify-consumers:
     # 2026-05-25 Phase 4.13 — Cross-repo immediate SSOT sync(per user 永久 directive
     # 「任何 ds repo 增刪改,package 該同步的都應該自動自主同步,不需要耳提面命」)
-    # DS publish 成功後立即 dispatch `design-system-published` event 給 product-workspace,
-    # product-workspace 自己的 sync-design-system.yml workflow 接收 event → 自動 npm update + commit + push
+    # DS publish 成功後立即 dispatch `design-system-published` event 給 ds-product-template,
+    # ds-product-template 自己的 sync-design-system.yml workflow 接收 event → 自動 npm update + commit + push
     # → Netlify auto-rebuild。免 Dependabot 24h daily 延遲,真即時同步。
     #
     # Pre-req:user 需 GitHub Settings → Secrets → Actions 加 `CROSS_REPO_TOKEN` PAT
     #   (https://github.com/settings/tokens → Fine-grained,scope: repo:write to ajenchen/ds-product-template)
     # 沒設此 secret 此 job 會 skip(if guard)+ Dependabot daily 仍 fallback。
-    name: Notify product-workspace(immediate sync)
+    name: Notify ds-product-template(immediate sync)
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: release
     runs-on: ubuntu-latest
@@ -247,7 +247,7 @@ jobs:
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Dispatch design-system-published event to product-workspace
+      - name: Dispatch design-system-published event to ds-product-template
         if: steps.check.outputs.skip == 'false'
         uses: peter-evans/repository-dispatch@v3
         with:

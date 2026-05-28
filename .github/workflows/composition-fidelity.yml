@@ -1,7 +1,7 @@
 name: Composition Fidelity (DS canonical vs PW consumer visual diff)
 
 # 2026-05-27 ship per user 「mechanical 機制讓未來所有 DS components 在
-# product-workspace 渲染必跟 DS canonical 一致 可被驗證(byte-identity 不夠,visual diff)」
+# ds-product-template 渲染必跟 DS canonical 一致 可被驗證(byte-identity 不夠,visual diff)」
 #
 # 機制:
 # 1. Checkout DS + PW(via gh CLI or remote ref)
@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ajenchen/ds-product-template
-          path: product-workspace
+          path: ds-product-template
           # If private, gh PAT — for public template, none needed.
           # token: ${{ secrets.PW_REPO_PAT }}
 
@@ -55,14 +55,14 @@ jobs:
           cache: npm
           cache-dependency-path: |
             design-system/package-lock.json
-            product-workspace/package-lock.json
+            ds-product-template/package-lock.json
 
       - name: Install DS deps
         working-directory: design-system
         run: npm ci --legacy-peer-deps
 
       - name: Install PW deps
-        working-directory: product-workspace
+        working-directory: ds-product-template
         run: npm ci --legacy-peer-deps
 
       - name: Install Playwright chromium (DS)
@@ -76,7 +76,7 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Build PW storybook-static
-        working-directory: product-workspace
+        working-directory: ds-product-template
         run: npm run build-storybook
         env:
           NODE_OPTIONS: --max-old-space-size=4096
@@ -86,8 +86,8 @@ jobs:
         run: |
           node scripts/composition-fidelity-visual-diff.mjs \
             --ds-static=storybook-static \
-            --consumer-static=../product-workspace/storybook-static \
-            --consumer-root=../product-workspace \
+            --consumer-static=../ds-product-template/storybook-static \
+            --consumer-root=../ds-product-template \
             --threshold-pct=0.5 \
             --out=.claude/snapshots/composition-fidelity
 
