@@ -156,14 +156,10 @@ npm run setup:netlify            # CLI + site + 印 password dashboard URL
 # 開瀏覽器點 Save password → done
 ```
 
-**Cloud-dev 模式**(GitHub Codespaces,全雲端):
-```bash
-# 在 GitHub 你的 fork → Code → Codespaces → Create
-npm install -g @anthropic-ai/claude-code
-claude                            # governance hooks 全 fire
-npm install
-npm run setup:netlify
-```
+**Cloud-dev 模式**(3 path 選一):
+- **Path 1 推薦** — Claude Code 直連 fork repo(sandbox 自動 clone + governance 跑):從 claude.ai/code 或 Claude 桌面新增 GitHub repo → sandbox 內直接 `claude` 跑 + `npm install` + 寫 code + push。**user 目前工作流,零地端**
+- **Path 2** — GitHub Codespaces(`.devcontainer/` 已 ship):fork → Code → Codespaces → Create → container 自動裝齊
+- **Path 3** — 本地 `git clone` + `npm install` + `claude`
 
 **Claude DO NOT**:假設 user 已知 Netlify / 跳過 onboarding 直接寫 code / 沒解釋就要 user 跑 setup 命令 / 嘗試「fully headless password 設定」(Netlify CLI 不支援,做不到)/ 推薦 Identity(已 deprecated)。
 

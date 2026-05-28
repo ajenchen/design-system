@@ -133,23 +133,24 @@ Then plugin auto-enables (`.claude/settings.json` `defaultMode: "auto"`). You ge
 - Import only from public surface: `@qijenchen/design-system` top barrel,`@qijenchen/design-system/styles/tokens`,`@qijenchen/design-system/hooks/<name>`
 - Run `npm run lint:imports` before commit to catch internal-path leaks
 
-## Cloud-dev path(全雲端,免本地 Node / Claude Code)— **2026-05-29 ship `.devcontainer/`**
+## Cloud-dev paths(全雲端,3 條路選一條走)
 
-GitHub Codespaces 跑得動全套,且本 repo 已 ship `.devcontainer/devcontainer.json`,**Container 起來自動裝齊**:Node 22 + gh CLI + jq + `@anthropic-ai/claude-code` + `netlify-cli` + Tailwind / ESLint / Prettier VS Code extensions + `npm install`。
+**Path 1 — Claude Code 直連 repo(推薦,真正零地端依賴)**:在 claude.ai/code(或 Claude 桌面 / VS Code extension)直接連你的 GitHub fork repo;Claude 把 repo clone 進 ephemeral sandbox,所有 governance hooks + skills + npm + git ops 在 sandbox 內跑。寫完 commit / push 回 GitHub。**這是 user 目前實際工作流**;不需要 Codespaces 也不需本地 IDE。
 
-**3 step 上工**:
-1. Fork 本 repo(GitHub「Use this template」按鈕)
-2. 你的 fork repo → `<> Code` → **Codespaces** tab → **Create codespace on main**(等 ~2 min 環境裝完)
-3. Codespace terminal 自動顯示中文 onboard banner,跟著做:
-   ```bash
-   claude                                                         # ① 啟動 Claude Code(governance hooks 全 fire)
-   # 內輸: /plugin marketplace add github:ajenchen/design-system    # ② 拿 DS 治理 plugin
-   # 內輸: /plugin install design-system@qijenchen-ds                #    啟用 22 skills + 59 hooks
-   npm run setup:netlify                                          # ③ Netlify OAuth + 印 dashboard URL
-   # 開瀏覽器點 Visitor access → Basic protection → 輸 password → Save
-   ```
+**Path 2 — GitHub Codespaces(2026-05-29 ship `.devcontainer/`,給不用 Claude Code 直連的 user)**:fork repo → `<> Code → Codespaces → Create codespace on main` → container 自動裝 Node 22 + gh CLI + jq + `@anthropic-ai/claude-code` + `netlify-cli` + Tailwind / ESLint / Prettier ext + `npm install`(via `postCreateCommand`)。Terminal 自動顯示中文 onboard banner。免費 60h/月。
 
-寫 code / commit / push 都在 browser 內完成。Codespaces 免費 60h/月,小團隊 / hobby 夠用;超量走 GitHub Pro $4/mo。
+**Path 3 — 本地**:`git clone` + `npm install` + `claude`(本地 macOS/Linux/WSL)。
+
+**3 path 共通 3 step 上工**(無論在 sandbox / Codespaces / 本地 都一樣):
+```bash
+claude                                                         # ① 啟動 Claude Code
+# 內輸: /plugin marketplace add github:ajenchen/design-system    # ② 拿 DS 治理 plugin
+# 內輸: /plugin install design-system@qijenchen-ds                #    啟用 22 skills + 59 hooks
+npm run setup:netlify                                          # ③ Netlify OAuth + 印 dashboard URL
+# 開瀏覽器點 Visitor access → Basic protection → 輸 password → Save
+```
+
+Deploy URL 在 push 後 hook `inject_deploy_url_after_push.sh` 自動 inject 進 Claude reply(`https://<branch>--<owner>-<repo>.netlify.app` 推導 + curl 200 verify + Storybook content sniff)。
 
 ## Storybook deploy(無需 GitHub secret)
 
