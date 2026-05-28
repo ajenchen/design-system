@@ -43,7 +43,7 @@ run_hook() {
 # Test 1:apps/** tsx wrap <Sidebar> 無 canonical read → soft BLOCKER context
 echo "Test 1: apps/** wrap <Sidebar> 無 canonical read → context inject"
 CONTENT='import { Sidebar } from "@qijenchen/design-system"; export default () => <Sidebar collapsible="icon" />'
-run_hook "/tmp/product-workspace/apps/_template/src/App.tsx" "$CONTENT" "$TMP_TRANSCRIPT"
+run_hook "/tmp/ds-product-template/apps/template/src/App.tsx" "$CONTENT" "$TMP_TRANSCRIPT"
 if echo "$STDERR_TEXT" | grep -q "M29 DS Anchor Preflight"; then
   echo "  PASS  Test 1"; PASS=$((PASS+1))
 else
@@ -53,7 +53,7 @@ fi
 
 # Test 2:有 canonical Grep trace → silent
 echo "Test 2: wrap <Sidebar> 有 Grep canonical → silent"
-run_hook "/tmp/product-workspace/apps/_template/src/App.tsx" "$CONTENT" "$TMP_TRANSCRIPT_WITH_READ"
+run_hook "/tmp/ds-product-template/apps/template/src/App.tsx" "$CONTENT" "$TMP_TRANSCRIPT_WITH_READ"
 if [ -z "$STDERR_TEXT" ]; then
   echo "  PASS  Test 2"; PASS=$((PASS+1))
 else
