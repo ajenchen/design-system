@@ -64,7 +64,7 @@ cat <<EOF
   2. \`/plugin install design-system@qijenchen-ds\`(or 對應 plugin name per marketplace.json)
 
 跑完 plugin install 後:
-  - 30+ DS governance hooks 自動 fire(M29 anchor preflight / approval-preflight / story_invariants 等)
+  - 59 個 DS governance hooks 自動 fire(M29 anchor preflight / approval-preflight / story_invariants / inject_deploy_url_after_push 等;count snapshot 2026-05-29)
   - DS canonical / rules / skills 從 ~/.claude/plugins/ 可 cross-load
   - Fork-user 寫 App.tsx 時憑記憶寫 mock 會被 mechanical BLOCKER 攔
 
