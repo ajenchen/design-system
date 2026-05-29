@@ -5,6 +5,7 @@
 - [project_goal.md](project_goal.md) — World-class DS where CLAUDE.md + specs ensure AI faithfully executes design principles
 
 ## Feedback (workflow / collaboration discipline)
+- [feedback_m31_phaseA_first_and_autonomy_no_ask.md](feedback_m31_phaseA_first_and_autonomy_no_ask.md) — M31 Phase-A-first(codex=second opinion,Claude 必先自己 Phase A,跑 script ≠ Phase A)+ auto mode 只為 SSOT-UI/UX ASK 其他自己 pick best(2026-05-29,hook backstop)
 - [feedback_codex_dual_track_synthesizer.md](feedback_codex_dual_track_synthesizer.md) — Codex collab 永遠 dual-track:Claude own + codex own + 比稿 synthesize
 - [feedback_codex_collab_2026_05_23_directives.md](feedback_codex_collab_2026_05_23_directives.md) — Codex brief 三 invariant + 「trust 自己」真意=dual-track NOT skip + ASK gate 嚴格 + triple-verify(2026-05-23,合 3 file)
 - [feedback_audit_discipline_full_sweep_deterministic_preflight.md](feedback_audit_discipline_full_sweep_deterministic_preflight.md) — 稽核三 invariant:NO-SAMPLE 全盤 / 必 chain deterministic script / Preflight scan(合 3 file)
