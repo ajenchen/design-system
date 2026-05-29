@@ -85,6 +85,7 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 | **寫 story / 視覺 code** | `/story-writing` + `# SSOT 消費 canonical` |
 | **命名新檔 / 變數 / prop** | `# 命名與語言一致性` + `.claude/rules/ui-development.md`「元件 Props 命名」 |
 | **新元件 layout** | `# 4-Family Layout Model` |
+| **建產品 / 開新 product app** | `npm run create-app <name>` → `apps/<name>/`(2026-05-29 monorepo 2-scenario arch:DS repo = SSOT,Scenario A 直 fork DS 在 `apps/<name>/` 開發,Scenario B fork `ds-product-template` 用 mirror artifact,scaffold source 統一 `apps/template/`)|
 | **新 skill / hook / command** | `.claude/{home}/README.md` charter |
 | **無前例設計決策** | `# 遇不確定時的協議` |
 | **Tailwind 出怪事** | `.claude/rules/ui-development.md`「Tailwind 5 條核心」+ `# 失敗記憶索引` |
