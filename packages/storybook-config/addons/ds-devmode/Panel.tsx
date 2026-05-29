@@ -1,3 +1,6 @@
+/** @jsxRuntime classic */
+// classic JSX(React.createElement,用 externalize 的 manager React)而非 react/jsx-runtime(解析到專案第二份 React)
+// → 修 consumer manager React #31。詳 manager.tsx 檔頭。(2026-05-29)
 import React from 'react'
 import { useChannel } from '@storybook/manager-api'
 import { EVENTS, type InspectPayload, type DevmodeMode, type ForceState } from './constants'

@@ -1,3 +1,8 @@
+/** @jsxRuntime classic */
+// classic JSX(React.createElement)而非 react/jsx-runtime:manager addon 在 consumer(非 monorepo)
+// Storybook build 中,`react` 被 externalize 到 manager 自身 React,但 `react/jsx-runtime` 會解析到
+// 專案另一份 React → 元素 $$typeof 不符 → Minified React error #31 整個故事檢視空白。
+// classic JSX 用已 externalize 的 React.createElement → 單一 React。(2026-05-29 fix:fork template 故事檢視空白 root cause)
 import React from 'react'
 import { addons, types, useChannel } from '@storybook/manager-api'
 import { IconButton } from '@storybook/components'
