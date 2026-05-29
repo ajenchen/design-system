@@ -9,7 +9,7 @@
     "6006": { "label": "Storybook", "onAutoForward": "openPreview" },
     "5173": { "label": "Vite Dev", "onAutoForward": "notify" }
   },
-  "postCreateCommand": "npm ci && node scripts/sync-memory.mjs --reverse",
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y jq && npm install -g @anthropic-ai/claude-code netlify-cli && npm ci && node scripts/sync-memory.mjs --reverse && bash .devcontainer/onboard-banner.sh",
   "customizations": {
     "vscode": {
       "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]

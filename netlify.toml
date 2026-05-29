@@ -10,3 +10,15 @@
 
 # Per-branch deploy previews 預設啟用(任何 branch push → 自動 preview URL)
 # Production deploy 走 main(production URL = 永遠最新 main 的 storybook)
+
+# 2026-05-30:noindex/access-control headers(對齊 template netlify.toml parity)。
+# DS Storybook 的 .storybook/main.ts glob `../apps/**/*.stories.@(tsx|mdx)` → 公開暴露 apps/** 內部 product UI;
+# 無此 header 則 preview + production deploy 會被搜尋引擎收錄(內部 UI SEO leak)。
+# 真擋陌生人仍靠 Netlify Basic Password(per template「Access control」段);此 header 只防搜尋引擎索引。
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"

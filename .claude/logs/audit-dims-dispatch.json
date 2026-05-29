@@ -1,7 +1,7 @@
 {
-  "generated": "2026-05-29T18:03:43.013Z",
+  "generated": "2026-05-29T23:51:25.004Z",
   "ssotSource": ".claude/skills/design-system-audit/SKILL.md",
-  "total": 83,
+  "total": 87,
   "groups": {
     "A": {
       "name": "Correctness (bug-class guards, P0 priority)",
@@ -164,6 +164,15 @@
         81,
         82,
         83
+      ]
+    },
+    "Q": {
+      "name": "Fork-shipped packaging integrity(2026-05-30 加 per user「打包給 template/fork 的所有東西都應被稽核正確無誤且如預期可用」)",
+      "dims": [
+        84,
+        85,
+        86,
+        87
       ]
     }
   },
@@ -665,6 +674,30 @@
       "title": "Fork-context runtime + naming SSOT",
       "group": "P",
       "groupName": "World-class tier(2026-05-17 加,codex 共識)"
+    },
+    {
+      "n": 84,
+      "title": "Mirror-build integrity + 2-scenario E2E",
+      "group": "Q",
+      "groupName": "Fork-shipped packaging integrity(2026-05-30 加 per user「打包給 template/fork 的所有東西都應被稽核正確無誤且如預期可用」)"
+    },
+    {
+      "n": 85,
+      "title": "ds-canonical npm mirror 新鮮度",
+      "group": "Q",
+      "groupName": "Fork-shipped packaging integrity(2026-05-30 加 per user「打包給 template/fork 的所有東西都應被稽核正確無誤且如預期可用」)"
+    },
+    {
+      "n": 86,
+      "title": "Plugin manifest + symlink-vs-source 一致",
+      "group": "Q",
+      "groupName": "Fork-shipped packaging integrity(2026-05-30 加 per user「打包給 template/fork 的所有東西都應被稽核正確無誤且如預期可用」)"
+    },
+    {
+      "n": 87,
+      "title": "Scaffold 可建性 dogfood prepublish gate",
+      "group": "Q",
+      "groupName": "Fork-shipped packaging integrity(2026-05-30 加 per user「打包給 template/fork 的所有東西都應被稽核正確無誤且如預期可用」)"
     }
   ],
   "heavyDims": [
@@ -688,8 +721,8 @@
     "mandatoryAntiSampleContract": "\n🚨 MANDATORY ANTI-SAMPLE CONTRACT(2026-05-23 user verbatim「所有稽核都要完整執行不要再抽樣」):\n\n每 dim 必走 anti-sample 機制(tier per scripts/audit-coverage-matrix.mjs):\n\n1. DETERMINISTIC tier:**MUST chain** 對應 script,output 含「N files scanned / 0 violations」cite。**禁** sub-agent 自寫 grep 替代 script。\n2. HOOK-ENFORCED tier:write-time hook 已 enforce。Audit-time report 必 grep DS-wide 確認 0 hook fire residue。\n3. PURE-JUDGMENT tier:LLM 必 DS-wide ALL files enumerate(eg. 全 82 spec.md / 全 196 stories / 全 62 components),report header 必含「Total file scanned: N」+ per-finding file:line cite。\n\n**絕對禁**(任一觸發 = audit incomplete,需 reject + restart):\n- ❌「sampled Button only」/「spot-checked」/「representative sample」/「I sampled」 sub-agent admission\n- ❌ Audit report claim「Dim N CLEAN」無 N-files-scanned cite + 無 deterministic script chain output\n- ❌「too many for exhaustive」/「heavy too many」/「context budget」 deferral excuse\n- ❌「sample top N」 dispatch prompt clause\n\n**通過 contract test**:report 必含 per-dim 2 行 — 「Tier: DETERMINISTIC/HOOK/JUDGMENT」+「Coverage: N files / scope」。\n",
     "suggestedBatches": [
       {
-        "range": "1-28",
-        "count": 28,
+        "range": "1-29",
+        "count": 29,
         "dimNumbers": [
           1,
           2,
@@ -718,7 +751,8 @@
           25,
           26,
           27,
-          28
+          28,
+          29
         ],
         "heavyDimsInBatch": [
           12,
@@ -728,10 +762,9 @@
         "groupSpan": "A+B+C+D+E+F+G+H+I+J+K+L"
       },
       {
-        "range": "29-56",
-        "count": 28,
+        "range": "30-58",
+        "count": 29,
         "dimNumbers": [
-          29,
           30,
           31,
           32,
@@ -758,7 +791,9 @@
           53,
           54,
           55,
-          56
+          56,
+          57,
+          58
         ],
         "heavyDimsInBatch": [
           40,
@@ -775,11 +810,9 @@
         "groupSpan": "L+M+N+O+P"
       },
       {
-        "range": "57-83",
-        "count": 27,
+        "range": "59-87",
+        "count": 29,
         "dimNumbers": [
-          57,
-          58,
           59,
           60,
           61,
@@ -804,10 +837,14 @@
           80,
           81,
           82,
-          83
+          83,
+          84,
+          85,
+          86,
+          87
         ],
         "heavyDimsInBatch": [],
-        "groupSpan": "P"
+        "groupSpan": "P+Q"
       }
     ]
   }
