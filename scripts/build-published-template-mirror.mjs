@@ -60,6 +60,11 @@ const ALLOWLIST = [
   'scripts/create-app.mjs',
   'scripts/setup-netlify-access.mjs',
   'scripts/check-plugin-installed.mjs',
+  // Consumer-side scripts(Phase 4 moved from template/ds-product-template/scripts/)
+  'scripts/audit-consumer-a11y.mjs',
+  'scripts/deploy-url.mjs',
+  'scripts/lint-ds-internal-imports.mjs',
+  'scripts/sync-all.mjs',
   // Cloud-dev path
   '.devcontainer',
   // Consumer-facing scaffold(template/ds-product-template/ 內)
