@@ -169,7 +169,7 @@ if [ -f "$FIRES_LOG" ] && [ -d "$TESTS_DIR" ]; then
   fi
 fi
 
-# Check 7: Hook count auto-trigger(soft 25 / hard 30 — Anthropic guideline ~15)
+# Check 7: Hook count auto-trigger(soft 26 / hard 60 — Anthropic guideline ~15;真值見下方 -gt 判斷 + CLAUDE.md `# 治理 canonical`)
 # 2026-05-09 fix:tree-recursive count(含 lib/ helpers)。前身 -maxdepth 1 只 count root,
 # 漏 16 個 lib/ helpers → metric reports 19,reality 35 = system gaming own metric。
 # 2026-05-13 prune consolidation:`_*.sh` 約定 = internal helper(Unix convention)。

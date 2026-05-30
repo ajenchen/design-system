@@ -38,11 +38,14 @@ CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content /
 if echo "$CONTENT" | grep -qE '@preset-cjs-skip:'; then exit 0; fi
 
 # Detect ESM/CJS interop antipatterns
+# 2026-05-30(dim 81 M7/M34 broad-vs-narrow fix):strip comments BEFORE keyword grep — 正確的 preset.ts
+# 會在 comment block 內「文件化」這些 anti-pattern(教學),raw-content grep 會假 BLOCK 合法 edit(ship 給 fork)。
+CONTENT_CODE=$(echo "$CONTENT" | grep -vE '^[[:space:]]*(//|\*|/\*|\*/)' | sed -E 's@//.*@@')
 ANTIPATTERN=""
-if echo "$CONTENT" | grep -qE 'createRequire|require\.resolve'; then
+if echo "$CONTENT_CODE" | grep -qE 'createRequire|require\.resolve'; then
   ANTIPATTERN="${ANTIPATTERN}  - createRequire / require.resolve(被 Node ESM scope 攔)\n"
 fi
-if echo "$CONTENT" | grep -qE 'fileURLToPath\s*\(\s*import\.meta\.url'; then
+if echo "$CONTENT_CODE" | grep -qE 'fileURLToPath\s*\(\s*import\.meta\.url'; then
   ANTIPATTERN="${ANTIPATTERN}  - fileURLToPath(import.meta.url)(同被 esbuild-register/ESM 衝突攔)\n"
 fi
 

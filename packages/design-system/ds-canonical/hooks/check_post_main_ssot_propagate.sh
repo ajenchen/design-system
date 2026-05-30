@@ -14,7 +14,7 @@
 #
 # SSOT-affecting paths(改這些 = consumer 需要 bump npm dep 才能拿到):
 #   - packages/design-system/src/**         (DS production code → npm package)
-#   - packages/storybook-config/src/**       (storybook addon config → npm package)
+#   - packages/storybook-config/{addons,addons-preset.ts,preview.tsx,package.json}  (storybook addon config → npm;無 src/ dir,真 regex 見 L56)
 #   - .claude/{rules,hooks,skills,commands,references}/** (governance plugin → ships via ds-canonical/)
 #   - .claude-plugin/{plugin,marketplace}.json (plugin metadata)
 #   - hooks/hooks.json                        (plugin hook registration)

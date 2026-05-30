@@ -5,7 +5,7 @@
  *   - DS tokens 必 import(component class 才能 resolve var(--token))
  *   - @source 指向 DS source(讓 Tailwind scan 到 DS 元件用的 utility classes 並 generate CSS)
  *
- * 跟 apps/_template/src/globals.css 同 pattern,但 path 從 .storybook/ 算起。
+ * 跟 apps/template/src/globals.css 同 pattern,但 path 從 .storybook/ 算起。
  */
 @import 'tailwindcss';
 @import '@qijenchen/design-system/styles/tokens';

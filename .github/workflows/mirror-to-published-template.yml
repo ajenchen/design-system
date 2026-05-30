@@ -29,6 +29,7 @@ on:
       - 'scripts/deploy-url.mjs'
       - 'scripts/lint-ds-internal-imports.mjs'
       - 'scripts/sync-all.mjs'
+      - 'scripts/verify-consumer-css-entry.mjs'
       - '.devcontainer/**'
       - 'template/ds-product-template/**'
       - 'package.json'

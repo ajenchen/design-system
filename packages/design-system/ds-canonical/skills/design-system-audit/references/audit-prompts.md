@@ -1,6 +1,6 @@
 # Audit Subagent Prompts(全 dim per `SKILL.md SSOT`)
 
-> **Count canonical**:本檔 dim 數對齊 `.claude/skills/design-system-audit/SKILL.md` `## The N audit dimensions` 表。歷史標題曾寫「22 audits」,已 deprecated — 真實 dim 數以 SKILL.md 為準,本檔每加 dim 必同步補 prompt section。`scripts/sync-governance-counters.mjs` 自動 cross-verify。
+> **Count canonical**:本檔 dim 數對齊 `.claude/skills/design-system-audit/SKILL.md` `## The N audit dimensions` 表。歷史標題曾寫「22 audits」,已 deprecated — 真實 dim 數以 SKILL.md 為準。Prompt section 對 PURE-JUDGMENT dims 必備;deterministic-script dims(eg. 84-88)無需 prompt(腳本即檢查)。**誠實註**:prompt 數**非**機械 count-verified(`sync-governance-counters.mjs` 不 parse 本檔)— 靠 audit dim 15 + Phase A 人工對齊(2026-05-30 修正前 frontmatter 誤稱有自動 cross-verify)。
 
 Each prompt is self-contained — designed to paste into an `Agent` call with `run_in_background: true` and `subagent_type: ds-dim-auditor`(registered agent since 2026-04-24;scoped Read/Grep/Glob only;fallback to `general-purpose` if agent not available)。
 
@@ -525,9 +525,9 @@ End: `Total issues found: M. Categories: [breakdown 1-10]`. Under 600 words. Don
 
 ---
 
-## Running all 22 in parallel
+## Running all dimensions in parallel(count per SKILL.md SSOT)
 
-Single message with 20 `Agent` tool calls, each with `run_in_background: true`. Expected wall time: 3-5 minutes for all to complete (they process in parallel server-side).
+Dispatch per `node scripts/dispatch-audit-dims.mjs --summary`(動態 batch plan,non-hardcoded)— 一 message 內每 batch 一個 `Agent` tool call,`run_in_background: true`。Heavy dims 各獨立 sub-agent。Expected wall time: 3-5 分鐘並行。
 
 After all return:
 - Consolidate findings per file with line numbers

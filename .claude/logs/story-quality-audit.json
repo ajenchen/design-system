@@ -1,8 +1,8 @@
 {
-  "ts": "2026-05-23T08:01:24.062Z",
+  "ts": "2026-05-30T01:23:25.962Z",
   "scope": {
-    "total_story_files": 199,
-    "manual_story_files": 75
+    "total_story_files": 196,
+    "manual_story_files": 72
   },
   "violations": {
     "title_canonical": [],
@@ -11,7 +11,7 @@
     "placeholder": []
   },
   "totals": {
-    "titles_scanned": 199,
-    "names_scanned": 356
+    "titles_scanned": 196,
+    "names_scanned": 352
   }
 }

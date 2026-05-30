@@ -165,8 +165,10 @@ case "$FILE_PATH" in
     case "$FILE_PATH" in
       */item-anatomy.tsx|*/field-wrapper.tsx|*.stories.tsx|*.test.*|*.spec.tsx) ;; # SSOT/test skip
       *)
+        # 2026-05-30(dim 39 M7/M34 fix):order-INDEPENDENT — extract className attrs,require ALL 4 tokens
+        # present(natural Tailwind 序 `flex items-center gap-2 shrink-0 h-[1lh]` 之前漏抓)。BSD/GNU grep 通用。
         if ! echo "$NEW_CONTENT" | grep -q '@row-slot-handcraft-allow' \
-           && echo "$NEW_CONTENT" | grep -E 'h-\[1lh\][^"]*shrink-0[^"]*flex[^"]*items-center|shrink-0[^"]*h-\[1lh\][^"]*flex[^"]*items-center|flex[^"]*items-center[^"]*h-\[1lh\][^"]*shrink-0' >/dev/null; then
+           && echo "$NEW_CONTENT" | grep -oE 'class(Name)?="[^"]*"' | grep -F 'h-[1lh]' | grep -F 'shrink-0' | grep -F 'flex' | grep -F 'items-center' >/dev/null 2>&1; then
           cat >&2 <<EOF
 
 ┄┄┄ C.4 check_pattern_invariants — row slot handcraft BLOCKER ┄┄┄
