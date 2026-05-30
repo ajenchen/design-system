@@ -47,9 +47,9 @@ benchmark:
 
 **Regex**:`^--color-(magenta|turquoise)-\d+$`
 
-### 3. Mask alpha(16 token,structural)
+### 3. Mask alpha(17 token,structural)
 
-**Rule**:`--black-aN` / `--white-aN`(alpha tiers a02-a85)完整保留。
+**Rule**:`--black-aN`(a02-a85,9 階)/ `--white-aN`(a04-a85,8 階)完整保留。
 
 **Why**:Overlay / scrim / shadow / disabled state alpha composition 預留;Material 3「Surface Tint」+ Apple HIG「Vibrancy」需要完整 alpha ladder。
 
@@ -85,13 +85,13 @@ benchmark:
 
 **Regex**:`^--(primary|error|success|warning|info)-(active|hover|text|subtle|emphasis|foreground|focus)$`
 
-### 8. JS literal mirror(2 token,structural)
+### 8. JS literal mirror(3 token,structural)
 
-**Rule**:`--hover-delay-{plain|rich|close|skip}` motion tokens 鏡像 JS constants(`HOVER_DELAY_PLAIN_MS` 等),CSS 端保留供 design SSOT 可見 + 未來 programmatic 讀取(`getComputedStyle`)。
+**Rule**:`--hover-delay-{plain|rich|close}` motion tokens 鏡像 JS constants(`HOVER_DELAY_PLAIN_MS` / `HOVER_DELAY_RICH_MS` / `HOVER_DELAY_CLOSE_MS`),CSS 端保留供 design SSOT 可見 + 未來 programmatic 讀取(`getComputedStyle`)。
 
 **Why**:M17 SSOT 雙頭設計 — CSS 端是設計師 inspector 入口,JS 端是 runtime 消費入口,兩端必同步存在。
 
-**Regex**:`^--hover-delay-(plain|rich|close|skip)$`
+**Regex**:`^--hover-delay-(plain|rich|close)$`
 
 ---
 

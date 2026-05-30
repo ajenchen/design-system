@@ -121,7 +121,7 @@ const PALETTE_HUES = '(amber|blue|brown|red|green|deep-orange|grey|indigo|lime|o
 const PALETTE_FULL = new RegExp(`^--color-${PALETTE_HUES}-\\d+$`)
 const PALETTE_STATE = new RegExp(`^--${PALETTE_HUES.replace('|magenta|turquoise', '|magenta|turquoise')}-(hover|active|focus|subtle|emphasis|disabled|text)$`)
 const SOP_SEMANTIC = /^--(primary|error|success|warning|info)-(active|hover|text|subtle|emphasis|foreground|focus)$/
-const SOP_HOVER_DELAY = /^--hover-delay-(plain|rich|close|skip)$/
+const SOP_HOVER_DELAY = /^--hover-delay-(plain|rich|close)$/
 
 for (const o of orphans) {
   if (PALETTE_FULL.test(o)) cat.palette.push(o)
