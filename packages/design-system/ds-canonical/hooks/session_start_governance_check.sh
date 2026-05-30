@@ -24,7 +24,10 @@ set -uo pipefail
 # Per-hook fire logging(enables /knowledge-prune D2 dead-hook detection)
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
-set -euo pipefail
+# 2026-05-30:移除 -e(對齊 L2 set -uo)。本 hook = 非阻塞 governance reminder,必永遠 exit 0;
+# set -e 會讓任何未 guard 的 command(eg. L38 grep no-match pipeline 在 node-missing degraded env)
+# 殺掉整個 session-start hook。fail-open > fail-closed。adversarial-verify 2026-05-30 抓出此真 bug。
+set -uo pipefail
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 cd "$PROJECT_DIR" || exit 0
@@ -35,7 +38,7 @@ cd "$PROJECT_DIR" || exit 0
 # Memory sync = harness ↔ repo mirror auto-fix-up,not blocking,always exit 0。
 if [ -f scripts/sync-memory.mjs ]; then
   SYNC_OUT=$(node scripts/sync-memory.mjs 2>&1 || true)
-  COPIED=$(echo "$SYNC_OUT" | grep -oE 'copied: [0-9]+' | grep -oE '[0-9]+' | head -1)
+  COPIED=$(echo "$SYNC_OUT" | grep -oE 'copied: [0-9]+' | grep -oE '[0-9]+' | head -1 || true)
   # COPIED > 0 → 加入 REMINDERS(下面 main flow inject)
   if [ -n "$COPIED" ] && [ "$COPIED" -gt 0 ]; then
     MEMSYNC_NOTE="\n- 🔄 auto sync-memory(SessionStart): harness → repo mirrored ${COPIED} memory file(s)。"
