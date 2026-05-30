@@ -37,13 +37,13 @@ interface PartSpec {
 
 const PARTS: Record<PartKey, PartSpec> = {
   caption:      { label: '月份標題',    bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: 'text-body font-medium' },
-  nav:          { label: 'Nav 按鈕',    bg: 'transparent',     text: '--fg-muted',    border: 'transparent', extra: 'h-7 w-7 rounded-md · hover: bg-neutral-hover' },
-  weekday:      { label: '星期標頭',    bg: 'transparent',     text: '--fg-muted',    border: 'transparent', extra: 'text-caption · w-9 h-8' },
-  day:          { label: '日格(default)', bg: 'transparent',   text: '--foreground',  border: 'transparent', extra: 'h-9 w-9 rounded-md' },
+  nav:          { label: 'Nav 按鈕',    bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: 'Button variant=text size=xs iconOnly · hover 藍圈' },
+  weekday:      { label: '星期標頭',    bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: 'text-body font-medium · h-7' },
+  day:          { label: '日格(default)', bg: 'transparent',   text: '--foreground',  border: 'transparent', extra: 'h-field-sm w-field-sm rounded-full' },
   daySelected:  { label: 'Selected',     bg: '--primary',       text: 'white',         border: 'transparent' },
-  dayToday:     { label: 'Today(未選)', bg: 'transparent',     text: '--foreground',  border: '--primary',   extra: 'ring-1 ring-primary' },
-  dayHover:     { label: 'Hover',        bg: '--neutral-hover', text: '--foreground',  border: 'transparent' },
-  dayOutside:   { label: 'Outside 月份', bg: 'transparent',     text: '--fg-disabled', border: 'transparent' },
+  dayToday:     { label: 'Today(未選)', bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: '數字下方藍色底線(underline bar)' },
+  dayHover:     { label: 'Hover',        bg: 'transparent',     text: '--foreground',  border: '--primary',   extra: 'hover 藍圈 1.5px(無填底)' },
+  dayOutside:   { label: 'Outside 月份', bg: 'transparent',     text: '--fg-muted',    border: 'transparent' },
   dayDisabled:  { label: 'Disabled',     bg: 'transparent',     text: '--fg-disabled', border: 'transparent', extra: 'text-fg-disabled · pointer-events-none' },
   dayFocus:     { label: 'Focus-visible',bg: 'transparent',     text: '--foreground',  border: '--ring',      extra: 'ring-2 ring-ring' },
 }
@@ -104,7 +104,7 @@ export const Overview = {
 
       <div>
         <H3>視覺一覽</H3>
-        <Desc>實際渲染 — single mode,已選今日的前一日展示 selected 視覺,today 以 ring 框定位。</Desc>
+        <Desc>實際渲染 — single mode,已選今日的前一日展示 selected 視覺,today 以數字下方藍色底線標示。</Desc>
         <div className="inline-flex bg-surface-raised border border-border rounded-lg p-2 w-fit">
           <DateGrid
             mode="single"
@@ -209,9 +209,9 @@ export const Inspector = {
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
                 <Legend c={Z.pad} label="外層 p-3" />
-                <Legend c={Z.head} label="月份 caption h-9" />
-                <Legend c={Z.grid} label="日格 h-9 w-9" />
-                <Legend c={Z.cell} label="星期標頭 h-8" />
+                <Legend c={Z.head} label="月份 caption h-field-xs" />
+                <Legend c={Z.grid} label="日格 h-field-sm" />
+                <Legend c={Z.cell} label="星期標頭 h-7" />
               </div>
 
               <div className="inline-flex flex-col gap-0 rounded-md overflow-hidden" style={{ padding: 12, background: Z.pad.bg, border: `2px solid rgba(0,0,0,0.1)` }}>

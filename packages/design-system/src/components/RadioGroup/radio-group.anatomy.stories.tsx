@@ -674,7 +674,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `radio-group.spec.md` 「A11y 預設」段。摘要:\n\n  ARIA / Pattern  :繼承 Radix  radio-group  primitive a11y 預設(role / aria-  / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/radio-group#accessibility)。\n\n  Keyboard 行為  :\n\n- Tab — 進入 group\n- ↑/↓ — 切 option\n- Space — 選擇\n\n  Focus  :Radix primitive 自管 focus trap / restoration / visible ring( outline: 2px solid var(--ring)  per design-system focus-visible 設計準則)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1"}</p>
+      <p className="whitespace-pre-line">{"角色與語意:整組是一個單選群組,每個選項自動標記為 radio 角色,螢幕閱讀器會念出「第幾項、共幾項、是否已選」。\n\n鍵盤操作:\n\n- Tab — 進入或離開整個群組(群組只佔一個 Tab 停留點)\n- 上 / 下方向鍵 — 在選項間移動,移到哪個就直接選哪個\n- 空白鍵 — 選取目前聚焦的選項\n\n聚焦:選項被聚焦時會顯示明顯的外框(focus ring)。注意這不是「焦點鎖定」——按 Tab 仍會離開群組、跳到表單的下一個欄位,符合一般表單填寫流程。\n\n驗證:Storybook 無障礙檢查面板應為零項嚴重違規;不靠滑鼠也能完整操作。文字對比度至少 4.5:1、控件對比度至少 3:1。"}</p>
     </div>
   ),
 }

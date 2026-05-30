@@ -37,8 +37,8 @@ export const Overview: Story = {
             <thead><tr><Th>狀態</Th><Th>Indicator</Th><Th>Label</Th><Th>Connector(右側)</Th></tr></thead>
             <tbody>
               <tr><Td>completed</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--primary" size="sm" /><span>filled primary + white check icon</span></span></Td><Td><TokenCell token="--foreground" display="foreground" /></Td><Td><TokenCell token="--primary" display="bg-primary" /></Td></tr>
-              <tr><Td>current(= value)</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--primary" size="sm" /><span>hollow + primary border + ring</span></span></Td><Td><TokenCell token="--foreground" display="foreground" /></Td><Td><TokenCell token="--divider" display="bg-divider" /></Td></tr>
-              <tr><Td>upcoming</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--border" size="sm" /><span>hollow + border</span></span></Td><Td><TokenCell token="--fg-secondary" display="fg-secondary" /></Td><Td><TokenCell token="--divider" display="bg-divider" /></Td></tr>
+              <tr><Td>current(= value)</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--primary" size="sm" /><span>filled primary + white number + ring</span></span></Td><Td><TokenCell token="--foreground" display="foreground" /></Td><Td><TokenCell token="--border" display="bg-border" /></Td></tr>
+              <tr><Td>upcoming</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--muted" size="sm" /><span>filled muted + fg-disabled number</span></span></Td><Td><TokenCell token="--fg-secondary" display="fg-secondary" /></Td><Td><TokenCell token="--border" display="bg-border" /></Td></tr>
               <tr><Td>error</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--error" size="sm" /><span>bg-error + white icon</span></span></Td><Td><TokenCell token="--error" display="error" /></Td><Td>—</Td></tr>
             </tbody>
           </table>
@@ -58,12 +58,14 @@ export const Overview: Story = {
                 ['  errorValues', 'string[]', '[]', '錯誤的步驟 values'],
                 ['  size', "'sm' | 'md' | 'lg'", "'md'", 'indicator / 字體 tier'],
                 ['  orientation', "'horizontal' | 'vertical'", "'vertical'", '步驟排列方向'],
-                ['  onStepClick', '(value: string) => void', '—', '點擊 completed step 的 callback(linear 流程可回查)'],
+                ['  linear', 'boolean', 'true', 'true=僅能順序前進 / false=任意可達步驟可點'],
+                ['  onValueChange', '(value: string) => void', '—', '點擊可達步驟時觸發,回傳該步驟 value'],
                 ['StepItem', '', '', ''],
                 ['  value', 'string', '必填', '唯一識別碼'],
-                ['  label', 'ReactNode', '必填', '步驟名稱'],
-                ['  description', 'ReactNode', '—', '描述(vertical 模式常用)'],
-                ['  icon', 'LucideIcon', '—', '替代 indicator 的 icon(default:數字 1,2,3)'],
+                ['  state', "'error'", '—', '覆寫狀態(僅支援 error;一般狀態由 Steps 的 value / completedValues 推導)'],
+                ['  disabled', 'boolean', 'false', '停用該步驟(不可點)'],
+                ['  <StepLabel>', 'children', '必填', '步驟名稱(以子元件傳入,非 prop)'],
+                ['  <StepDescription>', 'children', '—', '描述(以子元件傳入,vertical 模式常用)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -189,19 +191,19 @@ export const ColorMatrix: Story = {
               </tr>
               <tr>
                 <Td mono>current(= value)</Td>
-                <Td><TokenCell token="--surface" display="hollow" /></Td>
                 <Td><TokenCell token="--primary" /></Td>
-                <Td><TokenCell token="--primary" display="primary 數字" /></Td>
+                <Td>—(同 bg)</Td>
+                <Td><TokenCell token="--on-emphasis" display="白色數字" /></Td>
                 <Td><TokenCell token="--foreground" /></Td>
-                <Td><TokenCell token="--divider" display="bg-divider" /></Td>
+                <Td><TokenCell token="--border" display="bg-border" /></Td>
               </tr>
               <tr>
                 <Td mono>upcoming</Td>
-                <Td><TokenCell token="--surface" display="hollow" /></Td>
-                <Td><TokenCell token="--border" /></Td>
-                <Td><TokenCell token="--fg-secondary" display="fg-secondary 數字" /></Td>
+                <Td><TokenCell token="--muted" display="filled muted" /></Td>
+                <Td>—(同 bg)</Td>
+                <Td><TokenCell token="--fg-disabled" display="fg-disabled 數字" /></Td>
                 <Td><TokenCell token="--fg-secondary" /></Td>
-                <Td><TokenCell token="--divider" display="bg-divider" /></Td>
+                <Td><TokenCell token="--border" display="bg-border" /></Td>
               </tr>
               <tr>
                 <Td mono>error</Td>
@@ -215,9 +217,9 @@ export const ColorMatrix: Story = {
           </table>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          設計 rationale:completed connector 填 primary、upcoming connector 填 divider——
+          設計 rationale:completed connector 填 primary、其餘 connector 填 border——
           讓「已走過的路」視覺上連續實在,「未走過的路」保持輕量。current step 的 connector 屬於「未走過」,
-          所以也用 divider。
+          所以也用 border。
         </p>
       </div>
 

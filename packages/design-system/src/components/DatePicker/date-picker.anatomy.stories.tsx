@@ -172,7 +172,7 @@ export const Overview = {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <H3>結構（Anatomy）</H3>
-          <Desc>edit 模式：button trigger 顯示格式化文字 + Calendar icon（固定右側），點擊開啟 Calendar Popover。clearable 有值時額外顯示 X clear 按鈕。readonly / disabled 模式：Intl.DateTimeFormat 格式化文字，無 icon。</Desc>
+          <Desc>edit 模式：可點擊的觸發列顯示格式化日期文字 + 日曆圖示（固定右側），點任意位置都會展開日期面板。clearable 有值時額外顯示 X 清除按鈕。readonly / disabled 模式：純格式化文字，無圖示。</Desc>
         </div>
         <div className="flex gap-8">
           {/* Edit layout */}
@@ -180,21 +180,21 @@ export const Overview = {
             <span className="text-[11px] text-fg-muted font-medium">edit</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
               {[
-                { name: 'button trigger text （flex-1）', color: 'success' },
+                { name: '日期文字 （flex-1）', color: 'success' },
                 { name: 'Calendar icon', color: 'info' },
               ].map((s) => (
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">&lt;button&gt; + fieldWrapperStyles(edit, size) → 點擊開啟 Popover&lt;Calendar&gt;</span>
+            <span className="text-[10px] text-fg-muted font-mono">可點擊觸發列（Input 外觀）→ 點任意位置展開日期面板</span>
           </div>
           {/* Edit + clearable layout */}
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-medium">edit + clearable（有值）</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
               {[
-                { name: 'button trigger text （flex-1）', color: 'success' },
+                { name: '日期文字 （flex-1）', color: 'success' },
                 { name: 'X clear', color: 'error' },
                 { name: 'Calendar icon', color: 'info' },
               ].map((s) => (
@@ -696,9 +696,9 @@ export const StateBehavior = {
 
         {/* Trigger opens Calendar Popover */}
         <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">Trigger — 點擊任意位置開啟 Calendar Popover</span>
+          <span className="text-caption font-medium text-fg-secondary">觸發列 — 點任意位置展開日期面板</span>
           <div className="flex flex-col gap-2 max-w-sm">
-            <span className="text-[11px] text-fg-muted">Trigger 是一個 &lt;button&gt;,Calendar icon 內建於 button 內。點擊 trigger 任意位置(含文字區與 icon)都會開啟 Popover 展開本 DS 自建的 Calendar。</span>
+            <span className="text-[11px] text-fg-muted">觸發列是一個可點擊的 combobox 控件(外觀同 Input),日曆圖示固定在右側。點觸發列任意位置(含文字區與圖示)都會展開本 DS 自建的日期面板。</span>
             <DatePicker value="2026-05-15" onChange={() => {}} />
           </div>
         </div>

@@ -62,7 +62,7 @@ export const Overview: Story = {
             <CarouselContent>
               {slides.map((s) => (
                 <CarouselItem key={s.label}>
-                  <SampleSlide label={s.label} gradient={s.gradient} />
+                  <SampleSlide label={s.label} image={s.image} />
                 </CarouselItem>
               ))}
             </CarouselContent>
@@ -152,7 +152,7 @@ const InspectorInner = () => {
               <CarouselContent>
                 {slides.slice(0, 3).map((s) => (
                   <CarouselItem key={s.label}>
-                    <SampleSlide label={s.label} gradient={s.gradient} height={200} />
+                    <SampleSlide label={s.label} image={s.image} height={200} />
                   </CarouselItem>
                 ))}
               </CarouselContent>

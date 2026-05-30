@@ -99,7 +99,7 @@ export const Overview: Story = {
                 ['subtitle', 'string', '—', '職稱 / 位置 / 描述'],
                 ['avatar', 'AvatarData', '—', '{ src?, alt?, color? };size/status 由 NameCard 覆寫'],
                 ['status', "'online' | 'away' | 'busy' | 'offline'", '—', '觸發 Status section + Avatar 狀態點'],
-                ['statusMessage', 'ReactNode', '—', 'Status message(line-clamp 2)'],
+                ['statusMessage', 'ReactNode', '—', '狀態說明文字(完整顯示,內容多時 Body 區捲動)'],
                 ['actions', 'ReactNode', '—', 'CTA buttons(通常 2 個 sm Button)'],
                 ['fields', '{ label: string; value: string }[]', '—', 'Info fields,走 DescriptionList cols=2'],
                 ['onViewMore', '() => void', '—', 'View more callback(有值才顯示該 section)'],
@@ -277,7 +277,7 @@ export const SectionMatrix: Story = {
               </>
             }
             fields={[
-              { label: 'Email', value: 'user@example.com' },
+              { label: 'Email', value: 'ada.chen@example.com' },
               { label: '團隊', value: 'Engineering' },
               { label: '時區', value: 'UTC+8' },
               { label: '員工編號', value: '#E-2048' },
@@ -440,10 +440,10 @@ export const StateBehavior: Story = {
       </div>
 
       <div>
-        <H3>Status message 超過兩行 → line-clamp 2</H3>
+        <H3>長 status message 完整顯示,卡片不無限撐高</H3>
         <Desc>
-          statusMessage 強制 `line-clamp-2`,避免單個 status message 撐開整張 card。
-          超過兩行內容靠 View more 進入 profile 頁查看完整。
+          statusMessage 完整顯示不截斷。內容變長時,Body 區（status + 資訊欄位）會在
+          固定高度內出現捲軸,不會把整張卡片撐到超出畫面。Header 與 View more 始終固定可見。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 inline-block">
           <NameCard
@@ -476,10 +476,11 @@ export const StateBehavior: Story = {
       </div>
 
       <div>
-        <H3>空 fields array → 不渲染 Info section</H3>
+        <H3>未傳資訊欄位 → 仍顯示預設欄位佔位</H3>
         <Desc>
-          `fields=[]` 或未傳 → 整個 Info fields section 不渲染(包括 border-t),
-          避免「有分隔但內容空」的視覺 bug。
+          資訊欄位區永遠渲染。`fields` 未傳或為空時,仍會顯示 ID 與 Employee number 兩個
+          預設欄位,缺資料的欄位顯示佔位符 `—`。固定結構確保同一個人在不同畫面看起來一致,
+          不會因為少傳資料就整個區段消失造成視覺漂移。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 inline-block">
           <NameCard name="Bob Chen" subtitle="Guest User" status="offline" fields={[]} />

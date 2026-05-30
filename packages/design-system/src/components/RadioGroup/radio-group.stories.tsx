@@ -36,15 +36,15 @@ export const Modes: Story = {
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
-        <RadioGroup mode="readonly" value="yearly" aria-label="付款方案(readonly mode demo)">
-          <SelectionItem control={<RadioGroupItem value="monthly" id="m-ro" />} label="月付方案" htmlFor="m-ro" />
-          <SelectionItem control={<RadioGroupItem value="yearly" id="y-ro" />} label="年付方案" htmlFor="y-ro" />
-          <SelectionItem control={<RadioGroupItem value="lifetime" id="l-ro" />} label="終身方案" htmlFor="l-ro" />
+        <RadioGroup value="yearly" aria-label="付款方案(readonly mode demo)">
+          <SelectionItem control={<RadioGroupItem value="monthly" id="m-ro" readOnly />} label="月付方案" htmlFor="m-ro" />
+          <SelectionItem control={<RadioGroupItem value="yearly" id="y-ro" readOnly />} label="年付方案" htmlFor="y-ro" />
+          <SelectionItem control={<RadioGroupItem value="lifetime" id="l-ro" readOnly />} label="終身方案" htmlFor="l-ro" />
         </RadioGroup>
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
-        <RadioGroup mode="disabled" value="yearly" aria-label="付款方案(disabled mode demo)">
+        <RadioGroup value="yearly" aria-label="付款方案(disabled mode demo)">
           <SelectionItem control={<RadioGroupItem value="monthly" id="m-dis" />} label="月付方案" htmlFor="m-dis" disabled />
           <SelectionItem control={<RadioGroupItem value="yearly" id="y-dis" />} label="年付方案" htmlFor="y-dis" disabled />
           <SelectionItem control={<RadioGroupItem value="lifetime" id="l-dis" />} label="終身方案" htmlFor="l-dis" disabled />
@@ -93,9 +93,9 @@ export const Horizontal: Story = {
 export const Disabled: Story = {
   name: '停用',
   render: () => (
-    <RadioGroup defaultValue="a" className="max-w-sm">
-      <SelectionItem control={<RadioGroupItem value="a" id="dis-a" disabled />} label="已選取但不可更改" htmlFor="dis-a" disabled />
-      <SelectionItem control={<RadioGroupItem value="b" id="dis-b" disabled />} label="此選項不可用" htmlFor="dis-b" disabled />
+    <RadioGroup defaultValue="bank" className="max-w-sm">
+      <SelectionItem control={<RadioGroupItem value="bank" id="dis-a" disabled />} label="銀行轉帳" description="帳單已開立,付款方式鎖定" htmlFor="dis-a" disabled />
+      <SelectionItem control={<RadioGroupItem value="invoice" id="dis-b" disabled />} label="月結發票" description="需企業方案才能使用" htmlFor="dis-b" disabled />
     </RadioGroup>
   ),
 }
