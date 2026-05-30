@@ -100,7 +100,7 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 
 - `.claude/rules/story-rules.md`「拆分原則」— canonical 上游 one-liner
 - `/story-writing` SKILL.md Phase 0 — write-time mapping
-- Hook `check_story_category.sh` — pre-write enforcement(攔不符 trait core)
+- Hook `check_story_invariants.sh` R3 category — pre-write enforcement(攔不符 trait core)
 - `/design-system-audit` Dim 29 — periodic verify
 - `/new-component` Phase 5 — 新元件 trait-based scaffold
 - `scripts/compile-stories.mjs` — runtime trait → required stories check
@@ -168,7 +168,7 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 
 ## 強制機制
 
-- **Hook** `check_principles_canonical.sh`:PreToolUse 攔不符 ≥ 2 universal core
+- **Hook** `check_canonical_propagation.sh` E.1 principles:PreToolUse 攔不符 ≥ 2 universal core
 - **Audit Dim 30**:periodic verify
 - **`/new-component` Phase 5.3**:scaffold 4 universal stories template
 

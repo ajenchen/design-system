@@ -51,7 +51,7 @@ ls -la ~/.codex/auth.json                                              # 3 Auth(
 
 **User 原話 SSOT**(2026-05-15):「也要告訴他我的原話,讓他也能有機會解讀我的原話 ... 說不定codex在解讀別人的問題比你還有慧根 ... 請你在infra上避免你下次又在局限codex發現問題的能力」
 
-**Why**:Paraphrase 過濾 user 細節 / 加 Claude 偏見 / frame 問題 → codex 只能在 Claude 框架答 surgical fix → root cause 沒抓到。錨例 2026-05-15:I1 placeholder ellipsis + I3 overflow 兩 bug user 提 2-3 次,每次送 paraphrase → 冰山修。Hook TBD `check_codex_brief_verbatim.sh`(grep `## User 原話` heading missing → warn)。
+**Why**:Paraphrase 過濾 user 細節 / 加 Claude 偏見 / frame 問題 → codex 只能在 Claude 框架答 surgical fix → root cause 沒抓到。錨例 2026-05-15:I1 placeholder ellipsis + I3 overflow 兩 bug user 提 2-3 次,每次送 paraphrase → 冰山修。Hook `check_codex_brief_verbatim.sh`(未實作;verbatim-relay `## User 原話` heading 檢查無 write-time hook — live `check_codex_brief_invariants.sh` 只 cover 全盤閱讀/triple-verify/禁抽樣/禁列檔 audit-flow invariants,不涵蓋此 verbatim-relay,改靠本 Step 0.05 mindset enforcement)。
 
 ## ⚠️ M31 Universal 5-step canonical(2026-05-10 user directive)
 

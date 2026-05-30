@@ -134,7 +134,7 @@ traits:
 
 **Phase 5.1-5.3 — 三層 stories**:
 
-1. **`{name}.stories.tsx` 展示**:per Phase 5.0 declared traits → 對照 `category-templates.md` 衍生 required core stories(`hasVariants` → AllVariants / `hasSizes` → AllSizes / `isOverlay` → OpenSnapshot 等)。再加 1-2 真實業務 scenario(Jira / Stripe / Notion 過 earn-existence)。Hook `check_story_category.sh` write-time 攔不符 trait core。
+1. **`{name}.stories.tsx` 展示**:per Phase 5.0 declared traits → 對照 `category-templates.md` 衍生 required core stories(`hasVariants` → AllVariants / `hasSizes` → AllSizes / `isOverlay` → OpenSnapshot 等)。再加 1-2 真實業務 scenario(Jira / Stripe / Notion 過 earn-existence)。Hook `check_story_invariants.sh` R3 category(原 check_story_category.sh folded 折入)write-time 攔不符 trait core。
 2. **`{name}.anatomy.stories.tsx` 設計規格**:5-story 標準(Overview + SizeMatrix + ColorMatrix + StateBehavior + Inspector)或合理 subset + rationale。
 3. **`{name}.principles.stories.tsx` 設計原則**(對齊 Polaris/Carbon/Ant canonical,2026-04-26):universal core ≥ 2 of {`WhenToUse` / `WhenNotToUse` / `Vs{Sibling}Rule` / `ContentGuidelines`}。do / don't 情境對照,每則 Rule title + Rule note + 範例。Hook `check_principles_canonical.sh` write-time 攔不符。
 

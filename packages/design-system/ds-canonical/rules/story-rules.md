@@ -12,9 +12,9 @@ paths:
 
 | 層 | 檔案 | Canonical | Hook | Audit Dim |
 |---|------|-----------|------|-----------|
-| 1 展示 | `*.stories.tsx` | trait-based v2 | `check_story_category.sh` | 29 |
-| 2 設計規格 | `*.anatomy.stories.tsx` | 6-canonical(Overview / Inspector / ColorMatrix / SizeMatrix / StateBehavior / Accessibility)| `check_story_anatomy.sh` | 13 |
-| 3 設計原則 | `*.principles.stories.tsx` | Polaris-aligned ≥ 2 of {WhenToUse / WhenNotToUse / Vs*Rule / ContentGuidelines};v3 預設整合 `UsageGuidance` 單一 export(Polaris/Material/Ant 共識) | `check_principles_canonical.sh` | 30 |
+| 1 展示 | `*.stories.tsx` | trait-based v2 | `check_story_invariants.sh` R3 category | 29 |
+| 2 設計規格 | `*.anatomy.stories.tsx` | 6-canonical(Overview / Inspector / ColorMatrix / SizeMatrix / StateBehavior / Accessibility)| `check_story_invariants.sh` R1 anatomy | 13 |
+| 3 設計原則 | `*.principles.stories.tsx` | Polaris-aligned ≥ 2 of {WhenToUse / WhenNotToUse / Vs*Rule / ContentGuidelines};v3 預設整合 `UsageGuidance` 單一 export(Polaris/Material/Ant 共識) | `check_canonical_propagation.sh` E.1 principles | 30 |
 
 ## Title 命名
 
@@ -56,7 +56,7 @@ paths:
 - 同 affordance 內 prop variations 用 Controls 不另開(❌ `WithStartIcon`+`WithEndIcon` → ✓ `WithIcon` grid)
 - Compound 有 new constraint 才分
 
-**展示 v2 trait-based**:spec.md frontmatter `traits:` array → required core stories 衍生 + hook `check_story_category.sh` 攔。
+**展示 v2 trait-based**:spec.md frontmatter `traits:` array → required core stories 衍生 + hook `check_story_invariants.sh` R3 category 攔。
 
 **Principles canonical**(Polaris-aligned):universal core ≥ 2 of `WhenToUse`/`WhenNotToUse`/`Vs*Rule`/`ContentGuidelines` + hook 攔。SSOT → `/story-writing` skill `references/category-templates.md`。
 

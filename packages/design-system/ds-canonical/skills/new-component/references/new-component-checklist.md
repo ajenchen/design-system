@@ -59,7 +59,7 @@
 - [ ] `{name}.principles.stories.tsx` 含 do/don't Rule stories,每則 title + note + 範例
 - [ ] 「人」test 過:遮標題 5 秒能懂情境
 - [ ] 「舉一反三」test 過:讀者推得出自己產品怎用
-- [ ] hook `check_story_anatomy.sh` 未觸發 block(無手刻 list item / label Button dismiss / 自刻 overlay)
+- [ ] hook `check_story_invariants.sh` R1 anatomy(原 check_story_anatomy.sh folded 折入)未觸發 block(無手刻 list item / label Button dismiss / 自刻 overlay)
 - [ ] Storybook title path 正確(`Design System/Components/{Name}/{中文子頁}` 或 `Internal/{Name}/...`)
 
 ## Phase 6 — Self quality-gate chain

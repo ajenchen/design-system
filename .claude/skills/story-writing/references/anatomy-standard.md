@@ -58,7 +58,7 @@ export const Overview = {
 
 **嚴格警告**:曾經被誤用「applicable-where-meaningful」放行大量元件跳 Inspector,造成 anatomy 紙本文件不如世界級。**2026-04-21 audit 重修:policy 改回「6-canonical 預設全建(含 Accessibility),N/A 要硬 rationale」**。N/A 不是省工通行證。
 
-### 允許的偏離(CLAUDE.md「Consistency Audit 原則」公式)
+### 允許的偏離(CLAUDE.md `# 稽核 canonical`「Consistency 類稽核」公式;design-system-audit Dim 13 enforce)
 
 #### `@anatomy-rationale:` 檔頭註解(scope-N/A 的 canonical escape)
 
@@ -76,7 +76,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 **何時不用**:section 只是還沒填完 — 補完內容,不要拿 escape 規避。
 **世界級對照**:對齊 ESLint `eslint-disable-next-line {rule}` 的 per-line allowlist idiom — 每個豁免必有具名 rule + 一行 rationale,不允許整檔默默繞過。
 
-`check_story_anatomy.sh` 識別 `@anatomy-rationale:` block:列出的 section 視為 legitimately N/A;未列出的 missing section 仍 violation。
+`check_story_invariants.sh` R1 anatomy 識別 `@anatomy-rationale:` block:列出的 section 視為 legitimately N/A;未列出的 missing section 仍 violation。
 
 #### 其他允許的偏離
 

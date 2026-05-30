@@ -67,7 +67,7 @@
 - **Pre/post-tool 自動化**(邊界守衛、sync check 提醒、token hygiene、import guard、charter gate)
 - **判斷法**:這條規則能「機械化在 tool 執行前後自動跑」嗎? 是 → hook;否 → CLAUDE.md 或 spec
 - **當前 hooks**(7 個):
-  - `pre_edit_spec_check.sh` — 編輯 tsx 前讀 spec
+  - `pre_edit_spec_check.sh`(retired;改靠 M3 mindset #3「改一處看三處」)— 編輯 tsx 前讀 spec
   - `check_sync_update.sh`(retired/未實作 — 改靠 M3 mindset #3 + `pre_edit_spec_check.sh`)
   - `lib/_token_hygiene.sh`(由 `post_edit_dispatcher.sh` source)— 硬寫 shadow / shadcn alias / primitive-color / raw overflow 抓違規
   - `block_prototype_imports.py` — 產品 code 禁 import explorations

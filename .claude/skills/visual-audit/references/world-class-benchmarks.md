@@ -114,7 +114,7 @@
 - **Web DS 用 overlay scrollbar 跨 OS 一致**(Radix ScrollArea / Ant Design Scrollbar 都這樣做)
 - **原因**:Windows native scrollbar 吃寬度會讓同一 page 在 Mac 和 Windows 上 layout 不同,違反「設計在任何平台視覺一致」
 
-對應 DS:`components/ScrollArea/` + CLAUDE.md「overflow 使用三規則」。
+對應 DS:`components/ScrollArea/` + `.claude/references/build-ui-canonicals.md`「overflow 使用三規則」。
 
 ---
 

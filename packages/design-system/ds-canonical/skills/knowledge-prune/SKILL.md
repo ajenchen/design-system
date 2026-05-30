@@ -72,7 +72,7 @@ Scan:同概念(同 keyword / 同 canonical)出現在 ≥ 3 個不同 home 寫完
 Example violations(historic — 2026-05-22 prune verify 後均已收斂為 pointer 模式,僅留作教學範例):
 - `Portal 逃脫 theme`:過去在 hover-card.spec.md / avatar.spec.md / color.spec.md 各重述;現只 M3 SSOT + 各 spec pointer。2026-05-22 audit verify 為已對齊(僅 ui-development.md / meta-patterns.md 2 home 涉及,clean pointer)
 - `Inline Action vs Button predicate`:過去 CLAUDE.md / item-anatomy.spec.md / button.spec.md 各完整;現 `inline-action.spec.md` 為 SSOT,其他 cross-link
-- 新範例(2026-05-22 抓):**hook count threshold** 在 CLAUDE.md L35 / meta-patterns M14 / M20 / `session_start_governance_check.sh:173` 4 處 drift 3 值(40/35/30)→ M14/M20 strip 數字改 pointer SSOT 修
+- 新範例(2026-05-22 抓):**hook count threshold** 在 CLAUDE.md `# 治理 canonical` 行數預算表 / meta-patterns M14 / M20 / `session_start_governance_check.sh` 4 處 drift 3 值(40/35/30)→ M14/M20 strip 數字改 pointer SSOT 修
 
 **Output**:duplicate cluster 清單 + 建議 SSOT home。
 

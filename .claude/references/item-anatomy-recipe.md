@@ -194,7 +194,7 @@ const isActive = variant === "meta" ? false : (... 同上)
 - 看 `item-layout.tsx` 的 export → 找到 `ICON_SIZE` / `AVATAR_SIZE` / `ItemPrefix` / `ItemLabel` / `ItemIcon` / `ItemAvatar` / `ItemInlineAction` / `ItemInlineActionButton` / `ItemSuffix` / `RowSizeProvider` / `useRowSize` / `getUniformPrefixSlotStyle` / `INLINE_ACTION_HOVER_BG_SIZE` ✓
 - 看本 spec 的 Recipe → 7 步 copy-paste ✓
 - 看 `MenuItem` / `SidebarMenuButton` / `TreeItem` 三個現成 row primitive → canonical 實作參考 ✓
-- 跨檔案 grep 規則 → CLAUDE.md「Row primitives 共用 item-layout 公式」節列出禁止事項 ✓
+- 跨檔案 grep 規則 → `patterns/element-anatomy/item-anatomy.spec.md`「Row primitives item-layout 公式」節列出禁止事項 ✓
 
 如果以上四條任何一條斷掉,就是 spec / code drift,該補。
 

@@ -49,14 +49,14 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '
 # Detect hardcoded numeric dim count
 # Patterns: "53 dim" / "53-dim" / "53 audit dim" / "53 audit dimensions" / "46 dim" / "46-dim"
 # Exclude legitimate uses: "N dim" / "全 dim" / "<N>" placeholder / "1 dim" thru "9 dim" (could be reasonable refs)
-HARDCODE_HITS=$(echo "$NEW_CONTENT" | grep -oE '\b[1-9][0-9]+[ -]?(dim|audit dim|audit dimension)' | sort -u || true)
+HARDCODE_HITS=$(echo "$NEW_CONTENT" | grep -oE '\b[1-9][0-9]+[ -]?(dim|audit dim|audit dimension)|[0-9]+ ?維 ?(audit|sweep|dim)|[0-9]+ ?維度' | sort -u || true)
 
 # Allow if line contains "SSOT" / "禁" / "forbidden" / "example" / "anti-pattern" — these are invariant doc references
-ALLOWED_LINES=$(echo "$NEW_CONTENT" | grep -nE '\b[1-9][0-9]+[ -]?(dim|audit dim|audit dimension)' 2>/dev/null | grep -E '(SSOT|禁|forbidden|example|anti-pattern|invariant|hardcode)' || true)
+ALLOWED_LINES=$(echo "$NEW_CONTENT" | grep -nE '\b[1-9][0-9]+[ -]?(dim|audit dim|audit dimension)|[0-9]+ ?維 ?(audit|sweep|dim)|[0-9]+ ?維度' 2>/dev/null | grep -E '(SSOT|禁|forbidden|example|anti-pattern|invariant|hardcode)' || true)
 
 if [ -n "$HARDCODE_HITS" ]; then
   # Filter out allowed lines (invariant doc context)
-  VIOLATION_LINES=$(echo "$NEW_CONTENT" | grep -nE '\b[1-9][0-9]+[ -]?(dim|audit dim|audit dimension)' 2>/dev/null | grep -vE '(SSOT|禁|forbidden|example|anti-pattern|invariant|hardcode)' || true)
+  VIOLATION_LINES=$(echo "$NEW_CONTENT" | grep -nE '\b[1-9][0-9]+[ -]?(dim|audit dim|audit dimension)|[0-9]+ ?維 ?(audit|sweep|dim)|[0-9]+ ?維度' 2>/dev/null | grep -vE '(SSOT|禁|forbidden|example|anti-pattern|invariant|hardcode)' || true)
 
   if [ -n "$VIOLATION_LINES" ]; then
     printf '⚠️ AUDIT DIM COUNT DRIFT(P1 soft):\n' >&2

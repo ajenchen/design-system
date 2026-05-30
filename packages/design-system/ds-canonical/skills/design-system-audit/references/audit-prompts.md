@@ -31,7 +31,7 @@ Working directory: /Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@g
 - **「decorative indicator 被誤列入 action predicate」(D6e,2026-04-22)** → `pointer-events-none` + `aria-hidden` 的 icon 不該出現在 action example 表。Calendar / status dot / CircularProgress 等被誤收 = P0 flag。對照 CLAUDE.md M9 predicate 自測
 - **「Row action 尺寸 > 24」(D6e cap 違反,2026-04-22)** → row primitive 內 inline action 絕對值 cap = 24,row tier 放大不該讓 action 同步放大。違反 = P0 flag。對照 `patterns/element-anatomy/item-anatomy.spec.md`「Inline Action 設計規格」Row ≤ 24 cap
 
-## Dimension Type Taxonomy (CLAUDE.md「Consistency Audit 原則」)
+## Dimension Type Taxonomy (CLAUDE.md`# 稽核 canonical`「Consistency 類稽核」)
 
 Every dimension below is tagged **Absolute** or **Consistency** so sub-agents apply the right formula:
 
@@ -403,7 +403,7 @@ End: `N files checked, V violations.` Under 600 words. Don't fix.
 **Rationale home**: element .spec.md — replacing/omitting a 6-canonical section requires a rationale paragraph explaining why (e.g., "Badge 無互動狀態,不需 StateBehavior"). Renaming identifier is never allowed. **`*.anatomy.stories.tsx` 檔頭 `// @anatomy-rationale:` 註解列出 N/A sections + 一行原因 → legitimately N/A,不報為 violation**(對齊 hook `check_story_anatomy.sh` 同源處理)。
 
 ```
-Your job: audit .anatomy.stories.tsx against `/story-writing` anatomy-standard.md on THREE layers, enforcing CLAUDE.md 「Consistency Audit 原則」.
+Your job: audit .anatomy.stories.tsx against `/story-writing` anatomy-standard.md on THREE layers, enforcing CLAUDE.md `# 稽核 canonical`「Consistency 類稽核」.
 
 **Layer 1 — Canonical `export const` names** (一字不差, in order):
 1. `Overview` / 2. `Inspector` / 3. `ColorMatrix` / 4. `SizeMatrix` / 5. `StateBehavior` / 6. `Accessibility`(互動元件強制,純視覺 indicator N/A)
@@ -433,7 +433,7 @@ Missing 6-canonical → requires rationale paragraph in .spec.md OR `// @anatomy
 **For each `packages/design-system/src/components/*/*.anatomy.stories.tsx`**:
 1. Grep `^export const ([A-Za-z]+)` — Layer 1 identifier list
 2. For each export, grep its `name:` field value — Layer 2 中文覆寫
-3. Check 6-canonical presence + rationale in .spec.md OR `// @anatomy-rationale:` 檔頭註解 for any missing(若 .anatomy.stories.tsx 檔頭有 `// @anatomy-rationale:` 註解,列出 N/A sections 和理由 — 視為 legitimate 偏離,不報為 violation。Hook `check_story_anatomy.sh` 同源處理。)
+3. Check 6-canonical presence + rationale in .spec.md OR `// @anatomy-rationale:` 檔頭註解 for any missing(若 .anatomy.stories.tsx 檔頭有 `// @anatomy-rationale:` 註解,列出 N/A sections 和理由 — 視為 legitimate 偏離,不報為 violation。Hook `check_story_invariants.sh`(R1 anatomy,原 check_story_anatomy.sh folded 已合入)同源處理。)
 
 Report format:
 - `ComponentName L1: missing [Inspector, ColorMatrix] — no rationale in spec.md`
@@ -860,7 +860,7 @@ Scan consumer 自建的視覺邊界容器(非 chrome primitive 消費)是否有 
 
 若同 className 無 `p-N` / `px-N` / `py-N` / `p-\[var(...)\]` / `pt-N` / `pb-N` → violation。
 
-Hook `check_container_breathing.sh` 已 P1 warn,本 dim 為 audit 層捕 hook 遺漏 / 多行 className split 的 case。
+Hook `check_container_breathing.sh`(retired;audit-only via 本 dim 22)— 本 dim 為 audit 層捕 hook 遺漏 / 多行 className split 的 case。
 
 **排除**(hook 同邏輯):
 - Chrome primitive(SurfaceHeader / SurfaceBody / SurfaceFooter / Field wrapper / Button / Input)= 自帶 canonical padding
@@ -981,7 +981,7 @@ End: `N components scanned, M with traits, K P0 violations, J P2 pending migrati
 **Type**: Absolute
 **Canonical source**: `.claude/skills/story-writing/references/category-templates.md`「Principles canonical」節 v3(2026-04-26 整合)
 **Rationale home**: 元件 spec.md(若需 scope-N/A 例外)
-**Hook**: `check_principles_canonical.sh`(已 v3-aware)
+**Hook**: `check_canonical_propagation.sh`(E.1 principles canonical,原 check_principles_canonical.sh folded 已合入;v3-aware)
 
 Working directory: /Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project
 
@@ -1078,37 +1078,37 @@ Sub-agent 對每 benchmark cite 反查 DS 內既有 codified canonical;有 → c
 
 **Type**: Absolute / **Canonical**: M24 + `field-controls.spec.md` disabled state machine / **Home**: spec.md「state precedence」
 
-Per-element grep disabled mode → 內 placeholder / value / icon 全切 `text-fg-disabled`(neutral-6)非 `text-fg-muted`(neutral-7)。state > emphasis。Hook `check_disabled_placeholder_color.sh` 同源,本 dim DS-wide batch。
+Per-element grep disabled mode → 內 placeholder / value / icon 全切 `text-fg-disabled`(neutral-6)非 `text-fg-muted`(neutral-7)。state > emphasis。Hook `check_field_family_invariants.sh`(A.4 disabled placeholder color,原 check_disabled_placeholder_color.sh folded 已合入)同源,本 dim DS-wide batch。
 
 ## 35. Layered chain invariant — overlay scroll(M25)
 
 **Type**: Absolute / **Canonical**: M25 + `overlay-surface.spec.md` / **Home**: spec.md SSOT
 
-Overlay primitive → SurfaceBody 中間 wrapper 必 `flex flex-col h-full`,斷一層 = body 不 scroll。Hook `check_overlay_panel_scroll_chain.sh` 同源,本 dim DS-wide batch verify integrity。
+Overlay primitive → SurfaceBody 中間 wrapper 必 `flex flex-col h-full`,斷一層 = body 不 scroll。Hook `check_pattern_invariants.sh`(C.1 overlay scroll chain,原 check_overlay_panel_scroll_chain.sh folded 已合入)同源,本 dim DS-wide batch verify integrity。
 
 ## 36. Naked variant cell-as-input row-mode propagation(M19)
 
 **Type**: Absolute / **Canonical**: `nakedCellRowModeAlign` SSOT / **Home**: spec.md
 
-`variant="naked"` consumer 內 wrapper 必 import + apply `nakedCellRowModeAlign` SSOT。Hook `check_naked_row_mode_propagation.sh` 同源。
+`variant="naked"` consumer 內 wrapper 必 import + apply `nakedCellRowModeAlign` SSOT。Hook `check_field_family_invariants.sh`(A.1 naked row-mode propagation,原 check_naked_row_mode_propagation.sh folded 已合入)同源。
 
 ## 37. Field state machine「focus dominates everything」(M19 v13.3)
 
 **Type**: Absolute / **Canonical**: `field-wrapper.tsx` 三 compoundVariant SSOT / **Home**: spec.md state machine 段
 
-禁 per-control `(open|isOpen) && 'border-primary'`(Field default 處理)+ naked variant 禁平行 outline ring。對齊 Material 3 / Polaris / Ant 共識。Hook `check_field_state_token_consume.sh` 同源,本 dim batch verify Field family + outliers。
+禁 per-control `(open|isOpen) && 'border-primary'`(Field default 處理)+ naked variant 禁平行 outline ring。對齊 Material 3 / Polaris / Ant 共識。Hook `check_field_family_invariants.sh`(A.3 Field state ring SSOT,原 check_field_state_token_consume.sh folded 已合入)同源,本 dim batch verify Field family + outliers。
 
 ## 38. Inline-action gap canonical
 
 **Type**: Absolute / **Canonical**: `inline-action.spec.md:80` / **Home**: spec.md
 
-`<ItemInlineAction>` sibling gap = `gap-2`(8px)。Hook `check_inline_action_canonical_gap.sh` 同源,本 dim batch verify consumer。
+`<ItemInlineAction>` sibling gap = `gap-2`(8px)。Hook `check_pattern_invariants.sh`(C.2 inline-action canonical gap,原 check_inline_action_canonical_gap.sh folded 已合入)同源,本 dim batch verify consumer。
 
 ## 39. Row-layout slot primitive consumption(M1+M17)
 
 **Type**: Absolute / **Canonical**: `ItemPrefix` / `ItemSuffix` primitive / **Home**: `item-anatomy.spec.md`
 
-禁自刻 `<span h-[1lh] shrink-0 flex items-center>` slot wrapper(item-anatomy / field-wrapper 外),必消費 `<ItemPrefix>` / `<ItemSuffix>`。Hook `check_row_slot_handcraft.sh` 同源。
+禁自刻 `<span h-[1lh] shrink-0 flex items-center>` slot wrapper(item-anatomy / field-wrapper 外),必消費 `<ItemPrefix>` / `<ItemSuffix>`。Hook `check_pattern_invariants.sh`(C.4 row slot handcraft,原 check_row_slot_handcraft.sh folded 已合入)同源。
 
 ## 40. Title 命名 quality(story-rules.md L18-22)
 
@@ -1168,7 +1168,7 @@ Per-file grep `packages/design-system/src/**/*.{tsx,css}` + consumer code,對 `u
 - shadcn alias:`bg-popover` / `text-muted-foreground` 等
 - primitive class:`bg-neutral-1` / `text-blue-6` 等
 
-對齊 Atlassian `@atlaskit/tokens` + Carbon `@carbon/themes` + Ant ConfigProvider + Polaris `polaris-tokens` registry + lint enforcement。Hook `check_tailwind_token_registry.sh`(由 `check_opacity_token_usage.sh` 升級)同源,本 dim DS-wide batch。
+對齊 Atlassian `@atlaskit/tokens` + Carbon `@carbon/themes` + Ant ConfigProvider + Polaris `polaris-tokens` registry + lint enforcement。Hook `check_opacity_token_usage.sh`(reads tokens/utility-registry.json;原 doc 稱 check_tailwind_token_registry.sh 之 rename 未實作,SSOT 仍為此 hook)同源,本 dim DS-wide batch。
 
 ## 48. Unused / orphan token detector(2026-05-17 新增,codex Q5 verdict)
 

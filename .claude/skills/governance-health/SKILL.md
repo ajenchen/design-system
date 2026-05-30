@@ -42,6 +42,7 @@ ls -la .claude/logs/*.jsonl
 | **User correction signals**(per session)| `user-corrections.jsonl` count + sample | 總累積 > 20 = 需 codify |
 | **File size trend**(weekly snapshot)| `metric-snapshots.jsonl`(若存在)| CLAUDE.md 增速 > 5 line/week = sprawl alert |
 | **Benchmark freshness**(external)| `.claude/benchmarks/last-fetch.txt` | > 30 天 = 過期 |
+| **Infra-ref integrity**(2026-05-30 加,根因防線)| `node scripts/check-dangling-infra-ref.mjs` + `node scripts/check-skill-deadref.mjs`(fail-open report)| bucket-B > 0(死 hook ref)OR removed-section/line-number ref > 0 = infra-self drift → 提議 repoint。錨例:2026-05-30 抓 40 處死 hook ref + env-smoke set-e bug |
 
 ### Phase 2 — Analysis(fire-driven auto-propose)
 
@@ -57,7 +58,7 @@ Output: 「`check_item_list_gap.sh` 6 月 fired 78 次 → 提議擴充到 CLAUD
 
 Hook 0 fire / 6 月 OR skill 0 invoke / 3 月 = 無 consumer = retire 候選。
 
-Output: 「`check_sideoffset_canonical.sh` 6 月 0 fire → retire 候選(先 grep 全 repo 確認無 reference 才執行)」
+Output: 「`check_sideoffset_canonical.sh`(retired;已移入 hooks/retired/,此為 dead-rule 偵測示例)6 月 0 fire → retire 候選(先 grep 全 repo 確認無 reference 才執行)」
 
 #### 2c. Pending corrections → codify 候選
 

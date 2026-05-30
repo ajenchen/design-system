@@ -5,7 +5,7 @@ description: Process .claude/logs/user-corrections.jsonl — the Stop-hook-harve
 
 # Codify Corrections — 把 user 糾正 log 落到 governance 文件
 
-**目的**:`.claude/logs/user-corrections.jsonl` 是 `stop_harvest_corrections.sh` 從每 session transcript 抓到的「不是 / 不對 / 應該 / 糾正」訊號。骨架存在,但從 log 到實際 CLAUDE.md / memory / spec edit 原本全靠人工讀 + 決定寫哪,實務上堆積 = 骨架失靈。本 skill 把這條 loop 合上。
+**目的**:`.claude/logs/user-corrections.jsonl` 是 `stop_passive_logging.sh` R2 `rule_harvest_corrections()`(原 lib/stop_harvest_corrections.sh,已 folded 進統一 Stop hook)從每 session transcript 抓到的「不是 / 不對 / 應該 / 糾正」訊號。骨架存在,但從 log 到實際 CLAUDE.md / memory / spec edit 原本全靠人工讀 + 決定寫哪,實務上堆積 = 骨架失靈。本 skill 把這條 loop 合上。
 
 **對齊 CLAUDE.md**:
 - 治理 canonical L2(per-commit)下游
@@ -25,7 +25,7 @@ description: Process .claude/logs/user-corrections.jsonl — the Stop-hook-harve
 - 不改 code(`.tsx` / `.css`)— 只動 governance 文件
 - 不自動 write 任何 M-row(新 Meta-Pattern 必 Checkpoint 3 — 動 canonical substantive)
 - 不刪 jsonl 歷史 — 處理後 append 到 `.processed.jsonl`,raw log 保留 grep evidence
-- 不重跑 harvest — harvest 是 stop_harvest_corrections.sh 的責任
+- 不重跑 harvest — harvest 是 stop_passive_logging.sh R2 rule_harvest_corrections()(原 stop_harvest_corrections.sh,已 folded)的責任
 
 ---
 
@@ -147,7 +147,7 @@ Update `.claude/logs/metric-snapshots.jsonl`:
 ```markdown
 ## Self-improvement capture
 - 新發現 pattern:{某 topic 反覆出現 → 該抽 meta}OR "無"
-- Harvest miss:{stop_harvest_corrections.sh 沒抓到但該抓的 keyword}OR "無"
+- Harvest miss:{stop_passive_logging.sh R2 rule_harvest_corrections()(原 stop_harvest_corrections.sh,已 folded)沒抓到但該抓的 keyword}OR "無"
 - Codify-to-home 公式漂移:{有 topic 判斷多次走錯 home → 更新 Phase 1 判斷表}OR "無"
 ```
 
@@ -157,7 +157,7 @@ Update `.claude/logs/metric-snapshots.jsonl`:
 
 | Skill | Scope |
 |-------|-------|
-| `stop_harvest_corrections.sh`(hook)| 抓 log — 不 codify |
+| `stop_passive_logging.sh` R2 rule_harvest_corrections()(原 stop_harvest_corrections.sh,已 folded)| 抓 log — 不 codify |
 | **本 skill**(`/codify-corrections`) | log → governance 文件 edit |
 | `/knowledge-prune` | governance 文件 prune — 不處理新 correction |
 | `/design-system-audit --deep` Phase 4.5 | chain `/knowledge-prune`;未來可 chain 本 skill |

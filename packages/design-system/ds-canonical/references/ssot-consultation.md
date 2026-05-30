@@ -50,7 +50,7 @@ CLAUDE.md `# SSOT 消費 canonical` 的詳表 + 反例。主章留核心 + point
  */
 ```
 
-Hook `check_ssot_consultation.sh`(Write 新 tsx 到 `packages/design-system/src/components/` 或 `src/explorations/`)→ 若檔內無上述註解區 → warn 要求補齊。
+Hook `check_ssot_consultation.sh`(retired;改靠 mindset #2 + `check_canonical_propagation.sh`)(原 Write 新 tsx 到 `packages/design-system/src/components/` 或 `src/explorations/` → 若檔內無上述註解區 → warn 要求補齊)。
 
 ## 禁止:隱性自創
 

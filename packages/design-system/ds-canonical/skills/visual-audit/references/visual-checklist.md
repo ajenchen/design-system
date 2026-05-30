@@ -34,7 +34,7 @@
 
 **FAIL 範例**:DatePicker 量到 top=12 / right=12 / bottom=8 / left=12,spec 未宣告 bottom asymmetric → FAIL,建議討論是對齊 12 還是補 spec rationale
 
-**對應規則**:CLAUDE.md `# Consistency Audit 原則`(actual == canonical OR rationale-for-deviation)
+**對應規則**:CLAUDE.md `# 稽核 canonical`「Consistency 類稽核必 Phase 0 全掃再判」(actual == canonical OR rationale-for-deviation;design-system-audit Dim 13 enforce)
 
 ---
 

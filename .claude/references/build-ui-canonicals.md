@@ -28,7 +28,7 @@
 
 **Story 特別提醒**:**stories 也是 code**。如果 story 在 label / comment 說「DataTable cell 用法」「Table 配額」「Menu 選單」等,**要 render 真的該元件 demo,不可用 raw `<table>` / raw `<button>` 假裝**。否則 story 教壞 consumer、自己也在破壞 DS 訓練資料。
 
-`check_story_anatomy.sh` hook 會在 Write/Edit 階段攔下這類手刻;allowlist `// @anatomy-exempt: <reason>`(檔首)/ `// @anatomy-exempt-next`(下一行)可豁免教學用 raw primitive。
+`check_story_invariants.sh` hook(R1 anatomy,原 `check_story_anatomy.sh` folded 折入)會在 Write/Edit 階段攔下這類手刻;allowlist `// @anatomy-exempt: <reason>`(檔首)/ `// @anatomy-exempt-next`(下一行)可豁免教學用 raw primitive。
 
 ---
 
