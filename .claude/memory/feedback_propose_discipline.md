@@ -9,9 +9,11 @@ originSessionId: 41fa83c2-f951-431e-911e-ed3ceb185903
 User 2026-05-15 + 2026-05-27 系列 directives codified per Rule-of-3 absorb principle.
 原 2 file(`feedback_propose_in_plain_chinese.md` + `feedback_propose_without_cite_fabrication_2026_05_27.md`)合併本檔。
 
-## Sub-rule 1 — 中文人話(原 propose_in_plain_chinese)
+## Sub-rule 1 — 中文人話(原 propose_in_plain_chinese;2026-05-31 擴大至所有 reply)
 
-**Rule**:propose 給 user 拍板的決策必用中文具體人話講,禁術語 jargon。
+**Rule**:propose 給 user 拍板的決策必用中文具體人話講,禁術語 jargon。**2026-05-31 擴大**:不只 propose —— **所有給 user 的 reply / 清單 / summary** 都必繁中人話。User 看不懂英文,整段/整句英文 = reply 對 user 無效 = 白做。唯一例外:不可避免的識別碼(檔名 / token 名 / commit hash / 指令)出現時必緊跟中文解釋。工具輸出(CI log / git output)要引用 → 摘成中文重點,禁貼原始英文 dump。
+
+**Anchor(2026-05-31)**:user verbatim「你他媽問題後面一長串英文是怎樣?我看不懂英文」。
 
 **Format**:
 ```

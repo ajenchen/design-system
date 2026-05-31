@@ -1581,7 +1581,7 @@ function DataTableInner<TData>(
                       type="button"
                       aria-label={isExpanded ? '收合' : '展開'}
                       aria-expanded={isExpanded}
-                      className="inline-flex items-center justify-center shrink-0 w-4 h-4 mr-2 text-fg-muted hover:text-foreground rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform"
+                      className="inline-flex items-center justify-center shrink-0 w-4 h-4 mr-2 text-fg-muted hover:text-foreground rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform"
                       style={{ transform: isExpanded ? 'rotate(90deg)' : undefined }}
                       onClick={(e) => { e.stopPropagation(); toggleExpand?.() }}
                     >
@@ -1626,7 +1626,7 @@ function DataTableInner<TData>(
                     type="button"
                     aria-label={isExpanded ? '收合' : '展開'}
                     aria-expanded={isExpanded}
-                    className="inline-flex items-center justify-center shrink-0 w-4 h-4 mr-2 text-fg-muted hover:text-foreground rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform"
+                    className="inline-flex items-center justify-center shrink-0 w-4 h-4 mr-2 text-fg-muted hover:text-foreground rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform"
                     style={{ transform: isExpanded ? 'rotate(90deg)' : undefined }}
                     onClick={(e) => { e.stopPropagation(); toggleExpand?.() }}
                   >

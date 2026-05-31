@@ -153,8 +153,8 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
         aria-valuemax={isInteractive ? max : undefined}
         aria-valuetext={isInteractive ? `${currentValue} of ${max} stars` : undefined}
         aria-disabled={disabled || undefined}
-        // a11y: aria-readonly 只允許於 slider role(非 img)— axe aria-allowed-attr 2026-04-25
-        aria-readonly={isInteractive && readOnly ? true : undefined}
+        // a11y: 刻意不設 aria-readonly — readOnly 時 role=img(axe aria-allowed-attr 禁 img 用 aria-readonly,2026-04-25);
+        //       interactive 時 role=slider 但必非 readOnly(isInteractive = !readOnly)。兩 state 皆不該有此屬性,故省略。
         aria-busy={loading || undefined}
         tabIndex={isInteractive ? 0 : undefined}
         onKeyDown={handleKeyDown}

@@ -33,8 +33,7 @@
  * ── 防漂移 ──
  * 1. uiSize.spec.md「Icon Size Tier」段 codify 16/16/16/20 tier(text-based canonical)
  * 2. 本 const 程式化 SSOT(type-safe Record<RowSize, number>)
- * 3. Hook `check_icon_size_literal.sh`(write-time regex 攔非標準 literal)
- * 4. Audit Dim「Icon size literal compliance」DS-wide audit-time scan
+ * 3. Audit Dim「Icon size literal compliance」DS-wide audit-time scan(write-time hook 尚未實作 — 改靠 audit-time + mindset)
  *
  * ── Carve-out(不適用本 SSOT)──
  * - `rating.spec.md` Rating star 20/24/24(identity scale,cite Ant/Material/Airbnb)

@@ -273,13 +273,15 @@ Size 建議:overlay / chrome header 內用 `sm`(32/40)— 對應 close X 也是 
 
 ---
 
-## 為何無 Inspector
+## Anatomy story 結構
 
-Tabs 決策維度是 `size` × `variant` × overflow 模式 × 寬度行為——已由 `SizeMatrix` / `ColorMatrix` / `StateBehavior`(selected / hover / disabled) / 元件特有 `OverflowMatrix`(scroll / menu / fade 三模式) / `SpacingTokens` 五張結構 story 完整覆蓋。
+Tabs anatomy 採 DS 標準結構 + 元件特有矩陣:
 
-互動 Inspector 切單一 tab 不如 `OverflowMatrix` 的三種 overflow 模式 side-by-side 比較有效——「tabs 放不下時怎麼處理」是設計決策題,需要同時看三個方案。同樣 `SizeMatrix` / `StateBehavior` 是結構性對照,單 tab 互動無法呈現 underline / selected border 與 TabsList border 的視覺關係(見「Underline 與 TabsList border 的視覺關係」段)。
-
-對應 anatomy story:保留 `Overview` + `SizeMatrix` + `ColorMatrix` + `StateBehavior` + 元件特有 `OverflowMatrix` + `SpacingTokens`。
+- `Overview` —— 預設視覺概覽
+- `Inspector`(`元件檢閱器`)—— 互動式 prop 試玩(`size` × `variant` 即時切換),對齊全部同類元件「單組合即時試玩 prop」的 DS 慣例
+- 標準 `SizeMatrix` / `ColorMatrix` / `StateBehavior`(selected / hover / disabled)—— 結構性對照,呈現 underline / selected border 與 TabsList border 的視覺關係(見「Underline 與 TabsList border 的視覺關係」段),單組合 Inspector 無法並列呈現
+- 元件特有 `OverflowMatrix`(scroll / menu / fade 三模式)—— 「tabs 放不下時怎麼處理」是設計決策題,需三方案 side-by-side 同時比較,Inspector 單組合無法呈現
+- `SpacingTokens` —— 間距 token 對照
 
 ---
 

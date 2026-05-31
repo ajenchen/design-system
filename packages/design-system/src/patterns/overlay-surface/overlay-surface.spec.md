@@ -18,7 +18,7 @@ Dialog 和 Popover 的**結構化 sub-components 共用 primitive**——提供 
 
 **Layout Family**:非上述 family — structural container primitive(不是 element-level layout,是 surface-level 分區)。
 
-**Consumers**:`Dialog` / `Popover`。未來任何其他「elevation-200 浮層」(如 Drawer / Sheet)的結構化 sub-components 都應消費本 primitive。
+**Consumers**:`Dialog` / `Popover` / `Sheet`(皆直接消費 `SurfaceHeader` / `SurfaceFooter`,body 走 ScrollArea canonical 見下);`Coachmark` 經 `PopoverHeader` wrapper、DataTable 篩選/排序面板經 raw `SurfaceHeader` 間接消費。未來任何其他「elevation-200 浮層」(如 Drawer)的結構化 sub-components 都應消費本 primitive。
 
 ---
 

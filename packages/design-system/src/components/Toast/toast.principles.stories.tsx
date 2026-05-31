@@ -133,7 +133,7 @@ export const ActionRule: Story = {
         title="Undo 的好處：避免每個動作都 Dialog 阻斷"
         note="傳統做法每個刪除都彈 Dialog 確認 → 使用者被反覆阻斷。Undo pattern 讓「未確認即執行」變得安全——錯了 4 秒內可救"
       >
-        <Label>✓ 減少 Dialog 阻斷、提升速度、錯誤仍可挽救</Label>
+        <Label>✅ 減少 Dialog 阻斷、提升速度、錯誤仍可挽救</Label>
       </Rule>
 
       <Rule

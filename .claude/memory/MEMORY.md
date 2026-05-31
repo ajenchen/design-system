@@ -10,7 +10,7 @@
 - [feedback_audit_discipline_full_sweep_deterministic_preflight.md](feedback_audit_discipline_full_sweep_deterministic_preflight.md) — 稽核三 invariant:NO-SAMPLE 全盤 / 必 chain deterministic script / Preflight scan(合 3 file)
 - [feedback_solo_dev_workflow.md](feedback_solo_dev_workflow.md) — 1 chat = 1 working branch;Netlify preview = user gate;user 拍板才 push main(M28)
 - [feedback_ship_then_revert_anti_pattern.md](feedback_ship_then_revert_anti_pattern.md) — SSOT-UI/UX edit 必先 propose verbatim approval,違 = hook BLOCKER(2026-05-15)
-- [feedback_propose_discipline.md](feedback_propose_discipline.md) — Propose discipline 2-in-1:中文人話(禁 jargon)+ file:line cite(claim「規定/必配」沒 cite = 撤回)(2026-05-15 + 2026-05-27,合 2 file)
+- [feedback_propose_discipline.md](feedback_propose_discipline.md) — 中文人話(禁 jargon,2026-05-31 擴大至**所有 reply**,user 看不懂英文)+ file:line cite(claim「規定/必配」沒 cite = 撤回)(2026-05-15 + 2026-05-27 + 2026-05-31,合 3 file)
 - [feedback_codex_exec_transport_canonical.md](feedback_codex_exec_transport_canonical.md) — 地端 transport `node_modules/.bin/codex` 3-test + visual audit `--dangerously-bypass-approvals-and-sandbox`(user authorize)+ 大 brief 死局 → 拆 N focused brief + low reasoning(2026-05-29 合 2 file)
 - [feedback_push_always_call.md](feedback_push_always_call.md) — 每 substantive turn 結尾必 call PushNotification,不自我 suppress(2026-05-17)
 - [feedback_ds_css_aggregator_full_sweep_2026_05_27.md](feedback_ds_css_aggregator_full_sweep_2026_05_27.md) — DS src/**/*.css 必在 tokens.css aggregator 或被 tsx import — 否則 consumer 拿不到(2026-05-27,hook `check_orphan_ds_css.sh`)
