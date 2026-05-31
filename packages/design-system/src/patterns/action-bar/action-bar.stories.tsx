@@ -76,7 +76,7 @@ export const RoleIdentification: Story = {
     <div>
       <Rule
         title="業務操作（Operations）— 使用者完成目標所需"
-        note="判斷：移除這個操作，使用者是否無法完成他來這裡要做的事？是 → 業務操作。允許所有 variant（primary、secondary、tertiary、text、checked），決定位置與視覺重量"
+        note="判斷：移除這個操作，使用者是否無法完成他來這裡要做的事？是 → 業務操作。允許所有 variant（primary、secondary、tertiary、text），啟用態用 pressed prop 表達，決定位置與視覺重量"
       >
         <ToolbarFrame title="文件管理">
           <ButtonGroup>
@@ -91,7 +91,7 @@ export const RoleIdentification: Story = {
 
       <Rule
         title="工具操作（Utilities）— 服務環境，與任務本身無關"
-        note="判斷：這個操作跟「現在在做什麼任務」無關，任何頁面都可能有它？是 → 工具操作。工具層必須是操作列中視覺重量最低的一層，否則會搶走業務操作的焦點，所以只用 text（預設）與 checked（啟用中）。⚙ ↺ ⤢ ? 等 icon 跨頁面意義固定，使用者靠位置記憶辨識，不需要 label"
+        note="判斷：這個操作跟「現在在做什麼任務」無關，任何頁面都可能有它？是 → 工具操作。工具層必須是操作列中視覺重量最低的一層，否則會搶走業務操作的焦點，所以只用 text（預設）,啟用中加 `pressed`（非換 variant）。⚙ ↺ ⤢ ? 等 icon 跨頁面意義固定，使用者靠位置記憶辨識，不需要 label"
       >
         <ToolbarFrame title="文件管理">
           <ButtonGroup>
@@ -106,7 +106,7 @@ export const RoleIdentification: Story = {
 
       <Rule
         title="可配置資料操作（篩選 / 排序 / 分組）— 業務操作，Toolbar 全程 icon-only"
-        note="篩選、排序、分組是業務操作，但在資料表格脈絡下 Filter、ArrowUpDown、Layers 已是約定成俗的圖示，使用者不需要讀 label 就能確定功能，因此 Toolbar 場景可全程 icon-only。未配置用 text，配置啟用後換 checked——底色 + 藍色 icon 已足夠傳達「目前有生效的條件」"
+        note="篩選、排序、分組是業務操作，但在資料表格脈絡下 Filter、ArrowUpDown、Layers 已是約定成俗的圖示，使用者不需要讀 label 就能確定功能，因此 Toolbar 場景可全程 icon-only。未配置用 text，配置啟用後加 `pressed`（預設 emphasis tone）——底色 + 藍色 icon 已足夠傳達「目前有生效的條件」"
       >
           <div className="flex items-center gap-2">
             <ConfigurableDemo />
@@ -251,7 +251,7 @@ export const Dividers: Story = {
 
       <Rule
         title="不觸發 — 有框 ↔ 無框接壤"
-        note="有框（primary / secondary / tertiary / checked）接無框（text），視覺差異本身已是邊界信號，不需分隔線疊加"
+        note="有框（primary / secondary / tertiary）接無框（text），視覺差異本身已是邊界信號，不需分隔線疊加"
       >
         <ToolbarFrame title="專案列表">
           <ButtonGroup>
