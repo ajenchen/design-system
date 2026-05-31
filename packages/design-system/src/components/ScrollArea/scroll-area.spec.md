@@ -107,7 +107,7 @@ Radix primitive + 本 DS a11y 橋接:
 - **Scrollbar 非 tab stop**:scrollbar thumb 不搶焦點,使用鍵盤的使用者透過 viewport 捲動(Radix 內建)
 - **Pointer 支援**:thumb 可拖曳,track 可 click-to-jump(Radix 內建)
 
-Consumer 無需額外處理 a11y——本元件已內建 `tabIndex` 與 focus ring。
+本元件已內建 `tabIndex` + focus ring(滿足 axe `scrollable-region-focusable`)。但 Viewport 預設**無 `role` / accessible name**——**若 scroll 區域有具體語意(如「留言列表」「程式碼區塊」),consumer 應提供 `aria-label`**,否則 SR 只報「可捲動區域」無內容描述;純視覺裝飾容器可省略。(2026-05-31 #31:修正原「consumer 無需額外處理 a11y」過度宣稱)
 
 ---
 
