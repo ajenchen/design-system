@@ -28,7 +28,10 @@ case "$FILE_PATH" in
   *) exit 0 ;;
 esac
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+# 2026-06-01 #18 fix(user 授權):lib 被 dispatcher 以 `bash "$helper"` 呼叫($0=lib 自身路徑,在 .claude/hooks/lib/),
+# 需 3 層 ../ 才到 repo root。原 `../..` 只到 .claude → UISIZE_CSS/GLOBALS_CSS 路徑錯 → 兩值皆空 → empty==empty
+# → assertion 一直 vacuous(從不真 enforce,這才是 #18「assertion 失效」的底層根因,比讀錯檔更上游)。
+PROJECT_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 UISIZE_CSS="$PROJECT_ROOT/packages/design-system/src/tokens/uiSize/uiSize.css"
 GLOBALS_CSS="$PROJECT_ROOT/src/globals.css"
 
@@ -37,10 +40,11 @@ TAB_LG_MD=$(grep -oE '\--tab-height-lg:[[:space:]]*[0-9.]+rem' "$UISIZE_CSS" | h
 # Extract --tab-height-lg in lg density override(2nd occurrence)
 TAB_LG_LG=$(grep -oE '\--tab-height-lg:[[:space:]]*[0-9.]+rem' "$UISIZE_CSS" | sed -n '2p' | grep -oE '[0-9.]+')
 
-# Extract --chrome-header-height md(1st occurrence)
-CH_MD=$(grep -oE '\--chrome-header-height:[[:space:]]*[0-9.]+rem' "$GLOBALS_CSS" | head -1 | grep -oE '[0-9.]+')
-# Extract --chrome-header-height lg(2nd occurrence in lg override)
-CH_LG=$(grep -oE '\--chrome-header-height:[[:space:]]*[0-9.]+rem' "$GLOBALS_CSS" | sed -n '2p' | grep -oE '[0-9.]+')
+# Extract --chrome-header-height md(1st occurrence)— 2026-06-01 #18 fix(user 授權):讀 uiSize.css(token 真實 SSOT,L50),
+# 非 src/globals.css(22 行 aggregator 無此 token,2026-05-23 deep-audit Decision 1 已搬走)→ 原讀空值,assertion 失效。
+CH_MD=$(grep -oE '\--chrome-header-height:[[:space:]]*[0-9.]+rem' "$UISIZE_CSS" | head -1 | grep -oE '[0-9.]+')
+# Extract --chrome-header-height lg(2nd occurrence in lg override)— 同上讀 uiSize.css(L98)
+CH_LG=$(grep -oE '\--chrome-header-height:[[:space:]]*[0-9.]+rem' "$UISIZE_CSS" | sed -n '2p' | grep -oE '[0-9.]+')
 
 ERRORS=()
 
