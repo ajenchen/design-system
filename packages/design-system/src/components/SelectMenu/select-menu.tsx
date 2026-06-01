@@ -241,6 +241,19 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     if (!open) setSearch('')
   }, [open])
 
+  // 2026-06-01 Select/Combobox #15(user 拍板 A):非搜尋時開選單把 focus 移到 cmdk-root,
+  // 讓 cmdk 內建方向鍵 / Enter / Home / End 導覽生效。原 PopoverContent default autofocus 找 body
+  // input/button,非搜尋無 input + 選項是 role=option div → focus 落在 content wrapper,cmdk 的 keydown
+  // handler 綁在 cmdk-root 收不到事件 → 桌機鍵盤導覽不可達(WAI-ARIA combobox 違反)。
+  // **純鍵盤路由**:滑鼠點擊路徑完全不碰;cmdk active-option highlight 是 cmdk 內部 state(非 DOM focus
+  // 驅動)故視覺不變。selector miss 時 root=null → no-op fallback(無回歸)。
+  // SSOT 在 SelectMenu → Select / Combobox / 所有 non-searchable SelectMenu consumer 自動受益。
+  const handleNonSearchableAutoFocus = React.useCallback((e: Event) => {
+    e.preventDefault()
+    const root = (e.currentTarget as HTMLElement).querySelector<HTMLElement>('[cmdk-root]')
+    root?.focus({ preventScroll: true })
+  }, [])
+
   // RowSizeProvider 讓 PopoverContent 子樹內任何 <ItemIcon> / <ItemAvatar> /
   // <ItemInlineAction> 都自動讀到對的 size,跟 SidebarProvider / TreeView 同一條規則。
   // (注:Popover 透過 Portal 渲染,context 仍然會跨 portal 傳遞——React context 是 tree-based
@@ -264,7 +277,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         }}
         align={align}
         sideOffset={OVERLAY_SIDE_OFFSET}
-        onOpenAutoFocus={onOpenAutoFocus}
+        onOpenAutoFocus={onOpenAutoFocus ?? (!searchable ? handleNonSearchableAutoFocus : undefined)}
         // **2026-05-07 v15.16 nested portal fix**:Tag dismiss inside trigger
         // 區的 OverflowIndicator HoverCard popup(獨立 Radix portal,DOM 不在
         // PopoverContent 內)— Radix DismissableLayer document-level outside
