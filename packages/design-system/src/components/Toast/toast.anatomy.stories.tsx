@@ -223,7 +223,7 @@ export const StateBehavior: Story = {
             <tbody>
               <tr><Td mono>進場</Td><Td mono>toast()</Td><Td>從右下滑入 + fade-in + stacking shift</Td><Td mono>~400ms(sonner 內建)</Td></tr>
               <tr><Td mono>自動關閉</Td><Td>`duration` 到期</Td><Td>fade-out + 向右滑出</Td><Td mono>duration ?? 4000ms</Td></tr>
-              <tr><Td mono>手動 dismiss</Td><Td>X button / 向右滑動</Td><Td>立即 fade-out + 滑出</Td><Td mono>滑動超過 45px</Td></tr>
+              <tr><Td mono>手動 dismiss</Td><Td>X button / 向右滑動</Td><Td>立即 fade-out + 滑出</Td><Td mono>滑動 ≥ 45px 或速度夠快(velocity {'>'} 0.11)</Td></tr>
               <tr><Td mono>Pause on hover</Td><Td>Hover 任一 toast</Td><Td>倒數暫停;離開後 resume</Td><Td mono>sonner 預設開啟</Td></tr>
             </tbody>
           </table>
@@ -318,7 +318,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `toast.spec.md` 「A11y 預設」段。摘要:\n\n-   預設  （success / info / neutral）： role=\"status\"  +  aria-live=\"polite\" ——screen reader 在空閒時讀出，不中斷使用者\n-   error / warning 升級  ： role=\"alert\"  +  aria-live=\"assertive\" ——立即中斷朗讀通知使用者\n-   由 sonner 自動管理  ：本 DS 不覆寫 sonner 的 a11y 行為，consumer 無需額外處理\n-   關閉按鈕  ：若 consumer 自訂 action,務必提供  aria-label （sonner 內建 dismiss 已處理）"}</p>
+      <p className="whitespace-pre-line">{"詳 `toast.spec.md` 「A11y 預設」段。摘要:\n\n-   預設  （success / info / neutral）： role=\"status\"  +  aria-live=\"polite\" ——screen reader 在空閒時讀出，不中斷使用者\n-   error / warning 升級  ： role=\"alert\"  +  aria-live=\"assertive\" ——立即中斷朗讀通知使用者\n-   由本 DS 在 outer wrapper 上依 variant 設 role / aria-live  ：非 sonner 內建（sonner runtime 本身 0 個 role,只有外層 <section> 容器固定 aria-live=polite），consumer 無需額外處理\n-   關閉按鈕  ：畫面上可見的 X 由 Notice 渲染（<Button dismiss> 自帶 aria-label='關閉通知'），非 sonner 內建 close 鈕；若 consumer 自訂 action,務必為自訂互動元素提供  aria-label "}</p>
     </div>
   ),
 }

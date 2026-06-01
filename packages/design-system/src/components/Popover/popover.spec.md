@@ -152,14 +152,16 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 
 ## A11y 預設
 
-Radix Popover 自動處理：
+焦點 / 鍵盤 / ARIA 行為分兩層——**DS 覆寫**(改 Radix 預設)與 **Radix 內建**(沿用)：
 
-- **焦點管理**：開啟時移動焦點進入 content；關閉時 focus return to trigger
-- **Esc 關閉**：按 Esc 自動關閉並返回焦點
-- **Focus trap**：`modal={true}` 時焦點鎖在 content 內；預設 non-modal 下焦點離開 content 樹會自動關閉
-- **ARIA**：trigger 自動 `aria-expanded` / `aria-controls`，content `role="dialog"`
+- **開啟焦點(DS 覆寫)**：DS 以 `onOpenAutoFocus` 覆寫 Radix 預設 autofocus(見 `popover.tsx` `handlePopoverOpenAutoFocus`),開啟時把焦點落在 body 第一個可互動元素。Radix 預設會先 focus 右上 close X,DS 覆寫以避免觸發 tooltip leak(對齊 Material / Polaris「open 時 focus 落首個有意義控制」)。**注意**:若移除此 default handler,行為會回退成 Radix 預設 focus close X
+- **關閉返回(Radix 內建)**：關閉時 focus return to trigger
+- **Esc 關閉(Radix 內建)**：按 Esc 自動關閉並返回焦點
+- **Focus trap(Radix 內建,僅 modal)**：`modal={true}` 時焦點鎖在 content 內
+- **點外 / 焦點離開即關(Radix 內建,non-modal)**：預設 non-modal **不鎖焦點**(無 focus trap),焦點或指標離開 content 樹時由 DismissableLayer 觸發 dismiss 自動關閉——這是 dismiss-on-focus-out 機制,**不是** focus trap
+- **ARIA(Radix 內建)**：trigger 自動 `aria-expanded` / `aria-controls`，content `role="dialog"`
 
-Consumer 無需額外處理 a11y，保留 Radix `data-state` 屬性即可。
+Consumer 無需額外處理 a11y,保留 Radix `data-state` 屬性即可(開啟焦點的 DS 覆寫 default 已 wire 在 `PopoverContent`,consumer 可傳自己的 `onOpenAutoFocus` override)。
 
 ---
 

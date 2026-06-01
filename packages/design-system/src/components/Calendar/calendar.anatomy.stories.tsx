@@ -118,13 +118,13 @@ export const ColorMatrix: Story = {
                 </tr>
                 <tr>
                   <Td>日期 header</Td>
-                  <Td mono>h-7 · text-body · font-medium</Td>
-                  <Td>右上角數字,對齊 Google Calendar</Td>
+                  <Td mono>flex items-start justify-end · text-body · font-medium</Td>
+                  <Td>右上角數字,wrapper 無固定高度(由內容 + cell min-h-28 決定),對齊 Google Calendar</Td>
                 </tr>
                 <tr>
                   <Td>Today cell(日期數字)</Td>
-                  <Td mono>bg-primary · text-on-emphasis · rounded-full · px-2 py-0.5</Td>
-                  <Td>primary-filled pill(對齊 Google Calendar today pill)</Td>
+                  <Td mono>bg-primary · text-on-emphasis · rounded-full · min-w-6 h-6 px-2 · text-body font-medium</Td>
+                  <Td>primary-filled pill,固定 h-6 + min-w-6 做圓形 badge(對齊 Google Calendar today pill)</Td>
                 </tr>
                 <tr>
                   <Td>Outside day cell</Td>

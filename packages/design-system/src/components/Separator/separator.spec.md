@@ -16,7 +16,7 @@ Separator 是語意分隔元件，用於標示內容群組之間的邊界。
 
 **Layout Family**：非上述 family — self-contained primitive（獨立視覺，無 slot 結構）。
 
-**實作基礎**：基於 Radix Separator（shadcn passthrough）——提供正確的 ARIA `role="separator"` + orientation 語意。
+**實作基礎**：基於 Radix Separator（shadcn passthrough）——提供正確的 ARIA 語意：預設 `decorative=true` 時 render `role="none"`（SR 跳過），`decorative={false}` 時 render `role="separator"` + orientation 語意。詳 A11y 段。
 
 ## 定位
 

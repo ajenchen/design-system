@@ -101,7 +101,8 @@ export const Overview: Story = {
                 ['status', "'online' | 'away' | 'busy' | 'offline'", '—', '觸發 Status section + Avatar 狀態點'],
                 ['statusMessage', 'ReactNode', '—', '狀態說明文字(完整顯示,內容多時 Body 區捲動)'],
                 ['actions', 'ReactNode', '—', 'CTA buttons(通常 2 個 sm Button)'],
-                ['fields', '{ label: string; value: ReactNode }[]', '—', 'Info fields,走 DescriptionList cols=2'],
+                ['fields', '{ label: string; value: ReactNode }[]', '—', 'Consumer 自訂 info fields(email / phone / 團隊 等),append 在 default 之後,走 DescriptionList cols=2'],
+                ['defaultFieldValues', "Partial<Record<'id' | 'employeeNumber', ReactNode>>", '—', '填 default field(id / Employee number)真實值的正規入口,缺值顯 — 佔位;優於用 fields 傳同名 label(後者 dev mode 會 console.warn)'],
                 ['onViewMore', '() => void', '—', 'View more callback(有值才顯示該 section)'],
                 ['viewMoreLabel', 'string', "'View more'", 'View more button 文字'],
               ].map(([p, t, d, desc]) => (

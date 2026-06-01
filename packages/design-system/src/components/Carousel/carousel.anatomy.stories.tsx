@@ -475,7 +475,7 @@ export const StateBehavior: Story = {
             <tbody>
               <tr><Td mono>ArrowLeft</Td><Td>上一張(onKeyDownCapture 於根容器)</Td></tr>
               <tr><Td mono>ArrowRight</Td><Td>下一張</Td></tr>
-              <tr><Td mono>Tab</Td><Td>進入 Previous → Next → 每個 Dot 的 roving focus</Td></tr>
+              <tr><Td mono>Tab</Td><Td>循序 Tab(sequential Tab)進入 Previous → Next → 每個 Dot</Td></tr>
               <tr><Td mono>Enter / Space</Td><Td>觸發當前 focus 的 arrow / dot</Td></tr>
             </tbody>
           </table>
@@ -510,7 +510,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `carousel.spec.md` 「A11y 預設」段。摘要:\n\n  ARIA  :\n\n- 根容器 `role=\"region\"` + `aria-roledescription=\"carousel\"`\n- 每個 `CarouselItem` `role=\"group\"` + `aria-roledescription=\"slide\"`\n- Arrow 為 DS Button,帶 `aria-label`(「上一張」/「下一張」),邊界時 `disabled`\n- Dots 容器 `role=\"tablist\"` + `aria-label`;每個 dot `role=\"tab\"` + `aria-selected={...}` + `aria-label=\"跳至第 N 張\"`\n\n  Keyboard 行為  :\n\n- ←/→ — 上一張 / 下一張(根容器 `onKeyDownCapture`,`preventDefault` 避免頁面捲動)\n- Tab — roving 進入 Previous → Next → 每個 Dot\n- Enter / Space — 觸發當前 focus 的 arrow / dot(原生 `<button>`)\n\n  Focus  :arrow 預設 `opacity-0`,`focus-within` / `focus-visible` 時強制顯示(鍵盤使用者不 hover,焦點必可見);dot focus-visible 走 ring token(`ring-2 ring-ring ring-offset-2`)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;不靠滑鼠即可完整切張與跳張。"}</p>
+      <p className="whitespace-pre-line">{"詳 `carousel.spec.md` 「A11y 預設」段。摘要:\n\n  ARIA  :\n\n- 根容器 `role=\"region\"` + `aria-roledescription=\"carousel\"`\n- 每個 `CarouselItem` `role=\"group\"` + `aria-roledescription=\"slide\"`\n- Arrow 為 DS Button,帶 `aria-label`(「上一張」/「下一張」),邊界時 `disabled`\n- Dots 容器 `role=\"tablist\"` + `aria-label`;每個 dot `role=\"tab\"` + `aria-selected={...}` + `aria-label=\"跳至第 N 張\"`\n\n  Keyboard 行為  :\n\n- ←/→ — 上一張 / 下一張(根容器 `onKeyDownCapture`,`preventDefault` 避免頁面捲動)\n- Tab — 循序 Tab(sequential Tab)進入 Previous → Next → 每個 Dot(每個控制項各為獨立 tab stop)\n- Enter / Space — 觸發當前 focus 的 arrow / dot(原生 `<button>`)\n\n  Focus  :arrow 預設 `opacity-0`,`focus-within` / `focus-visible` 時強制顯示(鍵盤使用者不 hover,焦點必可見);dot focus-visible 走 ring token(`ring-2 ring-ring ring-offset-2`)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;不靠滑鼠即可完整切張與跳張。"}</p>
     </div>
   ),
 }

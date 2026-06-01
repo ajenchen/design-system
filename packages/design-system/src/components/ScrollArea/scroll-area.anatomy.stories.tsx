@@ -227,8 +227,8 @@ export const Inspector: Story = {
           <div className="px-4 py-1">
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Color</span></div>
             <InspectRow label="Track"><TokenCell token="transparent" display="transparent" /></InspectRow>
-            <InspectRow label="Thumb"><TokenCell token="--border" /></InspectRow>
-            <InspectRow label="Thumb hover"><TokenCell token="--border-hover" /></InspectRow>
+            <InspectRow label="Thumb"><TokenCell token="--scrollbar-thumb" /></InspectRow>
+            <InspectRow label="Thumb hover"><TokenCell token="--scrollbar-thumb-hover" /></InspectRow>
           </div>
 
           {/* STYLE */}
@@ -275,8 +275,8 @@ export const ColorMatrix: Story = {
             </tr>
             <tr>
               <Td mono>Thumb</Td>
-              <Td><TokenCell token="--border" /></Td>
-              <Td><TokenCell token="--border-hover" /></Td>
+              <Td><TokenCell token="--scrollbar-thumb" /></Td>
+              <Td><TokenCell token="--scrollbar-thumb-hover" /></Td>
             </tr>
           </tbody>
         </table>
@@ -284,7 +284,7 @@ export const ColorMatrix: Story = {
 
       <div>
         <H3>實際渲染 — hover 感受差異</H3>
-        <Desc>將游標移入下方容器,scrollbar 會淡入(type=&quot;hover&quot;);hover 到 thumb 上,色彩由 --border(neutral-5)加深至 --border-hover(neutral-6)。世界級 SaaS 的 scrollbar thumb 都是這種 subtle 視覺,不搶主視覺。</Desc>
+        <Desc>將游標移入下方容器,scrollbar 會淡入(type=&quot;hover&quot;);hover 到 thumb 上,色彩由 --scrollbar-thumb(resolves to --border = neutral-5)加深至 --scrollbar-thumb-hover(resolves to --border-hover = neutral-6)。世界級 SaaS 的 scrollbar thumb 都是這種 subtle 視覺,不搶主視覺。</Desc>
         <ScrollArea className="h-[200px] w-[320px] border border-border rounded-md bg-surface">
           <PreviewList count={18} />
         </ScrollArea>

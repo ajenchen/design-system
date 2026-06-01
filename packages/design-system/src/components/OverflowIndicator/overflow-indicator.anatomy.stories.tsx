@@ -45,10 +45,16 @@ type ShapeKey = 'circle' | 'tag'
 const SIZES: SizeKey[] = ['sm', 'md', 'lg']
 const SHAPES: ShapeKey[] = ['circle', 'tag']
 
-const SIZE_SPECS: Record<SizeKey, { height: string; text: string; heightPx: number; textPx: number }> = {
-  sm: { height: 'h-5 min-w-5', text: 'text-[10px]', heightPx: 20, textPx: 10 },
-  md: { height: 'h-6 min-w-6', text: 'text-caption', heightPx: 24, textPx: 12 },
-  lg: { height: 'h-6 min-w-6', text: 'text-caption', heightPx: 24, textPx: 12 },
+// font-size 依 shape 分流(re-verified 2026-06-01):circle shape 走元件內建 triggerText
+// map(overflow-indicator.tsx:24-28),tag shape 走 tagVariants({ size })(tag.tsx:45-47)。
+// circleText / tagText 兩欄分別對應,避免把 circle-only 字級當成兩 shape 通用。
+const SIZE_SPECS: Record<
+  SizeKey,
+  { height: string; heightPx: number; circleText: string; circleTextPx: number; tagText: string; tagTextPx: number }
+> = {
+  sm: { height: 'h-5 min-w-5', heightPx: 20, circleText: 'text-[10px]', circleTextPx: 10, tagText: 'text-caption', tagTextPx: 12 },
+  md: { height: 'h-6 min-w-6', heightPx: 24, circleText: 'text-caption', circleTextPx: 12, tagText: 'text-body', tagTextPx: 14 },
+  lg: { height: 'h-6 min-w-6', heightPx: 24, circleText: 'text-caption', circleTextPx: 12, tagText: 'text-body', tagTextPx: 14 },
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -186,6 +192,9 @@ function OverflowInspector() {
   const [count, setCount] = useState(5)
 
   const spec = SIZE_SPECS[size]
+  // font-size 隨 shape 不同:circle 走 triggerText map、tag 走 tagVariants
+  const textClass = shape === 'tag' ? spec.tagText : spec.circleText
+  const textPx = shape === 'tag' ? spec.tagTextPx : spec.circleTextPx
 
   return (
     <div className="grid grid-cols-[1fr_320px] gap-8 max-w-5xl">
@@ -213,7 +222,7 @@ function OverflowInspector() {
   ┌───────────────┐
   │   +${count.toString().padStart(2, ' ')}           │   ← trigger pill
   │  ${spec.height.padEnd(13)}│      ${spec.heightPx}px (min-width 同高)
-  │  ${spec.text.padEnd(13)}│      ${spec.textPx}px 字體
+  │  ${textClass.padEnd(13)}│      ${textPx}px 字體 (${shape})
   └───────────────┘
          │ hover
          ▼
@@ -293,7 +302,7 @@ function OverflowInspector() {
               </tr>
               <tr>
                 <Td mono>font-size</Td>
-                <Td mono>{spec.text} · {spec.textPx}px</Td>
+                <Td mono>{textClass} · {textPx}px（{shape}）</Td>
               </tr>
               <tr>
                 <Td mono>bg</Td>
@@ -433,7 +442,8 @@ export const SizeMatrix: Story = {
                 <Th>Size</Th>
                 <Th>Height</Th>
                 <Th>Min-width</Th>
-                <Th>Font-size</Th>
+                <Th>Font-size（circle）</Th>
+                <Th>Font-size（tag）</Th>
                 <Th>對齊</Th>
               </tr>
             </thead>
@@ -443,7 +453,8 @@ export const SizeMatrix: Story = {
                   <Td mono>{s}</Td>
                   <Td mono>{SIZE_SPECS[s].height.split(' ')[0]} · {SIZE_SPECS[s].heightPx}px</Td>
                   <Td mono>{SIZE_SPECS[s].height.split(' ')[1]} · {SIZE_SPECS[s].heightPx}px</Td>
-                  <Td mono>{SIZE_SPECS[s].text} · {SIZE_SPECS[s].textPx}px</Td>
+                  <Td mono>{SIZE_SPECS[s].circleText} · {SIZE_SPECS[s].circleTextPx}px</Td>
+                  <Td mono>{SIZE_SPECS[s].tagText} · {SIZE_SPECS[s].tagTextPx}px</Td>
                   <Td>{s === 'lg' ? '同 md(24px)' : `Tag ${s}`}</Td>
                 </tr>
               ))}
@@ -451,7 +462,9 @@ export const SizeMatrix: Story = {
           </table>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          <code className="font-mono">sm</code> 用
+          font-size 依 shape 分流——<code className="font-mono">circle</code> 走元件內建 triggerText map、
+          <code className="font-mono">tag</code> 走 <code className="font-mono">tagVariants</code>(對齊 Tag 字級)。
+          circle shape 的 <code className="font-mono">sm</code> 用
           <code className="font-mono mx-1">text-[10px]</code>
           的理由見 spec「尺寸」段——sub-footnote 特殊例外,與 Badge 共享 micro-indicator typography tier。
         </p>

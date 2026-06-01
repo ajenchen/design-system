@@ -82,7 +82,7 @@ const [country, setCountry] = useState('tw')
 - **Toolbar / filter 的選擇**：table 上方的 category filter、sort by、狀態篩選
 - **Table cell 的 inline edit**：Jira-style task 的 status / priority / assignee（見下文「即時 vs on-submit」）
 - **選項 label 自帶語意**：國家、類別、時區——使用者看 label 就知道要選什麼，不需要額外 description
-- **選項 10+ 且不需搜尋**：時區、國家這類使用者熟悉的清單，依賴 native select 的 type-to-jump 快速定位
+- **選項 10+ 且不需搜尋**：時區、國家這類使用者熟悉的清單，靠捲動瀏覽即可定位（type-to-jump 逐字定位只有手機原生 `<select>` 才有；桌機是自建 combobox，非搜尋模式無逐字定位，選項偏多時建議直接開 searchable）
 
 ## 何時不用
 
@@ -182,10 +182,10 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
   - 郵遞區號、機場代碼（TPE / NRT / JFK）
   - 使用者 ID、專案 slug、ticket number
   - 中文姓名（同姓大量集中，字母跳不動）
-- ❌ **不需要 searchable**：label 是流暢自然語言、品類名稱，native select 的 type-to-jump 就夠用
+- ❌ **不需要 searchable**：label 是流暢自然語言、品類名稱，且選項數量在捲動可輕鬆掃完的範圍
   - `Electronics`、`Furniture`、`Food`
   - `Draft` / `In progress` / `Done`
-  - 國家英文名（按首字母跳夠快）
+  - 國家英文名（清單不長時捲動即可；注意桌機自建 combobox 無逐字定位，國家這類長清單仍建議開 searchable）
 
 ### 次要啟發：選項數量
 
@@ -197,7 +197,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 ### 為什麼不用純數量 threshold
 
-- 100 個 `a` / `b` / `c` / ... 不需要搜尋（native type-to-jump 直達）
+- 100 個 `a` / `b` / `c` / ... 因 label 有序好掃，捲動定位心智成本低（手機原生 `<select>` 另有 type-to-jump 加成；桌機若清單真的很長仍可開 searchable）
 - 5 個 `SKU-4837` / `SKU-8210` / ... 需要搜尋（使用者記不起哪個代碼對應哪個產品）
 
 純量化規則會誤判這兩端。label 性質是唯一可靠的主判準。
@@ -218,7 +218,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 - 原生 select 純文字 + ChevronDown
 - 可搭配 `startIcon`——**field-level leading indicator**(色 muted,對齊 `Input.startIcon` search-icon pattern;`Mail` / `Globe` / `Lock` / `Flag` 等提示「這個 field 的類型 / 屬性」,跟 selected value 變動無關)
 - **代表 value 的 icon(value-bound)走 `option.icon` per-option API**,Select 渲 selected 時 inherit fg-default(對齊 `MenuItem.startIcon` 跨元件 SSOT)
-- 兩 prop 不互斥:`startIcon` field-level 顯示時優先;unset 才落到 selected `option.icon` fallback(select.tsx:197/369 `SelectedIcon` path)
+- 兩 prop 不互斥:`startIcon` field-level 顯示時優先;unset 才落到 selected `option.icon` fallback(渲染處 `!StartIcon && <SelectedIcon> && value`:CustomSelect text display select.tsx:253、NativeSelect text display select.tsx:436)
 - **icon kind canonical(2026-05-09 clarified)**:DS 兩種 icon 角色明確區分 — **value icon**(代表 label / 選中項)→ fg-default(MenuItem 內 / `option.icon`)/ **indicator icon**(field-level leading hint)→ muted(Input.startIcon / Select.startIcon)
 
 ### tag 模式

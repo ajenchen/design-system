@@ -200,7 +200,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>Close button 互動狀態</H3>
         <Desc>
-          Chrome corner close 用 **Button iconOnly `dismiss` size="xs"**(Notification banner 家族設計準則,見 `overlay-surface.spec.md`「Chrome dismiss size canonical」三家族分類 — Notice / Alert / Toast 屬 notification banner,xs 為其 家族設計準則)。corner 屬 action group region,實務上可與 refresh / share 等 Button 並排(用 Separator 分群),必須統一 Button primitive + 同 family 全 xs。`dismiss` prop 自動套 `variant="text"` + icon `fg-muted` 弱化,hover 時恢復 foreground。
+          Chrome corner close 用 **Button iconOnly `dismiss` size="xs"**(notification banner family 設計準則,見 `overlay-surface.spec.md`「Chrome dismiss size canonical」)。現行 canonical 為兩分:notification banner family(Notice / Alert / Toast,px-4 py-3 固定)dismiss 用 `xs`;overlay surface(Dialog / Sheet / Popover)另走 `sm` + unbounded 負 margin trick。corner 屬 action group region,實務上可與 refresh / share 等 Button 並排(用 Separator 分群),必須統一 Button primitive + 同 family 全 xs。`dismiss` prop 自動套 `variant="text"` + icon `fg-muted` 弱化,hover 時恢復 foreground。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">

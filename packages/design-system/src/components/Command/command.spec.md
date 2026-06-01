@@ -18,7 +18,7 @@ benchmark:
 
 Command 是**搜尋 + 鍵盤導覽的指令清單**——提供搜尋框、分組選項、鍵盤導覽、空狀態。多用於浮層選單內部（SelectMenu）或 Command Palette（Cmd+K）。
 
-**實作基礎**：shadcn passthrough——基於 cmdk + Radix Dialog（Command Palette 模式）。本 DS 保留 shadcn 原結構 + 橋接 DS token 和 Empty / MenuItem primitive。
+**實作基礎**：shadcn passthrough——基於 cmdk + Radix Dialog（Command Palette 模式）。本 DS 保留 shadcn 原結構,視覺樣式以 inline Tailwind class 直接掛在 cmdk primitive 上（`command.tsx`），token 值對齊（非結構繼承）MenuItem / Input / Empty 的 canonical token——改 MenuItem 不會自動連動 Command。
 
 **分類**：Internal primitive——由 SelectMenu 消費（Select / Combobox / PeoplePicker 透過 SelectMenu 使用）。App 不直接使用 Command；若要 Command Palette 類 UX,組合 Popover + Command 即可。
 
@@ -95,20 +95,20 @@ Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>`
 ## 邊界案例
 
 - **Disabled item**:`<CommandItem disabled>` 透過 cmdk 內建支援,視覺繼承 MenuItem SSOT(`text-fg-disabled` + `aria-disabled=true` + 鍵盤導覽自動 skip + Enter 不觸發 onSelect)。
-- **Loading**:Command 本身非 async surface。async option fetch 應由 consumer(SelectMenu / Cmd+K palette)在外層處理 — 將 `<CommandList>` body 切換為 `<Empty icon={<CircularProgress size={48}/>}/>`(對齊 `empty.spec.md:182` SSOT)。Command primitive 不獨立 own loading prop。
+- **Loading**:Command 本身非 async surface。async option fetch 應由 consumer(SelectMenu / Cmd+K palette)在外層處理 — 將 `<CommandList>` body 切換為 `<Empty icon={<CircularProgress size={48}/>}/>`(對齊 `empty.spec.md:163` SelectMenu loading row SSOT,禁止事項見 `empty.spec.md:168`)。Command primitive 不獨立 own loading prop。
 - **Empty(no results)**:`<CommandEmpty>` 自動偵測 search filter result = 0 時渲;consumer 必傳 fallback 文案(預設 cmdk 不渲)。
-- **Dark mode / density**:走 MenuItem + Input + Empty SSOT 自動 adapt;Command 不獨立 own density(由 consumer SelectMenu 控)。
+- **Dark mode / density**:Command 的 inline Tailwind class 直接消費 semantic token（`bg-neutral-hover` / `text-fg-muted` / `text-fg-disabled` 等），token 在 dark mode 自動切值——非透過 MenuItem / Input / Empty primitive 連動。density 不獨立 own（由 consumer SelectMenu 控）。
 
 ---
 
 ## 為何無 Inspector / ColorMatrix / SizeMatrix / StateBehavior
 
-Command 是 **internal primitive**(SelectMenu 底層消費,app 不直接使用,見本 spec「分類」段),結構規格完全繼承既有 primitive:
+Command 是 **internal primitive**(SelectMenu 底層消費,app 不直接使用,見本 spec「分類」段),視覺 token 對齊既有 primitive 的 canonical 值（inline 寫在 `command.tsx`,非結構消費 primitive):
 
 - **無 Inspector**:Command 無自己的決策性 prop(variant / size / severity),behavior 全部由 cmdk library 處理。該讓消費者 inspect 的是 **SelectMenu**(公開消費入口),不是 Command 本身。
-- **無 ColorMatrix**:Command 的視覺(`CommandItem` / `CommandGroup` / `CommandInput` / `CommandEmpty`)全部繼承既有 DS primitive 的 token(MenuItem row / Input field / Empty layout),無自己的色彩決策——色彩漂移由 primitive layer 控制。
+- **無 ColorMatrix**:Command 的視覺(`CommandItem` / `CommandGroup` / `CommandInput` / `CommandEmpty`)以 inline Tailwind class 直接消費 semantic token(`bg-neutral-hover` / `text-fg-muted` / `text-fg-disabled` 等,token 值對齊 MenuItem row / Input field 的 canonical 用法),無自己的色彩決策——色彩漂移由 token layer 控制(改 token 連動,改 MenuItem 不連動)。
 - **無 SizeMatrix**:Command 搜尋框與 list items 的尺寸由 **Menu block tier**(consumer SelectMenu 決定 compact / reading),Command 自身無 size prop(見本 spec「禁止事項」:Command 搜尋框不對齊 Field size token)。
-- **無 StateBehavior**:Command item 的 selected / hover / disabled 走 MenuItem primitive state(`patterns/element-anatomy/item-anatomy.spec.md`);Command 層級僅處理 search 過濾與鍵盤導覽,那是 cmdk behavior 不是視覺 state。
+- **無 StateBehavior**:Command item 的 selected / hover / disabled 由 cmdk 的 `data-[selected]` / `data-[disabled]` attribute 觸發,樣式 inline 寫在 `command.tsx`(`data-[selected='true']:bg-neutral-hover` / `data-[disabled=true]:text-fg-disabled`),token 值對齊 MenuItem state 的 canonical 用法(`patterns/element-anatomy/item-anatomy.spec.md`)但非結構消費 MenuItem;Command 層級僅處理 search 過濾與鍵盤導覽,那是 cmdk behavior 不是視覺 state。
 
 對應 anatomy story:保留 `Overview`(展示 internal primitive 的 API surface——CommandInput / CommandList / CommandGroup / CommandItem / CommandEmpty)。深度視覺 / 尺寸對照請查 SelectMenu(consumer)與 MenuItem(item primitive)的 anatomy。
 

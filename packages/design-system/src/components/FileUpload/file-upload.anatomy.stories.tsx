@@ -88,6 +88,12 @@ export const Overview: Story = {
                 ['title', 'string', "'Click or drag file here to upload'", '預設結構(Empty)的主標題'],
                 ['description', 'string', '單/多檔字串自動切換', '預設結構(Empty)的副標題'],
                 ['children', 'ReactNode', '—', '傳入則整個覆寫預設 Empty 結構(consumer 完全客製)'],
+                ['loading', 'boolean', 'false', '上傳 / 處理中:以 CircularProgress 取代預設內容、阻擋新互動、aria-busy=true'],
+                ['loadingTitle', 'string', "'上傳中…'", 'loading 狀態的文字標題'],
+                ['files', 'FileUploadStatus[]', '—', '內建檔案清單。傳入 → drop zone 下方渲染列表(經由 FileItem);不傳 → 不顯示'],
+                ['fileListMode', "'compact' | 'rich'", "'compact'", '清單每項顯示模式。rich = 含 thumbnail / size / linear progress bar'],
+                ['onRemove', '(id: string) => void', '—', '清單移除 callback。有值 → 每項右側顯示 X 移除鈕;無 → view-only'],
+                ['removeAriaLabel', '(name: string) => string', '移除 {name}', '清單移除鈕的 ARIA label 模板(for i18n)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}>
                   <Td mono>{p}</Td>

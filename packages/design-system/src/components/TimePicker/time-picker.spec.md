@@ -22,7 +22,7 @@ TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Desi
 **Layout Family**:**Family 4(Field control layout)**,視覺對齊 Family 1(Menu item)。見 `patterns/element-anatomy/element-anatomy.spec.md`「Field Composition(不在 family 但相關)」段。
 
 **實作基礎**:
-- **Trigger**:`<button>` + `fieldWrapperStyles`(視覺 = Input wrapper,但 role 是 button 開 popover)
+- **Trigger**:`<div role="combobox">` + `fieldWrapperStyles`(視覺 = Input wrapper;**不用 `<button>`** —— 避免內層 `ItemInlineAction` 清除 button 構成 nested-interactive,對齊 Select / Combobox 同 pattern。Radix Popover 在 `asChild` 下會自動 inject Enter / Space 開啟 handler + 正確 aria attributes)
 - **Popup**:`<Popover>`(消費 `patterns/overlay-surface/` 的 surface chrome)
 - **Panel 主體**:**自建** 2-3 欄 column picker(時 / 分 / 秒),**不引入第三方 time library**——自建讓 DS own 視覺與交互(對齊 Ant Design 的 Panel 結構 — [react-component/picker TimePanel](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel) + 本 DS token)
 - **世界級對照**:Ant Design TimePicker([source](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel))/ Material DateTimePicker([mui-x DigitalClock](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DigitalClock/DigitalClock.tsx))/ iOS native time picker `@benchmark-unverified`(closed-source)——共同行為:column scroll selector、minuteStep 支援、Now / OK footer、clearable
@@ -34,7 +34,7 @@ TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Desi
 本元件刻意採 **controlled-only** 模式:`value` + `onChange` 必傳,不支援 `defaultValue` uncontrolled fallback。
 
 **為什麼**:
-- 內部狀態複雜(search filter / range / menu open state)跟 `value` 雙向 sync 會產生 race condition
+- 內部狀態(panel `open` + 暫存 `draft` 值)若要跟外部 `value` 雙向 sync 會產生 race condition
 - Consumer 幾乎一定有外部 state(form library / app state),強制 controlled 消除 ambiguity
 - 世界級對照:Ant Design DatePicker([source](https://github.com/react-component/picker/blob/master/src/PickerInput/SinglePicker.tsx)) / Material MUI Select([source](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Select/Select.js))皆支援 dual-mode;我們選 controlled-only 對齊狀態一致性優先
 

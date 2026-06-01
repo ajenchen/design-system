@@ -606,7 +606,7 @@ export const StateBehavior: Story = {
         <div className="flex flex-wrap gap-6">
           <CollapsedFrame variant="expanded" label='collapsible="icon" · expanded' width={240} collapsed={false} />
           <CollapsedFrame variant="icon" label='collapsible="icon" · collapsed(icon mode)' width={48} collapsed />
-          <CollapsedFrame variant="offcanvas" label='collapsible="offcanvas" · collapsed(hidden)' width={272} collapsed />
+          <CollapsedFrame variant="offcanvas" label='collapsible="offcanvas" · collapsed(hidden)' width={240} collapsed />
         </div>
       </div>
 

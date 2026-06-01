@@ -367,11 +367,12 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'` OR `dismiss === true`** 任一成立。這是 DS-wide 視覺邊界 marker,讓容器(如 SurfaceHeader)可用 CSS selector 對無視覺邊界 button 套 layout 調整。
 
-**實際應用**:`SurfaceHeader` / `SurfaceFooter` 內建 CSS rule:
+**實際應用**:`SurfaceHeader` / `SurfaceFooter` 內建 CSS rule(SSOT 在 `overlay-surface.tsx` `CHROME_UNBOUNDED_SLOT`,此處僅引述不重述完整公式):
 ```css
-[&_[data-unbounded]]:my-[calc((var(--field-height-xs) - var(--field-height-sm)) / 2)]
+[&_[data-unbounded]]:my-[calc((var(--chrome-slot-h,var(--field-height-xs))-var(--field-height-sm))/2)]
 ```
-→ md: my=-2px / lg: my=-4px
+→ slot 高度由 `--chrome-slot-h` 參數化(default `var(--field-height-xs)`=24;Popover override 20)
+→ default(md): my=-2px / lg: my=-4px
 → 效果:Button native size 不變(sm 28/32,touch target 亦同),**layout 佔位縮到 24**(等效 xs 幾何),header = 24 + 2×tight = 48/56 = `--chrome-header-height` ✓
 
 **詳**:`patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」+ `tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」。

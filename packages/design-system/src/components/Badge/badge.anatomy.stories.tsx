@@ -508,7 +508,7 @@ export const SizeMatrix = {
               { label: '字體', count: { token: 'text-[10px]', value: '10px' }, dot: { token: '—', value: '無文字' } },
               { label: 'Font Weight', count: { token: 'font-medium', value: '500' }, dot: { token: '—', value: '' } },
               { label: 'Line Height', count: { token: 'leading-none', value: '1' }, dot: { token: '—', value: '' } },
-              { label: 'Radius', count: { token: 'rounded-full', value: '9999px' }, dot: { token: 'rounded-full', value: '9999px（implicit via w/h）' } },
+              { label: 'Radius', count: { token: 'rounded-full', value: '9999px' }, dot: { token: 'rounded-full', value: '9999px（base rounded-full）' } },
             ].map((row) => (
               <tr key={row.label}>
                 <Td>{row.label}</Td>
@@ -577,7 +577,7 @@ export const Accessibility = {
       <h3 className="text-h5 text-foreground mb-1">無障礙設計</h3>
       <p>Badge 不可聚焦、無鍵盤互動（非互動元件），但**不是**完全無語意：元件預設帶 <code className="font-mono text-fg-secondary">role="status"</code>（live region，計數變化可被 screen reader 播報），consumer 可傳 <code className="font-mono text-fg-secondary">role</code> override。</p>
       <ul className="list-disc pl-5 space-y-1 text-caption text-fg-muted">
-        <li><span className="font-mono text-fg-secondary">role="status"</span>：cva 預設，計數更新時自動播報，不需 consumer 設定。</li>
+        <li><span className="font-mono text-fg-secondary">role="status"</span>：元件預設（forwardRef render，consumer 可傳 role override），計數更新時自動播報，不需 consumer 設定。</li>
         <li>Count 模式：數字會被讀出，但需 parent 容器的 <span className="font-mono text-fg-secondary">aria-label</span> 補 context（「通知 (3 則未讀)」）。</li>
         <li>Dot 模式：無文字 → screen reader 看不到 → <span className="font-mono text-fg-secondary">aria-label</span> 為必填。</li>
         <li>色彩不獨立承載語意（color-blind）：level 不能只靠紅 / 藍 / 灰，需搭配 count 數字或 aria-label。</li>

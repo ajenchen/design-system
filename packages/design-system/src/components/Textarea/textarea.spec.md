@@ -27,7 +27,7 @@ benchmark:
 
 Textarea 是**多行文字**的輸入與顯示元件——Input 的多行版本。格式化邏輯為 identity（value → value）。
 
-**Layout Family**：Family 4（Field control）— multi-line variant。結構與單行 Family 4 相同（fieldWrapper + startIcon + content + endAction，視覺對齊 Family 1），僅高度可隨 rows / resize-y 擴展、不受 `--field-height-*` 約束。
+**Layout Family**：Family 4（Field control）— multi-line variant。**繼承** Family 4 的 token（字體 / padding / border / state 色彩），但**結構簡化為單一 native `<textarea>`**（edit 態裸 `<textarea>`、display 態裸 `<div>`）——無 fieldWrapper composite、無 startIcon / content / endAction 多 slot anatomy（見下方「與 Input 的差異」L64 與「禁止事項」L113）。高度可隨 rows / resize-y 擴展、不受 `--field-height-*` 約束。
 
 **實作基礎**：native `<textarea>` + 橋接 DS token，無 external primitive base。shadcn 同類做法。
 

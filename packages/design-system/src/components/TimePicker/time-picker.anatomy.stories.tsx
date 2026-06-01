@@ -254,10 +254,10 @@ export const Accessibility: Story = {
       <section>
         <h3 className="text-body font-bold mb-2">ARIA roles</h3>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
-          <li>Trigger:<code>role="combobox"</code> + <code>aria-expanded={`{open}`}</code> + 必含 <code>aria-label</code></li>
+          <li>Trigger:<code>role="combobox"</code> + <code>aria-expanded={`{open}`}</code>;在 <code>{'<Field>'}</code> 內以 <code>aria-labelledby</code> 指向 field label(無 Field 時 consumer 需自帶 <code>aria-label</code>)</li>
           <li>Panel:每欄(時 / 分 / 秒)<code>role="listbox"</code></li>
           <li>每 item:<code>role="option"</code> + <code>aria-selected</code> 反映當前 value</li>
-          <li>Screen reader 讀「時間選擇器,當前 9 時 30 分」</li>
+          <li>Screen reader 經 trigger label(field label)+ combobox 內可見值文字朗讀目前選取時間(目前值以可見 <code>{'<span>'}</code> 呈現,無額外 <code>aria-valuetext</code>)</li>
         </ul>
       </section>
       <section>

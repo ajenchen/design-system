@@ -224,7 +224,7 @@ const InspectorInner = () => {
             <PropRow label="Role">{readOnly || disabled ? 'img' : 'slider'}</PropRow>
             <PropRow label="tabIndex">{readOnly || disabled ? '—' : '0'}</PropRow>
             <PropRow label="Hover">{readOnly || disabled ? '—' : '填色預覽至游標所在星（不改尺寸）'}</PropRow>
-            <PropRow label="Keyboard">{readOnly || disabled ? '—' : `Arrow ± ${precision === 'half' ? '0.5' : '1'}`}</PropRow>
+            <PropRow label="Keyboard">{readOnly || disabled ? '—' : `Arrow ± ${precision === 'half' ? '0.5' : '1'} · Home=0 · End=max`}</PropRow>
           </div>
 
           <div className="px-4 py-1 pb-3">
@@ -234,6 +234,7 @@ const InspectorInner = () => {
             <PropRow label="aria-valuenow">{readOnly || disabled ? '—' : value}</PropRow>
             <PropRow label="aria-valuemin">{readOnly || disabled ? '—' : '0'}</PropRow>
             <PropRow label="aria-valuemax">{readOnly || disabled ? '—' : '5'}</PropRow>
+            <PropRow label="aria-valuetext">{readOnly || disabled ? '—' : `${value} of 5 stars`}</PropRow>
             <PropRow label="aria-label">{readOnly ? '必填' : '建議填'}</PropRow>
           </div>
         </div>
@@ -373,12 +374,13 @@ export const SizeMatrix = {
       </table>
 
       <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">為何不走 field-height family</span>
+        <span className="text-caption font-medium text-fg-secondary">Container 消費 field-height,star icon 走 inline-Avatar 尺寸</span>
         <p className="text-caption text-fg-muted max-w-[720px] leading-relaxed">
-          Field-height family（Input / NumberInput / DatePicker / Select 等）需要高度對齊相同 row
-          的其他 Field control，共用 `--field-height-sm/md/lg` token。Rating 沒有 padding / border box，
-          高度由 icon px 自然撐起——若強制套 field-height，icon 周圍會出現不必要的空白。
-          Badge / Switch / Checkbox 等 self-contained primitive 採同樣策略。
+          Rating 的 container 消費 `--field-height-*`（xs=24 / sm=28 / md=32 / lg=36），讓它與
+          Input / NumberInput / DatePicker / Select / Button 等 field-height family 元件並排同一 row 時高度對齊。
+          這一層是「外框高度」對齊；star icon 本身則走 item-anatomy inline Avatar 尺寸（sm=20 / md=24 / lg=24），
+          而非 icon tier（16/16/20）——因為一顆星是 filled identity 視覺（主要資料點），視覺份量要跟 Avatar 齊。
+          兩層分開設計:container 高度對齊 Field row,icon 大小對齊 Avatar 重量。
         </p>
       </div>
     </div>
@@ -434,10 +436,11 @@ export const StateBehavior = {
 
           <div className="flex flex-col gap-2">
             <span className="text-caption font-medium text-fg-secondary">
-              Keyboard — Arrow Left/Right/Up/Down 改值
+              Keyboard — Arrow Left/Right/Up/Down 改值 · Home / End 跳極值
             </span>
             <p className="text-caption text-fg-muted max-w-[720px]">
-              Focus 進入 Rating 容器後，Arrow Right/Up 加一、Arrow Left/Down 減一（precision=half 時 step=0.5）。
+              Focus 進入 Rating 容器後，Arrow Right/Up 加一、Arrow Left/Down 減一（precision=half 時 step=0.5）；
+              Home 跳到 0、End 跳到 max（完整 WAI-ARIA slider 鍵盤 pattern）。
               值範圍 0 ~ max，超出自動 clamp。
             </p>
             <div className="flex items-center gap-4">
@@ -484,7 +487,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `rating.spec.md` 「A11y 預設」段。摘要:\n\n-   interactive  ： role=\"slider\"  +  aria-valuenow={value}  +  aria-valuemin={0}  +  aria-valuemax={max}  +  tabIndex={0} ，鍵盤 Arrow Left/Right/Up/Down 改值（precision=half 時 step=0.5，否則 step=1）\n-   readOnly  ： role=\"img\"  +  aria-label （  必填  ），例： aria-label=\"平均評分 4.7 星，共 5 星\" 。無 tabIndex\n-   disabled  ： aria-disabled=\"true\"  +  pointer-events-none \n-   單顆星    aria-hidden ：內部點擊目標是  <span role=\"presentation\" aria-hidden> （非 interactive element，避免與外層 role=\"slider\" 形成 axe nested-interactive；含 half-precision 兩個 hover zone）"}</p>
+      <p className="whitespace-pre-line">{"詳 `rating.spec.md` 「A11y 預設」段。摘要:\n\n-   interactive  ： role=\"slider\"  +  aria-valuenow={value}  +  aria-valuemin={0}  +  aria-valuemax={max}  +  aria-valuetext={`{value} of {max} stars`}  +  tabIndex={0} ，鍵盤 Arrow Left/Right/Up/Down ± step（precision=half 時 step=0.5，否則 step=1），Home=0 / End=max（完整 WAI-ARIA slider 鍵盤 pattern）\n-   readOnly  ： role=\"img\"  +  aria-label （  必填  ），例： aria-label=\"平均評分 4.7 星，共 5 星\" 。無 tabIndex\n-   disabled  ： aria-disabled=\"true\"  +  pointer-events-none \n-   單顆星    aria-hidden ：內部點擊目標是  <span role=\"presentation\" aria-hidden> （非 interactive element，避免與外層 role=\"slider\" 形成 axe nested-interactive；含 half-precision 兩個 hover zone）"}</p>
     </div>
   ),
 }

@@ -108,7 +108,7 @@ export const Overview: Story = {
                 <Td mono>control</Td>
                 <Td>Checkbox 或 RadioGroupItem(consumer 傳入)</Td>
                 <Td>跟 prefix 同高度(inline 或 block)</Td>
-                <Td mono>h-[1lh] · block: avatar height</Td>
+                <Td mono>h-[1lh] · block: text-block height (1lh + gap + desc)</Td>
               </tr>
               <tr>
                 <Td mono>prefix(icon)</Td>

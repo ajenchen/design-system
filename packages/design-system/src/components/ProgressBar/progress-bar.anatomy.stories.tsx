@@ -382,7 +382,7 @@ export const AffixBehavior = {
             <ProgressBar value={100} status="success" affix="status-icon" />
             <ProgressBar value={72} status="error" affix="status-icon" />
             <ProgressBar value={50} status="inProgress" affix="status-icon" />
-            <span className="text-footnote text-fg-muted">↑ inProgress 傳 status-icon 時不渲染 icon(仍保留 wrapper gap)</span>
+            <span className="text-footnote text-fg-muted">↑ inProgress 傳 status-icon 時不渲染 icon,且因無 affix 內容而 collapse 成純 bar(無 wrapper、無 gap,與不傳 affix 等價)</span>
           </div>
         </div>
 

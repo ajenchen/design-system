@@ -189,7 +189,7 @@ Field render 時讀第一個 control child 的 `type.fieldLayout`,缺則 `'inlin
 
 **第一行對齊責任**:Field 的 block control area **不加 paddingTop**(避免跟 RadioGroup 自帶 `py = calc((field-height - 1lh) / 2)` double)。需 label 對齊的 block primitive 自行保證第一行位置(RadioGroup/CheckboxGroup 自帶 ✓;FileDropzone/RichTextEditor 自管)。
 
-**已宣告 block**:`RadioGroup`。新增 `CheckboxGroup` / `FileDropzone` 等同模式加 `fieldLayout = 'block'`。
+**已宣告 block**:`RadioGroup`、`CheckboxGroup`(checkbox-group.tsx:92)。新增 `FileDropzone` 等同模式加 `fieldLayout = 'block'`。
 
 ---
 

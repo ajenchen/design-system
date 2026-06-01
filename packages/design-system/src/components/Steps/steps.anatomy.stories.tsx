@@ -18,7 +18,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Steps 是有序步驟序列——Indicator(圓形)+ Label + 可選 Description + Connector(連接線)。每個 StepItem 有三種狀態:completed / current / upcoming。</Desc>
+        <Desc>Steps 是有序步驟序列——Indicator(圓形)+ Label + 可選 Description + Connector(連接線)。每個 StepItem 有四種狀態:completed / current / upcoming / error(reachable 為 linear 模式內部推導的解鎖態,不在介紹層暴露)。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-2xl">
           <Steps value="shipping" completedValues={['cart', 'payment']}>
             <StepItem value="cart"><StepLabel>購物車</StepLabel></StepItem>
@@ -31,7 +31,7 @@ export const Overview: Story = {
       </div>
 
       <div>
-        <H3>三種狀態</H3>
+        <H3>四種狀態</H3>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>狀態</Th><Th>Indicator</Th><Th>Label</Th><Th>Connector(右側)</Th></tr></thead>

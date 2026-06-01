@@ -129,7 +129,7 @@ Item-level default / hover / checked / disabled **色彩**與 Checkbox 共用同
 - ↑/↓ — 切 option
 - Space — 選擇
 
-**Focus**:Radix primitive 以 roving tabindex 管理群組內焦點(整組只佔一個 Tab 停留點,方向鍵在選項間移動);**非** focus trap——Tab 仍會離開群組、跳到下一個表單欄位。聚焦時顯示 visible ring(`outline: 2px solid var(--ring)` per design-system focus-visible canonical)。
+**Focus**:Radix primitive 以 roving tabindex 管理群組內焦點(整組只佔一個 Tab 停留點,方向鍵在選項間移動);**非** focus trap——Tab 仍會離開群組、跳到下一個表單欄位。聚焦時顯示 visible ring(`ring-2 ring-ring ring-offset-1`,box-shadow ring 機制,並 `outline-none` 關閉原生 outline,per design-system focus-visible canonical)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

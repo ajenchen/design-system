@@ -32,7 +32,7 @@ benchmark:
 
 **實作基礎**：組合元件——Icon / number indicator + Text 有序序列，無 external primitive base。Radix / shadcn 無對應 Steps primitive。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 2（List item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「List item layout」章節的 reading-mode 規格。Steps 有明文例外：indicator inline 對齊 label 第一行（不走 24px 閾值）。
+**Layout Family**：CLAUDE.md 4-Family Model **Family 2（List item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「List item layout」章節的 **scanning-mode** 規格——跟 MenuItem / TreeItem 同 scanning-family：label `text-body`、description 縮 `text-caption`（sm/md）+ `leading-compact`（非 reading-mode 的 body + default leading），consume `--item-gap-label-desc-scanning` token。Steps 有明文例外：indicator inline 對齊 label 第一行（不走 24px 閾值）。
 
 > 命名選 `Steps`(複數)而非 `Stepper`——`stepper` 在 web 有 HTML `<input type="number">` 計數器的歷史包袱(spinbutton 也叫 stepper),`Steps` 更精確地表達「一組有序步驟」。對齊 Ant Design 的命名慣例。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
@@ -451,6 +451,7 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 
 - Tab — focus step(若 clickable)
 - Enter — navigate to step
+- Space — navigate to step(同 Enter,對齊 ARIA `button` pattern——`role=button` 元素必同時支援 Enter 與 Space 觸發)
 
 **Focus**:focus-visible ring 對齊 DS canonical(`outline: 2px solid var(--ring)`);focus management 由元件 own。
 

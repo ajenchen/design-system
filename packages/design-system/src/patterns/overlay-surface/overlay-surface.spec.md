@@ -388,7 +388,7 @@ const CHROME_UNBOUNDED_SLOT =
 
 overlay-surface 是 **layout pattern**(`SurfaceHeader` / `SurfaceBody` / `SurfaceFooter`),不持有互動行為 — a11y 大宗在 consumer overlay primitive(Dialog / Sheet / Popover / HoverCard)上,由 Radix 處理:
 
-- **Role + ARIA**:`Dialog.Content` / `Sheet.Content`(皆 wrap Radix Dialog)自帶 `role="dialog"` + `aria-modal="true"`(modal)+ `aria-labelledby`(連 DialogTitle id)+ `aria-describedby`(optional Description)。`Popover.Content` / `HoverCard.Content` 是 non-modal popover,**無** `role="dialog"` / `aria-modal`,也**不**自動 `aria-labelledby`(consumer 需自設 `aria-label`)
+- **Role + ARIA**:`Dialog.Content` / `Sheet.Content`(皆 wrap Radix Dialog)自帶 `role="dialog"` + `aria-labelledby`(連 DialogTitle id)+ `aria-describedby`(optional Description)。**modality 機制**:Radix 不發 `aria-modal` 屬性,而是用 `hideOthers`(把背景 sibling subtree 套 `aria-hidden`)+ `RemoveScroll` 達成 modal — 對齊 WAI-ARIA APG「aria-hidden on background content」做法(APG 指出 `aria-modal` 的 AT 支援不一致,hideOthers 較穩健)。`Popover.Content` 同樣 wrap Radix(non-modal,Radix `modal` 預設 false)且**也帶** `role="dialog"`(Radix non-modal dialog,APG sanctioned)——但**不** trap focus、**不**自動 `aria-labelledby`(consumer 需自設 `aria-label`)。`HoverCard.Content` 才是真的**無 role**(Radix react-hover-card 不發任何 role)
 - **Focus trap**:Dialog / Sheet 自帶 modal focus trap;Popover / HoverCard 不 trap(non-modal canonical)
 - **Esc / 點外面關閉**:Radix 處理(可被 `onEscapeKeyDown` / `onPointerDownOutside` 攔截)
 - **AutoFocus on open**:consumer 自管 `onOpenAutoFocus`(Popover 範例:`handlePopoverOpenAutoFocus` 找 body 第一個 interactive 元素,跳過 close X 避免 tooltip leak)

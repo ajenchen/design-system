@@ -86,7 +86,7 @@ Skeleton 是**純視覺 loading placeholder**,預設 ARIA 行為:
 - **無內建 ARIA**:Skeleton 實作只是一個套用 pulse 動畫的 div(`{...props}` 原樣傳遞),不會自動設任何 ARIA 屬性。SR 不該朗讀 N 條 placeholder shape,因此 consumer 若需要對 SR 隱藏這些佔位塊,應自行在容器設 `aria-hidden="true"`
 - **`aria-busy="true"` 由 consumer 容器 own**:loading region 的容器(如 DataTable / Card / Sidebar group)應設 `aria-busy="true"`,告知 SR「該區域 loading 中」;data ready 後 consumer 移除 `aria-busy` 同時 unmount Skeleton
 - **不取得 focus**:Skeleton 永遠 non-interactive,無鍵盤行為
-- **動畫**:`prefers-reduced-motion: reduce` 用戶自動 stop pulse 動畫(對齊 WCAG 2.3.3 Animation from Interactions)
+- **動畫**:`prefers-reduced-motion: reduce` 用戶自動 stop pulse 動畫(`skeleton.tsx:10` 的 `motion-reduce:animate-none`)。pulse 是自動播放的循環動畫,歸 WCAG 2.2.2 Pause, Stop, Hide(Level A);honor `prefers-reduced-motion` 即滿足。注意非 2.3.3 Animation from Interactions(該 SC 是 Level AAA,僅涵蓋由互動 / 捲動觸發的位移動畫,不適用 auto-play loop)
 - **替代文字**:長時間 loading(>3s)consumer 應 fallback 為 `<Empty icon={<CircularProgress/>} description="載入中..." />`(SR-friendly text)— Skeleton 適合 < 3s 短暫 placeholder
 - **驗證**:Storybook a11y addon panel 0 critical violation。Skeleton 本身無文字內容、無互動角色,axe 不會要求 label;若 consumer 把 Skeleton 包進有語意的容器,label 由該容器負責
 

@@ -44,12 +44,12 @@ benchmark:
 
 ```
          [Avatar 48px neutral + icon]     ← 可選
-          gap = --layout-space-tight
+          mb-4(固定 16px,不隨 density 變)
         [Title 16px font-medium centered]  ← 可選
          --item-gap-label-desc-reading-lg (2px)
       [Description 14px(lg context 16px)fg-secondary centered]
-               w-full (no max-width)
-          gap = --layout-space-loose
+        內容寬度置中(no max-width;由 items-center 居中,非 w-full)
+          mt-6(固定 24px,不隨 density 變)
               [Action Button]              ← 可選
 ```
 
@@ -79,7 +79,7 @@ Outer padding 由 **consumer 容器** 決定(Table 空狀態需較大留白、Se
 
 ## 文字不限寬
 
-Description **不加 max-width**。文字撐滿容器,由容器 padding 控制行寬。文案設計者自己規劃換行(文案長度 = 設計的一部分),Empty 不該強制截斷。
+Description **不加 max-width**。文字置中(由 `items-center` 居中,span 收縮成內容寬度,非 w-full),行寬由容器 padding 控制。文案設計者自己規劃換行(文案長度 = 設計的一部分),Empty 不該強制截斷。
 
 ## 垂直定位(Consumer 容器的責任)
 

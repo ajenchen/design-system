@@ -207,14 +207,14 @@ export const DurationRule: Story = {
       </Rule>
 
       <Rule
-        title="❌ 長時間(&gt; 5s)一直 Skeleton——使用者懷疑卡住"
+        title="❌ 長時間(&gt; 10s)一直 Skeleton——使用者懷疑卡住"
         note="長時間靜態 skeleton 會讓使用者以為網路斷線或系統卡住。此時改用 CircularProgress + 進度文案(「處理中,大約 10 秒」),或 ProgressBar"
       >
         <div className="flex items-center gap-2 border border-border rounded-md px-3 py-2 w-72">
           <CircularProgress />
           <span className="text-body text-fg-muted">分析中,這可能需要一分鐘...</span>
         </div>
-        <Label>&gt; 5s 的長工作 → 改用 CircularProgress + 進度文字,告知使用者仍在處理</Label>
+        <Label>&gt; 10s 的長工作 → 改用 CircularProgress + 進度文字,告知使用者仍在處理</Label>
       </Rule>
     </div>
   ),

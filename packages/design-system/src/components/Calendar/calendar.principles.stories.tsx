@@ -58,7 +58,7 @@ export const UsageGuidance: Story = {
         <div className="space-y-4 text-body text-fg-secondary max-w-3xl">
           <ul className="list-disc pl-5 space-y-2">
             <li><b>選單一日期</b>(Due date / Birthday)→ 用 <code>DatePicker</code></li>
-            <li><b>選日期範圍</b>(訂單 from-to)→ 用 <code>DatePicker mode="range"</code></li>
+            <li><b>選日期範圍</b>(訂單 from-to)→ 用 <code>{'<DatePicker.Range>'}</code></li>
             <li><b>任務看板</b>(非時間軸 view)→ 用 <code>DataTable</code> + status column</li>
             <li><b>時段可用性</b>(會議訂房 slot picker)→ 獨立 time-slot picker(未來 primitive)</li>
             <li><b>Mini month widget</b>(sidebar 小月曆)→ 用 <code>DateGrid</code>(不 fullscreen)</li>

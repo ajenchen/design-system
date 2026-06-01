@@ -48,7 +48,7 @@ export const Overview: Story = {
           </div>
           <div className="text-caption text-fg-muted max-w-[320px] leading-relaxed">
             <div className="mb-2"><span className="font-mono text-foreground">container</span> — 父層決定寬度(此處 320px),AspectRatio 依 ratio 自動算高(180px = 320 × 9/16)</div>
-            <div><span className="font-mono text-foreground">children</span> — 絕對定位填滿容器;通常是 img / video / illustration</div>
+            <div><span className="font-mono text-foreground">children</span> — 放在內層容器(絕對定位 inset:0 的視覺盒)的正常流中,需自行加 w-full h-full(+ object-cover)才會填滿;通常是 img / video / illustration</div>
           </div>
         </div>
       </div>
@@ -61,7 +61,7 @@ export const Overview: Story = {
             <tbody>
               <tr><Td mono>ratio</Td><Td mono>number</Td><Td mono>1</Td><Td>寬 / 高比值(如 16/9 = 1.777)。DS 標準 ratio 見下方對照</Td></tr>
               <tr><Td mono>asChild</Td><Td mono>boolean</Td><Td mono>false</Td><Td>Radix Slot pattern——把 ratio 行為合併到 children 元素(不常用)</Td></tr>
-              <tr><Td mono>className</Td><Td mono>string</Td><Td mono>—</Td><Td>套在 container 外層(放 bg-muted / rounded-lg / overflow-hidden)</Td></tr>
+              <tr><Td mono>className</Td><Td mono>string</Td><Td mono>—</Td><Td>套在內層容器(絕對定位的視覺可見層,放 bg-muted / rounded-lg / overflow-hidden)</Td></tr>
               <tr><Td mono>children</Td><Td mono>ReactNode</Td><Td mono>—</Td><Td>填滿容器的內容(通常是 img + object-cover)</Td></tr>
             </tbody>
           </table>

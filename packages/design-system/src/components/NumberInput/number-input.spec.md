@@ -95,7 +95,7 @@ col.accessor('price', {
 
 ## 邊界案例
 
-- **Disabled**:由 Field SSOT own(`Field/field-controls.spec.md` State machine 段)。視覺:wrapper bg → `bg-fg-disabled-subtle`、formatted text → `text-fg-disabled`(M24 state>emphasis)。Display mode + disabled 維持格式化輸出但 token 切 disabled。
+- **Disabled**:由 Field SSOT own(`Field/field-controls.spec.md` State machine 段)。視覺:wrapper bg → `bg-disabled`(neutral-2,`semantic.css` `--bg-disabled`)、formatted text → `text-fg-disabled`(M24 state>emphasis)。Display mode + disabled 維持格式化輸出但 token 切 disabled。
 - **Loading**:NumberInput 不提供 loading state(`NumberInputProps` 無 `loading` prop、無 `CircularProgress` / `aria-busy` 邏輯)。數值輸入為同步操作,無 async fetch 語意;若需 async 場景(如遠端校驗)請走外層 Field validation + `endSlot` 自訂 spinner。
 - **Empty(null / undefined / 空字串)**:Display mode 渲 `—`(em dash + `text-fg-muted`);Edit mode placeholder 走 default placeholder color。
 - **Invalid input**(non-numeric):input 為 `type="text" inputMode="decimal"`,onChange 以 `Number(raw)` parse,NaN 時忽略不觸發 `onChange`(value 維持原值);搭配 Field validation 渲 error variant(`aria-invalid="true"` + `text-fg-error` border + 下方 error message)。
@@ -112,7 +112,7 @@ col.accessor('price', {
 
 ## A11y 預設
 
-**ARIA / Pattern**:native `<input>` element 預設 a11y;Field wrapper 補 `aria-labelledby` / `aria-invalid` / `aria-describedby`。
+**ARIA / Pattern**:ARIA / keyboard 機制**僅 edit mode 適用**——edit mode 渲染 native `<input>` element(預設 a11y),且把 `...props`(含 `aria-label` / `aria-describedby` 等)轉發到該 input,Field wrapper 另補 `aria-invalid` / `aria-required` / `aria-describedby` / `aria-errormessage`。`display` / `readonly` / `disabled` 三 mode 渲染的是無互動純展示文字(`<div>` + `<span>`,不轉發 `aria-*`),螢幕報讀僅得格式化後的靜態值(對齊 Carbon read-only / Stripe display 慣例)。
 
 **Keyboard 行為**:
 

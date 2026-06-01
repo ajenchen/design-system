@@ -64,12 +64,6 @@ export const UsageGuidance: Story = {
             <li>
               <LinkTo kind="Design System/Components/Empty/展示" name="空清單"><span className="text-primary hover:underline font-medium cursor-pointer">空清單</span></LinkTo>
             </li>
-            <li>
-              <LinkTo kind="Design System/Components/Empty/展示" name="錯誤無法載入"><span className="text-primary hover:underline font-medium cursor-pointer">錯誤無法載入</span></LinkTo>
-            </li>
-            <li>
-              <LinkTo kind="Design System/Components/Empty/展示" name="權限不足"><span className="text-primary hover:underline font-medium cursor-pointer">權限不足</span></LinkTo>
-            </li>
           </ul>
           <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
         </div>

@@ -55,7 +55,7 @@ benchmark:
 ## 何時用
 
 - **Button / Inline Action 的 loading 狀態**:Button `loading` prop 內部渲染(無 value = indeterminate)
-- **Field loading 狀態**(Input / NumberInput / Combobox / Select):consumer 傳 `loading={true}` → 元件內部 readonly + endAction slot 自動塞 `<CircularProgress>`(見 `field-controls.spec.md`「Loading state」)
+- **Field loading 狀態**(Input / NumberInput / Combobox / Select):consumer 傳 `loading={true}` → 元件內部**保持可編輯**(Ant Input.Search 派,UX「邊改邊讀」,非 Material readonly 派),自動在尾端渲染 `<CircularProgress>` + `aria-busy="true"` 標示處理中(與 `endAction` 互斥;見 `input.tsx` loading 分支與 `field-controls.spec.md`「Loading state」)
 - **Cell / row 局部進度**(cell 上傳中、cell async fetch 中):size 16-20 inline
 - **inline 可量化小進度**(如 file uploader list row 的上傳 % / 倒數計時):有 value
 - **全頁 / empty surface 載入**:`<Empty icon={<CircularProgress size={48}/>}/>` compose(Empty canonical 垂直堆疊,無需另造)
@@ -156,7 +156,7 @@ export interface CircularProgressProps extends React.HTMLAttributes<HTMLSpanElem
 
 **實作保證**:
 - Button / Input / Field 等 **元件內部自動傳對的 size**(consumer 不用傳)— 來源:這些元件本來就知道自己的 `iconSize`(`field-controls.spec.md` 中 `sm/md=16, lg=20`)
-- DataTable cell 由 consumer 手寫 render,**consumer 傳 `16`(sm/md table) / `20`(lg table)** — 規則在 `data-table.spec.md` 十一之一
+- DataTable **cell 內 inline 指示器**由 consumer 手寫 render,size 對齊 cell icon 刻度 **`16`(sm/md table) / `20`(lg table)** — 對齊 `data-table.spec.md` 十一之一(cell icon size canonical,非 CircularProgress 專屬規則)。**整表 refresh loading** 則走 `data-table.spec.md` 十三:容器疊 `<CircularProgress/>` 24px center + table `opacity-disabled`(DataTable 禁內建 loading prop)
 - 獨立使用 CircularProgress 的元件 **預設走 24** — 已是 `<CircularProgress />` default
 
 世界級對照:Material / Ant / Carbon 的 inline loading 全部 16dp;Material 獨立使用標準 = 40dp(desktop)/ 24dp(compact)。本 DS 收斂成「inline 跟 context 走 16 或 20,獨立走 24」兩檔,不暴露更多 size 階。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->

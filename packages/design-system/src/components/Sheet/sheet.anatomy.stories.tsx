@@ -236,7 +236,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>開啟 / 關閉</H3>
-        <Desc>Radix 原生動畫：進場 slide-in-from-側邊 + fade-in overlay；離場鏡像。Modal 狀態鎖 body scroll。</Desc>
+        <Desc>Radix 提供 data-state 切換 + DS Tailwind animate 驅動進離場動畫（slide-in-from-側邊 + fade-in overlay，300ms；sheet.tsx L69-78），離場鏡像。Modal 狀態鎖 body scroll。</Desc>
         <ul className="text-caption text-fg-muted list-disc pl-5 space-y-1">
           <li>點擊 trigger → 開啟（slide-in from `side`）</li>
           <li>點擊 overlay → 關閉（default；可用 onPointerDownOutside preventDefault 阻止）</li>

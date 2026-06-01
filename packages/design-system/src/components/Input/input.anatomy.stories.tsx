@@ -242,10 +242,14 @@ export const Overview = {
             <tbody>
               {[
                 ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", '顯示模式，disabled/readOnly 原生屬性會自動覆蓋'],
+                ['variant', "'default' | 'bare'", "'default'", '視覺 chrome（正交於 mode）；bare = 透明、hover/focus 才出現 border，用於 toolbar inline editing'],
                 ['error', 'boolean', 'false', '紅色邊框 + aria-invalid，僅 edit 模式生效'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '高度與字體，與 Button 共用 field-height token'],
                 ['startIcon', 'LucideIcon', '—', '左側靜態 icon，fg-muted，pointer-events-none'],
-                ['endAction', 'InlineActionConfig', '—', '右側 inline action（宣告式 API），僅 edit 模式渲染'],
+                ['endAction', 'InlineActionConfig', '—', '右側 inline action（宣告式 API），僅 edit 模式渲染；loading=true 或傳 endSlot 時被覆蓋'],
+                ['endSlot', 'ReactNode', '—', '右側自訂 slot（escape hatch，如 DropdownMenuTrigger）；與 endAction 互斥，同時傳會優先'],
+                ['loading', 'boolean', 'false', 'async 驗證中：endAction slot 自動塞 CircularProgress + aria-busy，input 仍可編輯'],
+                ['autoWidth', 'boolean', 'false', '寬度隨內容（field-sizing:content）；用於 inline edit，禁用於表單 Field'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}

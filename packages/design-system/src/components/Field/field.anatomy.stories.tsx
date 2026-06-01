@@ -1,3 +1,4 @@
+// @anatomy-exempt: anatomy 參考用靜態 props / 責任 / 色彩對照表（純文件,非互動資料表格,不需 DataTable runtime）
 import type { Meta, StoryObj } from '@storybook/react'
 import { Field, FieldLabel, FieldDescription, FieldError, FieldGroup } from './field'
 import { Input } from '@/design-system/components/Input/input'
@@ -59,7 +60,7 @@ export const Overview: Story = {
       </div>
 
       <div>
-        <H3>Props 速查</H3>
+        <H3>Field Props 速查</H3>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -70,8 +71,28 @@ export const Overview: Story = {
                 ['required', 'boolean', 'false', '顯示 * 星號 + context.required'],
                 ['invalid', 'boolean', 'false', 'error 狀態 + context.invalid(觸發 aria-invalid)'],
                 ['disabled', 'boolean', 'false', 'context.disabled 傳給 control'],
-                ['size', "'sm' | 'md' | 'lg'", "'md'", 'context.size 傳給 control(field-height tier)'],
+                ['size', "'sm' | 'md' | 'lg'", "'md'", 'context.size 傳給 input-class control(Input / NumberInput / Select);primitive 不讀'],
                 ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'context.mode 傳給 Field Controls'],
+                ['variant', "'default' | 'bare' | 'naked'", "'default'", "視覺外殼:default 含 border+bg / bare hover-reveal(toolbar inline edit)/ naked 無 chrome(DataTable cell substrate)"],
+                ['controlLayout', "'inline' | 'block'", '(自動偵測)', '逃生艙:覆寫 control area 佈局(consumer 手寫 JSX 當 control 無法偵測時用)'],
+              ].map(([p, t, d, desc]) => (
+                <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <H3>FieldLabel Props 速查</H3>
+        <div className="overflow-x-auto">
+          <table className="text-caption border-collapse">
+            <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
+            <tbody>
+              {[
+                ['info', 'string', '(無)', 'label 文字後加 info icon(ℹ),hover 出現 tooltip 補充說明'],
+                ['required', 'boolean', '(承 Field context)', '覆寫 Field context.required;預設沿用容器狀態'],
+                ['htmlFor', 'string', '(承 Field context.id)', '覆寫自動綁定的 label htmlFor'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -241,7 +262,7 @@ export const SizeMatrix: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>三種 Size — 對齊 field-height 系統</H3>
-        <Desc>Field 的 size 透過 context 傳遞給所有 Field Controls(Input / NumberInput / Select / Slider / Switch / Checkbox),讓一個 Field 內所有 control 自動對齊高度。對齊 `--field-height-*` tier(見 uiSize.spec.md)。</Desc>
+        <Desc>Field 的 size 透過 context 傳遞給 input-class control(Input / NumberInput / Select),控制其內部高度對齊 `--field-height-*` tier(見 uiSize.spec.md)。Slider / Switch / Checkbox 等 primitive 維持原生尺寸不讀 context size(見 field.spec.md「為什麼 primitive 不自己變高」),其行高節奏改由 Field control-area 的 min-h-field-{size} 提供——同一 Field 內所有 control 因此自動對齊高度。</Desc>
         <div className="grid grid-cols-3 gap-6">
           {(['sm', 'md', 'lg'] as const).map(size => (
             <div key={size} className="border border-dashed border-divider rounded-md p-4">

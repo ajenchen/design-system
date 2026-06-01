@@ -66,7 +66,7 @@ export const Overview: Story = {
           <table className="text-caption border-collapse">
             <thead><tr><Th>區塊</Th><Th>CSS</Th><Th>用途</Th></tr></thead>
             <tbody>
-              <tr><Td mono>DialogHeader</Td><Td mono>border-b, px-loose py-tight</Td><Td>Title + Close button(fixed top-right)</Td></tr>
+              <tr><Td mono>DialogHeader</Td><Td mono>border-b, px-loose py-tight</Td><Td>Title + Close button(靠右,flex 第一 child flex-1 grow 自然右推,非 position:fixed)</Td></tr>
               <tr><Td mono>DialogBody</Td><Td mono>ScrollArea(flex-1 min-h-0)+ inner div(px-loose pt-tight pb-bottom)</Td><Td>主要內容(ScrollArea 捲動,底部留較大空間)</Td></tr>
               <tr><Td mono>DialogFooter</Td><Td mono>border-t, px-loose py-tight</Td><Td>Action buttons(justify-end, gap-2)</Td></tr>
             </tbody>
@@ -82,7 +82,7 @@ export const Overview: Story = {
             <tbody>
               {[
                 ['autoHeight', 'boolean', 'false', 'true=隨內容 / false=填滿 viewport(body 捲動)'],
-                ['maxWidth', 'number', '512', 'Content 最大寬度(px),受 viewport inset 限制'],
+                ['maxWidth', 'string | number', "'512px'", 'Content 最大寬度(傳 number 視為 px,亦可傳 CSS 值如 32rem),受 viewport inset 限制'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}

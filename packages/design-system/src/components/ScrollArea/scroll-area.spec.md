@@ -80,7 +80,7 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 | Scrollbar 內距 | `p-[1px]` | 讓 thumb 與容器邊緣有 1px 視覺 inset |
 | Scrollbar 邊界 | `border-l / border-t` transparent | 保留 1px 透明邊,hover 時若需視覺反饋可替換 |
 | Track | 透明(無 bg) | overlay 浮層,不搶視覺 |
-| Thumb bg | `bg-border` → hover `bg-border-hover` | 靜態時低存在感,hover 加深反饋可抓握 |
+| Thumb bg | `--scrollbar-thumb` → hover `--scrollbar-thumb-hover`(semantic alias,resolves to `--border` / `--border-hover` = neutral-5/-6) | 靜態時低存在感,hover 加深反饋可抓握。2026-05-09 抽 SSOT alias 跟 DataTable fake scrollbar 共享 token,避免 thumb 視覺未來演化時誤動 Field/Input/Checkbox border |
 | Thumb radius | `rounded-full` | 圓形 thumb 對齊 macOS / modern DS 慣例 | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 | 過渡 | `transition-colors` | 色彩變化平滑,不做尺寸動畫 |
 
@@ -113,7 +113,7 @@ Radix primitive + 本 DS a11y 橋接:
 
 ## 邊界案例
 
-- **Dark mode**:`bg-border` / `bg-border-hover` 自動由 semantic token 切換,無自訂 palette,詳見 `color.spec.md`
+- **Dark mode**:`--scrollbar-thumb` / `--scrollbar-thumb-hover`(resolves to `--border` / `--border-hover`)自動由 semantic token 切換,無自訂 palette,詳見 `color.spec.md`
 - **Density**:scrollbar 寬度不受 density 影響(功能性 primitive,不隨 field-height / layout-space 放大縮小)
 - **Disabled**:ScrollArea 無互動狀態——內容是否可操作由 consumer 決定,captured 容器本身不 disable
 - **Empty**:內容為空時 scrollbar 不顯示(Radix 自動偵測 overflow,無溢出 → scrollbar 隱藏)

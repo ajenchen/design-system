@@ -138,9 +138,9 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 | default | 各 child 自身 border | 2 |
 | hover(子)| 該 child border-hover | 3 |
 | focus / focus-within(子)| 該 child focus ring | 3 |
-| disabled(子)| 該 child disabled style + **FCG-local override `border-input`**(K12,2026-05-04) | 0 |
+| disabled(子)| 該 child disabled style + **FCG-local override `border-[var(--border-opaque)]`**(K12,2026-05-04) | 0 |
 
-**Disabled border integrity canonical(K12,2026-05-04)**:全域 disabled = `border-transparent`(讓 standalone field 視覺輕量),但**FCG context 下,disabled child 強制 `border-input`** — 確保:(a) FCG 整體外圈 border 健在,(b) inner divider 健在(不會因兩相鄰 disabled cells 都 transparent 而消失)。bg-disabled 仍區分狀態,border 維護群組視覺整合性。對齊 [Bootstrap input-group](https://getbootstrap.com/docs/5.3/forms/input-group/) / [Ant Space.Compact](https://ant.design/components/space#spacecompact) disabled idiom。
+**Disabled border integrity canonical(K12,2026-05-04)**:全域 disabled = `border-transparent`(讓 standalone field 視覺輕量),但**FCG context 下,disabled child 強制 `border-[var(--border-opaque)]`** — 確保:(a) FCG 整體外圈 border 健在,(b) inner divider 健在(不會因兩相鄰 disabled cells 都 transparent 而消失)。bg-disabled 仍區分狀態,border 維護群組視覺整合性。對齊 [Bootstrap input-group](https://getbootstrap.com/docs/5.3/forms/input-group/) / [Ant Space.Compact](https://ant.design/components/space#spacecompact) disabled idiom。
 
 實作(v7 — semantic token):
 ```tsx
@@ -150,7 +150,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 
 **為什麼用 `--border-opaque` 而非 `--border`**:`--border`(neutral-5 = 15% alpha)會跟 cell bg compositing — 灰底上 composite 略深(物理對比結果)。**`--border-opaque`** semantic token(其 primitive 後盾為 `--color-neutral-5-opaque`,solid #D9D9D9)不分 bg 永遠同色,divider 在 white edit cell 跟 grey disabled cell 上視覺完全一致。
 
-**Token 系統設計**:`--border-opaque` 在 `semantic.css` L289 新增,語意「視覺等同 `--border` 但 alpha-immune」。對齊 [Ant Design `colorBorderSecondary`](https://ant.design/docs/react/customize-theme#seedtoken) solid idiom — Ant 用此 token 在 table 外框 + row divider(non-white bg 場景),跟 input alpha border 視覺層級分。
+**Token 系統設計**:`--border-opaque` 在 `semantic.css` 新增(grep `--border-opaque:` 查定義行,不寫死行號避免漂移),語意「視覺等同 `--border` 但 alpha-immune」。對齊 [Ant Design `colorBorderSecondary`](https://ant.design/docs/react/customize-theme#seedtoken) solid idiom — Ant 用此 token 在 table 外框 + row divider(non-white bg 場景),跟 input alpha border 視覺層級分。
 
 **為什麼不 override bg**:user 明確要求 disabled cells 有底色(辨識 state)。bg 灰底是 disabled state 的主要視覺載體,FCG context 不應抹除。
 | error(子)| 該 child border-error | 2(預設層;聚焦該 child 時才升 3 蓋過鄰接 border)|

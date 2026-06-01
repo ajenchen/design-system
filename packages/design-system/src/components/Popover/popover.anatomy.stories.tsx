@@ -43,16 +43,19 @@ export const Overview: Story = {
 
       <div>
         <H3>Props 速查</H3>
-        <Desc>Popover / PopoverTrigger / PopoverContent 直接沿用 Radix Popover 的同名 API,只多接上設計系統的 token,行為與 props 與 Radix 一致。完整 API 見 <a href="https://www.radix-ui.com/primitives/docs/components/popover" className="underline" target="_blank" rel="noreferrer">Radix Popover 官方文件</a>。</Desc>
+        <Desc>Popover / PopoverTrigger / PopoverContent 直接沿用 Radix Popover 的同名 API,只多接上設計系統的 token,行為與 props 與 Radix 一致。Props 依宣告元件分兩類——定位類(align / side / sideOffset / collisionPadding)寫在 {'<PopoverContent>'} 上,開關 / modal 類(open / onOpenChange / defaultOpen / modal)寫在最外層 {'<Popover>'}(Root)上;寫錯元件不會生效(見「所屬元件」欄)。完整 API 見 <a href="https://www.radix-ui.com/primitives/docs/components/popover" className="underline" target="_blank" rel="noreferrer">Radix Popover 官方文件</a>。</Desc>
         <div className="overflow-x-auto">
+          {/* @anatomy-exempt-next: Props 速查表為純文件對照(prop/type/default),非元件資料展示;DataTable 過重 */}
           <table className="text-caption border-collapse">
-            <thead><tr><Th>Prop(PopoverContent)</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
+            <thead><tr><Th>Prop</Th><Th>所屬元件</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
-              <tr><Td mono>align</Td><Td mono>'start' | 'center' | 'end'</Td><Td mono>'center'</Td><Td>相對 trigger 的對齊</Td></tr>
-              <tr><Td mono>side</Td><Td mono>'top' | 'right' | 'bottom' | 'left'</Td><Td mono>'bottom'</Td><Td>浮層出現在 trigger 的哪一側</Td></tr>
-              <tr><Td mono>sideOffset</Td><Td mono>number</Td><Td mono>8 ★default</Td><Td>與 trigger 的距離(px)。DS 設計準則 = 8(對標 Notion / Linear / Figma / Stripe)</Td></tr>
-              <tr><Td mono>open / onOpenChange</Td><Td mono>{'boolean / (o) => void'}</Td><Td mono>—</Td><Td>controlled 開關(選用)</Td></tr>
-              <tr><Td mono>modal</Td><Td mono>boolean</Td><Td mono>false</Td><Td>`true` 時鎖 body scroll + focus trap</Td></tr>
+              <tr><Td mono>align</Td><Td mono>PopoverContent</Td><Td mono>'start' | 'center' | 'end'</Td><Td mono>'center'</Td><Td>相對 trigger 的對齊</Td></tr>
+              <tr><Td mono>side</Td><Td mono>PopoverContent</Td><Td mono>'top' | 'right' | 'bottom' | 'left'</Td><Td mono>'bottom'</Td><Td>浮層出現在 trigger 的哪一側</Td></tr>
+              <tr><Td mono>sideOffset</Td><Td mono>PopoverContent</Td><Td mono>number</Td><Td mono>8 ★default</Td><Td>與 trigger 的距離(px)。DS 設計準則 = 8(對標 Notion / Linear / Figma / Stripe)</Td></tr>
+              <tr><Td mono>collisionPadding</Td><Td mono>PopoverContent</Td><Td mono>number</Td><Td mono>8 ★default</Td><Td>浮層與 viewport 邊緣的最小間距(px)。DS 設計準則 = 8</Td></tr>
+              <tr><Td mono>open / onOpenChange</Td><Td mono>Popover(Root)</Td><Td mono>{'boolean / (o) => void'}</Td><Td mono>—</Td><Td>controlled 開關(選用)</Td></tr>
+              <tr><Td mono>defaultOpen</Td><Td mono>Popover(Root)</Td><Td mono>boolean</Td><Td mono>false</Td><Td>uncontrolled 初始開啟狀態</Td></tr>
+              <tr><Td mono>modal</Td><Td mono>Popover(Root)</Td><Td mono>boolean</Td><Td mono>false</Td><Td>`true` 時阻斷背景互動 + 鎖 body scroll + focus trap</Td></tr>
             </tbody>
           </table>
         </div>
@@ -268,7 +271,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"Radix Popover 自動處理：\n\n-   焦點管理  ：開啟時移動焦點進入 content；關閉時 focus return to trigger\n-   Esc 關閉  ：按 Esc 自動關閉並返回焦點\n-   Focus trap  ： modal={true}  時焦點鎖在 content 內；預設 non-modal 下焦點離開 content 樹會自動關閉\n-   ARIA  ：trigger 自動  aria-expanded  /  aria-controls ，content  role=\"dialog\" \n\nConsumer 無需額外處理 a11y，保留 Radix  data-state  屬性即可。"}</p>
+      <p className="whitespace-pre-line">{"焦點 / 鍵盤 / ARIA 行為（部分為 DS 覆寫,部分為 Radix 內建）：\n\n-   開啟焦點（DS 覆寫）  ：DS 以  onOpenAutoFocus  覆寫 Radix 預設,開啟時把焦點落在 body 第一個可互動元素（避免 Radix 預設先 focus 右上 close X,觸發 tooltip leak）\n-   關閉返回（Radix 內建）  ：關閉時 focus return to trigger\n-   Esc 關閉（Radix 內建）  ：按 Esc 自動關閉並返回焦點\n-   Focus trap（Radix 內建,僅 modal）  ： modal={true}  時焦點鎖在 content 內\n-   點外 / 焦點離開即關（Radix 內建,non-modal）  ：預設 non-modal 不鎖焦點,焦點或指標離開 content 樹即自動關閉（dismiss,非 focus trap）\n-   ARIA（Radix 內建）  ：trigger 自動  aria-expanded  /  aria-controls ，content  role=\"dialog\" \n\nConsumer 無需額外處理 a11y,保留 Radix  data-state  屬性即可。"}</p>
     </div>
   ),
 }
