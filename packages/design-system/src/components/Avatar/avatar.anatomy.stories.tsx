@@ -190,8 +190,8 @@ export const Overview = {
                 ['icon', 'LucideIcon', '—', 'Icon 模式（與 src/alt 互斥優先）'],
                 ['color', 'ColorKey', "'neutral'", 'Icon / Text 模式的背景色'],
                 ['solid', 'boolean', 'false', '深底白字模式（step-6 背景 + 白色前景，yellow 例外）'],
-                ['status', "'online' | 'away' | 'busy' | 'offline'", '—', '在線狀態 dot（presence），顯示在右下角；與 badgeCount 擇一'],
-                ['badgeCount', 'number', '—', '未讀 / 通知計數 badge，顯示在右上角（消費 Badge critical，>99 顯示 99+）；與 status 擇一'],
+                ['status', "'online' | 'away' | 'busy' | 'offline'", '—', '在線狀態 dot（presence），顯示在右下角；可與 badgeCount（右上）並存'],
+                ['badgeCount', 'number', '—', '未讀 / 通知計數 badge，顯示在右上角（消費 Badge critical，>99 顯示 99+）；可與 status（右下）並存'],
                 ['hoverCard', 'ReactNode', '—', 'hover 時彈出的內容（如 ProfileCard），person avatar 預設必帶'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>

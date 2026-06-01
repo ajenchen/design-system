@@ -450,13 +450,16 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 
 ## A11y 預設
 
-**ARIA / Pattern**:對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 pattern。
+**ARIA / Pattern**:[W3C APG](https://www.w3.org/WAI/ARIA/apg/patterns/) **無**正式 stepper pattern(2026-06-01 M26 source-verified:APG 31 patterns 無 stepper / wizard / progress)。本元件採 **Carbon ProgressIndicator 模型** — root `<ol>` + clickable step `role="button"` + focused step `aria-current="step"` + indicator `aria-hidden`(純視覺)。
 
-**Keyboard 行為**:
+- **root `aria-label`**:consumer 透過 `<Steps aria-label="註冊流程進度">` 提供(透傳到 `<ol>`),命名此流程。對齊 Angular Material「stepper 必須有 label」。
+- **sr-only 狀態文字**:每個 step header 含 visually-hidden `<span>`「第 N 步,共 M 步,{已完成 / 進行中 / 錯誤 / 未開始}」——indicator 是 `aria-hidden` 純視覺,故 sr-only 是螢幕報讀器**唯一**狀態來源(對齊 Carbon `--assistive-text` 慣例)。
 
-- Tab — focus step(若 clickable)
-- Enter — navigate to step
-- Space — navigate to step(同 Enter,對齊 ARIA `button` pattern——`role=button` 元素必同時支援 Enter 與 Space 觸發)
+**Keyboard 行為**(Carbon 模型 — sequential Tab,非 tablist roving):
+
+- Tab — focus 每個 clickable step(各自 tab stop)
+- Enter / Space — navigate to step(`role=button` 元素必同時支援)
+- **不提供方向鍵 roving**:採 native button sequential Tab(對齊 Carbon ProgressIndicator);MUI / Angular Material 的「tablist + 方向鍵 roving」是另一派世界級做法,本 DS 不採(避免把 `role=button` 改寫成 `role=tab` 的語義改動)。
 
 **Focus**:focus-visible ring 對齊 DS canonical(`outline: 2px solid var(--ring)`);focus management 由元件 own。
 

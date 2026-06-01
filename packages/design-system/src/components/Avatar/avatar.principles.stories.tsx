@@ -166,14 +166,15 @@ export const WithBadgeOverlayRule: Story = {
       </Rule>
 
       <Rule
-        title="❌ 同一個 Avatar 上同時顯示 status + badgeCount"
-        note="對齊 Badge 設計準則『一個頭像最多顯示 1 個提示標記』。在線狀態點(status)跟未讀數字(badgeCount)**擇一使用**,不並存 — 兩個提示同時出現會互相搶注意力,使用者反而看不出哪個才是重點"
+        title="✅ status(右下 presence)+ badgeCount(右上 count)可並存"
+        note="兩者是**不同角、不同語義**的 slot(presence=這個人的線上狀態,右下;count=此對話未讀量,右上),對齊 `badge.spec.md`「Avatar 可疊 status + count」canonical + Slack / Teams / iMessage / LINE 標配。**signal crowding 只禁「同一角疊兩個同類 indicator」**(如右上同時 count + dot),不禁不同角不同語義的兩個訊號"
       >
         <div className="flex items-center gap-4">
-          <Avatar alt="Ada" size={40} status="online" />
-          <Avatar alt="Alex" size={40} badgeCount={3} />
+          <Avatar alt="Ada" size={40} status="online" badgeCount={3} />
+          <Avatar alt="Alex" size={40} status="busy" />
+          <Avatar alt="Ben" size={40} badgeCount={12} />
         </div>
-        <Label>↑ Ada 只顯示線上狀態;Alex 只顯示未讀數 —— 不合併</Label>
+        <Label>↑ Ada 同時 presence(右下)+ count(右上)並存;Alex 只 presence;Ben 只 count</Label>
       </Rule>
     </div>
   ),

@@ -274,7 +274,7 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 - **ScrollIntoView**:切換當前 file 時 active thumb 自動 scroll 到視野中央
 - **消費 `horizontal-overflow` pattern**:隱藏 native scrollbar + fade-mask + scroll arrows(canScroll 時)
 - **Thumb 內容**:image 用 `<img object-cover>`;非 image 用 FileText icon + ext label
-- **A11y**:整個 strip `role="tablist"`,每個 thumb `role="tab" aria-selected`
+- **A11y**:整個 strip `role="group"` + `aria-label`,每個 thumb `<button>` + `aria-current`(當前)。**非 `tablist`**——filmstrip 是「選圖導航」非「切換 N 個 tabpanel」,lightbox 單一 viewport 不符 W3C tabs pattern(tab MUST 對應自己的 tabpanel + roving)。對齊 APG grouped-carousel + PhotoSwipe / codeaccessible.com lightbox 共識(2026-06-01 M26 source-verified)
 
 ---
 
@@ -350,7 +350,7 @@ Radix DialogPrimitive 自動處理:
 
 自加的 a11y:
 - 所有 iconOnly button 皆有 `aria-label`(中文,跟 DS 其他元件風格一致)
-- Filmstrip `role="tablist"` + thumb `role="tab"` + `aria-selected`
+- Filmstrip `role="group"` + `aria-label` + thumb `<button>` + `aria-current`(非 tablist;見「Filmstrip 規則」段理由)
 - InfoPanel 用 `<aside aria-label="檔案詳細資訊">` 語意標記
 - `onOpenAutoFocus={e => e.preventDefault()}` 避免焦點自動跑進第一個 tabbable(讓鍵盤從 viewport 開始)
 

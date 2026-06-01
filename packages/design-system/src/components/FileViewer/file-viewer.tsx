@@ -578,9 +578,11 @@ const Filmstrip: React.FC<FilmstripProps> = ({ files, activeIndex, onSelect, lab
             gap-[var(--layout-space-tight)] 走 DS density-aware token(不用 raw gap-1)——
             世界級 idiom:Google Drive / Dropbox / Notion file preview 的 filmstrip 都是
             少量置中 / 多量靠 start scroll。
-            role="tablist" 擺在 tabs 的直接父元件,符合 ARIA tab pattern 語意。 */}
+            ARIA role="group"(非 tablist):filmstrip 是「選圖導航」不是「切換 N 個 tabpanel」——
+            lightbox 縮圖膠卷只有單一 viewport,不符 W3C tabs pattern(tab MUST 對應自己的 tabpanel + roving tabindex)。
+            對齊 APG grouped-carousel + PhotoSwipe / codeaccessible.com lightbox 共識:group + button + aria-current。 */}
         <div
-          role="tablist"
+          role="group"
           aria-label={labels.filmstripLabel}
           className="flex items-center gap-[var(--layout-space-tight)] mx-auto shrink-0"
         >
@@ -592,8 +594,7 @@ const Filmstrip: React.FC<FilmstripProps> = ({ files, activeIndex, onSelect, lab
             <button
               key={file.id}
               type="button"
-              role="tab"
-              aria-selected={active}
+              aria-current={active ? 'true' : undefined}
               aria-label={`${i + 1} / ${files.length}:${file.name}`}
               data-thumb-index={i}
               onClick={() => onSelect(i)}

@@ -64,6 +64,7 @@ interface StepsContextValue {
   expandedSet: Set<string>
   setValue: (value: string) => void
   toggleExpanded: (value: string) => void
+  total: number
 }
 
 const StepsContext = React.createContext<StepsContextValue | null>(null)
@@ -240,6 +241,8 @@ const Steps = React.forwardRef<HTMLOListElement, StepsProps>(
       })
     }, [])
 
+    const stepCount = React.Children.count(children)
+
     const ctxValue = React.useMemo<StepsContextValue>(
       () => ({
         value,
@@ -253,12 +256,13 @@ const Steps = React.forwardRef<HTMLOListElement, StepsProps>(
         expandedSet,
         setValue,
         toggleExpanded,
+        total: stepCount,
       }),
-      [value, completedValues, errorValues, reachableValues, linear, size, orientation, expansion, expandedSet, setValue, toggleExpanded],
+      [value, completedValues, errorValues, reachableValues, linear, size, orientation, expansion, expandedSet, setValue, toggleExpanded, stepCount],
     )
 
     // Interleave horizontal connectors between items
-    const count = React.Children.count(children)
+    const count = stepCount
     const itemsWithIndex: React.ReactNode[] = []
 
     React.Children.forEach(children, (child, index) => {
@@ -421,8 +425,20 @@ function StepItemLayout({ children }: { children: React.ReactNode }) {
 
 // ── Clickable header ─────────────────────────────────────────────────────
 
+// SR-only 狀態文字 map(2026-06-01 #25 a11y:indicator 是 aria-hidden 純視覺,故「第 N 步/共 M 步/狀態」
+// 需經 sr-only span 給螢幕報讀器。對齊 Carbon ProgressIndicator `--assistive-text`(已完成/進行中/未開始)慣例)
+const STEP_STATUS_TEXT: Record<StepContentState, string> = {
+  completed: '已完成',
+  current: '進行中',
+  error: '錯誤',
+  reachable: '未開始',
+  upcoming: '未開始',
+}
+
 function StepItemHeader({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   const item = useStepItemContext()
+  const steps = useStepsContext()
+  const index = React.useContext(StepIndexContext)
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!item.clickable) return
     if (e.key === 'Enter' || e.key === ' ') {
@@ -446,6 +462,7 @@ function StepItemHeader({ children, className, style }: { children: React.ReactN
       )}
       style={style}
     >
+      <span className="sr-only">{`第 ${index} 步,共 ${steps.total} 步,${STEP_STATUS_TEXT[item.state]}`}</span>
       {children}
     </div>
   )

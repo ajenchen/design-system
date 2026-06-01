@@ -1116,7 +1116,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `fileviewer.spec.md` 「A11y 預設」段。摘要:\n\nRadix DialogPrimitive 自動處理:\n-  role=\"dialog\"  +  aria-modal=\"true\" \n-  <DialogPrimitive.Title> (sr-only)自動成  aria-labelledby  目標——screen reader 開啟時讀「檔案檢視器:{file.name}」\n- Focus trap:焦點鎖在 viewer 內\n- Esc 關閉;Overlay click 關閉(Radix 預設)\n\n自加的 a11y:\n- 所有 iconOnly button 皆有  aria-label (中文,跟 DS 其他元件風格一致)\n- Filmstrip  role=\"tablist\"  + thumb  role=\"tab\"  +  aria-selected \n- InfoPanel 用  <aside aria-label=\"檔"}</p>
+      <p className="whitespace-pre-line">{"詳 `fileviewer.spec.md` 「A11y 預設」段。摘要:\n\nRadix DialogPrimitive 自動處理:\n-  role=\"dialog\"  +  aria-modal=\"true\" \n-  <DialogPrimitive.Title> (sr-only)自動成  aria-labelledby  目標——screen reader 開啟時讀「檔案檢視器:{file.name}」\n- Focus trap:焦點鎖在 viewer 內\n- Esc 關閉;Overlay click 關閉(Radix 預設)\n\n自加的 a11y:\n- 所有 iconOnly button 皆有  aria-label (中文,跟 DS 其他元件風格一致)\n- Filmstrip  role=\"group\"  + thumb  <button>  +  aria-current (非 tablist:選圖導航非切 tabpanel)\n- InfoPanel 用  <aside aria-label=\"檔"}</p>
     </div>
   ),
 }

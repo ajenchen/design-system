@@ -11,12 +11,16 @@ import * as React from 'react'
  *      使用 `useScrollEdges()`：回傳 atStart / atEnd / canScroll，讓消費端
  *      決定 mask-image / scroll arrow 的顯示。
  *
- *   2. **Menu 模式**（Ant Design / Atlassian 作法）
- *      塞不下的 items 收進 DropdownMenu。**所有 items 都渲染在 DOM 中**
- *      （只視覺隱藏溢出的）以保留 Radix 的 roving tabindex / roving focus 等
- *      a11y 語意。使用 `useOverflowIndices()`：回傳 overflowIndices
- *      供消費端渲染對應的 menu items（通常是 click proxy，觸發同一個
- *      onValueChange）。
+ *   2. **Menu 模式**（Ant Design / Atlassian「動態 collapse-overflow」作法）
+ *      塞不下的 items 收進 DropdownMenu。`useOverflowIndices()` 回傳 overflowIndices
+ *      供消費端動態計算哪些 items 塞不下、渲染對應的 menu items。
+ *
+ *      ⚠️ **目前 0 consumer（reserved primitive）**：DS 內現有 menu 模式實作（Tabs / Chip）走的是
+ *      「**show-all navigator**」派 — dropdown 永遠列**全部** items（不需動態 overflow 計算），各自用
+ *      local registerItem，**刻意不用** `useOverflowIndices`（見 tabs.tsx:256 / chip.tsx:219 註解）。
+ *      本 hook 保留給未來真正需要「collapse-overflow：只把塞不下的收進選單」的 consumer。
+ *      **roving tabindex / a11y 語意由 consumer 的渲染方式決定**（hook 只回傳 indices，不操作
+ *      DOM / tabindex），非 hook 本身保證。
  *
  * ── 為什麼分兩個 hook，不合一 ──
  *   Scroll 的計算依據是 scroll 事件與 client/scroll width；Menu 的計算依據是
