@@ -110,8 +110,9 @@ export interface SelectMenuProps {
   onOpenAutoFocus?: (e: Event) => void
 
   /**
-   * Popover 內容容器的 DOM id。Combobox / 自定 trigger 用 `aria-controls` 指向此 id 時,
-   * 需傳入相同 id 讓 AT 能找到對應的 listbox。
+   * Popover 內容容器的 DOM id(set 在 PopoverContent 外層 div,**非** cmdk 內層 `role="listbox"` 本身)。
+   * Combobox / 自定 trigger 用 `aria-controls` 指向此 id 時,指向的是 **popover 容器(listbox 的 ancestor)**——
+   * AT 經此容器可定位到內部 cmdk listbox(cmdk List 自帶 auto-generated `role="listbox"` id)。
    */
   contentId?: string
 

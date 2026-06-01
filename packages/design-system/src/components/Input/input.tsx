@@ -19,10 +19,13 @@ export interface InputProps
   mode?: FieldMode
   /**
    * Visual chrome(正交於 mode);Phase B1(2026-05-05)從 `variant` 改名 `chrome`,對齊 FieldContext.variant 透傳。
+   * 公開 variant 兩個:
    * - `'default'`(預設)— Field wrapper 完整 variant:bg-surface + 明顯 border + hover/focus 回饋。適用表單、Field 內嵌。
-   * - `'bare'` — 透明 variant,hover / focus 才出現 border。適用 Toolbar inline editing(如 FileViewer zoom input / chart config toolbar / rich text toolbar number input)+ DataTable cell-as-input。保留 padding / typography / height,只拿掉背景和常態 border。
+   * - `'bare'` — 透明 variant,hover / focus 才出現 border。適用 Toolbar inline editing(如 FileViewer zoom input / chart config toolbar / rich text toolbar number input)。保留 padding / typography / height,只拿掉背景和常態 border。
    *
-   * 透傳:在 `<Field variant="bare">` 內自動繼承 context.variant;per-prop override context。
+   * @internal `'naked'` — 完全無 chrome / 無 border / 無 focus ring。單獨使用無視覺邊界,**不可直接 standalone 用**;僅供 DS 內部 cell-as-input 組合(host cell 自管 border + focus visual,正被 `FieldSurfaceContext='table-cell'` 取代)。consumer 請用 `default` / `bare`。
+   *
+   * 透傳:在 `<Field variant="default|bare">` 內自動繼承 context.variant;per-prop override context。
    * 世界級對照(bare):VS Code settings input / Figma toolbar number / Notion prop input。
    */
   variant?: FieldVariant
