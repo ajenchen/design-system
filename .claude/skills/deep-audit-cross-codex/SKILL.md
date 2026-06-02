@@ -87,7 +87,7 @@ detect_mode() {
 **為何不能只靠 deterministic grep**:2026-05-30 嘗試建 `audit-anatomy-prop-existence.mjs`(已刪除不存在)機械驗 prop-existence,但 **prop passthrough(元件 `...props` 轉發 Radix/react-day-picker)使 naive grep 必 over-flag 合法 prop** → 不可靠 → 刪除。**結論:FALSE_CLAIM 驗證本質需 LLM 讀 source 判斷,無法純 grep gate → 故必用「強制 + 報告驗證確認真跑」的機制保證**。
 
 **強制流程**(deep-audit 每次必跑,no skip):
-0. **機械 gate 先跑(deterministic,2026-06-02 加)**:`npm run typecheck:stories`(抓 stories 的 `{var}`-undefined / prop 型別錯;主 tsc -b exclude stories 故必跑此)+ `node scripts/storybook-smoke-test.mjs --full`(coverage-gated 全量 render,抓 runtime crash;**確認 `probed == 總數`,非「Failures 0」即綠**)。兩道先過才進 adversarial read。Anchor:2026-06-02 Field SizeMatrix `{size}` JSX-undefined crash 隨 beta.44 ship —— stories 沒型別檢查 + smoke 靜默 skip 886/945 假綠燈,三防線全漏。
+0. **機械 gate 先跑(deterministic,2026-06-02 加)**:`npm run typecheck:stories`(deterministic 抓 stories 的 `{var}`-undefined / prop 型別錯 —— **這是 SizeMatrix `{size}` crash 的真防線**;主 tsc -b exclude stories 故必跑此)+ `node scripts/storybook-smoke-test.mjs --full`(runtime crash render 掃)。先過才進 adversarial read。Anchor:2026-06-02 Field SizeMatrix `{size}` JSX-undefined crash 隨 beta.44 ship。**注**:smoke 全覆蓋 coverage-gate(防靜默-skip 假綠燈)attempted 但 CI server 規模化降級(~60 story 後 timeout 撞 20-min budget)→ **defer**(需 robust-server / browser-recycle + 可靠測試環境);故 typecheck:stories 是目前 deterministic 主防線。
 1. **per-component(NO-SAMPLE,全 62 component + 全 pattern)** dispatch adversarial agent。
 2. 每 agent 必 **Read 元件 .tsx + 其 wrap 的 lib(Radix/cmdk/react-day-picker/sonner 等)source**,對該元件**所有** anatomy / a11y / principles / spec 宣稱**逐句**比對:鍵盤 map / ARIA role / focus 行為 / prop 存在性 / 視覺 token / 預設值 / native-vs-custom。
 3. **「自上次 audit 無 code 改動」≠ 可跳過** —— content 宣稱可在 code 沒變下就是假的(前期正是用此藉口跳過 = 違規)。
