@@ -27,36 +27,39 @@ FAILED_TESTS=""
 TMPROOT=$(mktemp -d)
 trap 'rm -rf "$TMPROOT"' EXIT
 
-# Setup sandbox: <TMPROOT>/.claude/hooks/<hook> + <TMPROOT>/packages/... + <TMPROOT>/src/globals.css
-mkdir -p "$TMPROOT/.claude/hooks"
+# Setup sandbox: hook 放 .claude/hooks/lib/(對齊 production)。2026-06-01 #18 把 hook 改成
+# `cd $0/../../..` 算 PROJECT_ROOT(因它在 lib/、被 dispatcher 以 $0=lib 路徑呼叫,需 3 層上溯)。
+# test sandbox 必同放 lib/ 深度,否則 `../../..` 多上溯一層 → grep 找不到 CSS → 假 fail(2026-06-02 修)。
+mkdir -p "$TMPROOT/.claude/hooks/lib"
 mkdir -p "$TMPROOT/packages/design-system/src/tokens/uiSize"
 mkdir -p "$TMPROOT/src"
-cp "$SRC_HOOK" "$TMPROOT/.claude/hooks/check_tab_lg_chrome_header_equal.sh"
-chmod +x "$TMPROOT/.claude/hooks/check_tab_lg_chrome_header_equal.sh"
-# Provide _log-fire.sh shim (sourced by hook)
+cp "$SRC_HOOK" "$TMPROOT/.claude/hooks/lib/_tab_lg_chrome_header_equal.sh"
+chmod +x "$TMPROOT/.claude/hooks/lib/_tab_lg_chrome_header_equal.sh"
+# _log-fire.sh shim(hook source `$(dirname $0)/../_log-fire.sh` = .claude/hooks/_log-fire.sh)
 cp "$LOG_FIRE_SH" "$TMPROOT/.claude/hooks/_log-fire.sh" 2>/dev/null || true
 
-SANDBOX_HOOK="$TMPROOT/.claude/hooks/check_tab_lg_chrome_header_equal.sh"
+SANDBOX_HOOK="$TMPROOT/.claude/hooks/lib/_tab_lg_chrome_header_equal.sh"
 UISIZE_CSS="$TMPROOT/packages/design-system/src/tokens/uiSize/uiSize.css"
 GLOBALS_CSS="$TMPROOT/src/globals.css"
 
 write_tokens() {
   # args: tab_lg_md tab_lg_lg ch_md ch_lg
+  # 2026-06-02 修:both token 寫進 uiSize.css —— #18 後 hook 從 uiSize.css 讀 chrome-header
+  # (globals.css 是 22 行 aggregator,token 已搬走,deep-audit Decision 1)。原 test 把
+  # chrome-header 寫 globals.css → hook grep uiSize.css 空值 → set -e 下 exit 1 假 fail。
   cat > "$UISIZE_CSS" <<EOF
 :root {
   --tab-height-lg: ${1}rem;
-}
-[data-density="lg"] {
-  --tab-height-lg: ${2}rem;
-}
-EOF
-  cat > "$GLOBALS_CSS" <<EOF
-:root {
   --chrome-header-height: ${3}rem;
 }
 [data-density="lg"] {
+  --tab-height-lg: ${2}rem;
   --chrome-header-height: ${4}rem;
 }
+EOF
+  cat > "$GLOBALS_CSS" <<EOF
+/* aggregator — chrome-header-height 已搬至 uiSize.css(deep-audit Decision 1);此檔僅為 hook trigger-path 測試用 */
+:root {}
 EOF
 }
 
