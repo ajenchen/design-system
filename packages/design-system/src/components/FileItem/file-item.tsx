@@ -52,6 +52,16 @@ export interface FileItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
    * - `rich`：縮圖 + 檔名 + size + status + progress 的完整 card 呈現
    */
   mode?: 'compact' | 'rich'
+  /**
+   * 清單所在的 surface context（2026-06-03 codify rich-borderless）：
+   * - `form`（預設）：rich = border card（自立輪廓，Slack/Notion/Linear attachment 慣例）
+   * - `upload-manager`：rich = **無邊框**（Google Drive/Dropbox 背景上傳 box —— box 自身已是容器，
+   *   card border 多餘 = 雙層容器）；avatar 作每筆 item 視覺邊界。compact 不受影響（其 Type A/B
+   *   由 status 決定，已正確）。
+   * surface-driven（非 status-driven）：避免 form 內 rich 上傳中變無邊框、存好變 card 的邊框閃爍。
+   * gap 由「有無邊框」決定：borderless（upload-manager rich / compact）→ 4px；border card（form rich）→ 8px。
+   */
+  surface?: 'form' | 'upload-manager'
   status?: 'uploading' | 'completed' | 'error'
   progress?: number
   /** rich mode: 檔案大小、狀態訊息。compact: 只有 error 才顯示。 ReactNode 支援 inline clickable link(如「View log」)。 */
@@ -79,6 +89,7 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
     {
       name,
       mode = 'compact',
+      surface = 'form',
       status,
       progress = 0,
       description,
@@ -234,7 +245,9 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
           ref={ref}
           className={cn(
             'group/row flex items-start gap-2 px-3 py-3 w-full text-body leading-compact transition-colors',
-            'border border-divider rounded-md bg-surface',
+            // surface=form → border card(自立輪廓);surface=upload-manager → 無邊框(box 自身是容器,
+            // avatar 作 item 邊界)。2026-06-03 codify rich-borderless(原僅 spec 旁註,consumer 自己移除)。
+            surface === 'upload-manager' ? 'rounded-md' : 'border border-divider rounded-md bg-surface',
             hoverClass,
             className,
           )}

@@ -132,3 +132,33 @@ export const CustomChildren = {
     </div>
   ),
 }
+
+// variant="button":表單內緊湊上傳(*Excel file 欄位場景)— 大 dropzone 太重時用按鈕觸發,
+// 檔案清單在按鈕下方(Type B compact)。2026-06-03 加 — FileUpload 常出現在 form。
+export const ButtonVariant = {
+  name: '按鈕觸發(表單內)',
+  render: () => {
+    type Item = { id: string; name: string; size?: number; status?: 'completed' }
+    const [items, setItems] = useState<Item[]>([
+      { id: '1', name: 'UXP T-Phone.xlsx', size: 1_800_000, status: 'completed' },
+    ])
+    return (
+      <div className="max-w-md">
+        <FileUpload
+          variant="button"
+          buttonLabel="Choose Excel file" // i18n-allow: story label
+          accept=".xls,.xlsx,.csv"
+          files={items}
+          fileListMode="compact"
+          onRemove={(id) => setItems((prev) => prev.filter((i) => i.id !== id))}
+          onUpload={(accepted) =>
+            setItems((prev) => [
+              ...prev,
+              ...accepted.map((f, i) => ({ id: `n-${Date.now()}-${i}`, name: f.name, size: f.size, status: 'completed' as const })),
+            ])
+          }
+        />
+      </div>
+    )
+  },
+}

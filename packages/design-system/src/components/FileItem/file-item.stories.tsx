@@ -202,3 +202,19 @@ export const CompactMixed = {
     </div>
   ),
 }
+
+// surface="upload-manager":Google Drive / Dropbox 背景上傳 box — rich 無邊框(box 自身是容器,
+// avatar 作每筆 item 邊界),列間 4px(無邊框 → 跟 compact 同間距)。對比預設 surface=form 的 border card。
+export const UploadManagerSurface = {
+  name: 'Upload manager(無邊框)',
+  render: () => (
+    <div className="flex flex-col gap-1 max-w-md rounded-md border border-divider bg-surface p-2">
+      <FileItem mode="rich" surface="upload-manager" name="Alan Profile.png" status="uploading" progress={40}
+        description="5.7 MB of 7.5MB" thumbnailSrc="https://i.pravatar.cc/80?u=alan" actions={deleteBtn} />
+      <FileItem mode="rich" surface="upload-manager" name="Q1 營收報表.xlsx" status="completed"
+        description="2.4 MB" thumbnailSrc="https://i.pravatar.cc/80?u=xls" onDownload={noop} actions={deleteBtn} />
+      <FileItem mode="rich" surface="upload-manager" name="合約草案 v3.pdf" status="error"
+        description="There's something wrong. View log" thumbnailSrc="https://i.pravatar.cc/80?u=pdf" onRetry={noop} actions={deleteBtn} />
+    </div>
+  ),
+}

@@ -14,11 +14,14 @@ import { Button } from '@/design-system/components/Button/button'
  * 與本 DS 既有 FileItem(顯示已上傳檔案)配對 — 這裡 own「上傳觸發 + 拖放偵測」,
  * 上傳後的檔案清單顯示交給 consumer 用 FileItem 渲染。
  *
- * ── 4 狀態 ──
- * idle     (default) — border-dashed border-divider  bg-surface
- * drag-over         — border-dashed border-primary  bg-primary-subtle
- * loading           — 上傳中(async)顯示 CircularProgress,阻擋新互動
- * disabled          — opacity-disabled pointer-events-none
+ * ── 4 狀態(2026-06-03 修正)──
+ * idle     (default) — border-dashed border-border  bg-surface
+ * hover = drag-over  — border-primary(統一,純 border-driven,底維持 surface)
+ * loading            — CircularProgress;cursor-progress(無 pointer-events-none)
+ * disabled           — bg-disabled + 文字 fg-disabled(語意 token,非 opacity)+ cursor-not-allowed
+ *
+ * ── variant ──
+ * dropzone(預設)大拖放區 + drag;button 緊湊 Button 觸發(form-friendly,click-only)
  *
  * ── children 插槽 ──
  * 預設渲染 `<Empty icon={Upload} title description />` — 重用 Empty 元件 own
@@ -58,6 +61,15 @@ export interface FileUploadProps extends Omit<React.HTMLAttributes<HTMLDivElemen
   accept?: string
   maxSize?: number
   disabled?: boolean
+  /**
+   * 觸發外觀(2026-06-03 加,M21 prop-variant + Ant `Upload`(button)/`Upload.Dragger`(dropzone)先例):
+   * - `dropzone`(預設):大拖放區 + 點擊,支援 drag-and-drop。
+   * - `button`:緊湊 Button 觸發(form-friendly,省空間),click-only(無拖放區)。
+   * 兩者共用 onUpload / onReject / files 清單渲染;都可放進 Field control slot。
+   */
+  variant?: 'dropzone' | 'button'
+  /** `variant="button"` 的按鈕文字(預設「Choose file」)。 */
+  buttonLabel?: string
   /**
    * Loading 狀態(async 上傳 / 伺服器處理中)。
    * - 顯示 CircularProgress 取代預設 Empty 內容
@@ -101,6 +113,8 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
       accept,
       maxSize,
       disabled = false,
+      variant = 'dropzone',
+      buttonLabel = 'Choose file', // i18n-allow: DS default; consumer override via buttonLabel prop
       loading = false,
       loadingTitle = '上傳中…', // i18n-allow: DS default; consumer override via loadingTitle prop
       title = 'Click or drag file here to upload', // i18n-allow: DS default; consumer override via title prop
@@ -143,7 +157,9 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
     }
 
     const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!disabled) inputRef.current?.click()
+      // 2026-06-03 Q4:guard `!disabled && !loading`(= !isBlocked)。loading 時也擋點擊防 double-submit
+      // (原只 guard !disabled,靠 pointer-events-none 擋 loading;移除 pointer-events-none 後改這裡 guard)。
+      if (!disabled && !loading) inputRef.current?.click()
       onClick?.(e)
     }
 
@@ -156,9 +172,11 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
     const fileListNode = hasFiles ? (
       <ul
         className={cn(
-          // stack vertically with consistent gap;bg-surface 在容器外的 chrome / consumer bg 之上
-          'flex flex-col gap-2 w-full',
-          'mt-3',
+          'flex flex-col w-full',
+          // 2026-06-03 gap SSOT:列間 gap + control→list gap(mt)由「item 有無邊框」單一規則決定,
+          // 同值貫穿整個垂直堆疊 — rich(form surface = border card)→ 8px;compact(borderless/bg-pill)→ 4px。
+          // 消費 FileItem「List wrapper canonical」(file-item.spec.md),取代原硬寫 gap-2 / mt-3(不分 mode)。
+          fileListMode === 'rich' ? 'gap-2 mt-2' : 'gap-1 mt-1',
         )}
         aria-label="Uploaded files"
       >
@@ -198,6 +216,32 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
 
     return (
       <div ref={ref} className={cn('w-full', hasFiles && 'flex flex-col')}>
+      {variant === 'button' ? (
+        // ── button variant:緊湊觸發(form-friendly,省空間),click-only(無拖放區)──
+        <div className={className} {...props}>
+          <input
+            ref={inputRef}
+            type="file"
+            className="hidden"
+            multiple={multiple}
+            accept={accept}
+            disabled={disabled}
+            onChange={(e) => filterAndDispatch(e.target.files)}
+          />
+          <Button
+            variant="secondary"
+            startIcon={UploadIcon}
+            loading={loading}
+            disabled={disabled}
+            aria-busy={loading || undefined}
+            onClick={() => {
+              if (!disabled && !loading) inputRef.current?.click()
+            }}
+          >
+            {buttonLabel}
+          </Button>
+        </div>
+      ) : (
       <div
         role="button"
         tabIndex={isBlocked ? -1 : 0}
@@ -240,14 +284,17 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           'rounded-md border-2 border-dashed p-[var(--layout-space-loose)]',
           'cursor-pointer transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-          // idle
-          'border-divider bg-surface hover:bg-neutral-hover',
-          // drag-over
-          'data-[state=drag-over]:border-primary data-[state=drag-over]:bg-primary-subtle data-[state=drag-over]:hover:bg-primary-subtle',
-          // loading(阻擋新互動但不 opacity-disabled — 避免跟 disabled 視覺撞,保持「處理中」語意)
-          'data-[state=loading]:cursor-progress data-[state=loading]:pointer-events-none',
-          // disabled
-          'data-[state=disabled]:opacity-disabled data-[state=disabled]:pointer-events-none data-[state=disabled]:cursor-not-allowed',
+          // idle:--border(元件邊框,非 --divider 分隔線 — 2026-06-03 Q2 token 修正)+ surface 底
+          'border-border bg-surface',
+          // hover = drag-over 統一(2026-06-03 Q2-A 純 border-driven,對齊 Ant Dragger colorPrimaryHover):
+          // 兩者都 → primary 邊框,底色維持 surface(不變 bg)。state 信號靠邊框,非底色。
+          'hover:border-primary data-[state=drag-over]:border-primary',
+          // loading(2026-06-03 Q4:移除 pointer-events-none — 它會讓 cursor-progress 失效;
+          // 互動已由 handleClick + drag/key handlers 的 isBlocked guard 擋,不需 pointer-events-none)
+          'data-[state=loading]:cursor-progress',
+          // disabled(2026-06-03 Q3:語意 token 非 opacity — dashed outline surface 走 DS outline-disabled 慣例;
+          // bg→disabled,border 不變色,文字/icon 由 Empty disabled 控;cursor-not-allowed 現在生效)
+          'data-[state=disabled]:bg-disabled data-[state=disabled]:cursor-not-allowed',
           className,
         )}
         {...props}
@@ -272,10 +319,12 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
               icon={UploadIcon}
               title={title}
               description={description}
+              disabled={disabled}
             />
           )
         )}
       </div>
+      )}
       {fileListNode}
       </div>
     )
@@ -317,7 +366,7 @@ export const fileUploadMeta = {
   },
   states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-neutral-hover', 'bg-primary-subtle', 'bg-surface'],
+    bg: ['bg-surface', 'bg-disabled'],
     fg: [],
     ring: ['ring-ring'],
   },

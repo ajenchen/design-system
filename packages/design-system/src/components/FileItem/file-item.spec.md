@@ -128,10 +128,13 @@ Avatar **固定 48px square**,不隨 content 高度變化。content(label + desc
 
 ## 邊框 / 背景(AR15-21 canonical,2026-04-21 · 2026-04-22 擴充)
 
-| Mode | 容器視覺 | Rationale |
+**容器視覺由 `mode` × `surface` 決定**（2026-06-03 加 surface 維度，codify rich-borderless）。`surface` prop：`form`（預設）/ `upload-manager`。
+
+| Mode × surface | 容器視覺 | Rationale |
 |------|---------|-----------|
-| **rich**(所有 status) | `border border-divider rounded-md bg-surface` | Rich mode **永遠是「檔案 card」**,不因 status 改變——Slack / Notion / Linear attachment 皆獨立 card;邊框讓每個 row 視覺上是自立單元 |
-| **compact + 有 progress**(上傳中 / 類 Upload manager 完成態) | 無背景、無邊框,只靠 progress bar 提供 affordance | 「正在發生」/「剛發生」的動態 narrative,progress 本身就是視覺焦點 |
+| **rich + `surface=form`**（預設，表單/訊息附件）| `border border-divider rounded-md bg-surface` | Rich = 「檔案 card」自立輪廓——Slack / Notion / Linear attachment 慣例；邊框讓每 row 視覺獨立 |
+| **rich + `surface=upload-manager`**（Google Drive / Dropbox 背景上傳 box）| **無邊框 + 無 bg**（`rounded-md` 保留供 thumbnail 切角）；avatar 作每筆 item 視覺邊界 | box 自身已是容器 → card border 多餘＝雙層容器；avatar thumbnail 提供「每筆檔案」邊界節奏。2026-06-03 codify（原僅 L116 旁註「consumer 自己移除 border」，現 `surface` prop 機械化）|
+| **compact + 有 progress**（上傳中 / 類 Upload manager 完成態，= Type A）| 無背景、無邊框,只靠 progress bar 提供 affordance | 「正在發生」/「剛發生」的動態 narrative,progress 本身就是視覺焦點 |
 | **compact + 無 progress**(form attachment 靜態態) | `bg-secondary rounded-md`(= neutral-3 色) | 靜態清單(form / 訊息附件)背景色區隔出「檔案 row」邊界,跟純文字內容區分。**為何 `bg-secondary` 不 `bg-neutral-3`**:`--secondary` 是 semantic token 經 `@theme inline` 橋接成合法 Tailwind utility,`--color-neutral-3` 是 primitive token(僅 `:root` CSS var)不生成 utility,寫 `bg-neutral-3` 會 silent 失效。對齊 Badge low / ProgressBar track SSOT(同色) |
 
 ### Hover 行為 canonical(2026-04-23)
@@ -268,12 +271,15 @@ Type A completed(100% bar + ✓)屬「剛完成的 upload session」視覺;Type 
 
 ## List wrapper canonical(多 item 間距)
 
-`FileItem` 連續排列時 list wrapper gap,**統一規則**(2026-04-23 簡化,user 指示):
+**單一規則(2026-06-03 統一）:gap 由「item 有無邊框」決定 —— 有邊框 card → `gap-2`(8px,邊框不相黏);無邊框 / bg-pill → `gap-1`(4px)。**
 
-| Mode | List wrapper gap | Rationale |
+| Mode × surface | List wrapper gap | Rationale |
 |------|----------------|-----------|
-| **Rich**(單一 mode list) | `gap-2`(8px) | card 邊框不相黏(standalone card invariant) |
-| **Compact**(單一 mode list,所有情境) | `gap-1`(4px) | 統一 — 不論 Type A only / Type B only / Type A+B mixed,都用 gap-1 簡化 canonical。Type A 無 bg 的 0-gap 選項已捨棄,簡化 consumer 心智負擔 |
+| **Rich + `surface=form`**(border card)| `gap-2`(8px) | card 邊框不相黏(standalone card invariant) |
+| **Rich + `surface=upload-manager`**(無邊框)| `gap-1`(4px) | 拿掉邊框 → 與無邊框 compact 同間距(2026-06-03 user 校準:「沒邊框就跟 compact 一樣 4px」)|
+| **Compact**(所有情境)| `gap-1`(4px) | 統一 — Type A only / Type B only / mixed 都 gap-1(2026-04-23 user 指示簡化:原條件式「全 Type A → 0 gap」是 consumer 心智負擔 + state 轉換時 fragile,故捨棄 0-gap)|
+
+**control→list gap(FileUpload 內建 list 消費)**:dropzone / button 控制項 ↔ 第一個 FileItem 的間距 = **同上「有無邊框」規則的同值**（card 8px / borderless 4px），由 `file-upload.tsx` 依 `fileListMode` 套用。判準是 **item 有無邊框,非控制項類型**（控制項一律有邊框,不影響）。
 
 **Rich + Compact 不可混用**(見 Invariant 1 上方),故無「混用 gap」決策。
 

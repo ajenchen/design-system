@@ -27,10 +27,16 @@ export interface EmptyProps extends React.HTMLAttributes<HTMLDivElement> {
   description?: string
   /** 行動按鈕(可選) */
   action?: React.ReactNode
+  /**
+   * Disabled context(2026-06-03 加 — FileUpload disabled 等情境消費):title / description 轉
+   * `text-fg-disabled`(語意 disabled token,非 opacity)。icon(Avatar)維持 neutral(icon-circle muted)。
+   * 預設 false,不影響既有 consumer。
+   */
+  disabled?: boolean
 }
 
 const Empty = React.forwardRef<HTMLDivElement, EmptyProps>(
-  ({ icon, title, description, action, className, ...props }, ref) => {
+  ({ icon, title, description, action, disabled = false, className, ...props }, ref) => {
     // 字體 tier:讀 RowSizeContext(menu 內自動對齊 menu items 的字體）
     // 沒有 context(standalone）→ fallback 'md' → text-body (14px)
     const rowSize = useRowSize('md')
@@ -59,7 +65,7 @@ const Empty = React.forwardRef<HTMLDivElement, EmptyProps>(
           <div className="mb-4">{iconElement}</div>
         )}
         {title && (
-          <span className="text-body-lg font-medium text-foreground">
+          <span className={cn('text-body-lg font-medium', disabled ? 'text-fg-disabled' : 'text-foreground')}>
             {title}
           </span>
         )}
@@ -69,7 +75,7 @@ const Empty = React.forwardRef<HTMLDivElement, EmptyProps>(
               // 字體跟 RowSizeContext 對齊:sm/md = text-body (14px),lg = text-body-lg (16px)
               // 在 menu 內自動對齊 menu items;standalone 時 fallback text-body
               descFont,
-              (title || action) ? 'text-fg-secondary' : 'text-fg-muted',
+              disabled ? 'text-fg-disabled' : (title || action) ? 'text-fg-secondary' : 'text-fg-muted',
               // Empty title 永遠 body-lg(16)→ 用 reading-lg token(label tier 決定)
               title && 'mt-[var(--item-gap-label-desc-reading-lg)]',
             )}
