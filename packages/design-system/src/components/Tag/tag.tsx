@@ -66,8 +66,8 @@ export interface TagProps
   icon?: LucideIcon
   /** 左側 avatar（ReactNode），與 icon 互斥。 */
   avatar?: React.ReactNode
-  /** 可移除——Tag 自動渲染 dismiss 按鈕並控制尺寸與互動樣式 */
-  onDismiss?: () => void
+  /** 可移除——Tag 自動渲染 remove 按鈕並控制尺寸與互動樣式(從集合移除 item) */
+  onRemove?: () => void
   /** 深底模式（step-6 背景 + on-emphasis 配對前景;亮色 hue yellow/amber/orange/lime 用深字 --on-emphasis-dark,green 白字例外） */
   solid?: boolean
   /**
@@ -99,14 +99,14 @@ const SOLID_DISMISS_HOVER: Record<string, { hover: string; active: string }> = {
 // Subtle variant 落用 ItemInlineActionButton 預設 neutral-hover。
 // 圖標色繼承 Tag 文字色 → `text-current` 三態覆寫。
 
-function TagDismiss({ onDismiss, label, solid, color }: { onDismiss: () => void; label: string; solid?: boolean; color?: string }) {
+function TagDismiss({ onRemove, label, solid, color }: { onRemove: () => void; label: string; solid?: boolean; color?: string }) {
   const solidColors = solid && color ? SOLID_DISMISS_HOVER[color] : undefined
 
   return (
     <ItemInlineActionButton
       icon={X}
       size="md"
-      onClick={(e) => { e.stopPropagation(); onDismiss() }}
+      onClick={(e) => { e.stopPropagation(); onRemove() }}
       aria-label={`移除 ${label}`}
       style={solidColors ? ({ '--dismiss-hover': solidColors.hover, '--dismiss-active': solidColors.active } as React.CSSProperties) : undefined}
       hoverBgClassName={
@@ -121,7 +121,7 @@ function TagDismiss({ onDismiss, label, solid, color }: { onDismiss: () => void;
 }
 
 function TagInner(
-  { className, color, size, icon: Icon, avatar, onDismiss, solid, unbounded = false, children, style, ...props }: TagProps,
+  { className, color, size, icon: Icon, avatar, onRemove, solid, unbounded = false, children, style, ...props }: TagProps,
   forwardedRef: React.ForwardedRef<HTMLDivElement>,
 ) {
   const solidClass = solid ? SOLID_CLASSES[color ?? 'neutral'] : undefined
@@ -178,7 +178,7 @@ function TagInner(
       {Icon && <Icon size={16} aria-hidden />}
       {avatar && <span className="shrink-0 w-4 h-4 rounded-full overflow-hidden inline-grid place-content-center [&>*]:w-full [&>*]:h-full">{avatar}</span>}
       <span data-tag-text="" className="px-1 truncate min-w-0">{children}</span>
-      {onDismiss && <TagDismiss onDismiss={onDismiss} label={label} solid={solid} color={color ?? 'neutral'} />}
+      {onRemove && <TagDismiss onRemove={onRemove} label={label} solid={solid} color={color ?? 'neutral'} />}
     </div>
   )
 

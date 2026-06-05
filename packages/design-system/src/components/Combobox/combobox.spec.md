@@ -18,6 +18,8 @@ benchmark:
 
 ## 定位
 
+> **Internal-only props(PeoplePicker stack wrapper 協議,end-user 勿用)**:`tagWrapperClassName` / `overflowWrapperClassName` / `tagAreaGapPx` / `tagAreaPaddingLeftPx` / `visibleCountOverride` 是 Combobox overflow 量測層的內部 hook,只供 DS-internal wrapper(PeoplePicker avatar stack)用,已標 `@internal`。`tagAreaPaddingLeftPx` 目前無 active consumer(PeoplePicker 走 `!px-3` 路徑),保留供未來精準 padding 但新 consumer 請先評估。`overflowShape` 是 public typed enum(矩形/圓形 +N),不在此列。
+
 Combobox 是**多選下拉**的輸入與顯示元件。選中值以 Tag 陣列呈現，支援單行溢出與多行換行兩種版面。底層依裝置走兩條實作（觸控偵測自動切換）：**桌機（預設，非觸控）走自建浮層選單**（SelectMenu → Popover + Command（cmdk）），**手機 / 觸控裝置走隱藏的原生 `<select>`**（配合 Tag 疊層 overlay）。詳見「A11y 預設」段的雙路徑設計。
 
 共用規則見 `../Field/field-controls.spec.md`。本文件只記錄 Combobox 特有的原則。

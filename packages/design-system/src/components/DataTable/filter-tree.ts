@@ -4,7 +4,7 @@
  * 抽自 data-table-filter-panel.tsx 為了 file-size budget(panel 拆分)。
  * 純資料結構 + pure functions,無 UI dep。
  *
- * 詳:./advanced-filter.draft.md
+ * 詳:./filter-operators.spec.md
  */
 
 import {
@@ -235,7 +235,7 @@ function matchOperator(op: string, cellValue: unknown, filterValue: unknown): bo
     case 'contains':         return String(cellValue ?? '').toLowerCase().includes(String(filterValue).toLowerCase())
     case 'does_not_contain': return !String(cellValue ?? '').toLowerCase().includes(String(filterValue).toLowerCase())
     // 2026-05-12 Round 6 fix(user 抓 Roadmap 進階篩選「全部」結果空)— impl-vs-spec drift。
-    // Per `advanced-filter-operators.draft.md` L116「is 直接接受多值,不另設 is_any_of」+ L103-116
+    // Per `filter-operators.spec.md` L116「is 直接接受多值,不另設 is_any_of」+ L103-116
     // select(is/is_not + select_multi ValueShape OR 語意)+ L31-32(select.is / person.is 都走
     // select_multi / person_multi ValueShape)。原 impl 只做 single-value 比對,filterValue 是
     // array(全選 options)→ String(array)= "v1,v2" → 永遠 != single cellValue → 結果空。

@@ -47,7 +47,7 @@ export const Dismissable: Story = {
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-1">
           {tags.map(t => (
-            <Tag key={t} color="neutral" onDismiss={() => setTags(prev => prev.filter(x => x !== t))}>{t}</Tag>
+            <Tag key={t} color="neutral" onRemove={() => setTags(prev => prev.filter(x => x !== t))}>{t}</Tag>
           ))}
         </div>
         {tags.length === 0 && <p className="text-caption text-fg-muted">全部移除了，重新整理頁面可恢復</p>}

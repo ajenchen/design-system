@@ -273,7 +273,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
               avatar={pillShowAvatar
                 ? <Avatar src={p.avatarUrl} alt={p.name} size={16} hoverCard={buildPersonProfileCard(p)} />
                 : undefined}
-              onDismiss={onRemove}
+              onRemove={onRemove}
             >
               {p.name}
             </Tag>
@@ -403,7 +403,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
                 hoverCard={buildPersonProfileCard(p)}
               />
             }
-            onDismiss={() => {
+            onRemove={() => {
               onChange?.(selectedNames.filter(n => n !== item.value).map(n => findPerson(people, n)))
             }}
           >

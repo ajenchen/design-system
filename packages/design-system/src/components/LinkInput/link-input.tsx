@@ -92,6 +92,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       disabled: disabledProp,
       label,
       showDisplayEndIcon = false,
+      readOnly,
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
@@ -102,9 +103,11 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     const fieldCtx = useFieldContext()
     const size = sizeProp ?? fieldCtx?.size ?? 'md'
     const disabled = disabledProp ?? fieldCtx?.disabled
-    // mode resolution:disabled prop 一律覆蓋;否則 prop > context.mode > default 'edit'
-    const mode: FieldMode = modeProp ?? fieldCtx?.mode ?? 'edit'
-    const resolvedMode: FieldMode = disabled ? 'disabled' : mode
+    // mode resolution(對齊 input.tsx L107-112 / textarea.tsx L202 canonical):
+    //   prop > fieldCtx.mode > (readOnly → 'readonly') > (disabled → 'disabled') > 'edit'
+    // spec field-controls.spec.md L125「readOnly 原生屬性自動覆蓋 mode」契約落地。
+    const resolvedMode: FieldMode =
+      modeProp ?? fieldCtx?.mode ?? (readOnly ? 'readonly' : disabled ? 'disabled' : 'edit')
     const isEditable = resolvedMode === 'edit'
     // chrome resolution:per-prop > context > 'default'
     const resolvedVariant: FieldVariant = variantProp ?? fieldCtx?.variant ?? 'default'
@@ -269,6 +272,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
+          readOnly={resolvedMode === 'readonly'}
           aria-invalid={(error || fieldCtx?.invalid) || undefined}
           aria-required={fieldCtx?.required || undefined}
           aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}

@@ -7,7 +7,7 @@
  * **禁止**:component 內 hardcode op 字串。一律走 `OPERATOR_REGISTRY[columnType]`。
  *
  * 設計路線:ClickUp baseline + 合理擴充(string +2, url 獨立 +4, date +2)。
- * 詳細 spec:`./advanced-filter-operators.draft.md`
+ * 詳細 spec:`./filter-operators.spec.md`
  */
 
 import type { ColumnType } from './column-types'

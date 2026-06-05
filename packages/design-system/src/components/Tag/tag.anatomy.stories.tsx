@@ -3,7 +3,7 @@
 //   StateBehavior covered by ColorMatrix「Dismiss 按鈕色彩」段(default /
 //     hover / active × subtle / solid 兩模式)。Tag 本身是非互動展示元件
 //     ——沒有 hover / focus / active state(對齊 Material Chip / Ant Tag 慣例),
-//     唯一 interactive 部位是 onDismiss button,其狀態色彩集中於 ColorMatrix 比拆 5. 直觀。
+//     唯一 interactive 部位是 onRemove button,其狀態色彩集中於 ColorMatrix 比拆 5. 直觀。
 import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { Hash } from 'lucide-react'
@@ -183,7 +183,7 @@ export const Overview = {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <H3>結構（Anatomy）</H3>
-          <Desc>Inline label，用於分類標籤、狀態標記、多選已選值。icon 與 avatar 互斥，onDismiss 自動渲染 dismiss 按鈕。</Desc>
+          <Desc>Inline label，用於分類標籤、狀態標記、多選已選值。icon 與 avatar 互斥，onRemove 自動渲染 remove 按鈕。</Desc>
         </div>
         <div className="flex gap-8">
           {/* Text only */}
@@ -248,7 +248,7 @@ export const Overview = {
                 ['size', "'sm'|'md'|'lg'", "'md'", '尺寸（lg = md alias，子元件補齊原則）'],
                 ['icon', 'LucideIcon', '—', '左側 icon，統一 16px。與 avatar 互斥'],
                 ['avatar', 'ReactNode', '—', '左側 avatar（16px 圓形）。與 icon 互斥'],
-                ['onDismiss', '() => void', '—', '可移除——Tag 自動渲染 dismiss 按鈕'],
+                ['onRemove', '() => void', '—', '可移除——Tag 自動渲染 remove 按鈕'],
                 ['solid', 'boolean', 'false', '深底白字模式（step-6 背景 + 白色前景，yellow 例外）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -323,7 +323,7 @@ const InspectorInner = () => {
               color={variant}
               size={size}
               icon={withIcon ? Hash : undefined}
-              onDismiss={withDismiss ? () => {} : undefined}
+              onRemove={withDismiss ? () => {} : undefined}
               solid={solid}
             >
               Label
@@ -639,7 +639,7 @@ export const SizeMatrix = {
                     <Td key={`icon-${sz}`}><Tag color={v} size={sz} icon={Hash}>API</Tag></Td>
                   ))}
                   {SIZES.map((sz) => (
-                    <Td key={`dismiss-${sz}`}><Tag color={v} size={sz} onDismiss={() => {}}>Review</Tag></Td>
+                    <Td key={`dismiss-${sz}`}><Tag color={v} size={sz} onRemove={() => {}}>Review</Tag></Td>
                   ))}
                 </tr>
               ))}

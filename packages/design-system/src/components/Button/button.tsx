@@ -244,7 +244,7 @@ export interface ButtonProps
    * 按鈕視覺強調等級。
    * `destructive` / `ghost` 為 shadcn 內部 compat，請勿在應用程式碼中直接使用。
    */
-  variant?: 'primary' | 'secondary' | 'tertiary' | 'text' | 'link' | (string & {})
+  variant?: 'primary' | 'secondary' | 'tertiary' | 'text' | 'link'
   /** 套用危險色（紅色）。可與任何 variant 組合使用。 */
   danger?: boolean
   /**

@@ -882,7 +882,7 @@ export const StateBehavior = {
             </button>
           </div>
           <div className="flex flex-col gap-1 text-[11px] text-fg-muted">
-            <span>Tag dismiss = Tag 元件的 onDismiss prop，按鈕由 Tag 內部渲染</span>
+            <span>Tag remove = Tag 元件的 onRemove prop，按鈕由 Tag 內部渲染</span>
             <span>dismiss icon: 16px X，hover bg: 18px rounded-md neutral-hover</span>
             <span>readonly / disabled 的 Tag 沒有 dismiss 按鈕</span>
           </div>

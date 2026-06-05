@@ -114,7 +114,7 @@ export const UsageGuidance: Story = {
         title="何時不用 / 替代元件 — 加 dismiss X(再點一次 deselect 就是 dismiss)"
         note="Filter chip 的「移除這個 filter」由 toggle(再點一次)承擔。加 X 等於同一動作有兩個 affordance,違反 Hicks's Law。Material 3 / Atlassian / Polaris filter chips 都不提供 X"
       >
-        <Label warn>（範例省略）Chip 型別不提供 onDismiss,設計上就擋住這個錯用</Label>
+        <Label warn>（範例省略）Chip 型別不提供 onRemove,設計上就擋住這個錯用</Label>
       </Rule>
 
       <Rule

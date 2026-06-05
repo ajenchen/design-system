@@ -194,12 +194,12 @@ export const DismissRule: Story = {
     return (
       <div>
         <Rule
-          title="用 onDismiss callback,Tag 自動渲染 X button"
-          note="消費者不需要自己組 dismiss button——傳 onDismiss,Tag 內部處理尺寸、hover、a11y。多選 Combobox 的已選 tag 用這個 pattern"
+          title="用 onRemove callback,Tag 自動渲染 X button"
+          note="消費者不需要自己組 remove button——傳 onRemove,Tag 內部處理尺寸、hover、a11y。多選 Combobox 的已選 tag 用這個 pattern"
         >
           <div className="flex items-center gap-2 flex-wrap">
             {tags.map(t => (
-              <Tag key={t} color="blue" onDismiss={() => setTags(tags.filter(x => x !== t))}>
+              <Tag key={t} color="blue" onRemove={() => setTags(tags.filter(x => x !== t))}>
                 {t}
               </Tag>
             ))}
@@ -212,17 +212,17 @@ export const DismissRule: Story = {
           note="不同於一般 inline action 的 fg-muted——Tag 有色變體時 dismiss 跟 Tag 文字同色,視覺一體"
         >
           <div className="flex items-center gap-2 flex-wrap">
-            <Tag color="blue" onDismiss={() => {}}>React</Tag>
-            <Tag color="green" onDismiss={() => {}}>TypeScript</Tag>
-            <Tag color="red" onDismiss={() => {}}>Storybook</Tag>
-            <Tag color="neutral" onDismiss={() => {}}>Design System</Tag>
+            <Tag color="blue" onRemove={() => {}}>React</Tag>
+            <Tag color="green" onRemove={() => {}}>TypeScript</Tag>
+            <Tag color="red" onRemove={() => {}}>Storybook</Tag>
+            <Tag color="neutral" onRemove={() => {}}>Design System</Tag>
           </div>
           <Label>↑ X icon 跟 Tag 文字同色,融入 Tag 視覺</Label>
         </Rule>
 
         <Rule
           title="❌ 用 prefix / suffix / 自訂 button 放 dismiss"
-          note="會失去 Tag 內建的尺寸 / hover / a11y 規則。統一走 onDismiss callback pattern"
+          note="會失去 Tag 內建的尺寸 / hover / a11y 規則。統一走 onRemove callback pattern"
         >
           <Label warn>(範例省略)consumer 自組 dismiss = 漂移風險</Label>
         </Rule>

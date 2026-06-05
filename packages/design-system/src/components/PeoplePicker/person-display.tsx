@@ -263,7 +263,7 @@ function MultiPersonDisplay({
                   hoverCard={buildPersonProfileCard(person)}
                 />
               }
-              onDismiss={onRemove ? () => onRemove(value![resolvedMax + i]) : undefined}
+              onRemove={onRemove ? () => onRemove(value![resolvedMax + i]) : undefined}
             >
               {person.name}
             </Tag>

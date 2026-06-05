@@ -65,7 +65,7 @@ export type { Conjunction, FilterCondition, FilterGroup, FilterTree, FilterTreeF
  * - Operator definitions:`./filter-operators.ts` `OPERATOR_REGISTRY`(SSOT,禁 hardcode op 字串)
  * - Filter state:**FilterTree**(本檔自管;搭配 TanStack `globalFilter` 求值)
  *
- * 詳:`./advanced-filter.draft.md` + `./advanced-filter-operators.draft.md`
+ * 詳:`./filter-operators.spec.md`
  */
 
 // ── Internal — id seed ──────────────────────────────────────────────────

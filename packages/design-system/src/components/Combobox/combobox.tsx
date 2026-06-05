@@ -304,7 +304,7 @@ function OverflowTagList({ containerRef, items, size, wrap, renderTag, renderHid
           {hiddenItems.map(item => (
             renderHiddenTag
               ? <React.Fragment key={item.value}>{renderHiddenTag(item)}</React.Fragment>
-              : <Tag key={item.value} size="sm" onDismiss={onRemove ? () => onRemove(item.value) : undefined}>
+              : <Tag key={item.value} size="sm" onRemove={onRemove ? () => onRemove(item.value) : undefined}>
                   {item.label}
                 </Tag>
           ))}
@@ -400,7 +400,7 @@ export interface ComboboxProps {
    * Selected tag pill 客製 render(2026-05-07 v15.5)。
    *
    * 設了 → 每個 selected tag pill 走 consumer 提供的 ReactNode(收 item={value, label}
-   * + onRemove,consumer 自己組 onDismiss);沒設 → 走預設 `<Tag>` text-only pill。
+   * + onRemove,consumer 自己組 onRemove);沒設 → 走預設 `<Tag>` text-only pill。
    *
    * 用例:PeoplePicker(multi)用此 slot 把 selected tag 換成 avatar + name pill,而非
    * 純文字 Tag。對齊 PeoplePicker = Combobox wrapper SSOT。
@@ -414,12 +414,15 @@ export interface ComboboxProps {
    */
   renderHiddenTag?: (item: { value: string; label: string }) => React.ReactNode
   /**
+   * @internal PeoplePicker stack wrapper 內部協議 — end-user 勿用(measurement-layer hook)。
+   *
    * Optional class merged into each tag's outer measurement wrapper (2026-05-07 v15.13)。
    * Stack avatar 模式用此 hook point 達成 sibling-level overlap (`-ml-0.5`) + group selector
    * (`group/avatar`)— 既保留 Combobox 必要 measurement wrapper,又讓 dismiss/overlap 視覺生效。
    */
   tagWrapperClassName?: string
-  /** 2026-05-16:overflow chip wrapper 套此 class(對齊 tagWrapperClassName)。Stack 模式
+  /** @internal PeoplePicker stack wrapper 內部協議 — end-user 勿用(measurement-layer hook)。
+   *  2026-05-16:overflow chip wrapper 套此 class(對齊 tagWrapperClassName)。Stack 模式
    *  pass `-ml-0.5 first:ml-0` 讓 chip 跟 avatar 同 overlap step,物理上 chip = 1 個 slot 不
    *  外加 24px。Default undefined = chip 不 overlap(text-tag mode 等)。*/
   overflowWrapperClassName?: string
@@ -429,6 +432,8 @@ export interface ComboboxProps {
    * (CSS `gap` 套在 flex container 上會強制 sibling spacing,蓋過 negative margin)。
    * **Q2 known tradeoff**:0 後 useOverflowCount 仍按 wrapper.offsetWidth 累加(不含 overlap
    * 補償)→ +N 偏保守。當前接受;若需精準可 future 加 `overlapPx` 補償邏輯。
+   *
+   * @internal PeoplePicker stack wrapper 內部協議 — end-user 勿用(measurement-layer hook)。
    */
   tagAreaGapPx?: number
   /**
@@ -437,6 +442,8 @@ export interface ComboboxProps {
    * 設值時 tagAreaRef 增 `style.paddingLeft`,**useOverflowCount 的 `available = clientWidth -
    * paddingLeft - paddingRight` 自動 include**(`parseFloat(cs.paddingLeft)` 從 container CSS 抓)
    * → width calc 不漂移,無 side-effect。
+   *
+   * @internal PeoplePicker stack wrapper 內部協議 — 目前無 active consumer(PeoplePicker 傳 undefined),保留供未來精準 padding;新 consumer 請先評估。
    *
    * **2026-05-13 v2 deprecate path**:原 PeoplePicker pass `{8}` 假設「Combobox tagPadding=4px,4+8=12」
    * 但 `tagPadding[size]` 是 density-dependent calc `(field-height - icon-size) / 2`,只在 md size +
@@ -452,6 +459,8 @@ export interface ComboboxProps {
    */
   overflowShape?: ComboboxOverflowShape
   /**
+   * @internal PeoplePicker stack wrapper 內部協議 — end-user 勿用(measurement-layer override)。
+   *
    * 2026-05-15 Bug 3 fix:override visible count via formula-based primitive(opt-in;default 走
    * DOM-based `useOverflowCount`)。PeoplePicker stack mode 用 `avatar-stack-overflow` primitive
    * deterministic formula 計算 visible count,forward 給 Combobox bypass DOM offsetWidth
@@ -592,7 +601,7 @@ function NativeCombobox({
         <OverflowTagList containerRef={tagAreaRef} items={items} size={size} wrap={wrap}
           renderTag={(item) => (
             <Tag size={size} className="shrink-0 relative z-10" onClick={() => { selectRef.current?.showPicker?.(); selectRef.current?.focus() }}
-              onDismiss={() => handleRemove(item.value)}>{item.label}</Tag>
+              onRemove={() => handleRemove(item.value)}>{item.label}</Tag>
           )} onRemove={handleRemove} trailing={value.length === 0 ? selectDropdown : undefined} />
       </div>
       {value.length > 0 && selectDropdown}
@@ -737,7 +746,7 @@ function CustomCombobox({
               tagRenderer
                 ? tagRenderer(item, () => handleRemove(item.value))
                 : <Tag size={size} className="shrink-0 relative z-10"
-                    onDismiss={() => handleRemove(item.value)}>{item.label}</Tag>
+                    onRemove={() => handleRemove(item.value)}>{item.label}</Tag>
             )}
             renderHiddenTag={renderHiddenTag}
             onRemove={handleRemove}

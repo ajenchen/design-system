@@ -82,7 +82,7 @@ Chip 是 **Material Design Filter Chip** 的實作——用於從多個選項裡
 
 Filter chip 的「移除這個 filter」動作已由「再點一次 deselect」承擔。加 dismiss X 等於同一動作有兩個 affordance，違反 Hicks's Law。Material 3 / Atlassian / Polaris filter chips 都不提供 dismiss。
 
-**需要 dismiss 的情境** = active filter token / 使用者輸入 token，那是 Input chip 的語意（走 `LinkInput` / `Tag` + `onDismiss` 路線），不是 Filter chip。
+**需要 dismiss 的情境** = active filter token / 使用者輸入 token，那是 Input chip 的語意（走 `LinkInput` / `Tag` + `onRemove` 路線），不是 Filter chip。
 
 ### 為什麼不需要 checkmark-on-selected
 
