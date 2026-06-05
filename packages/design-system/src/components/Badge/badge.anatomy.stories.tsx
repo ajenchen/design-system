@@ -443,10 +443,12 @@ export const ColorMatrix = {
                       {(v === 'critical' || v === 'high') ? <Badge dot variant={v} /> : <span className="text-fg-muted text-caption">—</span>}
                     </td>
                     <td className="p-3 border-b border-divider align-middle">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Swatch value={c.bg} />
-                        <span className="font-mono text-[12px] text-fg-secondary">{c.bg}</span>
-                      </span>
+                      {(v === 'critical' || v === 'high') ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Swatch value={c.bg} />
+                          <span className="font-mono text-[12px] text-fg-secondary">{c.bg}</span>
+                        </span>
+                      ) : <span className="text-fg-muted text-caption">—</span>}
                     </td>
                   </tr>
                 )
