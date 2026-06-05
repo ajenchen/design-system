@@ -11,16 +11,20 @@ paths:
 
 僅在編 `.tsx` / `.ts` 或 DS / explorations / app code 時 load。
 
-## Public component vs Internal primitive canonical(SSOT,2026-05-23 user 永久拍板)
+## Public component vs Internal primitive canonical(SSOT,2026-05-23 user 拍板;**2026-06-06 refine 為 intent-based,retire 舊「空 render 測試」**)
 
-**Public component**(consumer-facing):**end-user app 直接寫 `<X />` 就能 render 出有意義的 UI**,不需要再 wrap / 不需要再 compose 其他 DS 元件。Examples:`<Button>` / `<Avatar>` / `<Dialog>` / `<DataTable>` / `<MenuItem>` / `<ActionBar>` / `<ResizeHandle>`。
+**唯一判準 = 「DS 是否想讓 consumer 直接 import 來用它」(public-API intent)** —— **不是**「空 `<X/>` 能不能 render 出有意義 UI」。世界級實證:MUI Base 官方「**requiring composition and styling does NOT make something internal — these are explicitly public primitives**」;Atlassian Primitives(Box/Stack/Inline)/ Bootstrap input-group / Ant Space.Compact 皆 public 卻需 compose。
 
-**Internal primitive**:**供 DS 內部其他元件 wrap / compose 用**。end-user app 直接 render 無 functioning UI,或必須先 import 多個 DS 元件一起組才有結果。Examples:`<ChromeHeader>`(Sidebar 內部消費)/ `<SurfaceHeader/Body/Footer>`(Dialog 內部)/ `useOverflowItems` hook / `<ItemIcon>` / `<ItemAvatar>`(MenuItem 內部 slot)。
+**Public**(consumer-facing):DS 想讓 consumer 直接用的東西,**包含**:(a) 成品元件 `<Button>` / `<Avatar>` / `<Dialog>` / `<DataTable>` / `<MenuItem>`;(b) **組合 primitive —— consumer 把自己內容塞進去 / 自接 callback 才完整**:`<FieldControlGroup>`(塞 field controls = Bootstrap input-group idiom)/ `<ResizeHandle>`(接 drag math = VS Code/Figma resize idiom)。**「需要 children / 接線 / 組合」是正常 public 用法,不是 internal**。判斷訊號:benchmark 對標 consumer-facing primitive / spec「何時用」是 consumer 場景 / 有 standalone 用法 / export 給 consumer。
 
-**Mechanical test(verifiable)**:
-- 問:end-user app `<X />`(空 children / 無 props / 無 wrapper context)render → 有 functioning visible UI 嗎?
-  - YES → **public**
-  - NO → **internal**
+**Internal primitive**:**只有 DS 內部其他元件會用、consumer 永遠不碰**(consumer 用 wrapper 而非它)。Examples:`<ChromeHeader>`(只 Sidebar 內部)/ `<SurfaceHeader/Body/Footer>`(只 Dialog 內部)/ `useOverflowItems` hook / `<ItemIcon>` / `<ItemAvatar>`(只 MenuItem 內部 slot,consumer 用 `<MenuItem>` 不用裸 slot)。判斷訊號:無 consumer 場景 / 只被其他 DS 元件 import / 是別元件的 sub-part/slot/chrome。
+
+**決策(verifiable)**:
+- 問:DS 想讓 end-user 在自己 app 直接 import 並用它嗎(看 benchmark / 何時用 / 是否 export 給 consumer)?
+  - YES(**即使需要 compose/wire**)→ **public**
+  - 只有 DS 內部元件用、consumer 用 wrapper 不碰它 → **internal**
+- ⚠️ **禁用舊「空 render 測試」當判準**(2026-06-06 retire):它把 composition primitive(`<FieldControlGroup>` 空 = 透明 div)誤判 internal。anchor:2026-06-06 我用機械測試(空 render / 0-current-usage / 需接線)連環誤判 FieldControlGroup·ResizeHandle 為 internal,user 抓「它明明是 Bootstrap input-group / VS Code resize 那種 consumer 直接用的 primitive」。**「現在 DS 自家沒用到」≠ internal**。
+- **note(pattern guidance / anatomy 參照)**:`action-bar`(組合指南,**無 component**)、`item-anatomy`(anatomy 參照 doc)不是「元件」,不走本判準 —— 它們是**可見的設計參照 Pattern**(per `patterns/README.md` charter)。
 
 **Folder + storybook canonical**:
 - public:`components/<Name>/` OR `patterns/<name>/`(frontmatter 無 `internal: true`),storybook title `Design System/Components/<Name>/...` OR `Design System/Patterns/<Name>`
