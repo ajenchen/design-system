@@ -53,6 +53,7 @@ export interface SliderProps
   extends Omit<React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>, 'children'>,
     VariantProps<typeof sliderRootVariants> {}
 
+// code-quality-allow: long-function — foundational composite(thumb-count 推導 + Field disabled 整合 + multi-mode render)
 const Slider = React.forwardRef<
   React.ElementRef<typeof SliderPrimitive.Root>,
   SliderProps
