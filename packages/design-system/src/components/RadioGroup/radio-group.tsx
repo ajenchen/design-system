@@ -38,6 +38,10 @@ export interface RadioGroupProps
   variant?: FieldVariant
 }
 
+// RadioGroup mode='readonly' → 透過 context 把 readOnly 傳給所有 child RadioGroupItem
+// (item 已支援 readOnly prop + data-[readonly] 樣式;Radix Root 無 readOnly,故用 context)。
+const RadioGroupReadonlyContext = React.createContext(false)
+
 const RadioGroup = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Root>,
   RadioGroupProps
@@ -70,14 +74,19 @@ const RadioGroup = React.forwardRef<
     )
   }
 
+  // mode='disabled' → Radix Root disabled(原生 propagate 給所有 item);
+  // mode='readonly' → context 傳 readOnly 給 items(item 渲染為 data-[readonly] 鎖互動 + aria-readonly)。
   return (
-    <RadioGroupPrimitive.Root
-      className={cn("grid", className)}
-      value={value}
-      defaultValue={defaultValue}
-      {...props}
-      ref={ref}
-    />
+    <RadioGroupReadonlyContext.Provider value={mode === 'readonly'}>
+      <RadioGroupPrimitive.Root
+        className={cn("grid", className)}
+        value={value}
+        defaultValue={defaultValue}
+        {...props}
+        disabled={mode === 'disabled' || (props as { disabled?: boolean }).disabled}
+        ref={ref}
+      />
+    </RadioGroupReadonlyContext.Provider>
   )
 })
 RadioGroup.displayName = 'RadioGroup'
@@ -180,6 +189,9 @@ const RadioGroupItem = React.forwardRef<
     // FieldLabel 則是整個 RadioGroup 的 label。
     // 因此 RadioGroupItem 的 label 不因 Field context 被忽略。
     const fieldCtx = useFieldContext()
+    // group-level readonly(RadioGroup mode='readonly')或 item-level readOnly,任一 true 即鎖互動。
+    const groupReadonly = React.useContext(RadioGroupReadonlyContext)
+    const effectiveReadonly = readOnly || groupReadonly
 
     const generatedId = React.useId()
     const inputId = idProp ?? generatedId
@@ -189,9 +201,9 @@ const RadioGroupItem = React.forwardRef<
         id={inputId}
         ref={ref}
         disabled={disabled}
-        aria-readonly={readOnly || undefined}
-        data-readonly={readOnly || undefined}
-        tabIndex={readOnly ? -1 : undefined}
+        aria-readonly={effectiveReadonly || undefined}
+        data-readonly={effectiveReadonly || undefined}
+        tabIndex={effectiveReadonly ? -1 : undefined}
         className={cn(radioItemVariants({ size }), className)}
         {...props}
       >

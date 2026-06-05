@@ -94,6 +94,8 @@ export interface CalendarProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   /** ARIA labels for chrome controls. Override for i18n. */
   prevAriaLabel?: string
   nextAriaLabel?: string
+  /** 月份導覽 <nav> landmark 的 aria-label。Override for i18n. */
+  navAriaLabel?: string
   viewToggleAriaLabel?: string
   todayLabel?: string
 }
@@ -146,6 +148,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   locale = 'en-US',
   prevAriaLabel = '上個月', // i18n-allow: DS default; consumer override via prevAriaLabel prop
   nextAriaLabel = '下個月', // i18n-allow: DS default; consumer override via nextAriaLabel prop
+  navAriaLabel = '行事曆月份導覽', // i18n-allow: DS default; consumer override via navAriaLabel prop
   viewToggleAriaLabel = '檢視切換', // i18n-allow: DS default; consumer override via viewToggleAriaLabel prop
   todayLabel = '今天', // i18n-allow: DS default; consumer override via todayLabel prop
   ...props
@@ -219,7 +222,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
           'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',
         )}
       >
-        <div className="flex items-center gap-2">
+        {/* 月份導覽 landmark:prev / 今天 / next 包成 <nav> 給 SR landmark 導航(per calendar.spec.md a11y 段) */}
+        <nav className="flex items-center gap-2" aria-label={navAriaLabel}>
           <Button
             variant="text"
             size="sm"
@@ -239,7 +243,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
             aria-label={nextAriaLabel}
             onClick={handleNext}
           />
-        </div>
+        </nav>
 
         <h2 className="text-body-lg font-medium text-foreground flex-1 min-w-0 truncate ml-2">
           {monthTitle}

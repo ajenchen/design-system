@@ -17,6 +17,7 @@ import { X as XIcon } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
+  SheetTitle,
 } from '@/design-system/components/Sheet/sheet'
 import { Button } from '@/design-system/components/Button/button'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
@@ -301,10 +302,14 @@ const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
     // 2026-05-20 migrate 消費 ChromeHeader primitive(撤回自刻 + 撤回 bg-surface 疊加 — 對齊
     // `header-canonical.spec.md`「6. Background ownership」段「Nested chrome header 透明繼承
     // parent」:aside container 自身已 bg-surface,內 header 不該再畫 bg 避免疊加 drift)。
-    const frame = (
+    // titleNode 依 mode 不同:modal(Sheet)用 SheetTitle 綁 Radix Dialog titleId — 否則
+    // SheetContent 的 aria-labelledby 指向不存在的 id → SR 念「unnamed dialog」+ Radix
+    // TitleWarning console.error(違 sheet.spec.md:98「Sheet content 必有可見 title」)。
+    // inline(aside)用純 <h2>:aside 自身已 aria-label={title},且無 Dialog context 不可用 SheetTitle。
+    const renderFrame = (titleNode: React.ReactNode) => (
       <>
         <ChromeHeader>
-          <h2 className="text-body-lg font-medium flex-1 truncate">{title}</h2>
+          {titleNode}
           <Button
             iconOnly
             dismiss
@@ -329,7 +334,7 @@ const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
             className="w-[min(90vw,var(--app-shell-aside-modal-width))] flex flex-col p-0 [&>button]:hidden"
             style={{ ['--app-shell-aside-modal-width' as string]: `${resolvedWidth}px` }}
           >
-            {frame}
+            {renderFrame(<SheetTitle className="flex-1">{title}</SheetTitle>)}
           </SheetContent>
         </Sheet>
       )
@@ -349,7 +354,7 @@ const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
         )}
         style={{ width: resolvedWidth }}
       >
-        {frame}
+        {renderFrame(<h2 className="text-body-lg font-medium flex-1 truncate">{title}</h2>)}
       </aside>
     )
   }

@@ -129,6 +129,7 @@ const DropdownMenuContent = React.forwardRef<
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}
       align={align}
+      data-density="md"
       onCloseAutoFocus={(e) => e.preventDefault()}
       className={cn(floatingLayerClass, !maxHeight && 'py-2', className)}
       style={{

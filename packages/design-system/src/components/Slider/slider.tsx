@@ -2,6 +2,7 @@ import * as React from 'react'
 import * as SliderPrimitive from '@radix-ui/react-slider'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
+import { useFieldContext } from '@/design-system/components/Field/field-context'
 
 /**
  * Slider — 數值範圍選取器
@@ -56,6 +57,10 @@ const Slider = React.forwardRef<
   React.ElementRef<typeof SliderPrimitive.Root>,
   SliderProps
 >(({ className, size, value, defaultValue, 'aria-label': ariaLabel, ...props }, ref) => {
+  // Field 家族整合:被 <Field mode="disabled"> 包裹時自動 disabled(per slider.spec.md「Slider 作為 Field
+  // 家族整合時繼承其 canonical」)。Slider 已有完整 data-[disabled] 視覺,故只需把 fieldCtx disabled 接上。
+  const fieldCtx = useFieldContext()
+  const fieldDisabled = fieldCtx?.mode === 'disabled'
   // 推導要渲染幾個 thumb:controlled 用 value,uncontrolled 用 defaultValue,
   // 都沒有時 fallback 單 thumb(Radix 預設行為)
   const thumbCount =
@@ -70,6 +75,7 @@ const Slider = React.forwardRef<
       defaultValue={defaultValue}
       className={cn(sliderRootVariants({ size }), className)}
       {...props}
+      disabled={(props as { disabled?: boolean }).disabled || fieldDisabled}
     >
       {/*
         Track — rest 用 bg-secondary(n-3,「微淡可辨」),disabled 用 bg-muted(n-2,退化)。
