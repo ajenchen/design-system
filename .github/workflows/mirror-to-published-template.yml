@@ -47,7 +47,9 @@ jobs:
   mirror:
     name: Build mirror + push to published template repo
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 2026-06-06 fix:race — 同一 main push 同時觸發此 mirror + Release;Release npm publish 約 +11min 才完成,
+    # 此 job 的 `npm install --package-lock-only` 需新版已上 npm,故下方 poll 等版本上架(最多 15min)→ timeout 從 10 升 20。
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,6 +91,25 @@ jobs:
           # Why:published Audit CI 用 setup-node cache:npm + npm ci → 需 valid committed lock 含 @product/template
           # workspace。Template source(template/ds-product-template/)無 apps/ → 只有此 mirror 結構能生正確 lock。
           # rsync 上一步已移除 clone 的舊 lock(mirror-build 無 lock)→ 在此重生確保與 scaffold 同步。
+          #
+          # 2026-06-06 RACE FIX:此 mirror 與 Release 同 push 觸發,但 Release npm publish 約 +11min 才完成。
+          # 若 scaffold 的 @qijenchen/design-system 版本是「本次剛 bump、npm 尚未發布」→ npm install 撞
+          # ETARGET(beta.56 / beta.57 mirror 連敗 root cause)。故先 poll 等目標版本上 npm 才重生 lock。
+          # 非版本變更(template 內容改)時版本早已在 npm → poll 立即通過,零等待。
+          DS_VER=$(node -p "(require('/tmp/published/package.json').dependencies||{})['@qijenchen/design-system']||''" | sed 's/[\^~>=< ]//g')
+          if [ -n "$DS_VER" ]; then
+            echo "⏳ 等 @qijenchen/design-system@$DS_VER 上 npm(避開 release-publish race,最多 15min)..."
+            for i in $(seq 1 60); do
+              if npm view "@qijenchen/design-system@$DS_VER" version >/dev/null 2>&1; then
+                echo "✓ @qijenchen/design-system@$DS_VER 已上 npm,繼續重生 lock"; break
+              fi
+              if [ "$i" -eq 60 ]; then
+                echo "❌ 等 npm 逾時 15min — Release 可能失敗 / 延遲。本次不 mirror(避免寫出指向不存在版本的 lock)。"
+                exit 1
+              fi
+              sleep 15
+            done
+          fi
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           git config user.name "DS Mirror Bot"
           git config user.email "bot@noreply.github.com"
