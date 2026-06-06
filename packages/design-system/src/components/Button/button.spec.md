@@ -8,18 +8,18 @@ traits:
   - hasSizes
   - hasInteractiveStates
 variants:
-  primary:    # ★ cva default
-    when: "主要 action / CTA"
+  primary:
+    when: "主要 action / CTA。**必 explicit `variant=\"primary\"`,不靠預設**(2026-06-06 起預設改低 emphasis)"
     world-class: ["Polaris Button primary", "Material Filled Button", "Atlassian Primary"]
   secondary:
     when: "陪襯 primary 的次要 action"
     world-class: ["Polaris Button default", "Material Tonal Button"]
-  tertiary:
-    when: "第三級 action(tool-like / icon-heavy)"
-    world-class: ["Material Outlined Button"]
-  text:
-    when: "文字樣式 — low emphasis / toolbar embedded"
-    world-class: ["Ant Button type=text", "Material Text Button"]
+  tertiary:    # ★ labeled cva default(2026-06-06 從 primary 改 — 對齊世界級「預設低 emphasis、按重要程度升」)
+    when: "**labeled 按鈕預設** / 第三級 action(tool-like / icon-heavy)。中性外框、清楚可點性,再按重要程度升 primary"
+    world-class: ["Material Outlined Button", "Ant Button default", "Polaris tertiary"]
+  text:    # ★ iconOnly cva default(2026-06-06 加)
+    when: "文字樣式 — low emphasis / toolbar embedded。**iconOnly 按鈕預設**(對齊 action-bar「純動作工具→text」+ Material 3「icon-only = no fill」)"
+    world-class: ["Ant Button type=text", "Material Text Button", "Material 3 icon-only no-fill"]
   link:
     when: "內文連結 — inline reading context"
     world-class: ["Polaris Link", "Ant Button type=link"]

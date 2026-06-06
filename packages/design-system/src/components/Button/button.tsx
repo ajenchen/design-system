@@ -211,7 +211,9 @@ const buttonVariants = cva(
       },
     ],
     defaultVariants: {
-      variant: 'primary',
+      // labeled 預設 = tertiary(2026-06-06 從 primary 改;iconOnly 預設 = text,由 resolvedVariant 注入)。
+      // 真正預設邏輯在元件 resolvedVariant(L394);此 cva default 供直接 buttonVariants() 呼叫者一致。
+      variant: 'tertiary',
       size: 'md',
       pressedTone: 'emphasis',
     },
@@ -391,11 +393,15 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // shadcn compat:AlertDialog、Toast 等元件內部會傳入這些 alias,
     // 在此靜默轉換,不暴露到型別或自動完成。
     // dismiss=true 強制 variant=text(dismiss canonical);override 其他 variant 傳入。
+    // 2026-06-06 預設 emphasis 改低(對齊世界級:MUI 預設 text / Ant 預設 default / Polaris 低 emphasis —
+    // 預設 primary CTA 是 outlier)。labeled 無 variant → `tertiary`(中性外框,清楚可點性,再按重要程度升 primary);
+    // iconOnly 無 variant → `text`(toolbar ghost,對齊 action-bar.spec.md「純動作工具/低重量輔助 → text」+
+    // Material 3「icon-only = no fill」)。**CTA 必 explicit `variant="primary"`**(不靠預設)。dismiss 仍強制 text。
     const resolvedVariant: InternalVariant =
       dismiss ? 'text' :
       (variantProp as string) === 'destructive' ? 'primary' :
       (variantProp as string) === 'ghost'        ? 'text'    :
-      (variantProp as InternalVariant) ?? 'primary'
+      (variantProp as InternalVariant) ?? (iconOnly ? 'text' : 'tertiary')
 
     const resolvedDanger = dangerProp || (variantProp as string) === 'destructive'
 

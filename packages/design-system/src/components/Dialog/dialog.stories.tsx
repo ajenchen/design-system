@@ -104,7 +104,7 @@ export const Default = {
           <DialogClose asChild>
             <Button variant="tertiary">取消</Button>
           </DialogClose>
-          <Button>寄出邀請</Button>
+          <Button variant="primary">寄出邀請</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -139,7 +139,7 @@ export const WithForm = {
           <DialogClose asChild>
             <Button variant="tertiary">取消</Button>
           </DialogClose>
-          <Button>建立</Button>
+          <Button variant="primary">建立</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

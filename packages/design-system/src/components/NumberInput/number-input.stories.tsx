@@ -60,7 +60,7 @@ export const SizeAlignment: Story = {
         {(['sm', 'md', 'lg'] as const).map(size => (
           <div key={size} className="flex items-center gap-3">
             <NumberInput size={size} value={states[size][0]} onChange={states[size][1]} prefix="$" className="max-w-xs" />
-            <Button size={size}>送出</Button>
+            <Button variant="primary" size={size}>送出</Button>
             <span className="text-caption text-fg-muted">size="{size}"</span>
           </div>
         ))}

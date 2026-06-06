@@ -643,10 +643,10 @@ export const StateBehavior = {
       <div className="flex flex-col gap-4">
         <span className="text-caption font-medium text-fg-secondary">Loading — CircularProgress 替換規則</span>
         {[
-          { label: '有 startIcon', before: <Button startIcon={Download}>匯出</Button>, after: <Button startIcon={Download} loading>匯出</Button>, desc: 'startIcon → CircularProgress(同位置)' },
-          { label: '無 startIcon', before: <Button>儲存</Button>, after: <Button loading>儲存</Button>, desc: 'CircularProgress 加在文字左側' },
+          { label: '有 startIcon', before: <Button variant="primary" startIcon={Download}>匯出</Button>, after: <Button variant="primary" startIcon={Download} loading>匯出</Button>, desc: 'startIcon → CircularProgress(同位置)' },
+          { label: '無 startIcon', before: <Button variant="primary">儲存</Button>, after: <Button variant="primary" loading>儲存</Button>, desc: 'CircularProgress 加在文字左側' },
           { label: 'iconOnly', before: <Button iconOnly startIcon={Download} aria-label="下載" />, after: <Button iconOnly startIcon={Download} loading aria-label="下載" />, desc: 'CircularProgress 替換 icon' },
-          { label: '有 endIcon', before: <Button startIcon={Download} endIcon={ChevronDown}>匯出</Button>, after: <Button startIcon={Download} loading endIcon={ChevronDown}>匯出</Button>, desc: 'endIcon 維持顯示' },
+          { label: '有 endIcon', before: <Button variant="primary" startIcon={Download} endIcon={ChevronDown}>匯出</Button>, after: <Button variant="primary" startIcon={Download} loading endIcon={ChevronDown}>匯出</Button>, desc: 'endIcon 維持顯示' },
         ].map(({ label, before, after, desc }) => (
           <div key={label} className="flex items-center gap-3">
             <span className="text-[11px] text-fg-muted w-20 shrink-0">{label}</span>

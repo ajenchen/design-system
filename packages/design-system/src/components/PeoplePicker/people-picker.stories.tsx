@@ -1,3 +1,4 @@
+// @story-trait-rationale: pre-existing isInputLike WithError trait gap tracked separately (see L62/L72 inline rationale); this edit only adds explicit variant="primary" to the primary-CTA Button per new tertiary/text default migration
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
@@ -120,7 +121,7 @@ const SizePicker = ({ size }: { size: 'sm' | 'md' | 'lg' }) => {
   return (
     <div className="flex items-center gap-3">
       <PeoplePicker size={size} value={val} people={samplePeople} onChange={(v) => setVal(v[0] ?? null)} className="max-w-xs" />
-      <Button size={size}>送出</Button>
+      <Button variant="primary" size={size}>送出</Button>
       <span className="text-caption text-fg-muted">size="{size}"</span>
     </div>
   )

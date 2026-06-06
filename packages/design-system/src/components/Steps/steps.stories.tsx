@@ -95,7 +95,7 @@ export const Default: Story = {
                   請輸入你的姓名、電子郵件與電話。
                 </p>
                 <div className="flex gap-2">
-                  <Button onClick={advance}>下一步</Button>
+                  <Button variant="primary" onClick={advance}>下一步</Button>
                 </div>
               </div>
             </StepContent>
@@ -110,7 +110,7 @@ export const Default: Story = {
                   設定登入帳號。使用者名稱至少 3 個字元。
                 </p>
                 <div className="flex gap-2">
-                  <Button onClick={advance}>下一步</Button>
+                  <Button variant="primary" onClick={advance}>下一步</Button>
                   <Button variant="secondary" onClick={back}>
                     上一步
                   </Button>
@@ -128,7 +128,7 @@ export const Default: Story = {
                   請確認所有欄位正確,按下送出後系統會建立您的帳號。
                 </p>
                 <div className="flex gap-2">
-                  <Button onClick={submit}>送出</Button>
+                  <Button variant="primary" onClick={submit}>送出</Button>
                   <Button variant="secondary" onClick={back}>
                     上一步
                   </Button>
