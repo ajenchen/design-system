@@ -41,6 +41,12 @@ head_leaked()   { echo "$STDOUT" | grep -qE 'HEAD(--|:|\))'; }
 fn7() { echo "$STDOUT" | grep -q "feature-test" && ! head_leaked; }
 fn8() { ! head_leaked; }
 fn9() { echo "$STDOUT" | grep -q "feature-test"; }
+has_feature() { echo "$STDOUT" | grep -q "feature-test"; }
+no_quiet()    { ! echo "$STDOUT" | grep -q -- "--quiet"; }
+fn10() { has_feature && no_quiet; }   # compound:fetch 段的 --quiet 不可被誤抓為 branch
+fn11() { has_feature; }                # compound:pull 段的 main 不可被誤抓(否則 grep feature-test 失敗)
+fn12() { has_feature; }                # bare push origin → fallback current branch
+fn13() { has_feature; }                # flag-after-origin → 清空 → fallback current branch
 
 check() {  # <name> <expect: skip|fire> [extra-assert-fn]
   local name="$1" expect="$2" extra="${3:-}"
@@ -97,6 +103,23 @@ check "8 refspec HEAD:main → no HEAD leak" fire 'fn8'
 # 9. positive control:真 branch push → fires(確保 skip 測試非因 hook 全壞而假過)
 run_hook "git add -A && git push origin feature-test"
 check "9 real branch push (positive control) → fire" fire 'fn9'
+
+# 10. ROOT regression:compound 命令前段 `git fetch origin --quiet` 的 flag 不可被誤抓為 branch
+#     (2026-06-07 anchor:merge 時 `git fetch origin --quiet && ... && git push origin main` 吐 `--quiet--site` 404)
+run_hook "git fetch origin --quiet && git push origin feature-test"
+check "10 compound w/ fetch flag → branch from push seg only (no --quiet leak)" fire 'fn10'
+
+# 11. compound 前段 `git pull origin main` 的 main 不可被誤抓(branch 必來自 push 段)
+run_hook "git pull origin main && git push origin feature-test"
+check "11 compound w/ pull → branch from push seg (not pull's main)" fire 'fn11'
+
+# 12. bare `git push origin`(無顯式 branch)→ fallback 當前 branch
+run_hook "git push origin"
+check "12 bare push origin → fallback current branch" fire 'fn12'
+
+# 13. flag-after-origin `git push origin --force`(無顯式 branch)→ fallback 當前 branch
+run_hook "git push origin --force"
+check "13 flag-after-origin → fallback current branch (no flag-as-branch)" fire 'fn13'
 
 teardown
 

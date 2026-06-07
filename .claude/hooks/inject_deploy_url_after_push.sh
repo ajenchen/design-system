@@ -51,7 +51,14 @@ fi
 
 CWD=$(pwd)
 URLS_FOUND=""
-BRANCH=$(echo "$CMD" | grep -oE 'origin\s+\S+' | awk '{print $2}' | head -1)
+# 2026-06-07 ROOT fix:只從「git push ... origin <ref>」這一段擷取 branch,不是整條 compound command 的
+# 第一個 `origin X`。否則 `git fetch origin --quiet && git push origin main` 會誤抓 fetch 段的 `--quiet`
+# 當 branch → 推導 `--quiet--site` 404(此前 5 道 guard 都沒擋到,因 `--quiet` 全是合法 git ref 字元)。
+# 隔出 push 段(到下個 command 分隔 ; & | 為止)後,取 origin 後第一個 token。
+PUSH_SEG=$(echo "$CMD" | grep -oE '(^|[;&|(])[[:space:]]*git[[:space:]]+push[[:space:]][^;&|]*' | head -1)
+BRANCH=$(echo "$PUSH_SEG" | grep -oE 'origin[[:space:]]+[^[:space:]]+' | head -1 | awk '{print $2}')
+# origin 後第一個 token 是 flag(`git push origin --force` = 無顯式 branch)→ 清空走 current-branch fallback
+case "$BRANCH" in -*) BRANCH="" ;; esac
 # 2026-06-06 fix:refspec `src:dst` → 取 dst(`HEAD:main` → `main`),否則推導出 `HEAD:main--site` 404 URL
 case "$BRANCH" in *:*) BRANCH="${BRANCH##*:}" ;; esac
 # 2026-06-06 fix:`git push origin HEAD`(或 `@`)= symbolic ref 指向當前 branch → 解析成真 branch 名,
