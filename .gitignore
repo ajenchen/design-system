@@ -115,3 +115,4 @@ tmp/
 /smoke.png
 *.tsbuildinfo
 storybook-static-baseline/
+.netlify/
