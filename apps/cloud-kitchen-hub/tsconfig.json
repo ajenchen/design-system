@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // React + Vite app options — root tsconfig 是 monorepo/Node 取向不含這些,
+    // apps/template 是 React app 必自帶(2026-05-29 fix:原繼承缺 jsx → `tsc -b` 報 TS17004
+    // Cannot use JSX。對齊 published template/ds-product-template/tsconfig.json 已驗設定)。
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "src"
+  ]
+}
