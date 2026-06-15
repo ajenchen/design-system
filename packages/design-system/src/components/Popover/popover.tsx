@@ -13,7 +13,7 @@ import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING } from "@/design-system/
  *
  * ── 視覺 ──
  * 與 Dialog 對齊：bg-surface-raised / rounded-lg / border-border / elevation-200。
- * density 永遠鎖 md（non-modal 輕量浮層不隨頁面 density 放大）。
+ * layout-space 鎖 md（輕量浮層 header py-tight 保持精簡）；ui-size 繼承 page（內部控件對齊觸發點，2026-06-15 改，原 data-density master switch）。
  *
  * ── 結構 ──
  * PopoverContent：外殼（bg / border / radius / shadow / density），無內距。
@@ -56,7 +56,11 @@ const PopoverContent = React.forwardRef<
       align={align}
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}
-      data-density="md"
+      // Layout-space lock(2026-06-15 canonical,原 data-density="md" 改為只鎖 layout-space):Popover 是
+      // 輕量浮層,header/footer 用 py-tight(layout-space)→ 鎖 layout-space=md 保持精簡 padding;但
+      // **ui-size 不鎖、繼承 page** → 內部 field 控件 / dismiss 按鈕隨 page 放大,跟觸發點一致(decouple)。
+      // [data-layout-space="md"] 有 reset selector(layoutSpace.css L31)→ lg page 上正確 reset 回 md。
+      data-layout-space="md"
       onOpenAutoFocus={onOpenAutoFocus ?? handlePopoverOpenAutoFocus}
       className={cn(
         "z-50 w-72 rounded-lg border border-border bg-surface-raised text-foreground shadow-[var(--elevation-200)] outline-none",

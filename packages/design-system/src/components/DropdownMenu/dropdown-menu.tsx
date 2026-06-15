@@ -129,7 +129,10 @@ const DropdownMenuContent = React.forwardRef<
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}
       align={align}
-      data-density="md"
+      // Density:繼承 page density(2026-06-15 canonical)。menu item 高度 = field-height-{size},而
+      // field-height 隨 density 變(md 28/32/36 → lg 32/36/40)→ 鎖 data-density="md" 會把選單釘在 md-scale,
+      // lg page 上對不上 lg 觸發點。原 data-density 是 409b91da a11y 批次順手加(對齊 Popover),非設計
+      // 決策 → 移除,item 隨 page density 與觸發點一致(tier 仍由 size prop 決定)。
       // Focus return on close:不 override `onCloseAutoFocus` — 用 Radix 內建 default
       // (close 時 focus 還 trigger;outside-interaction 例外由 Radix `hasInteractedOutsideRef` 自管)。
       // W3C APG menubar「Escape: …return focus to the element…from which the menu was opened」

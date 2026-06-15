@@ -196,7 +196,7 @@ export const ColorMatrix: Story = {
               <tr><Td>次要文字</Td><Td><TokenCell token="--fg-secondary" display="text-fg-secondary" /></Td><Td>說明 / 次要資訊</Td></tr>
               <tr><Td>圓角</Td><Td mono>rounded-lg(8px)</Td><Td>對齊 Dialog radius(浮層視覺語言一致)</Td></tr>
               <tr><Td>陰影</Td><Td mono>--elevation-200</Td><Td>浮層級 elevation(見 `elevation.spec.md`)</Td></tr>
-              <tr><Td>Density</Td><Td mono>data-density="md"</Td><Td>Popover 永遠鎖 md,不隨頁面 density 放大(lightweight)</Td></tr>
+              <tr><Td>Layout-space</Td><Td mono>data-layout-space="md"</Td><Td>只鎖版面間距(header py-tight 精簡);ui-size 跟 page → 內部控件對齊觸發點(2026-06-15 改,原 data-density master switch)</Td></tr>
               <tr><Td>Header/Body/Footer padding</Td><Td mono>px-[loose] py-[tight]</Td><Td>結構化 sub-components 採 Dialog 同一套 padding token</Td></tr>
               <tr><Td>Portal z-index</Td><Td mono>z-50</Td><Td>Radix Portal 統一層級,避開一般頁面內容</Td></tr>
             </tbody>

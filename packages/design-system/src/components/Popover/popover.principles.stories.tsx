@@ -253,7 +253,7 @@ export const VisualAlignmentRule: Story = {
     <div>
       <Rule
         title="Popover 與 Dialog 共用 overlay-surface 視覺語言"
-        note="bg-surface-raised / border-border / rounded-lg / elevation-200 完全一致。Header / Body / Footer 內 padding 來自 overlay-surface pattern 主檔(px-loose py-tight)。差異只有兩點:(1) Popover 是 non-modal 無 overlay 遮罩,(2) density 永遠鎖 md(不隨頁面 density 放大)"
+        note="bg-surface-raised / border-border / rounded-lg / elevation-200 完全一致。Header / Body / Footer 內 padding 來自 overlay-surface pattern 主檔(px-loose py-tight)。差異:(1) Popover 是 non-modal 無 overlay 遮罩,(2) Popover 鎖 layout-space=md(header 精簡)、Dialog 鎖 layout-space=lg(寬鬆呼吸),兩者 ui-size 都繼承 page"
       >
         <Popover>
           <PopoverTrigger asChild>

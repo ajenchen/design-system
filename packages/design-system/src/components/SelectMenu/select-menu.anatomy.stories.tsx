@@ -609,8 +609,9 @@ export const SizeMatrix: Story = {
           <H3>Size token 對照</H3>
           <Desc>
             size 傳遞到浮層內的 CommandInput / MenuItem,三者統一尺寸。RowSizeProvider 確保所有 slot 自動讀取正確
-            size,不需在每個 item 重設。注意:PopoverContent 鎖 data-density="md"(popover.tsx),故 lg size 下
-            --field-height-lg 仍解析為 md-default 36px(非 lg-density 的 40px),下表數值已反映此 overlay 鎖密度行為。
+            size,不需在每個 item 重設。size prop 決定 tier(sm/md/lg);實際像素隨 page density(2026-06-15:
+            PopoverContent 改鎖 `layout-space=md`、ui-size 繼承 page → 下拉項目跟觸發點 / 頁面 density 一致,
+            不再被鎖死 md-scale)。下表為 md page 的 field-height 值。
           </Desc>
           <div className="overflow-x-auto">
             <table className="text-caption border-collapse">

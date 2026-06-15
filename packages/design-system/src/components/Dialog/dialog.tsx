@@ -95,14 +95,14 @@ const DialogContent = React.forwardRef<
       <DialogOverlay />
       <DialogPrimitive.Content
         ref={ref}
-        // Density canonical(2026-04-22 v5 校準):Dialog 繼承 page density(跟 Sheet 對齊
-        // sheet.tsx line 111 canonical),不自設 data-layout-space="lg" 或 data-density。
-        //
-        // 先前曾設 `data-layout-space="lg"` 給 header/body 寬鬆呼吸,但跟 chrome-header-height
-        // canonical 衝突(md page dialog header 期望 48,強設 lg 會變 56)。
-        // 世界級對照:Polaris Modal horizontal padding 16 / Material M3 24 / Atlassian 24 — 16 是
-        // 合理 lower bound;md page 用 16 loose body padding 可接受,lg page 自動 24。
-        // 詳 overlay-surface.spec.md「Chrome dismiss size canonical」
+        // Layout-space lock(2026-06-15 canonical,reinstate c3d3b736 decouple):modal 是聚焦中斷,值得
+        // 寬鬆呼吸 padding(避免誤按 + strapline 空間)→ 鎖 layout-space=lg(body px-loose 24、header
+        // py-tight 16)。**ui-size 不鎖、繼承 page** → 控件維持 page 尺寸(不被撐大,= c3d3b736 原始 decouple
+        // 意圖,非當年撤回的「density=lg 撐高 header」)。header 因 layout-space lg 自然 = title 24 +
+        // py-tight 16×2 = 56,它宣告 lg tier(等同 Popover 宣告 md tier = 45);對齊 chrome-header-height
+        // 是「同 tier 內」成立、非跨 page 強制(見 header-canonical.spec.md A 家族 + density.spec 消費者清單)。
+        // 世界級:Material M3 modal padding 24 / Polaris 16 lower bound。[data-layout-space="lg"] selector:layoutSpace.css L21。
+        data-layout-space="lg"
         onOpenAutoFocus={handleOpenAutoFocus}
         className={cn(
           "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",

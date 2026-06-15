@@ -417,7 +417,7 @@ export const ColorMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Density</H3>
-        <Desc>Dialog 繼承 page `data-density`(v5 校準,跟 Sheet 對齊)— 不自設密度 attribute。先前曾設 `data-layout-space="lg"` 給 body 寬鬆呼吸,但跟 `--chrome-header-height` canonical(md=48)衝突,2026-04-22 撤回。世界級:Polaris Modal px 16(md loose)/ Material M3 24(lg loose)— 我方跟 page density 自動對齊。</Desc>
+        <Desc>Dialog 鎖 `data-layout-space="lg"`(只鎖版面間距 tier)+ ui-size 繼承 page `data-density`(控件不被撐大)。modal 值得寬鬆呼吸 padding:body px-loose 24 / header py-tight 16 → header 56(宣告 lg tier)。reinstate c3d3b736 decouple(只鎖 layout-space,非當年連 ui-size 一起鎖撐高 header 的 density)。世界級:Material M3 / Atlassian modal padding 24。</Desc>
       </div>
 
       <div>

@@ -394,7 +394,7 @@ export const Inspector: Story = {
                 </tr>
                 <tr>
                   <Td>Toolbar 高度</Td>
-                  <Td mono>--chrome-header-height(lg=56px,ChromeHeader lockDensity="lg",與 InfoPanel header 等高)</Td>
+                  <Td mono>--chrome-header-height(隨 page:48 md / 56 lg,ChromeHeader 繼承 page,與 InfoPanel header 等高)</Td>
                 </tr>
                 <tr>
                   <Td>Toolbar 水平 padding</Td>
@@ -632,9 +632,9 @@ export const SizeMatrix: Story = {
               </tr>
               <tr>
                 <Td>Toolbar 高</Td>
-                <Td mono>--chrome-header-height(lg=56px)</Td>
+                <Td mono>--chrome-header-height(48 md / 56 lg)</Td>
                 <Td>Figma toolbar 48–56 / macOS Preview 56</Td>
-                <Td>ChromeHeader lockDensity="lg",token 驅動;lg 下值為 56px</Td>
+                <Td>ChromeHeader 繼承 page density,token 驅動;md=48 / lg=56(2026-06-15 移除 lockDensity)</Td>
               </tr>
               <tr>
                 <Td>InfoPanel 寬</Td>
@@ -698,7 +698,7 @@ export const SizeMatrix: Story = {
               <tr>
                 <Td>Panel header 高</Td>
                 <Td mono>--chrome-header-height</Td>
-                <Td>消費 &lt;ChromeHeader lockDensity=&quot;lg&quot;&gt;,lg = 56px;與 Toolbar 等高,視覺水平對齊</Td>
+                <Td>消費 &lt;ChromeHeader&gt;(繼承 page density);md=48 / lg=56,與 Toolbar 等高,視覺水平對齊</Td>
               </tr>
               <tr>
                 <Td>Body 水平 padding</Td>

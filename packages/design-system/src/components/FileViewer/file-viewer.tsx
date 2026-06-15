@@ -338,7 +338,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
 }) => {
   return (
     <ChromeHeader
-      lockDensity="lg"
+      // Density:繼承 page(2026-06-15 canonical)。原 lockDensity="lg" 只鎖在 header、沒鎖 body →
+      // InfoPanel header(px-loose@lg=24)與其 body(px-loose@page=16)左緣不對齊(圖二 bug)。移除 lock
+      // → header + body 全繼承 page density,左緣對齊;FileViewer 全 surface 同一密度(non-special)。
       className={cn(
         // Chrome layer — `bg-surface-raised` 對齊 token semantic「遮蓋型浮層必須不透明」。
         // FileViewer 整體是 overlay,chrome 屬其 raised surface(同 DropdownMenuContent line 244)。
@@ -467,8 +469,9 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
       )}
       aria-label={labels.detailPanel}
     >
-      {/* Panel header — 與 Toolbar 等高(consume ChromeHeader lockDensity="lg"),視覺一致 */}
-      <ChromeHeader lockDensity="lg" className="justify-between">
+      {/* Panel header — 與 Toolbar 同 ChromeHeader,繼承 page density(2026-06-15:移除 lockDensity,
+          修 header(原 px-loose@lg=24)與 body(px-loose@page=16)左緣不對齊 = 圖二 bug;全 surface 同密度)。 */}
+      <ChromeHeader className="justify-between">
         <h3 className="text-body-lg font-medium text-foreground">{labels.detailsHeading}</h3>
         {/* InfoPanel close 走 dismiss canonical `<Button iconOnly dismiss />`,對齊 button.spec.md
             「Dismiss 視覺類」+ inline-action.spec.md「Dismiss canonical — X close only」。 */}
