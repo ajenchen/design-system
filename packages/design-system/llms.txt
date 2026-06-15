@@ -1,7 +1,7 @@
 # @qijenchen/design-system
 
 > World-class React design system(Radix/shadcn + Tailwind v4 + 自訂 design token)。
-> 54 components + 4 public patterns + design tokens。v0.1.0-beta.66。
+> 54 components + 4 public patterns + design tokens。v0.1.0-beta.67。
 
 本檔由 source(spec.md frontmatter + Storybook index)build-time 自動生成,**禁手改**(CI --check drift gate 守)。
 每元件 / pattern 的完整 variants / sizes / 禁止事項 全文見 [llms-full.txt](./llms-full.txt)。

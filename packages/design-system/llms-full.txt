@@ -1,6 +1,6 @@
 # @qijenchen/design-system — 完整設計參考(llms-full)
 
-> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.66。
+> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.67。
 
 # Components
 
