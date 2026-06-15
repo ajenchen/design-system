@@ -45,12 +45,13 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
     error:    { bg: '--surface',     text: '--foreground',  border: '--error',        icon: '--fg-muted' },
     disabled: { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent',    icon: '--fg-disabled' },
   },
+  // readonly wrapper 為靜態 bg-readonly(field-wrapper.tsx 無 hover/focus 樣式;mode prop 勝 disabled)
   readonly: {
-    default:  { bg: '--bg-disabled', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
-    hover:    { bg: '--bg-disabled', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
-    focus:    { bg: '--bg-disabled', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
-    error:    { bg: '--bg-disabled', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
-    disabled: { bg: '--bg-disabled', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
+    default:  { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
+    hover:    { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
+    focus:    { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
+    error:    { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
+    disabled: { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
   },
   disabled: {
     default:  { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent', icon: '--fg-disabled' },
@@ -270,7 +271,7 @@ export const Overview = {
               <span className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
                 style={{ borderColor: 'var(--color-turquoise-6)', backgroundColor: 'var(--color-turquoise-1)', color: 'var(--color-turquoise-6)' }}>Tag</span>
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">無 chevron · 不可開選單 · tagPadding 置中</span>
+            <span className="text-[10px] text-fg-muted font-mono">chevron 恆顯(類型身份 indicator)· 不可開選單 · tagPadding 置中</span>
           </div>
         </div>
       </div>
@@ -641,7 +642,7 @@ export const ColorMatrix = {
       {/* ── Tag mode color comparison ── */}
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">text vs tag 模式色彩差異</span>
-        <Desc>wrapper 色彩相同，tag 模式的 Tag 元件有自己的底色和文字色（bg-muted + text-foreground）。disabled 時 Tag 文字色變為 fg-disabled。</Desc>
+        <Desc>wrapper 色彩相同，tag 模式的 Tag 元件有自己的底色和文字色（neutral = bg-secondary + text-foreground，tagVariant 時用對應色相）。disabled 時 wrapper 變 bg-disabled，Tag 本身色彩不變（Tag 元件無 disabled 樣式）。</Desc>
         <div className="overflow-x-auto">
           <table className="border-collapse">
             <thead><tr><Th>Mode</Th><Th>text 模式</Th><Th>tag 模式</Th><Th>差異說明</Th></tr></thead>
@@ -656,9 +657,9 @@ export const ColorMatrix = {
                     <Select mode={m} display="tag" options={statusOptions} value="active" size="sm" disabled={m === 'disabled'} />
                   </Td>
                   <Td>
-                    {m === 'edit' && 'Wrapper 相同。Tag 用 Tag 元件色彩（bg-muted + text-foreground）'}
-                    {m === 'readonly' && 'Wrapper 相同（bg-disabled）。Tag 用 tagPadding 置中'}
-                    {m === 'disabled' && 'Wrapper 相同。Tag 文字色 fg-disabled + 背景 bg-disabled'}
+                    {m === 'edit' && 'Wrapper 相同。Tag 用 Tag 元件色彩（neutral = bg-secondary + text-foreground）'}
+                    {m === 'readonly' && 'Wrapper 相同（bg-readonly）。Tag 用 tagPadding 置中'}
+                    {m === 'disabled' && 'Wrapper 變 bg-disabled。Tag 本身色彩不變（Tag 元件無 disabled 樣式）'}
                   </Td>
                 </tr>
               ))}
@@ -821,7 +822,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"無障礙行為依裝置分兩條路徑:\n\n  ARIA / Pattern  :桌機(非觸控)觸發點是一個容器,標記  role=\"combobox\"  +  aria-expanded  /  aria-haspopup=\"listbox\" ,選項在浮層的 listbox 裡;searchable 模式時容器內另放一個可打字篩選的  <input> 。手機(觸控)改用瀏覽器原生的  <select>  element,直接取得作業系統內建的無障礙與 picker。Field wrapper 兩邊都補  aria-invalid  /  aria-required  /  aria-describedby  /  aria-errormessage ;手機原生  <select>  另由 FieldLabel 的  htmlFor  關聯取得 accessible name。\n\n  Keyboard 行為  :\n\n- Tab — 聚焦到觸發點\n- Enter / Space — 展開選單(searchable 模式則直接進入打字篩選)\n- ↑ / ↓ — 選單展開後在選項間移動\n- 字母鍵 — searchable 模式為打字篩選;手機原生 <select> 為平台內建 type-to-jump 逐字定位(桌機非 searchable combobox 無逐字定位)\n- Enter — 選定目前 highlight 的選項並關閉\n- Esc — 關閉選單(清除值走右側 clear 按鈕,非 Esc)\n\n  Focus  :DS focus-visible ring( focus-visible:!border-primary )由 Field wrapper 提供;手機原生  <select>  另有系統 focus ring。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
+      <p className="whitespace-pre-line">{"無障礙行為依裝置分兩條路徑:\n\n  ARIA / Pattern  :桌機(非觸控)觸發點是一個容器,標記  role=\"combobox\"  +  aria-expanded  /  aria-haspopup=\"listbox\" ,選項在浮層的 listbox 裡;searchable 模式時容器內另放一個可打字篩選的  <input> 。手機(觸控)改用瀏覽器原生的  <select>  element,直接取得作業系統內建的無障礙與 picker。Field wrapper 兩邊都補  aria-invalid  /  aria-required  /  aria-describedby  /  aria-errormessage ;手機原生  <select>  另由 FieldLabel 的  htmlFor  關聯取得 accessible name。\n\n  Keyboard 行為  :\n\n- Tab — 聚焦到觸發點\n- Enter / Space — 展開選單(searchable 模式則直接進入打字篩選)\n- ↑ / ↓ — 選單展開後在選項間移動\n- 字母鍵 — searchable 模式為打字篩選;手機原生 <select> 為平台內建 type-to-jump 逐字定位(桌機非 searchable combobox 無逐字定位)\n- Enter — 選定目前 highlight 的選項並關閉\n- Esc — 關閉選單(清除值走右側 clear 按鈕,非 Esc)\n\n  Focus  :DS focus 藍框( focus-within:!border-primary )由 Field wrapper 提供;手機原生  <select>  另有系統 focus ring。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
     </div>
   ),
 }

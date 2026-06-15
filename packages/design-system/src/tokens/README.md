@@ -16,7 +16,9 @@
 
 ## 當前居民
 
-`color/` / `typography/` / `uiSize/` / `layoutSpace/` / `density/` / `elevation/` / `radius/` / `opacity/`
+`color/` / `typography/` / `uiSize/` / `layoutSpace/` / `density/` / `elevation/` / `radius/` / `opacity/` / `motion/`
+
+例外居民:`categorical-color.ts` 住 tokens/ 根層(非 folder)— `CATEGORICAL_HUES` 的 TypeScript SSOT,由 `color/color.spec.md` 指認(Tag / Avatar 等 categorical 色相消費)。
 
 ## Consumer scope:public vs internal token(2026-05-17 codified)
 
@@ -24,8 +26,9 @@
 |---|---|---|
 | `color/` / `typography/` / `radius/` / `elevation/` / `opacity/` / `layoutSpace/` / `density/` | **Public** — consumer-layer(`src/app` / `src/explorations`)直接消費 | UI 開發者寫 `text-body` / `bg-primary` / `--layout-space-loose` 等 |
 | `uiSize/`(`--field-height-*` / `--tab-height-*` / `--table-row-*` / `--tree-indent-*`)| **Internal primitive** — DS 內部 component 消費,consumer 不直接用 | Button / Input / Tabs / DataTable / TreeView 等 primitive 內部消費;consumer 用 `<Button size="sm">` 不用 `h-[var(--field-height-sm)]` |
+| `motion/`(`--hover-delay-*`)| **Internal primitive** — DS overlay 元件內部消費,consumer 不直接用 | Tooltip / HoverCard / Avatar / OverflowIndicator 的 hover open / close delay;consumer 用元件預設,不直接讀 token |
 
-**Internal token 規則**(`uiSize/` 適用):
+**Internal token 規則**(`uiSize/` / `motion/` 適用):
 - **不必補 Storybook stories**(consumer 不直接看;審查 grep 結果:`src/app` + `src/explorations` 0 個檔案直接消費 uiSize token,2026-05-17 verified)
 - 但仍有 `.spec.md` codify family / 命名 / 派生公式
 - 出現在 consumer-layer code = anti-pattern(該用 component prop 不該 raw token)

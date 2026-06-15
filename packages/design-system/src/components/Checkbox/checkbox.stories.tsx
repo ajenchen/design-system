@@ -100,7 +100,7 @@ export const VerticalGroup: Story = {
 export const Horizontal: Story = {
   name: '水平排列',
   render: () => (
-    <div className="flex gap-6 max-w-md">
+    <div className="flex gap-4 max-w-md">
       <SelectionItem control={<Checkbox id="h-a" />} label="Electronics" htmlFor="h-a" />
       <SelectionItem control={<Checkbox id="h-b" />} label="Furniture" htmlFor="h-b" />
       <SelectionItem control={<Checkbox id="h-c" />} label="Food" htmlFor="h-c" />

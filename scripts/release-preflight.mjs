@@ -48,6 +48,7 @@ run('tsc -b', 'npx tsc -b')
 run('typecheck:stories', 'npm run --silent typecheck:stories')
 run('audit-orphan-tokens', 'node scripts/audit-orphan-tokens.mjs --check')
 run('categorical-color-invariants', 'node scripts/categorical-color-invariants.mjs')
+run('motion-delay-invariants', 'node scripts/audit-motion-delay-invariants.mjs')
 run('status-color-invariant(progress/step/in-progress → --info)', 'node scripts/status-color-invariant.mjs')
 run('layout-space-utility-invariant(裸 px-loose silent-fail)', 'node scripts/layout-space-utility-invariant.mjs')
 run('category-classification-invariant(分類三訊號一致)', 'node scripts/category-classification-invariant.mjs')
@@ -111,6 +112,21 @@ if (tmplDrift.length) {
   process.exit(1)
 }
 console.log(`    ✓ template consumer dep 對齊 ${tmplExpected}`)
+
+// ④.9 worktree-clean 終局 gate(2026-06-12 beta.66 CI 紅燈根治):上方 sync 步驟(ds-canonical /
+// llms / template canonical App / 5-manifest)會「重生」working tree 檔案 — 若有未 commit 的重生產物,
+// pass-marker 綁的 HEAD 不含它們 → tag 的乾淨 checkout 在 CI 同道 drift gate 必紅(local 綠 / CI 紅)。
+// 故 marker 寫入前 worktree 必乾淨;dirty → fail-fast 列檔要求先 commit 再重跑。
+import { execSync as _ex } from 'node:child_process'
+{
+  const dirty = _ex('git status --porcelain', { encoding: 'utf8' }).trim()
+  if (dirty) {
+    console.error('\n❌ RELEASE PREFLIGHT FAIL: sync 步驟產生未 commit 的重生檔案(tag 會缺它們 → CI drift gate 必紅):')
+    console.error(dirty.split('\n').map((l) => '   ' + l).join('\n'))
+    console.error('   修:git add -A && git commit(訊息註明 preflight sync 產物)→ 重跑 npm run release:preflight')
+    process.exit(1)
+  }
+}
 
 // ⑤ pass-marker(綁 HEAD sha)
 const head = execSync('git rev-parse HEAD').toString().trim()

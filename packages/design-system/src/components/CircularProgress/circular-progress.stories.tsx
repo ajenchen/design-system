@@ -56,23 +56,44 @@ export const ButtonLoading: Story = {
 
 export const InlineAction: Story = {
   name: '行內操作',
-  render: () => (
-    <div className="flex flex-col gap-4 max-w-sm">
-      <Input
-        startIcon={Search}
-        loading
-        defaultValue="react-"
-        placeholder="搜尋 GitHub repositories..."
-      />
+  render: () => {
+    // 多檔上傳列(Google Drive / Dropbox 慣例):上傳中的檔案 determinate(value + affix
+    // 顯示 %),尚在準備(壓縮 / 掃描)的檔案 indeterminate + label——兩態在同一真實佇列
+    // 中對照。容器 text-body(14px)→ CircularProgress label 天然 inherit,無須
+    // hand-craft label span。
+    const uploads = [
+      { file: 'Q3-revenue-report.xlsx', value: 28 },
+      { file: 'product-roadmap.pdf', value: 64 },
+      { file: 'presentation.pdf', value: undefined },
+    ]
+    return (
+      <div className="flex flex-col gap-4 max-w-sm">
+        <Input
+          startIcon={Search}
+          loading
+          defaultValue="react-"
+          placeholder="搜尋 GitHub repositories..."
+        />
 
-      {/* 容器 text-body(14px)→ CircularProgress label 天然 inherit,無須 hand-craft label span */}
-      <div className="flex items-center gap-2 border border-border rounded-md px-3 py-2 text-body">
-        <Upload size={16} className="text-fg-muted" />
-        <span className="flex-1">presentation.pdf</span>
-        <CircularProgress size={16} label="上傳中" />
+        <div className="flex flex-col gap-2">
+          {uploads.map((u) => (
+            <div
+              key={u.file}
+              className="flex items-center gap-3 border border-border rounded-md px-3 py-2 text-body"
+            >
+              <Upload size={16} className="text-fg-muted" />
+              <span className="flex-1 truncate">{u.file}</span>
+              {u.value != null ? (
+                <CircularProgress size={16} value={u.value} affix="value" aria-label={`${u.file} 上傳 ${u.value}%`} />
+              ) : (
+                <CircularProgress size={16} label="準備中" />
+              )}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
-  ),
+    )
+  },
 }
 
 type SyncRow = { file: string; modified: string; sync: 'syncing' | 'synced' }
@@ -130,31 +151,3 @@ export const FullScreenOverlay: Story = {
   ),
 }
 
-// @story-trait-rationale: determinate 模式的真實消費場景——多檔上傳列(Google Drive /
-//   Dropbox 慣例),每列 value + affix 顯示各檔上傳進度。determinate 視覺枚舉本身由
-//   anatomy UsageInline 涵蓋;100%-swap 原則由 principles/UsageGuidance 擁有,本展示不重述,
-//   只示範「determinate 在真實 context 怎麼用」(earn-existence:檔案上傳列 = 別 story 沒教的場景)。
-export const Determinate: Story = {
-  name: '確定進度',
-  render: () => {
-    const uploads = [
-      { file: 'Q3-revenue-report.xlsx', value: 28 },
-      { file: 'product-roadmap.pdf', value: 64 },
-      { file: 'onboarding-deck.key', value: 91 },
-    ]
-    return (
-      <div className="flex flex-col gap-2 max-w-sm">
-        {uploads.map((u) => (
-          <div
-            key={u.file}
-            className="flex items-center gap-3 border border-border rounded-md px-3 py-2 text-body"
-          >
-            <Upload size={16} className="text-fg-muted" />
-            <span className="flex-1 truncate">{u.file}</span>
-            <CircularProgress size={16} value={u.value} affix="value" aria-label={`${u.file} 上傳 ${u.value}%`} />
-          </div>
-        ))}
-      </div>
-    )
-  },
-}

@@ -148,7 +148,7 @@ export const Overview = {
           <H3>結構（Anatomy）</H3>
           <Desc>
             Radio 由兩個部分組成：圓形控件（indicator）和 Label。
-            控件不內建 label，label 組合使用 SelectionItem 元件。
+            控件可傳 label / description prop——傳入時自動透過 SelectionItem 包裝;無 label 時只渲染圓形控件。
             Radio 必須在 RadioGroup 內使用（互斥選擇語意）。
           </Desc>
         </div>
@@ -191,6 +191,9 @@ export const Overview = {
                 ['value', 'string', '(required)', 'RadioGroup 內的唯一值'],
                 ['size', "'sm'|'md'|'lg'", "'md'", '控件尺寸（sm/md = 16px, lg = 20px）'],
                 ['disabled', 'boolean', 'false', '不可互動，移除品牌色'],
+                ['label', 'ReactNode', '—', '選項 label；傳入時自動以 SelectionItem 包裝'],
+                ['description', 'ReactNode', '—', '次要說明文字（須與 label 搭配）'],
+                ['readOnly', 'boolean', 'false', '鎖互動、保留 checked 視覺(standalone 整組 readonly 由 RadioGroup mode="readonly" 傳遞;Field 內整組改渲染灰框 + 選中項 label)'],
                 ['id', 'string', '—', '搭配 SelectionItem 的 htmlFor'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -627,10 +630,10 @@ const StateBehaviorInner = () => {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">行為 3:整組 disabled(Field context 接管)</span>
         <Desc>
-          整個 RadioGroup 放在 disabled 的 Field 內時,所有 item 繼承 disabled——consumer 不需逐 item 傳 disabled。
+          整個 RadioGroup 放在 disabled 的 Field 內時,所有 item 經 useResolvedFieldDisabled 繼承 disabled——consumer 不需逐 item 傳 disabled(SSOT:field-controls.spec.md cascade 段)。下方示意為靜態模擬(逐 item 傳 disabled 重現相同視覺);實際使用以 {'<Field disabled>'} 包裹即可。
         </Desc>
         <div className="flex gap-6 items-start">
-          <div className="px-6 py-5 rounded-lg bg-canvas border border-divider min-w-[280px] opacity-60 pointer-events-none">
+          <div className="px-6 py-5 rounded-lg bg-canvas border border-divider min-w-[280px]">
             <RadioGroup defaultValue="b" className="flex flex-col gap-2">
               <RadioGroupItem value="a" label="個人版" disabled />
               <RadioGroupItem value="b" label="團隊版(目前方案)" disabled />

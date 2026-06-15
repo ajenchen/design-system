@@ -61,15 +61,18 @@ export const UsageGuidance: Story = {
     <div className="flex flex-col gap-12">
       {/* 何時用 — 原 WhenToUse */}
       <div className="prose prose-sm max-w-prose">
-      <p>適合 Breadcrumb 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      <p>Breadcrumb 顯示「目前頁面在資訊階層中的位置」,適合 ≥ 3 層的階層頁面。真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
+          電商多層分類、檔案管理器等深層頁面,路徑過長時中段折疊、點 ⋯ 可展開中間層 —— 見{' '}
           <LinkTo kind="Design System/Components/Breadcrumb/展示" name="可互動省略"><span className="text-primary hover:underline font-medium cursor-pointer">可互動省略</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Breadcrumb/展示" name="宣告式 API + 自動收合"><span className="text-primary hover:underline font-medium cursor-pointer">深層巢狀自動收合</span></LinkTo>
+          路徑由路由 / CMS 資料動態產生,直接傳資料陣列、超過層數自動收合中段 —— 見{' '}
+          <LinkTo kind="Design System/Components/Breadcrumb/展示" name="宣告式 API + 自動收合"><span className="text-primary hover:underline font-medium cursor-pointer">宣告式 API + 自動收合</span></LinkTo>
         </li>
         <li>
+          SPA 內點麵包屑要走前端路由、不整頁重載 —— 見{' '}
           <LinkTo kind="Design System/Components/Breadcrumb/展示" name="整合 React Router / Next.js Link"><span className="text-primary hover:underline font-medium cursor-pointer">整合 React Router / Next.js Link</span></LinkTo>
         </li>
       </ul>

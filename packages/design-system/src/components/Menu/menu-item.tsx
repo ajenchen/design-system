@@ -1,3 +1,7 @@
+/**
+ * @internal — DS-internal 單元(per `.claude/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
+ * 不進 root barrel front-door;由 DropdownMenu / SelectMenu 等 menu 類 DS 元件 wrap 消費,end-user app 請用 wrapper 元件。
+ */
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
@@ -20,7 +24,7 @@ import { ICON_SIZE, AVATAR_SIZE, ItemContent, itemPrefixAlignVariants, ROW_PADDI
  *
  * ── Prefix 對齊規則（24px 閾值）──
  *   prefix ≤ 24px  → h-[1lh]，對齊第一行 label
- *   prefix > 24px  → h-[calc(1lh+var(--item-gap-label-desc)+desc_1lh)]，對齊文字區塊
+ *   prefix > 24px  → h-[calc(1lh+var(--item-gap-label-desc-scanning)+desc_1lh)](size-aware -scanning[-lg] 變體)，對齊文字區塊
  *   無 description → prefix 上限 24px
  *
  * ── Size ──
@@ -86,7 +90,7 @@ export interface MenuItemProps
    * Label 最大行數(line-clamp 截斷,超過顯示 ellipsis)。
    *
    * - `undefined`(預設 prop 值未傳)→ 套用元件預設 `1`(單行截斷,符合選單快速掃視需求)
-   * - 數字 → 截斷到該行數
+   * - 數字(1-6)→ 截斷到該行數;>6 超出 line-clamp utility 支援範圍 → 不截斷(同 'none',見 lineClampClass)
    * - `'none'` → **明確**不截斷,自然 wrap 任意行數
    *
    * 為什麼用 `'none'` 而不是 `undefined` 表達不截斷?React props 的 destructure default
@@ -98,7 +102,7 @@ export interface MenuItemProps
    * Description 最大行數。
    *
    * - `undefined`(預設 prop 值未傳)→ 套用元件預設 `1`(跟 label 對稱,維持掃視節奏)
-   * - 數字 → 截斷到該行數
+   * - 數字(1-6)→ 截斷到該行數;>6 超出 line-clamp utility 支援範圍 → 不截斷(同 'none',見 lineClampClass)
    * - `'none'` → 明確不截斷
    *
    * 為什麼預設 1?Menu 的設計目的是「快速掃視多個選項挑一個」,垂直空間是

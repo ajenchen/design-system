@@ -3,8 +3,8 @@
 //
 // 2026-06-05 二修:免費 access control = Netlify Edge Function 自做 HTTP Basic Auth,不是 _headers / dashboard Password。
 //
-// Why Identity removed:
-//   - Netlify 2024 公告 Identity service deprecated;新帳號可能看不到 Identity menu
+// Why Identity not used(注意:Identity 未 deprecated — 2025-02 曾公告,2026-02-19 官方撤回,仍 supported):
+//   - Identity 是完整 signup/login 系統(要自己接 login UI widget),對「上個簡單密碼」是 overkill
 //   - `netlify api provisionSiteIdentity` 在新 site 已不穩定 / 不可用
 //
 // Free-tier 真實可用 access control(2026-06-05 官方 docs + support forum 三重證實):

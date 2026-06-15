@@ -25,6 +25,7 @@ benchmark:
 
 **SSOT 邊界**:
 - AppShell own:slot composition / layout mode / Aside inline-vs-modal mode / mobile breakpoint propagate
+- **邊界狀態**:layout 殼,無自身互動狀態(disabled / loading / empty 不適用,slot 內容各自管;dark / density 隨 theme subtree);overlay open state 自管(見「Dialog / Sheet / Popover 互動」段)
 - **不 own**:Sidebar 視覺(SSOT 在 `sidebar.spec.md`)/ Header 視覺(SSOT 在 `header-canonical.spec.md`)/ Sheet 視覺(SSOT 在 `sheet.spec.md`)/ Main 內 layout(SSOT 在 `layoutSpace.spec.md` 6 條規則)
 
 **不是**:`Sidebar`(本 shell consumer 之一)/ `Sheet`(臨時浮層)/ `ChromeHeader`(local header)/ `Page`(語意 wrapper,不存在於本 DS)。
@@ -94,14 +95,14 @@ function CustomAside() {
 
 **Header 永遠是 horizontal strip,不延伸 vertical**(per 2026-05-19 user clarification)。
 
-### primary-header = primary-sidebar + 一條 global header(2026-05-21 v2 user clarification)
+### primary-header = primary-sidebar + 一條 global header
 
-過去版本誤把 primary-header 描述成「header 取代 local toolbar」**錯了** — 世界級 100% 反證:
-- **GitHub**:global top nav(logo / search / account)+ **repo header**(breadcrumb / branch selector,**local**)+ sidebar + content ← **2 層 header**
-- **Slack**:global header(workspace switcher)+ **channel header**(channel name / settings,**local**)+ sidebar + main ← **2 層**
-- **Gmail**:global logo bar + **email list toolbar**(sort / filter,**local**)+ sidebar + list ← **2 層**
+`primary-header` mode = `primary-sidebar` mode 的所有東西 + **額外一條 global header 在頂**。`header` slot(local toolbar)**仍然存在**,只是上面多了 `globalHeader` slot(跨頁 chrome)。世界級對照(皆為 2 層 header):
+- **GitHub**:global top nav(logo / search / account)+ **repo header**(breadcrumb / branch selector,**local**)+ sidebar + content
+- **Slack**:global header(workspace switcher)+ **channel header**(channel name / settings,**local**)+ sidebar + main
+- **Gmail**:global logo bar + **email list toolbar**(sort / filter,**local**)+ sidebar + list
 
-**結論**:`primary-header` mode = `primary-sidebar` mode 的所有東西 + **額外一條 global header 在頂**。`header` slot(local toolbar)**仍然存在**,只是上面多了 `globalHeader` slot(跨頁 chrome)。
+**常見誤解:「primary-header = header 取代 local toolbar」** — 錯;global header 是**加在 local toolbar 之上**,不是取代(上列三家全部同時保有兩層)。
 
 **API**:
 - `header` prop:**永遠** local page header(per page actions / breadcrumb / filter),兩 mode 都 render
@@ -133,18 +134,11 @@ function CustomAside() {
   header={<PageHeader title="..." />}>...
 ```
 
-**真正的 distinguishing factor = Header scope(local toolbar vs global bar)**(2026-05-20 user clarification 撤回 single/multi-workspace mis-claim):
-
-過去版本誤把「workspace 數量」綁定到 layout mode(寫 primary-sidebar = single-workspace、primary-header = multi-workspace)。**反證(grep world-class verified)**:
-- Linear / Notion / Figma(primary-sidebar)= 全部都**支援 multi workspace / multi team**
-- GitHub / Gmail / Slack(primary-header)= 同樣是 multi workspace
-- **Workspace 多寡跟 layout 派别無相關性** — Notion 多 workspace 卻用 primary-sidebar、Gmail 多 account 用 primary-header
-
-決定派别的是「Header scope」:
+**真正的 distinguishing factor = Header scope(local toolbar vs global bar)**:
 - **Local toolbar 派**(當前頁 anchor / breadcrumb / page-level actions / filter / 該頁 specific 操作)→ `primary-sidebar`
 - **Global bar 派**(account avatar / workspace switcher / notifications / 跨頁 search / 跨頁導覽)→ `primary-header`
 
-選 mode = 表態「Header 是 local 還是 global」,**不是**「workspace 是 single 還是 multi」。
+**常見誤解:「multi-workspace 就必須 primary-header 派」** — workspace 多寡跟 layout 派别無相關性(world-class 反證:Linear / Notion / Figma 皆 multi-workspace 卻用 primary-sidebar;Gmail 多 account 用 primary-header)。選 mode = 表態「Header 是 local 還是 global」,**不是**「workspace 是 single 還是 multi」。
 
 **Sidebar toggle 按鈕位置**(消費既有 `sidebar.spec.md:308-360` SidebarTrigger 兩 pattern,**不發明新 toggle**):
 
@@ -173,7 +167,7 @@ function CustomAside() {
 
 | Mode | Trigger | Mask 蓋背景? | Background operable? | 佔 layout 寬度? |
 |---|---|---|---|---|
-| **Standard inline**(對齊 Material 3 standard drawer) | viewport ≥ `--sidebar-mobile-breakpoint`(768px) | ❌ 不蓋 | ✅ 可操作 | ✅ 佔 layout |
+| **Standard inline**(對齊 Material 3 standard drawer) | viewport ≥ 768px(`useIsNarrowViewport()`,同 Sidebar mobile 切換) | ❌ 不蓋 | ✅ 可操作 | ✅ 佔 layout |
 | **Modal overlay**(對齊 Material 3 modal drawer = Sheet pattern) | viewport < breakpoint | ✅ 蓋 | ❌ 不可操作 | ❌ 不佔(蓋上去) |
 
 **Standard inline** 行為(layout-mode aware):
@@ -188,13 +182,13 @@ function CustomAside() {
 - **title prop required**(per `sheet.spec.md:98` 禁無 title — `aria-labelledby` 強制)
 - 跟 Sidebar mobile fallback 同 SSOT
 
-**Breakpoint**:消費既有 `--sidebar-mobile-breakpoint`(`sidebar.spec.md:594` SSOT,768px),**不發明新 breakpoint**。Sidebar + Aside 同步切 Sheet。
+**Breakpoint**:消費既有 `useIsNarrowViewport()` hook(`hooks/use-is-narrow-viewport.ts`,`MOBILE_BREAKPOINT = 768`;與 `sidebar.spec.md`「Mobile 行為」段 768px 同值),**不發明新 breakpoint**(非 CSS token — repo 無 `--sidebar-mobile-breakpoint`)。Sidebar + Aside 同步切 Sheet。
 
 ---
 
 ## Mobile(viewport < breakpoint)
 
-- **Sidebar**:消費既有 `sidebar.spec.md:594` canonical(自動切 Sheet,從左滑出,寬度 `--sidebar-width-mobile`)
+- **Sidebar**:消費既有 `sidebar.spec.md`「Mobile 行為」canonical(自動切 Sheet,從左滑出,寬度 `--sidebar-width-mobile`)
 - **Aside**:同邏輯,切右 Sheet(複用 Sheet primitive,只方向相反)
 - **Header**:始終可見(both mode);`primary-sidebar` 仍是 local toolbar / `primary-header` 仍是 global bar
 - **AppShell 不重新發明 mobile**,沿用 Sidebar / Sheet 既有 canonical
@@ -258,7 +252,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 
 **W3C ARIA in HTML banner rule(精準 quote)**:`<header>` element 在 `<body>` direct context = `role="banner"` implicit;若 `<header>` 是 `<main>` / `<nav>` / `<article>` / `<section>` / `<aside>` descendant,則 **NOT** banner role(W3C HTML AAM spec)。
 
-**本 AppShell 對應落實**(ChromeHeader render `<header>`,per `chrome-header.tsx:96/129/157`):
+**本 AppShell 對應落實**(ChromeHeader 三個分支皆 render `<header>`,per `chrome-header.tsx` 2026-05-20「`<div>` → `<header>`」註解):
 - `primary-header` mode:`<header>` 被 `flex-shrink-0 <div>` 包覆(AppShell root flex-col 第一個 child,body-scoped)→ implicit banner role ✓
 - `primary-sidebar` mode:`<header>` 被 `flex-shrink-0 <div>` 包覆、與 `<main>` 是 sibling(非 main descendant,body-scoped)→ **同樣得到 implicit banner role**。`<div>` wrapper 依 W3C HTML-AAM **不** scope out banner(只有 `main/article/aside/nav/section` 能)。
 
@@ -284,7 +278,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 
 | 用途 | Consume token / SSOT |
 |---|---|
-| Mobile breakpoint | `--sidebar-mobile-breakpoint`(`sidebar.spec.md:594`)|
+| Mobile breakpoint | `useIsNarrowViewport()` JS hook,768px(非 CSS token;`sidebar.spec.md`「Mobile 行為」段同值)|
 | Sidebar width | `--sidebar-width`(`sidebar.spec.md`)|
 | Header height | `--chrome-header-height`(`tokens/uiSize/uiSize.spec.md`)|
 | Aside width | consumer 自傳 prop(無 token)|
@@ -300,9 +294,10 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 ## Consumer 紀律
 
 - ❌ 禁:`<AppShell>` 內 wrap 第二個 `<AppShell>`(nested shell 違反「整頁框架」單例性)
-- ❌ 禁:`sidebar={<div>...</div>}`(必傳 `<Sidebar>` primitive,確保視覺 SSOT)
-- ❌ 禁:`header={<header>...</header>}`(必傳 `<ChromeHeader>` 或消費 `header-canonical` 派生 header)
+- ❌ 禁:`sidebar={<div>...</div>}`(應傳 `<Sidebar>` primitive,確保視覺 SSOT。型別上收 ReactNode、不做機械強制 — React 型別強制易被 wrapper 包一層繞過,世界級 shell 元件皆收 ReactNode;本約定靠 story 示範 + audit 把關。2026-06-10 user 拍板 2a:措辭「必」→「應」對齊 code 真實)
+- ❌ 禁:`header={<header>...</header>}`(應傳 `<ChromeHeader>` 或消費 `header-canonical` 派生 header;同上,型別不機械強制)
 - ❌ 禁:AppShell.Main 自加 padding(違反 layoutSpace 規則 1B)
+- ❌ 禁:AppShellAside header 加第二行 / actions(header = 單行 title + close X,API typed `title: string` 結構鎖;說明文字歸 aside body — 2026-06-12 fork-drift 防線)
 - ✅ 必:`layout` mode 在 product 啟動時固定,**不在 runtime 切換**(切換 = product 角色變動 = 應該重 mount app)
 
 ---
@@ -326,5 +321,4 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 - `patterns/overlay-surface/overlay-surface.spec.md` — Aside modal mode 上層 SSOT
 - `components/Sheet/sheet.spec.md` — modal fallback SSOT(`aria-labelledby` 強制 + `z-50`)
 - `tokens/layoutSpace/layoutSpace.spec.md` — Main 內 layout 6 條規則 SSOT
-- `tokens/uiSize/uiSize.spec.md` — `--chrome-header-height` / `--sidebar-mobile-breakpoint` 等 size token
-
+- `tokens/uiSize/uiSize.spec.md` — `--chrome-header-height` 等 size token

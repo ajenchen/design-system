@@ -22,7 +22,7 @@ scope: utility primitives module (use-overflow-items hooks: useScrollEdges + use
 
 `ScrollArrow` 元件在 `Tabs/tabs.tsx` 和 `Chip/chip.tsx` **逐行 copy-paste**,`buildFadeMask` / `ARROW_BUTTON_WIDTH` / `SCROLL_PAGE_RATIO` 常數也是複製的。任何修改都要手動改兩處,是漂移溫床——實際上已經造成了一個 bug:
 
-**Chip 的 menu trigger 曾用 chip variant 的視覺語言(與可選 chip 同形狀),讓 menu trigger 與可選 chip 在 mental model 上無法區分——使用者預期點擊是選中,實際是打開選單。同期 Tabs 的 menu trigger 用 text button 正確表達「這是 overflow 工具」,兩個元件 overflow affordance 自相矛盾。**
+**Chip 的 menu trigger 曾漂移成可選 chip 的視覺語言,使用者無法區分「點擊 = 選中」與「點擊 = 打開選單」;同期 Tabs 正確用 text button 表達工具層——同一個 overflow affordance 在兩元件自相矛盾。**
 
 ### Canonical 規則
 
@@ -30,9 +30,18 @@ scope: utility primitives module (use-overflow-items hooks: useScrollEdges + use
 
 - 左右 scroll arrow → text button,ChevronLeft / ChevronRight
 - Menu trigger → text button,ChevronDown
-- **禁止**用 item 自身的視覺語言(chip 形狀、tab 底線等)來渲染 overflow trigger——overflow affordance 是「工具層」,不是「業務層」,不該跟內容爭視覺重量(對齊 `CLAUDE.md` 的「工具層必須是視覺重量最低的一層」原則)。
+- **禁止**用 item 自身的視覺語言(chip 形狀、tab 底線等)來渲染 overflow trigger——overflow affordance 是「工具層」,不是「業務層」,不該跟內容爭視覺重量(「工具層必須是視覺重量最低的一層」— 本 spec codify 此原則,owner SSOT 在此)。
 
 這條規則讓使用者看到向下 chevron 或向右 arrow 時,心智是一致的:「這是 overflow 的工具,不是可選內容」,不論這排 items 是什麼類型。
+
+---
+
+## 何時用 / 近親分界 / 常見誤解 / A11y
+
+- **何時用**:任何「一排水平 items 可能塞不下容器」的 DS 元件要加 overflow affordance 時 import 本 module。scroll vs menu 模式的抉擇 SSOT 在 `tabs.spec.md`「Overflow 模式」表(none / scroll / menu 三策略 + 何時用),此處不重複
+- **何時不用 / 近親分界**:設計上拒絕 overflow 的元件不消費——SegmentedControl / Steps(見「消費者清單 Non-consumers」,各自 spec 明文)
+- **常見誤解**:「在新元件自刻 ScrollArrow / fade mask 比較快」——禁止(見「禁止事項」),copy-paste 漂移正是本 module 存在的歷史教訓
+- **A11y**:arrow / trigger 內建 `aria-label`(arrow 預設繁中、trigger 必填)+ iconOnly Button 自動 tooltip(見「元件保證行為」);menu 開啟後的 a11y 由消費者的 DropdownMenu(Radix)承擔
 
 ---
 
@@ -49,7 +58,7 @@ scope: utility primitives module (use-overflow-items hooks: useScrollEdges + use
 ### Helpers
 
 - `buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth })`
-  回傳 `linear-gradient` 字串。`reserveArrowWidth` > 0 時 fade 會延伸到 arrow button 底下(Material 3 scrim 原理);= 0 時直接從邊緣 fade。
+  回傳 `linear-gradient` 字串。`reserveArrowWidth` > 0 時 fade 會延伸到 arrow button 底下(Material 3 scrim 原理);= 0 時直接從邊緣 fade。 <!-- @benchmark-unverified -->
 - `useScrollByPage(scrollRef)` → `(direction: 'left' | 'right') => void`
   點一次滑動 `clientWidth × SCROLL_PAGE_RATIO`,含 `behavior: 'smooth'`。
 
@@ -66,7 +75,7 @@ scope: utility primitives module (use-overflow-items hooks: useScrollEdges + use
   - 必填 `aria-label`(直接傳給 Button 的 `aria-label`,無 `label` alias;由消費者決定,例如「頁籤選單(共 5 個)」)
   - `forwardRef` + `...props` spread 讓 Radix `DropdownMenuTrigger asChild` 可以接管
 
-> **元件保證行為:auto-Tooltip**——`OverflowScrollArrow` 與 `OverflowMenuTriggerButton` 都是 `iconOnly` + string `aria-label` + 非 `asChild`,因此都會觸發 Button 內建的 auto-Tooltip wrap(button.tsx:491-498)。亦即 hover 時 arrow / trigger 會自動冒出對應 `aria-label` 的 tooltip(「向左捲動」/「向右捲動」/「頁籤選單(共 N 個)」),共享全域 `Tooltip` 的 delay 與 warm-up。`DropdownMenuTrigger asChild` 仍正常運作:Radix 的 `asChild` 由 Trigger 自身消費(套到 `OverflowMenuTriggerButton` 的 forwardRef),不會傳成 Button 的 `asChild` prop,所以 tooltip wrap 與 trigger 接管互不衝突。
+> **元件保證行為:auto-Tooltip**——`OverflowScrollArrow` 與 `OverflowMenuTriggerButton` 都是 `iconOnly` + string `aria-label` + 非 `asChild`,因此都會觸發 Button 內建的 auto-Tooltip wrap(`button.tsx` iconOnly auto-Tooltip wrap)。亦即 hover 時 arrow / trigger 會自動冒出對應 `aria-label` 的 tooltip(「向左捲動」/「向右捲動」/「頁籤選單(共 N 個)」),共享全域 `Tooltip` 的 delay 與 warm-up。`DropdownMenuTrigger asChild` 仍正常運作:Radix 的 `asChild` 由 Trigger 自身消費(套到 `OverflowMenuTriggerButton` 的 forwardRef),不會傳成 Button 的 `asChild` prop,所以 tooltip wrap 與 trigger 接管互不衝突。
 
 ### Hook re-export
 
@@ -158,6 +167,13 @@ return (
 
 ---
 
+## 邊界案例
+
+- **內容塞得下(`canScroll=false`)**:`buildFadeMask` 回傳 `undefined`(無 mask),消費者依 `canScroll` 條件不渲染 arrows / menu trigger(Tabs / Chip 組裝範例皆如此)——items 為 0 或恰好全部塞進容器同理,overflow affordance 完全不出現
+- **鍵盤操作**:arrow / trigger 都是標準 `<Button>`(Tab 聚焦、Enter / Space 觸發);menu 開啟後的 Escape / 方向鍵由消費者的 `DropdownMenu`(Radix)own,本 module 無自訂 keyboard handler
+
+---
+
 ## 禁止事項
 
 ❌ **禁止** copy `ScrollArrow` 到其他元件。要在新元件加 overflow → import 本 module 的 `<OverflowScrollArrow>`。
@@ -174,7 +190,7 @@ return (
 
 **Non-consumers**(2026-05-10 retire from「未來」清單 — prior prediction stale,spec 已明文不消費):
 - ~~`components/Steps/steps.tsx`~~ — `steps.spec.md:342`「水平空間不夠塞 content 區,強塞會破壞 stepper 的掃視節奏」+ L353「步驟 ≤ 5、水平空間充足」→ 設計上不 overflow
-- ~~`components/SegmentedControl/*`~~ — `segmented-control.spec.md:240`「**不支援 overflow / scroll**——若選項可能超出容器寬度,代表選錯元件了」+ L239「最多 5 個 item」→ 設計上拒絕 overflow
+- ~~`components/SegmentedControl/*`~~ — `segmented-control.spec.md`「規模限制與邊界案例」段「**不支援 overflow / scroll**——若選項可能超出容器寬度,代表選錯元件了」+「最多 5 個 item」→ 設計上拒絕 overflow
 
 新消費者必須加到這個清單,並且**只從本 module import** overflow 相關的 primitive,不允許自己複製。
 
@@ -183,7 +199,6 @@ return (
 ## 反向引用
 
 - `hooks/use-overflow-items.ts` — 底層 scroll / overflow 計算 hooks(本 module re-export)
-- `CLAUDE.md`「選擇 / 狀態視覺」規則 — 為什麼 overflow trigger 不該用 selection-like 視覺
 - `components/Button/button.tsx` — text variant 的 canonical 樣式
 - `components/DropdownMenu/dropdown-menu.spec.md` — menu item 的 selection 指示器規則
 
@@ -191,11 +206,6 @@ return (
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `chip.spec.md`
 - `file-viewer.spec.md`
 - `overflow-indicator.spec.md`
-
-## 被引用(auto-maintained,Dim 3 reciprocal audit)
-
-> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
-
-- `chip.spec.md`

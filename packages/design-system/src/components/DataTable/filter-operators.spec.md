@@ -1,6 +1,6 @@
-# Advanced Filter — Operator × ColumnType × ValueShape SSOT(DRAFT v3)
+# Advanced Filter 設計原則(Operator × ColumnType × ValueShape SSOT,v3)
 
-> **狀態**:Draft for review。Phase A 結案版 + datetime 擴充。確認後升 `filter-operators.spec.md` + 寫成 `filter-operators.ts` registry。
+> **狀態**:已落地 — registry 寫成 `filter-operators.ts`,`filter-tree.ts` + `data-table-filter-panel.tsx` 消費(原 draft 兩個升級條件皆已達成,2026-06-11 對齊)。
 > **M8 benchmark**:對照 ClickUp(CU)/ Airtable(AT)/ Notion(NT)三家。**v3 加 datetime / includeTime + 砍 number.between(2/3 業界共識)**。
 > **設計路線**:**ClickUp 為 baseline**,合理 + 不衝突 + 真實用的擴充採納。
 > **檔位**:暫放 DataTable/,若決定抽 `patterns/advanced-filter/` 再搬。
@@ -10,7 +10,7 @@
 - **砍 `number.between`**(9→8 ops)— Notion + Airtable 共識,同 field 重複 condition 可組合 `gte X AND lte Y`,無自然視覺也無業界 NumberRangeInput 元件
 - **加 `column.meta.includeTime: boolean` 旗標** — 對齊 Notion idiom,不另設 datetime column type
 - **加 ValueShape `datetime_single` / `datetime_range`** — `includeTime=true` 時切到這兩個 shape
-- **加 ValueShape `datetime_relative`**(同 date_relative,relative 邏輯不變)
+- **datetime 不另設 relative shape** — `is_relative` 維持 `date_relative`(relative 邏輯不變;12-shape 表與 code `ValueShape` union 皆無 `datetime_relative`)
 - **filter 比對精度**:`includeTime=true` 走 ms 精度(避開 Airtable 著名地雷:filter 忽略 time)
 - **不新增 `time-only` column type**(業界沒人做,罕見場景)
 
@@ -33,8 +33,8 @@
 | `select_single` | `<Select>` from `column.meta.options` | (預留)罕用 |
 | `person_single` | `<PeoplePicker>` 單選 | (預留)罕用 |
 
-**date_relative 預設選項**(11 個):
-`today / yesterday / tomorrow / this_week / last_week / next_week / this_month / last_month / next_month / past_7_days / past_30_days`
+**date_relative 預設選項**(13 個,分過去 / 目前 / 未來三組 — 對齊 code `DATE_RELATIVE_OPTIONS` / `DATE_RELATIVE_GROUPS`):
+`today / yesterday / tomorrow / this_week / last_week / next_week / this_month / last_month / next_month / past_7_days / past_30_days / next_7_days / next_30_days`
 
 **`number_range` 已砍**(配合 `number.between` 砍除)。
 
@@ -189,30 +189,15 @@
 | 統一用 `is_set` / `is_not_set`(不混 `is_empty`) | 9 types 全用(boolean 豁免) |
 | select / person 用 `is` 配多值 picker(不另設 `is_any_of`) | ✓ 對齊 CU UX |
 | multiSelect / multiPerson 用 `has_*` 動詞(對應 CU labels Any/All/None) | ✓ |
-| number 用 `between` 對應 CU RANGE | ✓ |
+| number 不設 `between`(v3 砍 — 同 field `gte AND lte` 組合替代,見拍板 #10) | ✓ |
 | date 用 `before/after/between/relative` + `is_set` 不混 Airtable `is_empty` 風 | ✓ |
 | 6 ops 擴充項皆有 ≥ 2 家 world-class DS 採用,且不衝突 CU 設計語言 | ✓ |
 
 **未跑 audit / test 驗證**,僅與 web-researched ClickUp / Airtable / Notion docs 自我比對。
 
-## 5. TypeScript 結構草案
+## 5. TypeScript 結構(已落地)
 
-```ts
-export type ValueShape =
-  | 'none' | 'text' | 'number' | 'number_range'
-  | 'date_single' | 'date_range' | 'date_relative'
-  | 'select_single' | 'select_multi'
-  | 'person_single' | 'person_multi'
-
-export interface OperatorSpec {
-  op: string                 // e.g. 'contains'
-  label: string              // e.g. '包含'(暫硬編,留 i18n hook)
-  valueShape: ValueShape
-}
-
-export const OPERATOR_REGISTRY: Record<ColumnType, OperatorSpec[]> = { ... }
-export const DEFAULT_OPERATOR: Record<ColumnType, string> = { ... }
-```
+型別與 registry 落地於 `filter-operators.ts`(`ValueShape` 12 種含 `datetime_*`、無 `number_range`;`OPERATOR_REGISTRY` / `DEFAULT_OPERATOR`;`getValueShape` 處理 `includeTime` auto-promote)。Tree 型別與求值在 `filter-tree.ts`。原 v2 草案已退役,以 code 為準。
 
 ## 6. 拍板紀錄
 
@@ -253,12 +238,19 @@ export const DEFAULT_OPERATOR: Record<ColumnType, string> = { ... }
 
 **技術坑(信心 85%,Phase B spec.md 詳)**:TanStack `ColumnFiltersState` per-column 一筆 filter value,N 條同 column 會 AND-chain 不能 OR。**業界標準解法**:棄用 `columnFilters`,改自管 FilterTree state + 用 `globalFilter` + 自訂 `globalFilterFn` 走樹求 boolean。
 
-## 8. Phase B 進度
+## 8. 邊界案例(code 真值 — `filter-tree.ts` / `data-table-filter-panel.tsx`)
 
-- [x] ValueShape × DS 元件對照 — 完成,coverage 8/12 直接消費 + 4 預留 + 2 新建(DateTimePicker / DateTimeRangePicker)
+- **Condition 值空 / 未選 field**:視為 incomplete,求值 **pass-through**(不過濾任何 row);空值 ≠ `is_not_set`(後者是顯式 op)— `isConditionComplete` 守門
+- **群組刪光 condition**:空群組保留並 pass-through(true),panel 顯示「移除空群組」按鈕由 user 顯式刪除,不自動消失
+- **巢狀深度**:1-level cap 由 TypeScript 型別鎖死(`FilterGroup.children: FilterCondition[]`),無 runtime guard;繞過型別塞入的非 condition 物件缺 `field`/`op` → incomplete → pass-through,不 crash
+- **relative 區間邊界**:全部 local time、雙端 inclusive(`startOfDay`–`endOfDay`);`past_7_days` = 7 天前 00:00 起**含今天整天**;week 以週一起算(`weekStartsOn: 1`)
+
+## 9. Phase B 進度
+
+- [x] ValueShape × DS 元件對照 — 完成,coverage 8/12 直接消費 + 4 預留;datetime 走 `<DatePicker showTime>` / `<DatePickerRange showTime>` prop variant(M21,非新元件)
 - [x] InputSurface 議題消失(配合砍 `number.between`)
-- [→] `advanced-filter.draft.md` — FilterTree data model + DataTable 耦合(本 turn 同步寫)
-- [→] `datetime-picker.draft.md` — DateTimePicker / Range spec(本 turn 同步寫)
+- [x] FilterTree data model + DataTable 耦合 — 已落地 `filter-tree.ts` + `data-table-filter-panel.tsx`(原規劃 `advanced-filter.draft.md` 未另立檔,內容即本 spec + code)
+- [x] datetime spec — 併入本 spec v3(原規劃 `datetime-picker.draft.md` 不需要,無新元件)
 - [x] i18n 策略 — 暫硬編繁中,留 i18n hook(對齊 DS 既有元件慣例)
 - [→] Phase B.5 lock canonical via `/ensure-canonical`(spec 全收斂後)
 

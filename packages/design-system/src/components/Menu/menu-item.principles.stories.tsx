@@ -24,19 +24,19 @@ export const UsageGuidance: Story = {
       <p>適合 Menu 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Internal/Menu/展示" name="基本"><span className="text-primary hover:underline font-medium cursor-pointer">基本</span></LinkTo>
+          <LinkTo kind="Design System/Internal/Menu/展示" name="基本"><span className="text-primary hover:underline font-medium cursor-pointer">信箱資料夾切換選單(收件匣 / 草稿 / 已傳送)— 純文字選項</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Internal/Menu/展示" name="前置圖示 + 說明文字"><span className="text-primary hover:underline font-medium cursor-pointer">前置圖示 + 說明文字</span></LinkTo>
+          <LinkTo kind="Design System/Internal/Menu/展示" name="前置圖示 + 說明文字"><span className="text-primary hover:underline font-medium cursor-pointer">通知偏好設定選單 — 前置圖示 + 說明文字</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Internal/Menu/展示" name="頭像"><span className="text-primary hover:underline font-medium cursor-pointer">頭像</span></LinkTo>
+          <LinkTo kind="Design System/Internal/Menu/展示" name="頭像"><span className="text-primary hover:underline font-medium cursor-pointer">指派負責人選單 — 人員頭像列</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Internal/Menu/展示" name="頭像 + 說明文字"><span className="text-primary hover:underline font-medium cursor-pointer">頭像 + 說明文字</span></LinkTo>
+          <LinkTo kind="Design System/Internal/Menu/展示" name="頭像 + 說明文字"><span className="text-primary hover:underline font-medium cursor-pointer">跨部門選人 — 頭像 + 部門說明文字</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Internal/Menu/展示" name="多選"><span className="text-primary hover:underline font-medium cursor-pointer">多選</span></LinkTo>
+          <LinkTo kind="Design System/Internal/Menu/展示" name="多選"><span className="text-primary hover:underline font-medium cursor-pointer">通知管道多選(電子郵件 / 推播 / Slack)</span></LinkTo>
         </li>
       </ul>
       <p className="text-fg-muted mt-3">判斷不確定時:先確認情境是否屬於上面這些「在選單裡挑一個或多個選項」的場景;若不是(例如是可編輯的表單欄位、或需要大塊內容的列表行),改用對應的近親元件,下方「vs 近親元件」段有說明。</p>

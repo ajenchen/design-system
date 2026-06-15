@@ -133,7 +133,7 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
 
 **為什麼 default 是 md 不是 sm**：跟 Button / Input / Select / Checkbox 等所有 field-height 系列元件的 default size 一致——consumer 在表單場景裡一組並排的 control 才能自動對齊而不用手動傳 size。違反這個一致性會讓「放著不管就對齊」的 consumer 體驗破功。
 
-**在 Field 內自動讀 size**：透過 `useFieldContext()`，SegmentedControl 在 Field 內時 size 跟著 Field 的 size 走，不需 consumer 重複指定——機制與 Button 完全相同。
+**在 Field 內自動讀 size**：透過 `useFieldContext()`，SegmentedControl 在 Field 內時 size 跟著 Field 的 size 走，不需 consumer 重複指定——機制與 Button 完全相同。Field 內明確傳 `size` prop 時以 prop 為準（解析順序 prop > Field context > `md`，經 `useResolvedFieldSize` SSOT hook）。
 
 **Icon size**：xs/sm/md = 16、lg = 20（對齊 `uiSize.spec.md` Icon Size Tier L132-143 統一規則,2026-05-18 retire 過去 xs=14 例外。Cite:Carbon icon-only line tabs 40/16,Ant small input 24/16）。
 
@@ -154,7 +154,7 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
 `fullWidth` prop（boolean，預設 `false`）：
 
 - **false（hug content）★default**：SegmentedControl 寬度由 item 總寬決定，items 各自照內容寬度排列
-- **true**：SegmentedControl 撐滿父容器，所有 item 等分該寬度
+- **true**：SegmentedControl 撐滿父容器，所有 item 等分該寬度。fullWidth 與 size 正交——只影響寬度分配，高度仍由 `size` 決定（xs fullWidth 仍是 24px 固定）
 
 > **不論 `fullWidth` 為何，items 之間永遠等寬或全由內容決定，不存在「撐滿但各自不同寬」的混血模式**。這是 SegmentedControl 的身份特徵，對齊 Apple HIG、Material 3 Segmented Button、Carbon ContentSwitcher 等世界級系統：「all segments have the same width」是 segmented 的視覺定義之一。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
@@ -192,13 +192,9 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
   <SegmentedControlItem value="center" startIcon={AlignCenter} aria-label="置中" />
   <SegmentedControlItem value="right" startIcon={AlignRight} aria-label="靠右" />
 </SegmentedControl>
-
-// ❌ 混搭（禁止）
-<SegmentedControl>
-  <SegmentedControlItem value="a" startIcon={Home}>首頁</SegmentedControlItem>
-  <SegmentedControlItem value="b" startIcon={Settings} aria-label="設定" />
-</SegmentedControl>
 ```
+
+混搭（部分 item 帶 label、部分 icon-only）禁止——見「禁止事項」。
 
 `iconOnly` 為 true 時：
 - 每個 item 變正方形（`aspect-square p-0`）
@@ -211,11 +207,9 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
 
 ### 選中 / 未選
 
-- **選中**：`bg-surface text-primary-hover border-primary-hover z-10`
-  - 文字與邊框都用 `--primary-hover`（底色維持 `bg-surface` 不變），這是 pill 風格元件（Chip / SegmentedControl）共用的選中規則
-  - `z-10` 讓 selected item 的邊框浮在相鄰 item 之上，避免被重疊的 border 切掉
-- **未選**：`bg-surface text-fg-secondary border-border`
-  - hover：`text-foreground`（不改 bg，避免 hover 狀態與 selected 搶戲）
+- **選中**：文字與邊框都用 `--primary-hover`（底色維持 surface 不變）——pill 風格元件（Chip / SegmentedControl）共用的選中規則；selected item 提升 z-index 讓邊框浮在相鄰 item 之上，避免被重疊的 border 切掉（class 實作見 `segmented-control.tsx` `data-[state=on]` cva）
+- **未選**：surface 底 + `--fg-secondary` 文字 + `--border` 邊框
+  - hover：文字轉 `--foreground` + 邊框加深一階（`--border-hover`）+ 微提升 z-index；不改 bg，避免 hover 狀態與 selected 搶戲
 
 ### Item 連體手法
 
@@ -233,11 +227,16 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 
 ---
 
-## 規模限制
+## 規模限制與邊界案例
 
 - **最少 2 個 item**——只有 1 個沒有選擇語意，應直接用 `Button pressed`
 - **最多 5 個 item**——超過 5 個視覺會過窄、label 被截斷，改用 `Select` / `RadioGroup`
 - **不支援 overflow / scroll**——若選項可能超出容器寬度，代表選錯元件了
+- **未傳 `value` / `defaultValue`**：初始無選中 item——違反 radio 語意（見禁止事項），consumer 必提供 default value
+- **點擊已選中 item**：不取消選取——wrapper 忽略 Radix single ToggleGroup 的 deselect（空字串），維持「恆有一值」的 radio 語意
+- **個別 item disabled**：Radix roving focus 跳過該 item（`focusable: !disabled`），方向鍵不停留；disabled item 不得是當前 value（contract，見「狀態 › disabled」）
+- **所有 item disabled**：整組無可聚焦 item，Radix roving focus 將 group 的 tab 停留點設為 `tabIndex=-1`，Tab 直接跳過
+- **disabled × fullWidth 並存**：兩者正交——fullWidth 只控寬度等分，disabled 只控互動與色彩，無交互規則
 
 ---
 
@@ -289,8 +288,10 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `button.spec.md`
 - `chip.spec.md`
 - `horizontal-overflow.spec.md`
 - `radio-group.spec.md`
 - `select.spec.md`
 - `slider.spec.md`
+- `tabs.spec.md`

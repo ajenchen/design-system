@@ -1,5 +1,5 @@
 {
-  "ts": "2026-06-04T14:53:27.015Z",
+  "ts": "2026-06-11T09:43:27.104Z",
   "expected_dims": 88,
   "classified": 88,
   "tier_counts": {
@@ -52,7 +52,7 @@
     },
     "11": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_story_anatomy.sh + 3-layer file existence DS-wide grep"
+      "mechanism": "check_story_invariants.sh R1 anatomy(原 check_story_anatomy.sh)+ 3-layer file existence DS-wide grep"
     },
     "12": {
       "tier": "PURE-JUDGMENT",
@@ -60,7 +60,7 @@
     },
     "13": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_story_anatomy.sh 5-section structural enforce"
+      "mechanism": "check_story_invariants.sh R1 anatomy 5-section structural enforce(原 check_story_anatomy.sh)"
     },
     "14": {
       "tier": "PURE-JUDGMENT",
@@ -124,11 +124,11 @@
     },
     "29": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_story_category.sh trait-based DS-wide enforce"
+      "mechanism": "check_story_invariants.sh R3 category trait-based DS-wide enforce(原 check_story_category.sh)"
     },
     "30": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_principles_canonical.sh DS-wide enforce"
+      "mechanism": "check_canonical_propagation.sh E.1 principles canonical DS-wide enforce(原 check_principles_canonical.sh)"
     },
     "31": {
       "tier": "HOOK-ENFORCED",
@@ -144,11 +144,11 @@
     },
     "34": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_disabled_placeholder_color.sh"
+      "mechanism": "check_field_family_invariants.sh A.4 disabled placeholder color(原 check_disabled_placeholder_color.sh,P1 stderr)"
     },
     "35": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_overlay_panel_scroll_chain.sh"
+      "mechanism": "check_pattern_invariants.sh C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain.sh,P1 WARN)"
     },
     "36": {
       "tier": "DETERMINISTIC",
@@ -240,7 +240,7 @@
     },
     "58": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_fork_user_plugin_install.sh SessionStart"
+      "mechanism": "check_plugin_fork_health.sh r1_plugin_install SessionStart(原 check_fork_user_plugin_install.sh,2026-06-11 prune merge)"
     },
     "59": {
       "tier": "HOOK-ENFORCED",
@@ -252,7 +252,7 @@
     },
     "61": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_item_list_gap.sh + check_data_table_size_num_to_meta_width.sh(M16 + M23c)WARN(exit 0,非 block)+ audit-time grep backstop"
+      "mechanism": "check_item_list_gap.sh + check_datatable_invariants.sh r2(原 check_data_table_size_num_to_meta_width.sh;M16 + M23c)WARN(exit 0,非 block)+ audit-time grep backstop"
     },
     "62": {
       "tier": "PURE-JUDGMENT",
@@ -284,15 +284,15 @@
     },
     "69": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_consumer_no_ds_catalog.sh PostToolUse BLOCKER"
+      "mechanism": "check_consumer_app_invariants.sh r1_no_ds_catalog PostToolUse BLOCKER(原 check_consumer_no_ds_catalog.sh,2026-06-11 prune merge)"
     },
     "70": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_consumer_story_baseline.sh PostToolUse BLOCKER + ds-story-manifest.json"
+      "mechanism": "check_consumer_app_invariants.sh r2_story_baseline PostToolUse BLOCKER + ds-story-manifest.json(原 check_consumer_story_baseline.sh)"
     },
     "71": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_consumer_ds_primitive_misuse.sh BLOCKER"
+      "mechanism": "check_consumer_app_invariants.sh r3_ds_primitive_misuse BLOCKER(原 check_consumer_ds_primitive_misuse.sh)"
     },
     "72": {
       "tier": "PURE-JUDGMENT",
@@ -308,7 +308,7 @@
     },
     "75": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_plugin_freshness.sh SessionStart fork-user"
+      "mechanism": "check_plugin_fork_health.sh r2_plugin_freshness SessionStart fork-user(原 check_plugin_freshness.sh)"
     },
     "76": {
       "tier": "HOOK-ENFORCED",
@@ -328,15 +328,15 @@
     },
     "80": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_addon_subdir_ship.sh P0 BLOCKER"
+      "mechanism": "check_storybook_addon_packaging.sh r1_addon_subdir_ship P0 BLOCKER(原 check_addon_subdir_ship.sh,2026-06-11 prune merge)"
     },
     "81": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_storybook_addon_preset_cjs.sh P0 BLOCKER"
+      "mechanism": "check_storybook_addon_packaging.sh r2_preset_cjs P0 BLOCKER(原 check_storybook_addon_preset_cjs.sh)"
     },
     "82": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_consumer_app_story_title.sh P0 BLOCKER"
+      "mechanism": "check_consumer_app_invariants.sh r4_app_story_title P0 BLOCKER(原 check_consumer_app_story_title.sh)"
     },
     "83": {
       "tier": "DETERMINISTIC",

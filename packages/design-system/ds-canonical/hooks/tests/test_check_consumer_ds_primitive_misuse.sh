@@ -1,5 +1,7 @@
 #!/bin/bash
-# Tests for check_consumer_ds_primitive_misuse.sh(P0 BLOCKER,2026-05-27 user verbatim
+# 2026-06-11 payload 正交化:合併檔跑全規則,payload 須對非受測規則 clean(合併前真系統行為相同 — 另一 hook 同樣會攔)
+# 2026-06-11 repoint:check_consumer_ds_primitive_misuse.sh 已合併進 check_consumer_app_invariants.sh(prune merge;測試 payload 不變 = 行為等價驗證)
+# Tests for check_consumer_app_invariants.sh(P0 BLOCKER,2026-05-27 user verbatim
 # 「做產品真的要能使用跟 ds repo 一模一樣的元件」)
 #
 # Hook 契約(PreToolUse,tool=Edit|Write|MultiEdit):
@@ -24,7 +26,7 @@
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOOK="$SCRIPT_DIR/../check_consumer_ds_primitive_misuse.sh"
+HOOK="$SCRIPT_DIR/../check_consumer_app_invariants.sh"
 
 if [ ! -x "$HOOK" ]; then
   echo "FATAL: hook not executable: $HOOK"
@@ -185,7 +187,7 @@ expect_silent "16. P5 nearmiss <Empty title+icon> → silent"
 # ── P6 overlay(.stories.tsx scope-gated;prod tsx 不攔)────────────────────────
 
 # 17. POSITIVE:story 用 Dialog overlay 無 defaultOpen → BLOCK
-run_hook "$STORY_TSX" 'export const S = () => <DS.Dialog><DS.DialogContent>內容</DS.DialogContent></DS.Dialog>'
+run_hook "$STORY_TSX" '// @story-baseline: x.stories.tsx#Default\nexport const S = () => <DS.Dialog><DS.DialogContent>內容</DS.DialogContent></DS.Dialog>'
 expect_block "17. P6 story <Dialog> 無 defaultOpen → BLOCK"
 
 # 18. NEGATIVE over-broad guard:同 overlay 在 prod .tsx(非 story)→ silent
@@ -193,7 +195,7 @@ run_hook "$PROD_TSX" 'export const S = () => <DS.Dialog><DS.DialogContent>內容
 expect_silent "18. P6 prod .tsx <Dialog>(非 story scope)→ silent"
 
 # 19. NEGATIVE:story Dialog 有 defaultOpen(canonical visual-snapshot 用法)→ silent
-run_hook "$STORY_TSX" 'export const S = () => <DS.Dialog defaultOpen><DS.DialogContent>內容</DS.DialogContent></DS.Dialog>'
+run_hook "$STORY_TSX" '// @story-baseline: x.stories.tsx#Default\nexport const S = () => <DS.Dialog defaultOpen><DS.DialogContent>內容</DS.DialogContent></DS.Dialog>'
 expect_silent "19. P6 nearmiss story <Dialog defaultOpen> → silent"
 
 # ── Edit field-path 契約(new_string 而非 content)────────────────────────────

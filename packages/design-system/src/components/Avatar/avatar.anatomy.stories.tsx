@@ -190,7 +190,7 @@ export const Overview = {
                 ['alt', 'string', '—', '替代文字（圖片失敗時取首字作 fallback）'],
                 ['icon', 'LucideIcon', '—', 'Icon 模式（與 src/alt 互斥優先）'],
                 ['color', 'ColorKey', "'neutral'", 'Icon / Text 模式的背景色'],
-                ['solid', 'boolean', 'false', '深底白字模式（step-6 背景 + 白色前景，yellow 例外）'],
+                ['solid', 'boolean', 'false', '深底配對前景模式（step-6 背景；yellow/amber/orange/lime 用深字，其餘白字）'],
                 ['status', "'online' | 'away' | 'busy' | 'offline'", '—', '在線狀態 dot（presence），顯示在右下角；可與 badgeCount（右上）並存'],
                 ['badgeCount', 'number', '—', '未讀 / 通知計數 badge，顯示在右上角（消費 Badge critical，>99 顯示 99+）；可與 status（右下）並存'],
                 ['hoverCard', 'ReactNode', '—', 'hover 時彈出的內容（如 ProfileCard），person avatar 預設必帶'],

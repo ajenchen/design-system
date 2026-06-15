@@ -66,7 +66,7 @@ export const Overview: Story = {
             <tbody>
               {[
                 ['Tabs', '', '', ''],
-                ['  size', "'sm' | 'md' | 'lg'", "'sm'", 'tab 高度 tier(對齊 --tab-height-*);2026-05-17 從 md 改 sm,overlay/chrome 預設'],
+                ['  size', "'sm' | 'md' | 'lg'", "'sm'", 'tab 高度 tier(對齊 --tab-height-*);size 選擇指引詳「設計原則 → 尺寸選擇」'],
                 ['  overflow', "'none' | 'scroll' | 'menu'", "'none'", '水平溢出處理(捲動 / 下拉選單)'],
                 ['  defaultValue / value', 'string', '—', '當前 tab 值(受控 / 非受控)'],
                 ['TabsTrigger', '', '', ''],
@@ -118,7 +118,7 @@ export const Inspector: Story = {
     size: {
       control: 'radio',
       options: ['sm', 'md', 'lg'],
-      description: 'sm★default=overlay / chrome / dense(2026-05-17 從 md 改)/ md=future tier 無 use case / lg=獨立 tabs 取代 chrome header',
+      description: 'sm★default=overlay / chrome / dense / md=future tier 無 use case / lg=獨立 tabs 取代 chrome header',
     },
     overflow: {
       control: 'radio',
@@ -166,13 +166,13 @@ export const Inspector: Story = {
               </>
             )}
           </TabsList>
-          <TabsContent value="overview" className="mt-4 text-body text-fg-secondary">
+          <TabsContent value="overview" className=" text-body text-fg-secondary">
             專案的總覽資訊(KPI / 最近活動 / 團隊成員簡介)
           </TabsContent>
-          <TabsContent value="members" className="mt-4 text-body text-fg-secondary">
+          <TabsContent value="members" className=" text-body text-fg-secondary">
             專案成員列表(3 人待邀請)
           </TabsContent>
-          <TabsContent value="settings" className="mt-4 text-body text-fg-secondary">
+          <TabsContent value="settings" className=" text-body text-fg-secondary">
             專案設定(12 個通知待閱讀)
           </TabsContent>
         </Tabs>
@@ -187,12 +187,12 @@ export const SizeMatrix: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>三種 Size — 對應 `--tab-height-*` token</H3>
-        <Desc>Tabs 有自己的高度 tier(不直接複用 field-height)——tab 需要較高視覺重量,`--tab-height-*` 比 `--field-height-*` 略高。</Desc>
+        <Desc>Tabs 有自己的高度 tier(不直接複用 field-height)——tab 需要較高視覺重量,`--tab-height-*` 比 `--field-height-*` 略高。何時選哪個 size 的完整判斷與世界級引用,詳「設計原則 → 尺寸選擇」。</Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Size</Th><Th>Token</Th><Th>字體</Th><Th>使用場景</Th></tr></thead>
             <tbody>
-              <tr><Td mono>sm ★default</Td><Td mono>--tab-height-sm</Td><Td>text-body</Td><Td>overlay / chrome header / dense(2026-05-17 從 md 改)</Td></tr>
+              <tr><Td mono>sm ★default</Td><Td mono>--tab-height-sm</Td><Td>text-body</Td><Td>overlay / chrome header / dense</Td></tr>
               <tr><Td mono>md</Td><Td mono>--tab-height-md</Td><Td>text-body</Td><Td>future tier — 目前無 recommended use case</Td></tr>
               <tr><Td mono>lg</Td><Td mono>--tab-height-lg</Td><Td>text-body-lg</Td><Td>獨立 tabs 取代 chrome header(像素 = --chrome-header-height)</Td></tr>
             </tbody>

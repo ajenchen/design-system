@@ -22,7 +22,7 @@ TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Desi
 **Layout Family**:**Family 4(Field control layout)**,視覺對齊 Family 1(Menu item)。見 `patterns/element-anatomy/element-anatomy.spec.md`「Field Composition(不在 family 但相關)」段。
 
 **實作基礎**:
-- **Trigger**:`<div role="combobox">` + `fieldWrapperStyles`(視覺 = Input wrapper;**不用 `<button>`** —— 避免內層 `ItemInlineAction` 清除 button 構成 nested-interactive,對齊 Select / Combobox 同 pattern。Radix Popover 在 `asChild` 下會自動 inject Enter / Space 開啟 handler + 正確 aria attributes)
+- **Trigger**:`<div role="combobox">` + `fieldWrapperStyles`(視覺 = Input wrapper;**不用 `<button>`** —— 避免內層 `ItemInlineAction` 清除 button 構成 nested-interactive,對齊 Select / Combobox 同 pattern。Radix PopoverTrigger 在 `asChild` 下只 compose onClick 與 aria / data attributes,**不** inject 任何 onKeyDown——Enter / Space / ↓ 鍵盤開啟由 trigger 顯式 `onKeyDown` 實作,對齊 select.tsx canonical + APG combobox required keys)
 - **Popup**:`<Popover>`(消費 `patterns/overlay-surface/` 的 surface chrome)
 - **Panel 主體**:**自建** 2-3 欄 column picker(時 / 分 / 秒),**不引入第三方 time library**——自建讓 DS own 視覺與交互(對齊 Ant Design 的 Panel 結構 — [react-component/picker TimePanel](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel) + 本 DS token)
 - **世界級對照**:Ant Design TimePicker([source](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel))/ Material DateTimePicker([mui-x DigitalClock](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DigitalClock/DigitalClock.tsx))/ iOS native time picker `@benchmark-unverified`(closed-source)——共同行為:column scroll selector、minuteStep 支援、Now / OK footer、clearable
@@ -39,6 +39,17 @@ TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Desi
 - 世界級對照:Ant Design DatePicker([source](https://github.com/react-component/picker/blob/master/src/PickerInput/SinglePicker.tsx)) / Material MUI Select([source](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Select/Select.js))皆支援 dual-mode;我們選 controlled-only 對齊狀態一致性優先
 
 **若未來要改 dual-mode**:需引入 `useControllableState` helper + 測試 controlled↔uncontrolled switch 場景,屬 major API 擴充,非本 session scope。
+
+### Open-pair rationale:defaultOpen + onOpenChange,無 controlled open(2026-06-12 deep-audit R2 補)
+
+open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開)+ `onOpenChange`(通知 callback),無 controlled `open` prop。
+
+**為什麼**:
+- 已知需求只要「初始開 + 知道何時關」:(1) 視覺快照 — Storybook OpenSnapshot / visual-audit(M15)`defaultOpen` 一行達成;(2) DataTable cell-as-input(`DataTable/cell-registry.tsx`)— `defaultOpen` 1-step 開 panel,`onOpenChange(false)` → cell exit edit mode
+- open 跟 panel draft 生命週期綁死:開啟時以當前 value 重新初始化 draft(time-picker.tsx open effect)/ Now → commit + 關 / OK → 關 / Esc dismiss,全走 `setOpen` wrapper 統一 fire `onOpenChange`。controlled `open` 等於把 draft 初始化 + 關閉時機切一半給 consumer,漏接 → draft 殘留 / cell 卡 edit
+- 世界級對照:Radix Popover([radix-ui.com/primitives/docs/components/popover](https://www.radix-ui.com/primitives/docs/components/popover))/ Ant Select([ant.design/components/select](https://ant.design/components/select))/ MUI Select([mui.com/material-ui/api/select](https://mui.com/material-ui/api/select/))皆提供 controlled `open` — 它們是泛用 primitive / library,必須支援任意 orchestration;本 DS 是 opinionated form control,無真實 consumer 需求前不為「可能性」付受控成本(Rule-of-3)
+
+**若未來要開 controlled open**:同 value 軸引入 `useControllableState` helper + 測 controlled↔uncontrolled switch,屬 major API 擴充,非本 session scope。
 
 ---
 
@@ -69,7 +80,7 @@ TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Desi
   value={time}                   // ISO "HH:mm" or "HH:mm:ss" | null
   onChange={setTime}
   size="sm" | "md" | "lg"        // 對齊 field-height family,default md
-  mode="edit" | "readonly" | "disabled"
+  mode="edit" | "display" | "readonly" | "disabled"   // display = 純展示(DataTable cell 用)
   disabled={boolean}
   error={boolean}
   clearable={boolean}
@@ -146,7 +157,7 @@ Panel 展開後的 column picker 結構:
 - Scrollable list 用 **`<ScrollArea>`**(對齊 DS 跨 OS 一致 overlay 捲軸 canonical);不 raw `overflow-y-auto`
 - **Scroll-into-view**:mount = `behavior:'auto'`(避閃爍),後續 `value` 變更 = `behavior:'smooth'`(對齊 iOS / Material / Ant timepicker idiom)。SSOT 在 `time-columns.tsx` `TimeColumn` useEffect
 - 每 item **`h-field-sm`(28px @ md / 32px @ lg)對齊 DatePicker date cell**(跨 picker 視覺一致)
-- Panel 容器高 `h-[216px]`(含 footer);TimeColumns 為 `flex-1 min-h-0`,實際可捲動 list 高 ≈ 216 − footer 40 = **~176px**(約可見 6 個 item)
+- Panel 容器高 `h-[216px]`(含 footer);TimeColumns 為 `flex-1 min-h-0`,實際可捲動 list 高 = 216 − footer 實高(Button sm 28px + `py-tight` 12px×2 + border-t 1px ≈ 53px @ md)≈ **~163px**(約可見 5-6 個 item)
 
 ### Panel 寬度(固定容器寬,隨 showSeconds 切換)
 
@@ -174,6 +185,7 @@ Panel 展開後的 column picker 結構:
 | 按鍵 | 行為 |
 |------|------|
 | 點 trigger | 開 Panel |
+| Enter / Space / ↓(focus 在 trigger)| 開 Panel(APG combobox required keys,trigger 顯式 `onKeyDown`)|
 | Esc | 關 Panel(不確認) |
 | Tab | 焦點在 column 間移動 |
 | ↑ / ↓ | 欄內上下選(每次移動即 commit,無 highlight 中間態) |
@@ -241,6 +253,13 @@ trigger 的互動狀態(focus / invalid / disabled / readonly)完全繼承 `../F
 
 ---
 
+## 常見誤解
+
+- 「OK(確定)鈕才 commit value」→ 錯;每次欄位選取**當下即 commit**(eager commit),OK 只關 Panel(見「驗證時機」)
+- 「時間範圍要等內建 Range」→ 用兩個 `<TimePicker>` 並列組合即可(見「為何無 Range(MVP)」)
+- 「value 可傳 Date object」→ 不可;家族統一 ISO time string(見「Value 格式」)
+- 「selected 該用藍底」→ panel 是「列表選中」語意走 `bg-neutral-selected`,藍底是 DatePicker date cell 的「最終選定」語意(見「欄內 item 狀態」)
+
 ## 禁止事項
 
 - ❌ 不要在 TimePicker 內部直接顯示日期——那是 DatePicker 的語義
@@ -257,6 +276,7 @@ trigger 的互動狀態(focus / invalid / disabled / readonly)完全繼承 `../F
 - **Loading**:TimePicker 為 sync UI(time math 在 client),無 loading state。極端 case(後端 disabled-times list)應由 consumer 先 disable trigger 直到 fetch 完成。
 - **Empty(no value)**:`value=null` 為合法 initial state,trigger 顯 placeholder;**未傳 `placeholder` 時 default = 格式遮罩**(`HH:MM`,showSeconds=true 時 `HH:MM:SS`),非固定文案。`null` + Display mode 顯 `—`(em dash + `text-fg-muted`)對齊 Input display empty 慣例。
 - **Empty(disabled all times)**:極端場景(`disabledHours` / `disabledMinutes` 覆蓋全範圍),panel column 全 disabled,鍵盤焦點停留無導覽目標。
+- **Panel 開啟中外部 value 變更**:controlled 單向資料流——欄位選中即時反映新 value,並 scroll-into-view(`behavior:'smooth'`,mount 後的變更;見「Spacing + 結構」的 Scroll-into-view 條)。
 - **Dark mode / density**:走 Field + Popover SSOT 自動 adapt;panel column item 由 MenuItem SSOT 控 density。
 
 ---

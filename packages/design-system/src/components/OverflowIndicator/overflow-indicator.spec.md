@@ -67,6 +67,15 @@ sm / md 跟 Tag 同階（20/24px），lg 對齊 md（尺寸需求一致，不需
 
 ---
 
+## 邊界案例
+
+- **count ≤ 0**:元件自行不渲染(return `null`)——「無溢出」時 consumer 不需條件渲染
+- **大數值**:`+N` 原樣顯示(無 `99+` 縮寫),trigger `min-w` 起步、隨位數自然加寬
+- **極窄容器 / 貼 viewport 邊**:浮層定位與翻邊由 HoverCard(Radix collision)處理,見 `hover-card.spec.md`
+- **已展開時項目變動**:children 變動觸發浮層寬度重新量測(shrink-wrap re-measure)
+
+---
+
 ## 禁止事項
 
 - ❌ 用 Tooltip 取代 HoverCard——溢出內容可能需要互動
@@ -116,4 +125,3 @@ OverflowIndicator 是 **composite**(HoverCard trigger + tag-styled `+N` span + H
 **Focus**:trigger 是 tab stop(keyboard 可達 + focus-visible ring,讓鍵盤使用者也能 focus 開啟 HoverCard 看溢出內容);HoverCard 內展開的可互動內容(如人員 tag / ProfileCard)由各自的內容元件負責 focus 管理。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;HoverCard 內容透過 hover 或 focus 自動顯示(非鍵盤指令觸發)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
-

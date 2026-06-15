@@ -1,5 +1,6 @@
 #!/bin/bash
-# Tests for check_propose_plain_chinese.sh(2026-05-15 → 2026-05-18 升 M34 broad detect)
+# 2026-06-11 repoint:check_propose_plain_chinese.sh 已合併進 check_propose_discipline.sh(prune merge;測試 payload 不變 = 行為等價驗證)
+# Tests for check_propose_discipline.sh(2026-05-15 → 2026-05-18 升 M34 broad detect)
 #
 # Hook 規則:Stop hook,tail transcript 取最後 assistant text。
 # 若 reply 含「決策 prompt」pattern(回 A / → 選 A / 等你拍板 / 一字回 / etc)
@@ -13,7 +14,7 @@
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOOK="$SCRIPT_DIR/../check_propose_plain_chinese.sh"
+HOOK="$SCRIPT_DIR/../check_propose_discipline.sh"
 
 if [ ! -x "$HOOK" ]; then
   echo "FATAL: hook not executable: $HOOK"

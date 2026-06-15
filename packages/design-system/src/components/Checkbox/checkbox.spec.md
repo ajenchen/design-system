@@ -10,6 +10,8 @@ sizes:
   lg:
     when: "touch / prominent CTA / stakeholder-facing surface"
 traits:
+  - hasSizes
+  - hasInteractiveStates
   - isSelectionMulti
 benchmark:
   - Radix Checkbox primitive: github.com/radix-ui/primitives/tree/main/packages/react/checkbox
@@ -90,6 +92,12 @@ Checkbox 和 Radio 是**表單內的選擇控件**，視覺語言完全一致，
 
 - 在 form 裡、旁邊有 submit button / cancel button → **Checkbox**
 - 獨立的 inline control、旁邊沒有 submit 流程 → **Switch**
+- **常見誤解**:「無 submit button 就一定用 Switch」→ 錯。判準是上方三角度(套用時機優先);值仍屬 form 欄位語意(暫存後一併儲存)就用 Checkbox,本 heuristic 只是輔助
+
+### 常見誤解(其餘)
+
+- 只傳 `checked` 不傳 `onCheckedChange` ≠ readonly——那只是值鎖死,仍可 focus / click;readonly 必用 `readOnly` prop(見「Controlled / Uncontrolled API」)
+- `<Field disabled>` cascade 與自身 `disabled` prop 同效(SSOT resolver),不需兩處都傳
 
 ### 情境對照表
 
@@ -129,7 +137,9 @@ Checkbox 和 Radio 是**表單內的選擇控件**，視覺語言完全一致，
 
 ## Label 對齊
 
-Checkbox/Radio 不內建 label。Label 組合使用 `SelectionItem` 元件。
+Checkbox/Radio 控件本體不畫 label——label 由 `SelectionItem` 承載:提供一級 `label` / `description` props 時元件內部自動包 `SelectionItem`(checkbox.tsx,consumer 不手刻);需自訂佈局時才手動組合 `SelectionItem`。
+
+**icon / avatar prefix(2026-06-12 M30 轉發)**:一級 `icon`(LucideIcon)/ `avatar`(AvatarData)props 直接轉發 `SelectionItem` 既有三槽 canonical 的 prefix 槽(互斥;尺寸與 inline/block 對齊規則 SSOT = `selection-item.spec.md`「3-slot 結構」+ selection-item.tsx jsDoc)。RadioGroupItem 同。
 
 對齊機制：
 1. 外層 `<div>` 設 `text-body` / `text-body-lg`（建立 line-height context）
@@ -199,14 +209,16 @@ Checkbox / Radio 在 form 內承載的常常是:
 | 狀態 | 邊框 | 底色 | 指示器 |
 |------|------|------|--------|
 | unchecked | border | surface | 無 |
-| checked | primary | primary | white check |
-| indeterminate | primary | primary | white minus |
-| hover unchecked | neutral-6 | surface | 無 |
-| hover checked | primary-hover | primary-hover | white check |
-| hover indeterminate | primary-hover | primary-hover | white minus |
-| disabled unchecked | 無 | neutral-2 | 無 |
-| disabled checked | 無 | neutral-2 | fg-disabled check |
-| disabled indeterminate | 無 | neutral-2 | fg-disabled minus |
+| checked | primary | primary | on-emphasis check |
+| indeterminate | primary | primary | on-emphasis minus |
+| hover unchecked | border-hover | surface | 無 |
+| hover checked | primary-hover | primary-hover | on-emphasis check |
+| hover indeterminate | primary-hover | primary-hover | on-emphasis minus |
+| disabled unchecked | transparent | bg-disabled | 無 |
+| disabled checked | transparent | bg-disabled | fg-disabled check |
+| disabled indeterminate | transparent | bg-disabled | fg-disabled minus |
+
+(token 名對齊 `checkbox.tsx` cva 真值;表內一律 semantic token,不寫視覺色名)
 
 ### Indeterminate（半選）
 
@@ -214,7 +226,9 @@ Checkbox / Radio 在 form 內承載的常常是:
 
 典型場景：SelectMenu 的「全選」checkbox——當部分選項被勾選時顯示 indeterminate。
 
-Indeterminate 是由父層邏輯控制的狀態，Checkbox 本身不會自動進入 indeterminate——必須明確傳入 `checked="indeterminate"`。
+Indeterminate 是由父層邏輯控制的狀態，Checkbox 本身不會自動進入 indeterminate——必須明確傳入 `checked="indeterminate"`。**常見誤解**:「部分子項已選」不可用 disabled + checked 混搭表達——半選是可互動狀態,disabled 是鎖互動,語意不同。
+
+**狀態切換視覺**(code 真值):unchecked ↔ checked / indeterminate 之間色彩走 `transition-colors` 150ms;Check ↔ Minus 圖示為條件渲染即時 swap,無過渡動畫。
 
 ### Radio
 
@@ -222,10 +236,10 @@ Indeterminate 是由父層邏輯控制的狀態，Checkbox 本身不會自動進
 |------|------|------|--------|
 | unchecked | border | surface | 無 |
 | checked | primary | surface | primary dot |
-| hover unchecked | neutral-6 | surface | 無 |
+| hover unchecked | border-hover | surface | 無 |
 | hover checked | primary-hover | surface | primary-hover dot |
-| disabled unchecked | 無 | neutral-2 | 無 |
-| disabled checked | 無 | neutral-2 | fg-disabled dot |
+| disabled unchecked | transparent | bg-disabled | 無 |
+| disabled checked | transparent | bg-disabled | fg-disabled dot |
 
 ---
 
@@ -235,7 +249,15 @@ Indeterminate 是由父層邏輯控制的狀態，Checkbox 本身不會自動進
 
 - **Uncontrolled**:只傳 `defaultChecked`,DOM 自管 — 適合表單 native submit
 - **Controlled**:傳 `checked` + `onCheckedChange`,React state 主導 — 適合需即時聯動其他欄位
-- **Read-only**:用 `readOnly` prop(不是省略 `onCheckedChange`)。`readOnly` 設 `aria-readonly` / `data-readonly` / `tabIndex=-1` + cva `pointer-events-none`,鎖互動但保留 checked 視覺。注意:只傳 `checked` 而不傳 `onCheckedChange` 僅讓 Radix 把值鎖在 prop(不會更新),控件仍可 focus / click、不會進 disabled state — 那不是 readonly
+- **Read-only**:用 `readOnly` prop(不是省略 `onCheckedChange`)。standalone:`readOnly` 設 `aria-readonly` / `data-readonly` / `tabIndex=-1` + cva `pointer-events-none`,鎖互動但保留 checked 視覺;**Field 內(無 inline label)改渲染 readonly 灰框 + ✓/—**(見上方 mode 段)。注意:只傳 `checked` 而不傳 `onCheckedChange` 僅讓 Radix 把值鎖在 prop(不會更新),控件仍可 focus / click、不會進 disabled state — 那不是 readonly
+
+### `mode` prop(Field mode,正交於 size)
+
+`mode?: 'edit' | 'display' | 'readonly' | 'disabled'`(默認 inherit Field context 或 `'edit'`),對齊 `field-types.ts` FieldMode(完整 4-mode canonical SSOT → `Field/field-controls.spec.md`;本段鏡像 switch.spec.md 同名段):
+- `edit`(預設)— 可勾選的 Checkbox。
+- `display` — **純展示**:渲染 ✓(checked)/ —(其他),非互動、無 input chrome,供 DataTable boolean cell 非編輯態共用。
+- `readonly` — **Field 內(無 inline label)**= `fieldWrapperStyles` readonly 灰框 + ✓/—(與 Input readonly 同一視覺語言,2026-06-12 user 拍板;世界級:Salesforce output ✓ glyph / SAP 靜態文字);**standalone / 有 inline label**(SelectionItem row)= 正常色鎖互動(同下方 Read-only)。
+- `disabled` — 落到真 disabled chrome(`effectiveDisabled`,2026-06-12 修:mode='disabled' 直傳〔如 DataTable disabled cell〕與 `disabled` prop 等效,降色 + 不可 focus)。
 
 CheckboxGroup 是純 layout primitive — **不**持有 group-level selection state(無 `value` / `defaultValue` / `onValueChange`)。每個 `<Checkbox>` child 各自管自己的 `checked` / `defaultChecked` / `onCheckedChange`;CheckboxGroup 只透過 `CheckboxGroupContext` 告知 child「你在 group 裡」(保留各自 label)。
 
@@ -311,7 +333,7 @@ Horizontal 需 `gap-4` 因 row 的 py 不擴散到左右。
 ## 禁止事項
 
 - ❌ Radio 不可單獨使用——必須在 RadioGroup 內
-- ❌ Checkbox 不內建 label——label 組合用 SelectionItem
+- ❌ 不手刻外部 `<label>` 排版——用 `label` prop(內部自動包 SelectionItem)或手動組合 `SelectionItem`
 - ❌ 垂直 CheckboxGroup 加 `gap-y-*` / `space-y-*`——違反 zero-gap canonical
 - ❌ 多選一不用 Checkbox——用 Radio 或 Select
 - ❌ 即時套用的布林開關用 Checkbox——用 Switch（見「與 Switch 的分界」）
@@ -332,7 +354,7 @@ Horizontal 需 `gap-4` 因 row 的 py 不擴散到左右。
 
 **ARIA / Pattern**:繼承 Radix `checkbox` primitive a11y 預設(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/checkbox#accessibility)。
 
-**Focus**:單一 toggle 控件,無 focus trap / restoration(那是 Dialog / Sheet 等浮層容器的行為)。鍵盤聚焦時顯示 visible ring(`focus-visible:ring-2 ring-ring ring-offset-1` per design-system focus-visible canonical)。
+**Focus**:單一 toggle 控件,無 focus trap / restoration(那是 Dialog / Sheet 等浮層容器的行為);聚焦中被切 disabled 時由瀏覽器原生 drop focus(native disabled button 行為),不另行管理。鍵盤聚焦時顯示 visible ring(`focus-visible:ring-2 ring-ring ring-offset-1` per design-system focus-visible canonical)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
@@ -340,5 +362,11 @@ Horizontal 需 `gap-4` 因 row 的 py 不擴散到左右。
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `combobox.spec.md`
+- `field-control-group.spec.md`
 - `menu-item.spec.md`
+- `radio-group.spec.md`
 - `segmented-control.spec.md`
+- `select.spec.md`
+- `selection-item.spec.md`
+- `switch.spec.md`

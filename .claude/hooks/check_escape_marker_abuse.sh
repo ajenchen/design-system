@@ -84,14 +84,28 @@ EOF
   exit 2
 fi
 
+# ── Sanctioned portal 檔 allowlist(2026-06-11 R2 held-item #10)──────────────
+# AllDsComponents.stories.tsx 是 documented DS proxy portal(檔頭 @anatomy-exempt +
+# @consumer-catalog-allow per 2026-05-27 M31 codex synthesis + @layout-space-magic-ok
+# dev-artifact 豁免)— 3 個 marker 各帶 rationale 是它的 sanctioned 常態,數量 gate
+# (≥3 distinct)對它必誤擋 = hook-vs-hook 張力。只豁免數量 gate;justification gate
+# (空理由 BLOCK)上方已跑完照常生效,真保護不削弱。
+IS_SANCTIONED_PORTAL=0
+case "$FILE" in
+  *apps/*/src/AllDsComponents.stories.tsx) IS_SANCTIONED_PORTAL=1 ;;
+esac
+
 # ── 數量 gate(≥3 distinct / ≥5 total）— 僅 consumer(DS source 有大量 legit exception,只走上方 justification gate）──
+# 2026-06-11 R2 Phase B(codex b3 抓縫):portal 無限豁免會放走「第 4、5 個新增 marker」——
+# 改為提高閾值(portal ≥6 / 一般 ≥3)保留 ceiling,justification gate 不變。
+if [ "$IS_SANCTIONED_PORTAL" -eq 1 ]; then DISTINCT_CAP=6; else DISTINCT_CAP=3; fi
 if [ "$IS_CONSUMER" -eq 1 ]; then
   # 2026-05-31 廣化 MARKER_RE(M7/M34:spec wording broad「任何 escape marker」→ hook regex 不該 narrow 只 16 種):
   # @<x>-allow 家族用廣義 [a-z][a-z-]*-allow 自動納管(免每次補 enum drift)+ 非 -allow markers 顯式列。
   MARKER_RE='@([a-z][a-z-]*-allow|benchmark-unverified(-blanket)?|template-customized|anatomy-exempt(-next)?|overlay-open-skip|layout-space-magic-ok|propose-cite-skip|story-(trait|split)-rationale)'
   MARKERS_FOUND=$(echo "$CONTENT" | grep -oE "$MARKER_RE" | sort -u)
   # 2026-05-30 fix(test-surfaced):空 MARKERS_FOUND 時 grep -c 印 "0" 已 exit 1,原 `|| echo 0`
-  # 會再 append 一個 "0" → "0\n0" → 下方 `[ -ge 3 ]` integer-expression error。改 `|| true` 不重複。
+  # 會再 append 一個 "0" → "0\n0" → 下方 `[ -ge "$DISTINCT_CAP" ]` integer-expression error。改 `|| true` 不重複。
   DISTINCT_COUNT=$(echo "$MARKERS_FOUND" | grep -c . || true)
   [ -z "$DISTINCT_COUNT" ] && DISTINCT_COUNT=0
   TOTAL_COUNT=$(echo "$CONTENT" | grep -oE "$MARKER_RE" | wc -l | tr -d ' ')

@@ -212,9 +212,9 @@ export const Overview = {
             <tbody>
               {[
                 ['size', "'sm'|'md'|'lg'", "'md'", '控件尺寸（sm = md = 16px，lg = 20px）'],
-                ['checked', 'boolean', '—', '受控模式的選取狀態'],
+                ['checked', "boolean | 'indeterminate'", '—', '受控模式的選取狀態(Radix CheckedState,含 indeterminate)'],
                 ['defaultChecked', 'boolean', 'false', '非受控模式的初始選取狀態'],
-                ['onCheckedChange', '(checked: boolean) => void', '—', '選取狀態變更 callback'],
+                ['onCheckedChange', "(checked: boolean | 'indeterminate') => void", '—', '選取狀態變更 callback'],
                 ['disabled', 'boolean', 'false', '禁止互動'],
                 ['required', 'boolean', 'false', '必填標記'],
                 ['name', 'string', '—', '表單欄位名稱'],
@@ -578,8 +578,8 @@ export const StateBehavior = {
 
       {/* Horizontal Group */}
       <div className="flex flex-col gap-3">
-        <span className="text-caption font-medium text-fg-secondary">水平排列 — Item 之間 gap-6（24px）</span>
-        <div className="flex gap-6 border border-dashed border-divider rounded-md p-2">
+        <span className="text-caption font-medium text-fg-secondary">水平排列 — Item 之間 gap-4（16px）</span>
+        <div className="flex gap-4 border border-dashed border-divider rounded-md p-2">
           <SelectionItem control={<Checkbox id="hg-a" />} label="Email" htmlFor="hg-a" />
           <SelectionItem control={<Checkbox id="hg-b" />} label="SMS" htmlFor="hg-b" />
           <SelectionItem control={<Checkbox id="hg-c" />} label="Push" htmlFor="hg-c" />

@@ -171,7 +171,7 @@ export const ColorMatrix: Story = {
         <H3>四種 mode / state × 色彩 Token</H3>
         <Desc>
           Textarea 作為 Field Control,mode 規則對齊 Input 但 readonly 呈現不同
-          (Textarea readonly 保留 padding,用 bg-disabled 底色標示閱讀區;Input readonly 是緊湊底色)。Error border 跟其他
+          (Textarea readonly 保留 padding,用 bg-readonly 底色標示閱讀區;Input readonly 是緊湊底色)。Error border 跟其他
           Field Controls 共用 `--error` 語意色。
         </Desc>
         <div className="overflow-x-auto mb-4">
@@ -209,7 +209,7 @@ export const ColorMatrix: Story = {
               </tr>
               <tr>
                 <Td mono>readonly</Td>
-                <Td><TokenCell token="--bg-disabled" display="bg-disabled(填色標示閱讀區)" /></Td>
+                <Td><TokenCell token="--bg-readonly" display="bg-readonly(填色標示閱讀區)" /></Td>
                 <Td>透明（無可見邊框，靠填色 + padding 區隔）</Td>
                 <Td><TokenCell token="--foreground" display="foreground" /></Td>
                 <Td>—</Td>
@@ -217,7 +217,7 @@ export const ColorMatrix: Story = {
               <tr>
                 <Td mono>disabled</Td>
                 <Td><TokenCell token="--bg-disabled" display="bg-disabled" /></Td>
-                <Td><TokenCell token="--border" display="border" /></Td>
+                <Td>透明（無可見邊框，靠填色區隔）</Td>
                 <Td><TokenCell token="--fg-disabled" display="fg-disabled" /></Td>
                 <Td><TokenCell token="--fg-disabled" display="fg-disabled" /></Td>
               </tr>

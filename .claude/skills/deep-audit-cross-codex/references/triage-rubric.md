@@ -31,7 +31,7 @@
 
 本檔曾把這幾項抄成舊的 4-Q(漏最關鍵的 Q0)+ 指向已刪檔 = 漂移實證;一律以主檔為準,改一處不會漏改別處:
 
-- **中文人話 propose format + 禁用 jargon 對照表** → SSOT `.claude/memory/feedback_propose_discipline.md`(hook `check_propose_plain_chinese.sh` 機械強制)
+- **中文人話 propose format + 禁用 jargon 對照表** → SSOT `.claude/memory/feedback_propose_discipline.md`(hook `check_propose_discipline.sh(r1,2026-06-11 merge)` 機械強制)
 - **Propose 前必過 7-Q gate**(Q0 先驗「問題是否真存在」/ Q1 cite / Q1' DS canonical 優先 / Q2 SSOT consume / Q3 Rule-of-3 / Q4 下游吸收 / Q5 issue 100% mapped)→ SSOT `.claude/skills/propose-options/SKILL.md`(hook `check_propose_pre_grep_verify.sh` 機械強制 Q0);M18 為 meta anchor
 - **Non-SSOT autonomous 7 軸 optimize 操作清單** → `phase-a-workflow.md` A.3;SSOT `CLAUDE.md` `# 自主執行 canonical`(檔案大小上限以該主檔為準,本檔不重述數字)
 

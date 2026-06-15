@@ -33,7 +33,7 @@ const COLOR_MAP: Record<ModeKey, Partial<Record<StateKey, ColorSpec>>> = {
     disabled: { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent',     icon: '--fg-disabled' },
   },
   readonly: {
-    default:  { bg: '--bg-disabled', text: '--foreground',  border: 'transparent',     icon: '--fg-muted' },
+    default:  { bg: '--bg-readonly', text: '--foreground',  border: 'transparent',     icon: '--fg-muted' },
   },
   disabled: {
     default:  { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent',     icon: '--fg-disabled' },
@@ -57,7 +57,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
 
 const MODE_DESC: Record<ModeKey, string> = {
   edit:     'button trigger + Calendar icon — bg-surface + border + hover/focus 回饋,點擊開啟 Calendar Popover',
-  readonly: '格式化日期文字 — bg-disabled(neutral-2) + 無邊框 + 文字正常色',
+  readonly: '格式化日期文字 — bg-readonly(neutral-2) + 無邊框 + 文字正常色',
   disabled: '格式化日期文字 — bg-disabled(neutral-2) + 無邊框 + 文字灰化',
 }
 
@@ -172,7 +172,7 @@ export const Overview = {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <H3>結構（Anatomy）</H3>
-          <Desc>edit 模式：可點擊的觸發列顯示格式化日期文字 + 日曆圖示（固定右側），點任意位置都會展開日期面板。clearable 有值時額外顯示 X 清除按鈕。readonly / disabled 模式：純格式化文字，無圖示。</Desc>
+          <Desc>edit 模式：可點擊的觸發列顯示格式化日期文字 + 日曆圖示（固定右側），點任意位置都會展開日期面板。clearable 有值時額外顯示 X 清除按鈕。readonly / disabled 模式：格式化文字 + Calendar icon（類型身份 indicator；disabled 切 fg-disabled），無 X。</Desc>
         </div>
         <div className="flex gap-8">
           {/* Edit layout */}
@@ -248,7 +248,7 @@ export const Overview = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", '顯示模式；display 為純內容輸出（DataTable cell 用），傳 disabled prop 時以 React prop 覆蓋 mode（resolvedMode）並套 aria-disabled（trigger 為 div role=combobox，非原生 disabled 屬性）'],
+                ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", "顯示模式；display 為純內容輸出（DataTable cell 用）。優先序：顯式 mode prop 永遠最優先，未傳 mode 時 disabled 才升 disabled（useResolvedFieldMode）；disabled 以 aria-disabled 表達（trigger 為 div role=combobox，非原生 disabled 屬性）"],
                 ['error', 'boolean', 'false', '紅色邊框 + aria-invalid，僅 edit 模式生效'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '高度與字體，與 Button 共用 field-height token'],
                 ['value', 'string | null', '—', 'ISO date string（YYYY-MM-DD）'],
@@ -346,7 +346,7 @@ const InspectorInner = () => {
                 { c: Z.pad, l: '左右內距' },
                 ...(isEdit ? [{ c: Z.input, l: 'trigger text' }] : [{ c: Z.input, l: 'formatted text' }]),
                 ...(showClear ? [{ c: Z.action, l: 'X clear' }] : []),
-                ...(isEdit ? [{ c: Z.icon, l: 'Calendar' }] : []),
+                { c: Z.icon, l: 'Calendar' },
               ].map(({ c, l }) => (
                 <span key={l} className="inline-flex items-center gap-1">
                   <span className="w-2.5 h-2.5 rounded-md" style={{ background: c.bg, border: `1px dashed ${c.border}` }} />
@@ -364,12 +364,8 @@ const InspectorInner = () => {
                     <BpZone w={44} color={Z.action} label={`${s.icon}px`} sub="clear" />
                   </>
                 )}
-                {isEdit && (
-                  <>
-                    <BpZone w={32} color={Z.gap} label={s.gapToken} sub={`${s.gap}px`} />
-                    <BpZone w={44} color={Z.icon} label={`${s.icon}px`} sub="Calendar" />
-                  </>
-                )}
+                <BpZone w={32} color={Z.gap} label={s.gapToken} sub={`${s.gap}px`} />
+                <BpZone w={44} color={Z.icon} label={`${s.icon}px`} sub="Calendar" />
                 <BpZone w={44} color={Z.pad} label={s.pxToken} sub={`${s.px}px`} />
               </div>
               <div className="ml-3 flex items-center" style={{ height: 52 }}>
@@ -556,7 +552,7 @@ export const ColorMatrix = {
                 <Td>指示用途（開啟 picker）</Td>
                 <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-muted" size="sm" /><span className="font-mono">--fg-muted</span></span></Td>
                 <Td><span className="text-fg-muted">不變</span></Td>
-                <Td><span className="text-fg-muted">不渲染（disabled 無 Calendar）</span></Td>
+                <Td><span className="inline-flex items-center gap-1"><Swatch value="--fg-disabled" size="sm" /><span className="font-mono">--fg-disabled</span></span></Td>
               </tr>
               <tr>
                 <Td mono>X clear</Td>
@@ -690,7 +686,7 @@ export const StateBehavior = {
               <span className="text-fg-muted text-caption">→</span>
               <DatePicker mode="disabled" value="2026-04-02" className="w-56" />
             </div>
-            <span className="text-[11px] text-fg-muted">左：edit（有 X）→ 中：readonly（無 X，無 Calendar）→ 右：disabled（無 X，無 Calendar，文字灰化）</span>
+            <span className="text-[11px] text-fg-muted">左：edit（有 X）→ 中：readonly（無 X，保留 Calendar）→ 右：disabled（無 X，Calendar 與文字切 fg-disabled）</span>
           </div>
         </div>
 
@@ -705,7 +701,7 @@ export const StateBehavior = {
 
         {/* Format options */}
         <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">格式化 — readonly / disabled / Display 使用 Intl.DateTimeFormat</span>
+          <span className="text-caption font-medium text-fg-secondary">格式化 — 預設 YYYY/MM/DD 直接組；傳 formatOptions / locale 走 Intl.DateTimeFormat</span>
           <div className="overflow-x-auto">
             <table className="border-collapse text-caption">
               <thead><tr><Th>設定</Th><Th>readonly 預覽</Th><Th>Display 預覽</Th></tr></thead>
@@ -850,7 +846,7 @@ export const CalendarTokens = {
                   <tr>
                     <Td>outside month</Td>
                     <Td>弱化字色</Td>
-                    <Td mono>text-fg-disabled</Td>
+                    <Td mono>text-fg-muted</Td>
                     <Td>上下月溢出日期;不套 disabled 灰底圓(outside 只是「非當月」不是「禁選」)</Td>
                   </tr>
                 </tbody>

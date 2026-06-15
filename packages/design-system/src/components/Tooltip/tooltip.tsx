@@ -58,7 +58,7 @@ export const tooltipMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  states: ['default'], // 2026-06-11 R2:Tooltip 浮層本身無互動 state(anatomy rationale L9-12),
   tokens: {
     bg: [],
     fg: [],

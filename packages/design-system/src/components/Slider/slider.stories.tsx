@@ -66,24 +66,8 @@ export const MinMaxStep: Story = {
 }
 
 // @story-trait-rationale: Disabled retired 2026-05-17 per audit Dim 24 —
-//   anatomy.stories.tsx StateBehavior 已 cover disabled state。展示層保留 SizeAlignment + MinMaxStep。
-//   (legacy Disabled body 移到 anatomy StateBehavior demo;若要看 disabled,進 anatomy 頁)
-export const Disabled_REMOVED: Story = {
-  name: '停用狀態（已移至設計規格頁示範）',
-  tags: ['!autodocs', '!dev'],
-  render: () => (
-    <div className="w-[360px] flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <div className="text-caption text-fg-muted">單值 disabled</div>
-        <Slider defaultValue={[60]} disabled />
-      </div>
-      <div className="flex flex-col gap-2">
-        <div className="text-caption text-fg-muted">範圍 disabled</div>
-        <Slider defaultValue={[20, 80]} disabled />
-      </div>
-    </div>
-  ),
-}
+//   anatomy.stories.tsx StateBehavior 已 cover disabled state(單值 + 範圍)。展示層保留 SizeAlignment + MinMaxStep + OnCommit。
+//   2026-06-11:刪除 zombie export `Disabled_REMOVED`,對齊 DS-wide comment-only 退役慣例(deep-audit dim25)。
 
 // ── With live value commit ──────────────────────────────────────────────
 

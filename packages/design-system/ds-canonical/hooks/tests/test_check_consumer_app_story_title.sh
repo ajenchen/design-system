@@ -1,5 +1,6 @@
 #!/bin/bash
-# Tests for check_consumer_app_story_title.sh(P0 BLOCKER,2026-05-28 codified)
+# 2026-06-11 repoint:check_consumer_app_story_title.sh 已合併進 check_consumer_app_invariants.sh(prune merge;測試 payload 不變 = 行為等價驗證)
+# Tests for check_consumer_app_invariants.sh(P0 BLOCKER,2026-05-28 codified)
 #
 # Hook 規則(PreToolUse,Edit|Write|MultiEdit):
 #   Scope: file_path matches `/apps/<name>/**.stories.(tsx|ts|mdx)` (consumer apps only)
@@ -14,7 +15,7 @@
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOOK="$SCRIPT_DIR/../check_consumer_app_story_title.sh"
+HOOK="$SCRIPT_DIR/../check_consumer_app_invariants.sh"
 
 if [ ! -x "$HOOK" ]; then
   echo "FATAL: hook not executable: $HOOK"

@@ -1,5 +1,6 @@
 #!/bin/bash
-# Tests for check_addon_subdir_ship.sh(P0 BLOCKER,2026-05-28 beta.27 anchor)
+# 2026-06-11 repoint:check_addon_subdir_ship.sh 已合併進 check_storybook_addon_packaging.sh(prune merge;測試 payload 不變 = 行為等價驗證)
+# Tests for check_storybook_addon_packaging.sh(P0 BLOCKER,2026-05-28 beta.27 anchor)
 #
 # Hook 規則(PreToolUse,Edit / Write / MultiEdit):
 #   Scope: file_path 命中 /(\.storybook|storybook-config)/addons/<addonName>/<MainFile>.(ts|tsx)$
@@ -22,7 +23,7 @@
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOOK="$SCRIPT_DIR/../check_addon_subdir_ship.sh"
+HOOK="$SCRIPT_DIR/../check_storybook_addon_packaging.sh"
 
 if [ ! -x "$HOOK" ]; then
   echo "FATAL: hook not executable: $HOOK"

@@ -1,6 +1,6 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Folder, FileText, Image, Users, User } from 'lucide-react'
+import { Folder, FileText, Image, Users, User, Pencil, Trash2 } from 'lucide-react'
 import { TreeView, TreeItem } from './tree-view'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
@@ -244,20 +244,20 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td mono>default</Td>
                   <Td>—(transparent)</Td>
-                  <Td><TokenCell token="--foreground" display="foreground(medium)" /></Td>
-                  <Td><TokenCell token="--fg-muted" display="fg-muted" /></Td>
+                  <Td><TokenCell token="--fg-secondary" display="fg-secondary(muted)" /></Td>
+                  <Td>icon 跟 label 同色;chevron <TokenCell token="--fg-muted" display="fg-muted" /></Td>
                 </tr>
                 <tr>
                   <Td mono>hover</Td>
                   <Td><TokenCell token="--neutral-hover" display="neutral-hover" /></Td>
-                  <Td><TokenCell token="--foreground" display="foreground(medium)" /></Td>
                   <Td><TokenCell token="--foreground" display="foreground" /></Td>
+                  <Td>icon 隨 label 變 foreground;chevron 不變(hover chevron 本身才變)</Td>
                 </tr>
                 <tr>
-                  <Td mono>selected</Td>
+                  <Td mono>selected(single)</Td>
                   <Td><TokenCell token="--neutral-selected" display="neutral-selected" /></Td>
-                  <Td><TokenCell token="--foreground" display="foreground(medium)" /></Td>
                   <Td><TokenCell token="--foreground" display="foreground" /></Td>
+                  <Td>icon 隨 label;chevron 不變(multi mode text / bg 皆不變,信號在 checkbox)</Td>
                 </tr>
                 <tr>
                   <Td mono>disabled</Td>
@@ -295,7 +295,7 @@ export const ColorMatrix: Story = {
 }
 
 export const IndentMatrix: Story = {
-  name: '縮排 與 樹狀導引',
+  name: '縮排與樹狀導引',
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
@@ -361,8 +361,24 @@ export const StateBehavior: Story = {
             <TreeView defaultExpandedIds={['eng', 'frontend']}>
               <TreeItem id="eng" label="Engineering" icon={Users}>
                 <TreeItem id="frontend" label="Frontend" icon={Users}>
-                  <TreeItem id="alice" label="Alice" icon={User} />
-                  <TreeItem id="bob" label="Bob" icon={User} />
+                  <TreeItem
+                    id="alice"
+                    label="Alice"
+                    icon={User}
+                    inlineActions={[
+                      { icon: Pencil, label: '重新命名', onClick: () => {} },
+                      { icon: Trash2, label: '刪除', onClick: () => {} },
+                    ]}
+                  />
+                  <TreeItem
+                    id="bob"
+                    label="Bob"
+                    icon={User}
+                    inlineActions={[
+                      { icon: Pencil, label: '重新命名', onClick: () => {} },
+                      { icon: Trash2, label: '刪除', onClick: () => {} },
+                    ]}
+                  />
                 </TreeItem>
               </TreeItem>
             </TreeView>

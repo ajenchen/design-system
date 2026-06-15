@@ -206,7 +206,11 @@
 
   /* Status: Info — 資訊狀態色
      目前指向 blue（與 primary 同源），但語義獨立——如未來 brand 改色，
-     primary 跟著改，info 仍維持「資訊=藍」的通用慣例 */
+     primary 跟著改，info 仍維持「資訊=藍」的通用慣例。
+     ⚠️ 選取控件(Checkbox/Switch/Radio/Calendar selected)的 checked 藍 = --primary 非 --info:
+     選取是「互動操作的 selected state」隨 brand 走(Material 3 CheckboxTokens
+     SelectedContainerColor=Primary / shadcn bg-primary / Ant colorPrimary 同款);
+     --info 只給資訊呈報(Alert/Badge/Toast info)。2026-06-12 codify per user 提問 */
   --info:                 var(--color-blue-6);
   --info-hover:           var(--color-blue-5);
   --info-active:          var(--color-blue-7);
@@ -328,6 +332,7 @@
   --neutral-hover:        var(--color-neutral-1);
   --neutral-active:       var(--color-neutral-2);
   --bg-disabled:          var(--color-neutral-2);
+  --bg-readonly:          var(--color-neutral-2);  /* readonly 鎖定欄位 chrome — 同值但獨立 owner(≠ disabled:可聚焦/選取/提交,僅不可改值);詳 color.spec.md Static Subtle 邊界 */
 
   /* Neutral Interactive — Selected state family
      ─────────────────────────────────────────────────────────────
@@ -515,6 +520,7 @@
   --color-neutral-hover:             var(--neutral-hover);
   --color-neutral-active:            var(--neutral-active);
   --color-disabled:                  var(--bg-disabled);
+  --color-readonly:                  var(--bg-readonly);
 
   /* Neutral Interaction — Selected state family */
   --color-neutral-selected:          var(--neutral-selected);

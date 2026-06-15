@@ -80,8 +80,8 @@ export const Overview: Story = {
           <table className="text-caption border-collapse">
             <thead><tr><Th>區塊</Th><Th>角色</Th><Th>關鍵 CSS</Th></tr></thead>
             <tbody>
-              <tr><Td mono>Carousel</Td><Td>根容器(role=region),掛 Embla ref,提供 context</Td><Td mono>relative · group/carousel</Td></tr>
-              <tr><Td mono>CarouselContent</Td><Td>overflow-hidden 卷軸 + flex 排列 slides</Td><Td mono>overflow-hidden + flex(-ml-4)</Td></tr>
+              <tr><Td mono>Carousel</Td><Td>根容器(role=region),onKeyDownCapture 鍵盤導覽,提供 context</Td><Td mono>relative · group/carousel</Td></tr>
+              <tr><Td mono>CarouselContent</Td><Td>掛 Embla ref 的 overflow-hidden 視窗,內層 flex 排列 slides</Td><Td mono>overflow-hidden + flex(-ml-4)</Td></tr>
               <tr><Td mono>CarouselItem</Td><Td>單張 slide(role=group, aria-roledescription=slide)</Td><Td mono>shrink-0 grow-0 basis-full · pl-4</Td></tr>
               <tr><Td mono>CarouselPrevious</Td><Td>左箭頭,hover-only 顯示</Td><Td mono>absolute left-3 top-1/2 · opacity-0 → hover 100%</Td></tr>
               <tr><Td mono>CarouselNext</Td><Td>右箭頭,hover-only 顯示</Td><Td mono>absolute right-3 top-1/2 · opacity-0 → hover 100%</Td></tr>
@@ -231,7 +231,7 @@ const InspectorInner = () => {
           <div className="flex flex-col gap-1.5 text-[12px] font-mono">
             <div className="flex justify-between"><span className="text-fg-muted">Root</span><span>role="region"</span></div>
             <div className="flex justify-between"><span className="text-fg-muted">Item</span><span>role="group"</span></div>
-            <div className="flex justify-between"><span className="text-fg-muted">Dots</span><span>role="tablist"</span></div>
+            <div className="flex justify-between"><span className="text-fg-muted">Dots</span><span>role="group" + button</span></div>
             <div className="flex justify-between"><span className="text-fg-muted">Keyboard</span><span>ArrowLeft / ArrowRight</span></div>
           </div>
         </div>
@@ -426,7 +426,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>Arrow hover-only 顯示</H3>
         <Desc>
-          預設 opacity-0,父容器 `group-hover/carousel` 時顯示。focus-visible 時強制顯示(鍵盤使用者不 hover)。邊界時(canScrollPrev / Next = false)直接消失,不顯示 disabled 視覺。
+          預設 opacity-0,父容器 `group-hover/carousel` 時顯示。focus-within 時強制顯示(鍵盤 focus 進 arrow,不需 hover)。邊界時(canScrollPrev / Next = false)直接消失,不顯示 disabled 視覺。
         </Desc>
         <div className="max-w-[560px]">
           <Carousel>
@@ -475,7 +475,7 @@ export const StateBehavior: Story = {
             <tbody>
               <tr><Td mono>ArrowLeft / ArrowUp</Td><Td>上一張(horizontal 用 ←,vertical 用 ↑;onKeyDownCapture 於根容器)</Td></tr>
               <tr><Td mono>ArrowRight / ArrowDown</Td><Td>下一張(horizontal 用 →,vertical 用 ↓)</Td></tr>
-              <tr><Td mono>Tab</Td><Td>循序 Tab(sequential Tab)進入 Previous → Next → 每個 Dot</Td></tr>
+              <tr><Td mono>Tab</Td><Td>循序 Tab(sequential Tab)進入 Previous → Next → 每個 Dot;邊界時 disabled 的箭頭自動跳出 Tab 順序</Td></tr>
               <tr><Td mono>Enter / Space</Td><Td>觸發當前 focus 的 arrow / dot</Td></tr>
             </tbody>
           </table>
@@ -510,7 +510,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `carousel.spec.md` 「A11y 預設」段。摘要:\n\n  ARIA  :\n\n- 根容器 `role=\"region\"` + `aria-roledescription=\"carousel\"`\n- 每個 `CarouselItem` `role=\"group\"` + `aria-roledescription=\"slide\"`\n- Arrow 為 DS Button,帶 `aria-label`(「上一張」/「下一張」),邊界時 `disabled`\n- Dots 容器 `role=\"tablist\"` + `aria-label`;每個 dot `role=\"tab\"` + `aria-selected={...}` + `aria-label=\"跳至第 N 張\"`\n\n  Keyboard 行為  :\n\n- ←/→(horizontal)或 ↑/↓(vertical) — 上一張 / 下一張(鍵盤方向對齊內容捲動方向;根容器 `onKeyDownCapture`,`preventDefault` 避免頁面捲動)\n- Tab — 循序 Tab(sequential Tab)進入 Previous → Next → 每個 Dot(每個控制項各為獨立 tab stop)\n- Enter / Space — 觸發當前 focus 的 arrow / dot(原生 `<button>`)\n\n  Focus  :arrow 預設 `opacity-0`,`focus-within` / `focus-visible` 時強制顯示(鍵盤使用者不 hover,焦點必可見);dot focus-visible 走 ring token(`ring-2 ring-ring ring-offset-2`)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;不靠滑鼠即可完整切張與跳張。"}</p>
+      <p className="whitespace-pre-line">{"詳 `carousel.spec.md` 「A11y 預設」段。摘要(對應 carousel.tsx 實作):\n\n  ARIA  :\n\n- 根容器 `role=\"region\"` + `aria-roledescription=\"carousel\"` + `aria-label=\"輪播\"`(consumer 可覆寫)\n- 每個 `CarouselItem` `role=\"group\"` + `aria-roledescription=\"slide\"`\n- Arrow 為 DS Button,`aria-label` 預設「上一張」/「下一張」(prop 可覆寫供 i18n);邊界時 native `disabled`,wrapper 同時 `opacity-0` + `pointer-events-none`——整顆按鈕從畫面與 Tab 順序消失,不顯示 disabled 樣式\n- Dots 容器 `role=\"group\"` + `aria-label=\"輪播指示器\"`;每個 dot 為原生 `<button>` + `aria-label=\"跳至第 N 張\"`,目前這張的 dot `aria-current=\"true\"`(對齊 FileViewer filmstrip canonical;為何不用 tabs 模型詳 spec「A11y 預設」)\n\n  Keyboard 行為  :\n\n- ←/→(horizontal)或 ↑/↓(vertical) — 上一張 / 下一張(鍵盤方向對齊內容捲動方向;根容器 `onKeyDownCapture` + `preventDefault` 避免頁面捲動)。根容器本身無 tabIndex,方向鍵在焦點位於 carousel 內任一控制項(arrow / dot)時生效\n- Tab — 各控制項為原生 `<button>`,各自獨立 tab stop;邊界時 disabled 的箭頭不可聚焦,自動跳出 Tab 順序\n- Enter / Space — 觸發當前 focus 的 arrow / dot(原生 `<button>` 預設行為)\n\n  Focus  :arrow wrapper 預設 `opacity-0`,`focus-within` 時強制顯示(鍵盤 focus 進 arrow,不需 hover,焦點必可見),Button 自身 focus-visible ring(`ring-2 ring-ring ring-offset-1`);dot focus-visible 走 ring token(`ring-2 ring-ring ring-offset-2`)。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;不靠滑鼠即可完整切張與跳張。"}</p>
     </div>
   ),
 }

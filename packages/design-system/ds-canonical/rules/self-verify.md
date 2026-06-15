@@ -40,7 +40,7 @@
 ## Anti-pattern(永久 ban)
 
 - ❌「我感覺修好了」沒跑 tsc / invariant 就 claim done
-- ❌ 動 export/型別 surface(interface/discriminated union/新 export)只跑 `tsc -b` 就宣告 deploy-safe —— tsc -b 不 emit declaration,漏 TS4023「cannot be named」,Netlify `build:dts` 才炸;必跑 `npm run build:lib`(2026-06-05 Badge union 連掛 3 Netlify build,tsc -b 全綠騙過)
+- ❌ 動 export/型別 surface 只跑 `tsc -b` 就宣告 deploy-safe(必 `npm run build:lib`,詳上方 Post-edit row — 單一住所)
 - ❌ 動 spec / src 沒先 grep owner anchor(M29 違反)
 - ❌ 改 hook 沒跑 syntax check + smoke test
 - ❌「下個 session 補」defer 可做的 verify(M33 違反)

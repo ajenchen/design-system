@@ -27,7 +27,7 @@ benchmark:
 
 Textarea 是**多行文字**的輸入與顯示元件——Input 的多行版本。格式化邏輯為 identity（value → value）。
 
-**Layout Family**：Family 4（Field control）— multi-line variant。**繼承** Family 4 的 token（字體 / padding / border / state 色彩），但**結構簡化為單一 native `<textarea>`**（edit 態裸 `<textarea>`、display 態裸 `<div>`）——無 fieldWrapper composite、無 startIcon / content / endAction 多 slot anatomy（見下方「與 Input 的差異」L64 與「禁止事項」L113）。高度可隨 rows / resize-y 擴展、不受 `--field-height-*` 約束。
+**Layout Family**：Family 4（Field control）— multi-line variant。**繼承** Family 4 的 token（字體 / padding / border / state 色彩），但**結構簡化為單一 native `<textarea>`**（edit 態裸 `<textarea>`、display 態裸 `<div>`）——無 fieldWrapper composite、無 startIcon / content / endAction 多 slot anatomy（見下方「與 Input 的差異」表與「禁止事項」）。高度可隨 rows / resize-y 擴展、不受 `--field-height-*` 約束。
 
 **實作基礎**：native `<textarea>` + 橋接 DS token，無 external primitive base。shadcn 同類做法。
 
@@ -103,7 +103,13 @@ native `<textarea>` 自帶 `value` / `defaultValue` / `onChange` triplet — Tex
 
 ### Readonly 特例
 
-不同於 Input 的 readonly（同高度、緊湊底色），Textarea readonly **保留 padding，並填上 bg-disabled 底色標示閱讀區**——多行內容需要明確的閱讀區域邊界訊號,沒有這塊填色區會無法與周圍純文字內容區分。
+不同於 Input 的 readonly（同高度、緊湊底色），`variant="default"` 的 Textarea readonly **保留 padding，並填上 `bg-readonly` 底色標示閱讀區**——多行內容需要明確的閱讀區域邊界訊號,沒有這塊填色區會無法與周圍純文字內容區分。`variant="bare"` readonly 維持透明無填色;`variant="naked"`(cell-as-input substrate)readonly 透明且 `!px-0 !py-0`——兩者的邊界訊號由 host context(toolbar / table cell)提供(`textarea.tsx` compoundVariants,intentional divergence)。
+
+### 邊界案例
+
+- **空值**:edit 態顯示 placeholder;display 態 value 為空(`null` / `''`)時渲染 `—`(`EMPTY_DISPLAY`)+ `text-fg-muted`
+- **極長文字**:edit 態高度固定於 rows / resize 結果,內容超出時 native 內部捲動;display 態 `<div>` 隨內容增高(`whitespace-pre-wrap break-words`),無截斷
+- **resize 上限**:`resize-y` 預設無上限;需限制時 consumer 傳 `max-h-*` className(native resize 受 max-height 約束)
 
 ---
 
@@ -113,7 +119,7 @@ native `<textarea>` 自帶 `value` / `defaultValue` / `onChange` triplet — Tex
 - ❌ Textarea 裡放 startIcon / endAction——textarea 慣例無 icon 框內
 - ❌ Textarea 啟用水平 resize（`resize-x` / `resize: both`）——破壞 form 佈局
 - ❌ 把 Textarea 當 code editor 用（無 syntax highlight / auto-complete）
-- ❌ Readonly 時移除底色填充 + padding——多行內容需要閱讀區域邊界訊號
+- ❌ `variant="default"` readonly 移除底色填充 + padding——多行內容需要閱讀區域邊界訊號(bare / naked 變體本就透明、邊界由 host context 提供,不在此限)
 
 ---
 
@@ -148,3 +154,9 @@ Textarea 是 **Field Controls family 的多行變體**,共用規則由 `../Field
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `field-controls.spec.md`
+- `input.spec.md`

@@ -191,13 +191,13 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "$LAST_USER_LINE"
     # ── Sub-check M31 Phase-A-first(2026-05-29 codify per user「codex 只是 second opinion」)──
     # 偵測:本 turn 讀 codex reply 但無 prior Claude-solo audit trace(Agent/Explore dispatch OR ≥5 Grep/Read)
     # → codex 被當 primary 而非 second opinion = 違反 M31 dual-track「Claude 必先自己 Phase A」
-    # SSOT: memory/feedback_codex_collab_2026_05_23_directives.md(Sub-rule 3C/3D)
+    # SSOT: memory/feedback_codex_dual_track_synthesizer.md(Sub-rule 3C/3D)
     M31_PRIOR_AUDIT=$(echo "$THIS_TURN_FULL" | grep -cE '"(Agent|Task)"|subagent_type|Explore' 2>/dev/null)
     M31_PRIOR_AUDIT=${M31_PRIOR_AUDIT:-0}
     M31_GREP_READ=$(echo "$THIS_TURN_FULL" | grep -cE '"name":"(Grep|Read)"' 2>/dev/null)
     M31_GREP_READ=${M31_GREP_READ:-0}
     if [ "$M31_PRIOR_AUDIT" -eq 0 ] && [ "$M31_GREP_READ" -lt 5 ]; then
-      WARNINGS="${WARNINGS}\n  • M31 Phase-A-first risk:本 turn 啟 codex 但無 Claude-solo audit trace(Explore/Agent dispatch OR ≥5 Grep/Read)。codex = second opinion,Claude 必先自己跑完整 Phase A 深度 audit 才 defer codex(跑幾個 script ≠ Phase A)。per memory/feedback_codex_collab_2026_05_23_directives.md(Sub-rule 3C/3D)。Anchor 2026-05-29:run test+tsc 就 launch codex 跳過自己 audit,漏 3 個只有 Claude 抓到的 P0。"
+      WARNINGS="${WARNINGS}\n  • M31 Phase-A-first risk:本 turn 啟 codex 但無 Claude-solo audit trace(Explore/Agent dispatch OR ≥5 Grep/Read)。codex = second opinion,Claude 必先自己跑完整 Phase A 深度 audit 才 defer codex(跑幾個 script ≠ Phase A)。per memory/feedback_codex_dual_track_synthesizer.md(Sub-rule 3C/3D)。Anchor 2026-05-29:run test+tsc 就 launch codex 跳過自己 audit,漏 3 個只有 Claude 抓到的 P0。"
     fi
 
     # ── Sub-check: 設計決策 implementation 沒 user approval(2026-05-09 user-authorized)──

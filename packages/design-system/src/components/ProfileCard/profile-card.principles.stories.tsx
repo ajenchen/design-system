@@ -6,8 +6,6 @@ import { MessageCircle, Phone, ChevronDown } from 'lucide-react'
 import { ProfileCard } from './profile-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Button } from '@/design-system/components/Button/button'
-import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/design-system/components/HoverCard/hover-card'
-import { HOVER_DELAY_RICH_MS, HOVER_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
 
 const meta: Meta = {
   title: 'Design System/Internal/ProfileCard/設計原則',
@@ -43,30 +41,31 @@ const sampleActions = (
   </>
 )
 
+// Canonical path(avatar.spec.md DS-wide rule;抄 profile-card.stories.tsx ProfileCardHover baseline):
+// 透過 <Avatar hoverCard={...}> — Avatar 內部處理 HoverCardTrigger / Content / keyboard focus /
+// 浮層 chrome,不在 story 層手刻 HoverCard 三件套(避免 raw button UA chrome 污染視覺)。
 function InlineHoverExample() {
   return (
-    <HoverCard openDelay={HOVER_DELAY_RICH_MS} closeDelay={HOVER_DELAY_CLOSE_MS}>
-      <span className="inline-flex items-center gap-2">
-        <HoverCardTrigger asChild>
-          <button type="button" className="cursor-pointer">
-            <Avatar src={AVATAR_URL} alt="Alice" size={32} />
-          </button>
-        </HoverCardTrigger>
-        <span className="text-body">@Alice Chen</span>
-        <span className="text-body text-fg-muted">留言：「這版 spacing 看起來好多了！」</span>
-      </span>
-      <HoverCardContent align="start" className="bg-surface-raised rounded-lg border border-border" style={{ boxShadow: 'var(--elevation-200)' }}>
-        <ProfileCard
-          name="Alice Chen"
-          avatar={{ src: AVATAR_URL, alt: 'Alice' }}
-          subtitle="Product Designer｜D-0042"
-          status="online"
-          actions={sampleActions}
-          defaultFieldValues={{ id: 'YHANAX', employeeNumber: '1234567' }}
-          onViewMore={() => {}}
-        />
-      </HoverCardContent>
-    </HoverCard>
+    <span className="inline-flex items-center gap-2">
+      <Avatar
+        src={AVATAR_URL}
+        alt="Alice"
+        size={32}
+        hoverCard={
+          <ProfileCard
+            name="Alice Chen"
+            avatar={{ src: AVATAR_URL, alt: 'Alice' }}
+            subtitle="Product Designer｜D-0042"
+            status="online"
+            actions={sampleActions}
+            defaultFieldValues={{ id: 'YHANAX', employeeNumber: '1234567' }}
+            onViewMore={() => {}}
+          />
+        }
+      />
+      <span className="text-body">@Alice Chen</span>
+      <span className="text-body text-fg-muted">留言：「這版 spacing 看起來好多了！」</span>
+    </span>
   )
 }
 
@@ -85,7 +84,12 @@ export const UsageGuidance: Story = {
     <div className="flex flex-col gap-12">
       {/* 何時用 — 原 WhenToUse */}
       <div className="prose prose-sm max-w-prose">
-      <p>適用情境見<LinkTo kind="Design System/Internal/ProfileCard/展示" name="Default"><span className="text-primary hover:underline font-medium cursor-pointer">展示頁</span></LinkTo>的真實業務場景範例。</p>
+      <p>適合 ProfileCard 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      <ul className="space-y-1">
+        <li>
+          <LinkTo kind="Design System/Internal/ProfileCard/展示" name="懸停展開 ProfileCard"><span className="text-primary hover:underline font-medium cursor-pointer">懸停留言者 / PR reviewer / 成員列表的頭像,展開人員詳情卡</span></LinkTo>
+        </li>
+      </ul>
       <p>判斷時對照 spec.md「何時用 / 何時不用」段落。</p>
     </div>
 

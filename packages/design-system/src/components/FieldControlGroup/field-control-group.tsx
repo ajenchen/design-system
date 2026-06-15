@@ -116,13 +116,14 @@ FieldControlGroup.displayName = 'FieldControlGroup'
 // Story auto-compile metadata — Phase 4 migration(2026-05-10 #12 task complete)
 // Per scripts/compile-stories.mjs --check。FieldControlGroup is self-contained
 // structural wrapper(border-collapse pattern for Field controls)。
-// **No own sizes** — size prop is cascade-only(passes through to children Field controls,
-// not own visual variants),so sizes:{} matches spec frontmatter (no sizes declared)。
+// **No own sizes** — size prop 目前為 no-op(不傳遞給 children,無 Context Provider /
+// 無 cloneElement;children 尺寸自管,見上方 docblock「Size」段 + spec「FCG `size` prop 目前為 no-op」),
+// so sizes:{} matches spec frontmatter (no sizes declared)。
 export const fieldControlGroupMeta = {
   component: 'FieldControlGroup',
   family: 'self-contained',
   variants: {},
-  sizes: {},  // self-contained wrapper, sizes cascade to children only
+  sizes: {},  // self-contained wrapper;size prop no-op(children 尺寸自管)
   states: ['default', 'children-hover', 'children-focus', 'children-disabled'],
   tokens: {
     bg: [],  // structural wrapper has no own bg

@@ -265,6 +265,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
         <div
           className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, size }), className)}
           data-field-mode={resolvedMode}
+          aria-disabled={resolvedMode === 'disabled' ? true : undefined}
           {...(props as React.HTMLAttributes<HTMLDivElement>)}
         >
           <span
@@ -278,7 +279,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
             }
           </span>
-          {EndIconCmp && (
+          {/* 2026-06-10 類型身份 indicator gate:naked cell 依 showDisplayEndIcon=isEditable(修 disabled cell 漏顯 bug)*/}
+          {EndIconCmp && (variant === 'naked' ? showDisplayEndIcon : true) && (
             <ItemSuffix className="pointer-events-none">
               <EndIconCmp
                 size={iconSize}
@@ -369,7 +371,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
         <PopoverContent className="w-auto p-0" align="start">
           {/* Panel 對齊 ref/timepicker.png:2-3 個 SelectMenu 式欄位並排,分隔線分開。
               Width 依欄數由 TimeColumns 決定:2 欄 w-40 / 3 欄 w-60。
-              Height 由 wrapper 控:216px 預設(~7 items)。
+              Height 由 wrapper 控:216px 預設(扣 footer 後 list 約可見 5-6 items)。
               TimeColumns 本身 h-full,parent 控 height — 讓 DatePicker showTime / Range 可
               用 flex-row items-stretch 自動同 calendar 高。 */}
           <div className="flex flex-col h-[216px]">
@@ -382,7 +384,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               disabled={disabledForColumns}
               // 2026-05-06 v9.1 M25 chain fix:TimeColumns 自然高 = 24 buttons × ~28.7px = 688px
               // 會撐破 parent h-[216px]。flex-1 + min-h-0 讓 TimeColumns 取 parent 剩餘空間
-              // (216 - footer 40 = 176px)→ ScrollArea h-full 才能正確收斂 →
+              // (216 − footer ≈53px ≈ 163px)→ ScrollArea h-full 才能正確收斂 →
               // listbox scrollIntoView 找對 nearest scrollable ancestor(內部 viewport),
               // 不會走到 document body 把 popover 內容推出畫面(user 報「hours 欄空白」根因)。
               className="flex-1 min-h-0"

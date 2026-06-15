@@ -212,18 +212,26 @@ jobs:
       # Renovate weekly 不夠 → DS publish 後 repository_dispatch immediate trigger ds-product-template
       # → fork user 24h 內收到 new beta auto-PR(非 weekly cron)
       - name: Dispatch ds-product-template sync(immediate cross-repo propagation)
+        # 2026-06-11 R2:移除 `|| secrets.GITHUB_TOKEN` 假 fallback —— GITHUB_TOKEN 對 cross-repo
+        # dispatch 必 403(repo-scoped),fallback 形同虛設且掩蓋未設 secret 的真相。改:secret 未設
+        # 即明確 ::warning:: skip(receiver 對雙 event 已 concurrency dedup;另一路 CROSS_REPO_TOKEN
+        # job 與 Dependabot daily 為 fallback)。
         if: startsWith(github.ref, 'refs/tags/v') && success()
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN }}
         run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::PRODUCT_WORKSPACE_DISPATCH_TOKEN 未設 — skip ds-published dispatch(CROSS_REPO_TOKEN job / Dependabot daily 仍 fallback)"
+            exit 0
+          fi
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "Dispatching ds-published event to ds-product-template, version=$VERSION"
           gh api repos/ajenchen/ds-product-template/dispatches \
             -f "event_type=ds-published" \
             -f "client_payload[version]=$VERSION" \
             -f "client_payload[tag]=${{ github.ref_name }}" \
-            || echo "⚠️ dispatch failed (secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN 未設?fork user 仍可 dependabot daily auto-PR)"
+            || echo "::warning::ds-published dispatch failed(token 權限?)— fork user 仍有 Dependabot daily fallback"
 
       # Claude plugin marketplace distribution(Phase 7 — 2026-05-23 ship per real Anthropic spec)
       # Distribution model:**GitHub-direct**(不走 Anthropic public marketplace)

@@ -1,3 +1,7 @@
+/**
+ * @internal — DS-internal 單元(per `.claude/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
+ * 不進 root barrel front-door;由 Checkbox / RadioGroup wrap 消費,end-user app 請用 wrapper 元件。
+ */
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
@@ -9,7 +13,7 @@ import { ICON_SIZE, AVATAR_SIZE } from '@/design-system/patterns/element-anatomy
 // Checkbox 和 RadioGroup 共用的 item 佈局。
 //
 // 結構(item-anatomy.spec.md 4-slot 模型):
-//   [control] [optional prefix(icon|avatar)] [content(label/desc)] [optional suffix]
+//   [control] [optional prefix(icon|avatar)] [content(label/desc)](3-slot,見 spec「定位」)
 //
 // padding 公式：py = (field-height - 1lh) / 2
 //   - 單行時 item 高度 = field-height（對齊同 size 的 Input）
@@ -169,6 +173,8 @@ function ContentSlot({ htmlFor, disabled, label, description, sizeKey, labelClam
     <div className="min-w-0 flex-1">
       <label
         htmlFor={htmlFor}
+        // 2026-06-10 a11y:styled-disabled label 明告 inactive(WCAG 1.4.3 豁免可機判;對齊 FieldLabel 同修;a11y 補強不動 SSOT = AUTO 分權,user verbatim「確保所有的任務你都有做到完美做到完整」)
+        aria-disabled={disabled || undefined}
         className={cn(
           'cursor-pointer block break-words',
           labelClampClass,
@@ -252,7 +258,7 @@ export const selectionItemMeta = {
     lg: {},
   },
   defaultSize: 'md',
-  states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'],
+  states: ['default', 'disabled'], // disabled 是唯一視覺狀態;selected / hover 屬傳入的 control(spec「為何無 ColorMatrix / StateBehavior」)
   tokens: {
     fg: ['text-foreground', 'text-fg-secondary', 'text-fg-disabled'],
   },

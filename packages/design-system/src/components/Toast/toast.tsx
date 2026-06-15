@@ -42,7 +42,7 @@ function ToastInner({
     <Button variant="tertiary" size="xs" onClick={action.onClick}>{action.label}</Button>
   ) : undefined
 
-  // ── Live region 由 outer Toast wrapper 擁有(WAI-ARIA + spec L59-60 canonical) ──
+  // ── Live region 由 outer Toast wrapper 擁有(WAI-ARIA + toast.spec.md「A11y 預設」段 canonical) ──
   // Notice(inner layout)不再帶 role,避免 nested live region。
   // - error / warning → role="alert" + aria-live="assertive"(中斷朗讀)
   // - info / success / neutral → role="status" + aria-live="polite"(空閒朗讀)

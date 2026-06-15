@@ -41,7 +41,7 @@ fi
 cat >&2 <<'EOF'
 🚨 BLOCKER:DS governance plugin 未安裝,不准改 production code(apps/**)。
 
-  沒裝 plugin = 沒有 22 skills + 59 hooks 的設計原則 / SSOT 機械防線
+  沒裝 plugin = 沒有 22 skills + 52 hooks 的設計原則 / SSOT 機械防線
   → AI 會寫出不合規 mock(漏 SidebarTrigger / startIcon / 視覺跑版,2026-05-26 anchor)。
 
   先裝(Claude session 內):

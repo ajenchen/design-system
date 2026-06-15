@@ -29,7 +29,7 @@ cat <<'EOF'
    2. /plugin install design-system@qijenchen-ds
    3. 裝完 restart session(plugin/addon 需 restart 才 apply)
 
-   裝好後拿到:22 skills + 59 hooks + 31 M-rules + 88 audit dims 全套 governance。
+   裝好後拿到:22 skills + 52 hooks + 31 M-rules + 88 audit dims 全套 governance。
    詳 CLAUDE.md「🛑 第 −1 步」。本提醒由 fork 自帶 bootstrap hook 觸發(不依賴 plugin)。
 EOF
 exit 0

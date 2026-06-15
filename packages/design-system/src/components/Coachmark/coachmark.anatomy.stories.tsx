@@ -223,7 +223,7 @@ export const SizeMatrix: Story = {
             <tbody>
               <tr><Td>Popover</Td><Td mono>w-72</Td><Td mono>288px</Td><Td>篩選 / 設定面板,內容短</Td></tr>
               <tr><Td>Coachmark</Td><Td mono>w-80</Td><Td mono>320px</Td><Td>需放 media + 多行 description</Td></tr>
-              <tr><Td>Dialog</Td><Td mono>maxWidth 變動</Td><Td mono>360–720px</Td><Td>modal 內容量級別最大</Td></tr>
+              <tr><Td>Dialog</Td><Td mono>maxWidth 變動</Td><Td mono>400–720px</Td><Td>modal 內容量級別最大</Td></tr>
             </tbody>
           </table>
         </div>

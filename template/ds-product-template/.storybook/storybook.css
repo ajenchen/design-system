@@ -10,4 +10,7 @@
 @import 'tailwindcss';
 @import '@qijenchen/design-system/styles/tokens';
 @source '../node_modules/@qijenchen/design-system/src/**/*.{js,ts,jsx,tsx}';
+/* 2026-06-12 fork-audit:stories 的 doc placeholder(如 `{color}`)會被誤掃成 utility 生成無效 CSS
+   (lightningcss CurlyBracketBlock warning)— stories 不進 consumer bundle,排除治本 + 減 CSS 體積 */
+@source not '../node_modules/@qijenchen/design-system/src/**/*.stories.tsx';
 @source '../apps/**/*.{tsx,ts}';

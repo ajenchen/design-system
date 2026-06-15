@@ -32,7 +32,7 @@
 
 ## 行數預算(Anthropic 對齊)
 
-CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap 800。SKILL ≤ 250 / spec ≤ 300(foundational SSOT 例外 ≤ 800-1200)/ memory **per-file ≤ 100 lines** + **MEMORY.md index ≤ 20 entries**(soft 18 / hard 20,session-start hook 攔)。Hooks **26 soft / 60 hard**(SSOT = `session_start_governance_check.sh` Check 7 threshold logic,2026-05-27 升 50→55→60 per codex M31 P0 hooks + baseline + primitive-misuse 3 new hooks)。動態值見 `scripts/sync-governance-counters.mjs` 跑出為準(snapshot 2026-05-30:**31 M-rules / 88 audit dims / 59 hooks** — 數字僅供 sanity check,真值以 script 輸出為準避 drift)。
+CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap 800。SKILL ≤ 250 / spec ≤ 300(foundational SSOT 例外 ≤ 800-1200)/ memory **per-file ≤ 100 lines** + **MEMORY.md index ≤ 20 entries**(soft 18 / hard 20,session-start hook 攔)。Hooks **26 soft / 60 hard**(SSOT = `session_start_governance_check.sh` Check 7 threshold logic,2026-05-27 升 50→55→60 per codex M31 P0 hooks + baseline + primitive-misuse 3 new hooks)。動態值見 `scripts/sync-governance-counters.mjs` 跑出為準(snapshot 2026-06-11:**31 M-rules / 88 audit dims / 52 hooks** — 數字僅供 sanity check,真值以 script 輸出為準避 drift)。
 
 ## Anti-bloat L1-L3
 
@@ -154,7 +154,7 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 **Trigger phrase auto-pipeline**(M19 升級):「依原則自主」/「不需問」/「馬不停蹄」/「全部做完」/「自動」→ 進 autonomous mode,僅 SSOT-affecting UI/UX 停下 ASK。
 
 **2026-05-23 永久 reinforcement(user verbatim,hook 機械強制)**:
-- **Triple-verify before propose**(M18 Q0 universal gate):propose / 列 option / 發現「問題」(含 codex / deep audit findings)前必 inline 跑 (1) grep DS-wide (2) Read spec.md / tsx (3) 對照 canonical exception。三題全過才 propose;任一 NO → 自動撤回不煩 user。Hook `check_propose_pre_grep_verify.sh`。Anchor:2026-05-18 Sheet/inline-action/SurfaceBody false positive、2026-05-23 Badge `text-[10px]` 誤判為 drift(spec L161-167 documented exception)
+- **Triple-verify before propose**(M18 Q0 universal gate):propose / 列 option / 發現「問題」(含 codex / deep audit findings)前必 inline 跑 (1) grep DS-wide (2) Read spec.md / tsx (3) 對照 canonical exception。三題全過才 propose;任一 NO → 自動撤回不煩 user。Hook `check_propose_pre_grep_verify.sh`。Anchor:2026-05-18 Sheet/inline-action/SurfaceBody false positive、2026-05-23 Badge `text-[10px]` 誤判為 drift(badge.spec.md「字體例外」段 documented exception)
 - **SSOT auto-sync invariant**:M-rule count / hook count / dim count / npm scope / version / plugin name 等跨 file 數字禁 hardcode 多處;SSOT in `session_start_governance_check.sh` Check 7 / `meta-patterns.md` / `design-system-audit/SKILL.md` / `package.json` / `.claude-plugin/plugin.json`;其他 file reference 或 `scripts/sync-governance-counters.mjs` 機械對齊,drift 偵測 auto fix
 
 # 遇不確定時的協議
@@ -176,15 +176,15 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 | 清 unused imports 後 runtime | tsc 不充分,需 storybook |
 | shadcn compat alias 回流 | dark mode 不聯動 |
 | `asChild ? Slot : Native` 內部 JSX 仍渲染多 children | React.Children.only runtime fail — Slot 規範 children 必為單 element,內部 `{icon}{label}{badge}` 多 expression 變 array → throw。asChild 分支 render 只傳 consumer child;tsc/build 過,story 打開才炸 |
-| `tsc -b` 不 emit declaration | 漏 TS4023「cannot be named」;改 export/型別 surface 的 deploy-safety 必跑 `npm run build:lib`(= Netlify build:dts emit .d.ts),tsc -b 全綠會騙過(2026-06-05 Badge union 連掛 3 Netlify build)|
-| `rsync -a` 對「等長 + 同秒」檔靜默跳過 | `-a` 用 size+mtime quick-check;clone 與 build 同秒寫、版本字串等長(`^…beta.NN` 恆 130B)→ 判定沒變不複製 → ship stale。必 `--checksum` + 寫後 fail-closed 斷言(2026-06-07 mirror beta.56-58 連環 ship stale package.json,3-agent 對抗調查 + 本地 `-a` vs `-ac` 復現才抓到)|
+| `tsc -b` 不 emit declaration | TS4023 漏抓;型別 surface 改動必 `npm run build:lib`(詳 `.claude/rules/self-verify.md` Post-edit)|
+| 工具 flag 沉默陷阱:`rsync -a` 等長同秒靜默跳過(必 `--checksum`+fail-closed,詳 build-published-template-mirror.mjs 檔頭)/ `rg` 黏寫 `-rn` 的 `-r`=replace 輸出變假字串(`-n`/`-l` 永不黏 `r`,2026-06-12 兩次答錯 anchor)| 寫後斷言 + flag 分開寫 |
+| DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 → 跑版;hook `check_orphan_ds_css.sh` 機械攔(2026-05-27 anchor)|
 
 新 bug → 歸 Meta-Pattern OR 本表 1 行;> 10 條 = 漏寫,**評估 meta-merge 既有 M-rule 而非無腦新增**(meta-patterns velocity ≤ 3/quarter,單 M-rule 必吸收 ≥ 3 prior bugs)。
 
 # 專案 Stack
 
-Vite + React + TypeScript + Tailwind v4 + shadcn/ui + Storybook + 自訂 Design Token。必要檔案:`index.html` / `src/main.tsx` / `src/globals.css` / `vite.config.ts` / `package.json` / `tsconfig.json`。
-完整路徑 + Token 系統 → `packages/design-system/src/tokens/README.md`(charter)— Phase 1 後 DS 內化在 npm workspace。
+Vite + React + TypeScript + Tailwind v4 + shadcn/ui + Storybook + 自訂 Design Token(必要檔案:`index.html` / `src/main.tsx` / `src/globals.css` / `vite.config.ts` / `package.json` / `tsconfig.json`);完整路徑 + Token 系統 → `packages/design-system/src/tokens/README.md`(charter)— Phase 1 後 DS 內化在 npm workspace。
 
 # Path-scoped rules(2026 Anthropic 推薦)
 

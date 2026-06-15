@@ -13,8 +13,15 @@
  *   @import '@qijenchen/design-system/styles/base';
  */
 
-/* lucide 全域 stroke width */
-.lucide {
+/* lucide 全域 stroke width — DS-wide icon 預設 1.75(比 lucide 原廠 2 輕一階的整體風格)。
+   ⚠️ 必須限定 [stroke-width="2"](= 沒被 component 顯式覆寫的 icon):
+   2026-06-12 修 — 原寫法 `.lucide { ... }` 無條件蓋掉所有 explicit strokeWidth prop
+   (CSS class > SVG presentation attribute),導致 Checkbox/Switch/Steps/PeoplePicker
+   的小尺寸 stroke 補償(strokeWidth 3 / 2.5)自 2026-04-08 起從未真正渲染
+   (rendered DOM 驗證:attr=3 但 computed=1.75px,實畫 0.80px vs 設計 1.50px)。
+   限定後:lucide 預設(attr=2)→ 1.75;顯式 prop(3 / 2.5 / 1.75)→ attribute 直接生效。
+   補償值 SSOT → .claude/references/ui-dev-rules.md「小尺寸 icon stroke 補償」 */
+.lucide[stroke-width='2'] {
   stroke-width: 1.75;
 }
 

@@ -1,8 +1,13 @@
+/**
+ * @internal — DS-internal 單元(per `.claude/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
+ * 不進 root barrel front-door;由 Select / Combobox wrap 消費,end-user app 請用 wrapper 元件。
+ */
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
 import { Plus, Search } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useControllable } from '@/design-system/hooks/use-controllable'
 import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
 import { Command, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator } from '@/design-system/components/Command/command'
@@ -150,9 +155,15 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   className,
 }, _ref) {
   // ── State ──
-  const [internalOpen, setInternalOpen] = React.useState(defaultOpen ?? false)
-  const open = controlledOpen ?? internalOpen
-  const setOpen = controlledOnOpenChange ?? setInternalOpen
+  // 2026-06-11 R2 bug fix:原手寫 `setOpen = controlledOnOpenChange ?? setInternalOpen` 在
+  // uncontrolled + onOpenChange listener 場景(傳 onOpenChange 不傳 open)會讓 listener 蓋掉
+  // internal setter → menu 開不了。改消費 DS 既有 useControllable(select.tsx 同 canonical):
+  // uncontrolled 時 internal state 為準、onOpenChange 僅通知。
+  const [open, setOpen] = useControllable<boolean>({
+    value: controlledOpen,
+    defaultValue: defaultOpen ?? false,
+    onChange: controlledOnOpenChange,
+  })
   const [search, setSearch] = React.useState('')
 
   // ── Value helpers ──

@@ -78,11 +78,13 @@ detect_mode() {
 完整跑,**no sample / no escape**(對齊 `feedback_audit_full_sweep_not_sample.md` + `check_audit_sample_escape.sh` BLOCKER)。
 每 dim sub-agent prompt 必含「DS-wide 全盤,禁 sample top N」。
 
+**DETERMINISTIC dim 必驗「mode 真的有跑」(2026-06-11 加)**:script exit 0 ≠ 該 dim 宣稱的模式真的執行了 — 必看輸出證據(per-mode 計數 / cell label / scenario 數)確認 flag 真生效。Anchor:dim 51 `--matrix` flag 接受後 `MATRIX_CELLS` 定義但 main loop 從未消費(dead code),跑出來是無 matrix 的普通 scan + exit 0 = 連續假綠;另 cell 清單含 Storybook 不認識的 globals(hc/rtl)= 注入後靜默 fallback = 假覆蓋。兩層都要驗:flag→行為、行為→真值。
+
 **PURE-JUDGMENT dim 真跑證據強制(2026-05-30 generalize,user 問「包括所有 infra 稽核?」)**:judgment dim(無 deterministic script / write-time hook 兜底者,含 infra 62/66/68/72 fork-onboarding/runtime/API-surface)report 必逐 dim show「DS-wide N files scanned + file:line findings / 或『0 after 全掃』」真跑證據,**禁只 mention dim 號**。report-validator `check_audit_post_report_validator.sh` Validator G 機械強制(evidence marker 數 < judgment dim 數 = BLOCKER)。DETERMINISTIC(22)+ HOOK(42)dim 由 CI / write-time hook 兜底(含 22/26 infra dim),不在此 risk。
 
 **🚨 反抽樣鐵律 — 「機械涵蓋」必先 breadth-verify(2026-06-05 user 抓 story-title 又抽樣,verbatim「這個問題已經問你一百次了結果你還是抽樣」)**:把某 judgment dim 標為「DETERMINISTIC/HOOK 已兜底、不在 judgment risk」**= 一種抽樣**,除非該 gate 的偵測廣度被**證明**對齊 canonical。**強制兩步,缺一即視同抽樣**:
 1. **Breadth-test**:對該 gate 注入一個「已知違規」樣本 → 跑 gate → 確認被抓(exit 1)→ revert。沒通過 = 該 gate **不算**涵蓋該 dim,退回 PURE-JUDGMENT 跑完整枚舉。
-2. **完整枚舉 + partition-review**(judgment dim sample-proof 跑法):deterministic 腳本枚舉**全部單元**(eg. `extract-story-names.mjs` 全 926 name)→ 機械 auto-pass 明確合規者 → 剩餘 candidate **切 N chunk,每 chunk agent 審它每一個**(chunk 互斥涵蓋全集 → 每單元剛好審一次,數學上不可能漏)。**禁** agent 自選 top N。
+2. **完整枚舉 + partition-review**(judgment dim sample-proof 跑法):deterministic 腳本枚舉**全部單元**(eg. `gen-ds-story-manifest.mjs` 全 926 name)→ 機械 auto-pass 明確合規者 → 剩餘 candidate **切 N chunk,每 chunk agent 審它每一個**(chunk 互斥涵蓋全集 → 每單元剛好審一次,數學上不可能漏)。**禁** agent 自選 top N。
 - **錨例**:dim 40/41/43 被當「story-quality:check 已涵蓋」排除 NO-SAMPLE → 但 gate 有 detection gap(只抓 100%-English,漏中英混雜)+ scope gap(漏 anatomy/principles)→ 放過 84 違規,還回報「0 violations」假綠燈。修:gate 補 `name_mixed_english`(Dim 41b)+ 全 storyFiles scope + breadth-verified(注入 `Hover Compact 測試` 確認抓到)。對齊 M7 子規則 M34「spec broad + hook narrow = gap 必補」。
 
 ### A.1b — Claim-vs-code + docblock + spec-internal adversarial verification(MANDATORY,NO-SAMPLE,per-component)
@@ -98,6 +100,7 @@ detect_mode() {
    **+ 2026-06-04 補兩 lens(Dim 15 cross-doc 明文涵蓋但前期被「散文 skim」漏的同 class failure;非抽樣、非無覆蓋,是「有 dim 淺跑」)**:
    - **(a) 元件 `.tsx` 自己的 docblock / inline 註解 vs 同檔 code**:A.1b 原設計把 `.tsx` 當「真相來源」去驗別人(story/spec),**從不反驗它自己的註解** → docblock claim 的 padding / typography mode / hover / 行為 vs code 真實值,逐行比。
    - **(b) spec 段落間描述性一致(spec-internal cross-section)**:A.1b 原驗 claim-vs-code,**不驗 spec-段-vs-段** → 同一 spec 內 Mode 表 typography 標籤 / padding 值 / gap 值 / surface 行為,跨 section 不可打架。
+   - **(c) token / pattern spec 的 cross-file consumer-list claims(2026-06-11 加)**:token spec 常有「消費者清單」宣稱**其他檔案**的行為(如 motion.spec「hover-card.tsx Provider 預設 override 為 --hover-delay-rich」)— per-component A.1b 只驗「該元件自己的 spec vs 自己的 code」,**cross-file 宣稱兩邊都不在誰的 claim set 裡 = 系統性盲區**。每個 token / pattern spec 的消費者清單必逐檔開 code 驗。Anchor:2026-06-11 hover delay 雙 drift(HoverCard 沒接 token / OverflowIndicator 誤 tier)連續多輪 deep-audit 漏抓,正是此 lens 缺;現另有 `scripts/audit-motion-delay-invariants.mjs` 機械凍結 motion 域。
    - **Anchor**:2026-06-04 user 抓「deep-audit 多次沒發現」—— tsx docblock(`閱讀模式 1.5` / `hover:bg-neutral-hover`,自 2026-04-23 stale)+ spec Mode 表 typography stale,全是 Dim 15 該抓、卻被當散文掃漏。納入此強制 adversarial(Validator F per-component 覆蓋率閘一併保證),不再可 skim。
 3. **「自上次 audit 無 code 改動」≠ 可跳過** —— content 宣稱可在 code 沒變下就是假的(前期正是用此藉口跳過 = 違規)。
 4. output per-component:`{component, claimsVerified: N, falseClaims: [{fileLine, 宣稱, 真實 code 行為}]}`。
@@ -113,7 +116,7 @@ detect_mode() {
 
 **SSOT-UI/UX propose 必過 gate + 中文人話 format**(SSOT 在主檔,不在此重述以免多處抄寫漂移):
 - **Propose 前必過 7-Q gate**(Q0 先驗「問題是否真存在」/ Q1 cite / Q1' DS canonical 優先 / Q2 SSOT consume / Q3 Rule-of-3 / Q4 下游吸收 / Q5 issue 100% mapped)→ SSOT `.claude/skills/propose-options/SKILL.md`(hook `check_propose_pre_grep_verify.sh` 機械強制 Q0);M18 為 meta anchor
-- **中文人話 propose format + 禁用 jargon 對照表** → SSOT `.claude/memory/feedback_propose_discipline.md`(hook `check_propose_plain_chinese.sh` 機械強制)
+- **中文人話 propose format + 禁用 jargon 對照表** → SSOT `.claude/memory/feedback_propose_discipline.md`(hook `check_propose_discipline.sh(r1,2026-06-11 merge)` 機械強制)
 - **Triage 分流 + format 細則** → `references/triage-rubric.md`
 
 ### A.3 — Autonomous batch execute(non-SSOT,M33 anti-defer)
@@ -178,6 +181,10 @@ Brief 必含 4 段(完整 template SSOT → `references/phase-b-codex-brief.md`,
 
 ## Phase C — Final report + commit + push trigger gate
 
+### C.0a — Governance prune auto-chain(2026-06-11 user verbatim 糾正 codify)
+
+Deep-audit 收尾**必自動跑** `/knowledge-prune` deep — **前提鐵律:確保產出不打折、以產出完美為前提**(quality-first,= knowledge-prune SKILL 2026-06-02 核心前提:只清真冗餘提升 signal,每一條真實 invariant / 機械防線必完整保留,retire 前必確認保護已被別處覆蓋;2026-06-11 user verbatim「請確保有確保產出不打折且產出完美,且未來也必須要確保產出不打折以產出為完美的前提跑 knowledge prune deep」)。governance headroom / session-start trigger 命中時 scope 聚焦觸發點,否則 quarterly scope。**禁問 user「要不要跑」**(anchor:2026-06-11 user verbatim「deep audit cross codex不是會自動…跑 knowledge prune deep?為何每次都要問我是否要跑?」)。分權不變:P0+P1(表達層對齊/清 stale)AUTO 執行;**P2(retire 機械防線 / 動 canonical)整理成候選表進 C.1 拍板清單** — user 只拍板 P2 內容,不拍板「跑不跑」。
+
 ### C.0 — 收斂判準(rerun stop gate,2026-06-01)
 
 決定「**再 rerun 嗎**」必過此 gate:deep-audit = LLM 對抗式 non-deterministic + 高假陽性,**追零 = 跑步機 + 誘發 regression**。STOP 判準 = **某輪 adversarial 二次驗證後真 material/regression = 0(只剩 marginal + false-positive)**——不追零、不過早收。收斂靠 CI gate + 寫入時紀律,非 audit loop。三分類表 + 「改一處看 N 處」→ `references/triage-rubric.md`「收斂判準」。
@@ -202,6 +209,8 @@ Brief 必含 4 段(完整 template SSOT → `references/phase-b-codex-brief.md`,
 
 ### 待你拍板(中文人話)
 <決策 1-N(per A.2 format)>
+
+**每題必附「SSOT 理由:」一句**(= 為何這是「會影響 SSOT 的 UI/UX 增刪改」:新 API contract / 改 canonical 語意 / 新視覺 design language,三類之一,具體指出)。**寫不出 SSOT 理由 = 該題不是拍板題,移回 AUTO 自己做**(2026-06-11 user 第 3 次糾正 codify:bug fix / a11y 對齊 W3C / 對齊 spec 既有意圖 / story 內容 / 治理 / 補 rationale 文件 / dead code 清除,全部 AUTO 不問)。Hook \`check_audit_post_report_validator.sh\` Validator H 機械強制。
 
 ### Verify artifact
 - tsc PASS / invariant PASS / content-quality PASS / visual probe PASS

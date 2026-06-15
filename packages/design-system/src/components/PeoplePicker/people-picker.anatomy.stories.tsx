@@ -97,12 +97,14 @@ export const Overview: Story = {
 export const Inspector: Story = {
   name: '元件檢閱器',
   parameters: {
-    docs: { description: { story: '右側 Controls 切 props 即時 render,取代 Figma inspect。切 `mode` 看 edit / display / readonly / disabled 視覺差異,切 `size` 對照 field-height tier。' } },
+    docs: { description: { story: '右側 Controls 切 props 即時 render,取代 Figma inspect。切 `mode` 看 edit / display / readonly / disabled 視覺差異,切 `size` 對照 field-height tier,切 `variant` 看 default / bare / naked chrome 差異。' } },
   },
   args: {
     mode: 'edit',
+    variant: 'default',
     size: 'md',
     disabled: false,
+    showDisplayEndIcon: false,
     value: SAMPLE_PEOPLE[0],
     people: SAMPLE_PEOPLE,
     searchPlaceholder: '搜尋指派對象…',
@@ -110,8 +112,10 @@ export const Inspector: Story = {
   },
   argTypes: {
     mode: { control: 'radio', options: ['edit', 'display', 'readonly', 'disabled'] },
+    variant: { control: 'radio', options: ['default', 'bare', 'naked'] },
     size: { control: 'radio', options: ['sm', 'md', 'lg'] },
     disabled: { control: 'boolean' },
+    showDisplayEndIcon: { control: 'boolean' },
     searchPlaceholder: { control: 'text' },
     emptyText: { control: 'text' },
   },
@@ -130,6 +134,11 @@ export const ModeMatrix: Story = {
         <H3>edit(預設)</H3>
         <Desc>Field 樣式 + 展開觸發 Popover + Command 搜尋。</Desc>
         <PeoplePicker people={SAMPLE_PEOPLE} value={SAMPLE_PEOPLE[0]} onChange={() => {}} />
+      </div>
+      <div>
+        <H3>display</H3>
+        <Desc>裸 PersonDisplay(Avatar + Name),無 field chrome——DataTable cell / detail panel 純顯示。</Desc>
+        <PeoplePicker mode="display" people={SAMPLE_PEOPLE} value={SAMPLE_PEOPLE[0]} />
       </div>
       <div>
         <H3>readonly</H3>
@@ -236,7 +245,7 @@ export const ColorMatrix: Story = {
               </tr>
               <tr>
                 <Td mono>readonly</Td>
-                <Td><TokenCell token="--bg-disabled" display="bg-disabled(鎖定底)" /></Td>
+                <Td><TokenCell token="--bg-readonly" display="bg-readonly(鎖定底)" /></Td>
                 <Td>—(no border)</Td>
                 <Td><TokenCell token="--foreground" /></Td>
               </tr>

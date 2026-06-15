@@ -138,7 +138,7 @@ const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => vo
 
 const PropRow = ({ label, dot, children }: { label: string; dot?: string; children: React.ReactNode }) => (
   <div className="flex items-start gap-3 py-2 border-b border-divider last:border-b-0">
-    <span className="text-[11px] text-fg-muted font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
+    <span className="text-[11px] text-fg-secondary font-medium w-[72px] shrink-0 pt-0.5 flex items-center gap-1.5">
       {dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
       {label}
     </span>
@@ -188,31 +188,31 @@ export const Overview = {
         <div className="flex gap-8">
           {/* Text only */}
           <div className="flex flex-col gap-2 items-start">
-            <span className="text-[11px] text-fg-muted font-medium">純文字</span>
+            <span className="text-[11px] text-fg-secondary font-medium">純文字</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-1">
               {[{ name: 'label', color: 'success' }].map((s) => (
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
-                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
+                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color}-text)` }}>{s.name}</span>
               ))}
             </div>
           </div>
           {/* With icon + dismiss */}
           <div className="flex flex-col gap-2 items-start">
-            <span className="text-[11px] text-fg-muted font-medium">icon + dismiss</span>
+            <span className="text-[11px] text-fg-secondary font-medium">icon + dismiss</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-1">
               {[{ name: 'icon', color: 'info' }, { name: 'icon', color: 'success' }, { name: 'icon', color: 'error' }].map((s) => (
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
-                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
+                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color}-text)` }}>{s.name}</span>
               ))}
             </div>
           </div>
           {/* With avatar */}
           <div className="flex flex-col gap-2 items-start">
-            <span className="text-[11px] text-fg-muted font-medium">avatar</span>
+            <span className="text-[11px] text-fg-secondary font-medium">avatar</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-1">
               {[{ name: 'avatar', color: 'warning' }, { name: 'avatar', color: 'success' }].map((s) => (
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
-                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
+                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color}-text)` }}>{s.name}</span>
               ))}
             </div>
           </div>
@@ -239,7 +239,7 @@ export const Overview = {
       {/* Props table */}
       <div className="flex flex-col gap-3">
         <H3>Props</H3>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Tag 變體對照表(可橫向捲動)">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
@@ -249,7 +249,7 @@ export const Overview = {
                 ['icon', 'LucideIcon', '—', '左側 icon，統一 16px。與 avatar 互斥'],
                 ['avatar', 'ReactNode', '—', '左側 avatar（16px 圓形）。與 icon 互斥'],
                 ['onRemove', '() => void', '—', '可移除——Tag 自動渲染 remove 按鈕'],
-                ['solid', 'boolean', 'false', '深底白字模式（step-6 背景 + 白色前景，yellow 例外）'],
+                ['solid', 'boolean', 'false', '深底配對前景模式（step-6 背景；yellow/amber/orange/lime 用深字，其餘白字）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -280,33 +280,33 @@ const InspectorInner = () => {
       {/* Controls */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-fg-muted w-16 shrink-0">Variant</span>
+          <span className="text-[11px] text-fg-secondary w-16 shrink-0">Variant</span>
           <div className="flex flex-wrap gap-1.5">
             {VARIANTS.map((v) => <Tab key={v} active={variant === v} onClick={() => setVariant(v)}>{v}</Tab>)}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-fg-muted w-16 shrink-0">Size</span>
+          <span className="text-[11px] text-fg-secondary w-16 shrink-0">Size</span>
           <div className="flex gap-1.5">
             {SIZES.map((sz) => <Tab key={sz} active={size === sz} onClick={() => setSize(sz)}>{sz}</Tab>)}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-fg-muted w-16 shrink-0">Icon</span>
+          <span className="text-[11px] text-fg-secondary w-16 shrink-0">Icon</span>
           <div className="flex gap-1.5">
             <Tab active={!withIcon} onClick={() => setWithIcon(false)}>off</Tab>
             <Tab active={withIcon} onClick={() => setWithIcon(true)}>on</Tab>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-fg-muted w-16 shrink-0">Dismiss</span>
+          <span className="text-[11px] text-fg-secondary w-16 shrink-0">Dismiss</span>
           <div className="flex gap-1.5">
             <Tab active={!withDismiss} onClick={() => setWithDismiss(false)}>off</Tab>
             <Tab active={withDismiss} onClick={() => setWithDismiss(true)}>on</Tab>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-fg-muted w-16 shrink-0">Solid</span>
+          <span className="text-[11px] text-fg-secondary w-16 shrink-0">Solid</span>
           <div className="flex gap-1.5">
             <Tab active={!solid} onClick={() => setSolid(false)}>off</Tab>
             <Tab active={solid} onClick={() => setSolid(true)}>on</Tab>
@@ -658,7 +658,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"本元件為純視覺呈現,無 keyboard / ARIA role / focus state 需求。Consumer 包 Tag 進互動容器(Button / Card / Link)時 a11y 由容器決定。"}</p>
+      <p className="whitespace-pre-line">{"靜態 Tag(無 onRemove)為純視覺呈現,無 keyboard / ARIA role / focus state;包進互動容器(Button / Card / Link)時 a11y 由容器決定。傳 onRemove 時 Tag 渲染原生 remove button(aria-label「移除 {label}」):Tab 可聚焦、Enter/Space 觸發移除、focus-visible 帶 outline ring(詳 spec「A11y 預設」)。"}</p>
     </div>
   ),
 }

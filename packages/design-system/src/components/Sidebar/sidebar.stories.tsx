@@ -324,6 +324,22 @@ export const MixedContent: Story = {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+                  {/* Disabled favorite(已封存專案):host disabled 時 inline actions
+                      整組不渲染——hover 也不出現 ⋯/＋,不可操作就不暗示可操作
+                      (sidebar.spec.md「Host disabled 時」+ inline-action.spec.md 宿主 disabled 規則)。 */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      startIcon={Folder}
+                      disabled
+                      actionsReveal="hover"
+                      inlineActions={[
+                        { icon: MoreVertical, label: '更多動作', onClick: () => {} },
+                        { icon: Plus, label: '新增', onClick: () => {} },
+                      ]}
+                    >
+                      delta（已封存）
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

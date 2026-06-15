@@ -4,7 +4,8 @@
 //     ShapeMatrix(3.)已對照 shape × 色彩 token + consumer 場景。HoverCard
 //     content 走深色 tooltip,色彩繼承 tooltip token。
 //   StateBehavior N/A — Trigger pill 本身無 hover 視覺(hover 觸發 HoverCard
-//     展開即是 state 表達);無 focus / active / disabled。openDelay /
+//     展開即是 state 表達);無 active / disabled;focus-visible ring 屬 a11y
+//     focusable 修正(2026-06-01 #13,見 Accessibility story)非獨立視覺軸。openDelay /
 //     closeDelay 等行為已於 Inspector 展示。HoverCard 內容互動由消費的內容
 //     元件(Avatar / Tag)各自負責。
 import type { Meta, StoryObj } from '@storybook/react'
@@ -321,7 +322,7 @@ function OverflowInspector() {
               </tr>
               <tr>
                 <Td mono>openDelay</Td>
-                <Td mono>700ms（HOVER_DELAY_RICH_MS）</Td>
+                <Td mono>500ms（HOVER_DELAY_PLAIN_MS）</Td>
               </tr>
               <tr>
                 <Td mono>closeDelay</Td>
@@ -542,7 +543,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"摘要:\n\n  ARIA / Pattern  :對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 pattern。\n\n  互動行為  :\n\n  +N trigger 是 passive 計數 span（cursor-default，無 tabIndex / role / Enter handler）。HoverCard 在 hover 或 trigger 取得 focus 時自動展開，沒有「按 Enter 開選單」的鍵盤指令，也沒有 click 切換。\n\n  Focus  :trigger 本身不是 tab stop；HoverCard 內展開的可互動內容（人員 tag / ProfileCard）由各自內容元件負責 focus 管理。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation；HoverCard 內容透過 hover 或 focus 自動顯示（非鍵盤指令觸發）。WCAG AA contrast ≥ 4.5:1（text）/ 3:1（UI）。"}</p>
+      <p className="whitespace-pre-line">{"摘要:\n\n  ARIA / Pattern  :對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 pattern。\n\n  互動行為  :\n\n  +N trigger 是 keyboard-focusable 計數 span（tabIndex=0 + role=\"button\" + aria-haspopup=\"dialog\"；2026-06-01 #13 由純 passive 改 focusable，修 WCAG 2.1.1 違反）。HoverCard 在 hover 或 trigger 取得 focus 時自動展開，沒有「按 Enter 開選單」的鍵盤指令，也沒有 click 切換。\n\n  Focus  :trigger 是 tab stop（focus-visible ring，鍵盤使用者可 focus 開啟 HoverCard 看溢出內容）；HoverCard 內展開的可互動內容（人員 tag / ProfileCard）由各自內容元件負責 focus 管理。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation；HoverCard 內容透過 hover 或 focus 自動顯示（非鍵盤指令觸發）。WCAG AA contrast ≥ 4.5:1（text）/ 3:1（UI）。"}</p>
     </div>
   ),
 }

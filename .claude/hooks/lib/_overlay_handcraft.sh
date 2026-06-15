@@ -72,11 +72,21 @@ fi
 # 同 root cause(自刻 SelectionItem 包 Checkbox 而非消費 CheckboxGroup primitive)。
 # 對齊 checkbox.spec.md「群組模式(CheckboxGroup)」canonical line 225:
 #   多選 Checkbox 必包 <CheckboxGroup>(zero-gap canonical + Context 隔離 + a11y group)。
+# 2026-06-11 R2 held-item #11 context-narrow:檔案級 count 對下列合法 context 永久 FP(8 檔噪音實測):
+#   - DataTable / TreeView:row-selection canonical(selection column / tree 多選 = row anatomy,非 form 群組)
+#   - Checkbox / SelectionControl:selection primitive 自家 stories 示範 raw usage(同 Check 4 menu-primitive skip idiom)
+#   - Field:單顆 Checkbox 包 <Field> = field-controls Family 4 canonical(field.stories.tsx 每顆獨立非群組)
+#   - patterns/element-anatomy:row anatomy SSOT reference 本身
+# 消費者 / 其他 DS 元件自刻多選 list 仍照抓(原 bug class 保護不變)。
+# 2026-06-11 R2 Phase B(codex b3 抓縫):原 DataTable/TreeView 整目錄 skip 會放走目錄內
+# 其他檔(如 filter-panel)的真違規 — 縮到 row-selection canonical 真實檔名 + 自家 primitive。
+IS_CB_LEGIT_CONTEXT=$(echo "$FILE_PATH" | grep -cE '(components/DataTable/data-table\.tsx|components/TreeView/tree-view\.tsx|components/(Checkbox|SelectionControl|Field)/|patterns/element-anatomy/)' | head -1)
+IS_CB_LEGIT_CONTEXT=${IS_CB_LEGIT_CONTEXT:-0}
 CB_COUNT=$(grep -c '<Checkbox\b' "$FILE_PATH" 2>/dev/null | head -1 || echo 0)
 CBG_COUNT=$(grep -c '<CheckboxGroup\b' "$FILE_PATH" 2>/dev/null | head -1 || echo 0)
 CB_COUNT=${CB_COUNT:-0}
 CBG_COUNT=${CBG_COUNT:-0}
-if [ "$CB_COUNT" -ge 2 ] && [ "$CBG_COUNT" -eq 0 ]; then
+if [ "$CB_COUNT" -ge 2 ] && [ "$CBG_COUNT" -eq 0 ] && [ "$IS_CB_LEGIT_CONTEXT" -eq 0 ]; then
   CB_HITS=$(grep -nE '<Checkbox\b' "$FILE_PATH" 2>/dev/null | head -3)
   # allowlist: same-line or prev-line has // checkbox-group-allow:
   if ! grep -qE 'checkbox-group-allow:' "$FILE_PATH" 2>/dev/null; then
@@ -87,13 +97,24 @@ fi
 # ── Check 5: Same-row consistency 違反(同 row 混 ItemInlineActionButton + Button iconOnly)──
 # 對齊 inline-action.spec.md L152「Same-row consistency rule:同 action row 所有 icon action 必同一類」。
 # Pattern:同檔出現 <ItemInlineActionButton 與 <Button.*iconOnly,且非 menu primitive impl(menu 內 Button 為合法 chrome)。
-HAS_INLINE=$(grep -c '<ItemInlineActionButton' "$FILE_PATH" 2>/dev/null | head -1)
-HAS_BTN_ICON=$(grep -cE '<Button[^>]*iconOnly' "$FILE_PATH" 2>/dev/null | head -1)
+# 2026-06-11 R2 held-item #11 context-narrow(檔案級 co-occurrence 對合法 chrome-vs-row 永久 FP):
+#   (1) strip 純註解行再 count(對齊 check_story_invariants.sh R9 idiom;file-viewer.tsx 註解 cite
+#       `<Button iconOnly dismiss />` 字樣誤觸;不 strip 行內 // 避免 mutilate https:// URL)
+#   (2) 排除 dismiss Button:chrome corner close X = dismiss canonical(inline-action.spec.md
+#       「Dismiss canonical — X close only」+ button.spec.md「Dismiss 視覺類」),跟 row inline action
+#       永遠不同 row → 非 same-row mixing(把 hook 自述 escape note「chrome corner 跟 row 不同 row 可分開」codify 進 detection)
+#   (3) patterns/element-anatomy/ skip:anatomy SSOT 本身示範兩類對照(含刻意 ❌ mixed 教學例)
+# 真 same-row mixing(非 dismiss 的 iconOnly Button 與 InlineAction 同檔)仍照抓,保護不削弱。
+IS_ANATOMY_SSOT=$(echo "$FILE_PATH" | grep -c 'patterns/element-anatomy/' | head -1)
+IS_ANATOMY_SSOT=${IS_ANATOMY_SSOT:-0}
+OH5_SRC=$(grep -vE '^[[:space:]]*(//|\*|/\*|\{/\*)' "$FILE_PATH" 2>/dev/null)
+HAS_INLINE=$(printf '%s\n' "$OH5_SRC" | grep -c '<ItemInlineActionButton' 2>/dev/null | head -1)
+HAS_BTN_ICON=$(printf '%s\n' "$OH5_SRC" | grep -E '<Button[^>]*iconOnly' 2>/dev/null | grep -cv 'dismiss' | head -1)
 HAS_INLINE=${HAS_INLINE:-0}
 HAS_BTN_ICON=${HAS_BTN_ICON:-0}
 IS_MENU_PRIMITIVE2=$(echo "$FILE_PATH" | grep -cE '(DropdownMenu|SelectMenu|Combobox|Menu)/.*\.tsx$' | head -1)
 IS_MENU_PRIMITIVE2=${IS_MENU_PRIMITIVE2:-0}
-if [ "$HAS_INLINE" -ge 1 ] && [ "$HAS_BTN_ICON" -ge 1 ] && [ "$IS_MENU_PRIMITIVE2" -eq 0 ]; then
+if [ "$HAS_INLINE" -ge 1 ] && [ "$HAS_BTN_ICON" -ge 1 ] && [ "$IS_MENU_PRIMITIVE2" -eq 0 ] && [ "$IS_ANATOMY_SSOT" -eq 0 ]; then
   if ! grep -qE 'same-row-mixed-allow:' "$FILE_PATH" 2>/dev/null; then
     VIOLATIONS="${VIOLATIONS}\n⚠️ 同檔混用 <ItemInlineActionButton>(${HAS_INLINE}) + <Button.*iconOnly>(${HAS_BTN_ICON}):\n  → 違反 inline-action.spec.md L152 Same-row consistency rule(同 row icon action 必同一類)。\n  → Box size 不一致(InlineAction 16+18 vs Button text sm 28)會 gap 斷裂。\n  → 修法:row 內 icon action 全 ItemInlineActionButton(對齊 size=md / 16+18 hover bg)。\n  Escape hatch:加 \`// same-row-mixed-allow: <reason>\` 在檔頭(若 chrome corner action group 跟 row 不同 row,可分開)。"
   fi

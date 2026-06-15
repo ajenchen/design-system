@@ -257,7 +257,7 @@ const SidebarProvider = React.forwardRef<
             style={wrapperStyle}
             className={cn(
               "group/sidebar-wrapper flex min-h-svh w-full",
-              // CSS :has() 偵測 — 只在 uniformPrefix=true(預設)時掛
+              // CSS :has() 偵測 — 只在 uniformPrefix=true(opt-in,預設 false;見 sidebar.spec.md「Sidebar 全域 prefix 對齊」)時掛
               // mixing detected → 同時把 --item-icon-size cascade 到 slot 寬(`!` important 蓋
               // 過 wrapperStyle inline,讓 collapsed pl 公式知道「ItemPrefix wrapper 被撐到
               // 24,effective prefix width = 24 非 16」)。
@@ -731,7 +731,7 @@ const SidebarGroupLabel = React.forwardRef<
 
   // Collapsible group:label 本身仍是 plain header(保留原本語意),
   // chevron 是 suffix slot 裡的 inline action button,用 Radix Collapsible.Trigger asChild
-  // 包住 `ItemInlineActionButton`——視覺規格完全對齊 uiSize.spec.md「Inline Action」,
+  // 包住 `ItemInlineActionButton`——視覺規格完全對齊 patterns/element-anatomy/inline-action.spec.md(Inline Action SSOT),
   // 跟 SidebarMenuButton 的 suffix inline action 同一套 canonical 實作。
   //
   // **為什麼 chevron 是 inline action 而非整個 label 是 trigger**:
@@ -814,9 +814,10 @@ SidebarGroupAction.displayName = "SidebarGroupAction"
 
 // SidebarMenu — items 容器
 //
-// Prefix 對齊由 `SidebarProvider` 全域 auto-detect 處理(school B,Notion/Linear 慣例):
-// 整個 sidebar 子樹同時存在 icon 和 avatar prefix 時,自動套用固定槽,跨 menu 跨 group 對齊。
-// 若要關閉,在 `<SidebarProvider uniformPrefix={false}>` 全域控制。SidebarMenu 沒有
+// Prefix 對齊由 `SidebarProvider` 的 `uniformPrefix`(opt-in,預設 false)全域處理(school B,
+// Notion/Linear 慣例):開啟後,整個 sidebar 子樹同時存在 icon 和 avatar prefix 時,自動套用
+// 固定槽,跨 menu 跨 group 對齊。要啟用,在 `<SidebarProvider uniformPrefix>` 全域 opt-in
+// (explicit > implicit,見 sidebar.spec.md「Sidebar 全域 prefix 對齊」段)。SidebarMenu 沒有
 // per-menu 覆寫——沒有真實 use case,YAGNI。
 const SidebarMenu = React.forwardRef<
   HTMLUListElement,
@@ -958,7 +959,7 @@ const SidebarMenuButton = React.forwardRef<
     startIcon?: LucideIcon
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
     /**
-     * Suffix slot 的 inline actions(宣告式 API,對齊 uiSize.spec.md「Inline Action」)。
+     * Suffix slot 的 inline actions(宣告式 API,對齊 patterns/element-anatomy/inline-action.spec.md)。
      * Host 自動用 `<ItemInlineAction>` 渲染,consumer 只宣告 intent。
      * Icon 模式下自動隱藏。
      */
@@ -1046,7 +1047,14 @@ const SidebarMenuButton = React.forwardRef<
     )
 
     const hasSlot = !!inlineActionsSlot
-    const hasActions = hasSlot || (!!inlineActions && inlineActions.length > 0)
+    // Host disabled 時 inline actions(config + slot)整段不渲染,paddingRight 預留一併取消
+    // (inline-action.spec.md「宿主 disabled 時不渲染」+ sidebar.spec.md「Host disabled 時|不渲染」)。
+    // 必須 render 層 guard:suffix 跟 button 是 sibling(避免巢狀 button),
+    // native disabled 的 pointer-events-none 蓋不到 sibling,CSS 層無從繼承。
+    // aria-disabled 同步 guard——對齊 cva `aria-disabled:` 樣式支線(asChild 非 button host 自傳)。
+    const isDisabled =
+      !!props.disabled || props["aria-disabled"] === true || props["aria-disabled"] === "true"
+    const hasActions = !isDisabled && (hasSlot || (!!inlineActions && inlineActions.length > 0))
 
     // 計算 suffix 所佔寬度:N×icon + (N-1)×gap-2(8px),再加 gap-2 跟 label 之間的間隔
     // Slot mode 預設按 1 icon 預留(consumer 寬度自控)

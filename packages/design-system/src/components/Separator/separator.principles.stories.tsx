@@ -54,10 +54,10 @@ export const UsageGuidance: Story = {
       <p>適合 Separator 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Components/Separator/展示" name="Horizontal"><span className="text-primary hover:underline font-medium cursor-pointer">Horizontal</span></LinkTo>
+          <LinkTo kind="Design System/Components/Separator/展示" name="水平"><span className="text-primary hover:underline font-medium cursor-pointer">水平分隔</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Separator/展示" name="Vertical"><span className="text-primary hover:underline font-medium cursor-pointer">Vertical</span></LinkTo>
+          <LinkTo kind="Design System/Components/Separator/展示" name="垂直"><span className="text-primary hover:underline font-medium cursor-pointer">垂直分隔</span></LinkTo>
         </li>
         <li>
           <LinkTo kind="Design System/Components/Separator/展示" name="在 DropdownMenu 內"><span className="text-primary hover:underline font-medium cursor-pointer">在 DropdownMenu 內</span></LinkTo>

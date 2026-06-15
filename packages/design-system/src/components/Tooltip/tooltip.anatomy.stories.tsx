@@ -195,7 +195,7 @@ export const Overview = {
       {/* Warm-up pattern */}
       <div className="flex flex-col gap-3">
         <H3>Warm-up Pattern（暖機模式）</H3>
-        <Desc>全產品統一一組時間參數，不因 tooltip 類型或位置而異。其中 delayDuration（500ms）由 DS 的 TooltipProvider 統一 override（對齊 motion token SSOT）；skipDelayDuration（300ms）沿用 Radix 內建 default，由消費端 app／storybook root 顯式同步設定，DS wrapper 本身不 carry 這個值。</Desc>
+        <Desc>全產品統一一組時間參數，不因 tooltip 類型或位置而異。其中 delayDuration（500ms）由 DS Tooltip wrapper（Root 預設值,對齊 motion token SSOT;Radix Root prop 優先於 Provider 同名設定）統一；skipDelayDuration（300ms）沿用 Radix 內建 default，由消費端 app／storybook root 顯式同步設定，DS wrapper 本身不 carry 這個值。</Desc>
         <div className="flex flex-col gap-1.5 text-caption max-w-[600px]">
           <div className="flex items-start gap-2 py-1.5 border-b border-divider">
             <span className="text-fg-muted w-5 shrink-0 font-mono">1.</span>

@@ -97,6 +97,7 @@ export const Overview = {
               ['precision', "'full'|'half'", "'full'", '整星 / 半星'],
               ['readOnly', 'boolean', 'false', '唯讀展示（不響應 hover/click/鍵盤）'],
               ['disabled', 'boolean', 'false', '完全停用'],
+              ['loading', 'boolean', 'false', '暫時性等待,視覺同 disabled、aria-busy(詳 spec「Loading canonical」段)'],
               ['icon', 'LucideIcon', 'Star', '自訂 icon（極少用，禁止換成 Heart/ThumbsUp）'],
               ['aria-label', 'string', '—', 'readOnly 時必填，描述分數'],
             ].map(([p, t, d, desc]) => (

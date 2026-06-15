@@ -40,8 +40,8 @@ export const UsageGuidance: Story = {
         <div className="prose prose-sm max-w-prose">
           <p>BulkActionBar 是「選取狀態驅動」的批次操作列,跟 selection state 生命週期綁定。真實業務場景:</p>
           <ul className="space-y-1">
-            <li><LinkTo kind="Design System/Components/BulkActionBar/展示" name="基本"><span className="text-primary hover:underline cursor-pointer">基本</span></LinkTo>(email inbox 多選 archive / delete)</li>
-            <li><LinkTo kind="Design System/Components/BulkActionBar/展示" name="提示擴選整個資料集"><span className="text-primary hover:underline cursor-pointer">提示擴選整個資料集</span></LinkTo>(table 單頁看不完 5370 筆,本頁全選後浮 hint 擴 dataset)</li>
+            <li><LinkTo kind="Design System/Components/BulkActionBar/展示" name="基本"><span className="text-primary hover:underline cursor-pointer">基本</span></LinkTo>(收件匣多選郵件後,一次封存 / 加標籤 / 刪除)</li>
+            <li><LinkTo kind="Design System/Components/BulkActionBar/展示" name="提示擴選整個資料集"><span className="text-primary hover:underline cursor-pointer">提示擴選整個資料集</span></LinkTo>(資料集共 5370 筆、本頁只顯示 50 筆:本頁全選後浮出提示,可一鍵把選取範圍擴大到全部 5370 筆)</li>
           </ul>
           <p className="text-fg-muted mt-3">判斷不確定:對照 spec.md「何時用 / 何時不用」段。</p>
         </div>

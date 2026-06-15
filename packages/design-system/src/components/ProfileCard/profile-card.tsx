@@ -1,3 +1,7 @@
+/**
+ * @internal — DS-internal 單元(per `.claude/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
+ * 不進 root barrel front-door;由 PeoplePicker(person-display)wrap 消費,end-user app 請用 wrapper 元件。
+ */
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
 import { MessageCircle, Phone, ChevronDown } from 'lucide-react'
@@ -71,16 +75,17 @@ const STATUS_LABEL: Record<StatusType, string> = {
 }
 
 /**
- * ProfileCard SSOT — 預設 field keys(v11 always-render canonical,2026-05-06)
+ * ProfileCard SSOT — 預設 field keys(現行 v15.7:default 只 `id` + `employeeNumber`;
+ * v11 always-render 為歷史脈絡,已退役 — 見下方 2026-05-07 註解 + render 處 v12 註解)
  *
  * ── 為什麼 SSOT ──
  * User explicit rule:「所有 namecard 預設顯示的資訊都是要一樣完整的」。前 v10 props
  * 全 optional + body conditional render → consumer 漏傳 fields 視覺缺 section,每個範例
  * 各自不一致(同 person 在 DataTable / PeoplePicker / avatar.principles 看起來不同)。
  *
- * v11 canonical:ProfileCard **always** renders 4 default sections regardless of consumer 是否
- * 傳資料 — 缺 data → 對應 DescriptionItem 顯 `EMPTY_PLACEHOLDER`("—"),section 結構不收合。
- * 視覺結構 SSOT 在此元件,不依賴 consumer。
+ * v11 canonical(歷史):ProfileCard 當時 always renders 4 default sections — 缺 data → 顯
+ * `EMPTY_PLACEHOLDER`("—")。現行:default fields 縮為 2(v15.7)+ status 條件 render(v12),
+ * 「視覺結構 SSOT 在此元件,不依賴 consumer」原則不變。
  *
  * ── 對齊 world-class ──
  * Slack profile card / Linear member card / Notion person card / GitHub user card / Figma user card
@@ -146,9 +151,9 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
     },
     ref,
   ) => {
-    // v11 always-render canonical:default fields 永遠 render(缺資料顯 placeholder),
-    // consumer 自訂 fields 在 default 之後 append。Status section 也永遠 render(無 status
-    // 顯「Status not set」placeholder),統一視覺結構。
+    // v12 canonical:default fields 永遠 render(缺資料顯 placeholder),consumer 自訂
+    // fields 在 default 之後 append。Status section 為條件 render(status undefined →
+    // 整 block 隱藏,見下方 render 處)— v11「永遠 render + placeholder」已退役。
     //
     // **Dedup canonical(2026-05-07 v15.8 fix Bug E)**:consumer 的 `fields` array 若含
     // label 撞 default(eg. 「ID」「Employee number」),consumer 值 win — defaults 那一行

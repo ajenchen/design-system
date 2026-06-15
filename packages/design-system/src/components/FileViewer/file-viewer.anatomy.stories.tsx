@@ -104,7 +104,7 @@ export const Overview: Story = {
               </div>
               {/* Viewport + InfoPanel */}
               <div className="flex-1 min-h-0 flex">
-                <div className="flex-1 bg-canvas flex items-center justify-center relative">
+                <div className="flex-1 bg-overlay flex items-center justify-center relative">
                   <span className="text-body-lg text-fg-secondary">② Viewport — renderer 渲染區(flex-1)</span>
                   <span className="absolute left-6 top-1/2 -translate-y-1/2 text-caption text-fg-muted">← prev</span>
                   <span className="absolute right-6 top-1/2 -translate-y-1/2 text-caption text-fg-muted">next →</span>
@@ -150,7 +150,7 @@ export const Overview: Story = {
               <tr>
                 <Td mono>Viewport</Td>
                 <Td>永遠顯示</Td>
-                <Td mono>flex-1, bg-canvas</Td>
+                <Td mono>flex-1(無自身 bg;bg-overlay 透出)</Td>
                 <Td>renderer 渲染區;prev/next arrow 絕對定位於左右</Td>
               </tr>
               <tr>
@@ -377,7 +377,7 @@ export const Inspector: Story = {
                 <tr>
                   <Td>Viewport 背景</Td>
                   <Td>
-                    <TokenCell token="--canvas" display="bg-canvas" />
+                    <TokenCell token="--overlay" display="bg-overlay 透出(自身無 bg)" />
                   </Td>
                 </tr>
                 <tr>
@@ -467,7 +467,7 @@ export const ColorMatrix: Story = {
         <H3>Chrome 鎖 dark 的理由</H3>
         <Desc>
           FileViewer 是「內容展示 chrome」,viewer 本身是獨立沉浸式 context——類比 Tooltip 永久 dark、
-          全螢幕影片播放器 UI 永遠暗色。Dark 底 + bg-canvas 讓圖片 / media 顯色最自然
+          全螢幕影片播放器 UI 永遠暗色。Dark 底 + 半透明 bg-overlay backdrop 讓圖片 / media 顯色最自然
           (亮底會跟任何含白色邊緣的圖片打架);rollback 到 light theme 會讓圖片與 chrome 產生
           色溫衝突。實作:DialogPrimitive.Content 內包 &lt;div data-theme="dark"&gt;,子元件 token
           自動解析為 dark 值,不影響背景頁面 theme。
@@ -488,9 +488,9 @@ export const ColorMatrix: Story = {
             <div className="flex">
               <div
                 className="flex-1 flex items-center justify-center"
-                style={{ height: 180, backgroundColor: 'var(--canvas)' }}
+                style={{ height: 180, backgroundColor: 'var(--overlay)' }}
               >
-                <span className="text-body text-fg-secondary">Viewport — bg-canvas</span>
+                <span className="text-body text-fg-secondary">Viewport — 無自身 bg(bg-overlay 透出)</span>
               </div>
               <aside className="w-56 bg-surface-raised border-l border-divider flex items-center justify-center">
                 <span className="text-body text-fg-secondary">InfoPanel — bg-surface-raised</span>
@@ -525,9 +525,9 @@ export const ColorMatrix: Story = {
               <tr>
                 <Td>Viewport 背景</Td>
                 <Td>
-                  <TokenCell token="--canvas" display="bg-canvas" />
+                  <TokenCell token="--overlay" display="bg-overlay 透出(自身無 bg)" />
                 </Td>
-                <Td>近黑底,讓 media 顯色</Td>
+                <Td>viewer 自身不畫 viewport bg;半透明遮罩透出,media 周圍近黑</Td>
               </tr>
               <tr>
                 <Td>Toolbar / InfoPanel / Filmstrip</Td>
@@ -813,13 +813,18 @@ export const StateBehavior: Story = {
               </tr>
               <tr>
                 <Td>Zoom in</Td>
-                <Td mono>滾輪 / + / = / ZoomInput</Td>
+                <Td mono>+ / = 鍵 / ＋ 按鈕</Td>
                 <Td>下一個 preset(10/25/50/75/100/125/150/200/400)</Td>
               </tr>
               <tr>
                 <Td>Zoom out</Td>
-                <Td mono>反向滾輪 / -</Td>
+                <Td mono>- 鍵 / − 按鈕</Td>
                 <Td>上一個 preset</Td>
+              </tr>
+              <tr>
+                <Td>連續 / 任意值</Td>
+                <Td mono>滾輪(step 0.03)/ ZoomInput 打字</Td>
+                <Td>multiplicative 連續縮放,任意 %(非 preset;spec「Wheel step canonical」);ZoomInput preset menu 才跳 preset</Td>
               </tr>
               <tr>
                 <Td>Reset 100%</Td>
@@ -1116,7 +1121,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `fileviewer.spec.md` 「A11y 預設」段。摘要:\n\nRadix DialogPrimitive 自動處理:\n-  role=\"dialog\"  +  aria-modal=\"true\" \n-  <DialogPrimitive.Title> (sr-only)自動成  aria-labelledby  目標——screen reader 開啟時讀「檔案檢視器:{file.name}」\n- Focus trap:焦點鎖在 viewer 內\n- Esc 關閉(Radix DismissableLayer);Backdrop click 關閉為自寫 geometric onClick handler(非 Radix outside-click — Content 為 fixed inset-0 全螢幕覆蓋,判斷 click 落在 img rect 外才關)\n\n自加的 a11y:\n- 所有 iconOnly button 皆有  aria-label (中文,跟 DS 其他元件風格一致)\n- Filmstrip  role=\"group\"  + thumb  <button>  +  aria-current (非 tablist:選圖導航非切 tabpanel)\n- InfoPanel 用  <aside aria-label=\"檔"}</p>
+      <p className="whitespace-pre-line">{"詳 `file-viewer.spec.md` 「A11y 預設」段。摘要:\n\nRadix DialogPrimitive 自動處理:\n-  role=\"dialog\"  +  aria-modal=\"true\" \n-  <DialogPrimitive.Title> (sr-only)自動成  aria-labelledby  目標——screen reader 開啟時讀「檔案檢視器:{file.name}」\n- Focus trap:焦點鎖在 viewer 內\n- Esc 關閉(Radix DismissableLayer);Backdrop click 關閉為自寫 geometric onClick handler(非 Radix outside-click — Content 為 fixed inset-0 全螢幕覆蓋,判斷 click 落在 img rect 外才關)\n\n自加的 a11y:\n- 所有 iconOnly button 皆有  aria-label (中文,跟 DS 其他元件風格一致)\n- Filmstrip  role=\"group\"  + thumb  <button>  +  aria-current (非 tablist:選圖導航非切 tabpanel)\n- InfoPanel 用  <aside aria-label=\"檔案詳細資訊\">  語意標記\n-  onOpenAutoFocus  preventDefault:避免焦點自動跑進第一個 tabbable(讓鍵盤從 viewport 開始)"}</p>
     </div>
   ),
 }

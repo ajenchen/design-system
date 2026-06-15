@@ -14,7 +14,7 @@ const meta: Meta<typeof SelectionItem> = {
     docs: {
       description: {
         component:
-          'SelectionItem 是 Checkbox 與 RadioGroup 共用的 item 佈局 primitive——提供 control + optional prefix(icon/avatar) + content(label/description) 的 3-slot 結構,並處理 `py = (field-height - 1lh) / 2` 的 padding 公式讓單行高度對齊同 size 的 Input。App 層級應使用 Checkbox / RadioGroup,不直接使用 SelectionItem——以下情境展示 primitive 被兩個 consumer 包出的樣貌。',
+          'SelectionItem 是 Checkbox 與 RadioGroup 共用的 item 佈局 primitive——提供 control + optional prefix(icon/avatar) + content(label/description) 的 3-slot 結構,並處理 `py = (field-height - 1lh) / 2` 的 padding 公式讓單行高度對齊同 size 的 Input。App 層級應使用 Checkbox / RadioGroup,不直接使用 SelectionItem——前兩個情境展示 primitive 被 Checkbox / RadioGroup 包出的樣貌;後兩個(前綴圖示 / 前綴頭像)直接以 primitive 展示 prefix slot 結構(docs 結構展示用,非 App 層用法)。',
       },
     },
   },

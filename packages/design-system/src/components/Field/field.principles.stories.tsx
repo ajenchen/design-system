@@ -49,11 +49,10 @@ export const UsageGuidance: Story = {
         <div className="prose prose-sm max-w-prose mb-8">
           <p>適合 Field 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           <ul className="space-y-1">
-            <li><LinkTo kind="Design System/Components/Field/展示" name="Vertical"><span className="text-primary hover:underline font-medium cursor-pointer">Vertical</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Field/展示" name="Horizontal"><span className="text-primary hover:underline font-medium cursor-pointer">Horizontal</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Field/展示" name="水平 — 標籤 垂直對齊公式驗證"><span className="text-primary hover:underline font-medium cursor-pointer">水平 — 標籤 垂直對齊公式驗證</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Field/展示" name="混合 控制元件 的 field 高度對齊"><span className="text-primary hover:underline font-medium cursor-pointer">混合 控制元件 的 field 高度對齊</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Field/展示" name="SegmentedControl 作為 Field 控制元件"><span className="text-primary hover:underline font-medium cursor-pointer">SegmentedControl 作為 Field 控制元件</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Field/展示" name="垂直"><span className="text-primary hover:underline font-medium cursor-pointer">註冊 / 建立專案表單 — 引導式逐欄輸入(垂直佈局)</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Field/展示" name="水平"><span className="text-primary hover:underline font-medium cursor-pointer">帳號設定 / 偏好設定頁 — 修改已知屬性(水平佈局)</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Field/展示" name="混合控制元件的高度對齊"><span className="text-primary hover:underline font-medium cursor-pointer">同一表單混用 Input / Select / DatePicker 等控制元件</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Field/展示" name="SegmentedControl 作為 Field 控制元件"><span className="text-primary hover:underline font-medium cursor-pointer">少量互斥選項(計費週期、版面密度)用 SegmentedControl 當控制元件</span></LinkTo></li>
           </ul>
           <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
@@ -116,7 +115,8 @@ export const UsageGuidance: Story = {
           note="「查看使用者資料」「訂單明細」這類純展示場景不該用 Field + readonly mode——DescriptionList 的 `dl / dt / dd` HTML 語義更適合唯讀屬性列表,a11y 也更清楚"
         >
           <div className="max-w-sm">
-            <FieldGroup>
+            {/* horizontalLabelWidth:同表單 horizontal Field 必統一 label 寬(field.spec.md「FieldGroup horizontalLabelWidth cascade」)*/}
+            <FieldGroup horizontalLabelWidth="120px">
               <Field orientation="horizontal">
                 <FieldLabel>Email</FieldLabel>
                 <Input mode="readonly" defaultValue="user@example.com" />
@@ -197,7 +197,8 @@ export const OrientationRule: Story = {
         note="已知屬性的修改介面(account settings、使用者偏好)。label + control 並排節省垂直空間,讓多個設定一目了然。label 固定寬度對齊縱向軸"
       >
         <div className="max-w-xl">
-          <FieldGroup>
+          {/* horizontalLabelWidth:同表單 label 等寬 → 控件起點對齊(2026-06-10 user 抓本 story 違反自家 canonical)*/}
+          <FieldGroup horizontalLabelWidth="120px">
             <Field orientation="horizontal" required>
               <FieldLabel>電子郵件</FieldLabel>
               <Input type="email" defaultValue="user@example.com" />

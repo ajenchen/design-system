@@ -941,7 +941,7 @@ const StateBehaviorInner = () => {
           <li>`DropdownMenuItem` 點擊即 close——這是「action 觸發即完成」語意。</li>
           <li>`DropdownMenuCheckboxItem` 點擊**不 close**——多選語意,等使用者關 menu 才 commit。</li>
           <li>`DropdownMenuSub` 永遠右側滑入,parent menu 保持展開——提供 breadcrumb 式認知流,使用者知道自己在哪層。</li>
-          <li>Escape 永遠 close 最內層 submenu(一次只收一層),對照 macOS native menu。</li>
+          <li>Escape close 整個選單(含所有展開子層;Radix root close)。ArrowLeft 才逐層收合(焦點回 SubTrigger)。</li>
           <li>Portal render 到 body,`z-50` 確保不被 parent overflow 截斷。</li>
           <li>Focus trap:menu open 時鍵盤焦點進入 menu,close 時自動 restore 到 trigger。</li>
         </ul>
@@ -962,7 +962,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"無障礙能力沿用 Radix 選單元件的內建支援,涵蓋語意角色、選單導覽與焦點管理,設計師與工程師不需額外設定。\n\n鍵盤操作:\n\n- Tab — 將焦點移到觸發按鈕\n- Enter / Space / 向下鍵 — 開啟選單\n- 向上鍵 / 向下鍵 — 在選項之間移動\n- Enter — 選擇目前的選項\n- Esc — 關閉選單(子選單會先關內層)\n\n焦點管理:選單開啟時焦點會進入選單,關閉後自動回到原本的觸發按鈕;目前導覽到的選項會以明顯的 highlight 底色標示,鍵盤使用者隨時看得到自己在哪一項。\n\n驗證:鍵盤可完整操作(不需滑鼠),文字對比達 WCAG AA;在 Storybook 無障礙檢查面板上應為零項嚴重問題。"}</p>
+      <p className="whitespace-pre-line">{"無障礙能力沿用 Radix 選單元件的內建支援,涵蓋語意角色、選單導覽與焦點管理,設計師與工程師不需額外設定。\n\n鍵盤操作:\n\n- Tab — 將焦點移到觸發按鈕\n- Enter / Space / 向下鍵 — 開啟選單\n- 向上鍵 / 向下鍵 — 在選項之間移動\n- Enter — 選擇目前的選項\n- Esc — 關閉整個選單(含子選單;逐層收合用左方向鍵)\n\n焦點管理:選單開啟時焦點會進入選單,關閉後自動回到原本的觸發按鈕;目前導覽到的選項會以明顯的 highlight 底色標示,鍵盤使用者隨時看得到自己在哪一項。\n\n驗證:鍵盤可完整操作(不需滑鼠),文字對比達 WCAG AA;在 Storybook 無障礙檢查面板上應為零項嚴重問題。"}</p>
       <p className="mt-4 text-fg-muted">完整 ARIA 細節參考 <a className="text-primary hover:underline" href="https://www.radix-ui.com/primitives/docs/components/dropdown-menu#accessibility" target="_blank" rel="noreferrer">Radix Accessibility 文件</a>。</p>
     </div>
   ),

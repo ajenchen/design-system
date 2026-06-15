@@ -1152,7 +1152,7 @@ Per-element folder verify 三 test:(a) 有預設視覺?(b) 直接 `<X>` 有視�
 
 ## 46. Manual vs Mechanical boundary
 
-**Type**: Absolute / **Canonical**: `category-templates.md` v2 trait-based / **Home**: 檔頭 `// @manual-trait-allow: <reason>`
+**Type**: Absolute / **Canonical**: `category-templates.md` v2 trait-based / **Home**: 檔頭 `// @story-trait-rationale: <reason>`(= `check_story_invariants.sh` R3 機械 escape;舊名 `@manual-trait-allow` 無實作已廢)
 
 Per-元件 grep `.stories.tsx`(非 anatomy/principles),若含 trait-derived `AllSizes` / `AllVariants` / `WithIcon` hand-written export 而非 import auto-compile = anti-pattern(該 migrate 進 auto-compile)。
 
@@ -1297,10 +1297,11 @@ composition-fidelity visual-diff scenarios(全 N scenario)/ dogfood-prepublish�
 
 ## 68. Stories-vs-spec drift(PURE-JUDGMENT,2026-05-31 補)
 
-**Type**: Absolute / **Canonical**: `@canonical-pattern` / `@anti-pattern` markers + 各 component spec.md / **Home**: 該 component spec.md
+**Type**: Absolute / **Canonical**: `story-baseline-registry.json`(R8 主防線)+ 各 component spec.md 禁止事項;`@canonical-pattern` / `@anti-pattern` marker = 建議性輔助(2026-06-12 降格)/ **Home**: 該 component spec.md
 
 ```
-Your job(NO-SAMPLE 全 component):驗 stories 標的 @canonical-pattern / @anti-pattern 與 spec.md 宣告一致,
+Your job(NO-SAMPLE 全 component):驗 stories 教的 pattern 與 spec.md「禁止事項」+ story-baseline-registry.json
+antiPatterns 一致(marker 為建議性輔助,存在時順驗其與 spec 一致;缺 marker 非 finding),
 且 anatomy/principles 教的 pattern 未與 spec「禁止事項」矛盾。Enumerate 全 83 component。Report file:line drift。
 End:`N components, M drift`。Don't fix.
 ```

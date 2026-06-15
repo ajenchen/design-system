@@ -1,7 +1,7 @@
 // @story-trait-rationale: 6 stories(Default/WithStartIcon/WithBadge/IconOnly/FullWidth/Disabled)
 // 2026-05-17 retire per audit Dim 24:跟 anatomy.stories.tsx 4 個 matrix
 // (Overview/IconOnlyMatrix/FullWidthMatrix/StateBehavior)完全 trait-grid 重複,無 unique teaching。
-// 真實業務情境靠 principles.stories.tsx 的 VsTabsRule / DecisionTreeExamples;
+// 真實業務情境靠 principles.stories.tsx 的 UsageGuidance / IconOnlyRule / FullWidthRule;
 // trait matrix 靠 anatomy.stories.tsx;本檔保留 1 典型「Jira-style view switcher」入口情境。
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'

@@ -14,9 +14,9 @@ import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatom
  *
  * 本元件極薄(Radix AspectRatio passthrough),無 variant / size / color token。
  * 結構僅:container 鎖 ratio + children 填滿。因此 anatomy 保留 Overview + Inspector
- * + 元件特有 StandardRatios(DS 慣用 5 ratio)——無 ColorMatrix / SizeMatrix /
- * StateBehavior,rationale 詳見 `aspect-ratio.spec.md`「為何無 ColorMatrix /
- * SizeMatrix / StateBehavior」段。
+ * + 元件特有 StandardRatios(DS 慣用 5 ratio)+ Accessibility(2026-05-17 Dim 13)
+ * ——無 ColorMatrix / SizeMatrix / StateBehavior,rationale 詳見
+ * `aspect-ratio.spec.md`「為何無 ColorMatrix / SizeMatrix / StateBehavior」段。
  */
 
 const meta: Meta = {

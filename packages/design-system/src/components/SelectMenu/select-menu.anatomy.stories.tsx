@@ -108,8 +108,8 @@ export const Overview: Story = {
                   <Td mono>cmdk</Td>
                 </tr>
                 <tr>
-                  <Td mono>CommandInput</Td>
-                  <Td>搜尋框(searchable 模式,高度對齊 field-height)</Td>
+                  <Td mono>CommandPrimitive.Input</Td>
+                  <Td>搜尋框(raw cmdk input + 自建 wrapper,searchable 模式,高度對齊 field-height)</Td>
                   <Td mono>cmdk</Td>
                 </tr>
                 <tr>

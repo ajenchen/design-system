@@ -45,7 +45,7 @@ export const Overview: Story = {
                 ['label', 'ReactNode', '—', 'inline label(Field context 內會被忽略)'],
                 ['description', 'ReactNode', '—', 'inline description(與 label 搭配)'],
                 ['disabled', 'boolean', 'false', '停用(opacity-disabled 保留顏色,見 spec)'],
-                ['readOnly', 'boolean', 'false', '鎖定互動但視覺正常(pointer-events-none + aria-readonly)'],
+                ['readOnly', 'boolean', 'false', 'standalone:鎖定互動視覺正常;Field 內:灰框 + ✓/—(2026-06-12 拍板)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -87,7 +87,7 @@ export const Inspector: InspectorStory = {
     },
     defaultChecked: { control: 'boolean', description: '預設 ON / OFF' },
     disabled: { control: 'boolean', description: '停用(opacity-disabled 保留顏色)' },
-    readOnly: { control: 'boolean', description: '唯讀(視覺正常,互動鎖定)' },
+    readOnly: { control: 'boolean', description: '唯讀(standalone 視覺正常鎖互動;Field 內灰框 + ✓/—)' },
     label: { control: 'text', description: 'inline label(留空 → 只渲染 switch 本體)' },
     description: { control: 'text', description: 'inline description(需搭配 label)' },
   },
@@ -135,7 +135,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>視覺狀態對照</H3>
-        <Desc>disabled 用 opacity-disabled 保留顏色(Switch 特例,見下「Disabled 策略」)。readonly 視覺正常但互動鎖定。</Desc>
+        <Desc>disabled 用 opacity-disabled 保留顏色(Switch 特例,見下「Disabled 策略」)。readonly:standalone 視覺正常鎖互動;Field 內灰框 + ✓/—。</Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse">
             <thead><tr><Th>State</Th><Th>Track</Th><Th>Thumb</Th><Th>Check icon</Th></tr></thead>
@@ -144,7 +144,7 @@ export const StateBehavior: Story = {
               <tr><Td>ON</Td><Td><TokenCell token="--primary" display="bg-primary" /></Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--primary" size="sm" /><span className="font-mono">白色 + 2px primary border</span></span></Td><Td><TokenCell token="--primary" display="primary check" /></Td></tr>
               <tr><Td>Disabled OFF</Td><Td>opacity-disabled 套於整體</Td><Td>同 OFF(顏色保留)</Td><Td>—</Td></tr>
               <tr><Td>Disabled ON</Td><Td>opacity-disabled 套於整體</Td><Td>同 ON(顏色保留)</Td><Td>同 ON</Td></tr>
-              <tr><Td>Readonly</Td><Td>正常顏色</Td><Td>正常視覺</Td><Td>視 on/off</Td></tr>
+              <tr><Td>Readonly(standalone)</Td><Td>正常顏色</Td><Td>正常視覺</Td><Td>視 on/off</Td></tr>
             </tbody>
           </table>
         </div>

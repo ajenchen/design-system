@@ -186,8 +186,13 @@ if [ -d "$HOOKS_DIR" ]; then
     2>/dev/null | wc -l | tr -d ' ')
   HOOK_COUNT=${HOOK_COUNT:-0}
 fi
+# 2026-06-11 deep-audit R2(n=8)重估:訊息原以 3 consumer hooks(check_consumer_no_ds_catalog /
+# check_consumer_story_baseline / check_consumer_ds_primitive_misuse)作 60 cap rationale,該 3 hook
+# 已 2026-06-11 prune-merge 入 check_consumer_app_invariants.sh(retired/2026-06-11-prune-merge/),
+# 現值 52。重估 verdict:60 維持 — 52 + 8 headroom(~15%)符合「升 cap 只為已 justified 新 hook」
+# 歷史節奏;降 cap 屬治理 substantive(soft 26 已在 27+ 提供 advisory),留 /knowledge-prune 評估。
 if [ "$HOOK_COUNT" -gt 60 ]; then
-  BLOCKERS="${BLOCKERS}\n- Hook count ${HOOK_COUNT}(hard 60 — Anthropic guideline ~15;含 root + lib/,排 retired/tests/). 2026-05-27 升 50→55→60 per user「眼不見為淨」+「做產品真的要能使用跟 ds repo 一模一樣的元件」directive → 3 new hooks ship(check_consumer_no_ds_catalog + check_consumer_story_baseline + check_consumer_ds_primitive_misuse)。Re-raise 56+ 需 /knowledge-prune 評估 retire / consolidate。"
+  BLOCKERS="${BLOCKERS}\n- Hook count ${HOOK_COUNT}(hard 60 — Anthropic guideline ~15;含 root + lib/,排 retired/tests/). 2026-05-27 升 50→55→60(當時 3 consumer hooks ship;該 3 hook 已 2026-06-11 prune-merge 入 check_consumer_app_invariants,現值基準 52,cap 60 經 2026-06-11 重估維持)。超 60 = 先跑 /knowledge-prune 評估 retire / consolidate,不直接 re-raise。"
 elif [ "$HOOK_COUNT" -gt 26 ]; then
   # 2026-05-15 raised soft cap 25→26 per /knowledge-prune D2 audit:
   # 26 wired hooks reflects M30 wrapper-schema-drift 新增 dedicated hook(justified evolution
@@ -294,7 +299,7 @@ if [ -n "$BLOCKERS" ]; then
   [ -n "$PRUNE_TRIGGERS" ] && MSG="${MSG}\n\n附 soft prune triggers:${PRUNE_TRIGGERS}"
   [ -n "$QUARTERLY_DUE" ] && MSG="${MSG}\n${QUARTERLY_DUE}"
 elif [ -n "$PRUNE_TRIGGERS" ]; then
-  MSG="⚙️ Auto-prune triggers fired (SessionStart):${PRUNE_TRIGGERS}\n建議 invoke /knowledge-prune scope=full 評估 retire / consolidate.${QUARTERLY_DUE}"
+  MSG="⚙️ Auto-prune triggers fired (SessionStart):${PRUNE_TRIGGERS}\nAI 必 AUTO-RUN /knowledge-prune(禁問 user 要不要跑;P0+P1 自動執行,P2 retire 候選列拍板清單 — per deep-audit-cross-codex SKILL C.0a,2026-06-11 user 糾正 codify).${QUARTERLY_DUE}"
 else
   MSG="🧭 Governance hygiene reminder (SessionStart):${QUARTERLY_DUE}\nNot blocking — address inline when convenient."
 fi

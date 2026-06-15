@@ -19,6 +19,10 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 
 共用規則見 `../Field/field-controls.spec.md`。本文件只記錄 LinkInput 特有的原則。
 
+## Controlled-only rationale(Dim 26)
+
+本元件採 **controlled-only**:`value` + `onChange`,不支援 `defaultValue` uncontrolled fallback(value pair V1)。對齊 Field 家族 canonical(Combobox / DatePicker / TimePicker / SelectMenu 同,rationale 見各 spec 同名段);LinkInput 內部另有「連結顯示 ↔ 編輯中」狀態與 `value` 雙向 sync,dual-mode 會引入 race condition。未來要改 dual-mode 需 `useControllableState` helper,屬 major API 擴充。
+
 **Layout Family**：CLAUDE.md 4-Family Model **Family 4（Field control layout）** 消費者。結構繼承 `components/Field/field-controls.spec.md` 的 `fieldWrapperStyles + [startIcon?] [<editable>] [endAction?]` 規格,視覺對齊 Family 1（Menu item）讓 SelectMenu trigger + options 連續一致。
 
 ---
@@ -64,7 +68,7 @@ LinkInput 是 **URL 的**輸入與顯示元件。外觀基於 Input，但 value 
 遵循 Field 共用驗證標準（blur validation）：
 
 1. **blur 時驗證**——使用者離開 field 時才檢查格式
-2. **開始編輯時清除 error**——重新 focus 或開始打字時移除錯誤狀態
+2. **開始打字時清除 error**——輸入任一字元即移除錯誤狀態(Escape 還原原值亦清除);單純重新 focus 不清除
 3. **Enter 觸發 blur**——等同離開 field
 4. **Escape 取消編輯**——回復原值，不觸發驗證
 
@@ -75,6 +79,14 @@ URL 格式要求：必須包含 `http://` 或 `https://` protocol。
 ## 空值
 
 沒有 URL 時直接顯示 placeholder 並允許輸入，不需要先按 Pencil——因為沒有連結可以開。
+
+---
+
+## 極長 URL（邊界）
+
+- **顯示文字 = hostname**:link 狀態預設只顯示 hostname（去 `www.`,如 `https://github.com/org/repo` → `github.com`）,非完整 URL;`label` prop 可覆寫顯示文字。完整 URL 載於 `href`
+- **單行 truncate**:link / readonly / display 狀態超寬時 ellipsis 截斷,不換行
+- **編輯態**:原生 input 水平捲動,無長度上限
 
 ---
 
@@ -128,4 +140,5 @@ LinkInput 是 **Field Controls family 成員**——互動狀態(focus / invalid
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `file-item.spec.md`
+- `input.spec.md`
 - `textarea.spec.md`

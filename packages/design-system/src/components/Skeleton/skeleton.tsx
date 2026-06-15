@@ -24,7 +24,7 @@ export const skeletonMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  states: [], // 2026-06-11 R2:非互動元件,只有顯示/不顯示(spec L77;同 DescriptionList 先例),
   tokens: {
     bg: ['bg-muted'],
     fg: [],

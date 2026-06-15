@@ -51,10 +51,10 @@ export const UsageGuidance: Story = {
         >
           <ul className="space-y-1">
             <li>
-              <LinkTo kind="Design System/Components/Checkbox/展示" name="直式群組"><span className="text-primary hover:underline font-medium cursor-pointer">直式群組</span></LinkTo>
+              <LinkTo kind="Design System/Components/Checkbox/展示" name="直式群組"><span className="text-primary hover:underline font-medium cursor-pointer">商品類別的複選清單(直式群組)</span></LinkTo>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/Checkbox/展示" name="水平排列"><span className="text-primary hover:underline font-medium cursor-pointer">水平排列</span></LinkTo>
+              <LinkTo kind="Design System/Components/Checkbox/展示" name="水平排列"><span className="text-primary hover:underline font-medium cursor-pointer">篩選列的少量選項複選(水平排列)</span></LinkTo>
             </li>
           </ul>
         </Rule>

@@ -167,7 +167,7 @@ Alert.displayName = 'Alert'
 // Sizes = none(Alert 視覺尺寸繼承 Notice primitive,不隨 size 變;見 spec「為何無 SizeMatrix」)
 export const alertMeta = {
   component: 'Alert',
-  family: null, // non-family composite / overlay / layout
+  family: 2, // List item(對齊 alert.spec.md frontmatter family: 2)
   variants: {
     neutral: { purpose: '中性提示(系統公告、非緊急說明);無情緒色' },
     info: { purpose: '資訊性提示(版本更新、流程說明);藍色 hue' },
@@ -176,7 +176,7 @@ export const alertMeta = {
     error: { purpose: '錯誤但非阻斷(系統錯誤可重試、API 失敗摘要);aria-live=assertive' },
   },
   sizes: {},
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  states: ['default'], // 2026-06-11 R2:Alert 本體無互動 state(spec L183 明文無 disabled;dismiss 互動屬內部 Button),
   tokens: {
     bg: ['bg-error', 'bg-error-subtle', 'bg-info', 'bg-info-subtle', 'bg-muted', 'bg-success', 'bg-success-subtle', 'bg-surface-raised', 'bg-warning', 'bg-warning-subtle'],
     fg: ['text-foreground'],

@@ -28,7 +28,7 @@ paths:
 
 **Folder + storybook canonical**:
 - public:`components/<Name>/` OR `patterns/<name>/`(frontmatter 無 `internal: true`),storybook title `Design System/Components/<Name>/...` OR `Design System/Patterns/<Name>`
-- internal:`components/Internal/<Name>/` OR `patterns/<name>/`(frontmatter `internal: true` / `- isInternal`),storybook title `Design System/Internal/<Name>/...` OR `Design System/Internal Patterns/<Name>`(end-user 設計師 default 過濾掉,DS contributor 看 reference 用)
+- internal:in-place `components/<Name>/` 或 `patterns/<name>/` + frontmatter `internal: true` / `- isInternal`(主路徑;現行 11 個 internal 單元全走 frontmatter,`components/Internal/<Name>/` folder 路線同樣支援但目前無住戶),storybook title `Design System/Internal/<Name>/...` OR `Design System/Internal Patterns/<Name>`(end-user 設計師 default 過濾掉,DS contributor 看 reference 用)
 - export jsDoc 加 `@internal` marker(IDE intellisense 警示 end-user)
 - **Root barrel front-door 排除(2026-06-05 dim-72 SSOT,user Q2 拍板)**:internal 元件/pattern **不進** `packages/design-system/src/index.ts`(root barrel = 直接 front-door),**只**經 per-component subpath `@qijenchen/design-system/{components,patterns}/<Dir>` 取用 —— 對應 user 原則「internal 要**另外包裝過 + 自行確認**才可用,不得直接 front-door 使用;public 才可直接用」。SSOT = spec frontmatter isInternal;機械 = `gen-design-system-barrel.mjs`(生成時自動排除)+ `--check`(release:preflight drift gate)。改 public/internal → 改 frontmatter 後重跑 generator。
 

@@ -49,7 +49,7 @@
 | **固定長寬比容器(防 CLS 坍塌,多張圖統一 ratio)** | `components/AspectRatio/` | Coachmark media / Carousel item image / Card thumbnail / Chart container(override default 16:9) |
 | Field wrapper（border + padding + startIcon + endAction 結構) | `components/Field/field-wrapper.tsx` + `field-controls.spec.md` | 所有單行可編輯欄位元件 |
 
-### 自我檢查腳本(CLAUDE.md 保留這節的精簡版,完整對照在本檔上表)
+### 自我檢查腳本(.claude/rules/ui-development.md「建立 UI 前必讀」保留這節的精簡版,完整對照在本檔上表)
 
 - 新元件有 icon+text 垂直堆疊? → 用 `<Empty>`,不自己畫 icon + title + desc
 - 新元件有橫向 row 結構(prefix/content/suffix)? → 用 `element-anatomy/item-anatomy` 的 `<MenuItem>` + slot components(`<ItemIcon>` / `<ItemAvatar>` / `<ItemLabel>` / `<ItemSuffix>` / `<ItemInlineAction>`)
@@ -60,7 +60,7 @@
 - 以上都沒命中 → 才可自建,但 **建完要立刻回來加行**(防下一個人又重造輪子)
 - **本規則同樣適用 story / consumer / exploration code**:不 hand-craft 已有 prop 能做的事(如 Input loading 走 `loading` prop 不自刻 `<div className="relative"><input/><div className="absolute">` / 全頁 loading 走 `<Empty icon={<CircularProgress/>}/>` 不自刻 `absolute inset-0`)。遇缺口**回元件 spec 擴 API**,不自刻繞過 — hand-craft 視覺對齊 bug 上游
 
-具體 anti-pattern signals → `/design-system-audit` Dim 21;pixel-level 視覺 regression(API 用對但視覺仍跑掉)tech debt → memory `project_pending_tasks`。
+具體 anti-pattern signals → `/design-system-audit` Dim 21;pixel-level 視覺 regression(API 用對但視覺仍跑掉)→ `/visual-audit`(D5)抓(原 memory `project_pending_tasks` 已 retire)。
 
 ---
 

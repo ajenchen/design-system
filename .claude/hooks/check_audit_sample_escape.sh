@@ -18,8 +18,10 @@ INPUT=$(cat)
 TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""')
 EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // ""')
 
+# 2026-06-11 coverage expand(prune D2 抓盲區;expand never replace):Workflow 派發的 agents
+# 原本完全繞過本防線(tool 名 ≠ Agent);Task 為舊名 alias 一併納入。
 case "${TOOL:-}" in
-  Agent) ;;
+  Agent|Task|Workflow) ;;
   *) exit 0 ;;
 esac
 
@@ -35,8 +37,9 @@ case "${EVENT:-}" in
     PROMPT="$OUTPUT" # reuse PROMPT var for downstream grep
     ;;
   *)
-    # PreToolUse(default existing logic):scan dispatch prompt
-    PROMPT=$(echo "$INPUT" | jq -r '.tool_input.prompt // ""')
+    # PreToolUse(default existing logic):scan dispatch prompt;
+    # Workflow 的 agent prompts 在 .tool_input.script 內(2026-06-11 expand)
+    PROMPT=$(echo "$INPUT" | jq -r '(.tool_input.prompt // "") + "\n" + (.tool_input.script // "")')
     ;;
 esac
 

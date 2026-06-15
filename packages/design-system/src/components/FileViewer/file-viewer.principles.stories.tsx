@@ -109,16 +109,16 @@ export const UsageGuidance: Story = {
             <LinkTo kind="Design System/Components/FileViewer/展示" name="Jira — 附件多圖檢視"><span className="text-primary hover:underline font-medium cursor-pointer">Jira — 附件多圖檢視</span></LinkTo>
           </li>
           <li>
-            <LinkTo kind="Design System/Components/FileViewer/展示" name="Notion — 頁內配圖 相簿"><span className="text-primary hover:underline font-medium cursor-pointer">Notion — 頁內配圖 相簿</span></LinkTo>
+            <LinkTo kind="Design System/Components/FileViewer/展示" name="Notion — 頁內配圖相簿"><span className="text-primary hover:underline font-medium cursor-pointer">Notion — 頁面配圖相簿瀏覽</span></LinkTo>
           </li>
           <li>
-            <LinkTo kind="Design System/Components/FileViewer/展示" name="Figma — 單檔 縮放 聚焦"><span className="text-primary hover:underline font-medium cursor-pointer">Figma — 單檔 縮放 聚焦</span></LinkTo>
+            <LinkTo kind="Design System/Components/FileViewer/展示" name="Figma — 單檔縮放聚焦"><span className="text-primary hover:underline font-medium cursor-pointer">Figma — 設計稿單檔縮放聚焦檢視</span></LinkTo>
           </li>
           <li>
-            <LinkTo kind="Design System/Components/FileViewer/展示" name="Gmail — 多附件預覽"><span className="text-primary hover:underline font-medium cursor-pointer">Gmail — 多附件預覽</span></LinkTo>
+            <LinkTo kind="Design System/Components/FileViewer/展示" name="Gmail — 多附件預覽"><span className="text-primary hover:underline font-medium cursor-pointer">Gmail — 信件多附件快速預覽</span></LinkTo>
           </li>
           <li>
-            <LinkTo kind="Design System/Components/FileViewer/展示" name="活動相集 — 縮圖膠卷 開"><span className="text-primary hover:underline font-medium cursor-pointer">活動相集 — 縮圖膠卷 開</span></LinkTo>
+            <LinkTo kind="Design System/Components/FileViewer/展示" name="活動相集 — 縮圖膠卷展開"><span className="text-primary hover:underline font-medium cursor-pointer">活動相集 — 開啟縮圖膠卷瀏覽跳轉</span></LinkTo>
           </li>
         </ul>
         <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>

@@ -109,7 +109,7 @@ Tabs.displayName = 'Tabs'
 // - 跟 Dialog / Sheet / Popover / Sidebar header `border-b border-divider`(neutral-4)同色
 // - withTabs scenario 下 tabs underline = chrome separator,跟 dialog 其他 separator 視覺一致
 // - Selected trigger 2px primary 仍 overlay underlying divider(對比 primary >> divider 不弱)
-// - 對齊 `color.spec.md:706-708` outer-vs-divider 判準(Dialog 結構,T-junction 思路適用)
+// - 對齊 `color.spec.md`「T-junction connectivity 原則」段 outer-vs-divider 判準(Dialog 結構,T-junction 思路適用)
 const TABS_LIST_BASE = [
   'inline-flex items-stretch',
   'gap-[var(--layout-space-loose)]',
@@ -157,7 +157,7 @@ const TabsList = React.forwardRef<
     <TabsContext.Provider value={tabsSizeContext}>
       <TabsPrimitive.List
         ref={ref}
-        className={cn(TABS_LIST_BASE, 'w-fit', className)}
+        className={cn(TABS_LIST_BASE, 'w-full', className)}
         {...props}
       >
         {children}
@@ -204,7 +204,7 @@ const ScrollTabsList = React.forwardRef<
     //   overflow-x:auto + overflow-y:visible 必 compute auto)。
     //   不加 `pb-px`(outer border 撤後 list border 已接 -1px 部分,加 pb 多 1px 多餘空白)。
     //   對齊 Primer UnderlineNav `overflow-x:auto; overflow-y:hidden` canonical 同步動
-    //   horizontal-overflow.spec.md L75/L101/L129 owner 升 list 內部。
+    //   horizontal-overflow.spec.md(「Hook re-export」+「典型 scroll / menu 模式組裝」段)owner 升 list 內部。
     <div className="relative">
       <div
         ref={scrollRef}
@@ -213,7 +213,7 @@ const ScrollTabsList = React.forwardRef<
       >
         <TabsPrimitive.List
           ref={ref}
-          className={cn(TABS_LIST_BASE, 'w-fit', className)}
+          className={cn(TABS_LIST_BASE, 'min-w-full', className)}
           {...props}
         >
           {children}
@@ -309,7 +309,7 @@ const MenuTabsList = React.forwardRef<
       >
         <TabsPrimitive.List
           ref={ref}
-          className={cn(TABS_LIST_BASE, 'w-fit', className)}
+          className={cn(TABS_LIST_BASE, 'min-w-full', className)}
           {...props}
         >
           {enhancedChildren}
@@ -481,6 +481,12 @@ const TabsContent = React.forwardRef<
   <TabsPrimitive.Content
     ref={ref}
     className={cn(
+      // 與 TabsList 的間距 canonical(2026-06-12 user 拍板):--layout-space-tight(md 12px,
+      // density 連動)。依 layoutSpace.spec「親疏 3 級」:Tabs↔Content 同 bundle(第一級,
+      // 元件 spec own),值取規則 3「直接功能依賴 = tight」精神(heading → labeled content 同類)。
+      // 收斂原 DS-wide 四種土法(無間距 / mt-4 / p-4 / pt-4 — M17 假 SSOT)。
+      // full-height 佈局(AppShell pane)用 className="mt-0" 覆寫(tailwind-merge)。
+      'mt-[var(--layout-space-tight)]',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
       className
     )}

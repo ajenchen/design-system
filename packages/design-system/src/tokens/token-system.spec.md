@@ -228,16 +228,13 @@ Tailwind v4 `@theme inline` 把 CSS variable 升級成 utility class。每 famil
 
 ---
 
-## 被引用(auto-maintained,Dim 3 reciprocal audit)
+## 相關
 
-> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護。
+- `README.md`(tokens charter)— 檔案路徑 + Public vs Internal token 表
+- `color/color.spec.md` — L1/L2 色彩 family 具體規則(含 Tag / Avatar 直接消費 L1 的流派定位)
+- `uiSize/uiSize.spec.md` — L3 Family / L4 Layout 尺寸 token
+- `typography/typography.spec.md` — `--font-*` family
+- `elevation/elevation.spec.md` — `--elevation-*`(住 `color/primitives.css`,理由見「跨 family co-location 規則」)
+- `layoutSpace/layoutSpace.spec.md` — `--layout-space-*` 抽象 spacing rhythm
 
-- `tokens/README.md`(Public vs Internal token 表 cross-reference)
-- `color/color.spec.md`(L1/L2 上游 SSOT)
-- `uiSize/uiSize.spec.md`(L3 Family + L4 Layout 上游 SSOT)
-- `layoutSpace/layoutSpace.spec.md`(L4 Layout 上游 SSOT)
-- `elevation/elevation.spec.md`(L1 co-location rationale)
-- `opacity/opacity.spec.md`(L1 classification)
-- `radius/radius.spec.md`(L3 Family classification)
-- `typography/typography.spec.md`(L3 Family classification)
-- `.claude/rules/ui-development.md`「Token 命名 4 條硬規則」(下游 lint-style summary)
+---

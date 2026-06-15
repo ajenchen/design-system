@@ -301,7 +301,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"  鍵盤與讀屏  :長條、折線、面積圖的範例都加上 Recharts 的 accessibilityLayer。加上之後,使用者可用方向鍵 ←/→ 沿軸刻度逐一瀏覽資料點,讀屏器會讀出當前資料點的類別與數值。圓餅 / 環圈圖經 Recharts 預設一樣啟用 accessibilityLayer(圖表本身可聚焦),但方向鍵導覽建立在軸刻度的數值索引上,圓餅這類無數值軸的圖無法逐片導覽——若需要讓比例圖也能鍵盤瀏覽,改用可逐項聚焦的呈現方式(例如搭配資料表格)。\n\n  顏色非唯一語義  :不只靠色彩區分類別,配合圖例、軸標籤與圖形變化(例如折線用虛線),讓色盲或黑白列印時仍可辨識。實例見「設計原則」頁的「顏色不是區分類別的唯一手段」(iOS 實線 / Android 虛線)。\n\n  對比度  :類別色對畫布底色的對比已在色彩設定時考量(淺色模式用較深的一階、深色模式用較淺的一階)。\n\n  驗證  :打開 Storybook 的 a11y 檢測面板應為 0 critical violation。"}</p>
+      <p className="whitespace-pre-line">{"  鍵盤與讀屏  :Recharts v3 的 accessibilityLayer 預設啟用(本頁長條、折線、面積圖範例顯式標明此 prop,文件化此依賴)。啟用時圖表 SVG 取得 tabIndex=0 + role=\"application\":Tab 聚焦圖表後,方向鍵 ←/→ 沿軸刻度逐一瀏覽資料點;tooltip 內容(ChartTooltipContent)掛 role=\"status\" + aria-live,讀屏器朗讀當前資料點的類別與數值。圓餅 / 環圈圖同樣預設啟用(圖表本身可聚焦),但方向鍵導覽建立在軸刻度的數值索引上,圓餅這類無數值軸的圖無法逐片導覽——若需要讓比例圖也能鍵盤瀏覽,改用可逐項聚焦的呈現方式(例如搭配資料表格)。\n\n  顏色非唯一語義  :不只靠色彩區分類別,配合圖例、軸標籤與圖形變化(例如折線用虛線),讓色盲或黑白列印時仍可辨識。實例見「設計原則」頁的「顏色不是區分類別的唯一手段」(iOS 實線 / Android 虛線)。\n\n  對比度  :類別色對畫布底色的對比已在色彩設定時考量(淺色模式用較深的一階、深色模式用較淺的一階)。\n\n  驗證  :打開 Storybook 的 a11y 檢測面板應為 0 critical violation。"}</p>
     </div>
   ),
 }

@@ -103,7 +103,7 @@ Badge.displayName = 'Badge'
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const badgeMeta = {
   component: 'Badge',
-  family: 3,
+  family: null, // self-contained(對齊 spec frontmatter 2026-06-11 修),
   variants: {
     critical: { purpose: 'deep-orange 底白字（bg-notification = deep-orange-6）' },
     high: { purpose: '藍底白字（bg-info）' },

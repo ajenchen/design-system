@@ -80,6 +80,85 @@ function NotificationSettings() {
   )
 }
 
+/**
+ * 成員列 demo 共用 data + row —「長內容」與「主體放清單」大 item 共用同一 anatomy,
+ * 避免兩份重複 markup(EXAMPLE_REDUNDANT 收斂,2026-06-11)。
+ * - item-anatomy Family 2 reading:[prefix Avatar 40] [content: title + description(--item-gap-label-desc-scanning gap)]
+ * - list-as-region canonical:item 自帶 `px-loose rounded-md` → hover bg flush 到 chrome 邊
+ * - Person avatar canonical:hover 必出現 ProfileCard(DS-wide rule,見 avatar.spec.md)
+ * - description = 「職稱｜員編｜工號」(full-width 「｜」separator;世界級成員卡以職稱辨識工作身份)
+ */
+const MEMBER_ROLES = ['Design', 'Engineering', 'Product', 'Research'] as const
+const MEMBERS = [
+  { name: 'Alan Chen', empId: 'D-0042', empNum: 'EMP-1001' },
+  { name: 'Betty Wu', empId: 'E-0183', empNum: 'EMP-1002' },
+  { name: 'Charlie Lee', empId: 'D-0127', empNum: 'EMP-1003' },
+  { name: 'Diana Kim', empId: 'M-0055', empNum: 'EMP-1004' },
+  { name: 'Ethan Park', empId: 'E-0210', empNum: 'EMP-1005' },
+  { name: 'Fiona Lin', empId: 'D-0098', empNum: 'EMP-1006' },
+  { name: 'George Ho', empId: 'E-0271', empNum: 'EMP-1007' },
+  { name: 'Hana Yu', empId: 'M-0019', empNum: 'EMP-1008' },
+  { name: 'Ivan Sun', empId: 'D-0145', empNum: 'EMP-1009' },
+  { name: 'Julia Shen', empId: 'E-0302', empNum: 'EMP-1010' },
+  { name: 'Kevin Hsu', empId: 'D-0076', empNum: 'EMP-1011' },
+  { name: 'Lydia Cao', empId: 'M-0088', empNum: 'EMP-1012' },
+  { name: 'Mark Tseng', empId: 'E-0154', empNum: 'EMP-1013' },
+  { name: 'Nina Pan', empId: 'D-0031', empNum: 'EMP-1014' },
+  { name: 'Oscar Lo', empId: 'E-0249', empNum: 'EMP-1015' },
+  { name: 'Peggy Qin', empId: 'M-0067', empNum: 'EMP-1016' },
+  { name: 'Ray Tang', empId: 'D-0192', empNum: 'EMP-1017' },
+  { name: 'Sophia Fei', empId: 'E-0115', empNum: 'EMP-1018' },
+  { name: 'Tom Liang', empId: 'D-0234', empNum: 'EMP-1019' },
+  { name: 'Uma Jiang', empId: 'M-0043', empNum: 'EMP-1020' },
+  { name: 'Victor Ren', empId: 'E-0168', empNum: 'EMP-1021' },
+  { name: 'Wendy Xia', empId: 'D-0059', empNum: 'EMP-1022' },
+  { name: 'Xavier Ma', empId: 'E-0296', empNum: 'EMP-1023' },
+  { name: 'Yuki Du', empId: 'D-0081', empNum: 'EMP-1024' },
+  { name: 'Zach Feng', empId: 'M-0024', empNum: 'EMP-1025' },
+  { name: 'Amy Zhao', empId: 'D-0163', empNum: 'EMP-1026' },
+  { name: 'Brad Fan', empId: 'E-0207', empNum: 'EMP-1027' },
+  { name: 'Cathy Miao', empId: 'M-0102', empNum: 'EMP-1028' },
+  { name: 'Derek Qu', empId: 'D-0140', empNum: 'EMP-1029' },
+  { name: 'Elena Xu', empId: 'E-0318', empNum: 'EMP-1030' },
+]
+
+function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index: number }) {
+  const role = MEMBER_ROLES[index % MEMBER_ROLES.length]
+  return (
+    <div
+      role="listitem"
+      className="flex items-center gap-3 py-2 px-[var(--layout-space-loose)] rounded-md hover:bg-neutral-hover"
+    >
+      <Avatar
+        size={40}
+        src={`https://i.pravatar.cc/80?u=${member.empNum}`}
+        alt={member.name}
+        hoverCard={
+          <ProfileCard
+            name={member.name}
+            avatar={{ src: `https://i.pravatar.cc/80?u=${member.empNum}`, alt: member.name }}
+            subtitle={`${role}｜${member.empId}`}
+            status={(['online', 'busy', 'away', 'offline'] as const)[index % 4]}
+            statusMessage="Out of Office: Back on Monday!"
+            actions={<ProfileCardDefaultActions />}
+            fields={[
+              { label: 'ID', value: member.empNum },
+              { label: 'Employee number', value: member.empId },
+            ]}
+            onViewMore={() => {}}
+          />
+        }
+      />
+      <div className="flex flex-col min-w-0 flex-1">
+        <span className="text-body font-medium truncate">{member.name}</span>
+        <span className="mt-[var(--item-gap-label-desc-scanning)] text-caption text-fg-secondary truncate">
+          {role}｜{member.empId}｜{member.empNum}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 const meta: Meta = {
   title: 'Design System/Components/Dialog/展示',
   parameters: { layout: 'centered' },
@@ -148,114 +227,33 @@ export const WithForm = {
 
 export const LongContent = {
   name: '長內容',
-  render: () => {
-    // 30 avatar + title + description(ROLE｜EMP_ID｜EMP_NUM,full-width 「｜」 separator)
-    // 對齊 user 要求 + ProfileCard 資訊量:
-    //   - avatar:real photo src(pravatar seed 確保每人不同面孔)
-    //   - title:name(body font-medium)
-    //   - description:「職稱｜員編｜工號」格式(text-caption text-fg-secondary = neutral-8)
-    //     → 世界級 Slack / Linear / Notion 成員卡都用「職稱」而非「公司名」作為 subtitle 核心(辨識工作身份)
-    // item-anatomy Family 2 reading mode — prefix Avatar 40 / content title + description 2 行
-    // hover bg flush to body padded edge(無 item px)—— 2026-04-22 canonical
-    const roles = ['Design', 'Engineering', 'Product', 'Research']
-    const members = [
-      { name: 'Alan Chen', empId: 'D-0042', empNum: 'EMP-1001' },
-      { name: 'Betty Wu', empId: 'E-0183', empNum: 'EMP-1002' },
-      { name: 'Charlie Lee', empId: 'D-0127', empNum: 'EMP-1003' },
-      { name: 'Diana Kim', empId: 'M-0055', empNum: 'EMP-1004' },
-      { name: 'Ethan Park', empId: 'E-0210', empNum: 'EMP-1005' },
-      { name: 'Fiona Lin', empId: 'D-0098', empNum: 'EMP-1006' },
-      { name: 'George Ho', empId: 'E-0271', empNum: 'EMP-1007' },
-      { name: 'Hana Yu', empId: 'M-0019', empNum: 'EMP-1008' },
-      { name: 'Ivan Sun', empId: 'D-0145', empNum: 'EMP-1009' },
-      { name: 'Julia Shen', empId: 'E-0302', empNum: 'EMP-1010' },
-      { name: 'Kevin Hsu', empId: 'D-0076', empNum: 'EMP-1011' },
-      { name: 'Lydia Cao', empId: 'M-0088', empNum: 'EMP-1012' },
-      { name: 'Mark Tseng', empId: 'E-0154', empNum: 'EMP-1013' },
-      { name: 'Nina Pan', empId: 'D-0031', empNum: 'EMP-1014' },
-      { name: 'Oscar Lo', empId: 'E-0249', empNum: 'EMP-1015' },
-      { name: 'Peggy Qin', empId: 'M-0067', empNum: 'EMP-1016' },
-      { name: 'Ray Tang', empId: 'D-0192', empNum: 'EMP-1017' },
-      { name: 'Sophia Fei', empId: 'E-0115', empNum: 'EMP-1018' },
-      { name: 'Tom Liang', empId: 'D-0234', empNum: 'EMP-1019' },
-      { name: 'Uma Jiang', empId: 'M-0043', empNum: 'EMP-1020' },
-      { name: 'Victor Ren', empId: 'E-0168', empNum: 'EMP-1021' },
-      { name: 'Wendy Xia', empId: 'D-0059', empNum: 'EMP-1022' },
-      { name: 'Xavier Ma', empId: 'E-0296', empNum: 'EMP-1023' },
-      { name: 'Yuki Du', empId: 'D-0081', empNum: 'EMP-1024' },
-      { name: 'Zach Feng', empId: 'M-0024', empNum: 'EMP-1025' },
-      { name: 'Amy Zhao', empId: 'D-0163', empNum: 'EMP-1026' },
-      { name: 'Brad Fan', empId: 'E-0207', empNum: 'EMP-1027' },
-      { name: 'Cathy Miao', empId: 'M-0102', empNum: 'EMP-1028' },
-      { name: 'Derek Qu', empId: 'D-0140', empNum: 'EMP-1029' },
-      { name: 'Elena Xu', empId: 'E-0318', empNum: 'EMP-1030' },
-    ]
-    return (
-      <Dialog defaultOpen>
-        <DialogTrigger asChild>
-          <Button>開啟 Modal</Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>成員列表</DialogTitle>
-          </DialogHeader>
-          {/* Body 放 list canonical(2026-05-01):body 撤 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer
-              wrapper 自帶 `py-2`(menu group 8px breathing)+ item 自帶 `px-loose rounded-md`
-              (hover bg flush 到 chrome 邊,unbounded list-as-region pattern)。
-              item 用 Family 2 reading mode(prefix Avatar 40 + content title+description)。 */}
-          <DialogBody className="!px-0 !pt-0 !pb-0">
-            <div role="list" className="flex flex-col py-2">
-              {members.map((m, i) => (
-                // item-anatomy Family 2:[prefix Avatar 40] [content: title + description(--item-gap-label-desc-scanning gap)]
-                // `px-2 rounded-md` → content(avatar / text)在 hover bg 內有 8px breathing
-                // (非背景元素不可直接觸 affordance bg 邊 — 真實 invariant,對齊 Material / Polaris 世界級)
-                // description 色 = text-fg-secondary(neutral-8);separator = full-width 「｜」
-                <div
-                  key={m.empNum}
-                  role="listitem"
-                  className="flex items-center gap-3 py-2 px-[var(--layout-space-loose)] rounded-md hover:bg-neutral-hover"
-                >
-                  {/* Person avatar canonical:hover 必出現 ProfileCard(DS-wide rule,見 avatar.spec.md)
-                      世界級 Slack / Figma / Linear / Notion 的 person avatar 全預設 hover → profile popover */}
-                  <Avatar
-                    size={40}
-                    src={`https://i.pravatar.cc/80?u=${m.empNum}`}
-                    alt={m.name}
-                    hoverCard={
-                      <ProfileCard
-                        name={m.name}
-                        avatar={{ src: `https://i.pravatar.cc/80?u=${m.empNum}`, alt: m.name }}
-                        subtitle={`${roles[i % roles.length]}｜${m.empId}`}
-                        status={(['online','busy','away','offline'] as const)[i % 4]}
-                        statusMessage="Out of Office: Back on Monday!"
-                        actions={<ProfileCardDefaultActions />}
-                        fields={[
-                          { label: 'ID', value: m.empNum },
-                          { label: 'Employee number', value: m.empId },
-                        ]}
-                        onViewMore={() => {}}
-                      />
-                    }
-                  />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-body font-medium truncate">{m.name}</span>
-                    <span className="mt-[var(--item-gap-label-desc-scanning)] text-caption text-fg-secondary truncate">
-                      {roles[i % roles.length]}｜{m.empId}｜{m.empNum}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </DialogBody>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="tertiary">關閉</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    )
-  },
+  render: () => (
+    <Dialog defaultOpen>
+      <DialogTrigger asChild>
+        <Button>開啟成員列表</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>成員列表</DialogTitle>
+        </DialogHeader>
+        {/* Body 放 list canonical(2026-05-01):body 撤 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer
+            wrapper 自帶 `py-2`(menu group 8px breathing)+ item 自帶 `px-loose rounded-md`
+            (hover bg flush 到 chrome 邊)。30 筆超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
+        <DialogBody className="!px-0 !pt-0 !pb-0">
+          <div role="list" className="flex flex-col py-2">
+            {MEMBERS.map((m, i) => (
+              <MemberRow key={m.empNum} member={m} index={i} />
+            ))}
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="tertiary">關閉</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  ),
 }
 
 export const Destructive = {
@@ -284,25 +282,11 @@ export const Destructive = {
 }
 
 /**
- * ListBody — body 放 list 的 canonical pattern。
- *
- * **世界級對照**(每家 benchmark,對齊 CLAUDE.md Meta-Pattern M8):
- * - Material M3 Dialog with List:body 移除 pt/pb,item py-3 (48-56px row)
- *   ref https://m3.material.io/components/dialogs/specs
- * - Polaris Modal + ResourceList:body px only,list 接頂接底 flush,item 44-52px
- *   ref https://polaris.shopify.com/components/overlays/modal
- * - Atlassian Modal + OptionList:body padding 全移除,item 40-56px
- * - Linear Cmd+K:body 0 padding,item dense py-1 (密集 palette)
- * - GitHub Primer ActionList in Dialog:body 0 vertical padding
- *
- * **共識**:overlay body 裝 list 時,**body 不加 vertical padding**;list item 自己的
- * py 是節奏源。我方 canonical(2026-05-01):`<DialogBody className="!px-0 !pt-0 !pb-0">`
- * 配 list outer wrapper(`<div className="py-2">`)+ item 自帶 `px-loose rounded-md`。
- * 不加 `flush` variant — 對齊 Material/Atlassian/Mantine/shadcn 主流(無 universal flush);
- * Polaris 有 flush API 但 scope 極窄。原因:加 1 row(search/banner)就破功 → 不如保留
- * chrome padding;新增 prop 不解決底層脆弱(consumer 仍要管 list py + item px-loose)。
- *
- * 以下三個 item-size 範例對應不同 list-item tier(item-anatomy Family 1 reading mode):
+ * ListBody — body 放 list 的 canonical pattern(Material / Polaris / Atlassian / Linear /
+ * GitHub Primer 共識:overlay body 裝 list 時 body 不加 vertical padding,節奏源 = item 自己的 py)。
+ * 我方 canonical(2026-05-01):`<DialogBody className="!px-0 !pt-0 !pb-0">` + list wrapper `py-2`
+ * + item 自帶 `px-loose rounded-md`。不加 `flush` variant — 加 1 row(search / banner)就破功,
+ * 保留 chrome padding 較穩。以下三個範例對應不同 list-item tier(item-anatomy Family 2 / MenuItem)。
  */
 export const ListBody = {
   name: '主體放清單',
@@ -319,48 +303,8 @@ export const ListBody = {
           </DialogHeader>
           <DialogBody className="!px-0 !pt-0 !pb-0">
             <div role="list" className="flex flex-col py-2">
-              {[
-                { name: 'Alan Chen', role: 'Design', empId: 'D-0042', empNum: 'EMP-1001' },
-                { name: 'Betty Wu', role: 'Engineering', empId: 'E-0183', empNum: 'EMP-1002' },
-                { name: 'Charlie Lee', role: 'Design', empId: 'D-0127', empNum: 'EMP-1003' },
-                { name: 'Diana Kim', role: 'Product', empId: 'M-0055', empNum: 'EMP-1004' },
-                { name: 'Ethan Park', role: 'Engineering', empId: 'E-0210', empNum: 'EMP-1005' },
-                { name: 'Fiona Lin', role: 'Design', empId: 'D-0098', empNum: 'EMP-1006' },
-              ].map((m, i) => (
-                // list-as-region canonical:item `px-loose rounded-md` → hover bg flush 到 chrome 邊
-                <div
-                  key={m.empNum}
-                  role="listitem"
-                  className="flex items-center gap-3 py-2 px-[var(--layout-space-loose)] rounded-md hover:bg-neutral-hover"
-                >
-                  {/* Person avatar canonical:hover 必出現 ProfileCard */}
-                  <Avatar
-                    size={40}
-                    src={`https://i.pravatar.cc/80?u=${m.empNum}`}
-                    alt={m.name}
-                    hoverCard={
-                      <ProfileCard
-                        name={m.name}
-                        avatar={{ src: `https://i.pravatar.cc/80?u=${m.empNum}`, alt: m.name }}
-                        subtitle={`${m.role}｜${m.empId}`}
-                        status={(['online','busy','away','offline'] as const)[i % 4]}
-                        statusMessage="Out of Office: Back on Monday!"
-                        actions={<ProfileCardDefaultActions />}
-                        fields={[
-                          { label: 'ID', value: m.empNum },
-                          { label: 'Employee number', value: m.empId },
-                        ]}
-                        onViewMore={() => {}}
-                      />
-                    }
-                  />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-body font-medium truncate">{m.name}</span>
-                    <span className="mt-[var(--item-gap-label-desc-scanning)] text-caption text-fg-secondary truncate">
-                      {m.role}｜{m.empId}｜{m.empNum}
-                    </span>
-                  </div>
-                </div>
+              {MEMBERS.slice(0, 6).map((m, i) => (
+                <MemberRow key={m.empNum} member={m} index={i} />
               ))}
             </div>
           </DialogBody>
@@ -412,17 +356,6 @@ export const ListBody = {
 }
 
 /**
- * OpenSnapshot — visual-audit 專用 story(非 consumer-facing 教學範例)。
- *
- * 用 `defaultOpen` 讓 overlay 在 render 當下就開著,Playwright 截圖才抓得到
- * Dialog chrome(Header/Body/Footer)。不用 play() + userEvent,是因為
- * Radix `defaultOpen` 對 Portal 自動生效,不需額外互動觸發 — 世界級 DS
- * (Polaris / Atlassian)的 chromatic 稽核也走同 pattern。
- *
- * 情境選用「確認刪除專案」— Jira / Linear 常見的 destructive confirmation,
- * 涵蓋 title + description + footer 雙 action 的完整 chrome。
- */
-/**
  * 標頭內含分頁(2026-05-18 從 patterns/header-canonical/header-canonical.stories.tsx 整合過來
  * per user「應該整合進去 dialog 吧?目前應該不需要獨立的 header canonical 資料夾來說明這些東西」)
  *
@@ -441,7 +374,7 @@ export const WithTabsInHeader = {
   render: () => (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="secondary">打開含分頁的對話框</Button>
+        <Button variant="secondary">專案設定</Button>
       </DialogTrigger>
       <DialogContent>
         <Tabs defaultValue="general">
@@ -458,13 +391,44 @@ export const WithTabsInHeader = {
           </DialogHeader>
           <DialogBody>
             <TabsContent value="general">
-              <p className="text-body">專案的名稱、描述、可見度等基本資訊。修改後立即生效。</p>
+              <div className="flex flex-col gap-[var(--layout-space-loose)]">
+                <Field>
+                  <FieldLabel>專案名稱</FieldLabel>
+                  <Input defaultValue="Q3 設計改版" />
+                </Field>
+                <Field>
+                  <FieldLabel>專案簡介</FieldLabel>
+                  <Input defaultValue="改善結帳流程體驗與轉換率" />
+                </Field>
+              </div>
             </TabsContent>
             <TabsContent value="members">
-              <p className="text-body">管理專案成員與角色。邀請新成員會收到 Email 通知並自動加入。</p>
+              <div className="flex flex-col gap-3">
+                {[
+                  ['Alan Chen', '管理員'],
+                  ['Betty Wu', '編輯者'],
+                  ['Charlie Lee', '檢視者'],
+                ].map(([name, role]) => (
+                  <div key={name} className="flex items-center justify-between">
+                    <span className="text-body">{name}</span>
+                    <span className="text-caption text-fg-secondary">{role}</span>
+                  </div>
+                ))}
+              </div>
             </TabsContent>
             <TabsContent value="integrations">
-              <p className="text-body">串接第三方服務:Slack 通知、GitHub PR 同步、Linear issue 連動。</p>
+              <div className="flex flex-col gap-3">
+                {[
+                  { key: 'slack', label: 'Slack 通知', on: true },
+                  { key: 'github', label: 'GitHub PR 同步', on: true },
+                  { key: 'linear', label: 'Linear issue 連動', on: false },
+                ].map((it) => (
+                  <div key={it.key} className="flex items-center justify-between">
+                    <span className="text-body">{it.label}</span>
+                    <Switch defaultChecked={it.on} aria-label={it.label} />
+                  </div>
+                ))}
+              </div>
             </TabsContent>
           </DialogBody>
         </Tabs>
@@ -473,6 +437,17 @@ export const WithTabsInHeader = {
   ),
 }
 
+/**
+ * OpenSnapshot — visual-audit 專用 story(非 consumer-facing 教學範例)。
+ *
+ * 用 `defaultOpen` 讓 overlay 在 render 當下就開著,Playwright 截圖才抓得到
+ * Dialog chrome(Header/Body/Footer)。不用 play() + userEvent,是因為
+ * Radix `defaultOpen` 對 Portal 自動生效,不需額外互動觸發 — 世界級 DS
+ * (Polaris / Atlassian)的 chromatic 稽核也走同 pattern。
+ *
+ * 情境選用「確認刪除專案」— Jira / Linear 常見的 destructive confirmation,
+ * 涵蓋 title + description + footer 雙 action 的完整 chrome。
+ */
 export const OpenSnapshot = {
   name: '開啟狀態',
   tags: ['!autodocs'],

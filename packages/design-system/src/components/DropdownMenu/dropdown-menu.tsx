@@ -113,7 +113,7 @@ const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
 interface DropdownMenuContentProps
   extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> {
   size?: SizeKey
-  /** 最小寬度（px），預設跟隨觸發元件寬度 */
+  /** 最小寬度（px），預設 `max(180px, 觸發元件寬度)`——窄 trigger 時吃 180px 地板 */
   minWidth?: number
   /** 最大高度（px），超過時捲動 */
   maxHeight?: number
@@ -130,7 +130,17 @@ const DropdownMenuContent = React.forwardRef<
       collisionPadding={collisionPadding}
       align={align}
       data-density="md"
-      onCloseAutoFocus={(e) => e.preventDefault()}
+      // Focus return on close:不 override `onCloseAutoFocus` — 用 Radix 內建 default
+      // (close 時 focus 還 trigger;outside-interaction 例外由 Radix `hasInteractedOutsideRef` 自管)。
+      // W3C APG menubar「Escape: …return focus to the element…from which the menu was opened」
+      // (w3.org/WAI/ARIA/apg/patterns/menubar/);shadcn dropdown-menu 同樣不 override。
+      // 2026-06-11 移除 2026-04-08 的 `(e) => e.preventDefault()` hardcode:它跑在 Radix
+      // composeEventHandlers 內建 handler 之前,defaultPrevented → trigger focus 被 skip →
+      // Esc 關閉後 focus 掉到 body(APG violation)。原動機「mouse close 後 trigger 殘留
+      // focus ring」不構成 override 理由:實測(2026-06-12 playwright)pointer item-click
+      // close 後 programmatic refocus 在 Chromium 仍可 match `:focus-visible`(UA heuristic),
+      // 但與 shadcn 官方 live demo 同流程 DOM 比對 IDENTICAL — Radix 生態一致接受此
+      // tradeoff:APG keyboard focus-return 優先於 cosmetic ring。
       className={cn(floatingLayerClass, !maxHeight && 'py-2', className)}
       style={{
         boxShadow: 'var(--elevation-200)',

@@ -15,7 +15,7 @@
         ]
       },
       {
-        "matcher": "Agent",
+        "matcher": "Agent|Task|Workflow",
         "hooks": [
           {
             "type": "command",
@@ -111,10 +111,6 @@
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_data_table_size_num_to_meta_width.sh\""
-          },
-          {
-            "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/chrome_header_dispatcher.sh\""
           },
           {
@@ -138,7 +134,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Agent",
+        "matcher": "Agent|Task|Workflow",
         "hooks": [
           {
             "type": "command",
@@ -168,15 +164,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_consumer_no_ds_catalog.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_consumer_story_baseline.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_consumer_ds_primitive_misuse.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_consumer_app_invariants.sh\""
           },
           {
             "type": "command",
@@ -196,15 +184,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_addon_subdir_ship.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_storybook_addon_preset_cjs.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_consumer_app_story_title.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_storybook_addon_packaging.sh\""
           }
         ]
       },
@@ -281,11 +261,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_propose_plain_chinese.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_propose_cite_required.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_propose_discipline.sh\""
           },
           {
             "type": "command",
@@ -311,11 +287,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_fork_user_plugin_install.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_plugin_freshness.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/check_plugin_fork_health.sh\""
           }
         ]
       }

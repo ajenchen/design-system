@@ -1,5 +1,9 @@
+// @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#NumberAlignment
 import type { Meta, StoryObj } from '@storybook/react'
+import { createColumnHelper } from '@tanstack/react-table'
 import { ScrollArea, ScrollBar } from './scroll-area'
+import { DataTable } from '@/design-system/components/DataTable/data-table'
+import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 
 const meta: Meta = {
   title: 'Design System/Components/ScrollArea/展示',
@@ -52,6 +56,100 @@ const STATUS_COLORS: Record<string, string> = {
   'Active':      'var(--success)',
   'Beta':        'var(--info)',
 }
+
+// ── DataTable columns ─────────────────────────────────────────────────────────
+// 消費真 <DataTable>(per data-table.spec.md「簡單展示場景也用 DataTable,不另外維護靜態 Table」)。
+// ScrollArea 包 height="auto" DataTable = scroll-area.spec.md「Orientation」段 canonical 組合:
+// 捲動完全由 ScrollArea own(DataTable 無高度約束 + min-w-max 不啟內部捲軸)。
+
+type StripeProduct = (typeof STRIPE_PRODUCTS)[number]
+const productCol = createColumnHelper<StripeProduct>()
+
+const PRODUCT_COLUMNS = [
+  productCol.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 100 } }),
+  productCol.accessor('name', { header: 'Product', meta: { type: 'string', width: 240 } }),
+  productCol.accessor('category', { header: 'Category', meta: { type: 'string', width: 130 } }),
+  productCol.accessor('stock', { header: 'Stock', meta: { type: 'number', width: 90 } }),
+  productCol.accessor('price', { header: 'Price', meta: { type: 'string', align: 'right', width: 110 } }),
+  productCol.accessor('margin', { header: 'Margin', meta: { type: 'string', align: 'right', width: 90 } }),
+  productCol.accessor('channel', { header: 'Channel', meta: { type: 'string', width: 100 } }),
+  productCol.accessor('status', {
+    header: 'Status',
+    meta: { width: 110 },
+    cell: (info) => (
+      <span className="inline-flex items-center gap-1.5">
+        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[info.getValue()] }} />
+        {info.getValue()}
+      </span>
+    ),
+  }),
+]
+
+interface PullRequest {
+  id: string
+  title: string
+  author: string
+  reviewer: string
+  base: string
+  compare: string
+  checks: string
+  additions: number
+  deletions: number
+}
+
+const PR_TITLES = [
+  'feat: ScrollArea overlay scrollbar for cross-OS consistency',
+  'fix: DataTable pinned column shadow on horizontal scroll',
+  'refactor: extract drag-visual SSOT for row + column reorder',
+  'docs: clarify density vs size boundary in tokens README',
+  'fix: Sheet body scroll chain forwards flex-col h-full',
+  'feat: Combobox keyboard navigation skips disabled options',
+]
+
+const PR_AUTHORS = ['@alice-chen', '@bob-liu', '@carol-wang', '@david-kuo', '@eve-lin', '@frank-ho']
+
+const PULL_REQUESTS: PullRequest[] = Array.from({ length: 18 }, (_, i) => ({
+  id: `#${4210 - i}`,
+  title: PR_TITLES[i % PR_TITLES.length],
+  author: PR_AUTHORS[i % PR_AUTHORS.length],
+  reviewer: `${PR_AUTHORS[(i + 1) % PR_AUTHORS.length]}, ${PR_AUTHORS[(i + 2) % PR_AUTHORS.length]}`,
+  base: 'main',
+  compare: 'feat/scroll-area',
+  checks: '12 / 12 passing',
+  additions: 128 + i * 7,
+  deletions: 24 + i * 3,
+}))
+
+const prCol = createColumnHelper<PullRequest>()
+
+const PR_COLUMNS = [
+  prCol.accessor('id', { header: '#', meta: { type: 'string', width: 90 } }),
+  prCol.accessor('title', { header: 'Title', meta: { type: 'string', width: 360 } }),
+  prCol.accessor('author', { header: 'Author', meta: { type: 'string', width: 130 } }),
+  prCol.accessor('reviewer', { header: 'Reviewer', meta: { type: 'string', width: 190 } }),
+  prCol.accessor('base', { header: 'Base', meta: { type: 'string', width: 90 } }),
+  prCol.accessor('compare', { header: 'Compare', meta: { type: 'string', width: 150 } }),
+  prCol.accessor('checks', {
+    header: 'Checks',
+    meta: { width: 140 },
+    cell: (info) => (
+      <span className="inline-flex items-center gap-1.5">
+        <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)]" />
+        {info.getValue()}
+      </span>
+    ),
+  }),
+  prCol.accessor('additions', {
+    header: 'Additions',
+    meta: { width: 110, align: 'right' },
+    cell: (info) => <span className="text-success">+{info.getValue()}</span>,
+  }),
+  prCol.accessor('deletions', {
+    header: 'Deletions',
+    meta: { width: 110, align: 'right' },
+    cell: (info) => <span className="text-error">-{info.getValue()}</span>,
+  }),
+]
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -110,39 +208,15 @@ export const HorizontalProductTable: Story = {
   render: () => (
     <div className="max-w-[640px]">
       <p className="text-caption text-fg-muted mb-3">
-        8 欄商品表(SKU / Name / Category / Stock / Price / Margin / Channel / Status)超出 640px 容器 →
-        用 <code className="font-mono text-footnote bg-muted px-1 rounded">orientation=&quot;horizontal&quot;</code> scrollbar。
+        8 欄商品表(SKU / Name / Category / Stock / Price / Margin / Channel / Status)欄寬總和超出
+        640px 容器 → 用 <code className="font-mono text-footnote bg-muted px-1 rounded">orientation=&quot;horizontal&quot;</code> scrollbar。
         比 native 的優勢:Windows 不吃 17px,右邊 Status 欄不被裁切。
+        表格本體消費真 DataTable(height=&quot;auto&quot; 無高度約束,捲動由 ScrollArea own)。
       </p>
       <ScrollArea className="border border-border rounded-lg">
-        <table className="text-caption">
-          <thead>
-            <tr className="bg-muted">
-              {['SKU', 'Product', 'Category', 'Stock', 'Price', 'Margin', 'Channel', 'Status'].map((h) => (
-                <th key={h} className="px-4 py-2 text-left font-medium text-fg-secondary whitespace-nowrap border-b border-border">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {STRIPE_PRODUCTS.map((p) => (
-              <tr key={p.sku} className="hover:bg-neutral-hover">
-                <td className="px-4 py-2 font-mono text-fg-muted whitespace-nowrap border-b border-divider">{p.sku}</td>
-                <td className="px-4 py-2 whitespace-nowrap border-b border-divider">{p.name}</td>
-                <td className="px-4 py-2 whitespace-nowrap border-b border-divider">{p.category}</td>
-                <td className="px-4 py-2 text-right font-mono whitespace-nowrap border-b border-divider">{p.stock}</td>
-                <td className="px-4 py-2 text-right font-mono whitespace-nowrap border-b border-divider">{p.price}</td>
-                <td className="px-4 py-2 text-right font-mono whitespace-nowrap border-b border-divider">{p.margin}</td>
-                <td className="px-4 py-2 whitespace-nowrap border-b border-divider">{p.channel}</td>
-                <td className="px-4 py-2 whitespace-nowrap border-b border-divider">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[p.status] }} />
-                    {p.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="min-w-max">
+          <DataTable columns={PRODUCT_COLUMNS} data={STRIPE_PRODUCTS} getRowId={(p) => p.sku} height="auto" bordered={false} />
+        </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
     </div>
@@ -154,38 +228,14 @@ export const BothDirections: Story = {
   render: () => (
     <div className="max-w-[560px]">
       <p className="text-caption text-fg-muted mb-3">
-        容器 560×280px、內容寬 &gt; 560、高 &gt; 280,同時渲染 vertical + horizontal scrollbar。
+        容器 560×280px、內容寬 &gt; 560、高 &gt; 280,同時渲染 vertical + horizontal scrollbar
+        (wrapper 已內建 vertical,consumer 只需再渲染一個 horizontal,見 scroll-area.spec.md「Orientation」)。
+        表格本體消費真 DataTable(height=&quot;auto&quot;,雙向捲動完全由 ScrollArea own)。
       </p>
       <ScrollArea className="h-[280px] border border-border rounded-lg">
-        <table className="text-caption">
-          <thead>
-            <tr className="bg-muted sticky top-0">
-              {['#', 'Title', 'Author', 'Reviewer', 'Base', 'Compare', 'Checks', 'Additions', 'Deletions'].map((h) => (
-                <th key={h} className="px-3 py-2 text-left font-medium text-fg-secondary whitespace-nowrap border-b border-border">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: 18 }).map((_, i) => (
-              <tr key={i} className="hover:bg-neutral-hover">
-                <td className="px-3 py-2 font-mono text-fg-muted whitespace-nowrap border-b border-divider">#{4210 - i}</td>
-                <td className="px-3 py-2 whitespace-nowrap border-b border-divider">feat: ScrollArea overlay scrollbar for cross-OS consistency</td>
-                <td className="px-3 py-2 whitespace-nowrap border-b border-divider">@alice-chen</td>
-                <td className="px-3 py-2 whitespace-nowrap border-b border-divider">@bob-liu, @carol-wang</td>
-                <td className="px-3 py-2 font-mono whitespace-nowrap border-b border-divider">main</td>
-                <td className="px-3 py-2 font-mono whitespace-nowrap border-b border-divider">feat/scroll-area</td>
-                <td className="px-3 py-2 whitespace-nowrap border-b border-divider">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--success)' }} />
-                    12 / 12 passing
-                  </span>
-                </td>
-                <td className="px-3 py-2 text-right font-mono text-success whitespace-nowrap border-b border-divider">+{128 + i * 7}</td>
-                <td className="px-3 py-2 text-right font-mono text-error whitespace-nowrap border-b border-divider">-{24 + i * 3}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="min-w-max">
+          <DataTable columns={PR_COLUMNS} data={PULL_REQUESTS} getRowId={(pr) => pr.id} height="auto" bordered={false} />
+        </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
     </div>

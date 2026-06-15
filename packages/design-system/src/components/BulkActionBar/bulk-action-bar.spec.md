@@ -53,6 +53,14 @@ benchmark:
 
 判斷:**「沒選取就消失嗎?」** 是 → BulkActionBar;否 → Action Bar / Toolbar / Notice。
 
+## 常見誤解
+
+| 誤解 | 正解 |
+|------|------|
+| 「BulkActionBar 可替代 toolbar」 | 否——additive 派,toolbar 永遠保留(selection 期間 filter / sort / search 仍可用,見「Placement」) |
+| 「批次主操作用 primary」 | 否——一律 tertiary(primary 留給 dialog 確認最終 action,見「禁止事項」) |
+| 「selection 為 0 顯示空 bar 佔位」 | 否——回 null 完全不佔 layout(見「結構」) |
+
 ---
 
 ## 結構
@@ -64,15 +72,16 @@ benchmark:
 └──────────────────────────────────────────────────────────────┘
 ```
 
-- 全 md Buttons(`same-row consistency`,close X 同 size;2026-05-04 升 md,見下方 Size canonical)
+- 全 md Buttons(`same-row consistency`,close X 同 size;rationale 見下方「Size canonical」)
 - `gap-2`(8px)+ `<ButtonDivider />`(自帶 mx-1 = 12px 視覺距離)
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
 - 自然高度 56md / 68lg(md Button `--field-height-md` 32/36 + `py-[var(--layout-space-tight)]` 12/16 ×2;對齊 SurfaceFooter / DataTable toolbar canonical)
 - `selection.length === 0` → 回 null 不佔 layout
+- **寬度邊界**:actions 為單行 flex 排列(`gap-2`),無折行、無內建 overflow 收納;寬度受限場景由 consumer 控制 action 數量
 
 ### Slot
 
-- **`actions`**:consumer 提供 **md** Buttons(2026-05-04 spec update,前版 sm 為錯);`variant=tertiary`(主)/ `tertiary danger`(destructive)— **不用 primary**(留 dialog 確認最終 action)
+- **`actions`**:consumer 提供 **md** Buttons(size rationale 見「Size canonical」);`variant=tertiary`(主)/ `tertiary danger`(destructive)— **不用 primary**(留 dialog 確認最終 action)
 - **count 區**:`{N} 已選`(內建)+ inline filter hidden status `· {M} 個被 filter 隱藏`(`hiddenByFilter` prop 傳入時)
 - **clear**:`<Button iconOnly size=md variant=text dismiss />`(內建,觸發 `onClear`)
 
@@ -138,6 +147,8 @@ interface BulkActionBarProps {
   actions?: React.ReactNode
   /** Filter 模式:hidden 數量,顯示在 count 區 inline 「{N} 已選 · {M} 個被 filter 隱藏」 */
   hiddenByFilter?: number
+  /** 擴選整個 dataset 後的真總數;number 時 count 顯示此值,否則 fallback selection.length(見「Extend dataset pattern」) */
+  totalSelected?: number | null
   /** i18n labels(Partial,merge with default;對齊 Material localeText / Polaris i18n 慣例) */
   labels?: Partial<BulkActionBarLabels>
   className?: string
@@ -155,6 +166,10 @@ interface BulkActionBarLabels {
 
 **Hint banner(擴 dataset 提示)不在本 API**:由 consumer 用 `<Alert variant="info" placement="fixed">` 配 ReactNode title 帶 inline link 自組,黏在 BulkActionBar 上方。Alert / Notice 的 `title` + `description` 已支援 ReactNode(2026-04-28)。
 
+### Extend dataset pattern(totalSelected)
+
+「本頁全選 → hint 點擊 → 擴選整個 dataset」2-step 後,consumer 把 `totalSelected` 設為 dataset 真總數,count 區改顯示該值(否則 fallback `selection.length`)——避免 Alert 顯「已選 5370」但 bar 仍顯「已選 50」的不同步(2026-05-13 ship)。對齊 Gmail / Linear / Notion 全選 dataset hint pattern。
+
 ---
 
 ## a11y 預設
@@ -170,12 +185,11 @@ interface BulkActionBarLabels {
 
 ## 視覺與動畫
 
-- **出現 / 消失**:`selection.length` 0→>0 時 fade in;>0→0 時 fade out（animation timing — see motion canonical, not invariant）。**不 layout shift**(預留位置或 absolute / fixed)
+- **出現 / 消失**:`selection.length` 0→>0 直接 mount;>0→0 回 null 直接 unmount(無 fade 動畫)。inline composition 下自然 reflow;consumer 需固定高度時自擺 placeholder(見「禁止事項」)
 - **底色**:**無底色 contrast**,跟 page 同色(`bg-canvas` / `bg-surface` 視 placement 繼承)。對齊 Notion / Linear minimalist — 用文字內容切換呈現「mode」,**不**用底色 highlight。**不像 Polaris 那種顯著底色變化** <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
-- **邊界**:**無外框邊界**(融入 page chrome)— Top 模式跟 toolbar 共位置;Footer 模式 **`border-top` border-divider 切割 layout**(因 footer 是 page 結構,不是 floating overlay,不用 box-shadow 製造「浮層」誤導)
-- **與 table 的關係**:Top scenario 跟 toolbar 共邊;Footer scenario 是 page 結構性 footer,純 border-top 切
+- **邊界**:**無外框邊界**(融入 page chrome)— 恆 **`border-top` border-divider 切割 layout**(bar 是 page 結構,不是 floating overlay,不用 box-shadow 製造「浮層」誤導)。top-toolbar 變體為未來項(見「Size canonical」)
+- **與 table 的關係**:inline composition — bar 接在 DataTable 下方,toolbar 永遠保留(見「Placement」)
 - **Action variant**:`tertiary`(主)+ `tertiary danger`(destructive)— **不用 primary**(留給 dialog 確認最終 action)
-- **respects `motion-reduce`**:fade 動畫 disable
 
 ---
 

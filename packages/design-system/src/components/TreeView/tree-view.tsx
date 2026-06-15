@@ -714,14 +714,14 @@ export interface TreeItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
    */
   checkbox?: React.ReactNode
   /**
-   * 右側 inline actions(suffix slot,宣告式 API)。對齊 `uiSize.spec.md`「Inline Action」
+   * 右側 inline actions(suffix slot,宣告式 API)。對齊 `patterns/element-anatomy/inline-action.spec.md`
    * 與 `SidebarMenuButton.inlineActions` 的同一條規格——TreeItem / SidebarMenuButton /
    * 未來的 row primitive 全部用同一個 declarative API。
    *
    * Consumer 只宣告 intent,TreeItem 用 `<ItemInlineAction>` 自動渲染:
    * - Icon 尺寸 = `ICON_SIZE[treeViewSize]`(自動)
    * - Hover bg、tooltip、aria-label、cursor-pointer 自動處理
-   * - **不可以**手刻 button JSX(canonical 實作在 `item-layout.tsx`)
+   * - **不可以**手刻 button JSX(canonical 實作在 `patterns/element-anatomy/item-anatomy.tsx` `ItemInlineAction`)
    *
    * ```tsx
    * <TreeItem
@@ -750,7 +750,7 @@ export interface TreeItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
    *
    * 規則對齊 Input.endSlot canonical:90% case 用 `inlineActions` 宣告式 API,
    * 10% config 表達不出時走 slot。視覺一致性由 consumer 負責(可使用 host 內部 helper
-   * — 但禁止 app-code 直接 import L3 primitive,見 `check_l3_primitive_import.sh`)。
+   * — 但禁止 app-code 直接 import L3 primitive,見 `check_canonical_propagation.sh` E.2,原 `check_l3_primitive_import` 已 folded)。
    */
   inlineActionsSlot?: React.ReactNode
   /**
@@ -992,7 +992,10 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
                 actionsReveal="hover"(預設):row hover 或 keyboard focus-visible 才顯示;
                 actionsReveal=false:常駐顯示。跟 SidebarMenuButton 共用同一條規則,行為一致。
                 inlineActionsSlot escape hatch 優先(consumer 自控 JSX,reveal 一樣套外層 group)。 */}
-            {inlineActionsSlot ? (
+            {/* 2026-06-12 R2(同 sidebar.tsx 修):宿主 disabled 時 render 層擋 inline actions —
+                inline-action.spec.md「宿主 disabled | 不渲染」;row pointer-events 蓋不住
+                actionsReveal=false 常駐顯示的視覺暗示,必須 render 層 guard。 */}
+            {disabled ? null : inlineActionsSlot ? (
               <ItemSuffix hoverReveal={actionsReveal === 'hover'} hoverGroup="tree-item">
                 {inlineActionsSlot}
               </ItemSuffix>
@@ -1045,7 +1048,7 @@ const ParentIdContext = React.createContext<string | null>(null)
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const treeViewMeta = {
   component: 'TreeView',
-  family: null, // non-family composite / overlay / layout
+  family: 1, // Family 1(Menu item layout)消費者 — 對齊 tree-view.spec.md frontmatter family: 1
   variants: {
 
   },

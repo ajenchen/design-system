@@ -334,7 +334,7 @@ export const PrimarySidebarWithTabs: Story = {
             asideOpen={asideOpen}
             onAsideOpenChange={setAsideOpen}
           >
-            <TabsContent value="all" className="flex-1 min-h-0 flex flex-col">
+            <TabsContent value="all" className="mt-0 flex-1 min-h-0 flex flex-col">
               <IssuesView
                 selectedId={selected?.id}
                 asideOpen={asideOpen}
@@ -344,7 +344,7 @@ export const PrimarySidebarWithTabs: Story = {
                 }}
               />
             </TabsContent>
-            <TabsContent value="open" className="flex-1 min-h-0 flex flex-col">
+            <TabsContent value="open" className="mt-0 flex-1 min-h-0 flex flex-col">
               <IssuesView
                 selectedId={selected?.id}
                 asideOpen={asideOpen}
@@ -354,7 +354,7 @@ export const PrimarySidebarWithTabs: Story = {
                 }}
               />
             </TabsContent>
-            <TabsContent value="done" className="flex-1 min-h-0 flex flex-col">
+            <TabsContent value="done" className="mt-0 flex-1 min-h-0 flex flex-col">
               <IssuesView
                 selectedId={selected?.id}
                 asideOpen={asideOpen}

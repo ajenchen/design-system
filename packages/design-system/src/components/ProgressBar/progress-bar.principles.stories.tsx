@@ -62,9 +62,11 @@ export const UsageGuidance: Story = {
           <ul className="space-y-1">
             <li>
               <LinkTo kind="Design System/Components/ProgressBar/展示" name="批次任務進度"><span className="text-primary hover:underline font-medium cursor-pointer">批次任務進度</span></LinkTo>
+              <span className="text-fg-secondary"> — CSV 匯入 1,250 筆客戶資料、批次寄送:總量已知,單一 prominent 進度條讓使用者掌握整體完成比例</span>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/ProgressBar/展示" name="DataTable 儲存格 內進度"><span className="text-primary hover:underline font-medium cursor-pointer">DataTable 儲存格 內進度</span></LinkTo>
+              <LinkTo kind="Design System/Components/ProgressBar/展示" name="DataTable 儲存格內進度"><span className="text-primary hover:underline font-medium cursor-pointer">DataTable 儲存格內進度</span></LinkTo>
+              <span className="text-fg-secondary"> — 列表中每列各自的配額使用率 / 任務完成度,4px 細線不搶走主要欄位的閱讀重量</span>
             </li>
           </ul>
           <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>
@@ -137,7 +139,7 @@ export const UsageGuidance: Story = {
           <Frame>
             <ProgressBar value={55} status="inProgress" />
           </Frame>
-          <Label>✅ 走 status token(primary / success / error),不 override 色值</Label>
+          <Label>✅ 走 status token(info / success / error),不 override 色值</Label>
         </Rule>
       </Section>
 
@@ -212,8 +214,8 @@ export const StatusRule: Story = {
   render: () => (
     <div>
       <Rule
-        title="primary = 進行中 / 未完成;success = 完成;error = 失敗"
-        note="三種 status 是進度的完整生命週期:在途(primary)→ 終態二選一(success / error)。不要用 status 表達「警示」或「接近上限」等中間語意——那是 Notice / Alert 的職責。"
+        title="inProgress = 進行中 / 未完成;success = 完成;error = 失敗"
+        note="三種 status 是進度的完整生命週期:在途(inProgress,fill 用 --info)→ 終態二選一(success / error)。不要用 status 表達「警示」或「接近上限」等中間語意——那是 Notice / Alert 的職責。"
       >
         <Frame>
           <div className="flex items-center gap-2 mb-2">
@@ -222,7 +224,7 @@ export const StatusRule: Story = {
           </div>
           <ProgressBar value={42} status="inProgress" affix="value" />
         </Frame>
-        <Label>✅ 上傳中用 primary,affix 顯示進度百分比</Label>
+        <Label>✅ 上傳中用 inProgress,affix 顯示進度百分比</Label>
 
         <Frame>
           <div className="flex items-center gap-2 mb-2">

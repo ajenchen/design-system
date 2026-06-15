@@ -10,6 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
+  SheetBody,
   SheetFooter,
   SheetClose,
 } from './sheet'
@@ -32,7 +33,6 @@ import { Button } from '@/design-system/components/Button/button'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
-import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 
 const meta: Meta = {
   title: 'Design System/Components/Sheet/設計原則',
@@ -75,10 +75,10 @@ export const UsageGuidance: Story = {
       <p>適合 Sheet 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Components/Sheet/展示" name="右側建立 專案"><span className="text-primary hover:underline font-medium cursor-pointer">右側建立 專案</span></LinkTo>
+          <LinkTo kind="Design System/Components/Sheet/展示" name="建立新專案（右側滑入）"><span className="text-primary hover:underline font-medium cursor-pointer">建立新專案（右側滑入）</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Sheet/展示" name="右側編輯 使用者 詳情"><span className="text-primary hover:underline font-medium cursor-pointer">右側編輯 使用者 詳情</span></LinkTo>
+          <LinkTo kind="Design System/Components/Sheet/展示" name="編輯成員詳情（右側滑入）"><span className="text-primary hover:underline font-medium cursor-pointer">編輯成員詳情（右側滑入）</span></LinkTo>
         </li>
       </ul>
       <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
@@ -99,10 +99,9 @@ export const UsageGuidance: Story = {
               <SheetTitle>專案設定</SheetTitle>
               <SheetDescription>修改此專案的基本資訊與通知偏好</SheetDescription>
             </SheetHeader>
-            {/* Overlay body 長內容必用 ScrollArea 而非 native overflow-y-auto,對齊 DS
-                跨 OS 一致設計準則(避免 Windows/Linux 右側被吃 15-17px)。 */}
-            <ScrollArea className="flex-1">
-              <div className="py-4 flex flex-col gap-4">
+            {/* Body 必用 SheetBody(內建 ScrollArea + 浮層 padding SSOT px-loose/pt-tight/pb-bottom);
+                自組 ScrollArea + py-4 = 水平 0 padding 歷史 bug,詳 sheet.tsx SheetBody comment。 */}
+            <SheetBody className="flex flex-col gap-4">
                 <Field>
                   <FieldLabel>名稱</FieldLabel>
                   <Input defaultValue="產品路線圖" />
@@ -118,8 +117,7 @@ export const UsageGuidance: Story = {
                     <Checkbox label="每日摘要" />
                   </div>
                 </Field>
-              </div>
-            </ScrollArea>
+            </SheetBody>
             <SheetFooter>
               <SheetClose asChild>
                 <Button variant="tertiary">取消</Button>
@@ -163,28 +161,12 @@ export const UsageGuidance: Story = {
         <Label>Dialog:刪除確認、放棄變更、登入、付款確認</Label>
       </Rule>
 
-      {/* 何時不用 / 替代元件 — 原 WhenNotSheetRule */}
+      {/* 何時不用 / 替代元件 — 原 WhenNotSheetRule。
+          短確認 → Dialog 的完整 live 對照已在上方「Dialog — 居中 modal」段示範,此處不重複(2026-06-11 精簡)。 */}
       <Rule
         title="何時不用 / 替代元件 — 短確認 / 不可逆動作 → Dialog"
-        note="「刪除 / 登出 / 放棄變更」這類要使用者完全停下做決定的場景,用 Dialog 的居中 modal 強制聚焦。Sheet 側滑視覺不夠強,使用者可能點旁邊就跳過"
+        note="「刪除 / 登出 / 放棄變更」這類要使用者完全停下做決定的場景,用 Dialog 的居中 modal 強制聚焦。Sheet 側滑視覺不夠強,使用者可能點旁邊就跳過(live 對照見上方「Dialog — 居中 modal」段)"
       >
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="primary" danger startIcon={Trash2}>刪除帳號</Button>
-          </DialogTrigger>
-          <DialogContent autoHeight maxWidth="420px">
-            <DialogHeader>
-              <DialogTitle>確定要刪除帳號?</DialogTitle>
-            </DialogHeader>
-            <DialogBody>
-              <p className="text-body">所有資料將於 30 天後永久移除,此動作無法復原。</p>
-            </DialogBody>
-            <DialogFooter>
-              <Button variant="tertiary">取消</Button>
-              <Button variant="primary" danger>確認刪除</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
         <Label>↑ 短決策應該用 Dialog(Sheet 太長太輕)</Label>
       </Rule>
 
@@ -243,9 +225,9 @@ export const SidePropRule: Story = {
               <SheetTitle>任務詳情</SheetTitle>
               <SheetDescription>#PROJ-234 · 指派給Ada Chen</SheetDescription>
             </SheetHeader>
-            <div className="flex-1 py-4 text-body text-fg-secondary">
+            <SheetBody className="text-body text-fg-secondary">
               登入頁在連續輸入錯誤密碼 3 次後未顯示鎖定提示,使用者反覆嘗試仍無回饋。建議補上鎖定倒數與重設連結。
-            </div>
+            </SheetBody>
           </SheetContent>
         </Sheet>
         <Label>↑ 列表點 row → 右側滑入編輯,左側列表仍可見</Label>
@@ -287,13 +269,13 @@ export const SidePropRule: Story = {
             <SheetHeader>
               <SheetTitle>分享</SheetTitle>
             </SheetHeader>
-            <div className="flex-1 py-4 flex flex-col gap-2">
+            <SheetBody className="flex flex-col gap-2">
               {['複製連結', '傳送到 Email', '加入我的最愛', '匯出 PDF'].map(name => (
                 <button key={name} type="button" className="px-3 py-2 text-body text-left hover:bg-neutral-hover rounded-md">
                   {name}
                 </button>
               ))}
-            </div>
+            </SheetBody>
           </SheetContent>
         </Sheet>
         <Label>↑ 手機拇指操作區 → bottom Sheet</Label>
@@ -322,7 +304,7 @@ export const HeaderFooterStructureRule: Story = {
     <div>
       <Rule
         title="標準結構 — Header(標題 + 描述) + 主內容 + Footer(按鈕列)"
-        note="與 Dialog 共用 overlay-surface 視覺語言(bg-surface-raised / elevation-200;容器邊框用較淡的 border-divider,Dialog 用 border-border)。Header 放 SheetTitle + SheetDescription,Footer 放按鈕列;主內容區 flex-1 + ScrollArea(跨 OS 一致捲軸,非 native overflow-y-auto)吃長內容"
+        note="與 Dialog 共用 overlay-surface 視覺語言(bg-surface-raised / elevation-200;容器邊框用較淡的 border-divider,Dialog 用 border-border)。Header 放 SheetTitle + SheetDescription,Footer 放按鈕列;主內容區用 SheetBody(內建 ScrollArea 跨 OS 一致捲軸 + 浮層 padding SSOT)吃長內容"
       >
         <Sheet>
           <SheetTrigger asChild>
@@ -333,9 +315,8 @@ export const HeaderFooterStructureRule: Story = {
               <SheetTitle>建立新客戶</SheetTitle>
               <SheetDescription>填寫基本資料後可進行付款設定</SheetDescription>
             </SheetHeader>
-            {/* Overlay body 長內容必用 ScrollArea,對齊 DS 跨 OS 一致 canonical */}
-            <ScrollArea className="flex-1">
-              <div className="py-4 flex flex-col gap-4">
+            {/* Body 必用 SheetBody(內建 ScrollArea + 浮層 padding SSOT) */}
+            <SheetBody className="flex flex-col gap-4">
                 <Field>
                   <FieldLabel>公司名稱</FieldLabel>
                   <Input placeholder="輸入公司名稱" />
@@ -344,8 +325,7 @@ export const HeaderFooterStructureRule: Story = {
                   <FieldLabel>聯絡人 Email</FieldLabel>
                   <Input placeholder="contact@example.com" />
                 </Field>
-              </div>
-            </ScrollArea>
+            </SheetBody>
             <SheetFooter>
               <SheetClose asChild>
                 <Button variant="tertiary">取消</Button>

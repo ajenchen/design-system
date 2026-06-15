@@ -197,7 +197,7 @@ export const LabelAlignmentRule: Story = {
     <div>
       <Rule
         title="本系統採 stacked(label 在上、value 在下)— label 左對齊"
-        note="對齊 Atlassian / Shopify Polaris / Stripe 慣例——label 與 value 垂直堆疊,兩者都左對齊。閱讀節奏由上往下、由左往右,不需視線左右跳動。這是本系統固定結構,無 `horizontal align` 等 prop 可改"
+        note="對齊 Atlassian / Shopify Polaris / Stripe 慣例——label 與 value 垂直堆疊,兩者都左對齊。閱讀節奏由上往下、由左往右,不需視線左右跳動。這是 vertical(預設)模式的結構;label 左 / value 右的 metadata 列改用既有 `direction=&quot;horizontal&quot;` prop(見 spec「Direction」段)"
       >
         <Frame className="max-w-md">
           <DescriptionList cols={2}>
@@ -225,7 +225,7 @@ export const LabelAlignmentRule: Story = {
 
       <Rule
         title="❌ 不要自己用 flex 改 horizontal layout"
-        note="若試圖改 DescriptionList 為 label 左 / value 右對齊 → 破壞 HTML 語義(dt 和 dd 不再視覺上緊密配對),且在多欄配置下 grid 對齊會錯亂。有此需求 → 改用 Field 系統或自訂 layout"
+        note="手刻 flex 模擬 label 左 / value 右 → 失去 dl/dt/dd 語意,且多欄配置下 grid 對齊錯亂。有此需求 → 用既有 `direction=&quot;horizontal&quot;` prop(dl/dt/dd 語意完整保留,見 showcase「水平佈局」story),不要自組 layout"
       >
         <Frame className="max-w-md">
           <div className="flex justify-between py-1">
@@ -246,7 +246,7 @@ export const LabelAlignmentRule: Story = {
 }
 
 export const NoInteractionRule: Story = {
-  name: '唯讀 — 不放互動元件 / 不做表格',
+  name: '唯讀:不放互動元件',
   render: () => (
     <div>
       <Rule
@@ -303,21 +303,7 @@ export const NoInteractionRule: Story = {
           ↑ dd 內放 Button 破壞「唯讀屬性」語義 → 改用 Field(read-only mode + inline edit)
         </Label>
       </Rule>
-
-      <Rule
-        title="❌ 把 DescriptionList 當表格(多 row 同結構)"
-        note="重複的 label 是反模式 — 視覺上也會讀起來像清單而不是屬性。多筆同結構資料 → DataTable"
-      >
-        <Frame className="max-w-md">
-          <DescriptionList cols={2}>
-            <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
-            <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
-            <DescriptionItem label="姓名">王小明</DescriptionItem>
-            <DescriptionItem label="Email">ming@example.com</DescriptionItem>
-          </DescriptionList>
-        </Frame>
-        <Label warn>↑ 「姓名 / Email」重複 → 多筆同結構應用 DataTable</Label>
-      </Rule>
+      {/* 「多筆同結構 → DataTable」的 ❌ 對照由「使用指引」story(vs DataTable 段)擁有,不在此重複 */}
     </div>
   ),
 }

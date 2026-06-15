@@ -30,6 +30,12 @@ FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
 # Self-exemption:本 hook help-text 合法含 anti-pattern literal 作為文件範例(且 .sh 不被 Tailwind
 # vite plugin 掃,無 build 風險)→ 不掃自己,避免 self-trigger false-positive(2026-05-30 test-surfaced)。
 case "$FILE" in */check_tailwind_wildcard_in_docs.sh) exit 0 ;; esac
+# 2026-06-11 R2 held-item #13:.claude/{tmp,logs} 歷史 artifact(codex brief / reply、audit findings
+# json、preflight log)非 Tailwind 掃描對象 — src/globals.css 用 explicit positive @source(只掃 src/ +
+# packages/{design-system,storybook-config} + .storybook/)且 `@source not "**/.claude/**"`;盤上 12 檔
+# 已含 antiPattern 而 build 連續綠(至 beta.61)= 零 build 風險實證。掃描對象路徑(src/packages/docs)
+# 保護不變。
+case "$FILE" in */.claude/tmp/*|*/.claude/logs/*|.claude/tmp/*|.claude/logs/*) exit 0 ;; esac
 # Only check files Tailwind v4 might scan
 if ! echo "$FILE" | grep -qE '\.(md|spec\.md|sh|ts|tsx|css|json)$'; then exit 0; fi
 
@@ -53,7 +59,7 @@ if [ -n "$ANTI_PATTERNS" ]; then
 $(echo "$ANTI_PATTERNS" | sed 's/^/    /')
 
   Why blocked:
-    Tailwind v4 vite plugin scans .md/.ts/etc → 把 `var(--X-*)` / `var(--X-A/B/C)`
+    Tailwind v4 vite plugin scans .md/.ts/etc → 把 \`var(--X-*)\` / \`var(--X-A/B/C)\`
     當 literal class string 抓 → 產 invalid CSS(CSS 變數名禁 \`*\` / \`/\`)→ Storybook
     build 死 → release CI fail。本 anchor:beta.27 6+ CI iteration 燒此問題。
 
@@ -65,7 +71,7 @@ $(echo "$ANTI_PATTERNS" | sed 's/^/    /')
     var(--radix-*-available-height) → var(--radix-{popover|hover-card|dialog}-content-available-height)
 
   Escape(極罕見,本 file 真需要 wildcard token literal):
-    add `// @tailwind-wildcard-allow: <rationale>` to file content
+    add \`// @tailwind-wildcard-allow: <rationale>\` to file content
 EOF
   exit 2
 fi

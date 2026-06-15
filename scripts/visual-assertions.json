@@ -149,10 +149,6 @@
       "file": "button-icon-only.png"
     },
     {
-      "id": "design-system-components-button-設計規格--size-matrix",
-      "file": "button-sizes.png"
-    },
-    {
       "id": "design-system-components-button-設計規格--color-matrix",
       "file": "button-color-matrix.png"
     },
@@ -293,6 +289,10 @@
       "file": "accordion-faq.png"
     },
     {
+      "id": "design-system-components-appshell-設計規格--overview",
+      "file": "appshell-overview.png"
+    },
+    {
       "id": "design-system-components-aspectratio-展示--hero-banner-16-x-9",
       "file": "aspectratio-hero-banner-16-x-9.png"
     },
@@ -303,6 +303,10 @@
     {
       "id": "design-system-components-breadcrumb-展示--default",
       "file": "breadcrumb-default.png"
+    },
+    {
+      "id": "design-system-components-bulkactionbar-設計規格--overview",
+      "file": "bulkactionbar-overview.png"
     },
     {
       "id": "design-system-components-chart-展示--bar-chart-revenue",
@@ -337,6 +341,10 @@
       "file": "field-vertical.png"
     },
     {
+      "id": "design-system-components-fieldcontrolgroup-設計規格--overview",
+      "file": "fieldcontrolgroup-overview.png"
+    },
+    {
       "id": "design-system-components-fileupload-展示--resume-upload",
       "file": "fileupload-resume-upload.png"
     },
@@ -353,8 +361,8 @@
       "file": "linkinput-basic.png"
     },
     {
-      "id": "design-system-internal-namecard-設計規格--overview",
-      "file": "namecard-basic.png"
+      "id": "design-system-internal-profilecard-設計規格--overview",
+      "file": "profilecard-basic.png"
     },
     {
       "id": "design-system-components-numberinput-展示--modes",

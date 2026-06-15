@@ -78,8 +78,9 @@ export interface SurfaceHeaderProps
    * Tabs row slot(2026-05-18 加 per header-canonical.spec.md W2/W4 真實能用 + user-mandated fix)。
    * 提供時 SurfaceHeader 自動 column 結構:
    *   row 1 = children(title + actions/dismiss,px-loose py-tight)
-   *   row 2 = tabsSlot 包在 `<div px-loose border-b border-divider>`
-   *           ↑ wrapper 提供 W2 padding inheritance + 全寬 paint(W1 視覺一條線)
+   *   row 2 = tabsSlot 包在 `HEADER_TABS_SLOT_WRAPPER_CLASS` wrapper(v3:wrapper 自身
+   *           無 px / 無 border;TabsList 自己 w-full + px-loose,border-b 延展全寬 —
+   *           W1 視覺一條線。詳 chrome-header.tsx v3 fix 註解)
    *
    * Consumer 傳:`tabsSlot={<TabsList>...</TabsList>}`,TabsContent 仍放 DialogBody 內。
    * `<Tabs>` root 必須 wrap 整 DialogContent(Radix TabsList ↔ TabsContent 同 root 連動)。

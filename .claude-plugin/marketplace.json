@@ -6,15 +6,15 @@
     "name": "qijenchen"
   },
   "metadata": {
-    "version": "0.1.0-beta.61",
+    "version": "0.1.0-beta.66",
     "pluginRoot": "."
   },
   "plugins": [
     {
       "name": "design-system",
       "source": "./",
-      "description": "World-class DS governance — 22 skills + 59 hooks + 5 path-scoped rules + CLAUDE.md instructions + 31 active M-rules + 88 audit dims. Consumers enable once and inherit all canonical (codex collab discipline, knowledge-prune cadence, M14 5-layer pipeline, M22 benchmark cite, M29 anchor preflight, etc.)。",
-      "version": "0.1.0-beta.61",
+      "description": "World-class DS governance — 22 skills + 52 hooks + 5 path-scoped rules + CLAUDE.md instructions + 31 active M-rules + 88 audit dims. Consumers enable once and inherit all canonical (codex collab discipline, knowledge-prune cadence, M14 5-layer pipeline, M22 benchmark cite, M29 anchor preflight, etc.)。",
+      "version": "0.1.0-beta.66",
       "author": {
         "name": "qijenchen"
       },

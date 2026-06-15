@@ -1,5 +1,7 @@
 #!/bin/bash
-# Tests for check_consumer_no_ds_catalog.sh(P0 BLOCKER,2026-05-27 user directive「確保跟 ds repo 一模一樣」)
+# 2026-06-11 payload 正交化:合併檔跑全規則,payload 須對非受測規則 clean(合併前真系統行為相同 — 另一 hook 同樣會攔)
+# 2026-06-11 repoint:check_consumer_no_ds_catalog.sh 已合併進 check_consumer_app_invariants.sh(prune merge;測試 payload 不變 = 行為等價驗證)
+# Tests for check_consumer_app_invariants.sh(P0 BLOCKER,2026-05-27 user directive「確保跟 ds repo 一模一樣」)
 #
 # Hook 規則(PreToolUse,Edit|Write|MultiEdit):
 #   Scope: tool_input.file_path 必 match /(apps|consumer)/.*\.stories\.tsx$
@@ -17,7 +19,7 @@
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOOK="$SCRIPT_DIR/../check_consumer_no_ds_catalog.sh"
+HOOK="$SCRIPT_DIR/../check_consumer_app_invariants.sh"
 
 if [ ! -x "$HOOK" ]; then
   echo "FATAL: hook not executable: $HOOK"
@@ -173,7 +175,7 @@ expect_pass_silent "14. near-miss 4 distinct <DS.X> (< 5 threshold) → silent"
 
 # Near-miss P2: legit business title(not a catalog claim)→ silent
 run_hook "Edit" "$CONSUMER_FILE" \
-  "const meta = { title: 'Apps/Dashboard/Overview', component: Dashboard }; export default meta;"
+  "const meta = { title: 'Apps/template/Overview', component: Dashboard }; export default meta;"
 expect_pass_silent "15. near-miss legit business title → silent"
 
 # Near-miss P3: Object.keys on NON-DS object → silent(over-broad guard)
@@ -183,7 +185,8 @@ expect_pass_silent "16. near-miss Object.keys(cfg).map (not DS) → silent"
 
 # Legit composition demo: realistic AppShell scenario, < 5 DS tags, normal title → silent
 run_hook "Write" "/repo/apps/template/src/Dashboard.stories.tsx" \
-  "const meta = { title: 'Apps/Billing Dashboard' };
+  "// @story-baseline: @qijenchen/design-system/components/AppShell/app-shell.stories.tsx#Default
+const meta = { title: 'Apps/template/Billing Dashboard' };
 export const Default = () => (<DS.AppShell><DS.DataTable rows={invoices} /></DS.AppShell>);"
 expect_pass_silent "17. legit business composition demo → silent"
 

@@ -105,7 +105,7 @@ function TruncatedLabel({ children, fullText }: { children: React.ReactNode; ful
  * ── 視覺 ──
  *   Link (預設): text-fg-secondary
  *   Link hover:  text-primary-hover (canonical「互動高亮」, 跟 Tabs / Chip 用法一致)
- *   Page (當前): text-foreground + font-medium
+ *   Page (當前): text-foreground(不加粗 — 加粗會讓 breadcrumb 最右端視覺過重,見 spec)
  *   Separator:  ChevronRight (size 跟 list 一致), text-fg-muted
  *
  * ── 詳見 breadcrumb.spec.md ──

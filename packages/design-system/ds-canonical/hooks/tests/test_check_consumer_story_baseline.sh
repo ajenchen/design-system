@@ -1,5 +1,7 @@
 #!/bin/bash
-# Tests for check_consumer_story_baseline.sh(P0 BLOCKER,M31 codex synthesis 2026-05-27)
+# 2026-06-11 payload 正交化:bare `open` 不匹配 R3 P6 regex(open={true})、Sheet 無 defaultOpen 觸 R3 — 合併檔跑全規則,payload 須對非受測規則 clean
+# 2026-06-11 repoint:check_consumer_story_baseline.sh 已合併進 check_consumer_app_invariants.sh(prune merge;測試 payload 不變 = 行為等價驗證)
+# Tests for check_consumer_app_invariants.sh(P0 BLOCKER,M31 codex synthesis 2026-05-27)
 #
 # Hook 規則(PreToolUse,Edit|Write|MultiEdit):
 #   - tool_name not in {Edit,Write,MultiEdit} → silent exit 0
@@ -18,7 +20,7 @@
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOOK="$SCRIPT_DIR/../check_consumer_story_baseline.sh"
+HOOK="$SCRIPT_DIR/../check_consumer_app_invariants.sh"
 
 if [ ! -x "$HOOK" ]; then
   echo "FATAL: hook not executable: $HOOK"
@@ -136,14 +138,14 @@ expect_block "P4. empty @story-baseline: value → still BLOCK" "CONSUMER-STORY-
 # N1. 高風險 primitive + 有效 @story-baseline: marker → silent
 CONTENT_OK='// @story-baseline: @qijenchen/design-system/components/Dialog/dialog.stories.tsx#Basic
 import * as DS from "@qijenchen/design-system";
-export const Basic = () => <DS.Dialog open><DS.Dialog.Content>hi</DS.Dialog.Content></DS.Dialog>;'
+export const Basic = () => <DS.Dialog defaultOpen><DS.Dialog.Content>hi</DS.Dialog.Content></DS.Dialog>;'
 run_hook "Write" "$CONSUMER_STORY" "$CONTENT_OK"
 expect_pass_silent "N1. <DS.Dialog> + valid marker → silent"
 
 # N2. escape clause @story-baseline-allow: → silent(即使無 marker)
 CONTENT_ALLOW='// @story-baseline-allow: pure behavior test, no visual baseline needed
 import * as DS from "@qijenchen/design-system";
-export const KeyboardOnly = () => <DS.Sheet />;'
+export const KeyboardOnly = () => <DS.Sheet defaultOpen />;'
 run_hook "Write" "$CONSUMER_STORY" "$CONTENT_ALLOW"
 expect_pass_silent "N2. @story-baseline-allow: escape → silent"
 

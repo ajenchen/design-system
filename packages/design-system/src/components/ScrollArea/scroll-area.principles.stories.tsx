@@ -1,7 +1,11 @@
+// @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#NumberAlignment
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
 import LinkTo from '@storybook/addon-links/react'
+import { createColumnHelper } from '@tanstack/react-table'
 import { ScrollArea, ScrollBar } from './scroll-area'
+import { DataTable } from '@/design-system/components/DataTable/data-table'
+import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 
 const meta: Meta = {
   title: 'Design System/Components/ScrollArea/設計原則',
@@ -36,24 +40,42 @@ const NOTION_PAGES = [
   'Roadmap Q2', 'Incident retrospectives', 'Onboarding docs',
 ]
 
-const STRIPE_COLUMNS = ['SKU', 'Product', 'Category', 'Stock', 'Price', 'Margin', 'Channel', 'Status']
+// Stripe 寬欄位商品表 — 消費真 DataTable(per data-table.spec.md「簡單展示場景也用 DataTable」,
+// 對齊展示頁 HorizontalProductTable 同模式)。height="auto" + min-w-max:DataTable 無高度約束、
+// 不啟內部捲軸,捲動完全由外層 ScrollArea / native overflow 容器 own。
+type StripeProduct = {
+  sku: string; name: string; category: string; stock: number
+  price: string; margin: string; channel: string; status: string
+}
 
-const StripeRows = ({ count = 5 }: { count?: number }) => (
-  <>
-    {Array.from({ length: count }).map((_, i) => (
-      <tr key={i}>
-        <td className="px-3 py-2 font-mono text-fg-muted whitespace-nowrap border-b border-divider">PRO-{String(i + 1).padStart(3, '0')}</td>
-        <td className="px-3 py-2 whitespace-nowrap border-b border-divider">Stripe Atlas 新創設立方案</td>
-        <td className="px-3 py-2 whitespace-nowrap border-b border-divider">Incorporation</td>
-        <td className="px-3 py-2 text-right font-mono whitespace-nowrap border-b border-divider">128</td>
-        <td className="px-3 py-2 text-right font-mono whitespace-nowrap border-b border-divider">$500.00</td>
-        <td className="px-3 py-2 text-right font-mono whitespace-nowrap border-b border-divider">42%</td>
-        <td className="px-3 py-2 whitespace-nowrap border-b border-divider">Direct</td>
-        <td className="px-3 py-2 whitespace-nowrap border-b border-divider">Active</td>
-      </tr>
-    ))}
-  </>
-)
+const STRIPE_PRODUCTS: StripeProduct[] = [
+  { sku: 'PRO-001', name: 'Stripe Atlas 新創設立方案', category: 'Incorporation', stock: 128, price: '$500.00', margin: '42%', channel: 'Direct', status: 'Active' },
+  { sku: 'PRO-002', name: 'Stripe Radar 詐欺偵測加購', category: 'Add-on', stock: 256, price: '$0.05/tx', margin: '78%', channel: 'Direct', status: 'Active' },
+  { sku: 'PRO-003', name: 'Stripe Tax 自動稅額計算', category: 'Compliance', stock: 64, price: '$0.50/tx', margin: '65%', channel: 'Partner', status: 'Active' },
+  { sku: 'PRO-004', name: 'Stripe Connect 分潤平台帳號', category: 'Platform', stock: 32, price: '$2/acct', margin: '55%', channel: 'Direct', status: 'Beta' },
+  { sku: 'PRO-005', name: 'Stripe Issuing 實體卡發行', category: 'Cards', stock: 16, price: '$3/card', margin: '38%', channel: 'Partner', status: 'Active' },
+  { sku: 'PRO-006', name: 'Stripe Climate 碳移除貢獻', category: 'Sustainability', stock: 8, price: '1% gross', margin: '—', channel: 'Direct', status: 'Active' },
+]
+
+// 取 count 列(> 6 時循環 base 資料、SKU 連號 — 對齊展示頁 PULL_REQUESTS 生成模式)
+const productRows = (count: number): StripeProduct[] =>
+  Array.from({ length: count }, (_, i) => ({
+    ...STRIPE_PRODUCTS[i % STRIPE_PRODUCTS.length],
+    sku: `PRO-${String(i + 1).padStart(3, '0')}`,
+  }))
+
+const productCol = createColumnHelper<StripeProduct>()
+
+const PRODUCT_COLUMNS = [
+  productCol.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 100 } }),
+  productCol.accessor('name', { header: 'Product', meta: { type: 'string', width: 240 } }),
+  productCol.accessor('category', { header: 'Category', meta: { type: 'string', width: 130 } }),
+  productCol.accessor('stock', { header: 'Stock', meta: { type: 'number', width: 90 } }),
+  productCol.accessor('price', { header: 'Price', meta: { type: 'string', align: 'right', width: 110 } }),
+  productCol.accessor('margin', { header: 'Margin', meta: { type: 'string', align: 'right', width: 90 } }),
+  productCol.accessor('channel', { header: 'Channel', meta: { type: 'string', width: 100 } }),
+  productCol.accessor('status', { header: 'Status', meta: { type: 'string', width: 110 } }),
+]
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 
@@ -186,16 +208,9 @@ export const OrientationChoice: Story = {
       >
         <div className="w-[440px]">
           <ScrollArea className="border border-border rounded-md bg-surface">
-            <table className="text-caption">
-              <thead>
-                <tr className="bg-muted">
-                  {STRIPE_COLUMNS.map((h) => (
-                    <th key={h} className="px-3 py-2 text-left font-medium text-fg-secondary whitespace-nowrap border-b border-border">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody><StripeRows count={3} /></tbody>
-            </table>
+            <div className="min-w-max">
+              <DataTable columns={PRODUCT_COLUMNS} data={productRows(3)} getRowId={(p) => p.sku} height="auto" bordered={false} />
+            </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
           <Label>Stripe 商品表 — 8 欄超出 440px 容器,水平 scrollbar</Label>
@@ -208,16 +223,9 @@ export const OrientationChoice: Story = {
       >
         <div className="w-[440px]">
           <ScrollArea className="h-[200px] border border-border rounded-md bg-surface">
-            <table className="text-caption">
-              <thead>
-                <tr className="bg-muted sticky top-0">
-                  {STRIPE_COLUMNS.map((h) => (
-                    <th key={h} className="px-3 py-2 text-left font-medium text-fg-secondary whitespace-nowrap border-b border-border">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody><StripeRows count={12} /></tbody>
-            </table>
+            <div className="min-w-max">
+              <DataTable columns={PRODUCT_COLUMNS} data={productRows(12)} getRowId={(p) => p.sku} height="auto" bordered={false} />
+            </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
           <Label>大型商品網格 — 12 列 × 8 欄,雙向 scrollbar + corner</Label>
@@ -237,16 +245,9 @@ export const SolvesDataTableBug: Story = {
       >
         <div className="w-[560px]">
           <div className="border border-error/40 rounded-md bg-surface overflow-x-auto">
-            <table className="text-caption">
-              <thead>
-                <tr className="bg-muted">
-                  {STRIPE_COLUMNS.map((h) => (
-                    <th key={h} className="px-3 py-2 text-left font-medium text-fg-secondary whitespace-nowrap border-b border-border">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody><StripeRows count={4} /></tbody>
-            </table>
+            <div className="min-w-max">
+              <DataTable columns={PRODUCT_COLUMNS} data={productRows(4)} getRowId={(p) => p.sku} height="auto" bordered={false} />
+            </div>
           </div>
           <Label warn>❌ Native overflow-x-auto — Windows 右側 Status 欄被 scrollbar 吃掉</Label>
         </div>
@@ -258,16 +259,9 @@ export const SolvesDataTableBug: Story = {
       >
         <div className="w-[560px]">
           <ScrollArea className="border border-success/40 rounded-md bg-surface">
-            <table className="text-caption">
-              <thead>
-                <tr className="bg-muted">
-                  {STRIPE_COLUMNS.map((h) => (
-                    <th key={h} className="px-3 py-2 text-left font-medium text-fg-secondary whitespace-nowrap border-b border-border">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody><StripeRows count={4} /></tbody>
-            </table>
+            <div className="min-w-max">
+              <DataTable columns={PRODUCT_COLUMNS} data={productRows(4)} getRowId={(p) => p.sku} height="auto" bordered={false} />
+            </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
           <Label>✅ ScrollArea + horizontal ScrollBar — 跨 OS 一致</Label>

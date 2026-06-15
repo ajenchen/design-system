@@ -41,19 +41,19 @@ export const UsageGuidance: Story = {
       <p>適合 Alert 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Components/Alert/展示" name="低調 單行"><span className="text-primary hover:underline font-medium cursor-pointer">Subtle 單行</span></LinkTo>
+          <LinkTo kind="Design System/Components/Alert/展示" name="低調單行"><span className="text-primary hover:underline font-medium cursor-pointer">低調單行</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Alert/展示" name="實心 單行"><span className="text-primary hover:underline font-medium cursor-pointer">Solid 單行</span></LinkTo>
+          <LinkTo kind="Design System/Components/Alert/展示" name="實心單行"><span className="text-primary hover:underline font-medium cursor-pointer">實心單行</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Alert/展示" name="低調 + 說明文字"><span className="text-primary hover:underline font-medium cursor-pointer">低調 + 說明文字</span></LinkTo>
+          <LinkTo kind="Design System/Components/Alert/展示" name="低調含說明文字"><span className="text-primary hover:underline font-medium cursor-pointer">低調含說明文字</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Alert/展示" name="實心 + 說明文字"><span className="text-primary hover:underline font-medium cursor-pointer">實心 + 說明文字</span></LinkTo>
+          <LinkTo kind="Design System/Components/Alert/展示" name="實心含說明文字"><span className="text-primary hover:underline font-medium cursor-pointer">實心含說明文字</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Alert/展示" name="框架角落操作群組"><span className="text-primary hover:underline font-medium cursor-pointer">框架角落操作群組</span></LinkTo>
+          <LinkTo kind="Design System/Components/Alert/展示" name="右上角操作群組"><span className="text-primary hover:underline font-medium cursor-pointer">右上角操作群組</span></LinkTo>
         </li>
       </ul>
       <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>

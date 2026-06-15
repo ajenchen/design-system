@@ -1,6 +1,6 @@
 # @qijenchen/design-system — 完整設計參考(llms-full)
 
-> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.61。
+> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.66。
 
 # Components
 
@@ -36,7 +36,7 @@ Source(AI 讀此看官方範例): src/components/AspectRatio/
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Avatar/
 
-## Badge(family 3)
+## Badge(family self-contained)
 
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Badge/
@@ -180,6 +180,10 @@ Source(AI 讀此看官方範例): src/components/FileItem/
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/FileUpload/
 
+### Variants
+- **dropzone**: 預設 — 大型 dashed 拖放區;「拖放有價值」+ 主要上傳區(drag + click)
+- **button**: form 內單欄 / 空間省 / 與其他 field 並列 — 緊湊 Button 觸發(click-only)
+
 ## FileViewer(family composite)
 
 Storybook: https://ajenchen-design-system.netlify.app
@@ -280,7 +284,7 @@ Source(AI 讀此看官方範例): src/components/Sidebar/
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Skeleton/
 
-## Slider(family 4)
+## Slider(family self-contained)
 
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Slider/
@@ -316,9 +320,9 @@ Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Tabs/
 
 ### Sizes
-- **sm**: ★ cva default — 所有 header 內 tabs(overlay / chrome header / Dialog / Sidebar / dense toolbar);tab-height 32/40
+- **sm**: ★ cva default — 所有 header 內 tabs(overlay / chrome header / Dialog / Sidebar / dense toolbar)
 - **md**: future tier — 目前無 recommended use case,新 consumer 須先諮詢 DS owner
-- **lg**: 獨立 tabs 直接取代 chrome header — page-level workspace 主導覽(tab-height 48/56 = chrome-header-height)
+- **lg**: 獨立 tabs 直接取代 chrome header — page-level workspace 主導覽(tab 高度 = chrome-header-height)
 
 ## Tag(family 3)
 

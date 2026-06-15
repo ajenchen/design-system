@@ -235,7 +235,7 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
           'aria-label': alt ?? 'View profile',
         }
       : {}
-    // 2026-05-31:focus ring 圓角跟隨 shape(circle→rounded-full / square→rounded-md 對齊 body radius L173),
+    // 2026-05-31:focus ring 圓角跟隨 shape(circle→rounded-full / square→rounded-md,對齊 body 的 `radius` 變數 '9999px'/'4px'),
     // 原寫死 rounded-full 會讓方形 avatar(實體)配 hoverCard 時出現圓形 ring。hoverCard 為通用行為(任意內容),
     // 方形 avatar 合法可配(內容非 ProfileCard 而已),故 ring 必跟形狀。
     const focusableClass = hoverCard
@@ -348,7 +348,7 @@ export const avatarMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  states: ['default', 'focus-visible', 'disabled'], // 2026-06-11 R2:本身無自有 hover/active(spec L279;hoverCard 互動屬 HoverCard),
   tokens: {
     bg: ['bg-surface-raised'],
     fg: ['--foreground', '--on-emphasis'],

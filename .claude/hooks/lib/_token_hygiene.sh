@@ -80,8 +80,16 @@ fi
 # 應改用 ScrollArea(Components/ScrollArea/)。
 # 允許:horizontal-overflow pattern(有 scrollbar-none / fade-mask 特殊 UX)/
 #      use-overflow-items hook consumers(Tabs/ChipGroup hiding scroll)
+# 2026-06-11 deep-audit R2(n=29):豁免 regex 補認 [scrollbar-width:none] arbitrary 語法 —
+# Tabs(tabs.tsx:211,307)/ Chip(chip.tsx:173,298)hidden-scrollbar 實寫
+# `overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`,與 FileViewer 的
+# `scrollbar-none` utility 同語意;舊 regex 只認後者 → 豁免失效噪音 warn。
+# 同輪補:剝離純註解行(grep -n 輸出 `N:content` 前綴)— Tabs tabs.tsx:126,173,176,239 等
+# rationale 註解提及 overflow-x-auto 屬說明文字,非 className 用法,不構成跨 OS scrollbar drift。
 OVERFLOW_PATTERN='\boverflow-(auto|scroll|x-auto|x-scroll|y-auto|y-scroll)\b'
-OVERFLOW_HITS=$(grep -nE "$OVERFLOW_PATTERN" "$FILE_PATH" 2>/dev/null | grep -vE 'scrollbar-none|useOverflow|horizontal-overflow' | head -5)
+# 2026-06-11 R2 Phase B(codex b3 抓縫):hidden-scrollbar 豁免限水平(overflow-x;canonical =
+# horizontal-overflow pattern)— vertical overflow-y-auto 配 scrollbar-width:none 不在 canonical,照 warn。
+OVERFLOW_HITS=$(grep -nE "$OVERFLOW_PATTERN" "$FILE_PATH" 2>/dev/null | grep -vE '^[0-9]+:[[:space:]]*(//|\*|/\*|\{/\*)' | grep -vE 'overflow-x-[a-z]+[^\n]*(scrollbar-none|\[scrollbar-width:none\])|(scrollbar-none|\[scrollbar-width:none\])[^\n]*overflow-x-[a-z]+' | grep -vE 'useOverflow|horizontal-overflow' | head -5)
 if [ -n "$OVERFLOW_HITS" ]; then
   VIOLATIONS="${VIOLATIONS}\n⚠️ Native overflow-auto/scroll found (可能造成跨 OS 跑版):\n${OVERFLOW_HITS}\n  考慮改用 ScrollArea(\`@/design-system/components/ScrollArea/scroll-area\`)取得跨 OS 一致 overlay 捲軸。例外:刻意隱藏捲軸(scrollbar-none)+ fade-mask UX 屬 horizontal-overflow pattern,不套用本規則。"
 fi

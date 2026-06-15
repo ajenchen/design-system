@@ -24,19 +24,19 @@ export const UsageGuidance: Story = {
       <p>適合 Command 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Internal/Command/展示" name="全域指令面板"><span className="text-primary hover:underline font-medium cursor-pointer">全域指令面板</span></LinkTo>
+          <LinkTo kind="Design System/Internal/Command/展示" name="全域指令面板"><span className="text-primary hover:underline font-medium cursor-pointer">全域指令面板(⌘K)— Linear / VS Code 式跨頁搜尋與快速動作</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Internal/Command/展示" name="行內搜尋清單"><span className="text-primary hover:underline font-medium cursor-pointer">行內搜尋清單</span></LinkTo>
+          <LinkTo kind="Design System/Internal/Command/展示" name="行內搜尋清單"><span className="text-primary hover:underline font-medium cursor-pointer">行內搜尋清單 — Gmail 式 sidebar 信件資料夾過濾</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Internal/Command/展示" name="外觀切換器"><span className="text-primary hover:underline font-medium cursor-pointer">外觀切換器</span></LinkTo>
+          <LinkTo kind="Design System/Internal/Command/展示" name="外觀切換器"><span className="text-primary hover:underline font-medium cursor-pointer">外觀切換器 — 選中立即執行的純動作清單</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Internal/Command/展示" name="無結果狀態"><span className="text-primary hover:underline font-medium cursor-pointer">無結果狀態</span></LinkTo>
+          <LinkTo kind="Design System/Internal/Command/展示" name="無結果狀態"><span className="text-primary hover:underline font-medium cursor-pointer">搜尋無結果時的空狀態文案(CommandEmpty)</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」段)。</p>
     </div>
 
       {/* vs 近親 — VsSelectMenuRule — 原 VsSelectMenuRule */}
@@ -64,9 +64,9 @@ export const CompositionRules: Story = {
         <h4>Pattern 1 — SelectMenu 內嵌 Command(searchable form input)</h4>
         <p>需要「搜尋 + 選值寫回 form」→ 用 <code>SelectMenu</code>(內部已組合 <code>Popover + Command</code>),<strong>不要</strong>自己組合:</p>
         <ul>
-          <li><LinkTo kind="Design System/Components/Combobox/展示" name="四模式"><span className="text-primary hover:underline font-medium cursor-pointer">Combobox</span></LinkTo>——searchable 多選</li>
-          <li><LinkTo kind="Design System/Components/Select/展示" name="搜尋"><span className="text-primary hover:underline font-medium cursor-pointer">Select(searchable)</span></LinkTo>——searchable 單選</li>
-          <li><LinkTo kind="Design System/Components/PeoplePicker/展示" name="單人"><span className="text-primary hover:underline font-medium cursor-pointer">PeoplePicker</span></LinkTo>——人員搜尋</li>
+          <li><LinkTo kind="Design System/Components/Combobox/展示" name="四模式"><span className="text-primary hover:underline font-medium cursor-pointer">Combobox</span></LinkTo>——可搜尋多選(如商品類別多選標籤)</li>
+          <li><LinkTo kind="Design System/Components/Select/展示" name="搜尋"><span className="text-primary hover:underline font-medium cursor-pointer">Select(searchable)</span></LinkTo>——可搜尋單選(如從長國家清單打字篩選)</li>
+          <li><LinkTo kind="Design System/Components/PeoplePicker/展示" name="單人"><span className="text-primary hover:underline font-medium cursor-pointer">PeoplePicker</span></LinkTo>——人員搜尋(如指派任務負責人)</li>
         </ul>
 
         <h4>Pattern 2 — Popover + Command 組成 Command Palette(Cmd+K)</h4>

@@ -159,8 +159,18 @@ EOF
             record_worst 2
           fi
           # A.3.3 per-control open=blue override(v13.5)
-          if echo "$NEW_CONTENT" | grep -E "(open|isOpen) +&& +.{0,40}('border-primary'|\"border-primary\")" >/dev/null \
-             || echo "$NEW_CONTENT" | grep -E "data-\[state=open\]:border-primary" >/dev/null; then
+          # 2026-06-11 deep-audit R2(n=38)精準化(M7 broad-vs-narrow 3-column):
+          #   Spec wording:v13.3 禁「open 時 per-control 把 border 轉 primary(藍)」。
+          #   Hook regex(舊):substring 無 boundary + 不分註解行。
+          #   Gap:誤命中 (a) `data-[state=open]:border-primary-hover` canonical(button.tsx:99,109
+          #     overlay trigger 維持 hover 樣式,-hover/-active 是合法 token 後綴);(b) v13.3 retire
+          #     註解內引用舊 pattern 文字(combobox.tsx:725 / select.tsx:594)。
+          #   修:純註解行剝離 + border-primary 加字尾 boundary([^-a-zA-Z]|$)。
+          #   DS-wide counter-example scan 2026-06-11:新 regex 全 components/ 0 hit(真違規 shape
+          #   `open && 'border-primary'` / `data-[state=open]:border-primary` 結尾 仍 BLOCK,fixture 驗證)。
+          A33_CONTENT=$(echo "$NEW_CONTENT" | grep -vE '^[[:space:]]*(//|\*|/\*)')
+          if echo "$A33_CONTENT" | grep -E "(open|isOpen) +&& +.{0,40}('border-primary'|\"border-primary\")" >/dev/null \
+             || echo "$A33_CONTENT" | grep -E "data-\[state=open\]:border-primary([^-a-zA-Z]|$)" >/dev/null; then
             cat >&2 <<'EOF'
 
 ┄┄┄ A.3.3 check_field_family_invariants — per-control open=blue BLOCKER ┄┄┄

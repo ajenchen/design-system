@@ -45,11 +45,11 @@ export const UsageGuidance: Story = {
     <div>
       <Section title="何時用">
         <div className="prose prose-sm max-w-prose mb-8">
-          <p>適合 Avatar 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+          <p>Avatar 代表「誰」——人、團隊、組織、專案的視覺身份。適合的真實業務場景(點擊跳轉「展示」頁範例):</p>
           <ul className="space-y-1">
-            <li><LinkTo kind="Design System/Components/Avatar/展示" name="四模式"><span className="text-primary hover:underline font-medium cursor-pointer">四模式</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Avatar/展示" name="備援顯示"><span className="text-primary hover:underline font-medium cursor-pointer">備援顯示</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Avatar/展示" name="情境用例"><span className="text-primary hover:underline font-medium cursor-pointer">情境用例</span></LinkTo></li>
+            <li>留言者、指派者、團隊成員列表的人員識別;workspace / 組織 / App 的身份標識 —— 見 <LinkTo kind="Design System/Components/Avatar/展示" name="四模式"><span className="text-primary hover:underline font-medium cursor-pointer">四模式</span></LinkTo></li>
+            <li>成員沒上傳照片、或頭像圖片載入失敗時,以名字首字 + 色彩維持可辨識 —— 見 <LinkTo kind="Design System/Components/Avatar/展示" name="備援顯示"><span className="text-primary hover:underline font-medium cursor-pointer">備援顯示</span></LinkTo></li>
+            <li>通訊錄、成員選單、chat 列表等列表項目的主視覺 prefix —— 見 <LinkTo kind="Design System/Components/Avatar/展示" name="情境用例"><span className="text-primary hover:underline font-medium cursor-pointer">情境用例</span></LinkTo></li>
           </ul>
           <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
@@ -61,10 +61,10 @@ export const UsageGuidance: Story = {
           note="「設定」「通知」「首頁」這類功能 / 動作 / 概念不是「誰」,是「做什麼」。Icon 更適合——Avatar 用在這裡會讓使用者以為是某個人的頭像"
         >
           <div className="border border-divider rounded-lg bg-surface py-1">
-            {/* alt 用真實人名首字「S」會讓 Avatar 渲染出 initials,使用者誤以為「設定」是某位成員 */}
-            <MenuItem avatar={{ alt: 'Sam Lin' }}>設定</MenuItem>
+            {/* 真實誤用:把功能名「設定」直接當 avatar 的 alt,fallback 渲染首字「設」的色塊,看起來像某個成員或群組 */}
+            <MenuItem avatar={{ alt: '設定' }}>設定</MenuItem>
           </div>
-          <Label warn>↑ ❌ 「設定」是功能不是「誰」,套 Avatar 後首字「S」讓使用者誤以為是某位成員(Sam?)。功能導覽應用 Lucide icon</Label>
+          <Label warn>↑ ❌ 「設定」是功能不是「誰」,套 Avatar 後 fallback 渲染首字「設」的色塊,使用者誤以為是某位成員或群組。功能導覽應用 Lucide icon</Label>
           <div className="border border-divider rounded-lg bg-surface py-1">
             <MenuItem startIcon={Settings}>設定</MenuItem>
           </div>
@@ -130,7 +130,7 @@ export const FallbackRule: Story = {
           <Avatar alt="Alice Wang" size={40} />
           <Avatar alt="ABC Corp" size={40} color="blue" />
         </div>
-        <Label>↑ 依序:有圖 / 圖片失敗取首字母 / 英文取首字母 / 組織首字 + 色彩</Label>
+        <Label>↑ 依序:有圖 / 無 src 取首字母 / 英文取首字母 / 組織首字 + 色彩</Label>
       </Rule>
     </div>
   ),

@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { Heart, ThumbsUp, Star } from 'lucide-react'
 import { Rating } from './rating'
 import { Button } from '@/design-system/components/Button/button'
-import { Badge } from '@/design-system/components/Badge/badge'
+import { Tag } from '@/design-system/components/Tag/tag'
 import { Slider } from '@/design-system/components/Slider/slider'
 
 const meta: Meta = {
@@ -59,12 +59,15 @@ export const UsageGuidance: Story = {
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Components/Rating/展示" name="商品列表平均分"><span className="text-primary hover:underline font-medium cursor-pointer">商品列表平均分</span></LinkTo>
+          <span className="text-fg-secondary"> — 電商搜尋結果每張商品卡的 readOnly 平均分 + 評論數(4.7、12,843 則)</span>
         </li>
         <li>
           <LinkTo kind="Design System/Components/Rating/展示" name="送出評分流程"><span className="text-primary hover:underline font-medium cursor-pointer">送出評分流程</span></LinkTo>
+          <span className="text-fg-secondary"> — 訂單完成 / 用餐後使用者親自給分:hover 預覽 + click 送出(interactive)</span>
         </li>
         <li>
           <LinkTo kind="Design System/Components/Rating/展示" name="包在 Field 內"><span className="text-primary hover:underline font-medium cursor-pointer">包在 Field 內</span></LinkTo>
+          <span className="text-fg-secondary"> — 售後問卷表單中作為欄位:label + 驗證跟其他 Field 控制項一致</span>
         </li>
       </ul>
       <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
@@ -175,16 +178,16 @@ export const UsageGuidance: Story = {
         </Rule>
 
         <Rule
-          title="Badge — 靜態分類標記（非量化）"
-          note="「熱門」「Beta」「必填」「NEW」是 categorical label，不是 1–5 評分。Badge 傳達「屬於哪類」，Rating 傳達「值多少分」。"
+          title="Tag — 靜態分類標記（非量化）"
+          note="「熱門」「Beta」「NEW」是 categorical label，不是 1–5 評分。分類標籤用 Tag——Badge 是通知計數 / 紅點指示器（badge.spec：不用 Badge 做分類標籤）。Tag 傳達「屬於哪類」，Rating 傳達「值多少分」。"
         >
           <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
             <div className="text-caption text-fg-secondary font-medium">商品標記</div>
             <div className="flex items-center gap-2">
-              <Badge count={0} variant="critical" />
-              <span className="text-caption text-fg-muted">或文字 Badge（分類）</span>
+              <Tag color="blue">熱門</Tag>
+              <Tag color="neutral">Beta</Tag>
             </div>
-            <Label>分類 / 狀態 / 通知計數 → Badge，不是 Rating</Label>
+            <Label>分類 / 狀態標記 → Tag（通知計數才用 Badge），不是 Rating</Label>
           </div>
         </Rule>
 

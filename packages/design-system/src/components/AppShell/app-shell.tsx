@@ -253,9 +253,10 @@ const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
           {/* Main column(header + main 垂直堆)*/}
           <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
             {header && (
-              // Header 在 main column 內(main col sibling,非 main descendant)→ 跟 W3C ARIA in HTML
-              // banner rule 對照:`<header>` 在 main descendant 才不是 banner,本 ChromeHeader 是 <div>
-              // 所以本來就不會被 banner role 計算。仍包 wrap div not <header> 確保不無意觸發 banner。
+              // Header 在 main column 內(main col sibling,非 main descendant)。ChromeHeader 自
+              // 2026-05-20 起 render `<header>`(chrome-header.tsx);依 W3C HTML-AAM,`<div>` wrapper
+              // 不 scope out banner(只有 main/article/aside/nav/section 能)→ 仍得 implicit banner ✓
+              // (對齊 app-shell.spec.md「W3C ARIA in HTML banner rule」段)。
               <div className="flex-shrink-0">{header}</div>
             )}
             <main

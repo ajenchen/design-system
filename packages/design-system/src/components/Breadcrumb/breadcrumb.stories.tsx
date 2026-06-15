@@ -59,8 +59,9 @@ export const InteractiveEllipsis: Story = {
       <div className="text-caption text-fg-muted max-w-xl">
         BreadcrumbEllipsis 永遠是 <code>&lt;button&gt;</code>,搭配
         <code> DropdownMenuTrigger asChild </code>把 dropdown 行為注入。
-        點擊 <code>⋯</code> 開選單顯示折疊路徑,hover 時字色變 primary-hover,
-        跟 BreadcrumbLink 同語言。對齊 Material / Atlassian / Ant Design 作法。
+        點擊 <code>⋯</code> 開選單顯示折疊路徑;hover 走 neutral(fg-muted → foreground
+        + neutral hover bg,消費 ItemInlineActionButton),與 BreadcrumbLink 的
+        primary-hover 區隔。對齊 Material / Atlassian / Ant Design 作法。
       </div>
       <Breadcrumb>
         <BreadcrumbList>
@@ -204,35 +205,9 @@ export const DeclarativeAutoCollapse: Story = {
 // 兩者與 Default(3 層)教的原則完全相同(BreadcrumbLink + Separator + 末項 BreadcrumbPage),差別僅「深度數字」。
 // 路徑深度變化已由 anatomy Inspector `pathLength` control(3/4/5/6/7 即時切換)+ DeclarativeAutoCollapse(5 層 + auto-collapse)涵蓋。
 
-// ── 首項 Home icon(Material / Atlassian 業界慣例,spec.md startIcon prop)──
-
-export const WithHomeIcon: Story = {
-  name: '首項配首頁圖示',
-  parameters: {
-    docs: {
-      description: {
-        story: '首項用 House icon 強化視覺錨點,對齊 Material / Atlassian / Ant Design 慣例。只需傳入 icon,尺寸由元件依字級自動決定(sm/md 為 16px,lg 為 20px),確保整條麵包屑的 icon 大小一致。',
-      },
-    },
-  },
-  render: () => (
-    <Breadcrumb>
-      <BreadcrumbList>
-        <BreadcrumbItem>
-          <BreadcrumbLink href="/" startIcon={House}>首頁</BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbLink href="/projects">專案</BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbPage>新增專案</BreadcrumbPage>
-        </BreadcrumbItem>
-      </BreadcrumbList>
-    </Breadcrumb>
-  ),
-}
+// @story-trait-rationale: WithHomeIcon(首項配首頁圖示)retired 2026-06-11 per earn-existence 2-test —
+// 首項 House icon 慣例 + icon 尺寸隨字級自動(sm/md 16px / lg 20px)已由下方 PairedWithPageTitle 三個
+// size 的首項完整示範(原則層 ScopeRule 另有教學),單獨一則 md 尺寸範例屬重複;LinkTo 全庫 grep 無引用。
 
 // ── 配對頁面標題(spec.md size canonical:sm→h4 / md→h3 / lg→h2)─────────
 
@@ -241,7 +216,7 @@ export const PairedWithPageTitle: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Breadcrumb 的字級應對應頁面標題的層級:sm 配 h4(對話框 / 側板),md 配 h3(一般頁面 header,預設),lg 配 h2(詳情頁主視覺)。讓階層視覺維持平衡,麵包屑不搶走標題的視覺權重。',
+        story: 'Breadcrumb 的字級應對應頁面標題的層級:sm 配 h4(對話框 / 側板),md 配 h3(一般頁面 header,預設),lg 配 h2(詳情頁主視覺)。讓階層視覺維持平衡,麵包屑不搶走標題的視覺權重。首項配 House icon 為業界慣例,用 startIcon 傳入即可,圖示尺寸由元件依字級自動決定(sm/md 16px、lg 20px),三個尺寸可對照觀察。',
       },
     },
   },

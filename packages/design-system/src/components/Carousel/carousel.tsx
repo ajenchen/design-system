@@ -219,7 +219,7 @@ const CarouselItem = React.forwardRef<
 CarouselItem.displayName = 'CarouselItem'
 
 // ── Arrow buttons(hover 才顯示)────────────────────────────────────────────
-// 使用 DS Button (secondary + iconOnly size md);hover-only 顯示由 wrapper 的
+// 使用 DS Button (tertiary + iconOnly size md);hover-only 顯示由 wrapper 的
 // opacity transition 控制(Button 本身不負責)。此 wrapper 存在僅為絕對定位 +
 // hover/focus 可見性,不再覆寫 Button 的視覺 token。
 
@@ -318,7 +318,19 @@ const CarouselDots = React.forwardRef<
         'flex items-center gap-1.5',
         className,
       )}
-      role="tablist"
+      // 2026-06-12 a11y(deep-audit R2 verdict b):APG grouped carousel 模型,非 tabs 模型。
+      // APG:「picker buttons 收在 group 容器;現張的 picker button aria-disabled=true」
+      // (https://www.w3.org/WAI/ARIA/apg/patterns/carousel/)+ Embla 官方 Accessibility plugin
+      // 同採 plain button + label、無 tab roles(https://www.embla-carousel.com/docs/plugins/accessibility)。
+      // 為何不用完整 tabs 模型(slide=tabpanel + dot aria-controls):
+      // (1) Embla snap ≠ slide — basis-1/3 多張並排時 1 dot 控多張,tab↔tabpanel 1:1 不成立
+      // (2) tabs 鍵盤契約(方向鍵移 tablist 內 focus)與根容器方向鍵=切張(本檔 handleKeyDown)衝突
+      // (3) compound API 下 CarouselItem 不知 index,aria-controls id 接線需額外 registration
+      // 舊實作 role="tablist"/"tab" + aria-selected 是半套 tabs(無 aria-controls、slide 非 tabpanel)= 非法混血。
+      // 現張標記用 aria-current(非 APG 原文的 aria-disabled)— M23 DS 既有 canonical 優先:
+      // FileViewer filmstrip(file-viewer.tsx aria-current={active ? 'true' : undefined})同類
+      // 「視覺項導航 + 現張標記」已 codify group + button + aria-current;Bootstrap 5 indicators 同 idiom。
+      role="group"
       aria-label="輪播指示器" /* i18n-allow: DS default; 對齊同檔其他 aria-label 語言 */
       {...props}
     >
@@ -326,12 +338,15 @@ const CarouselDots = React.forwardRef<
         <button
           key={i}
           type="button"
-          role="tab"
-          aria-selected={i === selectedIndex}
+          // 現張 dot aria-current(告知 SR「你在這張」;仍可 focus / 點擊為 no-op)
+          aria-current={i === selectedIndex ? 'true' : undefined}
           aria-label={`跳至第 ${i + 1} 張`}
           onClick={() => scrollTo(i)}
           className={cn(
             'h-1.5 rounded-full transition-all',
+            // 2026-06-11 a11y(R2;Phase B codex 修重疊):hit-area 垂直擴至 24px、水平 ±3px(dot 6px+gap 6px → 中心距 12px,±3 恰相切零重疊;再寬必互搶點擊)
+            // — 視覺 dot 維持 6×6 不變,僅點擊目標擴大(anatomy story 原宣稱的 hit-area 機制補真)
+            'relative before:absolute before:-inset-y-[9px] before:-inset-x-[3px] before:content-[""]',
             // Dots 疊在 media(image/video)之上,不是 token color 底——用 --on-emphasis 保持語義
             // 跟其他「於飽和色底上的淺色前景」一致
             'bg-on-emphasis/60 hover:bg-on-emphasis/80',

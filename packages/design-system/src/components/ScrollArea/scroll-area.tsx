@@ -51,7 +51,7 @@ const ScrollArea = React.forwardRef<
         visible:outline 用 DS focus ring,不破壞視覺。 */}
     <ScrollAreaPrimitive.Viewport
       tabIndex={0}
-      className="flex-1 min-h-0 w-full rounded-[inherit] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
+      className="flex-1 min-h-0 w-full rounded-[inherit] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
     >
       {children}
     </ScrollAreaPrimitive.Viewport>

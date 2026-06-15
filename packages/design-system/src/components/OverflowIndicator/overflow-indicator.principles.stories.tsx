@@ -27,10 +27,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="Combobox 標籤溢出"><span className="text-primary hover:underline font-medium cursor-pointer">Combobox 標籤溢出</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="人員頭像 疊合 +N"><span className="text-primary hover:underline font-medium cursor-pointer">人員頭像 疊合 +N</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="形狀對照"><span className="text-primary hover:underline font-medium cursor-pointer">形狀對照</span></LinkTo>
+          <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="人員頭像 疊合 +N"><span className="text-primary hover:underline font-medium cursor-pointer">PR reviewer 頭像疊合 +N(只顯前 3 位)</span></LinkTo>
         </li>
         <li>
           <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="Breadcrumb 中段收合"><span className="text-primary hover:underline font-medium cursor-pointer">Breadcrumb 中段收合</span></LinkTo>
@@ -39,7 +36,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="DataTable 人員欄位"><span className="text-primary hover:underline font-medium cursor-pointer">DataTable 人員欄位</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親段落)。</p>
     </div>
 
       {/* vs 近親 — VsScrollAreaRule — 原 VsScrollAreaRule */}

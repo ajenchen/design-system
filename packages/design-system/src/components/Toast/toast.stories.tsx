@@ -22,6 +22,12 @@ const ACTIONS: Record<string, string> = {
   warning: '續訂',
   error: '重試',
 }
+const DESCRIPTIONS: Record<string, string> = {
+  neutral: '「Q3 營收報表.xlsx」已加入剪貼簿',
+  success: '變更已同步到所有成員',
+  warning: '7 天後將停用,請前往結算頁續訂',
+  error: '請檢查網路後再試一次',
+}
 
 /**
  * 靜態 Toast 展示——完全複製 Toast.tsx 的三層結構:
@@ -77,23 +83,23 @@ export const WithDescription = {
   render: () => (
     <div className="flex gap-16">
       <div className="flex flex-col gap-4">
-        <span className="text-caption text-fg-muted font-medium">light mode</span>
+        <span className="text-caption text-fg-secondary font-medium">light mode</span>
         <div className="flex flex-col gap-3 p-8 rounded-lg bg-canvas border border-divider">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-4">
-              <span className="text-caption text-fg-muted w-24 shrink-0">元素 {modeLabel(v, 'light')} mode</span>
-              <StaticToast variant={v} title={LABELS[v]} description="變更會立即套用到所有成員" pageTheme="light" />
+              <span className="text-caption text-fg-secondary w-24 shrink-0">套 {modeLabel(v, 'light')} theme</span>
+              <StaticToast variant={v} title={LABELS[v]} description={DESCRIPTIONS[v]} pageTheme="light" />
             </div>
           ))}
         </div>
       </div>
       <div className="flex flex-col gap-4" data-theme="dark">
-        <span className="text-caption text-fg-muted font-medium">dark mode</span>
+        <span className="text-caption text-fg-secondary font-medium">dark mode</span>
         <div className="flex flex-col gap-3 p-8 rounded-lg bg-canvas border border-divider">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-4">
-              <span className="text-caption text-fg-muted w-24 shrink-0">元素 {modeLabel(v, 'dark')} mode</span>
-              <StaticToast variant={v} title={LABELS[v]} description="變更會立即套用到所有成員" pageTheme="dark" />
+              <span className="text-caption text-fg-secondary w-24 shrink-0">套 {modeLabel(v, 'dark')} theme</span>
+              <StaticToast variant={v} title={LABELS[v]} description={DESCRIPTIONS[v]} pageTheme="dark" />
             </div>
           ))}
         </div>

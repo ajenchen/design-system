@@ -215,7 +215,7 @@ ItemPrefix.displayName = "ItemPrefix"
  * 直接用 `<ItemPrefix>` 就好,不需此 cva。
  *
  * ── SSOT 傳播 ──
- * gap 用 `var(--item-gap-label-desc)` token;font-size 用 token-awareness
+ * gap 用 `var(--item-gap-label-desc-scanning[-lg])` token(bare 變體已不存在,4 個 mode×size 變體);font-size 用 token-awareness
  * (`var(--font-caption-size)` / `var(--font-body-size)`)。改 token → 公式同步。
  */
 // code-quality-allow: long-function — cva variant/styles table — 拆 fn 會失去 type inference + 跨 fn 傳 config 反而難讀
@@ -270,7 +270,7 @@ ItemLabel.displayName = "ItemLabel"
  * `<ItemContent>` — Row primitive 的 label + optional description 內容區(SSOT)。
  *
  * ── 存在的唯一理由 ──
- * 封裝「flex-col + label + description + `mt-[var(--item-gap-label-desc)]` gap」結構,
+ * 封裝「flex-col + label + description + `mt-[var(--item-gap-label-desc-<mode>[-lg])]` gap」結構,
  * 避免 13+ 消費者各自 hard-code `mt-0.5`。改 token 一處,全 DS 同步。
  *
  * ── Consumer 偏離 canonical ──
@@ -278,7 +278,7 @@ ItemLabel.displayName = "ItemLabel"
  * 該元件 `spec.md` 明文寫下 rationale(對齊 item-anatomy canonical「偏離必明文」)。
  * 合法偏離範例:
  *   - MenuItem 的 `leading-compact + text-caption` scanning-mode typography
- *     → MenuItem spec 明文 rationale + 消費 `--item-gap-label-desc` token 直接用
+ *     → MenuItem spec 明文 rationale + 消費 `--item-gap-label-desc-scanning[-lg]` token 直接用
  *   - SelectionItem 的 control slot 跟 block formula 綁定
  *     → SelectionItem spec 明文 rationale
  *

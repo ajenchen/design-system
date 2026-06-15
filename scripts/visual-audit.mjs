@@ -70,17 +70,23 @@ const UPDATE_BASELINE = ARGS_SET.has('--update-baseline') // copy new snapshots 
 // 用法:`--matrix=theme-density-rtl` → 對每 scenario 跑 6-cell matrix
 //   (light / dark / high-contrast) × (density-md / density-lg) × (ltr / rtl)
 // Storybook globals 對齊 .storybook/preview.tsx:57-65 — theme={light|dark|hc} density={md|lg} dir={ltr|rtl}
-const MATRIX = ARGS_KV['--matrix'] // 'theme-density-rtl' | undefined(預設不跑 matrix)
-const MATRIX_CELLS = MATRIX === 'theme-density-rtl'
+const MATRIX = ARGS_KV['--matrix'] // 'theme-density' | 'theme-density-rtl'(舊名,同義)| undefined
+// 2026-06-11 dim 51 真落地:MATRIX_CELLS 原為 dead code(定義後 main loop 從未消費 = doc-claim ≠ code)。
+// 同時修 cell 清單造假:preview.tsx globals 真值只有 theme{light,dark} × density{md,lg} —
+// 原 hc / dir:rtl cell 注入未知 global = Storybook 靜默忽略 = 截到的其實是 light/ltr(假覆蓋)。
+// RTL / high-contrast 屬 DS-wide 未決策(見拍板清單),DS 落地後再擴 cell。
+const MATRIX_CELLS = MATRIX === 'theme-density' || MATRIX === 'theme-density-rtl'
   ? [
-      { theme: 'light', density: 'md', dir: 'ltr', label: 'light-md-ltr' },
-      { theme: 'dark', density: 'md', dir: 'ltr', label: 'dark-md-ltr' },
-      { theme: 'hc', density: 'md', dir: 'ltr', label: 'hc-md-ltr' },
-      { theme: 'light', density: 'lg', dir: 'ltr', label: 'light-lg-ltr' },
-      { theme: 'light', density: 'md', dir: 'rtl', label: 'light-md-rtl' },
-      { theme: 'dark', density: 'md', dir: 'rtl', label: 'dark-md-rtl' },
+      { theme: 'light', density: 'md', label: 'light-md' },
+      { theme: 'dark', density: 'md', label: 'dark-md' },
+      { theme: 'light', density: 'lg', label: 'light-lg' },
+      { theme: 'dark', density: 'lg', label: 'dark-lg' },
     ]
   : []
+if (MATRIX_CELLS.length && UPDATE_BASELINE) {
+  console.error('[visual-audit] --matrix 與 --update-baseline 不可併用(cell 截圖無 baseline 槽,會污染 baseline)')
+  process.exit(1)
+}
 
 // ── 主 scenario 清單 ────────────────────────────────────────────────────────
 // 先讀 assertions.json 取 scenario,fallback 到 hardcoded
@@ -328,7 +334,7 @@ async function auditScenario(browser, scenario, opts = {}) {
   // 注入 Storybook globals query params(對齊 .storybook/preview.tsx 全域 toolbar)
   const matrixCell = opts.matrixCell
   const globalsParam = matrixCell
-    ? `&globals=theme:${matrixCell.theme};density:${matrixCell.density};dir:${matrixCell.dir}`
+    ? `&globals=theme:${matrixCell.theme};density:${matrixCell.density}`
     : ''
   const url = scenario.url
     ? scenario.url
@@ -566,14 +572,25 @@ async function main() {
   let totalDiffBudgetBreached = 0
 
   for (const scenario of scopedScenarios) {
-    console.log(`[visual-audit] 稽核 ${scenario.id ?? scenario.url}`)
-    const r = await auditScenario(browser, scenario, { retina: RETINA, noA11y: NO_A11Y, noDiff: NO_DIFF })
-    results.push(r)
-    if (r.contrast?.violations?.length) totalContrastViolations += r.contrast.violations.length
-    if (r.geometryViolations?.length) totalGeometryViolations += r.geometryViolations.length
-    if (r.a11yViolations?.length) totalA11yViolations += r.a11yViolations.length
-    if (r.diff?.exceedBudget) totalDiffBudgetBreached++
-    if (r.error) console.error(`  ✗ ${r.error}`)
+    // 2026-06-11 dim 51:matrix mode = 每 scenario × cell 全跑 violation scan(contrast/geometry/axe)。
+    // cell 截圖檔名帶 label、無 baseline 槽 → 固定 noDiff(pixel-diff 防線由非 matrix 正常跑負責)。
+    const cellRuns = MATRIX_CELLS.length
+      ? MATRIX_CELLS.map((cell) => ({
+          scenario: { ...scenario, file: scenario.file ? scenario.file.replace(/\.png$/, `--${cell.label}.png`) : scenario.file },
+          opts: { retina: RETINA, noA11y: NO_A11Y, noDiff: true, matrixCell: cell },
+          tag: ` [${cell.label}]`,
+        }))
+      : [{ scenario, opts: { retina: RETINA, noA11y: NO_A11Y, noDiff: NO_DIFF }, tag: '' }]
+    for (const run of cellRuns) {
+      console.log(`[visual-audit] 稽核 ${scenario.id ?? scenario.url}${run.tag}`)
+      const r = await auditScenario(browser, run.scenario, run.opts)
+      results.push(r)
+      if (r.contrast?.violations?.length) totalContrastViolations += r.contrast.violations.length
+      if (r.geometryViolations?.length) totalGeometryViolations += r.geometryViolations.length
+      if (r.a11yViolations?.length) totalA11yViolations += r.a11yViolations.length
+      if (r.diff?.exceedBudget) totalDiffBudgetBreached++
+      if (r.error) console.error(`  ✗ ${r.error}`)
+    }
   }
 
   await browser.close()
