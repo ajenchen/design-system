@@ -31,7 +31,9 @@ log_hook_fire() {
     local size
     size=$(wc -c < "$log_file" 2>/dev/null | tr -d ' ')
     if [ -n "$size" ] && [ "$size" -gt 1048576 ]; then
-      mv "$log_file" "${log_file}.$(date +%Y%m)" 2>/dev/null || true
+      # 2026-06-11 fix(prune D2 抓 data-loss):原 mv 同月二次 rotation 直接覆寫 archive
+      # (實證 .202605 只存 5/31 六小時,5/31–6/10 數萬筆 fire 史遺失)→ append 後清空,不覆寫
+      cat "$log_file" >> "${log_file}.$(date +%Y%m)" 2>/dev/null && : > "$log_file" || true
     fi
   fi
 

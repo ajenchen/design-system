@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-06-08T14:39:27.928Z"
+    "generatedAt": "2026-06-12T01:14:25.965Z"
   },
   "components": {
     "accordion": {
@@ -80,7 +80,8 @@
           "design-system-components-appshell-設計規格--size-matrix"
         ],
         "設計原則": [
-          "design-system-components-appshell-設計原則--usage-guidance"
+          "design-system-components-appshell-設計原則--usage-guidance",
+          "design-system-components-appshell-設計原則--layout-mode-rule"
         ]
       },
       "openSnapshotIds": [],
@@ -167,7 +168,6 @@
           "design-system-components-breadcrumb-展示--default",
           "design-system-components-breadcrumb-展示--interactive-ellipsis",
           "design-system-components-breadcrumb-展示--declarative-auto-collapse",
-          "design-system-components-breadcrumb-展示--with-home-icon",
           "design-system-components-breadcrumb-展示--paired-with-page-title",
           "design-system-components-breadcrumb-展示--integrate-router-link"
         ],
@@ -378,8 +378,7 @@
           "design-system-components-circularprogress-展示--button-loading",
           "design-system-components-circularprogress-展示--inline-action",
           "design-system-components-circularprogress-展示--inline-cell-loading",
-          "design-system-components-circularprogress-展示--full-screen-overlay",
-          "design-system-components-circularprogress-展示--determinate"
+          "design-system-components-circularprogress-展示--full-screen-overlay"
         ],
         "設計規格": [
           "design-system-components-circularprogress-設計規格--overview",
@@ -499,7 +498,8 @@
           "design-system-components-datatable-展示--filter-panel-long-tag-overflow",
           "design-system-components-datatable-展示--row-drag-interactive",
           "design-system-components-datatable-展示--row-drag-with-virtualization",
-          "design-system-components-datatable-展示--roadmap-all-in-one"
+          "design-system-components-datatable-展示--roadmap-all-in-one",
+          "design-system-components-datatable-展示--roadmap-perf-budget"
         ],
         "設計規格": [
           "design-system-components-datatable-設計規格--overview",
@@ -598,8 +598,7 @@
           "design-system-components-descriptionlist-展示--product-spec",
           "design-system-components-descriptionlist-展示--order-summary",
           "design-system-components-descriptionlist-展示--detail-panel",
-          "design-system-components-descriptionlist-展示--horizontal",
-          "design-system-components-descriptionlist-展示--retired-horizontal-divided"
+          "design-system-components-descriptionlist-展示--horizontal"
         ],
         "設計規格": [
           "design-system-components-descriptionlist-設計規格--overview",
@@ -746,10 +745,10 @@
     "fieldcontrolgroup": {
       "tiers": {
         "展示": [
-          "design-system-components-fieldcontrolgroup-展示--phone-number-input",
+          "design-system-components-fieldcontrolgroup-展示--phone-number",
           "design-system-components-fieldcontrolgroup-展示--currency-amount",
           "design-system-components-fieldcontrolgroup-展示--search-submit",
-          "design-system-components-fieldcontrolgroup-展示--filter-row-real-usage"
+          "design-system-components-fieldcontrolgroup-展示--filter-row"
         ],
         "設計規格": [
           "design-system-components-fieldcontrolgroup-設計規格--overview",
@@ -900,8 +899,7 @@
           "design-system-components-input-設計原則--mode-rule",
           "design-system-components-input-設計原則--start-icon-rule",
           "design-system-components-input-設計原則--end-action-rule",
-          "design-system-components-input-設計原則--error-rule",
-          "design-system-components-input-設計原則--data-type-rule"
+          "design-system-components-input-設計原則--error-rule"
         ]
       },
       "openSnapshotIds": [],
@@ -1005,8 +1003,7 @@
         "設計原則": [
           "design-system-components-numberinput-設計原則--usage-guidance",
           "design-system-components-numberinput-設計原則--alignment-rule",
-          "design-system-components-numberinput-設計原則--format-options-rule",
-          "design-system-components-numberinput-設計原則--data-type-match-rule"
+          "design-system-components-numberinput-設計原則--format-options-rule"
         ]
       },
       "openSnapshotIds": [],
@@ -1017,7 +1014,6 @@
         "展示": [
           "design-system-internal-overflowindicator-展示--combobox-tag-overflow",
           "design-system-internal-overflowindicator-展示--avatar-stack-overflow",
-          "design-system-internal-overflowindicator-展示--shapes",
           "design-system-internal-overflowindicator-展示--breadcrumb-collapse",
           "design-system-internal-overflowindicator-展示--table-row-assignees"
         ],
@@ -1042,7 +1038,7 @@
           "design-system-components-peoplepicker-展示--single",
           "design-system-components-peoplepicker-展示--multi",
           "design-system-components-peoplepicker-展示--size-alignment",
-          "design-system-components-peoplepicker-展示--race-test"
+          "design-system-components-peoplepicker-展示--async-directory-load"
         ],
         "設計規格": [
           "design-system-components-peoplepicker-設計規格--overview",
@@ -1271,7 +1267,7 @@
           "design-system-internal-selectmenu-展示--multi-select",
           "design-system-internal-selectmenu-展示--multi-searchable",
           "design-system-internal-selectmenu-展示--clearable",
-          "design-system-internal-selectmenu-展示--states"
+          "design-system-internal-selectmenu-展示--option-states"
         ],
         "設計規格": [
           "design-system-internal-selectmenu-設計規格--overview",
@@ -1420,7 +1416,6 @@
         "展示": [
           "design-system-components-slider-展示--size-alignment",
           "design-system-components-slider-展示--min-max-step",
-          "design-system-components-slider-展示--disabled-removed",
           "design-system-components-slider-展示--on-commit"
         ],
         "設計規格": [
@@ -1450,8 +1445,7 @@
           "design-system-components-steps-展示--focus-ring-combinations",
           "design-system-components-steps-展示--non-linear",
           "design-system-components-steps-展示--horizontal",
-          "design-system-components-steps-展示--multiple-expansion",
-          "design-system-components-steps-展示--mixed-description"
+          "design-system-components-steps-展示--multiple-expansion"
         ],
         "設計規格": [
           "design-system-components-steps-設計規格--overview",
@@ -1685,5 +1679,5 @@
     }
   },
   "totalComponents": 62,
-  "totalStories": 915
+  "totalStories": 909
 }

@@ -32,9 +32,17 @@ case "$FILE_PATH" in *.test.tsx|*.spec.md) exit 0 ;; esac
 
 # Multi-line detection:`<SidebarHeader>...<ItemAvatar...>...</SidebarHeader>` block
 # Use python for proper multiline match
+# 2026-06-11 R2 held-item #9:strip 註解再 match — apps/template/src/App.tsx:57 canonical citation
+# 註解({/* ... 禁用 <ItemAvatar> ... */})在 SidebarHeader block 內被當真 JSX 誤發 P0(code 實際正確
+# 用 raw <Avatar size={24}>)。Strip 順序:JSX comment {/* */} → block comment /* */ → 行首 // 整行
+# (不 strip 行內 //,避免 mutilate https:// URL — 對齊 check_story_invariants.sh R9 idiom)。
 HAS_DRIFT=$(printf '%s' "$NEW" | python3 -c '
 import sys, re
 content = sys.stdin.read()
+# Strip comments(citation 註解含 <ItemAvatar> 字樣不是 drift)
+content = re.sub(r"\{/\*.*?\*/\}", "", content, flags=re.DOTALL)
+content = re.sub(r"/\*.*?\*/", "", content, flags=re.DOTALL)
+content = re.sub(r"(?m)^[ \t]*//.*$", "", content)
 # Find SidebarHeader blocks(opening tag → closing tag,non-greedy)
 blocks = re.findall(r"<SidebarHeader[^>]*>.*?</SidebarHeader>", content, re.DOTALL)
 for block in blocks:

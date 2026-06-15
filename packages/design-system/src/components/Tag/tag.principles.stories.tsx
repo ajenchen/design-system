@@ -123,7 +123,7 @@ export const VariantNotSemanticRule: Story = {
           <Tag color="magenta">洋紅</Tag>
           <Tag color="indigo">靛藍</Tag>
         </div>
-        <Label>↑ 9 種 variant,色彩意義由 consumer 上下文決定</Label>
+        <Label>↑ 13 種 color variant(neutral + 12 categorical 色相,此處節選),色彩意義由 consumer 上下文決定</Label>
       </Rule>
 
       <Rule

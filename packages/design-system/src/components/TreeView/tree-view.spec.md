@@ -46,7 +46,7 @@ TreeView 本身只負責三件事:
 | 場景 | 改用 | 原因 |
 |------|------|------|
 | 平面資料（無階層）| `DataTable` / 自訂 list | TreeView 為階層而設計，沒 children 的平面用 list |
-| 同時只能展開一個（互斥）| `Accordion`（TBD）| TreeView 允許任意多個展開,互斥模式語意不同 |
+| 同時只能展開一個（互斥）| `Accordion type="single"` | TreeView 允許任意多個展開,互斥模式語意不同 |
 | 簡單 2 層 nav（主分類 + 子分類）| `Sidebar` + SidebarMenuSubButton | 輕量 2 層用 Sidebar 的內建結構,不需遞迴 |
 | 選單式展開（點完就關）| `DropdownMenu` + sub-menu | DropdownMenu 的 sub menu 是 temporary,TreeView 是 persistent |
 | 階層選擇但需要搜尋 / 快速找 | 自訂 tree + search filter（未來 TreeView 可加 search prop）| 基本 TreeView 不含 search |
@@ -79,7 +79,7 @@ TreeView 本身只負責三件事:
 | Slot | 說明 | 存在條件 |
 |---|---|---|
 | **indent** | `paddingLeft = depth × indentStep` | depth > 0 |
-| **chevron** | `ChevronRight`(收合)/ `ChevronDown`(展開) | 有 children |
+| **chevron** | `ChevronRight`(展開時 `rotate-90` transition,見「動畫」)| 有 children |
 | **chevron placeholder** | 等寬空白,確保同層 leaf label 對齊 | 沒 children(每個 leaf 無條件留等寬空白,不檢查 siblings)|
 | **icon** | `LucideIcon`,跟 label 同色(內容 icon) | 可選 |
 | **label** | 主要文字 | 必有 |
@@ -135,7 +135,7 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
   - **Auto-render `<Checkbox>`**:`selectionMode="multiple"` 時 TreeItem 內建 render checkbox(reflect `selectedIds`),consumer **無需手動傳** `checkbox` prop
   - **Row 不套 `bg-neutral-selected`**(該 token 保留給 single mode 補無 checkbox 的視覺信號)
   - **Text 也不變 `text-foreground`**(已有 checkbox 強信號,text 變色會雙重 noise)→ 維持 `text-fg-secondary` muted
-  - 對齊 cite:`menu-item.tsx:194-195`(MenuItem selected → bg only)+ `select-menu.tsx:352-354`(SelectMenu multi → checkbox only)
+  - 對齊 cite:`menu-item.tsx:194-195`(MenuItem selected → bg only)+ `select-menu.tsx` option render `checkbox={multiple}` / `selected={!multiple && …}`(SelectMenu multi → checkbox only)
 - API:`selectionMode="multiple"` 自動 render checkbox;consumer 傳 `checkbox={<Checkbox/>}` 可 override(parent-child cascade 等 advanced 場景)
 - 多選互動:點擊逐項 toggle(`handleRowClick` → `select(id)`;**不支援** `Shift+Click` 範圍選取 / `Ctrl/Cmd+Click` 修飾鍵切換——`handleRowClick` 不讀 `shiftKey/metaKey/ctrlKey`)/ `aria-multiselectable="true"` 在 TreeView 上
 
@@ -198,9 +198,9 @@ TreeItem row 有 5 種狀態:default / hover / focused(鍵盤) / selected / disa
 |---|---|---|
 | **全 icon** | node 有明確的類型差異(folder/file、page type、step status) | icon 是層級的主要視覺指引,每個 node 一眼可辨識 |
 | **全無 icon** | node 類型單一(全部是「頁面」或「步驟」),不需要類型區分 | 靠 indent + chevron 表達層級;深層考慮開 tree guide |
-| ❌ **混用** | — | 有 icon 的 node 和沒 icon 的 node label 起始位置不同(即使有 placeholder 佔位,視覺仍不一致) |
+| ❌ **混用** | — | icon 無自動佔位(見「佔位規則」),有 icon / 無 icon 的 node label 起始位置直接錯開 |
 
-混用時 placeholder 雖然保證 label 水平對齊,但「有圖 / 無圖」的視覺節奏仍然不一致。如果確實有些 node 沒有合適的 icon,寧可全部不用 icon + 開 tree guide,也不要混用。
+Chevron placeholder 只保證 chevron 欄對齊;icon 無自動佔位,混用時「有圖 / 無圖」的 label 起點與視覺節奏都不一致。如果確實有些 node 沒有合適的 icon,寧可全部不用 icon + 開 tree guide,也不要混用。
 
 ---
 
@@ -260,7 +260,7 @@ TreeItem 右側 `actions` slot 只在 hover 該列時出現(opacity 0→1 transi
 
 Icon 尺寸跟 size tier(sm/md=16, lg=20);色 `fg-muted` → hover `foreground`;hover bg `neutral-hover`;action 間距 / 高度對齊規則見 `item-anatomy.spec.md`「Inline Action 設計規格」(canonical SSOT)。
 
-**宣告式 API**(對齊 `uiSize.spec.md` + `SidebarMenuButton.inlineActions`):`inlineActions: InlineActionConfig[]` + `actionsReveal: false | "hover"`(預設 `"hover"`,鍵盤 focus-visible 也顯)。內部用 `<ItemInlineAction>` helper 渲染,consumer **不可手刻 button JSX**(canonical 在 `item-layout.tsx`,共用 size 查表 / Tooltip / hover bg / aria)。Hover-reveal 用 `group-has-[:focus-visible]/tree-item:opacity-100` 而非 `group-focus-within`(後者 mouse click 會永久顯示)。
+**宣告式 API**(對齊 `inline-action.spec.md` + `SidebarMenuButton.inlineActions`):`inlineActions: InlineActionConfig[]` + `actionsReveal: false | "hover"`(預設 `"hover"`,鍵盤 focus-visible 也顯)。內部用 `<ItemInlineAction>` helper 渲染,consumer **不可手刻 button JSX**(canonical 在 `item-anatomy.tsx`,共用 size 查表 / Tooltip / hover bg / aria)。Hover-reveal 用 `group-has-[:focus-visible]/tree-item:opacity-100` 而非 `group-focus-within`(後者 mouse click 會永久顯示)。
 
 ---
 
@@ -330,8 +330,8 @@ TreeItem props slots(consumer 決定 node 視覺):
 
 - ❌ 不得在 TreeItem 內嵌套非 TreeItem 的 children——children slot 只接受 TreeItem(遞迴結構)
 - ❌ 不得把展開/收合和選取的語意混在一起——chevron 負責 expand,label 負責 select,兩者獨立(除非 consumer 顯式 opt-in `expandOnSelect`)
-- ❌ 不得用 Accordion 取代 TreeView——Accordion 是「同時只開一個」的互斥模式,tree 是「任意多個都可以開」
-- ❌ 不得省略 chevron / icon placeholder——同層 siblings 有元素差異時必須佔位,否則 label 不對齊(佔位由 TreeView 自動處理,consumer 不需介入)
+- ❌ 不得用 Accordion 取代 TreeView——Accordion 是平面 section 折疊(`type="single"` 互斥 / `type="multiple"` 多開,見 accordion.spec.md),tree 是階層 node 結構
+- ❌ 不得省略 chevron placeholder——leaf 無條件佔位,由 TreeView 自動處理,consumer 不需介入;icon 無自動佔位,同層要嘛全傳 icon 要嘛全不傳(見「佔位規則」)
 - ❌ 不得用非 gap-2(8px)的值作為 indent 內部 gap——indentStep 必須等於 `chevronSize + gap-2`,跟 item-layout 的 prefix-content gap 一致
 
 ---
@@ -376,7 +376,7 @@ TreeView 真實展示需要**多層巢狀結構**才有意義(單節點無法體
 - Home / End — 跳到第一個 / 最後一個可見 node
 - Enter / Space — 選取目前 node
 
-**Focus**:焦點由元件自管(roving focus)——整棵 tree 是單一 tab stop(root `tabIndex={0}`),鍵盤移動時用內描邊高亮標示目前 node(`ring-2 ring-ring ring-inset`,非 `outline`)。**無** focus trap、**無** focus restoration(tree 不是浮層,不需要)。
+**Focus**:焦點由元件自管(`aria-activedescendant` virtual focus,非 roving tabindex)——DOM focus 固定停在 tree 容器(單一 tab stop,root `tabIndex={0}`),鍵盤移動時 `aria-activedescendant` 指向目前 node,並用內描邊高亮標示(`ring-2 ring-ring ring-inset`,非 `outline`)。**無** focus trap、**無** focus restoration(tree 不是浮層,不需要)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
@@ -386,3 +386,5 @@ TreeView 真實展示需要**多層巢狀結構**才有意義(單節點無法體
 
 - `accordion.spec.md`
 - `combobox.spec.md`
+- `data-table.spec.md`
+- `sidebar.spec.md`

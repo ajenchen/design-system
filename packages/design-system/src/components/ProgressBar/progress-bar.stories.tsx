@@ -72,7 +72,7 @@ export const BatchTask: Story = {
 // ── 真實情境 3: DataTable cell inline 進度 ─────────────────────────────
 
 export const InlineTableCell: Story = {
-  name: 'DataTable 儲存格 內進度',
+  name: 'DataTable 儲存格內進度',
   render: () => {
     const rows = [
       { name: 'Acme Corp 專案', quota: 45, status: 'inProgress' as const },

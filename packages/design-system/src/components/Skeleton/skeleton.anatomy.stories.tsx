@@ -4,7 +4,7 @@
 //   variant prop。形狀 / 尺寸完全由 consumer 的 className 決定;色彩透過
 //   bg-muted 從 theme 繼承(2026-05-20 修 drift,實際 skeleton.tsx:10 用 bg-muted);
 //   loading 是唯一狀態(無 hover / focus / active)。
-//   本檔僅保留 Overview + CommonShapes + DesignPrinciple 三個 story。
+//   本檔保留 Overview + CommonShapes + DesignPrinciple + Accessibility 四個 story。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Skeleton } from './skeleton'
 import { H3, Desc } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
@@ -14,7 +14,7 @@ import { H3, Desc } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
  * **刻意沒有 size / color / variant**。形狀 / 尺寸完全由 consumer 的 className
  * (Tailwind utilities)決定。底色固定用 `bg-muted`,深淺模式由主題色自動切換。
  *
- * 因此本 spec 只有 Overview + 常見形狀 + 設計原則三個 story,沒有 SizeMatrix /
+ * 因此本 spec 只有 Overview + 常見形狀 + 設計原則 + 無障礙四個 story,沒有 SizeMatrix /
  * ColorMatrix / StateMatrix——這些概念對 Skeleton 不適用。
  */
 

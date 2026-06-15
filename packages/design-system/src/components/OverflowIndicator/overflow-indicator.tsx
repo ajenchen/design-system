@@ -1,8 +1,12 @@
+/**
+ * @internal — DS-internal 單元(per `.claude/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
+ * 不進 root barrel front-door;由 Combobox / PeoplePicker 等 DS 元件 wrap 消費,end-user app 請用 wrapper 元件。
+ */
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/design-system/components/HoverCard/hover-card'
 import { tagVariants } from '@/design-system/components/Tag/tag'
-import { HOVER_DELAY_RICH_MS, HOVER_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
+import { HOVER_DELAY_PLAIN_MS, HOVER_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
 
 /**
  * OverflowIndicator — +N 觸發器 + HoverCard 顯示溢出內容
@@ -126,9 +130,11 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
     )
 
     // 2026-05-18 fix(per user audit「所有 hovercard 應消費 hover delay token」+ motion.spec.md SSOT):
-    // rich tier(可互動 popup,user 可移浮層上操作)= HOVER_DELAY_RICH_MS;close = HOVER_DELAY_CLOSE_MS。
+    // plain tier(純列表展開、無 fetch)= HOVER_DELAY_PLAIN_MS,per motion.spec.md 對照表 row;
+    // close = HOVER_DELAY_CLOSE_MS。2026-06-11 修:2026-05-18 token 遷移誤挑 rich(原 hardcode 200/300
+    // 兩 tier 皆非,遷移未對照 spec 表)— popup 可互動性由 close 緩衝保障,與 open tier 無關。
     return (
-      <HoverCard openDelay={HOVER_DELAY_RICH_MS} closeDelay={HOVER_DELAY_CLOSE_MS}>
+      <HoverCard openDelay={HOVER_DELAY_PLAIN_MS} closeDelay={HOVER_DELAY_CLOSE_MS}>
         <HoverCardTrigger asChild>
           {trigger}
         </HoverCardTrigger>

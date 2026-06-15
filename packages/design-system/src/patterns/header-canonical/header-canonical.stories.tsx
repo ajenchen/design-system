@@ -68,7 +68,7 @@ export const SingleRow = () => (
       <Separator orientation="vertical" className="h-6 mx-1" />
       <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
     </ChromeHeader>
-    <div className="p-6 text-body text-fg-muted">文件預覽內容區…</div>
+    <div className="p-6 text-body text-fg-secondary">文件預覽內容區…</div>
   </Panel>
 )
 
@@ -92,13 +92,13 @@ export const WithTabs = () => (
         <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
       </ChromeHeader>
       <TabsContent value="overview">
-        <div className="p-6 text-body text-fg-muted">「概覽」分頁內容…</div>
+        <div className="p-6 text-body text-fg-secondary">「概覽」分頁內容…</div>
       </TabsContent>
       <TabsContent value="activity">
-        <div className="p-6 text-body text-fg-muted">「活動」分頁內容…</div>
+        <div className="p-6 text-body text-fg-secondary">「活動」分頁內容…</div>
       </TabsContent>
       <TabsContent value="files">
-        <div className="p-6 text-body text-fg-muted">「檔案」分頁內容…</div>
+        <div className="p-6 text-body text-fg-secondary">「檔案」分頁內容…</div>
       </TabsContent>
     </Tabs>
   </Panel>
@@ -112,21 +112,21 @@ export const Overview = () => (
   <div className="flex flex-col gap-8">
     <section className="flex flex-col gap-2">
       <div className="text-body font-medium text-foreground">Single-row(標題 + 動作列)</div>
-      <div className="text-body-sm text-fg-muted">
+      <div className="text-body-sm text-fg-secondary">
         最常見的 chrome header。對標 FileViewer Toolbar / Sidebar header。border-b 自畫、px-loose、dismiss size=sm。
       </div>
       <SingleRow />
     </section>
     <section className="flex flex-col gap-2">
       <div className="text-body font-medium text-foreground">withTabs(標題列 + 分頁列)</div>
-      <div className="text-body-sm text-fg-muted">
+      <div className="text-body-sm text-fg-secondary">
         header 內含分頁。對標 FileViewer InfoPanel。傳 tabsSlot,border 改由 TabsList 全寬畫一條線。
       </div>
       <WithTabs />
     </section>
     <section className="flex flex-col gap-2">
       <div className="text-body font-medium text-foreground">A 家族 overlay(SurfaceHeader)— 浮層標題列</div>
-      <div className="text-body-sm text-fg-muted">
+      <div className="text-body-sm text-fg-secondary">
         Dialog / Sheet / Popover / Coachmark 的頂部標題列。高度 padding-based(由內容撐、對齊 chrome-header-height),跟
         chrome 家族共用同一組契約:border-b、px-loose、dismiss size=sm、tabs 連動。consumer 多用 DialogHeader /
         SheetHeader / PopoverHeader wrapper,此處用底層 SurfaceHeader 展示 anatomy。
@@ -136,12 +136,12 @@ export const Overview = () => (
           <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">編輯專案設定</h2>
           <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
         </SurfaceHeader>
-        <div className="p-6 text-body text-fg-muted">浮層內容區…(Dialog / Sheet / Popover body)</div>
+        <div className="p-6 text-body text-fg-secondary">浮層內容區…(Dialog / Sheet / Popover body)</div>
       </div>
     </section>
     <section className="flex flex-col gap-2">
       <div className="text-body font-medium text-foreground">leadingRail — 見 AppShell（非此處）</div>
-      <div className="text-body-sm text-fg-muted">
+      <div className="text-body-sm text-fg-secondary">
         ChromeHeader 另有 leadingRail slot(寬 = sidebar 收合寬,專為跟 sidebar 收合 icon 對齊)。因它只在「有
         sidebar」時有意義,canonical demo 放在 AppShell primary-header（leadingRail = SidebarTrigger）,不在此孤立展示。
       </div>

@@ -10,9 +10,14 @@ benchmark:
   - Polaris Design Tokens — semantic SOP 5-piece set canonical https://polaris.shopify.com/design/colors
 ---
 
-# Orphan Token 分類 SSOT(retire vs structural-keep)
+# Orphan Token 分類設計原則(retire vs structural-keep SSOT)
 
 > **Foundational context**(2026-05-21 codify per user verbatim「決策四你他媽仔細給我確認到底該retire的是否真的該retire還是應該結構性保留,請全盤檢查,然後確認之後請下次不要再煩我,尤其是Palette tier」+「都給我做到好」):**永久解決**「audit 每次抓 X 個 orphan tokens」噪音。本 spec 明文哪些 token 結構性保留 + 自動 audit script 識別,user 不需重複確認同一題。
+
+## Scope(何時用 / 何時不用)
+
+- **用**:DS 作者稽核 token bloat(retire vs structural-keep 判定)— `audit-orphan-tokens.mjs` + design-system-audit Dim 48 消費本分類,屬 DS-internal audit SSOT
+- **不用**:consumer 選 token 的使用指南 — 那是 `tokens/README.md` + 各 token spec 的職責
 
 ## 為什麼會出現「假孤兒」
 
@@ -79,7 +84,7 @@ benchmark:
 
 ### 7. SOP 5-piece semantic 完整集(1+ token,structural)
 
-**Rule**:每個 semantic role(primary / error / success / warning / info)必有 5 件套:`base / hover / active / subtle / text`,即使當前 `text` variant 無消費者也保留。
+**Rule**:每個 semantic role(primary / error / success / warning / info)必有 5 件套:`base / hover / active / subtle / text`;機械保護集另含 `emphasis / foreground / focus`(下方 Regex 共 7 後綴,與 `audit-orphan-tokens.mjs` 一致;無後綴 base 由消費者直接引用不在 regex 內)。即使當前 variant 無消費者也保留。
 
 **Why**:Consistency invariant — 缺 `-text` variant 設計時找不到「on-emphasis 文字色」會 hot-create,違反 SSOT。Polaris「Status colors complete set」canonical。
 
@@ -104,9 +109,15 @@ benchmark:
 2. **Git blame** declare 提交 — 提交訊息 / PR 描述是否說明用途
 3. 兩 step 都無 → safe retire,從 `tokens/**/*.css` 刪宣告 + 加 git commit message cite 本 spec
 
+## 邊界案例
+
+- **Audit 間 token 重獲消費者(0 → N)**:audit 為每次執行的即時 snapshot(無跨次狀態),token 重獲消費後自動退出 retire 候選;無 deprecation period 機制
+- **新 structural-keep token**:不在 baseline → `--check` fail,需 `--update` 顯式 justify(防 regex 過寬 silent absorb;baseline 縮減不 fail)— baseline SSOT `scripts/audit-orphan-tokens.baseline.json`
+- **Dark-mode token mirror 驗證**:非本 audit scope — script 只驗「消費存在性」,不驗 light / dark 配對完整性
+
 ## Audit chain
 
-- **Dim 48** (`design-system-audit/SKILL.md`)— chain 本 spec + `audit-orphan-tokens.mjs --check`(not raw `grep var()`)
+- **Dim 48**(= `design-system-audit/SKILL.md` 的「Unused / orphan token detector」audit 維度)— chain 本 spec + `audit-orphan-tokens.mjs --check`(not raw `grep var()`)
 - **CI**:`npm run audit:tokens`(future add to `package.json` scripts)— `node scripts/audit-orphan-tokens.mjs --check` fail = real orphan 出現
 - **Hook**:無 hook(本 audit run-time / monthly cadence,非 PreToolUse 攔截場景)
 

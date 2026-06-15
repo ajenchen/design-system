@@ -6,6 +6,7 @@ import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/
 import { Select } from '@/design-system/components/Select/select'
 import { Input } from '@/design-system/components/Input/input'
 import { Button } from '@/design-system/components/Button/button'
+import { OPERATOR_REGISTRY } from '@/design-system/components/DataTable/filter-operators'
 
 const meta: Meta<typeof FieldControlGroup> = {
   title: 'Design System/Components/FieldControlGroup/設計原則',
@@ -17,7 +18,10 @@ type Story = StoryObj<typeof FieldControlGroup>
 
 const CODES = [{ value: '+886', label: '+886' }, { value: '+1', label: '+1' }]
 const FIELDS = [{ value: 'sku', label: 'SKU' }, { value: 'name', label: '名稱' }]
-const OPS = [{ value: 'is', label: '等於' }, { value: 'contains', label: '包含' }]
+// op 選項消費 OPERATOR_REGISTRY SSOT(audit dim 32 — 禁 hardcode op 字串)
+const OPS = OPERATOR_REGISTRY.string
+  .filter((o) => ['is', 'contains'].includes(o.op))
+  .map((o) => ({ value: o.op, label: o.label }))
 
 /* WhenToUse + WhenNotToUse + VsRule + ContentGuidelines = single UsageGuidance */
 export const UsageGuidance: Story = {

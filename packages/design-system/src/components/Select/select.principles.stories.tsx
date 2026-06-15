@@ -162,7 +162,7 @@ export const DisplayModeRule: Story = {
     return (
       <div>
         <Rule
-          title="text — 純文字選項(預設)"
+          title="plain — 純文字選項(預設)"
           note="選項沒有色彩語意、僅靠文字就能識別時使用。常見場景:類別、地區、語言、角色等"
         >
           <Select options={categoryOptions} value={category} onChange={setCategory} />
@@ -263,7 +263,7 @@ export const SearchableRule: Story = {
 
       <Rule
         title="❌ 流暢自然語言 label:不開 searchable"
-        note="Electronics / Furniture / Food 這類 label,native select 的 type-to-jump(按 E 跳到 Electronics)夠快。多加 searchable 等於多一層不必要的互動"
+        note="Electronics / Furniture / Food 這類 label 短清單一眼可掃(手機原生 select 另有 type-to-jump 直達;桌機自建 combobox 無逐字定位,但掃視已夠快)。多加 searchable 等於多一層不必要的互動"
       >
         <Select
           searchable
@@ -276,7 +276,7 @@ export const SearchableRule: Story = {
 
       <Rule
         title="次要啟發:數量 > 50 幾乎必開(但仍看 label 性質)"
-        note="100 個 a/b/c 不需要搜尋(type-to-jump 直達),5 個產品代碼需要搜尋。純數量 threshold 會誤判這兩端,詳見 spec"
+        note="100 個 a/b/c 不需要搜尋(字母排序掃視快,手機原生 select 還有 type-to-jump 直達),5 個產品代碼需要搜尋。純數量 threshold 會誤判這兩端,詳見 spec"
       >
         <Label>判斷優先序:label 性質 → 數量次要啟發</Label>
       </Rule>

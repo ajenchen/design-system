@@ -2,9 +2,9 @@
 //   Inspector N/A — size 為自由 number prop,互動決策點少(僅 value / size /
 //     affix),由 Overview + UsageInButton + UsageInline 三個 consumer-context
 //     story 直接示範比建 inspector 更實用。
-//   ColorMatrix N/A — color 透過 className="text-current" 繼承 host(Button
-//     foreground),無 own variant × state 色彩;不會隨狀態變色(完成 / 失敗由
-//     consumer swap 整個元件,見 spec「不設 status prop」)。
+//   ColorMatrix N/A — arc 預設固定 text-info;consumer 傳 className="text-current"
+//     才繼承 host(如 Button loading),無 own variant × state 色彩;不會隨狀態變色
+//     (完成 / 失敗由 consumer swap 整個元件,見 spec「不設 status prop」)。
 //   SizeMatrix N/A — size 為自由 number,Button / Input 等 consumer 內部依規
 //     則程式化縮放(field iconSize),由 UsageInButton / UsageInline 涵蓋。
 //   StateBehavior N/A — 無 hover / focus / active 狀態(載入中是唯一狀態)。
@@ -19,11 +19,11 @@ import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatom
  * 不傳 value 時是旋轉的載入動畫(indeterminate),傳了 value 時是固定弧長的
  * 進度圈(determinate,有底圈 + 進度弧)。
  *
- * 這頁只放三個範例:元件總覽、在 Button 載入狀態內、行內使用。
+ * 這頁只放四個範例:元件總覽、在 Button 載入狀態內、行內使用、無障礙。
  * 沒有另外做尺寸對照、顏色對照、互動狀態等示範,原因是:
  * - 尺寸是自由數值(非 sm/md/lg 階),由 Button / Input 等容器內部依規則自動縮放,
  *   範例裡直接示範比列舉一堆尺寸更實用。
- * - 顏色不隨狀態變色,固定繼承所在容器的文字色,沒有需要對照的色彩組合。
+ * - 顏色不隨狀態變色,預設固定 text-info(傳 text-current 才繼承容器文字色),沒有需要對照的色彩組合。
  * - 元件本身沒有 hover / focus / active 等互動狀態,唯一會變的是進度值本身。
  */
 
@@ -78,7 +78,7 @@ export const Overview: Story = {
           </table>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          色彩策略:固定 <span className="font-mono">text-primary</span>;Button loading 傳
+          色彩策略:固定 <span className="font-mono">text-info</span>;Button loading 傳
           <span className="font-mono"> className="text-current" </span>讓 arc 繼承 button
           foreground(常為白色)。**不隨狀態變色**——「完成 / 失敗」由 consumer 端 swap 整個元件
           呈現(見 spec「不設 status prop」)。

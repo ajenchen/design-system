@@ -134,7 +134,7 @@ export const OrientationMatrix: Story = {
         <H3>Horizontal</H3>
         <Desc>步驟水平排列,常見於結帳流程 / wizard 頂部。Indicator 之間有橫向 connector。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-2xl">
-          <Steps value="payment" completedValues={['cart']}>
+          <Steps orientation="horizontal" value="payment" completedValues={['cart']}>
             <StepItem value="cart"><StepLabel>購物車</StepLabel></StepItem>
             <StepItem value="payment"><StepLabel>付款</StepLabel></StepItem>
             <StepItem value="shipping"><StepLabel>配送</StepLabel></StepItem>
@@ -348,7 +348,7 @@ const ErrorInterrupt = () => {
           ))}
         </Steps>
       </div>
-      <div className="text-[11px] text-fg-muted">payment step 發生錯誤:indicator 切 `bg-error` + X icon,label 轉 `--error`。對 focus ring 也從 primary-hover 切到 error-hover。</div>
+      <div className="text-[11px] text-fg-muted">payment step 發生錯誤:indicator 切 `bg-error` + X icon,label 轉 `--error-text`。focus ring 也從 info-hover 切到 error-hover。</div>
     </div>
   )
 }
@@ -391,7 +391,7 @@ export const StateBehavior: Story = {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">行為 3:Error interrupt(中斷流程)</span>
         <Desc>
-          任何 step 加入 `errorValues` 時,該 step 轉 error state(紅底 + X icon),label 色轉 `--error`。
+          任何 step 加入 `errorValues` 時,該 step 轉 error state(紅底 + X icon),label 色轉 `--error-text`。
           consumer 若要繼續流程,必須先解除 errorValues 再推進 current——避免靜默跳過錯誤。
         </Desc>
         <ErrorInterrupt />

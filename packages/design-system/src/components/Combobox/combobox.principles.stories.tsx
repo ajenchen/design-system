@@ -195,7 +195,7 @@ export const TagOperationRule: Story = {
 
         <Rule
           title="readonly / disabled 的 Tag 沒有任何互動"
-          note="沒有 dismiss X、沒有 ChevronDown、沒有 clear。Tag 變純顯示，溢出規則仍然套用（+N 指示器可 hover 查看完整）"
+          note="沒有 dismiss X、沒有 clear;ChevronDown 保留為類型身份 indicator(不可開啟)。Tag 變純顯示,溢出規則仍然套用(+N 指示器可 hover 查看完整)"
         >
           <Combobox mode="readonly" options={categoryOptions} value={ro} />
           <Label>↑ 不可移除、不可新增、不可清空——整個 field 變「顯示」</Label>

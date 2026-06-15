@@ -193,7 +193,7 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
                 onRemove ? (
                   // Collection remove(per-file)— 不是 dismiss surface,故不套 `dismiss` prop。
                   // 視覺與 dismiss 一致(text variant + fg-muted dim)— 對齊 inline-action.spec.md
-                  // 「Dismiss canonical — X close only」(section L204);L229 明文:onRemove callback 不觸發 dismiss prop。
+                  // 「Dismiss canonical — X close only」+「dismiss prop 觸發條件」段:onRemove callback 不觸發 dismiss prop。
                   <Button
                     iconOnly
                     variant="text"
@@ -288,7 +288,8 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           'border-border bg-surface',
           // hover = drag-over 統一(2026-06-03 Q2-A 純 border-driven,對齊 Ant Dragger colorPrimaryHover):
           // 兩者都 → primary 邊框,底色維持 surface(不變 bg)。state 信號靠邊框,非底色。
-          'hover:border-primary data-[state=drag-over]:border-primary',
+          // 2026-06-11 R2(M5 狀態疊加):hover 變 primary 僅限 idle/error —— disabled/loading 維持原邊框(spec「disabled 邊框不變色」)
+          'data-[state=idle]:hover:border-primary data-[state=drag-over]:border-primary',
           // loading(2026-06-03 Q4:移除 pointer-events-none — 它會讓 cursor-progress 失效;
           // 互動已由 handleClick + drag/key handlers 的 isBlocked guard 擋,不需 pointer-events-none)
           'data-[state=loading]:cursor-progress',
@@ -359,7 +360,8 @@ export const fileUploadMeta = {
   component: 'FileUpload',
   family: null, // non-family composite / overlay / layout
   variants: {
-
+    dropzone: { purpose: '大型 dashed 拖放區(預設)— 拖放有價值 + 主要上傳區(drag + click)' },
+    button: { purpose: '緊湊 Button 觸發 — form 內單欄 / 空間省(click-only)' },
   },
   sizes: {
 

@@ -1,5 +1,6 @@
 #!/bin/bash
-# Tests for check_storybook_addon_preset_cjs.sh(P0,2026-05-28 beta.27-.31 5 連敗 anchor)
+# 2026-06-11 repoint:check_storybook_addon_preset_cjs.sh 已合併進 check_storybook_addon_packaging.sh(prune merge;測試 payload 不變 = 行為等價驗證)
+# Tests for check_storybook_addon_packaging.sh(P0,2026-05-28 beta.27-.31 5 連敗 anchor)
 #
 # Hook 規則(PreToolUse,Edit|Write|MultiEdit):
 #   Scope:  tool_input.file_path 匹配 `/addons/<name>/preset.ts$`(storybook-config OR .storybook)
@@ -19,7 +20,7 @@
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOOK="$SCRIPT_DIR/../check_storybook_addon_preset_cjs.sh"
+HOOK="$SCRIPT_DIR/../check_storybook_addon_packaging.sh"
 
 if [ ! -x "$HOOK" ]; then
   echo "FATAL: hook not executable: $HOOK"

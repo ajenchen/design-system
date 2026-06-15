@@ -28,7 +28,11 @@ const targets = [
 // Source:https://chromedevtools.github.io/devtools-protocol/tot/Emulation/#method-setCPUThrottlingRate
 //
 // 同時 multiple runs + statistical analysis(median + stddev)消除 single-run noise。
-const CPU_THROTTLE_RATE = Number(process.env.CPU_THROTTLE_RATE || 4)
+// 2026-06-12 校準(R2 實測):4x throttle 在開發機(Google Drive 常駐負載)連未動過的對照組
+// Case A 都超標(38ms vs 16.67ms = 60fps vsync 物理下限)→ 門檻與 4x 連乘對本機不現實。
+// 預設 1x(全 4 case 實測過,具迴歸偵測力);4x 保留為 CI 專用 stress(待 CI 硬體跑基準後再定門檻):
+//   CPU_THROTTLE_RATE=4 node scripts/runtime-perf-datatable.mjs
+const CPU_THROTTLE_RATE = Number(process.env.CPU_THROTTLE_RATE || 1)
 const RUNS_PER_STORY = Number(process.env.RUNS_PER_STORY || 3)
 
 const browser = await chromium.launch({ headless: true })

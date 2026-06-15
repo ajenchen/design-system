@@ -84,6 +84,8 @@ startIcon 不隨 value 變化——它描述的是 input 的用途，不是 valu
 
 清除按鈕消失後不佔位——input 自然擴展。
 
+endAction(host 內嵌 inline action)vs 獨立 `<Button iconOnly>` 的分界詳 `../../patterns/element-anatomy/inline-action.spec.md`「Inline Action vs Button iconOnly」predicate。
+
 ---
 
 ## Display
@@ -107,7 +109,7 @@ startIcon 不隨 value 變化——它描述的是 input 的用途，不是 valu
 
 ## 邊界案例
 
-- **Disabled**:`disabled` prop 由 Field SSOT own(`Field/field-controls.spec.md` State machine 段)。視覺 token:wrapper bg → `bg-disabled`(neutral-2)、text → `text-fg-disabled`(neutral-6,M24 state>emphasis canonical)、startIcon → `text-fg-disabled`、endAction button 自動 disabled、cursor → `cursor-not-allowed`、border 弱化、無 hover/focus ring。`readOnly` 與 `disabled` 視覺分離:readOnly 維持 default text color(可選取複製)、disabled 全面弱化(不可選)。
+- **Disabled**:`disabled` prop 由 Field SSOT own(`Field/field.spec.md`「Field state machine SSOT」段)。視覺 token:wrapper bg → `bg-disabled`(neutral-2)、text → `text-fg-disabled`(neutral-6,M24 state>emphasis canonical)、startIcon → `text-fg-disabled`、endAction button 自動 disabled、cursor → `cursor-not-allowed`、border 弱化、無 hover/focus ring。`readOnly` 與 `disabled` 視覺分離:readOnly 維持 default text color(可選取複製)、disabled 全面弱化(不可選)。
 - **Loading**:已 codify(見「Loading」段)。`loading=true` 時 endAction slot 自動切 `<CircularProgress/>`,input 仍可編輯(Ant Search 派 idiom)。
 - **Empty(no value)**:placeholder 走 `text-fg-muted`(neutral-7);`disabled + empty` 時 placeholder 切 `text-fg-disabled`(M24 state precedence)。
 - **Dark mode**:走 semantic token 自動 adapt,無 per-component override。
@@ -125,12 +127,14 @@ startIcon 不隨 value 變化——它描述的是 input 的用途，不是 valu
 
 Input 有兩個 visual chrome variant,**獨立於 mode**(mode 是 state,variant 是 chrome look):
 
-| Variant | 視覺 | 適用場景 | 世界級對照 |
+| Variant | 原則 | 適用場景 | 世界級對照 |
 |---------|------|---------|-----------|
-| `'default'`(預設) | bg-surface + 明顯 border + hover/focus 回饋 | 表單 / Field 內嵌 / 標準 edit UI | Material Input / Ant Input default |
-| `'bare'` | 透明 chrome,hover / focus 才出現 border;保留 padding / typography / height | **Toolbar inline editing**(FileViewer zoom input / chart config / rich text toolbar number input / Sidebar inline rename) | VS Code settings input / Figma toolbar number / Notion prop input |
+| `'default'`(預設) | 完整 field chrome(背景 + 常態 border + hover/focus 回饋)——明確邀請輸入 | 表單 / Field 內嵌 / 標準 edit UI | Material Input / Ant Input default |
+| `'bare'` | 常態無 chrome,hover / focus 才現 border;sizing(padding / typography / height)不變 | **Toolbar inline editing**(FileViewer zoom input / chart config / rich text toolbar number input / Sidebar inline rename) | VS Code settings input / Figma toolbar number / Notion prop input |
 
 **判斷法**:Input 放在表單或 Field 內 → `default`;放在 Toolbar chrome 或 page-body inline → `bare`。
+
+**透傳**:在 `<Field variant="default|bare">` 內自動繼承 context variant,per-prop override(code:`useResolvedFieldVariant`)。
 
 > **內部 variant `naked`(@internal,非公開)**：`FieldVariant` 型別含第三值 `'naked'`(完全無 chrome / border / focus ring),但**不是公開 Input variant**——單獨使用無視覺邊界,**不可 standalone**。僅供 DS 內部 cell-as-input 組合(host cell 自管 border + focus visual;正被 `FieldSurfaceContext='table-cell'` 取代）。consumer 只用 `default` / `bare`。對齊 public-vs-internal canonical（`ui-development.md`：能直接被使用且用在合理地方才公開）。
 
@@ -157,6 +161,8 @@ Input 有兩個 visual chrome variant,**獨立於 mode**(mode 是 state,variant 
 - **Inline edit**:FileViewer `ZoomInput`(輸入「100%」縮到三位數寬)、Figma toolbar number input、VS Code setting row
 - **Tag / Chip rename**:選中 chip 進入 inline edit,寬度跟 chip 內容保持視覺一致
 - **Spreadsheet-like cells**:內容寬度自動跟字數走
+
+**邊界(內容超寬)**:寬度上限 = 父容器可用寬(wrapper `inline-flex w-auto` shrink-to-fit);超過後 input 不再增寬,溢出文字走原生水平捲動。不支援 `field-sizing` 的瀏覽器退化 `w-auto`(fallback 細節見 tsx jsDoc)。
 
 **禁止**:
 - ❌ **表單 Field 內**——Field 欄位必須欄寬對齊,寬度隨值跳動會破壞 grid layout
@@ -192,4 +198,10 @@ Input 有兩個 visual chrome variant,**獨立於 mode**(mode 是 state,variant 
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `date-picker.spec.md`
+- `field-controls.spec.md`
+- `form-validation.spec.md`
+- `link-input.spec.md`
+- `number-input.spec.md`
+- `textarea.spec.md`
 - `time-picker.spec.md`

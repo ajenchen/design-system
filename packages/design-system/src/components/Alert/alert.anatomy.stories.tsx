@@ -1,7 +1,7 @@
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 // @anatomy-rationale:
 //   SizeMatrix N/A — Alert 固定 md tier(由消費的 Notice primitive 決定),
-//     不隨 density 縮放。Placement(inline / fixed)取代 size 作為佈局決策,
+//     不隨 density 縮放(僅 placement="fixed" 的水平 px 走 --layout-space-loose,density-aware)。Placement(inline / fixed)取代 size 作為佈局決策,
 //     已由 PlacementMatrix 涵蓋。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Alert, type AlertProps } from './alert'
@@ -127,7 +127,7 @@ export const ColorMatrix: Story = {
           <table className="text-caption border-collapse">
             <thead><tr><Th>Variant</Th><Th>Subtle</Th><Th>Solid</Th></tr></thead>
             <tbody>
-              <tr><Td mono>neutral</Td><Td mono>bg-muted + border-border + text-fg-muted icon</Td><Td>bg-surface-raised + data-theme inverse(跟頁面反)</Td></tr>
+              <tr><Td mono>neutral</Td><Td mono>bg-muted + border-border;無 status icon(VARIANT_ICON.neutral = null)</Td><Td>bg-surface-raised + data-theme inverse(跟頁面反)</Td></tr>
               <tr><Td mono>info</Td><Td mono>bg-info-subtle + border-info-hover + text-info-text</Td><Td mono>bg-info + data-theme="dark"(藍底白字)</Td></tr>
               <tr><Td mono>success</Td><Td mono>bg-success-subtle + border-success-hover + text-success-text</Td><Td mono>bg-success + data-theme="dark"(綠底白字)</Td></tr>
               <tr><Td mono>warning</Td><Td mono>bg-warning-subtle + border-warning-hover + text-warning-text</Td><Td mono>bg-warning + data-theme="light"(黃底深字)</Td></tr>
@@ -200,7 +200,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>Close button 互動狀態</H3>
         <Desc>
-          Chrome corner close 用 **Button iconOnly `dismiss` size="xs"**(notification banner family 設計準則,見 `overlay-surface.spec.md`「Chrome dismiss size canonical」)。現行 canonical 為兩分:notification banner family(Notice / Alert / Toast,px-4 py-3 固定)dismiss 用 `xs`;overlay surface(Dialog / Sheet / Popover)另走 `sm` + unbounded 負 margin trick。corner 屬 action group region,實務上可與 refresh / share 等 Button 並排(用 Separator 分群),必須統一 Button primitive + 同 family 全 xs。`dismiss` prop 自動套 `variant="text"` + icon `fg-muted` 弱化,hover 時恢復 foreground。
+          Chrome corner close 用 **Button iconOnly `dismiss` size="xs"**(notification banner family 設計準則,見 `overlay-surface.spec.md`「Chrome dismiss size canonical」)。現行 canonical 為兩分:notification banner family(Notice / Alert / Toast,px-4 py-3 固定)dismiss 用 `xs`;overlay surface(Dialog / Sheet / Popover)另走 `sm` + unbounded 負 margin trick。corner 屬 action group region,實務上可與 refresh / share 等 Button 並排(用 ButtonDivider 分群),必須統一 Button primitive + 同 family 全 xs。`dismiss` prop 自動套 `variant="text"` + icon `fg-muted` 弱化,hover 時恢復 foreground。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
@@ -209,7 +209,7 @@ export const StateBehavior: Story = {
               <tr><Td>default</Td><Td>Button xs iconOnly(24×24),X icon 16,fg-muted</Td><Td mono>text-fg-muted(`dismiss` override)</Td></tr>
               <tr><Td>hover</Td><Td>Button bg 套 neutral-hover,icon 升 foreground</Td><Td mono>bg-neutral-hover / text-foreground</Td></tr>
               <tr><Td>focus</Td><Td>2px ring(鍵盤導航)</Td><Td mono>ring-ring ring-offset-1</Td></tr>
-              <tr><Td>solid appearance</Td><Td>icon 隨 variant 的 data-theme:info / success / error(dark theme)白字,warning(light theme)深字</Td><Td mono>text-foreground(隨 data-theme 翻轉)</Td></tr>
+              <tr><Td>solid appearance</Td><Td>icon 隨 variant 的 data-theme:info / success / error(dark theme)白字,warning(light theme)深字</Td><Td mono>text-fg-muted → hover text-foreground(隨 data-theme 翻轉)</Td></tr>
             </tbody>
           </table>
         </div>

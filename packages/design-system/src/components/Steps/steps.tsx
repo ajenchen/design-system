@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Check, ChevronDown, X } from 'lucide-react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
+import { ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -489,18 +490,20 @@ function VerticalLayout({
   return (
     <>
       <StepItemHeader className="flex items-start gap-3">
-        <div className="shrink-0" style={{ width: indicatorBox }}>
-          <div className="h-[1lh] flex items-center justify-center">
-            <StepIndicator />
-          </div>
-        </div>
-        <div className="flex-1 min-w-0 flex items-start">
+        {/* Row prefix slot — 消費 item-anatomy <ItemPrefix>(h-[1lh] 對齊 label 第一行 SSOT);
+            width = INDICATOR_BOX_WIDTH 固定欄寬,base justify-center 讓 sm dot 在欄內置中 */}
+        <ItemPrefix style={{ width: indicatorBox }}>
+          <StepIndicator />
+        </ItemPrefix>
+        <div className="flex-1 min-w-0 flex items-start gap-2">
           <div className="flex-1 min-w-0 flex flex-col">
             {label}
             {description}
           </div>
+          {/* Row suffix slot — 消費 item-anatomy <ItemSuffix>(h-[1lh] 對齊 label 第一行);
+              text col 是 flex-1 → base ml-auto 惰性,8px 間距由父層 gap-2 提供(= MenuItem 父層 gap idiom)*/}
           {steps.expansion === 'multiple' && !!content && (
-            <span aria-hidden className="h-[1lh] flex items-center shrink-0 ml-2">
+            <ItemSuffix aria-hidden>
               <ChevronDown
                 size={16}
                 className={cn(
@@ -508,7 +511,7 @@ function VerticalLayout({
                   item.expanded && 'rotate-180',
                 )}
               />
-            </span>
+            </ItemSuffix>
           )}
         </div>
       </StepItemHeader>
@@ -580,9 +583,10 @@ function HorizontalLayout({
     <>
       {/* Row 1: indicator + label + connector(在同一個 flex row) */}
       <StepItemHeader className="flex items-start gap-3">
-        <div className="h-[1lh] flex items-center shrink-0">
+        {/* Row prefix slot — 消費 item-anatomy <ItemPrefix>(h-[1lh] 對齊 label 第一行 SSOT)*/}
+        <ItemPrefix>
           <StepIndicator />
-        </div>
+        </ItemPrefix>
         <div className="shrink-0 min-w-0">{label}</div>
         {/* Connector 在 item 內部,flex-1 填滿剩餘寬度 */}
         {!item.isLast && (
@@ -734,7 +738,8 @@ function MdLgIndicator({
         height: diameter,
         background: fillBg,
         color: contentColor,
-        fontSize: size === 'lg' ? 'var(--font-body-size)' : 'var(--font-caption-size)',
+        // 2026-06-11 R2:對齊 spec canonical「indicator 數字與 label 同級」(steps.spec.md 狀態表 md=14/lg=16;spec 明文「之前寫小一號(md=12,lg=14)是錯的」)
+        fontSize: size === 'lg' ? 'var(--font-body-lg-size)' : 'var(--font-body-size)',
         boxShadow: focused ? getOuterRingShadow(resolveRingColor(state, linear)) : undefined,
       }}
     >
@@ -856,7 +861,7 @@ export const stepsMeta = {
     md: { px: 24, when: '預設 — wizard / checkout / 註冊主流程;indicator 24px circle' },
     lg: { px: 32, when: 'Marketing 流程展示 / 重要 onboarding;indicator 32px circle' },
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  states: ['upcoming', 'reachable', 'current', 'completed', 'error'], // 2026-06-11 R2:content-state 模型(spec 狀態表),非 Phase-1 boilerplate 互動 states,
   tokens: {
     bg: ['bg-info'],
     fg: ['--fg-disabled', '--foreground', '--on-emphasis', 'text-error-text', 'text-fg-disabled', 'text-fg-muted', 'text-fg-secondary', 'text-foreground'],

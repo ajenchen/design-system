@@ -141,10 +141,10 @@ export const ValidationRule: Story = {
       <div>
         <Rule
           title="blur 時驗證，不在打字過程中"
-          note="使用者還在輸入時就抱怨「格式錯」= 打擾體驗。blur(離開欄位 / 按 Enter)才檢查。開始重新編輯時清除 error,讓使用者無壓力重試。對齊 Field 系統的共用驗證規則"
+          note="使用者還在輸入時就抱怨「格式錯」= 打擾體驗。blur(離開欄位 / 按 Enter)才檢查。開始打字時清除 error,讓使用者無壓力重試。對齊 Field 系統的共用驗證規則"
         >
           <LinkInput value={url} onChange={setUrl} placeholder="輸入 URL（需含 https://）" />
-          <Label>↑ 試試輸入「github.com」(無 protocol),按 Tab 離開會出現 error。重新 focus 自動清除 error</Label>
+          <Label>↑ 試試輸入「github.com」(無 protocol),按 Tab 離開會出現 error。開始打字自動清除 error</Label>
         </Rule>
 
         <Rule

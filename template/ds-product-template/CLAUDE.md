@@ -27,7 +27,7 @@ per 2026-05-27 user verbatim「fork template 必須要能跟 ds repo 完全 ssot
 **之後同步用**:`npm run sync-all`(per critical step 1)。
 
 **沒裝後果**(2026-05-26 anchor case):
-- 59 個 DS governance hooks 全部不 fire(M29 anchor preflight / approval-preflight / SSOT propagation 全失效)
+- 52 個 DS governance hooks 全部不 fire(M29 anchor preflight / approval-preflight / SSOT propagation 全失效)
 - AI 寫 `apps/template/src/App.tsx` 憑記憶寫 simplified mock(漏 SidebarTrigger / collapsible / startIcon / tooltip / footer)
 - 視覺直接跑版 + 互動破損(menu toggle 不見 / sidebar 收不起來)
 
@@ -78,7 +78,7 @@ Fork 本 repo 後,user 用 Claude 開啟,Claude **必依以下順序**做 painle
 |---|---|---|
 | 0 | Cross-load DS canonical(見上)| 拿 design SSOT |
 | 1 | `npm install` | 拉 `@qijenchen/design-system` + `@qijenchen/storybook-config` npm deps + DS canonical 隨 npm 落地 |
-| 2 | `/plugin marketplace add github:ajenchen/design-system` | 拿 DS governance plugin(22 skills / 59 hooks 自動下載) |
+| 2 | `/plugin marketplace add github:ajenchen/design-system` | 拿 DS governance plugin(22 skills / 52 hooks 自動下載) |
 | 3 | `/plugin install design-system@qijenchen-ds` | 啟動 plugin |
 | 4 | `npm run setup:netlify` | Netlify CLI install + login + site 建 + 連 repo;最後印 dashboard URL + 教 fork user 在 Netlify 設 `STORYBOOK_BASIC_AUTH` env var(`user:password`)→ Edge Function `netlify/edge-functions/basic-auth.ts` 在 edge 層做 HTTP Basic Auth 上密碼(免費,Edge Functions 所有方案含 free-tier 可用)。Dashboard 的 Password protection 與 `_headers` Basic-Auth 都是 Pro 專屬($20/mo),非必須 |
 | 5 | `npm run create-app <new-app-name>`(若需新 product app) | copy `template/` → 新 app folder |

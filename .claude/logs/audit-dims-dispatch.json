@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-05T02:41:12.420Z",
+  "generated": "2026-06-11T08:11:58.056Z",
   "ssotSource": ".claude/skills/design-system-audit/SKILL.md",
   "total": 88,
   "groups": {
@@ -240,7 +240,7 @@
     },
     {
       "n": 11,
-      "title": "Story 三層齊全 + pattern demo coverage",
+      "title": "Story 層 coverage — category-aware",
       "group": "D",
       "groupName": "Story layer (designer-facing, P1 priority)"
     },

@@ -144,16 +144,16 @@ export const UsageGuidance: Story = {
       <p>適合 Sidebar 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Components/Sidebar/展示" name="完整佈局"><span className="text-primary hover:underline font-medium cursor-pointer">完整佈局</span></LinkTo>
+          <LinkTo kind="Design System/Components/Sidebar/展示" name="完整佈局"><span className="text-primary hover:underline font-medium cursor-pointer">Linear 式議題追蹤主導覽(完整佈局)</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Sidebar/展示" name="混合內容"><span className="text-primary hover:underline font-medium cursor-pointer">混合內容</span></LinkTo>
+          <LinkTo kind="Design System/Components/Sidebar/展示" name="混合內容"><span className="text-primary hover:underline font-medium cursor-pointer">專案導覽混排群組、徽章與操作(混合內容)</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Sidebar/展示" name="抽屜收合（離畫面外）"><span className="text-primary hover:underline font-medium cursor-pointer">抽屜收合（離畫面外）</span></LinkTo>
+          <LinkTo kind="Design System/Components/Sidebar/展示" name="抽屜收合（離畫面外）"><span className="text-primary hover:underline font-medium cursor-pointer">側欄整條滑出畫面外的內容優先工作區（抽屜收合）</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Sidebar/展示" name="混合前綴"><span className="text-primary hover:underline font-medium cursor-pointer">混合前綴</span></LinkTo>
+          <LinkTo kind="Design System/Components/Sidebar/展示" name="混合前綴"><span className="text-primary hover:underline font-medium cursor-pointer">icon 導覽與 GitHub / Slack / Figma 整合並列對齊（混合前綴）</span></LinkTo>
         </li>
       </ul>
       <p className="text-fg-muted mt-3">判斷不確定時:對照下方「何時不用 / 替代元件」清單;若情境不屬於垂直持久導覽,改用對應的近親元件。</p>

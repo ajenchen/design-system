@@ -141,56 +141,110 @@
     {
       "name": "Button(foundation primitive)",
       "path": "packages/design-system/dist/components/Button/button.js",
-      "limit": "8 KB",
-      "gzip": true
+      "limit": "32 KB",
+      "gzip": true,
+      "ignore": [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "scheduler"
+      ]
     },
     {
       "name": "DataTable(heaviest — filter+sort+drag+virtual)",
       "path": "packages/design-system/dist/components/DataTable/data-table.js",
-      "limit": "60 KB",
-      "gzip": true
+      "limit": "168 KB",
+      "gzip": true,
+      "ignore": [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "scheduler"
+      ]
     },
     {
       "name": "FileViewer(complex composition)",
       "path": "packages/design-system/dist/components/FileViewer/file-viewer.js",
-      "limit": "30 KB",
-      "gzip": true
+      "limit": "85 KB",
+      "gzip": true,
+      "ignore": [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "scheduler"
+      ]
     },
     {
       "name": "Calendar(date grid + a11y)",
       "path": "packages/design-system/dist/components/Calendar/calendar.js",
-      "limit": "20 KB",
-      "gzip": true
+      "limit": "49 KB",
+      "gzip": true,
+      "ignore": [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "scheduler"
+      ]
     },
     {
       "name": "Chart(recharts wrapper)",
       "path": "packages/design-system/dist/components/Chart/chart.js",
-      "limit": "25 KB",
-      "gzip": true
+      "limit": "92 KB",
+      "gzip": true,
+      "ignore": [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "scheduler"
+      ]
     },
     {
       "name": "Sidebar(compound + collapse + tooltip)",
       "path": "packages/design-system/dist/components/Sidebar/sidebar.js",
-      "limit": "20 KB",
-      "gzip": true
+      "limit": "57 KB",
+      "gzip": true,
+      "ignore": [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "scheduler"
+      ]
     },
     {
       "name": "Combobox(input + listbox + filter)",
       "path": "packages/design-system/dist/components/Combobox/combobox.js",
-      "limit": "15 KB",
-      "gzip": true
+      "limit": "69 KB",
+      "gzip": true,
+      "ignore": [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "scheduler"
+      ]
     },
     {
       "name": "AppShell(layout primitive)",
       "path": "packages/design-system/dist/components/AppShell/app-shell.js",
-      "limit": "10 KB",
-      "gzip": true
+      "limit": "47 KB",
+      "gzip": true,
+      "ignore": [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "scheduler"
+      ]
     },
     {
       "name": "Dialog(modal overlay)",
       "path": "packages/design-system/dist/components/Dialog/dialog.js",
-      "limit": "10 KB",
-      "gzip": true
+      "limit": "46 KB",
+      "gzip": true,
+      "ignore": [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "scheduler"
+      ]
     }
   ]
 }

@@ -47,7 +47,7 @@ export const Overview: Story = {
                 ['name', 'string', '必填', '檔名'],
                 ['mode', "'compact' | 'rich'", "'compact'", 'compact=Paperclip 16px icon / rich=Avatar 48px 縮圖'],
                 ['status', "'uploading' | 'completed' | 'error'", '—', '上傳狀態(不傳=已上傳靜態)'],
-                ['progress', 'number', '—', '上傳進度 0-100(uploading 時顯示 bar)'],
+                ['progress', 'number', '—', '上傳進度 0-100(有 status 時顯示 bar;completed 強制 100%)'],
                 ['description', 'ReactNode', '—', 'rich 任意場景 / compact 只有 error 才顯示。ReactNode — 可含 inline clickable link(如「View log」)'],
                 ['thumbnailSrc', 'string', '—', 'rich mode 的縮圖 URL(圖片類檔案)'],
                 ['actions', 'ReactNode', '—', 'suffix actions(例:delete / cancel button)'],
@@ -127,7 +127,7 @@ export const ColorMatrix: Story = {
                 <Td mono>uploading</Td>
                 <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--foreground" size="sm" /><span className="font-mono">--foreground</span></span></Td>
                 <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--fg-secondary" size="sm" /><span className="font-mono">--fg-secondary</span></span></Td>
-                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--primary" size="sm" /><span className="font-mono">--primary(inProgress)</span></span></Td>
+                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--info" size="sm" /><span className="font-mono">--info(inProgress)</span></span></Td>
                 <Td>—(只顯示 bar)</Td>
               </tr>
               <tr>
@@ -146,16 +146,6 @@ export const ColorMatrix: Story = {
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <div>
-        <H3>視覺對照(rich mode)</H3>
-        <div className="flex flex-col gap-2 max-w-lg">
-          <FileItem name="Q1-marketing-report.pdf" description="2.4 MB · 已上傳" mode="rich" />
-          <FileItem name="brand-guidelines.pdf" description="1.2 MB · 上傳中 45%" status="uploading" progress={45} mode="rich" />
-          <FileItem name="Q2-forecast.xlsx" description="上傳成功 · 3.8 MB" status="completed" progress={100} mode="rich" />
-          <FileItem name="legacy-data.csv" description="上傳失敗 · 網路中斷" status="error" mode="rich" />
         </div>
       </div>
 
@@ -199,7 +189,7 @@ export const ModeMatrix: Story = {
 
       <div>
         <H3>compact（預設）— Paperclip 16px icon 在左</H3>
-        <Desc>掃描模式(text-caption),資訊密度高。適合批次上傳的 logs / CSV / JSON。Description 只在 error 才顯示。</Desc>
+        <Desc>掃描模式(text-body + leading-compact;desc 為 text-caption,兩 mode 統一),資訊密度高。適合批次上傳的 logs / CSV / JSON。Description 只在 error 才顯示。</Desc>
         <div className="flex flex-col gap-1 max-w-lg">
           <FileItem name="users.csv" mode="compact" status="completed" progress={100} />
           <FileItem name="orders.json" mode="compact" status="uploading" progress={42} />
@@ -214,7 +204,7 @@ export const ModeMatrix: Story = {
           <table className="text-caption border-collapse">
             <thead><tr><Th>Mode</Th><Th>Prefix</Th><Th>Typography</Th><Th>Description</Th><Th>使用場景</Th></tr></thead>
             <tbody>
-              <tr><Td mono>compact（預設）</Td><Td>Paperclip 16px</Td><Td>掃描模式(text-caption)</Td><Td>只有 error 才顯示</Td><Td>批次上傳、一般檔案</Td></tr>
+              <tr><Td mono>compact（預設）</Td><Td>Paperclip 16px</Td><Td>掃描模式(text-body;兩 mode 統一 scanning)</Td><Td>只有 error 才顯示</Td><Td>批次上傳、一般檔案</Td></tr>
               <tr><Td mono>rich</Td><Td>Avatar 48px square</Td><Td>掃描模式(text-body;兩 mode 統一 scanning)</Td><Td>任何場景</Td><Td>圖片、文件、需要預覽</Td></tr>
             </tbody>
           </table>
@@ -245,7 +235,7 @@ export const SizeMatrix: Story = {
               </tr>
             </thead>
             <tbody>
-              <tr><Td>Prefix</Td><Td mono>Paperclip 16px(foreground)</Td><Td mono>Avatar 48px square(縮圖或 fallback)</Td></tr>
+              <tr><Td>Prefix</Td><Td mono>Paperclip 16px(fg-muted)</Td><Td mono>Avatar 48px square(縮圖或 fallback)</Td></tr>
               <tr><Td>Row 高度(無 bar)</Td><Td mono>px-3 py-2(content 1lh)</Td><Td mono>content col minHeight 48(avatar)+ py-3</Td></tr>
               <tr><Td>Typography</Td><Td mono>text-body leading-compact(掃描模式)</Td><Td mono>text-body leading-compact(掃描模式;兩 mode 統一 scanning)</Td></tr>
               <tr><Td>Description</Td><Td>僅 error 才顯示</Td><Td>任何場景都可顯示</Td></tr>
@@ -263,7 +253,7 @@ export const SizeMatrix: Story = {
         <div className="grid grid-cols-2 gap-6">
           <div>
             <div className="text-caption text-fg-muted mb-2 font-mono">mode="compact"</div>
-            <div className="flex flex-col gap-0 max-w-sm border border-border rounded-md">
+            <div className="flex flex-col gap-1 max-w-sm">
               <FileItem name="Q1-report.pdf" mode="compact" status="completed" progress={100} />
               <FileItem name="users.csv" mode="compact" status="completed" progress={100} />
               <FileItem name="products.xlsx" mode="compact" status="uploading" progress={62} />
@@ -310,7 +300,7 @@ export const StateBehavior: Story = {
           <table className="text-caption border-collapse">
             <thead><tr><Th>Status</Th><Th>Progress bar 色</Th><Th>Status icon</Th></tr></thead>
             <tbody>
-              <tr><Td mono>uploading</Td><Td mono>bg-primary</Td><Td>—</Td></tr>
+              <tr><Td mono>uploading</Td><Td mono>bg-info</Td><Td>—</Td></tr>
               <tr><Td mono>completed</Td><Td mono>bg-success(100%)</Td><Td>CircleCheck(text-success)</Td></tr>
               <tr><Td mono>error</Td><Td mono>bg-error(寬度 = consumer 傳入 progress)</Td><Td>XCircle(text-error)</Td></tr>
               <tr><Td>(無 status)</Td><Td>無 bar</Td><Td>—</Td></tr>

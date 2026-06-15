@@ -6,6 +6,7 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Bot, Sparkles, Users, FolderPlus, Filter, Trash2, AlertCircle } from 'lucide-react'
 import { Coachmark } from './coachmark'
+import { MediaGradient } from './coachmark-story-helpers'
 import {
   Popover,
   PopoverTrigger,
@@ -58,22 +59,6 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
   </section>
 )
 
-const DemoMedia = ({
-  from = '#6366f1', to = '#8b5cf6', icon: Icon = Sparkles, label = 'Feature',
-}: {
-  from?: string; to?: string; icon?: React.ComponentType<{ className?: string }>; label?: string
-}) => (
-  <div
-    className="w-full h-full flex items-center justify-center"
-    style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}
-  >
-    <div className="flex flex-col items-center gap-1.5 text-white/90">
-      <Icon className="w-8 h-8" />
-      <span className="text-footnote font-medium">{label}</span>
-    </div>
-  </div>
-)
-
 // ── Stories ───────────────────────────────────────────────────────────────────
 
 export const UsageGuidance: Story = {
@@ -84,9 +69,9 @@ export const UsageGuidance: Story = {
         <div className="prose prose-sm max-w-prose mb-8">
           <p>適合 Coachmark 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           <ul className="space-y-1">
-            <li><LinkTo kind="Design System/Components/Coachmark/展示" name="單步驟新功能介紹"><span className="text-primary hover:underline font-medium cursor-pointer">單步驟新功能介紹</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Coachmark/展示" name="多步 新手導覽"><span className="text-primary hover:underline font-medium cursor-pointer">多步 Onboarding Tour</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Coachmark/展示" name="多步提示"><span className="text-primary hover:underline font-medium cursor-pointer">多步 Tips</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Coachmark/展示" name="單步驟新功能介紹"><span className="text-primary hover:underline font-medium cursor-pointer">首次推出 AI 助理時 anchor 到入口按鈕介紹(單步驟)</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Coachmark/展示" name="多步 新手導覽"><span className="text-primary hover:underline font-medium cursor-pointer">新用戶首登的三步功能導覽(多步 Onboarding)</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Coachmark/展示" name="多步提示"><span className="text-primary hover:underline font-medium cursor-pointer">進階快捷鍵的漸進式提示(多步 Tips)</span></LinkTo></li>
           </ul>
           <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
@@ -112,10 +97,10 @@ export const UsageGuidance: Story = {
         </Rule>
 
         <Rule
-          title="❌ 不強迫完成 tour(無 Skip 選項)"
-          note="使用者的本能是「我想自己試試」。沒 Skip = 綁架,使用者找關閉方式或直接關閉整個頁面。永遠提供 Skip 反而提升完成率 — 信任使用者會選擇"
+          title="❌ 不強迫完成 tour(拿掉退出機制)"
+          note="使用者的本能是「我想自己試試」。沒退出 = 綁架,使用者找關閉方式或直接關閉整個頁面。永遠提供退出機制(第一步 Skip;step 2+ 走 Esc / header Close,有 Prev 時 Skip 自動隱藏,見 CTA 語義表)反而提升完成率 — 信任使用者會選擇"
         >
-          <Label warn>❌ 只提供 Next 沒有 Skip — 使用者 frustration 增加,產品印象變差</Label>
+          <Label warn>❌ 拿掉所有退出路徑(無 Skip / Esc / header Close)— 使用者 frustration 增加,產品印象變差</Label>
         </Rule>
 
         <Rule
@@ -169,7 +154,7 @@ export const UsageGuidance: Story = {
         >
           <Coachmark
             open
-            image={<DemoMedia icon={Bot} label="AI 助理" />}
+            image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI 助理" />}
             title="試試新的 AI 助理"
             description="在任何文件中按下 AI 按鈕,讓 Claude 幫你摘要、翻譯或改寫內容。"
             onSkip={() => {}}
@@ -204,7 +189,7 @@ export const UsageGuidance: Story = {
 
         <Rule
           title="判準 — 問「不看這個資訊會怎樣?」"
-          note="不看也能用 → Coachmark(介紹 / 提示 / onboarding)。不看就做不下去(破壞性動作、必要資訊輸入、多步表單)→ Dialog。視覺上 Coachmark 共用 overlay-surface(bg / border / shadow / radius 完全繼承 Popover),差別僅:觸發模型(主動 vs 被動)+ 結構(Coachmark 無 Header / 有 Media / Footer 是 justify-between)"
+          note="不看也能用 → Coachmark(介紹 / 提示 / onboarding)。不看就做不下去(破壞性動作、必要資訊輸入、多步表單)→ Dialog。視覺上 Coachmark 共用 overlay-surface(bg / border / shadow / radius 完全繼承 Popover),差別僅:觸發模型(主動 vs 被動)+ 結構(Coachmark Header 可選 kind / 有 Media / Footer 是 justify-between)"
         >
           <Label>Coachmark:新功能介紹、onboarding tour、版本更新提示</Label>
           <Label>Dialog:刪除確認、建立 project 表單、付款資訊輸入、多步 wizard</Label>
@@ -224,7 +209,7 @@ export const MultiStepBestPracticesRule: Story = {
       >
         <Coachmark
           open
-          image={<DemoMedia icon={Users} from="#f59e0b" to="#ef4444" label="團隊" />}
+          image={<MediaGradient from="var(--color-yellow-6)" to="var(--color-deep-orange-6)" icon={Users} label="團隊" />}
           title="邀請成員"
           description="輸入 email 寄送邀請,新成員自動加入這個 Workspace。"
           step={{ current: 2, total: 3 }}
@@ -263,7 +248,7 @@ export const MultiStepBestPracticesRule: Story = {
         <div className="flex gap-6">
           <Coachmark
             open
-            image={<DemoMedia icon={Sparkles} from="#10b981" to="#059669" label="完成" />}
+            image={<MediaGradient from="var(--color-green-6)" to="var(--color-green-7)" icon={Sparkles} label="完成" />}
             title="建立你的第一個專案"
             description="專案用來組織相關的任務、文件和討論。"
             step={{ current: 3, total: 3 }}
@@ -293,7 +278,7 @@ export const MultiStepBestPracticesRule: Story = {
       >
         <Coachmark
           open
-          image={<DemoMedia icon={FolderPlus} from="#0ea5e9" to="#06b6d4" label="Workspace" />}
+          image={<MediaGradient from="var(--color-blue-6)" to="var(--color-cyan-6)" icon={FolderPlus} label="Workspace" />}
           title="建立你的第一個 Workspace"
           description="Workspace 是團隊協作的主要空間,所有專案、文件、成員都在這裡集中管理。"
           step={{ current: 1, total: 3 }}
@@ -320,7 +305,7 @@ export const MediaContentRule: Story = {
       >
         <Coachmark
           open
-          image={<DemoMedia icon={Bot} from="#6366f1" to="#8b5cf6" label="AI Illustration" />}
+          image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI Illustration" />}
           title="AI 助理"
           description="illustration 傳達概念,比純文字更快被理解"
           onNext={() => {}}
@@ -346,7 +331,7 @@ export const MediaContentRule: Story = {
       >
         <Coachmark
           open
-          image={<DemoMedia icon={Sparkles} label="簡潔" />}
+          image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Sparkles} label="簡潔" />}
           title="簡潔的 description"
           description="兩行說明足以傳達核心價值 — 使用者能快速掃完並理解功能用途。"
           onNext={() => {}}

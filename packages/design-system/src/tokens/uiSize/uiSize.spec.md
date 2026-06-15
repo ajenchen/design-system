@@ -3,7 +3,7 @@
 # UiSize 設計原則
 
 > **Foundational SSOT rationale**(cap 800,2026-04-25 approved):
-> 尺寸 token SSOT。定義 field-height family `md` default / chrome-header 選型 decision tree(fixed-h vs padding-based + 8 家對照)/ icon-only `calc` 公式。Button / Input / Select / Checkbox / Slider / Tabs 等皆消費,scope 本質 > 單一 token 檔。
+> 尺寸 token SSOT。定義 field-height family `md` default / chrome-header 選型 decision tree(fixed-h vs padding-based + 8 家對照)/ icon-only padding-free canonical。Button / Input / Select / Checkbox / Slider / Tabs 等皆消費,scope 本質 > 單一 token 檔。
 
 元件高度的語義 token，rem 單位。透過 `data-density`（或 `data-ui-size`）切換。
 
@@ -47,7 +47,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 
 | 元件 | 固定 size | 理由 |
 |------|----------|------|
-| `Chip` | 固定 `h-field-sm`（28/32px） | Material 3 / Atlassian / Polaris 共識：filter chips 使用單一高度。不暴露 size prop |
+| `Chip` | 固定 `h-field-sm`（28/32px） | Material 3 / Atlassian / Polaris 共識：filter chips 使用單一高度。不暴露 size prop | <!-- @benchmark-unverified -->
 
 #### 偏離 field-height family 的 rationale 格式(canonical)
 
@@ -148,13 +148,13 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 
 | Carve-out owner | File | Rule | Rationale cite |
 |---|---|---|---|
-| Rating star | `components/Rating/rating.spec.md:84` | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20 / Material 24 / Airbnb 24 |
+| Rating star | `components/Rating/rating.spec.md:84` | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20 / Material 24 / Airbnb 24 | <!-- @benchmark-unverified -->
 | Avatar 內 icon | `components/Avatar/avatar.spec.md:165` | `round_even(size × 0.6)` formula | Material / Apple HIG |
 | Empty illustration | `components/Empty/empty.tsx:48` | Avatar 48 wrap → icon 28(Avatar formula derived)| Empty-state canonical |
 | FileViewer thumb | `components/FileViewer/file-viewer.tsx:621` | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |
 | CircularProgress | `components/CircularProgress/circular-progress.tsx:87` | `strokeWidth = max(2, size/10)` stroke ring 厚度非 icon | Geometric scaling |
 | Steps indicator icon | `components/Steps/steps.tsx:24` | `INDICATOR_ICON_SIZE {sm:0, md:16, lg:20}`(sm 因圓圈 8px 太小)| Indicator-internal |
-| Checkbox/Switch check | `components/Checkbox/checkbox.tsx:49` + `components/Switch/switch.tsx:73` | `{sm:12, md:12, lg:16}` form-control internal + stroke 下限 12 | iOS HIG / Material 3 / Polaris |
+| Checkbox/Switch check | `components/Checkbox/checkbox.tsx:49` + `components/Switch/switch.tsx:73` | `{sm:12, md:12, lg:16}` form-control internal + stroke 下限 12 | iOS HIG / Material 3 / Polaris | <!-- @benchmark-unverified -->
 
 **程式化 SSOT**:`patterns/element-anatomy/item-anatomy.tsx:66` `ICON_SIZE = {sm:16, md:16, lg:20}` 是本 tier 的 type-safe const。**Form control 透過 `tokens/uiSize/icon-size.ts` re-export entry import**(避 components→patterns 反向 dependency)。
 
@@ -192,7 +192,7 @@ Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
 
 | Token | md | lg | 消費者 |
 |-------|----|----|--------|
-| `--chrome-header-height` | 48px | 56px | Sidebar header/footer、主內容 page header、app top bar、`--sidebar-width-icon`、**Overlay family chrome**(Dialog / Sheet / Popover / Coachmark header + footer,透過 `patterns/overlay-surface` 的 SurfaceHeader / SurfaceFooter `min-h-[var(--chrome-header-height)]`)、**Chrome family ChromeHeader primitive**(`patterns/header-canonical/chrome-header.tsx`,Sidebar / FileViewer Toolbar+InfoPanel 消費)|
+| `--chrome-header-height` | 48px | 56px | Sidebar header/footer、主內容 page header、app top bar、`--sidebar-width-icon`、**Overlay family chrome**(Dialog / Sheet / Popover / Coachmark header + footer,透過 `patterns/overlay-surface` 的 SurfaceHeader / SurfaceFooter padding-based 公式自然閉合等值 48/56,**無 min-h 強鎖**(詳 overlay-surface.spec.md「Chrome dismiss size canonical」))、**Chrome family ChromeHeader primitive**(`patterns/header-canonical/chrome-header.tsx`,Sidebar / FileViewer Toolbar+InfoPanel 消費)|
 
 ### Canonical 意圖(AR47,2026-04-21)
 
@@ -217,7 +217,7 @@ Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
 - 不同 → 其中一個元件在 density-override 情境,行為正確
 
 **為什麼 48 不 56 / 64**:
-- Material App Bar 56dp(mobile)/ 64dp(desktop);Airbnb 主站 header 80px;Shopify 64px
+- Material App Bar 56dp(mobile)/ 64dp(desktop);Airbnb 主站 header 80px;Shopify 64px <!-- @benchmark-unverified -->
 - 本 DS 選 **48px @ md / 56px @ lg** 取「密集工具型產品」的下限(Linear / Figma / Notion 主 chrome 40-52px),給主內容區留更多 vertical space
 - 跟 Button-lg + Field-lg 高度(40 / 36)拉出視覺 hierarchy — chrome 高於任何 row control,但不壓迫內容
 
@@ -270,7 +270,7 @@ Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
 
 | DS | Fixed-height 實例 | Padding-based 實例 |
 |----|-------------------|-------------------|
-| Material M3 | AppBar 56/64 dp | Dialog min-height + padding |
+| Material M3 | AppBar 56/64 dp | Dialog min-height + padding | <!-- @benchmark-unverified -->
 | Polaris | TopBar 56px | Modal padding-based |
 | Atlassian | global nav / top bar | Modal padding |
 | Carbon(IBM)| UIShell 48px | Modal |
@@ -330,7 +330,7 @@ Overlay family 套 v5 `data-unbounded` slot trick(Button unbounded → SurfaceHe
 
 ## Inline Action
 
-詳見 `patterns/element-anatomy/item-anatomy.spec.md`「Inline Action 設計規格」節。
+詳見 `patterns/element-anatomy/inline-action.spec.md`(獨立 SSOT,2026-04-24 自 item-anatomy 抽出)。
 
 ---
 
@@ -352,6 +352,8 @@ className={cn(
 ```
 
 `aspect-square` 鎖 width=height(從 `h-field-X` 來)。`p-0` override base 的 `px-3`。SVG flex-center 自動視覺置中。**0 magic number / 0 公式 / 0 border-deduction** — 任何 size / icon 都自然正方形。
+
+**邊界(非 1:1 viewBox icon / RTL)**:容器寬恆等高、`p-0` 四邊對稱,flex 置中對任意 icon viewBox 比例與 RTL 方向皆不變形,無需特例。
 
 ### 為什麼選 padding-free 派(2026-04-25 從 padding-formula 派切換)
 
@@ -396,6 +398,20 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 ---
 
+## 何時不用(反 pattern 總覽)
+
+散在各節的 ❌ 規則總索引(細節以 owner 段落為準):
+
+| ❌ 場景 | 正解 | Owner 段落 |
+|---|---|---|
+| 互動元件高度 < 24px | 重新檢視容器佈局,不縮元件 | 「元件高度地板」 |
+| chrome 區域硬寫高度(`h-16` 等) | `h-[var(--chrome-header-height)]` | 「Canonical 意圖(AR47)」 |
+| iconOnly 用 padding 公式 | `ICON_ONLY_BASE` padding-free | 「Icon-only 元件的 padding canonical」 |
+| Tabs 高度借用 field-height / table-row | `--tab-height-*`(概念獨立) | 「Tab Height」 |
+| 新 field-height 消費者 default ≠ md | default `md`;偏離必寫 rationale | 「硬規則」+「偏離 rationale 格式」 |
+
+---
+
 ## Tailwind Bridge
 
 透過 `@theme inline` 橋接到 Tailwind spacing：
@@ -425,15 +441,11 @@ document.documentElement.setAttribute('data-density', 'lg')
 
 - `app-shell.spec.md`
 - `breadcrumb.spec.md`
-- `popover.spec.md`
-
-## 被引用(auto-maintained,Dim 3 reciprocal audit)
-
-> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
-
 - `button.spec.md`
-- `dialog.spec.md`
+- `header-canonical.spec.md`
+- `overlay-surface.spec.md`
+- `popover.spec.md`
+- `segmented-control.spec.md`
 - `selection-item.spec.md`
 - `slider.spec.md`
 - `token-system.spec.md`
-- `tree-view.spec.md`

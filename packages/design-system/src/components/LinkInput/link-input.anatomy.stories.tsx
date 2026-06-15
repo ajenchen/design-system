@@ -62,7 +62,7 @@ const COLOR_MAP: Record<ModeKey, Partial<Record<EditStateKey, ModeStateColors>>>
   },
   readonly: {
     link: {
-      wrapper: { bg: '--bg-disabled', text: '--foreground', border: 'transparent' },
+      wrapper: { bg: '--bg-readonly', text: '--foreground', border: 'transparent' },
       value: '--primary',
       placeholder: '--fg-muted',
       pencil: '—',

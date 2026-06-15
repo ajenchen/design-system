@@ -9,8 +9,9 @@
  *   - Find all A→B pointers via regex
  *   - Classify as SSOT (within 6-line context of SSOT keywords) vs casual
  *   - Build reverse map (B → set of A's)
- *   - For each B with missing reverse pointers: append an auto-maintained
- *     「## 被引用(auto-maintained from audit Dim 3)」section listing sources
+ *   - For each B with ANY inbound SSOT edges: fully REBUILD its auto-maintained
+ *     「## 被引用(auto-maintained,Dim 3 reciprocal audit)」section(union of sources);
+ *     targets with 0 inbound get stale sections swept(2026-06-11 root-fix)
  *
  * Idempotent: section is regenerated each run (no duplication).
  */
@@ -26,11 +27,22 @@ const CHECK = process.argv.includes('--check')
 const drifted = []
 const SPECS = globSync('packages/design-system/src/**/*.spec.md', { cwd: root }).map((p) => path.join(root, p))
 
+// Auto-section marker(置頂宣告:scan-strip 與 write-removal 共用同一條 escaped regex,禁手寫第二份)
+const SECTION_HEADER = '## 被引用(auto-maintained,Dim 3 reciprocal audit)'
+const SECTION_NOTE = '> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。'
+// 2026-06-11 根治:header 含 ASCII 括號 = regex 特殊字元。舊 escape 的 char class 寫壞
+// (`[...[\\]...]` 中 `\\]` 提早閉合 class)→ escape 變 no-op → `(...)` 成 regex group
+// 永遠 match 不到檔案字面括號 → 舊 section 從未被移除,每跑一次疊一份 dup。
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const SECTION_RE = new RegExp(`\\n*${escapeRe(SECTION_HEADER)}[\\s\\S]*?(?=\\n## |$)`, 'g')
+
 // Build pointer map
 const pointers = [] // { from: abspath, fromBase, to: basename, line, context }
 
 for (const f of SPECS) {
-  const content = fs.readFileSync(f, 'utf-8')
+  // 2026-06-10 根治:pointer 掃描排除 auto-section 內容 — section 自列的 `- x.spec.md` 行
+  // 不算真 edge(否則 dup 檔自證「reciprocal 齊」→ 永不重建 → dup 永久滯留 + --check 假綠)
+  const content = fs.readFileSync(f, 'utf-8').replace(SECTION_RE, '')
   const lines = content.split('\n')
   for (const m of content.matchAll(/([\w\-/.]+\.spec\.md)/g)) {
     const target = m[1].split('/').pop()
@@ -68,20 +80,27 @@ for (const p of pointers) {
 
 // Resolve each basename → actual file path (since multiple specs may have same basename, use map from SPECS)
 const pathByBase = new Map()
-for (const f of SPECS) pathByBase.set(path.basename(f), f)
-
-// Auto-section marker
-const SECTION_HEADER = '## 被引用(auto-maintained,Dim 3 reciprocal audit)'
-const SECTION_NOTE = '> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。'
+for (const f of SPECS) {
+  // 2026-06-11(codex b1):basename = identity 的前提是不撞名;撞名 = ambiguous,fail loud
+  if (pathByBase.has(path.basename(f))) {
+    console.error(`❌ duplicate spec basename: ${path.basename(f)}(${pathByBase.get(path.basename(f))} vs ${f})— reciprocal identity ambiguous,先改名再跑`)
+    process.exit(1)
+  }
+  pathByBase.set(path.basename(f), f)
+}
 
 let updatedCount = 0
 let targetCount = 0
 const updated = []
 const skipped = []
 
-for (const [targetBase, sources] of gapsByTarget.entries()) {
+// 2026-06-10 根治:迭代域 = 所有有 inbound SSOT 的 target(reverse)全量重建 canonical section,
+// 非僅「有缺的」(gapsByTarget)— 否則 dup / stale section 永不被重訪。gapsByTarget 仍用於 log 語意。
+for (const [targetBase, sources] of reverse.entries()) {
   const targetPath = pathByBase.get(targetBase)
   if (!targetPath) {
+    // 2026-06-11(codex b1):SSOT context 指向不存在的 spec = broken pointer,--check 必 fail(原本只進 skipped = 假綠)
+    if (CHECK) drifted.push(`${targetBase} (SSOT 語境引用但檔案不存在 — broken pointer)`)
     skipped.push(`${targetBase}: file not found`)
     continue
   }
@@ -100,18 +119,9 @@ for (const [targetBase, sources] of gapsByTarget.entries()) {
     '',
   ].join('\n')
 
-  // Idempotent regenerate(2026-05-10 v2 bug fix):
-  // 1. Remove ALL existing reciprocal sections with global flag(handles dup case
-  //    accumulated from previous buggy runs)
-  // 2. Append fresh section once
-  // Original bug:'m' flag + lookahead `$` lazy-stopped at first newline,causing
-  // dup section accumulation across runs。7 specs corrupted before discovery
-  // (button/notice/action-bar/element-anatomy/overlay-surface/layoutSpace/uiSize)。
-  const sectionRe = new RegExp(
-    `\\n*${SECTION_HEADER.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}[\\s\\S]*?(?=\\n## |$)`,
-    'g',  // global flag = remove ALL existing(handles dup)
-  )
-  const cleaned = content.replace(sectionRe, '').trimEnd()
+  // Idempotent regenerate:remove ALL existing sections(SECTION_RE global,正確 escape
+  // 詳檔頭 2026-06-11 註)再 append fresh union once。
+  const cleaned = content.replace(SECTION_RE, '').trimEnd()
   const newContent = cleaned + '\n' + newSection
 
   if (newContent !== content) {
@@ -122,6 +132,22 @@ for (const [targetBase, sources] of gapsByTarget.entries()) {
       updatedCount++
       updated.push(`${targetBase} (${sortedSources.length} inbound)`)
     }
+  }
+}
+
+// 2026-06-11 根治第二段:target 已無任何 inbound SSOT edge(不在 reverse,上方 loop 訪不到)
+// 但檔內殘留舊 auto-section(歷史假 edge 時代寫入)→ stale,整節移除;--check 同步 flag 防假綠。
+for (const f of SPECS) {
+  if (reverse.has(path.basename(f))) continue
+  const content = fs.readFileSync(f, 'utf-8')
+  const cleaned = content.replace(SECTION_RE, '')
+  if (cleaned === content) continue
+  if (CHECK) {
+    drifted.push(`${path.basename(f)} (0 inbound — stale 被引用 section 該移除)`)
+  } else {
+    fs.writeFileSync(f, cleaned.trimEnd() + '\n')
+    updatedCount++
+    updated.push(`${path.basename(f)} (stale section removed)`)
   }
 }
 

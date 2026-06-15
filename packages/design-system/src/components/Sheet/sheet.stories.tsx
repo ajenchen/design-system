@@ -25,7 +25,7 @@ export default meta
 type Story = StoryObj
 
 export const CreateProjectRight: Story = {
-  name: '右側建立 專案',
+  name: '建立新專案（右側滑入）',
   render: () => (
     <Sheet>
       <SheetTrigger asChild>
@@ -73,7 +73,7 @@ export const CreateProjectRight: Story = {
 }
 
 export const EditUserRight: Story = {
-  name: '右側編輯 使用者 詳情',
+  name: '編輯成員詳情（右側滑入）',
   render: () => (
     <Sheet>
       <SheetTrigger asChild>

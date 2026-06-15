@@ -192,7 +192,7 @@ export const circularProgressMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  states: ['default'], // 無 hover / focus / active(spec);disabled 屬 consumer host(spec「邊界案例」)
   tokens: {
     bg: [],
     fg: ['text-fg-muted', 'text-foreground', 'text-info'],

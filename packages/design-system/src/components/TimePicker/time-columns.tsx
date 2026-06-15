@@ -149,7 +149,7 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
         aria-label={label}
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        className="flex flex-col py-2 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[-2px]"
+        className="flex flex-col py-2 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px]"
       >
         {values.map((v) => {
           const isSelected = v === selected

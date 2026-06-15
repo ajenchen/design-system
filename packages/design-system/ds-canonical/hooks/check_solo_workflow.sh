@@ -32,6 +32,12 @@ SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
 TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
 
 # === Override flag ===
+# 2026-06-11:documented override 從 Bash command 前綴無法進到 hook env(PreToolUse 隔離)—
+# 對齊 check_substantive_edit_approval_preflight 行為,command 字串含 override token 也視為 set(audit-logged 不變)。
+_OVR_CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
+if echo "${_OVR_CMD:-}" | grep -q 'CLAUDE_BYPASS_SOLO_WORKFLOW=1' 2>/dev/null; then
+  CLAUDE_BYPASS_SOLO_WORKFLOW=1
+fi
 if [ "${CLAUDE_BYPASS_SOLO_WORKFLOW:-0}" = "1" ]; then
   mkdir -p "$(dirname "$BYPASS_LOG")"
   printf '{"ts":"%s","tool":"%s","session":"%s"}\n' \
@@ -44,8 +50,12 @@ has_push_trigger() {
   [ -z "$TRANSCRIPT" ] || [ ! -f "$TRANSCRIPT" ] && return 1
   # Transcript JSONL schema:每 line 一 message。real user text msg = `type:"user"` AND
   # `message.role:"user"` AND `message.content` is STRING(tool_results 的 content 是 array)。
-  jq -r 'select(.type=="user" and .message.role=="user" and (.message.content | type == "string")) | .message.content' \
+  # 2026-06-11 fix(false-negative 根因):task-notification / system-notification 也是 type:user
+  # string content,會把真 user trigger 擠出 tail-10 窗(本日 beta.62 發版鏈 6 個背景通知把
+  # 「就push」擠出窗 → R3 誤擋)。真 user 訊息掃描必排除系統通知。
+  jq -r 'select(.type=="user" and .message.role=="user" and (.message.content | type == "string")) | (.message.content | gsub("\n"; " "))' \
     "$TRANSCRIPT" 2>/dev/null \
+    | grep -v -e '<task-notification>' -e '\[SYSTEM NOTIFICATION' -e '<system-reminder>' \
     | tail -10 \
     | grep -qE "$APPROVAL_KEYWORD_RE"
 }

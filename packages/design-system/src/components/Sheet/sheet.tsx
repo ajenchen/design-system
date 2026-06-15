@@ -18,9 +18,9 @@ import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
  *
  * ── 定位(2026-04-21 canonical)──
  * Sheet 給**消費者**用的唯一合法形式 = **右側開啟的 modal**(side="right"),
- * 內部結構跟 `Dialog` 一致:`SheetHeader` / `SheetBody` / `SheetFooter`(各自消費
- * `SurfaceHeader` / `SurfaceBody` / `SurfaceFooter` primitive,padding token SSOT
- * 在 `patterns/overlay-surface/`)。side="right" 是 defaultVariants,消費者不傳 side。
+ * 內部結構跟 `Dialog` 一致:`SheetHeader` / `SheetBody` / `SheetFooter`(Header / Footer 消費
+ * `SurfaceHeader` / `SurfaceFooter` primitive;Body = `ScrollArea` + 內層 padding div,
+ * padding token SSOT 在 `patterns/overlay-surface/`)。side="right" 是 defaultVariants,消費者不傳 side。
  *
  * ── 其他 side(top / bottom / left)——**非消費者 API**,內部基建用 ──
  * top / bottom / left 變體保留給 DS 內部基建(例:Sidebar 在小尺寸視口時從 left 滑入)。
@@ -31,9 +31,10 @@ import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
  * - Sheet(side="right")= 側滑 modal,用於「補充資訊 / 多欄位表單 / 編輯 flow」
  * - 兩者 API 結構 1:1 對應,差異只在 side / 動畫 / 初始寬度
  *
- * ── Header / Body / Footer 消費 SurfaceXxx SSOT ──
+ * ── Header / Footer 消費 SurfaceXxx SSOT;Body 走 ScrollArea canonical ──
  * 避免 padding 漂移 — Dialog / Popover / Sheet / Coachmark 共用同一套 overlay-surface
- * padding token(px-loose / py-tight),改 overlay-surface.tsx 四者自動跟進。
+ * padding token(px-loose / py-tight),改 overlay-surface.tsx 四者自動跟進;
+ * SheetBody 同 DialogBody:ScrollArea + 內層 px-loose / pt-tight / pb-bottom(詳 SheetBody comment)。
  */
 
 const Sheet = SheetPrimitive.Root

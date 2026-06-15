@@ -1,11 +1,9 @@
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
+<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline(M22(d) 顯式撤回;本檔 frontmatter 無 benchmark list,來源 URL 未補)。 -->
 
 # Form Validation 設計原則
 
-> **本 spec = 跨表單的 validation 方法論 rules,非 UI 元件 spec,不適用 Layout Family 分類**(Dim 16 豁免)。
+> **本 spec = 跨表單的 validation 方法論 rules**(表單層級行為規範,適用於所有含 Field 元件的表單)。非 UI 元件 spec,不適用 Layout Family 分類(Dim 16 豁免)。
 > 元件級 validation 視覺規格住在 `Field/field.spec.md`(Field wrapper chrome)+ 各 form control spec。
-
-表單層級的驗證行為規範。適用於所有包含 Field 元件的表單。
 
 ---
 
@@ -43,7 +41,7 @@
 ### Submit 驗證
 
 7. **Submit 驗證全部**——點擊 submit 時對所有欄位執行驗證(不依賴個別 field 的 blur 狀態)
-8. **Anchor 到第一個錯誤**——若有任何欄位出錯,scroll 並 focus 到第一個錯誤欄位
+8. **Anchor 到第一個錯誤**——若有任何欄位出錯,scroll 並 focus 到第一個錯誤欄位。多次 submit 重試時,每次都重新驗證全部欄位並重新計算「第一個錯誤」(rule 7 的自然結果),不保持上次 anchor 位置
 9. **Async / cross-field 驗證 defer 到 submit**——某些驗證無法在 blur 當下完成(如「名稱是否重複」需要 API 查詢、跨欄位邏輯如「結束日不得早於開始日」),這些在 submit 時統一判斷。若有錯誤,同樣 anchor 到第一個出錯欄位。
 
 ### 驗證分層
@@ -91,29 +89,29 @@
 
 四個關鍵決策,各自有世界級先例支撐:
 
-**(1) Blur-only validation(non-onChange)— 對齊 Polaris / Carbon「don't validate while typing」** <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**(1) Blur-only validation(non-onChange)— 對齊 Polaris / Carbon「don't validate while typing」** <!-- @benchmark-unverified -->
 
 Ant Design default `validateTrigger=['onChange', 'onBlur']` 對使用者 aggressive — 才打「user@」就跳「invalid email」碎念,reader 思路被打斷。Polaris / Carbon / iOS / Atlassian 共識 onBlur + submit,讓使用者「先表達完意圖再評斷」。
 
-捨棄 onChange 即時驗證的代價是「打錯看不到反饋」(打到第 3 位才發現密碼太短),但 Field 內可選 `realtime` mode 提供 hint(非 error)補足,本 spec 規範 default 行為。
+捨棄 onChange 即時驗證的代價是「打錯看不到反饋」(打到第 3 位才發現密碼太短)——本 spec 規範 default 行為(blur + submit);DS 目前無 onChange hint API。
 
-**(2) Edit 清 error + blur 重驗(已出錯後),非 onChange 重驗 — 對齊 Carbon / Atlassian 兩階段哲學** <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**(2) Edit 清 error + blur 重驗(已出錯後),非 onChange 重驗 — 對齊 Carbon / Atlassian 兩階段哲學** <!-- @benchmark-unverified -->
 
 Material/Polaris/Ant 已出錯後 onChange re-validate(改第 1 字 error 又跳回)— 給使用者壓力。Carbon / Atlassian「edit 清 + blur 重驗」哲學:給使用者完整修正空間,離開時才再判決。
 
 對應使用者心智:「修改」是過程,「離開 field」是動作完成的 boundary,在 boundary 評斷比每字評斷尊重 user agency。
 
-**(3) Create always-enabled / Update disabled-until-dirty 不對稱 — 對齊 Stripe / Notion / Linear 現代慣例** <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**(3) Create always-enabled / Update disabled-until-dirty 不對稱 — 對齊 Stripe / Notion / Linear 現代慣例** <!-- @benchmark-unverified -->
 
 Ant 對「Create」也 disabled-until-dirty(填了所有 required 才亮)— 但這讓使用者第一次進 form 看到 disabled button 困惑「為什麼按不了」。Stripe / Notion / Material 共識:Create 永遠 enabled — 點擊後若 invalid,顯示 error 並 scroll,使用者明確知道為什麼。
 
-Update 場景反向:沒改的 Update 沒提交意義(對齊「intent 才 commit」),disabled 表達「等你做動作」比 enabled 後點擊判斷「沒變化」更直接。對齊 Notion 設定頁 / Figma file rename 慣例。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Update 場景反向:沒改的 Update 沒提交意義(對齊「intent 才 commit」),disabled 表達「等你做動作」比 enabled 後點擊判斷「沒變化」更直接。對齊 Notion 設定頁 / Figma file rename 慣例。 <!-- @benchmark-unverified -->
 
-**(4) 格式驗證 vs 業務驗證分層(blur vs submit)— 對齊 Material/Carbon「local vs cross-cutting validation」哲學** <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**(4) 格式驗證 vs 業務驗證分層(blur vs submit)— 對齊 Material/Carbon「local vs cross-cutting validation」哲學** <!-- @benchmark-unverified -->
 
 Email 格式 / URL 格式 / 必填等「single-field 純 syntax」blur 即可判斷;名稱重複(API 查)/ 結束日 ≥ 開始日(跨欄位)等「business / async」必須 submit 才能判 — 強行 blur 觸發 API 對使用者體驗差(每換 field 一次 API call)。
 
-對齊 Material `<TextField error>` + Form layer error 分層 / Carbon「format vs business」雙軌。視覺一致(都紅框 + error message)避免 reader 區分「為什麼這個 error 是 blur 出來那個是 submit 出來」。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+對齊 Material `<TextField error>` + Form layer error 分層 / Carbon「format vs business」雙軌。視覺一致(都紅框 + error message)避免 reader 區分「為什麼這個 error 是 blur 出來那個是 submit 出來」。 <!-- @benchmark-unverified -->
 
 ## 禁止事項
 
@@ -129,10 +127,16 @@ Email 格式 / URL 格式 / 必填等「single-field 純 syntax」blur 即可判
 Form validation 的 ARIA / 鍵盤行為(對齊 WCAG 3.3.1 Error Identification + 3.3.3 Error Suggestion):
 
 - **Error message ARIA**:Field error 容器 `id="field-{name}-error"`,Input 設 `aria-describedby="field-{name}-error"` + `aria-invalid="true"`;SR 在 focus field 時自動讀「{label}, {error message}」
-- **Submit error scroll**:submit 失敗後,focus 自動 jump 到第一個 invalid field(`field.focus()` + `scrollIntoView({block: 'center'})`);對齊 Material / Atlassian 慣例 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **Submit error scroll**:submit 失敗後,focus 自動 jump 到第一個 invalid field(`field.focus()` + `scrollIntoView({block: 'center'})`);對齊 Material / Atlassian 慣例 <!-- @benchmark-unverified -->
 - **Error live region**:跨欄位 / async error 用 `aria-live="polite"` 容器宣告 — SR 在空閒時讀出,不中斷使用者打字
 - **Required indicator**:label 的 `*` 為純視覺、對讀屏隱藏(`aria-hidden="true"`,field.tsx:392);required 語意由內部輸入控件的 `aria-required`(input.tsx:192)承擔,避免讀屏讀出「asterisk」語義不清
-- **Color-only error 警告**:error border 紅色之外必有 icon 或文字(WCAG 1.4.1 不僅靠顏色)— DS error variant 自動 prefix `<AlertCircle/>` icon
+- **Color-only error 警告**:error border 紅色之外必有文字訊息(WCAG 1.4.1 不僅靠顏色)— 由 `<FieldError>` 文字承擔;DS **不**在 input 內放 error 狀態 icon(見 `field-controls.spec.md`「禁止事項」)
+
+## 相關
+
+- `field.spec.md` — Field wrapper 的 error 視覺 chrome(紅框 + error message slot)
+- `field-controls.spec.md` — form control 共用 state(disabled / readonly / invalid)
+- `../Input/input.spec.md` — `aria-required` / `aria-invalid` 實作端(input.tsx)
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 
@@ -140,11 +144,8 @@ Form validation 的 ARIA / 鍵盤行為(對齊 WCAG 3.3.1 Error Identification +
 
 - `combobox.spec.md`
 - `date-picker.spec.md`
-
-## 被引用(auto-maintained,Dim 3 reciprocal audit)
-
-> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
-
+- `field-controls.spec.md`
+- `field.spec.md`
 - `link-input.spec.md`
 - `textarea.spec.md`
 - `time-picker.spec.md`

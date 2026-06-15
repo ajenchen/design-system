@@ -73,7 +73,7 @@ export const DisplayMode: Story = {
     return (
       <div className="flex flex-col gap-6 max-w-xs">
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">text（預設）</h3>
+          <h3 className="text-body font-bold text-foreground mb-2">plain（預設）</h3>
           <p className="text-caption text-fg-muted mb-2">純文字，readonly/disabled 跟 Input 一致</p>
           <Select options={statusOptions} value={textVal} onChange={setTextVal} />
           <div className="mt-2"><Select mode="readonly" options={statusOptions} value={textVal} /></div>
@@ -189,7 +189,7 @@ export const InDataTable: Story = {
     return (
       <div>
         <p className="text-caption text-fg-muted mb-3">
-          select 欄位自動用 Tag 渲染——meta.options 提供 value → label 對應
+          select 欄位預設純文字渲染（cell IS variant）——meta.options 提供 value → label 對應；需 Tag 視覺時在 column meta.display='tag' opt-in
         </p>
         <DataTable columns={columns} data={data} height="auto" />
       </div>

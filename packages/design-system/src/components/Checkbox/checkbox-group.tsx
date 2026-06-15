@@ -25,7 +25,8 @@ export const CheckboxGroupContext = React.createContext<{ inGroup: true } | null
  * **禁止**外層加 `gap-y-*` / `space-y-*` / margin —— 會 double padding,違反 canonical。
  *
  * ── 對齊 RadioGroup canonical ──
- * Radix `RadioGroup.Root` 預設用 `grid` (無 gap);本元件垂直也用 `grid`(無 gap),
+ * 本 DS `RadioGroup` wrapper 用 `grid`(無 gap;radio-group.tsx 自加——Radix primitive
+ * 本身 unstyled,無預設 layout);本元件垂直也用 `grid`(無 gap),
  * horizontal 用 `flex flex-wrap gap-4`(短 label 並排才需水平 gap)。
  *
  * ── 為什麼 vertical 不給 gap 也能好看 ──

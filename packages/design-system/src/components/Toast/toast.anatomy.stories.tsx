@@ -144,7 +144,7 @@ export const ContainerArchitecture: Story = {
         <H3>為什麼分三層</H3>
         <Desc>
           Toast 的 container 結構是**刻意三層**——解決陰影 token 在 light / dark
-          mode 不同強度的問題(dark 45% black,light 4% black)。若陰影跟
+          mode 不同強度的問題(dark 25% black,light 4% black)。若陰影跟
           `data-theme="dark"` 在同一層,light 頁面上的 dark toast 會有過重陰影。
         </Desc>
       </div>

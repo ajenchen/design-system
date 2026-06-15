@@ -8,6 +8,7 @@ import { Select } from '@/design-system/components/Select/select'
 import { Input } from '@/design-system/components/Input/input'
 import { NumberInput } from '@/design-system/components/NumberInput/number-input'
 import { Button } from '@/design-system/components/Button/button'
+import { OPERATOR_REGISTRY } from '@/design-system/components/DataTable/filter-operators'
 
 const meta: Meta<typeof FieldControlGroup> = {
   title: 'Design System/Components/FieldControlGroup/展示',
@@ -42,7 +43,7 @@ const CURRENCIES = [
 ]
 
 /* ── 電話輸入(國碼 + 號碼)── */
-export const Phone_NumberInput: Story = {
+export const PhoneNumber: Story = {
   name: '電話',
   render: () => {
     const [code, setCode] = React.useState('+886')
@@ -75,7 +76,7 @@ export const Phone_NumberInput: Story = {
 }
 
 /* ── 金額輸入(幣別 + 數字)── */
-export const Currency_Amount: Story = {
+export const CurrencyAmount: Story = {
   name: '金額',
   render: () => {
     const [currency, setCurrency] = React.useState('TWD')
@@ -105,7 +106,7 @@ export const Currency_Amount: Story = {
 }
 
 /* ── 搜尋 + 提交按鈕 ── */
-export const Search_Submit: Story = {
+export const SearchSubmit: Story = {
   name: '搜尋與提交',
   render: () => {
     const [q, setQ] = React.useState('')
@@ -133,13 +134,12 @@ const FILTER_FIELDS = [
   { value: 'category', label: '類別' },
   { value: 'stock', label: '庫存' },
 ]
-const STRING_OPS = [
-  { value: 'contains', label: '包含' },
-  { value: 'is', label: '等於' },
-  { value: 'starts_with', label: '開頭為' },
-]
+// op 選項消費 OPERATOR_REGISTRY SSOT(DataTable/filter-operators.ts;audit dim 32 — 禁 hardcode op 字串)
+const STRING_OPS = OPERATOR_REGISTRY.string
+  .filter((o) => o.valueShape === 'text')
+  .map((o) => ({ value: o.op, label: o.label }))
 
-export const FilterRow_RealUsage: Story = {
+export const FilterRow: Story = {
   name: '篩選列（資料表進階篩選實例）',
   render: () => {
     const [field, setField] = React.useState('name')

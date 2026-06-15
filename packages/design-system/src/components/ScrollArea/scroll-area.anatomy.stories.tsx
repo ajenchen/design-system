@@ -1,3 +1,4 @@
+// @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#NumberAlignment
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-rationale:
 //   StateBehavior represented as OrientationBehavior — ScrollArea 是 OS chrome
@@ -5,7 +6,10 @@
 //     真正的行為差異是 orientation(vertical / horizontal / both)與 type(hover /
 //     scroll / always / auto)顯示時機,由 OrientationBehavior(5.)涵蓋。
 import type { Meta, StoryObj } from '@storybook/react'
+import { createColumnHelper } from '@tanstack/react-table'
 import { ScrollArea, ScrollBar } from './scroll-area'
+import { DataTable } from '@/design-system/components/DataTable/data-table'
+import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -34,30 +38,40 @@ const PreviewList = ({ count = 20 }: { count?: number }) => (
   </div>
 )
 
+// 寬欄位商品表 — 水平捲動 demo 內容,消費真 DataTable(per data-table.spec.md「簡單展示場景
+// 也用 DataTable」;對齊展示頁 HorizontalProductTable 同模式)。height="auto" + min-w-max:
+// DataTable 無高度約束、不啟內部捲軸,捲動完全由外層 ScrollArea own。
+type StripeProduct = {
+  sku: string; name: string; category: string; stock: number
+  price: string; margin: string; channel: string; status: string
+}
+
+const STRIPE_PRODUCTS: StripeProduct[] = [
+  { sku: 'PRO-001', name: 'Stripe Atlas 新創設立方案', category: 'Incorporation', stock: 128, price: '$500.00', margin: '42%', channel: 'Direct', status: 'Active' },
+  { sku: 'PRO-002', name: 'Stripe Radar 詐欺偵測加購', category: 'Add-on', stock: 256, price: '$0.05/tx', margin: '78%', channel: 'Direct', status: 'Active' },
+  { sku: 'PRO-003', name: 'Stripe Tax 自動稅額計算', category: 'Compliance', stock: 64, price: '$0.50/tx', margin: '65%', channel: 'Partner', status: 'Active' },
+  { sku: 'PRO-004', name: 'Stripe Connect 分潤平台帳號', category: 'Platform', stock: 32, price: '$2/acct', margin: '55%', channel: 'Direct', status: 'Beta' },
+  { sku: 'PRO-005', name: 'Stripe Issuing 實體卡發行', category: 'Cards', stock: 16, price: '$3/card', margin: '38%', channel: 'Partner', status: 'Active' },
+  { sku: 'PRO-006', name: 'Stripe Climate 碳移除貢獻', category: 'Sustainability', stock: 8, price: '1% gross', margin: '—', channel: 'Direct', status: 'Active' },
+]
+
+const productCol = createColumnHelper<StripeProduct>()
+
+const PRODUCT_COLUMNS = [
+  productCol.accessor('sku', { header: 'SKU', meta: { type: 'string', width: 100 } }),
+  productCol.accessor('name', { header: 'Product', meta: { type: 'string', width: 240 } }),
+  productCol.accessor('category', { header: 'Category', meta: { type: 'string', width: 130 } }),
+  productCol.accessor('stock', { header: 'Stock', meta: { type: 'number', width: 90 } }),
+  productCol.accessor('price', { header: 'Price', meta: { type: 'string', align: 'right', width: 110 } }),
+  productCol.accessor('margin', { header: 'Margin', meta: { type: 'string', align: 'right', width: 90 } }),
+  productCol.accessor('channel', { header: 'Channel', meta: { type: 'string', width: 100 } }),
+  productCol.accessor('status', { header: 'Status', meta: { type: 'string', width: 110 } }),
+]
+
 const WideTable = () => (
-  <table className="text-caption">
-    <thead>
-      <tr className="bg-muted">
-        {['SKU', 'Product', 'Category', 'Stock', 'Price', 'Margin', 'Channel', 'Status'].map((h) => (
-          <th key={h} className="px-4 py-2 text-left font-medium text-fg-secondary whitespace-nowrap border-b border-border">{h}</th>
-        ))}
-      </tr>
-    </thead>
-    <tbody>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <tr key={i}>
-          <td className="px-4 py-2 font-mono text-fg-muted whitespace-nowrap border-b border-divider">PRO-{String(i + 1).padStart(3, '0')}</td>
-          <td className="px-4 py-2 whitespace-nowrap border-b border-divider">Stripe Atlas 新創設立方案</td>
-          <td className="px-4 py-2 whitespace-nowrap border-b border-divider">Incorporation</td>
-          <td className="px-4 py-2 text-right font-mono whitespace-nowrap border-b border-divider">128</td>
-          <td className="px-4 py-2 text-right font-mono whitespace-nowrap border-b border-divider">$500.00</td>
-          <td className="px-4 py-2 text-right font-mono whitespace-nowrap border-b border-divider">42%</td>
-          <td className="px-4 py-2 whitespace-nowrap border-b border-divider">Direct</td>
-          <td className="px-4 py-2 whitespace-nowrap border-b border-divider">Active</td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
+  <div className="min-w-max">
+    <DataTable columns={PRODUCT_COLUMNS} data={STRIPE_PRODUCTS} getRowId={(p) => p.sku} height="auto" bordered={false} />
+  </div>
 )
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -117,6 +131,7 @@ export const Overview: Story = {
 
       <div>
         <H3>Props 速查 — ScrollArea (Radix Root)</H3>
+        {/* doc-table:規格說明對照(說明文字非業務資料)— raw table 為 anatomy doc-table 慣例,不消費 DataTable */}
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -137,6 +152,7 @@ export const Overview: Story = {
 
       <div>
         <H3>Props 速查 — ScrollBar</H3>
+        {/* doc-table:規格說明對照(說明文字非業務資料)— raw table 為 anatomy doc-table 慣例,不消費 DataTable */}
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
@@ -265,6 +281,7 @@ export const ColorMatrix: Story = {
       </div>
 
       <div className="overflow-x-auto">
+        {/* doc-table:規格說明對照(說明文字非業務資料)— raw table 為 anatomy doc-table 慣例,不消費 DataTable */}
         <table className="border-collapse">
           <thead><tr><Th>元素</Th><Th>Default</Th><Th>Hover</Th></tr></thead>
           <tbody>
@@ -310,6 +327,7 @@ export const SizeMatrix: Story = {
       </div>
 
       <div className="overflow-x-auto">
+        {/* doc-table:規格說明對照(說明文字非業務資料)— raw table 為 anatomy doc-table 慣例,不消費 DataTable */}
         <table className="text-caption border-collapse">
           <thead><tr><Th>屬性</Th><Th>值</Th><Th>備註</Th></tr></thead>
           <tbody>
@@ -365,6 +383,7 @@ export const OrientationBehavior: Story = {
       </div>
 
       <div className="overflow-x-auto">
+        {/* doc-table:規格說明對照(說明文字非業務資料)— raw table 為 anatomy doc-table 慣例,不消費 DataTable */}
         <table className="text-caption border-collapse">
           <thead><tr><Th>Orientation</Th><Th>場景</Th><Th>使用範例</Th></tr></thead>
           <tbody>
@@ -403,6 +422,7 @@ export const OrientationBehavior: Story = {
         <H3>Scrollbar 顯示時機(Radix <code className="font-mono text-footnote bg-muted px-1 rounded">type</code> prop)</H3>
         <Desc>預設 type=&quot;hover&quot;——游標進入容器時 scrollbar 淡入;離開後延遲隱藏(scrollHideDelay=600ms)。其他選項 always / scroll / auto 依場景調整。</Desc>
         <div className="overflow-x-auto">
+          {/* doc-table:規格說明對照(說明文字非業務資料)— raw table 為 anatomy doc-table 慣例,不消費 DataTable */}
           <table className="text-caption border-collapse">
             <thead><tr><Th>type</Th><Th>行為</Th><Th>何時用</Th></tr></thead>
             <tbody>
@@ -425,7 +445,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `scroll-area.spec.md` 「A11y 預設」段。摘要(Radix primitive + 本 DS 橋接):\n\n-   鍵盤捲動  :本 DS 在 Viewport 加  tabIndex={0}  使其可被鍵盤聚焦(Radix 不自動標 focusable,Safari 尤其需要),聚焦後支援  ArrowUp/Down/Left/Right  /  PageUp/Down  /  Home/End \n-   Focus 可見  :聚焦的 Viewport 顯示 DS focus ring(focus-visible:outline-primary,inset 2px)\n-   Scrollbar 非 tab stop  :scrollbar thumb 不搶焦點,使用鍵盤的使用者透過 viewport 捲動(Radix 內建)\n-   Pointer 支援  :thumb 可拖曳,track 可 click-to-jump(Radix 內建)\n\n本元件已內建 tabIndex 與 focus ring(滿足 axe scrollable-region-focusable);但 Viewport 預設無 role / accessible name——scroll 區域有具體語意(如「留言列表」「程式碼區塊」)時,consumer 應提供 aria-label,否則 SR 只報「可捲動區域」無內容描述;純視覺裝飾容器可省略。"}</p>
+      <p className="whitespace-pre-line">{"詳 `scroll-area.spec.md` 「A11y 預設」段。摘要(Radix primitive + 本 DS 橋接):\n\n-   鍵盤捲動  :本 DS 在 Viewport 加  tabIndex={0}  使其可被鍵盤聚焦(Radix 不自動標 focusable,Safari 尤其需要),聚焦後支援  ArrowUp/Down/Left/Right  /  PageUp/Down  /  Home/End \n-   Focus 可見  :聚焦的 Viewport 顯示 DS focus ring(focus-visible:outline-ring,inset 2px)\n-   Scrollbar 非 tab stop  :scrollbar thumb 不搶焦點,使用鍵盤的使用者透過 viewport 捲動(Radix 內建)\n-   Pointer 支援  :thumb 可拖曳,track 可 click-to-jump(Radix 內建)\n\n本元件已內建 tabIndex 與 focus ring(滿足 axe scrollable-region-focusable);但 Viewport 預設無 role / accessible name——scroll 區域有具體語意(如「留言列表」「程式碼區塊」)時,consumer 應提供 aria-label,否則 SR 只報「可捲動區域」無內容描述;純視覺裝飾容器可省略。"}</p>
     </div>
   ),
 }

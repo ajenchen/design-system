@@ -51,7 +51,7 @@ export const Overview: Story = {
 
       <div>
         <H3>間距</H3>
-        <Desc>所有垂直間距皆走 `--layout-space-tight` token(density-aware)——切 density 自動適配,避免硬寫 px / py-N 脫鉤 token。</Desc>
+        <Desc>items 之間垂直間距走 `--layout-space-tight` token(density-aware)——切 density 自動適配,避免硬寫 px / py-N 脫鉤 token;label → value(同 item 內)走 `--item-gap-label-desc-reading`(2px,見下表 row 1)。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Direction</Th><Th>位置</Th><Th>Value</Th><Th>Rationale</Th></tr></thead>
@@ -246,7 +246,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"本元件為純視覺呈現,無 keyboard / ARIA role / focus state 需求。Consumer 包 DescriptionList 進互動容器(Button / Card / Link)時 a11y 由容器決定。"}</p>
+      <p className="whitespace-pre-line">{"詳 `description-list.spec.md`「無障礙」段。摘要:\n\n- 語意 HTML:外層 <dl>,每組 <dt>(term)+ <dd>(description)— screen reader 讀「term X, description Y」配對敘事\n- DT/DD 配對:DescriptionItem 強制一組配對,不分開暴露 <dt>/<dd> primitive\n- 空值:consumer 傳 — 占位(SR 讀出長破折號,比空 <dd> 明確)\n- 多欄 cols>1:視覺 grid、DOM 仍 item 順序,SR 依 DOM 敘事\n- 無互動:純唯讀呈現,無 keyboard / focus state(無 ARIA 補強需求,語意由原生 dl/dt/dd 承載)"}</p>
     </div>
   ),
 }

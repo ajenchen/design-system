@@ -6,9 +6,11 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 import type { FieldMode, FieldVariant } from "@/design-system/components/Field/field-types"
-import { useResolvedFieldMode, useResolvedFieldDisabled } from "@/design-system/components/Field/field-context"
+import { useFieldContext, useResolvedFieldMode, useResolvedFieldDisabled, useResolvedFieldSize } from "@/design-system/components/Field/field-context"
 import { SelectionItem } from "@/design-system/components/SelectionControl/selection-item"
-import { EMPTY_DISPLAY } from "@/design-system/components/Field/field-wrapper"
+import type { LucideIcon } from "lucide-react"
+import type { AvatarData } from "@/design-system/components/Avatar/avatar"
+import { EMPTY_DISPLAY, fieldWrapperStyles } from "@/design-system/components/Field/field-wrapper"
 
 // ── RadioGroup display mode ─────────────────────────────────────────────────
 // RadioGroup mode='display' 時:Group 不渲染 Radix primitive(無 radio 視覺),
@@ -27,7 +29,7 @@ export interface RadioGroupProps
    *   display  — **純展示**:不渲染 Radix Root / 任何 radio 視覺;RadioGroup 本體 walk
    *              children,僅 control.value === group.value 那筆把 label 渲染為純文字 span。
    *              對齊 Carbon read-only / DataTable single-select cell read mode。
-   *   readonly — 同 child item 各自 readOnly:radio 視覺保留 + 鎖互動
+   *   readonly — standalone:ReadonlyContext 傳 items 鎖互動保留視覺;Field 內:灰框 + 選中項 label(不渲染 radio 群組)
    *   disabled — 同 RadioGroupPrimitive.Root disabled 屬性
    */
   mode?: FieldMode
@@ -42,12 +44,38 @@ export interface RadioGroupProps
 // (item 已支援 readOnly prop + data-[readonly] 樣式;Radix Root 無 readOnly,故用 context)。
 const RadioGroupReadonlyContext = React.createContext(false)
 
+// walk children 找 control.value === selectedValue 的 SelectionItem label(display / readonly-in-Field 共用)
+function findSelectedRadioLabel(children: React.ReactNode, selectedValue: string | undefined): React.ReactNode {
+  let selectedLabel: React.ReactNode = null
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) return
+    const cProps = child.props as { control?: unknown; label?: React.ReactNode; value?: unknown }
+    // 形狀 1:<RadioGroupItem value label>(主用法)— value/label 直掛 props
+    if (cProps.value === selectedValue && cProps.value !== undefined) {
+      selectedLabel = cProps.label ?? selectedValue
+      return
+    }
+    // 形狀 2:<SelectionItem control={<RadioGroupItem value/>} label>(組合用法)
+    const control = cProps.control
+    if (React.isValidElement(control)) {
+      const controlValue = (control.props as { value?: unknown }).value
+      if (controlValue === selectedValue) {
+        selectedLabel = cProps.label ?? selectedValue
+      }
+    }
+  })
+  return selectedLabel
+}
+
 const RadioGroup = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Root>,
   RadioGroupProps
 >(({ className, mode, variant: _chrome, value, defaultValue, ...props }, ref) => {
   // 2026-06-08 SSOT cascade:resolvedMode 經 resolver hook 讀 fieldCtx(原 root 完全不讀 → <Field disabled>/<Field mode> 失效)
   const resolvedMode = useResolvedFieldMode({ mode, disabled: (props as { disabled?: boolean }).disabled })
+  const fieldCtx = useFieldContext()
+  // readonly 灰框 size:走 SSOT resolver(RadioGroup 無 size prop → ctx > 'md')
+  const resolvedBoxSize = useResolvedFieldSize(undefined, 'md') as 'sm' | 'md' | 'lg'
   // mode='display' — 純展示 selected option 的 label,不渲染任何 radio control 視覺。
   // 對齊 Carbon read-only single-select(只顯示 selected 內容)+ Airtable / Notion read-only。
   // 實作:walk children 找 control.value === selectedValue 的 SelectionItem,render label plain text。
@@ -57,21 +85,39 @@ const RadioGroup = React.forwardRef<
     if (!selectedValue) {
       return <div role="group" className={cn('grid', className)}><span className="text-fg-muted">{EMPTY_DISPLAY}</span></div>
     }
-    let selectedLabel: React.ReactNode = null
-    React.Children.forEach(props.children, (child) => {
-      if (!React.isValidElement(child)) return
-      const cProps = child.props as { control?: unknown; label?: React.ReactNode }
-      const control = cProps.control
-      if (React.isValidElement(control)) {
-        const controlValue = (control.props as { value?: unknown }).value
-        if (controlValue === selectedValue) {
-          selectedLabel = cProps.label ?? selectedValue
-        }
-      }
-    })
+    const selectedLabel = findSelectedRadioLabel(props.children, selectedValue)
     return (
       <div role="group" className={cn('grid', className)}>
         <span className="text-foreground">{selectedLabel ?? selectedValue}</span>
+      </div>
+    )
+  }
+
+  // ── mode='readonly' in Field(2026-06-12 user 拍板,與 Checkbox/Switch 灰框模型一致)──
+  // Field 內 readonly 單選 = fieldWrapperStyles readonly 灰框 + 選中項 label 文字
+  // (= Select readonly 同款呈現:同為「單選資料」,鎖定時呈現一致)。
+  // standalone readonly(無 Field)維持原樣鎖互動(ReadonlyContext 路徑)。
+  if (resolvedMode === 'readonly' && fieldCtx?.hasFieldWrapper === true) {
+    const selectedValue = (value ?? defaultValue) as string | undefined
+    const selectedLabel = selectedValue ? findSelectedRadioLabel(props.children, selectedValue) : null
+    const boxSize = resolvedBoxSize
+    return (
+      <div
+        role="radiogroup"
+        aria-readonly="true"
+        aria-labelledby={fieldCtx?.labelId}
+        aria-invalid={fieldCtx?.invalid || undefined}
+        data-readonly="true"
+        tabIndex={0}
+        className={cn(
+          fieldWrapperStyles({ size: boxSize, mode: 'readonly', variant: 'default' }),
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          className,
+        )}
+      >
+        {selectedValue
+          ? <span className="text-foreground">{selectedLabel ?? selectedValue}</span>
+          : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>}
       </div>
     )
   }
@@ -151,6 +197,10 @@ export interface RadioGroupItemProps
    * 套用 text-body / text-fg-secondary 樣式。
    */
   description?: React.ReactNode
+  /** 可選左側 icon(label 前)— 2026-06-12 M30 修:轉發 SelectionItem 既有 canonical 槽(selection-item.tsx jsDoc SSOT;與 avatar 互斥)*/
+  icon?: LucideIcon
+  /** 可選左側 avatar(label 前)— 同上 */
+  avatar?: AvatarData
   /**
    * readonly 模式：鎖定互動但維持 checked/unchecked 視覺正確。
    * 通常整個 RadioGroup 一起設 readonly（由 parent RadioGroup 的 disabled
@@ -170,6 +220,8 @@ const RadioGroupItem = React.forwardRef<
       className,
       size,
       label,
+      icon,
+      avatar,
       description,
       readOnly = false,
       disabled,
@@ -227,6 +279,8 @@ const RadioGroupItem = React.forwardRef<
         control={rootEl}
         label={label}
         description={description}
+        icon={icon}
+        avatar={avatar}
         htmlFor={inputId}
         disabled={resolvedDisabled}
         size={sizeKey}

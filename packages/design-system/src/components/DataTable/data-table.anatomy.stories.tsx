@@ -227,9 +227,9 @@ export const RowHeightMatrix: Story = {
             <table className="text-caption border-collapse">
               <thead><tr><Th>Tier</Th><Th>高度</Th><Th>字體</Th><Th>適用</Th></tr></thead>
               <tbody>
-                <tr><Td mono>compact(sm)</Td><Td mono>--table-row-compact</Td><Td>text-body</Td><Td>大量資料掃視(log、交易紀錄)</Td></tr>
-                <tr><Td mono>cozy(md)★default</Td><Td mono>--table-row-cozy</Td><Td>text-body</Td><Td>一般業務資料</Td></tr>
-                <tr><Td mono>comfortable(lg)</Td><Td mono>--table-row-comfortable</Td><Td>text-body-lg</Td><Td>詳情檢視、avatar 多的場景</Td></tr>
+                <tr><Td mono>compact(sm)</Td><Td mono>--table-row-sm</Td><Td>text-body</Td><Td>大量資料掃視(log、交易紀錄)</Td></tr>
+                <tr><Td mono>cozy(md)★default</Td><Td mono>--table-row-md</Td><Td>text-body</Td><Td>一般業務資料</Td></tr>
+                <tr><Td mono>comfortable(lg)</Td><Td mono>--table-row-lg</Td><Td>text-body-lg</Td><Td>詳情檢視、avatar 多的場景</Td></tr>
               </tbody>
             </table>
           </div>
@@ -355,7 +355,7 @@ export const ColorMatrix: Story = {
               </tr>
               <tr>
                 <Td>Header border-bottom</Td>
-                <Td><TokenCell token="--border" display="border" /></Td>
+                <Td><TokenCell token="--divider" display="divider" /></Td>
                 <Td>區隔 header 與 body</Td>
               </tr>
               <tr>
@@ -405,9 +405,9 @@ export const ColorMatrix: Story = {
                 <Td><TokenCell token="--divider" display="divider" /></Td>
               </tr>
               <tr>
-                <Td mono>disabled row</Td>
-                <Td><TokenCell token="--bg-disabled" display="bg-disabled" /></Td>
-                <Td><TokenCell token="--fg-disabled" display="fg-disabled" /></Td>
+                <Td mono>disabled row(isRowSelectable=false)</Td>
+                <Td><TokenCell token="--surface" display="surface(不灰底)" /></Td>
+                <Td><TokenCell token="--foreground" display="foreground" /></Td>
                 <Td><TokenCell token="--divider" display="divider" /></Td>
               </tr>
             </tbody>
@@ -416,6 +416,8 @@ export const ColorMatrix: Story = {
         <p className="text-footnote text-fg-muted mt-3">
           選取狀態由 __select__ 欄的 checkbox / radio 呈現,不套 row 底色;hover 與 selection 正交
           (已選 row 仍可有 hover 的 neutral-hover tint,但不疊額外 selected 底色)。
+          isRowSelectable=false 僅 disable checkbox,row 不灰底(spec 禁止事項);
+          cell-level disabled(inline edit cellDisabled)才套 --bg-disabled。
         </p>
       </div>
 

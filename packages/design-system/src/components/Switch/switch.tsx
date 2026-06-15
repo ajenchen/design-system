@@ -5,7 +5,8 @@ import { Check } from 'lucide-react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
-import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode } from '@/design-system/components/Field/field-context'
+import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldSize } from '@/design-system/components/Field/field-context'
+import { fieldWrapperStyles } from '@/design-system/components/Field/field-wrapper'
 
 /**
  * Switch — 開關控件
@@ -22,7 +23,8 @@ import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode } from 
  *   OFF: track border (neutral-5), thumb 白色 + 2px border-border(neutral-5,與 OFF track 同色)無 check
  *   ON:  track primary, thumb 白色 + 2px primary border + primary check icon
  *   disabled: opacity-disabled（整體透明度）
- *   readOnly: 視覺同一般態，但 pointer-events-none + aria-readonly
+ *   readOnly(standalone): 視覺同一般態，但 pointer-events-none + aria-readonly
+ *   readOnly(Field 內): 渲染 readonly 灰框 + ✓/—(2026-06-12 拍板,= Input readonly 同視覺語言)
  *
  * ── label / description / readOnly ──
  * Switch 可以透過 `label` 和 `description` props 在元件內直接渲染緊鄰的文字，
@@ -42,7 +44,8 @@ import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode } from 
  *
  * readOnly 模式：
  *   <Switch readOnly checked={true} label="..." />
- *   視覺維持 ON/OFF 正確狀態，但無法互動、不在 tab order 內、寫入 aria-readonly。
+ *   standalone:視覺維持 ON/OFF 正確狀態,但無法互動、不在 tab order 內、寫入 aria-readonly。
+ *   Field 內:渲染 readonly 灰框 + ✓/—(不渲染 toggle;見 forwardRef 內 readonly 分支)。
  *   與 disabled 的差異：readonly 不降色（可讀），disabled 降色（弱化）。
  */
 
@@ -98,9 +101,9 @@ export interface SwitchProps
    */
   description?: React.ReactNode
   /**
-   * readonly 模式：鎖定互動但維持 ON/OFF 視覺正確。
-   * 與 disabled 的差異：readonly 不降色（可讀），disabled 降色（弱化）。
-   * 用於表單 readonly 呈現、DataTable cell 非編輯態。
+   * readonly 模式:standalone = 鎖定互動但維持 ON/OFF 視覺;Field 內 = 灰框 + ✓/—。
+   * 與 disabled 的差異:readonly 不降色(可讀),disabled 降色(弱化)。
+   * DataTable cell 非編輯態用 mode="display"(✓/—),非 readOnly。
    */
   readOnly?: boolean
   /**
@@ -108,8 +111,8 @@ export interface SwitchProps
    *   edit     — 一般可互動 Switch(預設)
    *   display  — **純展示**:渲染 ✓ / —(無互動 primitive、無 input chrome);
    *              對齊 Carbon read-only / DataTable boolean cell。
-   *              `readonly` 保留 toggle 視覺 + 鎖互動;`display` 完全無 toggle 形體 — 兩者語意分離(field-types.ts)。
-   *   readonly — 同 readOnly prop
+   *              `display` 完全無 toggle 形體;`readonly` 視場景(field-types.ts)。
+   *   readonly — standalone 同 readOnly prop(保留視覺鎖互動);Field 內 = 灰框 + ✓/—
    *   disabled — 同 disabled prop
    */
   mode?: FieldMode
@@ -151,6 +154,10 @@ const Switch = React.forwardRef<
     const disabled = useResolvedFieldDisabled(disabledProp)
     const resolvedMode = useResolvedFieldMode({ mode, disabled, readOnly })
     const effectiveReadOnly = readOnly || resolvedMode === 'readonly'
+    // mode='disabled' 直傳(無 Field ctx 的 cell 場景)必須落到真 disabled chrome(同 Checkbox 2026-06-12 修)
+    const effectiveDisabled = disabled || resolvedMode === 'disabled'
+    // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:150-161)
+    const resolvedBoxSize = useResolvedFieldSize(size ?? undefined, 'md') as 'sm' | 'md' | 'lg'
     const insideField = fieldCtx?.hasFieldWrapper === true
     const effectiveLabel = insideField ? undefined : label
     const effectiveDescription = insideField ? undefined : description
@@ -176,12 +183,38 @@ const Switch = React.forwardRef<
         : <span className="text-fg-muted">—</span>
     }
 
+    // ── mode='readonly' in Field(2026-06-12 user 拍板「灰框 + ✓/—」,與 Checkbox 同款)──
+    // Field 內 readonly boolean = fieldWrapperStyles readonly 灰框(= Input readonly 同源)
+    // + ✓/— 值語言;standalone readOnly(settings list)維持原樣鎖互動。詳 checkbox.tsx 同段註解。
+    if (effectiveReadOnly && insideField) {
+      const isChecked = (props.checked ?? props.defaultChecked) === true
+      const boxSize = resolvedBoxSize
+      return (
+        <div
+          role="switch"
+          aria-checked={isChecked}
+          aria-readonly="true"
+          aria-labelledby={fieldCtx?.labelId}
+          aria-invalid={fieldCtx?.invalid || undefined}
+          data-readonly="true"
+          tabIndex={0}
+          className={cn(
+            fieldWrapperStyles({ size: boxSize, mode: 'readonly', variant: 'default' }),
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            className,
+          )}
+        >
+          {isChecked ? <span className="text-foreground">✓</span> : <span className="text-fg-muted">—</span>}
+        </div>
+      )
+    }
+
     const rootEl = (
       <SwitchPrimitives.Root
         id={inputId}
         className={cn(switchVariants({ size }), alignRightInField, className)}
         ref={ref}
-        disabled={disabled}
+        disabled={effectiveDisabled}
         aria-readonly={effectiveReadOnly || undefined}
         data-readonly={effectiveReadOnly || undefined}
         tabIndex={effectiveReadOnly ? -1 : undefined}
@@ -220,7 +253,7 @@ const Switch = React.forwardRef<
         htmlFor={inputId}
         className={cn(
           'inline-flex items-start gap-3 select-none',
-          disabled ? 'cursor-not-allowed' : readOnly ? 'cursor-default' : 'cursor-pointer'
+          effectiveDisabled ? 'cursor-not-allowed' : readOnly ? 'cursor-default' : 'cursor-pointer'
         )}
       >
         {/* Label↔desc gap typography-mode-aware:
@@ -237,7 +270,7 @@ const Switch = React.forwardRef<
             className={cn(
               // Reading mode 字級:lg → text-body-lg (16px),sm/md → text-body (14px)
               sizeKey === 'lg' ? 'text-body-lg' : 'text-body',
-              disabled ? 'text-fg-disabled' : 'text-foreground'
+              effectiveDisabled ? 'text-fg-disabled' : 'text-foreground'
             )}
           >
             {effectiveLabel}
@@ -245,7 +278,7 @@ const Switch = React.forwardRef<
           {effectiveDescription != null && (
             <span
               className={cn(
-                disabled ? 'text-fg-disabled' : 'text-fg-secondary'
+                effectiveDisabled ? 'text-fg-disabled' : 'text-fg-secondary'
               )}
               // Reading mode description:**最小 14px**(spec 14→14px, 16→14px),lh 預設 1.5。
               // 用 inline style 直接繞過 tailwind-merge 對 text-body / text-fg-* 的潛在衝突。
@@ -273,9 +306,9 @@ export const switchMeta = {
 
   },
   sizes: {
-    sm: { fieldHeight: 28, iconSize: 16, typography: 'body' },
-    md: { fieldHeight: 32, iconSize: 16, typography: 'body' },
-    lg: { fieldHeight: 40, iconSize: 20, typography: 'body' },
+    sm: { fieldHeight: 28, iconSize: 12, typography: 'body' },
+    md: { fieldHeight: 32, iconSize: 12, typography: 'body' },
+    lg: { fieldHeight: 36, iconSize: 16, typography: 'body-lg' },
   },
   states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
   tokens: {

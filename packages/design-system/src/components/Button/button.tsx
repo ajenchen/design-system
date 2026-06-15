@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/compone
  *   link       外觀像連結的按鈕（本質仍是 button）
  *
  * ── danger prop ──
- *   danger     套用在任何 variant 上，將顏色改為危險色（紅色）
+ *   danger     套用危險色（紅色）；僅 primary / secondary / text 支援（tertiary / link 不支援，見 spec 禁止事項）
  *
  *   <Button variant="primary" danger>永久刪除</Button>        → 紅底白字（立即不可逆）
  *   <Button variant="secondary" danger>移至垃圾桶</Button>    → 紅框紅字（點下去還可反悔）
@@ -221,8 +221,8 @@ const buttonVariants = cva(
 )
 
 // ── ButtonGroup Context ──────────────────────────────────────────────────────
-// ButtonGroup provides this context; Button reads it for fullWidth injection.
-// Context lives here (not in button-group.tsx) so there is no circular import.
+// ButtonGroup 提供此 context;Button 讀取它注入 fullWidth。
+// Context 放本檔(不放 button-group.tsx)以避免循環 import。
 interface ButtonGroupContextValue {
   fullWidth?: boolean
 }
@@ -247,7 +247,7 @@ export interface ButtonProps
    * `destructive` / `ghost` 為 shadcn 內部 compat，請勿在應用程式碼中直接使用。
    */
   variant?: 'primary' | 'secondary' | 'tertiary' | 'text' | 'link'
-  /** 套用危險色（紅色）。可與任何 variant 組合使用。 */
+  /** 套用危險色（紅色）。僅 primary / secondary / text 支援（tertiary / link 不支援，見 spec 禁止事項）。 */
   danger?: boolean
   /**
    * Toggle 按下狀態（持續 on/off）。設定時 Button 變為 toggle：
@@ -421,8 +421,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Toggle 狀態：pressed 定義時自動寫入 aria-pressed + data-state。
     // 未定義時不寫入任何 toggle 屬性（按鈕為一般 action button）。
-    // 樣式由 cva 的 data-[state=on] 分支套用——secondary/tertiary 走 primary-subtle，
-    // text 走 neutral-selected family；primary/link 不定義 on 分支，傳入無效果。
+    // 樣式由 cva data-[state=on] compoundVariants（variant × pressedTone）套用——
+    // secondary/tertiary/text 預設 pressedTone='emphasis' 走 primary-subtle，
+    // pressedTone='neutral' 才走 neutral-selected family；primary/link 不定義 on 分支，傳入無效果。
     const toggleAttrs =
       pressed === undefined
         ? {}
@@ -527,10 +528,10 @@ export const buttonMeta = {
     link: { purpose: '內文連結(inline reading)' },
   },
   sizes: {
-    xs: { fieldHeight: 24, iconSize: 16, typography: 'body' },
+    xs: { fieldHeight: 24, iconSize: 16, typography: 'caption' },
     sm: { fieldHeight: 28, iconSize: 16, typography: 'body' },
     md: { fieldHeight: 32, iconSize: 16, typography: 'body' },
-    lg: { fieldHeight: 40, iconSize: 20, typography: 'body-lg' },
+    lg: { fieldHeight: 36, iconSize: 20, typography: 'body-lg' },
   },
   states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
   tokens: {
@@ -538,7 +539,7 @@ export const buttonMeta = {
     fg: ['--on-emphasis', '--fg-disabled'],
     ring: ['--ring'],
   },
-  defaultVariant: 'primary',
+  defaultVariant: 'tertiary',  // 2026-06-10 修 stale:對齊 cva defaultVariants(2026-06-06 labeled 預設改 tertiary,meta 漏同步)
   defaultSize: 'md',
 } as const
 

@@ -1,8 +1,13 @@
+/**
+ * @internal — DS-internal 單元(per `.claude/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
+ * 不進 root barrel front-door;由 Avatar(hoverCard)/ OverflowIndicator 等 DS 元件 wrap 消費,end-user app 請用 wrapper 元件。
+ */
 import * as React from "react"
 import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
 
 import { cn } from "@/lib/utils"
 import { OVERLAY_SIDE_OFFSET } from "@/design-system/tokens/elevation/overlay-geometry"
+import { HOVER_DELAY_RICH_MS, HOVER_DELAY_CLOSE_MS } from "@/design-system/tokens/motion/motion"
 
 /**
  * HoverCard — hover 顯示可互動內容的浮層（行為 primitive）
@@ -16,7 +21,13 @@ import { OVERLAY_SIDE_OFFSET } from "@/design-system/tokens/elevation/overlay-ge
  * 只提供：z-index、動畫、sideOffset。
  */
 
-const HoverCard = HoverCardPrimitive.Root
+// 2026-06-11 user 拍板 A 案(「確保所有 hover 延遲都有按照設計原則」):Root 預設接 motion token SSOT
+// (rich 700ms open / close 200ms)— 對齊 tooltip.tsx 同 pattern(2026-05-18 拍板 #3A)。
+// 原裸用 Radix 預設 open 700 / close 300:open 巧合同值、close 300 ≠ canonical 200(drift)。
+// Consumer 仍可 per-instance override(Avatar 同值傳入、OverflowIndicator 傳 plain)。
+const HoverCard = ({ openDelay = HOVER_DELAY_RICH_MS, closeDelay = HOVER_DELAY_CLOSE_MS, ...props }: React.ComponentProps<typeof HoverCardPrimitive.Root>) => (
+  <HoverCardPrimitive.Root openDelay={openDelay} closeDelay={closeDelay} {...props} />
+)
 
 const HoverCardTrigger = HoverCardPrimitive.Trigger
 

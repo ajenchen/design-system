@@ -283,8 +283,9 @@ MultiPersonDisplay.displayName = 'MultiPersonDisplay'
 //   - **12×12 圓**(固定,不隨 field size 變)
 //   - **bg `--surface-strong`**(neutral-6),hover → `--surface-strong-hover`
 //     (light=neutral-5 / dark=neutral-7,跨 mode 對稱)
-//   - **X icon size=12 strokeWidth=3.5**(icon 跟底色一樣大,對齊 checkbox checkmark
-//     sm/md stroke 規格)
+//   - **X icon size=12 strokeWidth=3**(icon 跟底色一樣大,對齊 checkbox checkmark
+//     sm/md stroke 規格;2026-06-12 同步 checkbox 2026-05-18 簡化 3.5→3,SSOT →
+//     .claude/references/ui-dev-rules.md「小尺寸 icon stroke 補償」)
 //   - **text-on-emphasis**(白 X,確保飽和色底對比)
 //   - **位置 `absolute top-0 right-0`**(button 右上角貼齊 avatar 右上角,完全在 avatar
 //     內 — user-confirmed canonical)
@@ -324,7 +325,7 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       ].join(' ')}
     >
-      <X size={12} strokeWidth={3.5} aria-hidden />
+      <X size={12} strokeWidth={3} aria-hidden />
     </button>
   )
 }

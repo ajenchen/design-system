@@ -1,5 +1,17 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // code-quality-allow: file-size — foundational composite — 拆檔會複雜化 context / ref / state 同步
+//
+// ── 檔案結構(2026-05-03 split matrix;2026-06-11 自 data-table.spec.md 遷入,Level 4 code home)──
+// 每個檔過 M21 / M17 / Rule-of-3 三 test:
+//   - data-table.tsx(主,foundational)
+//   - data-table-filter-panel.tsx + data-table-sort-manager.tsx + data-table-column-visibility-panel.tsx(panel state 隔離)
+//   - cell-registry.tsx(column type → cell display / edit 解析 SSOT)
+//   - data-table-interaction-layer.tsx + active-editor-controller.ts(spreadsheet overlay + portal editor)
+//   - column-types.ts + filter-operators.ts(✓ Rule-of-3 SSOT,3+ consumer)
+//   - filter-tree.ts(pure data + eval,test isolation)
+//   - lib/column-meta.ts(Internal SSOT,消 5 處 `(col as any)`)
+//   - + stories / spec / css
+// M21 retract:filter-value-picker.tsx 1 consumer → 已 inline 回 panel。
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { Empty } from '@/design-system/components/Empty/empty'
@@ -56,6 +68,7 @@ type TableSize = 'sm' | 'md' | 'lg'
 export interface DataTableProps<TData>
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'>,
     VariantProps<typeof dataTableVariants> {
+  // any-allow: TanStack ColumnDef TValue idiom(per-column value 型別異質,官方範例同)— 對齊本 module 既有 escape 紀律
   columns: ColumnDef<TData, any>[]
   data: TData[]
   size?: TableSize

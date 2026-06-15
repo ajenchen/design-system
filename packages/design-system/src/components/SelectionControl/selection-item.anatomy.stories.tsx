@@ -132,7 +132,7 @@ export const Overview: Story = {
                 <Td mono>content · description</Td>
                 <Td>輔助文字(reading mode,最小 14px)</Td>
                 <Td mono>text-fg-secondary · line-height 1.5</Td>
-                <Td mono>mt-0.5</Td>
+                <Td mono>mt-[var(--item-gap-label-desc-reading)]（lg → -reading-lg）</Td>
               </tr>
             </tbody>
           </table>

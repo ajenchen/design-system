@@ -27,7 +27,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Chip 是 **Material Design Filter Chip** 實作——多選(預設)或單選的 pill 控件。基於 Radix ToggleGroup,橋接 DS token。視覺上是一排獨立的 `rounded-full` pill,各自有 `gap-2` 間距(非連體,這是跟 SegmentedControl 的主要差異)。</Desc>
+        <Desc>Chip 是 **Material Design Filter Chip** 實作——多選或單選的 pill 控件(`type` 必填)。基於 Radix ToggleGroup,橋接 DS token。視覺上是一排獨立的 `rounded-full` pill,各自有 `gap-2` 間距(非連體,這是跟 SegmentedControl 的主要差異)。</Desc>
         <ChipGroup type="multiple" defaultValue={['electronics', 'food']}>
           <Chip value="electronics">電子產品</Chip>
           <Chip value="furniture">家具</Chip>
@@ -88,7 +88,7 @@ export const Inspector: InspectorStory = {
     type: {
       control: 'radio',
       options: ['single', 'multiple'],
-      description: 'ToggleGroup 選擇模式:multiple(多選,預設)/ single(單選互斥)',
+      description: 'ToggleGroup 選擇模式(必填,Radix 要求):multiple(多選)/ single(單選互斥)',
     },
     selected: {
       control: 'boolean',
@@ -234,7 +234,7 @@ export const SelectionMatrix: Story = {
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
-        <H3>Multiple(預設)</H3>
+        <H3>Multiple</H3>
         <Desc>選取任意數量——filter panel 的 tag 選取、toolbar 多選過濾。</Desc>
         <ChipGroup type="multiple" defaultValue={['zh', 'en']}>
           <Chip value="zh">中文</Chip>
@@ -395,8 +395,8 @@ export const LayoutMatrix: Story = {
       </div>
 
       <div>
-        <H3>menu(overflow 收入 DropdownMenu)</H3>
-        <Desc>隱藏溢出到下拉選單(類似 Tabs overflow="menu")。適合 chip 很多但使用者不常切後面的場景。</Desc>
+        <H3>menu(show-all navigator dropdown)</H3>
+        <Desc>所有 chip 留在單行水平捲動容器,全部可見可點(不隱藏);dropdown 永遠列出全部 chip 供快速勾選(對齊 Chrome tab dropdown / VS Code editor tabs)。適合 chip 很多但使用者不常切後面的場景。</Desc>
         <div className="max-w-md border border-border rounded-md p-3">
           <ChipGroup type="multiple" layout="menu" defaultValue={['a']}>
             {['電子產品', '家具', '食品', '服飾', '書籍', '運動', '玩具', '美妝', '家電'].map(label => (

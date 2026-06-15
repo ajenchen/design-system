@@ -2,7 +2,7 @@ import * as React from 'react'
 import * as SliderPrimitive from '@radix-ui/react-slider'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
-import { useResolvedFieldDisabled } from '@/design-system/components/Field/field-context'
+import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode } from '@/design-system/components/Field/field-context'
 
 /**
  * Slider — 數值範圍選取器
@@ -61,7 +61,13 @@ const Slider = React.forwardRef<
   // Field 家族整合:被 <Field mode="disabled"> 包裹時自動 disabled(per slider.spec.md「Slider 作為 Field
   // 家族整合時繼承其 canonical」)。Slider 已有完整 data-[disabled] 視覺,故只需把 fieldCtx disabled 接上。
   // 2026-06-08 SSOT:讀 useResolvedFieldDisabled()(fieldCtx.disabled)→ <Field disabled> 與 <Field mode="disabled"> 都生效
+  // 2026-06-12 補:<Field mode="readonly"> → 鎖互動保留視覺(readonly ≠ disabled,不降色)
   const fieldDisabled = useResolvedFieldDisabled()
+  const fieldMode = useResolvedFieldMode({ mode: undefined, disabled: undefined, readOnly: undefined })
+  const fieldReadonly = fieldMode === 'readonly'
+  // 2026-06-10 a11y:Field 內 Slider thumb(role=slider)無 accessible name(deep-audit axe 抓 aria-input-field-name)
+  // → 預設接 FieldLabel(aria-labelledby),consumer ariaLabel 優先。對齊 rating/time-picker labelId 接線。
+  const fieldLabelId = useFieldContext()?.labelId
   // 推導要渲染幾個 thumb:controlled 用 value,uncontrolled 用 defaultValue,
   // 都沒有時 fallback 單 thumb(Radix 預設行為)
   const thumbCount =
@@ -74,9 +80,12 @@ const Slider = React.forwardRef<
       ref={ref}
       value={value}
       defaultValue={defaultValue}
-      className={cn(sliderRootVariants({ size }), className)}
+      className={cn(sliderRootVariants({ size }), fieldReadonly && 'pointer-events-none', className)}
       {...props}
       disabled={(props as { disabled?: boolean }).disabled || fieldDisabled}
+      // <Field mode="readonly"> cascade(2026-06-12 補):鎖互動、保留正常視覺(readonly
+      // 不降色;值仍可讀)。pointer-events-none 擋滑鼠,thumb tabIndex=-1 擋鍵盤。
+      data-readonly={fieldReadonly || undefined}
     >
       {/*
         Track — rest 用 bg-secondary(n-3,「微淡可辨」),disabled 用 bg-muted(n-2,退化)。
@@ -112,27 +121,34 @@ const Slider = React.forwardRef<
           - Rest: `border-primary` ↔ Range `bg-primary`
           - Disabled: `border-border` ↔ Range `bg-border`
         這個一致性讓 thumb border 跟 range 融為一體,看起來像「range 包住 thumb」
-        的連續視覺。thumb 的白底則是「被 range 圍住的空心洞」,讓 thumb 的位置
-        清楚浮出。不論 state,thumb border 跟 range 永遠同色。
+        的連續視覺。不論 state,thumb border 跟 range 永遠同色。
 
-        **為什麼 thumb bg 不能改**:`bg-surface`(白)必須在 rest / disabled 都維持,
-        否則會融入 track 的 `bg-muted` 裡消失。這是之前踩過的同色融色 bug
-        (曾經寫成 `data-[disabled]:bg-muted` 讓 thumb 跟 track 完全融合)。
+        **Thumb bg 兩態(2026-06-12 user 拍板,深色模式破洞修正)**:
+          - Rest/hover/active:`bg-on-emphasis`(固定白、深淺主題不反轉)— 對齊自家
+            Switch thumb(switch.tsx bg-on-emphasis)+ Radix Themes(thumb 字面 white
+            無 dark override)+ Apple iOS(深色模式旋鈕仍白)。原 `bg-surface` 在深色
+            = 8% 白半透明 → thumb 變深色破洞且 track 穿透。
+          - Disabled:`bg-canvas`(不透明頁面背景色)— 沉回背景表達「不可動」,
+            = Radix disabled thumb 用 gray-1(app background)同款;不透明故 track
+            不穿透。不可用 bg-muted(曾踩 thumb 跟 track 同色融合 bug;canvas 與
+            track 的 muted 隔 n-5 邊框 + 不同值,不融)。
       */}
       {Array.from({ length: thumbCount }).map((_, i) => (
         <SliderPrimitive.Thumb
           key={i}
+          tabIndex={fieldReadonly ? -1 : undefined}
+          aria-readonly={fieldReadonly || undefined}
           className={cn(
             'block h-4 w-4 shrink-0 rounded-full cursor-grab',
-            'bg-surface border-2 border-primary',
+            'bg-on-emphasis border-2 border-primary',
             'transition-all duration-150',
             // Hover:border 加深到 primary-hover + elevation 陰影
             'hover:border-primary-hover hover:[box-shadow:var(--elevation-100)]',
             'active:cursor-grabbing active:border-primary-hover active:[box-shadow:var(--elevation-200)]',
             // Focus:border 加深(跟 hover 同視覺),不加 ring 或 halo
             'outline-none focus-visible:border-primary-hover',
-            // Disabled:border 跟 Range 一起退成 border(n-5),bg 保留 bg-surface
-            'data-[disabled]:cursor-not-allowed data-[disabled]:border-border',
+            // Disabled:border 跟 Range 一起退成 border(n-5),bg 沉回 canvas(不透明背景色)
+            'data-[disabled]:cursor-not-allowed data-[disabled]:border-border data-[disabled]:bg-canvas',
             'data-[disabled]:hover:[box-shadow:none]',
           )}
           // aria-label 策略(對齊 WAI-ARIA APG multi-thumb slider + Radix 原生語意標籤):
@@ -147,6 +163,7 @@ const Slider = React.forwardRef<
                 : ariaLabel
               : undefined
           }
+          aria-labelledby={!ariaLabel && fieldLabelId ? fieldLabelId : undefined}
         />
       ))}
     </SliderPrimitive.Root>
@@ -158,7 +175,7 @@ Slider.displayName = 'Slider'
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const sliderMeta = {
   component: 'Slider',
-  family: 4,
+  family: null, // self-contained(對齊 spec;同 rating.tsx 慣例),
   variants: {},
   // size 只控容器外高,對齊 Field family h-field-*(md density:28/32/36px,uiSize.css)。
   // track 厚度 / thumb 直徑固定不隨 size 變,故無 iconSize / typography。
@@ -170,7 +187,7 @@ export const sliderMeta = {
   },
   states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-muted', 'bg-primary', 'bg-secondary', 'bg-surface'],
+    bg: ['bg-muted', 'bg-primary', 'bg-secondary', 'bg-on-emphasis', 'bg-canvas'],
     fg: [],
     ring: [],
   },

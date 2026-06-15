@@ -2,7 +2,7 @@
 import * as React from 'react'
 import { Star, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled } from '@/design-system/components/Field/field-context'
+import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode } from '@/design-system/components/Field/field-context'
 
 /**
  * Rating — 星星評分元件
@@ -98,7 +98,7 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
       max = 5,
       size: sizeProp,
       precision = 'full',
-      readOnly = false,
+      readOnly: readOnlyProp = false,
       disabled: disabledProp,
       loading = false,
       icon: Icon = Star,
@@ -115,6 +115,10 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
     const fieldCtx = useFieldContext()  // 保留:aria-labelledby 用 fieldCtx.labelId
     // 2026-06-08 SSOT:<Field disabled> cascade(原 isInteractive 只看 local disabled prop)
     const disabled = useResolvedFieldDisabled(disabledProp)
+    // <Field mode="readonly"> cascade(2026-06-12 補):Rating 的 readonly 呈現 = 星星本身
+    // (星星即值語言,role=img,全業界 review-stars canonical)——不包灰框,只鎖互動。
+    const resolvedMode = useResolvedFieldMode({ mode: undefined, disabled, readOnly: readOnlyProp })
+    const readOnly = readOnlyProp || resolvedMode === 'readonly'
     const size = useResolvedFieldSize<'xs' | 'sm' | 'md' | 'lg'>(sizeProp, 'xs')  // SSOT:統一 size resolution(Rating default 'xs')
     const [internalValue, setInternalValue] = React.useState(defaultValue)
     const [hoverValue, setHoverValue] = React.useState<number | null>(null)
@@ -157,7 +161,7 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
         //   Standalone → 仍需 consumer 傳 aria-label。對齊 TimePicker / DatePicker 同 canonical
         //   (time-picker.tsx:313 / date-picker.tsx:514:aria-labelledby={fieldCtx?.labelId})。
         //   置於 {...props} 前,consumer 顯式傳的 aria-labelledby 仍可覆寫。
-        aria-labelledby={isInteractive ? fieldCtx?.labelId : undefined}
+        aria-labelledby={fieldCtx?.labelId}  // 2026-06-12 修:readonly/disabled(role=img)也需 accessible name,labelledby 對 img 合法
         aria-valuenow={isInteractive ? currentValue : undefined}
         aria-valuemin={isInteractive ? 0 : undefined}
         aria-valuemax={isInteractive ? max : undefined}

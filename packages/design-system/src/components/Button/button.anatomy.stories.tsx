@@ -201,7 +201,7 @@ export const Overview = {
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-medium">標準</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
-              {[{ name: 'startIcon', color: 'info' }, { name: 'startIcon', color: 'success' }, { name: 'startIcon', color: 'warning' }, { name: 'startIcon', color: 'magenta' }].map((s) => (
+              {[{ name: 'startIcon', color: 'info' }, { name: 'label', color: 'success' }, { name: 'badge', color: 'warning' }, { name: 'endIcon', color: 'magenta' }].map((s) => (
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
@@ -249,7 +249,7 @@ export const Overview = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['variant', "'primary'|'secondary'|'tertiary'|'text'|'link'", "'primary'", '視覺強調等級'],
+                ['variant', "'primary'|'secondary'|'tertiary'|'text'|'link'", "'tertiary'（iconOnly 時 'text'）", '視覺強調等級；CTA 必 explicit primary'],
                 ['danger', 'boolean', 'false', '套用紅色，與 variant 正交'],
                 ['pressed', 'boolean', '—', 'Toggle 按下狀態（aria-pressed + data-state），僅 secondary/tertiary/text 有視覺效果'],
                 ['pressedTone', "'emphasis'|'neutral'", "'emphasis'", 'pressed 視覺色調:emphasis 藍底 / neutral 灰底,context 決定'],

@@ -2,7 +2,7 @@
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { Paperclip, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { FileUpload } from './file-upload'
 import { FileItem } from '@/design-system/components/FileItem/file-item'
 import { Button } from '@/design-system/components/Button/button'
@@ -64,16 +64,16 @@ export const UsageGuidance: Story = {
       <p>適合 FileUpload 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Components/FileUpload/展示" name="單檔上傳"><span className="text-primary hover:underline font-medium cursor-pointer">單檔上傳</span></LinkTo>
+          <LinkTo kind="Design System/Components/FileUpload/展示" name="單檔上傳"><span className="text-primary hover:underline font-medium cursor-pointer">履歷 / 大頭貼等單檔上傳</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/FileUpload/展示" name="批次上傳"><span className="text-primary hover:underline font-medium cursor-pointer">批次上傳</span></LinkTo>
+          <LinkTo kind="Design System/Components/FileUpload/展示" name="批次上傳"><span className="text-primary hover:underline font-medium cursor-pointer">相簿照片 / 多檔附件批次上傳</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/FileUpload/展示" name="內建 files 屬性"><span className="text-primary hover:underline font-medium cursor-pointer">內建 files 屬性</span></LinkTo>
+          <LinkTo kind="Design System/Components/FileUpload/展示" name="內建 files 屬性"><span className="text-primary hover:underline font-medium cursor-pointer">上傳後直接顯示進度清單(內建 files 屬性)</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/FileUpload/展示" name="自訂內容"><span className="text-primary hover:underline font-medium cursor-pointer">自訂內容</span></LinkTo>
+          <LinkTo kind="Design System/Components/FileUpload/展示" name="自訂內容"><span className="text-primary hover:underline font-medium cursor-pointer">品牌化上傳區 — 自訂 dropzone 內容</span></LinkTo>
         </li>
       </ul>
       <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
@@ -127,8 +127,8 @@ export const UsageGuidance: Story = {
       </Rule>
 
       <Rule
-        title="✅ 表單內 inline field — 用小 Button + hidden input"
-        note="form 裡和其他 field 並列時,大 dropzone 會破壞欄位節奏。對照:Jira issue 附件按鈕、Stripe 發票上傳欄位——小按鈕不喧賓奪主。"
+        title='✅ 表單內 inline field — 用 FileUpload variant="button"'
+        note="form 裡和其他 field 並列時,大 dropzone 會破壞欄位節奏;variant=&quot;button&quot; 與 dropzone 共用同一套上傳邏輯(hidden input / accept / maxSize / onReject)。對照:Jira issue 附件按鈕、Stripe 發票上傳欄位——小按鈕不喧賓奪主。"
       >
         <div className="flex flex-col gap-3 w-full">
           <Field>
@@ -139,20 +139,18 @@ export const UsageGuidance: Story = {
             <FieldLabel>申請人身分證</FieldLabel>
             <div className="flex items-center gap-2">
               <Input className="flex-1" placeholder="A123456789" />
-              <Button variant="tertiary" size="md" startIcon={Paperclip}>
-                附上照片
-              </Button>
+              <FileUpload variant="button" buttonLabel="附上照片" accept="image/*" onUpload={noop} />
             </div>
           </Field>
         </div>
-        <Label>↑ 「附上照片」內部是 `&lt;input type="file" hidden /&gt;` + button.onClick</Label>
+        <Label>↑ 「附上照片」= FileUpload variant="button"——與 dropzone 同上傳邏輯,只是觸發外觀緊湊化</Label>
       </Rule>
 
       <Rule
         title="❌ form 裡塞大 dropzone"
         note="上下欄位高度落差太大,使用者視覺節奏被打斷——這是 form field 不該出現的體積。"
       >
-        <Label warn>⚠️ form 內 inline 上傳欄位,不要用 FileUpload</Label>
+        <Label warn>⚠️ form 內 inline 上傳欄位,不要用大 dropzone(改 variant="button")</Label>
       </Rule>
     </div>
     </div>

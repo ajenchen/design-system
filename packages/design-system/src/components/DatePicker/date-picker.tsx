@@ -474,17 +474,22 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
         <div
           className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, size }), className)}
           data-field-mode={resolvedMode}
+          aria-disabled={resolvedMode === 'disabled' ? true : undefined}
           {...(props as React.HTMLAttributes<HTMLDivElement>)}
         >
-          <span className={cn('flex-1 min-w-0', resolvedMode === 'disabled' && 'text-fg-disabled')}>
+          <span className={cn('flex-1 min-w-0 truncate', resolvedMode === 'disabled' && 'text-fg-disabled')}>
             {value
               ? displayCommitted
               : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
             }
           </span>
-          <ItemSuffix className="pointer-events-none">
-            <CalendarIcon size={iconSize} className="text-fg-muted" aria-hidden />
-          </ItemSuffix>
+          {/* 2026-06-10 類型身份 indicator:readonly/disabled 保留(naked cell 依 showDisplayEndIcon=isEditable,
+              並修掉原「disabled cell 無視 gate 漏顯」之 2026-05-10 cell canonical 違反);disabled → fg-disabled(spec L213)*/}
+          {(variant === 'naked' ? showDisplayEndIcon : true) && (
+            <ItemSuffix className="pointer-events-none">
+              <CalendarIcon size={iconSize} className={resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted'} aria-hidden />
+            </ItemSuffix>
+          )}
         </div>
       )
     }
@@ -882,17 +887,18 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
           ref={ref}
           className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, size }), className)}
           data-field-mode={resolvedMode}
+          aria-disabled={resolvedMode === 'disabled' ? true : undefined}
           {...props}
         >
           <span className={cn('flex-1 min-w-0 truncate', !startIso && 'text-fg-muted', resolvedMode === 'disabled' && 'text-fg-disabled')}>
             {startIso ? formatDateOrDateTime(startIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[0]}
           </span>
-          <ArrowRight size={iconSize} className="shrink-0 text-fg-muted mx-2" aria-hidden />
+          <ArrowRight size={iconSize} className={cn('shrink-0 mx-2', resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted')} aria-hidden />
           <span className={cn('flex-1 min-w-0 truncate', !endIso && 'text-fg-muted', resolvedMode === 'disabled' && 'text-fg-disabled')}>
             {endIso ? formatDateOrDateTime(endIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[1]}
           </span>
           <ItemSuffix className="pointer-events-none">
-            <CalendarIcon size={iconSize} className="text-fg-muted" aria-hidden />
+            <CalendarIcon size={iconSize} className={resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted'} aria-hidden />
           </ItemSuffix>
         </div>
       )

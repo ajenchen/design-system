@@ -35,9 +35,9 @@ originSessionId: 41fa83c2-f951-431e-911e-ed3ceb185903
 1. **Anti-pattern static hooks**(primary):
    - `check_sidebar_menu_button_implicit_wrap.sh` — SidebarMenuButton wrap pattern
    - `check_chrome_header_avatar_canonical.sh` — chrome header raw Avatar 24
-   - `check_consumer_ds_primitive_misuse.sh` — 7 anti-pattern(含 2026-06-02 Pattern 8:硬寫色值/字級/shadow 繞 token)
-   - `check_consumer_story_baseline.sh` — @story-baseline marker enforce
-   - `check_consumer_no_ds_catalog.sh` — 禁 PW 重寫 DS catalog
+   - `check_consumer_app_invariants.sh(r3,2026-06-11 merge)` — 7 anti-pattern(含 2026-06-02 Pattern 8:硬寫色值/字級/shadow 繞 token)
+   - `check_consumer_app_invariants.sh(r2,2026-06-11 merge)` — @story-baseline marker enforce
+   - `check_consumer_app_invariants.sh(r1,2026-06-11 merge)` — 禁 PW 重寫 DS catalog
 2. **架構保障**:npm workspace link / portal pattern(AllDsComponents iframe to DS Storybook)— consumer 不可能 fork DS source
 3. **Visual diff = identity opt-in(2026-06-02 修正,原無條件 UNION dual-track 已廢)**:`scripts/composition-fidelity-visual-diff.mjs` 的 pixel/DOM identity 只比標 `@composition-fidelity-mode` 的 mapping(忠實複製 replica / same-story 跨版本回歸);單獨 `@story-baseline` = conformance 意圖,不做 identity diff(交上述靜態 hook 驗);shell-only 模式 skip DOM diff(DOM 仍含被遮內容會 false-positive,只比遮罩後 pixel)。對齊 Polaris/Atlassian/Carbon「consumer 用對 token 靠 static lint」模型(SSOT: `.claude/references/composition-fidelity.md`)
 

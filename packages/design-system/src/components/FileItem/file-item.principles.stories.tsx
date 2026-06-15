@@ -43,19 +43,19 @@ export const UsageGuidance: Story = {
       <p>適合 FileItem 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="Rich"><span className="text-primary hover:underline font-medium cursor-pointer">Rich</span></LinkTo>
+          <LinkTo kind="Design System/Components/FileItem/展示" name="豐富樣式"><span className="text-primary hover:underline font-medium cursor-pointer">圖片 / 設計稿上傳 — 需要縮圖預覽(豐富樣式)</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="Compact"><span className="text-primary hover:underline font-medium cursor-pointer">Compact</span></LinkTo>
+          <LinkTo kind="Design System/Components/FileItem/展示" name="緊湊樣式"><span className="text-primary hover:underline font-medium cursor-pointer">CSV / JSON 批次匯入的密集清單(緊湊樣式)</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="懸停替換"><span className="text-primary hover:underline font-medium cursor-pointer">Hover 替換</span></LinkTo>
+          <LinkTo kind="Design System/Components/FileItem/展示" name="懸停替換"><span className="text-primary hover:underline font-medium cursor-pointer">上傳完成後滑入整列、狀態 icon 換成下載鈕(懸停替換)</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="已上傳"><span className="text-primary hover:underline font-medium cursor-pointer">已上傳</span></LinkTo>
+          <LinkTo kind="Design System/Components/FileItem/展示" name="已上傳"><span className="text-primary hover:underline font-medium cursor-pointer">工單 / 訊息附件的已上傳靜態檔案</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/FileItem/展示" name="緊湊 混合"><span className="text-primary hover:underline font-medium cursor-pointer">Compact 混合</span></LinkTo>
+          <LinkTo kind="Design System/Components/FileItem/展示" name="緊湊 混合"><span className="text-primary hover:underline font-medium cursor-pointer">同一批次混合上傳中 / 完成 / 失敗狀態的清單</span></LinkTo>
         </li>
       </ul>
       <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
@@ -121,7 +121,7 @@ export const ModeRule: Story = {
 
       <Rule
         title="compact — 批次上傳的一般檔案（CSV / JSON）"
-        note="左側 Paperclip 16px icon,掃描模式(text-caption),資訊密度高。適合一次顯示 10+ 檔案的 batch upload 清單"
+        note="左側 Paperclip 16px icon,掃描模式(text-body + leading-compact,desc 為 text-caption;兩 mode 統一),資訊密度高。適合一次顯示 10+ 檔案的 batch upload 清單"
       >
         <div className="flex flex-col gap-1">
           <FileItem
@@ -161,7 +161,7 @@ export const StatusProgressRule: Story = {
   render: () => (
     <div>
       <Rule
-        title="uploading — progress bar primary 色 + 百分比 description"
+        title="uploading — progress bar info 色 + 百分比 description"
         note="上傳中清楚展示進度,讓使用者知道「多久能好」而不是只看到一個等待狀態"
       >
         <FileItem

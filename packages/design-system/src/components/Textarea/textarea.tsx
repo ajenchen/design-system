@@ -84,7 +84,7 @@ const textareaVariants = cva(
       {
         mode: 'readonly',
         variant: 'default',
-        className: 'bg-disabled border border-transparent',
+        className: 'bg-readonly border border-transparent',
       },
       {
         mode: 'disabled',

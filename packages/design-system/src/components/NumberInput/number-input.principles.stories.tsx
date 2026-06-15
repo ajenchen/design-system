@@ -71,7 +71,7 @@ export const UsageGuidance: Story = {
       <Section title="vs 近親元件">
         <Rule
           title="❌ 不用 NumberInput 做電話號碼或郵遞區號 → Input"
-          note="電話不是算術數字。改用 Input + type='tel'。Stripe 的電話欄用 Input,不用 NumberInput(不該加千分位或用 step)"
+          note="電話、郵遞區號、身分證字號、產品代碼都「長得像數字」但不是算術型 value——不做加減、不做千分位、不做 step。改用 Input + type='tel' / pattern(Stripe 的電話欄用 Input)。用 NumberInput 會錯誤套用千分位、吃掉前導零,且誤導 mobile 彈出數字鍵盤"
         >
           <NumberInput mode="readonly" value={912345678} />
           <Label warn>↑ 電話 0912-345-678 被當數值,顯示時加上千分位 912,345,678 → 數字意義錯誤(前導零也被吃掉)</Label>
@@ -93,6 +93,14 @@ export const UsageGuidance: Story = {
           <NumberInput mode="readonly" value={1234567} prefix="$" />
           <NumberInput mode="readonly" value={85.5} suffix="%" precision={1} />
           <NumberInput mode="readonly" value={12500} />
+        </Rule>
+
+        <Rule
+          title="❌ 不用 Input 顯示數字"
+          note="即使值看起來「就是數字字串」,缺少格式化會讓大數字不可讀(1234567 vs 1,234,567)。Edit 與 Display 分離是 Field 設計的基本前提——用 NumberInput 兩者都得到"
+        >
+          <Input defaultValue="1234567" />
+          <Label warn>↑ 1234567 難讀、無貨幣前綴、無 locale、無右對齊</Label>
         </Rule>
       </Section>
     </div>
@@ -153,7 +161,7 @@ export const FormatOptionsRule: Story = {
     <div>
       <Rule
         title="prefix — 置於數字前的符號(貨幣是最常見場景)"
-        note="prefix 會同時出現在 edit、readonly、DataTable cell。使用者不需要自己輸入 $——打字就是純數字"
+        note="prefix 出現在 readonly / display / disabled 與 DataTable cell 的格式化值;edit 模式輸入 raw 純數字、不渲染 prefix——使用者不需要自己輸入 $"
       >
         <NumberInput mode="readonly" value={2490} prefix="$" />
         <NumberInput mode="readonly" value={12500} prefix="NT$" precision={0} />
@@ -186,36 +194,6 @@ export const FormatOptionsRule: Story = {
   ),
 }
 
-export const DataTypeMatchRule: Story = {
-  name: '數字一律用 NumberInput',
-  render: () => (
-    <div>
-      <Rule
-        title="所有數值資料都用 NumberInput——不用 Input type=number"
-        note="NumberInput 提供:千分位格式化、locale 切換、prefix/suffix、precision、edit 左 / table 右 對齊、DataTable 自動整合。原生 input type=number 這些都沒有"
-      >
-        <NumberInput mode="readonly" value={1234567} prefix="$" />
-        <NumberInput mode="readonly" value={85.5} suffix="%" precision={1} />
-        <NumberInput mode="readonly" value={12500} />
-      </Rule>
-
-      <Rule
-        title="❌ 不用 Input 顯示數字"
-        note="即使值看起來「就是數字字串」,缺少格式化會讓大數字不可讀(1234567 vs 1,234,567)。Edit 與 Display 分離是 Field 設計的基本前提——用 NumberInput 兩者都得到"
-      >
-        <Input defaultValue="1234567" />
-        <Label warn>↑ 1234567 難讀、無貨幣前綴、無 locale、無右對齊</Label>
-      </Rule>
-
-      <Rule
-        title="❌ 看起來像數字但不是算術型的資料:用 Input"
-        note="電話、郵遞區號、身分證字號、產品代碼都「長得像數字」但不是算術型 value——不做加減、不做千分位、不做 step。用 NumberInput 會錯誤套用千分位(0912-345-678 變成「912,345,678」)、誤導 mobile 彈出數字鍵盤且關閉符號輸入"
-      >
-        <NumberInput mode="readonly" value={912345678} />
-        <Label warn>↑ 電話 0912-345-678 被當數值,顯示時加上千分位 912,345,678 → 數字意義錯誤(前導零也被吃掉)</Label>
-        <Input defaultValue="0912-345-678" />
-        <Label>↑ 電話用 Input(可自訂 type=tel 或 pattern),保留 dash / 前導零</Label>
-      </Rule>
-    </div>
-  ),
-}
+// @story-trait-rationale: DataTypeMatchRule(數字一律用 NumberInput)retired 2026-06-11 per audit Dim 24/25 —
+//   與 UsageGuidance「vs 近親元件」段完整重複(✅ NumberInput-over-Input / ❌ 電話號碼非算術型);
+//   唯一未覆蓋的「❌ 不用 Input 顯示數字」與「非算術型資料」完整 note 已折入 UsageGuidance。

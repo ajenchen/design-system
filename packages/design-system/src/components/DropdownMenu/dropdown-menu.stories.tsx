@@ -1,7 +1,7 @@
 // @story-trait-rationale: isOverlay OpenSnapshot / hasInteractiveStates Disabled 由 anatomy.stories.tsx StateBehavior + Inspector auto-compile owns(2026-05-15 F-migration);showcase 展示真實多選 / 角色切換 / Checkbox 整合情境。
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
-import { Mail, Settings, User, LogOut, Plus, Trash2, Copy, Pencil, ExternalLink, Moon, Sun, Monitor, ChevronDown, FileText } from 'lucide-react'
+import { Mail, Settings, User, LogOut, Trash2, Copy, Pencil, ExternalLink, Moon, Sun, Monitor, ChevronDown, FileText } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuRadioItem,
@@ -52,6 +52,8 @@ export const Groups: StoryObj = {
         <Button variant="tertiary" endIcon={ChevronDown}>帳號</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        {/* Group auto-separation canonical(spec):相鄰 Group 自動 border-divider 分隔,
+            不手動加 Separator(手動 Separator 保留給群組內子分組 / 破壞性動作前的強調) */}
         <DropdownMenuGroup>
           <DropdownMenuLabel>我的帳號</DropdownMenuLabel>
           <DropdownMenuItem startIcon={User}>
@@ -61,10 +63,11 @@ export const Groups: StoryObj = {
             設定
           </DropdownMenuItem>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem startIcon={LogOut}>
-          登出
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem startIcon={LogOut}>
+            登出
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   ),
@@ -86,9 +89,7 @@ export const WithSuffix: StoryObj = {
         <DropdownMenuItem startIcon={FileText} endIcon={ExternalLink}>
           說明文件
         </DropdownMenuItem>
-        <DropdownMenuItem startIcon={Plus} disabled>
-          新增（已停用）
-        </DropdownMenuItem>
+        {/* disabled state 由 anatomy StateBehavior / Inspector owns(檔頭 trait-rationale),不在後綴 story 重複 */}
       </DropdownMenuContent>
     </DropdownMenu>
   ),
@@ -115,16 +116,13 @@ const SubMenuDemo = () => {
             主題
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
+            {/* RadioGroup 內必用 RadioItem(spec 結構表):Radix 給 menuitemradio 語義 +
+                aria-checked,選中底色與「選後保持開啟」由元件內建,不用手動 selected / onSelect */}
             <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
               {(['light', 'dark', 'system'] as const).map((t) => (
-                <DropdownMenuItem
-                  key={t}
-                  startIcon={themeIcons[t]}
-                  selected={theme === t}
-                  onSelect={() => setTheme(t)}
-                >
+                <DropdownMenuRadioItem key={t} value={t} startIcon={themeIcons[t]}>
                   {themeLabels[t]}
-                </DropdownMenuItem>
+                </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
           </DropdownMenuSubContent>

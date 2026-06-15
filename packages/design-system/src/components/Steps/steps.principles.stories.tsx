@@ -76,22 +76,19 @@ export const UsageGuidance: Story = {
       <p>適合 Steps 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Components/Steps/展示" name="聚焦環正交示範"><span className="text-primary hover:underline font-medium cursor-pointer">Ring 正交示範</span></LinkTo>
+          <LinkTo kind="Design System/Components/Steps/展示" name="預設"><span className="text-primary hover:underline font-medium cursor-pointer">註冊申請精靈(預設)</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Steps/展示" name="非線性"><span className="text-primary hover:underline font-medium cursor-pointer">非線性</span></LinkTo>
+          <LinkTo kind="Design System/Components/Steps/展示" name="非線性"><span className="text-primary hover:underline font-medium cursor-pointer">工作區設定導覽(非線性)</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Steps/展示" name="水平"><span className="text-primary hover:underline font-medium cursor-pointer">水平</span></LinkTo>
+          <LinkTo kind="Design System/Components/Steps/展示" name="水平"><span className="text-primary hover:underline font-medium cursor-pointer">結帳流程進度(水平)</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Steps/展示" name="多重展開模式"><span className="text-primary hover:underline font-medium cursor-pointer">Multiple 展開模式</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Steps/展示" name="欄 節奏 驗證"><span className="text-primary hover:underline font-medium cursor-pointer">欄 節奏 驗證</span></LinkTo>
+          <LinkTo kind="Design System/Components/Steps/展示" name="多重展開模式"><span className="text-primary hover:underline font-medium cursor-pointer">安裝指南逐步教學(多重展開模式)</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-secondary mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用下方清單建議的近親元件。</p>
     </div>
 
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
@@ -146,7 +143,7 @@ export const ParentControlled: Story = {
 // ── 規則 2:Ring 是 focus marker,不是 selection ──
 
 export const RingIsFocusMarker: Story = {
-  name: '規則:環 是 聚焦 標記,不是 選取',
+  name: '規則:環是聚焦標記,不是選取',
   render: () => (
     <Section
       title="Ring 表達「你現在在這步」,跟 step 本身的狀態正交"
@@ -181,7 +178,7 @@ export const RingIsFocusMarker: Story = {
 // ── 規則 3:Blue connector 只跟 completedValues 走 ──
 
 export const BlueConnectorLogic: Story = {
-  name: '規則:藍色 連線 只跟 已完成 走',
+  name: '規則:藍色連線只跟已完成走',
   render: () => (
     <Section
       title="藍色代表實際走過的路徑,不是 focus 指向"
@@ -220,7 +217,7 @@ export const BlueConnectorLogic: Story = {
 // ── 規則 4:Column rhythm ──
 
 export const ColumnRhythm: Story = {
-  name: '規則:指示 欄 節奏',
+  name: '規則:指示欄節奏一致',
   render: () => (
     <Section
       title="Indicator 永遠對齊 label 第一行——即使同一 Steps 內混用「有/無 description」"
@@ -259,7 +256,7 @@ export const ColumnRhythm: Story = {
 // ── 規則 5:Linear 點 completed 不自動 unmark ──
 
 export const LinearBackClickDoesNotMutate: Story = {
-  name: '規則:Linear 點回 完成項 不改狀態',
+  name: '規則:Linear 點回完成項不改狀態',
   render: () => {
     const [value, setValue] = React.useState('review')
     const [completed] = React.useState(['info', 'account'])

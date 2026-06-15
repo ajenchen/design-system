@@ -7,6 +7,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
+  SheetBody,
   SheetFooter,
 } from './sheet'
 import { Button } from '@/design-system/components/Button/button'
@@ -36,10 +37,10 @@ export const Overview: Story = {
                 <SheetTitle>修復付款流程 bug</SheetTitle>
                 <SheetDescription>#PROJ-1234 · 指派給陳大明</SheetDescription>
               </SheetHeader>
-              <div className="flex-1 p-4 text-body">
+              <SheetBody className="text-body">
                 <p className="mb-3 text-fg-secondary">使用者於結帳最後一步點選「完成付款」後,頁面卡在轉圈動畫超過 30 秒,最終回到購物車且訂單未成立。重現率約 1/5,僅出現在 Safari 17。</p>
                 <p className="text-caption text-fg-muted">優先級 P1 · 影響 230 筆訂單 · 截止 2026-04-25</p>
-              </div>
+              </SheetBody>
               <SheetFooter>
                 <Button variant="tertiary">標記為已解決</Button>
                 <Button variant="primary">儲存變更</Button>
@@ -118,10 +119,10 @@ export const Inspector: Story = {
             <SheetTitle>修復付款流程 bug</SheetTitle>
             <SheetDescription>#PROJ-1234 · 指派給陳大明</SheetDescription>
           </SheetHeader>
-          <div className="flex-1 p-4 text-body">
+          <SheetBody className="text-body">
             <p className="mb-3 text-fg-secondary">使用者於結帳最後一步點選「完成付款」後,頁面卡在轉圈動畫超過 30 秒,最終回到購物車且訂單未成立。重現率約 1/5,僅出現在 Safari 17。</p>
             <p className="text-caption text-fg-muted">優先級 P1 · 影響 230 筆訂單 · 截止 2026-04-25</p>
-          </div>
+          </SheetBody>
           {showFooter && (
             <SheetFooter>
               <Button variant="tertiary">標記為已解決</Button>
@@ -166,9 +167,9 @@ export const SideMatrix: Story = {
               <SheetTitle>Q1 財報</SheetTitle>
               <SheetDescription>最後編輯：2026-04-18 17:32</SheetDescription>
             </SheetHeader>
-            <div className="flex-1 p-4">
+            <SheetBody>
               <p className="text-body text-fg-secondary">本季營收 NT$4,820 萬,較上季成長 12%;毛利率 38.5%。下方附完整損益表與部門別明細,可直接在此面板註記後送交財務複核。</p>
-            </div>
+            </SheetBody>
             <SheetFooter>
               <Button variant="primary">儲存</Button>
             </SheetFooter>

@@ -35,7 +35,7 @@ const D: Record<string, string> = {
 const actionBtn = <Button variant="tertiary" size="xs">查看詳情</Button>
 
 export const SubtleSingleLine = {
-  name: '低調 單行',
+  name: '低調單行',
   render: () => (
     <div className="flex flex-col gap-3 max-w-lg">
       {ALL.map((v) => <Alert key={v} variant={v} appearance="subtle" title={L[v]} endContent={actionBtn} />)}
@@ -44,7 +44,7 @@ export const SubtleSingleLine = {
 }
 
 export const SolidSingleLine = {
-  name: '實心 單行',
+  name: '實心單行',
   render: () => (
     <div className="flex flex-col gap-3 max-w-lg">
       {ALL.map((v) => <Alert key={v} variant={v} appearance="solid" title={L[v]} endContent={actionBtn} />)}
@@ -53,7 +53,7 @@ export const SolidSingleLine = {
 }
 
 export const SubtleWithDescription = {
-  name: '低調 + 說明文字',
+  name: '低調含說明文字',
   render: () => (
     <div className="flex flex-col gap-3 max-w-lg">
       {ALL.map((v) => <Alert key={v} variant={v} appearance="subtle" title={L[v]} description={D[v]} endContent={actionBtn} />)}
@@ -62,7 +62,7 @@ export const SubtleWithDescription = {
 }
 
 export const SolidWithDescription = {
-  name: '實心 + 說明文字',
+  name: '實心含說明文字',
   render: () => (
     <div className="flex flex-col gap-3 max-w-lg">
       {ALL.map((v) => <Alert key={v} variant={v} appearance="solid" title={L[v]} description={D[v]} endContent={actionBtn} />)}
@@ -71,7 +71,7 @@ export const SolidWithDescription = {
 }
 
 export const CornerActionGroup = {
-  name: '框架角落操作群組',
+  name: '右上角操作群組',
   render: () => (
     <div className="flex flex-col gap-4 max-w-lg">
       <span className="text-caption text-fg-muted">

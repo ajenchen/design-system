@@ -35,9 +35,8 @@ export const Default: Story = {
 }
 
 /**
- * Issue 10 typed input(2026-05-10):trigger 內渲 `<input>` 接 user 自由輸入,Enter / Blur
- * 解析 commit;不合法 input 顯 aria-invalid。Calendar icon 仍開 popover 選日期。
- * 對齊 Material X-DatePicker / Ant DatePicker / Notion typed-date idiom。
+ * typeable(2026-05-10 Issue 10):trigger 內渲 `<input>` 接使用者自由輸入,
+ * Enter / Blur 解析 commit、Esc reset;不合法輸入標 aria-invalid。Calendar icon 仍開 popover。
  */
 export const TypedInput: Story = {
   name: '可直接輸入日期',
@@ -47,23 +46,19 @@ export const TypedInput: Story = {
     return (
       <div className="flex flex-col gap-6 max-w-md">
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">Date typed input</h3>
-          <p className="text-caption text-fg-muted mb-3">
-            支援:<code>YYYY-MM-DD</code> / <code>YYYY/MM/DD</code> / <code>YYYY.MM.DD</code> /
-            native <code>Date.parse</code>(eg. <code>Mar 12 2026</code>)。Enter / Blur commit;
-            Esc reset。Invalid → <code>aria-invalid</code>。Calendar icon 仍開 popover。
+          <p className="text-caption text-fg-secondary mb-3">
+            日期:支援 <code>2026-04-02</code> / <code>2026/04/02</code> 等格式,Enter / Blur 解析,
+            不合法輸入標 <code>aria-invalid</code>。
           </p>
           <DatePicker typeable value={value} onChange={setValue} />
-          <p className="text-caption text-fg-muted mt-2">value: <code>{value || '(empty)'}</code></p>
+          <p className="text-caption text-fg-secondary mt-2">目前值:<code>{value || '(空)'}</code></p>
         </div>
         <div>
-          <h3 className="text-body font-bold text-foreground mb-2">DateTime typed input</h3>
-          <p className="text-caption text-fg-muted mb-3">
-            支援:<code>YYYY-MM-DD HH:MM[:SS]</code> / <code>YYYY-MM-DDTHH:MM</code>。
-            Calendar + Time panel 仍可用。
+          <p className="text-caption text-fg-secondary mb-3">
+            日期 + 時間(showTime):支援 <code>2026-04-02 14:30</code> 這類輸入,月曆與時間欄仍可用。
           </p>
           <DatePicker typeable showTime value={showTimeValue} onChange={setShowTimeValue} />
-          <p className="text-caption text-fg-muted mt-2">value: <code>{showTimeValue || '(empty)'}</code></p>
+          <p className="text-caption text-fg-secondary mt-2">目前值:<code>{showTimeValue || '(空)'}</code></p>
         </div>
       </div>
     )
@@ -92,10 +87,7 @@ export const Modes: Story = {
         <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
         <DatePicker mode="disabled" value="2026-04-02" />
       </div>
-      <div>
-        <h3 className="text-body font-bold text-foreground mb-2">readonly (null)</h3>
-        <DatePicker mode="readonly" value={null} />
-      </div>
+      {/* 空值(null)與完整 state 矩陣由 anatomy 的 StateBehavior / ColorMatrix 擁有,不在此重複 */}
     </div>
   ),
 }
@@ -195,6 +187,12 @@ export const ShowTime: Story = {
   },
 }
 
+/* ── OpenSnapshot stories(M15 visual-audit):共用 play helper 點開 trigger 讓 popover 留在畫面上 ── */
+const openPopoverPlay = (selector: string) => async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  canvasElement.querySelector<HTMLElement>(selector)?.click()
+  await new Promise((r) => setTimeout(r, 200))
+}
+
 /* ── OpenSnapshot:Range popover 內 range track 視覺驗證(M15)── */
 export const RangePopoverOpen: Story = {
   name: '範圍:浮層展開狀態',
@@ -204,15 +202,10 @@ export const RangePopoverOpen: Story = {
     return (
       <div style={{ paddingBottom: 480 }}>
         <DatePicker.Range value={range} onChange={setRange} className="max-w-md" />
-        {/* play 函式自動 click trigger,讓 popover 開著截圖。沒有 play 可用 storybook controls。 */}
       </div>
     )
   },
-  play: async ({ canvasElement }) => {
-    const trigger = canvasElement.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]')
-    trigger?.click()
-    await new Promise((r) => setTimeout(r, 200))
-  },
+  play: openPopoverPlay('button[aria-haspopup="dialog"]'),
 }
 
 /* ── OpenSnapshot:showTime popover 內 TimePicker side panel(M15)── */
@@ -227,11 +220,7 @@ export const ShowTimePopoverOpen: Story = {
       </div>
     )
   },
-  play: async ({ canvasElement }) => {
-    const trigger = canvasElement.querySelector<HTMLElement>('[role="combobox"]')
-    trigger?.click()
-    await new Promise((r) => setTimeout(r, 200))
-  },
+  play: openPopoverPlay('[role="combobox"]'),
 }
 
 /* ── OpenSnapshot:showTime Range popover(activeEnd='start')── */
@@ -249,16 +238,12 @@ export const ShowTimeRangePopoverOpen: Story = {
       </div>
     )
   },
-  play: async ({ canvasElement }) => {
-    const inputs = canvasElement.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')
-    inputs[0]?.click()  // start input
-    await new Promise((r) => setTimeout(r, 200))
-  },
+  play: openPopoverPlay('button[aria-haspopup="dialog"]'),  // 第一個 match = start input
 }
 
 /* ── HoverState:Range middle hover blue ring 驗證(M11 + Bug C 真實截圖)── */
 export const RangeMiddleHoverState: Story = {
-  name: '範圍 中段:滑鼠移過 狀態',
+  name: '範圍中段:滑鼠移過狀態',
   parameters: { docs: { description: { story: 'Visual-audit — 開 range popover 並 userEvent.hover 一個 range_middle date,verify 藍色 1.5px ring 顯示在 grey track 之上(Bug C 設計準則 2026-05-02)。CSS :hover 需真實 pointer event,用 storybook/test userEvent.hover 觸發。' } } },
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
@@ -270,28 +255,13 @@ export const RangeMiddleHoverState: Story = {
   },
   play: async ({ canvasElement }) => {
     const { userEvent } = await import('@storybook/test')
-    // 1. Open popover via click on start input
     const trigger = canvasElement.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]')
     if (!trigger) return
     await userEvent.click(trigger)
     await new Promise((r) => setTimeout(r, 250))
-    // 2. Hover a range_middle date(May 7,between May 4 start and May 12 end)
-    // Popover 在 Portal — query document 而非 canvasElement
-    const dayButtons = document.querySelectorAll<HTMLButtonElement>('.rdp-day_button')
-    let target: HTMLButtonElement | null = null
-    for (const btn of dayButtons) {
-      if (btn.textContent?.trim() === '7') {
-        const cell = btn.closest('td, [class*="rdp-day"]')
-        if (cell?.className.includes('range_middle') || cell?.className.includes('rangeMiddle')) {
-          target = btn
-          break
-        }
-      }
-    }
-    // fallback:即使沒匹配到 range_middle class,也 hover 某個 May 7
-    if (!target) {
-      target = Array.from(dayButtons).find((b) => b.textContent?.trim() === '7') ?? null
-    }
+    // Popover 在 Portal — query document;May 7 介於 range 5/4–5/12 之間 = range_middle cell
+    const target = Array.from(document.querySelectorAll<HTMLButtonElement>('.rdp-day_button'))
+      .find((b) => b.textContent?.trim() === '7')
     if (target) await userEvent.hover(target)
     await new Promise((r) => setTimeout(r, 400))
   },

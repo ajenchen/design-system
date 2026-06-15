@@ -138,7 +138,7 @@ PopoverFooter.displayName = "PopoverFooter"
 // 的 header title 多半比 modal dialog title 小一級(16→14 或同比),視覺宣告「此浮層可忽略」
 //
 // Coachmark 同樣消費 PopoverTitle 作 header 小標籤(如 "新功能介紹" / "Tip 1 of 3"),
-// CoachmarkBody 的主 title 另走 text-body-lg(見 coachmark.tsx L178)。
+// CoachmarkBody 的主 title 另走 text-body-lg(見 coachmark.tsx CoachmarkBody 主 title <h3>)。
 const PopoverTitle = React.forwardRef<
   HTMLHeadingElement,
   React.HTMLAttributes<HTMLHeadingElement>
@@ -162,7 +162,7 @@ export const popoverMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  states: ['default'], // 浮層容器 primitive,無自己的 variant/size/disabled 互動 state(spec「為何無 Inspector」段;對齊 separator.tsx meta canonical)
   tokens: {
     bg: ['bg-surface-raised'],
     fg: ['text-foreground'],

@@ -73,7 +73,7 @@ export const StateCascade: Story = {
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
-        <p className="text-body-sm font-medium text-fg-muted mb-3">{'<Field disabled> — 所有控件自動停用（含 Switch / Rating / Slider / Select / DatePicker）'}</p>
+        <p className="text-body-sm font-medium text-fg-secondary mb-3">{'<Field disabled> — 所有控件自動停用（含 Switch / Rating / Slider / Select / DatePicker）'}</p>
         <div className="flex flex-wrap gap-x-8 gap-y-4 max-w-3xl">
           <Field disabled className="w-44"><FieldLabel>負責人</FieldLabel><Input value="王小明" onChange={() => {}} /></Field>
           <Field disabled className="w-44"><FieldLabel>優先級</FieldLabel><Select options={CASCADE_PRIORITY} value="high" onChange={() => {}} aria-label="優先級" /></Field>
@@ -86,7 +86,19 @@ export const StateCascade: Story = {
         </div>
       </div>
       <div>
-        <p className="text-body-sm font-medium text-fg-muted mb-3">{'<Field mode="display"> — 有展示態的控件自動切純展示（Select / DatePicker / Checkbox / Switch 修復後生效）'}</p>
+        <p className="text-body-sm font-medium text-fg-secondary mb-3">{'<Field mode="readonly"> — 鎖定表單:文字控件灰框;boolean/單選 = 灰框 + ✓/—/選中項(2026-06-12 拍板);Rating 星星鎖定、Slider 鎖互動保留視覺'}</p>
+        <div className="flex flex-wrap gap-x-8 gap-y-4 max-w-3xl">
+          <Field mode="readonly" className="w-44"><FieldLabel>負責人</FieldLabel><Input value="王小明" onChange={() => {}} /></Field>
+          <Field mode="readonly" className="w-44"><FieldLabel>同意條款</FieldLabel><Checkbox checked /></Field>
+          <Field mode="readonly" className="w-44"><FieldLabel>已啟用</FieldLabel><Switch checked /></Field>
+          <Field mode="readonly" className="w-44"><FieldLabel>未勾選範例</FieldLabel><Checkbox /></Field>
+          <Field mode="readonly" className="w-44"><FieldLabel>付款方式</FieldLabel><RadioGroup value="card"><RadioGroupItem value="card" label="信用卡" /><RadioGroupItem value="cash" label="貨到付款" /></RadioGroup></Field>
+          <Field mode="readonly" className="w-44"><FieldLabel>滿意度</FieldLabel><Rating value={4} aria-label="滿意度" /></Field>
+          <Field mode="readonly" className="w-44"><FieldLabel>完成度</FieldLabel><Slider defaultValue={[40]} aria-label="完成度" /></Field>
+        </div>
+      </div>
+      <div>
+        <p className="text-body-sm font-medium text-fg-secondary mb-3">{'<Field mode="display"> — 有展示態的控件自動切純展示（Select / DatePicker / Checkbox / Switch 修復後生效）'}</p>
         <div className="flex flex-wrap gap-x-8 gap-y-4 max-w-3xl">
           <Field mode="display" className="w-44"><FieldLabel>負責人</FieldLabel><Input value="王小明" onChange={() => {}} /></Field>
           <Field mode="display" className="w-44"><FieldLabel>優先級</FieldLabel><Select options={CASCADE_PRIORITY} value="high" aria-label="優先級" /></Field>
@@ -131,7 +143,7 @@ export const Horizontal: Story = {
 // ── Horizontal 垂直對齊公式驗證 ─────────────────────────────────────────
 
 export const HorizontalLabelAlignment: Story = {
-  name: '水平 — 標籤 垂直對齊公式驗證',
+  name: '水平:標籤垂直對齊公式驗證',
   render: () => (
     <div className="max-w-3xl flex flex-col gap-8">
       <div>
@@ -186,7 +198,7 @@ export const HorizontalLabelAlignment: Story = {
 // ── Checkbox / Switch 在 Field 內的高度對齊 ─────────────────────────────
 
 export const MixedControlAlignment: Story = {
-  name: '混合 控制元件 的 field 高度對齊',
+  name: '混合控制元件的高度對齊',
   render: () => (
     <div className="flex flex-col gap-8 max-w-3xl">
       <div>
@@ -245,7 +257,8 @@ export const MixedControlAlignment: Story = {
           </Field>
           <Field orientation="horizontal" labelWidth="120px">
             <FieldLabel>開啟通知</FieldLabel>
-            <Switch />
+            {/* 混合表單 = Form-edit → ml-0 靠左(switch.spec.md「兩種對齊慣例」) */}
+            <Switch className="ml-0" />
           </Field>
         </FieldGroup>
       </div>
@@ -315,7 +328,9 @@ export const SegmentedControlInField: Story = {
           </Field>
           <Field orientation="horizontal" labelWidth="120px">
             <FieldLabel>訂閱通知</FieldLabel>
-            <Switch />
+            {/* 混合表單(Input/SegmentedControl 同列)= Form-edit 情境 → Switch 跟其他控件靠左
+                (switch.spec.md「兩種對齊慣例」判準;ml-0 覆寫 Field 內預設 ml-auto 齊右 —— 齊右屬純 settings list)*/}
+            <Switch className="ml-0" />
           </Field>
         </FieldGroup>
       </div>
@@ -418,7 +433,7 @@ export const BlockControlRadioGroup: Story = {
 // ── Button as Data Input Affordance ─────────────────────────────────────
 
 export const ButtonAsControl: Story = {
-  name: 'Button 作為 控制元件',
+  name: 'Button 作為控制元件',
   render: () => (
     <div className="flex flex-col gap-8 max-w-3xl">
       <div>
@@ -460,7 +475,7 @@ export const ButtonAsControl: Story = {
 // ── Label Width 變化 ────────────────────────────────────────────────────
 
 export const LabelWidth: Story = {
-  name: '標籤 寬度',
+  name: '標籤寬度',
   render: () => (
     <div className="max-w-2xl flex flex-col gap-4">
       <p className="text-caption text-fg-muted">labelWidth 支援任何 CSS length 值</p>

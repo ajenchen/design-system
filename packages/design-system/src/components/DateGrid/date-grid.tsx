@@ -1,3 +1,7 @@
+/**
+ * @internal — DS-internal 單元(per `.claude/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
+ * 不進 root barrel front-door;由 DatePicker wrap 消費,end-user app 請用 wrapper 元件。
+ */
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // M22 retrofit DONE 2026-05-03 v11(real source URLs added inline at lines 38 + 111)
 import * as React from 'react'
@@ -17,8 +21,8 @@ import { Button } from '@/design-system/components/Button/button'
  * |------|------|
  * | Outer padding | `p-3`(12px 四邊對稱) |
  * | Nav + Month caption row | h-field-xs(24px)單行,chevron(xs)分居左右 / 月份置中垂直對齊 |
- * | Nav → Weekday gap | 12px(mt-3) |
- * | Weekday | text-body(14px)text-fg-secondary(neutral-8) |
+ * | Nav → Weekday gap | 12px(month_caption mb-3) |
+ * | Weekday | text-body(14px)text-foreground font-medium(neutral-9,同 caption 權重;撤銷 v3 fg-secondary) |
  * | Cell gap(水平 + 垂直)| 4px(gap-1) |
  * | Day cell size | h-field-sm w-[var(--field-height-sm)](28×28 md / 32×32 lg) |
  * | Day button | rounded-full 填滿 cell |
@@ -200,8 +204,8 @@ export const dateGridMeta = {
   },
   states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-disabled', 'bg-primary', 'bg-primary-hover', 'bg-transparent'],
-    fg: ['text-fg-disabled', 'text-fg-muted', 'text-fg-secondary', 'text-foreground'],
+    bg: ['bg-disabled', 'bg-neutral-selected', 'bg-on-emphasis', 'bg-primary', 'bg-primary-hover', 'bg-transparent'],
+    fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground', 'text-on-emphasis'],
     ring: ['ring-primary', 'ring-ring'],
   },
 } as const

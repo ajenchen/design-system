@@ -45,10 +45,10 @@ export const UsageGuidance: Story = {
         <div className="prose prose-sm max-w-prose mb-8">
           <p>適合 TreeView 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           <ul className="space-y-1">
-            <li><LinkTo kind="Design System/Components/TreeView/展示" name="File Browser"><span className="text-primary hover:underline font-medium cursor-pointer">File Browser</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/TreeView/展示" name="Stepper"><span className="text-primary hover:underline font-medium cursor-pointer">Stepper</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/TreeView/展示" name="檔案瀏覽"><span className="text-primary hover:underline font-medium cursor-pointer">檔案瀏覽</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/TreeView/展示" name="步驟引導"><span className="text-primary hover:underline font-medium cursor-pointer">步驟引導</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/TreeView/展示" name="多選"><span className="text-primary hover:underline font-medium cursor-pointer">多選</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/TreeView/展示" name="長 標籤"><span className="text-primary hover:underline font-medium cursor-pointer">長 標籤</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/TreeView/展示" name="長標籤"><span className="text-primary hover:underline font-medium cursor-pointer">長標籤</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/TreeView/展示" name="拖曳重排"><span className="text-primary hover:underline font-medium cursor-pointer">拖曳重排</span></LinkTo></li>
           </ul>
           <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
@@ -146,7 +146,7 @@ export const ExpandSelectSeparationRule: Story = {
 }
 
 export const IndentRule: Story = {
-  name: '縮排 與 欄 節奏',
+  name: '縮排與欄位節奏',
   render: () => (
     <div>
       <Rule
@@ -170,7 +170,7 @@ export const IndentRule: Story = {
       </Rule>
 
       <Rule
-        title="Chevron / Icon placeholder 保留對齊"
+        title="Chevron placeholder 保留對齊"
         note="同層 siblings 有展開 icon、有的沒有 → label 不對齊。TreeView 自動給葉節點留 chevron 位置(透明 placeholder),consumer 不需介入"
       >
         <div className="border border-border rounded-lg p-3 w-80">

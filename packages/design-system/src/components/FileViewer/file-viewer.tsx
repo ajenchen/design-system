@@ -39,11 +39,13 @@ import {
   buildFadeMask,
   OverflowScrollArrow,
 } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
+import { useControllable } from '@/design-system/hooks/use-controllable'
 import { ImageRenderer, canRenderImage } from './image-renderer'
 import type {
   FileInfo,
   FileRenderer,
   FileRendererCapabilities,
+  FileRendererProps,
 } from './file-viewer-types'
 
 /**
@@ -79,20 +81,30 @@ import type {
  * Fallback renderer — 無 renderer 能處理時兜底。
  * 顯示 Empty 佈局:icon + 檔名 + 「請下載檢視」提示。
  */
-const FallbackRenderer: React.FC<{ file: FileInfo }> = ({ file }) => (
-  <div className="w-full h-full flex items-center justify-center p-8">
-    <Empty
-      icon={FileText}
-      title={file.name}
-      description={`無法在瀏覽器中預覽此檔案類型（${file.mimeType || 'unknown'}）。請下載後檢視。`}
-    />
-  </div>
-)
+const FallbackRenderer: React.FC<FileRendererProps> = ({ file, onCapabilitiesChange }) => {
+  // Contract(file-viewer-types.ts `onCapabilitiesChange` doc):「第一個 renderer mount
+  // 時必須 emit」。fallback 不支援 zoom → emit { zoom: false };不 emit 的話 shell 會沿用
+  // 上一個 renderer 的 capability(image → 未知檔切換時 toolbar 殘留 zoom controls,
+  // `+`/`-`/`0`/`F` 快捷鍵也會對不支援 zoom 的檔案生效)。同 image-renderer.tsx mount emit pattern。
+  React.useEffect(() => {
+    onCapabilitiesChange({ zoom: false })
+  }, [onCapabilitiesChange])
+
+  return (
+    <div className="w-full h-full flex items-center justify-center p-8">
+      <Empty
+        icon={FileText}
+        title={file.name}
+        description={`無法在瀏覽器中預覽此檔案類型（${file.mimeType || 'unknown'}）。請下載後檢視。`}
+      />
+    </div>
+  )
+}
 
 const fallbackRenderer: FileRenderer = {
   id: 'fallback',
   canRender: () => true,
-  component: ({ file }) => <FallbackRenderer file={file} />,
+  component: FallbackRenderer,
 }
 
 const imageRenderer: FileRenderer = {
@@ -729,7 +741,7 @@ export interface FileViewerProps
 const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function FileViewer({
   files,
   initialIndex = 0,
-  open,
+  open: openProp,
   defaultOpen,
   onOpenChange,
   index: indexProp,
@@ -746,6 +758,18 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
     () => ({ ...DEFAULT_LABELS, ...labelsOverride }) satisfies Required<FileViewerLabels>,
     [labelsOverride],
   )
+  // Open:受控/非受控雙模式鏡像(消費 DS useControllable;select-menu.tsx 2026-06-11 同修先例)。
+  // 原本 keyboard shortcuts effect 與 index-reset effect 直接讀 `open` prop ——
+  // uncontrolled(defaultOpen)場景 open === undefined,兩 effect 永遠不啟動(快捷鍵全失效
+  // + 重開不重置 index),Toolbar X / backdrop click 的 onOpenChange?.(false) 也是 no-op。
+  // 鏡像後 effect / close 都走 mirror:controlled 時純 passthrough,
+  // uncontrolled 時 internal state 為準 + onOpenChange 僅通知。
+  const [open, setOpen] = useControllable<boolean>({
+    value: openProp,
+    defaultValue: defaultOpen ?? false,
+    onChange: onOpenChange,
+  })
+
   // Index:uncontrolled fallback
   const [internalIndex, setInternalIndex] = React.useState(initialIndex)
   const activeIndex = indexProp ?? internalIndex
@@ -877,8 +901,10 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
   const showFilmstripResolved = showFilmstrip && files.length > 1
   const showArrows = files.length > 1
 
+  // Root 永遠餵 mirror(Radix 視角 controlled);uncontrolled 的 defaultOpen 由
+  // useControllable internal state 承載,Radix Esc / dismiss 經 setOpen 同步回 mirror。
   return (
-    <DialogPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
       <DialogPrimitive.Portal>
         {/* Overlay — FileViewer 固定深色氛圍,與 Dialog 共用 bg-overlay。
             **data-theme="dark"**(2026-04-30):Overlay 在 Portal 內、是 Content 的 sibling,
@@ -934,7 +960,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
               onInfoToggle={() => setInfoOpen((o) => !o)}
               onDownload={handleDownload}
               allowDownload={allowDownload}
-              onClose={() => onOpenChange?.(false)}
+              onClose={() => setOpen(false)}
               labels={labels}
             />
 
@@ -963,8 +989,8 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
                     const r = img.getBoundingClientRect()
                     if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) return
                   }
-                  // 否則 = 點到 backdrop(image-renderer TransformComponent 透出的 bg-canvas)→ close
-                  onOpenChange?.(false)
+                  // 否則 = 點到 backdrop(outer 不設 bg,半透明 bg-overlay 透出 — 見 Q1 註解)→ close
+                  setOpen(false)
                 }}
               >
                 {showArrows && activeIndex > 0 && (
@@ -1056,7 +1082,7 @@ export const fileViewerMeta = {
   },
   states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-muted', 'bg-surface', 'bg-surface-raised'],
+    bg: ['bg-muted', 'bg-overlay', 'bg-surface-raised'],
     fg: ['text-fg-muted', 'text-foreground'],
     ring: ['ring-primary', 'ring-ring'],
   },

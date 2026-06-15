@@ -296,7 +296,7 @@ export const TriggerShowcase: Story = {
       </div>
 
       <div className="text-footnote text-fg-muted">
-        建議 delay:消費 <code className="font-mono mx-1">HOVER_DELAY_RICH_MS / HOVER_DELAY_CLOSE_MS</code> SSOT
+        預設 delay 已內建(<code className="font-mono mx-1">HOVER_DELAY_RICH_MS / HOVER_DELAY_CLOSE_MS</code> SSOT),特殊 tier 才需 override
         (motion.spec.md,當前 700ms / 200ms)——避免 hover 過路誤觸發 fetch waterfall;close 延遲讓 user 誤滑出可回來。
       </div>
     </div>

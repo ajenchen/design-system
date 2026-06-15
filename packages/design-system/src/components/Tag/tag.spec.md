@@ -139,7 +139,16 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 
 ## Solid 模式
 
-`solid` boolean prop，預設 false。開啟後使用 step-6 全色背景 + 白色前景，適合需要更強視覺權重的場景（狀態標記、重點標籤）。
+`solid` boolean prop，預設 false。開啟後使用 step-6 全色背景 + on-emphasis 配對前景（yellow / amber / orange / lime 用深字，詳下「Solid 文字色規則」），適合需要更強視覺權重的場景（狀態標記、重點標籤）。
+
+### Subtle vs Solid 選用準則(2026-06-11 user 拍板補,M8 benchmark)
+
+| 場景 | 用 | 理由 |
+|---|---|---|
+| 被動分類 / 屬性標示(列表標籤、檔案類型、多 Tag 並排掃視)| **subtle**(預設)| 大量並排時低視覺噪音;對齊 Ant Tag filled 預設(淡底)、Atlassian Lozenge default(非 bold)|
+| 高訊號狀態(當前工作流狀態、需立即辨識的單一重點、選取/啟用態區分)| **solid** | 一眼鎖定;對齊 Ant Tag solid「更濃郁視覺」([ant.design/components/tag](https://ant.design/components/tag))、Atlassian Lozenge `isBold` 強調態([atlassian.design/components/lozenge](https://atlassian.design/components/lozenge),search-only confidence)、Carbon selectable tag 必 high-contrast 區分 selected([carbondesignsystem.com/components/tag/usage](https://carbondesignsystem.com/components/tag/usage/),search-only confidence)|
+
+**經驗法則**:一個視圖內 solid Tag 應是少數(≤1 類);整排都 solid = 全部都重點 = 沒有重點。
 
 ### Subtle vs Solid 色彩對照
 
@@ -228,7 +237,8 @@ Inline Action 的其他規則（尺寸、hover 背景 pattern）不變。
 | `icon` | `LucideIcon` | 左側 icon，Tag 統一 16px。與 avatar 互斥 |
 | `avatar` | `ReactNode` | 左側 avatar。與 icon 互斥 |
 | `onRemove` | `() => void` | 可移除——Tag 自動渲染 remove 按鈕並控制尺寸與互動樣式(從集合移除 item) |
-| `solid` | `boolean` | 深底白字模式（step-6 背景 + 白色前景，yellow 例外），預設 false |
+| `solid` | `boolean` | 深底配對前景模式（step-6 背景；yellow/amber/orange/lime 用深字，其餘白字），預設 false |
+| `unbounded` | `boolean` | 預設 false = 寬度 cap 160px;true = 寬度交給 parent constrain（cell-as-input narrow cell 場景），詳「邊界案例」 |
 
 ## 圓角
 
@@ -248,14 +258,22 @@ Field 內包含 Tag 時，Field 的 padding 改為 `(field-height - tag-height) 
 
 傳入 `onRemove` callback 時，Tag 自動渲染 remove 按鈕。消費端不需要自行建構 remove 按鈕或知道 inline action 的尺寸規格。
 
-尺寸 / 互動規則共用 SSOT 見 `../../patterns/element-anatomy/item-anatomy.spec.md`「Inline Action 設計規格」段落。
+尺寸 / 互動規則共用 SSOT 見 `../../patterns/element-anatomy/inline-action.spec.md`(獨立 SSOT,2026-04-24 自 item-anatomy 抽出)。
 
-**Icon 色彩特例（colored host)**：Tag dismiss icon **繼承 Tag 文字色**（非 `fg-muted`）— Tag 屬「colored host」分類。完整兩支規則（neutral host vs colored host）見上述 item-anatomy.spec.md SSOT。詳細每 variant 的 icon 色 + hover 背景見上面「Dismiss 行為（Inline Action 客製）」段（141-149 行）。
+**Icon 色彩特例（colored host)**：Tag dismiss icon **繼承 Tag 文字色**（非 `fg-muted`）— Tag 屬「colored host」分類。完整兩支規則（neutral host vs colored host）見上述 item-anatomy.spec.md SSOT。詳細每 variant 的 icon 色 + hover 背景見上面「Dismiss 行為（Inline Action 客製）」段。
 
 | Tag size | Icon | Hover 背景 | 上下呼吸空間 |
 |---|---|---|---|
 | sm (20px) | 16px | 18px | 1px |
 | md/lg (24px) | 16px | 18px | 3px |
+
+---
+
+## 邊界案例
+
+- **極長文字**:預設寬度 cap 160px(`max-w-40` 等效),超出時文字 truncate ellipsis + **自動包 Tooltip 顯示全文**(Canvas measureText 偵測截斷);`unbounded=true` 時 cap 改由 parent 注入寬度 constrain。
+- **Dark mode**:subtle 底(step-1 alpha 公式)/ step-7 文字自動高對比,solid 對比由 `categorical-color-invariants.mjs` I4 機械驗——皆 primitives 層處理,Tag 不 own dark token(見 `color.spec.md`)。
+- **Disabled / Loading**:Tag 為純顯示 indicator,無此二 state(見「為何無 StateBehavior」);需互動 state → `Chip`。
 
 ---
 
@@ -274,7 +292,7 @@ Field 內包含 Tag 時，Field 的 padding 改為 `(field-height - tag-height) 
 Tag 是**純顯示 indicator**(非互動 — 見「與 Button 的差異」段),本身**無互動狀態**:
 
 - 無 hover / focus / active / selected / disabled——Tag 是 Family 3 indicator variant(非 Pill button)。若要 hover / selected 語意,改用 `Chip`(可互動版本)。
-- 僅有的「行為」是 remove(`onRemove` callback 觸發,Tag 本身不管 remove 動畫),close icon 的 hover 狀態屬 Inline Action pattern(item-anatomy.spec.md「Inline Action 設計規格」SSOT),非 Tag 自有。
+- 僅有的「行為」是 remove(`onRemove` callback 觸發,Tag 本身不管 remove 動畫),close icon 的 hover 狀態屬 Inline Action pattern(`inline-action.spec.md` 獨立 SSOT),非 Tag 自有。
 
 對應 anatomy story:保留 `Overview` + `Inspector` + `ColorMatrix`(variant solid/subtle) + `SizeMatrix`。互動狀態 → 改用 Chip(見「與 Button 的差異」段)。
 
@@ -301,4 +319,6 @@ Tag 是**純視覺 indicator**(非互動 control,互動版本是 Chip),預設 AR
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `avatar.spec.md`
+- `badge.spec.md`
 - `overflow-indicator.spec.md`

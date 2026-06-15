@@ -55,8 +55,9 @@ export interface ChromeHeaderProps
    * Tabs row slot(2026-05-18 加 per W2/W4 真實能用 + user-mandated fix)。
    * 提供時 ChromeHeader 自動 column 結構:
    *   row 1 = children(h-chrome-header-height 固定,px-loose,跟 single-row 模式同)
-   *   row 2 = tabsSlot 包在 `<div px-loose border-b border-divider>`
-   *           ↑ wrapper 提供 W2 padding inheritance + W1 全寬 paint(一條線)
+   *   row 2 = tabsSlot 包在 `HEADER_TABS_SLOT_WRAPPER_CLASS` wrapper
+   *           (`[&>[role=tablist]]:w-full` + 注入 TabsList 內 px-loose;wrapper 本身
+   *           無 padding 無 border——border 由 TabsList 自畫,W1 全寬 paint 一條線)
    *
    * Consumer 傳:`tabsSlot={<TabsList>...</TabsList>}`,TabsContent 放 ChromeHeader 之外。
    * Standalone Tabs(無 chrome header)該直接用 `<TabsList>` 不需 wrapper。

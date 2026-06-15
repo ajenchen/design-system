@@ -45,7 +45,7 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
     disabled: { bg: 'transparent',    text: '--fg-disabled',  border: 'transparent' },
   },
   readonly: {
-    default:  { bg: '--bg-disabled',  text: '--foreground',   border: 'transparent' },
+    default:  { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
     hover:    { bg: '--bg-disabled',  text: '--foreground',   border: 'transparent' },
     focus:    { bg: '--bg-disabled',  text: '--foreground',   border: 'transparent' },
     error:    { bg: '--bg-disabled',  text: '--foreground',   border: 'transparent' },
@@ -254,8 +254,8 @@ export const Overview = {
                 ['precision', 'number', '—', '小數位數'],
                 ['locale', 'string', "'en-US'", '數字格式 locale'],
                 ['endAction', 'InlineActionConfig', '—', '右側 inline action（宣告式 API）'],
-                ['disabled', 'boolean', 'false', '原生屬性，自動覆蓋 mode 為 disabled'],
-                ['readOnly', 'boolean', 'false', '原生屬性，自動覆蓋 mode 為 readonly'],
+                ['disabled', 'boolean', 'false', '原生屬性；mode 未顯式指定時解析為 disabled（顯式 mode prop 永遠最優先，useResolvedFieldMode SSOT）'],
+                ['readOnly', 'boolean', 'false', '原生屬性；mode 未顯式指定且無 Field context mode 時解析為 readonly（優先序 mode > 有效 disabled > fieldCtx.mode > readOnly）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -760,7 +760,7 @@ export const StateBehavior = {
                   ['type="text" inputMode="decimal"', '用 text 而非 number，避免瀏覽器 spinner 干擾'],
                   ['空字串 / "-" → onChange(null)', '清空或只剩負號時回傳 null'],
                   ['NaN 忽略', '非數字輸入不觸發 onChange'],
-                  ['disabled / readOnly 原生屬性覆蓋 mode', 'disabled → mode="disabled", readOnly → mode="readonly"'],
+                  ['disabled / readOnly 參與 mode 推導', 'mode 未顯式指定時：有效 disabled → "disabled"；readOnly 排在 Field context mode 之後 → "readonly"（顯式 mode prop 永遠最優先，useResolvedFieldMode）'],
                 ].map(([rule, desc]) => (
                   <tr key={rule}><Td mono>{rule}</Td><Td>{desc}</Td></tr>
                 ))}

@@ -96,9 +96,9 @@ Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快
 | **`BreadcrumbLink`（可點擊）預設** | `text-fg-secondary` | neutral-8, 提示「可互動但非焦點」 |
 | **`BreadcrumbLink` hover** | **`text-primary-hover`** | 藍字 + `transition-colors duration-150`，明確回饋「點這個會有動作」 |
 | **`BreadcrumbPage`（當前）** | `text-foreground`（不加粗）| neutral-9 深色區分於 fg-secondary 的 links，但**不加粗**——加粗會讓 breadcrumb 最右端視覺過重，破壞「你從哪來 → 你在這」的流動感 |
-| **`BreadcrumbSeparator`** | `text-fg-muted` + `ChevronRight` size=`BREADCRUMB_ICON_SIZE[size]`(`breadcrumb.tsx:134` SSOT,sm/md=16, lg=20) | 視覺降噪,separator 不搶焦點;對齊 `uiSize.spec.md` Icon Size Tier(2026-05-18 retire 過去 14) |
-| **`BreadcrumbEllipsis`** | `text-fg-muted` + `MoreHorizontal`，icon **固定 16px**（消費 `ItemInlineActionButton` 並硬傳 `size="md"`，不隨 BreadcrumbList size 變化）| Breadcrumb 不在 RowSizeProvider 樹內，固定 md tier（16px icon + 18px hover bg，對齊 inline-action.spec.md 尺寸表）|
-| **`BreadcrumbLink` / `BreadcrumbPage` `startIcon`**(2026-05-20 ship)| `<Icon size={BREADCRUMB_ICON_SIZE[size]} aria-hidden />`(sm/md=16, lg=20)| 首項 Home icon 業界慣例(Material / Atlassian)。Consumer 只傳 `LucideIcon`,DS 統一管 size 消費 BREADCRUMB_ICON_SIZE SSOT — 對齊 `uiSize.spec.md` Icon Size Tier,**禁 consumer 傳 size prop**(避免再次 14 / 20 等寫死 drift)|
+| **`BreadcrumbSeparator`** | `text-fg-muted` + `ChevronRight`,尺寸消費 `BREADCRUMB_ICON_SIZE`(`breadcrumb.tsx` SSOT,對齊 `uiSize.spec.md` Icon Size Tier)| 視覺降噪,separator 不搶焦點 |
+| **`BreadcrumbEllipsis`** | `text-fg-muted` + `MoreHorizontal`,消費 `ItemInlineActionButton` 固定 `size="md"`(不隨 BreadcrumbList size 變化)| 尺寸 SSOT 在 `inline-action.spec.md` 尺寸表;固定 md 的理由詳 `breadcrumb.tsx` |
+| **`BreadcrumbLink` / `BreadcrumbPage` `startIcon`** | `<Icon size={BREADCRUMB_ICON_SIZE[size]} aria-hidden />` | 首項 Home icon 業界慣例(Material / Atlassian)。Consumer 只傳 `LucideIcon`,DS 統一管 size 消費 BREADCRUMB_ICON_SIZE SSOT — 對齊 `uiSize.spec.md` Icon Size Tier,**禁 consumer 傳 size prop**(避免寫死 drift)|
 
 ## 對齊既有設計語言
 
@@ -168,26 +168,21 @@ Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快
 | `BreadcrumbSeparator` | **0** | 永遠完整(否則 path 視覺斷裂)|
 
 **為何 flex-shrink hierarchy 不用 fixed max-width**:
-- 容器寬 / items 少 → 各 item 自然寬度,**不浪費剩餘空間**(回應 user 質疑)
+- 容器寬 / items 少 → 各 item 自然寬度,**不浪費剩餘空間**
 - 容器窄 / items 多 → 按 priority 縮(root 先 → middle → current 最後)
 - 都縮到 `min-w-0` 後 CSS `truncate` 開啟 + Tooltip 補完整文字
-- Root **也會** truncate(shrink:3 縮最積極)— 不是 `shrink-0`(回應 user 質疑)
+- Root **也會** truncate(shrink:3 縮最積極)— 不是 `shrink-0`
 
-**Truncate-on-overflow + tooltip canonical**(per `tooltip.principles.stories.tsx:190`):
-- 每 BreadcrumbLink / BreadcrumbPage 內部 wrap `<TruncatedLabel>`(同 `data-table.tsx:339 TruncateCell` + `tag.tsx:138 isTruncated` SSOT pattern)
-- Shared ResizeObserver 偵測 `scrollWidth > clientWidth` → `<Tooltip>` wrap
-- 只在實際 truncate 時才顯 Tooltip(per tooltip canonical)— 沒被截斷不顯
-- **TODO**(Rule-of-3):breadcrumb / data-table / tag 三處同 idiom,future 抽 `patterns/element-anatomy/truncated-text.tsx` 共用 SSOT
+**Truncate-on-overflow + tooltip canonical**(消費 Tooltip「資訊補救」canonical,見 `tooltip.principles.stories.tsx`):
+- 每 BreadcrumbLink / BreadcrumbPage 內部 wrap `<TruncatedLabel>` — 與 DataTable `TruncateCell` / Tag truncate 同一 idiom(偵測機制詳 `breadcrumb.tsx`)
+- 只在實際 truncate 時才顯 Tooltip — 沒被截斷不顯
 
 世界級對照:
-- **Material UI**:`maxItems=8` declarative auto-collapse(source verified,**no per-item width rule**)
-- Notion / Linear / GitHub / Atlassian per-item width 策略:**unverified**(WebFetch + web search 無法取得 source / docs)。本 DS 設計基於 DS internal SSOT(`TruncateCell` + `Tag truncate` + `Tooltip canonical`)+ first-principles flex-shrink hierarchy 回應 user 兩 challenges(root 也 truncate / 不浪費空間)。
-
-世界級對照:
-- **Material UI**:`maxItems=8` + auto-collapse(declarative)
+- **Material UI**:`maxItems=8` declarative auto-collapse(source verified,no per-item width rule)
 - **Polaris**:點 ⋯ DropdownMenu 展開
 - **Atlassian**:中段 ⋯ + dropdown
 - **GitHub / Notion / Linear / Apple Finder**:auto truncate 中段
+- Per-item width(flex-shrink hierarchy)無世界級 source 可考(**unverified**)— 本 DS 自有設計,依據詳上方「為何 flex-shrink hierarchy 不用 fixed max-width」
 
 ## Title-breadcrumb-end 同步 canonical(2026-05-10 新增)
 
@@ -204,21 +199,31 @@ Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快
 
 ---
 
+## 邊界案例
+
+- **空值**:`items={[]}` 渲染空容器、空 label 渲染空節點(元件皆不 guard)— 單一層級本就禁用 Breadcrumb(見禁止事項),consumer 應條件性不渲染
+- **中段項無 `href`**:declarative mode 僅末位自動轉 `BreadcrumbPage`;中段項無 `href` 仍渲染 `BreadcrumbLink`(輸出無 `href` 的 `<a>`,不可 focus / 不可導覽)
+- **Loading / Error**:本元件無 loading / error state — 純 sync 展示元件;async 路徑載入時 consumer 以 Skeleton 取代整條(對齊 Steps 同類處理),路徑解析失敗的降級由 consumer own
+- **多語言長字串**:truncate 為 CSS 字元級裁切,不分語言(中英同規則),完整文字由 Tooltip 補(見 truncate canonical)
+- **RTL**:未實作方向鏡像(separator 固定 `ChevronRight`,flex-shrink hierarchy 以 LTR 設計);RTL 屬 DS-wide 決策,未定
+
+---
+
 ## 禁止事項
 
 - ❌ **不用 `/` 字元作分隔**——用 `ChevronRight` icon。`/` 是文字字元，跟文字對齊不穩、顏色綁 text、screen reader 會讀出「斜線」
 - ❌ **最後一項不可是 `BreadcrumbLink`**——最後一項代表當前頁，無處可點。必須用 `BreadcrumbPage`
-- ❌ **Breadcrumb 不做頁面切換動作的「back 按鈕」**——back 的語意是「上一步瀏覽歷史」不是「上一層階層」，兩者不同。Back 用 Button 或瀏覽器原生
-- ❌ **不得在 Breadcrumb 裡嵌入複雜互動元素**（dropdown、search、avatar picker）——breadcrumb 是「位置指示器」，塞功能會變 nav bar
+- ❌ **Breadcrumb 不做頁面切換動作的「back 按鈕」**——back 的語意是「上一步瀏覽歷史」不是「上一層階層」，兩者目的地可能不同（從搜尋結果直接進深層頁時，back 回搜尋結果＝歷史，breadcrumb 上一層回 parent＝階層）。Back 用 Button 或瀏覽器原生
+- ❌ **不得在 Breadcrumb 裡嵌入複雜互動元素**（dropdown、search、avatar picker）——使用者對 breadcrumb 的心智模型是「每個節點都是回上層的連結」，混入查詢 / 選擇功能會打斷路徑掃讀，breadcrumb 就變成 nav bar（`BreadcrumbEllipsis` 展開折疊路徑的選單屬路徑導覽本身、是本 spec 既定 canonical，非此禁令範圍——禁令指 consumer 自嵌的業務 dropdown / search）
 - ❌ **不得覆寫 `BreadcrumbLink` 的 hover 色彩**——`primary-hover` 是全系統的「互動高亮」canonical，覆寫破壞語言一致性
 - ❌ **不得把 Breadcrumb 拿來當 sidebar 或 top nav 替代**——breadcrumb 只顯示當前路徑，不展示 sibling 選項
 - ❌ **單一層級頁面不要放 Breadcrumb**——「首頁」一個 item 沒導覽價值，造成視覺噪音
 
 ---
 
-## 為何無 Inspector
+## anatomy story 結構
 
-Breadcrumb 決策維度是 collapse 策略 × size × 當前頁狀態,已在 `CollapseMatrix` / `SizeMatrix` / `ColorMatrix` / `StateBehavior` / 元件特有 `UsageExamples` 五張結構矩陣 + 真實場景完整覆蓋。互動 Inspector(切換 size / truncate)無法呈現「路徑深度 + 斷點」這類真實場景決策——`UsageExamples` 展示實際業務路徑更直接。
+互動 `Inspector`(切 `size` / `showHomeIcon` / `pathLength` / `maxItems` / collapse 設定,即時看路徑深度 × 折疊行為)搭配 `CollapseMatrix` / `SizeMatrix` / `ColorMatrix` / `StateBehavior` / 元件特有 `UsageExamples` 結構矩陣 + 真實場景,完整覆蓋 collapse 策略 × size × 當前頁狀態的決策維度。
 
 ColorMatrix 已建:展示 BreadcrumbLink / Page / Separator / Ellipsis 四種節點的 default / hover / focus 色彩矩陣,採 fg-muted → fg-secondary → foreground 的階層策略(對齊 GitHub / Notion / Linear)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
@@ -241,7 +246,7 @@ ColorMatrix 已建:展示 BreadcrumbLink / Page / Separator / Ellipsis 四種節
 - Tab — 逐個 link 導覽
 - Enter — navigate
 
-**Focus**:聚焦時顯示 visible ring;`BreadcrumbLink` 用 `focus-visible:ring-2 ring-ring ring-offset-1`（box-shadow ring，對齊全系統 focus-visible canonical，見上方互動狀態段 L118），`BreadcrumbEllipsis` 按鈕（消費 `ItemInlineActionButton`）用 `focus-visible:outline-2 outline-ring`。連結逐個依序成為 tab stop,不攔截焦點(無 focus trap — breadcrumb 是序列式導覽,trap 反而是無障礙 bug)。
+**Focus**:聚焦時顯示 visible ring;`BreadcrumbLink` 用 `focus-visible:ring-2 ring-ring ring-offset-1`（box-shadow ring，對齊全系統 focus-visible canonical，見上方「互動狀態」段），`BreadcrumbEllipsis` 按鈕（消費 `ItemInlineActionButton`）用 `focus-visible:outline-2 outline-ring`。連結逐個依序成為 tab stop,不攔截焦點(無 focus trap — breadcrumb 是序列式導覽,trap 反而是無障礙 bug)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
@@ -250,9 +255,4 @@ ColorMatrix 已建:展示 BreadcrumbLink / Page / Separator / Ellipsis 四種節
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `app-shell.spec.md`
-
-## 被引用(auto-maintained,Dim 3 reciprocal audit)
-
-> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
-
 - `steps.spec.md`

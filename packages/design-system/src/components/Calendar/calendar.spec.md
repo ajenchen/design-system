@@ -16,7 +16,7 @@ benchmark:
 
 ## 定位
 
-Calendar 是**事件檢視 canvas**,讓 user 以**月 / 週 / 日** 三種 view 瀏覽、定位、快速增減事件。對齊 Notion Calendar / Google Calendar / Fantastical / macOS Calendar 的事件檢視模型 <!-- @benchmark-unverified: closed-source product visual references, no public DS spec URL; visual sampling -->。
+Calendar 是**事件檢視 canvas**,讓 user 以**月 / 週 / 日** 三種 view 瀏覽、定位、快速增減事件(**MVP 僅實作月 view**,週 / 日 列後續增量,見「MVP vs 後續增量」)。對齊 Notion Calendar / Google Calendar / Fantastical / macOS Calendar 的事件檢視模型 <!-- @benchmark-unverified: closed-source product visual references, no public DS spec URL; visual sampling -->。
 
 **Layout Family**:**非 4-Family,屬 page-composite**(見 `patterns/element-anatomy/element-anatomy.spec.md`「Page-composite」段)。多區塊 layout(Toolbar / Grid / EventTile / SidePanel),各自 own 自己的 anatomy。
 
@@ -30,7 +30,7 @@ Calendar 是**事件檢視 canvas**,讓 user 以**月 / 週 / 日** 三種 view 
 | 元件 | 定位 | 互動模型 | 適用 Layout |
 |------|------|---------|------------|
 | `<DatePicker>` | **選日期**的 form control | 點 trigger → 浮層 Calendar → 選一個 → 回填 input | Field control(form 的一部分) |
-| `<Calendar>`(DayPicker 包裝) | DatePicker 的內部 calendar grid primitive | N/A(不直接消費) | Internal to DatePicker |
+| `<DateGrid>`(DayPicker 包裝,2026-04-21 自 Calendar 改名) | DatePicker 的內部 calendar grid primitive | N/A(不直接消費) | Internal to DatePicker |
 | **`<Calendar>`**(本元件) | **看事件**的 page-level canvas | 在月/週/日 view 中瀏覽 event、點 event 看詳情、拖拉新增 | Page layout(整個檢視頁面) |
 
 「User 需要選日期」 → DatePicker。「User 需要看本月會議 / 行程 / 截止日」 → **Calendar**。
@@ -63,6 +63,16 @@ Calendar 是**事件檢視 canvas**,讓 user 以**月 / 週 / 日** 三種 view 
 | 「選一個日期範圍」表單欄位 | `<DatePicker.Range>` | 同上 |
 | 時間 granularity 是時分秒的儀表板 | Timeline / Gantt chart | event calendar 的最小 granularity 是**時段**(15-60 分鐘),不是秒級 |
 | 單純事件**列表**(沒時間軸視覺需求) | `<DataTable>` / `<Empty>` | 列表是「linear」瀏覽,calendar 是「spatial」瀏覽 |
+| 跨日 span 排程視覺(bar 橫跨多欄) | Gantt / Timeline | 月 view 多日事件為每涵蓋日各一條 tile,非橫跨欄 span bar(見「Event tile 規則」) |
+
+## 常見誤解
+
+| 誤解 | 正解 |
+|------|------|
+| 「Calendar 是 DatePicker 的內部 grid」 | 那是 `DateGrid`(DayPicker 包裝);本元件是 page-level 事件 canvas(見「定位」分界表) |
+| 「多日事件渲染成橫跨多欄的長 bar」 | 月 view 為 per-cell 模型,每涵蓋日各一條 tile(見「Event tile 規則」) |
+| 「整月無事件要放 `<Empty>`」 | 空白即常態;需要提示由 consumer 外層自疊(見「狀態 > Empty」) |
+| 「傳 `view="week"` 就有週 view」 | MVP 只實作月 view,週 / 日為後續增量(見「狀態 > 邊界案例」) |
 
 ---
 
@@ -112,15 +122,15 @@ interface CalendarEvent {
 ├─────┼─────┼─────┼─────┼─────┼─────┼─────┼────────────────────┤
 │ 29* │ 30* │ 31* │  1  │  2  │  3  │  4  │   ← 月 grid row
 │     │     │     │event│event│     │event│
-│     │     │     │█mtg │▌vac │     │█dl  │      event tile / ▌=全天長條(左 accent)
+│     │     │     │█mtg │▌vac │     │█dl  │
 ├─────┼─────┼─────┼─────┼─────┼─────┼─────┤
 │  5  │  6  │  7  │  8  │  9  │ 10  │ 11  │
 │event│     │     │     │event│     │     │
 │█ret │     │     │     │█rev │     │     │
 └─────┴─────┴─────┴─────┴─────┴─────┴─────┴────────────────────┘
-
-*= prev/next month outside days(text-fg-disabled)
 ```
+
+圖例:`*` = 上 / 下月 outside days(弱化字色);`█` = 一般 event tile;`▌` = 全天事件(左 accent 條)。
 
 ### Cell 規則
 
@@ -133,9 +143,9 @@ interface CalendarEvent {
 
 ### Event tile 規則
 
-- **一般 event(timed)**:`{color}-subtle` 底色 + `{color}-text` 文字,圓角 + 緊湊 padding + truncate(單行)
-- **All-day event**(2026-06-01 補實作):淡底 tile + 左側實心 accent 條(`color-6`)+ `font-medium`,排在 cell 事件區頂端(`allDay` 事件排序在有時間事件之前);多日全天事件靠日期範圍 filter 在每個涵蓋日各顯示一條(非單一橫跨多欄的 grid-column span bar——month view per-cell 模型不做跨欄絕對定位)
-- **Hover tile**:用 `{color}-hover` 微暗化表示可點擊
+- **一般 event(timed)**:事件色相 subtle 底 + 對應文字色(消費 categorical-color SSOT,與 Tag / Avatar 共用 12 色相),單行 truncate
+- **All-day event**(2026-06-01 補實作):淡底 tile + 左側實心 accent 條 + 字重略強,排在 cell 事件區頂端(`allDay` 事件排序在有時間事件之前);多日全天事件靠日期範圍 filter 在每個涵蓋日各顯示一條(非單一橫跨多欄的 grid-column span bar——month view per-cell 模型不做跨欄絕對定位)
+- **Hover tile**:hover 微暗化表示可點擊
 - **超出 tile 限制**:每格最多顯示 3 筆事件,超出顯示「+N more」弱化計數文字(對齊 Google Calendar),目前不可點擊(點擊展開 popover 列表為後續增量)
 
 完整 cell + event tile 的 class / token 對照見 anatomy `ColorMatrix` story。
@@ -168,18 +178,27 @@ MVP 無內建 loading 狀態(無 `loading` prop / 無 Skeleton 分支)——even
 ### Error
 MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 consumer 在外層處理。後續增量擬在 toolbar 內顯示 inline error hint + retry button 且不 block 整個 calendar 顯示。
 
+### 邊界案例(MVP 實作現況)
+
+- **單格事件 > 3**:只渲染前 3 筆,其餘**不進 DOM**(鍵盤 / SR 不可達),以「+N more」弱化計數提示(不可點擊,展開 popover 為後續增量)
+- **極長事件標題**:tile 單行 truncate,不換行不撐高 cell
+- **跨月多日事件**:依日期範圍 filter,在每個涵蓋日各顯示一條(含 outside days 與翻月後的新月份)
+- **載入失敗 / 舊資料**:無內建 error 狀態(見上)——Calendar 照常渲染 consumer 當下傳入的 `events`,互動不自動禁用;是否 block 由 consumer 決定
+- **`view` 傳 `week` / `day`**:MVP 仍渲染月 grid;SegmentedControl 的週/日項 disabled(使用者無法切入),但受控 `value` 仍反映外部傳入值(`data-view` 同步)
+- **週末 / RTL**:MVP 無週末弱化(列後續增量)、無 RTL 專屬處理——週末 cell 行為與平日完全一致(event tile 照常顯示)
+
 ### a11y
-- Toolbar navigation 用 `<nav aria-label="calendar navigation">`
-- Month grid 用 `role="grid"`,每 cell `role="gridcell"`,日期用 ISO 格式 `aria-label="2026-04-03,3 個事件"`
+- Toolbar navigation 用 `<nav aria-label>`(預設 `行事曆月份導覽`,consumer 可由 `navAriaLabel` prop override)
+- Month grid 用 `role="grid"`,每 cell `role="gridcell"`(非互動容器 — button 語義禁互動後代,cell 內含事件 tile 不可自身為 button);日期數字為 `<button>`,ISO 格式 `aria-label="2026-04-03,3 個事件"`
 - Event tile `role="button"` + `aria-label`(事件標題,格式 `事件:{title}`)
-- Keyboard(MVP 實作現況):Tab 逐一 focus 每個日期格與其中的事件 tile;Enter / Space 啟用目前 focus 的事件 tile(觸發 `onEventClick`);toolbar 的 prev / 今天 / next / 檢視切換為標準可聚焦控件。方向鍵在格間移動、PageUp/Down 切月為後續增量(見「MVP vs 後續增量」),尚未實作
+- Keyboard:見文末「A11y 預設」(keyboard map SSOT,本節不重複)
 
 ---
 
 ## 禁止事項
 
 - ❌ 不用 `<DayPicker>` 為底層——DayPicker 是 form control 用,結構不適合 page-level event canvas
-- ❌ 不硬寫 month grid 為 `<table>`——用 CSS grid(月 view 可能跨 cell span event,table 不好 span)
+- ❌ 不硬寫 month grid 為 `<table>`——用 CSS grid(月 view 為 per-cell 模型不跨欄 span,見「Event tile 規則」;後續週 / 日 view 的 timeline / 拖拉增量需 grid 自由佈局,table 結構難擴充)
 - ❌ 不把 event 資料存在元件內部 state——event 是 consumer 責任,本元件是純 view
 - ❌ 不自動打開「新事件」表單——`onDateClick` / `onCreateEvent` 回調給 consumer 決定(避免強制開 Dialog UX)
 - ❌ 不重造 date math——用 `date-fns`
@@ -213,7 +232,7 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 ## Anatomy N/A rationale(偏離 canonical 5 的說明)
 
 - **無 `SizeMatrix`**:MVP 只支援 `view="month"` + 固定 `size="md"`,無多 size tier 可 matrix 對照。後續擴充 week / day view 時再補 SizeMatrix
-- **無 `StateBehavior`**:Calendar 是 page-composite canvas,本身無 `hover / focus / disabled` 狀態;互動狀態屬於內部 primitive(event tile / date cell),由 `<Button>` / `<DropdownMenu>` 等消費元件自己的 StateBehavior 負責
+- **`StateBehavior` 已存在**(today / outside month / 多事件 / event hover / empty cell):Calendar 本身無 `hover / focus / disabled` 互動 prop,但 cell / event tile 的視覺狀態由 anatomy `StateBehavior` story 列舉(對齊 calendar.anatomy.stories.tsx 檔頭 @anatomy-rationale)
 
 ---
 
@@ -230,15 +249,16 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 
 **Keyboard 行為(MVP 實作現況)**:
 
-- Tab — 逐一 focus 每個日期格與其中的事件 tile(每格為 native `<button>`)
-- Enter / Space — 啟用目前 focus 的事件 tile,觸發 `onEventClick`
+- Tab — 逐一 focus 每格的日期數字按鈕與其中的事件 tile(cell 為非互動 `role="gridcell"` 容器;滑鼠點 cell 空白處等同點日期,keyboard 走日期數字按鈕,功能等價。對齊 Google Calendar)
+- Enter / Space — 啟用目前 focus 的元素:日期數字按鈕觸發 `onDateClick`(native button activation),事件 tile 觸發 `onEventClick`
 - Toolbar 的 prev / 今天 / next / 檢視切換為標準可聚焦控件,Tab 可達
+- `renderEventTile` 自訂 tile:外層 wrapper 只掛 `onClick`(無 role / tabIndex / onKeyDown)——keyboard 可達性由 consumer 的自訂 tile 自行渲染 focusable element 提供(default tile 才內建 `role="button"` + tabIndex + Enter/Space);否則該 tile 僅滑鼠可點
 
 **Keyboard 後續增量(尚未實作,見「MVP vs 後續增量」)**:
 
 - ↑/↓/←/→ 在日期格間 roving 移動、PageUp/Down 切月、Shift+PageUp/Down 切年、Esc 關閉 — 隨週 / 日 view 增量一併補上 roving tabindex
+- 此為**已知 a11y gap(非發佈 blocker)**:方向鍵 roving 是 APG grid pattern 建議;MVP 所有互動元素皆 Tab 可達(鍵盤可操作性已滿足),驗證基準見下方「驗證」
 
-**Focus**:focus-visible ring 對齊 DS canonical(`outline: 2px solid var(--ring)`);日期格與事件 tile 皆有 ring。
+**Focus**:focus-visible ring 對齊 DS canonical(`outline: 2px solid var(--ring)`);日期數字按鈕與事件 tile 皆有 ring。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
-

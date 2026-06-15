@@ -348,10 +348,10 @@ export const chipMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'], // selected = data-[state=on](primary-hover);cva 無 active 樣式
   tokens: {
     bg: ['bg-surface'],
-    fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground'],
+    fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary-hover'],
     ring: ['ring-ring'],
   },
 } as const

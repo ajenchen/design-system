@@ -8,7 +8,7 @@ import { cva } from 'class-variance-authority'
 //   edit     — bg-surface, border, hover/focus 回饋(可編輯 input)
 //   display  — 純展示(無 input chrome、無 affordance);語意「read-only 內容,展示給人看」。
 //              對齊 Carbon read-only / PatternFly inline-edit hidden-input。
-//   readonly — bg-disabled(neutral-2), 無邊框, 文字正常色(input chrome 但鎖定)
+//   readonly — bg-readonly(neutral-2), 無邊框, 文字正常色(input chrome 但鎖定;token 獨立於 disabled)
 //   disabled — bg-disabled(neutral-2), 無邊框, 文字灰化
 //
 // 2 種視覺外殼(variant):
@@ -106,7 +106,7 @@ export const fieldWrapperStyles = cva(
       {
         mode: 'readonly',
         variant: 'default',
-        className: 'bg-disabled border border-transparent',
+        className: 'bg-readonly border border-transparent',
       },
       {
         // 2026-05-13 R3.5(per codex Q3 verdict + user 拍「想盡辦法 auto-handle prereq」):

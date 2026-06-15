@@ -150,7 +150,7 @@ const notionInlinePics: FileInfo[] = [
 ]
 
 export const NotionGallery: Story = {
-  name: 'Notion — 頁內配圖 相簿',
+  name: 'Notion — 頁內配圖相簿',
   render: () => {
     const [open, setOpen] = React.useState(false)
     const [startIdx, setStartIdx] = React.useState(0)
@@ -214,7 +214,7 @@ const figmaDesignFile: FileInfo[] = [
 ]
 
 export const FigmaDesignReview: Story = {
-  name: 'Figma — 單檔 縮放 聚焦',
+  name: 'Figma — 單檔縮放聚焦',
   render: () => {
     const [open, setOpen] = React.useState(false)
 
@@ -312,7 +312,7 @@ const eventPhotos: FileInfo[] = Array.from({ length: 6 }, (_, i) => ({
 }))
 
 export const EventPhotosCollection: Story = {
-  name: '活動相集 — 縮圖膠卷 開',
+  name: '活動相集 — 縮圖膠卷展開',
   render: () => {
     const [open, setOpen] = React.useState(false)
     const [index, setIndex] = React.useState(0)

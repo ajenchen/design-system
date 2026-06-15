@@ -1,4 +1,8 @@
 "use client"
+/**
+ * @internal — DS-internal 單元(per `.claude/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
+ * 不進 root barrel front-door;由 SelectMenu(搜尋式選單引擎)等 DS 元件 wrap 消費,end-user app 請用 wrapper 元件。
+ */
 
 import * as React from "react"
 import { type DialogProps } from "@radix-ui/react-dialog"
@@ -25,9 +29,10 @@ const Command = React.forwardRef<
 Command.displayName = CommandPrimitive.displayName
 
 const CommandDialog = ({ children, ...props }: DialogProps) => {
-  // M2 verified 2026-04-25(cmdk/dist/index.js source):cmdk 於 DOM 上 emit
-  // `cmdk-group-heading=""` / `cmdk-group=""` / `cmdk-input-wrapper=""` / `cmdk-input=""` /
-  // `cmdk-item=""` attributes,下列 `[&_[cmdk-*]]:` attribute selectors 皆有對應真實 DOM。
+  // M2 verified 2026-04-25 / 2026-06-11 更正歸因(cmdk/dist source):cmdk 於 DOM 上 emit
+  // `cmdk-group-heading=""` / `cmdk-group=""` / `cmdk-input=""` / `cmdk-item=""` attributes;
+  // `cmdk-input-wrapper=""` 非 cmdk emit — 是本檔 CommandInput 自設的 wrapper div attribute(shadcn 慣例)。
+  // 下列 `[&_[cmdk-*]]:` attribute selectors 皆有對應真實 DOM。
   return (
     <Dialog {...props}>
       <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]">

@@ -34,7 +34,7 @@ const COLOR_MAP: Record<ModeKey, Partial<Record<StateKey, ColorSpec>>> = {
     default:  { bg: 'transparent',    text: '--foreground',  border: 'transparent',     placeholder: '--fg-muted' },
   },
   readonly: {
-    default:  { bg: '--bg-disabled',  text: '--foreground',  border: 'transparent',     placeholder: '--fg-muted' },
+    default:  { bg: '--bg-readonly',  text: '--foreground',  border: 'transparent',     placeholder: '--fg-muted' },
   },
   disabled: {
     default:  { bg: '--bg-disabled',  text: '--fg-disabled', border: 'transparent',     placeholder: '--fg-disabled' },
@@ -59,7 +59,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
 const MODE_DESC: Record<ModeKey, string> = {
   edit:     '表單可編輯欄位 — bg-surface + border + hover/focus 回饋',
   display:  '純展示資料 — 無 chrome（transparent）+ 文字正常色，空值顯示 —（em dash）',
-  readonly: '不可編輯但可見 — bg-disabled(neutral-2) + 無邊框 + 文字正常色',
+  readonly: '不可編輯但可見 — bg-readonly(neutral-2) + 無邊框 + 文字正常色',
   disabled: '被停用的欄位 — bg-disabled(neutral-2) + 無邊框 + 文字灰化',
 }
 
@@ -241,9 +241,9 @@ export const Overview = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'mode 未顯式指定時，由 native readOnly/disabled fallback 推導（最低優先序；顯式 mode prop / fieldCtx.mode 勝出）'],
+                ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'mode 未顯式指定時依序推導：有效 disabled（prop 或 <Field disabled>）→ fieldCtx.mode → native readOnly → edit；顯式 mode prop 永遠最優先（field-context.ts useResolvedFieldMode）'],
                 ['variant', "'default' | 'bare'", "'default'", '視覺 chrome（正交於 mode）；bare = 透明、hover/focus 才出現 border，用於 toolbar inline editing'],
-                ['error', 'boolean', 'false', '紅色邊框 + aria-invalid，僅 edit 模式生效'],
+                ['error', 'boolean', 'false', '紅色邊框僅 edit 模式生效；aria-invalid 不分 mode（readonly / disabled 渲染的 input 同樣帶）'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '高度與字體，與 Button 共用 field-height token'],
                 ['startIcon', 'LucideIcon', '—', '左側靜態 icon，fg-muted，pointer-events-none'],
                 ['endAction', 'InlineActionConfig', '—', '右側 inline action（宣告式 API），僅 edit 模式渲染；loading=true 或傳 endSlot 時被覆蓋'],

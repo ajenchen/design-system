@@ -35,10 +35,11 @@ export { PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS, getPeoplePickerTagWrapperClass }
 // **2026-05-07 v15.6 SSOT 重構 v2**:
 //
 //   - **single mode** wraps `<Select searchable selectedItemRenderer>`
-//   - **multi mode** 兩種 displayMode(consumer 自選):
+//   - **multi mode** 兩種 displayMode(consumer 自選),**皆 wrap `<Combobox>`**(同 SSOT,
+//     差別在 tagRenderer 視覺):
 //       - **'stack'**(default,baseline 既有視覺)— Avatar 疊合 + `+N` overflow indicator,
-//         不可 wrap。Trigger 自組 + 直接 wrap `<SelectMenu multiple>` primitive,
-//         trigger 內 render `<MultiPersonDisplay>` reuse baseline primitive(SSOT)。
+//         不可 wrap。tagRenderer 渲染 avatar stack(visible count 走 shared `avatar-stack-overflow`
+//         primitive deterministic formula,2026-05-15 Bug 3 fix;display 路徑 `<MultiPersonDisplay>` 同 primitive)。
 //         對齊 Notion / Linear / Atlassian / Slack 多人 quick-glance idiom。
 //       - **'pill'**(opt-in)— 每人 Tag pill,可 wrap。Wrap `<Combobox tagRenderer>`,
 //         tagRenderer 用 Tag 元件 `avatar` prop SSOT(不塞 children)。
@@ -177,6 +178,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         ref={ref}
         className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, size }), className)}
         data-field-mode={resolvedMode}
+        aria-disabled={resolvedMode === 'disabled' ? true : undefined}
         aria-label={ariaLabel}
         {...rest}
       >
@@ -187,6 +189,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
               ? <MultiPersonDisplay value={value as PersonValue[]} size={size} measured />
               : <PersonDisplay value={value as PersonValue} size={size} />}
         </span>
+        {/* 2026-06-10 類型身份 indicator:readonly/disabled 保留 chevron(naked cell 依 showDisplayEndIcon);disabled → fg-disabled */}
+        {(resolvedVariant === 'naked' ? showDisplayEndIcon : true) && (
+          <ItemSuffix className="pointer-events-none">
+            <ChevronDown size={ICON_SIZE[size as 'sm' | 'md' | 'lg']} className={cn('shrink-0', resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted')} aria-hidden />
+          </ItemSuffix>
+        )}
       </div>
     )
   }
@@ -421,7 +429,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // selectedNames.length === 1 → PersonDisplay(avatar + name)代替 PersonAvatarTag(avatar only)。
         // SSOT 對齊 PeoplePicker single mode line 201 selectedItemRenderer。多選 1 人時視覺等同單選,
         // 只在 length > 1 才走 stack(各 avatar 純 chip)。多選 + inline 搜尋場景拿掉 name 改 cursor
-        // 是 future 工作(需 PeoplePicker 加 searchIn='trigger' opt-in,當前 wrapped Combobox 走 menu search)。
+        // 走 `searchIn='trigger'` opt-in(2026-05-12 規則 3 ship,已轉傳 Combobox;default 'menu' 走 panel-top search)。
         if (selectedNames.length === 1) {
           return <PersonDisplay key={item.value} value={p} size={size} />
         }

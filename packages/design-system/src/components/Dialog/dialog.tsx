@@ -150,7 +150,8 @@ const DialogHeader = React.forwardRef<
   >
     <div className="flex-1 min-w-0">{children}</div>
     {/* Dismiss X(chrome-slot canonical,v5):Button 本身 native sm(28 md / 32 lg,touch target 亦同),
-        但 data-dismiss attribute 讓 SurfaceHeader CSS rule 套負 my 讓 layout 佔位 = 24,
+        但 `dismiss` prop 自動標 `data-unbounded`,SurfaceHeader CSS rule 對其套負 my 讓
+        layout 佔位 = 24(`data-dismiss` 僅作 openAutoFocus 排除 marker,與縮位無關),
         header = 24 + 2×tight = 48 / 56 chrome-header-height ✓。
         詳 overlay-surface.spec.md「Chrome dismiss size canonical」*/}
     <DialogPrimitive.Close asChild>

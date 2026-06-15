@@ -25,7 +25,7 @@ Notice 是純視覺 primitive，不是獨立使用的元件。消費者：
 
 **Layout Family**：CLAUDE.md 4-Family Model **Family 2（List item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「List item layout」章節的 reading-mode 規格。Notice 語意為 notification（非 row collection），但視覺排版遵循 Family 2 確保跨元件視覺一致。
 
-**尺寸偏離（documented exception）**：Notice / Alert / Toast **單一固定 size**，**不**實作 Family 2 baseline 的 sm/md/lg。世界級共識（Material Banner/Snackbar、Polaris Banner、Atlassian InlineMessage、GitHub Flash）都是**單一 prominent size**——通知的使命是「搶注意」而非「在密度選擇裡協調」，提供 size 選項反而會讓 consumer 糾結（該用哪個 size？）而稀釋元件的目的性。同理 padding 也不隨 density 變（`px-4 py-3` 固定）——通知是跨 density 一致的訊息載體。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**尺寸偏離（documented exception）**：Notice / Alert / Toast **單一固定 size**——不實作 Family 2 baseline 的 sm/md/lg，padding 也不隨 density 變（`px-4 py-3` 固定）。通知用單一 prominent size 強化「搶注意」的目的性，對齊世界級共識（Material Banner/Snackbar、Polaris Banner、Atlassian InlineMessage、GitHub Flash）。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
 ## Typography
 
@@ -107,7 +107,7 @@ Notice 是 **Toast / Alert 共用的 layout primitive**,刻意不擁有尺寸與
 - **無 SizeMatrix**:Notice / Alert / Toast **單一固定 size**(見本 spec「尺寸偏離」段),不實作 Family 2 baseline 的 sm/md/lg——通知的使命是「搶注意」而非「在密度選擇裡協調」。padding 固定 `px-4 py-3`,typography 固定 md tier(14px),不隨 density 變。
 - **無 ColorMatrix**:Notice 本身**不設 bg / text color**(見本 spec「Theme 策略」段),色彩完全由 consumer(Alert / Toast)透過 `data-theme` + `text-foreground` 控制。Notice 層級的色彩矩陣沒有意義——視覺對照屬於 consumer 的職責,應查 `alert.anatomy.stories.tsx` 與 `toast.anatomy.stories.tsx` 的 ColorMatrix。
 
-對應 anatomy story:保留 `Overview` / `Inspector` / `StateBehavior`,額外追加元件特有的 `VariantIconMap`(展示 5 種 variant 對應的 status icon + 語意)。
+對應 anatomy story:保留 `Overview` / `Inspector` / `StateBehavior` / `Accessibility`,額外追加元件特有的 `VariantIconMap`(展示 5 種 variant 對應的 status icon + 語意)。
 
 ---
 
@@ -115,7 +115,7 @@ Notice 是 **Toast / Alert 共用的 layout primitive**,刻意不擁有尺寸與
 
 - **Disabled(dismiss button)**:Notice 本身不擁有 disabled state(internal primitive,無互動);內嵌的 `<Button iconOnly dismiss size="xs" />` 在 disabled context 內會自動繼承 Button disabled 視覺(`text-fg-disabled` + `cursor-not-allowed`)。Notice **不提供 disable dismiss 的 API**——`...props` 只 spread 到 root `<div>`,dismiss `<Button>` 不接收 / 不 forward 任何 consumer disabled prop,無 consumer-level prop pass-through 可停用 dismiss。對齊消費者 canonical(`../Alert/alert.spec.md`「Disabled(dismiss button)」:banner dismiss 恆可用,對齊 Polaris / Material Banner「通知關閉鈕應永遠可按」);若需防止 close action(API in-flight)被雙擊,consumer 在 `onDismiss` 內自行 debounce / 加上層鎖,不在 UI 層暴露 disabled 透傳。
 - **Loading**:Notice 非 async surface,無 loading state。Body 內若 consumer 注入 CTA Button,該 Button 自行處理 loading。
-- **Empty**:Notice 的 `title` 為必填(消費合約),`description` 選填;layout 至少 1 行 title 內容。`neutral` variant 不渲 status icon 時即為 title-only icon-less 形態(見 `NeutralTitleOnly` story),仍合法 render。
+- **Empty**:Notice 的 `title` 為必填(TypeScript required prop,消費合約),`description` 選填;layout 至少 1 行 title 內容。誤傳空字串時照常 render(無 runtime warn / throw),空 title 的內容責任在 consumer(Alert / Toast)。`neutral` variant 不渲 status icon 時即為 title-only icon-less 形態(見 `NeutralTitleOnly` story),仍合法 render。
 - **Icon-only / variant=neutral**:`neutral` variant 不渲 status icon,layout 自動收斂為 `[title + description?]  [endContent?]  [dismiss X?]` 三 slot。
 
 ---
@@ -137,9 +137,9 @@ Notice 是 **Toast / Alert 共用的 layout primitive**,刻意不擁有尺寸與
 - Tab — focus dismiss button(若 dismissible)
 - Enter / Space — 觸發 focus 中的 dismiss button(原生 button 行為,呼叫 `onDismiss`)
 
-Notice **不**自帶 Esc-to-dismiss 行為(`notice.tsx` 無 keydown handler);dismiss 純粹由 dismiss button 的 `onClick={onDismiss}` 觸發。若 consumer(Alert / Toast)需要 Esc 關閉,於 consumer 層自行掛 keydown。
+Notice **不**自帶 Esc-to-dismiss 行為(`notice.tsx` 無 keydown handler);dismiss 純粹由 dismiss button 的 `onClick={onDismiss}` 觸發。若 consumer(Alert / Toast)需要 Esc 關閉,於 consumer 層自行掛 keydown。Dismiss 後的焦點處置 Notice 同樣不管理(無 focus restoration 邏輯)——節點移除後焦點落點由 consumer(Alert / Toast host)決定。
 
-**Focus**:focus-visible ring 對齊 DS canonical(`outline: 2px solid var(--ring)`);focus management 由元件 own。
+**Focus**:唯一 focusable 元素是 dismiss `<Button>`,focus indicator 走 Button canonical(`focus-visible:ring-2 ring-ring`,box-shadow ring 非 CSS `outline`);Notice 本身無 focus management(dismiss 後焦點處置見上段,由 consumer 決定)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
@@ -147,5 +147,7 @@ Notice **不**自帶 Esc-to-dismiss 行為(`notice.tsx` 無 keydown handler);dis
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `alert.spec.md`
 - `bulk-action-bar.spec.md`
 - `coachmark.spec.md`
+- `toast.spec.md`

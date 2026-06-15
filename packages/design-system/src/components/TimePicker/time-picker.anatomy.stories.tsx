@@ -77,9 +77,15 @@ export const ColorMatrix: Story = {
                   <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
                 </tr>
                 <tr>
-                  <td className="p-2 border-b border-divider font-mono">focus / open</td>
+                  <td className="p-2 border-b border-divider font-mono">focus(focus-within)</td>
                   <td className="p-2 border-b border-divider"><Swatch value="--surface" /><span className="font-mono">--surface</span></td>
-                  <td className="p-2 border-b border-divider"><Swatch value="--primary" /><span className="font-mono">--primary + ring-ring</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--primary" /><span className="font-mono">--primary</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
+                </tr>
+                <tr>
+                  <td className="p-2 border-b border-divider font-mono">open(autofocus 移入 panel)</td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--surface" /><span className="font-mono">--surface</span></td>
+                  <td className="p-2 border-b border-divider"><Swatch value="--border-hover" /><span className="font-mono">--border-hover</span></td>
                   <td className="p-2 border-b border-divider"><Swatch value="--foreground" /><span className="font-mono">--foreground</span></td>
                 </tr>
                 <tr>

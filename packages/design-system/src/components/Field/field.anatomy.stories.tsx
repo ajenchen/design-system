@@ -53,7 +53,7 @@ export const Overview: Story = {
               <tr><Td>資料格式化(千分位/貨幣/locale)</Td><Td>—</Td><Td>✓ 管</Td></tr>
               <tr><Td>驗證邏輯</Td><Td>—</Td><Td>✓ 管(+ zod schema 於 form 層)</Td></tr>
               <tr><Td>readonly 呈現</Td><Td>—</Td><Td>✓ 管</Td></tr>
-              <tr><Td>DataTable cell 顯示</Td><Td>—</Td><Td>✓ 管(Display 子元件)</Td></tr>
+              <tr><Td>DataTable cell 顯示</Td><Td>—</Td><Td>✓ 管(mode="display" 渲染分支)</Td></tr>
             </tbody>
           </table>
         </div>
@@ -225,7 +225,7 @@ export const OrientationMatrix: Story = {
         <H3>Horizontal — label 在控件左方</H3>
         <Desc>Settings / 詳情頁場景。label 寬度(labelWidth,預設 auto 由內容撐開)對齊縱向軸,節省垂直空間。</Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-2xl">
-          <FieldGroup>
+          <FieldGroup horizontalLabelWidth="120px">
             <Field orientation="horizontal" required>
               <FieldLabel>電子郵件</FieldLabel>
               <Input type="email" defaultValue="user@example.com" />
@@ -243,7 +243,9 @@ export const OrientationMatrix: Story = {
             </Field>
             <Field orientation="horizontal">
               <FieldLabel>訂閱電子報</FieldLabel>
-              <Switch defaultChecked />
+              {/* 混合表單(Input/Select 同列)= Form-edit 情境 → Switch 靠左對齊其他控件
+                  (switch.spec.md「兩種對齊慣例」判準;ml-0 覆寫 horizontal Field 預設 ml-auto) */}
+              <Switch defaultChecked className="ml-0" />
             </Field>
             <Field orientation="horizontal">
               <FieldLabel>個人檔案公開</FieldLabel>
@@ -347,7 +349,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>組合:Required + Horizontal + Size=md(settings 典型場景)</H3>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-2xl">
-          <FieldGroup>
+          <FieldGroup horizontalLabelWidth="120px">
             <Field orientation="horizontal" required size="md">
               <FieldLabel>姓名</FieldLabel>
               <Input defaultValue="Ada Chen" />
@@ -417,7 +419,7 @@ export const ColorMatrix: Story = {
                 <Td mono>Control border(傳給 Field Controls)</Td>
                 <Td><TokenCell token="--border" display="border" /></Td>
                 <Td><TokenCell token="--error" display="error(border)" /></Td>
-                <Td><TokenCell token="--border" display="border" /></Td>
+                <Td>—(border-transparent,無可見邊框)</Td>
               </tr>
               <tr>
                 <Td mono>Control bg(disabled)</Td>
@@ -503,7 +505,8 @@ export const FieldGroupBehavior: Story = {
           </div>
           <div className="border border-dashed border-divider rounded-md p-4">
             <div className="text-caption text-fg-muted mb-3 font-mono">horizontal orientation</div>
-            <FieldGroup>
+            {/* horizontalLabelWidth:同表單 horizontal Field 必統一 label 寬(field.spec.md「FieldGroup horizontalLabelWidth cascade」硬規則)*/}
+            <FieldGroup horizontalLabelWidth="120px">
               <Field orientation="horizontal" required>
                 <FieldLabel>姓名</FieldLabel>
                 <Input placeholder="請輸入姓名" />

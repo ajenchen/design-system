@@ -1,9 +1,10 @@
 #!/bin/bash
-# Tests for check_fork_user_plugin_install.sh — SessionStart enforce fork-user repo install plugin.
+# 2026-06-11 repoint:check_fork_user_plugin_install.sh 已合併進 check_plugin_fork_health.sh(prune merge;測試 payload 不變 = 行為等價驗證)
+# Tests for check_plugin_fork_health.sh — SessionStart enforce fork-user repo install plugin.
 
 set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOOK="$SCRIPT_DIR/../check_fork_user_plugin_install.sh"
+HOOK="$SCRIPT_DIR/../check_plugin_fork_health.sh"
 [ ! -f "$HOOK" ] && { echo "FATAL: hook not found"; exit 1; }
 PASS=0; FAIL=0; FAILED=""
 

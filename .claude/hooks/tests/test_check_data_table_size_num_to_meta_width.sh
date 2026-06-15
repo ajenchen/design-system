@@ -1,9 +1,10 @@
 #!/bin/bash
-# Tests for check_data_table_size_num_to_meta_width.sh(M23(c))
+# 2026-06-11 repoint:check_data_table_size_num_to_meta_width.sh 已合併進 check_datatable_invariants.sh(prune merge;測試 payload 不變 = 行為等價驗證)
+# Tests for check_datatable_invariants.sh(M23(c))
 
 set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOOK="$SCRIPT_DIR/../check_data_table_size_num_to_meta_width.sh"
+HOOK="$SCRIPT_DIR/../check_datatable_invariants.sh"
 [ ! -f "$HOOK" ] && { echo "FATAL"; exit 1; }
 PASS=0; FAIL=0
 

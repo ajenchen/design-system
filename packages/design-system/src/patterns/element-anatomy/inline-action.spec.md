@@ -1,6 +1,6 @@
 <!-- @benchmark-cited: D5 retrofit 2026-05-18 — verified 0 world-class DS claim in body; blanket retract removed. -->
 
-# Inline Action 設計規格(SSOT)
+# Inline Action 設計原則(SSOT)
 
 **Layout Family**:non-family(hosted inline element,無 own layout — 由宿主 family 1/4 提供)。
 
@@ -153,7 +153,7 @@ Q3. Row 多大?
 | Menu / TreeView / SidebarMenuButton / SelectionItem suffix | Row inline flow | Inline Action | Inline with content |
 | SidebarGroup header chevron | Aux toggle | Inline Action | Inline header toggle |
 | Select ChevronDown / DatePicker Calendar / Combobox ChevronDown | Field chrome(裝飾)| **Decorative**(不是 action)| Click falls through;host 是 trigger |
-| **FileItem compact**(row 24)| Row slot | Inline Action | Row 太小容不下 Button xs 24 |
+| **FileItem compact**(row 24)| Row slot | Button xs iconOnly(`var(--field-height-xs)` 容器 + data-unbounded 收斂到 1lh)| 2026-04-23 user 統一 rich + compact 同 primitive,不撐高 row(見 file-item.tsx 註解)|
 | **FileItem rich**(row 56 sm/md rich)| Row slot | Button xs iconOnly(24 固定)| ≤ 24 cap,不放大 |
 | **DataTable header cell internal**(sort indicator / ⌄ menu / filter funnel / pin)| Header cell host internal | **Inline Action**(`ItemInlineActionButton` asChild for DropdownMenu)| Embedded inline,跟 label 一體 |
 | **DataTable body cell internal**(display endAction / clear / edit indicator)| Cell content host internal | **Inline Action**(自動繼承 Field family endAction)| Field display 元件已對齊 |
@@ -188,6 +188,11 @@ Row action 的 affordance 是「次要功能」,不是 primary CTA。Button chro
 - 尺寸:`patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」(overlay sm + v5 trick / banner xs explicit)
 - variant / divider:`patterns/action-bar/action-bar.spec.md`(corner action group)
 
+### 邊界案例
+
+- **帶可見文字 label 的觸發**:不是 Inline Action — Inline Action 必 icon-only(label 走 tooltip + `aria-label`,見「實作要求」);需要可見文字 → `Button`(text / tertiary)。
+- **Dark mode**:hover / active / fg 全走 semantic token(`--neutral-hover` 等)自動 adapt,Inline Action 不 own dark token;colored host 的繼承色由 host token 處理(見 `tag.spec.md`)。
+
 ### Inline action 共用元件(`ItemInlineAction` / `ItemSuffix`)
 
 Canonical 實作於 `item-anatomy.tsx`,匯出 `ItemInlineAction` / `ItemSuffix`(從 `RowSizeContext` 自動查 icon size / hover bg / tooltip / aria-label / fg-muted → foreground 全內建)。
@@ -199,7 +204,7 @@ Canonical 實作於 `item-anatomy.tsx`,匯出 `ItemInlineAction` / `ItemSuffix`(
 <ItemSuffix hoverReveal>{actions.map((a) => <ItemInlineAction action={a} />)}</ItemSuffix>
 ```
 
-**Host 走宣告式 API**(`inlineActions?: InlineActionConfig[]` / `endAction?: InlineActionConfig` prop)— 不自刻 button JSX。已遷移:`SidebarMenuButton` / `Input` / `NumberInput`(2026-05-31 infra-audit 修 stale status:verify input.tsx/number-input.tsx 已用 endAction InlineActionConfig)。Pending refactor:`Tag` / `LinkInput` / `Combobox`。
+**Host 走宣告式 API**(`inlineActions?: InlineActionConfig[]` / `endAction?: InlineActionConfig` prop)— 不自刻 button JSX。已遷移:`SidebarMenuButton` / `Input` / `NumberInput`(2026-05-31 infra-audit 修 stale status:verify input.tsx/number-input.tsx 已用 endAction InlineActionConfig)、`Tag`(2026-05-01:宣告式 `onRemove` + 內部 `ItemInlineActionButton`,見 tag.tsx)。`LinkInput` / `Combobox` 屬下方「不適用清單」(右側 chrome 獨佔),內建 inline action 已直接消費 `ItemInlineAction` primitive——無 pending。
 
 ### Dismiss canonical — X close only
 
@@ -224,7 +229,7 @@ Canonical 實作於 `item-anatomy.tsx`,匯出 `ItemInlineAction` / `ItemSuffix`(
 
 #### `dismiss` prop 觸發條件(Button 限定)
 
-**明示**:`<Button dismiss />` 或 callback = `onClose` / `onDismiss` → 觸發弱化 override(icon fg-muted → hover foreground;variant 強制 text)
+**明示**:`<Button dismiss />`(唯一機械觸發;Button 無 `onClose` / `onDismiss` prop)→ 觸發弱化 override(icon fg-muted → hover foreground;variant 強制 text)。語意判準:點擊語意 = X close 才用 dismiss
 
 **不觸發**:callback = `onRemove`(collection 操作)/ `onClear`(欄位清空)/ `onDelete` — 這些不是 dismiss 語意,Button 用對應 variant 即可
 
@@ -244,7 +249,7 @@ Tag solid / branded color variant(`red / blue / orange`)→ Tag 內 X **繼承 h
 
 sonner toast auto-dismiss / Radix Dialog `DialogClose` wiring — 第三方只管 state logic(何時關),**我們渲染的視覺按鈕必套對應 canonical**(chrome corner → Button dismiss;chrome padding → Inline Action)。
 
-hook `check_story_anatomy.sh` 規則 B 已在 stories 層攔 label Button 作 dismiss。
+hook `check_story_invariants.sh` R1(原 `check_story_anatomy.sh` 規則 B,已 folded)已在 stories 層攔 label Button 作 dismiss。
 
 ---
 
@@ -279,7 +284,7 @@ hook `check_story_anatomy.sh` 規則 B 已在 stories 層攔 label Button 作 di
 - `disabled / readonly` 模式 / Sidebar `collapsible=icon` 模式跟 config 一致(slot 也要被相同條件隱藏)
 - Reveal 模式(`actionsReveal="hover"`)、絕對定位 chrome 跟 config 共用,consumer 不需重做
 - Padding budget(Sidebar)slot mode 預設按 1 icon 寬度預留,多 icon 寬度需 consumer 自控 className
-- 視覺一致性 by consumer — 但 **app-code 不可直接 import L3 primitive**(`ItemInlineActionButton` / `ItemInlineAction` / `RowSizeProvider`),由 `check_l3_primitive_import.sh` 攔截。需要視覺一致 inline-action button 時,(a) 用 host 自帶 slot(此 escape hatch)、(b) 用 `<Button iconOnly variant="text" />`、(c) 走 spec rationale 例外申請
+- 視覺一致性 by consumer — 但 **app-code 不可直接 import L3 primitive**(`ItemInlineActionButton` / `ItemInlineAction` / `RowSizeProvider`),由 `check_canonical_propagation.sh` E.2(原 `check_l3_primitive_import`,已 folded,P0 BLOCK)攔截。需要視覺一致 inline-action button 時,(a) 用 host 自帶 slot(此 escape hatch)、(b) 用 `<Button iconOnly variant="text" />`、(c) 走 spec rationale 例外申請
 
 **現況清單**(2026-04-25 補完):
 - ✅ `Input.endSlot`
@@ -289,7 +294,7 @@ hook `check_story_anatomy.sh` 規則 B 已在 stories 層攔 label Button 作 di
 
 **不適用清單**:DatePicker / Combobox / Select / TimePicker / LinkInput 右側由元件自帶 chrome 獨佔(Calendar / ChevronDown / Clock / ExternalLink 等 intrinsic affordance),不開放 consumer 放置 endAction/endSlot — 這些元件的 inline-action 需求走**內建 clear X**(consumer 透過 `clearable` prop opt-in)或 `<Button iconOnly />` 放在 Field 外側。Escape hatch canonical 不涵蓋此類 host(本質上非 consumer-facing slot)。
 
-**世界級對照**:
+**世界級對照**: <!-- @benchmark-unverified -->
 - Material UI:`InputAdornment` ReactNode slot(無 config,純 escape hatch 派 — 我們的 90/10 比 Material 更有結構)
 - Polaris:`TextField.connectedRight` ReactNode 只接 Button,但無 config-based 簡化,API 一致性差
 - Ant Design:`Input.suffix` ReactNode slot,跟 Material 同派
@@ -301,20 +306,15 @@ hook `check_story_anatomy.sh` 規則 B 已在 stories 層攔 label Button 作 di
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
-- `sheet.spec.md`
-
-## 被引用(auto-maintained,Dim 3 reciprocal audit)
-
-> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
-
 - `alert.spec.md`
 - `breadcrumb.spec.md`
 - `data-table.spec.md`
 - `field-controls.spec.md`
+- `item-anatomy.spec.md`
+- `overlay-surface.spec.md`
 - `popover.spec.md`
-
-## 被引用(auto-maintained,Dim 3 reciprocal audit)
-
-> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
-
+- `sheet.spec.md`
+- `sidebar.spec.md`
 - `tag.spec.md`
+- `tree-view.spec.md`
+- `uiSize.spec.md`

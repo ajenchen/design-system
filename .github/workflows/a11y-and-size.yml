@@ -57,10 +57,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '22', cache: 'npm' }
       - run: npm ci
-      - name: Build DS lib + types
-        run: |
-          npm -w @qijenchen/design-system run build 2>&1 | tail -10
-          npm -w @qijenchen/design-system run build:dts 2>&1 | tail -5
+      # 2026-06-10 fix:改用 build:lib(含 storybook-config build)— 原本漏建 storybook-config →
+      # 根目錄 `npm run build` 的 tsc -b 在 .storybook/main.ts 解析不到 '@qijenchen/storybook-config/preset'
+      # 型別(exports 指 dist/,冷環境 npm ci 後無)→ TS2307 silent exit 2(被 tail -10 吞)→ 本 job
+      # 自 6/5 enforce 後連續紅;本地有舊 dist 故不曾復現,乾淨房 clone 才抓到。
+      - name: Build DS lib + types(含 storybook-config,supply .storybook/main.ts 型別)
+        run: npm run build:lib 2>&1 | tail -10
       - name: Build production app(for aggregate budget)
         run: npm run build 2>&1 | tail -10
       - name: Run size-limit

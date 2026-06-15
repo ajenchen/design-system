@@ -129,10 +129,12 @@ Chip **不可單獨使用**，必須放在 `<ChipGroup>` 裡。跟 SegmentedCont
 
 ### Type
 
-| Type | 語意 | 預設 |
+| Type | 語意 | 備註 |
 |---|---|---|
-| `multiple` | 可勾選任意數量（checkbox 語意）| ★ **預設**（filter 最常見） |
+| `multiple` | 可勾選任意數量（checkbox 語意）| filter 最常見 |
 | `single` | 互斥單選（radio 語意）| 從 tag 群裡選唯一主要 tag |
+
+`type` 必填——Radix ToggleGroup discriminated union,無 API default(anatomy「Props 速查」同)。
 
 ### Layout
 
@@ -142,7 +144,7 @@ Chip 的 overflow 處理有三種模式：
 |---|---|---|
 | `wrap` ★default | 塞不下時換到下一排 | 大多數情況（filter panel / tag cloud） |
 | `scroll` | 單行、水平滾動，邊緣 fade mask 指示還有內容 | Toolbar / header filter 必須單行 |
-| `menu` | 塞不下的 chips 收進 `⋯` dropdown menu | 單行且需要完整選項可見（ListView toolbar）|
+| `menu` | 單行水平捲動;dropdown(`ChevronDown` trigger)永遠列出全部 chip(show-all navigator)| 單行且需要完整選項可見（ListView toolbar）|
 
 **詳見 overflow 段落。**
 
@@ -183,6 +185,8 @@ Chip 的 overflow 處理有三種模式：
 **a11y 保留機制**：所有 chip 都在 DOM 且視覺可見，Radix ToggleGroup 的 roving tabindex 可以 focus 全部 chip。鍵盤使用者可以透過 Tab 進入 ChipGroup，用方向鍵在所有 chips 之間導覽（焦點移動時 chip 隨 scroll 進入視圖），或用 Tab 到 dropdown 觸發按鈕用 menu 介面。兩條互動路徑同時可用。
 
 **menu 模式需要 controlled ChipGroup**：菜單 items 透過 `onValueChange` 觸發選擇變化，因此 ChipGroup 必須傳 `value` + `onValueChange`（controlled）。uncontrolled mode（`defaultValue`）的 menu 模式無法讓 menu items 與 chips 同步狀態。
+
+**RTL**：三模式皆未實作方向鏡像（scroll edge 偵測以 LTR `scrollLeft` 計算，fade mask / arrow 為實體 left/right）；RTL 屬 DS-wide 決策，未定。
 
 ---
 
@@ -229,10 +233,5 @@ ColorMatrix 已建:展示 default / hover / selected / disabled 四狀態的 bg 
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
-- `opacity.spec.md`
-
-## 被引用(auto-maintained,Dim 3 reciprocal audit)
-
-> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
-
+- `badge.spec.md`
 - `tag.spec.md`

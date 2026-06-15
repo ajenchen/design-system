@@ -153,7 +153,7 @@
         ]
       },
       {
-        "matcher": "Agent",
+        "matcher": "Agent|Task|Workflow",
         "hooks": [
           {
             "type": "command",
@@ -249,10 +249,6 @@
           },
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_data_table_size_num_to_meta_width.sh\""
-          },
-          {
-            "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/chrome_header_dispatcher.sh\""
           },
           {
@@ -276,7 +272,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Agent",
+        "matcher": "Agent|Task|Workflow",
         "hooks": [
           {
             "type": "command",
@@ -306,15 +302,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_consumer_no_ds_catalog.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_consumer_story_baseline.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_consumer_ds_primitive_misuse.sh\""
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_consumer_app_invariants.sh\""
           },
           {
             "type": "command",
@@ -334,15 +322,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_addon_subdir_ship.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_storybook_addon_preset_cjs.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_consumer_app_story_title.sh\""
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_storybook_addon_packaging.sh\""
           }
         ]
       },
@@ -419,11 +399,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_propose_plain_chinese.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_propose_cite_required.sh\""
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_propose_discipline.sh\""
           },
           {
             "type": "command",
@@ -431,11 +407,11 @@
           },
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/audit-content-quality.mjs\" --check 2>&1 | grep -E '\\[P[01]\\]|\u2705|\u26a0\ufe0f' | head -10 || true"
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/audit-content-quality.mjs\" --check 2>&1 | grep -E '\\[P[01]\\]|✅|⚠️' | head -10 || true"
           },
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/extract-canonical-rules.mjs\" 2>&1 | grep -E 'GAPS|\u2705|keywords missing' | head -8 || true"
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/extract-canonical-rules.mjs\" 2>&1 | grep -E 'GAPS|✅|keywords missing' | head -8 || true"
           }
         ]
       }
@@ -449,11 +425,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_fork_user_plugin_install.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_plugin_freshness.sh\""
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_plugin_fork_health.sh\""
           }
         ]
       }

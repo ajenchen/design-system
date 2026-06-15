@@ -10,7 +10,7 @@
 //
 // Output dir contains:
 //   - apps/template/                       (from DS root apps/template)
-//   - scripts/{create-app,setup-netlify-access,check-plugin-installed,lint-ds-internal-imports,deploy-url,sync-all}.mjs
+//   - scripts/{create-app,setup-netlify-access,check-plugin-installed,lint-ds-internal-imports,deploy-url,sync-all,audit-consumer-a11y,verify-consumer-css-entry}.mjs(以 ALLOWLIST 常數為準)
 //   - .devcontainer/                       (Codespaces cloud-dev path)
 //   - .storybook/                          (from template/ds-product-template/.storybook,apps-only glob)
 //   - .github/{workflows,CODEOWNERS,dependabot.yml}

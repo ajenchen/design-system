@@ -96,7 +96,7 @@ export const accordionMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: [],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-fg-secondary', 'text-foreground'],

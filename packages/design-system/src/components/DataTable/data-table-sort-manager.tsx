@@ -26,7 +26,7 @@ import { getColumnId, getColumnLabel } from './lib/column-meta'
  * Source-of-truth: TanStack `SortingState`(同 `useReactTable.state.sorting`)。
  * 跟 cell click sort 共享 state — single source-of-truth across cell + panel。
  *
- * MVP: reorder 用 ↑/↓ button(DnD 留 phase 2 跟 column reorder 一起做)。
+ * Reorder:DnD(useSortable + GripVertical handle,見下方 SortRow)——原 MVP ↑/↓ button 已退役。
  */
 
 interface SortColumn {

@@ -86,6 +86,8 @@ export const Overview: Story = {
                 ['accept', 'string', '—', 'MIME filter,支援 .pdf / image/* / application/pdf'],
                 ['maxSize', 'number', '—', '單檔最大 bytes;超過進 onReject'],
                 ['disabled', 'boolean', 'false', '完全停用(語意 token bg-disabled + cursor-not-allowed;互動由 handler isBlocked guard 擋,非 pointer-events-none)'],
+                ['variant', "'dropzone' | 'button'", "'dropzone'", '觸發外觀:dropzone 大拖放區(drag + click)/ button 緊湊按鈕(click-only,form-friendly)'],
+                ['buttonLabel', 'string', "'Choose file'", "variant='button' 的按鈕文字"],
                 ['title', 'string', "'Click or drag file here to upload'", '預設結構(Empty)的主標題'],
                 ['description', 'string', '單/多檔字串自動切換', '預設結構(Empty)的副標題'],
                 ['children', 'ReactNode', '—', '傳入則整個覆寫預設 Empty 結構(consumer 完全客製)'],
@@ -290,8 +292,8 @@ export const SizeMatrix: Story = {
           由 Empty 元件 擁有(主檔)(`../Empty/empty.spec.md`)。
           <br />
           <strong>空間大小由 consumer 以 wrapper width / min-height 控制</strong>
-          ——如需窄版擺在表單欄位旁,改用小 Button + hidden input 模式
-          (見「設計原則 / 何時用大 Dropzone vs 小 Button」)。
+          ——如需窄版擺在表單欄位旁,改用 `variant="button"`
+          (見「設計原則」UsageGuidance「表單內 inline field」)。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">

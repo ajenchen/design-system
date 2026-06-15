@@ -49,7 +49,27 @@ jobs:
           # If private, gh PAT — for public template, none needed.
           # token: ${{ secrets.PW_REPO_PAT }}
 
+      # 2026-06-11 deep-audit R2 #6:identity diff 是明確 opt-in(composition-fidelity.md 層 3)—
+      # diff script 對 0 個 @composition-fidelity-mode mapping 必 vacuous exit 0,卻仍先花 ~30 min
+      # dual storybook build。便宜 pre-step(秒級 grep,regex 對齊 composition-fidelity-visual-diff.mjs:118)
+      # 0 命中 → skip 全部重步驟;有命中 → full gate 照跑。Marker SSOT 在 consumer story 檔
+      # (DS repo apps/template 經 mirror-to-published-template 傳播到 ds-product-template)。
+      - name: Detect identity opt-in markers (cheap pre-step)
+        id: optin
+        working-directory: ds-product-template
+        run: |
+          count=$({ grep -rE --include='*.tsx' --include='*.ts' \
+            --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=storybook-static \
+            '@composition-fidelity-mode:[[:space:]]*(pixel|shell-only|structural)' . || true; } | wc -l | tr -d ' ')
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          if [ "$count" = "0" ]; then
+            echo "::notice::0 個 @composition-fidelity-mode opt-in marker in consumer — skip dual storybook build(diff script 對 0 mapping 必 exit 0;conformance 由靜態 hook 防線保證,見 .claude/references/composition-fidelity.md 層 2)"
+          else
+            echo "Found $count opt-in marker line(s) — full identity diff gate will run."
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.optin.outputs.count != '0'
         with:
           node-version: 22
           cache: npm
@@ -58,14 +78,17 @@ jobs:
             ds-product-template/package-lock.json
 
       - name: Install DS deps
+        if: steps.optin.outputs.count != '0'
         working-directory: design-system
         run: npm ci --legacy-peer-deps
 
       - name: Install PW deps
+        if: steps.optin.outputs.count != '0'
         working-directory: ds-product-template
         run: npm ci --legacy-peer-deps
 
       - name: Install Playwright chromium (DS)
+        if: steps.optin.outputs.count != '0'
         working-directory: design-system
         run: npx playwright install --with-deps chromium
 
@@ -73,22 +96,26 @@ jobs:
       # 漏這步 → storybook-config preview.tsx 的 `import @qijenchen/design-system` tsc 找不到型別 → TS2307,
       # 此 workflow 整天連紅(不擋發版,但污染 main CI 信號)。對齊 release.yml / ci.yml 已 proven 的 build 順序。
       - name: Build DS lib(型別宣告 — storybook-config tsc 需 @qijenchen/design-system)
+        if: steps.optin.outputs.count != '0'
         working-directory: design-system
         run: npm run build:lib
 
       - name: Build DS storybook-static
+        if: steps.optin.outputs.count != '0'
         working-directory: design-system
         run: npm run build-storybook
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Build PW storybook-static
+        if: steps.optin.outputs.count != '0'
         working-directory: ds-product-template
         run: npm run build-storybook
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Run composition-fidelity diff
+        if: steps.optin.outputs.count != '0'
         working-directory: design-system
         run: |
           node scripts/composition-fidelity-visual-diff.mjs \

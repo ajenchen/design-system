@@ -13,7 +13,7 @@ import { useRowSize } from '@/design-system/patterns/element-anatomy/item-anatom
  * 間距固定,不隨 density 變（Empty 是展示性元件,不是工作區域元件）:
  *   icon → text = mb-4（16px）
  *   desc → action = mt-6（24px）
- *   title → desc = `var(--item-gap-label-desc)`（token,預設 2px,item-anatomy SSOT）
+ *   title → desc = `var(--item-gap-label-desc-reading-lg)`（reading-lg tier token,item-anatomy SSOT;bare `--item-gap-label-desc` 已 retire）
  *
  * Outer padding 由 consumer 容器決定(py-12 / py-6 / py-16 等）。
  */

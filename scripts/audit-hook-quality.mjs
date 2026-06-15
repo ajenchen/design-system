@@ -34,11 +34,18 @@ if (!existsSync(FIRE_LOG)) {
 }
 
 // 1. Read fire log + aggregate per-hook
-const fires = readFileSync(FIRE_LOG, 'utf-8')
-  .split('\n')
-  .filter(Boolean)
-  .map(l => { try { return JSON.parse(l) } catch { return null } })
-  .filter(Boolean)
+// 2026-06-11 fix(prune D2):原只讀 current jsonl(~數小時)卻標「dead 6mo」= 系統性誤導。
+// 聚合 rotated archives(.jsonl.YYYYMM)+ summary 寫明真實觀測窗 span。
+const LOG_DIR = dirname(FIRE_LOG)
+const logFiles = [FIRE_LOG, ...readdirSync(LOG_DIR)
+  .filter(f => f.startsWith('hook-fires-per-hook.jsonl.'))
+  .map(f => join(LOG_DIR, f))]
+const fires = logFiles.flatMap(lf => {
+  try {
+    return readFileSync(lf, 'utf-8').split('\n').filter(Boolean)
+      .map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean)
+  } catch { return [] }
+})
 
 const perHook = {}
 for (const f of fires) {
@@ -88,11 +95,17 @@ for (const hook of [...seenHooks].sort()) {
   else classification = 'cool'
 
   // Retire candidate signal(NOT execute)
+  // 2026-06-11 fix(prune D2):(a) `_` prefix root helpers(被 source 的共用 lib,自己永不 fire)
+  // 不提名 retire;(b) dead 標籤帶真實觀測窗(rotation 史曾遺失,窗可能遠短於 6mo)
+  const isSourcedHelper = hook.startsWith('_') && /log-fire|helper/.test(hook)
   let retireCandidate = false
   let retireReason = null
-  if (classification === 'dead' && fileExists) {
+  if (classification === 'dead' && fileExists && !isSourcedHelper) {
     retireCandidate = true
-    retireReason = '6-month 0 fire + file exists — observe rationale before retire'
+    retireReason = `0 fire in OBSERVED window(觀測窗見 summary.observedWindow,非保證 6mo)— observe rationale before retire`
+  } else if (isSourcedHelper && classification === 'dead') {
+    retireCandidate = false
+    retireReason = 'sourced shared helper(被其他 hook source,自身永不 fire)— NOT retirable'
   } else if (classification === 'orphan') {
     retireCandidate = true
     retireReason = 'fire log mentions hook no longer in file system — likely already retired but log shows historical fires'
@@ -116,8 +129,11 @@ for (const hook of [...seenHooks].sort()) {
 }
 
 // 4. Summary
+const allTs = fires.map(f => f.ts).filter(Boolean).sort()
 const summary = {
   generatedAt: new Date().toISOString(),
+  // 2026-06-11:真實觀測窗(rotation 史曾遺失;「dead」只代表此窗內 0 fire,非保證 6mo)
+  observedWindow: allTs.length ? { from: allTs[0], to: allTs[allTs.length - 1], totalFires: allTs.length } : null,
   totalHooksInFireLog: Object.keys(perHook).length,
   totalActiveFiles: activeHooks.size,
   classifications: {

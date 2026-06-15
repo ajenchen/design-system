@@ -22,7 +22,7 @@ import { SegmentedControl, SegmentedControlItem } from '@/design-system/componen
  * Calendar — 事件檢視 canvas(月 view MVP)
  *
  * 定位:看事件的 page-level canvas,對齊 Notion Calendar / Google Calendar。
- * 完整 spec 見 `event-calendar.spec.md`。
+ * 完整 spec 見 `calendar.spec.md`。
  *
  * ── Layout Family ──
  * 非 4-Family,屬 page-composite(多區塊 Toolbar + Grid + EventTile)。
@@ -300,37 +300,41 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
               const overflowCount = dayEvents.length - visibleEvents.length
 
               return (
-                <button
+                // 2026-06-11 a11y(user 拍板 2c 修 code):cell 從 <button role="gridcell"> 改非互動容器 —
+                // W3C button 語義禁止互動後代,cell 內含 role="button" 事件 tile = nested-interactive 違規。
+                // 對齊 Google Calendar:gridcell = 容器,日期數字按鈕 = 日期級 keyboard 入口,tile 各自為 button。
+                // div onClick 保留滑鼠「點 cell 空白處等同點日期」便利(keyboard 走日期數字按鈕,功能等價)。
+                <div
                   key={date.toISOString()}
-                  type="button"
                   role="gridcell"
-                  aria-label={`${format(date, 'yyyy-MM-dd')},${dayEvents.length} 個事件`}
-              onClick={() => onDateClick?.(date)}
+                  onClick={() => onDateClick?.(date)}
               className={cn(
                 'flex flex-col gap-1 min-h-28 p-1.5 text-left',
                 'border-r border-b border-divider last:border-r-0',
                 '[&:nth-child(7n)]:border-r-0',
                 'hover:bg-neutral-hover transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 !inMonth && 'bg-muted',
               )}
             >
-              {/* Date number header */}
+              {/* Date number = keyboard 入口;今天/平日統一 24px 圓形 hit-area(WCAG 2.5.8 ≥24,
+                  今天 pill 本就 24px,平日跟齊 → 跨 cell 數字光學對齊) */}
               <div className="flex items-start justify-end">
-                {isToday ? (
-                  <span className="inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full bg-info text-on-emphasis text-body font-medium">
-                    {format(date, 'd')}
-                  </span>
-                ) : (
-                  <span
-                    className={cn(
-                      'text-body font-medium',
-                      !inMonth && 'text-fg-disabled',
-                    )}
-                  >
-                    {format(date, 'd')}
-                  </span>
-                )}
+                <button
+                  type="button"
+                  aria-label={`${format(date, 'yyyy-MM-dd')},${dayEvents.length} 個事件`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDateClick?.(date)
+                  }}
+                  className={cn(
+                    'inline-flex items-center justify-center min-w-6 h-6 rounded-full text-body font-medium',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    isToday && 'px-2 bg-info text-on-emphasis',
+                    !isToday && !inMonth && 'text-fg-disabled',
+                  )}
+                >
+                  {format(date, 'd')}
+                </button>
               </div>
 
               {/* Event tiles */}
@@ -388,7 +392,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                   </div>
                 )}
               </div>
-            </button>
+            </div>
               )
             })}
           </div>

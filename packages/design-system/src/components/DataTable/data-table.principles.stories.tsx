@@ -71,13 +71,13 @@ export const UsageGuidance: Story = {
       <p>適合 DataTable 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Components/DataTable/展示" name="數字靠右對齊"><span className="text-primary hover:underline font-medium cursor-pointer">數字靠右對齊</span></LinkTo>
+          <LinkTo kind="Design System/Components/DataTable/展示" name="數字靠右對齊"><span className="text-primary hover:underline font-medium cursor-pointer">商品庫存後台 — 單價 / 金額數字靠右對齊</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/DataTable/展示" name="自動行高"><span className="text-primary hover:underline font-medium cursor-pointer">自動行高</span></LinkTo>
+          <LinkTo kind="Design System/Components/DataTable/展示" name="自動行高"><span className="text-primary hover:underline font-medium cursor-pointer">商品備註長短不一 — 自動行高撐開列高</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/DataTable/展示" name="空狀態"><span className="text-primary hover:underline font-medium cursor-pointer">空狀態</span></LinkTo>
+          <LinkTo kind="Design System/Components/DataTable/展示" name="空狀態"><span className="text-primary hover:underline font-medium cursor-pointer">目錄尚無商品 — 空狀態引導新增</span></LinkTo>
         </li>
       </ul>
       <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>

@@ -34,6 +34,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarTrigger,
+  ChromeHeader,
   TooltipProvider,
   Avatar,
   ItemAvatar,
@@ -92,15 +93,19 @@ function AppSidebar() {
   )
 }
 
-// ── PageHeader(對齊 DS canonical chrome-header pattern:fixed --chrome-header-height + SidebarTrigger + title)──
+// ── PageHeader(消費 DS ChromeHeader primitive,2026-06-12 修:原手刻 <header className=...>
+// 繞過 header-canonical 全部機械簽名 + 違反「消費 primitive 不 hand-craft」canonical;
+// 對齊 _demo-helpers.tsx PageHeader 同款消費形)──
 // SidebarTrigger 必有(primary-sidebar mode 的 menu toggle 入口,⌘B keyboard shortcut)
-function PageHeader({ title, rightSlot }: { title: string; rightSlot?: React.ReactNode }) {
+// rightSlot 用 JSX.Element(非 React.ReactNode):workspace 內 app 自帶 @types/react 副本與
+// DS 套件 .d.ts 解析的 ReactNode 版本不相容(bigint 差異)— Element 兩邊皆可指派
+function PageHeader({ title, rightSlot }: { title: string; rightSlot?: JSX.Element }) {
   return (
-    <header className="flex items-center gap-2 h-[var(--chrome-header-height)] px-[var(--layout-space-loose)] bg-surface border-b border-divider">
+    <ChromeHeader className="bg-surface">
       <SidebarTrigger />
       <h1 className="text-body-lg font-medium flex-1 truncate">{title}</h1>
       {rightSlot}
-    </header>
+    </ChromeHeader>
   )
 }
 

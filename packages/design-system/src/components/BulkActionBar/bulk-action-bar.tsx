@@ -12,7 +12,7 @@ import { ButtonDivider } from '@/design-system/components/Button/button-group'
 // - inline-action.spec.md「same-row consistency rule」(close X 同尺寸 md)
 // - tokens/layoutSpace/layoutSpace.spec.md(footer 用 px-loose py-tight)
 // - patterns/overlay-surface/overlay-surface.spec.md SurfaceFooter canonical
-// - Alert(banner)用 description ReactNode 帶 inline link CTA
+// - Alert(banner)用 title ReactNode 帶 inline link CTA
 
 // ── i18n labels ─────────────────────────────────────────────────────────────
 
@@ -68,7 +68,7 @@ export interface BulkActionBarProps extends React.HTMLAttributes<HTMLDivElement>
 //
 // Hint banner(擴 dataset 提示)完全外包給 Alert 元件 — consumer 視 ref 圖
 // 黏在 BulkActionBar 上方/下方,用 Alert variant="info" placement="fixed"
-// description={inline link JSX}。BulkActionBar 自己不再有 hint banner slot。
+// title={inline link JSX}。BulkActionBar 自己不再有 hint banner slot。
 //
 // 浮起 / fixed positioning 由 consumer wrap 決定(BulkActionBar 不限定 placement)。
 

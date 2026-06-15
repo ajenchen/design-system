@@ -19,7 +19,7 @@ benchmark:
 
 Accordion 是**垂直堆疊、可收合的多區塊容器**——每個 item 由 header（含 chevron）點擊切換展開 / 收合狀態。適合「多段內容,多數時間只想看其中一段」的情境。
 
-**實作基礎**：shadcn/ui 結構 + Radix Accordion primitive。本 DS 保留 shadcn 的 `Accordion / AccordionItem / AccordionTrigger / AccordionContent` API,視覺全改本 DS token,移除 shadcn 預設的 hover underline(web 早期 link style,與現代 SaaS 質感不符)。
+**實作基礎**：shadcn/ui 結構 + Radix Accordion primitive。本 DS 保留 shadcn 的 `Accordion / AccordionItem / AccordionTrigger / AccordionContent` API,視覺全改本 DS token(與 shadcn 預設的差異見「視覺規則」)。
 
 **Layout Family**：非上述 family — composite / multi-section（多個 AccordionItem 垂直堆疊，自 own layout）。
 
@@ -30,7 +30,8 @@ Accordion 是**垂直堆疊、可收合的多區塊容器**——每個 item 由
 - **FAQ / 說明**：常見問題、使用教學（預設全收合，使用者展開有興趣的）
 - **設定分組**：一般 / 通知 / 安全 / 付款等多節 settings 頁（長 form 拆段）
 - **進階選項可隱藏**：預設展示主要欄位，「進階選項」收合起來避免壓力
-- **單邊 sidebar 多分類**：檔案樹、notion-style 工作區 sidebar
+- **單邊 sidebar 多分類(淺層分組)**:notion-style 工作區 sidebar 的 section 收合;檔案樹 / 深度 tree 改用 `TreeView`(見「何時不用」)
+- **多段獨立收合（非互斥切換）**：各段內容垂直堆疊、可各自展開收合——若是「同一塊空間互斥切換視圖」改用 Tabs（見「何時不用」）
 
 ## 何時不用
 
@@ -72,7 +73,10 @@ Accordion 是**垂直堆疊、可收合的多區塊容器**——每個 item 由
 - **Content 文字**:次要閱讀色—— 主資訊在 trigger,展開內容是補充
 - **焦點環**:鍵盤 focus 用 ring token(非自訂 outline)
 
-**為什麼 hover 不用底線**:shadcn 預設 `hover:underline` 是 web 早期 link convention,現代 SaaS(Notion / Linear / Stripe / Vercel)皆不使用。改用文字色 tint 弱化維持統一質感,同時保留可點擊提示——不變色會讓使用者不確定是否能點擊,比起「被誤以為是 link」的風險,「失去可點擊提示」的風險更高。
+**為什麼 hover 不用底線**:
+- shadcn 預設 `hover:underline` 是 web 早期 link convention,現代 SaaS(Notion / Linear / Stripe / Vercel)皆不使用
+- 改用文字色 tint 弱化,維持 DS 統一質感
+- 仍保留可點擊提示——完全不變色會讓使用者不確定能否點擊;「失去可點擊提示」的風險大於「被誤以為是 link」
 
 完整 class / token 對照見 anatomy story(`ColorMatrix` + `SizeMatrix`)。
 
@@ -84,7 +88,7 @@ Accordion 是**垂直堆疊、可收合的多區塊容器**——每個 item 由
 - ❌ **不寫「全部展開 / 全部收合」按鈕**（違反 accordion 節省空間的設計意圖;若需要此功能,改用 TreeView 或 DescriptionList）
 - ❌ **單一 item 不用 Accordion**（用 `<details>` 或自組 toggle;見「何時不用」）
 - ❌ **不用 Accordion 做主要導航**（主導航用 Tabs / Sidebar,Accordion 是 content-level 收合）
-- ❌ **AccordionContent 不放互動重焦點元素**（例:complex form / Dialog trigger;收合後焦點消失,但如果只是輸入欄位可以）
+- ❌ **AccordionContent 不放重焦點互動元素**（例:complex form / Dialog trigger）——a11y 硬限制:item 被收合時(尤其 `single` 模式展開他段會自動收合本段)內部焦點隨 content 隱藏而消失,鍵盤使用者失去落點。少量輸入欄位可以(UX 建議層級:使用者通常完成填寫才切換)
 
 ---
 
@@ -99,9 +103,16 @@ Consumer 無需額外處理,保留 Radix `data-state` 屬性即可。
 
 ---
 
+## 常見誤解
+
+**誤解**:「Accordion 該提供全部展開 / 全部收合按鈕」。
+**事實**:期待「全展開一次讀完 / 全收合做導航」代表內容是參照型結構——那是 TreeView / DescriptionList 的場景。Accordion 的設計意圖是節省空間、一次聚焦一段(見「禁止事項」)。
+
+---
+
 ## 邊界狀態
 
-Empty state 由 consumer 處理(無 items 則不渲染);loading 狀態由 consumer 用 `<Skeleton />` 包;disabled state 詳 `../Field/field-controls.spec.md`;本元件無 density 概念,padding 固定為 `py-4 / pb-4`(不隨 density token 變動)。
+Empty state 由 consumer 處理(無 items 則不渲染);loading 狀態由 consumer 用 `<Skeleton />` 包;disabled state 詳 `../Field/field-controls.spec.md`;本元件無 density 概念,padding 固定為 `py-4 / pb-4`(不隨 density token 變動)。**垂直留白世界級對照(2026-06-12 source-verified)**:shadcn trigger `py-4`=16px(本 DS 基底,一字不差)/ Ant Collapse header 垂直 = paddingSM 12px / MUI Accordion = minHeight 48 + content margin 12px(expanded 64/20 漸進式)/ Carbon = min-height token 模型——業界垂直節奏值域 12-16px,16px 為舒適端上緣;item 數量無內建上限與虛擬捲動(全數 render),極長清單的收納(拆頁 / 搜尋)由 consumer 內容層處理。
 
 ---
 
@@ -112,3 +123,9 @@ Empty state 由 consumer 處理(無 items 則不渲染);loading 狀態由 consum
 - `../Sheet/sheet.spec.md` — 側邊抽屜
 - `../TreeView/tree-view.spec.md` — 具層級結構的收合（Accordion 的巢狀延伸）
 - Radix Accordion primitive — `@radix-ui/react-accordion`
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `tabs.spec.md`

@@ -47,13 +47,13 @@ export const UsageGuidance: Story = {
       <p>適合 Textarea 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Components/Textarea/展示" name="基本用法"><span className="text-primary hover:underline font-medium cursor-pointer">基本用法</span></LinkTo>
+          <LinkTo kind="Design System/Components/Textarea/展示" name="基本用法"><span className="text-primary hover:underline font-medium cursor-pointer">Issue 回報、評論留言等多行輸入(基本用法)</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Textarea/展示" name="在 Field 內"><span className="text-primary hover:underline font-medium cursor-pointer">在 Field 內</span></LinkTo>
+          <LinkTo kind="Design System/Components/Textarea/展示" name="在 Field 內"><span className="text-primary hover:underline font-medium cursor-pointer">表單內的專案說明、備註欄位(在 Field 內)</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-secondary mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,見下方與 Input 的分界示範。</p>
     </div>
 
       {/* vs 近親 — 原 VsInputRule */}
@@ -100,7 +100,7 @@ export const UsageGuidance: Story = {
 // ── Resize 行為 ───────────────────────────────────────────────────────
 
 export const ResizeRule: Story = {
-  name: '縮放 只 垂直，不允許 水平',
+  name: '縮放只允許垂直,不允許水平',
   render: () => (
     <div>
       <Rule
@@ -129,9 +129,9 @@ export const ReadonlyRule: Story = {
     <div>
       <Rule
         title="Textarea readonly 保留 padding，用底色標示閱讀區"
-        note="多行內容需要明確的閱讀區域邊界——多行文字若直接攤平會跟周圍純文字區融合,讀者無法辨識「這是一個 field 的內容」還是「文章一部分」。所以 readonly 時填上 bg-disabled 底色並保留內距,圈出一塊可辨識的閱讀區。Input readonly 因為是單行,可以做得更緊湊"
+        note="多行內容需要明確的閱讀區域邊界——多行文字若直接攤平會跟周圍純文字區融合,讀者無法辨識「這是一個 field 的內容」還是「文章一部分」。所以 readonly 時填上 bg-readonly 底色並保留內距,圈出一塊可辨識的閱讀區。Input readonly 因為是單行,可以做得更緊湊"
       >
-        <Textarea mode="readonly" defaultValue={'這是已送出的留言,現在呈現在 readonly 狀態。\n\n多行內容需要明確的閱讀區域邊界,所以 readonly 時保留內距並填上 bg-disabled 底色,圈出一塊閱讀區。'} rows={4} />
+        <Textarea mode="readonly" defaultValue={'這是已送出的留言,現在呈現在 readonly 狀態。\n\n多行內容需要明確的閱讀區域邊界,所以 readonly 時保留內距並填上 bg-readonly 底色,圈出一塊閱讀區。'} rows={4} />
         <Label>↑ 對照 Slack 已編輯留言 / Notion 嵌入文字塊的 readonly 呈現</Label>
       </Rule>
 
@@ -148,7 +148,7 @@ export const ReadonlyRule: Story = {
 // ── Icon / endAction 禁止 ────────────────────────────────────────────
 
 export const NoIconRule: Story = {
-  name: '禁止:內部不放 圖示 / endAction',
+  name: '框內不放圖示 / endAction',
   render: () => (
     <div>
       <Rule

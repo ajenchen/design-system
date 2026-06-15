@@ -367,8 +367,8 @@ export const PlacementRule: Story = {
         note="通常是 dot 模式,跟 description 文字並列作為狀態 indicator"
       >
         <div className="flex items-center gap-2">
-          <Badge dot variant="critical" aria-label="離線" />
-          <span className="text-body">離線</span>
+          <Badge dot variant="critical" aria-label="同步失敗" />
+          <span className="text-body">同步失敗</span>
         </div>
       </Rule>
 

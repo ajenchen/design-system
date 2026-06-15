@@ -17,8 +17,8 @@
 
 | 層 | 驗什麼 | 落地 |
 |---|---|---|
-| **1 marker(conformance 意圖)** | consumer wrap 高風險 primitive 必標 `// @story-baseline: <DS-path>#<export>` cite canonical | `check_consumer_story_baseline.sh`(P0)+ `check_story_invariants.sh` R7 |
-| **2 靜態 conformance(主防線)** | consumer 用對 token/primitive、沒 simplified mock、沒硬寫色值/字級/間距/shadow、沒 API-misuse | `check_consumer_ds_primitive_misuse.sh`(P0,含 2026-06-02 Pattern 8 硬寫 token)+ `check_layout_space_magic_numbers.sh`(P0 間距)+ `check_story_invariants.sh` R8(P0,registry antiPattern)+ `check_chrome_header_avatar_canonical.sh` / `check_sidebar_menu_button_implicit_wrap.sh` |
+| **1 marker(conformance 意圖)** | consumer wrap 高風險 primitive 必標 `// @story-baseline: <DS-path>#<export>` cite canonical | `check_consumer_app_invariants.sh(r2,2026-06-11 merge)`(P0)+ `check_story_invariants.sh` R7 |
+| **2 靜態 conformance(主防線)** | consumer 用對 token/primitive、沒 simplified mock、沒硬寫色值/字級/間距/shadow、沒 API-misuse | `check_consumer_app_invariants.sh(r3,2026-06-11 merge)`(P0,含 2026-06-02 Pattern 8 硬寫 token)+ `check_layout_space_magic_numbers.sh`(P0 間距)+ `check_story_invariants.sh` R8(P0,registry antiPattern)+ `check_chrome_header_avatar_canonical.sh` / `check_sidebar_menu_button_implicit_wrap.sh` |
 | **3 pixel/DOM identity(opt-in,窄用)** | 僅「忠實複製 replica」或「同 story 跨版本回歸」才比 render identity | `scripts/composition-fidelity-visual-diff.mjs`,**只比標了 `@composition-fidelity-mode` 的 mapping**;單獨 `@story-baseline` = conformance 不做 identity diff |
 
 **層 3 為何 opt-in(2026-06-02)**:`@story-baseline` 單獨 = conformance 意圖(交層 2 驗)。pixel/DOM identity 只在該 consumer story **額外標** `@composition-fidelity-mode: pixel|shell-only|structural` 才跑(用於忠實複製 / same-story 回歸)。0 個 opt-in → script exit 0(conformance 由層 2 保證)。**禁** 拿產品範本(內容刻意不同)去 pixel 比 DS showcase。
@@ -32,7 +32,7 @@ node scripts/composition-fidelity-visual-diff.mjs \
   --consumer-root=/path/to/ds-product-template --threshold-pct=0.5
 ```
 
-掛在 `.github/workflows/composition-fidelity.yml`(checkout DS + ds-product-template,build 兩邊 storybook 後比對;**build-storybook 前必先 `build:lib`** 否則 storybook-config tsc 找不到 `@qijenchen/design-system` 型別 = TS2307)。
+掛在 `.github/workflows/composition-fidelity.yml`(checkout DS + ds-product-template,build 兩邊 storybook 後比對;**build-storybook 前必先 `build:lib`** 否則 storybook-config tsc 找不到 `@qijenchen/design-system` 型別 = TS2307)。**2026-06-11 cheap pre-step**:checkout 後先秒級 grep consumer `@composition-fidelity-mode` marker(regex 對齊 diff script L118),0 命中 → skip 整段 ~30 min dual build(script 對 0 mapping 必 vacuous exit 0);≥1 命中 → full gate。現役 opt-in sentinel = `apps/template/src/CompositionFidelityReplica.stories.tsx`(Button#IconOnly 忠實複製 replica,mode pixel,經 mirror 傳播到 ds-product-template),讓 gate 名實相符。
 
 ## 不該做的事
 

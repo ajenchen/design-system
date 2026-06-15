@@ -104,7 +104,8 @@ export const ColorMatrix: Story = {
               <tr><Td>Range 填滿色 default</Td><Td><TokenCell token="--primary" display="bg-primary" /></Td><Td><TokenCell token="--primary" /></Td></tr>
               <tr><Td>Range 填滿色 disabled</Td><Td><TokenCell token="--border" display="bg-border" /></Td><Td><TokenCell token="--border" display="--border(neutral-5)" /></Td></tr>
               <tr><Td>Thumb 直徑</Td><Td mono>16px(h-4 w-4)</Td><Td>—</Td></tr>
-              <tr><Td>Thumb 底色</Td><Td><TokenCell token="--surface" display="bg-surface(白,default+disabled 不變)" /></Td><Td><TokenCell token="--surface" /></Td></tr>
+              <tr><Td>Thumb 底色 rest</Td><Td><TokenCell token="--on-emphasis" display="bg-on-emphasis(白,深淺不反轉)" /></Td><Td><TokenCell token="--on-emphasis" /></Td></tr>
+              <tr><Td>Thumb 底色 disabled</Td><Td><TokenCell token="--canvas" display="bg-canvas(不透明背景色,沉回)" /></Td><Td><TokenCell token="--canvas" /></Td></tr>
               <tr><Td>Thumb 邊框 default</Td><Td><TokenCell token="--primary" display="border-2 border-primary" /></Td><Td><TokenCell token="--primary" display="--primary(與 Range default 同色)" /></Td></tr>
               <tr><Td>Thumb 邊框 disabled</Td><Td><TokenCell token="--border" display="border-border" /></Td><Td><TokenCell token="--border" display="--border(與 Range disabled 同色)" /></Td></tr>
               <tr><Td>Thumb hover</Td><Td mono>border primary-hover + --elevation-100</Td><Td>—</Td></tr>

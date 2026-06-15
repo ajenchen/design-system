@@ -12,7 +12,12 @@
   "components": {
     "Sidebar": {
       "baseline": "packages/design-system/src/components/Sidebar/sidebar.stories.tsx#IconCollapse",
-      "requiredHelpers": ["WorkspaceBrand", "MAIN_NAV", "SidebarHeader", "SidebarFooter"],
+      "requiredHelpers": [
+        "WorkspaceBrand",
+        "MAIN_NAV",
+        "SidebarHeader",
+        "SidebarFooter"
+      ],
       "antiPatterns": [
         {
           "id": "sidebar-header-simplified-span",
@@ -25,13 +30,30 @@
           "regex": "<SidebarMenuButton[^>]*>[^<]*<[A-Z][a-zA-Z]+[[:space:]]+className=\"size-",
           "severity": "block",
           "rationale": "SidebarMenuButton 必用 startIcon prop + tooltip prop;children inline icon = drift"
+        },
+        {
+          "id": "sidebar-header-subtitle-second-line",
+          "regex": "<SidebarHeader[^>]*>[[:space:]]*<div[^>]*flex-col",
+          "severity": "block",
+          "rationale": "SidebarHeader brand 必單行(Fixed-h chrome 不可成長,sidebar.spec.md SidebarHeader 段 2026-06-12 明文)。flex-col 直接子層 = logo name 下加副標的結構簽名 — shadcn TeamSwitcher demo prior 滲漏;plan/org 資訊歸 workspace switcher dropdown row,非常駐 header"
+        },
+        {
+          "id": "sidebar-footer-two-line",
+          "regex": "<SidebarFooter[^>]*>.{0,400}(text-xs|leading-tight)",
+          "severity": "block",
+          "rationale": "SidebarFooter user 區必單行(名字 only;職稱/email 等身份資訊歸 ItemAvatar hoverCard 的 ProfileCard,sidebar.stories.tsx UserFooter canonical)。shadcn nav-user 的「name + email text-xs 兩行」是強 LLM 先驗,且 text-xs 違反 chrome typography canonical(sidebar.spec『chrome 內 text 一律 text-body-lg』);400 字元窗限制 greediness"
         }
       ]
     },
     "DataTable": {
       "baseline": "packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions",
       "toolbar": {
-        "requiredHelpers": ["Popover", "PopoverTrigger", "PopoverContent", "Input"],
+        "requiredHelpers": [
+          "Popover",
+          "PopoverTrigger",
+          "PopoverContent",
+          "Input"
+        ],
         "filterPanel": "DataTableFilterPanel",
         "sortManager": "DataTableSortManager",
         "buttonCanonical": {
@@ -72,6 +94,12 @@
           "regex": "<ChromeHeader[^>]*>.{0,160}<span[[:space:]]+className=\"[^\"]*flex-1[^\"]*\">",
           "severity": "block",
           "rationale": "ChromeHeader title 該用 <h1 className=\"text-body-lg font-medium\"> 緊鄰 SidebarTrigger,不該用 <span flex-1> 撐空間造成 toggle + title 巨大間距"
+        },
+        {
+          "id": "chromeheader-subtitle-second-line",
+          "regex": "<(ChromeHeader|PageHeader)[^>]*>[[:space:]]*<div[^>]*flex-col",
+          "severity": "block",
+          "rationale": "Chrome 家族永遠 single-row(header-canonical.spec.md:47,剛性 --chrome-header-height);title 下加副標/description = LLM 先驗回填(Polaris Page subtitle / Tailwind UI page heading 先驗),頁面說明文字歸 content 區,非 chrome。flex-col 直接子層 = 兩行結構簽名"
         }
       ]
     }

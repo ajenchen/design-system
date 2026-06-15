@@ -6,8 +6,11 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 import type { FieldMode, FieldVariant } from "@/design-system/components/Field/field-types"
-import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode } from "@/design-system/components/Field/field-context"
+import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldSize } from "@/design-system/components/Field/field-context"
+import { fieldWrapperStyles } from "@/design-system/components/Field/field-wrapper"
 import { SelectionItem } from "@/design-system/components/SelectionControl/selection-item"
+import type { LucideIcon } from "lucide-react"
+import type { AvatarData } from "@/design-system/components/Avatar/avatar"
 import { CheckboxGroupContext } from "./checkbox-group"
 
 // ── Variants ────────────────────────────────────────────────────────────────
@@ -68,6 +71,10 @@ const checkIconSize: Record<string, number> = { sm: 12, md: 12, lg: 16 }
 // - 原 {3.5, 3.5, 2.5} → effective render thickness 1.75 / 1.75 / 1.67 = 跨 size 差 0.08px(視覺看不出)
 // - 改 {3, 3, 2.5} 保留 sm/md 小尺寸 legibility insurance(per iOS HIG / Material 3 cite)
 //   + lg 仍稍粗於 Lucide default 2(保留 compensation 主旨,但不過度差異化)
+// ⚠️ 2026-06-12:發現 base.css `.lucide{stroke-width:1.75}` 全域規則自 2026-04-08 起
+// 無條件蓋掉本 prop(CSS class > SVG attribute)→ 本表從未真渲染過,上述 05-18 視覺
+// 測試兩者實為 0.875px(證據污染)。base.css 已改 `[stroke-width='2']` 限定,本表自此
+// 真實生效(pixel 驗證 1.50px)。SSOT → .claude/references/ui-dev-rules.md「小尺寸 icon stroke 補償」
 const checkStrokeWidth: Record<string, number> = { sm: 3, md: 3, lg: 2.5 }
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -87,6 +94,10 @@ export interface CheckboxProps
    * 在 <Field> context 內時此 prop 會被忽略（由 FieldDescription 接管）。
    */
   description?: React.ReactNode
+  /** 可選左側 icon(label 前)— 2026-06-12 M30 修:轉發 SelectionItem 既有 canonical 槽(selection-item.tsx jsDoc 為 SSOT;與 avatar 互斥)*/
+  icon?: LucideIcon
+  /** 可選左側 avatar(label 前)— 同上,SelectionItem 槽轉發 */
+  avatar?: AvatarData
   /**
    * readonly 模式：鎖定互動但維持 checked/unchecked 視覺正確。
    * 與 disabled 的差異：readonly 不降色（可讀），disabled 降色（弱化）。
@@ -120,6 +131,8 @@ const Checkbox = React.forwardRef<
       className,
       size,
       label,
+      icon,
+      avatar,
       description,
       readOnly = false,
       disabled,
@@ -168,6 +181,12 @@ const Checkbox = React.forwardRef<
     const resolvedDisabled = useResolvedFieldDisabled(disabled)
     const resolvedMode = useResolvedFieldMode({ mode, disabled, readOnly })
     const effectiveReadOnly = readOnly || resolvedMode === 'readonly'
+    // mode='disabled'(如 DataTable disabled cell 直傳)必須落到真 disabled chrome —
+    // 2026-06-12 修:原本只看 resolvedDisabled(prop/fieldCtx),mode='disabled' 無人消費
+    // → disabled boolean cell 渲出可 focus 的正常外觀 checkbox(違 field-controls.spec L286)
+    const effectiveDisabled = resolvedDisabled || resolvedMode === 'disabled'
+    // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:150-161)
+    const resolvedBoxSize = useResolvedFieldSize(size ?? undefined, 'md') as 'sm' | 'md' | 'lg'
 
     // ── mode='display'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
     // 純展示模式:無互動 primitive、渲染 ✓ / —(checked=true → ✓ / 其他 → —)。取代 BooleanDisplay。
@@ -178,11 +197,42 @@ const Checkbox = React.forwardRef<
         : <span className="text-fg-muted">—</span>
     }
 
+    // ── mode='readonly' in Field(2026-06-12 user 拍板「灰框 + ✓/—」)─────────────
+    // Field 內 readonly boolean = readonly 灰框 chrome + display 同款值語言 ✓/—。
+    // 灰框消費 fieldWrapperStyles 同一 cva = 與 Input readonly 字面同源(SSOT,改一處全動)。
+    // 理由:同一張 readonly 表單裡文字控件有 bg-readonly 灰框鎖定訊號,boolean 保留全彩
+    // 控件會誤導「仍可操作」(世界級 0/4 用原樣鎖互動:Salesforce=✓ 靜態 glyph /
+    // SAP=靜態文字 / Atlassian=readView / Ant Pro=文字)。
+    // Scope:僅 Field 內且無 inline label(FieldLabel 接管 label 的表單欄位場景);
+    // standalone readOnly(settings list / SelectionItem row)維持原樣鎖互動不變。
+    if (effectiveReadOnly && insideField && effectiveLabel == null) {
+      const isChecked = (props.checked ?? props.defaultChecked) === true
+      const boxSize = resolvedBoxSize
+      return (
+        <div
+          role="checkbox"
+          aria-checked={isChecked}
+          aria-readonly="true"
+          aria-labelledby={fieldCtx?.labelId}
+          aria-invalid={fieldCtx?.invalid || undefined}
+          data-readonly="true"
+          tabIndex={0}
+          className={cn(
+            fieldWrapperStyles({ size: boxSize, mode: 'readonly', variant: 'default' }),
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            className,
+          )}
+        >
+          {isChecked ? <span className="text-foreground">✓</span> : <span className="text-fg-muted">—</span>}
+        </div>
+      )
+    }
+
     const rootEl = (
       <CheckboxPrimitive.Root
         id={inputId}
         ref={ref}
-        disabled={resolvedDisabled}
+        disabled={effectiveDisabled}
         aria-readonly={effectiveReadOnly || undefined}
         data-readonly={effectiveReadOnly || undefined}
         tabIndex={effectiveReadOnly ? -1 : undefined}
@@ -208,8 +258,10 @@ const Checkbox = React.forwardRef<
         control={rootEl}
         label={effectiveLabel}
         description={effectiveDescription}
+        icon={icon}
+        avatar={avatar}
         htmlFor={inputId}
-        disabled={resolvedDisabled}
+        disabled={effectiveDisabled}
         size={sizeKey}
       />
     )
@@ -226,9 +278,10 @@ export const checkboxMeta = {
 
   },
   sizes: {
-    sm: { fieldHeight: 28, iconSize: 16, typography: 'body' },
-    md: { fieldHeight: 32, iconSize: 16, typography: 'body' },
-    lg: { fieldHeight: 36, iconSize: 20, typography: 'body' },
+    // 2026-06-10 修 stale meta:iconSize 對齊 checkIconSize 真值(L49 sm/md=12, lg=16;deep-audit A.1b 抓 metadata drift)
+    sm: { fieldHeight: 28, iconSize: 12, typography: 'body' },
+    md: { fieldHeight: 32, iconSize: 12, typography: 'body' },
+    lg: { fieldHeight: 36, iconSize: 16, typography: 'body' },
   },
   states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {

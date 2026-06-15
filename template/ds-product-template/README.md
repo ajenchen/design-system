@@ -135,7 +135,7 @@ ds-product-template/
 
 Then plugin auto-enables (`.claude/settings.json` `defaultMode: "auto"`). You get:
 - 22+ skills (`/component-quality-gate`, `/visual-audit`, etc.)
-- 59 hooks (auto-fire pre/post tool events)
+- 52 hooks (auto-fire pre/post tool events)
 - 31 active M-rules (CLAUDE.md instructions inherit on every session)
 
 ## Important rules(read CLAUDE.md from `design-system` repo via plugin)
@@ -156,7 +156,7 @@ Then plugin auto-enables (`.claude/settings.json` `defaultMode: "auto"`). You ge
 ```bash
 claude                                                         # ① 啟動 Claude Code
 # 內輸: /plugin marketplace add github:ajenchen/design-system    # ② 拿 DS 治理 plugin
-# 內輸: /plugin install design-system@qijenchen-ds                #    啟用 22 skills + 59 hooks
+# 內輸: /plugin install design-system@qijenchen-ds                #    啟用 22 skills + 52 hooks
 npm run setup:netlify                                          # ③ Netlify OAuth + 印 dashboard URL
 # Netlify Dashboard → Environment variables → 加 STORYBOOK_BASIC_AUTH=user:password(免費上密碼)
 ```
@@ -183,7 +183,7 @@ Deploy URL 在 push 後 hook `inject_deploy_url_after_push.sh` 自動 inject 進
 **為何不走 Dashboard 的 Password Protection?**(2026-06-05 官方 docs + support forum 三重證實):
 - ❌ **Dashboard「Password protection / Basic protection」**(Site settings → Access & security)= **Pro 方案專屬**($20/mo);free-tier 沒這個開關,按下去會被要求升級付費(這就是 fork user 卡住的原因)
 - ❌ **`_headers` 的 Basic-Auth header** = 同樣 **Pro 方案專屬**($20/mo);且官方限制頁載明 `_headers` basic-auth **不會套用到 edge function**——免費寫進 `_headers` 不會生效,別再用
-- ❌ **Identity** = 2024 起 Netlify 公告 deprecated;新帳號可能看不到 Identity menu
+- ❌ **Identity** = 完整 signup/login 系統(要自己接 login UI widget),對「上個簡單密碼」是 overkill(2025-02 曾公告 deprecate,**2026-02-19 官方已撤回**、仍 supported——不適合 simple gate 才不用)
 - ✅ **`STORYBOOK_BASIC_AUTH` env var → Edge Function `netlify/edge-functions/basic-auth.ts`** = 免費(Edge Functions 免費方案可用)、`.netlify.app` 預設網址直接生效、無需自訂網域,本 template 已內建
 
 **Defense-in-depth**(`netlify.toml` 已 ship):X-Robots-Tag noindex(搜尋引擎不收錄 URL)+ Referrer strict-origin + X-Frame SAMEORIGIN — 只防 SEO 索引,不擋直接訪問;**真實擋人**靠上面的 `STORYBOOK_BASIC_AUTH` Edge Function Basic Auth 那一層。

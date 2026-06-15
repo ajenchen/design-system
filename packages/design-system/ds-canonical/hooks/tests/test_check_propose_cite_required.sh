@@ -1,5 +1,6 @@
 #!/bin/bash
-# Tests for check_propose_cite_required.sh(2026-05-27 user verbatim codify;M22 cite invariant 延伸到對話層)
+# 2026-06-11 repoint:check_propose_cite_required.sh 已合併進 check_propose_discipline.sh(prune merge;測試 payload 不變 = 行為等價驗證)
+# Tests for check_propose_discipline.sh(2026-05-27 user verbatim codify;M22 cite invariant 延伸到對話層)
 #
 # Hook 規則(Stop / SubagentStop post-assistant turn):
 #   - 只在 hook_event_name ∈ {Stop, SubagentStop} fire;其他 event → silent exit 0
@@ -21,7 +22,7 @@
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOOK="$SCRIPT_DIR/../check_propose_cite_required.sh"
+HOOK="$SCRIPT_DIR/../check_propose_discipline.sh"
 
 if [ ! -x "$HOOK" ]; then
   echo "FATAL: hook not executable: $HOOK"

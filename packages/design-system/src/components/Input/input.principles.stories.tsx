@@ -50,10 +50,10 @@ export const UsageGuidance: Story = {
         <div className="prose prose-sm max-w-prose mb-8">
           <p>適合 Input 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           <ul className="space-y-1">
-            <li><LinkTo kind="Design System/Components/Input/展示" name="四模式"><span className="text-primary hover:underline font-medium cursor-pointer">四模式</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Input/展示" name="尺寸與 Button 對齊"><span className="text-primary hover:underline font-medium cursor-pointer">尺寸與 Button 對齊</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Input/展示" name="尾端操作"><span className="text-primary hover:underline font-medium cursor-pointer">尾端操作</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Input/展示" name="錯誤狀態"><span className="text-primary hover:underline font-medium cursor-pointer">錯誤狀態</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Input/展示" name="四模式"><span className="text-primary hover:underline font-medium cursor-pointer">商品名稱欄位的編輯 / 純展示 / 唯讀 / 停用四模式</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Input/展示" name="尺寸與 Button 對齊"><span className="text-primary hover:underline font-medium cursor-pointer">搜尋列 — 輸入框與按鈕並排等高</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Input/展示" name="尾端操作"><span className="text-primary hover:underline font-medium cursor-pointer">密碼顯示切換 / 搜尋清除等尾端操作</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Input/展示" name="錯誤狀態"><span className="text-primary hover:underline font-medium cursor-pointer">Email 格式錯誤的驗證回饋</span></LinkTo></li>
           </ul>
           <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>
@@ -263,30 +263,3 @@ export const ErrorRule: Story = {
   ),
 }
 
-export const DataTypeRule: Story = {
-  name: '資料類型匹配',
-  render: () => (
-    <div>
-      <Rule
-        title="Input 只用於純文字——沒有格式化需求的 value"
-        note="姓名、URL、搜尋字串、email。格式化邏輯是 identity(value → value)"
-      >
-        <Input placeholder="姓名" defaultValue="Ada Chen" />
-        <Input startIcon={Globe} defaultValue="https://example.com" />
-        <Input startIcon={Search} placeholder="搜尋..." />
-      </Rule>
-
-      <Rule
-        title="❌ 不用 Input 顯示需要格式化的資料"
-        note="數字、日期、金額都需要格式化(千分位、時區、幣別符號)。每種資料類型有專屬元件,擁有該類型的格式化邏輯(唯一真實來源),同時服務 Form 和 DataTable"
-      >
-        <Input defaultValue="1234567" placeholder="金額" />
-        <Label warn>↑ 金額 → 用 NumberInput + currency mode(自動 $1,234,567)</Label>
-        <Input defaultValue="2026-04-18" placeholder="日期" />
-        <Label warn>↑ 日期 → 用 DatePicker(in-locale 顯示、避免時區誤判)</Label>
-        <Input defaultValue="1234567" placeholder="數量" />
-        <Label warn>↑ 數字 → 用 NumberInput(千分位、min/max、step)</Label>
-      </Rule>
-    </div>
-  ),
-}

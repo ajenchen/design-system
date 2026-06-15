@@ -1,3 +1,7 @@
+/**
+ * @internal — DS-internal 單元(per `.claude/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
+ * 不進 root barrel front-door;由 Alert / Toast wrap 消費,end-user app 請用 wrapper 元件。
+ */
 import * as React from 'react'
 import { X as XIcon, Info, CircleCheck, TriangleAlert, XCircle, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -186,7 +190,7 @@ export const noticeMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  states: ['default'], // 無互動 layout primitive(spec「邊界案例」:不擁有 disabled;hover / focus 屬內嵌 dismiss Button)
   tokens: {
     bg: [],
     fg: ['text-error-text', 'text-fg-muted', 'text-fg-secondary', 'text-info-text', 'text-success-text', 'text-warning-text'],

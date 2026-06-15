@@ -85,7 +85,7 @@ export const Overview: Story = {
         <H3>消費場景</H3>
         <Desc>Command 本身不單獨使用,透過 SelectMenu 外層元件消費:
           <br />• <code className="font-mono text-footnote">SelectMenu</code> — Select / Combobox / PeoplePicker 的 searchable 浮層
-          <br />• <code className="font-mono text-footnote">Command Palette</code>(Cmd+K)— 全局跨頁搜尋入口(consumer 自組,本 DS 尚無包裝元件)
+          <br />• <code className="font-mono text-footnote">Command Palette</code>(Cmd+K)— 全局跨頁搜尋入口(消費本檔 export 的 CommandDialog 包裝,cmdk + Radix Dialog;見展示層「CommandPalette」)
         </Desc>
       </div>
     </div>

@@ -118,31 +118,38 @@ export const Clearable: StoryObj = {
 }
 
 // @story-trait-rationale: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。
-// ── 狀態 ──
+// @story-trait-rationale: 原 States(edit/readonly/disabled/error 觸發器狀態)retired 2026-06-11 —
+//   trigger field state 由 Select.stories.tsx「四模式」owns(SelectMenu 是 internal popover surface,
+//   不 own input state,見檔頭 rationale)。本層改示範浮層自己 own 的選項狀態。
+// ── 選項狀態(浮層內)──
 
-export const States: StoryObj = {
-  name: '狀態',
-  render: () => {
-    const [value, setValue] = React.useState('in_stock')
-    return (
-      <div className="flex flex-col gap-6 max-w-xs">
-        <div>
-          <span className="text-caption text-fg-muted mb-1 block">edit</span>
-          <Select options={statusOptions} value={value} onChange={setValue} />
-        </div>
-        <div>
-          <span className="text-caption text-fg-muted mb-1 block">readonly</span>
-          <Select mode="readonly" options={statusOptions} value={value} />
-        </div>
-        <div>
-          <span className="text-caption text-fg-muted mb-1 block">disabled</span>
-          <Select mode="disabled" options={statusOptions} value={value} />
-        </div>
-        <div>
-          <span className="text-caption text-fg-muted mb-1 block">error</span>
-          <Select options={statusOptions} value={value} onChange={setValue} error />
-        </div>
-      </div>
-    )
-  },
+const assigneeOptions = [
+  { value: 'ada', label: 'Ada Chen', description: 'Design Engineer' },
+  { value: 'ben', label: 'Ben Liu', description: 'Frontend' },
+  { value: 'cindy', label: 'Cindy Wang', description: '休假中,暫不可指派', disabled: true },
+  { value: 'derek', label: 'Derek Kao', description: 'Backend' },
+]
+
+const OptionStatesDemo = () => {
+  const [value, setValue] = React.useState<string>('ada')
+  return (
+    <div className="flex flex-col gap-4 max-w-xs">
+      <p className="text-caption text-fg-secondary">
+        浮層內選項狀態 — 已選中(勾選標記)、disabled(休假成員不可選)、搜尋無結果(輸入不存在的名字)
+      </p>
+      <Select
+        options={assigneeOptions}
+        value={value}
+        onChange={setValue}
+        searchable
+        placeholder="指派負責人…"
+        aria-label="指派負責人(SelectMenu option-states demo)"
+      />
+    </div>
+  )
+}
+
+export const OptionStates: StoryObj = {
+  name: '選項狀態',
+  render: () => <OptionStatesDemo />,
 }

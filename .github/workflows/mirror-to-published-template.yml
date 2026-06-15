@@ -115,10 +115,13 @@ jobs:
           # ^$BUILT_VER 寫進 package.json,npm install 需該版已上 npm → 否則 ETARGET(beta.56/57 連敗根因)。故 poll
           # 等「正在發布的版本」($BUILT_VER,直接讀 DS source,不靠 clone 的舊值)上 npm 才重生 lock。
           # 非版本變更時 $BUILT_VER 早已在 npm → 立即通過,零等待。
-          echo "⏳ 等 @qijenchen/design-system@$BUILT_VER 上 npm(避開 release-publish race,最多 15min)..."
+          # 2026-06-10 fix:必等「兩個」套件都上 npm(beta.61 mirror 敗因:只等 design-system,
+          # storybook-config 晚幾分鐘 publish → lock 重生 ETARGET notarget storybook-config)。
+          echo "⏳ 等 @qijenchen/design-system@$BUILT_VER + @qijenchen/storybook-config@$BUILT_VER 上 npm(避開 release-publish race,最多 15min)..."
           for i in $(seq 1 60); do
-            if npm view "@qijenchen/design-system@$BUILT_VER" version >/dev/null 2>&1; then
-              echo "✓ @qijenchen/design-system@$BUILT_VER 已上 npm,繼續重生 lock"; break
+            if npm view "@qijenchen/design-system@$BUILT_VER" version >/dev/null 2>&1 \
+               && npm view "@qijenchen/storybook-config@$BUILT_VER" version >/dev/null 2>&1; then
+              echo "✓ 兩套件 @$BUILT_VER 都已上 npm,繼續重生 lock"; break
             fi
             if [ "$i" -eq 60 ]; then
               echo "❌ 等 npm 逾時 15min — Release 可能失敗 / 延遲。本次不 mirror(避免寫出指向不存在版本的 lock)。"

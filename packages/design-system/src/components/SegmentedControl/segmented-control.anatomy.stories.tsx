@@ -167,7 +167,7 @@ export const StateBehavior: Story = {
             <thead><tr><Th>State</Th><Th>Bg</Th><Th>Text</Th><Th>Border</Th><Th>Z-index</Th></tr></thead>
             <tbody>
               <tr><Td>Unselected</Td><Td><TokenCell token="--surface" display="bg-surface" /></Td><Td><TokenCell token="--fg-secondary" display="text-fg-secondary" /></Td><Td><TokenCell token="--border" display="border-border" /></Td><Td>—</Td></tr>
-              <tr><Td>Hover unselected</Td><Td><TokenCell token="--surface" display="bg-surface(不變)" /></Td><Td><TokenCell token="--foreground" display="text-foreground" /></Td><Td><TokenCell token="--border" display="border-border" /></Td><Td>—</Td></tr>
+              <tr><Td>Hover unselected</Td><Td><TokenCell token="--surface" display="bg-surface(不變)" /></Td><Td><TokenCell token="--foreground" display="text-foreground" /></Td><Td><TokenCell token="--border-hover" display="border-border-hover" /></Td><Td mono>z-[5](hover 邊框浮上)</Td></tr>
               <tr><Td>Selected</Td><Td><TokenCell token="--surface" display="bg-surface" /></Td><Td><TokenCell token="--primary-hover" display="text-primary-hover" /></Td><Td><TokenCell token="--primary-hover" display="border-primary-hover" /></Td><Td mono>z-10(浮在相鄰 item border 上)</Td></tr>
               <tr><Td>Disabled</Td><Td>灰化</Td><Td>灰化</Td><Td>—</Td><Td>—</Td></tr>
             </tbody>
