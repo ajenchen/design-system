@@ -1,0 +1,3 @@
+@import 'tailwindcss';
+@import '@qijenchen/design-system/styles/tokens';
+@source '../../../node_modules/@qijenchen/design-system/src/**/*.{js,ts,jsx,tsx}';
