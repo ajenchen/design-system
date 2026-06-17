@@ -1,82 +1,42 @@
 #!/usr/bin/env node
-// sync-all.mjs — 1-command sync npm + Claude plugin marketplace + plugin install
+// sync-all.mjs — 1-command 同步 DS 治理到最新(C-prime:npm-only,雲端可跑)
 //
-// Anchor:2026-05-28 全盤 sweep round 4 — 原 inline `sync-all` script 用
-// `2>/dev/null && ... && echo "✓"` chain → 任一 step silent fail 仍顯 ✓ 誤導 user
-// 以為 sync 完成。本 script 顯式 try each step + report per-step status。
+// 2026-06-17 C-prime 改寫(codex C5 共識 + 雲端探針實證):治理改 committed-config-first —
+//   - 治理「本體」(fork hooks + 設計紀律 preamble)在 npm package 的 ds-canonical/fork/,`npm install @beta` 即最新。
+//   - 設計紀律「事前注入」由 committed SessionStart hook 讀 npm-current preamble(下個 session 自動最新)。
+//   - skills 由 committed `.claude/settings.json` 的 enabledPlugins 在雲端自動浮出(免 plugin 指令)。
+// 故 sync-all = 純 npm(不再 shell `claude plugin ...`;舊 plugin 指令在雲端不可靠 #63028 + 非 npm-only)。
+//
+// Anchor:plain `npm install` 會被 lockfile 重現舊樹(codex risk 2)→ 明確 `@beta` 拿最新 beta(robust)。
 
 import { spawnSync } from 'node:child_process'
 
 function run(label, cmd, args) {
   process.stdout.write(`▶ ${label}... `)
   const result = spawnSync(cmd, args, { stdio: ['inherit', 'pipe', 'pipe'], encoding: 'utf8' })
-  if (result.status === 0) {
-    console.log('✓')
-    return true
-  }
+  if (result.status === 0) { console.log('✓'); return true }
   console.log(`✗(exit ${result.status})`)
   if (result.stderr) console.log(`  stderr: ${result.stderr.trim().split('\n').slice(0, 3).join('\n  ')}`)
   return false
 }
 
-console.log('🔄 Syncing all sources(npm + Claude plugin marketplace + plugin install)')
+console.log('🔄 同步 DS 治理到最新(npm-only,雲端可跑)')
 console.log('')
 
-const results = {
-  npm: run(
-    // 2026-05-29 fix:明確 install @beta tag,不用 `npm update`(後者抓 `latest` dist-tag)。
-    // Why:pre-1.0 beta-only 套件,`latest` 可能跟 `beta` 分岔(beta.34 anchor:latest 卡 beta.33)
-    // → `npm update` 拿舊版 → fork user sync 不到最新修正。`@beta` 永遠 = 最新 beta,robust。
-    // (codex 2026-05-29 dual-track:「Do not rely on latest during prerelease」)
-    'npm install @qijenchen/* @beta(明確 tag,不靠 latest)',
-    'npm',
-    ['install', '@qijenchen/design-system@beta', '@qijenchen/storybook-config@beta', '--legacy-peer-deps'],
-  ),
-  marketplace: run(
-    'Claude plugin marketplace update qijenchen-ds',
-    'claude',
-    ['plugin', 'marketplace', 'update', 'qijenchen-ds'],
-  ),
-  plugin: run(
-    'Claude plugin update design-system@qijenchen-ds',
-    'claude',
-    ['plugin', 'update', 'design-system@qijenchen-ds'],
-  ),
-}
+const ok = run(
+  'npm install @qijenchen/{design-system,storybook-config}@beta(明確 @beta,不靠 lockfile/latest)',
+  'npm',
+  ['install', '@qijenchen/design-system@beta', '@qijenchen/storybook-config@beta', '--legacy-peer-deps'],
+)
 
 console.log('')
-const passed = Object.values(results).filter(Boolean).length
-const total = Object.keys(results).length
-
-if (passed === total) {
-  console.log(`✅ All ${total} sources synced. Restart Claude Code session to apply plugin changes.`)
+if (ok) {
+  console.log('✅ 治理本體已更到最新(node_modules/@qijenchen/design-system/ds-canonical/fork)。')
+  console.log('   • 設計紀律 preamble + fork hooks 隨 npm 更新。')
+  console.log('   • Skills 由 committed enabledPlugins 自動浮出(免 plugin 指令)。')
+  console.log('   👉 重啟 Claude Code session → committed hook 重讀 npm-current 治理生效。')
   process.exit(0)
 }
 
-console.log(`⚠️  ${passed}/${total} sources synced — review ✗ lines above for fail reason:`)
-if (!results.npm) {
-  console.log(`  • npm update fail → 試 \`npm install --legacy-peer-deps\` 後重跑`)
-}
-if (!results.marketplace) {
-  console.log(`  • Claude plugin marketplace fail`)
-  console.log(`    常見原因 1:marketplace 'qijenchen-ds' 還沒 add 到 local Claude CLI`)
-  console.log(`       → 跑:claude plugin marketplace add github:ajenchen/design-system`)
-  console.log(`         (一次性 setup,之後 sync-all 才 work)`)
-  console.log(`    常見原因 2:claude CLI 不在 PATH`)
-  console.log(`       → which claude → 無 → install Claude Code CLI(https://claude.com/code)`)
-}
-if (!results.plugin) {
-  console.log(`  • Plugin 'design-system' update fail`)
-  console.log(`    常見原因:plugin 還沒 install`)
-  console.log(`       → 跑:claude plugin install design-system@qijenchen-ds`)
-  console.log(`         (一次性 setup,之後 sync-all 才 work)`)
-}
-
-console.log('')
-console.log('完整 first-time setup(fork user):')
-console.log('  1. claude plugin marketplace add github:ajenchen/design-system')
-console.log('  2. claude plugin install design-system@qijenchen-ds')
-console.log('  3. npm run sync-all   # 之後每次 DS update 跑此')
-
-// Exit 1 if any step failed — surface to user / CI
+console.log('⚠️  npm install 失敗 — 試 `npm install --legacy-peer-deps` 後重跑;確認網路可達 npm registry。')
 process.exit(1)
