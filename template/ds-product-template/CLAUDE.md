@@ -14,7 +14,7 @@
 | 6 | Push main → Netlify auto-deploy | done |
 
 > **雲端(claude.ai/code)**:每個 session 是 fresh clone(node_modules 不留)→ committed bootstrap 偵測缺本體會**自動 `npm install @beta`** 啟用治理。網路政策需可達 npm/github。
-> **既有 fork 採用 C-prime**:跑一次 `npm run setup:governance`(寫入 committed 啟動器);之後 `npm run sync-all` 同步。
+> **既有 fork(C-prime 之前建立的)補上 committed 啟動器**:啟動器在 upstream 模板 → `git fetch upstream && git checkout upstream/main -- .claude/settings.json .claude/hooks/`(取 settings.json hooks 區塊 + 3 個啟動器),之後 `npm run sync-all` 拉治理本體;或直接重新從模板建立 repo。**(全新 fork 不需此步——啟動器已隨模板 ship。)**
 
 ## 🧭 治理怎麼到你手上(C-prime 多軌,皆 committed 隨 repo 走)
 - **事前主動指引**(寫產品 code 前就遵循 item-anatomy/layout-space/命名/SSOT 消費/4-family)→ committed SessionStart hook `inject_fork_governance_preamble.sh` 讀 npm-current `ds-canonical/fork/preamble.md` 注入 context。**可靠 + 最新 + 零 drift**(非 @import / 非 path-scoped rules,那兩個官方證實不可靠)。
