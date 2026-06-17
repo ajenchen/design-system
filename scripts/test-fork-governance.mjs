@@ -150,6 +150,13 @@ buildFullFixture()
   if (c.exit !== 0) { flowResults.push(`  dispatcher(PostToolUse CLEAN 檔): ❌ exit ${c.exit}(應 0;B1 brick 回歸 = 用 bash 跑 .py)`); fail++ }
   else flowResults.push('  dispatcher(PostToolUse CLEAN 檔): ✅ exit 0 不誤擋乾淨編輯')
 }
+// dispatcher:PostToolUse Bash git-push → exit 0(deploy-url 修:matcher 補 Bash 後,dispatcher 會在 git push 跑;
+// file-hooks 在 Bash payload 必自守 no-op,不得誤擋每次 push = brick。此為 deploy-url-relay 修正的安全鎖)
+{
+  const b = runTpl('fork-governance-dispatcher.sh', JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: 'Bash', tool_input: { command: 'git push origin main' } }))
+  if (b.exit !== 0) { flowResults.push(`  dispatcher(Bash git-push): ❌ exit ${b.exit}(應 0;file-hook 在 Bash 誤擋 = 每次 push 被 brick)`); fail++ }
+  else flowResults.push('  dispatcher(Bash git-push): ✅ exit 0(deploy-url 路徑可跑 + file-hooks 在 Bash 自守不誤擋)')
+}
 // dispatcher:manifest 缺 → 不 brick(exit 0)
 {
   rmSync(join(FULL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/manifest.json'), { force: true })

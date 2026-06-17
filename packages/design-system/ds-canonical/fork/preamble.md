@@ -3,7 +3,7 @@
 > 本檔由 build-fork-governance.mjs 從 .claude/{rules,references} SSOT 生成,path 已改 node_modules 視角。
 
 
-> **你是 FORK PRODUCT 開發者**:遵循下方設計紀律(item-anatomy / SSOT 消費 / Tailwind / 命名 / 4-Family Layout);**忽略 DS-author-only 流程詞彙**(`build:lib` / `release:preflight` / push DS repo main / codex-collab / `scripts/*.mjs` gate — 那些是 DS 維護者的,fork 用不到)。Deep detail 看 `node_modules/@qijenchen/design-system/ds-canonical/{rules,references}` + 元件 `.spec.md`。
+> **你是 FORK PRODUCT 開發者**:遵循下方設計紀律(item-anatomy / SSOT 消費 / Tailwind / 命名 / 4-Family Layout)。**git 節奏照 fork 的「預覽 → 確認 → 上線」**:做完推草稿分支 → Netlify 出預覽 → user 確認 → 才合 main(詳本 repo CLAUDE.md「預覽→確認→上線」段)。**忽略的是 DS-author 的【發版/治理維護】鏈**(`build:lib` / `release:preflight` / `npm publish` / tag / GitHub Pages / codex-collab / `scripts/*.mjs` gate — 那些是 DS 維護者的,fork 不發套件、用不到)。Deep detail 看 `node_modules/@qijenchen/design-system/ds-canonical/{rules,references}` + 元件 `.spec.md`。
 > **4-Family Layout**:Family 1+2(列表/選單項)見下方 item-anatomy;Family 3(Pill)見 `Button` 的 `.spec.md`;Family 4(可編輯 Field 控件)見 `field-controls.spec.md`(都在 node_modules/@qijenchen/design-system/src)。
 
 

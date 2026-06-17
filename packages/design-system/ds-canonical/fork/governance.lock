@@ -97,7 +97,7 @@
     },
     {
       "file": "launchers/settings-hooks.json",
-      "sha256": "b040779f18032dc382bb83ce8ccac3ebae4c2280976e73f14e3b78e39dc9367b",
+      "sha256": "04f328ae97687e112995288bff2c1fa8c9feecf25335f4b63036964209e7b402",
       "source": "template/.claude/settings.json"
     },
     {
@@ -106,7 +106,7 @@
     },
     {
       "file": "preamble.md",
-      "sha256": "940d812f228bd8b09e53baeef8291d581a256c91743f6445b7bc376539304ad2"
+      "sha256": "394299047d01f60bf1d9fd14a41e173b31d649068c62bd47352556beab9683e1"
     }
   ]
 }

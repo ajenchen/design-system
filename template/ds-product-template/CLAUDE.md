@@ -69,6 +69,18 @@ node_modules/@qijenchen/design-system/ds-story-manifest.json                    
 
 → 真斷點剩 ~3 個(OAuth click + 密碼設 + 密碼分享),約 3 分鐘。**治理本身零斷點**(committed + npm 自動)。
 
+## 🚦 預覽 → 確認 → 上線(git 流程,fork 版;**不含** DS 發版鏈)
+
+做產品的 git 節奏:
+1. **AI 做完一段** → 自動 `commit` + `push` 一個**草稿分支**(working branch)→ Netlify 自動 build → **出一個草稿預覽網址**(committed deploy-url hook 在 push 後自動吐連結進 reply)。
+2. **你看草稿**(不影響正式站)→ 要改就繼續講,AI 再推、預覽再更新。
+3. **確認 OK** → 你說「push / 合 main」→ AI squash-merge 到 main → **正式站(密碼保護)更新**。
+4. **只想看不想上線** → 停在草稿預覽即可。
+
+**重點**:你**不用為了「看」而特別下令 push** —— AI 做完會自動推草稿分支出預覽;你的「push / OK」是**上正式站**的關卡(對齊 DS 的 user-gate 精神,但 fork 端**沒有** bump 版本 / tag / npm publish / GitHub Pages 那些)。
+
+> ⚠️ 草稿預覽需 Netlify「branch deploys」啟用(`npm run setup:netlify` 會設定;或到 Netlify 後台開「Deploy all branches」)。未啟用時 → 改用 main 的密碼保護站當團隊預覽(push main → 團隊在唯一網址看,外人被密碼擋)。
+
 ## 🔄 Daily dev workflow
 | 事件 | 自動發生 |
 |---|---|

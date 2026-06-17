@@ -161,6 +161,15 @@ if (!skipPrompts) {
 }
 console.log('')
 
+console.log('━━━ 🚦 啟用草稿預覽(branch deploys — 給「預覽 → 確認 → 上線」流程)━━━')
+console.log('  做產品時 AI 會推「草稿分支」,要 Netlify 給每個分支獨立預覽網址,需開 branch deploys:')
+console.log(`     ${`https://app.netlify.com/projects/${siteSlug}/configuration/deploys#branches-and-deploy-contexts`}`)
+console.log('     → Branch deploys → 選「Deploy all branches」(1 個開關)')
+console.log('  開了之後:AI 推草稿分支 → 自動產生 https://<branch>--' + siteSlug + '.netlify.app 預覽網址(治理 hook 自動吐連結)。')
+// best-effort:至少把 deploy previews(PR)打開(API 可靠的部分);branch deploys 全開靠上面 dashboard
+try { execSync(`${netlifyCmd} api updateSite --data '{"site_id":"${siteId}","build_settings":{"skip_prs":false}}' 2>/dev/null`, { stdio: 'pipe' }); console.log('  ✓ deploy previews(PR-based 預覽)已試開') } catch { /* API 不保證,dashboard 為準 */ }
+console.log('  (未開 branch deploys 也行 → 用 main 的密碼保護站當團隊預覽:push main,團隊在唯一網址看、外人被密碼擋。)')
+console.log('')
 console.log('━━━ 後續驗證 ━━━')
 console.log(`  1. push main(或 Trigger deploy)後 2-3 min,Netlify Dashboard 看 ${siteUrl} 部署狀態`)
 console.log('  2. 試開 site URL(無痕視窗)→ 應該見瀏覽器原生帳密彈窗')

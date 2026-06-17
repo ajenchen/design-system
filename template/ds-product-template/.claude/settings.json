@@ -28,7 +28,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Edit|Write|MultiEdit",
+        "matcher": "Edit|Write|MultiEdit|Bash",
         "hooks": [
           { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/fork-governance-dispatcher.sh\"" }
         ]
