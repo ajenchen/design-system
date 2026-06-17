@@ -5,7 +5,7 @@
 - [project_goal.md](project_goal.md) — World-class DS where CLAUDE.md + specs ensure AI faithfully executes design principles
 
 ## Project (active work)
-- [project_cprime_governance_shipped.md](project_cprime_governance_shipped.md) — C-prime fork 治理已發版 beta.70(committed-config + npm,免 plugin);**雲端首次-session install-timing 待 user 真機驗證**(唯一無法 headless 的殘留)
+- [project_cprime_governance_shipped.md](project_cprime_governance_shipped.md) — C-prime fork 治理已發版 beta.70(committed-config + npm,免 plugin);**雲端端到端已驗證(2026-06-17 user 真機,proactive 指引在 cloud cold-clone 生效)**;機械強制層同機制+harness 已測(可選顯式雲端 spot-check)
 
 ## Feedback (workflow / collaboration discipline)
 - [feedback_codex_dual_track_synthesizer.md](feedback_codex_dual_track_synthesizer.md) — Codex dual-track + ASK gate 嚴格 + triple-verify + brief 三 invariant + Phase-A-first + auto-mode 禁問(2026-06-11 合併 05-23 directives)
