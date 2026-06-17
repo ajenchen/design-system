@@ -1,6 +1,6 @@
 {
   "name": "@qijenchen/storybook-config",
-  "version": "0.1.0-beta.70",
+  "version": "0.1.0-beta.71",
   "private": false,
   "description": "Shared Storybook config (addons preset + preview parameters + decorators) for design-system + consumer products. Single SSOT for storybook UX.",
   "type": "module",
