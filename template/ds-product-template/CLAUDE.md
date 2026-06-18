@@ -7,7 +7,7 @@
 | Step | Action | 為何 |
 |---|---|---|
 | 1 | `npm install`(或本機已裝跳過)| 拉 `@qijenchen/design-system` + `storybook-config`;**治理本體(fork hooks + 設計紀律 preamble)隨 npm 落地 `node_modules/.../ds-canonical/fork/`** |
-| 2 | 開啟 Claude Code session | committed `.claude/settings.json` 的 hook 自動 fire(全環境含雲端,已實證):**SessionStart 注入 npm-current 設計紀律 + dispatcher 跑官方治理 + bootstrap 缺本體自動裝**。(skills slash command 非 C-prime 自動送達 — 見下方「治理怎麼到你手上」)|
+| 2 | 開啟 Claude Code session | committed `.claude/settings.json` 的 hook 自動 fire(全環境含雲端,已實證):**SessionStart 注入 npm-current 設計紀律 + dispatcher 跑官方治理 + bootstrap 缺本體自動裝**。**fork-relevant skills(`/prototype` 等)已 committed 進 `.claude/skills/`,session-1 即可叫用**(見下方「治理怎麼到你手上」)|
 | 3 | `npm run setup:netlify`(要 deploy 才需)| Netlify site + 密碼保護(見下)|
 | 4 | `npm run create-app <name>`(要新 app)| 從 `apps/template/` 複製 |
 | 5 | `npm run storybook` 本地 verify | 確認 DS 元件視覺正確 |
@@ -19,7 +19,7 @@
 ## 🧭 治理怎麼到你手上(C-prime 多軌,皆 committed 隨 repo 走)
 - **事前主動指引**(寫產品 code 前就遵循 item-anatomy/layout-space/命名/SSOT 消費/4-family)→ committed SessionStart hook `inject_fork_governance_preamble.sh` 讀 npm-current `ds-canonical/fork/preamble.md` 注入 context。**可靠 + 最新 + 零 drift**(非 @import / 非 path-scoped rules,那兩個官方證實不可靠)。
 - **機械強制**(手刻 table / 硬寫間距色值 / 誤用 primitive 等被擋)→ committed `fork-governance-dispatcher.sh` 跑 npm fork-corpus hook(轉發攔截)。
-- **Skills(slash command,如 `/prototype`)→ 非 C-prime 自動送達**:Claude Code 只從 `.claude/skills` / plugin 載入、**不認 node_modules**,且專案級 `enabledPlugins` 被官方靜默忽略(#62174)。要 slash command 需自行 commit 進 `.claude/skills/` 或裝 plugin。**但設計治理不靠 skills** — 事前指引(preamble)+ 機械強制(hooks)已涵蓋核心,skills 只是便利包裝。
+- **Skills(slash command,如 `/prototype`)→ committed 送達,可直接叫用**:Claude Code 只從 `.claude/skills` 載入、不認 node_modules(且專案級 `enabledPlugins` 被官方靜默忽略 #62174),故 fork-relevant skills 由 build 從 DS SSOT 產生、**committed 進 `.claude/skills/`**:`/prototype` `/product-ui-audit` `/visual-audit` `/ux-audit` `/performance-audit` `/delivery-handoff` `/bug-fix-rhythm` `/scan-similar-bugs` `/propose-options` `/code-quality-audit`(官方控管:clobber-on-sync 覆寫、改不動;要 diverge 走 `.github/no-governance-sync`)。**新 fork session-1 即有**;既有 fork `npm run sync-all` 後**下個 session** 生效(Claude Code 在 session 開始前掃 skill,故剛同步的 skill 需重啟一次)。DS-author-only 治理 skill(design-system-audit / knowledge-prune / codex-collab 等)不送(fork 用不到)。
 - **本體 SSOT** 全在 npm(`npm install` 覆蓋 = 官方控管、改不動);`npm run sync-all` 更到最新。
 
 ### 🧩 寫某元件 UI 前必讀:DS 官方範例(stories)
@@ -85,7 +85,7 @@ node_modules/@qijenchen/design-system/ds-story-manifest.json                    
 | 事件 | 自動發生 |
 |---|---|
 | DS publish 新 beta | Dependabot daily + `sync-design-system.yml` → 自動 bump deps + commit |
-| 你想手動同步治理到最新 | `npm run sync-all`(`npm install @beta` → 治理本體最新 **+ idempotent 刷新接線骨架**〔啟動器 + settings hooks〕;重啟 session 生效)|
+| 你想手動同步治理到最新 | `npm run sync-all`(`npm install @beta` → 治理本體最新 **+ idempotent 刷新接線骨架 + skills**〔啟動器 + settings hooks + `.claude/skills/`〕;**重啟 session** 後 skill 生效)|
 | 你寫 product code | committed 治理 hook 自動 enforce(注入指引 + 擋違規);違規 = 立即提示/BLOCKER |
 | Push main | `audit.yml`(tsc + lint:imports + build)+ Netlify auto-rebuild |
 

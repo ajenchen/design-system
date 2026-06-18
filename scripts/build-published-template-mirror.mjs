@@ -235,7 +235,10 @@ console.log(`▶ Integrity scans(mirror integrity)`)
 let scanFail = 0
 
 // Scan 1: DS source residue prevention(per Test case M3)
-const dsSourceCheck = ['packages/design-system/src', 'packages/storybook-config/addons', '.claude/rules', '.claude/skills', '.claude/memory', '.claude/planning', '.claude-plugin']
+// .claude/skills|commands|agents 移出 blanket 封鎖 → 改下方 name-aware allowlist(2026-06-18 C-prime skill delivery):
+// fork-relevant 子集合法該 committed 進 mirror(use-template/fork session-1 可叫用 /prototype),非 fork 的仍擋。
+// rules/memory/planning 維持封鎖(rules 走 preamble 注入、memory/planning 刻意不送)。
+const dsSourceCheck = ['packages/design-system/src', 'packages/storybook-config/addons', '.claude/rules', '.claude/memory', '.claude/planning', '.claude-plugin']
 for (const p of dsSourceCheck) {
   if (existsSync(join(OUT_DIR, p))) {
     console.error(`  ❌ DS internal path leaked into mirror: ${p}`)
@@ -260,7 +263,22 @@ if (existsSync(mirrorHooksDir)) {
     scanFail += leaked.length
   }
 }
-console.log(`  ✓ Scan DS source residue: ${dsSourceCheck.length} paths + .claude/hooks bootstrap-allowlist checked,${scanFail} leaks`)
+// name-aware allowlist:.claude/{skills,commands,agents} 只准 fork manifest 列的 fork-relevant 名;其餘 = DS-author-only 洩漏。
+// allowed 名單 SSOT = ds-canonical/fork/manifest.json(build-fork-governance.mjs 產出)→ mirror guard 與 corpus 永不背離。
+const forkManifestPath = join(REPO_ROOT, 'packages/design-system/ds-canonical/fork/manifest.json')
+const forkManifest = existsSync(forkManifestPath) ? JSON.parse(readFileSync(forkManifestPath, 'utf8')) : {}
+for (const cat of ['skills', 'commands', 'agents']) {
+  const allowed = new Set([...(forkManifest[cat] || []), 'README.md'])
+  const mirrorCatDir = join(OUT_DIR, '.claude', cat)
+  if (existsSync(mirrorCatDir)) {
+    const leaked = readdirSync(mirrorCatDir).filter((f) => !allowed.has(f))
+    if (leaked.length) {
+      console.error(`  ❌ non-fork-relevant .claude/${cat} leaked into mirror: ${leaked.join(', ')}(只准 fork manifest 列的 fork-relevant 名)`)
+      scanFail += leaked.length
+    }
+  }
+}
+console.log(`  ✓ Scan DS source residue: ${dsSourceCheck.length} paths + .claude/hooks bootstrap-allowlist + skills/commands/agents name-allowlist checked,${scanFail} leaks`)
 
 // Scan 2: secret leak prevention(per Test case M2)
 const secretCheck = ['.env', '.env.local', '.npmrc.local', 'tmp/codex-stdout', '.claude/logs', '.claude/snapshots']

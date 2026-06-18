@@ -75,5 +75,19 @@
         "bucket": "REPLACE"
       }
     ]
-  }
+  },
+  "skills": [
+    "bug-fix-rhythm",
+    "code-quality-audit",
+    "delivery-handoff",
+    "performance-audit",
+    "product-ui-audit",
+    "propose-options",
+    "prototype",
+    "scan-similar-bugs",
+    "ux-audit",
+    "visual-audit"
+  ],
+  "commands": [],
+  "agents": []
 }

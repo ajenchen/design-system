@@ -92,7 +92,7 @@
     },
     {
       "file": "launchers/inject_fork_governance_preamble.sh",
-      "sha256": "eccf9dbb5ccd3a2e0bea6e3e225de2eb0f1634a6c12c349aab89439cf6e1fb89",
+      "sha256": "06bc80989782d15704a562cd9a7b2c13c063c89f1ee3a6bbfc807056825b20c7",
       "source": "template/.claude/hooks"
     },
     {
@@ -102,11 +102,115 @@
     },
     {
       "file": "manifest.json",
-      "sha256": "ee4f619b722c7d3a4f80dddb52dcee4bf900c7e6923945cd59d290d4a8236e5a"
+      "sha256": "627ff28351c0af0baca271bbcfa9812389979218ffa64c4d23b4abee7606429a"
     },
     {
       "file": "preamble.md",
       "sha256": "394299047d01f60bf1d9fd14a41e173b31d649068c62bd47352556beab9683e1"
+    },
+    {
+      "file": "skills/bug-fix-rhythm/SKILL.md",
+      "sha256": "9901dc89a2e58072687b37ab8160b0cfe477f28eb3fd812a70e559870d1ab407"
+    },
+    {
+      "file": "skills/code-quality-audit/SKILL.md",
+      "sha256": "9fec4a0a89799f73361e6352d21e200e6e7b3557a61c33e8b9d5b0affaa2809d"
+    },
+    {
+      "file": "skills/delivery-handoff/references/flow-diagram.md",
+      "sha256": "b750d5117c92a1d0cde53283951a6848a1d3baa69ef6253cdc308a49720281df"
+    },
+    {
+      "file": "skills/delivery-handoff/references/handoff-template.md",
+      "sha256": "7985469e96766da72032c7aad84e00efbbe0223dcaf7eb6df680b2f31c4d6a6e"
+    },
+    {
+      "file": "skills/delivery-handoff/references/inventory-checklist.md",
+      "sha256": "7be9cbe37788183aad8032373e22f5ca63e05f94f4232784a79f20bc3d122b75"
+    },
+    {
+      "file": "skills/delivery-handoff/SKILL.md",
+      "sha256": "b3ba781857bed71c1bff537519b1e3858e5f115f25fb7c55967e5b147d360f79"
+    },
+    {
+      "file": "skills/performance-audit/SKILL.md",
+      "sha256": "7a77f4999b8d4bb6875c105050196fc3d7b451713da791531d186c37e593020b"
+    },
+    {
+      "file": "skills/product-ui-audit/references/audit-checks.md",
+      "sha256": "4dd879a1c983dedc29520762313b22e3b4d38cb395afe8ca1ecb43eb5e52ef83"
+    },
+    {
+      "file": "skills/product-ui-audit/references/common-misuses.md",
+      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942"
+    },
+    {
+      "file": "skills/product-ui-audit/references/report-template.md",
+      "sha256": "a847aba70e7c8f8cd620420f8d34d7f818070253ece5cdb1010bec16f71f5f57"
+    },
+    {
+      "file": "skills/product-ui-audit/SKILL.md",
+      "sha256": "8d814dbd5409d8a6069a2a2a32360f5e1f356d44246005a7abba63b85599b723"
+    },
+    {
+      "file": "skills/propose-options/SKILL.md",
+      "sha256": "3c0f8a8cef70506802ad67350ecde1ff5f633ddab21c22f3a4f91d923b9b9151"
+    },
+    {
+      "file": "skills/prototype/references/audit-checks.md",
+      "sha256": "76ccad0fcfaaaacf4c45825bc42419374e3621572b72c847f51a9e96778a745c"
+    },
+    {
+      "file": "skills/prototype/references/benchmark-sources.md",
+      "sha256": "5bf8b038d2476c38c72cbb808f75e023655eaa7735d72c3e6071e199307e594b"
+    },
+    {
+      "file": "skills/prototype/references/checkpoints.md",
+      "sha256": "b37d72ad57392a6dbc75398bd9f9b92868346245530b8bddfbda4729744def33"
+    },
+    {
+      "file": "skills/prototype/references/evaluation-matrix.md",
+      "sha256": "575385e5250ecbe96068a94f71521e5d0bf9a1a33873c79500708ab620067be8"
+    },
+    {
+      "file": "skills/prototype/references/ooux-template.md",
+      "sha256": "7fda191d66844a765a67c4eae6c5c5cd54c45a2b40feff68fa54d33e24639486"
+    },
+    {
+      "file": "skills/prototype/references/proposal-template.md",
+      "sha256": "ec54bb412c255be03dd0269b708be8e8d4797f8bd58f4954a6dc52f955a9a8c6"
+    },
+    {
+      "file": "skills/prototype/SKILL.md",
+      "sha256": "21b6c91550233609274e772f245afa25bbc1aa338cc2a7a135a3577e3b16da77"
+    },
+    {
+      "file": "skills/scan-similar-bugs/SKILL.md",
+      "sha256": "ad532b903eb9dc4963fc938ace0b32fbdf14031ee60ee851f6ca1fe703ea893c"
+    },
+    {
+      "file": "skills/ux-audit/SKILL.md",
+      "sha256": "28673c2f0207a0fa37f262ae8276d2b120b61c3329ada4d900fd6cdca42e35ed"
+    },
+    {
+      "file": "skills/visual-audit/output/.gitkeep",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "skills/visual-audit/references/audit-architecture.md",
+      "sha256": "781ed6929c9bf354a0170f292fea23ce84dd7d7c8d9cba32698679ec42a2196f"
+    },
+    {
+      "file": "skills/visual-audit/references/visual-checklist.md",
+      "sha256": "1d2d366122227b0665135c9a9f3138385d369996ad870ffa1c58402753b22bd0"
+    },
+    {
+      "file": "skills/visual-audit/references/world-class-benchmarks.md",
+      "sha256": "bdb46cb8d1f164c141e0e7092932a787674fe5bd4defe88ad2ca91d2cfb76bdf"
+    },
+    {
+      "file": "skills/visual-audit/SKILL.md",
+      "sha256": "4e2cab48827f7301045656d10b926b2666582a89f6ce1e57a9a063beff82bb84"
     }
   ]
 }

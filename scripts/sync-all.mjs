@@ -49,9 +49,12 @@ if (ok) {
     if (refresh.copied?.length) console.log(`   • 啟動器:${refresh.copied.join(' / ')}`)
     if (refresh.removed?.length) console.log(`   • 移除 obsolete plugin-era hook:${refresh.removed.join(' / ')}(防 brick:這些舊 hook 沒 plugin 會擋掉所有編輯)`)
     if (refresh.settingsMerged) console.log('   • settings.json hooks + permissions 已對齊 canonical(strip 舊 launcher + obsolete + append + union,未動你自有非治理 hook)。')
+    if (refresh.skills?.length) console.log(`   • skills(可叫用如 /${refresh.skills[0]}):${refresh.skills.join(' / ')}(複製進 .claude/skills/,下個 session 生效;未動你自有 skill)`)
+    if (refresh.commands?.length) console.log(`   • commands:${refresh.commands.join(' / ')}`)
+    if (refresh.agents?.length) console.log(`   • agents:${refresh.agents.join(' / ')}`)
   }
 
-  console.log('   👉 重啟 Claude Code session → committed hook 重讀 npm-current 治理生效。')
+  console.log('   👉 重啟 Claude Code session → committed hook 重讀 npm-current 治理 + skills 生效。')
   process.exit(0)
 }
 

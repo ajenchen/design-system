@@ -178,9 +178,13 @@ function buildSkelFixture(withOptOut) {
   if (existsSync(SKEL)) rmSync(SKEL, { recursive: true, force: true })
   mkdirSync(join(SKEL, '.claude/hooks'), { recursive: true })
   if (withOptOut) { mkdirSync(join(SKEL, '.github'), { recursive: true }); writeFileSync(join(SKEL, '.github/no-governance-sync'), '') }
-  const npmLaunchers = join(SKEL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/launchers')
+  const npmFork = join(SKEL, 'node_modules/@qijenchen/design-system/ds-canonical/fork')
+  const npmLaunchers = join(npmFork, 'launchers')
   mkdirSync(npmLaunchers, { recursive: true })
   execSync(`cp -R '${join(ROOT, 'packages/design-system/ds-canonical/fork/launchers')}/.' '${npmLaunchers}/'`)
+  // 2026-06-18:帶 fork skills + manifest(測 skill 送達 / clobber scope）
+  execSync(`cp -R '${join(ROOT, 'packages/design-system/ds-canonical/fork/skills')}' '${npmFork}/'`)
+  copyFileSync(join(ROOT, 'packages/design-system/ds-canonical/fork/manifest.json'), join(npmFork, 'manifest.json'))
   // 既有 fork settings:user 自有「非治理」hook + 一個「舊版 launcher 註冊」(模擬 pre-update,測去重)
   writeFileSync(join(SKEL, '.claude/settings.json'), JSON.stringify({
     defaultMode: 'auto',
@@ -251,6 +255,43 @@ const r1 = refreshLaunchers(SKEL)
   const regGone = !JSON.stringify(s.hooks).includes('block_production_edit_without_plugin')
   if (!fileGone || !regGone) { skelResults.push(`  obsolete 移除: ❌ block_production_edit 殘留(file 在=${!fileGone}/reg 在=${!regGone})`); fail++ }
   else skelResults.push(`  obsolete 移除: ✅ block_production_edit 從 disk + settings 清掉(防 brick;removed=${(r.removed || []).join(',')})`)
+}
+// 4f skill 送達(2026-06-18:C-prime 補 skill 送達 → fork 可叫用 /prototype;根治 root cause)
+{
+  buildSkelFixture(false)
+  // user 自有非治理 skill(不得被 clobber)
+  mkdirSync(join(SKEL, '.claude/skills/my-team-skill'), { recursive: true })
+  writeFileSync(join(SKEL, '.claude/skills/my-team-skill/SKILL.md'), '---\nname: my-team-skill\n---\nmine')
+  const r = refreshLaunchers(SKEL)
+  const protoPath = join(SKEL, '.claude/skills/prototype/SKILL.md')
+  const protoThere = existsSync(protoPath)
+  const fmValid = protoThere && /^---[\s\S]*?\bname:\s*prototype\b[\s\S]*?^---/m.test(readFileSync(protoPath, 'utf8'))
+  const tenSkills = (r.skills || []).length === 10 && (r.skills || []).includes('prototype')
+  const noDropSkill = !existsSync(join(SKEL, '.claude/skills/design-system-audit')) // DROP 的 DS-internal 不得誤送
+  const userSkillKept = existsSync(join(SKEL, '.claude/skills/my-team-skill/SKILL.md'))
+  // clobber proof:竄改治理 skill → 再 refresh → 還原
+  writeFileSync(protoPath, 'tampered')
+  refreshLaunchers(SKEL)
+  const reverted = existsSync(protoPath) && readFileSync(protoPath, 'utf8') !== 'tampered'
+  // idempotent:第二次 refresh skill byte 不變
+  const b = readFileSync(protoPath, 'utf8'); refreshLaunchers(SKEL); const idem = readFileSync(protoPath, 'utf8') === b
+  if (!protoThere) { skelResults.push('  skill 送達: ❌ /prototype 未複製進 .claude/skills/'); fail++ }
+  else if (!fmValid) { skelResults.push('  skill 送達: ❌ prototype SKILL.md frontmatter name 不合法(Claude Code 會靜默不載)'); fail++ }
+  else if (!tenSkills) { skelResults.push(`  skill 送達: ❌ 應送 10 skill 含 prototype(實得 ${(r.skills || []).length})`); fail++ }
+  else if (!noDropSkill) { skelResults.push('  skill 送達: ❌ DROP 的 DS-internal skill(design-system-audit)被誤送'); fail++ }
+  else if (!userSkillKept) { skelResults.push('  skill 送達: ❌ clobber 了 user 自有 skill(my-team-skill)'); fail++ }
+  else if (!reverted) { skelResults.push('  skill 送達: ❌ 竄改的治理 skill 沒被還原(clobber 失效)'); fail++ }
+  else if (!idem) { skelResults.push('  skill 送達: ❌ 重跑 skill 內容變動(非冪等)'); fail++ }
+  else skelResults.push('  skill 送達: ✅ /prototype 等 10 skill 送達 + frontmatter 合法 + 無 DROP 誤送 + user skill 保留 + clobber 還原 + 冪等')
+}
+// 4g committed scaffold == generated(drift lock:stale scaffold → CI 紅,同 ds-canonical/fork 一致)
+{
+  const genSkills = join(ROOT, 'packages/design-system/ds-canonical/fork/skills')
+  const scaffoldSkills = join(ROOT, 'template/ds-product-template/.claude/skills')
+  let drift = false
+  try { execSync(`diff -r '${genSkills}' '${scaffoldSkills}'`, { stdio: 'pipe' }) } catch { drift = true }
+  if (drift) { skelResults.push('  scaffold drift: ❌ template/.claude/skills ≠ ds-canonical/fork/skills(重跑 build-fork-governance + commit)'); fail++ }
+  else skelResults.push('  scaffold drift: ✅ committed scaffold == 生成物(byte-equal)')
 }
 
 console.log('=== 假 fork 測試 harness 結果 ===')

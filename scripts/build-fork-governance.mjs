@@ -19,7 +19,7 @@
 //   node scripts/build-fork-governance.mjs            # 生成 ds-canonical/fork/
 //   node scripts/build-fork-governance.mjs --check    # 驗:(1) 全 hook 已分類(漏接=FAIL)(2) 生成物與 SSOT 無 drift
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, rmSync, createWriteStream } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, rmSync, statSync, cpSync, createWriteStream } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
@@ -30,6 +30,12 @@ const CLS_PATH = join(ROOT, 'scripts/fork-hook-classification.json')
 const GOV_PATH = join(ROOT, 'scripts/fork-governance-classification.json')
 const RULES_DIR = join(ROOT, '.claude/rules')
 const REFS_DIR = join(ROOT, '.claude/references')
+// 必-committed 類別 SSOT(Claude Code 只從 .claude/<cat>/ 載入、永不掃 node_modules → 必複製進 fork .claude/)
+const COMMITTED_CATS = [
+  { home: 'skills', dir: join(ROOT, '.claude/skills'), kind: 'dir' },     // skill = 目錄(<name>/SKILL.md)
+  { home: 'commands', dir: join(ROOT, '.claude/commands'), kind: 'file' }, // command = 單檔(<name>.md)
+  { home: 'agents', dir: join(ROOT, '.claude/agents'), kind: 'file' },     // agent = 單檔(<name>.md)
+]
 const OVERRIDE_DIR = join(ROOT, 'scripts/fork-hook-overrides')
 const OUT_DIR = join(ROOT, 'packages/design-system/ds-canonical/fork')
 const SETTINGS_PATH = join(ROOT, '.claude/settings.json')
@@ -62,6 +68,41 @@ if (ghost.length) {
   console.error(`❌ FORK-GOVERNANCE GHOST FAIL: ${ghost.length} 個分類的 hook 在 .claude/hooks/ 不存在(stale 分類):`)
   console.error(ghost.map((h) => '   - ' + h).join('\n'))
   process.exit(1)
+}
+
+// ── classification helpers(items 支援 name 字串 或 names 陣列)──
+function classifiedNames(home, buckets) {
+  const items = (gov.homes[home] && gov.homes[home].items) || []
+  const out = []
+  for (const it of items) {
+    if (buckets && !buckets.includes(it.bucket)) continue
+    const names = it.names || (it.name != null ? [it.name] : [])
+    out.push(...names)
+  }
+  return out
+}
+
+// ── (1b) Coverage gate:skills/commands/agents 每個單元都必須被分類(漏接=FAIL,沿用 hooks C3 future-SSOT 防漂移)──
+// 根治 root cause:skills 被分類成 SHIP 卻從沒被 build → 此 gate 確保「分類存在 ⇒ 一定有對應實檔」雙向不漂。
+for (const { home, dir, kind } of COMMITTED_CATS) {
+  if (!existsSync(dir)) continue
+  const actual = readdirSync(dir).filter((f) =>
+    kind === 'dir'
+      ? statSync(join(dir, f)).isDirectory()
+      : (f.endsWith('.md') && f !== 'README.md')) // README.md 是 charter,非治理單元
+  const allCls = new Set(classifiedNames(home))
+  const miss = actual.filter((a) => !allCls.has(a))
+  if (miss.length) {
+    console.error(`❌ FORK-GOVERNANCE COVERAGE FAIL(${home}): ${miss.length} 個未分類(新增 ${home} 必先分類進 fork-governance-classification.json homes.${home}):`)
+    console.error(miss.map((m) => '   - ' + m).join('\n'))
+    process.exit(1)
+  }
+  const ghostCat = [...allCls].filter((n) => n !== 'README.md' && !actual.includes(n))
+  if (ghostCat.length) {
+    console.error(`❌ FORK-GOVERNANCE GHOST FAIL(${home}): ${ghostCat.length} 個分類在 .claude/${home}/ 不存在(stale):`)
+    console.error(ghostCat.map((m) => '   - ' + m).join('\n'))
+    process.exit(1)
+  }
 }
 
 // ── event 對照(從 DS settings.json 取每個 hook 註冊在哪些 event)──
@@ -98,7 +139,7 @@ function buildCorpus() {
   if (existsSync(OUT_DIR)) rmSync(OUT_DIR, { recursive: true, force: true })
   mkdirSync(join(OUT_DIR, 'hooks'), { recursive: true })
 
-  const manifest = { _generated: 'build-fork-governance.mjs', hooks: {} } // event → [{file, source-hook}]
+  const manifest = { _generated: 'build-fork-governance.mjs', hooks: {}, skills: [], commands: [], agents: [] } // hooks: event → [{file, source-hook}];skills/commands/agents: 名單(sync clobber scope 權威)
   const lockEntries = []
 
   const emit = (outName, content, sourceHook, bucket, evs) => {
@@ -138,6 +179,35 @@ function buildCorpus() {
     emit(newName, readFileSync(ov, 'utf8'), e.hook, 'REPLACE', eventsOf(e.hook))
   }
   // DROP: 不生成
+
+  // ── 必-committed 類別(skills / commands / agents):整目錄複製進 ds-canonical/fork/<cat>/ ──
+  // Claude Code 只從 committed .claude/<cat>/ 載入、永不掃 node_modules → fork 必有實檔才能叫用(尤 /prototype)。
+  // 全部套 preambleTransform 改寫死指標(.claude/... / packages/design-system/src → node_modules/...);
+  // skill/command/agent 是「docs-with-pointers」,即使 SHIP_AS_IS 也須改 path(與 hook 的 self-contained shell verbatim 不同)。
+  const emitFile = (srcFile, outRel) => {
+    let buf = readFileSync(srcFile)
+    if (srcFile.endsWith('.md')) buf = Buffer.from(preambleTransform(buf.toString('utf8')))
+    const outPath = join(OUT_DIR, outRel)
+    mkdirSync(dirname(outPath), { recursive: true })
+    writeFileSync(outPath, buf)
+    lockEntries.push({ file: outRel, sha256: createHash('sha256').update(buf).digest('hex') })
+  }
+  const emitTree = (srcPath, outRel) => {
+    if (statSync(srcPath).isDirectory()) {
+      for (const ent of readdirSync(srcPath).sort()) emitTree(join(srcPath, ent), `${outRel}/${ent}`)
+    } else {
+      emitFile(srcPath, outRel)
+    }
+  }
+  for (const { home, dir } of COMMITTED_CATS) {
+    for (const name of classifiedNames(home, ['SHIP_AS_IS', 'SHIP_REWRITTEN'])) {
+      const src = join(dir, name)
+      if (!existsSync(src)) continue
+      emitTree(src, `${home}/${name}`)
+      manifest[home].push(name)
+    }
+    manifest[home].sort()
+  }
 
   // ── preamble.md(#3 事前指引層,deterministic 從 source 生成、hash-locked,禁人工摘要)──
   // 規則:via 含 "inject" 的 rules/references → 收錄全文(path-rewrite 後);via "npm_read" → 收錄 pointer。
@@ -205,6 +275,17 @@ function buildCorpus() {
   const lockStr = JSON.stringify({ _purpose: 'sha256 of every shipped fork governance body + manifest (tamper-detect baseline)', entries: lockEntries.sort((a, b) => a.file.localeCompare(b.file)) }, null, 2) + '\n'
   writeFileSync(join(OUT_DIR, 'governance.lock'), lockStr)
 
+  // ── committed scaffold:把必-committed 類別鏡像進 template 的 committed .claude/<cat>/ ──
+  // use-template/fork 從 published mirror 起手 → session-1 即有實檔可叫用(committed,早於 SessionStart 的 discovery 掃描)。
+  // = ds-canonical/fork/<cat> 的 byte-copy(generated artifact,禁手改);stale 由 release:preflight 的 git-clean check 攔
+  // (同 llms.txt 機制:--check 重生 → git 變髒 → preflight「未 commit 重生檔」FAIL)。hooks/launchers/preamble 不進 scaffold(留 node_modules)。
+  for (const { home } of COMMITTED_CATS) {
+    const srcCat = join(OUT_DIR, home)
+    const dstCat = join(TPL_CLAUDE, home)
+    if (existsSync(dstCat)) rmSync(dstCat, { recursive: true, force: true })
+    if (existsSync(srcCat)) cpSync(srcCat, dstCat, { recursive: true })
+  }
+
   return { manifest, lockEntries, count: lockEntries.length - 1 }
 }
 
@@ -217,13 +298,15 @@ if (CHECK) {
     console.error('❌ FORK-GOVERNANCE DRIFT: ds-canonical/fork/ 與 SSOT 重生結果不一致 — 重跑 `node scripts/build-fork-governance.mjs` 並 commit。')
     process.exit(1)
   }
-  console.log(`✅ fork-governance --check PASS:53 hook 全分類 + 生成物與 SSOT 無 drift（${r.count} 個 fork hook body）`)
+  console.log(`✅ fork-governance --check PASS:hooks + skills/commands/agents 全分類 + 生成物與 SSOT 無 drift（${r.count} 個 fork 治理檔)`)
 } else {
   const r = buildCorpus()
   const tally = cls._meta.tally
   console.log(`✅ fork governance corpus 生成 → packages/design-system/ds-canonical/fork/`)
-  console.log(`   ship-as-is ${tally.SHIP_AS_IS} / rewritten ${tally.SHIP_REWRITTEN} / replaced ${tally.REPLACE} / dropped ${tally.DROP}`)
-  console.log(`   → ${r.count} 個 fork hook body + manifest.json(dispatcher 清單)+ governance.lock(sha256 tamper baseline）`)
+  console.log(`   hooks:ship-as-is ${tally.SHIP_AS_IS} / rewritten ${tally.SHIP_REWRITTEN} / replaced ${tally.REPLACE} / dropped ${tally.DROP}`)
+  console.log(`   skills(${r.manifest.skills.length}): ${r.manifest.skills.join(', ') || '—'}`)
+  console.log(`   commands(${r.manifest.commands.length}) / agents(${r.manifest.agents.length})`)
+  console.log(`   → ${r.count} 個 fork 治理檔 + manifest.json + governance.lock(sha256 tamper baseline）`)
   const evs = Object.keys(r.manifest.hooks)
-  console.log(`   events: ${evs.map((e) => `${e}(${r.manifest.hooks[e].length})`).join(' / ')}`)
+  console.log(`   hook events: ${evs.map((e) => `${e}(${r.manifest.hooks[e].length})`).join(' / ')}`)
 }

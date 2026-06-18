@@ -14,8 +14,9 @@
 //
 // 抽成獨立模組 = sync-all 呼叫 + test-fork-governance.mjs 直接測(不需真跑 npm install)。
 
-import { readFileSync, writeFileSync, copyFileSync, existsSync, readdirSync, mkdirSync, rmSync } from 'node:fs'
+import { readFileSync, writeFileSync, copyFileSync, existsSync, readdirSync, mkdirSync, rmSync, cpSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // Claude Code 的 .claude/settings.json 允許 JSONC(// 行註解 / block 註解)→ JSON.parse 會炸。
 // string-aware strip 註解後再 parse(fork user 若註解過 settings,skeleton 刷新才不會默默 no-op)。
@@ -50,7 +51,7 @@ const refsObsolete = (cmd) => OBSOLETE_HOOKS.some((o) => new RegExp(`/${escRe(o)
 
 // 刷新 projectDir 的接線骨架;回傳 {copied, settingsMerged, skipped}
 export function refreshLaunchers(projectDir) {
-  const result = { copied: [], removed: [], settingsMerged: false, skipped: null }
+  const result = { copied: [], removed: [], settingsMerged: false, skills: [], commands: [], agents: [], skipped: null }
 
   // opt-out:fork user 明確不要官方覆蓋骨架
   if (existsSync(join(projectDir, '.github/no-governance-sync'))) {
@@ -102,5 +103,35 @@ export function refreshLaunchers(projectDir) {
 
   writeFileSync(settingsPath, JSON.stringify(s, null, 2) + '\n')
   result.settingsMerged = true
+
+  // 3. 刷新必-committed 類別(skills/commands/agents)— Claude Code 不掃 node_modules,須有實檔在 .claude/<cat>/ 才能叫用。
+  // clobber 只覆寫「治理擁有的名」(manifest 清單);使用者自有 skill/command/agent 名不在清單內 → 完全不碰(scope 精準,
+  // 同 launcher 的 path-segment 精準刪)。clobber = 官方控管不可客製(改動下次 sync 被還原;要 diverge 走 .github/no-governance-sync)。
+  const forkRoot = join(projectDir, 'node_modules/@qijenchen/design-system/ds-canonical/fork')
+  const manifestPath = join(forkRoot, 'manifest.json')
+  if (existsSync(manifestPath)) {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    for (const cat of ['skills', 'commands', 'agents']) {
+      const names = manifest[cat] || []
+      const catSrc = join(forkRoot, cat)
+      const catDest = join(projectDir, '.claude', cat)
+      for (const name of names) {
+        const s2 = join(catSrc, name)
+        if (!existsSync(s2)) continue
+        const d2 = join(catDest, name)
+        mkdirSync(catDest, { recursive: true })
+        if (existsSync(d2)) rmSync(d2, { recursive: true, force: true }) // clobber:還原使用者對治理單元的改動
+        cpSync(s2, d2, { recursive: true })
+        result[cat].push(name)
+      }
+    }
+  }
   return result
+}
+
+// 允許直接 `node scripts/refresh-fork-launchers.mjs`(inject hook self-heal 用);被 import(sync-all)時不執行。
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const r = refreshLaunchers(process.cwd())
+  if (r.skipped) console.log(`refresh-fork-launchers: skip(${r.skipped})`)
+  else console.log(`refresh-fork-launchers: launchers ${r.copied.length} / skills ${(r.skills || []).length} / settings ${r.settingsMerged ? 'merged' : '-'}`)
 }

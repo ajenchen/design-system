@@ -24,6 +24,14 @@ if [ ! -f "$PREAMBLE" ] && [ -f "$PD/package.json" ]; then
   ( cd "$PD" && npm install @qijenchen/design-system@beta @qijenchen/storybook-config@beta --legacy-peer-deps --no-audit --no-fund >/dev/null 2>&1 ) || true
 fi
 
+# (1b) 自我修復 skills/commands/agents:本體在但 .claude/skills 尚未送達(C-prime 之前的舊 fork / 尚未 sync-all)→ 從 npm 補。
+# ⚠️ Claude Code 在 SessionStart hook 跑「之前」就掃過 .claude/skills → 補的 skill「下個 session」才可叫用(self-heal,非當場;
+#    全新 use-template/fork 因 committed scaffold 不走此路、session-1 即有)。fail-open:任何錯都不阻擋。
+if [ -f "$PREAMBLE" ] && [ ! -e "$PD/.claude/skills/prototype" ] && [ -f "$PD/scripts/refresh-fork-launchers.mjs" ]; then
+  echo "💡 偵測 .claude/skills 尚未送達 → 從 npm 自我修復(下個 session 可叫用 /prototype 等 skill)…" >&2
+  ( cd "$PD" && node scripts/refresh-fork-launchers.mjs >/dev/null 2>&1 ) || true
+fi
+
 # (2) 本體在(本機持久 / 剛裝完)→ 讀 + 經 additionalContext 注入設計紀律
 if [ -f "$PREAMBLE" ]; then
   CONTENT=$(cat "$PREAMBLE" 2>/dev/null)
