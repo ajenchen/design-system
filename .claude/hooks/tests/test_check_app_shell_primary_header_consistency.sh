@@ -1,9 +1,10 @@
 #!/bin/bash
 # Tests for check_app_shell_primary_header_consistency.sh
 #
-# Hook(PreToolUse Edit/Write):偵測 AppShell consumer 2 violations:
+# Hook(PreToolUse Edit/Write):偵測 AppShell consumer 3 violations:
 #   V1 layout="primary-header" 缺 globalHeader prop
-#   V2 layout="primary-header" + 同 file 含 <SidebarHeader>
+#   V2 layout="primary-header" + 同 file 含 <SidebarHeader>(useSidebar/isMobile 豁免)
+#   V3 layout="primary-header" + 同 file 含 <SidebarFooter>(帳號家在 header 右,非 footer;無 isMobile 豁免)
 #
 # Hook 透過 stdin 讀 tool_input(INPUT=$(cat) + jq;2026-05-31 改 env→stdin 對齊 sibling helper + 讓 dispatcher 能呼叫)
 # 且需 TARGET file 真實存在於 disk(`[[ ! -f "$TARGET" ]] && exit 0`)。
@@ -142,6 +143,49 @@ const { isMobile } = useSidebar()
 </AppShell>
 '
 expect_pass_silent "8. responsive isMobile + SidebarHeader → silent(mobile-only 補品牌豁免)"
+
+# 9. layout="primary-header" + <SidebarFooter> → block (V3)
+#    (2026-06-18 beta.74:primary-header 帳號家在 header 右,sidebar footer 是 primary-sidebar 慣例;無 isMobile 豁免)
+run_hook_on_file "src/ph-footer.tsx" '
+<AppShell layout="primary-header" globalHeader={<GH />}>
+  <Sidebar>
+    <SidebarFooter>account</SidebarFooter>
+  </Sidebar>
+</AppShell>
+'
+expect_block "9. V3 primary-header + SidebarFooter → block" "V3 Sidebar 內含 SidebarFooter"
+
+# 10. layout="primary-header" + mobile header-right account(SidebarHeader 補品牌+帳號,無 SidebarFooter)→ silent
+#     (2026-06-18:帳號鏡像 globalHeader 到 Sheet header 右,無 footer = 合規;V2 isMobile 豁免 + V3 無 footer)
+run_hook_on_file "src/ph-header-account.tsx" '
+const { isMobile } = useSidebar()
+<AppShell layout="primary-header" globalHeader={<GH />}>
+  <Sidebar>
+    {isMobile && <SidebarHeader><WorkspaceBrand /><AccountMenu /></SidebarHeader>}
+  </Sidebar>
+</AppShell>
+'
+expect_pass_silent "10. primary-header + header-right account, no footer → silent"
+
+# 11. single-quote JSX layout={'primary-header'} missing globalHeader → block (V1)
+#     (2026-06-18 beta.74 regression:octal \047 gate bug → 單引號 JSX 整個 hook 靜默 skip;fix 後三種引號形式皆偵測)
+run_hook_on_file "src/single-quote.tsx" "
+<AppShell layout={'primary-header'}>
+  <Sidebar />
+</AppShell>
+"
+expect_block "11. single-quote layout JSX gate (octal fix regression) → V1 block" "V1 缺 globalHeader prop"
+
+# 12. prefix-extended component name <SidebarFooterPanel> with primary-header → silent (tag-boundary guard, V3 no false-positive)
+#     (2026-06-18 beta.74 audit P2#4:`<SidebarFooter` 不該 match `<SidebarFooterPanel`)
+run_hook_on_file "src/prefix-extended.tsx" '
+<AppShell layout="primary-header" globalHeader={<GH />}>
+  <Sidebar>
+    <SidebarFooterPanel>not the DS SidebarFooter</SidebarFooterPanel>
+  </Sidebar>
+</AppShell>
+'
+expect_pass_silent "12. prefix-extended <SidebarFooterPanel> → silent(V3 tag-boundary 不誤觸)"
 
 echo ""
 echo "=== Summary ==="

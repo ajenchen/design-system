@@ -113,12 +113,12 @@ if [ -z "$REMOTE_VERSION" ] || [ "$REMOTE_VERSION" = "null" ]; then exit 0; fi
 if [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
   cat << EOF
 
-📦 DS plugin update available:
+📦 DS governance update available:
    Local installed: $LOCAL_VERSION
    Latest published: $REMOTE_VERSION
 
 Run in terminal (1 command):
-  npm run sync-all  # npm + plugin marketplace + plugin install + restart prompt
+  npm run sync-all  # npm install @beta(治理本體)+ 刷新接線骨架(committed launchers + settings + skills);npm-only,免 plugin
 
 
 (Per user 2026-05-27 directive「DS 增刪改自動同步」— this hook detects staleness on session start.)

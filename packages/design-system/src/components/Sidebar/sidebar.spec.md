@@ -598,7 +598,7 @@ Consumer 不需要任何額外 code——只要加一個 prop:
 
 Sheet 開啟狀態**不持久化**。
 
-**Sheet 蓋住 global top bar → primary-header consumer 須在 Sheet 內補品牌/帳號**:Sheet（z-50）打開時覆蓋整個左側含 global top bar。若你是 `AppShell` `primary-header` 派(品牌 logo + 帳號入口放在 globalHeader、sidebar 平常無 header/footer),小螢幕 Sheet 打開後 globalHeader 被蓋住 → 使用者看不到品牌也按不到帳號。解法:consumer 讀 `useSidebar().isMobile`,**mobile 時才**在 sidebar 內條件渲染 `<SidebarHeader><WorkspaceBrand/>`(頂)+ `<SidebarFooter>`(底),用與 `primary-sidebar` 相同的 primitive(style SSOT)。**rule owner = `../AppShell/app-shell.spec.md`「WorkspaceBrand / 帳號入口放置 SSOT」的 Responsive 精修子句**(本處不重述,Rule-of-3)。reference:`AppShell/_demo-helpers.tsx` `AcmeSidebar`。
+**Sheet 蓋住 global top bar → primary-header consumer 須在 Sheet 內補品牌/帳號**:Sheet（z-50）打開時覆蓋整個左側含 global top bar。若你是 `AppShell` `primary-header` 派(品牌 logo + 帳號入口放在 globalHeader、sidebar 平常無 header/footer),小螢幕 Sheet 打開後 globalHeader 被蓋住 → 使用者看不到品牌也按不到帳號。解法:consumer 讀 `useSidebar().isMobile` + `useAppShell().layout`,**mobile 時才**在 `<SidebarHeader>` 內放 `<WorkspaceBrand/>`(左)+ `flex-1` + `<AccountMenu/>`(右)= 把整條 globalHeader 鏡像進 Sheet 頂排(SidebarHeader 即 ChromeHeader 基底,結構 SSOT);**不放 `<SidebarFooter>`**(primary-header 帳號家在 header 區,footer 是 primary-sidebar 慣例)。**rule owner = `../AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」的 Responsive 精修子句**(本處不重述,Rule-of-3)。reference:`AppShell/_demo-helpers.tsx` `AcmeSidebar`。
 
 ---
 

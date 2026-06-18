@@ -28,6 +28,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/design-system/components/Sidebar/sidebar'
+import { useAppShell } from '@/design-system/components/AppShell/app-shell'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import {
   ItemAvatar,
@@ -126,17 +127,31 @@ export function AcmeSidebar({
   includeWorkspaceBrand?: boolean
   includeUserFooter?: boolean
 } = {}) {
-  // Responsive 品牌/帳號(2026-06-18):小螢幕 sidebar 收成 Sheet(z-50)打開時會「蓋住」globalHeader →
-  // primary-header 把品牌+帳號放 globalHeader,Sheet 內就看不到、drawer 變孤兒。故 mobile 時在 sidebar 內
-  // 補回同一組 primitive(<SidebarHeader><WorkspaceBrand/> + <SidebarFooter><UserFooter/>,style SSOT 與
-  // primary-sidebar 完全一致);desktop(globalHeader 可見)維持 headerless/footerless,不重複。
-  // 「只能出現一次」精修為「同一時間一次,per breakpoint 判定」— 見 app-shell.spec.md WorkspaceBrand/帳號入口 SSOT。
+  // Responsive 品牌/帳號(2026-06-18 v2):小螢幕 sidebar 收成 Sheet(z-50)打開時會「蓋住」globalHeader →
+  // primary-header 把品牌+帳號放 globalHeader,Sheet 內就看不到、drawer 變孤兒。故 mobile 時在 sidebar 內補回。
+  // **每 mode 鏡像自己桌面的帳號家**(per app-shell.spec.md「帳號入口(Account entry)放置 SSOT」Responsive 精修):
+  //   - primary-header:桌面帳號在 globalHeader 右(brand 左 / account 右)→ Sheet 內把整條 globalHeader 搬進
+  //     SidebarHeader(brand + flex-1 + AccountMenu;**SidebarHeader 即 ChromeHeader 基底,與 GlobalHeader 同
+  //     primitive** = 結構 SSOT,非手刻對齊),**不放 SidebarFooter**(footer 是 primary-sidebar 慣例;
+  //     對齊 Material modal navigation drawer「帳號 switcher 放 drawer header,非 footer」)。
+  //   - primary-sidebar:桌面帳號在 sidebar 底(SidebarFooter)→ Sheet 維持 header=brand / footer=UserFooter(不變)。
+  // desktop(globalHeader 可見)維持 headerless/footerless,不重複。「只能出現一次」= 同一時間一次,per breakpoint 判定。
   const { isMobile } = useSidebar()
+  const { layout } = useAppShell()
+  // primary-header 收成 Sheet:帳號入口鏡像 globalHeader 放 SidebarHeader 右(SidebarHeader = ChromeHeader 基底,
+  // 與 GlobalHeader「brand 左 + flex-1 + account 右」完全同結構 → avatar 24px + 右緣距 px-loose 由 construction 保證)。
+  const headerHasAccount = layout === 'primary-header' && isMobile
   return (
     <Sidebar collapsible="icon" viewportInsetTop={viewportInsetTop}>
       {(includeWorkspaceBrand || isMobile) && (
         <SidebarHeader>
           <WorkspaceBrand />
+          {headerHasAccount && (
+            <>
+              <div className="flex-1" />
+              <AccountMenu />
+            </>
+          )}
         </SidebarHeader>
       )}
       <SidebarContent>
@@ -158,7 +173,9 @@ export function AcmeSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      {(includeUserFooter || isMobile) && (
+      {/* Footer 只 primary-sidebar(帳號在 sidebar 底);primary-header 帳號改放 SidebarHeader 右(見上),
+          mobile 也不放 footer(誤用他 mode 慣例)。 */}
+      {includeUserFooter && (
         <SidebarFooter>
           <UserFooter />
         </SidebarFooter>
