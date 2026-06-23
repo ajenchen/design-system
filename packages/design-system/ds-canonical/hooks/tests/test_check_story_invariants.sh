@@ -345,6 +345,24 @@ export const P = () => (<div className="px-[var(--layout-space-loose)] border-b 
 '
 expect_pass_silent "23. R9 skip FileViewer(isOverlay 家)→ 不檢查"
 
+# 24. R10 link_canonical: text-primary hover:underline → P1 warn(非 block)
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Foo/foo.principles.stories.tsx" '
+<span className="text-primary hover:underline font-medium cursor-pointer">查看詳情</span>
+'
+expect_warn "24. R10 text-primary hover:underline → P1 warn" "R10 link_canonical"
+
+# 25. R10 canonical(hover:text-primary-hover 換色)→ silent
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Foo/foo.principles.stories.tsx" '
+<span className="text-primary hover:text-primary-hover font-medium cursor-pointer">查看詳情</span>
+'
+expect_pass_silent "25. R10 canonical hover:text-primary-hover → silent"
+
+# 26. R10 escape marker @link-style-allow → silent
+run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/components/Foo/foo.principles.stories.tsx" '// @link-style-allow: legacy doc-nav underline
+<span className="text-primary hover:underline">查看詳情</span>
+'
+expect_pass_silent "26. R10 @link-style-allow 豁免 → silent"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

@@ -708,6 +708,29 @@ rule_handcraft_overlay_header() {
   fi
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# R10 — link_canonical(2026-06-22 codify per user;color.spec.md「Action — Primary」)
+# canonical 文字連結 = text-primary + hover:text-primary-hover(hover 換色,無底線);
+# 禁 `text-primary hover:underline`(用底線取代換色)。真元件(Breadcrumb / LinkInput /
+# Button / RadioGroup)已遵循;本 rule 防 story LinkTo 導覽連結復發 drift(曾累積 232 處)。
+# P1 WARN(story 導覽 style 低風險,不 block)。豁免:檔首 `// @link-style-allow:`。
+# ─────────────────────────────────────────────────────────────────────────────
+rule_link_canonical() {
+  [ "$EVENT" = "PostToolUse" ] && return 0
+  printf '%s' "$NEW_CONTENT" | grep -q '@link-style-allow:' && return 0
+  if printf '%s' "$NEW_CONTENT" | grep -qE 'text-primary[[:space:]]+hover:underline'; then
+    {
+      echo ""
+      echo "╔═══ R10 link_canonical — 連結 hover 樣式 drift ═══"
+      echo "[P1 WARN] ${FILE_PATH}"
+      echo "  偵測到 'text-primary hover:underline' = 用底線取代換色,偏離 canonical。"
+      echo "  canonical(color.spec.md「Action — Primary」)= text-primary + hover:text-primary-hover(換色,無底線)。"
+      echo "  修:hover:underline → hover:text-primary-hover。豁免:檔首 // @link-style-allow: <reason>"
+    } >&2
+    # P1 warn:not block
+  fi
+}
+
 # ─── Run rules ───
 rule_anatomy
 rule_slot_split
@@ -718,5 +741,6 @@ rule_description_jargon
 rule_story_baseline_reference
 rule_story_archetype_registry
 rule_handcraft_overlay_header
+rule_link_canonical
 
 exit $WORST
