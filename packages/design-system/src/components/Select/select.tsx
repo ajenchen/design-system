@@ -327,12 +327,12 @@ function ReadonlyDisplay({
     )
   }
 
-  // 2026-06-10 user 拍板「類型身份 indicator」規則:readonly/disabled 保留 ChevronDown(表單情境恆顯;
-  // naked cell 情境依 showDisplayEndIcon = isEditable,維持 2026-05-10 cell canonical「非可編欄不顯」)。
-  // disabled → fg-disabled(對齊 spec L213 + Accordion M24 precedent + 原生 select/MUI/Carbon 慣例)。
+  // 2026-06-26 類型身份 indicator 規則:edit 顯示 / readonly 不顯示(純值、不可開下拉,箭頭會誤導) /
+  // disabled 保留(fg-disabled,對齊原生 <select disabled> 灰示箭頭 + Accordion M24 precedent)。
+  // naked cell 情境依 showDisplayEndIcon = isEditable,維持 2026-05-10 cell canonical「非可編欄不顯」。
   // aria-disabled:styled-disabled(非 native disabled 元素)需明告 AT「inactive」,同時讓 axe 正確
   // 豁免 disabled 文字的 color-contrast(WCAG 1.4.3 inactive UI 例外)。
-  const showIndicator = variant === 'naked' ? !!showDisplayEndIcon : true
+  const showIndicator = variant === 'naked' ? !!showDisplayEndIcon : resolvedMode === 'disabled'
   const ariaDisabled = resolvedMode === 'disabled' ? true : undefined
 
   if (isTextDisplay) {

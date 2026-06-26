@@ -536,8 +536,8 @@ function ReadonlyMultiSelect({
       ) : (
         <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
       )}
-      {/* 2026-06-10 類型身份 indicator 規則:readonly/disabled 保留 chevron(naked cell 依 showDisplayEndIcon);disabled → fg-disabled */}
-      {(variant === 'naked' ? !!showDisplayEndIcon : true) && (
+      {/* 2026-06-26 類型身份 indicator:edit 顯示 / readonly 不顯示(純值、不可開下拉) / disabled 保留(fg-disabled,對齊原生 <select disabled>);naked cell 依 showDisplayEndIcon */}
+      {(variant === 'naked' ? !!showDisplayEndIcon : resolvedMode === 'disabled') && (
         <ItemSuffix className="pointer-events-none">
           <ChevronDown size={iconSize} className={cn('shrink-0', resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted')} aria-hidden />
         </ItemSuffix>

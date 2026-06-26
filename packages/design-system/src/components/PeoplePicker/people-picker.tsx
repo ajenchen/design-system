@@ -189,8 +189,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
               ? <MultiPersonDisplay value={value as PersonValue[]} size={size} measured />
               : <PersonDisplay value={value as PersonValue} size={size} />}
         </span>
-        {/* 2026-06-10 類型身份 indicator:readonly/disabled 保留 chevron(naked cell 依 showDisplayEndIcon);disabled → fg-disabled */}
-        {(resolvedVariant === 'naked' ? showDisplayEndIcon : true) && (
+        {/* 2026-06-26 類型身份 indicator:edit 顯示 / readonly 不顯示 / disabled 保留(fg-disabled,對齊原生 <select disabled>);naked cell 依 showDisplayEndIcon */}
+        {(resolvedVariant === 'naked' ? showDisplayEndIcon : resolvedMode === 'disabled') && (
           <ItemSuffix className="pointer-events-none">
             <ChevronDown size={ICON_SIZE[size as 'sm' | 'md' | 'lg']} className={cn('shrink-0', resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted')} aria-hidden />
           </ItemSuffix>

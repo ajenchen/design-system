@@ -279,8 +279,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
             }
           </span>
-          {/* 2026-06-10 類型身份 indicator gate:naked cell 依 showDisplayEndIcon=isEditable(修 disabled cell 漏顯 bug)*/}
-          {EndIconCmp && (variant === 'naked' ? showDisplayEndIcon : true) && (
+          {/* 2026-06-26 類型身份 indicator:edit 顯示 / readonly 不顯示 / disabled 保留(fg-disabled);naked cell 依 showDisplayEndIcon=isEditable(修 disabled cell 漏顯 bug)*/}
+          {EndIconCmp && (variant === 'naked' ? showDisplayEndIcon : resolvedMode === 'disabled') && (
             <ItemSuffix className="pointer-events-none">
               <EndIconCmp
                 size={iconSize}

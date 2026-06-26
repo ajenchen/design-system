@@ -161,7 +161,7 @@ const SCANNING_SPECS: Record<SizeKey, TypoSpec> = {
 const READING_SPECS: Record<SizeKey, TypoSpec> = {
   sm: { labelFont: 'text-body', labelSize: '14px', labelLh: '1.5', descFont: 'text-body', descSize: '14px', descLh: '1.5', iconPx: 16 },
   md: { labelFont: 'text-body', labelSize: '14px', labelLh: '1.5', descFont: 'text-body', descSize: '14px', descLh: '1.5', iconPx: 16 },
-  lg: { labelFont: 'text-body-lg', labelSize: '16px', labelLh: '1.5', descFont: 'text-body-lg', descSize: '16px', descLh: '1.5', iconPx: 20 },
+  lg: { labelFont: 'text-body-lg', labelSize: '16px', labelLh: '1.5', descFont: 'text-body', descSize: '14px', descLh: '1.5', iconPx: 20 },
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -240,7 +240,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 - Tag 元件呈現選中值 + 隱藏的原生 select overlay
 - Tag 設為 `pointer-events-none`，點擊穿透到底層 select
 - edit 模式：Tag + ChevronDown + 可選 clear
-- readonly / disabled：Tag 顯示 + ChevronDown 恆顯(類型身份 indicator;readonly fg-muted / disabled fg-disabled),不可開選單
+- readonly：Tag 顯示，**ChevronDown 不顯示**（純值、不可開選單）；disabled：Tag 顯示 + **ChevronDown 保留**（類型身份 indicator，fg-disabled），不可開選單
 
 ---
 

@@ -116,7 +116,7 @@ value 軸 controlled-only;open 軸方向相反 — **uncontrolled-only**:`defaul
 ## readonly / disabled 的 Tag
 
 - 沒有 dismiss 按鈕——不可操作
-- ChevronDown 保留——類型身份 indicator(2026-06-10;`pointer-events-none` 不可開啟新增、readonly `fg-muted` / disabled `fg-disabled`、naked cell 依 `showDisplayEndIcon`)
+- ChevronDown:**readonly 不顯示**(純值、不可開下拉)/ **disabled 保留**(類型身份 indicator,`fg-disabled`,`pointer-events-none`)/ naked cell 依 `showDisplayEndIcon`(2026-06-26)
 - 沒有 clear 按鈕——不可清除
 - 溢出行為與 edit 模式相同（+N 指示器）
 

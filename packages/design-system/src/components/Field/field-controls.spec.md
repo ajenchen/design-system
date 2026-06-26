@@ -226,9 +226,9 @@ Field 內的具體套用：
 
 ## 下拉箭頭（Select / Combobox）與類型身份 indicator
 
-Select / Combobox 的 ChevronDown、DatePicker 的 Calendar、TimePicker 的 Clock = **類型身份 indicator**(「這是什麼欄位」),**「是欄位」的所有狀態都顯示**(2026-06-10 user 拍板;對齊原生 select / MUI #19833 / Carbon read-only「keep icon signifiers de-emphasized」/ Accordion M24 precedent):
+Select / Combobox 的 ChevronDown、DatePicker 的 Calendar、TimePicker 的 Clock = **類型身份 indicator**(「這是什麼欄位」)。**edit 顯示(可互動)/ readonly 不顯示 / disabled 顯示(灰示)**(2026-06-26 user 拍板;readonly = 純值顯示、不可開下拉 → 箭頭會誤導故不顯;disabled 保留對齊原生 `<select disabled>` 灰示箭頭 + MUI #19833 / Carbon read-only「keep icon signifiers de-emphasized」/ Accordion M24 precedent):
 
-- edit / readonly:`fg-muted`;**disabled:`fg-disabled`**(對齊上方 Icon 色彩原則)
+- edit:`fg-muted`;**readonly:不顯示 indicator**;**disabled:`fg-disabled`**(對齊上方 Icon 色彩原則)
 - 不可互動(`pointer-events-none`)——下拉由 select 元素本身觸發
 - **Cell(naked variant)例外**:indicator 依 `showDisplayEndIcon`(= cell 的 isEditable)——非可編欄不顯(2026-05-10 cell canonical「indicator = editable affordance」);**可編欄的 disabled cell 顯示 + fg-disabled**(同表單邏輯)
 - locked(readonly/disabled)wrapper 並設 `aria-disabled`(disabled 時)——styled-disabled 非原生元素需明告 AT inactive,亦使 axe 正確套用 WCAG 1.4.3 inactive-UI 豁免

@@ -483,9 +483,9 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
             }
           </span>
-          {/* 2026-06-10 類型身份 indicator:readonly/disabled 保留(naked cell 依 showDisplayEndIcon=isEditable,
-              並修掉原「disabled cell 無視 gate 漏顯」之 2026-05-10 cell canonical 違反);disabled → fg-disabled(spec L213)*/}
-          {(variant === 'naked' ? showDisplayEndIcon : true) && (
+          {/* 2026-06-26 類型身份 indicator:edit 顯示 / readonly 不顯示(純值、不可開) / disabled 保留(fg-disabled,對齊原生 <select disabled>);
+              naked cell 依 showDisplayEndIcon=isEditable(維持 2026-05-10 cell canonical「非可編欄不顯」)*/}
+          {(variant === 'naked' ? showDisplayEndIcon : resolvedMode === 'disabled') && (
             <ItemSuffix className="pointer-events-none">
               <CalendarIcon size={iconSize} className={resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted'} aria-hidden />
             </ItemSuffix>

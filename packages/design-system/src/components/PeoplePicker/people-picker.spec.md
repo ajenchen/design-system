@@ -249,7 +249,7 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 
 ## 邊界案例
 
-- **Disabled**:`disabled` → `resolvedMode='disabled'`(`useResolvedFieldMode`),走獨立 static-display 分支(`people-picker.tsx`「readonly / disabled」段)——渲染靜態 `<div>` 包 `MultiPersonDisplay` / `PersonDisplay` + `ItemSuffix` ChevronDown 類型身份 indicator(2026-06-10 加;naked variant 依 `showDisplayEndIcon`),**不** wrap Select / Combobox、無 dismiss X、無 inline-search input。視覺與 readonly 等效。token 走 M24 state precedence(`text-fg-disabled`,含 chevron)。
+- **Disabled**:`disabled` → `resolvedMode='disabled'`(`useResolvedFieldMode`),走獨立 static-display 分支(`people-picker.tsx`「readonly / disabled」段)——渲染靜態 `<div>` 包 `MultiPersonDisplay` / `PersonDisplay` + `ItemSuffix` ChevronDown 類型身份 indicator(2026-06-26:disabled 保留 chevron、readonly 不顯示;naked variant 依 `showDisplayEndIcon`),**不** wrap Select / Combobox、無 dismiss X、無 inline-search input。token 走 M24 state precedence(`text-fg-disabled`,含 chevron)。
 - **Loading(async people fetch)**:目前 PeoplePicker **未暴露 `loading` prop**(`PeoplePickerProps` 無此欄位,內部也未 forward 給 wrapped Select / Combobox)。consumer 若需 loading 態,在 fetch 完成前自行控制 `people=[]`(走 emptyText 空態)。底層 Select / Combobox / SelectMenu 各有自己的 loading 機制,但尚未經 PeoplePicker API 層轉發。
 - **Empty(no search results)**:`emptyText` 預設「沒有符合的人員」(本 spec L72 已 codify);無 creatable mode(人員不可建立)。
 - **Empty(no value selected)**:single mode → trigger 顯 placeholder「請選擇人員」;multi mode `value=[]` → trigger 同 placeholder(無 avatar stack 渲);詳「Trigger display SSOT canonical table」B-D 段。
