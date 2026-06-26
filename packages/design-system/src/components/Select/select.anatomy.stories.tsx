@@ -47,11 +47,11 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
   },
   // readonly wrapper 為靜態 bg-readonly(field-wrapper.tsx 無 hover/focus 樣式;mode prop 勝 disabled)
   readonly: {
-    default:  { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
-    hover:    { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
-    focus:    { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
-    error:    { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
-    disabled: { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '--fg-muted' },
+    default:  { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '—' },
+    hover:    { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '—' },
+    focus:    { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '—' },
+    error:    { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '—' },
+    disabled: { bg: '--bg-readonly', text: '--foreground',  border: 'transparent', icon: '—' },
   },
   disabled: {
     default:  { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent', icon: '--fg-disabled' },

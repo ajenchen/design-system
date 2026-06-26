@@ -897,9 +897,12 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
           <span className={cn('flex-1 min-w-0 truncate', !endIso && 'text-fg-muted', resolvedMode === 'disabled' && 'text-fg-disabled')}>
             {endIso ? formatDateOrDateTime(endIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[1]}
           </span>
-          <ItemSuffix className="pointer-events-none">
-            <CalendarIcon size={iconSize} className={resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted'} aria-hidden />
-          </ItemSuffix>
+          {/* 2026-06-26 類型身份 indicator:readonly 不顯示 / disabled 保留(fg-disabled)— 對齊單一 DatePicker(:488)+ SSOT;Range 無 naked-cell 變體故 gate = resolvedMode==='disabled' */}
+          {resolvedMode === 'disabled' && (
+            <ItemSuffix className="pointer-events-none">
+              <CalendarIcon size={iconSize} className="text-fg-disabled" aria-hidden />
+            </ItemSuffix>
+          )}
         </div>
       )
     }

@@ -33,7 +33,7 @@ const COLOR_MAP: Record<ModeKey, Partial<Record<StateKey, ColorSpec>>> = {
     disabled: { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent',     icon: '--fg-disabled' },
   },
   readonly: {
-    default:  { bg: '--bg-readonly', text: '--foreground',  border: 'transparent',     icon: '--fg-muted' },
+    default:  { bg: '--bg-readonly', text: '--foreground',  border: 'transparent',     icon: '—' },
   },
   disabled: {
     default:  { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent',     icon: '--fg-disabled' },
