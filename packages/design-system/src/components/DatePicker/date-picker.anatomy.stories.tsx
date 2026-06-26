@@ -172,7 +172,7 @@ export const Overview = {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <H3>結構（Anatomy）</H3>
-          <Desc>edit 模式：可點擊的觸發列顯示格式化日期文字 + 日曆圖示（固定右側），點任意位置都會展開日期面板。clearable 有值時額外顯示 X 清除按鈕。readonly / disabled 模式：格式化文字 + Calendar icon（類型身份 indicator；disabled 切 fg-disabled），無 X。</Desc>
+          <Desc>edit 模式：可點擊的觸發列顯示格式化日期文字 + 日曆圖示（固定右側），點任意位置都會展開日期面板。clearable 有值時額外顯示 X 清除按鈕。readonly 模式：純格式化文字，無 Calendar icon、無 X。disabled 模式：格式化文字 + Calendar icon（類型身份 indicator，切 fg-disabled），無 X。</Desc>
         </div>
         <div className="flex gap-8">
           {/* Edit layout */}
@@ -686,7 +686,7 @@ export const StateBehavior = {
               <span className="text-fg-muted text-caption">→</span>
               <DatePicker mode="disabled" value="2026-04-02" className="w-56" />
             </div>
-            <span className="text-[11px] text-fg-muted">左：edit（有 X）→ 中：readonly（無 X，保留 Calendar）→ 右：disabled（無 X，Calendar 與文字切 fg-disabled）</span>
+            <span className="text-[11px] text-fg-muted">左：edit（有 X）→ 中：readonly（無 X、無 Calendar，純文字）→ 右：disabled（無 X，保留 Calendar，與文字切 fg-disabled）</span>
           </div>
         </div>
 

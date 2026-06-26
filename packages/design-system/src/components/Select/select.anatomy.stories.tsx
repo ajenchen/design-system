@@ -271,7 +271,7 @@ export const Overview = {
               <span className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
                 style={{ borderColor: 'var(--color-turquoise-6)', backgroundColor: 'var(--color-turquoise-1)', color: 'var(--color-turquoise-6)' }}>Tag</span>
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">chevron 恆顯(類型身份 indicator)· 不可開選單 · tagPadding 置中</span>
+            <span className="text-[10px] text-fg-muted font-mono">chevron:readonly 不顯示 / disabled 保留(類型身份 indicator)· 不可開選單 · tagPadding 置中</span>
           </div>
         </div>
       </div>

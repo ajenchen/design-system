@@ -270,7 +270,7 @@ export const Overview = {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <H3>結構（Anatomy）— readonly / disabled</H3>
-          <Desc>Tag 沒有 dismiss 按鈕、沒有 clear;ChevronDown 保留為類型身份 indicator(pointer-events-none,readonly fg-muted / disabled fg-disabled)。溢出行為與 edit 相同(+N 指示器)。</Desc>
+          <Desc>Tag 沒有 dismiss 按鈕、沒有 clear;readonly 不顯示 ChevronDown(純值、不可開下拉),disabled 保留為類型身份 indicator(pointer-events-none,fg-disabled)。溢出行為與 edit 相同(+N 指示器)。</Desc>
         </div>
         <div className="flex gap-8">
           <div className="flex flex-col gap-2 items-start">
