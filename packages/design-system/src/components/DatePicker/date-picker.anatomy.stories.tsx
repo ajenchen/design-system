@@ -346,7 +346,7 @@ const InspectorInner = () => {
                 { c: Z.pad, l: '左右內距' },
                 ...(isEdit ? [{ c: Z.input, l: 'trigger text' }] : [{ c: Z.input, l: 'formatted text' }]),
                 ...(showClear ? [{ c: Z.action, l: 'X clear' }] : []),
-                { c: Z.icon, l: 'Calendar' },
+                ...(mode !== 'readonly' ? [{ c: Z.icon, l: 'Calendar' }] : []),
               ].map(({ c, l }) => (
                 <span key={l} className="inline-flex items-center gap-1">
                   <span className="w-2.5 h-2.5 rounded-md" style={{ background: c.bg, border: `1px dashed ${c.border}` }} />
@@ -364,8 +364,12 @@ const InspectorInner = () => {
                     <BpZone w={44} color={Z.action} label={`${s.icon}px`} sub="clear" />
                   </>
                 )}
-                <BpZone w={32} color={Z.gap} label={s.gapToken} sub={`${s.gap}px`} />
-                <BpZone w={44} color={Z.icon} label={`${s.icon}px`} sub="Calendar" />
+                {mode !== 'readonly' && (
+                  <>
+                    <BpZone w={32} color={Z.gap} label={s.gapToken} sub={`${s.gap}px`} />
+                    <BpZone w={44} color={Z.icon} label={`${s.icon}px`} sub="Calendar" />
+                  </>
+                )}
                 <BpZone w={44} color={Z.pad} label={s.pxToken} sub={`${s.px}px`} />
               </div>
               <div className="ml-3 flex items-center" style={{ height: 52 }}>
@@ -393,7 +397,7 @@ const InspectorInner = () => {
             <PropRow label="Fill"><TokenValue value={colors.bg} /></PropRow>
             <PropRow label="Text"><TokenValue value={colors.text} /></PropRow>
             <PropRow label="Border"><TokenValue value={colors.border} /></PropRow>
-            {isEdit && (
+            {mode !== 'readonly' && (
               <PropRow label="Calendar">
                 <TokenValue value={colors.icon} />
               </PropRow>
@@ -424,7 +428,7 @@ const InspectorInner = () => {
             <PropRow label="高度" dot={Z.dim.text}><TkVal token={s.heightToken} value={s.height} /></PropRow>
             <PropRow label="左右內距" dot={Z.pad.text}><TkVal token={s.pxToken} value={`${s.px}px`} /></PropRow>
             <PropRow label="元素間距" dot={Z.gap.text}><TkVal token={s.gapToken} value={`${s.gap}px`} /></PropRow>
-            {isEdit && (
+            {mode !== 'readonly' && (
               <PropRow label="Calendar" dot={Z.icon.text}>{s.icon}px</PropRow>
             )}
             {showClear && (

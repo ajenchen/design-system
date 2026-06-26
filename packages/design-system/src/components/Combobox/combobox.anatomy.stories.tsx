@@ -39,15 +39,15 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
   },
   readonly: {
     default:  { bg: '--bg-readonly', text: '--foreground', border: 'transparent', icon: '—' },
-    hover:    { bg: '--bg-disabled', text: '--foreground', border: 'transparent', icon: '—' },
-    focus:    { bg: '--bg-disabled', text: '--foreground', border: 'transparent', icon: '—' },
-    disabled: { bg: '--bg-disabled', text: '--foreground', border: 'transparent', icon: '—' },
+    hover:    { bg: '--bg-readonly', text: '--foreground', border: 'transparent', icon: '—' },
+    focus:    { bg: '--bg-readonly', text: '--foreground', border: 'transparent', icon: '—' },
+    disabled: { bg: '--bg-readonly', text: '--foreground', border: 'transparent', icon: '—' },
   },
   disabled: {
-    default:  { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent', icon: '—' },
-    hover:    { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent', icon: '—' },
-    focus:    { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent', icon: '—' },
-    disabled: { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent', icon: '—' },
+    default:  { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent', icon: '--fg-disabled' },
+    hover:    { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent', icon: '--fg-disabled' },
+    focus:    { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent', icon: '--fg-disabled' },
+    disabled: { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent', icon: '--fg-disabled' },
   },
 }
 
@@ -285,7 +285,7 @@ export const Overview = {
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">無 dismiss · 無 clear · chevron=類型 indicator · tagPadding</span>
+            <span className="text-[10px] text-fg-muted font-mono">無 dismiss · 無 clear · chevron:readonly 不顯示 / disabled 保留 · tagPadding</span>
           </div>
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-secondary font-medium">空值</span>
@@ -466,7 +466,7 @@ const InspectorInner = () => {
             <PropRow label="Fill"><TokenValue value={colors.bg} /></PropRow>
             <PropRow label="Text"><TokenValue value={colors.text} /></PropRow>
             <PropRow label="Stroke"><TokenValue value={colors.border} /></PropRow>
-            {isEdit && <PropRow label="Icon"><TokenValue value={colors.icon} /></PropRow>}
+            {mode !== 'readonly' && <PropRow label="Icon"><TokenValue value={colors.icon} /></PropRow>}
           </div>
 
           {/* LAYOUT */}

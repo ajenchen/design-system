@@ -437,7 +437,7 @@ const InspectorInner = () => {
                     { c: Z.gap, l: '元素間距' },
                     { c: Z.select, l: 'Select 文字' },
                     ...(clearable && value ? [{ c: Z.action, l: 'Clear' }] : []),
-                    { c: Z.icon, l: 'Chevron' },
+                    ...(mode !== 'readonly' ? [{ c: Z.icon, l: 'Chevron' }] : []),
                   ].map(({ c, l }) => (
                     <span key={l} className="inline-flex items-center gap-1">
                       <span className="w-2.5 h-2.5 rounded-md" style={{ background: c.bg, border: `1px dashed ${c.border}` }} />
@@ -452,7 +452,7 @@ const InspectorInner = () => {
                     {hasStartIcon && <BpZone w={32} color={Z.gap} label={s.gapToken} sub={s.gap} />}
                     <BpZone w={80} color={Z.select} label="flex-1" sub="select 文字" />
                     {clearable && value && <BpZone w={36} color={Z.action} label={`${s.icon}px`} sub="clear" />}
-                    <BpZone w={36} color={Z.icon} label={`${s.icon}px`} sub="chevron" />
+                    {mode !== 'readonly' && <BpZone w={36} color={Z.icon} label={`${s.icon}px`} sub="chevron" />}
                     <BpZone w={44} color={Z.pad} label={s.pxToken} sub={s.px} />
                   </div>
                   <div className="ml-3 flex items-center" style={{ height: 52 }}>
@@ -475,7 +475,7 @@ const InspectorInner = () => {
                     { c: Z.select, l: 'Select (hidden)' },
                     { c: Z.gap, l: 'Spacer' },
                     ...(clearable && value ? [{ c: Z.action, l: 'Clear' }] : []),
-                    { c: Z.icon, l: 'Chevron' },
+                    ...(mode !== 'readonly' ? [{ c: Z.icon, l: 'Chevron' }] : []),
                   ].map(({ c, l }) => (
                     <span key={l} className="inline-flex items-center gap-1">
                       <span className="w-2.5 h-2.5 rounded-md" style={{ background: c.bg, border: `1px dashed ${c.border}` }} />
@@ -490,7 +490,7 @@ const InspectorInner = () => {
                     <BpZone w={40} color={Z.select} label="select" sub="hidden" />
                     <BpZone w={36} color={Z.gap} label="flex-1" sub="spacer" />
                     {clearable && value && <BpZone w={36} color={Z.action} label={`${s.icon}px`} sub="clear" />}
-                    <BpZone w={36} color={Z.icon} label={`${s.icon}px`} sub="chevron" />
+                    {mode !== 'readonly' && <BpZone w={36} color={Z.icon} label={`${s.icon}px`} sub="chevron" />}
                     <BpZone w={44} color={Z.pad} label="12px" sub="pR fixed" />
                   </div>
                   <div className="ml-3 flex items-center" style={{ height: 52 }}>
@@ -520,7 +520,7 @@ const InspectorInner = () => {
             <PropRow label="Fill"><TokenValue value={colors.bg} /></PropRow>
             <PropRow label="Text"><TokenValue value={colors.text} /></PropRow>
             <PropRow label="Stroke"><TokenValue value={colors.border} /></PropRow>
-            <PropRow label="Icon"><TokenValue value={colors.icon} /></PropRow>
+            {mode !== 'readonly' && <PropRow label="Icon"><TokenValue value={colors.icon} /></PropRow>}
           </div>
 
           {/* LAYOUT */}
@@ -537,7 +537,7 @@ const InspectorInner = () => {
               <PropRow label="左右內距" dot={Z.pad.text}><TkVal token={s.pxToken} value={s.px} /></PropRow>
             )}
             <PropRow label="元素間距" dot={Z.gap.text}><TkVal token={s.gapToken} value={s.gap} /></PropRow>
-            <PropRow label="Icon 尺寸" dot={Z.icon.text}>{s.icon}px</PropRow>
+            {mode !== 'readonly' && <PropRow label="Icon 尺寸" dot={Z.icon.text}>{s.icon}px</PropRow>}
           </div>
 
           {/* TYPOGRAPHY */}
