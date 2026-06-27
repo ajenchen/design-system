@@ -124,7 +124,7 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td>Today cell(日期數字)</Td>
                   <Td mono>bg-info · text-on-emphasis · rounded-full · min-w-6 h-6 px-2 · text-body font-medium</Td>
-                  <Td>info-filled pill,固定 h-6 + min-w-6 做圓形 badge(對齊 Google Calendar today pill)</Td>
+                  <Td>info-filled pill,固定 h-6 + min-w-6 做 pill badge(對齊 Google Calendar today pill)</Td>
                 </tr>
                 <tr>
                   <Td>Outside day cell</Td>

@@ -253,7 +253,7 @@ export const VisualAlignmentRule: Story = {
     <div>
       <Rule
         title="Popover 與 Dialog 共用 overlay-surface 視覺語言"
-        note="bg-surface-raised / border-border / rounded-lg / elevation-200 完全一致。Header / Body / Footer 內 padding 來自 overlay-surface pattern 主檔(px-loose py-tight)。差異:(1) Popover 是 non-modal 無 overlay 遮罩,(2) Popover 鎖 layout-space=md(header 精簡)、Dialog 鎖 layout-space=lg(寬鬆呼吸),兩者 ui-size 都繼承 page"
+        note="bg-surface-raised / border-border / rounded-lg / elevation-200 完全一致。Header / Body / Footer 內 padding 來自 overlay-surface pattern 主檔(px-loose py-tight)。差異:(1) Popover 是 non-modal 無 overlay 遮罩,(2) Popover 鎖 layout-space=md(header 精簡);Dialog 不鎖 layout-space,全繼承 page(md page → 16 / lg page → 24)。兩者 ui-size 都繼承 page"
       >
         <Popover>
           <PopoverTrigger asChild>
@@ -285,10 +285,10 @@ export const VisualAlignmentRule: Story = {
       </Rule>
 
       <Rule
-        title="為什麼 density 鎖 md"
-        note="頁面 density 大(lg)時,Popover 若跟著放大會失去「輕量補充 UI」的定位 — 使用者會誤以為是主 modal。鎖 md 讓 Popover 永遠比主頁面緊湊,保持「這是補充不是主流程」的視覺暗示"
+        title="為什麼 layout-space 鎖 md"
+        note="Popover 只鎖 layout-space=md(header / footer padding 永遠精簡),內部控件的 ui-size 繼承 page(對齊 trigger)。頁面 layout-space 大(lg)時,Popover 若 header / footer 跟著放大會失去「輕量補充 UI」的定位 — 使用者會誤以為是主 modal。鎖 layout-space=md 讓 Popover chrome 永遠比主頁面緊湊,保持「這是補充不是主流程」的視覺暗示"
       >
-        <Label>頁面 density = lg,Popover 內部仍是 md — 輕量感不被放大破壞</Label>
+        <Label>頁面 layout-space = lg,Popover header / footer 仍是 md(內部控件 ui-size 繼承 page)— 輕量感不被放大破壞</Label>
       </Rule>
     </div>
   ),

@@ -42,7 +42,9 @@ function resolvesOnDisk(name) {
   if (libForm !== name) variants.push(libForm)
   const dirs = name.endsWith('.mjs')
     ? ['scripts', '.claude/hooks', '.']
-    : ['.claude/hooks', '.claude/hooks/lib', '.claude/hooks/tests', 'hooks/scripts', '.']
+    : ['.claude/hooks', '.claude/hooks/lib', '.claude/hooks/tests', 'hooks/scripts',
+       // fork-launcher homes:intentionally fork-shipped hooks(非 ds-source),live on disk
+       'template/ds-product-template/.claude/hooks', 'packages/design-system/ds-canonical/fork/launchers', '.']
   if (variants.some((v) => dirs.some((d) => existsSync(join(ROOT, d, v))))) return true
   // folded-provenance form:hook merge 把整個 check_X.sh logic 搬進 mega-dispatcher,
   // 並在 dispatcher 內留 `原 [lib/]check_X.sh` provenance 註解(eg. check_story_invariants.sh

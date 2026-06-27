@@ -39,7 +39,7 @@ const PARTS: Record<PartKey, PartSpec> = {
   caption:      { label: '月份標題',    bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: 'text-body font-medium' },
   nav:          { label: 'Nav 按鈕',    bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: 'Button variant=text size=xs iconOnly · hover 藍圈' },
   weekday:      { label: '星期標頭',    bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: 'text-body font-medium · h-7' },
-  day:          { label: '日格(default)', bg: 'transparent',   text: '--foreground',  border: 'transparent', extra: 'h-field-sm w-field-sm rounded-full' },
+  day:          { label: '日格(default)', bg: 'transparent',   text: '--foreground',  border: 'transparent', extra: 'h-field-sm w-[var(--field-height-sm)] rounded-full' },
   daySelected:  { label: 'Selected',     bg: '--primary',       text: 'white',         border: 'transparent' },
   dayToday:     { label: 'Today(未選)', bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: '數字下方藍色底線(underline bar)' },
   dayHover:     { label: 'Hover',        bg: 'transparent',     text: '--foreground',  border: '--primary',   extra: 'hover 藍圈 1.5px(無填底)' },

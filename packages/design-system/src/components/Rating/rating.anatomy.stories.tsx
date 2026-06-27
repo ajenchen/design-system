@@ -124,7 +124,7 @@ const Tab = ({ active, onClick, children }: { active: boolean; onClick: () => vo
     type="button"
     onClick={onClick}
     className={`px-2.5 py-1 text-[12px] font-mono rounded-md cursor-pointer transition-colors ${
-      active ? 'bg-primary text-white font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
+      active ? 'bg-primary text-on-emphasis font-semibold' : 'bg-neutral-hover text-fg-secondary hover:bg-neutral-active'
     }`}
   >
     {children}
@@ -237,7 +237,7 @@ const InspectorInner = () => {
             <PropRow label="aria-valuemax">{readOnly || disabled ? '—' : '5'}</PropRow>
             <PropRow label="aria-valuetext">{readOnly || disabled ? '—' : `${value} of 5 stars`}</PropRow>
             <PropRow label="aria-label">{readOnly ? '必填' : 'Field 內免填 · standalone 必填'}</PropRow>
-            <PropRow label="aria-labelledby">{readOnly || disabled ? '—' : 'Field 內自動指向 FieldLabel'}</PropRow>
+            <PropRow label="aria-labelledby">Field 內自動指向 FieldLabel（所有模式,含 readonly/disabled）</PropRow>
           </div>
         </div>
       </div>

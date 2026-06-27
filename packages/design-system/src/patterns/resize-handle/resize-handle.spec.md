@@ -59,7 +59,7 @@ benchmark:
 取值依據:7px 命中區 / 1px line 非自創——來自下方「世界級對照細節」5 家共識(hit zone 7-8px fingertip-friendly / 1px line non-intrusive)+ DataTable v11 已 ship 的既有 canonical(本 primitive 抽取自它,M17)。
 
 - **命中區**:7px 寬(horizontal)/ 高(vertical),`-3px` outward offset 跨 boundary 抓得到
-- **Visual line**:1px,positioned `right-[3px]` / `bottom-[3px]`,default full-extent
+- **Visual line**:1px,line offset 3px from the position edge(inline style `right: 3` / `bottom: 3`,非 Tailwind class — 見 tsx JIT-quirk note),default full-extent
   - **idle**:`bg-divider`
   - **disabled**:`bg-divider`(無 hover affordance)
   - **hover**:`bg-[var(--border-hover)]`(via `group/resize` selector)

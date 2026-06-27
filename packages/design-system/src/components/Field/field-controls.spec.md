@@ -58,7 +58,9 @@ components/
 
 ---
 
-## Mode — 三種模式
+## Mode — 表單三態 (display 見下方 Display 段)
+
+下表涵蓋 Form-context 三態(edit / readonly / disabled);完整 `FieldMode` 為四值(`'edit' | 'display' | 'readonly' | 'disabled'`),`display` 模式於下方 `## Display` 段記載。
 
 | Mode | 底色 | 邊框 | 文字色 | 用途 |
 |------|------|------|--------|------|

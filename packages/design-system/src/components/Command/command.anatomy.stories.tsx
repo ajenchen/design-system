@@ -14,6 +14,7 @@ import {
   CommandGroup,
   CommandItem,
   CommandSeparator,
+  CommandShortcut,
 } from './command'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
@@ -44,6 +45,7 @@ export const Overview: Story = {
                 <CommandItem>
                   <Settings className="mr-2 h-4 w-4" />
                   前往設定
+                  <CommandShortcut>⌘K</CommandShortcut>
                 </CommandItem>
               </CommandGroup>
               <CommandSeparator />

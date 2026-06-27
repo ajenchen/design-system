@@ -181,6 +181,7 @@ export const StatusProgressRule: Story = {
           name="users-export.csv"
           description="1.2 MB"
           status="completed"
+          surface="upload-manager"
           mode="rich"
         />
       </Rule>

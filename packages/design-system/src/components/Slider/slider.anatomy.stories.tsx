@@ -43,7 +43,7 @@ export const Overview: Story = {
                 ['min / max', 'number', '0 / 100', '值範圍'],
                 ['step', 'number', '1', '步進'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '**只影響容器外高**,不影響 track/thumb 尺寸'],
-                ['disabled', 'boolean', 'false', '灰階降級(range/thumb border→border,thumb bg 保留白)'],
+                ['disabled', 'boolean', 'false', '灰階降級(range/thumb border→border,thumb bg 沉回 bg-canvas(不透明背景色))'],
                 ['minStepsBetweenThumbs', 'number', '—', 'range mode 兩 thumb 最小距離'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>

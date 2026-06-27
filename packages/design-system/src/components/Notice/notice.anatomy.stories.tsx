@@ -448,7 +448,7 @@ export const VariantIconMap: Story = {
         <H3>Subtle 樣式視覺</H3>
         <Desc>
           Notice 本身不設 bg / border。此處 shell 為 Alert consumer 提供的 subtle container(
-          <code className="font-mono text-footnote mx-1">bg-*-subtle + border {`{hue}-hover`}</code>
+          <code className="font-mono text-footnote mx-1">bg-*-subtle + border {`{hue}-text`}</code>
           ),展示 icon 色彩在 subtle surface 上的對比。Solid(dark bg + 白字 icon)對照請查
           <code className="font-mono text-footnote mx-1">alert.anatomy.stories.tsx</code>
           。

@@ -167,7 +167,7 @@ export const Inspector: Story = {
                 <tr><Td>Previous / Skip variant</Td><Td mono>tertiary</Td></tr>
                 <tr><Td>Next variant</Td><Td mono>primary</Td></tr>
                 <tr><Td>sideOffset</Td><Td mono>8px(對齊 Popover DS 設計準則)</Td></tr>
-                <tr><Td>Density</Td><Td mono>繼承 Popover(鎖 md)</Td></tr>
+                <tr><Td>Layout-space</Td><Td mono>繼承 Popover(鎖 layout-space md;ui-size 繼承 page)</Td></tr>
               </tbody>
             </table>
           </div>

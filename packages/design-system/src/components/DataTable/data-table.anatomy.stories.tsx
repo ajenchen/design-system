@@ -131,7 +131,7 @@ export const Inspector: Story = {
     bordered: { control: 'boolean', description: '外框(嵌入已帶框容器時可設 false 避免雙重邊框)' },
     pinnedLeft: { control: 'boolean', description: 'Pin 產品名稱欄到左側,橫向捲動時保持可見' },
     pinnedRight: { control: 'boolean', description: 'Pin 上架日期欄到右側' },
-    inlineEdit: { control: 'boolean', description: 'inline edit 視覺:cell 間加垂直分隔線 + select 欄顯示 chevron' },
+    inlineEdit: { control: 'boolean', description: 'inline edit 視覺:cell 間加垂直分隔線(dtCellGrid)。Select 欄 chevron 由 column meta.editable 控制(showDisplayEndIcon),非本 prop' },
     height: {
       control: 'select',
       options: ['auto', '300px'],

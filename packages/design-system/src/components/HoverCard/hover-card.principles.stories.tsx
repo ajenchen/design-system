@@ -193,7 +193,7 @@ export const PureBehaviorPrimitiveRule: Story = {
             <HoverCardTrigger asChild>
               <Button variant="tertiary" size="sm">深色 Tooltip 樣式</Button>
             </HoverCardTrigger>
-            <HoverCardContent className="bg-tooltip text-inverse-fg rounded-md px-3 py-2" data-theme="dark">
+            <HoverCardContent className="bg-tooltip text-on-emphasis rounded-md px-3 py-2" data-theme="dark">
               <div className="w-48 text-caption">OverflowIndicator 風格:深底 + compact</div>
             </HoverCardContent>
           </HoverCard>

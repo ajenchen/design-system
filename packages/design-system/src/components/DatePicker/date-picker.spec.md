@@ -310,7 +310,7 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 
 ## 邊界案例
 
-- **Disabled**:Field SSOT own;resolvedMode='disabled' 走 readonly / disabled 純 wrapper 分支(無 Popover trigger、`aria-disabled`、不開 picker),文字與 Calendar icon 切 `text-fg-disabled`。顯式 `mode="display"` 永遠最優先(useResolvedFieldMode step 1,見 field-context.ts):display + disabled 同傳走 display 分支不套 disabled token;要 disabled chrome 傳 `disabled` 或 `mode="disabled"`。
+- **Disabled**:Field SSOT own;resolvedMode='disabled' 走 readonly / disabled 純 wrapper 分支(無 Popover trigger、`aria-disabled`、不開 picker),文字與 Calendar icon 切 `text-fg-disabled`。readonly 不顯示 Calendar icon(類型身份 indicator 規則,SSOT field-controls.spec.md L227);disabled 保留並切 `fg-disabled`。顯式 `mode="display"` 永遠最優先(useResolvedFieldMode step 1,見 field-context.ts):display + disabled 同傳走 display 分支不套 disabled token;要 disabled chrome 傳 `disabled` 或 `mode="disabled"`。
 - **Loading(server-rendered grid)**:DatePicker 為 sync UI 不獨立 own loading。若 consumer 場景需 async date constraint fetch(如後端 disabled-dates list),consumer 應先 disable trigger 直到 fetch 完成,或在 popover 開啟後 body 切 `<Empty icon={<CircularProgress/>}/>`(對齊 panel-body loading SSOT)。本 spec scope 內不渲 loading state。
 - **Empty(no value)**:`value=null` → trigger 顯 placeholder(預設 `YYYY/MM/DD`,showTime 時 `YYYY/MM/DD HH:MM`;consumer 可傳 `placeholder` 覆寫)。無導覽目標時鍵盤焦點停留(react-day-picker v9 內建)。
 - **Invalid date input**:Field validation 處理 `aria-invalid="true"` + error border + 下方 error message;DatePicker 本身不 own validation 規則。

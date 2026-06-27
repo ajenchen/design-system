@@ -80,7 +80,7 @@ Steps 是 `patterns/element-anatomy/item-anatomy.spec.md` 的 row primitive **co
 - **字體 tier**:label `text-body` (sm/md) / `text-body-lg` (lg);description `text-caption` (sm/md) / `text-body` (lg)。跟 MenuItem / TreeItem 同一套。
 - **字重**:`font-medium`(含 label,不隨 focus 變)
 - **預設文字色**:`text-fg-secondary`;`value` 指向的 step(focused)為 `text-foreground`
-- **Icon tier**:`ICON_SIZE = { sm: 16, md: 16, lg: 20 }`
+- **Icon tier**:`INDICATOR_ICON_SIZE = { sm: 0, md: 16, lg: 20 }`(sm 為純圓點無內部 icon,見 size table)
 - **Description 永遠可選**,任何 size 都不強制
 - **Hit area 地板**:可點擊的 indicator 至少 `field-height-xs`(24px),不足者用透明 padding 撐開
 
@@ -172,7 +172,7 @@ indicator 圓形 flex items-center 居中
 
 | State | 視覺 | 觸發 |
 |---|---|---|
-| `upcoming` | 灰底(`bg-muted`)+ 灰字(`text-fg-disabled`)| 未走到 |
+| `upcoming` | 灰底(inline `background: var(--muted)`)+ 灰字(`text-fg-disabled`)| 未走到 |
 | `current` | 藍底(`bg-info`)+ 白字數字 | step === `value` 且不在 completedValues / errorValues |
 | `completed` | 藍底(`bg-info`)+ 白色 ✓ | step 在 `completedValues` 內 |
 | `reachable` | 藍底(`bg-info`)+ 白字數字(僅 linear;sm 為空心環)| linear 下「下一個未完成」step(非 current / completed / error),可點 |

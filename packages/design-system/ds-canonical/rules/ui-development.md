@@ -79,7 +79,7 @@ paths:
 **4 名關閉 / 移除 callback**(詳 `.claude/references/props-naming.md`):
 `onClose` / `onDismiss` / `onRemove` / `onClear` 各有語意不合併。
 
-**Badge 命名按放置**:`badge`(inline)/ `overlayBadge`(疊視覺重心 iconOnly)/ `badgeCount`(Avatar count)/ `status`(Avatar presence dot)。
+**Badge 命名按放置**:`badge`(inline)/ `overlayBadge`(疊視覺重心 iconOnly)/ `badgeCount`(Avatar count)/ `status`(presence dot — Avatar / ProfileCard / PeoplePicker;另有 lifecycle value-set 用於 FileItem / FileUpload / ProgressBar,詳 `props-naming.md`)。
 
 **Icon canonical**:Overflow `MoreVertical` / Breadcrumb ellipsis `MoreHorizontal` / Close `X` / 成功 `Check` / 警告 `TriangleAlert` / 資訊 `Info`。
 

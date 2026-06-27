@@ -193,7 +193,7 @@ Previous(可選)→ Skip(可選)→ Next / Done。對齊 Ant Tour / Intercom con
 - ❌ **不用 Coachmark 做確認框**——確認破壞性動作必須阻斷流程,改用 `Dialog`
 - ❌ **Media 區不放互動元件**——按鈕 / 輸入 / checkbox 一律走 footer。Media 是視覺說明不是互動區
 - ❌ **Description 不寫超過 3 行**——Coachmark 是快速說明,超過 3 行改用 Dialog + 完整 body 或連結到說明文件
-- ❌ **不強迫完成 tour**——永遠提供退出機制(Esc / header Close / 第一步 Skip)。沒有退出的 onboarding 讓使用者感到被綁架,反而降低完成率
+- ❌ **不強迫完成 tour**——永遠提供退出機制(Esc / header Close / 第一步 Skip)。沒有退出的 onboarding 讓使用者感到被綁架,反而降低完成率。註:header Close 僅在傳 `kind`(有 header)時才 render;無 `kind` 的 multi-step tour 第 2+ 步退出靠 Esc(永遠可用),multi-step 務必傳 `kind` 以提供 header Close 退出入口
 - ❌ **單步驟 CTA 不叫 "Next"**——沒有下一步就不用 Next 字眼,用 `'知道了' / 'Got it' / 'Start'`
 - ❌ **有 Prev 時不同時顯示 Skip**——使用者投入進度後兩個退出路徑衝突(見 CTA 語義表)
 - ❌ **不自包視覺 token**——bg / shadow / radius / padding 一律繼承 Popover,改視覺就改 Popover
@@ -212,7 +212,7 @@ Previous(可選)→ Skip(可選)→ Next / Done。對齊 Ant Tour / Intercom con
 
 ## 邊界狀態
 
-disabled / density 繼承 Popover(density 鎖 md,見 `../Popover/popover.spec.md`);empty(title + description 都不傳)則 Body 不渲染(已於「Props 結構」規定);loading 由 consumer 決定。
+disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 header py-tight 精簡;ui-size / 控件大小繼承 page density),SSOT 見 `tokens/density/density.spec.md` L47;empty(title + description 都不傳)則 Body 不渲染(已於「Props 結構」規定);loading 由 consumer 決定。
 
 - **步數 > 5**:元件不機械限制 — `step.total` 照實顯示(如「6 of 8」);≤ 5 是設計建議(見 Multi-step Tour),超過應改靜態 onboarding 頁
 - **無 `image`**:整個 Media 區不渲染(非 skeleton 佔位,見「Props 結構」)

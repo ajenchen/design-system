@@ -45,11 +45,12 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
     disabled: { bg: 'transparent',    text: '--fg-disabled',  border: 'transparent' },
   },
   readonly: {
+    // readonly cva = `bg-readonly border border-transparent`(field-wrapper.tsx:109)—— 鎖定,無 hover / focus / error bg 轉換
     default:  { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
-    hover:    { bg: '--bg-disabled',  text: '--foreground',   border: 'transparent' },
-    focus:    { bg: '--bg-disabled',  text: '--foreground',   border: 'transparent' },
-    error:    { bg: '--bg-disabled',  text: '--foreground',   border: 'transparent' },
-    disabled: { bg: '--bg-disabled',  text: '--foreground',   border: 'transparent' },
+    hover:    { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
+    focus:    { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
+    error:    { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
+    disabled: { bg: '--bg-readonly',  text: '--foreground',   border: 'transparent' },
   },
   disabled: {
     default:  { bg: '--bg-disabled',  text: '--fg-disabled',  border: 'transparent' },

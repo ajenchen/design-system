@@ -217,7 +217,7 @@ Item-level default / hover / focused / selected / disabled **色彩**由 MenuIte
 - **Disabled item**:`<DropdownMenuItem disabled>`(Radix 內建支援),視覺繼承 MenuItem SSOT(`text-fg-disabled` + `aria-disabled=true` + 鍵盤導覽 skip + 不觸發 onSelect)。
 - **Loading(async submenu / async items)**:DropdownMenu primitive 不獨立 own loading prop。async submenu 場景應由 consumer 在 `<DropdownMenuSub>` 內條件性渲 `<DropdownMenuItem disabled>` + spinner label(如「載入中...」);或 fetch options 前先 disable 整個 menu trigger。完整 loading body 替換 pattern 屬 SelectMenu scope,不在 DropdownMenu scope。
 - **Empty(no items / async fetch result empty)**:consumer 應條件性渲 `<DropdownMenuItem disabled>` 顯示「無可用動作」字樣;不渲空 menu。
-- **Dark mode / density**:走 MenuItem + Popover SSOT 自動 adapt;density 預設 lock `md`(M3 portal subtree convention)。
+- **Dark mode / density**:走 MenuItem + Popover SSOT 自動 adapt;density 繼承 page(不鎖;DropdownMenu item 高度 = field-height-{size} 隨 page density 變,鎖 md 會釘死 md-scale 對不上 lg 觸發點),SSOT 見 `tokens/density/density.spec.md`。
 
 ---
 

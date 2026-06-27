@@ -24,9 +24,11 @@ Badge 在不同 anchor 有兩種截然不同視覺 / 語意,prop 名區分:
 | `badge` | **Pill 內 inline badge** — label 右側 flex | Button(有 label)/ Tab item / Chip | inline count |
 | `overlayBadge` | **疊視覺重心** — absolute 於 icon/avatar 角 | iconOnly Button / pure Icon | top-right count overlay |
 | `badgeCount`(Avatar 專用) | count overlay,內部用 `<Badge variant="critical">`,貼 avatar 右上 | Avatar | overlay but Avatar 語意 |
-| `status`(Avatar 專用) | **非 Badge** — SVG presence dot,貼右下 | Avatar | presence indicator |
+| `status`(presence dot — Avatar / ProfileCard / PeoplePicker) | **非 Badge** — SVG presence dot,貼右下 | Avatar | presence indicator |
 
 **禁止**:同 prop 名兼 inline + overlay。世界級 Material `BadgedBox`(overlay)vs `Chip.label`(inline)分開;Ant `<Badge overflowCount>` vs `<Tag>` 分開。
+
+**`status` 兩個 value-set family(刻意 overload,非隱性衝突)**:(1) **presence** `'online' | 'away' | 'busy' | 'offline'` — Avatar / ProfileCard / PeoplePicker;(2) **lifecycle** `'uploading' | 'completed' | 'error'`(FileItem / FileUpload)/ `'inProgress' | 'success' | 'error'`(ProgressBar)。兩 family 各自 self-consistent,prop 名沿用同一 presence/lifecycle 軸。
 
 **禁止組合**:有 label 的 Button / Chip 疊 `overlayBadge`(badge 飄到 chrome 邊緣遠離 icon 語義) → 計數改用 `badge` inline。詳 `badge.spec.md`「Overlay 適用元件 canonical」。
 

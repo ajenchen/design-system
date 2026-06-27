@@ -170,7 +170,7 @@ Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="current
 ## A11y 預設
 
 - **interactive**：`role="slider"` + `aria-valuenow={value}` + `aria-valuemin={0}` + `aria-valuemax={max}` + `aria-valuetext={`{value} of {max} stars`}` + `tabIndex={0}`，鍵盤 Arrow Left/Right/Up/Down ± step（precision=half 時 step=0.5，否則 step=1）；Home = 0；End = max（完整 WAI-ARIA slider keyboard pattern）
-- **readOnly**：`role="img"` + `aria-label`（**必填**），例：`aria-label="平均評分 4.7 星，共 5 星"`。無 tabIndex
+- **readOnly**：`role="img"` + accessible name。`Field` 內由 `aria-labelledby` 自動指向 `FieldLabel`（免填 `aria-label`）；standalone（無 Field）時 `aria-label` 必填，例：`aria-label="平均評分 4.7 星，共 5 星"`。無 tabIndex
 - **disabled**：`aria-disabled="true"` + `pointer-events-none`
 - **單顆星** `aria-hidden`：內部點擊目標是 `<span role="presentation" aria-hidden>`（非 interactive element，避免與外層 `role="slider"` 形成 axe nested-interactive 違規，2026-04-25 修正；含 half-precision 的兩個 hover zone）都不干擾螢幕閱讀器，父層 role 獨自表達語意
 

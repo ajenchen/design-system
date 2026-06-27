@@ -166,9 +166,9 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 | Avatar 內 icon | `components/Avatar/avatar.spec.md:165` | `round_even(size × 0.6)` formula | Material / Apple HIG |
 | Empty illustration | `components/Empty/empty.tsx:48` | Avatar 48 wrap → icon 28(Avatar formula derived)| Empty-state canonical |
 | FileViewer thumb | `components/FileViewer/file-viewer.tsx:621` | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |
-| CircularProgress | `components/CircularProgress/circular-progress.tsx:87` | `strokeWidth = max(2, size/10)` stroke ring 厚度非 icon | Geometric scaling |
-| Steps indicator icon | `components/Steps/steps.tsx:24` | `INDICATOR_ICON_SIZE {sm:0, md:16, lg:20}`(sm 因圓圈 8px 太小)| Indicator-internal |
-| Checkbox/Switch check | `components/Checkbox/checkbox.tsx:49` + `components/Switch/switch.tsx:73` | `{sm:12, md:12, lg:16}` form-control internal + stroke 下限 12 | iOS HIG / Material 3 / Polaris | <!-- @benchmark-unverified -->
+| CircularProgress | `components/CircularProgress/circular-progress.tsx:86` | `strokeWidth = max(2, round(size/10))` stroke ring 厚度非 icon | Geometric scaling |
+| Steps indicator icon | `components/Steps/steps.tsx:25` | `INDICATOR_ICON_SIZE {sm:0, md:16, lg:20}`(sm 因圓圈 8px 太小)| Indicator-internal |
+| Checkbox/Switch check | `components/Checkbox/checkbox.tsx:52` + `components/Switch/switch.tsx:83` | `{sm:12, md:12, lg:16}` form-control internal + stroke 下限 12 | iOS HIG / Material 3 / Polaris | <!-- @benchmark-unverified -->
 
 **程式化 SSOT**:`patterns/element-anatomy/item-anatomy.tsx:66` `ICON_SIZE = {sm:16, md:16, lg:20}` 是本 tier 的 type-safe const。**Form control 透過 `tokens/uiSize/icon-size.ts` re-export entry import**(避 components→patterns 反向 dependency)。
 

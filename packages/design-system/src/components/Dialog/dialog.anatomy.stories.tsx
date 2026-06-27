@@ -417,7 +417,7 @@ export const ColorMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Density</H3>
-        <Desc>Dialog 鎖 `data-layout-space="lg"`(只鎖版面間距 tier)+ ui-size 繼承 page `data-density`(控件不被撐大)。modal 值得寬鬆呼吸 padding:body px-loose 24 / header py-tight 16 → header 56(宣告 lg tier)。reinstate c3d3b736 decouple(只鎖 layout-space,非當年連 ui-size 一起鎖撐高 header 的 density)。世界級:Material M3 / Atlassian modal padding 24。</Desc>
+        <Desc>Dialog **不自設任何 density attribute**,layout-space + ui-size 全繼承 page。md page → body px-loose 16 / header py-tight 12 → header 48;lg page → 24 / 16 → header 56,隨 page tier。modal 寬鬆呼吸由 page tier 自動滿足(lg 拿 24 = Material 級;md 16 = Polaris Modal 下限)。世界級:SAP Fiori / AWS Cloudscape 皆讓 modal 跟 page density dial 走,不釘固定 tier。</Desc>
       </div>
 
       <div>

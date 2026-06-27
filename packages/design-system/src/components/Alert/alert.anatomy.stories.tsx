@@ -128,10 +128,10 @@ export const ColorMatrix: Story = {
             <thead><tr><Th>Variant</Th><Th>Subtle</Th><Th>Solid</Th></tr></thead>
             <tbody>
               <tr><Td mono>neutral</Td><Td mono>bg-muted + border-border;無 status icon(VARIANT_ICON.neutral = null)</Td><Td>bg-surface-raised + data-theme inverse(跟頁面反)</Td></tr>
-              <tr><Td mono>info</Td><Td mono>bg-info-subtle + border-info-hover + text-info-text</Td><Td mono>bg-info + data-theme="dark"(藍底白字)</Td></tr>
-              <tr><Td mono>success</Td><Td mono>bg-success-subtle + border-success-hover + text-success-text</Td><Td mono>bg-success + data-theme="dark"(綠底白字)</Td></tr>
-              <tr><Td mono>warning</Td><Td mono>bg-warning-subtle + border-warning-hover + text-warning-text</Td><Td mono>bg-warning + data-theme="light"(黃底深字)</Td></tr>
-              <tr><Td mono>error</Td><Td mono>bg-error-subtle + border-error-hover + text-error-text</Td><Td mono>bg-error + data-theme="dark"(橘底白字)</Td></tr>
+              <tr><Td mono>info</Td><Td mono>bg-info-subtle + border-[var(--info-text)] + text-info-text</Td><Td mono>bg-info + data-theme="dark"(藍底白字)</Td></tr>
+              <tr><Td mono>success</Td><Td mono>bg-success-subtle + border-[var(--success-text)] + text-success-text</Td><Td mono>bg-success + data-theme="dark"(綠底白字)</Td></tr>
+              <tr><Td mono>warning</Td><Td mono>bg-warning-subtle + border-[var(--warning-text)] + text-warning-text</Td><Td mono>bg-warning + data-theme="light"(黃底深字)</Td></tr>
+              <tr><Td mono>error</Td><Td mono>bg-error-subtle + border-[var(--error-text)] + text-error-text</Td><Td mono>bg-error + data-theme="dark"(橘底白字)</Td></tr>
             </tbody>
           </table>
         </div>

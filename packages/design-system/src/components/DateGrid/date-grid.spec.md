@@ -82,7 +82,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 
 因此用 `[&[data-range-middle=true]]:xxx` 這種 attribute selector **根本不會生效**(舊版做法錯誤)。
 
-**正解**:把 state 樣式放進 `classNames[state]` 物件,v9 的 `getClassNamesForModifiers` 會在對應 modifier 為 true 時把該 key 的 class 附加到 Day CELL。範例:`classNames.range_middle: 'bg-[var(--color-neutral-2)] [&>button]:!bg-transparent'`。
+**正解**:把 state 樣式放進 `classNames[state]` 物件,v9 的 `getClassNamesForModifiers` 會在對應 modifier 為 true 時把該 key 的 class 附加到 Day CELL。範例:`classNames.range_middle: "before:content-[''] before:absolute before:inset-y-0 before:-inset-x-[2px] before:bg-neutral-selected [&>button]:!bg-transparent"`(用 `before:` pseudo + semantic `--neutral-selected` token,對齊下方 Range track canonical 與 tsx)。
 
 `[&>button]:xxx` 從 cell 向內選子 button 用於 button-level 樣式(selected / disabled 的藍底白圓等)。
 

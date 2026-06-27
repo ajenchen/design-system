@@ -2,9 +2,19 @@
 component: Breadcrumb
 family: composite
 variants: {}
-sizes: {}
+sizes:
+  sm:
+    when: "Dialog / panel / drawer 內;text-body(14)+ icon 16,建議配 text-h4(20)title。對齊 BREADCRUMB_TEXT_CLASS.sm + BREADCRUMB_ICON_SIZE.sm(breadcrumb.tsx:124-136)"
+    world-class: ["Atlassian Breadcrumb", "Ant Design Breadcrumb"]
+  md:
+    when: "預設 — 一般頁面 header;text-body(14)+ icon 16,建議配 text-h3(24)title"
+    world-class: ["Ant Design Breadcrumb default", "MUI Breadcrumbs", "Polaris Breadcrumbs"]
+  lg:
+    when: "Detail page hero / landing;text-body-lg(16)+ icon 20,建議配 text-h2(32)title"
+    world-class: ["Carbon Breadcrumb", "Material 3 breadcrumb"]
 traits:
   - hasInteractiveStates
+  - hasSizes
   - isStructural
 benchmark:
   - Ant Design Breadcrumb: github.com/ant-design/ant-design/tree/master/components/breadcrumb

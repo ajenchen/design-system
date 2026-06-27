@@ -57,7 +57,7 @@ export const UsageGuidance: Story = {
               <LinkTo kind="Design System/Components/Tabs/展示" name="溢出處理 — 水平捲動"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">溢出處理 — 水平捲動</span></LinkTo>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/Tabs/展示" name="溢出處理 — ⌄ 導覽選單"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">溢出處理 — 收進選單</span></LinkTo>
+              <LinkTo kind="Design System/Components/Tabs/展示" name="溢出處理 — ⌄ 導覽選單"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">溢出處理 — ⌄ 導覽選單</span></LinkTo>
             </li>
           </ul>
           <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方「vs 近親」)。</p>

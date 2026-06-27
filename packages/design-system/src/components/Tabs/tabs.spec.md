@@ -207,7 +207,7 @@ TabsList 底部有 1px gray border（`border-divider`，neutral-4），selected 
 
 Tabs 常與容器 header 的底邊 border 合併——**視覺上只有一條線**,不是 header border + tabs border 疊兩條。
 
-**做法**:Tabs 的 `TabsList` 底部 border 與 header 的 `border-b` 實際上是**同一條線**(設計上重疊、實作上不重複渲染)。**Header 退讓**(移除自己 `border-b`),**Tabs 接管**(自身 `border-b border-divider` per `TABS_LIST_BASE`,2026-05-18 fd843c25 統一 chrome separator 色)。三種 overflow mode(none / scroll / menu)的 TabsList 一律 `inline-flex w-fit`(`TABS_LIST_BASE` + `w-fit`;2026-05-19 c359c711 border owner 升 list 內部 + `overflow-y-hidden` 阻 y auto-promote);chrome header 內的全寬 paint 由 `ChromeHeader` tabsSlot wrapper 以 `[&>[role=tablist]]:w-full` 強制(見 `header-canonical.spec.md`)。
+**做法**:Tabs 的 `TabsList` 底部 border 與 header 的 `border-b` 實際上是**同一條線**(設計上重疊、實作上不重複渲染)。**Header 退讓**(移除自己 `border-b`),**Tabs 接管**(自身 `border-b border-divider` per `TABS_LIST_BASE`,2026-05-18 fd843c25 統一 chrome separator 色)。三種 overflow mode 的 TabsList 一律跨滿父容器(none 模式 `w-full`;scroll / menu 模式 inner list `min-w-full` 保留溢出成長,見 L184;`TABS_LIST_BASE` + `overflow-y-hidden` 阻 y auto-promote,2026-05-19 c359c711 border owner 升 list 內部);chrome header 內的全寬 paint 由 `ChromeHeader` tabsSlot wrapper 以 `[&>[role=tablist]]:w-full` 強制(見 `header-canonical.spec.md`)。
 
 **世界級對照(verbatim cite)**:
 - **GitHub Primer PageHeader**:「`hasBorder` defaults true,**but border NOT rendered if Navigation child contains UnderlineNav**;UnderlineNav itself provides bottom border」(`primer.style/components/page-header/react`)

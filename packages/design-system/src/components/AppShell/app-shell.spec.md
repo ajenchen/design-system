@@ -1,5 +1,5 @@
 ---
-pattern: app-shell
+component: AppShell
 family: composite  # 組合 sidebar+header+main+aside,非 Family 1-4 row element
 scope: web service page-level layout primitive (sidebar + header + main + aside composition)
 benchmark:
@@ -58,7 +58,7 @@ benchmark:
   asideOpen={open}      onAsideOpenChange={setOpen}      // ⌘. / Ctrl+. toggle (本 AppShell own)
   sidebar={<Sidebar>...</Sidebar>}              // SSOT in components/Sidebar/sidebar.spec.md
   header={<ChromeHeader>...</ChromeHeader>}     // SSOT in patterns/header-canonical/header-canonical.spec.md
-  aside={<AppShellAside title="Detail">...</AppShellAside>}   // 本 pattern own;modal mode 必 title(Sheet a11y)
+  aside={<AppShellAside title="Detail">...</AppShellAside>}   // 本 composite own;modal mode 必 title(Sheet a11y)
 >
   {children}    {/* <main> landmark, padding=0,內容遵循 layoutSpace 6 條規則 */}
 </AppShell>
@@ -288,7 +288,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 
 ## Future extension(目前不定義)
 
-**Multi-sidebar**(Notion / Linear 雙側欄派):**尚未實作**。目前 `sidebar` prop 僅 `React.ReactNode`(單一 slot,無 array signature、無取首位邏輯、無 dev warning)。未來若支援會擴充為 array,SSOT 放 `sidebar.spec.md`,不在本 pattern(per user 2026-05-19「AppShell 不該 customize Sidebar」)。
+**Multi-sidebar**(Notion / Linear 雙側欄派):**尚未實作**。目前 `sidebar` prop 僅 `React.ReactNode`(單一 slot,無 array signature、無取首位邏輯、無 dev warning)。未來若支援會擴充為 array,SSOT 放 `sidebar.spec.md`,不在本 composite(per user 2026-05-19「AppShell 不該 customize Sidebar」)。
 
 **Footer**:不 expose slot(per user 2026-05-19「不用 footer」)。Web service 通常不用 footer,consumer 若需要自貼 Main 底。
 
@@ -342,7 +342,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 
 ## 相關 spec(per codex Layer B 比稿修正 path/case)
 
-- `components/Sidebar/sidebar.spec.md` — sidebar 視覺 + 鍵盤 + mobile + SidebarTrigger Pattern A/B SSOT(本 pattern 必消費)
+- `components/Sidebar/sidebar.spec.md` — sidebar 視覺 + 鍵盤 + mobile + SidebarTrigger Pattern A/B SSOT(本 composite 必消費)
 - `patterns/header-canonical/header-canonical.spec.md` — header 視覺契約 SSOT
 - `patterns/overlay-surface/overlay-surface.spec.md` — Aside modal mode 上層 SSOT
 - `components/Sheet/sheet.spec.md` — modal fallback SSOT(`aria-labelledby` 強制 + `z-50`)
