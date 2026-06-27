@@ -1,7 +1,7 @@
 # @qijenchen/design-system
 
 > World-class React design system(Radix/shadcn + Tailwind v4 + 自訂 design token)。
-> 54 components + 4 public patterns + design tokens。v0.1.0-beta.75。
+> 54 components + 4 public patterns + design tokens。v0.1.0-beta.76。
 
 本檔由 source(spec.md frontmatter + Storybook index)build-time 自動生成,**禁手改**(CI --check drift gate 守)。
 每元件 / pattern 的完整 variants / sizes / 禁止事項 全文見 [llms-full.txt](./llms-full.txt)。
@@ -10,11 +10,11 @@
 ## Components
 - [Accordion](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Accordion
 - [Alert](https://ajenchen-design-system.netlify.app): variants:neutral/info/success/warning/error — src:components/Alert
-- [app-shell](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/AppShell
+- [AppShell](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/AppShell
 - [AspectRatio](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/AspectRatio
 - [Avatar](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Avatar
 - [Badge](https://ajenchen-design-system.netlify.app): variants:critical/high/medium/low — src:components/Badge
-- [Breadcrumb](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Breadcrumb
+- [Breadcrumb](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/Breadcrumb
 - [BulkActionBar](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/BulkActionBar
 - [Button](https://ajenchen-design-system.netlify.app): variants:primary/secondary/tertiary/text/link;sizes:xs/sm/md/lg — src:components/Button
 - [Calendar](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Calendar

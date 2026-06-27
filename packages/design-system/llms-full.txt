@@ -1,6 +1,6 @@
 # @qijenchen/design-system — 完整設計參考(llms-full)
 
-> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.75。
+> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.76。
 
 # Components
 
@@ -21,7 +21,7 @@ Source(AI 讀此看官方範例): src/components/Alert/
 - **warning**: 警告但非阻斷(方案即將到期、需更新付款方式);最高頻使用
 - **error**: 錯誤但非阻斷(系統錯誤但可重試、API 失敗摘要);搭配 aria-live=assertive
 
-## app-shell(family composite)
+## AppShell(family composite)
 
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/AppShell/
@@ -51,6 +51,11 @@ Source(AI 讀此看官方範例): src/components/Badge/
 
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Breadcrumb/
+
+### Sizes
+- **sm**: Dialog / panel / drawer 內;text-body(14)+ icon 16,建議配 text-h4(20)title。對齊 BREADCRUMB_TEXT_CLASS.sm + BREADCRUMB_ICON_SIZE.sm(breadcrumb.tsx:124-136)
+- **md**: 預設 — 一般頁面 header;text-body(14)+ icon 16,建議配 text-h3(24)title
+- **lg**: Detail page hero / landing;text-body-lg(16)+ icon 20,建議配 text-h2(32)title
 
 ## BulkActionBar(family composite)
 

@@ -123,3 +123,6 @@ packages/design-system/ds-canonical/.claude/
 # 不該 ship 進 npm(beta.70 誤含一個 .pyc,harmless 但 cruft;此處 + package.json files negation 防再現)
 __pycache__/
 *.pyc
+
+# Standalone working docs (not part of DS package)
+ds-competitive-positioning.md
