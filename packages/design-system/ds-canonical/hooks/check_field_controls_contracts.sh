@@ -47,10 +47,10 @@ esac
 case "$FILE_PATH" in
   */packages/design-system/src/components/Combobox/*.tsx|*/packages/design-system/src/components/Select/*.tsx|*/packages/design-system/src/components/PeoplePicker/*.tsx)
     if ! head -3 "$FILE_PATH" | grep -qE '//[[:space:]]*@renderer-symmetry-allow:'; then
-      DEFINES_RENDERER=$(grep -cE '(tagRenderer|selectedItemRenderer)\?:\s*\(' "$FILE_PATH" 2>/dev/null || echo 0)
+      DEFINES_RENDERER=$(grep -cE '(tagRenderer|selectedItemRenderer)\?:\s*\(' "$FILE_PATH" 2>/dev/null | head -1)
       DEFINES_RENDERER=${DEFINES_RENDERER:-0}
       if [ "$DEFINES_RENDERER" -gt 0 ]; then
-        EDIT_HITS=$(grep -cE 'tagRenderer\(.*\)|selectedItemRenderer\(.*\)' "$FILE_PATH" 2>/dev/null || echo 0)
+        EDIT_HITS=$(grep -cE 'tagRenderer\(.*\)|selectedItemRenderer\(.*\)' "$FILE_PATH" 2>/dev/null | head -1)
         EDIT_HITS=${EDIT_HITS:-0}
         DISPLAY_LINES=$(grep -nE "mode\s*=*\s*'display'|resolvedMode\s*==*\s*'display'" "$FILE_PATH" 2>/dev/null | cut -d: -f1)
         if [ "$EDIT_HITS" -gt 0 ] && [ -n "$DISPLAY_LINES" ]; then
@@ -102,18 +102,27 @@ ${FILE_PATH}${WARN}
     ;;
 esac
 
-# ── Contract (d) field-px token(2026-06-27)──────────────────────────────────
-# Scope:消費 --field-px 的 field controls(form 水平內距 SSOT)。12px 已 tokenize,禁 hardcode 0.75rem
-#       (含 paddingRight inline override / px 雜值)。current code 全 migrate → 不誤報,只防未來 drift。
+# ── Contract (d) field-px token(2026-06-27;round-2 對抗驗證 2026-06-27 補洞)──────
+# Scope:消費 --field-px 的 field controls(form 水平內距 SSOT)。12px 已 tokenize → production
+#       code 禁 hardcode `0.75rem`(inline override)或裸 `px-3`/`pr-3`(uiSize.css:29
+#       「取代散落的 px-3 / inline 0.75rem」canonical;M34 hook 廣度對齊 spec wording)。
+#       PeoplePicker 補進 scope(round-1 漏:其 form-context inject `!px-[var(--field-px)]`)。
+# 豁免(避免 false-positive):
+#   - `*.stories.tsx`(anatomy/principles 內含合法 token 對照標註 + demo 容器 px-3 layout,非 padding hardcode)
+#   - comment 行(`//` `*` `/*` 開頭 — migration 註解可合法 reference 舊 px-3/0.75rem 形式)
+#   - 已 tokenize 的 `px-[var(--field-px)]`
 case "$FILE_PATH" in
-  */packages/design-system/src/components/Select/*.tsx|*/packages/design-system/src/components/Combobox/*.tsx|*/packages/design-system/src/components/Input/*.tsx|*/packages/design-system/src/components/NumberInput/*.tsx|*/packages/design-system/src/components/Textarea/*.tsx|*/packages/design-system/src/components/DatePicker/*.tsx|*/packages/design-system/src/components/TimePicker/*.tsx|*/packages/design-system/src/components/LinkInput/*.tsx|*/packages/design-system/src/components/Field/*.tsx)
+  *.stories.tsx) ;;
+  */packages/design-system/src/components/Select/*.tsx|*/packages/design-system/src/components/Combobox/*.tsx|*/packages/design-system/src/components/Input/*.tsx|*/packages/design-system/src/components/NumberInput/*.tsx|*/packages/design-system/src/components/Textarea/*.tsx|*/packages/design-system/src/components/DatePicker/*.tsx|*/packages/design-system/src/components/TimePicker/*.tsx|*/packages/design-system/src/components/LinkInput/*.tsx|*/packages/design-system/src/components/PeoplePicker/*.tsx|*/packages/design-system/src/components/Field/*.tsx)
     if ! head -3 "$FILE_PATH" | grep -qE '//[[:space:]]*@field-px-escape-allow:'; then
-      FIELDPX_HITS=$(grep -nE "0\.75rem" "$FILE_PATH" 2>/dev/null)
+      FIELDPX_HITS=$(grep -nE "0\.75rem|(^|[^a-zA-Z0-9-])!?(px|pr)-3([^0-9.]|$)" "$FILE_PATH" 2>/dev/null \
+        | grep -vE '^[0-9]+:[[:space:]]*(//|\*|/\*)' \
+        | grep -vE 'px-\[var')
       if [ -n "$FIELDPX_HITS" ]; then
         VIOLATIONS="${VIOLATIONS}
 [contract (d) field-px]:
 ${FIELDPX_HITS}
-  → field 水平內距 12px 已 tokenize 為 --field-px(field-controls.spec.md「右側元素」canonical)。禁 hardcode 0.75rem,改 \`paddingRight: 'var(--field-px)'\` / \`px-[var(--field-px)]\`。
+  → field 水平內距 12px 已 tokenize 為 --field-px(field-controls.spec.md「右側元素」canonical + tokens/uiSize/uiSize.css)。production 禁 hardcode 0.75rem / 裸 px-3,改 \`paddingRight: 'var(--field-px)'\` / \`px-[var(--field-px)]\`。
   Allow:檔首加 \`// @field-px-escape-allow: <reason>\`。"
       fi
     fi

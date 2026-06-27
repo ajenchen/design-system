@@ -86,7 +86,7 @@ interface SizeSpec {
 const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
   sm: {
     heightToken: 'h-field-sm', height: '28px',
-    pxToken: 'px-3', px: '12px',
+    pxToken: 'px-[var(--field-px)]', px: '12px',
     gapToken: 'gap-2', gap: '8px',
     fontToken: 'text-body', font: '14px',
     icon: 16,
@@ -95,7 +95,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
   },
   md: {
     heightToken: 'h-field-md', height: '32px',
-    pxToken: 'px-3', px: '12px',
+    pxToken: 'px-[var(--field-px)]', px: '12px',
     gapToken: 'gap-2', gap: '8px',
     fontToken: 'text-body', font: '14px',
     icon: 16,
@@ -104,7 +104,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
   },
   lg: {
     heightToken: 'h-field-lg', height: '36px',
-    pxToken: 'px-3', px: '12px',
+    pxToken: 'px-[var(--field-px)]', px: '12px',
     gapToken: 'gap-2', gap: '8px',
     fontToken: 'text-body-lg', font: '16px',
     icon: 20,
@@ -530,7 +530,7 @@ const InspectorInner = () => {
             {isTag ? (
               <>
                 <PropRow label="tagPadding" dot={Z.pad.text}><TkVal token="calc()" value={s.tagPaddingFormula} /></PropRow>
-                <PropRow label="右側 pR"><TkVal token="0.75rem" value="12px" /></PropRow>
+                <PropRow label="右側 pR"><TkVal token="var(--field-px)" value="12px" /></PropRow>
                 <PropRow label="Tag 高度" dot={Z.tag.text}>{s.tagHeight}</PropRow>
               </>
             ) : (
@@ -722,7 +722,7 @@ export const SizeMatrix = {
       {/* ── tag mode additional tokens ── */}
       <div className="flex flex-col gap-2">
         <span className="text-caption font-medium text-fg-secondary">tag 模式額外 token</span>
-        <Desc>tag 模式的 padding 用 calc() 公式置中 Tag：px = (field-height - tag-height) / 2。右側 paddingRight 固定 12px（0.75rem）。</Desc>
+        <Desc>tag 模式的 padding 用 calc() 公式置中 Tag：px = (field-height - tag-height) / 2。右側 paddingRight 固定 12px（--field-px token）。</Desc>
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">
             <thead><tr>
@@ -752,7 +752,7 @@ export const SizeMatrix = {
                 <Td>paddingRight</Td>
                 {SIZES.map((sz) => (
                   <Td key={sz} mono>
-                    <div className="text-fg-secondary">0.75rem</div>
+                    <div className="text-fg-secondary">var(--field-px)</div>
                     <div className="text-fg-muted text-[10px]">12px（固定）</div>
                   </Td>
                 ))}

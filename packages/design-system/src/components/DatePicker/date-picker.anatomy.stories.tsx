@@ -50,9 +50,9 @@ interface SizeSpec {
 }
 
 const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
-  sm: { heightToken: 'h-field-sm', height: '28px', pxToken: 'px-3', px: 12, gapToken: 'gap-2', gap: 8, fontToken: 'text-body',    font: '14px', icon: 16, clearHover: 18 },
-  md: { heightToken: 'h-field-md', height: '32px', pxToken: 'px-3', px: 12, gapToken: 'gap-2', gap: 8, fontToken: 'text-body',    font: '14px', icon: 16, clearHover: 18 },
-  lg: { heightToken: 'h-field-lg', height: '36px', pxToken: 'px-3', px: 12, gapToken: 'gap-2', gap: 8, fontToken: 'text-body-lg', font: '16px', icon: 20, clearHover: 22 },
+  sm: { heightToken: 'h-field-sm', height: '28px', pxToken: 'px-[var(--field-px)]', px: 12, gapToken: 'gap-2', gap: 8, fontToken: 'text-body',    font: '14px', icon: 16, clearHover: 18 },
+  md: { heightToken: 'h-field-md', height: '32px', pxToken: 'px-[var(--field-px)]', px: 12, gapToken: 'gap-2', gap: 8, fontToken: 'text-body',    font: '14px', icon: 16, clearHover: 18 },
+  lg: { heightToken: 'h-field-lg', height: '36px', pxToken: 'px-[var(--field-px)]', px: 12, gapToken: 'gap-2', gap: 8, fontToken: 'text-body-lg', font: '16px', icon: 20, clearHover: 22 },
 }
 
 const MODE_DESC: Record<ModeKey, string> = {

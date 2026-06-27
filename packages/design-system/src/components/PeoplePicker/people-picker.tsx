@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @placeholder-vocabulary-allow: 1-cycle backward-compat — `placeholder` 已加(trigger empty SSOT),`emptyPlaceholder={emptyText}` forward 仍保留讓既有 consumer 不被 silent break;Combobox line 760 `placeholder ?? emptyPlaceholder` fallback → placeholder 永遠 takes precedence。Future cycle 移除 emptyPlaceholder forward(per field-controls.spec.md 共享 contract b)。
-// @cell-metric-escape-allow: comment describes RETIRED `tagAreaPaddingLeftPx={8}` magic — current code is surface-guarded (`surface === 'form'` only injects `!px-3`; table-cell context untouched, lets naked `!px-[var(--table-cell-px)]` SSOT take over). Hook regex grep'd the comment word, not the live code path. Per (a) fix 2026-05-13 user-approved Path a.
+// @cell-metric-escape-allow: comment describes RETIRED `tagAreaPaddingLeftPx={8}` magic — current code is surface-guarded (`surface === 'form'` only injects `!px-[var(--field-px)]`; table-cell context untouched, lets naked `!px-[var(--table-cell-px)]` SSOT take over). Hook regex grep'd the comment word, not the live code path. Per (a) fix 2026-05-13 user-approved Path a.
 import * as React from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -363,12 +363,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // 撤掉 `tagAreaPaddingLeftPx={8}` magic — Combobox `tagPadding[size]` 是 density-dependent
       // calc 公式(`(field-height - icon-size) / 2`),只在 md size + default density 才 = 4px;
       // 其他 size/density 漂 6px / 8px → 4+8=12 spec 公式不成立。
-      // (a) fix:form context + 有 tag → 改 inject `!px-3`(固定 12px)直接 override `tagPadding[size]`,
+      // (a) fix:form context + 有 tag → 改 inject `!px-[var(--field-px)]`(固定 12px)直接 override `tagPadding[size]`,
       // 達成 GitHub PeoplePicker fixed 12px inset(對齊 cell context 同 13px from cell.left 含 1px border)。
-      // - form + 有 tag → `!px-3`(12px 固定 inset)+ tagAreaPaddingLeftPx undefined → field.padL=12 ✓
+      // - form + 有 tag → `!px-[var(--field-px)]`(12px 固定 inset)+ tagAreaPaddingLeftPx undefined → field.padL=12 ✓
       // - table-cell + 有 tag → naked variant `!px-[var(--table-cell-px)]` 已是 12px,不 inject ✓
       // - isEmpty → 不 inject,走 Combobox 預設文字 inset(`tagPadding[size]` 公式自然 vertical center)
-      className={cn(className, !isEmpty && surface === 'form' && '!px-3')}
+      className={cn(className, !isEmpty && surface === 'form' && '!px-[var(--field-px)]')}
       aria-label={ariaLabel}
       // 2026-05-15 Bug 1 fix(Claude+Codex Step 5 比稿 consensus,user verbatim「就 A」):per-length 動態
       // wrapper class — length=1 降階單人視覺需要 width constraint chain(`flex-1 min-w-0 overflow-hidden`),

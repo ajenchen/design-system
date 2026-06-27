@@ -94,6 +94,20 @@ Consumer 寫 Form 或 Toolbar 時並排多個 field-height 元件：
 
 本專案曾發生 SegmentedControl 的 code defaults 是 `md`、spec + docblock 寫 `sm ★default` 的三方不一致（2026-04-18 修正）。避免方式：改 cva `defaultVariants` 前先讀本表，確認新值仍符合 family 約束。
 
+## Field Horizontal Padding
+
+Form-context field 控件的左右水平內距。**固定 12px,不隨 size / density 變化**——縱向才是 density 節奏;橫向是內容溝槽常數,對齊 field-height family 全控件。
+
+| Token | 值 | 說明 |
+|-------|-----|------|
+| `--field-px` | 0.75rem (12px) | form-context field 左右內距 SSOT;固定不隨 size / density |
+
+**消費者**:`Input` / `NumberInput` / `Select` / `Combobox` / `DatePicker` / `TimePicker` / `LinkInput` / `Textarea`(經 `fieldWrapperStyles` cva `px-[var(--field-px)]`)+ `PeoplePicker`(form-context inject `!px-[var(--field-px)]`)+ tag 模式右緣 re-assert(`paddingRight: var(--field-px)`,Select / Combobox readonly + edit)。
+
+**與 `--table-cell-px` 的關係**:同 `-px` 命名慣例。`--table-cell-px`(DataTable-scoped)預設 `var(--field-px)`(form / cell 同 12px content gutter SSOT),但仍是獨立 named token、可被 DataTable 單獨 override(per `components/Field/field-controls.spec.md` contract (c) scoped 決策)。
+
+**Why 固定不隨 density**:density 本質是縱向密度(一屏幾列);橫向管可讀性(字離格線距離),目的不同不綁。對齊 Ant Table(橫向 padding 不隨 density 變、縱橫分離)+ 全 DS field 控件 12px 常數。M17「SSOT 必可傳播」:散落的 `px-3` / inline `0.75rem` 全收斂進此 token。
+
 ## Table Row
 
 DataTable 行高。density 切換統一 +0.5rem (+8px)。

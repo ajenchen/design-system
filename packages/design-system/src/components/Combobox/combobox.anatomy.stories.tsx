@@ -479,7 +479,7 @@ const InspectorInner = () => {
               }
             </PropRow>
             <PropRow label="tagPadding" dot={Z.pad.text}><TkVal token="calc()" value={s.tagPaddingCalc} /></PropRow>
-            <PropRow label="右側內距">0.75rem (12px)</PropRow>
+            <PropRow label="右側內距">var(--field-px) (12px)</PropRow>
             <PropRow label="Tag 間距" dot={Z.gap.text}>{s.tagGap}</PropRow>
             <PropRow label="Icon 尺寸" dot={Z.icon.text}>{s.icon}px</PropRow>
             <PropRow label="Tag 高度" dot={Z.tag.text}>{s.tagHeight} ({s.tagSize})</PropRow>
@@ -677,7 +677,7 @@ export const SizeMatrix = {
               {SIZES.map((sz) => (
                 <Td key={sz} mono>
                   <div className="text-fg-secondary">paddingRight</div>
-                  <div className="text-fg-muted text-[10px]">0.75rem (12px)</div>
+                  <div className="text-fg-muted text-[10px]">var(--field-px) (12px)</div>
                 </Td>
               ))}
             </tr>
