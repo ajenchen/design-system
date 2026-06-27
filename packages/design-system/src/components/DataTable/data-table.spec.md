@@ -386,12 +386,12 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 
 ### 四、UI canonical
 
-- 第 1 row conjunction 是靜態 `Where` label(`px-3` 對齊下方 Field value 起點 = 12px)
+- 第 1 row conjunction 是靜態 `Where` label(`px-[var(--field-px)]` 對齊下方 Field value 起點 = 12px)
 - field 未選 → operator + value picker disabled;同 group 共用 conjunction(toggle 任一 → flip 整 group)
 - **空狀態**:無 condition → 只顯 inline `+ 加篩選` CTA(對齊 Notion / Airtable / Linear,**禁止** auto-create 空 row) <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 - **CTA 位置**:緊貼最後一條 row(text variant 輕量,**廢 SurfaceFooter**),條件與「加入」屬同一語境
 - **Trash / 刪除**:row 是 form-control row → text Button(non Inline Action,違 item-anatomy canonical)
-- **And/Or Select** `minRows={2}`(2 選項顯式縮 menu 高度);**Where padding** `px-3` align Field
+- **And/Or Select** `minRows={2}`(2 選項顯式縮 menu 高度);**Where padding** `px-[var(--field-px)]` align Field
 - Header refresh icon:`value !== defaultValue` 顯;ButtonDivider 串接 close X(對齊欄位顯示 chrome canonical)
 - **Relative date 群組**:`DATE_RELATIVE_GROUPS` Past / Current / Future,走 `<Select groups>`
 - Trigger button checked(`aria-pressed`):`value` 有 ≥ 1 active condition → on(語意:資料被篩,獨立於 refresh)

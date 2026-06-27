@@ -98,7 +98,7 @@ export const fieldWrapperStyles = cva(
         mode: 'display',
         variant: 'default',
         // 2026-05-13 Q3 Path Ⅰ(user 拍板 Path Ⅰ 全 zero chrome + codex V2 verdict + field-controls.spec.md (d)):
-        // default display = zero chrome — !px-0 !py-0 override size token 的 px-3,跟 Select / Combobox
+        // default display = zero chrome — !px-0 !py-0 override size token 的 px-[var(--field-px)],跟 Select / Combobox
         // / DatePicker / TimePicker / LinkInput non-D-path bare-span idiom 一致(Carbon read-only / Stripe
         // display / Notion property / Polaris readonly TextField 全 zero chrome)。
         className: 'bg-transparent border border-transparent !px-0 !py-0',

@@ -2,14 +2,14 @@
 /**
  * AppShell — web service page-level layout primitive。
  *
- * 組合 Sidebar + ChromeHeader + Aside + main 成完整 page shell。SSOT 邊界:本 pattern only
+ * 組合 Sidebar + ChromeHeader + Aside + main 成完整 page shell。SSOT 邊界:本 composite component only
  * own slot composition + layout mode + Aside responsive mode;不 own sidebar / header /
  * sheet 視覺(各自 spec own)。
  *
  * 對齊 Mantine AppShell compound API + Ant Layout slot 模式 + Material 3 standard/modal
  * drawer canonical(per spec.md frontmatter cite)。
  *
- * Spec SSOT:`patterns/app-shell/app-shell.spec.md`
+ * Spec SSOT:`components/AppShell/app-shell.spec.md`
  */
 
 import * as React from 'react'

@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
  * 預設建議使用 --chart-1..5(本 DS 提供的 5 色類別 token)
  *
  * ── 視覺 token ──
- * Tooltip: bg-surface-raised / border-border / shadow-[elevation-200] / rounded-md
+ * Tooltip: bg-surface-raised / border-border / shadow-[var(--elevation-200)] / rounded-md
  * Legend text: text-fg-secondary / text-caption
  * Grid: stroke-divider
  * Axis tick: text-fg-muted / text-caption

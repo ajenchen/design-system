@@ -152,7 +152,7 @@ Panel 展開後的 column picker 結構:
 
 ### Spacing + 結構(2026-04-21 canonical,2026-04-21 window width 修正)
 
-- Footer 內 padding = `--layout-space-tight`(12px @ md density)
+- Footer 內 padding = `--layout-space-tight`(12px @ md density);**消費 `<SurfaceFooter>` SSOT**(border-t + py + gap + justify + shrink-0),px 經 `className` override 回 tight——因滿欄 column 面板無 chrome-padded body 內縮邊可對齊(見 `overlay-surface.spec.md` SurfaceFooter「footer px = body 內縮原則」例外);此刻按鈕 `mr-auto` 推右,視覺等同原 justify-between(零視覺變化)
 - **Panel 容器固定寬:2 欄(時 / 分)`w-40`(160px)/ 3 欄(時 / 分 / 秒)`w-60`(240px)**;**每欄 `flex-1 h-full` 等分**容器寬(非固定 `w-12`)。**分隔「:」移除**(AR8 canonical — Ant TimePicker / Google Calendar 同樣不加 `:`,靠 column 間距自明 `@benchmark-unverified` visual)
 - Scrollable list 用 **`<ScrollArea>`**(對齊 DS 跨 OS 一致 overlay 捲軸 canonical);不 raw `overflow-y-auto`
 - **Scroll-into-view**:mount = `behavior:'auto'`(避閃爍),後續 `value` 變更 = `behavior:'smooth'`(對齊 iOS / Material / Ant timepicker idiom)。SSOT 在 `time-columns.tsx` `TimeColumn` useEffect

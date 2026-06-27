@@ -448,7 +448,7 @@ export interface ComboboxProps {
    * **2026-05-13 v2 deprecate path**:原 PeoplePicker pass `{8}` 假設「Combobox tagPadding=4px,4+8=12」
    * 但 `tagPadding[size]` 是 density-dependent calc `(field-height - icon-size) / 2`,只在 md size +
    * default density 才 = 4px;其他 size/density 漂 6/8px → 4+8=12 公式破。改 PeoplePicker 直接 inject
-   * `!px-3` className 到 Combobox Field wrapper(per people-picker.spec.md:94 v2),`tagAreaPaddingLeftPx`
+   * `!px-[var(--field-px)]` className 到 Combobox Field wrapper(per people-picker.spec.md:94 v2),`tagAreaPaddingLeftPx`
    * 走 undefined。Future 仍保留此 prop 給其他 consumer 精準調整 padding,但 PeoplePicker 已不再用。
    */
   tagAreaPaddingLeftPx?: number
@@ -578,14 +578,18 @@ function NativeCombobox({
   const handleRemove = (v: string) => onChange?.(value.filter(x => x !== v))
   const handleAdd = (v: string) => { if (!value.includes(v)) onChange?.([...value, v]) }
 
+  // React #310 fix(對齊 select.tsx):hooks 必在 conditional early-return 前無條件呼叫。
+  // resolvedMode 在 edit↔非edit 切換(<Field mode/disabled> cascade / DataTable cell 進出編輯)時
+  // hook 數量不可變動,否則 Rules of Hooks violation → React #310 「rendered fewer/more hooks」crash。
+  const selectRef = React.useRef<HTMLSelectElement>(null)
+  const tagAreaRef = React.useRef<HTMLDivElement>(null)
+
   if (resolvedMode !== 'edit') {
     return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
   }
 
   const items = value.map(v => ({ value: v, label: options.find(o => o.value === v)?.label ?? v }))
   const unselected = options.filter(o => !value.includes(o.value))
-  const selectRef = React.useRef<HTMLSelectElement>(null)
-  const tagAreaRef = React.useRef<HTMLDivElement>(null)
   const tagHeight = size === 'sm' ? 20 : 24
 
   const selectDropdown = unselected.length > 0 ? (
@@ -674,10 +678,10 @@ function CustomCombobox({
 
   React.useEffect(() => { if (!open) setSearch('') }, [open])
 
-  if (resolvedMode !== 'edit') {
-    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
-  }
-
+  // React #310 fix(對齊 select.tsx):以下 hooks(useMemo/useRef)必在 conditional early-return 前
+  // 無條件呼叫。resolvedMode 在 edit↔非edit 切換時 hook 數量不可變動,否則 Rules of Hooks
+  // violation → React #310 「rendered fewer/more hooks」crash(ReadonlyMultiSelect 用不到這些值,
+  // 多算無害,對齊 select.tsx hoist pattern)。
   const items = React.useMemo(
     () => value.map(v => ({ value: v, label: options.find(o => o.value === v)?.label ?? v })),
     [value, options]
@@ -710,6 +714,10 @@ function CustomCombobox({
     })),
     [filteredOptions]
   )
+
+  if (resolvedMode !== 'edit') {
+    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
+  }
 
   const chevronEl = <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted transition-transform', open && 'rotate-180')} aria-hidden />
 

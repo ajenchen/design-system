@@ -650,13 +650,13 @@ function ConjunctionLabel({
   // index === 1:**唯一可改**的 AND/OR Select(連動整 group conjunction)
   // index ≥ 2:被連動的 row,read-only 顯示當前 conjunction 文字(同 Where 視覺,A6 canonical)
   //   對齊 Airtable / Notion / Linear 共識 @benchmark-unverified(non-OSS)
-  //   px-3 對齊 Field 內部 padding 12px(Q13)
+  //   px-[var(--field-px)] 對齊 Field 內部 padding 12px(Q13)
   if (index === 0) {
-    return <div className="w-20 shrink-0 text-body text-fg-muted px-3 self-center">Where</div>
+    return <div className="w-20 shrink-0 text-body text-fg-muted px-[var(--field-px)] self-center">Where</div>
   }
   if (index >= 2) {
     const label = conjunction === 'and' ? 'And' : 'Or'
-    return <div className="w-20 shrink-0 text-body text-fg-muted px-3 self-center">{label}</div>
+    return <div className="w-20 shrink-0 text-body text-fg-muted px-[var(--field-px)] self-center">{label}</div>
   }
   // index === 1:可切換的 AND/OR Select
   // minRows={2} — And/Or 2 選項,顯式縮 menu 高度避免 reserve 3 row 空白(Q5)

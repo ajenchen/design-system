@@ -151,7 +151,7 @@ OverflowIndicator.displayName = 'OverflowIndicator'
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const overflowIndicatorMeta = {
   component: 'OverflowIndicator',
-  family: null, // non-family composite / overlay / layout
+  family: 'self-contained', // 對齊 overflow-indicator.spec.md frontmatter family: self-contained(SSOT)
   variants: {
 
   },

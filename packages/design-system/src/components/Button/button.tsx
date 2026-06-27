@@ -313,16 +313,6 @@ export interface ButtonProps
   fullWidth?: boolean
 }
 
-/**
- * Icon-only padding — calc `(field-height - icon-size) / 2` per size。
- *
- * 設計:startIcon 到左邊距離 = padding = `(height - icon) / 2`。
- * 純 icon-only 時 width = 2*padding + icon = height → **自然正方形**,不需要 aspect-square。
- * 有 suffix(badge / endIcon)時 width = 2*pad + icon + gap + suffix > height → **自然長方形**。
- * StartIcon 到左邊距離始終不變,形狀自動適應內容。
- *
- * 用 CSS var 讓 density 切換時 padding 自動跟著算(field-height 會變)。
- */
 // IconOnly 用 padding-free + aspect-square + flex-center 的 Polaris/Atlassian idiom
 // (M17 SSOT 必可傳播 — 取代 4 個 size 的 magic-number 公式):
 //   - aspect-square 鎖 width=height(來自 h-field-X)

@@ -17,7 +17,7 @@ import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useRes
  * ── 視覺 ──
  * 填色用 `var(--warning)`(yellow-6,世界級黃星 convention;與 warning 語意共用色相
  * 但語境不同,評分 = UX convention color 非 status)。
- * 空色用 `var(--color-neutral-4)`(灰色;與 disabled/empty 同級)。
+ * 空色用 `var(--divider)`(neutral-4 借 divider semantic alias;灰色;與 disabled/empty 同級)。
  *
  * ── 互動 ──
  * interactive(預設):hover 預覽、click 設值、keyboard Left/Right 改值

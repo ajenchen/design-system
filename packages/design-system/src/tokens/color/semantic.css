@@ -197,7 +197,7 @@
 
   /* Brand / Action — 品牌主操作色
      --primary-text 為 SOP 規定的 5 件套之一，目前無消費者
-     （Button 直接用 text-white, Tag 用 primitive --color-blue-7） */
+     （Button 直接用 text-on-emphasis, Tag 用 primitive --color-blue-7） */
   --primary:              var(--color-blue-6);
   --primary-hover:        var(--color-blue-5);
   --primary-active:       var(--color-blue-7);

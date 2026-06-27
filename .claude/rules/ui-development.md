@@ -74,7 +74,7 @@ paths:
 - slot 只接 icon → `startIcon` / `endIcon`(型別 `LucideIcon`,元件控尺寸)
 - slot 接任意視覺 → 描述內容類型(`avatar`,型別 `ReactNode`)
 - slot 是行為 → callback(`onDismiss`,元件渲染互動 + 樣式)
-- ❌ 禁 `prefix` / `suffix` / `left` / `right`(位置名不傳達本質)
+- ❌ 禁 `prefix` / `suffix` / `left` / `right` 當**內容插槽** prop(位置名不傳達本質)→ 用 `startIcon`/`endContent`。**例外**:值格式 affix 字串(`NumberInput.prefix='$'`)+ 結構 anatomy 詞彙合法,判準見 `.claude/references/props-naming.md`「prefix/suffix canonical」
 
 **4 名關閉 / 移除 callback**(詳 `.claude/references/props-naming.md`):
 `onClose` / `onDismiss` / `onRemove` / `onClear` 各有語意不合併。

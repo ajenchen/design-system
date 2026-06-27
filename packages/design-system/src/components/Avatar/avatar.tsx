@@ -277,7 +277,7 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
               style={{
                 boxShadow: `0 0 0 2px var(--surface-raised, var(--canvas))`,
               }}
-              aria-label={`${badgeCount} unread`}
+              aria-label={`${badgeCount} unread`} // i18n-allow: DS default(未覆寫英文 'N unread')
             />
           )}
         </div>

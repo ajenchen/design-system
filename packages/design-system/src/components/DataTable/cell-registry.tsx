@@ -174,6 +174,11 @@ function NumberCell({ value, meta, mode, size, isDisabled, onCommit, onCancel, o
   // currency 透過 columnType-aware prefix:type='currency' → 預設 '$'(可 override)
   const isCurrency = meta?.type === 'currency'
   const prefix = isCurrency ? (meta?.prefix ?? '$') : meta?.prefix
+  // React #310 fix:useState 必在 display early-return 前無條件呼叫。同一 memo'd cell instance
+  // 在 display↔edit 切換時被重用(render site 無 key={mode},data-table.tsx:1352),hook 數量不可變,
+  // 否則 Rules of Hooks violation → React #310 crash。對齊 combobox/select hoist pattern。
+  const initial = typeof value === 'number' ? value : null
+  const [localValue, setLocalValue] = React.useState<number | null>(initial)
   if (mode === 'display') {
     return (
       <NumberInput
@@ -193,8 +198,7 @@ function NumberCell({ value, meta, mode, size, isDisabled, onCommit, onCancel, o
   // (`value={value ?? ''}`)— 若 NumberCell 以 `defaultValue` 傳入,NumberInput value=undefined → ''
   // empty。對齊 cell-as-input「edit mode 自動帶入 display 值」(對齊 Notion / Airtable 共識),
   // 改用 local state controlled。User typing → setLocalValue;blur/Enter → onCommit(localValue)。
-  const initial = typeof value === 'number' ? value : null
-  const [localValue, setLocalValue] = React.useState<number | null>(initial)
+  // (initial + useState 已 hoist 到 display-return 前 — 見上方 React #310 fix。)
   return (
     <NumberInput
       autoFocus

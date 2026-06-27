@@ -32,6 +32,18 @@ Badge 在不同 anchor 有兩種截然不同視覺 / 語意,prop 名區分:
 
 **禁止組合**:有 label 的 Button / Chip 疊 `overlayBadge`(badge 飄到 chrome 邊緣遠離 icon 語義) → 計數改用 `badge` inline。詳 `badge.spec.md`「Overlay 適用元件 canonical」。
 
+## `prefix` / `suffix` canonical(按「prop 型別」判,非按位置一刀切)
+
+`prefix` / `suffix` 這對字在 DS 有 3 種身份,**只有當它是「放 ReactNode 的內容插槽 prop」時才禁**:
+
+| 形態 | 判定 | 改用 / 對齊 |
+|------|------|-----------|
+| **ReactNode 內容插槽 prop**(`prefix?: ReactNode`)| ❌ **禁** — 位置名不傳達放什麼 | 內容描述名:`startIcon`/`endIcon`(icon)、`avatar`(ReactNode)、`endContent`/`endAction`(trailing slot)。對齊 Material `startIcon`/`endIcon`、Atlassian `iconBefore`/`iconAfter` |
+| **值格式 affix 字串 prop**(`prefix?: string`)| ✅ **允許** — 黏在值上的貨幣/單位符號,屬格式化非插槽 | `NumberInput.prefix='$'`/`suffix='kg'`。對齊 Ant `InputNumber.prefix` |
+| **結構 anatomy 詞彙 / 內部原語 / CSS 變數**(`ItemPrefix`/`ItemSuffix`、`--item-prefix-slot`、`data-prefix-type`、spec 的 `[prefix][content][suffix]` 骨架)| ✅ **允許** — 位置就是結構槽的身分(類比 CSS `::before`/`::after`),非 consumer 內容 prop | item-anatomy SSOT(`item-anatomy.spec.md`)|
+
+**一句話判準**:**「是 ReactNode 內容插槽 consumer prop 嗎?是 → 禁(改內容名);否(格式字串 / 結構原語)→ 合法。」** `ui-development.md`「Props 命名」禁令的標的是**內容插槽**,非格式字串或結構詞彙——三者程式碼裡 0 衝突(全庫掃證實無任何元件暴露 ReactNode prefix/suffix 插槽 prop)。
+
 ## 常用 icon canonical
 
 | 語義 | Icon | 反例 |

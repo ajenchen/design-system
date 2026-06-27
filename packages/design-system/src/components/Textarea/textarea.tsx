@@ -19,7 +19,7 @@ import { EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'
  *
  * ── Padding 規則 ───────────────────────────────────────────────────────
  * 多行內容必須有上下內距才能閱讀舒適。不沿用 Input 的 items-center，
- * 改用 py-2（8px）固定上下內距 + px-3 左右內距（與 Input 一致）。
+ * 改用 py-2（8px）固定上下內距 + px-[var(--field-px)]（12px token，左右內距 SSOT，與 Input/Field family 一致）。
  *
  * ── Size ────────────────────────────────────────────────────────────────
  * sm / md → text-body（14px）
@@ -77,7 +77,7 @@ const textareaVariants = cva(
       {
         mode: 'display',
         variant: 'default',
-        // 2026-05-13 Q3 Path Ⅰ:Textarea default display zero chrome,!px-0 !py-0 override base `px-3 py-2`
+        // 2026-05-13 Q3 Path Ⅰ:Textarea default display zero chrome,!px-0 !py-0 override base `px-[var(--field-px)] py-2`
         // (跟 Input 同 SSOT,per field-controls.spec.md (d))
         className: 'bg-transparent border border-transparent !px-0 !py-0',
       },

@@ -15,6 +15,8 @@ import { useRowSize } from '@/design-system/patterns/element-anatomy/item-anatom
  *   desc → action = mt-6（24px）
  *   title → desc = `var(--item-gap-label-desc-reading-lg)`（reading-lg tier token,item-anatomy SSOT;bare `--item-gap-label-desc` 已 retire）
  *
+ * description 字級隨 RowSizeContext 變（sm/md → text-body 14px,lg → text-body-lg 16px）。
+ *
  * Outer padding 由 consumer 容器決定(py-12 / py-6 / py-16 等）。
  */
 

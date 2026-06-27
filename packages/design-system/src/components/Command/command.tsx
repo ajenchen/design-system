@@ -135,7 +135,7 @@ const CommandItem = React.forwardRef<
   <CommandPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default gap-2 select-none items-center rounded-md px-2 py-1.5 text-body outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-neutral-hover data-[selected=true]:text-foreground data-[disabled=true]:text-fg-disabled [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+      "relative flex cursor-default gap-2 select-none items-center rounded-md px-2 py-1.5 text-body outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-neutral-hover data-[selected=true]:text-foreground data-[disabled=true]:text-fg-disabled [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
       className
     )}
     {...props}
@@ -164,7 +164,7 @@ CommandShortcut.displayName = "CommandShortcut"
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const commandMeta = {
   component: 'Command',
-  family: null, // non-family composite / overlay / layout
+  family: 'composite', // 對齊 command.spec.md frontmatter family: composite(SSOT)
   variants: {
 
   },

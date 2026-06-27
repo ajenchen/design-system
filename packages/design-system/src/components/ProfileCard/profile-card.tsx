@@ -314,7 +314,7 @@ export const nameCardMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  states: [], // 唯讀 person-info template,無自身互動 state（hover/active/focus/disabled 屬子 Button/Avatar）
   tokens: {
     bg: ['bg-muted'],
     fg: ['text-foreground'],

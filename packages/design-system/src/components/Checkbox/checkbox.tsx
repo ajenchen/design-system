@@ -281,7 +281,7 @@ export const checkboxMeta = {
     // 2026-06-10 修 stale meta:iconSize 對齊 checkIconSize 真值(L49 sm/md=12, lg=16;deep-audit A.1b 抓 metadata drift)
     sm: { fieldHeight: 28, iconSize: 12, typography: 'body' },
     md: { fieldHeight: 32, iconSize: 12, typography: 'body' },
-    lg: { fieldHeight: 36, iconSize: 16, typography: 'body' },
+    lg: { fieldHeight: 36, iconSize: 16, typography: 'body-lg' },
   },
   states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {

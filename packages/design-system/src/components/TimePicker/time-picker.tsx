@@ -14,6 +14,7 @@ import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-a
 import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
 import { Button } from '@/design-system/components/Button/button'
+import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import {
   TimeColumns,
   isoToTimeParts,
@@ -389,15 +390,13 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               // 不會走到 document body 把 popover 內容推出畫面(user 報「hours 欄空白」根因)。
               className="flex-1 min-h-0"
             />
-            {/* Footer:Now + OK */}
-            <div
-              className={cn(
-                'flex items-center justify-between gap-2',
-                'border-t border-divider',
-                'px-[var(--layout-space-tight)] py-[var(--layout-space-tight)]',
-              )}
-            >
-              <Button variant="text" size="sm" onClick={handleNow}>
+            {/* Footer:消費 SurfaceFooter SSOT(border-t + py-tight + gap-2 + shrink-0 + justify-end)。
+                px override 回 layout-space-tight,因 TimePicker 滿欄 column 面板無 chrome-padded body
+                內縮邊可對齊(footer px = body 內縮 原則;column-selector 數字置中、零內距,
+                見 time-picker.spec.md)。此刻 mr-auto 把確定推右,視覺等同原 justify-between
+                —— 純結構消費 overlay-surface canonical(overlay-surface.spec.md:17「不自寫 padding token」),零視覺變化。 */}
+            <SurfaceFooter className="px-[var(--layout-space-tight)]">
+              <Button variant="text" size="sm" onClick={handleNow} className="mr-auto">
                 此刻
               </Button>
               <Button
@@ -407,7 +406,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
               >
                 確定
               </Button>
-            </div>
+            </SurfaceFooter>
           </div>
         </PopoverContent>
       </Popover>

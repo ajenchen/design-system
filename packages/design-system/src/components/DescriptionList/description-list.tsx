@@ -123,7 +123,7 @@ DescriptionItem.displayName = 'DescriptionItem'
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const descriptionListMeta = {
   component: 'DescriptionList',
-  family: null, // non-family composite / overlay / layout
+  family: 'composite', // 對齊 description-list.spec.md frontmatter family: composite(SSOT)
   variants: {
 
   },
