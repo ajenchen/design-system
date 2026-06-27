@@ -7,7 +7,7 @@
    ───────────────────────────────────────────────────────── */
 
 :root {
-  --table-cell-px: 0.75rem;
+  --table-cell-px: var(--field-px);  /* 預設取自 --field-px(form/cell 同 12px content gutter SSOT);仍是 DataTable-scoped named token、可獨立 override(spec field-controls.spec.md:330 scoped 決策不變) */
 }
 
 [data-table-size="sm"] {

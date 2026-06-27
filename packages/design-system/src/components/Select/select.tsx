@@ -351,7 +351,7 @@ function ReadonlyDisplay({
   const tagVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
 
   return (
-    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, size: sz }), value && tagPadding[sz], className)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
+    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, size: sz }), value && tagPadding[sz], className)} style={{ paddingRight: 'var(--field-px)' }} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
       {value ? <Tag size={sz} color={tagVariant}>{label}</Tag> : <span className={emptyColorCls}>{emptyText}</span>}
       {showIndicator && <ItemSuffix className="pointer-events-none"><ChevronDown size={iconSize} className={cn('shrink-0', iconColor)} aria-hidden /></ItemSuffix>}
     </div>
@@ -429,7 +429,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
       return (
         <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size }), value && tagPadding[size], 'relative',
           error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'], className)}
-          style={{ paddingRight: '0.75rem' }} data-field-mode="edit" data-error={error ? '' : undefined}>
+          style={{ paddingRight: 'var(--field-px)' }} data-field-mode="edit" data-error={error ? '' : undefined}>
           {value ? <Tag size={size} color={nativeTagVariant} className="shrink-0 relative z-10 pointer-events-none">{label}</Tag> : <span className="text-fg-muted">{placeholder ?? '選擇...'}</span>}
           {selectEl}
           <span className="flex-1" />
@@ -599,7 +599,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
           'cursor-pointer',
           className,
         )}
-        style={!isTextDisplay ? { paddingRight: '0.75rem' } : undefined}
+        style={!isTextDisplay ? { paddingRight: 'var(--field-px)' } : undefined}
         data-field-mode="edit"
         data-error={error ? '' : undefined}
         onKeyDown={(e) => {

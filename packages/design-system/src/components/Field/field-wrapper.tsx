@@ -57,9 +57,9 @@ export const fieldWrapperStyles = cva(
         naked: '',
       },
       size: {
-        sm: 'text-body h-field-sm px-3 gap-2',
-        md: 'text-body h-field-md px-3 gap-2',
-        lg: 'text-body-lg h-field-lg px-3 gap-2',
+        sm: 'text-body h-field-sm px-[var(--field-px)] gap-2',
+        md: 'text-body h-field-md px-[var(--field-px)] gap-2',
+        lg: 'text-body-lg h-field-lg px-[var(--field-px)] gap-2',
       },
     },
     // mode x variant 交叉:visual chrome 由 compoundVariants 決定

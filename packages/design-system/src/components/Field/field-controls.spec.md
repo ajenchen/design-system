@@ -233,7 +233,8 @@ Select / Combobox 的 ChevronDown、DatePicker 的 Calendar、TimePicker 的 Clo
 - **Cell(naked variant)例外**:indicator 依 `showDisplayEndIcon`(= cell 的 isEditable)——非可編欄不顯(2026-05-10 cell canonical「indicator = editable affordance」);**可編欄的 disabled cell 顯示 + fg-disabled**(同表單邏輯)
 - locked(readonly/disabled)wrapper 並設 `aria-disabled`(disabled 時)——styled-disabled 非原生元素需明告 AT inactive,亦使 axe 正確套用 WCAG 1.4.3 inactive-UI 豁免
 - clearable 有值時：clear X 在左，ChevronDown 在右
-- 右側元素(clear + chevron)水平間距對齊 Field container padding token(具體值見 `field-wrapper.tsx`),跟 Input 一致
+- **右側元素(clear / chevron / calendar / clock)右緣水平內距 = `--field-px`(12px,SSOT `tokens/uiSize/uiSize.css`),edit / readonly / disabled / display 全 mode 一致**(跟 Input 一致)。**tag 模式特例**:左側 `tagPadding` 用對稱 px-calc(≈8px)貼齊 tags、會吃掉右緣,故 tag 容器(含 readonly/disabled)**必 re-assert `paddingRight: var(--field-px)`** 對齊 edit;漏接 = chevron 右緣偏移 bug(2026-06-27 修 Select:354 / Combobox ReadonlyMultiSelect)
+- **多行(Combobox tag wrap)垂直對齊**:tags 換行、容器動態變高時,右側 chevron **鎖第一行 tag 中線**(非整體置中)——容器 `items-start` + `ItemSuffix self-start` + `style={{ height: tagHeight }}`(sm 20 / md+lg 24)。對齊 item-anatomy「suffix 永遠 `h-[1lh]` 對齊第一行」canonical;edit / readonly / disabled 全 mode 一致(2026-06-27 補 readonly/disabled wrap 漏接)
 
 ## Select 顯示模式
 
@@ -246,9 +247,9 @@ Select 支援兩種顯示模式（`display` prop）：
 
 `plain` 模式可搭配 `startIcon`(代表 value 的圖示,如狀態 icon;2026-05-01 由 `text` 改名 `plain`,rationale 見 `select.spec.md`)。
 
-`tag` 模式的 edit 用 hidden select overlay(跟 Combobox 同模式),Tag 用 `pointer-events-none`,點擊穿透到 select。右側元素水平間距對齊 Field container padding token(見 `field-wrapper.tsx`)。
+`tag` 模式的 edit 用 hidden select overlay(跟 Combobox 同模式),Tag 用 `pointer-events-none`,點擊穿透到 select。右側元素右緣 = `--field-px`(見上方「右側元素」canonical;tag 模式 readonly/disabled 必 re-assert)。
 
-tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態使用 fieldWrapper 的標準 px-3 padding，確保文字與邊框有足夠間距。
+tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態使用 fieldWrapper 的標準 `--field-px`(`px-[var(--field-px)]`)padding，確保文字與邊框有足夠間距。
 
 ---
 

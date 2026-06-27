@@ -24,6 +24,11 @@
   --field-height-md: 2rem;      /* 32px */
   --field-height-lg: 2.25rem;   /* 36px */
 
+  /* Field horizontal padding — 固定 12px(不隨 size/density);form-context field 左右內距 SSOT。
+     跟 --table-cell-px(cell-context)同 -px 慣例;Input/Select/Combobox/DatePicker/TimePicker/Textarea
+     + tag 模式右緣 re-assert 全消費此 token(取代散落的 px-3 / inline 0.75rem,M17 SSOT 可傳播)。 */
+  --field-px: 0.75rem;          /* 12px */
+
   /* Table Row Height — DataTable */
   --table-row-sm: 2rem;         /* 32px */
   --table-row-md: 2.5rem;       /* 40px */

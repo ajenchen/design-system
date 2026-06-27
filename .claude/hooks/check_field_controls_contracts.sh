@@ -1,5 +1,5 @@
 #!/bin/bash
-# check_field_controls_contracts.sh — Stream C shared contracts(a)(b)(c) consolidated guardrail
+# check_field_controls_contracts.sh — Stream C shared contracts(a)(b)(c)(d) consolidated guardrail
 #
 # 2026-05-13 prune consolidation(per knowledge-prune Phase 2 P1):3 hook 合 1:
 #   - 原 check_field_placeholder_vocabulary.sh — contract (b)
@@ -97,6 +97,24 @@ ${FILE_PATH}${WARN}
   → 違反 field-controls.spec.md「共享 contract (c)」:cell 內禁 hardcode padding magic,改 \`useFieldSurface()\` + \`--table-cell-px\` 推導。
   Fix pattern: tagAreaPaddingLeftPx={(!isEmpty && surface === 'form') ? 8 : undefined}
   Allow:檔首加 \`// @cell-metric-escape-allow: <reason>\`。"
+      fi
+    fi
+    ;;
+esac
+
+# ── Contract (d) field-px token(2026-06-27)──────────────────────────────────
+# Scope:消費 --field-px 的 field controls(form 水平內距 SSOT)。12px 已 tokenize,禁 hardcode 0.75rem
+#       (含 paddingRight inline override / px 雜值)。current code 全 migrate → 不誤報,只防未來 drift。
+case "$FILE_PATH" in
+  */packages/design-system/src/components/Select/*.tsx|*/packages/design-system/src/components/Combobox/*.tsx|*/packages/design-system/src/components/Input/*.tsx|*/packages/design-system/src/components/NumberInput/*.tsx|*/packages/design-system/src/components/Textarea/*.tsx|*/packages/design-system/src/components/DatePicker/*.tsx|*/packages/design-system/src/components/TimePicker/*.tsx|*/packages/design-system/src/components/LinkInput/*.tsx|*/packages/design-system/src/components/Field/*.tsx)
+    if ! head -3 "$FILE_PATH" | grep -qE '//[[:space:]]*@field-px-escape-allow:'; then
+      FIELDPX_HITS=$(grep -nE "0\.75rem" "$FILE_PATH" 2>/dev/null)
+      if [ -n "$FIELDPX_HITS" ]; then
+        VIOLATIONS="${VIOLATIONS}
+[contract (d) field-px]:
+${FIELDPX_HITS}
+  → field 水平內距 12px 已 tokenize 為 --field-px(field-controls.spec.md「右側元素」canonical)。禁 hardcode 0.75rem,改 \`paddingRight: 'var(--field-px)'\` / \`px-[var(--field-px)]\`。
+  Allow:檔首加 \`// @field-px-escape-allow: <reason>\`。"
       fi
     fi
     ;;

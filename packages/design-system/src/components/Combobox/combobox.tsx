@@ -488,6 +488,7 @@ function ReadonlyMultiSelect({
   const variant = variantProp ?? 'default'
   const sz = size ?? 'md'
   const iconSize = sz === 'lg' ? 20 : 16
+  const tagHeight = sz === 'sm' ? 20 : 24
   const containerRef = React.useRef<HTMLDivElement>(null)
   const hasTags = (value?.length ?? 0) > 0
 
@@ -527,8 +528,10 @@ function ReadonlyMultiSelect({
         // 2026-05-18 #6A Round 1 Step 1/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:451):
         // readonly/disabled path 對齊 L293 display wrapper 已 ship 的 overflow-hidden fix。
         // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 display 不對稱。
-        wrap ? 'flex-wrap py-1' : 'overflow-hidden', className)}
-      style={{ gap: GAP, ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode={resolvedMode}
+        // 2026-06-27 對齊 edit path(L598-617):wrap 時 items-start + chevron self-start/tagHeight 鎖第一行;
+        // paddingRight: var(--field-px) re-assert 右緣 12px(tagPadding 對稱 calc 會吃掉右緣,跟 edit 一致)。
+        wrap ? 'flex-wrap items-start py-1' : 'overflow-hidden', className)}
+      style={{ gap: GAP, paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode={resolvedMode}
       aria-disabled={resolvedMode === 'disabled' ? true : undefined}>
       {hasTags ? (
         <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap}
@@ -538,7 +541,7 @@ function ReadonlyMultiSelect({
       )}
       {/* 2026-06-26 類型身份 indicator:edit 顯示 / readonly 不顯示(純值、不可開下拉) / disabled 保留(fg-disabled,對齊原生 <select disabled>);naked cell 依 showDisplayEndIcon */}
       {(variant === 'naked' ? !!showDisplayEndIcon : resolvedMode === 'disabled') && (
-        <ItemSuffix className="pointer-events-none">
+        <ItemSuffix className={cn('pointer-events-none', wrap && 'self-start')} style={wrap ? { height: tagHeight } : undefined}>
           <ChevronDown size={iconSize} className={cn('shrink-0', resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted')} aria-hidden />
         </ItemSuffix>
       )}
@@ -597,7 +600,7 @@ function NativeCombobox({
   return (
     <div ref={__triggerRef} className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size }), value.length > 0 && tagPadding[size], 'relative',
       wrap && 'items-start py-1', error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'], className)}
-      style={{ paddingRight: '0.75rem', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode="edit" data-error={error ? '' : undefined}
+      style={{ paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode="edit" data-error={error ? '' : undefined}
       onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}>
       {/* 2026-05-18 F2 sync(per user verbatim「modifying 修好 PeoplePicker stack 後改壞 Combobox tag display」
           + 「tag 應該要判斷所在空間最多可以呈現幾個tag(包括＋n)去自動判斷何時要變成+n」):
@@ -725,7 +728,7 @@ function CustomCombobox({
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
         // 統一處理 — open=灰深(data-state)/ focus=藍(focus-within !important)。改一處全 control 跟動。
         error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'], className)}
-      style={{ paddingRight: '0.75rem', ...(wrap ? { height: 'auto' } : undefined) }}
+      style={{ paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }}
       data-field-mode="edit" data-error={error ? '' : undefined}
       // WAI-ARIA APG combobox 鍵盤開啟語意 — 對齊 sibling Select(select.tsx:593-598)。
       // <div role=combobox> 不像 native <button> 自動 synthesize Enter/Space click,故顯式補:
