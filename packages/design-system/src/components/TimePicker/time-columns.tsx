@@ -106,6 +106,11 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
     isFirstRunRef.current = false
   }, [values, selected])
 
+  // a11y:穩定 id 前綴,讓 listbox `aria-activedescendant` 指向目前 active(= selected)option。
+  // single-tabstop + 方向鍵 listbox 應透過 activedescendant 告知 AT 哪個 option active,
+  // 否則 SR 方向鍵移動時讀不出目前 option(WAI-ARIA listbox virtual-focus 慣例)。
+  const baseId = React.useId()
+
   // WAI-ARIA listbox keyboard pattern:ArrowUp/Down 切 option / Home / End 跳邊界。
   // 對標 Ant TimePicker / Material TimePicker。Tab 跳離 listbox(走預設行為,不 stopPropagation)。
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -147,6 +152,7 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
         ref={listRef}
         role="listbox"
         aria-label={label}
+        aria-activedescendant={selected != null ? `${baseId}-opt-${selected}` : undefined}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         className="flex flex-col py-2 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px]"
@@ -157,6 +163,7 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
           return (
             <button
               key={v}
+              id={`${baseId}-opt-${v}`}
               type="button"
               role="option"
               aria-selected={isSelected}

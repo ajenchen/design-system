@@ -299,9 +299,12 @@ export const radioGroupMeta = {
 
   },
   sizes: {
-    sm: { fieldHeight: 28, iconSize: 16, typography: 'body' },
-    md: { fieldHeight: 32, iconSize: 16, typography: 'body' },
-    lg: { fieldHeight: 36, iconSize: 20, typography: 'body-lg' },
+    // iconSize = 渲染指示器尺寸(對齊 checkbox/switch meta 慣例:checkbox iconSize=真 Check glyph 12/12/16)。
+    // Radio 指示器是 filled dot 非 glyph,真值 = dotSize 8/8/10(radio-group.tsx:179);
+    // 控件框 16/16/20 與 Checkbox 對齊但那是 box 非「指示器」,不入此鍵(避免 metadata 語意 drift)。
+    sm: { fieldHeight: 28, iconSize: 8, typography: 'body' },
+    md: { fieldHeight: 32, iconSize: 8, typography: 'body' },
+    lg: { fieldHeight: 36, iconSize: 10, typography: 'body-lg' },
   },
   states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
   tokens: {

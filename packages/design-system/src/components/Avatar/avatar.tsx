@@ -124,6 +124,11 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
    */
   badgeCount?: number
   /**
+   * badgeCount overlay 的 aria-label override(i18n)。預設英文 `${badgeCount} unread`;
+   * consumer 傳此 prop 本地化(對齊 `Notice` dismissAriaLabel pattern,a11y/i18n)。
+   */
+  badgeAriaLabel?: string
+  /**
    * 傳入 HoverCard 內容（如 ProfileCard），hover avatar 時自動顯示。
    * 只有人員 avatar 需要傳；實體 avatar（專案、組織）不傳。
    */
@@ -138,7 +143,7 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
 // (filter Avatar/PeoplePicker/FieldSurfaceProvider remounts)。
 // code-quality-allow: long-function — size × shape × color × solid × status × badgeCount × hoverCard × img-fallback 多軸 prop 組合,拆 sub-fn 會跨 fn 傳 imgError state + isTableScrolling observer 結果
 const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
-  ({ size = 32, shape = 'circle', src, alt, icon: Icon, color = 'neutral', solid = false, status, badgeCount, hoverCard, className, style, ...props }, ref) => {
+  ({ size = 32, shape = 'circle', src, alt, icon: Icon, color = 'neutral', solid = false, status, badgeCount, badgeAriaLabel, hoverCard, className, style, ...props }, ref) => {
     const [imgError, setImgError] = React.useState(false)
     const documentTheme = useDocumentTheme()
     const isTableScrolling = useTableIsScrolling()
@@ -277,7 +282,7 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
               style={{
                 boxShadow: `0 0 0 2px var(--surface-raised, var(--canvas))`,
               }}
-              aria-label={`${badgeCount} unread`} // i18n-allow: DS default(未覆寫英文 'N unread')
+              aria-label={badgeAriaLabel ?? `${badgeCount} unread`} // i18n-allow: DS default 英文(consumer 可傳 badgeAriaLabel i18n)
             />
           )}
         </div>

@@ -90,10 +90,11 @@ export interface TreeDragEndEvent {
 // Icon / chevron 尺寸——從 item-layout pattern module 引入(在檔頂 import),
 // 這裡本地不再宣告。所有 row primitives 共用同一個常數。
 
-// indentStep = chevronSize + gap-2(8px)— 2026-05-04 升 SSOT 為 token `--tree-indent-{sm,md,lg}`
-// 在 `tokens/uiSize/uiSize.css`。DataTable nested rows 共用此 SSOT,跨元件視覺一致。
-// 結構對齊:子 chevron 對齊父 icon,子 icon 對齊父 label。
-// Numeric value 此處保留(drop indicator JS px 計算需 number),Tailwind class 走 token。
+// indentStep = chevronSize + gap-2(8px)。值 {24,24,28} 與 CSS token `--tree-indent-{sm,md,lg}`
+// (`tokens/uiSize/uiSize.css`)**完全一致、必須同步維護**(改一處要兩處一起改;非「token 取代 literal」)。
+// 為何兩源並存:本元件 render 用此 JS literal 算 `indentPx`(L808 inline calc 需 number)+ drop-indicator
+// pointer 數學(L352,需 number 做 px 命中判斷,CSS var 在 JS 計算層拿不到);DataTable nested rows
+// 則走 CSS token 的 Tailwind class(跨元件視覺一致)。結構對齊:子 chevron 對齊父 icon,子 icon 對齊父 label。
 const INDENT_STEP: Record<SizeKey, number> = { sm: 24, md: 24, lg: 28 }
 
 // ═══════════════════════════════════════════════════════════════════════════
