@@ -78,6 +78,18 @@ Sub-agent dispatch prompt 必含 3 directives(verbatim,不可弱化):
 - 收斂靠決定性 CI gate + 寫入時紀律,非稽核 loop;deep-audit = 週期性工具(release/季度)非對沒變內容反覆跑。
 - **已 codify(2026-06-01)**:`deep-audit-cross-codex/SKILL.md` Phase C.0 rerun-stop-gate anchor + `references/triage-rubric.md`「收斂判準」完整三分類表 + 「改一處看 N 處」。放 skill 而非新 M-rule(velocity cap + skill-specific,不增 every-session context)。
 
+## Sub-rule 5 — Audit-FIX triage 別過度保守:非-SSOT-UI/UX 一律 AUTO 修到完美(2026-06-28,user 連兩次糾正「為何沒做」)
+
+**Why**:deep-audit A.3 / A2 fix 階段把「改超過一行 / 加 optional prop」誤當成「substantive → 需 user 決策」而 skip,留一堆本該自動修的待辦。user 連兩次糾正:「你應該把全部做到完整完美吧?」+「與 ssot 的 ui/ux 無關的錯誤修正不是應該自動修正到完美嗎?到底為何還留那麼多待辦?」
+
+**正確判準(不是「改幾行」)**:
+- **AUTO 修到完美**(autonomy canonical 本就規定):a11y 改善(含加 **optional 非破壞性 prop**,如 Avatar `badgeAriaLabel` / Tag `dismissLabel`)、metadata 準確性(meta 值對齊真實渲染,如 RadioGroup iconSize→真 dot)、code-quality(stale 註解)、**drift-to-canonical**(裸 utility → DS token,如 Command `border-b`→`border-divider`;零視覺對齊,如 Sheet 去多餘 `text-foreground`)。
+- **才需 user 決策**:真正改**視覺結構 / 跨元件 design language / 破壞性 API**。
+
+**Anchor**:2026-06-28 beta.77 followups —— Phase A 早抓到這 9 項(都在 findings),但 A2 fix-workflow scope-guard 過度 skip 成「needs manual substantive」。實際 6 個是 a11y/meta/drift = 該 AUTO;只 SelectMenu(重接破 cmdk = 真風險)+ 已正確項不動。教訓:**fix-workflow scope-guard 的「substantive」門檻 = 改視覺結構/design-language/破壞 API,不是「改 >1 行 / 加 prop」**。
+
+**驗證鐵律(user「不要改A壞B」)**:加 optional prop = 跑 `build:lib`(型別 surface);動 aria = a11y audit **per-story 比對 committed baseline**(總數可能 axe flake ±2,要看「我改的元件有沒有新增 violation」而非總數)。
+
 ## 對齊原則
 
 - CLAUDE.md `# 稽核 canonical` audit-vs-execute 分權
