@@ -60,6 +60,11 @@
         "bucket": "SHIP_AS_IS"
       },
       {
+        "file": "hooks/check_tabs_content_chrome_body_double_gap.sh",
+        "sourceHook": "check_tabs_content_chrome_body_double_gap.sh",
+        "bucket": "SHIP_AS_IS"
+      },
+      {
         "file": "hooks/check_opacity_token_usage.sh",
         "sourceHook": "check_opacity_token_usage.sh",
         "bucket": "SHIP_REWRITTEN"

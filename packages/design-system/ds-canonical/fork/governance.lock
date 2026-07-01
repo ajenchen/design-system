@@ -74,6 +74,12 @@
       "bucket": "SHIP_AS_IS"
     },
     {
+      "file": "hooks/check_tabs_content_chrome_body_double_gap.sh",
+      "sha256": "b377ae011f28d76c5c46a88771932c5301e18102a19c1ad0fc030f252249d962",
+      "sourceHook": "check_tabs_content_chrome_body_double_gap.sh",
+      "bucket": "SHIP_AS_IS"
+    },
+    {
       "file": "hooks/check_tailwind_wildcard_in_docs.sh",
       "sha256": "51fcf04d3adc2a15b6c06312753e51412ed8ff88d088a5e8fe4ec0c784c7aa96",
       "sourceHook": "check_tailwind_wildcard_in_docs.sh",
@@ -102,7 +108,7 @@
     },
     {
       "file": "manifest.json",
-      "sha256": "627ff28351c0af0baca271bbcfa9812389979218ffa64c4d23b4abee7606429a"
+      "sha256": "08d75f69ee0aeb54da2a6fa6079f3a3163ad1742ea3c0d62c202d6a8901088a0"
     },
     {
       "file": "preamble.md",

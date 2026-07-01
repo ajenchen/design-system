@@ -2,8 +2,8 @@
   "_meta": {
     "purpose": "C-prime fork-mode governance corpus 分類 SSOT。build-fork-governance.mjs 消費此檔生成 ds-canonical/fork/。--check 若有任何 .claude/hooks/*.{sh,py} 未分類則 FAIL(防漏接新 hook)。",
     "source": "workflow wf_4070529c-5af critic agent(讀全 53 hook + inventory 對抗分類)+ Claude 組裝 2026-06-16",
-    "total": 53,
-    "tally": { "SHIP_AS_IS": 9, "SHIP_REWRITTEN": 4, "REPLACE": 1, "DROP": 39 },
+    "total": 54,
+    "tally": { "SHIP_AS_IS": 10, "SHIP_REWRITTEN": 4, "REPLACE": 1, "DROP": 39 },
     "known_coverage_gaps": [
       "post_edit_dispatcher 的 _overlay_handcraft(擋 consumer 手刻 overlay header,非 SurfaceHeader/Popover primitive)+ _code_quality 兩個 fork-relevant 檢查,改判 DROP 後目前無 standalone 涵蓋 → 待 promote 成 standalone fork hook(harness 驗證後加)。layout-space 部分已由 check_layout_space_magic_numbers 涵蓋,無 gap。"
     ],
@@ -25,7 +25,8 @@
     { "hook": "check_sidebar_menu_button_implicit_wrap.sh", "reason": "窄條件 exit 2(SidebarMenuButton+Avatar 無 asChild)+ env escape,非 blanket brick。verify escape 隨 ship。" },
     { "hook": "check_chrome_header_avatar_canonical.sh", "reason": "窄條件 exit 2(SidebarHeader 含 ItemAvatar)+ CLAUDE_BYPASS escape,非 blanket brick。verify escape 隨 ship。" },
     { "hook": "check_layout_space_magic_numbers.sh", "reason": "consumer apps/** 硬寫 Tailwind 間距 P0 BLOCKER,skip packages/design-system/src+node_modules(L34),fork-relevant;訊息含 DS spec path(可選改)。" },
-    { "hook": "check_tailwind_wildcard_in_docs.sh", "reason": "Tailwind wildcard in docs,layout-agnostic、乾淨 exit、fork-relevant。" }
+    { "hook": "check_tailwind_wildcard_in_docs.sh", "reason": "Tailwind wildcard in docs,layout-agnostic、乾淨 exit、fork-relevant。" },
+    { "hook": "check_tabs_content_chrome_body_double_gap.sh", "reason": "consumer apps/** 內 TabsContent 放進 Dialog/Sheet/SurfaceBody chrome body 未 mt-0 → 雙重 tight P0 BLOCKER;scope 含 apps/**(fork 有 apps/),DS 內部路徑在 fork 不存在故乾淨 exit 0;窄 gate(必同時含 chrome body + TabsContent)+ escape marker 不 false-lock。與 check_layout_space_magic_numbers 同族 fork-relevant;訊息含 DS spec path(可選改)。" }
   ],
 
   "SHIP_REWRITTEN": [
