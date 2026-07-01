@@ -1,8 +1,12 @@
 #!/bin/bash
-# check_tabs_content_chrome_body_double_gap.sh — P0 BLOCKER
+# check_tabs_content_chrome_body_double_gap.sh — P0 BLOCKER(overlay-body layout-space guardian,2 checks)
 #
-# 偵測「一軸雙重 spacing owner」composition bug:`<TabsContent>` 被放進 chrome scroll body
-# (`<DialogBody>` / `<SheetBody>` / `<SurfaceBody>`)內,卻沒 `mt-0` override。
+# **Check 1**(tabs double-gap):`<TabsContent>` 被放進 chrome scroll body(`<DialogBody>` /
+#   `<SheetBody>` / `<SurfaceBody>`)內卻沒 `mt-0` override → 雙重 gap owner。
+# **Check 2**(overlay-body fixed macro gap,2026-07-01 Sheet gap-4 錨例):浮層 body 自身 className
+#   用固定 `gap-[4-9]`(macro)而非 layout-space token → lg density 不縮放,drift。詳見下方 Check 2 段。
+#
+# 兩者同屬「overlay-body layout-space 合規」domain,折進一 hook(不增 hook 數)。
 #
 # Root invariant(item-anatomy.spec.md「垂直 padding 歸屬 / 禁雙重 padding」+ layoutSpace.spec.md
 # 規則 2「Header → element = 單一 tight」):兩元素之間的 gap 只能有一個 owner。
@@ -48,6 +52,50 @@ if ! echo "$FILE" | grep -qE '(packages/design-system/src/|/apps/|(^|/)apps/)'; 
 CONTENT=$(cat "$FILE" 2>/dev/null)
 [ -z "$CONTENT" ] && exit 0
 
+# ══ Check 2:overlay body 自身用固定 macro gap-N → 該用 layout-space token(2026-07-01 Sheet gap-4 錨例)══
+# Root(layoutSpace.spec.md 規則 2/3):浮層 body 直接堆疊內容的垂直 gap 屬 macro layout-space,該用
+#   density-scaling token(並列 = loose / functional 交互 = tight),非固定 gap-N(lg 不縮放 → 跟 DS
+#   自己 dialog.stories 的 gap-[var(--layout-space-loose)] 不一致)。窄 gate:只抓 overlay body 自身
+#   className 的固定 gap-[4-9](macro range;排除 gap-1/2/3 micro + 已 tokenize 的 gap-[var)。
+#   全庫掃證實零現存假陽性(純防未來 drift)。Escape:同行或前一註解行 @overlay-body-gap-ok:。
+GAP_MARKER='@overlay-body-gap-ok:'
+GAP_HITS=$(printf '%s\n' "$CONTENT" | grep -nE '<(DialogBody|SheetBody|PopoverBody|SurfaceBody)[^>]*gap-[4-9]([^0-9]|$)' 2>/dev/null | grep -v 'gap-\[var')
+GAP_UNJUSTIFIED=""
+if [ -n "$GAP_HITS" ]; then
+  while IFS= read -r hit; do
+    [ -z "$hit" ] && continue
+    ln="${hit%%:*}"
+    cur="${hit#*:}"
+    if echo "$cur" | grep -qF "$GAP_MARKER"; then continue; fi
+    if [ "$ln" -gt 1 ] 2>/dev/null; then
+      prev=$(printf '%s\n' "$CONTENT" | sed -n "$((ln-1))p")
+      if echo "$prev" | grep -qF "$GAP_MARKER" && echo "$prev" | grep -qE '^[[:space:]]*(//|\{?/\*|\*)'; then continue; fi
+    fi
+    GAP_UNJUSTIFIED="${GAP_UNJUSTIFIED}${ln}: $(echo "$cur" | sed 's/^[[:space:]]*//')\n"
+  done <<< "$GAP_HITS"
+fi
+if [ -n "$GAP_UNJUSTIFIED" ]; then
+  cat >&2 << EOF
+🚨 OVERLAY-BODY FIXED-GAP BLOCKER(P0,2026-07-01 Sheet demo gap-4 錨例)
+
+  在 $FILE 偵測到浮層 body(Dialog/Sheet/Popover/Surface Body)自身用固定 macro gap-N:
+$(echo -e "$GAP_UNJUSTIFIED" | sed 's/^/    /' | head -10)
+
+  ── 為什麼 ──
+  浮層 body 直接堆疊內容(並列表單欄位 / 區塊)的垂直 gap 屬 macro layout-space,該用
+  density-scaling token(並列 = loose / functional 交互 = tight),非固定 gap-N(lg 不縮放 →
+  跟 DS 自己 dialog.stories 的 gap-[var(--layout-space-loose)] 不一致)。
+
+  ── 修法 2 選 1 ──
+    (a) gap-N → gap-[var(--layout-space-loose)](並列)/ gap-[var(--layout-space-tight)](functional 交互)
+    (b) Escape:該行或前一註解行加 \`// @overlay-body-gap-ok: <rationale>\`(刻意 list 間距 / 視覺平衡)
+
+  canonical → tokens/layoutSpace/layoutSpace.spec.md 規則 2/3
+EOF
+  exit 2
+fi
+
+# ══ Check 1:<TabsContent> 在 chrome body 內雙重 gap(原 beta.78 邏輯)══
 # Gate:必同時含 chrome body open tag 且 TabsContent 才啟動(narrow surface,絕大多數 edit 靜默)
 if ! echo "$CONTENT" | grep -qE '<(DialogBody|SheetBody|SurfaceBody)[ />]'; then exit 0; fi
 if ! echo "$CONTENT" | grep -q '<TabsContent'; then exit 0; fi
