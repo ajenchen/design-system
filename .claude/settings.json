@@ -347,6 +347,10 @@
           },
           {
             "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_tabs_content_chrome_body_double_gap.sh\""
+          },
+          {
+            "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_field_controls_contracts.sh\""
           },
           {
