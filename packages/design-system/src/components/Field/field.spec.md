@@ -363,7 +363,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 - **表單欄位的 label + control + description + error 標準佈局**：登入表單、設定頁、建立對話框
 - **需要 required 星號、disabled 狀態、invalid 驗證的統一行為**
 - **需要 `horizontal` / `vertical` 排版切換**：設定頁常用 horizontal（label 左 / control 右）
-- **多欄位垂直堆疊**：搭配 `FieldGroup` 管理 density-aware 間距
+- **多欄位垂直堆疊**：搭配 `FieldGroup` 統一管理欄位垂直間距（三級固定值 `compact` / `normal` / `loose`，刻意不隨 density 縮放；具體 gap map 見上方 gap 表）
 
 ## 何時不用
 
