@@ -116,7 +116,7 @@ function PageHeader({ title, rightSlot }: { title: string; rightSlot?: ReactElem
 
 function DashboardPage() {
   return (
-    <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] space-y-6">
+    <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] space-y-[var(--layout-space-loose)]">
       <section>
         <h2 className="text-h5 mb-2">Today</h2>
         <p className="text-body text-fg-secondary">
@@ -124,9 +124,9 @@ function DashboardPage() {
           (DataTable / Chart / Card / Stat 等),never modify DS source。
         </p>
       </section>
-      <section className="grid grid-cols-3 gap-4">
+      <section className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
         {['Revenue', 'Active customers', 'Pending orders'].map((label) => (
-          <div key={label} className="rounded-lg border border-divider bg-surface p-4">
+          <div key={label} className="rounded-lg border border-divider bg-surface p-[var(--layout-space-loose)]">
             <div className="text-caption text-fg-secondary">{label}</div>
             <div className="text-h3 mt-1">—</div>
           </div>
