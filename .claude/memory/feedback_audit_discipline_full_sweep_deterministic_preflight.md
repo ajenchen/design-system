@@ -90,6 +90,8 @@ Sub-agent dispatch prompt 必含 3 directives(verbatim,不可弱化):
 
 **驗證鐵律(user「不要改A壞B」)**:加 optional prop = 跑 `build:lib`(型別 surface);動 aria = a11y audit **per-story 比對 committed baseline**(總數可能 axe flake ±2,要看「我改的元件有沒有新增 violation」而非總數)。
 
+**Sub-rule 5b — 「magic number 使用」≠「原則違規」(2026-07-01 layout-space 雙向翻車 anchor)**:audit sweep 抓「該用 token 卻硬寫值」時**禁把所有 magic number 當違規**——原則本質是**判斷**(regex 分不出),有明文邊界。錨例:layout-space sweep 我先 over-reach 全改(把 ProfileCard 內距 / apps scaffold / list 列間距 = 刻意固定值都 token 化)→ user 罵 → 我**過度縮手全撤**(連真違規 Sheet gap-4 也撤)→ user 再罵「這才是真違規你還放」。**穩定判準**:並列區塊/卡片/表單欄位、chrome 內距、header→content、content→action = **該 token**;同質 list 列間距 / micro-icon / 刻意視覺平衡 / 元件內部固定(FieldGroup)= **magic number 合法不碰**。**教訓**:別把原則做成 binary(全違規/全沒事);SSOT-spec 定邊界,窄 hook 抓明確 pattern,LLM sweep 抓判斷題,其餘設計裁量。邊界已 codify → `tokens/layoutSpace/layoutSpace.spec.md`「該用 token vs 刻意固定」段 + audit dim 90 + hook Check 2。
+
 ## 對齊原則
 
 - CLAUDE.md `# 稽核 canonical` audit-vs-execute 分權
