@@ -75,7 +75,7 @@
     },
     {
       "file": "hooks/check_tabs_content_chrome_body_double_gap.sh",
-      "sha256": "b377ae011f28d76c5c46a88771932c5301e18102a19c1ad0fc030f252249d962",
+      "sha256": "656e854fc8c3e61afd7da3705f87d169a2ea04979e446ed453114b42b9bdcfb1",
       "sourceHook": "check_tabs_content_chrome_body_double_gap.sh",
       "bucket": "SHIP_AS_IS"
     },
