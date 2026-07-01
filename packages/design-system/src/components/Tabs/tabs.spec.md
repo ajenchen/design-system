@@ -185,6 +185,8 @@ Tabs 是 **navigation anchor**，不是 compact control：
 
 **TabsContent 與 TabsList 間距(2026-06-12 user 拍板)**:`--layout-space-tight`(md 12px,density 連動),**內建於 TabsContent**(`mt-[var(--layout-space-tight)]`,className 可覆寫;full-height 佈局用 `mt-0`)。依 `layoutSpace.spec`「親疏 3 級」第一級(同 bundle,元件 spec own)+ 規則 3「直接功能依賴 = tight」精神;**不**取 Ant 的固定 16px(M23 自家 token 優先)。內容本身的排版歸 item-anatomy / 各內容元件管,本條只管 list↔content gap。
 
+> ⚠️ **此預設只在 TabsContent 緊接 tab bar 當直接 sibling 時成立**(standalone 頁面 tabs、ChromeHeader-as-sibling)。當 `tabsSlot` composition 把 tab bar 抬進 chrome header、TabsContent 留在 `DialogBody`/`SheetBody`/`SurfaceBody`(chrome scroll body,已自帶 `pt-/py-[var(--layout-space-tight)]`)內時,body 已擁有 header→content gap,TabsContent 的預設 `mt-tight` 會**雙重疊加**(md 24 / lg 32)。此時 TabsContent **必 `className="mt-0"`** 把 ownership 轉移給 body — 詳見下方「出現在 Dialog」段。一軸單一 spacing owner,per `item-anatomy.spec.md`「垂直 padding 歸屬 / 禁雙重 padding」。Hook `check_tabs_content_chrome_body_double_gap.sh` 機械強制。
+
 ---
 
 ## Underline 與 TabsList border 的視覺關係
@@ -218,6 +220,8 @@ Tabs 常與容器 header 的底邊 border 合併——**視覺上只有一條線
 **Auto-suppress 機制(Phase 2 production code 提案)**:header primitive 加 `withTabs?: boolean` prop → true 時自動移除自身 `border-b`,免 consumer 手動忘記。對齊 GitHub Primer 的 auto-suppress 模式(免 consumer 手動 prop)。完整 cross-header canonical 詳 `patterns/header-canonical/header-canonical.spec.md` W1。
 
 Size 建議:overlay / chrome header 內用 `sm`(32/40)— 對應 close X 也是 sm,視覺一致;**獨立取代 chrome header** 的 page-level workspace tabs 用 `lg`(48/56,= chrome-header-height)。
+
+**間距 ownership**:tabsSlot 模式下 `TabsContent` 放 `DialogBody`/`SheetBody`/`SurfaceBody`(自帶 `pt-/py-tight`)內時**必 `className="mt-0"`** — body 已擁有 header→content gap,TabsContent 預設 `mt-tight` 會雙重(md 24 / lg 32,2026-07-01 user 抓)。詳「TabsContent 與 TabsList 間距」段;hook `check_tabs_content_chrome_body_double_gap.sh` 強制。
 
 ---
 

@@ -245,6 +245,8 @@ Row 集合是**內容(content)**,不是區段(region)。加 py 到 row 集合會
 
 **曾經發生的 bug**:TreeView 原本硬寫 `py-2`,放進 `SidebarGroup`(也有 `py-2`)導致 label 和 first tree item 之間多出 8px 無法解釋的 gap;後來改成「只有 menu context 加 py-2」,結果 story 的 bordered wrapper 不屬於 menu context,items 貼邊。最終解法:TreeView root 一律不加 py,所有外層容器自己負責。
 
+**同源 invariant(不只 row 集合)**:「一軸單一 spacing owner」也適用元件的**單一 margin**跨 composition boundary。2026-07-01:`TabsContent` 內建 `mt-[var(--layout-space-tight)]`(tab bar 下方間距),`tabsSlot` 模式把 tab bar 抬進 chrome header 後 TabsContent 留在 `DialogBody`(自帶 `pt-tight`)內 → header→content gap 兩個 owner 疊加 = 雙重 tight(「專案名稱」上方 md 24 / lg 32)。解法同上:chrome body 已擁有 gap,TabsContent 加 `mt-0` 轉移 ownership。詳 `components/Tabs/tabs.spec.md`「出現在 Dialog」段 + hook `check_tabs_content_chrome_body_double_gap.sh`。
+
 ### 實作規則
 
 - 寫 row 集合元件(新 tree / menu / list)時,**root div 不加 py**

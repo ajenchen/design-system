@@ -365,9 +365,16 @@ export const ListBody = {
  *   W4 header content row + tabs row flush stack(gap = 0)
  *
  * Anatomy(consumer 寫法):`<Tabs>` wrap 整 DialogContent → `<DialogHeader tabsSlot={<TabsList>}>` →
- *   `<DialogBody><TabsContent>...</TabsContent></DialogBody>`
+ *   `<DialogBody><TabsContent className="mt-0">...</TabsContent></DialogBody>`
  *
  * 注意:TabsContent 必放 DialogBody 內(scroll + chrome padding 由 DialogBody 自管),不要自加 padding。
+ * ⚠️ 一軸單一 spacing owner(item-anatomy.spec.md「垂直 padding 歸屬 / 禁雙重 padding」):DialogBody
+ *   內層已用 `pt-[var(--layout-space-tight)]` 擁有 header→content 的 chrome gap;而 TabsContent 預設
+ *   帶 `mt-[var(--layout-space-tight)]`(tabs.tsx:489,為「緊接 tab bar 下方」而設)。tabsSlot 這條
+ *   composition 把 tab bar 抬進 header,兩 owner 疊加 = 雙重 tight(md 24 / lg 32,user 2026-07-01 抓)。
+ *   故 chrome body 內的 TabsContent **必 `className="mt-0"`** 把 ownership 轉移給 DialogBody(對齊
+ *   AppShell 前例 app-shell.stories.tsx:337 + tabs.spec.md「出現在 Dialog」段)。Hook
+ *   `check_tabs_content_chrome_body_double_gap.sh` 機械強制。
  */
 export const WithTabsInHeader = {
   name: '標頭內含分頁',
@@ -390,7 +397,8 @@ export const WithTabsInHeader = {
             <DialogTitle>專案設定</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <TabsContent value="general">
+            {/* mt-0:DialogBody pt-tight 已擁有 header→content gap,TabsContent 預設 mt-tight 會雙重(見上方 JSDoc)*/}
+            <TabsContent value="general" className="mt-0">
               <div className="flex flex-col gap-[var(--layout-space-loose)]">
                 <Field>
                   <FieldLabel>專案名稱</FieldLabel>
@@ -402,7 +410,7 @@ export const WithTabsInHeader = {
                 </Field>
               </div>
             </TabsContent>
-            <TabsContent value="members">
+            <TabsContent value="members" className="mt-0">
               <div className="flex flex-col gap-3">
                 {[
                   ['Alan Chen', '管理員'],
@@ -416,7 +424,7 @@ export const WithTabsInHeader = {
                 ))}
               </div>
             </TabsContent>
-            <TabsContent value="integrations">
+            <TabsContent value="integrations" className="mt-0">
               <div className="flex flex-col gap-3">
                 {[
                   { key: 'slack', label: 'Slack 通知', on: true },

@@ -1,11 +1,11 @@
 {
-  "ts": "2026-06-17T04:58:51.112Z",
+  "ts": "2026-07-01T04:40:34.546Z",
   "counts": {
-    "hooks": 52,
+    "hooks": 53,
     "mRules": 31,
-    "auditDims": 88,
+    "auditDims": 89,
     "auditDimMin": 1,
-    "auditDimMax": 88,
+    "auditDimMax": 89,
     "skills": 22,
     "specTraits": 11
   },
@@ -83,6 +83,7 @@
     ".claude/hooks/check_story_invariants.sh",
     ".claude/hooks/check_storybook_addon_packaging.sh",
     ".claude/hooks/check_substantive_edit_approval_preflight.sh",
+    ".claude/hooks/check_tabs_content_chrome_body_double_gap.sh",
     ".claude/hooks/check_tailwind_wildcard_in_docs.sh",
     ".claude/hooks/check_wrapper_primitive_schema_drift.sh",
     ".claude/hooks/chrome_header_dispatcher.sh",
