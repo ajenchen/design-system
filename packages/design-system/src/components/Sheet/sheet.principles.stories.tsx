@@ -102,7 +102,7 @@ export const UsageGuidance: Story = {
             </SheetHeader>
             {/* Body 必用 SheetBody(內建 ScrollArea + 浮層 padding SSOT px-loose/pt-tight/pb-bottom);
                 自組 ScrollArea + py-4 = 水平 0 padding 歷史 bug,詳 sheet.tsx SheetBody comment。 */}
-            <SheetBody className="flex flex-col gap-4">
+            <SheetBody className="flex flex-col gap-[var(--layout-space-loose)]">
                 <Field>
                   <FieldLabel>名稱</FieldLabel>
                   <Input defaultValue="產品路線圖" />
@@ -317,7 +317,7 @@ export const HeaderFooterStructureRule: Story = {
               <SheetDescription>填寫基本資料後可進行付款設定</SheetDescription>
             </SheetHeader>
             {/* Body 必用 SheetBody(內建 ScrollArea + 浮層 padding SSOT) */}
-            <SheetBody className="flex flex-col gap-4">
+            <SheetBody className="flex flex-col gap-[var(--layout-space-loose)]">
                 <Field>
                   <FieldLabel>公司名稱</FieldLabel>
                   <Input placeholder="輸入公司名稱" />
