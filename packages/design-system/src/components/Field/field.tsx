@@ -536,3 +536,7 @@ export const fieldMeta = {
 } as const
 
 export { Field, FieldLabel, FieldDescription, FieldError, FieldGroup }
+
+// form-validation.spec.md 可執行層(per-component index gen 只 re-export 主檔,故經此公開)
+export { useFormValidation } from './use-form-validation'
+export type { UseFormValidationOptions, UseFormValidationReturn, FormFieldInputProps } from './use-form-validation'

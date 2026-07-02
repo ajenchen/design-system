@@ -53,16 +53,37 @@
 
 兩者都透過 `error` prop / Field context 的 `invalid` 呈現,視覺上一致(紅框 + error message)。
 
-### 可程式化的部分
+### 可執行層:`useFormValidation`(2026-07-03,本 spec 的 executable arm)
 
-| 功能 | 實作位置 | 方式 |
-|---|---|---|
-| Blur validation timing | Form library config(如 RHF `mode: 'onBlur'`) | 應用層 |
-| Error clearing on edit | Form library config(`reValidateMode: 'onBlur'`）+ Field `onChange` clear | 應用層 |
-| Dirty tracking(submit button 狀態) | Form library(`isDirty`)或自訂 `useFormDirty` | 應用層 |
-| Scroll to first error | Form library(`scrollToFirstError`)或自訂 `focusFirstError` | 應用層 |
-| Field error visual | Field 元件的 `error` prop / `invalid` context | **元件層(已有)** |
-| Submit button disabled | `<Button disabled={!isDirty}>` | 應用層 consumer |
+上表 9 條方法論已編成 **`useFormValidation` hook 的不可配置預設**(`Field/use-form-validation.ts`,public export)——consumer 拿到就是 canonical 行為,**沒有 API 可以違反**(M17「SSOT 必可傳播」:方法論從 prose 變 executable)。
+
+**實作基礎**:基於 react-hook-form(direct dependency,**完全 wrapped 不外露** —— consumer 不 install、不 import、看不到 RHF API;對齊 DS「基於 X」引擎慣例:DataTable 基於 TanStack / DatePicker 基於 react-day-picker / Toast 基於 sonner)。RHF 提供 state / dirty 深比對 / errors store;驗證**時機**由本 hook own(RHF 的 mode / reValidateMode 不外露 = 不可配錯)。世界級對照:Atlassian `@atlaskit/form` 包 react-final-form 同構;MUI 靠第三方 binding(react-hook-form-mui)達成,本 DS 做成第一方。 <!-- @benchmark-unverified -->
+
+```tsx
+const form = useFormValidation({
+  initialValues: { name: '', email: '' },
+  intent: 'update',                         // 'create'(default)| 'update' → submitDisabled 規則
+  validate: { email: (v) => !v.includes('@') ? 'Email 格式不正確' : undefined },  // 格式層(blur)
+  onSubmit: async (values) => {             // 業務層(submit);回傳 field-keyed errors = 規則 9
+    if (await nameTaken(values.name)) return { name: '名稱已存在' }
+  },
+})
+<Field invalid={!!form.errors.name}>        {/* Field 層零耦合:一行接 context */}
+  <FieldLabel>名稱</FieldLabel>
+  <Input {...form.getInputProps('name')} />
+  <FieldError>{form.errors.name}</FieldError>
+</Field>
+<Button type="submit" disabled={form.submitDisabled}>儲存</Button>
+```
+
+| 功能(規則) | 實作位置 |
+|---|---|
+| Blur validation timing(1/2/6)+ Edit 清 error(5)+ Escape 回復(4) | **`useFormValidation` 內建(不可配置)** |
+| Submit 全驗 + anchor 第一個錯誤(7/8)+ 業務/async 錯誤同軌(9) | **`useFormValidation.handleSubmit` 內建** |
+| Dirty tracking + Submit button 狀態(Create/Update) | **`useFormValidation.submitDisabled`** |
+| Field error visual(紅框 + FieldError) | Field 元件 `invalid` context(既有,hook 不侵入) |
+
+**v1 邊界**(誠實 documented):(a) `getInputProps` 支援 value/onChange 型控件(Input / Textarea / NumberInput / Select / Combobox / DatePicker / TimePicker;onChange 收 event 或裸值皆可);Checkbox / Switch(onCheckedChange)用 `setFieldValue` 自接。(b) focus-first-error 以 DOM `name` 屬性定位 —— native input 生效;非 native 控件 focus 略過(error 視覺仍由 Field 紅框 + FieldError 呈現)。(c) 不用 hook 的 consumer 仍可全手動(Field `invalid` prop 是 engine-agnostic 的,見 field.spec.md 定位)。
 
 ---
 

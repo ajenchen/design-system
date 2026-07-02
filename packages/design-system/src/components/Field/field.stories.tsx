@@ -2,7 +2,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import * as React from 'react'
 import { Upload } from 'lucide-react'
-import { Field, FieldLabel, FieldDescription, FieldError, FieldGroup } from './field'
+import { Field, FieldLabel, FieldDescription, FieldError, FieldGroup, useFormValidation } from './field'
 import { Input } from '@/design-system/components/Input/input'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { Switch } from '@/design-system/components/Switch/switch'
@@ -610,4 +610,107 @@ export const SliderWithLiveNumberInput: Story = {
       </div>
     )
   },
+}
+
+// ── 表單驗證(useFormValidation)──────────────────────────────────────────
+// form-validation.spec.md 可執行層 showcase:blur 驗證 / edit 清 error / Escape 回復 /
+// submit 全驗 + anchor 第一個錯誤 / 業務錯誤同軌 / Create·Update 按鈕不對稱。
+
+const EXISTING_PROJECT_NAMES = ['產品路線圖 Q3', '客服工單系統'] // 模擬「名稱重複」業務驗證(規則 9)
+
+function UpdateProjectSettingsForm() {
+  const [saved, setSaved] = React.useState(false)
+  const form = useFormValidation({
+    initialValues: { name: '產品路線圖', ownerEmail: 'pm@acme.com' },
+    intent: 'update', // Update:disabled-until-dirty(沒改就不用存)
+    validate: {
+      name: (v) => (String(v).trim() ? undefined : '專案名稱必填'),
+      ownerEmail: (v) => (/^\S+@\S+\.\S+$/.test(String(v)) ? undefined : 'Email 格式不正確'),
+    },
+    onSubmit: (values) => {
+      if (EXISTING_PROJECT_NAMES.includes(String(values.name).trim())) {
+        return { name: '此專案名稱已存在' } // 業務驗證(規則 9)→ 自動 setError + anchor
+      }
+      setSaved(true)
+    },
+  })
+  return (
+    <form onSubmit={form.handleSubmit} className="w-80" aria-label="專案設定">
+      <FieldGroup>
+        <Field required invalid={!!form.errors.name}>
+          <FieldLabel>專案名稱</FieldLabel>
+          <Input {...form.getInputProps('name')} />
+          <FieldDescription>改成「產品路線圖 Q3」可觸發 submit 業務驗證(名稱重複)</FieldDescription>
+          <FieldError>{form.errors.name}</FieldError>
+        </Field>
+        <Field required invalid={!!form.errors.ownerEmail}>
+          <FieldLabel>負責人 Email</FieldLabel>
+          <Input {...form.getInputProps('ownerEmail')} />
+          <FieldError>{form.errors.ownerEmail}</FieldError>
+        </Field>
+      </FieldGroup>
+      {/* 規則 4:內容 → action button = --layout-space-bottom(48px,commitment 前留白) */}
+      <div className="mt-[var(--layout-space-bottom)] flex items-center gap-2">
+        <Button type="submit" variant="primary" disabled={form.submitDisabled}>儲存變更</Button>
+        {saved && <span className="text-caption text-fg-muted">已儲存 ✓</span>}
+      </div>
+    </form>
+  )
+}
+
+function CreateProjectForm() {
+  const [created, setCreated] = React.useState(false)
+  const form = useFormValidation({
+    initialValues: { name: '', ownerEmail: '' },
+    intent: 'create', // Create:永遠 enabled(不讓使用者猜「為什麼按不了」)
+    validate: {
+      name: (v) => (String(v).trim() ? undefined : '專案名稱必填'),
+      ownerEmail: (v) => (/^\S+@\S+\.\S+$/.test(String(v)) ? undefined : 'Email 格式不正確'),
+    },
+    onSubmit: () => setCreated(true),
+  })
+  return (
+    <form onSubmit={form.handleSubmit} className="w-80" aria-label="建立專案">
+      <FieldGroup>
+        <Field required invalid={!!form.errors.name}>
+          <FieldLabel>專案名稱</FieldLabel>
+          <Input placeholder="例:結帳流程改版" {...form.getInputProps('name')} />
+          <FieldError>{form.errors.name}</FieldError>
+        </Field>
+        <Field required invalid={!!form.errors.ownerEmail}>
+          <FieldLabel>負責人 Email</FieldLabel>
+          <Input placeholder="pm@company.com" {...form.getInputProps('ownerEmail')} />
+          <FieldError>{form.errors.ownerEmail}</FieldError>
+        </Field>
+      </FieldGroup>
+      <div className="mt-[var(--layout-space-bottom)] flex items-center gap-2">
+        <Button type="submit" variant="primary">建立專案</Button>
+        {created && <span className="text-caption text-fg-muted">已建立 ✓</span>}
+      </div>
+    </form>
+  )
+}
+
+export const FormValidation: Story = {
+  name: '表單驗證 — useFormValidation 可執行層',
+  render: () => (
+    <div className="flex flex-wrap items-start gap-[var(--layout-space-loose)]">
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-body font-bold">更新:專案設定(disabled-until-dirty)</h3>
+        <p className="text-caption text-fg-muted max-w-80">
+          按鈕沒改不亮;打字中不報錯(blur 才驗);已出錯欄位一編輯立即清 error;
+          Escape 回復原值;空 submit / 格式錯 → anchor 到第一個錯誤欄位。
+        </p>
+        <UpdateProjectSettingsForm />
+      </div>
+      <div className="flex flex-col gap-[var(--layout-space-tight)]">
+        <h3 className="text-body font-bold">建立:新專案(永遠 enabled)</h3>
+        <p className="text-caption text-fg-muted max-w-80">
+          Create 按鈕永遠可按 —— 點了才驗證全部並 scroll 到第一個錯誤,
+          不讓使用者對著 disabled 按鈕猜原因。
+        </p>
+        <CreateProjectForm />
+      </div>
+    </div>
+  ),
 }

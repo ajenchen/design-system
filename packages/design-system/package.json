@@ -95,6 +95,7 @@
     "embla-carousel-react": "^8.6.0",
     "lucide-react": "^0.577.0",
     "react-day-picker": "^9.14.0",
+    "react-hook-form": "^7.80.0",
     "react-is": "^18.0.0 || ^19.0.0",
     "react-zoom-pan-pinch": "^4.0.3",
     "recharts": "^3.8.1",
