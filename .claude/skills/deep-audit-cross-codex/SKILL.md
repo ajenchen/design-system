@@ -11,6 +11,7 @@ arguments: scope?=full|changed focus?=「ssot|visual|behavior|all」
 ## When to invoke
 
 - User 明確 trigger:「跑深度稽核 + codex 比稿」「完整盤查 with codex」「dual-pass audit」「/deep-audit-cross-codex」
+- **Solo mode**(2026-07-02 codify,user 主要入口):「深度稽核不用 codex」「/deep-audit-cross-codex solo」→ 跳過 Phase B,**其餘全跑**(Phase 0 + A.0 全盤閱讀 + A.1 全 dim + A.1b 對抗驗證 + A.2-4 + Phase C 含 C.0a prune)— 品質底盤不打折,唯失 codex 第二對眼(mitigation:A.1b multi-agent adversarial 仍在)。**禁**為此另開 skill(Rule-of-3;本 mode = B.0 fallback 路徑升 first-class)
 - 重大 release / SSOT 大改 / 季度健檢
 - 多輪修正後想雙 model verify
 
@@ -137,6 +138,8 @@ detect_mode() {
 
 ## Phase B — Codex parallel audit + 比稿辯論共識
 
+**Solo mode 先判**:user invoke 含「solo / 不用 codex / 不要 codex」→ **整個 Phase B 跳過**(明文 opt-out,非故障 fallback;不跑 B.0 transport discovery),直接進 Phase C。Report 標注「撤回 codex:solo mode(user opt-out),Phase B skipped」——此句同時滿足 codex-transport stop hook 的 (b) 顯式撤回選項(該 hook 機械 grep turn 內容,solo 跑仍可能 fire,用撤回聲明過閘,勿被迫跑 discovery)。
+
 ### B.0 — Codex transport discovery(per codex-collab/SKILL.md Step 0.4)
 
 3-test 順序固定(local 優先):`node_modules/.bin/codex` → `which codex` → `~/.codex/auth.json`。**禁 Explore agent 替身**(M31)。
@@ -238,7 +241,7 @@ Deep-audit 收尾**必自動跑** `/knowledge-prune` deep — **前提鐵律:確
 | **CP-A0** | A.0 結束 | 全盤閱讀清單給 user 看(列 N file read,per detected mode 切 scope),禁未讀就進 A.1 |
 | **CP-A1b** | A.1b 結束 | **每個** component/pattern 都有 story-vs-code adversarial verdict(讀 .tsx + wrap lib 逐句比對宣稱);**禁** 用「無 code 改動」跳過任一單元。缺任一 component verdict = 不可進 A.2(2026-05-30 403-finding 偷懶 anchor)|
 | **CP-A2** | A.2 SSOT-UI/UX propose | 中文人話 + 4-Q gate;**STOP** 等 user A/B 才動 code(fork-user-repo mode:propose scope 限 `apps/**`,禁 DS source)|
-| **CP-B0** | B.0 codex transport | 3-test 全 ❌ + cwd=fork → **auto-fallback Phase A only 印中文**,不 interactive ASK;cwd=ds-repo → 報 user;禁 Explore 替身 |
+| **CP-B0** | B.0 codex transport | **solo mode(user opt-out)→ 整個 Phase B 跳過不進此 CP**;3-test 全 ❌ + cwd=fork → **auto-fallback Phase A only 印中文**,不 interactive ASK;cwd=ds-repo → 報 user;禁 Explore 替身 |
 | **CP-B4** | B.4 cite battle | evidence 對等 → STOP 等 user 拍板,**禁** AI 自決誰勝 |
 | **CP-C2** | C.2 push gate | 等 user「Push 到 main」trigger;禁 AI 自決 merge |
 
