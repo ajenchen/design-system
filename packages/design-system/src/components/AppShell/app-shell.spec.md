@@ -1,6 +1,7 @@
 ---
 component: AppShell
 family: composite  # 組合 sidebar+header+main+aside,非 Family 1-4 row element
+traits: []  # page-level layout composite,slots 全 ReactNode 組合,無 trait variants(R3 trait enforce 無適用項;2026-07-04 dim 29 補宣告)
 scope: web service page-level layout primitive (sidebar + header + main + aside composition)
 benchmark:
   - Mantine AppShell: https://mantine.dev/core/app-shell/ — 6-slot (Header/Navbar/Aside/Footer/Main) + layout="default|alt" mode
@@ -201,7 +202,7 @@ function CustomAside() {
 - `primary-header` mode:右側 fix 在 **Header 下方**(不 underlap header,跟 sidebar 同高 — 都從 header 底邊起)
 - Width consumer 自傳 `width` prop(`number` 或 `{ md, xl }` breakpoint-keyed),DS 不發明 width token,**clamp `min-width: 240` / `max-width: 640`** 避免過窄無法閱讀 / 過寬擠 main
 - 跟 main 共享 layout space(main width = viewport - sidebar - aside)
-- **Scroll ownership**:Aside 自帶 scroll(`overflow-y: auto` + `min-h-0`,per Atlassian Layout 慣例),main 自帶 scroll,**禁止** body-level scroll
+- **Scroll ownership**:Aside 自帶 scroll(body 包 `<ScrollArea>` primitive + `min-h-0`,per Atlassian Layout 慣例),main 自帶 scroll,**禁止** body-level scroll
 
 **Modal overlay** 行為:
 - 消費既有 `sheet.spec.md` canonical(從右滑出 + Esc 關 + click-outside 關 + focus trap + restore focus)
@@ -262,7 +263,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 | **`⌘.`(macOS)/ `Ctrl+.`(Windows)** | Toggle aside | Linear convention(新加) |
 | **Skip-to-main link** | `Tab` 第一站 focus 「Skip to content」link → `main` | A11y WCAG 2.4.1 bypass blocks;對齊 Atlassian Layout skip-link |
 
-兩者消費既有 Sidebar keyboard shortcut 機制(`useEffect` + `document.addEventListener('keydown')`),AppShell 不發明新機制。
+兩者消費既有 Sidebar keyboard shortcut 機制(`useEffect` + `window.addEventListener('keydown')`),AppShell 不發明新機制。
 
 ---
 

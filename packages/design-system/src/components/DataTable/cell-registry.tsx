@@ -82,6 +82,10 @@ function makeKeyHandler(
   parseValue?: (raw: string) => unknown,
 ) {
   return (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // IME 組字 guard(2026-07-05 D4 fix):中文輸入法選字的 Enter 是組字確認、Esc 是取消組字,
+    // 非 commit / cancel 意圖 — 無 guard 會把半截組字提交並退出 edit(Esc 則丟棄整個 draft)。
+    // 同 data-table.tsx nav handler 既有寫法(isComposing + Safari/舊 Chrome keyCode 229)。
+    if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
     if (e.key === 'Escape') { e.preventDefault(); onCancel?.() }
     if (e.key === 'Enter') {
       e.preventDefault()
@@ -148,6 +152,8 @@ function StringCell({ value, meta, mode, size, isDisabled, autoRowHeight, onComm
         onChange={(e) => onDraft?.((e.target as HTMLTextAreaElement).value)}
         onBlur={(e) => onCommit?.((e.target as HTMLTextAreaElement).value)}
         onKeyDown={(e) => {
+          // IME 組字 guard(2026-07-05 D4 fix,同 makeKeyHandler)
+          if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
           if (e.key === 'Escape') { e.preventDefault(); onCancel?.() }
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
             e.preventDefault()
@@ -211,6 +217,8 @@ function NumberCell({ value, meta, mode, size, isDisabled, onCommit, onCancel, o
       precision={meta?.precision}
       onBlur={() => onCommit?.(localValue)}
       onKeyDown={(e) => {
+        // IME 組字 guard(2026-07-05 D4 fix,同 makeKeyHandler;IME 可在 number 欄輸入全形數字)
+        if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
         if (e.key === 'Escape') { e.preventDefault(); onCancel?.() }
         if (e.key === 'Enter') { e.preventDefault(); onCommit?.(localValue) }
       }}

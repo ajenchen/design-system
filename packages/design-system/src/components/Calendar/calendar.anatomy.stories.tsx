@@ -95,7 +95,7 @@ export const ColorMatrix: Story = {
 
         <div>
           <H3>Cell 視覺 token</H3>
-          <Desc>月 view cell 的狀態色彩。Cell 高度固定容納日期 header + 3 event tile;7 欄等分。</Desc>
+          <Desc>月 view cell 的狀態色彩。Cell 最小高度 min-h-28 容納日期 header + 3 event tile,隨容器高度伸縮;7 欄等分。</Desc>
           <div className="overflow-x-auto">
             <table className="text-caption border-collapse">
               <thead>
@@ -109,7 +109,7 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td>Cell 高度</Td>
                   <Td mono>min-h-28(112px)</Td>
-                  <Td>容納 header + 3 event tile,MVP 月 view 固定</Td>
+                  <Td>容納 header + 3 event tile 的下限,隨容器高度伸縮(root h-full + grid flex-1)</Td>
                 </tr>
                 <tr>
                   <Td>Cell 寬度</Td>

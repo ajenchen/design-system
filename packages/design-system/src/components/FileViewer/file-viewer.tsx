@@ -15,6 +15,7 @@ import {
   FileText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
 import { Button } from '@/design-system/components/Button/button'
 import { Separator } from '@/design-system/components/Separator/separator'
 import { Input } from '@/design-system/components/Input/input'
@@ -33,7 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
-import {
+import { ARROW_BUTTON_WIDTH,
   useScrollEdges,
   useScrollByPage,
   buildFadeMask,
@@ -256,7 +257,7 @@ const ZoomInput: React.FC<ZoomInputProps> = ({ value, onChange, onFit, labels })
             Tailwind 條件 class + CSS variable 都要一起帶) */}
         <DropdownMenuContent
           align="end"
-          sideOffset={8}
+          sideOffset={OVERLAY_SIDE_OFFSET}  // 2026-07-04:M17 — elevation.spec「primitive default 必 import 該 const」
           // minWidth 對齊 trigger(Input autoWidth),menu 寬度 fit-content 更貼近觸發點視覺中心
           className="min-w-[9rem] w-auto bg-surface-raised text-foreground border-divider"
           data-theme="dark"
@@ -554,7 +555,7 @@ const THUMB_SIZE = 64 // px, 固定
 const Filmstrip: React.FC<FilmstripProps> = ({ files, activeIndex, onSelect, labels }) => {
   const { scrollRef, atStart, atEnd, canScroll } = useScrollEdges<HTMLDivElement>()
   const scrollByPage = useScrollByPage(scrollRef)
-  const maskImage = buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth: 32 })
+  const maskImage = buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth: ARROW_BUTTON_WIDTH })  // 2026-07-04:消 SSOT 硬寫(spec 禁止重新定義 ARROW_BUTTON_WIDTH)
 
   // 切換當前檔案時,自動 scroll 讓 active thumb 可見
   React.useEffect(() => {

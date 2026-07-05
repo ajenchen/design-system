@@ -155,11 +155,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div
         className={cn(
-          fieldWrapperStyles({ mode: resolvedMode, variant: variant, size }),
-          isEditable && resolvedError && [
-            'border-error hover:border-error-hover',
-            'focus-within:border-error focus-within:hover:border-error',
-          ],
+          fieldWrapperStyles({ mode: resolvedMode, variant: variant, size, error: resolvedError }),
           // autoWidth:wrapper 縮到 inline-flex + w-auto,讓寬度由 startIcon + input(field-sizing: content)+ endAction 自然累加
           autoWidth && 'inline-flex w-auto',
           className,

@@ -23,7 +23,7 @@ import { Button } from '@/design-system/components/Button/button'
  * | Nav + Month caption row | h-field-xs(24px)單行,chevron(xs)分居左右 / 月份置中垂直對齊 |
  * | Nav → Weekday gap | 12px(month_caption mb-3) |
  * | Weekday | text-body(14px)text-foreground font-medium(neutral-9,同 caption 權重;撤銷 v3 fg-secondary) |
- * | Cell gap(水平 + 垂直)| 4px(gap-1) |
+ * | Cell gap(水平 + 垂直)| 4px(table-native border-separate border-spacing-1;非 gap — grid 會 break,見下方 v7 註) |
  * | Day cell size | h-field-sm w-[var(--field-height-sm)](28×28 md / 32×32 lg) |
  * | Day button | rounded-full 填滿 cell |
  *
@@ -174,15 +174,17 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         // 不開新 tier 自打嘴(撤銷 v6-v8 用 fg-muted override 的 mistake)。
         // RDP v9 `PreviousMonthButton / NextMonthButton` override(node_modules/react-day-picker/dist/esm/components/Nav.js)
         // ⚠️ children: _ 必丟棄(RDP 把 <Chevron> 當 children 傳 → 跟 Button startIcon 重疊變 double chevron)
+        // 2026-07-04 修:aria-label 必在 {...props} 之後 — RDP 以 props 傳 labelPrevious() 英文
+        // default(「Go to the Previous Month」),原寫在 spread 前 = 中文 label 永遠被蓋(dead code)。
         PreviousMonthButton: ({ className, children: _children, ...props }) => (
           <Button variant="text" size="xs" iconOnly startIcon={ChevronLeft}
-            aria-label="上一個月"
-            className={className} {...props} />
+            className={className} {...props}
+            aria-label="上一個月" />
         ),
         NextMonthButton: ({ className, children: _children, ...props }) => (
           <Button variant="text" size="xs" iconOnly startIcon={ChevronRight}
-            aria-label="下一個月"
-            className={className} {...props} />
+            className={className} {...props}
+            aria-label="下一個月" />
         ),
       }}
       {...props}

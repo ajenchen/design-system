@@ -179,8 +179,8 @@ function MultiPersonDisplay({
   /** 傳入時啟用 dismiss(edit mode),callback 接收被移除的 person */
   onRemove?: (person: PersonValue) => void
 }) {
-  if (!value || value.length === 0) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
-
+  // 2026-07-05 D3 P1 修(React #310 家族):3 hooks 原在 empty early return 之後 — value 非空↔空
+  // 切換時 hook 數 0↔3 變動必 crash(現靠 consumer 三元切換 element type 偶然避開)。hoist 到 return 前。
   // 2026-05-15 Bug 3 fix(Claude+Codex Step 5 比稿 consensus):消費 shared `avatar-stack-overflow`
   // primitive。原 inline canvas-based formula 是 dual-implementation 違反 user SSOT「同 cell width 同
   // overflow 判斷」(edit path 用 Combobox useOverflowCount DOM offsetWidth / display path 用 inline
@@ -189,7 +189,7 @@ function MultiPersonDisplay({
   const containerRef = React.useRef<HTMLSpanElement>(null)
   const [measuredCount, setMeasuredCount] = React.useState<number | null>(null)
   React.useLayoutEffect(() => {
-    if (!measured) return
+    if (!measured || !value || value.length === 0) return
     const el = containerRef.current
     if (!el) return
     const calc = () => {
@@ -206,6 +206,8 @@ function MultiPersonDisplay({
     ro.observe(el)
     return () => ro.disconnect()
   }, [measured, size, value])
+
+  if (!value || value.length === 0) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
 
   const resolvedMax = measured && measuredCount !== null ? measuredCount : (max ?? 3)
   const people = value.map(resolvePerson)

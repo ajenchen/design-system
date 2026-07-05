@@ -244,16 +244,21 @@ export const LongPathRule: Story = {
               <BreadcrumbLink href="#">組織</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <BreadcrumbEllipsis />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem>部門</DropdownMenuItem>
-                <DropdownMenuItem>設計團隊</DropdownMenuItem>
-                <DropdownMenuItem>成員管理</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* 2026-07-04 修 broken demo:裸 DropdownMenu 會被 BreadcrumbList children filter 丟棄
+                (breadcrumb.tsx compositionalContent 只認 BreadcrumbItem)→ 包 BreadcrumbItem
+                (對齊 declarative 模式內部 ellipsis 作法) */}
+            <BreadcrumbItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <BreadcrumbEllipsis />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem>部門</DropdownMenuItem>
+                  <DropdownMenuItem>設計團隊</DropdownMenuItem>
+                  <DropdownMenuItem>成員管理</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink href="#">權限</BreadcrumbLink>

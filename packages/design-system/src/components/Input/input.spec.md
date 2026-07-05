@@ -109,7 +109,7 @@ endAction(host 內嵌 inline action)vs 獨立 `<Button iconOnly>` 的分界詳 `
 
 ## 邊界案例
 
-- **Disabled**:`disabled` prop 由 Field SSOT own(`Field/field.spec.md`「Field state machine SSOT」段)。視覺 token:wrapper bg → `bg-disabled`(neutral-2)、text → `text-fg-disabled`(neutral-6,M24 state>emphasis canonical)、startIcon → `text-fg-disabled`、endAction button 自動 disabled、cursor → `cursor-not-allowed`、border 弱化、無 hover/focus ring。`readOnly` 與 `disabled` 視覺分離:readOnly 維持 default text color(可選取複製)、disabled 全面弱化(不可選)。
+- **Disabled**:`disabled` prop 由 Field SSOT own(`Field/field.spec.md`「Field state machine SSOT」段)。視覺 token:wrapper bg → `bg-disabled`(neutral-2)、text → `text-fg-disabled`(neutral-6,M24 state>emphasis canonical)、startIcon → `text-fg-disabled`、endAction 不渲染(僅 edit mode 渲染)、cursor → `cursor-not-allowed`、border 弱化、無 hover/focus ring。`readOnly` 與 `disabled` 視覺分離:readOnly 維持 default text color(可選取複製)、disabled 全面弱化(不可選)。
 - **Loading**:已 codify(見「Loading」段)。`loading=true` 時 endAction slot 自動切 `<CircularProgress/>`,input 仍可編輯(Ant Search 派 idiom)。
 - **Empty(no value)**:placeholder 走 `text-fg-muted`(neutral-7);`disabled + empty` 時 placeholder 切 `text-fg-disabled`(M24 state precedence)。
 - **Dark mode**:走 semantic token 自動 adapt,無 per-component override。

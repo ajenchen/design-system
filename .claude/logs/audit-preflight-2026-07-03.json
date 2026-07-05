@@ -1,0 +1,22 @@
+{
+  "ts": "2026-07-03T11:33:06.014Z",
+  "filesCount": {
+    "total": 472,
+    "componentTsx": 82,
+    "storiesShowcase": 72,
+    "storiesAnatomy": 62,
+    "storiesPrinciples": 62,
+    "specMd": 84,
+    "tokens": 20
+  },
+  "principles": {
+    "mRules": 31,
+    "specTraits": 11,
+    "hookInvariants": 41,
+    "rules": 6,
+    "total": 83
+  },
+  "auditDims": 90,
+  "coverageGaps": 0,
+  "gaps": []
+}

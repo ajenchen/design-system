@@ -766,7 +766,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"-   收合切換鍵：Cmd+B(Mac)/ Ctrl+B(Windows)是業界慣例(VS Code / Linear / shadcn 都用),Sidebar 內建並會攔下這組鍵,避免穿透到瀏覽器書籤列。任何焦點位置都能觸發;目前未排除文字輸入框——在 input / textarea 內按下仍會 toggle(無 disableShortcut opt-out)。\n\n-   收合按鈕:SidebarTrigger 內建 aria-label「Toggle Sidebar」,讓螢幕報讀使用者知道按鈕用途;consumer 可傳 aria-label 覆寫(i18n)。SidebarGroupLabel 的收合 chevron 另有 toggleAriaLabel prop(預設「展開或收合」)。\n\n-   當前項目:選中的 menu item 帶 data-active,呈現選取底色(bg-neutral-selected)作為視覺指引;即使收合成 icon-only 模式,選取底色仍然保留,使用者一眼知道現在在哪一頁。\n\n-   手機尺寸:768px 以下自動切換成從旁滑出的抽屜(Sheet),內建焦點鎖定、Esc 關閉、關閉後焦點回到觸發按鈕。"}</p>
+      <p className="whitespace-pre-line">{"-   收合切換鍵：Cmd+B(Mac)/ Ctrl+B(Windows)是業界慣例(VS Code / Linear / shadcn 都用),Sidebar 內建並會攔下這組鍵,避免穿透到瀏覽器書籤列。任何焦點位置都能觸發;目前未排除文字輸入框——在 input / textarea 內按下仍會 toggle(無 disableShortcut opt-out)。\n\n-   收合按鈕:SidebarTrigger 內建 aria-label「切換側邊欄」,讓螢幕報讀使用者知道按鈕用途;consumer 可傳 aria-label 覆寫(i18n)。SidebarGroupLabel 的收合 chevron 另有 toggleAriaLabel prop(預設「展開或收合」)。\n\n-   當前項目:選中的 menu item 帶 data-active,呈現選取底色(bg-neutral-selected)作為視覺指引;即使收合成 icon-only 模式,選取底色仍然保留,使用者一眼知道現在在哪一頁。\n\n-   手機尺寸:768px 以下自動切換成從旁滑出的抽屜(Sheet),內建焦點鎖定、Esc 關閉、關閉後焦點回到觸發按鈕。"}</p>
     </div>
   ),
 }

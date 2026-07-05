@@ -217,7 +217,8 @@ export const sheetMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 2026-07-04 audit 對齊:Sheet 本身無 disabled state(surface container,spec 邊界案例明文;對齊 popover/dialog meta pattern)
+  states: ['default'],
   tokens: {
     bg: ['bg-surface-raised'],
     fg: ['text-fg-secondary', 'text-foreground'],

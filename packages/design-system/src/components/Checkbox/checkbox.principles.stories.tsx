@@ -209,7 +209,7 @@ export const ClampPolicyRule: Story = {
         title="Per-instance override：傳 'none' 不是 undefined"
         note="這組覆寫設定在 SelectionItem 上（Checkbox 內部用它組合 label）。React destructure default 會把 undefined 當「沒傳」→ fallback 到預設。要明確表達「不截」請傳 'none'"
       >
-        <Label>SelectionItem labelMaxLines='none' / labelMaxLines={1} / labelMaxLines={2}（1-10 的數字）</Label>
+        <Label>SelectionItem labelMaxLines='none' / labelMaxLines={1} / labelMaxLines={2}（1-6 的數字；7 以上無對應 line-clamp class，傳了不生效）</Label>
       </Rule>
     </div>
   ),

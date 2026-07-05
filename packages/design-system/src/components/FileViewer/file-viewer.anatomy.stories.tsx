@@ -222,7 +222,8 @@ export const Overview: Story = {
             <tbody>
               {([
                 ['files', 'FileInfo[]', '—', '檔案清單(shell 依 index 渲染當前)'],
-                ['open', 'boolean', '—', 'Modal 開關(controlled)'],
+                ['open', 'boolean', '—', 'Modal 開關(controlled;與 defaultOpen 二擇一)'],
+                ['defaultOpen', 'boolean', 'false', 'Modal 開關預設(uncontrolled;對齊 Dialog/Sheet/Popover dual-mode canonical)'],
                 ['onOpenChange', '(open: boolean) => void', '—', 'Modal 開關 callback'],
                 ['initialIndex', 'number', '0', '初始 active 索引(uncontrolled)'],
                 ['index', 'number', '—', 'Active 索引(controlled);不傳則 shell 自理'],
@@ -232,6 +233,7 @@ export const Overview: Story = {
                 ['showFilmstrip', 'boolean', 'false', 'true && files.length>1 → 顯示 filmstrip'],
                 ['allowDownload', 'boolean', 'true', 'true → toolbar 顯示 download 按鈕'],
                 ['onDownload', '(file: FileInfo) => void', '—', '自訂 download(跨域檔案必傳)'],
+                ['labels', 'FileViewerLabels', 'DEFAULT_LABELS', 'i18n 文案 override(partial,與 DS 預設 merge;15 keys 覆蓋 toolbar / InfoPanel / filmstrip 的 aria-label 與 placeholder)'],
               ] as const).map(([p, t, d, desc]) => (
                 <tr key={p}>
                   <Td mono>{p}</Td>
@@ -410,7 +412,7 @@ export const Inspector: Story = {
                 </tr>
                 <tr>
                   <Td>InfoPanel 內 padding</Td>
-                  <Td mono>px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]</Td>
+                  <Td mono>px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]</Td>
                 </tr>
                 <tr>
                   <Td>Filmstrip 高</Td>
@@ -703,7 +705,7 @@ export const SizeMatrix: Story = {
               <tr>
                 <Td>Body 水平 padding</Td>
                 <Td mono>px-[var(--layout-space-loose)]</Td>
-                <Td>24 / 32 px(隨 density)</Td>
+                <Td>16 / 24 px(隨 density)</Td>
               </tr>
               <tr>
                 <Td>Body 垂直 padding</Td>
@@ -713,7 +715,7 @@ export const SizeMatrix: Story = {
               <tr>
                 <Td>Section 間 gap</Td>
                 <Td mono>gap-[var(--layout-space-loose)]</Td>
-                <Td>說明 ↔ 檔案資訊 24 / 32 px(隨 density;跨範疇 parallel = loose)</Td>
+                <Td>說明 ↔ 檔案資訊 16 / 24 px(隨 density;跨範疇 parallel = loose)</Td>
               </tr>
               <tr>
                 <Td>檔案資訊 metadata</Td>

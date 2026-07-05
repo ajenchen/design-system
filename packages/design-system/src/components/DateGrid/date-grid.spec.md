@@ -68,9 +68,11 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 
 | mode | 選擇行為 | 典型場景 |
 |------|---------|---------|
-| `single`（預設） | 單日選取,點新日取代舊選 | DatePicker / 生日 / 到期日 |
+| `single` | 單日選取,點新日取代舊選 | DatePicker / 生日 / 到期日 |
 | `multiple` | 可勾選多個不連續日期 | event 報名多日 |
 | `range` | from → to 連續範圍 | 訂單日期範圍 / 查詢時段 |
+
+**mode 無預設值**(react-day-picker v9 `mode?: Mode | undefined`,本元件薄包裝不補 default):未傳 `mode` 時 grid 為**非互動純展示**(day 渲染純文字非 button,不可選);DS 內所有消費者(DatePicker / stories)皆顯式傳 `mode`。
 
 **range vs multiple 分界**:選的是「連續區間」(只在乎起迄兩端)→ `range`;選的是「各自獨立的日子」(可不連續、逐日增減)→ `multiple`。起迄日場景(訂單 / 查詢時段)固定走 `range`;簽核 / 報名這類逐日勾選走 `multiple`。
 
@@ -78,7 +80,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 
 ## 實作機制:classNames 鏡射 modifier keys(2026-04-21 AR43 修正)
 
-**重要**:react-day-picker v9 的 cell 只有 `data-selected / data-disabled / data-today / data-outside / data-focused` 這幾個 DOM attribute;**`data-range-start / data-range-middle / data-range-end` 不存在**。
+**重要**:react-day-picker v9 的 cell state DOM attribute 只有 `data-selected / data-disabled / data-today / data-outside / data-focused`(另有非 state 的 `data-day / data-month / data-hidden`);**`data-range-start / data-range-middle / data-range-end` 不存在**。
 
 因此用 `[&[data-range-middle=true]]:xxx` 這種 attribute selector **根本不會生效**(舊版做法錯誤)。
 
@@ -127,13 +129,13 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 - **Caption row alignment canonical**:`pt-3 + h-field-xs + mb-3 = 12 + 24 + 12 = 48px`
   - DateGrid month_caption + TimePickerSidePanel header **必走同樣 48px caption row 結構**
   - title text vertical center Y 一致 = 12 + 12 = 24px(from container top)
-  - ⚠️ 改 DateGrid `p-3` → 必同步改 `TimePickerSidePanel py-3`,否則對齊破
+  - ⚠️ 改 DateGrid `p-3` → 必同步改 `TimePickerSidePanel pt-3`(root 刻意 bottom = 0,見 date-picker.tsx docblock),否則對齊破
 
 **為什麼用 `h-field-sm` 而非固定 `h-9`**:picker grid 在 lg density 下也要跟 Input 系統一起放大,`h-field-sm` 在 md = 28px / lg = 32px,比 Ant/Google 固定 36px(`@benchmark-unverified` visual measurement)稍緊但對齊本 DS 的 field 家族。day cell 尺寸雖固定,但**隨 density 縮放**,視覺跟 popup 內其他欄位(Input / Button)保持比例。
 
 ## Nav button canonical(2026-05-03 v9)
 
-Prev/Next chevron 用 `<Button variant="text" size="xs" iconOnly>`(DS primitive 消費,不 hand-coded inline-flex)。透過 RDP v9 `components.PreviousMonthButton / NextMonthButton` override(`node_modules/react-day-picker/dist/esm/components/Nav.js` 證實支援)。
+Prev/Next chevron 用 `<Button variant="text" size="xs" iconOnly>`(DS primitive 消費,不 hand-coded inline-flex)。透過 RDP v9 `components.PreviousMonthButton / NextMonthButton` override(本元件 `navLayout="around"` 下按鈕由 `DayPicker.js` 於首/末月 caption 兩側直渲;無 navLayout 時才走 `Nav.js` — 兩路徑皆消費此 override,`node_modules/react-day-picker/dist/esm/` 證實)。
 
 **Icon 顏色 = Button 預設 `text-foreground`(neutral-9 / 85% 黑)**,**對齊 DS 一致設計語言**(M23):
 - Icon-only Button 預設 = neutral-9(本 DS 既有 canonical)

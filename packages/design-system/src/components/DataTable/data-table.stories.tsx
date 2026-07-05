@@ -603,10 +603,11 @@ export const InlineEdit: Story = {
  * 驗證點:
  *   - hover editable cell → 1px overlay 邊框 var(--border-hover)
  *   - sku(readonly)/ inStock(boolean)/ url(openAction)→ 不出現 hover overlay(Contract 15)
- *   - click 1 → cell selected(2px primary border outline)
+ *   - click 1 → cell selected(1px `--primary` border outline,`CELL_RING_STYLES.selected`)
  *   - click 2 / Enter / F2 → enter edit(portal Field, cell mode 不變)
- *   - Shift+click → range(focus = 2px primary outline + 內 cells `--primary-subtle` bg)
- *   - cell border-box 對齊(0.5px sub-pixel snap;dtCellGrid 4-edge inset divider 共軌)
+ *   - Shift+click → range(focus = 1px primary outline + 內 cells `--primary-subtle` bg)
+ *   - cell border-box 對齊(float coords 直接 pass-through 不 round / 不 snap,overlay outline
+ *     -1px 剛好壓 cell 邊線;dtCellGrid right-edge inset divider + row border-b 共軌)
  *   - Issue 6 viewport clip:H scroll cell out → overlay 被 panel ClipMask 裁切不溢出
  */
 export const InlineEditWithSpreadsheetOverlay: Story = {

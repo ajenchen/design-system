@@ -1,15 +1,16 @@
 #!/bin/bash
 # check_full_story_visual_interaction_sweep.sh — P0 BLOCKER
 #
-# Codex M31 P0 finding 2026-05-27: ds-story-manifest.json 是 62-component / 916-story
-# SSOT,但無 hook 攔 audit reports 漏 manifest story IDs / screenshots / metrics / probe.
+# Codex M31 P0 finding 2026-05-27: ds-story-manifest.json 是 story 總數 SSOT(動態,
+# 禁 hardcode 數字 — 真值以 manifest.totalStories 為準;2026-07-04 dim 73 修 stale 916),
+# 但無 hook 攔 audit reports 漏 manifest story IDs / screenshots / metrics / probe.
 # User 2026-05-27 verbatim「不准抽樣 全 visual + interaction 全跑」.
 #
 # Triggers when audit report JSON is edited/written:
 #   - /tmp/codex-*-sweep/audit-report.json
 #   - /tmp/claude-*-sweep/audit-report.json
 #   - .claude/snapshots/*audit-report.json
-# Verifies storyResults.length === manifest.totalStories (916) — block if sample.
+# Verifies storyResults.length === manifest.totalStories(動態讀 manifest)— block if sample.
 #
 # Escape: report frontmatter `"_sampling_allowed": "<rationale>"`(極罕見).
 

@@ -202,9 +202,11 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
           disabled && 'text-fg-disabled cursor-not-allowed',
           className,
         )}
+        // 2026-07-04 robustness:先 spread 其餘 props、後放 guarded handlers — 消除
+        // 「handler 置前 + 後方 runtime filter 同名 key」對屬性順序的隱性依賴,行為不變
+        {...Object.fromEntries(Object.entries(props).filter(([k]) => k !== 'onClick' && k !== 'onKeyDown'))}
         onClick={disabled ? undefined : props.onClick}
         onKeyDown={disabled ? undefined : props.onKeyDown}
-        {...Object.fromEntries(Object.entries(props).filter(([k]) => k !== 'onClick' && k !== 'onKeyDown'))}
       >
         {/* Prefix 對齊容器 */}
         {hasPrefix && (

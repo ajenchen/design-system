@@ -35,7 +35,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'Command 是 cmdk 的 shadcn passthrough 搜尋 + 鍵盤導覽清單 primitive。App 層級**不直接使用** Command——透過 Select / Combobox / PeoplePicker 的 searchable 模式消費,底層自動切換到 SelectMenu(SelectMenu 包 Command)。唯一可以直接組合 Command 的場景是 Command Palette(Cmd+K)——跨頁全域搜尋與快速動作入口。',
+          'Command 是 cmdk 的 shadcn passthrough 搜尋 + 鍵盤導覽清單 primitive。主用法是浮層:透過 Select / Combobox / PeoplePicker 的 searchable 模式消費(底層自動切換到 SelectMenu,SelectMenu 包 Command),或用 `CommandDialog` 組 Command Palette(Cmd+K)——跨頁全域搜尋與快速動作入口。Inline 嵌頁面是允許的次要用法,必須自帶邊框容器(rounded + border,見下方行內範例;spec「禁止事項」2026-06-12 拍板)。',
       },
     },
   },
@@ -64,8 +64,8 @@ const PaletteDemo = () => {
   return (
     <div className="flex flex-col gap-3 max-w-xl">
       <p className="text-caption text-fg-muted">
-        按下 <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded">⌘K</kbd> (Mac) 或{' '}
-        <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded">Ctrl+K</kbd> (Win) 開啟全域指令面板。
+        按下 <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded-md">⌘K</kbd> (Mac) 或{' '}
+        <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded-md">Ctrl+K</kbd> (Win) 開啟全域指令面板。
       </p>
       <button
         type="button"
@@ -74,7 +74,7 @@ const PaletteDemo = () => {
       >
         <Search size={14} className="text-fg-muted" />
         <span className="text-fg-muted">搜尋或輸入指令…</span>
-        <kbd className="ml-4 font-mono text-footnote bg-muted px-1.5 py-0.5 rounded">⌘K</kbd>
+        <kbd className="ml-4 font-mono text-footnote bg-muted px-1.5 py-0.5 rounded-md">⌘K</kbd>
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>

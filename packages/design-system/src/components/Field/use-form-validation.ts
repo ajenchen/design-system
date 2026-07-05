@@ -27,6 +27,8 @@
  * 8 Anchor 到第一個錯誤    → focus + scrollIntoView({block:'center'});每次 submit 重算
  * 9 Async / 跨欄位 defer 到 submit → onSubmit 回傳 field-keyed errors → 同 8 anchor
  * + Submit button:Create 永遠 enabled / Update disabled-until-dirty → `submitDisabled`
+ * + Double-submit 防護(2026-07-05 D4):await onSubmit 期間重入直接忽略;`isSubmitting`
+ *   暴露餵 Button loading / disabled;onSubmit reject 先復位再原樣上拋(不吞錯)
  *
  * ── v1 邊界(spec「可執行層」段 documented)──
  * - getInputProps 支援 value/onChange 型控件(Input / Textarea / NumberInput / Select /
@@ -77,8 +79,10 @@ export interface UseFormValidationReturn<T extends FieldValues> {
   errors: Partial<Record<keyof T, string>>
   /** 任一欄位偏離 initialValues(深比對,還原回原值 = false) */
   isDirty: boolean
-  /** Submit button disabled 狀態(intent 驅動,見 options.intent) */
+  /** Submit button disabled 狀態(intent 驅動,見 options.intent;submit 進行中一併 disabled) */
   submitDisabled: boolean
+  /** Submit 進行中(await onSubmit 期間 true)— 餵 Button loading;double-submit 防護的 state 面 */
+  isSubmitting: boolean
   /** Spread 到 value/onChange 型控件:`<Input {...form.getInputProps('name')} />` */
   getInputProps: <K extends keyof T & string>(name: K) => FormFieldInputProps<T[K]>
   /** 接 `<form onSubmit={form.handleSubmit}>`(規則 7/8/9) */
@@ -118,6 +122,7 @@ function focusFirstError(errorNames: string[]) {
   }
 }
 
+// code-quality-allow: long-function — 單一 validation 生命週期 state machine(blur 驗證/edit 清 error/Escape 回復/submit 聚焦首錯)拆散會把耦合狀態跨函式傳遞,降低可讀性;對齊 react-hook-form useForm 本體同級長度
 export function useFormValidation<T extends FieldValues>(
   options: UseFormValidationOptions<T>,
 ): UseFormValidationReturn<T> {
@@ -185,10 +190,18 @@ export function useFormValidation<T extends FieldValues>(
     [form, validateField],
   )
 
+  // 2026-07-05 D4 double-submit 防護:連點 submit / 連按 Enter 在 await onSubmit(規則 9
+  // async 業務驗證)期間會並發呼叫 onSubmit(重複建立資源的經典事故)。ref 同步擋重入
+  // (state 有 render 延遲,擋不住同 tick 連點);state 暴露 isSubmitting 餵 Button
+  // loading / disabled。對齊 RHF formState.isSubmitting / Polaris / Mantine form submitting。
+  const isSubmittingRef = React.useRef(false)
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+
   /** 規則 7/8/9:submit 全驗 + anchor 第一個錯誤 + 業務錯誤同軌 */
   const handleSubmit = React.useCallback(
     async (e?: React.FormEvent) => {
       e?.preventDefault()
+      if (isSubmittingRef.current) return // double-submit guard(見上方 comment)
       const current = form.getValues()
       // 規則 7:對所有 validate keys 全跑(不依賴個別 blur 狀態);每次 submit 重算(規則 8)
       const formatErrors: string[] = []
@@ -210,18 +223,27 @@ export function useFormValidation<T extends FieldValues>(
         return
       }
       // 規則 9:業務 / async / 跨欄位驗證 defer 到 submit(onSubmit 回傳 field-keyed errors)
-      const businessErrors = await onSubmit(current)
-      if (businessErrors && typeof businessErrors === 'object') {
-        const names = Object.keys(businessErrors).filter(
-          (k) => businessErrors[k as keyof T] != null,
-        )
-        for (const name of names) {
-          form.setError(name as Path<T>, {
-            type: 'business',
-            message: businessErrors[name as keyof T] as string,
-          })
+      // try/finally(2026-07-05 D4):onSubmit reject 先復位 isSubmitting 再讓 rejection 原樣
+      // 上拋(不吞錯,對齊 RHF handleSubmit re-throw canonical)— 表單回到可重送狀態而非卡死。
+      isSubmittingRef.current = true
+      setIsSubmitting(true)
+      try {
+        const businessErrors = await onSubmit(current)
+        if (businessErrors && typeof businessErrors === 'object') {
+          const names = Object.keys(businessErrors).filter(
+            (k) => businessErrors[k as keyof T] != null,
+          )
+          for (const name of names) {
+            form.setError(name as Path<T>, {
+              type: 'business',
+              message: businessErrors[name as keyof T] as string,
+            })
+          }
+          if (names.length > 0) focusFirstError(names)
         }
-        if (names.length > 0) focusFirstError(names)
+      } finally {
+        isSubmittingRef.current = false
+        setIsSubmitting(false)
       }
     },
     [form, validate, onSubmit],
@@ -231,8 +253,10 @@ export function useFormValidation<T extends FieldValues>(
     values,
     errors,
     isDirty,
-    // Submit Button 狀態 canonical:Create 永遠 enabled / Update disabled-until-dirty
-    submitDisabled: intent === 'update' ? !isDirty : false,
+    // Submit Button 狀態 canonical:Create 永遠 enabled / Update disabled-until-dirty;
+    // submit 進行中一律 disabled(double-submit 防護的 UI 面,2026-07-05 D4)
+    submitDisabled: (intent === 'update' ? !isDirty : false) || isSubmitting,
+    isSubmitting,
     getInputProps,
     handleSubmit,
     reset: () => form.reset(),

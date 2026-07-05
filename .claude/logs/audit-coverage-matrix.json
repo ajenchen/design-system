@@ -1,11 +1,11 @@
 {
-  "ts": "2026-06-11T09:43:27.104Z",
-  "expected_dims": 88,
-  "classified": 88,
+  "ts": "2026-07-03T11:33:06.060Z",
+  "expected_dims": 90,
+  "classified": 90,
   "tier_counts": {
     "DETERMINISTIC": 23,
-    "HOOK-ENFORCED": 39,
-    "PURE-JUDGMENT": 26,
+    "HOOK-ENFORCED": 40,
+    "PURE-JUDGMENT": 27,
     "UNKNOWN": 0
   },
   "gaps": [],
@@ -361,6 +361,14 @@
     "88": {
       "tier": "DETERMINISTIC",
       "mechanism": "scripts/check-dangling-infra-ref.mjs --check + scripts/check-skill-deadref.mjs --check"
+    },
+    "89": {
+      "tier": "HOOK-ENFORCED",
+      "mechanism": "check_tabs_content_chrome_body_double_gap.sh(write-time P0:Check 1 tabs double-gap + Check 2 overlay-body fixed macro gap)+ audit-time DS-wide sweep per SKILL dim row"
+    },
+    "90": {
+      "tier": "PURE-JUDGMENT",
+      "mechanism": "LLM layout-space macro 合規 DS-wide 全掃(NO-SAMPLE;regex 分不出 macro/micro);判準 = layoutSpace.spec.md「該用 token vs 刻意固定」邊界段;每 finding 對抗二次驗證(2026-07-01 錨:35 raw → 8 confirmed)"
     }
   }
 }

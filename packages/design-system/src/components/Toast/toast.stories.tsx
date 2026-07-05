@@ -9,21 +9,25 @@ const meta: Meta = {
 }
 export default meta
 
-const VARIANTS: NoticeVariant[] = ['neutral', 'success', 'warning', 'error']
+// 2026-07-04 audit:補 'info'(NoticeVariant 5 值,原漏 → 靜態雙 theme 對照未涵蓋全 variant)
+const VARIANTS: NoticeVariant[] = ['neutral', 'info', 'success', 'warning', 'error']
 const LABELS: Record<string, string> = {
   neutral: '檔案已複製到剪貼簿',
+  info: '新版本 v2.4 可用',
   success: '專案已儲存',
   warning: '即將到期的訂閱',
   error: '無法連線伺服器',
 }
 const ACTIONS: Record<string, string> = {
   neutral: '復原',
+  info: '查看更新',
   success: '查看',
   warning: '續訂',
   error: '重試',
 }
 const DESCRIPTIONS: Record<string, string> = {
   neutral: '「Q3 營收報表.xlsx」已加入剪貼簿',
+  info: '重新整理頁面即可套用新功能',
   success: '變更已同步到所有成員',
   warning: '7 天後將停用,請前往結算頁續訂',
   error: '請檢查網路後再試一次',

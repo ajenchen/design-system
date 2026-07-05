@@ -105,6 +105,11 @@ const SegmentedControl = React.forwardRef<
     const resolvedSize = useResolvedFieldSize<SegmentedControlSize>(sizeProp, 'md')  // SSOT:統一 size resolution(原散落 ?? fieldCtx?.size ?? 'md')
     const resolvedDisabled = useResolvedFieldDisabled(disabled)
 
+    // 2026-07-04:恆 controlled mirror(見下方 onValueChange 註解)— uncontrolled consumer 的
+    // defaultValue 收進 internal state,Radix 永遠拿 controlled value → deselect 空值可攔。
+    const [internalValue, setInternalValue] = React.useState(defaultValue ?? '')  // '' = controlled 無選取(恆 controlled 從 mount 起,避免 un→controlled 切換)
+    const resolvedValue = value !== undefined ? value : internalValue
+
     // Memoize provider value(2026-04-22 D3 perf audit):避免每次父 render 重建 4-field object
     // 讓 children SegmentedControlItem 不必要 re-render
     const ctxValue = React.useMemo(
@@ -117,12 +122,16 @@ const SegmentedControl = React.forwardRef<
         <ToggleGroupPrimitive.Root
           ref={ref}
           type="single"
-          value={value}
-          defaultValue={defaultValue}
+          value={resolvedValue}
           onValueChange={(v) => {
             // Radix 的 single ToggleGroup 允許 deselect（返回空字串）
-            // SegmentedControl 是 radio 語意，不允許空值——忽略 deselect
-            if (v) onValueChange?.(v)
+            // SegmentedControl 是 radio 語意，不允許空值——忽略 deselect。
+            // 2026-07-04 修:原 uncontrolled(只傳 defaultValue)時 Radix 內部 state 直通,
+            // 點已選中項照樣 deselect 成空值(spec:236「恆有一值」失守)→ wrapper 恆 controlled
+            // (internalValue mirror),空字串一律不進 state 也不呼叫 consumer callback。
+            if (!v) return
+            if (value === undefined) setInternalValue(v)
+            onValueChange?.(v)
           }}
           disabled={resolvedDisabled}
           className={cn(segmentedControlVariants({ fullWidth }), className)}
@@ -290,10 +299,11 @@ export const segmentedControlMeta = {
     md: { fieldHeight: 32, typography: 'body', iconSize: 16, purpose: '預設 — form field 對齊' },
     lg: { fieldHeight: 36, typography: 'body-lg', iconSize: 20, purpose: 'touch / prominent CTA' },
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 2026-07-04 audit 對齊:cva 無 active(按下)專屬樣式,移除 'active'
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-surface'],
-    fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground'],
+    fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary-hover'], // 2026-07-04 補:selected 態 cva data-[state=on]:text-primary-hover 實際消費
     ring: ['ring-ring'],
   },
   defaultSize: 'md',

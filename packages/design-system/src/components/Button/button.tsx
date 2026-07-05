@@ -212,7 +212,7 @@ const buttonVariants = cva(
     ],
     defaultVariants: {
       // labeled 預設 = tertiary(2026-06-06 從 primary 改;iconOnly 預設 = text,由 resolvedVariant 注入)。
-      // 真正預設邏輯在元件 resolvedVariant(L394);此 cva default 供直接 buttonVariants() 呼叫者一致。
+      // 真正預設邏輯在元件內 resolvedVariant(相對指法,免行號漂移);此 cva default 供直接 buttonVariants() 呼叫者一致。
       variant: 'tertiary',
       size: 'md',
       pressedTone: 'emphasis',
@@ -303,7 +303,7 @@ export interface ButtonProps
    * - Clear → 欄位清空,用 Inline Action
    * - Remove → collection 移除,用一般 Button / Inline Action
    *
-   * 詳見 button.spec.md「Dismiss 視覺類」段 + patterns/element-anatomy/item-anatomy.spec.md
+   * 詳見 button.spec.md「Dismiss 視覺類」段 + patterns/element-anatomy/inline-action.spec.md
    * 「Dismiss canonical — X close only」段。
    */
   dismiss?: boolean
@@ -370,7 +370,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // 2026-05-23 deep-audit Phase A.4 Decision 1(user verbatim「決策ㄧ照你建議做」):dev-warn `iconOnly + (endIcon|badge)` 並用。
     // Spec SSOT:button.spec.md「iconOnly 嚴格定義為『只有一個 icon,正方形』,不可與 endIcon 或 badge 並用」。
-    // 例外:overlayBadge 跟 iconOnly 並用 canonical(L372 反向 warn 已 cover)。
+    // 例外:overlayBadge 跟 iconOnly 並用 canonical(上方 overlayBadge 反向 warn 已 cover;相對指法,免行號漂移)。
     // 不擋 image canonical「icon + 下拉指示 = 不加 iconOnly + startIcon + endIcon + aria-label」(那 case iconOnly=false 不 trigger)。
     if (process.env.NODE_ENV !== 'production' && iconOnly && (EndIcon !== undefined || badge != null)) {
       // eslint-disable-next-line no-console
@@ -426,27 +426,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const unboundedAttr =
       resolvedVariant === 'text' || dismiss ? { 'data-unbounded': 'true' } : {}
 
-    const buttonEl = (
-      <Comp
-        className={cn(
-          buttonVariants({ variant: resolvedVariant, danger: resolvedDanger, size: resolvedSize, pressedTone, className }),
-          // iconOnly 鐵律:padding-free + aspect-square + flex-center (Polaris idiom)
-          // 0 magic-number 0 公式自動正方形。詳 ICON_ONLY_BASE rationale。
-          resolvedIconOnly && ICON_ONLY_BASE,
-          // Dismiss 視覺弱化:override Button text variant 預設 foreground 為 fg-muted → hover foreground
-          // 跟 Inline Action dismiss 視覺一致(cross-implementation dimming canonical)
-          dismiss && 'text-fg-muted hover:text-foreground',
-          resolvedFullWidth && 'w-full',
-        )}
-        ref={ref}
-        type="button"
-        disabled={disabled || loading}
-        aria-busy={loading || undefined}
-        aria-label={ariaLabel}
-        {...toggleAttrs}
-        {...unboundedAttr}
-        {...restProps}
-      >
+    // Native path 內部結構:[loading spinner | startIcon(+overlayBadge)] [label] [badge + endIcon]。
+    // asChild 時**不渲染**(2026-07-04 fix):Radix Slot 規範 children 必為單一 element
+    // (React.Children.only)— 內部多 expression children 變 array 必 runtime throw;
+    // asChild 分支只 render consumer child,內容由 consumer 自帶。
+    // 詳 CLAUDE.md 失敗記憶索引「asChild ? Slot : Native 內部 JSX 仍渲染多 children」條。
+    const nativeChildren = (
+      <>
         {loading ? (
           <CircularProgress size={iconSize} className="text-current" />
         ) : StartIcon ? (
@@ -478,6 +464,55 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             {EndIcon && <EndIcon size={iconSize} aria-hidden />}
           </span>
         )}
+      </>
+    )
+
+    const sharedClassName = cn(
+      buttonVariants({ variant: resolvedVariant, danger: resolvedDanger, size: resolvedSize, pressedTone, className }),
+      // iconOnly 鐵律:padding-free + aspect-square + flex-center (Polaris idiom)
+      // 0 magic-number 0 公式自動正方形。詳 ICON_ONLY_BASE rationale。
+      resolvedIconOnly && ICON_ONLY_BASE,
+      // Dismiss 視覺弱化:override Button text variant 預設 foreground 為 fg-muted → hover foreground
+      // 跟 Inline Action dismiss 視覺一致(cross-implementation dimming canonical)
+      dismiss && 'text-fg-muted hover:text-foreground',
+      resolvedFullWidth && 'w-full',
+    )
+
+    // 2026-07-05 D4 修:asChild 原 silently drop loading/disabled 語意(無 aria-busy/aria-disabled/
+    // click guard → <a> loading 期間可重複點擊)。補 ARIA(任何 element 合法;aria-disabled 自動點亮
+    // cva 既有視覺)+ functional guard(APG aria-disabled 模式:語意+視覺由元件、功能阻斷由 guard)。
+    const { onClick: slotConsumerOnClick, ...slotRest } = restProps as typeof restProps & { onClick?: React.MouseEventHandler<HTMLElement> }
+    const buttonEl = asChild ? (
+      // Slot 分支:children 必為單一 consumer element(React.Children.only),
+      // 內部 slot(loading/startIcon/badge)不渲染;不硬塞 type/disabled(consumer child 可能是 <a>)。
+      <Comp
+        className={sharedClassName}
+        ref={ref}
+        aria-label={ariaLabel}
+        aria-busy={loading || undefined}
+        aria-disabled={disabled || loading || undefined}
+        onClick={disabled || loading
+          ? (e: React.MouseEvent<HTMLElement>) => { e.preventDefault(); e.stopPropagation() }
+          : slotConsumerOnClick}
+        {...toggleAttrs}
+        {...unboundedAttr}
+        {...slotRest}
+      >
+        {children}
+      </Comp>
+    ) : (
+      <Comp
+        className={sharedClassName}
+        ref={ref}
+        type="button"
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        aria-label={ariaLabel}
+        {...toggleAttrs}
+        {...unboundedAttr}
+        {...restProps}
+      >
+        {nativeChildren}
       </Comp>
     )
 
@@ -525,8 +560,10 @@ export const buttonMeta = {
   },
   states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['--primary', '--primary-hover', '--primary-active', '--bg-disabled'],
-    fg: ['--on-emphasis', '--fg-disabled'],
+    // 2026-07-04 audit 補齊:原只列 primary variant 家族;按 buttonVariants cva 真實 class 補
+    // secondary/tertiary/text/link/danger 消費的 token(auto-compile token 矩陣依此)
+    bg: ['--primary', '--primary-hover', '--primary-active', '--primary-subtle', '--bg-disabled', '--surface', '--neutral-hover', '--neutral-active', '--neutral-selected'],
+    fg: ['--on-emphasis', '--fg-disabled', '--foreground', '--primary', '--error', '--error-hover', '--error-active'],
     ring: ['--ring'],
   },
   defaultVariant: 'tertiary',  // 2026-06-10 修 stale:對齊 cva defaultVariants(2026-06-06 labeled 預設改 tertiary,meta 漏同步)

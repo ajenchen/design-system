@@ -168,7 +168,7 @@ Tag md 和 Button xs 同 24px，但：
 
 - `startIcon`：最多一個，放在最左側
 - `badge` 和 `endIcon` 可同時出現在右側
-- `badge` 傳入 Badge 元件（通知計數指示器）。Badge 層級應匹配按鈕的視覺重量——深色底按鈕（primary、secondary+danger）只適合 `critical`，詳見 `badge.spec.md`
+- `badge` 傳入 Badge 元件（通知計數指示器）。Badge 層級受按鈕底色的 contrast floor 約束——深色底按鈕（primary、secondary+danger）floor 為 `high`（`high` / `critical` 可直接用；`low` / `medium` 被迫 bump 是設計錯配訊號），詳見 `badge.spec.md`「各容器的 contrast floor 對照」
 
 ---
 
@@ -362,7 +362,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 - FileItem / DataTable **row delete(Trash icon)**→ 一般 Button xs 或 Inline Action(看 row size),**不套 dismiss**
 - Tag dismiss X / Input clear X → Inline Action(host chrome padding 內,不是 Button)
 
-完整 predicate 見 `patterns/element-anatomy/item-anatomy.spec.md`「Predicate」+「Dismiss canonical」。
+完整 predicate 見 `patterns/element-anatomy/inline-action.spec.md`「Predicate:Inline Action vs Button iconOnly」+「Dismiss canonical — X close only」（2026-04-24 自 item-anatomy.spec.md 抽出）。
 
 #### `data-unbounded` attribute(2026-04-22 v5 canonical)
 

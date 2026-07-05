@@ -275,7 +275,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 
 **Keyboard 行為**:
 
-- Tab — 進入 group(focus 在第一個或選中項)
+- Tab — 進入 group(focus 落在選中項;無選中時落在上次 focus 過的 item——Radix roving focus 記住停留點,初次進入才是第一項)
 - ←/→ — 在 item 間移動 roving focus(只移焦點,不切換選取)。WAI-ARIA APG 對水平 segmented/radio group 的主要導覽鍵
 - ↑/↓ — 同 ←/→,也會在 item 間移動 roving focus。Radix `toggle-group` 未鎖 `orientation`(沿用 default 雙軸 roving),APG 接受 group 同時支援兩軸方向鍵
 - Enter / Space — 選取目前 focus 的 item

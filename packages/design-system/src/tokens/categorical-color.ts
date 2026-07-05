@@ -21,7 +21,7 @@
  * (dark-mode 方向 pre-computed,**不可**用 primitive step-5,否則 dark mode 反向)。12 色相皆已定義。
  *
  * **加色相**:加進 `CATEGORICAL_HUES` + 下列 5 個 map 各補一行字面值(key X 用 `--color-X-*`,1:1)。
- * **機械防線**:`check_categorical_color_1to1.sh` 強制 map 的 key X 的值含 `--color-X-`(名實一致,禁 offset)。
+ * **機械防線**:`scripts/categorical-color-invariants.mjs` I1(release:preflight 已 chain)強制 map 的 key X 的值含 `--color-X-`(名實一致,禁 offset;原引 hook 名不存在,2026-07-04 修)。
  */
 
 /** 12 個 categorical 色相(順序對齊 primitives.css / Storybook color token 列)。 */

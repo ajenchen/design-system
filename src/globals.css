@@ -1,20 +1,19 @@
-@import "tailwindcss";
-
-/* Tailwind v4 scope: EXPLICITLY limit scan to source code only (tsx/ts/jsx/js).
-   Default auto-detect scans .md too,picking up wildcard examples like
-   `var(--X-*)` and `var(--X-100/200/300)` in spec docs as literal class strings →
-   generated CSS has illegal `/` `*` chars → Storybook smoke fail.
-   Anchor 2026-05-28 beta.26/27 CI fail root cause.
-   `@source not` 試過不 work,改用 explicit positive @source(REPLACE auto-detect)。 */
+/* Tailwind v4 scope(2026-07-04 dim 50 root fix): `source(none)` 真關 auto-detect,
+   只掃下方 explicit @source。
+   ── 為什麼(官方 docs 實查 2026-07-04)──
+   positive @source 是 **ADD 不是 REPLACE**(2026-05-28 註解「REPLACE auto-detect」是錯誤結論),
+   `@source not` 只吃相對路徑、glob(`**`)不支援 → 原 5 條 not 全 no-op。
+   實證 phantom:`.claude/logs/deep-audit-rerun2-*.json` 內的 class 字串
+   (h-[calc(1lh+gap+descHeight)])被 auto-detect 撿進 shipped dist CSS。
+   Anchor 2026-05-28 beta.26/27(.md 雜訊 class 炸 build)同 root、當時只治標。 */
+@import "tailwindcss" source(none);
 @source "../src/**/*.{ts,tsx,jsx,js}";
 @source "../packages/design-system/src/**/*.{ts,tsx,jsx,js}";
 @source "../packages/storybook-config/**/*.{ts,tsx,jsx,js}";
 @source "../.storybook/**/*.{ts,tsx,jsx,js}";
-@source not "**/*.spec.md";
-@source not "**/*.sh";
-@source not "**/ds-canonical/**";
-@source not "**/.claude/**";
-@source not "**/planning/**";
+/* apps/** stories 在 repo storybook globs 內(.storybook/main.ts:19)——source(none) 後必須
+   顯式列入,否則 Apps/* story 的 class 從 build 消失(2026-07-04 source(none) 切換時同步補)。 */
+@source "../apps/**/*.{ts,tsx,jsx,js}";
 
 /* DS runtime SSOT: tokens + component CSS + base/runtime utilities.
    Keep repo-root Storybook and consumers on the same aggregator to prevent drift. */

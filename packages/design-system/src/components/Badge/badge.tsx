@@ -77,8 +77,11 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
   ({ variant, dot = false, count, max, className, role, ...props }, ref) => {
     // dot 預設 attention 色 = critical(非 cva 的 count default 'low');count 沿用 cva default 'low'。
     const effectiveVariant = variant ?? (dot ? 'critical' : 'low')
+    // 2026-07-05 D4 修(續 07-04 guard):count 模式 count == null → 整顆 return null 不渲染 —
+    // 原 guard 只擋文字,仍渲染 16px 空 pill + 空 role=status live region(Ant/Material 皆不渲染)。
+    if (!dot && count == null) return null
     const display = dot ? null : (
-      max != null && count != null && count > max ? `${max}+` : `${count}`
+      max != null && count! > max ? `${max}+` : `${count}`
     )
 
     // a11y(2026-04-25 axe aria-prohibited-attr fix):

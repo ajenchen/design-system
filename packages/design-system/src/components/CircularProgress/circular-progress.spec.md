@@ -185,6 +185,8 @@ Track 色鎖 `var(--secondary)`(= neutral-3,與 ProgressBar track 一致)。
 | Indeterminate + 有 aria-label / label | `status` | `aria-label={aria-label ?? label}`(顯式 aria-label 優先,label 為 fallback) |
 | Indeterminate + 無 label | `aria-hidden=true` | 由父層 `aria-busy` 管理(Button 模式) |
 
+**動畫 × `prefers-reduced-motion`**:indeterminate 旋轉對 reduce 使用者**不停止**(loading 回饋仍需可見,停轉會像卡住),改放慢至 3s/圈(預設 1s;`circular-progress.tsx` 的 `motion-reduce:[animation-duration:3s]`,Material 流派)——保留「進行中」訊號、降低前庭刺激。對照 Skeleton 的 `motion-reduce:animate-none`(完全停止):占位塊靜止後仍是有效的靜態內容,語意不失,故兩元件策略不同。
+
 ---
 
 ## 視覺與幾何鐵律

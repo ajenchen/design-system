@@ -255,7 +255,8 @@ const ChartTooltipContent = React.forwardRef<HTMLDivElement, ChartTooltipContent
                         {nestLabel ? tooltipLabel : null}
                         <span className="text-fg-secondary">{itemConfig?.label || item.name}</span>
                       </div>
-                      {item.value && (
+                      {/* 2026-07-04 修:falsy check 會讓合法資料值 0 不渲染(shadcn 上游同病)→ null check */}
+                      {item.value != null && (
                         <span className="text-foreground font-mono font-medium tabular-nums">
                           {item.value.toLocaleString()}
                         </span>

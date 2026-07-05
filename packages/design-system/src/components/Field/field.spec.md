@@ -193,7 +193,7 @@ Field render 時迭代**全部** control child 的 `type.fieldLayout`,**任一**
 
 **第一行對齊責任**:Field 的 block control area **不加 paddingTop**(避免跟 RadioGroup 自帶 `py = calc((field-height - 1lh) / 2)` double)。需 label 對齊的 block primitive 自行保證第一行位置(RadioGroup/CheckboxGroup 自帶 ✓;FileDropzone/RichTextEditor 自管)。
 
-**已宣告 block**:`RadioGroup`、`CheckboxGroup`(checkbox-group.tsx:92)。新增 `FileDropzone` 等同模式加 `fieldLayout = 'block'`。
+**已宣告 block**:`RadioGroup`、`CheckboxGroup`(checkbox-group.tsx:93)。新增 `FileDropzone` 等同模式加 `fieldLayout = 'block'`。
 
 ---
 
@@ -253,8 +253,8 @@ Field 透過 Context 暴露以下狀態給子元件（Primitive 可以透過 `us
 
 label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel info="說明文字">`。
 
-- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(field.tsx L388-408)
-- **disabled 時整顆不渲染**(L400)— info 是 action affordance(hover 互動),非類型身份 indicator,non-editable 隱藏
+- **與 label 間距 `gap-1`(4px)**、InfoIcon **16px 固定**、色 `fg-muted` hover `fg-secondary`(field.tsx L391-416)
+- **disabled 時整顆不渲染**(L403)— info 是 action affordance(hover 互動),非類型身份 indicator,non-editable 隱藏
 - 設計定位:inline action pattern(補充工具,視覺退後)— label 的 primary interaction 是 input,info 是輔助
 
 ---
@@ -386,16 +386,18 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 
 ## Field state machine SSOT(v13.3)
 
-**Canonical**:**focus dominates everything**(M11 延伸:focus 勝 hover/open/error-rest)。Cursor in input = user 編輯中 = 永遠藍。對齊 Material 3 / Polaris / Ant Design 5 共識。SSOT 在 `field-wrapper.tsx` 三 compoundVariant — 改一處全 control + cell + 各 variant 跟動(**例外:error state CSS 目前逐 control 實作**——input.tsx / select.tsx / number-input.tsx 各自帶 `border-error` 系列,不在 field-wrapper compoundVariants,改 error 需逐 control 同步)。 <!-- @benchmark-unverified -->
+**Canonical**(2026-07-04 Q1 拍板修訂):**focus dominates everything — 除 error**。無 error 時 cursor in input = 藍;**有 error 時聚焦維持紅**(error 勝 focus 的「顏色」通道;修錯中不可失去 error 訊號)。開始編輯 → edit-clears-error(`useFormValidation`)→ 自然回 focus 藍。Benchmark 實查:MUI(error+focused 紅框加粗,OutlinedInput.js error rule 排 focused 後)/ Ant 5(`activeBorderColor: colorError` 紅框紅 glow,input/style/variants.ts)/ Polaris(紅 border 聚焦持續 + 獨立藍 outline,TextField.module.css)三家聚焦時 error 紅皆保留;唯一切藍的 Carbon 靠 in-field 紅 icon 補償(DS 無此通道故不採)。SSOT 全在 `field-wrapper.tsx` compoundVariants(**含 error** — 2026-07-04 起 `error` 為 cva 變體,原逐 control `border-error` 系列已 retire,控件只傳 `error` flag)。
 
 | State | Token | CSS |
 |---|---|---|
 | rest | `--border` | `border-border` |
 | hover(無 focus)| `--border-hover` | `hover:border-border-hover` |
-| **focus** | `--primary` | **`focus-within:!border-primary`**(`!important` 勝 data-state)|
+| **focus(無 error)** | `--primary` | **`focus-within:!border-primary`**(error:false compound;`!important` 勝 data-state)|
 | focus + hover | `--primary` | `focus-within:hover:!border-primary`(M11 AND case)|
 | open(無 focus)| `--border-hover` | `data-[state=open]:border-border-hover` |
-| error | `--error` | `focus-within:border-error focus-within:hover:border-error` |
+| **error(edit 全程,含聚焦)** | `--error` | `border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error`(error:true compound)|
+
+**Error × focus 疊加 canonical(2026-07-05 user 拍板「照 Mantine」)**:錯誤欄位聚焦時**視覺完全不變**(紅框同色同寬,無加深/加粗/ring/暈)。依據:DS 聚焦主機制 =「邊框換 primary 基準色、無第二訊號」,12 家實查中唯一同款機制的 Mantine(Input.module.css:focus 僅 border 換 primary-filled、outline none)在此題同樣選擇不變;保紅又加訊號的三家(MUI 粗 / Ant 暈 / Bootstrap 暈)前提是其一般聚焦本來就有該第二訊號可染紅,DS 無此前提。**已知代價(documented tradeoff,非 bug)**:無游標的觸發器(Select / DatePicker / TimePicker)error 聚焦時無視覺聚焦指示(文字框靠游標);Mantine 同款弱點。未來若升級全 DS 聚焦語言(一般態加第二訊號),本題應同步重議(錯誤態染紅該訊號,對齊 MUI/Ant/Bootstrap 結構)。D4 finding「error+focus 零 focus delta」據此結案為 user-拍板 intentional。
 
 副作用(自動達成 Ant「選後藍 / 取消灰」):選 option → Radix `onCloseAutoFocus` return focus → focus-within fires → 藍 / 點外取消 → focus 移外 → 灰。純 focus 機制無需 transient class。
 
@@ -414,7 +416,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 | **L1 Slot** | `patterns/element-anatomy/item-anatomy.tsx` | `<ItemPrefix>` / `<ItemSuffix>`(永遠 `h-[1lh]` 對齊第 1 行) |
 | **L2 Align** | `field-wrapper.tsx` `nakedCellRowModeAlign` | host cell `data-row-mode` propagate(autoRow→items-start / fixed→items-center)|
 | **L3 State machine** | **繼承 Field default v13.3**(↑ 上方 SSOT)| 不重定義 |
-| **L4 Display hover** | `field-wrapper.tsx` `nakedCellEditableDisplayHover` | editable cell display mode `outline-1 outline-offset:-1 outline-[var(--border-hover)]`(cell wrapper outline)。**v15.13 design intent(user-accepted 2026-05-07)**:hover ring 蓋 cell.borderRight。**known asymmetry**(2026-05-09 user 重抓):只 **right** 邊 outline 跟 cell own border-r 同位置覆蓋成 1 條;top/left/bottom 邊 outline 在 cell.outer 內 1px,grid lines(前 row border-b / 前 cell border-r / row 自己 border-b 在 cell.outer 外 1px)露出 → 視覺 4 邊不對稱。**Pending design decision**(等 user 拍板才 ship):4 邊都蓋(spec 1 selection-style)vs 4 邊都不蓋(spec 2 inset 1px)vs 維持現狀。三層 SSOT:state source = cell wrapper / paint owner = 混合(hover=cell / edit=Field)/ grid divider = DataTable own |
+| **L4 Display hover** | `field-wrapper.tsx` `nakedCellEditableDisplayHover` | editable cell display mode `outline-1 outline-offset:-1 outline-[var(--cell-hover-outline-color,var(--border-hover))]`(cell wrapper outline;2026-05-10 Slice D:spreadsheet overlay 啟用時 DataTable cell host 可 set `--cell-hover-outline-color: transparent` 抑制 outline、讓 overlay layer 接管 hover ring paint,fallback 即 `--border-hover` 既有行為不變)。**v15.13 design intent(user-accepted 2026-05-07)**:hover ring 蓋 cell.borderRight。**known asymmetry**(2026-05-09 user 重抓):只 **right** 邊 outline 跟 cell own border-r 同位置覆蓋成 1 條;top/left/bottom 邊 outline 在 cell.outer 內 1px,grid lines(前 row border-b / 前 cell border-r / row 自己 border-b 在 cell.outer 外 1px)露出 → 視覺 4 邊不對稱。**Pending design decision**(等 user 拍板才 ship):4 邊都蓋(spec 1 selection-style)vs 4 邊都不蓋(spec 2 inset 1px)vs 維持現狀。三層 SSOT:state source = cell wrapper / paint owner = 混合(hover=cell / edit=Field)/ grid divider = DataTable own |
 | **L5 Position(v14,2026-05-06 revert v12)** | naked compoundVariant flow | Field 留 layout flow,**不**用 `!absolute`(v12 absolute 跟 autoRowHeight 不相容)。視覺接受 cell `border-r grid` + Field border 2px 雙線;cell border-r divider 永遠保留(對齊 L4 Invariant divider-owner / editor-owner 分離)|
 | **L6 Cell trigger indicator(v15,2026-05-09)** | naked-display branch + `showDisplayEndIcon?: boolean` opt-in | DataTable cell-registry 顯式傳 `showDisplayEndIcon` → Field component 內部 `<ItemSuffix>` 渲對應 trigger icon(Select/Combobox/PeoplePicker → ChevronDown / DatePicker → CalendarIcon / TimePicker → Clock / LinkInput 例外無 suffix)。table 外用法不傳此 prop = 純展示無 icon。詳 `.claude/planning/cell-indicator-ssot-rfc.md`。|
 

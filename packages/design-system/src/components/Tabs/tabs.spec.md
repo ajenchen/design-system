@@ -97,7 +97,7 @@ TabsContent ← 對應被選中的 trigger
 - `startIcon` 描述 tab 的內容性質（人像 icon 配「成員」、齒輪 icon 配「設定」）
 - `badge` 傳達該 tab 底下的待處理計數（「通知 3」「成員 12」）
 - `endIcon` **純視覺 indicator only**（方向 / 狀態 — ChevronDown 暗示「展開後看到子內容」、Pin / Star 狀態徽記）。**不拼 click 行為** — 點到 endIcon 跟點到 tab body 同效果（切 tab）
-- `inlineAction`（2026-05-21 加）拆分 click target：點到 inlineAction 走它自己的 handler 不切 tab；典型如「『更多 ▾』tab 後綴點開 overflow dropdown 不切 tab」（split-click pattern,對齊 GitHub「Code ▾」/ Linear "Triage..." menu / Atlassian split-tab 共識）
+- `inlineAction`（2026-05-21 加）拆分 click target：點到 inlineAction 走它自己的 handler 不切 tab；典型如「『更多 ▾』tab 後綴點開 overflow dropdown 不切 tab」（split-click pattern,對齊 GitHub「Code ▾」/ Linear "Triage..." menu / Atlassian split-tab 共識）。DOM 上 inlineAction 是 trigger 的 **sibling**（絕對定位在 trigger 以 paddingRight 預留的區域,同 SidebarMenuButton suffixNode canonical）,**非巢狀 button** — Radix trigger 是原生 `<button>`,巢 button 為 HTML 不合法 + axe nested-interactive（2026-07-05 D4 修）
 
 ### 對標對象與故意的偏離
 
@@ -292,6 +292,7 @@ Tabs anatomy 採 DS 標準結構 + 元件特有矩陣:
 - 標準 `SizeMatrix` / `ColorMatrix` / `StateBehavior`(selected / hover / disabled)—— 結構性對照,呈現 underline / selected border 與 TabsList border 的視覺關係(見「Underline 與 TabsList border 的視覺關係」段),單組合 Inspector 無法並列呈現
 - 元件特有 `OverflowMatrix`(scroll / menu / fade 三模式)—— 「tabs 放不下時怎麼處理」是設計決策題,需三方案 side-by-side 同時比較,Inspector 單組合無法呈現
 - `SpacingTokens` —— 間距 token 對照
+- `Accessibility`(`無障礙`)—— Radix tabs a11y 預設摘要 + Keyboard 行為對照(詳「A11y 預設」段)
 
 ---
 

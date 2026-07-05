@@ -6,7 +6,7 @@ import * as React from 'react'
 import { X as XIcon, Info, CircleCheck, TriangleAlert, XCircle, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/design-system/components/Button/button'
-import { ItemContent, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ICON_SIZE, ItemContent, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 /**
  * Notice — Toast / Alert 共用的視覺佈局層
@@ -75,6 +75,11 @@ export interface NoticeProps
   title: React.ReactNode
   description?: React.ReactNode
   endContent?: React.ReactNode
+  /**
+   * 顯示關閉鈕(預設 true)。**需同時傳 `onDismiss` 才會渲染 X** — Notice 是 controlled-only
+   * (不自我移除),無 handler 的 X 是可 focus、SR 播報「關閉通知」但按下零反應的死按鈕
+   * (2026-07-05 D4;對齊 Polaris Banner `onDismiss` 存在才顯示 X / Ant Alert `closable` 預設 false)。
+   */
   dismissible?: boolean
   onDismiss?: () => void
   /** ARIA label for the dismiss button. Override for i18n. Default: "關閉通知" */
@@ -99,7 +104,9 @@ const Notice = React.forwardRef<HTMLDivElement, NoticeProps>(
       title,
       description,
       endContent,
-      dismissible = true,
+      // 不 destructure-default(保留「顯式傳 true」的可辨識性給下方 dev-warn);等效預設 true 由
+      // showDismiss 的 `!== false` 承擔。
+      dismissible,
       onDismiss,
       dismissAriaLabel = '關閉通知', // i18n-allow: DS default; consumer override via dismissAriaLabel prop
       iconClassName,
@@ -110,6 +117,16 @@ const Notice = React.forwardRef<HTMLDivElement, NoticeProps>(
   ) => {
     const StatusIcon = VARIANT_ICON[variant]
 
+    // 2026-07-05 D4:X 渲染條件 = dismissible(預設 true)**且**有傳 onDismiss — 原 `dismissible &&`
+    // 單獨判斷讓預設用法 <Alert title="…"/> 渲染一顆死 X(controlled-only 不自我移除,onClick=undefined
+    // 零反應;keyboard / SR 使用者按 Enter 零回饋 = 假 affordance)。對齊 Polaris Banner(onDismiss
+    // 存在才顯示 X)/ Ant Alert(closable 預設 false)。
+    const showDismiss = dismissible !== false && onDismiss != null
+    if (process.env.NODE_ENV !== 'production' && dismissible === true && onDismiss == null) {
+      // 只在「顯式傳 dismissible={true} 卻沒接 onDismiss」的消費端矛盾時提示(預設 undefined 不吵)
+      console.warn('[Notice] dismissible=true 但未傳 onDismiss,關閉鈕不會渲染(需同時提供 onDismiss)。')
+    }
+
     return (
       <div
         ref={ref}
@@ -118,7 +135,7 @@ const Notice = React.forwardRef<HTMLDivElement, NoticeProps>(
       >
         {StatusIcon && (
           <ItemPrefix>
-            <StatusIcon size={16} className={cn('shrink-0', iconClassName)} aria-hidden />
+            <StatusIcon size={ICON_SIZE.md} className={cn('shrink-0', iconClassName)} aria-hidden />
           </ItemPrefix>
         )}
 
@@ -130,7 +147,7 @@ const Notice = React.forwardRef<HTMLDivElement, NoticeProps>(
           labelClassName={description ? 'font-medium' : undefined}
         />
 
-        {(endContent || dismissible) && (
+        {(endContent || showDismiss) && (
           // 2026-06-15 user 拍板:消費 ItemSuffix primitive(原手刻 div + @row-slot-handcraft-allow
           // 已移除)。item-anatomy.spec.md 把 Notice 的 action/dismiss 對應到 suffix slot;ItemSuffix
           // base geometry(h-[1lh] shrink-0 ml-auto flex items-center gap-2)正是此處所需,hoverReveal
@@ -138,7 +155,7 @@ const Notice = React.forwardRef<HTMLDivElement, NoticeProps>(
           // family canonical,overlay-surface.spec.md「Chrome dismiss size canonical」)。
           <ItemSuffix>
             {endContent}
-            {dismissible && (
+            {showDismiss && (
               <Button
                 data-dismiss
                 iconOnly

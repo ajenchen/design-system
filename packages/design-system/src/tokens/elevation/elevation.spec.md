@@ -17,7 +17,7 @@ Elevation 定義陰影層級，區分內容層（Card）和浮層（Modal/Popove
 
 | Token | 用途 | 對應元件 |
 |-------|------|----------|
-| `--elevation-100` | 頁面內容層，靜止 | Card |
+| `--elevation-100` | 頁面內容層，靜止 | Card 類內容容器(DS 尚無 Card 元件;現行唯一 DS consumer = Slider thumb hover 陰影,per `slider.spec.md` 互動 canonical) |
 | `--elevation-100-hover` | 頁面內容層，hover / 拖拽 lift | —(目前無 DS 內建 consumer;預留給 consumer 的可拖拽 / hover-lift card,如 board card drag) |
 | `--elevation-200` | 浮層，靜止 | Modal、popover、dropdown、overlay drawer |
 | `--elevation-200-hover` | 浮層，hover | —(同上,預留) |

@@ -440,7 +440,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `fileupload.spec.md` 「A11y 預設」段。摘要:\n\n-  role=\"button\"  +  tabIndex=0 (disabled 時  -1 )\n- Enter / Space 鍵觸發檔案選取浮窗(模擬 click)\n-  aria-disabled={true}  當 disabled\n-  <input type=\"file\">  以  hidden (display:none) 隱藏,移出無障礙樹;互動由外層  role=\"button\"  wrapper 承載,accessible name 來自 wrapper 內 Empty 的 title + description 文字"}</p>
+      <p className="whitespace-pre-line">{"詳 `file-upload.spec.md` 「A11y 預設」段。摘要:\n\n-  role=\"button\"  +  tabIndex=0 (disabled 時  -1 )\n- Enter / Space 鍵觸發檔案選取浮窗(模擬 click)\n-  aria-disabled={true}  當 disabled\n-  <input type=\"file\">  以  hidden (display:none) 隱藏,移出無障礙樹;互動由外層  role=\"button\"  wrapper 承載,accessible name 來自 wrapper 內 Empty 的 title + description 文字"}</p>
     </div>
   ),
 }

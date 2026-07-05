@@ -103,7 +103,7 @@ Modal 與 viewport 四邊保持 `--layout-space-bottom`（48px）最小間距。
 - Header 只有 title + close X → max layout = 24 → header = 24 + 2×`py-tight`(隨 page:md 12 / lg 16)= **48 md / 56 lg**(= `--chrome-header-height` 同 tier 對齊)✓
 - Header 塞 bounded primary(無 `data-unbounded`)→ header 自然長高
 
-**Canonical 來源**:Dialog 是 overlay chrome，corner close X 屬 action group region，必用 Button(非 Inline Action / 非自刻 button)。詳見 `patterns/element-anatomy/item-anatomy.spec.md`「Dismiss canonical」+ `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」。
+**Canonical 來源**:Dialog 是 overlay chrome，corner close X 屬 action group region，必用 Button(非 Inline Action / 非自刻 button)。詳見 `patterns/element-anatomy/inline-action.spec.md`「Dismiss canonical — X close only」+ `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」。
 
 ## Title
 

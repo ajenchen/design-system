@@ -1,0 +1,235 @@
+{
+ "failed": [],
+ "perGroup": [
+  {
+   "key": "coachmark-toast",
+   "fixed": [
+    {
+     "title": "Coachmark 鍵盤路徑機制性斷裂",
+     "what": "重驗成立(coachmark.tsx:170 仍為裸 preventDefault)。照 user 拍板 suggestion 修:onOpenAutoFocus 保留 preventDefault 後補 (e.currentTarget as HTMLElement).focus({ preventScroll: true }) — 焦點進 content 容器(FocusScope 自帶 tabIndex=-1),Tab 不再觸發 non-modal focus-outside dismiss,第一下即達第一個 CTA;Enter 按在容器上無動作,原「不誤推進」意圖保留(對齊 dialog.tsx handleOpenAutoFocus `?? content` fallback canonical)。同步:tsx 檔頭 canonical 第 4 條 + inline 註解(2026-07-05 D4 anchor)、coachmark.spec.md 兩處行為宣稱(L169「Footer 按鈕順序」+ L206「A11y 預設」)、coachmark.anatomy.stories.tsx 兩處「焦點停在 trigger」宣稱(Focus/Esc 段 + Accessibility 摘要)。"
+    },
+    {
+     "title": "Toast 自動關閉計時器不因鍵盤焦點暫停",
+     "what": "重驗成立(toast.tsx:83 仍為 uniform duration = 4000)。照 user 拍板修:toast() 預設改 `duration = options.action ? 10000 : 4000`(action 存在 → 10 秒,user 拍板;anchor 註解:sonner 計時器僅 hover/pointer/⌥T 暫停,Tab 焦點不暫停,對齊 Polaris toast with action ≥10s)。同步 toast.spec.md:「何時用」undo 句 4 秒→10 秒(L47)、「A11y 預設」新增「自動關閉計時器與鍵盤暫停路徑」bullet(Tab 不暫停 + ⌥T/Option+T 內建 hotkey 路徑 + WCAG 2.2.1)、「API」段 duration 預設說明 + 範例移除硬寫 duration。Story 宣稱同步:toast.anatomy.stories.tsx(Overview 預設值表、Inspector argTypes 描述、生命週期表 duration ?? 4000ms、Undo demo 移除 duration:6000 + 6000ms 建議句)、toast.principles.stories.tsx(ActionRule 預設 4 秒×3 處→10 秒、DurationRule 兩則 Rule 改為「預設 4000ms(無 action)」/「有 action → 預設自動加長 10000ms」+ demo 移除 duration:7000)。principles L85「4 秒後消失」保留 — 該 demo 顯式傳 duration:4000 且無 action,宣稱仍為真。"
+    }
+   ],
+   "skipped": [],
+   "specSynced": [
+    "packages/design-system/src/components/Coachmark/coachmark.spec.md(L169 Footer 按鈕順序 + L206 A11y 預設焦點管理)",
+    "packages/design-system/src/components/Toast/toast.spec.md(L47 undo 場景句 + L85 A11y 預設新增 ⌥T 鍵盤暫停路徑 bullet + L115-127 API duration 預設說明與範例)"
+   ]
+  },
+  {
+   "key": "fileupload",
+   "fixed": [
+    {
+     "title": "FileUpload:file input 選檔後未 reset value",
+     "what": "重驗發現此修已在 working tree 先行落地(未 commit,帶 2026-07-05 D4 anchor 註解):兩個 <input type=file>(button variant 約 :229、dropzone variant 約 :315)onChange 均已改為 filterAndDispatch 後 e.target.value = ''。與 finding suggestion 完全一致,本次確認無遺漏、不重複修改。同檔重選(失敗修正後重選 / 刪除後重傳)恢復觸發 onUpload。"
+    },
+    {
+     "title": "FileUpload:dragleave 無 relatedTarget guard",
+     "what": "onDragLeave 加 guard:if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) return(file-upload.tsx:274,含 D4 anchor 繁中註解)。拖曳滑過內部 Empty 子元素(icon/title)時不再熄滅 drag-over 高亮,消除經典 drag-flicker。"
+    },
+    {
+     "title": "FileUpload:disabled / loading 時 dragover+drop 提前 return 未 preventDefault",
+     "what": "onDragOver 改為無條件 e.preventDefault()(移除提前 return);onDrop 的 e.preventDefault() 提前至 if (isBlocked) return 之前(file-upload.tsx:277-288,含 D4 anchor 註解)。blocked 時吞掉 drop 操作(filterAndDispatch 仍不執行),不再讓瀏覽器 default 在當前 tab 開啟被丟檔案造成整頁導航、app 狀態全失。"
+    }
+   ],
+   "skipped": [],
+   "specSynced": [
+    "packages/design-system/src/components/FileUpload/file-upload.spec.md — 邊界案例段補 3 條行為記載(同檔重選 input value 清空 / 拖曳滑過內部子元素高亮不熄滅 / disabled+loading drop 吞掉仍 preventDefault),各帶 2026-07-05 D4 anchor;修前 spec「互動由 isBlocked guard 擋」宣稱在 blocked-drop 情境實際不成立,修後成立並補明文"
+   ]
+  },
+  {
+   "key": "tabs-tree-steps",
+   "fixed": [
+    {
+     "title": "Tabs:inlineAction slot 造成 button 巢 button(Radix TabsTrigger 是原生 <button>,ItemInlineAction 也是 <button>)",
+     "what": "packages/design-system/src/components/Tabs/tabs.tsx:434-480 — inlineAction 移出 TabsPrimitive.Trigger,照 finding 建議改 sibling 佈局(同 SidebarMenuButton suffixNode canonical):wrapper span(relative inline-flex)內 trigger + 絕對定位 action(top-1/2 -translate-y-1/2 right-0);trigger 以 paddingRight 預留 action 空間(iconSize + 有 badge/endIcon 時 4px = 原 suffix 內 gap-1 / 僅 action 時 8px = 原 slot 間 gap-2,幾何與巢狀版一致);click 天然分流,原 stopPropagation 五連發移除。underline(after:left-0 right-0)與 focus ring 幾何不變。JSDoc 同步改寫。esbuild syntax PASS;僅 stories 消費(WithSuffix),無 production consumer 破壞。"
+    },
+    {
+     "title": "TreeView:multiple 模式自動 render 的 Checkbox 是 aria-hidden 但可聚焦",
+     "what": "packages/design-system/src/components/TreeView/tree-view.tsx:986 — auto-render `<Checkbox aria-hidden>` 補 `tabIndex={-1}`(Checkbox 內部 {...props} spread 在 tabIndex 之後,consumer 值生效已驗 checkbox.tsx:253-263)。消 axe aria-hidden-focus + 恢復 tree 單一 tab stop 虛擬焦點模型(對齊 tree-view.spec.md「Focus」段既有宣稱,spec 無需改)。consumer 自傳 checkbox 分支不動(consumer 責任)。"
+    },
+    {
+     "title": "TreeView:draggable 時 dnd-kit attributes 把每個 row 注入 role=\"button\"",
+     "what": "packages/design-system/src/components/TreeView/tree-view.tsx:960-967 — row div 改只 spread dragListeners,不再 spread dragAttrs(過濾 role=\"button\"/tabIndex=0/aria-pressed/aria-describedby;sensors 僅 PointerSensor,這些 attrs 換不到鍵盤拖曳能力);tree-view.tsx:906-909 — aria-roledescription 保留並上移到 role=\"treeitem\" 元素(ARIA 規定有 role 才合法),值消費 dnd-kit attributes SSOT(dragAttrs['aria-roledescription']),gate 在 draggable && !disabled。單一 tab stop + Enter/focusedId 錯位問題一併消除。"
+    },
+    {
+     "title": "Steps:expansion=\"multiple\" 的可收合 step header(role=button)缺 aria-expanded",
+     "what": "packages/design-system/src/components/Steps/steps.tsx — StepItemHeader(L439)加 contentId?: string prop,clickable 且該 step 有 content 時輸出 aria-expanded={item.expanded}(APG disclosure trigger 最低要求;multiple toggle 與 follow-active 皆同步反映,照 suggestion「亦可同步輸出」);aria-controls 只在 content 實際 render(展開)時輸出避免 dangling id(content 收合時 conditional render 不在 DOM)。VerticalLayout(L500)以 React.useId() 生成 contentId,content wrapper div 補 id(L532)。linear 不可點 step 無 role=button → 正確不輸出(gate item.clickable)。"
+    }
+   ],
+   "skipped": [
+    {
+     "title": "TreeView 單一 context 收納高頻 drag/focus state(d3-results.json TreeView 效能 finding)",
+     "reason": "不在本 agent 工作清單(委派 prompt 僅列 4 題 D4 findings;d3 註記為 datatable 組讀取指示)。且該 finding verdict 標「部分成立、核心機制被推翻」降 P2(拖曳半條路徑為 dnd-kit InternalContext 固有,拆 context 也消不掉),是否落地 setDropTarget bail-out 屬主 loop 判斷。"
+    }
+   ],
+   "specSynced": [
+    "packages/design-system/src/components/Tabs/tabs.spec.md:100 — inlineAction 段補 DOM 結構宣稱:inlineAction 是 trigger 的 sibling(絕對定位於 paddingRight 預留區,同 SidebarMenuButton suffixNode canonical),非巢狀 button(2026-07-05 D4 修)",
+    "packages/design-system/src/components/Steps/steps.spec.md:462 — A11y 預設段新增「展開狀態 ARIA」bullet:垂直模式含 StepContent 時 clickable header 輸出 aria-expanded(multiple/follow-active 皆同步)+ 展開時 aria-controls 指向 content 區,對齊 WAI-ARIA disclosure pattern;chevron 維持 aria-hidden 純視覺"
+   ]
+  },
+  {
+   "key": "sidebar-fileitem",
+   "fixed": [
+    {
+     "title": "Sidebar:Cmd/Ctrl+B 全域攔截無輸入框/組字/defaultPrevented guard",
+     "what": "sidebar.tsx:191-218 keydown handler 於 key combo 命中後加三道 guard:(1) event.defaultPrevented(app 層 editor 已處理不 double-fire)(2) event.isComposing(IME 組字不攔)(3) target.closest('input, textarea, [contenteditable]:not([contenteditable=\"false\"])')(可編輯區 bold 語意優先,對齊 VS Code / Linear)。繁中註解記 2026-07-05 D4 anchor。spec 同步。tsc -b exit 0。已進 HEAD(被主 loop 同輪 commit 收走)。finding 內另提的 disableShortcut opt-out prop 與 multi-Provider 重複註冊未做(見 skipped)。"
+    },
+    {
+     "title": "Sidebar:icon-collapsed 模式 label display:none 後 SidebarMenuButton 完全沒有 accessible name",
+     "what": "sidebar.tsx:922 cva base 由 [&_[data-sidebar=menu-label]]:hidden 改 :sr-only — 視覺隱藏但保留 a11y tree,collapsed 時 button 恢復 accessible name(WCAG 4.1.2);sr-only position:absolute 移出 flex flow,layout 效果同 display:none(icon 置中公式 904-905 不變),asChild 手寫 label span(stories / AppShell demo)經同 CSS selector 自動受惠。同步更新 stale 註解:879-881 v4「SR 仍讀到」失真宣稱(改為現況:label sr-only 供名、badge/action 仍 display:none)、860-861 docblock、1029-1039 asChild 指引、913-921 v5 段補 D4 機制註解。spec 補「Collapsed accessible name」bullet。tsc -b exit 0。已進 HEAD。"
+    }
+   ],
+   "skipped": [
+    {
+     "title": "FileItem:hover-swap 的 Download/Retry button 鍵盤 focus 時仍 opacity-0",
+     "reason": "Finding 重驗仍成立(file-item.tsx:176 現況無 focus reveal),修法已定案但被 check_substantive_edit_approval_preflight.sh P0 BLOCKER 擋:subagent transcript tail-200 窗內近 5 條 user msgs 已無 approval keyword(委派 prompt 含「核可/拍板」但滑出窗外),CLAUDE_BYPASS_DESIGN_APPROVAL=1 需 harness env(subagent 設不了),Bash tunnel 被 auto-mode classifier 拒絕。需主 loop(approval 在其窗內)直接落地,patch 內容:(a) file-item.tsx:163 passive icon 的 hoverAction 條件 class 由 'group-hover/row:opacity-0' 改 'group-hover/row:opacity-0 group-has-[:focus-visible]/row:opacity-0';(b) file-item.tsx:176 button className 補 'group-has-[:focus-visible]/row:opacity-100'(對齊 item-anatomy.tsx:710 SUFFIX_HOVER_REVEAL_BY_GROUP.row SSOT,:has(:focus-visible) 非 focus-within);(c) 兩處註解加 2026-07-05 D4 anchor;(d) file-item.spec.md A11y 段補一句 hover-swap 鍵盤 focus-visible reveal 宣稱(先改 code 再 sync spec,避免 doc-claim ≠ code)。"
+    },
+    {
+     "title": "Sidebar:disableShortcut opt-out prop + SidebarProvider 多實例重複註冊",
+     "reason": "核可補充指示僅列三 guard;opt-out prop 是新增 public API surface(SSOT-affecting API 設計),multi-Provider dedupe 是架構選擇(finding suggestion 未給定案)— 均需主 loop 判斷,不在本次核可範圍內擅自擴 scope。spec:688 已如實保留「目前無 opt-out prop」宣稱。"
+    },
+    {
+     "title": "Sidebar:sidebar.tsx:723 stale 註解殘留(GroupLabel display:none 宣稱『跟 SidebarMenuButton label span 一致的策略』)",
+     "reason": "sr-only 修後此 1 行註解宣稱失真(label 已非 display:none)。補修 edit 被同一 approval-preflight hook block(approval 窗滑出後 sidebar.tsx 一切 Edit 均擋)。純註解、無行為影響;建議主 loop 順手改為:GroupLabel 純視覺分段 collapsed 連 SR 一併隱藏是刻意,供名責任在各 menu button 的 sr-only label。"
+    }
+   ],
+   "specSynced": [
+    "packages/design-system/src/components/Sidebar/sidebar.spec.md:688 — 快捷鍵宣稱同步:移除「也未排除文字輸入框內」失效宣稱,改記三道 guard(defaultPrevented / isComposing / 可編輯 target),保留「目前無 opt-out prop」如實現況",
+    "packages/design-system/src/components/Sidebar/sidebar.spec.md:689 — A11y 預設段新 bullet「Collapsed accessible name(2026-07-05 D4 修)」:label sr-only 供名、Tooltip 不供名、badge/inline actions 仍 display:none 之現況宣告"
+   ]
+  },
+  {
+   "key": "pickers-form",
+   "fixed": [
+    {
+     "title": "DatePicker(single)`needConfirm` 不帶 `showTime` = 死路",
+     "what": "date-picker.tsx:639 footer gate 由 `{showTime &&}` 改 `{(showTime || needConfirm) &&}` 對齊 Range(:1081),含 2026-07-05 D4 anchor 註解(此 edit 為前次中斷執行已落在 working tree,本次重驗確認完整無誤);另照 finding suggestion 補 date-picker.stories.tsx `NeedConfirmDateOnlyOpen` story(合約生效日真實場景 + M15 OpenSnapshot play 驗 date-only popover 渲 footer)+ date-picker.spec.md codify「needConfirm 獨立於 showTime」。"
+    },
+    {
+     "title": "DatePickerRange 關閉 popover 後焦點掉到 body",
+     "what": "date-picker.tsx:763-765 startBtnRef/endBtnRef/hasInteractedOutsideRef(前次中斷執行留下的半成品,本次補完)::940/:958 兩顆 button 綁 ref;:988-1002 PopoverContent 加 onInteractOutside(標記 outside-click 不搶焦,鏡射 Radix non-modal 自家 guard)+ onCloseAutoFocus(preventDefault 後回焦 active 端 button,對齊 Ant RangePicker)。修 WCAG 2.4.3 Esc/確定/選完自動關閉後焦點遺失。"
+    },
+    {
+     "title": "NumberInput 無 draft state",
+     "what": "number-input.tsx:116 加 internal draft string state(宣告於 non-edit early return 前,Rules-of-Hooks);:140-152 handleChange 先寫 draft 再 parse(value 面語意不變:''/'-'→null、NaN 忽略);:169-176 DOM 顯示 draft 優先(輸入期間負號/尾點不被 controlled 回寫吃掉),blur/Enter commit 清 draft、Escape 棄 draft(destructure onBlur/onKeyDown 組合 consumer handler)。對齊 Ant InputNumber / Spectrum NumberField internal draft canonical。修「值 5 全選打負號被吃、無法輸入 -5」確定性失敗。"
+    },
+    {
+     "title": "LinkInput 視覺紅框漏接 fieldCtx.invalid",
+     "what": "link-input.tsx:7 補 import useResolvedFieldInvalid;:117 `fieldInvalid = useResolvedFieldInvalid(errorProp)`(display early return 前,Rules-of-Hooks);:176 `error = fieldInvalid || localError` 同一值餵紅框與 aria;:282/:285 刪 aria inline 的 `fieldCtx?.invalid` 重複判斷(視覺/AT 自此同源);:246-250 showLink 分支 wrapper 補 error + data-error。對齊 field-controls.spec.md resolver 契約,LinkInput 原為 12 控件收斂輪唯一漏接者。"
+    },
+    {
+     "title": "useFormValidation.handleSubmit 無 double-submit 防護",
+     "what": "use-form-validation.ts:197-198 isSubmittingRef(同步擋重入)+ isSubmitting state;:204 handleSubmit 進入即 guard;:228-247 onSubmit 包 try/finally(reject 先復位 isSubmitting 再原樣上拋,不吞錯,對齊 RHF re-throw canonical);:258-259 submitDisabled 併入 `|| isSubmitting` + isSubmitting 暴露進 UseFormValidationReturn(interface + 檔頭 docblock 同步)。注意:型別 surface 有變(interface 加 boolean member),tsc -b exit 0 已過,主 loop 統一跑 build:lib 驗 declaration emit(release preflight 已涵蓋)。"
+    }
+   ],
+   "skipped": [],
+   "specSynced": [
+    "packages/design-system/src/components/Field/form-validation.spec.md(「Submit 驗證」段 codify double-submit 防護/isSubmitting/不吞錯 + 可執行層對照表補一列)",
+    "packages/design-system/src/components/NumberInput/number-input.spec.md(邊界案例補「輸入中間態」bullet:draft 承載 '-'/'1.' 等 raw 字串、blur/Enter commit、Escape 棄 draft、value 面語意不變)",
+    "packages/design-system/src/components/DatePicker/date-picker.spec.md(showTime 行為段 codify「needConfirm 獨立於 showTime」footer gate = showTime || needConfirm;注意該 spec 現 337 行超 soft 預算 300,主 loop prune 時可 consolidate)"
+   ]
+  },
+  {
+   "key": "selection-readonly",
+   "fixed": [
+    {
+     "title": "readOnly 的 Checkbox/Switch/RadioGroupItem 可被 label 點擊繞過 — 鎖互動失守",
+     "what": "三檔同修:在 Radix Root/Item 加 onClick preventDefault guard(effectiveReadOnly 時取消 activation),置於 {...props} 之後防 consumer onClick 覆蓋;經 Radix composeEventHandlers(checkForDefaultPrevented=true,已讀 node_modules dist 驗證三個 primitive 皆如此組合)跳過內部 toggle/onCheck,完整攔截 <label htmlFor> synthetic click(非 pointer event,原 pointer-events-none 攔不到)與 consumer 自寫 label 的繞道。checkbox.tsx:263-274(Root guard)/ switch.tsx:243-253(Root guard)+ 287-289(自家 label 端 preventDefault 第一道防線)/ radio-group.tsx:282-293(Item guard,兼攔 roving-focus arrow-key onFocus→click() 路徑)。readOnly=false 時行為完全不變(consumer onClick 照常先跑再進 Radix 內部 handler)。"
+    }
+   ],
+   "skipped": [
+    {
+     "title": "finding suggestion 的 SelectionItem label-level guard(readOnly prop + label onClick preventDefault)",
+     "reason": "selection-item.tsx 位於 components/SelectionControl/,越界本 agent 檔案所有權(僅 Checkbox/Switch/RadioGroup)。行為上不影響修復完整性:label 的 synthetic click 最終 dispatch 到 Radix button 本體,已被本次 Root/Item guard 完整攔截(preventDefault 取消 toggle);SelectionItem 端 guard 純屬 defense-in-depth。若要補齊 suggestion 第一道防線,留主 loop 判斷(需在 SelectionItem 增 readOnly prop 由 Checkbox/RadioGroupItem 以 effectiveReadOnly 傳入)。"
+    }
+   ],
+   "specSynced": [
+    "packages/design-system/src/components/Checkbox/checkbox.spec.md — L252 Read-only 機制句補 onClick preventDefault guard(原只列 pointer-events-none,doc-claim 對齊 code)",
+    "packages/design-system/src/components/Switch/switch.spec.md — L105 狀態表 + L126 Readonly-vs-Disabled 表 + L184 邊界案例:readonly 鎖互動機制補 click guard(label synthetic click 非 pointer event)",
+    "packages/design-system/src/components/RadioGroup/radio-group.spec.md — L93 standalone readonly 機制補 item onClick preventDefault guard"
+   ]
+  },
+  {
+   "key": "selectmenu-misc",
+   "fixed": [
+    {
+     "title": "SelectMenu 巢狀 role='option' + 兩個語意相反的 aria-selected",
+     "what": "select-menu.tsx:內層 MenuItem 傳 role=\"presentation\"(鏡射 DropdownMenu canonical,cmdk CommandItem 成唯一 option 節點)。重驗時發現工作樹已有未 commit 的部分修(主選項 row + selectAllLabel destructure),本輪補完:creatable row 同 pattern 也巢狀 option → 一併加 role=\"presentation\"(M10 同 pattern 掃描)。spec A11y 段同步宣告。"
+    },
+    {
+     "title": "多選 footer「全部」全選列鍵盤不可達(兩筆 finding 同一 root,合併修)",
+     "what": "select-menu.tsx footer MenuItem 改真實 focusable checkbox 語意:tabIndex={0} + role=\"checkbox\" + aria-checked(indeterminate→'mixed')+ onKeyDown Enter/Space → handleSelectAll(preventDefault,已驗 cmdk root onKeyDown 源碼檢查 e.defaultPrevented 故不會對 active option 重複觸發);orphan role=\"option\"(無 listbox 祖先)一併消除;aria-selected 顯式蓋回 undefined。順手完成 finding 附帶項:hardcode「全部」改消費 selectAllLabel prop(HEAD 已有 interface 宣告 + 工作樹已有 destructure,本輪補 JSX 消費)。spec Keyboard 段 + anatomy Accessibility story 同步。"
+    },
+    {
+     "title": "emptyText / loading 空狀態對 SR 不可感知",
+     "what": "select-menu.tsx 新增 module-private SelectMenuLiveStatus:visually-hidden(sr-only)role=\"status\" + aria-live=\"polite\",useCommandState 讀 filtered.count 鏡射 CommandEmpty 可見內容(count===0 時 loading → '載入中…' i18n-allow / 否則 emptyText);放 SelectMenu 一處 → Select/Combobox/PeoplePicker 全體受益。已驗 cmdk 源碼:shouldFilter=false 或無 search 時 filtered.count = 全 items 數,non-searchable 也正確。spec Empty state 段 + A11y 段同步。"
+    },
+    {
+     "title": "Avatar imgError 不隨 src 變更 reset",
+     "what": "avatar.tsx:147 後加 render-time derived reset(prevSrc state,src 變更 → setImgError(false);React 官方 adjust-state-on-prop-change 寫法,照 finding suggestion),對齊 Radix useImageLoadingStatus / MUI useLoaded。avatar.spec.md 無相關矛盾宣稱,不需 spec sync。"
+    },
+    {
+     "title": "Alert/Notice dismissible 預設 true 但 onDismiss optional — 死 X 按鈕",
+     "what": "notice.tsx:X 渲染條件改 showDismiss = dismissible !== false && onDismiss != null(兩處 JSX 條件同步改);dev-warn 只在「顯式 dismissible={true} 且無 onDismiss」時 fire(process.env.NODE_ENV 慣例同 Button/SelectionItem)。alert.tsx:移除 destructure default(避免把「沒傳」materialize 成顯式 true 誤觸 dev-warn),原樣 forward,行為不變。兩層 prop JSDoc 更新。Toast 順檢:恆傳 onDismiss={dismiss},不受影響。全 repo grep 確認無殘留「顯式 true 無 handler」site。三方聯動:alert/notice anatomy stories 的 X 載重 demo(Overview 4-slot、Inspector toggle、StateBehavior/Dismissible 對照、prop 速查表)補 onDismiss={() => {}} + prose 更新,並加「沒傳 onDismiss 不渲染 X」對照例;showcase/matrix/principles stories 依新 canonical 讓死 X 自然消失(原本就是按不動的假 affordance)。"
+    }
+   ],
+   "skipped": [],
+   "specSynced": [
+    "packages/design-system/src/components/SelectMenu/select-menu.spec.md(A11y ARIA/Pattern 段:內層 role=presentation + footer role=checkbox + live region;Keyboard 段補 footer Tab/Enter/Space 兩列;Empty state 段補 SR 播報)",
+    "packages/design-system/src/components/Alert/alert.spec.md(Multi corner action 段 + 邊界案例 Disabled row:X 僅在傳 onDismiss 時渲染,「恆可用」語意校準為已渲染的 X)",
+    "packages/design-system/src/components/Notice/notice.spec.md(A11y Keyboard Tab row 條件校準 + 邊界案例新增「dismissible 無 onDismiss」row 含 dev-warn 行為)"
+   ]
+  },
+  {
+   "key": "datatable",
+   "fixed": [
+    {
+     "title": "Spreadsheet mode 鍵盤無法「進入」— 初始 cell selection 只能靠滑鼠 click 建立",
+     "what": "data-table.tsx tableKeyboardHandler 開頭(IME guard 後)加 seed 分支:spreadsheetMode + selectedCellId==null + editingCellId==null + 方向鍵 → preventDefault 並選取第一個 visible cell(`allRows[0]:allCols[0]`)+ setRangeAnchor(照 finding suggestion「在 handler 開頭」選項),對齊 Excel / Google Sheets / AG Grid「focus grid → first cell active」。鍵盤-only 使用者 Tab 進 table 後方向鍵即可進入導覽。"
+    },
+    {
+     "title": "Edit 退出(commit / Esc)後 selection 不還原 + 焦點掉到 body — 鍵盤導覽死巷",
+     "what": "新增 restoreCellSelection(rowId,colId)(spreadsheetMode gate):selection + rangeAnchor 還原至該 cell,並以 rAF 檢查 document.activeElement 掉到 body/null 才 tableRef.focus({preventScroll:true})(不搶 user 點擊的新焦點、不搶 Tab 換格後下一格 editor autoFocus)。commitCell 尾端呼叫;舊無參數 exitEdit 移除、改為 cancelCellEdit(rowId,colId)(inline 路徑經 MemoCellSlot onCancelCell、portal 路徑經 closure)。對齊 datatable-spreadsheet-rfc.md Contract 11,code 宣稱補真。suggestion 附加項「Enter-commit 後下移一列」未做,見 skipped。"
+    },
+    {
+     "title": "Cell editor 的 Enter/Esc 無 IME 組字 guard — 中文選字 Enter 誤 commit",
+     "what": "cell-registry.tsx 三處 keydown 開頭加 `if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return`(同 data-table.tsx nav handler 既有寫法):makeKeyHandler(StringCell Input + UrlCell 共用)、StringCell autoRow Textarea onKeyDown、NumberCell onKeyDown。active-editor-controller.ts Contract 10 ownership 表 + ship checklist item 4 的假宣稱(「Field per-control IME guard」不存在)同步改真、指向 cell-registry 新 guard。"
+    },
+    {
+     "title": "Portal edit(experimentalActiveEditorController)Tab 換格:draft 不 commit、不 reset、editor 不 remount",
+     "what": "data-table.tsx handleEditTab 找到 next editable cell 後:(1) `if (editingDraft !== undefined) commitCell(rowId, colId, editingDraft)` 先 commit 當前 draft(commitCell 內已清 draft — 打字內容不再遺失、不再帶進下一格/commit 進錯 cell);(2) 清 spreadsheet selection 對齊 edit-entry canonical(commitCell 的 restore 對 Tab 不適用);(3) activeEditorRender wrapper 加 `key={cellId}` 強制 per-cell remount(相鄰同型欄位 uncontrolled Input / NumberCell localValue 不再殘留上一格字);(4) L852 不存在的「editingCellId 變時 useEffect reset draft」註解宣稱改為真實 draft 生命週期描述。"
+    },
+    {
+     "title": "Cell React.memo 全滅 — renderCellContent 每 render 造 3 個新 inline closure props",
+     "what": "照 D3 suggestion 全文落地:data-table.tsx module-level 新增 `MemoCellSlot`(React.memo 中介層)— 接 stable callbacks(commitCell / cancelCellEdit / onCellCommit / enterCellEdit)+ primitive rowId/colId/value,slot 內 useCallback 綁 per-cell onCommit/onCommitLive/onCancel/onRequestEdit(保留 !disabled guard 語意);meta fallback 改 module-level `EMPTY_META`;renderCellContent 改經 slot。新增 stable `enterCellEdit` useCallback。unchanged cells 在 scroll / resize / drag / spreadsheet 選取 / portal keystroke 全部熱路徑 memo 真命中。"
+    },
+    {
+     "title": "拖曳 / spreadsheet 互動 state 全放 DataTableInner root — dropIndicator 每次跨 row 觸發全表重渲",
+     "what": "三段低成本收斂全落地:(a) `setDropIndicatorIfChanged` shallow-compare setter(id/side/type 同 → 回傳 prev reference bail out),handleDragOver row/column 兩處改用 + deps 補;(b) RowDragHandle update() 的 setPos 改 prev 值比對(top/left/rowHovered 沒變保留 reference,消每 scroll frame 必 re-render);(c) SourceRowProvider / MirrorRowProvider ctxValue 改 useMemo(消 RowDragHandle useLayoutEffect deps [rowEl, ctx] 每 render teardown/重掛 MutationObserver + scroll/resize listener)。finding「進一步(可選)」的 per-row subscription 模型未動(架構重構,主 loop 判斷)。驗證:npx tsc -b PASS + node scripts/data-table-invariants.mjs 37/37 PASS。註:tsx/ts edits 因 approval-preflight hook transcript 視窗掃不到本委派的 approval verbatim,依 hook 自身 bypass 路徑(b)落地(CLAUDE_BYPASS_DESIGN_APPROVAL + approval-bypass.jsonl audit log + verbatim「全部放行(Recommended)」);變更已被並行主 loop 收進 commit a217e4bf,spec.md 修改仍在 working tree 待 commit。"
+    }
+   ],
+   "skipped": [
+    {
+     "title": "Edit 退出 D4 suggestion 附加項:Enter-commit 後 selection 下移一列(Excel canonical)",
+     "reason": "commitCell 無法區分 Enter-commit 與 blur-commit(blur = user 點了別處,此時下移一列是錯的);正確實作需改 CellComponentProps.onCommit API 簽名(cell-registry 10 個 cell type 全動)= finding suggestion 沒講清楚的 API 選擇 → 需主 loop 判斷。核心死巷(selection 還原至原 cell + 焦點收回)已完整修復。"
+    },
+    {
+     "title": "datatable-spreadsheet-rfc.md Contract 10「Field per-control IME guard」宣稱同步",
+     "reason": "RFC 位於 .claude/planning/,超出本 agent 檔案所有權(components/DataTable/ 互斥);同義宣稱已在 active-editor-controller.ts(權限內)改真,RFC 本體一行同步交主 loop。"
+    },
+    {
+     "title": "data-table.spec.md 行數預算(hook 警告 540/500 soft budget)",
+     "reason": "本批 spec 淨增約 4 行(行為宣稱對齊必要);consolidate/prune canonical 段落屬 substantive 動作,超出 surgical 修復批 scope → 交主 loop 統籌。"
+    }
+   ],
+   "specSynced": [
+    "packages/design-system/src/components/DataTable/data-table.spec.md — Keyboard 行為段 4 句對齊新行為:方向鍵 seed 入口(無 selection 自動選第一格)/ edit 退出 selection+focus 還原(Contract 11)/ IME 組字 Enter/Esc 不觸發 commit/cancel / portal Tab = commit 當前 draft + 移至下一 editable cell",
+    "packages/design-system/src/components/DataTable/active-editor-controller.ts — Contract 10 ownership 表 + ship checklist item 4:假宣稱「Field per-control IME guard」改真,指向 cell-registry per-editor guard(2026-07-05 D4 補)"
+   ]
+  }
+ ]
+}

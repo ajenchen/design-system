@@ -17,7 +17,7 @@
  * `field-height-xs / sm / md` → icon **16px**
  * `field-height-lg`           → icon **20px**
  *
- * 詳 spec L132+ Icon Size Tier 段(stroke 下限 12px / Tag-Field 配對 / etc.)
+ * 詳 uiSize.spec.md「Icon 尺寸 Tier」段(段名指法免行號漂移;stroke 下限 12px / Tag-Field 配對 / etc.)
  *
  * ── Consumer 用法 ──
  * ```tsx
@@ -26,7 +26,7 @@
  * // sm/md → 16, lg → 20
  * <LucideIcon size={ICON_SIZE[size]} />
  *
- * // form control xs(field-height-xs 24)用 ICON_SIZE.sm(同 16,per spec L132 Tier)
+ * // form control xs(field-height-xs 24)用 ICON_SIZE.sm(同 16,per uiSize.spec.md「Icon 尺寸 Tier」段)
  * <LucideIcon size={size === 'xs' ? ICON_SIZE.sm : ICON_SIZE[size]} />
  * ```
  *

@@ -1,5 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @renderer-symmetry-allow: ComboboxTagStack(display path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer display-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer 線 314 PersonDisplay SSOT 對齊;其他 Combobox consumer 走 default `<Tag>` 純文字 backward-compat。
+// @renderer-symmetry-allow: ComboboxTagStack(display path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer display-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx:426-444)PersonDisplay SSOT 對齊;其他 Combobox consumer 走 default `<Tag>` 純文字 backward-compat。
 // code-quality-allow: file-size — Combobox 含 NativeCombobox/CustomCombobox/useOverflowCount/OverflowTagList/ComboboxTagStack 5 子元件 + 共用 helpers,split-into-files 會破壞 measurement closures + 重複 type definitions。
 import * as React from 'react'
 import { X, ChevronDown } from 'lucide-react'
@@ -10,7 +10,7 @@ import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useRes
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
-import { SelectMenu, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { SelectMenu, forwardKeyToListbox, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
@@ -60,7 +60,7 @@ function useOverflowCount(
   const [state, setState] = React.useState({ visibleCount: totalCount, ready: !enabled })
   // 2026-05-18 Round 6 fix(per Codex M31 Round 6 H7 verdict + Step 5 共識):
   // `ofEl.offsetWidth` 在 expanded state(visibleCount === totalCount → overflow=0 →
-  // `OverflowIndicator` line 92 `return null` → ofEl wrapper empty)= 0,fallback 60;
+  // `OverflowIndicator` count≤0 早退 `return null` → ofEl wrapper empty)= 0,fallback 60;
   // 在 collapsed state(+N rendered)= 真實寬(~28-32px)。同 `available` 在兩 state 給
   // 不同 verdict → 臨界值區 `max(B+g+Q, B+g+O) ≤ available < B+g+F` 振盪。Cache last
   // non-zero measurement → measurement state-independent → oscillation 收斂。
@@ -168,7 +168,7 @@ function useOverflowCount(
       }
       if (ofEl) ofEl.hidden = count >= totalCount
       // 2026-05-18 A' fix functional setState value-equal guard(per Codex Round 3 verdict):
-      // sync calc 在 useLayoutEffect 內 + ResizeObserver re-fire 同時跑 → 若每次都 new object setState
+      // effect 內 calc 直跑 + ResizeObserver re-fire 同時跑 → 若每次都 new object setState
       // 觸發 re-render 即使值沒變,可能 cascade。回 prev 不更新 = avoid 抖動。
       setState(prev => (prev.visibleCount === count && prev.ready) ? prev : { visibleCount: count, ready: true })
     }
@@ -180,13 +180,13 @@ function useOverflowCount(
     //
     // 2026-05-16 Race close:capture rAF IDs + cancel on cleanup(原版 race I3 沒 close
     // 完;user 抓 path A 逐個 click vs path B 取消全選再全選 same length 不同 visible)。
-    // 2026-05-18 A' fix(per Codex Round 3 共識,user 拍板「執行」)— sync calc in useLayoutEffect:
-    // React 18 `useLayoutEffect` 在 DOM commit 後、瀏覽器繪製前同步跑,sync calc 在 paint 前
+    // 2026-05-18 A' fix(per Codex Round 3 共識,user 拍板「執行」)— effect fire 時 calc() 直跑
     // 完成 `el.hidden` 設定 + functional setState guard(value-equal 不更新 = 避免 ResizeObserver
-    // 抖動 cascade rerender)。double-rAF 改 fallback only(ResizeObserver / async update path)。
+    // 抖動 cascade rerender)。double-rAF 為 fallback path(ResizeObserver / async update path)。
     // 解 user verbatim「tag 過長 / 過多會先全顯再變 +N 閃動」root cause(per codex Round 3 cite
-    // `combobox.tsx:248 render 沒設 hidden + L129 calc imperative 寫 DOM`)。
-    // 對齊 React docs https://react.dev/reference/react/useLayoutEffect pre-paint guarantee。
+    // 「render 沒設 hidden + calc imperative 寫 DOM」)。
+    // 註:Round 3 原以 useLayoutEffect sync calc(paint 前設 hidden)實作;2026-05-18 Round 5
+    // 已改 React.useEffect after-paint(nested 場景 parent ref attach 時序,詳上方 Round 5 註解)。
     calc()
     let rafId1 = 0, rafId2 = 0
     const scheduleCalc = () => {
@@ -287,8 +287,9 @@ function OverflowTagList({ containerRef, items, size, wrap, renderTag, renderHid
 
   // 2026-05-18 A' fix(per Codex Round 3 共識,user 拍板「執行」)— 撤掉舊的 `style={{ opacity: ready ? 1 : 0 }}`
   // gate(掛在 `<span className="contents">` 上,但 CSS Display 3 spec 規定 `display:contents` 元素不產生 box,
-  // parent opacity 對 children 無效 → gate 從沒生效是 dead code)。Flicker 已改 sync calc in useLayoutEffect 解
-  // (L153 `calc()` 直跑,paint 前 hidden 設好)。`ready` state 保留供未來 instrumentation / debug,不再當 visual gate。
+  // parent opacity 對 children 無效 → gate 從沒生效是 dead code)。Flicker 由 `useOverflowCount` effect 內
+  // `calc()` 直跑(現 L190;2026-05-18 Round 5 改 useEffect after-paint + double-rAF guard,詳該 hook 註解)解。
+  // `ready` state 保留供未來 instrumentation / debug,不再當 visual gate。
   // 保留 `<span className="contents">` 維持 fragment-like rendering(parent JSX 期望 single child)。
   void ready  // intentional: ready 留供 future debug,目前無 consumer
   return (
@@ -389,6 +390,8 @@ export interface ComboboxProps {
   searchAriaLabel?: string
   /** Empty-selection placeholder text。Default: 「選擇…」 */
   emptyPlaceholder?: string
+  /** 搜尋無結果提示(2026-07-04 Q4 拍板接線)— forward SelectMenu primitive SSOT(default「沒有符合的選項」) */
+  emptyText?: string
   /** a11y:無 Field wrapper 時提供 role='combobox' 的 accessible name(axe aria-input-field-name) */
   'aria-label'?: string
   /** Initial open state(uncontrolled)— 對齊 Select.defaultOpen / Radix Popover canonical。
@@ -602,8 +605,8 @@ function NativeCombobox({
   ) : null
 
   return (
-    <div ref={__triggerRef} className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size }), value.length > 0 && tagPadding[size], 'relative',
-      wrap && 'items-start py-1', error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'], className)}
+    <div ref={__triggerRef} className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }), value.length > 0 && tagPadding[size], 'relative',
+      wrap && 'items-start py-1', className)}
       style={{ paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode="edit" data-error={error ? '' : undefined}
       onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}>
       {/* 2026-05-18 F2 sync(per user verbatim「modifying 修好 PeoplePicker stack 後改壞 Combobox tag display」
@@ -644,6 +647,7 @@ function CustomCombobox({
   searchPlaceholder = '搜尋…', // i18n-allow: DS default
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default
   emptyPlaceholder = '選擇…', // i18n-allow: DS default
+  emptyText,
   defaultOpen = false,
   onOpenChange,
   __triggerRef,
@@ -731,11 +735,11 @@ function CustomCombobox({
       aria-required={fieldCtx?.required || undefined}
       aria-describedby={fieldCtx?.descriptionId}
       aria-errormessage={error ? fieldCtx?.errorId : undefined}
-      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size }), value.length > 0 && tagPadding[size], 'relative cursor-pointer',
+      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }), value.length > 0 && tagPadding[size], 'relative cursor-pointer',
         wrap && 'items-start py-1',
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
-        // 統一處理 — open=灰深(data-state)/ focus=藍(focus-within !important)。改一處全 control 跟動。
-        error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'], className)}
+        // 統一處理 — open=灰深(data-state)/ focus=藍;2026-07-04 Q1:error 亦收進 error variant。
+        className)}
       style={{ paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }}
       data-field-mode="edit" data-error={error ? '' : undefined}
       // WAI-ARIA APG combobox 鍵盤開啟語意 — 對齊 sibling Select(select.tsx:593-598)。
@@ -745,6 +749,8 @@ function CustomCombobox({
       //   open 後不 preventDefault 讓方向鍵自由流向選單導覽)。
       // 純 additive:此 trigger 原無 onKeyDown,不覆寫既有 handler;open 邏輯仍走 setOpen SSOT。
       onKeyDown={(e) => {
+        // 2026-07-05 D4 P0:open 後 ArrowUp/Down/Enter 轉送 cmdk root(select-menu.tsx forwardKeyToListbox)
+        if (open && forwardKeyToListbox(listboxId, e)) return
         if (e.key === 'Enter' || e.key === ' ') {
           // 2026-06-11 P0 a11y(R2,同 select.tsx 修):Combobox 恆 searchable → 原 `!searchable`
           // guard 使 Enter/Space 永遠開不了(僅 ArrowDown 可)。正確 guard = !open。
@@ -813,6 +819,7 @@ function CustomCombobox({
   return (
     <SelectMenu
       loading={loading}
+      emptyText={emptyText}
       options={menuOptions}
       value={value}
       onValueChange={onChange as (value: string | string[]) => void}

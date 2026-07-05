@@ -2,6 +2,7 @@ import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Search, Eye, EyeOff, X } from 'lucide-react'
 import { Input } from './input'
+import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/field'
 import { Button } from '@/design-system/components/Button/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
@@ -114,15 +115,20 @@ export const EndAction: Story = {
 }
 
 /* ── Error ── */
+// 2026-07-04 audit Dim 24/M23(d):錯誤訊息改消費 Field + FieldError primitive(對齊 Textarea / TimePicker /
+// Rating showcase idiom),不手刻 <p text-error>(重複 FieldError 內部樣式 = drift 來源)。
 export const ErrorState: Story = {
   name: '錯誤狀態',
   render: () => (
     <div className="flex flex-col gap-4 max-w-sm">
-      <p className="text-caption text-fg-muted">Error 以紅色邊框表示。錯誤訊息由 Form help text 提供，不在 input 內放狀態 icon</p>
-      <div>
-        <Input error defaultValue="invalid-email@" />
-        <p className="text-caption text-error mt-1">請輸入有效的 email 地址</p>
-      </div>
+      <p className="text-caption text-fg-muted">Error 以紅色邊框表示。錯誤訊息由 FieldError 提供，不在 input 內放狀態 icon</p>
+      {/* Field invalid 自動 cascade 到 Input(useResolvedFieldInvalid),不需重複傳 error;
+          standalone <Input error> 用法由 anatomy「+ error prop」section 展示 */}
+      <Field invalid>
+        <FieldLabel>Email</FieldLabel>
+        <Input defaultValue="invalid-email@" />
+        <FieldError>請輸入有效的 email 地址</FieldError>
+      </Field>
     </div>
   ),
 }

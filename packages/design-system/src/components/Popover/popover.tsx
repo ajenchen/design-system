@@ -134,8 +134,8 @@ PopoverFooter.displayName = "PopoverFooter"
 // PopoverTitle(2026-04-22 v4 non-modal canonical):`text-body font-medium`(14px)
 // Rationale:Popover / Coachmark 屬 **non-modal 輕量浮層**,跟 density 鎖 md 同源的視覺語言 —
 // chrome 全體輕量:
-//   - density 鎖 md(不隨 page 放大)
-//   - dismiss X 透過 v5 unbounded trick layout 佔位 24
+//   - layout-space 鎖 md(ui-size 繼承 page,2026-06-15)
+//   - dismiss X 走 COMPACT_HEADER_SLOT 佔位 21(= title text-body line-box;見 PopoverHeader docblock)
 //   - **title `text-body`(14px)跟 Dialog / Sheet modal 的 body-lg(16px)形成重量級 vs 輕量級視覺區分**
 // 世界級對照:Figma / Notion / Linear / Material 的 popover / filter panel / inline settings
 // 的 header title 多半比 modal dialog title 小一級(16→14 或同比),視覺宣告「此浮層可忽略」

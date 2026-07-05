@@ -46,8 +46,9 @@ export const Overview: Story = {
               {[
                 ['name', 'string', '必填', '檔名'],
                 ['mode', "'compact' | 'rich'", "'compact'", 'compact=Paperclip 16px icon / rich=Avatar 48px 縮圖'],
+                ['surface', "'form' | 'upload-manager'", "'form'", '所在容器 context:form=rich 為 border card / upload-manager=rich 無邊框無 bg(面板自身是容器,avatar 作 item 邊界)+ padding 縮減。詳 spec「邊框 / 背景」「Padding」表'],
                 ['status', "'uploading' | 'completed' | 'error'", '—', '上傳狀態(不傳=已上傳靜態)'],
-                ['progress', 'number', '—', '上傳進度 0-100(有 status 時顯示 bar;completed 強制 100%)'],
+                ['progress', 'number', '0', '上傳進度 0-100(有 status 時顯示 bar;completed 強制 100%)'],
                 ['description', 'ReactNode', '—', 'rich 任意場景 / compact 只有 error 才顯示。ReactNode — 可含 inline clickable link(如「View log」)'],
                 ['thumbnailSrc', 'string', '—', 'rich mode 的縮圖 URL(圖片類檔案)'],
                 ['actions', 'ReactNode', '—', 'suffix actions(例:delete / cancel button)'],
@@ -101,7 +102,7 @@ export const ColorMatrix: Story = {
         <H3>Status × 元素 色彩矩陣</H3>
         <Desc>
           FileItem 本身無色彩變體——text 走 item-anatomy row primitive 共用 token
-          (`--foreground` / `--fg-secondary`);background 依 mode 固定(rich = `--surface` + border / compact 無 status = `--secondary` / compact 有 status = transparent),**無 hover-bg**(見下方 Container background table)。
+          (`--foreground` / `--fg-secondary`);background 依 mode × surface 決定(rich + surface=form = `--surface` + border / rich + surface=upload-manager = 無邊框無 bg / compact 無 status = `--secondary` / compact 有 status = transparent),**無 hover-bg**(見下方 Container background table)。
           Status 才驅動色彩:progress bar 色(inProgress / success / error)+ status icon 色(check / X)+ description 色(error 時升階)。
         </Desc>
         <div className="overflow-x-auto mb-4">
@@ -152,7 +153,7 @@ export const ColorMatrix: Story = {
       <div>
         <H3>Container background(per mode,**無 hover-bg**)</H3>
         <Desc>
-          FileItem 設計準則(2026-04-23):**永不顯示 hover-bg**。三種型態皆已 permanent-anchored(rich = border card / compact 無 status = bg-secondary / compact 有 status = 底部 progress bar),再加 hover-bg 是 double-emphasis 視覺雜。affordance 只靠 `cursor-pointer`(onClick 時)+ hover-swap icon fade。詳 spec「Hover 行為 canonical」。
+          FileItem 設計準則(2026-04-23):**永不顯示 hover-bg**。各型態皆已 permanent-anchored(rich + surface=form = border card / rich + surface=upload-manager = avatar 作 item 邊界 / compact 無 status = bg-secondary / compact 有 status = 底部 progress bar),再加 hover-bg 是 double-emphasis 視覺雜。affordance 只靠 `cursor-pointer`(onClick 時)+ hover-swap icon fade。詳 spec「Hover 行為 canonical」。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
@@ -160,7 +161,8 @@ export const ColorMatrix: Story = {
               <tr><Th>Mode / State</Th><Th>Background</Th><Th>Rationale</Th></tr>
             </thead>
             <tbody>
-              <tr><Td mono>rich(all status)</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--surface" size="sm" /><span className="font-mono">--surface</span> + border</span></Td><Td>永遠是 card(border + rounded + bg-surface)</Td></tr>
+              <tr><Td mono>rich + surface=form(all status)</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--surface" size="sm" /><span className="font-mono">--surface</span> + border</span></Td><Td>card(border + rounded + bg-surface)——Slack / Notion attachment 慣例</Td></tr>
+              <tr><Td mono>rich + surface=upload-manager(all status)</Td><Td><span className="font-mono">無邊框無 bg(只留 rounded-md)</span></Td><Td>面板自身是容器,avatar 作 item 邊界。詳 spec「邊框 / 背景」表</Td></tr>
               <tr><Td mono>compact 無 status</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--secondary" size="sm" /><span className="font-mono">--secondary</span>(= neutral-3)</span></Td><Td>靜態 pill,對齊 Badge low / ProgressBar track SSOT</Td></tr>
               <tr><Td mono>compact 有 status</Td><Td><span className="font-mono">transparent</span></Td><Td>底部 progress bar 作 permanent affordance(分隔線型)</Td></tr>
               <tr><Td mono>hover(任意 mode)</Td><Td><span className="font-mono">無變化</span></Td><Td>permanent-anchored → 不加 hover-bg。cursor-pointer 作 affordance(onClick 時)</Td></tr>

@@ -128,13 +128,15 @@ const PageContent = ({ title, description }: { title: string; description: React
           平等 sibling。「當下在哪頁」的訊號由 sidebar active item 負責,不靠 title 字重 */}
       <h1 className="text-body-lg font-medium">{title}</h1>
     </ChromeHeader>
-    <div className="flex-1 overflow-auto p-8">
+    {/* 2026-07-04 dim 90:macro 間距對齊 layout-space token(同 87dbc9cd template DashboardPage
+        已拍板 pattern;本檔是 R8 registry archetype,錯 rhythm 會被 consumer 機械複製)*/}
+    <div className="flex-1 overflow-auto px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
       <div className="max-w-2xl">
-        <p className="text-body text-fg-secondary mb-6">{description}</p>
-        <div className="grid grid-cols-2 gap-4">
+        <p className="text-body text-fg-secondary mb-[var(--layout-space-loose)]">{description}</p>
+        <div className="grid grid-cols-2 gap-[var(--layout-space-loose)]">
           {/* 固定值(非 Math.random)— story 是 visual baseline,必確定性,否則每次 build 像素不同 = composition-fidelity / visual regression 無法比對(2026-06-02 fix)*/}
           {([['專案數量', 24], ['團隊成員', 8], ['本週提交', 47], ['待處理', 3]] as const).map(([t, v]) => (
-            <div key={t} className="rounded-lg border border-divider bg-surface p-4">
+            <div key={t} className="rounded-lg border border-divider bg-surface p-[var(--layout-space-loose)]">
               <p className="text-caption text-fg-muted">{t}</p>
               <p className="text-h5 font-semibold mt-1">{v}</p>
             </div>

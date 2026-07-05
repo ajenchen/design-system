@@ -66,6 +66,11 @@ export interface AlertProps
   title: React.ReactNode
   description?: React.ReactNode
   endContent?: React.ReactNode
+  /**
+   * 顯示關閉鈕(預設 true)。**需同時傳 `onDismiss` 才會渲染 X** — Alert 是 controlled-only
+   * (不自我移除),無 handler 的 X 是死按鈕(2026-07-05 D4;對齊 Polaris Banner / Ant Alert)。
+   * 條件判斷 SSOT 在 Notice(notice.tsx `showDismiss`),Alert 原樣 forward。
+   */
   dismissible?: boolean
   onDismiss?: () => void
 }
@@ -80,7 +85,10 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
       title,
       description,
       endContent,
-      dismissible = true,
+      // 2026-07-05 D4:不 destructure-default(原 `= true` 會把「consumer 沒傳」materialize 成顯式
+      // true,讓 Notice 的 dev-warn 無法分辨消費端矛盾)。等效預設 true 由 Notice showDismiss
+      // `!== false` 承擔,行為不變;X 僅在同時傳 onDismiss 時渲染(SSOT 在 notice.tsx)。
+      dismissible,
       onDismiss,
       className,
       ...props

@@ -210,7 +210,7 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
   - **100% 重設**(user 按 `0` 鍵;雙擊是 fit↔100% 條件式 toggle,見下「雙擊」bullet)— `centerZoomedOut: true` 讓 ≤100% 時自動 center,避免內容停在容器角落
   - 結果:user 看哪,zoom 完 **看哪**,視覺焦點不漂移 — 世界級 media viewer 共識
 - Min scale 10%,max scale 400%
-- **雙擊 = toggle fit-page ↔ 100%**(對齊 Apple Photos / Preview.app / Imgur / PhotoSwipe canonical):當前 zoom 在 fit-page ±5pt 內 → 跳 100% natural;否則 → 回 fit-page。`0` 鍵才是固定重設 100%(`file-viewer.tsx:835`),兩者不同(`image-renderer.tsx:144`)
+- **雙擊 = toggle fit-page ↔ 100%**(對齊 Apple Photos / Preview.app / Imgur / PhotoSwipe canonical):當前 zoom 在 fit-page ±5pt 內 → 跳 100% natural;否則 → 回 fit-page。`0` 鍵才是固定重設 100%(`file-viewer.tsx:863`),兩者不同(`image-renderer.tsx:144`)
 - 切換檔案時 shell **不重設 zoom**——把「下一張該怎麼初始化 zoom」的決定權交給 renderer:image-renderer 自己 watch `file.url` 變化 → reset loaded → onLoad → 重 fit-page(含 cache 命中時 `<img complete>` 主動觸發,避免 onLoad 不 fire 卡在上一張的 zoom)。原本 shell `setZoom(100)` 在 cache 命中時會卡 100% 不 fit,已移除
 
 ---
@@ -362,7 +362,7 @@ Radix DialogPrimitive 自動處理:
 - `../DropdownMenu/dropdown-menu.spec.md` — ZoomInput preset / fit 選單消費(取代先前 Popover)
 - `../Empty/empty.spec.md` — FallbackRenderer 佈局
 - `../AspectRatio/aspect-ratio.spec.md` — Filmstrip thumb 固定比例
-- `../ScrollArea/scroll-area.spec.md` — InfoPanel body 高度受限時 scroll(`file-viewer.tsx:478`);filmstrip 不用 ScrollArea(刻意走 fade-mask,屬 horizontal-overflow pattern)
+- `../ScrollArea/scroll-area.spec.md` — InfoPanel body 高度受限時 scroll(`file-viewer.tsx:493`);filmstrip 不用 ScrollArea(刻意走 fade-mask,屬 horizontal-overflow pattern)
 - `../../patterns/horizontal-overflow/horizontal-overflow.spec.md` — Filmstrip 水平捲動 + fade mask
 - `../../patterns/action-bar/action-bar.spec.md` — Toolbar 按鈕順序 canonical
 - `../FileItem/file-item.spec.md` — 上傳清單列元件(與 FileViewer 不同用途,FileItem 是 list item,FileViewer 是 fullscreen preview)

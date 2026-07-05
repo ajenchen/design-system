@@ -12,7 +12,8 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { TimePicker } from './time-picker'
 
 /**
- * TimePicker 設計規格 — 完整技術規格。anatomy 5-story 最小版本。
+ * TimePicker 設計規格 — 完整技術規格。anatomy 7 story(6-canonical 去 StateBehavior,
+ * 加元件特有 ModeMatrix / PrecisionMatrix;見 spec「為何無 StateBehavior」)。
  * 深度規格見 `time-picker.spec.md`。
  */
 

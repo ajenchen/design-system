@@ -46,8 +46,8 @@ type ShapeKey = 'circle' | 'tag'
 const SIZES: SizeKey[] = ['sm', 'md', 'lg']
 const SHAPES: ShapeKey[] = ['circle', 'tag']
 
-// font-size 依 shape 分流(re-verified 2026-06-01):circle shape 走元件內建 triggerText
-// map(overflow-indicator.tsx:24-28),tag shape 走 tagVariants({ size })(tag.tsx:45-47)。
+// font-size 依 shape 分流(re-verified 2026-07-04):circle shape 走元件內建 triggerText
+// map(overflow-indicator.tsx:28-32),tag shape 走 tagVariants({ size })(tag.tsx:40-44)。
 // circleText / tagText 兩欄分別對應,避免把 circle-only 字級當成兩 shape 通用。
 const SIZE_SPECS: Record<
   SizeKey,
@@ -467,7 +467,7 @@ export const SizeMatrix: Story = {
           <code className="font-mono">tag</code> 走 <code className="font-mono">tagVariants</code>(對齊 Tag 字級)。
           circle shape 的 <code className="font-mono">sm</code> 用
           <code className="font-mono mx-1">text-[10px]</code>
-          的理由見 spec「尺寸」段——sub-footnote 特殊例外,與 Badge 共享 micro-indicator typography tier。
+          的理由見 spec「尺寸」段——與 Badge 共享 micro-indicator typography tier 的特殊例外(10px)。
         </p>
       </div>
 

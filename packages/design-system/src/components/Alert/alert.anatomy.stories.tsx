@@ -21,11 +21,12 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Alert 跟 Toast 共用同一套排版、圖示與主題策略。結構:圖示 + 標題 + 說明文字 + 右側操作區(endContent)+ 右上角關閉鈕。</Desc>
+        <Desc>Alert 跟 Toast 共用同一套排版、圖示與主題策略。結構:圖示 + 標題 + 說明文字 + 右側操作區(endContent)+ 右上角關閉鈕(需傳 onDismiss 才渲染)。</Desc>
         <Alert
           variant="warning"
           title="方案即將到期"
           description="您的 Pro 方案將在 3 天後到期,請及時續訂以維持服務"
+          onDismiss={() => {}} // anatomy 展示含 dismiss X slot(2026-07-05 D4:X 僅在傳 onDismiss 時渲染)
         />
       </div>
 
@@ -42,8 +43,8 @@ export const Overview: Story = {
                 ['title', 'ReactNode', '必填', '主要訊息'],
                 ['description', 'ReactNode', '—', '補充說明'],
                 ['endContent', 'ReactNode', '—', '右側操作區（CTA 按鈕等）'],
-                ['dismissible', 'boolean', 'true', '是否顯示右上角關閉按鈕'],
-                ['onDismiss', '() => void', '—', '按下關閉按鈕時觸發'],
+                ['dismissible', 'boolean', 'true', '搭配 onDismiss 顯示右上角關閉按鈕(兩者同時成立才渲染 X)'],
+                ['onDismiss', '() => void', '—', '按下關閉按鈕時觸發;未傳則不渲染 X(2026-07-05 D4)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -71,6 +72,7 @@ export const Inspector: InspectorStory = {
     title: '方案即將到期',
     description: '您的 Pro 方案將在 3 天後到期,請及時續訂以維持服務',
     dismissible: true,
+    onDismiss: () => {}, // 2026-07-05 D4:X 僅在傳 onDismiss 時渲染,Inspector 切 dismissible 才看得到 X
   },
   argTypes: {
     variant: {
@@ -90,7 +92,7 @@ export const Inspector: InspectorStory = {
     },
     title: { control: 'text', description: '主要訊息' },
     description: { control: 'text', description: '補充說明' },
-    dismissible: { control: 'boolean', description: '是否顯示關閉按鈕' },
+    dismissible: { control: 'boolean', description: '是否顯示關閉按鈕(需同時傳 onDismiss 才渲染 X)' },
   },
   render: (args) => <Alert {...args} />,
 }
@@ -189,11 +191,12 @@ export const StateBehavior: Story = {
       <div>
         <H3>Dismissible(右側 close icon)</H3>
         <Desc>
-          Alert 預設 `dismissible=true`,右上角顯示 close button。按 close 觸發 `onDismiss` 由 consumer 控制移除(Alert 本身不 own unmount 狀態——inline 通知通常需要 consumer 記住「使用者已關閉」狀態)。
+          Alert 預設 `dismissible=true`,**傳入 `onDismiss` 時**右上角顯示 close button(未傳 handler 不渲染 X——controlled-only,無 handler 的 X 是死按鈕;2026-07-05 D4)。按 close 觸發 `onDismiss` 由 consumer 控制移除(Alert 本身不 own unmount 狀態——inline 通知通常需要 consumer 記住「使用者已關閉」狀態)。
         </Desc>
         <div className="flex flex-col gap-3 max-w-xl">
-          <Alert variant="info" title="可關閉" description="右上角有 close icon,按下觸發 onDismiss" />
+          <Alert variant="info" title="可關閉" description="右上角有 close icon,按下觸發 onDismiss" onDismiss={() => {}} />
           <Alert variant="warning" title="不可關閉" description="永久性警告,設 dismissible={false} 隱藏 close icon" dismissible={false} />
+          <Alert variant="neutral" title="靜態通知" description="沒傳 onDismiss 時同樣不渲染 close icon(避免按了沒反應的假 affordance)" />
         </div>
       </div>
 

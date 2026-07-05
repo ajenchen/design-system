@@ -54,7 +54,8 @@ export const Overview: Story = {
       <section>
         <H3>Selection state-driven 渲染(0 / N)</H3>
         <Desc>
-          <code>selection.length === 0</code> → null(不佔 layout)。<code>{`> 0`}</code> → 主 bar 浮現。
+          <code>selection.length === 0</code> 且無 <code>totalSelected</code> → null(不佔 layout);
+          有選取(含反向選取 <code>totalSelected {'>'} 0</code>,見 spec「Extend dataset pattern」)→ 主 bar 浮現。
           擴 dataset 的 hint banner 由 consumer 用 <code>Alert</code> 元件包在 BulkActionBar 上方/下方,
           不在 BulkActionBar 內部 hardcode(對齊 ref 圖)。
         </Desc>

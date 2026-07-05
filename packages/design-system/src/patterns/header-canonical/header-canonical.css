@@ -9,8 +9,7 @@
      + 5-DS 共識:Linear / Notion / Figma / Slack / Polaris chrome header brand mark
      皆固定 24px,不 density-scale 也不 row-size-scale)。
 
-     Chrome header **不是 row context**(per `item-anatomy.spec.md:535` scope 限定
-     段)— chrome header 內 avatar 用 raw `<Avatar size={24}>`,**不用 `<ItemAvatar>`**。
+     Chrome header **不是 row context**(per `item-anatomy.spec.md`「Scope 例外:Chrome header 不是 row context」段;段名指法免行號漂移)— chrome header 內 avatar 用 raw `<Avatar size={24}>`,**不用 `<ItemAvatar>`**。
 
      Consumers(2,需 sync):
        1. WorkspaceBrand demo(`components/AppShell/_demo-helpers.tsx`)hardcode `<Avatar size={24}>` + comment cite token

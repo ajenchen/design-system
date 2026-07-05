@@ -64,7 +64,7 @@ Typography 由三個獨立維度組成，分開疊加：
 
 可用的 override utility：
 - `leading-compact`：1.3（自訂，只給 `text-body` / `text-body-lg`）
-- `leading-normal`：1.5（Tailwind 內建，**極少用**——僅 stories `<p>` 補 12px footnote 段落呼吸感，正式 DS 元件**不需**主動覆蓋成 1.5，因為 `text-body` / `text-body-lg` 預設就是 1.5）
+- `leading-normal`：1.5（Tailwind 內建，**極少用**——僅 stories `<p>` 補 10px footnote 段落呼吸感，正式 DS 元件**不需**主動覆蓋成 1.5，因為 `text-body` / `text-body-lg` 預設就是 1.5）
 
 ### 反 pattern（禁用）
 

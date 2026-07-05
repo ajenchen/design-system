@@ -2,11 +2,12 @@
  * DataTableInteractionLayer — Slice D Step 1A scaffold(per `.claude/planning/datatable-spreadsheet-rfc.md`)
  *
  * Singleton overlay root inside DataTable(M21 private,不抽 global pattern)。
- * 5 sub-layer children(per RFC §Overlay Geometry):
+ * Sub-layer children(2026-07-04 對齊實作;原 RFC 5-layer 清單含未實作元件):
  *   - HoverCellRect(z 1):hover 邊框,「one geometry owner, two paint owners」(Contract 8)
- *   - SelectionRect / RangeRect(z 1.5):spreadsheet mode 才顯示(Contract 5,defer)
+ *   - SelectionRing(z 2):spreadsheet mode selected cell 1px ring(CELL_RING_STYLES.selected)
  *   - ActiveEditorHost(z 3):portal active edit Field(Slice C wire-up)
- *   - NestedPortalRegistry(z 4):date/select popup 註冊為 inside editor(Contract 7)
+ *   -(range 視覺 = CSS [data-range-cell] cell-bg,非 layer 元件;nested popup 走 Radix idiom
+ *     見 active-editor-controller.ts — RangeRect / NestedPortalRegistry 元件不存在)
  *
  * Slice D Step 1A scope:
  *   - getCellRect(cellId)geometry source(per Contract 8)
@@ -80,7 +81,7 @@ interface DataTableInteractionLayerProps {
  *   2. layoutCache 需另寫 invalidation logic,added complexity
  *   3. Hover overlay re-render 頻率低(per cell hover,不是 per frame)
  *
- * 0.5px sub-pixel snap per RFC §Overlay Geometry。
+ * Float coords pass-through — no rounding / no snap(v3 fix,見下方 v3 註解;原 RFC 0.5px snap 已撤)。
  */
 function getCellRect(containerEl: HTMLElement | null, cellId: CellId): CellRect | null {
   if (!containerEl) return null
@@ -303,10 +304,10 @@ export function DataTableInteractionLayer({
       )}
       {/* 2026-05-10 retire RangeOuterRing(per user 抓 image 4 + verbatim「range 的 cell 本來就有顏色變化,
           那樣就夠了,不需要再有 2px 藍色的框」)。Range visual now relies purely on cell-bg
-          (`--primary-subtle` via `[data-range-cell]` CSS in `data-table.css`)+ focus cell 2px selected
+          (`--primary-subtle` via `[data-range-cell]` CSS in `data-table.css`)+ focus cell 1px selected
           border。Outer 2px primary ring 從 Issue 6 ship 但 visual 太重 — bg-fill 已給「這些 cell 在範圍內」
-          訊號,outer ring 是 redundant。`rangeOuterRingsByPanel` 計算保留但不 render(future 若需 reinstate
-          只需打開 .map)。 */}
+          訊號,outer ring 是 redundant。calc + render 皆已 retire(變數已移除;future 若需 reinstate
+          參考 git history 2026-05-10)。 */}
       {/* {rangeOuterRingsByPanel.map((group) => (
         <ClipMask key={group.panel} clipRect={group.clipRect}>
           <CellRangeOuterRing rect={toRelRect(group.bbox, group.clipRect)} />

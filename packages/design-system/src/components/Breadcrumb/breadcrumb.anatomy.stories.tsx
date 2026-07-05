@@ -36,7 +36,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Breadcrumb 是純 HTML + Tailwind 元件(無 Radix primitive),基於 shadcn/ui Breadcrumb 結構橋接 DS token。使用 `&lt;nav aria-label="Breadcrumb"&gt;` 確保正確 a11y。</Desc>
+        <Desc>Breadcrumb 基於 shadcn/ui Breadcrumb 結構橋接 DS token,基礎結構為原生 HTML + Tailwind(asChild 用 Radix Slot;truncate Tooltip 與收合 DropdownMenu 消費 DS 內部元件)。使用 `&lt;nav aria-label="Breadcrumb"&gt;` 確保正確 a11y。</Desc>
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -439,7 +439,7 @@ export const CollapseMatrix: Story = {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <p className="text-footnote text-fg-muted mt-3">點 Ellipsis 按鈕(包在 DropdownMenuTrigger 內)以 DropdownMenu 展開中間層;BreadcrumbEllipsis 渲染的是完整可點擊按鈕(消費 ItemInlineActionButton,帶 aria-label / focus / hover bg)。declarative `items` 與 compositional 兩種用法都會自動接上 DropdownMenu 收合。</p>
+        <p className="text-footnote text-fg-muted mt-3">本 story 為靜態結構展示:手動 `&lt;BreadcrumbItem&gt;&lt;BreadcrumbEllipsis /&gt;` 只渲染 ⋯ 按鈕本身(消費 ItemInlineActionButton,帶 aria-label / focus / hover bg),未接 DropdownMenu — 此處點擊無展開行為。完整互動接線(Ellipsis 包在 DropdownMenuTrigger 內展開中間層)見展示層「可互動省略」story;declarative `items` 與 compositional 超過 `maxItems` 的自動收合路徑則由元件自動接上 DropdownMenu。</p>
       </div>
     </div>
   ),

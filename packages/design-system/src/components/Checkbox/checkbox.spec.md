@@ -249,7 +249,7 @@ Indeterminate 是由父層邏輯控制的狀態，Checkbox 本身不會自動進
 
 - **Uncontrolled**:只傳 `defaultChecked`,DOM 自管 — 適合表單 native submit
 - **Controlled**:傳 `checked` + `onCheckedChange`,React state 主導 — 適合需即時聯動其他欄位
-- **Read-only**:用 `readOnly` prop(不是省略 `onCheckedChange`)。standalone:`readOnly` 設 `aria-readonly` / `data-readonly` / `tabIndex=-1` + cva `pointer-events-none`,鎖互動但保留 checked 視覺;**Field 內(無 inline label)改渲染 readonly 灰框 + ✓/—**(見上方 mode 段)。注意:只傳 `checked` 而不傳 `onCheckedChange` 僅讓 Radix 把值鎖在 prop(不會更新),控件仍可 focus / click、不會進 disabled state — 那不是 readonly
+- **Read-only**:用 `readOnly` prop(不是省略 `onCheckedChange`)。standalone:`readOnly` 設 `aria-readonly` / `data-readonly` / `tabIndex=-1` + cva `pointer-events-none` + onClick preventDefault guard(2026-07-05 D4 補:`<label htmlFor>` 的 synthetic click 非 pointer event,`pointer-events-none` 攔不到,需 guard 才真鎖),鎖互動但保留 checked 視覺;**Field 內(無 inline label)改渲染 readonly 灰框 + ✓/—**(見上方 mode 段)。注意:只傳 `checked` 而不傳 `onCheckedChange` 僅讓 Radix 把值鎖在 prop(不會更新),控件仍可 focus / click、不會進 disabled state — 那不是 readonly
 
 ### `mode` prop(Field mode,正交於 size)
 

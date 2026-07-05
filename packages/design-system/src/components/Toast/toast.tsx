@@ -80,7 +80,9 @@ function ToastInner({
 }
 
 export function toast(options: ToastOptions) {
-  const { duration = 4000, ...rest } = options
+  // 2026-07-05 D4:sonner 計時器不因鍵盤 Tab 焦點暫停(僅 hover / pointer 按住 / ⌥T hotkey)——
+  // 含 action(復原/重試)預設 10s,給鍵盤使用者足夠時間 Tab 到 action(user 拍板;對齊 Polaris toast with action ≥10s)
+  const { duration = options.action ? 10000 : 4000, ...rest } = options
   return sonnerToast.custom((id) => <ToastInner id={id} {...rest} />, { duration })
 }
 
@@ -88,10 +90,10 @@ export interface ToasterProps {
   position?: 'top-left' | 'top-right' | 'top-center' | 'bottom-left' | 'bottom-right' | 'bottom-center'
 }
 
-// shadcn canonical:forwardRef + displayName 統一。Sonner Toaster portal-renders
-// 到 document body,ref 對 Toaster 本身無實際 DOM 節點可接(portal 逃逸),
-// 但保留 forwardRef 簽名以符合 DS 統一 API(consumer 可 typecheck 傳 ref,
-// 與其他 DS 元件一致)。
+// shadcn canonical:forwardRef + displayName 統一。SonnerToaster 不轉發 ref,
+// 故 ref 無實際 DOM 節點可接;viewport 為就地渲染的 <section>,以 CSS position:fixed
+// 覆蓋 viewport(非 portal — sonner 全庫 0 createPortal,2026-07-04 grep 驗證)。
+// 保留 forwardRef 簽名以符合 DS 統一 API(consumer 可 typecheck 傳 ref)。
 const Toaster = React.forwardRef<HTMLDivElement, ToasterProps>(
   ({ position = 'bottom-right', ...props }, _ref) => {
     return (
@@ -118,7 +120,8 @@ export const toastMeta = {
     error: { when: '錯誤(匯入失敗 / 權限不足);action prop 可加重試' },
   },
   sizes: {},
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 2026-07-04 audit 對齊:Toast 無 disabled state(spec 邊界案例明文;對齊 noticeMeta ['default'] 已修 pattern)
+  states: ['default'],
   tokens: {
     bg: ['bg-error', 'bg-info', 'bg-surface-raised', 'bg-warning'],
     fg: ['text-foreground'],

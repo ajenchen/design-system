@@ -58,7 +58,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
 
 const MODE_DESC: Record<ModeKey, string> = {
   edit:     '表單可編輯欄位 — bg-surface + border + hover/focus 回饋',
-  display:  '純展示資料 — 無 chrome（transparent）+ 文字正常色，空值顯示 —（em dash）',
+  display:  '純展示資料 — 無 chrome（transparent + !px-0 !py-0 零內距，field-wrapper.tsx Path Ⅰ）+ 文字正常色，空值顯示 —（em dash）',
   readonly: '不可編輯但可見 — bg-readonly(neutral-2) + 無邊框 + 文字正常色',
   disabled: '被停用的欄位 — bg-disabled(neutral-2) + 無邊框 + 文字灰化',
 }
@@ -360,7 +360,7 @@ const InspectorInner = () => {
             </div>
             <div className="flex items-center">
               <div className="flex items-center rounded-md overflow-hidden" style={{ height: 52, outline: `2px solid ${Z.dim.text}22` }}>
-                <BpZone w={44} color={Z.pad} label={s.pxToken} sub={`${s.px}px`} />
+                <BpZone w={44} color={Z.pad} label={mode === 'display' ? '!px-0' : s.pxToken} sub={mode === 'display' ? '0px' : `${s.px}px`} />
                 {hasStartIcon && (
                   <>
                     <BpZone w={44} color={Z.icon} label={`${s.icon}px`} sub="icon" />
@@ -374,7 +374,7 @@ const InspectorInner = () => {
                     <BpZone w={44} color={Z.action} label={`${s.icon}px`} sub="action" />
                   </>
                 )}
-                <BpZone w={44} color={Z.pad} label={s.pxToken} sub={`${s.px}px`} />
+                <BpZone w={44} color={Z.pad} label={mode === 'display' ? '!px-0' : s.pxToken} sub={mode === 'display' ? '0px' : `${s.px}px`} />
               </div>
               <div className="ml-3 flex items-center" style={{ height: 52 }}>
                 <svg width="10" height="52" className="shrink-0">
@@ -425,7 +425,7 @@ const InspectorInner = () => {
           <div className="px-4 py-1">
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Layout</span></div>
             <PropRow label="高度" dot={Z.dim.text}><TkVal token={s.heightToken} value={s.height} /></PropRow>
-            <PropRow label="左右內距" dot={Z.pad.text}><TkVal token={s.pxToken} value={`${s.px}px`} /></PropRow>
+            <PropRow label="左右內距" dot={Z.pad.text}><TkVal token={mode === 'display' ? '!px-0 !py-0' : s.pxToken} value={mode === 'display' ? '0px（零 chrome）' : `${s.px}px`} /></PropRow>
             <PropRow label="元素間距" dot={Z.gap.text}><TkVal token={s.gapToken} value={`${s.gap}px`} /></PropRow>
             {hasStartIcon && (
               <PropRow label="Icon 尺寸" dot={Z.icon.text}>{s.icon}px</PropRow>

@@ -194,6 +194,21 @@ const SidebarProvider = React.forwardRef<
           event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
           (event.metaKey || event.ctrlKey)
         ) {
+          // 2026-07-05 D4 修:全域攔截加三道 guard——
+          // (1) defaultPrevented:app 層 editor 已處理同快捷鍵時不 double-fire;
+          // (2) isComposing:IME 組字中不攔(組字期間 key 事件不代表使用者意圖);
+          // (3) 可編輯 target:input / textarea / contentEditable 內 Cmd/Ctrl+B 是
+          //     bold 等編輯語意,快捷鍵讓位(對齊 VS Code / Linear 讓位可編輯區慣例)。
+          if (event.defaultPrevented || event.isComposing) return
+          const target = event.target
+          if (
+            target instanceof HTMLElement &&
+            target.closest(
+              'input, textarea, [contenteditable]:not([contenteditable="false"])'
+            )
+          ) {
+            return
+          }
           event.preventDefault()
           toggleSidebar()
         }
@@ -426,7 +441,7 @@ const SidebarTrigger = React.forwardRef<
       size="sm"
       iconOnly
       startIcon={PanelLeft}
-      aria-label="Toggle Sidebar"
+      aria-label="切換側邊欄" /* i18n-allow: DS default;consumer 經 {...props} override */
       className={className}
       onClick={(event) => {
         onClick?.(event)
@@ -705,7 +720,7 @@ const sidebarGroupLabelVariants = cva(
     "px-[var(--layout-space-loose)]",
     "font-medium text-fg-muted",
     "cursor-default select-none pointer-events-none outline-none",
-    // icon 模式:display:none 硬隱藏(跟 SidebarMenuButton label span 一致的策略)
+    // icon 模式:GroupLabel 純視覺分段 → collapsed 連 SR 一併隱藏是刻意(供名責任在各 menu button 的 sr-only label,2026-07-05 D4 修後與 MenuButton 策略分工)
     "group-data-[collapsible=icon]:hidden",
   ],
   {
@@ -858,7 +873,8 @@ SidebarMenuItem.displayName = "SidebarMenuItem"
  *   - selected:   bg-neutral-selected(data-active=true)
  *
  * Icon 模式:button 保持 w-full 填滿 sidebar icon rail,鎖高為 field-height-{size},
- * content 用 justify-center 居中,label span 以 display:none 硬隱藏。
+ * content 用 justify-center 居中,label span 以 sr-only 視覺隱藏(a11y tree 保留,
+ * 2026-07-05 D4——SR 仍讀得到 accessible name)。
  */
 const sidebarMenuButtonVariants = cva(
   [
@@ -877,8 +893,11 @@ const sidebarMenuButtonVariants = cva(
     //   range 內。Row geometry 永遠 stable(px-loose + items-start + gap-2 + height auto),
     //   無 discrete property switch → 無 fly / 無 flutter / 無 jitter。
     //
-    //   Label/badge/action 自然存在 DOM(a11y screen reader 仍讀到),只是 outer clip 視覺消失。
-    //   Tooltip 仍在 collapsed state 顯示(per L1043-1055 既有 hidden 條件)。
+    //   2026-07-05 D4 更新:v4「outer clip、SR 仍讀到」的宣稱在 v5 label display:none 後
+    //   已失真;現行 = label 走 sr-only(SR 讀到、供 accessible name,見下方 v5/D4 註解),
+    //   badge / action / inline-actions 仍 display:none(視覺 + SR 一併隱藏——collapsed 供名
+    //   責任在 label,badge 計數屬補充資訊)。Tooltip 仍在 collapsed state 顯示
+    //   (per buttonWithTooltip 既有 hidden 條件),僅 hover 提示、不供名。
     //
     //   對齊 MUI MiniDrawer + shadcn canonical(width morph + overflow clip + row geometry 不變)。
     "transition-[background-color,color] duration-200 ease-linear motion-reduce:duration-0",
@@ -891,11 +910,16 @@ const sidebarMenuButtonVariants = cva(
     "aria-disabled:pointer-events-none aria-disabled:text-fg-disabled",
     "data-[active=true]:bg-neutral-selected data-[active=true]:text-foreground",
     "group-has-[[data-sidebar=menu-action]]/menu-item:pr-8",
-    // 2026-05-21 v5 restore label display:none(user 抓「label 沒消失」):
+    // 2026-05-21 v5 restore label 硬隱藏(user 抓「label 沒消失」):
     // C* outer overflow-x:hidden 理論 clip,但 label.x=40 在 sidebar-width-icon=48 內 → 首字
-    // 部分可見。display:none 是 instant 切換非 main animation,跟 C* 「不用 display:none 做主
-    // 動畫」不衝突(label 不參與 width 動畫,純 final state)。對齊 shadcn canonical。
-    "group-data-[collapsible=icon]:[&_[data-sidebar=menu-label]]:hidden",
+    // 部分可見。instant 切換非 main animation,跟 C* 「不用 display:none 做主
+    // 動畫」不衝突(label 不參與 width 動畫,純 final state)。
+    // 2026-07-05 D4 修:v5 的 display:none 讓 accessible-name 計算排除 label
+    // (icon aria-hidden、badge 也 hidden)→ collapsed 時 menu button 對 SR 是無名
+    // button(WCAG 4.1.2)。改 sr-only:position:absolute + 1px + clip 視覺隱藏但保留
+    // a11y tree,button 仍有 accessible name;absolute 移出 flex flow,layout 效果同
+    // display:none(icon 置中公式不變)。
+    "group-data-[collapsible=icon]:[&_[data-sidebar=menu-label]]:sr-only",
     // 2026-05-22 Approach 9 — 收合時所有 prefix center 鎖回 rail center
     // (--sidebar-width-icon/2 = GlobalHeader toggle geometry SSOT)。
     // 公式: pl = (rail - prefix-width) / 2,prefix-width 由 SidebarProvider 注入的
@@ -1030,8 +1054,9 @@ const SidebarMenuButton = React.forwardRef<
     // 所以 asChild 的 consumer 自行放 icon + label(記得 prefix 要包在 h-[1lh] 容器,
     // label span 要有 data-sidebar="menu-label" attribute 才能參與 icon 模式自動隱藏)。
     //
-    // Label span 在 icon 模式下透過 cva base 的 `[&_[data-sidebar=menu-label]]:hidden` display:none,
-    // 這樣 flex 只剩 icon 一個 child,justify-center 可以真正置中。
+    // Label span 在 icon 模式下透過 cva base 的 `[&_[data-sidebar=menu-label]]:sr-only`
+    // 視覺隱藏(2026-07-05 D4:sr-only 非 display:none,SR 保留 accessible name;
+    // absolute 移出 flex flow),這樣 flex 只剩 icon 一個 in-flow child,置中公式不變。
     // Sidebar 寬度 transition 200ms 是唯一持續動畫,使用者視線跟著寬度走,不會察覺 label 的瞬切。
     // 用 `<ItemIcon>` / `<ItemLabel>` helper,**不直接寫 ItemPrefix wrap StartIcon**——
     // ItemIcon 內部會自動加 `data-prefix-type="icon"`,讓 SidebarProvider 的全域

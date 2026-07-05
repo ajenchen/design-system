@@ -178,7 +178,7 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           // 消費 FileItem「List wrapper canonical」(file-item.spec.md),取代原硬寫 gap-2 / mt-3(不分 mode)。
           fileListMode === 'rich' ? 'gap-2 mt-2' : 'gap-1 mt-1',
         )}
-        aria-label="Uploaded files"
+        aria-label="已上傳的檔案"
       >
         {files!.map((f) => (
           <li key={f.id} className="list-none">
@@ -226,7 +226,12 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
             multiple={multiple}
             accept={accept}
             disabled={disabled}
-            onChange={(e) => filterAndDispatch(e.target.files)}
+            onChange={(e) => {
+              // 2026-07-05 D4:dispatch 後清空 value — 瀏覽器對同路徑檔案不重發 change,
+              // 不清空則「失敗修正後重選同檔 / 刪除後重傳同檔」靜默無反應
+              filterAndDispatch(e.target.files)
+              e.target.value = ''
+            }}
           />
           <Button
             variant="tertiary"
@@ -264,15 +269,20 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
         onDragLeave={(e) => {
           if (isBlocked) return
           e.preventDefault()
+          // 2026-07-05 D4:relatedTarget guard — 拖曳滑過內部子元素(Empty 的 icon/title)時
+          // 子元素先發 dragenter、dropzone 再發 dragleave;無 guard 則 pointer 正對中央時高亮反而熄滅
+          if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) return
           setDragOver(false)
         }}
         onDragOver={(e) => {
-          if (isBlocked) return
+          // 2026-07-05 D4:blocked 時仍先 preventDefault — dragover 未取消 = 非合法 drop target,
+          // 瀏覽器 default 會在當前 tab 直接開啟被丟檔案(整頁導航,app 狀態全失);吞掉操作而非讓瀏覽器接管
           e.preventDefault()
         }}
         onDrop={(e) => {
-          if (isBlocked) return
+          // 2026-07-05 D4:preventDefault 先於 isBlocked guard — 同 dragover,擋瀏覽器開檔導航
           e.preventDefault()
+          if (isBlocked) return
           setDragOver(false)
           filterAndDispatch(e.dataTransfer.files)
         }}
@@ -288,7 +298,7 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           'border-border bg-surface',
           // hover = drag-over 統一(2026-06-03 Q2-A 純 border-driven,對齊 Ant Dragger colorPrimaryHover):
           // 兩者都 → primary 邊框,底色維持 surface(不變 bg)。state 信號靠邊框,非底色。
-          // 2026-06-11 R2(M5 狀態疊加):hover 變 primary 僅限 idle/error —— disabled/loading 維持原邊框(spec「disabled 邊框不變色」)
+          // 2026-06-11 R2(M5 狀態疊加):hover 變 primary 僅限 idle —— disabled/loading 維持原邊框(spec「disabled 邊框不變色」;dropzone 狀態機無 error 態,error 屬 files 清單 FileItem status)
           'data-[state=idle]:hover:border-primary data-[state=drag-over]:border-primary',
           // loading(2026-06-03 Q4:移除 pointer-events-none — 它會讓 cursor-progress 失效;
           // 互動已由 handleClick + drag/key handlers 的 isBlocked guard 擋,不需 pointer-events-none)
@@ -307,7 +317,12 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           multiple={multiple}
           accept={accept}
           disabled={disabled}
-          onChange={(e) => filterAndDispatch(e.target.files)}
+          onChange={(e) => {
+            // 2026-07-05 D4:dispatch 後清空 value — 瀏覽器對同路徑檔案不重發 change,
+            // 不清空則「失敗修正後重選同檔 / 刪除後重傳同檔」靜默無反應
+            filterAndDispatch(e.target.files)
+            e.target.value = ''
+          }}
         />
         {loading ? (
           <Empty

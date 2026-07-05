@@ -115,10 +115,11 @@ export const UsageGuidance: Story = {
             <Label>✅ Tabs:電商後台,每個 view 是獨立子頁(各自有 filters / table / actions)</Label>
             <Tabs defaultValue="orders">
               <TabsList>
+                {/* 2026-07-04:同組 startIcon 全有或全無(spec 禁止事項)— 原 顧客/設定 混用 icon 已移除 */}
                 <TabsTrigger value="orders">訂單</TabsTrigger>
-                <TabsTrigger value="customers" startIcon={Users}>顧客</TabsTrigger>
+                <TabsTrigger value="customers">顧客</TabsTrigger>
                 <TabsTrigger value="products">產品</TabsTrigger>
-                <TabsTrigger value="settings" startIcon={Settings}>設定</TabsTrigger>
+                <TabsTrigger value="settings">設定</TabsTrigger>
               </TabsList>
               <TabsContent value="orders" className="text-body text-fg-muted">(訂單頁的 toolbar、filters、table…)</TabsContent>
             </Tabs>
@@ -199,8 +200,9 @@ export const SizeSelection: Story = {
       >
         <Tabs defaultValue="a">
           <TabsList size="md">
+            {/* 2026-07-04:同組 icon 全有或全無(spec 禁止事項)— 原 成員 單獨帶 icon 已移除 */}
             <TabsTrigger value="a">總覽</TabsTrigger>
-            <TabsTrigger value="b" startIcon={Users}>成員</TabsTrigger>
+            <TabsTrigger value="b">成員</TabsTrigger>
             <TabsTrigger value="c" badge={<Badge count={3} />}>通知</TabsTrigger>
           </TabsList>
         </Tabs>

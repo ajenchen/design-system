@@ -89,6 +89,8 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
       disabled: disabledProp,
       readOnly,
       id: idProp,
+      onBlur: onBlurProp,
+      onKeyDown: onKeyDownProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
       ...props
@@ -103,6 +105,15 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
     const variant: FieldVariant = useResolvedFieldVariant(variantProp)
     // 2026-06-08 SSOT:mode 經 useResolvedFieldMode 統一解析(prop > 有效 disabled > fieldCtx.mode > readOnly > 'edit')
     const resolvedMode: FieldMode = useResolvedFieldMode({ mode: modeProp, disabled, readOnly })
+
+    // 2026-07-05 D4 draft state:controlled value 回寫會吃掉輸入中間態('-'、'1.'、'0.0' 等
+    // parse 後 lossy 的 raw 字串)— 例:已有值 5 全選打「-」→ onChange(null) 回寫把 DOM 重設
+    // 為空,負號被吃、無法打出 -5。修法對齊 Ant InputNumber / Adobe Spectrum NumberField 的
+    // internal draft string canonical:輸入期間 DOM 顯示以 local draft 優先,parse 成功即時同步
+    // onChange(parsed);blur / Enter commit 清 draft 回 value 顯示;Escape 一併棄 draft(對齊
+    // form-validation 規則 4 回復原值)。宣告於 non-edit early return 之前(Rules-of-Hooks,
+    // 同 LinkInput 2026-07-04 修法)。
+    const [draft, setDraft] = React.useState<string | null>(null)
 
     // display / readonly / disabled 都顯示格式化值(span 取代 input)
     if (resolvedMode !== 'edit') {
@@ -125,10 +136,11 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
       )
     }
 
-    // edit 模式：raw 數值輸入
+    // edit 模式:raw 數值輸入(draft 承載中間態;value 面語意不變 — ''/'-' 視為空、NaN 忽略)
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (!onChange) return
       const raw = e.target.value
+      setDraft(raw)
+      if (!onChange) return
       if (raw === '' || raw === '-') {
         onChange(null)
         return
@@ -142,11 +154,7 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
     return (
       <div
         className={cn(
-          fieldWrapperStyles({ mode: 'edit', variant: variant, size }),
-          error && [
-            'border-error hover:border-error-hover',
-            'focus-within:border-error focus-within:hover:border-error',
-          ],
+          fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
           className,
         )}
         data-field-mode="edit"
@@ -157,8 +165,15 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
           type="text"
           inputMode="decimal"
           id={idProp ?? fieldCtx?.id}
-          value={value ?? ''}
+          // 輸入期間 draft(raw 字串)優先;非輸入期間才從 value prop 同步顯示(2026-07-05 D4)
+          value={draft ?? (value != null ? String(value) : '')}
           onChange={handleChange}
+          // blur / Enter = commit(清 draft,顯示回 committed value);Escape 棄 draft
+          onBlur={(e) => { setDraft(null); onBlurProp?.(e) }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === 'Escape') setDraft(null)
+            onKeyDownProp?.(e)
+          }}
           aria-invalid={error || undefined}
           aria-required={fieldCtx?.required || undefined}
           aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}

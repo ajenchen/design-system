@@ -30,7 +30,7 @@ benchmark:
 ## 定位
 
 Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快速回到上層的路徑導覽。
-基於 shadcn/ui Breadcrumb 結構（純 HTML + Tailwind，無 Radix primitive），橋接設計系統 token。
+基於 shadcn/ui Breadcrumb 結構（原生 nav / ol / li 語意 + Tailwind；`asChild` 多型渲染用 Radix Slot，truncate Tooltip 與 collapse DropdownMenu 消費 DS 內部 Radix-based 元件），橋接設計系統 token。
 
 **Breadcrumb 是「你在哪裡」的指示器，不是「你可以去哪裡」的選單**——反映當前路徑，不是全部可能路徑。
 
@@ -177,6 +177,8 @@ Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快
 | `ellipsis`(BreadcrumbEllipsis 包裝)| **0** | 永遠完整顯示 ⋯ |
 | `BreadcrumbSeparator` | **0** | 永遠完整(否則 path 視覺斷裂)|
 
+**Compositional 手動 ellipsis 注意**:compositional path 按位置自動分派 role(first=root / last=current / 其餘=middle,`breadcrumb.tsx` `cloneWithRole` 尊重顯式 role),手動 `<BreadcrumbItem><BreadcrumbEllipsis/></BreadcrumbItem>` 需顯式傳 `role="ellipsis"` 才拿到 shrink:0(否則按位置拿 middle / shrink:2);declarative `items` 與自動收合路徑由元件自動標 `role="ellipsis"`。
+
 **為何 flex-shrink hierarchy 不用 fixed max-width**:
 - 容器寬 / items 少 → 各 item 自然寬度,**不浪費剩餘空間**
 - 容器窄 / items 多 → 按 priority 縮(root 先 → middle → current 最後)
@@ -247,7 +249,7 @@ ColorMatrix 已建:展示 BreadcrumbLink / Page / Separator / Ellipsis 四種節
 
 ## A11y 預設
 
-**ARIA / Pattern**:純 HTML 結構元件(nav + ol + li + a/span),無第三方 primitive。a11y 來自原生 HTML 語意 — 外層 `<nav aria-label="Breadcrumb">`、當前頁 `<span role="link" aria-disabled="true" aria-current="page">`、分隔符 `aria-hidden`(不進無障礙樹)。對齊 [WAI-ARIA Breadcrumb pattern](https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/)。
+**ARIA / Pattern**:結構為原生 HTML(nav + ol + li + a/span),a11y 來自原生 HTML 語意(`asChild` 用 Radix Slot 只合併 prop、不管理焦點 / ARIA / 鍵盤;truncate Tooltip 與 collapse DropdownMenu 各自帶自身 a11y)— 外層 `<nav aria-label="Breadcrumb">`、當前頁 `<span role="link" aria-disabled="true" aria-current="page">`、分隔符 `aria-hidden`(不進無障礙樹)。對齊 [WAI-ARIA Breadcrumb pattern](https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/)。
 
 **為何當前頁加 `role="link" aria-disabled="true"`**:BreadcrumbPage 是「被 disable 的連結」— 把它標記成連結家族(`role="link"`)讓螢幕閱讀器把整條 breadcrumb 念成同一個連結序列,再以 `aria-disabled="true"` 告知不可操作(對齊 shadcn/ui Breadcrumb canonical `BreadcrumbPage`)。WAI-ARIA APG 允許 current 用 link + `aria-current`,shadcn 加 `aria-disabled` 是合理增強。
 

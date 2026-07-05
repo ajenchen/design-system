@@ -178,7 +178,7 @@ export const Overview = {
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-medium">edit</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
-              {[{ name: 'wrapper', color: 'info' }, { name: 'wrapper', color: 'success' }, { name: 'wrapper', color: 'warning' }].map((s) => (
+              {[{ name: 'wrapper', color: 'info' }, { name: 'input', color: 'success' }, { name: 'endAction', color: 'warning' }].map((s) => (
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
@@ -189,7 +189,7 @@ export const Overview = {
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-medium">readonly / disabled</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
-              {[{ name: 'wrapper', color: 'info' }, { name: 'wrapper', color: 'success' }].map((s) => (
+              {[{ name: 'wrapper', color: 'info' }, { name: 'formatted span', color: 'success' }].map((s) => (
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
@@ -255,6 +255,7 @@ export const Overview = {
                 ['precision', 'number', '—', '小數位數'],
                 ['locale', 'string', "'en-US'", '數字格式 locale'],
                 ['endAction', 'InlineActionConfig', '—', '右側 inline action（宣告式 API）'],
+                ['endSlot', 'ReactNode', '—', '右側自訂 slot（escape hatch，僅 edit 渲染）；與 endAction 互斥，同時傳時 endSlot 優先'],
                 ['disabled', 'boolean', 'false', '原生屬性；mode 未顯式指定時解析為 disabled（顯式 mode prop 永遠最優先，useResolvedFieldMode SSOT）'],
                 ['readOnly', 'boolean', 'false', '原生屬性；mode 未顯式指定且無 Field context mode 時解析為 readonly（優先序 mode > 有效 disabled > fieldCtx.mode > readOnly）'],
               ].map(([p, t, d, desc]) => (
@@ -744,7 +745,7 @@ export const StateBehavior = {
               <div key={m} className="flex flex-col gap-1 items-start">
                 <span className="text-[11px] text-fg-muted font-mono">{m}</span>
                 <div className="w-[160px]"><NumberInput mode={m} value={null} prefix="$" /></div>
-                <span className="text-[10px] text-fg-muted">{m === 'edit' ? '空白 input' : 'em dash — + fg-muted'}</span>
+                <span className="text-[10px] text-fg-muted">{m === 'edit' ? '空白 input' : m === 'disabled' ? 'em dash — + fg-disabled（M24 state > emphasis）' : 'em dash — + fg-muted'}</span>
               </div>
             ))}
           </div>
@@ -781,7 +782,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"ARIA  :使用原生  <input type=\"text\" inputMode=\"decimal\">  ;外層 Field 自動補上標籤、錯誤狀態與描述的關聯。 inputMode=\"decimal\"  讓行動裝置彈出數字鍵盤。\n\n  鍵盤行為  :\n\n- Tab — 移入欄位\n- 數字鍵 — 輸入數值\n\n  焦點  :原生 input 焦點外框,聚焦時外框轉為主色,由外層 Field 提供。\n\n  驗證  :Storybook 無障礙檢查面板應為 0 項嚴重問題;不靠滑鼠也能完整操作。文字對比度至少 4.5:1、介面元件至少 3:1(WCAG AA)。"}</p>
+      <p className="whitespace-pre-line">{"ARIA  :使用原生  <input type=\"text\" inputMode=\"decimal\">  ;外層 Field 自動補上標籤、錯誤狀態與描述的關聯。 inputMode=\"decimal\"  讓行動裝置彈出數字鍵盤。\n\n  鍵盤行為  :\n\n- Tab — 移入欄位\n- 數字鍵 — 輸入數值\n\n  焦點  :原生 input 以  outline-none  移除預設焦點外框;聚焦時由元件自身 wrapper 的  focus-within  將邊框轉為主色(border-primary)。\n\n  驗證  :Storybook 無障礙檢查面板應為 0 項嚴重問題;不靠滑鼠也能完整操作。文字對比度至少 4.5:1、介面元件至少 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

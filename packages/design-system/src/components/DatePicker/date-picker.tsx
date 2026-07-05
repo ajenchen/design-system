@@ -537,13 +537,9 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               if (e.key === 'Escape') setOpen(false)
             }}
             className={cn(
-              fieldWrapperStyles({ mode: 'edit', variant: variant, size }),
+              fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
               'text-left cursor-pointer',
               'focus-visible:outline-none',
-              error && [
-                'border-error hover:border-error-hover',
-                'focus-within:border-error focus-within:hover:border-error',
-              ],
               className,
             )}
             {...props}
@@ -640,10 +636,13 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                 }
               />
             </div>
-            {showTime && (
+            {(showTime || needConfirm) && (
               // Footer:消費 SurfaceFooter SSOT(border-t + canonical px-loose py-tight padding,
               // 不再 hand-coded p-2 / Separator / ml-auto wrapper 三層垃圾)。
               // 「此刻」加 mr-auto 把後面 button 推右(對齊 Ant `marginInlineStart: auto` on OK)。
+              // 2026-07-05 D4:gate 由 `showTime` 改 `(showTime || needConfirm)` 對齊 Range(:1068)—
+              // date-only `needConfirm` 時 onSelect 只寫 draft 且不關 popover,footer「確定」是唯一
+              // commit 路徑,原 gate 漏渲 footer = draft 永遠無法 commit 的死路。
               <SurfaceFooter>
                 <Button variant="tertiary" size="sm" onClick={handleNow} className="mr-auto">此刻</Button>
                 {needConfirm ? (
@@ -755,6 +754,15 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     const [open, setOpen] = React.useState(false)
     const [draft, setDraft] = React.useState<[string | null, string | null]>(value ?? [null, null])
     const [activeEnd, setActiveEnd] = React.useState<'start' | 'end'>('start')
+
+    // 2026-07-05 D4 focus 回復:Range 只用 PopoverAnchor(start/end button 自行 onClick 開啟),
+    // Radix triggerRef 恆 null → 內建 onCloseAutoFocus 的 triggerRef.focus() no-op 後又
+    // preventDefault 掉 FocusScope fallback → Esc/確定/選完自動關閉後焦點掉到 document.body
+    // (WCAG 2.4.3)。手動回焦 active 端 button(對齊 Ant RangePicker);outside-click 關閉
+    // 依 Radix non-modal 慣例不搶焦(hasInteractedOutside 鏡射 Radix 自家 guard)。
+    const startBtnRef = React.useRef<HTMLButtonElement>(null)
+    const endBtnRef = React.useRef<HTMLButtonElement>(null)
+    const hasInteractedOutsideRef = React.useRef(false)
 
     // Sync draft from value ONLY on open false→true(canonical 2026-05-02 v3):
     // 之前用 `[value, open]` 雙 dep,popover 開啟期間 value 任何 reference 變更 → useEffect
@@ -921,18 +929,15 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             data-error={error ? '' : undefined}
             data-state={open ? 'open' : 'closed'}
             className={cn(
-              fieldWrapperStyles({ mode: 'edit', size }),
+              fieldWrapperStyles({ mode: 'edit', size, error }),
               'cursor-text',
-              error && [
-                'border-error hover:border-error-hover',
-                'focus-within:border-error focus-within:hover:border-error',
-              ],
               className,
             )}
             {...props}
           >
             <button
               type="button"
+              ref={startBtnRef}
               onClick={() => openWithActive('start')}
               data-active-end={open && activeEnd === 'start' ? 'true' : undefined}
               aria-label={resolvedPlaceholder[0]}
@@ -950,6 +955,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             <ArrowRight size={iconSize} className="shrink-0 text-fg-muted mx-2" aria-hidden />
             <button
               type="button"
+              ref={endBtnRef}
               onClick={() => openWithActive('end')}
               data-active-end={open && activeEnd === 'end' ? 'true' : undefined}
               aria-label={resolvedPlaceholder[1]}
@@ -979,7 +985,22 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             </ItemSuffix>
           </div>
         </PopoverAnchor>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent
+          className="w-auto p-0"
+          align="start"
+          // 2026-07-05 D4 focus 回復(機制詳 :758 comment):outside-click 標記不搶焦(鏡射
+          // Radix non-modal 自家 hasInteractedOutside guard);其餘關閉路徑(Esc / 確定 /
+          // 選完自動關)preventDefault 掉內建 triggerRef.focus()(Anchor-only 恆 null no-op)
+          // 後手動回焦 active 端 button — 對齊 Ant RangePicker 關閉後焦點回 active 端輸入格。
+          onInteractOutside={() => { hasInteractedOutsideRef.current = true }}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault()
+            if (!hasInteractedOutsideRef.current) {
+              ;(activeEnd === 'start' ? startBtnRef : endBtnRef).current?.focus()
+            }
+            hasInteractedOutsideRef.current = false
+          }}
+        >
           {/* 2026-05-06 v9.1 M25 chain — 同 single DatePicker 修法,viewport 壓縮 calendar 內滾 + footer 永遠 in-view */}
           <div role="dialog" aria-label="日期區間選擇" className="flex flex-col flex-1 min-h-0">
             <div className="flex-1 min-h-0 overflow-y-auto">

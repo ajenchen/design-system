@@ -222,17 +222,21 @@ export const tagMeta = {
     magenta: { purpose: 'categorical 色相(--color-magenta-*)' },
   },
   sizes: {
-    // Tag 尺寸不引用 field-height token（spec.md:180/241——Tag 與 Field 尺寸獨立）。
+    // Tag 尺寸不引用 field-height token（spec「尺寸」段——Tag 與 Field 尺寸獨立;段名指法免行號漂移）。
     // height = Tag 自身高度（cva h-5/h-6/h-6 = 20/24/24，lg = md alias）。
-    // iconSize 全尺寸統一 16（tag.tsx:195 硬寫 size={16}）。
+    // iconSize 全尺寸統一 16（本檔 CAT icon render 硬寫 size={16}）。
     sm: { height: 20, iconSize: 16, typography: 'caption' },
     md: { height: 24, iconSize: 16, typography: 'body' },
     lg: { height: 24, iconSize: 16, typography: 'body' },
   },
-  // Tag 為純展示 indicator，無互動 state（spec.md:249-256「為何無 StateBehavior」）。
+  // Tag 為純展示 indicator，無互動 state（spec「為何無 StateBehavior」段;段名指法免行號漂移）。
   // 唯一行為 dismiss 屬 Inline Action pattern，非 Tag 自有 state。
   states: ['default'],
   tokens: {
+    // 2026-07-04 audit 註記:另有動態色相家族不逐一列 — CAT_SUBTLE 12 色相
+    // bg-[var(--color-{hue}-1)] + step-7 深字、CAT_SOLID step-6 底 + --on-emphasis(-dark) 配字、
+    // neutral solid bg-[var(--color-neutral-9)] — 全由 categorical-color.ts SSOT 衍生
+    //(anatomy TOKEN_MAP 以 stripVar 機械衍生,零漂移)。
     bg: ['bg-neutral-active', 'bg-neutral-hover', 'bg-secondary', 'bg-transparent'],
     fg: ['text-foreground', 'text-inverse-fg'],
     ring: [],

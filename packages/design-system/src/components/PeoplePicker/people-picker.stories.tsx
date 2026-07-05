@@ -150,7 +150,7 @@ const AsyncDirectoryPicker = () => {
     <div className="flex flex-col gap-2 max-w-xs">
       <PeoplePicker value={val} people={people} onChange={setVal} aria-label="任務協作者" />
       <p className="text-caption text-fg-secondary">
-        Jira 任務「協作者」欄位場景：已選成員隨任務資料先抵達，組織人員名錄約 1.5 秒後才從 API 回來——已選的 avatar 與姓名立即顯示，不等名錄載入。
+        Jira 任務「協作者」欄位場景：已選成員隨任務資料先抵達，組織人員名錄約 1.5 秒後才從 API 回來——已選成員立即顯示、不報錯；名錄未到前 avatar 先以姓名縮寫 fallback 呈現，名錄載入後自動補上頭像。
       </p>
     </div>
   )

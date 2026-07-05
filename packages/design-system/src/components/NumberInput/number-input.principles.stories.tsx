@@ -1,4 +1,5 @@
 // @principles-rationale: UsageGuidance merges WhenToUse + WhenNotToUse into single 使用指引 story per refactor task (2026-04-26)
+// @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#NumberAlignment
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -35,7 +36,7 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="mb-12">
-    <h2 className="text-heading-3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+    <h2 className="text-h3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
     {children}
   </section>
 )

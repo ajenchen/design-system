@@ -288,7 +288,7 @@ export const YellowStarConvention: Story = {
               <Rating value={4.5} readOnly precision="half" size="lg" aria-label="誤用範例" icon={Star} />
             </div>
           </div>
-          <Label warn>藍星讓使用者猶豫「這是什麼」→ 一瞬間流失 = 設計 bug</Label>
+          <Label warn>藍星讓使用者猶豫「這是什麼」→ 一瞬間流失 = 設計 bug。（上例外層雖掛 color: var(--primary)，渲染仍是黃星——星色由 rating.tsx fill 硬綁 --warning，非 currentColor，機械保證此誤用做不出來）</Label>
         </div>
       </Rule>
     </div>

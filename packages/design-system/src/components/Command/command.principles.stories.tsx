@@ -69,18 +69,16 @@ export const CompositionRules: Story = {
           <li><LinkTo kind="Design System/Components/PeoplePicker/展示" name="單人"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">PeoplePicker</span></LinkTo>——人員搜尋(如指派任務負責人)</li>
         </ul>
 
-        <h4>Pattern 2 — Popover + Command 組成 Command Palette(Cmd+K)</h4>
-        <p>需要「全域 keyboard 觸發 + 跨頁搜尋 / 動作」→ 自行組合 <code>Popover + Command</code>(對齊 Linear ⌘K / Raycast / VS Code Quick Pick):</p>
-        <pre className="text-xs"><code>{`<Popover open={cmdkOpen}>
-  <Command>
-    <CommandInput placeholder="輸入指令..." />
-    <CommandList>
-      <CommandGroup heading="動作">
-        <CommandItem>新建文件</CommandItem>
-      </CommandGroup>
-    </CommandList>
-  </Command>
-</Popover>`}</code></pre>
+        <h4>Pattern 2 — CommandDialog 組成 Command Palette(Cmd+K)</h4>
+        <p>需要「全域 keyboard 觸發 + 跨頁搜尋 / 動作」→ 用本 DS export 的 <code>CommandDialog</code>(cmdk + Radix Dialog 包裝,內部已包 Command),不自行組合浮層(對齊 Linear ⌘K / Raycast / VS Code Quick Pick):</p>
+        <pre className="text-xs"><code>{`<CommandDialog open={cmdkOpen} onOpenChange={setCmdkOpen}>
+  <CommandInput placeholder="輸入指令..." />
+  <CommandList>
+    <CommandGroup heading="動作">
+      <CommandItem>新建文件</CommandItem>
+    </CommandGroup>
+  </CommandList>
+</CommandDialog>`}</code></pre>
         <p className="text-fg-muted">禁止:在產品端自己刻搜尋框 + 過濾清單 — 一律重用 Command,不要重造一份。</p>
       </div>
     </div>

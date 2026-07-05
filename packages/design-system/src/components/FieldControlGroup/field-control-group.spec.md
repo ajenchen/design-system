@@ -79,7 +79,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 ## Width 配置 canonical(W-A,對齊 Ant)
 
 **子 controls 自管 width**:
-- Fixed:`<Select className="w-[140px]">`
+- Fixed:`<Select className="!w-[140px]">`
 - Flex:`<Input className="flex-1">`
 - 混合 OK(filter row 典型:fixed + fixed + flex)
 
@@ -94,7 +94,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 <Field size="lg">
   <FieldLabel>電話</FieldLabel>
   <FieldControlGroup>  {/* 各 child 自動繼承外層 Field context size */}
-    <Select className="w-[80px]" options={codes} />
+    <Select className="!w-[80px]" options={codes} />
     <Input className="flex-1" />
   </FieldControlGroup>
 </Field>
@@ -103,7 +103,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 **Mode B**(standalone):**逐一給每個 child 設 `size`**(設 `<FieldControlGroup size>` 無效)。
 ```tsx
 <FieldControlGroup>
-  <Select size="md" className="w-[120px]" options={fields} />
+  <Select size="md" className="!w-[120px]" options={fields} />
   <Input size="md" className="flex-1" />
 </FieldControlGroup>
 ```

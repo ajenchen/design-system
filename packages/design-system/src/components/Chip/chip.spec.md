@@ -225,7 +225,7 @@ ColorMatrix 已建:展示 default / hover / selected / disabled 四狀態的 bg 
 - Tab（再按一次）— 離開整組
 - Enter / Space — 切換選取
 
-**Focus**:整組 chip 採 roving tabindex——Tab 進入整組、方向鍵在組內移動焦點、再按 Tab 離開整組（不是 Dialog 那種把焦點鎖在裡面、Tab 無法離開的 focus trap）。focus-visible 時顯示 `2px solid var(--ring)` 焦點環。
+**Focus**:整組 chip 採 roving tabindex——Tab 進入整組、方向鍵在組內移動焦點、再按 Tab 離開整組（不是 Dialog 那種把焦點鎖在裡面、Tab 無法離開的 focus trap）。focus-visible 時顯示 focus ring（`focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1`,以 box-shadow 實作並 `outline-none`）。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

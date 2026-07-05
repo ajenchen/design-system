@@ -39,8 +39,8 @@ import type { FieldSize } from '@/design-system/components/Field/field-context'
  * ```tsx
  * // Filter row: 2 fixed select + 1 flex value
  * <FieldControlGroup>
- *   <Select className="w-[140px]" options={fields} />
- *   <Select className="w-[120px]" options={ops} />
+ *   <Select className="!w-[140px]" options={fields} />
+ *   <Select className="!w-[120px]" options={ops} />
  *   <Input className="flex-1" placeholder="輸入值..." />
  * </FieldControlGroup>
  *
@@ -48,7 +48,7 @@ import type { FieldSize } from '@/design-system/components/Field/field-context'
  * <Field>
  *   <FieldLabel>電話</FieldLabel>
  *   <FieldControlGroup>
- *     <Select className="w-[80px]" options={codes} />
+ *     <Select className="!w-[80px]" options={codes} />
  *     <Input className="flex-1" />
  *   </FieldControlGroup>
  * </Field>

@@ -565,7 +565,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"SelectionItem 是純佈局元件,本身不接管鍵盤與焦點——它只渲染外層容器加上指向控件的 label(label 的 htmlFor 連到控件 id,點文字會觸發控件)。\n\n鍵盤操作、焦點環、勾選狀態都由傳入的控件(Checkbox / Radio)負責:\n\n- Tab — 焦點落在控件本身\n- Space — 由控件切換勾選狀態\n- 焦點環(outline 2px,顏色取自 var(--ring))由控件自己畫\n\n搭配建議:\n\n- 控件對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應的 checkbox / radio pattern。\n- 用 label 的 htmlFor 連到控件 id,讓點擊文字也能操作。\n- 驗證:Storybook 無障礙面板應 0 項嚴重違規;不靠滑鼠也能完整操作。文字對比 ≥ 4.5:1,介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
+      <p className="whitespace-pre-line">{"SelectionItem 是純佈局元件,本身不接管鍵盤與焦點——它只渲染外層容器加上指向控件的 label(label 的 htmlFor 連到控件 id,點文字會觸發控件)。\n\n鍵盤操作、焦點環、勾選狀態都由傳入的控件(Checkbox / Radio)負責:\n\n- Tab — 焦點落在控件本身\n- Space — 由控件切換勾選狀態\n- 焦點環(ring 2px box-shadow,顏色取自 var(--ring))由控件自己畫\n\n搭配建議:\n\n- 控件對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應的 checkbox / radio pattern。\n- 用 label 的 htmlFor 連到控件 id,讓點擊文字也能操作。\n- 驗證:Storybook 無障礙面板應 0 項嚴重違規;不靠滑鼠也能完整操作。文字對比 ≥ 4.5:1,介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

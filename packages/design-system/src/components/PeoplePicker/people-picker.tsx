@@ -1,5 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @placeholder-vocabulary-allow: 1-cycle backward-compat — `placeholder` 已加(trigger empty SSOT),`emptyPlaceholder={emptyText}` forward 仍保留讓既有 consumer 不被 silent break;Combobox line 760 `placeholder ?? emptyPlaceholder` fallback → placeholder 永遠 takes precedence。Future cycle 移除 emptyPlaceholder forward(per field-controls.spec.md 共享 contract b)。
+// @placeholder-vocabulary-allow: 2026-07-04 Q4 完成 field-controls.spec.md 共享 contract b — emptyPlaceholder forward 已移除,emptyText 直達 Combobox → SelectMenu emptyText(search-empty 真住所);placeholder 為 trigger empty SSOT。
 // @cell-metric-escape-allow: comment describes RETIRED `tagAreaPaddingLeftPx={8}` magic — current code is surface-guarded (`surface === 'form'` only injects `!px-[var(--field-px)]`; table-cell context untouched, lets naked `!px-[var(--table-cell-px)]` SSOT take over). Hook regex grep'd the comment word, not the live code path. Per (a) fix 2026-05-13 user-approved Path a.
 import * as React from 'react'
 import { ChevronDown } from 'lucide-react'
@@ -67,8 +67,8 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   placeholder?: string
   /** 搜尋框 placeholder */
   searchPlaceholder?: string
-  /** 搜尋無結果訊息(filtered menu empty)。**僅**用於 SelectMenu noResultsText,
-   *  不再 silent 轉 trigger placeholder(2026-05-12 Issue 4 semantic fix)。 */
+  /** 搜尋無結果訊息(filtered menu empty)。**僅**用於 SelectMenu `emptyText`(菜單空狀態,
+   *  2026-07-04 Q4 接線完成),不轉 trigger placeholder(2026-05-12 Issue 4 semantic fix)。 */
   emptyText?: string
   className?: string
   disabled?: boolean
@@ -139,6 +139,56 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   const isMulti = Array.isArray(value)
   const isEmpty = !value || (isMulti && value.length === 0)
 
+  // 2026-07-05 D3 P0 修:以下派生 + 4 hooks 原宣告在 display/readonly/single/pill 四個 early return
+  // 之後 — 同一 mounted instance 的 resolvedMode 於 edit↔display/disabled 切換(<Field mode>/<Field
+  // disabled> cascade 正是 runtime 翻轉機制)時 hook 數 7→11 變動 → React #310 crash(與 Combobox
+  // beta.76 / LinkInput 2026-07-04 同家族)。全部 hoist 到任何 early return 之前(對齊 select.tsx
+  // 「所有 hooks 必在 early return 前 call」canonical);effect 加 mode/stack guard,邏輯不變。
+  const selectedNames: string[] = !value
+    ? []
+    : Array.isArray(value)
+      ? value.map(v => resolvePerson(v).name)
+      : [resolvePerson(value).name]
+
+  // SSOT visible count compute via formula primitive + ResizeObserver(multi stack mode 專用)
+  const stackContainerRef = React.useRef<HTMLDivElement | null>(null)
+  const [stackVisibleCount, setStackVisibleCount] = React.useState<number | undefined>(undefined)
+  React.useLayoutEffect(() => {
+    if (resolvedMode !== 'edit' || !isMulti || multiDisplay !== 'stack' || selectedNames.length <= 1) {
+      setStackVisibleCount(undefined); return
+    }
+    const root = stackContainerRef.current
+    if (!root) return
+    // 2026-05-15 ROOT CAUSE FIX(user 抓「之前說的問題都還是存在」):
+    // stackContainerRef 透過 mergedStackRef 接 Combobox forwarded ref → root **就是** [role=combobox]
+    // div 自己。原 `root.querySelector('[role=combobox]')` 不找 self 永遠 null → trigger=null →
+    // tagArea=null → available=0 → setStackVisibleCount(0) → 整 stack 全 overflow → fallback 到
+    // Combobox DOM-based useOverflowCount(非 deterministic 那個算法)。修:用 root 自己當 trigger,
+    // 從 root 內找 tagArea(flex-1 min-w-0 div)。
+    const calc = () => {
+      const trigger = root.matches('[role="combobox"]') ? root : root.querySelector<HTMLElement>('[role="combobox"]')
+      const tagArea = trigger?.querySelector<HTMLElement>('div[class*="flex-1"][class*="min-w-0"]')
+      const available = tagArea?.clientWidth ?? trigger?.clientWidth ?? 0
+      const visible = getAvatarStackVisibleCount({
+        availablePx: available,
+        total: selectedNames.length,
+        avatarPx: AVATAR_STACK_AVATAR_PX[size],
+        overflowChipPx: AVATAR_STACK_OVERFLOW_CHIP_PX[size],
+      })
+      setStackVisibleCount(visible)
+    }
+    calc()
+    const ro = new ResizeObserver(calc)
+    ro.observe(root)
+    return () => ro.disconnect()
+  }, [resolvedMode, isMulti, multiDisplay, selectedNames.length, size])
+  // Merge ref:forward to parent + capture for ResizeObserver
+  const mergedStackRef = React.useCallback((el: HTMLDivElement | null) => {
+    stackContainerRef.current = el
+    if (typeof ref === 'function') ref(el)
+    else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = el
+  }, [ref])
+
   // ── mode='display' ────────────────────────────────────────────────────────
   // Default(showDisplayEndIcon=false):裸 PersonDisplay / MultiPersonDisplay — backward compat。
   // Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix ChevronDown,
@@ -200,11 +250,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   }
 
   // ── edit mode ─────────────────────────────────────────────────────────────
-  const selectedNames: string[] = !value
-    ? []
-    : Array.isArray(value)
-      ? value.map(v => resolvePerson(v).name)
-      : [resolvePerson(value).name]
+  // (selectedNames 派生已 hoist 至檔上方 hooks 區,見 D3 P0 修註解)
 
   // ── single mode → wraps Select ────────────────────────────────────────────
   if (!isMulti) {
@@ -219,8 +265,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         onChange={handleSingleChange}
         searchable
         placeholder={placeholder}
-        // 2026-05-12 Stream C Issue 4 fix(codex Q3):傳 `placeholder` 給 Select trigger empty。
-        // 不再傳 `emptyText`(search-empty semantic 跟 trigger-empty 分離,canonical SSOT)。
+        // 2026-05-12 Issue 4:placeholder = trigger empty。2026-07-04 Q4:emptyText 走 Select →
+        // SelectMenu 接線(search-empty 語意,與 trigger-empty 分離)。
+        emptyText={emptyText}
         defaultOpen={defaultOpen}
         onOpenChange={onOpenChange}
         className={className}
@@ -252,11 +299,10 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         searchable
         searchPlaceholder={searchPlaceholder}
         // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty hint('請選擇人員')
-        // — semantic clean separation;emptyText 不再 silent 轉 trigger placeholder。
-        // emptyPlaceholder backward-compat forward(Combobox line 760 `placeholder ?? emptyPlaceholder` fallback)
-        // 1 cycle:future 移除 emptyPlaceholder forward,emptyText 改傳 SelectMenu noResultsText。
+        // — semantic clean separation。2026-07-04 Q4 拍板完成 1-cycle 承諾:emptyPlaceholder forward
+        // 移除,emptyText 改傳 Combobox → SelectMenu emptyText(search-empty 真住所,菜單空狀態)。
         placeholder={placeholder}
-        emptyPlaceholder={emptyText}
+        emptyText={emptyText}
         wrap={pillWrap}
         defaultOpen={defaultOpen}
         onOpenChange={onOpenChange}
@@ -302,45 +348,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   const handleMultiChange = (next: string[]) => {
     onChange?.(next.map(name => findPerson(people, name)))
   }
-  // SSOT visible count compute via formula primitive + ResizeObserver
-  const stackContainerRef = React.useRef<HTMLDivElement | null>(null)
-  const [stackVisibleCount, setStackVisibleCount] = React.useState<number | undefined>(undefined)
-  React.useLayoutEffect(() => {
-    // 注:此 effect 只在 multi stack mode 跑(early return if not stack);length<=1 不需 override
-    if (!isMulti || selectedNames.length <= 1) {
-      setStackVisibleCount(undefined); return
-    }
-    const root = stackContainerRef.current
-    if (!root) return
-    // 2026-05-15 ROOT CAUSE FIX(user 抓「之前說的問題都還是存在」):
-    // stackContainerRef 透過 mergedStackRef 接 Combobox forwarded ref → root **就是** [role=combobox]
-    // div 自己。原 `root.querySelector('[role=combobox]')` 不找 self 永遠 null → trigger=null →
-    // tagArea=null → available=0 → setStackVisibleCount(0) → 整 stack 全 overflow → fallback 到
-    // Combobox DOM-based useOverflowCount(非 deterministic 那個算法)。修:用 root 自己當 trigger,
-    // 從 root 內找 tagArea(flex-1 min-w-0 div)。
-    const calc = () => {
-      const trigger = root.matches('[role="combobox"]') ? root : root.querySelector<HTMLElement>('[role="combobox"]')
-      const tagArea = trigger?.querySelector<HTMLElement>('div[class*="flex-1"][class*="min-w-0"]')
-      const available = tagArea?.clientWidth ?? trigger?.clientWidth ?? 0
-      const visible = getAvatarStackVisibleCount({
-        availablePx: available,
-        total: selectedNames.length,
-        avatarPx: AVATAR_STACK_AVATAR_PX[size],
-        overflowChipPx: AVATAR_STACK_OVERFLOW_CHIP_PX[size],
-      })
-      setStackVisibleCount(visible)
-    }
-    calc()
-    const ro = new ResizeObserver(calc)
-    ro.observe(root)
-    return () => ro.disconnect()
-  }, [isMulti, multiDisplay, selectedNames.length, size])
-  // Merge ref:forward to parent + capture for ResizeObserver
-  const mergedStackRef = React.useCallback((el: HTMLDivElement | null) => {
-    stackContainerRef.current = el
-    if (typeof ref === 'function') ref(el)
-    else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = el
-  }, [ref])
+  // ── edit mode ─────────────────────────────────────────────────────────────
+  // (selectedNames 派生已 hoist 至檔上方 hooks 區,見 D3 P0 修註解)
 
   return (
     <Combobox
@@ -355,7 +364,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       searchPlaceholder={searchPlaceholder}
       // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty('請選擇人員');emptyText = search-empty(僅 backward-compat forward 1 cycle)
       placeholder={placeholder}
-      emptyPlaceholder={emptyText}
+      emptyText={emptyText}
       wrap={false}
       defaultOpen={defaultOpen}
       onOpenChange={onOpenChange}

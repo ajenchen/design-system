@@ -306,7 +306,7 @@ export const Overview = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit'|'display'|'readonly'|'disabled'", "'edit'", 'FieldMode 四模式;disabled 原生屬性會自動覆蓋'],
+                ['mode', "'edit'|'display'|'readonly'|'disabled'", "'edit'", 'FieldMode 四模式;顯式傳入時永遠最優先,不被 disabled 覆蓋'],
                 ['size', "'sm'|'md'|'lg'", "'md'", '尺寸，與 Button 共用 field-height token'],
                 ['options', 'ComboboxOption[]', '—', '選項列表（extends SelectMenuOption：value / label / icon / avatar / description / disabled / group）'],
                 ['value', 'string[]', '[]', '已選中的值陣列'],
@@ -315,7 +315,7 @@ export const Overview = {
                 ['wrap', 'boolean', 'false', '換行模式——高度隨內容展開，Tags 自然換行'],
                 ['clearable', 'boolean', 'false', '有值時顯示 X clear all 按鈕'],
                 ['placeholder', 'string', '—', '無值時的提示文字；未傳時桌機 fallback 到 emptyPlaceholder（預設「選擇…」全形省略號），手機原生 select fallback「選擇...」'],
-                ['disabled', 'boolean', 'false', '原生 disabled，自動覆蓋 mode'],
+                ['disabled', 'boolean', 'false', '原生屬性；未傳 mode 時 resolve 為 disabled 樣式（顯式 mode prop 恆優先，見 useResolvedFieldMode）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -783,8 +783,8 @@ export const StateBehavior = {
           <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
             <span>1. useOverflowCount hook 量測 container 寬度與每個 tag 的自然寬度</span>
             <span>2. ResizeObserver 持續監聽容器變化</span>
-            <span>3. 量測在 useLayoutEffect 內 paint 前同步完成，超出的 tag 在繪製前就已隱藏，避免閃爍</span>
-            <span>4. 超出的 tag 用 DOM hidden 隱藏（非 display:none）</span>
+            <span>3. 量測在 useEffect 內首次 paint 後執行（確保 nested 場景所有 ref 已 attach），double-rAF 保證 layout 完成才量測；代價是可能 1-2 frame 閃爍，由 value-equal setState guard 收斂</span>
+            <span>4. 超出的 tag 以 DOM hidden attribute 隱藏（UA 樣式即 display:none；節點保留在 DOM，量測時先全部解除隱藏再計算）</span>
           </div>
         </div>
 

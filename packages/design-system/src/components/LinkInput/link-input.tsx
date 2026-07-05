@@ -4,7 +4,7 @@ import type { VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
-import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant } from '@/design-system/components/Field/field-context'
+import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 // ── URL Validation ──────────────────────────────────────────────────────────
@@ -110,6 +110,37 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // chrome resolution:per-prop > context > 'default'
     const resolvedVariant: FieldVariant = useResolvedFieldVariant(variantProp)
 
+    // 2026-07-05 D4:invalid 經 useResolvedFieldInvalid 統一接 fieldCtx.invalid(field-controls.spec.md
+    // resolver 契約「error/invalid = prop OR fieldCtx.invalid」)— 原本紅框只吃 errorProp||localError、
+    // aria-invalid 卻 inline 加 fieldCtx?.invalid → <Field invalid> 下 AT 聽到 invalid 視覺卻正常框
+    // (聚焦還變藍)。紅框與 aria 自此同源。宣告於 display early return 之前(Rules-of-Hooks)。
+    const fieldInvalid = useResolvedFieldInvalid(errorProp)
+
+    // ── Local state / refs ──────────────────────────────────────────────────
+    // 2026-07-04 Rules-of-Hooks 修:hooks 必在 display early return 之前宣告,
+    // 否則 mode 於 render 間切換 display↔edit 會改變 hook 呼叫數 → React #310 crash
+    // (同 beta.76 Combobox 同款修法;僅搬位置,hook 邏輯不變)。
+    const [editing, setEditing] = React.useState(false)
+    const [localValue, setLocalValue] = React.useState(value ?? '')
+    const [localError, setLocalError] = React.useState(false)
+    const inputRef = React.useRef<HTMLInputElement | null>(null)
+
+    // Sync external value → local
+    React.useEffect(() => {
+      if (!editing) setLocalValue(value ?? '')
+    }, [value, editing])
+
+    // Merge refs
+    const setRef = React.useCallback((el: HTMLInputElement | null) => {
+      inputRef.current = el
+      if (typeof ref === 'function') ref(el)
+      else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = el
+    }, [ref])
+
+    // 2026-05-16 audit codex Round 6:capture rAF + cancel on unmount(defensive hygiene)
+    const focusRafIdRef = React.useRef<number>(0)
+    React.useEffect(() => () => { if (focusRafIdRef.current) cancelAnimationFrame(focusRafIdRef.current) }, [])
+
     // ── mode='display' ─────────────────────────────────────────────────────
     // 純展示:無 input chrome / 無 hover affordance / 無 Pencil edit 入口。
     // 取代既有 LinkInputDisplay sub-component(2026-05-05 Phase B3 retire)。
@@ -140,30 +171,9 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       )
     }
 
-    const [editing, setEditing] = React.useState(false)
-    const [localValue, setLocalValue] = React.useState(value ?? '')
-    const [localError, setLocalError] = React.useState(false)
-    const inputRef = React.useRef<HTMLInputElement | null>(null)
-
-    // Sync external value → local
-    React.useEffect(() => {
-      if (!editing) setLocalValue(value ?? '')
-    }, [value, editing])
-
-    // Merge refs
-    const setRef = React.useCallback((el: HTMLInputElement | null) => {
-      inputRef.current = el
-      if (typeof ref === 'function') ref(el)
-      else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = el
-    }, [ref])
-
     const hasValidValue = !!value && isValidUrl(value)
     const showLink = isEditable && hasValidValue && !editing && !localError
-    const error = errorProp || localError
-
-    // 2026-05-16 audit codex Round 6:capture rAF + cancel on unmount(defensive hygiene)
-    const focusRafIdRef = React.useRef<number>(0)
-    React.useEffect(() => () => { if (focusRafIdRef.current) cancelAnimationFrame(focusRafIdRef.current) }, [])
+    const error = fieldInvalid || localError
 
     const handleEdit = () => {
       setEditing(true)
@@ -233,8 +243,11 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     if (showLink) {
       return (
         <div
-          className={cn(fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size }), className)}
+          // 2026-07-05 D4:link 顯示分支同樣接 error(errorProp / fieldCtx.invalid)紅框,
+          // 否則 <Field invalid> 下 link state 完全無 error 呈現
+          className={cn(fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error }), className)}
           data-field-mode="edit"
+          data-error={error ? '' : undefined}
         >
           <span className="flex-1 min-w-0">
             {value && renderLinkAnchor(value, label)}
@@ -251,11 +264,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     return (
       <div
         className={cn(
-          fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size }),
-          error && [
-            'border-error hover:border-error-hover',
-            'focus-within:border-error focus-within:hover:border-error',
-          ],
+          fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error }),
           className,
         )}
         data-field-mode="edit"
@@ -270,10 +279,10 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          aria-invalid={(error || fieldCtx?.invalid) || undefined}
+          aria-invalid={error || undefined}
           aria-required={fieldCtx?.required || undefined}
           aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
-          aria-errormessage={ariaErrorMessageProp ?? ((error || fieldCtx?.invalid) ? fieldCtx?.errorId : undefined)}
+          aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
           className={bareInputStyles}
           {...props}
         />
@@ -294,9 +303,12 @@ export const linkInputMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // states 對齊真實 state 集:text-input 家族無 'active'(按下)專屬視覺態(同 textareaMeta 修法);
+  //   readonly / error 為 fieldWrapperStyles mode + errorProp/localError 實有狀態(2026-07-04 audit 對齊)。
+  states: ['default', 'hover', 'focus-visible', 'readonly', 'disabled', 'error'],
   tokens: {
-    bg: [],
+    // bg 經 fieldWrapperStyles 實渲:edit bg-surface / readonly bg-readonly / disabled bg-disabled(field-wrapper.tsx)。
+    bg: ['bg-surface', 'bg-readonly', 'bg-disabled'],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-primary'],
     ring: [],
   },

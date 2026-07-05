@@ -1478,6 +1478,7 @@ export const IconActionPrimitiveDecision = {
                 <Td>
                   &le; 24(compact / xs row)→ <strong>Inline Action</strong>(Button xs 24 會填滿 row,失去呼吸)
                   <br />&ge; 28(sm / md / lg row)→ <strong>Button iconOnly size="xs"(24 固定,不放大)</strong>
+                  <br /><span className="text-fg-muted">例外:FileItem compact(row 24)用 Button xs iconOnly — 2026-04-23 user 拍板 rich + compact 同 primitive 統一(field-height-xs 容器 + data-unbounded 收斂;見下表 FileItem 兩列),不套本則 &le;24 規則</span>
                 </Td>
               </tr>
             </tbody>

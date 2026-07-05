@@ -1,6 +1,9 @@
 /**
- * @internal — DS-internal 單元(per `.claude/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
- * 不進 root barrel front-door;由 PeoplePicker(person-display)wrap 消費,end-user app 請用 wrapper 元件。
+ * Public 元件(2026-07-04 Q8 拍板升 public,原 @internal 標記移除)。
+ * 理由:avatar.spec.md「hover 必出 ProfileCard」DS-wide canonical 要求 consumer 直接
+ * import ProfileCard + ProfileCardDefaultActions 組 HoverCard — 按 ui-development.md
+ * 唯一判準(DS 想讓 consumer 直接用 = public)internal 標記是 governance bug;
+ * 世界級對照:Atlassian ProfileCard 同為 public standalone。
  */
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'

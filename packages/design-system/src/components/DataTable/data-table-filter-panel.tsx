@@ -115,12 +115,18 @@ function getDefaultOperator(type?: ColumnType): string {
   return (type && DEFAULT_OPERATOR[type]) || DEFAULT_OPERATOR.string
 }
 
+// Q6(2026-07-04):date 欄位把比對精度寫進 condition(includeTime=true → ms,否則 day)。
+// 'time' 欄暫不寫(值非完整日期,truncate 語意不成立;見 filter-operators.spec v3 time 註)。
+const datePrecisionOf = (col: FilterColumn | undefined): 'day' | 'ms' | undefined =>
+  col?.type === 'date' ? (col.includeTime ? 'ms' : 'day') : undefined
+
 const newCondition = (firstCol: FilterColumn | undefined): FilterCondition => ({
   kind: 'cond',
   id: newId(),
   field: firstCol?.id ?? '',
   op: firstCol ? getDefaultOperator(firstCol.type) : '',
   value: '',
+  datePrecision: datePrecisionOf(firstCol),
 })
 
 // **G fix(2026-05-04)**:initial-mount 用 — field 不預選,user 自選後 op/value 才 enable
@@ -588,7 +594,7 @@ function DataTableFilterPanelInner<TData>({
             onChangeConjunction={setFlatConjunction}
             onChangeField={(v) => {
               const newCol = filterableColumns.find((c) => c.id === v)
-              updateFlatCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '' })
+              updateFlatCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '', datePrecision: datePrecisionOf(newCol) })
             }}
             onChangeOp={(v) => updateFlatCondition(cond.id, { op: v, value: '' })}
             onChangeValue={(v) => updateFlatCondition(cond.id, { value: v })}
@@ -793,7 +799,7 @@ function GroupBlock({
             onChangeConjunction={onChangeGroupConjunction}
             onChangeField={(v) => {
               const newCol = filterableColumns.find((c) => c.id === v)
-              onChangeCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '' })
+              onChangeCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '', datePrecision: datePrecisionOf(newCol) })
             }}
             onChangeOp={(v) => onChangeCondition(cond.id, { op: v, value: '' })}
             onChangeValue={(v) => onChangeCondition(cond.id, { value: v })}

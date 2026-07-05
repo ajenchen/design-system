@@ -1,3 +1,6 @@
+// @anatomy-rationale: Inspector + ColorMatrix N/A — AppShell 是 page-level layout composite
+// (sidebar+header+main+aside 組合),無 cva color variant → ColorMatrix N/A;
+// 無 interactive prop control(slots 全 ReactNode 組合)→ Inspector N/A(Dim 13 例外 marker)。
 // @benchmark-cited: anatomy 6-canonical 對齊 Polaris / Material anatomy spec
 // @story-baseline: packages/design-system/src/components/Sidebar/sidebar.stories.tsx#IconCollapse
 // (透過 ./_demo-helpers AcmeSidebar / PageHeader / WorkspaceBrand / UserFooter 共用 baseline,

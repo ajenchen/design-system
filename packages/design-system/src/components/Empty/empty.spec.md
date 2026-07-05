@@ -32,6 +32,7 @@ benchmark:
 - **SelectMenu / Combobox 下拉空**：「無選項」「找不到符合的項目」
 - **Page section 無內容**：dashboard widget 暫無資料、設定頁未建立任何項目
 - **初次引導**：讓使用者首次使用時知道「這裡會放什麼」+ 有 CTA 建立
+- **容器級無權限提示**（2026-07-04 Q7 拍板）：卡片 / 區塊 / 面板內容因權限不可見 — **必附 request-access 類 action**（對齊 Atlassian「Request access」empty state 官方範例 + Carbon error-management scenario）；整頁級 403 / 404 仍禁用（→ 專屬錯誤頁面，見「何時不用」）
 
 ## 何時不用
 
@@ -113,7 +114,7 @@ Empty 是 **non-interactive layout primitive**——本身無 ARIA role(讓 cons
 | Page section 暫無內容 | `<section aria-labelledby={titleId}>` + `<h2>` 包 title slot | 對齊 WCAG 2.1 SC 2.4.6 標題明確語意 |
 | 初次引導(有 CTA) | Action Button 自帶 a11y;無需 Empty 層額外 ARIA | CTA 是真實互動 element,自己的 a11y 足夠 |
 
-**Title slot heading level**:Empty 不渲染 heading tag(`<h1>` / `<h2>`),只 `<div>` + 視覺 typography。Consumer 若需 heading semantic,在外層自包 `<h2>{title}</h2>` + 不傳 Empty 的 title prop(避免重複)。
+**Title slot heading level**:Empty 不渲染 heading tag(`<h1>` / `<h2>`),只 `<span>` + 視覺 typography。Consumer 若需 heading semantic,在外層自包 `<h2>{title}</h2>` + 不傳 Empty 的 title prop(避免重複)。
 
 **Icon slot**:LucideIcon 自動渲染 `aria-hidden="true"`(decorative);ReactElement(自帶 Avatar / Illustration)由 consumer 控制 `aria-hidden` / `alt`(若是 `<img>` 必傳 `alt=""` 表示 decorative)。
 

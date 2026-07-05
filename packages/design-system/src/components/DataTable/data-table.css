@@ -119,7 +119,7 @@
        - Right panel 最右 cell 旁:outer container border
      若 cell shadow 跟 panel/outer border 重疊 = 2px 視覺。
      Fix v3:`:not(:last-child)` 排除每 panel 最右 cell,讓 panel/outer border 唯一 own
-     panel-boundary 視覺。對齊 spec.md L462 grid line 1px SSOT canonical。 */
+     panel-boundary 視覺。對齊 data-table.spec.md「Paint」段 grid line 1px SSOT canonical(段名指法)。 */
   box-shadow: inset -1px 0 0 var(--divider);
 }
 
@@ -131,7 +131,7 @@
 
 /* Phase 9 Issue 1 fix(2026-05-10):range cells bg fill — cell 自身 bg layer
    (在 cell content 之下),non-overlay。Per codex Q1 verdict 對齊 row selected idiom
-   `--primary-subtle`(`data-table.spec.md` L170-174)。
+   `--primary-subtle`(`data-table.spec.md`「L2 選取」段;原引 L170-174 之 selected-row bg 語意 2026-05-31 已廢除,改指現行段)。
    Layer 不再畫 RangeFill div(避免 layer fixed positioned bg 蓋 cell content)。 */
 /* 2026-05-13 V1.6 fix(codex caught medium severity):disabled cell bg dominance — disabled cell
    included in spreadsheet range 不該被 range fill 蓋過,disabled state visual 必勝。 */

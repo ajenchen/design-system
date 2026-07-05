@@ -205,8 +205,10 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, BreadcrumbListProps>(
     // Declarative mode(items prop provided):自動 render + auto-collapse
     const declarativeContent = React.useMemo(() => {
       if (!items) return null
-      const renderItem = (spec: BreadcrumbItemSpec, role: 'root' | 'middle' | 'current') => (
-        <BreadcrumbItem key={`${role}-${typeof spec.label === 'string' ? spec.label : Math.random()}`} role={role}>
+      // 2026-07-04 修:非字串 label 的 key 原用 Math.random() → 每次 render 新 key 造成
+      // BreadcrumbItem unmount/remount(重置 TruncatedLabel ResizeObserver 與 state)→ 改 stable idx key
+      const renderItem = (spec: BreadcrumbItemSpec, role: 'root' | 'middle' | 'current', idx: number) => (
+        <BreadcrumbItem key={`${role}-${typeof spec.label === 'string' ? spec.label : idx}`} role={role}>
           {role === 'current'
             ? <BreadcrumbPage startIcon={spec.startIcon}>
                 <TruncatedLabel fullText={typeof spec.label === 'string' ? spec.label : undefined}>{spec.label}</TruncatedLabel>
@@ -264,7 +266,7 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, BreadcrumbListProps>(
             </BreadcrumbItem>
           )
         } else {
-          rendered.push(renderItem(entry.spec, entry.role))
+          rendered.push(renderItem(entry.spec, entry.role, i))
         }
       })
       return rendered
@@ -596,7 +598,11 @@ export const breadcrumbMeta = {
 
   },
   sizes: {
-
+    // 值源 = code SSOT:BREADCRUMB_SIZE_TEXT(sm/md=text-body, lg=text-body-lg)+ BREADCRUMB_ICON_SIZE(sm/md=16, lg=20)。
+    // Breadcrumb 是文字列無固定高度 token,故不列 height(對照 Tag meta 有自身 h-* 才列)。
+    sm: { iconSize: 16, typography: 'body' },
+    md: { iconSize: 16, typography: 'body' },
+    lg: { iconSize: 20, typography: 'body-lg' },
   },
   states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
   tokens: {

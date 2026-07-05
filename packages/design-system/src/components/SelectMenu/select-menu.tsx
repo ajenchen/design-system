@@ -11,7 +11,7 @@ import { useControllable } from '@/design-system/hooks/use-controllable'
 import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
 import { Command, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator } from '@/design-system/components/Command/command'
-import { Command as CommandPrimitive } from 'cmdk'
+import { Command as CommandPrimitive, useCommandState } from 'cmdk'
 import { MenuItem, MenuFooter } from '@/design-system/components/Menu/menu-item'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
@@ -86,10 +86,13 @@ export interface SelectMenuProps {
   searchPlaceholder?: string
   /** 空選項提示 */
   emptyText?: string
-  /** Loading 狀態(2026-05-15 audit B fix per user verbatim「dropdown 隨時可開,讀取在 panel 中間 CircularProgress」)
-   *  true → render `<Empty icon={<CircularProgress size={48}/>} className="py-6" />` 取代 options(純 spinner,無 description);
-   *  trigger 不變,user 隨時可開 dropdown。對齊 MUI Autocomplete loading dropdown-body + Ant Select
-   *  loading idiom + DS 既有 `empty.spec.md:191` 「全頁 loading = Empty + CircularProgress compose」SSOT。
+  /** 多選 footer 全選列文字(2026-07-05 D4:原「全部」字面 hardcode,無法覆寫也無法 i18n) */
+  selectAllLabel?: string
+  /** Loading 狀態(2026-05-15 audit B fix;2026-07-04 Q3 拍板措辭修訂)
+   *  true → 無可顯示選項時 empty slot(cmdk CommandEmpty)渲 `<Empty icon={<CircularProgress size={48}/>} className="py-6" />`
+   *  (純 spinner,無 description);已有 options 時保留顯示不清空(MUI Autocomplete「only if there are
+   *  no suggestions」共識)。trigger 不變,user 隨時可開 dropdown。DS `empty.spec.md`「loading = Empty +
+   *  CircularProgress compose」SSOT。
    */
   loading?: boolean
 
@@ -124,6 +127,25 @@ export interface SelectMenuProps {
   className?: string
 }
 
+// ── SR live status(2026-07-05 D4:empty / loading 空狀態對 SR 不可感知修)──
+// cmdk CommandEmpty 渲染為 role="presentation" div、cmdk 全鏈無 aria-live,且 DOM focus 停在
+// combobox input(aria-activedescendant 虛擬焦點)→ SR 使用者搜尋到 0 結果或 loading 佔位時
+// 聽不到任何播報(loading spinner 的 CircularProgress 無 label 時更是 aria-hidden)。
+// 補 visually-hidden polite live region,鏡射 CommandEmpty 可見內容(cmdk Empty 只在
+// filtered.count === 0 渲染:loading → 載入文案;否則 → emptyText)。對齊 react-select A11yText /
+// APG combobox no-results 播報 + empty.spec.md「動態 filter no-results 容器需 aria-live="polite"」。
+// SSOT 放 SelectMenu 一處 → Select / Combobox / PeoplePicker 全體受益。
+function SelectMenuLiveStatus({ loading, emptyText }: { loading: boolean; emptyText: string }) {
+  const filteredCount = useCommandState((state) => state.filtered.count)
+  return (
+    <div role="status" aria-live="polite" className="sr-only">
+      {filteredCount === 0
+        ? (loading ? '載入中…' /* i18n-allow: DS default SR-only 播報文案 */ : emptyText)
+        : null}
+    </div>
+  )
+}
+
 // shadcn canonical:forwardRef + displayName 統一。SelectMenu 是 Popover + Command
 // composite,自身無 DOM host(trigger 由 consumer 以 asChild children 提供),ref 簽名
 // 保留但不附著(consumer 想取 trigger DOM 直接在 children 上自己 ref)。className 合併到
@@ -141,6 +163,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   children,
   searchPlaceholder = '搜尋…', // i18n-allow: DS default; consumer override via searchPlaceholder prop
   emptyText = '沒有符合的選項', // i18n-allow: DS default; consumer override via emptyText prop
+  selectAllLabel = '全部', // i18n-allow: DS default; consumer override via selectAllLabel prop
   loading = false,
   size = 'md',
   align = 'start',
@@ -343,7 +366,9 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
               user 過濾出 < minRows 個 match 時 list 底下空一片(eg. 打 'c' 出 2 個 match
               卻撐高到 3 row 容量,1 row 留白)。 Fix:只有 empty state 才需要 minHeight 撐
               起 placeholder 視覺;有 results 時 CommandList 自然 fit content。 */}
-          <CommandList className="relative">
+          {/* aria-busy(2026-07-04):loading 時標注 listbox 忙碌——兌現 select.spec.md「Loading」段
+              「+ aria-busy」承諾(cmdk List 本身即 role="listbox" 容器,wrapper forward props)。 */}
+          <CommandList className="relative" aria-busy={loading || undefined}>
             <CommandEmpty
               className="flex items-center justify-center"
               style={{ minHeight: getMenuListMinHeight(size, minRows) }}
@@ -367,7 +392,16 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                       keywords={opt.description ? [opt.description] : undefined}
                       disabled={opt.disabled}
                       onSelect={() => handleSelect(opt.value)}
-                      className="p-0 rounded-none data-[selected=true]:bg-transparent"
+                      // 2026-07-05 D4 P0 修:原 data-[selected=true]:bg-transparent 蓋掉 command.tsx base
+                      // 的 data-[selected=true]:bg-neutral-hover = cmdk virtual focus(aria-activedescendant)
+                      // 鍵盤 cursor 唯一視覺通道被抹掉 → 方向鍵移動畫面零變化(影響 Select/Combobox/PeoplePicker
+                      // 全家)。鏡射 DropdownMenu wrapper pattern:互動 bg 單一 owner 在外層 CommandItem
+                      //(base highlight 恢復;persistent selection 上移;selected×cursor 加深一階 —
+                      // 對齊本日 DropdownMenu Q2 決策),內層 MenuItem 全透明。
+                      className={cn(
+                        'p-0 rounded-none',
+                        !multiple && isSelected(opt.value) && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected-active',
+                      )}
                     >
                       <MenuItem
                         size={size}
@@ -378,6 +412,13 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                         checked={isSelected(opt.value)}
                         selected={!multiple && isSelected(opt.value)}
                         disabled={opt.disabled}
+                        // 2026-07-05 D4:巢狀 role 修 — MenuItem 預設 role="option" + aria-selected(persistent
+                        // selection)巢狀在 cmdk CommandItem(本身 role="option" + aria-selected=cursor)內,
+                        // AT 讀到 option 包 option 且內外 aria-selected 語意相反 → 朗讀錯亂。鏡射 DropdownMenu
+                        // canonical(dropdown-menu.tsx「Pure visual — Radix parent handles role/aria」):
+                        // 內層純視覺 role="presentation",cmdk CommandItem 是唯一 option 節點。
+                        role="presentation"
+                        className="!bg-transparent hover:!bg-transparent"
                       >
                         {renderLabel ? renderLabel(opt) : opt.label}
                       </MenuItem>
@@ -398,9 +439,11 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                       onCreate?.(search.trim())
                       setSearch('')
                     }}
-                    className="p-0 rounded-none data-[selected=true]:bg-transparent"
+                    className="p-0 rounded-none"
                   >
-                    <MenuItem size={size} startIcon={Plus}>
+                    {/* 2026-07-05 D4:同上方選項 row 的巢狀 role 修 — creatable row 同樣是
+                        MenuItem 巢狀在 cmdk CommandItem(option)內,內層純視覺 role="presentation"。 */}
+                    <MenuItem size={size} startIcon={Plus} role="presentation" className="!bg-transparent hover:!bg-transparent">
                       {createLabel(search.trim())}
                     </MenuItem>
                   </CommandItem>
@@ -409,18 +452,38 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             )}
           </CommandList>
 
+          {/* SR 播報 empty / loading 空狀態(見 SelectMenuLiveStatus docblock,2026-07-05 D4) */}
+          <SelectMenuLiveStatus loading={loading} emptyText={emptyText} />
+
           {/* Multi-select footer: Select All
               - 沒有選項時不顯示(selectableOptions.length === 0)
               - 搜尋有文字時不顯示(search 非空 = 使用者在找特定項目,「全選」沒意義) */}
           {multiple && selectableOptions.length > 0 && !search && (
             <MenuFooter>
+              {/* 2026-07-05 D4:全選列鍵盤可達修 — 原裸 MenuItem(div 預設 role="option" 無 tabIndex)
+                  位於 CommandList 之外:cmdk 方向鍵只導覽 [cmdk-item]、Tab 也到不了 div → 鍵盤使用者
+                  完全無法操作全選(WCAG 2.1.1),且該 role="option" 無 listbox 祖先(orphan,axe
+                  aria-required-parent)。改真實 focusable checkbox 語意:tabIndex=0 + role="checkbox" +
+                  aria-checked(indeterminate → "mixed")+ Enter / Space 觸發;preventDefault 讓 cmdk root
+                  onKeyDown(源碼檢查 e.defaultPrevented)不會再對 active option 重複觸發 Enter。
+                  aria-selected 顯式蓋回 undefined(MenuItem 內建 aria-selected 對 role="checkbox" 無效)。 */}
               <MenuItem
                 size={size}
                 checkbox
                 checked={allState}
                 onClick={handleSelectAll}
+                role="checkbox"
+                aria-checked={allState === 'indeterminate' ? 'mixed' : allState}
+                aria-selected={undefined}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleSelectAll()
+                  }
+                }}
               >
-                全部
+                {selectAllLabel}
               </MenuItem>
             </MenuFooter>
           )}
@@ -451,5 +514,24 @@ export const selectMenuMeta = {
     ring: [],
   },
 } as const
+
+/**
+ * 2026-07-05 D4 P0 修(searchable 鍵盤死路):trigger 內的裸 <input> 與 portal 內的 cmdk root
+ * 在不同 DOM 子樹 — 鍵盤事件永遠 bubble 不到 cmdk 的 ArrowUp/Down/Enter handler([cmdk-root]
+ * onKeyDown)→ searchable Select / PeoplePicker single / Combobox searchIn='trigger' 開啟後
+ * 只能 Esc。修法 = APG combobox-with-list:trigger input 把三鍵 re-dispatch 給 cmdk root
+ * (native KeyboardEvent bubbles 經 React root delegation 觸發 cmdk synthetic handler)。
+ * Home/End 刻意不轉送(文字輸入的 caret 語意優先,對齊 MUI/Ant Autocomplete)。
+ * 已知殘項:aria-activedescendant 尚未綁回 trigger input(SR 播報 active option 名),列 D4 P1 backlog。
+ */
+export function forwardKeyToListbox(contentId: string | undefined, e: React.KeyboardEvent): boolean {
+  if (!contentId) return false
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter') return false
+  const root = document.getElementById(contentId)?.querySelector<HTMLElement>('[cmdk-root]')
+  if (!root) return false
+  e.preventDefault()
+  root.dispatchEvent(new KeyboardEvent('keydown', { key: e.key, bubbles: true, cancelable: true }))
+  return true
+}
 
 export { SelectMenu }

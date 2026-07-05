@@ -1,8 +1,7 @@
 ---
 component: ProfileCard
 family: composite
-traits:
-  - isInternal
+traits: []
 variants: {}
 sizes: {}
 benchmark:

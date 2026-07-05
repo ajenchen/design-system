@@ -271,6 +271,7 @@ const CarouselPrevious = React.forwardRef<HTMLButtonElement, ArrowProps>(
 )
 CarouselPrevious.displayName = 'CarouselPrevious'
 
+// code-quality-allow: long-function — 與 CarouselPrevious 結構對稱的 JSX-heavy arrow(方向/位置/邊界三態 className 組合),拆 helper 會破壞兩支對讀性
 const CarouselNext = React.forwardRef<HTMLButtonElement, ArrowProps>(
   ({ className, 'aria-label': ariaLabel = '下一張' /* i18n-allow: DS default; consumer override via aria-label prop */ }, ref) => {
     const { orientation, scrollNext, canScrollNext } = useCarousel()

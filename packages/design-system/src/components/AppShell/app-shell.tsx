@@ -282,7 +282,7 @@ AppShell.displayName = 'AppShell'
  * AppShellAside — right panel:standard inline(desktop) vs modal overlay(mobile)。
  *
  * Desktop(viewport ≥ 768px):
- *   - Render 直接放 layout grid 右側(asideOpen=true 才 mount,close hide via parent)
+ *   - Render 直接放 layout grid 右側(AppShell 恆 render {aside};AppShellAside 於 !asideOpen 自行 return null — 內部自決,非 via parent)
  *   - 不蓋 mask / background 可操作 / 佔 layout 寬
  *   - Vertical extent:primary-sidebar → 頂天立地 / primary-header → header 下方
  *

@@ -57,7 +57,7 @@ Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延
 
 1. **既有 DS 詞彙**:`plain` / `rich` 對齊 FileItem `compact / rich` mode tier idiom(world-class richness gradient)
 2. **世界級 idiom**:Material 3 documentation 公開使用「plain tooltip」+「rich tooltip」術語(verified URL above) <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
-3. **跨元件無語意衝突**:`plain` 不撞 cva variant(無元件用 `variant="plain"`);`rich` 跟 FileItem mode 同義(content density gradient)
+3. **跨元件無語意衝突**:`plain` 不撞 cva variant(無元件用 `variant="plain"`;Select / Combobox 另有 `display="plain"` prop value,屬不同 slot 且同「簡單呈現」語意方向,無認知衝突);`rich` 跟 FileItem mode 同義(content density gradient)
 
 ### Anti-pattern 避免命名
 

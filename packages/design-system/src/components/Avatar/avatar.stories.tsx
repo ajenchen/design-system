@@ -41,7 +41,7 @@ export const Modes = {
 }
 
 /* @story-trait-rationale: Shapes / Colors / AllSizes retired 2026-05-17 per audit Dim 24 —
- *   anatomy.stories.tsx SizeMatrix(含 circle/square shape axis)+ ColorMatrix(9 hue × subtle/solid)
+ *   anatomy.stories.tsx SizeMatrix(含 circle/square shape axis)+ ColorMatrix(12 hue + neutral × subtle/solid)
  *   已 cover trait grids。展示層保留 typical real-product 情境(Modes / Fallback / Status / Count badge 等),
  *   避免跟 anatomy trait grid 重複。 */
 

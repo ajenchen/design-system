@@ -307,7 +307,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             (@radix-ui/react-popover index.js:145),不 inject 任何 onKeyDown。原生 <button>
             靠瀏覽器在 Enter/Space 自動派發 click 才能開;但本 trigger 是 <div role=combobox>,
             div 不會自動派發 click → 鍵盤使用者打不開 panel。故顯式加 onKeyDown
-            (對齊 select.tsx:593-598 既有 canonical + WAI-ARIA APG combobox required keys)。 */}
+            (對齊 select.tsx:609-619 既有 canonical + WAI-ARIA APG combobox required keys)。 */}
         <PopoverTrigger asChild>
           <div
             ref={ref}
@@ -335,13 +335,9 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             data-field-mode="edit"
             data-error={error ? '' : undefined}
             className={cn(
-              fieldWrapperStyles({ mode: 'edit', variant: variant, size }),
+              fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
               'text-left cursor-pointer',
               'focus-visible:outline-none',
-              error && [
-                'border-error hover:border-error-hover',
-                'focus-within:border-error focus-within:hover:border-error',
-              ],
               className,
             )}
             {...props}
@@ -426,9 +422,11 @@ export const timePickerMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // states 對齊真實視覺態:trigger 與 panel item 皆無 'active'(按下)專屬視覺態(2026-07-04 audit 對齊)。
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-neutral-hover', 'bg-primary', 'bg-transparent'],
+    // panel selected 走 bg-neutral-selected(time-columns.tsx isSelected;spec「欄內 item 狀態」),非 bg-primary。
+    bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-transparent'],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground'],
     ring: [],
   },

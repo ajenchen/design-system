@@ -92,7 +92,7 @@ ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const scrollAreaMeta = {
   component: 'ScrollArea',
-  family: null, // non-family composite / overlay / layout
+  family: 'self-contained', // 對齊 scroll-area.spec.md frontmatter(SSOT;同 Separator/OverflowIndicator meta 寫法)
   variants: {
 
   },

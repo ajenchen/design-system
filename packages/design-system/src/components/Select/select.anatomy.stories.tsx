@@ -62,7 +62,7 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
   },
 }
 
-// Error state tokens (edit only) — traced from select.tsx line 177-178
+// Error state tokens (edit only) — traced from select.tsx:431/444/598(NativeSelect 兩處 + CustomSelect trigger)
 // border-error hover:border-error-hover, focus-within:border-error
 const ERROR_TOKENS: Record<StateKey, ColorSpec> = {
   default:  { bg: '--surface', text: '--foreground', border: '--error',       icon: '--fg-muted' },
@@ -324,7 +324,7 @@ export const Overview = {
                 ['onOpenChange', '(open: boolean) => void', '—', 'open 狀態變更 callback'],
                 ['showDisplayEndIcon', 'boolean', 'false', 'display 模式渲 ChevronDown(DataTable cell 對齊)'],
                 ['selectedItemRenderer', '(opt: SelectOption) => ReactNode', '—', 'trigger 已選項目客製 render(PeoplePicker 用)'],
-                ['disabled', 'boolean', '—', '原生屬性，自動覆蓋 mode 為 disabled'],
+                ['disabled', 'boolean', '—', '原生屬性；未傳 mode 時 resolve 為 disabled 樣式（顯式 mode prop 恆優先，見 useResolvedFieldMode）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}

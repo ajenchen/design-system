@@ -5,7 +5,7 @@ import { HEADER_TABS_SLOT_WRAPPER_CLASS } from '@/design-system/patterns/header-
 
 /**
  * @internal — DS-internal primitive(2026-05-23 per `.claude/rules/ui-development.md` Public vs Internal canonical)。
- * end-user app 直接 import 無 functioning UI;由 Dialog / Sheet / Popover / HoverCard / Coachmark 等 DS overlay 元件 wrap 消費。
+ * end-user app 直接 import 無 functioning UI;由 Dialog / Sheet / Popover / Coachmark 等 DS overlay 元件 wrap 消費(HoverCard 不消費 — 2026-07-04 grep 0 import,spec「何時不用」同步)。
  *
  * Overlay Surface primitives — Dialog / Popover / Sheet 共用結構化 sub-components。
  *
@@ -135,10 +135,10 @@ export const SurfaceHeader = React.forwardRef<
                  (不到 dialog 邊 user 抓「分隔線寬度應該要填滿整個 dialog」)
             - v3(本):wrapper 不 inset,TabsList 自己 px-loose 內 padding inset triggers
                   → TabsList border-b 延展全 dialog 寬,triggers 對齊 header content
-            對齊既有 `tabs.spec.md:199`「TabsList 自身 border-b border-border 延展全 header 寬,因
-            TabsList wrapper 是 block-level full-width」+ `:187-189`「selected 底線從 TabsList
-            gray border 位置長出來」+ GitHub Primer UnderlineNav / Ant Design line type / Mantine
-            default 共識(全派 TabsList 自畫 full-width underline)。*/}
+            對齊既有 `tabs.spec.md`「Underline 與 TabsList border 的視覺關係」段「selected 底線從
+            TabsList 的 gray border 位置長出來」(token = border-divider,tabs.tsx TABS_LIST_BASE)
+            + GitHub Primer UnderlineNav / Ant Design line type / Mantine default 共識
+            (全派 TabsList 自畫 full-width underline)。*/}
         <div className={HEADER_TABS_SLOT_WRAPPER_CLASS}>
           {tabsSlot}
         </div>

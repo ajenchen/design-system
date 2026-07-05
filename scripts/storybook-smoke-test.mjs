@@ -16,7 +16,7 @@
 // Hook 進 ci.yml verify job → fail = block main merge / 防 Storybook runtime regression。
 
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -28,6 +28,35 @@ const PORT = 8920
 if (!existsSync(STATIC_DIR)) {
   console.error('❌ storybook-static/ not found. Run `npm run build-storybook` first.')
   process.exit(1)
+}
+
+// ── Stale-build guard(2026-07-05 自抓包 codify)────────────────────────────
+// 本 script 驗的是 storybook-static/ 靜態 build — 若 build 早於 src 最新改動,整輪 smoke =
+// 驗舊碼的假綠燈(anchor:2026-07-05 發現 7/3 舊 build 撐過本 branch 全部 smoke 宣稱)。
+// Guard:storybook-static/iframe.html mtime 必 >= src 最新 tsx/ts/css mtime,否則 fail-loud
+//(fail-closed,對齊 rsync --checksum 檔頭同款沉默陷阱教訓)。純 Node 實作零 shell。
+{
+  const { readdirSync: rd, statSync: st } = await import('node:fs')
+  const staticMtime = st(join(STATIC_DIR, 'iframe.html')).mtimeMs
+  const stale = []
+  const walk = (dir) => {
+    for (const e of rd(dir, { withFileTypes: true })) {
+      if (stale.length >= 5) return
+      const p = join(dir, e.name)
+      if (e.isDirectory()) { if (e.name !== 'node_modules' && e.name !== 'dist') walk(p) }
+      else if (/\.(tsx|ts|css)$/.test(e.name) && st(p).mtimeMs > staticMtime) stale.push(p)
+    }
+  }
+  for (const root of [join(REPO_ROOT, 'packages/design-system/src'), join(REPO_ROOT, 'src')]) {
+    if (existsSync(root)) walk(root)
+  }
+  if (stale.length) {
+    console.error('❌ storybook-static/ 比 src 舊(stale build = 假綠燈)。先跑 `npm run build-storybook` 再 smoke。')
+    console.error('   比 build 新的檔案(前 5):')
+    for (const p of stale) console.error('   ' + p.replace(REPO_ROOT + '/', ''))
+    console.error(`   build mtime: ${new Date(staticMtime).toISOString()}`)
+    process.exit(1)
+  }
 }
 
 // Spawn http.server

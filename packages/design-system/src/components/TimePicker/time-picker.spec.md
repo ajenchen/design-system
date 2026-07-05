@@ -31,7 +31,7 @@ TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Desi
 
 ## Controlled-only rationale(Dim 26)
 
-本元件刻意採 **controlled-only** 模式:`value` + `onChange` 必傳,不支援 `defaultValue` uncontrolled fallback。
+本元件刻意採 **controlled-only** 模式:`value` + `onChange` 成對傳入(型別宣告 optional、無 runtime 強制,對齊 DatePicker / SelectMenu 同慣例),不支援 `defaultValue` uncontrolled fallback。
 
 **為什麼**:
 - 內部狀態(panel `open` + 暫存 `draft` 值)若要跟外部 `value` 雙向 sync 會產生 race condition
@@ -249,7 +249,7 @@ TimePicker 視覺分兩層,各自繼承不同 SSOT:
 
 trigger 的互動狀態(focus / invalid / disabled / readonly)完全繼承 `../Field/field-controls.spec.md` SSOT「Mode 狀態」;panel 內 column item 的 hover / selected / disabled 走 `patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」。TimePicker 層級無自有 state 行為,panel 開 / 關由 Popover primitive 處理。重寫 StateBehavior = 與兩個 SSOT 同時漂移。
 
-對應 anatomy story:保留 `Overview` + `Inspector` + `ColorMatrix`(兩層整合展示) + `SizeMatrix` + 元件特有 `ModeMatrix` / `PrecisionMatrix`。Field-level state 見 Input `StateBehavior` + field-controls.spec.md;panel item-level state 見 SelectMenu / MenuItem 的對應 story。
+對應 anatomy story:保留 `Overview` + `Inspector` + `ColorMatrix`(兩層整合展示) + `SizeMatrix` + `Accessibility` + 元件特有 `ModeMatrix` / `PrecisionMatrix`。Field-level state 見 Input `StateBehavior` + field-controls.spec.md;panel item-level state 見 SelectMenu / MenuItem 的對應 story。
 
 ---
 

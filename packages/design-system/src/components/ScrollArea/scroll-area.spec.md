@@ -3,6 +3,7 @@ component: ScrollArea
 family: self-contained
 variants: {}
 sizes: {}
+traits: []  # Radix wrapper 捲軸 primitive,無 trait variants(R3 trait enforce 無適用項;2026-07-04 dim 29 補宣告)
 benchmark:
   - Radix ScrollArea primitive: github.com/radix-ui/primitives/tree/main/packages/react/scroll-area
 ---

@@ -420,9 +420,9 @@ Description 在 error state 下維持 `text-fg-secondary`(跟其他 state 一樣
 
 ---
 
-## 為何無 Inspector
+## Inspector 與矩陣分工
 
-Steps 的決策是「展示所有步驟進度」,需要一整條鏈才能呈現設計——單互動切換 value 不如 side-by-side 矩陣清楚。關鍵維度由 `OrientationMatrix` / `ColorMatrix`(含 4 狀態色)/ `SizeMatrix` / `StateBehavior`(進度流轉 / linear / error interrupt)/ 元件特有 `IndentAlignment` 五張 story 完整覆蓋。
+Steps 的決策是「展示所有步驟進度」,需要一整條鏈才能呈現設計——關鍵維度由 `OrientationMatrix` / `ColorMatrix`(含 4 狀態色)/ `SizeMatrix` / `StateBehavior`(進度流轉 / linear / error interrupt)/ 元件特有 `IndentAlignment` 五張 side-by-side 矩陣 story 完整覆蓋;`Inspector`(元件檢閱器)另補單一互動 playground(Controls 切 value / completedValues / errorValues / size / orientation / linear / expansion,對齊 anatomy 6-canonical)。矩陣是設計比對主路徑,Inspector 供即時 prop 試切。
 
 ## StateBehavior 說明(Steps 層級特有)
 
@@ -432,7 +432,7 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 
 ## 邊界案例
 
-- **Disabled step**:`disabled` step 視覺繼承 SelectionItem disabled token(`text-fg-disabled`,M24),click 不觸發 navigate;`linear` mode 下 upcoming steps 預設 disabled 直到前面 completed。
+- **Disabled step**:`disabled` step 視覺繼承 SelectionItem disabled token(`text-fg-disabled`,M24),click 不觸發 navigate;`linear` mode 下 upcoming steps 預設不可點(non-clickable:無 `role="button"` / 不進 Tab 順序 / cursor-not-allowed,SR 念 sr-only「未開始」;與 `disabled` prop 不同,**不**設 `aria-disabled` / `data-disabled`)直到前面 completed 解鎖。
 - **Loading(async step state fetch)**:Steps primitive 為 sync render,async data fetch 應由 consumer 在外層 Skeleton 取代整個 Steps;Steps 內部不獨立 own loading prop,**也無 per-step loading state**(content state 集合不含 loading)— 單一步驟 async 進行中即 current,進度細節由 consumer 在 `StepContent` 內呈現。
 - **Empty(0 steps)**:無任何 `<StepItem>` children 時無進度可呈現;consumer 應條件性不渲 Steps 或渲 `<Empty>` 替代,不渲空 Steps container。
 - **Single step / `value` 指向第一步**:合法初始狀態,第一個 step 渲染 current,後續依推導為 reachable / upcoming。
@@ -448,7 +448,7 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 - `../Tabs/tabs.spec.md` — 平行視圖切換（非進度場景）
 - `../Breadcrumb/breadcrumb.spec.md` — 位置路徑（非進度場景）
 - `../RadioGroup/radio-group.spec.md` — 選值（非進度場景）
-- `../Avatar/avatar.tsx` — Indicator 32px 尺寸依據（`AVATAR_SIZE.block.sm/md = 32`）
+- `../../patterns/element-anatomy/item-anatomy.tsx` — Indicator 32px 尺寸依據（`AVATAR_SIZE.block.sm/md = 32`;`AVATAR_SIZE` 常數住 item-anatomy,非 avatar.tsx — Avatar 本身 size 為任意 number）
 - `../../tokens/uiSize/uiSize.spec.md` — `field-height-xs` 地板規則 + Icon 尺寸 Tier
 - `../../tokens/color/color.spec.md` — Primary token
 - CLAUDE.md「選擇 / 狀態視覺必須對齊既有 canonical」— Steps 不用 `bg-neutral-selected` 的理由
@@ -459,6 +459,7 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 
 - **root `aria-label`**:consumer 透過 `<Steps aria-label="註冊流程進度">` 提供(透傳到 `<ol>`),命名此流程。對齊 Angular Material「stepper 必須有 label」。
 - **sr-only 狀態文字**:每個 step header 含 visually-hidden `<span>`「第 N 步,共 M 步,{已完成 / 進行中 / 錯誤 / 未開始}」——indicator 是 `aria-hidden` 純視覺,故 sr-only 是螢幕報讀器**唯一**狀態來源(對齊 Carbon `--assistive-text` 慣例)。
+- **展開狀態 ARIA**(2026-07-05 D4 加):垂直模式 step 含 `<StepContent>` 時,clickable header(`role="button"`)輸出 `aria-expanded`(反映 content 展開狀態;`multiple` toggle 與 `follow-active` 皆同步),並在 content 實際渲染(展開)時以 `aria-controls` 指向 content 區(收合時 content 不在 DOM,不輸出避免 dangling reference)——對齊 WAI-ARIA disclosure pattern trigger 最低要求。chevron 維持 `aria-hidden` 純視覺。
 
 **Keyboard 行為**(Carbon 模型 — sequential Tab,非 tablist roving):
 

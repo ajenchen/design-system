@@ -179,6 +179,7 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 | `tsc -b` 不 emit declaration | TS4023 漏抓;型別 surface 改動必 `npm run build:lib`(詳 `.claude/rules/self-verify.md` Post-edit)|
 | 工具 flag 沉默陷阱:`rsync -a` 等長同秒靜默跳過(必 `--checksum`+fail-closed,詳 build-published-template-mirror.mjs 檔頭)/ `rg` 黏寫 `-rn` 的 `-r`=replace 輸出變假字串(`-n`/`-l` 永不黏 `r`,2026-06-12 兩次答錯 anchor)| 寫後斷言 + flag 分開寫 |
 | DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 → 跑版;hook `check_orphan_ds_css.sh` 機械攔(2026-05-27 anchor)|
+| storybook-smoke 驗 storybook-static/ 舊 build = 假綠 | smoke script 已加 stale-build guard(src mtime > build → fail-loud;2026-07-05 anchor:7/3 舊 build 撐過整 branch smoke 宣稱)|
 
 新 bug → 歸 Meta-Pattern OR 本表 1 行;> 10 條 = 漏寫,**評估 meta-merge 既有 M-rule 而非無腦新增**(meta-patterns velocity ≤ 3/quarter,單 M-rule 必吸收 ≥ 3 prior bugs)。
 

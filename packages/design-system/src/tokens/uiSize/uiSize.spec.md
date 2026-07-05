@@ -39,7 +39,7 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 | `SegmentedControl` | xs / sm / md / lg | **`md`** | `--field-height-md` |
 | `Checkbox` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
 | `RadioGroup` | sm / md / lg | **`md`** | `--field-height-md`（控件 16/20px 對應） |
-| `Rating` | sm / md / lg | **`md`** | `--field-height-md`(container 對齊,icon 走 icon tier 16/16/20) |
+| `Rating` | xs / sm / md / lg | standalone **`xs`** / Field 內跟 Field size(md) | `--field-height-*`(container 對齊;icon 走 identity scale {xs:20, sm:20, md:24, lg:24} 非 icon tier — 偏離 rationale 詳 `rating.spec.md`「為什麼不 default md」+「為什麼不完全對齊 icon tier」段 + 本檔「跨 regime pointer index」carve-out row) |
 | `TimePicker` | sm / md / lg | **`md`** | `--field-height-md`(Ant-style 時間選擇,對齊 DatePicker 家族) |
 | `Tag` | sm / md / lg | **`md`** | 自帶尺寸，透過 Field size 配對 |
 
@@ -158,16 +158,17 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 
 ### 跨 regime pointer index(2026-05-18 codify per user audit「確保 SSOT 不偏移」)
 
-本 Icon Size Tier 段是 DS-wide icon size SSOT 的**主索引**。下列 7 個 carve-out 是別律 owner:
+本 Icon Size Tier 段是 DS-wide icon size SSOT 的**主索引**。下列 8 個 carve-out 是別律 owner:
 
 | Carve-out owner | File | Rule | Rationale cite |
 |---|---|---|---|
-| Rating star | `components/Rating/rating.spec.md:84` | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20 / Material 24 / Airbnb 24 | <!-- @benchmark-unverified -->
-| Avatar 內 icon | `components/Avatar/avatar.spec.md:165` | `round_even(size × 0.6)` formula | Material / Apple HIG |
-| Empty illustration | `components/Empty/empty.tsx:48` | Avatar 48 wrap → icon 28(Avatar formula derived)| Empty-state canonical |
-| FileViewer thumb | `components/FileViewer/file-viewer.tsx:621` | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |
+| Rating star | `components/Rating/rating.spec.md:85` | Identity scale `{sm:20, md:24, lg:24}` 不走 icon tier | Ant 20 / Material 24 / Airbnb 24 | <!-- @benchmark-unverified -->
+| Avatar 內 icon | `components/Avatar/avatar.spec.md:160` | `round_even(size × 0.6)` formula | Material / Apple HIG |
+| Empty illustration | `components/Empty/empty.tsx:57` | Avatar 48 wrap → icon 28(Avatar formula derived)| Empty-state canonical |
+| FileViewer thumb | `components/FileViewer/file-viewer.tsx:552,637` | thumb 64 → icon 20(file-type indicator hardcode 無公式)| Thumbnail UI 慣例 |
 | CircularProgress | `components/CircularProgress/circular-progress.tsx:86` | `strokeWidth = max(2, round(size/10))` stroke ring 厚度非 icon | Geometric scaling |
 | Steps indicator icon | `components/Steps/steps.tsx:25` | `INDICATOR_ICON_SIZE {sm:0, md:16, lg:20}`(sm 因圓圈 8px 太小)| Indicator-internal |
+| Slider thumb/track | `components/Slider/slider.spec.md:86` | thumb 16 / track 4px 固定不隨 size 變(視覺 single tier)| Material 3 / iOS / Ant / Radix 固定 thumb | <!-- @benchmark-unverified -->
 | Checkbox/Switch check | `components/Checkbox/checkbox.tsx:52` + `components/Switch/switch.tsx:83` | `{sm:12, md:12, lg:16}` form-control internal + stroke 下限 12 | iOS HIG / Material 3 / Polaris | <!-- @benchmark-unverified -->
 
 **程式化 SSOT**:`patterns/element-anatomy/item-anatomy.tsx:66` `ICON_SIZE = {sm:16, md:16, lg:20}` 是本 tier 的 type-safe const。**Form control 透過 `tokens/uiSize/icon-size.ts` re-export entry import**(避 components→patterns 反向 dependency)。
@@ -192,9 +193,9 @@ Tabs 導覽容器的高度。獨立於 field-height 和 table-row——tabs 是 
 
 | Token | md | lg | 消費者 |
 |-------|----|----|--------|
-| `--tab-height-sm` | 32px | 40px | Dialog / Sidebar 內的 dense tabs |
-| `--tab-height-md` | 40px | 48px | **預設**，頁面主要 tabs |
-| `--tab-height-lg` | 48px | 56px | Page-level hero tabs |
+| `--tab-height-sm` | 32px | 40px | **預設**(2026-05-17 從 md 改,per `header-canonical.spec.md` Rule W6)— overlay / chrome / dense toolbar tabs |
+| `--tab-height-md` | 40px | 48px | future tier(無 recommended use case,2026-05-17 從預設降級) |
+| `--tab-height-lg` | 48px | 56px | Page-level hero tabs(獨立 tabs 取代 chrome header,值 = `--chrome-header-height`) |
 
 Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
 
@@ -206,7 +207,7 @@ Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
 
 | Token | md | lg | 消費者 |
 |-------|----|----|--------|
-| `--chrome-header-height` | 48px | 56px | Sidebar header/footer、主內容 page header、app top bar、`--sidebar-width-icon`、**Overlay family chrome**(Dialog / Sheet / Popover / Coachmark header + footer,透過 `patterns/overlay-surface` 的 SurfaceHeader / SurfaceFooter padding-based 公式自然閉合等值 48/56,**無 min-h 強鎖**(詳 overlay-surface.spec.md「Chrome dismiss size canonical」))、**Chrome family ChromeHeader primitive**(`patterns/header-canonical/chrome-header.tsx`,Sidebar / FileViewer Toolbar+InfoPanel 消費)|
+| `--chrome-header-height` | 48px | 56px | Sidebar header/footer、主內容 page header、app top bar、**Overlay family chrome**(Dialog / Sheet / Popover / Coachmark header + footer,透過 `patterns/overlay-surface` 的 SurfaceHeader / SurfaceFooter padding-based 公式自然閉合等值 48/56,**無 min-h 強鎖**(詳 overlay-surface.spec.md「Chrome dismiss size canonical」))、**Chrome family ChromeHeader primitive**(`patterns/header-canonical/chrome-header.tsx`,Sidebar / FileViewer Toolbar+InfoPanel 消費)|
 
 ### Canonical 意圖(AR47,2026-04-21)
 
@@ -386,7 +387,7 @@ className={cn(
 
 | Size | Icon size | 備註 |
 |------|-----------|------|
-| xs | 16px | 統一規則(2026-05-18 retire 過去 SegmentedControl xs=14 例外);對齊 Icon Size Tier L132-143 |
+| xs | 16px | 統一規則(2026-05-18 retire 過去 SegmentedControl xs=14 例外);對齊本檔「Icon 尺寸 Tier」段 |
 | sm | 16px | |
 | md | 16px | |
 | lg | 20px | lg 切換到大 icon tier |

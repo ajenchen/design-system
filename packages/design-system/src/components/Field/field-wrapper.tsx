@@ -61,6 +61,16 @@ export const fieldWrapperStyles = cva(
         md: 'text-body h-field-md px-[var(--field-px)] gap-2',
         lg: 'text-body-lg h-field-lg px-[var(--field-px)] gap-2',
       },
+      // error(2026-07-04 Q1 拍板,SSOT 集中):原散在各控件的 error border classes 因
+      // focus-within:!border-primary(!important)被蓋 = dead code(聚焦永遠藍)。
+      // Benchmark 實查證偽舊宣稱:MUI(紅框加粗)/ Ant(紅框紅 glow)/ Polaris(紅 border
+      // + 獨立藍 focus ring)聚焦時 error 紅皆保留;唯一切藍的 Carbon 靠 in-field 紅 icon 補償。
+      // DS 邊框是唯一 error 載體 → error 勝 focus 的「顏色」通道。錯誤清除(edit-clears-error,
+      // useFormValidation)後自然回 focus 藍。
+      error: {
+        true: '',
+        false: '',
+      },
     },
     // mode x variant 交叉:visual chrome 由 compoundVariants 決定
     //
@@ -90,10 +100,13 @@ export const fieldWrapperStyles = cva(
           // 副作用 — Ant 風「選後藍 / 取消灰」自動達成:
           //   - 選 option close popover → Radix focus return to trigger → focus-within fires → 藍
           //   - 點外取消 close popover → focus 移外 → focus-within 不 fire → 灰
-          'focus-within:!border-primary focus-within:hover:!border-primary',
+          //
+          // 2026-07-04 Q1 拍板修訂:「focus dominates everything」對 error 讓位(見 error variant
+          // 註解)— focus 藍只在 error:false compound(下方),error:true 走 error compound 紅。
           'data-[state=open]:border-border-hover',
         ],
       },
+      { mode: 'edit', variant: 'default', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
       {
         mode: 'display',
         variant: 'default',
@@ -125,9 +138,16 @@ export const fieldWrapperStyles = cva(
           'bg-transparent border border-transparent',
           'hover:border-border',
           // 同 default chrome v13.3 SSOT:focus-within !important 強制勝過 data-state
-          'focus-within:!border-primary focus-within:hover:!border-primary',
+          //(2026-07-04 Q1:同 default,focus 藍移到 error:false compound)
           'data-[state=open]:border-border',
         ],
+      },
+      { mode: 'edit', variant: 'bare', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
+      // error chrome(mode=edit 限定,variant 不分 — naked cell 內 error 同樣紅框,保留既有控件層行為):
+      {
+        mode: 'edit',
+        error: true,
+        className: 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error',
       },
       {
         mode: 'display',
@@ -173,12 +193,13 @@ export const fieldWrapperStyles = cva(
           '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
           'border border-border',
           'hover:border-border-hover',
-          // v13.3 SSOT canonical:focus-within !important(同 default + bare)
-          'focus-within:!border-primary focus-within:hover:!border-primary',
+          // v13.3 SSOT canonical:focus-within !important(同 default + bare;
+          // 2026-07-04 Q1:focus 藍移到 error:false compound,error:true 走共用 error compound)
           'data-[state=open]:border-border-hover',
           'group-data-[row-mode=auto]/cell:!items-start',
         ],
       },
+      { mode: 'edit', variant: 'naked', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
       {
         // 2026-05-12 fix v2(M32 root invariant audit):
         //   Q1 root invariant?:cell-as-input display 視覺位置 = `cell.items-{X}` × `Field.height`
@@ -215,8 +236,6 @@ export const fieldWrapperStyles = cva(
         // 移除 `opacity-disabled` blanket — naked wrapper 只負責 substrate(透明 border + 抑制 cursor),
         // 內部 content(text / icon / avatar)各自 disabled context 處理(text-fg-disabled / Avatar opacity 等具體 token)。
         // 對齊 DataTable cell-disabled TD 加 `bg-disabled` 表達 cell-level disabled state 的 SSOT 分權。
-        // **default/bare disabled variant(line 107, 135)deferred R3.5** — 仍依賴 wrapper opacity-disabled
-        // for Avatar dim(Avatar 尚未 fieldCtx-aware self-dim);Avatar self-dim 實作後再連帶移除。
         mode: 'disabled',
         variant: 'naked',
         className: [
@@ -229,6 +248,7 @@ export const fieldWrapperStyles = cva(
       mode: 'edit',
       variant: 'default',
       size: 'md',
+      error: false,
     },
   }
 )
@@ -274,8 +294,8 @@ export const bareInputStyles = [
 //   - Material X-Grid `gridClasses.cell` wrapper 不允許 cell content override alignment
 //   - Notion / Airtable cell content 從 host 繼承,不 hardcode self alignment
 //
-// Hook:`check_naked_row_mode_propagation.sh`(write-time BLOCKER)
-// Audit:design-system-audit Group N M27(periodic batch verify)
+// Hook:`check_field_family_invariants.sh` A.1(原 check_naked_row_mode_propagation.sh 已 folded,write-time BLOCKER)
+// Audit:design-system-audit Group N(periodic batch verify)
 export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-start'
 
 // ── Cell-as-input Display Hover Ring(2026-05-05 v9 — sole remaining ring const)─

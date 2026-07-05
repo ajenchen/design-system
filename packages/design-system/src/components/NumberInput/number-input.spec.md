@@ -106,7 +106,8 @@ col.accessor('price', {
 - **Disabled**:由 Field SSOT own(`Field/field-controls.spec.md` State machine 段)。視覺:wrapper bg → `bg-disabled`(neutral-2,`semantic.css` `--bg-disabled`)、formatted text → `text-fg-disabled`(M24 state>emphasis)。Display mode + disabled 維持格式化輸出但 token 切 disabled。
 - **Loading**:NumberInput 不提供 loading state(`NumberInputProps` 無 `loading` prop、無 `CircularProgress` / `aria-busy` 邏輯)。數值輸入為同步操作,無 async fetch 語意;若需 async 場景(如遠端校驗)請走外層 Field validation + `endSlot` 自訂 spinner。
 - **Empty(null / undefined / 空字串)**:Display mode 渲 `—`(em dash + `text-fg-muted`);Edit mode placeholder 走 default placeholder color。
-- **Invalid input**(non-numeric):input 為 `type="text" inputMode="decimal"`,onChange 以 `Number(raw)` parse,NaN 時忽略不觸發 `onChange`(value 維持原值);搭配 Field validation 渲 error variant(`aria-invalid="true"` + `text-fg-error` border + 下方 error message)。
+- **Invalid input**(non-numeric):input 為 `type="text" inputMode="decimal"`,onChange 以 `Number(raw)` parse,NaN 時忽略不觸發 `onChange`(value 維持原值);搭配 Field validation 渲 error variant(`aria-invalid="true"` + wrapper `border-error`(hover 時 `border-error-hover`)+ 下方 error message)。
+- **輸入中間態**(`-`、`1.`、`0.0` 等 parse 後 lossy 的 raw 字串,2026-07-05 D4 codify):edit mode 以 internal draft string 承載——輸入期間 DOM 顯示 draft 原字串(負號、尾點不被 controlled 回寫吃掉),parse 成功即時同步 `onChange(parsed)`;blur / Enter commit(清 draft、顯示回 committed value,不合法殘字自然還原)、Escape 棄 draft(對齊 form-validation 規則 4)。value 面語意不變:`''` / `'-'` 視為 `null`。對齊 Ant InputNumber / Adobe Spectrum NumberField internal draft canonical。 <!-- @benchmark-unverified -->
 - **負數 / 超大數字**:`toLocaleString(locale)` 自動處理負號與千分位分組,無特殊 prop。
 - **科學記號輸入**(`1e5`):`Number(raw)` parse 為 `100000`,非 NaN 即觸發 `onChange`(`number-input.tsx:136-138`)。
 - **精度上限**:`precision` > 6 為禁止事項(浮點精度雜訊),極端精度走 `Input` + 自驗證。

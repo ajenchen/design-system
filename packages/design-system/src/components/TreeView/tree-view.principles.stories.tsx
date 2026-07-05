@@ -30,7 +30,7 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="mb-12">
-    <h2 className="text-heading-3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+    <h2 className="text-h3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
     {children}
   </section>
 )
@@ -77,7 +77,7 @@ export const UsageGuidance: Story = {
 
       <Section title="何時不用 + 替代方案">
         <Rule
-          title="❌ 互斥展開(同時只開一個):用 Accordion(未來)"
+          title='❌ 互斥展開(同時只開一個):用 Accordion type="single"'
           note="TreeView 預設允許任意多個節點同時展開。若需要「選一個展開其他自動收」的互斥語意,用 Accordion(非 TreeView)"
         >
           <Label warn>(範例省略)TreeView 是多展開,Accordion 是單展開,語意不同</Label>

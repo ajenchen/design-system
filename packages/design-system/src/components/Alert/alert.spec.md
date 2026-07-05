@@ -134,7 +134,7 @@ Alert chrome corner 可承載多個 action(close 左側並排):
 
 ### Multi corner action 場景
 
-目前 Alert API 只透過 `dismissible` 渲染單一 close X。多 corner action 場景目前不支援;若未來 consumer 有需求,走 Checkpoint 3 決策(M8 benchmark + consumer survey),不預先投機擴 API。
+目前 Alert API 只透過 `dismissible` + `onDismiss` 渲染單一 close X(X 僅在傳 `onDismiss` 時渲染——controlled-only,無 handler 的 X 是死按鈕;對齊 Polaris Banner `onDismiss`-driven,2026-07-05 D4,詳 `../Notice/notice.spec.md`「邊界案例」)。多 corner action 場景目前不支援;若未來 consumer 有需求,走 Checkpoint 3 決策(M8 benchmark + consumer survey),不預先投機擴 API。
 
 ---
 
@@ -155,7 +155,7 @@ Subtle vs Solid 的完整 variant × theme class 對照見 anatomy `ColorMatrix`
 - **`inline`(預設)**:頁面內嵌,圓角 + 邊框,像一張 card 嵌在內容區塊裡
 - **`fixed`**:頂部全域警告,無圓角無邊框,橫跨頁面寬度
 
-**為什麼兩種 placement 的圓角不同**:inline 是 content-level card(rounded-md = 4px,對齊 Alert 的 inline 容器身份,與 Dialog / Card 一致);fixed 是 page-level bar(無 radius,橫跨畫面形成整條)。Toast 是浮層用 `rounded-lg`(8px,浮層慣例),跟 Alert 區分。
+**為什麼兩種 placement 的圓角不同**:inline 是 content-level card(rounded-md = 4px,對齊 Alert 的 inline 容器身份,與 Card 同 tier — 見 `tokens/radius/radius.spec.md`「一般元件」;Dialog 屬浮層走 rounded-lg);fixed 是 page-level bar(無 radius,橫跨畫面形成整條)。Toast 是浮層用 `rounded-lg`(8px,浮層慣例),跟 Alert 區分。
 
 完整 placement 對照見 anatomy `PlacementMatrix` story。
 
@@ -180,7 +180,7 @@ Subtle vs Solid 的完整 variant × theme class 對照見 anatomy `ColorMatrix`
 
 ## 邊界案例
 
-- **Disabled(dismiss button)**:Alert **不提供 dismiss 停用 API**——banner dismiss 恆可用(對齊 Polaris / Material Banner:通知關閉鈕應永遠可按)。Alert 本身亦無 `disabled` prop(持久通知不該被禁用)。若需防止 close action(API in-flight)被雙擊,consumer 在 `onDismiss` 內自行 debounce / 加上層鎖,不在 UI 層加 disable(Alert 不提供 dismiss 停用 API、也不把 disabled 轉傳給內部 dismiss Button;Button primitive 本身支援 disabled,但 Alert 刻意不開洞)。
+- **Disabled(dismiss button)**:Alert **不提供 dismiss 停用 API**——banner dismiss 恆可用(對齊 Polaris / Material Banner:通知關閉鈕應永遠可按)。「恆可用」指**已渲染的 X 永遠可按**;X 本身僅在傳 `onDismiss` 時渲染(否則是死按鈕假 affordance,2026-07-05 D4,見「Multi corner action 場景」段 + `../Notice/notice.spec.md`「邊界案例」)。Alert 本身亦無 `disabled` prop(持久通知不該被禁用)。若需防止 close action(API in-flight)被雙擊,consumer 在 `onDismiss` 內自行 debounce / 加上層鎖,不在 UI 層加 disable(Alert 不提供 dismiss 停用 API、也不把 disabled 轉傳給內部 dismiss Button;Button primitive 本身支援 disabled,但 Alert 刻意不開洞)。
 - **Loading**:Alert 本身不需 loading state(非 async surface);若 Alert body action row 內 CTA 在 async 動作中,該 Button 自己處理 `loading` prop。
 - **Empty / icon-only**:Alert 必有 `title`(API contract),無 empty 場景;若無 description 則僅顯示 title + icon,layout 自動收斂。
 - **極長字串**:title 單行 truncate、description 自由換行不截斷(皆繼承 ItemContent 預設);description 超過 2–3 行屬誤用,改 Dialog(見禁止事項)。

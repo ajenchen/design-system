@@ -257,6 +257,7 @@ export const Overview = {
             <tbody>
               {[
                 ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'FieldMode 四模式'],
+                ['variant', "'default' | 'bare' | 'naked'", "'default'", 'Field chrome variant（bare：toolbar / cell-as-input 透明 chrome）'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '尺寸，與 Button 共用 token'],
                 ['error', 'boolean', 'false', '錯誤狀態，紅色邊框 + aria-invalid'],
                 ['value', 'string | null', '—', 'URL 值'],
@@ -264,6 +265,7 @@ export const Overview = {
                 ['placeholder', 'string', "'https://'", '空值時的佔位文字'],
                 ['disabled', 'boolean', 'false', '等同 mode="disabled"'],
                 ['label', 'string', '—', '自訂顯示文字（覆蓋自動 hostname 提取）'],
+                ['showDisplayEndIcon', 'boolean', 'false', 'display 態改包 Field naked wrapper（D-path opt-in，DataTable cell display↔edit 像素對齊；本元件 edit 無 endIcon，故僅 wrapper 無 ItemSuffix）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}

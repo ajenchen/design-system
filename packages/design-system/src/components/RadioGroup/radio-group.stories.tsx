@@ -44,7 +44,9 @@ export const Modes: Story = {
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">disabled</h3>
-        <RadioGroup value="yearly" aria-label="付款方案(disabled mode demo)">
+        {/* mode="disabled" → Radix Root disabled 原生 propagate 全 item(radio 控件真停用);
+            SelectionItem disabled 另管 label 降色 — 雙傳對齊「停用」story 寫法 */}
+        <RadioGroup mode="disabled" value="yearly" aria-label="付款方案(disabled mode demo)">
           <SelectionItem control={<RadioGroupItem value="monthly" id="m-dis" />} label="月付方案" htmlFor="m-dis" disabled />
           <SelectionItem control={<RadioGroupItem value="yearly" id="y-dis" />} label="年付方案" htmlFor="y-dis" disabled />
           <SelectionItem control={<RadioGroupItem value="lifetime" id="l-dis" />} label="終身方案" htmlFor="l-dis" disabled />

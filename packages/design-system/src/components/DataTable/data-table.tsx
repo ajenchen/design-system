@@ -41,7 +41,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/compone
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
-import { resolveCellComponent } from './cell-registry'
+import { resolveCellComponent, type CellComponentProps } from './cell-registry'
 import { DataTableInteractionLayer } from './data-table-interaction-layer'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
@@ -105,7 +105,8 @@ export interface DataTableProps<TData>
    * Slice D Step 1B(2026-05-10):啟用 spreadsheet-grade interaction overlay。
    * Default false(backward-compat)。Enable 後 hover/editor/selected/range 由
    * `DataTableInteractionLayer` overlay 統一畫,per `.claude/planning/datatable-spreadsheet-rfc.md`。
-   * 漸進切換階段,當前 v1 minimal:hover overlay 1 layer。
+   * 現況:hover ring + selection ring + active editor host 三個 sub-layer
+   * (詳 `data-table-interaction-layer.tsx` 檔頭)。
    */
   experimentalSpreadsheetOverlay?: boolean
   /**
@@ -121,15 +122,16 @@ export interface DataTableProps<TData>
    * Slice D Step 4(spreadsheet semantics,2026-05-10 user 拍板 + codex Layer B Q2.1 confirm):
    * Excel-like cell selection:click 1=select / click 2=edit / Shift+click=range。
    * Default false opt-in(per codex「DataTable is not a spreadsheet」既有原則 +
-   * data-table.principles.stories.tsx L283-292)。
+   * data-table.principles.stories.tsx「不是試算表」principle story)。
    * Enable 後 inlineEdit cell click 行為:
    *   - Plain click → setSelectedCellId,**不**進 edit mode
    *   - Click on already-selected → enter edit
    *   - Shift+click → extend range from anchor
    *   - Double-click / Enter / F2 / printable(deferred) → enter edit on selected
    *   - Click empty area → clear selection
-   * 視覺:Layer 渲 SelectionRect(solid `--primary` 2px border)+ RangeRect
-   *   (`--primary-subtle` bg fill)— per user「不要 dash 直接實的就好」+ codex Q2.2 token。
+   * 視覺:selection ring 1px `--primary`(layer `CELL_RING_STYLES.selected`);range 視覺
+   *   = cell-bg `--primary-subtle`(`[data-range-cell]` CSS),outer ring 已 2026-05-10 retire
+   *   — per user「不要 dash 直接實的就好」+ codex Q2.2 token。
    */
   spreadsheetMode?: boolean
 
@@ -140,7 +142,8 @@ export interface DataTableProps<TData>
   defaultSelection?: string[] | DataTableSelection
   /** Selection 變更 callback(emit DataTableSelection union;include / all 兩模型) */
   onSelectionChange?: (next: DataTableSelection) => void
-  /** 全資料集筆數 M(server-side / filter 後);all 模式 count = totalCount − excluded.length(consumer 計算) */
+  /** 全資料集筆數 M(server-side / filter 後);all 模式 count = totalCount − excluded.length。
+   *  **DS 內部零消費(no-op prop)**:僅型別文件 + destructure 防 spread 到 DOM;count 全由 consumer 計算 */
   totalCount?: number
   /** 是否啟用 selection / 模式;true 等同 'multi' */
   selectable?: boolean | 'single' | 'multi'
@@ -148,7 +151,7 @@ export interface DataTableProps<TData>
   isRowSelectable?: (row: TData) => boolean
   /** 取 row 唯一 ID(selection 用);default `(row, index) => String(index)` */
   getRowId?: (row: TData, index: number) => string
-  /** Checkbox aria-label fallback;default `'Select row'` */
+  /** Checkbox aria-label fallback;default `'選取此列'` */
   getRowAriaLabel?: (row: TData) => string
   /** Filter 後 hidden selected rows 是否保留(default false,對齊 Material/AG Grid 共識) */
   preserveSelectionOnFilter?: boolean
@@ -484,7 +487,6 @@ function SourceRowProvider({
     droppable.setNodeRef(el)
   }, [draggable.setNodeRef, droppable.setNodeRef])
   const isDragging = draggable.isDragging
-  const style: React.CSSProperties = { ...dragSourceStyle(isDragging) }
   // a11y(2026-05-07 v15.10 codex P1 fix):button-only drag mode 下,row 本身不該成為
   // keyboard tab stop。dnd-kit `useDraggable.attributes` 含 `role="button" tabIndex=0
   // aria-roledescription="..."` 全給 activator 用,套到 row div 會讓每筆 row tabbable
@@ -492,10 +494,14 @@ function SourceRowProvider({
   // **拆分**:rowAttributes 留空(row 是 passive container)/ handleAttributes 全給
   // RowDragHandle Button(它是真 activator,Button 自帶 role/tabIndex 完全相容)。
   const handleAttrs = draggable.attributes as unknown as Record<string, unknown>
-  const ctxValue: SortableRowCtxValue = {
+  // 2026-07-05 D3 perf fix:ctxValue useMemo — 原每 render 新 object,RowDragHandle 的
+  // useLayoutEffect deps [rowEl, ctx] 在每次 DataTableInner render 都 teardown/重掛
+  // MutationObserver + window scroll/resize listener(×每個 visible primary row)。
+  // memo 後 identity 只在 drag 相關值真變(isDragging / invalidDrop 等)時才換。
+  const ctxValue: SortableRowCtxValue = React.useMemo(() => ({
     setNodeRef: setRefs,
     role,
-    style,
+    style: { ...dragSourceStyle(isDragging) },
     attributes: {},
     isDragging,
     // row 不接 listeners(button-only),baseRowDiv `{...(extra?.listeners ?? {})}` 自動 noop
@@ -508,7 +514,7 @@ function SourceRowProvider({
     handleListeners: draggable.listeners as unknown as Record<string, unknown> | undefined,
     handleAttributes: handleAttrs,
     invalidDrop,
-  }
+  }), [setRefs, role, isDragging, draggable.setActivatorNodeRef, draggable.listeners, handleAttrs, invalidDrop])
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
 }
 
@@ -536,7 +542,9 @@ function MirrorRowProvider({
   const droppable = useDroppable({ id, disabled, data: { type: 'row' } })
   const dndCtx = useDndContext()
   const isDragging = dndCtx.active?.id === id
-  const ctxValue: SortableRowCtxValue = {
+  // 2026-07-05 D3 perf fix:ctxValue useMemo(同 SourceRowProvider — 消掉 RowDragHandle
+  // effect 的每 render observer/listener churn;mirror 雖不渲 handle,identity 穩定仍省下游 diff)
+  const ctxValue: SortableRowCtxValue = React.useMemo(() => ({
     setNodeRef: droppable.setNodeRef,
     role,
     style: { ...dragSourceStyle(isDragging) },
@@ -548,7 +556,7 @@ function MirrorRowProvider({
     handleListeners: undefined,
     handleAttributes: {},
     invalidDrop,
-  }
+  }), [droppable.setNodeRef, role, isDragging, invalidDrop])
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
 }
 
@@ -661,11 +669,16 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
       // v15.1:drag 期間 source button hide(visible 邏輯已 guard isDragging),
       // 此處只報「真實 hover」狀態,不疊 isDragging mask。
       const rowHovered = rowEl.hasAttribute('data-hovered')
-      setPos({
-        top: rRect.top + rRect.height / 2,
-        left: tRect.left, // table outer 左 border line position(viewport coords)
-        rowHovered,
-      })
+      const top = rRect.top + rRect.height / 2
+      const left = tRect.left // table outer 左 border line position(viewport coords)
+      // 2026-07-05 D3 perf fix:prev 值比對 — 位置/hover 沒變時回傳 prev reference,
+      // React Object.is bail out(原每 scroll frame 無條件新 object → 每個 visible handle
+      // 每 frame 必 re-render Button + Tooltip + portal,即使位置根本沒動)。
+      setPos((prev) =>
+        prev && prev.top === top && prev.left === left && prev.rowHovered === rowHovered
+          ? prev
+          : { top, left, rowHovered },
+      )
     }
 
     update()
@@ -751,10 +764,11 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
         // 2026-05-12 fix v2(user 抓「drag column sort 啟用時 button 不是 disable 視覺」):
         // 前 Round 4.5 加 `aria-disabled:opacity-[var(--opacity-disabled)]` 在 Button cva
         // 沒生效 — 因為 inline style `opacity` 永遠 win over Tailwind class。Fix:把 disabled
-        // state opacity 也 compute 進 inline style。priority order:invisible 0 → drag 0.5 →
-        // canDrag=false(sort active)disabled visual var(--opacity-disabled) 0.45 → idle 1。
+        // state opacity 也 compute 進 inline style。priority order:invisible 0 → drag var(--opacity-disabled)
+        // 0.45(2026-07-04 修:原硬寫 0.5 違 lib/drag-visual.ts SSOT)→ canDrag=false(sort active)
+        // disabled visual var(--opacity-disabled) 0.45 → idle 1。
         opacity: visible
-          ? (ctx.isDragging ? 0.5 : (canDrag ? 1 : 'var(--opacity-disabled)' as unknown as number))
+          ? (ctx.isDragging ? 'var(--opacity-disabled)' as unknown as number : (canDrag ? 1 : 'var(--opacity-disabled)' as unknown as number))
           : 0,
         pointerEvents: visible ? 'auto' : 'none',
         transition: 'opacity 150ms ease',
@@ -795,20 +809,78 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// AG Grid 模式：header 在 scroll 外面，body 是唯一的垂直 scroll container。
+// AG Grid 模式：header 在 scroll 外面，V scroll 在 center-body（AR44 後現況）。
 //
 //  table
 //  ├── header（固定頂部，不在 scroll 內）
 //  │   ├── left-header
 //  │   ├── center-header（overflow:hidden，JS sync scrollLeft）
 //  │   └── right-header
-//  └── body-viewport（overflow-y:auto，display:flex）
-//      ├── left-body（overflow:hidden）
-//      ├── center-body（overflow-x:auto, overflow-y:hidden）
-//      └── right-body（overflow:hidden）
+//  └── body-viewport（display:flex，無 overflow — AR44 後不再是 scroll container）
+//      ├── left-body（overflow:hidden，JS sync scrollTop）
+//      ├── center-body（overflow-x:auto, overflow-y:auto — 唯一 V scroll，
+//      │               onCenterBodyScroll 同步兩側 scrollTop + header scrollLeft）
+//      └── right-body（overflow:hidden，JS sync scrollTop）
 //
-// 不用 CSS sticky。Header 永遠在頂部。
+// 不用 CSS sticky。Header 永遠在頂部。細節見下方「JS scroll sync(AR44)」註解。
 // ══════════════════════════════════════════════════════════════════════════════
+
+// ── MemoCellSlot(2026-07-05 D3 perf fix)────────────────────────────────────
+// cell-registry 2026-05-13 已把每個 cell type 包成 module-level cached `React.memo(CellWithSurface)`,
+// 但 renderCellContent 每次 render 傳 3 個全新 inline closure(onCommit / onCommitLive /
+// onRequestEdit)+ `meta ?? {}` 新 object → memo shallow-compare 100% fail,防線靜默失效
+// (DataTableInner 任何 re-render — scroll / resize / drag / spreadsheet 選取 / portal keystroke —
+// 都讓全部 visible cells 的 Field display subtree 整棵重渲)。
+// Fix:中介 memo slot — 從 parent 接 stable callback(commitCell / cancelCellEdit / onCellCommit /
+// enterCellEdit)+ primitive rowId / colId,在 slot 內 useCallback 綁 per-cell closure;
+// props 全 primitive / stable reference → memo 真命中,unchanged cells render 成本歸零。
+// Cite world-class:AG Grid「cell renderer stable reference」/ MUI X DataGrid memoized subcomponents。
+const EMPTY_META: Record<string, unknown> = {}
+
+interface MemoCellSlotProps {
+  Cell: React.ComponentType<CellComponentProps>
+  rowId: string
+  colId: string
+  // any-allow: free-form column value(consumer-defined,同 CellComponentProps.value)
+  value: any
+  // any-allow: free-form consumer meta bag(同 CellComponentProps.meta)
+  meta: Record<string, any>
+  mode: 'display' | 'edit'
+  size: 'sm' | 'md' | 'lg'
+  autoRowHeight: boolean
+  isEditable: boolean
+  isDisabled: boolean
+  onCommitCell: (rowId: string, colId: string, next: unknown) => void
+  onCancelCell: (rowId: string, colId: string) => void
+  onCellCommitLive?: (rowId: string, colId: string, next: unknown) => void
+  onEnterEdit: (rowId: string, colId: string) => void
+}
+
+const MemoCellSlot = React.memo(function MemoCellSlot({
+  Cell, rowId, colId, value, meta, mode, size, autoRowHeight,
+  isEditable, isDisabled, onCommitCell, onCancelCell, onCellCommitLive, onEnterEdit,
+}: MemoCellSlotProps) {
+  const onCommit = React.useCallback((next: unknown) => onCommitCell(rowId, colId, next), [onCommitCell, rowId, colId])
+  const onCommitLive = React.useCallback((next: unknown) => onCellCommitLive?.(rowId, colId, next), [onCellCommitLive, rowId, colId])
+  const onCancel = React.useCallback(() => onCancelCell(rowId, colId), [onCancelCell, rowId, colId])
+  // disabled guard 保留原 renderCellContent inline closure 語意(`() => !disabled && setEditingCellId(...)`)
+  const onRequestEdit = React.useCallback(() => { if (!isDisabled) onEnterEdit(rowId, colId) }, [onEnterEdit, isDisabled, rowId, colId])
+  return (
+    <Cell
+      value={value}
+      meta={meta}
+      mode={mode}
+      size={size}
+      autoRowHeight={autoRowHeight}
+      isEditable={isEditable}
+      isDisabled={isDisabled}
+      onCommit={onCommit}
+      onCommitLive={onCommitLive}
+      onCancel={onCancel}
+      onRequestEdit={onRequestEdit}
+    />
+  )
+})
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 function DataTableInner<TData>(
@@ -844,12 +916,10 @@ function DataTableInner<TData>(
   // Phase 7 D.3 portal Field virtualizer unmount preserve draft(2026-05-10 per codex Q-B4 verdict):
   // Lifted draft state in DataTable — Cell DOM unmount(virtualizer scroll out)時 draft 不丟,
   // mount-back 時 portal Field value=draft 而非 row.value,user 編輯中字保留。
-  // editingCellId 變時 useEffect reset draft 到新 cell row.value(全新 edit session)。
+  // draft 生命週期(2026-07-05 D4 fix):cancelCellEdit / commitCell 清 draft;Tab 換格
+  // (handleEditTab)先 commit 當前 draft 再換格 — 原註解宣稱「editingCellId 變時 useEffect
+  // reset draft」的 effect 從未存在,曾致 Tab 換格後下一格顯示上一格草稿。
   const [editingDraft, setEditingDraft] = React.useState<unknown>(undefined)
-  const exitEdit = React.useCallback(() => {
-    setEditingCellId(null)
-    setEditingDraft(undefined)
-  }, [])
 
   // ── Slice D Step 4 spreadsheet semantics state(2026-05-10) ──
   // selectedCellId:`${rowId}:${colId}` Excel-like 選取(click 1)
@@ -878,14 +948,44 @@ function DataTableInner<TData>(
     document.addEventListener('pointerdown', handler, true)
     return () => document.removeEventListener('pointerdown', handler, true)
   }, [spreadsheetMode, selectedCellId, rangeAnchor])
+  // 2026-07-05 D4 fix:edit 退出(commit / cancel)後還原 spreadsheet selection 到該 cell +
+  // 收回焦點到 table root — 原本只清 editingCellId,editor unmount 後 document.activeElement
+  // 掉到 body、selection 不還原 → 每次編輯後鍵盤導覽死巷(方向鍵全滅、必須滑鼠重點),違反
+  // datatable-spreadsheet-rfc.md Contract 11「退出後還給 active cell」(對齊 Excel / AG Grid / Sheets)。
+  const restoreCellSelection = React.useCallback((rowId: string, colId: string) => {
+    if (!spreadsheetMode) return
+    const cellId = `${rowId}:${colId}`
+    setSelectedCellId(cellId)
+    setRangeAnchor(cellId)
+    setRangeFocus(null)
+    // 等 editor unmount 完成後才收回焦點;activeElement 非 body(user 點了其他 focusable /
+    // Tab 換格後下一格 editor autoFocus)時不搶焦點。
+    requestAnimationFrame(() => {
+      const el = tableRef.current
+      if (!el) return
+      const active = document.activeElement
+      if (active === document.body || active === null) el.focus({ preventScroll: true })
+    })
+  }, [spreadsheetMode])
   const commitCell = React.useCallback(
     (rowId: string, colId: string, next: unknown) => {
       onCellCommit?.(rowId, colId, next)
       setEditingCellId(null)
       setEditingDraft(undefined)  // Phase 7:commit 後清 draft
+      restoreCellSelection(rowId, colId)  // 2026-07-05 D4:commit 後 selection 還原(Contract 11)
     },
-    [onCellCommit],
+    [onCellCommit, restoreCellSelection],
   )
+  // cancel 路徑(Esc / popover dismiss)— 同 commit 還原 selection;取代舊無參數 exitEdit
+  const cancelCellEdit = React.useCallback((rowId: string, colId: string) => {
+    setEditingCellId(null)
+    setEditingDraft(undefined)
+    restoreCellSelection(rowId, colId)
+  }, [restoreCellSelection])
+  // edit 進入點(MemoCellSlot onEnterEdit 消費;stable identity 維持 memo 命中)
+  const enterCellEdit = React.useCallback((rowId: string, colId: string) => {
+    setEditingCellId(cellEditId(rowId, colId))
+  }, [])
   // 判 column meta.editable 對特定 row 是否成立(支援 fn)
   // column meta 是 free-form consumer bag(同 renderTypedValue any policy),不適合窄型化
   const isCellEditable = React.useCallback(
@@ -1336,19 +1436,24 @@ function DataTableInner<TData>(
         (experimentalActiveEditorController && isEditingThisCell)
           ? 'display'
           : (isEditingThisCell && !disabled) ? 'edit' : 'display'
+      // 2026-07-05 D3 perf fix:改經 MemoCellSlot — 原 inline closure props 讓 CellWithSurface
+      // memo 100% miss(詳 MemoCellSlot 檔頭註解)。
       content = (
-        <Cell
+        <MemoCellSlot
+          Cell={Cell}
+          rowId={rowId}
+          colId={colId}
           value={cell.getValue()}
-          meta={meta ?? {}}
+          meta={meta ?? EMPTY_META}
           mode={cellMode}
           size={size}
           autoRowHeight={autoRowHeight}
           isEditable={editable}
           isDisabled={disabled}
-          onCommit={(next) => commitCell(rowId, colId, next)}
-          onCommitLive={(next) => onCellCommit?.(rowId, colId, next)}
-          onCancel={exitEdit}
-          onRequestEdit={() => !disabled && setEditingCellId(cellEditId(rowId, colId))}
+          onCommitCell={commitCell}
+          onCancelCell={cancelCellEdit}
+          onCellCommitLive={onCellCommit}
+          onEnterEdit={enterCellEdit}
         />
       )
     } else {
@@ -1420,7 +1525,7 @@ function DataTableInner<TData>(
       const rowId = cell.row.id
       const rowOriginal = cell.row.original
       const isDisabled = isRowSelectable ? !isRowSelectable(rowOriginal) : false
-      const ariaLabel = getRowAriaLabel?.(rowOriginal) ?? 'Select row'
+      const ariaLabel = getRowAriaLabel?.(rowOriginal) ?? '選取此列'
       const checkboxSize = size === 'lg' ? 'lg' : 'md'
       // Cell 整格可點:click cell padding 也觸發 toggle/select(對齊 Linear / Apple Mail / Material DataGrid)
       // 內部 checkbox/radio 用 stopPropagation 避免 double-fire
@@ -1603,9 +1708,11 @@ function DataTableInner<TData>(
           // Phase 9 Issue 8 fix(2026-05-10 user 撞 + codex 重比稿 verdict ADOPT):
           // 之前 `border-r border-divider` 只 right edge → hover overlay outline:-1px 只 right
           // 邊壓 cell border,上左下 sub-pixel 不一致(user 抓「右 1px / 上左下 2px」bug)。
-          // 改 `dtCellGrid` (data-table.css:96-110)用 `box-shadow: inset` 4 邊 1px divider,
-          // 不佔 layout(per user verbatim「在 cell 內容起始位置不變」前提)→ 4 邊一致 grid line
-          // → overlay outline:-1px 4 邊都剛好壓 cell border line。
+          // 改 `dtCellGrid`(data-table.css「dtCellGrid v2/v3」段)box-shadow inset **只保右邊**
+          // `inset -1px 0 0 var(--divider)`(bottom 由 row border-b 接管、:last-child 設 none 防 2px;
+          // 2026-07-04 對齊 css 現況 — 原「4 邊 inset」敘述已被 v2/v3 取代),不佔 layout
+          // (per user verbatim「在 cell 內容起始位置不變」前提)→ 視覺 4 邊 grid line 由
+          // row border + 相鄰 cell 合成 → overlay outline:-1px 壓 cell border line。
           // Field naked edit border 仍 own(per Field SSOT)— 編輯時 Field 自帶 border 1px,
           // 跟 cell 4 邊 inset divider 視覺相疊(同 pixel)= 1 line visual,不雙線。
           inlineEdit && 'dtCellGrid',
@@ -1817,6 +1924,23 @@ function DataTableInner<TData>(
       // Phase B3 IME guard(2026-05-10 per codex Q-B3):中文輸入法組字中 ignore 所有 nav keys。
       // 2026-05-16 Round 5 audit Dim 27 fix:`keyCode` deprecated but still in KeyboardEvent type — no cast needed。
       if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
+      // 2026-07-05 D4 fix:spreadsheet 鍵盤入口 — selection 尚未建立時按方向鍵,seed 第一個
+      // visible cell(原本唯一 set 起點是 mouse click → 鍵盤-only 使用者 Tab 進 table 後方向鍵
+      // 全 no-op,整個 spreadsheet 導覽被滑鼠 gate,違反 spec「鍵盤完整可操作」驗證宣稱。
+      // 對齊 Excel / Google Sheets / AG Grid「focus grid → first cell active」canonical)。
+      if (spreadsheetMode && selectedCellId == null && editingCellId == null
+        && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        const allRows = table.getRowModel().rows.map((r) => r.id)
+        const allCols = table.getVisibleLeafColumns().map((c) => c.id).filter((id) => id !== SELECT_COL_ID)
+        if (allRows.length > 0 && allCols.length > 0) {
+          e.preventDefault()
+          const firstCellId = `${allRows[0]}:${allCols[0]}`
+          setSelectedCellId(firstCellId)
+          setRangeAnchor(firstCellId)
+          setRangeFocus(null)
+        }
+        return
+      }
       if (spreadsheetMode && selectedCellId != null && editingCellId == null) {
         const navKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'F2', 'Escape']
         if (!navKeys.includes(e.key)) return
@@ -1906,7 +2030,7 @@ function DataTableInner<TData>(
               checked={headerCheckedState}
               onClick={(e) => e.stopPropagation()}
               onCheckedChange={() => toggleHeaderCheckbox()}
-              aria-label="Select all visible rows"
+              aria-label="全選可見列"
               disabled={selectableVisibleIds.length === 0}
             />
           )}
@@ -1959,7 +2083,8 @@ function DataTableInner<TData>(
           className={cn(
             'flex items-center min-w-0 flex-1 gap-1 outline-none',
             canSort && 'cursor-pointer hover:text-foreground transition-colors',
-            canSort && 'focus-visible:ring-2 focus-visible:ring-ring rounded-sm',
+            // 2026-07-04:rounded-sm → rounded-md(radius.spec.md 設計哲學(4)rounded-sm 保留未使用,4px 一律 rounded-md)
+            canSort && 'focus-visible:ring-2 focus-visible:ring-ring rounded-md',
           )}
         >
           <TruncateCell className={cn('min-w-0', align === 'right' && 'text-right', align === 'center' && 'text-center')}>
@@ -2122,6 +2247,18 @@ function DataTableInner<TData>(
   // 2026-05-06 v14.4 Notion blue line drop indicator(column reorder visual canonical)
   // 必須宣告在 renderHeaderRow 之前(closure 引用,避 minified bundler TDZ false-positive)
   const [dropIndicator, setDropIndicator] = React.useState<{ id: string; side: 'before' | 'after'; type: 'row' | 'column' } | null>(null)
+  // 2026-07-05 D3 perf fix:shallow-compare setter — drag 中每次 over 變更 handleDragOver 都
+  // set 全新 object,即使 id/side/type 沒變也觸發整個 DataTableInner 重渲(全 visible rows +
+  // cells + header)。值相同 → 回傳 prev reference 讓 React bail out(對齊檔內 invalidRef guard
+  // pattern;`setDropIndicator(null)` 自帶 Object.is bail out 不需經此)。
+  const setDropIndicatorIfChanged = React.useCallback(
+    (next: { id: string; side: 'before' | 'after'; type: 'row' | 'column' }) => {
+      setDropIndicator((prev) =>
+        prev && prev.id === next.id && prev.side === next.side && prev.type === next.type ? prev : next,
+      )
+    },
+    [],
+  )
   // ref for stable lookup in handleDragOver(避免 closure 抓舊值)
   const reorderableColumnIdsRef = React.useRef<string[]>([])
 
@@ -2213,8 +2350,9 @@ function DataTableInner<TData>(
       const effectiveAutoRow = autoRowHeight || rowHasError
 
       // L4 row drag:handle absolute 貼齊 row 左 border(Jira canonical),不佔 column 空間。
-      // 只在 primary region(left 若有,否則 center)+ depth===0 render — RowDragHandle
-      // 內部再用 ctx.role === 'primary' 守門避免 mirror region 重複 render。
+      // 只在 primary region + depth===0 render — primary 永遠 = center(v15.4 撤銷「left 優先」,
+      // 見上方 isPrimaryRegion 註解);RowDragHandle 內部再用 ctx.role === 'primary' 守門避免
+      // mirror region 重複 render。
       const showDragHandle = enableRowDrag && (row.depth ?? 0) === 0 && isPrimaryRegion
       // v15.2 SSOT 對齊 TreeView:drag 期間 suppress 全表 hover state
       // (user directive「drag 時 row 不應 hover / drag button 不應出現」)
@@ -2573,12 +2711,25 @@ function DataTableInner<TData>(
               // 2026-05-13:canEditCell helper(per V4 consolidation,合 editable + !disabled invariant)
               if (!nextRow || !canEditCell(nextMeta, nextRow.original)) continue
               // 找到 next editable cell → commit current + start next edit
+              // 2026-07-05 D4 fix:原本只 setEditingCellId —(a)同 type 相鄰 cell React 同位
+              // 重用 input DOM,blur 不 fire → onBlur commit 不觸發,剛打的 draft 整段遺失;
+              // (b)editingDraft 不清 → 下一格 portal value 顯示上一格草稿(甚至把上一格 draft
+              // commit 進錯的 cell)。Fix:有 draft 先 commit 當前 cell(commitCell 內已清 draft),
+              // 再換格;spreadsheet selection 對齊 edit-entry canonical 清空(commitCell 的
+              // selection restore 對 Tab 換格不適用 — 下一格馬上進 edit)。
+              if (editingDraft !== undefined) commitCell(rowId, colId, editingDraft)
               setEditingCellId(cellEditId(allRows[nextRowIdx], allCols[nextColIdx]))
+              setSelectedCellId(null)
+              setRangeAnchor(null)
+              setRangeFocus(null)
               return
             }
           }
           return (
-            <div onKeyDownCapture={handleEditTab} style={{ width: '100%', height: '100%' }}>
+            // 2026-07-05 D4 fix:key={cellId} 強制 per-cell remount — 相鄰同型欄位 Tab 過去時
+            // uncontrolled Input / NumberCell localValue 原封不動(上一格的字跑到下一格)。
+            // 對齊 cell-registry「mode-keyed remount canonical」(per-cell edit session 是不同 mount cycle)。
+            <div key={cellId} onKeyDownCapture={handleEditTab} style={{ width: '100%', height: '100%' }}>
               <Cell
                 value={value}
                 meta={meta}
@@ -2588,7 +2739,7 @@ function DataTableInner<TData>(
                 isEditable={cellEditable}
                 onCommit={(next) => commitCell(rowId, colId, next)}
                 onCommitLive={(next) => onCellCommit?.(rowId, colId, next)}
-                onCancel={exitEdit}
+                onCancel={() => cancelCellEdit(rowId, colId)}  // 2026-07-05 D4:cancel 還原 selection(Contract 11)
                 onDraft={setEditingDraft}  // Phase 7:每 keystroke 寫 draft → preserve across virtualizer unmount
               />
             </div>
@@ -2799,7 +2950,7 @@ function DataTableInner<TData>(
       const side: 'before' | 'after' = activeIdx < overIdx ? 'after' : 'before'
       // **v15.3 noop suppress**:drop position 等同原位 → 不顯 indicator(對齊 handleDragEnd noop guard)
       if (isReorderNoop(activeIdx, overIdx, side)) { setDropIndicator(null); return }
-      setDropIndicator({ id: String(over.id), side, type: 'column' })
+      setDropIndicatorIfChanged({ id: String(over.id), side, type: 'column' })
     } else {
       // Row drag — 用 allRowIds 算位置(只 same-parent siblings,跨 parent collisionDetection 已過濾)
       const activeIdx = allRowIds.indexOf(String(active.id))
@@ -2807,9 +2958,9 @@ function DataTableInner<TData>(
       if (activeIdx === -1 || overIdx === -1) { setDropIndicator(null); return }
       const side: 'before' | 'after' = activeIdx < overIdx ? 'after' : 'before'
       if (isReorderNoop(activeIdx, overIdx, side)) { setDropIndicator(null); return }
-      setDropIndicator({ id: String(over.id), side, type: 'row' })
+      setDropIndicatorIfChanged({ id: String(over.id), side, type: 'row' })
     }
-  }, [allRowIds, isReorderNoop])
+  }, [allRowIds, isReorderNoop, setDropIndicatorIfChanged])
 
   const handleDragCancel = React.useCallback(() => {
     setActiveDragId(null)

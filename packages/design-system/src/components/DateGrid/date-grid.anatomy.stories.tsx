@@ -133,7 +133,7 @@ export const Overview = {
             </thead>
             <tbody>
               {[
-                ['mode', "'single' | 'multiple' | 'range'", "'single'", '選擇模式(react-day-picker v9)'],
+                ['mode', "'single' | 'multiple' | 'range'", '—', '選擇模式(react-day-picker v9;無預設,未傳時 grid 為非互動純展示)'],
                 ['selected', 'Date | Date[] | { from; to? }', '—', '受控值,型別依 mode 決定'],
                 ['onSelect', '(value) => void', '—', '值變動回呼,參數型別依 mode'],
                 ['defaultMonth', 'Date', 'new Date()', '初始可見月份'],

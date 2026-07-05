@@ -92,6 +92,12 @@ Calendar 是**事件檢視 canvas**,讓 user 以**月 / 週 / 日** 三種 view 
   weekStartsOn={0 | 1}                      // 0=Sun, 1=Mon
   renderEventTile={(event) => ReactNode}    // 自訂 event tile 視覺
   size="md" | "lg"                          // cell 大小(MVP 只 md;lg 為 tech debt)
+  locale="en-US"                            // Intl 語系(月份標題 / 星期名;預設 'en-US')
+  prevAriaLabel="上個月"                    // i18n override:prev 導覽鈕 aria-label
+  nextAriaLabel="下個月"                    // i18n override:next 導覽鈕 aria-label
+  navAriaLabel="行事曆月份導覽"             // i18n override:月份導覽 <nav> landmark aria-label
+  viewToggleAriaLabel="檢視切換"            // i18n override:檢視切換 SegmentedControl aria-label
+  todayLabel="今天"                         // i18n override:「今天」按鈕文字
   className
 />
 ```
@@ -134,7 +140,7 @@ interface CalendarEvent {
 
 ### Cell 規則
 
-- **Cell 尺寸**:MVP 月 view cell 高度固定,容納日期 header + 3 個 event tile;寬度 7 欄等分
+- **Cell 尺寸**:MVP 月 view cell 最小高度 `min-h-28`(112px),容納日期 header + 3 個 event tile,並隨容器高度伸縮(root `h-full` + grid `flex-1`);寬度 7 欄等分
 - **日期 header**:右上角數字(對齊 Google Calendar 視覺慣例)
 - **Today cell**:日期數字以 info-filled pill 強調(對齊 Google Calendar today pill)
 - **Outside day cell**:上/下月溢出日期弱化字色 + 背景略暗區分

@@ -173,7 +173,7 @@ export const commandMeta = {
   },
   states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-neutral-hover', 'bg-surface-raised', 'bg-transparent'],
+    bg: ['bg-divider', 'bg-neutral-hover', 'bg-surface-raised', 'bg-transparent'], // 2026-07-04 補:CommandSeparator h-px bg-divider 實際消費
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground'],
     ring: [],
   },

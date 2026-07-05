@@ -308,7 +308,7 @@ document.documentElement.setAttribute('data-layout-space', 'lg')
 - **不抽 universal LayoutBody / FormLayout primitive**:world-class(Material / Polaris / Atlassian / Carbon / Mantine)都「每元件 own variant + 共享 token」;規則 1-6 universal,角色 scope-relative 易誤封裝。獨特 chrome 已在 `overlay-surface.spec.md` + `action-bar.spec.md`
 - **List-as-region in overlay body**(2026-05-01 canonical):當 Dialog / Sheet / Popover body 內容 = unbounded list-as-region(menu / Cmd+K / nav)時,consumer 用 className override 撤掉 chrome padding(`<DialogBody className="!px-0 !pt-0 !pb-0">`)+ 自管 list outer wrapper(`<div className="py-2">`)+ item 自帶 `px-loose rounded-md`。**不做成 body variant**(`flush?: boolean`)— Material/Atlassian/Mantine/shadcn 都 consumer 自管,Polaris flush API scope 極窄;variant 不解決底層脆弱(加 1 row search/banner 就破功),反把 1 surface decision 拆兩 API。詳 `overlay-surface.spec.md`「List-as-region in overlay body」+ `dialog.tsx:165` JSDoc
 - **Tabs-in-chrome-body 單一 gap owner**(2026-07-01 canonical):`tabsSlot` 模式下 `TabsContent` 放進 `DialogBody`/`SheetBody`/`SurfaceBody`(自帶 `pt-/py-tight`)時**必 `className="mt-0"`** — chrome body 已擁有 header→content gap(規則 2「element → tight」),TabsContent 內建 `mt-tight` 會雙重疊加(md 24 / lg 32)。同「一軸單一 spacing owner」原則(`item-anatomy.spec.md`「垂直 padding 歸屬 / 禁雙重 padding」)。詳 `components/Tabs/tabs.spec.md`「出現在 Dialog」段 + hook `check_tabs_content_chrome_body_double_gap.sh`
-- **v1 → v6**(2026-04-30):block-adjacent 機械 → 親疏判 + bundled-family 分權 + region 二分(bounded/unbounded)+ 多 region 限制。詳 git + memory `feedback_layout_v6_canonical.md`
+- **v1 → v6**(2026-04-30):block-adjacent 機械 → 親疏判 + bundled-family 分權 + region 二分(bounded/unbounded)+ 多 region 限制。詳 git 歷史(原 memory `feedback_layout_v6_canonical.md` 已 prune)
 
 ---
 

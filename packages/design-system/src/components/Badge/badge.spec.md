@@ -167,13 +167,13 @@ Contrast floor **是下限不是上限**——不限制 semantic 繼續往上。
 
 ---
 
-## 字體例外：`text-[10px]`（documented sub-footnote）
+## 字體例外：`text-[10px]`（documented micro-indicator 例外）
 
-Badge count 模式的數字使用 `text-[10px]`,低於 typography 系統最小的 `--font-footnote`（12px）。這是 **Badge 獨有的合法例外**：
+Badge count 模式的數字使用 `text-[10px]`（10px,與 typography 系統最小的 `--font-footnote` 同值;12px 是 `--font-caption`）。不消費 `text-footnote` utility——該 utility 綁 line-height 1.3 且語意為法律文字/來源標注,Badge count 需要 `leading-none`（circle 內數字置中 canonical）。這是 **Badge 獨有的合法例外**：
 
 - **為什麼不加新 typography token**: 10px 是「count indicator 專用尺寸」,全系統**只有 Badge / OverflowIndicator 兩處**使用；創一個 `--font-micro` token 只為這兩個消費者會過度 generalization
-- **為什麼合法**: Badge count 是輔助 indicator（次要訊號）,12px 字寬在 16×16 的圓形 Badge 內缺乏 padding 呼吸(字徑/圓徑比例過密)。對照世界級:Material Badge 10sp、Polaris Badge 字級小於 body、GitHub Counter 10-11px 都小於 body footnote <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
-- **其他元件不得比照**: 若新元件覺得需要 `text-[10px]`,先問「真的不是 footnote 12px 可以解決嗎」,99% 情境 footnote 夠用;真有需求跟 Badge / OverflowIndicator 歸同一 micro-indicator family 討論
+- **為什麼合法**: Badge count 是輔助 indicator（次要訊號）,caption（12px）字寬在 16×16 的圓形 Badge 內缺乏 padding 呼吸(字徑/圓徑比例過密)。對照世界級:Material Badge 10sp、Polaris Badge 字級小於 body、GitHub Counter 10-11px 都小於 body <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **其他元件不得比照**: 若新元件覺得需要 `text-[10px]`,先問「真的不是 caption 12px 可以解決嗎」,99% 情境 caption 夠用;真有需求跟 Badge / OverflowIndicator 歸同一 micro-indicator family 討論
 
 ---
 

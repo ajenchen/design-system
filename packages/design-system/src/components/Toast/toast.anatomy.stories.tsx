@@ -51,7 +51,7 @@ export const Overview: Story = {
                 ['title', 'string', '必填', '主要訊息'],
                 ['description', 'string', '—', '補充說明,自然換行'],
                 ['action', '{ label: string; onClick: () => void }', '—', 'tertiary xs 按鈕(Undo pattern)'],
-                ['duration', 'number', '4000', '自動關閉時間(ms)'],
+                ['duration', 'number', 'action ? 10000 : 4000', '自動關閉時間(ms);含 action 預設加長(2026-07-05 D4)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -100,7 +100,7 @@ export const Inspector: Story = {
     description: { control: 'text', description: '補充說明,自然換行' },
     duration: {
       control: { type: 'range', min: 2000, max: 10000, step: 1000 },
-      description: '自動關閉時間(ms),action toast 建議加長至 6000',
+      description: '自動關閉時間(ms);預設 action 存在 → 10000,否則 4000(2026-07-05 D4)',
     },
     withAction: { control: 'boolean', description: '附 undo action button(樂觀 UI 反悔窗口)' },
   },
@@ -171,7 +171,7 @@ export const ColorMatrix: Story = {
   render: () => (
     <div className="flex flex-col gap-6">
       <div>
-        <H3>跟 Alert 共用同一套 variant × theme</H3>
+        <H3>與 Alert 共用 Notice primitive 與三層 theme 架構(variant × theme 映射各自不同)</H3>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Variant</Th><Th>Bg</Th><Th>data-theme</Th><Th>視覺</Th></tr></thead>
@@ -222,7 +222,7 @@ export const StateBehavior: Story = {
             <thead><tr><Th>階段</Th><Th>觸發</Th><Th>行為</Th><Th>Token / 數值</Th></tr></thead>
             <tbody>
               <tr><Td mono>進場</Td><Td mono>toast()</Td><Td>從右下滑入 + fade-in + stacking shift</Td><Td mono>~400ms(sonner 內建)</Td></tr>
-              <tr><Td mono>自動關閉</Td><Td>`duration` 到期</Td><Td>fade-out + 向右滑出</Td><Td mono>duration ?? 4000ms</Td></tr>
+              <tr><Td mono>自動關閉</Td><Td>`duration` 到期</Td><Td>fade-out + 向右滑出</Td><Td mono>duration ?? (action ? 10000 : 4000) ms</Td></tr>
               <tr><Td mono>手動 dismiss</Td><Td>X button / 向右滑動</Td><Td>立即 fade-out + 滑出</Td><Td mono>滑動 ≥ 45px 或速度夠快(velocity {'>'} 0.11)</Td></tr>
               <tr><Td mono>Pause on hover</Td><Td>Hover 任一 toast</Td><Td>倒數暫停;離開後 resume</Td><Td mono>sonner 預設開啟</Td></tr>
             </tbody>
@@ -284,13 +284,12 @@ export const StateBehavior: Story = {
               label: '復原',
               onClick: () => toast({ variant: 'info', title: '已復原' }),
             },
-            duration: 6000,
           })}
         >
           觸發含 Undo action 的 toast
         </Button>
         <p className="text-footnote text-fg-muted mt-3">
-          Action toast 通常 `duration` 加長至 6000ms,給使用者足夠時間反悔(預設 4000ms 較短)。
+          含 action 的 toast DS 預設 `duration` 自動加長至 10000ms(無 action 4000ms;2026-07-05 D4)——給使用者(含鍵盤 Tab 路徑)足夠時間反悔,無需手動指定。
         </p>
       </div>
 

@@ -904,6 +904,9 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
           aria-selected={selectionMode !== 'none' ? isSelected : undefined}
           aria-level={depth + 1}
           aria-disabled={disabled || undefined}
+          // 2026-07-05 D4 修:aria-roledescription 移到 treeitem(有 role 的元素才合法)—
+          // 供 AT 提示此 node 可拖曳;值消費 dnd-kit attributes SSOT(預設 'draggable')。
+          aria-roledescription={draggable && !disabled ? dragAttrs['aria-roledescription'] : undefined}
           data-tree-id={id}
           data-tree-parent-id={parentId ?? ''}
           data-tree-has-children={hasChildren}
@@ -954,7 +957,14 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               paddingRight: 'var(--tree-px)',
             }}
             onClick={handleRowClick}
-            {...(draggable ? { ...dragListeners, ...dragAttrs } : {})}
+            // 2026-07-05 D4 修:只 spread listeners,不 spread dnd-kit attributes —
+            // useDraggable 預設 attributes 注入 role="button" + tabIndex=0 + aria-pressed +
+            // aria-describedby(鍵盤拖曳指示):role=button 污染 treeitem 語意、tabIndex=0
+            // 讓每 row 變 DOM tab stop 破壞單一 tab stop 虛擬焦點模型(DOM focus 在 row 上按
+            // Enter 會 bubble 到容器 handleKeyDown 但 handler 操作 state focusedId → 錯位);
+            // sensors 僅 PointerSensor(無 KeyboardSensor),這些 attrs 換不到鍵盤拖曳能力。
+            // aria-roledescription 保留在上方 treeitem 元素(有 role 才合法)。
+            {...(draggable ? dragListeners : {})}
             {...props}
           >
             {chevronSlot}
@@ -968,7 +978,12 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               * 對齊 cite:menu-item.tsx:194-195(MenuItem selected bg)+ select-menu.tsx:352-354(SelectMenu multi=checkbox) */}
             {(checkbox || selectionMode === 'multiple') && (
               <ItemPrefix className="pointer-events-none">
-                {checkbox || <Checkbox checked={isSelected} disabled={disabled} aria-hidden="true" />}
+                {/* 2026-07-05 D4 修:auto-render Checkbox 補 tabIndex={-1} — Radix Checkbox root
+                  * 是原生 button(預設可聚焦),aria-hidden + 可聚焦 = axe aria-hidden-focus,且
+                  * 破壞 tree 單一 tab stop 虛擬焦點模型(tree-view.spec.md「Focus」段);
+                  * ItemPrefix pointer-events-none 只擋滑鼠不擋鍵盤。選取語意由 treeitem
+                  * aria-selected 承載,checkbox 純視覺反映。 */}
+                {checkbox || <Checkbox checked={isSelected} disabled={disabled} aria-hidden="true" tabIndex={-1} />}
               </ItemPrefix>
             )}
 

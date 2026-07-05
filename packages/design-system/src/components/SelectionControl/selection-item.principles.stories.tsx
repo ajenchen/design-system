@@ -43,10 +43,10 @@ export const UsageGuidance: Story = {
       <div className="prose prose-sm max-w-prose">
       <p>兩者表達 selectable state,但結構與場景不同:</p>
       <ul>
-        <li><strong>SelectionControl(本元件)</strong>—大塊 row(含 icon / avatar / multi-line description),適合 settings / list-as-page;Notion/Slack idiom</li>
+        <li><strong>SelectionControl rich row(本 primitive,經 Checkbox / RadioGroup 消費)</strong>—大塊 row(含 icon / avatar / multi-line description),適合 settings / list-as-page;Notion/Slack idiom</li>
         <li><strong>Checkbox + Field</strong>—緊湊 form 欄位;適合 form group 多選</li>
       </ul>
-      <p className="text-fg-muted">判斷:row 是 page content(讀取/設定)→ SelectionControl;row 是 form input(submit value)→ Checkbox + Field。</p>
+      <p className="text-fg-muted">判斷:row 是 page content(讀取/設定)→ Checkbox / RadioGroup 的 rich-row 形態(內部消費 SelectionItem,不裸用 &lt;SelectionItem&gt;);row 是 form input(submit value)→ Checkbox + Field。</p>
     </div>
     </div>
   ),

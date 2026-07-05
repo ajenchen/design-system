@@ -5,7 +5,6 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { Search, Upload } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { CircularProgress } from './circular-progress'
-import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
@@ -43,16 +42,9 @@ export const Default: Story = {
   ),
 }
 
-export const ButtonLoading: Story = {
-  name: '按鈕載入中',
-  render: () => (
-    <div className="flex items-center gap-3">
-      <Button variant="primary" loading>處理付款中</Button>
-      <Button variant="secondary" loading>儲存草稿</Button>
-      <Button variant="tertiary" loading>匯出 CSV</Button>
-    </div>
-  ),
-}
+// Retired 2026-07-04 audit Dim 24:`ButtonLoading` 全程只 demo `<Button loading>`(0 個直接 `<CircularProgress>`),
+// 跟 button.stories.tsx「載入中」重複且較弱(那邊有 原始→loading 對照 + iconOnly + startIcon 替換)。
+// Button loading 消費 CircularProgress 的關係由 spec「何時用」+ Size canonical 段記載,story home 在 Button。
 
 export const InlineAction: Story = {
   name: '行內操作',

@@ -160,7 +160,8 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
           className={cn(
             'shrink-0 transition-opacity',
             statusConfig.color,
-            hoverAction && 'group-hover/row:opacity-0',
+            // 2026-07-05 D4:鍵盤 focus 同步觸發 swap(:has(:focus-visible),對齊 item-anatomy SUFFIX_HOVER_REVEAL_BY_GROUP SSOT)
+            hoverAction && 'group-hover/row:opacity-0 group-has-[:focus-visible]/row:opacity-0',
           )}
           aria-hidden
         />
@@ -173,7 +174,7 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
             startIcon={hoverAction.icon}
             aria-label={hoverAction.label}
             onClick={(e) => { e.stopPropagation(); hoverAction.onClick() }}
-            className="absolute inset-0 opacity-0 group-hover/row:opacity-100 transition-opacity"
+            className="absolute inset-0 opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 transition-opacity"
           />
         )}
       </span>

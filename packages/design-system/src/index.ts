@@ -35,6 +35,7 @@ export * from './components/LinkInput/index'
 export * from './components/NumberInput/index'
 export * from './components/PeoplePicker/index'
 export * from './components/Popover/index'
+export * from './components/ProfileCard/index'
 export * from './components/ProgressBar/index'
 export * from './components/RadioGroup/index'
 export * from './components/Rating/index'
@@ -71,7 +72,6 @@ export * from './patterns/resize-handle/index'
 //   - components/Menu
 //   - components/Notice
 //   - components/OverflowIndicator
-//   - components/ProfileCard
 //   - components/SelectMenu
 //   - components/SelectionControl
 //   - patterns/horizontal-overflow

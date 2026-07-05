@@ -162,7 +162,7 @@ Chart 是 **composite data-visualization** 元件,不是單一互動 primitive:
 ## A11y 預設
 
 - **顏色非唯一語義**：不只靠色彩區分類別,配合 icon / label / pattern（Recharts 的 `strokeDasharray` 等）讓色盲 / 黑白列印仍可辨識
-- **Tooltip 鍵盤可存取**：Recharts v3 的 `accessibilityLayer`(本 DS 所有 chart 範例皆已啟用)內建鍵盤導覽——圖表 SVG 自動取得 `tabIndex=0` + `role="application"`,使用者用方向鍵 ←/→ 沿軸刻度逐一瀏覽資料點,讀屏器朗讀當前資料點;無需 controlled `activeIndex` 手動接線
+- **Tooltip 鍵盤可存取**：Recharts v3 的 `accessibilityLayer`(Recharts 3.x 預設啟用;本 DS 長條 / 折線 / 面積範例另顯式標明此 prop 文件化依賴,圓餅 / 環圈走預設)內建鍵盤導覽——圖表 SVG 自動取得 `tabIndex=0` + `role="application"`,使用者用方向鍵 ←/→ 沿軸刻度逐一瀏覽資料點,讀屏器朗讀當前資料點;無需 controlled `activeIndex` 手動接線
 - **對比度**：`--chart-*` 在 light/dark 的 step 選擇已考量對 canvas bg 的對比（light=step-6 / dark=step-5）
 
 ---

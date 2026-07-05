@@ -158,7 +158,8 @@ export const overflowIndicatorMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 2026-07-04 audit 對齊(spec:95「本身無 hover / active / disabled / selected 變化」;code 有 focus-visible ring tsx:106/121)
+  states: ['default', 'focus-visible'],
   tokens: {
     bg: ['bg-muted'],
     fg: ['text-foreground'],

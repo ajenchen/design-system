@@ -273,7 +273,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 ## Loading
 
-`loading?: boolean`(forward 給 SelectMenu SSOT,2026-05-15 audit B 補):dropdown body 內取代 options 顯 `<Empty icon={<CircularProgress size={48}/>}/>`(消費 既有 empty.spec.md「現有消費者」SelectMenu loading row SSOT)+ `aria-busy`。Trigger 不變(chevron 保留,user 隨時可開)。對齊 MUI Autocomplete `loadingText` 雙層 + Ant Select loading,反 trigger spinner 派。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+`loading?: boolean`(forward 給 SelectMenu SSOT,2026-05-15 audit B 補;**2026-07-04 Q3 拍板措辭修訂 — 不清空 stale options**):spinner 只在**無可顯示選項時**佔 empty slot 顯 `<Empty icon={<CircularProgress size={48}/>}/>`(cmdk `CommandEmpty` 機制;已有 options 時保留顯示,不取代)+ `aria-busy`。Trigger 不變(chevron 保留,user 隨時可開)。Benchmark 實查:MUI Autocomplete 官方逐字「shows the loadingText in place of suggestions **only if there are no suggestions to show**」/ Ant Select 清空是 consumer 自選(demo select-users.tsx setOptions([]))非元件行為 — 原「取代 options」是過度宣稱,code 行為即世界級共識。
 
 ---
 
@@ -319,6 +319,7 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 
 - Tab — 聚焦到觸發點
 - Enter / Space — 展開選單(searchable 模式則直接進入打字篩選)
+- ↓ — 選單關閉時亦可直接展開(APG combobox 展開鍵,與 Combobox 同 pattern;展開後不攔,讓方向鍵導覽選單)
 - ↑ / ↓ — 選單展開後在選項間移動
 - Esc — 關閉選單(清除值走右側 clear 按鈕,非 Esc)
 

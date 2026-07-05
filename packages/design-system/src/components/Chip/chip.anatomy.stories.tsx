@@ -416,7 +416,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 「無障礙設計」段。摘要:\n\n  ARIA / Pattern  :繼承 Radix toggle-group 鍵盤模式(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/toggle-group#accessibility)。\n\n  Keyboard 行為  :\n\n- Tab — 進入整組 chip(只有一個 Tab 停留點)\n- ←/→ — 在組內 chip 之間移動焦點\n- Tab — 再按一次離開整組\n- Enter / Space — 切換選取\n\n  Focus  :焦點環為 2px 的 --ring 色描邊(focus-visible 才顯示)。整組 chip 用方向鍵移動焦點、Tab 進出整組——這不是 Dialog 那種把焦點鎖在裡面的行為。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA 對比 ≥ 4.5:1(文字)"}</p>
+      <p className="whitespace-pre-line">{"詳 「無障礙設計」段。摘要:\n\n  ARIA / Pattern  :繼承 Radix toggle-group 鍵盤模式(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/toggle-group#accessibility)。\n\n  Keyboard 行為  :\n\n- Tab — 進入整組 chip(只有一個 Tab 停留點)\n- ←/→ — 在組內 chip 之間移動焦點\n- Tab — 再按一次離開整組\n- Enter / Space — 切換選取\n\n  Focus  :焦點環為 2px 的 --ring 色(ring-2 ring-ring ring-offset-1,以 box-shadow 實作並 outline-none;focus-visible 才顯示)。整組 chip 用方向鍵移動焦點、Tab 進出整組——這不是 Dialog 那種把焦點鎖在裡面的行為。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA 對比 ≥ 4.5:1(文字)"}</p>
     </div>
   ),
 }

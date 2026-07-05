@@ -11,8 +11,8 @@
 - **加 `column.meta.includeTime: boolean` 旗標** — 對齊 Notion idiom,不另設 datetime column type
 - **加 ValueShape `datetime_single` / `datetime_range`** — `includeTime=true` 時切到這兩個 shape
 - **datetime 不另設 relative shape** — `is_relative` 維持 `date_relative`(relative 邏輯不變;12-shape 表與 code `ValueShape` union 皆無 `datetime_relative`)
-- **filter 比對精度**:`includeTime=true` 走 ms 精度(避開 Airtable 著名地雷:filter 忽略 time)
-- **不新增 `time-only` column type**(業界沒人做,罕見場景)
+- **filter 比對精度**:`includeTime=true` 走 ms 精度;default day 級(`startOfDay` 截斷,含 `is` 日期比對 — 2026-07-04 Q6 實作於 `filter-tree.ts` `datePrecision`)(避開 Airtable 著名地雷:filter 忽略 time)
+- **不新增 `time-only` column type**(業界沒人做,罕見場景)—— 後續 Phase C(2026-05-05)已補 `'time'` columnType 供 cell render(`<TimePicker>`);advanced filter 暫 reuse `DATE_OPS`,`time_*` ValueShape 整合留 Phase D+(見 `filter-operators.ts` registry 註解)
 
 ## 1. ValueShape canonical(12 種)
 
@@ -28,7 +28,7 @@
 | `date_relative` | `<Select>` 預設選項 | 相對日期 |
 | `datetime_single` | `<DatePicker showTime>` | 特定 datetime(`includeTime=true`) |
 | `datetime_range` | `<DatePickerRange showTime>` | datetime 介於(`includeTime=true`) |
-| `select_multi` | `<SelectMenu multiple>` from `column.meta.options` | 多選(`select.is` 也走這 — OR 語意) |
+| `select_multi` | `<Combobox>` from `column.meta.options` | 多選(`select.is` 也走這 — OR 語意) |
 | `person_multi` | `<PeoplePicker multiple>` | 多人員(`person.is` 也走這 — OR 語意) |
 | `select_single` | `<Select>` from `column.meta.options` | (預留)罕用 |
 | `person_single` | `<PeoplePicker>` 單選 | (預留)罕用 |
@@ -133,7 +133,7 @@
 | 1-to-1 比對 | ✓ `is` / `is_not`(picker 多選 OR-語意) | ✗ 不適用(陣列比單值 ambiguous) |
 | 集合運算 | ✗ 不適用 | ✓ `has_any_of` / `has_all_of` / `has_none_of` |
 
-差異**根源於 cell 資料形狀**,不是 picker 不同。Value picker 兩者都共用 `SelectMenu` DS 既有元件。
+差異**根源於 cell 資料形狀**,不是 picker 不同。Value picker 兩者都共用 `<Combobox>` DS 既有元件(code 真值 `data-table-filter-panel.tsx` select_multi case)。
 
 ### `person`(4 ops — 跟 select 同邏輯)
 | op key | 中 | en | valueShape | CU | AT | NT |

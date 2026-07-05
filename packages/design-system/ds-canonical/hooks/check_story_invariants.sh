@@ -639,9 +639,12 @@ rule_story_archetype_registry() {
       continue
     fi
 
-    # Read antiPatterns regex list(P0 block only — warn ship later)
+    # Read antiPatterns(block + warn 皆載;2026-07-04 dim 54 修:原只載 block → warn 條目=從未執行的紙防線)
+    # 每條三行一組:severity / regex / unlessRegex(jq -r 原始輸出零跳脫;**禁 @tsv/插值** —
+    # @tsv 把 regex 反斜線雙跳脫、插值 nested-quote 踩 jq lexer,2026-07-04 smoke 連抓兩雷)。
+    # unlessRegex 選填 — ERE 不支援 negative lookahead,兩段式替代:match 且 unless 不 match 才 fire。
     local PATTERNS
-    PATTERNS=$(jq -r --arg c "$COMP" '.components[$c].antiPatterns[]? | select(.severity == "block") | .regex' "$REGISTRY" 2>/dev/null)
+    PATTERNS=$(jq -r --arg c "$COMP" '.components[$c].antiPatterns[]? | .severity, .regex, (.unlessRegex // "")' "$REGISTRY" 2>/dev/null)
     [ -z "$PATTERNS" ] && continue
 
     # 2026-06-03 修:CONTENT 換行 → 空格再 grep。真實 JSX 是多行(<ChromeHeader> 與 <span> 分行),
@@ -649,10 +652,18 @@ rule_story_archetype_registry() {
     # 靜默漏 = 假 P0(對抗稽核抓到)。tr 後整段成單行,[[:space:]]* / .* 才能跨原換行匹配。
     local CONTENT_FLAT
     CONTENT_FLAT=$(echo "$CONTENT" | tr '\n' ' ')
-    while IFS= read -r PATTERN; do
+    while read -r SEV && read -r PATTERN && { read -r UNLESS || true; }; do
       [ -z "$PATTERN" ] && continue
+      # regex self-test(2026-07-04 dim 54:PCRE lookahead 混入曾致 grep exit 2 靜默永不 fire;fail-loud)
+      echo x | grep -qE "$PATTERN" 2>/dev/null
+      if [ $? -eq 2 ]; then
+        echo "⚠️  R8 registry regex 不可執行(ERE invalid,此條防線失效,修 registry):$PATTERN" >&2
+        continue
+      fi
       if echo "$CONTENT_FLAT" | grep -qE "$PATTERN"; then
-        echo "⚠️  R8 story_archetype_registry violation:" >&2
+        # unlessRegex 存在且 match → 豁免(兩段式 negative)
+        if [ -n "$UNLESS" ] && echo "$CONTENT_FLAT" | grep -qE "$UNLESS" 2>/dev/null; then continue; fi
+        echo "⚠️  R8 story_archetype_registry violation(severity: $SEV):" >&2
         echo "   $FILE_PATH wrap <$COMP> matches anti-pattern:" >&2
         echo "   regex: $PATTERN" >&2
         echo "   per registry: .claude/references/story-baseline-registry.json#components.$COMP.antiPatterns" >&2
@@ -660,7 +671,8 @@ rule_story_archetype_registry() {
         echo "   修法:Read baseline story + helpers,抄 production archetype。" >&2
         echo "   或加 \`// @story-baseline-allow: <reason>\` 檔頭豁免(audit-logged)。" >&2
         echo "   詳 .claude/rules/meta-patterns.md M35 + memory/feedback_nearest_same_purpose_canonical.md" >&2
-        record_worst 2  # 2026-06-02 升 P0 BLOCKER:DS + consumer(ds-product-template)全掃確認零現有違規後升級(原 2026-05-20 ship-as-warn 的 TODO 條件達成);只 block-severity antiPattern(warn-severity 仍 stderr-only)
+        # 2026-06-02 升 P0 BLOCKER(block-severity record_worst);warn-severity stderr-only(2026-07-04 補實作)
+        [ "$SEV" = "block" ] && record_worst 2
       fi
     done <<< "$PATTERNS"
   done

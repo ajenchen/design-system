@@ -3,7 +3,7 @@ import { ProfileCard, ProfileCardDefaultActions } from './profile-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 
 const meta: Meta = {
-  title: 'Design System/Internal/ProfileCard/展示',
+  title: 'Design System/Components/ProfileCard/展示',
   parameters: { layout: 'padded' },
 }
 export default meta

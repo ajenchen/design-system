@@ -96,6 +96,7 @@ export const Overview: Story = {
                 升級方案
               </Button>
             }
+            onDismiss={() => {}} // anatomy 4-slot 展示含 dismiss X(2026-07-05 D4:X 僅在傳 onDismiss 時渲染)
           />
         </SubtleShell>
       </div>
@@ -189,13 +190,13 @@ export const Overview: Story = {
                 <Td mono>dismissible</Td>
                 <Td mono>boolean</Td>
                 <Td mono>true</Td>
-                <Td>顯示關閉按鈕</Td>
+                <Td>搭配 onDismiss 顯示關閉按鈕(兩者同時成立才渲染 X)</Td>
               </tr>
               <tr>
                 <Td mono>onDismiss</Td>
                 <Td mono>() =&gt; void</Td>
                 <Td mono>undefined</Td>
-                <Td>關閉按鈕 callback</Td>
+                <Td>關閉按鈕 callback;未傳則不渲染 X(2026-07-05 D4)</Td>
               </tr>
               <tr>
                 <Td mono>iconClassName</Td>
@@ -248,6 +249,7 @@ function NoticeInspector() {
                 ) : undefined
               }
               dismissible={dismissible}
+              onDismiss={() => {}} // 2026-07-05 D4:X 僅在傳 onDismiss 時渲染,Inspector 切 dismissible 才看得到 X
             />
           </SubtleShell>
         </div>
@@ -481,19 +483,22 @@ export const StateBehavior: Story = {
       <div>
         <H3>Dismissible 行為</H3>
         <Desc>
-          Alert 預設可 dismiss(持久通知,使用者需主動關);Toast 通常不 dismiss(計時器自動關)。兩者共用 Notice,僅透過
+          Alert 預設可 dismiss(持久通知,使用者需主動關);Toast 通常不 dismiss(計時器自動關)。兩者共用 Notice,透過
           <code className="font-mono text-footnote mx-1">dismissible</code>
-          prop 控制。
+          +
+          <code className="font-mono text-footnote mx-1">onDismiss</code>
+          控制(X 僅在兩者同時成立時渲染——未接 handler 的 X 是死按鈕,2026-07-05 D4)。
         </Desc>
         <div className="grid grid-cols-2 gap-3 max-w-3xl">
           <div>
-            <p className="text-caption text-fg-muted mb-2">dismissible (default)</p>
+            <p className="text-caption text-fg-muted mb-2">dismissible + onDismiss</p>
             <SubtleShell variant="info">
               <Notice
                 variant="info"
                 iconClassName={SUBTLE_ICON_COLOR.info}
                 title="Audit log 僅限 Business 方案"
                 dismissible
+                onDismiss={() => {}}
               />
             </SubtleShell>
           </div>

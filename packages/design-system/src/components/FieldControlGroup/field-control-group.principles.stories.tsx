@@ -101,7 +101,7 @@ export const UsageGuidance: Story = {
         <Field>
           <FieldLabel>聯絡電話</FieldLabel>
           <FieldControlGroup block>
-            <Select className="w-[88px]" options={CODES} value="+886" onChange={() => {}} />
+            <Select className="!w-[88px]" options={CODES} value="+886" onChange={() => {}} />
             <Input className="flex-1" placeholder="912 345 678" />
           </FieldControlGroup>
         </Field>
@@ -111,8 +111,8 @@ export const UsageGuidance: Story = {
       <section>
         <h2 className="text-body-lg font-bold mb-3">Mode B — Filter row 場景</h2>
         <FieldControlGroup block>
-          <Select className="w-[140px]" options={FIELDS} value="name" onChange={() => {}} />
-          <Select className="w-[120px]" options={OPS} value="contains" onChange={() => {}} />
+          <Select className="!w-[140px]" options={FIELDS} value="name" onChange={() => {}} />
+          <Select className="!w-[120px]" options={OPS} value="contains" onChange={() => {}} />
           <Input className="flex-1" defaultValue="無線滑鼠" />
         </FieldControlGroup>
       </section>

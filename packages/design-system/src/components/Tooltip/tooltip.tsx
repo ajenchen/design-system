@@ -24,7 +24,7 @@ const TooltipContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(({ className, sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, style, children, ...props }, ref) => (
   // collisionPadding default 8px:避免 tooltip 貼 viewport 邊(Radix avoidCollisions 預設 true 但 padding 0 會貼邊)
-  // 對齊 HoverCard canonical 避免 viewport edge clipping
+  // 消費 OVERLAY_COLLISION_PADDING overlay 家族 canonical(與 Popover 一致;HoverCard 特例 12 補 rounding)避免 viewport edge clipping
   <TooltipPrimitive.Portal>
     <TooltipPrimitive.Content
       ref={ref}

@@ -7,11 +7,11 @@ const meta: Meta = {
     docs: {
       description: {
         component: `
-透明度 token 系統。定義「禁用」「半透明遮罩」「hover overlay」等狀態的不透明度。
+透明度 token 系統。系統內唯一 opacity token = \`--opacity-disabled\`(disabled 狀態);其他透明度需求走 alpha 色階(\`--white-aN\` / \`--black-aN\`),不另開 opacity token。
 
 完整規則:\`packages/design-system/src/tokens/opacity/opacity.spec.md\`
 
-**禁:**\`opacity-0\`/\`/N\` 數字 utility(走 token,不直接寫死)。
+**禁:**\`opacity-{5..95}\` 數字 ladder 與 arbitrary \`opacity-[0.N]\`(走 token,不直接寫死);\`opacity-0\` / \`opacity-100\`(show / hide transition)與 \`opacity-disabled\` 為 utility-registry allow。
         `,
       },
     },
@@ -50,19 +50,15 @@ export const Overview: Story = {
     <div className="max-w-4xl">
       <h2 className="text-h3 mb-2">Opacity Tokens</h2>
       <p className="text-body text-fg-secondary mb-6">
-        本系統定義 6 個 opacity token,覆蓋 disabled / hover overlay / backdrop / skeleton 等場景。
-        Token 隨 dark mode 自動切換(dark theme 下 overlay 數值不同)。
+        本系統只定義 1 個 opacity token——<code>--opacity-disabled</code>(0.45,系統內唯一)。
+        其他透明度需求走 alpha 色階(<code>--white-aN</code> / <code>--black-aN</code>),不另開 opacity token;
+        值不隨 dark mode 切換(light / dark 共用 0.45)。
       </p>
 
-      <OpacityRow utility="opacity-disabled" value="0.4" usage="禁用元素整體(整 row 不可互動)" />
-      <OpacityRow utility="opacity-hover-overlay" value="0.04" usage="row hover bg 疊加" />
-      <OpacityRow utility="opacity-press-overlay" value="0.08" usage="row 按下(pressed)bg 疊加" />
-      <OpacityRow utility="opacity-backdrop" value="0.5" usage="Dialog / Sheet backdrop 變暗" />
-      <OpacityRow utility="opacity-skeleton" value="0.12" usage="Skeleton loading 灰塊基底" />
-      <OpacityRow utility="opacity-divider-strong" value="0.16" usage="hover 期間強化的 divider" />
+      <OpacityRow utility="opacity-disabled" value="0.45" usage="所有元件的 disabled 狀態(token swap 為主、opacity blanket 為輔,詳 spec「使用規則」)" />
 
       <p className="text-caption text-fg-muted mt-6">
-        實際 CSS 值見 <code>packages/design-system/src/tokens/opacity/opacity.css</code>;dark mode override 在同檔 <code>[data-theme=&quot;dark&quot;]</code> 段。
+        實際 CSS 值見 <code>packages/design-system/src/tokens/opacity/opacity.css</code>;雙策略(token swap vs opacity blanket)與消費者清單見同目錄 <code>opacity.spec.md</code>。
       </p>
     </div>
   ),

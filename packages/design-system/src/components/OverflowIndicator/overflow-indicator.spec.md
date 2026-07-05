@@ -63,7 +63,7 @@ sm / md 跟 Tag 同階（20/24px），lg 對齊 md（尺寸需求一致，不需
 
 **字級依 shape 分流**：`circle` shape 走元件內建的 `triggerText` map（sm 10px / md·lg 12px）；`tag` shape 直接套 `tagVariants({ size })`（sm 12px / md·lg 14px，見 `tag.spec.md`），刻意對齊 Tag 視覺一致（見上方「trigger 不用 Tag 元件」段）。下方「sm 用 `text-[10px]`」的理由僅適用於 circle shape。
 
-**sm 用 `text-[10px]` 的理由**：sub-footnote 特殊例外,與 Badge 共享「micro-indicator typography」tier——trigger 數字是次要輔助 indicator（非主訊息）,在 20px 小容器內 12px 會擠。完整理由與 pattern-family 說明詳見 `badge.spec.md`「字體例外：`text-[10px]`」。若未來 OverflowIndicator / Badge 以外的元件也需要 sub-footnote 尺寸,應在 typography system 加 `--font-micro` token,再改用 token 而非 arbitrary value。
+**sm 用 `text-[10px]` 的理由**：micro-indicator 特殊例外（10px,與 `--font-footnote` 同值但不消費其 utility——lh 1.3 vs 需要的緊湊行高）,與 Badge 共享「micro-indicator typography」tier——trigger 數字是次要輔助 indicator（非主訊息）,在 20px 小容器內 caption 12px 會擠。完整理由與 pattern-family 說明詳見 `badge.spec.md`「字體例外：`text-[10px]`」。若未來 OverflowIndicator / Badge 以外的元件也需要這個 10px micro-indicator 尺寸,先依 `badge.spec.md`「其他元件不得比照」歸同一 family 討論,確立第三個消費者才升 typography token,而非直接抄 arbitrary value。
 
 ---
 

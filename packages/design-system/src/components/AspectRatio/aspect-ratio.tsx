@@ -22,7 +22,8 @@ import * as AspectRatioPrimitive from '@radix-ui/react-aspect-ratio'
  * Consumer 傳 `ratio={n/m}` 數字計算(如 16/9 = 1.7777)。
  *
  * ── 常見消費者 ──
- * Coachmark media / Carousel item image / Card thumbnail(未來)/ Chart preview
+ * Coachmark media(coachmark.tsx)/ FileViewer 圖片預覽(file-viewer.tsx)/ Carousel item image、Card thumbnail(未來)
+ *(Chart 現用 raw aspect-video 非消費者 — 2026-07-04 grep 驗證)
  */
 
 export type AspectRatioProps = React.ComponentPropsWithoutRef<typeof AspectRatioPrimitive.Root>
@@ -47,7 +48,7 @@ export const aspectRatioMeta = {
   sizes: {
 
   },
-  // 2026-06-05 fix(deep-audit):純 structural container,無互動狀態(spec.md L101「無 hover/focus/active/disabled」)。
+  // 2026-06-05 fix(deep-audit):純 structural container,無互動狀態(spec「為何無 ColorMatrix / SizeMatrix / StateBehavior」段;段名指法免行號漂移)。
   // 原 ['default','hover','active','focus-visible','disabled'] 是 Phase 1 mechanical placeholder,與 spec 矛盾。
   states: ['default'],
   tokens: {

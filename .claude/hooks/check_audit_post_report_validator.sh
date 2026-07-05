@@ -106,6 +106,19 @@ if [ "$DIM_COUNT" -ge 10 ]; then   # 只對 full/deep-audit 規模 report 要求
     WARNINGS="${WARNINGS}\n  🔴 [G] PURE-JUDGMENT dim 真跑證據不足:report 只 ${EVIDENCE_COUNT} 個 per-dim 證據 marker < ${PJ_COUNT} judgment dim(含 infra 62/66/68/72)。judgment dim 無 script/hook 兜底,必每 dim show『DS-wide N files scanned + file:line / 0-after-全掃』證據,否則=mention-only 偷懶。補齊再出 report。"
     TRIGGER_PRUNE=1; CRITICAL_FAIL=1
   fi
+
+  # ─ Validator I: D3/D4/D5 domain-skill chain invocation evidence(2026-07-04 solo-run 偏差 anchor:
+  #   稽核 canonical 6-維度表 D3→/performance-audit、D4→/ux-audit、D5→/visual-audit,但歷次 deep run
+  #   performance-audit 0 次 invoke = chain 缺席沒任何機械閘抓。deep-scale report 必含三 skill 名
+  #   (= 有 chain 或有明寫 N/A 豁免理由;mention 缺席即偷懶 risk)─
+  _D345_MISSING=""
+  for _sk in performance-audit ux-audit visual-audit; do
+    grep -q "$_sk" "$FILE_PATH" 2>/dev/null || _D345_MISSING="${_D345_MISSING} ${_sk}"
+  done
+  if [ -n "$_D345_MISSING" ]; then
+    WARNINGS="${WARNINGS}\n  🔴 [I] D3/D4/D5 domain-skill chain 證據缺席:report 未提及${_D345_MISSING}。稽核 canonical 6-維度表(CLAUDE.md)deep 規模必 chain 三 domain skill(或明寫豁免理由 + skill 名)。補跑/補記再出 report。"
+    TRIGGER_PRUNE=1; CRITICAL_FAIL=1
+  fi
 fi
 
 # ─ Validator BLOCK gate(2026-05-31 fix infra-audit self-finding:原 hook 只 exit 0 + additionalContext

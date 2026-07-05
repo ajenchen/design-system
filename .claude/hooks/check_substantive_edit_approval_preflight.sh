@@ -43,8 +43,9 @@ case "$FILE_PATH" in
 esac
 
 # Allowlist:storybook config / scripts / tests 等非 production code
+# (dim 59 2026-07-04:*.test.ts → *.test.* 補 .test.tsx;第一道 case 已限 tsx/ts/css,不會誤放 .md)
 case "$FILE_PATH" in
-  *.stories.tsx|*.test.ts|*.spec.ts|*/scripts/*) exit 0 ;;
+  *.stories.tsx|*.test.*|*.spec.ts|*/scripts/*) exit 0 ;;
 esac
 
 [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ] && exit 0
@@ -63,7 +64,9 @@ RECENT_USER_MSGS=$(tail -200 "$TRANSCRIPT_PATH" 2>/dev/null | \
 #   (a) 加「妳」變體(`照妳`= `照你` 文書通用 variant)
 #   (b) 加「決策[一二三四五六七八九十1-9]」numbered directive(eg.「決策一改…」「決策3做」)
 #   (c) 加「做到好」/「都做」/「全做」auto-approve 變體
-APPROVAL_RE='(同意|採用|採納|拍板|拍\s*[A-Z0-9]|可以|改成|改為|執行|上吧|push|implement|go ahead|approved|OK|好|沒問題|做一做|就做|做吧|做完|全部做完|做到完|做到好|都做|全做|馬不停蹄|建議做|ship|合 main|^#[0-9]+|照你|照妳|照建議|照共識|照我的|按照|決策[一二三四五六七八九十1-9]|[A-Z][0-9]+\s*(做|改|修)|先\s*[A-Z][0-9]+)'
+# 2026-07-04 M7 detection-breadth fix(user verbatim「同意補詞」拍板):「核可修 production 佇列」曾被判
+# 0 approval — 20+ 口語變體卻漏最標準的「核可 / 批准」,補上。
+APPROVAL_RE='(同意|採用|採納|拍板|拍\s*[A-Z0-9]|核可|批准|可以|改成|改為|執行|上吧|push|implement|go ahead|approved|OK|好|沒問題|做一做|就做|做吧|做完|全部做完|做到完|做到好|都做|全做|馬不停蹄|建議做|ship|合 main|^#[0-9]+|照你|照妳|照建議|照共識|照我的|按照|決策[一二三四五六七八九十1-9]|[A-Z][0-9]+\s*(做|改|修)|先\s*[A-Z][0-9]+)'
 HAS_APPROVAL=$(echo "$RECENT_USER_MSGS" | grep -cE "$APPROVAL_RE" 2>/dev/null)
 HAS_APPROVAL=${HAS_APPROVAL:-0}
 

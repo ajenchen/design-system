@@ -66,9 +66,10 @@ export const Overview: Story = {
             <tbody>
               {[
                 ['Tabs', '', '', ''],
+                ['  defaultValue / value', 'string', '—', '當前 tab 值(受控 / 非受控)'],
+                ['TabsList', '', '', ''],
                 ['  size', "'sm' | 'md' | 'lg'", "'sm'", 'tab 高度 tier(對齊 --tab-height-*);size 選擇指引詳「設計原則 → 尺寸選擇」'],
                 ['  overflow', "'none' | 'scroll' | 'menu'", "'none'", '水平溢出處理(捲動 / 下拉選單)'],
-                ['  defaultValue / value', 'string', '—', '當前 tab 值(受控 / 非受控)'],
                 ['TabsTrigger', '', '', ''],
                 ['  value', 'string', '必填', '唯一識別碼,對應 TabsContent value'],
                 ['  startIcon', 'LucideIcon', '—', '前綴 icon(描述 tab 類型)'],
@@ -395,7 +396,7 @@ export const SpacingTokens: Story = {
 
       <div>
         <H3>Trigger 無水平 padding</H3>
-        <Desc>Trigger **不加任何水平 padding**——寬度 = 內容寬度(hug content)。selected underline(`::after left-0 right-0`)因此剛好 fit label;若加橫向 padding,underline 會多出鬆散空白。trigger 之間的分隔靠 TabsList 的 `gap-[--layout-space-loose]`,不是 padding。</Desc>
+        <Desc>Trigger **不加任何水平 padding**——寬度 = 內容寬度(hug content)。selected underline(`::after left-0 right-0`)因此剛好 fit label;若加橫向 padding,underline 會多出鬆散空白。trigger 之間的分隔靠 TabsList 的 `gap-[var(--layout-space-loose)]`,不是 padding。</Desc>
       </div>
     </div>
   ),

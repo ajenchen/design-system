@@ -245,7 +245,14 @@ const DropdownMenuItem = React.forwardRef<
       disabled={disabled}
       className={cn(
         radixItemClass,
-        selected && 'bg-neutral-selected',
+        // 2026-07-04 Q2 拍板:selected bg 勝 hover/highlighted(bg 是唯一選中指示器,被 hover 洗掉
+        // = 選中資訊消失)。對齊 MenuItem(menu-item.tsx selected 時關 hover bg)+ Ant Menu
+        // `:not(-item-selected)` + VS Code list `:hover:not(.selected)`;Radix highlighted 同時是
+        // keyboard cursor,selected 項停留時維持 selected bg(DS bg 通道單一職責)。
+        // 2026-07-05 D4 補完 Q2 附帶條件:selected×highlighted(鍵盤 cursor 停留)用加深一階
+        // bg-neutral-selected-active(neutral-3;M23 nearest canonical = Button toggle active 同
+        // family)— 深化而非洗掉 selection,cursor 可感知(WCAG 2.4.7),對齊 MUI selectedOpacity+hover idiom。
+        selected && 'bg-neutral-selected data-[highlighted]:bg-neutral-selected-active',
         className,
       )}
       {...props}
@@ -425,7 +432,8 @@ const DropdownMenuRadioItem = React.forwardRef<
       // 2026-05-31 #10:selected 底色套在外層 Radix RadioItem 本身(非 `[&>*]` 子 MenuItem),
       // 因內層 MenuItem 自帶 `!bg-transparent` 會蓋掉子層 bg → 選中底色從不顯示。
       // 改 parent-bg pattern(對齊 DropdownMenuItem selected):RadioItem 上底色,MenuItem 透明讓它透出。
-      className={cn(radixItemClass, 'data-[state=checked]:bg-neutral-selected', className)}
+      // 2026-07-04 Q2:checked 亦勝 highlighted(同 DropdownMenuItem selected 規則)
+      className={cn(radixItemClass, 'data-[state=checked]:bg-neutral-selected data-[state=checked]:data-[highlighted]:bg-neutral-selected-active', className)}
       {...props}
     >
       <MenuItem
@@ -461,7 +469,7 @@ DropdownMenuShortcut.displayName = 'DropdownMenuShortcut'
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const dropdownMenuMeta = {
   component: 'DropdownMenu',
-  family: null, // non-family composite / overlay / layout
+  family: 1, // 對齊 dropdown-menu.spec.md frontmatter L3(Family 1 消費者;DS 慣例 = meta 對齊 spec frontmatter,原 null 是 Phase 1 boilerplate 殘留)
   variants: {
 
   },

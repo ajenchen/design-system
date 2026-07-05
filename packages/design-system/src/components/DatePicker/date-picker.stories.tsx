@@ -223,6 +223,25 @@ export const ShowTimePopoverOpen: Story = {
   play: openPopoverPlay('[role="combobox"]'),
 }
 
+/* ── OpenSnapshot:needConfirm date-only(2026-07-05 D4 修 footer gate 死路)── */
+export const NeedConfirmDateOnlyOpen: Story = {
+  name: 'needConfirm:合約生效日確認',
+  parameters: { docs: { description: { story: 'date-only + needConfirm:點日期只暫存 draft(trigger 即時顯示),footer「確定」才 commit onChange——footer 渲染 gate = showTime || needConfirm(2026-07-05 D4 修 single 漏 || needConfirm 時「點了日期什麼都不會發生」的死路)。適用選錯成本高的日期(合約生效日 / 帳單結算起算日)。Visual-audit OpenSnapshot verify date-only popover 有渲 footer(此刻 / 確定)。' } } },
+  render: () => {
+    const [effectiveDate, setEffectiveDate] = React.useState('2026-08-01')
+    return (
+      <div className="flex flex-col gap-4 max-w-xs" style={{ paddingBottom: 420 }}>
+        <p className="text-caption text-fg-muted">
+          合約生效日選錯成本高:點日期先暫存,按「確定」才真正寫入。
+        </p>
+        <DatePicker needConfirm value={effectiveDate} onChange={setEffectiveDate} />
+        <p className="text-caption text-fg-muted">已提交值:{effectiveDate || '(空)'}</p>
+      </div>
+    )
+  },
+  play: openPopoverPlay('[role="combobox"]'),
+}
+
 /* ── OpenSnapshot:showTime Range popover(activeEnd='start')── */
 export const ShowTimeRangePopoverOpen: Story = {
   name: 'showTime 範圍:浮層展開狀態',

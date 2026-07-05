@@ -253,6 +253,7 @@ export const Overview = {
                 ['SubTrigger', 'badge', 'ReactNode', '—', '子選單狀態 badge'],
                 ['CheckboxItem', 'checked', 'boolean', '—', '勾選狀態'],
                 ['CheckboxItem', 'startIcon', 'LucideIcon', '—', '左側 icon'],
+                ['CheckboxItem', 'description', 'ReactNode', '—', '次要說明文字'],
               ].map(([comp, p, t, d, desc], i) => (
                 <tr key={i}><Td>{comp}</Td><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -647,7 +648,8 @@ export const ColorMatrix = {
                 ['suffix icon (direction)', '--fg-muted', 'ChevronRight, ExternalLink — via endIcon prop'],
                 ['suffix value text', '--fg-muted', '"深色", "已啟用"'],
                 ['shortcut text', '--fg-muted', '⌘C, ⌘E — via shortcut prop'],
-                ['all icons (disabled)', '--fg-disabled', 'unified'],
+                ['prefix icon / label (disabled)', '--fg-disabled', 'startIcon 與 label 同步切 disabled'],
+                ['suffix icon / shortcut (disabled)', '--fg-muted', '容器套 opacity-disabled 減淡,非 fg-disabled(menu-item.spec.md「狀態」)'],
               ].map(([role, token, ex], i) => (
                 <tr key={i}>
                   <Td>{role}</Td>

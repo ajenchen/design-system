@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { SearchX, WifiOff, Lock, Inbox } from 'lucide-react'
+import { SearchX, Lock, Inbox } from 'lucide-react'
 import { Empty } from './empty'
 import { Button } from '@/design-system/components/Button/button'
 
@@ -49,20 +49,9 @@ export const NoTasks: Story = {
   ),
 }
 
-/* ── 錯誤無法載入(action-oriented)────────────────────────────────── */
-export const LoadFailure: Story = {
-  name: '錯誤無法載入',
-  render: () => (
-    <div className="border border-border rounded-lg p-8 max-w-md">
-      <Empty
-        icon={WifiOff}
-        title="連線中斷,無法載入資料"
-        description="請檢查網路連線後重試"
-        action={<Button variant="secondary">重新載入</Button>}
-      />
-    </div>
-  ),
-}
+// Retired 2026-07-04 audit(Q 拍板):原 LoadFailure story 正面示範 spec 明文禁止的 error-state
+// 用法(empty.spec.md「何時不用」+ 禁止事項「錯誤/失敗狀態 → 改用 Alert」)— showcase 不得把
+// 反例當正例教。錯誤示範保留在 principles 的 ❌ 反例(empty.principles.stories.tsx)。
 
 /* ── 權限不足 ─────────────────────────────────────────────────────── */
 export const NoPermission: Story = {

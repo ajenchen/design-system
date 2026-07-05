@@ -380,3 +380,4 @@ col.accessor('status', {
 - `switch.spec.md`
 - `textarea.spec.md`
 - `time-picker.spec.md`
+- `uiSize.spec.md`

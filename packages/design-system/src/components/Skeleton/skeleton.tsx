@@ -17,7 +17,7 @@ Skeleton.displayName = "Skeleton"
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const skeletonMeta = {
   component: 'Skeleton',
-  family: null, // non-family composite / overlay / layout
+  family: 'self-contained', // 對齊 skeleton.spec.md frontmatter(SSOT;同 ScrollArea meta 寫法)
   variants: {
 
   },

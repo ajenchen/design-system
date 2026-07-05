@@ -8,7 +8,7 @@
       ".claude/skills/design-system-audit/references/audit-prompts.md Dim 5"
     ],
     "spec_sources": [
-      "packages/design-system/src/tokens/typography/typography.spec.md L91-105",
+      "packages/design-system/src/tokens/typography/typography.spec.md L118-156",
       "packages/design-system/src/tokens/radius/radius.spec.md L57-71",
       "packages/design-system/src/tokens/opacity/opacity.spec.md L53-57",
       "packages/design-system/src/tokens/color/color.spec.md(hardcoded hex/rgb canonical)",
@@ -53,7 +53,7 @@
   "typography": {
     "allow": [
       "text-h1", "text-h2", "text-h3", "text-h4", "text-h5", "text-h6",
-      "text-body", "text-caption", "text-helper", "text-label",
+      "text-body", "text-body-lg", "text-caption", "text-footnote",
       "leading-compact", "leading-normal",
       "font-normal", "font-medium", "font-bold",
       "tracking-shortcut"
@@ -65,11 +65,12 @@
       "tracking_raw": ["tracking-tighter", "tracking-tight", "tracking-wide", "tracking-wider", "tracking-widest"],
       "tracking_raw_rationale": "Block raw Tailwind tracking-* utility(unscoped letter-spacing leaks 跨元件不一致)。需要 wider letter-spacing 場景必 codify role-specific semantic utility — 例如 `tracking-shortcut`(鍵盤快捷鍵 hint,0.1em,對應 --tracking-shortcut token)。新 role 必走 typography.css 新增 `--tracking-<role>` + `@utility tracking-<role>`,再 allow 進本 registry。",
       "inline_style": "style={{ fontSize: ..., lineHeight: ... }}",
-      "rationale_path": "packages/design-system/src/tokens/typography/typography.spec.md L91-105"
+      "rationale_path": "packages/design-system/src/tokens/typography/typography.spec.md L118-156"
     }
   },
   "radius": {
-    "allow": ["rounded-xs", "rounded-sm", "rounded-md", "rounded-lg", "rounded-full"],
+    "allow": ["rounded-xs", "rounded-sm", "rounded-md", "rounded-lg", "rounded-full", "rounded-[inherit]"],
+    "allow_note": "rounded-[inherit] 是 passthrough 非 radius 值(clip 到父容器圓角,token utility 無法表達;anchor scroll-area.tsx Viewport)— 唯一合法 arbitrary bracket",
     "block": {
       "out_of_range": ["rounded-xl", "rounded-2xl", "rounded-3xl"],
       "ambiguous_default": "rounded(use rounded-md explicit)",

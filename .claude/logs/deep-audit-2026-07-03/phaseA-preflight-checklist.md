@@ -1,0 +1,242 @@
+# Phase A.0 全盤閱讀 Preflight Checklist(2026-07-03,solo mode run)
+
+- Groups: 7/7 | Total files READ: 134
+
+## Files read by group
+### governance(11)
+- CLAUDE.md
+- .claude/rules/README.md
+- .claude/rules/meta-patterns.md
+- .claude/rules/self-verify.md
+- .claude/rules/spec-rules.md
+- .claude/rules/story-rules.md
+- .claude/rules/ui-development.md
+- .claude/references/ssot-index.md
+- .claude/references/ssot-consultation.md
+- .claude/references/build-ui-canonicals.md
+- .claude/references/naming-conventions.md
+### tokens+patterns(19)
+- packages/design-system/src/tokens/token-system.spec.md
+- packages/design-system/src/tokens/color/color.spec.md
+- packages/design-system/src/tokens/density/density.spec.md
+- packages/design-system/src/tokens/elevation/elevation.spec.md
+- packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md
+- packages/design-system/src/tokens/motion/motion.spec.md
+- packages/design-system/src/tokens/opacity/opacity.spec.md
+- packages/design-system/src/tokens/orphan-tokens.spec.md
+- packages/design-system/src/tokens/radius/radius.spec.md
+- packages/design-system/src/tokens/typography/typography.spec.md
+- packages/design-system/src/tokens/uiSize/uiSize.spec.md
+- packages/design-system/src/patterns/action-bar/action-bar.spec.md
+- packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md
+- packages/design-system/src/patterns/element-anatomy/inline-action.spec.md
+- packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md
+- packages/design-system/src/patterns/header-canonical/header-canonical.spec.md
+- packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.spec.md
+- packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md
+- packages/design-system/src/patterns/resize-handle/resize-handle.spec.md
+### comp-A-C(18)
+- packages/design-system/src/components/Accordion/accordion.spec.md
+- packages/design-system/src/components/Alert/alert.spec.md
+- packages/design-system/src/components/AppShell/app-shell.spec.md
+- packages/design-system/src/components/AspectRatio/aspect-ratio.spec.md
+- packages/design-system/src/components/Avatar/avatar.spec.md
+- packages/design-system/src/components/Badge/badge.spec.md
+- packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md
+- packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md
+- packages/design-system/src/components/Button/button.spec.md
+- packages/design-system/src/components/Calendar/calendar.spec.md
+- packages/design-system/src/components/Carousel/carousel.spec.md
+- packages/design-system/src/components/Chart/chart.spec.md
+- packages/design-system/src/components/Checkbox/checkbox.spec.md
+- packages/design-system/src/components/Chip/chip.spec.md
+- packages/design-system/src/components/CircularProgress/circular-progress.spec.md
+- packages/design-system/src/components/Coachmark/coachmark.spec.md
+- packages/design-system/src/components/Combobox/combobox.spec.md
+- packages/design-system/src/components/Command/command.spec.md
+### comp-D-F(15)
+- packages/design-system/src/components/DataTable/data-table.spec.md
+- packages/design-system/src/components/DataTable/filter-operators.spec.md
+- packages/design-system/src/components/DateGrid/date-grid.spec.md
+- packages/design-system/src/components/DatePicker/date-picker.spec.md
+- packages/design-system/src/components/DescriptionList/description-list.spec.md
+- packages/design-system/src/components/Dialog/dialog.spec.md
+- packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md
+- packages/design-system/src/components/Empty/empty.spec.md
+- packages/design-system/src/components/Field/field.spec.md
+- packages/design-system/src/components/Field/field-controls.spec.md
+- packages/design-system/src/components/Field/form-validation.spec.md
+- packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md
+- packages/design-system/src/components/FileItem/file-item.spec.md
+- packages/design-system/src/components/FileUpload/file-upload.spec.md
+- packages/design-system/src/components/FileViewer/file-viewer.spec.md
+### comp-H-R(13)
+- packages/design-system/src/components/HoverCard/hover-card.spec.md
+- packages/design-system/src/components/Input/input.spec.md
+- packages/design-system/src/components/LinkInput/link-input.spec.md
+- packages/design-system/src/components/Menu/menu-item.spec.md
+- packages/design-system/src/components/Notice/notice.spec.md
+- packages/design-system/src/components/NumberInput/number-input.spec.md
+- packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md
+- packages/design-system/src/components/PeoplePicker/people-picker.spec.md
+- packages/design-system/src/components/Popover/popover.spec.md
+- packages/design-system/src/components/ProfileCard/profile-card.spec.md
+- packages/design-system/src/components/ProgressBar/progress-bar.spec.md
+- packages/design-system/src/components/RadioGroup/radio-group.spec.md
+- packages/design-system/src/components/Rating/rating.spec.md
+### comp-S-Z(19)
+- packages/design-system/src/components/ScrollArea/scroll-area.spec.md
+- packages/design-system/src/components/SegmentedControl/segmented-control.spec.md
+- packages/design-system/src/components/Select/select.spec.md
+- packages/design-system/src/components/SelectionControl/selection-item.spec.md
+- packages/design-system/src/components/SelectMenu/select-menu.spec.md
+- packages/design-system/src/components/Separator/separator.spec.md
+- packages/design-system/src/components/Sheet/sheet.spec.md
+- packages/design-system/src/components/Sidebar/sidebar.spec.md
+- packages/design-system/src/components/Skeleton/skeleton.spec.md
+- packages/design-system/src/components/Slider/slider.spec.md
+- packages/design-system/src/components/Steps/steps.spec.md
+- packages/design-system/src/components/Switch/switch.spec.md
+- packages/design-system/src/components/Tabs/tabs.spec.md
+- packages/design-system/src/components/Tag/tag.spec.md
+- packages/design-system/src/components/Textarea/textarea.spec.md
+- packages/design-system/src/components/TimePicker/time-picker.spec.md
+- packages/design-system/src/components/Toast/toast.spec.md
+- packages/design-system/src/components/Tooltip/tooltip.spec.md
+- packages/design-system/src/components/TreeView/tree-view.spec.md
+### memory(39)
+- .claude/memory/MEMORY.md
+- .claude/memory/README.md
+- .claude/memory/user_role.md
+- .claude/memory/project_goal.md
+- .claude/memory/project_cprime_governance_shipped.md
+- .claude/memory/feedback_codex_dual_track_synthesizer.md
+- .claude/memory/feedback_audit_discipline_full_sweep_deterministic_preflight.md
+- .claude/memory/feedback_solo_dev_workflow.md
+- .claude/memory/feedback_ship_then_revert_anti_pattern.md
+- .claude/memory/feedback_propose_discipline.md
+- .claude/memory/feedback_codex_exec_transport_canonical.md
+- .claude/memory/feedback_push_always_call.md
+- .claude/memory/feedback_storybook_addon_preset_must_be_cjs.md
+- .claude/memory/feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md
+- .claude/memory/feedback_ai_ground_truth_unreliable_mechanical_primary.md
+- .claude/memory/feedback_consume_existing_classification_ssot.md
+- .claude/memory/feedback_nearest_same_purpose_canonical.md
+- .claude/memory/feedback_netlify_basic_password_canonical_2026_05_29.md
+- .claude/memory/reference_deploy_targets.md
+- .claude/memory/reference_cloud_governance_loading.md
+- .claude/memory/retired/2026-05-27-prune/codex_collab_backfill_2026-05-19.md
+- .claude/memory/retired/2026-05-27-prune/feedback_audit_deterministic_script_not_subagent.md
+- .claude/memory/retired/2026-05-27-prune/feedback_audit_full_sweep_not_sample.md
+- .claude/memory/retired/2026-05-27-prune/feedback_audit_preflight_全盤查.md
+- .claude/memory/retired/2026-05-27-prune/feedback_autonomous_default_triple_verify_2026_05_23.md
+- .claude/memory/retired/2026-05-27-prune/feedback_codex_brief_invariants_2026_05_23.md
+- .claude/memory/retired/2026-05-27-prune/feedback_codex_collab_real_intent.md
+- .claude/memory/retired/2026-05-27-prune/project_hover_overlay_decisions_2026_05_09.md
+- .claude/memory/retired/2026-05-28-consolidate/feedback_ai_self_audit_unreliable_mechanical_primary_2026_05_27.md
+- .claude/memory/retired/2026-05-28-consolidate/feedback_composition_fidelity_pixel_vs_structural_2026_05_27.md
+- .claude/memory/retired/2026-05-28-consolidate/feedback_propose_in_plain_chinese.md
+- .claude/memory/retired/2026-05-28-consolidate/feedback_propose_without_cite_fabrication_2026_05_27.md
+- .claude/memory/retired/2026-05-29-codex-transport-consolidate/feedback_codex_local_transport_node_modules.md
+- .claude/memory/retired/2026-05-29-codex-transport-consolidate/feedback_codex_visual_audit_dangerously_bypass.md
+- .claude/memory/retired/2026-05-29-m31-phase-consolidate/feedback_m31_phaseA_first_and_autonomy_no_ask.md
+- .claude/memory/retired/2026-06-02-prune/feedback_story_baseline_reference.md
+- .claude/memory/retired/2026-06-11-prune/feedback_codex_collab_2026_05_23_directives.md
+- .claude/memory/retired/2026-06-11-prune/feedback_deploy_url_auto_detect_2026_05_27.md
+- .claude/memory/retired/2026-06-11-prune/feedback_ds_css_aggregator_full_sweep_2026_05_27.md
+
+## Drift suspicions(94)— 待 A.1/A.1b 深查
+- [governance] CLAUDE.md:189-196 vs .claude/rules/README.md:19: CLAUDE.md「# Path-scoped rules」清單只列 4 條 rule(meta-patterns/spec-rules/ui-development/story-rules),漏列 self-verify.md;rules README 表格有 5 條 — 兩份居民清單 drift。
+- [governance] .claude/rules/meta-patterns.md:22-32: 「DS 現有 20 skills」宣稱過時:.claude/skills/ 實際有 22 個 skill dir(不含 README),分類表漏 bug-fix-rhythm 與 deep-audit-cross-codex;且同檔 M32(line 72)自己引用 `/bug-fix-rhythm` skill — 同檔自打架。
+- [governance] .claude/rules/meta-patterns.md:15 vs :58: Cluster E 表寫 M18 =「4-Q 自檢」,但 M18 本文已升級為「6 題自檢 gate(2026-05-18 升 4→6)」— cluster cross-link 表未同步。
+- [governance] .claude/rules/meta-patterns.md:58: M18 自稱「6 題」但實際列 Q0/Q1/Q1'/Q2/Q3/Q4/Q5 = 7 題;且 propose-options skill 描述自稱「7-Q principle check」— 題數在本檔內與跨檔(skill SSOT)兩處不一致。
+- [governance] .claude/rules/meta-patterns.md:11 vs :16: M30 同時列在 Cluster A(無 @watch)與 Cluster F(標 M30@watch)— 雙重歸屬且 @watch 標記互相矛盾,不知哪個是 canonical 狀態。
+- [governance] .claude/rules/meta-patterns.md:18: Velocity 算式自打架:「本季 net add 12 rules(15 new − 3 fold)= 18 → 12」的 18 無來源;12 對 charter ≤3/quarter 是 4 倍卻寫「趨近 target」;且 @watch(2026-05-15/22 標)聲明「1 quarter 觀察」後 demote/keep,現已逾一季(今 2026-07)M16/M21/M25/M30 仍掛 @watch 未 resolve — 日期過時宣稱。
+- [governance] CLAUDE.md:146,152 + .claude/rules/self-verify.md:46: 三處以「(M33 反 defer)」「(M33)」「M33 違反」引用 M33 當 active rule,但 M33 已於 2026-05-22 retired(folded into M20)— 引用退役編號,應指 M20 sub-rule。
+- [governance] CLAUDE.md:76: 「Hook check_ssot_consultation.sh 2026-05-XX 已 retired」— 日期是 placeholder『XX』從未補完,canonical 宣稱帶未完成的日期。
+- [governance] .claude/rules/story-rules.md:25 vs .claude/rules/ui-development.md:31: story-rules 的 DS repo title canonical 只允許 namespace {Tokens|Patterns|Components|Internal},但 ui-development 說 internal pattern 用 `Design System/Internal Patterns/<Name>` — 「Internal Patterns」namespace 不在 title canonical 白名單內,兩檔 drift。
+- [governance] .claude/rules/meta-patterns.md:61 (M21): 「Hook check_premature_abstraction(retired/未實作;mindset enforcement)」— 『retired』與『未實作』互斥(從未實作的東西無法 retire),hook 狀態宣稱自相矛盾;該檔案確實不存在於 .claude/hooks/。
+- [governance] .claude/rules/meta-patterns.md:67-78: M27 retired 的 HTML comment(line 67)+ 空行插在 markdown table 中段,把 M-rule 表切成兩截(M28 起另起一表);且 M31 row 排在 M32 之後,編號順序亂 — 疑似歷次 edit 殘留的結構破損。
+- [governance] .claude/references/build-ui-canonicals.md:67-72: 「overflow 使用三規則」標題宣稱 3 條,實際列 4 條編號項(第 4 條是例外條款)— 標題與內容數量不符。
+- [governance] .claude/rules/ui-development.md:31: 「現行 11 個 internal 單元全走 frontmatter」hardcode 動態數字,違反 CLAUDE.md:158「SSOT auto-sync invariant:跨 file 數字禁 hardcode」精神,極易過時(無 script 對齊)。
+- [governance] .claude/references/ssot-index.md:13-26: High-risk interface 表最後 divergence 事件停在 2026-05-10;其後近兩個月的 SSOT 級事件(如 recent commits 的 Field disabled/mode cascade SSOT、header-canonical withTabs 契約)未回填 index,疑違反自訂維護規則「新 interface 第一次 surface → 加進本 index」— 日期明顯過時。
+- [tokens+patterns] packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md:326: 「Popover header 同 pattern:48 md / 56 lg」與同檔 L272-275 表(Popover slot 21 → max(21,21)+py-tight = 45)及 density.spec.md L52(Popover md → 45)自打架——Popover 鎖 layout-space=md 後高度應恆 45,不隨 page density 變 56。
+- [tokens+patterns] packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md:208,240: 兩處寫「Popover / Coachmark density 鎖 md」,與 density.spec.md 2026-06-15/16 重訂 canonical(禁用 data-density master switch 鎖浮層;Popover 只鎖 data-layout-space=md、ui-size 繼承 page)矛盾,疑 stale 宣稱未同步。
+- [tokens+patterns] packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md:340: 稱 `--chrome-header-height` 為「globals.css 聲明(md=3rem / lg=3.5rem)」,但 header-canonical.spec.md:199 明寫「globals.css 僅 21 行 aggregator,不定義此 token」、uiSize.spec.md:203 寫 2026-05-23 已搬入 DS uiSize.css——跨檔矛盾。
+- [tokens+patterns] packages/design-system/src/tokens/uiSize/uiSize.spec.md:341: 指向 layoutSpace.spec.md「規則 1.1:Chrome inline padding canonical」段,但 layoutSpace.spec.md 無規則 1.1——chrome 水平 padding 現為「規則 6」,段名 pointer stale。
+- [tokens+patterns] packages/design-system/src/tokens/orphan-tokens.spec.md:71-77: 「State variants 完整集(8 token)」但 regex 只列 7 後綴;「hover/active/focus 是 elevation 8-tier 一部分」用詞可疑;且結構性保留 `--{hue}-subtle/-text/-focus` 與 color.spec.md「嚴格限制:categorical 色相只有 hover/active 兩個 token,故意不加 base/subtle/text」的設計禁令矛盾。
+- [tokens+patterns] packages/design-system/src/tokens/orphan-tokens.spec.md:63-69: Chart reserved 稱「即使 DS 內無 chart 元件也保留」,但 color.spec.md:711 已寫 `--chart-1`~`--chart-5` 供 Chart 元件消費(chart.spec.md 在其被引用清單)——「無 chart 元件」宣稱疑過時;且 regex 用 `--color-chart-N` 與 color.spec.md 寫的 token 名 `--chart-N` 前綴不一致(可能混淆 bridge 名與 token 名)。
+- [tokens+patterns] packages/design-system/src/tokens/orphan-tokens.spec.md:87-91: SOP 保護 regex 仍含 `-foreground` 後綴,但 color.spec.md:285 於 2026-06-04 明文移除 `--warning-foreground` 且「不保留 warning 專屬 token」——機械保護集與現行 color canonical 疑脫節。
+- [tokens+patterns] packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:269 vs :295: Escape hatch 表把 DatePicker / Combobox / LinkInput / TimePicker 列為 Field family host(有 `endAction` config + `endSlot`),但同檔「不適用清單」明文這些元件右側 chrome 獨佔、不開放 endAction/endSlot——同檔前後矛盾。
+- [tokens+patterns] packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:144: Pointer 寫「詳 `patterns/action-bar.spec.md`」,實際路徑為 `patterns/action-bar/action-bar.spec.md`,檔案路徑 stale。
+- [tokens+patterns] packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md:110: Pure-wrapper 清單列「FieldGroup(若建)」表示尚未存在,但 layoutSpace.spec.md:157 已把 FieldGroup 當既有元件引用(「FieldGroup 三級固定 gap,不隨 density」)——「若建」措辭疑 stale。
+- [tokens+patterns] packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:45,47,308: 對 uiSize.spec.md 的行號 cite(「L242 Fixed-height 段」「L240-260 decision tree」「L160-289」)與 uiSize.spec.md 現行行號不符(選型 canonical 起 ~L238、decision tree ~L246-268、Fixed-height 表 ~L274-278)——行號 cite drift;同檔 L309 對 tabs.spec.md 的行號 cite 同樣脆弱未驗。
+- [tokens+patterns] packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:55,239: Border token 寫成 `--divider-color`,但 color.spec.md「邊框/分隔」表的 divider token 為 `border-divider`(對應 `--divider`)——`--divider-color` 名稱在 token spec 家族中查無,疑引用不存在的 token 名。
+- [tokens+patterns] packages/design-system/src/tokens/uiSize/uiSize.spec.md:390: 「對齊 Icon Size Tier L132-143」自檔行號 stale——「Icon 尺寸 Tier」段現位於 ~L146-157。
+- [tokens+patterns] packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:22,97,117: 禁止事項「❌ 自畫 resize handle 視覺 — 必消費本 primitive」與消費者現況「DataTable column resize 目前自畫(Phase 2 migrate pending)」並存——spec 硬禁令與已 ship 現況矛盾,屬已知 roadmap 張力但宣稱層面自打架。
+- [tokens+patterns] packages/design-system/src/tokens/motion/motion.spec.md:32 vs :84-88: L32 稱「shadcn-Radix default 500ms 主流共識」,但同檔世界級對照表寫 Radix Tooltip default = 700ms(shadcn 是 provider override 成 500)——把兩者合稱 500ms 與自表不一致。
+- [tokens+patterns] packages/design-system/src/tokens/token-system.spec.md:35(5-Layer 表): L3 Family 的「居住檔案」欄只列 `uiSize/uiSize.css`,但同檔規則 1 把 `--font-<role>-<measurement>`(typography.css)與 `--radius-<size>`(radius.css)也歸 L3 Family——layer 表的居住檔案欄不完整,讀者會誤以為 L3 全住 uiSize.css。
+- [comp-A-C] bulk-action-bar.spec.md:86,205 vs button.spec.md:416: 跨 spec 直接矛盾:BulkActionBar 規定 destructive 批次 action 用「tertiary + danger」,但 Button spec 禁止事項明文「danger 僅支援 primary、secondary、text——tertiary + danger 與 secondary 視覺完全相同(冗餘)」
+- [comp-A-C] bulk-action-bar.spec.md:205: 引用 button.spec.md「Inline destructive 不用 primary」canonical 段——button.spec.md 內查無此段落名(疑引用不存在的章節)
+- [comp-A-C] breadcrumb.spec.md:7: frontmatter hardcode 具體 code 行號「breadcrumb.tsx:124-136」,tsx 一改行號即 drift;另 sm 與 md 的 text/icon 規格完全相同(text-body 14 + icon 16),只差建議 title 配對,size 分級是否名存實亡待查
+- [comp-A-C] breadcrumb.spec.md:140,153: 同一句 claim 同時標「WebFetch verified Material UI source」與 <!-- @benchmark-unverified --> inline marker,verified/unverified 兩標記自打架
+- [comp-A-C] avatar.spec.md:98: 「未來會加 hook check_avatar_hovercard.sh 自動攔截」——未來式承諾寫進 spec canonical,該 hook 若已存在或已決定不做即為 stale claim
+- [comp-A-C] alert.spec.md:112-137: 「Corner action group 佈局 canonical」整段規定多 action + ButtonDivider 佈局,但同 spec 137 行明言「目前 Alert API 只透過 dismissible 渲染單一 close X,多 corner action 場景目前不支援」——canonical 段規範的是不存在的 API 能力
+- [comp-A-C] button.spec.md:360,388 vs alert.spec.md:126: chrome corner 多 action 分隔詞彙不一致:Button spec 寫「Separator」,Alert spec 寫「<ButtonDivider />(button-group.tsx)」——同一 canonical 兩個元件名
+- [comp-A-C] aspect-ratio.spec.md:76 / app-shell.spec.md:74: Consumer 範例 import path 用「@/design-system/components/...」alias;Phase 1 後 DS 已內化 npm workspace(@qijenchen/design-system subpath,見 ui-development.md dim-72),spec 範例 path 疑似 pre-migration 殘留
+- [comp-A-C] aspect-ratio.spec.md:140,144-148: 「相關」稱 Carousel 為「未來 consumer」(是否已成真待查);且 chart.spec.md 大量消費 AspectRatio(定位段 覆寫 ratio canonical)但 AspectRatio「被引用」auto-maintained 節只列 file-viewer.spec.md,無 chart/coachmark reciprocal
+- [comp-A-C] bulk-action-bar.spec.md(檔尾): 缺「被引用(auto-maintained)」節——data-table.spec.md「L2 選取」與本 spec 互為 SSOT 引用(本 spec 173 行明指),reciprocal pointer script 疑漏跑此檔
+- [comp-A-C] chart.spec.md(全檔): 唯一缺 <!-- @benchmark-cited --> D5 retrofit marker 的 spec;body 含「Stripe / Vercel Analytics / Datadog 世界級慣例」等 claim 無 inline cite 或 @benchmark-unverified 標記,D5 cite 紀律未套用
+- [comp-A-C] checkbox.spec.md:252: Read-only 條寫「見上方 mode 段」,但 ### mode prop 段在其下方(line 256)——指向方向錯誤,疑段落重排後 pointer 未同步
+- [comp-A-C] chip.spec.md:41,85: 兩處引用「LinkInput」元件(Input chip 系列)——本分區未見其 spec,該元件是否存在/已改名待查(可能 stale 元件名)
+- [comp-A-C] calendar.spec.md:210: 「### MVP(本次 session)」——spec canonical 內殘留 session 時態措辭,MVP 邊界應以版本/日期錨定而非對話 session
+- [comp-A-C] command.spec.md:21 vs :97: 定位段強調「token 值對齊(非結構繼承)MenuItem——改 MenuItem 不會自動連動」,但邊界案例段寫 disabled item「視覺繼承 MenuItem SSOT」——同檔內「繼承 vs 僅對齊」措辭自打架
+- [comp-A-C] combobox.spec.md:136,145: 定位/何時不用皆稱 Combobox「永遠多選」,但邊界案例與驗證段兩處用「multi mode」措辭,暗示存在非 multi 模式——疑 single-mode 殘留措辭或 API 曾有 mode 之分
+- [comp-D-F] date-picker.spec.md:319 vs date-grid.spec.md:132,203(+ date-picker.spec.md:128 自打架): DatePicker 邊界案例宣稱「DateGrid 內 cell 尺寸固定不隨 density 漂移(密度敏感不可變區)」,但 DateGrid spec 明文 day cell 走 --field-height-sm 隨 density 縮放(md 28 / lg 32),且 DatePicker 自己 L128 也說 density-aware — 跨 spec + 同檔內直接矛盾
+- [comp-D-F] data-table.spec.md:384 vs filter-operators.spec.md:31,136: select_multi 的 picker 對照不一致:data-table ValueShape 表寫 `<Combobox>`,filter-operators(自稱 SSOT)寫 `<SelectMenu multiple>` 且 L136 說兩者共用 SelectMenu — 同一 shape 兩份 canonical 指不同元件
+- [comp-D-F] data-table.spec.md:28: 「見「鍵盤」段 L504-507」硬寫行號已漂移 — 實際 Keyboard 行為段在本檔 L515-524
+- [comp-D-F] data-table.spec.md:171-180(Runtime perf budget 表): Gate 門檻標 hard,但同段 2026-06-12 實測註記自述 script 預設 4x throttle 下全 case(含對照組 A)一致 ~2.3x 超標、門檻只對應 1x/閒置條件 — gate 宣稱與量測條件自打架,懸置「等 user 決策」未收斂
+- [comp-D-F] empty.spec.md:89,95 vs empty.spec.md:183: 無框 page section 垂直定位 canonical 寫 py-[calc(var(--layout-space-bottom)*2)](≈96px),但「為何無 SizeMatrix」段舉例 Page 用 py-16(64px)— 同檔兩處 page-level padding 值不一致
+- [comp-D-F] field-control-group.spec.md:111(Mode C): 宣稱「進 Popover,density 鎖 md(Popover density canonical)」,但同分區 Dialog(2026-06-16 全繼承 page 不鎖)、DropdownMenu(density 繼承 page 不鎖)、FileViewer(2026-06-15 移除 lockDensity)全走繼承派 — Popover 鎖 md 之說疑為 stale,需對 density.spec.md 現行 canonical 驗證
+- [comp-D-F] date-picker.spec.md:128 + date-picker.spec.md:313: 硬寫他檔行號疑漂移:「SSOT → date-grid.spec.md:120」(實際 cell 尺寸敘述在 date-grid L124/L132)、「SSOT field-controls.spec.md L227」(類型身份 indicator 段實際在 field-controls L229-239)
+- [comp-D-F] dialog.spec.md:65: 「本 density.spec 第 10 行親自定義…」硬寫他檔行號 — density.spec.md 任何編輯即漂移,且未驗證第 10 行現仍是該句
+- [comp-D-F] field.spec.md:256-257 / form-validation.spec.md:153 / file-viewer.spec.md:205,213,365: 多處 spec 硬寫 tsx 行號(field.tsx L388-408/L400、field.tsx:392、input.tsx:192、file-viewer.tsx:835、image-renderer.tsx:144、file-viewer.tsx:478)— 與 FCG spec 自己明訂的「不寫死行號避免漂移」原則相悖,行號正確性未驗
+- [comp-D-F] dropdown-menu.spec.md:1-15: 全分區 15 份中唯一缺 `<!-- @benchmark-cited: D5 retrofit -->` 檔頭 marker 的 spec(其他 14 份皆有)— D5 retrofit 覆蓋疑漏此檔
+- [comp-D-F] file-viewer.spec.md:47 + 53: 引用「CLAUDE.md『Consistency Audit 原則』」章節名 — 現行 CLAUDE.md 只有『稽核 canonical』無此標題,pointer 疑 stale;且同表稱 anatomy canonical 為「5 件套」,DescriptionList spec 稱「6-canonical 結構」(含 Accessibility)— canonical story 件數跨 spec 說法不一(data-table.spec.md:489 亦稱 canonical 5)
+- [comp-D-F] data-table.spec.md:176(Case B): 引用 story `RoadmapPerfBudget`『2026-06-12 R2 重建,gate 恢復可跑』— story 是否真存在於 data-table.stories.tsx 未驗,曾有『整併誤 retire』前科,建議 A.1 對 code 驗 story 名
+- [comp-H-R] packages/design-system/src/components/NumberInput/number-input.spec.md:46,100,107: body 三處引用 `endSlot` prop(stepper / 自訂 spinner 走 endSlot),但同檔 L26 宣告的 Field 結構 slot 是 `endAction`(Field family canonical);同檔自打架,`endSlot` 疑不存在或命名漂移
+- [comp-H-R] packages/design-system/src/components/Menu/menu-item.spec.md:262: 邊界案例 Disabled 說「已在『選擇 / 狀態視覺規則』段 codify」,但本檔無此段名(實際段名為「狀態」「選中指示器」),內部段落引用 stale
+- [comp-H-R] packages/design-system/src/components/Menu/menu-item.spec.md:267: Density 段引用 consumer「`Menu` block-tier `compact` / `reading`」,但 Menu 目錄內只有 menu-item.spec.md、無 Menu 元件 spec,疑引用不存在或已改名的元件/tier
+- [comp-H-R] packages/design-system/src/components/PeoplePicker/people-picker.spec.md:92: 「對齊本 spec L91-92 SSOT 表」行號自引已漂——搜尋型態 SSOT 表實際在 L94-100
+- [comp-H-R] packages/design-system/src/components/PeoplePicker/people-picker.spec.md:150: §E 表 cite「本 spec L94」指向的是搜尋型態表 header 行,Avatar 12px inset canonical 段實際在 L175,行號 stale
+- [comp-H-R] packages/design-system/src/components/PeoplePicker/people-picker.spec.md:254: 「`emptyText` 預設…(本 spec L72 已 codify)」行號 stale——emptyText 預設實際 codify 在 L80(搜尋段),L72 是 multiDisplay 段
+- [comp-H-R] packages/design-system/src/components/PeoplePicker/people-picker.spec.md:6-7(frontmatter): traits 只有 isInputLike、缺 hasInteractiveStates,同 Field 家族的 Input / LinkInput / NumberInput 皆有該 trait,frontmatter metadata 不一致嫌疑
+- [comp-H-R] packages/design-system/src/components/Rating/rating.spec.md:4-8(frontmatter)vs :56,68-73: frontmatter `sizes: {}` 空且 traits 無 hasSizes,但 body 明文 4 個 size(xs/sm/md/lg)+ Size 表;frontmatter 與 body 漂移(對照 RadioGroup frontmatter sizes+hasSizes 齊備)
+- [comp-H-R] packages/design-system/src/components/Menu/menu-item.spec.md:5-11(frontmatter): sizes 宣告 sm/md/lg 但 traits 無 hasSizes(RadioGroup pattern 兩者並存),frontmatter trait 標記不一致嫌疑
+- [comp-H-R] packages/design-system/src/components/ProfileCard/profile-card.spec.md:79: 「View more 按鈕 padding:固定 `py-3`(12px),比 Body `py-3` 同位 — 讓 footer 有明顯呼吸空間」句自打架(同為 py-3 卻宣稱對比出呼吸空間;「比…同位」不成句),疑編輯殘留
+- [comp-H-R] packages/design-system/src/components/ProfileCard/profile-card.spec.md:61,67 vs :124: 結構圖宣稱 Footer「View more(hover context 必含)」「永遠可見」,但 View More 段說「只在傳入 onViewMore callback 時顯示」——必含 vs conditional 內部張力
+- [comp-H-R] packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md(檔尾): 缺 auto-maintained「被引用」section——本分區其他 12 份 spec 皆有;combobox / hover-card 等 spec 明列消費關係,疑 add-reciprocal-pointers.mjs 漏跑或該檔被排除
+- [comp-H-R] packages/design-system/src/components/Input/input.spec.md:101: Loading 段以跨檔行號 cite「Field/field-controls.spec.md L70-115」,行號 cite 易漂移,未驗證該行段仍是 Loading SSOT
+- [comp-S-Z] packages/design-system/src/components/TreeView/tree-view.spec.md:50: 「何時不用」表建議簡單 2 層 nav 改用「Sidebar + SidebarMenuSubButton」,但 sidebar.spec.md(L95/L155/L637)明文本 DS 完全不 export SidebarMenuSub 家族、深度 > 1 一律 TreeView,且 sidebar.tsx grep 0 hit——跨 spec 自打架 + 引用不存在的 API。
+- [comp-S-Z] packages/design-system/src/components/Steps/steps.spec.md:268,289,454: 三處引用 CLAUDE.md 的「選擇 / 狀態視覺」規則 B 與「Label 永遠 foreground」段落,現行 CLAUDE.md 已無此二段(治理重構後 stale anchor)。
+- [comp-S-Z] packages/design-system/src/components/Steps/steps.spec.md:451-453: 「相關」段引 color.spec.md「Primary token」與 Avatar 32px 依據,但全 spec 進度色已是 bg-info / --info-hover(L177-243)——疑似 primary→info 遷移後殘留 stale 引用。
+- [comp-S-Z] packages/design-system/src/components/Steps/steps.spec.md:6-17(frontmatter): frontmatter sizes 的 `px` 欄填 indicator 直徑(sm=8/md=24/lg=32),而鄰居 spec(SegmentedControl/Slider/Sidebar)同欄語意是 row/容器高度 px——同 schema 欄位跨 spec 語意漂移。
+- [comp-S-Z] packages/design-system/src/components/Switch/switch.spec.md:5-11 + Tag/tag.spec.md:47-53 + Textarea/textarea.spec.md:5-11: 三檔 sizes frontmatter 用同一組 boilerplate when 字串(「form field-height 28…」「touch / prominent CTA…」),與各自 body canonical 矛盾:Switch 明文 track 20/24px 不對齊 field-height;Tag 禁止事項禁引用 field-height token 且 lg=md 同值(非 touch 放大)。疑機械回填非元件實況。
+- [comp-S-Z] packages/design-system/src/components/Sheet/sheet.spec.md:19 vs 65-67: 定位段宣告 consumer API 僅 side=right(top/bottom/left 禁用、需 user 授權),但 Inspector 段與 SideMatrix story 規劃以「side 四方向滑入動畫」「4 方向 × 用途」為展示重點——spec 內部語氣自打架(是否該把禁用變體當賣點展示)。
+- [comp-S-Z] packages/design-system/src/components/Sidebar/sidebar.spec.md:244-250 vs 131,216: 「Chrome 內容的約束」段仍要求放在 SidebarHeader / SidebarFooter 的內容「必須能容納在這個高度內」(fixed chrome-header-height 語境),但 L131/216 的 2026-06-12 修正已明文 SidebarFooter 為 content-based——補丁不完全,舊段落殘留 footer=fixed 前提。
+- [comp-S-Z] packages/design-system/src/components/ScrollArea/scroll-area.spec.md:41 vs 130: 「何時用」明文 DataTable 中央捲動區不用 ScrollArea(2026-06-12 收斂以 DataTable 側為準),但「相關」段仍稱 DataTable 為「主要 consumer(橫向捲動跑版問題的解法來源)」——收斂後殘留 stale 描述。
+- [comp-S-Z] packages/design-system/src/components/Tabs/tabs.spec.md:218: 世界級對照 counter-pattern 自引「tabs.spec.md:185-187」作為 underline base line 論據,現該行號落在 TabsList 寬度 / TabsContent 間距段(underline 論述已移至 ~L192-204)——hardcode 行號 anchor 已漂移(L184/L58 等自引行號同風險)。
+- [comp-S-Z] packages/design-system/src/components/Sidebar/sidebar.spec.md:65(及:50): 「何時不用」表改用欄指向「自訂 Nav / NavigationMenu」,但 components/ 下無 NavigationMenu 元件(已驗 0 hit)——讀者會誤以為 DS 有此元件;定位段 L50 同字樣。
+- [memory] .claude/memory/reference_cloud_governance_loading.md:23: Wiki-link [[project_cprime_governance_delivery]] 指向不存在的 memory/plan doc(全庫 grep 無此檔;實際檔名是 project_cprime_governance_shipped.md)— 死 pointer。
+- [memory] .claude/memory/feedback_ship_then_revert_anti_pattern.md:11,34,39: Rule 本文用舊路徑 src/design-system/**,但 CLAUDE.md 明言 Phase 1 後 production code 在 packages/design-system/src/**;active canonical rule 的 enforcement 路徑宣稱已 stale。
+- [memory] .claude/memory/feedback_ship_then_revert_anti_pattern.md:48: Related 段引「M33(下個 session defer 反 pattern)」當作現行 M-rule,但 meta-patterns.md 宣告 M33 已於 2026-05-22 retire 折入 M20 — stale M-rule 指標。
+- [memory] .claude/memory/feedback_ship_then_revert_anti_pattern.md:34: 宣稱 check_substantive_edit_approval_preflight.sh「目前 P1 soft warn → 升 P0 BLOCKER」是未完成的 future action,但 CLAUDE.md 自主執行 canonical 已描述該 hook 為現行 PreToolUse 攔截 — 檔內狀態宣稱疑似過時(需 A.1 對 hook 實際 exit code 驗證)。
+- [memory] .claude/memory/feedback_audit_discipline_full_sweep_deterministic_preflight.md:25,28: Hardcode 動態數字「全 196 stories / 350 names」,違反本專案自己宣告的 SSOT auto-sync invariant(跨 file 數字禁 hardcode,真值以 script 輸出為準);repo 已演進至 beta.80,數字幾乎必已漂移。
+- [memory] .claude/memory/feedback_audit_discipline_full_sweep_deterministic_preflight.md:37: Preflight 檔案 enumeration 寫舊路徑 src/design-system/**/*.{tsx,ts,css,md},與 CLAUDE.md「post Phase 1 migration → packages/design-system/src/**」矛盾;若 audit-preflight.mjs 已改新路徑則本檔宣稱與 script 不一致。
+- [memory] .claude/memory/feedback_codex_dual_track_synthesizer.md:3: 檔頭宣稱 2026-06-11 合併後「142→98 行零保護損失」,但實際檔案只有 68 行 — 內部宣稱與檔案現狀不符(後續 prune 未回寫宣稱)。
+- [memory] .claude/memory/feedback_audit_discipline_full_sweep_deterministic_preflight.md:93: Sub-rule 5b(2026-07-01)引「audit dim 90」,而 CLAUDE.md 2026-06-11 snapshot 寫 88 dims — 數字可能合法成長,但又是 SSOT 外的 hardcode counter,需對 sync-governance-counters 輸出核實。
+- [memory] .claude/memory/README.md:12-16: 同步機制寫手動 cp $HARNESS/*.md .claude/memory/,但 CLAUDE.md Level 6 說「跑 npm run sync-memory 推回 repo」— 兩處記載不同 sync 程序,SSOT 分裂嫌疑。
+- [memory] .claude/memory/feedback_solo_dev_workflow.md:25,76: 宣稱 harness session-start 分配 claude/<task>-XXX branch 且 hook R1 追蹤 git checkout -b claude/*,但目前實際 working branch 命名為 2026-06-10-bg-readonly-token(無 claude/ 前綴)— branch 命名慣例疑已變,R1 pattern 可能追不到實際 branch。
+- [memory] .claude/memory/MEMORY.md:15: 索引宣稱 propose_discipline「合 3 file」,但 feedback_propose_discipline.md:2 檔頭自稱「2-in-1 consolidated」且本文只列 2 個原始檔 — 索引與檔頭的合併數宣稱互相矛盾。
+- [memory] .claude/memory/codex-brief-queue.jsonl(mtime 2026-05-18): codex-collab skill 宣稱此檔為「Queue SSOT」,但檔案自 2026-05-18 起未更新 — queue SSOT 疑似休眠/stale,宣稱與實際使用狀態可能脫節(非 .md,僅記 mtime 觀察)。
+- [memory] .claude/memory/retired/2026-05-27-prune/feedback_codex_brief_invariants_2026_05_23.md:13: (retired 檔,低優先)brief invariant 硬編「31 M-rules / 56 audit dims / 82 spec / 196 stories / 62 components / 20 memory files」全套 counter,與現行數字(88+ dims / 16-18 memory)不符 — archive 屬預期 stale,但若有人照抄 template 會傳播舊數字。

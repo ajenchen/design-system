@@ -12,9 +12,9 @@
  * | RFC Contract | Original class method | New owner(Phase 7) |
  * |---|---|---|
  * | Contract 3 commit/cancel | `controller.commit()` | per-cell `onCommit` / `onCommitLive` callback in cell-registry |
- * | Contract 4 Tab navigation | `controller.routeKeyDown` | `data-table.tsx:2605 handleEditTab`(onKeyDownCapture per portal cell) |
+ * | Contract 4 Tab navigation | `controller.routeKeyDown` | `data-table.tsx handleEditTab(符號指法免行號漂移)`(onKeyDownCapture per portal cell) |
  * | Contract 6 unmount preserve draft | `controller.onAnchorUnmount` | `data-table.tsx editingDraft` lifted state + `onDraft` prop(Phase 7) |
- * | Contract 10 IME guard | `controller.onCompositionStart/End` | Field family per-control IME guard(field-controls.spec.md)+ `data-table.tsx:2609 isComposing` early-return |
+ * | Contract 10 IME guard | `controller.onCompositionStart/End` | cell-registry per-editor isComposing guard(makeKeyHandler + Textarea/NumberCell onKeyDown,2026-07-05 D4 補 — 原宣稱的 Field per-control guard 不存在)+ `data-table.tsx isComposing(符號指法)` early-return(nav + Tab route) |
  * | Esc cancel | `controller.cancel()` | per-cell Field `onCancel` callback + Radix Popover outside-click |
  *
  * Verify(grep `src/`):**zero runtime consumer** of the class — only `experimentalActiveEditorController`
@@ -34,7 +34,8 @@
  *   2. ✅ RFC Slice C / Contract 3 / 6 backfill distributed ownership
  *   3. ✅ Keyboard invariants(Enter / Esc / Tab/Shift+Tab commit-and-move + skip non-editable)
  *      — visual-audit-comprehensive 17/17 PASS this turn(scenarios 11-17 cover Enter/Esc/Arrow/Tab)
- *   4. ✅ IME composition — Field per-control built-in + `data-table.tsx:2609 isComposing` guard
+ *   4. ✅ IME composition — cell-registry per-editor guard(2026-07-05 D4 補;原宣稱的 Field
+ *      per-control built-in 不存在)+ `data-table.tsx isComposing(符號指法)` guard
  *   5. ✅ Virtualizer scroll-out / scroll-back draft preservation — Phase 7 commit c5eb054 ships
  *      `onDraft` prop + lifted state(spec'd in commit body)
  *   6. ✅ Outside-click + nested popover — Radix Popover idiom + Field family

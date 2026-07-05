@@ -109,7 +109,7 @@ Material 3 / Polaris / Tailwind 6-7 tier 過細 — 每 tier 只差 2-4px,reader
 
 **(2) Geometric scale(2 / 4 / 8 doubling)— 對齊 Tailwind / Polaris 慣例** <!-- @benchmark-unverified -->
 
-數值 doubling 確保 reader 一眼感知「不同層級」(2→4→8 比 4→6→8 對比明顯)。對齊 Tailwind sm(2)/ md(4)/ lg(8) + Polaris 100(4)/ 200(6 — 偏離)/ 300(8) 的 powers-of-2 idiom。
+數值 doubling 確保 reader 一眼感知「不同層級」(2→4→8 比 4→6→8 對比明顯)。對齊 Tailwind v4 xs(2)/ sm(4)/ lg(8)(見上表數值序列)+ Polaris 100(4)/ 200(6 — 偏離)/ 300(8) 的 powers-of-2 idiom。
 
 捨棄連續 ratio(Material 4/8/12/16/28 等差 + 跳級)的代價是「中段 size 表現空間」(無 6px tier),DS 場景無此需求(中段需求都歸入 md=4)。
 

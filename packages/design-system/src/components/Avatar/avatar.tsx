@@ -145,6 +145,16 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
 const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
   ({ size = 32, shape = 'circle', src, alt, icon: Icon, color = 'neutral', solid = false, status, badgeCount, badgeAriaLabel, hoverCard, className, style, ...props }, ref) => {
     const [imgError, setImgError] = React.useState(false)
+    // 2026-07-05 D4:imgError 隨 src 變更 reset — 原 state 首次 onError 後永久 true,consumer 之後
+    // 換有效新 src(重傳頭像 / signed URL 刷新)時 showImage 永遠 false,<img> 不再掛載 → 新圖
+    // 永不嘗試載入、終身卡 initials fallback。React 官方 adjust-state-on-prop-change 寫法
+    //(render-time derived reset,較 useEffect 少一輪 render);對齊 Radix useImageLoadingStatus /
+    // MUI useLoaded 皆隨 src reset 的 canonical。
+    const [prevSrc, setPrevSrc] = React.useState(src)
+    if (prevSrc !== src) {
+      setPrevSrc(src)
+      setImgError(false)
+    }
     const documentTheme = useDocumentTheme()
     const isTableScrolling = useTableIsScrolling()
     // 2026-05-13 R3.5(per codex Q3 verdict + user 拍「想盡辦法 auto-handle prereq」):
@@ -320,7 +330,6 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     )
   }
 )
-AvatarInner.displayName = 'AvatarInner'
 
 // ── AvatarData ─────────────────────────────────────────────────────────────
 // 資料型別，讓 consumer 傳資料而非 ReactNode。
@@ -336,8 +345,9 @@ export interface AvatarData {
   /**
    * Person avatar hover ProfileCard(DS-wide canonical,person avatar 預設必有,見 avatar.spec.md)。
    * Entity avatar(專案 / 組織 logo)不帶 → consumer 不傳 hoverCard 即豁免。
-   * 所有消費 AvatarData 的 primitive(MenuItem / DropdownMenu / SelectMenu / SelectionItem / ProfileCard)
-   * 需 forward 此 prop 到內部 <Avatar hoverCard={avatar.hoverCard} />。
+   * 消費 AvatarData 的 row primitive(MenuItem menu-item.tsx / SelectionItem selection-item.tsx,
+   * DropdownMenu / SelectMenu 經 MenuItem)需 forward 此 prop 到內部 <Avatar hoverCard={...} />。
+   * 例外:ProfileCard 內部 Avatar 不 forward(卡片本身就是 hover 目的地,nested hover-in-hover 不合理)。
    */
   hoverCard?: React.ReactNode
 }
@@ -347,12 +357,10 @@ export interface AvatarData {
 export const avatarMeta = {
   component: 'Avatar',
   family: null, // non-family composite / overlay / layout
-  variants: {
-
-  },
-  sizes: {
-
-  },
+  // 2026-07-04 audit 標記:Avatar 無 variant 軸、size 為任意 number(px,由 consumer context 決定
+  // — item-anatomy AVATAR_SIZE 查表 / ProfileCard 40 等),無 discrete tier → 兩欄留空為 intentional 非漏填
+  variants: {},
+  sizes: {},
   states: ['default', 'focus-visible', 'disabled'], // 2026-06-11 R2:本身無自有 hover/active(spec L279;hoverCard 互動屬 HoverCard),
   tokens: {
     bg: ['bg-surface-raised'],

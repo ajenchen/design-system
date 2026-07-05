@@ -223,9 +223,7 @@ const liveCountFiles = [
   'scripts/check-plugin-installed.mjs',
   'template/ds-product-template/CLAUDE.md',
   'template/ds-product-template/README.md',
-  // 2026-06-12 fork-audit 抓漏:bootstrap 提示文字含 hook 數,prune-merge 59→52 時漏同步
-  'template/ds-product-template/.claude/hooks/check_plugin_bootstrap.sh',
-  'template/ds-product-template/.claude/hooks/block_production_edit_without_plugin.sh',
+  // 2026-07-04 dim 58:plugin-era bootstrap hooks 已 retired(C-prime dispatcher 取代),原 2 條 template 路徑移除
 ]
 // \b 前置:要求數字前有 word boundary,避免 embedded 數字誤匹配(「P0 hooks」的 0 / 「v14」/「beta.37」等)
 const countPatterns = [

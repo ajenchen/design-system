@@ -3,8 +3,7 @@ component: Skeleton
 family: self-contained
 variants: {}
 sizes: {}
-traits:
-  - isMatrixHeavy
+traits: []  # 2026-07-04 audit:移除幻影 isMatrixHeavy(spec body「為何無 Matrix」明文 rationale + 0 matrix stories,trait 與自家宣告矛盾)
 benchmark:
   - Ant Design Skeleton: github.com/ant-design/ant-design/tree/master/components/skeleton
   - MUI Skeleton: github.com/mui/material-ui/tree/master/packages/mui-material/src/Skeleton

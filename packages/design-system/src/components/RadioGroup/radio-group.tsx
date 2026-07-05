@@ -80,14 +80,31 @@ const RadioGroup = React.forwardRef<
   // 對齊 Carbon read-only single-select(只顯示 selected 內容)+ Airtable / Notion read-only。
   // 實作:walk children 找 control.value === selectedValue 的 SelectionItem,render label plain text。
   // (不用 context dispatch 給 RadioGroupItem — SelectionItem layout wrapper 仍會渲染所有 item label)
+  // 2026-07-04 修:display / readonly-in-Field 分支的 <div> 原丟棄剩餘 props(id/data-*/aria-*)
+  // 且不轉發 forwardRef ref → 自家 radio-group.stories.tsx display demo 傳的 aria-label 都靜默失效。
+  // 抽出 Radix 專屬 non-DOM props,其餘 DOM props 於兩分支 spread 轉發(與 Checkbox/Switch 同修);
+  // edit 主路徑不受影響(Root 仍 spread 完整 props)。
+  const {
+    onValueChange: _onValueChange,
+    disabled: _disabled,
+    required: _required,
+    name: _name,
+    orientation: _orientation,
+    dir: _dir,
+    loop: _loop,
+    asChild: _asChild,
+    children: _children,
+    ...restDomProps
+  } = props as RadioGroupProps & { asChild?: boolean }
+
   if (resolvedMode === 'display') {
     const selectedValue = (value ?? defaultValue) as string | undefined
     if (!selectedValue) {
-      return <div role="group" className={cn('grid', className)}><span className="text-fg-muted">{EMPTY_DISPLAY}</span></div>
+      return <div {...restDomProps} ref={ref as React.Ref<HTMLDivElement>} role="group" className={cn('grid', className)}><span className="text-fg-muted">{EMPTY_DISPLAY}</span></div>
     }
     const selectedLabel = findSelectedRadioLabel(props.children, selectedValue)
     return (
-      <div role="group" className={cn('grid', className)}>
+      <div {...restDomProps} ref={ref as React.Ref<HTMLDivElement>} role="group" className={cn('grid', className)}>
         <span className="text-foreground">{selectedLabel ?? selectedValue}</span>
       </div>
     )
@@ -103,6 +120,8 @@ const RadioGroup = React.forwardRef<
     const boxSize = resolvedBoxSize
     return (
       <div
+        {...restDomProps}
+        ref={ref as React.Ref<HTMLDivElement>}
         role="radiogroup"
         aria-readonly="true"
         aria-labelledby={fieldCtx?.labelId}
@@ -260,6 +279,18 @@ const RadioGroupItem = React.forwardRef<
         tabIndex={effectiveReadonly ? -1 : undefined}
         className={cn(radioItemVariants({ size }), className)}
         {...props}
+        // 2026-07-05 D4 修:readOnly 鎖互動補 label 繞道 — <label htmlFor> 的 synthetic click
+        // 不是 pointer event,cva pointer-events-none 攔不到,點 label 文字仍選中。
+        // preventDefault 讓 Radix composeEventHandlers(checkForDefaultPrevented)跳過內部 onCheck;
+        // 必列在 {...props} 之後才不被 consumer onClick 覆蓋(與 Checkbox/Switch 同修)。
+        // 同時攔 Radix roving-focus 的 arrow-key onFocus → click() 路徑(同為 click event)。
+        onClick={(event) => {
+          if (effectiveReadonly) {
+            event.preventDefault()
+            return
+          }
+          props.onClick?.(event)
+        }}
       >
         <RadioGroupPrimitive.Indicator className="grid place-content-center">
           <Circle
@@ -306,7 +337,9 @@ export const radioGroupMeta = {
     md: { fieldHeight: 32, iconSize: 8, typography: 'body' },
     lg: { fieldHeight: 36, iconSize: 10, typography: 'body-lg' },
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 2026-07-04 修 stale meta:移除 'active' — radioItemVariants cva 無 active-state 樣式,
+  // Radix radio 也無 data-state=active(對照 checkboxMeta 正確不含 active)
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-disabled', 'bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary'],

@@ -30,7 +30,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Separator 是語意分隔元件——consumer 手動放置的分隔線。基於 Radix Separator(shadcn passthrough),提供正確的 ARIA 語意:預設 `decorative=true` 時 render `role="none"`(SR 跳過),`decorative={false}` 時 render `role="separator"` + orientation 語意。元件固定結構(header/footer 邊框)和裝飾性邊框**不使用 Separator**。</Desc>
+        <Desc>Separator 是語意分隔元件——consumer 手動放置的分隔線。基於 Radix Separator(shadcn passthrough),提供正確的 ARIA 語意:預設 `decorative=true` 時 render `role="none"`(SR 跳過),`decorative=&#123;false&#125;` 時 render `role="separator"` + orientation 語意。元件固定結構(header/footer 邊框)和裝飾性邊框**不使用 Separator**。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
           <div className="flex flex-col gap-2 py-2">
             <div className="text-body">個人資訊</div>
@@ -100,7 +100,7 @@ export const TokenMatrix: Story = {
           <table className="text-caption border-collapse">
             <thead><tr><Th>決策者</Th><Th>使用</Th><Th>理由</Th></tr></thead>
             <tbody>
-              <tr><Td>Consumer 手動放置</Td><Td mono>&lt;Separator /&gt;</Td><Td>需要語意標記(role="separator")讓輔助技術辨識</Td></tr>
+              <tr><Td>Consumer 手動放置</Td><Td mono>&lt;Separator /&gt;</Td><Td>分隔語意由放置者宣告——預設 decorative(role="none",SR 跳過),真實切分內容區段時 decorative=&#123;false&#125; 才輸出 role="separator"</Td></tr>
               <tr><Td>元件自動分隔相鄰群組</Td><Td mono>CSS [&+&]</Td><Td>MenuGroup / SidebarGroup——無處插入 DOM node</Td></tr>
               <tr><Td>元件固定結構</Td><Td mono>CSS border-t/b</Td><Td>Dialog Header/Footer、Sidebar Header/Footer——結構的一部分</Td></tr>
               <tr><Td>控件外框 / 容器輪廓</Td><Td mono>CSS border</Td><Td>Input 外框、Card 容器——不分隔內容,是元件邊緣</Td></tr>

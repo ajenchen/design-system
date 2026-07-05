@@ -34,9 +34,11 @@ import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-ge
  *   3. **Multi step 中間 / 最後步**(有 `onPrev`):**Skip 不顯示**(使用者已投入進度,
  *      再給 Skip 會讓「放棄」入口與「回上一步」衝突 — Linear / Pendo / Shepherd.js
  *      同樣規則)。CTA = `isLastStep ? 'Done' : 'Next'`
- *   4. **抑制開啟時的自動 focus** — `onOpenAutoFocus` preventDefault,連 Radix 預設
- *      focus 第一個 focusable 也一併抑制(焦點停在 trigger),避免使用者還在讀 body 時
- *      按 Enter 誤推進。想推進者自行 tab 到 CTA 再 Enter(對齊 spec「A11y 預設」)。
+ *   4. **抑制 CTA 自動 focus,焦點落在 content 容器** — `onOpenAutoFocus` preventDefault
+ *      後 focus content 容器本身(非第一個 CTA),避免使用者還在讀 body 時按 Enter 誤推進;
+ *      Tab 第一下即達 content 內第一個 CTA。焦點不可停在 trigger:non-modal Popover 下
+ *      焦點在 DismissableLayer 外按 Tab 會觸發 focus-outside dismiss 誤關閉
+ *      (2026-07-05 D4;對齊 dialog.tsx handleOpenAutoFocus `?? content` fallback,見 spec「A11y 預設」)。
  *
  * ── 為什麼 Body+Footer 消費 overlay-surface ──
  * 避免 padding token 漂移:Dialog / Popover / Coachmark 三者共用同一套 Header/Body/Footer
@@ -166,8 +168,14 @@ const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
           className={cn('w-80 p-0 overflow-hidden', className)}
           // 禁止 Radix 開啟時自動 focus 第一個 focusable(預設會 focus Prev / Skip / Next),
           // Coachmark 的 CTA 不該被 auto-focus 偷觸發(user 可能還在讀 body,按 Enter 就推進)。
-          // 想推進的 user 自己 tab 到 CTA 即可。
-          onOpenAutoFocus={(e) => e.preventDefault()}
+          // 2026-07-05 D4:preventDefault 後必 focus content 容器本身(FocusScope 容器自帶 tabIndex=-1)——
+          // 焦點若停在 trigger(DismissableLayer 外),non-modal Popover 按 Tab 即觸發 focus-outside
+          // dismiss 直接關閉,CTA 鍵盤永遠到不了;focus 容器後 Tab 第一下即達第一個 CTA,Enter 按在
+          // 容器上無動作(原「不誤推進」意圖保留;對齊 dialog.tsx handleOpenAutoFocus `?? content` fallback)。
+          onOpenAutoFocus={(e) => {
+            e.preventDefault()
+            ;(e.currentTarget as HTMLElement).focus({ preventScroll: true })
+          }}
           aria-labelledby={dialogLabelledBy}
           aria-label={dialogLabelledBy ? undefined : '提示'}
           {...props}

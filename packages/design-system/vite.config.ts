@@ -57,6 +57,7 @@ export default defineConfig({
         'lucide-react',
         'next-themes',
         'react-day-picker',
+        'react-hook-form',  // 2026-07-05 D3:beta.80 漏列 → 整包 inline 進 dist(gzip 15.3KB + sourcemap)
         'react-zoom-pan-pinch',
         'recharts',
         'sonner',

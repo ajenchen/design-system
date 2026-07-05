@@ -82,7 +82,7 @@ export const Overview: Story = {
               <tbody>
                 <tr><Td>L1 Structure</Td><Td>DOM 結構 + 捲動行為</Td><Td mono>&lt;div&gt; + ARIA role="table/row/cell" + useVirtualizer</Td></tr>
                 <tr><Td>L2 Typography / Spacing</Td><Td>Row 高度 / Cell padding / 對齊</Td><Td mono>--table-row-* + --field-height-* token</Td></tr>
-                <tr><Td>L3 Cell Rendering</Td><Td>根據 meta.type 自動選 Display 元件</Td><Td mono>column-types.ts 註冊 string/number/currency/date/select/boolean/person/url</Td></tr>
+                <tr><Td>L3 Cell Rendering</Td><Td>根據 meta.type 自動選 Display 元件</Td><Td mono>cell-registry.tsx cellRegistry 註冊 11 型:string/number/currency/date/time/select/multiSelect/person/multiPerson/boolean/url(column-types.ts 管 type union + 對齊預設)</Td></tr>
                 <tr><Td>L4 Interactions</Td><Td>排序 / 選取 / 欄位拖動 / frozen column</Td><Td>TanStack Table features + 自訂 state</Td></tr>
               </tbody>
             </table>
@@ -110,7 +110,7 @@ export const Inspector: Story = {
     docs: {
       description: {
         story:
-          '右側 Controls 切 DataTable props 即時 render,取代 Figma inspect。調整 `size` 看 row height tier 差異;`pinnedLeft` / `pinnedRight` 切換 frozen column 切出三區域(left / center / right);`height` 切換 auto 與固定(啟用虛擬捲動)。',
+          '右側 Controls 切 DataTable props 即時 render,取代 Figma inspect。調整 `size` 看 row height tier 差異;`pinnedLeft` / `pinnedRight` 切換 frozen column 切出三區域(left / center / right);`height` 切換 auto 與固定高度(固定高度限制容器並可捲動;資料多於 30 筆才啟用虛擬捲動,本例 5 筆不觸發)。',
       },
     },
   },
@@ -135,7 +135,7 @@ export const Inspector: Story = {
     height: {
       control: 'select',
       options: ['auto', '300px'],
-      description: 'auto=全渲染(少於 50 筆)/ 固定值=啟用 TanStack Virtual(多於 100 筆)',
+      description: 'auto=全渲染 / 固定值=限制容器高度並捲動;資料多於 30 筆(VIRTUAL_THRESHOLD)才啟用 TanStack Virtual,本例 5 筆不觸發',
     },
   },
   render: (args) => {
@@ -513,7 +513,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"DataTable 用一般 div 搭配表格語意標記,而非原生 table 元素——因為虛擬捲動需要絕對定位每一列,而 table 的佈局模型做不到。輔助技術(螢幕報讀器)會把它當成表格朗讀。\n\n  表格語意  :最外層標記為表格、每一列標記為列、每一格標記為儲存格,表頭那一格標記為欄位標題。\n\n  排序  :可排序的表頭會標示目前的排序方向(升冪 / 降冪 / 未排序),報讀器讀得出來。\n\n  選取  :每一列的勾選框都有說明文字(由使用方傳入,沒傳就用「Select row」),全選框的說明文字是「Select all visible rows」。\n\n  鍵盤  :一般表格模式下,用 Tab 進入表格後可操作排序與勾選;方向鍵在儲存格之間移動是試算表模式(spreadsheetMode)才開啟的功能,不是預設。列上的更多操作都收進右側的「更多」選單,確保不用滑鼠也能用。\n\n  焦點  :鍵盤聚焦時顯示清楚的外框,與整個設計系統的聚焦樣式一致。\n\n  驗證  :Storybook 無障礙檢查面板應該沒有嚴重問題;全程鍵盤可操作,不必用到滑鼠;文字對比度達到無障礙標準。"}</p>
+      <p className="whitespace-pre-line">{"DataTable 用一般 div 搭配表格語意標記,而非原生 table 元素——因為虛擬捲動需要絕對定位每一列,而 table 的佈局模型做不到。輔助技術(螢幕報讀器)會把它當成表格朗讀。\n\n  表格語意  :最外層標記為表格、每一列標記為列、每一格標記為儲存格,表頭那一格標記為欄位標題。\n\n  排序  :可排序的表頭會標示目前的排序方向(升冪 / 降冪 / 未排序),報讀器讀得出來。\n\n  選取  :每一列的勾選框都有說明文字(由使用方傳入,沒傳就用「選取此列」),全選框的說明文字是「全選可見列」。\n\n  鍵盤  :一般表格模式下,用 Tab 進入表格後可操作排序與勾選;方向鍵在儲存格之間移動是試算表模式(spreadsheetMode)才開啟的功能,不是預設。列上的更多操作都收進右側的「更多」選單,確保不用滑鼠也能用。\n\n  焦點  :鍵盤聚焦時顯示清楚的外框,與整個設計系統的聚焦樣式一致。\n\n  驗證  :Storybook 無障礙檢查面板應該沒有嚴重問題;全程鍵盤可操作,不必用到滑鼠;文字對比度達到無障礙標準。"}</p>
     </div>
   ),
 }

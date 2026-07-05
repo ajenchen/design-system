@@ -10,7 +10,7 @@ import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY, nakedCellRowModeAli
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
-import { SelectMenu, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { SelectMenu, forwardKeyToListbox, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
@@ -78,9 +78,10 @@ export interface SelectProps
   startIcon?: LucideIcon
   /** 啟用搜尋（desktop 時 field 變 input，打字即篩選） */
   searchable?: boolean
-  /** Loading state(2026-05-15 audit B fix per user verbatim「dropdown 隨時可開,讀取在 panel 中間 CircularProgress」)。
-   *  Forward 給 SelectMenu primitive SSOT;dropdown 開啟時取代 options 顯 CircularProgress + loadingText。
-   *  Trigger 不變(chevron 保留 user 隨時可點開)。對齊 Field family loading SSOT + Empty 元件 `<Empty icon={CircularProgress}/>` compose。*/
+  /** Loading state(2026-05-15 audit B fix;2026-07-04 Q3 拍板措辭修訂)。
+   *  Forward 給 SelectMenu primitive SSOT;spinner 只在**無可顯示選項時**佔 empty slot(cmdk CommandEmpty
+   *  機制)— 已有 stale options 時保留顯示不清空(對齊 MUI Autocomplete「only if there are no suggestions」)。
+   *  Trigger 不變(chevron 保留 user 隨時可點開)。*/
   loading?: boolean
 
   /** Menu list 最小列數(空狀態 / 選項少時的視覺一致 reserve)。預設 3 — 選項 < 3 時顯式縮(如 And/Or 兩選項) */
@@ -112,6 +113,11 @@ export interface SelectProps
    * (avatar + name)而非純文字 label。對齊 PeoplePicker = Select wrapper SSOT。
    */
   selectedItemRenderer?: (selectedOpt: SelectOption) => React.ReactNode
+  /** 搜尋無結果提示(2026-07-04 Q4 拍板接線 — 原 spec 宣稱可覆寫但 prop 從未轉發)。
+   *  Forward 給 SelectMenu primitive SSOT(default 在 SelectMenu 層「沒有符合的選項」);
+   *  僅 Custom path(searchable dropdown)生效,Native path 無搜尋空狀態。
+   *  對齊 MUI noOptionsText / Ant notFoundContent / Polaris emptyState 三家公開覆寫點共識。 */
+  emptyText?: string
 }
 
 // ── Icon / size helpers ─────────────────────────────────────────────────────
@@ -362,7 +368,11 @@ function ReadonlyDisplay({
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ mode, variant: variantProp, error: errorProp = false, size: sizeProp, options, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, ...props }, ref) => {
+  ({ mode, variant: variantProp, error: errorProp = false, size: sizeProp, options, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp,
+    // 2026-07-04:Custom-path-only props 顯式 destructure 丟棄(不 spread 到原生 <select> 消 React
+    // unknown-prop warning);各 prop docblock 已註「僅 Custom path 生效」語意
+    searchable: _searchable, groups: _groups, loading: _loading, minRows: _minRows, emptyText: _emptyText, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer: _selectedItemRenderer,
+    ...props }, ref) => {
     const fieldCtx = useFieldContext()
     const error = useResolvedFieldInvalid(errorProp)
     const disabled = useResolvedFieldDisabled(disabledProp)
@@ -407,7 +417,8 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
         {...props}
       >
         {placeholder && <option value="" disabled>{placeholder}</option>}
-        {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+        {/* disabled forward(2026-07-04):對齊桌機 path menuOptions disabled forward — 觸控原生 option 同樣不可選(spec「disabled 選項」邊界案例) */}
+        {options.map(opt => <option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</option>)}
       </select>
     )
 
@@ -427,8 +438,8 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
 
     if (!isTextDisplay) {
       return (
-        <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size }), value && tagPadding[size], 'relative',
-          error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'], className)}
+        <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }), value && tagPadding[size], 'relative',
+          className)}
           style={{ paddingRight: 'var(--field-px)' }} data-field-mode="edit" data-error={error ? '' : undefined}>
           {value ? <Tag size={size} color={nativeTagVariant} className="shrink-0 relative z-10 pointer-events-none">{label}</Tag> : <span className="text-fg-muted">{placeholder ?? '選擇...'}</span>}
           {selectEl}
@@ -440,8 +451,8 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     }
 
     return (
-      <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size }),
-        error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'], className)}
+      <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
+        className)}
         data-field-mode="edit" data-error={error ? '' : undefined}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
         {!StartIcon && SelectedOptIcon && value && <ItemPrefix><SelectedOptIcon size={iconSize} className="pointer-events-none" aria-hidden /></ItemPrefix>}
@@ -458,7 +469,7 @@ NativeSelect.displayName = 'NativeSelect'
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode, variant: variantProp, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, minRows, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel }, ref) => {
+  ({ mode, variant: variantProp, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, minRows, emptyText, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel }, ref) => {
     const fieldCtx = useFieldContext()
     const error = useResolvedFieldInvalid(errorProp)
     const disabled = useResolvedFieldDisabled(disabledProp)
@@ -482,6 +493,9 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     const [open, setOpen] = React.useState(defaultOpen)
     const [search, setSearch] = React.useState('')
     const inputRef = React.useRef<HTMLInputElement>(null)
+    // a11y(2026-07-04):listbox 容器 id——trigger aria-controls 指向 SelectMenu PopoverContent
+    // (對齊姊妹元件 combobox.tsx:677 既有 canonical;React.useId SSR/CSR 穩定)。
+    const listboxId = React.useId()
 
     // 關閉時清搜尋
     React.useEffect(() => { if (!open) setSearch('') }, [open])
@@ -582,20 +596,22 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         role="combobox"
         aria-expanded={open}
         aria-haspopup="listbox"
+        aria-controls={listboxId}
         aria-label={ariaLabel}
+        // a11y(2026-07-04):div-based role=combobox 的 <label for> 無效,接 FieldLabel labelId
+        // (field-context.ts labelId jsDoc 明文);consumer aria-label 優先(對齊 slider.tsx:166 guard canonical)。
+        aria-labelledby={ariaLabel ? undefined : fieldCtx?.labelId}
         aria-invalid={error || undefined}
         aria-required={fieldCtx?.required || undefined}
         aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
         aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
         tabIndex={0}
         className={cn(
-          fieldWrapperStyles({ mode: 'edit', variant: variant, size }),
+          fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
           !isTextDisplay && value && !searchable && tagPadding[size],
           // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
-          // state machine `data-[state=open]:border-border-hover`(灰深)處理 open;若 trigger focused
-          // (Radix focus on open),focus-within:!border-primary 強制勝出顯藍。focus dominates everything
-          // 全 DS 一致(Material/Polaris/Ant 共識),改 Field default 一處全 control 自動跟動。
-          error && ['border-error hover:border-error-hover', 'focus-within:border-error focus-within:hover:border-error'],
+          // state machine `data-[state=open]:border-border-hover`(灰深)處理 open。
+          // 2026-07-04 Q1:error border 同樣收進 fieldWrapperStyles error variant(error 勝 focus 色)。
           'cursor-pointer',
           className,
         )}
@@ -603,6 +619,9 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         data-field-mode="edit"
         data-error={error ? '' : undefined}
         onKeyDown={(e) => {
+          // 2026-07-05 D4 P0:open 後 ArrowUp/Down/Enter 轉送 cmdk root(見 select-menu.tsx
+          // forwardKeyToListbox docblock — 原「open 後不攔讓方向鍵導覽」在跨 DOM 子樹機制上不成立)
+          if (open && forwardKeyToListbox(listboxId, e)) return
           if (e.key === 'Enter' || e.key === ' ') {
             // 2026-06-11 P0 a11y(R2 deep-audit):原 guard `!searchable` 連「關閉時的鍵盤開啟」一起擋
             // → searchable Select / PeoplePicker single 鍵盤打不開(WCAG 2.1.1)。原意只是開啟後
@@ -628,10 +647,12 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         onValueChange={handleValueChange}
         searchable={false}
         loading={loading}
+        emptyText={emptyText}
         size={size}
         minRows={minRows}
         open={open}
         onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
+        contentId={listboxId}
         renderLabel={renderLabel}
         onOpenAutoFocus={searchable ? (e) => { e.preventDefault(); inputRef.current?.focus() } : undefined}
       >

@@ -8,7 +8,7 @@ import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta = {
-  title: 'Design System/Internal/ProfileCard/設計原則',
+  title: 'Design System/Components/ProfileCard/設計原則',
   parameters: { layout: 'padded' },
 }
 export default meta
@@ -87,7 +87,7 @@ export const UsageGuidance: Story = {
       <p>適合 ProfileCard 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Internal/ProfileCard/展示" name="懸停展開 ProfileCard"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">懸停留言者 / PR reviewer / 成員列表的頭像,展開人員詳情卡</span></LinkTo>
+          <LinkTo kind="Design System/Components/ProfileCard/展示" name="懸停展開 ProfileCard"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">懸停留言者 / PR reviewer / 成員列表的頭像,展開人員詳情卡</span></LinkTo>
         </li>
       </ul>
       <p>判斷時對照 spec.md「何時用 / 何時不用」段落。</p>

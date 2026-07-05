@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-07-03T00:23:00.203Z"
+    "generatedAt": "2026-07-05T08:46:14.185Z"
   },
   "components": {
     "accordion": {
@@ -375,7 +375,6 @@
       "tiers": {
         "展示": [
           "design-system-components-circularprogress-展示--default",
-          "design-system-components-circularprogress-展示--button-loading",
           "design-system-components-circularprogress-展示--inline-action",
           "design-system-components-circularprogress-展示--inline-cell-loading",
           "design-system-components-circularprogress-展示--full-screen-overlay"
@@ -563,6 +562,7 @@
           "design-system-components-datepicker-展示--show-time",
           "design-system-components-datepicker-展示--range-popover-open",
           "design-system-components-datepicker-展示--show-time-popover-open",
+          "design-system-components-datepicker-展示--need-confirm-date-only-open",
           "design-system-components-datepicker-展示--show-time-range-popover-open",
           "design-system-components-datepicker-展示--range-middle-hover-state",
           "design-system-components-datepicker-展示--show-time-range",
@@ -587,6 +587,7 @@
       "openSnapshotIds": [
         "design-system-components-datepicker-展示--range-popover-open",
         "design-system-components-datepicker-展示--show-time-popover-open",
+        "design-system-components-datepicker-展示--need-confirm-date-only-open",
         "design-system-components-datepicker-展示--show-time-range-popover-open"
       ],
       "exception": null
@@ -686,7 +687,6 @@
         "展示": [
           "design-system-components-empty-展示--search-no-results",
           "design-system-components-empty-展示--no-tasks",
-          "design-system-components-empty-展示--load-failure",
           "design-system-components-empty-展示--no-permission"
         ],
         "設計規格": [
@@ -1088,22 +1088,22 @@
     "profilecard": {
       "tiers": {
         "展示": [
-          "design-system-internal-profilecard-展示--default"
+          "design-system-components-profilecard-展示--default"
         ],
         "設計規格": [
-          "design-system-internal-profilecard-設計規格--overview",
-          "design-system-internal-profilecard-設計規格--inspector",
-          "design-system-internal-profilecard-設計規格--section-matrix",
-          "design-system-internal-profilecard-設計規格--color-matrix",
-          "design-system-internal-profilecard-設計規格--hover-card-integration",
-          "design-system-internal-profilecard-設計規格--state-behavior",
-          "design-system-internal-profilecard-設計規格--accessibility"
+          "design-system-components-profilecard-設計規格--overview",
+          "design-system-components-profilecard-設計規格--inspector",
+          "design-system-components-profilecard-設計規格--section-matrix",
+          "design-system-components-profilecard-設計規格--color-matrix",
+          "design-system-components-profilecard-設計規格--hover-card-integration",
+          "design-system-components-profilecard-設計規格--state-behavior",
+          "design-system-components-profilecard-設計規格--accessibility"
         ],
         "設計原則": [
-          "design-system-internal-profilecard-設計原則--usage-guidance",
-          "design-system-internal-profilecard-設計原則--trigger-context-rule",
-          "design-system-internal-profilecard-設計原則--fixed-width-rule",
-          "design-system-internal-profilecard-設計原則--section-rule"
+          "design-system-components-profilecard-設計原則--usage-guidance",
+          "design-system-components-profilecard-設計原則--trigger-context-rule",
+          "design-system-components-profilecard-設計原則--fixed-width-rule",
+          "design-system-components-profilecard-設計原則--section-rule"
         ]
       },
       "openSnapshotIds": [],
@@ -1680,5 +1680,5 @@
     }
   },
   "totalComponents": 62,
-  "totalStories": 910
+  "totalStories": 909
 }

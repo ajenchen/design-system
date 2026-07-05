@@ -1,5 +1,5 @@
 {
-  "ts": "2026-06-10T19:53:37.428Z",
+  "ts": "2026-07-03T13:00:19.021Z",
   "scope": {
     "total_story_files": 197,
     "manual_story_files": 73
@@ -13,7 +13,7 @@
   },
   "totals": {
     "titles_scanned": 197,
-    "names_scanned": 348,
-    "names_mixed_scanned": 938
+    "names_scanned": 350,
+    "names_mixed_scanned": 941
   }
 }

@@ -57,7 +57,7 @@ item-layout 4-slot：
 ```
 
 - Icon: 16px，`h-[1lh]` inline 對齊 first line
-- Dismiss X: `<Button iconOnly dismiss size="xs" />` — chrome corner action group region(Cat 3)。xs 是 **Notification banner family canonical**(Notice / Alert / Toast inherit):ephemeral banner `px-4 py-3` 固定不隨 density,dismiss 邊角小 affordance 輕量不搶眼。詳見 `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」(overlay header 走 sm native + 負 margin trick;只有 notification banner family 用 xs)+ `patterns/element-anatomy/item-anatomy.spec.md`「Dismiss canonical — X close only」
+- Dismiss X: `<Button iconOnly dismiss size="xs" />` — chrome corner action group region(Cat 3)。xs 是 **Notification banner family canonical**(Notice / Alert / Toast inherit):ephemeral banner `px-4 py-3` 固定不隨 density,dismiss 邊角小 affordance 輕量不搶眼。詳見 `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」(overlay header 走 sm native + 負 margin trick;只有 notification banner family 用 xs)+ `patterns/element-anatomy/inline-action.spec.md`「Dismiss canonical — X close only」
 - endContent: 通常放 `<Button variant="tertiary" size="xs">`
 
 ## Variant
@@ -121,6 +121,7 @@ Notice 是 **Toast / Alert 共用的 layout primitive**,刻意不擁有尺寸與
 - **Loading**:Notice 非 async surface,無 loading state。Body 內若 consumer 注入 CTA Button,該 Button 自行處理 loading。
 - **Empty**:Notice 的 `title` 為必填(TypeScript required prop,消費合約),`description` 選填;layout 至少 1 行 title 內容。誤傳空字串時照常 render(無 runtime warn / throw),空 title 的內容責任在 consumer(Alert / Toast)。`neutral` variant 不渲 status icon 時即為 title-only icon-less 形態(見 `NeutralTitleOnly` story),仍合法 render。
 - **Icon-only / variant=neutral**:`neutral` variant 不渲 status icon,layout 自動收斂為 `[title + description?]  [endContent?]  [dismiss X?]` 三 slot。
+- **`dismissible` 無 `onDismiss`**(2026-07-05 D4):X 渲染條件 = `dismissible`(預設 true)**且**有傳 `onDismiss`——Notice / Alert 為 controlled-only(不自我移除),無 handler 的 X 是可 focus、SR 播報「關閉通知」但按下零反應的死按鈕(假 affordance)。對齊 Polaris Banner(`onDismiss` 存在才顯示 X)/ Ant Alert(`closable` 預設 false)。顯式傳 `dismissible={true}` 卻缺 `onDismiss` 時 dev-only `console.warn` 提示(預設未傳不吵)。
 
 ---
 
@@ -138,12 +139,12 @@ Notice 是 **Toast / Alert 共用的 layout primitive**,刻意不擁有尺寸與
 
 **Keyboard 行為**:
 
-- Tab — focus dismiss button(若 dismissible)
+- Tab — focus dismiss button(若 dismissible 且有傳 `onDismiss`——X 僅在兩者同時成立時渲染,見「邊界案例」,2026-07-05 D4;consumer 經 `endContent` 注入互動元素時,其 DOM 順序在 dismiss 之前,Tab 先落 endContent)
 - Enter / Space — 觸發 focus 中的 dismiss button(原生 button 行為,呼叫 `onDismiss`)
 
 Notice **不**自帶 Esc-to-dismiss 行為(`notice.tsx` 無 keydown handler);dismiss 純粹由 dismiss button 的 `onClick={onDismiss}` 觸發。若 consumer(Alert / Toast)需要 Esc 關閉,於 consumer 層自行掛 keydown。Dismiss 後的焦點處置 Notice 同樣不管理(無 focus restoration 邏輯)——節點移除後焦點落點由 consumer(Alert / Toast host)決定。
 
-**Focus**:唯一 focusable 元素是 dismiss `<Button>`,focus indicator 走 Button canonical(`focus-visible:ring-2 ring-ring`,box-shadow ring 非 CSS `outline`);Notice 本身無 focus management(dismiss 後焦點處置見上段,由 consumer 決定)。
+**Focus**:Notice 自身渲染的唯一 focusable 元素是 dismiss `<Button>`(consumer 經 `endContent` 注入的互動元素——如上方建議的 tertiary Button——由 consumer 自管 a11y),focus indicator 走 Button canonical(`focus-visible:ring-2 ring-ring`,box-shadow ring 非 CSS `outline`);Notice 本身無 focus management(dismiss 後焦點處置見上段,由 consumer 決定)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

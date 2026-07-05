@@ -261,10 +261,10 @@ function StarIcon({ Icon, sizePx, fillRatio, isHalf, interactive, onHover, onCli
 
   // Half: 兩個重疊 icon,左半 filled / 右半 empty + 兩個 hover zone 切半星
   return (
-    <span className="relative inline-flex" style={{ width: sizePx, height: sizePx }}>
-      <Icon size={sizePx} fill={FILL_EMPTY} stroke="none" className="absolute inset-0" style={{ color: FILL_EMPTY }} />
+    <span aria-hidden className="relative inline-flex" style={{ width: sizePx, height: sizePx }}>
+      <Icon size={sizePx} fill={FILL_EMPTY} stroke="none" aria-hidden className="absolute inset-0" style={{ color: FILL_EMPTY }} />
       <span className="absolute inset-0 overflow-hidden" style={{ width: sizePx * fillRatio }}>
-        <Icon size={sizePx} fill={FILL_FILLED} stroke="none" style={{ color: FILL_FILLED }} />
+        <Icon size={sizePx} fill={FILL_FILLED} stroke="none" aria-hidden style={{ color: FILL_FILLED }} />
       </span>
       {interactive && (
         <>

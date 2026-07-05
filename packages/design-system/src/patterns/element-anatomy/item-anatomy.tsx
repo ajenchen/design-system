@@ -88,7 +88,7 @@ export const ICON_SIZE: Record<RowSize, number> = {
  * <Avatar size={AVATAR_SIZE.inline[size]} />
  * ```
  *
- * Canonical 實作:`MenuItem` 的內部 `AVATAR_SIZE` 查表(即將 re-export 自此)。
+ * Canonical 消費者:MenuItem 直接 import 本檔 `AVATAR_SIZE`(menu-item.tsx,消費 .block/.inline;re-export 已完成,MenuItem 無內部查表)。
  */
 export const AVATAR_SIZE = {
   inline: { sm: 20, md: 24, lg: 24 },

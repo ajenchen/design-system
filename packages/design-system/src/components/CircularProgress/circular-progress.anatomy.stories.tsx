@@ -170,7 +170,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"本元件不可聚焦、無鍵盤互動(載入指示不接收鍵盤),但會依模式自動輸出對的 ARIA 給輔助技術:\n\n• 有 value(determinate)→ role=\"progressbar\",並帶 aria-valuenow / aria-valuemin=0 / aria-valuemax=100,螢幕報讀器會念出目前進度。\n• 無 value(indeterminate)+ 有傳 label 或 aria-label → role=\"status\",把 label 當作 aria-label 念出(例如「載入訂單資料中」)。\n• 無 value 且沒給任何 label → 標記 aria-hidden,交由外層容器(如 Button 的 aria-busy)負責語義。\n\n當把 CircularProgress 包進互動容器(Button / Card / Link)時,聚焦與鍵盤行為由容器決定。"}</p>
+      <p className="whitespace-pre-line">{"本元件不可聚焦、無鍵盤互動(載入指示不接收鍵盤),但會依模式自動輸出對的 ARIA 給輔助技術:\n\n• 有 value(determinate)→ role=\"progressbar\",並帶 aria-valuenow / aria-valuemin=0 / aria-valuemax=100,螢幕報讀器會念出目前進度。\n• 無 value(indeterminate)+ 有傳 label 或 aria-label → role=\"status\",把 label 當作 aria-label 念出(例如「載入訂單資料中」)。\n• 無 value 且沒給任何 label → 標記 aria-hidden,交由外層容器(如 Button 的 aria-busy)負責語義。\n\n動畫尊重 prefers-reduced-motion:偏好減少動態的使用者不會看到停止的圈(那會像卡住),indeterminate 旋轉改放慢至 3s/圈(預設 1s)——保留「進行中」訊號、降低前庭刺激(Material 流派)。\n\n當把 CircularProgress 包進互動容器(Button / Card / Link)時,聚焦與鍵盤行為由容器決定。"}</p>
     </div>
   ),
 }

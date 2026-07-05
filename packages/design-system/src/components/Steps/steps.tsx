@@ -436,7 +436,7 @@ const STEP_STATUS_TEXT: Record<StepContentState, string> = {
   upcoming: '未開始',
 }
 
-function StepItemHeader({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+function StepItemHeader({ children, className, style, contentId }: { children: React.ReactNode; className?: string; style?: React.CSSProperties; contentId?: string }) {
   const item = useStepItemContext()
   const steps = useStepsContext()
   const index = React.useContext(StepIndexContext)
@@ -454,6 +454,12 @@ function StepItemHeader({ children, className, style }: { children: React.ReactN
       onClick={item.clickable ? item.activate : undefined}
       onKeyDown={item.clickable ? onKeyDown : undefined}
       aria-disabled={item.disabled || undefined}
+      // 2026-07-05 D4 修:step 有 content 的可點 header(role=button)必帶 aria-expanded —
+      // WAI-ARIA disclosure pattern trigger 最低要求(multiple 模式 toggle;follow-active 亦
+      // 同步反映展開狀態)。aria-controls 只在 content 實際 render(展開)時輸出,避免
+      // dangling id reference(content 收合時不在 DOM)。
+      aria-expanded={item.clickable && contentId ? item.expanded : undefined}
+      aria-controls={item.clickable && contentId && item.expanded ? contentId : undefined}
       className={cn(
         // leading-compact:scanning-family header 行高 = 1.3(item-anatomy.spec.md:776 掃描模式 label 行高)。
         // 設在 header 而非 li 根 → prefix h-[1lh] + 水平 connector h-[1lh] + label(StepLabel 亦 leading-compact)
@@ -490,10 +496,12 @@ function VerticalLayout({
   const item = useStepItemContext()
   const showContent = !!content && item.expanded
   const indicatorBox = INDICATOR_BOX_WIDTH[steps.size]
+  // 2026-07-05 D4 修:content 區 id 供 header aria-controls 指向(disclosure 配線)
+  const contentId = React.useId()
 
   return (
     <>
-      <StepItemHeader className="flex items-start gap-3">
+      <StepItemHeader className="flex items-start gap-3" contentId={content ? contentId : undefined}>
         {/* Row prefix slot — 消費 item-anatomy <ItemPrefix>(h-[1lh] 對齊 label 第一行 SSOT);
             width = INDICATOR_BOX_WIDTH 固定欄寬,base justify-center 讓 sm dot 在欄內置中 */}
         <ItemPrefix style={{ width: indicatorBox }}>
@@ -520,7 +528,7 @@ function VerticalLayout({
         </div>
       </StepItemHeader>
       {showContent && (
-        <div className="flex items-start gap-3 mt-3">
+        <div id={contentId} className="flex items-start gap-3 mt-3">
           <div className="shrink-0" style={{ width: indicatorBox }} />
           <div className="flex-1 min-w-0">{content}</div>
         </div>

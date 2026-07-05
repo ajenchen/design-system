@@ -382,7 +382,7 @@ export const StateBehavior: Story = {
         <span className="text-caption font-medium text-fg-secondary">行為 2:linear 控制 upcoming step 可否點擊</span>
         <Desc>
           `linear=true`(預設)= 只能依序前進,回查僅限 completed(對應 checkout 這種「不可跳過」流程)。
-          `linear=false` + `reachableValues` = 自由跳轉,任何 reachable step 可點(對應「多 tab 表單編輯器」)。
+          `linear=false` = 自由跳轉,任何非 disabled step 都可點(對應「多 tab 表單編輯器」;reachable 是 linear 模式的內部推導態,非 prop)。
         </Desc>
         <LinearVsNonlinear />
       </div>

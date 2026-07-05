@@ -1,0 +1,92 @@
+[
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/NumberInput/number-input.tsx",
+    "label": "NumberInput: destructure onBlur/onKeyDown for composition",
+    "old": "      className,\n      disabled: disabledProp,\n      readOnly,\n      id: idProp,\n      'aria-describedby': ariaDescribedByProp,",
+    "new": "      className,\n      disabled: disabledProp,\n      readOnly,\n      id: idProp,\n      onBlur: onBlurProp,\n      onKeyDown: onKeyDownProp,\n      'aria-describedby': ariaDescribedByProp,"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/NumberInput/number-input.tsx",
+    "label": "NumberInput: draft state declaration (before non-edit early return, Rules-of-Hooks)",
+    "old": "    // 2026-06-08 SSOT:mode 經 useResolvedFieldMode 統一解析(prop > 有效 disabled > fieldCtx.mode > readOnly > 'edit')\n    const resolvedMode: FieldMode = useResolvedFieldMode({ mode: modeProp, disabled, readOnly })\n",
+    "new": "    // 2026-06-08 SSOT:mode 經 useResolvedFieldMode 統一解析(prop > 有效 disabled > fieldCtx.mode > readOnly > 'edit')\n    const resolvedMode: FieldMode = useResolvedFieldMode({ mode: modeProp, disabled, readOnly })\n\n    // 2026-07-05 D4 draft state:controlled value 回寫會吃掉輸入中間態('-'、'1.'、'0.0' 等\n    // parse 後 lossy 的 raw 字串)— 例:已有值 5 全選打「-」→ onChange(null) 回寫把 DOM 重設\n    // 為空,負號被吃、無法打出 -5。修法對齊 Ant InputNumber / Adobe Spectrum NumberField 的\n    // internal draft string canonical:輸入期間 DOM 顯示以 local draft 優先,parse 成功即時同步\n    // onChange(parsed);blur / Enter commit 清 draft 回 value 顯示;Escape 一併棄 draft(對齊\n    // form-validation 規則 4 回復原值)。宣告於 non-edit early return 之前(Rules-of-Hooks,\n    // 同 LinkInput 2026-07-04 修法)。\n    const [draft, setDraft] = React.useState<string | null>(null)\n"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/NumberInput/number-input.tsx",
+    "label": "NumberInput: handleChange writes draft first",
+    "old": "    // edit 模式：raw 數值輸入\n    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {\n      if (!onChange) return\n      const raw = e.target.value\n      if (raw === '' || raw === '-') {",
+    "new": "    // edit 模式:raw 數值輸入(draft 承載中間態;value 面語意不變 — ''/'-' 視為空、NaN 忽略)\n    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {\n      const raw = e.target.value\n      setDraft(raw)\n      if (!onChange) return\n      if (raw === '' || raw === '-') {"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/NumberInput/number-input.tsx",
+    "label": "NumberInput: input binds draft-first display + blur/Enter/Escape commit",
+    "old": "          value={value ?? ''}\n          onChange={handleChange}",
+    "new": "          // 輸入期間 draft(raw 字串)優先;非輸入期間才從 value prop 同步顯示(2026-07-05 D4)\n          value={draft ?? (value != null ? String(value) : '')}\n          onChange={handleChange}\n          // blur / Enter = commit(清 draft,顯示回 committed value);Escape 棄 draft\n          onBlur={(e) => { setDraft(null); onBlurProp?.(e) }}\n          onKeyDown={(e) => {\n            if (e.key === 'Enter' || e.key === 'Escape') setDraft(null)\n            onKeyDownProp?.(e)\n          }}"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/LinkInput/link-input.tsx",
+    "label": "LinkInput: import useResolvedFieldInvalid",
+    "old": "import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant } from '@/design-system/components/Field/field-context'",
+    "new": "import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/LinkInput/link-input.tsx",
+    "label": "LinkInput: resolve fieldInvalid via SSOT resolver (before display early return)",
+    "old": "    // chrome resolution:per-prop > context > 'default'\n    const resolvedVariant: FieldVariant = useResolvedFieldVariant(variantProp)\n",
+    "new": "    // chrome resolution:per-prop > context > 'default'\n    const resolvedVariant: FieldVariant = useResolvedFieldVariant(variantProp)\n\n    // 2026-07-05 D4:invalid 經 useResolvedFieldInvalid 統一接 fieldCtx.invalid(field-controls.spec.md\n    // resolver 契約「error/invalid = prop OR fieldCtx.invalid」)— 原本紅框只吃 errorProp||localError、\n    // aria-invalid 卻 inline 加 fieldCtx?.invalid → <Field invalid> 下 AT 聽到 invalid 視覺卻正常框\n    // (聚焦還變藍)。紅框與 aria 自此同源。宣告於 display early return 之前(Rules-of-Hooks)。\n    const fieldInvalid = useResolvedFieldInvalid(errorProp)\n"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/LinkInput/link-input.tsx",
+    "label": "LinkInput: error derivation includes fieldCtx.invalid",
+    "old": "    const error = errorProp || localError",
+    "new": "    const error = fieldInvalid || localError"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/LinkInput/link-input.tsx",
+    "label": "LinkInput: aria-invalid same source as visual",
+    "old": "          aria-invalid={(error || fieldCtx?.invalid) || undefined}",
+    "new": "          aria-invalid={error || undefined}"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/LinkInput/link-input.tsx",
+    "label": "LinkInput: aria-errormessage same source as visual",
+    "old": "          aria-errormessage={ariaErrorMessageProp ?? ((error || fieldCtx?.invalid) ? fieldCtx?.errorId : undefined)}",
+    "new": "          aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/LinkInput/link-input.tsx",
+    "label": "LinkInput: showLink branch wrapper也接 error 紅框",
+    "old": "        <div\n          className={cn(fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size }), className)}\n          data-field-mode=\"edit\"\n        >\n          <span className=\"flex-1 min-w-0\">\n            {value && renderLinkAnchor(value, label)}\n          </span>",
+    "new": "        <div\n          // 2026-07-05 D4:link 顯示分支同樣接 error(errorProp / fieldCtx.invalid)紅框,\n          // 否則 <Field invalid> 下 link state 完全無 error 呈現\n          className={cn(fieldWrapperStyles({ mode: 'edit', variant: resolvedVariant, size, error }), className)}\n          data-field-mode=\"edit\"\n          data-error={error ? '' : undefined}\n        >\n          <span className=\"flex-1 min-w-0\">\n            {value && renderLinkAnchor(value, label)}\n          </span>"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Field/use-form-validation.ts",
+    "label": "useFormValidation: docblock 補 double-submit 防護一行",
+    "old": " * + Submit button:Create 永遠 enabled / Update disabled-until-dirty → `submitDisabled`",
+    "new": " * + Submit button:Create 永遠 enabled / Update disabled-until-dirty → `submitDisabled`\n * + Double-submit 防護(2026-07-05 D4):await onSubmit 期間重入直接忽略;`isSubmitting`\n *   暴露餵 Button loading / disabled;onSubmit reject 先復位再原樣上拋(不吞錯)"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Field/use-form-validation.ts",
+    "label": "useFormValidation: return interface 加 isSubmitting",
+    "old": "  /** Submit button disabled 狀態(intent 驅動,見 options.intent) */\n  submitDisabled: boolean",
+    "new": "  /** Submit button disabled 狀態(intent 驅動,見 options.intent;submit 進行中一併 disabled) */\n  submitDisabled: boolean\n  /** Submit 進行中(await onSubmit 期間 true)— 餵 Button loading;double-submit 防護的 state 面 */\n  isSubmitting: boolean"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Field/use-form-validation.ts",
+    "label": "useFormValidation: isSubmitting ref+state + entry guard",
+    "old": "  /** 規則 7/8/9:submit 全驗 + anchor 第一個錯誤 + 業務錯誤同軌 */\n  const handleSubmit = React.useCallback(\n    async (e?: React.FormEvent) => {\n      e?.preventDefault()",
+    "new": "  // 2026-07-05 D4 double-submit 防護:連點 submit / 連按 Enter 在 await onSubmit(規則 9\n  // async 業務驗證)期間會並發呼叫 onSubmit(重複建立資源的經典事故)。ref 同步擋重入\n  // (state 有 render 延遲,擋不住同 tick 連點);state 暴露 isSubmitting 餵 Button\n  // loading / disabled。對齊 RHF formState.isSubmitting / Polaris / Mantine form submitting。\n  const isSubmittingRef = React.useRef(false)\n  const [isSubmitting, setIsSubmitting] = React.useState(false)\n\n  /** 規則 7/8/9:submit 全驗 + anchor 第一個錯誤 + 業務錯誤同軌 */\n  const handleSubmit = React.useCallback(\n    async (e?: React.FormEvent) => {\n      e?.preventDefault()\n      if (isSubmittingRef.current) return // double-submit guard(見上方 comment)"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Field/use-form-validation.ts",
+    "label": "useFormValidation: onSubmit try/finally 復位 + rejection 原樣上拋",
+    "old": "      // 規則 9:業務 / async / 跨欄位驗證 defer 到 submit(onSubmit 回傳 field-keyed errors)\n      const businessErrors = await onSubmit(current)\n      if (businessErrors && typeof businessErrors === 'object') {\n        const names = Object.keys(businessErrors).filter(\n          (k) => businessErrors[k as keyof T] != null,\n        )\n        for (const name of names) {\n          form.setError(name as Path<T>, {\n            type: 'business',\n            message: businessErrors[name as keyof T] as string,\n          })\n        }\n        if (names.length > 0) focusFirstError(names)\n      }\n    },",
+    "new": "      // 規則 9:業務 / async / 跨欄位驗證 defer 到 submit(onSubmit 回傳 field-keyed errors)\n      // try/finally(2026-07-05 D4):onSubmit reject 先復位 isSubmitting 再讓 rejection 原樣\n      // 上拋(不吞錯,對齊 RHF handleSubmit re-throw canonical)— 表單回到可重送狀態而非卡死。\n      isSubmittingRef.current = true\n      setIsSubmitting(true)\n      try {\n        const businessErrors = await onSubmit(current)\n        if (businessErrors && typeof businessErrors === 'object') {\n          const names = Object.keys(businessErrors).filter(\n            (k) => businessErrors[k as keyof T] != null,\n          )\n          for (const name of names) {\n            form.setError(name as Path<T>, {\n              type: 'business',\n              message: businessErrors[name as keyof T] as string,\n            })\n          }\n          if (names.length > 0) focusFirstError(names)\n        }\n      } finally {\n        isSubmittingRef.current = false\n        setIsSubmitting(false)\n      }\n    },"
+  },
+  {
+    "file": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Field/use-form-validation.ts",
+    "label": "useFormValidation: return 面 submitDisabled 併 isSubmitting + 暴露 isSubmitting",
+    "old": "    // Submit Button 狀態 canonical:Create 永遠 enabled / Update disabled-until-dirty\n    submitDisabled: intent === 'update' ? !isDirty : false,\n    getInputProps,",
+    "new": "    // Submit Button 狀態 canonical:Create 永遠 enabled / Update disabled-until-dirty;\n    // submit 進行中一律 disabled(double-submit 防護的 UI 面,2026-07-05 D4)\n    submitDisabled: (intent === 'update' ? !isDirty : false) || isSubmitting,\n    isSubmitting,\n    getInputProps,"
+  }
+]

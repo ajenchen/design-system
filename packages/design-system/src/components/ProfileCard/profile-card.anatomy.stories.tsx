@@ -24,7 +24,7 @@ type InspectorArgs = {
 }
 
 const meta: Meta = {
-  title: 'Design System/Internal/ProfileCard/設計規格',
+  title: 'Design System/Components/ProfileCard/設計規格',
   parameters: { layout: 'padded' },
 }
 export default meta
@@ -97,7 +97,7 @@ export const Overview: Story = {
               {[
                 ['name', 'string', '必填', '姓名(profile header)'],
                 ['subtitle', 'string', '—', '職稱 / 位置 / 描述'],
-                ['avatar', 'AvatarData', '—', '{ src?, alt?, color? };size/status 由 ProfileCard 覆寫'],
+                ['avatar', 'AvatarData', '—', '{ src?, alt, color?, hoverCard? }(alt 必填;未傳 avatar 時以 name 作 fallback alt);size/status 由 ProfileCard 覆寫,hoverCard 不 forward'],
                 ['status', "'online' | 'away' | 'busy' | 'offline'", '—', '觸發 Status section + Avatar 狀態點'],
                 ['statusMessage', 'ReactNode', '—', '狀態說明文字(完整顯示,內容多時 Body 區捲動)'],
                 ['actions', 'ReactNode', '—', 'CTA buttons(通常 2 個 sm Button)'],
@@ -122,7 +122,7 @@ export const Overview: Story = {
               <tr><Td>Card 寬度</Td><Td mono>w-[320px](元件級常數,不抽 token)</Td></tr>
               <tr><Td>Profile header padding</Td><Td mono>px-4 py-3</Td></tr>
               <tr><Td>Profile avatar / text gap</Td><Td mono>gap-3</Td></tr>
-              <tr><Td>Avatar 大小</Td><Td mono>64px(對齊 Avatar.block tier)</Td></tr>
+              <tr><Td>Avatar 大小</Td><Td mono>64px(profile-card.tsx 元件級常數 AVATAR_SIZE;非 item-anatomy AVATAR_SIZE.block tier — block 為 32/32/40)</Td></tr>
               <tr><Td>Actions padding</Td><Td mono>px-4 pb-3 + gap-2</Td></tr>
               <tr><Td>Status / Info padding</Td><Td mono>px-4 py-3</Td></tr>
               <tr><Td>View more padding</Td><Td mono>px-4 py-3</Td></tr>
@@ -376,7 +376,7 @@ export const HoverCardIntegration: Story = {
                   <Avatar alt={p.name} size={40} status={p.status} />
                 </span>
               </HoverCardTrigger>
-              <HoverCardContent align="start" className="p-0" sideOffset={8}>
+              <HoverCardContent align="start" className="p-0">{/* sideOffset 不 override — spec 禁止事項(default 即 OVERLAY_SIDE_OFFSET) */}
                 <ProfileCard
                   name={p.name}
                   subtitle={p.subtitle}

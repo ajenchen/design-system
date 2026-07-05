@@ -79,9 +79,10 @@
         },
         {
           "id": "datatable-toolbar-no-popover-wrap",
-          "regex": "startIcon=\\{(Filter|ArrowUpDown)\\}(?![\\s\\S]*?(DataTableFilterPanel|DataTableSortManager))",
+          "regex": "startIcon=\\{(Filter|ArrowUpDown)\\}",
           "severity": "warn",
-          "rationale": "DataTable toolbar filter/sort button 必包在 Popover 內,內含真 DataTableFilterPanel / DataTableSortManager primitive"
+          "rationale": "DataTable toolbar filter/sort button 必包在 Popover 內,內含真 DataTableFilterPanel / DataTableSortManager primitive(2026-07-04 dim 54:原 PCRE lookahead 在 ERE grep exit 2 永不 fire → 改兩段式 regex+unlessRegex)",
+          "unlessRegex": "DataTableFilterPanel|DataTableSortManager"
         }
       ]
     },

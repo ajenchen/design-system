@@ -75,9 +75,9 @@ Tooltip 底色是深色，子元素永遠套用 dark theme token（透過 `data-
 
 ## Edge collision(避免貼 viewport 邊)
 
-**`collisionPadding` default = 8**(與 HoverCard 一致),Radix `avoidCollisions` 預設 true 會自動翻邊,但 padding 0 會讓 tooltip **貼齊 viewport 邊緣**(視覺上擠)。default 8 讓 tooltip 跟 viewport 邊保留最少 8px 呼吸距離。consumer 需自訂傳 prop 即可覆寫。
+**`collisionPadding` default = 8**(消費 `OVERLAY_COLLISION_PADDING` overlay 家族 canonical,與 Popover 一致;HoverCard 是 documented exception 特意用 12 補 Radix rounding,見 `hover-card.tsx` 註解),Radix `avoidCollisions` 預設 true 會自動翻邊,但 padding 0 會讓 tooltip **貼齊 viewport 邊緣**(視覺上擠)。default 8 讓 tooltip 跟 viewport 邊保留最少 8px 呼吸距離。consumer 需自訂傳 prop 即可覆寫。
 
-世界級對照:Material Tooltip `margin: 14px` default / Polaris Tooltip 8-12px — 本 DS 選 8 對齊 HoverCard。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+世界級對照:Material Tooltip `margin: 14px` default / Polaris Tooltip 8-12px — 本 DS 選 8 對齊 overlay 家族共用常數。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
 ## 最大寬度（元件級常數）
 
@@ -109,7 +109,7 @@ Tooltip 是**單一職責 hover 提示 primitive**(一句話補充),刻意無變
 - **無 SizeMatrix**:Tooltip 無 size prop,尺寸由內容 + max-width 常數決定(本 spec「最大寬度」段)。不提供 sm/md/lg tier——短文字 hint 不需要尺寸變體。
 - **無 StateBehavior**:Tooltip 是 passive 出現 / 消失(hover / focus 觸發,見「出現時機」段),無 hover / selected / active / disabled 這類互動元件 state。開 / 關行為由 Radix primitive 處理,寫在 `Overview` 的 usage 說明已足夠。
 
-對應 anatomy story:保留 `Overview` + `Inspector`(delay / placement 互動試玩) + 元件特有 `PlacementReference`(12 種 side × align 對照)。
+對應 anatomy story:保留 `Overview` + `Inspector`(delay / placement 互動試玩) + 元件特有 `PlacementReference`(4 種 side 方向對照 + side-aware 動畫表;Tooltip 走 `align="center"` 輕量浮層例外,見「Align 對齊」段,無 align 軸矩陣)。
 
 ---
 

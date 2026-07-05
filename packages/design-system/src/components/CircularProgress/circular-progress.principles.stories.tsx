@@ -8,6 +8,7 @@ import { Search, Check } from 'lucide-react'
 import { CircularProgress } from './circular-progress'
 import { Button } from '@/design-system/components/Button/button'
 import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
+import { Empty } from '@/design-system/components/Empty/empty'
 import { Input } from '@/design-system/components/Input/input'
 
 const meta: Meta = {
@@ -214,12 +215,13 @@ export const UsageScenarioRule: Story = {
         title="✅ 延遲加載浮層 / 全頁 overlay — 用 Empty compose"
         note="切換 workspace / 載入 dashboard 等需要阻擋互動的場景,走 Empty compose:<Empty icon={<CircularProgress size={48} />} title=... description=... />。不要自己手刻 absolute overlay"
       >
+        {/* 2026-07-04 audit:改消費 <Empty> compose(原手刻垂直堆疊與本則自教規則+spec Do 矛盾) */}
         <div className="border border-border rounded-lg w-96 h-40 flex items-center justify-center bg-muted/40">
-          <div className="flex flex-col items-center gap-3">
-            <CircularProgress size={48} aria-label="載入 dashboard" />
-            <p className="text-body font-medium">載入 dashboard 中</p>
-            <p className="text-caption text-fg-muted">Notion workspace 切換、Stripe dashboard 初載</p>
-          </div>
+          <Empty
+            icon={<CircularProgress size={48} aria-label="載入 dashboard" />}
+            title="載入 dashboard 中"
+            description="Notion workspace 切換、Stripe dashboard 初載"
+          />
         </div>
       </Rule>
     </div>

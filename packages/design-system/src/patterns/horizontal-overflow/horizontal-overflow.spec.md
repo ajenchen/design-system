@@ -1,7 +1,7 @@
 ---
 pattern: horizontal-overflow
 internal: true
-scope: utility primitives module (use-overflow-items hooks: useScrollEdges + useOverflowIndices + fade-mask + scroll-arrow helper components) — DS-internal consumer only(Tabs / ChipGroup wrap)
+scope: utility primitives module (use-overflow-items hooks: useScrollEdges + useOverflowIndices + fade-mask + scroll-arrow helper components) — DS-internal consumer only(Tabs / ChipGroup / FileViewer filmstrip wrap)
 ---
 
 <!-- @benchmark-unverified-blanket: 對齊 horizontal-overflow.tsx:5 的 file-level retraction(M22(d))——本檔 benchmark claim 均未逐條 URL cite,視為未驗證的視覺/用法陳述,除非後續 retrofit per-claim。 -->
@@ -96,7 +96,7 @@ scope: utility primitives module (use-overflow-items hooks: useScrollEdges + use
 - Tabs 用 `DropdownMenuItem + selected`(單選);Chip 用 `DropdownMenuCheckboxItem`(多選)
 - Tabs 有 `gap-[var(--layout-space-loose)]`;Chip 有 `gap-2`
 
-把這些差異塞進一個 container prop 只會讓 API 變成 bag of flags。**讓 consumer 組裝,但強制消費 canonical primitive**,是更乾淨的做法——跟 `item-layout` module 提供 `ItemPrefix` / `ItemLabel` / `ItemIcon` 但不做「ItemRow 容器」是同一個設計哲學。
+把這些差異塞進一個 container prop 只會讓 API 變成 bag of flags。**讓 consumer 組裝,但強制消費 canonical primitive**,是更乾淨的做法——跟 `item-anatomy` module(`patterns/element-anatomy/item-anatomy.tsx`)提供 `ItemPrefix` / `ItemLabel` / `ItemIcon` 但不做「ItemRow 容器」是同一個設計哲學。
 
 ### 典型 scroll 模式組裝
 
@@ -183,13 +183,14 @@ return (
 
 ---
 
-## 消費者清單(跟 item-layout 同步維護)
+## 消費者清單(跟 item-anatomy 同步維護)
 
 - `components/Tabs/tabs.tsx` — `overflow="scroll" | "menu"`
 - `components/Chip/chip.tsx` — `layout="scroll" | "menu"`
+- `components/FileViewer/file-viewer.tsx` — Filmstrip(直接組裝 `useScrollEdges` / `useScrollByPage` / `buildFadeMask` / `OverflowScrollArrow`)
 
 **Non-consumers**(2026-05-10 retire from「未來」清單 — prior prediction stale,spec 已明文不消費):
-- ~~`components/Steps/steps.tsx`~~ — `steps.spec.md:342`「水平空間不夠塞 content 區,強塞會破壞 stepper 的掃視節奏」+ L353「步驟 ≤ 5、水平空間充足」→ 設計上不 overflow
+- ~~`components/Steps/steps.tsx`~~ — `steps.spec.md:347`「水平空間不夠塞 content 區,強塞會破壞 stepper 的掃視節奏」+ L358「步驟 ≤ 5、水平空間充足」→ 設計上不 overflow
 - ~~`components/SegmentedControl/*`~~ — `segmented-control.spec.md`「規模限制與邊界案例」段「**不支援 overflow / scroll**——若選項可能超出容器寬度,代表選錯元件了」+「最多 5 個 item」→ 設計上拒絕 overflow
 
 新消費者必須加到這個清單,並且**只從本 module import** overflow 相關的 primitive,不允許自己複製。

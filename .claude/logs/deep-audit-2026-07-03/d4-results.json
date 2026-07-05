@@ -1,0 +1,1042 @@
+{
+ "confirmed": [
+  {
+   "title": "Coachmark 鍵盤路徑機制性斷裂 — Tab 離開 trigger 即觸發 focus-outside dismiss,CTA 鍵盤永遠到不了",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Coachmark/coachmark.tsx:170",
+   "phase": "keyboard",
+   "severity": "P1",
+   "detail": "coachmark.tsx:170 `onOpenAutoFocus={(e) => e.preventDefault()}` 讓焦點停在 trigger(spec 明文的 documented 決策),但 code comment(L168-169)與 coachmark.spec.md L169/L206 宣稱「想推進者自行 tab 到 CTA 再 Enter」— 這在機制上不成立:Radix Popover 預設 modal=false(react-popover/dist/index.mjs:35 `modal = false`、:226 `trapped: trapFocus=false`),content portal 在 body 末端;焦點在 trigger(= DismissableLayer 之外)時按 Tab,焦點落到頁面下一個 focusable(仍在 layer 外)→ react-dismissable-layer/dist/index.mjs:191 `focusin` listener → onFocusOutside → :57 `if (!event.defaultPrevented) onDismiss()`(NonModal 的 onInteractOutside 只在 target 是 trigger 或 pointerdown 時 preventDefault)→ **Coachmark 直接關閉**。結果:鍵盤使用者完全無法按到 Previous / Skip / Next(多步 tour 鍵盤無法推進,只能 Esc 退出);且焦點停在 PopoverTrigger 上按 Enter = toggle 關閉浮層。popover.spec.md A11y 段自己也明文「焦點離開 content 樹 → DismissableLayer dismiss」,與 coachmark 的宣稱互相矛盾。A.1b claim-vs-code 比對抓不到此題(claim 與 code comment 一致,錯在跨 lib runtime 機制)。",
+   "suggestion": "保留 preventDefault(不 auto-focus CTA,防 Enter 誤推進)但補 focus content 容器本身:`onOpenAutoFocus={(e) => { e.preventDefault(); (e.currentTarget as HTMLElement).focus({ preventScroll: true }) }}`(FocusScope div 自帶 tabIndex=-1 可 focus)。焦點進入 layer 內 → focus-outside dismiss 不再誤觸發,Tab 第一下即達 content 內第一個 CTA(對齊 dialog.tsx handleOpenAutoFocus 的 `?? content` fallback canonical);Enter 按在容器上無任何動作,原設計意圖(不誤推進)完整保留。同步修正 coachmark.spec.md L169/L206 的行為描述。SSOT-affecting UI/UX 行為改動 → 走 ASK 提議流程。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified end-to-end against installed lib sources. (1) Pattern exists: coachmark.tsx:170 onOpenAutoFocus preventDefault keeps focus on trigger; comment L167-169 + coachmark.spec.md L169/L206 claim users can \"tab to CTA\". (2) Mechanism confirmed broken: Radix Popover defaults modal=false (react-popover dist: `modal = false`), local popover.tsx wrapper and Coachmark never set modal → PopoverContentNonModal with trapFocus:false; DismissableLayer registers a document-level focusin listener (react-dismissable-layer dist:191) that fires onFocusOutside → onDismiss when not prevented (dist:51-57), and the non-modal onInteractOutside only preventDefaults when target is the trigger or focusin-after-pointerdown (dist:194-196). Content is portaled to body end (popover.tsx:53), so Tab from the trigger lands on the next in-app focusable — outside the layer — and dismisses the Coachmark; Enter on trigger toggles it closed (onOpenToggle). Previous/Skip/Next are keyboard-unreachable in any real page. Aggravating: the base Popover wrapper already solved this trap via handlePopoverOpenAutoFocus (popover.tsx:37-46, moves focus INTO content on open), and Coachmark's override (onOpenAutoFocus ?? default, popover.tsx:64) re-creates it. popover.spec.md:171 itself documents dismiss-on-focus-out, contradicting coachmark's spec claim. Only escape hatch: in a trivial story where trigger is the last tabbable, Tab falls into the body-end portal and appears to work — explains why demos passed, does not refute real-page breakage. (3) Severity P1 appropriate: WCAG 2.1.1 keyboard failure of the component's primary action path (multi-step tour cannot advance via keyboard, only Esc exit), but component-scoped, mouse unaffected, Esc works → not P0.",
+    "correctedSeverity": "P1"
+   },
+   "key": "overlays"
+  },
+  {
+   "title": "Toast 自動關閉計時器不因鍵盤焦點暫停 — 鍵盤使用者跟 4 秒倒數賽跑才按得到 復原/重試",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Toast/toast.tsx:83-85",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "sonner 2.0.7 source 驗證:計時器僅在 `expanded || interacting || isDocumentHidden` 時暫停(node_modules/sonner/dist/index.mjs:605);`interacting` 只由 onPointerDown/onPointerUp 設定(:1140-1142),`expanded` 只由 onMouseEnter/onMouseMove(:1128-1129)或 hotkey ⌥T(:1049-1053)設定。toast `<li>` 有 `tabIndex: 0`(:645)= 一般 Tab 可達,但 **Tab 進 toast 不觸發任何 pause** → 滑鼠 hover 暫停倒數(anatomy story L227 有文件)、鍵盤 focus 不暫停。DS `toast()` 預設 `duration = 4000`(toast.tsx:83)且不分 variant / 有無 action — 鍵盤或 switch 使用者要在 4 秒內 Tab 到 `復原`/`重試` action button(spec L47 明文支持 undo 場景),實務上常失敗即消失,WCAG 2.2.1(Timing Adjustable)風險。世界級對照:Carbon actionable notification 預設 persistent、Material Snackbar 帶 action 建議加長,Polaris toast with action 建議 ≥10s。",
+   "suggestion": "DS 層可修(不需動 sonner):`toast()` 內 `const { duration = options.action ? 10000 : 4000, ...rest }`(或 action 場景 `Infinity` + 靠 dismiss X / action 關閉),並在 toast.spec.md「A11y 預設」補 hotkey ⌥T(sonner 內建,focus 進 list 即 expanded=true → 倒數暫停)的鍵盤路徑說明。duration 預設值屬 SSOT-affecting 行為 → 提議由 user 拍板數值。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified against installed sonner 2.0.7 source: timer pauses only on `expanded || interacting || isDocumentHidden` (index.mjs:605); exhaustive grep of all setExpanded/setInteracting call sites confirms they fire only on mouse enter/move (:1128-1129), pointer down/up (:1140-1142), and the undocumented ⌥T hotkey (:1052) — the list onFocus handler (:1120) only tracks focus for restoration and never pauses. Toast <li> has tabIndex:0 (:645) so Tab reaches it without pausing. DS toast.tsx:83 defaults duration=4000 uniformly (no variant/action differentiation), spec L47 explicitly endorses the 4-second undo scenario, and the DS is sonner-based (not Radix Toast, which pauses on focus), with no wrapper mitigation. The anatomy story documents hover-pause only; the ⌥T hotkey is a technical keyboard pause but undocumented in DS and not triggered by Tab, so it doesn't refute the finding. WCAG 2.2.1 risk on a spec-endorsed action flow is genuine. P1 (not P0) because mouse users have hover-pause, spec frames action as non-essential backhand, consumers can override duration, and core operation isn't blocked.",
+    "correctedSeverity": "P1"
+   },
+   "key": "overlays"
+  },
+  {
+   "title": "SelectMenu 鍵盤 cursor 完全無視覺回饋 — data-[selected=true]:bg-transparent 抹掉唯一 highlight 通道",
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:373(creatable 同 :404)",
+   "phase": "keyboard",
+   "severity": "P0",
+   "detail": "CommandItem className 'data-[selected=true]:bg-transparent' 蓋掉 command.tsx:138 base 'data-[selected=true]:bg-neutral-hover'。已用 node 跑 tailwind-merge 機械證明:合併輸出只剩 bg-transparent(bg-neutral-hover 被 strip)。cmdk 是 virtual focus(aria-activedescendant,DOM focus 停在 input / cmdk-root),內層 MenuItem 的 hover:bg-neutral-hover(menu-item.tsx:198)與 focus-visible:bg-neutral-hover(:43)在鍵盤導覽時永不觸發 → ArrowUp/Down 移動 cursor 時畫面零變化,只有 scrollIntoView 偶爾洩漏位置。滑鼠路徑靠真實 :hover 遮蔽了此 bug。影響 Select / Combobox / PeoplePicker 全家(皆消費 SelectMenu)。直接違反 select-menu.spec.md:217「aria-activedescendant 高亮」與 command.spec.md:121 highlight canonical;全庫 grep 過 css/stories 無其他 [cmdk-item][data-selected] 視覺 hook 補位。",
+   "suggestion": "鏡射 DropdownMenu wrapper pattern(單一互動 bg owner 在外層 primitive):移除 bg-transparent override 讓 CommandItem 恢復 data-[selected=true]:bg-neutral-hover;內層 MenuItem 改傳 '!bg-transparent hover:!bg-transparent'(同 dropdown-menu.tsx:267);persistent selection bg 上移 CommandItem(isSelected && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected',對齊 dropdown-menu.tsx:252)。修後 playwright ArrowDown walk 逐 step pixel-verify(M32)。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified end-to-end. (1) select-menu.tsx:373/:404 do apply data-[selected=true]:bg-transparent to CommandItem; command.tsx:138 base is data-[selected=true]:bg-neutral-hover. (2) Independently re-ran tailwind-merge with the project's real extendTailwindMerge config (lib/utils.ts) — merged output keeps only bg-transparent; bg-neutral-hover is stripped, and the surviving data-[selected=true]:text-foreground is visually a no-op. (3) Refutation attempts all failed: cmdk 1.1.1 dist source confirms virtual focus (items role=option, no tabIndex, ArrowUp/Down on cmdk-root, aria-activedescendant, only scrollIntoView on active item), so MenuItem's hover:bg-neutral-hover (menu-item.tsx:198) and focus-visible:bg-neutral-hover (:43) never fire during keyboard nav; DS-wide grep across tsx/ts/css finds zero other [cmdk-item]/[data-selected] visual hooks; MenuItem selected prop is persistent value-selection, not the keyboard cursor; git log -L shows the line unchanged since SelectMenu's creation commit with no documented alternative channel. (4) select-menu.spec.md Focus 段 promises aria-activedescendant 高亮 + 「鍵盤完整可操作」, and command.spec.md:121 defines the bg-neutral-hover temporary-highlight canonical — both violated. (5) Select / Combobox / PeoplePicker / TimePicker / DataTable filter panel all consume SelectMenu, so the entire select family has an invisible keyboard cursor — a WCAG 2.4.7 (Focus Visible) functional a11y break on flagship components. P0 stands.",
+    "correctedSeverity": "P0"
+   },
+   "key": "menus"
+  },
+  {
+   "title": "多選 footer「全部」全選列鍵盤不可達 — 無 tabIndex、無 keydown、在 cmdk 導覽範圍外",
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:418-428",
+   "phase": "keyboard",
+   "severity": "P1",
+   "detail": "MenuFooter 內的 MenuItem 是純 div + onClick(menu-item.tsx:189-210 無 tabIndex 無 Enter/Space 處理);cmdk 鍵盤導覽只查詢 CommandList listInnerRef 內的 [cmdk-item](cmdk dist V() 實作),footer 在 List 外 → 方向鍵到不了;無 focusable → Tab 也跳過。鍵盤使用者完全無法操作 Select All(WCAG 2.1.1)。附帶:此 MenuItem 渲染 role='option' + aria-selected 卻不在任何 listbox 內(invalid ARIA context);「全部」字面 hardcode(:426)無 prop 可覆寫也無 i18n-allow 標記(同檔 searchPlaceholder/emptyText 皆有)。",
+   "suggestion": "footer 列改真實 focusable checkbox 語意:tabIndex={0} + role='checkbox' + aria-checked={allState} + onKeyDown Enter/Space → handleSelectAll(取代 role='option');或改為 forceMount CommandItem 固定在 CommandList 底部讓 cmdk 導覽涵蓋。順手補 selectAllLabel prop + i18n-allow 註記。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed via source: select-menu.tsx L418-429 footer MenuItem only gets onClick (no tabIndex/onKeyDown); menu-item.tsx L188-210 renders a plain div with no built-in keyboard handling and its inner Checkbox is tabIndex={-1} pointer-events-none, so nothing in the footer is focusable (Tab skips). cmdk dist source proves arrow-key/Enter navigation only queries '[cmdk-item=\\\"\\\"]' inside CommandList's listInnerRef sizer — the footer is both outside CommandList and not a CommandItem, so it is doubly unreachable; no alternate shortcut exists. Radix Popover adds nothing for non-focusable divs. This contradicts select-menu.spec.md L219's explicit claim 「鍵盤完整可操作(無需滑鼠)」= WCAG 2.1.1 Level A failure. Reaches production users: public Combobox passes multiple (combobox.tsx L824) and PeoplePicker always uses SelectMenu. Side claims also verified: role=\\\"option\\\" + aria-selected rendered outside any listbox (invalid ARIA context), and 「全部」hardcoded at L426 with no override prop and no i18n-allow marker (unlike searchPlaceholder/emptyText at L143-144). P1 is calibrated correctly — not P0 because keyboard users can still select every option individually via cmdk navigation (Select All is a convenience control), so core selection remains keyboard-operable.",
+    "correctedSeverity": "P1"
+   },
+   "key": "menus"
+  },
+  {
+   "title": "DropdownMenu selected/checked 項:鍵盤 cursor 停留時零可感知回饋(本輪 Q2 改動的缺口)",
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:252(Item)/ :433(RadioItem)",
+   "phase": "focus",
+   "severity": "P1",
+   "detail": "Radix menu 是 real DOM focus roving;radixItemClass(:59-64)= outline-none + 唯一 focus 指示是 data-[highlighted]:bg-neutral-hover。Q2 override 讓 selected 項的 highlighted bg = selected bg(neutral-2 不變)→ cursor 走到 selected 項時畫面完全無變化(該狀態 WCAG 2.4.7 focus-visible fail;實際 DOM focus 在該項上)。RadioItem 又「不渲染 radio 控件」(dropdown-menu.spec.md:171),bg 是唯一 selection 指示器 → 單一 bg 通道同時背 selection + cursor 兩職,是 root invariant 衝突。spec 內部矛盾:dropdown-menu.spec.md:246 宣稱「鍵盤導覽到的項目以 highlight 底色標示」在 selected 項不成立(:212 Q2 override 未同步修此句)。Q2 拍板只 document 了 bg precedence,未 document cursor 消失是接受的 tradeoff → 非 documented exception。",
+   "suggestion": "SSOT 視覺決策需拍板,兩案:(a)消費既有 token family bg-neutral-selected-active(neutral-3,semantic.css:356;Button toggle 已消費此家族 button.tsx:204-205 = M23 nearest canonical)— selected×highlighted 用加深一階,深化而非洗掉 selection,不違 Q2 invariant;(b)VS Code list.focusOutline idiom:selected && 'data-[highlighted]:ring-1 data-[highlighted]:ring-inset'。落地後同步修 spec:246 措辭 + RadioItem/CheckboxItem 同規則。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed in code: dropdown-menu.tsx:252 (Item selected) and :433 (RadioItem checked) override data-[highlighted] bg to bg-neutral-selected — identical to rest selected bg (neutral-2); radixItemClass:59-64 has outline-none and no other focus channel; inner MenuItem is !bg-transparent role=presentation. Radix is unstyled (data-highlighted is the only hook, real DOM focus + outline-none = no UA ring), so keyboard cursor on a selected/checked item produces zero pixel change — WCAG 2.4.7 claim holds. RadioItem renders no radio control (spec:171), so bg is simultaneously the sole selection AND sole cursor indicator — the single-channel root-invariant conflict is real, deviating from world-class two-channel norms (shadcn/Radix default dot ItemIndicator, macOS checkmark+highlight, VS Code list.focusOutline). Q2's cited benchmarks (Ant/VS Code :hover:not(.selected)) are mouse-hover rules where the pointer self-indicates position; they don't cover keyboard cursor. Spec self-contradiction verified: dropdown-menu.spec.md:246 still unconditionally claims keyboard-navigated items are marked by highlight bg and :248 claims WCAG AA + full keyboard operability — false for selected items post-Q2, not synced (M5 violation: selected × keyboard-focus overlay consequence undocumented). Refutation attempts failed: CheckboxItem is unaffected (no bg override; checkbox = separate channel), confirming the finding's precise scoping. Note the token system already provides --neutral-selected-hover (= neutral-1, semantic.css:355, labeled Selected + Hover) as an in-system fix path Q2 did not consume. P1 severity appropriate: keyboard-only a11y defect in one state combination, still functionally operable (not P0), but guaranteed to occur on every keyboard pass through RadioGroup menus and contradicts the spec's WCAG AA claim (above P2).",
+    "correctedSeverity": "P1"
+   },
+   "key": "menus"
+  },
+  {
+   "title": "SelectMenu 巢狀 role='option' + 兩個語意相反的 aria-selected",
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:375-386",
+   "phase": "aria",
+   "severity": "P1",
+   "detail": "內層 MenuItem 未 override role → menu-item.tsx:191 預設 role='option' + aria-selected(persistent selection)+ aria-disabled,巢狀在 cmdk CommandItem(本身 role='option' + aria-selected=cursor,cmdk dist source 證實)之內。aria-activedescendant 指向外層 id,AT 讀到 option 裡包 option、且內外 aria-selected 語意相反(外=cursor、內=選中)→ 朗讀錯亂;aria-disabled 亦雙重。同場景 DropdownMenu 已正確處理(dropdown-menu.tsx:265-267 傳 role='presentation')。",
+   "suggestion": "SelectMenu 的內層 MenuItem 傳 role='presentation'(鏡射 DropdownMenu),讓 cmdk CommandItem 當唯一 option 節點;persistent selection 的 ARIA 表達由外層承擔(cmdk aria-selected=cursor 是上游已知 tradeoff,至少先消除巢狀 option)。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified against all three sources. (1) Pattern exists: select-menu.tsx:375-386 renders MenuItem (selected/checked/disabled) inside CommandItem with no role override; Menu/menu-item.tsx:191-193 hardcodes role=\"option\" + aria-selected={selected||checked===true} + aria-disabled, and the props spread at line 207 comes after, so an override would work — SelectMenu never passes one. DS Command wrapper (command.tsx:131-143) is a className-only passthrough. (2) Behavior inference correct: cmdk dist source confirms CommandItem renders role=\"option\" + aria-selected=(cursor match) + aria-disabled + id, and CommandList is role=\"listbox\" with aria-activedescendant → outer item id. Nothing (Radix/cmdk/wrapper) strips the inner role. Result: option nested in option with semantically opposite aria-selected (outer=keyboard cursor, inner=persistent selection) and doubled aria-disabled — an ARIA authoring error (\"option\" has presentational children); browsers either expose contradictory double options or prune the inner semantics, losing the only place selection state lives. Both outcomes break AT announcement. (3) No documented exception: select-menu.spec.md:206/217 describes a single role=\"option\" per item; and the DS's own canonical for the identical nesting, dropdown-menu.tsx:265-267, passes role=\"presentation\" (\"Pure visual — Radix parent handles role/aria\") — SelectMenu missed the same treatment. Severity P1 is correct: serious a11y defect on a core select control (screen-reader state wrong/lost) but functionally intact for non-AT users, so not P0.",
+    "correctedSeverity": "P1"
+   },
+   "key": "menus"
+  },
+  {
+   "title": "searchable Select(含 PeoplePicker single / Combobox searchIn='trigger')開啟後方向鍵與 Enter 完全無法導覽選單 — 只能滑鼠選取",
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:621-631, 209-240;Combobox/combobox.tsx:751-759, 779-790;PeoplePicker/people-picker.tsx:213-229",
+   "phase": "keyboard",
+   "severity": "P0",
+   "detail": "searchable 開啟後焦點在 trigger 內的裸 <input>(onOpenAutoFocus 顯式 focus,select.tsx:654),但 cmdk 的 ArrowDown/ArrowUp/Home/End/Enter handler 綁在 portal 內的 [cmdk-root](已讀 node_modules/cmdk/dist/index.mjs:root 元素 onKeyDown,tabIndex:-1)— trigger input 的鍵盤事件在不同 DOM 子樹,永遠 bubble 不到 cmdk root。trigger 自己的 onKeyDown 對 Enter/Space/ArrowDown 全掛 `!open` guard,open 後三鍵皆 no-op。結果:searchable Select、PeoplePicker single(永遠 searchable)、Combobox searchIn='trigger' 打開後鍵盤只能 Esc 關閉,無法上下移動、無法 Enter 選取(WCAG 2.1.1)。spec 卻宣稱「方向鍵在選項間移動,Enter 選取」「鍵盤完整可操作」(select.spec.md:322,328;combobox.spec.md:173)。註:2026-06-11 R2 只修了『關閉時鍵盤打不開』,開啟後的導覽 gap 仍在;non-searchable 路徑因 handleNonSearchableAutoFocus 聚焦 cmdk-root 而正常。",
+   "suggestion": "APG combobox-with-list pattern:trigger input 加 onKeyDown 把 ArrowDown/ArrowUp/Home/End/Enter 轉送給選單 — 最小侵入做法是在 Select/Combobox 保存 PopoverContent ref,對 `[cmdk-root]` re-dispatch 同款 KeyboardEvent(cmdk root handler 會處理並更新 active item);同時把 cmdk 的 selectedItemId 以 aria-activedescendant 綁回 input(對齊 cmdk 自家 Input 的做法:role=combobox + aria-activedescendant)。修完把 select.spec.md/combobox.spec.md 的鍵盤宣稱標回真實。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed via source reads. (1) Pattern exists: searchable Select renders a bare input in the trigger with focus explicitly kept there (select.tsx:215-223, 654), passes searchable={false} to SelectMenu (select.tsx:645) so no in-popover CommandInput; trigger onKeyDown guards Enter/Space/ArrowDown with !open (select.tsx:621-631) → all no-op when open. Same for Combobox searchIn='trigger' (combobox.tsx:751-759, 779-790, 825, 833); PeoplePicker single wraps <Select searchable> (people-picker.tsx:256-283). (2) Behavior inference correct: cmdk dist source shows ArrowDown/ArrowUp/Home/End/Enter handled solely in onKeyDown on the [cmdk-root] div (tabIndex:-1); CommandInput relies on DOM bubbling. Trigger input is in PopoverTrigger subtree, cmdk root in portaled PopoverContent — events can never reach it; no forwarding/dispatchEvent anywhere in Select/Combobox/PeoplePicker/SelectMenu/Command/Popover; Radix Popover adds no listbox nav. Contrast case proves mechanism: non-searchable works because handleNonSearchableAutoFocus focuses [cmdk-root] itself (select-menu.tsx:264-268, 293). (3) Spec contradiction real: select.spec.md「↑/↓ 選單展開後在選項間移動」「鍵盤完整可操作」, combobox.spec.md「方向鍵在選項間移動,Enter 選取」. Only minor citation drift: people-picker.tsx cited range 213-229 is display/readonly code; actual single-mode Select wrap is 256-283 — substance unaffected. Severity P0 justified: total keyboard inoperability of selection (WCAG 2.1.1 Level A) on three shipped paths; repo itself labeled the sibling open-when-closed half of this bug P0 a11y (select.tsx:623 comment, 2026-06-11 R2).",
+    "correctedSeverity": "P0"
+   },
+   "key": "pickers"
+  },
+  {
+   "title": "多選「全部」select-all footer 鍵盤完全不可達(非 CommandItem、div 無 tabIndex)",
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:418-428;Menu/menu-item.tsx:188-210",
+   "phase": "keyboard",
+   "severity": "P1",
+   "detail": "multi 模式 footer 的「全部」是 MenuFooter 內裸 MenuItem(div role='option',無 tabIndex),且位於 CommandList 之外 — cmdk 方向鍵只導覽 [cmdk-item],Tab 也到不了 div。鍵盤使用者(Combobox multiple / PeoplePicker multi)無法全選/全清。附帶 ARIA 結構問題:此 role='option' 沒有 listbox 祖先(orphan option,axe aria-required-parent)。",
+   "suggestion": "把 footer item 改為真實可聚焦控制:render 成 <button role='checkbox' aria-checked={allState}>(tabIndex 0)+ Enter/Space toggle,或對齊 Ant Select 把「全選」做成 list 內第一個 CommandItem(cmdk 導覽自然可達)。同步移除 orphan role='option'。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed against code + cmdk library source. (1) Pattern exists: select-menu.tsx:415-429 renders the multi-mode「全部」select-all as a bare MenuItem inside MenuFooter (plain div), placed inside <Command> but outside </CommandList> (line 413), not a CommandItem. (2) Behavior inference verified in node_modules/cmdk/dist/index.mjs: cmdk keyboard navigation queries '[cmdk-item=\\\"\\\"]:not([aria-disabled=\\\"true\\\"])' scoped to the CommandList inner sizer (listInnerRef), so the footer is doubly excluded (not cmdk-item + outside list); Enter only fires on the virtually-selected [cmdk-item]. MenuItem (menu-item.tsx:188-210) renders div role=\\\"option\\\" with no tabIndex, inner Checkbox is tabIndex={-1} + pointer-events-none, and no alternate keyboard path (no Ctrl+A / onKeyDown) exists anywhere in select-menu.tsx — the control is fully keyboard-inoperable. Radix Popover does not make untabbable divs reachable; nothing intercedes. (3) Real consumer exposure confirmed: combobox.tsx:824 passes multiple to SelectMenu, PeoplePicker multi wraps Combobox — so Combobox multiple / PeoplePicker multi keyboard users cannot select-all/clear-all. (4) ARIA orphan confirmed: only role=\\\"listbox\\\" is CommandList; footer option's ancestors (MenuFooter div → cmdk-root div → PopoverContent) contain no listbox → axe aria-required-parent (critical). This also falsifies select-menu.spec.md:217-219 explicit claims「鍵盤完整可操作(無需滑鼠)」and「0 critical violation」. P1 (not P0) is appropriate: per-option keyboard selection still works so the task is achievable item-by-item, but a visible interactive control that is completely keyboard-unreachable is a WCAG 2.1.1 Level A failure contradicting the spec's promises.",
+    "correctedSeverity": "P1"
+   },
+   "key": "pickers"
+  },
+  {
+   "title": "emptyText / loading 空狀態對 SR 不可感知 — cmdk Empty 是 role='presentation' 且全鏈無 aria-live",
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:349-357;node_modules/cmdk/dist/index.mjs(Empty:role='presentation')",
+   "phase": "aria",
+   "severity": "P1",
+   "detail": "本輪 emptyText 接線後視覺生效,但 SR 驗證結果是否定的:CommandEmpty 在 cmdk 渲染為 role='presentation' div,Empty 元件也無 role/aria(已 grep components/Empty/empty.tsx 無 aria),SelectMenu/Select/Combobox 全鏈沒有任何 aria-live region。SR 使用者在搜尋框打字打到 0 結果時聽不到「沒有符合的選項」,loading spinner 佔位同樣無聲(aria-busy 有接在 CommandList 但多數 SR 不主動播報 busy 變化)。對照 react-select A11yText / APG combobox 都有 polite live region 播報結果數或 no-results。",
+   "suggestion": "在 SelectMenu 加一個 visually-hidden `<div role='status' aria-live='polite'>`,內容隨 filtered 結果變化播報:0 筆時輸出 emptyText、loading 時輸出載入文案(可選:結果數 N 筆)。放 SelectMenu 一處,Select/Combobox/PeoplePicker 全體受益(SSOT propagation)。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed at every layer. (1) Pattern exists: select-menu.tsx:349-357 renders emptyText/loading inside CommandEmpty; cmdk dist source verbatim renders CommandEmpty as role=\"presentation\" div; CommandList is role=\"listbox\" with no live region; cmdk has zero aria-live; Empty/empty.tsx has no aria; grep for aria-live/role=\"status\" across SelectMenu/Select/Combobox returns nothing. (2) Behavior inference correct and slightly understated: neither Radix Popover nor cmdk provides announcements; focus stays in the combobox input (aria-activedescendant), so newly-appearing presentation content is never announced; the loading spinner is worse than claimed — CircularProgress with no value/label/ariaLabel resolves a11yRole=undefined → aria-hidden={true} (circular-progress.tsx:115,130), removing it from the a11y tree entirely; aria-busy claim accurate (SRs defer rendering, don't announce busy changes). (3) Severity reinforced by the DS's own canonical: empty.spec.md lines 101/113/121 explicitly require the consumer container to add aria-live=\"polite\" for dynamic filter/search no-results — SelectMenu is that consumer and doesn't comply, so this violates the project's own SSOT plus WCAG 2.1 SC 4.1.3 (AA) and world-class practice (react-select A11yText). P1 is right: real SR-facing gap in a core searchable combobox, but component stays operable when results exist, so not P0. Only nit: role=\"presentation\" doesn't strip text from the a11y tree (a SR user manually browsing the popup could find it), but the announcement claim — the core of the finding — is correct.",
+    "correctedSeverity": "P1"
+   },
+   "key": "pickers"
+  },
+  {
+   "title": "PeoplePicker multi 'stack'(default 模式)emptyText 漏接線 — 仍傳 retired 的 emptyPlaceholder,檔頭宣稱「forward 已移除」與 code 不符",
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:358(對照 pill 分支 :259 與檔頭 :2)",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "2026-07-04 commit 347d35f6 宣稱「single+multi 雙 mode」完成 emptyText 三層接線,但 multi 有 pill 和 stack 兩個分支:pill 已改 `emptyText={emptyText}`,stack(default)仍是 `emptyPlaceholder={emptyText}` 且沒傳 emptyText。結果:預設多選模式下搜尋無結果顯示 SelectMenu fallback「沒有符合的選項」而非「沒有符合的人員」/consumer 自訂文案;emptyText 同時被錯灌進 trigger empty placeholder 語意(僅因 placeholder 恆有值才沒外顯)。檔頭 @placeholder-vocabulary-allow 註解「emptyPlaceholder forward 已移除」對 stack 分支為假。",
+   "suggestion": "people-picker.tsx:358 改為 `emptyText={emptyText}` 並刪除 `emptyPlaceholder={emptyText}`;檔頭 escape 註解同步改真。補一個 stack 模式 search-empty 的 story/測試防回歸(M10:同 commit 內三分支必全掃)。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed by source + git evidence. people-picker.tsx:367 (multi 'stack', the DEFAULT multiDisplay) still passes emptyPlaceholder={emptyText} and never passes emptyText, while pill branch (:305) and single branch (:270) were fixed. Commit 347d35f6 diff shows only one emptyPlaceholder→emptyText edit (pill) yet rewrote the header (:2) to claim「emptyPlaceholder forward 已移除」— false for stack; stack branch comment (:365) still says「僅 backward-compat forward 1 cycle」(stale). Runtime consequence verified in Combobox source: emptyText (combobox.tsx:394→:820) forwards to SelectMenu; when undefined, SelectMenu falls back to default '沒有符合的選項' (select-menu.tsx:144) instead of PeoplePicker's '沒有符合的人員'/consumer copy. The mis-wired emptyPlaceholder feeds trigger-empty semantics (combobox.tsx:795 `placeholder ?? emptyPlaceholder`) but stays invisible only because PeoplePicker placeholder defaults to '請選擇人員'. No Radix/native behavior mitigates this — wiring is entirely DS code. Severity P1 stands: documented consumer prop silently no-op in the default multi path + header/code claim drift, but no crash and fallback text is still a reasonable generic message (not P0).",
+    "correctedSeverity": "P1"
+   },
+   "key": "pickers"
+  },
+  {
+   "title": "DatePicker(single)`needConfirm` 不帶 `showTime` = 死路 — footer 只在 showTime 才渲染,draft 永遠無法 commit",
+   "fileLine": "packages/design-system/src/components/DatePicker/date-picker.tsx:639(對照 Range 版 :1068 的 `showTime || needConfirm`)",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "single DatePicker 的 footer 條件是 `{showTime && (...)}`;而 needConfirm 是公開 prop(docblock 明示可獨立設定,預設 showTime 時 true)。consumer 傳 `<DatePicker needConfirm>`(date-only)時:onSelect 只寫 draft(commitDraft)、`if (!needConfirm) setOpen(false)` 不關閉、又沒有任何「確定」按鈕 → 使用者點了日期什麼都不會發生,dismiss 後 draft 直接丟棄,onChange 永不 fire。Range 版已用 `(showTime || needConfirm)` 正確處理,single 漏了。",
+   "suggestion": "date-picker.tsx:639 條件改 `(showTime || needConfirm)` 對齊 Range;footer 內已有 needConfirm ? 確定 : 關閉 分支,無需其他改動。補 needConfirm-date-only story 驗證。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified in date-picker.tsx: single-picker footer is gated `{showTime && ...}` (line 639) while the only draft-commit path (handleConfirm/確定, lines 505+646) lives inside it. With `<DatePicker needConfirm>` date-only (needConfirm = needConfirmProp ?? showTime, line 389), calendar onSelect only writes draft via commitDraft (lines 501-504, no onChange) and skips setOpen(false) (line 618), so the popover stays open with no confirm button; dismiss discards the draft on next open (re-sync from value, lines 400-403) and onChange never fires — plus the trigger misleadingly shows the uncommitted draft (displayValue = draft, line 408). No Radix/native rescue: commit logic is entirely component-level; typeable input commit (default off) bypasses needConfirm and doesn't fix the calendar path. Range version at line 1068 uses `(showTime || needConfirm)`, confirming intended design. Spec also treats needConfirm as an independent prop (date-picker.spec.md:153/213/231, Ant idiom). P1 confirmed: total functional dead-end on a documented public prop combo, but opt-in only — grep shows no current consumer passes needConfirm, and all default configurations are unaffected, so not P0.",
+    "correctedSeverity": "P1"
+   },
+   "key": "pickers"
+  },
+  {
+   "title": "DatePickerRange 關閉 popover 後焦點掉到 body — 只用 PopoverAnchor,Radix triggerRef 為 null 且 preventDefault 擋掉 FocusScope 回復",
+   "fileLine": "packages/design-system/src/components/DatePicker/date-picker.tsx:908(PopoverAnchor)、:974(PopoverContent);node_modules/@radix-ui/react-popover/dist/index.mjs(onCloseAutoFocus → context.triggerRef.current?.focus() 後 event.preventDefault())",
+   "phase": "focus",
+   "severity": "P1",
+   "detail": "已讀 Radix popover source 驗證:close 時 onCloseAutoFocus 會 focus `context.triggerRef`(只有 PopoverTrigger 會填)然後 preventDefault 掉 FocusScope 的 previously-focused fallback。DatePickerRange 只用 PopoverAnchor(start/end 兩顆 button 自行 onClick 開啟),triggerRef 恆 null → Escape/確定/選完雙端自動關閉後,鍵盤焦點直接遺失到 document.body(WCAG 2.4.3)。single DatePicker/TimePicker/Select 都走 PopoverTrigger 所以正常,唯 Range 例外。",
+   "suggestion": "給 start/end button 建 ref,PopoverContent 加 `onCloseAutoFocus={(e) => { e.preventDefault(); (activeEnd === 'start' ? startBtnRef : endBtnRef).current?.focus() }}` — 對齊 Ant RangePicker 關閉後焦點回 active 端輸入格的行為。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified against both component and lib source. (1) Pattern exists: date-picker.tsx:906-974 DatePickerRange uses only PopoverAnchor; start/end buttons open via onClick; PopoverTrigger only in single DatePicker (:513); no onCloseAutoFocus override or manual .focus() restore anywhere in the file. (2) Behavior inference correct: Radix popover source shows triggerRef is only populated by PopoverTrigger (index.mjs:85), never by Anchor; non-modal path (DS default) onCloseAutoFocus does triggerRef.current?.focus() (no-op when null) then unconditionally event.preventDefault() (index.mjs:176-181), which suppresses FocusScope's unmount fallback focus(previouslyFocusedElement ?? document.body) (react-focus-scope index.mjs:90-94). FocusScope mount auto-focus moves focus into the popover on open, so after Escape/auto-close/確定-close the content unmounts and focus drops to document.body with no restore — WCAG 2.4.3 violation for keyboard users. Outside-click close intentionally skips restore in Radix (hasInteractedOutside) and is not part of the bug. Single DatePicker/TimePicker/Select use PopoverTrigger and are unaffected, matching the finding's scoping. P1 fits: keyboard/AT focus loss on a core Field control, but no data loss or mouse breakage.",
+    "correctedSeverity": "P1"
+   },
+   "key": "pickers"
+  },
+  {
+   "title": "NumberInput 無 draft state — 負號/小數中間態被 controlled 回寫吃掉",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/NumberInput/number-input.tsx:129-140",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "edit 分支直接 value={value ?? ''} 控制 input,handleChange 把 raw '-' 映射為 onChange(null)、'1.' 映射為 onChange(1)。確定性失敗案例:欄位已有值 5,使用者全選後打「-」→ onChange(null) → 值變動觸發 re-render → DOM 被重設為空,負號被吃掉;接著打 5 得到 +5,無法輸入 -5。小數中間態('1.'、'0.0')能否存活取決於 parent setState 是否 Object.is bailout — 用 object state({...form, price:v})或 RHF 觸發 re-render 的場景 '.' 一樣被吃。spec(number-input.spec.md:109-110)只記載 NaN-ignore 與顯示層負號格式化,未記載此輸入限制;inputMode='decimal' + precision/貨幣範例(85.5%)明示支援小數,故非 documented exception。",
+   "suggestion": "對齊 Ant InputNumber / Adobe Spectrum NumberField canonical:edit 分支加 internal draft string state — focus 期間 input 綁 draft 文字,onChange 更新 draft 並在 parse 成功時同步呼叫 onChange(parsed),但 DOM 顯示永遠用 draft;blur/Enter 時 commit(format + 清 draft);非 focus 期間才從 value prop 同步顯示。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified against source: number-input.tsx has no internal draft state (no useState in file); edit branch is fully controlled (line 156 value={value ?? ''}) and handleChange (lines 129-140) maps raw '-' to onChange(null) and '1.' to onChange(1) (Number parse behavior confirmed via node). The deterministic failure holds: existing value 5 + select-all + '-' forces state 5→null (no Object.is bailout possible) → re-render resets DOM to '', eating the minus; decimal intermediates survive only under primitive-useState bailout and are eaten with object-state/RHF parents, exactly as the finding claims. Component is native input (not Radix), so nothing built-in rescues it; the spec's own benchmark (Ant InputNumber) keeps an internal string draft for this exact reason. Spec (number-input.spec.md:109-111) documents only NaN-ignore + display-layer negative formatting while 何時用/邊界案例 explicitly advertise decimals (85.5%, precision) and negatives — so this is spec-contradicting, not a documented exception. Only minor overstatement: -5 is still enterable via paste or caret-insertion after typing digits, but no normal typing flow works. P1 fits: deterministic functional data-entry failure in mainstream flows, yet not P0 (no crash/corruption, visible, workarounds exist).",
+    "correctedSeverity": "P1"
+   },
+   "key": "form-controls"
+  },
+  {
+   "title": "Textarea naked variant error+focus 顯藍非紅 — Q1 canonical 鏡射漏 naked 分支",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Textarea/textarea.tsx:140",
+   "phase": "focus",
+   "severity": "P1",
+   "detail": "field-wrapper.tsx 的 Q1 修法把 focus 藍全部移進 error:false compound(default:109 / bare:145 / naked:202 三處都有 gate),但 textarea.tsx 只鏡射了 default(:81)與 bare(:108)— naked edit compound(:140)的 'focus-visible:!border-primary focus-visible:hover:!border-primary' 沒有 error:false gate。已驗證 Tailwind v4 variant 註冊順序為 focus-within → hover → focus → focus-visible(node_modules/tailwindcss/dist/chunk-F4544Y4M.mjs),focus-visible 規則在 CSS 後段、同 specificity 同 !important → 蓋過 error compound(:112)的 focus-within:!border-error;且 textarea 屬文字輸入元素,瀏覽器對任何 focus 都匹配 :focus-visible → naked cell 內出錯的 Textarea 一聚焦(滑鼠或鍵盤)紅框即變藍,違反 Q1「聚焦時 error 紅保留」canonical。field-wrapper.tsx:150 明文「variant 不分 — naked cell 內 error 同樣紅框」。",
+   "suggestion": "把 textarea.tsx:140 的兩個 focus-visible 藍 class 從 naked edit compound 抽出,移到新 compound { mode:'edit', variant:'naked', error:false }(一字不差鏡射 field-wrapper.tsx:202 的 gate 模式)。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed real. (1) Pattern verified: field-wrapper.tsx gates focus-blue behind error:false in all 3 variants (:109 default / :145 bare / :202 naked) with :146 stating error red is variant-agnostic incl. naked; textarea.tsx mirrors the gate only for default (:81) and bare (:108) — the naked edit compound (:132-146) carries 'focus-visible:!border-primary focus-visible:hover:!border-primary' (:140) with no error key, so cva applies it even when error:true, alongside the error compound (:110-113) 'focus-within:!border-error'. (2) Cascade inference verified against installed Tailwind v4 dist (chunk-F4544Y4M.mjs): variant registration order is focus-within → hover → focus → focus-visible, so the blue focus-visible rule sorts later in the same border-color utility group; both selectors are specificity (0,2,0) + !important → source order wins → blue overrides red. Textarea is a text-entry element so browsers match :focus-visible on any focus modality (mouse or keyboard); tailwind-merge keeps both classes (different modifier stacks); no Radix/native layer intervenes (raw <textarea> owns its border). Net effect: naked+edit+error Textarea shows blue border on focus, violating the 2026-07-04 Q1 canonical ('error 勝 focus 顏色通道', border is the sole error carrier per field-wrapper.tsx:68) and falsifying textarea.tsx:65's own '鏡射 fieldWrapperStyles' claim. (3) Reachability nuance (slight overstatement in finding, not refuting): the first-party naked consumer DataTable cannot currently hit it — data-table.tsx:1549 'edit-clears-own-cell' clears error visuals on entering edit and cell-registry.tsx never passes error. However the combination is reachable via public API: Textarea's variant/error props are public (naked has no @internal marker, unlike Input's) and error inherits from <Field invalid> context via useResolvedFieldInvalid (field-context.ts:217-220); a consumer cell editor with live validation reproduces deterministically (autoFocus → instant blue). P1 stands: explicit fresh canonical violation with deterministic repro on a supported public state combination, but shielded from first-party surfaces, so not P0.",
+    "correctedSeverity": "P1"
+   },
+   "key": "form-controls"
+  },
+  {
+   "title": "LinkInput 視覺紅框漏接 fieldCtx.invalid — aria-invalid 與紅框不同步",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/LinkInput/link-input.tsx:170",
+   "phase": "aria",
+   "severity": "P1",
+   "detail": "link-input.tsx:170 的 error = errorProp || localError,不含 fieldCtx.invalid;:258 fieldWrapperStyles 只吃這個 error → <Field invalid><LinkInput/></Field> 不顯紅框。但 :273/:276 的 aria-invalid / aria-errormessage 卻 inline 加了 fieldCtx?.invalid → AT 聽到 invalid、視覺卻是正常框(聚焦還變藍),aria 與視覺分裂。違反 field-controls.spec.md:156 resolver 契約「error/invalid = useResolvedFieldInvalid(prop) = prop OR fieldCtx.invalid」— 12 控件紅框收斂輪 LinkInput 是唯一沒 import useResolvedFieldInvalid 的 Field family 文字控件(:7 import 清單可證)。另 showLink 分支(:237-252)在 fieldCtx.invalid 時也完全無 error 呈現。",
+   "suggestion": "改 const fieldInvalid = useResolvedFieldInvalid(errorProp);const error = fieldInvalid || localError,同一值餵 fieldWrapperStyles 與 aria-invalid/aria-errormessage(刪 :273/:276 的 inline fieldCtx?.invalid 重複判斷);showLink 分支的 wrapper 也補 error 傳遞。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified by reading link-input.tsx + field-context.ts + field-wrapper.tsx + both specs. (1) Pattern exists exactly as claimed: :170 `error = errorProp || localError` excludes fieldCtx.invalid; :258 wrapper styles consume only this error; :273/:276 aria-invalid/aria-errormessage DO include fieldCtx?.invalid — aria/visual split is real. (2) No rescue mechanism: red border's sole carrier is fieldWrapperStyles error compound (field-wrapper.tsx:146-150); field.tsx only sets data-field-invalid + context (no prop cloning); DS-wide grep found zero CSS keyed to data-field-invalid/aria-invalid; LinkInput is a native <input>, no Radix; with error:false the focus compound (field-wrapper.tsx:109) even turns the border blue under <Field invalid> — confirming the「聚焦還變藍」claim. (3) Contract violation confirmed: field-controls.spec.md:156 mandates useResolvedFieldInvalid(prop)=prop OR fieldCtx.invalid (hook at field-context.ts:217), and link-input.spec.md:111 explicitly says invalid state fully inherits field-controls SSOT — no documented exception. (4) All 8 sibling text controls (Input/Textarea/NumberInput/Select/Combobox/DatePicker/TimePicker) import the resolver; LinkInput's :7 import list lacks it. (5) showLink branch :237-252 passes no error to wrapper, confirmed. P1 appropriate: real spec-contract break with a11y/visual desync in documented composition, but no crash and direct error prop workaround exists — not P0.",
+    "correctedSeverity": "P1"
+   },
+   "key": "form-controls"
+  },
+  {
+   "title": "readOnly 的 Checkbox/Switch/RadioGroupItem 可被 label 點擊繞過 — 鎖互動失守",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Checkbox/checkbox.tsx:284",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "standalone readOnly 的鎖互動只靠 cva pointer-events-none + tabIndex=-1(checkbox.tsx:34,259 / switch.tsx:59,240 / radio-group.tsx:180,279),但三者帶 inline label 時都渲染 <label htmlFor={inputId}>(Checkbox/RadioGroupItem 經 SelectionItem selection-item.tsx:174、Switch 自家 switch.tsx:273)。Radix Root 是 <button>(labelable element),點 label 觸發瀏覽器 synthetic click activation 直達 button — 這不是 pointer event,pointer-events:none 攔不到 → readOnly checkbox/switch/radio 點文字即 toggle(uncontrolled 直接翻視覺;controlled 照樣 fire onCheckedChange/onValueChange)。違反 checkbox.spec.md:252「readOnly …鎖互動但保留 checked 視覺」與 field-controls.spec.md:73「standalone readOnly 維持原樣鎖互動」明文契約。",
+   "suggestion": "SelectionItem 增 readOnly prop(由 Checkbox/RadioGroupItem 以 effectiveReadOnly 傳入),label 上加 onClick={e => readOnly && e.preventDefault()}(preventDefault 可取消 label 的 synthetic activation);Switch 自家 label(switch.tsx:272)同修。並在 Radix Root 加 onClick capture guard(effectiveReadOnly 時 preventDefault)作第二道防線,防 consumer 自寫 label htmlFor 同樣繞過。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed real via source read + empirical browser test. All three components lock readOnly only with cva pointer-events-none + tabIndex=-1 (checkbox.tsx:34,259 / switch.tsx:59,240 / radio-group.tsx:180,279), yet with inline label render a real <label htmlFor> pointing at the Radix <button> (Checkbox/RadioGroupItem via selection-item.tsx:174, Switch via switch.tsx:272). Playwright test in-repo proved: direct click on a pointer-events:none button is blocked, but clicking its associated label dispatches a synthetic click that toggles it — pointer-events:none cannot intercept label activation. Radix checkbox/switch/radio-group dist source has zero readonly handling and toggles unconditionally in onClick, so readOnly is bypassed: uncontrolled flips real state, controlled fires onCheckedChange/onValueChange. This violates the explicit contracts at checkbox.spec.md:252 (standalone/inline-label readOnly = 鎖互動) and field-controls.spec.md:73-74 (standalone readOnly 維持原樣鎖互動) — the vulnerable path is the documented supported scenario (settings list / SelectionItem row). P1 stands: cross-component silent state mutation breaking a documented contract, but no crash and Field-readonly/disabled branches are safe.",
+    "correctedSeverity": "P1"
+   },
+   "key": "form-controls"
+  },
+  {
+   "title": "useFormValidation.handleSubmit 無 double-submit 防護、無 isSubmitting、onSubmit rejection 未接",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Field/use-form-validation.ts:190-229",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "規則 9 明定業務/async 驗證(API 查名稱重複等)defer 到 submit,但 handleSubmit 在 await onSubmit(current) 期間:(a) 無 re-entrancy guard — 使用者連點 submit / 連按 Enter 會並發呼叫 onSubmit 兩次(重複建立資源的經典事故);(b) return 值只有 submitDisabled(dirty 驅動),不暴露 isSubmitting → consumer 無法做 Button loading / disable,spec 的「不可配置的預設」哲學下 consumer 也沒有掛載點自防;(c) onSubmit throw/reject 時無 try/catch → unhandled rejection,錯誤被吞、表單無任何回饋(違反五態「error 不吞」)。世界級對照:RHF formState.isSubmitting 內建 + submit 期間自動擋重入;Polaris/Mantine form 皆暴露 submitting。form-validation.spec.md 全文無 double-submit / busy 記載(已 grep 驗證),非 documented exception。",
+   "suggestion": "handleSubmit 加 isSubmittingRef guard(進入即 return)+ React state isSubmitting 暴露進 UseFormValidationReturn(submitDisabled 併入 || isSubmitting);onSubmit 包 try/finally,catch 時 re-throw 前先復位 isSubmitting,並在 spec「Submit 驗證」段補 codify。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified against source: use-form-validation.ts:190-229 custom handleSubmit has (a) no re-entrancy guard — concurrent submits both reach `await onSubmit(current)` (line 214); (b) return surface (lines 73-90, 231-242) exposes only submitDisabled (dirty-driven), no isSubmitting — and since RHF is fully wrapped (lines 9-11) and the hook never calls RHF's own handleSubmit, RHF's built-in formState.isSubmitting (confirmed in react-hook-form dist source) never fires and is unreachable; (c) line 214 has no try/catch → onSubmit rejection becomes an unhandled promise rejection in a React form handler, error state never set, form silently dead — contradicting the file's own charter (lines 5-6 \"不可配置的預設\") and five-states \"error 不吞\". Grep of form-validation.spec.md found zero double-submit/isSubmitting/busy mention — not a documented exception. Spec's own usage example (line 67) documents async API onSubmit, so the vulnerable window is the documented canonical path, not theoretical. Two nuances that don't overturn: RHF exposes isSubmitting but doesn't auto-block re-entry (finding slightly overstates), and consumer could hand-roll a guard inside their own onSubmit — but that defeats the hook's executable-canonical purpose and can't produce a loading state. Severity P1 confirmed: public canonical API, affects all consumers following documented usage, failure classes are duplicate resource creation + swallowed errors; not P0 since current in-repo consumers (stories only) use sync onSubmit.",
+    "correctedSeverity": "P1"
+   },
+   "key": "form-controls"
+  },
+  {
+   "title": "FileUpload:file input 選檔後未 reset value,同一檔案重選完全無反應",
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.tsx:229, 310",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "兩個 <input type=file> 的 onChange 都只呼叫 filterAndDispatch(e.target.files),沒有清 e.target.value。瀏覽器對相同路徑檔案不觸發 change event,所以「上傳失敗 → 使用者修正檔案內容 → 再選同一個檔」或「刪除後重傳同檔」會靜默無反應(error 修復路徑被吞)。Ant Design Upload / react-dropzone 皆在 dispatch 後 reset input value。",
+   "suggestion": "onChange 內 dispatch 後補 e.target.value = ''(或 dispatch 前先讀出 FileList 再清),兩個 variant 的 input 都要改。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed at file-upload.tsx:229 and :310 — both native file inputs call only filterAndDispatch(e.target.files); grep of the whole FileUpload dir shows no value reset, no key-remount of the input, no imperative handle (inputRef used only for .click()), and the hidden input/ref is not consumer-accessible, so no workaround exists. It is a bare native input (no Radix/lib wrapper that would handle this; React never clears file inputs), so same-file re-selection fires no change event and is silently swallowed. Verified cited libs against real source: rc-upload (Ant Design) resets via setState({uid: getUid()}) + key={uid} remount after onChange; react-dropzone sets inputRef.current.value = null before .click() explicitly so re-selecting the same file fires change (minor wording nit: react-dropzone resets before opening the dialog, not after dispatch — same substance). Severity P1 stands because the component's own API makes the broken flows first-class: status='error' supports the fail→fix→re-select-same-file recovery loop and onRemove makes delete→re-upload-same-file a designed interaction; both silently no-op. Not P0 since first-time uploads work and drag-drop path (dataTransfer.files) is unaffected.",
+    "correctedSeverity": "P1"
+   },
+   "key": "rows-nav"
+  },
+  {
+   "title": "FileUpload:dragleave 無 relatedTarget guard,拖曳滑過內部 Empty 內容時 drag-over 高亮熄滅",
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.tsx:264-268",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "拖檔進入 dropzone 後,pointer 移到子元素(Empty 的 icon/title div)時 DOM 先對子元素發 dragenter(bubble 設 true)、再對舊 target(dropzone 本體)發 dragleave(bubble 設 false),最終 state=false → border-primary 高亮在使用者正對準 dropzone 中央時反而消失,直到再碰到容器邊緣才恢復。經典 drag-flicker bug,程式內無 counter 也無 relatedTarget 檢查。",
+   "suggestion": "onDragLeave 加 guard:if (e.currentTarget.contains(e.relatedTarget as Node)) return;或改用 enter/leave depth counter。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed. file-upload.tsx:264-268 onDragLeave unconditionally calls setDragOver(false) with no relatedTarget-contains guard and no enter/leave counter (DS-wide grep: zero guard hits). Component is self-built on native HTML5 drag events (spec.md:27 declares 自建, no Radix primitive), and React delegates raw dragenter/dragleave bubbling semantics without enter/leave synthesis for drag events. Default content renders nested Empty children (icon div / title span / description span) inside the dropzone, so pointer movement toward the center crosses child boundaries: dragenter fires on the child (bubbles, sets true) then dragleave fires on the dropzone (sets false) → final state false → the spec'd drag-over border-primary highlight (file-upload.spec.md:62) extinguishes while the user aims at the dropzone center. Classic drag-flicker bug; react-dropzone (cited in spec as the drag API benchmark) guards exactly this. One detail in the finding is off — native dragleave does bubble per HTML spec — but that worsens rather than refutes the bug. Drop functionality is unaffected (dragover/drop bubble from children), so it is a visual-feedback defect in the component's primary gesture, violating its own documented 4-state machine: P1 stands.",
+    "correctedSeverity": "P1"
+   },
+   "key": "rows-nav"
+  },
+  {
+   "title": "FileUpload:disabled / loading 時 dragover+drop 提前 return 未 preventDefault,瀏覽器直接開啟被丟的檔案(整頁導航走人)",
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.tsx:269-278",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "onDragOver / onDrop 開頭 `if (isBlocked) return` 在 preventDefault 之前。dragover 沒 preventDefault = drop 不被攔截,瀏覽器 default 行為是在當前 tab 開啟該檔案 → loading 中(使用者剛送出第一批檔案)再丟第二個檔會直接離開 app,表單狀態全失。「loading 不阻斷輸入 + 防 double-submit」應該是吞掉操作而非讓瀏覽器接管。",
+   "suggestion": "isBlocked 時仍先 e.preventDefault()(dragover 與 drop 都要),之後才 return,不執行 filterAndDispatch;對齊 react-dropzone / Ant Dragger disabled 行為。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified at file-upload.tsx:269-278 — `if (isBlocked) return` precedes e.preventDefault() in both onDragOver and onDrop (isBlocked = disabled || loading, line 168). Component is a hand-rolled div dropzone (no Radix/lib layer to intercept), and the code deliberately removed pointer-events-none (comment at lines 293-294, 2026-06-03 Q4) relying on handler guards, so the element DOES receive drag events while blocked, then early-returns without cancelling. Per HTML DnD spec, uncancelled dragover means the element is not a valid drop target and the browser default for dropped files applies: navigate current tab to the file — user drops a second batch during loading and the SPA unloads, losing all state. No window-level drag/drop guard exists anywhere in the DS. The component's own design intent ('loading blocks input to prevent double-submit') requires swallowing the drop, not surrendering to browser navigation (Polaris DropZone calls stopEvent before its disabled check). P1 is appropriate: data-loss-grade consequence but requires a specific user action (drop while blocked) — not unconditional enough for P0, too harmful for P2. Fix: move e.preventDefault() before the isBlocked guard in both handlers.",
+    "correctedSeverity": "P1"
+   },
+   "key": "rows-nav"
+  },
+  {
+   "title": "Tabs:inlineAction slot 造成 button 巢 button(Radix TabsTrigger 是原生 <button>,ItemInlineAction 也是 <button>)",
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:437-471(span wrapper 449-468)",
+   "phase": "aria",
+   "severity": "P1",
+   "detail": "Radix Tabs Trigger render Primitive.button(node_modules/@radix-ui/react-tabs/dist/index.mjs:109),inlineAction 的建議用法(ItemInlineAction / DropdownMenuTrigger asChild + ItemInlineActionButton)是原生 button(item-anatomy.tsx ItemInlineActionButton)。結果是 interactive 巢 interactive:HTML 不合法、axe nested-interactive serious、SR 對 tab 的 accessible name 會混入 action 內容、鍵盤 Tab 會停進 tab 內部的隱藏 stop。stopPropagation 五連發只解 click 行為分流,解不了語意巢狀。tabs.spec.md:100 只文件化 split-click 意圖,沒有把巢狀 button 列為 accepted exception;GitHub「Code ▾」/ Linear 的 split-tab 實作都是 sibling 元素而非巢狀。",
+   "suggestion": "把 inlineAction 移出 TabsPrimitive.Trigger,改成 sibling 佈局:wrapper span(relative)內 trigger + 絕對定位 action(同 SidebarMenuButton 的 suffixNode 模式,sidebar.tsx:1084-1108 已有 canonical 先例),trigger 加 paddingRight 預留。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed via source: (1) Pattern exists — tabs.tsx:437-441 renders TabsPrimitive.Trigger without asChild, and Radix source (@radix-ui/react-tabs/dist/index.mjs) renders Primitive.button (native <button role=\"tab\">); tabs.tsx:449-468 renders {inlineAction} inside that button in a span wrapper that only attaches stopPropagation handlers (no portal/sibling escape). The recommended usage in the JSDoc (tabs.tsx:418) and the production story (tabs.stories.tsx WithSuffix) place ItemInlineActionButton — a native <button> per item-anatomy.tsx:615 — inside, yielding button-in-button. (2) Behavior inference correct — Radix has no nested-interactive handling; the inner button keeps tabIndex 0 creating an extra Tab stop inside the tablist (violates APG single-tab-stop); stopPropagation only splits click behavior, not semantics; HTML forbids interactive descendants of button; axe nested-interactive (impact: serious) applies; role=tab accessible name from contents will absorb the inner aria-label=\"更多選項\". Bonus hazard: any SSR/HTML-parse path would auto-close the outer button. (3) No accepted exception — tabs.spec.md only documents split-click intent; its A11y section (L306-319) even claims \"0 critical violation\" expected, contradicting reality. GitHub \"Code ▾\" / Linear split-tabs are indeed sibling elements. Severity P1 is appropriate: axe serious (not critical), no crash, but the defect is in the component's officially recommended API usage affecting keyboard/SR users.",
+    "correctedSeverity": "P1"
+   },
+   "key": "rows-nav"
+  },
+  {
+   "title": "TreeView:multiple 模式自動 render 的 Checkbox 是 aria-hidden 但可聚焦的 Radix button",
+   "fileLine": "packages/design-system/src/components/TreeView/tree-view.tsx:969-973;components/Checkbox/checkbox.tsx:253-259",
+   "phase": "aria",
+   "severity": "P1",
+   "detail": "Radix Checkbox root 是 Primitive.button role=checkbox(@radix-ui/react-checkbox dist index.mjs:96-99),預設 tabIndex=0。TreeItem 傳 aria-hidden=\"true\" 但沒傳 tabIndex=-1;外層 ItemPrefix 的 pointer-events-none 只擋滑鼠不擋鍵盤。結果:(a) axe aria-hidden-focus serious violation(focusable 元素對 AT 隱形);(b) 破壞 spec 明文的單一 tab stop 虛擬焦點模型(tree-view.spec.md:379)— Tab 會逐一停進每個 node 的隱形 checkbox。",
+   "suggestion": "auto-render 的 Checkbox 加 tabIndex={-1}(Checkbox 已支援 tabIndex passthrough),或改 render 純視覺 checkbox(non-interactive span 畫勾選態),選取語意已由 treeitem aria-selected 承載。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified all three legs. (1) Pattern exists: tree-view.tsx:969-973 auto-renders <Checkbox aria-hidden=\"true\"> without tabIndex in multiple mode; ItemPrefix pointer-events-none blocks mouse only, no inert anywhere. (2) Behavior correct: checkbox.tsx:259 tabIndex={effectiveReadOnly ? -1 : undefined} resolves undefined (TreeView passes no readOnly) and the {...props} spread carries aria-hidden but no tabIndex; Radix dist source (CheckboxTrigger) renders Primitive.button type=button role=checkbox with zero tabIndex/aria-hidden handling, so the non-disabled native button is focusable by default → focusable aria-hidden element = axe aria-hidden-focus serious violation. (3) Spec contradiction confirmed: tree-view.spec.md:372/379 mandates single tab stop with virtual focus (root tabIndex=0 at tree-view.tsx:627); the DS neutralizes rows (tabIndex=-1, :910) and chevron (tabIndex=-1 + aria-hidden, :870/880) but missed the checkbox — Tab stops on every node's AT-invisible checkbox, breaking the documented keyboard model for all multi-select consumers on the default auto-render path. P1 severity fits: serious a11y violation + broken documented interaction model, but no crash/data loss and arrow-key virtual focus still works (not P0).",
+    "correctedSeverity": "P1"
+   },
+   "key": "rows-nav"
+  },
+  {
+   "title": "TreeView:draggable 時 dnd-kit attributes 把每個 row 注入 role=\"button\" + tabIndex=0,破壞 tree 語意與單一 tab stop,且 Enter 可能作用在錯的 node",
+   "fileLine": "packages/design-system/src/components/TreeView/tree-view.tsx:957(dragAttrs spread);node_modules/@dnd-kit/core/dist/core.cjs.development.js:3403-3404, 3429-3436",
+   "phase": "keyboard",
+   "severity": "P1",
+   "detail": "useDraggable 的 attributes 預設 { role:'button', tabIndex:0, aria-roledescription:'draggable' },TreeItem 直接 {...dragAttrs} spread 到 row div。draggable=true 時:(a) 每個 role=treeitem 內多一個 role=button 全 row wrapper,tree 結構語意被污染;(b) 每 row 變成 DOM tab stop,單一 tab stop 虛擬焦點(aria-activedescendant)模型全破;(c) DOM focus 停在某 row 上按 Enter/Space 會 bubble 到容器 handleKeyDown,但 handler 操作的是 state 的 focusedId(可能是另一個 node)→ 鍵盤啟動錯位;(d) sensors 只有 PointerSensor,這些 role/tabIndex 換不到任何鍵盤拖曳能力(無 KeyboardSensor),純負債。",
+   "suggestion": "useDraggable 傳 attributes 覆寫:{ role: undefined 或不 spread role, tabIndex: -1, roleDescription 保留 },只 spread listeners;若要鍵盤重排,另補 KeyboardSensor + APG tree 的 Ctrl+Arrow 慣例,而不是靠 dnd-kit 預設 attrs。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified against source, could not refute. (1) tree-view.tsx:813-815 calls useDraggable without a custom attributes option; dnd-kit source confirms defaults role='button', tabIndex=0, aria-roledescription='draggable', plus aria-describedby pointing to keyboard-drag instructions. Line 957 spreads dragAttrs onto the inner full-row div inside role=\"treeitem\" (line 902), so every row gains a role=button wrapper when draggable. (2) Single-tab-stop virtual focus is the component's own documented contract (comments at lines 285/609-610; container role=tree tabIndex=0 + aria-activedescendant lines 607-627, rows tabIndex=-1 line 910) — tabIndex=0 on every row breaks it. (3) No onFocus/focusin sync exists; container handleKeyDown resolves Enter/Space target from focusedId state (lines 526-527, 592-597), not event.target, so DOM-focusing a row via Tab then pressing Enter either no-ops or selects a stale different node — mis-targeting confirmed. (4) Sensors are PointerSensor-only (lines 304-305, 642) with no KeyboardSensor, and dragListeners contain only onPointerDown, so the injected role/tabIndex provide zero keyboard-drag capability — pure a11y debt. Radix offers no rescue: spec states tree ARIA is self-built (Radix has no Tree primitive). P1 severity is right: real a11y/keyboard defect violating the spec's APG model, but scoped to draggable=true with pointer interaction unaffected.",
+    "correctedSeverity": "P1"
+   },
+   "key": "rows-nav"
+  },
+  {
+   "title": "Sidebar:icon-collapsed 模式 label display:none 後 SidebarMenuButton 完全沒有 accessible name(code 註解仍宣稱 SR 讀得到)",
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:898(hidden 規則), 879-881(stale 註解), 1040-1047(content 組裝)",
+   "phase": "aria",
+   "severity": "P1",
+   "detail": "cva base 的 group-data-[collapsible=icon]:[&_[data-sidebar=menu-label]]:hidden 把 ItemLabel(item-anatomy.tsx:256-267)設 display:none;acc-name 計算排除 display:none 內容,icon 是 aria-hidden,SidebarMenuBadge 也 hidden → collapsed 時每個 menu button 對 SR 都是無名 button。tooltip 只在 open 時掛 describedby,不供名。而 879-881 的 v4 註解「label…a11y screen reader 仍讀到」在 v5 restore display:none 後已失真(doc-claim ≠ code,M32 類)。",
+   "suggestion": "collapsed 隱藏改 sr-only 化而非 display:none(label span 在 icon 模式套 sr-only class),或 ItemLabel 同步輸出 aria-label 到 button;並更新 879-881 註解。",
+   "verdict": {
+    "real": true,
+    "reason": "全部三項驗證通過。(1) Pattern 真存在:sidebar.tsx:898 cva base 的 group-data-[collapsible=icon]:[&_[data-sidebar=menu-label]]:hidden 對 ItemLabel(item-anatomy.tsx:260-266 渲染 span[data-sidebar=menu-label])施加 display:none;content 組裝(sidebar.tsx:1040-1047)中 label 是 button 唯一文字來源。(2) 行為推論正確:ItemIcon 的 icon 帶 aria-hidden(item-anatomy.tsx:650),SidebarMenuBadge 同樣 group-data-[collapsible=icon]:hidden(sidebar.tsx:1180);accname spec 排除 display:none 子節點的 name-from-content;grep 證實 SidebarMenuButton 無 aria-label/sr-only fallback(aria-label 只在 SidebarTrigger:429/767);button 是 native button 非 Radix primitive,無內建救援;Tooltip 是標準 Radix Tooltip,只在 open 時掛 aria-describedby 且 description 不供 accessible name(sidebar.tsx:1111-1129)→ collapsed 時每個 menu button 對 SR 是無名 button,違 WCAG 4.1.2。(3) Stale 註解成立:sidebar.tsx:880「a11y screen reader 仍讀到」是 v4 outer-clip 架構宣稱,v5(line 894-898,2026-05-21)restore display:none 後已失真(M32 doc-claim ≠ code);且 line 897 稱「對齊 shadcn canonical」但 shadcn 是 overflow clip 保留 acc tree,display:none 反而偏離。Severity P1 合理:主導覽 collapsed 態 SR 全滅是 must-fix a11y 缺陷,但不影響視覺/滑鼠用戶且限 collapsed 模式,未達 P0。",
+    "correctedSeverity": "P1"
+   },
+   "key": "rows-nav"
+  },
+  {
+   "title": "FileItem:hover-swap 的 Download/Retry button 鍵盤 focus 時仍 opacity-0(可聚焦但不可見),打破 spec 自己宣稱的鍵盤等價路徑",
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.tsx:168-177;file-item.spec.md:424",
+   "phase": "focus",
+   "severity": "P1",
+   "detail": "className 只有 opacity-0 group-hover/row:opacity-100 — 沒有 focus-visible:opacity-100 也沒消費 item-anatomy 已有的 group-has-[:focus-visible]/row reveal SSOT(item-anatomy.tsx:710)。spec:424 明文「keyboard user 直接 Tab 到列內 explicit 操作按鈕取得等價能力」,但 Tab 到這顆按鈕時它完全透明:使用者看到焦點消失在列中某處,passive 狀態 icon 也不讓位(它只在 group-hover 淡出)。這是機制缺陷不是 documented exception。",
+   "suggestion": "按鈕 className 補 focus-visible:opacity-100,同時 passive icon 補 group-has-[:focus-visible]/row:opacity-0(直接改用 SUFFIX_HOVER_REVEAL_BY_GROUP.row 的既有 pattern 最一致)。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed at all three cited locations. (1) file-item.tsx:176 — hover-swap Download/Retry Button className is only `absolute inset-0 opacity-0 group-hover/row:opacity-100 transition-opacity`; no focus-visible reveal anywhere in the file, and row wrappers (lines 247/291) have `group/row` but no focus handling. (2) The button is a native <button> in tab order (button.tsx:401, no tabIndex/aria-hidden at call site), and opacity-0 hides the element including its focus ring while the passive status icon stays visible (it only fades on group-hover) — keyboard focus is genuinely invisible = WCAG 2.4.7 failure. (3) item-anatomy.tsx:710 SSOT includes `group-has-[:focus-visible]/row:opacity-100` with an explicit comment (lines 717-721) that hover-reveal must also fire on keyboard focus-visible; FileItem hand-rolled a partial copy dropping the focus half — true M1/M23 drift, not a documented exception. (4) file-item.spec.md A11y section explicitly justifies no row-level focus with「keyboard user 直接 Tab 到列內 explicit 操作按鈕取得等價能力」and counts Download/retry among those buttons; no mouse-only exception is documented in the hover-swap section. Refutation attempts (Radix built-in handling, parent focus-within, documented exception) all failed. P1 stands: real broken keyboard path + AA a11y failure in a DS primitive, but not P0 since the action is still technically operable (Enter fires, SR users get aria-label) and remove via actions slot remains visible.",
+    "correctedSeverity": "P1"
+   },
+   "key": "rows-nav"
+  },
+  {
+   "title": "Steps:expansion=\"multiple\" 的可收合 step header(role=button)缺 aria-expanded / aria-controls",
+   "fileLine": "packages/design-system/src/components/Steps/steps.tsx:450-473(StepItemHeader), 509-519(chevron), 355-362(activate toggle)",
+   "phase": "aria",
+   "severity": "P1",
+   "detail": "multiple 模式下點 header 會 toggleExpanded 展開/收合 StepContent,chevron 是 aria-hidden 純視覺(ItemSuffix aria-hidden),但 role=\"button\" 的 header 沒有 aria-expanded,也沒 aria-controls 指向 content 區 → SR 使用者完全無法得知這是 disclosure、更不知道目前展開狀態。WAI-ARIA disclosure pattern 的最低要求就是 trigger 帶 aria-expanded。steps.spec.md 的 expansion 段沒把省略列為 documented exception。",
+   "suggestion": "StepItemHeader 在「expansion===multiple 且該 step 有 content」時輸出 aria-expanded={item.expanded} + aria-controls={contentId}(content div 補 id;follow-active 模式亦可同步輸出)。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified by direct Read of steps.tsx: activate() (L355-362) toggles StepContent in expansion=\"multiple\"; StepItemHeader (L450-473) renders role=\"button\" with only aria-disabled + sr-only step-status span — rg confirms zero aria-expanded/aria-controls hits in the file; chevron (L509-519) is ItemSuffix aria-hidden; content (L491/522-527) is conditionally rendered with no id. Component is hand-rolled (imports: lucide/cva/cn/item-anatomy only — no Radix Collapsible), so nothing injects the ARIA state. steps.spec.md A11y section (L456-471) codifies only the Carbon ProgressIndicator model (which has no expandable content) and does not document the omission as an exception. SR users in multiple mode cannot perceive that the header is a disclosure nor its state — WCAG 4.1.2 / APG disclosure minimum (aria-expanded on trigger) violated. Minor nit: aria-controls is optional per APG, so aria-expanded is the hard half of the finding. P1 appropriate: real a11y defect, but scoped to opt-in expansion=\"multiple\" mode (default follow-active unaffected), so not P0.",
+    "correctedSeverity": "P1"
+   },
+   "key": "rows-nav"
+  },
+  {
+   "title": "Sidebar:Cmd/Ctrl+B 全域攔截無輸入框/組字/defaultPrevented guard — 已知 open issue 現況確認仍存在",
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:191-203;sidebar.spec.md:688",
+   "phase": "keyboard",
+   "severity": "P1",
+   "detail": "現況驗證:handler 只判斷 key==='b' && (metaKey||ctrlKey) 即 preventDefault + toggle。無 (a) event.target 是 input/textarea/contentEditable 的排除(在 SidebarInput 搜尋框或任何 rich-text editor 內按 Cmd+B 加粗 → sidebar 收合且 bold 被吃掉);(b) e.defaultPrevented 檢查(app 層 editor 已處理仍會 double-fire);(c) isComposing 檢查;(d) 無 opt-out prop。spec:688 已誠實文件化此限制(「目前無 opt-out prop、也未排除文字輸入框內」),此為承認的 gap 而非設計決策 — VS Code / Linear 同快捷鍵都排除可編輯 target。另 SidebarProvider 多實例會重複註冊、一次按鍵 toggle 兩次。",
+   "suggestion": "handler 開頭加:if (e.defaultPrevented || e.isComposing) return; const t = e.target as HTMLElement; if (t.closest('input,textarea,[contenteditable=true]')) return;並加 disableShortcut?: boolean prop 供 rich-text app opt-out。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed at sidebar.tsx:191-203: window keydown handler checks only key==='b' && (metaKey||ctrlKey) then preventDefault + toggleSidebar. File-wide grep confirms no isComposing / defaultPrevented / editable-target guard and no opt-out prop (no disableShortcut anywhere). Not Radix-mediated — plain window listener, so no built-in mitigation; input/textarea/contentEditable keydowns bubble to window, meaning Cmd/Ctrl+B inside editors toggles the sidebar and suppresses native bold, and app-level editors that already handled the key double-fire. Multi-SidebarProvider double-registration also mechanically true (each instance adds its own window listener, no dedupe). sidebar.spec.md:688 wording「目前無 opt-out prop…也未排除文字輸入框內」confirms this is an acknowledged open gap, not a documented design decision. Minor caveat: the 'VS Code excludes editable targets' benchmark claim is imprecise (VS Code resolves via keybinding-context precedence), but this does not affect the verdict.",
+    "correctedSeverity": "P1"
+   },
+   "key": "rows-nav"
+  },
+  {
+   "title": "Spreadsheet mode 鍵盤無法「進入」— 初始 cell selection 只能靠滑鼠 click 建立",
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:1827(guard `selectedCellId != null`)+ 1523-1526(唯一 set 起點 = mouse click)+ 2385(tabIndex=0)",
+   "phase": "keyboard",
+   "severity": "P1",
+   "detail": "table outer 有 tabIndex=0,但 tableKeyboardHandler 的 spreadsheet 分支要求 `selectedCellId != null` 才處理方向鍵;而 selectedCellId 的唯一初始來源是 onEditableCellClick(mouse)。鍵盤-only 使用者 Tab 到 table 後按任何方向鍵都是 no-op,整個 spreadsheet 導覽被滑鼠 gate。這直接牴觸 data-table.spec.md L526 驗證宣稱「鍵盤完整可操作(無需滑鼠)」(spec L522-524 documented exception 只涵蓋 APG role=grid full model,不涵蓋「完全進不去」)。Excel / Google Sheets / AG Grid:容器獲得焦點時自動聚焦第一格。",
+   "suggestion": "在 table outer 加 onFocus(或在 handler 開頭):`spreadsheetMode && selectedCellId == null && e.key 是方向鍵` → 選取第一個 visible cell(`allRows[0]:allCols[0]`)並 setRangeAnchor,而非 return。對齊 AG Grid「focus grid → first cell focused」canonical。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed by exhaustive source verification. (1) Guard exists: data-table.tsx:1827 requires selectedCellId != null before any spreadsheet key (arrows/Enter/F2/Esc) is handled. (2) Only two non-null setters of selectedCellId exist across all DataTable files: line 1524 (mouse onEditableCellClick) and line 1870 (arrow nav — itself inside the guarded branch, requiring prior selection). No onFocus seeding; the pointerdown effect (L870-885) only clears. tabIndex=0 + onKeyDown wiring at 2385-2387 means keyboard users can focus the table but every nav key is a no-op. (3) No library rescue: DataTable is hand-built div+ARIA over headless TanStack (no keyboard behavior); cell-registry/active-editor-controller keydown handlers only work inside an already-active editor. Keyboard-only users therefore cannot enter spreadsheet navigation at all. Spec check: L516/L522/L524 honestly document the guard and defer APG full model to future tier, but L526's verification claim 「鍵盤完整可操作(無需滑鼠)」 is factually violated — the documented exception covers APG model completeness (Home/End/PageUp/roving tabindex), not total keyboard inaccessibility of a shipped opt-in feature. WCAG 2.1.1 Level A failure for spreadsheetMode; Excel/Google Sheets/AG Grid all seed an active cell on container focus. P1 stands: not P0 (opt-in mode, mouse path works, default mode unaffected), above P2 (entire interaction model unreachable via keyboard + contradicts spec's own verification clause).",
+    "correctedSeverity": "P1"
+   },
+   "key": "data-heavy"
+  },
+  {
+   "title": "Edit 退出(commit / Esc)後 selection 不還原 + 焦點掉到 body — 鍵盤導覽死巷",
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:854-857(exitEdit)+ 886-893(commitCell)+ 1518/1854(進 edit 時 setSelectedCellId(null))",
+   "phase": "focus",
+   "severity": "P1",
+   "detail": "進 edit(Enter/F2 或 click-2)時 selectedCellId 被清成 null;exitEdit / commitCell 只清 editingCellId,從不還原 selection,且全 DataTable 家族 grep 零個程式化 `.focus()` 呼叫 — edit input unmount 後 document.activeElement 掉回 body。結果:Enter 進 edit → Esc/Enter 退出 → 方向鍵全滅、必須用滑鼠重新點格子才能繼續。RFC datatable-spreadsheet-rfc.md Contract 11 明文「editing 時 focus 進 editor,退出後還給 active cell」— code 違反自家 contract。Excel/Sheets/AG Grid:Esc 回到原格保持選取;Enter commit 後選取下移一列。",
+   "suggestion": "exitEdit / commitCell 收 cellId 參數:`setSelectedCellId(rowId+':'+colId)` + `setRangeAnchor(同)` + `tableRef.current?.focus({ preventScroll: true })`。Enter-commit 路徑額外對齊 Excel canonical:commit 後 selection 下移一列(curRowIdx+1)。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified all claims by reading source. (1) Pattern exists: exitEdit (data-table.tsx:854-857) and commitCell (886-893) only clear editingCellId/draft; edit entry at 1517-1518 (click-2) and 1853-1854 (Enter/F2) sets selectedCellId(null); zero programmatic .focus() in the DataTable family (only grep hit is a Chinese comment 「focus(終點)」 at L1507). (2) Behavior inference correct: editors mount with autoFocus (cell-registry.tsx L140/162/204/253/318); on exit the editor unmounts (cellMode flips to display, L1340-1343/1370) so activeElement drops to body per native behavior — Radix cannot restore because picker popover triggers unmount simultaneously. Keyboard handler is on table outer div onKeyDown (L2387, tabIndex=0 L2385), so keydown on body never reaches it; and even if user Tabs back, the L1827 guard requires selectedCellId != null with NO keyboard path to initialize it from null (only mouse click L1524 sets it) — hard keyboard dead-end after every edit. No restore mechanism exists anywhere (grep restore/prevSelected = 0 hits). (3) Contract violation confirmed: datatable-spreadsheet-rfc.md:130-132 Contract 11 verbatim requires 「退出後還給 active cell」 citing WAI-ARIA APG grid + AG Grid. Severity P1 correct: opt-in spreadsheetMode + mouse-recoverable + no data loss rules out P0, but per-edit keyboard dead-end violating own RFC + APG grid pattern + Excel/Sheets/AG Grid canonical is above P2.",
+    "correctedSeverity": "P1"
+   },
+   "key": "data-heavy"
+  },
+  {
+   "title": "Cell editor 的 Enter/Esc 無 IME 組字 guard — 中文輸入選字的 Enter 會誤 commit 並退出編輯",
+   "fileLine": "packages/design-system/src/components/DataTable/cell-registry.tsx:84-92(makeKeyHandler)+ 150-156(Textarea Esc/Cmd+Enter)+ 213-216(NumberCell)+ 471(UrlCell)",
+   "phase": "keyboard",
+   "severity": "P1",
+   "detail": "table-level nav(data-table.tsx:1826)與 portal Tab route(:2550)都有 `isComposing || keyCode===229` guard,但 cell editor 自己的 Enter-commit / Esc-cancel 完全沒有:CJK 使用者在 string/number/url cell 打中文、按 Enter 確認候選字 → keydown(key='Enter', isComposing=true)直接 preventDefault + onCommit → 半截組字被提交且 cell 退出 edit;Esc 同理會丟棄整個 draft(原生行為應只取消組字)。RFC Contract 10 invariant「composition 期間 Enter/Tab/Escape 不 commit/navigate/remount」宣稱由「Field per-control IME guard」承接,但 Input/Textarea/NumberInput 與 field-controls.spec.md grep 零 composition 處理 — 該 guard 不存在。DS 內已有正確 canonical:date-picker.tsx:558-565 typeable input 的 composingRef 三件套。",
+   "suggestion": "在 makeKeyHandler 與 StringCell Textarea / NumberCell / UrlCell 的 onKeyDown 開頭加 `if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return`(同 data-table.tsx:1826 既有寫法),或依 RFC 宣稱下沉到 Input/Textarea/NumberInput per-control(抄 date-picker.tsx composingRef canonical)。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified by direct read + DS-wide grep: cell-registry.tsx makeKeyHandler (:84-92, used by StringCell :168 / UrlCell :471), Textarea handler (:150-156), and NumberCell (:213-216) all preventDefault + commit/cancel on Enter/Esc with no isComposing/keyCode-229 guard. Attempted refutation failed on every front: (1) underlying Field controls (Input/Textarea/NumberInput) are plain native inputs with zero composition handling — the 'Field per-control IME guard' claimed in active-editor-controller.ts:17 (Contract 10) and its ship-checklist item 4 does not exist (field-controls.spec.md has zero IME mentions), confirming a FALSE_CLAIM; (2) table-level guards don't cover it — data-table.tsx:1826 only runs in nav mode (editingCellId == null) and the cell input's own onKeyDown fires at target phase first; :2550 handleEditTab early-returns unless key==='Tab'; (3) browser behavior inference is correct — IME candidate-confirm Enter fires keydown with key='Enter' + isComposing=true which React delivers unsuppressed, so the half-composed value gets committed and edit exits; Esc during composition discards the whole draft instead of only cancelling the composition. DS's own canonical (date-picker.tsx:558-565 composingRef trio, shipped per codex Q-B3 Phase B3 verdict) proves the project treats this guard as mandatory for typeable inputs. P1 keyboard severity is correctly calibrated: core editing flow broken for CJK users across string/number/url cells, but no crash and non-IME users unaffected.",
+    "correctedSeverity": "P1"
+   },
+   "key": "data-heavy"
+  },
+  {
+   "title": "Portal edit(experimentalActiveEditorController)Tab 換格:draft 不 commit、不 reset、editor 不 remount — 打字內容遺失且下一格顯示上一格文字",
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:2545-2588(handleEditTab 只 setEditingCellId)+ 2590(wrapper 無 key)+ 852-853(宣稱的 draft-reset useEffect 不存在)",
+   "phase": "keyboard",
+   "severity": "P1",
+   "detail": "handleEditTab 註解宣稱「commit current + start next edit」但實際只呼叫 setEditingCellId:(a) 換格時被 focus 的 input DOM node 未被移除(同 type cell 走 React 同位重用),blur 不 fire → onBlur commit 路徑不觸發,commitCell 也沒被呼叫 → 使用者剛打的字整段遺失;(b) L852 註解宣稱「editingCellId 變時 useEffect reset draft」— grep 全檔 editingDraft 僅 3 處(宣告 + portal value 兩處),該 effect 不存在 → editingDraft 仍持上一格草稿,下一格 value = 上一格 draft;(c) activeEditorRender 回傳樹無 key={cellId},相鄰同型欄位 Tab 過去時 uncontrolled Input / NumberCell localValue 原封不動 → 視覺上「上一格的字跑到下一格」。雖 gated 在 experimental flag,但這是 shipped keyboard 契約(Tab=commit-and-move 在 active-editor-controller.ts 檔頭 / RFC 多處宣稱)的資料遺失級違反。",
+   "suggestion": "handleEditTab 找到 next cell 後先 `if (editingDraft !== undefined) commitCell(rowId, colId, editingDraft)`(commitCell 內已清 draft),再 setEditingCellId(next);同時 activeEditorRender 的 wrapper 改 `<div key={cellId} onKeyDownCapture={...}>` 強制 per-cell remount(對齊 cell-registry「mode-keyed remount canonical」同理)。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified in source: (a) handleEditTab (data-table.tsx:2545-2588) only calls setEditingCellId(L2585) despite its own comment claiming「commit current + start next edit」— no commitCell, and Tab is preventDefault+stopPropagation'd at capture phase so no focus move/blur occurs, and React fires no onBlur on unmount → the onBlur-commit path (cell-registry.tsx L149/167/212) never runs → typed draft lost. (b) L852 comment claims a draft-reset useEffect on editingCellId change but it does not exist — setEditingDraft appears only in exitEdit(L856)/commitCell(L890)/onDraft(L2601), none on the Tab path, so editingDraft carries the previous cell's text into the next editor via L2533. (c) No key={cellId} on the L2590 wrapper, the Cell, or ActiveEditorHost (data-table-interaction-layer.tsx:318-321); cellRegistry refs are stable module consts, so same-type adjacent Tab reuses the DOM input (StringCell uncontrolled defaultValue L165, NumberCell localValue L181 with no sync effect) → previous cell's text shows in next cell. Worse than stated: Enter/blur in the next cell then commits the previous cell's draft into the WRONG cell (commitCell(rowIdB,colIdB,draftA)) — silent data corruption. Severity P1 correct: data-loss class violation of the documented Tab=commit-and-move contract (active-editor-controller.ts:14-15,35 claims it shipped and verified), but gated behind experimentalActiveEditorController which defaults to false (L840), so not P0.",
+    "correctedSeverity": "P1"
+   },
+   "key": "data-heavy"
+  },
+  {
+   "title": "Button asChild 分支 silently drop loading/disabled 語意 — 無 aria-busy、無 aria-disabled、無 click guard,double-submit 防護失效",
+   "fileLine": "packages/design-system/src/components/Button/button.tsx:481-493(對照 native 分支 495-507;button.spec.md:307)",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "Native 分支有 `disabled={disabled || loading}` + `aria-busy={loading || undefined}`;asChild 分支兩者皆無 — `disabled` prop 被 destructure 後在 asChild 路徑完全沒用到,`loading` 亦然。後果:(1) `<Button asChild loading><a href>` 期間 link 仍可重複點擊/Enter → double-navigation/double-submit 無防護;(2) 無 aria-busy → SR 完全感知不到 loading(spec:307 明文「loading …設定 aria-busy」未排除 asChild,claim 與 code 不符);(3) `<Button asChild disabled>` 完全無效 — 連 cva base 已寫好的 `aria-disabled:opacity-[var(--opacity-disabled)]` / `aria-disabled:cursor-not-allowed` 視覺分支都不會觸發,因為 aria-disabled 從未被設。spec:437「a11y 由 child 自負」只涵蓋 child 原生語意(如 <a> Enter-only),不涵蓋 Button 自己收了 loading/disabled prop 卻靜默丟棄。",
+   "suggestion": "asChild 分支補:`aria-busy={loading || undefined}` + `aria-disabled={disabled || loading || undefined}`(純 ARIA attribute,任何 element 合法,且自動點亮既有 cva aria-disabled 視覺);並在 disabled||loading 時 wrap consumer onClick(preventDefault + 不 forward)提供 functional guard — 對齊 WAI-ARIA APG aria-disabled 模式(語意+視覺由元件、功能阻斷由 guard)。同步修 button.spec.md loading 段補 asChild 行為明文。",
+   "verdict": {
+    "real": true,
+    "reason": "Verified in button.tsx: asChild branch (481-493) spreads only className/ref/aria-label/toggleAttrs/unboundedAttr/restProps — `disabled` is destructured at line 347 (so excluded from restProps) and `loading` at 342; neither produces disabled/aria-disabled/aria-busy/click-guard, versus native branch (495-507) which sets disabled={disabled || loading} + aria-busy. Radix Slot does not compensate (grep of @radix-ui/react-slot dist: zero disabled/aria handling — pure prop-merger). cva base (lines 65,78) defines aria-disabled visual styles that can never fire from Button's own disabled prop in asChild mode. spec.md:307 claims loading 自動 disabled + aria-busy with no asChild carve-out → spec-code mismatch confirmed. Refutation attempts failed: line-483 comment only justifies omitting native disabled attr (child may be <a>), not the ARIA equivalents, and the prop isn't even forwarded to the child; spec:437 'a11y 由 child 自負' covers child native semantics, not silent prop-swallowing — which also contradicts the component's own dev-warn canonical for silently-ignored prop combos (overlayBadge/iconOnly warns at 364-380). Minor nuance: loading in asChild is a total no-op (no spinner either), slightly reducing the stealth of the double-submit hazard, but disabled no-op + a11y gap + spec mismatch stand.",
+    "correctedSeverity": "P1"
+   },
+   "key": "leaf-five-states"
+  },
+  {
+   "title": "Avatar hoverCard 內互動內容(Chat / Audio call / View more)keyboard 永遠不可達 — HoverCard blur 即關",
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:230-248, 296-319(佐證:node_modules/@radix-ui/react-hover-card/dist/index.mjs:91-92 `onFocus: open / onBlur: close`;avatar.spec.md:101-107)",
+   "phase": "keyboard",
+   "severity": "P1",
+   "detail": "2026-04-22 fix 讓 trigger focusable(tabIndex=0),focus 確實會開卡;但 Radix HoverCardTrigger 是 `onFocus→open / onBlur→close` — keyboard user 按 Tab 想進入卡片的瞬間 trigger blur → 卡片關閉 unmount,且 content portal 在 body 尾端不在 trigger 的下一個 tab 位。結論:ProfileCard 內的 Chat / Audio call / View more 按鈕 keyboard 永遠按不到(WCAG 2.1.1)。avatar.spec.md:101 聲稱「keyboard-only user 也能 reach ProfileCard」只成立於『看到』,不成立於『操作』— Radix 官方也明言 HoverCard is intended for sighted mouse users。",
+   "suggestion": "對齊 Atlassian ProfileCard / GitHub user hovercard:keyboard path 走 click/Enter 開啟 Popover(role=dialog,focus 可進入、Esc 關閉、focus restore trigger);hover path 維持 HoverCard。實作上 Avatar 可在 hoverCard 存在時同時掛 Popover(Enter/click)與 HoverCard(hover),或至少 spec 修正錯誤聲稱 + 明文要求 consumer 提供 keyboard 等效入口(如 row 上的 View profile action)。",
+   "verdict": {
+    "real": true,
+    "reason": "行為屬實但機制引用不完整、severity 高估。已驗證:(1) pattern 真存在 — avatar.tsx:296-319 HoverCardTrigger 包 focusable div,ProfileCard 內含互動 Button(profile-card.tsx:39-40 Chat/Audio call、:300 View more)。(2) 結論「keyboard 永遠按不到卡內按鈕」為真,但主機制不是 finding 引的 onFocus/onBlur(那只是次要):Radix HoverCardContentImpl 有 useEffect 用 TreeWalker getTabbableNodes 把 content 內所有 tabbable node 強制 setAttribute(\"tabindex\",\"-1\")(index.mjs),即使 blur 不關卡、portal 在 tab 順位,keyboard 也進不了 — 比 finding 所述更絕對。(3) 但 P1 不成立:此限制是 DS 已明文記載的刻意設計(documented canonical exception)— hover-card.spec.md:122 常見誤解段「HoverCard 內的按鈕鍵盤可達——錯」+ :154「關鍵互動勿放 HoverCard 內,需鍵盤可達用 Popover」;profile-card.spec.md:157-158 A11y 段逐字記載 TreeWalker tabindex=-1 機制 + 「無法 Tab 逐一聚焦 action/view more」+「這是 hover-only 預覽的刻意設計,需鍵盤可達 action 改用 Popover/Dialog」。依 repo M18 Q0 規則(命中 documented exception = 不得當新 finding propose),加上世界級同慣例(GitHub hovercard follow button / Slack profile hover 同為 mouse-only supplementary),此非未知的 P1 keyboard 違規。真正殘餘問題 = avatar.spec.md:107 措辭「同時對 keyboard / screen reader 可達」overstate,與 owner spec(hover-card.spec.md:144 content 不暴露給 AT / profile-card.spec.md:158 不可操作)矛盾 — 屬 spec wording drift,建議 doc-level 修正(明確「可達=focus 開卡檢視,互動內容操作限制指向 profile-card A11y 段」),故降為 P2。",
+    "correctedSeverity": "P2"
+   },
+   "key": "leaf-five-states"
+  },
+  {
+   "title": "Avatar imgError 不隨 src 變更 reset — 換新頭像 URL 後永遠卡在 fallback",
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:147, 169-171, 204-210",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "`const [imgError, setImgError] = useState(false)` + `onError={() => setImgError(true)}`,但 src prop 變更時 imgError 沒有 reset。髒資料 corollary 實例:第一張圖 404(CDN 抖動 / 舊 URL)→ imgError=true;consumer 之後換成有效的新 src(user 上傳新頭像 / retry signed URL)→ `showImage = src && !imgError` 永遠 false,元件終身顯示 initials fallback,新圖永遠不載。列表 virtualization 復用元件實例時同樣會把前一人的 error state 污染到下一人(若 key 不變)。",
+   "suggestion": "src 變更時 reset error:render-time derived reset(`const [prevSrc, setPrevSrc] = useState(src); if (prevSrc !== src) { setPrevSrc(src); setImgError(false) }`,React 官方推薦的 adjust-state-on-prop-change 寫法,避免 useEffect 多一輪 render)。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed real. avatar.tsx:147 useState(false) + :209 onError sets imgError=true, and no reset exists anywhere: no useEffect on src, no key={src} on the img or wrapper. After one error, showImage (line 170) stays false forever, which unmounts the <img> entirely — a new valid src never even attempts to load; the instance is permanently stuck on fallback until remount. No external rescue: the component is hand-rolled around native <img> (not Radix Avatar); Radix useImageLoadingStatus and MUI useLoaded both reset on src change, so this diverges from world-class canonical. React.memo doesn't mask it (src change re-renders but state persists), and no consumer forces remount via key={src} (people-picker.tsx:329, file-item.tsx:260, menu-item.tsx:232, profile-card.tsx:223, selection-item.tsx:154 all pass src directly). Severity P1 fair: silent permanent correctness failure in a foundational primitive with many consumers and realistic triggers (expired signed-URL refresh, user re-uploads avatar), but graceful degradation (initials fallback, no crash) and requires error-then-src-change sequence, so not P0. The virtualization-pollution corollary is key-dependent (row-id keys remount) — secondary, not load-bearing for the verdict.",
+    "correctedSeverity": "P1"
+   },
+   "key": "leaf-five-states"
+  },
+  {
+   "title": "Badge count 模式 count == null:guard 後仍渲染 16px 空 pill + 空的 role=status live region",
+   "fileLine": "packages/design-system/src/components/Badge/badge.tsx:81-97(cva dot:false 分支 badge.tsx:41)",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "2026-07-04 guard 修掉了字面 \"undefined\" 文字,但 display=null 時 span 本體照渲染:`min-w-4 h-4 px-1` + bg-secondary = 一顆 16px 空灰膠囊(視覺 artifact,無資訊卻 earn 不了 existence),且帶著 `role=\"status\"` 的空 live region 掛在 accessibility tree。SR 播報面:之後 count 從 null → 3 時 live region 播報裸數字「3」無任何 context(standalone 用法;Avatar 路徑因外掛 `${badgeCount} unread` aria-label 沒這問題)。世界級對照:Ant Badge count undefined / Material Badge invisible 皆不渲染任何視覺。",
+   "suggestion": "count 模式且 count == null → `return null` 不渲染(對齊 dot 模式的語意:沒東西要指示就沒有 badge);spec 補明文。若要保留「數字出現時 live 播報」,在 badge.spec.md 引導 consumer 比照 Avatar badgeAriaLabel 先例傳 context aria-label,避免裸數字播報。",
+   "verdict": {
+    "real": true,
+    "reason": "Code-verified at badge.tsx (HEAD 8ad7e232): the 2026-07-04 guard (line 81) only nulls the text — the span at lines 89-98 renders unconditionally with cva dot:false classes (line 41 min-w-4 h-4 px-1) + variant low bg-secondary, producing a visible empty 16px grey pill, and role=\"status\" (line 92) creates an empty live region that announces a bare context-less number on null→N in standalone use. Badge is a pure styled span (no Radix/native fallback per spec 定位), count?: number is optional and SidebarMenuBadge forwards it on the published package, and the prior literal-\"undefined\" incident proves the null path occurs in real usage — the fix was surface-layer (M12), root invariant (no info → no render, per Ant null-count / MUI auto-invisible) not enforced. Avatar exemption confirmed (avatar.tsx:276-286 guards badgeCount > 0 + aria-label). No spec/code documents empty-pill rendering as intended; spec's own「不 earn existence」language contradicts it.",
+    "correctedSeverity": "P1"
+   },
+   "key": "leaf-five-states"
+  },
+  {
+   "title": "Alert/Notice dismissible 預設 true 但 onDismiss optional — 預設渲染一顆死的 X 按鈕",
+   "fileLine": "packages/design-system/src/components/Alert/alert.tsx:83 + packages/design-system/src/components/Notice/notice.tsx:102-104, 141-151",
+   "phase": "five-states",
+   "severity": "P1",
+   "detail": "`dismissible = true` 是預設,`onDismiss` 是 optional:`<Alert variant=\"error\" title=\"付款失敗\"/>` 這種最普通的用法會渲染一顆可 focus、可點、有 aria-label「關閉通知」的 X — 按下去 onClick={undefined} 完全 no-op,Alert 不會消失(元件是 controlled-only,不自我移除)。keyboard/SR user 更慘:聽到「關閉通知, button」按 Enter 後零回饋。error state 的「不吞」軸被反向違反 — 提供了看似能關的 affordance 卻是假的。世界級:Polaris Banner 只在傳 onDismiss 才顯示 X;Ant Alert closable 預設 false。",
+   "suggestion": "X 渲染條件改為 `dismissible && onDismiss != null`(dismissible 保留為顯式關閉開關,onDismiss 存在才是顯示的必要條件),或 dismissible 預設值改為 `onDismiss != null`;加 dev-warn「dismissible=true 但未傳 onDismiss,X 將不渲染」。Notice(internal)與 Alert(public)兩層同步,Toast wrapper 順檢。",
+   "verdict": {
+    "real": true,
+    "reason": "Confirmed at all cited lines: alert.tsx:83 defaults dismissible=true with onDismiss optional (L70), forwarded unguarded to notice.tsx:141-151 which renders the X on `dismissible &&` alone — onClick={undefined} when no handler. No rescue path exists: Notice is plain div + native button (no Radix), Button's `dismiss` prop is styling-only (button.tsx:356-390), and neither Alert nor Notice holds internal visibility state (controlled-only), so click/Enter/Space on the announced「關閉通知」button is a true no-op. The trap fires in the DS's own code: empty.principles.stories.tsx:130-134 renders <Alert variant=\"error\" title description/> with no onDismiss → dead focusable X in a canonical error example, while 8+ other call sites must explicitly pass dismissible={false} to opt out. It also contradicts the component's own spec intent (alert.spec.md:183「通知關閉鈕應永遠可按」) and world-class consensus (Polaris Banner shows X only when onDismiss given; Ant Alert closable defaults false). Toast is unaffected (always passes onDismiss). P1 appropriate: default-path UX/a11y defect with false affordance for keyboard/SR users, but no crash/data loss (not P0).",
+    "correctedSeverity": "P1"
+   },
+   "key": "leaf-five-states"
+  }
+ ],
+ "p2": [
+  {
+   "title": "Toast action button 按下後不 dismiss — 留下重複觸發(double-undo / double-retry)窗口",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Toast/toast.tsx:41-43",
+   "phase": "five-states",
+   "severity": "P2",
+   "detail": "`actionButton` 的 onClick 直接透傳 `action.onClick`,未串 `dismiss()`(dismiss 只接在 Notice 的 onDismiss X 上,toast.tsx:39)。使用者按「復原」後 toast 仍停留至倒數結束,期間可再按第二次 → `handleUndo` 被 invoke 兩次(P5 double-submit 防護缺口,除非每個 consumer 自己做 idempotent)。世界級 idiom:Material Snackbar / Polaris toast / sonner 內建 action(sonner source 中內建 action button click 後呼叫 deleteToast)都是 action 觸發即關閉。",
+   "suggestion": "toast.tsx:42 改 `onClick={() => { action.onClick(); dismiss() }}`(對齊 sonner 內建 action 行為與 Material canonical)。若未來需要「按了不關」場景再擴 `action.dismissOnClick?: boolean`(default true),目前 YAGNI 不加。"
+  },
+  {
+   "title": "SheetOverlay 缺 prefers-reduced-motion 豁免 — 與 DialogOverlay canonical 不對稱",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Sheet/sheet.tsx:54",
+   "phase": "animation",
+   "severity": "P2",
+   "detail": "DialogOverlay(dialog.tsx:44)有 `motion-reduce:animate-none`;SheetContent(sheet.tsx:70)也有完整 `motion-reduce:transition-none + duration-0` 豁免;唯獨 SheetOverlay(sheet.tsx:54)的 `animate-in/animate-out fade` 沒有任何 motion-reduce 豁免。已 grep 全庫 css 確認無全域 `prefers-reduced-motion` 兜底 → reduce-motion 使用者開 Sheet 時 backdrop 仍跑 fade 動畫,同 DS 內兩個 modal overlay 行為不一致。",
+   "suggestion": "sheet.tsx:54 className 補 `motion-reduce:animate-none`(照抄 dialog.tsx:44 同 token,一行對齊)。"
+  },
+  {
+   "title": "HoverCardContent 缺 motion-reduce 豁免 — fade/zoom/slide 動畫在 reduce-motion 下仍播放",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/HoverCard/hover-card.tsx:57-61",
+   "phase": "animation",
+   "severity": "P2",
+   "detail": "hover-card.tsx:57-61 的 `animate-in/animate-out + fade + zoom-95 + slide-in-from-*` 沒有 `motion-reduce:animate-none`;同家族 Popover(popover.tsx:70)、Tooltip(tooltip.tsx:38)、DialogOverlay/Content(dialog.tsx:44/109)全都有。HoverCard 是 hover 高頻觸發浮層(Avatar NameCard / OverflowIndicator),reduce-motion 使用者反而吃到最頻繁的 zoom+slide 動畫。",
+   "suggestion": "hover-card.tsx 動畫 class 串上 `motion-reduce:animate-none`(對齊 popover.tsx:70 同位置寫法)。"
+  },
+  {
+   "title": "DS Tooltip Root 預設 delayDuration=500 蓋死 Provider 層設定 — 應用層 TooltipProvider delayDuration 成為死配置",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Tooltip/tooltip.tsx:16-18",
+   "phase": "animation",
+   "severity": "P2",
+   "detail": "Radix source 驗證(react-tooltip/dist/index.mjs:87):`delayDuration = delayDurationProp ?? providerContext.delayDuration` — Root prop 一旦 defined 就贏。DS `Tooltip` wrapper 用 default parameter 永遠傳 defined 值(HOVER_DELAY_PLAIN_MS=500)給 Root → 應用層 `<TooltipProvider delayDuration={X}>` 的統一設定被所有 DS tooltip 靜默忽略。這違反 ui-development.md「全域外觀配置(delay)由應用層 Provider 統一設定」的 canonical:Provider 這條 config 通道實質失效,只剩 per-instance override 可用。現況兩邊 default 同為 500 所以視覺無症狀,屬沉默陷阱(consumer 調 Provider 發現無效)。",
+   "suggestion": "tooltip.tsx:16 的 `Tooltip` 移除 Root 層 default(`delayDuration` 不傳時保持 undefined 透傳,Radix 自動 fallback 到 Provider context);DS `TooltipProvider`(tooltip.tsx:12)已有 500 default 守住 canonical 值,行為對現有 consumer 零變化,但 Provider 統一調整通道恢復生效。"
+  },
+  {
+   "title": "Popover openAutoFocus 單一 querySelector 依 DOM 序取第一 match — header 內互動元素會搶走 body 首元素焦點,且 bare fallback 漏 select",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Popover/popover.tsx:40-42",
+   "phase": "focus",
+   "severity": "P2",
+   "detail": "`handlePopoverOpenAutoFocus` 把 `[data-popover-body] …` scoped selectors 和 bare fallback(`input,textarea,button:not([data-dismiss])`)合併在同一個 querySelector — querySelector 對逗號分隔 selector 回傳的是**文件順序**第一個 match,非 selector 順序。PopoverHeader 在 body 之前,所以 header 內任何非 dismiss 的互動元素(header title 列的按鈕、tabsSlot 的 tab)會比 body 第一個 input 先 match → 焦點落 header,違反 popover.spec.md A11y 段自己宣告的「開啟時焦點落在 body 第一個可互動元素」canonical(Dialog/Sheet 版本因只用 scoped selector 沒此問題)。另 bare fallback 清單漏 `select:not([disabled])`,與 scoped 清單不對稱。",
+   "suggestion": "拆兩段查詢對齊 dialog.tsx pattern:先 `content.querySelector('[data-popover-body] input…,[data-popover-body] select…,…')`,null 才 fallback `content.querySelector('input…,textarea…,select…,button:not([data-dismiss])…')`,最後 footer → content。順手把 select 補進 fallback 清單。"
+  },
+  {
+   "title": "PopoverTitle 未自動接線 aria-labelledby — 一般 Popover 的 role=dialog 預設無 accessible name",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Popover/popover.tsx:145-155",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "PopoverContent 是 Radix `role=\"dialog\"`(react-popover/dist/index.mjs:246),但 Radix Popover 沒有 Title primitive,DS 的 `PopoverTitle` 只是裸 `<h2>` 無 id / 無 context 接線 → 消費 `PopoverHeader + PopoverTitle` 的一般 popover(filter panel / settings popover)dialog 無 accessible name。DS 內只有 Coachmark 手動用 useId 接 `aria-labelledby`(coachmark.tsx:155-156、171);popover.spec.md A11y 段只寫「ARIA(Radix 內建)」未告知 consumer 要自己接 name。對照:Radix Dialog 的 DialogTitle 透過 context 自動 wire aria-labelledby;Dialog/Sheet 因此免費拿到,Popover 家族獨缺。",
+   "suggestion": "世界級做法 = 補 DS 層 context 接線:Popover wrapper 內建一個 titleId context(PopoverContent `useId` 後把 id 提供給 children;PopoverTitle 從 context 取 id 掛上,PopoverContent 偵測有 PopoverTitle 掛載時設 `aria-labelledby`),對齊 Radix Dialog Title 機制,consumer 零改動。次佳(過渡):popover.spec.md A11y 段補「有 header 的 Popover 必接 aria-labelledby(參照 coachmark.tsx pattern)」+ anatomy Accessibility story 示範。屬 API 行為擴充 → 提議 user 拍板。"
+  },
+  {
+   "title": "SelectMenu 開啟時 cursor 落第一項而非已選項 — spec 宣稱的「已選」不會發生",
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:320",
+   "phase": "focus",
+   "severity": "P2",
+   "detail": "<Command> 未傳 value/defaultValue;cmdk dist W() 恆選第一個 non-disabled item。select-menu.spec.md:217「虛擬焦點落在第一個 / 已選 option」的「已選」分支在 code 不存在。APG combobox-select pattern 與 MUI/Ant 慣例 = 開啟時 highlight 現值,長選單使用者每次都得從頭 arrow。",
+   "suggestion": "單選模式傳 <Command defaultValue={selectedOption?.label}>(PopoverContent 每次開啟 remount,defaultValue per-open 生效;若採納 finding 6 改 value 識別則傳 opt.value)。多選維持第一項(無單一現值)。"
+  },
+  {
+   "title": "cmdk item 以 label 當識別值 — 重複 label 導致 cursor 雙亮 + Enter 選錯項",
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:369",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "value={opt.label}:cmdk 內部以 value string 識別 item(data-value / state.value)。兩個選項同 label(真實場景:同名人員、同名檔案)→ 兩列同時 data-selected=true,Enter 觸發 getSelectedItem() = 第一個 DOM match(cmdk dist M() 實作),可能選錯項。creatable 列 value={search} 與同名 option 亦可能相撞。",
+   "suggestion": "value={opt.value}(唯一 id)+ keywords 補 [opt.label, opt.description] 保搜尋照樣命中 label 文字;creatable 列 value 加前綴(如 __create__)避撞。"
+  },
+  {
+   "title": "群組標題 AT 不可感知 — CommandGroup 無 heading/aria-label,標題列是 role='presentation'",
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:362-365",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "群組名用 <MenuItem header>(menu-item.tsx:180 role='presentation')渲在 CommandGroup 內,而 CommandGroup 未傳 heading → cmdk 內層 role='group' 的 aria-labelledby 只在有 heading 時設定(cmdk dist source)→ 螢幕閱讀器聽不到任何群組邊界/名稱,視覺使用者卻看得到。",
+   "suggestion": "改 <CommandGroup heading={<MenuItem size={size} header>{group.label}</MenuItem>}>(cmdk 會包 cmdk-group-heading + id + aria-labelledby 接線),或至少 aria-label={group.label};刪除手動渲染的 header 列。"
+  },
+  {
+   "title": "搜尋 combobox 無 accessible name;listbox 預設英文 label 'Suggestions'",
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:320 / :349",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "Command root 未傳 label/aria-label → cmdk hidden <label> 內容為空、input aria-labelledby 指向空 label(cmdk dist:label = props.label || props['aria-label'])→ 搜尋框 accessible name 只剩 placeholder fallback(APG 不建議依賴)。CommandList 未傳 aria-label → cmdk 預設 aria-label='Suggestions',繁中產品被朗讀英文。",
+   "suggestion": "<Command label={searchPlaceholder}> + CommandList 傳 aria-label(繁中 default 如「選項」,可加 prop 覆寫)。"
+  },
+  {
+   "title": "DropdownMenu typeahead 匹配整段 textContent(label+description+value+shortcut 串接)",
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:243-271(Item)/ :288-325(SubTrigger)",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "未設 textValue;Radix menu dist 'textValue: textValue ?? textContent' → 有 description/badge/shortcut 的 item,typeahead 比對字串 = 'LabelDescription⌘C' 串接。輸入超過 label 長度即 mismatch,description 文字也污染 first-letter 之後的連續匹配。",
+   "suggestion": "DropdownMenuItem / SubTrigger 內部 auto-forward:textValue={typeof children === 'string' ? children : undefined}(Radix 官方 escape hatch),保留 consumer 顯式 textValue 覆寫。"
+  },
+  {
+   "title": "DS CommandInput 的 Search icon 缺 aria-hidden",
+   "fileLine": "packages/design-system/src/components/Command/command.tsx:52",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "<Search className=\"mr-2 h-4 w-4...\" /> 無 aria-hidden(lucide-react 不自帶);裝飾性 svg 進 a11y tree。同 pattern 在 SelectMenu 自建 search wrapper(select-menu.tsx:328)已正確加 aria-hidden — 同庫不一致。",
+   "suggestion": "補 aria-hidden(對齊 select-menu.tsx:328 與 buildEndContent 的 endIcon 慣例)。"
+  },
+  {
+   "title": "非 asChild 的 DropdownMenuTrigger 無任何 focus 指示",
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:74",
+   "phase": "focus",
+   "severity": "P2",
+   "detail": "cn('outline-none', className) 抹掉 native <button> outline 且無 focus-visible ring 替代。DS 內部 stories 全用 asChild + Button(自帶 ring)故未爆,但 Trigger 是 public export,consumer 裸用 <DropdownMenuTrigger>選單</DropdownMenuTrigger> 得到隱形 tab stop(WCAG 2.4.7)。",
+   "suggestion": "移除 hardcode outline-none,或改 'outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]'(對齊 Button focus canonical);asChild 場景 ring 由子元件覆寫不受影響。"
+  },
+  {
+   "title": "role='presentation' 的內層 MenuItem 仍渲染 aria-selected / aria-disabled",
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.tsx:192-193(源頭)/ DropdownMenu/dropdown-menu.tsx:353-364(CheckboxItem 觸發)",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "DropdownMenuCheckboxItem 傳 checked 給內層 MenuItem → menu-item.tsx:192 渲 aria-selected=true;disabled 同理渲 aria-disabled — 但該節點 role 已被 spread 成 'presentation'。presentation role 不支援 aria-selected(非 global state,invalid ARIA),且與外層 Radix menuitemcheckbox 的 aria-checked 重複表達。",
+   "suggestion": "MenuItem 內偵測 props.role === 'presentation' 時抑制 aria-selected / aria-disabled / role='option' 預設(data-* 保留供樣式),單一 ARIA owner = 外層 primitive。"
+  },
+  {
+   "title": "searchable Select 開啟時實際聚焦的搜尋 input 無 accessible name、無 combobox 語意 — 本輪 labelledby 接線接在焦點碰不到的外層 div",
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:215-223(input 無任何 aria)、:206-208(註解宣稱 name 來自 field/label)、:592-607(aria 全在外層 div)",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "本輪 aria-controls/aria-labelledby 接線在 trigger div(role=combobox)上,關閉狀態 SR 播報正確;但 searchable 開啟後焦點移到內層裸 <input>(無 aria-label / aria-labelledby / role / aria-expanded / aria-activedescendant),SR 使用者在互動當下只聽到一個無名 textbox。2026-05-15 註解宣稱「input accessible name 來自 field/label/aria-label」但 code 沒有任何接線。姊妹元件 Combobox 的 inline input 有 `aria-label={searchAriaLabel}`(combobox.tsx:788),唯 Select 漏。",
+   "suggestion": "input 加 `aria-labelledby={ariaLabel ? undefined : fieldCtx?.labelId}` + 提供 aria-label passthrough(對齊 Combobox searchAriaLabel);中期把 combobox 語意移到 input 本身(APG:combobox role 掛在可編輯 input 上)並與 P0 finding 的 aria-activedescendant 橋接一起做。"
+  },
+  {
+   "title": "DateGrid 中文化用「hardcode 在 spread 後」實作 — 蓋死 RDP labels API 消費者覆寫通道,且 day/weekday 等其餘 SR 文案仍是英文",
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.tsx:179-188(component override aria-label 在 {...props} 後)",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "本輪修法讓「上一個月/下一個月」生效(驗證:確實在 spread 後,RDP labelPrevious 英文 default 被蓋)— 但代價是 consumer 傳 `labels={{ labelPrevious: ... }}` 走 RDP 官方 i18n API 時,值會傳進 component props 再被 hardcode 蓋掉 = 覆寫通道死亡。且中文化只涵蓋 nav 兩顆按鈕:labelDayButton(day button 的 aria-label,RDP default 英文長日期)、labelWeekday、labelGrid 等仍為英文 → SR 播報中英夾雜,違反 2026-07-04「全庫 SR label 中文」canonical(commit 241676c6)。",
+   "suggestion": "改走 RDP 正門:`<DayPicker labels={{ labelPrevious: () => '上一個月', labelNext: () => '下一個月', labelDayButton: (d) => format 中文日期, ...props.labels }}>`(defaults + consumer merge),移除 component 層 hardcode aria-label — 對齊 MUI X localeText 預設可覆寫 idiom;DatePicker 層也能因此透傳 i18n。"
+  },
+  {
+   "title": "TimeColumns 三欄 listbox aria-label 英文 hardcode(hours/minutes/seconds)— 違反全庫 SR label 中文 canonical 且無 override 通道",
+   "fileLine": "packages/design-system/src/components/TimePicker/time-columns.tsx:244, 252, 261",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "2026-07-04 aria-label 中文化波(sidebar/file-upload/data-table ×4 + i18n-allow 標記)漏掃 TimeColumns:三個 role=listbox 的 aria-label 是英文 'hours'/'minutes'/'seconds',跟同 popover 內「清除時間」「此刻」「確定」中文播報夾雜;且非 prop,consumer 無法 override(M10 同類掃描漏網)。",
+   "suggestion": "改中文 default('時'/'分'/'秒')+ `// i18n-allow: DS default` 標記,並在 TimeColumnsProps 加 labels override(對齊 Calendar prevAriaLabel/navAriaLabel prop 慣例);TimePicker/DatePicker showTime 透傳。"
+  },
+  {
+   "title": "SelectMenu 選項為巢狀雙 role='option'(cmdk CommandItem 包 MenuItem)— aria-selected 兩層語意衝突",
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:367-387;Menu/menu-item.tsx:191-192",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "CommandItem(cmdk)本身是 role='option' 且 aria-selected=「目前 highlight」;內層 MenuItem 又渲染 role='option' aria-selected=「已勾選」— option 內含 option 是非法 ARIA 結構,且同名屬性兩層語意相反(highlight vs checked),SR 可能播報矛盾狀態(未勾選項目被 highlight 時外層 selected=true、內層 false)。",
+   "suggestion": "MenuItem 加 role override prop;SelectMenu 消費時傳 role='presentation'(視覺照舊),把 checked/selected 語意上移到 CommandItem(multiple 時 CommandItem 用 aria-checked 表勾選、留 aria-selected 給 cmdk highlight,對齊 APG listbox multi-select)。"
+  },
+  {
+   "title": "Combobox / PeoplePicker pill 的 Tag 移除後焦點掉到 body — 無「刪除移相鄰」處理",
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:771-776;Tag/tag.tsx:104-111(TagDismiss native button 在 tab order)",
+   "phase": "focus",
+   "severity": "P2",
+   "detail": "Tag 的 dismiss 是原生 button(可 Tab 到);鍵盤使用者聚焦某個 tag 的 X 按 Enter 移除後,該節點 unmount,焦點掉到 body,必須從頭 Tab 回欄位。combobox.spec.md:177-179 宣稱點擊區「不是鍵盤介面」,但原生 button 天然可聚焦,宣稱與 DOM 行為矛盾。世界級對照:MUI Autocomplete 刪 chip 後焦點移前一 chip / 回 input。",
+   "suggestion": "handleRemove 後把焦點移到相鄰 tag 的 dismiss(無相鄰則回 trigger/inline input):在 OverflowTagList 層做(有 items index 資訊),Select/Combobox/PeoplePicker 全體受益。或若維持 spec「非鍵盤介面」立場,TagDismiss 須 tabIndex=-1(擇一,消除宣稱與行為矛盾)。"
+  },
+  {
+   "title": "Calendar 用 role='grid' 但無 roving tabindex / 方向鍵導覽 — 每個日期按鈕與事件 tile 都是獨立 Tab stop",
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.tsx:287-293(role='grid')、:322-337(day button)、:362-386(event tile tabIndex=0)",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "APG 規定 role='grid' 是 composite widget:單一 Tab stop + 方向鍵在 gridcell 間移動。現況一個月 ~35 顆日期按鈕 + 全部事件 tile 都各自進 Tab order(穿越整月要按數十次 Tab),且 AT 進 grid 導覽模式時預期的 Arrow 鍵行為不存在。2026-06-11 拍板只處理了 nested-interactive(cell 改非互動容器),沒處理 grid composite 導覽契約。",
+   "suggestion": "二擇一:(a) 實作 roving tabindex + Arrow/Home/End/PageUp/Down 導覽(對齊 Google Calendar 月格);(b) 若 MVP 不做導覽,把 role='grid'/'row'/'gridcell' 降級為無 role 的 layout div + aria-label 保留(誠實語意,不承諾做不到的鍵盤契約)。"
+  },
+  {
+   "title": "DatePickerRange 兩顆 trigger 按鈕在關閉狀態下 focus-visible 無個別視覺區分",
+   "fileLine": "packages/design-system/src/components/DatePicker/date-picker.tsx:926-957(data-active-end underline 只在 open 時)",
+   "phase": "focus",
+   "severity": "P2",
+   "detail": "start/end 兩顆按鈕都 `focus-visible:outline-none`,焦點視覺完全靠外層 fieldWrapper 的 focus-within 藍框 — 兩個相鄰 Tab stop 看起來一模一樣,鍵盤使用者無法分辨目前會開哪一端(underline 的 data-active-end 條件是 `open && ...`,關閉時不顯)。Ant RangePicker 的 active bar 在 focus 時即顯示。",
+   "suggestion": "把 active underline 擴到 focus-visible:兩顆 button className 加 `focus-visible:underline`(同 decoration-primary underline-offset-4 系列),或 data-active-end 條件放寬為 focus 亦成立。"
+  },
+  {
+   "title": "TimeColumn 選中項 scrollIntoView smooth 未豁免 prefers-reduced-motion(DS 同類 Tabs/Chip/FileViewer 同病)",
+   "fileLine": "packages/design-system/src/components/TimePicker/time-columns.tsx:105;同類:Tabs/tabs.tsx:293、Chip/chip.tsx:281、FileViewer/file-viewer.tsx:565",
+   "phase": "animation",
+   "severity": "P2",
+   "detail": "DS motion canonical 全面採 motion-reduce(Popover/Dialog/Sheet/Sidebar 皆有 motion-reduce:animate-none/duration-0),但 JS 端 `scrollIntoView({ behavior: 'smooth' })` 不受 CSS motion-reduce 管轄 — reduced-motion 使用者在時間欄快速按方向鍵時仍得到連續平滑捲動動畫。M10 同類掃描:Tabs/Chip/FileViewer 同 pattern,宜一次修。",
+   "suggestion": "抽一個 `getScrollBehavior()` util(`matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'`)放 hooks/ 或 lib/,四處消費(M17 SSOT);TimeColumn 首次 'auto' 邏輯保留。"
+  },
+  {
+   "title": "Checkbox/Switch display 模式轉發的 aria-label 落在無 role 的 span — ARIA name-prohibited,AT 不讀",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Checkbox/checkbox.tsx:215-216",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "回答本輪指定問題「display 模式 props 轉發 — aria-label 真到 DOM?」:有到 DOM(restDomProps spread 已驗證,checkbox.tsx:215 / switch.tsx:200-201),但落點是無 role 的 <span>(implicit role=generic)— ARIA 1.2 對 generic role 屬 naming prohibited,aria-label 會被 axe 標 aria-prohibited-attr、多數 AT 忽略 → 2026-07-04 該修的目的(consumer aria-label 生效)對 Checkbox/Switch display 實際未達成;boolean display cell 被 AT 唸成「✓」/「em dash」無語意。RadioGroup display 分支(radio-group.tsx:103,107)因有 role='group' 不受影響。",
+   "suggestion": "✓/— span 加 role='img'(Salesforce 靜態 glyph canonical;role=img 合法接受 aria-label),並在無 consumer aria-label 時給預設(如 aria-label={isChecked ? '是' : '否'} 掛 i18n-allow),讓 boolean 值對 AT 有語意。"
+  },
+  {
+   "title": "RadioGroup / SegmentedControl edit 路徑不接 fieldCtx.labelId — Field 內群組無 accessible name",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/RadioGroup/radio-group.tsx:146-156",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "field-context.ts:25-28 明文契約:div-based role 控件 <label for> 無效,需 aria-labelledby={labelId}。RadioGroup 的 readonly-in-Field 分支(:127)有接 aria-labelledby,但 edit 主路徑的 Radix Root(role=radiogroup,:146-156)完全沒接 id 也沒接 labelId → <Field><FieldLabel>方案</FieldLabel><RadioGroup>…</Field> 的 radiogroup 無名(axe aria-toggle-field-name 類違規),FieldLabel htmlFor={ctx.id} 也懸空。SegmentedControl(segmented-control.tsx:122-139,Radix 渲 role='group',已讀 node_modules 源碼驗證)整檔不讀 fieldCtx.labelId,同樣無名。對照 Slider(slider.tsx:70,166)/ Rating(rating.tsx:164)/ TimePicker / DatePicker 皆已接線 — 這兩支是 Field 家族 labelId 接線的漏網。",
+   "suggestion": "RadioGroup edit Root 與 SegmentedControl Root 各加 aria-labelledby={props['aria-labelledby'] ?? (props['aria-label'] ? undefined : fieldCtx?.labelId)}(consumer 顯式 aria-* 優先,鏡射 rating.tsx:159-164 canonical);SegmentedControl 需先補 useFieldContext 讀取。"
+  },
+  {
+   "title": "Field context 永遠發 descriptionId/errorId — 無 FieldDescription 時 aria-describedby 懸空",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Field/field.tsx:201-218",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "Field 已把 children 分桶(descriptionNodes/errorNodes,field.tsx:184-195)卻沒用這個資訊:contextValue 無條件帶 descriptionId/errorId。Input(input.tsx:185)/ NumberInput / Textarea / LinkInput / Checkbox(:260)/ Switch(:241)一律 aria-describedby={fieldCtx?.descriptionId} → Field 內沒放 FieldDescription 的常見用法(只有 label + control)產生指向不存在 id 的 aria-describedby,axe aria-valid-attr-value(serious)違規、AT 行為未定義。同理 <Field invalid> 但 FieldError children 為空(field.tsx:460 return null)時,aria-errormessage 指向不存在的 errorId。",
+   "suggestion": "Field 在 contextValue 加 hasDescription={descriptionNodes.length>0} / hasError={errorNodes.length>0}(或直接把 descriptionId/errorId 設為 undefined),控件端 aria-describedby / aria-errormessage 自然只在對應 slot 存在時輸出;各控件不需逐一改。"
+  },
+  {
+   "title": "Checkbox/Switch/RadioGroup edit 路徑不同步 fieldCtx.invalid 到 aria-invalid",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Checkbox/checkbox.tsx:252-263",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "三者的 readonly-in-Field 分支都寫了 aria-invalid={fieldCtx?.invalid || undefined}(checkbox.tsx:238 / switch.tsx:218 / radio-group.tsx:128),證明意圖是同步;但 edit 主路徑(可互動、也是 error 最需要宣告的狀態)完全沒接:<Field invalid><FieldLabel>同意條款</FieldLabel><Checkbox/></Field>(必勾同意的經典表單錯誤場景)下 checkbox 無 aria-invalid,AT 聽不到欄位出錯(FieldError role=alert 只在訊息「出現當下」廣播一次)。文字四控件已全接 useResolvedFieldInvalid,boolean/單選三控件是缺口。",
+   "suggestion": "三控件 edit 路徑的 Radix Root 加 aria-invalid={useResolvedFieldInvalid(undefined) || undefined}(consumer 顯式 aria-invalid 經 {...props} 後 spread 自動覆寫);與 readonly 分支行為對齊。"
+  },
+  {
+   "title": "LinkInput Enter/Escape 結束編輯後 input unmount — 焦點掉到 body",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/LinkInput/link-input.tsx:204-211",
+   "phase": "focus",
+   "severity": "P2",
+   "detail": "編輯中按 Enter → blur → handleBlur commit → 若 URL 合法 showLink=true → input 分支 unmount,焦點落到 document.body;按 Escape(:206-210)setEditing(false) 同樣切回 showLink 分支 unmount input,焦點消失。鍵盤使用者 commit/cancel 後必須從頭 tab 回來。世界級 inline-edit(Atlassian inline edit / PatternFly inline edit)canonical:commit/cancel 後焦點回到 read view 或 edit trigger。進場方向已做對(handleEdit :172-179 rAF focus input),出場方向漏了對稱處理。",
+   "suggestion": "showLink 分支的 ItemInlineAction(編輯鉛筆按鈕)掛 ref;handleBlur commit 成功與 Escape 取消時,若事件源自鍵盤(Enter/Escape 路徑)以 rAF 將焦點移到該鉛筆按鈕(重用既有 focusRafIdRef 機制),對齊進場的 focus 管理。"
+  },
+  {
+   "title": "useFormValidation Escape 回復髒值時不 stopPropagation — Dialog 內一鍵同時回復+關窗",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Field/use-form-validation.ts:178-183",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "規則 4 的 Escape handler 無條件 resetField + clearErrors,但不判斷欄位是否 dirty、也不 stopPropagation。DS 表單的主要宿主是 Dialog/Sheet(Radix 皆 Escape 關閉):使用者在欄位打了一半按 Escape 想「取消這格」,事件冒泡到 Dialog → 整個表單關閉,所有欄位輸入一起丟失 — 「回復原值」的保護反而觸發更大的資料損失。世界級對照:VS Code / Figma inline 編輯的 Escape 由輸入層消費(消費掉才不外冒);Radix Dialog 官方 escape hatch 即是 content 層 onEscapeKeyDown 或子層 stopPropagation。",
+   "suggestion": "Escape handler 改為:僅當該欄位 dirty(form.getFieldState(path).isDirty)或有 error 時才 resetField,且此時 e.stopPropagation()(第一下 Escape 回復欄位、第二下才關 Dialog — 兩段式 canonical);pristine 欄位放行冒泡。"
+  },
+  {
+   "title": "focusFirstError 以 validate 物件 key 順序定「第一個錯誤」— 非 DOM 順序",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Field/use-form-validation.ts:110-119",
+   "phase": "focus",
+   "severity": "P2",
+   "detail": "規則 8「anchor 到第一個錯誤」的 formatErrors 收集順序 = Object.keys(validate) 插入順序(:197),focusFirstError 依此順序取第一個命中的 DOM element。consumer 的 validate 物件 key 順序與表單視覺順序不一致時(重構欄位排序、validate 按邏輯分組書寫皆常見),focus 會跳到視覺上不是第一個的錯誤欄位,與 spec form-validation.spec.md:44「第一個錯誤」語意漂移。世界級 canonical(GOV.UK error summary / Polaris)= DOM order 定序。",
+   "suggestion": "focusFirstError 先把 errorNames resolve 成 elements,再以 el.compareDocumentPosition(DOCUMENT_POSITION_FOLLOWING)排序取視覺第一個;或收集階段以 document.getElementsByName 命中元素的 DOM 序排序。"
+  },
+  {
+   "title": "Switch thumb 位移動畫 transition-all 無 prefers-reduced-motion 防護",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Switch/switch.tsx:247",
+   "phase": "animation",
+   "severity": "P2",
+   "detail": "全家族動畫皆 150ms(<400ms 達標),但 Switch Thumb 用 transition-all 包含 translate-x 位移(20-24px),是本組件群唯一的位置型動畫;已 grep 全 DS,prefers-reduced-motion 處理只存在 CircularProgress(circular-progress.tsx),Switch 無 gate。Material / Polaris 皆全域尊重 reduced-motion;幅度雖小,DS 層缺這條 canonical 意味未來更大的位移動畫也不會被攔。",
+   "suggestion": "Thumb 的 transition-all 改 motion-reduce:transition-none(或收斂為 transition-[transform,border-color] + motion-safe: 前綴);同時評估在 tokens/base.css 加全域 @media (prefers-reduced-motion: reduce) 降級規則,一處 SSOT 覆蓋全 DS(對齊 CircularProgress 既有做法)。"
+  },
+  {
+   "title": "Input/NumberInput/LinkInput display 分支丟棄 id — FieldLabel htmlFor 懸空(Textarea 已做對)",
+   "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Input/input.tsx:119-153",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "Textarea display 分支有把 id={inputId} + aria-describedby 放上 display <div>(textarea.tsx:222-226),維持 FieldLabel htmlFor 關聯與描述連結;但 Input display 分支(input.tsx:121-152)、NumberInput 非 edit 分支(number-input.tsx:108-126)、LinkInput display 分支(link-input.tsx:144-166)都沒帶 id → <Field mode='display'> 時 FieldLabel htmlFor={ctx.id} 指向不存在的 id(label-for 懸空),AT 無法把 label 與展示值關聯(Carbon read-only 派 canonical 是保留關聯)。同族四控件同一 mode 行為不一致 = SSOT 漂移。",
+   "suggestion": "三控件 display/非-edit 分支的 wrapper 補 id={idProp ?? fieldCtx?.id} 與 aria-describedby(對齊 textarea.tsx:222-226 既有做法);由於 wrapper 是 div,可同時考慮把值 span 標 role='text' 或直接依 Textarea 模式即可。"
+  },
+  {
+   "title": "Accordion / TreeView 展開動畫與 chevron 旋轉皆無 prefers-reduced-motion 降級(DS 內其他 overlay 都有 motion-reduce)",
+   "fileLine": "packages/design-system/src/styles/base.css:57-92;components/Accordion/accordion.tsx:63;components/Steps/steps.tsx:511-517;components/TreeView/tree-view.tsx:875-882, 1024",
+   "phase": "animation",
+   "severity": "P2",
+   "detail": "duration 本身合格(accordion 200ms / collapsible 150ms / chevron 150-200ms,全部 <400ms),但 base.css 的 animate-accordion-* / animate-collapsible-* utility 無 @media (prefers-reduced-motion) 分支,Accordion/Steps/TreeView 的 transition-transform 也沒掛 motion-reduce:duration-0。同 repo 的 Sidebar / Tooltip / DropdownMenu / Dialog / Popover / Sheet 都已用 motion-reduce(grep 證實),這四處是 coverage 漏網而非 DS 立場。",
+   "suggestion": "base.css 的 4 個 @utility 內補 @media (prefers-reduced-motion: reduce) { animation-duration: 0.01ms }(或 animation:none),tsx 端 chevron transition 補 motion-reduce:duration-0,對齊 Sidebar 既有寫法。"
+  },
+  {
+   "title": "Sidebar:single-selection active item 只有視覺 bg,無 aria-current(SR 無法得知現在頁)",
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:1070-1081(button render), 1016(isActive 計算)",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "isActive 只落到 data-active 屬性(bg-neutral-selected + text-foreground 純視覺)。導覽類 sidebar 的世界級慣例(Polaris Navigation / Atlassian side-navigation / APG)是 active nav item 帶 aria-current=\"page\"。目前 SR 使用者掃 sidebar 分不出目前所在頁。",
+   "suggestion": "SidebarMenuButton 在 isActive 時輸出 aria-current=\"page\"(asChild path 由 Slot merge 到 consumer anchor 上,天然正確)。"
+  },
+  {
+   "title": "SidebarGroupLabel:collapsible chevron 的 aria-label 是泛稱「展開或收合」,不含 group 名稱",
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:727, 764-771",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "label 本體 role=presentation + pointer-events-none(label 裝飾、chevron 互動是 documented 設計決策,非 finding),但唯一互動件 chevron 的預設 accessible name 是固定字串 — sidebar 有多個 collapsible group 時 SR 聽到 N 顆一模一樣的「展開或收合 button」,無從分辨是哪個 group。toggleAriaLabel prop 存在但預設值本身不合格。",
+   "suggestion": "用 aria-labelledby 把 label span(補 id,useId)跟 chevron 串起來:aria-labelledby={`${chevronLabelId} ${groupLabelId}`},或預設 label 模板改 `展開或收合 ${children 字串}`(children 為 string 時)。"
+  },
+  {
+   "title": "TreeView:收合含焦點節點的資料夾後 focusedId stale → aria-activedescendant 指向不存在的 DOM id;Tab 進 tree 不聚焦任何節點;無 typeahead",
+   "fileLine": "packages/design-system/src/components/TreeView/tree-view.tsx:282, 529-534, 611",
+   "phase": "focus",
+   "severity": "P2",
+   "detail": "(a) 滑鼠點 chevron 收合一個內含 focusedId 節點的資料夾時,focusedId 不被修正,Collapsible unmount 子節點後 aria-activedescendant 指向不存在的 id(invalid ARIA reference),下一次方向鍵才 reset 到第一項(位置跳失)。(b) Tab 進 tree 容器時 focusedId 為 null → 無任何節點高亮、activedescendant undefined,APG 建議 tree 得焦時聚焦第一個節點(或上次焦點節點)。(c) 無 type-ahead 首字母導覽(APG tree 建議項)。spec:379 只文件化 virtual-focus 選型,未把這三點列為例外。",
+   "suggestion": "(a) toggleExpand 收合時檢查 focusedId 是否為該節點後代,是則 setFocusedId(收合節點);(b) 容器 onFocus 時若 focusedId null(或已不在 DOM)設為第一個可見節點;(c) handleKeyDown 補可列印字元的 first-character 匹配。"
+  },
+  {
+   "title": "TreeItem:{...props} spread 在 onClick 與 drag listeners 之後 — consumer 傳 onClick 會整個蓋掉 row 的 select/focus 行為",
+   "fileLine": "packages/design-system/src/components/TreeView/tree-view.tsx:956-958",
+   "phase": "five-states",
+   "severity": "P2",
+   "detail": "row div 依序:onClick={handleRowClick} → {...dragListeners,...dragAttrs} → {...props}。TreeItemProps extends HTMLAttributes,consumer 傳 onClick(常見:埋 analytics / 導航)會靜默取代 handleRowClick → 點擊不再 select、不再 setFocusedId,樹看起來「壞掉」;同理 onPointerDown/onKeyDown 會蓋掉 dnd-kit listeners 讓拖曳失效。",
+   "suggestion": "改為組合而非覆蓋:const { onClick: consumerClick, ...rest } = props,row onClick 內先跑內建邏輯再呼叫 consumerClick;drag listeners 同法 compose(或 props 先 spread、內建 handler 後放並在內部 call consumer 的)。"
+  },
+  {
+   "title": "Tabs:無 defaultValue 的非受控用法首次切換時 Radix Root 由 uncontrolled 翻成 controlled",
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:73-75, 92-95",
+   "phase": "five-states",
+   "severity": "P2",
+   "detail": "wrapper 永遠傳 value={currentValue} 給 Radix Root。consumer 不傳 value 也不傳 defaultValue 時 currentValue 初始 undefined(Radix 視為 uncontrolled),第一次點 tab 後 internalValue 有值 → value 變 defined → Radix useControllableState 觸發 un→controlled 轉換(dev console 警告 + 依賴 Radix 內部 state 與 wrapper state 恰好同步)。正是 P5 checklist 的 un→controlled corollary。",
+   "suggestion": "非受控且無 defaultValue 時不要把 undefined 交給 Radix 當 value:改傳 value={currentValue ?? ''} 不可行(會鎖死),正解是 internalValue 初始化後才掛 value,或干脆要求 defaultValue(TS overload)/ 內部 fallback 到第一個 trigger 的 value。"
+  },
+  {
+   "title": "Breadcrumb:declarative items 中兩個同字串 label 的中段項目產生重複 React key",
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:210-221(key=`${role}-${label}`)",
+   "phase": "five-states",
+   "severity": "P2",
+   "detail": "2026-07-04 stable-key 修正對 string label 用 `${role}-${spec.label}` — 路徑中同名層級(例:Teams > Design > Projects > Design > Board,兩個 middle『Design』)key 撞 → React duplicate key warning + reconciliation 可能把 TruncatedLabel 的 ResizeObserver state 錯配到另一個 item。真實產品(資料夾樹、同名子專案)不罕見。",
+   "suggestion": "key 帶入 items 原始 index:`${idx}-${role}`(idx 用 items array 的絕對 index 而非 visible index,collapse 前後同 item 同 key,亦順帶修 role 變動導致的 remount)。"
+  },
+  {
+   "title": "Breadcrumb:truncate 補救 tooltip 的 trigger 是不可聚焦 span,鍵盤使用者拿不到被截斷的完整文字",
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:71-78",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "TruncatedLabel 永遠 wrap Tooltip,但 TooltipTrigger asChild 落在內層 span(non-focusable)。滑鼠 hover 開 tooltip;鍵盤 focus 停在外層 <a>(BreadcrumbLink)時 trigger 沒收到 focus → tooltip 不開。canonical『文字被 truncate 時 tooltip 補救』只對滑鼠成立,違 WCAG 鍵盤等價。BreadcrumbPage(span role=link 不可聚焦)更是完全無鍵盤路徑。",
+   "suggestion": "BreadcrumbLink path 把 TooltipTrigger 綁在 anchor 層(focus 事件天然命中),或 TruncatedLabel 在 isTruncated 時給 span 加 tabIndex={0};BreadcrumbPage 同步處理。"
+  },
+  {
+   "title": "FileUpload:dropzone disabled / loading 時仍呼叫 consumer 的 onClick",
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.tsx:159-164",
+   "phase": "five-states",
+   "severity": "P2",
+   "detail": "handleClick 的 guard 只包住 inputRef.click(),onClick?.(e) 無條件執行 — aria-disabled 語意下 consumer 的 side effect(開 modal、埋點)照跑,和原生 disabled button 行為不一致,也和同檔 button variant(Button 原生 disabled 全吞)不對稱。",
+   "suggestion": "isBlocked 時 early return 不呼叫 onClick(或至少 disabled 時吞掉,loading 視 spec 決定),讓兩個 variant 的 blocked 行為一致。"
+  },
+  {
+   "title": "AppShell:Cmd/Ctrl+. 全域攔截同樣無輸入框 guard,且沒有 aside 時仍 preventDefault",
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:179-188",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "與 Sidebar Cmd+B 同 class 的問題:不檢查 e.target 可編輯性 / e.defaultPrevented / isComposing,而且 handler 在 aside prop 未傳時照樣註冊並 preventDefault(白吃掉一個全域快捷鍵、setAsideOpen 空轉)。此點 spec 未文件化(不同於 Cmd+B 已在 sidebar.spec:688 承認)。",
+   "suggestion": "抽一個 shared useGlobalShortcut helper(單一 SSOT 修 Cmd+B 與 Cmd+. 兩處):可編輯 target / defaultPrevented / isComposing guard;AppShell 在無 aside 時不註冊 handler。"
+  },
+  {
+   "title": "AppShellAside:desktop inline 模式按 X 關閉後整棵 aside unmount,焦點掉到 body,無 focus restore",
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:314-321(close button), 344-345(return null)",
+   "phase": "focus",
+   "severity": "P2",
+   "detail": "mobile 走 Sheet 有 Radix focus restore;desktop inline 模式關閉時 !asideOpen → return null,DOM focus 所在的關閉鈕隨之 unmount → 焦點重置到 body,鍵盤使用者從頁面頂端重走。Cmd+. 關閉同樣中招(焦點若在 aside 內)。spec 只寫 inline『無 focus trap、無 restoration(非浮層)』的是 TreeView;AppShell 的 aside 是使用者主動 dismiss 的 panel,關閉後應把焦點還給 toggle 來源或 main。",
+   "suggestion": "setAsideOpen(false) 的 inline path 在 unmount 前把 focus 移到 #app-shell-main(既有 tabIndex=-1 landmark)或記錄 opener element 還原;可在 AppShellAside 內 useEffect 監聽 open false→cleanup 時處理。"
+  },
+  {
+   "title": "Accordion:disabled trigger 用 pointer-events-none,與 Tabs 同場景明文採 cursor-not-allowed 的理由矛盾",
+   "fileLine": "packages/design-system/src/components/Accordion/accordion.tsx:51;components/Tabs/tabs.tsx:379-381",
+   "phase": "five-states",
+   "severity": "P2",
+   "detail": "tabs.tsx:380 註解明文canonical:「不用 pointer-events-none,否則 cursor 不會改變;button[disabled] 本身就擋 click」。Accordion trigger 同為 disabled button 卻加 disabled:pointer-events-none → hover 無 cursor 反饋(看起來像普通文字),disabled affordance 跨元件不一致。",
+   "suggestion": "AccordionTrigger 改 disabled:cursor-not-allowed 移除 pointer-events-none,對齊 Tabs canonical(button disabled 原生已擋 click,不需要 pointer-events)。"
+  },
+  {
+   "title": "Filter panel / Sort manager 刪除 row 後焦點掉到 body — 未移交相鄰元素",
+   "fileLine": "packages/design-system/src/components/DataTable/data-table-filter-panel.tsx:760(FilterRow 刪除鈕)+ data-table-sort-manager.tsx:207(SortRow 刪除鈕);兩檔 grep 零 `.focus()`",
+   "phase": "focus",
+   "severity": "P2",
+   "detail": "鍵盤使用者 focus 在某條 condition/sort row 的 Trash 鈕按 Enter → row unmount → 被 focus 的元素從 DOM 移除 → activeElement 掉回 body。Radix Popover 不會因此關閉,但下一個 Tab 會從 document 頂端重新開始,使用者被甩出 panel 語境。世界級(Notion / Linear / Airtable filter 列刪除)把焦點移到下一條 row 的同位控件或「加篩選 / 加排序」CTA。",
+   "suggestion": "removeFlatCondition / removeGroupCondition / removeAt 前先記住 index,刪除後用 ref 把 focus 移到「下一條 row 的刪除鈕(無下一條則前一條;皆無則 Add CTA)」。可抽共用 hook(兩 panel 同 pattern,對齊 M17)。"
+  },
+  {
+   "title": "Sort manager 鍵盤重排用 default 25px stepping — SortableContext 場景應配 sortableKeyboardCoordinates",
+   "fileLine": "packages/design-system/src/components/DataTable/data-table-sort-manager.tsx:131-132(DndContext 無 sensors 配置 + SortableContext)",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "DndContext 未傳 sensors → 用 dnd-kit 預設 KeyboardSensor(方向鍵 Δ25px 座標步進)。data-table.tsx:2645-2651 的 codex P1 fix 註解已明文:`sortableKeyboardCoordinates` preset「需 <SortableContext> 才正確 resolve 下一個 sortable target」— 主表因無 SortableContext 才刻意用 default;但本檔 **有** SortableContext(L132),卻沒用該 canonical getter,鍵盤拖曳按一次方向鍵未必跨過一整條 row(row 高 ~28-36px vs 25px),重排行為不可靠。同 repo 自家註解即是 owner cite。",
+   "suggestion": "`useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }))` 傳入 DndContext(`@dnd-kit/sortable` 官方 sortable preset)。"
+  },
+  {
+   "title": "FileViewer 全域快捷鍵不檢查 modifier — 劫持瀏覽器 Cmd/Ctrl+加減零(頁面縮放)與 Alt+方向鍵(上下頁)",
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:843-878(handler 只查 tag,無 metaKey/ctrlKey/altKey guard)",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "viewer 開啟期間,Cmd/Ctrl+'='、Cmd/Ctrl+'-'、Cmd/Ctrl+'0'(瀏覽器頁面縮放,WCAG 1.4.4 低視力常用)會落入 `e.key === '+'/'-'/'0'` 分支被 preventDefault 並轉成 viewer zoom;Alt+ArrowLeft(瀏覽器返回)同樣被吃掉切檔。世界級 lightbox(Google Photos / Drive)的裸鍵快捷鍵均放行帶 modifier 的組合給 user agent。",
+   "suggestion": "handler 開頭加 `if (e.metaKey || e.ctrlKey || e.altKey) return`(五個分支一次涵蓋)。"
+  },
+  {
+   "title": "FileViewer ± 縮放階梯 200%→400% 單跳 2 倍(底部 10→25 亦 2.5 倍)— 離散步進超過世界級細緻度",
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:144(ZOOM_PRESETS = [10,25,50,75,100,125,150,200,400])+ 151-162(nextZoomIn/Out 整階跳)",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "wheel/pinch 已是 3% 平滑(image-renderer.tsx:217,PASS),但 toolbar ± 鈕與 +/- 快捷鍵走 preset 整階跳:200 之後直接 400(一按放大 100 個百分點),與檔內自我對標的 Chrome 縮放階梯(…150,175,200,250,300,400…)相比缺 250/300;100→125→150 也是 25pp 級距。任務判準「>10% 離散 = 非世界級」下,這條 ± 路徑是最粗的互動面。",
+   "suggestion": "最小修:ZOOM_PRESETS 補 250、300(Chrome ladder);更世界級:± 改乘法步進(current × / ÷ 1.25 後 clamp 10-400,Preview.app / Figma 派),preset 清單留給 dropdown menu。"
+  },
+  {
+   "title": "Carousel 以 capture 相位攔截方向鍵 — slide 內互動內容(input/textarea/video)的方向鍵被劫持",
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:121-127(handleKeyDown preventDefault)+ 162(onKeyDownCapture)",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "onKeyDownCapture 在 capture 相位先於任何 descendant handler 執行且 preventDefault:當 CarouselItem 內含 input(游標移動)、select、video(seek)等真實產品內容時,ArrowLeft/Right 會翻頁並吞掉原生行為。此為 shadcn 上游同款寫法的已知缺陷,真實業務 slide(onboarding 表單、媒體播放)必踩。",
+   "suggestion": "改 bubble 相位 onKeyDown + guard:`const t = e.target as HTMLElement; if (t.closest('input, textarea, select, [contenteditable=\"true\"], video, audio')) return`,或僅當 `e.target === e.currentTarget || t.closest('[data-carousel-control]')` 時翻頁。"
+  },
+  {
+   "title": "Carousel slide 無「第 N 張,共 M 張」label、無 aria-live 換張播報、離屏 slide 未 inert — SR 使用者按 Next 後無任何回饋",
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:200-218(CarouselItem 只有 role=group + roledescription)+ 179-197(CarouselContent 無 live region)",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "APG carousel pattern:各 slide 應有 `aria-label=\"N of M\"`(或 labelledby);非自動輪播時 slide 容器應設 `aria-live=\"polite\"` 讓換張被播報;Embla 官方 Accessibility 指引另建議離屏 slide inert(目前仍留在 tab order / a11y tree,鍵盤會 Tab 進看不見的 slide 內容)。Dots 的 group+aria-current 模型已修好(L322-335 documented),但 slide 側三件事都缺 — SR 使用者點「下一張」後聽不到任何變化。檔內註解已自認「compound API 下 CarouselItem 不知 index」是接線障礙。",
+   "suggestion": "Context 加 slide index registration(mount 時登記取得 index/total)→ CarouselItem 補 `aria-label={\\`第 ${i+1} 張,共 ${n} 張\\`}`;CarouselContent 內層加 `aria-live=\"polite\"`(拖曳中可暫時 off);selectedIndex 之外的 slide 設 `inert`(單張滿版場景)或 `aria-hidden` + 內部 focusable tabIndex=-1。"
+  },
+  {
+   "title": "BulkActionBar role=\"toolbar\" 未實作 APG toolbar 鍵盤契約(方向鍵 roving tabindex)",
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.tsx:92(role=toolbar)",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "APG toolbar pattern 的語意承諾 = 單一 tab stop + 方向鍵在成員間移動;目前 X / actions 都是獨立 Tab stop,SR 使用者聽到「工具列」卻得不到對應鍵盤行為(role 與行為脫鉤)。count 的 aria-live(L124)已正確。",
+   "suggestion": "二擇一:(a) 實作 roving tabindex(ArrowLeft/Right 移動、Home/End 首尾,對齊 APG);(b) 若不想承擔,role 降級為 `group`(語意誠實)。DS 內若已有 toolbar roving 先例(DataTable toolbar)優先消費同 primitive。"
+  },
+  {
+   "title": "Chart 以 outline-none 全面抹除 Recharts 鍵盤 a11y 層的 focus 可見性",
+   "fileLine": "packages/design-system/src/components/Chart/chart.tsx:74-77(`[&_.recharts-layer]:outline-none` + `[&_.recharts-surface]:outline-none`)",
+   "phase": "focus",
+   "severity": "P2",
+   "detail": "Recharts 的 `accessibilityLayer`(v2.13+ 預設漸開)讓 chart surface 可 focus、方向鍵在資料點間移動 — 其唯一視覺 focus 指示就是 surface/layer 的 outline。這三條 shadcn 上游帶來的 blanket 規則把 focus-visible 一併抹掉:consumer 開 accessibilityLayer 後鍵盤焦點完全隱形(WCAG 2.4.7)。",
+   "suggestion": "把規則收斂為只抹非鍵盤焦點:`[&_.recharts-surface:not(:focus-visible)]:outline-none`(layer 同理),或改覆寫為 DS ring token(`focus-visible:outline-2 outline-[var(--ring)]`)。"
+  },
+  {
+   "title": "ChartTooltipContent 的 role=status live region 隨 tooltip 內容一起 mount/unmount — 播報機制實際無效",
+   "fileLine": "packages/design-system/src/components/Chart/chart.tsx:194(inactive return null)+ 202-203(role=status + aria-live 在同一個會 unmount 的節點上)",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "ARIA live region 必須「先存在、後變更內容」才會被 AT 播報;本實作 `!active → return null` 讓 live region 節點本身隨 hover 出現/消失,大多數 SR 不會播報初次掛載的 live region 內容 → 2026-05-31 #5 補的 SR 朗讀機制形同虛設(機制層缺陷,非重複 A.1b 文字比對項)。",
+   "suggestion": "把 role=\"status\" aria-live 移到常駐 wrapper(ChartContainer 內固定渲染一個 visually-hidden live 節點),tooltip active 時把摘要文字寫進該節點;tooltip 視覺本體不帶 live 屬性。"
+  },
+  {
+   "title": "Carousel 換張動畫不尊重 prefers-reduced-motion",
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:100-102(scrollPrev/Next/scrollTo 永遠動畫)",
+   "phase": "animation",
+   "severity": "P2",
+   "detail": "DS 全庫 grep prefers-reduced-motion 只有 CircularProgress 一處;Embla 的 scroll 動畫(數百 ms 位移)對前庭障礙使用者正是該減免的大位移動態。Embla 官方 a11y 指引即建議 reduce-motion 時改瞬跳。",
+   "suggestion": "`const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches`(或共用 hook)→ `api.scrollPrev(reduce)` / `scrollNext(reduce)` / `scrollTo(i, reduce)`(embla 第二參數 jump=true 即瞬跳);dots/arrow 的 200ms opacity transition 可留(非位移)。"
+  },
+  {
+   "title": "FileViewer 縮放置中動畫(200ms)不尊重 prefers-reduced-motion",
+   "fileLine": "packages/design-system/src/components/FileViewer/image-renderer.tsx:167(api.centerView(targetScale, 200))+ 145-155(double-click toggle 同路徑)",
+   "phase": "animation",
+   "severity": "P2",
+   "detail": "每次 preset / ± / 打字 / fit / 雙擊縮放都走 200ms scale+translate 動畫(時長 <400ms 合格),但無 reduce-motion 分支 — 縮放是典型的 zoom 型前庭觸發動態(WCAG 2.3.3 Animation from Interactions)。",
+   "suggestion": "同 Carousel 共用 reduce-motion hook:`api.centerView(targetScale, reduce ? 0 : 200)`;programmaticZoomRef 的 280ms 解鎖 timer 同步縮短為 0/即時。"
+  },
+  {
+   "title": "Spreadsheet 方向鍵導覽到 boolean cell 後無鍵盤 toggle 路徑(Space 無作用)",
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:1851(Enter/F2 gate 排除 boolean)+ cell-registry.tsx:415-422(BooleanCell 直接 toggle 只接 click)",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "boolean 排除於 click-enters-edit 是 RFC Contract 15 documented(checkbox 自己 toggle),但鍵盤側沒有對應等價:方向鍵把 selection 移到 boolean cell 後,Enter/F2/Space 都無作用(cell 內 Checkbox 未被 focus,table-level handler 也不處理 Space)— 只能離開 spreadsheet 導覽、用原生 Tab 走到 checkbox 再按 Space,兩套模型斷裂。Excel / AG Grid / Glide:selection 在 checkbox cell 上按 Space 直接 toggle。",
+   "suggestion": "tableKeyboardHandler spreadsheet 分支 navKeys 加 ' '(Space):selection 所在 cell meta.type==='boolean' 且 canEditCell → e.preventDefault + commitCell(rowId, colId, !value)。"
+  },
+  {
+   "title": "Avatar hoverCard wrapper role=button 無 activation 行為、無 aria-expanded — ARIA button contract 未兌現",
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:235-241",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "focusableProps 給了 `role=\"button\"` + `aria-haspopup=\"dialog\"`,但沒有任何 onClick/onKeyDown — Enter/Space 完全 no-op(開啟靠 Radix 的 focus handler)。role=button 對 AT 承諾「可按下觸發」,實際按了沒事;且 aria-haspopup 有、aria-expanded 無 → 卡片開闔狀態對 SR 不可感知。這是 4.1.2 Name-Role-Value 的 Value 缺口。",
+   "suggestion": "與 P1 keyboard finding 一併解:改 click/Enter 開 Popover 後,Radix PopoverTrigger 自帶正確的 aria-expanded + activation 語意,此 finding 自動消失。若維持 HoverCard 短期方案:HoverCard 升 controlled(open + onOpenChange),wrapper 加 onKeyDown Enter/Space → setOpen(true) + `aria-expanded={open}`。"
+  },
+  {
+   "title": "Tag dismiss 後 focus 掉回 body — 無「刪除移相鄰」canonical,host 層也沒接",
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:104-123, 183(host 佐證:components/Combobox/combobox.tsx:622, 775 handleRemove 無 focus 管理)",
+   "phase": "focus",
+   "severity": "P2",
+   "detail": "TagDismiss 的 button 是當下 focus 所在;onRemove 後 consumer 把 Tag unmount → document.activeElement 掉回 body,keyboard user 連刪多個 tag 時每刪一個就迷航一次(要重新 Tab 回集合)。P2 checklist「刪除移相鄰」缺;grep Combobox/PeoplePicker host 路徑亦無 focus 移轉處理。世界級:Polaris Tag 集合 / Ant Select multiple 移除 tag 後 focus 移到下一個 tag 的 remove 或回到 input。",
+   "suggestion": "分兩層:tag.spec.md 補「dismiss 後 focus 移轉屬 host 責任」canonical;Combobox/PeoplePicker handleRemove 後 focus 移到相鄰 Tag 的 dismiss button,無相鄰則回 input(ref map 已有 overflow list 基礎可複用)。"
+  },
+  {
+   "title": "Tag 截斷 tooltip 只有 hover 可達 — Tag 非 focusable,keyboard user 拿不到全文",
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:157-194",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "isTruncated 時全文唯一的呈現管道是 Radix Tooltip;Radix Tooltip 支援 focus 觸發,但 trigger 是無 tabIndex 的 `<div>` → keyboard-only sighted user 對截斷 Tag 永遠只能看到 ellipsis(SR user 不受影響 — AT 讀 DOM 全文,truncate 只是視覺裁切)。WCAG 1.4.13 / 2.1.1 邊緣違反。",
+   "suggestion": "isTruncated 時 tag root 加 `tabIndex={0}`(Radix Tooltip 的 focus-open 行為即自動生效;非截斷時不加,避免污染 tab order)。"
+  },
+  {
+   "title": "MenuChipGroup single 模式 menu 無法取消選取 — 與直點 chip 的 deselect 行為不一致",
+   "fileLine": "packages/design-system/src/components/Chip/chip.tsx:268-276(佐證:node_modules/@radix-ui/react-toggle-group/dist/index.mjs:53 `onItemDeactivate: () => setValue(\"\")`)",
+   "phase": "keyboard",
+   "severity": "P2",
+   "detail": "Radix ToggleGroup single 模式直點已選 chip 會 deselect(onItemDeactivate → value='');但 MenuChipGroup 的 DropdownMenuCheckboxItem 已 checked 再點時,toggleFromMenu single 分支無條件 `groupOnValueChange(chipValue)` 重設同值 — checkbox 視覺承諾可勾可取消,實際永遠取消不了。同一份 selection 兩個入口(chip 直點 vs menu)行為分裂。",
+   "suggestion": "single 分支改 `groupOnValueChange(groupValue === chipValue ? '' : chipValue)`,對齊 Radix single-toggle deselect 語意,menu 與直點行為收斂一致。"
+  },
+  {
+   "title": "JS smooth scroll 無 prefers-reduced-motion gating — Chip scrollIntoView + horizontal-overflow scrollByPage",
+   "fileLine": "packages/design-system/src/components/Chip/chip.tsx:281 + packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.tsx:118-120",
+   "phase": "animation",
+   "severity": "P2",
+   "detail": "`scrollIntoView({ behavior: 'smooth' })` 與 `scrollBy({ behavior: 'smooth' })` 是 JS API,CSS 的 motion-reduce utility 管不到(DS 其他處如 Skeleton 已正確用 motion-reduce:animate-none,但 JS scroll 是漏網)。大位移平滑捲動正是 vestibular disorder 使用者最敏感的動畫類型;horizontal-overflow 是 pattern SSOT,Chip / Tabs / Steps / SegmentedControl 全部消費 → 系統性缺口。",
+   "suggestion": "在 motion token module(tokens/motion/motion.ts)加 SSOT helper `scrollBehavior(): 'auto' | 'smooth'`(內部 `matchMedia('(prefers-reduced-motion: reduce)')`),horizontal-overflow.tsx 與 chip.tsx 兩處消費;一次修好所有 overflow pattern consumer。"
+  },
+  {
+   "title": "ProgressBar status=error/success 對 SR 零訊號 — 失敗只有視覺(紅 bar + aria-hidden icon)",
+   "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.tsx:100-102, 107-124",
+   "phase": "aria",
+   "severity": "P2",
+   "detail": "status 換色靠 STATUS_FILL class、affix='status-icon' 的 ✓/✗ icon 是 `aria-hidden` — 上傳失敗時 SR user 得到的唯一語意是 Radix progressbar 的 valuenow(可能停在 47%),「失敗了」這件事完全不可感知;success 同理(五態 checklist「error 不吞 / success 可感知」的 AT 面)。",
+   "suggestion": "affix='status-icon' 且 status 非 inProgress 時,icon 旁附 visually-hidden 文字(sr-only span「已完成」/「失敗」,或 icon 改 role='img' + aria-label);並在 progress-bar.spec.md 明定 lifecycle 播報責任(host 如 FileItem 用 live region 播報 vs 元件自帶),二選一落文字。"
+  },
+  {
+   "title": "ProfileCardDefaultActions 無 handler props — production consumer 接不了線,Chat/Audio call 點擊 silent no-op",
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.tsx:37-42",
+   "phase": "five-states",
+   "severity": "P2",
+   "detail": "docblock 明示 consumer(含 future product code)應消費此 canonical export,但元件零 props — 兩顆 Button 沒有 onClick 也無法從外部傳入,production 使用時使用者按「Chat」「Audio call」毫無反應(dead affordance,與 Alert 死 X 同 pattern)。目前它只適合 story/demo,但 API 形狀和文件把它推向 production。",
+   "suggestion": "加 optional `onChat?: () => void` / `onCall?: () => void` props 接到對應 Button onClick;dev mode 下未傳 handler 時 console.warn(對齊本檔 ProfileCard defaultFieldValues dev-warn 先例)。或若定位確為 demo-only,docblock + spec 明文「story/demo 專用,production 必自組 actions」。"
+  }
+ ],
+ "passSummaries": [
+  {
+   "key": "overlays",
+   "s": "7 元件(Dialog / Sheet / Popover / Tooltip / HoverCard / Coachmark / Toast)已逐檔讀 .tsx 並對讀 node_modules 內 Radix(react-popover / react-dismissable-layer / react-tooltip / react-focus-scope)與 sonner 2.0.7 source 驗證。通過軸:P1 keyboard — Dialog/Sheet 走 Radix modal focus trap + Esc + aria-modal 全內建,DialogBody/SheetBody 的 ScrollArea viewport 有 tabIndex=0(長內容鍵盤可捲動,axe scrollable-region fix 落實),Dialog/Sheet openAutoFocus canonical(body-first、排除 dismiss X)selector 分層正確;P2 focus — 全家族關閉後 focus restore to trigger(Radix onCloseAutoFocus 未被覆寫),Popover/HoverCard viewport-aware max-h + min-h-0 flex chain(M25)完整;P3 ARIA — Dialog/Sheet Title/Description 走 Radix 自動接線,Toast 的 per-variant role=status/alert 由 DS wrapper 自設(nested-live-region 限制 spec L83 已明文 = documented exception 不列)、Notice dismiss X 自帶 aria-label,HoverCard content 鍵盤不可達為 Radix 定位限制且 spec「禁止事項+A11y 預設」雙處明文 = documented exception 不列,Coachmark aria-labelledby/aria-label fallback 接線正確;P4 animation — 全家族動畫 ≤300ms(Sheet 300 雙向、其餘 tw-animate 150 預設),hover delay 消費 motion token SSOT(Tooltip plain 500 / HoverCard rich 700 + close 200)符合 700/500 canonical,Dialog/Popover/Tooltip/SheetContent 皆有 motion-reduce 豁免;P5 五態 — 各 overlay 為 stateless 容器(loading/empty/error 責任邊界 spec 明文下放 consumer),Coachmark step null-safety(aria-hidden spacer)與 controlled/uncontrolled 雙模式、Esc 不誤觸 onSkip 且 step state 保留皆驗證通過,Toast pause-on-hover / swipe / stacking 由 sonner 內建。抓到 8 個行為機制缺陷:2 個 P1(Coachmark Tab 即 dismiss 導致 CTA 鍵盤不可達 — spec 宣稱的鍵盤路徑與 DismissableLayer focus-outside dismiss 機制矛盾;Toast 計時器不因鍵盤焦點暫停 + 4s 均一 duration 讓鍵盤使用者搶不到 action)、6 個 P2(action 不 dismiss 的 double-invoke 窗口、SheetOverlay 與 HoverCardContent 各缺 motion-reduce 豁免、Tooltip Root default 蓋死 Provider 配置通道、Popover autofocus selector DOM 序搶焦、PopoverTitle 無 aria-labelledby 自動接線)。"
+  },
+  {
+   "key": "menus",
+   "s": "通過軸(全部 source-verified,含 node_modules 上游源碼):P1 鍵盤 — DropdownMenu 鍵盤表逐鍵對 Radix dist 驗證(FIRST_KEYS=[ArrowDown,PageUp,Home]/LAST_KEYS=[ArrowUp,PageDown,End] 與 spec:182-188 完全吻合;typeahead、Esc 整層關閉、←/→ submenu、disabled skip 皆上游內建);cmdk root 證實有 tabIndex=-1,handleNonSearchableAutoFocus 焦點路由有效;cmdk Home/End/ctrl+n/p 導覽完整。P2 焦點轉移 — DropdownMenu 關閉後 focus 回 trigger(2026-06-11 移除 preventDefault 的修復仍在、未再 override onCloseAutoFocus);SelectMenu 單選 close-on-select 經 Radix Popover 回 trigger;Radix modal focus trap 內建;SubContent 經 RowSizeProvider 整鏈 forward(M25 合規)。P3 ARIA — Radix menuitem/menuitemcheckbox/menuitemradio + aria-checked 上游正確;cmdk combobox/listbox/aria-activedescendant 鏈完整;aria-busy loading 接線已兌現(2026-07-04);MenuGroup role='group'。P4 動畫 — floatingLayerClass 與 PopoverContent 皆有 motion-reduce:animate-none,tailwindcss-animate 預設 150ms < 400ms,無 hover-delay 誤用場景。P5 五態 — loading 不清空既有 options 且不擋輸入(MUI 共識、spec 對齊);CommandEmpty + getMenuListMinHeight 空狀態;value null-normalize(null→[]);useControllable 根治 un→controlled;Select All 消費 applySelectAll SSOT;無 unmount setState 風險;單選首 Enter 即關閉無 double-submit 面。主要缺陷集中在「highlight/selection 視覺通道」與「cmdk 包裝層 ARIA/焦點接線」:P0 一項(SelectMenu 鍵盤 cursor 隱形,twMerge 機械證明,波及 Select/Combobox/PeoplePicker)+ P1 三項(全選列鍵盤不可達、selected 項 cursor 無回饋 — 即本輪 Q2 改動的驗證答案:bg 不變下什麼都沒有、巢狀 role=option)+ P2 八項。"
+  },
+  {
+   "key": "pickers",
+   "s": "已 source-based 走完 5-phase(含 cmdk/Radix popover/RDP dist source 逐項比對)。通過軸:P1 鍵盤開啟鏈全綠 — Select/Combobox/TimePicker/DatePicker trigger 的 Enter/Space/ArrowDown/Esc 開關(2026-06-11 !open guard 修)驗證有效;non-searchable SelectMenu 的 cmdk-root 聚焦路由(2026-06-01 #15)確認讓方向鍵/Enter/Home/End 生效;TimeColumns 是完整 WAI-ARIA listbox(roving 免 Tab 84 次 + activedescendant + Home/End + disabled 跳過);RDP 日曆格 autoFocus 後鍵盤導覽原生可用。P2 焦點:單體 DatePicker/TimePicker/Select 走 PopoverTrigger,關閉自動回 trigger;searchable 開啟 auto-focus inline input(cursor 可見);draft 只在 open false→true 同步不 clobber。P3 ARIA 本輪改動驗證:Select aria-controls→SelectMenu contentId→PopoverContent id 接線真實生效、aria-labelledby={fieldCtx.labelId} guard 對齊 slider canonical、aria-busy 兌現 spec 承諾、native option disabled forward 生效、DateGrid 中文 nav label 確認蓋過 RDP 英文 default(但衍生 P2 覆寫通道問題);HoverCard 700/500/200 delay canonical 正確消費。P4 動畫:Popover/Tooltip/Dialog 均 animate <400ms + motion-reduce:animate-none;chevron rotate 為 150ms transition。P5 五態:loading 不清 stale options 且 trigger 可開(MUI 共識)、value-not-in-options 顯原值不沉默丟失、clear 的 value+draft 雙態同步、useOverflowCount rAF/ResizeObserver 完整 cleanup、React #310 hook hoisting 全家對齊、useControllable uncontrolled clear 正常。未過軸集中在:searchable 開啟後的鍵盤導覽斷鏈(P0)、search-empty SR 靜默、PeoplePicker stack emptyText 漏線、DatePicker needConfirm 死路、Range 關閉焦點遺失 — 詳 findings 14 條。"
+  },
+  {
+   "key": "form-controls",
+   "s": "已 source-based 逐檔讀完 10 控件 tsx + field.tsx/field-context.ts/field-wrapper.tsx/use-form-validation.ts/selection-item.tsx,並實讀 node_modules Radix toggle-group 源碼與 Tailwind v4 variant 順序驗證 cascade。通過項:P1 keyboard — Rating 完整 APG slider 鍵盤(Arrow/Home/End)、Radix Checkbox/Switch/RadioGroup/Slider 原生鍵盤、SegmentedControl 恆-controlled 改造後鍵盤仍正常(roving focus 移焦 + Space/Enter 選取為 spec:279 明文行為,deselect 空值被 wrapper 正確攔截,internalValue mirror 不影響 Radix RovingFocusGroup);P2 focus — LinkInput 進場 focus 管理(rAF + unmount cancel)正確、focus-visible ring(ring-2 ring-ring)在全部 selection 控件非 error 態可見;P3 aria — FieldError role=alert ✓、四文字控件 aria-invalid/aria-errormessage 正確 gate 在 error=true、display 模式 restDomProps 轉發確實到 DOM(RadioGroup role=group 路徑有效;Checkbox/Switch span 落點有 name-prohibited 問題,見 finding)、Rating role=slider/img 切換 + labelId 接線 ✓、Slider thumb labelId 接線 ✓;P4 animation — 全家族 150ms(<400ms)達標;P5 五態 — Input loading 保持可編輯 + aria-busy + spinner/endAction 互斥 ✓、EMPTY_DISPLAY 空值處理全 display 路徑一致 ✓、LinkInput 外部 value 同步(!editing gate)與 rAF unmount 清理 ✓、SegmentedControl un→controlled 切換已根治 ✓。已按紀律排除 documented exception 不列 finding:Slider focus 用 border 加深不加 ring(slider.spec.md:301 明文例外)、Slider/Rating 無 display 態(field-controls.spec.md:168)、SegmentedControl 無 readonly 態且方向鍵只移焦不選取(segmented-control.spec.md:279-283)、Radix ToggleGroup role=radio in role=group(ARIA 1.2 radio 無 required context,非違規)。主要缺陷集中在:error+focus 紅框無第二焦點通道(含 Textarea naked 鏡射漏 gate 直接顯藍)、LinkInput 漏接 fieldCtx.invalid、readOnly 三控件 label 點擊繞過鎖定、NumberInput 無 draft state、useFormValidation submit 無重入防護。"
+  },
+  {
+   "key": "rows-nav",
+   "s": "9 元件 source-based 全讀完(含 Radix Tabs/Checkbox/Collapsible、dnd-kit useDraggable 的 node_modules 源碼比對與 spec documented-exception 核對)。通過的軸:P1 鍵盤 — Tabs 走 Radix roving tabindex + TabsContent focus ring;TreeView 方向鍵/Home/End/Enter/Space 邏輯完整對齊 APG(ArrowRight 展開→入子、ArrowLeft 收合→上跳 parent 均正確);Steps header Enter+Space 有 preventDefault;FileUpload dropzone Enter/Space 開檔案對話框、blocked 時 tabIndex=-1;Accordion 純 Radix 原生鍵盤;overflow scroll arrows 是帶 aria-label 的真 button。P2 焦點 — Breadcrumb ellipsis 與 Tabs menu 模式走 Radix DropdownMenu 原生 focus restore;TreeView focus 變更 scrollIntoView(nearest);inline-action hover-reveal 全 DS 統一用 group-has-[:focus-visible](非 focus-within,mouse click 不誤觸)— TreeItem/SidebarMenuButton 消費同一 SSOT;AppShell 有 skip-to-main + main tabIndex=-1。P3 ARIA — TreeView role=tree/treeitem/aria-level/aria-expanded/aria-selected/aria-multiselectable + useId 前綴 aria-activedescendant(aria-setsize 省略有 spec 引 APG 條件文件化);Steps sr-only「第N步,共M步,狀態」+ aria-current=step;Breadcrumb nav aria-label + aria-current=page + separator role=presentation;FileItem ProgressBar aria-label 帶檔名、hover-swap passive icon aria-hidden + action 帶 aria-label;FileUpload aria-busy/aria-disabled;mobile Sidebar Sheet 有 sr-only SheetTitle;AppShellAside inline aria-label、modal SheetTitle 正確綁 labelledby。P4 動畫 — 全部 duration 150-200ms 遠低於 400ms 上限;Sidebar 寬度/padding transition、Tooltip/DropdownMenu/Dialog/Popover/Sheet 均有 motion-reduce;TreeView drag auto-expand 500ms 對齊 Figma canonical。P5 五態 — 受控/非受控雙軌(TreeView/Steps/Sidebar activeId/AppShell asideOpen)實作正確;FileUpload maxSize/accept 拒收走 onReject 不吞錯;TreeView unmount 清 auto-expand timer、MenuTabsList 清 rAF;Steps horizontal 下 StepContent 靜默不渲染為 spec 明文行為。未過的軸集中在:file input 不 reset / drag 事件 guard 缺失(FileUpload 三連)、巢狀與隱形 interactive(Tabs inlineAction、TreeView checkbox、FileItem hover-swap)、collapsed/draggable 模式的 ARIA 副作用(Sidebar 無名 button、dnd-kit attrs 污染)、disclosure 缺 aria-expanded(Steps)、以及 Cmd+B(已知 issue 確認仍在:sidebar.tsx:191-203 無 target guard,spec:688 已文件化承認)與 Cmd+. 同 class 快捷鍵攔截。共 22 findings:10 P1 / 12 P2 / 0 P0。"
+  },
+  {
+   "key": "data-heavy",
+   "s": "通過軸(source-based 逐檔驗證):(1) 本輪重點「日期 filter 鍵盤完成整條 condition」PASS — FilterRow 三控件鏈完整可鍵盤走完:欄位/運算子 Select(div role=combobox + Enter/Space/ArrowDown 開啟,select.tsx:621-630)→ DatePicker trigger Enter 開 popover(date-picker.tsx:535-537)→ DateGrid autoFocus + RDP 方向鍵/Enter 選日(date-picker.tsx:608-623)→ date-only needConfirm=false 選定即 commit 關閉、Radix 還焦點回 trigger;DatePickerRange 兩端為原生 button 亦可鍵盤開啟;datePrecision(Q6 本輪改動)只影響求值精度、不觸鍵盤面。(2) DataTable row-selection 鍵盤 PASS:Cmd/Ctrl+A、Esc 清除、Space/Shift 區間、header sort Enter/Space + aria-sort、column resize handle role=separator。(3) spreadsheet 方向鍵/Enter/F2/Esc 的 in-nav 部分機制正確(含 IME guard at :1826、disabled gate),但進入/退出兩端斷鏈(見 P1)。(4) FileViewer:pointer capture PASS(react-zoom-pan-pinch v4 用 document-level mousemove/mouseup,拖出容器不斷不卡);wheel/pinch 3% 平滑步進 PASS;Esc 關閉/焦點還原走 Radix Dialog PASS;Dialog fade <400ms PASS;圖片載入失敗不處理為 spec L323 documented MVP exception(不列 finding);uncontrolled open 鏡像(useControllable)已修快捷鍵失效。(5) DataTable ARIA 的 role=grid / roving tabindex / aria-activedescendant 缺口為 spec L522-524 documented exception(future tier),不重複列;aria-rowcount/rowindex、cell error aria-describedby/aria-invalid role=alert、checkbox aria-label 均在。(6) Carousel dots 的 APG group+aria-current 模型 + hit-area 擴大已落地(2026-06-11/12 修)。(7) BulkActionBar count aria-live=polite + 0-selection 自動隱藏 + 反向選取例外 PASS。(8) 五態:DataTable empty 走 Empty 元件(僅 center panel)、filter/sort panel 空狀態 CTA 引導、filter 全刪不復活(respect user intent)、Chart tooltip 值 0 已修 null check、NumberCell/React #310 hoist、virtualizer draft preserve(onDraft)機制在單 cell 編輯內成立。主要缺陷集中在 spreadsheet mode 鍵盤生命週期兩端(進入靠滑鼠、退出斷焦點)、cell editor IME guard 缺失、portal Tab route 資料遺失、以及 Carousel/FileViewer 的 reduce-motion 全缺 — 詳 findings。"
+  },
+  {
+   "key": "leaf-five-states",
+   "s": "Source-based 走完 13 元件(Button/Badge/Tag/Chip/Avatar/ProfileCard/Empty/Skeleton/CircularProgress/ProgressBar/Notice/Alert/DescriptionList)+ 佐證 node_modules 的 Radix Slot/HoverCard/ToggleGroup source。通過軸:P1 keyboard — Button native 分支原生 button 語意完整(type=button、Enter/Space、focus-visible ring)、Chip 由 Radix ToggleGroup 提供 roving tabindex + 方向鍵、Tag dismiss 走 ItemInlineActionButton 原生 button + focus-visible outline + stopPropagation;asChild aria-label merge 經 Radix Slot mergeProps 驗證為 child-wins 正確語意。P3 ARIA — Chip single→role=radio+aria-checked / multiple→aria-pressed 由 Radix 正確分派;Button pressed 雙寫 aria-pressed + data-state;Notice/Alert live region 單一 owner 無 nested 重複朗讀(error/warning→alert+assertive、其餘→status+polite);CircularProgress determinate progressbar + valuenow/min/max、indeterminate 無 label 時 aria-hidden;Notice/Tag/Avatar dismiss/badge aria-label 皆有 i18n override 管道。P4 animation — 全元件 transition ≤300ms;Skeleton motion-reduce:animate-none;CircularProgress motion-reduce 減速不停轉(Material 派,documented);Avatar HoverCard 700/200 delay 消費 HOVER_DELAY_RICH_MS/CLOSE_MS token canonical。P5 五態 — Button loading 自動 disabled + aria-busy(native 路徑 double-submit 防護成立)、Badge max→99+、Avatar badgeCount≤0 不渲染、ProfileCard 缺 data placeholder + label dedup + dev-warn、MenuChipGroup uncontrolled dev-warn + rAF unmount cleanup、ProgressBar/CircularProgress value clamp 0-100、COLOR_MAP fallback neutral null-safety。12 findings(5 P1 / 7 P2 / 0 P0):P1 集中在 asChild 分支 loading/disabled 語意整組蒸發(本輪改動核心關注點,spec:307 aria-busy claim 與 code 不符)、HoverCard 內容 keyboard 不可達(blur 即關,source 驗證)、Avatar imgError stale、Badge 空 pill + 空 live region、Alert 預設死 X;P2 為 focus 移轉缺 canonical、menu deselect 不一致、JS smooth scroll 漏 reduced-motion、ProgressBar 終態無 SR 訊號等機制缺口。"
+  }
+ ],
+ "refuted": [
+  {
+   "title": "error+focus 紅框零 focus delta — 錯誤欄位聚焦時無任何第二通道",
+   "reason": "核心宣稱「DS 無 ring/glow 任何第二通道、Select/Combobox trigger 完全無法辨識焦點」被推翻:packages/design-system/src/styles/base.css:44-47 有全域 :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px }(--ring=var(--primary) 藍,semantic.css:328),且在 consumer import chain(styles/tokens.css:46)。Select trigger(select.tsx:608)與 Combobox trigger(combobox.tsx:738)皆為 div tabIndex=0 且無 outline-none → 鍵盤 tab 到出錯欄位時紅框外顯示 2px 藍 ring = 正是 finding 說 DS 沒採的 Polaris「紅 border + 獨立藍 ring」補償手段;text input 則保有 caret(WCAG 2.4.7 Understanding 接受 caret 為 focus indicator)。error compound(field-wrapper.tsx:147-151)border 通道零 focus delta 的 code 事實正確,但行為推論在點名的元件上全錯。殘餘真 gap 屬另案窄 bug:DatePicker(date-picker.tsx:542)/ TimePicker(time-picker.tsx:340)trigger 各自寫 focus-visible:outline-none 剝掉全域 ring 且非 typeable 時為 span 無 caret → error 態鍵盤聚焦確實零指標,建議另立 P2 finding(root = per-component outline stripping,非 wrapper error compound);field-controls.spec.md:67 仍寫「focus primary」未記載 error 例外的 spec drift 亦屬實但為另案。"
+  }
+ ]
+}

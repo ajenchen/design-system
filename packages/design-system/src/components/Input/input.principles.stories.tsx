@@ -35,7 +35,7 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="mb-12">
-    <h2 className="text-heading-3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
+    <h2 className="text-h3 font-bold text-foreground mb-4 pb-2 border-b border-border">{title}</h2>
     {children}
   </section>
 )

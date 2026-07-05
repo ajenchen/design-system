@@ -66,8 +66,11 @@ export const Overview: Story = {
                 ['  selectionMode', "'single' | 'multiple' | 'none'", "'single'", "multiple 模式自動顯示 checkbox;none=純展開展示不可選(JSON viewer)"],
                 ['  expandedIds / onExpandedChange', 'Set<string> / handler', '—', '展開狀態受控'],
                 ['  defaultExpandedIds', 'string[]', '—', '初始展開(uncontrolled)'],
+                ['  defaultSelectedIds', 'string[]', '—', '初始選取(uncontrolled)'],
+                ['  expandOnSelect', 'boolean', 'false', '點 label 同時 select + expand(stepper 適用;預設 chevron 是展開唯一控件)'],
                 ['  draggable / onDragEnd', 'boolean / handler', 'false', '拖曳重排'],
-                ['  size', "'sm' | 'md' | 'lg'", "'md'", 'font-size tier'],
+                ['  size', "'sm' | 'md' | 'lg'", "'md'", '尺寸 tier(node 高度 / icon 大小 / indent 寬度連動)'],
+                ['  context', "'sidebar' | 'menu'", "'sidebar'", '使用脈絡,決定水平 padding(sidebar=--layout-space-loose / menu=12px 對齊 MenuItem)'],
                 ['TreeItem', '', '', ''],
                 ['  id', 'string', '必填', '唯一識別碼'],
                 ['  label', 'ReactNode', '必填', 'node 名稱'],
@@ -75,6 +78,8 @@ export const Overview: Story = {
                 ['  checkbox', 'ReactNode', '—', 'multiple 模式 selection checkbox(通常自動帶入)'],
                 ['  inlineActions', 'InlineActionConfig[]', '—', '右側 inline actions(宣告式 config,內部用 <ItemInlineAction> 渲染)'],
                 ['  inlineActionsSlot', 'ReactNode', '—', 'escape-hatch slot(放自訂元素,跟 inlineActions 互斥)'],
+                ['  actionsReveal', "false | 'hover'", "'hover'", 'inline actions 顯示時機(hover reveal;false=常駐)'],
+                ['  indicator', 'ReactNode', '—', '取代 icon 位置(chevron 永存);stepper 狀態視覺由此傳入'],
                 ['  disabled', 'boolean', 'false', '停用該 node'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>

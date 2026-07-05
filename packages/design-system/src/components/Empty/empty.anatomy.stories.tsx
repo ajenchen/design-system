@@ -81,7 +81,7 @@ export const Overview: Story = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['icon', 'LucideIcon', '—', 'Avatar 48px 內的 icon'],
+                ['icon', 'LucideIcon | ReactElement', '—', 'LucideIcon 自動包 Avatar 48px;ReactElement 原樣渲染(自訂 Avatar / img / CircularProgress)'],
                 ['title', 'string', '—', '主要標題(16px medium)'],
                 ['description', 'string', '必填(預設唯一 slot)', '說明文字(14px;lg RowSizeContext 子樹內 16px · fg-secondary)'],
                 ['action', 'ReactNode', '—', 'CTA button / 操作區'],

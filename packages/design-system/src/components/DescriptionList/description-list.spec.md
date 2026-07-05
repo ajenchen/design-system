@@ -194,7 +194,7 @@ DescriptionList 是**唯讀 label / value 資料呈現**(非互動 / 非 variant
 
 ## 邊界案例
 
-- **Disabled(action cell)**:DescriptionList 主體為唯讀資料呈現,本身無 disabled state;若 `<dd>` 內 consumer 嵌入 inline action(Button / Link),該 action 自行 own disabled,DL 不干預(token 走 Button SSOT)。
+- **Disabled(action cell)**:DescriptionList 主體為唯讀資料呈現,本身無 disabled state。**dd 內互動內容 canonical(2026-07-04 Q9 拍板,三處立場收斂)**:操作型互動(Button / Input)**禁止**(見「禁止事項」— 需要動作 → Field read-only / inline-edit / action row / 卡片 header action);展示 / 導覽型 ReactNode(Tag / Badge / **Link**)**允許**,Link 自行 own disabled,DL 不干預。對齊 Polaris(ReactNode 型別 + 純敘述範例)/ Ant(action 放 extra 不放 dd)/ Carbon(read-only default)三家共識。
 - **Loading**:DL 非 async surface,無 loading prop。若 page-level data 載入中,consumer 應在 DL 外層用 `<Skeleton>`(每組 dt/dd 對應一條 skeleton line)取代;DL 本體不渲染 loading state。
 - **Empty(no items / empty value)**:no items → consumer 應 conditional 渲 `<Empty>` 取代 DL,不渲空 `<dl>`(SR 會讀「empty list」造成混淆);individual value 空 → consumer 應自行傳入 `—`(em dash,包 `text-fg-muted`;元件不自動 normalize,已在「無障礙」段 codify)。
 - **長 label / 長值**:horizontal 模式 label(`dt`)`shrink-0` 不收縮、不截斷,value(`dd`)`break-all min-w-0` 斷行吸收擠壓;vertical 模式兩者佔滿欄寬自然換行。無空白長字串(URL / ID)詳「無障礙」段「長值換行」。

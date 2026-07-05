@@ -85,13 +85,16 @@ export interface CheckboxProps
   /**
    * Inline label。提供時 Checkbox 自動透過 SelectionItem 包裝，
    * 套用 text-body / text-foreground / disabled 色 的 codified 樣式。
-   * 在 <Field> context 內時此 prop 會被忽略（由 FieldLabel 接管）。
+   * 在 <Field> context 內且不在 CheckboxGroup 內時，此 prop 會被忽略（由 FieldLabel 接管）；
+   * CheckboxGroup 內每個 checkbox 的 label 是它自己的選項名，必保留
+   * （同檔 shouldSuppressLabel = insideField && !insideGroup，AR50 anchor）。
    */
   label?: React.ReactNode
   /**
    * Inline description（secondary 文字）。須與 label 搭配使用。
    * 套用 text-body / text-fg-secondary 樣式。
-   * 在 <Field> context 內時此 prop 會被忽略（由 FieldDescription 接管）。
+   * 在 <Field> context 內且不在 CheckboxGroup 內時，此 prop 會被忽略（由 FieldDescription 接管）；
+   * CheckboxGroup 內的 description 屬各選項自有，必保留（同 label 的 group 例外）。
    */
   description?: React.ReactNode
   /** 可選左側 icon(label 前)— 2026-06-12 M30 修:轉發 SelectionItem 既有 canonical 槽(selection-item.tsx jsDoc 為 SSOT;與 avatar 互斥)*/
@@ -188,13 +191,29 @@ const Checkbox = React.forwardRef<
     // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:150-161)
     const resolvedBoxSize = useResolvedFieldSize(size ?? undefined, 'md') as 'sm' | 'md' | 'lg'
 
+    // 2026-07-04 修:display / readonly-in-Field 分支的裸 span/div 原丟棄剩餘 props
+    // (id/data-*/aria-*)且不轉發 forwardRef ref → consumer 的 aria-label 等靜默失效。
+    // 抽出 Radix 專屬 non-DOM props,其餘 DOM props 於兩分支 spread 轉發(與 Switch/
+    // RadioGroup 同修);edit 主路徑不受影響(rootEl 仍 spread 完整 props)。
+    const {
+      checked: checkedProp,
+      defaultChecked: defaultCheckedProp,
+      onCheckedChange: _onCheckedChange,
+      required: _required,
+      name: _name,
+      value: _value,
+      asChild: _asChild,
+      children: _children,
+      ...restDomProps
+    } = props
+
     // ── mode='display'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
     // 純展示模式:無互動 primitive、渲染 ✓ / —(checked=true → ✓ / 其他 → —)。取代 BooleanDisplay。
     if (resolvedMode === 'display') {
-      const isChecked = props.checked === true
+      const isChecked = checkedProp === true
       return isChecked
-        ? <span className="text-foreground">✓</span>
-        : <span className="text-fg-muted">—</span>
+        ? <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="text-foreground">✓</span>
+        : <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="text-fg-muted">—</span>
     }
 
     // ── mode='readonly' in Field(2026-06-12 user 拍板「灰框 + ✓/—」)─────────────
@@ -206,10 +225,12 @@ const Checkbox = React.forwardRef<
     // Scope:僅 Field 內且無 inline label(FieldLabel 接管 label 的表單欄位場景);
     // standalone readOnly(settings list / SelectionItem row)維持原樣鎖互動不變。
     if (effectiveReadOnly && insideField && effectiveLabel == null) {
-      const isChecked = (props.checked ?? props.defaultChecked) === true
+      const isChecked = (checkedProp ?? defaultCheckedProp) === true
       const boxSize = resolvedBoxSize
       return (
         <div
+          {...(restDomProps as React.HTMLAttributes<HTMLDivElement>)}
+          ref={ref as React.Ref<HTMLDivElement>}
           role="checkbox"
           aria-checked={isChecked}
           aria-readonly="true"
@@ -239,6 +260,18 @@ const Checkbox = React.forwardRef<
         aria-describedby={fieldCtx?.descriptionId}
         className={cn(checkboxVariants({ size }), className)}
         {...props}
+        // 2026-07-05 D4 修:readOnly 鎖互動補 label 繞道 — <label htmlFor> 的 synthetic click
+        // 不是 pointer event,cva pointer-events-none 攔不到,點 label 文字仍 toggle。
+        // preventDefault 讓 Radix composeEventHandlers(checkForDefaultPrevented)跳過內部 toggle;
+        // 必列在 {...props} 之後才不被 consumer onClick 覆蓋(readOnly 時 consumer onClick 一併鎖,
+        // 與 pointer-events-none 擋直接點擊的行為一致)。
+        onClick={(event) => {
+          if (effectiveReadOnly) {
+            event.preventDefault()
+            return
+          }
+          props.onClick?.(event)
+        }}
       >
         <CheckboxPrimitive.Indicator className="grid place-content-center text-current">
           {props.checked === 'indeterminate'

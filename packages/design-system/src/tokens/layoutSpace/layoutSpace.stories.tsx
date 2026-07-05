@@ -62,13 +62,13 @@ export const Overview: Story = {
 
       <h3 className="text-h5 mt-8 mb-2">使用規則</h3>
       <ul className="list-disc pl-6 text-body text-fg-secondary space-y-1">
-        <li>跟 block 元素相鄰 → <code>tight</code>(12/16)</li>
-        <li>inline ↔ inline parallel → <code>loose</code>(16/24)</li>
+        <li>跨範疇 + functional 交互 → <code>tight</code>(12/16);同範疇 / bundled → 元件 spec 自管</li>
+        <li>跨範疇 + parallel → <code>loose</code>(16/24)</li>
         <li>容器最底部 → <code>bottom</code>(48 固定)</li>
       </ul>
 
       <p className="text-caption text-fg-muted mt-6">
-        實際 CSS 值見 <code>packages/design-system/src/tokens/layoutSpace/layoutSpace.css</code>;規則 4 條詳 spec.md。
+        實際 CSS 值見 <code>packages/design-system/src/tokens/layoutSpace/layoutSpace.css</code>;規則 6 條(親疏判)詳 spec.md。
       </p>
     </div>
   ),

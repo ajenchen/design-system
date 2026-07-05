@@ -62,6 +62,11 @@ const textareaVariants = cva(
         md: 'text-body',
         lg: 'text-body-lg',
       },
+      // error(2026-07-04 Q1,鏡射 fieldWrapperStyles error variant;Phase D 整併時一起收)
+      error: {
+        true: '',
+        false: '',
+      },
     },
     compoundVariants: [
       // default chrome × mode
@@ -71,9 +76,9 @@ const textareaVariants = cva(
         className: [
           'bg-surface border border-border',
           'hover:border-border-hover',
-          'focus-visible:!border-primary focus-visible:hover:!border-primary',
         ],
       },
+      { mode: 'edit', variant: 'default', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
       {
         mode: 'display',
         variant: 'default',
@@ -98,8 +103,13 @@ const textareaVariants = cva(
         className: [
           'bg-transparent border border-transparent',
           'hover:border-border',
-          'focus-visible:!border-primary focus-visible:hover:!border-primary',
         ],
+      },
+      { mode: 'edit', variant: 'bare', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
+      {
+        mode: 'edit',
+        error: true,
+        className: 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error',
       },
       {
         mode: 'display',
@@ -127,13 +137,13 @@ const textareaVariants = cva(
           '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
           'border border-border',
           'hover:border-border-hover',
-          'focus-visible:!border-primary focus-visible:hover:!border-primary',
           // textarea UA stylesheet 預設 line-height: normal(1.2-1.5 不定),會跟 display
           // `<div>` text-body line-height: 1.5(21px @ 14px)不一致 → cell 進 edit 後 height
           // shift。顯式 leading 對齊 div 行為。
           '!leading-[1.5]',
         ],
       },
+      { mode: 'edit', variant: 'naked', error: false, className: 'focus-visible:!border-primary focus-visible:hover:!border-primary' },
       // 2026-05-13 Q1 R4 verify(per codex Q1 verdict 補 Textarea nuance):
       // Textarea naked display/readonly/disabled 用 `!h-full`,**不**對齊 Field wrapper 的 `!h-auto`。
       // Why divergence:textarea 是 native form element 帶 intrinsic rows-based height,且 cell 內
@@ -150,6 +160,7 @@ const textareaVariants = cva(
       mode: 'edit',
       variant: 'default',
       size: 'md',
+      error: false,
     },
   }
 )
@@ -240,11 +251,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         data-field-mode={resolvedMode}
         data-error={isEditable && error ? '' : undefined}
         className={cn(
-          textareaVariants({ mode: resolvedMode, variant: variant, size }),
-          isEditable && error && [
-            'border-error hover:border-error-hover',
-            'focus-visible:border-error focus-visible:hover:border-error',
-          ],
+          textareaVariants({ mode: resolvedMode, variant: variant, size, error }),
           className
         )}
         {...props}
@@ -272,7 +279,7 @@ export const textareaMeta = {
   //   text input 無 'active'(按下)視覺態(Material/Polaris/Carbon TextArea 共識)。
   states: ['default', 'hover', 'focus-visible', 'readonly', 'disabled', 'error'],
   tokens: {
-    bg: ['bg-disabled', 'bg-surface'],
+    bg: ['bg-disabled', 'bg-readonly', 'bg-surface'], // 2026-07-04 補:readonly×default cva 實際消費(spec「Readonly 特例」主打 token)
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground'],
     ring: [],
   },

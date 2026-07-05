@@ -46,7 +46,7 @@ benchmark:
 />
 ```
 
-上方為自有(own)props。drag handler(`onPointerDownCapture` / `onPointerDown` / `onTouchStart` 等)**非本元件 bespoke typed prop**,而是經 `ResizeHandleProps extends React.HTMLAttributes<HTMLSpanElement>` 的 `...restProps` spread 透傳到底層 `<span>`(與 `onClick` / `onPointerMove` 等 generic DOM 事件同 status)。consumer 接 drag math 即透過這些透傳事件,本 primitive 不耦合。
+上方為自有(own)props。drag handler(`onPointerDownCapture` / `onPointerDown` / `onTouchStart` 等)**非本元件 bespoke typed prop**,而是經 `ResizeHandleProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'role'>`(resize-handle.tsx:38;`role` 被 Omit 型別鎖死不可覆寫 — a11y `role="separator"` SSOT 防漂移)的 `...restProps` spread 透傳到底層 `<span>`(與 `onClick` / `onPointerMove` 等 generic DOM 事件同 status)。consumer 接 drag math 即透過這些透傳事件,本 primitive 不耦合。
 
 **direction**:
 - `horizontal`(拖左右)→ `cursor: col-resize` + `aria-orientation="vertical"`(separator 軸垂直於 drag)

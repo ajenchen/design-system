@@ -11,18 +11,21 @@ export default meta
 
 /* ── Data ─────────────────────────────────────────────── */
 
-type SizeKey = 'sm' | 'md' | 'lg'
+type SizeKey = 'xs' | 'sm' | 'md' | 'lg'
 type PrecisionKey = 'full' | 'half'
 type ModeKey = 'interactive' | 'readOnly' | 'disabled'
 
-const SIZES: SizeKey[] = ['sm', 'md', 'lg']
-// 對齊 item-anatomy inline Avatar(sm=20 / md=24 / lg=24),詳見 rating.spec.md「Icon 尺寸對齊 Avatar inline」
-const SIZE_PX: Record<SizeKey, number> = { sm: 20, md: 24, lg: 24 }
+const SIZES: SizeKey[] = ['xs', 'sm', 'md', 'lg']
+// 對齊 item-anatomy inline Avatar(sm=20 / md=24 / lg=24),詳見 rating.spec.md「為什麼不完全對齊 icon tier — Icon 尺寸對齊 Avatar inline」
+const SIZE_PX: Record<SizeKey, number> = { xs: 20, sm: 20, md: 24, lg: 24 }
 
+// 對齊 rating.spec.md「Size」表 canonical:xs = standalone 預設（商品卡 / 評論列表旁 / 搜尋結果 row,
+// component default）,sm/md/lg 為 Field 配對尺寸(2026-07-04 補 xs — SizeMatrix 不該藏預設尺寸)
 const SIZE_USE: Record<SizeKey, string> = {
-  sm: '商品列表、搜尋結果、DataTable cell',
-  md: '一般卡片、評論列表、商品詳情（預設）',
-  lg: '送出評分的 review form 主 CTA 區',
+  xs: 'Standalone 預設 — 商品卡 / 評論列表旁（component default,container 24 / icon 20）',
+  sm: 'Field sm 並排（Field 配對尺寸）',
+  md: 'Field 預設 — 一般表單評分欄位',
+  lg: '送出評分的 review form、強調的主 CTA 區塊',
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -363,7 +366,7 @@ export const SizeMatrix = {
         <tbody>
           {SIZES.map((sz) => (
             <tr key={sz}>
-              <Td mono>{sz}{sz === 'md' ? ' ★default' : ''}</Td>
+              <Td mono>{sz}{sz === 'md' ? ' ★Field default' : ''}</Td>
               <Td mono>{SIZE_PX[sz]}px</Td>
               <Td mono>gap-1 (4px)</Td>
               <Td>{SIZE_USE[sz]}</Td>

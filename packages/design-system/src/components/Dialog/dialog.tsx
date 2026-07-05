@@ -244,7 +244,8 @@ export const dialogMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 2026-07-04 audit 對齊:容器無 hover/active/disabled 態(spec「狀態處理的職責邊界」明文;對齊 popover meta 已修 pattern)
+  states: ['default'],
   tokens: {
     bg: ['bg-surface-raised'],
     fg: ['text-fg-secondary'],

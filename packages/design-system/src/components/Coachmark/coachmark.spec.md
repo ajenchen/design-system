@@ -166,7 +166,7 @@ Previous(可選)→ Skip(可選)→ Next / Done。對齊 Ant Tour / Intercom con
 
 - **Previous 最左**——回到上一步(負方向,視覺權重低)
 - **Skip 中間**——exit escape hatch,tertiary 不搶焦點;**僅第一步顯示**(見 CTA 語義表)
-- **Next / Done 最右**——推進主動線(正方向,primary 視覺權重高);**Coachmark 抑制開啟時的自動 focus**(`onOpenAutoFocus` preventDefault,連 Radix 預設會 focus 的第一個 focusable 也一併抑制),避免使用者還在讀 body 時按 Enter 誤推進;想推進者自行 tab 到 CTA 再 Enter
+- **Next / Done 最右**——推進主動線(正方向,primary 視覺權重高);**Coachmark 抑制 CTA 自動 focus**(`onOpenAutoFocus` preventDefault 後 focus content 容器本身,非第一個 CTA),避免使用者還在讀 body 時按 Enter 誤推進;想推進者按一下 Tab 即達 CTA 再 Enter(焦點已在 content 內,不觸發 non-modal focus-outside dismiss;2026-07-05 D4 修)
 
 第 1 步通常無 Previous;最後步 Next 改 Done(由 `isLastStep` 控制)。單步驟 CTA 改 `'知道了'`。
 
@@ -178,7 +178,7 @@ Previous(可選)→ Skip(可選)→ Next / Done。對齊 Ant Tour / Intercom con
 |----|-------|------|
 | 浮層外殼 | 繼承 Popover(`bg-surface-raised` / `border-border` / `rounded-lg` / `--elevation-200`) | 改 Popover 自動跟進 |
 | Media 背景 | `bg-muted` | illustration / 透明 PNG 底色 |
-| Title | `text-body-lg font-medium text-foreground` | 比 Popover header 輕(Coachmark 無 header 分隔線) |
+| Title | `text-body-lg font-medium text-foreground` | body 主 title(16px),比 kind header 的 `PopoverTitle` 小標籤(`text-body` 14px)重一階——主教學訊息是視覺主角 |
 | Description | `text-body text-fg-secondary` | 主說明文字 |
 | Step 計數 | `text-body text-fg-secondary tabular-nums` | 跟 body 內文同字體;數字等寬,切換步驟不跳動 |
 | Body padding | `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]` | overlay-surface SSOT(PopoverBody) |
@@ -203,7 +203,7 @@ Previous(可選)→ Skip(可選)→ Next / Done。對齊 Ant Tour / Intercom con
 
 ## A11y 預設
 
-- **焦點管理**:Coachmark **刻意抑制開啟時的自動 focus**(`onOpenAutoFocus` preventDefault),焦點停在 trigger——避免使用者還在讀 body 時 CTA 被 auto-focus 偷觸發(按 Enter 誤推進);想推進者自行 tab 到 CTA。關閉時焦點 return to trigger(Radix 預設 `onCloseAutoFocus`,未 override)
+- **焦點管理**:Coachmark **刻意抑制 CTA 自動 focus**(`onOpenAutoFocus` preventDefault 後 focus content 容器本身,對齊 `dialog.tsx` 的 `?? content` fallback canonical)——避免使用者還在讀 body 時 CTA 被 auto-focus 偷觸發(焦點在容器上按 Enter 無動作);Tab 第一下即達 content 內第一個 CTA。焦點**不**停在 trigger:non-modal Popover 焦點在 content 樹外時按 Tab 會觸發 focus-outside dismiss 誤關閉浮層,CTA 鍵盤永遠到不了(2026-07-05 D4 修;dismiss 機制詳 `popover.spec.md` A11y 段)。關閉時焦點 return to trigger(Radix 預設 `onCloseAutoFocus`,未 override)
 - **Esc 關閉**:預設啟用——user 按 Esc 透過 Radix `onOpenChange` 關閉浮層(效果等同退出),**不觸發 `onSkip` callback**(Esc 是「關閉浮層」非「明確 skip」;若需區分 Esc-退出 vs Skip-按鈕 的追蹤事件,consumer 在 Skip 按鈕的 `onSkip` 處理)
 - **ARIA**:trigger 自動 `aria-expanded` / `aria-controls`,content `role="dialog"`(Radix 預設)
 - **Step 計數 tabular-nums**:螢幕閱讀器讀「2 of 3」語意清楚

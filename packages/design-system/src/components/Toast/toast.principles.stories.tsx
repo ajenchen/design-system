@@ -99,7 +99,7 @@ export const UsageGuidance: Story = {
         >
           ❌ 刪除確認用 Toast
         </Button>
-        <Label warn>↑ 破壞性動作靠 Toast action 確認 → 4 秒消失 / 點錯只能救 → 用 Dialog 聚焦確認</Label>
+        <Label warn>↑ 破壞性動作靠 Toast action 確認 → 10 秒後仍消失 / 點錯只能救 → 用 Dialog 聚焦確認</Label>
       </Rule>
     </div>
     <Toaster />
@@ -113,7 +113,7 @@ export const ActionRule: Story = {
     <div>
       <Rule
         title="Toast action — 讓使用者短暫內復原"
-        note="Undo pattern:執行後 toast 出現 + 「復原」按鈕,使用者有一段時間(預設 4 秒)可以反悔。Gmail / Linear / Slack 都用這個 pattern"
+        note="Undo pattern:執行後 toast 出現 + 「復原」按鈕,使用者有一段時間(含 action 預設 10 秒;2026-07-05 D4)可以反悔。Gmail / Linear / Slack 都用這個 pattern"
       >
         <Button
           variant="tertiary"
@@ -126,12 +126,12 @@ export const ActionRule: Story = {
         >
           刪除訊息(帶 Undo)
         </Button>
-        <Label>↑ 點「刪除」不彈 Dialog 直接刪 + Toast,4 秒內可「復原」</Label>
+        <Label>↑ 點「刪除」不彈 Dialog 直接刪 + Toast,10 秒內可「復原」</Label>
       </Rule>
 
       <Rule
         title="Undo 的好處：避免每個動作都 Dialog 阻斷"
-        note="傳統做法每個刪除都彈 Dialog 確認 → 使用者被反覆阻斷。Undo pattern 讓「未確認即執行」變得安全——錯了 4 秒內可救"
+        note="傳統做法每個刪除都彈 Dialog 確認 → 使用者被反覆阻斷。Undo pattern 讓「未確認即執行」變得安全——錯了 10 秒內可救"
       >
         <Label>✅ 減少 Dialog 阻斷、提升速度、錯誤仍可挽救</Label>
       </Rule>
@@ -153,7 +153,7 @@ export const VariantRule: Story = {
     <div>
       <Rule
         title="success / info / warning / error 各自對應場景"
-        note="跟 Alert 共用同一套 variant × theme 策略。語意由事件類型決定——不靠 consumer 用顏色暗示"
+        note="與 Alert 共用 Notice primitive 與三層 theme 架構(variant × theme 映射各自不同,如 success:Toast 反轉 surface / Alert solid 綠底)。語意由事件類型決定——不靠 consumer 用顏色暗示"
       >
         <div className="flex flex-col gap-2">
           <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '已儲存' })}>success</Button>
@@ -179,8 +179,8 @@ export const DurationRule: Story = {
   render: () => (
     <div>
       <Rule
-        title="預設 4000ms — 足夠讀完一行但不拖累"
-        note="多數場景用預設。使用者有足夠時間讀「已儲存」+ 考慮是否按「復原」。過短 = 來不及看,過長 = 堆積"
+        title="預設 4000ms(無 action)— 足夠讀完一行但不拖累"
+        note="多數場景用預設。使用者有足夠時間讀「已儲存」。過短 = 來不及看,過長 = 堆積"
       >
         <Button variant="tertiary" onClick={() => toast({ variant: 'success', title: '已儲存' })}>
           預設 4000ms
@@ -188,8 +188,8 @@ export const DurationRule: Story = {
       </Rule>
 
       <Rule
-        title="較長（7000-10000ms）— 內容較多或有 action"
-        note="兩行描述 + undo action 需要更多時間。使用者讀完 + 判斷 + 點擊 action"
+        title="有 action → 預設自動加長為 10000ms"
+        note="兩行描述 + undo action 需要更多時間——含鍵盤使用者 Tab 到 action 的路徑(鍵盤焦點不暫停倒數;2026-07-05 D4)。DS 在 action 存在時預設 duration = 10000ms,無需手動指定;內容特多可自行覆寫"
       >
         <Button
           variant="tertiary"
@@ -198,10 +198,9 @@ export const DurationRule: Story = {
             title: '已刪除 3 個項目',
             description: '已移至回收桶,可以在 7 天內復原',
             action: { label: '復原', onClick: () => {} },
-            duration: 7000,
           })}
         >
-          較長 duration(有 description + action)
+          較長 duration(有 description + action,預設 10000ms)
         </Button>
       </Rule>
 

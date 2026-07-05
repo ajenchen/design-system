@@ -37,7 +37,7 @@ export const separatorMeta = {
   sizes: {
 
   },
-  states: ['default'], // 純 Radix Separator.Root,非互動,無 hover/active/focus/disabled(對齊 spec L86/L99 + Tag tag.tsx:232 canonical)
+  states: ['default'], // 純 Radix Separator.Root,非互動,無 hover/active/focus/disabled(對齊 spec「無 StateBehavior」bullet + A11y 段;段名指法免行號漂移)
   tokens: {
     bg: [],
     fg: [],

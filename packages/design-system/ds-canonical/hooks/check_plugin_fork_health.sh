@@ -30,49 +30,57 @@ if ! grep -q '"@qijenchen/design-system"' "$CWD/package.json" 2>/dev/null; then
   exit 0
 fi
 
-# (c) Plugin 已安裝?Anthropic plugin install 可能使用 <plugin> 或
-# <plugin>@<marketplace> directory name;accept both.
-PLUGIN_INSTALLED=0
-# 2026-05-31 fix(infra-audit P1):真實 Claude Code layout = ~/.claude/plugins/marketplaces/<name>/
-# + known_marketplaces.json(keyed by marketplace name)。原查 plugins/design-system + 錯的
-# .claude/marketplaces(漏 plugins/)= 裝了仍誤判未裝。marketplace name = qijenchen-ds。
-MARKETPLACE="qijenchen-ds"
-KM="$HOME/.claude/plugins/known_marketplaces.json"
-[ -d "$HOME/.claude/plugins/marketplaces/$MARKETPLACE" ] && PLUGIN_INSTALLED=1
-[ -d "$CWD/.claude/plugins/marketplaces/$MARKETPLACE" ] && PLUGIN_INSTALLED=1
-{ [ -f "$KM" ] && grep -q "\"$MARKETPLACE\"" "$KM"; } && PLUGIN_INSTALLED=1
-# legacy / 舊 layout fallback
-[ -d "$HOME/.claude/plugins/design-system" ] && PLUGIN_INSTALLED=1
-[ -d "$CWD/.claude/plugins/design-system" ] && PLUGIN_INSTALLED=1
-
-if [ "$PLUGIN_INSTALLED" = "1" ]; then
+# (c) C-prime committed 治理鏈健康?(2026-07-04 dim 58 對齊:主路徑 = committed-config + npm,
+# 免 plugin — 2026-06-17 C-prime 改版,plugin 路線不可靠 per memory reference_cloud_governance_loading)
+# dispatcher(committed 啟動器)+ manifest(npm ship 治理本體)都在 → 官方 fork hooks 會 fire → 健康。
+DISPATCHER="$CWD/.claude/hooks/fork-governance-dispatcher.sh"
+MANIFEST="$CWD/node_modules/@qijenchen/design-system/ds-canonical/fork/manifest.json"
+if [ -f "$DISPATCHER" ] && [ -f "$MANIFEST" ]; then
   exit 0
 fi
 
-# All YES → fork-user 沒裝 plugin → context inject(SessionStart additional context)
+# (d) Legacy plugin 路線仍裝著 → 治理可 cross-load,不 nag(marketplaces layout per 2026-05-31 fix)。
+MARKETPLACE="qijenchen-ds"
+KM="$HOME/.claude/plugins/known_marketplaces.json"
+PLUGIN_INSTALLED=0
+[ -d "$HOME/.claude/plugins/marketplaces/$MARKETPLACE" ] && PLUGIN_INSTALLED=1
+[ -d "$CWD/.claude/plugins/marketplaces/$MARKETPLACE" ] && PLUGIN_INSTALLED=1
+{ [ -f "$KM" ] && grep -q "\"$MARKETPLACE\"" "$KM"; } && PLUGIN_INSTALLED=1
+[ -d "$HOME/.claude/plugins/design-system" ] && PLUGIN_INSTALLED=1
+[ -d "$CWD/.claude/plugins/design-system" ] && PLUGIN_INSTALLED=1
+[ "$PLUGIN_INSTALLED" = "1" ] && exit 0
+
+# 治理鏈缺失 → context inject(SessionStart additional context),修法 = npm(免 plugin)
+if [ -f "$DISPATCHER" ]; then
+  MISSING_DESC="接線骨架(dispatcher)已 commit ✅,但治理本體 manifest 不在 node_modules ❌(還沒 npm install)"
+  FIX_CMD="npm install   # 治理本體隨 @qijenchen/design-system ship,裝完 dispatcher 自動跑官方 fork hooks"
+else
+  MISSING_DESC="C-prime 接線骨架(.claude/hooks/fork-governance-dispatcher.sh)不存在 ❌(fork 尚未 adopt C-prime)"
+  FIX_CMD="npm run sync-all   # 從 npm 刷新 committed 啟動器 + settings + skills 骨架;首次啟用只需 npm install"
+fi
+
 cat <<EOF
-🚨 Fork-user plugin not installed — DS governance hooks 不會 fire,憑記憶寫 mock 不會被攔。
+🚨 Fork-user DS 治理鏈未就位 — 官方 fork governance hooks 不會 fire,憑記憶寫 mock 不會被攔。
 
 偵測:
   cwd = $CWD
   package.json 含 @qijenchen/design-system dep ✅
-  ~/.claude/plugins/design-system@qijenchen-ds/ 或 .claude/plugins/design-system@qijenchen-ds/ 不存在 ❌
+  $MISSING_DESC
 
 → 後果(2026-05-26 anchor event):憑記憶寫 App.tsx mock(漏 SidebarTrigger / collapsible / startIcon /
   tooltip / SidebarFooter)= production-grade fork-user 跑版 anti-pattern。
 
-修法:**session 開始第一件事必跑**
-  1. \`/plugin marketplace add github:ajenchen/design-system\`
-  2. \`/plugin install design-system@qijenchen-ds\`(or 對應 plugin name per marketplace.json)
+修法(**session 開始第一件事,終端跑 1 條;免 /plugin install**):
+  $FIX_CMD
 
-跑完 plugin install 後:
-  - 59 個 DS governance hooks 自動 fire(M29 anchor preflight / approval-preflight / story_invariants / inject_deploy_url_after_push 等;count snapshot 2026-05-29)
-  - DS canonical / rules / skills 從 ~/.claude/plugins/ 可 cross-load
-  - Fork-user 寫 App.tsx 時憑記憶寫 mock 會被 mechanical BLOCKER 攔
+就位後:
+  - fork-governance-dispatcher.sh 每 event 讀 node_modules 官方 manifest 跑全部 fork 治理 hooks(BLOCKER 會轉發攔截)
+  - DS canonical / rules / skills 從 node_modules/@qijenchen/design-system/ds-canonical/ cross-load
+  - 憑記憶寫 mock 會被 mechanical BLOCKER 攔
 
 對應 canonical:
-  - product-workspace CLAUDE.md「Fork-and-go onboarding」step 2-3
-  - .claude-plugin/marketplace.json
+  - template CLAUDE.md「🚀 Onboarding(C-prime)」段
+  - ds-canonical/fork/manifest.json(build-fork-governance.mjs 生成)
 EOF
 exit 0
 }

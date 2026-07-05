@@ -40,7 +40,7 @@ export const ReadOnlyProductRating: Story = {
                 value={p.rating}
                 readOnly
                 precision="half"
-                size="sm"
+                size="xs"
                 aria-label={`平均評分 ${p.rating} 星，共 5 星,${p.count} 則評論`}
               />
               <span className="text-caption text-fg-secondary">{p.rating}</span>

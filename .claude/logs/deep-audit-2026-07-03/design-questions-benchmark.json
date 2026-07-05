@@ -1,0 +1,280 @@
+{
+ "failed": [],
+ "groups": [
+  {
+   "answers": [
+    {
+     "q": "Q1 error+focus 邊框優先序:error 欄位聚焦時,邊框該維持紅(error)還是切藍(focus)?",
+     "dsFacts": "field.spec.md:389 canonical 寫「focus dominates everything(focus 勝 hover/open/error-rest)」並宣稱「對齊 Material 3 / Polaris / Ant Design 5 共識」但已標 <!-- @benchmark-unverified -->;同檔 :398 state 表 error row 卻寫 `focus-within:border-error focus-within:hover:border-error`(聚焦維持紅)= 自相矛盾。input.tsx:160-161 與 number-input.tsx:147-148 各帶 `border-error hover:border-error-hover focus-within:border-error focus-within:hover:border-error`;但兩者都消費 fieldWrapperStyles(input.tsx:158 / number-input.tsx:145),而 field-wrapper.tsx:93(另 :128 / :177 共 3 處 compoundVariant)是 `focus-within:!border-primary focus-within:hover:!border-primary`(!important)→ per-control 的 focus-within:border-error 被蓋 = dead code,現行為 = 聚焦永遠藍框。",
+     "benchmarks": [
+      {
+       "source": "MUI OutlinedInput(Material)",
+       "finding": "error rule 排在 focused rule 之後、同 specificity(皆單 class)→ error+focused 同時成立時 borderColor 紅贏(focused 只留 borderWidth 2px 加粗);即聚焦中的 error 欄位 = 紅框加粗",
+       "cite": "https://raw.githubusercontent.com/mui/material-ui/master/packages/mui-material/src/OutlinedInput/OutlinedInput.js(`&.Mui-error .notchedOutline { borderColor: palette.error.main }` 位於 focused variant 之後)"
+      },
+      {
+       "source": "Ant Design 5 Input",
+       "finding": "status=error 的 genOutlinedStatusStyle 明寫 `activeBorderColor: token.colorError` + `activeShadow: token.errorActiveShadow` → 聚焦/active 時維持紅框 + 紅色 glow,不切藍",
+       "cite": "https://raw.githubusercontent.com/ant-design/ant-design/master/components/input/style/variants.ts"
+      },
+      {
+       "source": "Polaris TextField(Shopify)",
+       "finding": "雙通道並存:error 的 `border-color: var(--p-color-border-critical-secondary)`(紅)在聚焦時持續,focus 指示是獨立 `outline: solid var(--p-color-border-focus)` + outline-offset 畫在 border 外圈 → 紅 border + 藍 ring 同時可見",
+       "cite": "https://raw.githubusercontent.com/Shopify/polaris/main/polaris-react/src/components/TextField/TextField.module.css"
+      },
+      {
+       "source": "Carbon TextInput(IBM)",
+       "finding": "唯一例外:`:focus` 的 focus-outline('outline')(藍)以 specificity 蓋過 `--invalid` 的 focus-outline('invalid')(紅)→ 聚焦時藍 outline 贏;但 error 訊號仍由欄位內紅色 error icon + helper text 保留,非只靠邊框",
+       "cite": "https://raw.githubusercontent.com/carbon-design-system/carbon/main/packages/styles/scss/components/text-input/_text-input.scss"
+      }
+     ],
+     "recommendation": "error 欄位聚焦時邊框應維持紅(error 勝 focus 的「顏色」通道;focus 改用加粗 / ring / shadow 等第二通道表達)。理由:4 家中 3 家(MUI 紅框加粗、Ant 紅框紅 glow、Polaris 紅 border + 獨立藍 focus ring)聚焦時 error 紅仍可見,唯一切藍的 Carbon 也靠 in-field 紅 icon 補償——DS 邊框是唯一 error 載體,切藍會讓「使用者正在修錯」時完全失去 error 訊號;且 M23 DS 內部 canonical 多數證據(field.spec.md:398 error row + input.tsx:161 / number-input.tsx:148 原意)本來就是紅,只是被 field-wrapper.tsx:93 的 !important 意外殺掉。落地:field-wrapper 3 處 `focus-within:!border-primary` 需對 error state 讓位(error 收進 compoundVariants 或以 aria-invalid/data-error guard),並修正 spec:389 的錯誤 benchmark 宣稱(「Material/Ant 共識 focus 勝 error」已被本次 fetch 證偽,該行本就標 @benchmark-unverified)。",
+     "confidence": "fetched"
+    },
+    {
+     "q": "Q2 hover×selected 優先序:選中項被 hover 時該顯示 hover bg 還是維持 selected bg?",
+     "dsFacts": "menu-item.tsx:198-199:`!disabled && !selected && 'hover:bg-neutral-hover'` + `!disabled && selected && 'bg-neutral-selected'` — selected 時刻意不掛 hover class,selected bg 贏(檔內註明 bg 是唯一選中指示器)。dropdown-menu.tsx:62:radixItemClass 含 `data-[highlighted]:bg-neutral-hover`(Radix 在 mouse hover 與 keyboard arrow nav 都 set data-highlighted,見 :24-:37 docblock);:248 `selected && 'bg-neutral-selected'`、:428 RadioItem `data-[state=checked]:bg-neutral-selected` — highlighted 蓋過 selected,行為與 menu-item 相反 = DS 內部 drift。",
+     "benchmarks": [
+      {
+       "source": "MUI MenuItem(Material)",
+       "finding": "selected+hover = 疊加通道:`backgroundColor: alpha(primary.main, selectedOpacity + hoverOpacity)` — hover 不取代 selected,而是在 selected bg 上加深一階,兩訊號並存",
+       "cite": "https://raw.githubusercontent.com/mui/material-ui/master/packages/mui-material/src/MenuItem/MenuItem.js"
+      },
+      {
+       "source": "Ant Design 5 Menu",
+       "finding": "selected 贏:hover bg selector 明寫 `:not(-item-selected):not(-submenu-selected)` 排除選中項 → 選中項被 hover 時維持 itemSelectedBg,不套 itemHoverBg",
+       "cite": "https://raw.githubusercontent.com/ant-design/ant-design/master/components/menu/style/theme.ts"
+      },
+      {
+       "source": "VS Code list widget",
+       "finding": "selected 贏:hoverBackground selector = `.monaco-list-row:hover:not(.selected):not(.focused)` — hover bg 只給未選中 row,選中 row 保持 activeSelection/inactiveSelection bg(keyboard focus 另有獨立 focus outline 通道)",
+       "cite": "https://raw.githubusercontent.com/microsoft/vscode/main/src/vs/base/browser/ui/list/listWidget.ts"
+      },
+      {
+       "source": "Radix Themes base-menu",
+       "finding": "highlighted 一律套 bg(`[data-highlighted] { background-color: var(--accent-a4/-9) }`),但 checked/selected 完全不用 bg 表達(只有 ItemIndicator checkmark)→ bg 通道專屬 highlight,無衝突;前提與 DS 不同(DS 以 bg 作選中指示器),不可直接套用",
+       "cite": "https://raw.githubusercontent.com/radix-ui/themes/main/packages/radix-ui-themes/src/components/_internal/base-menu.css"
+      }
+     ],
+     "recommendation": "selected bg 必須贏 mouse hover(hover bg 不得洗掉 selected bg),dropdown-menu.tsx 的 data-[highlighted] 蓋過 selected 是 drift,應對齊 menu-item.tsx:198。理由:Ant Menu 與 VS Code 都用 `:not(selected)` 明確排除、MUI 也不讓 hover 取代 selected(用疊加加深),而 Radix「highlight 贏」的前提是 selection 根本不靠 bg——DS 的 bg-neutral-selected 是唯一選中指示器,被 hover 洗掉 = 選中資訊消失;且 M23 DS 內部既有 canonical(menu-item.tsx:198 刻意 guard)已站在 selected 贏這邊。附帶條件:Radix data-[highlighted] 同時是 keyboard cursor,selected 項被 arrow nav 停留時不可完全無 feedback——建議 selected+highlighted 疊加時用加深一階 token(對齊 MUI selectedOpacity+hoverOpacity idiom),最低限度也要保住 selected bg 不被 hover 取代。",
+     "confidence": "fetched"
+    }
+   ],
+   "group": "state-precedence"
+  },
+  {
+   "answers": [
+    {
+     "q": "Q3 Select/SelectMenu loading 語意:async loading 中已有 stale options 時,保留 options + spinner,還是清空替換?",
+     "dsFacts": "spec 與 jsDoc 宣稱「取代 options」:select.spec.md:276「dropdown body 內取代 options 顯 <Empty icon={<CircularProgress size={48}/>}/>」、select.tsx:81-84 同句、select-menu.tsx:89-92 docblock「取代 options」。但 code 實際:select-menu.tsx:347-354 spinner 渲染在 cmdk 的 <CommandEmpty> 內({loading ? <Empty icon={<CircularProgress/>}/> : <Empty description={emptyText}/>}),而 cmdk CommandEmpty 只在搜尋零結果時 auto-render — 所以已有 stale options 時 options 照常顯示、spinner 完全不出現,spec 的「取代」從未發生。另 spec 同段自稱「對齊 MUI Autocomplete loadingText 雙層」。",
+     "benchmarks": [
+      {
+       "source": "MUI Autocomplete API(官方 docs)",
+       "finding": "loading prop 逐字:「shows the loadingText in place of suggestions (only if there are no suggestions to show, for example options are empty)」— 已有 options 時保留顯示,loadingText 只佔 empty slot。跟本 DS code 現行行為完全一致。",
+       "cite": "https://mui.com/material-ui/api/autocomplete/"
+      },
+      {
+       "source": "Ant Design Select(官方 docs + GitHub demo source)",
+       "finding": "loading prop = trigger suffix 位置 spinner(issue #42631 佐證 spin icon 在 suffixIcon 位);官方 async demo select-users.tsx 是 consumer 自己 setOptions([]) 清空 + notFoundContent={fetching ? <Spin size=\"small\"/> : ...} — dropdown spinner 一樣住在 empty slot,「清空」是 consumer 決策不是元件自動行為。notFoundContent default 'Not Found'。",
+       "cite": "https://raw.githubusercontent.com/ant-design/ant-design/master/components/select/demo/select-users.tsx + https://ant.design/components/select/"
+      },
+      {
+       "source": "Polaris Autocomplete(GitHub source)",
+       "finding": "唯一自動替換派:loading ? <Listbox.Loading/> + `optionsMarkup && (!loading || willLoadMoreResults) ? optionsMarkup : null` — loading 時藏 options 顯 spinner;但 willLoadMoreResults(load-more 追加)時保留 options + spinner 並存。",
+       "cite": "https://raw.githubusercontent.com/Shopify/polaris/main/polaris-react/src/components/Autocomplete/Autocomplete.tsx"
+      },
+      {
+       "source": "cmdk(Radix 生態社群慣例,README)",
+       "finding": "cmdk 提供獨立 Command.Loading(「You should conditionally render this with progress while loading asynchronous items」)與 Command.Empty(「Automatically renders when there are no results for the search query」)分離 — 社群正解是 loading 用專屬 Loading slot,不塞 Empty。",
+       "cite": "https://raw.githubusercontent.com/pacocoursey/cmdk/main/README.md"
+      }
+     ],
+     "recommendation": "保留 code 現行行為(spinner 只在無可顯示選項時佔 empty slot、stale options 不清空)、改 spec/jsDoc 措辭修 drift:世界級共識偏「保留 stale options」(MUI 逐字明文只在 options 空時顯 loadingText;Ant 清空是 consumer 自選;Polaris 是唯一自動替換派且 load-more 情境也保留),且 spec 自己 cite 的 MUI benchmark 實際支持的就是 code 行為,是 spec「取代 options」一句過度宣稱 — 修文字非修 code(M23:code 已對齊 MUI + cmdk 機制)。若日後要 async-append UX,canonical 擴充路徑是採 cmdk 原生 Command.Loading slot(頂/底部 spinner 與 options 並存),不是清空替換。",
+     "confidence": "fetched"
+    },
+    {
+     "q": "Q4 emptyText 死 prop:接線(轉發到底層)還是刪 spec 承諾?",
+     "dsFacts": "SelectMenu primitive 已有 emptyText prop(select-menu.tsx:88 宣告、:143 default『沒有符合的選項』、:353 渲染 <Empty description={emptyText}/>)。但 (1) Select:select.spec.md:282 承諾「emptyText 預設…可覆寫」,而 SelectProps destructure(select.tsx:461)無 emptyText、render SelectMenu(select.tsx:624-639)也沒轉發 — Select 層死承諾;select.tsx:289 的 `const emptyText` 是另一回事(trigger 空值顯示 = placeholder ?? EMPTY_DISPLAY)。(2) PeoplePicker:people-picker.tsx:70-72 jsDoc 宣稱 emptyText「僅用於 SelectMenu noResultsText」(此 prop 名根本不存在,SelectMenu 的是 emptyText),實際 :259/:358 轉發 `emptyPlaceholder={emptyText}` 給 Combobox,而 combobox.tsx:791 emptyPlaceholder 只用於 trigger 空值顯示(placeholder ?? emptyPlaceholder),PeoplePicker 又永遠傳 placeholder → emptyText 完全 dead;Combobox 本身也沒有任何 empty 文字轉發給 SelectMenu(grep 無)。",
+     "benchmarks": [
+      {
+       "source": "MUI Autocomplete API(官方 docs)",
+       "finding": "有 noOptionsText prop:「Text to display when there are no options. For localization purposes, you can use the provided translations.」default 'No options' — 公開可覆寫。",
+       "cite": "https://mui.com/material-ui/api/autocomplete/"
+      },
+      {
+       "source": "Ant Design Select(官方 docs)",
+       "finding": "有 notFoundContent prop:「Specify content to show when no result matches」default 'Not Found' — 公開可覆寫,且官方 async demo 依賴它塞 <Spin/>。",
+       "cite": "https://ant.design/components/select/"
+      },
+      {
+       "source": "Polaris Autocomplete(官方 docs)",
+       "finding": "有 emptyState prop:「Is rendered when there are no options.」type React.ReactNode — 公開可覆寫。",
+       "cite": "https://polaris-react.shopify.com/components/selection-and-input/autocomplete"
+      }
+     ],
+     "recommendation": "接線派:三家世界級(MUI noOptionsText / Ant notFoundContent / Polaris emptyState)全數公開此覆寫點,刪 spec 承諾違反全票共識;且 SelectMenu primitive 的 emptyText SSOT 已存在(select-menu.tsx:88),只差 Select 加 prop 轉發一行 + PeoplePicker 把 emptyText 改接到 menu empty slot(需 Combobox 補同名 pass-through)— 是最小、消費既有 SSOT(M23)的世界級做法。同時修 people-picker.tsx:70 的幻覺 prop 名「noResultsText」→「emptyText」,並依 1-cycle 註解(people-picker.tsx:2、:257)完成 emptyPlaceholder forward 的既定退場。",
+     "confidence": "fetched"
+    },
+    {
+     "q": "Q5 ButtonGroup/ButtonDivider + CheckboxGroup 未 export:補 export 還是降級 internal?",
+     "dsFacts": "模組層已 export:button-group.tsx:96 `export { ButtonGroup, ButtonDivider }`、checkbox-group.tsx 檔尾 `export { CheckboxGroup }`(+ :14 CheckboxGroupContext、:61 CheckboxGroupProps)。但 auto-generated per-component index 只 re-export 主檔(components/Button/index.ts:5 只 `export * from './button'`;Checkbox/index.ts:5 只 `./checkbox`)— 因 scripts/gen-component-indexes.mjs:11 convention「each <Name>/ has <kebab-name>.tsx as primary entry. Index re-exports that」只認單一主檔;root barrel(src/index.ts:13,17)又只 export index → consumer 經 npm package 拿不到。spec/stories 卻當 consumer API 教:checkbox.spec.md:266-268「群組模式(CheckboxGroup)」明文對齊 Ant Checkbox.Group / Chakra CheckboxGroup / Mantine Checkbox.Group;bulk-action-bar.spec.md:76 教 consumer 放 `<ButtonDivider />`;separator.spec.md:34,77,111 同;button.principles.stories.tsx:301,333 示範 ButtonGroup;內部 6+ stories 用 deep path `@/design-system/components/Checkbox/checkbox-group` 繞過。兩者皆無 isInternal frontmatter(DS 的 public/internal SSOT,ui-development.md「Root barrel front-door 排除」段)— 即依 DS 自家 canonical 它們是 public-intent,漏 export 是 generator convention 的機械缺口。",
+     "benchmarks": [
+      {
+       "source": "MUI ButtonGroup(官方 docs)",
+       "finding": "公開頂層元件:`import ButtonGroup from '@mui/material/ButtonGroup'`,「The ButtonGroup component can be used to group related buttons.」",
+       "cite": "https://mui.com/material-ui/react-button-group/"
+      },
+      {
+       "source": "Ant Design Space.Compact(官方 docs)",
+       "finding": "公開 API(Button.Group 的繼任):`import { Space } from 'antd'`,「Use Space.Compact when child form components are compactly connected and the border is collapsed. The supported components are: Button, …」含 Button Compact Mode 範例。",
+       "cite": "https://ant.design/components/space/"
+      },
+      {
+       "source": "Chakra UI CheckboxGroup(官方 docs)",
+       "finding": "公開元件:「Use the CheckboxGroup component to group multiple checkboxes together.」由 @chakra-ui/react 匯出。",
+       "cite": "https://chakra-ui.com/docs/components/checkbox"
+      },
+      {
+       "source": "Mantine Checkbox.Group(官方 docs)",
+       "finding": "公開 consumer-facing API:`import { Checkbox } from '@mantine/core'`,「Checkbox.Group manages the state of multiple checkboxes, it accepts value and onChange props…」。",
+       "cite": "https://mantine.dev/core/checkbox/"
+      }
+     ],
+     "recommendation": "補 export 派:四家世界級(MUI ButtonGroup / Ant Space.Compact / Chakra CheckboxGroup / Mantine Checkbox.Group)全數 public,降級 internal 違反全票共識,也違反 DS 自家雙重 canonical — spec/stories 已當 consumer API 教(checkbox.spec.md:266 甚至 cite 這三家佐證 public),且無 isInternal frontmatter(ui-development.md public/internal SSOT 判準 = consumer-facing intent)。正解是修機械缺口:擴 gen-component-indexes.mjs 讓同資料夾 sibling 檔(button-group.tsx / checkbox-group.tsx)進 per-component index(或主檔 re-export sibling),root barrel 隨 index 自動涵蓋 — 同時把內部 deep-path import 收斂,並跑 build:lib 驗 .d.ts(型別 surface 改動,self-verify.md Post-edit)。",
+     "confidence": "fetched"
+    }
+   ],
+   "group": "api-surface"
+  },
+  {
+   "answers": [
+    {
+     "q": "Q6 DataTable 日期 filter 精度:實作 day-truncation(spec 為準)還是簡化 spec(code 為準)?",
+     "dsFacts": "Spec 承諾雙精度:filter-operators.spec.md:14「filter 比對精度:includeTime=true 走 ms 精度(避開 Airtable 著名地雷:filter 忽略 time)」+ :101「includeTime=true 時 ValueShape 切 datetime_*,filter 比對走 ms 精度。is_relative 不受影響(relative 本質仍 day-level,today = 從今天 00:00 到 23:59:59)」+ :222 決策表 #12;data-table.spec.md:367「ms-precision when meta.includeTime=true」— 反面即 includeTime=false 承諾 day-level。Code 現況:filter-tree.ts:261-271 is_before/is_after/is_on_or_before/is_on_or_after/is_between 一律 raw new Date(...).getTime() ms 比對,無 includeTime 分支、無 startOfDay 截斷;filter-tree.ts:243-246 date 的 is op 更掉進 generic 分支走 lowercase 字串相等(根本不做 Date 解析);唯一正確 day-level 的是 is_relative(filter-tree.ts:22-37 relativeKeyToRange 用 date-fns startOfDay/endOfDay)。另 evaluateTree 現簽名拿不到 column meta,無從分辨 date-is 與 text-is。",
+     "benchmarks": [
+      {
+       "source": "AG Grid Date Filter(官方 docs,fetched)",
+       "finding": "預設 comparator「assumes that the Dates do not have a time (e.g. they are at midnight local time)」= day-level 是預設;若資料含 time 必須移除 time / 切 dateTime type / 自供 comparator。且 AG Grid 有同名旗標 includeTime(預設 false)控制比對是否含 time — 與本 DS 的 column.meta.includeTime 語意一模一樣:false=day、true=含 time。",
+       "cite": "https://www.ag-grid.com/javascript-data-grid/filter-date/"
+      },
+      {
+       "source": "MUI X DataGrid gridDateOperators 原始碼(GitHub master,fetched)",
+       "finding": "以 showTime 參數區分 date vs dateTime 欄位:date 欄比對前 dateCopy.setHours(0, 0, 0, 0) 歸零時分秒毫秒(day-level truncation),dateTime 欄只 setSeconds(0, 0)(minute-level);並含 timezone offset 補償避免跨日漂移。官方實作 = day-truncation 為 date 欄位的正規做法。",
+       "cite": "https://github.com/mui/mui-x/blob/master/packages/x-data-grid/src/colDef/gridDateOperators.ts"
+      },
+      {
+       "source": "Ant Design Table date filter(GitHub issue #46013 / discussion #35359,search-only)",
+       "finding": "Ant Table 不內建 date comparator,官方/社群 canonical 是自訂 filterDropdown + onFilter 內用 dayjs(...).isSame(value, 'day') day 粒度比對 — 即消費端自行 day-truncate,無人用 raw ms 相等比對日期。",
+       "cite": "https://github.com/ant-design/ant-design/issues/46013"
+      }
+     ],
+     "recommendation": "實作 day-truncation,spec 為準(M23:DS 既有 canonical = spec 雙精度契約,且 spec :200 明言型別落地於 code,非授權 code 覆蓋行為語意)。3/3 世界級一致:date 欄位預設 day-level(AG Grid 預設 midnight + 同名 includeTime 旗標預設 false;MUI X date 欄 setHours(0,0,0,0);Ant 社群 dayjs isSame 'day'),簡化 spec 走全 ms 反而重蹈 spec 自己引為地雷的 Airtable 對偶 bug(cell 含 time 時 day-filter 的 is/is_between 邊界漏抓),且 code 內 is_relative 已是 day-level — 全 ms 化會讓同一欄 relative 與 absolute op 精度不一致(M12 root invariant:比對精度由 column meta type+includeTime 決定,不是由 op 決定)。修法:evaluateTree 傳入 column meta,date ops 在 includeTime=false 時兩端 startOfDay 截斷(is = same day、is_between 端點含當天整天),並把 date 的 is 從字串相等分支拉出走 Date 解析。此為 SSOT-affecting 行為改動,實作前仍應照 autonomy canonical 向 user ASK 拍板。",
+     "confidence": "fetched"
+    },
+    {
+     "q": "Q7 Empty 容器級權限提示:容器級(卡片/區塊)無權限狀態可否用 Empty?",
+     "dsFacts": "empty.spec.md:42「何時不用」表只禁整頁級:「整頁級別的 404 / 無權限 → 專屬錯誤頁面(Empty 是容器內提示,整頁錯誤需要完整頁面佈局)」;:29-34「何時用」列 Table/list/grid 空狀態、SelectMenu 下拉空、Page section 無內容、初次引導,未明文容器級權限。empty.principles.stories.tsx:96 同樣只 ban「❌ 不用 Empty 做整頁級 404 / 無權限」。empty.stories.tsx:67-80 NoPermission story 已示範容器級用法:max-w-md 卡片內 icon=Lock「你沒有檢視這個專案的權限」+ description 指引聯絡擁有者 + tertiary action「聯絡擁有者」— 即 DS 內部三處(spec 禁令範圍、principles、showcase)一致地把禁令限縮在整頁級,容器級是既成示範但 spec「何時用」缺明文。",
+     "benchmarks": [
+      {
+       "source": "Atlassian Design System — EmptyState(官方 docs,fetched)",
+       "finding": "權限案例就是 EmptyState 的官方 canonical 範例:標題「You don't have access to this issue」+ description「ask a project admin for permission」+ primary action「Request access」貫穿全部 code sample;且提供 width='narrow'/'wide' 供非整頁容器使用 — 容器級權限提示明確屬 empty state 一級用例。",
+       "cite": "https://developer.atlassian.com/platform/forge/ui-kit/components/empty-state/"
+      },
+      {
+       "source": "IBM Carbon — Empty states pattern(官方 docs,fetched)",
+       "finding": "三大類 scenario 中「Error management empty states」明文含權限:「The user does not have permission to view the data. Suggest steps or process to request access.」;且明言 empty state「can occur anywhere your app can display data, including dashboards, data tables, tiles, full pages, and side panels」— 容器級(tile/side panel)是正式適用範圍,並對 smaller vs larger empty spaces 給不同 layout 指引。",
+       "cite": "https://v10.carbondesignsystem.com/patterns/empty-states-pattern/"
+      },
+      {
+       "source": "Shopify Polaris — EmptyState(官方 docs,fetched)",
+       "finding": "Polaris 把自家 EmptyState 元件 scope 在整頁:「intended for use when a full page in the admin is empty, and not for individual elements or areas in the interface」,定位偏 onboarding/activation;錯誤/警示訊息歸 Banner。此為元件佈局 scope 的分工(Polaris 容器級空狀態不用該元件),非「權限不得用 empty state 語言」的語意禁令。",
+       "cite": "https://polaris-react.shopify.com/components/layout-and-structure/empty-state"
+      },
+      {
+       "source": "Ant Design — Empty + Result(官方 docs,fetched)",
+       "finding": "Empty 只講兩用例:「When there is no data provided, display for friendly tips」+ fresh-new onboarding,不涉權限;403 未授權(「you are not authorized to access this page」)由 Result 元件的內建 403 status 承接 — Ant 把整頁級權限歸專屬 feedback 元件,與本 DS「整頁級 → 專屬錯誤頁面」禁令同構。",
+       "cite": "https://ant.design/components/empty ; https://ant.design/components/result"
+      }
+     ],
+     "recommendation": "可以 — 容器級權限狀態用 Empty 是合法用法,維持 NoPermission story 並在 spec「何時用」補一行明文(M23:DS 既有 canonical 三處已一致限縮禁令在整頁級,story 是既成示範;外部 Atlassian 官方 canonical 範例 + Carbon error-management scenario 明文背書容器級權限 empty state,Ant Result 403 分工恰好對應 DS 既有「整頁級 → 專屬錯誤頁面」禁令,Polaris 的 full-page-only 是其元件 layout scope 非語意禁令)。建議 spec「何時用」加:「容器級無權限提示:卡片/區塊/面板內容因權限不可見 — 必附 request-access 類 action(對齊 Atlassian『Request access』/ Carbon『suggest steps to request access』),整頁級無權限照舊改用專屬錯誤頁面」。此為 spec canonical 補明文(codify 既成一致行為,非改語意),但動「何時用」表屬 spec 視覺結構段落,落地前仍走 ASK 讓 user 拍板。",
+     "confidence": "fetched"
+    }
+   ],
+   "group": "behavior-contract"
+  },
+  {
+   "answers": [
+    {
+     "q": "Q8 ProfileCard internal 標記 vs avatar.spec.md 教 consumer 直接組 ProfileCard — 升 public 還是改教 wrapper?",
+     "dsFacts": "矛盾實錘:(1) profile-card.spec.md:4-5 frontmatter `traits: - isInternal`;profile-card.tsx:2 jsDoc `@internal`;root barrel packages/design-system/src/index.ts:64-78 internal 排除清單含 `components/ProfileCard`(line 74)— per dim-72 SSOT internal 只能 subpath import、「另外包裝過 + 自行確認」才可用。(2) 但 avatar.spec.md:47-68「Avatar HoverCard 原則(DS-wide canonical,必遵守)」:任何 person avatar hover 必出 ProfileCard、default 不 opt-in,且「消費者實作 canonical」code example(52-68)要 consumer 直接寫 `<ProfileCard name=... actions={<ProfileCardDefaultActions />} onViewMore=... />`;適用範圍(74-79)= ALL person avatars 無例外。(3) avatar.tsx:135 `hoverCard?: React.ReactNode` — Avatar 不代組 ProfileCard,內容由 consumer 建構,所以 consumer 必須 import ProfileCard。(4) .claude/rules/ui-development.md「Public vs Internal canonical」唯一判準 = 「DS 是否想讓 consumer 直接 import 來用它」;internal 定義 = 「consumer 永遠不碰」。avatar.spec canonical 明確要 consumer 直接用 → 按 DS 自家 intent-based 判準,isInternal 標記自相矛盾。",
+     "benchmarks": [
+      {
+       "source": "Atlassian Design System — @atlaskit/profilecard",
+       "finding": "ProfileCard 是 public 可安裝 npm 套件(v24.x,Apache-2.0),export ProfileCard(standalone card)+ ProfileCardTrigger(hover trigger wrapper),有官方 docs/examples/changelog — 正是「hover avatar → profile card」的 consumer-facing public standalone 元件(search-corroborated:npm 頁 + atlaskit.atlassian.com package 頁,直接 WebFetch 403/JS-rendered)",
+       "cite": "https://www.npmjs.com/package/@atlaskit/profilecard + https://atlaskit.atlassian.com/packages/people-and-teams/profilecard"
+      },
+      {
+       "source": "Material UI 官方 all-components 清單(WebFetch 成功)",
+       "finding": "MUI 無 ProfileCard / HoverCard 專用元件;最接近為 Card + Popover + Avatar,官方立場 = consumer 自行 compose。但 MUI 也沒有「hover 必出 profile card」的 DS-wide default 行為,故無此元件是因無此 canonical,非「該元件應 internal」的證據",
+       "cite": "https://mui.com/material-ui/all-components/"
+      },
+      {
+       "source": "GitHub Primer 官方 component 清單(WebFetch 成功)",
+       "finding": "Primer 不 ship public Hovercard / ProfileCard(最接近 Avatar / AvatarStack / Card / Popover / Tooltip);GitHub 產品的 user hovercard(data-hovercard-type)是 server-rendered 私有實作不開放 — 即「私有 hovercard」路線的代表,但其前提是平台自己 render 所有 avatar,與本 DS「consumer 自組 hoverCard content」架構不同",
+       "cite": "https://primer.style/product/components/"
+      }
+     ],
+     "recommendation": "ProfileCard 升 public(刪 isInternal frontmatter → 重跑 gen-design-system-barrel),avatar.spec 教學不用改。理由:M23 DS 內 canonical 優先 — avatar.spec DS-wide「hover 必出 ProfileCard、無例外」default 行為已要求每個 consumer 直接 import ProfileCard + ProfileCardDefaultActions,按 ui-development.md 唯一判準(DS 想讓 consumer 直接用 = public)internal 標記是 governance bug;世界級對照中唯一有同款「hover-profile default」canonical 的 Atlassian 就是 public standalone(@atlaskit/profilecard),MUI/Primer 無此元件是因無此行為 canonical,不構成反例;改教 wrapper(Avatar 收 PersonData 自動組卡)則是 Avatar API 大改 + 失去 content 彈性,無世界級對照支持。屬 SSOT-affecting(public API surface 變動)→ 需 user 拍板。",
+     "confidence": "fetched"
+    },
+    {
+     "q": "Q9 DescriptionList dd 內互動元件:禁止事項 vs 邊界案例 vs principles NoInteractionRule 三立場並存,哪個是 canonical?",
+     "dsFacts": "三處立場:(1) description-list.spec.md:167 禁止事項「❌ 不要在 <dt>/<dd> 內嵌互動元件(Button / Input)— 破壞 SR 敘事流;需要互動改用 Field 或 action row」。(2) description-list.spec.md:197 邊界案例「若 <dd> 內 consumer 嵌入 inline action(Button / Link),該 action 自行 own disabled,DL 不干預(token 走 Button SSOT)」— 讀起來像背書 Button 可嵌。(3) description-list.principles.stories.tsx:248-309 NoInteractionRule:✅ value 可為展示性 ReactNode(Tag / Badge / Link,253-269 含 FedEx 追蹤 link 範例);❌ Button / Input(288-305,「改用 Field read-only mode / inline-edit」)。另 spec.md:157 vs Field 表「互動:無」。實際立場拆解:167 與 NoInteractionRule 一致(操作型 Button/Input 禁、展示/導覽型 Link/Tag/Badge 允),真正 outlier 只有 197 的「Button …DL 不干預」措辭。",
+     "benchmarks": [
+      {
+       "source": "Polaris DescriptionList source(GitHub raw,WebFetch 成功)",
+       "finding": "items 的 term/description 型別皆 `React.ReactNode`(interface Item 引文確認),即內容層開放 ReactNode;但官方 docs 範例全為純文字、content guidance 要求 description「一兩句短句」— 開放型別 + 唯讀敘述性內容導向,無任何 Button-in-dd 範例",
+       "cite": "https://raw.githubusercontent.com/Shopify/polaris/main/polaris-react/src/components/DescriptionList/DescriptionList.tsx + https://polaris-react.shopify.com/components/lists/description-list"
+      },
+      {
+       "source": "Ant Design Descriptions 官方 docs(WebFetch 成功)",
+       "finding": "item children 型別 ReactNode,但官方 demo 內容全為純文字;動作(如 Edit Button)的官方位置是 `extra` prop =「description list 的 action 區,置於右上」— action 放 header extra,不放 dd 內,與本 DS「需要互動改用 action row」立場同構",
+       "cite": "https://ant.design/components/descriptions"
+      },
+      {
+       "source": "Carbon structured list usage(WebSearch fallback,search-only)",
+       "finding": "default structured list = read-only、rows 不可選、「no interactive states because it is not operable by mouse or keyboard」;互動僅有獨立的 selectable variant(整 row 單選),無 cell 內嵌 button 的 pattern — 唯讀展示元件不塞操作型互動是共識",
+       "cite": "https://carbondesignsystem.com/components/structured-list/usage/"
+      }
+     ],
+     "recommendation": "Canonical = 禁止事項(spec.md:167)+ NoInteractionRule 的共同立場:操作型互動(Button / Input)禁止、展示/導覽型 ReactNode(Tag / Badge / Link)允許 — 這與 Polaris(ReactNode 型別 + 純敘述範例)/ Ant(action 放 extra 不放 dd)/ Carbon(read-only default)三家一致,且已有兩處 DS 內互相印證(M23 既有 canonical 優先)。要修的是邊界案例 spec.md:197:把「Button / Link …DL 不干預」改寫為只承認 Link(允許的導覽型),Button 指回禁止事項第 4 條(需要動作 → Field read-only / inline-edit / action row / 卡片 header action 區),消除「像在背書 Button」的第三立場。此為 spec 表達層對齊(不改 canonical meaning 本身,167 與 principles story 不動)。",
+     "confidence": "fetched"
+    },
+    {
+     "q": "Q10 dark step-1 alpha 公式:spec 宣稱全色相同一公式 vs primitives.css 實際 8 alpha / 4 opaque — spec 補例外 rationale(code 為準)還是統一 css(spec 為準)?",
+     "dsFacts": "(1) color.spec.md:393-400:「Dark mode 的 step-1 在 primitives 中使用 alpha 公式自動計算 `--color-{hue}-1: oklch(from var(--color-{hue}-6) l c h / calc(0.12 / l))`…所有色相用同一套公式,無需在 semantic 層額外覆寫」(line 400)。(2) primitives.css dark 段實況:8 色相用 alpha 公式(blue:287 / deep-orange:299 / yellow:335 / green:359 / turquoise:371 / indigo:383 / purple:395 / magenta:407),4 色相用 opaque 公式 `calc(l * 0.18) calc(c * 0.48)`(orange:311 / amber:323 / lime:347 / red:419),css 內無任何例外註解。(3) git 考古:commit edbccade(2026-04-09「refactor(color): adopt Atlassian-style semantic state token architecture」)commit msg 明寫意圖「Move dark mode step-1 to alpha formula in primitives (subtle bg)」,diff 顯示 12 色相當時全部存在、只轉了 8 個、4 個留在舊 opaque 公式,commit msg 與 diff 皆零例外 rationale;其後唯一動色相的 57b9b8c4(2026-06-04)未觸 step-1 公式 → 判定為 incomplete migration drift,非 documented exception。(4) 「亮色不能 alpha」假想 rationale 不成立:最亮的 yellow(l=0.89)已用 alpha 公式,例外 4 色 l = 0.51(red)~0.82(amber)橫跨明暗,無物理共通性;red 換算 α=0.12/0.51≈0.235 合法值。",
+     "benchmarks": [
+      {
+       "source": "Radix Colors dark mode source(GitHub raw src/dark.ts,WebFetch 成功)",
+       "finding": "dark alpha scale 全色相一致提供,含爭議 4 色(orangeDarkA / amberDarkA / limeDarkA / redDarkA 皆存在,如 redDarkA2 #ff55330f / orangeDarkA2 #fe6d000e / limeDarkA2 #78f7000a / amberDarkA2 #fd9b000d)— 世界級 dark subtle 用 alpha 沒有「某些暖色/亮色除外」的慣例",
+       "cite": "https://raw.githubusercontent.com/radix-ui/colors/main/src/dark.ts"
+      },
+      {
+       "source": "Radix Colors「Understanding the scale」docs(WebFetch 成功)",
+       "finding": "step 1/2 官方語義 =「app backgrounds and subtle component backgrounds」— 與本 DS step-1 subtle bg(Tag/Avatar)用途對齊,step-1 是 subtle bg 層無誤",
+       "cite": "https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale"
+      },
+      {
+       "source": "DS 內 git 考古(edbccade,primary evidence — M23 DS canonical 優先,外部 benchmark 為輔)",
+       "finding": "commit message 唯一意圖宣告 =「Move dark mode step-1 to alpha formula」且同 commit 寫入 color.spec.md 的「所有色相同一公式」宣稱;4 色相未轉且無任何 rationale 紀錄 → spec 是 design intent、css 是漏轉",
+       "cite": "repo commit edbccade(refactor(color): adopt Atlassian-style semantic state token architecture,2026-04-09)"
+      }
+     ],
+     "recommendation": "統一 css(spec 為準):orange / amber / lime / red 4 色相 dark step-1 改為 alpha 公式 `oklch(from var(--color-{hue}-6) l c h / calc(0.12 / l))`。理由:git 證據顯示 spec 宣稱與 alpha 公式同一 commit 寫入且 commit msg 明示全面遷移意圖,4 色是無 rationale 的漏轉(drift)非 documented exception;Radix Colors dark alpha 全色相一致(含這 4 色)支持統一;yellow(最亮)已用 alpha 證明公式對高亮度色相可行。不建議 spec 補例外 — 補例外等於把 bug 升格 canonical(違 M12 root invariant:invariant = 感知亮度統一公式,opaque 4 色是 surface 殘留)。執行注意:這是 SSOT-affecting 可見視覺改動(dark mode Tag/Avatar subtle bg 4 色相會變 + alpha 疊在非黑底上表現不同)→ 需 before/after dark-mode screenshot verify + user 拍板後才動。",
+     "confidence": "fetched"
+    }
+   ],
+   "group": "doc-structure"
+  }
+ ]
+}

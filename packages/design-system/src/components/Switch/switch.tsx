@@ -73,16 +73,18 @@ const switchVariants = cva(
   }
 )
 
-const SPECS: Record<string, { thumb: number; check: number; checkStroke: number; translate: string }> = {
+const SPECS: Record<string, { thumb: number; check: number; checkStroke: number }> = {
   // checkStroke:16px 以下 icon 視覺不夠顯眼 → 加粗 stroke 補償(跟 Checkbox 共用原則,
   // 見 checkbox.tsx 的 checkStrokeWidth 註解)。12px 用 3.5(render ≈ 1.75px 線寬,比 Lucide
   // 預設的 1px render 明顯更粗,視覺跟 16px 預設 stroke 的 1.33px 有足夠區別),16px 用 2.5
   // (render ≈ 1.67px,比預設 1.33px 稍粗讓 toggle check 夠顯眼)。跨 size 配對值由 checkbox.tsx 共用。
   // 2026-05-18 簡化 per user 視覺證 + Checkbox 同步(3.5 → 3 sm/md):effective render 差
   // 0.08px 視覺看不出,保留 compensation 主旨但不過度差異化。
-  sm: { thumb: 20, check: 12, checkStroke: 3, translate: 'translateX(20px)' },
-  md: { thumb: 20, check: 12, checkStroke: 3, translate: 'translateX(20px)' },
-  lg: { thumb: 24, check: 16, checkStroke: 2.5, translate: 'translateX(24px)' },
+  // 2026-07-04 刪 dead field translate:整檔零消費,實際位移 SSOT = Thumb className
+  // translate-x-5(20px)/ translate-x-6(24px)(見下方 Thumb),消除雙住所漂移風險。
+  sm: { thumb: 20, check: 12, checkStroke: 3 },
+  md: { thumb: 20, check: 12, checkStroke: 3 },
+  lg: { thumb: 24, check: 16, checkStroke: 2.5 },
 }
 
 export interface SwitchProps
@@ -174,23 +176,41 @@ const Switch = React.forwardRef<
     const generatedId = React.useId()
     const inputId = idProp ?? fieldCtx?.id ?? generatedId
 
+    // 2026-07-04 修:display / readonly-in-Field 分支的裸 span/div 原丟棄剩餘 props
+    // (id/data-*/aria-*)且不轉發 forwardRef ref → consumer 的 aria-label 等靜默失效。
+    // 抽出 Radix 專屬 non-DOM props,其餘 DOM props 於兩分支 spread 轉發(與 Checkbox/
+    // RadioGroup 同修);edit 主路徑不受影響(rootEl 仍 spread 完整 props)。
+    const {
+      checked: checkedProp,
+      defaultChecked: defaultCheckedProp,
+      onCheckedChange: _onCheckedChange,
+      required: _required,
+      name: _name,
+      value: _value,
+      asChild: _asChild,
+      children: _children,
+      ...restDomProps
+    } = props
+
     // ── mode='display'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
     // 純展示模式:無互動 toggle、渲染 ✓ / —。與 Checkbox display 對齊(同 boolean primitive)。
     if (resolvedMode === 'display') {
-      const isChecked = props.checked === true
+      const isChecked = checkedProp === true
       return isChecked
-        ? <span className="text-foreground">✓</span>
-        : <span className="text-fg-muted">—</span>
+        ? <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="text-foreground">✓</span>
+        : <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="text-fg-muted">—</span>
     }
 
     // ── mode='readonly' in Field(2026-06-12 user 拍板「灰框 + ✓/—」,與 Checkbox 同款)──
     // Field 內 readonly boolean = fieldWrapperStyles readonly 灰框(= Input readonly 同源)
     // + ✓/— 值語言;standalone readOnly(settings list)維持原樣鎖互動。詳 checkbox.tsx 同段註解。
     if (effectiveReadOnly && insideField) {
-      const isChecked = (props.checked ?? props.defaultChecked) === true
+      const isChecked = (checkedProp ?? defaultCheckedProp) === true
       const boxSize = resolvedBoxSize
       return (
         <div
+          {...(restDomProps as React.HTMLAttributes<HTMLDivElement>)}
+          ref={ref as React.Ref<HTMLDivElement>}
           role="switch"
           aria-checked={isChecked}
           aria-readonly="true"
@@ -220,6 +240,17 @@ const Switch = React.forwardRef<
         tabIndex={effectiveReadOnly ? -1 : undefined}
         aria-describedby={fieldCtx?.descriptionId}
         {...props}
+        // 2026-07-05 D4 修:readOnly 鎖互動補 label 繞道 — <label htmlFor> 的 synthetic click
+        // 不是 pointer event,cva pointer-events-none 攔不到,點 label 文字仍 toggle。
+        // preventDefault 讓 Radix composeEventHandlers(checkForDefaultPrevented)跳過內部 toggle;
+        // 必列在 {...props} 之後才不被 consumer onClick 覆蓋(與 Checkbox/RadioGroupItem 同修)。
+        onClick={(event) => {
+          if (effectiveReadOnly) {
+            event.preventDefault()
+            return
+          }
+          props.onClick?.(event)
+        }}
       >
         <SwitchPrimitives.Thumb
           className={cn(
@@ -251,6 +282,11 @@ const Switch = React.forwardRef<
     return (
       <label
         htmlFor={inputId}
+        // 2026-07-05 D4 修:readOnly 時在 label 端取消 synthetic activation(第一道防線;
+        // Root onClick guard 為第二道 — 兩道對齊 finding suggestion 防 consumer 自寫 label 繞過)。
+        onClick={(event) => {
+          if (effectiveReadOnly) event.preventDefault()
+        }}
         className={cn(
           'inline-flex items-start gap-3 select-none',
           effectiveDisabled ? 'cursor-not-allowed' : readOnly ? 'cursor-default' : 'cursor-pointer'
@@ -288,6 +324,7 @@ const Switch = React.forwardRef<
             </span>
           )}
         </span>
+        {/* @row-slot-handcraft-allow: Field 控件的 1lh 首行對齊 wrapper(selection-control 家族 Checkbox/RadioGroup 同構),非 row item slot,不消費 MenuItem */}
         <span className="h-[1lh] flex items-center shrink-0">
           {rootEl}
         </span>
@@ -310,9 +347,13 @@ export const switchMeta = {
     md: { fieldHeight: 32, iconSize: 12, typography: 'body' },
     lg: { fieldHeight: 36, iconSize: 16, typography: 'body-lg' },
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 2026-07-04 修 stale meta:移除 'active' — switchVariants / Thumb 無 active-state 樣式
+  // (cva 只有 unchecked/checked/disabled/readonly/focus-visible;對照 checkboxMeta 正確不含 active)
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-primary'],
+    // 2026-07-04 補齊漏列:bg-border = OFF track(cva data-[state=unchecked]:bg-border)、
+    // bg-on-emphasis = Thumb 白圓(Thumb className)— 兩者 code 實際消費,meta 原漏列
+    bg: ['bg-border', 'bg-on-emphasis', 'bg-primary'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary'],
     ring: ['ring-ring'],
   },

@@ -90,7 +90,7 @@ Item-level default / hover / checked / disabled **色彩**與 Checkbox 共用同
 
 繼承 Field family,詳見 `../Field/field-controls.spec.md` + `../Field/form-validation.spec.md`。
 
-**Field 內 readonly(2026-06-12 user 拍板)**:不渲染 radio 群組,改渲染 `fieldWrapperStyles` readonly 灰框 + 選中項 label(= Select readonly 同款,同為單選資料的鎖定呈現);standalone readonly 維持原樣鎖互動(ReadonlyContext)。
+**Field 內 readonly(2026-06-12 user 拍板)**:不渲染 radio 群組,改渲染 `fieldWrapperStyles` readonly 灰框 + 選中項 label(= Select readonly 同款,同為單選資料的鎖定呈現);standalone readonly 維持原樣鎖互動(ReadonlyContext + item onClick preventDefault guard — 2026-07-05 D4 補:`<label htmlFor>` synthetic click 非 pointer event,`pointer-events-none` 攔不到,需 guard 才真鎖)。
 
 ---
 
@@ -112,7 +112,7 @@ Item-level default / hover / checked / disabled **色彩**與 Checkbox 共用同
 - **極長 label / description**:預設不截斷、自然換行(`labelMaxLines` / `descMaxLines` 預設 `'none'`,Clamp 政策 SSOT 見 `checkbox.spec.md`「Clamp 政策」)。
 - **icon / avatar prefix**:`RadioGroupItem` 一級 `icon` / `avatar` props 轉發 `SelectionItem` prefix 槽(2026-06-12 M30;規則 SSOT 見 `checkbox.spec.md` 同段 + `selection-item.spec.md`)。
 - **RTL**:未實作方向鏡像;RTL 屬 DS-wide 決策,未定(與 Chip / Breadcrumb 同口徑)。
-- **Dark mode / density**:走 SelectionItem semantic token 自動 adapt;垂直 gap 隨 layoutSpace token density-aware。
+- **Dark mode / density**:走 SelectionItem semantic token 自動 adapt;垂直行距由 SelectionItem `py = (field-height − 1lh) / 2` 公式消費 uiSize token(`--field-height-*`)生成,隨 density 自動調整(零外部 gap 機制 SSOT 見 `checkbox.spec.md`「群組模式」)。
 
 ---
 

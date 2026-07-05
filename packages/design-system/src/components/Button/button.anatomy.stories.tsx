@@ -26,9 +26,9 @@ const STATES: StateKey[] = ['default', 'hover', 'active', 'disabled']
 
 const TOKEN_MAP: Record<VariantKey, Record<StateKey, ColorSpec>> = {
   primary: {
-    default: { bg: '--primary', text: 'white', border: 'transparent' },
-    hover: { bg: '--primary-hover', text: 'white', border: 'transparent' },
-    active: { bg: '--primary-active', text: 'white', border: 'transparent' },
+    default: { bg: '--primary', text: '--on-emphasis', border: 'transparent' },
+    hover: { bg: '--primary-hover', text: '--on-emphasis', border: 'transparent' },
+    active: { bg: '--primary-active', text: '--on-emphasis', border: 'transparent' },
     disabled: { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent' },
   },
   secondary: {
@@ -59,9 +59,9 @@ const TOKEN_MAP: Record<VariantKey, Record<StateKey, ColorSpec>> = {
 
 const DANGER_MAP: Partial<Record<VariantKey, Record<StateKey, ColorSpec>>> = {
   primary: {
-    default: { bg: '--error', text: 'white', border: 'transparent' },
-    hover: { bg: '--error-hover', text: 'white', border: 'transparent' },
-    active: { bg: '--error-active', text: 'white', border: 'transparent' },
+    default: { bg: '--error', text: '--on-emphasis', border: 'transparent' },
+    hover: { bg: '--error-hover', text: '--on-emphasis', border: 'transparent' },
+    active: { bg: '--error-active', text: '--on-emphasis', border: 'transparent' },
     disabled: { bg: '--bg-disabled', text: '--fg-disabled', border: 'transparent' },
   },
   secondary: {

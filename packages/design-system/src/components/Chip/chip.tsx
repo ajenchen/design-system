@@ -342,11 +342,11 @@ MenuChipGroup.displayName = 'MenuChipGroup'
 export const chipMeta = {
   component: 'Chip',
   family: 3,
-  variants: {
-
-  },
+  // 2026-07-04 audit 填 Phase 2:Chip 單一視覺無 variant 軸(variants 留空為 intentional,非漏填)
+  variants: {},
   sizes: {
-
+    // 單一尺寸:h-field-sm(28/32 依 density)、icon 16、text-body、px-3(cva 真值)
+    sm: { fieldHeight: 28, iconSize: 16, typography: 'body' },
   },
   states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'], // selected = data-[state=on](primary-hover);cva 無 active 樣式
   tokens: {

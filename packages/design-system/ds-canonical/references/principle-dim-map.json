@@ -436,6 +436,106 @@
     "propose_pre_grep_verify": {
       "dims": [],
       "note": "2026-05-18 ship(M18 Q0 Pre-ASK self-verify governance infra):PreToolUse Edit/Write planning/reports/handoff *.md 偵測 propose keyword(請拍板 / 等你拍板 / 決策 N / 我推 A/B/C / 選項)但 content 無 file:line cite 證據 → P1 stderr warn。Escape:檔頭 <!-- @propose-pre-verified --> 含 rationale。起因 2026-05-18 Sheet/inline-action/SurfaceBody 三題 propose 給 user 拍板,grep 後 0 個真 gap;user verbatim「不是老早就跟你說過要我決策前請先基於我們所有的檔案包括設計原則包括 ssot 包括所有實作代碼,自主自動驗證這些問題是否真的是問題」"
+    },
+    "tabs_content_chrome_body_double_gap": {
+      "dims": [
+        89,
+        90
+      ],
+      "note": "2026-07-03 entry add per audit-preflight gap:write-time P0(Check1 tabs double-gap + Check2 overlay-body fixed macro gap);audit-time dim 89 sweep + dim 90 judgment"
+    },
+    "storybook_addon_packaging": {
+      "dims": [
+        87
+      ],
+      "note": "2026-07-03 entry add:packaging 事故家族(beta.27-31)write-time P0;audit-time 由 dim 87 dogfood prepublish(npm install + build-storybook consumer view)deterministic cover"
+    },
+    "tailwind_wildcard_in_docs": {
+      "dims": [],
+      "note": "2026-07-03 entry add:beta.27 release-fail anchor write-time P0;audit-time 由 release preflight build gate(build:lib + build-storybook)deterministic cover,無獨立 dim"
+    },
+    "chrome_header_avatar_canonical": {
+      "dims": [],
+      "note": "2026-07-03 entry add per audit-preflight gap:write-time P0 攔 chrome header 內 ItemAvatar 誤用(header-canonical 消費紀律);audit-time 由 dim 1 design-language + A.1b per-component cover,無獨立 dim"
+    },
+    "codex_brief_invariants": {
+      "dims": [],
+      "note": "2026-07-03 entry add per audit-preflight gap:codex-collab runtime 紀律(brief 三 invariant);governance-only,solo mode 不涉"
+    },
+    "consumer_app_invariants": {
+      "dims": [
+        69,
+        70,
+        71,
+        82
+      ],
+      "note": "2026-07-03 entry add per audit-preflight gap:consumer app DS 使用紀律 write-time ×4;audit-time dim 69-71(no-catalog/@story-baseline/primitive misuse)+ 82(app story title)"
+    },
+    "ds_anchor_preflight": {
+      "dims": [
+        57
+      ],
+      "note": "2026-07-03 entry add per audit-preflight gap:M29 anchor preflight;dim 57 直接對應(enforcement coverage)"
+    },
+    "escape_marker_abuse": {
+      "dims": [
+        76
+      ],
+      "note": "2026-07-03 entry add per audit-preflight gap:dim 76 escape marker abuse 直接對應"
+    },
+    "full_story_visual_interaction_sweep": {
+      "dims": [
+        73
+      ],
+      "note": "2026-07-03 entry add per audit-preflight gap:dim 73 full-story sweep 直接對應"
+    },
+    "item_list_gap": {
+      "dims": [
+        21
+      ],
+      "note": "2026-07-03 entry add per audit-preflight gap:M16 standalone gap;dim 21 直接對應"
+    },
+    "layout_space_magic_numbers": {
+      "dims": [
+        90
+      ],
+      "note": "2026-07-03 entry add per audit-preflight gap:app-code write-time P0(skip DS-src by design);DS-src 由 dim 90 judgment sweep cover"
+    },
+    "orphan_ds_css": {
+      "dims": [],
+      "note": "2026-07-03 entry add per audit-preflight gap:write-time P0(css 不在 aggregator 也沒被 import = orphan;失敗記憶索引條目);audit-time 由 build + visual 間接,無獨立 dim"
+    },
+    "overlay_open_focus_escape_probe": {
+      "dims": [
+        74
+      ],
+      "note": "2026-07-03 entry add per audit-preflight gap:dim 74 overlay probe 直接對應"
+    },
+    "plugin_fork_health": {
+      "dims": [
+        58
+      ],
+      "note": "2026-07-03 entry add per audit-preflight gap:dim 58 plugin install enforcement 直接對應"
+    },
+    "post_main_ssot_propagate": {
+      "dims": [
+        64
+      ],
+      "note": "2026-07-03 entry add per audit-preflight gap:dim 64 post-main-push SSOT propagation 直接對應"
+    },
+    "propose_discipline": {
+      "dims": [],
+      "note": "2026-07-03 entry add per audit-preflight gap:Stop hook runtime 紀律(中文人話 + cite);governance-only"
+    },
+    "propose_without_benchmark": {
+      "dims": [],
+      "note": "2026-07-03 entry add per audit-preflight gap:M26 runtime 紀律(propose 前 WebFetch);governance-only"
+    },
+    "sidebar_menu_button_implicit_wrap": {
+      "dims": [
+        71
+      ],
+      "note": "2026-07-03 entry add per audit-preflight gap:write-time 攔隱式 wrap;audit-time dim 71 primitive misuse + A.1b composition cover"
     }
   },
   "newDims_2026_05_17": {

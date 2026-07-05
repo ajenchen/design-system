@@ -53,6 +53,11 @@ export interface FilterCondition {
   op: string
   /** 依 ValueShape 解讀的值 */
   value: unknown
+  /** Date 欄位比對精度(2026-07-04 Q6 拍板,兌現 spec「includeTime」雙精度契約):
+   *  panel 建 condition 時依 column meta 寫入 — includeTime=true → 'ms',否則 'day'
+   *  (AG Grid midnight-truncate / MUI X setHours(0,0,0,0) 共識;避 Airtable 邊界漏抓地雷)。
+   *  非 date 欄位 / 舊 tree 無此欄 → undefined(date ops fallback 'day' 預設)。 */
+  datePrecision?: 'day' | 'ms'
 }
 
 export interface FilterGroup {
@@ -185,7 +190,7 @@ function evaluateGroup(group: FilterGroup, row: any): boolean {
 function evaluateCondition(cond: FilterCondition, row: any): boolean {
   if (!cond.field || !cond.op) return true
   const cellValue = row?.[cond.field]
-  return matchOperator(cond.op, cellValue, cond.value)
+  return matchOperator(cond.op, cellValue, cond.value, cond.datePrecision)
 }
 
 // PersonValue identity helper(2026-05-07):
@@ -201,7 +206,7 @@ function isPersonObject(v: unknown): v is { name: string } {
 }
 
 // code-quality-allow: long-function — 13-operator switch dispatch table,table-driven 重構會把 op-specific guards 拆出反增 indirection
-function matchOperator(op: string, cellValue: unknown, filterValue: unknown): boolean {
+function matchOperator(op: string, cellValue: unknown, filterValue: unknown, datePrecision?: 'day' | 'ms'): boolean {
   // 不需 value 的 op
   switch (op) {
     case 'is_set':     return cellValue !== null && cellValue !== undefined && cellValue !== ''
@@ -231,6 +236,14 @@ function matchOperator(op: string, cellValue: unknown, filterValue: unknown): bo
     }
   }
 
+  // Q6(2026-07-04):date 比對精度 helper — 'ms' 全精度;其餘(含 undefined)day 級
+  // (本地時區 startOfDay 截斷,對齊 AG Grid / MUI X date 欄 midnight 慣例)。
+  const dateMs = (v: unknown): number => {
+    const d = new Date(String(v))
+    if (Number.isNaN(d.getTime())) return NaN
+    return datePrecision === 'ms' ? d.getTime() : startOfDay(d).getTime()
+  }
+
   switch (op) {
     case 'contains':         return String(cellValue ?? '').toLowerCase().includes(String(filterValue).toLowerCase())
     case 'does_not_contain': return !String(cellValue ?? '').toLowerCase().includes(String(filterValue).toLowerCase())
@@ -241,10 +254,20 @@ function matchOperator(op: string, cellValue: unknown, filterValue: unknown): bo
     // array(全選 options)→ String(array)= "v1,v2" → 永遠 != single cellValue → 結果空。
     // Fix:加 array handling,走 OR 語意:any → match;is_not → every-not-match。
     case 'is':
+      // Q6:date 欄位(datePrecision 有值)走日期比對非字串 — 「2026-06-01」與「2026-06-01 14:30」
+      // 在 day 精度下相等(原字串小寫相等連同日不同格式都漏)
+      if (datePrecision) {
+        const a = dateMs(cellValue); const b = dateMs(filterValue)
+        return !Number.isNaN(a) && a === b
+      }
       if (Array.isArray(filterValue))
         return filterValue.some((v) => String(cellValue ?? '').toLowerCase() === String(v).toLowerCase())
       return String(cellValue ?? '').toLowerCase() === String(filterValue).toLowerCase()
     case 'is_not':
+      if (datePrecision) {
+        const a = dateMs(cellValue); const b = dateMs(filterValue)
+        return Number.isNaN(a) || a !== b
+      }
       if (Array.isArray(filterValue))
         return filterValue.every((v) => String(cellValue ?? '').toLowerCase() !== String(v).toLowerCase())
       return String(cellValue ?? '').toLowerCase() !== String(filterValue).toLowerCase()
@@ -258,15 +281,15 @@ function matchOperator(op: string, cellValue: unknown, filterValue: unknown): bo
     case 'lt':         return Number(cellValue) < Number(filterValue)
     case 'lte':        return Number(cellValue) <= Number(filterValue)
 
-    case 'is_before':       return new Date(String(cellValue)).getTime() < new Date(String(filterValue)).getTime()
-    case 'is_after':        return new Date(String(cellValue)).getTime() > new Date(String(filterValue)).getTime()
-    case 'is_on_or_before': return new Date(String(cellValue)).getTime() <= new Date(String(filterValue)).getTime()
-    case 'is_on_or_after':  return new Date(String(cellValue)).getTime() >= new Date(String(filterValue)).getTime()
+    case 'is_before':       return dateMs(cellValue) < dateMs(filterValue)
+    case 'is_after':        return dateMs(cellValue) > dateMs(filterValue)
+    case 'is_on_or_before': return dateMs(cellValue) <= dateMs(filterValue)
+    case 'is_on_or_after':  return dateMs(cellValue) >= dateMs(filterValue)
     case 'is_between': {
       if (!Array.isArray(filterValue) || filterValue.length !== 2) return true
-      const cv = new Date(String(cellValue)).getTime()
-      const start = filterValue[0] ? new Date(String(filterValue[0])).getTime() : -Infinity
-      const end = filterValue[1] ? new Date(String(filterValue[1])).getTime() : Infinity
+      const cv = dateMs(cellValue)
+      const start = filterValue[0] ? dateMs(filterValue[0]) : -Infinity
+      const end = filterValue[1] ? dateMs(filterValue[1]) : Infinity
       return cv >= start && cv <= end
     }
     case 'is_relative': {

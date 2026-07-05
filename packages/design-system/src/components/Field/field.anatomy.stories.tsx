@@ -151,8 +151,8 @@ export const Inspector: Story = {
       options: ['edit', 'display', 'readonly', 'disabled'],
       description: 'Context 傳給控制元件:edit 可編輯 / display 純展示 / readonly 鎖定但保留輸入外觀 / disabled 停用',
     },
-    required: { control: 'boolean', description: 'label 後加 * + aria-required' },
-    invalid: { control: 'boolean', description: '觸發 error border + FieldError 取代 FieldDescription' },
+    required: { control: 'boolean', description: 'label 文字前加 * + aria-required' },
+    invalid: { control: 'boolean', description: '觸發 error border + aria-invalid;本例以 FieldError 條件替換 FieldDescription(consumer 慣例,非元件行為)' },
     disabled: { control: 'boolean', description: 'Field disabled context 傳給 control' },
     labelWidth: {
       control: 'select',
@@ -264,7 +264,7 @@ export const SizeMatrix: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>三種 Size — 對齊 field-height 系統</H3>
-        <Desc>Field 的 size 透過 context 傳遞給 input-class control(Input / NumberInput / Select / Combobox / DatePicker / TimePicker / PeoplePicker 等,皆經 useResolvedFieldSize 解析),控制其內部高度對齊 `--field-height-*` tier(見 uiSize.spec.md)。Slider / Switch / Checkbox 等 primitive 維持原生尺寸不讀 context size(見 field.spec.md「為什麼 primitive 不自己變高」),其行高節奏改由 Field control-area 的 min-h-field-{'{size}'} 提供——同一 Field 內所有 control 因此自動對齊高度。</Desc>
+        <Desc>Field 的 size 透過 context 傳遞給 input-class control(Input / NumberInput / Select / Combobox / DatePicker / TimePicker / PeoplePicker 等,皆經 useResolvedFieldSize 解析),控制其內部高度對齊 `--field-height-*` tier(見 uiSize.spec.md)。Slider / Switch / Checkbox 等 primitive 的 edit 態維持原生尺寸、不隨 Field size 變高(Switch / Checkbox 仍經 useResolvedFieldSize 解析 size,僅用於 readonly 灰框 chrome;Slider 完全不讀 context size。見 field.spec.md「為什麼 primitive 不自己變高」),其行高節奏改由 Field control-area 的 min-h-field-{'{size}'} 提供——同一 Field 內所有 control 因此自動對齊高度。</Desc>
         <div className="grid grid-cols-3 gap-6">
           {(['sm', 'md', 'lg'] as const).map(size => (
             <div key={size} className="border border-dashed border-divider rounded-md p-4">
@@ -300,7 +300,7 @@ export const StateBehavior: Story = {
   render: () => (
     <div className="flex flex-col gap-10">
       <div>
-        <H3>Required — label 後加 * 星號</H3>
+        <H3>Required — label 前加 * 星號</H3>
         <Desc>Field 的 required 透過 context 傳遞,FieldLabel 自動在文字前加上星號(僅視覺,對讀屏隱藏);aria-required 由內部的輸入控件(如 Input)負責設定。</Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-md">
           <Field required>
@@ -313,7 +313,7 @@ export const StateBehavior: Story = {
 
       <div>
         <H3>Invalid — 觸發 error 視覺 + FieldError 顯示</H3>
-        <Desc>Field invalid 傳 context(觸發 aria-invalid + error border),FieldError 取代 FieldDescription 顯示。</Desc>
+        <Desc>Field invalid 傳 context(觸發 aria-invalid + error border),FieldError 顯示錯誤訊息(若與 FieldDescription 並存則兩者並列渲染;條件替換屬 consumer 慣例,非元件行為)。</Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-md">
           <Field invalid>
             <FieldLabel>Email</FieldLabel>
@@ -406,7 +406,7 @@ export const ColorMatrix: Story = {
               <tr>
                 <Td mono>FieldDescription</Td>
                 <Td><TokenCell token="--fg-secondary" display="fg-secondary" /></Td>
-                <Td>—(隱藏,被 FieldError 取代)</Td>
+                <Td>fg-secondary(不變;元件不自動隱藏——本例以 FieldError 條件替換屬 consumer 慣例)</Td>
                 <Td><TokenCell token="--fg-disabled" display="fg-disabled" /></Td>
               </tr>
               <tr>
@@ -453,7 +453,7 @@ export const ColorMatrix: Story = {
             <Field required>
               <FieldLabel>姓名</FieldLabel>
               <Input placeholder="請輸入姓名" />
-              <FieldDescription>本欄位為必填(label 後有星號 *)</FieldDescription>
+              <FieldDescription>本欄位為必填(label 前有星號 *)</FieldDescription>
             </Field>
           </div>
           <div>
