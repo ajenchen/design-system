@@ -11,7 +11,7 @@ set -uo pipefail
 # 檢的 block category:
 #   - opacity:opacity-{5..95} numeric tier(原 logic,保留)
 #   - typography:text-{xs..9xl} / font-{thin|light|semibold|black} / leading-{N} numeric / tracking-{wide..widest|tighter|tight}
-#   - radius:rounded-{xl|2xl|3xl} / rounded(unscoped)
+#   - radius:rounded-{xl|2xl|3xl} / rounded(unscoped)/ rounded-[...] arbitrary(例外 rounded-[inherit])
 #   - elevation:shadow-{sm|md|lg|xl|2xl|inner} / shadow(unscoped)
 #   - shadcn alias:bg-popover / text-muted-foreground / bg-accent 等
 #   - primitive 色名:bg-neutral-N / text-blue-N 等(越過 semantic 層)
@@ -105,6 +105,14 @@ if [ -n "$HITS_RADIUS" ]; then
   VIOLATIONS="${VIOLATIONS}\n   [radius out-of-range] $(echo "$HITS_RADIUS" | tr '\n' ' ')"
 fi
 
+# 6b) Radius arbitrary bracket(2026-07-04 dim 47 補洞:registry block arbitrary_value 但 hook 從沒偵測)
+#     rounded-[6px] / rounded-[var(--radius-md)] / rounded-t-[...] 皆 block;
+#     唯一例外 rounded-[inherit](registry radius.allow,passthrough 非 radius 值,anchor scroll-area.tsx Viewport)
+HITS_RADIUS_ARB=$(echo "$NEW_CONTENT" | grep -oE "\brounded(-(t|b|l|r|tl|tr|bl|br|s|e|ss|se|es|ee))?-\[[^]]+\]" | grep -v "rounded-\[inherit\]" | sort -u || true)
+if [ -n "$HITS_RADIUS_ARB" ]; then
+  VIOLATIONS="${VIOLATIONS}\n   [radius arbitrary] $(echo "$HITS_RADIUS_ARB" | tr '\n' ' ')"
+fi
+
 # 7) Shadow Tailwind size(shadow-sm/md/lg/xl/2xl/inner — DS 用 shadow-[var(--elevation-N)] N∈{100,200})
 HITS_SHADOW=$(echo "$NEW_CONTENT" | grep -oE "\bshadow-(sm|md|lg|xl|2xl|inner)\b" | sort -u || true)
 if [ -n "$HITS_SHADOW" ]; then
@@ -138,6 +146,7 @@ EOF_HEAD
      leading-{N}   → leading-compact / leading-normal
      tracking-*    → tracking-shortcut(or codify role-specific semantic utility)
      rounded-xl..  → rounded-xs..rounded-lg / rounded-full
+     rounded-[..]  → rounded-xs..lg 語意 utility(rounded-[inherit] 唯一例外,registry allow)
      shadow-sm..   → shadow-[var(--elevation-100)] / shadow-[var(--elevation-200)]
      bg-popover .. → direct semantic token(--surface-raised / --fg-muted / --error 等)
      bg-neutral-N  → semantic utility(bg-surface 等)或 bg-[var(--color-neutral-N)]

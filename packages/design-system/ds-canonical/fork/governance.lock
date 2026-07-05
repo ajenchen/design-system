@@ -57,7 +57,7 @@
     },
     {
       "file": "hooks/check_opacity_token_usage.sh",
-      "sha256": "1772e83242520f569a9a44e96d08d74e121c119c940c019c8ed50989f14de646",
+      "sha256": "f085fdf2b681f6ad20a51863ca580f4c56633091f0b044e05cf1b9ef665fdf0d",
       "sourceHook": "check_opacity_token_usage.sh",
       "bucket": "SHIP_REWRITTEN"
     },
