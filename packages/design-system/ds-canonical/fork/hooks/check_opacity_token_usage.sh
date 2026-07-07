@@ -46,6 +46,10 @@ esac
 
 NEW_CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // .tool_input.new_string // ""')
 [ -z "$NEW_CONTENT" ] && exit 0
+# Per-line escape(2026-07-07 方向 2 升 P0 配套):行內含 `@token-registry-ok: <rationale>` 豁免該行
+NEW_CONTENT=$(printf '%s
+' "$NEW_CONTENT" | grep -v '@token-registry-ok:' || true)
+[ -z "$NEW_CONTENT" ] && exit 0
 
 # Resolve registry path(absolute via $CLAUDE_PROJECT_DIR or relative fallback)
 REGISTRY="${CLAUDE_PROJECT_DIR:-}/node_modules/@qijenchen/design-system/src/tokens/utility-registry.json"
@@ -152,7 +156,11 @@ EOF_HEAD
      bg-neutral-N  → semantic utility(bg-surface 等)或 bg-[var(--color-neutral-N)]
 
    詳 utility-registry.json `_meta.spec_sources` + M23「DS 內既有 canonical 優先」。
+   Per-line escape:行尾註解 `@token-registry-ok: <rationale>`(audit 可追)。
 EOF_BODY
+  # P0 BLOCKER(2026-07-07 治理進化方向 2:對齊 user 2026-05-27「SSOT canonical 必 P0」doctrine;
+  # 檔級豁免(anatomy/principles stories / token 自家)+ 行級 escape 已備,升級不增誤殺)
+  exit 2
 fi
 
 exit 0

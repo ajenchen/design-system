@@ -3,6 +3,8 @@ name: performance-audit
 description: Performance audit for design-system components and product UI. Checks render count, unnecessary re-renders, memoization gaps, bundle size impact, useEffect chains, context thrashing. Invoke when user says「這元件效能如何」「為什麼很卡」「bundle 變大」「re-render 太多」, auto-invoked by `/component-quality-gate` Phase 4.5 (advanced mode) and `/design-system-audit` Dimension D3.
 ---
 
+> **⚠️ Fork 工具註記(build 自動加)**:本 skill 提到的 `scripts/*.mjs` 或非標準 `npm run <audit>` 是 **DS-author repo 的機械工具,未隨 fork 套件附帶**(Claude Code 不掃 node_modules,fork 也無這些 executor + dep)。你的 product fork 用本 skill 的**方法論**(human / AI judgment)+ 既有 committed governance hook 的機械強制即可;要 mechanical 腳本層(截圖 / CI gate)請自行設置對應工具,或把該檢查 PR 回 DS repo 跑。
+
 # Performance Audit — 元件效能稽核
 
 ## 存在意義
@@ -47,7 +49,7 @@ description: Performance audit for design-system components and product UI. Chec
 
 **工具**:
 - React DevTools Profiler record → 看 flame graph
-- `why-did-you-render` dev dep 觸發警告(未來可加)
+- `why-did-you-render` dev dep 觸發警告(**尚未落地**;trigger = 下一個 render-storm 類 bug 實例時一併引入,roadmap 殘項列冊)
 - 直接 grep pattern(inline style / arrow onClick)
 
 ### Phase 2 — Memoization / dependency
@@ -66,7 +68,7 @@ description: Performance audit for design-system components and product UI. Chec
 
 **工具**:
 - `npx vite build --report`(vite bundle visualizer)
-- bundle-size CI check(未來可加)
+- **bundle-size gate(已落地 2026-07-07)**:`npm run check:bundle-size`(budget SSOT = `packages/design-system/bundle-budget.json`,total + top-8 entry 各 +10% headroom;release-preflight 內建必跑;蓄意增大 → `--init` 更新 budget + commit 說明)
 
 ### Phase F — Report(必 STOP,對齊分權 canonical)
 

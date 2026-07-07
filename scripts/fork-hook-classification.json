@@ -3,7 +3,12 @@
     "purpose": "C-prime fork-mode governance corpus 分類 SSOT。build-fork-governance.mjs 消費此檔生成 ds-canonical/fork/。--check 若有任何 .claude/hooks/*.{sh,py} 未分類則 FAIL(防漏接新 hook)。",
     "source": "workflow wf_4070529c-5af critic agent(讀全 53 hook + inventory 對抗分類)+ Claude 組裝 2026-06-16",
     "total": 54,
-    "tally": { "SHIP_AS_IS": 10, "SHIP_REWRITTEN": 4, "REPLACE": 1, "DROP": 39 },
+    "tally": {
+      "SHIP_AS_IS": 10,
+      "SHIP_REWRITTEN": 4,
+      "REPLACE": 1,
+      "DROP": 39
+    },
     "known_coverage_gaps": [
       "post_edit_dispatcher 的 _overlay_handcraft(擋 consumer 手刻 overlay header,非 SurfaceHeader/Popover primitive)+ _code_quality 兩個 fork-relevant 檢查,改判 DROP 後目前無 standalone 涵蓋 → 待 promote 成 standalone fork hook(harness 驗證後加)。layout-space 部分已由 check_layout_space_magic_numbers 涵蓋,無 gap。"
     ],
@@ -15,70 +20,241 @@
     },
     "harness_must_verify": "每條 SHIP_AS_IS / SHIP_REWRITTEN 對合成 fork 跑:該擋的擋(exit 2)、該放的放(exit 0)、絕不靜默 no-op(false-green)。REPLACE 換後不得 exit 2 brick。DROP 不出現在 fork settings。"
   },
-
   "SHIP_AS_IS": [
-    { "hook": "check_consumer_app_invariants.sh", "reason": "fork-aware 樣板:scope apps|consumer,exit 0 on packages/design-system/src+node_modules(L28-32,166-170);含 r1-r4 + Pattern 10 raw-primitive 攔截。內容式偵測 layout-agnostic。" },
-    { "hook": "block_prototype_imports.py", "reason": "擋從 explorations/ import 進 production,layout-agnostic、fork 一樣該守。" },
-    { "hook": "check_item_list_gap.sh", "reason": "standalone card/pill multi-instance gap,內容式偵測,fire on apps/**。" },
-    { "hook": "check_pattern_invariants.sh", "reason": "overlay scroll-chain 等 pattern invariant,layout-agnostic;訊息含 @/design-system alias(可選改寫,不影響 enforcement)。" },
-    { "hook": "check_field_family_invariants.sh", "reason": "scope *components/*.tsx 含 apps/**/components,layout-agnostic 真 fire;訊息 @/design-system alias 可選改(SHIP_REWRITTEN-lite),enforcement 正確。" },
-    { "hook": "check_sidebar_menu_button_implicit_wrap.sh", "reason": "窄條件 exit 2(SidebarMenuButton+Avatar 無 asChild)+ env escape,非 blanket brick。verify escape 隨 ship。" },
-    { "hook": "check_chrome_header_avatar_canonical.sh", "reason": "窄條件 exit 2(SidebarHeader 含 ItemAvatar)+ CLAUDE_BYPASS escape,非 blanket brick。verify escape 隨 ship。" },
-    { "hook": "check_layout_space_magic_numbers.sh", "reason": "consumer apps/** 硬寫 Tailwind 間距 P0 BLOCKER,skip packages/design-system/src+node_modules(L34),fork-relevant;訊息含 DS spec path(可選改)。" },
-    { "hook": "check_tailwind_wildcard_in_docs.sh", "reason": "Tailwind wildcard in docs,layout-agnostic、乾淨 exit、fork-relevant。" },
-    { "hook": "check_tabs_content_chrome_body_double_gap.sh", "reason": "consumer apps/** 內 TabsContent 放進 Dialog/Sheet/SurfaceBody chrome body 未 mt-0 → 雙重 tight P0 BLOCKER;scope 含 apps/**(fork 有 apps/),DS 內部路徑在 fork 不存在故乾淨 exit 0;窄 gate(必同時含 chrome body + TabsContent)+ escape marker 不 false-lock。與 check_layout_space_magic_numbers 同族 fork-relevant;訊息含 DS spec path(可選改)。" }
+    {
+      "hook": "check_consumer_app_invariants.sh",
+      "reason": "fork-aware 樣板:scope apps|consumer,exit 0 on packages/design-system/src+node_modules(L28-32,166-170);含 r1-r4 + Pattern 10 raw-primitive 攔截。內容式偵測 layout-agnostic。"
+    },
+    {
+      "hook": "block_prototype_imports.py",
+      "reason": "擋從 explorations/ import 進 production,layout-agnostic、fork 一樣該守。"
+    },
+    {
+      "hook": "check_item_list_gap.sh",
+      "reason": "standalone card/pill multi-instance gap,內容式偵測,fire on apps/**。"
+    },
+    {
+      "hook": "check_pattern_invariants.sh",
+      "reason": "overlay scroll-chain 等 pattern invariant,layout-agnostic;訊息含 @/design-system alias(可選改寫,不影響 enforcement)。"
+    },
+    {
+      "hook": "check_field_family_invariants.sh",
+      "reason": "scope *components/*.tsx 含 apps/**/components,layout-agnostic 真 fire;訊息 @/design-system alias 可選改(SHIP_REWRITTEN-lite),enforcement 正確。"
+    },
+    {
+      "hook": "check_sidebar_menu_button_implicit_wrap.sh",
+      "reason": "窄條件 exit 2(SidebarMenuButton+Avatar 無 asChild)+ env escape,非 blanket brick。verify escape 隨 ship。"
+    },
+    {
+      "hook": "check_chrome_header_avatar_canonical.sh",
+      "reason": "窄條件 exit 2(SidebarHeader 含 ItemAvatar)+ CLAUDE_BYPASS escape,非 blanket brick。verify escape 隨 ship。"
+    },
+    {
+      "hook": "check_layout_space_magic_numbers.sh",
+      "reason": "consumer apps/** 硬寫 Tailwind 間距 P0 BLOCKER,skip packages/design-system/src+node_modules(L34),fork-relevant;訊息含 DS spec path(可選改)。"
+    },
+    {
+      "hook": "check_tailwind_wildcard_in_docs.sh",
+      "reason": "Tailwind wildcard in docs,layout-agnostic、乾淨 exit、fork-relevant。"
+    },
+    {
+      "hook": "check_tabs_content_chrome_body_double_gap.sh",
+      "reason": "consumer apps/** 內 TabsContent 放進 Dialog/Sheet/SurfaceBody chrome body 未 mt-0 → 雙重 tight P0 BLOCKER;scope 含 apps/**(fork 有 apps/),DS 內部路徑在 fork 不存在故乾淨 exit 0;窄 gate(必同時含 chrome body + TabsContent)+ escape marker 不 false-lock。與 check_layout_space_magic_numbers 同族 fork-relevant;訊息含 DS spec path(可選改)。"
+    },
+    {
+      "hook": "check_story_determinism.sh",
+      "reason": "path-agnostic *.stories.tsx 寫入哨(裸 new Date()/Date.now/Math.random → warn + @nondeterministic-ok escape);fork apps 自有 stories 同受換日 flake 之害,規則自包無 DS-repo 依賴。"
+    }
   ],
-
   "SHIP_REWRITTEN": [
-    { "hook": "check_opacity_token_usage.sh", "transform": "registry path packages/design-system/src/tokens/utility-registry.json + ../../packages fallback → node_modules/@qijenchen/design-system/src/tokens/utility-registry.json(ships in package)", "reason": "fire on apps/** 但 DS registry 在 fork 不存在 → 退化成 ~10% opacity-only 模式 = false-green。repoint 後恢復全 9 category enforcement。" },
-    { "hook": "check_escape_marker_abuse.sh", "transform": "保留 IS_CONSUMER apps/** branch(≥3 escape marker exit 2),丟棄 DS-source branch", "reason": "consumer branch fork-relevant;DS-source branch DS-author-only。" },
-    { "hook": "check_ds_anchor_preflight.sh", "transform": "canonical-read 目標 packages/design-system/src/**/spec.md → node_modules/@qijenchen/design-system/src/**/spec.md(pass-regex 認 node_modules spec read)", "reason": "scope apps/** soft inject(exit 0 不 brick),但 M29 nag 指向 fork 不存在的 DS spec path = 半廢 nag。repoint 後有用。" },
-    { "hook": "inject_deploy_url_after_push.sh", "transform": "確認 deploy-URL 推導邏輯不依賴 DS-internal path(generic Netlify/git remote 推導)", "reason": "每次 push 吐 deploy URL,fork 一樣需要(scenario-definition fork dim 63)。" }
+    {
+      "hook": "check_opacity_token_usage.sh",
+      "transform": "registry path packages/design-system/src/tokens/utility-registry.json + ../../packages fallback → node_modules/@qijenchen/design-system/src/tokens/utility-registry.json(ships in package)",
+      "reason": "fire on apps/** 但 DS registry 在 fork 不存在 → 退化成 ~10% opacity-only 模式 = false-green。repoint 後恢復全 9 category enforcement。"
+    },
+    {
+      "hook": "check_escape_marker_abuse.sh",
+      "transform": "保留 IS_CONSUMER apps/** branch(≥3 escape marker exit 2),丟棄 DS-source branch",
+      "reason": "consumer branch fork-relevant;DS-source branch DS-author-only。"
+    },
+    {
+      "hook": "check_ds_anchor_preflight.sh",
+      "transform": "canonical-read 目標 packages/design-system/src/**/spec.md → node_modules/@qijenchen/design-system/src/**/spec.md(pass-regex 認 node_modules spec read)",
+      "reason": "scope apps/** soft inject(exit 0 不 brick),但 M29 nag 指向 fork 不存在的 DS spec path = 半廢 nag。repoint 後有用。"
+    },
+    {
+      "hook": "inject_deploy_url_after_push.sh",
+      "transform": "確認 deploy-URL 推導邏輯不依賴 DS-internal path(generic Netlify/git remote 推導)",
+      "reason": "每次 push 吐 deploy URL,fork 一樣需要(scenario-definition fork dim 63)。"
+    }
   ],
-
   "REPLACE": [
-    { "hook": "check_substantive_edit_approval_preflight.sh", "replaceWith": "check_fork_product_quality.sh — apps/** 的 PreToolUse 改成 quality-positive soft inject(exit 0):提醒『改 X 元件前先讀 DS spec/story』+ 跑 primitive-misuse 提示;絕不 exit 2、絕不 approval gate。DS-internal packages/design-system/src branch 不進 fork(那是 DS-author 用)。", "reason": "PRIMARY BRICK:原 hook hard-block(exit 2)所有 apps/** edit(近 5 msg 無 approval keyword 時)→ fork 使用者連寫產品 code 都被擋死。" }
+    {
+      "hook": "check_substantive_edit_approval_preflight.sh",
+      "replaceWith": "check_fork_product_quality.sh — apps/** 的 PreToolUse 改成 quality-positive soft inject(exit 0):提醒『改 X 元件前先讀 DS spec/story』+ 跑 primitive-misuse 提示;絕不 exit 2、絕不 approval gate。DS-internal packages/design-system/src branch 不進 fork(那是 DS-author 用)。",
+      "reason": "PRIMARY BRICK:原 hook hard-block(exit 2)所有 apps/** edit(近 5 msg 無 approval keyword 時)→ fork 使用者連寫產品 code 都被擋死。"
+    }
   ],
-
   "DROP": [
-    { "hook": "_log-fire.sh", "reason": "sourced helper 非 standalone hook;僅當被 ship 的 hook source 時隨行。" },
-    { "hook": "auto_regen_ds_barrel.sh", "reason": "DS-author barrel 重生器;scope packages/design-system/src + 跑 node scripts/gen-*.mjs,fork 無此。" },
-    { "hook": "check_audit_post_report_validator.sh", "reason": "DS-author deep-audit report 驗證器。" },
-    { "hook": "check_audit_sample_escape.sh", "reason": "DS-author deep-audit 反抽樣閘。" },
-    { "hook": "check_benchmark_citation.sh", "reason": "DS-author spec/tsx benchmark cite 紀律。" },
-    { "hook": "check_canonical_propagation.sh", "reason": "DS-author canonical 傳播(scope packages/design-system/src)。" },
-    { "hook": "check_codex_brief_invariants.sh", "reason": "DS-author codex collab brief 紀律。" },
-    { "hook": "check_codex_collab_5step.sh", "reason": "DS-author codex 5-step collab 紀律。" },
-    { "hook": "check_datatable_invariants.sh", "reason": "DS-author DataTable 元件內部 invariant(scope DS src)。" },
-    { "hook": "check_dim_count_drift.sh", "reason": "DS-author design-system-audit SKILL dim count drift。" },
-    { "hook": "check_field_controls_contracts.sh", "reason": "DS-author Field 元件內部 contract(scope DS src)。" },
-    { "hook": "check_file_size_budget.sh", "reason": "DS-author governance file 行數預算(CLAUDE.md/spec/SKILL)。" },
-    { "hook": "check_full_story_visual_interaction_sweep.sh", "reason": "DS-author deep-audit full-story sweep(ds-story-manifest)。" },
-    { "hook": "check_main_branch_workbench.sh", "reason": "DS-author solo-dev git workflow(1 chat=1 branch);可能 brick fork user 在 main 編輯 → 不 ship。" },
-    { "hook": "check_naming_and_abstraction.sh", "reason": "DS-author 新元件命名/抽象紀律(scope DS src)。" },
-    { "hook": "check_orphan_ds_css.sh", "reason": "DS CSS aggregator orphan 偵測;packages/design-system/src 不存在即 early-exit = fork 無意義。" },
-    { "hook": "post_edit_dispatcher.sh", "reason": "fan-out 到 lib/_*.sh helper,但 helper 沒隨 corpus ship + 有 [ -f ]||return 0 guard → fork 內全 no-op = false-green(harness 深查抓到)。layout-space 價值已由 standalone check_layout_space_magic_numbers 涵蓋故 DROP;唯 _overlay_handcraft/_code_quality 列 known_coverage_gaps 待 promote。" },
-    { "hook": "check_overlay_open_focus_escape_probe.sh", "reason": "DS-author overlay focus/escape 稽核 probe。" },
-    { "hook": "check_peoplepicker_ssot_drift.sh", "reason": "DS-author PeoplePicker 元件 SSOT drift(scope DS src)。" },
-    { "hook": "check_pixel_quantified_audit.sh", "reason": "DS-author audit pixel-quantified 強制。" },
-    { "hook": "check_plugin_fork_health.sh", "reason": "其工作是 nag fork user 裝 DS plugin + curl GitHub 版本 = plugin-health nag(C-prime 退役 plugin 必經路)。" },
-    { "hook": "check_post_main_ssot_propagate.sh", "reason": "DS-author push main 後 SSOT 發版鏈。" },
-    { "hook": "check_propose_discipline.sh", "reason": "DS-author 中文人話 propose + cite 紀律。" },
-    { "hook": "check_propose_pre_grep_verify.sh", "reason": "DS-author propose 前 grep verify(M18 Q0)。" },
-    { "hook": "check_propose_without_benchmark.sh", "reason": "DS-author propose 前 WebFetch benchmark(M26)。" },
-    { "hook": "check_select_all_canonical.sh", "reason": "DS-author Select-all 元件 canonical(scope DS src)。" },
-    { "hook": "check_solo_workflow.sh", "reason": "DS-author solo-work git(no PR / 1 branch / push trigger)。" },
-    { "hook": "check_spec_class_drift.sh", "reason": "DS-author spec.md 反向 drift。" },
-    { "hook": "check_story_invariants.sh", "reason": "DS-author story archetype/baseline registry(scope DS src stories)。" },
-    { "hook": "check_storybook_addon_packaging.sh", "reason": "DS-author storybook-config addon packaging。" },
-    { "hook": "check_wrapper_primitive_schema_drift.sh", "reason": "DS-author wrapper-vs-primitive schema(scope DS src)。" },
-    { "hook": "chrome_header_dispatcher.sh", "reason": "fan-out 4 個 ChromeHeader header-canonical DS-author invariant(含 _app_shell_primary_header_consistency lib,beta.73 加 responsive 豁免)。注(2026-06-18 beta.74 audit):fork 端 primary-header 一致性『機械』enforcement 暫不送 = 刻意 defer,非 beta.73 回歸;responsive 品牌/帳號 pattern 由 app-shell.spec.md canonical + AcmeSidebar demo + preamble 注入指引 fork。要 fork 也機械擋,需另案把 chrome-header 家族 enforcement fork-relevant 化(scope 較大)。" },
-    { "hook": "enforce_home_charter.sh", "reason": "DS-author 8-home governance charter 強制。" },
-    { "hook": "inject_pending_self_audit.sh", "reason": "DS-author next-turn self-audit BLOCKER 注入(讀 score-history)。" },
-    { "hook": "log_governance_fires.sh", "reason": "DS-author governance fire log。" },
-    { "hook": "log_skill_invokes.sh", "reason": "DS-author skill invoke log。" },
-    { "hook": "session_start_governance_check.sh", "reason": "DS-author session-start governance/prune 檢查(讀 .claude/logs|benchmarks|memory)。" },
-    { "hook": "stop_passive_logging.sh", "reason": "DS-author stop-hook passive logging + infra score。" },
-    { "hook": "stop_self_audit.sh", "reason": "DS-author claim-verify/codex/solo-dev/completeness gate(讀 .claude/logs)= 全 DS-author-only。" }
+    {
+      "hook": "_log-fire.sh",
+      "reason": "sourced helper 非 standalone hook;僅當被 ship 的 hook source 時隨行。"
+    },
+    {
+      "hook": "auto_regen_ds_barrel.sh",
+      "reason": "DS-author barrel 重生器;scope packages/design-system/src + 跑 node scripts/gen-*.mjs,fork 無此。"
+    },
+    {
+      "hook": "check_audit_post_report_validator.sh",
+      "reason": "DS-author deep-audit report 驗證器。"
+    },
+    {
+      "hook": "check_audit_sample_escape.sh",
+      "reason": "DS-author deep-audit 反抽樣閘。"
+    },
+    {
+      "hook": "check_benchmark_citation.sh",
+      "reason": "DS-author spec/tsx benchmark cite 紀律。"
+    },
+    {
+      "hook": "check_canonical_propagation.sh",
+      "reason": "DS-author canonical 傳播(scope packages/design-system/src)。"
+    },
+    {
+      "hook": "check_codex_brief_invariants.sh",
+      "reason": "DS-author codex collab brief 紀律。"
+    },
+    {
+      "hook": "check_codex_collab_5step.sh",
+      "reason": "DS-author codex 5-step collab 紀律。"
+    },
+    {
+      "hook": "check_datatable_invariants.sh",
+      "reason": "DS-author DataTable 元件內部 invariant(scope DS src)。"
+    },
+    {
+      "hook": "check_dim_count_drift.sh",
+      "reason": "DS-author design-system-audit SKILL dim count drift。"
+    },
+    {
+      "hook": "check_field_controls_contracts.sh",
+      "reason": "DS-author Field 元件內部 contract(scope DS src)。"
+    },
+    {
+      "hook": "check_file_size_budget.sh",
+      "reason": "DS-author governance file 行數預算(CLAUDE.md/spec/SKILL)。"
+    },
+    {
+      "hook": "check_full_story_visual_interaction_sweep.sh",
+      "reason": "DS-author deep-audit full-story sweep(ds-story-manifest)。"
+    },
+    {
+      "hook": "check_main_branch_workbench.sh",
+      "reason": "DS-author solo-dev git workflow(1 chat=1 branch);可能 brick fork user 在 main 編輯 → 不 ship。"
+    },
+    {
+      "hook": "check_naming_and_abstraction.sh",
+      "reason": "DS-author 新元件命名/抽象紀律(scope DS src)。"
+    },
+    {
+      "hook": "check_orphan_ds_css.sh",
+      "reason": "DS CSS aggregator orphan 偵測;packages/design-system/src 不存在即 early-exit = fork 無意義。"
+    },
+    {
+      "hook": "post_edit_dispatcher.sh",
+      "reason": "fan-out 到 lib/_*.sh helper,但 helper 沒隨 corpus ship + 有 [ -f ]||return 0 guard → fork 內全 no-op = false-green(harness 深查抓到)。layout-space 價值已由 standalone check_layout_space_magic_numbers 涵蓋故 DROP;唯 _overlay_handcraft/_code_quality 列 known_coverage_gaps 待 promote。"
+    },
+    {
+      "hook": "check_overlay_open_focus_escape_probe.sh",
+      "reason": "DS-author overlay focus/escape 稽核 probe。"
+    },
+    {
+      "hook": "check_peoplepicker_ssot_drift.sh",
+      "reason": "DS-author PeoplePicker 元件 SSOT drift(scope DS src)。"
+    },
+    {
+      "hook": "check_pixel_quantified_audit.sh",
+      "reason": "DS-author audit pixel-quantified 強制。"
+    },
+    {
+      "hook": "check_plugin_fork_health.sh",
+      "reason": "其工作是 nag fork user 裝 DS plugin + curl GitHub 版本 = plugin-health nag(C-prime 退役 plugin 必經路)。"
+    },
+    {
+      "hook": "check_post_main_ssot_propagate.sh",
+      "reason": "DS-author push main 後 SSOT 發版鏈。"
+    },
+    {
+      "hook": "check_propose_discipline.sh",
+      "reason": "DS-author 中文人話 propose + cite 紀律。"
+    },
+    {
+      "hook": "check_propose_pre_grep_verify.sh",
+      "reason": "DS-author propose 前 grep verify(M18 Q0)。"
+    },
+    {
+      "hook": "check_propose_without_benchmark.sh",
+      "reason": "DS-author propose 前 WebFetch benchmark(M26)。"
+    },
+    {
+      "hook": "check_select_all_canonical.sh",
+      "reason": "DS-author Select-all 元件 canonical(scope DS src)。"
+    },
+    {
+      "hook": "check_solo_workflow.sh",
+      "reason": "DS-author solo-work git(no PR / 1 branch / push trigger)。"
+    },
+    {
+      "hook": "check_spec_class_drift.sh",
+      "reason": "DS-author spec.md 反向 drift。"
+    },
+    {
+      "hook": "check_story_invariants.sh",
+      "reason": "DS-author story archetype/baseline registry(scope DS src stories)。"
+    },
+    {
+      "hook": "check_storybook_addon_packaging.sh",
+      "reason": "DS-author storybook-config addon packaging。"
+    },
+    {
+      "hook": "check_wrapper_primitive_schema_drift.sh",
+      "reason": "DS-author wrapper-vs-primitive schema(scope DS src)。"
+    },
+    {
+      "hook": "chrome_header_dispatcher.sh",
+      "reason": "fan-out 4 個 ChromeHeader header-canonical DS-author invariant(含 _app_shell_primary_header_consistency lib,beta.73 加 responsive 豁免)。注(2026-06-18 beta.74 audit):fork 端 primary-header 一致性『機械』enforcement 暫不送 = 刻意 defer,非 beta.73 回歸;responsive 品牌/帳號 pattern 由 app-shell.spec.md canonical + AcmeSidebar demo + preamble 注入指引 fork。要 fork 也機械擋,需另案把 chrome-header 家族 enforcement fork-relevant 化(scope 較大)。"
+    },
+    {
+      "hook": "enforce_home_charter.sh",
+      "reason": "DS-author 8-home governance charter 強制。"
+    },
+    {
+      "hook": "inject_pending_self_audit.sh",
+      "reason": "DS-author next-turn self-audit BLOCKER 注入(讀 score-history)。"
+    },
+    {
+      "hook": "log_governance_fires.sh",
+      "reason": "DS-author governance fire log。"
+    },
+    {
+      "hook": "log_skill_invokes.sh",
+      "reason": "DS-author skill invoke log。"
+    },
+    {
+      "hook": "session_start_governance_check.sh",
+      "reason": "DS-author session-start governance/prune 檢查(讀 .claude/logs|benchmarks|memory)。"
+    },
+    {
+      "hook": "stop_passive_logging.sh",
+      "reason": "DS-author stop-hook passive logging + infra score。"
+    },
+    {
+      "hook": "stop_self_audit.sh",
+      "reason": "DS-author claim-verify/codex/solo-dev/completeness gate(讀 .claude/logs)= 全 DS-author-only。"
+    },
+    {
+      "hook": "check_ssot_header_declaration.sh",
+      "reason": "DS-authoring 專用:scope = packages/design-system/src/components 新檔(fork 端該路徑在 node_modules 唯讀,永不觸發);fork consumer 造輪防護由 check_consumer_app_invariants r3 primitive-misuse 涵蓋。"
+    }
   ]
 }

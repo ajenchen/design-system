@@ -198,6 +198,8 @@ paths:
 
 **元件不得自包全域 Provider**(Tooltip / Theme / Toast / Portal)— 由應用層統一設定。**判斷**:Context 是行為狀態(open / size)→ 可包;全域外觀配置(delay / theme / portal / variant defaults)→ 禁止。
 
+**shadcn 目錄後續新增元件 vs DS 既有(2026-07-07 codify,anchor:Attachment vs FileItem)**:「遵循 shadcn 框架」= 結構 idiom(forwardRef / Slot / data-* / cva),**非**「必須消費目錄每個元件」。shadcn 是 copy-in scaffold 非 runtime 依賴——遷移無上游更新流入。目錄新增元件時二分:(a) 帶 primitive / behavior 增益(Radix core、新 interaction model)且 DS 無等價 → 走 `/new-component` 近親評估;(b) **純組合式且 DS 已有 Family-compliant 等價物 → 不換架構、不改名**(M23 禁外部覆蓋既有 canonical),只做 API 對照:值得的 state / pattern 逐項評估為 DS prop 演進(SSOT-affecting → ASK),該元件 spec 補 M22 benchmark 對照行 + known-gap 記錄。同類先例:Empty / Item(≈item-anatomy)/ Field / Spinner(≈CircularProgress)/ InputGroup(≈FieldControlGroup)。
+
 
 ---
 ## rules/story-rules.md
@@ -310,7 +312,7 @@ paths:
 - **Pre-edit**:`check_substantive_edit_approval_preflight.sh`(production code)+ `stop_self_audit.sh`(spec/canonical 補位)+ `check_ds_anchor_preflight.sh`(M29 anchor)
 - **Post-edit**:`stop_self_audit.sh` Mechanism 1(claim-verify-gap)BLOCKER
 - **Pre-final(宣告完成前)**:`stop_self_audit.sh` Mechanism 7(完整性宣告閘)BLOCKER — 宣告「全做完 / 全部完成」+ 本 turn 實質改動但**無全庫 stale-ref 掃描證據** → block。**觸發器 = 「宣告完成」本身,非等 user 問第二次**(2026-06-03 user-authorized,根治重複 failure)
-- **Pre-final(重大 / SSOT / 模型 / 跨多檔改動)**:除 M7 自掃外,**宣告完成前必跑「獨立對抗稽核」**(multi-agent Workflow,每路假設「還有 loose end」主動去找 + cite 證據)。**理由**:self-grep 系統性漏(self-assessment unreliable,對齊 `feedback_ai_ground_truth_unreliable_mechanical_primary`)+ 信任機械閘(preflight / R4 / hook BLOCKER)勝於自評。**小改 = M7 自掃即可**,不需對抗稽核(避免過度)。2026-06-03 user-authorized,根治「宣告做完 → user 問第 N 次 → 才補掃出 loose end」
+- **Pre-final(中型以上 = 跨 ≥3 檔 substantive、任何 canonical/SSOT/模型改動、或宣告「殘項/債歸零」類完整性 claim;2026-07-07 軌道 4 收緊,Workflow 成本已低無理由跳)**:除 M7 自掃外,**宣告完成前必跑「獨立對抗稽核」**(multi-agent Workflow,每路假設「還有 loose end」主動去找 + cite 證據)。**理由**:self-grep 系統性漏(self-assessment unreliable,對齊 `feedback_ai_ground_truth_unreliable_mechanical_primary`)+ 信任機械閘(preflight / R4 / hook BLOCKER)勝於自評。**小改 = M7 自掃即可**,不需對抗稽核(避免過度)。2026-06-03 user-authorized,根治「宣告做完 → user 問第 N 次 → 才補掃出 loose end」
 - **Pre-commit**:`scripts/audit-content-quality.mjs --check` + `scripts/extract-canonical-rules.mjs` 各 fail = block
 
 ## Anti-pattern(永久 ban)

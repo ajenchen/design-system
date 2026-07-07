@@ -55,8 +55,19 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // .tool_input.new_stri
 # DS primitive 名單(wrap 這些就觸發 anchor preflight)
 DS_PRIMITIVES_RE='<(Sidebar|AppShell|DataTable|Dialog|Sheet|Popover|DropdownMenu|Field|FieldControlGroup|MenuItem|ItemAvatar|ItemLabel|ItemIcon|SegmentedControl|Tabs|TabsList|TabsTrigger|Combobox|Select|DatePicker|TimePicker|TreeView|Tooltip|Coachmark|FileViewer|ScrollArea|Avatar|Badge|Button|ChromeHeader|SurfaceHeader|SurfaceBody|SurfaceFooter|OverlaySurface|NameCard|Toast|FileUpload|DescriptionList|Chart|BulkActionBar|ActionBar|Carousel|Breadcrumb)\b'
 
-# 沒 wrap DS primitive → 跳過(可能是純 utility / hook code)
+# 沒 wrap DS primitive → 檢「純手刻」洞(2026-07-07 治理進化方向 3 洞 b:原本此分支直接放行,
+# 「該用 primitive 卻整個手刻」反而抓不到 — 內部盤點 file:line 證據見 planning/2026-07-07-governance-evolution-roadmap.md)
 if ! echo "$NEW_CONTENT" | grep -qE "$DS_PRIMITIVES_RE"; then
+  # 視覺簽名:row/浮層/chrome 手刻特徵(flex row + padding/border/rounded/shadow 組合)
+  HANDCRAFT_SIG=$(echo "$NEW_CONTENT" | grep -cE 'className="[^"]*\b(flex|absolute|fixed)\b[^"]*\b(border|rounded|shadow|px-|py-|gap-)' || true)
+  if [ "${HANDCRAFT_SIG:-0}" -ge 3 ] && ! echo "$NEW_CONTENT" | grep -q '@handcraft-ok:'; then
+    cat >&2 <<'EOF_HC'
+⚠️ [第一期 WARN] M23(d)/mindset #2 純手刻嫌疑:本段 production tsx 有 ≥3 處視覺結構 className
+   但零 DS primitive 消費。先查 patterns/(item-anatomy / overlay-surface / ChromeHeader /
+   horizontal-overflow)有無現成 primitive;真需自建 → 行內 `@handcraft-ok: <rationale>` +
+   spec「自建 + 理由」宣告。誤殺率驗證期後升 P0(roadmap 方向 3)。
+EOF_HC
+  fi
   exit 0
 fi
 
@@ -127,6 +138,6 @@ cat >&2 <<EOF
   - \`.claude/references/ssot-index.md\` Step 0.1 high-risk interface owner mapping
 EOF
 
-# Soft warn (exit 0):inject context 讓 AI 自決,Stop hook backstop。
-# 對齊 check_substantive_edit_approval_preflight.sh hybrid pattern(soft pre + hard stop)。
-exit 0
+# P0 BLOCKER(2026-07-07 治理進化方向 2:對齊 user 2026-05-27「SSOT canonical 必 P0 禁 soft」
+# doctrine;bypass env CLAUDE_BYPASS_DS_ANCHOR=1 已備且 audit-logged,升級不增誤殺)。
+exit 2

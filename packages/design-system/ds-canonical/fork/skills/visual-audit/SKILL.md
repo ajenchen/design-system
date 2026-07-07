@@ -54,6 +54,14 @@ description: Pixel-level visual audit for design-system components based on user
 - 沒有 screenshot → **本 skill 拒跑**(見 Preconditions)
 - 只要看一眼順不順 → 不做 audit(這不 mechanical)
 
+## Baseline 更新鐵律(2026-07-07 軌道 5 codify)
+
+**覆蓋任何 snapshots-baseline/*.png 前,模型必 Read 新舊兩張圖並寫出「觀察到的具體差異」**
+(diff 百分比是訊號、圖才是真相)。禁只看 pct 就 cp。錨例:2026-07-07 VR 換日 bug——釘日期後
+pct 一模一樣,只有看圖才發現 today 圈仍在真實日期(元件內部時間);FileViewer 40.3% 只有看圖
+才知道是 zoom 94→100(fit 被凍壞)非渲染炸裂。配套:roadmap 方向 7 accept-baseline workflow
+(script 化時「看圖步驟」不可省)。
+
 ## Preconditions(硬規則)
 
 **本 skill 在下列任一缺失下拒跑,回報 user 補齊後再 invoke**:

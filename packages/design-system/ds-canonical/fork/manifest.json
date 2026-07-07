@@ -65,6 +65,11 @@
         "bucket": "SHIP_AS_IS"
       },
       {
+        "file": "hooks/check_story_determinism.sh",
+        "sourceHook": "check_story_determinism.sh",
+        "bucket": "SHIP_AS_IS"
+      },
+      {
         "file": "hooks/check_opacity_token_usage.sh",
         "sourceHook": "check_opacity_token_usage.sh",
         "bucket": "SHIP_REWRITTEN"

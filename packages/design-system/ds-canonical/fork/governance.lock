@@ -21,7 +21,7 @@
     },
     {
       "file": "hooks/check_ds_anchor_preflight.sh",
-      "sha256": "15fb44c8b35042efd03e1992f8b5b7b121a7633cebe556d4ca0a1a7f5483dc35",
+      "sha256": "80b9f1be3140da0623b61c00d6f6b5c5f4bdbf3307e2f081ba8f6fc43cad0b52",
       "sourceHook": "check_ds_anchor_preflight.sh",
       "bucket": "SHIP_REWRITTEN"
     },
@@ -57,7 +57,7 @@
     },
     {
       "file": "hooks/check_opacity_token_usage.sh",
-      "sha256": "f085fdf2b681f6ad20a51863ca580f4c56633091f0b044e05cf1b9ef665fdf0d",
+      "sha256": "93123d9244264b821d6d31357c3868d343d7a96182664e02226cccbb8a29d18e",
       "sourceHook": "check_opacity_token_usage.sh",
       "bucket": "SHIP_REWRITTEN"
     },
@@ -71,6 +71,12 @@
       "file": "hooks/check_sidebar_menu_button_implicit_wrap.sh",
       "sha256": "240807737e9c75bd137a8abd9a7194ffcb4a92b1015f626f14539fd8dbf73ea8",
       "sourceHook": "check_sidebar_menu_button_implicit_wrap.sh",
+      "bucket": "SHIP_AS_IS"
+    },
+    {
+      "file": "hooks/check_story_determinism.sh",
+      "sha256": "34b56718a1f15b492c410d199a883d561afd4c51d7445994b84c2e6180ba3d4e",
+      "sourceHook": "check_story_determinism.sh",
       "bucket": "SHIP_AS_IS"
     },
     {
@@ -108,15 +114,15 @@
     },
     {
       "file": "manifest.json",
-      "sha256": "588eb31f9ad3c302217e7642b053cb8b4b81dcd2dd1c69959826f6d2317102ed"
+      "sha256": "5a8072bafa1d777fe4943f2f21130304101a4a6179270403fae205c4156d583b"
     },
     {
       "file": "preamble.md",
-      "sha256": "c6333d8a6127d4e0d9b9511e16efaace2d215638b3bd235b31a8b29ef8827d5c"
+      "sha256": "3bb47d3c88bcdeba13bc61ac6275799c9208c3001771e3652303e49a97fb0604"
     },
     {
       "file": "skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "4bca87df4f2777fe76f8e302698d373fb0ba60699922fb8b35c8aefae1c51ae0"
+      "sha256": "b5cc2fa5b50b533c06583b64d7eaf4efc62d03d3b9088f6a58cd0b796d78c2e2"
     },
     {
       "file": "skills/code-quality-audit/SKILL.md",
@@ -136,11 +142,11 @@
     },
     {
       "file": "skills/delivery-handoff/SKILL.md",
-      "sha256": "b3ba781857bed71c1bff537519b1e3858e5f115f25fb7c55967e5b147d360f79"
+      "sha256": "9e5c93441f6b56f64d1db46d4b46dc0015a7dd514af952d7e1926087249eaa23"
     },
     {
       "file": "skills/performance-audit/SKILL.md",
-      "sha256": "7a77f4999b8d4bb6875c105050196fc3d7b451713da791531d186c37e593020b"
+      "sha256": "71b63f44f90fa0bfeb1c63e589757bdb917f2d57ea9cf754c9c1b47808716061"
     },
     {
       "file": "skills/product-ui-audit/references/audit-checks.md",
@@ -216,7 +222,7 @@
     },
     {
       "file": "skills/visual-audit/SKILL.md",
-      "sha256": "0af4957c5ab08f8c04bbc944900ae45b719eed879e667de1fd139392e57c4525"
+      "sha256": "0e4193dfb3a24609795a3d6a19f0e9d06da06c671a74d2db1afefa21d869ba2d"
     }
   ]
 }
