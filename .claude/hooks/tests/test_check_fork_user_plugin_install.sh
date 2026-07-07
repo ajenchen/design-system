@@ -28,7 +28,9 @@ echo "Test 3: fork-user without plugin → inject"
 TMP=$(mktemp -d); echo '{"dependencies":{"@qijenchen/design-system":"^1"}}' > "$TMP/package.json"
 # Override HOME/CWD so plugin install detect 一定 fail
 STDOUT=$(cd "$TMP" && HOME=/tmp/no-plugin echo '{"hook_event_name":"SessionStart"}' | bash "$HOOK")
-if echo "$STDOUT" | grep -q "Fork-user plugin not installed"; then
+# 2026-07-07 修 stale needle:hook 訊息 2026-06 演進為「Fork-user DS 治理鏈未就位」,
+# 舊 needle「Fork-user plugin not installed」永 FAIL(main 既存紅;hook 行為本身正確)。
+if echo "$STDOUT" | grep -q "Fork-user DS 治理鏈未就位"; then
   echo "  PASS"; PASS=$((PASS+1))
 else
   echo "  FAIL: no inject (output: ${STDOUT:0:200})"; FAIL=$((FAIL+1))

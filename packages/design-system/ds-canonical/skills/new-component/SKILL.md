@@ -47,6 +47,7 @@ description: Create-phase workflow for building a new design-system component fr
    - SSOT anchor(往哪指)
 3. **查世界級對照**:Polaris / Material / Atlassian / Ant / Apple HIG 有沒對應元件?**至少 2 個** DS 的做法,記 3 行筆記(naming / API / 視覺模式)。
 4. **查 baseline 狀況**:`ls packages/design-system/src/components/` 確認名字衝突;`grep` CLAUDE.md「失敗記憶索引」看有沒同類別的歷史 bug。
+5. **產出「primitive 覆蓋對照表」artifact**(2026-07-07 治理進化方向 3 洞 c,強制產物非心算):逐 anatomy 段列「這段 × 消費哪個既有 primitive」——row → item-anatomy、浮層 → overlay-surface、chrome 標題列 → ChromeHeader、橫向溢出 → horizontal-overflow、輸入 chrome → field-wrapper、pill → Button「Pill Layout」。**每段必有著落;對不上的段才准自建,且必附「自建 + 理由」**(進 spec 定位段)。寫 tsx 時此表轉錄為檔頭「── 消費的 SSOT ──」段(hook `check_ssot_header_declaration.sh` P0 驗新檔必有)。
 
 ### Checkpoint 1 — 定位 Proposal(STOP 點)
 
@@ -54,6 +55,7 @@ description: Create-phase workflow for building a new design-system component fr
 - 元件名稱(按 CLAUDE.md `# 命名與語言一致性` 三重 test)
 - 近親元件清單 + 跟本元件的異同一句話
 - 世界級對照 2 個(Ant Design 叫 X / Material 叫 Y)
+- **primitive 覆蓋對照表**(Phase 1 step 5 artifact;自建段落 + 理由醒目標出)
 - **問 user**:「這個 positioning 對嗎?要不要改名 / 重 scope?」
 
 **User 點頭才進 Phase 2。** 定位錯的話在此階段轉向最便宜。

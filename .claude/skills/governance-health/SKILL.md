@@ -43,6 +43,7 @@ ls -la .claude/logs/*.jsonl
 | **File size trend**(weekly snapshot)| `metric-snapshots.jsonl`(若存在)| CLAUDE.md 增速 > 5 line/week = sprawl alert |
 | **Benchmark freshness**(external)| `.claude/benchmarks/last-fetch.txt` | > 30 天 = 過期 |
 | **Infra-ref integrity**(2026-05-30 加,根因防線)| `node scripts/check-dangling-infra-ref.mjs` + `node scripts/check-skill-deadref.mjs`(fail-open report)| bucket-B > 0(死 hook ref)OR removed-section/line-number ref > 0 = infra-self drift → 提議 repoint。錨例:2026-05-30 抓 40 處死 hook ref + env-smoke set-e bug |
+| **判準化佔比 trend**(2026-07-07 加,治理進化方向 1 KPI)| `node scripts/audit-coverage-matrix.mjs`(PURE-JUDGMENT / HOOK / DETERMINISTIC 三級計數)| PURE-JUDGMENT 佔比應逐月持平或降;連 2 月上升 = deep-audit C.0b 判準化 harvest 沒在跑 → flag。SSOT → `.claude/planning/2026-07-07-governance-evolution-roadmap.md` |
 
 ### Phase 2 — Analysis(fire-driven auto-propose)
 

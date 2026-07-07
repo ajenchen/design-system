@@ -47,7 +47,7 @@ description: Performance audit for design-system components and product UI. Chec
 
 **工具**:
 - React DevTools Profiler record → 看 flame graph
-- `why-did-you-render` dev dep 觸發警告(未來可加)
+- `why-did-you-render` dev dep 觸發警告(**尚未落地**;trigger = 下一個 render-storm 類 bug 實例時一併引入,roadmap 殘項列冊)
 - 直接 grep pattern(inline style / arrow onClick)
 
 ### Phase 2 — Memoization / dependency
@@ -66,7 +66,7 @@ description: Performance audit for design-system components and product UI. Chec
 
 **工具**:
 - `npx vite build --report`(vite bundle visualizer)
-- bundle-size CI check(未來可加)
+- **bundle-size gate(已落地 2026-07-07)**:`npm run check:bundle-size`(budget SSOT = `packages/design-system/bundle-budget.json`,total + top-8 entry 各 +10% headroom;release-preflight 內建必跑;蓄意增大 → `--init` 更新 budget + commit 說明)
 
 ### Phase F — Report(必 STOP,對齊分權 canonical)
 

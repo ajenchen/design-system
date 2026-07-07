@@ -1,0 +1,17 @@
+{
+  "_meta": {
+    "generatedAt": "2026-07-07",
+    "rule": "total 與 top-8 entry 各設現值 +10% budget;蓄意增大 → 重跑 --init + commit message 說明"
+  },
+  "totalKB": 894.5,
+  "entriesKB": {
+    "components/DataTable/data-table.js": 107.8,
+    "components/DatePicker/date-picker.js": 39.6,
+    "components/Sidebar/sidebar.js": 37.9,
+    "components/FileViewer/file-viewer.js": 31.9,
+    "components/Combobox/combobox.js": 27.9,
+    "components/TreeView/tree-view.js": 27.8,
+    "components/Select/select.js": 24.7,
+    "components/Steps/steps.js": 23
+  }
+}

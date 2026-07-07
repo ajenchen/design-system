@@ -47,10 +47,10 @@ expect_pass_silent() {
 
 expect_warn() {
   local name="$1"; local needle="$2"
-  if [ "$EXIT" = "0" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+  if [ "$EXIT" = "2" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
-    echo "  FAIL  $name (expected warn '$needle', got exit $EXIT)"
+    echo "  FAIL  $name (expected exit=2 + needle '$needle', got exit $EXIT)"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi

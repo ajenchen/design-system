@@ -17,7 +17,9 @@ const CHECK = process.argv.includes('--check')
 // ── scan scope(live governance docs;排除 mirror / 歷史凍結檔)──
 // 2026-05-31(infra-audit P1):補 .claude/memory — 原漏掉,memory infra ref 零機械防線
 // (memory file 可 cite 不存在的 hook 而無人攔)。
-const SCAN_DIRS = ['.claude/skills', '.claude/rules', '.claude/references', '.claude/commands', '.claude/memory']
+// 2026-07-07(治理進化收尾):補 .github/workflows — CI yml 引用的 scripts/*.mjs|sh 同屬
+// infra-self ref(workflow 引不存在的 script = release/CI 靜默斷鏈),納入同一 3-bucket 檢查。
+const SCAN_DIRS = ['.claude/skills', '.claude/rules', '.claude/references', '.claude/commands', '.claude/memory', '.github/workflows']
 const SCAN_FILES = ['CLAUDE.md', 'packages/design-system/CLAUDE.md', '.claude/settings.json', '.claude/settings.local.json']
 const EXCLUDE = /ds-canonical|\/planning\/|\/scratch\/|\/retired\/|\/tmp\/|node_modules/
 

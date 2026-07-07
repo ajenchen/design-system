@@ -7,6 +7,7 @@
 ## Project (active work)
 - [project_beta81_deep_audit_closure.md](project_beta81_deep_audit_closure.md) — beta.81 deep-audit 收斂發版;error×focus 照 Mantine canonical;backlog → C.1 報告
 - [project_cprime_governance_shipped.md](project_cprime_governance_shipped.md) — C-prime fork 治理已發版 beta.70(committed-config + npm,免 plugin);**雲端端到端 100% 蓋章(2026-06-17 user 真機):proactive 指引 + 機械強制(PostToolUse P0 BLOCKER 實際 fire)兩半皆親證生效**
+- [project_governance_evolution_roadmap.md](project_governance_evolution_roadmap.md) — 稽核=永久機構、謂詞化=機械化引擎雙柱;方向 1-3 已落地(判準化 harvest / fail-closed / 造輪三洞),4-7 分期各有 trigger;SSOT → planning/2026-07-07-governance-evolution-roadmap.md
 
 ## Feedback (workflow / collaboration discipline)
 - [feedback_codex_dual_track_synthesizer.md](feedback_codex_dual_track_synthesizer.md) — Codex dual-track + ASK gate 嚴格 + triple-verify + brief 三 invariant + Phase-A-first + auto-mode 禁問(2026-06-11 合併 05-23 directives)

@@ -80,6 +80,10 @@ run('Field cascade-resolve gate(防新控件漏讀 size/mode/disabled context �
 
 // ③ Build + smoke + dogfood(== release.yml publish job + smoke-shard job)
 run('build:lib', 'npm run --silent build:lib')
+// bundle-size gate(2026-07-07 治理進化收尾:performance-audit 自認缺口補上;budget SSOT =
+// packages/design-system/bundle-budget.json,蓄意增大 → --init 更新 + commit 說明)
+run('bundle-size gate', 'node scripts/check-bundle-size.mjs --check')
+run('naming-structure invariant', 'node scripts/naming-structure-invariant.mjs')
 // 2026-06-16 root-cause gate:apps/template 是 React 19 workspace,root tsc -b references 不含它 → React19
 // 專屬錯(@types/react 移除全域 JSX namespace → `JSX.Element` TS2503)只在 receiver `cd apps/template &&
 // npm run build` 才炸,DS preflight 一路假綠 ship(bde81e7e 2026-06-12 brick ds-product-template receiver +

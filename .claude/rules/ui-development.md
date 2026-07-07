@@ -90,3 +90,5 @@ paths:
 **cva 適用**:className-only 差異 → cva;style 物件 → object map + `style={{}}`;不同 JSX 樹 → conditional rendering。
 
 **元件不得自包全域 Provider**(Tooltip / Theme / Toast / Portal)— 由應用層統一設定。**判斷**:Context 是行為狀態(open / size)→ 可包;全域外觀配置(delay / theme / portal / variant defaults)→ 禁止。
+
+**shadcn 目錄後續新增元件 vs DS 既有(2026-07-07 codify,anchor:Attachment vs FileItem)**:「遵循 shadcn 框架」= 結構 idiom(forwardRef / Slot / data-* / cva),**非**「必須消費目錄每個元件」。shadcn 是 copy-in scaffold 非 runtime 依賴——遷移無上游更新流入。目錄新增元件時二分:(a) 帶 primitive / behavior 增益(Radix core、新 interaction model)且 DS 無等價 → 走 `/new-component` 近親評估;(b) **純組合式且 DS 已有 Family-compliant 等價物 → 不換架構、不改名**(M23 禁外部覆蓋既有 canonical),只做 API 對照:值得的 state / pattern 逐項評估為 DS prop 演進(SSOT-affecting → ASK),該元件 spec 補 M22 benchmark 對照行 + known-gap 記錄。同類先例:Empty / Item(≈item-anatomy)/ Field / Spinner(≈CircularProgress)/ InputGroup(≈FieldControlGroup)。

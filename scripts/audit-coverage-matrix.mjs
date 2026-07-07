@@ -34,7 +34,7 @@ const COVERAGE = {
   1: { tier: 'HOOK-ENFORCED', mechanism: 'cva 三方漂移 — story-auto-compile-migrate + compile-stories.mjs --check chain' },
   2: { tier: 'DETERMINISTIC', mechanism: 'scripts/audit-spec-deadlinks.mjs --check(掃 83 spec.md cross-ref pointer,assert target 存在;2026-05-30 從誤分 PURE-JUDGMENT 修正)' },
   3: { tier: 'DETERMINISTIC', mechanism: 'scripts/add-reciprocal-pointers.mjs --check(2026-05-31 加 --check verify gate;原本只 mutator 無 gate=紙上 DETERMINISTIC,infra-audit 修)' },
-  4: { tier: 'HOOK-ENFORCED', mechanism: 'check_opacity_token_usage.sh(write-time WARN — 印 9 類 violation 到 stderr 但 exit 0 不 block;2026-05-31 infra-audit 修:原寫「write-time block」是假 guarantee)+ utility-registry.json SSOT + audit-time DS-wide grep 確認 residue' },
+  4: { tier: 'HOOK-ENFORCED', mechanism: 'check_opacity_token_usage.sh(write-time P0 BLOCKER exit 2,2026-07-07 治理進化方向 2 升級;per-line escape @token-registry-ok)+ utility-registry.json SSOT + audit-time DS-wide grep 確認 residue' },
   5: { tier: 'DETERMINISTIC', mechanism: 'scripts/audit-orphan-tokens.mjs --check(0 真孤兒 verdict)' },
   // Group B — Spec hygiene
   6: { tier: 'PURE-JUDGMENT', mechanism: 'Spec 文字品質 AI judgment;dispatch 必 DS-wide 全 spec.md(82 files),禁 sample;含 file:line per finding' },
@@ -48,7 +48,7 @@ const COVERAGE = {
   12: { tier: 'PURE-JUDGMENT', mechanism: 'Story 人話 AI judgment;dispatch 必 DS-wide 全 stories 過 placeholder/jargon test' },
   13: { tier: 'HOOK-ENFORCED', mechanism: 'check_story_invariants.sh R1 anatomy 5-section structural enforce(原 check_story_anatomy.sh)' },
   // Group E — System
-  14: { tier: 'PURE-JUDGMENT', mechanism: '命名一致性 cross-component AI judgment;dispatch 必 grep DS-wide prop value semantic conflicts' },
+  14: { tier: 'PURE-JUDGMENT', mechanism: '結構核心已謂詞化:chain scripts/naming-structure-invariant.mjs(PascalCase/kebab/主檔,deterministic,2026-07-07 C.0b harvest 首跑);語義部分(hook naming / 章名中文 / identifier 語言)仍 AI judgment DS-wide' },
   15: { tier: 'DETERMINISTIC', mechanism: 'scripts/audit-content-quality.mjs --check(cross-doc drift)' },
   // Group F — Architecture
   16: { tier: 'DETERMINISTIC', mechanism: 'scripts/audit-layout-family-frontmatter.mjs --check(primary spec 必有 family: frontmatter;2026-05-30 從誤分 PURE-JUDGMENT 修正)' },

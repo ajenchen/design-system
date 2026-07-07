@@ -8,6 +8,7 @@ traits:
 benchmark:
   - Ant Design Upload (file list): github.com/ant-design/ant-design/tree/master/components/upload
   - Polaris Thumbnail: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Thumbnail
+  - shadcn Attachment (2026-06 chat 套件): ui.shadcn.com/docs/components/attachment
 ---
 
 <!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
@@ -471,6 +472,14 @@ Passive status icon 置中於 action-sized 容器,hover 時 active action 填滿
 FileItem 決策維度是 `mode`(compact / rich)× `status`(uploading / completed / error / static)。anatomy 同時提供 `Inspector`(右側 Controls 即時切 `mode` / `status` / `progress` / `description` 試玩單值)與 `ColorMatrix` / `SizeMatrix` / `StateBehavior` 結構矩陣——兩者分工:Inspector 給「單一組合長怎樣」的即時試玩,矩陣給「跨 status 並排比對」的 side-by-side 決策。
 
 ColorMatrix 已建:展示 status × 元素(filename / description / progress bar / status icon)色彩矩陣,明示 status 只驅動 **progress bar + status icon + description** 升階,**不染容器背景**(避免整 row 轉紅蓋過其他 metadata)。容器本身無 hover-bg / selected / disabled state——FileItem 三型態皆 permanent-anchored,反向於 MenuItem / DataTable flush row 的 hover-bg primitive(詳「Hover 行為 canonical」段),且 interface 無 `disabled` prop。
+
+## 與 shadcn Attachment 的分界(2026-07-07 codify,目錄新增元件謂詞 anchor)
+
+shadcn 2026-06 chat 套件的 Attachment(ui.shadcn.com/docs/components/attachment)與 FileItem 同情境(附件 + 上傳狀態 + 動作)。**不遷移架構、不改名**:Attachment 為純組合式(無 Radix primitive 核心,AttachmentAction 即其 Button),無 primitive 增益且缺我們的 item-anatomy 幾何深度與 ProgressBar 量化 a11y(其進度僅 title shimmer,SR 無量化值);shadcn 為 copy-in scaffold 無上游更新流入;改名破壞 File* 家族(FileUpload / FileViewer)+ npm breaking + `completed` lifecycle family(props-naming.md)。判準 SSOT → `ui-development.md`「shadcn 目錄後續新增元件 vs DS 既有」。
+
+**Known-gaps(對照後承認、留 anchor,現無產品需求不動)**:
+- `processing` / `idle` state:Attachment 5 態 enum 可表達「傳完但伺服器處理中」(掃毒 / transcode / AI ingestion);我們 3 態 + undefined 表達不了 — 未來需求出現時走 prop 演進 ASK
+- AttachmentTrigger stacking-order pattern(整卡鍵盤可達、actions 各自 focusable、不觸 nested-interactive — 解了我們明文 punt 的「整列 Enter 開啟」trade-off,見「Hover 行為 canonical」)與 `orientation="vertical"` + Group 橫向 scroll(chat composer tile;gallery 既定走 Grid / Carousel):皆屬 SSOT-affecting,對應需求出現時 ASK 再議
 
 ---
 

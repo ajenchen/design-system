@@ -74,7 +74,7 @@ Grouped by theme. Each runs as an independent subagent; many can parallelize.
 
 | # | Audit | What it catches |
 |---|-------|-----------------|
-| 14 | **命名一致性** | PascalCase folder / kebab-case file / hook naming / spec chapter 中文 / identifier 英文 / single-file 語言統一 |
+| 14 | **命名一致性** | 結構核心已謂詞化:`node scripts/naming-structure-invariant.mjs`(PascalCase folder / kebab file / 主檔對應,2026-07-07 C.0b harvest 首跑);語義部分留 judgment:hook naming / spec chapter 中文 / identifier 英文 / single-file 語言統一 |
 | 15 | **Cross-doc 一致性** | CLAUDE.md 自身 + cross-spec full dup(Rule-of-3)+ tsx docblock-spec drift + stale upgrade markers + **(2026-06-04 加)docblock-vs-同檔-code + spec 段內描述性一致(Mode 表 / typography / padding / gap cross-section)**。詳 `audit-prompts.md` Dim 15。**Enforcement 升級**:本 dim 易被「散文 skim」淺跑漏(2026-06-04 anchor:tsx docblock `閱讀模式`/`hover-bg` 自 2026-04-23 stale 多次沒抓)→ 改由 `/deep-audit-cross-codex` A.1b **強制 adversarial per-component**(Validator F 覆蓋率閘),不再可 skim |
 
 ### Group F — Architecture compliance (P1 priority, session-learned)

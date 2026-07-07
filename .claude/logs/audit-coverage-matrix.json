@@ -1,5 +1,5 @@
 {
-  "ts": "2026-07-03T11:33:06.060Z",
+  "ts": "2026-07-07T11:49:16.585Z",
   "expected_dims": 90,
   "classified": 90,
   "tier_counts": {
@@ -24,7 +24,7 @@
     },
     "4": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_opacity_token_usage.sh(write-time WARN — 印 9 類 violation 到 stderr 但 exit 0 不 block;2026-05-31 infra-audit 修:原寫「write-time block」是假 guarantee)+ utility-registry.json SSOT + audit-time DS-wide grep 確認 residue"
+      "mechanism": "check_opacity_token_usage.sh(write-time P0 BLOCKER exit 2,2026-07-07 治理進化方向 2 升級;per-line escape @token-registry-ok)+ utility-registry.json SSOT + audit-time DS-wide grep 確認 residue"
     },
     "5": {
       "tier": "DETERMINISTIC",
@@ -64,7 +64,7 @@
     },
     "14": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "命名一致性 cross-component AI judgment;dispatch 必 grep DS-wide prop value semantic conflicts"
+      "mechanism": "結構核心已謂詞化:chain scripts/naming-structure-invariant.mjs(PascalCase/kebab/主檔,deterministic,2026-07-07 C.0b harvest 首跑);語義部分(hook naming / 章名中文 / identifier 語言)仍 AI judgment DS-wide"
     },
     "15": {
       "tier": "DETERMINISTIC",

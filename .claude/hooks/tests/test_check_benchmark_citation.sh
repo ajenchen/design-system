@@ -3,7 +3,7 @@
 #
 # Hook(PreToolUse Edit/Write/MultiEdit):spec.md / .tsx in packages/design-system/src/
 # 含 world-class benchmark claim(Ant / Material / Polaris ...)必附 inline citation
-# (URL / GitHub #L / snapshots/ / @benchmark-unverified)。違 P1 soft warn(exit 1)。
+# (URL / GitHub #L / snapshots/ / @benchmark-unverified)。違 P0 BLOCKER(exit 2,2026-07-07 方向 2 升級;escape marker 既有)。
 # 整檔 escape:前 5 行含 @benchmark-citation-allow: 或 @benchmark-unverified-blanket:。
 
 set -u
@@ -45,10 +45,10 @@ expect_pass_silent() {
 
 expect_warn() {
   local name="$1"; local needle="$2"
-  if [ "$EXIT" = "1" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+  if [ "$EXIT" = "2" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
-    echo "  FAIL  $name (expected exit=1 + needle '$needle', got exit $EXIT)"
+    echo "  FAIL  $name (expected exit=2 + needle '$needle', got exit $EXIT)"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi

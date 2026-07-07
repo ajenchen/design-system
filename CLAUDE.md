@@ -32,7 +32,7 @@
 
 ## 行數預算(Anthropic 對齊)
 
-CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap 800。SKILL ≤ 250 / spec ≤ 300(foundational SSOT 例外 ≤ 800-1200)/ memory **per-file ≤ 100 lines** + **MEMORY.md index ≤ 20 entries**(soft 18 / hard 20,session-start hook 攔)。Hooks **26 soft / 60 hard**(SSOT = `session_start_governance_check.sh` Check 7 threshold logic,2026-05-27 升 50→55→60 per codex M31 P0 hooks + baseline + primitive-misuse 3 new hooks)。動態值見 `scripts/sync-governance-counters.mjs` 跑出為準(snapshot 2026-07-02:**31 M-rules / 90 audit dims / 53 hooks** — 數字僅供 sanity check,真值以 script 輸出為準避 drift)。
+CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap 800。SKILL ≤ 250 / spec ≤ 300(foundational SSOT 例外 ≤ 800-1200)/ memory **per-file ≤ 100 lines** + **MEMORY.md index ≤ 20 entries**(soft 18 / hard 20,session-start hook 攔)。Hooks **26 soft / 60 hard**(SSOT = `session_start_governance_check.sh` Check 7 threshold logic,2026-05-27 升 50→55→60 per codex M31 P0 hooks + baseline + primitive-misuse 3 new hooks)。動態值見 `scripts/sync-governance-counters.mjs` 跑出為準(snapshot 2026-07-07:**31 M-rules / 90 audit dims / 55 hooks** — 數字僅供 sanity check,真值以 script 輸出為準避 drift)。
 
 ## Anti-bloat L1-L3
 
@@ -73,7 +73,7 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 
 # SSOT 消費 canonical
 
-寫視覺 code 前必查對照 — 沒列 = 自創。**完整對照表 + 強制 checklist** → `.claude/references/ssot-consultation.md`(SSOT owner;含 9 項決策對應 SSOT + 新元件 tsx 開頭「── 消費的 SSOT ──」段強制要求)。Hook `check_ssot_consultation.sh` 2026-05-XX 已 retired → 改靠 mindset #2 + audit dim 1 + check_canonical_propagation hook 接手檢查。
+寫視覺 code 前必查對照 — 沒列 = 自創。**完整對照表 + 強制 checklist** → `.claude/references/ssot-consultation.md`(SSOT owner;含 9 項決策對應 SSOT + 新元件 tsx 開頭「── 消費的 SSOT ──」段強制要求)。原 `check_ssot_consultation.sh` 已 retired;2026-07-07 以 `check_ssot_header_declaration.sh` 精簡復活(新建 production tsx 必帶「── 消費的 SSOT ──」段,P0)+ mindset #2 + audit dim 1 + check_canonical_propagation 接手。
 
 # 任務導航表
 

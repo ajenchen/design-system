@@ -34,7 +34,7 @@
 - **Pre-edit**:`check_substantive_edit_approval_preflight.sh`(production code)+ `stop_self_audit.sh`(spec/canonical 補位)+ `check_ds_anchor_preflight.sh`(M29 anchor)
 - **Post-edit**:`stop_self_audit.sh` Mechanism 1(claim-verify-gap)BLOCKER
 - **Pre-final(宣告完成前)**:`stop_self_audit.sh` Mechanism 7(完整性宣告閘)BLOCKER — 宣告「全做完 / 全部完成」+ 本 turn 實質改動但**無全庫 stale-ref 掃描證據** → block。**觸發器 = 「宣告完成」本身,非等 user 問第二次**(2026-06-03 user-authorized,根治重複 failure)
-- **Pre-final(重大 / SSOT / 模型 / 跨多檔改動)**:除 M7 自掃外,**宣告完成前必跑「獨立對抗稽核」**(multi-agent Workflow,每路假設「還有 loose end」主動去找 + cite 證據)。**理由**:self-grep 系統性漏(self-assessment unreliable,對齊 `feedback_ai_ground_truth_unreliable_mechanical_primary`)+ 信任機械閘(preflight / R4 / hook BLOCKER)勝於自評。**小改 = M7 自掃即可**,不需對抗稽核(避免過度)。2026-06-03 user-authorized,根治「宣告做完 → user 問第 N 次 → 才補掃出 loose end」
+- **Pre-final(中型以上 = 跨 ≥3 檔 substantive、任何 canonical/SSOT/模型改動、或宣告「殘項/債歸零」類完整性 claim;2026-07-07 軌道 4 收緊,Workflow 成本已低無理由跳)**:除 M7 自掃外,**宣告完成前必跑「獨立對抗稽核」**(multi-agent Workflow,每路假設「還有 loose end」主動去找 + cite 證據)。**理由**:self-grep 系統性漏(self-assessment unreliable,對齊 `feedback_ai_ground_truth_unreliable_mechanical_primary`)+ 信任機械閘(preflight / R4 / hook BLOCKER)勝於自評。**小改 = M7 自掃即可**,不需對抗稽核(避免過度)。2026-06-03 user-authorized,根治「宣告做完 → user 問第 N 次 → 才補掃出 loose end」
 - **Pre-commit**:`scripts/audit-content-quality.mjs --check` + `scripts/extract-canonical-rules.mjs` 各 fail = block
 
 ## Anti-pattern(永久 ban)

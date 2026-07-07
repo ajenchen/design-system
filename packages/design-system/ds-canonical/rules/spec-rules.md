@@ -15,7 +15,7 @@ paths:
 - 編輯 spec 或建新元件時必對照 **Polaris / Material / Ant / Atlassian / Carbon / Apple HIG** 的 7 維度:何時用 / 何時不用 / 近親分界 / 常見誤解 / 相關 links / 空值 / 驗證 / Loading / a11y 預設。SegmentedControl spec 是本專案 template
 - 編輯 spec 必交叉比對相關 spec + Storybook,確認無矛盾 / 術語一致 / 無重複
 - 與既有 spec 有邏輯衝突 / 概念混淆 → 主動提出討論,不默默改 / 不迴避
-- 所有元件遵循 shadcn 框架(forwardRef / Slot / data-* / cva),不從零重寫
+- 所有元件遵循 shadcn 框架(forwardRef / Slot / data-* / cva),不從零重寫——**「框架」= 結構 idiom,非「必須消費 shadcn 目錄每個元件」;目錄後續新增 vs DS 既有等價物 → 見 ui-development.md「shadcn 目錄後續新增元件 vs DS 既有」**(2026-07-07 clarifier,防「FileItem 是 Attachment 的從零重寫」類誤讀)
 - 每個元件 spec「定位」段必明確宣告實作基礎:`基於 Radix X` / `基於 cmdk / sonner` / native / `自建 + 理由`(自建必說明為何不用現有 primitive)
 - Spec 文字品質:不描述視覺形狀 / 實作細節(「窄長形」「會變寬」「zero layout shift」屬 story 不進 spec);術語一致;「禁止事項(❌)」列所有常見誤用
 - **a11y 段強制**:互動元件 spec.md 必含 `## A11y 預設` 段(列 ARIA + Keyboard map);純視覺 indicator(Badge / Tag / Separator / Skeleton)豁免明文寫「本元件無互動」

@@ -52,7 +52,9 @@
     "prepare": "husky",
     "gen-ds-story-manifest": "node scripts/gen-ds-story-manifest.mjs",
     "gen-llms-txt": "node scripts/gen-llms-txt.mjs",
-    "postbuild-storybook": "node scripts/gen-ds-story-manifest.mjs"
+    "postbuild-storybook": "node scripts/gen-ds-story-manifest.mjs",
+    "check:bundle-size": "node scripts/check-bundle-size.mjs --check",
+    "check:naming-structure": "node scripts/naming-structure-invariant.mjs"
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",

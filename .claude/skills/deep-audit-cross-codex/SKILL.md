@@ -86,13 +86,11 @@ detect_mode() {
 **🚨 反抽樣鐵律 — 「機械涵蓋」必先 breadth-verify(2026-06-05 user 抓 story-title 又抽樣,verbatim「這個問題已經問你一百次了結果你還是抽樣」)**:把某 judgment dim 標為「DETERMINISTIC/HOOK 已兜底、不在 judgment risk」**= 一種抽樣**,除非該 gate 的偵測廣度被**證明**對齊 canonical。**強制兩步,缺一即視同抽樣**:
 1. **Breadth-test**:對該 gate 注入一個「已知違規」樣本 → 跑 gate → 確認被抓(exit 1)→ revert。沒通過 = 該 gate **不算**涵蓋該 dim,退回 PURE-JUDGMENT 跑完整枚舉。
 2. **完整枚舉 + partition-review**(judgment dim sample-proof 跑法):deterministic 腳本枚舉**全部單元**(eg. `gen-ds-story-manifest.mjs` 全 926 name)→ 機械 auto-pass 明確合規者 → 剩餘 candidate **切 N chunk,每 chunk agent 審它每一個**(chunk 互斥涵蓋全集 → 每單元剛好審一次,數學上不可能漏)。**禁** agent 自選 top N。
-- **錨例**:dim 40/41/43 被當「story-quality:check 已涵蓋」排除 NO-SAMPLE → 但 gate 有 detection gap(只抓 100%-English,漏中英混雜)+ scope gap(漏 anatomy/principles)→ 放過 84 違規,還回報「0 violations」假綠燈。修:gate 補 `name_mixed_english`(Dim 41b)+ 全 storyFiles scope + breadth-verified(注入 `Hover Compact 測試` 確認抓到)。對齊 M7 子規則 M34「spec broad + hook narrow = gap 必補」。
+- **錨例**:dim 40/41/43 被當「story-quality:check 已涵蓋」排除 → gate 有 detection gap(只抓 100%-English)+ scope gap(漏 anatomy/principles),放過 84 違規還報「0 violations」假綠。修:補 `name_mixed_english` + 全 storyFiles scope + breadth-verified。對齊 M34「spec broad + hook narrow = gap 必補」。
 
 ### A.1b — Claim-vs-code + docblock + spec-internal adversarial verification(MANDATORY,NO-SAMPLE,per-component)
 
-**2026-05-30 anchor(user verbatim 質問「之前他媽都在偷懶?」)**:獨立 adversarial 再審抓到 **403 findings / 64 單元 / 0 全乾淨**,其中 **202 個 FALSE_CLAIM**(anatomy/a11y/principles/spec 系統性記載 code 根本沒有的行為:Calendar 宣稱方向鍵導覽 / Tooltip·HoverCard 宣稱 focus trap / Alert 記不存在的 `actions` prop / Select 宣稱「用原生 select」但桌機自建 cmdk / AspectRatio spec 說「無 wrapper」但 code wrap)。**根因**:前期 audit 把 story-content dim(12/24/25/30/43 等)當「散文層 looks-fine 掃」跑,**沒 adversarial 讀 .tsx(+ wrap 的 lib)逐句比對宣稱**。這是「偷懶」的具體 failure mode。
-
-**為何不能只靠 deterministic grep**:2026-05-30 嘗試建 `audit-anatomy-prop-existence.mjs`(已刪除不存在)機械驗 prop-existence,但 **prop passthrough(元件 `...props` 轉發 Radix/react-day-picker)使 naive grep 必 over-flag 合法 prop** → 不可靠 → 刪除。**結論:FALSE_CLAIM 驗證本質需 LLM 讀 source 判斷,無法純 grep gate → 故必用「強制 + 報告驗證確認真跑」的機制保證**。
+**2026-05-30 anchor(user verbatim「之前他媽都在偷懶?」)**:獨立 adversarial 再審抓 **403 findings / 64 單元 / 202 FALSE_CLAIM**(doc 系統性記載 code 沒有的行為,如 Calendar 宣稱方向鍵導覽、Alert 記不存在的 `actions` prop)。根因 = 前期把 story-content dim(12/24/25/30/43 等)當「散文 looks-fine 掃」,沒 adversarial 讀 .tsx(+ wrap 的 lib)逐句比對宣稱。**為何不能純 grep**:prop passthrough(`...props` 轉發 Radix 等)使 naive prop-existence grep 必 over-flag 合法 prop(2026-05-30 建過即刪)→ **FALSE_CLAIM 驗證本質需 LLM 讀 source,故用「強制 + report-validator 確認真跑」機制保證**。
 
 **強制流程**(deep-audit 每次必跑,no skip):
 0. **機械 gate 先跑(deterministic,2026-06-02 加)**:`npm run typecheck:stories`(deterministic 抓 stories 的 `{var}`-undefined / prop 型別錯 —— **這是 SizeMatrix `{size}` crash 的真防線**;主 tsc -b exclude stories 故必跑此)+ `node scripts/storybook-smoke-test.mjs --full`(runtime crash render 掃)。先過才進 adversarial read。Anchor:2026-06-02 Field SizeMatrix `{size}` JSX-undefined crash 隨 beta.44 ship。**注**:smoke 全覆蓋 coverage-gate(防靜默-skip 假綠燈)attempted 但 CI server 規模化降級(~60 story 後 timeout 撞 20-min budget)→ **defer**(需 robust-server / browser-recycle + 可靠測試環境);故 typecheck:stories 是目前 deterministic 主防線。
@@ -188,6 +186,10 @@ Brief 必含 4 段(完整 template SSOT → `references/phase-b-codex-brief.md`,
 
 Deep-audit 收尾**必自動跑** `/knowledge-prune` deep — **前提鐵律:確保產出不打折、以產出完美為前提**(quality-first,= knowledge-prune SKILL 2026-06-02 核心前提:只清真冗餘提升 signal,每一條真實 invariant / 機械防線必完整保留,retire 前必確認保護已被別處覆蓋;2026-06-11 user verbatim「請確保有確保產出不打折且產出完美,且未來也必須要確保產出不打折以產出為完美的前提跑 knowledge prune deep」)。governance headroom / session-start trigger 命中時 scope 聚焦觸發點,否則 quarterly scope。**禁問 user「要不要跑」**(anchor:2026-06-11 user verbatim「deep audit cross codex不是會自動…跑 knowledge prune deep?為何每次都要問我是否要跑?」)。分權不變:P0+P1(表達層對齊/清 stale)AUTO 執行;**P2(retire 機械防線 / 動 canonical)整理成候選表進 C.1 拍板清單** — user 只拍板 P2 內容,不拍板「跑不跑」。
 
+### C.0b — 判準化 harvest(predicate-ization,2026-07-07 user 拍板治理進化方向 1)
+
+Deep-audit 收尾(C.0a 旁)**必跑**:讀 `node scripts/audit-coverage-matrix.mjs` 的 PURE-JUDGMENT gap list,**選 top 1-3 個本輪已充分理解的 judgment 維度,當場寫成 deterministic script**(invariant .mjs / hook rule);寫不成的必記一行「為何不能謂詞化」(品味 / 需 LLM 讀 source / 外部演進類)。**雙柱模型**:完整稽核 = 永久機構(存量 / 外來 / 漂移 / 防線腐化 / 品味五類永遠需要);謂詞化 = 稽核的機械化引擎——每類問題轉謂詞後,同一謂詞對存量與外來元件全量零抽樣免費掃,稽核不縮編、機械部分逐季變厚。KPI(PURE-JUDGMENT 佔比 trend)由 `/governance-health` 月度追蹤。SSOT → `.claude/planning/2026-07-07-governance-evolution-roadmap.md`。錨例:2026-07-07 selected/active meta 謂詞、VR shifted-clock(當場謂詞化,存量 63 元件一次掃平)。
+
 ### C.0 — 收斂判準(rerun stop gate,2026-06-01)
 
 決定「**再 rerun 嗎**」必過此 gate:deep-audit = LLM 對抗式 non-deterministic + 高假陽性,**追零 = 跑步機 + 誘發 regression**。STOP 判準 = **某輪 adversarial 二次驗證後真 material/regression = 0(只剩 marginal + false-positive)**——不追零、不過早收。收斂靠 CI gate + 寫入時紀律,非 audit loop。三分類表 + 「改一處看 N 處」→ `references/triage-rubric.md`「收斂判準」。
@@ -198,17 +200,12 @@ Deep-audit 收尾**必自動跑** `/knowledge-prune` deep — **前提鐵律:確
 ## Deep Audit Cross-Codex 完整報告(N 日期)
 
 ### Phase A 結果
-- 全 dim findings: <P0 N / P1 M / P2 K>
-- Autonomous landed: <N 項> commit <hash>
-- SSOT-UI/UX 已拍板: <M 項>
-- SSOT-UI/UX 待拍板: <列出 + 簡述>
+- 全 dim findings: <P0/P1/P2> / Autonomous landed: <N 項> commit <hash>
+- SSOT-UI/UX 已拍板: <M 項> / 待拍板: <列出 + 簡述>
 
 ### Phase B 結果
-- Codex 抓 + Claude 漏: <N 項>
-- Claude 抓 + Codex 漏: <M 項>
-- Cite battle: <K 題,各題 verdict + evidence>
-- 共識 SSOT-UI/UX 待拍板: <列出 + 簡述>
-- 共識 autonomous landed: <N 項> commit <hash>
+- Codex 抓 Claude 漏: <N 項> / Claude 抓 Codex 漏: <M 項> / Cite battle: <K 題,各題 verdict + evidence>
+- 共識 SSOT-UI/UX 待拍板: <列出 + 簡述> / 共識 autonomous landed: <N 項> commit <hash>
 
 ### 待你拍板(中文人話)
 <決策 1-N(per A.2 format)>
@@ -216,8 +213,7 @@ Deep-audit 收尾**必自動跑** `/knowledge-prune` deep — **前提鐵律:確
 **每題必附「SSOT 理由:」一句**(= 為何這是「會影響 SSOT 的 UI/UX 增刪改」:新 API contract / 改 canonical 語意 / 新視覺 design language,三類之一,具體指出)。**寫不出 SSOT 理由 = 該題不是拍板題,移回 AUTO 自己做**(2026-06-11 user 第 3 次糾正 codify:bug fix / a11y 對齊 W3C / 對齊 spec 既有意圖 / story 內容 / 治理 / 補 rationale 文件 / dead code 清除,全部 AUTO 不問)。Hook \`check_audit_post_report_validator.sh\` Validator H 機械強制。
 
 ### Verify artifact
-- tsc PASS / invariant PASS / content-quality PASS / visual probe PASS
-- file:line + before / after diff link
+- tsc / invariant / content-quality / visual probe 全 PASS + file:line + diff link;**backlog 項必附 verifyCmd+fixedSignal(可攜指令),對帳 = `node scripts/verify-backlog.mjs`(2026-07-07 軌道 3;anchor:C1 十筆考古 9 筆早已修)**
 ```
 
 ### C.2 — Push trigger gate(M28 solo-work canonical)

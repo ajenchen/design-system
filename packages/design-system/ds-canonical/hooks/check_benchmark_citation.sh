@@ -82,7 +82,7 @@ if [ -n "$VIOLATIONS" ]; then
 
 ┄┄┄┄ check_benchmark_citation — world-class benchmark claim 缺 source ┄┄┄┄
 
-[P1 WARN] ${FILE_PATH}
+[P0 BLOCKER] ${FILE_PATH}
 偵測到 benchmark claim 段缺 inline citation:
 ${VIOLATIONS}
 M22 canonical(2026-05-02):**寫 spec / code 含「Ant / Material / Polaris / ...」claim 必附**:
@@ -99,8 +99,10 @@ M22 canonical(2026-05-02):**寫 spec / code 含「Ant / Material / Polaris / ...
   - \`// @benchmark-citation-allow: <reason>\`(legacy 過渡期暫掛)
   - \`// @benchmark-unverified-blanket: <reason>\`(M22 (d) file-level 撤回)
 EOF
-  # Soft warning(P1)— print to stderr, don't block(exit 1 vs exit 2)
-  exit 1
+  # P0 BLOCKER(2026-07-07 治理進化方向 2:對齊 user 2026-05-27 doctrine「SSOT canonical
+  # 必 P0 BLOCKER 禁 P1 WARN」— escape 已備:@benchmark-unverified 逐句撤回 /
+  # @benchmark-citation-allow / @benchmark-unverified-blanket 檔級,故升級不增誤殺)
+  exit 2
 fi
 
 exit 0

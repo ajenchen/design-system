@@ -55,6 +55,12 @@ description: Batch-end-verify rhythm + parallel tool batch + user-listed N-rule 
 - 漏 N 條中第 K 條當「做完」report
 - 改寫 user wording 為自己 paraphrase(verbatim 保留)
 
+**Sweep-first, edit-second(2026-07-07 治理進化軌道 2 codify)**:任一 fix 屬「跨切面決策」
+(改名 / 詞彙統一 / 規則性改動,可寫成 grep 謂詞者)→ **先跑謂詞產出「sweep manifest」**
+(grep 指令 + 全庫命中清單,artifact 化),照清單做完、驗證清單歸零,才算該 fix 完成。
+**禁**「先改直覺想到的檔、稽核抓漏再補」(anchor:2026-07-07 meta 詞彙統一三波 11→16→9 檔,
+規則在散文裡 → 三輪才收斂;寫成謂詞後一個 grep 掃平)。
+
 ### Phase 1 — Parallel tool batch(原 M32(d))
 
 Read / Grep / Glob 多檔需求 → **single message multi-tool-call**:

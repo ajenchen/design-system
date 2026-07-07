@@ -10,6 +10,10 @@
 # source,不可憑印象 propose」+ propose-options/SKILL.md。
 #
 # 注意:本 hook 走 UserPromptSubmit(在 AI reply 前 inject context),
+# ⚠️ fail-closed 設計約束(2026-07-07 治理進化方向 2 稽核結論):UserPromptSubmit 的 exit 2
+# 擋的是 user 輸入本身 = 錯誤工具語義,本 hook **不可**升 exit 2。propose 家族的 fail-closed
+# 端 = check_propose_pre_grep_verify.sh(M18 Q0 配對)+ stop_self_audit claim-verify 閘;
+# 本 hook 職責 = 事前 P0 措辭 directive 注入(非 soft 建議)。
 # 跟 check_propose_pre_grep_verify.sh(走 PostToolUse 偵測 propose 已成型後再警示)互補。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
@@ -43,9 +47,9 @@ if [ "$HAS_FETCH" -ge 2 ]; then
   exit 0
 fi
 
-# Soft inject
+# P0-directive inject(exit 0 by design — 見檔頭 fail-closed 設計約束)
 cat <<EOF
-⚠️ M26 Propose-without-benchmark gate
+🚨 M26 Propose-without-benchmark gate(P0 directive — 未 fetch 就 propose = M26 違規,非建議)
 
 → User prompt 含 propose / visual / behavior decision trigger keyword,但過去 ~20 turns
   Web fetch / WebSearch tool_use count = $HAS_FETCH(< 2)。
