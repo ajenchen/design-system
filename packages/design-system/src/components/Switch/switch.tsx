@@ -60,6 +60,13 @@ const switchVariants = cva(
     // OFF → ON 背景色
     'data-[state=unchecked]:bg-border',
     'data-[state=checked]:bg-primary',
+    // 選中之上的 hover = 同色相升 hover 階(2026-07-06 user 掃出 Switch 是「藍色選中家族」
+    // 唯一漏網:Checkbox checked hover 早有同款、Ant Switch checked hover = colorPrimaryHover
+    // 源碼實錘;順修 meta states 宣稱 'hover' 但 code 原本零 hover 樣式的 claim-vs-code 落差)。
+    // unchecked hover:border(n-5)→ border-hover(n-6)深一階,對齊 Checkbox 未選 hover
+    // 加深一階慣例 + Ant unchecked hover(colorTextTertiary 加深)同方向。
+    'data-[state=unchecked]:hover:bg-border-hover',
+    'data-[state=checked]:hover:bg-primary-hover',
   ],
   {
     variants: {
@@ -349,7 +356,8 @@ export const switchMeta = {
   },
   // 2026-07-04 修 stale meta:移除 'active' — switchVariants / Thumb 無 active-state 樣式
   // (cva 只有 unchecked/checked/disabled/readonly/focus-visible;對照 checkboxMeta 正確不含 active)
-  states: ['default', 'hover', 'focus-visible', 'disabled'],
+  // 'checked' = ON 持續態(bg-primary;2026-07-07 meta 詞彙統一補列,toggle 家族用 'checked')
+  states: ['default', 'hover', 'checked', 'focus-visible', 'disabled'],
   tokens: {
     // 2026-07-04 補齊漏列:bg-border = OFF track(cva data-[state=unchecked]:bg-border)、
     // bg-on-emphasis = Thumb 白圓(Thumb className)— 兩者 code 實際消費,meta 原漏列

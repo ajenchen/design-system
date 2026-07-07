@@ -267,7 +267,7 @@ tagPadding 只在有 Tag 時才套用。Placeholder/空值狀態使用 fieldWrap
 
 Field 內部用 `<ItemInlineAction>`(`patterns/element-anatomy/item-anatomy.tsx` 共用元件)渲染 — 跟 Sidebar / TreeView / DropdownMenu 的 inline action **完全同一套** canonical 實作,不再有「每個 host 自己複製 18 行 button JSX」的漂移。
 
-- 共用規則見 `patterns/element-anatomy/item-anatomy.spec.md`「Inline Action 設計規格」節
+- 共用規則見 `patterns/element-anatomy/inline-action.spec.md`(canonical SSOT,2026-04-24 自 item-anatomy 抽出;Field endAction 屬 neutral host 支)
 - Helper 規格與 API 見 `item-anatomy.spec.md` 的「Inline action 共用元件」節
 - Field host 必須傳 `size={size}` 給 `<ItemInlineAction>`(field 不在 `RowSizeContext` 內,需明確覆寫)
 

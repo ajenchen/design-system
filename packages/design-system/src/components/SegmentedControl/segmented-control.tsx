@@ -175,12 +175,19 @@ const itemVariants = cva(
     'disabled:hover:text-fg-disabled disabled:hover:border-border',
     // hover（未選）：border 加深一階 + 文字轉深，對齊 Input / Chip hover
     'hover:text-foreground hover:border-border-hover hover:z-[5]',
-    // selected: 文字 + 邊框都用 primary-hover,底色維持 bg-surface 不變 (跟 Chip 一致)
-    //   ── 這是 pill 風格元件 (Chip / SegmentedControl) 的 canonical 選中規則:
-    //      primary-hover 同時染文字和線條;底色不改 (不用 primary-subtle)。
-    //      Tabs 是 underline 風格,規則不同 (文字 foreground + 底線 primary-hover)。
+    // selected: 文字 + 邊框都用 primary base,底色維持 bg-surface 不變 (跟 Chip 一致)
+    //   ── 這是 pill 風格元件 (Chip / SegmentedControl) 的 canonical 選中規則(SSOT = semantic.css「選中狀態」段):
+    //      primary base 同時染文字和線條;底色不改 (不用 primary-subtle)。
+    //      2026-07-06 user 拍板:持續選中 hover 階 → base(三家世界級「瞬時弱、持續強」實錘)。
+    //      Tabs 是 underline 風格,規則不同 (文字 foreground + 底線 primary)。
     //   z-10 讓 border 浮在相鄰 item 之上
-    'data-[state=on]:text-primary-hover data-[state=on]:border-primary-hover data-[state=on]:z-10',
+    'data-[state=on]:text-primary data-[state=on]:border-primary data-[state=on]:z-10',
+    // 選中之上的 hover = 同色相升 hover 階(2026-07-06 user 拍板;Button pressed hover 家族
+    // + Ant active hover 同派;跟 Chip 一致,顯式宣告解掉 CSS 平手 source-order 脆弱性)
+    'data-[state=on]:hover:text-primary-hover data-[state=on]:hover:border-primary-hover',
+    // disabled × selected 疊加(2026-07-07 user 拍板統一;M24 disabled 全滅,同 Chip)
+    'data-[state=on]:disabled:border-border data-[state=on]:disabled:text-fg-disabled',
+    'data-[state=on]:disabled:hover:border-border data-[state=on]:disabled:hover:text-fg-disabled',
     // item 連體：除第一個外，-ml-px 讓相鄰 border 重疊
     'first:rounded-l-md last:rounded-r-md',
     '[&:not(:first-child)]:-ml-px',
@@ -300,10 +307,11 @@ export const segmentedControlMeta = {
     lg: { fieldHeight: 36, typography: 'body-lg', iconSize: 20, purpose: 'touch / prominent CTA' },
   },
   // 2026-07-04 audit 對齊:cva 無 active(按下)專屬樣式,移除 'active'
-  states: ['default', 'hover', 'focus-visible', 'disabled'],
+  // 'selected' = data-[state=on](2026-07-07 meta 詞彙統一補列:持續選中一律 'selected';cva 無按壓 active 樣式)
+  states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-surface'],
-    fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary-hover'], // 2026-07-04 補:selected 態 cva data-[state=on]:text-primary-hover 實際消費
+    fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary'], // selected 態 cva data-[state=on]:text-primary 實際消費(2026-07-06 選中改 base)
     ring: ['ring-ring'],
   },
   defaultSize: 'md',

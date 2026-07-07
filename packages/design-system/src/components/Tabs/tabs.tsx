@@ -42,7 +42,7 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
  *   slot 間 gap-2，suffix 內 gap-1
  *
  * ── Selected underline ──
- *   使用 ::after 絕對定位在 bottom: -1px，2px primary-hover，
+ *   使用 ::after 絕對定位在 bottom: -1px，2px primary（2026-07-06 拍板:持續選中站 base），
  *   蓋住 TabsList 的 1px gray border（單一視覺線條，不雙線）。
  */
 
@@ -64,6 +64,23 @@ const TabsValueContext = React.createContext<{
   value?: string
   onValueChange?: (value: string) => void
 }>({})
+
+
+// ── getElementRef(Radix Slot idiom;鏡射 chip.tsx 同名 helper — 2026-07-05 M10 同型修)──
+// 讀 child 既有 ref 而不觸發 React 18/19 dev deprecation warning。
+function getElementRef(element: React.ReactElement): React.Ref<HTMLElement> | undefined {
+  let getter = Object.getOwnPropertyDescriptor(element.props, 'ref')?.get
+  let mayWarn = getter && 'isReactWarning' in getter && getter.isReactWarning
+  if (mayWarn) return (element as unknown as { ref?: React.Ref<HTMLElement> }).ref
+  getter = Object.getOwnPropertyDescriptor(element, 'ref')?.get
+  mayWarn = getter && 'isReactWarning' in getter && getter.isReactWarning
+  if (mayWarn) return (element.props as { ref?: React.Ref<HTMLElement> }).ref
+  return (
+    (element.props as { ref?: React.Ref<HTMLElement> }).ref ??
+    (element as unknown as { ref?: React.Ref<HTMLElement> }).ref ??
+    undefined
+  )
+}
 
 const Tabs = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Root>,
@@ -272,12 +289,21 @@ const MenuTabsList = React.forwardRef<
     [children]
   )
 
-  const enhancedChildren = items.map((child, i) =>
-    React.cloneElement(
+  // 2026-07-05 M10 同型修(Chip MenuChipGroup 同款):原 cloneElement 直接覆寫 child ref,
+  // consumer 自有 ref 被靜默取代 → compose(registerItem + child 原 ref)。
+  const enhancedChildren = items.map((child, i) => {
+    const childRef = getElementRef(child)
+    return React.cloneElement(
       child as React.ReactElement<{ ref?: React.Ref<HTMLElement> }>,
-      { ref: registerItem(i) }
+      {
+        ref: (el: HTMLElement | null) => {
+          registerItem(i)(el)
+          if (typeof childRef === 'function') childRef(el)
+          else if (childRef) (childRef as React.MutableRefObject<HTMLElement | null>).current = el
+        },
+      }
     )
-  )
+  })
 
   // Menu 模式沒有 arrows,但仍套 fade mask (reserveArrowWidth: 0) 軟化內容硬邊
   // code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜
@@ -366,7 +392,7 @@ const tabsTriggerVariants = cva(
     'cursor-pointer select-none',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     // Trigger 無水平 padding — 寬度 = 內容寬度。triggers 間的分隔靠 TabsList 的 gap-[var(--layout-space-loose)]
-    // selected underline：::after 絕對定位在 bottom:-1px，2px primary-hover
+    // selected underline：::after 絕對定位在 bottom:-1px，2px primary（持續選中 base）
     // left-0/right-0 因為 trigger 已無 padding，底線等於內容寬度
     // 底線蓋住 TabsList 的 1px gray border，視覺單一線條
     'after:absolute after:left-0 after:right-0 after:bottom-[-1px] after:h-0.5',
@@ -375,7 +401,9 @@ const tabsTriggerVariants = cva(
     'hover:text-foreground',
     // selected
     'data-[state=active]:text-foreground data-[state=active]:font-medium',
-    'data-[state=active]:after:bg-primary-hover',
+    // 2026-07-06 user 拍板:選中底線 hover 階 → primary base(持續選中站 base;
+    // Ant inkBarColor = colorPrimary / Material 3 active indicator = primary 同款)
+    'data-[state=active]:after:bg-primary',
     // disabled：cursor-not-allowed + 不吃 hover 色
     // 不用 pointer-events-none，否則 cursor 不會改變；button[disabled] 本身就擋 click
     'disabled:cursor-not-allowed disabled:text-fg-disabled',
@@ -516,9 +544,10 @@ export const tabsMeta = {
     md: { fieldHeight: 40, iconSize: 16, typography: 'body' },
     lg: { fieldHeight: 48, iconSize: 20, typography: 'body-lg' },
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'selected' = 選中 tab(Radix DOM attr 為 data-state="active",meta 詞彙統一用 'selected' 避免與「按壓 active」混用;2026-07-07)
+  states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-primary-hover', 'bg-transparent'],
+    bg: ['bg-primary', 'bg-transparent'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground'],
     ring: ['ring-ring'],
   },

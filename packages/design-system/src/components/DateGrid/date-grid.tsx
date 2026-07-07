@@ -37,7 +37,7 @@ import { Button } from '@/design-system/components/Button/button'
  * | selected / range 端點 | 藍底白字圓 | [&>button]:bg-primary [&>button]:text-on-emphasis rounded-full |
  * | range middle | 灰底矩形 track(bg-neutral-selected = neutral-2),**高度 = cell 高度**(28×28 @ md) | before pseudo: `inset-y-0 -inset-x-[2px]` |
  * | range start/end 半圓 track | 左/右半圓 + selected 圓疊在上,**圓半徑 = button 半徑** | before pseudo: `rounded-l/r-full` + start `left-0 -right-[2px]` / end `-left-[2px] right-0`(向 middle 外擴 2px bridge gap)|
- * | hover(未選中) | 藍圈 outline | hover:ring-[1.5px] hover:ring-primary |
+ * | hover(未選中) | 藍圈 outline | hover:ring-[1.5px] hover:ring-primary-hover(2026-07-07 統一:瞬時 hover = hover 階)|
  *
  * ── Range track 高度 canonical(2026-05-03 v6,M8 4 家對照)──
  * Ant Design([picker source](https://github.com/ant-design/ant-design/blob/master/components/date-picker/style/panel.ts))/ Material X DateRangePicker([mui-x source](https://github.com/mui/mui-x/tree/master/packages/x-date-pickers-pro/src/DateRangeCalendar))/ Apple Calendar `@benchmark-unverified`(closed-source)/ Google Calendar `@benchmark-unverified`(closed-source)共識:
@@ -57,11 +57,19 @@ import { Button } from '@/design-system/components/Button/button'
 
 export type DateGridProps = React.ComponentProps<typeof DayPicker>
 
+// ── SR label 中文 formatter(2026-07-05)──
+// 走 Intl.DateTimeFormat(對齊 TimePicker / Calendar 既有 canonical,不引第二套 date lib);
+// module-level 建一次 — label fn 每個 day cell 都會呼叫,避免 per-call new formatter。
+const ZH_FULL_DATE = new Intl.DateTimeFormat('zh-TW', { dateStyle: 'full' })
+const ZH_MONTH_YEAR = new Intl.DateTimeFormat('zh-TW', { year: 'numeric', month: 'long' })
+const ZH_WEEKDAY = new Intl.DateTimeFormat('zh-TW', { weekday: 'long' })
+
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGrid(
   {
     className,
     classNames,
+    labels,
     showOutsideDays = true,
     ...props
   },
@@ -114,7 +122,9 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           'absolute inset-0 z-[1] flex items-center justify-center',
           'font-normal text-body rounded-full transition-colors',
           // Hover 藍圈 1.5px(對齊 Apple HIG / Ant `@benchmark-unverified` visual ring measurement)— ring 在 button 之上 + 透明 bg 不擋 range track
-          'hover:ring-[1.5px] hover:ring-primary hover:bg-transparent',
+          // 2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階(FileUpload dropzone /
+          // Slider thumb hover 同族;base 專屬持續選中與 focus)——ring-primary → ring-primary-hover
+          'hover:ring-[1.5px] hover:ring-primary-hover hover:bg-transparent',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         ),
         // today:藍色 underline bar 貼近數字
@@ -124,7 +134,8 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           '[&>button]:after:bottom-[5px] [&>button]:after:left-1/2 [&>button]:after:-translate-x-1/2',
           '[&>button]:after:w-[40%] [&>button]:after:h-[1.5px] [&>button]:after:rounded-full',
           '[&>button]:after:bg-primary',
-          // today + selected:bar 切 on-emphasis(白)
+          // today + selected:bar 切 on-emphasis(白)— 只為「藍底白字圓」的選中日/端點設計;
+          // range 中段(淺灰底)由 range_middle 的 !bg-primary 覆寫回藍(2026-07-07 user 拍板)。
           '[&[data-selected=true]>button]:after:bg-on-emphasis',
         ),
         outside: '[&>button]:text-fg-muted',
@@ -161,11 +172,52 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         range_middle: cn(
           "before:content-[''] before:absolute before:inset-y-0 before:-inset-x-[2px]",
           'before:bg-neutral-selected before:pointer-events-none',
-          // button 透明顯露 track,但 hover ring 仍顯示
+          // 2026-07-07 user 拍板:range 中段的 today bar 維持藍(切白只屬藍底選中日;白條在
+          // neutral-selected 淺灰底上近乎隱形 = today 標記消失)。!important 確定性壓過 today 的
+          // data-selected 切白規則(同權重靠 stylesheet 順序不可靠)。Ant 源碼實錘:cell-today
+          // 指示 = colorPrimary,in-range 只換底色、無規則隱藏/改色 today 指示(panel.ts)。
+          // 非 today 的中段日無 after content,本規則無作用 — 安全。
+          '[&>button]:after:!bg-primary',
+          // button 透明顯露 track。2026-07-05 對齊 RDP v9 真實行為(deep-audit A.1b):
+          // range 中段日同樣掛 selected modifier(useRange rangeIncludesDate 不排除中段)→
+          // 上方 selected 的 `[&>button]:hover:ring-0` 一併壓制 hover ring(與 selected 一致
+          // 的 hover 抑制),非原註解宣稱的「hover ring 仍顯示」;today bar 亦被 data-selected
+          // selector 切 on-emphasis(見 spec「組合狀態」段)。
           '[&>button]:!bg-transparent [&>button]:!text-foreground',
         ),
         hidden: 'invisible',
         ...classNames,
+      }}
+      // ── SR label 中文 defaults(2026-07-05,RDP labels API 正門)──
+      // 對齊 MUI X localeText「預設可覆寫」idiom + 2026-07-04 全庫 SR label 中文
+      // canonical(commit 241676c6):DS 給中文 default,consumer 傳 labels 逐鍵覆寫(i18n)。
+      // 禁在 components override 內 spread 後 hardcode aria-label — 會蓋死此覆寫通道
+      // (2026-07-05 修正 07-04 的錯誤修法:中文要走 labels 正門,不是蓋 RDP 算好的值)。
+      labels={{
+        labelPrevious: () => '上一個月',
+        labelNext: () => '下一個月',
+        // 鏡射 RDP default 結構(labels/labelDayButton.js:today 前綴 / selected 後綴),文案中文化
+        labelDayButton: (date, modifiers) => {
+          let label = ZH_FULL_DATE.format(date)
+          if (modifiers.today) label = `今天,${label}`
+          if (modifiers.selected) label = `${label},已選取`
+          return label
+        },
+        // 未傳 mode 的非互動 grid(spec「mode 無預設值」段)day cell 走 labelGridcell
+        labelGridcell: (date, modifiers) => {
+          let label = ZH_FULL_DATE.format(date)
+          if (modifiers?.today) label = `今天,${label}`
+          return label
+        },
+        labelGrid: (date) => ZH_MONTH_YEAR.format(date),
+        labelWeekday: (date) => ZH_WEEKDAY.format(date),
+        // 以下非 default 渲染面(captionLayout dropdown / showWeekNumber 由 consumer 經
+        // {...props} 開啟)— 一併補齊,避免開啟後 SR 中英夾雜
+        labelMonthDropdown: () => '選擇月份',
+        labelYearDropdown: () => '選擇年份',
+        labelWeekNumber: (weekNumber) => `第 ${weekNumber} 週`,
+        labelWeekNumberHeader: () => '週數',
+        ...labels,
       }}
       components={{
         // ── Prev/Next nav(canonical 2026-05-03 v9,DS 一致設計語言)──
@@ -174,17 +226,16 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         // 不開新 tier 自打嘴(撤銷 v6-v8 用 fg-muted override 的 mistake)。
         // RDP v9 `PreviousMonthButton / NextMonthButton` override(node_modules/react-day-picker/dist/esm/components/Nav.js)
         // ⚠️ children: _ 必丟棄(RDP 把 <Chevron> 當 children 傳 → 跟 Button startIcon 重疊變 double chevron)
-        // 2026-07-04 修:aria-label 必在 {...props} 之後 — RDP 以 props 傳 labelPrevious() 英文
-        // default(「Go to the Previous Month」),原寫在 spread 前 = 中文 label 永遠被蓋(dead code)。
+        // 2026-07-05 修:此處**不** hardcode aria-label — 中文走上方 labels API 正門,
+        // RDP 算好 labelPrevious()/labelNext() 後經 {...props} 流入 Button;
+        // spread 後 hardcode(07-04 舊修法)= 蓋死 consumer labels 覆寫通道。
         PreviousMonthButton: ({ className, children: _children, ...props }) => (
           <Button variant="text" size="xs" iconOnly startIcon={ChevronLeft}
-            className={className} {...props}
-            aria-label="上一個月" />
+            className={className} {...props} />
         ),
         NextMonthButton: ({ className, children: _children, ...props }) => (
           <Button variant="text" size="xs" iconOnly startIcon={ChevronRight}
-            className={className} {...props}
-            aria-label="下一個月" />
+            className={className} {...props} />
         ),
       }}
       {...props}
@@ -204,7 +255,9 @@ export const dateGridMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'selected' = 選中日期 / range 端點持續選中(藍底白字圓 bg-primary + range 帶 bg-neutral-selected);
+  // 'active' 移除 — 全檔無 Tailwind 按壓 utility,無按壓專屬視覺態(2026-07-07 詞彙統一對抗稽核補修)。
+  states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-disabled', 'bg-neutral-selected', 'bg-on-emphasis', 'bg-primary', 'bg-primary-hover', 'bg-transparent'],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground', 'text-on-emphasis'],

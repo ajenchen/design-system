@@ -71,7 +71,13 @@ const DropdownMenuTrigger = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.Trigger
     ref={ref}
-    className={cn('outline-none', className)}
+    // 2026-07-05:非 asChild 裸用需可見 focus 指示(WCAG 2.4.7)——原 `outline-none` 讓裸 Trigger
+    // 完全無 focus ring。消費 Button focus canonical(button.tsx buttonVariants base)。
+    // asChild+Button 場景同名 class 重複,無影響。
+    className={cn(
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+      className,
+    )}
     {...props}
   />
 ))
@@ -243,6 +249,10 @@ const DropdownMenuItem = React.forwardRef<
     <DropdownMenuPrimitive.Item
       ref={ref}
       disabled={disabled}
+      // 2026-07-05:typeahead 只比對 label——children 為字串時 auto-forward textValue,避免 Radix
+      // fallback 拿整段 textContent(label+description+badge+shortcut 串接)比對。consumer 顯式
+      // textValue 在 {...props} 較後 spread,仍優先。
+      textValue={typeof children === 'string' ? children : undefined}
       className={cn(
         radixItemClass,
         // 2026-07-04 Q2 拍板:selected bg 勝 hover/highlighted(bg 是唯一選中指示器,被 hover 洗掉
@@ -307,6 +317,8 @@ const DropdownMenuSubTrigger = React.forwardRef<
   return (
     <DropdownMenuPrimitive.SubTrigger
       ref={ref}
+      // 2026-07-05:同 DropdownMenuItem——typeahead 只比對 label(endContent 的 value/badge 不進比對)。
+      textValue={typeof children === 'string' ? children : undefined}
       className={cn(
         radixItemClass,
         'data-[state=open]:bg-neutral-hover',
@@ -349,6 +361,8 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       ref={ref}
       checked={checked}
       disabled={disabled}
+      // 2026-07-05:同 DropdownMenuItem——typeahead 只比對 label(M10 同 pattern:帶 description)。
+      textValue={typeof children === 'string' ? children : undefined}
       onSelect={(e) => e.preventDefault()}
       className={cn(radixItemClass, className)}
       {...props}
@@ -428,6 +442,8 @@ const DropdownMenuRadioItem = React.forwardRef<
     <DropdownMenuPrimitive.RadioItem
       ref={ref}
       disabled={disabled}
+      // 2026-07-05:同 DropdownMenuItem——typeahead 只比對 label(M10 同 pattern:帶 description)。
+      textValue={typeof children === 'string' ? children : undefined}
       onSelect={(e) => e.preventDefault()}
       // 2026-05-31 #10:selected 底色套在外層 Radix RadioItem 本身(非 `[&>*]` 子 MenuItem),
       // 因內層 MenuItem 自帶 `!bg-transparent` 會蓋掉子層 bg → 選中底色從不顯示。
@@ -476,11 +492,13 @@ export const dropdownMenuMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'selected' = 單選/checked item 持續選中(bg-neutral-selected);'active' 保留 — highlight-on-selected
+  // 走 bg-neutral-selected-active(active 階 token,M23 nearest canonical;2026-07-07 詞彙統一補修)。
+  states: ['default', 'hover', 'active', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-neutral-hover', 'bg-surface-raised', 'bg-transparent'],
+    bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-neutral-selected-active', 'bg-surface-raised', 'bg-transparent'],
     fg: ['text-fg-disabled', 'text-fg-muted'],
-    ring: [],
+    ring: ['ring-ring'], // 2026-07-05:Trigger focus canonical ring(對齊 Checkbox/Tabs 等 meta 慣例)
   },
 } as const
 

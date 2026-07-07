@@ -205,7 +205,8 @@ export const numberInputMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'active' 移除 — Field chrome 無按壓態;stepper 按壓屬內嵌 ItemInlineActionButton(2026-07-07 詞彙統一 DS-wide 按壓訊號盤點:檔內 0 active: utility / 0 *-active token)。
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: [],
     fg: ['text-fg-disabled', 'text-fg-muted'],

@@ -121,10 +121,13 @@ const textareaVariants = cva(
         variant: 'bare',
         className: 'bg-transparent border border-transparent',
       },
+      // 2026-07-05 fix(deep-audit A.1b,鏡射下方 naked 2026-05-13 codex V2 fix):移除 bare×disabled
+      //   的 `opacity-disabled` blanket — 同 class 已用具體 `text-fg-disabled` token swap,兩策略同時
+      //   套用違 opacity.spec.md「不可混用」canonical(0.45 × token 疊加 = 過度褪色)。
       {
         mode: 'disabled',
         variant: 'bare',
-        className: 'bg-transparent border border-transparent cursor-not-allowed opacity-disabled text-fg-disabled',
+        className: 'bg-transparent border border-transparent cursor-not-allowed text-fg-disabled',
       },
       // naked chrome × mode — cell-as-input substrate(2026-05-06 v14 revert v12)。
       //   v12 `!absolute -inset-px` autoRowHeight 不相容 → revert v9 baseline + 保留 v13.3

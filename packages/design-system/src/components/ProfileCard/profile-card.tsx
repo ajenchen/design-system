@@ -34,12 +34,30 @@ import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anato
  *
  * Chat + Audio call 是 **default**,不是 **only**——consumer 可覆寫,但需有明確理由。
  */
-export const ProfileCardDefaultActions = () => (
-  <>
-    <Button variant="tertiary" size="sm" startIcon={MessageCircle}>Chat</Button>
-    <Button variant="tertiary" size="sm" startIcon={Phone} endIcon={ChevronDown}>Audio call</Button>
-  </>
-)
+export const ProfileCardDefaultActions = ({
+  onChat,
+  onCall,
+}: {
+  /** Chat 按鈕 handler(2026-07-06 user 拍板:預設鈕必可接線,未傳 = dev-warn;PersonData.onChat 自動 forward) */
+  onChat?: () => void
+  /** Audio call 按鈕 handler(ChevronDown 下拉行為留 v2,先接主 callback) */
+  onCall?: () => void
+}) => {
+  // Dev-mode warning(對齊本檔 defaultFieldValues dev-warn 先例):預設 actions 沒接 handler
+  // = 按鈕點了永遠沒反應(2026-07-06 D4 finding);production 必傳 callback 或自組 actions。
+  if (process.env.NODE_ENV !== 'production' && !onChat && !onCall) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[DS ProfileCard] ProfileCardDefaultActions 未接 onChat/onCall——按鈕點擊無反應。請傳入 callback(PersonData.onChat/onCall 會自動 forward)或自組 actions。'
+    )
+  }
+  return (
+    <>
+      <Button variant="tertiary" size="sm" startIcon={MessageCircle} onClick={onChat}>Chat</Button>
+      <Button variant="tertiary" size="sm" startIcon={Phone} endIcon={ChevronDown} onClick={onCall}>Audio call</Button>
+    </>
+  )
+}
 
 /**
  * ProfileCard — 人員 HoverCard 的內容元件

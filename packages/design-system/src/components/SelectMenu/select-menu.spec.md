@@ -163,6 +163,7 @@ Popover（浮動容器，handle 展開 / 定位）
 - **Creatable + search 與既有選項完全同名**(忽略大小寫):create row 隱藏(防重複建立,`select-menu.tsx:230-235`);選取既有選項為唯一路徑。
 - **Dark mode**:走 Popover / MenuItem semantic token 自動 adapt。
 - **Density**:row height 由 `MenuItem` SSOT 控(sm/md/lg);SelectMenu 不獨立 own density。
+- **大量選項(> 100)**:建議上游分頁 / 搜尋收斂或考慮 windowing(對齊 Ant Select / MUI Autocomplete 慣例);本元件無虛擬化。
 
 ---
 
@@ -204,7 +205,7 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 
 ## A11y 預設
 
-**ARIA / Pattern**:基於 `cmdk` library a11y(combobox / listbox / option role + aria-activedescendant)。詳 [cmdk a11y](https://cmdk.paco.me/#accessibility)。選項 row 的內層 `MenuItem` 傳 `role="presentation"`(cmdk CommandItem 是唯一 option 節點,避免 option 巢狀 option + 內外 `aria-selected` 語意相反;鏡射 DropdownMenu canonical,2026-07-05 D4)。多選 footer 全選列為 `role="checkbox"` + `aria-checked`(indeterminate → `"mixed"`)。空狀態 / loading 經 visually-hidden `role="status"` + `aria-live="polite"` live region 對 SR 播報(cmdk CommandEmpty 是 `role="presentation"`,SR 原本聽不到;2026-07-05 D4)。
+**ARIA / Pattern**:基於 `cmdk` library a11y(combobox / listbox / option role + aria-activedescendant)。詳 [cmdk a11y](https://cmdk.paco.me/#accessibility)。選項 row 的內層 `MenuItem` 傳 `role="presentation"`(cmdk CommandItem 是唯一 option 節點,避免 option 巢狀 option + 內外 `aria-selected` 語意相反;鏡射 DropdownMenu canonical,2026-07-05 D4)。分組標題走 cmdk `CommandGroup heading`(自動產 `cmdk-group-heading` id,選項容器 `role="group"` + `aria-labelledby` 指向之,AT 可感知);combobox accessible name 來自 `Command label`(= `searchPlaceholder`,僅 searchable 時傳),listbox 容器經 cmdk `List label` 預設「選項」取代 cmdk 內建英文 "Suggestions"(2026-07-06)。多選 footer 全選列為 `role="checkbox"` + `aria-checked`(indeterminate → `"mixed"`)。空狀態 / loading 經 visually-hidden `role="status"` + `aria-live="polite"` live region 對 SR 播報(cmdk CommandEmpty 是 `role="presentation"`,SR 原本聽不到;2026-07-05 D4)。
 
 **Keyboard 行為**:
 

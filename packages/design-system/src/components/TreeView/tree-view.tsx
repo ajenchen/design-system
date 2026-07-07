@@ -383,14 +383,19 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
             if (parentId && parentId !== String(active.id)) {
               const parentDepth = Number(parentTreeItem?.getAttribute('aria-level') ?? 1) - 1
               finalDepth = parentDepth
-              setDropTarget({ id: parentId, position: 'after', depth: parentDepth })
+              setDropTarget(prev => prev && prev.id === parentId && prev.position === 'after' && prev.depth === parentDepth ? prev : { id: parentId, position: 'after', depth: parentDepth })
               return
             }
           }
         }
       }
 
-      setDropTarget({ id: String(over.id), position, depth: finalDepth })
+      // 2026-07-06 D3 perf:bail-out — drop target 未變(每 dragOver 跨 row 才變)時回傳 prev,
+      // React 對相同 reference bail out,避免每次 over 事件重建 contextValue → 全樹 TreeItem re-render。
+      setDropTarget(prev => {
+        const id = String(over.id)
+        return prev && prev.id === id && prev.position === position && prev.depth === finalDepth ? prev : { id, position, depth: finalDepth }
+      })
 
       // Auto-expand collapsed folder after 500ms hover (Figma behavior)
       if (position === 'inside' && hasChildren && !expandedIds.has(String(over.id))) {
@@ -1071,7 +1076,9 @@ export const treeViewMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'selected' = single-selection 持續選中(bg-neutral-selected + aria-selected);'active' 移除 —
+  // 全檔無 Tailwind 按壓 utility,無按壓專屬視覺態(2026-07-07 詞彙統一對抗稽核補修)。
+  states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-fg-secondary', 'text-foreground'],

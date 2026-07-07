@@ -237,16 +237,22 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     )
 
     const hasOverlay = status || typeof badgeCount === 'number'
-    // Keyboard access canonical(D4 UX audit 2026-04-22 finding):Avatar with `hoverCard`
-    // 需 keyboard 可達 — Radix `HoverCardTrigger asChild` 不自動加 tabIndex,non-focusable
-    // `<div>` 會讓 keyboard-only user 無法 reach ProfileCard popover(WCAG 2.1.1 / 4.1.2 違反)。
-    // 解:當 `hoverCard` 存在時,wrapper `<div>` 變 focusable(`tabIndex=0` + `role="button"` +
-    // `aria-haspopup="dialog"` + focus-visible ring)。若無 hoverCard 則維持純展示 `<div>`。
+    // Keyboard access canonical(D4 2026-04-22 finding;2026-07-06 user 拍板修正 ARIA 空承諾):
+    // Avatar with `hoverCard` 需 keyboard 可達 — Radix `HoverCardTrigger asChild` 不自動加
+    // tabIndex,non-focusable `<div>` 會讓 keyboard-only user 無法 reach popover(WCAG 2.1.1)。
+    // 解:`tabIndex=0` + `role="img"` + `aria-label` + focus ring(focus 時 Radix 自動開卡)。
+    // **不掛 `role="button"` / `aria-haspopup`**(2026-07-06 拆除):原本宣告了卻沒有
+    // Enter/Space 行為、沒有 aria-expanded = 對 AT 的空承諾;對齊 Radix hover-card 官方
+    // (刻意零 popup ARIA,hover card 定位 sighted-user 輔助)+ GitHub hovercard(trigger
+    // 純連結無 popup ARIA)。若無 hoverCard 則維持純展示 `<div>`。
+    // **`role="img"`(2026-07-07 CI axe 補修)**:aria-label 在無 role 的 generic `<div>` 上
+    // 是 ARIA 禁用組合(axe aria-prohibited-attr,serious;2026-07-06 拆 role="button" 後裸露)。
+    // Avatar 語義本質 = 身份圖像 → `role="img"` 讓 aria-label 合法、子孫自動 presentational、
+    // 且不對 AT 承諾任何互動行為 — 與「拆假承諾」拍板意圖一致(emoji span / MUI Avatar img alt 同款語義)。
     const focusableProps = hoverCard
       ? {
           tabIndex: 0,
-          role: 'button' as const,
-          'aria-haspopup': 'dialog' as const,
+          role: 'img',
           'aria-label': alt ?? 'View profile',
         }
       : {}

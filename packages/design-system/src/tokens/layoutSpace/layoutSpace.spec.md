@@ -320,5 +320,6 @@ document.documentElement.setAttribute('data-layout-space', 'lg')
 - `description-list.spec.md`
 - `empty.spec.md`
 - `overlay-surface.spec.md`
+- `pagination.spec.md`
 - `token-system.spec.md`
 - `uiSize.spec.md`

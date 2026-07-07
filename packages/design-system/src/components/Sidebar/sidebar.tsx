@@ -1284,9 +1284,12 @@ export const sidebarMeta = {
     md: { px: 32, when: '預設 — 應用程式主導覽' },
     lg: { px: 36, when: '重要主導覽 / icon-prominent workspace switcher' },
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'selected' = nav 當前項(data-[active=true] → bg-neutral-selected 灰底家族;2026-07-07 meta 詞彙統一補列);
+  // 'active' 移除 — 全檔無 Tailwind 按壓 utility(內嵌 SidebarTrigger 的按壓屬 Button meta,同 Notice/Alert
+  // 排除內嵌 dismiss Button 慣例;2026-07-07 對抗稽核抓 doc-claim ≠ code 補修)。
+  states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-neutral-hover', 'bg-surface', 'bg-transparent'],
+    bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-surface', 'bg-transparent'],
     fg: ['text-fg-muted', 'text-fg-secondary', 'text-foreground'],
     ring: ['ring-ring'],
   },

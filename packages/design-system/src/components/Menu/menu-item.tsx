@@ -185,12 +185,21 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
       )
     }
 
+    // ── ARIA 單一 owner gate(2026-07-05)──
+    // consumer(DropdownMenu 各 item / SelectMenu option row)把 MenuItem 巢狀在 Radix / cmdk
+    // 互動節點內時傳 role="presentation":外層 primitive 是唯一 ARIA owner(aria-checked /
+    // aria-disabled 由外層宣告)。presentation 節點不得掛 ARIA state(axe aria-prohibited-attr
+    // + 內外雙重宣告)→ 同步抑制 role="option" 與 aria-selected / aria-disabled 預設;
+    // data-selected / data-disabled 保留(純樣式 hook,非 ARIA)。正規 listbox option 用法
+    //(不傳 role)與 select-all row(role="checkbox")不受影響。
+    const isPresentation = props.role === 'presentation'
+
     return (
       <div
         ref={ref}
-        role="option"
-        aria-selected={selected || (checked === true) || undefined}
-        aria-disabled={disabled || undefined}
+        role={isPresentation ? 'presentation' : 'option'}
+        aria-selected={isPresentation ? undefined : selected || (checked === true) || undefined}
+        aria-disabled={isPresentation ? undefined : disabled || undefined}
         data-selected={selected ? '' : undefined}
         data-disabled={disabled ? '' : undefined}
         className={cn(

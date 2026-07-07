@@ -64,7 +64,7 @@ Tailwind 提供 `opacity-{5/10/20/30/40/50/60/70/80/90/95}` 百分比 ladder,但
 
 ## 消費者
 
-直接套用 `opacity-disabled` 的元件（grep 驗證 2026-06-11）：Avatar（Field disabled context self-dim）、Button（`aria-disabled` 分支）、MenuItem、Rating（disabled / loading 整塊）、Steps、Switch、Textarea（disabled 分支）、DataTable（drag source 半透 + 整表 refresh loading reuse，經 `lib/drag-visual.ts`）。
+直接套用 `opacity-disabled` 的元件（grep 驗證 2026-07-05;Textarea 已全面 token-swap 化移除）：Avatar（Field disabled context self-dim）、Button（`aria-disabled` 分支）、MenuItem、Rating（disabled / loading 整塊）、Steps、Switch、DataTable（drag source 半透 + 整表 refresh loading reuse，經 `lib/drag-visual.ts`）。
 
 非消費者（曾誤列）：Slider / Sidebar 走灰階 token swap；Chip 無 opacity 用例；Field wrapper blanket 已移除（Avatar self-dim 取代，見 field-wrapper.tsx 註解）。
 

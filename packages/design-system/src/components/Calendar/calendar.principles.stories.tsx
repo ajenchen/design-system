@@ -14,7 +14,9 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const now = new Date()
+// 釘固定日期(2026-07-07 修 VR flake):真實 new Date() 讓 today 標記隨換日移格 → ubuntu
+// baseline 每隔幾天假 breach(0.07–0.5%)。釘死 = deterministic 渲染;月中讓事件分布自然。
+const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (

@@ -211,17 +211,23 @@ Input.displayName = 'Input'
 // 對齊 Carbon read-only / PatternFly inline-edit hidden-input / Cloudscape display-mode 統一 mode 模型。
 
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)
-// Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
+// 2026-07-05 Phase 2 fill(deep-audit A.1b):variants 按 input.tsx variant jsdoc、sizes 按
+// fieldWrapperStyles cva 真值(h-field-sm/md/lg = 28/32/36,uiSize.css)+ ICON_SIZE SSOT
+// (sm/md 16、lg 20)填。`naked` 為 @internal cell-as-input substrate → 不列入 public variants。
 export const inputMeta = {
   component: 'Input',
   family: 4,
   variants: {
-
+    default: { purpose: 'Field wrapper 完整 chrome(bg-surface + border + hover/focus 回饋)— 表單 / Field 內嵌' },
+    bare: { purpose: '透明 chrome,hover / focus 才現 border — Toolbar inline editing(zoom input / config toolbar)' },
   },
   sizes: {
-
+    sm: { fieldHeight: 28, iconSize: 16, typography: 'body' },
+    md: { fieldHeight: 32, iconSize: 16, typography: 'body' },
+    lg: { fieldHeight: 36, iconSize: 20, typography: 'body-lg' },
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'active' 移除 — Field chrome 無按壓態(對齊 Textarea / LinkInput meta 既有寫法)(2026-07-07 詞彙統一 DS-wide 按壓訊號盤點:檔內 0 active: utility / 0 *-active token)。
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-muted'],

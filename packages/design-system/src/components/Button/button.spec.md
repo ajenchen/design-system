@@ -456,6 +456,7 @@ N/A(action trigger,無資料層)。
 - `header-canonical.spec.md`
 - `item-anatomy.spec.md`
 - `overlay-surface.spec.md`
+- `pagination.spec.md`
 - `segmented-control.spec.md`
 - `switch.spec.md`
 - `tabs.spec.md`

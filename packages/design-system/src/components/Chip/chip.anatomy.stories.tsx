@@ -134,7 +134,7 @@ export const ColorMatrix: Story = {
       <div>
         <H3>狀態 × 色彩 Token 矩陣</H3>
         <Desc>
-          Chip 採 pill-設計準則 選中規則(跟 SegmentedControl 共用):selected 時 `--primary-hover` 同時染 border 和 text,
+          Chip 採 pill-設計準則 選中規則(跟 SegmentedControl 共用;semantic.css SSOT,2026-07-06 拍板改 base):selected 時 `--primary` 同時染 border 和 text,
           **底色維持 `--surface` 不變**——不用 primary-subtle 底色(那是 Button subtle 的視覺語言,跟 filter chip 不同)。
           視覺輕量是 filter 語意必要條件,避免 chip 群組喧賓奪主壓過資料表格。
         </Desc>
@@ -167,8 +167,8 @@ export const ColorMatrix: Story = {
               <tr>
                 <Td mono>selected</Td>
                 <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--surface" size="sm" /><span className="font-mono">--surface(不變)</span></span></Td>
-                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--primary-hover" size="sm" /><span className="font-mono">--primary-hover</span></span></Td>
-                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--primary-hover" size="sm" /><span className="font-mono">--primary-hover</span></span></Td>
+                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--primary" size="sm" /><span className="font-mono">--primary</span></span></Td>
+                <Td><span className="inline-flex items-center gap-1.5"><Swatch value="--primary" size="sm" /><span className="font-mono">--primary</span></span></Td>
                 <Td mono>currentColor</Td>
               </tr>
               <tr>
@@ -185,7 +185,7 @@ export const ColorMatrix: Story = {
 
       <div>
         <H3>視覺並列對照</H3>
-        <Desc>左 default / 中 selected / 右 disabled,觀察 border 同時升階到 primary-hover 的視覺變化(非 bg 變化)。</Desc>
+        <Desc>左 default / 中 selected / 右 disabled,觀察 border 同時染 primary(base)的視覺變化(非 bg 變化)。</Desc>
         <div className="flex items-center gap-8 px-6 py-5 rounded-lg bg-canvas border border-divider">
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-mono">default</span>
@@ -301,7 +301,7 @@ export const StateBehavior: Story = {
         <H3>四種狀態 × 色彩 Token</H3>
         <Desc>
           選中態走 pill-設計準則 規則(跟 SegmentedControl 完全一致):
-          **primary-hover 同時染 border 和 text**,底色維持 bg-surface 不變——不用 primary-subtle
+          **primary base 同時染 border 和 text**,底色維持 bg-surface 不變——不用 primary-subtle
           底色(那是 Button subtle 的視覺語言,跟 chip 不同)。
         </Desc>
         <div className="overflow-x-auto mb-4">
@@ -323,8 +323,8 @@ export const StateBehavior: Story = {
               <tr>
                 <Td mono>selected (data-state=on)</Td>
                 <Td><TokenCell token="--surface" /></Td>
-                <Td><TokenCell token="--primary-hover" display="primary-hover" /></Td>
-                <Td><TokenCell token="--primary-hover" display="primary-hover" /></Td>
+                <Td><TokenCell token="--primary" display="primary" /></Td>
+                <Td><TokenCell token="--primary" display="primary" /></Td>
               </tr>
               <tr>
                 <Td mono>disabled</Td>
@@ -351,7 +351,7 @@ export const StateBehavior: Story = {
         <H3>Selected 色彩跟 SegmentedControl 完全一致</H3>
         <Desc>
           兩者都是 pill 選擇語意(filter / 單選 radio),選中態視覺語言統一:
-          primary-hover 染 border + text,底色不變。只有「連體 vs 獨立」的視覺差異,選中規則是同一套。
+          primary base 染 border + text,底色不變。只有「連體 vs 獨立」的視覺差異,選中規則是同一套。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4">
           <div className="text-caption text-fg-muted mb-2">Chip(獨立 pill)</div>

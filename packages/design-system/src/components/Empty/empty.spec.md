@@ -211,7 +211,6 @@ Empty 是 **pure layout primitive**(排列 icon / title / description / action �
 - `file-upload.spec.md`
 - `file-viewer.spec.md`
 - `select-menu.spec.md`
-- `select.spec.md`
 - `sheet.spec.md`
 - `skeleton.spec.md`
 - `tree-view.spec.md`

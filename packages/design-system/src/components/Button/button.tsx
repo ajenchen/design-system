@@ -193,6 +193,8 @@ const buttonVariants = cva(
           // aria-pressed fallback(Radix overlay trigger override data-state 時仍生效)
           'aria-pressed:bg-primary-subtle aria-pressed:text-primary aria-pressed:border-transparent',
           'aria-pressed:hover:text-primary-hover',
+          // 2026-07-07 補齊第三階:fallback 分支與 data-[state=on] 分支同拼寫(選中之上按壓 = active 階)
+          'aria-pressed:active:text-primary-active',
         ],
       },
       // neutral tone:灰底(neutral-selected family)— sidebar/contextual nav pressed
@@ -558,7 +560,8 @@ export const buttonMeta = {
     md: { fieldHeight: 32, iconSize: 16, typography: 'body' },
     lg: { fieldHeight: 36, iconSize: 20, typography: 'body-lg' },
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'pressed' = toggle on 持續態(data-[state=on],emphasis 淡藍底/neutral 灰底;2026-07-07 meta 詞彙統一補列)
+  states: ['default', 'hover', 'active', 'pressed', 'focus-visible', 'disabled'],
   tokens: {
     // 2026-07-04 audit 補齊:原只列 primary variant 家族;按 buttonVariants cva 真實 class 補
     // secondary/tertiary/text/link/danger 消費的 token(auto-compile token 矩陣依此)

@@ -477,4 +477,5 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 
 - `horizontal-overflow.spec.md`
 - `item-anatomy.spec.md`
+- `pagination.spec.md`
 - `progress-bar.spec.md`

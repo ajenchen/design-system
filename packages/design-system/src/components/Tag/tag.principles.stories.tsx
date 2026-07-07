@@ -261,7 +261,7 @@ export const IconRule: Story = {
 
       <Rule
         title="❌ icon + avatar 同時用(互斥)"
-        note="icon 和 avatar 都是 prefix slot,設計慣例上互斥(由 consumer 自律,非型別強制)。若同時傳,icon 與 avatar 會並列渲染,破壞 Tag 內部結構"
+        note="icon 和 avatar 都是 prefix slot,設計慣例上互斥(非型別強制;dev mode 同時傳會 console.warn 提醒 — 對齊 Button overlayBadge dev-warn 先例)。若同時傳,icon 與 avatar 仍會並列渲染,破壞 Tag 內部結構"
       >
         <Label warn>(範例省略)設計慣例上互斥——同時傳會並列渲染,請只擇一</Label>
       </Rule>

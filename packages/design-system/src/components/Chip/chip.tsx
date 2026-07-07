@@ -35,7 +35,7 @@ import {
  * ── State ──
  *   default   bg-surface border-border text-fg-secondary
  *   hover     border-border-hover text-foreground（對齊 Input / SegmentedControl）
- *   selected  bg-surface（不變） border-primary-hover text-primary-hover
+ *   selected  bg-surface（不變） border-primary text-primary
  *   disabled  cursor-not-allowed text-fg-disabled
  *
  * ── 詳見 chip.spec.md ──
@@ -56,14 +56,26 @@ const chipVariants = cva(
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     // hover（未選）：border 加深一階 + 文字轉深，對齊 Input / SegmentedControl hover
     'hover:border-border-hover hover:text-foreground',
-    // selected: 文字 + 邊框都用 primary-hover,底色維持 bg-surface 不變
-    //   ── pill 風格 canonical 選中規則,跟 SegmentedControl 完全一致:
-    //      primary-hover 同時染文字和線條;底色不改 (不用 primary-subtle)。
-    'data-[state=on]:border-primary-hover data-[state=on]:text-primary-hover',
+    // selected: 文字 + 邊框都用 primary base,底色維持 bg-surface 不變
+    //   ── pill 風格 canonical 選中規則,跟 SegmentedControl 完全一致(SSOT = semantic.css「選中狀態」段):
+    //      primary base 同時染文字和線條;底色不改 (不用 primary-subtle)。
+    //   2026-07-06 user 拍板:持續選中 hover 階 → base — Ant(pagination/tabs/input focus 全 base)/
+    //   Atlassian(selected = brand 同顆)/ Material 3(active tab = primary)三家實錘「瞬時弱、持續強」;
+    //   hover 階專屬瞬時態(hover/預覽),持續選中站 base。
+    'data-[state=on]:border-primary data-[state=on]:text-primary',
+    // 選中之上的 hover = 同色相升 hover 階(2026-07-06 user 拍板;Button pressed hover
+    // data-[state=on]:hover:text-primary-hover 家族 + Ant active 頁 hover = colorPrimaryHover
+    // 同派)。原本靠 CSS 平手 source-order 讓選中「碰巧」贏過未選 hover(靜止無回饋)= 脆弱,
+    // 顯式宣告一併解掉。
+    'data-[state=on]:hover:border-primary-hover data-[state=on]:hover:text-primary-hover',
     // disabled：cursor-not-allowed + 鎖 hover 不變色
     // 不用 pointer-events-none（否則 cursor-not-allowed 不會顯示）
     'disabled:cursor-not-allowed disabled:text-fg-disabled',
     'disabled:hover:border-border disabled:hover:text-fg-disabled',
+    // disabled × selected 疊加(2026-07-07 user 拍板統一;M24 state > emphasis:disabled 全滅,
+    // 選中的 primary 描邊/染字一併退場——原本只滅字不滅框 = 半滅,Checkbox checked+disabled 全滅同族)
+    'data-[state=on]:disabled:border-border data-[state=on]:disabled:text-fg-disabled',
+    'data-[state=on]:disabled:hover:border-border data-[state=on]:disabled:hover:text-fg-disabled',
   ]
 )
 
@@ -208,6 +220,29 @@ ScrollChipGroup.displayName = 'ScrollChipGroup'
 //
 // Fade mask 仍保留(reserveArrowWidth: 0),軟化內容硬邊。
 
+// ── getElementRef(Radix Slot idiom)──────────────────────────────────────────
+// 讀取 child element 既有 ref 而不觸發 React dev deprecation warning:
+// React ≤18 ref 在 element.ref;React 19 起移到 element.props.ref,錯誤側讀取會 fire warning
+// (以 getter 上的 isReactWarning 標記)。抄 Radix UI Slot 的偵測法:
+// https://github.com/radix-ui/primitives/blob/main/packages/react/slot/src/slot.tsx(getElementRef)
+// react-compose-refs 僅為 transitive dep(非 package.json 直接依賴),不直接 import — 最小 local 實作。
+function getElementRef(element: React.ReactElement): React.Ref<HTMLElement> | undefined {
+  // React <=18 dev:props.ref 掛 isReactWarning getter → 真 ref 在 element.ref
+  let getter = Object.getOwnPropertyDescriptor(element.props, 'ref')?.get
+  let mayWarn = getter && 'isReactWarning' in getter && getter.isReactWarning
+  if (mayWarn) return (element as unknown as { ref?: React.Ref<HTMLElement> }).ref
+  // React 19 dev:element.ref 掛 isReactWarning getter → 真 ref 在 props.ref
+  getter = Object.getOwnPropertyDescriptor(element, 'ref')?.get
+  mayWarn = getter && 'isReactWarning' in getter && getter.isReactWarning
+  if (mayWarn) return (element.props as { ref?: React.Ref<HTMLElement> }).ref
+  // production:兩處擇一
+  return (
+    (element.props as { ref?: React.Ref<HTMLElement> }).ref ??
+    (element as unknown as { ref?: React.Ref<HTMLElement> }).ref ??
+    undefined
+  )
+}
+
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const MenuChipGroup = React.forwardRef<
   HTMLDivElement,
@@ -284,12 +319,22 @@ const MenuChipGroup = React.forwardRef<
     [groupType, groupValue, groupOnValueChange]
   )
 
-  const enhancedItems = items.map((child, i) =>
-    React.cloneElement(
+  // 2026-07-05 fix(deep-audit A.1b):原 cloneElement 直接以 registerItem 覆寫 child ref,
+  // consumer 傳給 Chip 的自有 ref 在 menu layout 會被靜默取代。改 compose — 同時餵
+  // registerItem(scrollIntoView 用)與 child 原 ref(對齊 Radix compose-refs idiom)。
+  const enhancedItems = items.map((child, i) => {
+    const childRef = getElementRef(child)
+    return React.cloneElement(
       child as React.ReactElement<{ ref?: React.Ref<HTMLElement> }>,
-      { ref: registerItem(i) }
+      {
+        ref: (el: HTMLElement | null) => {
+          registerItem(i)(el)
+          if (typeof childRef === 'function') childRef(el)
+          else if (childRef) (childRef as React.MutableRefObject<HTMLElement | null>).current = el
+        },
+      }
     )
-  )
+  })
 
   return (
     <div className="flex items-center gap-2">
@@ -348,10 +393,10 @@ export const chipMeta = {
     // 單一尺寸:h-field-sm(28/32 依 density)、icon 16、text-body、px-3(cva 真值)
     sm: { fieldHeight: 28, iconSize: 16, typography: 'body' },
   },
-  states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'], // selected = data-[state=on](primary-hover);cva 無 active 樣式
+  states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'], // selected = data-[state=on](primary base,2026-07-06 拍板);cva 無 active 樣式
   tokens: {
     bg: ['bg-surface'],
-    fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary-hover'],
+    fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary'],
     ring: ['ring-ring'],
   },
 } as const

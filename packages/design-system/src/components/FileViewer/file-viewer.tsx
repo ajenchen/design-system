@@ -41,7 +41,7 @@ import { ARROW_BUTTON_WIDTH,
   OverflowScrollArrow,
 } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
 import { useControllable } from '@/design-system/hooks/use-controllable'
-import { ImageRenderer, canRenderImage } from './image-renderer'
+import { canRenderImage } from './can-render-image'
 import type {
   FileInfo,
   FileRenderer,
@@ -108,10 +108,18 @@ const fallbackRenderer: FileRenderer = {
   component: FallbackRenderer,
 }
 
+// 2026-07-06 D3 bundle fix:ImageRenderer 改 React.lazy 動態 import——FileViewer 是
+// rare-use modal overlay,react-zoom-pan-pinch(~12KB gz)不該在 viewer 從未打開時就進
+// consumer 首屏 bundle。canRenderImage(registry 判斷 + Filmstrip 分流需同步呼叫)已拆至
+// ./can-render-image 保持靜態 import。
+const LazyImageRenderer = React.lazy(() =>
+  import('./image-renderer').then((m) => ({ default: m.ImageRenderer })),
+)
+
 const imageRenderer: FileRenderer = {
   id: 'image',
   canRender: canRenderImage,
-  component: ImageRenderer,
+  component: LazyImageRenderer,
 }
 
 // Registry 是 module-singleton:新 renderer 透過 registerFileRenderer 加入。
@@ -439,13 +447,16 @@ function formatBytes(bytes: number | undefined): string | undefined {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
 }
 
-const InfoPanel: React.FC<InfoPanelProps> = ({
+// React.memo(2026-07-06 D3):同 Filmstrip——wheel-zoom 每 tick 全 chrome re-render,InfoPanel
+// 開啟時(Field/Textarea/DescriptionList subtree)白付。onClose 走 shell handleInfoClose
+// useCallback;file(files[activeIndex] identity 穩定)/readOnly/onDescriptionChange/labels 本已穩定。
+const InfoPanel = React.memo(function InfoPanel({
   file,
   readOnly,
   onDescriptionChange,
   onClose,
   labels,
-}) => {
+}: InfoPanelProps) {
   const [draft, setDraft] = React.useState(file.description ?? '')
 
   React.useEffect(() => {
@@ -538,7 +549,7 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
       </ScrollArea>
     </aside>
   )
-}
+})
 
 // ─── Filmstrip ────────────────────────────────────────────────────────────────
 
@@ -552,7 +563,10 @@ interface FilmstripProps {
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const THUMB_SIZE = 64 // px, 固定
 
-const Filmstrip: React.FC<FilmstripProps> = ({ files, activeIndex, onSelect, labels }) => {
+// React.memo(2026-07-06 D3):wheel-zoom 每 tick(trackpad 60Hz+)setZoom → shell 全 chrome
+// re-render,Filmstrip(N thumbs × cn + buildFadeMask)是最貴的無關 subtree。props 已全穩定
+// (files=prop / activeIndex=primitive / onSelect=setIndex useCallback / labels=useMemo)→ memo 真命中。
+const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, labels }: FilmstripProps) {
   const { scrollRef, atStart, atEnd, canScroll } = useScrollEdges<HTMLDivElement>()
   const scrollByPage = useScrollByPage(scrollRef)
   const maskImage = buildFadeMask({ canScroll, atStart, atEnd, reserveArrowWidth: ARROW_BUTTON_WIDTH })  // 2026-07-04:消 SSOT 硬寫(spec 禁止重新定義 ARROW_BUTTON_WIDTH)
@@ -650,7 +664,7 @@ const Filmstrip: React.FC<FilmstripProps> = ({ files, activeIndex, onSelect, lab
       )}
     </div>
   )
-}
+})
 
 // ─── FileViewer (shell) ───────────────────────────────────────────────────────
 
@@ -796,6 +810,10 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
 
   // Info panel open state(shell own)
   const [infoOpen, setInfoOpen] = React.useState(false)
+  // 2026-07-06 D3 perf:抽 useCallback 穩定 identity——InfoPanel 上了 React.memo(見上),
+  // inline arrow 每 render 新 identity 會打穿 memo shallow-compare。
+  const handleInfoToggle = React.useCallback(() => setInfoOpen((o) => !o), [])
+  const handleInfoClose = React.useCallback(() => setInfoOpen(false), [])
 
   // Zoom state(shell own,renderer 消費 + 回報)
   const [zoom, setZoom] = React.useState(100)
@@ -961,7 +979,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
               onZoomChange={setZoom}
               onFit={handleFit}
               infoOpen={infoOpen}
-              onInfoToggle={() => setInfoOpen((o) => !o)}
+              onInfoToggle={handleInfoToggle}
               onDownload={handleDownload}
               allowDownload={allowDownload}
               onClose={() => setOpen(false)}
@@ -1018,13 +1036,18 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
                   </div>
                 )}
                 <div className="w-full h-full">
-                  <Renderer.component
-                    file={file}
-                    zoom={zoom}
-                    onZoomChange={setZoom}
-                    fitRequest={fitRequest}
-                    onCapabilitiesChange={setCapabilities}
-                  />
+                  {/* Suspense 兜 React.lazy renderer(ImageRenderer)chunk 載入。fallback=null
+                      = 既有 loading 行為——spec「Loading」段:shell 不提供全頁 loading state,
+                      loading 由 renderer 自理;chunk 載入期間的空 viewport 與 <img> 載入期間視覺一致。 */}
+                  <React.Suspense fallback={null}>
+                    <Renderer.component
+                      file={file}
+                      zoom={zoom}
+                      onZoomChange={setZoom}
+                      fitRequest={fitRequest}
+                      onCapabilitiesChange={setCapabilities}
+                    />
+                  </React.Suspense>
                 </div>
                 {showArrows && activeIndex < files.length - 1 && (
                   <div
@@ -1051,7 +1074,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
                   file={file}
                   readOnly={readOnly}
                   onDescriptionChange={onDescriptionChange}
-                  onClose={() => setInfoOpen(false)}
+                  onClose={handleInfoClose}
                   labels={labels}
                 />
               )}
@@ -1084,9 +1107,11 @@ export const fileViewerMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'selected' = 縮圖列當前頁持續選中(bg-neutral-selected);'active' 移除 — 全檔無按壓視覺
+  // (工具列按壓屬內嵌 Button meta;2026-07-07 詞彙統一 DS-wide 交叉掃補修)。
+  states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-muted', 'bg-overlay', 'bg-surface-raised'],
+    bg: ['bg-muted', 'bg-neutral-selected', 'bg-overlay', 'bg-surface-raised'],
     fg: ['text-fg-muted', 'text-foreground'],
     ring: ['ring-primary', 'ring-ring'],
   },

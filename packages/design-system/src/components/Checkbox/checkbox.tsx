@@ -316,7 +316,8 @@ export const checkboxMeta = {
     md: { fieldHeight: 32, iconSize: 12, typography: 'body' },
     lg: { fieldHeight: 36, iconSize: 16, typography: 'body-lg' },
   },
-  states: ['default', 'hover', 'focus-visible', 'disabled'],
+  // 'checked' = 勾選持續態(bg-primary;2026-07-07 meta 詞彙統一補列,含 indeterminate 同族)
+  states: ['default', 'hover', 'checked', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-disabled', 'bg-primary', 'bg-primary-hover', 'bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground'],

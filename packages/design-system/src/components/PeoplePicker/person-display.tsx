@@ -43,6 +43,10 @@ export interface PersonData {
   fields?: { label: string; value: string }[]
   /** 跳至完整 profile 頁的 handler(hover ProfileCard 必含,不傳時 fallback noop placeholder) */
   onViewProfile?: () => void
+  /** ProfileCard 預設 Chat 按鈕 handler(2026-07-06 user 拍板加接線;未傳 dev-warn,見 ProfileCardDefaultActions) */
+  onChat?: () => void
+  /** ProfileCard 預設 Audio call 按鈕 handler(ChevronDown 下拉行為留 v2) */
+  onCall?: () => void
 }
 
 export type PersonValue = string | PersonData
@@ -71,7 +75,7 @@ function buildPersonProfileCard(person: PersonData): React.ReactNode {
         employeeNumber: person.employeeNumber,
       }}
       fields={person.fields}
-      actions={<ProfileCardDefaultActions />}
+      actions={<ProfileCardDefaultActions onChat={person.onChat} onCall={person.onCall} />}
       // onViewMore hover context 必含(avatar.spec.md canonical)。consumer 傳
       // `onViewProfile` 則用真 handler,否則 noop placeholder(UI 仍渲染 View more
       // footer,避免 preview 變死路)。

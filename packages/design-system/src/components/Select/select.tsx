@@ -10,7 +10,7 @@ import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY, nakedCellRowModeAli
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
-import { SelectMenu, forwardKeyToListbox, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { SelectMenu, forwardKeyToListbox, useActiveDescendant, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
@@ -178,6 +178,9 @@ function CustomSelectTriggerContent({
   search,
   setSearch,
   inputRef,
+  activeDescendantId,
+  ariaLabel,
+  labelId,
   selectedItemRenderer,
 }: {
   searchable: boolean
@@ -194,6 +197,9 @@ function CustomSelectTriggerContent({
   search: string
   setSearch: (v: string) => void
   inputRef: React.RefObject<HTMLInputElement | null>
+  activeDescendantId?: string
+  ariaLabel?: string
+  labelId?: string
   selectedItemRenderer?: (selectedOpt: SelectOption) => React.ReactNode
 }): React.ReactNode {
   // Searchable + open: 顯示搜尋 input
@@ -204,8 +210,12 @@ function CustomSelectTriggerContent({
   // - sibling `<span aria-hidden pointer-events-none absolute inset-0 truncate>` 在 search='' 且
   //   有 selectedLabel 時 overlay 顯該人名(memory aid,truncate-with-ellipsis 可控)
   // 對齊 spec.md §B row 4「open + inline-search + 選 1 人 → input cursor + placeholder = 該人名 + ellipsis」。
-  // a11y guard(per codex Q2 reply):input aria-label / accessible name 來自 field/label/aria-label,
-  // **不**依賴 placeholder 當 label;overlay span aria-hidden + pointer-events-none。
+  // a11y(2026-07-05 backlog 補接):搜尋 input 是 open 時實際聚焦的元素,accessible name 必接在
+  // input 本身(原 codex Q2 guard 註解宣稱「來自 field/label/aria-label」,但接線全在外層 trigger
+  // div,焦點所在的 input 無 name)— aria-labelledby 接 FieldLabel labelId、consumer aria-label
+  // 優先(對齊 trigger div 同款 guard),兩者皆無時 fallback aria-label「搜尋選項」(對齊
+  // combobox.tsx searchAriaLabel canonical default);**不**依賴 placeholder 當 label;overlay
+  // span aria-hidden + pointer-events-none。APG「combobox role 移到 input 本身」屬中期重構另案。
   if (searchable && open) {
     const triggerEmptyPlaceholder = placeholder || '搜尋…' // i18n-allow: DS fallback
     const showSelectedOverlay = !search && selectedLabel
@@ -216,6 +226,11 @@ function CustomSelectTriggerContent({
           ref={inputRef as React.RefObject<HTMLInputElement>}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          // a11y(2026-07-05 D4):cmdk active item id(useActiveDescendant)→ SR 播報方向鍵導覽中的 option
+          aria-activedescendant={activeDescendantId}
+          // accessible name:aria-labelledby(Field label)> consumer aria-label > DS default(accname 優先序)
+          aria-label={ariaLabel ?? '搜尋選項'} // i18n-allow: DS default(對齊 combobox.tsx searchAriaLabel canonical)
+          aria-labelledby={ariaLabel ? undefined : labelId}
           // Native placeholder 限 trigger empty hint(無 selectedLabel 時);若已 selected,留空交給 overlay span
           placeholder={showSelectedOverlay ? '' : triggerEmptyPlaceholder}
           className={cn(bareInputStyles, 'cursor-text')}
@@ -496,6 +511,9 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // a11y(2026-07-04):listbox 容器 id——trigger aria-controls 指向 SelectMenu PopoverContent
     // (對齊姊妹元件 combobox.tsx:677 既有 canonical;React.useId SSR/CSR 穩定)。
     const listboxId = React.useId()
+    // a11y(2026-07-05 D4):追蹤 cmdk active item id → searchable trigger input 綁 aria-activedescendant
+    // (機制詳 select-menu.tsx useActiveDescendant docblock;必在 early return 前呼叫 — React #310 hook 順序)。
+    const activeOptionId = useActiveDescendant(listboxId, open)
 
     // 關閉時清搜尋
     React.useEffect(() => { if (!open) setSearch('') }, [open])
@@ -583,6 +601,9 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         search={search}
         setSearch={setSearch}
         inputRef={inputRef}
+        activeDescendantId={activeOptionId}
+        ariaLabel={ariaLabel}
+        labelId={fieldCtx?.labelId}
         selectedItemRenderer={selectedItemRenderer}
       />
     )
@@ -689,7 +710,8 @@ export const selectMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'active' 移除 — trigger 走 Field chrome、menu row 走 MenuItem(其 meta 無 active)(2026-07-07 詞彙統一 DS-wide 按壓訊號盤點:檔內 0 active: utility / 0 *-active token)。
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: [],
     fg: ['text-fg-disabled', 'text-fg-muted'],

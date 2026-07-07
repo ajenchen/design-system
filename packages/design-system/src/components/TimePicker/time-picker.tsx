@@ -63,6 +63,21 @@ export interface TimeFormatOptions {
   locale?: string
 }
 
+// 2026-07-06 D3 perf:Intl.DateTimeFormat 是標準庫最貴 constructor 之一(locale data
+// resolution)。formatTime 無 cheap path,display/readonly/edit 每 render 必建;DataTable time 欄
+// 轉發 config 時每 cell × 每次表格 re-render 重建。module-level cache 重用實例(DateTimeFormat
+// 無狀態可安全重用),key = locale|JSON.stringify(options)。行為 Δ=0。
+const dtfCache = new Map<string, Intl.DateTimeFormat>()
+function getDateTimeFormatter(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = locale + '|' + JSON.stringify(options)
+  let fmt = dtfCache.get(key)
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(locale, options)
+    dtfCache.set(key, fmt)
+  }
+  return fmt
+}
+
 function formatTime(
   iso: string,
   options: TimeFormatOptions = {},
@@ -76,7 +91,7 @@ function formatTime(
   // 借用 Date 讓 Intl.DateTimeFormat 處理 locale / 12h-24h
   const d = new Date()
   d.setHours(parts.hours, parts.minutes, parts.seconds, 0)
-  return new Intl.DateTimeFormat(locale, formatOptions).format(d)
+  return getDateTimeFormatter(locale, formatOptions).format(d)
 }
 
 // ── Disabled time callback ──────────────────────────────────────────────────
@@ -218,15 +233,20 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
 
     const handleNow = () => {
       const now = new Date()
-      // 按照 minuteStep / secondStep 對齊
-      const m = Math.round(now.getMinutes() / minuteStep) * minuteStep
-      const s = showSeconds
-        ? Math.round(now.getSeconds() / secondStep) * secondStep
-        : 0
+      // 按照 minuteStep / secondStep 對齊。
+      // 2026-07-05 邊界修正(deep-audit A.1b):Math.round 進位到 60 時,舊 `Math.min(round, 59)`
+      // 會產生 59 這種「不對齊 step、也不在 column values 內」的值(如 53 分 @ step=15 → 59)
+      // → panel 該欄失去 selected 高亮。改 clamp 到 ≤59 的最大 step 對齊值(= buildRange 產出的
+      // 最後一格,如 45),不跨小時進位 — 保持「此刻 = commit 當前時間(step 對齊)」語意
+      // (time-picker.spec.md「每次欄位選取當下即 commit」段)。
+      const alignToStep = (raw: number, step: number) => {
+        const rounded = Math.round(raw / step) * step
+        return rounded > 59 ? Math.floor(59 / step) * step : rounded
+      }
       const next: TimeParts = {
         hours: now.getHours(),
-        minutes: Math.min(m, 59),
-        seconds: Math.min(s, 59),
+        minutes: alignToStep(now.getMinutes(), minuteStep),
+        seconds: showSeconds ? alignToStep(now.getSeconds(), secondStep) : 0,
       }
       commitDraft(next)
       setOpen(false)
@@ -422,8 +442,9 @@ export const timePickerMeta = {
   sizes: {
 
   },
-  // states 對齊真實視覺態:trigger 與 panel item 皆無 'active'(按下)專屬視覺態(2026-07-04 audit 對齊)。
-  states: ['default', 'hover', 'focus-visible', 'disabled'],
+  // states 對齊真實視覺態:trigger 與 panel item 皆無 'active'(按下)專屬視覺態(2026-07-04 audit 對齊);
+  // 'selected' = panel item 持續選中(bg-neutral-selected,time-columns.tsx isSelected;2026-07-07 詞彙統一補列)。
+  states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'],
   tokens: {
     // panel selected 走 bg-neutral-selected(time-columns.tsx isSelected;spec「欄內 item 狀態」),非 bg-primary。
     bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-transparent'],

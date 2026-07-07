@@ -171,7 +171,8 @@ export const commandMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'active' 移除 — cmdk row 僅 data-[selected] highlight,無按壓視覺(2026-07-07 詞彙統一 DS-wide 按壓訊號盤點:檔內 0 active: utility / 0 *-active token)。
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-divider', 'bg-neutral-hover', 'bg-surface-raised', 'bg-transparent'], // 2026-07-04 補:CommandSeparator h-px bg-divider 實際消費
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground'],

@@ -152,10 +152,12 @@ const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
         ? KIND_TITLE[kind as 'tips' | 'new-features']
         : kind
 
-    // 2026-05-31 #6:PopoverContent(role=dialog)需 accessible name。dialog aria-labelledby 接可見標題
-    // (優先 headerTitle 的 PopoverTitle,否則 body title 的 h3);皆無則 aria-label fallback。
-    const titleId = React.useId()
-    const dialogLabelledBy = (headerTitle || title) ? titleId : undefined
+    // 2026-05-31 #6 / 2026-07-05 改消費 Popover 自動接線:PopoverContent(role=dialog)accessible name 三層 —
+    // 1. headerTitle → <PopoverTitle> 掛載時由 popover.tsx PopoverTitleContext 自動接 aria-labelledby(免手動)
+    // 2. 無 header 但有 body 主 title(<h3> 非 PopoverTitle,自動接線接不到)→ 仍手動接 aria-labelledby
+    // 3. 皆無 → aria-label fallback
+    const bodyTitleId = React.useId()
+    const bodyTitleLabelledBy = !headerTitle && title ? bodyTitleId : undefined
 
     return (
       <Popover open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
@@ -176,8 +178,8 @@ const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
             e.preventDefault()
             ;(e.currentTarget as HTMLElement).focus({ preventScroll: true })
           }}
-          aria-labelledby={dialogLabelledBy}
-          aria-label={dialogLabelledBy ? undefined : '提示'}
+          aria-labelledby={bodyTitleLabelledBy}
+          aria-label={headerTitle || title ? undefined : '提示'}
           {...props}
         >
           {headerTitle && (
@@ -185,7 +187,7 @@ const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
             // **不 hideClose** — 對齊 Popover / Dialog / 所有 overlay 家族 canonical:header 必有 dismiss X
             // (user 可隨時關閉,跟 Skip / Done 是不同入口,canonical 重複不冗)
             <PopoverHeader>
-              <PopoverTitle id={titleId}>{headerTitle}</PopoverTitle>
+              <PopoverTitle>{headerTitle}</PopoverTitle>
             </PopoverHeader>
           )}
 
@@ -202,7 +204,7 @@ const Coachmark = React.forwardRef<HTMLDivElement, CoachmarkProps>(
             // 世界級參考:Notion / Linear / Figma onboarding tour 皆左對齊;Intercom Messenger 亦如是。
             <PopoverBody className="flex flex-col">
               {title && (
-                <h3 id={!headerTitle ? titleId : undefined} className="text-body-lg font-medium text-foreground">{title}</h3>
+                <h3 id={!headerTitle ? bodyTitleId : undefined} className="text-body-lg font-medium text-foreground">{title}</h3>
               )}
               {description && (
                 // title(body-lg 16)+ desc(body 14)→ reading-lg token(label tier 決定)

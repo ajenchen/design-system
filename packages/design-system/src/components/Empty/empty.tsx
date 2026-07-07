@@ -50,7 +50,10 @@ const Empty = React.forwardRef<HTMLDivElement, EmptyProps>(
     let iconElement: React.ReactNode = null
     if (icon) {
       if (React.isValidElement(icon)) {
-        iconElement = icon
+        // disabled:自訂 element 同樣變淡(2026-07-07 補漏 — docblock/spec 無條件宣稱「icon glyph →
+        // fg-disabled」但原僅 LucideIcon 分支生效)。`contents` wrapper 不進 layout,[&_svg] token swap
+        // 只染 svg 系自訂 icon;非 svg(img 照片)不強制染色。
+        iconElement = disabled ? <span className="contents [&_svg]:!text-fg-disabled">{icon}</span> : icon
       } else {
         const Icon = icon as LucideIcon
         // disabled:glyph → fg-disabled([&_svg]:!… 蓋過 Avatar 內聯 color;circle bg 維持 muted)。icon 是文字一環,隨 disabled 變淡。

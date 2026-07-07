@@ -10,7 +10,7 @@ import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useRes
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
-import { SelectMenu, forwardKeyToListbox, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
+import { SelectMenu, forwardKeyToListbox, useActiveDescendant, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
@@ -679,6 +679,9 @@ function CustomCombobox({
   // a11y: 為 listbox 容器(SelectMenu 內 PopoverContent)建立穩定 id,讓 trigger 的
   // aria-controls 能指向它(WAI-ARIA combobox pattern 要求)。React.useId 在 SSR/CSR 都穩定。
   const listboxId = React.useId()
+  // a11y(2026-07-05 D4):追蹤 cmdk active item id → searchIn='trigger' 搜尋 input 綁 aria-activedescendant
+  // (機制詳 select-menu.tsx useActiveDescendant docblock;必在 early return 前呼叫 — React #310 hook 順序)。
+  const activeOptionId = useActiveDescendant(listboxId, open)
 
   React.useEffect(() => { if (!open) setSearch('') }, [open])
 
@@ -788,6 +791,8 @@ function CustomCombobox({
                 // empty-state fallback to trigger placeholder canonical。
                 placeholder={items.length === 0 ? placeholder : ''} onClick={(e) => { e.stopPropagation(); setOpen(true) }}
                 aria-label={searchAriaLabel}
+                // a11y(2026-07-05 D4):cmdk active item id(useActiveDescendant)→ SR 播報方向鍵導覽中的 option
+                aria-activedescendant={activeOptionId}
                 className="flex-1 min-w-[60px] bg-transparent outline-none text-body leading-compact relative z-10" />
             ) : undefined} />
         ) : (
@@ -869,7 +874,8 @@ export const comboboxMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'active' 移除 — trigger 走 Field chrome(field-wrapper 無按壓態)、menu row 走 MenuItem(其 meta 無 active)(2026-07-07 詞彙統一 DS-wide 按壓訊號盤點:檔內 0 active: utility / 0 *-active token)。
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-disabled', 'bg-transparent'],
     fg: ['text-fg-disabled', 'text-fg-muted'],

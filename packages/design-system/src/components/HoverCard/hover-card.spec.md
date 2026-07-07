@@ -141,7 +141,7 @@ HoverCard 是**純行為 primitive**(只提供 hover 觸發邏輯 + 定位 + 動
 
 ## A11y 預設
 
-**ARIA / Pattern**:Radix `hover-card` 刻意**不**設 `role` / `aria-*`,定位為 sighted-mouse-user 增強,content 不暴露給輔助技術(grep Radix source 0 命中 role/aria-*)。Radix 只提供:hover / focus 開、Esc 關 + `data-state`。Trigger 的可聚焦性需 consumer 自補(如 Avatar `hoverCard` 在 `avatar.tsx` 手動加 `tabIndex=0` + `role="button"` + `aria-haspopup="dialog"`)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/hover-card#accessibility)。
+**ARIA / Pattern**:Radix `hover-card` 刻意**不**設 `role` / `aria-*`,定位為 sighted-mouse-user 增強,content 不暴露給輔助技術(grep Radix source 0 命中 role/aria-*)。Radix 只提供:hover / focus 開、Esc 關 + `data-state`。Trigger 的可聚焦性需 consumer 自補(如 Avatar `hoverCard` 在 `avatar.tsx` 手動加 `tabIndex=0` + `aria-label`;**不掛 role/aria-haspopup**——2026-07-06 拆除,無 activation 行為的 role 宣告 = 對 AT 空承諾,對齊 Radix 官方零 role/aria 定位)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/hover-card#accessibility)。
 
 **Keyboard 行為**:
 

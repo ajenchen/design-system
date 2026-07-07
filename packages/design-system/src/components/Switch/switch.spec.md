@@ -75,6 +75,7 @@ Track（pill 形，rounded-full）
 - Track 寬 = 2 × 高（pill 比例）
 - Thumb 直徑 = track 高度
 - ON 狀態 thumb 右滑 `translateX(trackHeight)`
+- **Hover**(2026-07-06 補,「選中之上 hover 升階」家族):ON track `bg-primary → bg-primary-hover`(Checkbox checked hover 同款;Ant Switch checked hover = `colorPrimaryHover` 源碼實錘);OFF track `bg-border → bg-border-hover` 深一階(Checkbox 未選 hover 同慣例)
 
 ---
 

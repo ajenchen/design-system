@@ -246,11 +246,6 @@ export const ImageRenderer: React.FC<FileRendererProps> = ({
 }
 ImageRenderer.displayName = 'ImageRenderer'
 
-const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif', 'bmp', 'ico'])
-
-/** 判斷檔案是否可用 ImageRenderer 渲染。 */
-export function canRenderImage(file: { mimeType: string; name: string }): boolean {
-  if (file.mimeType.startsWith('image/')) return true
-  const ext = file.name.split('.').pop()?.toLowerCase()
-  return ext ? IMAGE_EXTS.has(ext) : false
-}
+// canRenderImage 已拆至 ./can-render-image(2026-07-06 D3 bundle fix)——
+// shell 需同步呼叫它,而本檔頂層 import react-zoom-pan-pinch;留在本檔會把整個 lib
+// 拉進 shell 的靜態 import graph,React.lazy 切分就失效。

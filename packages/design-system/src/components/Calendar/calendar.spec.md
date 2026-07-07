@@ -98,6 +98,7 @@ Calendar 是**事件檢視 canvas**,讓 user 以**月 / 週 / 日** 三種 view 
   navAriaLabel="行事曆月份導覽"             // i18n override:月份導覽 <nav> landmark aria-label
   viewToggleAriaLabel="檢視切換"            // i18n override:檢視切換 SegmentedControl aria-label
   todayLabel="今天"                         // i18n override:「今天」按鈕文字
+  createLabel="新事件"                      // i18n override:「新事件」CTA 文字(僅在傳 onCreateEvent 時渲染)
   className
 />
 ```
@@ -165,7 +166,7 @@ interface CalendarEvent {
 - 左 Nav:`<Button iconOnly>` prev/next + `<Button>今天</Button>` 跳 today
 - 中央 title:`<h2 className="text-h3">` or `text-body-lg font-medium`
 - 右視圖切換:`<SegmentedControl>`(day/week/month)—— MVP 只啟用 month,其他 disabled
-- 右上 CTA:`<Button variant="primary" startIcon={Plus}>新事件</Button>`
+- 右上 CTA:`<Button variant="primary" startIcon={Plus}>新事件</Button>` — **條件渲染:僅在傳 `onCreateEvent` 回調時出現**(未傳 = 無 CTA,純瀏覽場景);文案由 `createLabel` prop override(對齊 `todayLabel` 等 chrome 文字 i18n override 慣例)
 
 對齊 `patterns/action-bar/action-bar.spec.md`(左 context / 中 focus / 右 CTA 的經典分組)。
 

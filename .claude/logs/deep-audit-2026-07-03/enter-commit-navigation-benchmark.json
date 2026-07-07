@@ -1,0 +1,74 @@
+{
+ "findings": [
+  {
+   "product": "Microsoft Excel",
+   "enterBehavior": "編輯完按 Enter → 離開 Edit mode 並選取「正下方一格」(官方原句:Excel exits Edit mode and selects the cell directly below the current cell)。預設 = 下移一列。",
+   "configurable": "有,且是五家中唯一有正式設定的:File > Options > Advanced >「After pressing Enter, move selection」checkbox(取消勾選 = commit 後停留原格)+ Direction 下拉(Down/Right/Up/Left)。預設 = 勾選 + Down。",
+   "cite": "https://support.microsoft.com/en-us/office/edit-cell-contents-9c8489f6-08c4-4932-a6bc-4de0a8cf86d6 (官方 Edit cell contents doc,含 setting 位置與預設行為原句)",
+   "confidence": "fetched"
+  },
+  {
+   "product": "Google Sheets",
+   "enterBehavior": "編輯完按 Enter → 確認並下移一格(Shift+Enter 上移、Tab 右移)。官方 keyboard shortcuts 頁(answer/181110,已 fetch)竟未載 Enter 行為條目;下移行為由 support.google.com 官方 community 多條 thread + 第三方來源一致確認。",
+   "configurable": "無設定可改 Enter 方向(community threads 一致回答不可改,與 Excel 對比是常見抱怨)。替代 keystroke:Ctrl+Enter(Mac Cmd+Enter)= 確認後停留原格。",
+   "cite": "https://support.google.com/docs/answer/181110 (官方頁已 fetch 但無 Enter 條目) + https://support.google.com/docs/thread/5464466/change-enter-movement + https://www.thebricks.com/resources/how-to-press-enter-in-google-sheets-and-stay-in-the-same-cell",
+   "confidence": "search-only"
+  },
+  {
+   "product": "Apple Numbers (Mac)",
+   "enterBehavior": "編輯中按 Return → commit 並「Select the cell below」(下移一格);官方 shortcuts 頁另列 Command-Return =「Stop editing the cell and select the cell」(commit 後停留原格)。即:預設下移,停留原格是內建替代 keystroke 而非設定。Option-Return = cell 內段落換行。底列 cell 按 Return 會直接長出新列(Insert a row at the bottom)。",
+   "configurable": "現行版本無設定。舊版 Numbers '09 曾有 Table Inspector「Return key moves to next cell」checkbox,Numbers 3 起移除(Apple Community 確認);現在只能靠 Command-Return 停原格。",
+   "cite": "https://support.apple.com/guide/numbers/keyboard-shortcuts-tana45192591/mac (官方,含 Return / Command-Return 原句) + https://discussions.apple.com/thread/6825988 (舊 preference 已移除)",
+   "confidence": "fetched"
+  },
+  {
+   "product": "Airtable (grid view — 產品內嵌 data grid 對照組)",
+   "enterBehavior": "跟純試算表同派:編輯完按 Enter → commit 並移到「正下方一格」(同欄下一列)。Community 原句:In Airtable, you hit enter and it puts your cursor in the cell directly below。例外:Long text / Rich text field 內 Enter = 換行不退出(需 Esc/Tab 離開)。注意:官方 support 的 keyboard shortcuts 文件只寫「Enter F2 | Edit the selected cell」(進入編輯),commit 後落點官方未文件化,靠 community 補。",
+   "configurable": "無任何設定;官方文件亦無提供 stay-in-cell 選項。",
+   "cite": "https://support.airtable.com/docs/airtable-keyboard-shortcuts (官方,已 fetch,只載進入編輯) + https://community.airtable.com/other-questions-13/enter-and-return-19091 (官方 community 網域,commit 後下移原句,非 staff 回覆)",
+   "confidence": "fetched"
+  },
+  {
+   "product": "Notion database (table view)",
+   "enterBehavior": "五家中唯一無法 source 驗證落點的:官方 help(tables 頁 + keyboard shortcuts 頁,皆已 fetch)完全未文件化 cell 級 Enter 行為;keyboard shortcuts 頁的 database 條目只有 fill-down/多選/peek-view。第三方(notionanswers)只確認 Enter = 結束編輯離開 cell、Shift+Enter = cell 內換行,但「離開後停原格 vs 下移」沒有任何來源明寫。實際使用經驗上 Notion 是停留原格(不像試算表 auto-advance),但此點無 source 佐證,依 M26 標 unverifiable — 若要引用需 user 實機截圖確認。",
+   "configurable": "無設定;notionanswers 對「能否改 Enter 行為」的 accepted answer 原句:That is not possible at the moment in Notion。",
+   "cite": "https://www.notion.com/help/keyboard-shortcuts + https://www.notion.com/help/tables (官方,已 fetch,皆缺載) + https://notionanswers.com/1714/use-enter-for-new-line-inside-table-cell (第三方,已 fetch)",
+   "confidence": "unverifiable"
+  },
+  {
+   "product": "AG Grid",
+   "enterBehavior": "預設:Enter 確認編輯後「停止編輯、焦點維持在原格」(官方原文:\"The default is editing will stop and focus will remain on the editing cell.\")— 是 5 家中唯一預設不往下跳的。",
+   "configurable": "可設定。`enterNavigatesVerticallyAfterEdit: true`(預設 false)→ 編輯完 Enter 焦點移到下方 cell(Excel 行為);另有 `enterNavigatesVertically: true`(預設 false)管非編輯狀態下 Enter 往下移(預設是 Enter 開始編輯目前 cell)。兩者都是 grid-level option。",
+   "cite": "https://www.ag-grid.com/javascript-data-grid/cell-editing-start-stop/ (官方 docs,WebFetch 取得原文 quote)",
+   "confidence": "fetched"
+  },
+  {
+   "product": "MUI X DataGrid",
+   "enterBehavior": "Enter 儲存變更並「將焦點移到同一欄的下一個 cell」(官方原文:\"Pressing Enter—this also saves any changes made and moves the focus to the next cell in the same column\")— 預設即往下一列,無需設定。",
+   "configurable": "無簡單 flag 可改方向。要覆寫只能走 controlled model(`cellModesModel` / `onCellModesModelChange`)或 `apiRef` 程式化控制 editing stop 時機,屬進階自訂而非開關。",
+   "cite": "https://mui.com/x/react-data-grid/editing/ (官方 docs,WebFetch 取得原文 quote)",
+   "confidence": "fetched"
+  },
+  {
+   "product": "Handsontable",
+   "enterBehavior": "試算表血統:Enter 確認編輯後選取往下移 1 列。`enterMoves` 預設 `{col: 0, row: 1}`(source JSDoc `@default {col: 0, row: 1}`,metaSchema.ts L2577,實際賦值 L2594)。搭配 `enterBeginsEditing` 預設 `true`(L2526):第一次 Enter 進入編輯、第二次 Enter 確認並依 enterMoves 往下移。",
+   "configurable": "完全可設定。`enterMoves` 接受 object 或 function(可依 event 動態決定方向,例如 `{col: 1, row: 1}` 右下移);`enterBeginsEditing` 亦可關(false = 第一次 Enter 就移動)。皆 grid-level option。",
+   "cite": "https://github.com/handsontable/handsontable/blob/develop/handsontable/src/dataMap/metaManager/metaSchema.ts#L2577 + #L2594 + #L2526 (source 直接 curl+grep 驗證)",
+   "confidence": "fetched"
+  },
+  {
+   "product": "TanStack Table",
+   "enterBehavior": "無內建。headless library — 沒有內建 cell editing、也沒有任何 Enter 鍵行為;官方 editable-data example 是自訂 cell component,以 onBlur commit(連 Enter commit 都要自己寫 onKeyDown)。Enter 後焦點去哪完全由 consumer 實作決定。",
+   "configurable": "N/A — 沒有東西可設定,行為 100% 由 consumer 自己實作(GitHub issue #869 即使用者自行處理 Enter 的討論)。",
+   "cite": "https://tanstack.com/table/latest/docs/framework/react/examples/editable-data + https://github.com/TanStack/table/issues/869 (WebSearch 確認 headless 無內建 editing)",
+   "confidence": "search-only"
+  },
+  {
+   "product": "Glide Data Grid",
+   "enterBehavior": "試算表血統:Enter 確認編輯後選取固定往下移 1 列 — source 寫死 `customMotion.current = [0, 1]`(Enter 且非 shiftKey 時);Shift+Enter 刻意保留給 cell 內多行輸入;Tab 為 `[1, 0]` 橫移、Escape `[0, 0]` 不存檔。",
+   "configurable": "Enter-after-edit 方向無 flag 可改(source hardcode)。`keybindings` prop(Partial<Keybinds>)只能開關 binding,不能改方向;要覆寫需走 controlled `gridSelection` + `onFinishedEditing(newValue, movement)` callback 自行決定選取落點(API.md:movement 表示使用者要求的移動方向,-1 = 左/上、1 = 右/下)。",
+   "cite": "https://github.com/glideapps/glide-data-grid/blob/main/packages/core/src/internal/data-grid-overlay-editor/data-grid-overlay-editor.tsx (raw source WebFetch,取得 Enter → [0,1] 原始碼)+ https://github.com/glideapps/glide-data-grid/blob/main/packages/core/API.md (onFinishedEditing movement)",
+   "confidence": "fetched"
+  }
+ ]
+}

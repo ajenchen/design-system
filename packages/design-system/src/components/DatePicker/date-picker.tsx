@@ -35,6 +35,20 @@ export interface DateFormatOptions {
  * (跟 ISO date 視覺對不上,跟 sort 順序也對不上)。Ant / Material X / Apple HIG
  * 一致 year-first。Consumer 想自訂可傳 `formatOptions` + `locale`。
  */
+// 2026-07-06 D3 perf:formatOptions/locale 顯式傳入時走 Intl.DateTimeFormat(貴 constructor)。
+// DataTable date 欄轉發此 config → 每 cell × 每次表格 re-render 重建。module-level cache 重用實例
+// (無狀態可安全重用),key = locale|JSON.stringify(options)。行為 Δ=0。
+const dtfCache = new Map<string, Intl.DateTimeFormat>()
+function getDateTimeFormatter(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = locale + '|' + JSON.stringify(options)
+  let fmt = dtfCache.get(key)
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(locale, options)
+    dtfCache.set(key, fmt)
+  }
+  return fmt
+}
+
 function formatDate(
   value: string | number | Date,
   options: DateFormatOptions = {},
@@ -43,7 +57,7 @@ function formatDate(
   if (Number.isNaN(date.getTime())) return String(value)
   // 若 consumer 顯式傳 formatOptions / locale → 走 Intl.DateTimeFormat
   if (options.formatOptions || options.locale) {
-    return new Intl.DateTimeFormat(options.locale ?? 'en-US', options.formatOptions ?? { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+    return getDateTimeFormatter(options.locale ?? 'en-US', options.formatOptions ?? { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
   }
   // 預設:YYYY/MM/DD(直接組,locale-independent + 視覺穩定)
   const y = date.getFullYear()
@@ -1144,9 +1158,11 @@ export const datePickerMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'selected' = range 帶持續選中(before:bg-neutral-selected,本檔自有);'active' 移除 — 全檔無按壓
+  // 視覺(data-active-end 是定位 attr 非按壓 token;2026-07-07 詞彙統一 DS-wide 交叉掃補修)。
+  states: ['default', 'hover', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: [],
+    bg: ['bg-neutral-selected'],
     fg: ['text-fg-disabled', 'text-fg-muted'],
     ring: [],
   },

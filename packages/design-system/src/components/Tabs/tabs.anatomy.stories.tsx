@@ -36,7 +36,7 @@ export const Overview: Story = {
             </TabsContent>
           </Tabs>
         </div>
-        <p className="text-footnote text-fg-muted mt-3">Selected underline 用 ::after 絕對定位在 bottom: -1px(2px primary-hover),蓋住 TabsList 的 1px gray border(單一視覺線條)</p>
+        <p className="text-footnote text-fg-muted mt-3">Selected underline 用 ::after 絕對定位在 bottom: -1px(2px primary),蓋住 TabsList 的 1px gray border(單一視覺線條)</p>
       </div>
 
       <div>
@@ -228,7 +228,7 @@ export const ColorMatrix: Story = {
         <H3>TabsTrigger 四態色彩</H3>
         <Desc>
           Tabs 未選狀態用 fg-secondary(不搶視覺),hover 時文字色轉 foreground(text-foreground，
-          neutral 最深)。Selected 用 foreground + bottom 2px primary-hover 下線
+          neutral 最深)。Selected 用 foreground + bottom 2px primary 下線
           ——下線是「當前位置」的明確指示器,不靠底色區分。
         </Desc>
         <div className="overflow-x-auto mb-4">
@@ -307,7 +307,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>互動狀態對照</H3>
-        <Desc>「總覽」為 selected（當前 value，有 primary-hover 底部下線）;「成員」「通知」為 unselected(移 hover 上去文字色轉 foreground);「設定」為 disabled(停用)。</Desc>
+        <Desc>「總覽」為 selected（當前 value，有 primary 底部下線）;「成員」「通知」為 unselected(移 hover 上去文字色轉 foreground);「設定」為 disabled(停用)。</Desc>
         <div className="border border-border rounded-lg p-4">
           <Tabs defaultValue="overview">
             <TabsList>
@@ -319,7 +319,7 @@ export const StateBehavior: Story = {
           </Tabs>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          Selected underline:`::after bottom: -1px height: 2px bg: primary-hover`——蓋住 TabsList 的 1px gray border
+          Selected underline:`::after bottom: -1px height: 2px bg: primary`——蓋住 TabsList 的 1px gray border
         </p>
       </div>
     </div>

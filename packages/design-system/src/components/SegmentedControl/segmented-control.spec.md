@@ -58,6 +58,7 @@ SegmentedControl 是**互斥多選一的 compact control**——從 2–5 個選
 | 只有 1 個 | `Button pressed` | 沒有選擇語意 |
 | 切換的是 container 結構（整塊 view 有自己的 header / toolbar / filters）| `Tabs` | 見下「與 Tabs 的分界」 |
 | 選項需要描述文字 / 複雜排版 | `RadioGroup` | compact control 不支援多行內容 |
+| 頁碼導覽（大量資料翻頁） | `Pagination` | 位置導覽非互斥選值——頁數動態、可摺疊、數字無語意（見 `../Pagination/pagination.spec.md` 近親分界） |
 
 ---
 
@@ -207,7 +208,9 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
 
 ### 選中 / 未選
 
-- **選中**：文字與邊框都用 `--primary-hover`（底色維持 surface 不變）——pill 風格元件（Chip / SegmentedControl）共用的選中規則；selected item 提升 z-index 讓邊框浮在相鄰 item 之上，避免被重疊的 border 切掉（class 實作見 `segmented-control.tsx` `data-[state=on]` cva）
+- **選中**：文字與邊框都用 `--primary`（底色維持 surface 不變）——pill 風格元件（Chip / SegmentedControl）共用的選中規則（semantic.css「選中狀態」段 SSOT；2026-07-06 拍板自 primary-hover 改 base，hover 階專屬瞬時態）；selected item 提升 z-index 讓邊框浮在相鄰 item 之上，避免被重疊的 border 切掉（class 實作見 `segmented-control.tsx` `data-[state=on]` cva）。**❌ 選中態不得用 primary-hover**
+- **選中之上的 hover**：`--primary-hover` 同時染文字與邊框——選中元素的 hover = 同色相升 hover 階（2026-07-06 拍板；Button pressed hover 家族 + Ant active hover 同派，跟 Chip 一致），不用 neutral 灰底
+- **disabled × 選中疊加**：disabled 全滅（primary 描邊/染字退場 → `border-border` + `fg-disabled`）——M24 state > emphasis，跟 Chip 一致（2026-07-07 補明文）
 - **未選**：surface 底 + `--fg-secondary` 文字 + `--border` 邊框
   - hover：文字轉 `--foreground` + 邊框加深一階（`--border-hover`）+ 微提升 z-index；不改 bg，避免 hover 狀態與 selected 搶戲
 
@@ -256,7 +259,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 
 ## 為何無 ColorMatrix
 
-- **無 ColorMatrix**:SegmentedControl 沒有 Button 那種強調層級 variant(primary / secondary / tertiary / text)——只有「選中 / 未選」兩種 **state**,色彩變化純由 state 驅動(底色恆為 `bg-surface` 不變;選中 = `text-primary-hover` + `border-primary-hover`;未選 hover = `text-foreground`,詳「狀態」段)。這是 pill 風格元件(Chip / SegmentedControl)共用的選中規則,非 Button variant。因此 ColorMatrix(逐 variant 列色)不適用,狀態色已在 `StateBehavior` 完整覆蓋。
+- **無 ColorMatrix**:SegmentedControl 沒有 Button 那種強調層級 variant(primary / secondary / tertiary / text)——只有「選中 / 未選」兩種 **state**,色彩變化純由 state 驅動(底色恆為 `bg-surface` 不變;選中 = `text-primary` + `border-primary`;未選 hover = `text-foreground`,詳「狀態」段)。這是 pill 風格元件(Chip / SegmentedControl)共用的選中規則,非 Button variant。因此 ColorMatrix(逐 variant 列色)不適用,狀態色已在 `StateBehavior` 完整覆蓋。
 
 對應 anatomy story:`Overview` + `Inspector` + `SizeMatrix` + `StateBehavior` + 元件特有 `FullWidthMatrix` + `IconOnlyMatrix` + `Accessibility`。Inspector 用 Storybook Controls 即時切 `size` × `fullWidth` × `iconOnly`(取代 Figma inspect);三張矩陣 story(`SizeMatrix` / `FullWidthMatrix` / `IconOnlyMatrix`)則提供結構性並排對照,兩者互補。
 
@@ -291,6 +294,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 - `button.spec.md`
 - `chip.spec.md`
 - `horizontal-overflow.spec.md`
+- `pagination.spec.md`
 - `radio-group.spec.md`
 - `select.spec.md`
 - `slider.spec.md`

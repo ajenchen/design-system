@@ -98,6 +98,8 @@ export interface CalendarProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   navAriaLabel?: string
   viewToggleAriaLabel?: string
   todayLabel?: string
+  /** 「新事件」CTA 文字。Override for i18n。CTA 僅在傳 `onCreateEvent` 時渲染(spec Toolbar 段)。 */
+  createLabel?: string
 }
 
 // ── Event tile color tokens ─────────────────────────────────────────────────
@@ -114,17 +116,8 @@ function coerceDate(value: string | Date): Date {
   return value instanceof Date ? value : new Date(value)
 }
 
-function eventsOnDate(events: CalendarEvent[], date: Date): CalendarEvent[] {
-  return events.filter((e) => {
-    const start = coerceDate(e.start)
-    const end = coerceDate(e.end)
-    // 日期落在 [start, end] 範圍內(日精度)
-    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
-    const s = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime()
-    const eEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime()
-    return d >= s && d <= eEnd
-  })
-}
+// eventsOnDate(per-cell 全 events 掃描)已由 eventsByDate bucketing memo 取代並移除
+// (2026-07-06 D3 perf;留著會觸發 noUnusedLocals TS6133)。
 
 // ── Component ──────────────────────────────────────────────────────────────
 
@@ -151,6 +144,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
   navAriaLabel = '行事曆月份導覽', // i18n-allow: DS default; consumer override via navAriaLabel prop
   viewToggleAriaLabel = '檢視切換', // i18n-allow: DS default; consumer override via viewToggleAriaLabel prop
   todayLabel = '今天', // i18n-allow: DS default; consumer override via todayLabel prop
+  createLabel = '新事件', // i18n-allow: DS default; consumer override via createLabel prop
   ...props
 }, ref) {
   // Controlled / uncontrolled refDate
@@ -186,10 +180,13 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     return eachDayOfInterval({ start: gridStart, end: gridEnd })
   }, [refDate, weekStartsOn])
 
-  const monthTitle = new Intl.DateTimeFormat(locale, {
-    year: 'numeric',
-    month: 'long',
-  }).format(refDate)
+  // 2026-07-06 D3 perf:formatter 依 locale memo(對齊 weekdayNames 既有做法),避免每 render 重建
+  // Intl.DateTimeFormat(已知貴的 constructor);.format(refDate) 每 render 仍執行(cheap)。
+  const monthTitleFormatter = React.useMemo(
+    () => new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }),
+    [locale],
+  )
+  const monthTitle = monthTitleFormatter.format(refDate)
 
   const today = new Date()
 
@@ -199,6 +196,41 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
       new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(d),
     )
   }, [days, locale])
+
+  // 2026-07-06 D3 perf:原每 render 對 42 cells 各跑 eventsOnDate 全 events filter = O(42×N) +
+  // 每比較配 ~5 個 Date;數百-上千 events(行事曆真實規模)單次 render 數十 ms,且父層任何 re-render
+  // 全額重付。改 useMemo 單趟 bucket:每 event 只 parse 一次,展開 [start..end](clamp 到可見 grid,
+  // 避免長跨度 event 展開爆量)寫入 date→events Map,順便完成 allDay 排序。cell 內改 O(1) map.get。行為 Δ=0。
+  const eventsByDate = React.useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>()
+    if (days.length === 0) return map
+    const first = days[0]
+    const last = days[days.length - 1]
+    const gridStart = new Date(first.getFullYear(), first.getMonth(), first.getDate()).getTime()
+    const gridEnd = new Date(last.getFullYear(), last.getMonth(), last.getDate()).getTime()
+    for (const e of events) {
+      const start = coerceDate(e.start)
+      const end = coerceDate(e.end)
+      const eEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime()
+      let sMs = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime()
+      if (eEnd < gridStart || sMs > gridEnd) continue // 可見窗外對 42 cells 無貢獻
+      if (sMs < gridStart) sMs = gridStart
+      const lastMs = Math.min(eEnd, gridEnd)
+      const cursor = new Date(sMs)
+      while (cursor.getTime() <= lastMs) {
+        const key = `${cursor.getFullYear()}-${cursor.getMonth() + 1}-${cursor.getDate()}`
+        const bucket = map.get(key)
+        if (bucket) bucket.push(e)
+        else map.set(key, [e])
+        cursor.setDate(cursor.getDate() + 1)
+      }
+    }
+    // allDay 排前(對齊 Google Calendar 全天列在上;V8 stable sort 保 events 原序 → 與舊 per-cell 一致)
+    for (const bucket of map.values()) {
+      bucket.sort((a, b) => Number(b.allDay ?? false) - Number(a.allDay ?? false))
+    }
+    return map
+  }, [events, days])
 
   const handleToday = () => setRefDate(new Date())
   const handlePrev = () => setRefDate(subMonths(refDate, 1))
@@ -265,7 +297,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
 
         {onCreateEvent && (
           <Button variant="primary" size="sm" startIcon={Plus} onClick={onCreateEvent}>
-            新事件
+            {createLabel}
           </Button>
         )}
       </div>
@@ -294,8 +326,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
             {days.slice(rowIdx * 7, rowIdx * 7 + 7).map((date) => {
               const inMonth = isSameMonth(date, refDate)
               const isToday = isSameDay(date, today)
-              // 2026-06-01 allDay:全天事件排 cell 頂端(對齊 Google Calendar 全天列在上)
-              const dayEvents = eventsOnDate(events, date).slice().sort((a, b) => Number(b.allDay ?? false) - Number(a.allDay ?? false))
+              // 2026-06-01 allDay:全天事件排 cell 頂端(對齊 Google Calendar 全天列在上)——
+              // 排序已在 eventsByDate bucketing memo 內完成(D3 perf),cell 內 O(1) 查表
+              const dayEvents = eventsByDate.get(`${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`) ?? []
               const visibleEvents = dayEvents.slice(0, MAX_TILES_PER_CELL)
               const overflowCount = dayEvents.length - visibleEvents.length
 
@@ -414,7 +447,8 @@ export const calendarMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'active' 移除 — 日期格按壓視覺屬 DateGrid(其 meta 已 −active);nav 按壓屬內嵌 Button(2026-07-07 詞彙統一 DS-wide 按壓訊號盤點:檔內 0 active: utility / 0 *-active token)。
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-muted', 'bg-neutral-hover', 'bg-info', 'bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-muted', 'text-foreground'],

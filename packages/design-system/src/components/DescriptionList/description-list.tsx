@@ -112,7 +112,9 @@ const DescriptionItem = React.forwardRef<HTMLDivElement, DescriptionItemProps>(
     return (
       <div ref={ref} className={cn('flex flex-col', className)} {...props}>
         <dt className="text-body text-fg-secondary">{label}</dt>
-        <dd className="text-body mt-[var(--item-gap-label-desc-reading)]">{children}</dd>
+        {/* text-foreground 顯式宣告(2026-07-05 fix):與 horizontal 分支一致,不靠容器繼承 —
+            spec Typography 段 / tsx docblock / anatomy Overview 三處 canonical 皆宣稱 dd = text-foreground */}
+        <dd className="text-body text-foreground mt-[var(--item-gap-label-desc-reading)]">{children}</dd>
       </div>
     )
   },

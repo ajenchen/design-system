@@ -197,8 +197,8 @@ export const SelectedStyleRule: Story = {
   render: () => (
     <div>
       <Rule
-        title="選中 = primary-hover text + border，底色不變"
-        note="對齊 SegmentedControl / Tabs / Input 的設計準則 選中規則(primary-hover 同時染文字和線條)。用 bg 強調會讓 chip 看起來變成「按鈕」,混淆多選濾鏡的語意"
+        title="選中 = primary text + border，底色不變"
+        note="對齊 SegmentedControl / Tabs 的選中 canonical(primary base 同時染文字和線條;semantic.css SSOT,2026-07-06 拍板自 hover 階改 base——瞬時弱、持續強)。用 bg 強調會讓 chip 看起來變成「按鈕」,混淆多選濾鏡的語意"
       >
         <ChipGroup type="multiple" defaultValue={['react', 'ts']}>
           <Chip value="react">React</Chip>
@@ -206,7 +206,7 @@ export const SelectedStyleRule: Story = {
           <Chip value="ts">TypeScript</Chip>
           <Chip value="js">JavaScript</Chip>
         </ChipGroup>
-        <Label>↑ 選中(React / TypeScript)= primary-hover 文字 + 邊框,底色仍 bg-surface</Label>
+        <Label>↑ 選中(React / TypeScript)= primary 文字 + 邊框,底色仍 bg-surface</Label>
       </Rule>
 
       <Rule

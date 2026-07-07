@@ -67,7 +67,13 @@
    │  --border-hover  input/checkbox/radio hover 邊框（neutral-6）       │
    │  --divider       分隔線（neutral-4，比 border 更淡）                │
    │  --ring          focus 輪廓（= primary）                           │
-   │  選中狀態的邊框或文字 → 直接使用 var(--primary-hover)              │
+   │  選中狀態的邊框或文字 → 直接使用 var(--primary)                    │
+   │  (2026-07-06 拍板:持續選中站 base、hover 階專屬瞬時態——            │
+   │   Ant / Atlassian / Material 三家「瞬時弱、持續強」實錘)            │
+   │  選中之上的互動 = 同色相升降階(完整三階,2026-07-07 補):          │
+   │    hover → var(--primary-hover)、按壓 → var(--primary-active)      │
+   │  (Button pressed hover / Ant active 頁 hover 同派;實心填色家族     │
+   │   同理:bg-primary → hover bg-primary-hover,Checkbox/Switch/DateGrid)│
    └─────────────────────────────────────────────────────────────────────┘
 
    ┌─ Static Subtle ─────────────────────────────────────────────────────┐
@@ -137,7 +143,7 @@
    │     （不橋接成 utility class——只有 Tag/Avatar dismiss 一個 consumer）│
    └─────────────────────────────────────────────────────────────────────┘
 
-   選中邊框/文字 → border-[var(--primary-hover)] / text-[var(--primary-hover)]
+   選中邊框/文字 → border-primary / text-primary(2026-07-06 持續選中改 base,hover 階專屬瞬時態)
    ═══════════════════════════════════════════════════════════════════════ */
 
 

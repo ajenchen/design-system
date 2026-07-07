@@ -82,18 +82,7 @@ TabsList ─┬─ TabsTrigger  [startIcon?] [label] [suffix?: badge? + endIcon?
 TabsContent ← 對應被選中的 trigger
 ```
 
-**單個 Trigger 內部**：
-
-```
-[startIcon?]  [label]  [suffix?]
-  ↑            ↑         ↑
-  16/20px      plain     span(gap-1): [badge?] [endIcon?]
-               span
-  │─── gap-2 ────│─── gap-2 ──│
-```
-
-- **Trigger 三層 slot 間 gap-2**（8px），對標 **item-layout pattern** 的橫向 inline 變體
-- **suffix 內 gap-1**（4px），對標 **Button** suffix wrapper（`button.tsx` 的 `<span className="inline-flex items-center gap-1">`）
+**單個 Trigger 內部**：`[startIcon 16/20px] ─gap-2─ [label] ─gap-2─ [suffix span(gap-1): badge? endIcon?]`——slot 間 **gap-2**（8px）對標 **item-layout pattern** 橫向 inline 變體；suffix 內 **gap-1**（4px）對標 **Button** suffix wrapper（`button.tsx` 的 `<span className="inline-flex items-center gap-1">`）
 - `startIcon` 描述 tab 的內容性質（人像 icon 配「成員」、齒輪 icon 配「設定」）
 - `badge` 傳達該 tab 底下的待處理計數（「通知 3」「成員 12」）
 - `endIcon` **純視覺 indicator only**（方向 / 狀態 — ChevronDown 暗示「展開後看到子內容」、Pin / Star 狀態徽記）。**不拼 click 行為** — 點到 endIcon 跟點到 tab body 同效果（切 tab）
@@ -116,7 +105,7 @@ Tabs trigger = **item-layout 橫向變體 + Button 高度系統**。對標 item-
 
 **Tabs 目前只有一種視覺**：底線標示型（underline indicator）。
 
-選中 trigger 底部有 2px 的 `bg-primary-hover` 底線，未選 trigger 僅文字色變化。未來若需要「填色型」或「pill 型」tabs，應先評估是否真的是 Tabs 的語意（通常是 SegmentedControl 或 Button group 的偽裝）再考慮擴充。
+選中 trigger 底部有 2px 的 `bg-primary` 底線（2026-07-06 拍板：持續選中站 base），未選 trigger 僅文字色變化。未來若需要「填色型」或「pill 型」tabs，應先評估是否真的是 Tabs 的語意（通常是 SegmentedControl 或 Button group 的偽裝）再考慮擴充。
 
 ---
 
@@ -191,17 +180,11 @@ Tabs 是 **navigation anchor**，不是 compact control：
 
 ## Underline 與 TabsList border 的視覺關係
 
-TabsList 底部有 1px gray border（`border-divider`，neutral-4），selected trigger 有 2px primary-hover 底線。**這兩條線視覺上必須是同一條**——selected 底線從 TabsList 的 gray border 位置「長出來」，不得出現雙線。
+TabsList 底部有 1px gray border（`border-divider`，neutral-4），selected trigger 有 2px primary 底線。**這兩條線視覺上必須是同一條**——selected 底線從 TabsList 的 gray border 位置「長出來」，不得出現雙線。
 
 **原則**：selected 底線必須覆蓋並延伸 TabsList 的 gray border，避免疊線。實作手法（pseudo-element 定位）見 `.tsx`。
 
-**色 token = `--divider`(neutral-4)而非 `--border`(neutral-5)**(2026-05-18 改 per user verbatim「我認為應該把 tabs 的下底線統一改成是 divider 色吧?」+「做」approval):
-- 跟 Dialog / Sheet / Popover / Sidebar header `border-b border-divider` 同色 — chrome separator 一致
-- withTabs scenario 下 tabs underline = chrome separator,色不同會視覺斷裂
-- Selected trigger 2px primary indicator overlay underlying 1px divider 對比仍清楚(primary 比 neutral-4 強得多)
-- 對齊 `color.spec.md`「T-junction connectivity 原則」段 outer-vs-divider 判準的「T-junction seamless」直覺(tabs underline 跟 header separator T 字交接)
-
-在 Dialog / Sidebar header 內特別重要——header 的 `border-b` 和 Tabs 的 `border-b` 必須感知為同一條水平線。
+**色 token = `--divider`(neutral-4)而非 `--border`(neutral-5)**(2026-05-18 改 per user verbatim「我認為應該把 tabs 的下底線統一改成是 divider 色吧?」+「做」approval):跟 Dialog / Sheet / Popover / Sidebar header `border-b border-divider` 同色——chrome separator 一致,withTabs scenario 下 underline = chrome separator,色不同會視覺斷裂;selected trigger 2px primary indicator overlay 1px divider 對比仍清楚;對齊 `color.spec.md`「T-junction connectivity 原則」(tabs underline 跟 header separator T 字交接)。在 Dialog / Sidebar header 內特別重要——header 的 `border-b` 和 Tabs 的 `border-b` 必須感知為同一條水平線。
 
 ---
 
@@ -209,13 +192,9 @@ TabsList 底部有 1px gray border（`border-divider`，neutral-4），selected 
 
 Tabs 常與容器 header 的底邊 border 合併——**視覺上只有一條線**,不是 header border + tabs border 疊兩條。
 
-**做法**:Tabs 的 `TabsList` 底部 border 與 header 的 `border-b` 實際上是**同一條線**(設計上重疊、實作上不重複渲染)。**Header 退讓**(移除自己 `border-b`),**Tabs 接管**(自身 `border-b border-divider` per `TABS_LIST_BASE`,2026-05-18 fd843c25 統一 chrome separator 色)。三種 overflow mode 的 TabsList 一律跨滿父容器(none 模式 `w-full`;scroll / menu 模式 inner list `min-w-full` 保留溢出成長,見 L184;`TABS_LIST_BASE` + `overflow-y-hidden` 阻 y auto-promote,2026-05-19 c359c711 border owner 升 list 內部);chrome header 內的全寬 paint 由 `ChromeHeader` tabsSlot wrapper 以 `[&>[role=tablist]]:w-full` 強制(見 `header-canonical.spec.md`)。
+**做法**:Tabs 的 `TabsList` 底部 border 與 header 的 `border-b` 實際上是**同一條線**(設計上重疊、實作上不重複渲染)。**Header 退讓**(移除自己 `border-b`),**Tabs 接管**(自身 `border-b border-divider` per `TABS_LIST_BASE`,2026-05-18 fd843c25 統一 chrome separator 色)。三種 overflow mode 的 TabsList 一律跨滿父容器(none 模式 `w-full`;scroll / menu 模式 inner list `min-w-full` 保留溢出成長,見「寬度行為」段;`TABS_LIST_BASE` + `overflow-y-hidden` 阻 y auto-promote,2026-05-19 c359c711 border owner 升 list 內部);chrome header 內的全寬 paint 由 `ChromeHeader` tabsSlot wrapper 以 `[&>[role=tablist]]:w-full` 強制(見 `header-canonical.spec.md`)。
 
-**世界級對照(verbatim cite)**:
-- **GitHub Primer PageHeader**:「`hasBorder` defaults true,**but border NOT rendered if Navigation child contains UnderlineNav**;UnderlineNav itself provides bottom border」(`primer.style/components/page-header/react`)
-- **Ant Design Tabs**:line type 自帶 bottom border(`ant.design/components/tabs`)
-- **Mantine Tabs**:default variant 自包 bottom border(`mantine.dev/core/tabs/`)
-- **Counter-pattern(reject)**:Material UI 走「container 畫 border + tabs 不畫」(`<Box sx={{ borderBottom: 1 }}><Tabs>...</Tabs></Box>` 從 `mui.com/material-ui/react-tabs/`)— 本 DS reject,理由:tabs underline 需 1px gray base line(`tabs.spec.md:185-187`),tabs 不畫 border 會讓 2px primary indicator 浮空失去 base
+**世界級對照(verbatim cite)**:GitHub Primer PageHeader「`hasBorder` defaults true,**but border NOT rendered if Navigation child contains UnderlineNav**;UnderlineNav itself provides bottom border」(`primer.style/components/page-header/react`);Ant Tabs line type 自帶 bottom border(`ant.design/components/tabs`);Mantine Tabs default variant 自包 bottom border(`mantine.dev/core/tabs/`)。**Counter-pattern(reject)**:Material UI 走「container 畫 border + tabs 不畫」(`<Box sx={{ borderBottom: 1 }}><Tabs>` 從 `mui.com/material-ui/react-tabs/`)——本 DS reject,理由:tabs underline 需 1px gray base line(見「Underline 與 TabsList border 的視覺關係」段),tabs 不畫 border 會讓 2px primary indicator 浮空失去 base
 
 **Auto-suppress 機制(Phase 2 production code 提案)**:header primitive 加 `withTabs?: boolean` prop → true 時自動移除自身 `border-b`,免 consumer 手動忘記。對齊 GitHub Primer 的 auto-suppress 模式(免 consumer 手動 prop)。完整 cross-header canonical 詳 `patterns/header-canonical/header-canonical.spec.md` W1。
 
@@ -227,27 +206,14 @@ Size 建議:overlay / chrome header 內用 `sm`(32/40)— 對應 close X 也是 
 
 ## 狀態
 
-### active
+DS 詞彙 **selected**（持續選中）；Radix DOM attr 為 `data-state="active"`（primitive 命名，不改寫）。
 
-選中的 trigger：
-- 文字色 `text-foreground`、`font-medium`
-- 底部 2px 底線 `bg-primary-hover`（對齊 semantic.css：選中狀態的邊框/文字統一用 `--primary-hover`）
-
-未選的 trigger：
-- 文字色 `text-fg-secondary`、一般 weight
-- 無底線
-- hover 時文字色轉 `text-foreground`
-
-### disabled
-
-- 文字色 `text-fg-disabled`
-- 無 hover 色變化、無底線
-- Cursor 變為 `not-allowed`（滑鼠移過明確告知不可點）
-- 不接受鍵盤 focus
-
-### focus-visible
-
-`ring-2 ring-ring ring-offset-1`，與 Button 一致。鍵盤導覽（Radix Tabs 原生支援左右箭頭）由 Radix 處理。
+| State | 視覺 |
+|---|---|
+| selected | `text-foreground` + `font-medium` + 底部 2px `bg-primary` 底線（semantic.css 選中規則；2026-07-06 拍板持續選中站 base，Ant inkBarColor = colorPrimary 同款）|
+| 未選 | `text-fg-secondary`、一般 weight、無底線；hover 時文字色轉 `text-foreground` |
+| disabled | `text-fg-disabled`；無 hover 色變化、無底線；`cursor-not-allowed`；不接受鍵盤 focus |
+| focus-visible | `ring-2 ring-ring ring-offset-1`，與 Button 一致；鍵盤導覽（左右箭頭）由 Radix 原生處理 |
 
 ---
 

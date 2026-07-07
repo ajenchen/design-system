@@ -372,7 +372,9 @@ export const carouselMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'active' 移除 — 全檔無按壓視覺(prev/next 按壓屬內嵌 Button meta,同 Notice/Alert 排除慣例;
+  // 2026-07-07 詞彙統一 DS-wide 交叉掃補修)。dot hover 為自有 hover 態(bg-on-emphasis alpha 變體)。
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: [],
     fg: [],

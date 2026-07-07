@@ -21,7 +21,10 @@ export interface BulkActionBarLabels {
   count: (n: number) => string
   clear: string
   hiddenSuffix: (hidden: number) => string
+  /** @deprecated 2026-07-06 role 已降級 "group"(user 拍板),改用 `ariaLabel`;此 key 保留 backward-compat(值仍作 fallback)。 */
   toolbarAriaLabel: string
+  /** root `role="group"` 的 aria-label(2026-07-06 新名;未傳 fallback toolbarAriaLabel)。 */
+  ariaLabel?: string
 }
 
 // code-quality-allow: dead-export — public API per spec.md(consumer spread + override)
@@ -89,8 +92,11 @@ const BulkActionBar = React.forwardRef<HTMLDivElement, BulkActionBarProps>(
     return (
       <div
         ref={ref}
-        role="toolbar"
-        aria-label={labels.toolbarAriaLabel}
+        // 2026-07-06 user 拍板:role "toolbar" → "group" — 原宣告 toolbar 但未實作 APG toolbar
+        // 方向鍵 roving 契約(AT 告知「工具列」但方向鍵無反應 = 空承諾);group 語意誠實,
+        // Tab 序照 DOM(spec 本有 canonical),Gmail / Linear bulk bar 實務同款。
+        role="group"
+        aria-label={labels.ariaLabel ?? labels.toolbarAriaLabel}
         className={cn(
           'flex items-center gap-2',
           'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',

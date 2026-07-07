@@ -25,15 +25,20 @@ export function useControllable<T>({
   onChangeRef.current = onChange
 
   const current = isControlled ? (value as T) : internal
+  // 2026-07-07 C14:setter identity 穩定化——原 deps 含 `current`,值一變 setter 就換 identity
+  // (consumer 放 useEffect deps / useCallback 鏈會白重跑)。對齊 Radix useControllableState:
+  // current 走 ref、setter 只依 isControlled,行為 Δ=0(functional updater 讀最近 render 值,同 Radix)。
+  const currentRef = useRef(current)
+  currentRef.current = current
 
   const setValue = useCallback(
     (next: T | ((prev: T) => T)) => {
       const computed =
-        typeof next === 'function' ? (next as (prev: T) => T)(current) : next
+        typeof next === 'function' ? (next as (prev: T) => T)(currentRef.current) : next
       if (!isControlled) setInternal(computed)
       onChangeRef.current?.(computed)
     },
-    [isControlled, current]
+    [isControlled]
   )
 
   return [current, setValue]

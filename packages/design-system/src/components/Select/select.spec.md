@@ -313,7 +313,7 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 
 ## A11y 預設
 
-**ARIA / Pattern**:依裝置分兩條路徑。桌機(非觸控)觸發點是容器 `<div>`,標記 `role="combobox"` + `aria-expanded` / `aria-haspopup="listbox"`,選項在浮層 listbox 裡;searchable 模式時容器內另放可打字篩選的 `<input>`。手機(觸控)改用瀏覽器原生 `<select>` element,直接取得作業系統內建的無障礙與 picker。兩路徑皆由 Field wrapper 補 `aria-invalid` / `aria-required` / `aria-describedby` / `aria-errormessage`。
+**ARIA / Pattern**:依裝置分兩條路徑。桌機(非觸控)觸發點是容器 `<div>`,標記 `role="combobox"` + `aria-expanded` / `aria-haspopup="listbox"`,選項在浮層 listbox 裡;searchable 模式時容器內另放可打字篩選的 `<input>`(開啟時實際聚焦的元素,accessible name 直接接在 input 本身:有 Field label 時 `aria-labelledby` 指向之、consumer `aria-label` 優先,兩者皆無時 fallback「搜尋選項」——與 Combobox 搜尋框 `searchAriaLabel` 同 canonical)。手機(觸控)改用瀏覽器原生 `<select>` element,直接取得作業系統內建的無障礙與 picker。兩路徑皆由 Field wrapper 補 `aria-invalid` / `aria-required` / `aria-describedby` / `aria-errormessage`。
 
 **Keyboard 行為**:
 

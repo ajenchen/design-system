@@ -1940,3 +1940,50 @@ export const RoadmapPerfBudget: Story = {
     )
   },
 }
+
+// ── L5 分頁(2026-07-06)─────────────────────────────────────────────────────
+
+type OrderRow = { id: string; orderNo: string; customer: string; amount: number; placedAt: string }
+
+// 128 筆訂單(電商後台真實規模;deterministic 生成,無 Math.random)
+const ORDER_ROWS: OrderRow[] = Array.from({ length: 128 }, (_, i) => ({
+  id: `order-${i + 1}`,
+  orderNo: `SO-2026-${String(1001 + i)}`,
+  customer: ['Acme Corp', 'Globex', 'Initech', 'Umbrella', 'Stark Industries', 'Wayne Enterprises'][i % 6],
+  amount: 1200 + (i * 137) % 8800,
+  placedAt: `2026-0${(i % 6) + 1}-${String((i % 27) + 1).padStart(2, '0')}`,
+}))
+
+const orderColumns: ColumnDef<OrderRow>[] = [
+  { accessorKey: 'orderNo', header: '訂單編號' },
+  { accessorKey: 'customer', header: '客戶' },
+  { accessorKey: 'amount', header: '金額', cell: ({ getValue }) => `$${(getValue() as number).toLocaleString()}` },
+  { accessorKey: 'placedAt', header: '成立日期' },
+]
+
+export const WithPagination: Story = {
+  name: '分頁',
+  render: () => (
+    <div className="mx-[var(--layout-space-loose)] my-[var(--layout-space-loose)] flex flex-col gap-8">
+      <div>
+        <p className="text-caption text-fg-muted mb-2">
+          預設形態:`pagination` 傳 true — 128 筆 / 每頁 20 = 7 頁,分頁列間距 tight、頁碼靠右
+          (spec「L5:分頁」canonical);與虛擬滾動互斥(分頁時 useVirtual 關閉)。
+        </p>
+        <DataTable columns={orderColumns} data={ORDER_ROWS} pagination getRowId={(row) => row.id} />
+      </div>
+      <div>
+        <p className="text-caption text-fg-muted mb-2">
+          完整形態:「共 N 筆」opt-in(showTotal)+ 每頁筆數 Select(pageSizeOptions)——
+          左資訊右頁碼 justify-between;換每頁筆數自動回第 1 頁;filter 縮小自動 clamp 當前頁。
+        </p>
+        <DataTable
+          columns={orderColumns}
+          data={ORDER_ROWS}
+          pagination={{ pageSize: 20, pageSizeOptions: [10, 20, 50], showTotal: true }}
+          getRowId={(row) => row.id}
+        />
+      </div>
+    </div>
+  ),
+}

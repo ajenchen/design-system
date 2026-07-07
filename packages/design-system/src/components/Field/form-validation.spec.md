@@ -41,7 +41,7 @@
 ### Submit 驗證
 
 7. **Submit 驗證全部**——點擊 submit 時對所有欄位執行驗證(不依賴個別 field 的 blur 狀態)
-8. **Anchor 到第一個錯誤**——若有任何欄位出錯,scroll 並 focus 到第一個錯誤欄位。多次 submit 重試時,每次都重新驗證全部欄位並重新計算「第一個錯誤」(rule 7 的自然結果),不保持上次 anchor 位置
+8. **Anchor 到第一個錯誤**——若有任何欄位出錯,scroll 並 focus 到第一個錯誤欄位(**「第一個」= DOM 視覺順序**,非 validate key 宣告順序;對齊瀏覽器原生 reportValidity + react-hook-form shouldFocusError,2026-07-07 code 同步)。多次 submit 重試時,每次都重新驗證全部欄位並重新計算「第一個錯誤」(rule 7 的自然結果),不保持上次 anchor 位置
 9. **Async / cross-field 驗證 defer 到 submit**——某些驗證無法在 blur 當下完成(如「名稱是否重複」需要 API 查詢、跨欄位邏輯如「結束日不得早於開始日」),這些在 submit 時統一判斷。若有錯誤,同樣 anchor 到第一個出錯欄位。
 
 **Double-submit 防護(2026-07-05 D4 codify,規則 9 的必然配套)**:async onSubmit 進行期間,重複 submit(連點按鈕 / 連按 Enter)一律忽略——否則業務層被並發呼叫兩次(重複建立資源的經典事故)。submit 期間狀態以 `isSubmitting` 暴露(餵 Button loading / disabled;`submitDisabled` 同步為 true);onSubmit 拋錯時先復位 `isSubmitting` 再讓錯誤原樣上拋(不吞錯,表單回到可重送狀態)。對齊 react-hook-form `formState.isSubmitting` / Polaris / Mantine form submitting 內建。 <!-- @benchmark-unverified -->

@@ -120,7 +120,7 @@ export function getUniformPrefixSlotStyle(size: RowSize): React.CSSProperties {
 /**
  * Inline action(suffix 裡的 hover-action icon button)hover 背景尺寸(px)。
  * 規則:icon size + 2px(每邊 +1px,用 absolute positioning 溢出不影響排版)。
- * 對齊 `item-anatomy.spec.md`「Inline Action 設計規格」節。
+ * 對齊 `inline-action.spec.md`(canonical SSOT,2026-04-24 自 item-anatomy.spec 抽出)。
  */
 // code-quality-allow: dead-export — public constant — DS API surface,consumer 可引(即使當前 internal-only)
 export const INLINE_ACTION_HOVER_BG_SIZE: Record<RowSize, number> = {
@@ -534,10 +534,9 @@ ItemAvatar.displayName = "ItemAvatar"
 // ── Inline action (suffix slot) ───────────────────────────────────────────
 //
 // 共用 row-primitive 的 suffix inline action 渲染——消除過去 Input / NumberInput /
-// Tag / LinkInput / Combobox 各自複製 18 行 JSX 的狀況(見 `item-anatomy.spec.md`
-// 「Inline Action 設計規格」節)。
+// Tag / LinkInput / Combobox 各自複製 18 行 JSX 的狀況(見 `inline-action.spec.md`)。
 //
-// 規格(完全對齊 item-anatomy.spec.md「Inline Action 設計規格」節):
+// 規格(完全對齊 inline-action.spec.md — canonical SSOT,2026-04-24 自 item-anatomy.spec 抽出):
 // - Icon 尺寸 = ICON_SIZE[rowSize]      (16/16/20)
 // - Hover bg 尺寸 = icon + 2            (18/18/22,INLINE_ACTION_HOVER_BG_SIZE)
 // - Hover bg 圓角 = rounded-md (sm/md)/ rounded-md (lg)
@@ -693,7 +692,7 @@ ItemInlineAction.displayName = "ItemInlineAction"
 // `<ItemSuffix>` — row primitive 的 suffix 容器。對齊 item-layout spec:
 // - `h-[1lh]`:suffix 永遠對齊第一行 label(跟 prefix 解耦)
 // - `ml-auto`:靠右
-// - `gap-2`:多個 inline action 之間的標準間距(item-anatomy.spec.md「Inline Action 設計規格」節)
+// - `gap-2`:多個 inline action 之間的標準間距(inline-action.spec.md canonical SSOT)
 // - `hoverReveal` opt-in:opacity 0→1 on 父層 row hover/focus-visible
 //
 // `hoverGroup`(2026-05-05 v8 SSOT 升級):row primitive group selector 參數化。

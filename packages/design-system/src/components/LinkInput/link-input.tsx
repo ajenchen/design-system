@@ -48,7 +48,10 @@ function renderLinkAnchor(value: string, label?: string) {
 // ── Component ───────────────────────────────────────────────────────────────
 
 export interface LinkInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'value' | 'onChange'>,
+  // `defaultValue` 一併 Omit(2026-07-05 deep-audit A.1b):spec.md「controlled-only,不支援
+  // defaultValue」宣稱的型別面機械封鎖 — 原本仍在型別 surface 且經 {...props} spread 到已
+  // controlled 的 input(React dev warning)。
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'value' | 'defaultValue' | 'onChange'>,
     Omit<VariantProps<typeof fieldWrapperStyles>, 'mode' | 'variant'> {
   mode?: FieldMode
   /**

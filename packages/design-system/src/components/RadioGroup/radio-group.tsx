@@ -339,7 +339,8 @@ export const radioGroupMeta = {
   },
   // 2026-07-04 修 stale meta:移除 'active' — radioItemVariants cva 無 active-state 樣式,
   // Radix radio 也無 data-state=active(對照 checkboxMeta 正確不含 active)
-  states: ['default', 'hover', 'focus-visible', 'disabled'],
+  // 'checked' = 選定持續態(card 式 = border+text primary;2026-07-07 meta 詞彙統一補列)
+  states: ['default', 'hover', 'checked', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-disabled', 'bg-surface'],
     fg: ['text-fg-disabled', 'text-fg-secondary', 'text-foreground', 'text-primary'],

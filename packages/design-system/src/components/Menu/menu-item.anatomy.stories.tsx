@@ -774,7 +774,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"MenuItem 只負責單行的視覺排版,本身不接管鍵盤與焦點。真正的鍵盤導覽(上下鍵切換、Enter 選取、Esc 關閉)與焦點管理由外層的選單元件(SelectMenu / DropdownMenu)負責——MenuItem 不重複實作這些行為。\n\n  語意 role  :在 listbox 語境(SelectMenu / Combobox)MenuItem 預設渲染為 role=\"option\";在 menu 語境(DropdownMenu)外層會把每個 item 覆蓋為 role=\"presentation\",由 Radix parent 持有 role=\"menuitem\" 語意。哪一項目前被聚焦與選取由外層選單決定。\n\n  焦點外觀  :聚焦時以 bg-neutral-hover 背景高亮標示被聚焦的選項(cva base 為 outline-none + focus-visible:bg-neutral-hover),對齊 menu/listbox option 的 active-highlight 慣例,而非畫 outline ring。\n\n  驗證  :Storybook a11y addon 面板應 0 critical violation;整個選單用鍵盤即可完整操作(無需滑鼠);文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
+      <p className="whitespace-pre-line">{"MenuItem 只負責單行的視覺排版,本身不接管鍵盤與焦點。真正的鍵盤導覽(上下鍵切換、Enter 選取、Esc 關閉)與焦點管理由外層的選單元件(SelectMenu / DropdownMenu)負責——MenuItem 不重複實作這些行為。\n\n  語意 role  :直接使用時(如本元件 stories 的 listbox demo)MenuItem 預設渲染為 role=\"option\" 並帶 aria-selected / aria-disabled;巢狀在外層互動節點內時(SelectMenu / Combobox 的 cmdk option、DropdownMenu 的 Radix menuitem)外層會傳 role=\"presentation\",MenuItem 同步抑制 aria-selected / aria-disabled——ARIA 語意由外層節點單一持有,內層僅保留 data-* 樣式屬性。哪一項目前被聚焦與選取由外層選單決定。\n\n  焦點外觀  :聚焦時以 bg-neutral-hover 背景高亮標示被聚焦的選項(cva base 為 outline-none + focus-visible:bg-neutral-hover),對齊 menu/listbox option 的 active-highlight 慣例,而非畫 outline ring。\n\n  驗證  :Storybook a11y addon 面板應 0 critical violation;整個選單用鍵盤即可完整操作(無需滑鼠);文字對比 ≥ 4.5:1、介面元素對比 ≥ 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

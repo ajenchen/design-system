@@ -154,6 +154,17 @@ function TagInner(
 
   const label = typeof children === 'string' ? children : ''
 
+  // ── Dev-mode warning:icon 與 avatar 互斥 ──
+  // 兩者同為 prefix slot(tag.spec.md Props 表「與 avatar 互斥」),同時傳會並列渲染破壞 Tag
+  // 內部結構;原僅 jsdoc/spec 約束會靜默通過 → 2026-07-05 對齊 Button overlayBadge dev-warn
+  // 先例(button.tsx「Dev-mode warning」段)補齊家族一致 runtime 防線。
+  if (process.env.NODE_ENV !== 'production' && Icon && avatar) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[DS Tag] `icon` 與 `avatar` 互斥(同為 prefix slot),同時傳會並列渲染破壞 Tag 內部結構,請只擇一。SSOT:tag.spec.md Props 表 + tag.principles.stories.tsx IconRule。'
+    )
+  }
+
   const tag = (
     <div
       ref={(el) => {
@@ -162,7 +173,18 @@ function TagInner(
         else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = el
       }}
       data-tag-root=""
-      className={cn(tagVariants({ color, size }), solidClass, 'w-fit min-w-0 overflow-hidden', className)}
+      // 截斷時條件性可 focus(2026-07-06 user 拍板「確認世界級有這樣做就做」——APG Tooltip
+      // pattern 原文:tooltip 在元素「收到鍵盤焦點」或 hover 時顯示,trigger 可 focus 是
+      // W3C 官方 pattern 前提;Radix Tooltip focus-open 自動生效 → 鍵盤 Tab 到即見全文。
+      // 未截斷不入 tab 序(維持 tag.spec「靜態 Tag 不取得 focus」預設,不汙染 tab order)。
+      tabIndex={isTruncated ? 0 : undefined}
+      className={cn(
+        tagVariants({ color, size }),
+        solidClass,
+        'w-fit min-w-0 overflow-hidden',
+        isTruncated && 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+        className,
+      )}
       // 2026-05-18 Round 5 fix(per Codex M31 Round 5 verdict + user 拍板「那就開始做」):
       // 用 CSS var `--combobox-tag-area-inline-size`(由 Combobox useOverflowCount JS-injected)取代
       // `min(100%, 10rem)` cyclic percentage。CSS Sizing 3 §5.2.1:percentage 在 indefinite containing

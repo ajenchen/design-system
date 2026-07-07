@@ -4,6 +4,7 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Textarea } from './textarea'
 import { Input } from '@/design-system/components/Input/input'
+import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta = {
   title: 'Design System/Components/Textarea/設計原則',
@@ -165,7 +166,7 @@ export const NoIconRule: Story = {
         <div className="flex flex-col gap-2">
           <Textarea placeholder="留下你的評論..." rows={3} />
           <div className="flex justify-end">
-            <button className="px-4 py-2 text-body bg-primary text-inverse-fg rounded-md">送出</button>
+            <Button variant="primary" size="sm">送出</Button>
           </div>
         </div>
         <Label>↑ 按鈕在 Textarea 下方,不塞進框內</Label>

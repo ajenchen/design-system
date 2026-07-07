@@ -50,7 +50,9 @@ const sliderRootVariants = cva(
 )
 
 export interface SliderProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>, 'children'>,
+  // 'orientation' 一併 Omit(2026-07-07 deep-audit A.1b 殘項):spec「不支援 vertical」宣稱的
+  // 型別面機械封鎖 — DS 樣式(track h-1 / w-full / items-center)假設 horizontal,透傳 vertical 壞版。
+  extends Omit<React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>, 'children' | 'orientation'>,
     VariantProps<typeof sliderRootVariants> {}
 
 // code-quality-allow: long-function — foundational composite(thumb-count 推導 + Field disabled 整合 + multi-mode render)
@@ -121,7 +123,9 @@ const Slider = React.forwardRef<
           - Rest: `border-primary` ↔ Range `bg-primary`
           - Disabled: `border-border` ↔ Range `bg-border`
         這個一致性讓 thumb border 跟 range 融為一體,看起來像「range 包住 thumb」
-        的連續視覺。不論 state,thumb border 跟 range 永遠同色。
+        的連續視覺。**同色綁定 scope = rest 與 disabled 兩態**;互動態(hover/active/focus)
+        只動 thumb border 色階(+ elevation),range 填色恆定 —— 2026-07-06 修正原
+        「不論 state 永遠同色」過度宣稱(hover/active 一直都只動 thumb,claim 與 code 不符)。
 
         **Thumb bg 兩態(2026-06-12 user 拍板,深色模式破洞修正)**:
           - Rest/hover/active:`bg-on-emphasis`(固定白、深淺主題不反轉)— 對齊自家
@@ -142,10 +146,14 @@ const Slider = React.forwardRef<
             'block h-4 w-4 shrink-0 rounded-full cursor-grab',
             'bg-on-emphasis border-2 border-primary',
             'transition-all duration-150',
-            // Hover:border 加深到 primary-hover + elevation 陰影
+            // Hover:border 升 hover 階(light mode 淺一階 lift,= Button primary hover 變色邏輯)
+            // + elevation 陰影。2026-07-06 修語:原註解寫「加深」但 primary-hover 比 base 淺,
+            // 措辭與 token 相反 — token 不遷就錯註解,註解修正。
             'hover:border-primary-hover hover:[box-shadow:var(--elevation-100)]',
-            'active:cursor-grabbing active:border-primary-hover active:[box-shadow:var(--elevation-200)]',
-            // Focus:border 加深(跟 hover 同視覺),不加 ring 或 halo
+            // Active(按壓拖曳):深一階 primary-active(= Button active 邏輯 button.tsx active:*-active
+            // 對照組;原誤用 hover 階 = 全 DS 唯一 active-用-hover 偏移,2026-07-06 雙向全掃修正)
+            'active:cursor-grabbing active:border-primary-active active:[box-shadow:var(--elevation-200)]',
+            // Focus:跟 hover 同視覺(hover 階),不加 ring 或 halo
             'outline-none focus-visible:border-primary-hover',
             // Disabled:border 跟 Range 一起退成 border(n-5),bg 沉回 canvas(不透明背景色)
             'data-[disabled]:cursor-not-allowed data-[disabled]:border-border data-[disabled]:bg-canvas',

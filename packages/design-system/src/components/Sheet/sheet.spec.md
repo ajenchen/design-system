@@ -143,4 +143,5 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 - `accordion.spec.md`
 - `app-shell.spec.md`
 - `dialog.spec.md`
+- `popover.spec.md`
 - `scroll-area.spec.md`

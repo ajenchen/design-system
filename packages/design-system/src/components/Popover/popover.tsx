@@ -33,49 +33,84 @@ const PopoverAnchor = PopoverPrimitive.Anchor
 const PopoverClose = PopoverPrimitive.Close
 
 // AutoFocus canonical(對齊 Dialog / Sheet / Material / Polaris)—
-// 開啟時 focus 落在 body 第一個有意義互動元素,避免 focus 到 close X 觸發 tooltip leak
+// 開啟時 focus 落在 body 第一個有意義互動元素,避免 focus 到 close X 觸發 tooltip leak。
+// 兩段查詢對齊 dialog.tsx handleOpenAutoFocus(2026-07-05 修):舊版單一混合清單按 DOM 序取
+// 第一 match,header 內互動元素(非 data-dismiss)會搶走 body 首元素焦點,且 bare 段漏 select。
+// 改為:先 body-scoped 查詢,查無才退 bare 全域清單(保留 naked popover — consumer 不用
+// PopoverBody 自管結構 — 的 fallback 意圖),最後 footer → content 容器。
 const handlePopoverOpenAutoFocus = (e: Event) => {
   e.preventDefault()
   const content = e.currentTarget as HTMLElement
   const firstBodyTarget = content.querySelector<HTMLElement>(
-    '[data-popover-body] input:not([disabled]),[data-popover-body] textarea:not([disabled]),[data-popover-body] select:not([disabled]),[data-popover-body] button:not([disabled]):not([data-dismiss]),input:not([disabled]),textarea:not([disabled]),button:not([disabled]):not([data-dismiss])'
+    '[data-popover-body] input:not([disabled]),[data-popover-body] textarea:not([disabled]),[data-popover-body] select:not([disabled]),[data-popover-body] button:not([disabled]):not([data-dismiss])'
+  )
+  const firstBareTarget = content.querySelector<HTMLElement>(
+    'input:not([disabled]),textarea:not([disabled]),select:not([disabled]),button:not([disabled]):not([data-dismiss])'
   )
   const firstFooterButton = content.querySelector<HTMLElement>(
     '[data-popover-footer] button:not([disabled]):not([data-dismiss])'
   )
-  ;(firstBodyTarget ?? firstFooterButton ?? content).focus({ preventScroll: true })
+  ;(firstBodyTarget ?? firstBareTarget ?? firstFooterButton ?? content).focus({ preventScroll: true })
 }
+
+// ── PopoverTitle → aria-labelledby 自動接線(2026-07-05,照 Radix Dialog Title 機制補 DS 層)──
+// Radix Popover 的 content 有 role="dialog",但沒有 Radix Dialog Title 式的自動 accessible name
+// 接線 → 一般 Popover 預設無 accessible name。DS 層以 context 補同機制:PopoverContent 以 useId
+// 建 titleId 供給 children;PopoverTitle 掛載時註冊,PopoverContent 偵測到有 title 註冊才設
+// aria-labelledby。Consumer 自傳 aria-label / aria-labelledby 一律優先。PopoverTitle 亦被
+// DataTable sort / filter panel 等非 PopoverContent 場景裸用(raw SurfaceHeader chrome)—
+// context 為 null 時全部 no-op,行為與舊版一致。
+interface PopoverTitleContextValue {
+  titleId: string
+  onTitleMount: () => void
+  onTitleUnmount: () => void
+}
+
+const PopoverTitleContext = React.createContext<PopoverTitleContextValue | null>(null)
 
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, onOpenAutoFocus, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
-    <PopoverPrimitive.Content
-      ref={ref}
-      align={align}
-      sideOffset={sideOffset}
-      collisionPadding={collisionPadding}
-      // Layout-space lock(2026-06-15 canonical,原 data-density="md" 改為只鎖 layout-space):Popover 是
-      // 輕量浮層,header/footer 用 py-tight(layout-space)→ 鎖 layout-space=md 保持精簡 padding;但
-      // **ui-size 不鎖、繼承 page** → 內部 field 控件 / dismiss 按鈕隨 page 放大,跟觸發點一致(decouple)。
-      // [data-layout-space="md"] 有 reset selector(layoutSpace.css L31)→ lg page 上正確 reset 回 md。
-      data-layout-space="md"
-      onOpenAutoFocus={onOpenAutoFocus ?? handlePopoverOpenAutoFocus}
-      className={cn(
-        "z-50 w-72 rounded-lg border border-border bg-surface-raised text-foreground shadow-[var(--elevation-200)] outline-none",
-        // 2026-05-04 viewport-aware max-h SSOT(從 ProfileCard 升 DS-wide):header/footer 永遠 in-viewport,body 壓縮 scroll
-        // 2026-05-05 audit dim 35 補:加 `min-h-0` 完成 M25 chain invariant(flex item default min-h: auto 阻 shrink)
-        "max-h-[var(--radix-popover-content-available-height,100vh)] flex flex-col overflow-hidden min-h-0",
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 motion-reduce:animate-none",
-        "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-        "origin-[var(--radix-popover-content-transform-origin)]",
-        className
-      )}
-      {...props}
-    />
-  </PopoverPrimitive.Portal>
-))
+>(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, onOpenAutoFocus, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
+  const titleId = React.useId()
+  const [hasTitle, setHasTitle] = React.useState(false)
+  const titleContext = React.useMemo<PopoverTitleContextValue>(
+    () => ({ titleId, onTitleMount: () => setHasTitle(true), onTitleUnmount: () => setHasTitle(false) }),
+    [titleId],
+  )
+  return (
+    <PopoverPrimitive.Portal>
+      <PopoverTitleContext.Provider value={titleContext}>
+        <PopoverPrimitive.Content
+          ref={ref}
+          align={align}
+          sideOffset={sideOffset}
+          collisionPadding={collisionPadding}
+          // Layout-space lock(2026-06-15 canonical,原 data-density="md" 改為只鎖 layout-space):Popover 是
+          // 輕量浮層,header/footer 用 py-tight(layout-space)→ 鎖 layout-space=md 保持精簡 padding;但
+          // **ui-size 不鎖、繼承 page** → 內部 field 控件 / dismiss 按鈕隨 page 放大,跟觸發點一致(decouple)。
+          // [data-layout-space="md"] 有 reset selector(layoutSpace.css L31)→ lg page 上正確 reset 回 md。
+          data-layout-space="md"
+          onOpenAutoFocus={onOpenAutoFocus ?? handlePopoverOpenAutoFocus}
+          aria-label={ariaLabel}
+          // accessible name 自動接線:consumer 自傳優先;無 aria-label 且有 PopoverTitle 註冊才掛 titleId
+          aria-labelledby={ariaLabelledBy ?? (ariaLabel == null && hasTitle ? titleId : undefined)}
+          className={cn(
+            "z-50 w-72 rounded-lg border border-border bg-surface-raised text-foreground shadow-[var(--elevation-200)] outline-none",
+            // 2026-05-04 viewport-aware max-h SSOT(從 ProfileCard 升 DS-wide):header/footer 永遠 in-viewport,body 壓縮 scroll
+            // 2026-05-05 audit dim 35 補:加 `min-h-0` 完成 M25 chain invariant(flex item default min-h: auto 阻 shrink)
+            "max-h-[var(--radix-popover-content-available-height,100vh)] flex flex-col overflow-hidden min-h-0",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 motion-reduce:animate-none",
+            "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+            "origin-[var(--radix-popover-content-transform-origin)]",
+            className
+          )}
+          {...props}
+        />
+      </PopoverTitleContext.Provider>
+    </PopoverPrimitive.Portal>
+  )
+})
 PopoverContent.displayName = PopoverPrimitive.Content.displayName
 
 // PopoverHeader: SurfaceHeader + Close X(對齊 Dialog 的 canonical,見 docblock)
@@ -145,13 +180,27 @@ PopoverFooter.displayName = "PopoverFooter"
 const PopoverTitle = React.forwardRef<
   HTMLHeadingElement,
   React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <h2
-    ref={ref}
-    className={cn("text-body font-medium truncate", className)}
-    {...props}
-  />
-))
+>(({ className, id, ...props }, ref) => {
+  const titleCtx = React.useContext(PopoverTitleContext)
+  // 掛載時向 PopoverContent 註冊 → content 自動設 aria-labelledby(見 PopoverTitleContext docblock)。
+  // consumer 自傳 id 時不註冊:auto 接線指向 context titleId,自訂 id 下引用會斷 → aria 由 consumer 自管。
+  const shouldRegister = id == null && titleCtx != null
+  const onTitleMount = titleCtx?.onTitleMount
+  const onTitleUnmount = titleCtx?.onTitleUnmount
+  React.useLayoutEffect(() => {
+    if (!shouldRegister) return
+    onTitleMount?.()
+    return onTitleUnmount
+  }, [shouldRegister, onTitleMount, onTitleUnmount])
+  return (
+    <h2
+      ref={ref}
+      id={id ?? titleCtx?.titleId}
+      className={cn("text-body font-medium truncate", className)}
+      {...props}
+    />
+  )
+})
 PopoverTitle.displayName = "PopoverTitle"
 
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)

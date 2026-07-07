@@ -132,6 +132,10 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
   ) => {
     const inputRef = React.useRef<HTMLInputElement>(null)
     const [isDragOver, setDragOver] = React.useState(false)
+    // drag enter/leave 深度計數(react-dropzone / Mantine Dropzone 同款):跨進內部子元素時
+    // 瀏覽器發「子 dragenter → 外層 dragleave」成對事件,+1/−1 抵銷後計數仍 > 0 = 沒離開。
+    // 不依賴 e.relatedTarget —— Safari/WebKit 的 dragleave relatedTarget 恆 null,guard 法必失效。
+    const dragDepth = React.useRef(0)
 
     const filterAndDispatch = (files: FileList | null) => {
       if (!files || files.length === 0) return
@@ -264,15 +268,18 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
         onDragEnter={(e) => {
           if (isBlocked) return
           e.preventDefault()
+          // 2026-07-06 深度計數升級(user 實測抓到「拖入約一秒高亮熄滅」):游標從邊緣飄到中央
+          // 跨進 Empty icon/標題那刻,瀏覽器發「子 dragenter → 外層 dragleave」→ 舊版無 guard 直接
+          // 熄滅;2026-07-05 的 relatedTarget guard 只救 Chrome(Safari/WebKit dragleave 的
+          // relatedTarget 恆 null → guard 失效)。深度計數不依賴 relatedTarget,跨瀏覽器穩定。
+          dragDepth.current += 1
           setDragOver(true)
         }}
         onDragLeave={(e) => {
           if (isBlocked) return
           e.preventDefault()
-          // 2026-07-05 D4:relatedTarget guard — 拖曳滑過內部子元素(Empty 的 icon/title)時
-          // 子元素先發 dragenter、dropzone 再發 dragleave;無 guard 則 pointer 正對中央時高亮反而熄滅
-          if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) return
-          setDragOver(false)
+          dragDepth.current = Math.max(0, dragDepth.current - 1)
+          if (dragDepth.current === 0) setDragOver(false)
         }}
         onDragOver={(e) => {
           // 2026-07-05 D4:blocked 時仍先 preventDefault — dragover 未取消 = 非合法 drop target,
@@ -283,6 +290,7 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           // 2026-07-05 D4:preventDefault 先於 isBlocked guard — 同 dragover,擋瀏覽器開檔導航
           e.preventDefault()
           if (isBlocked) return
+          dragDepth.current = 0 // drop 結束整輪拖曳,計數歸零(下一輪從乾淨狀態起算)
           setDragOver(false)
           filterAndDispatch(e.dataTransfer.files)
         }}
@@ -297,9 +305,11 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           // idle:--border(元件邊框,非 --divider 分隔線 — 2026-06-03 Q2 token 修正)+ surface 底
           'border-border bg-surface',
           // hover = drag-over 統一(2026-06-03 Q2-A 純 border-driven,對齊 Ant Dragger colorPrimaryHover):
-          // 兩者都 → primary 邊框,底色維持 surface(不變 bg)。state 信號靠邊框,非底色。
+          // 兩者都 → primary-hover 邊框(2026-07-06 修:註解與 spec 一直宣稱 colorPrimaryHover、
+          // code 卻寫 base = claim-vs-code 反向 drift;瞬時態歸 hover 階,雙向全掃唯一 B 類違規),
+          // 底色維持 surface(不變 bg)。state 信號靠邊框,非底色。
           // 2026-06-11 R2(M5 狀態疊加):hover 變 primary 僅限 idle —— disabled/loading 維持原邊框(spec「disabled 邊框不變色」;dropzone 狀態機無 error 態,error 屬 files 清單 FileItem status)
-          'data-[state=idle]:hover:border-primary data-[state=drag-over]:border-primary',
+          'data-[state=idle]:hover:border-primary-hover data-[state=drag-over]:border-primary-hover',
           // loading(2026-06-03 Q4:移除 pointer-events-none — 它會讓 cursor-progress 失效;
           // 互動已由 handleClick + drag/key handlers 的 isBlocked guard 擋,不需 pointer-events-none)
           'data-[state=loading]:cursor-progress',
@@ -381,7 +391,8 @@ export const fileUploadMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'active' 移除 — dropzone 僅 hover / drag-over 態,無按壓視覺(2026-07-07 詞彙統一 DS-wide 按壓訊號盤點:檔內 0 active: utility / 0 *-active token)。
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-surface', 'bg-disabled'],
     fg: [],

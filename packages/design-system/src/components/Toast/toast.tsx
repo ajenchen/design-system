@@ -38,8 +38,11 @@ function ToastInner({
   const isInverse = variant === 'neutral' || variant === 'success'
   const dismiss = () => sonnerToast.dismiss(id)
 
+  // action 執行後自動 dismiss:關閉「復原/重試」的重複觸發窗口(double-undo / double-retry),
+  // 對齊 Polaris Toast action / Material Snackbar action 按後即收慣例;
+  // toast.anatomy.stories.tsx「點 action button 執行 callback + 關閉 toast」宣稱自此為真。
   const actionButton = action ? (
-    <Button variant="tertiary" size="xs" onClick={action.onClick}>{action.label}</Button>
+    <Button variant="tertiary" size="xs" onClick={() => { action.onClick(); dismiss() }}>{action.label}</Button>
   ) : undefined
 
   // ── Live region 由 outer Toast wrapper 擁有(WAI-ARIA + toast.spec.md「A11y 預設」段 canonical) ──

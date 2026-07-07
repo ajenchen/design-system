@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-07-05T08:46:14.185Z"
+    "generatedAt": "2026-07-06T11:37:10.794Z"
   },
   "components": {
     "accordion": {
@@ -498,7 +498,8 @@
           "design-system-components-datatable-展示--row-drag-interactive",
           "design-system-components-datatable-展示--row-drag-with-virtualization",
           "design-system-components-datatable-展示--roadmap-all-in-one",
-          "design-system-components-datatable-展示--roadmap-perf-budget"
+          "design-system-components-datatable-展示--roadmap-perf-budget",
+          "design-system-components-datatable-展示--with-pagination"
         ],
         "設計規格": [
           "design-system-components-datatable-設計規格--overview",
@@ -1028,6 +1029,28 @@
         "設計原則": [
           "design-system-internal-overflowindicator-設計原則--usage-guidance",
           "design-system-internal-overflowindicator-設計原則--composition-rules"
+        ]
+      },
+      "openSnapshotIds": [],
+      "exception": null
+    },
+    "pagination": {
+      "tiers": {
+        "展示": [
+          "design-system-components-pagination-展示--default",
+          "design-system-components-pagination-展示--full-bar",
+          "design-system-components-pagination-展示--many-pages",
+          "design-system-components-pagination-展示--states"
+        ],
+        "設計規格": [
+          "design-system-components-pagination-設計規格--overview",
+          "design-system-components-pagination-設計規格--inspector",
+          "design-system-components-pagination-設計規格--color-matrix",
+          "design-system-components-pagination-設計規格--state-behavior",
+          "design-system-components-pagination-設計規格--accessibility"
+        ],
+        "設計原則": [
+          "design-system-components-pagination-設計原則--usage-guidance"
         ]
       },
       "openSnapshotIds": [],
@@ -1679,6 +1702,6 @@
       "exception": null
     }
   },
-  "totalComponents": 62,
-  "totalStories": 909
+  "totalComponents": 63,
+  "totalStories": 920
 }

@@ -125,15 +125,11 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 | `purple` | `--color-purple-*` |
 | `magenta` | `--color-magenta-*` |
 
-所有有色 variant 直接使用 primitive token（`--color-blue-*` 等），不使用 semantic token（`--primary`、`--error`）。Tag 的「blue」代表藍色本身，不代表「主要操作」語義；「red」代表紅色（品牌紅 hue 25），**不代表 `--error`**。
-
-**注意**：`red` 與語意 `--error` 完全無關 —— `--error` = `--color-deep-orange-6`（hue 38），而 `red` variant = `--color-red-*`（品牌紅 hue 25）。三者（`red` / `deep-orange` / `--error`）是各自獨立的色相 / 語意 token，**無映射關係**。2026-06-04 修正原「red variant 接 deep-orange」offset。
+所有有色 variant 直接使用 primitive token（`--color-blue-*` 等），不使用 semantic token（`--primary`、`--error`）。Tag 的「blue」代表藍色本身，不代表「主要操作」語義；`red` = 品牌紅 hue 25，與語意 `--error`（= `--color-deep-orange-6`，hue 38）**完全無關**——`red` / `deep-orange` / `--error` 是各自獨立的色相 / 語意 token，**無映射關係**（2026-06-04 修正原「red variant 接 deep-orange」offset）。
 
 ### 文字色
 
-所有有色 variant 的文字一律使用 primitive step-7（`--color-{hue}-7`），優先辨識度。Primitives 的相對色階公式在 dark mode 自動把 step-7 解析為高對比方向，確保文字在 subtle 底色上始終可讀。Tag 以呈現資訊為主，小面積色塊文字需要更高對比才能舒適閱讀。neutral variant 用 `text-foreground`（不適用此規則）。
-
-見 `color.spec.md` 的「文字色 Step 原則」。
+所有有色 variant 文字一律 primitive step-7（`--color-{hue}-7`）——小面積色塊文字需高對比才可讀，primitives 相對色階公式在 dark mode 自動把 step-7 解析為高對比方向。neutral variant 用 `text-foreground`（不適用此規則）。見 `color.spec.md`「文字色 Step 原則」。
 
 ---
 
@@ -184,24 +180,11 @@ Dismiss 是 Inline Action，但 icon 色繼承 Tag 文字色（非 `fg-muted`）
 
 #### 為什麼 Tag 同時用 primitive（靜態色）和 semantic（互動色）
 
-這是 **有意的職責分離**，非 code smell：
-
-| 概念 | 為什麼住這層 |
-|------|------------|
-| 靜態色（subtle bg、text、solid bg）→ **primitive** | 不需要 mode 翻轉知識——primitives 公式翻轉已自動處理 step-1 alpha、step-7 對比方向 |
-| 互動色（hover、active）→ **semantic `--{hue}-hover/active`** | 需要保證「hover 永遠較亮、active 永遠較暗」，dark mode swap 必須住 semantic 層 |
-
-兩個概念本來就不該綁同一層。Tailwind 也是同樣分離：`bg-blue-500`（靜態 scale step）vs `hover:bg-blue-600 dark:hover:bg-blue-400`（互動需 consumer 處理 mode）。差別只在於我們把 mode swap 封裝進 token，consumer 不需自己寫 dark variant。
-
-詳細流派討論見 `color.spec.md` 的「架構流派定位」段落。
+**有意的職責分離**，非 code smell：靜態色（subtle bg、text、solid bg）住 **primitive**——primitives 公式已自動處理 dark mode 翻轉（step-1 alpha、step-7 對比方向）；互動色（hover、active）住 **semantic `--{hue}-hover/active`**——「hover 永遠較亮、active 永遠較暗」的 mode swap 必須住 semantic 層。Tailwind 同款分離（`bg-blue-500` 靜態 vs `hover:bg-blue-600 dark:hover:bg-blue-400` 互動），差別在我們把 mode swap 封裝進 token，consumer 不需自寫 dark variant。詳細流派討論見 `color.spec.md`「架構流派定位」。
 
 #### `--{hue}-hover/active` 的定位
 
-Semantic 互動 token，從 brand color (`--primary-hover`) 延伸到所有作為 bg 的色相。**刻意只有 hover/active 兩個 token**——base/subtle/text 用 primitive。沒有 `--blue` base 或 `--blue-subtle`，避免重新引入完整 categorical 層。
-
-#### Neutral 例外
-
-neutral solid 的 bg 是 `--color-neutral-9`，在 dark mode 反轉（近黑 → 近白），bg 本身會跨 mode 變色。所以 overlay 不能用 `--{hue}-hover/active`（這些針對「bg 不變」的飽和色），改用 `--inverse-neutral-hover` / `--inverse-neutral-active`（內部處理 mode 鏡射 swap）。
+Semantic 互動 token，從 brand color (`--primary-hover`) 延伸到所有作為 bg 的色相。**刻意只有 hover/active 兩個 token**——base/subtle/text 用 primitive，沒有 `--blue` base 或 `--blue-subtle`，避免重新引入完整 categorical 層。**Neutral 例外**：neutral solid bg = `--color-neutral-9`，dark mode 反轉（近黑 → 近白）bg 本身跨 mode 變色，不能用針對「bg 不變」飽和色的 `--{hue}-hover/active`，改用 `--inverse-neutral-hover` / `--inverse-neutral-active`（內部處理 mode 鏡射 swap）。
 
 Inline Action 的其他規則（尺寸、hover 背景 pattern）不變。
 
@@ -240,27 +223,17 @@ Inline Action 的其他規則（尺寸、hover 背景 pattern）不變。
 | `solid` | `boolean` | 深底配對前景模式（step-6 背景；yellow/amber/orange/lime 用深字，其餘白字），預設 false |
 | `unbounded` | `boolean` | 預設 false = 寬度 cap 160px;true = 寬度交給 parent constrain（cell-as-input narrow cell 場景），詳「邊界案例」 |
 
-## 圓角
+## 圓角與間距
 
-統一 `rounded-md`（4px）。
-
-## Tag 間距
-
-tag 與 tag 之間：`gap-1`（4px）。
-
-## 包含 Tag 的 Field
-
-Field 內包含 Tag 時，Field 的 padding 改為 `(field-height - tag-height) / 2`，確保 tag 四邊等距。
+- 圓角：統一 `rounded-md`（4px）
+- Tag 與 Tag 之間：`gap-1`（4px）
+- Field 內包含 Tag 時，Field 的 padding 改為 `(field-height - tag-height) / 2`，確保 tag 四邊等距
 
 ---
 
 ## Dismiss（Inline Action）
 
-傳入 `onRemove` callback 時，Tag 自動渲染 remove 按鈕。消費端不需要自行建構 remove 按鈕或知道 inline action 的尺寸規格。
-
-尺寸 / 互動規則共用 SSOT 見 `../../patterns/element-anatomy/inline-action.spec.md`(獨立 SSOT,2026-04-24 自 item-anatomy 抽出)。
-
-**Icon 色彩特例（colored host)**：Tag dismiss icon **繼承 Tag 文字色**（非 `fg-muted`）— Tag 屬「colored host」分類。完整兩支規則（neutral host vs colored host）見上述 item-anatomy.spec.md SSOT。詳細每 variant 的 icon 色 + hover 背景見上面「Dismiss 行為（Inline Action 客製）」段。
+傳入 `onRemove` callback 時，Tag 自動渲染 remove 按鈕，消費端不需自行建構或知道 inline action 尺寸規格。尺寸 / 互動規則 SSOT 見 `../../patterns/element-anatomy/inline-action.spec.md`（含 neutral host vs colored host 兩支規則；Tag 屬 colored host——dismiss icon 繼承 Tag 文字色而非 `fg-muted`）；每 variant 的 icon 色 + hover 背景見上「Dismiss 行為（Inline Action 客製）」段。
 
 | Tag size | Icon | Hover 背景 | 上下呼吸空間 |
 |---|---|---|---|
@@ -289,12 +262,7 @@ Field 內包含 Tag 時，Field 的 padding 改為 `(field-height - tag-height) 
 
 ## 為何無 StateBehavior
 
-Tag 是**純顯示 indicator**(非互動 — 見「與 Button 的差異」段),本身**無互動狀態**:
-
-- 無 hover / focus / active / selected / disabled——Tag 是 Family 3 indicator variant(非 Pill button)。若要 hover / selected 語意,改用 `Chip`(可互動版本)。
-- 僅有的「行為」是 remove(`onRemove` callback 觸發,Tag 本身不管 remove 動畫),close icon 的 hover 狀態屬 Inline Action pattern(`inline-action.spec.md` 獨立 SSOT),非 Tag 自有。
-
-對應 anatomy story:保留 `Overview` + `Inspector` + `ColorMatrix`(variant solid/subtle) + `SizeMatrix`。互動狀態 → 改用 Chip(見「與 Button 的差異」段)。
+Tag 是**純顯示 indicator**(Family 3 indicator variant,見「與 Button 的差異」段),無 hover / focus / active / selected / disabled 互動狀態——要互動語意改用 `Chip`。僅有的「行為」是 remove(`onRemove` callback,Tag 不管 remove 動畫),close icon 的 hover 屬 Inline Action pattern(`inline-action.spec.md` SSOT),非 Tag 自有。對應 anatomy story:`Overview` + `Inspector` + `ColorMatrix`(solid/subtle)+ `SizeMatrix`,無 StateBehavior。
 
 ---
 
@@ -304,7 +272,7 @@ Tag 是**純視覺 indicator**(非互動 control,互動版本是 Chip),預設 AR
 
 - **靜態 Tag**(無 `onRemove`):render 為 `<div data-tag-root>`(無 role、`inline-flex`,SR 等價於無語意 generic container,視覺上為 inline-level 跟隨 inline flow)。若 Tag 表達狀態語意(「進行中」「已逾期」),consumer 應在父 region 用 `aria-label` 或視覺 prefix(icon)讓 SR 理解 context
 - **Removable Tag**(`onRemove` 存在):inline X close 走 `<ItemInlineActionButton icon={X} size="md" aria-label="移除 {tagLabel}" />`(item-anatomy SSOT 的原生 `<button>`,非 `Button` 元件)— 對齊 inline-action canonical(`patterns/element-anatomy/inline-action.spec.md`)
-- **Keyboard**:靜態 Tag 不取得 focus(無互動);dismissible 的 X 走原生 button 鍵盤(Tab → focus → Enter/Space → dismiss)
+- **Keyboard**:靜態 Tag 不取得 focus(無互動);**例外:截斷時條件性 `tabIndex=0`**(2026-07-06 拍板)——全文 tooltip 需鍵盤可達,APG Tooltip pattern 原文「popup 在元素收到鍵盤焦點或 hover 時顯示」= trigger 可 focus 是 W3C 官方前提;Radix Tooltip focus-open 自動生效,未截斷不入 tab 序。dismissible 的 X 走原生 button 鍵盤(Tab → focus → Enter/Space → dismiss)
 - **Color-only 語意警告**:Tag 用色相區分狀態時必有文字 label 或 prefix icon(色盲 user 友好);對齊 WCAG 1.4.1「不僅靠顏色傳達」
 - **驗證**:Storybook a11y addon panel 0 critical violation;WCAG AA contrast ≥ 4.5:1(text)/ 3:1(icon)
 

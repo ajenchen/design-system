@@ -200,6 +200,12 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     [selectedValues]
   )
 
+  // 2026-07-05 P2:單選已選 option — 供 cmdk defaultValue 定 cursor 起點(見下方 <Command>)
+  const selectedOption = React.useMemo(
+    () => (!multiple ? options.find((o) => o.value === selectedValues[0]) : undefined),
+    [multiple, options, selectedValues]
+  )
+
   const handleSelect = React.useCallback(
     (optionValue: string) => {
       if (multiple) {
@@ -339,7 +345,18 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           }
         }}
       >
-        <Command shouldFilter={searchable} className="bg-transparent">
+        <Command
+          shouldFilter={searchable}
+          // 2026-07-06 cursor 起點修:單選已有值時 cmdk virtual focus 落在已選項而非第一項。
+          // cmdk 1.1.1 初始 state 取 defaultValue、item mount 的 selectFirstItem 有
+          // `state.value ||` guard 不覆蓋(dist source 驗證);Popover 關閉即 unmount(無
+          // forceMount)→ 每次開啟 remount 重新生效。需搭配下方 CommandItem value={opt.value}。
+          defaultValue={selectedOption?.value}
+          // 2026-07-06 A11y:combobox accessible name — cmdk 永遠渲 sr-only <label htmlFor={inputId}>,
+          // 僅 searchable(真的有 input)時傳,避免 orphan label 指向不存在的 input id。
+          label={searchable ? searchPlaceholder : undefined}
+          className="bg-transparent"
+        >
           {searchable && (
             <div className={cn(
               'flex items-center gap-2 px-3 py-1 border-b border-divider',
@@ -368,7 +385,13 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
               起 placeholder 視覺;有 results 時 CommandList 自然 fit content。 */}
           {/* aria-busy(2026-07-04):loading 時標注 listbox 忙碌——兌現 select.spec.md「Loading」段
               「+ aria-busy」承諾(cmdk List 本身即 role="listbox" 容器,wrapper forward props)。 */}
-          <CommandList className="relative" aria-busy={loading || undefined}>
+          <CommandList
+            className="relative"
+            aria-busy={loading || undefined}
+            // 2026-07-06 A11y:cmdk List 的 aria-label 由其 `label` prop 渲染(內部 spread 後 override,
+            // 直接傳 aria-label 會被 cmdk default "Suggestions" 蓋掉 silent 失效)— 必走 label prop。
+            label="選項" // i18n-allow: DS default; listbox accessible name
+          >
             <CommandEmpty
               className="flex items-center justify-center"
               style={{ minHeight: getMenuListMinHeight(size, minRows) }}
@@ -381,15 +404,23 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             {groupedOptions.map((group, gi) => (
               <React.Fragment key={group.key}>
                 {gi > 0 && <CommandSeparator />}
-                <CommandGroup className="p-0 py-2">
-                  {group.label && (
-                    <MenuItem size={size} header>{group.label}</MenuItem>
-                  )}
+                <CommandGroup
+                  className="p-0 py-2 [&_[cmdk-group-heading]]:p-0"
+                  // 2026-07-06 A11y:群組標題走 cmdk `heading`(自動產 cmdk-group-heading id,選項容器
+                  // role="group" + aria-labelledby 指向之)取代手刻 child row(原本 AT 不可感知;
+                  // aria-label fallback 對 role="presentation" group 無效)。[&_[cmdk-group-heading]]:p-0
+                  // 中和 command.tsx base 的 px-3 py-1.5(tailwind-merge p-0 勝);字級 / 顏色由 MenuItem
+                  // header 自帶(text-body leading-compact + font-medium + text-fg-muted),視覺不變。
+                  heading={group.label ? <MenuItem size={size} header>{group.label}</MenuItem> : undefined}
+                >
                   {group.options.map((opt) => (
                     <CommandItem
                       key={opt.value}
-                      value={opt.label}
-                      keywords={opt.description ? [opt.description] : undefined}
+                      // 2026-07-06 識別值修:cmdk 以 value 當 item identity + selection state。原用
+                      // opt.label → 重複 label 時雙亮 + Enter 選錯;改唯一的 opt.value,label 移入
+                      // keywords 保搜尋照樣命中(cmdk filter 對 value + keywords 計分)。
+                      value={opt.value}
+                      keywords={opt.description ? [opt.label, opt.description] : [opt.label]}
                       disabled={opt.disabled}
                       onSelect={() => handleSelect(opt.value)}
                       // 2026-07-05 D4 P0 修:原 data-[selected=true]:bg-transparent 蓋掉 command.tsx base
@@ -434,7 +465,11 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                 <CommandSeparator />
                 <CommandGroup className="p-0 py-2">
                   <CommandItem
-                    value={search}
+                    // 2026-07-06:`__create__` 前綴防 identity 撞名 — 選項 row 改用 opt.value 識別後,
+                    // search 恰等於某 option.value 時裸 search 會與該 row 同 value(cmdk 雙亮 + Enter
+                    // 選錯)。value 含 search 子字串,cmdk filter 照樣命中;onSelect closure 讀 search
+                    // 不受影響。
+                    value={`__create__${search}`}
                     onSelect={() => {
                       onCreate?.(search.trim())
                       setSearch('')
@@ -507,9 +542,11 @@ export const selectMenuMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'selected' = 單選 option 持續選中(bg-neutral-selected);'active' 保留 — cmdk virtual-focus on
+  // selected 走 bg-neutral-selected-active(active 階 token;2026-07-07 詞彙統一補修)。
+  states: ['default', 'hover', 'active', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-surface-raised', 'bg-transparent'],
+    bg: ['bg-neutral-selected', 'bg-neutral-selected-active', 'bg-surface-raised', 'bg-transparent'],
     fg: ['text-fg-muted'],
     ring: [],
   },
@@ -522,7 +559,7 @@ export const selectMenuMeta = {
  * 只能 Esc。修法 = APG combobox-with-list:trigger input 把三鍵 re-dispatch 給 cmdk root
  * (native KeyboardEvent bubbles 經 React root delegation 觸發 cmdk synthetic handler)。
  * Home/End 刻意不轉送(文字輸入的 caret 語意優先,對齊 MUI/Ant Autocomplete)。
- * 已知殘項:aria-activedescendant 尚未綁回 trigger input(SR 播報 active option 名),列 D4 P1 backlog。
+ * aria-activedescendant 綁回 trigger input → 見下方 useActiveDescendant(2026-07-05 D4 補齊)。
  */
 export function forwardKeyToListbox(contentId: string | undefined, e: React.KeyboardEvent): boolean {
   if (!contentId) return false
@@ -532,6 +569,43 @@ export function forwardKeyToListbox(contentId: string | undefined, e: React.Keyb
   e.preventDefault()
   root.dispatchEvent(new KeyboardEvent('keydown', { key: e.key, bubbles: true, cancelable: true }))
   return true
+}
+
+/**
+ * 2026-07-05 D4 補齊(APG combobox aria-activedescendant):追蹤 cmdk 目前 virtual-focus item
+ * 的 DOM id,供 trigger 端搜尋 input 綁 `aria-activedescendant` —— SR 才會在方向鍵導覽 /
+ * 打字過濾時播報 active option 名。機制:trigger 與 portal 內 cmdk 分屬不同 DOM 子樹,cmdk
+ * 只把 active id 綁在自己的 Command.Input / List(cmdk source:item 自帶 auto-generated id +
+ * `data-selected="true"` 標記 virtual focus)→ trigger 端用 MutationObserver 監聽 popover 容器
+ * (contentId = PopoverContent id)內 `data-selected` 屬性變化 + childList(打字過濾 re-render
+ * 換 item 節點),單一機制涵蓋全部更新路徑:開啟初始 auto-highlight / forwardKeyToListbox
+ * 方向鍵轉送 / 搜尋過濾後 cmdk 自動移 cursor / pointer hover。
+ * 關閉時清 undefined —— ARIA 要求 id 必指向存在於 DOM 的節點,不可留 stale id。
+ */
+export function useActiveDescendant(contentId: string | undefined, open: boolean): string | undefined {
+  const [activeId, setActiveId] = React.useState<string | undefined>(undefined)
+  React.useEffect(() => {
+    if (!open || !contentId) {
+      setActiveId(undefined)
+      return
+    }
+    // PopoverContent 與 trigger 同一個 React commit mount(open state 同批 render)→ effect 跑時已在 DOM
+    const container = document.getElementById(contentId)
+    if (!container) return
+    const read = () => {
+      setActiveId(container.querySelector<HTMLElement>('[cmdk-item][data-selected="true"]')?.id || undefined)
+    }
+    // 初始補讀:MutationObserver 只看「觀察開始後」的變化;cmdk 初始 auto-highlight(layout effect
+    // 排程)可能已 commit → rAF 讀當下狀態兜底,與 observer 互補、誰先到都不漏。
+    const raf = requestAnimationFrame(read)
+    const observer = new MutationObserver(read)
+    observer.observe(container, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-selected'] })
+    return () => {
+      cancelAnimationFrame(raf)
+      observer.disconnect()
+    }
+  }, [open, contentId])
+  return activeId
 }
 
 export { SelectMenu }

@@ -462,7 +462,8 @@ export const peoplePickerMeta = {
   family: 4,
   variants: {},
   sizes: {},
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'active' 移除 — trigger 走 Field chrome、menu 走 MenuItem,皆無自有按壓視覺(2026-07-07 詞彙統一 DS-wide 按壓訊號盤點:檔內 0 active: utility / 0 *-active token)。
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: [],
     fg: ['text-fg-disabled', 'text-fg-muted'],

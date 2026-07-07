@@ -15,11 +15,15 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { Empty } from '@/design-system/components/Empty/empty'
+// L5 分頁(2026-07-06):Pagination = 分頁完整功能 SSOT(頁碼 + showTotal + 每頁筆數選單
+// 全 own 在 Pagination;共用模式,Ant Table 消費 Pagination 同派)—— DataTable 只轉發 config
+import { Pagination } from '@/design-system/components/Pagination/pagination'
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   getExpandedRowModel,
+  getPaginationRowModel,
   flexRender,
   type ColumnDef,
   type SortingState,
@@ -73,6 +77,12 @@ export interface DataTableProps<TData>
   data: TData[]
   size?: TableSize
   autoRowHeight?: boolean
+  /**
+   * 容器高度。預設 '400px'(body 內捲動);'auto' = 自然高度(hug rows);'100%' = fill parent。
+   * L5 分頁(2026-07-06):啟用 `pagination` 且未顯式傳 height 時預設改 'auto' —— 分頁的
+   * 導覽通道是頁碼,再疊 body 內捲動 = 雙重導覽(一頁 20 筆只露 10 筆);對齊 Ant Table
+   * 無預設高度罩、`scroll.y` 顯式選配的慣例。顯式傳 height 照舊尊重(分頁 + 頁內捲動可並用)。
+   */
   height?: string
   overscan?: number
   emptyState?: React.ReactNode
@@ -240,6 +250,29 @@ export interface DataTableProps<TData>
    * @param position 'before' | 'after'
    */
   onColumnReorder?: (sourceId: string, targetId: string, position: 'before' | 'after') => void
+  /**
+   * L5 分頁(2026-07-06):`true` 或 config 物件啟用——內部接 TanStack `getPaginationRowModel`,
+   * 表格下方渲染分頁列(消費 `<Pagination>` 獨立元件,間距 tight、頁碼靠右)。
+   * 啟用時虛擬滾動自動關閉(TanStack 官方:互斥替代策略)。v1 = client-side only。
+   * 詳 data-table.spec.md「L5:分頁」段。
+   */
+  pagination?: boolean | DataTablePaginationOptions
+}
+
+/** L5 分頁 config(頁碼 1-based 對外,對齊 Pagination / Ant;詳 data-table.spec.md「L5:分頁」段) */
+export interface DataTablePaginationOptions {
+  /** 每頁筆數(預設 20) */
+  pageSize?: number
+  /** 每頁筆數選項;傳了才渲染「每頁 N 筆」Select(消費既有 Select size="sm") */
+  pageSizeOptions?: number[]
+  /** 左側「共 N 筆」文字(opt-in,= Ant showTotal 邏輯;數源 = filter 後全集 getPrePaginationRowModel,非 selection all-mode 的 totalCount) */
+  showTotal?: boolean
+  /** 當前頁(1-based,controlled;不傳 = uncontrolled) */
+  page?: number
+  /** uncontrolled 初始頁(1-based,預設 1) */
+  defaultPage?: number
+  onPageChange?: (page: number) => void
+  onPageSizeChange?: (pageSize: number) => void
 }
 
 // ── Cell Rendering(Phase C 2026-05-05 — type-keyed registry SSOT)─────────────
@@ -885,7 +918,7 @@ const MemoCellSlot = React.memo(function MemoCellSlot({
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 function DataTableInner<TData>(
   {
-    columns, data, size = 'md', autoRowHeight = false, height = '400px',
+    columns, data, size = 'md', autoRowHeight = false, height: heightProp,
     overscan = 5, emptyState, enableHover = true, bordered,
     estimateRowHeight, tableOptions, rowActions, cellErrors,
     pinnedLeftColumns, pinnedRightColumns, inlineEdit = false,
@@ -906,10 +939,15 @@ function DataTableInner<TData>(
     experimentalSpreadsheetOverlay = false,
     experimentalActiveEditorController = false,
     spreadsheetMode = false,
+    pagination,
     className, ...props
   }: DataTableProps<TData>,
   ref: React.ForwardedRef<HTMLDivElement>
 ) {
+  // L5 分頁 × height 預設(2026-07-06):未顯式傳 height 時 —— 分頁 = 'auto' 自然高度
+  // (頁碼是唯一導覽通道,不疊 body 內捲動;Ant Table 無預設高度罩慣例),
+  // 未分頁 = 既有 '400px' 預設不變。顯式傳 height 一律尊重(prop docblock 有完整規則)。
+  const height = heightProp ?? (pagination ? 'auto' : '400px')
   // ── L4 Inline edit state ──
   // editingCellId: `${rowId}__${columnId}` 標識當前進 edit mode 的 cell;null = 無
   const [editingCellId, setEditingCellId] = React.useState<string | null>(null)
@@ -1100,6 +1138,20 @@ function DataTableInner<TData>(
   // 注意:`...tableOptions` 必 spread 在 `state` 前,否則 user 傳的 tableOptions 會
   // 整個 override 掉我們組的 state(含 __select__ 自動 pinning + columnOrder 注入)。
   // 之前 bug:checkbox column 跑到右邊 = 此處 spread 順序錯。
+  // ── L5 分頁 state(2026-07-06)──────────────────────────────────────────────
+  // 共用模式(user 拍板):<Pagination> 獨立元件為頁碼視覺 SSOT,DataTable 內建接 TanStack
+  // 分頁模型消費它(Ant Table 消費 Pagination / Atlassian DynamicTable rowsPerPage / MUI
+  // DataGrid 同派;shadcn data-table 教學同款「分頁 render 在元件 JSX 內」)。
+  const paginationEnabled = !!pagination
+  const paginationOpts = typeof pagination === 'object' ? pagination : undefined
+  const [pageSizeState, setPageSizeState] = React.useState(paginationOpts?.pageSize ?? 20)
+  // 1-based 對外(對齊 Pagination / Ant);餵 TanStack state 時換算 0-based
+  const [currentPage, setCurrentPage] = useControllable<number>({
+    value: paginationOpts?.page,
+    defaultValue: paginationOpts?.defaultPage ?? 1,
+    onChange: paginationOpts?.onPageChange,
+  })
+
   const table = useReactTable({
     ...tableOptions,
     data, columns: columnsWithSelection,
@@ -1109,6 +1161,9 @@ function DataTableInner<TData>(
       // columnPinning + columnOrder 在 user state 後 override,確保 __select__ 永遠左
       columnPinning: { left: effectivePinnedLeft, right: pinnedRightColumns ?? [] },
       ...(effectiveColumnOrder ? { columnOrder: effectiveColumnOrder } : {}),
+      // L5 分頁:必在 ...tableOptions?.state 之後 spread(同 columnPinning override 理由——
+      // 防 user state 蓋掉內建接線);頁碼變更由 <Pagination onPageChange> 驅動,不走 TanStack 內部 setter
+      ...(paginationEnabled ? { pagination: { pageIndex: currentPage - 1, pageSize: pageSizeState } } : {}),
     },
     enableMultiSort,
     // **#1 fix(2026-05-04)**:chain user `tableOptions.onSortingChange`(spread 在前被 override = 之前 bug)
@@ -1126,6 +1181,8 @@ function DataTableInner<TData>(
     getSortedRowModel: getSortedRowModel(),
     // L4 nested rows:啟用 expanded row model(consumer 透過 tableOptions.getSubRows + state.expanded forward)
     getExpandedRowModel: getExpandedRowModel(),
+    // L5 分頁:條件掛載(TanStack 官方:pagination 與 virtualization 為互斥替代策略)
+    ...(paginationEnabled ? { getPaginationRowModel: getPaginationRowModel() } : {}),
     getRowId: getRowId,
     // 2026-05-06 v14 column resize:`onChange` mode → drag 中 column 即時跟動 cursor(world-class
     // canonical:TanStack docs / AG Grid / Excel / Google Sheets 全部 live resize)。前 v13.2
@@ -1140,10 +1197,20 @@ function DataTableInner<TData>(
   })
 
   // v13.2:onColumnResize callback 透過 useEffect 觀測 columnSizing state 變動 fire(uncontrolled state pattern)
+  // 2026-07-06 D3 fix:兌現 prop docblock「commit-on-pointerup,非 live」契約 —
+  // columnResizeMode:'onChange' 讓 drag 中 columnSizing 每 mousemove 變一次(視覺即時跟動,
+  // 保留),原 effect 無 gate → callback 每 mousemove fire 一次;docblock 明文建議 consumer
+  // 在此 callback 做 width persistence(localStorage / URL / API)= 每 mousemove I/O。
+  // 改以 TanStack columnSizingInfo.isResizingColumn 為訊號:drag 進行中不 fire、也不推進
+  // snapshot(保留 drag 前基準);pointerup(isResizingColumn 轉 false)才 diff snapshot,
+  // fire 一次最終寬度。非 drag 路徑(「自動調整寬度」menu 的 setColumnSizing)不經
+  // isResizingColumn,行為不變。
   const columnSizingState = table.getState().columnSizing
+  const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn
   const prevColumnSizingRef = React.useRef(columnSizingState)
   React.useEffect(() => {
     if (!onColumnResize) return
+    if (isResizingColumn) return
     const prev = prevColumnSizingRef.current
     Object.keys(columnSizingState).forEach(id => {
       if (columnSizingState[id] !== prev[id]) {
@@ -1151,10 +1218,17 @@ function DataTableInner<TData>(
       }
     })
     prevColumnSizingRef.current = columnSizingState
-  }, [columnSizingState, onColumnResize])
+  }, [columnSizingState, isResizingColumn, onColumnResize])
 
   const { rows } = table.getRowModel()
   const isEmpty = rows.length === 0
+
+  // L5 分頁:filter / data 縮小時 TanStack 不自動 clamp 當前頁(會停在空頁);對齊 MUI X 自動 clamp
+  const pageCount = paginationEnabled ? table.getPageCount() : 0
+  React.useEffect(() => {
+    if (!paginationEnabled) return
+    if (pageCount > 0 && currentPage > pageCount) setCurrentPage(pageCount)
+  }, [paginationEnabled, pageCount, currentPage, setCurrentPage])
   const hasHeightConstraint = height !== 'auto'
   // Fill-parent mode:height='100%' / '100vh' / 'fill' 等百分比 / 視口語義 → outer flex column + body flex-1 撐滿。
   // 固定 px/rem 仍維持 maxHeight cap 行為(資料少 = 內容高度,資料多 = 上限後 scroll)— 對齊既有 stories 預期。
@@ -1166,7 +1240,8 @@ function DataTableInner<TData>(
   // direct render 完全 bypass 此 race,且小資料下虛擬化沒效益(浪費 reflow)。
   // 對齊 AG Grid `suppressVirtualization` / TanStack Table virtualization-when-needed idiom。
   const VIRTUAL_THRESHOLD = 30
-  const useVirtual = hasHeightConstraint && !isEmpty && rows.length > VIRTUAL_THRESHOLD
+  // L5 分頁互斥:分頁後每頁 rows ≤ pageSize,虛擬化無效益(TanStack 官方:兩者為互斥替代策略)
+  const useVirtual = !paginationEnabled && hasHeightConstraint && !isEmpty && rows.length > VIRTUAL_THRESHOLD
   const hasRowActions = !!rowActions
 
   // Refs
@@ -1218,6 +1293,8 @@ function DataTableInner<TData>(
   // 後續 measureElement 修正到 6×40 = 240,差 24px 視覺看起來像「table 慢慢長高」。fix = estimate
   // 預設 size-aware 對齊 token(見下方 estimateRowHeight default 計算)。
   const [bodyMaxHeight, setBodyMaxHeight] = React.useState<number | null>(null)
+  // L5 分頁 × isFillHeight(2026-07-07 C12):bar 高度量測用 — compute() 需扣分頁列 footprint
+  const paginationBarRef = React.useRef<HTMLDivElement | null>(null)
   React.useLayoutEffect(() => {
     if (!isFillHeight) { setBodyMaxHeight(null); return }
     // **R4 真根因 fix(2026-05-09 v2 — codex Q3.6 root cause + Q3.9 reproduce verified)**:
@@ -1260,7 +1337,15 @@ function DataTableInner<TData>(
                 ?? tableRef.current.getBoundingClientRect().height
       const headerEl = tableRef.current.firstElementChild as HTMLElement | null
       const headerH = headerEl?.getBoundingClientRect().height ?? 0
-      const next = Math.max(0, slotH - headerH)
+      // L5 分頁 × isFillHeight(2026-07-07 C12):啟用分頁時 parent slot = composedContent
+      // wrapper(含分頁列 + tight gap),body 可用高必扣分頁列 footprint,否則 body 撐滿
+      // 把分頁列擠出 / 被 overflow 裁掉
+      const barEl = paginationBarRef.current
+      const barFootprint = barEl
+        ? barEl.getBoundingClientRect().height +
+          (parseFloat(getComputedStyle(barEl.parentElement as Element).rowGap) || 0)
+        : 0
+      const next = Math.max(0, slotH - headerH - barFootprint)
       // Diff guard < 4px(濾 micro-step,real resize δ 必 ≫ 4px)
       if (lastValue != null && Math.abs(next - lastValue) < 4) return
       lastValue = next
@@ -2006,8 +2091,11 @@ function DataTableInner<TData>(
         return
       }
     },
+    // D3 dep-hygiene fix(2026-07-06):handler 內(portal edit Enter 分支)呼叫的是 canEditCell,
+    // 非 isCellEditable — 原 deps 列 isCellEditable 是靠 canEditCell identity-stable 才無實害的
+    // stale-closure 地雷;改列真實依賴 canEditCell(其 useCallback deps 已含 isCellEditable + isCellDisabled)。
     [enabled, mode, hasAnySelection, selectableVisibleIds, setSelection,
-     spreadsheetMode, selectedCellId, editingCellId, table, isCellEditable]
+     spreadsheetMode, selectedCellId, editingCellId, table, canEditCell]
   )
 
   // ── Header cell ──
@@ -2390,7 +2478,10 @@ function DataTableInner<TData>(
           // 找 source row(避免 multi-region 場景挑錯 region 的 row 當 ghost)
           data-row-drag-source={enableRowDrag && isPrimaryRegion ? 'true' : undefined}
           role="row"
-          aria-rowindex={idx + 2}
+          // L5 分頁(2026-07-07 C13):rowindex 加分頁 offset — aria-rowcount 是全集,
+          // 第 2 頁起 index 必須接續(否則 AT 讀到「第 129 列中的第 2 列」錯位);
+          // 不可用 row.index(sort/filter 後是原始資料序,非視覺序)
+          aria-rowindex={(paginationEnabled ? (currentPage - 1) * pageSizeState : 0) + idx + 2}
           className={cn(
             'group/row flex relative',
             // H1 fix(2026-05-10):effectiveAutoRow 覆 global autoRowHeight,per-row 若有 cell error
@@ -2508,7 +2599,8 @@ function DataTableInner<TData>(
       // 行為:**永遠 hug rows**,只在被約束時才 cap + body shrink + V scroll。
       // 簡單需求:有約束 → rows 沒超就 hug;超就 cap+scroll;RWD 同理。
       style={isFillHeight ? { maxHeight: height } : undefined}
-      role="table" aria-rowcount={rows.length + 1}
+      // L5 分頁:aria-rowcount = 全集筆數非當頁(ARIA 規範;getPrePaginationRowModel = filter 後全集)
+      role="table" aria-rowcount={(paginationEnabled ? table.getPrePaginationRowModel().rows.length : rows.length) + 1}
       // Phase 9 Issue 12 fix(2026-05-10 codex 抓):**single tabIndex prop**,合併 selection
       // 跟 spreadsheet 兩 path。React 在 dup props 只 keep last 是 silent regression risk。
       tabIndex={enabled || spreadsheetMode ? 0 : undefined}
@@ -2984,8 +3076,11 @@ function DataTableInner<TData>(
         const meta = table.getColumn(id)?.columnDef.meta as { locked?: boolean } | undefined
         return !meta?.locked
       })
+    // D3 dep-hygiene fix(2026-07-06):補 columnVisibility — memo 讀 table.getVisibleLeafColumns()
+    // (live,受 visibility 影響)原 deps 漏列,隱藏欄位後清單 stale(隱藏欄仍在 reorderable
+    // 列表 → handleDragOver 的 drop side 計算錯位)。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table, columnsWithSelection, tableOptions?.state?.columnOrder])
+  }, [table, columnsWithSelection, tableOptions?.state?.columnOrder, columnVisibility])
   // Sync ref(handleDragOver closure 抓不到最新 reorderableColumnIds)
   React.useEffect(() => { reorderableColumnIdsRef.current = reorderableColumnIds }, [reorderableColumnIds])
 
@@ -3059,6 +3154,43 @@ function DataTableInner<TData>(
     return sameParentCollisionDetection(args)
   }, [sameParentCollisionDetection])
 
+  // ── L5 分頁列(2026-07-06,詳 data-table.spec.md「L5:分頁」段)────────────────
+  // 間距 tight = layoutSpace spec 規則 3「跨範疇 functional 交互」;頁碼靠右(shadcn justify-end /
+  // Ant Table bottomEnd / MUI / Carbon 4 家實證,左側空也靠右);「共 N 筆」數源 = filter 後全集
+  // getPrePaginationRowModel(≠ selection all-mode 的 totalCount prop,語意不同)。
+  // 2026-07-06 user 拍板:「Pagination 元件本身提供完整功能(showTotal / 每頁筆數)= SSOT,
+  // Table 按一致定義套用」—— 分頁列的資訊/選單/「資訊左、操作右」layout 全部 own 在
+  // <Pagination> 完整形態;DataTable 只轉發 config + own TanStack state(controlled 消費:
+  // page/pageSize 狀態在本層、定義在 Pagination)。
+  const totalRowCount = paginationEnabled ? table.getPrePaginationRowModel().rows.length : 0
+  const paginationBar = paginationEnabled && !isEmpty ? (
+    // 無條件 justify-end(2026-07-07 C16:原 paginationHasExtras 判斷式 = 平行重複 Pagination
+    // 內部 hasExtras 拼寫,未來加 extra 必 drift)——完整形態 Pagination 自帶 w-full
+    // justify-between,justify-end 對其為 no-op;純頁碼形態靠右 = 拍板 #6(shadcn justify-end /
+    // Ant Table bottomEnd / MUI / Carbon 4 家)。ref 供 isFillHeight bodyMaxHeight 扣 bar 高(C12)。
+    <div ref={paginationBarRef} className="flex justify-end">
+      <Pagination
+        total={totalRowCount}
+        page={currentPage}
+        onPageChange={setCurrentPage}
+        pageSize={pageSizeState}
+        onPageSizeChange={(next) => {
+          setPageSizeState(next)
+          paginationOpts?.onPageSizeChange?.(next)
+        }}
+        showTotal={paginationOpts?.showTotal}
+        pageSizeOptions={paginationOpts?.pageSizeOptions}
+      />
+    </div>
+  ) : null
+  // isFillHeight 並用:外層接管高度(h-full min-h-0),tableContent 的 maxHeight cap 在內層照常生效
+  const composedContent = paginationBar ? (
+    <div className={cn('flex flex-col gap-[var(--layout-space-tight)]', isFillHeight && 'h-full min-h-0')}>
+      {tableContent}
+      {paginationBar}
+    </div>
+  ) : tableContent
+
   const wrapWithDnd = (node: React.ReactNode): React.ReactNode => {
     if (!enableRowDrag && !enableColumnReorder) return node
     return (
@@ -3108,11 +3240,11 @@ function DataTableInner<TData>(
         value={selection.mode === 'include' ? (selection.ids[0] ?? '') : ''}
         onValueChange={(v) => v && setSelection({ mode: 'include', ids: [v] })}
       >
-        {wrapWithDnd(tableContent)}
+        {wrapWithDnd(composedContent)}
       </RadioGroupPrimitive.Root>
     )
   }
-  return wrapWithDnd(tableContent)
+  return wrapWithDnd(composedContent)
 }
 
 export const DataTable = React.forwardRef(DataTableInner) as <TData>(
@@ -3132,7 +3264,9 @@ export const dataTableMeta = {
   sizes: {
 
   },
-  states: ['default', 'hover', 'active', 'focus-visible', 'disabled'],
+  // 'active' 移除 — 全檔無 Tailwind 按壓 utility(rg `active:` 僅命中 dnd-kit `e.active` 物件),
+  // 無按壓專屬視覺態;row action / drag handle 的按壓屬內嵌 Button meta(2026-07-07 對抗稽核補修)。
+  states: ['default', 'hover', 'focus-visible', 'disabled'],
   tokens: {
     bg: ['bg-muted', 'bg-neutral-hover', 'bg-surface'],
     fg: ['text-fg-muted', 'text-fg-secondary', 'text-foreground'],

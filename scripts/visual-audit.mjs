@@ -329,6 +329,34 @@ async function auditScenario(browser, scenario, opts = {}) {
     deviceScaleFactor: opts.retina ? 2 : 1,
   })
   const page = await context.newPage()
+  // 凍結系統「日期」(2026-07-07 根治 VR 換日假 breach):日期元件內部 new Date()(Calendar today
+  // 圈 calendar.tsx:191 / DateGrid today bar)隨真實日期漂移 → baseline 每隔幾天假 breach
+  // (anchor:calendar-event-publishing 0.503%,diff 量 = today 標記移格固定像素)。
+  // ⚠️ 不用 page.clock.setFixedTime:它底層連 requestAnimationFrame 一起假化 → FileViewer
+  // fit-to-page 排在 rAF 的邏輯永不執行,卡 100% 未 fit(vr4 run 28843769570 40.3% breach 實錘)。
+  // addInitScript 只覆寫 Date / Date.now,rAF / timers / performance 全不動 — 對日期元件
+  // deterministic、對動畫排程零副作用;時間與 calendar stories 釘的 2026-07-15 一致。
+  await page.addInitScript(() => {
+    // 偏移時鐘(shifted clock,2026-07-07 三修定案):時間照常流動、「日期」恆 2026-07-15。
+    // 硬凍(clock.setFixedTime / 定值 Date.now)兩案皆實測壞 FileViewer fit(elapsed 永遠 0,
+    // 動畫/佈局的時間差邏輯靜默 stall,vr4/vr5 40.3% breach);偏移 = elapsed 計算全正常、
+    // 動畫零副作用,而 Calendar today 圈 / DateGrid today bar 等日期渲染 deterministic。
+    // TARGET = 2026-07-15T02:00Z(UTC 與台北皆 7/15 正午前後,run 時長內不跨日)。
+    const TARGET = 1784080800000
+    const OrigDate = globalThis.Date
+    const delta = TARGET - OrigDate.now()
+    class ShiftedDate extends OrigDate {
+      constructor(...args) {
+        if (args.length === 0) super(OrigDate.now() + delta)
+        else super(...args)
+      }
+      static now() { return OrigDate.now() + delta }
+    }
+    ShiftedDate.parse = OrigDate.parse
+    ShiftedDate.UTC = OrigDate.UTC
+    // eslint-disable-next-line no-global-assign
+    globalThis.Date = ShiftedDate
+  })
   // scenario 可有 .url(任意 URL,for product app routes)或 .id(Storybook story id)
   // 2026-05-18 ship per codex Phase B F5 + Dim 51: opts.matrixCell { theme, density, dir }
   // 注入 Storybook globals query params(對齊 .storybook/preview.tsx 全域 toolbar)

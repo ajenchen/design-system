@@ -108,9 +108,9 @@ export const ColorMatrix: Story = {
               <tr><Td>Thumb 底色 disabled</Td><Td><TokenCell token="--canvas" display="bg-canvas(不透明背景色,沉回)" /></Td><Td><TokenCell token="--canvas" /></Td></tr>
               <tr><Td>Thumb 邊框 default</Td><Td><TokenCell token="--primary" display="border-2 border-primary" /></Td><Td><TokenCell token="--primary" display="--primary(與 Range default 同色)" /></Td></tr>
               <tr><Td>Thumb 邊框 disabled</Td><Td><TokenCell token="--border" display="border-border" /></Td><Td><TokenCell token="--border" display="--border(與 Range disabled 同色)" /></Td></tr>
-              <tr><Td>Thumb hover</Td><Td mono>border primary-hover + --elevation-100</Td><Td>—</Td></tr>
-              <tr><Td>Thumb active</Td><Td mono>--elevation-200</Td><Td>—</Td></tr>
-              <tr><Td>Thumb focus</Td><Td mono>border-primary-hover(加深,不加 ring/halo)</Td><Td><TokenCell token="--primary-hover" /></Td></tr>
+              <tr><Td>Thumb hover</Td><Td mono>border primary-hover(升 hover 階)+ --elevation-100</Td><Td>—</Td></tr>
+              <tr><Td>Thumb active(按壓拖曳)</Td><Td mono>border primary-active(深一階)+ --elevation-200</Td><Td><TokenCell token="--primary-active" /></Td></tr>
+              <tr><Td>Thumb focus</Td><Td mono>border-primary-hover(同 hover 視覺,不加 ring/halo)</Td><Td><TokenCell token="--primary-hover" /></Td></tr>
             </tbody>
           </table>
         </div>
@@ -230,7 +230,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"ARIA / 角色:繼承 Radix slider 的無障礙預設(role、aria-* 屬性、鍵盤導覽都由 primitive 提供)。\n\n鍵盤操作:\n\n- Tab — 聚焦到 thumb\n- ←/→ — 微調數值\n- Home/End — 跳到最小/最大值\n- PageUp/PageDown — 大步階調整\n\n聚焦樣式:thumb 鍵盤聚焦時,邊框加深成 primary-hover 色(跟滑鼠 hover 同一個視覺),不另外加外框光暈(ring/halo)。\n\n驗證:Storybook a11y 面板應為 0 個 critical violation;不用滑鼠、純鍵盤也能完整操作。文字對比 ≥ 4.5:1、UI 元件對比 ≥ 3:1(WCAG AA)。"}</p>
+      <p className="whitespace-pre-line">{"ARIA / 角色:繼承 Radix slider 的無障礙預設(role、aria-* 屬性、鍵盤導覽都由 primitive 提供)。\n\n鍵盤操作:\n\n- Tab — 聚焦到 thumb\n- ←/→ — 微調數值\n- Home/End — 跳到最小/最大值\n- PageUp/PageDown — 大步階調整\n\n聚焦樣式:thumb 鍵盤聚焦時,邊框升 hover 階(跟滑鼠 hover 同一個視覺),不另外加外框光暈(ring/halo)。\n\n驗證:Storybook a11y 面板應為 0 個 critical violation;不用滑鼠、純鍵盤也能完整操作。文字對比 ≥ 4.5:1、UI 元件對比 ≥ 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

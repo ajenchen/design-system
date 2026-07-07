@@ -168,7 +168,7 @@ export const StateBehavior: Story = {
             <tbody>
               <tr><Td>Unselected</Td><Td><TokenCell token="--surface" display="bg-surface" /></Td><Td><TokenCell token="--fg-secondary" display="text-fg-secondary" /></Td><Td><TokenCell token="--border" display="border-border" /></Td><Td>—</Td></tr>
               <tr><Td>Hover unselected</Td><Td><TokenCell token="--surface" display="bg-surface(不變)" /></Td><Td><TokenCell token="--foreground" display="text-foreground" /></Td><Td><TokenCell token="--border-hover" display="border-border-hover" /></Td><Td mono>z-[5](hover 邊框浮上)</Td></tr>
-              <tr><Td>Selected</Td><Td><TokenCell token="--surface" display="bg-surface" /></Td><Td><TokenCell token="--primary-hover" display="text-primary-hover" /></Td><Td><TokenCell token="--primary-hover" display="border-primary-hover" /></Td><Td mono>z-10(浮在相鄰 item border 上)</Td></tr>
+              <tr><Td>Selected</Td><Td><TokenCell token="--surface" display="bg-surface" /></Td><Td><TokenCell token="--primary" display="text-primary" /></Td><Td><TokenCell token="--primary" display="border-primary" /></Td><Td mono>z-10(浮在相鄰 item border 上)</Td></tr>
               <tr><Td>Disabled</Td><Td>bg-surface(不變)</Td><Td>text-fg-disabled</Td><Td>border-border(不變,hover 鎖定)</Td><Td>—</Td></tr>
             </tbody>
           </table>

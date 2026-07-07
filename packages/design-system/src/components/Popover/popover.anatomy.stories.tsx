@@ -273,7 +273,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"焦點 / 鍵盤 / ARIA 行為（部分為 DS 覆寫,部分為 Radix 內建）：\n\n-   開啟焦點（DS 覆寫）  ：DS 以  onOpenAutoFocus  覆寫 Radix 預設,開啟時把焦點落在 body 第一個可互動元素（避免 Radix 預設先 focus 右上 close X,觸發 tooltip leak）\n-   關閉返回（Radix 內建）  ：關閉時 focus return to trigger\n-   Esc 關閉（Radix 內建）  ：按 Esc 自動關閉並返回焦點\n-   Focus trap（Radix 內建,僅 modal）  ： modal={true}  時焦點鎖在 content 內\n-   點外 / 焦點離開即關（Radix 內建,non-modal）  ：預設 non-modal 不鎖焦點,焦點或指標離開 content 樹即自動關閉（dismiss,非 focus trap）\n-   ARIA（Radix 內建）  ：trigger 自動  aria-expanded  /  aria-controls ，content  role=\"dialog\" \n\nConsumer 無需額外處理 a11y,保留 Radix  data-state  屬性即可。"}</p>
+      <p className="whitespace-pre-line">{"焦點 / 鍵盤 / ARIA 行為（部分為 DS 覆寫,部分為 Radix 內建）：\n\n-   開啟焦點（DS 覆寫）  ：DS 以  onOpenAutoFocus  覆寫 Radix 預設,開啟時把焦點落在 body 第一個可互動元素（避免 Radix 預設先 focus 右上 close X,觸發 tooltip leak）\n-   關閉返回（Radix 內建）  ：關閉時 focus return to trigger\n-   Esc 關閉（Radix 內建）  ：按 Esc 自動關閉並返回焦點\n-   Focus trap（Radix 內建,僅 modal）  ： modal={true}  時焦點鎖在 content 內\n-   點外 / 焦點離開即關（Radix 內建,non-modal）  ：預設 non-modal 不鎖焦點,焦點或指標離開 content 樹即自動關閉（dismiss,非 focus trap）\n-   ARIA（Radix 內建）  ：trigger 自動  aria-expanded  /  aria-controls ，content  role=\"dialog\" \n-   Accessible name（DS 覆寫）  ：content  role=\"dialog\"  預設無 accessible name， PopoverTitle  掛載時自動接上 content 的  aria-labelledby （consumer 自傳 aria-label / aria-labelledby 優先）\n\n保留 Radix  data-state  屬性即可；無  PopoverTitle  的 naked popover 需 consumer 自傳  aria-label ，否則 role=\"dialog\" 無 accessible name。"}</p>
     </div>
   ),
 }

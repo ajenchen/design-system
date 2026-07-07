@@ -112,13 +112,17 @@ function extractValue(eventOrValue: unknown): unknown {
 /** 規則 8:focus + scroll 到第一個錯誤欄位。以 DOM name 屬性定位(native input);
  *  找不到(非 native 控件)→ 靜默略過,error 視覺仍由 Field 紅框呈現。 */
 function focusFirstError(errorNames: string[]) {
-  for (const name of errorNames) {
-    const el = document.getElementsByName(name)[0] as HTMLElement | undefined
-    if (el) {
-      el.focus()
-      el.scrollIntoView({ block: 'center', behavior: 'smooth' })
-      return
-    }
+  // 2026-07-07 修(deep-audit A.1b 殘項):「第一個錯誤」以 DOM 順序為準(= 使用者看到的視覺第一),
+  // 非 validate key 宣告順序 — spec 規則 8 自然語意;對齊瀏覽器原生 reportValidity(DOM 序 focus
+  // 首個 invalid)+ react-hook-form shouldFocusError。
+  const els = errorNames
+    .map((name) => document.getElementsByName(name)[0] as HTMLElement | undefined)
+    .filter((el): el is HTMLElement => Boolean(el))
+    .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+  const el = els[0]
+  if (el) {
+    el.focus()
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }
 }
 

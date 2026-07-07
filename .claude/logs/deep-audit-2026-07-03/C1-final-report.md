@@ -144,3 +144,8 @@ approval-bypass audit log:.claude/logs/approval-bypass.jsonl(4 entries,全附 us
 
 ### 拍板題 3 結案(2026-07-05)
 error+focus 第二視覺通道:user 拍板「照 Mantine」= 完全不變。現行 code 已符合,零改動;canonical 寫入 field.spec.md state machine 段(含已知代價與未來重議條件)。D4 backlog 同主題 candidate 據此結案。
+
+### API 設計題結案(2026-07-05)
+- Cmd+B opt-out prop:user 拍板不加(guard 已讓產品層可攔;API 保守)
+- Enter 確認後跳列:10 家實查(7 下移 / AG Grid 留原格 / Notion unverifiable / TanStack 無內建)→ **user 拍板維持原格**(AG Grid 派);數據 → enter-commit-navigation-benchmark.json;未來連續輸入需求可重議 opt-in
+- aria-activedescendant:重分類為 auto a11y(APG 定義無選擇)→ 已進 residuals workflow 執行

@@ -170,8 +170,9 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 - **Focus trap(Radix 內建,僅 modal)**：`modal={true}` 時焦點鎖在 content 內
 - **點外 / 焦點離開即關(Radix 內建,non-modal)**：預設 non-modal **不鎖焦點**(無 focus trap),焦點或指標離開 content 樹時由 DismissableLayer 觸發 dismiss 自動關閉——這是 dismiss-on-focus-out 機制,**不是** focus trap
 - **ARIA(Radix 內建)**：trigger 自動 `aria-expanded` / `aria-controls`，content `role="dialog"`
+- **Accessible name(DS 覆寫)**:Radix Popover 沒有 Radix Dialog Title 式的自動接線,content `role="dialog"` 預設**無 accessible name**。DS 以 context 補同機制(見 `popover.tsx` `PopoverTitleContext`):`<PopoverTitle>` 掛載時自動把 id 接上 content 的 `aria-labelledby`;consumer 自傳 `aria-label` / `aria-labelledby` 一律優先
 
-Consumer 無需額外處理 a11y,保留 Radix `data-state` 屬性即可(開啟焦點的 DS 覆寫 default 已 wire 在 `PopoverContent`,consumer 可傳自己的 `onOpenAutoFocus` override)。
+焦點與 accessible name 的 DS 覆寫 default 已 wire 在 `PopoverContent`(consumer 可傳自己的 `onOpenAutoFocus` override),保留 Radix `data-state` 屬性即可。**無 `<PopoverTitle>` 的 naked popover 需 consumer 自傳 `aria-label`**,否則 `role="dialog"` 無 accessible name。
 
 ---
 

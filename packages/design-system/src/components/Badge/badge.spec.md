@@ -395,4 +395,5 @@ Badge 是**計數 / 狀態視覺指示器**,本身**非互動元件**:
 
 - `avatar.spec.md`
 - `button.spec.md`
+- `overflow-indicator.spec.md`
 - `tag.spec.md`
