@@ -1,6 +1,6 @@
 # @qijenchen/design-system — 完整設計參考(llms-full)
 
-> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.81。
+> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.82。
 
 # Components
 
@@ -208,6 +208,11 @@ Source(AI 讀此看官方範例): src/components/LinkInput/
 
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/NumberInput/
+
+## Pagination(family composite)
+
+Storybook: https://ajenchen-design-system.netlify.app
+Source(AI 讀此看官方範例): src/components/Pagination/
 
 ## PeoplePicker(family 4)
 
