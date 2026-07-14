@@ -85,7 +85,7 @@ function StateRow({
 }
 
 export const States: Story = {
-  name: '三態:read / hover / edit',
+  name: '三態:閱讀/懸停/編輯',
   render: () => (
     <div className="flex w-[440px] flex-col gap-6">
       <StateRow caption="read(靜態)—— 純文字,透明邊框(預留、不可見)、無底色">
@@ -175,7 +175,7 @@ export const SelectTagField: Story = {
 /* ── 真實業務:工作項目 Description 多行就地編輯(Jira description 類)──
    multiline:read 態換行顯示、edit 態預設 Textarea(Enter=換行、Cmd/Ctrl+Enter 或 blur 提交)。 */
 export const MultilineDescription: Story = {
-  name: '多行描述就地編輯(Jira description 類)',
+  name: '多行描述就地編輯(Jira 描述欄類)',
   render: () => {
     const [desc, setDesc] = React.useState(
       'Safari 上點擊結帳時,e2e 測試會間歇性失敗。\n\n重現:連跑測試 5 次,約 2 次失敗;疑似 checkout webhook race。',
@@ -198,7 +198,7 @@ export const MultilineDescription: Story = {
 /* ── 真實業務:工作項目詳情面板 —— vertical Field(FieldLabel + control)+ InlineEdit ──
    混合 plain / Tag / 多行欄位,驗證 Tag 值與 FieldLabel + 其他 plain 值的左緣視覺對齊。 */
 export const VerticalFieldForm: Story = {
-  name: '詳情面板:vertical Field + InlineEdit(Tag 對齊)',
+  name: '詳情面板:垂直排列 Field + InlineEdit(Tag 對齊)',
   render: () => {
     const [status, setStatus] = React.useState('in-progress')
     const [desc, setDesc] = React.useState('Safari 上點擊結帳時,e2e 測試會間歇性失敗。')

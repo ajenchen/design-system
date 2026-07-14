@@ -66,7 +66,7 @@ export const Modes: Story = {
 
 /* ── 寬度軸 hug(任務詳情 metadata)── */
 export const HugWidth: Story = {
-  name: '寬度 hug(詳情欄 metadata)',
+  name: '寬度貼合內容(詳情欄)',
   render: () => {
     const [status, setStatus] = React.useState('in_stock')
     const [priority, setPriority] = React.useState('medium')
