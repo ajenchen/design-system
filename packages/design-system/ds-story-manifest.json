@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-07-11T02:28:20.684Z"
+    "generatedAt": "2026-07-14T14:23:30.051Z"
   },
   "components": {
     "accordion": {
@@ -40,10 +40,8 @@
     "alert": {
       "tiers": {
         "展示": [
-          "design-system-components-alert-展示--subtle-single-line",
-          "design-system-components-alert-展示--solid-single-line",
-          "design-system-components-alert-展示--subtle-with-description",
-          "design-system-components-alert-展示--solid-with-description",
+          "design-system-components-alert-展示--single-line",
+          "design-system-components-alert-展示--with-description",
           "design-system-components-alert-展示--corner-action-group",
           "design-system-components-alert-展示--fixed"
         ],
@@ -90,11 +88,8 @@
     "aspectratio": {
       "tiers": {
         "展示": [
-          "design-system-components-aspectratio-展示--hero-banner-16-x-9",
           "design-system-components-aspectratio-展示--product-photo-4-x-3",
-          "design-system-components-aspectratio-展示--square-avatar-1-x-1",
-          "design-system-components-aspectratio-展示--ultrawide-21-x-9",
-          "design-system-components-aspectratio-展示--common-ratios"
+          "design-system-components-aspectratio-展示--ultrawide-21-x-9"
         ],
         "設計規格": [
           "design-system-components-aspectratio-設計規格--overview",
@@ -265,7 +260,7 @@
         "設計原則": [
           "design-system-components-calendar-設計原則--usage-guidance",
           "design-system-components-calendar-設計原則--color-semantic",
-          "design-system-components-calendar-設計原則--mvp-scope"
+          "design-system-components-calendar-設計原則--month-view-only-rule"
         ]
       },
       "openSnapshotIds": [],
@@ -388,7 +383,7 @@
         "設計原則": [
           "design-system-components-circularprogress-設計原則--usage-guidance",
           "design-system-components-circularprogress-設計原則--indeterminate-vs-determinate-rule",
-          "design-system-components-circularprogress-設計原則--usage-scenario-rule",
+          "design-system-components-circularprogress-設計原則--consumption-scenario-rule",
           "design-system-components-circularprogress-設計原則--size-match-context-rule"
         ]
       },
@@ -451,7 +446,7 @@
         "展示": [
           "design-system-internal-command-展示--command-palette",
           "design-system-internal-command-展示--inline-command",
-          "design-system-internal-command-展示--theme-switcher",
+          "design-system-internal-command-展示--action-command",
           "design-system-internal-command-展示--empty-state"
         ],
         "設計規格": [
@@ -469,7 +464,6 @@
     "datatable": {
       "tiers": {
         "展示": [
-          "design-system-components-datatable-展示--number-alignment",
           "design-system-components-datatable-展示--column-resize",
           "design-system-components-datatable-展示--column-reorder",
           "design-system-components-datatable-展示--row-auto-height-inline-edit",
@@ -1178,8 +1172,7 @@
         "展示": [
           "design-system-components-radiogroup-展示--modes",
           "design-system-components-radiogroup-展示--vertical-group",
-          "design-system-components-radiogroup-展示--horizontal",
-          "design-system-components-radiogroup-展示--disabled"
+          "design-system-components-radiogroup-展示--horizontal"
         ],
         "設計規格": [
           "design-system-components-radiogroup-設計規格--overview",
@@ -1356,7 +1349,6 @@
         "展示": [
           "design-system-components-separator-展示--horizontal",
           "design-system-components-separator-展示--vertical",
-          "design-system-components-separator-展示--in-dropdown-menu",
           "design-system-components-separator-展示--between-sections"
         ],
         "設計規格": [
@@ -1432,7 +1424,6 @@
     "skeleton": {
       "tiers": {
         "展示": [
-          "design-system-components-skeleton-展示--default",
           "design-system-components-skeleton-展示--user-profile-card",
           "design-system-components-skeleton-展示--task-list-loading",
           "design-system-components-skeleton-展示--table-row-loading",
@@ -1674,7 +1665,6 @@
         "展示": [
           "design-system-components-tooltip-展示--default",
           "design-system-components-tooltip-展示--non-button-trigger",
-          "design-system-components-tooltip-展示--placement",
           "design-system-components-tooltip-展示--long-text"
         ],
         "設計規格": [
@@ -1722,5 +1712,5 @@
     }
   },
   "totalComponents": 64,
-  "totalStories": 929
+  "totalStories": 919
 }
