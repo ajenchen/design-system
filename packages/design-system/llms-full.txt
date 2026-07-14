@@ -1,6 +1,6 @@
 # @qijenchen/design-system — 完整設計參考(llms-full)
 
-> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.83。
+> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.84。
 
 # Components
 
@@ -115,6 +115,9 @@ Source(AI 讀此看官方範例): src/components/Checkbox/
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Chip/
 
+### Sizes
+- **sm**: 單一尺寸(h-field-sm 28/32 依 density、icon 16、text-body)— 對齊 chip.tsx componentMeta
+
 ## CircularProgress(family self-contained)
 
 Storybook: https://ajenchen-design-system.netlify.app
@@ -194,10 +197,23 @@ Source(AI 讀此看官方範例): src/components/FileUpload/
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/FileViewer/
 
+## InlineEdit(family composite)
+
+Storybook: https://ajenchen-design-system.netlify.app
+Source(AI 讀此看官方範例): src/components/InlineEdit/
+
 ## Input(family 4)
 
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Input/
+
+### Variants
+- **default**: Field wrapper 完整 chrome(bg-surface + border + hover/focus 回饋)— 表單 / Field 內嵌
+
+### Sizes
+- **sm**: field-height 28、icon 16、text-body
+- **md**: default 一般表單(field-height 32、icon 16)
+- **lg**: touch / 大字級(field-height 36、icon 20、text-body-lg)
 
 ## LinkInput(family 4)
 
@@ -400,6 +416,11 @@ Source(AI 讀此看官方範例): src/components/Tooltip/
 
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/TreeView/
+
+### Sizes
+- **sm**: 緊湊清單(與 md 同視覺:text-body、indent 24;保留供密度語意)
+- **md**: default 一般導覽樹
+- **lg**: touch / 大字級(text-body-lg、px-4 py-2、indent 28)
 
 # Patterns
 

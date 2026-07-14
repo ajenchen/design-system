@@ -1,7 +1,7 @@
 # @qijenchen/design-system
 
 > World-class React design system(Radix/shadcn + Tailwind v4 + 自訂 design token)。
-> 56 components + 4 public patterns + design tokens。v0.1.0-beta.83。
+> 57 components + 4 public patterns + design tokens。v0.1.0-beta.84。
 
 本檔由 source(spec.md frontmatter + Storybook index)build-time 自動生成,**禁手改**(CI --check drift gate 守)。
 每元件 / pattern 的完整 variants / sizes / 禁止事項 全文見 [llms-full.txt](./llms-full.txt)。
@@ -21,7 +21,7 @@
 - [Carousel](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Carousel
 - [Chart](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Chart
 - [Checkbox](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/Checkbox
-- [Chip](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Chip
+- [Chip](https://ajenchen-design-system.netlify.app): sizes:sm — src:components/Chip
 - [CircularProgress](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/CircularProgress
 - [Coachmark](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Coachmark
 - [Combobox](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Combobox
@@ -37,7 +37,8 @@
 - [FileItem](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/FileItem
 - [FileUpload](https://ajenchen-design-system.netlify.app): variants:dropzone/button — src:components/FileUpload
 - [FileViewer](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/FileViewer
-- [Input](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Input
+- [InlineEdit](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/InlineEdit
+- [Input](https://ajenchen-design-system.netlify.app): variants:default;sizes:sm/md/lg — src:components/Input
 - [LinkInput](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/LinkInput
 - [NumberInput](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/NumberInput
 - [Pagination](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Pagination
@@ -63,7 +64,7 @@
 - [TimePicker](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/TimePicker
 - [Toast](https://ajenchen-design-system.netlify.app): variants:neutral/info/success/warning/error — src:components/Toast
 - [Tooltip](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Tooltip
-- [TreeView](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/TreeView
+- [TreeView](https://ajenchen-design-system.netlify.app): sizes:sm/md/lg — src:components/TreeView
 
 ## Patterns
 - [action-bar](https://ajenchen-design-system.netlify.app): 跨元件 anatomy / 設計參照 pattern — src:patterns/action-bar

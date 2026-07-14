@@ -1,6 +1,7 @@
 import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { Checkbox } from './checkbox'
+import { CheckboxGroup } from './checkbox-group'
 
 const meta: Meta = {
   title: 'Design System/Components/Checkbox/設計規格',
@@ -554,11 +555,11 @@ export const StateBehavior = {
           {(['md', 'lg'] as const).map((sz) => (
             <div key={sz} className="flex flex-col gap-1">
               <span className="text-[11px] text-fg-muted font-medium">size="{sz}"</span>
-              <div className="grid border border-dashed border-divider rounded-md p-2">
+              <CheckboxGroup className="border border-dashed border-divider rounded-md p-2">
                 <Checkbox size={sz} label="Email 通知" />
                 <Checkbox size={sz} label="SMS 通知" description="每則訊息可能有費用" />
                 <Checkbox size={sz} label="Push 通知" />
-              </div>
+              </CheckboxGroup>
             </div>
           ))}
         </div>
@@ -578,14 +579,14 @@ export const StateBehavior = {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">多行對齊 — 控件對齊第一行文字中心</span>
         <Desc>控件包在一行文字高度的容器內，外層 flex items-start 確保多行時控件對齊第一行。字體改變時高度自動重算。</Desc>
-        <div className="max-w-sm grid border border-dashed border-divider rounded-md">
+        <CheckboxGroup className="max-w-sm border border-dashed border-divider rounded-md">
           <Checkbox label="短標籤" />
           <Checkbox label="這是一個比較長的標籤文字，會自動換行到第二行，控件始終對齊第一行的垂直中心" />
           <Checkbox
             label="附帶說明"
             description="說明文字用 fg-secondary 色彩，排在 label 下方"
           />
-        </div>
+        </CheckboxGroup>
       </div>
     </div>
   ),
