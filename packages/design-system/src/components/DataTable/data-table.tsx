@@ -1457,7 +1457,7 @@ function DataTableInner<TData>(
   //   舊 `h-table-row-${size}` 模板字串 Tailwind **靜態掃描看不到** → `.h-table-row-{sm,md,lg}` 規則
   //   唯一靠 uiSize.spec.md 裡的 literal 被 content-detection 掃到才生成;戰役期間掃描樹變動後未生成
   //   → 規則消失 → row 塌成「內容高度」(非編輯 33px / 編輯 44px)而非固定 token 40px,連帶選取控件與
-  //   列文字對不齊。改用 literal map(對齊 fieldWrapperStyles 的 `h-field-md` cva-literal 慣例),Tailwind
+  //   列文字對不齊。改用 literal map(對齊 field-wrapper cva 的 `h-field-md` literal 慣例),Tailwind
   //   永遠掃得到、不再依賴脆弱的 spec.md literal → 永不再漂移。
   const rowHeight = { sm: 'h-table-row-sm', md: 'h-table-row-md', lg: 'h-table-row-lg' }[size] ?? 'h-table-row-md'
 
