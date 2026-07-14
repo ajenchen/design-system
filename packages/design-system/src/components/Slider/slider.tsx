@@ -107,7 +107,9 @@ const Slider = React.forwardRef<
           Range 是「填充視覺」,Thumb border 是「thumb 的輪廓線」——視覺上 thumb
           的 border 剛好是 range 的延續(thumb 坐落在 range 的端點上,border 跟
           range 在色彩上融為一體,看起來像「range 包住 thumb」而不是「thumb 浮在
-          range 上」)。兩個 token 綁在一起,不論什麼 state 都一致。
+          range 上」)。兩個 token 綁在一起 —— **同色綁定 scope = rest 與 disabled 兩態**;
+          互動態(hover/active/focus)只動 thumb border 色階,range 填色恆 primary
+          (詳下方 Thumb 註解 2026-07-06 retract)。
         */}
         <SliderPrimitive.Range
           className={cn(

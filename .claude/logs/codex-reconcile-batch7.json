@@ -1,0 +1,211 @@
+{
+  "batch": 7,
+  "components": ["BulkActionBar", "Button", "Calendar", "Checkbox", "Chip"],
+  "adjudicator": "claude-opus-4-8",
+  "method": "each codex finding verified against actual tsx/spec/stories + node_modules(Radix) + token css; deduped; cross-checked vs Claude deep findings",
+
+  "BulkActionBar": {
+    "codex_raw_count": 15,
+    "material_confirmed": [
+      {
+        "fileLine": "bulk-action-bar.spec.md:180",
+        "宣稱": "a11y 段:『BulkActionBar 整體用 role=\"toolbar\"』",
+        "真實code行為": "tsx:98 root 用 role=\"group\"(2026-07-06 user 拍板自 toolbar 降級,未實作 APG 方向鍵 roving);anatomy:189 已正確寫 role=\"group\"。spec a11y 段 stale。",
+        "claudeAlsoCaught": true,
+        "fixHint": "spec:180 role=\"toolbar\" → role=\"group\",補降級 rationale 對齊 code + anatomy story"
+      },
+      {
+        "fileLine": "bulk-action-bar.spec.md:158-163",
+        "宣稱": "BulkActionBarLabels interface 只列 count/clear/hiddenSuffix/toolbarAriaLabel",
+        "真實code行為": "tsx:24-27 新增 ariaLabel?:string(新主 key,root aria-label 用 labels.ariaLabel ?? labels.toolbarAriaLabel),且 toolbarAriaLabel 已標 @deprecated。spec API interface 漏 ariaLabel 欄位、未標 deprecated。",
+        "claudeAlsoCaught": true,
+        "fixHint": "spec:158-163 interface 補 `ariaLabel?: string` + 標 toolbarAriaLabel 為 @deprecated fallback"
+      }
+    ],
+    "marginal_count": 6,
+    "false_positive_count": 7,
+    "false_positive_examples": [
+      "tsx:47/spec:85/spec:149 『hiddenByFilter 傳入時顯示』被判 false — code 要求 >0;但 hidden 數為 0 本就無可顯示,>0 是自然語意非漏述(×3)",
+      "spec:49/203, principles:75/88 『selection.length>0 才顯示 / ===0 完全藏』被判與 totalSelected 例外矛盾 — 這些是近親對照表 / 禁止事項 / vs-元件 story 的合理簡述,反向選取例外已在 spec:79/170-174 專段完整記載(×4)"
+    ],
+    "marginal_examples": [
+      "tsx:41 selection docblock 未提 totalSelected 例外(spec:143 API 已完整)",
+      "spec:78 + anatomy:36 『自然高度 56/68px』— 加 1px border-t 實為 57/69px(box-sizing 邊界,設計意圖高度描述,immaterial)",
+      "spec:119 canonical 範例 gate `{selection.length>0 && ...}` 在 totalSelected>0/selection=[] 反選情境會阻 mount(該範例未傳 totalSelected,簡單場景 gate 正確)",
+      "spec:215/217 SizeMatrix rationale『高度由 placement 決定/繼承』— 實際高度由自身 padding+md button+border 固定撐出,rationale framing 不精確"
+    ]
+  },
+
+  "Button": {
+    "codex_raw_count": 26,
+    "material_confirmed": [
+      {
+        "fileLine": "button.spec.md:416",
+        "宣稱": "『danger 僅支援 primary/secondary/text —— tertiary+danger 與 secondary 視覺完全相同(冗餘)』",
+        "真實code行為": "cva compoundVariants 只有 primary/secondary/text + danger(150-180),無 tertiary+danger。`<Button variant=tertiary danger>` → danger:true 無匹配 compound → 靜默渲染成一般 tertiary(灰,無紅色),不會像 secondary。禁用 rationale 事實錯誤 + 無 runtime warn = 靜默 danger no-op(consumer 可能出非紅的刪除鍵)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 spec rationale 為真因『無對應 compound → tertiary+danger 靜默無 danger 視覺』;考慮加 dev-warn tertiary/link + danger"
+      },
+      {
+        "fileLine": "button.tsx:539-564 (buttonMeta.states)",
+        "宣稱": "buttonMeta 是 variant/size/state 矩陣結構化 canonical",
+        "真實code行為": "states 陣列 ['default','hover','active','pressed','focus-visible','disabled'] 漏 'loading'(已實作 CircularProgress+aria-busy,anatomy StateBehavior 章 631 明列 Loading)。auto-compile(compile-stories.mjs)消費此 meta → 生成矩陣漏 loading。",
+        "claudeAlsoCaught": false,
+        "fixHint": "buttonMeta.states 補 'loading'(對齊 anatomy 章 + cva loading 分支)"
+      },
+      {
+        "fileLine": "button.tsx:566-570 (buttonMeta.tokens)",
+        "宣稱": "『tokens 已按 buttonVariants 真實 class 補齊』",
+        "真實code行為": "tokens.bg 漏 --neutral-selected-hover / --neutral-selected-active(neutral pressedTone compound L206-207 消費)+ --error/--error-hover/--error-active(primary+danger `bg-error hover:bg-error-hover active:` L156-158 消費)。『補齊』claim 假。",
+        "claudeAlsoCaught": false,
+        "fixHint": "tokens.bg 補 neutral-selected-hover/active + error/error-hover/error-active(掃 cva 全 bg-* class)"
+      },
+      {
+        "fileLine": "button.spec.md:371",
+        "宣稱": "『SurfaceHeader / SurfaceFooter 都內建 data-unbounded CSS rule(CHROME_UNBOUNDED_SLOT)』",
+        "真實code行為": "overlay-surface.tsx:CHROME_UNBOUNDED_SLOT 只套在 SurfaceHeader(L125,161);SurfaceFooter(L192-206)className 僅 `flex justify-end gap-2 border-t px-loose py-tight`,無該 selector。cross-component 事實錯。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:371 移除 SurfaceFooter(只 SurfaceHeader 有 unbounded slot)OR SurfaceFooter 補該 rule(視 footer 是否需要)"
+      }
+    ],
+    "marginal_count": 22,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "marginal_examples": [
+      "tsx:2 file-size 註解『當前 528 < 800』stale — 實際 576 行(仍 <800,數字過期)",
+      "spec:20 『text:★ iconOnly cva default』— cva defaultVariants.variant='tertiary';iconOnly→text 是 runtime resolvedVariant(L395)非 cva default,『cva』用詞不精確",
+      "tsx:41/289/318-327 + spec:232/262/270 + anatomy(197..) iconOnly『任何尺寸變正方形/只有一個 icon』— fullWidth(或垂直 ButtonGroup 注入 w-full L480)壓過 aspect-square 成滿寬矩形;nativeChildren 仍渲染 children/badge/endIcon(僅 dev-warn 不移除)。真實但屬 uncommon combo / 禁用組合(×3 dedup)",
+      "tsx:274/312 + spec:307-311/300-302 + anatomy(257,262) loading/disabled『spinner/自動 disabled/品牌色移除/badge 維持』只對 native 分支成立;asChild 分支只渲染 consumer child(無 spinner/native disabled,只 aria-busy/aria-disabled+guard)。asChild 差異真實但廣被理解、code D4 comment 已知(×4 dedup 一個 root)",
+      "tsx:483-498 asChild guard:Radix Slot 合併使 slotted child 自帶 onClick 先執行、guard preventDefault 在後 → child 命令式副作用已發生(guard 仍擋原生導覽 + Button 自身 onClick;僅 child 自有 onClick 洩漏,uncommon)",
+      "spec:276 iconOnly tooltip『元件保證行為』— 實際 resolvedIconOnly && typeof ariaLabel==='string' && !asChild 三條件(L524)才渲染(claudeAlsoCaught,Claude 亦標 marginal)",
+      "spec:171 『深色底按鈕(primary、secondary+danger)』— secondary+danger 實為 bg-surface 淺底+紅字紅框(L165-166),非深色填滿(badge floor aside 的視覺 mislabel)",
+      "spec:200-201/anatomy:253 danger『與 variant 互相獨立』— 只 3/5 variant 有 danger compound;secondary/text+pressed 的 data-state selector 特異性壓過 text-error → pressed 覆蓋 danger 紅(edge combo)",
+      "spec:313 loading『endIcon 維持顯示,指示下拉仍可展開』— loading 自動 disabled → 實不可展開(endIcon 視覺保留正確,僅『仍可展開』aside 自相矛盾)",
+      "anatomy:494-507 StateMatrix『橫向看 state 變化』— 僅 disabled 欄收 prop;hover/active 靜態無法觸發 pseudo-class,渲染同 default,只 token annotation 變(靜態矩陣固有限制)",
+      "anatomy(91-94..) 尺寸表硬寫 28/32/36px 為 default density 值,lg density(32/36/40)不更新(DS 慣以 reference density 標註)",
+      "anatomy:631 章節註解『Loading / Disabled / Checked』— Button 無 checked prop,實為 pressed(body L640 已寫 pressed;僅 header 註解 stale)",
+      "spec:441/anatomy:707 『文字對比 ≥4.5:1 WCAG AA』— codex 手算多處 fail(light primary-hover~3.56 / dark primary~4.09 等);--primary=blue-6 oklch(0.54..) + on-emphasis=white,dark primary=blue-6 oklch(0.60) 更淺 → 對比更低,方向可信但 codex 手算數值不可信(M32:contrast 必 axe/playwright 機械量測,非 LLM 手算)。建議跑 storybook a11y addon 驗證後再定 material",
+      "principles:169-174 link variant demo `<Button variant=link>前往設定` 無 href/asChild/onClick → 點擊不導覽(僅示範視覺,M4 弱範例)",
+      "spec:27/118-124/236 vs principles:195-201 labeled xs 指引不一致(spec 建議 labeled 用 sm、xs 主 icon-only;principles 卡片 CTA 用 labeled xs『開啟』為 ✅)。spec 用『建議』非禁止,code 允許,故非硬矛盾",
+      "spec:15/182 + tsx:17/552 + principles(83-95/132-136) secondary 語意 canonical 兩框(一般次要 vs 正負並存的正面那個)跨 artifact 不一致(runtime 單一視覺,兩框皆屬 secondary emphasis)"
+    ]
+  },
+
+  "Calendar": {
+    "codex_raw_count": 17,
+    "material_confirmed": [
+      {
+        "fileLine": "calendar.tsx:45,115-117 / calendar.spec.md:112",
+        "宣稱": "『支援 ISO \"YYYY-MM-DD\"(all-day)』date-only 輸入",
+        "真實code行為": "coerceDate `new Date(value)` 對 date-only ISO 按 UTC 午夜解析,eventsByDate 分桶(L215)以本地 getFullYear/Month/Date 讀取 → 負 UTC 時區(西半球)all-day 事件被移到前一天。DS 自己文件化 date-only 為合法輸入 → 真實 timezone code bug。",
+        "claudeAlsoCaught": false,
+        "fixHint": "date-only 字串用 date-fns parseISO 的 date-only 或手動 split 建本地 Date(避免 UTC 午夜);或分桶統一用 UTC 讀取"
+      },
+      {
+        "fileLine": "calendar.spec.md:26,211 (禁止事項)",
+        "宣稱": "『日期運算用 date-fns —— 不自造 / ❌ 不重造 date math』",
+        "真實code行為": "eventsByDate 分桶(tsx:209-225)手刻 native Date:`new Date(y,m,d).getTime()` 比較 + `cursor.setDate(cursor.getDate()+1)` 逐日展開,非 date-fns(D3 perf 優化)。spec 自訂 canonical 被 code 違反,且此手刻 parse 正是 CAL timezone bug 根源。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec 加 perf 例外註記 OR 分桶改用 date-fns eachDayOfInterval/isWithinInterval(對齊 grid 建構已用 date-fns)"
+      },
+      {
+        "fileLine": "calendar.anatomy.stories.tsx:20-22 / calendar.principles.stories.tsx:17-18",
+        "宣稱": "『釘固定日期(2026-07-07 修 VR flake)…釘死 = deterministic 渲染』",
+        "真實code行為": "grep 全 stories `referenceDate` = 0 命中。`now=new Date(2026,6,15)` 只用來組 event 日期字串;Calendar 從未收到 referenceDate → 顯示月份取自即時 new Date()(tsx:152)、today 取自 new Date()(tsx:191)。VR-flake『修復』實未生效:today 標記仍隨真日期漂、當前月非 7 月時 7 月事件甚至不顯示。story 仍時間相依。",
+        "claudeAlsoCaught": false,
+        "fixHint": "三個 Calendar instance 補傳 referenceDate={new Date(2026,6,15)}(真正 pin 顯示月),才符合宣稱的 deterministic 渲染"
+      }
+    ],
+    "marginal_count": 10,
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      "spec:255 『對齊 W3C ARIA APG pattern』被判與『無 roving/方向鍵』矛盾 — 但 spec 緊接 L264-267 明確自陳『方向鍵 roving 是後續增量、已知 a11y gap(非 blocker)、MVP 全 Tab 可達』,spec 已誠實揭露"
+    ],
+    "marginal_examples": [
+      "tsx:352-353 『今天/平日統一 24px 圓形』— today 加 px-2,兩位數日期寬 >24px 呈 pill(WCAG 2.5.8 ≥24 仍滿足,僅形狀描述不精確)",
+      "spec:21 anatomy 段列 SidePanel 為區塊 — code 未渲染,spec 自己 L232 列 sidebar 為後續增量(aspirational 列舉)",
+      "spec:34 『月/週/日 view + 拖拉新增』何時用 — code 僅月 view(週/日 disabled),drag 未實作(tsx:30-33 + spec MVP 段已標 tech debt)",
+      "spec:126 Anatomy toolbar ASCII 把 title 置兩箭頭間 + 漏『今天』— spec 另一 Toolbar 段 L160 圖正確(含今天、title 在 nav group 後),兩圖不一致、L126 stale",
+      "spec:267 / anatomy:217 『所有互動元素皆 Tab 可達』— renderEventTile 自訂 wrapper 只掛 onClick 無 role/tabIndex/onKeyDown(default tile 才 keyboard-accessible);spec L268-270 已揭露此例外,anatomy story 未加 caveat(×4 dedup:spec:267 + anatomy:217 ×3)",
+      "spec:269 / anatomy:217 focus『outline: 2px solid var(--ring)』— 實為 focus-visible:outline-none + ring-2 ring-ring(box-shadow),且 DS focus canonical 本身即 box-shadow(button.spec.md:439),敘述與 DS canonical 自相矛盾(claudeAlsoCaught ×2)"
+    ]
+  },
+
+  "Checkbox": {
+    "codex_raw_count": 17,
+    "material_confirmed": [
+      {
+        "fileLine": "checkbox.tsx:280-284 / checkbox.spec.md:229",
+        "宣稱": "『Checkbox 不會自動進 indeterminate,必須明確傳 checked=\"indeterminate\"』",
+        "真實code行為": "繼承 Radix API 也接受 defaultChecked=\"indeterminate\"(CheckboxProps extends ComponentPropsWithoutRef<Root>)進 uncontrolled mixed state;但 Indicator 只判 `props.checked === 'indeterminate'`(L281),uncontrolled 時 props.checked=undefined → 渲 <Check/> 而非 <Minus/>。CSS data-[state=indeterminate] 仍給 primary 底 → 藍底 + 錯的勾(應 minus)。真實靜默 icon bug(觸發 rare)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "Indicator 改讀真實 data-state(用 CheckboxPrimitive.Indicator 內部 state 或 useState mirror),不靠 props.checked;或 spec 明列此 uncontrolled-indeterminate known-gap"
+      },
+      {
+        "fileLine": "checkbox.anatomy.stories.tsx:180",
+        "宣稱": "搭配 SelectionItem 藍圖兩區塊都標 control(Checkbox)",
+        "真實code行為": "陣列 `[{name:'control（Checkbox）'},{name:'control（Checkbox）'}].map(s=><span key={s.name}>)` — 兩項 name 相同 → 重複 React key(dev warning + reconciliation 風險),且語意錯(SelectionItem 應是 control + label/content 兩不同區,非兩 control)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "第二區改 label/content 名 + 用唯一 key(index 或不同 name),修複重複 key + 正確 anatomy 標示"
+      }
+    ],
+    "marginal_count": 14,
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      "checkbox-group.tsx:34 『相鄰 row py 相加 ≈10-12px』被判 default 實為 7/11/12、大 density 11/15/16 — 註解明用『≈』約值,且核心論點(row 高度獨佔間距、zero external gap)正確,over-precise 挑剔"
+    ],
+    "marginal_examples": [
+      "checkbox-group.tsx:44-45,91-92 / spec:310 『control area auto items-start + padding-top 公式』— codex 稱 padding-top 實套在 horizontal FieldLabel、control area 僅 items-start(Field 內部 attribution 差異,×3 dedup)",
+      "checkbox.tsx:116 mode='readonly' JSDoc『checkbox 視覺保留』— 僅 standalone;Field 內無 inline label 時改渲 readonly 灰框+Check/X(例外已於 L223-230 詳述)",
+      "checkbox.tsx:195-198 comment『display/readonly 分支已轉發 id/data-*/aria-*/ref』— id 已先解構成 idProp 不進 restDomProps,兩早退分支未補 id(aria-label 等 data-*/aria-* 有轉發;僅 id 漏 + comment 誤列 id)",
+      "checkbox.spec.md:31 『Checkbox 與 Radio 視覺語言完全一致,差異只有形狀和語意』— checked Checkbox=bg-primary 實心底+on-emphasis Check;checked Radio=維持 bg-surface+primary border/text+dot(radio-group.tsx:173,177)。checked 態填色模型不只『形狀』不同,spec overstate",
+      "checkbox.spec.md:250 『Uncontrolled:DOM 自管』— 實為 Radix useControllableState(React state),互動本體 button[role=checkbox]+隱藏 native checkbox 供 form(機制不精確,consumer 行為正確)",
+      "checkbox.spec.md:252 『readonly 灰框 + ✓/—』— code 用 BooleanValueIcon = Check/X(L223 comment 2026-07-09 ✓/— glyph→Check/X icon,dash 已移除),spec 值 stale",
+      "checkbox.anatomy.stories.tsx:162 『Checkbox 本身不內建 label』— CheckboxProps 有 label/description prop,傳 label 自動 SelectionItem 包裝(架構 framing vs 字面 API)",
+      "checkbox.anatomy.stories.tsx:216/221 prop 速查型別 drift:defaultChecked 標 boolean(實 boolean|'indeterminate')、value 標 string(實 string|number|readonly string[])、value default '—'(Radix 實為 'on')(×3)",
+      "checkbox.anatomy.stories.tsx:330-332 藍圖把 control + 12/16px Check icon 畫成左右相鄰 sibling — 實際 icon 巢狀置中於 Root 內,整 control 僅 16/20px(illustrative 藍圖不精確)",
+      "checkbox.principles.stories.tsx:150 『radio 必須有 default value(語意不允許都沒選)』— Radix RadioGroup value/defaultValue 皆 optional 可無選開始(story 屬設計 prescriptive 主張 vs API 能力,talking past)"
+    ]
+  },
+
+  "Chip": {
+    "codex_raw_count": 11,
+    "material_confirmed": [
+      {
+        "fileLine": "chip.spec.md:204-208 (為何無 Inspector 段)",
+        "宣稱": "『為何無 Inspector』整段 + 『互動 Inspector 無法呈現 selection model 差異』+ 決策維度 layout『連體/間隔』",
+        "真實code行為": "chip.anatomy.stories.tsx:71 已 export Inspector(L76 提供 type/selected/disabled/startIcon/layout 互動 controls)→ 整段 stale;LayoutMatrix(L369)實際 layout 軸為 wrap/scroll/menu,非『連體/間隔』;ColorMatrix rest selected 用 --primary(非段內稱的 --primary-hover)。多重 spec drift。",
+        "claudeAlsoCaught": false,
+        "fixHint": "刪/改『為何無 Inspector』段(Inspector 已存在);layout 軸更正為 wrap/scroll/menu;ColorMatrix 描述改 rest=--primary、hover=--primary-hover"
+      },
+      {
+        "fileLine": "chip.anatomy.stories.tsx:397-399 (menu layout story)",
+        "宣稱": "『dropdown 永遠列出全部 chip 供快速勾選』",
+        "真實code行為": "`<ChipGroup type=multiple layout=menu defaultValue={['a']}>` = uncontrolled(無 value/onValueChange)。toggleFromMenu(tsx:301-306)`if(!groupOnValueChange){warn;return}` 直接早退 → menu items 全 unchecked 且點擊無效,無法勾選;且 defaultValue 'a' 不對應任何 chip value(chip value=中文 label)→ 初始 0 選取。此 story 正是 spec 禁止事項 L189 明令禁止的 uncontrolled menu 模式,demo broken。",
+        "claudeAlsoCaught": false,
+        "fixHint": "menu story 改 controlled(useState + value + onValueChange),defaultValue/value 用真實 chip value(如首個中文 label)"
+      }
+    ],
+    "marginal_count": 7,
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      "spec:136 『multiple:可勾選任意數量(checkbox 語意)』被判與 aria-pressed(非 aria-checked)矛盾 — 括號『checkbox 語意』是多選概念類比,非字面 ARIA role 宣稱(chip item 為 ToggleGroup button+aria-pressed;menu 層才用 DropdownMenuCheckboxItem)"
+    ],
+    "marginal_examples": [
+      "chip.tsx:210 / spec:185 『點 menu item = toggle 選取』— multiple 會 toggle,single(else 分支)永遠送 chipValue 不 toggle-off(single=radio 語意本不該 deselect,行為正確;僅『toggle』用詞對 single 不精確,×2 dedup)",
+      "spec:191 『RTL 三模式皆未實作方向鏡像』— wrap 轉發 Radix dir,Radix 在 RTL 對調方向鍵;僅 scroll/menu overflow 層仍 LTR scrollLeft/實體 arrow(spec overstate,整體 RTL DS-wide 未定為真)",
+      "spec:208 ColorMatrix『--primary-hover 同步染 border+text』— 靜止 selected 用 --primary(border-primary+text-primary,tsx:59),只 selected:hover 用 --primary-hover(token 在 rationale aside 中混述)",
+      "anatomy:76 Inspector『切 selected 即時查看』— selected 映射 uncontrolled defaultValue,mount 後 Controls 更新不同步 Radix state;menu layout 未傳 value/onValueChange(Inspector control 部分非反應式)",
+      "anatomy:188 Desc『左 default/中 selected/右 disabled』(3 格)— 實渲染 4 格(含 selected+disabled),Desc count 與 render 不符",
+      "principles:186 menu 標『單行 + ⋯ 展開全部』用 ⋯ ellipsis — 實際 OverflowMenuTriggerButton startIcon=ChevronDown(horizontal-overflow.tsx:207,spec:149/183 亦寫 ChevronDown)(claudeAlsoCaught)"
+    ]
+  },
+
+  "summary": {
+    "total_codex_raw": 86,
+    "total_material_confirmed_deduped": 13,
+    "material_claude_also_caught": 2,
+    "material_claude_missed": 11,
+    "note": "material dedup:BAB=2(claude 皆中);Button=4(claude 全漏);Calendar=3(claude 全漏,6 raw entries);Checkbox=2(claude 全漏);Chip=2(claude 全漏,3 raw entries)"
+  }
+}

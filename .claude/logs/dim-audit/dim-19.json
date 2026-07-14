@@ -1,0 +1,41 @@
+{
+  "dim": 19,
+  "title": "Home-name-vs-scope 一致性",
+  "filesScanned": 292,
+  "mechanism": "DS-wide enumerate folder / 檔名 / frontmatter component / storybook title vs 實際 scope 是否一致(86 spec.md + 205 stories.tsx + 64 component 資料夾 + 6 pattern 資料夾 + tokens + barrel index.ts,NO-SAMPLE 全掃)",
+  "verdict": "largely-clean",
+  "documented_exceptions_not_reported": [
+    "Menu/ 資料夾包 menu-item.tsx(component=MenuItem)— menu-item.spec.md:定位段 + SelectionControl spec:25 均明文記載『概念群組』慣例,folder≠primitive 為刻意設計,非 drift",
+    "SelectionControl/ 資料夾包 selection-item.tsx(component=SelectionItem)— 同上『概念群組』documented convention",
+    "Field/field-controls.spec.md(FieldControls,Family 4 SSOT)+ form-validation.spec.md 為 Field 家族 sub-spec,CLAUDE.md 4-Family Model 明文 home 在 Field,合理",
+    "DataTable/filter-operators.spec.md(Advanced Filter)為 DataTable filter sub-scope,合理",
+    "Dialog dialog.stories.tsx:38 `title: '電子郵件通知'` = mock 資料非 storybook meta title(false positive,已驗真 meta = Design System/Components/Dialog/*)",
+    "全部 8 internal 元件(Command/DateGrid/HoverCard/Menu/Notice/OverflowIndicator/SelectMenu/SelectionControl)storybook 用 Design System/Internal/<Folder> 與 barrel index.ts internal 清單一致,無 drift"
+  ],
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:35,88",
+      "問題": "canonical spec 內部把『資料夾/home 名 SelectionControl』當成『primitive 名』使用,與實際 scope 名『SelectionItem』混用。frontmatter component=SelectionItem、H1『SelectionItem 設計原則』、全文 21 處『SelectionItem』;但 line 35『**SelectionControl 是 internal primitive**——不直接使用』、line 88『共用源頭一定是 SelectionControl』改用 folder 名當 primitive 名。讀者無法判斷此 primitive 到底叫 SelectionControl 還是 SelectionItem,正是 home-name(folder)污染 scope-name(component)的一致性問題。",
+      "severity": "marginal",
+      "建議": "line 35 / 88 的『SelectionControl』改為『SelectionItem』(指涉 primitive 本身時);僅當明確指涉『資料夾/概念群組』才保留 SelectionControl,並以反引號 `SelectionControl/` 標示是資料夾。統一後全文只用 SelectionItem 稱 primitive、SelectionControl 只稱資料夾。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:25",
+      "問題": "folder-naming rationale 引用不精確。該註記稱『概念群組』慣例對齊『Menu/ 包 menu-item.tsx / Field/ 包 field.tsx』,但已驗:Field/ 資料夾的主要 primitive 就是 `Field`(field.tsx export const Field,folder=primitive),並非 folder≠primitive 的先例;真正對得上的先例只有 Menu/menu-item(folder=Menu、component=MenuItem)。引用 Field 當先例會誤導後續維護者以為此類 folder≠primitive 命名有兩個先例。",
+      "severity": "marginal",
+      "建議": "line 25 移除或改寫 Field 的引用,只保留 Menu/menu-item 作為真先例;若要保留 Field,改述為『Field/ 是家族 home(folder=main component)』並釐清與本案(folder≠primitive)不同性質,避免把兩種情境混為同一慣例。"
+    },
+    {
+      "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx:28",
+      "問題": "同一 pattern 出現 4 個不同名:folder=`header-canonical`、spec H1『Header Canonical』、storybook title『Design System/Patterns/Header Anatomy』、component=`ChromeHeader`。ui-development.md『Folder + storybook canonical』規定 public pattern storybook = `Design System/Patterns/<Name>` 且 <Name> 應追隨 folder;但此處 story 用『Header Anatomy』而 folder 是『header-canonical』。對照 sibling patterns 全部 folder=story 一致(action-bar→Action Bar / resize-handle→Resize Handle / overlay-surface→Overlay Surface / horizontal-overflow→Horizontal Overflow),僅 header-canonical 偏離。",
+      "severity": "marginal",
+      "建議": "二選一收斂:(a) story title 改為『Design System/Patterns/Header Canonical』對齊 folder+spec;或 (b) 若刻意用 Anatomy(對標 Item Anatomy 的視覺 anatomy 定位)則在 header-canonical.spec.md 明文記 folder / spec / story / component 四名各自角色與對照,如同 SelectionControl 的『關於資料夾命名』註記,讓多名可追溯。"
+    },
+    {
+      "fileLine": "packages/design-system/src/patterns/element-anatomy/item-anatomy.stories.tsx:42",
+      "問題": "umbrella 資料夾 element-anatomy(內含 element-anatomy.spec『Element Anatomy』taxonomy + item-anatomy.spec + inline-action.spec 三 spec)的唯一 storybook front-door title 為『Design System/Patterns/Item Anatomy』——以 sub-spec 名對外,資料夾層級名『Element Anatomy』未被 surface,且偏離 sibling patterns 的 folder=story 慣例。可能為刻意設計(element-anatomy=taxonomy 傘、item-anatomy=實際視覺 pattern),但目前無明文對照。",
+      "severity": "marginal",
+      "建議": "若刻意(taxonomy 傘 + 主視覺 pattern),在 element-anatomy.spec.md 補一行說明『element-anatomy 為 taxonomy 傘,storybook 以主 pattern Item Anatomy 為 front-door』;或在 barrel/README 記錄此 folder↔story 對照,消除與 sibling folder=story 慣例的隱性不一致。"
+    }
+  ]
+}

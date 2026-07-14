@@ -211,7 +211,7 @@ export const Overview = {
               <span className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
                 style={{ borderColor: 'var(--success)', backgroundColor: 'var(--success-subtle)', color: 'var(--success)' }}>formatted text (flex-1)</span>
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">Intl.DateTimeFormat · null 顯示 — (em dash)</span>
+            <span className="text-[10px] text-fg-muted font-mono">Intl.DateTimeFormat · null 顯示 - (hyphen)</span>
           </div>
         </div>
       </div>
@@ -416,8 +416,8 @@ const InspectorInner = () => {
             )}
             {!isEdit && mode === 'readonly' && !value && (
               <PropRow label="Empty">
-                <TokenValue value="--fg-muted" />
-                <span className="text-[10px] text-fg-muted ml-1">em dash —</span>
+                <TokenValue value="--foreground" />
+                <span className="text-[10px] text-fg-muted ml-1">hyphen -</span>
               </PropRow>
             )}
           </div>
@@ -750,7 +750,7 @@ export const StateBehavior = {
 
         {/* Empty value display */}
         <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">空值 — 統一 em dash（—）+ fg-muted</span>
+          <span className="text-caption font-medium text-fg-secondary">空值 — 統一半形 hyphen（-）+ foreground</span>
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <span className="text-[11px] text-fg-muted w-20 shrink-0">readonly</span>
@@ -939,11 +939,11 @@ export const Accessibility = {
         </ul>
       </section>
       <section>
-        <h3 className="text-body font-bold mb-2">鍵盤(Radix Popover + react-day-picker v9 內建)</h3>
+        <h3 className="text-body font-bold mb-2">鍵盤</h3>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
-          <li>Trigger:<kbd>Space</kbd> / <kbd>Enter</kbd> 開 popover</li>
-          <li>Popover 開啟:<kbd>Esc</kbd> 關閉 + focus return to trigger</li>
-          <li>DateGrid:<kbd>←</kbd> <kbd>→</kbd> 切日 / <kbd>PgUp</kbd> <kbd>PgDn</kbd> 切月 / <kbd>Home</kbd> <kbd>End</kbd> 行首尾</li>
+          <li>Trigger 開 popover(<kbd>Space</kbd> / <kbd>Enter</kbd>):單一 DatePicker 的 <code>{`<div role="combobox">`}</code> 無 native Enter/Space→click,由元件<strong>自建 <code>onKeyDown</code></strong> 補開(date-picker.tsx:554;Radix PopoverTrigger 只 compose onClick)。Range 雙 trigger 為 native <code>{`<button>`}</code> onClick 開啟(同非 Radix Popover 內建)</li>
+          <li>Popover 開啟 <kbd>Esc</kbd> 關閉 + 回焦:單一 DatePicker 用 PopoverTrigger → Radix <strong>內建</strong> <code>triggerRef.focus()</code> 回焦;Range 只有 PopoverAnchor(triggerRef 恆 null,內建回焦為 no-op),改由元件<strong>自建 <code>onCloseAutoFocus</code></strong> 手動回焦 active 端 button(date-picker.tsx:1020-1026,守 WCAG 2.4.3)</li>
+          <li>DateGrid(react-day-picker v9 內建):<kbd>←</kbd> <kbd>→</kbd> 切日 / <kbd>PgUp</kbd> <kbd>PgDn</kbd> 切月 / <kbd>Home</kbd> <kbd>End</kbd> 行首尾</li>
           <li>showTime:<kbd>Tab</kbd> 從 calendar 跳到右側 time panel,各 column <kbd>↑</kbd> <kbd>↓</kbd> 切 option</li>
         </ul>
       </section>

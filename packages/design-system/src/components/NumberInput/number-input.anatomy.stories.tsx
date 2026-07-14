@@ -231,7 +231,7 @@ export const Overview = {
                 <NumberInput mode="readonly" value={value} {...props} className="max-w-[200px]" />
               </div>
               <span className="text-caption font-mono text-fg-secondary">{label}</span>
-              {value === null && <span className="text-[11px] text-fg-muted">em dash + text-fg-muted</span>}
+              {value === null && <span className="text-[11px] text-fg-muted">hyphen + text-foreground</span>}
             </div>
           ))}
         </div>
@@ -722,7 +722,7 @@ export const StateBehavior = {
                 {[
                   ['value = 2490, prefix="$"', '2490（raw 數值）', '$2,490（格式化）'],
                   ['value = 85.5, suffix="%", precision=1', '85.5（raw 數值）', '85.5%（格式化）'],
-                  ['value = null', '空白', '— (em dash, fg-muted)'],
+                  ['value = null', '空白', '- (hyphen, foreground)'],
                   ['value = 12500, prefix="NT$"', '12500（raw 數值）', 'NT$12,500（格式化）'],
                 ].map(([ctx, edit, display]) => (
                   <tr key={ctx}>
@@ -745,7 +745,7 @@ export const StateBehavior = {
               <div key={m} className="flex flex-col gap-1 items-start">
                 <span className="text-[11px] text-fg-muted font-mono">{m}</span>
                 <div className="w-[160px]"><NumberInput mode={m} value={null} prefix="$" /></div>
-                <span className="text-[10px] text-fg-muted">{m === 'edit' ? '空白 input' : m === 'disabled' ? 'em dash — + fg-disabled（M24 state > emphasis）' : 'em dash — + fg-muted'}</span>
+                <span className="text-[10px] text-fg-muted">{m === 'edit' ? '空白 input' : m === 'disabled' ? 'hyphen - + fg-disabled（M24 state > emphasis）' : 'hyphen - + foreground'}</span>
               </div>
             ))}
           </div>

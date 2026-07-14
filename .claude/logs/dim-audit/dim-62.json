@@ -1,0 +1,46 @@
+{
+  "dim": 62,
+  "title": "Fork-user Netlify onboarding canonical",
+  "filesScanned": 16,
+  "mechanism": "DS-wide enumerate netlify.toml / manager-head / setup-netlify / CLAUDE.md Access-control 段完整",
+  "verificationRun": {
+    "command": "node scripts/build-published-template-mirror.mjs --out=/tmp/dim62-mirror",
+    "exit": 0,
+    "result": "0 leak + 全 onboarding-critical 檔齊(netlify.toml / edge-functions/basic-auth.ts / scripts/setup-netlify-access.mjs / manager-head.html / CLAUDE.md / package.json)+ 3 道 fail-closed guard(netlify.toml ref / package.json scripts ref / ES import 鏈)全過"
+  },
+  "passedChecks": [
+    "template netlify.toml 含 [[edge_functions]] path=/* function=basic-auth wire + X-Robots-Tag noindex header + 指向 edge function 免費機制 comment",
+    "netlify/edge-functions/basic-auth.ts 存在,讀 STORYBOOK_BASIC_AUTH env var,缺/錯回 401 + WWW-Authenticate,未設=pass-through",
+    "manager-head.html 已移除 Netlify Identity widget(改 edge-function Basic Auth,無 client-side 殘留)",
+    "setup-netlify-access.mjs 含『沒帳號』explainer + gh auth pre-check + 最後印 dashboard URL 教設 STORYBOOK_BASIC_AUTH env var",
+    "package.json 有 setup:netlify script;mirror guard 確認 script ref 檔齊",
+    "fork CLAUDE.md Access control 段含『Claude 引導 Netlify onboarding』6 條話術 + 真實斷點清單 5 行",
+    "全 canonical 檔(netlify.toml×2 / README×2 / CLAUDE.md / docs/01,02 / .env.example / basic-auth.ts / manager-head.html)一致:免費=Edge Function、Dashboard+_headers=Pro $20/mo、Identity 未 deprecated 但 overkill;0 banned anti-pattern 措辭"
+  ],
+  "findings": [
+    {
+      "fileLine": "template/README.md:59,86",
+      "問題": "殘留 plugin-era 措辭與 C-prime committed-config 模型矛盾。L59 檔案樹註解寫 settings.json『enable design-system@qijenchen plugin』,L86 DS-side precondition #3 寫『design-system@qijenchen Claude plugin published to marketplace』;但 2026-06-17 已改 C-prime committed-config-first(免 /plugin install,治理隨 npm + committed dispatcher/bootstrap 生效),同 repo 的 template/ds-product-template/README.md:117 已正確描述為『C-prime committed 治理(dispatcher hooks + fail-open bootstrap)』。",
+      "severity": "marginal",
+      "建議": "把 L59 改為『C-prime committed 治理(dispatcher hooks + fail-open bootstrap)』、刪除 L86 plugin-marketplace precondition(或改為『DS canonical 隨 npm ds-canonical/fork 送達』),與 fork README / CLAUDE.md 對齊,避免 DS-owner 讀到已退役的 plugin 安裝前提。"
+    },
+    {
+      "fileLine": "template/README.md:88",
+      "問題": "DS-side precondition #5 寫『Renovate app installed to qijenchen GitHub org』,但實際版本同步全走 Dependabot(template/ds-product-template/.github/dependabot.yml + sync-design-system.yml,README/CLAUDE.md 各處皆稱 Dependabot daily)。Renovate 為孤立殘留名,與整條 auto-sync 鏈用詞不一致。",
+      "severity": "marginal",
+      "建議": "把 precondition #5 的『Renovate』改為『Dependabot』(或直接刪除該條,因 dependabot.yml 已隨 template ship、無需 org-level app 前置),命名對齊唯一 SSOT。"
+    },
+    {
+      "fileLine": "template/ds-product-template/docs/02-create-new-product.md:56",
+      "問題": "引用 `netlify.toml:14 build.command = \"npm run build-storybook\"`,但 template netlify.toml 第 14 行是 `publish = \"storybook-static\"`,`command` 在第 13 行。off-by-one 行號引用,指向錯行。",
+      "severity": "marginal",
+      "建議": "改成 `netlify.toml:13 build.command`(或去掉具體行號只寫 build.command),避免行號 drift 誤導讀者。"
+    },
+    {
+      "fileLine": "netlify.toml:14-29 (DS repo root)",
+      "問題": "DS repo 自身 netlify.toml 註解(L15)點名『apps/** 內部 product UI 被公開暴露 → 內部 UI SEO leak』並詳述『真擋陌生人(免費)= Edge Function Basic Auth』且 DS owner 可『同走 template 的 Edge Function Basic Auth』,但 DS root netlify.toml 只 ship noindex header,並未 wire `[[edge_functions]]`、DS root 也無 edge-functions/basic-auth.ts。即 DS 自己的 Storybook 對其註解所稱的內部 apps/** UI 只有 SEO 防護、無實際存取控制;描述的機制與實作不一致。",
+      "severity": "marginal",
+      "建議": "二擇一明確化:(a) 若 DS Storybook 刻意公開作 reference(docs 多處以 ajenchen-design-system.netlify.app 當公開參考),則把註解改為『DS Storybook 為公開 reference,故僅 noindex』消除『DS owner 要擋人』的暗示;(b) 若確要擋內部 apps/** UI,則在 DS root 同樣 wire [[edge_functions]] + 放 basic-auth.ts。避免『描述有防線、實際沒接』的認知落差。"
+    }
+  ]
+}

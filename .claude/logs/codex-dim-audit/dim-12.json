@@ -1,0 +1,258 @@
+{
+ "dim": 12,
+ "filesScanned": 205,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Accordion/accordion.anatomy.stories.tsx:36-43",
+   "問題": "Accordion 實際內容以 component、class、token 等實作術語充當文案，沒有可辨識的業務情境。",
+   "severity": "material",
+   "建議": "改成訂閱方案或產品 FAQ 等真實內容，技術標註移到元件外。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Alert/alert.anatomy.stories.tsx:197-199",
+   "問題": "Alert 內文直接描述 onDismiss、dismissible 與 close icon，將 API 說明當成使用者訊息。",
+   "severity": "material",
+   "建議": "改用付款方式過期、系統公告等具體通知情境展示可關閉差異。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.anatomy.stories.tsx:110-112",
+   "問題": "Header 與按鈕顯示 Toggle Aside demo、Aside(cmd+.) 等實作黑話。",
+   "severity": "material",
+   "建議": "改成「訂單詳情／顯示活動紀錄」等產品文案。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.anatomy.stories.tsx:345-353",
+   "問題": "Breadcrumb 節點直接顯示 Link、Hover、token、Current Page 等狀態或規格名稱。",
+   "severity": "material",
+   "建議": "改成「專案／Q3 改版／設計審查」等真實導覽路徑，狀態說明放在外部標註。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.principles.stories.tsx:198",
+   "問題": "卡片資料使用「專案 A／B／C」抽象代號。",
+   "severity": "material",
+   "建議": "換成可辨識且互補的真實專案名稱。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.stories.tsx:79",
+   "問題": "核心 Default story 以「主要／次要／第三動作」等按鈕角色名稱充當可見內容。",
+   "severity": "material",
+   "建議": "改成同一操作區的真實動作，例如「發佈版本／儲存草稿／預覽變更」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.stories.tsx:328-329",
+   "問題": "互動測試按鈕直接顯示「Hover 我／Focus 我」。",
+   "severity": "marginal",
+   "建議": "保留互動測試，但改用「查看報表／下載發票」等真實操作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:607",
+   "問題": "Checkbox 的實際說明文字直接談 token 與 slot，缺少使用者任務。",
+   "severity": "marginal",
+   "建議": "改成通知偏好等真實選項，規格說明移到 SelectionItem 外。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.anatomy.stories.tsx:342-345",
+   "問題": "Chip 內容直接顯示 Default、Hover、Selected、Disabled 等元件狀態名。",
+   "severity": "material",
+   "建議": "改用「全部／待處理／已完成／已停用」等真實篩選詞。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:80",
+   "問題": "反例清單使用「載入項目 1–4」編號式 placeholder。",
+   "severity": "marginal",
+   "建議": "換成真實訂單編號或檔名，讓反例問題只落在多個 spinner。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:336-337",
+   "問題": "Coachmark 的 title、description 與內文只描述欄位名稱和行數限制。",
+   "severity": "material",
+   "建議": "改成 AI 摘要或邀請成員等具體功能引導，行數規則留在外部說明。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:298",
+   "問題": "500 列可見資料以 Product 0001…流水號命名，屬 Item N 類 placeholder。",
+   "severity": "material",
+   "建議": "保留壓測規模，但用固定商品詞庫搭配 SKU 產生真實型錄名稱。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:173",
+   "問題": "虛擬捲動資料以 Product 0001…流水號充當商品名稱。",
+   "severity": "material",
+   "建議": "使用可辨識的商品名稱、規格與分類組合生成資料。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx:907-914",
+   "問題": "以 box-drawing、箭頭和符號堆出 DOM／互動架構圖。",
+   "severity": "material",
+   "建議": "改成語意化 anatomy 表與文字步驟，或在實際元件上標註結構。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DescriptionList/description-list.anatomy.stories.tsx:30",
+   "問題": "核心 profile anatomy 使用無角色脈絡的 user@example.com 教材式資料。",
+   "severity": "marginal",
+   "建議": "改成具名角色，並讓地址與團隊、職務及時區情境一致。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DescriptionList/description-list.principles.stories.tsx:219-220",
+   "問題": "實際 label/value 直接顯示 neutral token 與欄位術語。",
+   "severity": "material",
+   "建議": "用真實欄位和值展示層級，token 資訊移到元件外。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:36,158,208,351-358,376",
+   "問題": "多個實際 trigger 或 Dialog 內容使用 Dialog、viewport、autoHeight、ESC、overlay 等實作語言。",
+   "severity": "marginal",
+   "建議": "改用建立專案、編輯設定或確認刪除等流程；技術規格留在外部註解。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Dialog/dialog.stories.tsx:45,199,299,328,526",
+   "問題": "Showcase 的可見 trigger 混入 Modal、item、avatar、text-only 等元件術語。",
+   "severity": "marginal",
+   "建議": "改成「調整通知偏好／查看成員／選擇標籤／刪除專案」等真實操作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx:27",
+   "問題": "多個故事的 trigger 都只顯示「操作」，無法辨識操作的業務物件。",
+   "severity": "material",
+   "建議": "選定文件或專案等真實情境，讓 trigger 與重新命名、複製、刪除等選項一致。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:231",
+   "問題": "可見 defaultValue 重複使用無角色脈絡的 user@example.com。",
+   "severity": "marginal",
+   "建議": "改成與帳號設定情境一致的具名角色地址。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.principles.stories.tsx:98,122,204",
+   "問題": "多個 principle example 重複使用 user@example.com 教材式資料。",
+   "severity": "material",
+   "建議": "改用具體帳號或團隊設定情境，不以 generic user 充當內容。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:94,536",
+   "問題": "欄位文案只寫「未勾選範例／不可調整的範例」，沒有業務語意。",
+   "severity": "material",
+   "建議": "改成「接收行銷通知」及「方案價格由管理員設定」等真實設定與原因。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:181,185,189",
+   "問題": "實際 FieldLabel 直接顯示 sm、md、lg variant 名。",
+   "severity": "material",
+   "建議": "各尺寸沿用同一真實欄位名，尺寸名稱移到外部 caption。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.anatomy.stories.tsx:75",
+   "問題": "檔名尾綴「（範例檔）」將示範註解暴露成產品內容。",
+   "severity": "marginal",
+   "建議": "只保留可辨識檔名，例如「Q1 行銷報告.pdf」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.stories.tsx:206",
+   "問題": "檔案說明把內部 spec 2.3 代號顯示給讀者。",
+   "severity": "marginal",
+   "建議": "改成人話需求，例如「凍結前兩欄並保留列操作」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:522",
+   "問題": "實際按鈕文案由 viewer、theme、chrome、dark 等內部術語組成。",
+   "severity": "material",
+   "建議": "改成「預覽錯誤截圖／查看深色版設計稿」等可辨識任務。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.principles.stories.tsx:89",
+   "問題": "純文字值範例直接使用無語境的 https://example.com。",
+   "severity": "marginal",
+   "建議": "改成可辨識的專案規格或客服文件網址。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.stories.tsx:127",
+   "問題": "核心 Display story 使用 example.com/path/to/page 典型 placeholder URL。",
+   "severity": "material",
+   "建議": "改成具體專案規格或說明文件連結，並與相鄰 repository 範例互補。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.anatomy.stories.tsx:261",
+   "問題": "尺寸藍圖整塊使用 box-drawing ASCII。",
+   "severity": "material",
+   "建議": "改成實際 Notice anatomy overlay、尺寸標線或結構表。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:212",
+   "問題": "展開後的 HoverCard 顯示「隱藏項目 1／2…」抽象假資料。",
+   "severity": "material",
+   "建議": "改成真實的成員姓名、專案標籤或路徑節點。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:225",
+   "問題": "尺寸與 HoverCard 結構以 ASCII 方框和箭頭呈現。",
+   "severity": "material",
+   "建議": "用實際 trigger、HoverCard 與 DOM redline／尺寸表取代。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:372",
+   "問題": "人名尾綴「（範例人名）」把 mock 註解顯示在產品內容中。",
+   "severity": "marginal",
+   "建議": "只呈現自然人名，不把 demo 身分寫進卡片。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx:283",
+   "問題": "浮層藍圖使用多層 ASCII 樹狀圖。",
+   "severity": "material",
+   "建議": "改成實際 SelectMenu 開啟狀態，並以 slot 標註或尺寸表說明結構。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx:265",
+   "問題": "SelectionItem 結構以 ASCII 容器與 slot 圖呈現。",
+   "severity": "material",
+   "建議": "使用實際 SelectionItem redline，標示 control、prefix、content 與間距。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx:312",
+   "問題": "建立客戶流程的 trigger 顯示「標準結構範例」。",
+   "severity": "marginal",
+   "建議": "直接改成「建立新客戶」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:157",
+   "問題": "結構樹以空白縮排和箭頭符號圖表示。",
+   "severity": "material",
+   "建議": "改成語意化 tree／table，或在真實 Sidebar 預覽上標註結構。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.principles.stories.tsx:327,330",
+   "問題": "側欄資料直接命名為 Project A／B。",
+   "severity": "material",
+   "建議": "換成「結帳流程改版／帳務系統遷移」等可辨識專案。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.stories.tsx:75",
+   "問題": "成功流程按鈕顯示「重新開始 demo」。",
+   "severity": "marginal",
+   "建議": "依流程改成「再送一份申請」或「返回申請列表」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.principles.stories.tsx:124,151",
+   "問題": "Tabs body 與 toolbar 以「toolbar／filters／table／其他控制項」文字代替真實 composition。",
+   "severity": "material",
+   "建議": "放入訂單摘要，以及具名的篩選、匯出與批次操作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx:28",
+   "問題": "觸發按鈕直接以 success、error、action 等 variant／API 名當可見內容。",
+   "severity": "material",
+   "建議": "改成「儲存專案／重試連線／刪除後復原」等真實動作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.principles.stories.tsx:159",
+   "問題": "按鈕直接顯示 success、info、warning、error 等 variant 名。",
+   "severity": "material",
+   "建議": "為各 variant 配置對應的真實業務動作，variant 名留在外部標註。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.stories.tsx:124",
+   "問題": "按鈕文案「斷線示範」將 demo 語言暴露成產品操作。",
+   "severity": "marginal",
+   "建議": "改成「檢查連線」或「重新連線」，並維持相同錯誤情境。"
+  }
+ ]
+}

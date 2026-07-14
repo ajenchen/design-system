@@ -86,14 +86,15 @@ export const UsageGuidance: Story = {
           note="判斷法:「這代表『誰』還是『做什麼』?」誰 / 什麼實體 → Avatar;做什麼 / 某個概念 → Icon"
         >
           <div className="border border-divider rounded-lg bg-surface py-1">
-            <MenuItem avatar={{ alt: 'Ada Chen' }}>Ada Chen 的留言</MenuItem>
+            {/* 人員 → 真實人像;團隊 / 組織 → 首字 + 色彩(非人臉,letter mark 是 Slack workspace idiom)*/}
+            <MenuItem avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen' }}>Ada Chen 的留言</MenuItem>
             <MenuItem avatar={{ alt: 'Engineering Team', color: 'blue' }}>Engineering Team 專案</MenuItem>
           </div>
           {/* 視覺圖例(legend),非 list item */}
           <div className="flex items-center gap-3 flex-wrap mt-2">
             {/* @anatomy-exempt-next */}
             <div className="flex items-center gap-2">
-              <Avatar alt="Ada Chen" size={24} />
+              <Avatar src="https://i.pravatar.cc/48?u=ada-chen" alt="Ada Chen" size={24} />
               <span className="text-footnote text-fg-muted">人員</span>
             </div>
             <div className="flex items-center gap-2">
@@ -124,6 +125,8 @@ export const FallbackRule: Story = {
         title="有 src → 顯示圖片;沒有 src / 圖片載入失敗 → 顯示 initials"
         note="Fallback 用 `alt` 取首字母(一律取第一個字元並轉大寫,不分中英)。背景色由 `color` prop 決定"
       >
+        {/* 刻意示範 initials fallback:後三顆**必須**無 src(fallback 順序示範,
+            2026-07-08 demo 人像真實化 sweep 豁免保留) */}
         <div className="flex items-center gap-3">
           <Avatar alt="Ada Chen" size={40} src="https://i.pravatar.cc/80?img=1" />
           <Avatar alt="Ada Chen" size={40} />
@@ -145,10 +148,10 @@ export const WithBadgeOverlayRule: Story = {
         note="用 Avatar 的 `status` prop(不是手刻 `<Badge dot>`)—— 顏色走 presence semantic token(`--status-online` 等,獨立於 success / error / warning),位置固定 avatar 右下角,尺寸程式化 28%"
       >
         <div className="flex items-center gap-4">
-          <Avatar alt="Ada" size={40} status="online" />
-          <Avatar alt="Alex" size={40} status="busy" />
-          <Avatar alt="Ben" size={40} status="away" />
-          <Avatar alt="Bella" size={40} status="offline" />
+          <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" size={40} status="online" />
+          <Avatar src="https://i.pravatar.cc/80?u=alex-wang" alt="Alex" size={40} status="busy" />
+          <Avatar src="https://i.pravatar.cc/80?u=ben-liu" alt="Ben" size={40} status="away" />
+          <Avatar src="https://i.pravatar.cc/80?u=bella-wu" alt="Bella" size={40} status="offline" />
         </div>
         <Label>↑ online / busy / away / offline ── 狀態點本身不另發語音標籤,在線狀態整合進頭像的 alt 文字(例 alt="Ada(在線)"),避免一長串成員名單同時朗讀造成讀屏洪水</Label>
       </Rule>
@@ -158,9 +161,9 @@ export const WithBadgeOverlayRule: Story = {
         note="用 Avatar 的 `badgeCount` prop(不是手刻 `<Badge count>`)—— 內部消費 DS Badge critical variant + surface ring,max=99 自動處理 99+"
       >
         <div className="flex items-center gap-4">
-          <Avatar alt="Ada" size={40} badgeCount={3} />
-          <Avatar alt="Alex" size={40} badgeCount={12} />
-          <Avatar alt="Ben" size={40} badgeCount={128} />
+          <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" size={40} badgeCount={3} />
+          <Avatar src="https://i.pravatar.cc/80?u=alex-wang" alt="Alex" size={40} badgeCount={12} />
+          <Avatar src="https://i.pravatar.cc/80?u=ben-liu" alt="Ben" size={40} badgeCount={128} />
         </div>
         <Label>↑ count 3 / 12 / 128(超過 99 顯示 "99+")</Label>
       </Rule>
@@ -170,9 +173,9 @@ export const WithBadgeOverlayRule: Story = {
         note="兩者是**不同角、不同語義**的 slot(presence=這個人的線上狀態,右下;count=此對話未讀量,右上),對齊 `badge.spec.md`「Avatar 可疊 status + count」canonical + Slack / Teams / iMessage / LINE 標配。**signal crowding 只禁「同一角疊兩個同類 indicator」**(如右上同時 count + dot),不禁不同角不同語義的兩個訊號"
       >
         <div className="flex items-center gap-4">
-          <Avatar alt="Ada" size={40} status="online" badgeCount={3} />
-          <Avatar alt="Alex" size={40} status="busy" />
-          <Avatar alt="Ben" size={40} badgeCount={12} />
+          <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" size={40} status="online" badgeCount={3} />
+          <Avatar src="https://i.pravatar.cc/80?u=alex-wang" alt="Alex" size={40} status="busy" />
+          <Avatar src="https://i.pravatar.cc/80?u=ben-liu" alt="Ben" size={40} badgeCount={12} />
         </div>
         <Label>↑ Ada 同時 presence(右下)+ count(右上)並存;Alex 只 presence;Ben 只 count</Label>
       </Rule>
@@ -189,13 +192,14 @@ export const HoverCardIntegrationRule: Story = {
         note="ProfileCard 是 DS 設計準則 人員 hover 內容元件(avatar + name + subtitle + actions + status + fields 統一佈局)。Avatar 的 hoverCard prop 接 ProfileCard,不可手刻 JSX — 手刻會漂移出 ProfileCard 對齊 / 間距 / status token 規則"
       >
         <Avatar
+          src="https://i.pravatar.cc/80?u=ada-chen"
           alt="Ada Chen"
           size={40}
           hoverCard={
             <ProfileCard
               name="Ada Chen"
               subtitle="Design Engineer · 台北"
-              avatar={{ alt: 'Ada Chen' }}
+              avatar={{ src: 'https://i.pravatar.cc/80?u=ada-chen', alt: 'Ada Chen' }}
               status="online"
               statusMessage="Out of Office: Back on Monday!"
               actions={<ProfileCardDefaultActions />}
@@ -216,7 +220,7 @@ export const HoverCardIntegrationRule: Story = {
       >
         <div className="flex items-start gap-8">
           <div className="flex flex-col gap-2">
-            <Avatar alt="Alex Wang" size={48}
+            <Avatar src="https://i.pravatar.cc/96?u=alex-wang" alt="Alex Wang" size={48}
               hoverCard={
                 <ProfileCard name="Alex Wang" subtitle="Engineer · 已離職" onViewMore={() => {}} />
               }
@@ -230,7 +234,7 @@ export const HoverCardIntegrationRule: Story = {
             <div className="border border-divider rounded-lg bg-surface py-1 w-full">
               <MenuItem
                 size="lg"
-                avatar={{ alt: 'Alex Wang' }}
+                avatar={{ src: 'https://i.pravatar.cc/64?u=alex-wang', alt: 'Alex Wang' }}
                 description={<span className="text-error">已離職</span>}
               >
                 Alex Wang

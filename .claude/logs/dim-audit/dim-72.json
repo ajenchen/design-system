@@ -1,0 +1,35 @@
+{
+  "dim": 72,
+  "title": "DS API surface tightening",
+  "filesScanned": 66,
+  "mechanism": "per-component review; DS-wide enumerate ALL component API surface — 過寬 API 該收",
+  "scanScope": "root barrel index.ts + 全 64 component 目錄 export surface(grep 全枚舉)+ 10 spec.md internal frontmatter + compile-stories.mjs 消費路徑",
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:328 (+61 個同類 *Meta,經 index.ts export * 進 root barrel)",
+      "問題": "62 個 componentMeta 物件(radioGroupMeta / buttonMeta / tabsMeta ...)全部 `export const` 後被各元件 index.ts 的 `export *` 掃進 root barrel index.ts,成為 package 對外公開 API。實際上這些是 story-auto-compile 的建置期 metadata:compile-stories.mjs / audit-story-quality.mjs 等腳本是用『正則讀 tsx 原始碼字串 + vm.runInNewContext』取值(compile-stories.mjs:73 `tsxContent.match(/export const \\w+Meta = .../)`),不 import runtime export;全 DS 也 0 個 runtime consumer(grep import 確認)。等於把純內部工具 metadata 當公開契約暴露 —— consumer IDE autocomplete 多 62 個雜訊、公開 .d.ts type surface 膨脹、且一旦有人依賴就變成 breaking-change 負債。",
+      "severity": "material",
+      "建議": "把 *Meta 收出 root barrel front-door。最乾淨做法:gen-design-system-barrel.mjs 生成時排除 `*Meta` named export(或各元件 index.ts 改『具名 re-export 元件/型別』不用 `export *` 掃全部)。注意:compile-stories.mjs 的正則吃的是 `export const \\w+Meta = {...} as const` 字面,所以不能單純拿掉 export 關鍵字 —— 要嘛 barrel 層排除、要嘛把正則放寬成 `(export )?const \\w+Meta` 後改成非 export const。對齊 Material `@mui/material` 只出成品、內部 metadata 走 `@mui/utils` 不進 front-door 的分層。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Field/field-wrapper.tsx:294,332,368 + packages/design-system/src/components/TimePicker/time-columns.tsx:43,59",
+      "問題": "public 元件的純內部 helper 被 `export *` 一併掃進 root barrel:Field 的 `nakedCellRowModeAlign` / `nakedCellEditableDisplayHover`(DataTable cell 對齊/hover 的 Tailwind class 字串)、`fieldDisplayTextClass`(size→text token 對應)、TimePicker 的 `isoToTimeParts` / `timePartsToString`(date 解析)。這些是跨元件內部共用(Field→LinkInput/TimePicker、TimePicker→DatePicker,經 `@/design-system/...` subpath import),模組層確實需要 export,但不該出現在 consumer 直用的 root front-door。它們洩漏了『cell hover outline 用哪個 CSS var』『時間字串怎麼格式化』這類 implementation detail 當公開 API。",
+      "severity": "marginal",
+      "建議": "跟 finding #1 同根因(`export *` 無差別 re-export)。落地:barrel/index.ts 改具名 re-export 只放公開項(元件 / *Props / *Variants cva / 明示公開 helper 如 toast、registerFileRenderer),或把純內部跨元件 helper 搬到不被 barrel 掃的 internal 模組(如 lib/internal/*)並在 export 上加 jsDoc `@internal`。ui-development.md 已有『export jsDoc 加 @internal marker』canonical,此處未落實。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DateGrid/date-grid.tsx:58",
+      "問題": "`export type DateGridProps = React.ComponentProps<typeof DayPicker>` 把 react-day-picker 的整組 prop surface 原封不動當成 DateGrid 公開型別,零 API 邊界。但 DateGrid 內部已固定接管 `classNames`(L88)、`labels`(L196)、`components`(L222)等 prop —— 型別卻仍宣稱 consumer 可傳這些,傳了會被內部覆蓋或衝突(誤導型別)。DateGrid 雖是 internal(subpath-only)且刻意做 DayPicker 的樣式薄殼,full passthrough 有其道理,但『元件自己接管的 prop』不該還開放在型別上。",
+      "severity": "marginal",
+      "建議": "型別收成 `Omit<React.ComponentProps<typeof DayPicker>, 'classNames' | 'components' | 'labels'>`(把 DateGrid 內部固定控制的 prop 排除),讓公開型別只暴露 consumer 真正能安全傳的 prop。對齊同 DS 內 ProgressBar(`Omit<...ProgressPrimitive.Root, 'value'>`)/ Calendar(`Omit<...,'onSelect'>`)已在做的『Omit 掉內部接管 prop』慣例。"
+    }
+  ],
+  "cleanChecks": [
+    "語義 prop(size/variant/status/tone/type)無 bare string 型別(grep 全掃僅 Chart color CSS 字串 + TagDismiss 內部,皆合法)",
+    "icon slot 無 ReactNode 過寬型別(startIcon/endIcon 皆 LucideIcon,符合 props-naming canonical)",
+    "union prop 無不當 primitive escape hatch(僅 Steps defaultExpanded 'all'|'none'|string[],合法)",
+    "size?: number 皆為合法(Avatar/CircularProgress 任意 px、FileUpload bytes),非該收的 UI-size",
+    "root barrel 的 internal 排除清單(10 單元)與 spec.md isInternal frontmatter 完全一致,無洩漏",
+    "prop 內 Record<string,unknown> 多為內部(DataTable dnd attrs / Chart payload);Calendar event metadata 是 consumer 自有資料 escape hatch,合法"
+  ]
+}

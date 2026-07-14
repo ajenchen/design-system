@@ -4,10 +4,12 @@
  *
  * ── Layer 分工 ──
  * Layer A(本 script,mechanical)
- *   1. 截圖每個關鍵 story(retina PNG,snapshots/*.png)
+ *   1. 截圖每個關鍵 story(預設 1x PNG,`--retina` opt-in debug;snapshots/*.png)
  *   2. WCAG 對比度掃描:每個 story 找可見文字 / icon 和底色對比,flag AA 不過(< 4.5:1 for text)
- *   3. 幾何 assertion:讀 `scripts/visual-assertions.json` 定義的 DOM 測量 per story
- *      (例:FileViewer toolbar 4 slot 等高 / DatePicker 四邊 12px 對稱 / Calendar cell 等寬)
+ *   3. 幾何 assertion(引擎支援 equalHeight / padding4Sided 等 type;⚠️ 現況誠實標註 2026-07-14:
+ *      `scripts/visual-assertions.json` 的 111 個 scenario 目前全部只有 id+file、0 個定義
+ *      `assertions` 陣列 → geometryViolations 恆空。該 manifest 現階段實質是「截圖場景清單」;
+ *      幾何 invariant(如 toolbar slot 等高 / 四邊 padding 對稱)要生效須在 scenario 補 assertions 欄位)
  *   4. 產出 snapshots/report.json:{ snapshots: [...], contrastViolations: [...], geometryViolations: [...] }
  *
  * Layer B(`/visual-audit` skill,AI judgement)
@@ -89,25 +91,16 @@ if (MATRIX_CELLS.length && UPDATE_BASELINE) {
 }
 
 // ── 主 scenario 清單 ────────────────────────────────────────────────────────
-// 先讀 assertions.json 取 scenario,fallback 到 hardcoded
+// 讀 assertions.json 取 scenario — fail-closed(2026-07-14 dim-66 修:原 silent fallback
+// 內建 8-scenario 子集會讓 CI「DS-wide」宣稱靜默降級成 8 張截圖假綠;manifest 是 committed
+// SSOT,讀不到 = broken state,必 fail-loud,對齊 feedback_ssot_mechanical_p0_not_p1_warn)。
 let ASSERTIONS = {}
 try {
   const raw = await readFile(ASSERTIONS_PATH, 'utf-8')
   ASSERTIONS = JSON.parse(raw)
-} catch {
-  console.warn('[visual-audit] scripts/visual-assertions.json 缺失,用內建 fallback')
-  ASSERTIONS = {
-    scenarios: [
-      { id: 'design-system-components-datepicker-展示--basic', file: 'datepicker-basic.png' },
-      { id: 'design-system-components-datepicker-展示--range-picker', file: 'datepicker-range.png' },
-      { id: 'design-system-components-calendar-展示--團隊行事曆', file: 'calendar-event-team.png' },
-      { id: 'design-system-components-timepicker-展示--會議時段', file: 'timepicker-meeting.png' },
-      { id: 'design-system-components-fileviewer-展示--default', file: 'fileviewer-default.png' },
-      { id: 'design-system-components-rating-展示--default', file: 'rating-default.png' },
-      { id: 'design-system-components-coachmark-展示--tipsmultistep', file: 'coachmark-tips.png' },
-      { id: 'design-system-components-carousel-展示--default', file: 'carousel-default.png' },
-    ],
-  }
+} catch (err) {
+  console.error(`[visual-audit] FATAL: scripts/visual-assertions.json 讀取失敗(${err.message})— fail-closed,不做內建 fallback`)
+  process.exit(1)
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -467,6 +460,12 @@ async function auditScenario(browser, scenario, opts = {}) {
         } catch (diffErr) {
           diff = { error: diffErr.message }
         }
+      } else if (!UPDATE_BASELINE) {
+        // 2026-07-14 dim-66 修:baseline 缺失原本 silent skip(diff 恆 null → 該 scenario 永遠
+        // 沒有 regression 防線卻照樣綠燈)。改 fail-closed:計入 diff error;--update-baseline
+        // 模式豁免(該模式本來就是在生 baseline)。補 baseline 走 visual-regression.yml 檔頭流程
+        // (workflow_dispatch → 下載 ubuntu 渲染 artifact → commit 進 snapshots-baseline/)。
+        diff = { error: `baseline missing(snapshots-baseline/${scenario.file})` }
       }
     }
 
@@ -598,6 +597,11 @@ async function main() {
   let totalGeometryViolations = 0
   let totalA11yViolations = 0
   let totalDiffBudgetBreached = 0
+  // 2026-07-14 dim-66 修:render error(story 404 / Storybook error display)與 diff error
+  // (baseline missing / dimension mismatch)原本只 console.error、不進 exit condition →
+  // 壞掉的 story 照樣綠燈。fail-closed:兩者皆計數 + 進 exit gate。
+  let totalRenderErrors = 0
+  let totalDiffErrors = 0
 
   for (const scenario of scopedScenarios) {
     // 2026-06-11 dim 51:matrix mode = 每 scenario × cell 全跑 violation scan(contrast/geometry/axe)。
@@ -617,7 +621,14 @@ async function main() {
       if (r.geometryViolations?.length) totalGeometryViolations += r.geometryViolations.length
       if (r.a11yViolations?.length) totalA11yViolations += r.a11yViolations.length
       if (r.diff?.exceedBudget) totalDiffBudgetBreached++
-      if (r.error) console.error(`  ✗ ${r.error}`)
+      if (r.diff?.error) {
+        totalDiffErrors++
+        console.error(`  ✗ diff error: ${r.diff.error}`)
+      }
+      if (r.error) {
+        totalRenderErrors++
+        console.error(`  ✗ ${r.error}`)
+      }
     }
   }
 
@@ -645,6 +656,8 @@ async function main() {
     totalGeometryViolations,
     totalA11yViolations,
     totalDiffBudgetBreached,
+    totalRenderErrors,
+    totalDiffErrors,
     scenarios: results,
   }
   await writeFile(join(OUT_DIR, 'report.json'), JSON.stringify(report, null, 2))
@@ -654,15 +667,20 @@ async function main() {
   console.log(`  Geometry violations: ${totalGeometryViolations}`)
   if (!NO_A11Y) console.log(`  A11y violations (WCAG 2.1 AA): ${totalA11yViolations}`)
   if (!NO_DIFF) console.log(`  Baseline diff budget breached: ${totalDiffBudgetBreached} (threshold ${PIXEL_DIFF_PCT_BUDGET}%)`)
+  console.log(`  Render errors(story 404 / error display): ${totalRenderErrors}`)
+  if (!NO_DIFF) console.log(`  Diff errors(baseline missing / dimension mismatch): ${totalDiffErrors}`)
   console.log(`  Report: ${join(OUT_DIR, 'report.json')}`)
   console.log(`  Screenshots: ${OUT_DIR}/*.png`)
   console.log(`\n[Layer B:invoke /visual-audit 讀 snapshots/ 做 AI 設計合理性判斷]`)
 
+  // 2026-07-14 dim-66:render / diff error 進 exit gate(fail-closed;原本 404 story 假綠)
   process.exit(
     totalContrastViolations > 0 ||
       totalGeometryViolations > 0 ||
       totalA11yViolations > 0 ||
-      totalDiffBudgetBreached > 0
+      totalDiffBudgetBreached > 0 ||
+      totalRenderErrors > 0 ||
+      totalDiffErrors > 0
       ? 1
       : 0,
   )

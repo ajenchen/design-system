@@ -18,7 +18,7 @@ Scope:**tsx / ts code hygiene**,跟 design canonical 正交。
 | # | Check | Severity | 如何判定 |
 |---|-------|---------|---------|
 | 1 | `any` 使用 | P0 | grep `: any` / `as any` / `<any>` / `any[]` / `Record<X, any>`;支援 `// any-allow: {rationale}` 逃生口(同行或上一行) |
-| 2 | File size(.tsx)| P0 > 800 / P1 > 500 | `wc -l`;budget 500 / transition cap 800;spec 同 `check_file_size_budget.sh` policy |
+| 2 | File size(.tsx)| P0 > 800 / P1 > 500 | `wc -l`;budget 500 / transition cap 800(tsx SSOT = `scripts/code-quality-audit.mjs:36-37` + `lib/_code_quality.sh`;`check_file_size_budget.sh` 僅管治理 md,數字精神一致非同一 policy)|
 | 3 | Long function | P1 > 80 行 | naive:`function`/`const` 宣告到 matching `}` indent 行距 |
 | 4 | Dead export | P1 | `export` 名稱在其他 src/ 檔無出現;exempt `*Props/Options/Config/Args/Context/Variants/Value` 型別 API 慣例 |
 | 5 | Circular dep | P0 | DFS import graph,找 cycle |
@@ -56,10 +56,10 @@ Scope:**tsx / ts code hygiene**,跟 design canonical 正交。
 | `/design-system-audit` Dim 27 | `--deep` 必 chain 本 skill scope=all |
 | `/component-quality-gate` Ship | chain 本 skill scope=component:{Name} |
 | `/new-component` Phase 4.5 | 元件建完必跑 scope=component:{Name} |
-| Hook `check_code_quality.sh` | PostToolUse Edit/Write on src/ — 只跑 any + file-size(quick) |
+| Hook `post_edit_dispatcher.sh` → `lib/_code_quality.sh` | PostToolUse Edit/Write on src/ — 只跑 any + file-size(quick);原 check_code_quality.sh folded(2026-05-13 dispatcher consolidation)|
 
 ## References
 
 - `scripts/code-quality-audit.mjs` — 實作
-- `.claude/hooks/check_code_quality.sh` — per-edit lite check
+- `.claude/hooks/lib/_code_quality.sh`(經 `post_edit_dispatcher.sh` chain)— per-edit lite check
 - 相關:token 防線 `lib/_token_hygiene.sh` + `check_opacity_token_usage.sh`(正交 — token 紀律 vs code 紀律)

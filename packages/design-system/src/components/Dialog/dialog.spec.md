@@ -105,6 +105,15 @@ Modal 與 viewport 四邊保持 `--layout-space-bottom`（48px）最小間距。
 
 **Canonical 來源**:Dialog 是 overlay chrome，corner close X 屬 action group region，必用 Button(非 Inline Action / 非自刻 button)。詳見 `patterns/element-anatomy/inline-action.spec.md`「Dismiss canonical — X close only」+ `patterns/overlay-surface/overlay-surface.spec.md`「Chrome dismiss size canonical」。
 
+### Header actions slot(2026-07-08)
+
+Header 級操作(記錄 prev / next 導覽、header 級溢出選單 ⋮ 等「作用於整個 dialog 內容」的操作)走 `<DialogHeader actions={…}>` slot,**不**塞 children 自刻右側 cluster。
+
+- **何時用**:操作對象是 dialog 承載的記錄本身(切換上下筆、複製連結、更多選單)。欄位級操作仍歸 body;confirm / cancel 歸 footer。
+- **分隔線由 DS 自動放**:actions 與內建 Close X 之間 DS 渲 `<ButtonDivider>` — `action-bar.spec.md:281`「最右側為關閉 / 解除按鈕 → 分隔線必須(誤觸保護)」;幾何 = ButtonDivider `mx-1` 於 `gap-2` cluster → 兩側 12px 對稱(同 spec「分隔線幾何」段)。
+- **按鈕形態**:`<Button variant="text" iconOnly …>`(text variant 自動 `data-unbounded`,不撐高 chrome header;對齊 action-bar「溢出按鈕一律最低視覺重量」)。
+- ❌ **禁**:consumer 在 children 內自刻 cluster + divider(分隔線落點歸 DS,自刻 = 漏分隔線 / 幾何 drift 根因 — 2026-07-08 WM 詳情 header 錨例)。
+
 ## Title
 
 `text-body-lg font-medium truncate`——單行截斷，不換行。

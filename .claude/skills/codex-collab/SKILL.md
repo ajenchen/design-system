@@ -1,6 +1,6 @@
 ---
 name: codex-collab
-description: Codex dual-track collab for visual/SSOT/canonical decisions. Claude own → codex own → 比稿 synthesize(永遠 3-step,不 pass-through)。Local `codex exec` 為主 transport(地端);GitHub PR comment 為 fallback。Queue SSOT `.claude/memory/codex-brief-queue.jsonl`。Invoke when user asks「跟 codex 討論 / 比稿 / 確認」.
+description: Codex dual-track collab for visual/SSOT/canonical decisions. Claude own → codex own → 比稿 synthesize(永遠 3-step,不 pass-through)。Local `codex exec` 為主 transport(地端);GitHub PR comment 為 fallback。Queue SSOT `.claude/memory/codex-brief-queue.jsonl`。Invoke when user asks「跟 codex 討論 / 比稿 / 確認 / 2nd opinion / dual-track / 不打折 / 不省工」.
 ---
 
 # Codex Collaboration Workflow
@@ -16,7 +16,7 @@ description: Codex dual-track collab for visual/SSOT/canonical decisions. Claude
 | 對 user 負責 | YES(最終結論由我 report) | NO(透過我轉述) |
 | Benchmark cite | M22 mandate | 也須 cite source(我 enforce) |
 
-**核心原則**:Codex 不直接 commit。所有結論由 Claude 收斂、跑完 M1-M31 自檢、user approve 後由我落地。
+**核心原則**:Codex 不直接 commit。所有結論由 Claude 收斂、跑完 M1-M32 自檢、user approve 後由我落地。
 
 ## ⚠️ Step 0 入口 gate(2026-05-10 加,fix auto-fire anti-pattern)
 
@@ -39,6 +39,8 @@ which codex 2>/dev/null && codex --version 2>/dev/null                 # 2 Globa
 ls -la ~/.codex/auth.json                                              # 3 Auth(sanity)
 ```
 
+**Freshness gate(2026-07-10,補 deep-audit B.0 以外路徑)**:dispatch 前必跑 `node scripts/check-codex-freshness.mjs`(離線可 `--offline`)— CLI 落後自動升級、model pin 禁、effort = probe top。
+
 **Decision**:1 ✅ → local CLI(canonical per `references/transport.md:36-40`)/ 1 ❌ + 2 ✅ → global / 1+2 ❌ + 3 ✅ → `npm install`(`@openai/codex` 已 npm dep)/ 全 ❌ → 報 user。**禁 fallback Explore agent 當 codex**(M31 違反:Explore 同模型,不滿足 dual-track 第 2 bias)。
 
 **Anti-pattern**:`which codex` 失敗就斷言 unreachable → 嘗試 sudo install / 繞 M28 開 PR / Explore 替身。詳 `.claude/memory/feedback_codex_local_transport_node_modules.md`。
@@ -51,7 +53,7 @@ ls -la ~/.codex/auth.json                                              # 3 Auth(
 
 **User 原話 SSOT**(2026-05-15):「也要告訴他我的原話,讓他也能有機會解讀我的原話 ... 說不定codex在解讀別人的問題比你還有慧根 ... 請你在infra上避免你下次又在局限codex發現問題的能力」
 
-**Why**:Paraphrase 過濾 user 細節 / 加 Claude 偏見 / frame 問題 → codex 只能在 Claude 框架答 surgical fix → root cause 沒抓到。錨例 2026-05-15:I1 placeholder ellipsis + I3 overflow 兩 bug user 提 2-3 次,每次送 paraphrase → 冰山修。Hook `check_codex_brief_verbatim.sh`(未實作;verbatim-relay `## User 原話` heading 檢查無 write-time hook — live `check_codex_brief_invariants.sh` 只 cover 全盤閱讀/triple-verify/禁抽樣/禁列檔 audit-flow invariants,不涵蓋此 verbatim-relay,改靠本 Step 0.05 mindset enforcement)。
+**Why**:Paraphrase 過濾 user 細節 / 加 Claude 偏見 / frame 問題 → codex 只能在 Claude 框架答 surgical fix → root cause 沒抓到。錨例 2026-05-15:I1 placeholder ellipsis + I3 overflow 兩 bug user 提 2-3 次,每次送 paraphrase → 冰山修。Hook `check_codex_brief_verbatim.sh`(未實作;verbatim-relay `## User 原話` heading 檢查無 write-time hook — live `check_codex_brief_invariants.sh` 只 cover 全盤閱讀/triple-verify/禁抽樣/禁列檔 + 輸入對等(2026-07-10 加)audit-flow invariants,不涵蓋此 verbatim-relay,改靠本 Step 0.05 mindset enforcement)。
 
 ## ⚠️ M31 Universal 5-step canonical(2026-05-10 user directive)
 
@@ -87,7 +89,7 @@ ls -la ~/.codex/auth.json                                              # 3 Auth(
 明確 trigger(滿足任一才 invoke):
 1. **User 明確要求**:「跟 codex 討論 X」/「與 codex 確認」/「let's get codex's take on X」
 2. **Claude 自認 stuck**:investigate root cause 後仍不確定 / 多 hypothesis 沒 evidence 收斂 / 跨 framework 不熟悉(eg. Windows-specific bug 但本地是 Linux)
-3. **Deep audit (`/design-system-audit --deep`)**:Phase 4.5 second-pass(audit 是 explicit benchmark 場景)
+3. **Deep audit**:走 `/deep-audit-cross-codex` Phase B(codex 同流程稽核 + 比稿;audit 是 explicit benchmark 場景)
 4. **Cross-component canonical 訂立**(M8 benchmark 後)需獨立 reviewer
 
 **禁止 invoke**:
@@ -139,8 +141,8 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
 
 **Queue 跨 session 持久化(2026-05-08 user 拍板)**:
 - SSOT:`.claude/memory/codex-brief-queue.jsonl`,JSONL 一行一 brief
-- Schema:`{ id, url, topic, sentAt, status, followupCount, lastFollowupAt?, repliedAt?, deferredAt?, deferReason?, planRef?, queuedAfter? }` — status ∈ `pending` (active 等 reply 可 auto-followup) / `deferred` (user 明示「之後再/晚點/先放著」**不 auto-followup**,等 explicit re-invoke 轉 pending)/ `replied` / `exhausted`
-- **每 session start 必讀**(本 SKILL invariant — 載入掃 queue 找 pending resume tracking;`deferred` 不送 followup)
+- Schema:`{ id, url, topic, sentAt, status, followupCount, lastFollowupAt?, repliedAt?, deferredAt?, deferReason?, planRef?, queuedAfter? }` — status ∈ `pending` (active 等 reply 可 auto-followup) / `deferred` (user 明示「之後再/晚點/先放著」**不 auto-followup**,等 explicit re-invoke 轉 pending)/ `replied` / `exhausted` / `drafted`(草擬未送)/ `stale-superseded`(被後續 round 取代)
+- **本 skill invoke 時必讀**(SKILL 載入掃 queue 找 pending resume tracking;`deferred` 不送 followup;無 session-start 機械接線)
 - 事件:send brief = append;reply 來 = `replied` + repliedAt + unblock queued;followup auto = ++count + lastFollowupAt;3 round 無 reply = `exhausted` + handoff prompt;user defer trigger = `deferred` + deferredAt + deferReason + planRef
 - TodoWrite 仍用(session-scoped 視覺呈現),但 ground truth 在此 file
 
@@ -246,4 +248,4 @@ PR comment:`@codex 結論已 land at <commit>. 感謝 review.`
 
 ## Deep Audit 整合 + Cross-session persistence
 
-`/design-system-audit --deep` Phase 4.5 自動 invoke 本 skill(brief「review Phase 1-4 findings,有 systemic issue 嗎?」→ Codex reply 進 Phase 5,M14 chain)。新 session user 說「跟 codex 討論」→ 必查本 SKILL.md 按 Step 0-7 走;CLAUDE.md 任務導航表已 anchor;**禁憑記憶簡化流程**。
+Deep audit 的 codex 二審走獨立 `/deep-audit-cross-codex` skill Phase B(codex 同流程稽核 + 比稿辯論;`/design-system-audit --deep` Phase 4.5 現為 governance sprawl check chain `/knowledge-prune`,不 invoke 本 skill)。新 session user 說「跟 codex 討論」→ 必查本 SKILL.md 按 Step 0-7 走;CLAUDE.md 任務導航表已 anchor;**禁憑記憶簡化流程**。

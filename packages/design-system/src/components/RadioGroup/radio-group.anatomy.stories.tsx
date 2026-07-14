@@ -1,7 +1,6 @@
 import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { RadioGroup, RadioGroupItem } from './radio-group'
-import { SelectionItem } from '@/design-system/components/SelectionControl/selection-item'
 
 const meta: Meta = {
   title: 'Design System/Components/RadioGroup/設計規格',
@@ -287,20 +286,18 @@ const InspectorInner = () => {
           {/* Live preview */}
           <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center gap-6">
             <RadioGroup defaultValue={checked === 'checked' ? 'preview' : undefined} className="flex gap-4">
-              <SelectionItem
+              <RadioGroupItem
                 size={size}
-                control={<RadioGroupItem value="preview" id="preview-radio" size={size} disabled={state === 'disabled'} />}
+                value="preview"
                 label="信用卡"
                 description={withDescription ? '支援 Visa / Mastercard / JCB,結帳時直接扣款' : undefined}
-                htmlFor="preview-radio"
                 disabled={state === 'disabled'}
               />
-              <SelectionItem
+              <RadioGroupItem
                 size={size}
-                control={<RadioGroupItem value="other" id="preview-other" size={size} disabled={state === 'disabled'} />}
+                value="other"
                 label="ATM 轉帳"
                 description={withDescription ? '取得虛擬帳號後 3 天內完成付款' : undefined}
-                htmlFor="preview-other"
                 disabled={state === 'disabled'}
               />
             </RadioGroup>
@@ -534,26 +531,9 @@ export const SizeMatrix = {
             <div key={sz} className="flex flex-col gap-2">
               <span className="text-[11px] text-fg-muted font-mono">size="{sz}" ({SIZE_SPECS[sz].controlPx}px)</span>
               <RadioGroup defaultValue="a">
-                <SelectionItem
-                  size={sz}
-                  control={<RadioGroupItem value="a" id={`sz-${sz}-a`} size={sz} />}
-                  label="即時"
-                  htmlFor={`sz-${sz}-a`}
-                />
-                <SelectionItem
-                  size={sz}
-                  control={<RadioGroupItem value="b" id={`sz-${sz}-b`} size={sz} />}
-                  label="每日摘要"
-                  description="每天晚上 9 點寄一次"
-                  htmlFor={`sz-${sz}-b`}
-                />
-                <SelectionItem
-                  size={sz}
-                  control={<RadioGroupItem value="c" id={`sz-${sz}-c`} size={sz} disabled />}
-                  label="每週摘要"
-                  htmlFor={`sz-${sz}-c`}
-                  disabled
-                />
+                <RadioGroupItem size={sz} value="a" label="即時" />
+                <RadioGroupItem size={sz} value="b" label="每日摘要" description="每天晚上 9 點寄一次" />
+                <RadioGroupItem size={sz} value="c" label="每週摘要" disabled />
               </RadioGroup>
             </div>
           ))}
@@ -629,8 +609,10 @@ const StateBehaviorInner = () => {
       {/* Whole group disabled */}
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">行為 3:整組 disabled(Field context 接管)</span>
+        {/* 架構理由(移出 user-visible Desc,per story-rules.md 人話原則):item 經 useResolvedFieldDisabled
+            繼承 Field 的 disabled;SSOT = field-controls.spec.md cascade 段。 */}
         <Desc>
-          整個 RadioGroup 放在 disabled 的 Field 內時,所有 item 經 useResolvedFieldDisabled 繼承 disabled——consumer 不需逐 item 傳 disabled(SSOT:field-controls.spec.md cascade 段)。下方示意為靜態模擬(逐 item 傳 disabled 重現相同視覺);實際使用以 {'<Field disabled>'} 包裹即可。
+          整組放進停用的 Field 時,裡面每個選項會自動一起變灰,不需逐一設定。下方為靜態示意(逐 item 傳 disabled 重現相同視覺);實際使用以 {'<Field disabled>'} 包裹即可。
         </Desc>
         <div className="flex gap-6 items-start">
           <div className="px-6 py-5 rounded-lg bg-canvas border border-divider min-w-[280px]">

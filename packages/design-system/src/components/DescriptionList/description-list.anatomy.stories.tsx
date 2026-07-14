@@ -156,23 +156,23 @@ export const StateBehavior: Story = {
   render: () => (
     <div className="flex flex-col gap-10">
       <div>
-        <H3>空值呈現 — 一律用 `—` 字元(em dash)</H3>
+        <H3>空值呈現 — 一律用半形 `-` 字元(hyphen)</H3>
         <Desc>
-          DescriptionList 是唯讀資訊展示,空值不留空白(會讓使用者以為資料沒載入完)。一律用 em dash
-          (`—`)明確表達「有查過,但這個欄位目前沒值」。對齊 Atlassian / Polaris / GitHub 的資訊卡慣例。
+          DescriptionList 是唯讀資訊展示,空值不留空白(會讓使用者以為資料沒載入完)。一律用半形連字號
+          (`-`,對齊 Field `EMPTY_DISPLAY`)明確表達「有查過,但這個欄位目前沒值」;色同 value `text-foreground`。對齊 Atlassian / Polaris / GitHub 的資訊卡慣例。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-md">
           <DescriptionList cols={2}>
             <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
-            <DescriptionItem label="職稱"><span className="text-fg-muted">—</span></DescriptionItem>
+            <DescriptionItem label="職稱"><span className="text-foreground">-</span></DescriptionItem>
             <DescriptionItem label="Email">user@example.com</DescriptionItem>
-            <DescriptionItem label="電話"><span className="text-fg-muted">—</span></DescriptionItem>
+            <DescriptionItem label="電話"><span className="text-foreground">-</span></DescriptionItem>
             <DescriptionItem label="團隊">Engineering</DescriptionItem>
-            <DescriptionItem label="直屬主管"><span className="text-fg-muted">—</span></DescriptionItem>
+            <DescriptionItem label="直屬主管"><span className="text-foreground">-</span></DescriptionItem>
           </DescriptionList>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          空值不應該用「N/A」/「暫無」等字串——不同 consumer 會選不同字,破壞視覺一致。一律 em dash。
+          空值不應該用「N/A」/「暫無」等字串——不同 consumer 會選不同字,破壞視覺一致。一律半形連字號 `-`。
         </p>
       </div>
 
@@ -180,14 +180,16 @@ export const StateBehavior: Story = {
         <H3>長 value — 自然換行,撐高該 grid cell</H3>
         <Desc>
           `value` 是自然流文字,超過欄寬自然換行(CSS grid 會讓該 row 的 cell 變高,其他 cell 保持 label
-          top-aligned)。不使用 truncate——value 是被讀的內容,截斷會讓使用者漏資訊。
+          top-aligned)。不使用 truncate——value 是被讀的內容,截斷會讓使用者漏資訊。帶空白的文字(如職稱)
+          自然斷行;無空白長字串(email / URL / token)需在該 item 加 `break-all` 才會斷(此範例 Email 欄已加;
+          vertical dd 預設不強制斷字,長字串由 consumer 自加 break-all)。
         </Desc>
         <div className="border border-dashed border-divider rounded-md p-4 max-w-md">
           <DescriptionList cols={2}>
             <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
             <DescriptionItem label="職稱">Senior Staff Principal Engineer, Design Systems</DescriptionItem>
             <DescriptionItem label="辦公地點">Taipei, Taiwan</DescriptionItem>
-            <DescriptionItem label="Email">very.long.email.address@subdomain.example.com</DescriptionItem>
+            <DescriptionItem label="Email" className="min-w-0 break-all">very.long.email.address@subdomain.example.com</DescriptionItem>
           </DescriptionList>
         </div>
       </div>
@@ -246,7 +248,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `description-list.spec.md`「無障礙」段。摘要:\n\n- 語意 HTML:外層 <dl>,每組 <dt>(term)+ <dd>(description)— screen reader 讀「term X, description Y」配對敘事\n- DT/DD 配對:DescriptionItem 強制一組配對,不分開暴露 <dt>/<dd> primitive\n- 空值:consumer 傳 — 占位(SR 讀出長破折號,比空 <dd> 明確)\n- 多欄 cols>1:視覺 grid、DOM 仍 item 順序,SR 依 DOM 敘事\n- 無互動:純唯讀呈現,無 keyboard / focus state(無 ARIA 補強需求,語意由原生 dl/dt/dd 承載)"}</p>
+      <p className="whitespace-pre-line">{"詳 `description-list.spec.md`「無障礙」段。摘要:\n\n- 語意 HTML:外層 <dl>,每組 <dt>(term)+ <dd>(description)— screen reader 讀「term X, description Y」配對敘事\n- DT/DD 配對:DescriptionItem 強制一組配對,不分開暴露 <dt>/<dd> primitive\n- 空值:consumer 傳半形 - 占位(裸 - SR 敘事弱,宜補 sr-only「無資料」,比空 <dd> 明確)\n- 多欄 cols>1:視覺 grid、DOM 仍 item 順序,SR 依 DOM 敘事\n- 無互動:純唯讀呈現,無 keyboard / focus state(無 ARIA 補強需求,語意由原生 dl/dt/dd 承載)"}</p>
     </div>
   ),
 }

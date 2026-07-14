@@ -1,7 +1,8 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
 import { X } from 'lucide-react'
-import { EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'
+import { cn } from '@/lib/utils'
+import { useFieldEmptyDisplay } from '@/design-system/components/Field/field-context'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
@@ -16,10 +17,11 @@ import {
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
-// PersonData 承載 ProfileCard 所需的完整資訊。DS 全域 person avatar 的 hoverCard ProfileCard 永遠
-// 顯示同一組 sections(name + subtitle + status + 4 default fields + 自訂 fields + actions + View more)
-// — 缺資料顯 placeholder,不會 collapse。對齊 avatar.spec.md「person avatar hover → ProfileCard」
-// DS-wide canonical(2026-05-06 v11 always-render schema 升級)。
+// PersonData 承載 ProfileCard 所需的完整資訊。DS 全域 person avatar 的 hoverCard ProfileCard 顯示
+// 同一組 sections(name + subtitle + status + 2 default fields(id + employeeNumber,見下方
+// NAMECARD_DEFAULT_FIELD_KEYS 對齊註解)+ 自訂 fields + actions + View more)— 缺資料顯 placeholder;
+// **例外:status undefined 時整 status block 省略(collapse,= loading transient,見 status jsDoc)**。
+// 對齊 avatar.spec.md「person avatar hover → ProfileCard」DS-wide canonical。
 export interface PersonData {
   name: string
   avatarUrl?: string
@@ -109,23 +111,30 @@ function PersonAvatar({
   size = 'md',
   className = '',
   style,
+  disabled = false,
 }: {
   person: PersonData
   size?: 'sm' | 'md' | 'lg'
   className?: string
   style?: React.CSSProperties
+  /** disabled field context(2026-07-14 deep-audit 修):抑制 ProfileCard hoverCard(Avatar 收
+   *  undefined → 無 HoverCard wrapper / 無 tabIndex,真不可互動)+ avatar 自身 dim(host-controlled
+   *  opacity — avatar.spec.md「Avatar 在 disabled 元件內 host-controlled opacity」canonical;
+   *  PeoplePicker disabled 分支無 fieldCtx,Avatar self-dim 搆不到,host 補)。
+   *  對齊 people-picker.spec.md「disabled:灰化整個 field,不可互動」。 */
+  disabled?: boolean
 }) {
   const isTableScrolling = useTableIsScrolling()
   const nameCard = React.useMemo(
-    () => (isTableScrolling ? undefined : buildPersonProfileCard(person)),
-    [person, isTableScrolling]
+    () => (isTableScrolling || disabled ? undefined : buildPersonProfileCard(person)),
+    [person, isTableScrolling, disabled]
   )
   return (
     <Avatar
       src={person.avatarUrl}
       alt={person.name}
       size={AVATAR_PX[size]}
-      className={className}
+      className={cn(className, disabled && 'opacity-disabled')}
       style={style}
       hoverCard={nameCard}
     />
@@ -138,8 +147,9 @@ function PersonAvatar({
 // outer 改 items-start + Avatar 外包 ItemPrefix primitive consumption。單行視覺 = items-center 等效;
 // 多行(autoRowHeight cell)避免 avatar+name center 整 row 不對齊 first-line text top。M1 消費既有
 // 對齊 TreeView / MenuItem / SelectionItem 共用 ItemPrefix wrap chevron/icon/avatar canonical。
-function PersonDisplay({ value, size = 'md' }: { value?: PersonValue | null; size?: 'sm' | 'md' | 'lg' }) {
-  if (!value) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
+function PersonDisplay({ value, size = 'md', disabled = false }: { value?: PersonValue | null; size?: 'sm' | 'md' | 'lg'; /** 見 PersonAvatar.disabled jsDoc(抑制 hoverCard + dim) */ disabled?: boolean }) {
+const emptyDisplay = useFieldEmptyDisplay()
+  if (!value) return <span className="text-foreground">{emptyDisplay}</span>
 
   const person = resolvePerson(value)
 
@@ -150,7 +160,7 @@ function PersonDisplay({ value, size = 'md' }: { value?: PersonValue | null; siz
   // 對齊 GitHub Primer ActionList / Slack users_select / Atlassian UserPicker truncation canonical。
   return (
     <span className="flex items-start gap-2 min-w-0 w-full">
-      <ItemPrefix><PersonAvatar person={person} size={size} /></ItemPrefix>
+      <ItemPrefix><PersonAvatar person={person} size={size} disabled={disabled} /></ItemPrefix>
       <span className="truncate flex-1 min-w-0">{person.name}</span>
     </span>
   )
@@ -168,6 +178,7 @@ function MultiPersonDisplay({
   max,
   measured = false,
   onRemove,
+  disabled = false,
 }: {
   value?: PersonValue[] | null
   size?: 'sm' | 'md' | 'lg'
@@ -182,7 +193,10 @@ function MultiPersonDisplay({
   measured?: boolean
   /** 傳入時啟用 dismiss(edit mode),callback 接收被移除的 person */
   onRemove?: (person: PersonValue) => void
+  /** 見 PersonAvatar.disabled jsDoc(抑制全 stack ProfileCard hoverCard + avatar dim) */
+  disabled?: boolean
 }) {
+  const emptyDisplay = useFieldEmptyDisplay()
   // 2026-07-05 D3 P1 修(React #310 家族):3 hooks 原在 empty early return 之後 — value 非空↔空
   // 切換時 hook 數 0↔3 變動必 crash(現靠 consumer 三元切換 element type 偶然避開)。hoist 到 return 前。
   // 2026-05-15 Bug 3 fix(Claude+Codex Step 5 比稿 consensus):消費 shared `avatar-stack-overflow`
@@ -211,7 +225,7 @@ function MultiPersonDisplay({
     return () => ro.disconnect()
   }, [measured, size, value])
 
-  if (!value || value.length === 0) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
+  if (!value || value.length === 0) return <span className="text-foreground">{emptyDisplay}</span>
 
   const resolvedMax = measured && measuredCount !== null ? measuredCount : (max ?? 3)
   const people = value.map(resolvePerson)
@@ -221,7 +235,7 @@ function MultiPersonDisplay({
 
   // 單人回退到 PersonDisplay(顯示名字)
   if (people.length === 1) {
-    return <PersonDisplay value={value[0]} size={size} />
+    return <PersonDisplay value={value[0]} size={size} disabled={disabled} />
   }
 
   // 2026-05-14 item-anatomy SSOT fix(per codex+Layer A 共識):outer items-start + avatar stack
@@ -241,6 +255,7 @@ function MultiPersonDisplay({
               person={person}
               size={size}
               className="ring-2 ring-[var(--surface)]"
+              disabled={disabled}
             />
             {handleDismiss && <AvatarDismissOverlay onRemove={handleDismiss} label={person.name} />}
           </span>
@@ -266,7 +281,8 @@ function MultiPersonDisplay({
                   src={person.avatarUrl}
                   alt={person.name}
                   size={16}
-                  hoverCard={buildPersonProfileCard(person)}
+                  // disabled field:同 PersonAvatar — 抑制 ProfileCard hoverCard(不可互動)
+                  hoverCard={disabled ? undefined : buildPersonProfileCard(person)}
                 />
               }
               onRemove={onRemove ? () => onRemove(value![resolvedMax + i]) : undefined}
@@ -293,8 +309,8 @@ MultiPersonDisplay.displayName = 'MultiPersonDisplay'
 //     sm/md stroke 規格;2026-06-12 同步 checkbox 2026-05-18 簡化 3.5→3,SSOT →
 //     .claude/references/ui-dev-rules.md「小尺寸 icon stroke 補償」)
 //   - **text-on-emphasis**(白 X,確保飽和色底對比)
-//   - **位置 `absolute top-0 right-0`**(button 右上角貼齊 avatar 右上角,完全在 avatar
-//     內 — user-confirmed canonical)
+//   - **位置 `absolute -top-px -right-1`**(top -1px / right -4px,右緣凸出 avatar 外 4px —
+//     v15.15 user-confirmed asymmetric canonical,rationale 見下方 className 內註解)
 //
 // **a11y**(codex P1 fix):`opacity-0` 而非 `display:none` — element 在 DOM/tab-order,
 // keyboard tab 可達,觸控 focus-within 也顯。Hover / focus-within / focus-visible

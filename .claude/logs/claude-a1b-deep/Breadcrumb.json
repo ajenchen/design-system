@@ -1,0 +1,13 @@
+{
+  "component": "Breadcrumb",
+  "implBasis": "self-built on native HTML (nav/ol/li/a/span) + Radix Slot (asChild) + DS Tooltip/DropdownMenu/ItemInlineActionButton",
+  "claimsVerified": 33,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:607",
+      "宣稱": "breadcrumbMeta.states = ['default', 'hover', 'active', 'focus-visible', 'disabled'] — 宣稱 disabled 為一種狀態",
+      "真實code行為": "code 無任何 element-level disabled 實作：BreadcrumbLink 只有 hover/focus-visible class（tsx:454-462），BreadcrumbPage 是 aria-disabled 的 current-page span 但無 disabled variant 樣式。showcase 檔頭（breadcrumb.stories.tsx:2）明文『無 element-level disabled mode』、spec 互動狀態 Disabled row（spec:128）說『通常 breadcrumb link 不會 disabled』。meta 列 'disabled'（及無 DS 樣式的 'active'）為 Phase 1 mechanical placeholder 未清，與 story 檔頭明文相矛盾。",
+      "severity": "marginal"
+    }
+  ]
+}

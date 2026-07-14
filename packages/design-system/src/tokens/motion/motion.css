@@ -1,30 +1,42 @@
 /**
- * Motion tokens — hover delay tier system.
+ * Motion tokens — 統一 `--motion-*` family(2026-07-11 unify + 加進出場動畫 token)。
  *
- * 2026-05-18 ship per user 拍板 #3A(3-tier hover delay token + 確保命名世界級)。
+ * Naming convention(對齊 token-system.spec.md 規則 1 family-scoped + Material `md-sys-motion-*`
+ * / Polaris `p-motion-*` / Carbon motion 三家 namespace 共識):
+ *   --motion-<measurement>-<variant>
+ *   grep `--motion-` 即抓齊全 motion family。
  *
- * Naming convention:
- *   --hover-delay-{tier}
+ * ── 2 個 sub-measurement family ──
  *
- * Tier semantics 對齊 world-class consensus(see motion.spec.md「世界級對照」段):
- *   - plain  → passive hint  | Tooltip 文字提示    | 500ms  | Material 3 / Apple HIG / shadcn-Radix default 主流共識
- *   - rich   → rich preview  | HoverCard / ProfileCard | 700ms  | 含 fetch / multi-section,避免列表掃視誤觸發
- *   - close  → universal exit| 全部關閉延遲          | 200ms  | UX research consensus accidental-hover 容錯
+ * (A) delay(何時開/關 — hover open/close 延遲;Radix delayDuration/openDelay/closeDelay 吃 JS 鏡像)
+ *   - plain 500ms → Tooltip 純文字提示(被動 hint,對齊 Material 3 / Apple HIG / shadcn-Radix 主流)
+ *   - rich  700ms → HoverCard / ProfileCard 內容預覽(含 fetch,避免列表掃視誤觸發)
+ *   - close 200ms → 全 overlay 關閉延遲(close ≤ open UX 共識,user 誤滑出可回來)
+ *   (2026-05-18/20 user 拍板 #3A;原名 `--hover-delay-*`,2026-07-11 統一前綴為 `--motion-delay-*`)
  *
- * 2026-05-20 user 拍板「太快很容易干擾人」+ B 選項(plain 500 / rich 700):
- *   - plain 200 → 500ms:對齊 Material 3 plain tooltip 500ms + Apple HIG ~500ms + shadcn-Radix default 500ms
- *     主流共識(MUI 100ms / Ant 100ms 是 fast-tier 例外);200ms 偏快會打擾滑過列表的 user
- *   - rich 300 → 700ms:HoverCard 含 fetch + multi-section(ProfileCard avatar / actions),
- *     需 user「真停留」才觸發;300ms 列表掃視易觸發 N 次 fetch
- *   - close 200ms 維持:close delay ≤ open delay UX 共識(user 誤滑出可回來)
- *
- * Rationale 命名:不用 component name(`tooltip` 太特定)、不用純數字(`delay-200` 用值不用語意)、
- * 不用孤立縮寫(`hd-fast` 跨人不可讀)。`plain` / `rich` / `close` 對齊 Material rich-tooltip 公開文件 +
- * DS 既有 `compact / rich` mode 詞彙一致(per `# 命名與語言一致性` 命名 3 test)。
+ * (B) 進出場動畫(fade/zoom/slide 的 duration / easing / 幾何 — CSS 驅動,由 tw-animate-css 消費)
+ *   全部世界級實證(見 motion.spec.md「世界級對照」+ planning/2026-07-11-overlay-motion-tokens.md):
+ *   - duration-overlay 150ms:輕量浮層(Tooltip/Popover/HoverCard/DropdownMenu)。
+ *       Material short3 / Carbon moderate-01 / Polaris 150 / tw-animate-css 預設 **四家一致**。
+ *   - duration-surface 250ms:模態面板(Dialog/Sheet/FileViewer,面積大位移遠 → 慢一階)。
+ *       Material medium1 / Polaris 250 / Carbon moderate-02(240)。
+ *   - easing-enter cubic-bezier(0,0,0,1):進場減速(Material standard-decelerate,企業級中性沉穩)。
+ *   - easing-exit  cubic-bezier(0.3,0,1,1):出場加速(Material standard-accelerate)。
+ *   - enter-distance 0.5rem(8px):slide 位移,沿用現行 slide-*-2 = shadcn/Radix canonical。
+ *   - enter-scale 0.95:zoom scale,沿用現行 zoom-95 = shadcn default。
  */
 
 :root {
-  --hover-delay-plain: 500ms;
-  --hover-delay-rich: 700ms;
-  --hover-delay-close: 200ms;
+  /* (A) delay */
+  --motion-delay-plain: 500ms;
+  --motion-delay-rich: 700ms;
+  --motion-delay-close: 200ms;
+
+  /* (B) 進出場動畫 */
+  --motion-duration-overlay: 150ms;
+  --motion-duration-surface: 250ms;
+  --motion-easing-enter: cubic-bezier(0, 0, 0, 1);
+  --motion-easing-exit: cubic-bezier(0.3, 0, 1, 1);
+  --motion-enter-distance: 0.5rem;
+  --motion-enter-scale: 0.95;
 }

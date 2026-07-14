@@ -1,0 +1,1 @@
+{"dim":60,"hook":"check_propose_without_benchmark.sh","residueCount":0,"findings":[],"verified":true,"note":"UserPromptSubmit M26 gate (inject P0 directive when propose keyword + <2 WebFetch/WebSearch in last ~20 turns). Runtime transcript-based reminder, exit 0 by design; no static code anti-pattern to leave file residue."}

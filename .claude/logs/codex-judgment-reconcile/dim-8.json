@@ -1,0 +1,149 @@
+{
+  "dim": 8,
+  "title": "7-維度 對標覆蓋 (7 world-class benchmark dimensions per spec)",
+  "role": "B.3 比稿裁定員 — codex dim-8 findings adjudicated vs real code + Claude same-dim",
+  "judgedAt": "2026-07-13",
+  "codexRaw": 17,
+  "codexSelfLabeled": { "material": 7, "marginal": 10 },
+  "claudeSameDim": { "findings": 0, "verdict": "CLEAN — 0 genuine gaps (all suspicions killed by adversarial full-read)" },
+  "tally": { "material_confirmed": 4, "marginal": 13, "false_positive": 0, "claudeMissed": 4 },
+  "scopeNote": "dim 8 = Consistency type; N/A dimensions require a one-line rationale. Claude documented-scope excludes token specs from component-7dim (they document token systems; empty/validation/loading obviously N/A). Codex's token-spec cluster demands explicit N/A boilerplate → pedantic → marginal, NOT false_positive (specs genuinely lack the lines; codex read correctly, judgment over-strict).",
+  "verdicts": [
+    {
+      "fileLine": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:443",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeCaught": false,
+      "evidence": "Canonical example L432 `<MenuItem endContent={<Switch checked={dark} tabIndex={-1} aria-hidden />} onClick={...}>` passes NEITHER `selected` NOR `checkbox` prop to MenuItem. menu-item.tsx:214-215 defaults role='option' + aria-selected (driven by `selected`/`checked`, both absent here). Switch is aria-hidden → toggle on/off state is invisible to assistive tech. Spec (L443) mandates aria-hidden + row-as-sole-target but does NOT require the row to expose aria-checked/toggle state. Real a11y defect in a cross-component SSOT example that many row components consume. Strongest finding.",
+      "fix": "Canonical example must expose toggle state on the row (pass `selected`/`checked` so aria-selected reflects switch OR use role='switch'/menuitemcheckbox + aria-checked OR prefer DropdownMenuCheckboxItem). Spec must require row = ARIA owner with perceivable checked state."
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:103",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeCaught": false,
+      "evidence": "L103 `{rating === 0 && <FieldError>請至少給 1 星</FieldError>}` shows FieldError whenever rating===0 — including initial/untouched render before any interaction. Contradicts form-validation.spec.md:21-23 canonical 'all Field use blur validation — validate on leaving field, not eager'. demo 矛盾: the example teaches showing errors on untouched fields, an anti-pattern vs the established cross-spec validation-timing canonical.",
+      "fix": "Gate example on touched/submitted (or form.errors.rating) and point to Field/form-validation.spec.md blur-validation canonical."
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Badge/badge.spec.md:184",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeCaught": false,
+      "evidence": "badge.tsx:82 `if (!dot && count == null) return null` (null/undefined hidden) but L83-84 display=`${count}` → count=0 always renders literal '0'. No showZero-style guard. Count section (spec L184+) covers max/dot/placement but is silent on the empty/zero contract. dim-5 (空值呈現) genuinely uncovered for count mode, and the 0-behavior is a real design decision benchmarked by Ant Badge showZero (default false = hide 0); DS always renders '0' undocumented — the classic '0 unread' anti-pattern uncaught.",
+      "fix": "Add count empty-value contract to spec: state null/undefined→hidden and 0→? (decide showZero policy; align spec/type/code/story)."
+    },
+    {
+      "fileLine": "packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:17",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeCaught": false,
+      "evidence": "Interaction-state table L21-28 covers 預設/hover/active/overlay-open/focus-visible/host-disabled — no Loading state. InlineActionConfig surface = icon/label/onClick only (L207,269-270). No aria-busy / double-trigger guard / escalate-to-Button rationale for async actions. Unlike token specs (where loading is obviously N/A), inline actions DO occur async in real products (row approve/retry/delete calling API) — double-fire is a known failure class (form-validation.spec.md even has a Double-submit 防護). dim-7 (Loading) neither covered nor rationalized-as-N/A in a heavily-consumed cross-component SSOT.",
+      "fix": "Document Loading policy: either 'async → escalate to Button' OR define aria-busy + double-trigger debounce + stable geometry."
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:205",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Factually accurate: tag.tsx:204 always renders `<span data-tag-text>{children}</span>` → empty children yields empty pill; dismiss aria-label falls back to context-free '移除' (tag.tsx:112). BUT the empty-Tag scenario is degenerate/unrealistic (Tag core purpose = label carrier; nobody intentionally renders `<Tag/>`), and the a11y dismiss-context concern is already partially mitigated by dismissLabel prop (tag.tsx:71) + L276 color-only-must-have-label warning. Situational/edge → marginal.",
+      "fix": "(optional) Add non-empty label contract to 邊界案例 if degenerate empty tags are a real consumer risk."
+    },
+    {
+      "fileLine": "packages/design-system/src/tokens/typography/typography.spec.md:3",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Accurate: no ## A11y section covering text scaling / zoom / reflow (WCAG 1.4.4 / 1.4.10) / min-size limits. Typography IS the natural home for resize/reflow a11y so it is more than pure boilerplate — but it is a token spec (Claude documented-scope excludes token specs from component-7dim), the spec already discusses Dynamic Type comparison + 10px footnote min-size boundary, and the ask is an ADDITIVE a11y section, not a wrong statement or contradiction. Strongest of the marginals; scope-dependent enhancement.",
+      "fix": "(enhancement) Add A11y note: no truncation/overflow at 200% zoom, min-size usage boundary, verify method."
+    },
+    {
+      "fileLine": "packages/design-system/src/tokens/elevation/elevation.spec.md:16",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Accurate: spec (78 lines) covers 2-tier usage + surface pairing + sideOffset + shared floating styles, but has no explicit '何時不用 elevation' (flat/border-only regions) nor elevation-vs-border-vs-z-index near-neighbor boundary. However the tight 2-tier + mandatory surface-pairing already effectively prevents misuse (only these 2 in these 2 contexts), and it is a token spec (scope-excluded). Completeness gap, not a defect → marginal.",
+      "fix": "(enhancement) Add '何時不用/近親分界': flat regions with no float/覆蓋 semantic → no shadow; border and z-index ≠ elevation."
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:252",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Accurate + codex self-labeled marginal. Spec already handles single-item (L254) + zero-items (L255 consumer uses <Empty>, no built-in empty UI) + autoplay edge (L256). Async slide-load strategy (transient empty carousel during fetch) is not explicitly delegated. Minor completeness enhancement; loading is a consumer concern already implied by empty delegation.",
+      "fix": "(optional) Add one line: Carousel holds no loading; consumer substitutes equal-size Skeleton during async slide load."
+    },
+    {
+      "fileLine": "packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:76",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Accurate + codex self-labeled marginal. Spec uses role='separator' (L49) with world-class citations (Material X-DataGrid) and frames itself as 'drag-to-resize', which inherently distinguishes it from static Separator, but has no explicit '何時不用 → 用 Separator' near-neighbor one-liner nor cross-links to Separator/DataTable/Sidebar/AppShell owner specs. ResizeHandle and Separator are visually near-identical thin lines so the boundary is worth a line, but the drag framing already implies it. Minor dim-2 completeness → marginal.",
+      "fix": "(optional) Add ResizeHandle vs Separator boundary: draggable+resizes → ResizeHandle, pure divider → Separator; add DS spec links."
+    },
+    {
+      "fileLine": "packages/design-system/src/tokens/color/color.spec.md:3",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Token spec. Codex demands an explicit N/A line ('color only provides state colors; empty/loading/validation-timing owned by consuming component/Form/Field'). Pedantic boilerplate — a color token has zero relationship to form-validation timing; N/A is obvious. Documented token-scope exclusion applies. codex self-labeled marginal.",
+      "fix": "(optional cosmetic) one-line state-ownership delegation note."
+    },
+    {
+      "fileLine": "packages/design-system/src/tokens/density/density.spec.md:3",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Token spec. Demands explicit empty/validation/loading N/A line. Obviously-N/A boilerplate for a density dial (controls ui-size/layout-space only). Pedantic; documented token-scope exclusion. codex self-labeled marginal.",
+      "fix": "(optional cosmetic) one-line: density owns no data/form/async state."
+    },
+    {
+      "fileLine": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:3",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Token spec. Demands empty/validation/loading/a11y N/A line for a macro-spacing token. Obviously-N/A boilerplate; documented token-scope exclusion. codex self-labeled marginal.",
+      "fix": "(optional cosmetic) one-line consumer-ownership note."
+    },
+    {
+      "fileLine": "packages/design-system/src/tokens/motion/motion.spec.md:17",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Token spec. Codex acknowledges Loading IS delegated + reduced-motion IS ruled; only wants empty + validation-timing N/A lines. Motion already has N/A markers (L53-54). Demanding form-validation-timing N/A on a motion token = pure pedantry. codex self-labeled marginal.",
+      "fix": "(optional cosmetic) one-line: motion holds no data-empty/validation-timing."
+    },
+    {
+      "fileLine": "packages/design-system/src/tokens/opacity/opacity.spec.md:24",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Token spec. spec allows Rating/DataTable Loading to reuse opacity-disabled; codex wants a Loading owner pointer (consumer must provide aria-busy/progress/interaction policy) + empty/validation N/A. Partially reasonable (the Loading-reuse note could cross-ref aria-busy owner) but that a11y/interaction policy genuinely belongs to the consumer component spec, not the opacity token. Pedantic; documented token-scope. codex self-labeled marginal.",
+      "fix": "(optional cosmetic) one-line Loading-owner pointer at the opacity-disabled reuse note."
+    },
+    {
+      "fileLine": "packages/design-system/src/tokens/radius/radius.spec.md:3",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Token spec. Demands component/spec cross-links + runtime-state N/A line. Radius tier boundaries + misuse already complete. Obviously-N/A boilerplate + optional links; documented token-scope. codex self-labeled marginal.",
+      "fix": "(optional cosmetic) related-links section + one-line runtime-state N/A."
+    },
+    {
+      "fileLine": "packages/design-system/src/tokens/token-system.spec.md:3",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Upstream token-architecture spec. Demands cross-family state-ownership N/A + a11y ownership delegation. Boilerplate for a meta token-system doc that already has usage/layering/anti-pattern/family-links. Pedantic; documented token-scope. codex self-labeled marginal.",
+      "fix": "(optional cosmetic) one-line cross-family state delegation."
+    },
+    {
+      "fileLine": "packages/design-system/src/tokens/uiSize/uiSize.spec.md:3",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "evidence": "Token spec. Codex acknowledges the 24px interaction-height a11y floor IS covered; only wants empty/validation/loading N/A lines. Obviously-N/A boilerplate; documented token-scope. codex self-labeled marginal.",
+      "fix": "(optional cosmetic) one-line: uiSize holds no data/form/async state."
+    }
+  ]
+}

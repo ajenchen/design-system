@@ -31,7 +31,7 @@ description: Pixel-level visual audit for design-system components based on user
 /design-system-audit    全 dim 深度 audit(per design-system-audit SSOT,code/spec 層,Phase 0 自建 baseline)
 /product-ui-audit       consumer UI 對 DS 消費的 6 dim audit(code 層)
 /visual-audit           pixel-level 視覺 audit(本 skill,需 screenshot)
-/component-quality-gate  合入 DS 前的 45 項 checklist(Ship phase 可 chain 本 skill)
+/component-quality-gate  合入 DS 前的 35 項 checklist(Ship phase 可 chain 本 skill)
 ```
 
 **關鍵切分**:visual-audit 只看 pixel,**不讀 code / 不改 code**。code / spec / cva 的事全部歸前兩 skill;視覺幾何對齊 / overlay 定位 / baseline / typography vertical rhythm 等「眼睛看得到、mechanical 量得出」的事才是本 skill scope。
@@ -247,7 +247,7 @@ FAIL 項摘要:
 
 - `.claude/skills/design-system-audit/SKILL.md` — 全 dim code/spec audit(per design-system-audit SSOT);本 skill 是其 pixel-level 補位
 - `.claude/skills/product-ui-audit/SKILL.md` — consumer UI 對 DS 消費 audit(code 層),不處理視覺
-- `.claude/skills/component-quality-gate/SKILL.md` — 元件合入 DS 前的 45 項 checklist;Ship phase 可 chain 本 skill
+- `.claude/skills/component-quality-gate/SKILL.md` — 元件合入 DS 前的 35 項 checklist;Ship phase 可 chain 本 skill
 - .claude/references/ui-dev-rules.md `# 同 flex 列的互動 slot 幾何鐵律` — 本 skill checklist #3 的主要 canonical 來源
 - `.claude/rules/ui-development.md`「建立 UI 前必讀」 → layout primitive / token spec 清單 — 本 skill「合格標準」的對照錨
 - `memory/project_pending_tasks`「視覺 regression 基建」條目 — 長期 tech debt(Chromatic / screenshot-diff)

@@ -99,6 +99,20 @@ if [ "${LAST_USER_LINE:-0}" -gt 0 ] && [ -n "$LAST_ASSISTANT" ]; then
   fi
 fi
 
+# ── Mechanism 7c: Deep-audit coverage gate(2026-07-12 user verbatim「不抽樣不偷懶…現在和未來可以確保嗎」)──
+# Why: deep audit「完成」宣告前必證 91 dim × Claude+codex 雙軌全有證據。AI 自律不可靠(本 session 漏跑
+#   deterministic 24 + judgment 27 + hook 40 三層,只做 claim-vs-code + 反應式補,user 憤怒)。
+#   verify-deep-audit-coverage.mjs = 機械閘;宣告完成 + ledger 有缺口 → BLOCK。
+if [ "${LAST_USER_LINE:-0}" -gt 0 ] && [ -n "$LAST_ASSISTANT" ] && [ -f scripts/verify-deep-audit-coverage.mjs ]; then
+  DEEPAUDIT_CLAIM_RE='(deep.?audit.{0,10}(完成|完整|done)|稽核.{0,8}(完整完美|全部完成|都.?跑完)|91.{0,6}dim.{0,8}(都|全).{0,4}(跑|過|完|有證據)|Phase A.{0,6}完成)'
+  DEEPAUDIT_NEG_RE='(未完成|還沒|尚未|缺口|gap|未跑|待跑|待驗|不算完成|覆蓋.{0,4}未|還有.{0,4}dim|待補)'
+  if echo "$LAST_ASSISTANT" | grep -qE "$DEEPAUDIT_CLAIM_RE" && ! echo "$LAST_ASSISTANT" | grep -qE "$DEEPAUDIT_NEG_RE"; then
+    if ! node scripts/verify-deep-audit-coverage.mjs >/dev/null 2>&1; then
+      CRITICAL_DEEPAUDIT_COVERAGE=1
+    fi
+  fi
+fi
+
 # ── Mechanism 2: Auto-prune trigger ─────────────────────────────────────────
 if [ -f CLAUDE.md ]; then
   L=$(wc -l < CLAUDE.md | tr -d ' ')
@@ -508,6 +522,23 @@ if [ "${CRITICAL_COMPLETENESS:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
     REASON=$(printf '%s' \
       "🚨 COMPLETENESS-CLAIM-WITHOUT-SCAN BLOCKER(M7,2026-06-03 user-authorized):你宣告「全做完/全部完成」+ 本 turn 實質多檔改動,但無「全庫掃描」證據。per self-verify.md Pre-final + M10「改一處看三處」+ mindset #6:宣告全做完前必先自己跑 (1) DS-wide stale-ref grep(對你改的東西掃連帶 reference)(2) claim-verify 表(每『done』對應證據)。立刻補跑 OR 把『全做完』改成『核心做完,完整性掃描待跑』。否則 turn 不結束。" \
       "本機制起因:重複 failure — user 每次問『真的全做完?』我才補掃出 loose end(CF model 漏 3 ref / iceberg)。觸發器改成『宣告完成』本身,非 user pushback。")
+    printf '{"decision":"block","reason":%s}\n' "$(printf '%s' "$REASON" | jq -Rs .)"
+    exit 0
+  fi
+fi
+
+# ── BLOCKER for Mechanism 7c deep-audit coverage(2026-07-12 user-authorized)──
+if [ "${CRITICAL_DEEPAUDIT_COVERAGE:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
+  DACOV_HASH=$(echo "$LAST_ASSISTANT" | tail -c 200 | shasum -a 256 | cut -c1-16)
+  LAST_BLOCKED_DACOV_FILE="$PROJECT_DIR/.claude/logs/.last-blocked-deepaudit-coverage.txt"
+  LAST_BLOCKED_DACOV=""
+  [ -f "$LAST_BLOCKED_DACOV_FILE" ] && LAST_BLOCKED_DACOV=$(cat "$LAST_BLOCKED_DACOV_FILE" 2>/dev/null || echo "")
+  if [ "$DACOV_HASH" != "$LAST_BLOCKED_DACOV" ]; then
+    echo "$DACOV_HASH" > "$LAST_BLOCKED_DACOV_FILE" 2>/dev/null || true
+    GAPLINE=$(node scripts/verify-deep-audit-coverage.mjs 2>/dev/null | grep -E '個 dim-證據缺口' | head -1)
+    REASON=$(printf '%s' \
+      "🚨 DEEP-AUDIT-COVERAGE BLOCKER(M7c,2026-07-12 user-authorized「不抽樣不偷懶…現在和未來可以確保嗎」):你宣告 deep audit 完成,但 verify-deep-audit-coverage.mjs exit 1 — ${GAPLINE:-91 dim × Claude+codex 雙軌未全有證據}。禁宣稱 done。跑 node scripts/verify-deep-audit-coverage.mjs 看缺哪些 dim,填完(judgment findings 檔 / deterministic log / hook residue verify / codex-dim-audit)才可宣稱;OR 明寫『核心做完,dim 覆蓋待補』。否則 turn 不結束。" \
+      "本機制起因:本 session AI 漏跑 91 dim 裡 deterministic 24 + judgment 27 + hook 40 三層,只做 claim-vs-code + 反應式補,user 憤怒。觸發器 = 宣告 deep audit 完成本身。")
     printf '{"decision":"block","reason":%s}\n' "$(printf '%s' "$REASON" | jq -Rs .)"
     exit 0
   fi

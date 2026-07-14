@@ -3,9 +3,10 @@ import * as React from 'react'
 import { type VariantProps } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'
-import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
+import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
+import { fieldWrapperStyles, bareInputStyles } from '@/design-system/components/Field/field-wrapper'
+import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
+import { useControllable } from '@/design-system/hooks/use-controllable'
 import { ItemInlineAction, ItemPrefix, type InlineActionConfig } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
@@ -14,19 +15,17 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
-    Omit<VariantProps<typeof fieldWrapperStyles>, 'mode' | 'variant'> {
+    Omit<VariantProps<typeof fieldWrapperStyles>, 'mode' | 'variant' | 'width'> {
   /** Field display mode */
   mode?: FieldMode
   /**
-   * Visual chrome(正交於 mode);Phase B1(2026-05-05)從 `variant` 改名 `chrome`,對齊 FieldContext.variant 透傳。
-   * 公開 variant 兩個:
+   * Visual variant(正交於 mode),對齊 FieldContext.variant 透傳。
+   * 公開 variant 一個(2026-07-09 `bare` 退役,詳 field-types.ts FieldVariant note;naked 2026-07-14 型別收窄至 FieldVariantInternal):
    * - `'default'`(預設)— Field wrapper 完整 variant:bg-surface + 明顯 border + hover/focus 回饋。適用表單、Field 內嵌。
-   * - `'bare'` — 透明 variant,hover / focus 才出現 border。適用 Toolbar inline editing(如 FileViewer zoom input / chart config toolbar / rich text toolbar number input)。保留 padding / typography / height,只拿掉背景和常態 border。
    *
-   * @internal `'naked'` — 完全無 chrome / 無 border / 無 focus ring。單獨使用無視覺邊界,**不可直接 standalone 用**;僅供 DS 內部 cell-as-input 組合(host cell 自管 border + focus visual,正被 `FieldSurfaceContext='table-cell'` 取代)。consumer 請用 `default` / `bare`。
+   * @internal `'naked'` — 完全無 chrome / 無 border / 無 focus ring。單獨使用無視覺邊界,**不可直接 standalone 用**;僅供 DS 內部 cell-as-input 組合(edit×naked 的 border/hover/focus/error 由 field-wrapper 自渲 state machine 提供,非 host cell 自管;詳 field-wrapper.tsx)。consumer 請用 `default`(2026-07-14 起型別層已擋:公開 FieldVariant 不含 naked,僅 DataTable cell-registry 經 WithFieldVariantInternal 通道傳入)。
    *
-   * 透傳:在 `<Field variant="default|bare">` 內自動繼承 context.variant;per-prop override context。
-   * 世界級對照(bare):VS Code settings input / Figma toolbar number / Notion prop input。
+   * 透傳:在 `<Field variant="default">` 內自動繼承 context.variant;per-prop override context。
    */
   variant?: FieldVariant
   /** Error 狀態（正交於 mode）。border-error + aria-invalid。 */
@@ -63,7 +62,7 @@ export interface InputProps
    * **不要用在**:表單 Field(Field 需要欄寬對齊,不該隨值跳動)
    *
    * **fallback**:不支援 `field-sizing` 的瀏覽器會退化為 `w-auto`(wrapper 縮到 content 尺寸,
-   * input 本身有 min-width 避免消失)。UX 上稍不一致但不致斷;若必須精準對齊所有瀏覽器,
+   * input 為 min-w-0,依 content/placeholder 撐寬)。UX 上稍不一致但不致斷;若必須精準對齊所有瀏覽器,
    * consumer 可自行傳 `style={{ width: ... }}` 顯式寬度,不走 auto。
    */
   autoWidth?: boolean
@@ -88,6 +87,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       disabled: disabledProp,
       readOnly,
       value,
+      defaultValue,
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
@@ -102,10 +102,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const size = useResolvedFieldSize(sizeProp)
     const disabled = useResolvedFieldDisabled(disabledProp)
     // chrome 透傳:per-prop override context;context 沒值則 'default'
-    const variant: FieldVariant = useResolvedFieldVariant(variantProp)
+    const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
     // 2026-06-08 SSOT:mode 經 useResolvedFieldMode 統一解析(prop > 有效 disabled > fieldCtx.mode > readOnly > 'edit')。
     // loading 期間 input 保持可編輯(Ant Input.Search 派),只用 aria-busy + endAction Spinner,不動 mode。
     const resolvedMode: FieldMode = useResolvedFieldMode({ mode: modeProp, disabled, readOnly })
+    const emptyDisplay = useFieldEmptyDisplay()
     const isEditable = resolvedMode === 'edit'
     const isDisplay = resolvedMode === 'display'
     // error 合併:自身 error prop OR Field context invalid
@@ -114,18 +115,59 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const iconColor = resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted'
 
-    // ── display mode:純展示,渲染 <span> 取代 <input> ──
+    // ── display mode(+ readonly 空值)純展示,渲染 <span> 取代 <input> ──
     // 對齊 Carbon read-only / PatternFly inline-edit hidden-input / Cloudscape display-mode
-    if (isDisplay) {
-      const displayValue = value != null && value !== '' ? String(value) : null
+    // 2026-07-08 user 拍板:readonly 空值也走 display-span 顯 '-'(readonly **有值** 仍走下方
+    // native <input readOnly> 保留選取/複製語意 — field-controls.spec.md「null / undefined 值」)。
+    // 2026-07-14 audit Dim 26(dual-mode coherence):uncontrolled `defaultValue` 也要被
+    // display / readonly-空值判定認得 — 原本只讀 `value`,uncontrolled Input 切 display 會誤顯 '-'。
+    // 2026-07-14 R2(dual-model consensus,取代同日稍早 onChange-mirror 版):resolved value 改走
+    // useControllable 內部 SSOT(Radix idiom,同 Select / Pagination 既有消費)。uncontrolled 時
+    // native input 由 value={resolved} 內部驅動(defaultValue 只作初始值,不落 DOM attribute),
+    // 修 mirror 版兩個真缺陷:
+    // (1) remount-stale — 切 display / readonly(native input unmount)再回 edit,native input 從
+    //     defaultValue attribute 重掛 → 顯示 stale 初始值,與 mirror 判定分歧;
+    // (2) form.reset() stale — HTML 標準 reset 不發 input event,onChange mirror 停在 reset 前的值
+    //     (下方 reset bridge 修)。
+    // controlled(傳 value)時 useControllable 純 passthrough,行為與原本完全一致。
+    // consumer onChange 不接進 hook(保留 native event signature),於 <input> onChange 另行轉發。
+    const isControlled = value !== undefined
+    const [resolved, setResolved] = useControllable<string | number | readonly string[]>({
+      value: value as string | number | readonly string[] | undefined,
+      defaultValue: defaultValue ?? '',
+    })
+    const displayValue = resolved != null && resolved !== '' ? String(resolved) : null
+    const showDisplaySpan = isDisplay || (resolvedMode === 'readonly' && displayValue == null)
+
+    // form.reset() bridge(uncontrolled only):reset 恢復 defaultValue 但不發 input event →
+    // 手動把 resolved 歸位 defaultValue。keyed on showDisplaySpan:display 分支不掛 native input,
+    // 回 edit 重掛時 effect 重跑補掛 listener。
+    const innerRef = React.useRef<HTMLInputElement | null>(null)
+    React.useEffect(() => {
+      if (isControlled || showDisplaySpan) return
+      const form = innerRef.current?.form
+      if (!form) return
+      const handleReset = () => setResolved(defaultValue ?? '')
+      form.addEventListener('reset', handleReset)
+      return () => form.removeEventListener('reset', handleReset)
+    }, [isControlled, showDisplaySpan, defaultValue, setResolved])
+    // Merge refs(LinkInput setRef idiom,link-input.tsx:138)
+    const setRef = React.useCallback((el: HTMLInputElement | null) => {
+      innerRef.current = el
+      if (typeof ref === 'function') ref(el)
+      else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = el
+    }, [ref])
+
+    if (showDisplaySpan) {
+      const spanMode = isDisplay ? 'display' : 'readonly'
       return (
         <div
           className={cn(
-            fieldWrapperStyles({ mode: 'display', variant: variant, size }),
+            fieldWrapperStyles({ mode: spanMode, variant: variant, size }),
             autoWidth && 'inline-flex w-auto',
             className,
           )}
-          data-field-mode="display"
+          data-field-mode={spanMode}
         >
           {StartIcon && (
             <ItemPrefix>
@@ -143,10 +185,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               //   cell display canonical:single-line value 過長 → ellipsis。Textarea display 走 wrap path,
               //   不在此處;Input display 永遠 single-line。)
               'truncate',
-              displayValue == null && 'text-fg-muted',
+              displayValue == null && fieldEmptyColorClass(resolvedMode),
             )}
           >
-            {displayValue ?? EMPTY_DISPLAY}
+            {displayValue ?? emptyDisplay}
           </span>
         </div>
       )
@@ -174,10 +216,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </ItemPrefix>
         )}
         <input
-          ref={ref}
+          ref={setRef}
           type="text"
           id={idProp ?? fieldCtx?.id}
-          value={value as string | number | readonly string[] | undefined}
+          value={resolved}
           readOnly={resolvedMode === 'readonly'}
           disabled={resolvedMode === 'disabled'}
           aria-invalid={resolvedError || undefined}
@@ -192,6 +234,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             autoWidth && '[field-sizing:content] w-auto min-w-0',
           )}
           {...props}
+          // 置於 {...props} 後:寫回 resolved SSOT(controlled 時 useControllable 內部為 no-op)再轉發 consumer onChange。
+          onChange={(e) => {
+            setResolved(e.target.value)
+            props.onChange?.(e)
+          }}
         />
         {loading ? (
           <CircularProgress size={iconSize} className="shrink-0" />
@@ -219,7 +266,7 @@ export const inputMeta = {
   family: 4,
   variants: {
     default: { purpose: 'Field wrapper 完整 chrome(bg-surface + border + hover/focus 回饋)— 表單 / Field 內嵌' },
-    bare: { purpose: '透明 chrome,hover / focus 才現 border — Toolbar inline editing(zoom input / config toolbar)' },
+    // (2026-07-09 `bare` variant 退役 — 見 field-types.ts FieldVariant note)
   },
   sizes: {
     sm: { fieldHeight: 28, iconSize: 16, typography: 'body' },

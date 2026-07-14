@@ -1,7 +1,6 @@
 {
-  "$schema": "./story-baseline-registry.schema.json",
   "_meta": {
-    "purpose": "Anti-drift registry for stories wrap既有 primitive(Sidebar / ChromeHeader / DataTable / Dialog / Sheet / Popover)— machine-readable canonical archetype。Hook `check_story_invariants.sh R8` reads this(not grep spec.md / not憑 Claude judgment)to enforce nearest same-purpose canonical usage(per codex Layer B D4 2026-05-20)。新增 primitive entry 必先寫 baseline + helper list + antiPatterns regex + variantRules。",
+    "purpose": "Anti-drift registry for stories wrap既有 primitive(Sidebar / ChromeHeader / DataTable / Dialog / Sheet / Popover)— machine-readable canonical archetype。Hook `check_story_invariants.sh R8` reads this(not grep spec.md / not憑 Claude judgment)to enforce nearest same-purpose canonical usage(per codex Layer B D4 2026-05-20)。新增 primitive entry 必先寫 baseline + helper list + antiPatterns regex + buttonCanonical。",
     "owner": ".claude/references/story-baseline-registry.json",
     "consumed_by": [
       ".claude/hooks/check_story_invariants.sh#R8(story_archetype_registry)",
@@ -83,6 +82,13 @@
           "severity": "warn",
           "rationale": "DataTable toolbar filter/sort button 必包在 Popover 內,內含真 DataTableFilterPanel / DataTableSortManager primitive(2026-07-04 dim 54:原 PCRE lookahead 在 ERE grep exit 2 永不 fire → 改兩段式 regex+unlessRegex)",
           "unlessRegex": "DataTableFilterPanel|DataTableSortManager"
+        },
+        {
+          "id": "datatable-always-edit-cell",
+          "regex": "cell:[^;]{0,160}<(DS\\.)?(Select|Combobox|PeoplePicker|DatePicker|TimePicker)\\b",
+          "unlessRegex": "onCellCommit|editable|mode=[\"']display",
+          "severity": "block",
+          "rationale": "cell: 直接渲染恆-edit 控件 = display 態渲染 edit chrome,違 data-table.spec.md:373 indicator A 案(display 零恆顯 + hover outline + meta.editable/onCellCommit)。custom cell 元件包裹的同違規 regex 看不進去 → 由 product-ui-audit judgment 兜底(failure-class registry always-edit-cell)"
         }
       ]
     },

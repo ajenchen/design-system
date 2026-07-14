@@ -18,8 +18,11 @@ export default meta
 
 type Story = StoryObj<typeof Calendar>
 
-// 釘固定日期(2026-07-07 修 VR flake):真實 new Date() 讓 today 標記隨換日移格 → ubuntu
-// baseline 每隔幾天假 breach(0.07–0.5%)。釘死 = deterministic 渲染;月中讓事件分布自然。
+// 釘固定日期(2026-07-07 修 VR flake;2026-07-13 補傳 defaultReferenceDate 使 pin 真正生效):
+// 只把 now 用來組事件日期字串「不會」pin 顯示月 —— Calendar 顯示月預設取即時 new Date()(tsx),
+// 故必須把 now 傳給 defaultReferenceDate 才真正釘住顯示月(下方各 instance 已補),否則當前月非
+// 7 月時 7 月事件根本不顯示。註:today 標記仍取真實日期(tsx 內 new Date(),無 today override prop)
+// → 落在被釘的 7 月內時仍隨換日移格,屬已知殘留(需新增 today prop 才能完全釘死,SSOT 待拍板)。
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
 
@@ -36,7 +39,7 @@ export const Overview: Story = {
   name: '元件總覽',
   render: () => (
     <div className="h-screen p-4 bg-canvas">
-      <Calendar events={sampleEvents} />
+      <Calendar events={sampleEvents} defaultReferenceDate={now} />
     </div>
   ),
 }
@@ -63,13 +66,13 @@ export const Inspector: Story = {
   },
   render: (args) => (
     <div className="h-screen p-4 bg-canvas">
-      <Calendar {...args} />
+      <Calendar defaultReferenceDate={now} {...args} />
     </div>
   ),
 }
 
 // ── 3. 色彩對照表(事件 color 類別 + Cell / Event tile token)─────────────────────
-// 跳過 4. SizeMatrix(rationale 見 calendar.spec.md「MVP vs 後續增量」,MVP 只 md;lg 為 tech debt)
+// 跳過 4. SizeMatrix(rationale 見 calendar.spec.md「MVP vs 後續增量」,roadmap:lg 尚未實作、視覺同 md)
 export const ColorMatrix: Story = {
   name: '色彩對照表',
   render: () => {
@@ -85,13 +88,12 @@ export const ColorMatrix: Story = {
         <div>
           <H3>事件類別色</H3>
           <Desc>
-            event color = 12 categorical 色相,**消費 categorical-color SSOT**,與 Tag / Avatar 共用同一組
+            事件顏色用 12 種類別色,和 Tag / Avatar 共用同一套色盤
             (blue / green / deep-orange / yellow / red / orange / amber / lime / turquoise / indigo / purple / magenta)。
-            color 是**類別語意**(同 team / 同 project),非 severity。色名 1:1 對該色相的 `--color-*` primitive(零 offset);
-            2026-06-04 修正前 red 與 orange 都誤接 deep-orange,現各自獨立可區分。
+            顏色代表「這是哪一類事件」(同一個團隊 / 同一個專案),不是嚴重程度。每個色名對應一個色相,紅與橘各自獨立、可清楚區分。
           </Desc>
           <div className="h-[560px]">
-            <Calendar events={colorEvents} />
+            <Calendar events={colorEvents} defaultReferenceDate={now} />
           </div>
         </div>
 
@@ -202,7 +204,7 @@ export const StateBehavior: Story = {
         <div>• <b>event hover</b>:tile 切同色深一階 `hover:bg-{`{color}`}-2`(如 blue → `--color-blue-2`)+ `cursor-pointer`</div>
         <div>• <b>empty cell</b>:無事件保持純底色,點擊觸發 onDateClick</div>
       </div>
-      <Calendar events={sampleEvents} />
+      <Calendar events={sampleEvents} defaultReferenceDate={now} />
     </div>
   ),
 }

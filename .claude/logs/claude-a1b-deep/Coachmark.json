@@ -1,0 +1,13 @@
+{
+  "component": "Coachmark",
+  "implBasis": "Popover composition (Radix Popover via DS Popover primitive) + AspectRatio",
+  "claimsVerified": 32,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:88",
+      "宣稱": "Props 速查表把 className 的「Default」欄列為 'w-80 p-0 overflow-hidden'",
+      "真實code行為": "className prop 無預設值(undefined);'w-80 p-0 overflow-hidden' 是 coachmark.tsx:170 `cn('w-80 p-0 overflow-hidden', className)` 恆套在 PopoverContent 的 base classes,並非 className prop 的 default。把 base classes 標為 prop default 易誤導 consumer",
+      "severity": "marginal"
+    }
+  ]
+}

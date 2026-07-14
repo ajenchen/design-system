@@ -58,45 +58,10 @@ export const NonButtonTrigger: Story = {
   ),
 }
 
-/* ── 四個方向 ── */
-export const Placement: Story = {
-  name: '方向',
-  render: () => (
-    <div className="grid grid-cols-3 gap-4 items-center justify-items-center w-[300px]">
-      <div />
-      <Tooltip defaultOpen>
-        <TooltipTrigger asChild>
-          <Button variant="secondary" size="sm">Top</Button>
-        </TooltipTrigger>
-        <TooltipContent side="top">上方提示</TooltipContent>
-      </Tooltip>
-      <div />
-
-      <Tooltip defaultOpen>
-        <TooltipTrigger asChild>
-          <Button variant="secondary" size="sm">Left</Button>
-        </TooltipTrigger>
-        <TooltipContent side="left">左方提示</TooltipContent>
-      </Tooltip>
-      <div />
-      <Tooltip defaultOpen>
-        <TooltipTrigger asChild>
-          <Button variant="secondary" size="sm">Right</Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">右方提示</TooltipContent>
-      </Tooltip>
-
-      <div />
-      <Tooltip defaultOpen>
-        <TooltipTrigger asChild>
-          <Button variant="secondary" size="sm">Bottom</Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">下方提示</TooltipContent>
-      </Tooltip>
-      <div />
-    </div>
-  ),
-}
+// Retired 2026-07-14 audit Dim 24:`Placement` 四方向展示是 anatomy PlacementReference
+// (tooltip.anatomy.stories.tsx)的完整子集(同 top/right/bottom/left grid,anatomy 版含
+// 動畫方向 + placement 選擇規則),無額外內容或限制 → retire(earn-existence 2-test 雙 NO)。
+// Placement canonical home = anatomy `PlacementReference`。
 
 /* ── 長文字（測試換行） ── */
 export const LongText: Story = {

@@ -21,8 +21,10 @@ type Story = StoryObj<typeof Calendar>
 
 // ── 真實業務情境 ─────────────────────────────────────────────────────
 
-// 釘固定日期(2026-07-07 修 VR flake):真實 new Date() 讓 today 標記隨換日移格 → ubuntu
-// baseline 每隔幾天假 breach(0.07–0.5%)。釘死 = deterministic 渲染;月中讓事件分布自然。
+// 釘固定日期(2026-07-07 修 VR flake;2026-07-13 補傳 defaultReferenceDate 使 pin 真正生效):
+// 只把 now 用來組事件日期字串「不會」pin 顯示月 —— Calendar 顯示月預設取即時 new Date()(tsx),
+// 故必須把 now 傳給 defaultReferenceDate 才真正釘住顯示月(下方各 instance 已補)。
+// 註:today 標記仍取真實日期(tsx 內 new Date(),無 today override prop)→ 落在被釘 7 月內時仍隨換日移格,屬已知殘留。
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
 
@@ -46,6 +48,7 @@ export const TeamCalendar: Story = {
     return (
       <div className="h-screen p-4 bg-canvas">
         <Calendar
+          defaultReferenceDate={now}
           events={events}
           onEventClick={(e) => alert(`點了事件:${e.title}`)}
           onDateClick={(d) => console.log('點 date cell:', d)}
@@ -71,7 +74,7 @@ export const ContentPublishingSchedule: Story = {
     ]
     return (
       <div className="h-screen p-4 bg-canvas">
-        <Calendar events={events} onCreateEvent={() => alert('排內容')} />
+        <Calendar events={events} defaultReferenceDate={now} onCreateEvent={() => alert('排內容')} />
       </div>
     )
   },
@@ -84,7 +87,7 @@ export const EmptyCalendar: Story = {
   name: '空行事曆',
   render: () => (
     <div className="h-screen p-4 bg-canvas">
-      <Calendar events={[]} onCreateEvent={() => alert('加第一個事件')} />
+      <Calendar events={[]} defaultReferenceDate={now} onCreateEvent={() => alert('加第一個事件')} />
     </div>
   ),
 }

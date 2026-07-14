@@ -6,7 +6,7 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/design-system/components/HoverCard/hover-card'
 import { tagVariants } from '@/design-system/components/Tag/tag'
-import { HOVER_DELAY_PLAIN_MS, HOVER_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
+import { MOTION_DELAY_PLAIN_MS, MOTION_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
 
 /**
  * OverflowIndicator — +N 觸發器 + HoverCard 顯示溢出內容
@@ -96,13 +96,16 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
   ) {
     if (count <= 0) return null
 
+    // a11y(2026-07-14 dim-6):拆 role="button" + aria-haspopup="dialog" —— trigger 無
+    // activation 行為(無 Enter/Space handler,HoverCard 靠 hover/focus 自動開),宣告了
+    // button/haspopup 卻按 Enter 無反應 = 對 AT 空承諾。對齊 Avatar hoverCard 同款拆除
+    // (avatar.tsx 2026-07-06 + hover-card.spec.md「A11y 預設」:Radix 官方零 role/aria 定位)。
+    // trigger 有可見 "+N" 文字,無需 aria-label / role;保留 tabIndex=0 + focus ring(WCAG 2.1.1)。
     const trigger = shape === 'tag' ? (
       <span
         ref={ref}
         data-overflow-indicator=""
         tabIndex={0}
-        role="button"
-        aria-haspopup="dialog"
         className={cn(tagVariants({ color: 'neutral', size }), 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1', className)}
         {...props}
       >
@@ -113,8 +116,6 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         ref={ref}
         data-overflow-indicator=""
         tabIndex={0}
-        role="button"
-        aria-haspopup="dialog"
         className={cn(
           'shrink-0 rounded-full inline-grid place-content-center',
           'bg-muted text-foreground font-medium leading-none cursor-pointer',
@@ -130,11 +131,11 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
     )
 
     // 2026-05-18 fix(per user audit「所有 hovercard 應消費 hover delay token」+ motion.spec.md SSOT):
-    // plain tier(純列表展開、無 fetch)= HOVER_DELAY_PLAIN_MS,per motion.spec.md 對照表 row;
-    // close = HOVER_DELAY_CLOSE_MS。2026-06-11 修:2026-05-18 token 遷移誤挑 rich(原 hardcode 200/300
+    // plain tier(純列表展開、無 fetch)= MOTION_DELAY_PLAIN_MS,per motion.spec.md 對照表 row;
+    // close = MOTION_DELAY_CLOSE_MS。2026-06-11 修:2026-05-18 token 遷移誤挑 rich(原 hardcode 200/300
     // 兩 tier 皆非,遷移未對照 spec 表)— popup 可互動性由 close 緩衝保障,與 open tier 無關。
     return (
-      <HoverCard openDelay={HOVER_DELAY_PLAIN_MS} closeDelay={HOVER_DELAY_CLOSE_MS}>
+      <HoverCard openDelay={MOTION_DELAY_PLAIN_MS} closeDelay={MOTION_DELAY_CLOSE_MS}>
         <HoverCardTrigger asChild>
           {trigger}
         </HoverCardTrigger>

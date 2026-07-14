@@ -1,17 +1,17 @@
 {
   "_meta": {
-    "generatedAt": "2026-07-07",
+    "generatedAt": "2026-07-14",
     "rule": "total 與 top-8 entry 各設現值 +10% budget;蓄意增大 → 重跑 --init + commit message 說明"
   },
-  "totalKB": 894.5,
+  "totalKB": 1000.3,
   "entriesKB": {
-    "components/DataTable/data-table.js": 107.8,
-    "components/DatePicker/date-picker.js": 39.6,
-    "components/Sidebar/sidebar.js": 37.9,
-    "components/FileViewer/file-viewer.js": 31.9,
-    "components/Combobox/combobox.js": 27.9,
-    "components/TreeView/tree-view.js": 27.8,
-    "components/Select/select.js": 24.7,
-    "components/Steps/steps.js": 23
+    "components/DataTable/data-table.js": 109.7,
+    "components/DatePicker/date-picker.js": 41.9,
+    "components/Sidebar/sidebar.js": 38.1,
+    "components/TreeView/tree-view.js": 38.1,
+    "components/FileViewer/file-viewer.js": 32.1,
+    "components/Combobox/combobox.js": 29.1,
+    "components/Select/select.js": 28.3,
+    "components/DataTable/data-table-filter-panel.js": 23.5
   }
 }

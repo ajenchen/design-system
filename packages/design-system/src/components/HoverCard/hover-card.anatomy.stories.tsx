@@ -4,6 +4,10 @@
 //   shadow / padding / size 全由 consumer 透過 className 決定;無 own variant /
 //   state / size。Overview + VisualVariants 兩個 story 已涵蓋 consumer 兩種
 //   常見視覺(ProfileCard 亮色 vs OverflowIndicator 深色 tooltip)。
+// @story-trait-allow: missing-opensnapshot — 同 hover-card.stories.tsx 檔頭 rationale:
+//   hover-trigger 行為 primitive 的 anatomy doc 內多個 inline hover demo,forced defaultOpen
+//   會讓多張浮層互疊蓋住規格表;open-state 視覺快照由 consumer canonical(ProfileCard /
+//   OverflowIndicator)各自的 OpenSnapshot 涵蓋。
 import type { Meta, StoryObj } from '@storybook/react'
 import { HoverCard, HoverCardTrigger, HoverCardContent } from './hover-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
@@ -27,7 +31,7 @@ export const Overview: Story = {
         <div className="flex items-center gap-6">
           <HoverCard>
             <HoverCardTrigger asChild>
-              <Avatar alt="Ada Chen" size={40} />
+              <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada Chen" size={40} />
             </HoverCardTrigger>
             <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-4 shadow-[var(--elevation-200)]">
               <div className="flex flex-col gap-2 w-56">
@@ -139,7 +143,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"ARIA 與互動模式:Radix HoverCard 刻意不設角色語意 / aria-* 屬性(定位為 sighted-mouse-user 增強,卡片內容不暴露給輔助技術),只提供 hover / focus 開、Esc 關 + data-state。觸發元素的可聚焦性需 consumer 自補(例如 Avatar 的 hoverCard 在元件內手動加 tabIndex=0 + role=\"button\" + aria-haspopup=\"dialog\")。\n\n鍵盤操作:\n\n- Tab — 焦點移到觸發元素\n- Hover 或 focus — 開啟浮層卡片\n- Esc — 關閉卡片\n\n焦點行為:這是非阻斷(non-modal)的浮層,focus 會開啟卡片但不會把焦點鎖在裡面;焦點仍留在觸發元素,按 Esc 即可關閉。觸發元素 focus 時顯示可見的外框(2px 實線,使用 --ring 色),與整個設計系統的 focus-visible 樣式一致。\n\n鍵盤限制:Radix HoverCard 會把卡片內所有可 Tab 的節點強制設成 tabindex=\"-1\",因此卡片內部的按鈕 / 連結鍵盤 Tab 到不了 — 鍵盤使用者僅能 focus 觸發元素開卡 + Esc 關卡,無法進入卡片操作互動內容。關鍵互動勿放 HoverCard 內,需鍵盤可達的互動浮層請用 Popover(click 觸發)。\n\n驗證:Storybook 無障礙檢測面板應為 0 項嚴重違規;文字對比至少 4.5:1、UI 元素對比至少 3:1,符合 WCAG AA。"}</p>
+      <p className="whitespace-pre-line">{"ARIA 與互動模式:Radix HoverCard 刻意不設角色語意 / aria-* 屬性(定位為 sighted-mouse-user 增強,卡片內容不暴露給輔助技術),只提供 hover / focus 開、Esc 關 + data-state。觸發元素的可聚焦性需 consumer 自補(例如 Avatar 的 hoverCard 在元件內手動加 tabIndex=0 + role=\"img\" + aria-label;2026-07-06 拆除 role=\"button\" / aria-haspopup=\"dialog\" 空承諾 — 無 Enter/Space 行為卻宣告 popup ARIA = 對輔助技術的假承諾,對齊 avatar.tsx:252-256 + hover-card.spec.md:144)。\n\n鍵盤操作:\n\n- Tab — 焦點移到觸發元素\n- Hover 或 focus — 開啟浮層卡片\n- Esc — 關閉卡片\n\n焦點行為:這是非阻斷(non-modal)的浮層,focus 會開啟卡片但不會把焦點鎖在裡面;焦點仍留在觸發元素,按 Esc 即可關閉。觸發元素 focus 時顯示可見的外框(2px 實線,使用 --ring 色),與整個設計系統的 focus-visible 樣式一致。\n\n鍵盤限制:Radix HoverCard 會把卡片內所有可 Tab 的節點強制設成 tabindex=\"-1\",因此卡片內部的按鈕 / 連結鍵盤 Tab 到不了 — 鍵盤使用者僅能 focus 觸發元素開卡 + Esc 關卡,無法進入卡片操作互動內容。關鍵互動勿放 HoverCard 內,需鍵盤可達的互動浮層請用 Popover(click 觸發)。\n\n驗證:Storybook 無障礙檢測面板應為 0 項嚴重違規;文字對比至少 4.5:1、UI 元素對比至少 3:1,符合 WCAG AA。"}</p>
     </div>
   ),
 }

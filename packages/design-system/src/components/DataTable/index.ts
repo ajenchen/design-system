@@ -3,3 +3,6 @@
 //   import { ... } from '@qijenchen/design-system/{components,patterns}/<Dir>'
 // Regenerate: node scripts/gen-component-indexes.mjs
 export * from './data-table'
+export * from './data-table-column-visibility-panel'
+export * from './data-table-filter-panel'
+export * from './data-table-sort-manager'

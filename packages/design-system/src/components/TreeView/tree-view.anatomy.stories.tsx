@@ -36,7 +36,7 @@ export const Overview: Story = {
 
       <div>
         <H3>TreeItem 內部結構</H3>
-        <Desc>[chevron placeholder] [icon?] [label] [suffix? (hover inline action / badge)] ——遵循 item-layout pattern。葉節點(無 children)自動填入透明 chevron placeholder 保持 column 對齊。</Desc>
+        <Desc>[chevron placeholder] [checkbox? (多選模式)] [indicator | icon?] [label] [suffix? (hover inline action / badge)] ——遵循 item-layout pattern;checkbox 位於 chevron 之後、icon 之前(對齊 tsx render 順序)。葉節點(無 children)自動填入透明 chevron placeholder 保持 column 對齊。</Desc>
       </div>
 
       <div>
@@ -400,7 +400,7 @@ export const KeyboardMatrix: Story = {
     <div className="flex flex-col gap-6">
       <div>
         <H3>鍵盤操作對照</H3>
-        <Desc>TreeView 的 ARIA tree 鍵盤導覽是自建實作(Radix 沒有 Tree primitive)。</Desc>
+        <Desc>TreeView 的 ARIA tree 鍵盤導覽是自建實作(Radix 沒有 Tree primitive)。重排鍵位(最後三列)僅在 `draggable` 時生效,每按一下立即 commit(發出 onDragEnd,同 pointer 契約)。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>按鍵</Th><Th>行為</Th></tr></thead>
@@ -410,6 +410,9 @@ export const KeyboardMatrix: Story = {
               <tr><Td mono>←</Td><Td>若 expanded 則收合;若 collapsed 或 leaf 則移到 parent</Td></tr>
               <tr><Td mono>Enter / Space</Td><Td>選取當前 focus 的 node</Td></tr>
               <tr><Td mono>Home / End</Td><Td>跳到第一個 / 最後一個可見 node</Td></tr>
+              <tr><Td mono>Cmd/Ctrl+Shift+↑ / ↓</Td><Td>重排:同層上移 / 下移(需 draggable;整個子樹一起動,結果經 SR live region 播報)</Td></tr>
+              <tr><Td mono>Cmd/Ctrl+Shift+→</Td><Td>重排:移入上一個 sibling(需為 folder;收合時自動展開)</Td></tr>
+              <tr><Td mono>Cmd/Ctrl+Shift+←</Td><Td>重排:移出,成為 parent 的下一個 sibling</Td></tr>
             </tbody>
           </table>
         </div>
@@ -425,7 +428,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"TreeView 的無障礙是元件自建的,不是沿用第三方套件的預設。\n\n  角色與屬性  :外層容器標記為 role=\"tree\",每個節點標記為 role=\"treeitem\",並逐一寫上目前展開狀態、是否選取、所在層級;多選時容器再加上「允許多選」標記。展開/收合的動畫是借用 Radix Collapsible,但樹的角色、屬性、鍵盤導覽都是元件自己實作的(Radix 沒有 Tree 元件)。\n\n  鍵盤操作  :\n\n- Tab — 焦點進入整棵樹\n- 上 / 下 — 在可見節點之間移動\n- 右 — 展開資料夾,已展開時移到第一個子節點\n- 左 — 收合資料夾,葉節點時跳回上層\n- Home / End — 跳到第一個 / 最後一個可見節點\n- Enter / 空白鍵 — 選取目前節點\n\n  焦點  :焦點由元件自己管理——整棵樹是單一 Tab 停靠點,鍵盤移動時用一圈內描邊高亮(ring-2 ring-ring)標示目前位置。沒有焦點鎖定、也沒有焦點還原,因為樹不是浮層。\n\n  驗證  :Storybook a11y 面板應為 0 項嚴重問題;不靠滑鼠也能完整操作。文字對比度達 WCAG AA(內文 4.5:1、介面元素 3:1)。"}</p>
+      <p className="whitespace-pre-line">{"TreeView 的無障礙是元件自建的,不是沿用第三方套件的預設。\n\n  角色與屬性  :外層容器標記為 role=\"tree\",每個節點標記為 role=\"treeitem\",並逐一寫上目前展開狀態、是否選取、所在層級;多選時容器再加上「允許多選」標記。展開/收合的動畫是借用 Radix Collapsible,但樹的角色、屬性、鍵盤導覽都是元件自己實作的(Radix 沒有 Tree 元件)。\n\n  鍵盤操作  :\n\n- Tab — 焦點進入整棵樹\n- 上 / 下 — 在可見節點之間移動\n- 右 — 展開資料夾,已展開時移到第一個子節點\n- 左 — 收合資料夾,葉節點時跳回上層\n- Home / End — 跳到第一個 / 最後一個可見節點\n- Enter / 空白鍵 — 選取目前節點\n- Cmd(Ctrl)+Shift+方向鍵 — 重新排列節點(啟用拖曳時:上下=同層移動、右=移入資料夾、左=移出到上層,每按一下立即生效)\n\n  焦點  :焦點由元件自己管理——整棵樹是單一 Tab 停靠點,鍵盤移動時用一圈內描邊高亮(ring-2 ring-ring)標示目前位置。沒有焦點鎖定、也沒有焦點還原,因為樹不是浮層。\n\n  播報  :鍵盤重排的結果(移到第幾項、移入哪個資料夾)會透過隱藏的即時播報區域唸給螢幕閱讀器;無法移動時(已在最上方、不是資料夾等)也會說明原因。文案預設繁體中文,可用 reorderAnnouncements 屬性覆寫。\n\n  驗證  :Storybook a11y 面板應為 0 項嚴重問題;不靠滑鼠也能完整操作(含拖曳重排)。文字對比度達 WCAG AA(內文 4.5:1、介面元素 3:1)。"}</p>
     </div>
   ),
 }

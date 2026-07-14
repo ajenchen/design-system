@@ -83,6 +83,9 @@ Example violations(historic — 2026-05-22 prune verify 後均已收斂為 point
 - **Dead hooks**:跑 `npm run audit:hook-quality`(= `scripts/audit-hook-quality.mjs`,讀 `.claude/logs/hook-fires-per-hook.jsonl` 自動產 per-hook signal-to-noise report → `.claude/logs/hook-quality-report.json`:fire_count_6mo / fire_per_day / hot-warm-cool-dead 分類 / file_exists orphan signal / retire_candidate flag)。6 月 0 fire 的 hook 名 → retire 提名(report 已標 `dead`)
 - **Stale memories**:`ls -la ~/.claude/.../memory/*.md`,6 月無 git log 變動且不在 MEMORY.md index head = stale
 - **Unused skills**:`skill-invokes.jsonl` 3 月 0 invoke(除非是 rare-event skill,例 `delivery-handoff`)
+- **Commands / agents**(2026-07-10 hunt 補,原零掃描):`.claude/commands/*.md` 對照 `skill-invokes.jsonl`(slash command 同走 Skill tool log);`.claude/agents/*.md` 無 invoke log → 用 git log recency + transcript grep 判 dead
+- **References orphan**(2026-07-10 hunt 補):枚舉 `.claude/references/*.md`,rg 檔名 across `.claude/skills/` + `CLAUDE.md` + `packages/**/*.spec.md` + hooks;0 cite = retire 候選
+- **Stale marker 兌現**(2026-07-10 hunt 補,anchor drag-canonical 標了 6 次 prune 沒人讀):`rg -l 'stale-pending-prune' .claude/` → 命中即列 update/retire 候選
 
 **Output**:retire 候選 + rationale(`fire=0 / last_edit=2025-10 / 被 M14 吸收`)
 

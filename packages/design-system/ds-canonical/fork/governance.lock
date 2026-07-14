@@ -3,7 +3,7 @@
   "entries": [
     {
       "file": "hooks/block_prototype_imports.py",
-      "sha256": "0ab679ddb522f508c490891711559175a912be8b7f4db04d8a55cdac983fd482",
+      "sha256": "ee24825dc67147f38acdd7006ff8ed370079d30205425ebd38fadb1ec0e31331",
       "sourceHook": "block_prototype_imports.py",
       "bucket": "SHIP_AS_IS"
     },
@@ -15,25 +15,31 @@
     },
     {
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "e2d63b142759bf791ca3c4462342d91623827aeb54c15398c94853485684900b",
+      "sha256": "aff11b68728f47313452a1a03563075f36c9911494dd99b7d182b40936e0a5b4",
       "sourceHook": "check_consumer_app_invariants.sh",
       "bucket": "SHIP_AS_IS"
     },
     {
       "file": "hooks/check_ds_anchor_preflight.sh",
-      "sha256": "80b9f1be3140da0623b61c00d6f6b5c5f4bdbf3307e2f081ba8f6fc43cad0b52",
+      "sha256": "34643184615d38854e361df6f745730e5710a966a6f363aa642f1fe29d59bdb5",
       "sourceHook": "check_ds_anchor_preflight.sh",
       "bucket": "SHIP_REWRITTEN"
     },
     {
+      "file": "hooks/check_dynamic_tailwind_class.sh",
+      "sha256": "b90127463aa9efeda646b400d5534a7cf1ce2fa0467bbd46a7c3c76e9ef0232b",
+      "sourceHook": "check_dynamic_tailwind_class.sh",
+      "bucket": "SHIP_AS_IS"
+    },
+    {
       "file": "hooks/check_escape_marker_abuse.sh",
-      "sha256": "4f9d8dc91275145204f0bc760c4378dd53f7ad4389d89da737aef23f84b2502b",
+      "sha256": "acf5669cd31b97aa59bc66b045187292743b1330530b6eddb677458f707efca1",
       "sourceHook": "check_escape_marker_abuse.sh",
       "bucket": "SHIP_REWRITTEN"
     },
     {
       "file": "hooks/check_field_family_invariants.sh",
-      "sha256": "1beeb2b347cacf5d8a912470bce0b9ab6b54c2595873155389456cdbe6125d80",
+      "sha256": "9646c15d877a262870be0928760187cff8d8327e50e302276ae73709848f48e1",
       "sourceHook": "check_field_family_invariants.sh",
       "bucket": "SHIP_AS_IS"
     },
@@ -51,13 +57,13 @@
     },
     {
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "09c74c67c61a366b14bb1cce2ac27d4b8d0541a8698f85d50e4afe9783ad7309",
+      "sha256": "24526e2ac3af5d97307232d572578c56ab8a1674db4666f903a770c2b8099863",
       "sourceHook": "check_layout_space_magic_numbers.sh",
       "bucket": "SHIP_AS_IS"
     },
     {
       "file": "hooks/check_opacity_token_usage.sh",
-      "sha256": "93123d9244264b821d6d31357c3868d343d7a96182664e02226cccbb8a29d18e",
+      "sha256": "2fb9e94653540d596948683a5a8522a1286722eeb7b4297baaea852836a847fc",
       "sourceHook": "check_opacity_token_usage.sh",
       "bucket": "SHIP_REWRITTEN"
     },
@@ -75,13 +81,19 @@
     },
     {
       "file": "hooks/check_story_determinism.sh",
-      "sha256": "34b56718a1f15b492c410d199a883d561afd4c51d7445994b84c2e6180ba3d4e",
+      "sha256": "5ba8c0da0680528241772b90d38b7e4ebe3886b9fa2703b9237bdc62ef9d8720",
       "sourceHook": "check_story_determinism.sh",
       "bucket": "SHIP_AS_IS"
     },
     {
+      "file": "hooks/check_story_invariants.sh",
+      "sha256": "913b84ff4a84f100c7fe31b3ba570af0fd408ccffb3a6ed68952b0e117552322",
+      "sourceHook": "check_story_invariants.sh",
+      "bucket": "SHIP_REWRITTEN"
+    },
+    {
       "file": "hooks/check_tabs_content_chrome_body_double_gap.sh",
-      "sha256": "656e854fc8c3e61afd7da3705f87d169a2ea04979e446ed453114b42b9bdcfb1",
+      "sha256": "56e54c8383a12ae489f1747a96d8b7deafb591498c2d596fc2e955b35c04bfc7",
       "sourceHook": "check_tabs_content_chrome_body_double_gap.sh",
       "bucket": "SHIP_AS_IS"
     },
@@ -114,19 +126,19 @@
     },
     {
       "file": "manifest.json",
-      "sha256": "5a8072bafa1d777fe4943f2f21130304101a4a6179270403fae205c4156d583b"
+      "sha256": "9f9133ff3ad96d9e52c0c248ddb8e14d0d8cb98a13d27246b601c641d8a946c9"
     },
     {
       "file": "preamble.md",
-      "sha256": "3bb47d3c88bcdeba13bc61ac6275799c9208c3001771e3652303e49a97fb0604"
+      "sha256": "9b16560369afb01e3d3ae3b15f6fec8215bcfe2faf3095b59960d2080064d510"
     },
     {
       "file": "skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "b5cc2fa5b50b533c06583b64d7eaf4efc62d03d3b9088f6a58cd0b796d78c2e2"
+      "sha256": "aada1314d2b85ba8e866da75f7ff56f3922197d5a738956aa3cb7b469e40ae45"
     },
     {
       "file": "skills/code-quality-audit/SKILL.md",
-      "sha256": "fb65ebf0c72f7b475640f4861a1bfa2e9140727e2ff051fbd58f8348c0dc187d"
+      "sha256": "376120afbbea7052ec84ab04a36d93ee14671d9d430ec72642a8b53dd87c148c"
     },
     {
       "file": "skills/delivery-handoff/references/flow-diagram.md",
@@ -142,7 +154,7 @@
     },
     {
       "file": "skills/delivery-handoff/SKILL.md",
-      "sha256": "9e5c93441f6b56f64d1db46d4b46dc0015a7dd514af952d7e1926087249eaa23"
+      "sha256": "ef82a6d8f0dbefb3ff6e48042a3346ef96d263a60477cdcd43d46628f5632e68"
     },
     {
       "file": "skills/performance-audit/SKILL.md",
@@ -162,11 +174,11 @@
     },
     {
       "file": "skills/product-ui-audit/SKILL.md",
-      "sha256": "cef077d82f906fd26d1507bbab00f5215a75583780aa893805d3018eef000a05"
+      "sha256": "a8255bbd662cc5db98414ed32b5ae7423b0e09a7d719f969c202ba02974a41c7"
     },
     {
       "file": "skills/propose-options/SKILL.md",
-      "sha256": "3c0f8a8cef70506802ad67350ecde1ff5f633ddab21c22f3a4f91d923b9b9151"
+      "sha256": "6b8bdf866d45e25a620d1ea8cb0da9292cf3d80c7788d14508325a7d8d11d267"
     },
     {
       "file": "skills/prototype/references/audit-checks.md",
@@ -194,11 +206,11 @@
     },
     {
       "file": "skills/prototype/SKILL.md",
-      "sha256": "21b6c91550233609274e772f245afa25bbc1aa338cc2a7a135a3577e3b16da77"
+      "sha256": "c4b09bf7481d5f14375a5f22a4da2411047405811bc42490c0711b740265bd7f"
     },
     {
       "file": "skills/scan-similar-bugs/SKILL.md",
-      "sha256": "79c5125f6d65d9d530c09ba2f19afe60174278448b122f4d4a66f9280c1312ca"
+      "sha256": "4a47af39ee04a7ee7aee0f92f00c09296b083b9310a55e01c85538798ed31593"
     },
     {
       "file": "skills/ux-audit/SKILL.md",
@@ -222,7 +234,7 @@
     },
     {
       "file": "skills/visual-audit/SKILL.md",
-      "sha256": "0e4193dfb3a24609795a3d6a19f0e9d06da06c671a74d2db1afefa21d869ba2d"
+      "sha256": "49463b40de654546e05dc62765d4d37ad41a7c745fbc660878f4ecb5a26e3ae8"
     }
   ]
 }

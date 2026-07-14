@@ -1,0 +1,8 @@
+{
+  "dim": 82,
+  "hook": "check_consumer_app_invariants.sh (r4_app_story_title)",
+  "residueCount": 0,
+  "findings": [],
+  "verified": true,
+  "note": "apps/<name>/**/*.stories.(tsx|ts|mdx) title 必以 Apps/<app-name>/ 開頭。apps/template 3 檔全合規:App.stories.tsx='Apps/template/AppShell Dashboard'、AllDsComponents.stories.tsx='Apps/template/All DS Components (Portal)'、CompositionFidelityReplica.stories.tsx='Apps/template/Composition Fidelity Replica'。無錯 prefix residue。"
+}

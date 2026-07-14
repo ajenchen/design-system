@@ -38,7 +38,7 @@ export const Overview: Story = {
             </Field>
           </FieldGroup>
         </div>
-        <p className="text-footnote text-fg-muted mt-3">FieldLabel(必有)+ Control(必有)+ FieldDescription(選填)+ FieldError(僅 invalid 時顯示)</p>
+        <p className="text-footnote text-fg-muted mt-3">FieldLabel(必有)+ Control(必有)+ FieldDescription(選填)+ FieldError(consumer 傳 error 文字時渲染;children 有值即顯、固定 role=alert,非讀 Field.invalid 自動隱藏)</p>
       </div>
 
       <div>
@@ -73,7 +73,7 @@ export const Overview: Story = {
                 ['disabled', 'boolean', 'false', 'context.disabled 傳給 control'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", 'context.size 傳給 input-class control(Input / NumberInput / Select);primitive 不讀'],
                 ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'context.mode 傳給 Field Controls'],
-                ['variant', "'default' | 'bare' | 'naked'", "'default'", "視覺外殼:default 含 border+bg / bare hover-reveal(toolbar inline edit)/ naked 無 chrome(DataTable cell substrate)"],
+                ['variant', "'default'", "'default'", "視覺外殼(公開型別僅 'default',2026-07-14 收窄;naked = @internal FieldVariantInternal):default 含 border+bg / naked = DataTable cell substrate:edit×naked 自畫 border-based state machine(rest/hover/focus/error),display/readonly/disabled×naked 用 transparent border;2026-07-09 `bare` 退役"],
                 ['controlLayout', "'inline' | 'block'", '(自動偵測)', '逃生艙:覆寫 control area 佈局(consumer 手寫 JSX 當 control 無法偵測時用)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -248,8 +248,11 @@ export const OrientationMatrix: Story = {
               <Switch defaultChecked className="ml-0" />
             </Field>
             <Field orientation="horizontal">
-              <FieldLabel>個人檔案公開</FieldLabel>
-              <Checkbox label="允許搜尋引擎索引" />
+              <FieldLabel>允許搜尋引擎索引</FieldLabel>
+              {/* 單一布林欄位只用 FieldLabel,不再給 Checkbox 傳 label —— field.spec.md 禁止事項
+                  「不得同時放 FieldLabel 和 primitive label」(Field context 會抑制 primitive label,
+                  傳了不生效且重複宣告);與上方 Switch 列同款 pattern */}
+              <Checkbox />
             </Field>
           </FieldGroup>
         </div>
@@ -411,9 +414,9 @@ export const ColorMatrix: Story = {
               </tr>
               <tr>
                 <Td mono>FieldError</Td>
-                <Td>—(不渲染)</Td>
+                <Td>—(無 error children → 不渲染;children-gated,非 invalid-gated)</Td>
                 <Td><TokenCell token="--error-text" display="error-text" /></Td>
-                <Td>—</Td>
+                <Td><TokenCell token="--error-text" display="error-text(不 dim)" /></Td>
               </tr>
               <tr>
                 <Td mono>Control border(傳給 Field Controls)</Td>

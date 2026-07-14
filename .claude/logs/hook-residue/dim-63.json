@@ -1,0 +1,1 @@
+{"dim":63,"hook":"inject_deploy_url_after_push.sh","residueCount":0,"findings":[],"verified":true,"note":"PostToolUse Bash automation hook — detects git push origin <branch> and injects deploy URL(s) into AI context. Pure inject/automation, blocks nothing; no static code anti-pattern to leave file residue."}

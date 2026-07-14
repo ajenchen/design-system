@@ -108,7 +108,9 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // weekday 列標跟 caption「April 2026」同視覺權重(都屬 calendar header 區),
           // 不弱化(撤銷 v3 fg-secondary 的 mistake)。對齊 icon-only Button 預設 neutral-9 一致。
           'text-foreground text-body font-medium',
-          'h-7 align-middle text-center',
+          // h-field-sm(md=28/lg=32 隨 density):對齊 day cell 同 token 同 row cadence
+          // (spec:127 既定 canonical;Ant 36/36、Carbon 40/40 header/day 同節奏;2026-07-14 修 h-7 固定 drift)
+          'h-[var(--field-height-sm)] align-middle text-center',
         ),
         week: '',  // tr default
         // Cell **就是** button 容器(28×28 @ md / 32×32 @ lg),`relative` 讓 before pseudo 定位

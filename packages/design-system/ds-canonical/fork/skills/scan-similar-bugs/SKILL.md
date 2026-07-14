@@ -24,7 +24,7 @@ description: Auto-invoke after fix commits — extracts root-cause anti-pattern,
 **強制(auto-chain)— batch-end only**(2026-05-12 重構,per codex):
 - multi-issue session 結束後**一次**(不是每 fix 一次)
 - session 內 ≥ 2 fix commit 觸發批次 root-pattern scan
-- session_start_governance_check.sh 偵測 上 session 有 ≥ 2 fix commit 但 batch-end scan 沒跑 → 提醒
+- session_start_governance_check.sh Check 6 偵測 24h 內 ≥1 fix commit 且 skill-invokes log 24h 無 scan-similar-bugs invoke → soft 提醒
 
 **手動 invoke**:
 - user 明言「掃同類 bug / 看其他元件有沒有 / 全 DS scan」
@@ -170,7 +170,7 @@ N 個 candidate 的修法 scope。**禁止 auto-fix 超過 5 檔不 ask user**�
 | `/scan-similar-bugs`(本) | **immediate-after-fix grep + verify** | M10 mechanical 落地 |
 | `/knowledge-prune` | 季度 governance prune | 不重複 |
 | `check_canonical_propagation.sh` E.2(hook;原 check_l3_primitive_import.sh folded 折入,P0 BLOCK) | L3 primitive import 違規 | 即時 detect,本 skill 是 batch retro scan |
-| `pre_write_subsumption_check.sh`(hook)| 新 file / M-row | 不重複 |
+| `pre_write_subsumption_check.sh`(retired 2026-06 → `.claude/hooks/retired/`;新 file / M-row 治理由 `session_start_governance_check.sh` + `enforce_home_charter.sh` 現役防線接手)| 新 file / M-row | 不重複 |
 
 **3 層 防線**:
 - Hook(pre/post tool):**寫的瞬間** detect

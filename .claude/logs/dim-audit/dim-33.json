@@ -1,0 +1,20 @@
+{
+  "dim": 33,
+  "title": "Component classification + abstraction",
+  "filesScanned": 90,
+  "scope": "NO-SAMPLE 全掃:64 component spec.md + 8 pattern spec.md + tokens spec + root barrel index.ts + category-matrix.json (分類 SSOT) + ui-development.md (public/internal canonical) + naming-conventions.md",
+  "subDimsChecked": [
+    "分類 (component/internal/pattern/token/template):10 internal-flagged specs 全 grep + 驗證 barrel 排除一致 (56 public export = 64 dirs - 8 internal,0 leak);10 internal 元件全 grep consumer 確認真被內部消費非 orphan",
+    "抽象層級:每 spec Layout Family 宣告 (frontmatter family + body Layout Family 段) 全掃,63/64 component 有宣告 (3 個 sub-spec filter-operators/field-controls/form-validation 非 standalone 元件豁免)",
+    "prop-vs-separate (M21):suffix-pattern 元件全查 rationale — NumberInput/LinkInput (Input+suffix)、TimePicker (vs DatePicker showTime)、CircularProgress (vs ProgressBar)、InlineEdit、Sheet (vs Dialog side)、Combobox/PeoplePicker (vs Select) — 全部有 documented separate-component rationale (3-test 通過:distinct value contract / behavior / world-class precedent)"
+  ],
+  "findings": [
+    {
+      "fileLine": ".claude/rules/ui-development.md:31",
+      "問題": "Public/internal canonical 段寫死「現行 11 個 internal 單元全走 frontmatter」,但實際 grep isInternal 的 spec 只有 10 個 (Command / DateGrid / HoverCard / Menu / Notice / OverflowIndicator / SelectMenu / SelectionControl 8 元件 + horizontal-overflow / overlay-surface 2 pattern);root barrel index.ts 的 internal 排除註解也列 10 個。此 hardcode 計數已 drift,且無機械 sync (gen-design-system-barrel.mjs 只生成 barrel、不回寫此 doc 數字),下次增刪 internal 單元會再度不同步。",
+      "severity": "marginal",
+      "建議": "把「11 個」改成「10 個」,或改成不寫死數字的措辭 (例:『現行 internal 單元全走 frontmatter isInternal』去掉計數),避免 governance doc 計數 drift。此為分類狀態的文件表述失準,非分類本身錯誤 (classification 機械層 barrel generator 一致、0 leak)。"
+    }
+  ],
+  "cleanAssessment": "分類/抽象/prop-vs-separate 三 sub-dim 實質乾淨。全部 separate component (NumberInput/LinkInput/TimePicker/CircularProgress/InlineEdit/Sheet/Combobox/PeoplePicker/ProfileCard/Calendar) 皆帶 M21 3-test documented rationale (distinct value contract + behavior + world-class cite);10 個 internal 元件全被 DS 內部真消費 (非 orphan)、frontmatter isInternal ↔ barrel 排除機械一致 (56 public = 64-8,0 leak);近親分界 (Sheet↔Dialog / Tag↔Badge↔Chip / Calendar↔DateGrid↔DatePicker / ProgressBar↔CircularProgress) 皆 reciprocal 文件化。唯一 finding 為文件計數 drift。"
+}

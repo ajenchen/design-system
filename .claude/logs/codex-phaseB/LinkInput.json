@@ -1,0 +1,136 @@
+{
+ "component": "LinkInput",
+ "claimsVerified": 239,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.tsx:31",
+   "宣稱": "純展示 a tag，無 input chrome、無 hover affordance。",
+   "真實code行為": "renderLinkAnchor 實際包含 hover:text-primary-hover 與 hover:underline；只有「無 input chrome」為真。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.tsx:62",
+   "宣稱": "mode='display' 時 chrome 無視覺意義，display 完全無 wrapper。",
+   "真實code行為": "showDisplayEndIcon=true 時會渲染 Field wrapper，而且 resolvedVariant 會影響 default／naked 佈局。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.tsx:74",
+   "宣稱": "showDisplayEndIcon 控制是否包 Field naked wrapper。",
+   "真實code行為": "此 prop 只控制是否進入 wrapper branch，沒有強制 naked variant。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.tsx:75",
+   "宣稱": "showDisplayEndIcon 預設 false 時是裸 anchor。",
+   "真實code行為": "預設 branch 的 root 是 span；有值時 anchor 嵌在 span 內。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.tsx:76",
+   "宣稱": "設 true 時 display 走 fieldWrapperStyles(naked variant)。",
+   "真實code行為": "實際傳入 resolvedVariant；未另傳 variant 時預設是 default。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.tsx:149",
+   "宣稱": "display 純展示，無 hover affordance。",
+   "真實code行為": "display 仍呼叫 renderLinkAnchor，具有 hover 換色與底線。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.tsx:151",
+   "宣稱": "showDisplayEndIcon=false 時無 wrapper、裸 anchor。",
+   "真實code行為": "實際永遠有外層 span，只是沒有 Field wrapper。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.tsx:152",
+   "宣稱": "showDisplayEndIcon=true 時包 Field naked wrapper。",
+   "真實code行為": "wrapper 使用 resolvedVariant，並未強制 naked。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.spec.md:43",
+   "宣稱": "LinkInput 只處理 URL value，不處理 display text 搭配。",
+   "真實code行為": "公開 label prop 可作為 URL 的自訂顯示文字；僅「不能編輯 label」為真。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.spec.md:62",
+   "宣稱": "格式不合法會維持 error 邊框，直到格式正確。",
+   "真實code行為": "handleChange 在下一次輸入時立即清除 localError，即使新內容仍是不合法 URL。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.spec.md:75",
+   "宣稱": "URL 必須包含 http:// 或 https://。",
+   "真實code行為": "程式只檢查 WHATWG URL 解析後的 protocol；https:example.com、https:/example.com 也會被正規化並判定有效。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:44",
+   "宣稱": "edit-link 狀態的 placeholder token 是 --fg-muted。",
+   "真實code行為": "edit-link branch 不渲染 input 或 placeholder，該 token 應為 N/A。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:67",
+   "宣稱": "readonly 狀態的 placeholder token 是 --fg-muted。",
+   "真實code行為": "readonly 不渲染 native placeholder；空值改顯示 emptyDisplay，顏色為 text-foreground。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:76",
+   "宣稱": "disabled 狀態的 placeholder token 是 --fg-muted。",
+   "真實code行為": "disabled 不渲染 placeholder；空值改顯示 emptyDisplay，顏色為 text-fg-disabled。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:95",
+   "宣稱": "sm 高度是固定 28px。",
+   "真實code行為": "h-field-sm 是 density-aware token；density=lg 時為 32px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:96",
+   "宣稱": "md 高度是固定 32px。",
+   "真實code行為": "h-field-md 在 density=lg 時為 36px；32px 只是不加限定的預設 density 值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:97",
+   "宣稱": "lg 高度是固定 36px。",
+   "真實code行為": "h-field-lg 在 density=lg 時為 40px；36px 只是不加限定的預設 density 值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:262",
+   "宣稱": "error prop 會產生紅色邊框與 aria-invalid。",
+   "真實code行為": "合法 URL 的 link branch 可呈現紅框，但只設 data-error，沒有 aria-invalid；aria-invalid 僅存在 input branch。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:266",
+   "宣稱": "disabled prop 等同 mode=\"disabled\"。",
+   "真實code行為": "mode resolver 以顯式 mode 為最高優先；mode 與 disabled 衝突時並不等同。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:268",
+   "宣稱": "showDisplayEndIcon 使 display 改包 Field naked wrapper。",
+   "真實code行為": "boolean 只切換 wrapper branch；wrapper 使用 resolvedVariant，預設仍是 default。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:413",
+   "宣稱": "實際寬度由內容決定。",
+   "真實code行為": "Field wrapper 預設使用 w-full，故事預覽也由 w-64／max-w-xs 容器限寬；寬度主要由容器決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:463",
+   "宣稱": "Focus 一律使用 border-primary 1px。",
+   "真實code行為": "一般 edit 才是 border-primary；error focus 保持 border-error，readonly 使用 ring-ring，disabled 沒有可聚焦 control。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:745",
+   "宣稱": "Tab 會 focus 進輸入框。",
+   "真實code行為": "只有 input branch 存在輸入框；合法 URL 時 Tab 依序進入 anchor 與 Pencil，readonly/display 進 anchor，disabled 沒有 input focus。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.principles.stories.tsx:144",
+   "宣稱": "開始打字時清除 error，讓使用者無壓力重試。",
+   "真實code行為": "handleChange 只清 localError，不清 error prop／Field invalid；既有合法 value 編輯失敗後，第一個重試字元還可能讓 input 被舊連結取代。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.principles.stories.tsx:146",
+   "宣稱": "輸入 URL 需含 https://。",
+   "真實code行為": "驗證同時接受 http: 與 https:，並非必須 https://。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.principles.stories.tsx:152",
+   "宣稱": "Enter blur 與 Escape 還原跟瀏覽器 form／原生 input 行為一致。",
+   "真實code行為": "兩者都是 LinkInput 的自訂 onKeyDown 行為；原生 input 不會因 Enter 自動 blur，Escape 也不會自動回復先前 value。"
+  }
+ ]
+}

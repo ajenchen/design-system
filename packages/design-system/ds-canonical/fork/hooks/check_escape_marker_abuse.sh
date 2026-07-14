@@ -135,6 +135,33 @@ $(echo "$MARKERS_FOUND" | sed 's/^/    /')
 EOF
     exit 2
   fi
+
+  # ── Repo 級累計 ratchet(2026-07-08 WM 戰役 R4)──────────────────────────────
+  # per-file gate(≥3 distinct/≥5 total)可被「每檔 1-2 個、散多檔」繞過 → repo 級 ceiling。
+  # Ratchet 精神(Polaris stylelint migrator):存量 ≥ cap 後只擋「本次 edit 再新增 marker」,
+  # 不因存量 brick 無關 edit(本次內容無 marker → 直接放行)。
+  EDIT_ADDS_MARKER=$(echo "$CONTENT" | grep -cE "$MARKER_RE" || true)
+  if [ "${EDIT_ADDS_MARKER:-0}" -gt 0 ]; then
+    APPS_ROOT="${CLAUDE_PROJECT_DIR:-.}/apps"
+    REPO_CAP=10
+    if [ -d "$APPS_ROOT" ]; then
+      REPO_TOTAL=$(grep -rhoE "$MARKER_RE" "$APPS_ROOT" --include='*.tsx' --include='*.ts' 2>/dev/null | wc -l | tr -d ' ')
+      if [ "${REPO_TOTAL:-0}" -ge "$REPO_CAP" ]; then
+        cat >&2 << EOF
+🚨 ESCAPE-MARKER-REPO-RATCHET BLOCKER(P0,2026-07-08 WM 戰役 R4)
+
+  apps/** 全 repo escape marker 存量已 $REPO_TOTAL 個(ceiling $REPO_CAP),本次 edit 又要新增 $EDIT_ADDS_MARKER 個。
+  每檔 1-2 個散多檔 = 繞 per-file gate 的同型濫用 — repo 級 ratchet 攔。
+
+  修法 2 選 1:
+    (a) 先清既有 escape 的根因(重構走 DS canonical),存量 < $REPO_CAP 後再加真必要的
+    (b) Override env(極罕見,commit msg 必記 rationale):
+        CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT=1
+EOF
+        exit 2
+      fi
+    fi
+  fi
 fi
 
 exit 0

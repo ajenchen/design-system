@@ -1,0 +1,25 @@
+{
+  "component": "DatePicker",
+  "implBasis": "self-built: DateGrid (react-day-picker) + Radix Popover + TimeColumns + Intl.DateTimeFormat",
+  "claimsVerified": 35,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.spec.md:320",
+      "宣稱": "邊界案例 Dark mode/density: `DateGrid 內 cell 尺寸固定不隨 density 漂移(date grid 為密度敏感不可變區)`",
+      "真實code行為": "直接矛盾同 spec L128 `density-aware：md=28×28 / lg=32×32` + code:DateGrid day cell = `h-field-sm w-[var(--field-height-sm)]`,--field-height-sm 在 [data-density=lg] override 為 2rem(32px,uiSize.css:91)。cell 尺寸實際隨 density 縮放,L320 宣稱『固定不漂移』與 L128 及 code 皆衝突。",
+      "severity": "material"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.spec.md:128",
+      "宣稱": "`day cell 與 week header 尺寸 SSOT → date-grid.spec.md:120（消費 --field-height-sm token）`",
+      "真實code行為": "(a) week header 實際用固定 `h-7` 非 --field-height-sm(見 DateGrid 發現);(b) 指向的 date-grid.spec.md:120 落在『組合狀態』段,day-cell 尺寸 canonical 實際在 date-grid.spec.md:127-128,行號 pointer stale。",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.spec.md:270",
+      "宣稱": "Clearable: `清除後 value 變為 null`",
+      "真實code行為": "單一 DatePicker 的 onChange 型別是 `(value: string) => void`(L300),clear 實際 `onChange?.('')`(L604)發空字串,永不能發 null。value 變為 '' 而非 null(僅 DatePicker.Range 的 clear 才發 [null, null])。",
+      "severity": "marginal"
+    }
+  ]
+}

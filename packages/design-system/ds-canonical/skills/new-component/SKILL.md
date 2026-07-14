@@ -7,7 +7,7 @@ description: Create-phase workflow for building a new design-system component fr
 
 ## 存在意義
 
-`/component-quality-gate` 是 **review-phase** gate(元件做完後驗 45 項),但建 **create-phase** 沒 workflow guide → AI 每次從 CLAUDE.md 零散規則自己湊,容易漏規則、誤套 pattern。
+`/component-quality-gate` 是 **review-phase** gate(元件做完後驗 35 項),但建 **create-phase** 沒 workflow guide → AI 每次從 CLAUDE.md 零散規則自己湊,容易漏規則、誤套 pattern。
 
 本 skill 填 create-phase 空缺:6 phase 帶著 AI 一步一步建元件,對齊 CLAUDE.md 所有規則(Layout Family / Props 命名 / Spec 7 維度 / Stories 真實業務場景 / visual audit),最後自動 chain `/component-quality-gate` 做 exit check。
 
@@ -34,7 +34,7 @@ description: Create-phase workflow for building a new design-system component fr
 
 ### Phase 1 — 近親 spec 掃讀(不憑直覺發明)
 
-對齊 CLAUDE.md mindset #2 + `# 遇不確定時的協議` Step 2 + memory `feedback_proactive_5layer_pipeline.md`「5-step pre-check」(寫 tsx 前必含 CLAUDE.md SSOT 清單 + tsx 開頭「── 消費的 SSOT ──」段)。
+對齊 CLAUDE.md mindset #2 + `# 遇不確定時的協議` Step 2 + `.claude/references/ssot-consultation.md`「5-step pre-check」(寫 tsx 前必含 CLAUDE.md SSOT 清單 + tsx 開頭「── 消費的 SSOT ──」段)。
 
 1. **識別 2-3 個近親元件**(同 family、同 pattern、同職責):
    - 視覺相似?(例:新 `StatusChip` → 近親 `Tag` / `Badge` / `Chip`)
@@ -138,7 +138,7 @@ traits:
 
 1. **`{name}.stories.tsx` 展示**:per Phase 5.0 declared traits → 對照 `category-templates.md` 衍生 required core stories(`hasVariants` → AllVariants / `hasSizes` → AllSizes / `isOverlay` → OpenSnapshot 等)。再加 1-2 真實業務 scenario(Jira / Stripe / Notion 過 earn-existence)。Hook `check_story_invariants.sh` R3 category(原 check_story_category.sh folded 折入)write-time 攔不符 trait core。
 2. **`{name}.anatomy.stories.tsx` 設計規格**:5-story 標準(Overview + SizeMatrix + ColorMatrix + StateBehavior + Inspector)或合理 subset + rationale。
-3. **`{name}.principles.stories.tsx` 設計原則**(對齊 Polaris/Carbon/Ant canonical,2026-04-26):universal core ≥ 2 of {`WhenToUse` / `WhenNotToUse` / `Vs{Sibling}Rule` / `ContentGuidelines`}。do / don't 情境對照,每則 Rule title + Rule note + 範例。Hook `check_principles_canonical.sh` write-time 攔不符。
+3. **`{name}.principles.stories.tsx` 設計原則**(對齊 Polaris/Carbon/Ant canonical,2026-04-26):universal core ≥ 2 of {`WhenToUse` / `WhenNotToUse` / `Vs{Sibling}Rule` / `ContentGuidelines`}。do / don't 情境對照,每則 Rule title + Rule note + 範例。Hook `check_canonical_propagation.sh` E.1(原 `check_principles_canonical.sh` folded)write-time 攔不符。
 
 **兩個 test**:
 - 「人」test — 遮標題 5 秒讀者看懂情境?
@@ -146,11 +146,11 @@ traits:
 
 ### Phase 6 — Self quality-gate(exit check)
 
-**Mandatory**。chain `/component-quality-gate` 走 45 項 checklist + Phase 4.5 visual audit(Layer A + B)+ **Dim 27 code quality audit**(2026-04-24 新:`node scripts/code-quality-audit.mjs --scope=component:{Name} --check`,P0 violation 必 block)。對齊 CLAUDE.md 稽核 canonical Tier 1 stakeholder-gate:元件要 merge 前 code + visual + clean-code 三層過關。
+**Mandatory**。chain `/component-quality-gate` 走 35 項 checklist + Phase 4.5 visual audit(Layer A + B)+ **Dim 27 code quality audit**(2026-04-24 新:`node scripts/code-quality-audit.mjs --scope=component:{Name} --check`,P0 violation 必 block)。對齊 CLAUDE.md 稽核 canonical Tier 1 stakeholder-gate:元件要 merge 前 code + visual + clean-code 三層過關。
 
 **如何 chain**:
 1. Invoke `/component-quality-gate` skill,以本元件為 scope
-2. 45 項全綠 + visual 過關才算 create-phase 完成
+2. 35 項全綠 + visual 過關才算 create-phase 完成
 3. 若 quality-gate 發現問題 → 回 Phase 3 / 4 / 5 對應階段修,再跑 quality-gate
 4. 通過 → 回報 user「元件 {Name} 建立完成,已過 create + review 雙 gate」
 

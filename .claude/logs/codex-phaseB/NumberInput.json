@@ -1,0 +1,131 @@
+{
+ "component": "NumberInput",
+ "claimsVerified": 584,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:4",
+   "宣稱": "variants: {}",
+   "真實code行為": "NumberInputProps 實際提供 variant?: FieldVariant，支援 default 與 naked，預設為 default。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:5",
+   "宣稱": "sizes: {}",
+   "真實code行為": "NumberInput 從 fieldWrapperStyles 繼承 size，支援 sm／md／lg，預設 md。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:26",
+   "宣稱": "結構包含可選的 startIcon",
+   "真實code行為": "NumberInputProps 與 render 均無 startIcon；只有 input、endSlot／endAction。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:63",
+   "宣稱": "Edit 模式靠左",
+   "真實code行為": "input 使用 [text-align:inherit]，並未固定靠左；DataTable number／currency edit cell 會繼承 text-right。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:71",
+   "宣稱": "Display 的 null／undefined 一律顯示半形 -",
+   "真實code行為": "可編輯 DataTable cell 的 display 靜止態由 useFieldEmptyDisplay() 回傳空字串；只有 standalone／不可編輯 cell 才顯示 -。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:106",
+   "宣稱": "Disabled wrapper 背景一律為 bg-disabled",
+   "真實code行為": "只有 default×disabled 使用 bg-disabled；naked×disabled 是 bg-transparent，由 DataTable cell 外層負責 disabled 背景。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:106",
+   "宣稱": "Display mode + disabled 會切換 disabled token",
+   "真實code行為": "顯式 mode 優先；mode=\"display\" 與 disabled 同傳仍解析為 display，不會切換 disabled token。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:108",
+   "宣稱": "Display／readonly 的 null／undefined 都顯示半形 -",
+   "真實code行為": "可編輯 DataTable cell 的 display 狀態顯示空白。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:108",
+   "宣稱": "Display／readonly 的空字串顯示半形 -",
+   "真實code行為": "value 型別不接受 string；即使 runtime 傳入空字串，value == null 仍為 false，輸出也是空字串而非 -。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:110",
+   "宣稱": "Escape 棄 draft，對齊 form-validation 規則 4 回復原值",
+   "真實code行為": "元件未保存編輯前 value；合法輸入已即時觸發 onChange，Escape 只清除 draft，無法自行回復原值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:112",
+   "宣稱": "Number(raw)／onChange 實作位於 number-input.tsx:136-138",
+   "真實code行為": "136-138 是 non-edit JSX 收尾；實際 parse 與 onChange 位於 150-153。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:114",
+   "宣稱": "RTL 現況仍是 edit 靠左",
+   "真實code行為": "edit input 繼承 host 的 text-align；在 DataTable number／currency cell 內實際靠右。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:135",
+   "宣稱": "input focus 後 wrapper border 轉為 primary",
+   "真實code行為": "只在 error=false 時成立；error=true 時 focus 仍強制使用 border-error。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.tsx:115-116",
+   "宣稱": "Escape 對齊 form-validation 規則 4回復原值",
+   "真實code行為": "沒有 original-value snapshot 或 revert callback；Escape 僅 setDraft(null)，只能顯示最新 controlled value。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:38",
+   "宣稱": "edit×disabled 使用 --bg-disabled／--fg-disabled／transparent border",
+   "真實code行為": "mode=\"edit\" 優先於 disabled，且 disabled 未轉發到 input，因此仍是可互動的 edit input與 edit tokens。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:45",
+   "宣稱": "display×disabled 使用 --fg-disabled",
+   "真實code行為": "顯式 display mode 優先，非空值仍繼承 foreground。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:74-76",
+   "宣稱": "h-field-sm／md／lg 固定解析為 28／32／36px",
+   "真實code行為": "這只符合預設 density；lg density 會解析為 32／36／40px，但 anatomy 標籤仍顯示舊固定值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:259",
+   "宣稱": "disabled 是原生屬性",
+   "真實code行為": "disabled 僅參與自訂 mode resolution，未轉發為 native input 的 disabled attribute；mode=\"edit\" disabled 仍是 enabled input。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:260",
+   "宣稱": "readOnly 是原生屬性",
+   "真實code行為": "readOnly 僅參與自訂 mode resolution，未轉發為 native input 的 readOnly attribute；mode=\"edit\" readOnly 仍可編輯。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:362,370,410",
+   "宣稱": "Inspector 任一 mode 的左右內距都是 px-[var(--field-px)]／12px",
+   "真實code行為": "default display mode 以 !px-0 覆寫 size padding，實際左右內距為 0。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:428",
+   "宣稱": "非 edit mode 的 border resolved value 是 none",
+   "真實code行為": "display／readonly／disabled 均保留 1px solid transparent border，只是不可見，並非 border:none。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:429",
+   "宣稱": "Edit focus 一律使用 border-primary",
+   "真實code行為": "Inspector 開啟 error 時仍顯示此宣稱，但 error+focus 實際強制使用 border-error。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:785",
+   "宣稱": "未限定 mode 地宣稱 NumberInput 使用 native input、可 Tab 聚焦並以 focus-within 顯示主色邊框",
+   "真實code行為": "這些行為只適用 edit；display／readonly／disabled 皆早退為不可聚焦的 div＋span，且不轉發 aria-*。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:139",
+   "宣稱": "DataTable 以右對齊讓同欄數字的小數點／個位數對齊",
+   "真實code行為": "DataTable 只套用 justify-end＋text-right；precision 可省略，且沒有 decimal-align 或 tabular-nums 保證，因此不保證小數點對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:144",
+   "宣稱": "範例中的 price、stock 欄小數點縱向對齊",
+   "真實code行為": "範例資料全部是整數，畫面沒有小數點；實作只保證右邊界對齊。"
+  }
+ ]
+}

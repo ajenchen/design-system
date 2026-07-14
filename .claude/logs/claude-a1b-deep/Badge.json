@@ -1,0 +1,19 @@
+{
+  "component": "Badge",
+  "implBasis": "self-built (styled <span>, cva; no external primitive)",
+  "claimsVerified": 30,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/Badge/badge.spec.md:380",
+      "宣稱": "『為何無 StateBehavior』段：『對應 anatomy story：保留 Overview + Inspector + ColorMatrix + SizeMatrix』",
+      "真實code行為": "badge.anatomy.stories.tsx 除了這 4 個之外還 export 了 Accessibility story（anatomy:576 `export const Accessibility`，name '無障礙'）。spec 的 anatomy story 列舉不完整，漏列實際存在的 Accessibility。",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Badge/badge.anatomy.stories.tsx:197",
+      "宣稱": "Props 表 count 說明：『顯示的數量（dot 模式下忽略）』——暗示 dot 模式下可傳 count 但被忽略",
+      "真實code行為": "BadgeProps 為 discriminated union，BadgeDotProps 宣告 `count?: never`（badge.tsx:60）——dot=true 時傳 count 是 TypeScript compile error（型別禁止），非『accepted 但 runtime 忽略』。措辭『dot 模式下忽略』不精確（實際是型別層禁止）。",
+      "severity": "marginal"
+    }
+  ]
+}

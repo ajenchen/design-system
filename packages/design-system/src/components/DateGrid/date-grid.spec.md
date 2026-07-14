@@ -22,7 +22,7 @@ benchmark:
 
 DateGrid 是 **DatePicker 內部的 date-grid primitive**(月份格網 + 前後導航 + 日 cell),**不直接面向 consumer**。2026-04-21 從原本的 `Calendar/` 改名為 `DateGrid/`,因為「Calendar」此命名在世界級 DS 慣例專指**事件檢視 canvas**(見 `../Calendar/calendar.spec.md`),而本元件只是「選日期用的格網」,不做事件呈現。保留 Calendar 名字給 event view 元件是世界級對齊。
 
-**實作基礎**:`react-day-picker@9` 包裝 + 本 DS token 覆寫預設視覺。所有 classNames 透過 `classNames` prop 注入,避免引入原生 `.rdp-*` 樣式漂移。
+**實作基礎**:`react-day-picker@9` 包裝 + 本 DS token 覆寫預設視覺。**載入 RDP `style.css` 為結構基底**(tsx `import 'react-day-picker/style.css'`),再以 `classNames` prop 逐 key 用 DS token 覆寫視覺層(caption / weekday / day / range 等);**未列出的結構 key 沿用 RDP 原生 `.rdp-*` 預設**。故非「零 rdp-*」,而是「DS token 管視覺層、rdp-* 提供結構層」。
 
 **Layout Family**:非上述 family — composite / multi-section(月份 caption + 星期標頭 + 日期網格 + nav 按鈕,多區塊組合)。
 

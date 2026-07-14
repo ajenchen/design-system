@@ -1,3 +1,4 @@
+// @internal — DS-internal 單元(viewport 覆蓋 paint layer,只被 data-table.tsx 內部消費);不隨 index.ts re-export 進 npm public surface。
 /**
  * DataTableInteractionLayer — Slice D Step 1A scaffold(per `.claude/planning/datatable-spreadsheet-rfc.md`)
  *
@@ -30,15 +31,16 @@ interface CellRect {
 interface DataTableInteractionLayerProps {
   /** Flag default false:不破現有 outline。enable 後 hover/editor 走 overlay。 */
   enabled: boolean
-  /** Container ref;layer absolute position 對 container origin */
+  /** Container ref;geometry source(getCellRect 由此 query cell DOM)。layer root 本身是
+   *  position:fixed inset:0 viewport-anchor(見 render),非 container-origin absolute */
   containerRef: React.RefObject<HTMLDivElement | null>
   /** Per Contract 15:`cellClickEntersEdit` predicate;hover overlay 顯示與否 */
   cellClickEntersEdit?: (cellId: CellId) => boolean
   /**
-   * Slice D Step 3 scaffold(2026-05-10):active editor cell id。null = 無 active editor。
-   * 當前只 render rect placeholder layer(z-index 3,higher than hover ring z-index 1)。
-   * Future:ActiveEditorHost portal active edit Field per Contract 8 「two paint owners」。
-   * Wire-up 走 codex Q-7 string-first canary(text cell first,picker types 漸進)。
+   * Active editor cell id。null = 無 active editor。
+   * 已接線(Slice D Step 5 完成,2026-07-14 docblock 對齊):activeEditorEnabled +
+   * activeEditorCellId + activeEditorRender 齊 → ActiveEditorHost(z 3)portal render
+   * 真 edit Field(per Contract 8「two paint owners」)。
    */
   activeEditorCellId?: CellId | null
   /**
@@ -55,12 +57,6 @@ interface DataTableInteractionLayerProps {
    * Layer renders solid border SelectionRect(per user「不要 dash 直接實的就好」)。
    */
   selectedCellId?: CellId | null
-  /**
-   * Slice D Step 4 range support(per user「應該支援 range」+ codex Q2.1 Airtable/AG Grid
-   * cite):range cell IDs from anchor↔focus rectangle。Layer renders bg-fill RangeRect
-   * (z 1,bg `--primary-subtle`)+ selection border on focus cell。
-   */
-  rangeCellIds?: CellId[]
   /**
    * Slice D Step 5(D.3 portal Field,2026-05-10 user 拍板「在乎完美乾淨」+ codex Q6.1
    * 撤回 defer):active editor render callback。當 activeEditorEnabled + activeEditorCellId
@@ -222,10 +218,11 @@ function useHoveredCell(
 }
 
 /**
- * Singleton interaction layer。
+ * Singleton interaction layer(全 sub-layer 已接線;2026-07-14 docblock 對齊實作)。
  *
- * Slice D Step 1A:HoverCellRect only。
- * Slice D Step 2/3/4:SelectionRect / ActiveEditorHost / RangeRect 漸進加入。
+ * 現況:HoverCellRect(z 1)+ SelectionRing(z 2)+ ActiveEditorHost(z 3,portal edit Field);
+ * range 視覺走 cell 自身 CSS `[data-range-cell]`(RangeRect / rangeCellIds prop 已 retire)。
+ * layer root = position:fixed inset:0 viewport-anchor,pointerEvents:none(僅 ActiveEditorHost 開 auto)。
  */
 export function DataTableInteractionLayer({
   enabled,
@@ -235,8 +232,6 @@ export function DataTableInteractionLayer({
   activeEditorEnabled = false,
   activeEditorRender,
   selectedCellId = null,
-  // rangeCellIds retired 2026-05-10(outer ring 已 retire,range visual 靠 cell-bg `[data-range-cell]`)
-  rangeCellIds: _rangeCellIds,
 }: DataTableInteractionLayerProps) {
   const hoveredCellId = useHoveredCell(containerRef, enabled)
   // 2026-05-10 RWD/scroll sync(per user mandate「所有 overlay 在各種 RWD 和捲動時都處在正確位置」):
@@ -264,7 +259,7 @@ export function DataTableInteractionLayer({
     ? getCellRect(containerRef.current, activeEditorCellId)
     : null
 
-  // Slice D Step 4(spreadsheet semantics):SelectionRect + RangeRect with viewport clip。
+  // Slice D Step 4(spreadsheet semantics):SelectionRing with viewport clip(RangeRect 已 retire — range 視覺走 CSS [data-range-cell])。
   const selectedGeo = enabled && selectedCellId != null
     ? getCellGeometry(containerRef.current, selectedCellId)
     : null
@@ -341,9 +336,10 @@ function toRelRect(cellRect: CellRect, clipRect: CellRect): CellRect {
 
 // ── Private primitives(per codex unified-ring-overlay-2026-05-10 Final A')──────
 //
-// 三個 private primitive 各自 own 一個 paint concern:
+// 三個 private primitive 各自 own 一個 paint concern(2026-07-14 對齊實作:CellRangeFill
+// 不存在 — range bg 走 cell 自身 CSS `[data-range-cell]`,非 layer 元件):
 //   1. CellRingOverlay  — outline ring(hover / selected / future focus / error)
-//   2. CellRangeFill    — bg fill(range cells in spreadsheet mode)
+//   2. ClipMask         — panel viewport 裁切 wrapper(Issue 6 partial-visibility)
 //   3. ActiveEditorHost — opaque host(portal Field edit)
 //
 // SSOT pattern(共 3 primitives):rect float pass-through + boxSizing:border-box +

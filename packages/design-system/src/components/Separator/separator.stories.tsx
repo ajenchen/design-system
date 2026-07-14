@@ -1,16 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { MoreVertical, Pencil, Copy, Trash2, User, Bell, Shield } from 'lucide-react'
+import { User, Bell, Shield } from 'lucide-react'
 import { Separator } from './separator'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { Button } from '@/design-system/components/Button/button'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '@/design-system/components/DropdownMenu/dropdown-menu'
 
 const meta: Meta<typeof Separator> = {
   title: 'Design System/Components/Separator/展示',
@@ -76,25 +69,11 @@ export const Vertical: Story = {
   ),
 }
 
-/* ── 在 DropdownMenu 內 ─────────────────────────────────────────────── */
-export const InDropdownMenu: Story = {
-  name: '在 DropdownMenu 內',
-  render: () => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="tertiary" size="sm" startIcon={MoreVertical}>
-          更多操作
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        <DropdownMenuItem startIcon={Pencil}>重新命名</DropdownMenuItem>
-        <DropdownMenuItem startIcon={Copy}>複製連結</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem startIcon={Trash2}>刪除</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  ),
-}
+// @story-trait-rationale: InDropdownMenu retired 2026-07-14 per audit Dim 24 —
+//   同一「重新命名/複製連結/分隔/刪除」選單完整重複 principles DecorativeSemanticRule
+//   (separator.principles.stories.tsx)首例;且 menu 內分隔屬 DropdownMenuSeparator
+//   (DropdownMenu owns 該 primitive,見 separator.spec.md 近親分界),非 consumer
+//   手動放置 Separator 的場景 — canonical 範例由 DropdownMenu 展示層 owns。
 
 /* ── 在 DescriptionList 之間 ────────────────────────────────────────── */
 export const BetweenSections: Story = {

@@ -43,7 +43,31 @@ ESCAPE_MARKER='@layout-space-magic-ok:'
 
 # Detect magic spacing classes (Tailwind class strings only — NOT JSX props like size={24})
 # Match per line so we can check per-line escape comments
-MAGIC_LINES=$(echo "$NEW_CONTENT" | grep -nE '\b(p|px|py|pt|pb|pl|pr|gap|space-x|space-y|m|mx|my|mt|mb|ml|mr)-(0\.5|[1-9][0-9]?(\.[0-9])?)\b')
+# 2026-07-08 WM 戰役 R4 擴 scope(broad-vs-narrow gap 實證修補):
+#   (a) logical properties ps-/pe-/ms-/me-(WM 6 筆 ps-4 漏網實證)
+#   (b) arbitrary bracket 固定 px:gap-[7px] / p-[13px] 類(spacing 家族)
+#   (c) 固定寬度 w-[Npx](WM w-[640px] 丟失 min() viewport clamp 實證;w-[min(...)]/var()/% 不攔)
+#   (d) grid-template 固定 px 欄寬:grid-cols-[...Npx...](WM mini-table 88px/72px 黏死實證)
+MAGIC_LINES=$(echo "$NEW_CONTENT" | grep -nE '\b(p|px|py|pt|pb|pl|pr|ps|pe|gap|space-x|space-y|m|mx|my|mt|mb|ml|mr|ms|me)-(0\.5|[1-9][0-9]?(\.[0-9])?)\b|\b(p|px|py|pt|pb|pl|pr|ps|pe|gap|m|mx|my|mt|mb|ml|mr|ms|me)-\[[0-9]+(\.[0-9]+)?px\]|\bw-\[[0-9]+(\.[0-9]+)?px\]|\bgrid-(cols|rows)-\[[^]]*[0-9]+px[^]]*\]')
+
+# ── 幻覺 token 攔截(2026-07-08 WM 戰役:app 自創 var(--layout-space-distant) → CSS 未定義
+# silent 解析 0 → 區塊全黏死,PDF「全部擠在一起」根因之一。白名單 = loose|tight|bottom
+# (layoutSpace.css SSOT 僅此三顆;新增 tier 走 DS token 流程,不在 consumer 端發明)──
+PHANTOM=$(echo "$NEW_CONTENT" | grep -nE 'var\(--layout-space-[a-z-]+\)' | grep -vE 'var\(--layout-space-(loose|tight|bottom)\)' || true)
+if [ -n "$PHANTOM" ]; then
+  cat >&2 <<EOF_PH
+🚨 [P0 BLOCKER] 幻覺 layout-space token(CSS 未定義 = silent 0 = 佈局黏死):
+$PHANTOM
+→ 白名單只有 --layout-space-{loose,tight,bottom}(layoutSpace.css SSOT)。
+  要更大一級間距 → 用 loose;真需新 tier → 走 DS token 新增流程(layoutSpace.spec),禁 consumer 端自創。
+  Anchor:2026-07-08 WM --layout-space-distant ×4 處,整個 detail modal 區塊黏死。
+EOF_PH
+  exit 2
+fi
+
+# 2026-07-10 批次 A:divider 幾何 canonical(h-6 mx-1 / h-5 mx-1,action-bar.spec.md「分隔線幾何」)
+# 是**正解**,不該被 magic-number 攔(原本懲罰 canonical 修法、放行違規 = 治理自我打架)。
+MAGIC_LINES=$(echo "$MAGIC_LINES" | grep -vE '(Separator|ButtonDivider)' || true)
 
 if [ -z "$MAGIC_LINES" ]; then
   exit 0
@@ -82,9 +106,9 @@ $(echo -e "$UNJUSTIFIED" | sed 's/^/    /' | head -10)
   per app-shell.spec.md L205-219 + layoutSpace.spec.md SSOT:consumer content 必遵循
   layoutSpace 6 條規則 + 親疏 3 級,**禁** 硬寫 Tailwind magic numbers。改用:
     p-[var(--layout-space-loose)]      /* 16px 規則 1A/1B chrome / wrap */
-    p-[var(--layout-space-tight)]      /* 12px 規則 3 親 gap */
-    gap-[var(--layout-space-distant)]  /* 24px 規則 3 疏 gap */
-    space-y-[var(--layout-space-distant)]
+    gap-[var(--layout-space-tight)]    /* 12px 規則 3 親 gap(跨範疇相關) */
+    gap-[var(--layout-space-loose)]    /* 16px 規則 3 疏 gap(跨範疇 parallel;lg 密度自動 24px) */
+    (token 全集 = loose/tight/bottom,無其他級 — 自創 --layout-space-distant 類 = 幻覺 token,本 hook 會攔)
 
   修法 2 選 1:
     (a) 改 token:換成 var(--layout-space-N) N∈{loose,tight} family per 6 規則 + 親疏 3 級

@@ -1,7 +1,18 @@
 ---
 component: Notice
 family: 2
-variants: {}
+# variant 語意 = status icon 選擇(見本文「Variant」表);world-class 對照見 frontmatter benchmark 清單
+variants:
+  neutral:
+    when: "一般訊息、系統公告;無情緒色、不掛 status icon"
+  info:
+    when: "資訊提示(版本更新、流程說明);Info icon"
+  success:
+    when: "操作成功確認;CircleCheck icon"
+  warning:
+    when: "可恢復警告(未儲存變更、連線不穩);TriangleAlert icon"
+  error:
+    when: "錯誤(操作失敗、權限不足);XCircle icon"
 sizes: {}
 traits:
   - isInternal
@@ -25,7 +36,7 @@ Notice 是純視覺 primitive，不是獨立使用的元件。消費者：
 
 **Layout Family**：CLAUDE.md 4-Family Model **Family 2（List item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「List item layout」章節的 reading-mode 規格。Notice 語意為 notification（非 row collection），但視覺排版遵循 Family 2 確保跨元件視覺一致。
 
-**尺寸偏離（documented exception）**：Notice / Alert / Toast **單一固定 size**——不實作 Family 2 baseline 的 sm/md/lg，padding 也不隨 density 變（`px-4 py-3` 固定）。通知用單一 prominent size 強化「搶注意」的目的性，對齊世界級共識（Material Banner/Snackbar、Polaris Banner、Atlassian InlineMessage、GitHub Flash）。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**尺寸偏離（documented exception）**：Notice / Alert / Toast **單一固定 size**——不實作 Family 2 baseline 的 sm/md/lg，padding 預設不隨 density 變（`px-4 py-3` 固定；唯一例外：Alert `placement="fixed"` 水平 px 改 density-aware，詳「Padding」段）。通知用單一 prominent size 強化「搶注意」的目的性，對齊世界級共識（Material Banner/Snackbar、Polaris Banner、Atlassian InlineMessage、GitHub Flash）。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
 ## Typography
 
@@ -48,6 +59,8 @@ Notice 是純視覺 primitive，不是獨立使用的元件。消費者：
 | gap | `gap-2`（8px） | 跟 item-layout icon-text gap 一致 |
 
 不隨 density 變——Toast/Alert 是通知，不是工作區域元件。
+
+**例外——Alert `placement="fixed"` 水平 px density-aware**:Alert 的 fixed placement 傳 `className='px-[var(--layout-space-loose)]'`(`alert.tsx` fixed 分支)覆寫 Notice 的 `px-4`，改用 density-aware 水平 padding（md=16 / lg=24px），讓 fixed alert 嵌在更大佈局時跟周圍 loose-padding 元素（Toolbar / BulkActionBar / DataTable）左右對齊。垂直 `py-3` 仍固定（notification banner family 垂直不隨 density）。故上方「px 固定」限 Notice 預設 / Toast / Alert inline placement；Alert fixed placement 是唯一 documented 例外。
 
 ## Layout
 
@@ -89,7 +102,7 @@ CSS `color` 從 body 繼承的是**已解析的計算值**，不是 `var(--foreg
 
 ## 何時用 / 何時不用
 
-**Notice 是 internal primitive**——不直接使用，透過 `Alert` / `Toast` 等外層通知元件消費。
+**Notice 是 internal primitive**——不進 root barrel front-door、不裸用；透過 `Alert` / `Toast` 等外層通知元件消費；consumer 需要時可經 per-component subpath 包裝並自行確認後使用（`.claude/rules/ui-development.md`「Root barrel front-door 排除」SSOT，internal ≠ 禁用）。
 
 | 場景 | 正確做法 |
 |------|---------|

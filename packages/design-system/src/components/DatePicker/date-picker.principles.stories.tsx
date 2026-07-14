@@ -67,7 +67,7 @@ export const UsageGuidance: Story = {
 
         <Rule
           title="❌ 不用其他 calendar library 平行實作"
-          note="未來若需要 Date Range / DateTime,擴充本 DateGrid(`../DateGrid/date-grid.tsx`)而非引入第二個 library——避免兩套視覺語言在同一系統並存"
+          note="Date Range / DateTime 已內建(DatePicker.Range / showTime,見下方近親規則)且都基於本 DateGrid(`../DateGrid/date-grid.tsx`);未來任何日曆類擴充也走 DateGrid,而非引入第二個 library——避免兩套視覺語言在同一系統並存"
         >
           <Label>實作細節見 Design System / Components / DatePicker / 設計規格</Label>
         </Rule>
@@ -169,8 +169,8 @@ export const FormattingRule: Story = {
       </Rule>
 
       <Rule
-        title="null 值統一顯示 em dash"
-        note="Display 模式 null / undefined 顯示 —(fg-muted),與其他 Field 元件一致"
+        title="null 值統一顯示半形連字號"
+        note="Display 模式 null / undefined 顯示半形 -(foreground,同 readonly value 色),與其他 Field 元件一致"
       >
         <DatePicker mode="readonly" value={null} />
       </Rule>

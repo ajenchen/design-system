@@ -1,0 +1,273 @@
+[
+ {
+  "src": "claude-p1",
+  "component": "HoverCard",
+  "fileLine": "hover-card.anatomy.stories.tsx:146",
+  "宣稱": "Accessibility story: 觸發元素的可聚焦性需 consumer 自補（例如 Avatar 的 hoverCard 在元件內手動加 tabIndex=0 + role=\"button\" + aria-haspopup=\"dialog\"）",
+  "真實": "avatar.tsx:252-257 focusableProps = { tabIndex: 0, role: 'img', 'aria-label' }. role=\"button\" 與 aria-haspopup=\"dialog\" 已於 2026-07-06 拆除 (avatar.tsx:244 註解 + spec.md:144「不掛 role/aria-haspopup」). 此 story 為 stale docblock，與現行 code 及自家 spec 相矛盾，教錯 a11y API。",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "FileUpload",
+  "fileLine": "file-upload.tsx:20",
+  "宣稱": "檔頭 4-狀態 docblock:「hover = drag-over — border-primary（統一，純 border-driven，底維持 surface）」",
+  "真實": "className (file-upload.tsx:312) 實際用 `border-primary-hover`（--primary-hover = blue-5），非 `border-primary`（--primary = blue-6）。2026-07-06 修 code + spec(L62 已正確寫 border-primary-hover)，但此頂部 docblock 未同步 = stale，token 值 doc≠code。",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "FileUpload",
+  "fileLine": "file-upload.spec.md:138",
+  "宣稱": "邊界案例「拖曳滑過內部子元素(2026-07-05 D4)... dragleave 帶 relatedTarget guard，避免經典 drag-flicker」",
+  "真實": "code 用深度計數 (dragDepth ref, file-upload.tsx:135-138, 275-283)，並非 relatedTarget guard。tsx 註解 (137, 271-274) 明確指出 relatedTarget guard 在 Safari/WebKit 失效故已於 2026-07-06 換成深度計數。spec 仍描述被 code 明確廢棄的舊機制 = stale mechanism。",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "FileUpload",
+  "fileLine": "file-upload.anatomy.stories.tsx:356",
+  "宣稱": "StateBehavior 狀態表:`data-state=\"drag-over\"`（border-primary；底色維持 surface，純 border-driven = hover）",
+  "真實": "code (file-upload.tsx:312) drag-over 用 `border-primary-hover` 非 `border-primary`；Inspector 預覽 (anatomy.stories.tsx:136) 亦硬寫 `border-primary` mock，與實際元件渲染的 border-primary-hover(blue-5) 不符。wrong token value。",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "Sheet",
+  "fileLine": "sheet.tsx:71",
+  "宣稱": "docblock: 'Animation canonical:300ms 雙向一致'",
+  "真實": "cva base 消費 surfaceMotion (tokens/motion/overlay-motion.ts) = var(--motion-duration-surface) = 250ms (motion.css:37)。實際 duration 已 normalize 到 250ms,docblock 仍寫 300ms — 陳舊",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "Sheet",
+  "fileLine": "sheet.anatomy.stories.tsx:241",
+  "宣稱": "StateBehavior Desc: '進離場動畫...fade-in overlay,300ms;sheet.tsx L69-78'",
+  "真實": "實際 animation duration = surfaceMotion 250ms (--motion-duration-surface, motion.css:37);story 面向使用者仍宣稱 300ms — 陳舊/錯值",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "DatePicker",
+  "fileLine": "packages/design-system/src/components/DatePicker/date-picker.spec.md:320",
+  "宣稱": "邊界案例 Dark mode/density: `DateGrid 內 cell 尺寸固定不隨 density 漂移(date grid 為密度敏感不可變區)`",
+  "真實": "直接矛盾同 spec L128 `density-aware：md=28×28 / lg=32×32` + code:DateGrid day cell = `h-field-sm w-[var(--field-height-sm)]`,--field-height-sm 在 [data-density=lg] override 為 2rem(32px,uiSize.css:91)。cell 尺寸實際隨 density 縮放,L320 宣稱『固定不漂移』與 L128 及 code 皆衝突。",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "Sidebar",
+  "fileLine": "sidebar.spec.md:674-676",
+  "宣稱": "'## 為何無 Inspector' — Sidebar 無 Inspector,已由 Overview + SizeMatrix + ColorMatrix + StateBehavior + ChromeTokens 五 story 完整覆蓋,主張互動 Inspector 不需要",
+  "真實": "sidebar.anatomy.stories.tsx:267 有完整實作的 `export const Inspector`(name '元件檢閱器',帶 args/argTypes size/activeId/width + SidebarPreview render)。spec 段落標題與內文直接與 story 檔矛盾;且實際 anatomy 有 7 story(含 VariantMatrix),非 spec 列的五 story — 陳舊 spec 段",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "DateGrid",
+  "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:128",
+  "宣稱": "`week header 同寬，h-field-sm`(星期標頭消費 --field-height-sm token,density-aware md=28 / lg=32)",
+  "真實": "weekday classNames 實際用固定 `h-7`(L111 `'h-7 align-middle text-center'`),非 `h-field-sm` token。h-7 恆 28px 不隨 density 縮放 → lg 密度時星期標頭 28px、日 cell(真 h-field-sm)32px,兩者不再等高。spec 宣稱的 token 與 code 不符。",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "BulkActionBar",
+  "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:180",
+  "宣稱": "a11y 預設：『BulkActionBar 整體用 `role=\"toolbar\"` + aria-label』",
+  "真實": "bulk-action-bar.tsx:98 root 用 `role=\"group\"`（2026-07-06 user 拍板自 toolbar 降級——未實作 APG toolbar 方向鍵 roving 契約，改 group 語意誠實）。spec a11y 段仍寫 role=\"toolbar\"，與 code 及 anatomy story（anatomy:189 已正確寫 role=\"group\"）雙雙相矛盾。stale spec。",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "Alert",
+  "fileLine": "packages/design-system/src/components/Alert/alert.tsx:15",
+  "宣稱": "docblock: 'subtle: 淺底色 + 四邊 1px border(色相 hover 色)' — 宣稱 subtle border 用色相 hover 色",
+  "真實": "SUBTLE_CONTAINER (L29-35) border 用 `border-[var(--info-text)]` 等 hue-text 色,非 hover 色。同檔 L26-28 註解已明文『原借 --{hue}-hover... 改共用 hue-text』;docblock L15 摘要段沒同步更新 → stale docblock vs 現行 code(spec L145 已正確寫 hue-text,唯 tsx docblock 漂移)",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "Alert",
+  "fileLine": "packages/design-system/src/components/Alert/alert.spec.md:116",
+  "宣稱": "'Corner action group 佈局 canonical' 圖示兩區:上方 chrome corner action group + 底部獨立 'body action row' 放 [CTA1][CTA2](L120)",
+  "真實": "Alert 無底部 body action row。endContent + dismiss X 一起 render 進 Notice 的單一 ItemSuffix(`h-[1lh] shrink-0 ml-auto flex items-center` = 對齊第一行、靠右上),CTA 從 endContent 進來只會在右上角同一行,不是底部整列。anatomy Props 表(L45)自己也把 endContent 定義為『右側操作區』與 code 一致 → spec 圖示的底部 action row 教了 code 無法產生的佈局(且與自家 anatomy 互相矛盾)",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "Dialog",
+  "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:27",
+  "宣稱": "docblock 高度行為: `height=\"auto\"：高度隨內容，超過 viewport 時 max-height 安全帽`",
+  "真實": "無 `height` prop。實際 API 是 `autoHeight?: boolean`(DialogContentProps L63);spec.md L88 + anatomy stories 一律用 `autoHeight`。docblock 教了一個不存在的 prop 名。",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "DataTable",
+  "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:443",
+  "宣稱": "ColorMatrix 色彩表: `boolean | X / Check icon 均用 foreground`",
+  "真實": "BooleanCell 實際 render `<Checkbox variant=\"naked\">`(cell-registry.tsx:408 display + :416 edit,checked={value===true}),不是 X / Check icon。與同 spec L167(`live Checkbox`)、L382(`<Checkbox> 無 mode 切換`)自相矛盾;naked Checkbox 勾/空框,非 false 顯 X。ColorMatrix 教錯 render 元件。",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "Textarea",
+  "fileLine": "textarea.spec.md:154",
+  "宣稱": "「DS focus-visible 邊框(`focus-visible:!border-primary`)由 <textarea> 自身的 cva compoundVariants 直接套用(textarea.tsx default/naked edit 態)」— 明確把 `focus-visible:!border-primary` class 歸屬給 default 與 naked 兩種 edit 態",
+  "真實": "只有 naked edit compoundVariant 用 `focus-visible:!border-primary`(textarea.tsx:122);default edit compoundVariant 實際用的是 `focus-within:!border-primary`(textarea.tsx:80),不是 focus-visible。兩者行為不同:focus-within 在滑鼠點擊聚焦時也顯示主色邊框,focus-visible 只在鍵盤聚焦時。spec 對 default 態的具名 class 不存在於 code。",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "Tabs",
+  "fileLine": "tabs.anatomy.stories.tsx:261",
+  "宣稱": "ColorMatrix table row `selected` — Underline(::after) = `--primary-hover` (display '2px primary-hover')",
+  "真實": "tabs.tsx:406 `data-[state=active]:after:bg-primary` — selected underline is `--primary` base, NOT primary-hover (2026-07-06 拍板 hover→base change). Stale row: contradicts its own footnote line 275 ('2px primary line'), Overview footnote line 39, StateBehavior line 322, and spec.md:213 which all say bg-primary",
+  "fixHint": ""
+ },
+ {
+  "src": "claude-p1",
+  "component": "Avatar",
+  "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:702",
+  "宣稱": "無障礙 story：『當頭像帶有 hoverCard 時，頭像本身會變成可用 Tab 聚焦的按鈕並顯示聚焦框』",
+  "真實": "avatar.tsx:252-257 focusableProps 設 role='img'（非 button）+ tabIndex=0 + aria-label。2026-07-06 已『拆除 role=button / aria-haspopup』（tsx:244-251 註解 + spec.md:89 明文『不掛 role=button』）。a11y story 稱其為『按鈕』與 code 的 role='img' 及 spec 明文相矛盾，教錯 ARIA 語義。",
+  "fixHint": ""
+ },
+ {
+  "src": "codex-conf",
+  "component": "Accordion",
+  "fileLine": "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx:109",
+  "宣稱": "Rule title '獨立收合多段(每段各自是否展開)' + note '不是互斥' — 緊接 demo",
+  "真實": "demo 用 `type='single'`(L112):single 模式開新 item 自動收合前一個 = 一次只一段開,無法『每段各自是否展開』。DS 自家 UsageGuidance L68 明文『非互斥可同時展開 = type=multiple』→ 本 Rule 宣稱『不是互斥』卻用 single = demo 與自述矛盾 + 與 DS 內部定義衝突",
+  "fixHint": "改 doc: demo 改 `type='multiple'` 才真正示範『每段各自展開/非互斥』(對齊 UsageGuidance L68);或改 note 不寫『不是互斥』(single 即一次一段)。低-中 severity 措辭/demo 對齊",
+  "claudeAlsoCaught": false
+ },
+ {
+  "src": "codex-conf",
+  "component": "Alert",
+  "fileLine": "packages/design-system/src/components/Alert/alert.spec.md:86",
+  "宣稱": "禁止事項『兩個 action 區域不混用:chrome corner 只放 close X;body action row 只放 CTA』+ Corner action group 佈局 canonical L116-121 ASCII 底部獨立 [CTA1][CTA2] body action row",
+  "真實": "Alert 無底部 body action row。Notice(notice.tsx L150-170)把 endContent(CTA)與 dismiss X 一起 render 進單一 ItemSuffix(h-[1lh] shrink-0 ml-auto = 對齊第一行、靠右上)。CTA 從 endContent 進來只會在右上角同一行,結構上產不出 spec 圖示的『底部整列 CTA + 上方 corner』雙區;且與自家 anatomy Props(endContent=『右側操作區』)互相矛盾",
+  "fixHint": "改 doc: 移除 L112-137『Corner action group 佈局 canonical』底部 body action row 圖示(code 產不出),改為單一右上 suffix(icon+title+desc | [CTA][X])描述,對齊 anatomy endContent 定義。Claude 已於 spec:116 抓同缺陷(sibling)",
+  "claudeAlsoCaught": true
+ },
+ {
+  "src": "codex-conf",
+  "component": "Alert",
+  "fileLine": "packages/design-system/src/components/Alert/alert.spec.md:164",
+  "宣稱": "『## 為何無 Inspector / SizeMatrix』+ L164『無 Inspector』rationale + L167 story 清單『保留 Overview + ColorMatrix + StateBehavior + PlacementMatrix』(略 Inspector)",
+  "真實": "alert.anatomy.stories.tsx L59 已 export Inspector(InspectorStory,含 variant/appearance/placement/dismissible controls + argTypes)。spec 明文宣稱不存在的 feature 實際存在 + story 清單漏列 = 直接矛盾",
+  "fixHint": "改 doc: 刪『無 Inspector』rationale 段,把 Inspector 加進 L167 清單(現 anatomy = Overview/Inspector/ColorMatrix/PlacementMatrix/StateBehavior/Accessibility)",
+  "claudeAlsoCaught": false
+ },
+ {
+  "src": "codex-conf",
+  "component": "Alert",
+  "fileLine": "packages/design-system/src/components/Alert/alert.principles.stories.tsx:59",
+  "宣稱": "『判斷不確定時...改用近親元件(見 `Vs*Rule` stories)』",
+  "真實": "本檔 exports = UsageGuidance / VariantRule / PlacementRule / AppearanceRule;無任何 Vs*Rule story(近親比較已併入 UsageGuidance『vs 近親』段,見 L32 註解『合併自舊 VsToastVsDialogRule』)。指向不存在的 story = broken/stale cross-reference",
+  "fixHint": "改 doc: L59 改指向 UsageGuidance 內『vs 近親』段(同 story),或移除該 pointer",
+  "claudeAlsoCaught": false
+ },
+ {
+  "src": "codex-conf",
+  "component": "AppShell",
+  "fileLine": "packages/design-system/src/components/AppShell/app-shell.spec.md:208 + app-shell.anatomy.stories.tsx:157",
+  "宣稱": "mobile Sheet 消費 sheet.spec.md canonical『...focus trap + restore focus』/ anatomy『Sheet open focus 在 Aside 內,Esc 關回 trigger(Radix Dialog 內建)』",
+  "真實": "focus trap/Esc/outside-close 成立,但 AppShellAside(app-shell.tsx L330-342)用 controlled Sheet 且無 SheetTrigger。Radix Dialog modal onCloseAutoFocus(react-dialog/dist/index.mjs L146-148)= event.preventDefault() + context.triggerRef.current?.focus();triggerRef 為 null → focus 不還原到外部開啟鈕,反被 preventDefault 擋掉 FocusScope 預設還原 → 落 <body>。SOURCE-VERIFIED",
+  "fixHint": "改 code(建議): AppShellAside SheetContent 加 onCloseAutoFocus 手動 focus 回外部 opener(consumer 傳入 openerRef)或改 doc 移除『restore focus』宣稱。a11y 缺陷,rank 最高",
+  "claudeAlsoCaught": false
+ },
+ {
+  "src": "codex-conf",
+  "component": "AppShell",
+  "fileLine": "packages/design-system/src/components/AppShell/app-shell.spec.md:266",
+  "宣稱": "『兩者(⌘B/⌘.)消費既有 Sidebar keyboard shortcut 機制,AppShell 不發明新機制』",
+  "真實": "⌘. 由 AppShell 自有 useEffect + window.addEventListener('keydown')(app-shell.tsx L179-188)註冊 = 新機制,非消費 Sidebar;且缺 Sidebar handler 的 IME composition / input-textarea-contenteditable / defaultPrevented guard。spec L263 自己也標 ⌘.『新加』→ L266『不發明新機制』對 ⌘. 為假 + 內部自相矛盾(僅 ⌘B 屬實 delegate)",
+  "fixHint": "改 doc: L266 分開講 — ⌘B delegate Sidebar SSOT(本 component 不 register)、⌘. 為 AppShell 自有 window listener(new);可順補 code 加 input/IME guard 避免打字時誤觸",
+  "claudeAlsoCaught": false
+ },
+ {
+  "src": "codex-conf",
+  "component": "AppShell",
+  "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:35",
+  "宣稱": "JSDoc『Sidebar 元素(必傳 Sidebar primitive,per Consumer 紀律)』",
+  "真實": "型別 `sidebar?: React.ReactNode`(optional,收任意 ReactNode,不機械強制)。spec L324 已 2026-06-10 user 拍板『措辭必→應對齊 code 真實』、principles L66 亦作『應傳(型別收 ReactNode 不機械強制)』→ tsx JSDoc『必傳』stale,與已批准的『應』措辭 + optional 型別衝突",
+  "fixHint": "改 doc: app-shell.tsx L35 JSDoc『必傳』→『應傳』對齊 spec L324 + principles L66。低 severity 但屬已拍板措辭 drift",
+  "claudeAlsoCaught": false
+ },
+ {
+  "src": "codex-conf",
+  "component": "AppShell",
+  "fileLine": "packages/design-system/src/components/AppShell/_demo-helpers.tsx:196",
+  "宣稱": "AccountMenu comment『互動感由 focus ring + hover 提供,不放大到 field height』",
+  "真實": "AccountMenu trigger(L199-210 button)僅 focus-visible:ring* classes,無任何 hover class;內含 raw <Avatar size={24}> 亦無 hover prop → comment 宣稱的 hover 反饋不存在(僅 focus ring 成立)",
+  "fixHint": "改 code(建議): 加 hover:bg 反饋(對齊 GitHub/Gmail global-bar avatar hover 慣例)或改 comment 移除 hover。低 severity(demo-helper comment)",
+  "claudeAlsoCaught": false
+ },
+ {
+  "src": "claude-p2",
+  "component": "HoverCard",
+  "fileLine": "hover-card.anatomy.stories.tsx:146",
+  "宣稱": "Accessibility story:『觸發元素的可聚焦性需 consumer 自補(例如 Avatar 的 hoverCard 在元件內手動加 tabIndex=0 + role=\"button\" + aria-haspopup=\"dialog\")』。",
+  "真實": "Avatar 的 hoverCard trigger 不掛 role=\"button\" 也不掛 aria-haspopup —— avatar.tsx:244-247 明文『不掛 role=\"button\" / aria-haspopup(2026-07-06 拆除)』,實際 attrs 為 `focusableProps = { tabIndex: 0, role: 'img', 'aria-label': alt ?? 'View profile' }`(avatar.tsx:252-256)。hover-card.spec.md:144 已同步更新為正確版本(『不掛 role/aria-haspopup』),但本 anatomy Accessibility story 未跟改 → stale,引用兩個已從 code 移除的 ARIA 屬性。",
+  "category": "nonexistent-ref",
+  "fixHint": "改 doc:hover-card.anatomy.stories.tsx:146 把『role=\"button\" + aria-haspopup=\"dialog\"』改為『role=\"img\" + aria-label』,對齊 avatar.tsx:252-256 + spec.md:144(2026-07-06 拆除 role/aria-haspopup 定論)。"
+ },
+ {
+  "src": "claude-p2",
+  "component": "DatePicker",
+  "fileLine": "date-picker.anatomy.stories.tsx:942-944",
+  "宣稱": "Accessibility story 鍵盤段標題「鍵盤(Radix Popover + react-day-picker v9 內建)」涵蓋其下所有 bullet,包含『Trigger:Space / Enter 開 popover』——把 trigger 開啟歸為 Radix/RDP 框架內建行為",
+  "真實": "Trigger 開啟是自建機制,非 Radix 內建。單一 DatePicker trigger 是 <div role=combobox>,Radix PopoverTrigger 只 compose onClick,div 無 native Enter/Space→click,故 Space/Enter 開 popover 由本檔 hand-rolled onKeyDown 補(date-picker.tsx:554-557 `if (e.key==='Enter'||e.key===' ') { e.preventDefault(); setOpen(true) }`,code comment L549『Radix PopoverTrigger 只 compose onClick... 自建 onKeyDown 開 popover』)。Range 雙 trigger 則是 native <button type=button> onClick(L962/L980),同樣非 Radix Popover 內建。屬 AppShell『不發明新機制卻有自建 keyboard handler』同類 mechanism defect",
+  "category": "mechanism",
+  "fixHint": "anatomy A11y 鍵盤段標題勿一律歸『Radix Popover 內建』;trigger open bullet 標明為元件自建 onKeyDown(單一 combobox div)/ native button click(Range),與 date-picker.tsx:554 code comment 對齊"
+ },
+ {
+  "src": "claude-p2",
+  "component": "DatePicker",
+  "fileLine": "date-picker.anatomy.stories.tsx:945",
+  "宣稱": "『Popover 開啟:Esc 關閉 + focus return to trigger』置於『Radix Popover ... 內建』標題下,暗示 focus 回復是 Radix Popover 內建(spec line 298 同樣以『(Radix Popover 內建)』標註 Esc close + focus return to trigger)",
+  "真實": "對 DatePicker.Range,focus 回復是自建 manual refocus,非 Radix 內建。Range 只用 PopoverAnchor,Radix triggerRef 恆 null → 內建 onCloseAutoFocus 的 triggerRef.focus() 為 no-op,若不手動補會掉到 document.body 違反 WCAG 2.4.3(code comment date-picker.tsx:1015-1018 / 782-786)。實際回焦靠自建 onCloseAutoFocus:`e.preventDefault(); (activeEnd==='start'?startBtnRef:endBtnRef).current?.focus()`(L1020-1026)。僅單一 DatePicker(用 PopoverTrigger)才真為 Radix 內建回焦。維護者若信『Radix 內建』刪掉手動 refocus → Range 重現 WCAG 違規",
+  "category": "mechanism",
+  "fixHint": "anatomy A11y(及 spec line 298)區分:單一 DatePicker Esc 回焦=Radix 內建;Range=自建 onCloseAutoFocus 手動回焦 active 端 button(preventDefault Radix no-op default),對齊 date-picker.tsx:1020-1026"
+ },
+ {
+  "src": "claude-p2",
+  "component": "Popover",
+  "fileLine": "popover.anatomy.stories.tsx:48 (+ :22)",
+  "宣稱": "Overview『Props 速查』Desc:『Popover / PopoverTrigger / PopoverContent 直接沿用 Radix Popover 的同名 API,只多接上設計系統的 token,行為與 props 與 Radix 一致』;同 story Desc :22『本 DS 橋接 elevation / radius / border token,不改 Radix API』。",
+  "真實": "PopoverContent 不是純 token passthrough:(1) 覆寫 Radix 預設 open focus —— `onOpenAutoFocus={onOpenAutoFocus ?? handlePopoverOpenAutoFocus}`(popover.tsx:95),自訂 handler 把 focus 落在 body 第一個互動元素而非 Radix 預設 first tabbable/close X;(2) 新增 aria-labelledby 自動接線機制 —— `PopoverTitleContext` + `useId` + `useState(hasTitle)` + PopoverTitle 的 `useLayoutEffect` 註冊(popover.tsx:64-98,182-206),Radix 原生 Popover content 無 accessible name。此二者本 spec A11y 段(popover.spec.md:167,173)自己標為『DS 覆寫』—— Overview 的『行為與 Radix 一致/不改 Radix API』與之直接矛盾。",
+  "category": "mechanism",
+  "fixHint": "改 doc:Overview Props Desc 改為『沿用 Radix 同名 prop,但 DS 覆寫 onOpenAutoFocus(focus 落 body 首個互動元素)+ 自動接線 aria-labelledby(PopoverTitle context),行為非全等 Radix — 詳 A11y 段 DS 覆寫』;刪『不改 Radix API』。"
+ },
+ {
+  "src": "claude-p2",
+  "component": "Combobox",
+  "fileLine": "combobox.spec.md:127",
+  "宣稱": "Loading 段:'dropdown body 內取代 options 顯 <Empty icon={<CircularProgress size={48}/>}/>'(loading 時以 spinner 取代選項)",
+  "真實": "Combobox forward loading 到同一顆 SelectMenu primitive;spinner 只在 filtered.count===0(無可顯示選項)時渲於 cmdk CommandEmpty(select-menu.tsx:397-404),有 options 時照常顯示、不清空。與 SSOT 的 SelectMenu 行為 + sibling Select 已修正的 spec(select.spec.md:280『不取代』)矛盾——2026-07-04 Q3 修 Select 時未 propagate 到 Combobox spec(改一處未看三處)。",
+  "category": "absolute",
+  "fixHint": "對齊 select.spec.md:280 改成『無可顯示選項時 empty slot 顯 CircularProgress;已有 options 時保留不取代』。"
+ },
+ {
+  "src": "claude-p2",
+  "component": "Combobox",
+  "fileLine": "combobox.tsx:387",
+  "宣稱": "loading prop docblock:'dropdown 開啟時取代 options 顯 CircularProgress + loadingText'",
+  "真實": "(1)『取代 options』同上——實際只在無選項時佔 empty slot;(2)『+ loadingText』:實際 render 為 <Empty icon={<CircularProgress size={48}/>} className=\"py-6\" />(select-menu.tsx:402)純 spinner 無任何文字/description;Combobox / SelectMenu 皆無 loadingText prop 也不渲染任何 loading 文字(SR-only live region '載入中…' 是視覺隱藏,非可見 loadingText)。docblock 描述一個不存在的可見 loadingText 元素。",
+  "category": "nonexistent-ref",
+  "fixHint": "刪『取代 options』與『+ loadingText』;改述為純 CircularProgress spinner 佔 empty slot(無可見文字),benchmark 行的 MUI loadingText 對照保留但註明本 DS 不渲文字。"
+ },
+ {
+  "src": "claude-p2",
+  "component": "Select",
+  "fileLine": "select.anatomy.stories.tsx:319",
+  "宣稱": "loading argType 表格描述:'dropdown 開啟時取代 options 顯 CircularProgress'(loading 開啟時以 spinner 取代選項列表)",
+  "真實": "loading spinner 只在 filtered.count===0(無可顯示選項)時渲於 CommandEmpty slot;有 options 時照常顯示、spinner 不出現、stale options 不清空(select-menu.tsx:397-404 CommandEmpty + cmdk CommandEmpty 僅 0 結果才 render)。Select 自己的 spec(select.spec.md:280)2026-07-04 Q3 已修正為『已有 options 時保留顯示,不取代』並明指原措辭是『過度宣稱』——但同元件的 anatomy argType 表未同步,自我矛盾。",
+  "category": "absolute",
+  "fixHint": "改 argType 描述為『無可顯示選項時 empty slot 顯 CircularProgress(有 options 時不取代)』,對齊 select.spec.md:280 已修正措辭 + SelectMenul code。"
+ }
+]

@@ -162,7 +162,10 @@ export const AdvancedOptions: Story = {
           placeholder="一句話描述此專案"
         />
       </div>
-      <Accordion type="single" collapsible>
+      {/* 2026-07-14 Dim 68 修:原單一 AccordionItem 違反 accordion.spec.md「❌ 單一 item 不用
+          Accordion」(單區塊該用 <details>,見 principles「單一項目不用 Accordion」)。補第二個
+          可獨立收合的低頻設定段(type="multiple" 非互斥),成為合法多段收合場景。 */}
+      <Accordion type="multiple">
         <AccordionItem value="advanced">
           <AccordionTrigger>進階選項</AccordionTrigger>
           <AccordionContent>
@@ -181,6 +184,18 @@ export const AdvancedOptions: Story = {
                   defaultValue="看板"
                 />
               </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="notifications">
+          <AccordionTrigger>通知設定</AccordionTrigger>
+          <AccordionContent>
+            <div className="flex flex-col gap-1">
+              <label className="text-body text-foreground">狀態變更通知對象</label>
+              <input
+                className="h-field-md border border-border rounded-md px-3 text-body"
+                placeholder="例:專案成員 + 關注者"
+              />
             </div>
           </AccordionContent>
         </AccordionItem>

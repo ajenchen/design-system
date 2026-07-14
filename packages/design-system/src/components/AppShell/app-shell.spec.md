@@ -205,7 +205,7 @@ function CustomAside() {
 - **Scroll ownership**:Aside 自帶 scroll(body 包 `<ScrollArea>` primitive + `min-h-0`,per Atlassian Layout 慣例),main 自帶 scroll,**禁止** body-level scroll
 
 **Modal overlay** 行為:
-- 消費既有 `sheet.spec.md` canonical(從右滑出 + Esc 關 + click-outside 關 + focus trap + restore focus)
+- 消費既有 `sheet.spec.md` canonical(從右滑出 + Esc 關 + click-outside 關 + focus trap);**restore focus 由 AppShellAside 自建**(controlled Sheet 無 SheetTrigger → Radix 內建回焦失效;開啟時 snapshot opener、關閉還原、opener 已卸載 fallback `#app-shell-main`,WCAG 2.4.3,2026-07-14)
 - **title prop required**(per `sheet.spec.md`「禁止事項」禁無 title — `aria-labelledby` 強制)
 - 跟 Sidebar mobile fallback 同 SSOT
 
@@ -263,7 +263,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 | **`⌘.`(macOS)/ `Ctrl+.`(Windows)** | Toggle aside | Linear convention(新加) |
 | **Skip-to-main link** | `Tab` 第一站 focus 「Skip to content」link → `main` | A11y WCAG 2.4.1 bypass blocks;對齊 Atlassian Layout skip-link |
 
-兩者消費既有 Sidebar keyboard shortcut 機制(`useEffect` + `window.addEventListener('keydown')`),AppShell 不發明新機制。
+**`⌘B`** 消費既有 Sidebar SSOT 機制(Sidebar 內建 `useEffect` + `window.addEventListener('keydown')`,AppShell **不重複 register**)。**`⌘.`** 為 AppShell **自有** `window` keydown listener(`app-shell.tsx:179-188`,沿用相同 pattern 形態,但屬**新註冊**、非消費 Sidebar — 對齊上表「新加」標記)。此 AppShell 自有 listener 目前**未含** Sidebar handler 的 IME composition / input-textarea guard(打字時 `⌘.` 仍會觸發 — 已知 gap)。
 
 ---
 
@@ -321,8 +321,8 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 ## Consumer 紀律
 
 - ❌ 禁:`<AppShell>` 內 wrap 第二個 `<AppShell>`(nested shell 違反「整頁框架」單例性)
-- ❌ 禁:`sidebar={<div>...</div>}`(應傳 `<Sidebar>` primitive,確保視覺 SSOT。型別上收 ReactNode、不做機械強制 — React 型別強制易被 wrapper 包一層繞過,世界級 shell 元件皆收 ReactNode;本約定靠 story 示範 + audit 把關。2026-06-10 user 拍板 2a:措辭「必」→「應」對齊 code 真實)
-- ❌ 禁:`header={<header>...</header>}`(應傳 `<ChromeHeader>` 或消費 `header-canonical` 派生 header;同上,型別不機械強制)
+- ❌ 禁:`sidebar={<div>...</div>}`(應傳 `<Sidebar>` primitive,確保視覺 SSOT。raw-element slot 簽名(`sidebar={<div>}` / `header={<header>}` 等)由 `check_consumer_app_invariants.sh` Pattern 9 機械攔(P0,2026-06-12 加);TS 型別層仍收 ReactNode 不強制 — React 型別強制易被 wrapper 包一層繞過,世界級 shell 元件皆收 ReactNode;wrapper 包一層繞過的殘餘 case 靠 story 示範 + audit 把關。2026-06-10 user 拍板 2a:措辭「必」→「應」對齊 code 真實)
+- ❌ 禁:`header={<header>...</header>}`(應傳 `<ChromeHeader>` 或消費 `header-canonical` 派生 header;同上 — Pattern 9 同攔 header raw-element,TS 型別層不強制)
 - ❌ 禁:AppShell.Main 自加 padding(違反 layoutSpace 規則 1B)
 - ❌ 禁:AppShellAside header 加第二行 / actions(header = 單行 title + close X,API typed `title: string` 結構鎖;說明文字歸 aside body — 2026-06-12 fork-drift 防線)
 - ✅ 必:`layout` mode 在 product 啟動時固定,**不在 runtime 切換**(切換 = product 角色變動 = 應該重 mount app)

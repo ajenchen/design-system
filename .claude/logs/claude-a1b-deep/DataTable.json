@@ -1,0 +1,25 @@
+{
+  "component": "DataTable",
+  "implBasis": "self-built on TanStack Table (headless) — div+ARIA (role=table/columnheader/row/cell), self-built virtual scroll / 3-panel pin / spreadsheet keyboard / cell-registry 11 types; @dnd-kit for row drag",
+  "claimsVerified": 50,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:443",
+      "宣稱": "ColorMatrix 色彩表: `boolean | X / Check icon 均用 foreground`",
+      "真實code行為": "BooleanCell 實際 render `<Checkbox variant=\"naked\">`(cell-registry.tsx:408 display + :416 edit,checked={value===true}),不是 X / Check icon。與同 spec L167(`live Checkbox`)、L382(`<Checkbox> 無 mode 切換`)自相矛盾;naked Checkbox 勾/空框,非 false 顯 X。ColorMatrix 教錯 render 元件。",
+      "severity": "material"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:442",
+      "宣稱": "ColorMatrix meta.type 表 row: `link | --primary`",
+      "真實code行為": "已註冊 column type 是 `url`(cell-registry cellRegistry:500 `url: UrlCell`;columnTypes union 亦 url),無 meta.type=`link`。同檔 L85/L191 皆正確用 `url`,ColorMatrix 這行用了不存在的 type 名 `link`。",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DataTable/cell-registry.tsx:419",
+      "宣稱": "inline comment: `size 傳入 → boolean 值 icon(Check/X)@lg 縮放對齊其他 cell`",
+      "真實code行為": "緊接下一行 render 的是 `<Checkbox variant=\"naked\">`(L416),非 Check/X icon。註解把 boolean cell 描述成 icon,與實際 Checkbox render 不符(同 ColorMatrix 那條的 code-comment 版本)。",
+      "severity": "marginal"
+    }
+  ]
+}

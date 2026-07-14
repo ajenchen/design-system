@@ -104,11 +104,11 @@ native `<textarea>` 自帶 `value` / `defaultValue` / `onChange` triplet — Tex
 
 ### Readonly 特例
 
-不同於 Input 的 readonly（同高度、緊湊底色），`variant="default"` 的 Textarea readonly **保留 padding，並填上 `bg-readonly` 底色標示閱讀區**——多行內容需要明確的閱讀區域邊界訊號,沒有這塊填色區會無法與周圍純文字內容區分。`variant="bare"` readonly 維持透明無填色;`variant="naked"`(cell-as-input substrate)readonly 透明且 `!px-0 !py-0`——兩者的邊界訊號由 host context(toolbar / table cell)提供(`textarea.tsx` compoundVariants,intentional divergence)。
+不同於 Input 的 readonly（同高度、緊湊底色），`variant="default"` 的 Textarea readonly **保留 padding，並填上 `bg-readonly` 底色標示閱讀區**——多行內容需要明確的閱讀區域邊界訊號,沒有這塊填色區會無法與周圍純文字內容區分。`variant="naked"`(cell-as-input substrate)readonly 透明且 `!px-0 !py-0`——邊界訊號由 host context(table cell)提供(`textarea.tsx` compoundVariants,intentional divergence;`bare` variant 2026-07-09 退役)。
 
 ### 邊界案例
 
-- **空值**:edit 態顯示 placeholder;display 態 value 為空(`null` / `''`)時渲染 `—`(`EMPTY_DISPLAY`)+ `text-fg-muted`
+- **空值**:edit 態顯示 placeholder;display / readonly 態 value 為空(`null` / `''`)時渲染半形 `-`(`EMPTY_DISPLAY`)+ `text-foreground`(disabled → fg-disabled)
 - **極長文字**:edit 態高度固定於 rows / resize 結果,內容超出時 native 內部捲動;display 態 `<div>` 隨內容增高(`whitespace-pre-wrap break-words`),無截斷
 - **resize 上限**:`resize-y` 預設無上限;需限制時 consumer 傳 `max-h-*` className(native resize 受 max-height 約束)
 
@@ -120,7 +120,7 @@ native `<textarea>` 自帶 `value` / `defaultValue` / `onChange` triplet — Tex
 - ❌ Textarea 裡放 startIcon / endAction——textarea 慣例無 icon 框內
 - ❌ Textarea 啟用水平 resize（`resize-x` / `resize: both`）——破壞 form 佈局
 - ❌ 把 Textarea 當 code editor 用（無 syntax highlight / auto-complete）
-- ❌ `variant="default"` readonly 移除底色填充 + padding——多行內容需要閱讀區域邊界訊號(bare / naked 變體本就透明、邊界由 host context 提供,不在此限)
+- ❌ `variant="default"` readonly 移除底色填充 + padding——多行內容需要閱讀區域邊界訊號(naked 變體本就透明、邊界由 host context 提供,不在此限)
 
 ---
 
@@ -151,7 +151,7 @@ Textarea 是 **Field Controls family 的多行變體**,共用規則由 `../Field
 - 字母鍵 — 輸入
 - Enter — 換行（不觸發 form submit，與 Input 不同）
 
-**Focus**:DS focus-visible 邊框(`focus-visible:!border-primary`)由 `<textarea>` 自身的 cva compoundVariants 直接套用（textarea.tsx default/bare/naked edit 態），無 fieldWrapper composite——Textarea 是裸 native textarea（見「定位」L30），standalone 使用即取得 primary focus 邊框。
+**Focus**:DS focus 邊框由 `<textarea>` 自身的 cva compoundVariants 直接套用,無 fieldWrapper composite——Textarea 是裸 native textarea(見「定位」L30)。兩種 chrome 的 focus 觸發不同:**default chrome** 用 `focus-within:!border-primary`(滑鼠點擊或鍵盤聚焦皆亮主色邊框,對齊 form 場景);**naked chrome**(cell-as-input)用 `focus-visible:!border-primary`(僅鍵盤聚焦亮,滑鼠由 host cell 提供 frame)。readonly 有值態另用 ring idiom(`focus-visible:ring-2 ring-ring ring-offset-1`,鍵盤限定;見 `../Field/field-controls.spec.md`「readonly focus ring」)。standalone 使用即取得對應 focus 指示。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

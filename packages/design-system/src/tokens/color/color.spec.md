@@ -113,12 +113,12 @@ disabled 元件內的所有子元素必須呈現 disabled 狀態:
 
 ### 兩種 disabled 策略:何時用哪個
 
-系統有**兩種** disabled 視覺處理方式,判準是「**顏色是否是 semantic state 的唯一視覺載體**」:
+系統有**兩種** disabled 視覺處理方式,判準是「**顏色是否是 semantic state 的主視覺載體**」:
 
 | 策略 | 何時用 | 消費者 | 做法 |
 |---|---|---|---|
 | **灰階 token swap** | State 由形狀 / 位置 / icon / 文字 等**非顏色載體**承載,顏色只是美學 | Button、Checkbox、Input、Slider、Tag | 每個元素換到 disabled 對應的灰階 token(`bg-disabled` / `text-fg-disabled` / `bg-border` 等) |
-| **`opacity-disabled`** | State **完全只靠顏色區分**(形狀在 on/off 之間沒有差異),灰階化會丟失 state 辨識 | **Switch** | Root 層套 `opacity-disabled`,保留原有顏色身分,透過透明度均勻降級 |
+| **`opacity-disabled`** | State **主要靠顏色區分**(殘餘線索如 thumb 位移 / 小 icon 在灰階低對比下太弱),灰階化會使 state 辨識大幅下降 | **Switch** | Root 層套 `opacity-disabled`,保留原有顏色身分,透過透明度均勻降級 |
 
 **具體判準(寫新元件時問自己)**:
 1. 在 disabled 狀態下,使用者需要辨識的 state 資訊是什麼?
@@ -229,7 +229,7 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
   | 底色 | 文字色 | 原因 |
   |------|--------|------|
   | `bg-warning`（yellow-6，滿版） | `text-on-emphasis-dark`（`black-a85`，深色） | 黃色亮度高，白字對比不足，必須用深色（通用亮底深字 token，非 warning 專屬；定義見下「`--on-emphasis` / `--on-emphasis-dark` 配對」段） |
-  | `bg-warning-subtle`（淡黃） | `text-[yellow-7]`（step-7） | subtle 底色夠淺，深一階的黃色文字可辨識（見「文字色 Step 原則」） |
+  | `bg-warning-subtle`（淡黃） | `text-warning-text`（semantic，= `--color-yellow-7` step-7） | subtle 底色夠淺，深一階的黃色文字可辨識（見「文字色 Step 原則」）；Notice / Alert code 消費的即是此 semantic utility，不硬寫 primitive 色名 |
 
 ### Indicator — Notification
 

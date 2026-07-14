@@ -1,0 +1,195 @@
+{
+  "_meta": {
+    "task": "B.3/B.4 dual-model deep-audit reconcile — codex findings adjudicated against actual code + Claude findings",
+    "components": ["Dialog", "Sheet", "DropdownMenu", "Menu"],
+    "method": "每 codex finding 去重 → verify against code (tsx/spec/stories + overlay-surface + item-anatomy + Radix behavior) → verdict material/marginal/false_positive",
+    "note": "codex high-recall/low-precision confirmed: bulk of raw findings = RTL pedantry / ColorMatrix merged-column nitpicks / accurate-doc caveat-adding. But codex genuinely out-recalled Claude on DropdownMenu+Menu (Claude reported 0 there)."
+  },
+
+  "Dialog": {
+    "material_confirmed": [
+      {
+        "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:27",
+        "宣稱": "docblock 高度行為: `height=\"auto\"：高度隨內容，超過 viewport 時 max-height 安全帽`",
+        "真實code行為": "無 `height` prop;實際 API = `autoHeight?: boolean`(DialogContentProps L63);spec L88 + anatomy stories 全用 `autoHeight`。docblock 教了不存在的 prop 名。",
+        "claudeAlsoCaught": true,
+        "fixHint": "改 doc:docblock L27 `height=\"auto\"` → `autoHeight`(對齊 L63 真 prop)"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:135",
+        "宣稱": "docblock「justify-between 讓 children 與 Close 分左右」",
+        "真實code行為": "同檔 L170-172 明載 justify-between 已移除(改用第一 child flex-1 grow);L179 `<div className=\"flex-1 min-w-0\">`。L135 是 stale docblock,與 35 行下自己的移除說明 + 實作矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc:刪 L135「justify-between…」stale 行(已於 L170-172 撤除)"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:137",
+        "宣稱": "「withTabs / lockDensity 等 SurfaceHeader props 透過 spread 已 forward / type lift 暴露」",
+        "真實code行為": "SurfaceHeaderProps(overlay-surface.tsx L79-103)只有 `withTabs` + `tabsSlot`,沒有 `lockDensity` prop、也無 density-lock 邏輯。comment 引用不存在的 prop。同 bug 出現在 sheet.tsx:127。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc:刪 comment 中 `lockDensity`(不存在);同步修 sheet.tsx:127"
+      }
+    ],
+    "marginal_count": 14,
+    "marginal_examples": [
+      {"fileLine": "dialog.spec.md:186 / anatomy:406,482", "宣稱": "關閉時焦點返回 trigger 元素", "why": "Radix 預設就是 focus-return trigger(spec 描述 default 正確);codex 補的『需 mounted trigger + 未 prevent onCloseAutoFocus』是 edge-case 限定詞,非 doc 錯 — 精度 overclaim"},
+      {"fileLine": "dialog.anatomy.stories.tsx:324,371-372,388", "宣稱": "禁用 overlay-click + Esc 即『強迫使用者明確選擇』", "why": "story 主旨『避免誤觸』成立(Esc/overlay=誤觸路徑;Close X=刻意點擊非誤觸);但『force decision』措辭忽略永遠存在的 Close X,略 overclaim。demo footer 按鈕未綁 handler = 靜態展示常態"},
+      {"fileLine": "dialog.spec.md:171", "宣稱": "nested Dialog『使用者無法預測 Esc 關哪一層』", "why": "Radix DismissableLayer Esc 其實 deterministic topmost-first;但這是『不要 nested modal』的 UX rationale,deterministic ≠ intuitive,guidance 仍站得住 — codex 技術性反駁但不推翻結論"}
+    ],
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      {"fileLine": "dialog.anatomy.stories.tsx:262", "宣稱": "『四種常見 maxWidth tier』實為五種(400/480/512/560/720)", "whyWrong": "『四種常見』刻意指 4 個非預設 tier — 與同 story Desc(L263-267 列 400/480/560/720)+ chips(L287 `[400,480,560,720]`)完全一致;512 是標★default 另列。codex 把 default 算進去才湊 5,誤判。"}
+    ]
+  },
+
+  "Sheet": {
+    "material_confirmed": [
+      {
+        "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:71",
+        "宣稱": "docblock「Animation canonical:300ms 雙向一致」",
+        "真實code行為": "cva base 消費 surfaceMotion = `--motion-duration-surface` = 250ms(motion.css:37 + overlay-motion.ts:26 已驗)。實際已 normalize 到 250ms,docblock 仍寫 300ms — 陳舊。",
+        "claudeAlsoCaught": true,
+        "fixHint": "改 doc:sheet.tsx L71「300ms」→ 250ms(surfaceMotion token)"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/Sheet/sheet.anatomy.stories.tsx:241",
+        "宣稱": "StateBehavior Desc「slide-in + fade-in overlay,300ms」",
+        "真實code行為": "panel = surfaceMotion 250ms;Overlay(SheetOverlay)未套 surfaceMotion,沿用 tw-animate-css fade default(≈150ms)。兩者皆非 300ms;story 面向使用者宣稱 300ms — 陳舊/錯值。",
+        "claudeAlsoCaught": true,
+        "fixHint": "改 doc:anatomy L241 Desc「300ms」→ panel 250ms(overlay 另 150ms)"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:127",
+        "宣稱": "comment「type 對齊 SurfaceHeaderProps,withTabs / lockDensity expose 給 consumer」",
+        "真實code行為": "SurfaceHeaderProps 只有 withTabs + tabsSlot(overlay-surface.tsx L79-103),無 lockDensity。與 dialog.tsx:137 同一 stale comment。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc:刪 sheet.tsx L127 comment 中 `lockDensity`"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/Sheet/sheet.spec.md:107",
+        "宣稱": "cross-ref『對齊 `empty.spec.md:167` loading compose SSOT』",
+        "真實code行為": "empty.spec.md L167 = DataTable empty row;loading composition(`<Empty icon={<CircularProgress size={48}/>} className=\"py-6\"/>`)在 L168(SelectMenu 行)。行號 off-by-one,指到錯的 row。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc:sheet.spec.md L107 cross-ref `empty.spec.md:167` → `:168`"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx:85",
+        "宣稱": "「若仍不符,改用近親元件(見 `Vs*Rule` stories)」",
+        "真實code行為": "本檔只 export UsageGuidance / SidePropRule / HeaderFooterStructureRule;無任何 Vs*Rule story(舊 VsDialogRule 已 fold 進 UsageGuidance,見 L68 comment)。dangling story reference。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc:L85「見 Vs*Rule stories」→ 指向 UsageGuidance 內的 vs-對照段(已 inline),或移除 dangling ref"
+      }
+    ],
+    "marginal_count": 8,
+    "marginal_examples": [
+      {"fileLine": "sheet.spec.md:31 / principles:195-198", "宣稱": "內容複雜需全螢幕改用『fullscreen Dialog』", "why": "Dialog 無 fullscreen prop/variant(default 是 100vh-inset*2 有 48px 四邊留白,非全螢幕)。但『fullscreen Dialog』是口語替代方案措辭(句子含『或導航到獨立頁面』),非教特定 API call — 建議 doc 精修但非硬 defect"},
+      {"fileLine": "sheet.spec.md:65 / anatomy:86", "宣稱": "Inspector 切『SheetContent 三個關鍵維度 side/width/showFooter』", "why": "只有 side 是真 SheetContent prop;width 是 InspectorArgs→className(L110-111),showFooter 是控制是否 render footer 的 story arg。『SheetContent props』措辭 overclaim,但 Inspector 展示意圖清楚"},
+      {"fileLine": "sheet.tsx:36-37", "宣稱": "「改 overlay-surface.tsx 四者自動跟進」", "why": "Header/Footer 消費 SurfaceHeader/SurfaceFooter 會跟進;Body 硬寫 padding token(px-loose/pt-tight/pb-bottom)不走 SurfaceBody component。但 padding 靠 shared TOKEN(--layout-space-*)傳播,SSOT 不漂移意圖成立 — 措辭略不精確"}
+    ],
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      {"fileLine": "sheet.principles.stories.tsx:159", "宣稱": "「Sheet 可長、可複雜;Dialog 短、視線聚集」與 spec 相反(Dialog 支援 viewport-fill+scroll)", "whyWrong": "此為設計指引(Dialog 用於聚焦決策 / Sheet 用於帶 context 的較長工作),非技術能力宣稱。Dialog 技術上能承載長內容(HeightBehavior story 有 20 欄位範例)不推翻『該用哪個』的 guidance。codex 把 design guidance 誤讀成 false capability claim。"}
+    ]
+  },
+
+  "DropdownMenu": {
+    "material_confirmed": [
+      {
+        "fileLine": "dropdown-menu.tsx:102,103 + dropdown-menu.spec.md:93",
+        "宣稱": "「DropdownMenuContent 的 py-2 是既有 Radix 期望行為,移除會影響 trigger 鍵盤導覽的 focus offset」",
+        "真實code行為": "Radix Menu 無 padding contract;roving focus 依 collection refs + element.focus(),不讀 CSS padding。py-2 純視覺 inset,移除不影響 focus。false 技術 rationale(可能誤導 maintainer 不敢動 py-2)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc:tsx L102-103 + spec L93 刪『移除會影響 trigger focus offset』;py-2 rationale 改『視覺邊界 padding + 避免 Group double-padding』"
+      },
+      {
+        "fileLine": "dropdown-menu.tsx:475 + spec.md:72,73,126 + principles.stories.tsx:316",
+        "宣稱": "`DropdownMenuShortcut` child 用 `ml-auto` 靠右,且與 `shortcut` prop 視覺統一(靠右位置/gap/對齊一致)",
+        "真實code行為": "child 走 DropdownMenuItem children → MenuItem children → ItemContent `label`,被塞進 label `<span>`(item-anatomy.tsx L403,inline context);`ml-auto` 在 inline/非 flex-row 脈絡 = 0 效果,不會推到列尾。與 `shortcut` prop(走 MenuItem endContent flex suffix slot,真靠右)位置/gap 均不等價。principles:316 live story 直接示範此組合 → 實渲會顯示 ⌘N 緊貼 label 而非列尾(demo 與描述矛盾)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 code:讓 DropdownMenuShortcut child 走 flex suffix slot(如注入 endContent / 成為 MenuItem flex sibling);OR 改 doc:撤回『ml-auto 靠右 + 與 prop 視覺統一』,明示 child 僅 inline 附加在 label 尾"
+      },
+      {
+        "fileLine": "dropdown-menu.tsx:428",
+        "宣稱": "docblock「RadioItem visual 用 MenuItem 的 selected highlight」",
+        "真實code行為": "RadioItem 底色套在外層 Radix RadioItem(L454 `data-[state=checked]:bg-neutral-selected…`),內層 MenuItem 強制 `!bg-transparent` 且未收 `selected` prop(L457-466)。L450-452 自己的 inline comment 已說明是 parent-bg pattern,與 L428 header comment 矛盾 → stale。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc:L428 comment 改『checked 底色套外層 Radix RadioItem,內層 MenuItem 透明讓其透出』(對齊 L450-452)"
+      },
+      {
+        "fileLine": "dropdown-menu.spec.md:212",
+        "宣稱": "spec code snippet `selected && 'data-[highlighted]:bg-neutral-selected'`(selected×highlighted = bg-neutral-selected)",
+        "真實code行為": "dropdown-menu.tsx L267 實際 = `selected && 'bg-neutral-selected data-[highlighted]:bg-neutral-selected-active'`。selected×highlighted = bg-neutral-selected-**active**(neutral-3,加深一階,2026-07-05 D4 為 WCAG cursor 可見)。spec 的 snippet 用了舊 token,陳舊/錯值。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc:spec L212 snippet `data-[highlighted]:bg-neutral-selected` → `bg-neutral-selected-active`"
+      },
+      {
+        "fileLine": "dropdown-menu.spec.md:212",
+        "宣稱": "「CheckboxItem／RadioItem checked 同(selected 背景)規則」",
+        "真實code行為": "RadioItem 有 checked + checked×highlighted 底色(L454);但 DropdownMenuCheckboxItem(L369)只有 `radixItemClass`,**無** selected 底色 —— checked 僅由內層 Checkbox 控件表示,highlighted 時仍 neutral-hover。CheckboxItem 不遵循 selected-bg 規則。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc:spec L212 移除『CheckboxItem…同規則』;明示 CheckboxItem checked 無 row bg(由 checkbox 控件表達),只 RadioItem 走 selected-bg"
+      },
+      {
+        "fileLine": "dropdown-menu.anatomy.stories.tsx:944",
+        "宣稱": "rule note「`DropdownMenuCheckboxItem` 點擊不 close——多選語意,等使用者關 menu 才 commit」",
+        "真實code行為": "onCheckedChange 每次 toggle **即時** fire(同 story L909-926 的 trigger count `欄位(N)` live 更新即證);`onSelect={(e)=>e.preventDefault()}`(tsx L368)只擋 menu close,非 defer commit。『等關 menu 才 commit』與 demo 展示的即時提交矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc:L944 改『每次勾選即時生效(commit),menu 不 close 只為讓使用者續勾』"
+      },
+      {
+        "fileLine": "dropdown-menu.anatomy.stories.tsx:967",
+        "宣稱": "Accessibility story:「在 Storybook 無障礙檢查面板上應為零項嚴重問題」",
+        "真實code行為": "DropdownMenuCheckboxItem = Radix CheckboxItem(role=menuitemcheckbox)→ MenuItem(checkbox)→ 內層渲染 DS `<Checkbox>`(Radix Checkbox = focusable `<button role=checkbox>`,即使 tabIndex=-1 仍 axe-focusable)。menuitemcheckbox 內含 role=checkbox button = axe nested-interactive(impact=serious)。與『0 嚴重』宣稱矛盾。shadcn/Radix canonical 用非互動 ItemIndicator+Check,刻意避此。(⚠ architecture 已驗;severity 建議 axe panel 實跑確認)",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 code:DropdownMenuCheckboxItem 內層改用非互動 indicator(shadcn ItemIndicator + Check icon)或 aria-hidden inert,消除 nested-interactive;doc『0 嚴重』待 axe 重驗後修正"
+      }
+    ],
+    "marginal_count": 22,
+    "marginal_examples": [
+      {"fileLine": "spec:163 / anatomy:164,238", "宣稱": "size 經 `SizeContext` 向下傳遞", "why": "propagation 機制正確(size 確實經 context 傳),但 context 名已從 SizeContext 改為 RowSizeContext/useRowSize(tsx L54 自述已移除本地 SizeContext)。內部 identifier 名 drift,對 consumer API 無影響"},
+      {"fileLine": "anatomy:33,47", "宣稱": "ColorMatrix『item/danger active/selected 都是 --neutral-selected』", "why": "顯示的 base-state token 值正確(hover=neutral-hover、selected=neutral-selected);只是 4-state 矩陣未含 selected×highlighted=neutral-selected-active 疊加態(該態 spec L212 另述)。缺 overlay-state row 的完整性小 gap,非錯值"},
+      {"fileLine": "anatomy:61-63", "宣稱": "`--field-height-sm/md/lg` = 28/32/36px 固定", "why": "28/32/36 是 md-density resolved;lg density 為 32/36/40。story 顯示 md-tier 代表值 + 正確 token 名 = 標準 anatomy 文件慣例,精度上未標『md density』"},
+      {"fileLine": "tsx:226 / anatomy:244(+ Menu 同)", "宣稱": "avatar 與 startIcon 互斥", "why": "型別/runtime 未強制互斥(MenuItem 兩獨立 conditional 皆 render);但『互斥』是 DS 慣例用法指引(Material Chip idiom 同樣文件化不 type-enforce)。世界級可加 type union 更嚴,但非 doc-honesty defect"},
+      {"fileLine": "anatomy:850", "宣稱": "close 路徑含『(d) blur』", "why": "Radix DropdownMenu default modal=true,FocusScope trapped,單純 blur/focus-out 不 close(關閉靠 item-select/Esc/pointer-outside)。『blur』列為 close path 不精確,但屬 illustrative note 內 parenthetical"}
+    ],
+    "false_positive_count": 8,
+    "false_positive_examples": [
+      {"fileLine": "spec:187,188,189 / anatomy:859,888,946", "宣稱": "codex 加註『← 收合 / → 展開僅適用 LTR;RTL 相反』", "whyWrong": "story/spec 描述的 LTR 鍵盤行為(ArrowRight 展開/ArrowLeft 收合)在本 DS 的實際脈絡完全正確 — 本 DS 不宣稱 RTL 鏡像(Sheet spec L111『side 為物理方向,不隨 dir=rtl 鏡像』)。codex 為未支援模式補 caveat,不構成 doc 錯。"},
+      {"fileLine": "anatomy:39", "宣稱": "『CheckboxItem active/selected 都維持 --surface-raised』為 false", "whyWrong": "表格值正確 — CheckboxItem checked 確無 row 底色(=surface-raised),hover 態另列 neutral-hover。codex 自己的解釋(checked rest 無選中背景 ✓、highlighted 是 neutral-hover ✓)反而印證表格正確;它只是不喜歡『active/selected』合併欄標籤 = 純 pedantry。"}
+    ]
+  },
+
+  "Menu": {
+    "material_confirmed": [
+      {
+        "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:160",
+        "宣稱": "selected×hover =『--neutral-selected(selected 勝)』,且『消費者(DropdownMenu highlighted)同規則』",
+        "真實code行為": "MenuItem selected×hover 維持 bg-neutral-selected(menu-item.tsx L221 selected 時關 hover bg)✓;但 DropdownMenuItem selected×highlighted 深化到 bg-neutral-selected-**active**(dropdown-menu.tsx L267,2026-07-05 D4 為 WCAG cursor)。兩者 token 不同 → 『同規則』false。跨元件 drift(DropdownMenu 加了 deepen,MenuItem + 本 spec 未同步)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc/SSOT 決策:spec L160 記錄分歧(MenuItem 維持 / DropdownMenu deepen 為 keyboard cursor),或 SSOT 拍板 MenuItem 是否也 deepen selected×hover"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:554",
+        "宣稱": "ColorMatrix Desc「disabled 時所有元素統一 fg-disabled」",
+        "真實code行為": "code(menu-item.tsx L250/L269/L285/L294)+ spec L173/L219 + **同檔 props table L282** 皆明載 mixed 策略:label/description/startIcon = fg-disabled;tag/endContent/startContent = opacity-disabled;checkbox = 自身 disabled;avatar 不變暗。『統一 fg-disabled』與自家 props table + spec + code 三方矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc:anatomy L554 Desc 改『disabled:文字/startIcon=fg-disabled、tag/endContent/startContent=opacity-disabled、avatar 不變暗』(對齊 L282 props table)"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/Menu/menu-item.principles.stories.tsx:77",
+        "宣稱": "「一律使用 MenuItem,才能確保所有選單列的對齊與間距一致」(產品頁面禁自刻 div)",
+        "真實code行為": "MenuItem 是 internal primitive(menu-item.tsx @internal + spec L227/L234『直接使用 → ❌禁止,失去外層 Radix a11y/鍵盤/焦點』);consumer 應用 DropdownMenu/SelectMenu wrapper(內部消費 MenuItem)。principles 叫產品端『一律使用 MenuItem』與 internal 定位 + spec 硬禁矛盾 —— 直接用會得到非 focusable、無鍵盤的 div。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc:L77『一律使用 MenuItem』→『一律使用 MenuItem-based wrapper(DropdownMenu/SelectMenu)』,對齊 spec L234 internal 禁令"
+      }
+    ],
+    "marginal_count": 3,
+    "marginal_examples": [
+      {"fileLine": "menu-item.spec.md:35,216 / anatomy:276-277", "宣稱": "startIcon/avatar/startContent 三者互斥/不可同時使用", "why": "code 三獨立 conditional 皆 render(無 type union/gate);但『互斥』列在『禁止事項』= 刻意 usage prohibition(design guidance),非 false capability claim。可加 type union 更世界級,非 doc-honesty defect"},
+      {"fileLine": "menu-item.spec.md:289 / anatomy:777", "宣稱": "直接使用時 MenuItem 預設渲染 role=option 並帶 aria-selected/aria-disabled", "why": "role=option ✓;但 aria-selected/aria-disabled 在 false 時被省略(menu-item.tsx L215-216 `selected||...||undefined`),只在 true 才輸出。codex 觀察對(conditional),但引的『value||undefined』機制是杜撰(無 value prop);且屬 internal primitive 罕見的直接使用路徑 + 小 a11y edge"},
+      {"fileLine": "menu-item.spec.md:293", "宣稱": "keyboard map『Tab — focus container』", "why": "MenuItem 不實作 key handler(spec 自己說 outer 提供);但 Radix Menu 的 Tab 是關 menu、cmdk 也不把 Tab map 成 focus container。對 listbox 單-tab-stop 脈絡『Tab 進入容器』勉強成立,對 menu 脈絡則錯 — 混合精度問題"}
+    ],
+    "false_positive_count": 0,
+    "false_positive_examples": []
+  }
+}

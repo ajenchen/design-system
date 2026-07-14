@@ -1,0 +1,301 @@
+{
+  "dim": 72,
+  "title": "DS API surface tightening — codex B.3 比稿裁定",
+  "role": "B.3 比稿裁定員 — 逐條裁定 codex 對 dim 72 findings 對照真實 code + Claude same-dim findings",
+  "codexRaw": 31,
+  "summary": {
+    "material_confirmed": 7,
+    "marginal": 23,
+    "false_positive": 1,
+    "claudeMissed": 6
+  },
+  "note": "codex material label 25/31;真 material 僅 7(28% confirm，72% pedantic/documented/misread — 落在 codex 高-recall-低-precision 預期)。Claude same-dim 只出 3 finding(barrel *Meta / Field+TimePicker helpers / DateGrid passthrough);7 material 中 Claude 只抓到 barrel *Meta,其餘 6 條 claudeMissed。",
+  "verdicts": [
+    {
+      "n": 1,
+      "fileLine": "packages/design-system/scripts/gen-component-indexes.mjs:79 (+ src/index.ts export * chain)",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": true,
+      "groundTruth": "gen-component-indexes.mjs:79 `export * from './<stem>'` 讓各元件 tsx 的 `export const <x>Meta` + 內部 Context + 跨元件 helper 全部經 index.ts → root barrel(src/index.ts:5-60 逐元件 export *)進 package root API。radioGroupMeta 等 62 個 build-time metadata 確實可達 root。Claude same-dim finding #1 亦抓到(62 componentMeta via export *)。真 material。",
+      "reason": "無差別 export * 把純 build-time metadata / internal Context / 低階 helper 提升為公開契約,IDE autocomplete 雜訊 + .d.ts 膨脹 + breaking-change 負債。Claude 亦獨立抓到。"
+    },
+    {
+      "n": 2,
+      "fileLine": "packages/design-system/src/index.ts:92 (use-overflow-items)",
+      "codexSeverity": "material",
+      "verdict": "false_positive",
+      "claudeAlsoCaught": false,
+      "groundTruth": "codex 稱其『明列為 internal primitive』— 讀錯。use-overflow-items.ts 全檔 0 個 @internal marker,且 index.ts:88-92 刻意放在公開『Hooks』段(與 use-controllable / use-is-touch-device 同列)。檔頭 docblock L18-23 明白說 useOverflowIndices 是『reserved primitive(目前 0 consumer)』並附設計理由 = 有意保留的公開預留 hook,非內部洩漏。useScrollEdges 是正常公開 hook。",
+      "reason": "codex 核心前提『internal 被 leaked』與 code 不符(無 internal 標記、刻意公開、documented reserved)。殘留 kernel(1 個 0-consumer 預留 sub-hook)是 intentional documented 設計,非缺陷 → FP。"
+    },
+    {
+      "n": 3,
+      "fileLine": "packages/design-system/package.json:39 (\"./tokens/*\": \"./src/tokens/*\")",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruth": "`\"./tokens/*\": \"./src/tokens/*\"` 直指 source dir(非 ./dist,與其他 export 全走 dist 不一致)。src/tokens 35 檔中 29 個是 .spec.md / .stories.tsx / .json / .css 非-runtime,僅 ~5 個真 runtime token JS(categorical-color.ts / elevation/overlay-geometry.ts / motion/motion.ts / uiSize/icon-size.ts)。consumer 可 `import '@qijenchen/design-system/tokens/color/color.spec.md'`。真 over-wide export map。Claude cleanChecks 提到 tokens 但未 flag 此 wildcard。",
+      "reason": "wildcard export 把 spec/story/registry-json 當公開 subpath API 暴露 + 指向未編譯 src。世界級應為生成式明確 export map 只出 runtime token JS/CSS。claudeMissed。"
+    },
+    {
+      "n": 4,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:39 (globalHeader)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "確認 primary-sidebar 分支(L242-273)不 render globalHeader,僅 primary-header 分支(L205-220)render。但 L47 JSDoc 明白 documented『primary-sidebar mode 傳此 prop 會被忽略』。globalHeader 為 optional。",
+      "reason": "documented no-op + optional prop;discriminated union(globalHeader?: never)是合理收斂但屬 documented exception、低危害 → marginal。"
+    },
+    {
+      "n": 5,
+      "fileLine": "packages/design-system/src/components/Button/button.tsx:235 (ButtonProps 衝突組合)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "ButtonProps 確為 flat cva props,可表達 iconOnly+endIcon / primary+pressed(無效果)/ tertiary+danger 等 spec-禁組合。但 docblock L22-53 全 documented 且 graceful-degrade(如 L34『primary / link 傳入 pressed 無視覺效果』)。",
+      "reason": "Button 這種 7-axis(variant×danger×pressed×iconOnly×dismiss×loading×asChild)多軸元件,flat props + graceful-degrade + docs 是 MUI/Chakra/Ant 世界級慣例;discriminated-union Button props 普遍視為 over-engineering 反 pattern → marginal。"
+    },
+    {
+      "n": 6,
+      "fileLine": "packages/design-system/src/components/Calendar/calendar.tsx:62 (view week/day + size lg no-op)",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruth": "CalendarView='month'|'week'|'day'(L58)、size='md'|'lg'(L88),但實作只做 month + 固定 md(L163『MVP 只用 month』/ grid build 只 month)。view='week' 編譯通過但 silent 顯示 month,無 error/warn。union member 假廣告不存在能力。",
+      "reason": "union 把未實作 member(week/day/lg)與生效 member(month/md)平列廣告,consumer autocomplete 選 week 靜默 no-op = 真 dim-72 缺陷(過寬 union 該先收斂為已實作值)。JSDoc『MVP 只 month』caveat 不消除型別層假廣告 → material。claudeMissed。"
+    },
+    {
+      "n": 7,
+      "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:60 (children ReactNode → Radix asChild)",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruth": "children: React.ReactNode(L60)直接餵給 `<PopoverTrigger asChild>{children}</PopoverTrigger>`(L164)。Radix Slot asChild 要求單一 ReactElement — 傳 string / Fragment / array / 多節點編譯過但 runtime React.Children.only throw(= 失敗記憶索引『asChild Slot children 必單 element』class)。",
+      "reason": "型別-vs-runtime hard-crash gap;收成 ReactElement 是 Radix wrapper 世界級標準做法(易修)。真 material runtime bug class。claudeMissed。"
+    },
+    {
+      "n": 8,
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:431 (5 PeoplePicker measurement props)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "5 props(tagWrapperClassName / tagAreaGapPx / tagAreaPaddingLeftPx / visibleCountOverride 等)全帶 `@internal` JSDoc(L425/432/444/470)。combobox.spec.md:163 明白 documented 此 5 props 是內部量測 hook、只供 PeoplePicker、已標 @internal,且明說 tagAreaPaddingLeftPx『目前無 active consumer,保留供未來』。PeoplePicker 對其餘 4 個為真 consumer;tagAreaPaddingLeftPx 由 PeoplePicker 顯式傳 undefined(L405)。",
+      "reason": "codex『tagAreaPaddingLeftPx 無有效 consumer』屬實但 spec 已 documented 為刻意保留;4 props 有真 consumer + @internal 標記 + spec 專段說明 = documented exception。真正出口隔離(私有 context)是 nice-to-have,非缺陷 → marginal。"
+    },
+    {
+      "n": 9,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:91 (tableOptions Partial)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "tableOptions?: Partial<Omit<TableOptions, 'data'|'columns'|'getCoreRowModel'>>(L91)。已 Omit 掉 identity-critical 三項;code 刻意 `...tableOptions` 先 spread 再 override DS-owned state + chain user callback(L1156/1173/1178)。= 有意的 bounded power-user escape hatch。",
+      "reason": "table wrapper 開放底層 options escape hatch 是 MUI DataGrid slotProps / AG Grid gridOptions 世界級慣例,且已 Omit 邊界。收成窄型別是可選硬化,非缺陷 → marginal。"
+    },
+    {
+      "n": 10,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:157 (totalCount)",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruth": "grep totalCount 全 data-table.tsx 僅 L157(宣告)+ L926(destructure)為 code,其餘 L155/268/315/3180 皆註解。destructure 後 totalCount 從未被使用/傳遞(僅為避免 spread 到 DOM)。計數 doc(L315)說由 consumer 自算 `totalCount − excluded.length` — 但 consumer 本就持有 totalCount,傳進 DataTable 完全無作用。= 真 zero-effect 死 API,且 doc『需傳 totalCount』誤導 consumer 以為必需。",
+      "reason": "public prop destructured-but-never-used = 完全無效果 API + 誤導性 doc,正是 dim-72 核心(該 remove 或移到真需要總數的整合元件)。claudeMissed。"
+    },
+    {
+      "n": 11,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.spec.md:294 (FilterCondition.op string)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "FilterCondition = { op: string; value: unknown }(spec:294 + filter-operators.ts:39)。operator registry(filter-operators.ts:84+)為封閉集合;op: string 讓拼錯 operator 通過型別。",
+      "reason": "真型別-looseness,但 filter condition 由 UI builder 產生(只吐 registry 內合法 op),拼錯不會實際發生;value: unknown 對異質 filter value 屬必要。由 registry 推導 union 是可選硬化、低實務影響 → marginal。"
+    },
+    {
+      "n": 12,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:121 (experimental switches)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "experimentalSpreadsheetOverlay(L121)+ experimentalActiveEditorController(L130)+ spreadsheetMode(L146)三者公開。前二有 DS-internal consumer(data-table-interaction-layer.tsx / active-editor-controller.ts)+ stories,無外部 product consumer。",
+      "reason": "以 `experimental` 前綴自我標示不穩定 API 是 MUI unstable_ / React experimental_ 世界級慣例 = 誠實 opt-in。可能矛盾 bool 組合是 experimental 本質,非缺陷 → marginal。"
+    },
+    {
+      "n": 13,
+      "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.tsx:66 (size no-op)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "size 確為 no-op:L72 `size: _size = 'md'` 底線標示刻意不用,無 Context Provider / 無 cloneElement。3 處明白 documented no-op(docblock L29-32 / L65 prop JSDoc『no-op』/ spec.md:90『FCG size prop 目前為 no-op』)。",
+      "reason": "no-op prop 但在自身 JSDoc + spec 反覆明說『no-op,請改在 children 設 size』= 誠實 documented,consumer 不被誤導(對比 #10 totalCount 之誤導性 doc)。低危害 → marginal。"
+    },
+    {
+      "n": 14,
+      "fileLine": "packages/design-system/src/components/Field/field-types.ts:43 (naked in public FieldVariant)",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruth": "FieldVariant = 'default' | 'naked'(L43)是公開型別,用於所有 root-public field control(Input/Select 等)的 variant prop。field-controls.spec.md:65 明說 naked 是 `@internal`、無 chrome、host cell 管邊框/focus、只 DataTable cell-registry 消費。但型別本身零 @internal 訊號、零 guard、無 dev-warning → consumer 可 `<Input variant=\"naked\">` 靜默繞過 canonical chrome/focus。",
+      "reason": "internal substrate 值混入公開 union 且型別層零防護 = dim-72 核心;繞過 chrome/focus 有真 a11y/視覺完整性後果。應拆 public/internal variant type,DataTable 路徑走私有 wrapper。claudeMissed。"
+    },
+    {
+      "n": 15,
+      "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:48 (rotate/pageNumber capabilities)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "rotate?/pageNumber? 在 file-viewer-types.ts:31-34 FileRendererCapabilities,JSDoc 明說『預留給未來』;file-viewer.tsx grep rotate/pageNumber = 0(shell 不讀)。屬 renderer 擴充 API 的 documented reserved capability 欄位。",
+      "reason": "documented reserved capability(JSDoc『預留』誠實標示),非誤導承諾;honest 保留給未來 versioned contract → marginal。"
+    },
+    {
+      "n": 16,
+      "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:735 (extends DialogContent props)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "FileViewerProps extends Omit<React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>, 'onOpenChange'>(L735-738)= 繼承整組 Radix DialogContent surface(asChild / forceMount / onEscapeKeyDown / onInteractOutside / className / aria / data-*)。asChild / forceMount 確可破壞 shell。",
+      "reason": "extend 底層 primitive props 是常見 React 慣例,且多數繼承 props(className/aria/data/onEscapeKeyDown)對高階 shell 合法有用;僅 asChild/forceMount 是罕用 footgun。allowlist 屬可選硬化 → marginal。"
+    },
+    {
+      "n": 17,
+      "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.tsx:61 (renderEdit optional for non-string T)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "renderEdit?: 一律選填(L61),泛型 <T=string>;非 string T 省略 renderEdit 時 default path L206-225 把 draft `as unknown as string` / `as unknown as T` 硬 cast。L59/61/206 明白 documented『非 string 值必傳 renderEdit』。",
+      "reason": "真型別 hole,但條件式/discriminated props 依泛型 T 強制在 TS 難做(T default string)、世界級普遍以 doc 約束而非型別強制;已 documented → marginal。"
+    },
+    {
+      "n": 18,
+      "fileLine": "packages/design-system/src/components/NumberInput/number-input.tsx:15 (precision: number)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "precision?: number(L15)無 range guard,L31 直餵 toLocaleString minimum/maximumFractionDigits;負值/極端值理論可 RangeError。spec 記 0-6 範圍。",
+      "reason": "真 robustness gap 但需 clearly-wrong 輸入(precision=-1/500)才 throw,實務 precision 為受控小整數;spec 已記 0-6。收成 0-6 union + guard 是低影響硬化 → marginal。"
+    },
+    {
+      "n": 19,
+      "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:54 (implicit single/multi mode)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "value?: PersonValue|PersonValue[]|null;isMulti = Array.isArray(value)(L145)由 value shape 隱式推斷;null → single/empty(正確處理)。onChange 永遠 emit array(L65-66 documented uniform contract)。",
+      "reason": "隱式 mode + null 歧義是有效設計意見,但元件正確處理各狀態、contract documented;顯式 multiple discriminant 是 ergonomic 改善非缺陷 → marginal。"
+    },
+    {
+      "n": 20,
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.tsx:73 (height escape hatch)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "height? 於 L64-67 明白 documented 為『DS 元件(FileItem)極密集 row 壓 2px 的逃生艙,consumer 端一律走預設 4px』;docblock L19-32 說明 4px invariant + FileItem 分界。",
+      "reason": "documented internal escape hatch + 明說 consumer 勿用 = documented exception;移入 FileItem 私有 adapter 是可選硬化 → marginal。"
+    },
+    {
+      "n": 21,
+      "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:80 (value/defaultValue both optional)",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "value?/defaultValue? 皆可省(L80-81)。但 code 刻意支援空初始狀態:L110 useState(defaultValue ?? '') `'' = controlled 無選取`,L128 僅攔『互動 deselect』不攔初始空。= 有意支援的 empty-initial state。",
+      "reason": "元件正確支援兩者皆省的空初始狀態(常見於 segmented control);controlled/uncontrolled union 是 ergonomic 提示但 empty 為 intentional supported state → marginal(codex 同標 marginal)。"
+    },
+    {
+      "n": 22,
+      "fileLine": "packages/design-system/src/components/Select/select.tsx:56 (extends full native select attrs)",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruth": "SelectProps extends Omit<SelectHTMLAttributes, 'size'|'value'|'defaultValue'|'onChange'>(L57)= 繼承 name/form/required/onFocus/onBlur/data-*。NativeSelect(觸控,L425)render 真 `<select>` + {...props} → form attrs 生效;CustomSelect(桌機,L529 forwardRef<HTMLDivElement>)render div-based combobox,無 hidden native control(grep hidden L680-728 = 0),name/form/required 落在 div 對表單提交 inert = 桌機主路徑 form 語意靜默遺失。世界級 Radix Select 有 hidden native control forwarding。",
+      "reason": "型別 extends 完整 native select attrs 承諾 form 參與,但桌機主路徑無 native control 兌現 = 真 type-vs-behavior gap 且低於世界級(Radix 有 hidden-control forwarding)。應改雙路徑可兌現的 allowlist 或補 hidden native forwarding。claudeMissed。"
+    },
+    {
+      "n": 23,
+      "fileLine": "packages/design-system/src/components/Select/select.tsx:45 (SelectOption.tagVariant?: string)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "tagVariant?: string(L45)過寬,實值於 6 處硬 cast `as 'blue'|'green'|'red'|'yellow'|'neutral'` 傳 Tag.color(L292/347/351/412/494/599)。拼錯通過型別。",
+      "reason": "真型別過寬 + 多處硬 cast code smell,但 consumer 於 option 設值、typo 只給錯色非 crash、低影響。收成 tagColor?: NonNullable<TagProps['color']> 是合理清理但低優先 → marginal。"
+    },
+    {
+      "n": 24,
+      "fileLine": "packages/design-system/src/components/Sheet/sheet.spec.md:19 (SheetContent side top/bottom/left)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "sheet.spec.md:19 + tsx L21-33/66-67 明白 documented『消費者 API = 右側;top/bottom/left 保留 DS 內部基建用(Sidebar narrow viewport 左滑),消費者禁止傳,需 user 授權』。SheetContent side cva(L75-85)含全 4 值 default right。",
+      "reason": "documented forbidden-for-consumer + shared substrate(SheetContent 同時服務 Sidebar 左滑,拆分會複製 SheetContent)+ spec 明說 API 1:1 對應 = documented exception,功能正常。→ marginal。"
+    },
+    {
+      "n": 25,
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:331 (TreeItem children ReactNode)",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "TreeItemProps extends HTMLAttributes(L709)→ children: ReactNode;spec:331 禁止事項『children 只接受 TreeItem』。非 TreeItem child 會 render 但不 registerNode / 破壞 registry/keyboard/ARIA(soft break,非 crash)。",
+      "reason": "真 contract-vs-type gap,但 React/TS 強制『children 只能特定 element type』本質困難(Radix/MUI Tree 全 type 為 ReactNode + 文件約束);已於禁止事項 documented + soft break(非 crash,對比 #7 Coachmark 硬 crash + 易修)→ marginal。"
+    },
+    {
+      "n": 26,
+      "fileLine": "packages/design-system/src/components/Tag/tag.tsx:72 (dismissLabel vs removeAriaLabel)",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "Tag callback = onRemove(L70)但 accessible-name prop = dismissLabel(L72)= 動詞不一致(remove vs dismiss)。DS 內 removeAriaLabel 僅 FileUpload 用(n=1,非已確立 canonical)。",
+      "reason": "真 minor 命名不一致(onRemove/dismissLabel 動詞錯配),但屬命名 dim 而非 API-surface-過寬;removeAriaLabel 非確立 canonical(僅 1 元件)。低優先 → marginal。"
+    },
+    {
+      "n": 27,
+      "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:456 (meta variant id/isActive ignored)",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "spec:456 表格明說 meta variant『❌ 不參與 single selection,不傳 id(傳了也會被忽略),永不 active』。型別仍接受 id/isActive。",
+      "reason": "documented ignored-in-variant(『傳了也會被忽略』明說)= documented exception;variant union(meta 分支 id?: never)是可選硬化 → marginal(codex 同標 marginal)。"
+    },
+    {
+      "n": 28,
+      "fileLine": "packages/design-system/src/components/Select/select.spec.md:295 (tag display + startIcon 互斥)",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "spec:295 禁止事項『startIcon 不可用於 tag 模式(Tag 已有視覺標記,startIcon 冗餘)』。型別可同時傳,靠 render 優先序消解。",
+      "reason": "documented 禁止事項 + render-priority 已消解、無 crash;discriminant(tag 分支 startIcon?: never)是可選硬化 → marginal(codex 同標)。"
+    },
+    {
+      "n": 29,
+      "fileLine": "packages/design-system/src/components/Tag/tag.tsx:66 (icon/avatar 互斥)",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "icon(L66)+ avatar(L68)並存且 JSDoc 標『互斥』。已有 dev-mode runtime warning(L157-164 `if (Icon && avatar) console.warn`)實作互斥防護。",
+      "reason": "已有 dev-warning guard 兌現互斥(flat props + dev warning 是常見世界級做法);compile-time union 是可選加強但 DS 已有防線 → marginal。"
+    },
+    {
+      "n": 30,
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:102 (icon/avatar 互斥)",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "icon(L102)+ avatar(L104)並存,JSDoc 標『與 avatar 互斥』+ 轉發 SelectionItem canonical 槽(M30 修)。無 Tag 式 dev-warning。並存只會並列 render(minor 視覺破壞,非 crash)。",
+      "reason": "documented 互斥 + 轉發既有 SelectionItem canonical;低影響(rare 誤用 + 僅視覺)。compile-time union 是可選硬化 → marginal。"
+    },
+    {
+      "n": 31,
+      "fileLine": "packages/design-system/src/patterns/header-canonical/chrome-header.tsx:39 (lockDensity 無 consumer)",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "header-canonical.spec.md:264/271 明白 documented『2026-06-15 起無 consumer 使用,保留僅為 API 相容』+ 標為 anti-pattern(header 鎖 body 沒鎖 → 左緣不對齊,FileViewer 圖二教訓)。Dialog/Sheet 僅 expose type(spread-forward)、FileViewer 已移除 lockDensity(file-viewer.tsx:355/489)。codex『已無 consumer』屬實。",
+      "reason": "真 0-consumer + spec 自標 anti-pattern,但明白 documented『保留為 API 相容』;codex 建議僅『標 @deprecated』。documented + 低優先 → marginal。"
+    }
+  ],
+  "topMaterial": [
+    "package.json:39 \"./tokens/*\":\"./src/tokens/*\" wildcard 把 29 個 spec.md/stories/registry-json 非-runtime 檔當公開 subpath 暴露 + 指向未編譯 src(非 dist)",
+    "DataTable totalCount(data-table.tsx:157)public prop destructured 後從未使用 = 完全無效果死 API,且 doc『需傳 totalCount』誤導 consumer",
+    "Coachmark children: ReactNode(coachmark.tsx:60)餵 Radix asChild 單 trigger → 非單一 element children runtime React.Children.only throw",
+    "Field @internal substrate 值 naked 混入公開 FieldVariant union(field-types.ts:43),root-public field controls 型別零防護可繞過 chrome/focus canonical",
+    "barrel export *(gen-component-indexes.mjs:79 → index.ts)洩漏 62 個 build-time *Meta + 內部 Context/helper 成為 package root 公開 API"
+  ]
+}

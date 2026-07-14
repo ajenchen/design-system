@@ -136,7 +136,7 @@ case "$FILE_PATH" in
       */components/Tag/*|*/components/Avatar/*|*/components/Chart/*|*/tokens/*) ;; # codified primitive-consumer skip
       *)
         if ! echo "$NEW_CONTENT" | grep -q 'primitive-color-allow-blanket'; then
-          VIOLATIONS_D3=$(printf '%s' "$NEW_CONTENT" | grep -nE 'var\(--color-[a-z]+-[0-9](-opaque)?\)' | grep -v 'primitive-color-allow' || true)
+          VIOLATIONS_D3=$(printf '%s' "$NEW_CONTENT" | grep -nE 'var\(--color-[a-z][a-z-]*-[0-9]{1,2}(-opaque)?\)' | grep -v 'primitive-color-allow' || true)
           if [ -n "$VIOLATIONS_D3" ]; then
             cat >&2 <<EOF
 

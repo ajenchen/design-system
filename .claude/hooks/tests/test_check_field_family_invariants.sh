@@ -1,11 +1,13 @@
 #!/bin/bash
-# Tests for check_field_family_invariants.sh — merged 4 sub-rules(A.1-A.4)
+# Tests for check_field_family_invariants.sh — merged sub-rules(A.1-A.4 + A.6)
 #
-# Coverage(每 sub-rule pass + block 各 1 case,共 12 case):
+# Coverage(每 sub-rule pass + block 各 1 case):
 #   A.1 naked row-mode propagation:pass / block / allowlist
 #   A.2 FieldControlGroup wrapper child:pass / block / allowlist
 #   A.3 Field state ring SSOT:pass / 3 block(shadow inset / outline / per-control open)
 #   A.4 disabled placeholder color:pass / 1 stderr-warn(exit 0)/ allowlist
+#   A.6 空值顯示 SSOT(2026-07-08 半形 hyphen):非 owner import EMPTY_DISPLAY block /
+#       owner skip / 全形 em dash block / 半形 pass / allowlist
 #   non-target:non-tsx skip / SSOT host skip(field-wrapper.tsx)
 
 set -u
@@ -182,6 +184,29 @@ else
   echo "  FAIL  A.4.3"
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - A.4.3"
 fi
+
+echo ""
+echo "=== A.6 空值顯示 SSOT(2026-07-08 半形 hyphen)==="
+
+# 17. 非 owner import EMPTY_DISPLAY → BLOCK(應消費 useFieldEmptyDisplay hook 分流)
+run_hook "/r/packages/design-system/src/components/Bad/bad.tsx" "import { EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'"
+expect_exit "A.6.1 非 owner import EMPTY_DISPLAY → BLOCK" 2 "EMPTY_DISPLAY 直引"
+
+# 18. owner field-context.ts import EMPTY_DISPLAY → pass(SSOT owner skip)
+run_hook "/r/packages/design-system/src/components/Field/field-context.ts" "import { EMPTY_DISPLAY } from './field-wrapper'"
+expect_exit "A.6.1 owner field-context.ts import → pass" 0
+
+# 19. components tsx hardcode 全形 em dash '—' → BLOCK
+run_hook "/r/packages/design-system/src/components/Bad/bad.tsx" "const cls = value ?? '—'"
+expect_exit "A.6.2 hardcode 全形 em dash → BLOCK" 2 "全形 em dash"
+
+# 20. 半形 hyphen '-' → pass(非全形,不觸發)
+run_hook "/r/packages/design-system/src/components/Bad/bad.tsx" "const sep = '-'"
+expect_exit "A.6.2 半形 hyphen → pass" 0
+
+# 21. allowlist → pass
+run_hook "/r/packages/design-system/src/components/Bad/bad.tsx" "const cls = value ?? '—' // @empty-display-allow: legacy N/A marker"
+expect_exit "A.6 allowlist → pass" 0
 
 echo ""
 echo "=== Skip cases ==="

@@ -61,16 +61,6 @@ export const UsageGuidance: Story = {
 
       <Section title="何時不用 + 替代方案">
         <Rule
-          title="❌ 不用 Input variant='bare' 在表單主區域"
-          note="bare 是 toolbar inline edit 專用(適合外層已有 affordance)。表單需要明確 field chrome → 用 variant='default'。Notion 的 property inline edit 用 bare"
-        >
-          <div>
-            <Input variant="bare" placeholder="搜尋..." />
-            <Label warn>❌ 表單用 default,bare 只用 toolbar</Label>
-          </div>
-        </Rule>
-
-        <Rule
           title="❌ 不用 Input startIcon 表達狀態(有效 / 無效)"
           note="startIcon 是「欄位用途」識別符(郵件、搜尋、網址)。狀態用邊框 + help text。Stripe 信卡欄的有效狀態由邊框顏色傳達"
         >
@@ -119,7 +109,7 @@ export const ModeRule: Story = {
         title="readonly — 表單中顯示但當下不可編輯"
         note="同 edit 高度(neutral-2 底色、無邊框),確保與其他欄位並排對齊。常見場景:viewing mode、送出後鎖定但仍在表單脈絡"
       >
-        <Input mode="readonly" defaultValue="alice@example.com" />
+        <Input mode="readonly" value="alice@example.com" />
       </Rule>
 
       <Rule
@@ -140,7 +130,7 @@ export const ModeRule: Story = {
         title="❌ 不用 readonly 作為 DataTable cell"
         note="readonly 仍然有 padding + 視覺 chrome,密集列表會顯得鬆散。Table cell 用 `<Input mode='display'>`(零視覺 chrome、無左右 padding;wrapper 高度同 readonly)"
       >
-        <Input mode="readonly" defaultValue="alice@example.com" />
+        <Input mode="readonly" value="alice@example.com" />
         <Label warn>↑ 在 table cell 中會過高且有多餘 padding → 用 &lt;Input mode=&quot;display&quot; /&gt;</Label>
       </Rule>
     </div>

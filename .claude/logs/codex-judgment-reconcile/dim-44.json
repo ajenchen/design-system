@@ -1,0 +1,86 @@
+{
+  "dim": 44,
+  "title": "Public vs Internal classification — codex findings 比稿裁定",
+  "judge": "Claude (B.3 reconcile)",
+  "groundTruth": "真實 code 逐條 Read 驗證",
+  "codexRaw": 4,
+  "summary": {
+    "material_confirmed": 2,
+    "marginal": 2,
+    "false_positive": 0,
+    "claudeMissed": 1
+  },
+  "keyContext": {
+    "stripInternal": "tsconfig 全無 stripInternal(grep 0 命中 + 2026-06-05 deep-audit 已證)→ @internal 不從 .d.ts strip,純 doc/IDE soft marker,graceful 非 hard break。此為 DS 已 documented 的 accepted 模型。",
+    "generatorCheck": "node scripts/gen-component-indexes.mjs --check → 69 in sync(exit 0)。故各 index.ts 為 generator 權威輸出,非 stale;F4 是 generator findMainFile 邏輯選錯 primary,非漏跑。",
+    "rootBarrel": "index.ts:63 export * from './patterns/element-anatomy/index'(element-anatomy = PUBLIC front-door);Command / SelectionControl 皆在 internal-excluded 區塊(subpath-only)。"
+  },
+  "verdicts": [
+    {
+      "id": "codex-F1",
+      "fileLine": "packages/design-system/src/components/Command/command.spec.md:23",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "factsAccurate": true,
+      "evidence": [
+        "command.spec.md frontmatter trait isInternal(line 8)+ spec:23 明列『分類:Internal primitive』",
+        "root barrel index.ts internal-excluded 區塊列 components/Command → 不進 front-door",
+        "command.tsx:185 export CommandDialog;spec:23『若要 Command Palette 類 UX,用本檔 export 的 CommandDialog(showcase「CommandPalette」story 消費)』",
+        "Command/index.ts export * from './command' → CommandDialog 經 subpath @qijenchen/design-system/components/Command 仍可達"
+      ],
+      "reasoning": "事實全對(Command internal + 排 root barrel + CommandDialog 同檔),非 false positive。但:(a) CommandDialog 經 subpath 仍可達,無 hard reachability 斷鏈;(b) spec 已明文記載此用法;(c) 其主要 consumer 是內部 showcase story,直接給 app 用屬 edge-case Cmd+K 場景。是否把 CommandDialog 升為 root front-door public 屬 judgment call,DS 刻意把整 Command 單元歸 internal(由 SelectMenu 消費)。classification 純度 tension 但 documented + 可達 → marginal,非 must-fix。",
+      "claudeCaught": false
+    },
+    {
+      "id": "codex-F2",
+      "fileLine": ".claude/rules/ui-development.md:20",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "factsAccurate": true,
+      "evidence": [
+        "ui-development.md:20 SSOT 正文把 <ItemIcon> / <ItemAvatar> 列為 Internal primitive 招牌範例(『MenuItem 內部 slot,consumer 用 <MenuItem> 不用裸 slot』)",
+        "item-anatomy.tsx:479 ItemIcon / :521 ItemAvatar 皆 export 且【無】@internal marker(對比同檔 :450 RowSizeProvider / :606 ItemInlineActionButton / :672 ItemInlineAction 皆帶 @internal)",
+        "element-anatomy/index.ts:5 export * → root barrel index.ts:63 export * → ItemIcon/ItemAvatar 走 PUBLIC front-door、consumer 可直接 import",
+        "Claude 同 dim 亦獨立抓到此條(dim-44 Claude finding #1,material),雙軌交集"
+      ],
+      "reasoning": "SSOT canonical 正文 intent(標 internal)與 code intent(export 無 @internal + public front-door 可達 + apps/template 直接消費)相反。正屬 dim-44『spec-internal 矛盾』class(同檔 line 20/31 自警示過的同一 class)。是真 SSOT-vs-code drift,會誤導未來分類決策(有人可能為修矛盾把 element-anatomy 標 internal 而打斷 template public 消費)。material。",
+      "claudeCaught": true
+    },
+    {
+      "id": "codex-F3",
+      "fileLine": "packages/design-system/src/patterns/element-anatomy/index.ts:5",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "factsAccurate": true,
+      "evidence": [
+        "element-anatomy/index.ts:5 export * from './item-anatomy'(barrel 全出)",
+        "item-anatomy.tsx:450 RowSizeProvider / :606 ItemInlineActionButton / :672 ItemInlineAction 皆帶 @internal(『app code 禁/不直接 import』)",
+        "element-anatomy 為 public pattern(root barrel index.ts:63)→ 這些 @internal 符號經 export * 洩漏到 public front-door",
+        "無 stripInternal → 這些符號確實留在 published .d.ts,consumer 可強行 import(僅 IDE 灰字)"
+      ],
+      "reasoning": "洩漏屬實(@internal 符號確實流過 public barrel)。但 DS 已 documented 的 accepted 模型 = @internal-without-stripInternal 為 graceful soft-marker(2026-06-05 deep-audit 明證『純 doc/IDE marker、不破壞』),故此洩漏是【已知接受】的 tradeoff,非 must-fix defect。dim-44 三機制 cross-check 於【單元層】(component/pattern)運作;element-anatomy 單元本身正確歸 public,@internal 逐符號排除無現行機制、屬更細粒度純度議題。可 tighten(拆 internal module 或加 stripInternal)但非清楚缺陷 → marginal。",
+      "claudeCaught": false
+    },
+    {
+      "id": "codex-F4",
+      "fileLine": "packages/design-system/src/components/SelectionControl/index.ts:5",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "factsAccurate": true,
+      "evidence": [
+        "SelectionControl/index.ts:5 export * from './boolean-value'(只出 BooleanValueIcon,2KB helper icon)",
+        "selection-item.tsx 才是主 primitive:export SelectionItem、frontmatter component: SelectionItem + isInternal + isStructural、10.8KB、有完整 spec / anatomy / principles stories",
+        "generator findMainFile:kebab 'selection-control'.tsx 不存在 → 'SelectionControl.tsx' 不存在 → fallback『first non-stories .tsx』依字母序取 boolean-value.tsx(b<s),選錯 primary",
+        "gen-component-indexes.mjs:12 註解自稱『Special cases(Menu/menu-item, SelectionControl/selection-item): fallback to first non-stories .tsx』— 但該 fallback 實際給 boolean-value 而非 selection-item,註解 intent 與行為自相矛盾",
+        "SelectionItem 於 root barrel 被排除(internal-excluded 區塊)+ subpath 又不 export → npm consumer 【完全不可達】",
+        "gen-component-indexes.mjs --check = 69 in sync(exit 0)→ 非 stale,是 generator 邏輯本身選錯"
+      ],
+      "reasoning": "真 export-chain 斷鏈,與 generator 註解自述極力防範的 DT-EXPORT 失敗 class(『文件教得到、import 拿不到』,WM 曾被迫重造 FilterPanel 350 行)同型。SelectionItem 有完整 spec/anatomy 文件卻經任何 consumer 路徑皆不可達;subpath 名為 SelectionControl 卻只吐 BooleanValueIcon helper。canonical 明定 internal 應【經 subpath 包裝後可用】,此處連 subpath 都拿不到主 primitive → 違反 dim-44 intent。真 bug,material。",
+      "claudeCaught": false
+    }
+  ],
+  "topMaterial": [
+    "SelectionControl subpath 只 export BooleanValueIcon,主 primitive SelectionItem 經 root barrel(排除)+ subpath(選錯 primary)皆不可達 — generator findMainFile fallback 選錯檔,真 export-chain 斷鏈(Claude 漏)",
+    "ui-development.md:20 SSOT 正文把 ItemIcon/ItemAvatar 標 internal,實為 public composition slot(export 無 @internal + element-anatomy 走 root front-door + template 直接消費)— SSOT text vs code intent 反向 drift(Claude 亦抓到)"
+  ]
+}

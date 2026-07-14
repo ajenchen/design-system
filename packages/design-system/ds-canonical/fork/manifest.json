@@ -36,6 +36,11 @@
         "file": "hooks/inject_deploy_url_after_push.sh",
         "sourceHook": "inject_deploy_url_after_push.sh",
         "bucket": "SHIP_REWRITTEN"
+      },
+      {
+        "file": "hooks/check_story_invariants.sh",
+        "sourceHook": "check_story_invariants.sh",
+        "bucket": "SHIP_REWRITTEN"
       }
     ],
     "PreToolUse": [
@@ -70,6 +75,11 @@
         "bucket": "SHIP_AS_IS"
       },
       {
+        "file": "hooks/check_dynamic_tailwind_class.sh",
+        "sourceHook": "check_dynamic_tailwind_class.sh",
+        "bucket": "SHIP_AS_IS"
+      },
+      {
         "file": "hooks/check_opacity_token_usage.sh",
         "sourceHook": "check_opacity_token_usage.sh",
         "bucket": "SHIP_REWRITTEN"
@@ -77,6 +87,11 @@
       {
         "file": "hooks/check_ds_anchor_preflight.sh",
         "sourceHook": "check_ds_anchor_preflight.sh",
+        "bucket": "SHIP_REWRITTEN"
+      },
+      {
+        "file": "hooks/check_story_invariants.sh",
+        "sourceHook": "check_story_invariants.sh",
         "bucket": "SHIP_REWRITTEN"
       },
       {

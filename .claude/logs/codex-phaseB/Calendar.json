@@ -1,0 +1,91 @@
+{
+ "component": "Calendar",
+ "claimsVerified": 287,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.tsx:45",
+   "宣稱": "ISO 字串 \"YYYY-MM-DD\"(all-day)或 \"YYYY-MM-DDTHH:mm\"(timed)",
+   "真實code行為": "`coerceDate` 以 `new Date(value)` 解析，再用本地年月日分桶；負 UTC 時區會把 date-only ISO 移到前一天。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.tsx:352-353",
+   "宣稱": "今天/平日統一 24px 圓形 hit-area；今天 pill 本就 24px",
+   "真實code行為": "基底是 `min-w-6 h-6`，today 另加 `px-2`；兩位數日期會寬於 24px，呈 pill 而非 24×24 圓形。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.spec.md:21",
+   "宣稱": "多區塊 layout(Toolbar / Grid / EventTile / SidePanel)，各自 own 自己的 anatomy。",
+   "真實code行為": "目前只渲染 Toolbar、Grid 與 EventTile，沒有 SidePanel；同 spec:231 也把 sidebar 列為後續增量。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.spec.md:26",
+   "宣稱": "日期運算用 `date-fns`——不自造 date math",
+   "真實code行為": "事件範圍分桶自行用 native Date 比較 timestamp，並以 `cursor.setDate(cursor.getDate() + 1)` 逐日展開。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.spec.md:34",
+   "宣稱": "在月/週/日 view 中瀏覽 event、點 event 看詳情、拖拉新增",
+   "真實code行為": "元件永遠渲染月 grid，沒有週／日 view 或 drag、pointer、range-select 實作；拖拉新增亦在 spec:228 被列為後續增量。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.spec.md:112",
+   "宣稱": "ISO \"YYYY-MM-DDTHH:mm\" 或 \"YYYY-MM-DD\"(all-day)",
+   "真實code行為": "date-only 字串先按 UTC 解析、再以本地日期分桶，負 UTC 時區會提前一天，無法可靠表示本地全天日期。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.spec.md:126",
+   "宣稱": "Toolbar:[◀] 2026 年 4 月 [▶]        [< 日 週 月 >]  [+ 新事件]",
+   "真實code行為": "實際順序是 `[◀] [今天] [▶]`、月份標題、view toggle、條件式 CTA；圖示漏掉「今天」且誤把標題置於兩箭頭之間。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.spec.md:211",
+   "宣稱": "❌ 不重造 date math——用 `date-fns`",
+   "真實code行為": "事件日期展開在 calendar.tsx:209-225 以 native Date 和 `setDate(+1)` 手動實作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.spec.md:255",
+   "宣稱": "ARIA / Pattern：對齊 W3C ARIA Authoring Practices Guide 對應 pattern。",
+   "真實code行為": "僅 role 階層近似 grid；所有日期按鈕及預設 tile 都進入頁面 Tab 序列，且沒有 grid roving focus 或方向鍵 handler。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.spec.md:267",
+   "宣稱": "MVP 所有互動元素皆 Tab 可達(鍵盤可操作性已滿足)",
+   "真實code行為": "`renderEventTile` 分支的 wrapper 只有 `onClick`，沒有 role、tabIndex 或 onKeyDown；consumer 未自行回傳 focusable element 時僅滑鼠可達。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.spec.md:269",
+   "宣稱": "focus-visible ring 對齊 DS canonical(`outline: 2px solid var(--ring)`);日期數字按鈕與事件 tile 皆有 ring。",
+   "真實code行為": "實作明確使用 `focus-visible:outline-none` 加 `ring-2 ring-ring` box-shadow；custom tile wrapper 也沒有內建 focus ring。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx:21-22",
+   "宣稱": "釘固定日期可避免 today 標記換日移格；釘死 = deterministic 渲染",
+   "真實code行為": "固定日期只用來組 event 字串；Calendar 未收到 `referenceDate`，顯示月份與 today 仍取自即時 `new Date()`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx:217",
+   "宣稱": "事件 tile `role=\"button\"` + `aria-label`(事件標題)。",
+   "真實code行為": "只有 default tile 分支具備 role 與 aria-label；custom `renderEventTile` wrapper 只有 onClick。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx:217",
+   "宣稱": "Tab — 逐一 focus 每格的日期數字按鈕與其中的事件 tile",
+   "真實code行為": "custom tile wrapper 不可 Tab focus，除非 consumer 自行提供 focusable element。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx:217",
+   "宣稱": "Enter / Space — 日期數字按鈕觸發 `onDateClick`;事件 tile 觸發 `onEventClick`",
+   "真實code行為": "default tile 有 Enter／Space handler；custom tile wrapper 沒有鍵盤 handler，行為取決於 consumer 內容。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx:217",
+   "宣稱": "focus-visible ring 對齊 DS 設計準則(`outline: 2px solid var(--ring)`);日期數字按鈕與事件 tile 皆有 ring。",
+   "真實code行為": "實際為 `outline-none` 加 Tailwind ring box-shadow，且 custom tile wrapper沒有內建 ring。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.principles.stories.tsx:17-18",
+   "宣稱": "釘固定日期可避免 today 標記換日移格；釘死 = deterministic 渲染",
+   "真實code行為": "固定日期只建立 event 日期；三個 Calendar instance 均未傳 `referenceDate`，月份與 today 仍依系統時間變動。"
+  }
+ ]
+}

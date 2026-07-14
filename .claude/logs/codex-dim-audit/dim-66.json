@@ -1,0 +1,72 @@
+{
+ "dim": 66,
+ "filesScanned": 438,
+ "findings": [
+  {
+   "fileLine": ".github/workflows/release.yml:70-73,156-162; scripts/dogfood-prepublish-verify.mjs:47-62,104-113,152-162; .github/workflows/composition-fidelity.yml:20-25,44-50,117-126",
+   "問題": "visual parity 未接入發版整鏈。dogfood 只把 tarball 裝進 scratch Vite app，實際僅 render Button、Avatar；composition-fidelity 則在 publish／receiver sync 前比 DS HEAD 與遠端舊版 consumer，更新後不會重跑。實際已有同一 SHA 的 parity 失敗但 Release 仍成功；唯一 identity sentinel 也不是 stakeholder flow。",
+   "severity": "material",
+   "建議": "發版前用本次 tarball 生成真實 mirror consumer，build consumer Storybook並跑 AppShell／DataTable／表單等 deterministic replica diff；receiver 更新後再回呼驗證，兩道都列為 required release status。"
+  },
+  {
+   "fileLine": ".github/workflows/release.yml:241-245,319-331; .github/workflows/ssot-sync-dispatch.yml:65-69; template/ds-product-template/README.md:78-86",
+   "問題": "所有 repository_dispatch 都只送到 `ajenchen/ds-product-template`，不會廣播到 Use-template repo 或 forks，與「fork repo 自動同步」不符。全量核對目前 7 個公開 fork，0/7 到最新版本且 0 個有 sync-design-system dispatch run。",
+   "severity": "material",
+   "建議": "建立 consumer registry＋GitHub App/webhook逐 repo fan-out；若不做 fan-out，文件須明確限定只即時更新 canonical template，並把下游 Dependabot啟用、合併策略或手動 sync-all 寫清楚。"
+  },
+  {
+   "fileLine": ".github/workflows/ssot-sync-dispatch.yml:63-69; .github/workflows/release.yml:226-229",
+   "問題": "非版本 SSOT dispatch 仍以 repo-scoped `GITHUB_TOKEN` 作跨 repo 假 fallback，並用 `|| echo` 吞掉 403。現役 workflow 已實際出現 HTTP 403 後仍綠燈，receiver 沒有對應事件。",
+   "severity": "material",
+   "建議": "統一使用已驗證的 `CROSS_REPO_TOKEN`；secret 缺失或 API 非 204 必 fail-loud，移除 GITHUB_TOKEN fallback與吞錯。"
+  },
+  {
+   "fileLine": "template/ds-product-template/.github/workflows/sync-design-system.yml:92-111; template/ds-product-template/.github/workflows/audit.yml:3-38",
+   "問題": "sync workflow 用 checkout 的 `GITHUB_TOKEN` push，GitHub 不會再觸發 `on: push` 的 Audit；sync 自身只 build `apps/template`，fork 內其他 apps、root typecheck、internal-import lint與 a11y 都未驗就直推 main。",
+   "severity": "material",
+   "建議": "push 前直接呼叫 reusable Audit或在 sync job 跑完整等價 gate，禁止依賴 GITHUB_TOKEN push 產生下游 workflow。"
+  },
+  {
+   "fileLine": "scripts/check-src-republish.mjs:23-27,68-80; packages/design-system/package.json:8-24; scripts/sync-ds-canonical.mjs:21-27",
+   "問題": "republish gate 只涵蓋 runtime `src` 與 `ds-canonical/fork`，但 npm 實際還發布全部 rules／references／skills／commands／hooks、CLAUDE及 spec。這些 SSOT 可 main push 而不 bump；即使 dispatch 成功，receiver 重裝未變的 `@beta` 仍是 no-op。",
+   "severity": "material",
+   "建議": "以 package `files` surface 為準擴充 republish gate；所有 npm-shipped SSOT 變更未 bump/tag即阻擋，確保 dispatch payload必對應真實可安裝的新版本。"
+  },
+  {
+   "fileLine": ".github/workflows/ssot-sync-dispatch.yml:68; .github/workflows/release.yml:244; template/ds-product-template/.github/workflows/sync-design-system.yml:38-40,48",
+   "問題": "`head_commit.message`、`ref_name`、`client_payload` 被直接插入 `run` shell；這些值可含 shell syntax，步驟又持有跨 repo PAT或 contents-write token，存在命令注入與 token外洩面。",
+   "severity": "material",
+   "建議": "把 GitHub context 放入 step `env`，shell只引用已正確 quote的環境變數；payload優先由 `GITHUB_EVENT_PATH` 配 `jq` 讀取。"
+  },
+  {
+   "fileLine": ".github/workflows/release.yml:170-245,255-290",
+   "問題": "BLOCKER 的 tag／五份 manifest版本一致性檢查排在 npm publish、dist-tag、GitHub Release及第一條 consumer dispatch之後；繞過本機 preflight直接推錯 tag時，會先產生不可逆發布才紅燈。",
+   "severity": "material",
+   "建議": "把版本一致性 gate移到所有 publish、repoint、release、dispatch動作之前。"
+  },
+  {
+   "fileLine": "scripts/visual-audit.mjs:91-111,443-482,602-620,661-667; scripts/visual-assertions.json:293,309,345,364",
+   "問題": "visual gate fail-open：manifest壞掉會縮成 8 個 fallback；Storybook錯頁只記錄、不影響 exit；缺 baseline則靜默不 diff。目前 ProfileCard使用已失效的 internal ID，且 AppShell、BulkActionBar、FieldControlGroup三項沒有 baseline；最新完整 CI確實在 ProfileCard找不到後仍綠燈。",
+   "severity": "material",
+   "建議": "新增 manifest schema、story-index、baseline 1:1 validator並接入 preflight；任何 `r.error`、缺 baseline、尺寸或 PNG錯誤皆必 exit 1，禁止縮減 fallback。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.spec.md:52,86; packages/design-system/src/components/Pagination/pagination.spec.md:19; scripts/visual-assertions.json:3",
+   "問題": "全量核對 64 components、67 component specs與 929 個 component story後，InlineEdit、Pagination完全沒有 visual scenario；兩者都有正式展示與互動狀態，無合理豁免。",
+   "severity": "material",
+   "建議": "各加入至少一個 canonical展示／互動 scenario與 Ubuntu baseline，並把 component-spec↔有效 story ID覆蓋交集做成 deterministic preflight。"
+  },
+  {
+   "fileLine": "scripts/visual-assertions.json:2; scripts/visual-audit.mjs:9-10,252-253",
+   "問題": "111 個 scenario全部沒有 `assertions`，因此 runner宣稱的等高、四邊 padding、cell等寬幾何 gate永遠是空集合。",
+   "severity": "marginal",
+   "建議": "若幾何 invariant仍屬 canonical，補可執行的 pixel數值斷言並令 selector缺失失敗；若已由 pixel diff取代，移除不實宣稱並將 manifest誠實改名為 screenshot scenarios。"
+  },
+  {
+   "fileLine": ".github/workflows/visual-regression.yml:5,41,44; scripts/visual-audit.mjs:529-530",
+   "問題": "workflow宣稱 every story、約 1000 stories與 DS-wide pixel match，但 `scope=all`實際只跑 manifest的 111 scenarios，約為 929個 component stories的12%。",
+   "severity": "marginal",
+   "建議": "文件改為「curated scenarios、每 component至少一個」並輸出即時 coverage；若要求 every story，則從 Storybook index自動生成完整 manifest。"
+  }
+ ]
+}

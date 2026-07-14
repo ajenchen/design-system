@@ -48,6 +48,7 @@ import type {
   FileRendererCapabilities,
   FileRendererProps,
 } from './file-viewer-types'
+import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
 
 /**
  * FileViewer — 可延伸的網頁檔案 preview shell(modal fullscreen)
@@ -59,8 +60,8 @@ import type {
  *
  * ── 實作基礎 ──
  * 自建 composite,消費 DS primitives:
- *   - Radix DialogPrimitive(焦點 trap / Esc / aria-modal,保有 shadcn 結構優勢)
- *   - `<Empty>` / `<Button>` / `<Input variant="bare">` / `<AspectRatio>` / `<Textarea>` / `<DropdownMenu>`
+ *   - Radix DialogPrimitive(焦點 trap / Esc / modal 隔離靠 hideOthers aria-hidden — react-dialog@1.1.x 不輸出 aria-modal,保有 shadcn 結構優勢)
+ *   - `<Empty>` / `<Button>` / `<Input size="sm" autoWidth>`(ZoomInput,default variant)/ `<AspectRatio>` / `<Textarea>` / `<DropdownMenu>`
  *   - `patterns/horizontal-overflow`(filmstrip 溢出捲動)
  * 不用 DS 的 `<Dialog>` wrapper:因為 FileViewer 需要 edge-to-edge fullscreen
  * (無 viewport inset / 無 rounded-lg / 無 maxWidth),Dialog 的這些預設都要覆寫。
@@ -179,7 +180,7 @@ interface ZoomInputProps {
 }
 
 /**
- * ZoomInput — [−] [% input(bare)with ⌄ menu trigger] [+]
+ * ZoomInput — [−] [% input(default variant + autoWidth)with ⌄ menu trigger] [+]
  *
  * 世界級對照:Figma zoom control / Adobe Acrobat / Google Slides zoom。
  *
@@ -233,9 +234,13 @@ const ZoomInput: React.FC<ZoomInputProps> = ({ value, onChange, onFit, labels })
           — 靠 Radix asChild + ItemInlineActionButton:視覺是 Input + endAction,行為是 chevron-as-trigger
           — 完全對齊 user AR:「只有 inline action 能觸發選單,menu 對齊 inline action」 */}
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+        {/* maxLength 限縮(2026-07-09 user 要求「找合理最大值避免無限輸入」):autoWidth 下輸入框寬度隨字數長,
+            無上限則可無限打字撐爆 toolbar。max 合法值「400%」= 4 字(對齊 ZOOM_PRESETS / ImageRenderer MAX_SCALE 400;
+            commitDraft 另 clamp 10–400),留 1 字編輯緩衝 → maxLength={5}。 */}
         <Input
           size="sm"
           autoWidth
+          maxLength={5}
           aria-label={labels.zoomInput}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -533,7 +538,7 @@ const InfoPanel = React.memo(function InfoPanel({
           <span className="text-body font-normal text-foreground">{labels.fileInfoHeading}</span>
           <DescriptionList direction="horizontal" divided>
             <DescriptionItem label="檔名">{file.name}</DescriptionItem>
-            <DescriptionItem label="類型">{file.mimeType || '—'}</DescriptionItem>
+            <DescriptionItem label="類型">{file.mimeType || '-'}</DescriptionItem>
             {sizeText && (
               <DescriptionItem label="大小">
                 <span className="tabular-nums">{sizeText}</span>
@@ -937,6 +942,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
           data-theme="dark"
           className={cn(
             'fixed inset-0 z-50 bg-overlay',
+            surfaceMotion,
             'data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
           )}
@@ -946,8 +952,10 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
           className={cn(
             // Edge-to-edge fullscreen,無 inset / 無 radius(與一般 Dialog 差別的所在)
             'fixed inset-0 z-50 outline-none',
+            surfaceMotion,
             'data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+            'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
           )}
           // 避免 Radix 自動把焦點送進 Content 的第一個 tabbable —— 我們要留給 viewport
           onOpenAutoFocus={(e) => e.preventDefault()}

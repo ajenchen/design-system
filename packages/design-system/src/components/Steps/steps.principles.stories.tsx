@@ -263,7 +263,7 @@ export const LinearBackClickDoesNotMutate: Story = {
     return (
       <Section
         title="點 completed step 只改 focus(value),不會自動取消完成狀態"
-        subtitle="Steps 是純 controlled 元件,從不偷偷 mutate parent state。若應用層需要「使用者改錯了就 block 後續」,應由應用層自己從 completedValues 移除,Steps 內部絕不 auto-remove。"
+        subtitle="Steps 的進度狀態由 parent own(value 為 controlled / uncontrolled defaultValue 雙模),從不偷偷 mutate parent 的 completedValues。若應用層需要「使用者改錯了就 block 後續」,應由應用層自己從 completedValues 移除,Steps 內部絕不 auto-remove。"
       >
         <div className="flex flex-col gap-3 w-[360px]">
           <p className="text-caption text-fg-secondary">

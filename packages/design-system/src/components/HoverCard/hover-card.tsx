@@ -7,7 +7,8 @@ import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
 
 import { cn } from "@/lib/utils"
 import { OVERLAY_SIDE_OFFSET } from "@/design-system/tokens/elevation/overlay-geometry"
-import { HOVER_DELAY_RICH_MS, HOVER_DELAY_CLOSE_MS } from "@/design-system/tokens/motion/motion"
+import { MOTION_DELAY_RICH_MS, MOTION_DELAY_CLOSE_MS } from "@/design-system/tokens/motion/motion"
+import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 
 /**
  * HoverCard — hover 顯示可互動內容的浮層（行為 primitive）
@@ -25,7 +26,7 @@ import { HOVER_DELAY_RICH_MS, HOVER_DELAY_CLOSE_MS } from "@/design-system/token
 // (rich 700ms open / close 200ms)— 對齊 tooltip.tsx 同 pattern(2026-05-18 拍板 #3A)。
 // 原裸用 Radix 預設 open 700 / close 300:open 巧合同值、close 300 ≠ canonical 200(drift)。
 // Consumer 仍可 per-instance override(Avatar 同值傳入、OverflowIndicator 傳 plain)。
-const HoverCard = ({ openDelay = HOVER_DELAY_RICH_MS, closeDelay = HOVER_DELAY_CLOSE_MS, ...props }: React.ComponentProps<typeof HoverCardPrimitive.Root>) => (
+const HoverCard = ({ openDelay = MOTION_DELAY_RICH_MS, closeDelay = MOTION_DELAY_CLOSE_MS, ...props }: React.ComponentProps<typeof HoverCardPrimitive.Root>) => (
   <HoverCardPrimitive.Root openDelay={openDelay} closeDelay={closeDelay} {...props} />
 )
 
@@ -56,7 +57,8 @@ const HoverCardContent = React.forwardRef<
         "max-h-[var(--radix-hover-card-content-available-height,100vh)] flex flex-col overflow-hidden min-h-0",
         // 2026-07-05 補 motion-reduce 豁免:對齊 overlay 家族 canonical(popover.tsx / dialog.tsx /
         // dropdown-menu.tsx / tooltip.tsx 同位置寫法)— prefers-reduced-motion 下停用進出場動畫。
-        "data-[state=open]:animate-in data-[state=closed]:animate-out motion-reduce:animate-none",
+        overlayMotion,
+        "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",

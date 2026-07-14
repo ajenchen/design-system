@@ -1,0 +1,171 @@
+{
+ "component": "Field",
+ "claimsVerified": 1079,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:63",
+   "宣稱": "Field 家族 = 一個 `fieldWrapperStyles` cva + 兩條正交軸",
+   "真實code行為": "`fieldWrapperStyles` 實有 mode、variant、size、width、error 五個軸；同 spec 後文也另稱 width 為正交軸。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:65",
+   "宣稱": "`naked` 無 chrome、host cell 管邊框/focus",
+   "真實code行為": "edit × naked 自己渲染 rest、hover、open、focus-within、error 邊框；host 並未獨占邊框與 focus visual。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:85",
+   "宣稱": "三種模式只有底色、邊框、文字色不同",
+   "真實code行為": "mode 還改變 padding、cursor 與 focus 行為：display 清 padding、readonly 加 ring、disabled 加 cursor-not-allowed。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:156",
+   "宣稱": "Form wrapper 可透過 context 注入 `error` prop",
+   "真實code行為": "Field prop 與 context key 均為 `invalid`；`error` 只存在於 `fieldWrapperStyles` 的內部 cva 軸。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:223",
+   "宣稱": "readonly 的 `:has(:focus-visible)` 鍵盤限定、滑鼠不觸發",
+   "真實code行為": "沒有 modality gate；可文字輸入的 native input 被滑鼠點擊時也會匹配 `:focus-visible`，同 spec:219 亦明載點擊與 Tab 都會觸發。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:78",
+   "宣稱": "Control area（任何 size）一律 `min-h-field-{size}` + `flex items-center`",
+   "真實code行為": "只有 inline branch 如此；block branch 是 `flex flex-col items-start`，沒有 min-height。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:103",
+   "宣稱": "Horizontal 模式 Label 與 control 垂直對齊於第一行中線",
+   "真實code行為": "短 inline label 才置中；label 高於 field-height 時會改為 top-align。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:445",
+   "宣稱": "focus-visible ring 為 `outline: 2px solid var(--ring)`",
+   "真實code行為": "Field root 沒有 focus outline；editable wrapper 是既有 1px border 換色且無 ring，只有 readonly 使用 ring-2。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/form-validation.spec.md:44",
+   "宣稱": "若有任何欄位出錯，focus 到第一個錯誤欄位",
+   "真實code行為": "同 spec:89 承認只對可由 DOM `name` 定位的 native input 生效；非 native 控件會略過 focus。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/form-validation.spec.md:60",
+   "宣稱": "9 條方法論已全編成不可違反的 hook 預設",
+   "真實code行為": "規則 8 對非 native 控件並未完整實作；同 spec:89 明載 first-error focus 會略過。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/form-validation.spec.md:84",
+   "宣稱": "`handleSubmit` 內建 anchor 第一個錯誤",
+   "真實code行為": "anchor 能力只涵蓋 native input；非 native first-error 不會取得 focus anchor。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/form-validation.spec.md:103",
+   "宣稱": "本 DS Submit 失敗會 scroll + focus first error",
+   "真實code行為": "非 native 控件會略過 focus，表格宣稱缺少必要 scope。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/form-validation.spec.md:154",
+   "宣稱": "focus 自動 jump 到第一個 invalid field",
+   "真實code行為": "只有可由 `name` 定位的 native input 會被 focus；非 native 控件略過。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/form-validation.spec.md:155",
+   "宣稱": "跨欄位／async error 用 `aria-live=\"polite\"` 容器宣告",
+   "真實code行為": "canonical 範例把 submit/business error 放入 `FieldError`；其實作固定為 `role=\"alert\"`，沒有 polite live-region。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:41",
+   "宣稱": "FieldError 僅 invalid 時顯示",
+   "真實code行為": "FieldError 不讀 `ctx.invalid`；只要 children 非空，任何 Field 狀態都會渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:46",
+   "宣稱": "所有與資料相關的邏輯都在子元件（Field Controls）",
+   "真實code行為": "驗證時機、dirty、submit 與 error lifecycle 的 executable arm 是獨立的 `useFormValidation`，並非 Field Control 本身。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:54",
+   "宣稱": "驗證邏輯由 Field Controls 管",
+   "真實code行為": "Field Controls 接收 invalid/error 狀態並呈現；驗證流程由 form 層 `useFormValidation` 或 consumer 管理。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:76",
+   "宣稱": "naked 無 chrome",
+   "真實code行為": "edit × naked 仍繪製 border，並有 hover、open、focus-within 與 error 邊框；只有非 edit 的 naked branches 使用透明邊框。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:414",
+   "宣稱": "FieldError 在 Default 狀態不渲染",
+   "真實code行為": "FieldError 不判斷 Field state；default Field 內只要 children 非空便會渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:416",
+   "宣稱": "FieldError 在 Disabled 狀態不渲染",
+   "真實code行為": "FieldError 不讀 disabled；disabled Field 內仍會以 `text-error-text`、`role=\"alert\"` 渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:541",
+   "宣稱": "焦點外框由控件自己畫（2px 實線）",
+   "真實code行為": "沒有統一的 2px 外框：edit 使用 1px wrapper border 換色，readonly 才使用 ring-2，naked edit 同樣走邊框換色。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.principles.stories.tsx:150",
+   "宣稱": "與資料相關的一切（含驗證）住在 Field Control 元件本身",
+   "真實code行為": "驗證 state machine、timing 與 submit lifecycle 位於獨立的 `useFormValidation`，不是 Control 本身。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.principles.stories.tsx:166",
+   "宣稱": "Input 管 type=email／驗證邏輯",
+   "真實code行為": "Input 承載 native type 與 invalid 呈現；驗證流程由 `useFormValidation` 或 consumer 負責。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-wrapper.tsx:17",
+   "宣稱": "naked — 無 chrome，host cell 自管 border/focus",
+   "真實code行為": "edit × naked 自己畫 rest、hover、open、focus 與 error border。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-wrapper.tsx:19",
+   "宣稱": "高度固定為 field-height token",
+   "真實code行為": "naked edit 覆寫為 `!h-full`；naked display／readonly／disabled 覆寫為 `!h-auto`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-wrapper.tsx:53",
+   "宣稱": "naked hover/focus 也不出 border",
+   "真實code行為": "naked edit 明確包含 `hover:border-border-hover` 與 `focus-within:!border-primary`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-wrapper.tsx:105",
+   "宣稱": "focus dominates everything，包含 error-rest，游標在輸入框必藍",
+   "真實code行為": "error:true compound 在 focus 時維持紅色；同一 docblock 後文也已修正為 error 例外。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-wrapper.tsx:142",
+   "宣稱": "`:has(:focus-visible)` 僅鍵盤聚焦顯示，滑鼠點擊不觸發",
+   "真實code行為": "readonly native text input 的 pointer click 與 Tab 都會匹配 focus-visible。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-wrapper.tsx:349",
+   "宣稱": "State ring 3 const 仍留（下方）",
+   "真實code行為": "檔內只剩一個 ring helper `nakedCellEditableDisplayHover`；`nakedCellRowModeAlign` 是 alignment helper。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-wrapper.tsx:354",
+   "宣稱": "不可編輯空值使用 `text-fg-muted`",
+   "真實code行為": "現行 canonical 是非 disabled 使用 `text-foreground`、disabled 使用 `text-fg-disabled`；field-controls spec 亦明禁 muted。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.tsx:25",
+   "宣稱": "Control 一律包在 `min-h-field-* + items-center` 的 control area",
+   "真實code行為": "僅 inline layout 如此；block layout 使用 `flex-col items-start` 且沒有 min-height。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.tsx:29",
+   "宣稱": "Horizontal FieldLabel 一律使用 padding-top 公式",
+   "真實code行為": "padding-top 公式只套用 block control；inline control 使用 min-height + flex/justify-center。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.tsx:113",
+   "宣稱": "naked 無 chrome，host cell 提供 border/focus",
+   "真實code行為": "傳給子 control 的 naked edit wrapper 自己渲染 border、hover、focus 與 error 狀態。"
+  }
+ ]
+}

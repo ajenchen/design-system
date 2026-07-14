@@ -1,6 +1,10 @@
+// @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
 import type { Meta, StoryObj } from '@storybook/react'
+import type { ColumnDef } from '@tanstack/react-table'
 import { FileText, Table as TableIcon } from 'lucide-react'
 import { ProgressBar } from './progress-bar'
+import { DataTable } from '@/design-system/components/DataTable/data-table'
+import '@/design-system/components/DataTable/column-types' // ColumnMeta declaration merging
 
 const meta: Meta<typeof ProgressBar> = {
   title: 'Design System/Components/ProgressBar/展示',
@@ -70,50 +74,54 @@ export const BatchTask: Story = {
 }
 
 // ── 真實情境 3: DataTable cell inline 進度 ─────────────────────────────
+// 2026-07-14 audit(R1 A.2):手刻 table markup → 消費真 <DataTable>(對齊 Skeleton
+// TableRowLoading 同款 consumer-自訂-cell 模式;columns 不設 meta.type 走自訂 cell)。
+
+interface QuotaRow {
+  name: string
+  quota: number
+  status: 'inProgress' | 'success' | 'error'
+}
+
+const quotaRows: QuotaRow[] = [
+  { name: 'Acme Corp 專案', quota: 45, status: 'inProgress' },
+  { name: 'Globex 整合', quota: 78, status: 'inProgress' },
+  { name: 'Initech 改版', quota: 100, status: 'success' },
+  { name: 'Umbrella 導入', quota: 12, status: 'inProgress' },
+  { name: 'Wonka 客製化', quota: 95, status: 'error' },
+]
+
+const quotaColumns: ColumnDef<QuotaRow>[] = [
+  {
+    id: 'name',
+    header: '專案',
+    cell: ({ row }) => (
+      <div className="flex items-center gap-2">
+        <FileText size={16} className="text-fg-muted shrink-0" />
+        {row.original.name}
+      </div>
+    ),
+  },
+  {
+    id: 'quota',
+    header: '配額使用率',
+    meta: { width: 240 },
+    cell: ({ row }) => (
+      <ProgressBar value={row.original.quota} status={row.original.status} affix="value" />
+    ),
+  },
+]
 
 export const InlineTableCell: Story = {
   name: 'DataTable 儲存格內進度',
-  render: () => {
-    const rows = [
-      { name: 'Acme Corp 專案', quota: 45, status: 'inProgress' as const },
-      { name: 'Globex 整合', quota: 78, status: 'inProgress' as const },
-      { name: 'Initech 改版', quota: 100, status: 'success' as const },
-      { name: 'Umbrella 導入', quota: 12, status: 'inProgress' as const },
-      { name: 'Wonka 客製化', quota: 95, status: 'error' as const },
-    ]
-    return (
-      <div className="flex flex-col gap-4 w-[560px]">
-        <SectionTitle>配額使用率(DataTable inline)</SectionTitle>
-        <SectionDesc>
-          Table cell 內顯示配額使用率(4px 細線不搶走主要欄位的閱讀重量)。value affix 讓使用者快速讀數字。
-        </SectionDesc>
-        <div className="border border-border rounded-md overflow-hidden bg-surface">
-          <table className="w-full text-body">
-            <thead className="bg-muted text-caption text-fg-secondary">
-              <tr>
-                <th className="text-left px-4 py-2 font-medium">專案</th>
-                <th className="text-left px-4 py-2 font-medium w-[240px]">配額使用率</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.name} className="border-t border-divider">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <FileText size={16} className="text-fg-muted shrink-0" />
-                      {r.name}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <ProgressBar value={r.quota} status={r.status} affix="value" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    )
-  },
+  render: () => (
+    <div className="flex flex-col gap-4 w-[560px]">
+      <SectionTitle>配額使用率(DataTable inline)</SectionTitle>
+      <SectionDesc>
+        Table cell 內顯示配額使用率(4px 細線不搶走主要欄位的閱讀重量)。value affix 讓使用者快速讀數字。
+      </SectionDesc>
+      <DataTable columns={quotaColumns} data={quotaRows} getRowId={(r) => r.name} height="auto" />
+    </div>
+  ),
 }
 

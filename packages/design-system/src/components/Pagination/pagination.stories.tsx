@@ -18,9 +18,7 @@ export const Default: Story = {
     return (
       <div className="flex flex-col gap-3">
         <p className="text-caption text-fg-muted">
-          客服工單佇列:total=128 / 每頁預設 20 → 7 頁(總頁數由 total/pageSize 內部推導,
-          Ant 同款資料模型)。當前頁 `aria-current="page"`,選中 = 主色描邊+染字不染底;
-          選中之上 hover 升 hover 階、按壓 active 階。
+          客服工單佇列:共 128 筆、每頁 20 筆 → 7 頁。
         </p>
         <Pagination total={128} page={page} onPageChange={setPage} />
       </div>
@@ -36,9 +34,7 @@ export const FullBar: Story = {
     return (
       <div className="flex flex-col gap-3">
         <p className="text-caption text-fg-muted">
-          搜尋結果頁:showTotal(「第 x–y 筆,共 N 筆」range 格式,Ant/MUI/Carbon 共識)+
-          pageSizeOptions(「N 筆/頁」選單)—— 分頁完整功能 own 在本元件(SSOT),layout =
-          資訊左、操作群(頁碼+每頁筆數)右,對齊 Ant 源碼結構;換每頁筆數自動回第 1 頁。
+          搜尋結果頁:顯示總筆數 + 每頁筆數選單,左資訊右操作;換每頁筆數會自動回第 1 頁。
         </p>
         <Pagination
           total={85}

@@ -141,6 +141,7 @@
 | Family | 檔案 | 用途 |
 |---|---|---|
 | `--layout-space-*` | `layoutSpace.css` | **抽象** spacing rhythm(loose / tight / bottom)——多 consumer 共用 |
+| `--item-gap-label-desc-*` | `layoutSpace.css`(co-located) | item 級 label ↔ desc micro gap——概念 owner = `item-anatomy.spec.md`,住 layoutSpace.css 因同屬 spacing token 家族(見 layoutSpace.spec.md「Co-located:item-gap tokens」) |
 | `--sidebar-*` / `--chrome-header-*` / `--data-table-*-width` | `uiSize.css` | **具體** layout primitive 尺寸——對應特定 layout primitive 元件 |
 
 **Why 拆**:抽象 spacing rhythm 改值 → 整 app rhythm 動;具體 primitive 尺寸改值 → 單個 primitive 動。兩個影響半徑不同,拆檔案讓 grep / blame 直接看出。

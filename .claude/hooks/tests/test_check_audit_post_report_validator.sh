@@ -118,6 +118,50 @@ EOF
 run_hook "$TMPDIR_TEST/.claude/memory/project_audit_progress.md" "Edit"
 expect_block_stderr "5. judgment dim 缺 prompt → Validator C exit-2 block" "VALIDATOR BLOCK"
 
+# 6/7. Validator K 決策品質四要件(2026-07-14;SSOT = deep-audit SKILL C.1「🔒 決策品質四要件」)
+#    拍板 section 內每個決策 block 必含 SSOT-check / 世界級 cite(URL)/ codex verdict / design-fit 四 marker。
+#    先補 `## 99.` prompt 讓 test 5 留下的 Validator C 條件通過,隔離 K 的判定。
+cat > "$TMPDIR_TEST/.claude/skills/design-system-audit/references/audit-prompts.md" <<'EOF'
+## 1. foo
+prompt
+## 99. test judgment dim
+prompt
+EOF
+mkdir -p "$TMPDIR_TEST/.claude/logs/deep-audit-test"
+cat > "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" <<'EOF'
+# Deep Audit 報告
+Dim 1: pass
+
+### 待你拍板
+1. 決策一:Popover 內距是否改 12px
+   - SSOT 理由:改跨元件 canonical 視覺結構
+   - SSOT-check:grep spec + memory,無既有拍板
+   - codex verdict:agree(辯論共識)
+   - 設計語言 fit:符合 density canonical
+EOF
+run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
+expect_block_stderr "6. 決策缺世界級 cite → Validator K exit-2 block" "決策四要件不全"
+
+cat > "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" <<'EOF'
+# Deep Audit 報告
+Dim 1: pass
+
+### 待你拍板
+1. 決策一:Popover 內距是否改 12px
+   - SSOT 理由:改跨元件 canonical 視覺結構
+   - SSOT-check:grep spec + memory,無既有拍板
+   - 世界級:Polaris https://polaris.shopify.com/tokens/space / Material / Ant(3 家)
+   - codex verdict:agree(辯論共識)
+   - 設計語言 fit:符合 density canonical
+EOF
+run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
+if [ "$EXIT" = "0" ]; then
+  echo "  PASS  7. 四要件齊 → Validator K pass(exit 0)"; PASS=$((PASS+1))
+else
+  echo "  FAIL  7. 四要件齊 → Validator K pass (expected exit 0, got $EXIT, stderr=[$STDERR_TEXT])"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 7. 四要件齊 pass"
+fi
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

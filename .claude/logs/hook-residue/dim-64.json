@@ -1,0 +1,1 @@
+{"dim":64,"hook":"check_post_main_ssot_propagate.sh","residueCount":0,"findings":[],"verified":true,"note":"PostToolUse Bash automation hook — on git push origin main with SSOT-affecting diff, injects version-bump/release-chain directive into AI context. Pure inject/automation, blocks nothing; no static code anti-pattern to leave file residue."}

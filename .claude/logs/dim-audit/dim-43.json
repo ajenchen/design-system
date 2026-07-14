@@ -1,0 +1,52 @@
+{
+  "dim": 43,
+  "title": "Rule note 品質",
+  "mechanism": "DS-wide 全掃 63 principles.stories rule notes per-component — note 品質(原則>結論)/正確/人話(禁 spec 內部代號)。判準 SSOT = .claude/skills/story-writing/references/example-selection.md「Rule note 品質」段 + :23「spec 內部代號」禁則。",
+  "filesScanned": 63,
+  "notesExtracted": 619,
+  "verdict": "整體品質極高 — 絕大多數 note 都做到『傳達為什麼(原則)』+ 真實業務場景(Jira/Stripe/Notion/Linear/Figma)+ 世界級 cite。唯一系統性缺口:內部治理 metadata(決策日期/代碼、impl 檔名、spec 行號)洩漏進面向公開讀者的教學 note,違反 example-selection.md:23『spec 內部代號』禁則。共 7 處,同一 class。",
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/components/Chip/chip.principles.stories.tsx:201",
+      "問題": "note 內夾『semantic.css SSOT,2026-07-06 拍板自 hover 階改 base』—— 同時洩漏內部實作檔名(semantic.css)+ 內部決策日期(2026-07-06 拍板)。Storybook 讀者是設計師/開發者,看不懂『semantic.css』是什麼、也不需要知道哪天拍板。這是 example-selection.md:23 明列禁止的『spec 內部代號』anti-pattern,把 dev-internal changelog 塞進公開教學 note。",
+      "severity": "material",
+      "建議": "刪掉『semantic.css SSOT,2026-07-06 拍板』整段內部 metadata,保留可教學的原則即可:『對齊 SegmentedControl / Tabs 的選中 canonical(primary 底色同時染文字和線條;瞬時弱、持續強)』。決策日期/實作檔名歸 spec.md rationale 或 git log,不進 public note。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Toast/toast.principles.stories.tsx:116",
+      "問題": "『使用者有一段時間(含 action 預設 10 秒;2026-07-05 D4)可以反悔』—— 『2026-07-05 D4』是內部決策編號(D4=decision 4?),讀者無從理解。屬 spec 內部代號洩漏。",
+      "severity": "marginal",
+      "建議": "移除『;2026-07-05 D4』,只留讀者需要的事實:『含 action 時預設 10 秒可反悔』。決策編號留 memory/plan doc。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Toast/toast.principles.stories.tsx:192",
+      "問題": "『(鍵盤焦點不暫停倒數;2026-07-05 D4)』與『DS 在 action 存在時預設 duration = 10000ms』—— 『2026-07-05 D4』同為內部決策編號洩漏;同一 note 內先寫『10 秒』(L116)、這裡寫『10000ms』,單位表述不統一(雖等值,但讀者需換算)。",
+      "severity": "marginal",
+      "建議": "移除『;2026-07-05 D4』;duration 表述與 L116 統一為『10 秒』人話,或兩處都用 ms 並標註,避免讀者換算。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Switch/switch.principles.stories.tsx:119",
+      "問題": "『表單 readonly = Field 內灰框 + 勾/叉 icon(2026-06-12 拍板)』—— 『2026-06-12 拍板』內部決策日期洩漏進公開 note,對讀者無教學價值。",
+      "severity": "marginal",
+      "建議": "刪『(2026-06-12 拍板)』括號。note 主體(readonly 值重要不弱化 / disabled 傳達現在用不到)是好的原則,保留。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:256",
+      "問題": "note 以『2026-04-24 設計準則更新:』開頭 —— 用內部 changelog 日期當開場,讀者不需要知道哪天更新,且開場即是內部框架語。後半 dual-path 原則本身很好,但被日期前綴污染。",
+      "severity": "marginal",
+      "建議": "刪掉『2026-04-24 設計準則更新:』前綴,直接陳述規則:『DS 提供 dual path — FileUpload 可 own list via files prop,OR consumer 自組 files.map(...)。禁止的是自畫 status icon / thumbnail / progress bar / row layout...』。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.principles.stories.tsx:93",
+      "問題": "『DatePicker 加 showTime prop(canonical 2026-05-02,Ant idiom;非獨立並列組合,見 spec「showTime」段)』—— 『canonical 2026-05-02』內部決策日期洩漏。(『見 spec「showTime」段』用段落名而非行號,屬可接受 pointer,不計。)",
+      "severity": "marginal",
+      "建議": "刪『canonical 2026-05-02,』日期。保留『Ant idiom;非獨立並列組合,見 spec「showTime」段』—— Ant idiom 是合法世界級 cite。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:251",
+      "問題": "note 結尾『...仍不做公式計算),對齊 spec.md L28。』—— 引用 spec 行號(L28)。行號對公開讀者不透明(沒讀過 spec.md 不知 L28 是什麼),且 spec 內容變動時行號會 drift 成假引用。屬 example-selection.md:23 禁止的『spec 內部代號』。",
+      "severity": "marginal",
+      "建議": "把『對齊 spec.md L28』改成段落名 pointer(如『見 data-table.spec.md「spreadsheetMode」段』)或直接刪除 —— 行號引用一律禁止(reader-opaque + drift-prone)。"
+    }
+  ]
+}

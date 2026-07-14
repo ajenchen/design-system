@@ -12,6 +12,7 @@ import {
 } from "@/design-system/patterns/overlay-surface/overlay-surface"
 import { Button } from "@/design-system/components/Button/button"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
+import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
 
 /**
  * Sheet — **右側 Dialog primitive**(給消費者的 canonical)。
@@ -67,8 +68,9 @@ SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
 const sheetVariants = cva(
   // 核心容器 — 無 padding(由 SheetBody / SheetHeader / SheetFooter 自理 padding,
   // 對齊 overlay-surface pattern + Dialog canonical)
-  // Animation canonical:300ms 雙向一致(D4 audit:500ms 太久 sluggish)+ motion-reduce 豁免
-  "fixed z-50 flex flex-col bg-surface-raised shadow-[var(--elevation-200)] transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-300 motion-reduce:transition-none motion-reduce:data-[state=open]:duration-0 motion-reduce:data-[state=closed]:duration-0",
+  // Animation canonical:panel = surfaceMotion 250ms(--motion-duration-surface)雙向一致
+  // (D4 audit:500ms 太久 sluggish)+ motion-reduce 豁免
+  `fixed z-50 flex flex-col bg-surface-raised shadow-[var(--elevation-200)] transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out ${surfaceMotion}`,
   {
     variants: {
       side: {
@@ -91,7 +93,9 @@ interface SheetContentProps
     VariantProps<typeof sheetVariants> {}
 
 // AutoFocus canonical(對齊 Dialog / Material / Polaris)— 見 dialog.tsx handleOpenAutoFocus 註解
-const handleSheetOpenAutoFocus = (e: Event) => {
+/** @internal DS 預設 open-focus(首個 body 互動元素)。consumer 傳自訂 onOpenAutoFocus 會覆寫
+ *  本預設({...props} 在後),需自訂前置行為(如 AppShellAside opener snapshot)時 import 接力呼叫。 */
+export const handleSheetOpenAutoFocus = (e: Event) => {
   e.preventDefault()
   const content = e.currentTarget as HTMLElement
   const firstBodyTarget = content.querySelector<HTMLElement>(
@@ -123,7 +127,7 @@ const SheetContent = React.forwardRef<
 SheetContent.displayName = SheetPrimitive.Content.displayName
 
 // ── SheetHeader:SurfaceHeader + Close X(對齊 DialogHeader canonical)──────────
-// 2026-05-18 audit gap fix:type 對齊 SurfaceHeaderProps,withTabs / lockDensity expose
+// 2026-05-18 audit gap fix:type 對齊 SurfaceHeaderProps,withTabs / tabsSlot expose
 // 給 consumer(per header-canonical.spec.md W1 跨 6 consumer 同契約)。Spread 早 forward
 // 過去,只是 TS type 沒 expose 導致 consumer 不能 type-safe 用 `<SheetHeader withTabs>`。
 const SheetHeader = React.forwardRef<
@@ -152,7 +156,7 @@ SheetHeader.displayName = "SheetHeader"
 //
 // ── List-as-region 場景(menu / nav / settings list)──
 // 不再提供 `flush` variant(2026-05-01 移除)。canonical = consumer 用 className override:
-// `<SheetBody className="!px-0 !pt-0 !pb-0"><div className="py-2">{items}</div></SheetBody>`
+// `<SheetBody className="!px-0 !pt-0 !pb-0"><div className="py-2">{items}</div></SheetBody>`  ← @tabs-content-gap-ok: JSDoc 文件範例(list-as-region canonical,非 tabs !pt-0 hack;對齊 dialog.tsx 同款 marker)
 // 詳 DialogBody comment + `tokens/layoutSpace/layoutSpace.spec.md`「List-as-region in overlay body」
 // `className` forward 到 **inner content div**(非外層 ScrollArea wrapper)——
 // consumer `<SheetBody className="flex flex-col gap-X">` 期望作用於 children 排列;

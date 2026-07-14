@@ -211,7 +211,7 @@ DS 詞彙 **selected**（持續選中）；Radix DOM attr 為 `data-state="activ
 | State | 視覺 |
 |---|---|
 | selected | `text-foreground` + `font-medium` + 底部 2px `bg-primary` 底線（semantic.css 選中規則；2026-07-06 拍板持續選中站 base，Ant inkBarColor = colorPrimary 同款）|
-| 未選 | `text-fg-secondary`、一般 weight、無底線；hover 時文字色轉 `text-foreground` |
+| 未選 | `text-fg-secondary` + `font-medium`（與 selected 同 weight，差異僅文字色 + 有無底線，非 weight）、無底線；hover 時文字色轉 `text-foreground` |
 | disabled | `text-fg-disabled`；無 hover 色變化、無底線；`cursor-not-allowed`；不接受鍵盤 focus |
 | focus-visible | `ring-2 ring-ring ring-offset-1`，與 Button 一致；鍵盤導覽（左右箭頭）由 Radix 原生處理 |
 

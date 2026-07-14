@@ -368,7 +368,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'` OR `dismiss === true`** 任一成立。這是 DS-wide 視覺邊界 marker,讓容器(如 SurfaceHeader)可用 CSS selector 對無視覺邊界 button 套 layout 調整。
 
-**實際應用**:`SurfaceHeader` / `SurfaceFooter` 內建 CSS rule(SSOT 在 `overlay-surface.tsx` `CHROME_UNBOUNDED_SLOT`,此處僅引述不重述完整公式):
+**實際應用**:`SurfaceHeader` 內建 CSS rule(SSOT 在 `overlay-surface.tsx` `CHROME_UNBOUNDED_SLOT`,此處僅引述不重述完整公式;`SurfaceFooter` 不套此 rule):
 ```css
 [&_[data-unbounded]]:my-[calc((var(--chrome-slot-h,calc(var(--font-body-lg-size)*1.5))-var(--field-height-sm))/2)]
 ```
@@ -413,7 +413,7 @@ Button 自動加 **`data-unbounded="true"`** attribute 當 **`variant === 'text'
 - ❌ `startIcon` 不得放超過一個
 - ❌ `link` variant 不得嵌入段落文字——用 HTML `<a>` 代替
 - ❌ 不得直接使用 `variant="destructive"` 或 `variant="ghost"`——shadcn 內部 alias，僅供框架元件使用
-- ❌ `danger` 僅支援 `primary`、`secondary`、`text`——`tertiary` + danger 與 secondary 視覺完全相同（冗餘），`link` + danger 語義矛盾（連結暗示導覽，非破壞）
+- ❌ `danger` 僅支援 `primary`、`secondary`、`text`——`tertiary` + danger 無對應 compoundVariant,會靜默渲染成一般 tertiary（灰、無紅色 danger 視覺,並非等同 secondary),`link` + danger 語義矛盾（連結暗示導覽，非破壞）
 - ❌ `pressed` 不得用於多選一——應使用 Segmented Control
 - ❌ `pressed` 不得套用於 `primary` / `link`——主要操作不應 toggle、link 語意為導覽
 - ❌ `iconOnly` 不可與 `endIcon` 或 `badge` 並用——會破壞正方形結構

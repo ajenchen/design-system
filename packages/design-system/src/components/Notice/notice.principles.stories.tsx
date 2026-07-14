@@ -47,7 +47,7 @@ export const UsageGuidance: Story = {
       <Section title="何時不用 + 替代">
         <p>Notice 是 internal primitive,自身有 dismiss 按鈕 + <code>onDismiss</code> callback,但不管 dismiss 後的 mount / unmount 生命週期,也無 auto-dismiss 計時——需要這些行為改用以下 consumer:</p>
         <ul>
-          <li><strong>需要管理 dismiss 後移除(永久 inline)</strong> → 用 <code>Alert</code>(內部消費 Notice + 處理 unmount + live region:error/warning role="alert"、其餘 role="status")</li>
+          <li><strong>需要 dismiss 後移除(永久 inline)</strong> → 用 <code>Alert</code>(內部消費 Notice + live region:error/warning role="alert"、其餘 role="status")。Alert 是 controlled-only:提供 <code>onDismiss</code> callback,consumer 在 callback 中更新狀態並自行 unmount,Alert 不會自行移除</li>
           <li><strong>需要 auto-dismiss(短暫 toast)</strong> → 用 <code>Toast</code></li>
           <li><strong>表單欄位錯誤訊息</strong> → 用 <code>Field</code> 內建 errorText,不用 Notice</li>
         </ul>

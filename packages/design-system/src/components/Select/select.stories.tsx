@@ -64,6 +64,39 @@ export const Modes: Story = {
   },
 }
 
+/* ── 寬度軸 hug(任務詳情 metadata)── */
+export const HugWidth: Story = {
+  name: '寬度 hug(詳情欄 metadata)',
+  render: () => {
+    const [status, setStatus] = React.useState('in_stock')
+    const [priority, setPriority] = React.useState('medium')
+    return (
+      // 任務詳情右欄場景:label 上、hug 寬 select 下 — 框線互動與一般 field 完全相同,只有寬度依 value 收縮
+      <div className="flex w-72 flex-col gap-[var(--layout-space-loose)]">
+        <div className="flex flex-col gap-1">{/* @layout-space-magic-ok: gap-1 = label↔control 4px 內距 demo */}
+          <span className="text-caption text-fg-secondary">Status</span>
+          <Select width="hug" size="sm" options={statusOptions} value={status} onChange={setStatus} aria-label="Status(hug width demo)" />
+        </div>
+        <div className="flex flex-col gap-1">{/* @layout-space-magic-ok: gap-1 = label↔control 4px 內距 demo */}
+          <span className="text-caption text-fg-secondary">Priority</span>
+          <Select
+            width="hug"
+            size="sm"
+            options={[
+              { value: 'high', label: 'High' },
+              { value: 'medium', label: 'Medium' },
+              { value: 'low', label: 'Low' },
+            ]}
+            value={priority}
+            onChange={setPriority}
+            aria-label="Priority(hug width demo)"
+          />
+        </div>
+      </div>
+    )
+  },
+}
+
 /* ── 顯示模式 ── */
 export const DisplayMode: Story = {
   name: '顯示模式',

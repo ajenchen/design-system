@@ -195,7 +195,7 @@ export const PrimaryRule: Story = {
         title="✅ 卡片清單 CTA 用 tertiary"
         note="重複出現的 CTA 應使用 tertiary，避免頁面充斥填滿按鈕，稀釋 primary 的信號強度"
       >
-        {['專案 A', '專案 B', '專案 C'].map(name => (
+        {['官網改版', '行動裝置 App', '設計系統'].map(name => (
           <div key={name} className="border border-border rounded-lg px-4 py-3 flex items-center gap-3 min-w-40">
             <span className="text-body flex-1">{name}</span>
             <Button variant="tertiary" size="xs">開啟</Button>

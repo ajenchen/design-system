@@ -1,0 +1,25 @@
+{
+  "component": "Calendar",
+  "implBasis": "self-built composite (date-fns + CSS grid) — NOT react-day-picker (spec:24 correctly states 自建 composite 非 DayPicker; task hint of react-day-picker is wrong)",
+  "claimsVerified": 44,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/Calendar/calendar.spec.md:269",
+      "宣稱": "Focus: 『focus-visible ring 對齊 DS canonical(outline: 2px solid var(--ring))』",
+      "真實code行為": "calendar.tsx:364/414 用 `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`(Tailwind ring = box-shadow,並顯式 outline-none)。機制不是 CSS `outline: 2px solid`;且 DS focus canonical 本身即 box-shadow-based(button.spec.md:439『以 box-shadow 實作並 outline-none』)—— 敘述與 DS canonical 自相矛盾",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx:217",
+      "宣稱": "Accessibility story: 『Focus: focus-visible ring 對齊 DS 設計準則( outline: 2px solid var(--ring) )』",
+      "真實code行為": "同上 — 日期按鈕與 event tile 皆 `outline-none` + `ring-2 ring-ring`(box-shadow),非 outline。重複 spec:269 的錯誤機制描述",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Calendar/calendar.spec.md:167",
+      "宣稱": "Toolbar 中央 title: 『<h2 className=\"text-h3\"> or text-body-lg font-medium』",
+      "真實code行為": "calendar.tsx:280 title 只用 `text-body-lg font-medium`;`text-h3` 從未被使用 — 列出一個 code 不採用的 class 作為選項",
+      "severity": "marginal"
+    }
+  ]
+}

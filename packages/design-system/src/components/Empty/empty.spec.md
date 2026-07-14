@@ -132,8 +132,8 @@ Empty 是 **non-interactive layout primitive**——本身無 ARIA role(讓 cons
 ## 消費範例
 
 ```tsx
-// Table 空狀態(最簡)
-<Empty description="沒有資料" />
+// Table 空狀態(最簡)——文案仍點出「缺什麼資料」,避免抽象的「無資料」(見「禁止事項」)
+<Empty description="還沒有訂單" />
 
 // SelectMenu 無結果
 <Empty icon={SearchX} description="找不到符合的結果" />

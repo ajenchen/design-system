@@ -148,8 +148,8 @@ export const PositionAsStateRule: Story = {
       </Rule>
 
       <Rule
-        title="對照 Switch:必須用 opacity(顏色是唯一 state 載體)"
-        note="Switch 的 on/off 視覺差異唯一靠顏色(track bg-primary vs bg-border)——形狀完全一樣。若灰階 swap,disabled 的 ON 和 OFF 會看起來一模一樣,使用者無法分辨。必須 opacity 保留顏色"
+        title="對照 Switch:必須用 opacity(顏色是主要 state 載體)"
+        note="Switch 的 on/off 主要靠顏色(track bg-primary vs bg-border)承載——thumb 位移與 checked 勾號只是輔助訊號,單獨一顆、無左右對照時不易讀。若灰階 swap,disabled 的 ON 和 OFF track 同灰、主通道消失,使用者難以分辨。必須 opacity 保留顏色"
       >
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">

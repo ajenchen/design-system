@@ -396,6 +396,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const resolvedDanger = dangerProp || (variantProp as string) === 'destructive'
 
+    // Dev-mode warning:danger 僅 primary / secondary / text 有 compoundVariant。
+    // tertiary / link + danger 無匹配 compound → **靜默渲染成一般 tertiary / link**(灰、無紅色
+    // danger 視覺)— consumer 可能出「不紅的刪除鍵」而不自知。Spec SSOT:button.spec.md
+    // 「禁止事項」danger 條(2026-07-14 deep-audit 補 warn,對齊既有 overlayBadge / iconOnly warn pattern)。
+    if (process.env.NODE_ENV !== 'production' && resolvedDanger && (resolvedVariant === 'tertiary' || resolvedVariant === 'link')) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[DS Button] \`danger\` 不支援 variant="${resolvedVariant}"(無對應 compoundVariant,會靜默渲染成一般 ${resolvedVariant},無紅色 danger 視覺)。危險操作請改用 primary(立即不可逆)/ secondary(可反悔)/ text(低度)。SSOT:button.spec.md「禁止事項」danger 條。`
+      )
+    }
+
     // ButtonGroup context：vertical group 自動注入 fullWidth
     const groupCtx = React.useContext(ButtonGroupContext)
     const resolvedFullWidth = fullWidth || !!groupCtx.fullWidth
@@ -561,11 +572,15 @@ export const buttonMeta = {
     lg: { fieldHeight: 36, iconSize: 20, typography: 'body-lg' },
   },
   // 'pressed' = toggle on 持續態(data-[state=on],emphasis 淡藍底/neutral 灰底;2026-07-07 meta 詞彙統一補列)
-  states: ['default', 'hover', 'active', 'pressed', 'focus-visible', 'disabled'],
+  // 'loading' = CircularProgress spinner 取代 startIcon + aria-busy + click guard(2026-07-14 deep-audit
+  // 補列,原漏 → auto-compile 生成矩陣缺 loading;對齊 anatomy StateBehavior Loading 行 + tsx loading 分支)
+  states: ['default', 'hover', 'active', 'pressed', 'loading', 'focus-visible', 'disabled'],
   tokens: {
     // 2026-07-04 audit 補齊:原只列 primary variant 家族;按 buttonVariants cva 真實 class 補
-    // secondary/tertiary/text/link/danger 消費的 token(auto-compile token 矩陣依此)
-    bg: ['--primary', '--primary-hover', '--primary-active', '--primary-subtle', '--bg-disabled', '--surface', '--neutral-hover', '--neutral-active', '--neutral-selected'],
+    // secondary/tertiary/text/link/danger 消費的 token(auto-compile token 矩陣依此)。
+    // 2026-07-14 deep-audit 二次補齊(掃 cva 全 bg-* class):+ neutral-selected-hover / neutral-selected-active
+    // (neutral pressedTone compound 消費)+ error / error-hover / error-active(primary+danger bg-error 系)
+    bg: ['--primary', '--primary-hover', '--primary-active', '--primary-subtle', '--bg-disabled', '--surface', '--neutral-hover', '--neutral-active', '--neutral-selected', '--neutral-selected-hover', '--neutral-selected-active', '--error', '--error-hover', '--error-active'],
     fg: ['--on-emphasis', '--fg-disabled', '--foreground', '--primary', '--error', '--error-hover', '--error-active'],
     ring: ['--ring'],
   },

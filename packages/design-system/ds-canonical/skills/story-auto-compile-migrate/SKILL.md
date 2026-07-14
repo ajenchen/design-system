@@ -28,10 +28,10 @@ description: Batch-migrate design system components to Story Auto-Compile Phase 
 ### Phase 0 — Scan 未 migrated 元件
 
 ```bash
-node scripts/compile-stories.mjs --all --check 2>&1 | grep "skipped"
+node scripts/compile-stories.mjs --all 2>&1 | grep "Skipped"
 ```
 
-得清單:每元件 `{Name}(reason: no componentMeta export | no frontmatter)`。
+得清單(default 模式 `Skipped(N):` 行):每元件 `{Name}(reason: no componentMeta export | no frontmatter)`。(`--check` 模式只印 drift / skipped 總數,不含 per-component reason。)
 
 Output:待 migration 元件清單 + 每元件缺哪層(tsx only / spec only / 兩層都缺)。
 
@@ -147,7 +147,7 @@ STOP 提議 user:(a) 修 cva 對齊標準形;(b) componentMeta 特殊寫法;(c) 
 | 偵測未 migrated | `/design-system-audit --deep` Dim 23 |
 | 批次 mechanical migrate | **本 skill Phase 1** |
 | Judgment fill | 本 skill Phase 2(CP 2) |
-| Drift detection(已 migrated)| hook `check_story_compile_drift.sh` + Dim 23 |
+| Drift detection(已 migrated)| hook `post_edit_dispatcher.sh` → `lib/_story_compile_drift.sh`(原 check_story_compile_drift.sh folded)+ Dim 23 |
 
 **Chain**:user 說「ds 完整 audit」→ `/design-system-audit --deep` Phase 1 跑 Dim 23 → 發現 N 未 migrated → CP 1 提報 user → user sign-off → Phase 3 auto-chain 本 skill → mechanical migrate + judgment CP → 全 migrated + 0 drift。
 

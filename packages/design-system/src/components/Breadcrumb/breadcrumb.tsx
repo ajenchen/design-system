@@ -127,7 +127,8 @@ const BREADCRUMB_TEXT_CLASS: Record<BreadcrumbSize, string> = {
   lg: 'text-body-lg',
 }
 
-// Separator / ellipsis icon 尺寸 — 對齊 uiSize.spec.md「Icon Size Tier」(field-height-sm/md→16,lg→20)
+// Separator chevron + BreadcrumbLink/Item start icon 尺寸 — 對齊 uiSize.spec.md「Icon Size Tier」(field-height-sm/md→16,lg→20)。
+// 注意:BreadcrumbEllipsis 不消費此常數,固定 md(16px icon,見 BreadcrumbEllipsis 定義),size='lg' 時不隨 chevron 放大到 20
 // 2026-05-18 改 per user 拍板「A 先改 16/16/20」+「做完」approval:
 // 撤回 text-flow 例外設計,Breadcrumb chevron 跟其他 chrome icon 同 tier。
 // World-class 對齊:Atlassian Breadcrumb chevron 16 default / Material 3 / Ant Design 同。
@@ -598,7 +599,7 @@ export const breadcrumbMeta = {
 
   },
   sizes: {
-    // 值源 = code SSOT:BREADCRUMB_SIZE_TEXT(sm/md=text-body, lg=text-body-lg)+ BREADCRUMB_ICON_SIZE(sm/md=16, lg=20)。
+    // 值源 = code SSOT:BREADCRUMB_TEXT_CLASS(sm/md=text-body, lg=text-body-lg)+ BREADCRUMB_ICON_SIZE(sm/md=16, lg=20)。
     // Breadcrumb 是文字列無固定高度 token,故不列 height(對照 Tag meta 有自身 h-* 才列)。
     sm: { iconSize: 16, typography: 'body' },
     md: { iconSize: 16, typography: 'body' },

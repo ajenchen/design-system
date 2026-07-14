@@ -1,0 +1,60 @@
+{
+  "dim": 46,
+  "title": "Manual vs Mechanical boundary — trait-derived 手寫 exports 該機械生成卻手寫",
+  "judge": "Claude B.3 reconcile",
+  "groundTruthMethod": "每條 codex finding 去 Read 真實 stories.tsx + 對應 anatomy.stories.tsx + check_story_invariants.sh R3 escape 邏輯驗證",
+  "codexRaw": 5,
+  "summary": {
+    "material_confirmed": 1,
+    "marginal": 4,
+    "false_positive": 0,
+    "claudeMissed": 0
+  },
+  "hookContext": "check_story_invariants.sh R3 escape = 檔級 marker presence(line 241 grep 整份 NEW_CONTENT / line 243 只讀 disk 前 5 行),非 per-trait 內容驗證;hook 自註(L291)承認此為『marker hack = required-exports 集合與分層 convention 漂移』。故 codex 對『marker 內容未真正 justify 該矩陣』的語義批評是機械 hook 抓不到的合理深層 concern,但也因此多屬 documentation polish 級而非 must-fix defect。",
+  "verdicts": [
+    {
+      "fileLine": "packages/design-system/src/components/Button/button.stories.tsx:75",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "Default(line 75)render 五 variant 連發(primary/secondary/tertiary/text/link)真實業務 label。button.anatomy.stories.tsx ColorMatrix(:489)確實以 Variant×State 表完整承載 variant 軸 + danger 變體。檔首(:2)有 @story-trait-rationale 但只覆蓋 hasSizes,且文字『Default scenario 由 Pressed/IconOnly/各 variant 真實業務情境 story 覆蓋』與現況矛盾 —— 一個 Default export 實際存在且就是 variant lineup(header 應是 2026-05-15 F-migration 寫的,Default 2026-05-18 才被 repurpose 成 lineup,header 已 stale)。",
+      "reasoning": "codex 事實觀察正確:variant lineup 確與 anatomy ColorMatrix 重疊 + 檔首 rationale 確 stale/矛盾(codex 正確抓到)。但 Default 是 2026-05-18 per user 明確要求的『入口總覽』(inline comment :72-74 documented,user 抓『為何開頭是按下狀態』),每顆 button 手挑真實 label 非機械 grid。codex severity=material + 建議『收斂為單一最小範例』會 undo user directive = overshoot。真正 actionable 僅是更新 stale header rationale(documentation polish)。技術正確但屬 documented intentional exception → marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Toast/toast.stories.tsx:85",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "claudeExplicitlyDismissed": true,
+      "groundTruth": "WithDescription(:85)以 VARIANTS 陣列 render 5 variant × light/dark 兩 pageTheme = 10 StaticToast,展示 theme-inversion 行為(neutral/success 翻到頁面 inverse theme、info/error 強制 dark inner、warning 強制 light inner),每格 caption 標『套 {theme} theme』。toast.anatomy.stories.tsx ColorMatrix(:169)已用『Variant × Bg × data-theme × 視覺』表 canonical 承載該映射(含『light 頁→暗底/dark 頁→亮底』)+ 觸發各 variant 比較。2026-07-04 comment 證明曾漏 info 補齊 = manual drift 已發生。檔案 0 個 @story-trait-rationale header。",
+      "reasoning": "此為 Claude/codex 真實分歧。codex 各點事實正確:確是 variant-iterating 矩陣、drift 確已發生、無 exemption header、映射軸確被 anatomy ColorMatrix owns。Claude 對抗驗證判『light/dark theme 反轉行為 = 合法情境非 trait 矩陣』亦有據 —— light/dark 並列 static 對照是 anatomy 單 theme live-trigger 給不出的獨特視覺教學(M15 visual-audit-coverable)。兩方皆 defensible:drift+無 exemption(codex)vs 獨特視覺價值(Claude)。非 false_positive(codex 讀對 code、drift 真實)、非 clean material(獨特視覺價值 + Claude 對抗驗證判 legit);正確 actionable = 補 @story-trait-rationale 記錄 theme-inversion 教學價值(documentation)而非刪除 → context-dependent → marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.stories.tsx:42",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": true,
+      "groundTruth": "States(:42)手寫 md(:44-70)/lg(:71-88)兩 size × off/on/indeterminate/disabled×3 六態完整 grid,caption 直標『md（16px，預設）』『lg（20px）』列舉 cva size。checkbox.anatomy.stories.tsx SizeMatrix(:449)+ StateBehavior(:526)雙軸完整覆蓋。檔首 @story-trait-rationale(:13)內容=『pre-existing trait gaps tracked separately; this PR scope = add Modes story』= 明確承認 gap 但 defer 的 punt,非 justify 保留 States 矩陣。對照:結構近乎相同的 Switch States(switch.stories.tsx:1 header『狀態(States)story 的 md/lg 對照 owns size showcase』)已正確 documented,Checkbox 反而 defer —— 真實跨元件不一致。",
+      "reasoning": "5 條中最實的一條:最矩陣化(真正 exhaustive size×state grid),雙軸皆被 anatomy SizeMatrix+StateBehavior 重複,檔首 marker 是 punt/TODO 非有效豁免,且 sibling Switch 已示範正確做法 = 真跨元件 drift。Claude+codex 獨立雙方皆判 material,ground truth 驗證屬實。material_confirmed。Claude 亦抓到 → 非 claudeMissed。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Chip/chip.stories.tsx:36",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": true,
+      "groundTruth": "States(:36)用單一 ChipGroup(3 chip:react/typescript/deprecated-disabled)+ caption『Default/hover/selected/disabled』呈現 state 對照,非 exhaustive grid。chip.anatomy.stories.tsx StateBehavior(:296)已覆蓋。檔案有 @benchmark-unverified-blanket(:1)+ @story-trait-rationale(:52,關於 WithIcon 非 States)。Claude/codex 皆稱『無 @story-trait-rationale』技術上不精確(:52 有一條,但非涵蓋 States 且在 States export 之後)。",
+      "reasoning": "小型 state showcase,與 anatomy StateBehavior 輕度重疊,單一 3-chip 範例非完整矩陣。Claude+codex 皆判 marginal,一致。技術上對但吹毛求疵/情境依賴 → marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Menu/menu-item.stories.tsx:130",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": true,
+      "groundTruth": "States(:132)= 3 MenuItem(default/selected/disabled)。menu-item.anatomy.stories.tsx 刻意無 StateBehavior:anatomy 檔首註(:2-5)明載 state 由 ColorMatrix『State 色彩對照』段承載,另建 StateBehavior『會與 ColorMatrix 重複』。展示檔首 5 行無 @story-trait-rationale。codex 讀法(『spec 明定狀態由 anatomy ColorMatrix 承載並刻意不另建 StateBehavior』)精準對齊 anatomy 註;Claude 建議『補 StateBehavior export』反而違反該刻意設計。",
+      "reasoning": "state 對照與 anatomy ColorMatrix 重疊、無展示層豁免,但輕微。Claude+codex 皆判 marginal(一致);惟修法方向 codex 更準(不該加 StateBehavior)。context-dependent → marginal。"
+    }
+  ],
+  "topMaterial": [
+    "Checkbox States (checkbox.stories.tsx:42):md/lg × 六態完整 size×state grid 重複 anatomy SizeMatrix+StateBehavior;檔首 @story-trait-rationale 是『gaps tracked separately』punt 非有效豁免,而 sibling Switch 已正確 document 同款 States 矩陣 → 真實跨元件不一致"
+  ]
+}

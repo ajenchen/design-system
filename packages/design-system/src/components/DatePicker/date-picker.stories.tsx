@@ -136,7 +136,7 @@ export const RangePicker: Story = {
     return (
       <div className="flex flex-col gap-4 max-w-md">
         <p className="text-caption text-fg-muted">
-          雙 input + 中間箭頭。點 start input 開 popover + activeEnd='start';點 end input 同理。Auto-advance:選完 start 自動切 end。clearable=true → trigger 顯示 X 清空按鈕。
+          兩個輸入框加中間箭頭:點開始欄開月曆選起日,選完自動跳到結束欄選迄日;有值時右側出現清除鈕。
         </p>
         <DatePicker.Range value={range} onChange={setRange} clearable />
         <p className="text-caption text-fg-muted">
@@ -160,7 +160,7 @@ export const WithError: Story = {
   render: () => (
     <div className="flex flex-col gap-4 max-w-xs">
       <p className="text-caption text-fg-muted">
-        error=true 時 trigger border 切 error palette,hover/focus 同步切 error-hover。
+        驗證失敗時外框轉紅色,滑過或聚焦時同步用較深的紅。
       </p>
       <DatePicker error value="2026-04-02" onChange={() => {}} />
       <DatePicker error value={null} onChange={() => {}} placeholder="必填日期" />
@@ -226,7 +226,7 @@ export const ShowTimePopoverOpen: Story = {
 /* ── OpenSnapshot:needConfirm date-only(2026-07-05 D4 修 footer gate 死路)── */
 export const NeedConfirmDateOnlyOpen: Story = {
   name: 'needConfirm:合約生效日確認',
-  parameters: { docs: { description: { story: 'date-only + needConfirm:點日期只暫存 draft(trigger 即時顯示),footer「確定」才 commit onChange——footer 渲染 gate = showTime || needConfirm(2026-07-05 D4 修 single 漏 || needConfirm 時「點了日期什麼都不會發生」的死路)。適用選錯成本高的日期(合約生效日 / 帳單結算起算日)。Visual-audit OpenSnapshot verify date-only popover 有渲 footer(此刻 / 確定)。' } } },
+  parameters: { docs: { description: { story: '需確認模式:選日期只會先暫存(輸入框即時顯示),要按下方「確定」才真正套用。適用選錯成本高的日期,例如合約生效日、帳單結算起算日。' } } },
   render: () => {
     const [effectiveDate, setEffectiveDate] = React.useState('2026-08-01')
     return (
@@ -297,8 +297,7 @@ export const ShowTimeRange: Story = {
     return (
       <div className="flex flex-col gap-4 max-w-lg">
         <p className="text-caption text-fg-muted">
-          Range + showTime:點 start input → activeEnd='start' + TimeColumns 編 start 的時間;點 end input 同理。
-          兩端都填好 + 按確定才 commit(needConfirm=true 預設)。
+          範圍 + 時間:點開始欄選起始日期與時間,點結束欄選結束的日期與時間;兩端都選好、按下方「確定」才會套用。
         </p>
         <DatePicker.Range
           showTime

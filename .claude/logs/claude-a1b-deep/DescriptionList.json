@@ -1,0 +1,13 @@
+{
+  "component": "DescriptionList",
+  "implBasis": "native dl/dt/dd + React context (self-built)",
+  "claimsVerified": 18,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/DescriptionList/description-list.tsx:28",
+      "宣稱": "docblock: `horizontal: label ↔ value: gap-x-4（16px）最小間距`",
+      "真實code行為": "horizontal DescriptionItem 實際用 `gap-4`(L99 `flex items-baseline justify-between gap-4`),非 `gap-x-4`。spec.md L98 正確寫 `gap-4`;docblock 這行 class 名 stale(視覺同 16px,但 class 不符)。",
+      "severity": "marginal"
+    }
+  ]
+}

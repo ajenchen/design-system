@@ -66,8 +66,10 @@ export const Overview: Story = {
     <div className="max-w-3xl">
       <h2 className="text-h3 mb-2">Field Height</h2>
       <p className="text-body text-fg-secondary mb-4">
-        Button / Input / Checkbox SelectionItem 等互動元件的高度。所有 field-height 消費者
-        <strong>不傳 size 時自動對齊 md</strong>——Form / Toolbar 並排多控件默認等高。
+        Button / Input / Checkbox SelectionItem 等互動元件的高度。一般 field family 消費者
+        <strong>不傳 size 時預設 md</strong>——Form / Toolbar 並排多控件默認等高。
+        documented carve-outs 例外:Rating standalone 預設 xs(Field 內才跟 md)、
+        Chip 等單一尺寸消費者不在 default-md 規則內(uiSize.spec.md「單一尺寸消費者」段)。
         下列為 md density 預設值(lg density 對照見 Tokens/Density)。
       </p>
 

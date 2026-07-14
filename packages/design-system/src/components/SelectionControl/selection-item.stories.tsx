@@ -114,19 +114,19 @@ export const WithPrefixAvatarBlock: Story = {
       </p>
       <SelectionItem
         control={<Checkbox defaultChecked />}
-        avatar={{ alt: 'Ada Chen', color: 'indigo' }}
+        avatar={{ src: 'https://i.pravatar.cc/64?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
         label="Ada Chen"
         description="Design Engineer · Frontend team"
       />
       <SelectionItem
         control={<Checkbox />}
-        avatar={{ alt: '張美真', color: 'magenta' }}
+        avatar={{ src: 'https://i.pravatar.cc/64?u=zhang-meizhen', alt: '張美真', color: 'magenta' }}
         label="張美真"
         description="Product Designer · Platform team"
       />
       <SelectionItem
         control={<Checkbox defaultChecked />}
-        avatar={{ alt: '林伯彥', color: 'green' }}
+        avatar={{ src: 'https://i.pravatar.cc/64?u=lin-boyan', alt: '林伯彥', color: 'green' }}
         label="林伯彥"
         description="Staff Engineer · Infra team"
       />

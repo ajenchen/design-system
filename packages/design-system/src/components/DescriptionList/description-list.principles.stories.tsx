@@ -185,7 +185,7 @@ export const LayoutRule: Story = {
             <DescriptionItem label="職稱">Senior Design Engineer</DescriptionItem>
           </DescriptionList>
         </Frame>
-        <Label warn>↑ 窄容器配 cols=2 → email 與職稱都被壓到斷行,可讀性差</Label>
+        <Label warn>↑ 窄容器配 cols=2 → 職稱被迫斷行、email 擠壓貼邊,節奏亂、可讀性差</Label>
       </Rule>
     </div>
   ),
@@ -238,7 +238,7 @@ export const LabelAlignmentRule: Story = {
           </div>
         </Frame>
         <Label warn>
-          ↑ 這是自訂 layout 模擬 key-right-value-left → 不是 DescriptionList,也無 dl/dt/dd 語義
+          ↑ 這是自訂 layout 模擬 label 左 / value 右(key-left-value-right)→ 不是 DescriptionList,也無 dl/dt/dd 語義
         </Label>
       </Rule>
     </div>

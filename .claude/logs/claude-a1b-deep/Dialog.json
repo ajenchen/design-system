@@ -1,0 +1,13 @@
+{
+  "component": "Dialog",
+  "implBasis": "Radix Dialog (@radix-ui/react-dialog v — DialogContentModal: FocusScope trapped + hideOthers, role=\"dialog\", no aria-modal)",
+  "claimsVerified": 30,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:27",
+      "宣稱": "docblock 高度行為: `height=\"auto\"：高度隨內容，超過 viewport 時 max-height 安全帽`",
+      "真實code行為": "無 `height` prop。實際 API 是 `autoHeight?: boolean`(DialogContentProps L63);spec.md L88 + anatomy stories 一律用 `autoHeight`。docblock 教了一個不存在的 prop 名。",
+      "severity": "material"
+    }
+  ]
+}

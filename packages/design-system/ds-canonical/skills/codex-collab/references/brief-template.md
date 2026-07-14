@@ -38,7 +38,7 @@ N. <SSOT 是否該抽到更上層 primitive?>
 - 必產 3-column cite table(claim / path:line / reasoning)
 
 ## 🚨 三 invariant — 2026-05-23 user 永久 directive(缺一 = brief 不合格)
-1. **全盤閱讀全部 source**(CLAUDE.md / 31 active M-rules / 5 rules/*.md / 90 audit dims SKILL.md / 全部 spec.md / 全部 stories / 全部 components / tokens / patterns / hooks / 全部 memory files / planning),**禁憑記憶**(spec/story/component/memory 數量隨時變動,故不硬編數字 — 一律「全部」;M-rule / audit-dim 數由 sync-governance-counters 機械守住)
+1. **全盤閱讀全部 source**(CLAUDE.md / 31 active M-rules / 5 rules/*.md / 91 audit dims SKILL.md / 全部 spec.md / 全部 stories / 全部 components / tokens / patterns / hooks / 全部 memory files / planning),**禁憑記憶**(spec/story/component/memory 數量隨時變動,故不硬編數字 — 一律「全部」;M-rule / audit-dim 數由 sync-governance-counters 機械守住)
 2. **Triple-verify per finding**:(a) grep DS-wide 確認 pattern 存在 (b) Read 對應 spec.md / tsx 確認 problem 真存在 (c) 對照既有 canonical 確認非 documented exception。任一 NO → 自動撤回,**禁無病呻吟**
 3. **禁抽樣** — DS-wide ALL files 全掃,context 不夠拆 stage 全跑完;sub-agent admission「I sampled / spot-check / representative」= audit incomplete reject
 ```

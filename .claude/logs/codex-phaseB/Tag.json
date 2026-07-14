@@ -1,0 +1,131 @@
+{
+ "component": "Tag",
+ "claimsVerified": 336,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:19",
+   "宣稱": "截斷：max-w-40（160px），超出時文字 truncate + 自動 tooltip。",
+   "真實code行為": "未使用 `max-w-40`；以 inline `maxWidth` 動態取父層注入寬度與 10rem 的較小值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:254",
+   "宣稱": "Tag 為純展示 indicator，無互動 state。",
+   "真實code行為": "截斷 root 會取得 `tabIndex=0`、focus-visible ring，並成為 Tooltip 的 hover/focus trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:255",
+   "宣稱": "唯一行為 dismiss 屬 Inline Action pattern，非 Tag 自有 state。",
+   "真實code行為": "即使沒有 dismiss，截斷 Tag 仍有截斷偵測、鍵盤 focus、focus ring 與 Tooltip 行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:256",
+   "宣稱": "states: ['default']",
+   "真實code行為": "實作另有條件式 truncated、focus-visible 與 Tooltip open/closed 狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:264",
+   "宣稱": "ring: []",
+   "真實code行為": "Tag root 消費 `ring-ring`；dismiss button 另消費 `outline-ring`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:53",
+   "宣稱": "when: \"touch / prominent CTA / stakeholder-facing surface\"",
+   "真實code行為": "`lg` 與 `md` 完全同為 24px alias；Tag root 是非 action `<div>`，同 spec 亦將其定位為 data indicator 而非 CTA trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:71",
+   "宣稱": "實作基礎：純視覺 atom——styled span + 可選 dismiss button，無 external primitive base。",
+   "真實code行為": "root 是 `<div>`；dismiss 使用 `ItemInlineActionButton`，截斷時還組合 Radix Tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:167",
+   "宣稱": "合規門檻 = WCAG large/bold 3:1（solid Tag 視為大粗字）。",
+   "真實code行為": "Tag 字體為 12px/500 或 14px/400，皆非 large/bold text；green solid 更明載僅 2.47:1。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:223",
+   "宣稱": "yellow/amber/orange/lime 用深字，其餘白字",
+   "真實code行為": "neutral solid 使用 `text-inverse-fg`，dark mode 解析為 `black-a85` 深字。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:229",
+   "宣稱": "Tag 與 Tag 之間：gap-1（4px）",
+   "真實code行為": "shipped showcase 與 principles 的多數 Tag 群組使用 `gap-2`；僅 removable showcase 使用 `gap-1`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:265",
+   "宣稱": "Tag 是純顯示 indicator，無 hover / focus / active / selected / disabled 互動狀態。",
+   "真實code行為": "截斷 Tag 本身可 focus、顯示 ring，並在 hover/focus 時開啟 Tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:265",
+   "宣稱": "僅有的「行為」是 remove。",
+   "真實code行為": "無 `onRemove` 的截斷 Tag 仍有截斷偵測、focus、hover 與 Tooltip 行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:273",
+   "宣稱": "視覺 prefix(icon)讓 SR 理解 context",
+   "真實code行為": "prefix Icon 強制 `aria-hidden`，screen reader 無法讀取；只有可存取的父層標籤或文字 context 有效。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:274",
+   "宣稱": "Removable Tag 的按鈕為 aria-label=\"移除 {tagLabel}\"",
+   "真實code行為": "只有 string children 或顯式 `dismissLabel` 才帶名稱；非字串 children 且未傳 `dismissLabel` 時僅為 `aria-label=\"移除\"`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:277",
+   "宣稱": "WCAG AA contrast ≥ 4.5:1(text)/ 3:1(icon)",
+   "真實code行為": "green solid 白字明載實測 2.47:1；Tag 的 12/14px 一般文字亦不能套用 3:1 large-text 門檻。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:3-4",
+   "宣稱": "StateBehavior covered by ColorMatrix「Dismiss 按鈕色彩」段",
+   "真實code行為": "ColorMatrix 僅涵蓋 dismiss 的 default/hover/active，未涵蓋截斷 root 的 focus ring 與 Tooltip 狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:4-5",
+   "宣稱": "Tag 本身是非互動展示元件——沒有 hover / focus / active state。",
+   "真實code行為": "截斷 root 可 focus、有 ring，並作為 Tooltip 的 hover/focus trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:6",
+   "宣稱": "唯一 interactive 部位是 onRemove button。",
+   "真實code行為": "無 `onRemove` 的截斷 root 仍可 Tab focus，hover/focus 會開啟 Tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:252",
+   "宣稱": "yellow/amber/orange/lime 用深字，其餘白字",
+   "真實code行為": "neutral solid 在 dark mode 使用深色 `inverse-fg`，不屬四個 hue 卻也不是白字。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:441",
+   "宣稱": "step-7，不隨 dark mode 反轉",
+   "真實code行為": "dark primitives 將 step-7 從 darker-than-step-6 改為 lighter-than-step-6，色階方向確實反轉。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:531",
+   "宣稱": "Solid 模式使用色相自身的 primitive hover/active token。",
+   "真實code行為": "Tag 消費 `CAT_INTERACT`；其 SSOT 定義為 semantic dark-mode-aware `--{hue}-hover/active`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:661",
+   "宣稱": "靜態 Tag（無 onRemove）無 keyboard / ARIA role / focus state。",
+   "真實code行為": "無 `onRemove` 但截斷時仍有 `tabIndex=0`、focus ring 與 focus-open Tooltip；開啟時 Radix 還會加入 `aria-describedby`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:661",
+   "宣稱": "傳 onRemove 時按鈕 aria-label 為「移除 {label}」。",
+   "真實code行為": "非字串 children 且未傳 `dismissLabel` 時，實際 aria-label 僅為「移除」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:149",
+   "宣稱": "Subtle（預設）— 淺底深字",
+   "真實code行為": "dark mode 的 step-1 是暗色／透明底，step-7 轉為亮字；neutral 亦是 dark secondary 搭配 light foreground。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:162",
+   "宣稱": "Solid — 深底白字",
+   "真實code行為": "yellow/amber/orange/lime 使用深字；neutral 在 dark mode 亦使用深色 inverse foreground。"
+  }
+ ]
+}

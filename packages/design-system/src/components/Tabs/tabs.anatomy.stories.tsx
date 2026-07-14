@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { Users, Settings, Bell, FileText } from 'lucide-react'
+import { Users, Settings, Bell, FileText, CreditCard, Plug, Shield, KeyRound } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { H3, Desc, Td, Th, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
@@ -132,7 +132,7 @@ export const Inspector: Story = {
       description: '當前 selected tab',
     },
     withIcons: { control: 'boolean', description: 'startIcon(對應專案 / 成員 / 設定 icon)' },
-    withBadges: { control: 'boolean', description: '成員 tab 顯示 3、通知顯示 12(Badge suffix)' },
+    withBadges: { control: 'boolean', description: '成員 tab 顯示 3、設定顯示 12(Badge suffix)' },
   },
   render: (args) => {
     const { size, overflow, value, withIcons, withBadges } = args as InspectorArgs
@@ -158,12 +158,15 @@ export const Inspector: Story = {
             >
               設定
             </TabsTrigger>
+            {/* 2026-07-14 audit Dim 68:overflow 額外 triggers 也跟 withIcons 全有全無
+                (tabs.spec.md 禁止事項「同一組 Tabs 內 startIcon 全有或全無」— 原本前四個有
+                icon、後三個沒有,Inspector withIcons=true + overflow 時違反自家 spec)*/}
             {(overflow === 'scroll' || overflow === 'menu') && (
               <>
-                <TabsTrigger value="billing" startIcon={withIcons ? Bell : undefined}>計費</TabsTrigger>
-                <TabsTrigger value="integrations">整合</TabsTrigger>
-                <TabsTrigger value="security">安全性</TabsTrigger>
-                <TabsTrigger value="api">API keys</TabsTrigger>
+                <TabsTrigger value="billing" startIcon={withIcons ? CreditCard : undefined}>計費</TabsTrigger>
+                <TabsTrigger value="integrations" startIcon={withIcons ? Plug : undefined}>整合</TabsTrigger>
+                <TabsTrigger value="security" startIcon={withIcons ? Shield : undefined}>安全性</TabsTrigger>
+                <TabsTrigger value="api" startIcon={withIcons ? KeyRound : undefined}>API keys</TabsTrigger>
               </>
             )}
           </TabsList>
@@ -258,7 +261,7 @@ export const ColorMatrix: Story = {
                 <Td mono>selected</Td>
                 <Td><TokenCell token="--foreground" display="foreground" /></Td>
                 <Td>—(transparent)</Td>
-                <Td><TokenCell token="--primary-hover" display="2px primary-hover" /></Td>
+                <Td><TokenCell token="--primary" display="2px primary" /></Td>
               </tr>
               <tr>
                 <Td mono>disabled</Td>

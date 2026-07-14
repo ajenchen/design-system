@@ -64,7 +64,7 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 ```
 
 - **格位配置**:boundary 1 + sibling 1(= MUI `boundaryCount` / `siblingCount` 預設 1/1;內部常數,v1 不開 props——未來若開放,命名必沿用 MUI)。最大格位 = 首尾各 1 + 當前頁左右各 1 + 當前頁 + 2 顆 ellipsis = **7 格**,超過即摺疊。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
-- **Ellipsis 非互動**:純指示符號(`MoreHorizontal` icon + `aria-hidden`),不可點——對齊 Ant / MUI / shadcn;Breadcrumb 的可點 ellipsis 是 collapse dropdown 場景,語意不同。
+- **Ellipsis 非互動**:純指示符號(`MoreHorizontal` icon + `aria-hidden`),不可點——對齊 MUI / shadcn(非互動 ellipsis)。**Ant 為可點 jump-5 派**(rc-pagination 預設把省略格渲染成 `jump-prev` / `jump-next`:hover 顯 «/»、click 跳 5 頁,`https://github.com/react-component/pagination`);本 DS 選非互動,快速跳頁留給未來 `showQuickJumper`。Breadcrumb 的可點 ellipsis 是 collapse dropdown 場景,語意不同。
 - **上下頁按鈕**:iconOnly(`ChevronLeft` / `ChevronRight`),在第一頁 / 最後一頁時 `disabled`。
 - 頁碼格位由內部演算法產生;兩顆省略號各自身分穩定,翻頁時不互相 remount(演算法簽名與 React key 等實作細節由 `pagination.tsx` 檔內註解單一持有,spec 不重述——職責分離)。
 

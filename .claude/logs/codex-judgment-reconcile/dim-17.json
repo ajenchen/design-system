@@ -1,0 +1,40 @@
+{
+  "dim": 17,
+  "dimTitle": "Prop value 跨元件認知衝突(同字串在不同元件的語義衝突)",
+  "codexRaw": 1,
+  "summary": {
+    "material_confirmed": 0,
+    "marginal": 1,
+    "false_positive": 0,
+    "claudeMissed": 0
+  },
+  "verdicts": [
+    {
+      "codexIndex": 0,
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "fileLine": "packages/design-system/src/components/DataTable/filter-operators.ts:23 (ValueShape 'text' = <Input>) ↔ packages/design-system/src/components/Button/button.tsx:112,251 (variant='text' = 低權重文字按鈕)",
+      "claim": "DataTable ValueShape/FilterValuePickerProps.shape 的 literal 'text'(單行 <Input> picker)與 Button variant='text'(低視覺權重動作樣式)同字不同義,spec 未記載例外。",
+      "groundTruthCheck": {
+        "codexFactsAccurate": true,
+        "notes": [
+          "filter-operators.ts:23 確認 ValueShape 'text' 有 '// <Input>' inline 註解,語義=文字輸入 picker。",
+          "button.tsx:112 confirm variant='text' cva 分支;:251 confirm ButtonProps variant union 含 'text',公開 canonical。",
+          "關鍵:兩者 prop 名不同 — Button 是 `variant`,DataTable 是 `valueShape`(OperatorSpec 欄位)/ `shape`(內部 FilterValuePicker prop)。dim 17 + naming-conventions test 3 的核心是『同 prop 同值字串跨元件衝突』(如 variant='text' 或 align='center'),此處是不同 prop,認知衝突面極小。",
+          "ValueShape 型別未 export:grep 確認不在 DataTable/index.ts 也不在 root barrel(packages/design-system/src/index.ts)— 內部型別,consumer 從不撰寫 valueShape='text'。codex 自己也註『DataTable helper 未公開匯出,影響範圍較低』。",
+          "'text' 對『文字輸入 picker』是世界級 idiom(HTML input type='text' / form-lib text field),改名 'text_input' 反而更冗長且違 M23(既有 canonical / 慣用命名優先)。",
+          "DataTable spec 內 variant='text'(data-table.spec.md:153)與 valueShape(:306-310)各自 namespace 明確,無交叉誤用風險。"
+        ]
+      },
+      "reasoning": "codex 事實正確(非誤讀,故非 false_positive),但屬吹毛求疵:(1) 不同 prop 名(variant vs valueShape/shape)使認知衝突面幾近為零;(2) ValueShape 是內部未匯出型別,非 consumer-facing prop 值;(3) 'text' 對文字輸入 picker 是慣用 idiom,改 'text_input' = 對抗既有慣例的 churn(違 M23)。codex 自標 marginal 正確,不升 material。無真缺陷需修。",
+      "claudeAlsoCaught": false,
+      "claudeCaughtButNotMaterial": true
+    }
+  ],
+  "claudeSameDimFindings": [
+    "align left/right/center (DataTable cell) vs start/center/end (Button/Coachmark/SelectMenu overlay) — Claude 自標 marginal",
+    "Breadcrumb role?='root|middle|current|ellipsis' shadow 原生 li role — Claude 自標 marginal(內部未 export)",
+    "FileUpload/FileItem status uploading/completed vs ProgressBar inProgress/success 異字同義 — Claude 自標 marginal(spec documented)"
+  ],
+  "claudeMissedNote": "codex 唯一 finding 判為 marginal(非 material),故 claudeMissed=0。Claude 未抓此條 'text' collision,但因非 material 不計入 claudeMissed。Claude 反而抓到 codex 未提的 3 條同 dim marginal(align/role/status),recall 互補。"
+}

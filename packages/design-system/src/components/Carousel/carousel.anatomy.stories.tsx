@@ -18,9 +18,10 @@ export default meta
 type Story = StoryObj
 
 // ── Sample slides ────────────────────────────────────────────────────────────
-// 2026-05-16 audit Round 6:三層(展示 / 設計規格 / 設計原則)一致用真實 picsum seeded photo
+// 2026-05-16 audit Round 6:展示 + 設計規格 兩層用真實 picsum seeded photo
 // 取代 gradient 色塊 — gradient 抽象 block 教不到真實裁切 / 內容裁切 / 視覺層次,
-// 且要與主展示頁(carousel.stories.tsx)同源,讓設計師看到的 slide 內容跨三層一致。
+// 且與主展示頁(carousel.stories.tsx)同源。設計原則(principles)層刻意用輕量 gradient
+// placeholder(聚焦「何時用 / 何時不用」決策規則,不搶真實照片視覺),故 media 來源與此二層不同。
 // Picsum.photos 提供 stable seeded photos(免登入 / 免 API key / 跨環境一致)。
 // 註:ColorMatrix「視覺樣本」cell 刻意保留純色 swatch(bg-foreground)——那是 token 色票
 // 非 slide 內容,用純色才能精準標 dot 的 bg-on-emphasis/60 · /80 · 全(--on-emphasis = white)token。
@@ -185,7 +186,7 @@ const InspectorInner = () => {
             </div>
           </div>
           <p className="text-[10px] text-fg-muted font-mono">
-            Arrow:size="md"(h-field-md,default 32px / loose 36px,iconOnly 方形)· left/right-3 · top-1/2 · opacity 0 → hover/focus-within 100%<br />
+            Arrow:size="md"(h-field-md,default/md 32px / lg 36px,iconOnly 方形)· left/right-3 · top-1/2 · opacity 0 → hover/focus-within 100%<br />
             Dots:bottom-3 · gap-1.5 · inactive 6px × 6px / active 24px × 6px
           </p>
         </div>
@@ -374,7 +375,7 @@ export const SizeMatrix: Story = {
             <tbody>
               <tr>
                 <Td mono>Arrow button</Td>
-                <Td mono>size="md"(h-field-md,default 32px / loose 36px)</Td>
+                <Td mono>size="md"(h-field-md,default/md 32px / lg 36px)</Td>
                 <Td>iconOnly 方形,繼承 Button md 尺寸;rounded-full 圓形於照片 overlay 上的世界級慣例(Airbnb / Instagram / Netflix)</Td>
               </tr>
               <tr>

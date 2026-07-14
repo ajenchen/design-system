@@ -1,0 +1,21 @@
+{
+  "dim": 10,
+  "title": "a11y 基本覆蓋",
+  "filesScanned": 90,
+  "mechanism": "DS-wide 全 components grep aria-label / role / keyboard coverage;icon-only 必 aria-label",
+  "verdict": "極乾淨 — 世界級 a11y 覆蓋。0 material、2 marginal(皆邊界/低信度)。Chart accessibilityLayer 疑點經二次驗證(Recharts 3.8.1 default-enabled)為假陽性已殺。",
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.tsx:108",
+      "問題": "ProgressBar 基於 Radix Progress,<ProgressPrimitive.Root> 只 {...props} 透傳,無預設 accessible name 也無 aria-hidden fallback。determinate 進度條(Radix 自動給 role=\"progressbar\" + aria-valuenow/min/max)在 consumer 未傳 aria-label 時,螢幕報讀只念「X%」不知道「什麼」在進度。同 DS 的姊妹元件 CircularProgress(circular-progress.tsx:116-130)刻意做了 aria-label / label / aria-hidden 三層 accessible-name fallback,ProgressBar 未對齊 → DS 內部 a11y 處理不一致。(註:此為 Radix/shadcn 業界通例,axe-core 對 progressbar-name 屬 best-practice 非 hard violation,故 marginal。)",
+      "severity": "marginal",
+      "建議": "對齊 CircularProgress 的 a11yLabel 三層處理:ProgressBar 增加 aria-label / label prop 支援,無 name 時可走 aria-valuetext 或至少在 progress-bar.spec.md「A11y 預設」段明文要求 consumer 傳 accessible name(WAI-ARIA progressbar pattern 建議 name),讓兩支 progress 元件 a11y 契約一致。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:1",
+      "問題": "依 spec-rules.md「互動元件 spec.md 必含 ## A11y 預設 段」,此 Field 控件家族(Family 4,全為互動控件)的共用 SSOT 缺獨立 ## A11y 預設 標題段;a11y 契約(aria-busy L110 / aria-invalid L152 / aria-describedby / aria-errormessage)散落內文而非彙整成 ARIA + Keyboard map 段。",
+      "severity": "marginal",
+      "建議": "補一段 ## A11y 預設 彙整 Field 控件家族共用的 ARIA 契約(aria-busy / aria-invalid / aria-describedby / aria-errormessage 接線)+ 指向各控件 spec 的鍵盤 map;或在 spec 開頭明文聲明「a11y 由各控件自身 spec 承載」以符合 mandate 的委派例外。低信度:a11y 已委派給各控件 spec(input/select/textarea/number-input 等皆有 ## A11y 段且 code 層 aria 完整),field-controls 本質是 layout/geometry SSOT,故此僅為文件完整性邊界項。"
+    }
+  ]
+}

@@ -1,0 +1,190 @@
+{
+  "dim": 26,
+  "title": "Controlled/Uncontrolled dual-mode — codex B.3 比稿裁定",
+  "codexRaw": 22,
+  "summary": {
+    "material_confirmed": 7,
+    "marginal": 15,
+    "false_positive": 0,
+    "claudeMissed": 5
+  },
+  "note": "codex 逐條讀 code 皆屬實(無 misread → 0 false_positive),但 severity 大幅膨脹:22 條中 15 條為 marginal(type-surface 潔癖 / uncontrolled-only 合法 API / anatomy Inspector 的 mount-only defaultValue story-polish)。真 material 7 條:2 個 controlled/uncontrolled 分支/型別 bug(Sidebar/NumberInput,Claude 已抓)+ 2 個 readonly/display 漏 defaultValue(Input/Textarea)+ 2 個 DatePicker draft state-shadow(單值/Range,Claude 全漏)+ 1 個 Chip menu+uncontrolled spec 違反。Claude 漏 5 條真 material(Input/Textarea/DatePicker×2/Chip)。",
+  "verdicts": [
+    {
+      "codexIdx": 1,
+      "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:175",
+      "verdict": "material_confirmed",
+      "claudeAlsoFound": true,
+      "evidence": "L171 `open = openProp ?? _open`,L175 `if (setOpenProp) setOpenProp(...) else _setOpen(...)` — 依 callback 是否存在分岔而非依受控性。uncontrolled + 只傳 onOpenChange(要通知不管 state)→ setOpenProp truthy → 只呼叫 callback 永不 _setOpen → _open 卡 defaultOpen → open 恆定 → toggle/Cmd+B 只 fire callback,sidebar 視覺永不收合。同檔 activeId(L158-166)用正確 `if (activeIdProp === undefined)` 守門 = 證明 open 這條遺漏。SelectMenu R2 已修過同 bug。Claude finding #1 同判。",
+      "reason": "真 controlled/uncontrolled 分支 bug,凍結畫面"
+    },
+    {
+      "codexIdx": 2,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:53",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "L163-165 dual-mode 邏輯正確(`isControlled = asideOpenProp !== undefined`,proper 守門)。唯一缺口 = 無 defaultAsideOpen,內部 `useState(false)` 硬寫。aside 是抽屜/詳情面板,default 關閉合理;補 defaultAsideOpen 是 additive API 補完非 bug,uncontrolled 初始開啟極少需求。",
+      "reason": "dual-mode 邏輯正確;缺 defaultAsideOpen 是 API 完整性 nit,非缺陷"
+    },
+    {
+      "codexIdx": 3,
+      "fileLine": "packages/design-system/src/components/Input/input.tsx:120",
+      "verdict": "material_confirmed",
+      "claudeAlsoFound": false,
+      "evidence": "L120 `displayValue = value != null && value !== '' ? String(value) : null` 只讀 value。L121 readonly 空值(displayValue==null)走 display-span → 顯 emptyDisplay '-'。edit 分支 `{...props}`(L196)含 defaultValue → uncontrolled 可用,但 readonly/display 分支忽略 defaultValue。既有 story input.stories.tsx:36 `<Input mode='readonly' defaultValue='Wireless Bluetooth Headphones'>`:value=undefined → displayValue=null → 進 display-span → 實際渲染 '-' 而非文字。demonstrable bug via 現有 story。",
+      "reason": "真 bug + 現有 story 矛盾(readonly+defaultValue 顯示 '-')"
+    },
+    {
+      "codexIdx": 4,
+      "fileLine": "packages/design-system/src/components/Textarea/textarea.tsx:199",
+      "verdict": "material_confirmed",
+      "claudeAlsoFound": false,
+      "evidence": "textarea.spec.md「Controlled/Uncontrolled(M26)」明文 3 模式含 uncontrolled(只 defaultValue)+ Textarea thin wrapper 直接 forward triplet。L172 destructure value + L176 `{...props}`(含 defaultValue)→ edit uncontrolled 可用。但 L199 `displayValue = value != null && value !== '' ? ...: null` 只讀 value;L200 readonly 空值/display 走 display-div → `{displayValue ?? emptyDisplay}` = '-'。`<Textarea mode='readonly' defaultValue='x'>` → 顯 '-',直接違反 spec 宣告的 defaultValue-only uncontrolled mode。與 Input 同構。",
+      "reason": "真 bug + spec:103 明文支援 uncontrolled 卻 readonly/display 漏 defaultValue"
+    },
+    {
+      "codexIdx": 5,
+      "fileLine": "packages/design-system/src/components/NumberInput/number-input.tsx:42",
+      "verdict": "material_confirmed",
+      "claudeAlsoFound": true,
+      "evidence": "number-input.spec.md:24 明文 controlled-only 不支援 defaultValue。L42 Omit `'size'|'value'|'onChange'|'type'` 沒 Omit defaultValue → 留型別面。L171 `value={draft ?? (value!=null?String(value):'')}` 恆 string = 恆受控;L184 `{...props}` 把 defaultValue 灑到已受控 <input> → React value/defaultValue warning + silent ignore。sibling LinkInput(link-input.tsx:54)已於 2026-07-05 deep-audit 補 Omit 'defaultValue' — NumberInput 同修法漏掉。Claude finding #2 同判。",
+      "reason": "跨元件漂移(vs LinkInput)+ 受控 input 上 React warning + spec/code drift"
+    },
+    {
+      "codexIdx": 6,
+      "fileLine": "packages/design-system/src/components/TimePicker/time-picker.tsx:110",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "TimePickerProps extends `Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'|'placeholder'>`(L110-113)— base 是 <div> 非 <input>,HTMLAttributes 帶 defaultValue 型別。defaultValue 經 rest 灑到 trigger div = 無 React warning、無 runtime bug(div 不是受控 input)。純型別面潔癖:controlled-only spec 卻型別接受 defaultValue。與 NumberInput/LinkInput 不同(那兩者灑到受控 <input> 會 warning);此處 impact = nil。",
+      "reason": "技術上型別洩漏屬實但落在 div 無 runtime 危害,吹毛求疵"
+    },
+    {
+      "codexIdx": 7,
+      "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:54",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "PeoplePickerProps extends `Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'>`(L54)— 同 TimePicker,base <div>,defaultValue 型別洩漏經 rest forward 到 trigger 容器(L50-52 註解:rest → trigger container div)。value 是 custom PersonValue,defaultValue(string|number)洩漏是型別 nit,無 React warning。",
+      "reason": "型別面潔癖,落在 div 容器無 runtime 危害"
+    },
+    {
+      "codexIdx": 8,
+      "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:80",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "L79-82 open 軸 = defaultOpen + onOpenChange(uncontrolled + notify),無 controlled `open`。uncontrolled-only open 是合法 API(繼承 Select/Combobox 單模式)。codex 自己承認可能刻意。至多是 spec 該補 uncontrolled-only rationale 的文件缺口,非 bug。",
+      "reason": "uncontrolled-only open 合法 API + 至多 spec 文件缺口,情境依賴"
+    },
+    {
+      "codexIdx": 9,
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.tsx:420",
+      "verdict": "material_confirmed",
+      "claudeAlsoFound": false,
+      "evidence": "L411 draft=useState(value)。L416-422 draft 只在 open false→true 同步(effect 守門 `!lastOpenRef.current && open`,value 改但 open 維持 false → 不同步)。L427 `displayValue = needConfirm ? draft : value`;needConfirm 預設=showTime。L516 trigger triggerText 讀 displayValue=draft(showTime 時)。→ showTime DatePicker,外部 controlled value 於關閉期間更新(如 async 載入記錄、form reset、聯動欄位)→ draft 停在 mount 值 → trigger 顯示舊值/placeholder 直到再開。單值 display/readonly(L473/501 讀 displayCommitted=value)不受影響,只 edit trigger + showTime 中招。真 controlled contract 違反。Claude finding #3 是 Range open-API 不對稱(不同議題),漏此 state-shadow。",
+      "reason": "真 bug:showTime DatePicker 關閉期間外部 value 更新不反映(async-load 顯 placeholder)"
+    },
+    {
+      "codexIdx": 10,
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.tsx:796",
+      "verdict": "material_confirmed",
+      "claudeAlsoFound": false,
+      "evidence": "Range 更嚴重:L794-798 draft 只 open false→true 同步。L800-801 `startIso/endIso = needConfirm ? draft : value`。與單值不同,Range 的 display mode(L899-912)+ readonly/disabled(L915-931)都讀 startIso/endIso → needConfirm=true(showTime range)時讀 draft。display/readonly 永不開 popover → draft 恆停 mount 值 → 外部 value 更新永遠不反映(async-load range datetime 顯 placeholder 永久)。單值 display/readonly 讀 displayCommitted(value)正確 → Range 是不一致 + 更壞。Claude 全漏。",
+      "reason": "真 bug + 單值/Range 不一致:Range display/readonly 讀 draft,純輸出模式恆顯舊值"
+    },
+    {
+      "codexIdx": 11,
+      "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:112",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "coachmark.tsx L55-58 有 open + defaultOpen + onOpenChange,L163 都 forward 給 Popover → 實作確實支援 uncontrolled。spec:112 只寫 `open / onOpenChange — controlled`,漏 documented defaultOpen。純文件缺口。",
+      "reason": "spec 文件漏 defaultOpen;實作正確,doc-only gap"
+    },
+    {
+      "codexIdx": 12,
+      "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:316",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "StateBehavior story L313-332 用 controlled value + `onChange={() => {}}`。文案泛提「按 Enter 或點擊選取」但 story 主旨 = 展示單選/多選『已選視覺』(Avatar+Name / Avatar 陣列)。用 noop onChange 凍結展示態是 anatomy showcase 常見刻意 pattern;核心視覺目的達成。",
+      "reason": "凍結視覺態的常見 anatomy pattern;主旨(展示已選視覺)成立,吹毛求疵"
+    },
+    {
+      "codexIdx": 13,
+      "fileLine": "packages/design-system/src/components/Pagination/pagination.anatomy.stories.tsx:52",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "Inspector L44 args {page,total} + argTypes number control。L51 Desc 明示『調 page/total 觀察摺疊行為』= 經控制面板互動(可用,page={args.page} 已接線)。點頁碼鈕因 noop onPageChange 無效,但 story 承諾的互動(控制面板)正常運作。",
+      "reason": "control-driven demo 依設計運作;點鈕死是次要 affordance,情境依賴"
+    },
+    {
+      "codexIdx": 14,
+      "fileLine": "packages/design-system/src/components/Steps/steps.anatomy.stories.tsx:118",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "L88-92 args 無 value(只 completedValues/errorValues/size/orientation/linear/expansion),L94-99 argTypes.value 是 radio。初始 args.value=undefined → `<Steps {...args}>` 未受控;僅使用者觸 value 控制後才變 controlled + 無 onValueChange → 點步驟不切。主要互動(argType 控制)運作;click-navigate 觀察是次要。",
+      "reason": "conditionally-controlled;控制面板互動可用,吹毛求疵"
+    },
+    {
+      "codexIdx": 15,
+      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:289",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "InspectorInner L243 checked local state + L256-259 手刻 Checked toggle。L289 `<RadioGroup defaultValue={checked==='checked'?'preview':undefined}>` — mount-only defaultValue,切 toggle 後已掛載 RadioGroup 不更新。但 L248 `colors=TOKEN_MAP[checked][state]` → checked toggle 主要驅動 token blueprint(其主要輸出),live preview 是次要。story-only polish,不影響 consumer。",
+      "reason": "手刻 toggle 主驅動 blueprint(可用);live preview 不 re-sync 是 story-polish,吹毛求疵"
+    },
+    {
+      "codexIdx": 16,
+      "fileLine": "packages/design-system/src/components/Chip/chip.anatomy.stories.tsx:114",
+      "verdict": "material_confirmed",
+      "claudeAlsoFound": false,
+      "evidence": "L112-115 `defaultValue: args.selected ? ...`(uncontrolled),L118 `<ChipGroup layout={args.layout} {...groupProps}>` 且 argTypes.layout 含 'menu'(L105-108)。chip.spec.md:189/202 明文『menu 模式需要 controlled ChipGroup』+『❌ Menu 模式搭配 uncontrolled(只給 defaultValue)——menu items 無法同步狀態,TS 不擋但 runtime 會看到 menu 勾選失效』。此 Inspector 允許使用者選 layout=menu 同時用 defaultValue → 觸發 spec 明文禁止的 runtime-broken 組合。story 可產生違反自身 spec 的 broken state。",
+      "reason": "story 可產生 spec 明文❌的 menu+uncontrolled runtime-broken 組合,真 spec 違反"
+    },
+    {
+      "codexIdx": 17,
+      "fileLine": "packages/design-system/src/components/TimePicker/time-picker.anatomy.stories.tsx:248",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "Inspector useState(args.value) 只讀首次值,後續 Storybook value control 被 local state shadow。argType-driven mount-only,story-polish 不影響 consumer。codex 自標 marginal,同意。",
+      "reason": "argType mount-only shadow,story-polish"
+    },
+    {
+      "codexIdx": 18,
+      "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:89",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "Inspector live activeId control 傳成 defaultActiveId,mount 後切控制不更新選中列。argType-driven mount-only,story-polish。codex 自標 marginal,同意。",
+      "reason": "argType mount-only,story-polish"
+    },
+    {
+      "codexIdx": 19,
+      "fileLine": "packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:65",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "Inspector defaultValue 當 live control 但 Radix 只 mount 讀。argType-driven mount-only,story-polish。codex 自標 marginal,同意。",
+      "reason": "argType mount-only,story-polish"
+    },
+    {
+      "codexIdx": 20,
+      "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:71",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "defaultChecked 做 live control 但 mounted Switch 不重採。argType-driven mount-only,story-polish。codex 自標 marginal,同意。",
+      "reason": "argType mount-only,story-polish"
+    },
+    {
+      "codexIdx": 21,
+      "fileLine": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:82",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "Inspector 暴露可改 defaultValue control 但 mounted textarea 只初次採用。argType-driven mount-only,story-polish。codex 自標 marginal,同意。",
+      "reason": "argType mount-only,story-polish"
+    },
+    {
+      "codexIdx": 22,
+      "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:177",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "evidence": "invalid control 切 defaultValue 字串但 mount-only;切 invalid 後紅框+錯誤訊息出現而輸入框保留原 valid email。輕微展示不一致(invalid 態不強制清值,contradiction 溫和)。story-polish。codex 自標 marginal,同意。",
+      "reason": "argType mount-only + 溫和展示不一致,story-polish"
+    }
+  ]
+}

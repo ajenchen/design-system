@@ -1,0 +1,171 @@
+{
+  "batch": 9,
+  "components": ["RadioGroup", "SegmentedControl", "SelectionControl", "Slider", "Steps"],
+  "method": "each codex falseClaim deduped + verified vs actual tsx/spec/stories (+ Radix @radix-ui/react-slider@1.3.6 & react-radio-group & react-toggle-group node_modules source). Claude deep JSONs reported 0 false claims for 4/5 (Slider: 1 marginal). Verdicts: material_confirmed / marginal / false_positive.",
+
+  "RadioGroup": {
+    "material_confirmed": [
+      {
+        "fileLine": "radio-group.spec.md:91,100 + radio-group.tsx:213,264 (consolidated a11y wiring gap)",
+        "宣稱": "RadioGroup 繼承 Field family;<Field> 的 label 作為 group label / FieldLabel 是整個 RadioGroup 的 label",
+        "真實code行為": "edit-mode Radix Root (radio-group.tsx:148-159) 只 spread {...props} + disabled,未設 aria-labelledby={fieldCtx.labelId} / aria-invalid / aria-describedby。只有 readonly-in-Field 分支 (129-130) 接 labelId+invalid。role=radiogroup 的 <div> 無法被 <label for> 命名 → edit 態在 Field 內群組無 accessible name。field-context.ts:27-28 明載『下游 control 需自讀 labelId 寫 aria-labelledby』。",
+        "claudeAlsoCaught": false,
+        "fixHint": "edit Root 在 hasFieldWrapper 時補 aria-labelledby={fieldCtx?.labelId}(+ aria-invalid / aria-describedby)。DS 已有此 pattern:slider.tsx:70-74 / Rating / TimePicker 皆接 fieldLabelId → RadioGroup 漏接 = cross-component a11y drift。"
+      },
+      {
+        "fileLine": "radio-group.spec.md:108",
+        "宣稱": "Group-level disabled 的視覺繼承 SelectionItem text-fg-disabled",
+        "真實code行為": "standalone `<RadioGroup disabled>`(非經 Field):Radix Root disabled 透過 primitive context 令 radio 圓圈套 disabled: 樣式,但 SelectionItem 的 disabled 來自 RadioGroupItem 的 useResolvedFieldDisabled(item prop) — 只讀 item disabled + FieldContext,讀不到 group 的 disabled prop。無 Field 時 = false → label/description 仍 text-foreground/text-fg-secondary,未降 disabled 色(圈灰、字不灰)。經 <Field disabled> 才正確(fieldCtx.disabled 生效)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "加 RadioGroupDisabledContext(如既有 ReadonlyContext)把 group disabled 傳給 items 的 SelectionItem disabled;或 spec:108 註明降色僅 Field-path 生效。"
+      },
+      {
+        "fileLine": "radio-group.tsx:162-163",
+        "宣稱": "進入 <Field> 時 control area 自動切 items-start + padding-top 公式對齊",
+        "真實code行為": "field.tsx:226-231 明載 block control area『flex-col + items-start(不設 min-h、不加 padding-top,內容自己決定高度)』『額外加 paddingTop 會 double padding』。RadioGroup 是 block primitive → 走 block 分支 → 不加 padding-top。註解的『padding-top 公式對齊』是 stale/錯述。",
+        "claudeAlsoCaught": false,
+        "fixHint": "radio-group.tsx:163 移除『+ padding-top 公式對齊』,對齊 field.tsx block control area SSOT。"
+      },
+      {
+        "fileLine": "radio-group.tsx:336",
+        "宣稱": "真值 = dotSize 8/8/10(radio-group.tsx:179)",
+        "真實code行為": "dotSize 定義在 radio-group.tsx:200(const dotSize = {sm:8,md:8,lg:10});:179 是 `disabled:cursor-not-allowed disabled:bg-disabled...` 樣式行。自引註行號錯。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改自引註 :179 → :200。"
+      }
+    ],
+    "marginal_count": 8,
+    "false_positive_count": 2,
+    "false_positive_examples": [
+      "spec.md:29『從 2-5 個選項中挑恰好一個』= 設計使用指南(recommended range + 互斥單選語意),非 code contract;codex 逐字讀成『code 未限制數量』= 誤分類。",
+      "anatomy.stories.tsx:481『sm 和 md 視覺相同,純粹是命名 mapping』— 同句下一行即自我澄清『搭配 SelectionItem 時 item 高度自動對齊同 size 的 Input』(sm/md row 高 28 vs 32);codex 只讀前半、漏後半;控件圓圈確為 16/16。"
+    ],
+    "marginal_notes": "marginal 8 行:spec:93(readonly 仍輸出 role=radiogroup div — 語意小 nuance)/ spec:114(RTL:dir 轉發 Radix,鍵盤箭頭已鏡像,但 layout 視覺鏡像確未實作)/ spec:139 + anatomy:678(unchecked border 對比 <3:1 — DS-wide token 議題,codex #D9D9D9/1.41:1 為推估)/ anatomy:656(『必須提供 value/defaultValue』同行自澄清 omit=空狀態,設計 intent)/ principles:156(Field required 只給 context+標記,RadioGroup 未消費 fieldCtx.required — 設計指南)/ tsx:33(dup spec:93)/ tsx:168(『與 Checkbox 完全對齊差異只形狀+指示器』— checked chrome 亦不同,但核心 16/16/20 尺寸對齊正確)。"
+  },
+
+  "SegmentedControl": {
+    "material_confirmed": [],
+    "marginal_count": 11,
+    "false_positive_count": 2,
+    "false_positive_examples": [
+      "tsx:18『切 value(不是切 view)』/ tsx:19『切 view → Tabs』= SegmentedControl-vs-Tabs 設計分界指南;codex 以『元件不限制 consumer 如何用 value』反駁 = 設計意見對撞,非 code 矛盾。"
+    ],
+    "marginal_notes": "0 material(對齊 prompt『always-controlled』提示 — codex 主 gotcha 皆 always-controlled 的 robustness 細節)。marginal 11 行:tsx:14+spec:256(type=single 非 destructure-out,{...props} 在 type 之後 → as-any/JS 可覆寫 type=multiple;但 TS Omit type 已封鎖正常 API,僅 as-any abuse)/ tsx:153+spec:201+anatomy:260(『任何 size/icon 都自然正方形』於 hug-content 成立;iconOnly+fullWidth 時 flex-1 等分寬 + aspect-square → 長方形,但 anatomy:260 demo 為非-fullWidth 顯示正方形正確,fullWidth+iconOnly 為罕見組合未展示)/ anatomy:58(value/defaultValue Default『必填』— optional prop 但語意恆有一值,設計 intent)/ anatomy:6+spec:262(StateBehavior『完整覆蓋』矩陣列 4 state,cva 另有 data-[state=on]:hover:primary-hover 未單列 selected:hover 行,惟 rationale 自訂 scope 為 4 state)/ anatomy:172(Disabled Z-index『—』;disabled×selected 仍命中 data-[state=on]:z-10,disabled override 只重設色不清 z-index,邊角)/ principles:105+108(『5 個以上/5+ → 改用』與『2-5 有效』於邊界值 5 off-by-one 措辭鬆散)。"
+  },
+
+  "SelectionControl": {
+    "material_confirmed": [
+      {
+        "fileLine": "selection-item.spec.md:29 + selection-item.principles.stories.tsx:65,68",
+        "宣稱": "SelectionItem 是 Family 2 variant:prefix 放 Checkbox/Radio indicator 而非 icon/avatar(principles:65,68 同:prefix 放 Checkbox/Radio indicator)",
+        "真實code行為": "selection-item.tsx 3-slot = [control][optional prefix(icon|avatar)][content]。Checkbox/Radio indicator 走 `control` prop(RadioGroupItem.tsx:311-312 control={rootEl});PrefixSlot(142-158)專供 icon/avatar,且可與 control 並存(M30 <Checkbox icon>)。spec:58 自身結構亦寫『prefix (icon | avatar)』。spec:29 的『prefix 放 indicator 而非 icon/avatar』把 control 誤說成 prefix、且誤稱二者互斥,與 spec:55-64 + code 矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:29 + principles:65,68 改『control 放 Checkbox/Radio indicator;prefix 專供 icon/avatar,兩者可並存』。"
+      },
+      {
+        "fileLine": "selection-item.principles.stories.tsx:71",
+        "宣稱": "Field 處理 wrapper level 的 ARIA + error(for RadioGroup in form context)",
+        "真實code行為": "RadioGroup edit Root 未注入 id/aria-labelledby/aria-describedby/aria-invalid(radio-group.tsx:148-159),只有 readonly-in-Field 分支消費部分 ARIA。此宣稱與 RadioGroup a11y wiring gap 同源 — Field 提供 context 值,但 RadioGroup edit 態未消費,故 form context 內群組無 accessible name / error 關聯。",
+        "claudeAlsoCaught": false,
+        "fixHint": "同 RadioGroup material a11y finding — 修 RadioGroup edit Root 接線後此宣稱才成立;否則校正措辭。"
+      }
+    ],
+    "marginal_count": 18,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "marginal_notes": "marginal 18 行多為內部 primitive 註解精度 / 幾何邊角:selection-item.tsx:31(『field-height token 變動需手動同步』— py 用 var(--field-height-*) → token 值/density 變動自動傳播,僅公式/token 名變才需手改,措辭鬆散)/ tsx:56-57,92-95 + spec:64 + anatomy:111,392-395,421-424(avatar-block『text block center』— blockAlignClass 固定=1 行 label+gap+1 行 desc 高;label/desc 換行後非真中心,惟 avatar-row 多為單行,邊角)/ tsx:72,76(『control 永遠 h-[1lh]/inline』— block 模式改 blockAlignClass,tsx:94-95 已正確記載 block,故 :72 措辭 stale)/ tsx:103-112 + anatomy:204-213(labelMaxLines number → 只 1-6 有 clamp,7/負/小數靜默不截,Tailwind line-clamp 上限)/ spec:43(『直接用會失去 ARIA/keyboard/form』— 傳入的 Checkbox/Radio 保留自身 ARIA/keyboard/form,失去的只是 auto htmlFor / Field 整合;建議本身正確惟 rationale 過陳)/ spec:49(差異只形狀+指示器 — checked chrome 亦不同)/ spec:51(『保證永遠一致』overstate)/ spec:108(『desc 缺→單行』— labelMaxLines 預設 none 可換行)/ spec:122 + anatomy:568(htmlFor optional,anatomy 直用例省略 htmlFor → 點文字不觸發;惟 SelectionItem internal,真實 wrapper(RadioGroupItem:317)有傳)/ spec:129 + anatomy:568(『Space 切換勾選』— radio 只選不 toggle-off)/ anatomy:38-64,273,341,519(field-height『固定 28/32/36』— density-dependent,展示 default density)/ anatomy:269(dup tsx:72)/ boolean-value.tsx:26(SSOT 消費清單 — standalone readOnly 保留 Radix chrome 未用 BooleanValueIcon,jsDoc 精度)。"
+  },
+
+  "Slider": {
+    "material_confirmed": [
+      {
+        "fileLine": "slider.tsx:104-110",
+        "宣稱": "兩個 token 綁在一起,不論什麼 state 都一致",
+        "真實code行為": "同檔 tsx:126-128 已於 2026-07-06 明文撤回此宣稱:『同色綁定 scope = rest 與 disabled 兩態;互動態(hover/active/focus)只動 thumb border 色階...修正原「不論 state 永遠同色」過度宣稱』。hover=border-primary-hover(:152)、active=border-primary-active(:155),Range 恆 primary。:110 是未同步的 stale 過度宣稱(被同檔下方 retract note 打臉)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "tsx:104-110 改『rest/disabled 兩態綁定同 token;互動態只動 thumb border』,對齊 :126-128 retract。"
+      },
+      {
+        "fileLine": "slider.spec.md:126 + slider.anatomy.stories.tsx:42",
+        "宣稱": "onValueCommit // 放開滑鼠時才觸發 / 放開滑鼠才觸發(防抖用)",
+        "真實code行為": "Radix @radix-ui/react-slider@1.3.6 dist/index.js:165(onHomeKeyDown commit:true)、:166(onEndKeyDown commit:true)、:175(onStepKeyDown Arrow/Page commit:true)、:129(commit → onValueCommit)— Home/End/Arrow/Page 每次有效鍵盤變更立即觸發 onValueCommit,非僅滑鼠放開。『才觸發』= 定論式錯述。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改『互動結束時觸發(滑鼠放開,或鍵盤 Arrow/Page/Home/End 每次有效變更)』。"
+      },
+      {
+        "fileLine": "slider.spec.md:239",
+        "宣稱": "focus 用 border 加深(同 hover 視覺),不加 ring / halo",
+        "真實code行為": "focus=border-primary-hover(tsx:157),而 spec:115 + tsx:150-151 皆已於 2026-07-06 標明『加深』方向錯:primary-hover 比 base 淺(lift/淺一階)。spec:239 仍寫『加深』= 未同步、與同檔 spec:115 自我矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:239 改『border 升 hover 階(primary-hover,淺一階 lift)』,對齊 spec:115。"
+      },
+      {
+        "fileLine": "slider.anatomy.stories.tsx:178",
+        "宣稱": "Range 色和 Thumb border 色永遠同 token(H3 story header)",
+        "真實code行為": "下方 ColorBindingRule 表只列 Default/Disabled 兩 state(:184-186),無 hover/active/focus caveat。實際 hover=primary-hover / active=primary-active / focus=primary-hover 的 thumb border ≠ Range primary(tsx:152-157)。『永遠』無限定 + 該 story 無鄰近澄清(不同於 spec:104 有 spec:113-115 澄清)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "anatomy:178 H3 加『rest/disabled』限定,或補 body 說明互動態 thumb border 變色而 Range 恆 primary。"
+      }
+    ],
+    "marginal_count": 14,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "marginal_notes": "spec:132(API block 列 orientation=horizontal,但 SliderProps Omit 'orientation' → consumer 不可傳,型別面不存在此 prop)= Claude 亦 caught(claudeAlsoCaught=true,Claude 標 marginal);其餘 marginal:tsx:16+spec:139+anatomy:27(『Radix 原生自動多 thumb』— Radix 只管多值,DS wrapper thumbCount+Array.from map 才渲染 Thumb;consumer 觀察行為正確但 attribution 誤置於 Radix)/ tsx:17(『不用色變』— 依 spec:115 定義『不用色變』=thumb 底色+range 填色不變,border 變色另計,可辯護)/ tsx:66+tsx:88+spec:219(readonly=pointer-events-none+tabIndex=-1 未映射 Radix disabled → 已聚焦/程式聚焦的 thumb 仍可鍵盤改值,窄邊角)/ spec:104(『永遠同一 token』— 有 spec:113-115 鄰近澄清,故較 anatomy:178 輕)/ spec:225+anatomy:213(←/→ -/+step 未限定 LTR/非-inverted;dir/inverted 可反轉,惟 RTL DS-wide 未定)/ anatomy:40(value default『—』— Radix 無值時 defaultValue=[min]=[0])/ anatomy:47(minStepsBetweenThumbs default『—』— Radix 預設 0)/ anatomy:233(『role/aria/keyboard 都由 primitive』— wrapper 另加 aria-label 多-thumb suffix / Field aria-labelledby / readonly aria-readonly)。"
+  },
+
+  "Steps": {
+    "material_confirmed": [
+      {
+        "fileLine": "steps.spec.md:287",
+        "宣稱": "紅 ✕ indicator + 紅 label + 紅 description(如有)形成一致的 error visual language",
+        "真實code行為": "同 spec 緊接的段標題『### Description 沒有 error 變色』(:291-297)明載 description error 態維持 text-fg-secondary;StepDescription code(steps.tsx:816-836)className 為 `disabled ? text-fg-disabled : text-fg-secondary`,無 error 分支。spec:287 的『紅 description』與同檔 :291-297 + code 皆矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:287 刪『+ 紅 description(如有)』(留 indicator + label 紅),對齊 :291-297 + StepDescription code。"
+      },
+      {
+        "fileLine": "steps.principles.stories.tsx:266",
+        "宣稱": "Steps 是純 controlled 元件",
+        "真實code行為": "steps.tsx:200-202 = controlled/uncontrolled 雙模(internalValue=useState(defaultValue);value=isControlled?valueProp:internalValue)。spec 亦多處明載雙模(:330『value 為 controlled/uncontrolled(defaultValue)雙模』、:363 API parent-controlled 含 defaultValue、:368)。『純 controlled』與自家 spec + code 矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "principles:266 改『Steps 進度狀態由 parent own,value 為 controlled/uncontrolled 雙模』。"
+      },
+      {
+        "fileLine": "steps.anatomy.stories.tsx:42,214",
+        "宣稱": "error 狀態的 Connector(右側)= 『—』",
+        "真實code行為": "VerticalConnectorLine(:546 isBlue=state==='completed')+ HorizontalLayout(:593,608 同)— 非末項 error step 仍渲染 connector,色為 bg-border(灰),僅 completed 為 bg-info。spec:439 亦明載 error『connector 不變色...前一步 completed 才藍,否則灰』。表格『—』與 upcoming/current 行的『bg-border』不一致,誤示 error 無 connector。",
+        "claudeAlsoCaught": false,
+        "fixHint": "anatomy error 行 Connector 由『—』改『bg-border』。"
+      },
+      {
+        "fileLine": "steps.anatomy.stories.tsx:188,212",
+        "宣稱": "completed Check / error X 使用 white token(TokenCell token=\"white\")",
+        "真實code行為": "steps.tsx:712(error)、:716(completed)、:729(reachable)contentColor='var(--on-emphasis)';同表 current 行(:196)已正確用 token=\"--on-emphasis\"。completed/error 行 token=\"white\" 是 literal-white drift(dark mode --on-emphasis 未必純白),與 code + 鄰行不一致。",
+        "claudeAlsoCaught": false,
+        "fixHint": "anatomy:188,212 TokenCell token『white』→『--on-emphasis』。"
+      }
+    ],
+    "marginal_count": 17,
+    "false_positive_count": 3,
+    "false_positive_examples": [
+      "spec:175『upcoming = var(--muted)+fg-disabled』— summary table 行;spec 同章 :234-243 詳細 State×Focus 矩陣 + :181-187(sm)已完整涵蓋 non-linear upcoming=secondary+foreground,codex 讀 summary 行漏詳細矩陣。",
+      "spec:176『current = bg-info + 白字數字』— 同理,spec:202/:236-237 矩陣 + sm :185 已明載 non-linear current=secondary+foreground、sm linear current=空心環;summary 行是分層文件之摘要非完整宣稱。",
+      "anatomy:40,193『current(= value)』— color table 行 label 之簡寫;state precedence(override→error→completed→value)已於 spec:189-200 明文,行 label 非行為 contract。"
+    ],
+    "marginal_notes": "Steps spec 極完整(summary + 詳細 linear/non-linear 矩陣 + sm 專段),故多數 color 宣稱為 false_positive(codex 讀 summary 行 in isolation)。marginal 17 行:tsx:265(『Interleave connectors』stale comment,:284-285 同區已自更正『connectors now INSIDE each StepItem, no interleaving』)/ spec:62+principles:96,102(『非線性→Tabs』與 linear=false 支援有張力,惟 Tabs=無進度平行視圖 vs linear=false Steps=有進度可跳,可辯護分界)/ spec:171,228-239(『Content state ⊥ Focus』+ 矩陣含 focused-upcoming — focused=value=current 使 upcoming/reachable 不可 focused,矩陣該組合不可達;惟核心『fill 不因 focus 改變』正確)/ spec:306(藍 connector 跟 completedValues『一對一』— completed+error 交集時 state=error→灰,邊角,spec:195 已載交集規則)/ spec:326(『僅此而已』— multiple 模式另 toggle expand,惟 spec:339 已載)/ spec:347(horizontal『expansion 忽略』— expandedSet 仍更新但不渲染,實質無感)/ spec:390(『不可能多 current』— 重複 value 之 misuse 邊角)/ spec:429+anatomy:395(『errorValues 中斷流程』/『必須先解除』— 純視覺 + consumer 建議,非機械 guard;reachability 只看 completedValues)/ spec:461(sr-only『唯一狀態來源』— 另有 aria-current/disabled/expanded,惟 sr-only 為 granular 進度語意唯一源)/ spec:468(『native button』— 實為 <div role=button>,惟 spec 他處(:435,458,461)一致寫 role=button,a11y 結果等效)/ spec:470+anatomy:445(『focus management 由元件 own』— 設 tabIndex+focus-visible 但無 roving/focus())/ anatomy:61,112,384(linear『保證僅能順序前進』— completed 可點回看、parent 可傳任意 value,措辭 overstate)/ anatomy:67(StepLabel『必填』— 未型別/runtime 強制,設計 intent)/ anatomy:320-385(LinearVsNonlinear demo controlled value 無 onValueChange → 點擊不改畫面;惟 anatomy 為靜態 affordance 展示,互動歸 Inspector)/ principles:114(『絕不宣告 state』— 有 state='error' escape hatch(spec:395-397 documented),且該 override 只能建 error 非多 current)/ principles:143,149-150(『Ring 唯一 focus 表達』— label 色亦隨 focused 變、鍵盤另有 focus-visible outline;惟核心『用 ring 非 selection-bg』正確)。"
+  },
+
+  "summary": {
+    "total_codex_findings": 90,
+    "material_confirmed_total": 14,
+    "marginal_total": 68,
+    "false_positive_total": 7,
+    "claude_missed_material": 14,
+    "claude_caught_material": 0,
+    "cross_component_drift": [
+      "a11y label wiring drift: Slider/Rating/TimePicker edit-mode 皆接 fieldLabelId→aria-labelledby(slider.tsx:70-74),但 RadioGroup edit Root 未接(radio-group.tsx:148-159)→ Field 內 role=radiogroup 群組無 accessible name。RadioGroup spec:91/100/tsx:213,264 + SelectionControl principles:71 同源。",
+      "『Checkbox vs Radio 差異只在形狀+指示器』overclaim 重複出現(radio-group.tsx:168 / selection-item.spec.md:49)— checked chrome 亦不同(Checkbox 填 primary+on-emphasis glyph;Radio 只改 border/dot),marginal。",
+      "optional value/defaultValue 標『必填』模式重複(RadioGroup anatomy:656 / SegmentedControl anatomy:58 / Steps StepLabel anatomy:67)— 皆為設計-intent『必填』非型別強制。",
+      "2026-07-06 Slider hover/active thumb-border 色變修正未全傳播:tsx:110 / spec:239 / anatomy:178 三處仍留舊『永遠同 token / 加深』過度宣稱(M14 改一處看三處失效)。"
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+ "dim": 20,
+ "filesScanned": 86,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:166",
+   "問題": "`circle = 9999px`、`square = 4px` 直接硬寫 radius，且 `.tsx` 同樣重複裸值；既有 SSOT 已提供 `--radius-full` 與 `--radius-md`，存在 token 調整後漂移風險。",
+   "severity": "marginal",
+   "建議": "spec 改記 shape 對應的 radius token；`avatar.tsx` inline style 改用 `var(--radius-full)`／`var(--radius-md)`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:149",
+   "問題": "`autoWidth` 行為表直接複寫 `inline-flex w-auto` 與 `field-sizing:content w-auto min-w-0` 完整實作 class list；相同 mechanics 已由 `input.tsx` 承載，並非設計判斷。",
+   "severity": "marginal",
+   "建議": "spec 只保留「寬度隨內容、受父容器上限約束」及 fallback contract，具體 class recipe 留在 `input.tsx`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:208",
+   "問題": "`MenuFooter` 直接規定 `border-t + py-2`，重複 `menu-item.tsx` 的可程式化 utility，且鄰文未說明 8px 為何必須在 spec 成為 canonical。",
+   "severity": "marginal",
+   "建議": "spec 改述 footer 以 divider 分隔並沿用 menu 垂直節奏，引用 owner pattern；具體 utility 留在 `menu-item.tsx`。"
+  }
+ ]
+}

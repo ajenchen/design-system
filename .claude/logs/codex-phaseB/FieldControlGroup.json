@@ -1,0 +1,101 @@
+{
+ "component": "FieldControlGroup",
+ "claimsVerified": 181,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.tsx:19",
+   "宣稱": "ButtonGroup（多 Button 接合）同 pattern",
+   "真實code行為": "現行 ButtonGroup 使用 flex gap-2 分離排列，沒有負 margin、圓角剝除或 border-collapse 機制。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.tsx:26",
+   "宣稱": "z-index：disabled 0",
+   "真實code行為": "z-0 僅匹配 direct child 的 [disabled] 或 :has([disabled])；disabled Select 只渲染 data-field-mode=\"disabled\"、aria-disabled 的 div，仍維持 baseline z-2。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:23",
+   "宣稱": "對齊 ButtonGroup 同類接合 idiom",
+   "真實code行為": "ButtonGroup 是 gap-2 的分離群組，不是接合式 border-collapse 元件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:49",
+   "宣稱": "ButtonGroup：多 Button 接合／border collapse／同 mechanism",
+   "真實code行為": "ButtonGroup 實作為 flex gap-2，無 FieldControlGroup 的接合 selectors。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:71",
+   "宣稱": "disabled z-index: 0",
+   "真實code行為": "aria-disabled 或 data-field-mode=\"disabled\" 不會觸發 z-0；disabled Select 因無 [disabled] 本身或後代而保持 z-2。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:77",
+   "宣稱": "items-stretch（同高）",
+   "真實code行為": "align-items: stretch 不覆寫 child 明確的 h-field-* 高度；不同 size children 仍不同高，spec 第 170 行也承認不會被拉齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:111",
+   "宣稱": "進 Popover，density 鎖 md；children 自然吃 md",
+   "真實code行為": "Popover 現只設定 data-layout-space=\"md\"；ui-size 明確繼承 page，lg page 內的 controls 仍吃 lg。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:116",
+   "宣稱": "每個 Select/Input 自帶 aria-label",
+   "真實code行為": "FieldControlGroup 不注入或驗證 accessible name；Input 沒有預設 aria-label，Select 也只消費 consumer aria-label 或 Field context。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:131",
+   "宣稱": "外加 className=\"w-[Xpx]\" 無法 override 內部 w-full，必用 !w-[Xpx]",
+   "真實code行為": "consumer className 在 fieldWrapperStyles 後交給 tailwind-merge；實際 cn('w-full','w-[140px]') 產生 w-[140px]，不需要 !。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:141",
+   "宣稱": "disabled child 同時取得 FCG opaque border override 與 z-index 0",
+   "真實code行為": "兩項使用不同 selector：border 看 data-field-mode=\"disabled\"，z-0 看 [disabled]/:has([disabled])；disabled Select 可有 opaque border 但仍 z-2，Button 則可 z-0 卻沒有 opaque override。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:144",
+   "宣稱": "FCG context 下，disabled child 強制 border-opaque，外圈與 divider 必然健在",
+   "真實code行為": "override 只匹配 data-field-mode=\"disabled\"；支援清單中的 Button 沒有此 attribute，其 disabled:border-transparent 仍可使邊框消失。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:152",
+   "宣稱": "--color-neutral-5-opaque 是 solid #D9D9D9",
+   "真實code行為": "#D9D9D9 只近似 light theme；dark theme 將 --_na5 改為 25%，並計算 white-on-black opaque color，約為 #404040。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:166",
+   "宣稱": "Storybook a11y addon panel 0 critical violation",
+   "真實code行為": "UsageGuidance 的 standalone Input 與 Mode B Input 沒有 label/aria-label，axe 會回報 critical 的 label violation；兩個 standalone Select 亦缺 accessible name。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:171",
+   "宣稱": "混合 disabled/edit 時，disabled 子降 z-0 且 K12 border 維持 divider",
+   "真實code行為": "此組合只對同時符合兩套 selector 的 child 成立；Select 不一定降到 z-0，Button 不一定取得 K12 border。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:172",
+   "宣稱": "極窄容器中固定寬 children（w-[Xpx]）會溢出",
+   "真實code行為": "FCG 沒有 shrink-0，Field wrappers 有 min-w-0；flex item 預設 flex-shrink:1，通常會先縮小，只有另設不可縮條件才保證溢出。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:189",
+   "宣稱": "ButtonGroup 是同 border-collapse mechanism 的 Button 版",
+   "真實code行為": "ButtonGroup 實際是 gap-2 分離排列，並非 FieldControlGroup 的 Button 版接合機制。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.anatomy.stories.tsx:4",
+   "宣稱": "無 interactive prop control（僅 children layout）→ Inspector N/A",
+   "真實code行為": "公開 block?: boolean 是可檢閱且有實際作用的 prop，會在 inline-flex 與 flex w-full 間切換。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.anatomy.stories.tsx:40",
+   "宣稱": "z-index：default 2／hover-focus 3／disabled 0",
+   "真實code行為": "該 story 的 disabled Select 不符合 [disabled]/:has([disabled]) selector，因此實際仍是 z-2；只有 disabled Input 會降至 z-0。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.principles.stories.tsx:108",
+   "宣稱": "Field label／description／error 對 group 整體生效",
+   "真實code行為": "Field context 直接流入每個 child；FCG div 本身沒有 role、aria-labelledby 或 aria-describedby。Select/Input 還會重用同一 Field control id，因此不存在 group-level 的語意關聯。"
+  }
+ ]
+}

@@ -1,0 +1,12 @@
+{
+ "dim": 17,
+ "filesScanned": 155,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/filter-operators.ts:23,48；packages/design-system/src/components/DataTable/data-table-filter-panel.tsx:171,200 ↔ packages/design-system/src/components/Button/button.tsx:112,251",
+   "問題": "DataTable 的 ValueShape／FilterValuePickerProps.shape 使用「text」表示由單行 <Input> 接值；Button variant=\"text\" 則表示低視覺權重、無 chrome 的動作樣式。同一 literal 分別代表輸入控制形狀與按鈕強調層級，語義實質不同，且相關 spec 未記載例外。DataTable helper 未公開匯出，影響範圍較低。",
+   "severity": "marginal",
+   "建議": "將 DataTable 的 ValueShape literal 改為「text_input」，同步 operator registry、FilterValuePicker switch 與相關 spec；保留 Button 公開 canonical 的「text」。"
+  }
+ ]
+}

@@ -13,6 +13,7 @@ import {
   ICON_SIZE as ROW_ICON_SIZE,
   type RowSize,
 } from "@/design-system/patterns/element-anatomy/item-anatomy"
+import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 
 /**
  * DropdownMenu — Radix DropdownMenu + MenuItem visual layer
@@ -41,7 +42,8 @@ import {
 // ── Floating layer 共用樣式 ──
 const floatingLayerClass = [
   'z-50 overflow-hidden rounded-lg border border-border bg-surface-raised',
-  'data-[state=open]:animate-in data-[state=closed]:animate-out motion-reduce:animate-none',
+  overlayMotion,
+  'data-[state=open]:animate-in data-[state=closed]:animate-out',
   'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
   'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
   'data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2',
@@ -97,8 +99,10 @@ DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName
 // 的 8px,只需在第二個起的 group 加 8+8 = 16px gap + border)
 //
 // **視覺結果等同**:兩種實作的 visual output 一致,只是「padding 住在哪層」
-// 不同。不強制統一 CSS 表達式——DropdownMenuContent 的 py-2 是既有 Radix
-// 期望的行為,移除會影響 trigger 鍵盤導覽的 focus offset。
+// 不同。不強制統一 CSS 表達式——DropdownMenuContent 的 py-2 是純視覺 Content
+// 邊界 padding(Radix roving focus 依 collection refs + element.focus(),不讀
+// CSS padding;對齊 spec.md「為什麼不直接套 py-2」段)。Group 若再套 py-2 會
+// double padding,故 Group 用 mt-2/pt-2 只加在第二個起。
 const DropdownMenuGroup = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Group>
@@ -423,7 +427,8 @@ const DropdownMenuSeparator = React.forwardRef<
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName
 
 // ── RadioItem（單選，排序方式等）──
-// Radix handles checked state; visual用 MenuItem 的 selected highlight。
+// Radix handles checked state;checked 底色套在外層 Radix RadioItem 本身(parent-bg
+// pattern,詳下方 2026-05-31 #10 註解),內層 MenuItem 恆 !bg-transparent 讓它透出。
 interface DropdownMenuRadioItemProps
   extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem> {
   /** Prefix icon(LucideIcon) */
@@ -467,12 +472,16 @@ const DropdownMenuRadioItem = React.forwardRef<
 })
 DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName
 
-// ── Shortcut（鍵盤快捷鍵提示，ml-auto 靠右）──
+// ── Shortcut（鍵盤快捷鍵提示 child;escape-hatch,不靠右）──
 // **Canonical 是 `<DropdownMenuItem shortcut="⌘C">`** prop —— 走 MenuItem `endContent` 正規後綴 slot
-// (跟 badge / endIcon 同槽、gap/對齊一致)。本 child 是 **composition escape-hatch**(對齊 shadcn
-// DropdownMenuShortcut idiom),供需手動 compose children 的少數場景;它用 `ml-auto` 塞在 children
-// 內(繞過 endContent slot)。**同一 item 只用一種,勿混用**(見 spec.md 禁止事項)。
-// 視覺統一:text-caption + tracking-shortcut + fg-muted(對齊 prop 後綴 + CommandShortcut)。
+// (跟 badge / endIcon 同槽、gap/對齊一致,真正靠右對齊列尾)。本 child 是 **composition
+// escape-hatch**(相容 shadcn DropdownMenuShortcut idiom = `ml-auto` span,source:
+// https://ui.shadcn.com/docs/components/dropdown-menu;npm published API 不砍)。⚠️ 在
+// DropdownMenuItem 內 children 會進 MenuItem ItemContent 的 label `<span>`(inline context,
+// 非 flex row),故 `ml-auto` **不生效、不會靠右**——只會 inline 附加在 label 文字尾;`ml-auto`
+// 僅在 consumer 自組 flex row 時生效。要靠右一律用 canonical `shortcut` prop。**同一 item
+// 只用一種,勿混用**(見 spec.md「快捷鍵提示 API」+ 禁止事項)。
+// 字體樣式統一:text-caption + tracking-shortcut + fg-muted(對齊 prop 後綴 + CommandShortcut);位置不等價。
 const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => (
   <span
     className={cn('ml-auto text-caption text-fg-muted tracking-shortcut', className)}

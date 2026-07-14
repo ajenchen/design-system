@@ -1,0 +1,185 @@
+{
+  "dim": 24,
+  "title": "Story 範例重複性 — codex B.3 比稿裁定",
+  "role": "B.3 裁定員(逐條對照真實 code + Claude same-dim findings)",
+  "codexRaw": 25,
+  "summary": {
+    "material_confirmed": 5,
+    "marginal": 19,
+    "false_positive": 1,
+    "claudeMissed": 4
+  },
+  "judging_frame": [
+    "GROUND TRUTH = 真實 code(每條去 Read 驗證 fileLine + 對照 anatomy/principles 引用行)。",
+    "governing canonical = story-rules.md『範例最高準則』earn-existence 2-test:(a) 教別 story 沒教的原則? (b) 移除後 spec 理解 degrade? 兩題皆 NO → retire。",
+    "3-layer 結構是 DS 刻意設計:anatomy = 機制 matrix(prescribed 6-canonical)/ principles = 決策規則(Rule component 帶 rendered 對照例)/ showcase = 真實業務情境。Claude scope_note 明確排除 anatomy/principles 於『範例重複性』scope。",
+    "codex 系統性攻擊 (a) 3-layer prescribed 結構 (b) Field-family『四模式』跨元件慣例 → 這兩類皆 by-design,判 marginal。",
+    "material 門檻:showcase story 是 bare matrix 逐字/子集重複 anatomy 且無獨立教學、非 documented convention。"
+  ],
+  "verdicts": [
+    {
+      "fileLine": "packages/design-system/src/components/Alert/alert.principles.stories.tsx:143",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "PlacementRule 是 principles 決策教學(inline 正例 / fixed 正例 / ❌混用反例三段對照),Rule component 帶 rendered 例是 prescribed principles 結構。codex 想剝掉兩正例只留反例 = 攻擊 by-design 的決策對照三段式;anatomy PlacementMatrix 教機制、principles 教『何時 inline vs fixed』屬不同 layer。技術上有 overlap 但非該修缺陷。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.stories.tsx:139",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "reason": "驗證屬實:showcase CommonRatios(16/9,4/3,1/1 對照 grid)是 anatomy StandardRatios(5 比例矩陣 L167,16/9,4/3,1/1,3/4,21/9)的子集,兩層各有一份『比例對照 grid』= 真跨層重複(story-rules『AllVariants 對照各 1』)。Claude 同檔也抓 AspectRatio 重複(但主張退 HeroBanner/SquareAvatar,保留 CommonRatios)→ 反向結論;codex 的 CommonRatios-vs-anatomy 軸是有效觀察。Claude 已 address 該檔重複,不計 claudeMissed。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Badge/badge.stories.tsx:47",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "Dot 是 distinct affordance(dot mode vs count mode,story-rules『不同 affordance 必分』),showcase Dot 帶『只 critical/high』constraint caption。anatomy Overview/ColorMatrix(L443 只 critical/high 渲染)/SizeMatrix 確有覆蓋,但 showcase 以 affordance 角度呈現屬防禦性。thin 但非 clean 冗餘。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.stories.tsx:30",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "Default『預設』baseline 展示 indeterminate + value=60 + value=90 affix,與 anatomy Overview/UsageInline 有 overlap。但『Default/預設』baseline 是 DS 慣例 story,且帶 documented single-size rationale 註解。thin overlap,非 must-fix。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:135",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "reason": "驗證屬實:showcase NumberAlignment 僅渲染 <DataTable columns={columnsWithPrice}>,唯一教學『數字靠右』已被 anatomy AlignmentRule(L250,text/currency/select/boolean 跨型別對齊 + 跨產業共識理由表)全面且更完整涵蓋。DataTable 有 40+ stories,此 thin story earn-existence 2-test 皆 NO。Claude 未在 dim 24 flag DataTable → claudeMissed。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:69",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "Modes『四模式』是 Field-family 跨元件慣例(Input/NumberInput/LinkInput/RadioGroup 皆有同名 story),code 內帶註解『空值與完整 state 矩陣由 anatomy 擁有,不在此重複』顯示已刻意分工。攻擊 documented convention = marginal 非 material。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:96",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reason": "同意 codex。Clearable 是 thin clearable 行為 demo,與 anatomy StateBehavior + principles ClearableRule 有 overlap,但 clearable 為 distinct 行為。情境依賴。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:320",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "Display 是 display-mode 格式變體 grid(預設/完整月份/zh-TW/null),帶『DataTable cell 用』framing。與 anatomy display/locale 矩陣 overlap,屬 prop-variations grid(story-rules 建議用 Controls),但有特定 table-cell 使用脈絡。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Dialog/dialog.principles.stories.tsx:175",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "HeightBehaviorRule 是 principles 決策教學(預設填滿 vs autoHeight 對照 + 反例),Rule component 帶 rendered 例是 prescribed 結構。anatomy HeightBehavior 教機制、principles 教『何時選哪種高度』屬不同 layer。by-design。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Empty/empty.stories.tsx:23",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reason": "同意 codex。SearchNoResults 是 Empty 主要 showcase 業務情境(Jira/Linear 慣例);principles UsageGuidance/NextActionRule 引用同情境教規則屬 by-design 3-layer。showcase 該保留為 canonical,principles 重述屬職責。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:98",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "ModeRule 是 principles 決策教學(rich 何時用 vs compact 何時用),用不同檔案資料(Q1-report.pdf/beach-photo.jpg for rich;users.csv/orders.json for compact)非 codex 稱『近乎相同資料』。教『選擇準則』異於 anatomy ModeMatrix 教視覺機制。by-design。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Input/input.stories.tsx:19",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "Modes『四模式』Field-family 慣例,且帶 per-mode 豐富 caption(edit focus border / display 無 chrome / readonly neutral-2 / disabled Tooltip 模式)+ disabled Tooltip 真實 pattern，非 bare matrix。攻擊 documented convention = marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/LinkInput/link-input.stories.tsx:41",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reason": "同意 codex。Empty 是 thin 空值行為 demo(空值直接顯示 input 不用先按 Pencil),principles DisplayStateRule/EmptyRule 涵蓋。情境依賴。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/LinkInput/link-input.stories.tsx:56",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reason": "同意 codex。Validation 失焦驗證流程與 principles ValidationRule overlap,後者涵蓋更多鍵盤行為。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/NumberInput/number-input.stories.tsx:23",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "Modes『四模式』Field-family 慣例(prefix=$ 價格脈絡),與 DatePicker/Input Modes 同 convention。攻擊 documented convention = marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/NumberInput/number-input.stories.tsx:73",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "FormatOptions 是格式化 prop-variations grid(prefix $ / suffix % precision / NT$ precision / null),與 anatomy 格式矩陣 overlap,屬 prop variations(story-rules 建議 Controls)。但展示真實 formatting 輸出有參考價值。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:35",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reason": "同意 codex(偏 false-positive):Default 是 args-based Controls playground(args:{value,status,affix} + render(args)),為 Storybook 互動 Controls 故事的 distinct 角色。與 anatomy AffixBehavior 視覺 overlap 但功能定位不同。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:49",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reason": "同意 codex。BatchTask 是豐富真實 CSV 匯入情境(1,250 筆/812 已處理/65%/剩 28 秒),principles 批次案例重述屬 by-design。showcase 該保留為完整案例。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Separator/separator.stories.tsx:80",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "reason": "驗證屬實:showcase InDropdownMenu(重新命名/複製連結/separator/刪除)與 principles DecorativeSemanticRule(L99)的選單逐字相同 render。earn-existence 2-test 皆 NO(principles 已含同一 rendered 選單 + a11y 教學)。codex 另指 spec DropdownMenuSeparator canonical 屬 DropdownMenu 擁有。Claude 未 flag Separator → claudeMissed。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Skeleton/skeleton.stories.tsx:24",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "reason": "驗證屬實:showcase Default(h-4 w-full ×2 + h-4 w-3/4 三行)與 anatomy CommonShapes『多行段落(寬度遞減模擬自然換行)』subsection(L58-64)逐字相同。Skeleton 已有 5 個真實載入情境(UserProfileCard/TaskListLoading/...),bare 三行骨架不 earn existence。Claude 未 flag Skeleton → claudeMissed。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Slider/slider.stories.tsx:21",
+      "codexSeverity": "material",
+      "verdict": "false_positive",
+      "reason": "codex 誤判:稱『只重畫三個裸 Slider 尺寸,與 anatomy SizeMatrix 完整重複』失實。SizeAlignment 主要教學是 field-height 對齊原則(track 厚度/thumb 直徑跨 size 恆定、僅容器外高隨 --field-height-* 變、能與 Input/Select/NumberInput 在 Field 內並排對齊)—— 此原則 anatomy SizeMatrix(純 size grid)不教。story earn existence。codex『加真 Input/NumberInput』是有效 enhancement 但非 redundancy 缺陷;作為 dim-24 冗餘判定為 false_positive。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Tabs/tabs.stories.tsx:97、packages/design-system/src/components/Tabs/tabs.stories.tsx:119",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "OverflowScroll(水平捲動 fade mask)與 OverflowMenu(⌄ 導覽選單)是兩種 distinct overflow affordance(story-rules『不同 affordance 必分』),2026-05-18 專為『秀真實溢出』新增(narrow 320px 強制觸發)。codex 建議合併違反 affordance 分離 rule。與 anatomy OverflowMatrix side-by-side 對照有 overlap 但個別 real-trigger demo 有價值。marginal(codex merge 建議偏誤,但 anatomy overlap 觀察部分成立)。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/TimePicker/time-picker.stories.tsx:103",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "ShopBusinessHours 是真實業務情境(店家營業 10:00→22:00 兩 picker + 箭頭)。principles RuleRangeComposition 教『無內建 range 需組兩 picker』的規則(帶同構 rendered 例)。showcase 業務 framing 與 principles 規則教學屬不同 layer;overlap 明顯但 by-design 3-layer。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Tooltip/tooltip.stories.tsx:62",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "reason": "驗證屬實:showcase Placement 是四方向(top/left/right/bottom)裸 placement 矩陣,無業務情境;anatomy PlacementReference(L352)已含四方向 grid + 動畫對照表(更豐富)。方向是 prop(side)非 affordance(story-rules『同 affordance prop variations 用 Controls 不另開』)。showcase 版加不了 anatomy 沒有的東西。Claude 未 flag Tooltip → claudeMissed。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx:148",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "reason": "IndentRule 是 principles 規則教學(indentStep = chevronSize + gap-2 公式 + chevron placeholder 對齊原則),Rule component 帶 rendered 例。教『為何 gap-2 / 為何留 placeholder』異於 anatomy IndentMatrix 純視覺矩陣。prescribed principles 結構。marginal。"
+    }
+  ],
+  "topMaterial": [
+    "Skeleton `Default`(skeleton.stories.tsx:24)三行文字骨架與 anatomy CommonShapes『多行段落』逐字相同,不 earn existence",
+    "Tooltip `Placement`(tooltip.stories.tsx:62)四方向裸 placement 矩陣是 anatomy PlacementReference 子集,方向是 prop 非 affordance",
+    "Separator `InDropdownMenu`(separator.stories.tsx:80)與 principles DecorativeSemanticRule 選單逐字相同,且 separator-in-menu canonical 屬 DropdownMenu",
+    "AspectRatio `CommonRatios`(aspect-ratio.stories.tsx:139)4 比例對照 grid 完整落在 anatomy StandardRatios 5 比例矩陣內(跨層兩份比例 grid)",
+    "DataTable `NumberAlignment`(data-table.stories.tsx:135)唯一教學『數字靠右』已由 anatomy AlignmentRule 全面涵蓋,thin showcase 不 earn existence"
+  ],
+  "claudeMissedDetail": [
+    "DataTable NumberAlignment — Claude 未在 dim 24 flag DataTable",
+    "Separator InDropdownMenu — Claude 未 flag Separator",
+    "Skeleton Default — Claude 未 flag Skeleton",
+    "Tooltip Placement — Claude 未 flag Tooltip"
+  ],
+  "note_aspectratio": "AspectRatio(#2)判 material_confirmed 但不計 claudeMissed:Claude 已抓同檔 ratio 冗餘(主張退 HeroBanner/SquareAvatar,保留 CommonRatios),與 codex 反向結論;component-level 重複 Claude 已 address。"
+}

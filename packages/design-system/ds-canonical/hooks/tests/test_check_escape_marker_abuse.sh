@@ -182,6 +182,30 @@ expect_not_block "N8. empty content → not blocked"
 run_hook_bypass "Write" "$CONSUMER" "content" "$C_3DISTINCT"
 expect_not_block "N9. CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT=1 override → not blocked"
 
+# ── R-series:repo 級累計 ratchet(2026-07-08 WM 戰役 R4)──────────────────────
+# 存量 ≥10(apps/** 全 repo)後,只擋「本次 edit 再新增 marker」;無 marker edit 不 brick。
+mkdir -p "$TMP_DIR/apps/work/src"
+for i in 1 2 3 4 5 6; do
+  printf '// @ds-misuse-allow: seeded reason %s\n// @layout-space-magic-ok: seeded reason %sb\n' "$i" "$i" \
+    > "$TMP_DIR/apps/work/src/seed$i.tsx"
+done
+
+# R1. 存量 12 ≥ cap 10 + 本次新增 1 marker → BLOCK(ratchet)
+run_hook "Write" "/repo/apps/work/src/new.tsx" "content" '<div /> // @ds-misuse-allow: one more'
+expect_block "R1. repo 存量 12 ≥ cap + edit 加 marker → blocked (ratchet)" "ESCAPE-MARKER-REPO-RATCHET"
+
+# R2. 存量 12 ≥ cap 但本次 edit 無 marker → not blocked(不因存量 brick 無關 edit)
+run_hook "Write" "/repo/apps/work/src/new.tsx" "content" '<div className="flex" />'
+expect_not_block "R2. repo 存量 ≥ cap 但 edit 無 marker → not blocked"
+
+# R3. 存量降到 4 < cap + 本次加 1 marker → not blocked
+rm -f "$TMP_DIR/apps/work/src/seed3.tsx" "$TMP_DIR/apps/work/src/seed4.tsx" \
+      "$TMP_DIR/apps/work/src/seed5.tsx" "$TMP_DIR/apps/work/src/seed6.tsx"
+run_hook "Write" "/repo/apps/work/src/new.tsx" "content" '<div /> // @ds-misuse-allow: legit case'
+expect_not_block "R3. repo 存量 4 < cap + edit 加 marker → not blocked"
+
+rm -rf "$TMP_DIR/apps"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

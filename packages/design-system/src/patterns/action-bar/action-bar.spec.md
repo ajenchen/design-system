@@ -285,6 +285,15 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 
 **切換按鈕**：`text` + `pressed` toggle——依預設（未啟用）狀態決定位置與分隔線；切為啟用（`pressed=true`）時不移動、不調整分隔線（啟用態不是 variant，見三節）。
 
+### 分隔線幾何(2026-07-08 WM 戰役 codify,user 拍板 — **scope 僅限本節語意的「action region 群組分隔線」**)
+
+**版面切分的 divider(pane `border-l` / 全高欄界 / 區塊邊界)不適用本段 — 那類是 border,兩側零 gap、貼齊版面。**
+
+- **幾何** = `<Separator orientation="vertical" className="h-6 mx-1" />` 於 `gap-2` 容器 → 兩側各 8+4 = 12px 對稱。DS 自家雙錨:ChromeHeader 容器自帶 gap-2(chrome-header.tsx:116)+ FileViewer toolbar(file-viewer.tsx:390,414)/ header-canonical.stories.tsx:68;ButtonGroup 同款幾何 = ButtonDivider `mx-1` 於 gap-2 群組(button-group.tsx:26「8px(gap)+ 4px(自身)= 12px」)。
+- **高度縮短、不 full-height**:`h-6`(24px)配 sm 控件(28px)矮一級;dense 情境(xs 控件 / gap-1 容器)降 `h-5 mx-1`(item-anatomy.stories.tsx inline-action 群先例)。原則:「divider 高 ≈ 相鄰控件內容高,比控件盒矮一級」。
+- **世界級對照**(對稱 + 縮短 = 4/4 共識):Ant Divider vertical 兩側 8px + 高 0.9em(https://github.com/ant-design/ant-design/blob/master/components/divider/style/index.ts)/ MUI toolbar demo `mx:0.5 my:1`(https://github.com/mui/material-ui/blob/master/docs/data/material/components/toggle-button/CustomizedDividers.tsx)/ Radix Toolbar demo `margin: 0 10px`(https://github.com/radix-ui/website/blob/main/components/demos/toolbar/css/styles.css)/ shadcn `h-4 mx-2`(sidebar-02 block)。DS 取自家既有雙錨值(M23 DS canonical 優先)。
+- **禁**:`h-full`(觸頂觸底)/ 單側 margin(不對稱)。
+
 ---
 
 ## 六、溢出選單

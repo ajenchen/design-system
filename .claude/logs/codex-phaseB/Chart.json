@@ -1,0 +1,86 @@
+{
+ "component": "Chart",
+ "claimsVerified": 235,
+ "falseClaims": [
+  {
+   "fileLine": "chart.tsx:8-9; chart.spec.md:20; chart.anatomy.stories.tsx:256; chart.stories.tsx:33",
+   "宣稱": "tooltip / legend / grid / axis 的所有視覺皆改用本 DS token。",
+   "真實code行為": "ChartTooltip、ChartLegend 只是 Recharts alias；預設內容仍使用 #fff/#ccc 等原生樣式，tooltip cursor 仍為 #ccc，axis/tick lines 仍為 #666。只有自訂 Content、grid 與 tick text 被 token 化。"
+  },
+  {
+   "fileLine": "chart.tsx:46,52-86",
+   "宣稱": "ChartContainerProps extends React.ComponentProps<'div'>，支援原生 div props。",
+   "真實code行為": "id 被改作 data-chart 識別碼並從 rest props 移除，根 div 不會取得 consumer 傳入的 id。"
+  },
+  {
+   "fileLine": "chart.tsx:137,159-275; chart.tsx:289,296-331",
+   "宣稱": "ChartTooltipContent／ChartLegendContent 支援原生 div props。",
+   "真實code行為": "兩個 renderer 都沒有 rest spread；除 className、ref 外，id、style、data-*、aria-* 與事件 props 會被丟棄。"
+  },
+  {
+   "fileLine": "chart.tsx:66; chart.spec.md:26,40,155",
+   "宣稱": "外包 AspectRatio，其 padding-bottom 高度會蓋過 ChartContainer 的 aspect-video，提供特殊 ratio 覆寫門路。",
+   "真實code行為": "ChartContainer 仍保留 16:9；600px 寬的 ratio=2 wrapper 高 300px時，ChartContainer 仍高 337.5px並溢出。必須直接覆寫子層 aspect class或設 h-full + aspect-auto。"
+  },
+  {
+   "fileLine": "chart.tsx:201",
+   "宣稱": "spec L146 宣稱鍵盤可達與讀屏。",
+   "真實code行為": "現行 spec:146 是禁止在 chart 放 Button／Input；鍵盤與讀屏宣稱位於 spec:165。role=status、aria-live 的 code 本身存在。"
+  },
+  {
+   "fileLine": "chart.anatomy.stories.tsx:4-5; chart.principles.stories.tsx:323",
+   "宣稱": "資料密度由 --chart-1..5 限制／五色 token 會強制最多五類別。",
+   "真實code行為": "ChartConfig 接受任意數量的 string keys及任意 CSS color，沒有型別或 runtime 數量檢查；同一 principles story 本身即可建立並渲染七類。"
+  },
+  {
+   "fileLine": "chart.anatomy.stories.tsx:6-8; chart.principles.stories.tsx:190",
+   "宣稱": "hover tooltip／legend toggle 由 Recharts 內部處理；Chart 內只有 tooltip／legend 這類 hover 級 passive 互動。",
+   "真實code行為": "Tooltip 也由 focus、方向鍵與 Enter 驅動；ChartLegendContent 是無 handler 的靜態 div，Recharts 沒有自動 series toggle，Inspector 也未涵蓋此行為。"
+  },
+  {
+   "fileLine": "chart.stories.tsx:113,148",
+   "宣稱": "formatter 範例會顯示 dashed／line tooltip indicator。",
+   "真實code行為": "formatter 分支取代整個預設 row；兩個故事的 runtime indicator 節點數皆為 0。"
+  },
+  {
+   "fileLine": "chart.spec.md:121; chart.anatomy.stories.tsx:266; chart.principles.stories.tsx:180",
+   "宣稱": "Tooltip 值套用 text-foreground、font-mono、font-medium、tabular-nums，使用 formatter 仍維持一致視覺。",
+   "真實code行為": "formatter 回傳內容直接渲染，會繞過 indicator、類別名稱、值 wrapper及上述文字 utilities；僅保留 tooltip 外殼。"
+  },
+  {
+   "fileLine": "chart.spec.md:85; chart.anatomy.stories.tsx:116",
+   "宣稱": "每個 dataKey 透過 ChartConfig 對應 label + color；Pie 的 ChartConfig.key 與 dataKey 對齊。",
+   "真實code行為": "Pie dataKey 是 users，分類查找實際依 nameKey=tier；Free／Pro 等值又不匹配小寫 config keys，導致 Overview Pie legend label 全空。ChartConfig 本身也不限制 key 必須是 dataKey。"
+  },
+  {
+   "fileLine": "chart.anatomy.stories.tsx:283",
+   "宣稱": "ChartConfig 每項為 { label, color | theme, icon? }。",
+   "真實code行為": "label 是 optional；color 分支也允許 color／theme 都省略，因此空設定仍符合型別。"
+  },
+  {
+   "fileLine": "chart.spec.md:126",
+   "宣稱": "Dot fill 依 series color。",
+   "真實code行為": "Recharts 一般 Line dot 預設 fill=#fff；只有 active dot 使用 series mainColor，Chart wrapper 也沒有把一般 dot fill 改成 series color。"
+  },
+  {
+   "fileLine": "chart.spec.md:136",
+   "宣稱": "RTL 由 Recharts engine 處理。",
+   "真實code行為": "Recharts 3.8.1 不推斷 dir／RTL；軸順序與鍵盤方向須由 consumer 顯式設定 reversed等 props，wrapper 未提供額外 RTL 行為。"
+  },
+  {
+   "fileLine": "chart.anatomy.stories.tsx:304; chart.principles.stories.tsx:428",
+   "宣稱": "Pie／Donut 可聚焦，但方向鍵無法逐片導覽。",
+   "真實code行為": "Recharts 3.8.1 的 keyboard middleware 會推進 radial item index，Pie 亦註冊每個 sector 的 getPosition；runtime 中左右鍵可依序切換各切片 tooltip。"
+  },
+  {
+   "fileLine": "chart.spec.md:156",
+   "宣稱": "Chart 本身沒有 hover／focus／active 互動狀態。",
+   "真實code行為": "預設 SVG 具有 tabIndex=0、role=application；focus 會啟用第 0 筆 tooltip，方向鍵改變 active index，Enter 切換 active 狀態。"
+  },
+  {
+   "fileLine": "chart.principles.stories.tsx:259,350-367",
+   "宣稱": "Pie／Donut 只適用 3-4 類，超過就改用 Bar。",
+   "真實code行為": "同一檔稍後把五類 Pie 標為「正確」，且實際成功渲染，文件內部判準互相矛盾。"
+  }
+ ]
+}

@@ -38,14 +38,14 @@ export const Overview: Story = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'Field mode(默認 inherit Field context 或 edit);display 渲純展示 ✓/—,語意由 context 提供'],
+                ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'Field mode(默認 inherit Field context 或 edit);display 渲純展示 勾/叉 icon,語意由 context 提供'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '對齊 field size tier(sm 跟 md 視覺相同)'],
                 ['checked / defaultChecked', 'boolean', '—', 'ON/OFF 狀態(受控 / 非受控)'],
                 ['onCheckedChange', '(checked: boolean) => void', '—', '切換 callback'],
                 ['label', 'ReactNode', '—', 'inline label(Field context 內會被忽略)'],
                 ['description', 'ReactNode', '—', 'inline description(與 label 搭配)'],
                 ['disabled', 'boolean', 'false', '停用(opacity-disabled 保留顏色,見 spec)'],
-                ['readOnly', 'boolean', 'false', 'standalone:鎖定互動視覺正常;Field 內:灰框 + ✓/—(2026-06-12 拍板)'],
+                ['readOnly', 'boolean', 'false', 'standalone:鎖定互動視覺正常;Field 內:灰框 + 勾/叉 icon(2026-06-12 拍板)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -78,7 +78,7 @@ export const Inspector: InspectorStory = {
     mode: {
       control: 'radio',
       options: ['edit', 'display', 'readonly', 'disabled'],
-      description: 'Field mode;display 渲純展示 ✓/—(語意由 context 提供)',
+      description: 'Field mode;display 渲純展示 勾/叉 icon(語意由 context 提供)',
     },
     size: {
       control: 'radio',
@@ -87,7 +87,7 @@ export const Inspector: InspectorStory = {
     },
     defaultChecked: { control: 'boolean', description: '預設 ON / OFF' },
     disabled: { control: 'boolean', description: '停用(opacity-disabled 保留顏色)' },
-    readOnly: { control: 'boolean', description: '唯讀(standalone 視覺正常鎖互動;Field 內灰框 + ✓/—)' },
+    readOnly: { control: 'boolean', description: '唯讀(standalone 視覺正常鎖互動;Field 內灰框 + 勾/叉 icon)' },
     label: { control: 'text', description: 'inline label(留空 → 只渲染 switch 本體)' },
     description: { control: 'text', description: 'inline description(需搭配 label)' },
   },
@@ -135,7 +135,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>視覺狀態對照</H3>
-        <Desc>disabled 用 opacity-disabled 保留顏色(Switch 特例,見下「Disabled 策略」)。readonly:standalone 視覺正常鎖互動;Field 內灰框 + ✓/—。</Desc>
+        <Desc>disabled 用 opacity-disabled 保留顏色(Switch 特例,見下「Disabled 策略」)。readonly:standalone 視覺正常鎖互動;Field 內灰框 + 勾/叉 icon。</Desc>
         <div className="overflow-x-auto mb-4">
           <table className="text-caption border-collapse">
             <thead><tr><Th>State</Th><Th>Track</Th><Th>Thumb</Th><Th>Check icon</Th></tr></thead>
@@ -178,8 +178,8 @@ export const StateBehavior: Story = {
 
       <div>
         <H3>Disabled 策略:opacity 而非灰階 swap</H3>
-        <Desc>Switch 的 on/off 視覺差異**唯一載體是顏色**(track bg-primary vs bg-border)——track 和 thumb 在 on/off 之間形狀完全相同。若用灰階 swap(把 primary 換成 border),disabled 的 ON 和 OFF 會看起來一模一樣,使用者無法分辨當前狀態。必須保留顏色。</Desc>
-        <p className="text-footnote text-fg-muted">對照 Checkbox / Slider 用灰階弱化(它們的形狀或位置本身就承載開 / 關狀態,不靠顏色),所以灰掉也看得出狀態;Switch 只靠顏色,只能降透明度保留顏色。</p>
+        <Desc>Switch 的 on/off 視覺差異**最強載體是顏色**(track bg-primary vs bg-border)——thumb 位移與 check icon 只是弱輔助線索。若用灰階 swap(把 primary 換成 border),disabled 的 ON 和 OFF 只剩灰階低對比下的位置與小 icon 差異,難以一眼分辨當前狀態。必須保留顏色。</Desc>
+        <p className="text-footnote text-fg-muted">對照 Checkbox / Slider 用灰階弱化(它們的形狀或位置本身就承載開 / 關狀態,不靠顏色),所以灰掉也看得出狀態;Switch 的主載體是顏色,只能降透明度保留顏色。</p>
       </div>
     </div>
   ),

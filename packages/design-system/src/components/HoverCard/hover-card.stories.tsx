@@ -11,7 +11,7 @@ import { HoverCard, HoverCardTrigger, HoverCardContent } from './hover-card'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Button } from '@/design-system/components/Button/button'
 import { ProfileCard } from '@/design-system/components/ProfileCard/profile-card'
-import { HOVER_DELAY_RICH_MS, HOVER_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
+import { MOTION_DELAY_RICH_MS, MOTION_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
 
 const meta: Meta = {
   title: 'Design System/Internal/HoverCard/展示',
@@ -45,7 +45,7 @@ export const PersonProfileCard: Story = {
         <HoverCard>
           <HoverCardTrigger asChild>
             <button type="button" aria-label="Ada Chen 個人資訊" className="cursor-pointer rounded-full">
-              <Avatar alt="Ada Chen" color="indigo" size={28} />
+              <Avatar src="https://i.pravatar.cc/56?u=ada-chen" alt="Ada Chen" color="indigo" size={28} />
             </button>
           </HoverCardTrigger>
           <HoverCardContent
@@ -54,7 +54,7 @@ export const PersonProfileCard: Story = {
           >
             <ProfileCard
               name="Ada Chen"
-              avatar={{ alt: 'Ada Chen', color: 'indigo' }}
+              avatar={{ src: 'https://i.pravatar.cc/80?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
               subtitle="Design Engineer · Frontend"
               status="online"
               statusMessage="正在處理 login 頁重構"
@@ -130,9 +130,9 @@ export const OverflowList: Story = {
   name: '溢出清單',
   render: () => {
     const hidden = [
-      { name: '黃怡君', color: 'turquoise' as const },
-      { name: '王文彬', color: 'purple' as const },
-      { name: '李思妤', color: 'yellow' as const },
+      { name: '黃怡君', color: 'turquoise' as const, avatarUrl: 'https://i.pravatar.cc/40?u=huang-yijun' },
+      { name: '王文彬', color: 'purple' as const, avatarUrl: 'https://i.pravatar.cc/40?u=wang-wenbin' },
+      { name: '李思妤', color: 'yellow' as const, avatarUrl: 'https://i.pravatar.cc/40?u=li-siyu' },
     ]
     return (
       <div className="flex flex-col gap-3 max-w-md">
@@ -140,10 +140,10 @@ export const OverflowList: Story = {
           此樣式由 OverflowIndicator 使用(深色 tooltip-style)—— +N hover 看完整清單。
         </p>
         <div className="flex items-center gap-1">
-          <Avatar alt="Ada Chen" color="indigo" size={24} />
-          <Avatar alt="張美真" color="magenta" size={24} />
-          <Avatar alt="林伯彥" color="green" size={24} />
-          <HoverCard openDelay={HOVER_DELAY_RICH_MS} closeDelay={HOVER_DELAY_CLOSE_MS}>
+          <Avatar src="https://i.pravatar.cc/48?u=ada-chen" alt="Ada Chen" color="indigo" size={24} />
+          <Avatar src="https://i.pravatar.cc/48?u=zhang-meizhen" alt="張美真" color="magenta" size={24} />
+          <Avatar src="https://i.pravatar.cc/48?u=lin-boyan" alt="林伯彥" color="green" size={24} />
+          <HoverCard openDelay={MOTION_DELAY_RICH_MS} closeDelay={MOTION_DELAY_CLOSE_MS}>
             <HoverCardTrigger asChild>
               <button
                 type="button"
@@ -159,7 +159,7 @@ export const OverflowList: Story = {
               <div className="flex flex-col gap-1 min-w-[160px]">
                 {hidden.map((p) => (
                   <div key={p.name} className="flex items-center gap-2 text-caption">
-                    <Avatar alt={p.name} color={p.color} size={20} />
+                    <Avatar src={p.avatarUrl} alt={p.name} color={p.color} size={20} />
                     <span>{p.name}</span>
                   </div>
                 ))}
@@ -247,10 +247,10 @@ export const TriggerShowcase: Story = {
       <div className="flex items-center gap-6 flex-wrap">
         <div className="flex flex-col gap-2">
           <span className="text-footnote text-fg-muted font-mono">trigger: Avatar</span>
-          <HoverCard openDelay={HOVER_DELAY_RICH_MS} closeDelay={HOVER_DELAY_CLOSE_MS}>
+          <HoverCard openDelay={MOTION_DELAY_RICH_MS} closeDelay={MOTION_DELAY_CLOSE_MS}>
             <HoverCardTrigger asChild>
               <button type="button" aria-label="Ada Chen 個人資訊" className="cursor-pointer rounded-full">
-                <Avatar alt="Ada Chen" color="indigo" size={32} />
+                <Avatar src="https://i.pravatar.cc/64?u=ada-chen" alt="Ada Chen" color="indigo" size={32} />
               </button>
             </HoverCardTrigger>
             <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-3">
@@ -261,7 +261,7 @@ export const TriggerShowcase: Story = {
 
         <div className="flex flex-col gap-2">
           <span className="text-footnote text-fg-muted font-mono">trigger: Button</span>
-          <HoverCard openDelay={HOVER_DELAY_RICH_MS} closeDelay={HOVER_DELAY_CLOSE_MS}>
+          <HoverCard openDelay={MOTION_DELAY_RICH_MS} closeDelay={MOTION_DELAY_CLOSE_MS}>
             <HoverCardTrigger asChild>
               <Button variant="tertiary" size="sm">
                 查看位置
@@ -278,7 +278,7 @@ export const TriggerShowcase: Story = {
 
         <div className="flex flex-col gap-2">
           <span className="text-footnote text-fg-muted font-mono">trigger: text link</span>
-          <HoverCard openDelay={HOVER_DELAY_RICH_MS} closeDelay={HOVER_DELAY_CLOSE_MS}>
+          <HoverCard openDelay={MOTION_DELAY_RICH_MS} closeDelay={MOTION_DELAY_CLOSE_MS}>
             <HoverCardTrigger asChild>
               <a
                 href="#"
@@ -296,7 +296,7 @@ export const TriggerShowcase: Story = {
       </div>
 
       <div className="text-footnote text-fg-muted">
-        預設 delay 已內建(<code className="font-mono mx-1">HOVER_DELAY_RICH_MS / HOVER_DELAY_CLOSE_MS</code> SSOT),特殊 tier 才需 override
+        預設 delay 已內建(<code className="font-mono mx-1">MOTION_DELAY_RICH_MS / MOTION_DELAY_CLOSE_MS</code> SSOT),特殊 tier 才需 override
         (motion.spec.md,當前 700ms / 200ms)——避免 hover 過路誤觸發 fetch waterfall;close 延遲讓 user 誤滑出可回來。
       </div>
     </div>

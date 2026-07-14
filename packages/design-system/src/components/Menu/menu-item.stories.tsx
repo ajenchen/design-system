@@ -1,17 +1,20 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
-import { Mail, Star, Bell, Settings, Plus, Folder, FileText, BarChart3 } from 'lucide-react'
+import { Mail, Star, Bell, Settings, Plus, Folder, FileText, BarChart3, Bug, Rocket } from 'lucide-react'
 import { MenuItem, MenuGroup, MenuFooter } from './menu-item'
+import { CAT_SOLID, type CategoricalHue } from '@/design-system/tokens/categorical-color'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 
 // DS-wide canonical:person avatar 必 hover → ProfileCard(含 status / statusMessage / fields
 // / actions / onViewMore,profile-card.spec.md 重要資訊)。demo helper:
+// 真實人像(2026-07-08 sweep):固定 u= key 保 determinism(對齊 avatar.stories.tsx pravatar 慣例)
+const avatarSrc = (name: string, px = 96) => `https://i.pravatar.cc/${px}?u=${name.toLowerCase().replace(/\s+/g, '-')}`
 const personHover = (name: string, subtitle?: string) => (
   <ProfileCard
     name={name}
     subtitle={subtitle ?? 'Design｜D-0042｜EMP-1001'}
-    avatar={{ alt: name }}
+    avatar={{ src: avatarSrc(name), alt: name }}
     status="online"
     statusMessage="Out of Office: Back on Monday!"
     actions={<ProfileCardDefaultActions />}
@@ -77,9 +80,9 @@ export const AvatarInline: Story = {
   name: '頭像',
   render: () => (
     <MenuContainer><MenuGroup>
-      <MenuItem avatar={{ alt: "Alice Chen", color: "indigo", hoverCard: personHover('Alice Chen') }}>Alice Chen</MenuItem>
-      <MenuItem avatar={{ alt: "Bob Wang", color: "magenta", hoverCard: personHover('Bob Wang') }}>Bob Wang</MenuItem>
-      <MenuItem avatar={{ alt: "Carol Lin", color: "green", hoverCard: personHover('Carol Lin') }}>Carol Lin</MenuItem>
+      <MenuItem avatar={{ src: avatarSrc('Alice Chen', 48), alt: "Alice Chen", color: "indigo", hoverCard: personHover('Alice Chen') }}>Alice Chen</MenuItem>
+      <MenuItem avatar={{ src: avatarSrc('Bob Wang', 48), alt: "Bob Wang", color: "magenta", hoverCard: personHover('Bob Wang') }}>Bob Wang</MenuItem>
+      <MenuItem avatar={{ src: avatarSrc('Carol Lin', 48), alt: "Carol Lin", color: "green", hoverCard: personHover('Carol Lin') }}>Carol Lin</MenuItem>
     </MenuGroup></MenuContainer>
   ),
 }
@@ -90,10 +93,35 @@ export const AvatarBlock: Story = {
   name: '頭像 + 說明文字',
   render: () => (
     <MenuContainer><MenuGroup>
-      <MenuItem avatar={{ alt: "Alice Chen", color: "indigo", hoverCard: personHover('Alice Chen', '設計部門') }} description="設計部門">Alice Chen</MenuItem>
-      <MenuItem avatar={{ alt: "Bob Wang", color: "magenta", hoverCard: personHover('Bob Wang', '工程部門') }} description="工程部門">Bob Wang</MenuItem>
-      <MenuItem avatar={{ alt: "Carol Lin", color: "green", hoverCard: personHover('Carol Lin', '行銷部門') }} description="行銷部門">Carol Lin</MenuItem>
+      <MenuItem avatar={{ src: avatarSrc('Alice Chen', 64), alt: "Alice Chen", color: "indigo", hoverCard: personHover('Alice Chen', '設計部門') }} description="設計部門">Alice Chen</MenuItem>
+      <MenuItem avatar={{ src: avatarSrc('Bob Wang', 64), alt: "Bob Wang", color: "magenta", hoverCard: personHover('Bob Wang', '工程部門') }} description="工程部門">Bob Wang</MenuItem>
+      <MenuItem avatar={{ src: avatarSrc('Carol Lin', 64), alt: "Carol Lin", color: "green", hoverCard: personHover('Carol Lin', '行銷部門') }} description="行銷部門">Carol Lin</MenuItem>
     </MenuGroup></MenuContainer>
+  ),
+}
+
+// ── startContent(自訂 leading 徽章;佔位排列 = startIcon 同容器,見 menu-item.spec.md「結構」)──
+
+/** 類型徽章 demo helper — 消費 CAT_SOLID token pair(彩底 + 深/白字由 token 決定);size-4 = ICON_SIZE sm/md */
+const TypeBadge = ({ hue, glyph: Glyph }: { hue: CategoricalHue; glyph: typeof FileText }) => (
+  <span aria-hidden className={`inline-flex size-4 shrink-0 items-center justify-center rounded-md ${CAT_SOLID[hue]}`}>
+    <Glyph className="size-3" strokeWidth={2.5} />
+  </span>
+)
+
+export const WithStartContent: Story = {
+  name: '自訂前綴內容',
+  render: () => (
+    // 工作項類型設定的左側導覽(Jira / Meegle type settings):類型徽章 = 彩底 + glyph,
+    // LucideIcon 表達不了 → startContent;selected = 目前編輯中的類型
+    <MenuContainer width={224}>
+      <MenuGroup>
+        <MenuItem size="sm" startContent={<TypeBadge hue="indigo" glyph={FileText} />} selected>Task</MenuItem>
+        <MenuItem size="sm" startContent={<TypeBadge hue="red" glyph={Bug} />}>Bug</MenuItem>
+        <MenuItem size="sm" startContent={<TypeBadge hue="turquoise" glyph={Rocket} />}>Release</MenuItem>
+        <MenuItem size="sm" startContent={<TypeBadge hue="purple" glyph={FileText} />} disabled>Epic（已停用）</MenuItem>
+      </MenuGroup>
+    </MenuContainer>
   ),
 }
 
@@ -197,9 +225,9 @@ const FullExampleDemo = () => {
     <MenuContainer>
       <MenuGroup>
         <MenuItem header>成員</MenuItem>
-        <MenuItem checkbox checked={selected.alice} onClick={() => toggle('alice')} avatar={{ alt: "Alice", color: "indigo" }} description="設計部門">Alice Chen</MenuItem>
-        <MenuItem checkbox checked={selected.bob} onClick={() => toggle('bob')} avatar={{ alt: "Bob", color: "magenta" }} description="工程部門">Bob Wang</MenuItem>
-        <MenuItem checkbox checked={false} avatar={{ alt: "Carol", color: "green" }} description="行銷部門" disabled>Carol Lin（已離職）</MenuItem>
+        <MenuItem checkbox checked={selected.alice} onClick={() => toggle('alice')} avatar={{ src: avatarSrc('Alice Chen', 64), alt: "Alice", color: "indigo" }} description="設計部門">Alice Chen</MenuItem>
+        <MenuItem checkbox checked={selected.bob} onClick={() => toggle('bob')} avatar={{ src: avatarSrc('Bob Wang', 64), alt: "Bob", color: "magenta" }} description="工程部門">Bob Wang</MenuItem>
+        <MenuItem checkbox checked={false} avatar={{ src: avatarSrc('Carol Lin', 64), alt: "Carol", color: "green" }} description="行銷部門" disabled>Carol Lin（已離職）</MenuItem>
       </MenuGroup>
       <MenuFooter>
         <MenuItem checkbox checked={allState} onClick={toggleAll}>全部</MenuItem>

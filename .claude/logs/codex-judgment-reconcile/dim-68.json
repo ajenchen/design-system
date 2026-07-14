@@ -1,0 +1,152 @@
+{
+  "dim": 68,
+  "title": "Stories-vs-spec canonical drift — codex B.3 judgment reconcile",
+  "codexRaw": 26,
+  "summary": {
+    "material_confirmed": 17,
+    "marginal": 8,
+    "false_positive": 1,
+    "claudeMissed": 15,
+    "claudeCaught": ["Checkbox (SelectionItem)", "RadioGroup (SelectionItem)"],
+    "note": "codex 對 4 個 token doc(color/density/motion/uiSize)的 factual-claim-vs-spec/CSS 交叉比對品質高;MenuItem-direct-use 類(Avatar/Dialog/Separator)因 ui-development.md 2026-07-10 明文軟化『consumer 不可用 MenuItem』絕對措辭 + DS-internal 情境 → 降 marginal;action-bar 為 codex 誤把 placement 規則套到 semantic-treatment demo。"
+  },
+  "verdicts": [
+    {
+      "n": 1, "component": "Accordion", "fileLine": "accordion.stories.tsx:147,165-186",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "AdvancedOptions 故事只放一個 <AccordionItem value=\"advanced\">(165-186 單 item)。accordion.spec.md 禁止事項明文『❌ 單一 item 不用 Accordion(用 <details> 或自組 toggle)』。真 story-vs-spec drift。"
+    },
+    {
+      "n": 2, "component": "Avatar", "fileLine": "avatar.stories.tsx:100-131",
+      "verdict": "marginal", "claudeCaught": false,
+      "evidence": "『In Context — MenuItem』直接用 <MenuItem>(plain div 容器無 role=listbox)。menu-item.spec.md:235 豁免僅限 MenuItem 自身 stories。但這是 Avatar-slot 情境視覺 demo(非 functional picker),且 ui-development.md 2026-07-10 明文軟化 MenuItem『consumer 不可用』絕對措辭並標其為誤導。技術對但情境依賴 → pedantic。"
+    },
+    {
+      "n": 3, "component": "Badge", "fileLine": "badge.stories.tsx:47-52",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "Dot 故事 <Badge dot variant=\"critical\"/> / <Badge dot variant=\"high\"/> 皆無 aria-label。badge.spec.md 禁止事項明文『❌ dot 模式不帶 aria-label——無文字的 dot 對 screen reader 完全不存在』。canonical dot demo 示範被禁的 a11y-less 用法。"
+    },
+    {
+      "n": 4, "component": "Button", "fileLine": "button.stories.tsx:307-313",
+      "verdict": "marginal", "claudeCaught": false,
+      "evidence": "FullWidth 故事有兩個 variant=primary(確認送出 + 永久刪除 danger)。button.spec.md:408 禁『同一操作區超過一個 primary』。但這是 fullWidth prop showcase(非 modeled action area),且 danger-primary 視覺為紅色 distinct signal,primary+danger 為 spec-blessed 破壞性最終步 pattern。context-dependent。"
+    },
+    {
+      "n": 5, "component": "Checkbox", "fileLine": "checkbox.stories.tsx:89-106; checkbox.anatomy.stories.tsx:570-585",
+      "verdict": "material_confirmed", "claudeCaught": true,
+      "evidence": "展示/anatomy 有 label 選項全用 <SelectionItem control={<Checkbox/>} label htmlFor>,selection-item.spec.md:43『❌ 直接用 <SelectionItem> 禁止』。checkbox.tsx:87-100 有 public label/description prop 卻無 story 示範。Claude 亦抓到(finding 1)。"
+    },
+    {
+      "n": 6, "component": "Chip", "fileLine": "chip.anatomy.stories.tsx:114-122,398-404",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "Inspector 可切 layout=menu 但只傳 defaultValue(uncontrolled);LayoutMatrix 也 <ChipGroup type=\"multiple\" layout=\"menu\" defaultValue={['a']}>(且 'a' 不在 chip value 清單)。chip.spec.md:202『❌ Menu 模式搭配 uncontrolled——menu items 無法同步狀態,runtime 會看到 menu 勾選失效』。既是 spec drift 也是 runtime 功能 bug。"
+    },
+    {
+      "n": 7, "component": "Command", "fileLine": "command.stories.tsx:206-232",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "ThemeSwitcherDemo 用 CommandInput 搜尋框承載 2 個固定 CommandItem(淺色/深色)。command.spec.md:74『❌ 不在短選單(< 6 項)用 Command——改用 DropdownMenu 或 RadioGroup』。正向故事直接示範被禁的短選單 Command。"
+    },
+    {
+      "n": 8, "component": "DateGrid", "fileLine": "date-grid.stories.tsx:29-33,63",
+      "verdict": "marginal", "claudeCaught": false,
+      "evidence": "Card helper <div ...p-4> 包 {children},children 為 <div flex-col gap-3>(DateGrid + selected-date text)。date-grid.spec.md:170『Consumer 不可外加 padding wrapper』。但 p-4 距 DateGrid 隔 2 層 flex-col 且框住 composite(非 popover edge 直貼),spec rationale(第一 day cell 雙重 padding)在 demo Card 不 manifest。technically-correct-but-pedantic。"
+    },
+    {
+      "n": 9, "component": "Dialog", "fileLine": "dialog.stories.tsx:336-347",
+      "verdict": "marginal", "claudeCaught": false,
+      "evidence": "『選擇標籤』用 <div role=\"list\"> 直接渲 <MenuItem>(無 onSelect / 選取行為)。有大段 code comment 記載世界級意圖(Linear Cmd+K / Polaris OptionList)+ 主教學點是 list-as-region body padding canonical(@tabs-content-gap-ok);MenuItem『consumer 不可用』措辭已軟化。有 selection-gap 但非主 functional picker demo → pedantic。"
+    },
+    {
+      "n": 10, "component": "Dialog", "fileLine": "dialog.anatomy.stories.tsx:154-197; dialog.principles.stories.tsx:180-225",
+      "verdict": "marginal", "claudeCaught": false,
+      "evidence": "anatomy/principles 用 20-field 通知設定表單(近全螢幕)示範 fill-viewport + body scroll,標為正向。dialog.spec.md:173『表單高度接近全螢幕改用獨立頁面或 Sheet』。但 DS 確實支援 fill-viewport dialog(autoHeight API),故事教學點是 scroll/height 機制(需 bulk content 才展示);content 選擇欠佳但 demonstration 有效。context-dependent。"
+    },
+    {
+      "n": 11, "component": "Empty", "fileLine": "empty.anatomy.stories.tsx:145-150",
+      "verdict": "marginal", "claudeCaught": false,
+      "evidence": "ScenarioMatrix Table 空狀態 <Empty description=\"無資料\">。empty.spec.md:175『❌ 文案太抽象(「Nothing here」「No data」)』——『無資料』正是被列的壞範例。但為 layout matrix scaffolding、低嚴重度 copy nitpick。codex 自標 marginal,同意。"
+    },
+    {
+      "n": 12, "component": "Field", "fileLine": "field.anatomy.stories.tsx:250-253",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "同一 <Field orientation=\"horizontal\"> 同時放 <FieldLabel>個人檔案公開</FieldLabel> + <Checkbox label=\"允許搜尋引擎索引\"/>。field.spec.md:345『❌ 不得在 Field 內同時放 <FieldLabel> 和給 primitive 傳 label prop』。Field context 抑制 Checkbox label → 『允許搜尋引擎索引』silent 不渲染,誤導 consumer。"
+    },
+    {
+      "n": 13, "component": "FileItem", "fileLine": "file-item.stories.tsx:159-180",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "同一 list(flex-col gap-2)依 isImage=i<2 混用 mode=\"rich\"(前2)與 mode=\"compact\"。file-item.spec.md:451『❌ 不混用 rich + compact 在同一 list——高度差破壞 row rhythm』(Invariant 1,M16 相關)。"
+    },
+    {
+      "n": 14, "component": "RadioGroup", "fileLine": "radio-group.stories.tsx:24-100; radio-group.anatomy.stories.tsx:537-550",
+      "verdict": "material_confirmed", "claudeCaught": true,
+      "evidence": "展示層 Modes 用被禁 <SelectionItem control={<RadioGroupItem/>} label>,而同元件 principles/anatomy 卻用 public <RadioGroupItem value label description>——三層自相矛盾,證明 public API 可用、展示層純屬 drift。Claude 亦抓到(finding 2)。"
+    },
+    {
+      "n": 15, "component": "Separator", "fileLine": "separator.stories.tsx:37-60",
+      "verdict": "marginal", "claudeCaught": false,
+      "evidence": "Horizontal 用 <div role=\"listbox\"> 包 3 個 <MenuItem> 當 settings rows。menu-item.spec.md 豁免僅限自身 stories。但 role=listbox 容器 = MenuItem 自身 demo 慣例(spec 認可),MenuItem 為 DS row primitive(item-anatomy Family 1),Separator demo 合理需 row content 展示分隔;措辭已軟化 → pedantic。"
+    },
+    {
+      "n": 16, "component": "Sidebar", "fileLine": "sidebar.anatomy.stories.tsx:626-630",
+      "verdict": "marginal", "claudeCaught": false,
+      "evidence": "StateBehavior SidebarHeader 手刻 <div w-6 h-6 rounded-md bg-primary>(假 24px logo)+ <span text-body font-medium>Acme Inc。sidebar.spec.md:135/246 brand=Avatar 24、spec:261 chrome text『一律 text-body-lg font-medium』。text-body≠text-body-lg + 手刻塊≠Avatar 為真 drift,但 collapse-behavior demo scaffolding、低嚴重度。codex 自標 marginal,同意。"
+    },
+    {
+      "n": 17, "component": "Sidebar", "fileLine": "sidebar.anatomy.stories.tsx:653-656",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "同 live demo 手刻 <div h-10 ...> 主內容 header(40px)。sidebar.spec.md:210-216『SidebarHeader 高度=--chrome-header-height(md 48/lg 56)』+『跨元件共享:sidebar header、主內容 page header 都用同一 token』+ spec:256『Chrome(sidebar/page header)共享固定高度 token → 保證跨元件對齊』。h-10(40px)破壞 SidebarHeader(48px)vs 主 header 頂部對齊 = 真視覺 defect + spec 違反。"
+    },
+    {
+      "n": 18, "component": "Sidebar", "fileLine": "sidebar.principles.stories.tsx:327,330,381-392",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "導覽 SidebarMenuButton(Project A/B、Inbox/Projects/General/Team/Billing)皆漏 id。sidebar.spec.md:511『❌ SidebarMenuButton 不傳 id(除非純按鈕 action——極罕見)』+ spec:508『沒傳 id 就失去 selection 能力…啞 item(stories 展示時發生)』正是此歷史 bug。canonical principles 示範漏 id 的啞 nav item。"
+    },
+    {
+      "n": 19, "component": "Switch", "fileLine": "switch.stories.tsx:82-100",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "用 <SelectionItem control={<Switch/>} label description htmlFor> 包 Switch。switch.tsx:102-112 + switch.spec.md:144-152 有 public <Switch label description> API(內部走 plain <label> 非 SelectionItem)。selection-item.spec 消費者僅列 Checkbox/RadioGroup(不含 Switch),用 SelectionItem 包 Switch 更 off-pattern。同 Checkbox/RadioGroup 根因 drift,Claude 只抓 2 元件漏 Switch。"
+    },
+    {
+      "n": 20, "component": "Tabs", "fileLine": "tabs.anatomy.stories.tsx:144-166",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "Inspector withIcons=true 且 overflow=scroll/menu 時:總覽/成員/設定/計費 有 startIcon,但整合/安全性/API keys 無(3 個溢出 trigger 缺 icon)。tabs.spec.md:243『❌ 同一組 Tabs 內 startIcon 全有或全無——視覺重心散亂』。canonical Inspector 可產出被 spec 明列的 anti-pattern config。"
+    },
+    {
+      "n": 21, "component": "Toast", "fileLine": "toast.stories.tsx:18-26,49,123",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "warning Toast 用『即將到期的訂閱 / 7天後將停用,請前往結算頁續訂』(持久帳務狀態)+『續訂』CTA。toast.spec.md:57『持久性系統狀態(方案過期)用 Alert』+ spec:74『action 僅限復原/Undo;強制 CTA(付款)用 Dialog』。續訂=付款承諾 CTA。與 Claude 的 Toast finding(StaticToast fidelity)不同 → Claude 未抓此內容 drift。"
+    },
+    {
+      "n": 22, "component": "action-bar", "fileLine": "action-bar.stories.tsx:587-594",
+      "verdict": "false_positive", "claudeCaught": false,
+      "evidence": "codex 稱『把 destructive 攤成 visible 標正確、違反 spec:123 destructive 預設進 overflow』。但該 Rule 標題=『Destructive — 紅色警示』,✅ Label 標的是『danger prop 紅色警示,語意是破壞性動作』= button 視覺/語意 treatment,非 placement 主張。故事教學點為 dismiss-vs-danger 語意分界(相鄰 Rules 佐證),ToolbarFrame 僅為 scaffolding。codex 把 placement policy(spec:123)錯套到 semantic-treatment demo → code 對其目的無誤。"
+    },
+    {
+      "n": 23, "component": "color (token)", "fileLine": "color.stories.tsx:11,88,226",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "故事 line 11『元件只使用語義 token,不直接引用原始色票』+ line 88『原始色票元件不得直接使用,一律透過語義 token』(絕對宣稱)。但 color.spec.md:45『Primitive…Tag/Avatar 直接消費』+ spec:64『Tag/Avatar 色彩 variant=Primitive』+ spec:72『Tag/Avatar/Calendar categorical red=--color-red-*』+ spec:75『Tag/Avatar 使用 CSS 變數任意值 bg-[var(--color-blue-6)]』。canonical color doc 頂層絕對宣稱與 documented primitive carve-out 矛盾。"
+    },
+    {
+      "n": 24, "component": "density (token)", "fileLine": "density.stories.tsx:190,226-228",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "line 190 TokenRow desc=『頁面底部留白』(通用);line 226-228 demo <div height=var(--layout-space-bottom)> 無 action 的頁尾 band。layoutSpace.spec.md:13/15『--layout-space-bottom=結論留白:內容到 action buttons(commitment 前視覺暫停)』+ 規則4 line 116-118『無 action 時應依 bounded/unbounded/element 用 loose/0/tight』。mis-teach 通用底部留白 + 無-action demo,矛盾 commitment 定義。"
+    },
+    {
+      "n": 25, "component": "motion (token)", "fileLine": "motion.stories.tsx:18",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "故事 component doc『目前唯一 token 家族=hover delay 3-tier』『系統無 duration/easing token』。但 motion.css:36-41 已定義 --motion-duration-overlay:150ms / --motion-duration-surface:250ms / --motion-easing-enter/exit / --motion-enter-distance/scale;motion.spec.md:26『兩個 sub-family:(A)delay (B)進出場動畫(duration/easing/幾何)』+ spec:107-116『進出場動畫 token(2026-07-11 加)』。stale doc — 新 token 加入未更新故事,factual 宣稱直接錯。最 clear-cut。"
+    },
+    {
+      "n": 26, "component": "uiSize (token)", "fileLine": "uiSize.stories.tsx:69-70",
+      "verdict": "material_confirmed", "claudeCaught": false,
+      "evidence": "故事 Overview『所有 field-height 消費者不傳 size 時自動對齊 md』(絕對宣稱)。但 rating.tsx:122 useResolvedFieldSize(sizeProp,'xs')(standalone default xs)+ rating.tsx:46『Standalone → 預設 xs』;uiSize.spec.md:42『Rating…standalone xs / Field 內跟 Field size』+ spec:46『單一尺寸消費者(不在 default-md 規則內)』carve-out 段。『所有…md』provably false。"
+    }
+  ],
+  "topMaterial": [
+    "motion.stories:18 — 故事宣稱『系統無 duration/easing token』但 motion.css:36-41 已定義 --motion-duration-overlay/surface + easing(2026-07-11 加),stale factual doc drift(最 clear-cut)",
+    "Chip anatomy Inspector/LayoutMatrix — 示範 menu 模式搭 uncontrolled defaultValue,chip.spec.md:202 明定 runtime 會 menu 勾選失效(spec drift + 功能 bug)",
+    "color.stories:11,88 — canonical color doc 絕對宣稱『元件只使用語義 token』,矛盾 spec:45/64/75 documented『Tag/Avatar/Calendar 直接消費 --color-* primitive』carve-out",
+    "Field anatomy:250-253 — 同一 Field 放 <FieldLabel> + <Checkbox label>(spec:345 禁),Checkbox label 被 Field context silent 抑制、誤導 consumer",
+    "FileItem stories:159-180 — 同一 list 混用 mode=rich(前2)+ mode=compact(spec:451 禁,破壞 row rhythm,M16 invariant)"
+  ]
+}

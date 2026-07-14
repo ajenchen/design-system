@@ -284,7 +284,7 @@ disabled > error > focused > default
 
 ### 為什麼 error label 要跟 indicator 同色
 
-Steps 的 step 本身是「狀態載體」,跟 Field 的「label 只是欄位名,error 靠 help text 表達」不同。Steps 的 label 在視覺上屬於 indicator 的延伸資訊,兩者應該一起講故事:紅 ✕ indicator + 紅 label + 紅 description(如有)形成一致的 error visual language,讓使用者一眼看出這步出了什麼錯。
+Steps 的 step 本身是「狀態載體」,跟 Field 的「label 只是欄位名,error 靠 help text 表達」不同。Steps 的 label 在視覺上屬於 indicator 的延伸資訊,兩者應該一起講故事:紅 ✕ indicator + 紅 label 形成一致的 error visual language,讓使用者一眼看出這步出了什麼錯(description 不變色,見下段)。
 
 這跟 `CLAUDE.md` 的「Label 永遠 foreground」原則不衝突——那是 Field 家族的規則(edit / readonly / disabled 三態的欄位容器)。Steps 是**進度指示器**不是**輸入容器**,label 色彩跟著 step state 走是正確做法。
 

@@ -1,0 +1,13 @@
+{
+  "component": "Command",
+  "implBasis": "cmdk 1.1.1 passthrough (shadcn) + Radix Dialog (CommandDialog) + ScrollArea (CommandList)",
+  "claimsVerified": 24,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:34",
+      "宣稱": "Overview 描述「選項與空狀態的樣式直接寫在 Command 內,不透過其他元件」",
+      "真實code行為": "CommandEmpty(command.tsx:90-99)是純 className passthrough,無任何自帶 styling class(spec.md:119 自己也承認「CommandEmpty 為純 className passthrough 無自帶 class」)。故「空狀態的樣式直接寫在 Command 內」不成立——空狀態根本沒有寫任何樣式;只有 CommandItem/CommandGroup/CommandInput 有 inline class",
+      "severity": "marginal"
+    }
+  ]
+}

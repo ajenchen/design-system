@@ -80,7 +80,11 @@ const chipVariants = cva(
 )
 
 export interface ChipProps
-  extends React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> {
+  // 2026-07-14 dim-9 修:Omit 'asChild' — chip.spec.md 禁止事項明載「❌ 用 asChild——不支援」,
+  // 且內部固定渲染 {icon}{label}{suffix} 多 children 結構,asChild(Radix Slot 要求單一
+  // element child)會 runtime throw(CLAUDE.md 失敗記憶「asChild ? Slot : Native」條)。
+  // 型別層 Omit 讓誤用在編譯期失敗,對齊 spec-vs-type 一致。
+  extends Omit<React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item>, 'asChild'> {
   /** 左側 icon（LucideIcon），最多一個 */
   startIcon?: LucideIcon
   /** 右側 badge（通常是計數指示器）*/

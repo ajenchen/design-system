@@ -31,11 +31,12 @@
 
 ## Mechanical enforcement
 
-- **Pre-edit**:`check_substantive_edit_approval_preflight.sh`(production code)+ `stop_self_audit.sh`(spec/canonical 補位)+ `check_ds_anchor_preflight.sh`(M29 anchor)
+- **Pre-edit**:`check_substantive_edit_approval_preflight.sh`(production code)+ `stop_self_audit.sh`(spec/canonical 補位 — 僅覆蓋 codex-collab turn(Mechanism 4 嵌在 codex-reply 閘內);非 codex turn 的 spec.md edit 靠 discipline)+ `check_ds_anchor_preflight.sh`(M29 anchor)
 - **Post-edit**:`stop_self_audit.sh` Mechanism 1(claim-verify-gap)BLOCKER
 - **Pre-final(宣告完成前)**:`stop_self_audit.sh` Mechanism 7(完整性宣告閘)BLOCKER — 宣告「全做完 / 全部完成」+ 本 turn 實質改動但**無全庫 stale-ref 掃描證據** → block。**觸發器 = 「宣告完成」本身,非等 user 問第二次**(2026-06-03 user-authorized,根治重複 failure)
-- **Pre-final(中型以上 = 跨 ≥3 檔 substantive、任何 canonical/SSOT/模型改動、或宣告「殘項/債歸零」類完整性 claim;2026-07-07 軌道 4 收緊,Workflow 成本已低無理由跳)**:除 M7 自掃外,**宣告完成前必跑「獨立對抗稽核」**(multi-agent Workflow,每路假設「還有 loose end」主動去找 + cite 證據)。**理由**:self-grep 系統性漏(self-assessment unreliable,對齊 `feedback_ai_ground_truth_unreliable_mechanical_primary`)+ 信任機械閘(preflight / R4 / hook BLOCKER)勝於自評。**小改 = M7 自掃即可**,不需對抗稽核(避免過度)。2026-06-03 user-authorized,根治「宣告做完 → user 問第 N 次 → 才補掃出 loose end」
-- **Pre-commit**:`scripts/audit-content-quality.mjs --check` + `scripts/extract-canonical-rules.mjs` 各 fail = block
+- **⚠️ 紀律條(非本段機械閘 — #39 2026-07-11 誠實標註,原誤置於機械段暗示有 hook 強制,實為零機械消費點)Pre-final(中型以上 = 跨 ≥3 檔 substantive、任何 canonical/SSOT/模型改動、或宣告「殘項/債歸零」類完整性 claim)**:除 M7 自掃外,**宣告完成前應跑「獨立對抗稽核」**(multi-agent Workflow,每路假設「還有 loose end」主動去找 + cite 證據)。**理由**:self-grep 系統性漏(self-assessment unreliable,對齊 `feedback_ai_ground_truth_unreliable_mechanical_primary`)+ 信任機械閘(preflight / R4 / hook BLOCKER)勝於自評。**小改 = M7 自掃即可**,不需對抗稽核(避免過度)。2026-06-03 user-authorized。
+  **為何不機械化(#39 決策記錄)**:硬做成 BLOCKER 會**自我 brick** —— subagent 額度耗盡時無法 dispatch Workflow,則每個中型以上「宣告完成」都被擋(含修此條的 turn 本身);即使有額度,強制每次 ≥3 檔改動都 dispatch adversarial Workflow 亦過重。故本條**保持紀律**,不進 stop_self_audit BLOCKER。**未來可選**:額度穩定後加「completion claim + ≥3 檔 diff + transcript 無 Workflow/Agent dispatch → **soft WARN**(非 block)」溫和提醒,不走 BLOCKER。
+- **Pre-commit / release gate**:`scripts/audit-content-quality.mjs --check` 於 `release:preflight` fail-closed 阻擋(release-preflight.mjs);Stop hook 每 turn 跑兩支僅報告(command 尾 `|| true`,non-blocking);`scripts/extract-canonical-rules.mjs` 目前無 blocking 消費點(.husky/pre-commit 未接兩支)
 
 ## Anti-pattern(永久 ban)
 

@@ -1,0 +1,156 @@
+{
+ "component": "Input",
+ "claimsVerified": 489,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:21",
+   "宣稱": "`variant` 已改名為 `chrome`。",
+   "真實code行為": "公開 prop、解構與 resolver 仍使用 `variant`；不存在 `chrome` prop。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:22-25",
+   "宣稱": "`naked` 是 consumer 不可使用的 internal variant。",
+   "真實code行為": "公開的 `InputProps.variant` 接受包含 `naked` 的 `FieldVariant`，沒有型別或 runtime 封鎖。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:25",
+   "宣稱": "`naked` 完全無 chrome、border、focus ring，由 host cell 管理。",
+   "真實code行為": "`edit × naked` 自帶常態、hover、focus-primary 與 error border。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:30",
+   "宣稱": "Error 正交於 mode，會產生 `border-error + aria-invalid`。",
+   "真實code行為": "error border 僅在 edit mode；display 與 readonly-empty 提前回傳 span，連 `aria-invalid` 都沒有。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:63-64",
+   "宣稱": "autoWidth fallback 的 input 有 min-width 避免消失。",
+   "真實code行為": "實際套用 `min-w-0`，沒有正的最小寬度，允許 flex item 縮至 0。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:118-119",
+   "宣稱": "readonly 有值時會保留 native `<input readOnly>`。",
+   "真實code行為": "是否有值只檢查 controlled `value`；合法的 `defaultValue` 會被判成空值，改渲染 `-` span。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:236",
+   "宣稱": "`inputMeta.tokens.ring` 為空。",
+   "真實code行為": "readonly wrapper 明確消費 `ring-2 ring-ring ring-offset-1`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:4",
+   "宣稱": "`variants: {}`。",
+   "真實code行為": "Input 接受 `default | naked`，預設為 `default`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:5",
+   "宣稱": "`sizes: {}`。",
+   "真實code行為": "Input 接受 `sm | md | lg`，預設為 `md`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:95",
+   "宣稱": "null、undefined、空字串會顯示半形 `-`，disabled 時使用 disabled 前景色。",
+   "真實code行為": "disabled 不進 empty-display span branch，而是保留空 native input；editable table-cell 的 display 空值則顯示空白。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:128,136",
+   "宣稱": "`naked` 不是公開 Input variant，consumer 只能用 `default`。",
+   "真實code行為": "公開 `InputProps` 的 variant union 直接接受 `naked`，沒有封鎖。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:136",
+   "宣稱": "`naked` 完全無 chrome、border、focus ring。",
+   "真實code行為": "naked edit wrapper 自行渲染 rest、hover、focus 與 error border。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:176",
+   "宣稱": "Input 採用原生 `<input>`。",
+   "真實code行為": "display 與 readonly-empty 回傳 `<div><span>`，不是 native input，也沒有 textbox role。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:180-182",
+   "宣稱": "Tab 會聚焦、字母鍵會輸入，方向鍵與刪除鍵皆由 native input 處理。",
+   "真實code行為": "此鍵盤 map 只適用 native editable path；display、readonly-empty 是 span，disabled 不可聚焦，readonly 不接受文字輸入。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:184",
+   "宣稱": "focus 視覺由 wrapper 的 `focus-within:!border-primary` 提供。",
+   "真實code行為": "readonly 使用 `:has(:focus-visible)` ring；error edit 保留 error border；display與disabled沒有此 focus 行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:34",
+   "宣稱": "display placeholder token 是 `--fg-muted`。",
+   "真實code行為": "display 永遠渲染 span；空值使用 `text-foreground`，不存在 native placeholder。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:37",
+   "宣稱": "readonly placeholder token 是 `--fg-muted`。",
+   "真實code行為": "readonly 空值先轉成 foreground span；不存在可顯示 placeholder 的 readonly path。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:214",
+   "宣稱": "除 display 外，其餘 mode 可用 `defaultValue` 保持 uncontrolled。",
+   "真實code行為": "readonly 是反例；branch 只檢查 `value`，`defaultValue` 會被視為空值並顯示 `-`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:336",
+   "宣稱": "除 display 外，其餘 mode 使用 `defaultValue`。",
+   "真實code行為": "readonly 使用 `defaultValue` 時不會渲染該值，而會回傳 `-` span。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:245",
+   "宣稱": "naked 無 chrome，border/focus 由 host cell 提供，且為 internal。",
+   "真實code行為": "naked 可由公開 prop 傳入，並自行渲染 border、hover、focus與error狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:246",
+   "宣稱": "`aria-invalid` 不分 mode。",
+   "真實code行為": "display 與 readonly-empty early-return span，完全沒有 `aria-invalid`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:54-56,469",
+   "宣稱": "Inspector 的 theme/density resolved values 由系統解析。",
+   "真實code行為": "高度註記靜態寫成 28/32/36px；lg density 的真實 token 是 32/36/40px，註記不會更新。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:454",
+   "宣稱": "Inspector 的 focus 樣式固定為 primary border、無 ring。",
+   "真實code行為": "readonly 使用 ring、error 使用紅框；display與disabled沒有相同 focus state。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:486",
+   "宣稱": "readonly 只有一種視覺狀態。",
+   "真實code行為": "readonly 有值時另有 keyboard `:focus-visible` ring，至少包含 rest 與 focus-visible 兩態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:522",
+   "宣稱": "readonly / disabled 都是單一視覺狀態。",
+   "真實code行為": "readonly 另有 focus-visible ring state；只有 disabled 符合單一狀態描述。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:705",
+   "宣稱": "點擊 startIcon 區域會穿透並聚焦 input。",
+   "真實code行為": "只有 SVG 是 `pointer-events-none`；外層 `ItemPrefix` span 仍可命中，wrapper也沒有 click-to-focus forwarding。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:760",
+   "宣稱": "所有 Input 都是 native input，Tab 可聚焦。",
+   "真實code行為": "display 與 readonly-empty 是不可聚焦的 span；敘述只適用部分 native-input path。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:760",
+   "宣稱": "聚焦視覺一律是外層 primary `focus-within` border。",
+   "真實code行為": "readonly使用focus-visible ring、error保持紅框，display與disabled沒有該效果。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.principles.stories.tsx:109-112",
+   "宣稱": "`mode=\"readonly\" defaultValue=\"alice@example.com\"` 會顯示該值但不可編輯。",
+   "真實code行為": "readonly 判斷看不到 `defaultValue`，實際顯示 `-` span。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.principles.stories.tsx:175",
+   "宣稱": "loading 狀態不屬於 endAction 槽位。",
+   "真實code行為": "loading 正是在相同右側/endAction slot 中優先渲染 `CircularProgress`。"
+  }
+ ]
+}

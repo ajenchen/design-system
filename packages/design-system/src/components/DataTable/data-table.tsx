@@ -152,9 +152,6 @@ export interface DataTableProps<TData>
   defaultSelection?: string[] | DataTableSelection
   /** Selection 變更 callback(emit DataTableSelection union;include / all 兩模型) */
   onSelectionChange?: (next: DataTableSelection) => void
-  /** 全資料集筆數 M(server-side / filter 後);all 模式 count = totalCount − excluded.length。
-   *  **DS 內部零消費(no-op prop)**:僅型別文件 + destructure 防 spread 到 DOM;count 全由 consumer 計算 */
-  totalCount?: number
   /** 是否啟用 selection / 模式;true 等同 'multi' */
   selectable?: boolean | 'single' | 'multi'
   /** Row 是否可選(disabled rows 只 disable checkbox,row 內容正常 render) */
@@ -203,7 +200,7 @@ export interface DataTableProps<TData>
    *
    * **v2(2026-05-05)修正**:
    * - Virtualizer × transform:被拖 row 略過 `measureElement`(透過 SortableRowCtx 廣播 active id),避免 transform 干擾測量
-   * - 3-panel mirror sync:每 region 對同 row id 各呼叫 `useDraggable` + `useDroppable`,mirror 自然取得相同 transform
+   * - 3-panel mirror sync:primary region 呼叫 `useDraggable` + `useDroppable`;mirror region 只 `useDroppable`(v15.4 split),isDragging 由 `useDndContext` active.id 同步 → 三 region 視覺一致
    * - Cross-parent drop:nested 全 row 各自 `useDroppable`,自訂 collisionDetection 過濾出「同 parent siblings」;cross-parent over → 不觸發,handle cursor `not-allowed`
    *
    * 詳 `data-table.spec.md`「L4 Row drag」段。
@@ -265,7 +262,7 @@ export interface DataTablePaginationOptions {
   pageSize?: number
   /** 每頁筆數選項;傳了才渲染「每頁 N 筆」Select(消費既有 Select size="sm") */
   pageSizeOptions?: number[]
-  /** 左側「共 N 筆」文字(opt-in,= Ant showTotal 邏輯;數源 = filter 後全集 getPrePaginationRowModel,非 selection all-mode 的 totalCount) */
+  /** 左側「共 N 筆」文字(opt-in,= Ant showTotal 邏輯;數源 = filter 後全集 getPrePaginationRowModel,非 selection all-mode 的 server-side 全集數 M — 那是 consumer 自持) */
   showTotal?: boolean
   /** 當前頁(1-based,controlled;不傳 = uncontrolled) */
   page?: number
@@ -312,7 +309,9 @@ const SELECT_COL_ID = '__select__'
  *   解決「全選 10k 筆只載 50 筆 → 無法列舉其餘 ID」:all 模式「選取 = 全集 − excluded」,
  *   任何 toggle 都只是 excluded 的 add/remove,對任意順序封閉、O(1)、不需列舉未載入 ID。
  *
- * 計數(consumer):mode==='all' ? totalCount − excluded.length : ids.length(需傳 totalCount)。
+ * 計數(consumer):mode==='all' ? M − excluded.length : ids.length(M = consumer 自持的
+ * server-side / filter 後全集筆數;2026-07-13 D1 拍板:DataTable 不收 totalCount prop — DS 內部
+ * 零消費 no-op 已移除,計數本來就全由 consumer 端算)。
  * 進入 all 模式:consumer 在「選取全部 M」hint 點擊時 setSelection({ mode: 'all', excluded: [] })。
  */
 export type DataTableSelection =
@@ -446,12 +445,13 @@ function TruncateCell({ children, className }: { children: React.ReactNode; clas
   return <Tooltip><TooltipTrigger asChild>{span}</TooltipTrigger><TooltipContent>{children}</TooltipContent></Tooltip>
 }
 
-// ── L4 Row Drag: SortableRowContext (v2) ─────────────────────────────────────
-// v2:每 region(left / center / right)各 mount 一次 SortableRowProvider — 多個 useSortable
-// 共用同一 SortableContext / 同 row id 時,dnd-kit 內部以 id 為 unit 分發 transform / isDragging,
-// 各 hook instance 取得相同值,因此 mirror region 自然跟動(v1 mirror static bug 修正)。
-// listeners 仍只走 primary region(避免 pointer 事件雙重觸發);primary = left region 若存在否則 center。
-// `invalidDrop`(cross-parent over)走 prop 廣播給 DragHandleCell 切 cursor-not-allowed。
+// ── L4 Row Drag: SortableRowContext(v15 Path B;2026-07-14 JSDoc 對齊實作)──────
+// 每 region(left / center / right)各 mount 一次 SortableRowProvider,依 role 分流(v15.4 split):
+//   primary → SourceRowProvider(useDraggable + useDroppable)= 唯一 drag source;
+//   mirror  → MirrorRowProvider(useDroppable only),isDragging 走 useDndContext active.id 同步。
+// 無 SortableContext / useSortable(v15.0 Path B 已砍,見檔頭 import 註解)。listeners 全走
+// RowDragHandle Button(v15.6 button-only;row 本身不接 listeners)。primary = left region 若存在否則 center。
+// `invalidDrop`(cross-parent over)走 prop 廣播給 RowDragHandle 切 cursor-not-allowed。
 interface SortableRowCtxValue {
   setNodeRef: (el: HTMLElement | null) => void
   role: 'primary' | 'mirror'
@@ -477,10 +477,11 @@ interface SortableRowCtxValue {
 }
 const SortableRowCtx = React.createContext<SortableRowCtxValue | null>(null)
 
-/** Per-region per-row sortable wrapper(v2 multi-instance pattern)。
- *  同 row.id 在 left/center/right 三 region 各 mount 一次 — useSortable 共享同 SortableContext
- *  state,各 instance 取得相同 transform → mirror 自動跟動。
- *  primary instance 額外提供 listeners 給 DragHandleCell;mirror 不提供避免雙觸發。 */
+/** Per-region per-row drag wrapper(v15.4 architectural split)。
+ *  同 row.id 在 left/center/right 三 region 各 mount 一次,但 hook mount tree 完全分離:
+ *  primary → SourceRowProvider(useDraggable + useDroppable);mirror → MirrorRowProvider
+ *  (useDroppable only,isDragging 由 useDndContext 同步)。activator / listeners 只給
+ *  primary 的 RowDragHandle Button(v15.6 button-only);mirror 不提供避免雙觸發。 */
 function SortableRowProvider(props: {
   id: string
   disabled?: boolean
@@ -593,14 +594,15 @@ function MirrorRowProvider({
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
 }
 
-/** DraggableHeaderCell — wrap header cell 跟 dnd-kit useSortable 接軌(2026-05-06 v14.2)。
+/** DraggableHeaderCell — wrap header cell 跟 dnd-kit useDraggable + useDroppable 接軌
+ *  (2026-05-06 v14.2;v15.0 Path B 改分離 hooks,無 SortableContext)。
  *
  *  Why wrap-not-rewrite:`headerCellEl` 既有邏輯複雜(sort / resize / select column / right region 等),
- *  改 inline useSortable 入侵性高。本 wrapper cloneElement 注入 ref / style / listeners → 既有 render
+ *  改 inline useDraggable/useDroppable 入侵性高。本 wrapper cloneElement 注入 ref / style / listeners → 既有 render
  *  保持 untouched,單一職責 = 加 drag affordance。
  *
  *  Behavior:
- *    - useSortable 永遠 call(Rules of Hooks)— `disabled=true` 時不啟動 listeners
+ *    - useDraggable + useDroppable 永遠 call(Rules of Hooks)— `disabled=true` 時不啟動 listeners
  *    - `data: { type: 'column', columnId }` 餵 dnd-kit handleDragStart / handleDragEnd 區分 row/column drag
  *    - 注入 ref(setNodeRef)+ transform style + transition + opacity(drag 時 source invisible,DragOverlay 顯 ghost)
  *    - draggable 時注入 attributes + listeners + cursor:grab / `data-column-id` (DragOverlay snapshot 用)
@@ -660,8 +662,9 @@ function DraggableHeaderCell({
 
 /** Row drag handle — Portal-rendered, position:fixed 真正水平置中於 table outer border line(Jira canonical)。
  *
- *  v15.2 重構:**Button 純視覺 affordance**,不再 spread drag listeners — 改由 row div 整列接 listeners
- *  (TreeView SSOT)。Button 只負責顯示「此 row 可拖」的視覺暗示。
+ *  v15.6 button-only drag(推翻 v15.2「整列接 listeners」,2026-07-14 JSDoc 對齊):Button =
+ *  唯一 activator,接 handleSetActivatorNodeRef + handleListeners(SourceRowProvider ctx);
+ *  row div 不接 listeners(rowListeners=undefined),row click 保留給 select / open detail 等 UX。
  *
  *  Why Portal + position:fixed(2026-05-05 v4):
  *    DataTable 結構含三層 overflow-hidden(outer wrapper / leftBody / row),用 absolute + translate-x:-50%
@@ -923,7 +926,6 @@ function DataTableInner<TData>(
     estimateRowHeight, tableOptions, rowActions, cellErrors,
     pinnedLeftColumns, pinnedRightColumns, inlineEdit = false,
     selection: selectionProp, defaultSelection, onSelectionChange,
-    totalCount,
     selectable = false, isRowSelectable, getRowId, getRowAriaLabel,
     preserveSelectionOnFilter = false,
     columnVisibility: columnVisibilityProp, defaultColumnVisibility, onColumnVisibilityChange,
@@ -1262,7 +1264,7 @@ function DataTableInner<TData>(
   // 2026-05-06 v10 DragOverlay canonical:retire windowed sticky range extractor (v4-v9 workaround)。
   // 改用 `<DragOverlay>` portal 把 source row 視覺解耦 — source 即使 unmount(virtual scroll out)
   // overlay 仍 render 由 cloned outerHTML 提供視覺。dnd-kit transform / collision 走 active item id
-  // (id 永遠在 SortableContext.items 集合,跟 hook instance mount 狀態無關)。
+  // (DndContext store 以 active id 追蹤,跟 hook instance mount 狀態無關;v15 無 SortableContext)。
   // 對齊 dnd-kit GitHub #1674 + drag-overlay docs canonical「virtualized list MUST use DragOverlay」。
   // overscan 仍輕微拉高(避免 source row 旁邊 rows 也 unmount 致使 hover signal 計算抖動)。
   const effectiveOverscan = enableRowDrag ? Math.max(overscan, 5) : overscan
@@ -1392,10 +1394,9 @@ function DataTableInner<TData>(
 
   // ── Phase 9 Issue 1 fix(2026-05-10):range cells lifted compute + Set ────
   // 計算 spreadsheet range cell IDs(Shift+click rectangle from anchor↔focus),
-  // 提供:
-  //   1. `rangeCellIds` array → pass to layer for outer ring 4 line div boundary
-  //   2. `rangeCellIdSet` Set → cell wrapper data-range-cell attr for cell-bg fill
-  //      (per codex Q1 verdict:bg fill 移到 cell bg layer 不在 overlay,內容才不被蓋)
+  // 提供 `rangeCellIdSet` Set → cell wrapper data-range-cell attr for cell-bg fill
+  // (per codex Q1 verdict:bg fill 走 cell bg layer 不在 overlay,內容才不被蓋;
+  //  layer 的 outer ring / rangeCellIds prop 已 retire — 2026-07-14 對齊清理)
   const rangeCellIds = React.useMemo<string[] | undefined>(() => {
     if (!spreadsheetMode || !rangeAnchor || !rangeFocus || rangeAnchor === rangeFocus) return undefined
     const parseCell = (id: string) => {
@@ -1452,7 +1453,13 @@ function DataTableInner<TData>(
     return () => obs.disconnect()
   }, [hasLeft, hasRight, rows.length])
 
-  const rowHeight = `h-table-row-${size}`
+  // 2026-07-09 root-cause fix(user 以 GitHub Pages 對比抓出 regression):
+  //   舊 `h-table-row-${size}` 模板字串 Tailwind **靜態掃描看不到** → `.h-table-row-{sm,md,lg}` 規則
+  //   唯一靠 uiSize.spec.md 裡的 literal 被 content-detection 掃到才生成;戰役期間掃描樹變動後未生成
+  //   → 規則消失 → row 塌成「內容高度」(非編輯 33px / 編輯 44px)而非固定 token 40px,連帶選取控件與
+  //   列文字對不齊。改用 literal map(對齊 fieldWrapperStyles 的 `h-field-md` cva-literal 慣例),Tailwind
+  //   永遠掃得到、不再依賴脆弱的 spec.md literal → 永不再漂移。
+  const rowHeight = { sm: 'h-table-row-sm', md: 'h-table-row-md', lg: 'h-table-row-lg' }[size] ?? 'h-table-row-md'
 
   // ── Cross-region row hover (2026-04-22 D3 perf audit):event delegation 改 per-row closure
   // 舊:每 row 建 `{ onMouseEnter, onMouseLeave }` + 2 arrow functions → 100 row = 200 closures/render
@@ -1573,8 +1580,8 @@ function DataTableInner<TData>(
   const dragDisabled = sorting.length > 0
 
   // ── L4 Row drag v2:nested rows + parent map ─────────────────────────────────
-  // v2 cross-parent fix:全 row 進 SortableContext.items(含 sub-rows),custom collisionDetection
-  // 過濾掉 cross-parent over candidates,保留「同 parent siblings」。沒命中 → invalid drop signal。
+  // v2 cross-parent fix:全 row 各自掛 useDraggable/useDroppable(含 sub-rows;v15 無 SortableContext),
+  // custom collisionDetection 過濾掉 cross-parent over candidates,保留「同 parent siblings」。沒命中 → invalid drop signal。
   // parentMap: rowId → parentId(top-level row 的 parent = '' 哨兵 string)
   const { allRowIds, parentMap } = React.useMemo(() => {
     const ids: string[] = []
@@ -1725,7 +1732,13 @@ function DataTableInner<TData>(
     const canExpand = cell.row.getCanExpand?.() ?? false
     const isExpanded = cell.row.getIsExpanded?.() ?? false
     const toggleExpand = cell.row.getToggleExpandedHandler?.()
-    const showNestedPrefix = isFirstContent && (depth > 0 || canExpand)
+    // 2026-07-08 sibling-aware 佔位(WM root-cause 戰役):spec:382「同層 sibling 有 expandable
+    // 時 leaf 也佔位」原本沒實作 — depth-0 leaf(無 children 的頂層列)拿不到 w-4+mr-2 佔位,
+    // 與同層有 chevron 的列左緣錯位(PDF「chevron 空間」問題)。同層 = 同 parent 的 subRows;
+    // 頂層 = core rows。只在 isFirstContent 時計算,成本一列一次。
+    const siblingRows = cell.row.getParentRow?.()?.subRows ?? table.getCoreRowModel().rows
+    const siblingHasExpand = isFirstContent && siblingRows.some((r) => r.getCanExpand?.() ?? false)
+    const showNestedPrefix = isFirstContent && (depth > 0 || canExpand || siblingHasExpand)
     // Issue 9 cell error(2026-05-10):lookup `${rowId}:${colId}` in cellErrors map
     // editing cell 自動 clear visual error(per spec 「edit-clears-own-cell」)— consumer 走
     // onCellCommit 驗證後決定回填新 error(由 consumer 端控制 cellErrors map state)。
@@ -1802,6 +1815,9 @@ function DataTableInner<TData>(
           // 跟 cell 4 邊 inset divider 視覺相疊(同 pixel)= 1 line visual,不雙線。
           inlineEdit && 'dtCellGrid',
           onEditableCellClick && ['cursor-pointer', nakedCellEditableDisplayHover],  // editable cell display hover affordance(對齊 Notion / Airtable hover-cell-shows-border canonical)
+          // a11y(2026-07-14 dim-10 修):非 spreadsheet inlineEdit cell 可 Tab 聚焦(見下方
+          // tabIndex/onKeyDown)— focus-visible ring 對齊本檔 expand button / sortable header canonical。
+          onEditableCellClick && !spreadsheetMode && 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
           // 2026-05-13 Q3 cell disabled SSOT(per codex Q3 verdict + user 拍板「全部馬不停蹄做完」):
           // bg `--bg-disabled` component-state token(color.spec.md:671 owner)+ cursor 抑制 click affordance。
           cellDisabled && 'bg-disabled cursor-not-allowed',
@@ -1818,6 +1834,19 @@ function DataTableInner<TData>(
           ...(experimentalSpreadsheetOverlay && { '--cell-hover-outline-color': 'transparent' } as React.CSSProperties),
         }}
         onClick={onEditableCellClick}
+        // a11y(2026-07-14 dim-10 修):非 spreadsheet 的 inlineEdit cell 原本只有 onClick —
+        // 鍵盤 user 無法聚焦 cell、無法進入編輯(WCAG 2.1.1)。對齊 Atlassian InlineEdit
+        // read-view-focusable idiom:editable display cell 可 Tab 聚焦,Enter / F2 進 edit。
+        // spreadsheetMode 不加(該模式走 table-level selectedCellId 鍵盤導覽 SSOT,per-cell
+        // tab stop 會跟 roving 模型衝突);cell 內 embedded 控件事件不攔(target guard)。
+        tabIndex={onEditableCellClick && !spreadsheetMode ? 0 : undefined}
+        onKeyDown={onEditableCellClick && !spreadsheetMode ? (e) => {
+          if (e.target !== e.currentTarget) return
+          if (e.key === 'Enter' || e.key === 'F2') {
+            e.preventDefault()
+            setEditingCellId(cellEditId(cellRowId, cellColId))
+          }
+        } : undefined}
       >
         {/* Issue 9 cell error(2026-05-10):有 error → cell 內外結構切 flex-col,
             上 row 渲既有 nested + content,下 row 渲 error message 14px text-error。
@@ -2009,11 +2038,20 @@ function DataTableInner<TData>(
       // Phase B3 IME guard(2026-05-10 per codex Q-B3):中文輸入法組字中 ignore 所有 nav keys。
       // 2026-05-16 Round 5 audit Dim 27 fix:`keyCode` deprecated but still in KeyboardEvent type — no cast needed。
       if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
+      // 2026-07-14 dim-10 修:spreadsheet 分支排除 descendant 互動控件 — 焦點在 cell 內
+      // action button / link / input 時,Enter 應 activate 該控件、方向鍵交還控件,
+      // 原 handler 會 preventDefault 取消按鈕 activation、拿舊 selectedCellId 導覽。
+      // 對齊下方 row-selection 分支 2026-07-09 既有 input-family guard + AG Grid
+      // embedded-control convention(cell renderer 內控件 own keyboard)。
+      const spreadsheetKbTarget = e.target as HTMLElement | null
+      const targetIsEmbeddedControl = !!spreadsheetKbTarget?.closest?.(
+        'button, a[href], input, select, textarea, [contenteditable="true"]',
+      )
       // 2026-07-05 D4 fix:spreadsheet 鍵盤入口 — selection 尚未建立時按方向鍵,seed 第一個
       // visible cell(原本唯一 set 起點是 mouse click → 鍵盤-only 使用者 Tab 進 table 後方向鍵
       // 全 no-op,整個 spreadsheet 導覽被滑鼠 gate,違反 spec「鍵盤完整可操作」驗證宣稱。
       // 對齊 Excel / Google Sheets / AG Grid「focus grid → first cell active」canonical)。
-      if (spreadsheetMode && selectedCellId == null && editingCellId == null
+      if (spreadsheetMode && !targetIsEmbeddedControl && selectedCellId == null && editingCellId == null
         && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         const allRows = table.getRowModel().rows.map((r) => r.id)
         const allCols = table.getVisibleLeafColumns().map((c) => c.id).filter((id) => id !== SELECT_COL_ID)
@@ -2026,7 +2064,7 @@ function DataTableInner<TData>(
         }
         return
       }
-      if (spreadsheetMode && selectedCellId != null && editingCellId == null) {
+      if (spreadsheetMode && !targetIsEmbeddedControl && selectedCellId != null && editingCellId == null) {
         const navKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'F2', 'Escape']
         if (!navKeys.includes(e.key)) return
         const lastColon = selectedCellId.lastIndexOf(':')
@@ -2077,6 +2115,14 @@ function DataTableInner<TData>(
       }
       // ── Row selection mode keyboard handler(下方既有)──
       if (!enabled) return
+      // 2026-07-09 fix(圖一 Ctrl+A bug):焦點在可編輯輸入元素(cell edit / inline edit / 搜尋框)時,
+      // 鍵盤(Cmd/Ctrl+A 全選、Esc)應交給該元素(全選 cell 文字 / 取消編輯),**不**攔成 row selection。
+      // 對齊 Notion / Airtable / Linear:編輯格內 Ctrl+A = 選格內文字,非選全表列。
+      const kbTarget = e.target as HTMLElement | null
+      if (
+        editingCellId != null ||
+        (kbTarget && (kbTarget.tagName === 'INPUT' || kbTarget.tagName === 'TEXTAREA' || kbTarget.tagName === 'SELECT' || kbTarget.isContentEditable))
+      ) return
       // Cmd/Ctrl+A:選全可見(扣 disabled)— 對齊 Mail / GitHub / Linear 慣例
       if ((e.metaKey || e.ctrlKey) && e.key === 'a' && mode === 'multi') {
         e.preventDefault()
@@ -2367,7 +2413,7 @@ function DataTableInner<TData>(
           const meta = h.column.columnDef.meta as { locked?: boolean } | undefined
           const isLocked = meta?.locked === true
           const isSystem = isSystemColumn(colId)
-          // useSortable per header(Rules of Hooks compliant — same hook count per render
+          // useDraggable + useDroppable per header(Rules of Hooks compliant — same hook count per render
           // as long as headers count consistent;column reorder/hide 整 row reflow 自然觸發 React reconcile)。
           // disabled=true 時仍 call hook 不啟動 listeners。
           const isDraggable = enableColumnReorder && !isLocked && !isSystem
@@ -2417,13 +2463,13 @@ function DataTableInner<TData>(
     const isPrimaryRegion = isCenter
     const regionRole: 'primary' | 'mirror' = isPrimaryRegion ? 'primary' : 'mirror'
 
-    // code-quality-allow: long-function — virtualizer × sticky panel × drag listeners × hover delegation × per-row state 多 closure capture;拆會破壞 SortableContext / dnd-kit hooks 跟 row idx 的 stable binding
+    // code-quality-allow: long-function — virtualizer × sticky panel × drag listeners × hover delegation × per-row state 多 closure capture;拆會破壞 dnd-kit hooks 跟 row idx 的 stable binding
     const rowEl = (row: typeof rows[number], idx: number, opts?: { virtual?: boolean; start?: number; isLast?: boolean }) => {
       const showBorder = bordered !== false ? !opts?.isLast : true
-      // L4 row drag v2:nested rows 也 sortable(配合 cross-parent collisionDetection 過濾)
-      // sub-rows: depth>0 仍進 SortableContext,但 collisionDetection 只接受 same-parent over
+      // L4 row drag v2:nested rows 也可拖(配合 cross-parent collisionDetection 過濾)
+      // sub-rows: depth>0 也各自掛 useDraggable/useDroppable,但 collisionDetection 只接受 same-parent over
       const isThisRowDragging = enableRowDrag && activeDragId === row.id
-      const useSortableWrap = enableRowDrag
+      const dragRowWrap = enableRowDrag
 
       // H1 fix(2026-05-10,per user 確認):per-row autoRowHeight when any cell in this row has
       // error。Fixed-height row 模式下,該 row 的任一 cell 有 error msg → THAT row 自動 auto-height
@@ -2525,20 +2571,20 @@ function DataTableInner<TData>(
         </div>
       )
 
-      if (useSortableWrap) {
+      if (dragRowWrap) {
         // invalidDrop 只對「正在被拖」的 row 顯示 — handle 在 active row 上,UI 警示只需該 row
-        // code-quality-allow: long-function — 此 const 之下的整個 if-block 含 useSortable hooks + SortableRowProvider + baseRowDiv composition;audit 把 const 誤認為 function entry,實 long body 在 closure 內 dnd-kit + per-row state 多 capture,拆會破壞 hook order invariant
+        // code-quality-allow: long-function — 此 const 之下的整個 if-block 含 dnd-kit hooks + SortableRowProvider + baseRowDiv composition;audit 把 const 誤認為 function entry,實 long body 在 closure 內 dnd-kit + per-row state 多 capture,拆會破壞 hook order invariant
         const rowInvalidDrop = isThisRowDragging && invalidDropActive
         return (
           <SortableRowProvider key={row.id} id={row.id} disabled={dragDisabled} role={regionRole} invalidDrop={rowInvalidDrop}>
             {(ctx) => baseRowDiv({
-              // mirror 也掛 setNodeRef — dnd-kit 內部以 hook instance 為單元,
-              // 多 instance 同 id 時,measurement 走最後 mount 的;不影響 transform 一致性
+              // primary 掛 useDraggable+useDroppable 合成 ref;mirror 只掛 useDroppable ref
+              // (v15.4 split — mirror 不進 drag source store,isDragging 走 useDndContext 同步)
               ref: ctx.setNodeRef,
               style: ctx.style,
               isDragging: ctx.isDragging,
-              // v15.2 整列可拖:listeners + attributes spread 在 row div 上(只 primary,
-              // mirror region 沒 listeners 避免 a11y 重複 announce / pointer 雙觸發)
+              // v15.6 button-only:rowListeners 恆 undefined(activator = RowDragHandle Button),
+              // baseRowDiv spread `{...(extra?.listeners ?? {})}` 自動 noop;attributes 留空 = row 純 container
               listeners: ctx.rowListeners,
               attributes: ctx.rowAttributes,
             })}
@@ -2619,10 +2665,10 @@ function DataTableInner<TData>(
         )}
         {/* Header 的 center 區保持 overflow-hidden(非 scroll)—— body 的 center 才有 scroll,
             header 靠 JS 同步 scrollLeft(見 onCenterBodyScroll)。這樣不會出現雙 scrollbar。
-            為了對齊 body 的 V scrollbar(native 捲軸吃 ~15-17px 寬),header 等寬預留 gutter:
-            `scrollbar-gutter: stable` 放在 centerBody(真正有 V scroll 的 container)+
-            header 這層不需額外處理,因為 body 預留了空間後 H 內容寬度會自然等同 header。
-            注意:header 的 `scrollbar-gutter` 無效(因為 overflow-hidden),刻意不設 */}
+            V scrollbar 對齊:centerBody **刻意不用** `scrollbar-gutter: stable`(決策見 centerBody
+            className 註解 — 永久預留 15px 會讓 content-fit 看起來像恆有 V 捲軸);trade-off =
+            V scroll 出現時 body 內側少 ~15px、header 不縮 → 右端微 misalign,content-fit 乾淨優先。
+            header 的 `scrollbar-gutter` 本就無效(overflow-hidden),刻意不設 */}
         <div
           ref={centerHeaderRef}
           data-datatable-header-panel="center"
@@ -2670,8 +2716,6 @@ function DataTableInner<TData>(
         <div
           ref={centerBodyRef}
           // Center body 同時擁有 H + V scroll;maxHeight 限制讓 H scrollbar 落在 visible 底部
-          // `scrollbar-gutter: stable` 永遠預留 V scrollbar 寬度(~15-17px),避免 body 出現 V
-          // scrollbar 時右端被縮,跟 header 右端產生 gap(Windows/Linux native scrollbar 吃寬)
           data-datatable-hscroll
           data-datatable-panel="center"
           // overflow-x/y: auto — 沒 overflow 就不顯 bar。wrapper minWidth 仍 trigger H 真 overflow。
@@ -2837,13 +2881,12 @@ function DataTableInner<TData>(
             </div>
           )
         } : undefined}
-        // Slice D Step 4 spreadsheet semantics(2026-05-10):
-        //   selectedCellId(click 1)= solid border SelectionRect z 2
-        //   rangeCellIds(Shift+click rectangle from anchor↔focus)= cell-bg fill via
-        //     CSS `[data-range-cell]`(per Issue 1 codex verdict;layer 不畫 fill,只畫
-        //     RangeOuterRing 4 line div boundary)
+        // Slice D Step 4 spreadsheet semantics(2026-05-10;2026-07-14 對齊清理):
+        //   selectedCellId(click 1)= solid border SelectionRing z 2
+        //   range(Shift+click rectangle from anchor↔focus)= cell-bg fill via
+        //     CSS `[data-range-cell]`(per Issue 1 codex verdict;layer 不畫 range 視覺,
+        //     RangeOuterRing / rangeCellIds prop 已 retire)
         selectedCellId={spreadsheetMode ? selectedCellId : null}
-        rangeCellIds={rangeCellIds}
         cellClickEntersEdit={(cellId) => {
           // 2026-05-10 codex review red light fix(per dual-track verify):
           //   1. cellId parse 用 lastIndexOf(':')(row id 可含 colon)
@@ -2872,14 +2915,14 @@ function DataTableInner<TData>(
 
   // ── L4 Row drag DnD wrapper ───────────────────────────────────────────────
   // Sensors:Pointer(8px activation distance,避免 cell click 誤觸 drag)+ Keyboard(a11y)
-  // SortableContext items:**只 top-level row id**(nested sub-rows 不在 sortable 集合);
-  // 同 parent level 限制由「sub-rows 不在 items 內」自然成立。
+  // v15.0 Path B:無 SortableContext — 每 row 各自 useDraggable / useDroppable;
+  // 同 parent level 限制由自訂 collisionDetection 過濾 cross-parent target 成立(cross-parent over → invalidDrop)。
   // DragEnd:active.id / over.id → 算 position(active vs over 視覺位置),呼叫 onRowReorder。
   // hooks 必呼叫(rules-of-hooks)— 即使 enableRowDrag=false 也走 useSensors;wrap 才條件化。
   // **codex P1 fix(2026-05-07 v15.13)**:KeyboardSensor 不傳 `coordinateGetter`,用
   // dnd-kit 預設 25px 箭頭 stepping。`sortableKeyboardCoordinates` 是 `@dnd-kit/sortable`
   // preset,需 `<SortableContext>` 才正確 resolve 下一個 sortable target — 但 v15.0
-  // path B 已 explicit 砍 SortableContext 改用 useDraggable+useDroppable(line 21),
+  // path B 已 explicit 砍 SortableContext 改用 useDraggable+useDroppable(見檔頭 import 註解),
   // 此 getter 在無 context 下 keyboard nav 無法 reliable resolve target → keyboard
   // drag/reorder regression。Default getter(arrow-key Δ25px)在 useDraggable 場景是
   // dnd-kit canonical(`@dnd-kit/core/src/sensors/keyboard/defaults.ts` 預設行為)。
@@ -3157,7 +3200,7 @@ function DataTableInner<TData>(
   // ── L5 分頁列(2026-07-06,詳 data-table.spec.md「L5:分頁」段)────────────────
   // 間距 tight = layoutSpace spec 規則 3「跨範疇 functional 交互」;頁碼靠右(shadcn justify-end /
   // Ant Table bottomEnd / MUI / Carbon 4 家實證,左側空也靠右);「共 N 筆」數源 = filter 後全集
-  // getPrePaginationRowModel(≠ selection all-mode 的 totalCount prop,語意不同)。
+  // getPrePaginationRowModel(≠ selection all-mode 的 server-side 全集數 M — consumer 自持,語意不同)。
   // 2026-07-06 user 拍板:「Pagination 元件本身提供完整功能(showTotal / 每頁筆數)= SSOT,
   // Table 按一致定義套用」—— 分頁列的資訊/選單/「資訊左、操作右」layout 全部 own 在
   // <Pagination> 完整形態;DataTable 只轉發 config + own TanStack state(controlled 消費:

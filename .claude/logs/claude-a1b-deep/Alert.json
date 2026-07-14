@@ -1,0 +1,11 @@
+{
+  "component": "Alert",
+  "implBasis": "Notice primitive (Family 2, consumes item-anatomy ItemContent/ItemPrefix/ItemSuffix + Button dismiss); self-built cva for placement/appearance/theme",
+  "claimsVerified": 46,
+  "notes": "Verified role/aria-live (error+warning→alert/assertive, else status/polite), SUBTLE_CONTAINER + SOLID_HUE_BG + SOLID_HUE_THEME maps, ColorMatrix 5×2 variant×theme table (all bg/border/theme classes match code), placement inline=rounded-md(4px verified)/fixed=rounded-none+border-none, fixed px→--layout-space-loose (py stays py-3), Notice px-4/py-3/gap-2/text-body(14px)/icon 16px(ICON_SIZE.md), dismiss Button xs(h-field-xs=24px→24×24)+iconOnly+variant=text+fg-muted→hover foreground, focus ring-2/ring-ring/offset-1, showDismiss=dismissible!==false && onDismiss!=null, title required, ItemContent label default truncate(單行) + descriptionWrap default true, Props table defaults. Notice marked @internal.",
+  "falseClaims": [
+    {"fileLine": "packages/design-system/src/components/Alert/alert.tsx:15", "宣稱": "docblock: 'subtle: 淺底色 + 四邊 1px border(色相 hover 色)' — 宣稱 subtle border 用色相 hover 色", "真實code行為": "SUBTLE_CONTAINER (L29-35) border 用 `border-[var(--info-text)]` 等 hue-text 色,非 hover 色。同檔 L26-28 註解已明文『原借 --{hue}-hover... 改共用 hue-text』;docblock L15 摘要段沒同步更新 → stale docblock vs 現行 code(spec L145 已正確寫 hue-text,唯 tsx docblock 漂移)", "severity": "material"},
+    {"fileLine": "packages/design-system/src/components/Alert/alert.spec.md:116", "宣稱": "'Corner action group 佈局 canonical' 圖示兩區:上方 chrome corner action group + 底部獨立 'body action row' 放 [CTA1][CTA2](L120)", "真實code行為": "Alert 無底部 body action row。endContent + dismiss X 一起 render 進 Notice 的單一 ItemSuffix(`h-[1lh] shrink-0 ml-auto flex items-center` = 對齊第一行、靠右上),CTA 從 endContent 進來只會在右上角同一行,不是底部整列。anatomy Props 表(L45)自己也把 endContent 定義為『右側操作區』與 code 一致 → spec 圖示的底部 action row 教了 code 無法產生的佈局(且與自家 anatomy 互相矛盾)", "severity": "material"},
+    {"fileLine": "packages/design-system/src/components/Alert/alert.tsx:190", "宣稱": "alertMeta `states: ['default']` + 註解『Alert 本體無互動 state』", "真實code行為": "與 alert.spec.md frontmatter `traits: [hasVariants, hasInteractiveStates]`(L4-6)呈現交叉不一致 — 一處宣告有 interactive-states trait(驅動 StateBehavior story),另一處宣告本體無互動 state。兩者描述層不同但對讀者是表面矛盾", "severity": "marginal"}
+  ]
+}

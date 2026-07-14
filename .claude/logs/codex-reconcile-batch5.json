@@ -1,0 +1,320 @@
+{
+  "_meta": {
+    "task": "B.3 dual-model reconcile — overlay/nav/media family (Sidebar / TreeView / Coachmark / Carousel / FileViewer)",
+    "ground_truth": "actual .tsx/.spec.md/.stories.tsx + node_modules verification (react-zoom-pan-pinch@4.0.3 / @radix-ui/react-dialog@1.1.15 / embla-carousel-react@8 / @dnd-kit) + uiSize.css / layoutSpace.css token math",
+    "codex_signal": "HIGH-recall, and on THIS family unusually HIGH-precision on material defects: codex surfaced large clusters of genuine code/spec/library drift that Claude's deep pass almost entirely missed (Claude found 1 for Sidebar, 0 for TreeView, 2 marginal for Carousel/Coachmark, 1 stale-ref for FileViewer). Strongest yield = library-behavior teaching errors verified against node_modules (aria-modal, additive-not-multiplicative wheel, no smoothScroll API) + real code bugs (Carousel reInit never refreshes scrollSnaps; TreeView multi-selected loses muted text class; TreeView disabled node still keyboard-operable). Marginal tail = pedantic px/terminology/line-ref drift. Only 1 clear false_positive found (Coachmark principles Dialog over-read).",
+    "cross_component_drifts": [
+      "lg-density sidebar-width-icon = 2×24 + 20 = 68px, NOT 64px — spec token table (sidebar.spec.md:619) + anatomy ChromeTokens (:722) + tsx collapsed-header math comment (:520 '(64-24)/2') all hardcode the stale 64. Verified: uiSize.css:89 --sidebar-menu-icon-size→1.25rem(20) + layoutSpace.css:23 loose→24 at [data-density=lg].",
+      "TreeView icon-mode auto-hide is UNIMPLEMENTED but claimed as automatic in BOTH sidebar.spec.md (:146/:194/:301/:650/:703 + principles:442) AND tree-view.spec.md:241 ('由 Sidebar 元件透過 CSS group-data-[collapsible=icon]:hidden 自動隱藏'). grep of Sidebar+TreeView src+stories: zero such selector exists. Consumer must add the class manually or icon-mode shows the full tree.",
+      "@benchmark-unverified-blanket header on Sidebar/Coachmark/Carousel/FileViewer/image-renderer tsx pre-emptively retracts benchmark claims, but the SPEC.md files (no blanket) still carry the unverified library/APG claims that codex flagged — the retraction didn't propagate to spec, so consumer-facing docs keep the false library-behavior teaching.",
+      "Wrapped-library aria/behavior claims are systematically overstated: Radix Dialog 1.1.15 emits NO aria-modal (grep dist confirmed) yet FileViewer spec/tsx/anatomy claim it; react-zoom-pan-pinch wheel is additive (scale + delta*step, esm.js:1265) yet docblock says 'multiplicative log 等距'. Same anti-pattern class as Batch-3 cmdk orphan-label finding — docblock decodes library from memory, not source."
+    ]
+  },
+  "Sidebar": {
+    "material_confirmed": [
+      {
+        "fileLine": "sidebar.spec.md:619 (token table) + sidebar.anatomy.stories.tsx:722 (ChromeTokens) + sidebar.tsx:520 (collapsed-header math comment)",
+        "宣稱": "--sidebar-width-icon:md=48 / lg=64;collapsed-header pl 公式 'lg density: (64-24)/2 = 20'。",
+        "真實code行為": "--sidebar-width-icon = calc(2*--layout-space-loose + --sidebar-menu-icon-size)。lg 時 loose=24px(layoutSpace.css:23)+ menu-icon=20px(uiSize.css:89 override 1.25rem)= 68px,非 64。tsx:520 註解 (64-24)/2 應為 (68-24)/2=22。三處(spec 值表 / anatomy 值表 / tsx 幾何註解)全 hardcode stale 64。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:619 + anatomy:722 改 lg=68;tsx:519-521 sanity-check 註解改 (68-24)/2=22(或刪 stale loose-4 等值宣稱,formula 幾何自洽本身正確)。"
+      },
+      {
+        "fileLine": "sidebar.anatomy.stories.tsx:683 (行為規則 li) + Accessibility story 內文 (~:755)",
+        "宣稱": "「Cmd+B 全域快捷鍵…任何 focus 位置都可觸發——目前未排除文字輸入框,在 input / textarea 內按下仍會 toggle(無 disableShortcut opt-out)」。",
+        "真實code行為": "sidebar.tsx:202-211(2026-07-05 D4 修)handler 三道 guard:defaultPrevented / isComposing / target.closest('input, textarea, [contenteditable]') 全 return。input/textarea 內 Cmd+B **不會** toggle。story 兩處仍宣稱 D4 前的舊行為 = code-vs-story 矛盾(spec A11y 段已正確描述三 guard,只 story 沒同步)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "anatomy:683 li + Accessibility 內文改述三道 guard(對齊 spec A11y 段 + tsx:197-211),刪「input/textarea 內仍會 toggle」。"
+      },
+      {
+        "fileLine": "sidebar.spec.md:490 (Single selection 段) + sidebar.principles.stories.tsx:480 (ActiveState)",
+        "宣稱": "「不論 MainNav / TreeView / Favorites / 任何 group,同一時間只有一個 item 被選中。選任何 item 都會自動 deselect 其他。沒有例外」+「SidebarProvider 內建 single-selection state…consumer 無法寫出啞 item」。",
+        "真實code行為": "SidebarProvider 的 activeId/setActiveId(tsx:86-88)只協調 SidebarMenuButton(tsx:1040/1047)。TreeView 用完全獨立的 selectedIds:Set(tree-view.tsx:502),不接 SidebarContext,無 cross-family auto-deselect。「結構性保證 / 沒有例外」對 TreeView 不成立——需 consumer 自建 adapter 橋接(principles story 自己也只是叫 consumer 用單一 activeId,非元件自動)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:490 限縮「Provider 結構性保證僅涵蓋 SidebarMenuButton;跨 TreeView 的單選需 consumer 用同一 activeId 手動橋接」,刪「沒有例外」。"
+      },
+      {
+        "fileLine": "sidebar.tsx:474-478 (SidebarHeader/Footer docblock) + sidebar.anatomy.stories.tsx:142 + ChromeTokens 表 (~:753) + sidebar.spec.md:244",
+        "宣稱": "「SidebarHeader / SidebarFooter:固定高度 var(--chrome-header-height)…水平 padding 用 loose token」;anatomy「SidebarFooter(固定高)」/「header / footer 固定高度」。",
+        "真實code行為": "只有 SidebarHeader 消費 ChromeHeader(chrome-header-height)。SidebarFooter(tsx:538-554)= `flex shrink-0 flex-col py-2 border-t border-divider`——content-based,無固定高度、無自身 px-loose、不消費 chrome-height。tsx:474 docblock 把 Header+Footer 綁在一起是 stale(Footer 自身 docblock tsx:534-537 + spec:208 已正確,anatomy/ChromeTokens/tsx:474 未同步——改一處未看三處)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "tsx:474-478 拆開 Footer(content-based);anatomy:142 + ChromeTokens 'Footer 固定高度' 改 content-based。"
+      },
+      {
+        "fileLine": "sidebar.tsx:303-309 (Sidebar viewportInsetTop docblock)",
+        "宣稱": "「提供 viewportInsetTop 時,sidebar 改從該值起算 top 並扣除高度(AppShell primary-header mode 必傳)」。",
+        "真實code行為": "insetStyle(tsx:325-327)只套在桌機 offcanvas/icon 分支(tsx:386)。collapsible='none'(tsx:329-342 提前 return)與 mobile Sheet(tsx:344-366 提前 return)完全忽略 viewportInsetTop → 這兩模式下 global header 仍被覆蓋。docblock 未註明僅桌機分支生效 = dropped prop in 2/3 branches。",
+        "claudeAlsoCaught": false,
+        "fixHint": "docblock 註明 viewportInsetTop 僅 desktop offcanvas/icon 生效;collapsible='none' / mobile Sheet 不套(或補接線)。"
+      },
+      {
+        "fileLine": "sidebar.spec.md:597 + sidebar.spec.md:644 + sidebar.anatomy.stories.tsx:681",
+        "宣稱": "「Mobile(<768px)一律走 Sheet overlay,不受 collapsible prop 影響」。",
+        "真實code行為": "collapsible === 'none'(tsx:329)在 isMobile 判斷(tsx:344)**之前** return 靜態 `<div w-[var(--sidebar-width)]>`。mobile + collapsible='none' = 固定 240px div,不進 Sheet。「一律 Sheet / 不受 collapsible 影響」falsified(第三種實際狀態)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改「offcanvas / icon 在 mobile 切 Sheet;collapsible='none' 在 mobile 仍是固定 div」。"
+      },
+      {
+        "fileLine": "sidebar.tsx:604-606 + :619-621 (SidebarGroupContext/SidebarGroup docblock) + sidebar.spec.md:542 + A11y 段「label trigger 帶 aria-expanded」",
+        "宣稱": "「collapsible=true 時 SidebarGroupLabel 變 trigger」/「label trigger 帶 aria-expanded + aria-controls」。",
+        "真實code行為": "collapsible group 的 label(tsx:757-788)保持 `<div role='presentation'>`;只有尾端 chevron `<ItemInlineActionButton>` 被 `CollapsiblePrimitive.Trigger asChild` 包(tsx:779-786),aria-expanded/data-state 掛在 chevron button 上,非 label。GroupContent 確實變 Collapsible.Content(tsx:687-696,正確)但 label 從不變 trigger。重複於 docblock×2 + spec:542 + A11y 段。",
+        "claudeAlsoCaught": false,
+        "fixHint": "docblock/spec/A11y 改「chevron button 成為 Collapsible.Trigger 承載 aria-expanded;label 維持 presentation div」。"
+      },
+      {
+        "fileLine": "sidebar.tsx:670-671 (SidebarGroup collapsible Root 註解)",
+        "宣稱": "「Collapsible 在 icon 模式下整個隱藏(跟 TreeView 一樣)…Consumer 若要顯示自行傳 className 覆寫」。",
+        "真實code行為": "CollapsiblePrimitive.Root(tsx:663-673)無任何 `group-data-[collapsible=icon]:hidden` class,icon 模式預設仍渲染。無「整個隱藏」實作;consumer 反而要自加 class 才能隱藏。註解描述不存在的行為(與 TreeView 自動隱藏同屬幽靈 feature,見 cross-component drift #2)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "刪「icon 模式整個隱藏」宣稱,或真的在 Root 補 icon-hidden class(需設計拍板)。"
+      },
+      {
+        "fileLine": "sidebar.tsx:875-877 (SidebarMenuButton docblock)",
+        "宣稱": "「Icon 模式:button…鎖高為 field-height-{size},content 用 justify-center 居中」。",
+        "真實code行為": "cva(tsx:936-942 註解 '2026-05-21 v4 C*:撤回 group-data-[collapsible=icon]:!h-[...] height lock')已移除鎖高;現無 height lock、無 justify-center。collapsed 靠 pl 公式(tsx:928-929)把 prefix center 對 rail,row 維持 padding-derived auto height。docblock 是 v4 前的 stale 描述,被同檔 cva 註解 falsify。",
+        "claudeAlsoCaught": false,
+        "fixHint": "docblock:875-877 對齊 cva C* 註解——刪 height-lock / justify-center,改述 outer-clip + prefix-center pl 公式。"
+      },
+      {
+        "fileLine": "sidebar.spec.md:145 + :194 + :703 (icon 模式 icon+tooltip) + sidebar.anatomy.stories.tsx:671",
+        "宣稱": "「扁平導覽在 Icon 模式顯示 icon + tooltip」/「Collapsed mode 只留 icon + tooltip」/「hover menu button 自動出現 Tooltip」。",
+        "真實code行為": "SidebarMenuButton.tooltip 是 opt-in prop(tsx:984);只在傳入時才渲染 `<Tooltip>`(tsx:1136-1151)。未傳 tooltip 的 collapsed icon 按鈕**無 tooltip**——collapsed 態無 hover 提示 + 無 label(sr-only),對 SR/hover 只剩 icon。spec/anatomy 把 tooltip 講成 icon 模式自動代償,實為需 consumer 每顆 button 手傳的 a11y 缺口。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec/anatomy 註明 collapsed tooltip 是 opt-in（未傳則無 hover 提示），或建議 collapsed 導覽 button 必傳 tooltip。"
+      },
+      {
+        "fileLine": "sidebar.spec.md:690 (A11y Mobile sheet focus trap) + sidebar.anatomy.stories.tsx:769",
+        "宣稱": "「Mobile sheet…Radix Dialog 自帶…restore focus to trigger / 關閉後焦點回到觸發按鈕」。",
+        "真實code行為": "mobile 分支(tsx:344-364)`<Sheet>`/`<SheetContent>` 無 `<SheetTrigger>`——toggle 走 SidebarTrigger→toggleSidebar→setOpenMobile,非 Radix DialogTrigger。Radix onCloseAutoFocus 無條件 event.preventDefault() 後 triggerRef.current?.focus();triggerRef=null → focus() 不執行且 preventDefault 已擋掉 FocusScope 的 previously-focused 還原 → 關閉後焦點掉到 body,非 SidebarTrigger。「restore focus to trigger」不成立。",
+        "claudeAlsoCaught": false,
+        "fixHint": "把 SidebarTrigger 接成 SheetTrigger,或 spec 註明 mobile 關閉焦點不保證回 trigger(現況)。"
+      },
+      {
+        "fileLine": "sidebar.spec.md:674 (## 為何無 Inspector)",
+        "宣稱": "「Sidebar 無 Inspector,由 Overview + SizeMatrix + ColorMatrix + StateBehavior + ChromeTokens 五 story 完整覆蓋」。",
+        "真實code行為": "sidebar.anatomy.stories.tsx:267 `export const Inspector`(name '元件檢閱器',帶 size/activeId/width argTypes + SidebarPreview render)真實存在;anatomy 實際 7 story(含 VariantMatrix/Accessibility)。spec 段標題與內文直接與 story 檔矛盾。",
+        "claudeAlsoCaught": true,
+        "fixHint": "刪「為何無 Inspector」段,或改為 Inspector story 的說明(對齊 anatomy:267)。"
+      }
+    ],
+    "marginal_count": 33,
+    "false_positive_count": 0,
+    "false_positive_examples": []
+  },
+  "TreeView": {
+    "material_confirmed": [
+      {
+        "fileLine": "tree-view.tsx:949-950 (row cva) + tree-view.spec.md:137,147 + tree-view.anatomy.stories.tsx:265",
+        "宣稱": "「multiple selected text 不變,維持 text-fg-secondary muted;視覺信號只在 checkbox」(code 註解 tsx:945-948 亦如此宣稱意圖)。",
+        "真實code行為": "`!disabled && !isSelected && 'text-fg-secondary'`(tsx:949)——muted class 被 gate 在 !isSelected。multiple 模式選中時 text-fg-secondary 消失,text-foreground 又只給 single(tsx:950)→ 多選選中 row 文字 fall back 到繼承色(較深),**text 反而變色**,與『text 不變、信號只在 checkbox』的宣稱+意圖直接相反。真 CODE BUG(class 條件錯放)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "tsx:949 改 `!disabled && (!isSelected || selectionMode==='multiple') && 'text-fg-secondary'`,讓多選選中 text 真的維持 muted。"
+      },
+      {
+        "fileLine": "tree-view.tsx:522-607 (handleKeyDown) vs tree-view.tsx:775 / tree-view.anatomy.stories.tsx:83 (disabled 宣稱)",
+        "宣稱": "「disabled 會停用該 TreeItem / node」。",
+        "真實code行為": "handleKeyDown 完全不檢查 node disabled——querySelector 抓 `[role=treeitem]:not([hidden])` 含 disabled node;focusedId 可 arrow 到 disabled node,Enter/Space→select(id)(tsx:601)仍選取,ArrowLeft/Right 仍 toggleExpand。disabled 只擋 pointer(pointer-events-none)+ drag,鍵盤路徑全通。a11y 缺口。",
+        "claudeAlsoCaught": false,
+        "fixHint": "handleKeyDown 對 Enter/Space/Arrow 前查 node disabled(getNodeInfo 或 data-attr)並 skip;或 querySelector 排除 aria-disabled。"
+      },
+      {
+        "fileLine": "tree-view.tsx:304-305 (sensors) + tree-view.tsx:970 (自註解) vs tree-view.spec.md:381",
+        "宣稱": "「鍵盤完整可操作,無需滑鼠」。",
+        "真實code行為": "sensors = useSensors(useSensor(PointerSensor, {distance:5}))——**僅 PointerSensor,無 KeyboardSensor**(tsx:970 自註解已承認)。draggable 重排只能用指標裝置,鍵盤無拖放路徑。spec「無需滑鼠」對 drag-reorder falsified。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:381 註明 drag-reorder 需指標(現況),或加 KeyboardSensor + 鍵盤拖放 UX。"
+      },
+      {
+        "fileLine": "tree-view.tsx:534 (方向鍵 focus-init guard) + tree-view.tsx:614 (aria-activedescendant) vs tree-view.spec.md:171,372",
+        "宣稱": "「遵循 WAI-ARIA TreeView pattern;tree 收焦點時 active focus 設第一/已選 node」/「任何方向鍵先聚焦第一個」。",
+        "真實code行為": "無 onFocus 初始化——Tab 進 tree(tabIndex=0)時 focusedId=null → aria-activedescendant=undefined(tsx:616),AT 讀不到目前 node(違 APG focus-in 初始化)。且 focus-init guard(tsx:534)只含 ArrowDown/Up/Home/End;ArrowLeft/Right 無焦點時不初始化(currentEl undefined → break)。「任何方向鍵」overclaim。",
+        "claudeAlsoCaught": false,
+        "fixHint": "加 onFocus 初始化 focusedId=第一/已選 node;guard 補 ArrowLeft/Right(或註明)。"
+      },
+      {
+        "fileLine": "tree-view.spec.md:372,379 + tree-view.anatomy.stories.tsx:428 (單一 tab stop) vs tree-view.tsx:984-991 (inline actions / checkbox)",
+        "宣稱": "「DOM focus 固定在 tree 容器,整棵 tree 是單一 tab stop」。",
+        "真實code行為": "auto-render Checkbox 已補 tabIndex={-1}(tsx:991,D4 修),但公開 inlineActions API 經 ItemInlineAction 渲染原生 button(spec:251 自證存在),custom checkbox/escape slot 亦可加原生 tabbable → 產生額外 tab stops,破壞單一 tab stop 宣稱。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec 註明 inlineActions/custom slot 會加 tab stop(或 roving 收進虛擬焦點);修正「單一 tab stop」絕對措辭。"
+      },
+      {
+        "fileLine": "tree-view.spec.md:117,169 + tree-view.tsx:190 (expandOnSelect) vs tree-view.tsx:597-603 (Enter/Space)",
+        "宣稱": "「expandOnSelect 讓整行同時 select + expand;Enter／Space 跟點擊 label 同效果」。",
+        "真實code行為": "只有 pointer row click(handleRowClick)讀 expandOnSelect;Enter/Space handler(tsx:597-603)僅 select(id),不 toggleExpand。鍵盤選取不觸發 expandOnSelect → 鍵盤 ≠ pointer,「同效果」falsified。",
+        "claudeAlsoCaught": false,
+        "fixHint": "Enter/Space 分支比照 handleRowClick 讀 expandOnSelect(補 toggleExpand),或 spec 註明 expandOnSelect 僅 pointer。"
+      },
+      {
+        "fileLine": "tree-view.tsx:977 註解 + tree-view.tsx:984-999 (render 順序) vs tree-view.spec.md:287-290 / tree-view.anatomy.stories.tsx:39 (「checkbox 位於 icon 之後」)",
+        "宣稱": "spec/anatomy:「Checkbox 位於 icon 之後、label 之前」/ anatomy 結構「[chevron][icon?][label]」。",
+        "真實code行為": "JSX 順序 chevron(tsx:975)→ checkbox(tsx:984-993)→ indicator/icon(tsx:995+)→ label。checkbox 在 icon **之前**(code 自註解 tsx:977『Checkbox 在 icon 前』確認)。spec/anatomy 順序描述反了 + anatomy 結構漏 checkbox/indicator。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:287-290 + anatomy:39 改「chevron → checkbox → indicator/icon → label」,checkbox 在 icon 前。"
+      },
+      {
+        "fileLine": "tree-view.spec.md:341 vs tree-view.tsx:62 (type TreeContext)",
+        "宣稱": "「context 維度是 sidebar / panel / dialog」。",
+        "真實code行為": "`type TreeContext = 'sidebar' | 'menu'`(tsx:62);CONTEXT_PX_VAR 只有這兩值(tsx:66)。`panel`、`dialog` 非合法值。spec 列了不存在的 context 值。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:341 改 context = 'sidebar' | 'menu'。"
+      },
+      {
+        "fileLine": "tree-view.spec.md:251 vs tree-view.tsx (inlineActions/inlineActionsSlot props)",
+        "宣稱": "「右側 `actions` slot 只在 hover 該列時出現」。",
+        "真實code行為": "無 `actions` prop;實際為 `inlineActions` / `inlineActionsSlot`;預設也因 descendant `:focus-visible` 顯示(非僅 hover),`actionsReveal=false` 則常駐。spec 用錯 prop 名 + 錯 reveal 條件。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:251 改 prop 名 inlineActions/inlineActionsSlot,reveal 條件補 focus-visible + actionsReveal 常駐選項。"
+      },
+      {
+        "fileLine": "tree-view.tsx:626-633 (root treeEl style + trailing {...props}) — codex tsx:64-65",
+        "宣稱": "「root 注入 --tree-px,TreeItem 據此計算最終 padding」(隱含 consumer 不能破壞)。",
+        "真實code行為": "root div `style={{'--tree-px':…, ...props.style}}` 後又 `{...props}`(tsx:633)在 style/onKeyDown/tabIndex 之後 spread → consumer 傳 style/onKeyDown/tabIndex 會覆寫內部值(含 --tree-px indent、keyboard handler、單一 tab stop tabIndex)。prop-spread 順序 footgun。",
+        "claudeAlsoCaught": false,
+        "fixHint": "把 style/onKeyDown/tabIndex 移到 {...props} 之後(或明確 merge onKeyDown),防 consumer 意外清掉 --tree-px / handler。"
+      },
+      {
+        "fileLine": "tree-view.tsx:643 註解 + tree-view.tsx:1076-1087 (metadata sizes) vs tree-view.spec.md:5 frontmatter",
+        "宣稱": "「未來 TreeView 接 inlineActions API 後才用 RowSizeContext」+ frontmatter `sizes: {}` 空。",
+        "真實code行為": "inlineActions 已公開實作(spec:251 自證 + ItemInlineAction 渲染)——tsx:643『未來』註解 stale。且元件公開 sm|md|lg + defaultSize:'md',frontmatter/metadata `sizes:{}` 空 = 自相矛盾(屬全家族 Phase-1 mechanical migration 系統性空值,非 TreeView 特有)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "tsx:643 刪『未來』措辭;frontmatter/metadata sizes 補 sm/md/lg(全家族 batch)。"
+      }
+    ],
+    "marginal_count": 30,
+    "false_positive_count": 0,
+    "false_positive_examples": []
+  },
+  "Coachmark": {
+    "material_confirmed": [
+      {
+        "fileLine": "coachmark.tsx:37-41 (docblock) + coachmark.spec.md:169,206 (Footer/A11y 段)",
+        "宣稱": "「focus content 容器後,Tab 第一下即達 content 內第一個(推進)CTA」。",
+        "真實code行為": "有 kind/headerTitle 時 render `<PopoverHeader>`(coachmark.tsx:189,未 hideClose)→ PopoverHeader 預設附右上 Close X(popover.tsx:141)。onOpenAutoFocus focus 容器後 Tab 依 DOM 順序:Close X → (Previous) → (Skip) → Next/Done。多步/有 header 時第一個 tabbable 是 Close X 非推進 CTA;spec『Tab 一下即達推進 CTA』僅單步無 header 成立。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:169/206 + tsx:37-41 限縮：單步無 header 時 Tab 一下達 CTA;有 header/多步時先經 Close X / Previous / Skip。"
+      },
+      {
+        "fileLine": "coachmark.spec.md:156,168 vs coachmark.tsx:143 (showSkip)",
+        "宣稱": "「進到 step 2+ 後 Skip 自動隱藏」/「Skip 僅第一步顯示」。",
+        "真實code行為": "showSkip = Boolean(onSkip) && !onPrev && !isSingleStep(tsx:143)——由 onPrev 是否存在決定,**不讀 step.current**。step.current=2 但未傳 onPrev 時 Skip 仍顯示;step.current=1 但傳 onPrev 時 Skip 隱藏。行為是 onPrev-driven 非 step-number-driven,spec 措辭誤導非標準 tour。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:156/168 改「有 onPrev(通常第 2+ 步)時 Skip 隱藏」,對齊 tsx:143 真條件。"
+      }
+    ],
+    "marginal_count": 26,
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      {
+        "fileLine": "coachmark.principles.stories.tsx:188",
+        "宣稱": "codex：「此 DialogContent 未攔截 pointer-down outside,Radix DismissableLayer 會 dismiss,點 backdrop 可直接關閉」→ 判 Label『破壞性決策…不能讓使用者點旁邊跳過』矛盾。",
+        "whyWrong": "該 Label 是 Coachmark-vs-Dialog 對比的**設計原則主張**(為何破壞性動作該用 Dialog 而非 Coachmark),非宣稱這個 demo Dialog 攔截 outside-click。codex 把設計主張過度解讀為對 demo dismiss 行為的功能宣稱,且從 Coachmark principles story 反向伸入 Dialog 的 dismiss 實作 = 越界。demo 是靜態示意(Storybook 慣例),Label 描述設計意圖成立。"
+      }
+    ]
+  },
+  "Carousel": {
+    "material_confirmed": [
+      {
+        "fileLine": "carousel.tsx:93-119 (onSelect / reInit effect) vs carousel.spec.md:145,187,248,254 + carousel.anatomy.stories.tsx:487",
+        "宣稱": "「只有一張時 CarouselDots 自動 return null,consumer 不必判斷」/「8+ items → dots 全數渲染」。",
+        "真實code行為": "onSelect(tsx:93-98)只 set canScrollPrev/Next/selectedIndex,**不 setScrollSnaps**;setScrollSnaps 僅在 effect 掛載時跑一次(tsx:111),`api.on('reInit', onSelect)`(tsx:113)不刷新 scrollSnaps。動態 slide 增減(reInit)後 scrollSnaps React state stale → dots 數量不更新、multi→single 縮減時舊 dots 殘留、CarouselDots 的 `scrollSnaps.length<=1` return-null 保證失效。真 CODE BUG。",
+        "claudeAlsoCaught": false,
+        "fixHint": "reInit handler 補 setScrollSnaps(api.scrollSnapList());或另註冊 `api.on('reInit', () => setScrollSnaps(...))`。"
+      },
+      {
+        "fileLine": "carousel.spec.md:133 + carousel.anatomy.stories.tsx:188,377",
+        "宣稱": "「--field-height-md 為 default 32px / loose 36px」。",
+        "真實code行為": "系統無 'loose' density level（'loose' 是 --layout-space-* 的層級名,非 density/ui-size tier）。field-height-md 36px 由 [data-density='lg'] / [data-ui-size='lg'] 觸發(uiSize.css:92),對應的是 **lg** 密度非 'loose'。spec+anatomy×2 用錯密度層名,誤導 consumer 找不存在的 'loose' density。",
+        "claudeAlsoCaught": false,
+        "fixHint": "三處改「default(md)32px / lg 36px」,刪 'loose' 密度措辭。"
+      },
+      {
+        "fileLine": "carousel.spec.md:131 vs carousel.tsx:266,298 (rounded-full override)",
+        "宣稱": "「Arrow 完全對齊 DS Button,不自訂視覺」。",
+        "真實code行為": "Button 基底 rounded-md,CarouselPrevious/Next 明確傳 `className='rounded-full'`(tsx:266/298,自帶 documented exception 註解 + spec『箭頭視覺規格』另段記載此例外)。spec:131『不自訂視覺』與同 spec 的 rounded-full 例外段自相矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:131 改「箭頭消費 DS Button,唯 shape 覆寫 rounded-full(media carousel 例外,見箭頭視覺規格段)」。"
+      },
+      {
+        "fileLine": "carousel.anatomy.stories.tsx:21-23 vs carousel.principles.stories.tsx (MediaGradient)",
+        "宣稱": "「展示、設計規格、設計原則三層皆已改用同源 Picsum,取代 gradient 色塊」。",
+        "真實code行為": "principles.stories.tsx 仍以 `<MediaGradient from=… to=…>`(手刻 linear-gradient)渲染 media(見 MultiStep/Media rules)。三層並未同源——anatomy 用 Picsum、principles 用 gradient。story 註解 false。",
+        "claudeAlsoCaught": false,
+        "fixHint": "principles 改用同源 Picsum,或 anatomy:21-23 刪『三層同源』宣稱。"
+      }
+    ],
+    "marginal_count": 16,
+    "false_positive_count": 0,
+    "false_positive_examples": []
+  },
+  "FileViewer": {
+    "material_confirmed": [
+      {
+        "fileLine": "file-viewer.spec.md:23,363 + file-viewer.tsx:63 + file-viewer.anatomy.stories.tsx:1126 — verified vs node_modules/@radix-ui/react-dialog@1.1.15/dist/index.js",
+        "宣稱": "「Radix DialogPrimitive 提供 aria-modal / role=dialog + aria-modal='true' 的結構優勢」。",
+        "真實code行為": "grep dist:@radix-ui/react-dialog 1.1.15 **不輸出 aria-modal** attribute(只有 role/aria-describedby/aria-labelledby;modal isolation 靠 hideOthers + FocusScope)。spec/tsx/anatomy 三處宣稱 Radix 自動處理 aria-modal='true' = 錯誤 library-behavior teaching。",
+        "claudeAlsoCaught": false,
+        "fixHint": "刪 aria-modal 宣稱;若要 aria-modal 需自行加在 Content 上,或改述 modal isolation 靠 focus/hideOthers。"
+      },
+      {
+        "fileLine": "image-renderer.tsx:238,240,241-242 + file-viewer.spec.md:205 + file-viewer.anatomy.stories.tsx:829 — verified vs node_modules/react-zoom-pan-pinch@4.0.3/dist/index.esm.js:1265",
+        "宣稱": "「wheel zoom 是 multiplicative 乘算、log 視覺等距;可切 smoothScroll / smoothStep API」。",
+        "真實code行為": "handleCalculateWheelZoom: `var targetScale = scale + delta * step`——**additive 線性**非 multiplicative/log(esm.js:1265)。且 .d.ts 只有 `smooth?:boolean` + wheel.step,**無 smoothScroll / smoothStep** key(grep index.d.ts)。docblock 對 wrapped lib 的 zoom 數學 + 升級 API 皆錯。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改述 wheel = additive scale + delta×step;刪不存在的 smoothScroll/smoothStep,若要平滑用 `smooth:boolean`。"
+      },
+      {
+        "fileLine": "file-viewer.spec.md:365,373 + file-viewer.tsx:960-961 + file-viewer.anatomy.stories.tsx:1126",
+        "宣稱": "「Focus trap:焦點鎖在 viewer 內;preventDefault 讓鍵盤從 viewport 開始」。",
+        "真實code行為": "onOpenAutoFocus={(e)=>e.preventDefault()}(tsx:960-961)只取消 Radix 初始聚焦,**無任何 focus() 把焦點移入 viewer**;viewport div 無 tabIndex/ref.focus()。初始焦點停在 trigger(viewer 外),鍵盤不『從 viewport 開始』;FocusScope trapping 要等焦點實際進 Content 才生效。a11y 初始焦點宣稱 falsified。",
+        "claudeAlsoCaught": false,
+        "fixHint": "onOpenAutoFocus 內 focus viewport(補 tabIndex + ref.focus),或 spec 改述初始焦點留在 trigger、進 Content 後才 trap。"
+      },
+      {
+        "fileLine": "file-viewer.spec.md:211 vs image-renderer.tsx:183-197 (external-zoom effect centerView)",
+        "宣稱": "「user 看哪,zoom 完看哪,視覺焦點不漂移」。",
+        "真實code行為": "只有 wheel path(handleTransformed)以 pointer 為 anchor;按鈕/preset/fit/輸入改 zoom → external-zoom effect 呼叫 api.centerView(targetScale,200)(tsx:193)把既有 pan/focal point 重置為整張內容幾何中心。非-wheel zoom 焦點會漂移,spec 全稱宣稱過度。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:211 限縮「wheel/pinch 以指標為 anchor;按鈕/preset/fit 走 centerView 重置為內容中心」。"
+      },
+      {
+        "fileLine": "file-viewer.spec.md:278,282 + file-viewer.tsx:702,752 + principles:426,432 + anatomy:232 — verified vs Textarea/textarea.tsx:199-216",
+        "宣稱": "「說明是依 readOnly 切換的 Textarea;readOnly 無值顯『尚無說明』placeholder;readonly textarea focus 不進游標」。",
+        "真實code行為": "DS Textarea:readonly + 空值 → 渲染 `<div>` + emptyDisplay('-')非 textarea、非 placeholder(textarea.tsx:200-216);readonly + **有值** → 原生 `<textarea readOnly>`(可 focus / 選取 / 放 caret / 複製)。故 (1) placeholder『尚無說明』永無顯示狀態(空值走 div emptyDisplay),(2)『readonly textarea focus 不進游標』對有值 native readOnly textarea falsified。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec/principles 改:readonly 空值 = display div + emptyDisplay(非 placeholder);readonly 有值 = 可聚焦選取的 native textarea。FileViewer 若靠 placeholder 傳空狀態文字,改用 emptyDisplay。"
+      },
+      {
+        "fileLine": "file-viewer.spec.md:312 + file-viewer.anatomy.stories.tsx:906 — verified vs react-use-escape-keydown capture listener",
+        "宣稱": "「焦點在 input/textarea/contentEditable 時不觸發快捷鍵」。",
+        "真實code行為": "FileViewer 自寫 handler(tsx:863-903)對可編輯 target return,但 Radix Dialog 的 Escape 是 capture-phase document listener(react-use-escape-keydown)→ 在 InfoPanel description textarea 內按 Esc 仍關閉整個 viewer(可能丟失編輯)。『可編輯焦點不觸發快捷鍵』對 Esc 這條 shortcut 不成立。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec 註明 Esc(Radix capture)在可編輯區內仍關 viewer;或 description 編輯中攔 Esc(stopPropagation)只清編輯不關 viewer。"
+      },
+      {
+        "fileLine": "file-viewer.spec.md:143 + file-viewer.principles.stories.tsx:261",
+        "宣稱": "「close 會 unmount 所有 state」。",
+        "真實code行為": "close 只 setOpen(false);FileViewer 外層 function component 恆掛載,infoOpen/zoom/fitRequest/capabilities 等 useState 持續存在(僅 DialogContent 子樹卸載)。重開同檔保留上次 zoom/infoOpen(非 fresh state)。『unmount 所有 state』falsified。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec 改『close 卸載 DialogContent 子樹,但 shell state(zoom/infoOpen 等)保留於恆掛載 FileViewer;重開沿用』,或 close 時 reset。"
+      },
+      {
+        "fileLine": "image-renderer.tsx:225-226 (any-allow 註解) vs image-renderer.tsx:6 (import) + index.d.ts:137-155",
+        "宣稱": "「react-zoom-pan-pinch TransformWrapper ref type not exported」(用作 `apiRef as any` 的 justification)。",
+        "真實code行為": "本檔第 6 行就 `import { type ReactZoomPanPinchRef }` 並用於 apiRef 型別(tsx:44)——型別**有** export;ReactZoomPanPinchContentRef 亦 export。`as any` 的『type not exported』justification 事實錯誤(可用真型別移除 any)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 justification 或直接 `apiRef as React.Ref<ReactZoomPanPinchContentRef>`(真型別)移除 any。"
+      },
+      {
+        "fileLine": "image-renderer.tsx:18,32,94-100 + file-viewer.spec.md:202",
+        "宣稱": "「onLoad 自動 fit-to-page → image 完整可見(contain semantic)」。",
+        "真實code行為": "computeFitScale 回原始 ratio 但 clampToPct 夾到 MIN_SCALE=0.1(tsx:95)。所需倍率 <10% 的超大圖仍溢出(clamp 到 10%);且 floor(tsx:100)刻意 ~1% under-fill。『完整可見』對極端尺寸 overclaim(邊界)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec/docblock 註明 fit 受 MIN_SCALE 10% 下限,超大圖可能仍溢出(邊界)。"
+      }
+    ],
+    "marginal_count": 39,
+    "false_positive_count": 0,
+    "false_positive_examples": []
+  }
+}

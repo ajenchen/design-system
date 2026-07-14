@@ -35,10 +35,19 @@ VIOLATIONS=""
 # ── Check 1: shadcn compat alias 回流 ─────────────────────────────────────────
 # These are all shadcn safety-net aliases. Our code must use direct tokens instead.
 # bg-muted / bg-secondary / ring-ring are OUR tokens (kept), not listed here.
+# SSOT-drive(#87 2026-07-11):deny-list SSOT = utility-registry.json;優先從 registry 組 pattern
+# (未來新增 alias 只改 registry 自動傳播到本 write-time 主防線,消除「hardcoded 主 / registry 從」倒置)。
+# registry 讀不到 → 保留 hardcoded fallback(11 條)避免 hook 啞掉。
+_REG="${CLAUDE_PROJECT_DIR:-}/packages/design-system/src/tokens/utility-registry.json"
+[ -f "$_REG" ] || _REG="$(dirname "${BASH_SOURCE[0]}")/../../packages/design-system/src/tokens/utility-registry.json"
 SHADCN_PATTERN='\b(bg-popover|text-popover-foreground|text-muted-foreground|bg-accent|text-accent-foreground|bg-destructive|bg-background|bg-card|text-card-foreground|border-input|text-primary-foreground)\b'
+if [ -f "$_REG" ] && command -v jq >/dev/null 2>&1; then
+  _SHADCN_LIST=$(jq -r '.shadcn_alias.block.color_alias | join("|")' "$_REG" 2>/dev/null || true)
+  [ -n "$_SHADCN_LIST" ] && SHADCN_PATTERN="\\b(${_SHADCN_LIST})\\b"
+fi
 SHADCN_HITS=$(grep -nE "$SHADCN_PATTERN" "$FILE_PATH" 2>/dev/null | head -5)
 if [ -n "$SHADCN_HITS" ]; then
-  VIOLATIONS="${VIOLATIONS}\n⚠️ shadcn compat alias found (必須遷移為 direct token):\n${SHADCN_HITS}\n  映射: bg-popover→bg-surface-raised / text-popover-foreground→text-foreground / text-muted-foreground→text-fg-muted / bg-accent→bg-neutral-hover / text-accent-foreground→text-foreground / bg-destructive→bg-error / bg-background→bg-canvas / bg-card→bg-surface / border-input→border-border / text-primary-foreground→text-white"
+  VIOLATIONS="${VIOLATIONS}\n⚠️ shadcn compat alias found (必須遷移為 direct token):\n${SHADCN_HITS}\n  映射: bg-popover→bg-surface-raised / text-popover-foreground→text-foreground / text-muted-foreground→text-fg-muted / bg-accent→bg-neutral-hover / text-accent-foreground→text-foreground / bg-destructive→bg-error / bg-background→bg-canvas / bg-card→bg-surface / text-card-foreground→text-foreground / border-input→border-border / text-primary-foreground→text-white /（其餘 registry alias → 對應 semantic token,見 tokens/color/semantic.css）"
 fi
 
 # ── Check 2: Tailwind v4 [--foo] shorthand (silent fail) ─────────────────────

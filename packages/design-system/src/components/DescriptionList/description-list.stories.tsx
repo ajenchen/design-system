@@ -21,7 +21,7 @@ type Story = StoryObj<typeof DescriptionList>
 export const UserProfile: Story = {
   name: '使用者個資',
   render: () => (
-    <div className="border border-border rounded-lg p-4 max-w-md">
+    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-md">
       <DescriptionList cols={1}>
         <DescriptionItem label="姓名">Ada Chen</DescriptionItem>
         <DescriptionItem label="Email">ada.chen@example.com</DescriptionItem>
@@ -37,7 +37,7 @@ export const UserProfile: Story = {
 export const ProductSpec: Story = {
   name: '產品規格',
   render: () => (
-    <div className="border border-border rounded-lg p-4 max-w-2xl">
+    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-2xl">
       <DescriptionList cols={2}>
         <DescriptionItem label="螢幕尺寸">6.7 吋 Super Retina XDR</DescriptionItem>
         <DescriptionItem label="處理器">A18 Pro</DescriptionItem>
@@ -54,8 +54,9 @@ export const ProductSpec: Story = {
 export const OrderSummary: Story = {
   name: '訂單明細',
   render: () => (
-    <div className="border border-border rounded-lg p-4 max-w-md">
-      <div className="text-body font-medium mb-3">訂單摘要</div>
+    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-md">
+      {/* title 到第一個 item 的間距 = item 之間間距(Gestalt proximity canonical,見 spec;對齊 Horizontal story)*/}
+      <div className="text-body font-medium mb-[var(--layout-space-tight)]">訂單摘要</div>
       <DescriptionList cols={1}>
         <DescriptionItem label="訂單編號">#20260418-A241</DescriptionItem>
         <DescriptionItem label="商品">Pro 年費方案 × 5 人</DescriptionItem>
@@ -75,7 +76,7 @@ export const OrderSummary: Story = {
 export const DetailPanel: Story = {
   name: '詳情面板',
   render: () => (
-    <div className="border border-border rounded-lg p-4 max-w-3xl">
+    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-3xl">
       <DescriptionList cols={3}>
         <DescriptionItem label="訂單狀態">已出貨</DescriptionItem>
         <DescriptionItem label="建立時間">2026-04-18 10:35</DescriptionItem>
@@ -92,7 +93,7 @@ export const DetailPanel: Story = {
 export const Horizontal: Story = {
   name: '水平佈局',
   render: () => (
-    <div className="border border-border rounded-lg p-4 max-w-md">
+    <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-md">
       {/* title 到第一個 item 的間距 = item 之間間距(Gestalt proximity canonical,見 spec) */}
       <div className="text-body font-medium mb-[var(--layout-space-tight)]">檔案資訊</div>
       <DescriptionList direction="horizontal">

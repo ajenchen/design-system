@@ -1,6 +1,9 @@
 // @principles-rationale: Merged WhenToUse + VsTooltipRule + NotForCriticalInfoRule
 // into a single `UsageGuidance` story (3 sections) per 2026-04-26 user mandate to
 // consolidate decision-related stories. PureBehaviorPrimitiveRule kept as separate principle.
+// @story-trait-allow: missing-opensnapshot — 同 hover-card.stories.tsx 檔頭 rationale:
+// 原則頁多個 inline hover demo,forced defaultOpen 會多張浮層互疊;open-state 快照由
+// consumer canonical(ProfileCard / OverflowIndicator)的 OpenSnapshot 涵蓋。
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -121,7 +124,7 @@ export const UsageGuidance: Story = {
             <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-4 shadow-[var(--elevation-200)]">
               <div className="flex flex-col gap-2 w-64">
                 <div className="flex items-center gap-3">
-                  <Avatar alt="Ada Chen" size={40} />
+                  <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada Chen" size={40} />
                   <div>
                     <div className="text-body font-medium">Ada Chen</div>
                     <div className="text-caption text-fg-muted">Design Engineer</div>
@@ -149,7 +152,7 @@ export const UsageGuidance: Story = {
             <div className="flex flex-col gap-1">
               <HoverCard>
                 <HoverCardTrigger asChild>
-                  <Avatar alt="Ada Chen" size={32} />
+                  <Avatar src="https://i.pravatar.cc/64?u=ada-chen" alt="Ada Chen" size={32} />
                 </HoverCardTrigger>
                 <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-3">
                   <div className="flex flex-col gap-2 w-56">
@@ -206,7 +209,7 @@ export const PureBehaviorPrimitiveRule: Story = {
         note="人員類 Avatar 透過 `hoverCard` prop 自動 wrap HoverCardTrigger,不需要 consumer 手動組合。統一人員 hover 提供 ProfileCard 的體驗"
       >
         <div className="flex items-center gap-3">
-          <Avatar alt="Ada Chen" size={40} hoverCard={
+          <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada Chen" size={40} hoverCard={
             <div className="flex flex-col gap-2 w-56">
               <div className="text-body font-medium">Ada Chen</div>
               <div className="text-caption text-fg-muted">Design Engineer · 台北</div>

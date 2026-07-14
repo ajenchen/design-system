@@ -50,7 +50,7 @@ CLAUDE.md `# SSOT 消費 canonical` 的詳表 + 反例。主章留核心 + point
  */
 ```
 
-Hook `check_ssot_consultation.sh`(retired;改靠 mindset #2 + `check_canonical_propagation.sh`)(原 Write 新 tsx 到 `packages/design-system/src/components/` 或 `src/explorations/` → 若檔內無上述註解區 → warn 要求補齊)。
+Hook `check_ssot_consultation.sh` retired;**2026-07-07 以 `check_ssot_header_declaration.sh` 精簡復活**(新建 production tsx 必帶「── 消費的 SSOT ──」段,P0 BLOCKER)+ mindset #2 + `check_canonical_propagation.sh`。(2026-07-10 hunt 修 stale 描述)
 
 ## 禁止:隱性自創
 
@@ -60,4 +60,4 @@ Hook `check_ssot_consultation.sh`(retired;改靠 mindset #2 + `check_canonical_p
 - 自寫 `<button aria-label="Close"><X /></button>` 作 dismiss(應用 `ItemInlineAction`)
 - 自寫 Row `<div><Icon /><span>label</span><Button /></div>`(應用 `<MenuItem>` + slot)
 - 自訂 Input `variant="custom-name"` 未先 grep 既有 variant 值
-- 在 Toolbar 用 `<input className="bg-transparent border-0 ...">`(應用 `<Input variant="bare">` 若既有;無 → Ambiguity Protocol)
+- 在 Toolbar 用 `<input className="bg-transparent border-0 ...">`(應用 `<Input size="sm" autoWidth>` 標準 default variant;`variant="bare"` 已於 2026-07-09 退役,不再使用)

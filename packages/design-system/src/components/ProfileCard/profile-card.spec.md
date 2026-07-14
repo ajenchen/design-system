@@ -57,13 +57,13 @@ ProfileCard 是**三層 chrome 結構**(2026-04-23 canonical):
 │ BODY(可垂直捲動)            │  ← Status section(v12 conditional)+ Info fields(always-render)
 │ ↕ 空間不足時此區捲動         │    Status undefined → 整 status block skip
 ├─────────────────────────────┤
-│ FOOTER(固定不捲)            │  ← View more(hover context 必含,詳「View More」)
+│ FOOTER(固定不捲)            │  ← View more(傳 onViewMore 時顯示,詳「View More」)
 └─────────────────────────────┘
 ```
 
 - **Header 固定**:Profile + Actions 一體,**不捲動**(使用者的視覺 anchor:誰 + 可對他做什麼)
 - **Body 可捲動**:Status section + Info fields。以 `<ScrollArea>` 包(cross-OS overlay 捲軸)
-- **Footer 固定**:View more **永遠可見**(hover preview 的 escape hatch 到完整 profile)
+- **Footer 固定**:傳入 `onViewMore` 時 View more 固定於底(條件渲染 `{onViewMore && …}`,未傳則不渲染 footer)——是 hover preview 到完整 profile 的 escape hatch(對齊本 spec「View More」段 + `profile-card.tsx` footer 條件渲染)
 
 **Status section v12 conditional rule(2026-05-14 user 拍板)**:`status` 在 production 一定會被設定(每個 user 都有 presence state)。如果 status undefined,**唯一可能性 = 資料還沒讀到(loading transient)**,**不**是「user 沒設定狀態」。所以 status undefined 期間 → **整 status block 隱藏**(等資料到才 render),**禁** render「Status not set」這種 placeholder 文字(語義錯,user presence 不會「沒設定」)。**此規則 ProfileCard-specific 不外推至 DS 其他元件**(FileItem / DescriptionList / DataTable cell 各自 placeholder 邏輯 unrelated)。
 
@@ -134,7 +134,7 @@ ProfileCard 的 default actions **是 `Chat + Audio call`**(chat app 標配,cano
 
 - **Name / Subtitle 超長**:自然換行撐高 header,不截斷(text column 最小高度對齊 avatar,見「Profile Header」)
 - **Status / statusMessage 缺值**:status undefined = loading transient → 整 status block 隱藏(v12 rule,見「結構」);ProfileCard **無整卡 loading prop**,資料未到的整卡呈現由 consumer 決定
-- **Info fields 缺值**:default fields 永遠 render,缺資料顯 `—` placeholder(section 結構不收合);consumer `fields` label 撞 default 時 consumer 值 win(dedup canonical,詳 `profile-card.tsx`)
+- **Info fields 缺值**:default fields 永遠 render,缺資料顯半形 `-` placeholder(`text-foreground`——對齊 DS 空值顯示 canonical:不可編輯供檢視的空值同 readonly 值色;section 結構不收合);consumer `fields` label 撞 default 時 consumer 值 win(dedup canonical,詳 `profile-card.tsx`)
 - **內容過長**:Body 在固定高度內以 ScrollArea 捲動,不 clamp 行數(見「Status 區」)
 
 ---

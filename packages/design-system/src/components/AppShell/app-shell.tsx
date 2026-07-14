@@ -18,6 +18,7 @@ import {
   Sheet,
   SheetContent,
   SheetTitle,
+  handleSheetOpenAutoFocus,
 } from '@/design-system/components/Sheet/sheet'
 import { Button } from '@/design-system/components/Button/button'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
@@ -32,7 +33,7 @@ type AppShellLayout = 'primary-sidebar' | 'primary-header'
 export interface AppShellProps extends React.HTMLAttributes<HTMLDivElement> {
   /** primary-sidebar (Linear/Notion 派) | primary-header (GitHub/Slack 派);預設 primary-sidebar */
   layout?: AppShellLayout
-  /** Sidebar 元素(必傳 Sidebar primitive,per Consumer 紀律)*/
+  /** Sidebar 元素(應傳 Sidebar primitive,per Consumer 紀律;型別 optional 不機械強制,對齊 spec「應」措辭)*/
   sidebar?: React.ReactNode
   /**
    * Local page header(永遠 render 在 main column 頂部,當前頁 actions / breadcrumb / page-level filter)。
@@ -307,6 +308,9 @@ const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
     // SheetContent 的 aria-labelledby 指向不存在的 id → SR 念「unnamed dialog」+ Radix
     // TitleWarning console.error(違 sheet.spec.md:98「Sheet content 必有可見 title」)。
     // inline(aside)用純 <h2>:aside 自身已 aria-label={title},且無 Dialog context 不可用 SheetTitle。
+    // R1:mobile Sheet 關閉後焦點還原目標(open 時 snapshot)
+    const asideOpenerRef = React.useRef<HTMLElement | null>(null)
+
     const renderFrame = (titleNode: React.ReactNode) => (
       <>
         <ChromeHeader>
@@ -327,12 +331,34 @@ const AppShellAside = React.forwardRef<HTMLElement, AppShellAsideProps>(
     )
 
     // Modal mode(mobile)— Sheet from right
+    // 2026-07-14 dim-9 修:同步轉交 forwarded ref + 合併 consumer className —— 原 mobile 分支
+    // 兩者皆遺失,同一 API(ref / className)隨 breakpoint 靜默失效(desktop 有效、mobile 無效)。
     if (isMobile) {
       return (
         <Sheet open={asideOpen} onOpenChange={setAsideOpen}>
           <SheetContent
+            ref={ref as React.Ref<HTMLDivElement>}
             side="right"
-            className="w-[min(90vw,var(--app-shell-aside-modal-width))] flex flex-col p-0 [&>button]:hidden"
+            // R1 WCAG 2.4.3(2026-07-14,Claude+codex A′ 共識):controlled Sheet 無 SheetTrigger →
+            // Radix onCloseAutoFocus triggerRef=null + preventDefault 吃掉 fallback → 焦點掉 <body>。
+            // 解:開啟時 snapshot opener(事件 dispatch 時 Radix 尚未移焦;MUI/React Aria/Ant snapshot
+            // 共識 + DatePicker Range 先例 date-picker.tsx:1061),關閉手動還原;opener 已 unmount →
+            // fallback skip-link main(#app-shell-main tabIndex=-1)。
+            onOpenAutoFocus={(e) => {
+              asideOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+              handleSheetOpenAutoFocus(e) // 接力 DS 預設 body-focus(自訂 handler 覆寫預設,故顯式呼叫)
+            }}
+            onCloseAutoFocus={(e) => {
+              e.preventDefault()
+              const opener = asideOpenerRef.current
+              asideOpenerRef.current = null
+              if (opener?.isConnected) { opener.focus({ preventScroll: true }); return }
+              document.getElementById('app-shell-main')?.focus({ preventScroll: true })
+            }}
+            className={cn(
+              'w-[min(90vw,var(--app-shell-aside-modal-width))] flex flex-col p-0 [&>button]:hidden',
+              className
+            )}
             style={{ ['--app-shell-aside-modal-width' as string]: `${resolvedWidth}px` }}
           >
             {renderFrame(<SheetTitle className="flex-1">{title}</SheetTitle>)}

@@ -20,6 +20,15 @@ except Exception:
 EXPLORATION_PREFIX = "src/explorations/"
 SRC_PREFIX = "src/"
 
+# Project root for absolute→relative path normalization(real Edit/Write events
+# carry absolute file_path;prefix 比對必先轉 project-root 相對,否則 hook 永不 fire)。
+PROJECT_ROOT = os.environ.get('CLAUDE_PROJECT_DIR') or os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+def to_project_relative(path):
+    if os.path.isabs(path):
+        return os.path.relpath(path, PROJECT_ROOT)
+    return path
+
 def load_event():
     try:
         return json.load(sys.stdin)
@@ -83,19 +92,21 @@ def main():
     offenders = []
 
     for path in touched_paths:
-        if not should_check(path):
+        rel_path = to_project_relative(path)
+        if not should_check(rel_path):
             continue
-        if not os.path.exists(path):
+        abs_path = path if os.path.isabs(path) else os.path.join(PROJECT_ROOT, path)
+        if not os.path.exists(abs_path):
             continue
 
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(abs_path, "r", encoding="utf-8") as f:
                 content = f.read()
         except Exception:
             continue
 
         if contains_exploration_import(content):
-            offenders.append(path)
+            offenders.append(rel_path)
 
     if offenders:
         lines = [

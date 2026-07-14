@@ -1,0 +1,39 @@
+{
+  "dim": 12,
+  "title": "Story 人話範例(placeholder/jargon test — 範例是否真實業務場景)",
+  "filesScanned": 205,
+  "mech": "DS-wide 全 stories 過 placeholder/jargon test — 範例是否真實業務場景(mindset #4 + story-rules 禁止:佔位符/抽象代號/極端不現實/視覺符號/spec 內部代號)",
+  "verdict": "整體極乾淨 — 205 個 story 檔絕大多數用世界級真實業務情境(Jira PROJ-482 / Alex Rivera 指派 / 飯店入住退房 / 結帳 flow / npm 安裝 onboarding / name@example.com / 至少 8 碼 / 912 345 678 電話)。唯一偏差集中在 Field/Tabs/Steps 少數『幾何/狀態展示型』showcase story 用示意標註而非真實內容。全部 marginal,無 material。",
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:213,234,252,319",
+      "問題": "MixedControlAlignment(混合控制元件高度對齊)story 的 Input placeholder 用純佔位填充字『text input』『input』。上方 FieldLabel 已是真實欄位名(姓名/名稱),但 placeholder 是無意義通用字,非真實輸入提示。同檔其他 story(L124/130/135)用『請輸入姓名』『name@example.com』『至少 8 碼』證明此為 inconsistency。檔頭 trait-rationale 自稱『真實 form 情境』與此矛盾。",
+      "severity": "marginal",
+      "建議": "改成與 label 對應的真實提示(姓名欄→『王小明』或『請輸入姓名』)。此 story 焦點是高度對齊,內容次要,故 marginal — 但 showcase 層應維持真實範例一致性。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:157,169,182,186,190",
+      "問題": "HorizontalLabelAlignment(標籤垂直對齊公式驗證)story 的 placeholder 用 spec 內部驗證描述:『input 中線應與 label 對齊』『input 中線應與 label 第一行對齊』『28px high』『32px high』『36px high』。這是把『要驗證什麼』/ 尺寸標註塞進 user-facing placeholder slot = story-rules 禁止的『spec 內部代號 / 佔位符』。此類公式驗證屬設計規格性質,內容用示意標註而非真實 form 情境。",
+      "severity": "marginal",
+      "建議": "公式/幾何驗證型 story 若要留在 showcase 層,placeholder 應改真實提示(如『請輸入姓名』),驗證意圖放 story 上方 caption(該檔已有 <p> 說明段)承載;或整個驗證 story 歸位到 anatomy 層。尺寸標註(28px high)有輕微教學價值故信心較低,但仍屬示意填充。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:484,488,492,496",
+      "問題": "LabelWidth(標籤寬度)story 的 placeholder 用版面示意描述:『short label column』『typical settings form』『wide label column』『percentage』,描述的是被展示的 labelWidth 用途而非真實輸入內容。屬 showcase 層用示意標註填充 placeholder。",
+      "severity": "marginal",
+      "建議": "改成真實 form 提示(80px 窄欄→『縮寫』、160px→『請輸入姓名』等),用 FieldLabel 上的 80px/160px/240px 尺寸標籤已足以傳達 labelWidth 差異,placeholder 不需再重複示意。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Tabs/tabs.stories.tsx:149-151",
+      "問題": "Disabled(停用)story 用狀態名當 tab 標籤:『可用』『停用』『可用』+ value=a/b/c。同檔其他 story 用真實 tab 名(總覽/成員/通知/設定/計費/安全性),此 Disabled story 卻用狀態字當內容,非真實業務情境的 tab。屬 state-demo 以狀態名代替真實 tab 名。",
+      "severity": "marginal",
+      "建議": "改用真實 tab 名並停用其中一個(如 總覽 / 封存(停用) / 設定),讓 disabled 狀態出現在可辨識的產品情境中,而非抽象『可用/停用』。此為狀態展示故 marginal + 世界級 DS 有時亦如此標,但同檔已有真實 tab 名可對齊。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Steps/steps.stories.tsx:183-195",
+      "問題": "FocusRingCombinations(聚焦環正交示範)story 用狀態名當 step 標籤:『Completed』『Current』『Completed』『Error』+ value=step-1..4。同檔其他 story 用真實流程(基本資料/帳號設定/確認送出、購物車→寄送→運送→付款→完成)。此 focus-ring 展示卻用英文狀態名代替真實步驟名,非真實業務情境。",
+      "severity": "marginal",
+      "建議": "改用真實步驟名(如 基本資料 / 付款方式 / 確認 / 送出)並讓其中一步呈現 error 狀態,聚焦環正交組合仍能完整展示,但內容維持真實。此為狀態/焦點展示故 marginal。"
+    }
+  ]
+}

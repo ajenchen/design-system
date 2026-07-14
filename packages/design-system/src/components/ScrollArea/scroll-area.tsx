@@ -33,8 +33,18 @@ import { cn } from '@/lib/utils'
 
 const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
+    /** 2026-07-08(WM 戰役 R2):Radix Viewport 內建 wrapper `display:table; min-width:100%`
+     *  讓垂直捲動容器內的 flex 多欄佈局以 max-content 佈局、突破 100% 寬(WM 兩欄 dialog
+     *  右欄被裁 33px 實證)。垂直捲動場景 opt-in 此 prop 中和為 block/w-full(水平捲動
+     *  場景勿開 — table wrapper 是其 min-content 溢出機制)。 */
+    fillX?: boolean
+    /** Viewport tabIndex(預設 0 = axe scrollable-region-focusable fix)。內容已有自帶
+     *  focusable 元素(如 TimePicker role=listbox tabIndex=0)時傳 -1 消除雙 tab stop —
+     *  axe 由內部 focusable 內容滿足,焦點直接落在有 keydown 的 listbox 上。 */
+    viewportTabIndex?: 0 | -1
+  }
+>(({ className, children, fillX, viewportTabIndex = 0, ...props }, ref) => (
   <ScrollAreaPrimitive.Root
     ref={ref}
     className={cn('relative flex flex-col overflow-hidden', className)}
@@ -50,8 +60,11 @@ const ScrollArea = React.forwardRef<
         才能 keyboard focus(Safari 不自動把 scroll container 標 focusable)。focus-
         visible:outline 用 DS focus ring,不破壞視覺。 */}
     <ScrollAreaPrimitive.Viewport
-      tabIndex={0}
-      className="flex-1 min-h-0 w-full rounded-[inherit] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+      tabIndex={viewportTabIndex}
+      className={cn(
+        'flex-1 min-h-0 w-full rounded-[inherit] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
+        fillX && '[&>div]:!block [&>div]:!w-full [&>div]:!min-w-0',
+      )}
     >
       {children}
     </ScrollAreaPrimitive.Viewport>

@@ -80,7 +80,7 @@ Calendar 是**事件檢視 canvas**,讓 user 以**月 / 週 / 日** 三種 view 
 
 ```tsx
 <Calendar
-  view="month" | "week" | "day"           // MVP 只支援 "month"
+  view="month" | "week" | "day"           // roadmap:week / day 尚未實作,目前只渲染月檢視(誠實 API,傳入不報錯,見「狀態 > 邊界案例」)
   defaultView="month"
   referenceDate={Date}                      // 當前聚焦日期(月檢視的那個月)
   onViewChange={(view) => ...}
@@ -91,7 +91,7 @@ Calendar 是**事件檢視 canvas**,讓 user 以**月 / 週 / 日** 三種 view 
   onCreateEvent={() => ...}                 // 點「新事件」CTA 回調
   weekStartsOn={0 | 1}                      // 0=Sun, 1=Mon
   renderEventTile={(event) => ReactNode}    // 自訂 event tile 視覺
-  size="md" | "lg"                          // cell 大小(MVP 只 md;lg 為 tech debt)
+  size="md" | "lg"                          // cell 大小(roadmap:lg 尚未實作,視覺同 md——僅設 data-size,無 CSS 消費)
   locale="en-US"                            // Intl 語系(月份標題 / 星期名;預設 'en-US')
   prevAriaLabel="上個月"                    // i18n override:prev 導覽鈕 aria-label
   nextAriaLabel="下個月"                    // i18n override:next 導覽鈕 aria-label
@@ -208,7 +208,7 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 - ❌ 不硬寫 month grid 為 `<table>`——用 CSS grid(月 view 為 per-cell 模型不跨欄 span,見「Event tile 規則」;後續週 / 日 view 的 timeline / 拖拉增量需 grid 自由佈局,table 結構難擴充)
 - ❌ 不把 event 資料存在元件內部 state——event 是 consumer 責任,本元件是純 view
 - ❌ 不自動打開「新事件」表單——`onDateClick` / `onCreateEvent` 回調給 consumer 決定(避免強制開 Dialog UX)
-- ❌ 不重造 date math——用 `date-fns`
+- ❌ 不重造 date math——月 / 週 grid 邊界運算(`startOfMonth` / `eachDayOfInterval` / `isSameMonth` 等)一律用 `date-fns`。**唯一例外(D3 perf,tsx `eventsByDate` memo 有註解)**:每 render 對 42 cells 分桶事件的 hot path 用原生 timestamp 迭代(`new Date(y, m, d).getTime()` + `setDate(+1)`)—— 避免 per-cell `isWithinInterval` 的 O(42×N) 重複掃描;此 raw-Date 迭代**限縮在** bucketing memo 內,不外溢為通則
 
 ---
 
@@ -222,9 +222,10 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 - Outside days visual
 - Empty 為常態空白(無內建 empty/loading/error UI)
 
-### 後續(tech debt)
+### 後續 roadmap(尚未實作;2026-07-14 user 拍板 props 保留——`view="week"/"day"` + `size="lg"` 傳入不報錯,目前只渲染月檢視,誠實 API 明標於 tsx JSDoc)
 - 週 view(timeline 24 小時縱軸)
 - 日 view(single-day timeline)
+- `size="lg"` cell 密度(prop 已保留,目前視覺同 md)
 - 拖拉新增 event(from 月 cell → range select)
 - 拖拉移動 event(cross-day drag)
 - 「+N more」展開 popover

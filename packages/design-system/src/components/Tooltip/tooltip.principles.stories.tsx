@@ -109,7 +109,7 @@ export const UsageGuidance: Story = {
       <Section title="vs 近親 — Tooltip vs HoverCard">
         <Rule
           title="Tooltip — 純文字、語意為描述、不放互動元素"
-          note="適合一句話的提示。語意是純描述（role=tooltip / aria-describedby），不該放可點擊元素。離開 trigger 後有短暫關閉延遲讓滑鼠可移入。"
+          note="適合一句話的提示。語意是純描述（role=tooltip / aria-describedby），不該放可點擊元素。離開 trigger 往浮層移動時，靠 Radix 的 grace 區維持開啟（讓滑鼠可移入），非計時延遲。"
         >
           <Tooltip>
             <TooltipTrigger asChild>
@@ -117,7 +117,7 @@ export const UsageGuidance: Story = {
             </TooltipTrigger>
             <TooltipContent>這個設定會影響所有專案的預設值</TooltipContent>
           </Tooltip>
-          <Label>↑ 純文字說明、滑鼠離開即消失</Label>
+          <Label>↑ 純文字說明；滑鼠離開觸發器即關閉（移入浮層內容則保持開啟）</Label>
         </Rule>
 
         <Rule
@@ -197,7 +197,7 @@ export const NeedsTooltipRule: Story = {
           </TooltipTrigger>
           <TooltipContent>非常長的專案名稱會被截斷顯示完整版</TooltipContent>
         </Tooltip>
-        <Label>↑ 只在 `text-overflow: ellipsis` 觸發時才顯示 tooltip</Label>
+        <Label>↑ 模式示意（此靜態範例恆顯示；實務上應偵測文字真被截斷 `scrollWidth &gt; clientWidth` 時才掛 tooltip）</Label>
       </Rule>
     </div>
   ),

@@ -41,7 +41,7 @@ OUTPUT=$(node "$COMPILE_SCRIPT" "$COMP_NAME" --check 2>&1 || true)
 if echo "$OUTPUT" | grep -qE "spec/tsx canonical drift|spec-only|tsx-only"; then
   MSG="📐 Story canonical drift detected in ${COMP_NAME}:\n\n${OUTPUT}\n\nFix tsx componentMeta export 或 spec frontmatter 讓 keys 對齊。"
   ESCAPED=$(printf '%s' "$MSG" | jq -Rs .)
-  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":%s}}\n' "$ESCAPED"
+  printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":%s}}\n' "$ESCAPED"
 fi
 
 # Skip graceful(migration 未做的元件)不報

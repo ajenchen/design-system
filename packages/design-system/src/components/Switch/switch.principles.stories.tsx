@@ -116,7 +116,7 @@ export const UsageGuidance: Story = {
 
       <Rule
         title="使用場景對照"
-        note="Readonly(standalone settings list):值重要、視覺不能弱化。表單 readonly = Field 內灰框 + ✓/—(2026-06-12 拍板);DataTable cell 非編輯態 = mode display。Disabled:外部條件造成暫時不可用(方案限制、權限不足)——傳達「現在用不到」"
+        note="Readonly(standalone settings list):值重要、視覺不能弱化。表單 readonly = Field 內灰框 + 勾/叉 icon(2026-06-12 拍板);DataTable cell 非編輯態 = mode display。Disabled:外部條件造成暫時不可用(方案限制、權限不足)——傳達「現在用不到」"
       >
         <Label>兩者都不可切換、不在 tab order 內(standalone),機制不同:readonly 用 `pointer-events-none`(視覺正常);disabled 走 native `disabled` + `cursor-not-allowed`(降透明度)。Field 內 readonly 灰框則可聚焦(tabIndex=0)</Label>
       </Rule>
@@ -132,7 +132,7 @@ export const DisabledOpacityRule: Story = {
     <div>
       <Rule
         title="Switch disabled 用 opacity,不用灰階 swap"
-        note="Switch 的 on/off 視覺差異**唯一載體是顏色**(track bg-primary vs bg-border)——track 和 thumb 在 on/off 之間形狀完全相同,只有顏色變。若灰階 swap(primary → border),disabled 的 ON 和 OFF 會看起來一模一樣,使用者無法分辨當前狀態"
+        note="Switch 的 on/off 最強視覺載體是顏色(track bg-primary vs bg-border);thumb 位移與 checked 小 check icon 是輔助線索。若灰階 swap(primary → border),disabled 的 ON/OFF 只剩灰階低對比下的位置與小 icon 差異,難以一眼分辨當前狀態"
       >
         <div className="grid grid-cols-2 gap-4">
           <div className="border border-dashed border-divider rounded-md p-3">
@@ -164,9 +164,9 @@ export const DisabledOpacityRule: Story = {
 
       <Rule
         title="❌ 若 Switch 改用灰階 swap"
-        note="disabled ON 和 disabled OFF 都會變成「灰 track + 灰 thumb」,視覺一模一樣——使用者不知道這個被停用的開關當前是開還是關"
+        note="disabled ON 和 disabled OFF 都會退成「灰 track + 灰 thumb」——殘餘線索只剩 thumb 位置與 thumb 內小 check icon,在灰階低對比下辨識度大幅下降,使用者難以一眼判斷被停用的開關當前是開還是關"
       >
-        <Label warn>設計上禁止——Switch 是系統內唯一靠顏色承載 state 的元件,必須保留顏色</Label>
+        <Label warn>設計上禁止——Switch 的 on/off 最強視覺載體是顏色(thumb 位置 / check icon 只是輔助線索),disabled 必須保留顏色</Label>
       </Rule>
     </div>
   ),

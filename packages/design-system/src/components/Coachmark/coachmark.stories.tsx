@@ -46,7 +46,9 @@ const tourSteps = [
   {
     anchor: '建立 Workspace',
     icon: FolderPlus,
-    media: { from: 'var(--color-blue-6)', to: 'var(--color-cyan-6)', label: 'Workspace' },
+    // 2026-07-14 audit Dim 55:原 `--color-cyan-6` 不存在(primitive 12 hue 無 cyan)→ 漸層
+    // 靜默斷掉。改用既有 turquoise(oklch hue 196,最接近 cyan 的 primitive)。
+    media: { from: 'var(--color-blue-6)', to: 'var(--color-turquoise-6)', label: 'Workspace' },
     title: '建立你的第一個 Workspace',
     description: 'Workspace 是團隊協作的主要空間,所有專案、文件、成員都在這裡集中管理。',
   },

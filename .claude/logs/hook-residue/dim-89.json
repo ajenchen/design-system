@@ -1,0 +1,14 @@
+{
+  "dim": 89,
+  "hook": "check_tabs_content_chrome_body_double_gap.sh",
+  "residueCount": 0,
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:156",
+      "問題": "JSDoc 註解範例 `// <SheetBody className=\"!px-0 !pt-0 !pb-0\">...` 匹配 Check3 ROOT_SIG_A(不 strip 註解),且缺 @tabs-content-gap-ok: escape marker(其對映 sibling dialog.tsx:207 已補該 marker)。非 genuine !pt-0 hack(文件範例,無視覺 bug),但為 latent hook false-positive — 未來任何 sheet.tsx edit(PostToolUse 讀全檔)會被 Check3 誤擋。",
+      "severity": "marginal"
+    }
+  ],
+  "verified": true,
+  "note": "Material genuine 違規 = 0。Check1:dialog.stories.tsx 內 TabsContent(462/474/488)全帶 className=mt-0,合規。Check2:overlay body 固定 macro gap-[4-9] = 0 命中。Check3:真 !pt-0 hack = 0;所有 !pt-0 命中皆為 documented(inline @tabs-content-gap-ok:)或註解範例。唯 sheet.tsx:156 註解缺 marker = marginal latent false-positive,建議補 @tabs-content-gap-ok: 對齊 dialog.tsx:207。"
+}

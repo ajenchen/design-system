@@ -41,7 +41,7 @@
 ### Submit 驗證
 
 7. **Submit 驗證全部**——點擊 submit 時對所有欄位執行驗證(不依賴個別 field 的 blur 狀態)
-8. **Anchor 到第一個錯誤**——若有任何欄位出錯,scroll 並 focus 到第一個錯誤欄位(**「第一個」= DOM 視覺順序**,非 validate key 宣告順序;對齊瀏覽器原生 reportValidity + react-hook-form shouldFocusError,2026-07-07 code 同步)。多次 submit 重試時,每次都重新驗證全部欄位並重新計算「第一個錯誤」(rule 7 的自然結果),不保持上次 anchor 位置
+8. **Anchor 到第一個錯誤**——若有任何欄位出錯,scroll 並 focus 到第一個錯誤欄位(focus 僅對可由 DOM `name` 定位的 native input 生效,非 native 控件(Select / Combobox / RadioGroup 等)fallback 為 scroll + error 視覺,見下方「v1 邊界」(b);**「第一個」= DOM 視覺順序**,非 validate key 宣告順序;對齊瀏覽器原生 reportValidity + react-hook-form shouldFocusError,2026-07-07 code 同步)。多次 submit 重試時,每次都重新驗證全部欄位並重新計算「第一個錯誤」(rule 7 的自然結果),不保持上次 anchor 位置
 9. **Async / cross-field 驗證 defer 到 submit**——某些驗證無法在 blur 當下完成(如「名稱是否重複」需要 API 查詢、跨欄位邏輯如「結束日不得早於開始日」),這些在 submit 時統一判斷。若有錯誤,同樣 anchor 到第一個出錯欄位。
 
 **Double-submit 防護(2026-07-05 D4 codify,規則 9 的必然配套)**:async onSubmit 進行期間,重複 submit(連點按鈕 / 連按 Enter)一律忽略——否則業務層被並發呼叫兩次(重複建立資源的經典事故)。submit 期間狀態以 `isSubmitting` 暴露(餵 Button loading / disabled;`submitDisabled` 同步為 true);onSubmit 拋錯時先復位 `isSubmitting` 再讓錯誤原樣上拋(不吞錯,表單回到可重送狀態)。對齊 react-hook-form `formState.isSubmitting` / Polaris / Mantine form submitting 內建。 <!-- @benchmark-unverified -->
@@ -151,8 +151,8 @@ Email 格式 / URL 格式 / 必填等「single-field 純 syntax」blur 即可判
 Form validation 的 ARIA / 鍵盤行為(對齊 WCAG 3.3.1 Error Identification + 3.3.3 Error Suggestion):
 
 - **Error message ARIA**:`<FieldError>` 容器 id = `{fieldId}-error`(fieldId 為 Field 的 `id` prop / `useId`,field.tsx:174),控件經 Field context 自動接 `aria-errormessage`(有 error 時指向 errorId)+ `aria-invalid="true"`;`aria-describedby` 保留給 FieldDescription(descriptionId)。SR 在 focus field 時可得 label + error 完整資訊;接線 SSOT 見 `field.spec.md`「驗證與 aria 屬性」段(input.tsx:187-190)
-- **Submit error scroll**:submit 失敗後,focus 自動 jump 到第一個 invalid field(`field.focus()` + `scrollIntoView({block: 'center'})`);對齊 Material / Atlassian 慣例 <!-- @benchmark-unverified -->
-- **Error live region**:跨欄位 / async error 用 `aria-live="polite"` 容器宣告 — SR 在空閒時讀出,不中斷使用者打字
+- **Submit error scroll**:submit 失敗後,focus 自動 jump 到第一個 invalid field(`field.focus()` + `scrollIntoView({block: 'center'})`;focus 僅對 DOM `name`-locatable native input 生效,非 native 控件 fallback 為 scroll + error 視覺,見「v1 邊界」(b));對齊 Material / Atlassian 慣例 <!-- @benchmark-unverified -->
+- **Error 宣告**:`<FieldError>` 為 `role="alert"`(隱含 `aria-live="assertive"`,field.tsx:468)——error 文字一出現即由 SR 宣讀;children 有值才渲染(children-gated,非讀 Field.invalid)。目前**無**獨立 `aria-live="polite"` 容器,跨欄位 / async error 亦透過對應 field 的 `<FieldError>` 呈現
 - **Required indicator**:label 的 `*` 為純視覺、對讀屏隱藏(`aria-hidden="true"`,field.tsx:395);required 語意由內部輸入控件的 `aria-required`(input.tsx:188)承擔,避免讀屏讀出「asterisk」語義不清
 - **Color-only error 警告**:error border 紅色之外必有文字訊息(WCAG 1.4.1 不僅靠顏色)— 由 `<FieldError>` 文字承擔;DS **不**在 input 內放 error 狀態 icon(見 `field-controls.spec.md`「禁止事項」)
 

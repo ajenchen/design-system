@@ -941,7 +941,7 @@ const StateBehaviorInner = () => {
         <span className="text-caption font-medium text-fg-secondary">行為規則</span>
         <ul className="text-caption text-fg-secondary space-y-1.5 ml-4 list-disc">
           <li>`DropdownMenuItem` 點擊即 close——這是「action 觸發即完成」語意。</li>
-          <li>`DropdownMenuCheckboxItem` 點擊**不 close**——多選語意,等使用者關 menu 才 commit。</li>
+          <li>`DropdownMenuCheckboxItem` 點擊**不 close**——每次勾選即時生效(onCheckedChange 即時 fire),menu 保持開啟只為讓使用者連續多選。</li>
           <li>`DropdownMenuSub` 永遠右側滑入,parent menu 保持展開——提供 breadcrumb 式認知流,使用者知道自己在哪層。</li>
           <li>Escape close 整個選單(含所有展開子層;Radix root close)。ArrowLeft 才逐層收合(焦點回 SubTrigger)。</li>
           <li>Portal render 到 body,`z-50` 確保不被 parent overflow 截斷。</li>

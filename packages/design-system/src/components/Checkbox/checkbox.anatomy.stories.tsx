@@ -1,7 +1,6 @@
 import type { Meta } from '@storybook/react'
 import { useState } from 'react'
 import { Checkbox } from './checkbox'
-import { SelectionItem } from '@/design-system/components/SelectionControl/selection-item'
 
 const meta: Meta = {
   title: 'Design System/Components/Checkbox/設計規格',
@@ -159,7 +158,7 @@ export const Overview = {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <H3>結構（Anatomy）</H3>
-          <Desc>Checkbox 由兩層組成：indicator（方框 + check icon）和 label（透過 SelectionItem 組合）。Checkbox 本身不內建 label。</Desc>
+          <Desc>Checkbox 由兩層組成：indicator（方框 + check icon）和 label（`label` prop 提供，內部自動透過 SelectionItem 組合）。</Desc>
         </div>
         <div className="flex gap-8">
           {/* Standalone checkbox */}
@@ -173,16 +172,16 @@ export const Overview = {
               </div>
             </div>
           </div>
-          {/* With SelectionItem */}
+          {/* With label prop */}
           <div className="flex flex-col gap-2 items-start">
-            <span className="text-[11px] text-fg-muted font-medium">搭配 SelectionItem</span>
+            <span className="text-[11px] text-fg-muted font-medium">傳 label prop</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md p-3 gap-2">
-              {[{ name: 'control （Checkbox）', color: 'info' }, { name: 'control （Checkbox）', color: 'success' }].map((s) => (
+              {[{ name: 'control （Checkbox）', color: 'info' }, { name: 'label / content', color: 'success' }].map((s) => (
                 <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">SelectionItem 處理 label 對齊與 padding</span>
+            <span className="text-[10px] text-fg-muted font-mono">內部 SelectionItem 處理 label 對齊與 padding</span>
           </div>
         </div>
       </div>
@@ -272,7 +271,7 @@ const InspectorInner = () => {
             <Tab active={!withLabel} onClick={() => setWithLabel(false)}>off</Tab>
             <Tab active={withLabel} onClick={() => setWithLabel(true)}>on</Tab>
           </div>
-          <span className="text-[11px] text-fg-muted">搭配 SelectionItem</span>
+          <span className="text-[11px] text-fg-muted">label prop（內部 SelectionItem 組合）</span>
         </div>
         {withLabel && (
           <div className="flex items-center gap-2">
@@ -292,20 +291,13 @@ const InspectorInner = () => {
         <div className="flex flex-col gap-5 min-w-[340px]">
           <div className="px-10 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center">
             {withLabel ? (
-              <SelectionItem
+              /* 公開 API:`<Checkbox label>` 內部自動包 SelectionItem + wire id/htmlFor(selection-item.spec.md 禁裸用) */
+              <Checkbox
                 size={size}
-                control={
-                  <Checkbox
-                    id="inspector-cb"
-                    size={size}
-                    checked={checkedState === 'checked' ? true : checkedState === 'indeterminate' ? 'indeterminate' : false}
-                    disabled={interaction === 'disabled'}
-                  />
-                }
+                checked={checkedState === 'checked' ? true : checkedState === 'indeterminate' ? 'indeterminate' : false}
+                disabled={interaction === 'disabled'}
                 label="Label text"
                 description={withDescription ? '次要說明文字,給使用者更多 context' : undefined}
-                htmlFor="inspector-cb"
-                disabled={interaction === 'disabled'}
               />
             ) : (
               <Checkbox
@@ -493,7 +485,7 @@ export const SizeMatrix = {
               <Th>Size</Th>
               <Th>Unchecked</Th>
               <Th>Checked</Th>
-              <Th>搭配 SelectionItem</Th>
+              <Th>label prop</Th>
             </tr></thead>
             <tbody>
               {SIZES.map((sz) => (
@@ -502,12 +494,8 @@ export const SizeMatrix = {
                   <Td><Checkbox size={sz} /></Td>
                   <Td><Checkbox size={sz} defaultChecked /></Td>
                   <Td>
-                    <SelectionItem
-                      size={sz}
-                      control={<Checkbox id={`sz-${sz}`} size={sz} defaultChecked />}
-                      label="Label text"
-                      htmlFor={`sz-${sz}`}
-                    />
+                    {/* 公開 API:`<Checkbox label>` 內部自動包 SelectionItem + wire id/htmlFor(selection-item.spec.md 禁裸用) */}
+                    <Checkbox size={sz} defaultChecked label="Label text" />
                   </Td>
                 </tr>
               ))}
@@ -561,15 +549,15 @@ export const StateBehavior = {
       {/* Vertical Group */}
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">垂直排列 — Item 間距由 padding 處理，不加 gap</span>
-        <Desc>每個 SelectionItem 的 py = (field-height − 一行文字高度) / 2，單行高度剛好等於同 size 的 Input，多行時 padding 不變自然撐高。</Desc>
+        <Desc>每個 item（內部 SelectionItem）的 py = (field-height − 一行文字高度) / 2，單行高度剛好等於同 size 的 Input，多行時 padding 不變自然撐高。</Desc>
         <div className="flex gap-8">
           {(['md', 'lg'] as const).map((sz) => (
             <div key={sz} className="flex flex-col gap-1">
               <span className="text-[11px] text-fg-muted font-medium">size="{sz}"</span>
               <div className="grid border border-dashed border-divider rounded-md p-2">
-                <SelectionItem size={sz} control={<Checkbox id={`vg-${sz}-a`} size={sz} />} label="Email 通知" htmlFor={`vg-${sz}-a`} />
-                <SelectionItem size={sz} control={<Checkbox id={`vg-${sz}-b`} size={sz} />} label="SMS 通知" description="每則訊息可能有費用" htmlFor={`vg-${sz}-b`} />
-                <SelectionItem size={sz} control={<Checkbox id={`vg-${sz}-c`} size={sz} />} label="Push 通知" htmlFor={`vg-${sz}-c`} />
+                <Checkbox size={sz} label="Email 通知" />
+                <Checkbox size={sz} label="SMS 通知" description="每則訊息可能有費用" />
+                <Checkbox size={sz} label="Push 通知" />
               </div>
             </div>
           ))}
@@ -580,9 +568,9 @@ export const StateBehavior = {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">水平排列 — Item 之間 gap-4（16px）</span>
         <div className="flex gap-4 border border-dashed border-divider rounded-md p-2">
-          <SelectionItem control={<Checkbox id="hg-a" />} label="Email" htmlFor="hg-a" />
-          <SelectionItem control={<Checkbox id="hg-b" />} label="SMS" htmlFor="hg-b" />
-          <SelectionItem control={<Checkbox id="hg-c" />} label="Push" htmlFor="hg-c" />
+          <Checkbox label="Email" />
+          <Checkbox label="SMS" />
+          <Checkbox label="Push" />
         </div>
       </div>
 
@@ -591,21 +579,11 @@ export const StateBehavior = {
         <span className="text-caption font-medium text-fg-secondary">多行對齊 — 控件對齊第一行文字中心</span>
         <Desc>控件包在一行文字高度的容器內，外層 flex items-start 確保多行時控件對齊第一行。字體改變時高度自動重算。</Desc>
         <div className="max-w-sm grid border border-dashed border-divider rounded-md">
-          <SelectionItem
-            control={<Checkbox id="ml-a" />}
-            label="短標籤"
-            htmlFor="ml-a"
-          />
-          <SelectionItem
-            control={<Checkbox id="ml-b" />}
-            label="這是一個比較長的標籤文字，會自動換行到第二行，控件始終對齊第一行的垂直中心"
-            htmlFor="ml-b"
-          />
-          <SelectionItem
-            control={<Checkbox id="ml-c" />}
+          <Checkbox label="短標籤" />
+          <Checkbox label="這是一個比較長的標籤文字，會自動換行到第二行，控件始終對齊第一行的垂直中心" />
+          <Checkbox
             label="附帶說明"
             description="說明文字用 fg-secondary 色彩，排在 label 下方"
-            htmlFor="ml-c"
           />
         </div>
       </div>

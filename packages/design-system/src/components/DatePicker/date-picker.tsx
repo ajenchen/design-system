@@ -3,14 +3,14 @@
 import * as React from 'react'
 import { X, Calendar as CalendarIcon, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
+import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from '@/design-system/components/Popover/popover'
 import { DateGrid } from '@/design-system/components/DateGrid/date-grid'
 import { Button } from '@/design-system/components/Button/button'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
-import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
+import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import {
   TimeColumns,
   isoToTimeParts,
@@ -53,7 +53,15 @@ function formatDate(
   value: string | number | Date,
   options: DateFormatOptions = {},
 ): string {
-  const date = value instanceof Date ? value : new Date(value)
+  // TZ-safe:date-only / datetime ISO string 走 isoToDate(local-time 語意,new Date(y,m-1,d))
+  // 而非 new Date('YYYY-MM-DD')(ECMAScript 以 UTC 解析 → 負時區 off-by-one,如 LA 顯前一天)。
+  // 非 ISO string(RFC 'Mar 12 2025' 等)fallback new Date();number timestamp 直接 new Date()。
+  const date =
+    value instanceof Date
+      ? value
+      : typeof value === 'string'
+        ? (isoToDate(value) ?? new Date(value))
+        : new Date(value)
   if (Number.isNaN(date.getTime())) return String(value)
   // 若 consumer 顯式傳 formatOptions / locale → 走 Intl.DateTimeFormat
   if (options.formatOptions || options.locale) {
@@ -103,11 +111,11 @@ function isoToDate(iso: string | null | undefined): Date | undefined {
  * 或 ISO datetime(YYYY-MM-DDTHH:MM[:SS])。
  *
  * 支援 format(per Material X DatePicker / Ant DatePicker typed input idiom):
- *   - `YYYY-MM-DD` / `YYYY/MM/DD` / `YYYY.MM.DD`(ISO + 慣例 separator)
- *   - `MM/DD/YYYY` / `MM-DD-YYYY`(US locale)
- *   - `DD/MM/YYYY` / `DD-MM-YYYY`(EU locale)
+ *   - `YYYY-MM-DD` / `YYYY/MM/DD` / `YYYY.MM.DD`(ISO + 慣例 separator,明確 parse branch)
  *   - `YYYY-MM-DD HH:MM[:SS]` / `YYYY-MM-DDTHH:MM[:SS]`(datetime,showTime 才接)
- *   - native `Date.parse()` fallback(handle 'Mar 12 2025' 等英文 RFC)
+ *   - native `Date.parse()` fallback(handle 'Mar 12 2025' 等英文 RFC;US `MM/DD/YYYY` 亦由此判讀,ambiguous)
+ *   ⚠️ 不支援 EU `DD/MM/YYYY`:無專屬 parser branch;native Date.parse 把 slash 日期當 US MM/DD,
+ *      `31/12/2026`(月 > 12)直接 Invalid。v1 known-gap,需 EU 請走 formatOptions/locale 或另加 parser branch。
  *
  * Return:`{ iso, valid }`。Invalid → `valid=false` + `iso=null`,UI 顯 aria-invalid。
  * Partial input(打到一半)→ valid=false 但不顯 error UI(consumer 用 onBlur / Enter 才檢驗)。
@@ -123,6 +131,9 @@ function parseDateInput(input: string, opts: { allowTime: boolean }): { iso: str
     const [, y, m, d, hh, mm, ss] = isoDateMatch
     const date = new Date(Number(y), Number(m) - 1, Number(d), Number(hh ?? 0), Number(mm ?? 0), Number(ss ?? 0))
     if (isNaN(date.getTime()) || date.getMonth() !== Number(m) - 1) return { iso: null, valid: false }
+    // time 分量越界校驗:JS Date 會 silently normalize(25:99:99 → 隔日某時,getTime 仍 valid、
+    // getMonth 未必變),但回傳 iso 用的是原始越界字串 → 需在此擋掉 hh>23 / mm>59 / ss>59。
+    if (hh != null && (Number(hh) > 23 || Number(mm) > 59 || Number(ss ?? 0) > 59)) return { iso: null, valid: false }
     const datePart = dateToIso(date)
     if (hh != null && opts.allowTime) {
       const h2 = String(Number(hh)).padStart(2, '0')
@@ -290,6 +301,9 @@ export interface DatePickerProps
   mode?: FieldMode
   /** Field chrome variant. Default = context.variant ?? 'default'. Per-prop override. */
   variant?: FieldVariant
+  /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮(value 寬 + slot 寬 + gap + 內 padding);
+   *  chrome 與互動不變。SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
+  width?: FieldWidth
   error?: boolean
   size?: 'sm' | 'md' | 'lg'
   /** ISO date(YYYY-MM-DD)或 ISO datetime(YYYY-MM-DDTHH:MM:SS,當 showTime=true) */
@@ -362,6 +376,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     {
       mode,
       variant: variantProp,
+      width,
       error: errorProp = false,
       size: sizeProp,
       value,
@@ -396,7 +411,8 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     const disabled = useResolvedFieldDisabled(disabledProp)
     // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="display"> 漏 cascade
     const resolvedMode = useResolvedFieldMode({ mode, disabled })
-    const variant: FieldVariant = useResolvedFieldVariant(variantProp)
+    const emptyDisplay = useFieldEmptyDisplay()
+    const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
     const isEditable = resolvedMode === 'edit'
     // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
@@ -408,11 +424,14 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     // a11y:role="combobox" 必須有 accessible name(aria-label / labelledby / fieldCtx label)
     const accessibleName = ariaLabelProp ?? (ariaLabelledByProp ? undefined : (fieldCtx?.id ? undefined : resolvedPlaceholder))
 
-    // Sync draft from value ONLY on open false→true(避免 popover 開啟期間 value 改變
-    // clobber user 的編輯。Popover 關閉後下次再開時自動同步最新 value。)
+    // Sync draft from value:closed 期間恆跟隨 + open false→true 同步(避免 popover 開啟期間
+    // value 改變 clobber user 的編輯)。
+    // 2026-07-14 audit Dim 26(V4 state shadow):needConfirm trigger 讀 draft,原「只在 false→true
+    // 同步」使 controlled value 於關閉期間更新後,trigger 仍顯示舊值直到再次開啟 —— 改為
+    // 只要 open=false 就同步(與 range picker 分支 L83x 同款 canonical)。
     const lastOpenRef = React.useRef(open)
     React.useEffect(() => {
-      if (!lastOpenRef.current && open) setDraft(value ?? null)
+      if (!open || !lastOpenRef.current) setDraft(value ?? null)
       lastOpenRef.current = open
     }, [open, value])
 
@@ -464,16 +483,16 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       if (!showDisplayEndIcon) {
         // 2026-05-14 I2 fix(spec contract (e) display typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
-        if (!value) return <span className={cn(fieldDisplayTextClass(size), 'text-fg-muted', className)}>{EMPTY_DISPLAY}</span>
+        if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
         return <span className={cn(fieldDisplayTextClass(size), 'truncate', className)}>{displayCommitted}</span>
       }
       return (
         <div
-          className={cn(fieldWrapperStyles({ mode: 'display', variant, size }), className)}
+          className={cn(fieldWrapperStyles({ mode: 'display', variant, width, size }), className)}
           data-field-mode="display"
         >
-          <span className={cn(bareInputStyles, 'flex-1 min-w-0 truncate', !value && 'text-fg-muted')}>
-            {value ? displayCommitted : EMPTY_DISPLAY}
+          <span className={cn(bareInputStyles, 'flex-1 min-w-0 truncate', !value && fieldEmptyColorClass(resolvedMode))}>
+            {value ? displayCommitted : emptyDisplay}
           </span>
           <ItemSuffix className="pointer-events-none">
             <CalendarIcon size={iconSize} className="text-fg-muted" aria-hidden />
@@ -486,7 +505,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     if (!isEditable) {
       return (
         <div
-          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, size }), className)}
+          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, width, size }), className)}
           data-field-mode={resolvedMode}
           aria-disabled={resolvedMode === 'disabled' ? true : undefined}
           {...(props as React.HTMLAttributes<HTMLDivElement>)}
@@ -494,7 +513,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
           <span className={cn('flex-1 min-w-0 truncate', resolvedMode === 'disabled' && 'text-fg-disabled')}>
             {value
               ? displayCommitted
-              : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
+              : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
             }
           </span>
           {/* 2026-06-26 類型身份 indicator:edit 顯示 / readonly 不顯示(純值、不可開) / disabled 保留(fg-disabled,對齊原生 <select disabled>);
@@ -527,18 +546,22 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
         <PopoverTrigger asChild>
           <div
             ref={ref}
-            id={idProp ?? fieldCtx?.id}
-            role="combobox"
-            tabIndex={disabled ? -1 : 0}
-            aria-disabled={disabled || undefined}
-            aria-label={accessibleName}
-            aria-labelledby={ariaLabelledByProp ?? fieldCtx?.labelId}
-            aria-invalid={error || undefined}
-            aria-required={fieldCtx?.required || undefined}
-            aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
-            aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
-            aria-haspopup="dialog"
-            aria-expanded={open}
+            // a11y(2026-07-14 dim-10 修):typeable 模式 combobox 語意(name / state / 鍵盤)
+            // 集中在內層 <input>(APG editable-combobox idiom)— 外層 div 移除 role / tabIndex
+            // / aria-*,否則形成「關掉鍵盤 handler 的假 combobox tab stop」+ 內層 input 變成
+            // 第二個未命名 tab stop(雙重焦點站)。非 typeable 維持原 div-as-combobox canonical。
+            id={typeable ? undefined : (idProp ?? fieldCtx?.id)}
+            role={typeable ? undefined : 'combobox'}
+            tabIndex={typeable ? undefined : (disabled ? -1 : 0)}
+            aria-disabled={typeable ? undefined : (disabled || undefined)}
+            aria-label={typeable ? undefined : accessibleName}
+            aria-labelledby={typeable ? undefined : (ariaLabelledByProp ?? fieldCtx?.labelId)}
+            aria-invalid={typeable ? undefined : (error || undefined)}
+            aria-required={typeable ? undefined : (fieldCtx?.required || undefined)}
+            aria-describedby={typeable ? undefined : (ariaDescribedByProp ?? fieldCtx?.descriptionId)}
+            aria-errormessage={typeable ? undefined : (ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined))}
+            aria-haspopup={typeable ? undefined : 'dialog'}
+            aria-expanded={typeable ? undefined : open}
             data-field-mode="edit"
             data-error={error ? '' : undefined}
             // Radix PopoverTrigger 只 compose onClick(onOpenToggle),`<div>` trigger 無
@@ -551,7 +574,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               if (e.key === 'Escape') setOpen(false)
             }}
             className={cn(
-              fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
+              fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }),
               'text-left cursor-pointer',
               'focus-visible:outline-none',
               className,
@@ -562,8 +585,21 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               // Issue 10 typed input(2026-05-10):real `<input>` 接 user 鍵盤打字。
               // Click 在 input 上不 propagate 給外層 popover trigger(避免每次打字都開 popover)。
               // Calendar icon `<ItemSuffix>` 點才開 popover(Material/Ant typed-date idiom)。
+              // a11y(2026-07-14 dim-10 修):input 持完整 combobox 語意(id/name/state,APG
+              // editable-combobox)— 外層 div 已讓位(見上方 role/tabIndex 註解);ArrowDown
+              // 開 popover 補鍵盤開啟路徑(原僅 icon click 可開,鍵盤 user 無入口)。
               <input
                 type="text"
+                id={idProp ?? fieldCtx?.id}
+                role="combobox"
+                aria-haspopup="dialog"
+                aria-expanded={open}
+                aria-label={accessibleName}
+                aria-labelledby={ariaLabelledByProp ?? fieldCtx?.labelId}
+                aria-required={fieldCtx?.required || undefined}
+                aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
+                aria-errormessage={ariaErrorMessageProp ?? ((inputInvalid || error) ? fieldCtx?.errorId : undefined)}
+                disabled={disabled}
                 className={cn(bareInputStyles, 'truncate', !inputDraft && 'placeholder:text-fg-muted')}
                 value={inputDraft}
                 placeholder={resolvedPlaceholder}
@@ -575,6 +611,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                   if (composingRef.current) return
                   if (e.key === 'Enter') { e.preventDefault(); handleInputCommit(inputDraft) }
                   if (e.key === 'Escape') { setInputDraft(displayLive); setInputInvalid(false); e.preventDefault() }
+                  if (e.key === 'ArrowDown' && !open) { e.preventDefault(); setOpen(true) }
                 }}
                 onBlur={() => { if (!composingRef.current) handleInputCommit(inputDraft) }}
                 onClick={(e) => e.stopPropagation()}
@@ -607,12 +644,18 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
             </ItemSuffix>
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          {/* role="dialog" 為 flex item of PopoverContent(flex flex-col overflow-hidden)。
-              2026-05-06 v9.1:加 `flex flex-col flex-1 min-h-0` 完成 M25 chain — viewport
+        <PopoverContent
+          className="w-auto p-0"
+          align="start"
+          aria-label="日期選擇" // i18n-allow: DS default dialog label
+        >
+          {/* a11y(2026-07-14 dim-10 修):Radix PopoverContent 自帶 role="dialog"(popover.tsx:58)
+              — 內層 div 原本重複 role="dialog" 形成雙層 nested unnamed dialog,改為純 layout div,
+              accessible name 收斂到外層 PopoverContent aria-label(單一 dialog 層)。
+              2026-05-06 v9.1:`flex flex-col flex-1 min-h-0` 完成 M25 chain — viewport
               壓縮時 dialog 縮 + 內 calendar/footer 排序;原無 chain 致 calendar 末行被
               overflow-hidden 切掉、footer 推出 popover(user 報「位置改變就壞掉」根因)。 */}
-          <div role="dialog" className="flex flex-col flex-1 min-h-0">
+          <div className="flex flex-col flex-1 min-h-0">
             {/* Calendar 區包 overflow-y-auto:viewport 壓縮時 calendar 內滾(Material / Carbon
                 date picker idiom)。footer 永遠 in-view(SurfaceFooter shrink-0)。 */}
             <div className="flex-1 min-h-0 overflow-y-auto">
@@ -704,6 +747,9 @@ export interface DatePickerRangeProps
   mode?: FieldMode
   /** Field chrome variant. Default = context.variant ?? 'default'. Per-prop override. */
   variant?: FieldVariant
+  /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮(value 寬 + slot 寬 + gap + 內 padding);
+   *  chrome 與互動不變。SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
+  width?: FieldWidth
   error?: boolean
   size?: 'sm' | 'md' | 'lg'
   /** 區間值:[start ISO, end ISO]。任一 null 代表尚未選。 */
@@ -728,6 +774,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     {
       mode,
       variant: variantProp,
+      width,
       error: errorProp = false,
       size: sizeProp,
       value,
@@ -756,7 +803,8 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     const disabled = useResolvedFieldDisabled(disabledProp)
     // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="display"> 漏 cascade
     const resolvedMode = useResolvedFieldMode({ mode, disabled })
-    const variant: FieldVariant = useResolvedFieldVariant(variantProp)
+    const emptyDisplay = useFieldEmptyDisplay()
+    const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
     const isEditable = resolvedMode === 'edit'
     // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
@@ -778,12 +826,15 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     const endBtnRef = React.useRef<HTMLButtonElement>(null)
     const hasInteractedOutsideRef = React.useRef(false)
 
-    // Sync draft from value ONLY on open false→true(canonical 2026-05-02 v3):
-    // 之前用 `[value, open]` 雙 dep,popover 開啟期間 value 任何 reference 變更 → useEffect
-    // 觸發 → 直接 clobber user 的 draft 編輯。改成只在 open 從 false→true 同步。
+    // Draft sync canonical(2026-07-14 dim-26 V4 修,升級 2026-05-02 v3):
+    // - open=false(關閉期間):controlled value 變更**必**同步 draft — needConfirm 顯示層讀
+    //   draft(startIso/endIso),不同步會讓 trigger 持續顯示 stale 舊區間(外部 controlled
+    //   update 被凍結)。關閉期間無編輯進行,直接鏡射無 clobber 風險。
+    // - open=true(開啟期間):只在 false→true 轉換時 seed 一次;開啟中 value reference 變更
+    //   不覆寫,保護 user 尚未確認的 draft 編輯(原 v3 canonical 保留)。
     const lastOpenRef = React.useRef(open)
     React.useEffect(() => {
-      if (!lastOpenRef.current && open) setDraft(value ?? [null, null])
+      if (!open || !lastOpenRef.current) setDraft(value ?? [null, null])
       lastOpenRef.current = open
     }, [open, value])
 
@@ -888,7 +939,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     // mode='display'(Phase B2 2026-05-05):純內容輸出 — 無 Field wrapper / 無 Calendar icon。
     if (resolvedMode === 'display') {
       const hasAny = !!(startIso || endIso)
-      if (!hasAny) return <span className={cn('text-fg-muted', className)}>{EMPTY_DISPLAY}</span>
+      if (!hasAny) return <span className={cn(fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
       return (
         <span className={cn('inline-flex items-center min-w-0', nakedCellRowModeAlign, className)}>
           <span className={cn('truncate', !startIso && 'text-fg-muted')}>
@@ -907,7 +958,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       return (
         <div
           ref={ref}
-          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, size }), className)}
+          className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, width, size }), className)}
           data-field-mode={resolvedMode}
           aria-disabled={resolvedMode === 'disabled' ? true : undefined}
           {...props}
@@ -943,7 +994,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             data-error={error ? '' : undefined}
             data-state={open ? 'open' : 'closed'}
             className={cn(
-              fieldWrapperStyles({ mode: 'edit', size, error }),
+              fieldWrapperStyles({ mode: 'edit', width, size, error }),
               'cursor-text',
               className,
             )}
@@ -1002,6 +1053,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
         <PopoverContent
           className="w-auto p-0"
           align="start"
+          aria-label="日期區間選擇" // i18n-allow: DS default dialog label
           // 2026-07-05 D4 focus 回復(機制詳 :758 comment):outside-click 標記不搶焦(鏡射
           // Radix non-modal 自家 hasInteractedOutside guard);其餘關閉路徑(Esc / 確定 /
           // 選完自動關)preventDefault 掉內建 triggerRef.focus()(Anchor-only 恆 null no-op)
@@ -1015,8 +1067,10 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             hasInteractedOutsideRef.current = false
           }}
         >
-          {/* 2026-05-06 v9.1 M25 chain — 同 single DatePicker 修法,viewport 壓縮 calendar 內滾 + footer 永遠 in-view */}
-          <div role="dialog" aria-label="日期區間選擇" className="flex flex-col flex-1 min-h-0">
+          {/* a11y(2026-07-14 dim-10 修):accessible name 收斂到外層 PopoverContent(Radix 自帶
+              role="dialog")— 原內層第二個 role="dialog" 移除,避免 nested dialog 且外層 dialog 無名。
+              2026-05-06 v9.1 M25 chain — 同 single DatePicker 修法,viewport 壓縮 calendar 內滾 + footer 永遠 in-view */}
+          <div className="flex flex-col flex-1 min-h-0">
             <div className="flex-1 min-h-0 overflow-y-auto">
             <CalendarTimeContainer
               showTime={showTime}

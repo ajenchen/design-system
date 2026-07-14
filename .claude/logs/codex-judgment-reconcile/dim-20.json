@@ -1,0 +1,61 @@
+{
+  "dim": 20,
+  "title": "Spec 硬寫機械化值檢查 — spec.md 硬寫 px/hex/Tailwind class 該引 token",
+  "role": "B.3 比稿裁定員 — 逐條裁定 codex dim-20 findings against real code + Claude same-dim",
+  "codexRaw": 3,
+  "summary": {
+    "material_confirmed": 1,
+    "marginal": 2,
+    "false_positive": 0,
+    "claudeMissed": 0
+  },
+  "verdicts": [
+    {
+      "codexFinding": "avatar.spec.md:166 — circle=9999px / square=4px raw radius 硬寫（spec + tsx）",
+      "codexSeverity": "marginal",
+      "verdict": "material_confirmed",
+      "claudeAlsoFound": true,
+      "fileLine": [
+        "packages/design-system/src/components/Avatar/avatar.spec.md:166",
+        "packages/design-system/src/components/Avatar/avatar.tsx:177",
+        "packages/design-system/src/components/Avatar/avatar.tsx:206"
+      ],
+      "groundTruth": "avatar.spec.md:166 canonical 記『circle = 9999px、square = 4px』；avatar.tsx:177 `const radius = shape === 'circle' ? '9999px' : '4px'` → :206 `borderRadius: radius` 皆硬寫 raw px。radius.css:16-18 已定義 `--radius-md:4px` / `--radius-full:9999px`。radius.spec.md:18 明文 canonical『所有 4px 圓角一律用 rounded-md』+ :86 禁『硬寫值』。inline style 雖不能用 class，但可用 `var(--radius-full)`/`var(--radius-md)`。spec + production code 兩處硬寫 = 真違反 dim-20 判準 + radius canonical + M17 SSOT 傳播失效（radius token 改值 avatar 不跟隨）。",
+      "reasoning": "codex 自標 marginal，但依 ground truth 上調為 material：這是 dim-20 精確靶心（spec 硬寫 px 且 token 存在且 canonical 明文 prescribe），非吹毛求疵——有 radius.spec.md:18/:86 兩條明文 canonical 背書，且違反同時發生在 spec 與 production tsx。severity 低（值正確、drift 機率低）但屬 real should-fix。不照抄 codex 標籤。"
+    },
+    {
+      "codexFinding": "input.spec.md:149 — autoWidth 行為表複寫 `inline-flex w-auto` / `field-sizing:content w-auto min-w-0` 完整 class recipe",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "fileLine": [
+        "packages/design-system/src/components/Input/input.spec.md:149",
+        "packages/design-system/src/components/Input/input.tsx:127",
+        "packages/design-system/src/components/Input/input.tsx:162",
+        "packages/design-system/src/components/Input/input.tsx:194"
+      ],
+      "groundTruth": "spec:149 確實逐字複寫 class list，input.tsx:127/162 `inline-flex w-auto` + :194 `[field-sizing:content] w-auto min-w-0` 相符。但 `field-sizing:content` / `w-auto` / `inline-flex` / `min-w-0` 是結構性 layout utility，**無對應 token**（非可 token 化的 px/hex/色名）。",
+      "reasoning": "觀察屬實（spec 有 transcribe class），故非 false_positive。但 dim-20 靶心是『該引 token 卻硬寫』；這些是結構 layout primitive，無 token 等價、無 drift 風險。codex 真正抱怨是『spec 描述 implementation 細節』（另一個 spec-hygiene dim），屬 off-dim + pedantic。技術上對但吹毛求疵 → marginal。"
+    },
+    {
+      "codexFinding": "menu-item.spec.md:208 — MenuFooter 規定 `border-t + py-2`，重複 tsx utility，8px 未說明為何 canonical",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoFound": false,
+      "fileLine": [
+        "packages/design-system/src/components/Menu/menu-item.spec.md:208",
+        "packages/design-system/src/components/Menu/menu-item.spec.md:194",
+        "packages/design-system/src/components/Menu/menu-item.tsx:347"
+      ],
+      "groundTruth": "spec:208 記 `border-t + py-2`，menu-item.tsx:347 `cn('py-2 border-t border-divider', className)` 相符。`py-2`(8px) 是 DS menu 垂直節奏 canonical——spec:194 sibling 段已明文『py-2(8px) 上下內距…Pattern A，SSOT 見 item-anatomy.spec.md Group auto-separation』。code 全 menu 系統直接用 py-2，無 mandated DS 專用 token。",
+      "reasoning": "codex 前提『鄰文未說明 8px 為何 canonical』與 ground truth 相左——spec:194 同檔 sibling 段已說明 py-2=8px 的 menu 節奏 SSOT。border-t / py-2 是標準 Tailwind utility，非該引 token 的硬寫值（DS 未 mandate menu footer padding token）。observation 表面真但 premise 弱 + 無 token drift → 技術上對但吹毛求疵，marginal（非 false_positive，因『spec 寫了 class』本身屬實）。"
+    }
+  ],
+  "claudeMaterialNotInCodex": [
+    {
+      "fileLine": "packages/design-system/src/tokens/color/color.spec.md:232",
+      "note": "Claude 抓到 color.spec.md 硬寫 `text-[yellow-7]` malformed Tailwind（silent 失效 + 違反 primitive-color-as-utility 禁令，該用 semantic token `text-warning-text`），codex dim-20 audit 漏了此條。此屬 Claude 獨有的更嚴重 material，非本裁定 scope（本 task 只裁定 codex findings），故不計入 claudeMissed（claudeMissed 只算 codex material 中 Claude 漏的）。"
+    }
+  ],
+  "note": "codexRaw=3 全部技術上可驗證屬實（無純誤讀 false_positive）。1 material（Avatar radius，我獨立上調 codex 自標的 marginal）+ 2 marginal（Input/Menu 皆非 token 化目標、屬 spec-verbosity off-dim pedantry）。claudeMissed=0：唯一 material（Avatar）Claude 亦抓到。"
+}

@@ -1,0 +1,8 @@
+{
+  "dim": 75,
+  "hook": "check_plugin_fork_health.sh (r2_plugin_freshness)",
+  "residueCount": 0,
+  "findings": [],
+  "verified": true,
+  "note": "r2_plugin_freshness = SessionStart hook,比對本地 plugin.json version(0.1.0-beta.83)vs GitHub raw marketplace.json 遠端版本,不符 → 印 context nag(非 BLOCKER,非 file 寫入)。無持久化 file anti-pattern 可構成 residue;DS repo 內 r1 因存在 packages/design-system/src 早退。residue 概念不適用,材質 = 0。"
+}

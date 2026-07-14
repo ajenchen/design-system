@@ -1,0 +1,91 @@
+{
+ "component": "SelectMenu",
+ "claimsVerified": 602,
+ "falseClaims": [
+  {
+   "fileLine": "select-menu.spec.md:5,26",
+   "宣稱": "`sizes: {}`，且 Layout Family 不屬 1–4。",
+   "真實code行為": "元件支援 `sm | md | lg`、預設 `md`；`selectMenuMeta.family` 與 spec frontmatter 都宣告 family 4，和 line 26 互相矛盾。"
+  },
+  {
+   "fileLine": "select-menu.tsx:34; select-menu.anatomy.stories.tsx:285,611-614",
+   "宣稱": "搜尋框使用 DS `CommandInput`。",
+   "真實code行為": "實際渲染 raw `CommandPrimitive.Input` 加自建 wrapper，未 import／使用 DS `CommandInput`。"
+  },
+  {
+   "fileLine": "select-menu.tsx:107,310-312; select-menu.spec.md:79-81",
+   "宣稱": "預設與 trigger 同寬，因此 start／end 多數情況視覺相同。",
+   "真實code行為": "實作是 `w-auto` 加 `minWidth=max(trigger-width,15rem)`；只保證寬度下限，窄 trigger 時浮層至少 15rem，內容也可繼續撐寬。"
+  },
+  {
+   "fileLine": "select-menu.spec.md:50-51,57-58,205-207; select-menu.principles.stories.tsx:73",
+   "宣稱": "searchable 會切換到 SelectMenu；PeoplePicker／Select 固定以 SelectMenu + cmdk + MenuItem 實作。",
+   "真實code行為": "Select／Combobox 依 touch device 切 Native 與 Custom；touch path 不渲染 SelectMenu，desktop Custom path 則不論 searchable 都使用 SelectMenu。PeoplePicker 間接繼承同一分流。"
+  },
+  {
+   "fileLine": "select-menu.spec.md:35",
+   "宣稱": "元件內部具有 range state。",
+   "真實code行為": "實作只有 open、search，以及由外部 value 派生的 selectedValues；沒有 range state。"
+  },
+  {
+   "fileLine": "select-menu.spec.md:172-174; select-menu.anatomy.stories.tsx:3-6",
+   "宣稱": "SelectMenu 沒有自己的 bg／border／hover 色彩決策，item 色彩全由 MenuItem 決定。",
+   "真實code行為": "SelectMenu 自設 surface、border、elevation，外層 CommandItem 擁有 hover、persistent-selected 與 selected×cursor 背景；內層 MenuItem 被強制透明。"
+  },
+  {
+   "fileLine": "select-menu.anatomy.stories.tsx:186",
+   "宣稱": "creatable 只在「無結果」時顯示 create option。",
+   "真實code行為": "條件是 search 非空且不存在 label 完全相同的選項；即使仍有其他 fuzzy matches，create option 也會顯示。"
+  },
+  {
+   "fileLine": "select-menu.anatomy.stories.tsx:699",
+   "宣稱": "Creatable 預設顯示「建立 xxx」。",
+   "真實code行為": "預設 `createLabel` 是「直接使用『xxx』」；該 story 沒有覆寫它。"
+  },
+  {
+   "fileLine": "select-menu.anatomy.stories.tsx:300",
+   "宣稱": "RowSizeProvider 讓 MenuItem 自動讀取 size。",
+   "真實code行為": "MenuItem 由 SelectMenu 顯式傳入 `size={size}`；context 自動讀取只適用會消費 RowSizeContext 的 item-slot primitives。"
+  },
+  {
+   "fileLine": "select-menu.tsx:291",
+   "宣稱": "non-searchable autofocus 是純鍵盤路由，滑鼠點擊路徑完全不碰。",
+   "真實code行為": "handler 沒有 input-modality gate；滑鼠開啟同樣會 preventDefault 並把 DOM focus 移到 `[cmdk-root]`。"
+  },
+  {
+   "fileLine": "select-menu.tsx:292,294-297",
+   "宣稱": "找不到 `[cmdk-root]` 時是 no-op fallback、無回歸。",
+   "真實code行為": "程式在 query 前已無條件 `preventDefault()`；selector miss 仍取消 Radix 預設 autofocus，並非 no-op。"
+  },
+  {
+   "fileLine": "select-menu.tsx:328-330",
+   "宣稱": "nested portal fix 攔截 `onPointerDownOutside`。",
+   "真實code行為": "實作沒有掛該 handler；真正掛的是同時涵蓋 pointerdown／focusin 的 `onInteractOutside`。"
+  },
+  {
+   "fileLine": "select-menu.tsx:357-359",
+   "宣稱": "僅 searchable 時傳 label，可避免 non-searchable orphan label。",
+   "真實code行為": "cmdk 1.1.1 無條件渲染 hidden `<label htmlFor=inputId>`；`label={undefined}` 只讓內容為空，仍指向不存在的 input。"
+  },
+  {
+   "fileLine": "select-menu.spec.md:225; select-menu.anatomy.stories.tsx:809",
+   "宣稱": "已有選值時，開啟即以 `aria-activedescendant` 指向已選 option。",
+   "真實code行為": "cmdk `defaultValue` 只初始化 value；`selectedItemId` 起初仍是 undefined。row 雖為 selected，內部 input／list 要等 cursor value 後續改變才取得 active descendant。"
+  },
+  {
+   "fileLine": "select-menu.spec.md:225; select-menu.anatomy.stories.tsx:809",
+   "宣稱": "關閉時 focus 一律回 trigger。",
+   "真實code行為": "Escape、選取或 API close 等未發生 outside interaction 的路徑會回 trigger；pointer／focus outside 關閉時，Radix non-modal Popover 刻意不 restore。"
+  },
+  {
+   "fileLine": "select-menu.spec.md:212; select-menu.anatomy.stories.tsx:809",
+   "宣稱": "combobox／listbox／option role 與 aria-activedescendant 全由 cmdk 固有提供。",
+   "真實code行為": "non-searchable 不渲染 cmdk Input，`[cmdk-root]` 是無 role 的 `tabIndex=-1` div；combobox role 若存在由 consumer trigger 提供，PopoverContent 本身則是 `role='dialog'`。"
+  },
+  {
+   "fileLine": "select-menu.tsx:310-312; select-menu.spec.md:32,96,163,182",
+   "宣稱": "所列行號仍是對應規則的真實住所。",
+   "真實code行為": "多個 locator 已漂移：寬度規則在 spec 79-81；open dual-mode 在 tsx 174-191；creatable 判斷在 261-266；forwardRef rationale 在 151-155。"
+  }
+ ]
+}

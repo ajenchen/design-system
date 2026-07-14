@@ -1,0 +1,1 @@
+{"component":"Switch","implBasis":"Radix Switch primitive (@radix-ui/react-switch, shadcn wrap) + DS token bridge; native <button role=switch>, toggles on Space+Enter (no keydown prevention)","claimsVerified":29,"falseClaims":[]}

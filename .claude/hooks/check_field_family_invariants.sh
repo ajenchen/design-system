@@ -1,12 +1,13 @@
 #!/bin/bash
 # Field family unified invariant hook(2026-05-08 cluster A consolidation)
 #
-# Merges PreToolUse hooks(原各檔已 retire,合併入此)— 共 5 條 sub-rules:
+# Merges PreToolUse hooks(原各檔已 retire,合併入此)— 共 6 條 sub-rules:
 #   A.1 naked row-mode propagation(原 check_naked_row_mode_propagation,P0 BLOCKER)
 #   A.2 FieldControlGroup wrapper direct child(原 check_field_control_group_direct_child,P1 WARN)
 #   A.3 Field state ring SSOT(原 check_field_state_token_consume 3 sub-rules,P0 BLOCKER)
 #   A.4 disabled placeholder color(原 check_disabled_placeholder_color,P1 stderr only)
 #   A.5 _Group child fieldCtx.id 隔離(2026-05-31 折入,M4 AR34 regression detector,P0 BLOCKER)
+#   A.6 空值顯示 SSOT(2026-07-08 user 拍板半形 hyphen,P0 BLOCKER)
 #
 # Why merge:皆 Field 家族 invariant,共用 INPUT parsing + Edit/Write filter pattern,
 #   分散在 4 個 hook 是「散裝 SSOT」(M17 + Anthropic ≤ 15 hook best practice 違反)。
@@ -19,6 +20,7 @@
 #   A.3: `// @field-state-ring-allow: <reason>`
 #   A.4: `// @disabled-color-allow: <reason>`
 #   A.5: `// @group-fieldctx-allow: <reason>`
+#   A.6: `// @empty-display-allow: <reason>`
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
@@ -246,5 +248,63 @@ EOF
     fi
     ;;
 esac
+
+# ── A.6 空值顯示 SSOT(P0 BLOCKER,2026-07-08 user 拍板半形 hyphen)────────────────
+# user verbatim「我從頭到尾哪裡有說要用全形的」+ 五情境空值框架。SSOT:符號常數 =
+#   field-wrapper.tsx `EMPTY_DISPLAY = '-'`(U+002D 半形);分流 hook = field-context.ts
+#   `useFieldEmptyDisplay()`。禁 2 shape:
+#   A.6.1 非 owner 檔直接 import `EMPTY_DISPLAY` 常數(應消費 hook 分流,否則 table-cell
+#         editable→'' 分流會漏);
+#   A.6.2 components/ tsx display 路徑 hardcode 全形 em dash `'—'`/`"—"`(U+2014)字面。
+# M7 broad-vs-narrow:spec wording 廣(「禁 hardcode 空值符號」);hook 取「quoted em dash 字面」
+#   高信號 subset + owner skip + comment 剝離 + `@empty-display-allow` escape,零誤判導向。
+if ! echo "$NEW_CONTENT" | grep -q '@empty-display-allow'; then
+  # A.6.1 非 owner 檔 import EMPTY_DISPLAY 常數(剝離註解行)
+  case "$FILE_PATH" in
+    */field-context.ts|*/field-wrapper.tsx) ;; # SSOT owner(定義 + 分流 hook)skip
+    *)
+      A61_CONTENT=$(echo "$NEW_CONTENT" | grep -vE '^[[:space:]]*(//|\*|/\*)')
+      if printf '%s' "$A61_CONTENT" | grep -E "import.*EMPTY_DISPLAY|EMPTY_DISPLAY.*from" >/dev/null; then
+        cat >&2 <<EOF
+
+┄┄┄ A.6.1 check_field_family_invariants — EMPTY_DISPLAY 直引 BLOCKER ┄┄┄
+
+[P0] ${FILE_PATH}
+偵測到直接 import \`EMPTY_DISPLAY\` 常數(非 field-context.ts owner)。
+空值顯示必經 \`useFieldEmptyDisplay()\` hook 分流(table-cell 可編輯→空白 / 其餘→半形 '-'),
+直引常數會漏 surface × editable 分流。
+
+修法:import { useFieldEmptyDisplay } from '@/design-system/components/Field/field-context'
+      const emptyDisplay = useFieldEmptyDisplay()
+例外:行尾 \`// @empty-display-allow: <reason>\`
+
+EOF
+        record_worst 2
+      fi
+      ;;
+  esac
+  # A.6.2 components/ tsx hardcode 全形 em dash 空值字面(剝離註解行 + owner/story skip)
+  case "$FILE_PATH" in
+    *.stories.tsx|*/field-context.ts|*/field-wrapper.tsx) ;; # doc N/A marker + SSOT owner skip
+    *components/*.tsx)
+      A62_CONTENT=$(echo "$NEW_CONTENT" | grep -vE '^[[:space:]]*(//|\*|/\*)')
+      if printf '%s' "$A62_CONTENT" | grep -E "['\"]—['\"]" >/dev/null; then
+        cat >&2 <<EOF
+
+┄┄┄ A.6.2 check_field_family_invariants — 全形 em dash 空值 BLOCKER ┄┄┄
+
+[P0] ${FILE_PATH}
+偵測到 components/ 實作檔 hardcode 全形 em dash \`'—'\`(U+2014)字面。
+user 2026-07-08 拍板:空值符號 = **半形 hyphen '-'(U+002D)**,禁全形。
+
+修法:空值一律 \`{value ?? emptyDisplay}\`(emptyDisplay = useFieldEmptyDisplay()),不 hardcode 符號。
+例外:行尾 \`// @empty-display-allow: <reason>\`
+
+EOF
+        record_worst 2
+      fi
+      ;;
+  esac
+fi
 
 exit $WORST

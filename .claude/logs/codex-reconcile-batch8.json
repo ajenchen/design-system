@@ -1,0 +1,163 @@
+{
+  "batch": 8,
+  "components": ["Input", "LinkInput", "NumberInput", "Pagination", "ProfileCard"],
+  "note": "codex high-recall/low-precision. Verdicts vs actual code + node_modules. Field-family trio (Input/LinkInput/NumberInput) share fieldWrapperStyles cva; density-awareness of --field-height-sm/md/lg CONFIRMED (uiSize.css:23-25 default 28/32/36 → :91-93 [data-density=lg] 32/36/40), so codex density-annotation claims are technically-true-but-secondary-axis → marginal.",
+
+  "Input": {
+    "claudeReported": "0 falseClaims / claimsVerified=20 (shallow)",
+    "material_confirmed": [
+      {
+        "fileLine": "input.tsx:21",
+        "宣稱": "jsdoc: variant 已改名為 chrome,對齊 FieldContext.variant 透傳",
+        "真實code行為": "公開 prop 仍是 variant?: FieldVariant (line 29);解構/resolver 全用 variant;不存在 chrome prop。rename 從未發生 → 純 stale docblock",
+        "claudeAlsoCaught": false,
+        "fixHint": "刪除 line 21 '從 variant 改名 chrome' 字樣;prop 名就是 variant,jsdoc 只需描述 default/naked chrome 語意"
+      },
+      {
+        "fileLine": "input.tsx:63-64 (jsdoc) vs input.tsx:194 (code)",
+        "宣稱": "autoWidth fallback jsdoc: 'input 本身有 min-width 避免消失'",
+        "真實code行為": "line 194 實際套 '[field-sizing:content] w-auto min-w-0' — min-w-0 允許 flex item 縮到 0,無正 min-width。jsdoc 承諾的保護不存在",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 jsdoc 為 min-w-0(依賴內容/placeholder 撐寬),或真的加一個 min-w token 若要防塌陷"
+      },
+      {
+        "fileLine": "input.tsx:118-121 + principles.stories.tsx:112,133 + anatomy.stories.tsx:214-218",
+        "宣稱": "readonly 有 defaultValue 會顯示該值(story: <Input mode=\"readonly\" defaultValue=\"alice@example.com\"/>;anatomy comment: 其餘 mode 用 defaultValue 保持 uncontrolled)",
+        "真實code行為": "displayValue = value!=null && value!=='' ? ... : null (line 120) 只看 controlled value;readonly+empty(displayValue==null)提前回傳 <span>{emptyDisplay}> = 顯 '-'。故 mode='readonly' 傳 defaultValue(未傳 value)→ 畫面渲染 '-' 而非 email。principles ModeRule 兩處 + anatomy FieldMode catalog 的 readonly 格全部渲染 '-',demo 與描述矛盾",
+        "claudeAlsoCaught": false,
+        "fixHint": "readonly 空值判定應納入 defaultValue(或 story 改用 value=);目前 readonly uncontrolled 是真 bug — DS 自家 stories 就中招"
+      },
+      {
+        "fileLine": "input.spec.md:136 + input.tsx:25 + anatomy.stories.tsx:245 (props table)",
+        "宣稱": "naked 完全無 chrome / 無 border / 無 focus ring;host cell 自管 border+focus",
+        "真實code行為": "field-wrapper.tsx:182-196 edit×naked compound 自帶 'border border-border' + 'hover:border-border-hover' + (error:false) 'focus-within:!border-primary';mode=edit error compound(:157-161)不分 variant → naked cell error 亦紅框。v14 comment(field-wrapper:163-171)自承 naked 改 border-based state machine。'host cell 自管' 是退役的 v12 架構,spec/doc stale。(internal @internal scope,但屬 spec-vs-code 真矛盾)",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:136 + input.tsx:25 改述 naked = 無 padding/bg/rounded 但 edit 態仍渲染自身 border+focus 藍框(cell-as-input state machine)"
+      },
+      {
+        "fileLine": "input.anatomy.stories.tsx:703-705",
+        "宣稱": "點擊 icon 區域,focus 穿透到 input(startIcon pointer-events-none)",
+        "真實code行為": "只有 SVG 帶 pointer-events-none(input.tsx:136);外層 ItemPrefix <span>(item-anatomy.tsx:180-194)無 pointer-events-none 且無 onClick;wrapper div 無 click-to-focus,input 是 sibling(右側)。點 icon 區永遠命中 span,不會 focus input。'穿透到 input' 不成立",
+        "claudeAlsoCaught": false,
+        "fixHint": "改述為 'icon 不攔截點擊(pointer-events-none)',移除 'focus 穿透到 input' 誤導語;真要 click-to-focus 需 <label> 或 wrapper onClick"
+      }
+    ],
+    "marginal_count": 20,
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      {
+        "fileLine": "input.tsx:22-25",
+        "宣稱": "naked 是 consumer 不可使用的 internal variant(無型別/runtime 封鎖 = 假)",
+        "verdict": "marginal/FP — jsdoc 明標 @internal + 'consumer 請用 default',是 documented convention 非 runtime block;DS public-vs-internal canonical 本就靠 barrel 排除 + jsdoc,不靠 type union 移除。codex '沒封鎖=矛盾' 過度 literal"
+      }
+    ],
+    "marginal_examples_summary": "density Inspector 註記 28/32/36 vs lg 32/36/40 (anatomy:54-56/469/486/522); inputMeta.tokens.ring=[] 但 readonly focus-visible 用 ring(input.tsx:236); spec:4-5 variants/sizes {} 空 frontmatter(inputMeta 已填); error '正交於 mode'(display/readonly-empty 無 aria-invalid,span early-return); loading '不屬 endAction 槽位'(principles:175 語意 vs 物理槽位);a11y 段描述 native input keyboard(僅 edit path 適用)。全 accurate-但-低materiality mode-scoping/secondary-axis 精度"
+  },
+
+  "LinkInput": {
+    "claudeReported": "0 falseClaims / claimsVerified=38",
+    "material_confirmed": [],
+    "marginal_count": 24,
+    "false_positive_count": 2,
+    "false_positive_examples": [
+      {
+        "fileLine": "link-input.anatomy.stories.tsx:266",
+        "宣稱": "disabled prop 等同 mode='disabled'(codex 判 false,因顯式 mode 優先)",
+        "verdict": "FP — 一般用法(只傳 disabled)useResolvedFieldMode 確實 → 'disabled';codex 拿 'mode+disabled 衝突時 mode 勝' 邊角反駁通用教學,過度 pedantic"
+      },
+      {
+        "fileLine": "link-input.spec.md:75",
+        "宣稱": "'必須包含 http:// 或 https://' — codex:https:example.com / https:/example.com 也 normalize 有效",
+        "verdict": "FP/marginal — spec 意圖(protocol 必為 http/https)正確;WHATWG URL 對 special scheme 的 '//' 省略正規化是極邊角,不影響 consumer 指引"
+      }
+    ],
+    "marginal_examples_summary": "link-input.tsx:31/149 comment '無 hover affordance' 但 renderLinkAnchor(:41)有 hover:text-primary-hover+hover:underline(超連結正常 hover,comment 意指無 edit affordance);tsx:62 'display 完全無 wrapper' 於 showDisplayEndIcon=true 有 Field wrapper(:163-175,opt-in D-path);tsx:76 jsdoc '走 naked variant' 但 code 傳 resolvedVariant(:165,DataTable context 才=naked);spec:62 'error 邊框直到格式正確' vs spec:71 '打字即清 error'(edit-clears-error,兩行 spec 微張力,code 依 :71 handleChange:208-212);spec:43 'label display text 搭配' 有 label prop 但不可 inline 編輯;placeholder token N/A for link/readonly/disabled 分支;density 高度;principles:152 'Enter/Escape 跟原生一致'(實為自訂 onKeyDown:214-221,原生 url input 不 blur-on-Enter/不 restore-on-Escape)。全 doc 措辭精度,無 nonexistent-prop/真 bug"
+  },
+
+  "NumberInput": {
+    "claudeReported": "2 marginal stale line-refs (spec:112, anatomy:48) — both correctly stale",
+    "material_confirmed": [
+      {
+        "fileLine": "number-input.spec.md:110 + number-input.tsx:115-116",
+        "宣稱": "Escape 棄 draft 對齊 form-validation 規則 4『回復原值』",
+        "真實code行為": "handleChange(:150-152)在每次合法 parse 即 onChange(parsed) 即時 commit → controlled value 已更新;Escape 只 setDraft(null)(:176)顯示回『當前(已 live-commit)value』,無 original-value snapshot / revert callback。無法真正回復編輯前原值 → 與 LinkInput(blur-commit 派)不同,NumberInput 是 live-commit,'回復原值' 語意不成立",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec/comment 改述 Escape=棄未提交 raw draft 字串(顯示回 committed value);若要真 revert 需存 pre-edit snapshot,屬 API 擴充"
+      },
+      {
+        "fileLine": "number-input.spec.md:112",
+        "宣稱": "Number(raw)/onChange 實作於 number-input.tsx:136-138",
+        "真實code行為": "136-138 是 non-edit display 分支的 </span></div> 收尾;實際 parse+onChange 在 handleChange :150-152",
+        "claudeAlsoCaught": true,
+        "fixHint": "line-ref 改 :150-152(Claude 亦標;codex 標 :150-153 同)"
+      }
+    ],
+    "marginal_count": 21,
+    "false_positive_count": 2,
+    "false_positive_examples": [
+      {
+        "fileLine": "number-input.anatomy.stories.tsx:38",
+        "宣稱": "edit×disabled 使用 disabled tokens(codex 判 false,mode=edit 勝 disabled)",
+        "verdict": "FP/marginal — 'edit×disabled' 非真實可達組合(useResolvedFieldMode 顯式 mode='edit' 勝 disabled → 'edit');anatomy 若呈現此格屬矩陣模板產物,codex 反駁正確但屬 non-existent state,低 materiality"
+      },
+      {
+        "fileLine": "number-input.spec.md:108",
+        "宣稱": "'空字串顯示半形 -'(codex:value 型別為 number|null,'' 非合法值,value==null 為 false → 輸出 '' 非 -)",
+        "verdict": "FP/marginal — 純型別邊角(runtime 傳 '' 違反 contract);spec 描述空值語意無實害"
+      }
+    ],
+    "marginal_examples_summary": "spec:4-5 variants/sizes {}(numberInputMeta 亦空,Phase2 未填);spec:26 Layout Family 樣板句含 [startIcon?] 但 NumberInput 無 startIcon(boilerplate 繼承 field-controls 通用結構);spec:63/114 'edit 靠左' vs bareInputStyles [text-align:inherit](DataTable number/currency cell 繼承 text-right);spec:71/108 display '-' vs 可編輯 cell useFieldEmptyDisplay 回空白;spec:106 naked×disabled bg-transparent 非 bg-disabled;spec:135/anatomy:429 focus border-primary 於 error 時讓位 border-error;anatomy:259/260 'disabled/readOnly 是原生屬性'(NumberInput 從不設 native disabled/readOnly,disabled→span,edit input 無 disabled attr;Input 反而有設 → 跨元件差異);anatomy:362/370/410 display !px-0 vs 宣稱 12px;anatomy:428 border transparent 非 none;principles:139/144 右對齊 vs 無 tabular-nums 保證小數點對齊(範例資料全整數)"
+  },
+
+  "Pagination": {
+    "claudeReported": "0 falseClaims / claimsVerified=24 (implBasis 已知 nav>div>ul>li)",
+    "material_confirmed": [
+      {
+        "fileLine": "pagination.tsx:175 + pagination.spec.md:67",
+        "宣稱": "Ellipsis 純指示不可點——對齊 Ant / MUI / shadcn(全部不可點)",
+        "真實code行為": "本元件 ellipsis 確實 aria-hidden 不可點(:176-182),但『對齊 Ant』為假 benchmark:Ant Design Pagination 預設把省略格渲染成 jump-prev/jump-next(hover 顯 «/»、click 跳 5 頁、role=button+tabIndex+onKeyDown,RcPagination source)。MUI/shadcn 確為不可點,Ant 不是 → M22 錯誤 benchmark 引用",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 '對齊 MUI / shadcn(非互動 ellipsis);Ant 為可點 jump-5 派,本 DS 選非互動(快速跳頁走未來 showQuickJumper)'"
+      }
+    ],
+    "marginal_count": 9,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "marginal_examples_summary": "spec:100/anatomy:116 '邊界 disabled focus 掉落對齊 Ant/MUI' — MUI(native disabled button)確對齊,Ant(aria-disabled 保留元素不掉焦)不對齊 → 半錯 benchmark(MUI 部分成立故 marginal);spec:23 '允許直接跳到任一頁' vs >7 頁摺疊+ellipsis 不可點+無 quick-jumper(且 spec:117 自承 quick-jump 是未來擴充 → 內部微張力,但 '跳任一可見頁' 是數字派賣點,措辭鬆);spec:134/tsx:249/anatomy:2 '不隨 Field 密度縮放' — --field-height-sm 確 density-aware(28→32@lg),Button sm + 數字/ellipsis min-w 皆用之 → 技術上會縮放;但『無 size 軸/不連動 DataTable size』意圖成立,pagination 罕入 density 情境 → marginal;tsx:8 docblock 'nav>ul>li' 略去恆存在的操作群 <div>(spec:25 反而正確寫 'nav>(操作群 div)>ul>li');anatomy:62 '數字鈕四態含 disabled'(數字鈕從不接 disabled,僅上下頁邊界 disabled)"
+  },
+
+  "ProfileCard": {
+    "claudeReported": "0 falseClaims / claimsVerified=24",
+    "material_confirmed": [
+      {
+        "fileLine": "profile-card.spec.md:66 (vs :123 + tsx:316 + principles.stories.tsx:205)",
+        "宣稱": "Footer 固定:View more 永遠可見",
+        "真實code行為": "tsx:316 {onViewMore && (...footer...)} 條件渲染;未傳 onViewMore → footer 根本不存在。spec:123 自己寫『只在傳入 onViewMore callback 時顯示』,principles:205 亦寫 viewMore 條件渲染 → spec:66 '永遠可見' 與同檔 spec:123 + code + principles 全部矛盾,stale 內部衝突",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:66 改 'View more 傳入 onViewMore 時固定於底(條件渲染)',與 :123 對齊"
+      },
+      {
+        "fileLine": "profile-card.spec.md:101-103 (vs anatomy.stories.tsx:59-60,242-243 + :81)",
+        "宣稱": "跨 story/consumer 必須統一用 canonical actions Chat + Audio call,只有展示 1/3 action 數量差異才例外",
+        "真實code行為": "anatomy 一般雙 action 範例(:59-60, :242-243)用『傳訊(Message)+ 追蹤(Follow)』= 2 個 action,非 Chat+Audio call 也非數量例外;anatomy props 表(:81)舉例 'Message/Follow/Invite'。DS 自家 story 違反自家 spec:103 '統一 Chat+Audio call' 規則 → spec-vs-story 內部不一致",
+        "claudeAlsoCaught": false,
+        "fixHint": "統一:anatomy 範例改用 <ProfileCardDefaultActions/>(Chat+Audio call),或 spec:103 放寬 '示範自訂 action 亦可' 措辭"
+      }
+    ],
+    "marginal_count": 18,
+    "false_positive_count": 6,
+    "false_positive_examples": [
+      {
+        "fileLine": "anatomy.stories.tsx:83,108,487 + principles.stories.tsx:205",
+        "宣稱": "缺值顯示『—』(em dash),但 FIELD_PLACEHOLDER 實為半形 '-'",
+        "verdict": "FP(likely 誤讀)— story 原文 '缺值顯 — 佔位' 的 '—' 極可能是散文破折號標點(該檔到處用 — 作 prose 標點,如 '不是獨立 Card primitive——缺浮層外殼'),非宣稱 placeholder 字元為 em dash。code FIELD_PLACEHOLDER='-'(tsx:131)確為半形,spec:137 亦正確寫半形 -。codex 把 prose em-dash 誤判為 placeholder-字元 claim ×4"
+      },
+      {
+        "fileLine": "principles.stories.tsx:133-134",
+        "宣稱": "'唯一觸發點是 avatar hover' 為假(ProfileCard trigger-agnostic,spec:27 列 @username)",
+        "verdict": "FP — principles 教『avatar hover』設計 canonical(主觸發模式);@username hover(spec:27)本身即 avatar-context 觸發。元件 trigger-agnostic 是實作事實,但 principles 教的是設計指引,codex 過度 literal 反駁一條合法設計原則 ×2(133+134)"
+      }
+    ],
+    "marginal_examples_summary": "spec:45 'HoverCard 負責浮層外殼(radius/border/shadow)' — hover-card.tsx:18 明寫 '不含視覺樣式,bg/border/shadow 由 consumer 決定',shell(bg-surface-raised+elevation-200)由 Avatar/consumer 整合加(codex 對,但屬職責表概念層 nuance);tsx:41/149/211 dev-warn jsdoc 群(碼:!onChat&&!onCall 才 warn / !defaultFieldValues 才 warn;jsdoc 誇大為 per-key/per-callback);spec:158 'Popover 有 focus trap'(Radix Popover default modal=false 不 trap,但『改用 Popover 讓 action 可鍵盤達』建議仍成立,措辭鬆);spec:162 status 圓點『均通過 WCAG AA』(away=yellow-6/offline=neutral-6 對 light bg-muted 疑 <3:1,但 spec 自承『搭配文字標籤』冗餘 → 1.4.11 非唯一色彩載體豁免,實 a11y OK,措辭 overclaim);spec:170 SectionMatrix flex-col 堆疊 / HoverCardIntegration 手刻三件套 vs Avatar hoverCard canonical;anatomy:150/173/212-213/464 withFields/Minimal 說明未計入 always-render 的 2 default fields;anatomy:505 手刻 HoverCardTrigger 包無 tabIndex span 無法 Tab 達(佐證應用 Avatar hoverCard);principles:165 '永遠 320px'(default class,style/className 可覆寫)"
+  }
+}

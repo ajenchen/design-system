@@ -82,7 +82,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Sheet/展示" name="編輯成員詳情（右側滑入）"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">編輯成員詳情（右側滑入）</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見本頁下方「vs 近親」對照段)。</p>
     </div>
 
       {/* vs 近親 — VsDialogRule — 原 VsDialogRule */}

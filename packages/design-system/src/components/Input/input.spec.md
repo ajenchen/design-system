@@ -1,8 +1,12 @@
 ---
 component: Input
 family: 4
-variants: {}
-sizes: {}
+variants:
+  default: { when: "Field wrapper 完整 chrome(bg-surface + border + hover/focus 回饋)— 表單 / Field 內嵌" }
+sizes:
+  sm: { when: "field-height 28、icon 16、text-body" }
+  md: { when: "default 一般表單(field-height 32、icon 16)" }   # ★ default
+  lg: { when: "touch / 大字級(field-height 36、icon 20、text-body-lg)" }
 traits:
   - hasInteractiveStates
   - isInputLike
@@ -92,7 +96,7 @@ endAction(host 內嵌 inline action)vs 獨立 `<Button iconOnly>` 的分界詳 `
 
 `<Input mode="display">` 是 identity 顯示：
 - 有值：原樣輸出
-- null / undefined / 空字串：`—`（em dash），`text-fg-muted`
+- null / undefined / 空字串：半形 `-`（hyphen），`text-foreground`（display/readonly 供檢視值同色;disabled → fg-disabled）
 
 ---
 
@@ -125,26 +129,17 @@ endAction(host 內嵌 inline action)vs 獨立 `<Button iconOnly>` 的分界詳 `
 
 ## Variant(visual chrome,正交於 mode)
 
-Input 有兩個 visual chrome variant,**獨立於 mode**(mode 是 state,variant 是 chrome look):
+Input 有**一個公開** visual chrome variant `default`(+ 一個 `@internal` 的 `naked`),**獨立於 mode**(mode 是 state,variant 是 chrome look):
 
 | Variant | 原則 | 適用場景 | 世界級對照 |
 |---------|------|---------|-----------|
-| `'default'`(預設) | 完整 field chrome(背景 + 常態 border + hover/focus 回饋)——明確邀請輸入 | 表單 / Field 內嵌 / 標準 edit UI | Material Input / Ant Input default |
-| `'bare'` | 常態無 chrome,hover / focus 才現 border;sizing(padding / typography / height)不變 | **Toolbar inline editing**(FileViewer zoom input / chart config / rich text toolbar number input / Sidebar inline rename) | VS Code settings input / Figma toolbar number / Notion prop input |
+| `'default'`(預設) | 完整 field chrome(背景 + 常態 border + hover/focus 回饋)——明確邀請輸入 | 表單 / Field 內嵌 / 標準 edit UI / toolbar 內小尺寸輸入(如 FileViewer zoom,搭 `size="sm" autoWidth`) | [Material Input](https://github.com/material-components/material-web/blob/main/docs/components/text-field.md) / [Ant Input](https://github.com/ant-design/ant-design/blob/master/components/input/index.en-US.md) default |
 
-**判斷法**:Input 放在表單或 Field 內 → `default`;放在 Toolbar chrome 或 page-body inline → `bare`。
+**透傳**:在 `<Field variant="default">` 內自動繼承 context variant,per-prop override(code:`useResolvedFieldVariant`)。
 
-**透傳**:在 `<Field variant="default|bare">` 內自動繼承 context variant,per-prop override(code:`useResolvedFieldVariant`)。
+> **內部 variant `naked`(@internal,非公開)**：`FieldVariant` 型別含第二值 `'naked'`,但**不是公開 Input variant**——單獨使用無視覺邊界,**不可 standalone**。naked = 剝除 chrome(無 padding / bg / rounded),但 **edit 態仍由自身 border-based state machine 渲染 border + focus 藍框**（field-wrapper.tsx edit×naked compound = cell-as-input state machine;非「完全無 border」、亦非「host cell 自管」）；正被 `FieldSurfaceContext='table-cell'` 取代。consumer 只用 `default`。對齊 public-vs-internal canonical（`ui-development.md`：能直接被使用且用在合理地方才公開）。
 
-> **內部 variant `naked`(@internal,非公開)**：`FieldVariant` 型別含第三值 `'naked'`(完全無 chrome / border / focus ring),但**不是公開 Input variant**——單獨使用無視覺邊界,**不可 standalone**。僅供 DS 內部 cell-as-input 組合(host cell 自管 border + focus visual;正被 `FieldSurfaceContext='table-cell'` 取代）。consumer 只用 `default` / `bare`。對齊 public-vs-internal canonical（`ui-development.md`：能直接被使用且用在合理地方才公開）。
-
-**`bare` 使用情境的 canonical 要求**:
-- 外層 chrome 必須已提供「這是可編輯」的 affordance(Toolbar 的 icon / prop label / row structure);否則 user 看不到 input chrome 找不到可編輯位置
-- 保留 DS field-height(`h-field-sm/md/lg`)、typography、icon tier、error 視覺——**bare 只動 chrome 不動 sizing**
-
-**禁止**:
-- ❌ 在**表單** context 用 `bare`——表單需要明確的 field chrome 邀請輸入,bare 會失去 affordance
-- ❌ 拿 `bare` 來當「空白 div 替代品」——variant 不是拿掉視覺的工具,而是特定 chrome context 的 canonical
+> **`bare` variant 退役(2026-07-09,user 拍板)**:原「透明外殼、hover/focus 才顯 border」variant,宣稱用途 = toolbar inline editing,但全 repo(DS + apps + stories)**零真實 JSX 消費者**——FileViewer zoom 實為 `<Input size="sm" autoWidth>`(default variant),非 bare;唯一出現處是一個 ❌ 反例 story + 過時註解。toolbar 小輸入用 `default`(對齊「邊框給互動元素、輸入框就該有邊框」原則),cell-as-input 用 `naked` → `bare` 純冗餘,移除。Benchmark:[Ant Input](https://github.com/ant-design/ant-design/blob/master/components/input/index.en-US.md) 有 `variant="borderless"`(概念合法),但 [Material M3](https://github.com/material-components/material-web/blob/main/docs/components/text-field.md) 只有 filled/outlined、無無邊框變體;我們無真實消費場景 → 不留純預留 variant。詳 `field-types.ts` FieldVariant note。
 
 ---
 
@@ -166,7 +161,7 @@ Input 有兩個 visual chrome variant,**獨立於 mode**(mode 是 state,variant 
 
 **禁止**:
 - ❌ **表單 Field 內**——Field 欄位必須欄寬對齊,寬度隨值跳動會破壞 grid layout
-- ❌ **搭配 `variant="default"` 放在主表單區**——auto-width 預設搭 `variant="bare"`(toolbar inline 語意),default chrome 自動對齊 Field canonical
+- ❌ **放在主表單欄位區**——auto-width 讓欄寬隨值跳動、破壞 grid 對齊;autoWidth 適用 toolbar / page-body inline 場景,搭 `variant="default"`(小尺寸有框輸入,如 FileViewer zoom;`bare` 2026-07-09 退役)
 
 **世界級對照**:VS Code settings inline input 用同 pattern;Notion property field、Airtable cell edit 皆 auto-size。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 

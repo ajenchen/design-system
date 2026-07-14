@@ -1,0 +1,101 @@
+{
+ "component": "Textarea",
+ "claimsVerified": 218,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.tsx:17",
+   "宣稱": "readonly 呈現保留邊框與 padding，只改底色",
+   "真實code行為": "default readonly 除了改成 bg-readonly，也把可見邊框改為 border-transparent，並非只改底色。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.tsx:153",
+   "宣稱": "naked 完全無 chrome，host cell 提供 border + focus frame",
+   "真實code行為": "naked edit 自己套用 border-border、hover border 與 focus-visible:border-primary；host 不是唯一 border/focus frame 來源。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.tsx:156",
+   "宣稱": "Error 狀態正交於 mode；border-error + aria-invalid",
+   "真實code行為": "border-error compound 只匹配 edit；display 直接回傳 div，沒有 error border 或 aria-invalid；readonly/disabled 也沒有 error border。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.tsx:258",
+   "宣稱": "states 對齊 cva compoundVariants + anatomy ColorMatrix 真實 state 集合",
+   "真實code行為": "metadata 漏掉 ColorMatrix 的 display、列入 ColorMatrix 沒有的 hover，且 default edit 實際是 focus-within，只有 naked 才是 focus-visible。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.spec.md:99",
+   "宣稱": "三 mode 的色彩／互動／aria 規則 Textarea 全部對齊",
+   "真實code行為": "readonly textarea 套用 outline-none，卻沒有 Field Controls SSOT 的 readonly focus ring；互動規則並未全部對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.spec.md:103",
+   "宣稱": "Textarea 是 thin wrapper，直接 forward value/defaultValue/onChange triplet",
+   "真實code行為": "只有 native textarea 分支會 spread props；display 與沒有 controlled value 的 readonly 會改渲染 div，defaultValue/onChange 被丟棄。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.spec.md:111",
+   "宣稱": "display／readonly 空值渲染半形 -，disabled 則使用 fg-disabled",
+   "真實code行為": "可編輯 table-cell 的 display 空值由 useFieldEmptyDisplay() 回傳空字串；disabled 仍渲染 native textarea，也不會顯示半形 -。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.spec.md:131",
+   "宣稱": "Textarea 無特有 state 行為，完全繼承 Field Controls SSOT",
+   "真實code行為": "Textarea 自行定義 readonly chrome、naked 的 !resize-none/!h-full，以及 default focus-within 對 naked focus-visible 等特有行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.spec.md:146",
+   "宣稱": "aria-describedby 連到 description／error 文字",
+   "真實code行為": "aria-describedby 只取 descriptionId；errorId 由獨立的 aria-errormessage 關聯。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.spec.md:154",
+   "宣稱": "default／naked edit 態都套用 focus-visible:!border-primary",
+   "真實code行為": "default edit 使用 focus-within:!border-primary，滑鼠或程式聚焦也會生效；只有 naked edit 使用 focus-visible。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:2",
+   "宣稱": "StateBehavior 已由 ColorMatrix 的 5 state 完整涵蓋，狀態本質只是 mode × state 色彩 token",
+   "真實code行為": "ColorMatrix 實際有 6 列且未涵蓋 cva 的 hover；mode 還會切換 div/textarea、disabled/readOnly 語意、高度與 resize 行為，不只是色彩。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:143",
+   "宣稱": "mode=\"readonly\" 搭配 defaultValue 會呈現該唯讀內容",
+   "真實code行為": "readonly 分支只檢查 value；value 為 undefined 時改渲染空值 div，defaultValue 被忽略並顯示 -。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:238",
+   "宣稱": "直接對照五種 state 的視覺差異",
+   "真實code行為": "該區只渲染 edit default、readonly、disabled、error 四種，沒有第五個範例。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:246",
+   "宣稱": "readonly 色彩格以 defaultValue 呈現「已送出的意見」",
+   "真實code行為": "該組合走 readonly 空值 div；defaultValue 不會顯示。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:283",
+   "宣稱": "永遠 resize-y",
+   "真實code行為": "variant=\"naked\" 的 edit/display/readonly/disabled 全部以 !resize-none 覆蓋 resize-y。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:301",
+   "宣稱": "aria-invalid／aria-describedby 連到對應的錯誤與說明文字",
+   "真實code行為": "aria-invalid 只是布林狀態；說明文字由 aria-describedby 關聯，錯誤文字由 aria-errormessage 關聯。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.principles.stories.tsx:125",
+   "宣稱": "Readonly 保留邊框",
+   "真實code行為": "default readonly 使用 border-transparent；只保留 border 佔位，沒有可見邊框。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.principles.stories.tsx:135",
+   "宣稱": "mode=\"readonly\" 搭配 defaultValue 會顯示故事中的多行唯讀內容",
+   "真實code行為": "value 為 undefined 時程式判為空值並渲染 div + -，故事提供的 defaultValue 被丟棄。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.principles.stories.tsx:157",
+   "宣稱": "需要 icon 可使用 Field 的 startIcon",
+   "真實code行為": "FieldProps 沒有 startIcon；startIcon 屬 Input/Select 等 control API，Field 與 Textarea 都未提供此 prop。"
+  }
+ ]
+}

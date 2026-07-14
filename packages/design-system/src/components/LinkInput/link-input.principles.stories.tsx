@@ -172,8 +172,8 @@ export const EmptyRule: Story = {
       </Rule>
 
       <Rule
-        title="readonly 空值 → 顯示 empty placeholder（—）"
-        note="table cell / 個人資料展示頁,沒填 website 時以 em-dash 表達「未填」,跟其他 Field readonly 空值呈現一致"
+        title="readonly 空值 → 顯示半形連字號（-）"
+        note="table cell / 個人資料展示頁,沒填 website 時以半形連字號 - 表達「未填」,跟其他 Field readonly 空值呈現一致"
       >
         <LinkInput mode="readonly" value={null} />
       </Rule>

@@ -124,10 +124,7 @@ export const BarChartRevenue: Story = {
             />
             <ChartTooltip
               content={
-                <ChartTooltipContent
-                  indicator="dashed"
-                  formatter={(value) => `$${Number(value).toLocaleString()}`}
-                />
+                <ChartTooltipContent indicator="dashed" />
               }
             />
             <Bar dataKey="revenue" fill="var(--color-revenue)" radius={4} />
@@ -159,10 +156,7 @@ export const LineChartResponseTime: Story = {
             />
             <ChartTooltip
               content={
-                <ChartTooltipContent
-                  indicator="line"
-                  formatter={(value) => `${Number(value)}ms`}
-                />
+                <ChartTooltipContent indicator="line" />
               }
             />
             <ChartLegend content={<ChartLegendContent />} />

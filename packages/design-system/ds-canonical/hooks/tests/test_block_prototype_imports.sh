@@ -131,6 +131,30 @@ echo "Test 5: nonexistent path → pass (silently skip)"
 run_hook "src/does-not-exist-$$.tsx"
 expect_pass "Test 5 nonexistent path"
 
+# ── Test 6: ABSOLUTE path with explorations import → block ───────────────────
+# Real Edit/Write events carry absolute file_path(2026-07-10 wiring-hunt:hook
+# 原本只比對相對路徑 prefix → 對真實 edits 形同虛設)。
+echo ""
+echo "Test 6: absolute path tsx imports from src/explorations/ → block"
+F6="$SANDBOX/violation-abs.tsx"
+cat >"$F6" <<'EOF'
+import { ProtoX } from '@/explorations/foo/bar'
+export const X = () => <ProtoX />
+EOF
+run_hook "$F6"
+expect_block "Test 6 absolute path explorations import blocked" "Blocked"
+
+# ── Test 7: ABSOLUTE path clean import → pass ────────────────────────────────
+echo ""
+echo "Test 7: absolute path tsx with clean import → pass"
+F7="$SANDBOX/clean-abs.tsx"
+cat >"$F7" <<'EOF'
+import { Button } from '@/design-system/components/Button/button'
+export const X = () => <Button>OK</Button>
+EOF
+run_hook "$F7"
+expect_pass "Test 7 absolute path clean import"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════"

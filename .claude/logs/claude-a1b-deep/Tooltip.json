@@ -1,0 +1,1 @@
+{"component":"Tooltip","implBasis":"Radix Tooltip(@radix-ui/react-tooltip)+ 橋接 DS token;delayDuration 預設 MOTION_DELAY_PLAIN_MS(500ms),collisionPadding/sideOffset 消費 OVERLAY_* 常數(=8),data-theme=dark inner wrapper,max-w-[280px] break-words。已對照 Radix source 驗證 role=tooltip / 非 modal 不 focus-trap。","claimsVerified":29,"falseClaims":[]}

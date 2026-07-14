@@ -104,7 +104,7 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 ## 邊界案例
 
 - **Disabled**:Sheet 本身無 disabled state(非互動 control,是 surface container);trigger Button 由 consumer 控 disabled。
-- **Loading(panel content loading)**:Sheet 為純容器,不獨立 own loading state。Async body 場景由 consumer 在 body slot 渲 `<Empty icon={<CircularProgress size={48}/>}/>`(對齊 `empty.spec.md:167` loading compose SSOT)或 `<Skeleton>` line-stack 取代 content,不開 / 不關 Sheet 即可。
+- **Loading(panel content loading)**:Sheet 為純容器,不獨立 own loading state。Async body 場景由 consumer 在 body slot 渲 `<Empty icon={<CircularProgress size={48}/>}/>`(對齊 `empty.spec.md:168` loading compose SSOT)或 `<Skeleton>` line-stack 取代 content,不開 / 不關 Sheet 即可。
 - **Empty(no content)**:Sheet 必含 title(`aria-labelledby` 強制要求);body 為空時 consumer 應渲 `<Empty>` placeholder,不渲空白 panel。
 - **Scroll(body 內容超過視口高度)**:`SheetBody` = `<ScrollArea>`(`flex-1 min-h-0`),超高內容在 body 內部捲動,header / footer 固定不動;consumer 不需自寫 `overflow-y-auto`。
 - **誤嵌套降級(nested Sheet)**:禁止事項已禁 nested;若 consumer 不慎嵌套,Radix 的 Esc 與 focus trap 只作用於**最上層** layer(DismissableLayer 只 dismiss highest layer;FocusScope stack 最新 scope active),關閉由上而下逐層。
@@ -132,7 +132,7 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 - Esc — 關閉
 - Shift+Tab — 反向 focus 循環
 
-**Focus**:Radix primitive 自管 focus trap / restoration / visible ring(`outline: 2px solid var(--ring)` per design-system focus-visible canonical)。
+**Focus**:Radix primitive 自管 focus trap / visible ring(per design-system focus-visible canonical)。**Restoration 例外(2026-07-14)**:Radix 內建「關閉回焦 trigger」依賴 `SheetTrigger` 的 triggerRef;**controlled-without-trigger**(如 AppShellAside 手機模式)triggerRef=null + 內建 preventDefault 會讓焦點掉 `<body>` — 必自建 `onCloseAutoFocus` snapshot 還原(先例:AppShellAside app-shell.tsx / DatePicker Range date-picker.tsx:1061;WCAG 2.4.3)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

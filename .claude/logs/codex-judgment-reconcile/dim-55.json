@@ -1,0 +1,48 @@
+{
+  "dim": 55,
+  "title": "Token cross-namespace mapping integrity — codex B.3 reconcile",
+  "role": "B.3 比稿裁定員",
+  "groundTruthMethod": "每條 finding 去真實 code Read 驗證 + grep token 定義存在性(primitives.css / semantic.css)",
+  "codexRawCount": 3,
+  "claudeFindingCount": 1,
+  "summary": {
+    "material_confirmed": 3,
+    "marginal": 0,
+    "false_positive": 0,
+    "claudeMissed": 2
+  },
+  "verdicts": [
+    {
+      "codexFinding": 1,
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx:78",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": true,
+      "groundTruth": "已 Read 真實 code:affix pill 用 style={{ borderColor: 'var(--magenta)', backgroundColor: 'var(--magenta-subtle)', color: 'var(--magenta)' }}。grep 驗證:semantic.css 僅定義 --magenta-hover(:289/:439)/ --magenta-active(:290/:440),bare --magenta = NONE、--magenta-subtle = NONE(全 DS 掃 0 定義)。primitive --color-magenta-1/-6/-7 確實存在(primitives.css:219/220/225 light + 408/409/414 dark)。3 個 CSS 屬性拿 invalid value 被丟棄 → pill 無邊框色/透明底/繼承文字色,magenta tint 全消失。",
+      "reasoning": "非存在的 token ref × 3(dead var)+ 破損視覺 demo,直接違反 dim 55(把 primitive-namespace 概念用 semantic-hue-namespace 語法引用,實際兩者皆無此 token)。rubric 明列『非存在的 prop/ref / 真 bug / 真違反該 dim 判準』= material。story/doc 層只是 priority 降低,非 pedantic → 不降 marginal。codex+Claude 都自標 marginal,但 ground-truth 驗證是真 dead-var bug → 裁定 material_confirmed。",
+      "fix": "borderColor + color → var(--color-magenta-6)(或 -7);backgroundColor → var(--color-magenta-1),對齊 categorical-color.ts CAT_SUBTLE_TOKENS magenta。"
+    },
+    {
+      "codexFinding": 2,
+      "fileLine": "packages/design-system/src/components/Coachmark/coachmark.stories.tsx:49",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruth": "已 Read 真實 code:tour step media: { from: 'var(--color-blue-6)', to: 'var(--color-cyan-6)', label: 'Workspace' },經 MediaGradient(coachmark-story-helpers.tsx:30)組成 background: linear-gradient(135deg, from 0%, to 100%)。grep 驗證:--color-cyan-6 全 DS src 0 定義(exit 1);12-hue SSOT 用 --color-turquoise-6(primitives.css:183 light / :372 dark)非 cyan;semantic.css 只有 --turquoise-hover 無 cyan。to 為 invalid var → 整條 linear-gradient 失效 → background 被丟棄 → 主 tour demo step1 媒體區退化成 bg-black/30 深灰塊(intended blue→cyan gradient 消失)。",
+      "reasoning": "非存在的 token ref + 破損視覺 demo(且在主 tour stories 非僅 principles),違反 dim 55 hue-namespace mapping integrity。同一 --color-cyan-6 dead var 跨 2 檔 = 跨檔漂移。非 pedantic → material_confirmed。Claude dim-55 audit 僅抓 ProgressBar,漏此條。",
+      "fix": "to → var(--color-turquoise-6),與 categorical hue SSOT 對齊(同青綠色系)。"
+    },
+    {
+      "codexFinding": 3,
+      "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:282",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruth": "已 Read 真實 code:<MediaGradient from=\"var(--color-blue-6)\" to=\"var(--color-cyan-6)\" icon={FolderPlus} label=\"Workspace\" />(non-modal 探索 Rule demo)。同 finding 2 的 --color-cyan-6 dead var(全 DS 0 定義);linear-gradient to 失效 → principles story 媒體漸層破損。",
+      "reasoning": "非存在的 token ref + 破損視覺 demo,與 finding 2 同 root(--color-cyan-6 應為 turquoise),跨檔重複違反 dim 55。material_confirmed。Claude 漏抓。",
+      "fix": "to → var(--color-turquoise-6)。"
+    }
+  ],
+  "claudeMissedDetail": [
+    "coachmark.stories.tsx:49 — --color-cyan-6 dead var(Claude dim-55 audit 未涵蓋 Coachmark,只掃到 ProgressBar)",
+    "coachmark.principles.stories.tsx:282 — --color-cyan-6 dead var(同上)"
+  ],
+  "note": "本 dim 為機械化 token-existence 檢查,codex 3 條全部 ground-truth 屬實(非 pedantic 雜訊):此 dim codex precision = 100%。3 條皆 dead var(非存在 token ref)造成破損視覺 demo,直接違反 dim 55『token cross-namespace mapping integrity』。codex+Claude 都自標 marginal(理由:story/doc 層非 shipped 產品),但依裁定 rubric『非存在 ref/真 bug/真違反 dim 判準』= material_confirmed;story 層僅代表 fix priority 較低,一行修即可。Claude 同 dim 漏抓 2 條 Coachmark(scan scope 未含 Coachmark consumer)。"
+}

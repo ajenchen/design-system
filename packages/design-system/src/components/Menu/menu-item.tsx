@@ -68,10 +68,22 @@ export interface MenuItemProps
   children: React.ReactNode
   /** 次要說明文字，顯示在 label 下方 */
   description?: React.ReactNode
-  /** 左側 icon（LucideIcon），與 avatar 互斥 */
+  /** 左側 icon（LucideIcon），與 avatar / startContent 互斥 */
   startIcon?: LucideIcon
-  /** 左側頭像資料（AvatarData），元件內部渲染 Avatar。與 startIcon 互斥 */
+  /** startIcon 的 className 透傳(2026-07-08 WM 戰役:status 類彩色 icon 需求;disabled 色仍勝出) */
+  startIconClassName?: string
+  /** 左側頭像資料（AvatarData），元件內部渲染 Avatar。與 startIcon / startContent 互斥 */
   avatar?: AvatarData
+  /**
+   * 左側自訂內容（ReactNode），與 startIcon / avatar 互斥。與 `endContent` 對稱。
+   *
+   * **佔位與排列邏輯跟 startIcon 一模一樣**(2026-07-10 WM TypeIcon 彩色徽章需求):
+   * 渲染在同一個 prefix 對齊容器(`itemPrefixAlignVariants` SSOT)內 —— gap / 對齊 /
+   * shrink 全繼承,零平行 layout 邏輯,不可能與 startIcon 漂移。Consumer 唯一責任
+   * 是節點尺寸對齊 `ICON_SIZE[size]`(sm/md=16px、lg=20px;如 `size-4` 徽章)。
+   * 典型場景:類型徽章(彩底 + glyph)、status 圓點組合等 LucideIcon 表達不了的 leading 視覺。
+   */
+  startContent?: React.ReactNode
   /** 顯示 checkbox（多選模式由父層控制） */
   checkbox?: boolean
   /** Checkbox 選中狀態 */
@@ -132,7 +144,9 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
       children,
       description,
       startIcon: StartIcon,
+      startIconClassName,
       avatar,
+      startContent,
       checkbox,
       checked,
       selected,
@@ -165,7 +179,7 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
       ? (`block-${sizeKey}` as const)
       : 'inline'
 
-    const hasPrefix = !!StartIcon || !!avatar || checkbox
+    const hasPrefix = !!StartIcon || !!avatar || !!startContent || checkbox
 
     // ── Header variant ──
     if (header) {
@@ -221,11 +235,21 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
         {hasPrefix && (
           <div className={cn(itemPrefixAlignVariants({ align: prefixAlign }))}>
             {checkbox && (
+              // 2026-07-14 a11y(axe nested-interactive):此 checkbox 是純視覺 indicator —— checked
+              // ARIA state 由外層 row 單一 owner 宣告(Radix menuitemcheckbox / cmdk option /
+              // select-all row role="checkbox",見上方「ARIA 單一 owner gate」)。Radix Checkbox 渲
+              // focusable <button role="checkbox">,巢狀在互動 row 內 = axe nested-interactive
+              // violation;tabIndex=-1 不夠(axe-core no-focusable-content 對 tabindex<0 仍回
+              // violation,僅 messageKey 換 notHidden)。aria-hidden 移出 AT tree(消 SR 內外雙重
+              // checkbox 宣告)+ inert 移除 focusability(axe focusDisabled 認 inert → clean pass)。
+              // inert:React 18 無 typing(React 19 才內建),以 spread cast 傳字串 attr。
               <Checkbox
                 size={CHECKBOX_SIZE[sizeKey]}
                 checked={checked === true ? true : checked === 'indeterminate' ? 'indeterminate' : false}
                 disabled={disabled}
                 tabIndex={-1}
+                aria-hidden
+                {...({ inert: '' } as object)}
                 className="pointer-events-none"
               />
             )}
@@ -233,7 +257,7 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
               <StartIcon
                 data-prefix-type="icon"
                 size={iconPx}
-                className={cn('shrink-0', disabled && 'text-fg-disabled')}
+                className={cn('shrink-0', startIconClassName, disabled && 'text-fg-disabled')}
                 aria-hidden
               />
             )}
@@ -246,6 +270,16 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
                 hoverCard={avatar.hoverCard}
                 size={avatarPx}
               />
+            )}
+            {startContent && (
+              // 自訂 leading 節點:同容器 = 佔位/排列與 startIcon 一模一樣(見 props JSDoc)。
+              // disabled 用 opacity-disabled(對齊本元件 suffix slot 對自訂 ReactNode 的同款處理)。
+              <span
+                data-prefix-type="content"
+                className={cn('flex shrink-0 items-center', disabled && 'opacity-disabled')}
+              >
+                {startContent}
+              </span>
             )}
           </div>
         )}

@@ -9,7 +9,7 @@
 //
 // 設計原則:
 //   - 每個 cell component 接同一組 props(`CellComponentProps`)
-//   - 用 `variant="naked"` — DataTable cell-as-input substrate(對齊 Field B1 chrome=bare)
+//   - 用 `variant="naked"` — DataTable cell-as-input substrate(Field chrome variant;bare 2026-07-09 退役)
 //   - 消費 full Field 家族 primitive(無 stub)
 //   - 不再用 `meta._editable` 私有 flag — `isEditable` 直接顯式入參(消除 M1 hack)
 //
@@ -21,19 +21,37 @@ import type { ComponentType } from 'react'
 import { Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ColumnType } from './column-types'
-import { Input } from '@/design-system/components/Input/input'
-import { Textarea } from '@/design-system/components/Textarea/textarea'
-import { NumberInput } from '@/design-system/components/NumberInput/number-input'
-import { Select } from '@/design-system/components/Select/select'
-import { Combobox } from '@/design-system/components/Combobox/combobox'
-import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
-import { TimePicker } from '@/design-system/components/TimePicker/time-picker'
-import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
-import { LinkInput } from '@/design-system/components/LinkInput/link-input'
-import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
+import { Input as InputPublic } from '@/design-system/components/Input/input'
+import { Textarea as TextareaPublic } from '@/design-system/components/Textarea/textarea'
+import { NumberInput as NumberInputPublic } from '@/design-system/components/NumberInput/number-input'
+import { Select as SelectPublic } from '@/design-system/components/Select/select'
+import { Combobox as ComboboxPublic } from '@/design-system/components/Combobox/combobox'
+import { DatePicker as DatePickerPublic } from '@/design-system/components/DatePicker/date-picker'
+import { TimePicker as TimePickerPublic } from '@/design-system/components/TimePicker/time-picker'
+import { PeoplePicker as PeoplePickerPublic } from '@/design-system/components/PeoplePicker/people-picker'
+import { LinkInput as LinkInputPublic } from '@/design-system/components/LinkInput/link-input'
+import { Checkbox as CheckboxPublic } from '@/design-system/components/Checkbox/checkbox'
 import { Button } from '@/design-system/components/Button/button'
 import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
-import { FieldSurfaceProvider, FieldSurfaceSizeProvider } from '@/design-system/components/Field/field-context'
+import { FieldSurfaceProvider, FieldSurfaceSizeProvider, FieldSurfaceEditableProvider } from '@/design-system/components/Field/field-context'
+import { makeEditSettleKeyHandler } from '@/design-system/components/Field/field-edit-keys'
+import type { WithFieldVariantInternal } from '@/design-system/components/Field/field-types'
+
+// ── @internal naked variant 通道(2026-07-14 API 策展 E,user 拍板「全部收窄」)──────────────
+// `naked` 已從公開 FieldVariant 拆出(field-types.ts `FieldVariantInternal`);本檔是唯一合法
+// naked 消費者(field-controls.spec.md「軸二 variant」明文)。以 `WithFieldVariantInternal`
+// 型別層 widen 各 Field control 的 `variant` prop — 純型別、零 runtime;元件內部 cva / resolver
+// 分支本就吃 FieldVariantInternal,widen 不引入 unsound 行為。
+const Input = InputPublic as WithFieldVariantInternal<typeof InputPublic>
+const Textarea = TextareaPublic as WithFieldVariantInternal<typeof TextareaPublic>
+const NumberInput = NumberInputPublic as WithFieldVariantInternal<typeof NumberInputPublic>
+const Select = SelectPublic as WithFieldVariantInternal<typeof SelectPublic>
+const Combobox = ComboboxPublic as WithFieldVariantInternal<typeof ComboboxPublic>
+const DatePicker = DatePickerPublic as WithFieldVariantInternal<typeof DatePickerPublic>
+const TimePicker = TimePickerPublic as WithFieldVariantInternal<typeof TimePickerPublic>
+const PeoplePicker = PeoplePickerPublic as WithFieldVariantInternal<typeof PeoplePickerPublic>
+const LinkInput = LinkInputPublic as WithFieldVariantInternal<typeof LinkInputPublic>
+const Checkbox = CheckboxPublic as WithFieldVariantInternal<typeof CheckboxPublic>
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -81,18 +99,15 @@ function makeKeyHandler(
   onCancel?: () => void,
   parseValue?: (raw: string) => unknown,
 ) {
-  return (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // IME 組字 guard(2026-07-05 D4 fix):中文輸入法選字的 Enter 是組字確認、Esc 是取消組字,
-    // 非 commit / cancel 意圖 — 無 guard 會把半截組字提交並退出 edit(Esc 則丟棄整個 draft)。
-    // 同 data-table.tsx nav handler 既有寫法(isComposing + Safari/舊 Chrome keyCode 229)。
-    if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
-    if (e.key === 'Escape') { e.preventDefault(); onCancel?.() }
-    if (e.key === 'Enter') {
-      e.preventDefault()
+  // 消費 edit-in-place 鍵盤結算 SSOT(field-edit-keys.ts):IME guard + Enter/Esc dispatch 統一
+  // (2026-07-09 抽出;原本 InlineEdit 漏 IME guard = bug,現同源)。value 讀取為 input-specific,留本地。
+  return makeEditSettleKeyHandler({
+    onCommit: (e) => {
       const raw = (e.target as HTMLInputElement).value
       onCommit?.(parseValue ? parseValue(raw) : raw)
-    }
-  }
+    },
+    onCancel: () => onCancel?.(),
+  })
 }
 
 const sizeForInput = (size: CellSize): CellSize => size
@@ -151,15 +166,13 @@ function StringCell({ value, meta, mode, size, isDisabled, autoRowHeight, onComm
         style={{ fieldSizing: 'content' } as React.CSSProperties}
         onChange={(e) => onDraft?.((e.target as HTMLTextAreaElement).value)}
         onBlur={(e) => onCommit?.((e.target as HTMLTextAreaElement).value)}
-        onKeyDown={(e) => {
-          // IME 組字 guard(2026-07-05 D4 fix,同 makeKeyHandler)
-          if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
-          if (e.key === 'Escape') { e.preventDefault(); onCancel?.() }
-          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-            e.preventDefault()
-            onCommit?.((e.target as HTMLTextAreaElement).value)
-          }
-        }}
+        // 多行:走 edit-in-place 鍵盤結算 SSOT(IME guard + Esc + Cmd/Ctrl+Enter commit;
+        // plain Enter=換行)。commitOnEnter:false → 純 Enter 不攔。
+        onKeyDown={makeEditSettleKeyHandler({
+          onCommit: (e) => onCommit?.((e.target as HTMLTextAreaElement).value),
+          onCancel: () => onCancel?.(),
+          commitOnEnter: false,
+        })}
       />
     )
   }
@@ -216,12 +229,12 @@ function NumberCell({ value, meta, mode, size, isDisabled, onCommit, onCancel, o
       suffix={meta?.suffix}
       precision={meta?.precision}
       onBlur={() => onCommit?.(localValue)}
-      onKeyDown={(e) => {
-        // IME 組字 guard(2026-07-05 D4 fix,同 makeKeyHandler;IME 可在 number 欄輸入全形數字)
-        if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return
-        if (e.key === 'Escape') { e.preventDefault(); onCancel?.() }
-        if (e.key === 'Enter') { e.preventDefault(); onCommit?.(localValue) }
-      }}
+      // 單行:走 edit-in-place 鍵盤結算 SSOT(IME guard + Esc + Enter commit)。
+      // commit localValue(controlled state,非 e.target.value)。
+      onKeyDown={makeEditSettleKeyHandler({
+        onCommit: () => onCommit?.(localValue),
+        onCancel: () => onCancel?.(),
+      })}
     />
   )
 }
@@ -237,7 +250,7 @@ const dismissOnClose = (onCancel?: () => void) => (open: boolean) => { if (!open
 // Fix:`key={mode}` 強制 React unmount + remount,每次切 mode 都重跑 useState init。
 // 對齊 Notion / Airtable cell-as-input「display 跟 edit 是不同 mount cycle」語義。
 
-function DateCell({ value, meta, mode, size, isDisabled, isEditable, onCommit, onCancel }: CellComponentProps) {
+function DateCell({ value, meta, mode, size, isDisabled, onCommit, onCancel }: CellComponentProps) {
   if (mode === 'display') {
     return (
       <DatePicker
@@ -248,10 +261,10 @@ function DateCell({ value, meta, mode, size, isDisabled, isEditable, onCommit, o
         size={size}
         formatOptions={meta?.formatOptions}
         locale={meta?.locale}
-        // Indicator(calendar icon)= editable affordance(2026-05-10 user 糾正)。
-        // Non-editable cell 不該顯 picker indicator(誤導 read-only 為 editable)。
-        // 對齊 UrlCell L394 / BooleanCell L368 既有 isEditable conditional pattern。
-        showDisplayEndIcon={isEditable === true}
+        // 2026-07-08 user 拍板 A 案(推翻 2026-05-10/06-26 兩次拍板,per 6 家 benchmark 6/6 共識
+        // Ant/MUI X/AG Grid/Atlaskit/Notion/Airtable:display 態零恆顯型別 icon;editable
+        // affordance 統一 = hover outline(field.spec.md L4)。showDisplayEndIcon 不再傳
+        //(prop 保留為 spreadsheet-flavored 消費端 opt-in 逃生門,見 field.spec.md L6)。
       />
     )
   }
@@ -270,7 +283,7 @@ function DateCell({ value, meta, mode, size, isDisabled, isEditable, onCommit, o
   )
 }
 
-function TimeCell({ value, meta, mode, size, isDisabled, isEditable, onCommit, onCancel }: CellComponentProps) {
+function TimeCell({ value, meta, mode, size, isDisabled, onCommit, onCancel }: CellComponentProps) {
   if (mode === 'display') {
     return (
       <TimePicker
@@ -281,7 +294,7 @@ function TimeCell({ value, meta, mode, size, isDisabled, isEditable, onCommit, o
         size={size}
         formatOptions={meta?.formatOptions}
         locale={meta?.locale}
-        showDisplayEndIcon={isEditable === true}  // 2026-05-10:non-editable 不顯 indicator
+        // showDisplayEndIcon 不傳 — 2026-07-08 A 案:display 態零恆顯 icon(同 DateCell 註)
       />
     )
   }
@@ -301,7 +314,7 @@ function TimeCell({ value, meta, mode, size, isDisabled, isEditable, onCommit, o
   )
 }
 
-function SelectCell({ value, meta, mode, size, isDisabled, isEditable, onCommit, onCancel }: CellComponentProps) {
+function SelectCell({ value, meta, mode, size, isDisabled, onCommit, onCancel }: CellComponentProps) {
   // Display canonical(2026-05-05):cell IS variant,default plain text(no Tag pill 疊在 cell border 內)。
   // Consumer 可在 column meta.display='tag' opt-in 內容導向的 Tag 視覺(category 含色彩標籤等)。
   // 對齊 JTable / AG Grid「renderer/editor 視覺一致」canonical。
@@ -316,7 +329,8 @@ function SelectCell({ value, meta, mode, size, isDisabled, isEditable, onCommit,
         options={meta?.options ?? []}
         size={size}
         display={displayMode}
-        showDisplayEndIcon={isEditable === true}  // 2026-05-10:non-editable 不顯 chevron indicator
+        // showDisplayEndIcon 不傳 — 2026-07-08 A 案:display 態零恆顯 icon(同 DateCell 註)
+        selectedItemRenderer={meta?.selectedItemRenderer}  // 2026-07-08 WM 戰役:status 類彩色 cell 顯示通道
       />
     )
   }
@@ -326,6 +340,7 @@ function SelectCell({ value, meta, mode, size, isDisabled, isEditable, onCommit,
       autoFocus
       variant="naked"
       size={sizeForInput(size)}
+      selectedItemRenderer={meta?.selectedItemRenderer}
       options={meta?.options ?? []}
       value={value as string | null | undefined}
       onChange={(v) => onCommit?.(v)}
@@ -339,7 +354,7 @@ function SelectCell({ value, meta, mode, size, isDisabled, isEditable, onCommit,
   )
 }
 
-function MultiSelectCell({ value, meta, mode, size, isDisabled, autoRowHeight, isEditable, onCommitLive, onCancel }: CellComponentProps) {
+function MultiSelectCell({ value, meta, mode, size, isDisabled, autoRowHeight, onCommitLive, onCancel }: CellComponentProps) {
   const wrap = autoRowHeight && meta?.wrap === true
   if (mode === 'display') {
     return (
@@ -351,7 +366,7 @@ function MultiSelectCell({ value, meta, mode, size, isDisabled, autoRowHeight, i
         options={meta?.options ?? []}
         wrap={wrap}
         size={size}
-        showDisplayEndIcon={isEditable === true}  // 2026-05-10:non-editable 不顯 chevron indicator
+        // showDisplayEndIcon 不傳 — 2026-07-08 A 案:display 態零恆顯 icon(同 DateCell 註)
       />
     )
   }
@@ -371,10 +386,10 @@ function MultiSelectCell({ value, meta, mode, size, isDisabled, autoRowHeight, i
   )
 }
 
-function PersonCell({ value, mode, size, isDisabled, isEditable, onCommit, onCancel, meta }: CellComponentProps) {
+function PersonCell({ value, mode, size, isDisabled, onCommit, onCancel, meta }: CellComponentProps) {
   if (mode === 'display') {
-    // 2026-05-10:non-editable 不顯 chevron indicator(對齊 UrlCell isEditable conditional pattern)
-    return <PeoplePicker key="display" variant="naked" mode={displayOrDisabled(isDisabled)} value={value as PersonValue | null} size={size} showDisplayEndIcon={isEditable === true} />
+    // 2026-07-08 A 案:display 態零恆顯 icon(同 DateCell 註)
+    return <PeoplePicker key="display" variant="naked" mode={displayOrDisabled(isDisabled)} value={value as PersonValue | null} size={size} />
   }
   return (
     <PeoplePicker
@@ -391,10 +406,10 @@ function PersonCell({ value, mode, size, isDisabled, isEditable, onCommit, onCan
   )
 }
 
-function MultiPersonCell({ value, mode, size, isDisabled, isEditable, onCommitLive, onCancel, meta }: CellComponentProps) {
+function MultiPersonCell({ value, mode, size, isDisabled, onCommitLive, onCancel, meta }: CellComponentProps) {
   if (mode === 'display') {
-    // 2026-05-10:non-editable 不顯 chevron indicator
-    return <PeoplePicker key="display" variant="naked" mode={displayOrDisabled(isDisabled)} value={(value as PersonValue[]) ?? []} size={size} showDisplayEndIcon={isEditable === true} />
+    // 2026-07-08 A 案:display 態零恆顯 icon(同 DateCell 註)
+    return <PeoplePicker key="display" variant="naked" mode={displayOrDisabled(isDisabled)} value={(value as PersonValue[]) ?? []} size={size} />
   }
   // Multi 用 onCommitLive(commit 但不 exit edit)— 每勾一人即時生效,popover 持續開
   // 直到點外面;onOpenChange(false) → onCancel exit edit。對齊 multiSelect canonical。
@@ -418,7 +433,8 @@ function BooleanCell({ value, mode, meta, size, isEditable, isDisabled, onCommit
   // onCheckedChange 仍 fire(violate disabled contract)。Fix:`!isEditable || isDisabled` →
   // 走 display branch,Checkbox 拿 disabled mode + 不接 onCheckedChange。
   if (mode === 'display' && (!isEditable || isDisabled)) {
-    return <Checkbox variant="naked" mode={displayOrDisabled(isDisabled)} checked={value === true} />
+    // size 傳入 → boolean 值 icon(Check/X)@lg 縮放對齊其他 cell(對齊 editable 分支同 size 邏輯)
+    return <Checkbox variant="naked" size={size === 'lg' ? 'lg' : 'md'} mode={displayOrDisabled(isDisabled)} checked={value === true} />
   }
   return (
     <Checkbox
@@ -431,17 +447,19 @@ function BooleanCell({ value, mode, meta, size, isEditable, isDisabled, onCommit
 }
 
 /**
- * UrlCell — Phase C drift fix:
- *   舊 EditableCellContent edit mode 對 url 走 plain `<Input>`(失去 URL 驗證 + auto-link)。
- *   現改用 `<LinkInput>` edit mode → 保留 URL parse / hostname 顯示一致性 + 鍵盤 commit / cancel。
- *   read mode 仍 `<LinkInput mode={displayOrDisabled(isDisabled)}>` = 一致 SSOT。
- *   editable 互動:hover 時右側出 Pencil 鈕 → 進 edit(保留 link click 語意,對齊原 spec)。
+ * UrlCell(2026-07-14 docblock 對齊實作):
+ *   display branch = `<LinkInput mode={displayOrDisabled(isDisabled)}>`(URL parse / hostname
+ *   顯示一致性 SSOT);editable 互動:hover 時右側出 Pencil 鈕 → 進 edit(保留 link click 語意)。
+ *   edit branch = plain `<Input variant="naked">`(LinkInput edit 的 controlled value 衝突
+ *   revert,詳下方 edit branch 註解);URL 驗證 deferred 到 onCommit(consumer 端 validate)。
  */
 function UrlCell({ value, meta, mode, size, isDisabled, isEditable, onRequestEdit, onCommit, onCancel }: CellComponentProps) {
   if (mode === 'display') {
-    // showDisplayEndIcon ← D path Phase 2(2026-05-08):Field naked wrapper 包 anchor,與 Input edit 同 chrome
+    // showDisplayEndIcon ← D path Phase 2(2026-05-08):Field naked wrapper 包 anchor,與 Input edit 同 chrome。
+    // LinkInput 此 prop = wrapper-only(無 icon,field.spec.md L6 例外)→ A 案(2026-07-08)不撤;
+    // 但修 I1:原無條件 true 違反「= isEditable」knob 等式(field-controls.spec.md cell 例外),改等式。
     const display = (
-      <LinkInput variant="naked" mode={displayOrDisabled(isDisabled)} value={value as string | null} label={meta?.linkLabel} size={size} showDisplayEndIcon />
+      <LinkInput variant="naked" mode={displayOrDisabled(isDisabled)} value={value as string | null} label={meta?.linkLabel} size={size} showDisplayEndIcon={isEditable === true} />
     )
     // 2026-05-13 codex V1 fix:disabled URL 不顯 Pencil affordance(parent onRequestEdit 已被攔但 UI 仍誤導)
     if (!isEditable || isDisabled) return display
@@ -521,7 +539,12 @@ function buildCellWithSurface(Inner: ComponentType<CellComponentProps>, key: str
         {/* 2026-06-08:把 table-density size 經獨立 surface-size context 注給 child Field controls,
             漏傳 size 的 cell 也自動繼承(根治「新 cell 漏傳 size」class);size primitive 不破壞 memo identity。*/}
         <FieldSurfaceSizeProvider size={props.size}>
-          <Inner {...props} />
+          {/* 2026-07-08 user 拍板:cell 可編輯訊號經獨立 boolean context 注給 child Field controls,
+              讓 useFieldEmptyDisplay 分流「可編輯 cell 空 display → 空白」vs「不可編輯 cell → '-'」。
+              boolean primitive 不破壞 memo identity(同 size context)。 */}
+          <FieldSurfaceEditableProvider isEditable={props.isEditable ?? false}>
+            <Inner {...props} />
+          </FieldSurfaceEditableProvider>
         </FieldSurfaceSizeProvider>
       </FieldSurfaceProvider>
     )

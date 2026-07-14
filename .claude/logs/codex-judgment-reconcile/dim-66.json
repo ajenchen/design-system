@@ -1,0 +1,117 @@
+{
+  "dim": 66,
+  "title": "Immediate cross-repo dispatch + visual parity — codex-vs-Claude reconciliation",
+  "judge": "B.3 reconcile (Claude)",
+  "groundTruth": "real code Read + verified per finding",
+  "codexRaw": 11,
+  "tally": {
+    "material_confirmed": 7,
+    "marginal": 4,
+    "false_positive": 0,
+    "claudeMissed": 4
+  },
+  "verdicts": [
+    {
+      "codexIdx": 1,
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "fileLine": ".github/workflows/release.yml:70-73,156-162; scripts/dogfood-prepublish-verify.mjs:104-113; .github/workflows/composition-fidelity.yml:20-25,34,57-69",
+      "claudeCaught": true,
+      "claudeIdx": 7,
+      "reasoning": "Code claims mostly accurate: release job gates on `needs: smoke-shard` only (release.yml:72) — visual parity NOT a required release status; dogfood main.tsx renders only <Button>+<Avatar> (imports Dialog/Chart/DataTable but for peer-dep resolution, not parity — line 104-113); composition-fidelity is a SEPARATE main-push/PR workflow (:20-25) not wired into release, and is EXPLICITLY opt-in (:52 comment 'identity diff 是明確 opt-in', :57-69 cheap pre-step skips whole gate when 0 markers). BUT: (a) framing dogfood-Button/Avatar as a visual-parity gap is a category error (dogfood = peer-dep gate by design); (b) opt-in identity-diff + static-hook conformance is a documented design decision, not accidental; (c) '同一 SHA parity 失敗但 Release 成功' is an unverifiable runtime claim. Overlaps Claude#7 (composition-fidelity opt-in thin, also marginal). Real-but-by-design → marginal, not a clear defect."
+    },
+    {
+      "codexIdx": 2,
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "fileLine": ".github/workflows/release.yml:241,324; .github/workflows/ssot-sync-dispatch.yml:65; template/ds-product-template/CLAUDE.md (Daily dev workflow row)",
+      "claudeCaught": false,
+      "reasoning": "Code claim TRUE: ALL repository_dispatch target only `ajenchen/ds-product-template` (release.yml:241 gh api, :324 peter-evans repository, ssot-sync-dispatch.yml:65 gh api) — no fork fan-out. BUT the documented design is that forks sync via Dependabot daily + sync-design-system.yml (template CLAUDE.md 'Daily dev workflow': 'DS publish 新 beta → Dependabot daily + sync-design-system.yml'), NOT via dispatch fan-out. So dispatch-to-canonical-only is BY DESIGN; codex's 'fork 自動同步' violation is a strawman vs the actual mechanism. '0/7 forks at latest + 0 dispatch runs' is an unverifiable runtime claim that, if true, points to fork-side Dependabot config, not DS dispatch code. Factually-correct observation but context-dependent/by-design → marginal."
+    },
+    {
+      "codexIdx": 3,
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "fileLine": ".github/workflows/ssot-sync-dispatch.yml:63,69 vs .github/workflows/release.yml:226-238",
+      "claudeCaught": true,
+      "claudeIdx": 1,
+      "reasoning": "VERIFIED. ssot-sync-dispatch.yml:63 `GH_TOKEN: ${{ secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}` — the exact fake fallback that release.yml R2 explicitly removed (release.yml:226-238 comment '移除 || secrets.GITHUB_TOKEN 假 fallback —— GITHUB_TOKEN 對 cross-repo dispatch 必 403'). repo-scoped GITHUB_TOKEN hitting repos/ajenchen/ds-product-template/dispatches = guaranteed 403; line 69 `|| echo` then swallows it → green light + zero dispatch (double-masking). Classic M10 '改一處看三處' un-propagated fix. Claude#1 caught this identically."
+    },
+    {
+      "codexIdx": 4,
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "fileLine": "template/ds-product-template/.github/workflows/sync-design-system.yml:92-95,97-117; template/ds-product-template/CLAUDE.md (CI: audit.yml on push/PR)",
+      "claudeCaught": false,
+      "reasoning": "VERIFIED both sub-claims. (1) 'Verify build still pass' step (:92-95) runs ONLY `cd apps/template && npm run build` — no root typecheck, no lint:imports, no a11y, no other apps. (2) 'Commit + push if changed' (:97-117) pushes to fork main with the default actions/checkout GITHUB_TOKEN; GitHub documented behavior: pushes made with GITHUB_TOKEN do NOT trigger `on: push` workflows → the fork's audit.yml (tsc+lint:imports+build per push/PR, per template CLAUDE.md) will NOT fire. Since the bot pushes directly to main (not a PR), no PR-triggered audit either. Net: auto-sync commits land on production main with only apps/template build verified. Real gate-bypass (lower blast radius = consumer template repo). Claude did NOT flag this workflow → claudeMissed."
+    },
+    {
+      "codexIdx": 5,
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "fileLine": "scripts/check-src-republish.mjs:23-27,68,73-80 vs packages/design-system/package.json:8-25 (files surface); ssot-sync-dispatch.yml:61-69",
+      "claudeCaught": false,
+      "reasoning": "VERIFIED. package.json `files` (:8-25) ships `src/**/*.{tsx,ts,css}` + `src/**/*.spec.md` + `src/**/*.json` + `CLAUDE.md` + whole `ds-canonical` (minus .claude). ds-canonical contains commands/hooks/references/rules/skills/templates (verified via ls), all published. But check-src-republish.mjs only diffs SRC_GLOB=`packages/design-system/src` (with isShipRelevant EXCLUDING *.spec.md, :77) + FORK_GLOB=`ds-canonical/fork` (:27,68). So editing ds-canonical/rules|skills|references|commands|hooks|templates, or CLAUDE.md, or any src spec.md → published-surface change WITHOUT forced bump. Combined with ssot-sync-dispatch firing on those exact paths (.claude/rules|skills|... → dispatch ds-ssot-changed) but receiver doing `npm install @beta` = no-op if version unchanged → dispatch succeeds, propagates nothing. Exactly codex's '重裝未變的 @beta 仍是 no-op'. Given C-prime fork governance consumes ds-canonical from npm, stale-ship = fork gets stale governance. Claude MISSED."
+    },
+    {
+      "codexIdx": 6,
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "fileLine": ".github/workflows/ssot-sync-dispatch.yml:68; .github/workflows/release.yml:244; template/ds-product-template/.github/workflows/sync-design-system.yml:38-40,48",
+      "claudeCaught": false,
+      "reasoning": "VERIFIED. ssot-sync-dispatch.yml:68 `-f \"client_payload[message]=${{ github.event.head_commit.message }}\"` interpolates attacker-controllable commit message directly into a `run:` shell, and that same step holds a cross-repo PAT (GH_TOKEN, :62-63). Classic GitHub Actions script-injection (GHSA class): a commit msg containing `$(...)`/backticks executes with the PAT in scope → token exfiltration surface. Corroborating lower-severity instances: release.yml:244 `${{ github.ref_name }}` and template sync-design-system.yml:38-40,48 `${{ github.event.client_payload.* }}` also inlined into run/echo (payload path requires dispatcher PAT so lower risk, but same anti-pattern). Fix = move context into step `env:` + quote. High-value non-obvious security finding. Claude MISSED."
+    },
+    {
+      "codexIdx": 7,
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "fileLine": ".github/workflows/release.yml:170-201 (Publish),205-213 (Repoint latest),215-220 (Release),225-245 (Dispatch) vs 255-290 (Verify plugin manifest version sync BLOCKER)",
+      "claudeCaught": false,
+      "reasoning": "VERIFIED ordering. The 'Verify plugin manifest version sync (BLOCKER)' step that enforces tag==all-5-manifest-versions is at :255 — AFTER Publish-to-npm (:170), Repoint-latest dist-tag (:205), Create GitHub Release (:215), and the first consumer Dispatch (:225). A BLOCKER positioned after the irreversible operations it is meant to protect provides no protection: on a bypass of local `release:preflight` + wrong tag push, npm publish (irreversible) + dist-tag repoint + release + dispatch all execute BEFORE the version-drift red light. Genuine defense-in-depth ordering defect (gate should precede publish). Mitigated (not nullified) by local preflight being the primary pre-tag gate + idempotent publish + concurrency serialize, so practical severity is moderate — but the claim is factually correct and the fix (move gate before publish) is legitimate. Claude MISSED."
+    },
+    {
+      "codexIdx": 8,
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "fileLine": "scripts/visual-audit.mjs:93-111 (manifest fallback),447 (missing baseline),464-469 (dimension mismatch),620 vs 661-668 (exit code); visual-assertions.json:290-366 (appshell/bulkactionbar/fieldcontrolgroup/profilecard)",
+      "claudeCaught": true,
+      "claudeIdx": 5,
+      "reasoning": "VERIFIED — the strongest finding; fail-open across MULTIPLE silent-pass paths: (1) broken/missing manifest → falls back to 8 hardcoded scenarios (:93-111). (2) scenario render error → `r.error` only console.error'd (:620) and is NOT in the exit condition (:661-668 exits 1 only on contrast/geometry/a11y/diffBudget) → a story that 404s passes green. (3) missing baseline PNG → `if (existsSync(baselinePath))` false → diff stays null, silently no regression check (:447). (4) dimension mismatch → `diff={error:...}` with no `exceedBudget` field → not counted → passes (:464-465 vs :619). Concrete instances CONFIRMED: appshell-overview.png / bulkactionbar-overview.png / fieldcontrolgroup-overview.png scenarios exist in manifest (:292,313,350) but 0 baseline PNG on disk → silent skip; ProfileCard scenario id `design-system-internal-profilecard-設計規格--overview` is STALE — actual story title is `Design System/Components/ProfileCard/設計規格` (Components, not Internal) → real id `design-system-components-profilecard-...` → scenario 404s → r.error → passes green. Claude#5 caught a SUBSET (missing-baseline silent-skip + no manifest↔baseline gate, labeled marginal) so counted as caught, but codex's fail-open picture (exit-code ignoring render errors + manifest fallback + dimension-mismatch + stale ProfileCard id) is materially more complete."
+    },
+    {
+      "codexIdx": 9,
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "fileLine": "scripts/visual-assertions.json (no inlineedit/pagination scenario); packages/design-system/src/components/InlineEdit/inline-edit.stories.tsx; .../Pagination/pagination.stories.tsx",
+      "claudeCaught": true,
+      "claudeIdx": 4,
+      "reasoning": "VERIFIED precisely. Grep of all 111 manifest scenario ids: inlineedit=0, pagination=0. Both components have real 展示/interactive stories on disk (inline-edit.stories.tsx + pagination.stories.tsx present). So both user-facing components have ZERO visual-regression coverage — genuine break, no reasonable exemption. NOTE: codex#9 is MORE precise than Claude#4 here — Claude#4 over-broadly listed 11 components (Command/Notice/OverflowIndicator/ProfileCard/SelectionControl/HoverCard/SelectMenu) as '0 scenario', but those actually HAVE valid scenarios under `design-system-internal-*` ids (verified: those components ARE titled `Design System/Internal/*`). Only InlineEdit+Pagination are truly missing (+ ProfileCard is present-but-stale-id, belonging to finding #8). Claude did flag InlineEdit+Pagination among its list → counted as caught."
+    },
+    {
+      "codexIdx": 10,
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "fileLine": "scripts/visual-assertions.json (all 111 scenarios, 0 assertions[]); scripts/visual-audit.mjs:9-11,252-253",
+      "claudeCaught": true,
+      "claudeIdx": 2,
+      "reasoning": "VERIFIED: node count → 111 scenarios, 0 with non-empty `assertions[]`, 11 with rationale. runGeometryAssertions (:252-253) returns [] immediately when assertions empty → geometry gate is dead code; docstring (:9-11) advertises specific geometry examples (FileViewer 4-slot equal-height / DatePicker 12px symmetry / Calendar equal-width cell) that exist in ZERO scenarios. Real docstring-vs-data discrepancy giving false confidence. BUT: it does NOT create a coverage hole — pixel-diff baseline still runs; it degraded to a screenshot manifest. codex correctly self-labeled marginal; fix = rename/redoc or backfill assertions. Documentation-honesty issue, not a functional defect → marginal. Claude#2 caught it (labeled material)."
+    },
+    {
+      "codexIdx": 11,
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "fileLine": ".github/workflows/visual-regression.yml:5,41,44 vs scripts/visual-audit.mjs:519,529-530",
+      "claudeCaught": true,
+      "claudeIdx": 3,
+      "reasoning": "VERIFIED: filterScenarios (:519,529-530) returns allScenarios for SCOPE==='all' = the 111 manifest scenarios; workflow docstring claims 'Pixel diff every story screenshot' (:5), 'DS-wide pixel match' (:41), '~1000 stories × screenshot' (:44). Actual ≈111 curated scenarios (~12% of the ~929 component story exports). Real overclaim in comments. BUT the gate's actual function is correct (the 111 DO get pixel-diffed); curated-subset visual regression is a legit industry model (Chromatic curated). This is a comment-accuracy / false-confidence issue, not a functional coverage regression → marginal. Claude#3 caught it (labeled material)."
+    }
+  ],
+  "topMaterial": [
+    "#6 Command injection: ssot-sync-dispatch.yml:68 inlines attacker-controllable `head_commit.message` into a run shell that holds a cross-repo PAT → token-exfil surface (fix: move to step env)",
+    "#8 Visual gate fail-open: render-error/missing-baseline/dimension-mismatch/broken-manifest all pass green (exit only on contrast/geometry/a11y/diff-budget) + ProfileCard stale `-internal-` id + 3 missing baseline PNGs",
+    "#5 Republish gate surface gap: npm ships whole ds-canonical + CLAUDE.md + spec.md but check-src-republish guards only src + ds-canonical/fork → SSOT edit without bump → dispatch fires but receiver @beta reinstall is no-op",
+    "#3 ssot-sync-dispatch keeps the GITHUB_TOKEN cross-repo fallback that release.yml R2 removed, plus `|| echo` swallowing the guaranteed 403 → green light with zero dispatch (un-propagated fix)",
+    "#7 Version-consistency BLOCKER (tag==5 manifests) is ordered AFTER npm publish/dist-tag/release/dispatch → cannot prevent shipping a drifted version from its position"
+  ],
+  "notes": "codex 11 findings: 7 material_confirmed + 4 marginal + 0 false_positive. Zero false positives this dim — every code-level claim verified accurate against ground truth; the 4 marginals are technically-correct-but-by-design (#1 opt-in composition-fidelity, #2 Dependabot-for-forks) or documentation-honesty (#10 empty assertions, #11 coverage overclaim). claudeMissed=4: #4 (fork sync audit-bypass), #5 (republish surface gap), #6 (command injection), #7 (BLOCKER ordering). Claude's own #4 over-flagged 7 components that actually have valid Internal-namespace scenarios; codex#9 was the more precise version (only InlineEdit+Pagination truly missing)."
+}

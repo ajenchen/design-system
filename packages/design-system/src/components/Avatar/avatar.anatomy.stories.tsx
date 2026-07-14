@@ -164,7 +164,8 @@ export const Overview = {
         </div>
         <div className="flex gap-8">
           <div className="flex flex-col items-center gap-2">
-            <Avatar size={40} alt="Alice" color="blue" shape="circle" />
+            {/* circle = 人物 → 真實人像(2026-07-08 demo 人像真實化);square = 實體 → icon */}
+            <Avatar size={40} src="https://i.pravatar.cc/80?u=alice-chen" alt="Alice" shape="circle" />
             <span className="text-[11px] font-mono text-fg-muted">circle（預設）</span>
             <span className="text-[10px] text-fg-muted">rounded-full</span>
           </div>
@@ -644,6 +645,9 @@ export const StateBehavior = {
         <H3>Fallback chain（src 失敗 → icon → alt → User）</H3>
         <Desc>Avatar 不是互動元件,沒有 hover / focus / active。實際「狀態」是內容降級——src 載入失敗時自動依優先順序往下回退,確保永遠不會出現破圖。</Desc>
       </div>
+      {/* 刻意示範 fallback chain:失敗 URL / 無 src 各列**必須**維持原樣(降級行為規格,
+          2026-07-08 demo 人像真實化 sweep 豁免保留;ColorMatrix / SizeMatrix 的 Text 列同理 —
+          color / text-mode 軸只在無圖時可見) */}
       <div className="overflow-x-auto">
         <table className="border-collapse text-caption">
           <thead><tr><Th>來源</Th><Th>渲染</Th><Th>條件</Th></tr></thead>
@@ -679,7 +683,7 @@ export const StateBehavior = {
       <div className="flex items-center gap-6">
         {(['online', 'away', 'busy', 'offline'] as const).map(s => (
           <div key={s} className="flex flex-col items-center gap-2">
-            <Avatar size={40} alt="Ada" color="indigo" status={s} />
+            <Avatar size={40} src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" status={s} />
             <span className="text-[11px] font-mono text-fg-muted">{s}</span>
           </div>
         ))}
@@ -695,7 +699,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"・alt 必傳：即使有圖片,alt 同時是「圖片載入失敗時的文字 fallback」與「螢幕報讀時的身份說明」。人員頭像的 alt 建議含姓名與在線狀態(例:「陳冠霖(在線)」),組織 / 專案頭像用品牌或專案名;極少數純裝飾用途才用空字串。\n\n・沒有 alt 時的降級:圖片模式會自動降級為首字或 icon,不會留下沒有任何報讀內容的空頭像。\n\n・在線狀態點不另發報讀:右下角的狀態小點不會被螢幕報讀單獨朗讀,在線狀態整合進頭像本身的 alt 文字。這樣一長串成員名單就不會同時朗讀一堆「在線 / 離線」造成讀屏洪水。\n\n・hover 名片可用鍵盤抵達:當頭像帶有 hoverCard 時,頭像本身會變成可用 Tab 聚焦的按鈕並顯示聚焦框,鍵盤使用者也能打開名片浮層。"}</p>
+      <p className="whitespace-pre-line">{"・alt 必傳：即使有圖片,alt 同時是「圖片載入失敗時的文字 fallback」與「螢幕報讀時的身份說明」。人員頭像的 alt 建議含姓名與在線狀態(例:「陳冠霖(在線)」),組織 / 專案頭像用品牌或專案名;極少數純裝飾用途才用空字串。\n\n・沒有 alt 時的降級:圖片模式會自動降級為首字或 icon,不會留下沒有任何報讀內容的空頭像。\n\n・在線狀態點不另發報讀:右下角的狀態小點不會被螢幕報讀單獨朗讀,在線狀態整合進頭像本身的 alt 文字。這樣一長串成員名單就不會同時朗讀一堆「在線 / 離線」造成讀屏洪水。\n\n・hover 名片可用鍵盤抵達:當頭像帶有 hoverCard 時,頭像本身會變成可用 Tab 聚焦的圖像(role=img)並顯示聚焦框,鍵盤使用者也能打開名片浮層(頭像刻意不宣告成按鈕 / aria-haspopup,對齊 Radix / GitHub hover card 的零 popup ARIA 慣例)。"}</p>
     </div>
   ),
 }

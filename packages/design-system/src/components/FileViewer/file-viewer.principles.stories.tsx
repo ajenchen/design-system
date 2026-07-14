@@ -258,7 +258,7 @@ export const CloseButtonPositionRule: Story = {
       <div>
         <Rule
           title="✅ toolbar 順序 — zoom → info → download → close(影響力遞增)"
-          note="DS 設計準則三方交集:(1) action-bar「全局 primary 在最右」影響力遞增;(2) Notice dismiss X always rightmost;(3) Dialog close 靠右的跨平台慣例(macOS / Windows / Web 一致)。zoom 影響單檔 transform / info 影響 layout / download 搬內容出 viewer / close unmount 所有 state — 影響越大越右"
+          note="DS 設計準則三方交集:(1) action-bar「全局 primary 在最右」影響力遞增;(2) Notice dismiss X always rightmost;(3) Dialog close 靠右的跨平台慣例(macOS / Windows / Web 一致)。zoom 影響單檔 transform / info 影響 layout / download 搬內容出 viewer / close 卸載 DialogContent 子樹(shell state 保留於恆掛載外層)— 影響越大越右"
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setOpen(true)}>
             開啟 Dashboard 設計稿
@@ -423,13 +423,13 @@ export const ReadOnlyRule: Story = {
 
         <Rule
           title="✅ readOnly — 其他人上傳的 / 公開公告 / 只讀 link 分享"
-          note="readOnly=true 時 textarea 變 readOnly,onDescriptionChange 不觸發。placeholder 改為「尚無說明」讓無 description 時也不顯示「為這個檔案加上說明...」誘導編輯的文字"
+          note="readOnly=true 時說明區依 DS Textarea readonly canonical:有值 → 可聚焦選取但不可改的 native readonly textarea;空值 → display div 顯 emptyDisplay(`-`,非 placeholder);onDescriptionChange 不觸發。故 readonly 無 description 時顯示 `-`,不會出現「為這個檔案加上說明...」的編輯誘導 placeholder"
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setRoOpen(true)}>
             開啟公司公告(readOnly)
           </Button>
           <FileViewer files={publicFiles} open={roOpen} onOpenChange={setRoOpen} readOnly />
-          <Label>↑ 按 I 打開 info panel,textarea 不可編輯、focus 不進游標</Label>
+          <Label>↑ 按 I 打開 info panel;readonly 有值 = 可聚焦選取但不可改的 textarea,無值 = 顯 `-`</Label>
         </Rule>
 
         <Rule

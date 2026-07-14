@@ -1,0 +1,138 @@
+{
+ "dim": 26,
+ "filesScanned": 456,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:175",
+   "問題": "SidebarProvider 以 callback 是否存在判斷受控模式；uncontrolled 的 defaultOpen + onOpenChange 只會通知 callback，不更新內部 open，導致按鈕與快捷鍵有事件但畫面不收合。",
+   "severity": "material",
+   "建議": "改用 useControllable；或以 openProp 是否為 undefined 判斷，非受控時更新內部 state，並一律呼叫 onOpenChange。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:53",
+   "問題": "Aside 有 asideOpen、onAsideOpenChange 與內部非受控 state，卻缺 defaultAsideOpen，初始值硬寫 false，且 spec 無單模式理由；無法用非受控方式初始開啟。",
+   "severity": "material",
+   "建議": "補 defaultAsideOpen，形成 asideOpen/defaultAsideOpen/onAsideOpenChange triplet，並用它初始化內部 state。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:120",
+   "問題": "readonly/display 分支只讀 value；合法的 defaultValue 留在 rest props，會被提前判成空值並顯示「-」。input.stories.tsx:36 等現有 story 因此顯示錯誤。",
+   "severity": "material",
+   "建議": "以同一個 resolved current value 驅動所有 mode；非受控路徑需納入 defaultValue 並 mirror 後續輸入，不能只在 native edit 分支轉發。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.tsx:199",
+   "問題": "readonly/display 分支忽略 defaultValue，把非空的非受控內容顯示成「-」，直接違反 textarea.spec.md:103 宣告的原生 value/defaultValue/onChange triplet。",
+   "severity": "material",
+   "建議": "統一解析 controlled/uncontrolled current value，再供 native、readonly 與 display 分支共同使用。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.tsx:42",
+   "問題": "number-input.spec.md:24 明定 controlled-only，但型別未從 InputHTMLAttributes 排除 defaultValue；該值會被 spread 到已有 value 的 input，被忽略並可能觸發 React value/defaultValue 警告。",
+   "severity": "material",
+   "建議": "在 Omit 加入 defaultValue，對齊 LinkInput 的既有機械封鎖。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.tsx:110",
+   "問題": "controlled-only 的 TimePicker 仍從 HTMLAttributes 繼承 defaultValue；它只被傳到 trigger div，完全不會初始化時間值，形成型別接受、執行時忽略的假 uncontrolled API。",
+   "severity": "material",
+   "建議": "從公開型別 Omit defaultValue，維持 spec 宣告的 controlled-only contract。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:54",
+   "問題": "controlled-only 的 PeoplePicker 意外繼承 defaultValue，並經 any rest spread 傳到底層 Select/Combobox；公開型別接受此 prop，但 controlled value 會使它被忽略。",
+   "severity": "material",
+   "建議": "Omit defaultValue，並阻止 state-like props 經 any rest 轉發。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:80",
+   "問題": "open 軸只有 defaultOpen/onOpenChange、缺 controlled open；people-picker.spec.md 只解釋 value 軸 controlled-only，沒有本元件 open 軸的 Uncontrolled-only rationale。",
+   "severity": "material",
+   "建議": "補 open 並以 useControllable 接線；若刻意繼承 Select/Combobox 的單模式限制，須在 PeoplePicker spec 明文記錄理由與 pointer。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DatePicker/date-picker.tsx:420",
+   "問題": "DatePicker 的 draft 只在關閉轉開啟時同步 value；needConfirm 時畫面固定讀 draft，因此外部 controlled value 在關閉期間更新後，trigger 仍顯示舊值直到再次開啟，屬 V4 state shadow。",
+   "severity": "material",
+   "建議": "只要 open=false 就同步 draft=value；僅在面板開啟、使用者編輯期間保留 draft。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DatePicker/date-picker.tsx:796",
+   "問題": "DatePicker.Range 重複同一 V4：關閉期間不接收新的 controlled value，needConfirm 又從 draft 顯示兩端點；display/readonly 若不再開啟，甚至會持續顯示舊值。",
+   "severity": "material",
+   "建議": "在 open=false 時同步整個 range draft，開啟期間才保護尚未確認的編輯。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:112",
+   "問題": "Props SSOT 只把 open/onOpenChange 描述為 controlled，但實作完整支援 defaultOpen；文件漏掉合法的 uncontrolled mode。",
+   "severity": "marginal",
+   "建議": "補上 defaultOpen 與 controlled/uncontrolled 互斥說明。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:316",
+   "問題": "「狀態行為」story 明示可點擊或按 Enter 選取，卻固定 controlled value 並使用空 onChange，單選與多選都永遠不會回寫。",
+   "severity": "material",
+   "建議": "用 local state 或 Storybook useArgs 回寫 value，讓展示行為與文案一致。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.anatomy.stories.tsx:52",
+   "問題": "名為「互動檢視」的 story 傳 controlled page，onPageChange 卻是空函式，任何頁碼點擊都不會改頁。",
+   "severity": "material",
+   "建議": "用 useArgs 或 local state echo onPageChange。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.anatomy.stories.tsx:118",
+   "問題": "Inspector 將 args.value 當 controlled value，卻未傳 onValueChange；文案要求觀察 linear 下步驟是否可點，實際點擊不會切換 current step。",
+   "severity": "material",
+   "建議": "接 onValueChange 並以 useArgs/local state 更新 value。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:289",
+   "問題": "自製 Inspector 的 checked state 被轉成 mount-only defaultValue；切換 checked/unchecked 控制後，已掛載的 RadioGroup 不會更新。",
+   "severity": "material",
+   "建議": "改傳 controlled value/onValueChange，或以明確 key remount 測 defaultValue。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.anatomy.stories.tsx:114",
+   "問題": "Inspector 把 selected arg 轉成 mount-only defaultValue，後續控制不生效；切到 layout=menu 時又違反 spec 明定的 controlled-only menu 用法，選單 toggle 同樣無法同步。",
+   "severity": "material",
+   "建議": "改用 controlled value/onValueChange 並透過 useArgs 回寫。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.anatomy.stories.tsx:248",
+   "問題": "Inspector 以 useState(args.value) 只讀首次值，後續 Storybook value control 被本地 state shadow。",
+   "severity": "marginal",
+   "建議": "使用 useArgs 讓 value 與 onChange 同源，或明確同步 args.value。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:89",
+   "問題": "Inspector 的 live activeId control 被傳成 defaultActiveId；首次 mount 後再切控制面板，選中列不會更新。",
+   "severity": "marginal",
+   "建議": "改用 activeId/onActiveChange + useArgs；若只測 default 語意則以 key 明確 remount。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:65",
+   "問題": "Inspector 宣稱可即時調整 defaultValue，但 Radix 只在 mount 讀取它，控制面板後續修改不生效。",
+   "severity": "marginal",
+   "建議": "改用 controlled value/useArgs，或用 defaultValue 生成 key 以明確 remount。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:71",
+   "問題": "defaultChecked 被做成 live control，但 mounted Switch 不會重新採用；切到 display mode 時也沒有 controlled checked 可供純展示分支讀取。",
+   "severity": "marginal",
+   "建議": "改用 checked/onCheckedChange + useArgs，或用 key remount 測初始值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:82",
+   "問題": "Inspector 暴露可即時修改的 defaultValue control，但 mounted textarea 只在初次掛載採用，後續修改無效。",
+   "severity": "marginal",
+   "建議": "改用 value/onChange + useArgs，或以 key remount 明確測 defaultValue。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:177",
+   "問題": "invalid control 動態切換 defaultValue 字串，但 defaultValue 是 mount-only；切成 invalid 後紅框與錯誤訊息出現，輸入框仍保留原本的有效 email，示例自相矛盾。",
+   "severity": "marginal",
+   "建議": "改用 controlled value，或依 invalid 設 key 讓預設值重新掛載。"
+  }
+ ]
+}

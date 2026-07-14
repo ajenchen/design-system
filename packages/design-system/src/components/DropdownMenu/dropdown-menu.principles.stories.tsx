@@ -1,4 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+// @story-trait-allow: missing-opensnapshot — 原則頁多個 inline dropdown demo 只為承載規則說明(rule note),
+// forced defaultOpen 會讓 ~10 個浮層互疊;overlay open-state 快照由 dropdown-menu.anatomy.stories.tsx
+// StateBehavior(defaultOpen)canonical 涵蓋(對齊 hover-card.principles.stories.tsx 同 rationale)。
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -17,7 +20,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuGroup,
   DropdownMenuLabel,
-  DropdownMenuShortcut,
 } from './dropdown-menu'
 import { Button } from '@/design-system/components/Button/button'
 
@@ -313,17 +315,17 @@ export const SuffixRule: Story = {
   render: () => (
     <div>
       <Rule
-        title="DropdownMenuShortcut — 鍵盤快捷鍵（ml-auto 靠右）"
-        note="使用者熟悉快捷鍵後可跳過選單直接按快捷鍵。shortcut 用 fg-muted 作為輔助資訊色,不搶 label 注意力"
+        title="鍵盤快捷鍵 — canonical shortcut prop（靠右對齊列尾）"
+        note="使用者熟悉快捷鍵後可跳過選單直接按快捷鍵。shortcut 用 fg-muted 作為輔助資訊色,不搶 label 注意力。標準場景用 `shortcut` prop（走 MenuItem endContent flex slot,真正靠右對齊列尾);`<DropdownMenuShortcut>` child 僅為相容 shadcn 的 escape-hatch,會 inline 附加在 label 尾、不會靠右。"
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="tertiary">檔案</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem>新增<DropdownMenuShortcut>⌘N</DropdownMenuShortcut></DropdownMenuItem>
-            <DropdownMenuItem>開啟<DropdownMenuShortcut>⌘O</DropdownMenuShortcut></DropdownMenuItem>
-            <DropdownMenuItem>儲存<DropdownMenuShortcut>⌘S</DropdownMenuShortcut></DropdownMenuItem>
+            <DropdownMenuItem shortcut="⌘N">新增</DropdownMenuItem>
+            <DropdownMenuItem shortcut="⌘O">開啟</DropdownMenuItem>
+            <DropdownMenuItem shortcut="⌘S">儲存</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </Rule>

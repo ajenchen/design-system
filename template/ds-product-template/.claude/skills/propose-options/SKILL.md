@@ -59,7 +59,7 @@ description: Auto-invoke when listing options / 建議 / 候選方案. Forces in
 - ✅ "grep 結果 Input/NumberInput/LinkInput 3 file 都未消費 ItemInlineAction(file:line)+ spec.md L60 表格列為 expected consumer → 真 gap"
 - ❌ "5 元件應該 migrate"(沒 grep / 沒 cite spec / 不知道 K 元件已 migrate / 是 colored host 合法例外)
 
-**對應 hook**:`check_propose_pre_grep_verify.sh`(2026-05-18 加,Edit/Write `*.md` 內含「propose」/「請拍板」/「決策」keyword 但近 N turn 無 grep/Read tool call → P1 warn)
+**對應 hook**:`check_propose_pre_grep_verify.sh`(2026-05-18 加,PreToolUse Edit/Write 限 `*/planning|reports|handoff/*.md`,內容含「請拍板 / 決策 N / 選項」等 propose keyword 但 content 無 file:line cite → P1 stderr warn(exit 0);escape:檔頭 `<!-- @propose-pre-verified -->`。chat reply 通道無 hook 覆蓋,靠本 skill Q0 自律)
 
 ### Q1 — M8 World-class benchmark
 **問**:本 option ≥ 3 家 world-class DS / framework / canonical 有對照嗎?
@@ -169,9 +169,9 @@ User 已就「為什麼會給錯誤建議」糾正 ≥ 3 次:
 
 | Skill | scope |
 |---|---|
-| `pre_write_subsumption_check.sh`(hook)| Edit/Write 已發生時 |
+| `pre_write_subsumption_check.sh`(retired 2026-06 → `.claude/hooks/retired/` — write 前層由 `check_file_size_budget.sh` + `enforce_home_charter.sh` 等現役 pre-write hook 部分補位)| Edit/Write 已發生時 |
 | `post_edit_canonical_interrogate.sh`(retired/未實作 — mindset enforcement)| 寫完 canonical 後 3 題 |
 | `check_governance_compliance.sh`(retired/未實作 — 靠 `check_propose_pre_grep_verify.sh` + 加 hook 前 3 題)| 寫新 hook 7 題 |
 | **本 skill** `/propose-options` | **propose-time(寫進 user 回覆前)7 題** |
 
-4 個正交 — propose 前 / write 前 / write 中 / write 後 全 cover。
+4 個正交層(propose 前 / write 前 / write 中 / write 後);現役機械覆蓋僅 propose 前(本 skill + P1 hook)+ write 前部分補位,其餘層 retired/未實作,靠 mindset。

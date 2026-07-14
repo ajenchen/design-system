@@ -1,0 +1,1 @@
+{"component":"ProfileCard","implBasis":"組合元件 — Avatar(64px) + ItemContent + DescriptionList + ScrollArea + Button，作 HoverCard content 模板;固定 w-[320px];default fields id+employeeNumber;status conditional render;A11y HoverCard TreeWalker set tabindex=-1 (verified node_modules @radix-ui/react-hover-card:219-283)","claimsVerified":24,"falseClaims":[]}

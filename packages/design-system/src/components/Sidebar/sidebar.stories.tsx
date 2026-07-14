@@ -87,13 +87,14 @@ const UserFooter = () => (
       <SidebarMenuButton asChild>
         <div role="group" aria-label="當前使用者">
           <ItemAvatar
+            src="https://i.pravatar.cc/48?u=EMP-1001"
             alt="Alan Chen"
             color="blue"
             hoverCard={
               <ProfileCard
                 name="Alan Chen"
                 subtitle="Design｜D-0042｜EMP-1001"
-                avatar={{ alt: 'Alan Chen', color: 'blue' }}
+                avatar={{ src: 'https://i.pravatar.cc/80?u=EMP-1001', alt: 'Alan Chen', color: 'blue' }}
                 status="online"
                 statusMessage="Out of Office: Back on Monday!"
                 actions={<ProfileCardDefaultActions />}
@@ -258,8 +259,9 @@ export const MixedContent: Story = {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {/* User data:TreeView,icon 模式整區隱藏。
-                `collapsible` 讓整個 group 可收合——label 變 trigger + 自動 chevron,
+            {/* User data:TreeView,icon 模式整區隱藏(下方 group 手動加 group-data-[collapsible=icon]:hidden)。
+                `collapsible` 讓整個 group 可收合——label 尾端自動加 chevron button 作為
+                Collapsible.Trigger(label 本身維持 presentation div,不升格為 button),
                 content 用 Radix Collapsible 包起來。
                 群組之間的分隔線由 SidebarGroup 的 [&+&]:before 自動處理。 */}
             <SidebarGroup collapsible className="group-data-[collapsible=icon]:hidden">
@@ -486,10 +488,9 @@ export const IntegrationSidebar: Story = {
           }
           description={
             <>
-              <code className="text-caption px-1 bg-neutral-hover rounded">SidebarProvider uniformPrefix</code>
-              {' '}opt-in 後,CSS :has() 偵測整個 sidebar 子樹的混用 prefix,nav icon(16px)
-              和 brand logo(24px)在 24px 固定槽內共同對齊,兩種 label x 完全一致。Notion /
-              Raycast / Linear integrations 的混用模式。預設關閉(school A,explicit 立場)。
+              開啟 <code className="text-caption px-1 bg-neutral-hover rounded">uniformPrefix</code>
+              {' '}後,icon 導覽項與帶 logo 的整合項會對齊到同一條左緣,讓文字起點一致
+              (如 Notion / Raycast / Linear 的整合區)。預設關閉。
             </>
           }
         />

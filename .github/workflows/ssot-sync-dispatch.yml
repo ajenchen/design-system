@@ -59,11 +59,24 @@ jobs:
           echo "Changed files since last push:"
           echo "$DIFF"
       - name: Dispatch ds-ssot-changed event to ds-product-template
+        # 2026-07-14 對齊 release.yml R2 canonical(2026-06-11):移除 `|| secrets.GITHUB_TOKEN`
+        # 假 fallback —— GITHUB_TOKEN 對 cross-repo dispatch 必 403(repo-scoped),fallback 形同
+        # 虛設且掩蓋未設 secret 的真相。secret 未設即明確 ::warning:: skip;dispatch 失敗以
+        # ::warning:: 可見(不再靜默 echo 吞掉)。Dependabot daily 為 fallback。
+        continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN }}
+          # 2026-07-14:head_commit.message 不可直接 ${{ }} 內插進 run script —— 本 repo commit
+          # message 幾乎全多行(Co-Authored-By),raw 內插會撕裂 shell 命令(且為 GitHub 官方列名
+          # script-injection anti-pattern)。改走 env var,shell 展開安全。
+          HEAD_MSG: ${{ github.event.head_commit.message }}
         run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::PRODUCT_WORKSPACE_DISPATCH_TOKEN 未設 — skip ds-ssot-changed dispatch(Dependabot daily 仍 fallback)"
+            exit 0
+          fi
           gh api repos/ajenchen/ds-product-template/dispatches \
             -f "event_type=ds-ssot-changed" \
             -f "client_payload[commit]=${{ github.sha }}" \
-            -f "client_payload[message]=${{ github.event.head_commit.message }}" \
-            || echo "⚠️ dispatch failed(secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN missing?fallback: Dependabot daily)"
+            -f "client_payload[message]=${HEAD_MSG%%$'\n'*}" \
+            || echo "::warning::ds-ssot-changed dispatch failed(token 權限?)— Dependabot daily 仍 fallback"

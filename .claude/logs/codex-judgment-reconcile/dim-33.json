@@ -1,0 +1,91 @@
+{
+  "dim": 33,
+  "dimTitle": "Component classification + abstraction",
+  "judge": "Claude B.3 reconcile",
+  "summary": "codex 對 dim 33 實際跑的是『benchmark citation traceability(M22)』掃描,不是 classification+abstraction 判準。7 條 findings 中 6 條(2/3/4/5/6/7)全是『brand 名 / 世界級對照 沒附 inline URL』的 M22 議題,與 dim 33(public/internal 分類、Layout Family 抽象、prop-vs-separate M21)無關 = off-dim。唯一 on-dim 的 finding 1(LinkInput M21)spec 已有 documented rationale + DS 內部 data-type-per-Control canonical,external precedent leg 偏弱但 Claude 已驗過 = marginal。0 真 material,Claude 無漏抓。",
+  "codexFindingCount": 7,
+  "verdicts": [
+    {
+      "idx": 1,
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "onDim": true,
+      "fileLine": "packages/design-system/src/components/LinkInput/link-input.spec.md:18",
+      "codexClaim": "LinkInput 分件未證成 M21 抽象門檻(prop variant 可行性 / 不同 value contract / ≥3 家分件先例);通用 Input benchmark 不足。",
+      "groundTruth": "spec L16-24 有 documented separate-component rationale:核心互動差異=點擊 value 開啟連結非進入編輯(distinct behavior)+ URL 驗證/link↔input 狀態機 + controlled-only rationale + 何時用/何時不用 table 明確與 Input 分界;frontmatter benchmark = Ant Input / MUI TextField。field.spec.md L22 DS 內部 canonical『每個資料型別的一切住在該型別 Control 元件本身(Input/NumberInput...)』→ URL 是資料型別 → 自成 Control,是 DS 自有架構一致決策(M23 內部 canonical)。",
+      "reason": "on-dim 但非 must-fix。M21『≥3 家世界級用分離元件』leg 確實偏弱(Ant/MUI 用 Input+type,非獨立 LinkInput),但 spec 有真實 distinct-interaction rationale + DS data-type-per-Control 內部架構支撐,Claude 已驗為 3-test 通過。技術上有一條 external-precedent 缺口 = 吹毛求疵,非分類/抽象缺陷。"
+    },
+    {
+      "idx": 2,
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "onDim": false,
+      "fileLine": "53 spec.md (accordion:115 / alert:129 / badge:78 / color:10 / typography:140 / field:24 / sheet:19 ...)",
+      "codexClaim": "53 個 spec 以外部產品/元件庫共識支撐分類/抽象/prop/token canonical,沒可追溯來源;品牌清單無法證明具體斷言。",
+      "groundTruth": "抽驗:accordion.spec.md:115 明標『2026-06-12 source-verified』附 shadcn py-4=16 / Ant paddingSM 12 / MUI minHeight 48 具體值;alert:129 / badge:78 附 API 級細節(<Banner actions>/onDismiss / Ant status dot);color:10 有四流派對照表;field:24 分類內容(Field=form composition pattern 非 Family)正確且 Claude 已覆蓋;sheet:19 Sheet↔Dialog 分界 Claude 已列 reciprocal。全部段落內容本身正確,codex 抓的是『沒 inline URL』。",
+      "reason": "off-dim(這是 M22 benchmark-citation 議題,非 dim 33 classification/abstraction);codex 標籤『no traceable source』被 source-verified accordion + API 級細節反證 = 過度陳述。部分純 brand-name 段落技術上是 M22-adjacent,但已由 edit-time P0 hook(check_benchmark_citation.sh)+ 撤回 escape 治理。不是 dim-33 缺陷。"
+    },
+    {
+      "idx": 3,
+      "codexSeverity": "marginal",
+      "verdict": "false_positive",
+      "onDim": false,
+      "fileLine": "aspect-ratio.spec.md:128 / date-grid.spec.md:190 / textarea.spec.md:32",
+      "codexClaim": "三 spec 對上游 wrapper/ref/passthrough/native 慣例作可驗證描述但沒對應 source。",
+      "groundTruth": "aspect-ratio:128 明寫『本 DS 慣例是每個對外 export 都顯式包一層...對齊 shadcn canonical』= 本地實作選擇已如此框定;textarea:32『native <textarea>+橋接 DS token,無 external primitive base。shadcn 同類做法』= 本地 rationale;date-grid:190 詳述本地 ref 處理(react-day-picker v9 多 div 未 forward ref,簽名保留不附著)= 準確本地技術說明。",
+      "reason": "codex 讀錯 — 把明確標為『本 DS 慣例 / 本地選擇』的 rationale 誤判為『不可追溯的外部斷言』。code 本身沒問題。"
+    },
+    {
+      "idx": 4,
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "onDim": false,
+      "fileLine": "11 tsx (accordion:9 / badge:19 / tooltip:10 / dropdown-menu:39 / notice / pagination / toast / tree-view / app-shell / bulk-action-bar / data-table-interaction-layer)",
+      "codexClaim": "11 個 production 實作以外部系統支撐 DOM/API/狀態/視覺/延遲決策卻無 inline source。",
+      "groundTruth": "accordion.tsx:9『結構對齊 shadcn/ui accordion』= 準確本地結構描述;badge.tsx:19 comment 鏡射 spec + user 拍板 Option A;tooltip.tsx:10 Radix 700ms vs Material/MUI/Atlassian + token SSOT,且帶 2026-05-21 codex drift-fix 稽核痕;dropdown-menu.tsx:39 data-[highlighted] 跨瀏覽器 focus-visible 不一致的準確技術 rationale(shadcn/Radix/Ariakit canonical)。全部準確 + documented。",
+      "reason": "off-dim(M22 code-comment citation,非分類/抽象);comment 準確且多帶 user 拍板 / drift-fix 稽核痕,要求 code 註解逐條附 inline URL 屬吹毛求疵。非 dim-33 缺陷。"
+    },
+    {
+      "idx": 5,
+      "codexSeverity": "marginal",
+      "verdict": "false_positive",
+      "onDim": false,
+      "fileLine": "app-shell/_demo-helpers.tsx:119 / button-group.tsx:10 / chart.tsx:6 / command.tsx:34 / field.tsx:8",
+      "codexClaim": "五個實作對外部 placement/Context/上游結構/bug 作低影響但不可追溯說明。",
+      "groundTruth": "field.tsx:8『shadcn Field 風格』/ button-group.tsx:10『符合 shadcn 的 Context 慣例』(準確框架 idiom)/ command.tsx:32-35 M2-verified cmdk DOM 歸因 + 2026-06-11 source 更正(cmdk/dist)『下列 selectors 皆有對應真實 DOM』= 已驗證本地 DOM 說明 / chart.tsx:6『shadcn-style wrapper over Recharts』= 準確本地結構 / _demo-helpers:119 Linear/Notion/GitHub/Slack 慣例(demo helper 非 production API)。",
+      "reason": "codex 讀錯 — 把準確的本地框架結構描述(含 M2-verified DOM 歸因)誤判為不可追溯外部 claim。低影響且 code 無問題。"
+    },
+    {
+      "idx": 6,
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "onDim": false,
+      "fileLine": "28 story 段 (accordion.principles:68 / app-shell.* / button.anatomy:260 / calendar.principles:133 / command.* / tabs.* / tree-view.* ...)",
+      "codexClaim": "28 個 story 段以外部 benchmark 直接證成 public/internal 邊界/compound anatomy/prop-state 分界/視覺 canonical 但無同段來源。",
+      "groundTruth": "accordion.principles.stories.tsx:68 = Rule note『對齊 Material 3 Expansion panel / Polaris Disclosure 共識』證『何時用』= 標準 story Rule-note 世界級對照做法;story 層 benchmark 註記是 story-writing canonical 常態。無一條實際改動 public/internal 分類或 Layout Family。",
+      "reason": "off-dim(story benchmark citation,非 dim-33 classification/abstraction);story Rule-note 引世界級對照是既有 story 撰寫慣例,要求逐段 inline URL 屬吹毛求疵。非 dim-33 缺陷。"
+    },
+    {
+      "idx": 7,
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "onDim": false,
+      "fileLine": "6 story 段 (aspect-ratio.anatomy:15 / circular-progress.anatomy:173 / date-grid.anatomy:387 / switch.anatomy:26 / textarea.anatomy:130 / motion.stories:22)",
+      "codexClaim": "六個 story 段對上游 passthrough/幾何/motion/readonly/包裝慣例作未附來源外部歸因。",
+      "groundTruth": "同 finding 3/6 類別 — anatomy/motion story 對本地 passthrough/幾何/包裝慣例的敘述性註記,codex 自標 marginal(低影響)。",
+      "reason": "off-dim + 低影響 story 敘述性歸因。與 dim-33 分類/抽象判準無關,pedantic。"
+    }
+  ],
+  "claudeFindingsCrossCheck": {
+    "claudeMaterialOrMarginal": [
+      {
+        "fileLine": ".claude/rules/ui-development.md:31",
+        "severity": "marginal",
+        "note": "『現行 11 個 internal 單元』hardcode count drift(實際 grep isInternal 為 10);分類本身乾淨(barrel generator 機械一致、0 leak)。codex 完全沒抓到此條(codex 全跑 benchmark-citation 議題)。此為 Claude 獨有的真 marginal,非 codex material。"
+      }
+    ],
+    "claudeCleanAssessment": "分類/抽象/prop-vs-separate 三 sub-dim 實質乾淨:10 internal 元件 frontmatter isInternal↔barrel 排除機械一致(56 public=64-8,0 leak);全 separate component(LinkInput/NumberInput/TimePicker/CircularProgress/Combobox/PeoplePicker...)皆帶 documented rationale;近親分界 reciprocal 文件化。"
+  },
+  "claudeMissedMaterial": 0,
+  "note": "無 codex material 是 Claude 漏抓(claudeMissed=0)。codex 對 dim 33 掃錯維度(跑 M22 benchmark-citation 而非 classification+abstraction),故 0 真 dim-33 material。"
+}

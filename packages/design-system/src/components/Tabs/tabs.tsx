@@ -82,6 +82,25 @@ function getElementRef(element: React.ReactElement): React.Ref<HTMLElement> | un
   )
 }
 
+// 遞迴攤平 Fragment：React.Children.toArray 不展開 <>…</>(把 Fragment 當單一 element),
+// 導致 menu 模式 dropdown 漏掉被 Fragment 包起來的 trigger（如條件渲染的溢出 tabs）+ cloneElement
+// 對 Fragment 傳 ref 會噴 React warning。攤平後每個 keyless child 補 path-index key,對齊
+// React.Children.toArray 的自動 key 行為,避免 list key warning。
+function flattenTabTriggers(children: React.ReactNode, prefix = ''): React.ReactElement[] {
+  const out: React.ReactElement[] = []
+  React.Children.forEach(children, (child, i) => {
+    if (!React.isValidElement(child)) return
+    if (child.type === React.Fragment) {
+      out.push(
+        ...flattenTabTriggers((child.props as { children?: React.ReactNode }).children, `${prefix}${i}.`),
+      )
+    } else {
+      out.push(child.key != null ? child : React.cloneElement(child, { key: `tab-${prefix}${i}` }))
+    }
+  })
+  return out
+}
+
 const Tabs = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Root>,
   TabsProps
@@ -284,8 +303,9 @@ const MenuTabsList = React.forwardRef<
     []
   )
 
+  // Fragment-safe:攤平 <>…</> 讓條件渲染的溢出 tabs 也進 dropdown / ref map(見 flattenTabTriggers）
   const items = React.useMemo(
-    () => React.Children.toArray(children).filter(React.isValidElement) as React.ReactElement[],
+    () => flattenTabTriggers(children),
     [children]
   )
 

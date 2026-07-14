@@ -34,10 +34,10 @@ const statusOptions: SelectMenuOption[] = [
 ]
 
 const reviewerOptions: SelectMenuOption[] = [
-  { value: 'alice', label: 'Ada Chen', avatar: { alt: 'Ada Chen', color: 'indigo' }, description: 'Frontend' },
-  { value: 'bob', label: '張美真', avatar: { alt: '張美真', color: 'magenta' }, description: 'Platform' },
-  { value: 'carol', label: '林伯彥', avatar: { alt: '林伯彥', color: 'green' }, description: 'Infra' },
-  { value: 'dave', label: '黃怡君', avatar: { alt: '黃怡君', color: 'turquoise' }, description: 'QA' },
+  { value: 'alice', label: 'Ada Chen', avatar: { src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }, description: 'Frontend' },
+  { value: 'bob', label: '張美真', avatar: { src: 'https://i.pravatar.cc/48?u=zhang-meizhen', alt: '張美真', color: 'magenta' }, description: 'Platform' },
+  { value: 'carol', label: '林伯彥', avatar: { src: 'https://i.pravatar.cc/48?u=lin-boyan', alt: '林伯彥', color: 'green' }, description: 'Infra' },
+  { value: 'dave', label: '黃怡君', avatar: { src: 'https://i.pravatar.cc/48?u=huang-yijun', alt: '黃怡君', color: 'turquoise' }, description: 'QA' },
 ]
 
 const labelOptions: SelectMenuOption[] = [

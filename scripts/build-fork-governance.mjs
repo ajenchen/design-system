@@ -175,6 +175,17 @@ function buildCorpus() {
     const content = readFileSync(join(HOOKS_DIR, e.hook), 'utf8')
     emit(e.hook, content, e.hook, 'SHIP_AS_IS', eventsOf(e.hook))
   }
+  // 2026-07-08 WM 戰役 R4:_log-fire.sh helper 隨 corpus 附帶(非 hook 註冊,純檔案存在)。
+  // 原本 DROP 未 ship → 14 支 shipped hook 的 `source _log-fire.sh` 靜默失敗(2>/dev/null 吞掉)
+  // = fork 端防線 telemetry 全盲(WM fire log 只有 python hook 一支有紀錄實證)。
+  {
+    const helper = '_log-fire.sh'
+    const helperPath = join(HOOKS_DIR, helper)
+    if (existsSync(helperPath)) {
+      writeFileSync(join(OUT_DIR, 'hooks', helper), readFileSync(helperPath, 'utf8'))
+      // 不進 manifest.hooks(不是 hook,不註冊 event);僅檔案隨行供 source。
+    }
+  }
   for (const e of cls.SHIP_REWRITTEN) {
     const ov = join(OVERRIDE_DIR, e.hook)
     let content

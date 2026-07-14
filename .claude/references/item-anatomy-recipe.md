@@ -204,14 +204,14 @@ const isActive = variant === "meta" ? false : (... 同上)
 
 ```bash
 # 找出可疑的 raw ItemPrefix wrap 用法（應該幾乎沒有）
-rg '<ItemPrefix>\s*<[A-Z]' src/design-system
+rg '<ItemPrefix>\s*<[A-Z]' packages/design-system/src
 
 # 找出硬寫 size 的 Avatar / Icon（在 row primitive 內應該為零）
 rg '<Avatar[^>]*size=\{[0-9]+\}' packages/design-system/src/components/{Sidebar,TreeView,SelectMenu,DropdownMenu}
 rg 'size=\{16\}|size=\{20\}|size=\{24\}' packages/design-system/src/components/{Sidebar,TreeView}
 
 # 找出沒走 ItemInlineAction 的 inline action button
-rg "group/action.*relative grid place-content-center" src/design-system
+rg "group/action.*relative grid place-content-center" packages/design-system/src
 ```
 
 任何一條結果非空就是 drift，要修。

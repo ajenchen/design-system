@@ -1,0 +1,121 @@
+{
+ "component": "FileUpload",
+ "claimsVerified": 238,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.tsx:15",
+   "宣稱": "上傳後的檔案清單顯示交給 consumer 用 FileItem 渲染。",
+   "真實code行為": "`files` 有值時，FileUpload 自己 map 並渲染 `<FileItem>` 清單；consumer 自組只是另一條合法路徑。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.spec.md:25",
+   "宣稱": "不負責「已上傳檔案清單顯示」（那是 `FileItem` 的職責）。",
+   "真實code行為": "FileUpload 透過 `files` prop 內建並渲染 FileItem 清單。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:215",
+   "宣稱": "FileUpload 只負責「拖放偵測 + 觸發選檔」，已上傳檔案清單由 consumer 用 FileItem map 渲染。",
+   "真實code行為": "FileUpload 也能透過 `files` prop 自己組合並顯示 FileItem 清單。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.tsx:90",
+   "宣稱": "傳入 → FileUpload 在 drop zone 下方渲染列表。",
+   "真實code行為": "清單位於 variant conditional 之後；button variant 會把清單渲染在 Button 下方，該分支沒有 drop zone。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.spec.md:111",
+   "宣稱": "傳入 → drop zone 下方渲染列表。",
+   "真實code行為": "`files` 同樣支援 button variant；該分支的清單位於 Button 下方。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx:96",
+   "宣稱": "內建檔案清單。傳入 → drop zone 下方渲染列表。",
+   "真實code行為": "button variant 也渲染該清單，位置是 Button 下方。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.tsx:19",
+   "宣稱": "hover = drag-over — border-primary。",
+   "真實code行為": "hover 與 drag-over 都使用 `border-primary-hover`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx:167",
+   "宣稱": "drag-over border token 為 `--primary`。",
+   "真實code行為": "實際使用 `--primary-hover` 對應的 `border-primary-hover`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx:228",
+   "宣稱": "hover → border 切 `--primary`。",
+   "真實code行為": "hover 切換為 `--primary-hover`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx:233",
+   "宣稱": "drag-over 的 Border TokenCell 為 `--primary`。",
+   "真實code行為": "drag-over border 實際為 `--primary-hover`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx:241",
+   "宣稱": "hover 與 drag-over 只切 `--primary` 邊框。",
+   "真實code行為": "兩者切換的是 `--primary-hover` 邊框。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx:356",
+   "宣稱": "`data-state=\"drag-over\"`（border-primary）。",
+   "真實code行為": "`data-state=\"drag-over\"` 套用 `border-primary-hover`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:93",
+   "宣稱": "drag-over 只用邊框顏色（border-primary）傳達狀態。",
+   "真實code行為": "元件的 drag-over 邊框是 `border-primary-hover`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:97",
+   "宣稱": "✓ 僅改邊框顏色（dashed primary）。",
+   "真實code行為": "正確示範應使用 hover 階的 `border-primary-hover`，不是 base `border-primary`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx:226",
+   "宣稱": "ColorMatrix idle 列將「Icon / text color」標為 `--foreground`。",
+   "真實code行為": "預設 Empty 的 icon/title 是 foreground，但 description 使用 `text-fg-secondary`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx:239",
+   "宣稱": "ColorMatrix drag-over 列將「Icon / text color」標為 `--foreground`。",
+   "真實code行為": "drag-over 不改內容色；icon/title 是 foreground，description 仍是 `fg-secondary`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx:125",
+   "宣稱": "FileUpload 有 3 個狀態：idle / drag-over / disabled。優先序為 disabled > drag-over > idle。",
+   "真實code行為": "runtime 有 idle、drag-over、loading、disabled 四態，優先序為 `disabled > loading > drag-over > idle`；loading 只是未列入 showcase。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.spec.md:138",
+   "宣稱": "dragleave 帶 relatedTarget guard，避免經典 drag-flicker。",
+   "真實code行為": "目前使用 `dragDepth` 深度計數；code 明載 relatedTarget guard 是已被取代的舊做法。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.tsx:301",
+   "宣稱": "內容物（icon + title + description）垂直堆疊由 gap-2 控制。",
+   "真實code行為": "三者位於單一 Empty child 內；內距由 Empty 的 `mb-4` 與 `--item-gap-label-desc-reading-lg` 控制，外層 `gap-2` 無法控制 descendants。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:79",
+   "宣稱": "若仍不符，改用近親元件（見 `Vs*Rule` stories）。",
+   "真實code行為": "本檔沒有任何 `Vs*Rule` export；近親比較已合併進 `UsageGuidance`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.spec.md:110",
+   "宣稱": "`disabled`：完全停用（互動由 `isBlocked` guard 擋）。",
+   "真實code行為": "guard 只阻止 picker/upload activation；dropzone 仍無條件呼叫 consumer `onClick`，files 清單的 remove Buttons 也仍可操作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx:88",
+   "宣稱": "disabled 完全停用；互動由 handler `isBlocked` guard 擋。",
+   "真實code行為": "consumer `onClick` 與清單 `onRemove` 並未被 disabled guard 阻斷。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.anatomy.stories.tsx:427",
+   "宣稱": "disabled 時 drag / click / Enter / Space 全部無反應。",
+   "真實code行為": "檔案選取與上傳會被擋，但 pointer click 仍執行 consumer `onClick`，既有檔案的移除按鈕也保持可用。"
+  }
+ ]
+}

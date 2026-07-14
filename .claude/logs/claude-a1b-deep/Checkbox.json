@@ -1,0 +1,13 @@
+{
+  "component": "Checkbox",
+  "implBasis": "@radix-ui/react-checkbox + cva + SelectionItem/BooleanValueIcon (keyboard delegated to Radix; spec:355 correctly points to Radix docs, no specific keymap overclaim)",
+  "claimsVerified": 48,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:357",
+      "宣稱": "A11y Focus: 『鍵盤聚焦時顯示 visible ring(focus-visible:ring-2 ring-ring ring-offset-1 per design-system focus-visible canonical)』— 泛指整個 Checkbox 控件",
+      "真實code行為": "主 cva(checkbox.tsx:26)確為 `ring-2 ring-ring ring-offset-1`,但 readonly-in-Field 分支(checkbox.tsx:247)的 focus ring 為 `ring-2 ring-ring`(無 ring-offset-1)。A11y 段之 blanket 敘述未涵蓋此 readonly 分支的 offset 缺省",
+      "severity": "marginal"
+    }
+  ]
+}

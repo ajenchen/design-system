@@ -1,0 +1,81 @@
+{
+ "component": "Rating",
+ "claimsVerified": 353,
+ "falseClaims": [
+  {
+   "fileLine": "rating.tsx:42; rating.spec.md:71-73,83; rating.anatomy.stories.tsx:351,384",
+   "宣稱": "Container 高度為 sm=28 / md=32 / lg=36。",
+   "真實code行為": "Rating 使用動態 `h-field-*` token；`data-density/data-ui-size=\"lg\"` 時為 32/36/40px，文件數值只適用預設 md density。"
+  },
+  {
+   "fileLine": "rating.tsx:112; rating.spec.md:56",
+   "宣稱": "無 Field context 時預設 `xs`。",
+   "真實code行為": "`useResolvedFieldSize` 順序為 prop → FieldContext → FieldSurfaceSizeContext → xs；無 Field 但有 surface-size context 時會繼承 sm/md/lg。"
+  },
+  {
+   "fileLine": "rating.tsx:84; rating.spec.md:62,127,183; rating.anatomy.stories.tsx:105,495",
+   "宣稱": "readOnly 時 `aria-label` 必填。",
+   "真實code行為": "真正必要的是 accessible name；Field 內自動使用 `aria-labelledby`，caller 也可傳 `aria-labelledby`。Blanket claim 與 code 及 spec:173 衝突。"
+  },
+  {
+   "fileLine": "rating.spec.md:107",
+   "宣稱": "`aria-invalid` 透過 FieldContext 自動傳入。",
+   "真實code行為": "Rating 未讀 invalid context、未呼叫 invalid resolver、也未自行輸出 `aria-invalid`；只有 consumer 顯式傳入時才由 `...props` 轉發。"
+  },
+  {
+   "fileLine": "rating.spec.md:195; rating.anatomy.stories.tsx:449",
+   "宣稱": "超界 value 的鍵盤增減恆自動 clamp 到 0–max。",
+   "真實code行為": "Right/Up 只做上界 clamp，Left/Down 只做下界 clamp；例如 value=8、max=5 按 Left 會得到 7，仍超界。"
+  },
+  {
+   "fileLine": "rating.tsx:28,262; rating.spec.md:33,116; rating.anatomy.stories.tsx:43; rating.stories.tsx:15; rating.principles.stories.tsx:165",
+   "宣稱": "`precision=\"half\"` 將值量化為半星／左半填色，例如 4.7 以半星呈現。",
+   "真實code行為": "`fillRatio` 未做 0.5 rounding，overlay 寬度直接等於 `sizePx * fillRatio`；4.7 會填第五顆的 70%，不是半星。"
+  },
+  {
+   "fileLine": "rating.spec.md:175; rating.anatomy.stories.tsx:495; rating.principles.stories.tsx:250",
+   "宣稱": "half precision 提供兩個 hover/click 區，讓使用者選十個半星刻度。",
+   "真實code行為": "左右半區只在目前已有 fractional star 時才渲染；`defaultValue={0}` 時所有星皆為單一整星點擊區，滑鼠只能選 1–5。"
+  },
+  {
+   "fileLine": "rating.principles.stories.tsx:50,66; rating.stories.tsx:58,82-84",
+   "宣稱": "Story 實作了 click 送出評分流程。",
+   "真實code行為": "Rating click 只更新 local state；「送出評分」Button 無 `onClick`，也不在 form 中，沒有 submit 行為。"
+  },
+  {
+   "fileLine": "rating.principles.stories.tsx:98,204",
+   "宣稱": "範例示範 `Button + pressed` 的 binary toggle。",
+   "真實code行為": "相鄰 Button 均未傳 `pressed`、無 toggle state 或 handler，實際只是普通 icon button。"
+  },
+  {
+   "fileLine": "rating.principles.stories.tsx:224",
+   "宣稱": "full 模式可選值只有 1 / 2 / 3 / 4 / 5。",
+   "真實code行為": "Slider minimum 是 0；Home 或從 1 按 ArrowLeft/Down 都會產生 0。"
+  },
+  {
+   "fileLine": "rating.spec.md:39,205",
+   "宣稱": "「熱門／Beta／新品」等分類標記應使用 Badge。",
+   "真實code行為": "同元件 principles:181-190 明定並實際渲染 Tag，且說 Badge 僅用於通知計數／紅點；spec 內部漂移。"
+  },
+  {
+   "fileLine": "rating.spec.md:166,208; rating.principles.stories.tsx:283",
+   "宣稱": "Rating 共用 `--warning` 的例外已記錄在 `color.spec.md`。",
+   "真實code行為": "`color.spec.md` 沒有 Rating、黃星或該 evaluation-color 例外段落，也沒有 reciprocal pointer。"
+  },
+  {
+   "fileLine": "rating.principles.stories.tsx:291",
+   "宣稱": "星色硬綁 `--warning`，機械保證 consumer 無法改成品牌色。",
+   "真實code行為": "它只是不受 `color/currentColor` 影響；consumer 可在 ancestor 或 Rating root 覆寫 CSS custom property `--warning`。"
+  },
+  {
+   "fileLine": "rating.anatomy.stories.tsx:257",
+   "宣稱": "Inspector 可即時查看所有 token 與行為。",
+   "真實code行為": "Inspector 只涵蓋 interactive/readOnly/disabled；公開的 loading mode、`aria-busy` 與對應行為完全未納入。"
+  },
+  {
+   "fileLine": "rating.principles.stories.tsx:73",
+   "宣稱": "近親元件判斷可見 `Vs*Rule` stories。",
+   "真實code行為": "本檔只 export `UsageGuidance`、`PrecisionChoice`、`YellowStarConvention`，不存在任何 `Vs*Rule` story。"
+  }
+ ]
+}

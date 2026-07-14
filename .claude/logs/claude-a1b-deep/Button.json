@@ -1,0 +1,13 @@
+{
+  "component": "Button",
+  "implBasis": "shadcn/ui Button + Radix Slot(asChild)+ cva",
+  "claimsVerified": 52,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/Button/button.spec.md:276",
+      "宣稱": "『當 iconOnly 為 true 時，Button 自動以 aria-label 的值渲染 tooltip』— 無條件敘述",
+      "真實code行為": "button.tsx:524 tooltip 只在 `resolvedIconOnly && typeof ariaLabel === 'string' && !asChild` 三條件皆成立才渲染。iconOnly + asChild(docblock:241 另段承認)或缺 aria-label 時不渲染 tooltip；敘述省略了 asChild 例外與 aria-label 前提",
+      "severity": "marginal"
+    }
+  ]
+}

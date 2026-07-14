@@ -131,13 +131,9 @@ type Story = StoryObj
 // Anatomy 是 type-system structural canonical home(用 Product col helper 對齊其他 anatomy 範例);
 // 本 showcase 版用 custom `TypeDemo` interface,不對齊 anatomy 通用 type → noise。Retire showcase 版,anatomy 保留。
 
-/* ── 數字靠右對齊 ── */
-export const NumberAlignment: Story = {
-  name: '數字靠右對齊',
-  render: () => (
-    <DataTable columns={columnsWithPrice} data={sampleData} height="auto" />
-  ),
-}
+// Retired 2026-07-14 audit Dim 24:`NumberAlignment` 跟 anatomy.stories.tsx AlignmentRule 重複
+// (同「數字/金額靠右、文字靠左」規則,anatomy 版含完整 rationale Desc + column type 對照)。
+// Alignment 規則 canonical home = anatomy `AlignmentRule`;showcase 版無額外內容 → retire(earn-existence 2-test 雙 NO)。
 
 /* ── Column resize(2026-05-06 v11):table 層級開關 + handle hover 變色 ── */
 export const ColumnResize: Story = {
@@ -209,11 +205,11 @@ export const ColumnReorder: Story = {
     return (
       <div className="flex flex-col gap-3 max-w-5xl">
         <p className="text-caption text-fg-muted">
-          enableColumnReorder=true:hover header → grab cursor;拖曳期間 DragOverlay portal 顯示 ghost,
-          target column 邊緣顯 drop indicator(before/after 由 cursor 位置判定)。
+          開啟欄位重排(enableColumnReorder)後,拖住欄標題即可移動整欄:拖曳中欄位以半透明
+          浮影跟著游標,目標欄的左或右邊緣會出現落點提示線(依游標位置判定放在前或後)。
           <br />
-          - <strong>SKU 鎖定</strong>(<code>meta.locked=true</code>):無 grab cursor、被拖過不顯 drop
-          indicator(Notion primary column pattern)
+          - <strong>SKU 鎖定</strong>(<code>meta.locked=true</code>):不可拖曳,也不會成為落點
+          (對照 Notion 的主欄固定做法)
           <br />
           - System columns(__select__)永遠鎖
           <br />
@@ -830,8 +826,11 @@ export const NestedRows: Story = {
     )
     return (
       <div>
+        {/* 實作:forward TanStack getSubRows;縮排共用 --tree-indent-{sm,md,lg} token(跨 TreeView
+            設計語言);chevron click stopPropagation 不觸發 row select。 */}
         <p className="text-caption text-fg-muted mb-3">
-          forward TanStack <code>getSubRows</code> + 共用 token <code>--tree-indent-{'{sm,md,lg}'}</code>(跨 TreeView 設計語言)。Click chevron 展/收;chevron click stopPropagation 不 fire row select。
+          樹狀表格:點列首的三角形展開 / 收合子任務,子任務逐層縮排(與 TreeView 同一套縮排節奏);
+          點三角形只切換展開,不會順帶選取整列。
         </p>
         <DataTable
           columns={taskColumns}
@@ -1071,7 +1070,6 @@ export const WithBulkActions: Story = {
             selectable
             selection={selection}
             onSelectionChange={setSelection}
-            totalCount={TOTAL}
             columnVisibility={columnVisibility}
             onColumnVisibilityChange={setColumnVisibility}
             getRowId={(row) => row.sku}
@@ -1468,8 +1466,8 @@ export const RowDragInteractive: Story = {
       <div className="flex flex-col gap-3 max-w-3xl">
         <p className="text-caption text-fg-muted">
           handle 浮在 row 左緣（不佔 column 空間，Jira 設計準則）。pinned-left（SKU）+ pinned-right（Updated）+
-          center 中段欄。拖曳時 source 列留在原位（壓住視覺），2px 主色 drop indicator 跨三個 region
-          同步標示落點（per-region <code>useDraggable</code> / <code>useDroppable</code>，不 auto-shift）。
+          center 中段欄。拖曳時 source 列留在原位（半透明壓住視覺），2px 主色落點提示線在左固定欄、
+          中段、右固定欄三區同步標出，其他列不會先行讓位。
         </p>
         <DataTable
           columns={columnsWithPrice}
@@ -1515,9 +1513,10 @@ export const RowDragWithVirtualization: Story = {
     }
     return (
       <div className="flex flex-col gap-3 max-w-3xl">
+        {/* 實作(v3):enableRowDrag 自動拉高 overscan ≥ 5;drag 期間 freeze measureElement;
+            snapToCursorModifier 讓 ghost 對齊游標(不鎖軸)— 三者合修「拖曳 + 捲動錯位」。 */}
         <p className="text-caption text-fg-muted">
-          200 列 + 虛擬捲動。v3 修正:enableRowDrag 自動拉高 overscan ≥ 5、drag 期間 freeze
-          measureElement、snapToCursorModifier ghost 對齊游標（不鎖軸）— 拖曳 + 持續往下捲不再錯位。
+          200 列 + 虛擬捲動:拖住一列往下捲動,浮影一路跟著游標,落點在長清單任何位置都能正確對齊。
         </p>
         <DataTable
           columns={baseColumns}

@@ -1,0 +1,146 @@
+{
+ "component": "FileItem",
+ "claimsVerified": 386,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.tsx:24",
+   "宣稱": "「有 bar → justify-between（bar 底部對齊 avatar）」",
+   "真實code行為": "只在內容總高不超過 48px 時對齊；多行 description 會撐高 content column，使 bar 落到 avatar 下方。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.tsx:25",
+   "宣稱": "「無 bar → justify-center（文字垂直置中對齊 avatar）」",
+   "真實code行為": "多行內容高於 48px 時沒有可供 justify-center 分配的空間；column 自然增高且 row 為 items-start，不再與 avatar 中心對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.tsx:115",
+   "宣稱": "「rich = border card」是永久 visual anchor。",
+   "真實code行為": "rich + surface=\"upload-manager\" 只套 rounded-md，沒有 border 或 background；其 anchor 是 Avatar。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.tsx:222",
+   "宣稱": "「FileItem row 含 inner interactive（hover-swap action button / ProgressBar / Avatar hoverCard trigger）」",
+   "真實code行為": "ProgressBar 是不可聚焦的被動指示器；FileItem 未傳 Avatar hoverCard，Avatar 亦不可聚焦。只有 optional actions/onDownload/onRetry 才會產生按鈕。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.tsx:226",
+   "宣稱": "「鍵盤 user 直接 tab 到 inner primary action」",
+   "真實code行為": "actions、onDownload、onRetry 皆為 optional；onClick-only FileItem 沒有任何鍵盤啟動路徑，inner action 也不保證等價於 row onClick。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.tsx:240",
+   "宣稱": "「rich…canonical：加邊框 + gap-2」",
+   "真實code行為": "只有 surface=\"form\" 加 border/background；upload-manager rich 明確走無邊框、無背景分支。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.spec.md:22",
+   "宣稱": "「結構繼承…List item layout 章節的 reading-mode 規格」",
+   "真實code行為": "FileItem 固定傳 ItemContent mode=\"scanning\"；同 spec 後文也明定 compact、rich 都採 scanning。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.spec.md:75",
+   "宣稱": "「Content ↔ ProgressBar gap：gap-2（8px），兩 mode 一致」",
+   "真實code行為": "只有 rich content column 使用 gap-2；compact 是 py-2 加 absolute bottom-0 的 2px track，content line-box 到 track 的淨距為 6px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.spec.md:110",
+   "宣稱": "「無 progress bar 時…content 垂直置中對齊 avatar 中心」",
+   "真實code行為": "只適用內容不高於 48px；多行內容會使 column 高於 avatar，無法保持中心對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.spec.md:117",
+   "宣稱": "「consumer 移除 border 並 0 gap 相連」",
+   "真實code行為": "同一 spec 的現行 List wrapper canonical 明定 rich upload-manager 使用 --layout-space-tight（預設 12px），不是 0 gap。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.spec.md:153",
+   "宣稱": "「rich：border + rounded-md + bg-surface 永遠 card」",
+   "真實code行為": "rich + surface=\"upload-manager\" 是合法且已實作的無邊框、無背景模式。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.spec.md:176",
+   "宣稱": "「Rich mode 無邊框」是反例。",
+   "真實code行為": "公開 surface=\"upload-manager\" API 正是合法的 rich 無邊框模式。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.spec.md:345",
+   "宣稱": "「ProgressBar 公開 API 固定 4px；height 是 internal-only 逃生艙」",
+   "真實code行為": "公開匯出的 ProgressBarProps 含 height?: number，root barrel 亦公開 re-export，任何 consumer 都能設定任意高度。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.spec.md:372",
+   "宣稱": "「Button variant=\"text\" 預設 icon 已是 fg-muted → foreground」",
+   "真實code行為": "Button text variant 實際為 text-foreground，hover 只增加 neutral-hover 背景；只有 dismiss 才套 fg-muted → foreground。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.spec.md:423",
+   "宣稱": "「Download / retry / remove 的 aria-label 必須帶檔名；單純『下載』不足」",
+   "真實code行為": "內建 onDownload/onRetry buttons 硬編碼 aria-label=\"下載\"／\"重試\"，沒有檔名、locale 或 label override prop。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.spec.md:425",
+   "宣稱": "「keyboard user 直接 Tab 到列內 explicit 操作按鈕取得等價能力」",
+   "真實code行為": "操作按鈕可不存在或具有不同語意；onClick-only row 完全沒有等價鍵盤操作，spec 後文亦承認整列 Enter 開啟尚未解決。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.spec.md:426",
+   "宣稱": "「uploading / error 狀態由 progressbar role 與 description 文字本身傳達」",
+   "真實code行為": "Radix progressbar 只暴露數值百分比，FileItem 的 aria-label 也只有「檔名 上傳進度」；error 未進入 ARIA，description 又是 optional，因此錯誤語意可能完全未傳達。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.anatomy.stories.tsx:22",
+   "宣稱": "「基於 item-layout pattern」",
+   "真實code行為": "實作消費的是 patterns/element-anatomy/item-anatomy 的 ItemContent、ItemPrefix；item-layout 是 stale 名稱。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.anatomy.stories.tsx:244",
+   "宣稱": "「rich…bar 底部對齊 avatar」",
+   "真實code行為": "只在內容總高不超過 48px 時成立；多行 description 會讓 bar 低於 avatar。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.anatomy.stories.tsx:335",
+   "宣稱": "「下載 / 重試 / 移除等列內操作，consumer 必須傳語音標籤並帶上檔名」",
+   "真實code行為": "內建 onDownload/onRetry action 無法覆寫 label，只產生「下載」／「重試」；本 anatomy 自身也使用不帶檔名的泛稱標籤。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.anatomy.stories.tsx:340",
+   "宣稱": "「鍵盤使用者直接 Tab 到列內的操作按鈕」",
+   "真實code行為": "操作按鈕是 optional；合法的 onClick-only FileItem 沒有可 Tab 的子操作或 row keyboard handler。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:70",
+   "宣稱": "「FileItem 只用上傳流程」",
+   "真實code行為": "status 可省略形成已上傳靜態附件，並可透過 onClick 預覽或下載；同檔與 spec 也展示靜態附件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:104",
+   "宣稱": "「Avatar 48px square 顯示縮圖或檔案類型 icon」",
+   "真實code行為": "FileItem 未傳 Avatar icon；無縮圖或載入失敗時，因 alt={name} 而顯示檔名首字 fallback。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:178",
+   "宣稱": "「檔案變可點擊（下載）」",
+   "真實code行為": "該 completed story 未傳 onClick、onDownload 或 actions，實際不可點擊或下載。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:190",
+   "宣稱": "「error…可重試」",
+   "真實code行為": "對應 Retry Button 未傳 onClick，亦未使用 onRetry，實際沒有重試行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:224",
+   "宣稱": "「上傳進行中使用者應該可以取消」",
+   "真實code行為": "對應 Cancel Button 未傳 onClick，實際無法取消。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:238",
+   "宣稱": "「失敗時使用者需要兩個選項——重試…或移除」",
+   "真實code行為": "對應 Retry、Remove Buttons 均未傳 onClick，兩個動作皆為 inert。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:256",
+   "宣稱": "「完成後使用者可以下載或查看」",
+   "真實code行為": "對應 Download Button 未傳 onClick，FileItem 也未傳 onDownload/onClick，實際無法下載或查看。"
+  }
+ ]
+}

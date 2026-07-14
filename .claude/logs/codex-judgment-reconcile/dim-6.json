@@ -1,0 +1,146 @@
+{
+  "dim": 6,
+  "title": "Spec Rule A 文字品質(視覺形狀/實作細節 · 術語一致 · 禁止事項完整)",
+  "role": "B.3 比稿裁定員 — 逐條裁定 codex dim-6 findings 對照真實 code + Claude 同 dim findings",
+  "codexRaw": 14,
+  "tally": {
+    "material_confirmed": 4,
+    "marginal": 9,
+    "false_positive": 1,
+    "claudeMissed": 4
+  },
+  "verdicts": [
+    {
+      "codexIndex": 1,
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": "partial (Claude finding #5 = Steps box-shadow/zero-layout-impact, flagged marginal)",
+      "fileLine": "item-anatomy.spec.md:79-146; overlay-surface.spec.md:27-34; data-table.spec.md:157; file-viewer.spec.md:79,164; sidebar.spec.md:131; color.spec.md:112; uiSize.spec.md:218-269",
+      "問題(codex)": "82/86 spec 混入 raw px/JSX/Tailwind selector/DOM/演算法 → 實作 cookbook",
+      "裁定理由": "去 code 驗證:絕大多數 cited 行是合法內容 — item-anatomy 的 <div className='flex py-3'> 是 ❌反例教學 + grep 自檢工具;overlay-surface class 是 structural pattern SSOT 契約;data-table 'Button ... size=xs' 是 cva 引用(codex 自己排除 cva literal);uiSize/radius 的 h-16 vs h-[var] 是 token 反例表;color.spec/uiSize decision tree 是 token 本體主題;file-viewer FileRenderer 是 extension interface 契約。DS canonical(spec-rules:20)Rule A 針對『視覺形狀描述(窄長形/會變寬/zero layout shift)』,非『pattern/token SSOT 內任何 class』。真正散落的 impl-leakage(Steps box-shadow literal + 'zero layout impact' 措辭)Claude 已抓為 marginal。→ 現象零星存在但 material+82/86 systematic-cookbook 框架過度、多為 documented exception。"
+    },
+    {
+      "codexIndex": 2,
+      "codexSeverity": "material",
+      "verdict": "false_positive",
+      "claudeAlsoCaught": "no",
+      "fileLine": "description-list.spec.md:141; action-bar.spec.md:109,199; field.spec.md:299; form-validation.spec.md:39; popover.spec.md:34; slider.spec.md:98-115; radius.spec.md:25-52; uiSize.spec.md:204",
+      "問題(codex)": "『黏在一起/漂在半空/歪七扭八/碎念/貼死/凹槽/崩潰』視覺物理隱喻命中 Rule A",
+      "裁定理由": "驗證後這些全是設計理由(rationale)用可感知隱喻解釋『為什麼』— description-list '黏在一起無呼吸' 在 Gestalt proximity canonical 段;action-bar '漂在半空' 解釋對齊決策;field '歪七扭八' 解釋 label 共寬;form-validation '碎念' 解釋不 onChange 重驗的 UX;popover '貼死' 解釋 sideOffset。這正是世界級 DS(Polaris/Material rationale 段)要的 perceptual 'why',不是把視覺形狀當契約規範。radius 描述形狀=token 本體主題。codex 誤把 Rule A(禁『用視覺形狀取代行為契約』)套到合法 rationale 隱喻。"
+    },
+    {
+      "codexIndex": 3,
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": "no",
+      "fileLine": "app-shell.spec.md:42,321; calendar.spec.md:205; data-table.spec.md:451; filter-operators.spec.md:10; field-controls.spec.md:404; file-viewer.spec.md:348; hover-card.spec.md:112; profile-card.spec.md:142; select.spec.md:293; sidebar.spec.md:635; steps.spec.md:410; motion.spec.md:107; opacity.spec.md:57",
+      "問題(codex)": "59 spec 禁止段未收編核心誤用;部分檔案無集中禁止段",
+      "裁定理由": "『禁止事項列所有常見誤用』確為 spec-rules:20 真規則。但 codex 未 cite 任一 SPECIFIC 缺漏誤用,cited 錨點多是健康的 ## 禁止事項 / Consumer 紀律段(calendar:205/data-table:451/field-controls:404 皆是完整 ❌ bullet 段);motion/opacity 是 token spec,依 DS 慣例(taxonomy/token doc)合法豁免集中禁止段。→ 完整性原則有效但此 finding 非-actionable(無 demonstrated gap)、部分前提(每 spec 都需集中禁止段)牴觸 documented 豁免。marginal。"
+    },
+    {
+      "codexIndex": 4,
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": "yes (Claude finding #1, 同 3 檔)",
+      "fileLine": "circular-progress.spec.md:204; slider.spec.md:243; steps.spec.md:401",
+      "問題(codex)": "英文 ## Do / Don't 章節偏離全庫繁中『禁止事項』canonical",
+      "裁定理由": "3 檔驗證屬實(:204/:243/:401 皆為 '## Do / Don't')。違 naming-conventions『❌ 自創 spec 章節標題格式』。真但 marginal(章節標題一致性)。Claude 完全 overlap。"
+    },
+    {
+      "codexIndex": 5,
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": "yes (Claude finding #2)",
+      "fileLine": "carousel.spec.md:49; chip.spec.md:148-177; data-table.spec.md:22,433; select-menu.spec.md:182; tabs.spec.md:141-146; pagination.spec.md:45,55",
+      "問題(codex)": "捲動/滾動 混用(Carousel/Chip/DataTable/SelectMenu/Tabs 單檔內交替)",
+      "裁定理由": "真術語漂移(DS 主流『捲動』)。Claude overlap;codex 多列 Pagination/DataTable:22 亦屬實。marginal。"
+    },
+    {
+      "codexIndex": 6,
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": "yes (Claude finding #3)",
+      "fileLine": "resize-handle.spec.md:41,78; file-upload.spec.md:25,96",
+      "問題(codex)": "拖曳/拖拉 單檔內混用",
+      "裁定理由": "真術語漂移(aria-label 及多數 canonical 用『拖曳』)。Claude overlap。marginal。"
+    },
+    {
+      "codexIndex": 7,
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": "yes (Claude finding #4)",
+      "fileLine": "alert.spec.md:183",
+      "問題(codex)": "同段對 disabled 混用『停用/禁用』",
+      "裁定理由": "真(:183 同段 '停用'×2 + '不該被禁用')。Claude overlap。marginal。"
+    },
+    {
+      "codexIndex": 8,
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": "no",
+      "fileLine": "layoutSpace.spec.md:12; sidebar.spec.md:701; scroll-area.spec.md:19; file-upload.spec.md:139; combobox.spec.md:179",
+      "問題(codex)": "離群繁中詞 交互/用戶/反饋/導航/控制項 vs 主流 互動/使用者/回饋/導覽/控件",
+      "裁定理由": "DS-wide 計數驗證主流壓倒:互動74:交互6 / 使用者62:用戶4 / 回饋13:反饋3 / 控件28:控制項2。cited 行屬實(layoutSpace:12'交互'、sidebar:701'用戶'、scroll-area:19'反饋'、file-upload:139'導航'、combobox:179'控制項')。真術語漂移但 marginal(同 finding 5-7 class,Claude 只是沒掃這組詞)。marginal。"
+    },
+    {
+      "codexIndex": 9,
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": "no",
+      "fileLine": "dropdown-menu.spec.md:35; field-control-group.spec.md:90; link-input.spec.md:111; people-picker.spec.md:115; elevation.spec.md:45; uiSize.spec.md:3",
+      "問題(codex)": "非 canonical 別名 ToolBar/FCG/display link-chip/+N chip/Dropdown/UiSize",
+      "裁定理由": "混合:真的最小 casing 漂移 — dropdown-menu:35 'ToolBar'(應 Toolbar)、elevation:45 'Dropdown'(應 DropdownMenu)。較弱/描述性(非明確別名誤用)— link-input:111 'display link-chip'、people-picker:115 '+N 溢出 chip'(在描述 PeoplePicker 自有圓形 chip 形狀,非誤指 OverflowIndicator)、field-control-group:90 'FCG'(self-abbrev)、uiSize:3 'UiSize'(camelCase token PascalCased,stylistic)。net marginal — 含真 casing nit 但多屬 stylistic。"
+    },
+    {
+      "codexIndex": 10,
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": "no (Claude MISSED)",
+      "fileLine": "hover-card.spec.md:22; menu-item.spec.md:227; notice.spec.md:92; overflow-indicator.spec.md:26",
+      "問題(codex)": "4 spec 把 internal 寫成 consumer 絕對不可 import,與 canonical『root barrel 排除但可經 subpath+wrapper 消費』不一致",
+      "裁定理由": "codex 宣稱的 canonical 真實存在且權威:ui-development.md:20(2026-06-05 user Q2 拍板,2026-07-10 refined)明文『internal ≠ 禁用:consumer 可經 per-component subpath 另外包裝+自行確認後消費』+『isInternal = 需 subpath+包裝後才用(如 MenuItem 之於 nav row),非禁止 consumer 使用』,且該處明列此絕對措辭『曾誤導判定 MenuItem consumer 不可用』。menu-item:227 恰用『MenuItem 是 internal primitive——不直接使用』= 被點名的過時絕對框架;notice:92/overflow-indicator:26 同。真跨元件 spec-vs-SSOT 漂移。Claude 未抓。"
+    },
+    {
+      "codexIndex": 11,
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": "no (Claude MISSED)",
+      "fileLine": "selection-item.spec.md:18,35",
+      "問題(codex)": "H1/frontmatter/實際 primitive 皆 SelectionItem,正文卻稱 SelectionControl 為 internal primitive;後者只是概念資料夾名",
+      "裁定理由": "line 18 blockquote 明文『SelectionControl/ 是概念群組名稱...其內包含主要 primitive selection-item.tsx』;frontmatter component: SelectionItem;H1 # SelectionItem。但 line 35『SelectionControl 是 internal primitive——不直接使用』= 把資料夾名誤稱 primitive,與同檔 line 18 自相矛盾。真 canonical 術語自相矛盾(讀者會混淆 primitive 到底是哪個)。Claude 未抓。"
+    },
+    {
+      "codexIndex": 12,
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": "no (Claude MISSED)",
+      "fileLine": "inline-edit.spec.md:3,16",
+      "問題(codex)": "frontmatter family:4 vs 正文『Layout Family: composite』自相矛盾",
+      "裁定理由": "frontmatter:3 'family: 4';body:16 '**Layout Family**:composite。edit 態委派 Family 4';read 態為 self-contained 純文字。DS 慣例驗證:~30 spec 用 'family: composite' 作 frontmatter 值(DataTable/AppShell/FileViewer 等)— composite 是既有合法 frontmatter enum。InlineEdit frontmatter 應改 composite 對齊 body + DS 慣例。真 frontmatter-vs-body 分類矛盾(registry/tooling 依 frontmatter 分類)。Claude 未抓。"
+    },
+    {
+      "codexIndex": 13,
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": "no (Claude MISSED)",
+      "fileLine": "overflow-indicator.spec.md:122-125 (kernel); hover-card.spec.md:24,56,122,144-154 (context)",
+      "問題(codex)": "HoverCard 宣稱內容可互動但 Radix content tabindex=-1 鍵盤不可達;OverflowIndicator 仍承諾互動內容 + role=button",
+      "裁定理由": "HoverCard 內部其實 self-consistent(定位=滑鼠互動 surface + line 122/144 明文告知鍵盤限制 + 『關鍵互動勿放 HoverCard,需鍵盤用 Popover』)— 此半非矛盾。但 OverflowIndicator 部分是真漂移:overflow-indicator:122 trigger 用 role='button' + aria-haspopup='dialog',直接違 HoverCard A11y canonical(:144 明文 2026-07-06 拆除 trigger 的 role/aria-haspopup,理由『無 activation 行為的 role = 對 AT 空承諾』);且『HoverCard 內可互動內容由各自元件負責 focus 管理』暗示鍵盤可達,與 Radix tabindex=-1 事實牴觸;aria-haspopup='dialog' 假承諾鍵盤可操作 dialog(HoverCard 非 modal 不 trap、content 不可 Tab)。真 a11y 假 ARIA 承諾 + 跨元件 canonical 漂移。Claude 未抓。"
+    },
+    {
+      "codexIndex": 14,
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": "no",
+      "fileLine": "file-upload.spec.md:25,84,111,118-123",
+      "問題(codex)": "定位稱不負責已上傳清單,後文卻定義 files/fileListMode 由 FileUpload 組裝 FileItem 清單,職責衝突",
+      "裁定理由": "真存在措辭張力:定位:25『不負責已上傳檔案清單顯示(那是 FileItem 職責)』vs :111『傳入 files → drop zone 下方渲染列表... FileUpload 只負責渲染』。但同檔禁止事項:118-123 已明文 reconcile:『FileUpload 若內建 list 必 consume 既有 FileItem 不 replicate;禁止的是自己重畫 FileItem 視覺規格,不是內建 list 本身』+ 2026-04-24 canonical(Material/Ant/Carbon 皆 FileUpload own list)。→ 定位行措辭不精確(應為『不 own 單筆 FileItem 視覺,但可 orchestrate 內建清單』),但已在禁止事項 documented/reconciled,屬 wording-precision nit 非未解矛盾。marginal。"
+    }
+  ],
+  "topMaterial": [
+    "InlineEdit frontmatter `family: 4` 與正文『Layout Family: composite』矛盾;DS 約定用 `family: composite`(~30 spec)— frontmatter 應改 composite (inline-edit.spec.md:3,16)",
+    "SelectionItem spec:35 稱『SelectionControl 是 internal primitive』與同檔:18/H1/frontmatter(SelectionControl 僅資料夾概念名、primitive 實為 SelectionItem)自相矛盾 (selection-item.spec.md:18,35)",
+    "OverflowIndicator trigger role='button'+aria-haspopup='dialog' + 承諾卡內互動內容鍵盤可達,違 HoverCard 2026-07-06 A11y canonical(拆除 role/aria-haspopup=對 AT 空承諾;Radix content tabindex=-1 鍵盤不可達) (overflow-indicator.spec.md:122-125)",
+    "4 spec(HoverCard/MenuItem/Notice/OverflowIndicator)internal 用『不直接使用』絕對措辭,違 2026-07-10 refined SSOT(ui-development.md:20:internal≠禁用,可經 subpath+wrapper 消費;MenuItem 為明列反例) (menu-item.spec.md:227 等)"
+  ]
+}

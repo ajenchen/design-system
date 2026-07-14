@@ -1,0 +1,91 @@
+{
+ "component": "Checkbox",
+ "claimsVerified": 441,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox-group.tsx:34",
+   "宣稱": "相鄰 row 的 py 相加 = 2×py ≈ 10-12px 真實 row-to-row 視覺呼吸空間。",
+   "真實code行為": "預設 density 下 sm/md/lg 實為 7/11/12px；較大 density 下又會成為 11/15/16px，並非固定約 10–12px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox-group.tsx:44-45",
+   "宣稱": "control area auto items-start + padding-top 公式對齊第一個 item 的 label 第一行。",
+   "真實code行為": "block control area 只有 items-start，且刻意不加 padding-top；公式實際套在 horizontal FieldLabel。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox-group.tsx:91-92",
+   "宣稱": "control area 自動切 items-start + padding-top 公式。",
+   "真實code行為": "control area 無 padding-top；padding-top 屬於 horizontal FieldLabel。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:116",
+   "宣稱": "readonly — 同 readOnly prop:checkbox 視覺保留 + 鎖互動 + a11y readonly signal。",
+   "真實code行為": "只有 standalone readonly 保留 Checkbox chrome；Field 內且無 inline label 時會改渲染 readonly 灰框與 Check/X。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:195-198",
+   "宣稱": "display / readonly-in-Field 分支已轉發 id/data-*/aria-* 與 ref。",
+   "真實code行為": "data-*、aria-*、ref 會轉發，但 id 已先解構成 idProp，沒有進 restDomProps，也未補到兩個早退分支。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:31",
+   "宣稱": "Checkbox 和 Radio 視覺語言完全一致，差異只有形狀和語意。",
+   "真實code行為": "checked Checkbox 使用 primary 實心底與 on-emphasis Check；checked Radio 維持 surface 底，只改 primary border/text 並顯示 dot，視覺狀態模型不只形狀不同。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:229",
+   "宣稱": "Checkbox 本身不會自動進入 indeterminate——必須明確傳入 checked=\"indeterminate\"。",
+   "真實code行為": "繼承的 Radix API 也接受 defaultChecked=\"indeterminate\"，會進入 uncontrolled mixed state；但 wrapper 只檢查 props.checked，因而錯畫 Check 而非 Minus。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:250",
+   "宣稱": "Uncontrolled:只傳 defaultChecked，DOM 自管。",
+   "真實code行為": "Radix 以 React useControllableState 管理狀態；互動本體是 button[role=\"checkbox\"]，隱藏的 native checkbox 只鏡射狀態供 form bubbling/submission。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:252",
+   "宣稱": "Field 內（無 inline label）改渲染 readonly 灰框 + ✓/—。",
+   "真實code行為": "該分支使用 BooleanValueIcon，true 顯示 Check、false 顯示 X；dash 已被移除。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:310",
+   "宣稱": "CheckboxGroup 在 horizontal Field 內使 control area 自動切 items-start + padding-top。",
+   "真實code行為": "control area 僅套 items-start；padding-top 公式套在 FieldLabel。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:162",
+   "宣稱": "Checkbox 本身不內建 label。",
+   "真實code行為": "公開 CheckboxProps 內建 label/description props；傳入 label 後，Checkbox 自身會自動以 SelectionItem 包裝並渲染內容。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:180",
+   "宣稱": "搭配 SelectionItem 的兩個 anatomy 區塊都標為 control（Checkbox）。",
+   "真實code行為": "實際只有一個 Checkbox control，另一區是 label/content；目前 story 也因此產生重複 React key。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:216",
+   "宣稱": "defaultChecked type = boolean。",
+   "真實code行為": "實際繼承型別是 boolean | \"indeterminate\"。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:221",
+   "宣稱": "value type = string。",
+   "真實code行為": "實際公開型別為 string | number | readonly string[]。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:221",
+   "宣稱": "value default = —。",
+   "真實code行為": "Radix CheckboxProvider 的實際預設值是 \"on\"，並傳給隱藏的 form input。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:330-332",
+   "宣稱": "藍圖將控件與 12/16px Check Icon 畫成左右相鄰的兩個區塊。",
+   "真實code行為": "Indicator 與 Check/Minus 是 Root 內部置中的巢狀內容；整個 control 總尺寸只有 16px 或 20px，icon 不是額外的水平 sibling。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.principles.stories.tsx:150",
+   "宣稱": "必須有 default value（radio 的語意不允許「都沒選」）。",
+   "真實code行為": "RadioGroup 的 value/defaultValue 都是 optional；未傳 defaultValue 時可從無選取狀態開始。"
+  }
+ ]
+}

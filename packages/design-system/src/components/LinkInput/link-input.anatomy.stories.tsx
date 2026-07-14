@@ -257,7 +257,7 @@ export const Overview = {
             <tbody>
               {[
                 ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'FieldMode 四模式'],
-                ['variant', "'default' | 'bare' | 'naked'", "'default'", 'Field chrome variant（bare：toolbar / cell-as-input 透明 chrome）'],
+                ['variant', "'default'", "'default'", 'Field chrome variant（naked：cell-as-input 透明 chrome，@internal，2026-07-14 型別收窄至 FieldVariantInternal）'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '尺寸，與 Button 共用 token'],
                 ['error', 'boolean', 'false', '錯誤狀態，紅色邊框 + aria-invalid'],
                 ['value', 'string | null', '—', 'URL 值'],

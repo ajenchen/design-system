@@ -28,7 +28,7 @@ benchmark:
 | **Tailwind `@theme inline` bridge** | `--spacing-field-md` → `h-field-md` class | Tailwind 在 build time 從 bridge 讀值轉 utility class,無 `var()` 語法 |
 | **`@utility` definition** | `@utility tracking-shortcut { letter-spacing: var(--tracking-shortcut) }` | 是定義,不是消費點 |
 | **Class-name match** | `text-primary-text` 對應 `--primary-text` | 走 Tailwind 命名約定 |
-| **JS literal mirror** | `motion.ts` export `HOVER_DELAY_RICH_MS = 700` 鏡像 `--hover-delay-rich` | JS 端 hardcode 數字 + import constant,不讀 CSS var |
+| **JS literal mirror** | `motion.ts` export `MOTION_DELAY_RICH_MS = 700` 鏡像 `--motion-delay-rich` | JS 端 hardcode 數字 + import constant,不讀 CSS var |
 
 **修法**:`scripts/audit-orphan-tokens.mjs` 用 comprehensive consumer detection 涵蓋 5 條消費路徑,真實 orphan count drops from 175 → 0(2026-05-21 baseline)。
 
@@ -92,11 +92,11 @@ benchmark:
 
 ### 8. JS literal mirror(3 token,structural)
 
-**Rule**:`--hover-delay-{plain|rich|close}` motion tokens 鏡像 JS constants(`HOVER_DELAY_PLAIN_MS` / `HOVER_DELAY_RICH_MS` / `HOVER_DELAY_CLOSE_MS`),CSS 端保留供 design SSOT 可見 + 未來 programmatic 讀取(`getComputedStyle`)。
+**Rule**:`--motion-delay-{plain|rich|close}` motion tokens 鏡像 JS constants(`MOTION_DELAY_PLAIN_MS` / `MOTION_DELAY_RICH_MS` / `MOTION_DELAY_CLOSE_MS`),CSS 端保留供 design SSOT 可見 + 未來 programmatic 讀取(`getComputedStyle`)。
 
 **Why**:M17 SSOT 雙頭設計 — CSS 端是設計師 inspector 入口,JS 端是 runtime 消費入口,兩端必同步存在。
 
-**Regex**:`^--hover-delay-(plain|rich|close)$`
+**Regex**:`^--motion-delay-(plain|rich|close)$`
 
 ---
 
@@ -118,7 +118,7 @@ benchmark:
 ## Audit chain
 
 - **Dim 48**(= `design-system-audit/SKILL.md` 的「Unused / orphan token detector」audit 維度)— chain 本 spec + `audit-orphan-tokens.mjs --check`(not raw `grep var()`)
-- **CI**:`npm run audit:tokens`(future add to `package.json` scripts)— `node scripts/audit-orphan-tokens.mjs --check` fail = real orphan 出現
+- **CI**:`release.yml` deterministic-gates step + `scripts/release-preflight.mjs` 直呼 `node scripts/audit-orphan-tokens.mjs --check` — fail = real orphan 出現
 - **Hook**:無 hook(本 audit run-time / monthly cadence,非 PreToolUse 攔截場景)
 
 ## 永久解決承諾

@@ -147,7 +147,7 @@ export const UsageGuidance: Story = {
 
         <Rule
           title="Radio — 互斥單選（必須在 RadioGroup 內）"
-          note="N 個選項中只能選一個，其他自動變 unchecked。必須有 default value（radio 的語意不允許「都沒選」）"
+          note="N 個選項中只能選一個，其他自動變 unchecked。通常可預選常用項；需要使用者主動表態（如付款方式）時可從未選開始（radio-group.spec.md：value=null 為合法初始態），配 required 驗證兜底"
         >
           <RadioGroup value={selected} onValueChange={setSelected}>
             <RadioGroupItem value="credit" label="信用卡" description="手續費 2.5%，即時" />

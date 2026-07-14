@@ -2,9 +2,9 @@ import * as React from 'react'
 import { Pencil } from 'lucide-react'
 import type { VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
-import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
-import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
+import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
+import { fieldWrapperStyles, bareInputStyles, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 // ── URL Validation ──────────────────────────────────────────────────────────
@@ -52,12 +52,12 @@ export interface LinkInputProps
   // defaultValue」宣稱的型別面機械封鎖 — 原本仍在型別 surface 且經 {...props} spread 到已
   // controlled 的 input(React dev warning)。
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'value' | 'defaultValue' | 'onChange'>,
-    Omit<VariantProps<typeof fieldWrapperStyles>, 'mode' | 'variant'> {
+    Omit<VariantProps<typeof fieldWrapperStyles>, 'mode' | 'variant' | 'width'> {
   mode?: FieldMode
   /**
    * Visual chrome(2026-05-05 Phase B3)。對齊 FieldContext.variant 透傳。
    * - `'default'`(預設)— Field wrapper 完整 chrome(form / Field 內嵌)。
-   * - `'bare'` — 透明 variant,hover/focus 才現 border(Toolbar inline edit / DataTable cell-as-input)。
+   * (2026-07-09 `bare` variant 退役;naked = cell-as-input substrate,@internal)
    *
    * mode='display' 時 chrome 無視覺意義(display 完全無 wrapper);chrome 僅作用於 edit / readonly / disabled。
    */
@@ -109,9 +109,10 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // 2026-06-08 SSOT:mode 經 useResolvedFieldMode 統一解析(prop > 有效 disabled > fieldCtx.mode > readOnly > 'edit')。
     // spec field-controls.spec.md L125「readOnly 原生屬性自動覆蓋 mode」契約落地。
     const resolvedMode: FieldMode = useResolvedFieldMode({ mode: modeProp, disabled, readOnly })
+    const emptyDisplay = useFieldEmptyDisplay()
     const isEditable = resolvedMode === 'edit'
     // chrome resolution:per-prop > context > 'default'
-    const resolvedVariant: FieldVariant = useResolvedFieldVariant(variantProp)
+    const resolvedVariant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
 
     // 2026-07-05 D4:invalid 經 useResolvedFieldInvalid 統一接 fieldCtx.invalid(field-controls.spec.md
     // resolver 契約「error/invalid = prop OR fieldCtx.invalid」)— 原本紅框只吃 errorProp||localError、
@@ -156,7 +157,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
         // anchor / span 必套 `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)
         // — 對齊跨 Field family display 視覺尺寸統一。原無 font-size class → 用 browser default
         // 字體 → 跟其他 Field display 不一致(user 抓 I2)。truncate 同需,長 URL ellipsis(I1)。
-        if (!value) return <span className={cn(fieldDisplayTextClass(size), 'text-fg-muted block truncate')}>{EMPTY_DISPLAY}</span>
+        if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), 'block truncate')}>{emptyDisplay}</span>
         return <span className={cn(fieldDisplayTextClass(size), 'block truncate')}>{renderLinkAnchor(value, label)}</span>
       }
       return (
@@ -167,7 +168,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
           <span className="flex-1 min-w-0 truncate">
             {value
               ? renderLinkAnchor(value, label)
-              : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
+              : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
             }
           </span>
         </div>
@@ -232,10 +233,10 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
             {resolvedMode === 'disabled'
               ? (displayText
                   ? <span className="text-fg-disabled">{displayText}</span>
-                  : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>)
+                  : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>)
               : (value
                   ? renderLinkAnchor(value, label)
-                  : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>)
+                  : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>)
             }
           </span>
         </div>

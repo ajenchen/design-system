@@ -227,6 +227,7 @@ export const DragAndDrop: Story = {
         <div className="flex flex-col gap-2">
           <p className="text-caption text-fg-muted max-w-xs">
             Figma 風格:整列拖曳,items 真的會移動。拖到其他 node 上方(before) / 下方(after) / 中間(inside 成為子項)。
+            鍵盤同樣可重排:Tab 聚焦樹、↑↓ 移到目標後,Cmd/Ctrl+Shift+↑↓ 同層移動、→ 移入資料夾、← 移出到上層(每按一下立即生效,結果會播報給螢幕閱讀器)。
           </p>
           <div className="w-[280px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
             <TreeView

@@ -1,0 +1,30 @@
+{
+ "dim": 44,
+ "filesScanned": 436,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.spec.md:23",
+   "問題": "整個 Command 單元標為 Internal 並排除 root barrel，卻要求 app consumer 直接使用同檔匯出的 public wrapper「CommandDialog」。目前 public wrapper 與 internal primitives 混在同一分類。",
+   "severity": "material",
+   "建議": "將 CommandDialog／Command Palette API 拆成 public 單元並加入 Components stories、root export；Command、CommandInput、CommandList、CommandItem 等低階 primitives 保留 Internal。"
+  },
+  {
+   "fileLine": ".claude/rules/ui-development.md:20",
+   "問題": "SSOT 把 ItemIcon／ItemAvatar 列為 internal，但 item-anatomy spec 將它們定義為 consumer composition slots，官方 app template 也直接從 package root import ItemAvatar；public intent 與判準文字互相衝突。",
+   "severity": "material",
+   "建議": "明定 ItemIcon／ItemAvatar 為 public composition slots並移出 internal 範例；internal 範例改列真正只供 DS host 使用的 L3 primitives。"
+  },
+  {
+   "fileLine": "packages/design-system/src/patterns/element-anatomy/index.ts:5",
+   "問題": "public barrel 使用 export *，經 root barrel 連帶公開明確標為 @internal、且禁止 app 直接 import 的 RowSizeProvider、ItemInlineActionButton、ItemInlineAction。",
+   "severity": "material",
+   "建議": "改用明確 named exports 排除 L3 internal symbols，或將這些 primitives 拆到不被 public/root barrel 匯出的 internal module；同步修正 generator 支援 mixed public/internal module。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/index.ts:5",
+   "問題": "SelectionControl 的 internal 主 primitive 是 SelectionItem，但套件 subpath index 只匯出 BooleanValueIcon；root 已依規則排除後，允許包裝使用的 subpath 也拿不到主 primitive。",
+   "severity": "material",
+   "建議": "修正 index generator 的 primary-entry 判定，以主 spec或明確 manifest 選取 selection-item，並由 SelectionControl subpath 匯出 SelectionItem。"
+  }
+ ]
+}

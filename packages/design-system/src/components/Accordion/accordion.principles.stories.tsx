@@ -109,7 +109,7 @@ export const UsageGuidance: Story = {
         title='Accordion — 獨立收合多段(每段各自是否展開)'
         note='每個 item 是獨立主題,使用者依興趣選擇展開。不是互斥,而是「多段內容,多數時間只想看其中一段」。'
       >
-        <Accordion type='single' collapsible>
+        <Accordion type='multiple'>
           <AccordionItem value='pricing'>
             <AccordionTrigger>付款週期與折扣</AccordionTrigger>
             <AccordionContent>年付享 20% 折扣。</AccordionContent>

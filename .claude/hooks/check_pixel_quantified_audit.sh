@@ -6,7 +6,8 @@
 #   `getAttribute('data-state')` / `class.includes('items-start')` attribute-existence
 #   = false-positive trap(DOM-structure-pass ≠ visual-pass)。
 #
-# Mechanical rule:scripts/visual-audit-*.mjs(or *.js)若有 `getAttribute(` 但沒 paired
+# Mechanical rule:scripts/visual-audit*.mjs(or *.js;含 canonical scripts/visual-audit.mjs,
+# 舊 visual-audit-<target>.mjs 家族已於 2026-05-30 a2360e99 整批 retire)若有 `getAttribute(` 但沒 paired
 # `getBoundingClientRect(` 或 `offsetTop/.offsetHeight` 量化 measurement → warn。
 #
 # 對齊 Material X-DataGrid visual regression / AG Grid playwright pixel snapshot canonical。
@@ -21,7 +22,7 @@ EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // ""' 2>/dev/null)
 
 case "$TOOL" in Edit|Write|MultiEdit) ;; *) exit 0 ;; esac
 case "$FILE_PATH" in
-  */scripts/visual-audit-*.mjs|*/scripts/visual-audit-*.js) ;;
+  */scripts/visual-audit*.mjs|*/scripts/visual-audit*.js) ;;
   *) exit 0 ;;
 esac
 [ "$EVENT" != "PostToolUse" ] && exit 0

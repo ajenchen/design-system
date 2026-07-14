@@ -2,10 +2,15 @@
 # Codex brief invariants enforcement(2026-05-23 永久 per user verbatim「codex 跑的稽核流程理應要跟你跑的深度稽核流程是一模一樣 SSOT 的不能偏移」)
 #
 # PreToolUse(Bash)hook:catch codex exec / cat ... | codex exec / 任何 codex CLI invocation
-# Scan codex brief content for 3 mandatory invariants(per feedback_codex_brief_invariants_2026_05_23.md):
+# Scan codex brief content for 7 mandatory invariants(per feedback_codex_brief_invariants_2026_05_23.md
+# + 2026-07-10 user directive「codex 做的任務 / 資訊 / 閱讀 / 判斷標準都要跟 Claude 一模一樣 SSOT」):
 #   1. 全盤閱讀(全部 source 列舉 or 「DS-wide」「全盤閱讀」「全 N files」 keyword)
 #   2. Triple-verify(「triple-verify」/「三重驗證」/「grep + Read + canonical exception」 keyword)
 #   3. 禁抽樣(「禁抽樣」/「禁 sample」/「NO-SAMPLE」/「DS-wide ALL files」 keyword)
+#   4. 禁列檔(「禁列檔」/「禁 rg --files」/「只讀 N file」/「直接出 verdict」 keyword)
+#   5. 輸入對等(閱讀清單逐字鏡射 A.0:含 meta-patterns rules + memory MEMORY.md index 錨點)
+#   6. 判準對等(brief 給 codex audit-prompts.md 每-dim rubric + 逐 dim 套用)
+#   7. A.1b 對等(brief 要求 codex 做 per-component claim-vs-code 對抗驗證 = Claude A.1b 鏡像)
 #
 # 缺任一 → exit 2 BLOCKER(stop codex 啟動)。Escape:brief 含 `// @codex-brief-invariant-skip: <rationale>`(極罕見)。
 
@@ -96,6 +101,28 @@ fi
 # Brief 必含 directive 限制 codex 探索範圍 — 「只讀 N 列檔 + 禁列檔 / 禁 rg --files / 禁 find 全 repo」
 if ! echo "$BRIEF_CONTENT" | grep -qiE '禁列檔|禁 rg --files|禁 find 全|只讀.*[0-9]+.*file|限定.*file|targeted rg|不需報告探索|直接出'; then
   MISSING="${MISSING}  • 4️⃣ 禁列檔 invariant 缺(「禁列檔」/「禁 rg --files」/「只讀 N file」/「直接出 verdict」keyword)— per 2026-05-27 codex token-burn 2× anchor\n"
+fi
+
+# 5️⃣ 輸入對等(2026-07-10 user directive「codex 做的任務、擁有的資訊、閱讀的資訊要跟你一模一樣」):
+# 閱讀清單必逐字鏡射 A.0(泛 glob ≠ 對等;至少含 meta-patterns rules + memory index 兩錨點,
+# 具名鏡射時自然存在)。
+if ! echo "$BRIEF_CONTENT" | grep -qi 'meta-patterns' || ! echo "$BRIEF_CONTENT" | grep -qiE 'MEMORY\.md|memory'; then
+  MISSING="${MISSING}  • 5️⃣ 輸入對等 invariant 缺(閱讀清單必逐字鏡射 A.0 六項:含 .claude/rules/meta-patterns.md 等具名 rules + memory MEMORY.md index;泛 glob 不算)\n"
+fi
+
+# 6️⃣ 判準對等(2026-07-10 user directive「兩邊都用同樣的完美標準去稽核」):brief 必給 codex
+# 我用的每-dim 判準 rubric(audit-prompts.md,SKILL.md:257「Use prompts in audit-prompts.md」=
+# 我的 dim sub-agent 判準 SSOT),並要求逐 dim 套用 —— 只給 dim 編號 = codex 憑自己理解判 =
+# 判斷標準不對稱(user 錨:「我基於治理判、codex 可能沒有」)。
+if ! echo "$BRIEF_CONTENT" | grep -qi 'audit-prompts'; then
+  MISSING="${MISSING}  • 6️⃣ 判準對等 invariant 缺(brief 必給 codex `design-system-audit/references/audit-prompts.md` 每-dim rubric + 要求逐 dim 套用同一判準;只給 dim 編號 = codex 憑己意判 = 標準不對稱)\n"
+fi
+
+# 7️⃣ A.1b 對等(2026-07-10 user「所有稽核任務都應對等」全盤盤點抓):brief 必要求 codex 做
+# A.1b(per-component claim-vs-code 對抗驗證,讀每元件 .tsx + wrap lib 逐句驗宣稱)—— Claude
+# 最高產出 pass(2026-05-30 抓 403 findings),漏了 = codex 少做一整趟 = 任務不對等。
+if ! echo "$BRIEF_CONTENT" | grep -qiE 'A\.1b|claim-vs-code|per-component.*(對抗|逐句|verif)'; then
+  MISSING="${MISSING}  • 7️⃣ A.1b 對等 invariant 缺(brief 必要求 codex 做 per-component claim-vs-code 對抗驗證 = Claude SKILL A.1b 鏡像;漏 = 少做最高產出 pass = 任務不對等)\n"
 fi
 
 if [ -n "$MISSING" ]; then

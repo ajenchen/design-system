@@ -1,0 +1,163 @@
+{
+  "batch": 6,
+  "components": ["FileUpload", "InlineEdit", "Avatar", "Badge", "Breadcrumb"],
+  "reconciledBy": "Claude B.3 adjudication vs ACTUAL CODE + node_modules(radix hover-card) + Claude deep findings",
+
+  "FileUpload": {
+    "material_confirmed": [
+      {
+        "fileLine": "file-upload.tsx:19 + anatomy.stories.tsx:167/228/233/241/356 + principles.stories.tsx:93/97",
+        "宣稱": "top docblock + anatomy ColorMatrix/Inspector/StateBehavior TokenCell + principles note/demo 全寫 drag-over/hover 邊框 = `border-primary`（`--primary`）",
+        "真實code行為": "className(tsx:312) = `data-[state=idle]:hover:border-primary-hover data-[state=drag-over]:border-primary-hover`（--primary-hover = blue-5，非 --primary = blue-6）。2026-07-06 已修 code + spec.md:62，但頂部 docblock + anatomy token cells + principles demo 未同步 = wrong token value in the authoritative ColorMatrix token-reference。8 處 doc≠code drift。",
+        "claudeAlsoCaught": true,
+        "claudeCaughtInstances": "tsx:20, anatomy:356, principles:93 (codex found 5 more: anatomy 167/228/233/241, principles:97)",
+        "fixHint": "全數 --primary → --primary-hover(blue-5)，含 Inspector line 167/168 TokenCell + ColorMatrix 233 + StateBehavior 356 mock + principles demo 96/99 border class"
+      },
+      {
+        "fileLine": "file-upload.spec.md:138",
+        "宣稱": "邊界案例：dragleave 帶 relatedTarget guard，避免經典 drag-flicker",
+        "真實code行為": "code 用深度計數（dragDepth ref, tsx:135-138/275-283），tsx:271-274 註解明載 relatedTarget guard 在 Safari/WebKit dragleave.relatedTarget 恆 null 故已於 2026-07-06 廢棄換深度計數。spec 仍描述被 code 明確廢棄的舊機制 = stale mechanism。",
+        "claudeAlsoCaught": true,
+        "fixHint": "spec:138 relatedTarget guard → 深度計數(dragDepth 成對 dragenter/dragleave +1/-1)"
+      },
+      {
+        "fileLine": "file-upload.principles.stories.tsx:79",
+        "宣稱": "『判斷不確定時...若仍不符，改用近親元件（見 <Vs*Rule> stories）』",
+        "真實code行為": "本檔 exports = UsageGuidance / MultipleRule / DivisionOfLaborRule / ErrorFeedbackRule。無任何 `Vs*Rule` export；vs-近親比較已合併進 UsageGuidance(line 114 'vs 近親')。dangling story-name reference。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改指 UsageGuidance『vs 近親』段，或刪 Vs*Rule 引用"
+      }
+    ],
+    "marginal_count": 13,
+    "false_positive_count": 0,
+    "marginal_examples": [
+      "tsx:15 / spec:25 / principles:215 — 定位/note 說『清單顯示交給 consumer/FileItem』但 files prop 內建 own list(tsx:176-219);dual-path 已於同 spec:120-121 記載，屬 positioning 簡化 = marginal",
+      "tsx:90 / spec:111 / anatomy:96 — 『files 傳入→drop zone 下方渲染列表』對 button variant 不精確(list 在 Button 下方，該分支無 drop zone)，fileListNode 在 variant conditional 之後(tsx:354) = 精確度 nitpick",
+      "anatomy:226/239 — ColorMatrix 合併『Icon/text color=--foreground』，但 description 實為 fg-secondary(Inspector 182 已正確拆分) = 簡化",
+      "anatomy:125 — 稱 3 狀態(idle/drag-over/disabled)，runtime 有 4(含 loading，優先序 disabled>loading>drag-over>idle);但 loading 已明文 deferred(story line 127) = marginal",
+      "tsx:301 — 註解『內容物(icon+title+description)垂直堆疊由 gap-2 控制』不精確：三者在單一 <Empty> child 內，堆疊由 Empty mb-4/--item-gap 控制，外層 gap-2 只管 input↔Empty 間距(spec/stories 他處已正確歸功 Empty)",
+      "spec:110 / anatomy:88 / anatomy:427 — 『disabled 完全停用』過度宣稱：handleClick(tsx:167) 無條件呼叫 consumer onClick?.(e)，fileList remove Button(tsx:201) 無 disabled guard；picker/upload 有擋。pointer onClick + remove 仍可觸發 = 真行為 gap 但主互動已擋"
+    ]
+  },
+
+  "InlineEdit": {
+    "material_confirmed": [
+      {
+        "fileLine": "inline-edit.tsx:179",
+        "宣稱": "『結算後把 focus 送回 read 按鈕(僅鍵盤/程式化結算路徑)』",
+        "真實code行為": "commit()(tsx:164-170) 與 cancel()(172-177) 一律 set returnFocusRef.current=true；預設 Input/Textarea onBlur={commit}(tsx:214/226) → pointer blur commit 也 set flag → effect(180-185) readButton.focus()。故 pointer-blur 路徑也 return focus(非『僅鍵盤/程式化』)；點外面其他互動元件後焦點被搶回 read button = 註解與 code 矛盾 + 潛在 focus-stealing。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改註解為『所有結算路徑(含 blur)皆 return focus』，或若確實只想鍵盤路徑 return，改在 keyboard handler 才 set returnFocusRef(pointer blur 不 set)"
+      }
+    ],
+    "marginal_count": 19,
+    "false_positive_count": 2,
+    "signalNote": "codex 22 findings 幾乎全屬同 4 根：(A) multiline commitOnEnter:false → plain Enter=換行，但 spec 互動表(33)/退出(37)/A11y鍵盤表(138)/鍵盤SSOT(70) 皆述 Enter=commit(多行例外已於 spec:66 記載，屬 spec 內部一致性 nitpick — Claude 已抓 138 為 marginal);(B) 自訂 renderEdit 不自動綁 blur/Esc/Enter/focus(spec:113/132/141)，但預設路徑有接線，custom 屬 escape hatch;(C) renderRead 分支(tsx:245-247 <div>)忽略 as/readClassName/data-empty(spec:86/131, tsx:77/79);(D) multiline read(min-h field-height + py-1.5)vs edit Textarea(預設 rows,py-2)高度不同 → 非零位移(spec:47/52, tsx:86/190)。皆真 observation 但無 material 缺陷(無 nonexistent prop / wrong token / broken demo)。",
+    "false_positive_examples": [
+      "spec:132 『edit 態控件帶 aria-label(=label)』— 正確描述 wiring(label→aria-label);codex objection『label optional』不構成 spec 錯誤，spec 未宣稱 label 必填",
+      "spec:16 『edit 態委派 Family 4(預設 <Input>)...幾何/邊框/focus 全繼承 fieldWrapperStyles』— 句子已用『預設 <Input>』限定，對 default Input 為真;codex 拿 multiline Textarea / read inlineEditReadStyles 反駁屬其他 state，偏 false-positive"
+    ]
+  },
+
+  "Avatar": {
+    "material_confirmed": [
+      {
+        "fileLine": "avatar.spec.md:246 (+ tsx:211-212/292-303 code path)",
+        "宣稱": "『badgeCount 的 nested Badge 會提供 role=status + aria-label 計數語意』",
+        "真實code行為": "hoverCard 設定時 focusableProps(tsx:255-256)在外層 wrapper 掛 role=\"img\"+aria-label=alt(tsx:268 baseEl)。role=\"img\" 令整個 subtree presentational(ARIA img=leaf)→ 內部 <Badge role=\"status\" aria-label=\"N unread\">(tsx:292-303)語意被 flatten、count 對 SR 完全消失；外層 aria-label 只有 alt(不含 count)。hoverCard+badgeCount 並存時計數靜默 = 真 a11y bug。",
+        "claudeAlsoCaught": false,
+        "fixHint": "hoverCard 時把 badgeCount 併入外層 aria-label(如 `${alt}, ${badgeCount} unread`)，或改 role 讓 Badge 語意保留"
+      },
+      {
+        "fileLine": "avatar.anatomy.stories.tsx:702 (Accessibility story)",
+        "宣稱": "『當頭像帶有 hoverCard 時，頭像本身會變成可用 Tab 聚焦的按鈕並顯示聚焦框』",
+        "真實code行為": "focusableProps(tsx:255)= role='img'(非 button)+ tabIndex=0 + aria-label。2026-07-06 已拆除 role=button/aria-haspopup(tsx:244-251 + spec:89 明文『不掛 role=button』)。a11y story 教『按鈕』與 code role='img' 相矛盾 = 教錯 ARIA 語義。",
+        "claudeAlsoCaught": true,
+        "fixHint": "story 702 『可 Tab 聚焦的按鈕』→『可 Tab 聚焦的圖像(role=img)』"
+      }
+    ],
+    "marginal_count": 28,
+    "false_positive_count": 0,
+    "marginal_examples": [
+      "spec:49/74 + anatomy:197 + tsx:352-358 — 『person avatar 預設必有 ProfileCard，不 opt-in』vs API hoverCard?:optional 無 person discriminator/無自動建卡。spec 明框為 DS-wide governance convention(必遵守，enforced by row primitives)且自認 opt-in(line 82『opt-in 會讓一半 consumer 忘記』)= 用語『不 opt-in』字面與 optional API 有張力但為 intentional convention framing",
+      "tsx:186-189 / spec:215 / anatomy:681 — dotSize=clamp(8,round(size×0.28),16) 公式漏 fill 例外:size='fill' 時 dotSize 固定 10px(tsx:189)。真 doc 漏 fill 特例",
+      "tsx:322-323 — 註解『HoverCardContent 不設 max-height，由 ProfileCard 自限』誤述:HoverCardContent 元件本身固定套 max-h available-height(hover-card.tsx:57 已驗)。行為正確(max-height 有套)，只是誤歸功",
+      "tsx:72-74/324-327 — 註解『Portal 後 HoverCardContent 繼承 trigger subtree theme』與 M3 + hover-card.tsx:41-43 自身說明(Portal 到 body → 從 app root 繼承，不受 trigger subtree 污染)相矛盾;rationale 因果描述不精確但 fix + 觀察到的 bug(M3 錨『Avatar HoverCard NameCard 白字』)為真",
+      "spec:92 — 『tabIndex canonical 確保 keyboard 可達 ProfileCard content』:tabIndex 只讓 avatar focusable(focus 開卡);Radix HoverCard 刻意不 focus-trap、內容互動元件不 keyboard 可達 → 可開卡但 Tab 不進 actions(spec 意指 reach/open popover，codex 讀為 interact content)",
+      "spec:244 + anatomy:702 — 『無 alt 時降級 initials/icon 且一律不留無 SR 標的元素』:無 alt 不可能 initials(getInitial 需 alt);無 src+無 icon+無 alt → aria-hidden User + wrapper 無 accessible name = 真的無 SR 標的(但整段前提『alt 必傳』convention)",
+      "tsx:273-274 / spec:245 / anatomy:702 / principles:156 — 『presence 整合進 parent aria-label』:status span aria-hidden(tsx:286)，元件不自動 merge，需 consumer 把 presence 寫進 alt;story demo(tsx:686 alt='Ada')自身也沒帶 presence = 措辭誤導但 consumer 責任已於 spec:94 記載",
+      "tsx:110 / anatomy:194 — solid jsdoc/props『step-6 背景 + on-emphasis 前景』漏 neutral 例外(neutral solid = --color-neutral-9 + --inverse-fg，spec:184 已正確記);dark theme inverse-fg 為深字非白，『其餘白字』對 neutral 破例",
+      "anatomy:314-317 — Inspector blueprint mode==='image' 走 else 分支顯示 iconPx + 'icon' label(binary `mode==='text'?...:iconPx`)，但 image mode 實際 <img w-full h-full object-cover> 無 icon = story mock 誤標",
+      "anatomy:646 — StateBehavior Desc『Avatar 不是互動元件，沒有 hover/focus/active』與同檔 a11y story(702)+ spec:256『hoverCard 時 focus-visible ring』+ meta states 含 'focus-visible' 內部矛盾",
+      "spec:116/117 — 三種內容模式表 Icon/Text row 觸發條件不完整:Icon『src 載入失敗且無 alt』漏『全無→User』;Text『無 src/icon』實則 src-fail 也可(showText 條件 tsx:182)= 簡化",
+      "spec:25 — 『純視覺 atom(img+文字 fallback 組合)』understate:亦組合 icon/status/Badge/Field ctx，帶 hoverCard 成 focusable Radix trigger"
+    ]
+  },
+
+  "Badge": {
+    "material_confirmed": [
+      {
+        "fileLine": "badge.principles.stories.tsx:88",
+        "宣稱": "`aria-label=\"訊息 (150+)\"` 搭配 `<Badge count={150} max={99} variant=\"critical\">`",
+        "真實code行為": "display 邏輯(tsx:83-85)count=150 > max=99 → 可見值 = `99+`;同 story Label(line 91)也自認可見為『99+』。aria-label『150+』既不符可見值(99+)也不符原始精確數(150)= 錯的 a11y 標籤，教學範例本身矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "aria-label 改『訊息 (150 則)』(揭露精確數)或『訊息 (99+)』(對齊可見);『150+』無意義"
+      }
+    ],
+    "marginal_count": 26,
+    "false_positive_count": 3,
+    "marginal_examples": [
+      "tsx:90 — jsdoc『Consumer 可 override(傳 role=\"img\" / role={undefined})』誤導:role={undefined} 經 `role ?? 'status'`(tsx:94)仍輸出 role='status'，無法移除;只有 role=\"img\" 等字串 override 有效",
+      "spec:159/282 + principles:227/233/251/261 — 『primary button contrast floor 逼到 high/critical』與同 spec 權威定義(:143 Case2 / :153 各容器表)floor=high 內部不一致;critical 需 caller 明傳，非 floor 推出。repeated 內部矛盾",
+      "critical=紅色 cluster(anatomy:464/586, principles:146/184/191/196/198/267/323) — 教學一律稱 critical『紅色』，但 code(tsx:16/34)+ spec(:72)明定 critical = bg-notification = deep-orange-6 hue38『非 categorical red hue25』。色名 colloquialism 但與 code 自身框定不一致(≈8 處 repeated)",
+      "spec:15 — low variant when 例『VS Code tab modified dot』但 dot:true 型別只允 critical/high(BadgeDotProps)，無法建 low dot",
+      "spec:195 — Dot 何時用列『在線狀態』，但 dot 只 critical/high attention 色、無 presence variant;spec:81 也把 presence 導向 --status-* 系統",
+      "spec:215 — Max 表『max={99}(常見預設)』:max 無元件預設值(BadgeCountProps.max?:number)，省略顯示完整 count。『常見預設』語意在表格 context 指常用值非元件 default",
+      "anatomy:4 — 『唯一行為 logic 是 max overflow』undercounts:另有 effectiveVariant 條件預設(tsx:79)、count==null→null(tsx:82)、display 分支、role default/override",
+      "anatomy:195 — Props 表 variant『無條件 low|medium|high|critical』:實為 discriminated union，dot:true 只允 critical|high;default『low』:dot 模式 default critical(tsx:79)"
+    ],
+    "false_positive_examples": [
+      "anatomy:357/514(×2) — 『rounded-full resolved value = 9999px』:本 repo Tailwind 4.2.2 編譯為 calc(infinity*1px)。純 TW-version 實作 pedantry，視覺/語義等價(皆完全圓角)，9999px 為業界通用『fully round』表示 = 零影響 nitpick"
+    ]
+  },
+
+  "Breadcrumb": {
+    "material_confirmed": [
+      {
+        "fileLine": "breadcrumb.tsx:130 (comment) vs BreadcrumbEllipsis tsx:582",
+        "宣稱": "註解『Separator / ellipsis icon 尺寸 — sm/md=16、lg=20』(對齊 BREADCRUMB_ICON_SIZE)",
+        "真實code行為": "Separator 用 BREADCRUMB_ICON_SIZE[size] 會隨 lg→20(tsx:538);但 BreadcrumbEllipsis 硬寫 ItemInlineActionButton size='md'(tsx:582，『不在 RowSizeProvider 樹內，固定 md』)→ ellipsis icon 永遠 16px，size='lg' 時 chevron=20px 但 ⋯=16px = 真視覺尺寸 drift + 註解把 ellipsis 錯納入 16/16/20 tier。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改註解只涵蓋 Separator，或讓 BreadcrumbEllipsis 消費 BreadcrumbContext size 使 lg→20px 一致"
+      },
+      {
+        "fileLine": "breadcrumb.tsx:601 (breadcrumbMeta.sizes comment)",
+        "宣稱": "註解『值源 = code SSOT:BREADCRUMB_SIZE_TEXT(sm/md=text-body, lg=text-body-lg)』",
+        "真實code行為": "檔內無 `BREADCRUMB_SIZE_TEXT` identifier;真實常數名 = `BREADCRUMB_TEXT_CLASS`(tsx:124)。註解引用不存在的 identifier = stale/wrong reference。",
+        "claudeAlsoCaught": false,
+        "fixHint": "BREADCRUMB_SIZE_TEXT → BREADCRUMB_TEXT_CLASS"
+      },
+      {
+        "fileLine": "breadcrumb.principles.stories.tsx:276-297 (negative example，cites 276/277/296)",
+        "宣稱": "負例『❌ 不折疊、讓長路徑橫向撐破版面』宣稱 6 層完整路徑會『換行 / 折斷到第二行 / 超出版面』",
+        "真實code行為": "該負例用 compositional 6× BreadcrumbItem(組織/部門/設計團隊/成員管理/權限/編輯角色)。compositionalContent(tsx:279-355)對 children 也走 auto-collapse:total=6 > maxItems 預設 4 → shouldCollapse=true → 實際 render = 組織 › ⋯ › 編輯角色(與正例幾乎相同);且 ol 為 flex-nowrap(tsx:367)永不換行。負例 demo 與其 caption 完全矛盾、教學失效。",
+        "claudeAlsoCaught": false,
+        "fixHint": "負例改用 <BreadcrumbList maxItems={99}>(停用 collapse)或 whitespace-nowrap overflow 容器才能真的示範『不折疊會撐破』"
+      }
+    ],
+    "marginal_count": 14,
+    "false_positive_count": 2,
+    "marginal_examples": [
+      "tsx:165/438 + spec:111 — 『startIcon 由 DS 渲染消費 BREADCRUMB_ICON_SIZE，consumer 不控尺寸』漏 asChild 例外:BreadcrumbLink asChild 分支(tsx:471-476)只 render <Slot>{wrappedChildren}</Slot>，完全不 render StartIcon(僅 native <a> 分支 tsx:480 有);asChild+startIcon → icon 靜默丟失",
+      "tsx:388 + spec:176/184 — 『current shrink:1 最後縮 / root→middle→current staged priority』誤述 CSS flex-shrink 語義:3/2/1 是同步比例權重非分階段;current 仍同時縮，只是被保護最多",
+      "spec:185 — 『都縮到 min-w-0 後 CSS truncate』:li inline style minWidth:'1.5rem'(tsx:413-415)覆蓋 className min-w-0，floor 24px 不縮到 0(tsx:406-412 記為 intentional)",
+      "tsx:468 + spec:189 — 『asChild 只傳 consumer child / 每個 Link 都 wrap TruncatedLabel』:只有 string children auto-wrap TruncatedLabel(tsx:451/499);asChild+string → Slot 收到 TruncatedLabel 非 raw child(edge case)",
+      "spec:217/258/261 + anatomy:455 — a11y 鍵盤段只述未收合 link-list(Tab/Enter/無 focus trap)，漏收合態:auto-collapse 用預設 modal=true Radix DropdownMenu → 開啟時 trapFocus + Arrow/Home/End/typeahead/Esc + Ellipsis 額外 tab stop;spec:261『無 focus trap』對開選單態不成立(maxItems=4 default 使收合常見)= 真 a11y-doc gap",
+      "anatomy:124 — 註解『Inspector 1:1 暴露 BreadcrumbList public props』:args showHomeIcon/pathLength(story line 89-90)非 BreadcrumbListProps，是 Inspector-only synthetic control，render 時轉成 items/startIcon"
+    ],
+    "false_positive_examples": [
+      "anatomy:69 — 結構表『BreadcrumbEllipsis = 中間層過多時可點擊展開的省略符』:standalone 確實無 expand handler(需 DropdownMenu wrapper)，但 DS 實際 auto-collapse 一律自動 wrap(tsx:254-266)，描述對 composed usage 準確",
+      "principles:330 — 負例『把按鈕塞進 Breadcrumb』JSX 中 2 顆 Button(line 341-342)是 <Breadcrumb> 的 sibling(同 bordered flex box 內)非 nested;但 demo 用『breadcrumb + buttons 擠在同一 bar = 像 nav bar』視覺仍合理示範反 pattern，『塞進』屬 loose 措辭"
+    ]
+  }
+}

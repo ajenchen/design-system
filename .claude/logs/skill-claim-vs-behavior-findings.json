@@ -1,0 +1,619 @@
+{
+ "scanned": 22,
+ "falseCount": 37,
+ "findings": [
+  {
+   "skill": "bug-fix-rhythm",
+   "claimsChecked": 11,
+   "falseClaims": []
+  },
+  {
+   "skill": "code-quality-audit",
+   "claimsChecked": 21,
+   "falseClaims": []
+  },
+  {
+   "skill": "codex-collab",
+   "claimsChecked": 16,
+   "falseClaims": [
+    {
+     "line": "SKILL:42",
+     "claim": "dispatch 前必跑 node scripts/check-codex-freshness.mjs ... CLI 落後自動升級、model pin 禁、effort = probe top",
+     "reality": "check-codex-freshness.mjs 對 CLI 落後**不自動升級**:installed != npm latest 時只 errors.push(`跑 npm i -D @openai/codex@latest`) 指示訊息(line 92-94),script 從不執行升級。真正 auto-exec 是 B.0 workflow 由 AI 跑,非本 script。另兩項準確:model pin → errors.push(line 104);effort → writeEffortPin auto-write(line 124)。「CLI 落後自動升級」歸給此 script = 過度宣稱。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:19",
+     "claim": "所有結論由 Claude 收斂、跑完 M1-M31 自檢、user approve 後由我落地",
+     "reality": "meta-patterns.md SSOT 為 M1-M32(31 active,M27 retired)。M32(Audit script pixel-quantified verify)是 active sharp invariant(meta-patterns.md line 72)。「M1-M31」漏 M32,範圍描述 stale。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:157 + SKILL:162",
+     "claim": "Step 4:Codex 回覆 → Claude 自檢(M22/M23/M27/M8)... 3. M27 namespace:codex 建議 prop name 是否撞 DS 既有?",
+     "reality": "M27 已於 2026-05-15 retired,folded 進 M23(c)「framework prop name namespace conflict 子規則」(meta-patterns.md line 67 註 + M23 (c) 子規則)。SKILL 仍把 M27 當 live 自檢維度引用 = stale M-rule label(namespace 檢查功能存在,但編號已不存在於 active 集)。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:67",
+     "claim": "per references/phase-b-codex-brief.md B.0.1",
+     "reality": "codex-collab/references/ 只含 brief-template.md + transport.md;phase-b-codex-brief.md 不在此(相對路徑指向不存在檔)。實際檔在 .claude/skills/deep-audit-cross-codex/references/phase-b-codex-brief.md(B.0.1 anchor 存在於 line 14,內容相符)。跨 skill 相對 cite 斷鏈,讀者依 codex-collab/references/ 找不到。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "codify-corrections",
+   "claimsChecked": 14,
+   "falseClaims": [
+    {
+     "line": "SKILL:91",
+     "claim": "每個新 memory file 過 CLAUDE.md `## 命名必過三重 test`",
+     "reality": "CLAUDE.md 無 `## 命名必過三重 test` 此 heading。實際 section 為 `# 命名與語言一致性`(CLAUDE.md:116),3-test 內容是 body text `**3 重 test**(governance)`(CLAUDE.md:118)。cite 的 heading 不存在,grep `## 命名必過三重 test` 於 CLAUDE.md 零命中(此 fictional heading name 亦在 design-system-audit/SKILL.md、ssot-consultation.md、audit-prompts.md 系統性重複,屬全庫 stale cite)。內容可找到,故為輕微 pointer drift。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "codify-principle",
+   "claimsChecked": 12,
+   "falseClaims": [
+    {
+     "line": "SKILL:15",
+     "claim": "Auto-chained from `/ensure-canonical` 當 trigger 是「新原則」非「既有原則 enforce」",
+     "reality": "單向 orphan chain:ensure-canonical/SKILL.md 全文無任何 codify-principle 引用——其「與其他 skill 分工」表(lines 171-178)只列 propose-options / design-system-audit / knowledge-prune / scan-similar-bugs / story-writing,無 codify handoff;無任何 hook 做 skill chain;.claude/logs/skill-invokes.jsonl 亦 0 筆 codify-principle 紀錄(skill 從未實跑)。所謂 auto-chain 在來源 skill 端無任何 wiring,純靠 AI 記憶 = orphan。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "component-quality-gate",
+   "claimsChecked": 16,
+   "falseClaims": [
+    {
+     "line": "SKILL:47",
+     "claim": "走 **Ship section**(6 項):",
+     "reality": "三處自相矛盾:(a) 此行說 Ship section 是「6 項」,(b) 緊接著列出編號 1-7 共 7 個 ship 項目,(c) 被引用的 SSOT `references/checklist.md` Phase 4 Ship 實際只有 4 個 checkbox(且 SKILL:96 與 checklist.md 簽結格式皆寫「Ship 4」)。同一 section 出現 4/6/7 三個不同數字。SKILL body 的 ship 項 5-7(Visual audit / Story canonical-drift / Code quality)並未回寫進 checklist.md,故 checklist SSOT 與 workflow 敘述已 drift。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "deep-audit-cross-codex",
+   "claimsChecked": 35,
+   "falseClaims": [
+    {
+     "line": "SKILL:77",
+     "claim": "packages/design-system/src/**/*.spec.md 全部(83 file,通過 Glob 列舉 + Read)— A.0 強制 read sweep NO-SAMPLE scope",
+     "reality": "`find packages/design-system/src -name '*.spec.md'` 實測 = 86 file(component 67 + tokens 11 + patterns 8),非 83。glob src/**/*.spec.md 涵蓋全 86。硬編 count 已 drift(understate 3);operative 指令『全/Glob 列舉』本身正確,但數字錯,若被信任會 under-report scope。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:109",
+     "claim": "per-component(NO-SAMPLE,全 62 component + 全 pattern)dispatch adversarial agent(A.1b);line 45 亦稱『全 62 component』",
+     "reality": "`ls -d packages/design-system/src/components/*/` 實測 = 64 component 目錄(另 1 個 README.md file)。62 已 drift(off by 2)。A.1b 是 NO-SAMPLE per-component 強制掃,count stale 會 understate 應審單元數;『全』字為 operative 指令仍正確。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "delivery-handoff",
+   "claimsChecked": 11,
+   "falseClaims": [
+    {
+     "line": "SKILL:98 (亦 58, 167) + references/flow-diagram.md:167,180",
+     "claim": "用 Mermaid 產 flow(Storybook 支援 render,也可 export PDF);flow-diagram.md 進一步宣稱「Storybook 8+ 支援 MDX,可直接寫 mermaid code block」「一般推薦 MDX 方式,Storybook 原生支援」",
+     "reality": "repo Storybook 完全無 mermaid addon/dependency:grep 'mermaid' 於 package.json / packages/storybook-config / .storybook 全 0 命中,且無任何 mdx/story 內嵌 mermaid 佐證支援。@storybook/addon-docs 的 MDX 對 ```mermaid fence 只渲染成 syntax-highlighted code block,非 diagram(需 remark-mermaid 或 mermaid addon 才能 render)。「Storybook 原生支援 mermaid render」不成立 —— 依此 skill 產出的 Handoff page flow 圖不會真正 render。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:65 vs references/inventory-checklist.md:53 (SKILL:234 指向)",
+     "claim": "Phase 1 規定 token 消費掃描用 digit-inclusive `rg -o -- '--[a-z][a-z0-9-]*'`,並明文警告『字元類含 0-9 …缺數字會截斷合併成假 key』;SKILL:234 將 inventory-checklist.md 列為『grep pattern』SSOT",
+     "reality": "被指向的 inventory-checklist.md:53 token 掃描 pattern 為 `var\\(--[a-z-]+\\)`,字元類無 0-9 —— 正是 SKILL Phase 1 警告的截斷 bug,會把 `--chart-1`/`--black-a02` 等實測 45.1% 含數字的 token 截斷合併成假 key。SKILL body 於 2026-07-07 補強了正確 pattern,但其 cite 的 reference 檔未同步,兩者互相矛盾。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "design-system-audit",
+   "claimsChecked": 80,
+   "falseClaims": [
+    {
+     "line": "SKILL:160",
+     "claim": "Dim 45: 對應 SSOT:`scripts/compile-stories.mjs` 邏輯 + `references/anatomy-standard.md`",
+     "reality": "`references/anatomy-standard.md` 不存在於本 skill 的 references/ 目錄(.claude/skills/design-system-audit/references/ 僅含 audit-prompts.md / historical-bugs.md / checkpoints.md / principle-audit-protocol.md / rule-placement.md)。該檔實際住在 .claude/skills/story-writing/references/anatomy-standard.md。相對路徑 pointer 在此 skill 內指向不存在的檔 = dangling ref。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:158",
+     "claim": "Dim 43: 對齊 `references/example-selection.md`「Rule note 品質」",
+     "reality": "`references/example-selection.md` 不存在於本 skill 的 references/ 目錄;實際檔在 .claude/skills/story-writing/references/example-selection.md。相對路徑在 design-system-audit skill 內 resolve 到不存在的檔 = dangling ref(check-skill-deadref 未攔)。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:36",
+     "claim": "## The audit dimensions(Group A–P,full list per below;...)",
+     "reality": "維度表實際橫跨 Group A 到 Group Q(Group Q — Fork-shipped packaging integrity 在 line 205,dims 84-91)。範圍應為 A–Q;line 6 檔頭已正確寫「Groups A–Q」,line 36 stale 寫「Group A–P」漏 Group Q。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "ensure-canonical",
+   "claimsChecked": 11,
+   "falseClaims": [
+    {
+     "line": "SKILL:141",
+     "claim": "enforce template 抽象化 → 加進 references/patterns.md(若 ≥ 3 次同 pattern)",
+     "reality": "The ensure-canonical skill directory contains ONLY SKILL.md — there is no references/ subdirectory and no references/patterns.md. The cited destination path does not exist (and is not listed in the skill's own References section lines 180-185). '加進'(add into) implies the file exists; a reader following Phase F would find no such file/dir. Low severity because it is guarded by a conditional ('若 ≥ 3 次同 pattern') = create-on-demand pointer, not a claim of a mechanically-consumed existing artifact.",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "governance-health",
+   "claimsChecked": 16,
+   "falseClaims": [
+    {
+     "line": "SKILL:119-122",
+     "claim": "Phase 5 指示把本次 metric append 到 .claude/logs/metric-snapshots.jsonl,範例 schema 為 {\"ts\":\"2026-04-24\",\"claude_md_lines\":686,\"hook_fires_total\":N,\"skill_invokes_total\":M}",
+     "reality": "實際 metric-snapshots.jsonl 用 schema_version v2,由 hook stop_passive_logging.sh 機械寫入(tag:auto-daily),欄位為 claude_md_lines/memory_entries/hooks_total/skills_total/untested_hooks/last_prune_days_ago/corrections_pending + 完整 ISO ts。SKILL 宣稱的 hook_fires_total / skill_invokes_total 兩欄全 repo 只出現在本 SKILL.md,無任何 script/hook 產出。SKILL 的 Phase 5 手動 append 格式已與真實 v2 schema 漂移,且手動 snapshot 步驟實際被 hook 機械 snapshot 取代(orphan 指令)。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "knowledge-prune",
+   "claimsChecked": 22,
+   "falseClaims": [
+    {
+     "line": "SKILL:61",
+     "claim": "`benchmarks/claude-code-features.jsonl` — 新 CC feature 採用提議",
+     "reality": "No .jsonl exists in .claude/benchmarks/. The actual file is `.claude/benchmarks/claude-code-features.md` (973KB markdown). An AI following the skill would fail to read the cited `.jsonl` path. `find .claude/benchmarks -name '*.jsonl'` returns nothing.",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:62",
+     "claim": "`benchmarks/external-ds-snapshots/*.md` — Polaris / Material / Atlassian 近期更動",
+     "reality": "The files in .claude/benchmarks/external-ds-snapshots/ are `.html`, not `.md` (polaris-components.html / material3-foundations.html / atlassian-components.html). `find ... -name '*.md'` returns nothing; the cited `*.md` glob matches zero files.",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "new-component",
+   "claimsChecked": 13,
+   "falseClaims": [
+    {
+     "line": "SKILL:10, SKILL:149, SKILL:153",
+     "claim": "chain `/component-quality-gate` 走 45 項 checklist / 「45 項全綠」/「review-phase gate(元件做完後驗 45 項)」",
+     "reality": "component-quality-gate 實際是 35 項,非 45。其 SKILL.md:87「35 項全綠」+ :96「完整 35 項 checklist(Spec 12 / Code 13 / Stories 6 / Ship 4)」+ description「(35 items)」,且 CLAUDE.md 稽核 canonical 亦寫「35 項 + visual + clean-code 三層」。new-component SKILL 三處均寫 45,與所 chain 的 gate 及 CLAUDE.md canonical drift。",
+     "severity": "P1"
+    },
+    {
+     "line": "SKILL:37",
+     "claim": "對齊 ... memory `feedback_proactive_5layer_pipeline.md`「5-step pre-check」(寫 tsx 前必含 CLAUDE.md SSOT 清單 + tsx 開頭「── 消費的 SSOT ──」段)",
+     "reality": "被引為權威來源的 memory 檔 `feedback_proactive_5layer_pipeline.md` 不存在:.claude/memory/ 無此檔、.claude/memory/retired/ 無此檔、MEMORY.md index 亦未列。僅在 3 個 SKILL.md(new-component/prototype/story-writing)以引用形式出現但目標檔缺失 = 破損/stale citation(真實內容存於 .claude/references/ssot-consultation.md,但 cite target 已消失)。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "performance-audit",
+   "claimsChecked": 12,
+   "falseClaims": [
+    {
+     "line": "SKILL:68",
+     "claim": "`npx vite build --report`(vite bundle visualizer)",
+     "reality": "vite ^5.4.0(package.json:128)沒有原生 `--report` flag,`vite build --help` 無此選項;`rollup-plugin-visualizer` 未安裝(node_modules 不存在),vite config 也無 visualizer plugin。此指令不會產出任何 bundle visualizer 報告,`--report` 會被忽略。散文宣稱的『vite bundle visualizer』工具行為不存在(--report 是 webpack/vue-cli idiom,非 vite)。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "product-ui-audit",
+   "claimsChecked": 18,
+   "falseClaims": [
+    {
+     "line": "references/audit-checks.md:243",
+     "claim": "Rating yellow stars（`bg-warning` 黃星）: 世界級 convention（Amazon / Google / Yelp 皆黃），spec line 73 明文 documented exception。",
+     "reality": "rating.spec.md line 73 是 size 對照表（xs/sm/md/lg 高度），不是 yellow star exception。真正的黃星 documented exception 在 rating.spec.md 第 151 行（Filled star `var(--warning)` 表格列）+ 162-166 行（『為什麼用 --warning（黃色）』段 + 『documented 例外（見 color.spec.md）』）。line 73 cite 指錯行，跟隨此 cite 的 AI 會在錯的位置找不到 exception。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:134",
+     "claim": "### Phase 1 — Parallel 6-dim audit",
+     "reality": "本 SKILL 實際定義 7 個 dimension（SKILL:46『## 7-Dimension Audit』、SKILL:136『7 個維度各自獨立 grep』、Dim 1-7 全列 SKILL:50-124）。Phase 1 標題『6-dim』是 stale number，與同檔 7-dimension 結構自相矛盾。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "propose-options",
+   "claimsChecked": 12,
+   "falseClaims": [
+    {
+     "line": "SKILL:6 (+ SKILL:3 description, SKILL:8/30/112/175)",
+     "claim": "Propose-time 7-Q Gate / \"7-Q principle check\" / \"強制 7 題,缺一就 reject\"(全篇以「7-Q」命名,列出 Q0/Q1/Q1'/Q2/Q3/Q4/Q5 共 7 個 heading)",
+     "reality": "本 skill 明文對齊(SKILL:12)的 SSOT M18(.claude/rules/meta-patterns.md)canonical 定義為「Propose-time 6 題自檢 gate(2026-05-18 升 4→6 加 Q0 + Q5)」— M18 將 Q1' 折入 Q1 計為 6 題。SKILL 自稱「7-Q」與其宣稱對齊的 canonical 數字(6)不一致,屬 cross-doc number-SSOT drift。純命名/計數層,無 mechanical enforcement 影響(hook 僅強制 Q0)。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "prototype",
+   "claimsChecked": 18,
+   "falseClaims": [
+    {
+     "line": "SKILL:144",
+     "claim": "memory `feedback_proactive_5layer_pipeline.md`「5-step pre-check」(SSOT 在 memory + CLAUDE.md,本 skill 不重複)",
+     "reality": "The cited memory file does not exist anywhere — not in .claude/memory/ nor .claude/memory/retired/. `find . -name '*5layer*'` returns nothing; `grep -rl proactive_5layer_pipeline .claude/` only finds the three SKILL.md files that cite it (prototype, story-writing, new-component), never an actual file. It is a dangling orphan cite. The '5-step pre-check' discipline it points to therefore has no resolvable memory home; the actual content lives in feedback_codex_dual_track_synthesizer.md (but that is the codex 5-step, a different SSOT). Only the CLAUDE.md「SSOT 消費 canonical」half of the cite resolves (→ .claude/references/ssot-consultation.md). So the paired mechanical safety net claim (check_story_invariants.sh R1 anatomy, PreToolUse, exit 2 BLOCKER, registered in settings.json, folded from check_story_anatomy.sh) is fully accurate, but the memory SSOT home it references for the pre-check discipline is fabricated.",
+     "severity": "P1"
+    }
+   ]
+  },
+  {
+   "skill": "scan-similar-bugs",
+   "claimsChecked": 13,
+   "falseClaims": [
+    {
+     "line": "SKILL:22 (+ frontmatter SKILL:3)",
+     "claim": "強制(auto-chain)— batch-end only … / frontmatter「Auto-invoke after fix commits」",
+     "reality": "No mechanical auto-invoke or 強制 auto-chain exists — skills cannot self-invoke. The only mechanism is session_start_governance_check.sh Check 6, which appends to the SOFT REMINDERS channel with「考慮 invoke」(not BLOCKERS), and the hook ends with exit 0 (line 310) — no exit 2, no BLOCKER, nothing forced. The SKILL itself correctly labels this「soft 提醒」at line 25, so 強制/Auto-invoke in the header overstates a soft-reminder-only reality.",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "story-auto-compile-migrate",
+   "claimsChecked": 16,
+   "falseClaims": [
+    {
+     "line": "SKILL:150",
+     "claim": "Drift detection(已 migrated)| hook `post_edit_dispatcher.sh` → `lib/_story_compile_drift.sh`(原 check_story_compile_drift.sh folded)",
+     "reality": "Chain is wired (post_edit_dispatcher.sh line 54 runs the helper; dispatcher IS registered in .claude/settings.json:346) and check_story_compile_drift.sh IS correctly folded (absent). BUT lib/_story_compile_drift.sh scope filter uses stale glob `*/design-system/components/*.tsx` / `*.spec.md` — missing `/src/`. Real components live at `packages/design-system/src/components/...`, so the case statement falls through to `*) exit 0` and the `compile-stories --check` drift probe NEVER runs on any real component edit. Verified empirically: piping a real button.tsx path into the helper yields empty output, exit 0. The claimed write-time drift-detection net is silently dead; only the separate Dim 23 audit (`--all --check`, which uses correct COMPONENTS_DIR=packages/design-system/src/components) still catches drift.",
+     "severity": "P1"
+    },
+    {
+     "line": "SKILL:8",
+     "claim": "元件總數 Phase 0 動態計(`ls -d packages/design-system/src/components/*/ | wc -l`,當前 62),禁 hardcode",
+     "reality": "The dynamic-count command is correct and 禁 hardcode instruction is sound, but the parenthetical snapshot '當前 62' is stale: `ls -d packages/design-system/src/components/*/ | wc -l` currently returns 64.",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "story-writing",
+   "claimsChecked": 17,
+   "falseClaims": [
+    {
+     "line": "SKILL:44",
+     "claim": "對齊 memory `feedback_proactive_5layer_pipeline.md`「5-step pre-check」",
+     "reality": "該 memory 檔不存在於 .claude/memory/(ls + grep 均無;僅 new-component / prototype / story-writing 三 SKILL 引用它 = 三處 orphan 死指標)。MEMORY.md index 亦無此條。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:121",
+     "claim": "CLAUDE.md `# 失敗記憶索引` → 三方漂移:SegmentedControl cva defaultVariants bug",
+     "reality": "CLAUDE.md 全檔 SegmentedControl 命中 0 次;`# 失敗記憶索引` 現為「技術沉默陷阱 only」10 行表(header 明寫『設計判斷類已被 M-rules 吸收』),不含 SegmentedControl / 三方漂移 條目。該案例已移出至 M-rules / historical-bugs.md,SKILL 指標已 stale。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:85, SKILL:90",
+     "claim": "偏離需 rationale 由 design-system-audit Dim 13 enforce / Dimension 13 會強制 grep 比對偏離 + rationale 追溯（針對 anatomy 6 件套）",
+     "reality": "design-system-audit SKILL Dim 13(line 71)實際定義為『Anatomy Figma-inspect 完整度 | 5 mandatory sections present / token-first / dev language / no density dual / live swatches』——寫 5 sections 而非 SKILL/anatomy-standard.md 的 6 件套（漏 Accessibility 第 6 章），且 dim 定義完全未提及『rationale 追溯 / grep 比對偏離』機制。所引用的 enforce 行為與 dim 實文不符（under-scoped drift）。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:122",
+     "claim": "M3 mindset #3「改一處看三處」:三方連動改靠 mindset",
+     "reality": "標籤 conflation:meta-patterns.md 的 M3 = 『Portal 逃逸 subtree context』（theme/density/provider），與『改一處看三處』無關;『改一處必看三處』實為 CLAUDE.md mindset #3(非 meta-pattern M3)。grep『M3』會落在 Portal escape 而非本段引用內容。",
+     "severity": "P2"
+    }
+   ]
+  },
+  {
+   "skill": "ux-audit",
+   "claimsChecked": 8,
+   "falseClaims": [
+    {
+     "line": "SKILL:74",
+     "claim": "Hover delay:tooltip / hover-card 的 open delay(700ms for tooltip, 500ms for hover-card per DS canonical)",
+     "reality": "DS canonical 值被寫反。Tooltip open delay = MOTION_DELAY_PLAIN_MS = 500ms(tooltip.tsx L10-13 明確拒絕 Radix 700ms「過保守」,統一用 500ms)。HoverCard open delay = MOTION_DELAY_RICH_MS = 700ms(hover-card.tsx L29 + hover-card.spec.md L117「rich 700ms open / close 200ms」)。SSOT motion.ts:L12 PLAIN=500、L15 RICH=700。故實際應為「500ms for tooltip, 700ms for hover-card」,SKILL 恰好對調。用此 SKILL Phase 4 稽核 hover delay 會把正確實作誤判為錯。",
+     "severity": "P1"
+    }
+   ]
+  },
+  {
+   "skill": "visual-audit",
+   "claimsChecked": 17,
+   "falseClaims": [
+    {
+     "line": "SKILL:34",
+     "claim": "/component-quality-gate  合入 DS 前的 45 項 checklist(Ship phase 可 chain 本 skill)",
+     "reality": "component-quality-gate SKILL.md 實為 35 項,非 45。其 frontmatter description 寫『Ship checklist (35 items)』,line 87『35 項全綠』,line 96『完整 35 項 checklist(Spec 12 / Code 13 / Stories 6 / Ship 4)』= 12+13+6+4=35。全庫無任何 45 項 checklist 出處。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:250",
+     "claim": "`.claude/skills/component-quality-gate/SKILL.md` — 元件合入 DS 前的 45 項 checklist;Ship phase 可 chain 本 skill",
+     "reality": "同上,component-quality-gate 實際為 35 項 checklist(references/checklist.md 完整 35 項 Spec 12/Code 13/Stories 6/Ship 4)。此為第二處重複的錯誤數字。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:253",
+     "claim": "`memory/project_pending_tasks`「視覺 regression 基建」條目 — 長期 tech debt(Chromatic / screenshot-diff)",
+     "reality": "memory 檔 project_pending_tasks 不存在:.claude/memory/ 無此檔,~/.claude/projects/*/memory/ 無此檔,MEMORY.md index 亦未列。grep『視覺 regression 基建』在所有 memory 目錄零命中。此為 orphan/stale pointer,指向不存在的 SSOT 條目。",
+     "severity": "P2"
+    },
+    {
+     "line": "SKILL:100",
+     "claim": "checklist #8 同 row field 高度對齊:Input / Select / Button 並排時高度相同(`--field-height-md` = 36px)(line 122 亦『field-height-md = 36px』作 mechanical 對照基準)",
+     "reality": "--field-height-md 預設(:root / density-md)= 2rem = 32px(uiSize.css:24 `/* 32px */`、uiSize.css:113 `32px — md default`、uiSize.stories.tsx:76 px=\"32px\" isDefault)。36px 僅 density-lg(uiSize.css:92 `2.25rem /* 36px */`)。SKILL 未限定 density 而斷言 36px,與預設值 32px 不符 — 用作機械對照基準會產生 false FAIL。",
+     "severity": "P2"
+    }
+   ]
+  }
+ ],
+ "allFalse": [
+  {
+   "line": "SKILL:42",
+   "claim": "dispatch 前必跑 node scripts/check-codex-freshness.mjs ... CLI 落後自動升級、model pin 禁、effort = probe top",
+   "reality": "check-codex-freshness.mjs 對 CLI 落後**不自動升級**:installed != npm latest 時只 errors.push(`跑 npm i -D @openai/codex@latest`) 指示訊息(line 92-94),script 從不執行升級。真正 auto-exec 是 B.0 workflow 由 AI 跑,非本 script。另兩項準確:model pin → errors.push(line 104);effort → writeEffortPin auto-write(line 124)。「CLI 落後自動升級」歸給此 script = 過度宣稱。",
+   "severity": "P2",
+   "skill": "codex-collab"
+  },
+  {
+   "line": "SKILL:19",
+   "claim": "所有結論由 Claude 收斂、跑完 M1-M31 自檢、user approve 後由我落地",
+   "reality": "meta-patterns.md SSOT 為 M1-M32(31 active,M27 retired)。M32(Audit script pixel-quantified verify)是 active sharp invariant(meta-patterns.md line 72)。「M1-M31」漏 M32,範圍描述 stale。",
+   "severity": "P2",
+   "skill": "codex-collab"
+  },
+  {
+   "line": "SKILL:157 + SKILL:162",
+   "claim": "Step 4:Codex 回覆 → Claude 自檢(M22/M23/M27/M8)... 3. M27 namespace:codex 建議 prop name 是否撞 DS 既有?",
+   "reality": "M27 已於 2026-05-15 retired,folded 進 M23(c)「framework prop name namespace conflict 子規則」(meta-patterns.md line 67 註 + M23 (c) 子規則)。SKILL 仍把 M27 當 live 自檢維度引用 = stale M-rule label(namespace 檢查功能存在,但編號已不存在於 active 集)。",
+   "severity": "P2",
+   "skill": "codex-collab"
+  },
+  {
+   "line": "SKILL:67",
+   "claim": "per references/phase-b-codex-brief.md B.0.1",
+   "reality": "codex-collab/references/ 只含 brief-template.md + transport.md;phase-b-codex-brief.md 不在此(相對路徑指向不存在檔)。實際檔在 .claude/skills/deep-audit-cross-codex/references/phase-b-codex-brief.md(B.0.1 anchor 存在於 line 14,內容相符)。跨 skill 相對 cite 斷鏈,讀者依 codex-collab/references/ 找不到。",
+   "severity": "P2",
+   "skill": "codex-collab"
+  },
+  {
+   "line": "SKILL:91",
+   "claim": "每個新 memory file 過 CLAUDE.md `## 命名必過三重 test`",
+   "reality": "CLAUDE.md 無 `## 命名必過三重 test` 此 heading。實際 section 為 `# 命名與語言一致性`(CLAUDE.md:116),3-test 內容是 body text `**3 重 test**(governance)`(CLAUDE.md:118)。cite 的 heading 不存在,grep `## 命名必過三重 test` 於 CLAUDE.md 零命中(此 fictional heading name 亦在 design-system-audit/SKILL.md、ssot-consultation.md、audit-prompts.md 系統性重複,屬全庫 stale cite)。內容可找到,故為輕微 pointer drift。",
+   "severity": "P2",
+   "skill": "codify-corrections"
+  },
+  {
+   "line": "SKILL:15",
+   "claim": "Auto-chained from `/ensure-canonical` 當 trigger 是「新原則」非「既有原則 enforce」",
+   "reality": "單向 orphan chain:ensure-canonical/SKILL.md 全文無任何 codify-principle 引用——其「與其他 skill 分工」表(lines 171-178)只列 propose-options / design-system-audit / knowledge-prune / scan-similar-bugs / story-writing,無 codify handoff;無任何 hook 做 skill chain;.claude/logs/skill-invokes.jsonl 亦 0 筆 codify-principle 紀錄(skill 從未實跑)。所謂 auto-chain 在來源 skill 端無任何 wiring,純靠 AI 記憶 = orphan。",
+   "severity": "P2",
+   "skill": "codify-principle"
+  },
+  {
+   "line": "SKILL:47",
+   "claim": "走 **Ship section**(6 項):",
+   "reality": "三處自相矛盾:(a) 此行說 Ship section 是「6 項」,(b) 緊接著列出編號 1-7 共 7 個 ship 項目,(c) 被引用的 SSOT `references/checklist.md` Phase 4 Ship 實際只有 4 個 checkbox(且 SKILL:96 與 checklist.md 簽結格式皆寫「Ship 4」)。同一 section 出現 4/6/7 三個不同數字。SKILL body 的 ship 項 5-7(Visual audit / Story canonical-drift / Code quality)並未回寫進 checklist.md,故 checklist SSOT 與 workflow 敘述已 drift。",
+   "severity": "P2",
+   "skill": "component-quality-gate"
+  },
+  {
+   "line": "SKILL:77",
+   "claim": "packages/design-system/src/**/*.spec.md 全部(83 file,通過 Glob 列舉 + Read)— A.0 強制 read sweep NO-SAMPLE scope",
+   "reality": "`find packages/design-system/src -name '*.spec.md'` 實測 = 86 file(component 67 + tokens 11 + patterns 8),非 83。glob src/**/*.spec.md 涵蓋全 86。硬編 count 已 drift(understate 3);operative 指令『全/Glob 列舉』本身正確,但數字錯,若被信任會 under-report scope。",
+   "severity": "P2",
+   "skill": "deep-audit-cross-codex"
+  },
+  {
+   "line": "SKILL:109",
+   "claim": "per-component(NO-SAMPLE,全 62 component + 全 pattern)dispatch adversarial agent(A.1b);line 45 亦稱『全 62 component』",
+   "reality": "`ls -d packages/design-system/src/components/*/` 實測 = 64 component 目錄(另 1 個 README.md file)。62 已 drift(off by 2)。A.1b 是 NO-SAMPLE per-component 強制掃,count stale 會 understate 應審單元數;『全』字為 operative 指令仍正確。",
+   "severity": "P2",
+   "skill": "deep-audit-cross-codex"
+  },
+  {
+   "line": "SKILL:98 (亦 58, 167) + references/flow-diagram.md:167,180",
+   "claim": "用 Mermaid 產 flow(Storybook 支援 render,也可 export PDF);flow-diagram.md 進一步宣稱「Storybook 8+ 支援 MDX,可直接寫 mermaid code block」「一般推薦 MDX 方式,Storybook 原生支援」",
+   "reality": "repo Storybook 完全無 mermaid addon/dependency:grep 'mermaid' 於 package.json / packages/storybook-config / .storybook 全 0 命中,且無任何 mdx/story 內嵌 mermaid 佐證支援。@storybook/addon-docs 的 MDX 對 ```mermaid fence 只渲染成 syntax-highlighted code block,非 diagram(需 remark-mermaid 或 mermaid addon 才能 render)。「Storybook 原生支援 mermaid render」不成立 —— 依此 skill 產出的 Handoff page flow 圖不會真正 render。",
+   "severity": "P2",
+   "skill": "delivery-handoff"
+  },
+  {
+   "line": "SKILL:65 vs references/inventory-checklist.md:53 (SKILL:234 指向)",
+   "claim": "Phase 1 規定 token 消費掃描用 digit-inclusive `rg -o -- '--[a-z][a-z0-9-]*'`,並明文警告『字元類含 0-9 …缺數字會截斷合併成假 key』;SKILL:234 將 inventory-checklist.md 列為『grep pattern』SSOT",
+   "reality": "被指向的 inventory-checklist.md:53 token 掃描 pattern 為 `var\\(--[a-z-]+\\)`,字元類無 0-9 —— 正是 SKILL Phase 1 警告的截斷 bug,會把 `--chart-1`/`--black-a02` 等實測 45.1% 含數字的 token 截斷合併成假 key。SKILL body 於 2026-07-07 補強了正確 pattern,但其 cite 的 reference 檔未同步,兩者互相矛盾。",
+   "severity": "P2",
+   "skill": "delivery-handoff"
+  },
+  {
+   "line": "SKILL:160",
+   "claim": "Dim 45: 對應 SSOT:`scripts/compile-stories.mjs` 邏輯 + `references/anatomy-standard.md`",
+   "reality": "`references/anatomy-standard.md` 不存在於本 skill 的 references/ 目錄(.claude/skills/design-system-audit/references/ 僅含 audit-prompts.md / historical-bugs.md / checkpoints.md / principle-audit-protocol.md / rule-placement.md)。該檔實際住在 .claude/skills/story-writing/references/anatomy-standard.md。相對路徑 pointer 在此 skill 內指向不存在的檔 = dangling ref。",
+   "severity": "P2",
+   "skill": "design-system-audit"
+  },
+  {
+   "line": "SKILL:158",
+   "claim": "Dim 43: 對齊 `references/example-selection.md`「Rule note 品質」",
+   "reality": "`references/example-selection.md` 不存在於本 skill 的 references/ 目錄;實際檔在 .claude/skills/story-writing/references/example-selection.md。相對路徑在 design-system-audit skill 內 resolve 到不存在的檔 = dangling ref(check-skill-deadref 未攔)。",
+   "severity": "P2",
+   "skill": "design-system-audit"
+  },
+  {
+   "line": "SKILL:36",
+   "claim": "## The audit dimensions(Group A–P,full list per below;...)",
+   "reality": "維度表實際橫跨 Group A 到 Group Q(Group Q — Fork-shipped packaging integrity 在 line 205,dims 84-91)。範圍應為 A–Q;line 6 檔頭已正確寫「Groups A–Q」,line 36 stale 寫「Group A–P」漏 Group Q。",
+   "severity": "P2",
+   "skill": "design-system-audit"
+  },
+  {
+   "line": "SKILL:141",
+   "claim": "enforce template 抽象化 → 加進 references/patterns.md(若 ≥ 3 次同 pattern)",
+   "reality": "The ensure-canonical skill directory contains ONLY SKILL.md — there is no references/ subdirectory and no references/patterns.md. The cited destination path does not exist (and is not listed in the skill's own References section lines 180-185). '加進'(add into) implies the file exists; a reader following Phase F would find no such file/dir. Low severity because it is guarded by a conditional ('若 ≥ 3 次同 pattern') = create-on-demand pointer, not a claim of a mechanically-consumed existing artifact.",
+   "severity": "P2",
+   "skill": "ensure-canonical"
+  },
+  {
+   "line": "SKILL:119-122",
+   "claim": "Phase 5 指示把本次 metric append 到 .claude/logs/metric-snapshots.jsonl,範例 schema 為 {\"ts\":\"2026-04-24\",\"claude_md_lines\":686,\"hook_fires_total\":N,\"skill_invokes_total\":M}",
+   "reality": "實際 metric-snapshots.jsonl 用 schema_version v2,由 hook stop_passive_logging.sh 機械寫入(tag:auto-daily),欄位為 claude_md_lines/memory_entries/hooks_total/skills_total/untested_hooks/last_prune_days_ago/corrections_pending + 完整 ISO ts。SKILL 宣稱的 hook_fires_total / skill_invokes_total 兩欄全 repo 只出現在本 SKILL.md,無任何 script/hook 產出。SKILL 的 Phase 5 手動 append 格式已與真實 v2 schema 漂移,且手動 snapshot 步驟實際被 hook 機械 snapshot 取代(orphan 指令)。",
+   "severity": "P2",
+   "skill": "governance-health"
+  },
+  {
+   "line": "SKILL:61",
+   "claim": "`benchmarks/claude-code-features.jsonl` — 新 CC feature 採用提議",
+   "reality": "No .jsonl exists in .claude/benchmarks/. The actual file is `.claude/benchmarks/claude-code-features.md` (973KB markdown). An AI following the skill would fail to read the cited `.jsonl` path. `find .claude/benchmarks -name '*.jsonl'` returns nothing.",
+   "severity": "P2",
+   "skill": "knowledge-prune"
+  },
+  {
+   "line": "SKILL:62",
+   "claim": "`benchmarks/external-ds-snapshots/*.md` — Polaris / Material / Atlassian 近期更動",
+   "reality": "The files in .claude/benchmarks/external-ds-snapshots/ are `.html`, not `.md` (polaris-components.html / material3-foundations.html / atlassian-components.html). `find ... -name '*.md'` returns nothing; the cited `*.md` glob matches zero files.",
+   "severity": "P2",
+   "skill": "knowledge-prune"
+  },
+  {
+   "line": "SKILL:10, SKILL:149, SKILL:153",
+   "claim": "chain `/component-quality-gate` 走 45 項 checklist / 「45 項全綠」/「review-phase gate(元件做完後驗 45 項)」",
+   "reality": "component-quality-gate 實際是 35 項,非 45。其 SKILL.md:87「35 項全綠」+ :96「完整 35 項 checklist(Spec 12 / Code 13 / Stories 6 / Ship 4)」+ description「(35 items)」,且 CLAUDE.md 稽核 canonical 亦寫「35 項 + visual + clean-code 三層」。new-component SKILL 三處均寫 45,與所 chain 的 gate 及 CLAUDE.md canonical drift。",
+   "severity": "P1",
+   "skill": "new-component"
+  },
+  {
+   "line": "SKILL:37",
+   "claim": "對齊 ... memory `feedback_proactive_5layer_pipeline.md`「5-step pre-check」(寫 tsx 前必含 CLAUDE.md SSOT 清單 + tsx 開頭「── 消費的 SSOT ──」段)",
+   "reality": "被引為權威來源的 memory 檔 `feedback_proactive_5layer_pipeline.md` 不存在:.claude/memory/ 無此檔、.claude/memory/retired/ 無此檔、MEMORY.md index 亦未列。僅在 3 個 SKILL.md(new-component/prototype/story-writing)以引用形式出現但目標檔缺失 = 破損/stale citation(真實內容存於 .claude/references/ssot-consultation.md,但 cite target 已消失)。",
+   "severity": "P2",
+   "skill": "new-component"
+  },
+  {
+   "line": "SKILL:68",
+   "claim": "`npx vite build --report`(vite bundle visualizer)",
+   "reality": "vite ^5.4.0(package.json:128)沒有原生 `--report` flag,`vite build --help` 無此選項;`rollup-plugin-visualizer` 未安裝(node_modules 不存在),vite config 也無 visualizer plugin。此指令不會產出任何 bundle visualizer 報告,`--report` 會被忽略。散文宣稱的『vite bundle visualizer』工具行為不存在(--report 是 webpack/vue-cli idiom,非 vite)。",
+   "severity": "P2",
+   "skill": "performance-audit"
+  },
+  {
+   "line": "references/audit-checks.md:243",
+   "claim": "Rating yellow stars（`bg-warning` 黃星）: 世界級 convention（Amazon / Google / Yelp 皆黃），spec line 73 明文 documented exception。",
+   "reality": "rating.spec.md line 73 是 size 對照表（xs/sm/md/lg 高度），不是 yellow star exception。真正的黃星 documented exception 在 rating.spec.md 第 151 行（Filled star `var(--warning)` 表格列）+ 162-166 行（『為什麼用 --warning（黃色）』段 + 『documented 例外（見 color.spec.md）』）。line 73 cite 指錯行，跟隨此 cite 的 AI 會在錯的位置找不到 exception。",
+   "severity": "P2",
+   "skill": "product-ui-audit"
+  },
+  {
+   "line": "SKILL:134",
+   "claim": "### Phase 1 — Parallel 6-dim audit",
+   "reality": "本 SKILL 實際定義 7 個 dimension（SKILL:46『## 7-Dimension Audit』、SKILL:136『7 個維度各自獨立 grep』、Dim 1-7 全列 SKILL:50-124）。Phase 1 標題『6-dim』是 stale number，與同檔 7-dimension 結構自相矛盾。",
+   "severity": "P2",
+   "skill": "product-ui-audit"
+  },
+  {
+   "line": "SKILL:6 (+ SKILL:3 description, SKILL:8/30/112/175)",
+   "claim": "Propose-time 7-Q Gate / \"7-Q principle check\" / \"強制 7 題,缺一就 reject\"(全篇以「7-Q」命名,列出 Q0/Q1/Q1'/Q2/Q3/Q4/Q5 共 7 個 heading)",
+   "reality": "本 skill 明文對齊(SKILL:12)的 SSOT M18(.claude/rules/meta-patterns.md)canonical 定義為「Propose-time 6 題自檢 gate(2026-05-18 升 4→6 加 Q0 + Q5)」— M18 將 Q1' 折入 Q1 計為 6 題。SKILL 自稱「7-Q」與其宣稱對齊的 canonical 數字(6)不一致,屬 cross-doc number-SSOT drift。純命名/計數層,無 mechanical enforcement 影響(hook 僅強制 Q0)。",
+   "severity": "P2",
+   "skill": "propose-options"
+  },
+  {
+   "line": "SKILL:144",
+   "claim": "memory `feedback_proactive_5layer_pipeline.md`「5-step pre-check」(SSOT 在 memory + CLAUDE.md,本 skill 不重複)",
+   "reality": "The cited memory file does not exist anywhere — not in .claude/memory/ nor .claude/memory/retired/. `find . -name '*5layer*'` returns nothing; `grep -rl proactive_5layer_pipeline .claude/` only finds the three SKILL.md files that cite it (prototype, story-writing, new-component), never an actual file. It is a dangling orphan cite. The '5-step pre-check' discipline it points to therefore has no resolvable memory home; the actual content lives in feedback_codex_dual_track_synthesizer.md (but that is the codex 5-step, a different SSOT). Only the CLAUDE.md「SSOT 消費 canonical」half of the cite resolves (→ .claude/references/ssot-consultation.md). So the paired mechanical safety net claim (check_story_invariants.sh R1 anatomy, PreToolUse, exit 2 BLOCKER, registered in settings.json, folded from check_story_anatomy.sh) is fully accurate, but the memory SSOT home it references for the pre-check discipline is fabricated.",
+   "severity": "P1",
+   "skill": "prototype"
+  },
+  {
+   "line": "SKILL:22 (+ frontmatter SKILL:3)",
+   "claim": "強制(auto-chain)— batch-end only … / frontmatter「Auto-invoke after fix commits」",
+   "reality": "No mechanical auto-invoke or 強制 auto-chain exists — skills cannot self-invoke. The only mechanism is session_start_governance_check.sh Check 6, which appends to the SOFT REMINDERS channel with「考慮 invoke」(not BLOCKERS), and the hook ends with exit 0 (line 310) — no exit 2, no BLOCKER, nothing forced. The SKILL itself correctly labels this「soft 提醒」at line 25, so 強制/Auto-invoke in the header overstates a soft-reminder-only reality.",
+   "severity": "P2",
+   "skill": "scan-similar-bugs"
+  },
+  {
+   "line": "SKILL:150",
+   "claim": "Drift detection(已 migrated)| hook `post_edit_dispatcher.sh` → `lib/_story_compile_drift.sh`(原 check_story_compile_drift.sh folded)",
+   "reality": "Chain is wired (post_edit_dispatcher.sh line 54 runs the helper; dispatcher IS registered in .claude/settings.json:346) and check_story_compile_drift.sh IS correctly folded (absent). BUT lib/_story_compile_drift.sh scope filter uses stale glob `*/design-system/components/*.tsx` / `*.spec.md` — missing `/src/`. Real components live at `packages/design-system/src/components/...`, so the case statement falls through to `*) exit 0` and the `compile-stories --check` drift probe NEVER runs on any real component edit. Verified empirically: piping a real button.tsx path into the helper yields empty output, exit 0. The claimed write-time drift-detection net is silently dead; only the separate Dim 23 audit (`--all --check`, which uses correct COMPONENTS_DIR=packages/design-system/src/components) still catches drift.",
+   "severity": "P1",
+   "skill": "story-auto-compile-migrate"
+  },
+  {
+   "line": "SKILL:8",
+   "claim": "元件總數 Phase 0 動態計(`ls -d packages/design-system/src/components/*/ | wc -l`,當前 62),禁 hardcode",
+   "reality": "The dynamic-count command is correct and 禁 hardcode instruction is sound, but the parenthetical snapshot '當前 62' is stale: `ls -d packages/design-system/src/components/*/ | wc -l` currently returns 64.",
+   "severity": "P2",
+   "skill": "story-auto-compile-migrate"
+  },
+  {
+   "line": "SKILL:44",
+   "claim": "對齊 memory `feedback_proactive_5layer_pipeline.md`「5-step pre-check」",
+   "reality": "該 memory 檔不存在於 .claude/memory/(ls + grep 均無;僅 new-component / prototype / story-writing 三 SKILL 引用它 = 三處 orphan 死指標)。MEMORY.md index 亦無此條。",
+   "severity": "P2",
+   "skill": "story-writing"
+  },
+  {
+   "line": "SKILL:121",
+   "claim": "CLAUDE.md `# 失敗記憶索引` → 三方漂移:SegmentedControl cva defaultVariants bug",
+   "reality": "CLAUDE.md 全檔 SegmentedControl 命中 0 次;`# 失敗記憶索引` 現為「技術沉默陷阱 only」10 行表(header 明寫『設計判斷類已被 M-rules 吸收』),不含 SegmentedControl / 三方漂移 條目。該案例已移出至 M-rules / historical-bugs.md,SKILL 指標已 stale。",
+   "severity": "P2",
+   "skill": "story-writing"
+  },
+  {
+   "line": "SKILL:85, SKILL:90",
+   "claim": "偏離需 rationale 由 design-system-audit Dim 13 enforce / Dimension 13 會強制 grep 比對偏離 + rationale 追溯（針對 anatomy 6 件套）",
+   "reality": "design-system-audit SKILL Dim 13(line 71)實際定義為『Anatomy Figma-inspect 完整度 | 5 mandatory sections present / token-first / dev language / no density dual / live swatches』——寫 5 sections 而非 SKILL/anatomy-standard.md 的 6 件套（漏 Accessibility 第 6 章），且 dim 定義完全未提及『rationale 追溯 / grep 比對偏離』機制。所引用的 enforce 行為與 dim 實文不符（under-scoped drift）。",
+   "severity": "P2",
+   "skill": "story-writing"
+  },
+  {
+   "line": "SKILL:122",
+   "claim": "M3 mindset #3「改一處看三處」:三方連動改靠 mindset",
+   "reality": "標籤 conflation:meta-patterns.md 的 M3 = 『Portal 逃逸 subtree context』（theme/density/provider），與『改一處看三處』無關;『改一處必看三處』實為 CLAUDE.md mindset #3(非 meta-pattern M3)。grep『M3』會落在 Portal escape 而非本段引用內容。",
+   "severity": "P2",
+   "skill": "story-writing"
+  },
+  {
+   "line": "SKILL:74",
+   "claim": "Hover delay:tooltip / hover-card 的 open delay(700ms for tooltip, 500ms for hover-card per DS canonical)",
+   "reality": "DS canonical 值被寫反。Tooltip open delay = MOTION_DELAY_PLAIN_MS = 500ms(tooltip.tsx L10-13 明確拒絕 Radix 700ms「過保守」,統一用 500ms)。HoverCard open delay = MOTION_DELAY_RICH_MS = 700ms(hover-card.tsx L29 + hover-card.spec.md L117「rich 700ms open / close 200ms」)。SSOT motion.ts:L12 PLAIN=500、L15 RICH=700。故實際應為「500ms for tooltip, 700ms for hover-card」,SKILL 恰好對調。用此 SKILL Phase 4 稽核 hover delay 會把正確實作誤判為錯。",
+   "severity": "P1",
+   "skill": "ux-audit"
+  },
+  {
+   "line": "SKILL:34",
+   "claim": "/component-quality-gate  合入 DS 前的 45 項 checklist(Ship phase 可 chain 本 skill)",
+   "reality": "component-quality-gate SKILL.md 實為 35 項,非 45。其 frontmatter description 寫『Ship checklist (35 items)』,line 87『35 項全綠』,line 96『完整 35 項 checklist(Spec 12 / Code 13 / Stories 6 / Ship 4)』= 12+13+6+4=35。全庫無任何 45 項 checklist 出處。",
+   "severity": "P2",
+   "skill": "visual-audit"
+  },
+  {
+   "line": "SKILL:250",
+   "claim": "`.claude/skills/component-quality-gate/SKILL.md` — 元件合入 DS 前的 45 項 checklist;Ship phase 可 chain 本 skill",
+   "reality": "同上,component-quality-gate 實際為 35 項 checklist(references/checklist.md 完整 35 項 Spec 12/Code 13/Stories 6/Ship 4)。此為第二處重複的錯誤數字。",
+   "severity": "P2",
+   "skill": "visual-audit"
+  },
+  {
+   "line": "SKILL:253",
+   "claim": "`memory/project_pending_tasks`「視覺 regression 基建」條目 — 長期 tech debt(Chromatic / screenshot-diff)",
+   "reality": "memory 檔 project_pending_tasks 不存在:.claude/memory/ 無此檔,~/.claude/projects/*/memory/ 無此檔,MEMORY.md index 亦未列。grep『視覺 regression 基建』在所有 memory 目錄零命中。此為 orphan/stale pointer,指向不存在的 SSOT 條目。",
+   "severity": "P2",
+   "skill": "visual-audit"
+  },
+  {
+   "line": "SKILL:100",
+   "claim": "checklist #8 同 row field 高度對齊:Input / Select / Button 並排時高度相同(`--field-height-md` = 36px)(line 122 亦『field-height-md = 36px』作 mechanical 對照基準)",
+   "reality": "--field-height-md 預設(:root / density-md)= 2rem = 32px(uiSize.css:24 `/* 32px */`、uiSize.css:113 `32px — md default`、uiSize.stories.tsx:76 px=\"32px\" isDefault)。36px 僅 density-lg(uiSize.css:92 `2.25rem /* 36px */`)。SKILL 未限定 density 而斷言 36px,與預設值 32px 不符 — 用作機械對照基準會產生 false FAIL。",
+   "severity": "P2",
+   "skill": "visual-audit"
+  }
+ ]
+}

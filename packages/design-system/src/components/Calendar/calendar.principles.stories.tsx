@@ -1,6 +1,6 @@
 // @principles-rationale: Merged WhenToUse + WhenNotToUse + VsDatePicker into a single
 // `UsageGuidance` story (3 sections) per 2026-04-26 user mandate to consolidate
-// decision-related stories. ColorSemantic + MvpScope kept as separate principles.
+// decision-related stories. ColorSemantic + MonthViewOnlyRule kept as separate principles.
 import type { Meta, StoryObj } from '@storybook/react'
 import LinkTo from '@storybook/addon-links/react'
 import { Calendar, type CalendarEvent } from './calendar'
@@ -14,8 +14,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// 釘固定日期(2026-07-07 修 VR flake):真實 new Date() 讓 today 標記隨換日移格 → ubuntu
-// baseline 每隔幾天假 breach(0.07–0.5%)。釘死 = deterministic 渲染;月中讓事件分布自然。
+// 釘固定日期(2026-07-07 修 VR flake;2026-07-13 補傳 defaultReferenceDate 使 pin 真正生效):
+// 只把 now 用來組事件日期字串「不會」pin 顯示月 —— Calendar 顯示月預設取即時 new Date()(tsx),
+// 故必須把 now 傳給 defaultReferenceDate 才真正釘住顯示月(下方各 instance 已補),否則當前月非
+// 7 月時 7 月事件根本不顯示。註:today 標記仍取真實日期(tsx 內 new Date(),無 today override prop)
+// → 落在被釘的 7 月內時仍隨換日移格,屬已知殘留(需新增 today prop 才能完全釘死,SSOT 待拍板)。
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
 
@@ -85,6 +88,7 @@ export const UsageGuidance: Story = {
               <div className="text-body font-medium mb-2">Calendar(event canvas)</div>
               <div className="h-80 border border-divider rounded-md overflow-hidden">
                 <Calendar
+                  defaultReferenceDate={now}
                   events={[
                     { id: 'a', title: 'Design review', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
                   ] as CalendarEvent[]}
@@ -109,6 +113,7 @@ export const ColorSemantic: Story = {
       >
         <div className="h-80 border border-divider rounded-md overflow-hidden">
           <Calendar
+            defaultReferenceDate={now}
             events={[
               { id: '1', title: 'Design review', start: `${thisMonth}-05`, end: `${thisMonth}-05`, color: 'blue' },
               { id: '2', title: 'Sprint planning', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
@@ -123,9 +128,11 @@ export const ColorSemantic: Story = {
   ),
 }
 
-// ── 原則 — MVP scope:月 view only ─────────────────────────────────────────
-export const MvpScope: Story = {
-  name: 'MVP 範圍',
+// ── 原則 — 支援範圍:月 view only(2026-07-14 rename MvpScope → MonthViewOnlyRule
+//    per audit Dim 14 + category-templates.md「Canonical naming」:「MVP」為開發 roadmap
+//    內部用語,reader-facing name 必人話;component-specific {Topic}Rule idiom 保留)──────
+export const MonthViewOnlyRule: Story = {
+  name: '僅支援月檢視',
   render: () => (
     <div className="space-y-6">
       <Rule
@@ -134,6 +141,7 @@ export const MvpScope: Story = {
       >
         <div className="h-80 border border-divider rounded-md overflow-hidden">
           <Calendar
+            defaultReferenceDate={now}
             events={[
               { id: '1', title: 'Sprint planning', start: `${thisMonth}-08`, end: `${thisMonth}-08`, color: 'blue' },
             ] as CalendarEvent[]}

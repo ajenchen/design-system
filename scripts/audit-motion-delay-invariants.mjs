@@ -9,7 +9,7 @@
  *   - hover-card.tsx 裸 re-export Radix Root(close 300 ≠ canonical 200),spec 宣稱有預設 = 假
  *   - overflow-indicator.tsx 2026-05-18 token 遷移把 hardcode 200/300 誤挑 rich(spec 表明文 plain)
  *
- * R1 production code 禁 numeric literal delay(必走 HOVER_DELAY_*_MS;escape: @motion-delay-allow)
+ * R1 production code 禁 numeric literal delay(必走 MOTION_DELAY_*_MS;escape: @motion-delay-allow)
  * R2 tier freeze:已 codify 的 consumer tier 凍結(改 tier = 必先改 motion.spec 對照表 + 本表,diff 可見)
  * R3 cross-home 同值:motion.ts(JS)與 motion.css(CSS)三值必一致
  *
@@ -36,17 +36,17 @@ for (const f of prodFiles) {
     if (/(openDelay|closeDelay|delayDuration)\s*[=:]\s*\{?\s*\d+/.test(line)) {
       const prev = lines[i - 1] ?? ''
       if (line.includes('@motion-delay-allow') || prev.includes('@motion-delay-allow')) return
-      fails.push(`R1 ${f.replace(ROOT + '/', '')}:${i + 1} — numeric literal delay(必走 HOVER_DELAY_*_MS token;escape: @motion-delay-allow: <理由>)`)
+      fails.push(`R1 ${f.replace(ROOT + '/', '')}:${i + 1} — numeric literal delay(必走 MOTION_DELAY_*_MS token;escape: @motion-delay-allow: <理由>)`)
     }
   })
 }
 
 // ── R2:tier freeze(consumer → 必含的 token 引用;改 tier 必先動 motion.spec 對照表 + 本表)──
 const TIER_FREEZE = [
-  ['components/Tooltip/tooltip.tsx', ['delayDuration = HOVER_DELAY_PLAIN_MS']],
-  ['components/HoverCard/hover-card.tsx', ['openDelay = HOVER_DELAY_RICH_MS', 'closeDelay = HOVER_DELAY_CLOSE_MS']],
-  ['components/Avatar/avatar.tsx', ['openDelay={HOVER_DELAY_RICH_MS}', 'closeDelay={HOVER_DELAY_CLOSE_MS}']],
-  ['components/OverflowIndicator/overflow-indicator.tsx', ['openDelay={HOVER_DELAY_PLAIN_MS}', 'closeDelay={HOVER_DELAY_CLOSE_MS}']],
+  ['components/Tooltip/tooltip.tsx', ['delayDuration = MOTION_DELAY_PLAIN_MS']],
+  ['components/HoverCard/hover-card.tsx', ['openDelay = MOTION_DELAY_RICH_MS', 'closeDelay = MOTION_DELAY_CLOSE_MS']],
+  ['components/Avatar/avatar.tsx', ['openDelay={MOTION_DELAY_RICH_MS}', 'closeDelay={MOTION_DELAY_CLOSE_MS}']],
+  ['components/OverflowIndicator/overflow-indicator.tsx', ['openDelay={MOTION_DELAY_PLAIN_MS}', 'closeDelay={MOTION_DELAY_CLOSE_MS}']],
 ]
 for (const [rel, needles] of TIER_FREEZE) {
   const src = readFileSync(join(DS, rel), 'utf-8')
@@ -59,9 +59,9 @@ for (const [rel, needles] of TIER_FREEZE) {
 const ts = readFileSync(join(DS, 'tokens/motion/motion.ts'), 'utf-8')
 const css = readFileSync(join(DS, 'tokens/motion/motion.css'), 'utf-8')
 const pairs = [
-  ['HOVER_DELAY_PLAIN_MS', '--hover-delay-plain'],
-  ['HOVER_DELAY_RICH_MS', '--hover-delay-rich'],
-  ['HOVER_DELAY_CLOSE_MS', '--hover-delay-close'],
+  ['MOTION_DELAY_PLAIN_MS', '--motion-delay-plain'],
+  ['MOTION_DELAY_RICH_MS', '--motion-delay-rich'],
+  ['MOTION_DELAY_CLOSE_MS', '--motion-delay-close'],
 ]
 for (const [jsName, cssName] of pairs) {
   const jsVal = ts.match(new RegExp(`${jsName}\\s*=\\s*(\\d+)`))?.[1]

@@ -1,0 +1,19 @@
+{
+  "component": "BulkActionBar",
+  "implBasis": "self-built (div + DS Button/ButtonDivider; consumer-driven actions slot)",
+  "claimsVerified": 26,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:180",
+      "宣稱": "a11y 預設：『BulkActionBar 整體用 `role=\"toolbar\"` + aria-label』",
+      "真實code行為": "bulk-action-bar.tsx:98 root 用 `role=\"group\"`（2026-07-06 user 拍板自 toolbar 降級——未實作 APG toolbar 方向鍵 roving 契約，改 group 語意誠實）。spec a11y 段仍寫 role=\"toolbar\"，與 code 及 anatomy story（anatomy:189 已正確寫 role=\"group\"）雙雙相矛盾。stale spec。",
+      "severity": "material"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:162",
+      "宣稱": "API 段 BulkActionBarLabels interface 只列 count / clear / hiddenSuffix / toolbarAriaLabel，並把 `toolbarAriaLabel: string // default 「批次操作」` 呈現為 aria-label 的 key",
+      "真實code行為": "bulk-action-bar.tsx:24-27 介面已新增 `ariaLabel?: string`（root aria-label 的新主 key，2026-07-06），且 `toolbarAriaLabel` 已標 @deprecated（僅作 fallback）。code 實際用 `labels.ariaLabel ?? labels.toolbarAriaLabel`（tsx:99）。spec API interface 漏列 ariaLabel 欄位、也未標 toolbarAriaLabel 為 deprecated——文件 drift。",
+      "severity": "marginal"
+    }
+  ]
+}

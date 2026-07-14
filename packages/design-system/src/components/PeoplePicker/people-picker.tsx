@@ -4,20 +4,29 @@
 import * as React from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, EMPTY_DISPLAY, nakedCellRowModeAlign } from '@/design-system/components/Field/field-wrapper'
+import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
+import { fieldWrapperStyles, nakedCellRowModeAlign } from '@/design-system/components/Field/field-wrapper'
+import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { useFieldSurface, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant } from '@/design-system/components/Field/field-context'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Tag } from '@/design-system/components/Tag/tag'
-import { Select } from '@/design-system/components/Select/select'
-import { Combobox } from '@/design-system/components/Combobox/combobox'
+import { Select as SelectPublic } from '@/design-system/components/Select/select'
+import { Combobox as ComboboxPublic } from '@/design-system/components/Combobox/combobox'
 import { PersonDisplay, MultiPersonDisplay, PersonAvatarTag, buildPersonProfileCard, resolvePerson, type PersonValue } from './person-display'
 import {
   getAvatarStackVisibleCount,
   AVATAR_STACK_AVATAR_PX,
   AVATAR_STACK_OVERFLOW_CHIP_PX,
 } from './avatar-stack-overflow'
+import type { WithFieldVariantInternal } from '@/design-system/components/Field/field-types'
+
+// ── @internal naked variant forward 通道(2026-07-14 API 策展 E)──────────────────────────
+// naked 已從公開 FieldVariant 拆出(field-types.ts FieldVariantInternal)。PeoplePicker 是
+// Select / Combobox 的 wrapper:cell-registry 傳入的 naked 需原樣 forward 給 primitive
+// (M30 wrapper forward 全 primitive surface)。型別層 widen,純型別、零 runtime。
+const Select = SelectPublic as WithFieldVariantInternal<typeof SelectPublic>
+const Combobox = ComboboxPublic as WithFieldVariantInternal<typeof ComboboxPublic>
 // Pure helpers extracted to sibling for file-size budget(2026-05-18,P1 ≤ 500 lines)。
 // 不消費 component closure 的純 constant / 純 mapping function 全部搬走,主檔保留 SSOT-bearing
 // render logic(消費 Combobox / Select / state 等 closure 的部分)。
@@ -55,6 +64,9 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   mode?: FieldMode
   /** Field chrome variant(對齊 Select / Combobox)*/
   variant?: FieldVariant
+  /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮(value 寬 + slot 寬 + gap + 內 padding);
+   *  chrome 與互動不變。SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
+  width?: FieldWidth
   size?: 'sm' | 'md' | 'lg'
   /** 當前已選的人(單選 PersonValue,多選 PersonValue[])*/
   value?: PersonValue | PersonValue[] | null
@@ -65,7 +77,10 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   /** 2026-05-12 Stream C Issue 4 fix(codex Q3 Cluster C):trigger empty placeholder。
    *  Default '請選擇人員'。**禁** 將 `emptyText`(search-empty)當 trigger placeholder 傳。 */
   placeholder?: string
-  /** 搜尋框 placeholder */
+  /** 搜尋框 placeholder — **僅 multi 模式 panel-top search(`searchIn='menu'`,default)生效**。
+   *  single mode wrap `<Select searchable>` 走 inline-trigger 搜尋,提示取自 `placeholder`
+   *  (Select 無 searchPlaceholder prop);multi `searchIn='trigger'` inline 搜尋同理走
+   *  placeholder 規則(spec「Trigger display SSOT canonical table」)。 */
   searchPlaceholder?: string
   /** 搜尋無結果訊息(filtered menu empty)。**僅**用於 SelectMenu `emptyText`(菜單空狀態,
    *  2026-07-04 Q4 接線完成),不轉 trigger placeholder(2026-05-12 Issue 4 semantic fix)。 */
@@ -111,6 +126,7 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
 const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(function PeoplePicker({
   mode: modeProp,
   variant: variantProp,
+  width,
   size: sizeProp,
   value,
   onChange,
@@ -131,11 +147,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   ...rest
 }, ref) {
   const surface = useFieldSurface()
+  const emptyDisplay = useFieldEmptyDisplay()
   const size = useResolvedFieldSize(sizeProp)  // B 組 cascade fix
   const disabled = useResolvedFieldDisabled(disabledProp)
   // 2026-06-08 SSOT:mode/disabled/variant 統一經 helper;修 <Field disabled> 漏 cascade(原只讀 fieldCtx.mode)
   const resolvedMode: FieldMode = useResolvedFieldMode({ mode: modeProp, disabled })
-  const resolvedVariant: FieldVariant = useResolvedFieldVariant(variantProp)
+  const resolvedVariant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
   const isMulti = Array.isArray(value)
   const isEmpty = !value || (isMulti && value.length === 0)
 
@@ -195,7 +212,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   // 與 edit (Select / Combobox wrapped) 同 DOM 結構消除 cell display↔edit 像素偏移。
   if (resolvedMode === 'display') {
     if (!showDisplayEndIcon) {
-      if (isEmpty) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
+      if (isEmpty) return <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
       return isMulti
         ? <MultiPersonDisplay value={value as PersonValue[]} size={size} measured />
         : <PersonDisplay value={value as PersonValue} size={size} />
@@ -204,12 +221,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     return (
       <div
-        className={cn(fieldWrapperStyles({ mode: 'display', variant: resolvedVariant, size }), className)}
+        className={cn(fieldWrapperStyles({ mode: 'display', variant: resolvedVariant, width, size }), className)}
         data-field-mode="display"
       >
         <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign)}>
           {isEmpty
-            ? <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
+            ? <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
             : isMulti
               ? <MultiPersonDisplay value={value as PersonValue[]} size={size} measured />
               : <PersonDisplay value={value as PersonValue} size={size} />}
@@ -226,18 +243,20 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     return (
       <div
         ref={ref}
-        className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, size }), className)}
+        className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: resolvedVariant, width, size }), className)}
         data-field-mode={resolvedMode}
         aria-disabled={resolvedMode === 'disabled' ? true : undefined}
         aria-label={ariaLabel}
         {...rest}
       >
         <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign, resolvedMode === 'disabled' && 'text-fg-disabled')}>
+          {/* 2026-07-14 deep-audit 修:disabled 傳入 → 抑制 Avatar ProfileCard hoverCard + avatar dim
+              (spec「disabled:灰化整個 field,不可互動」原被 hoverCard falsify);readonly 保留 hoverCard(純展示仍可查閱) */}
           {isEmpty
-            ? <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
+            ? <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
             : isMulti
-              ? <MultiPersonDisplay value={value as PersonValue[]} size={size} measured />
-              : <PersonDisplay value={value as PersonValue} size={size} />}
+              ? <MultiPersonDisplay value={value as PersonValue[]} size={size} measured disabled={resolvedMode === 'disabled'} />
+              : <PersonDisplay value={value as PersonValue} size={size} disabled={resolvedMode === 'disabled'} />}
         </span>
         {/* 2026-06-26 類型身份 indicator:edit 顯示 / readonly 不顯示 / disabled 保留(fg-disabled,對齊原生 <select disabled>);naked cell 依 showDisplayEndIcon */}
         {(resolvedVariant === 'naked' ? showDisplayEndIcon : resolvedMode === 'disabled') && (
@@ -258,6 +277,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     return (
       <Select
         ref={ref as React.Ref<HTMLDivElement>}
+        // 2026-07-14 deep-audit fix:width 補 forward(原漏傳 → single edit path 忽略公開 width prop;
+        // multi pill / stack 皆有傳,對齊 M30 wrapper forward 全 primitive surface)
+        width={width}
         size={size}
         variant={resolvedVariant}
         options={people.map(personToSelectOption)}
@@ -273,9 +295,11 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         className={className}
         aria-label={ariaLabel}
         selectedItemRenderer={(opt) => <PersonDisplay value={findPerson(people, opt.value)} size={size} />}
-        // **codex P2 forward**:Select extends `SelectHTMLAttributes<HTMLSelectElement>`,
-        // event handler element 型別跟 PeoplePicker `HTMLAttributes<HTMLDivElement>` 不一致
-        // (`onCopy` / `onChange` 等)。Runtime spread 等效 — DOM 收到 attrs 不挑剔。
+        // **codex P2 forward**:Select 原生屬性走 allowlist(`Pick<SelectHTMLAttributes>`,
+        // 2026-07-14 API 策展 D,見 select.tsx SelectProps docblock),event handler element
+        // 型別跟 PeoplePicker `HTMLAttributes<HTMLDivElement>` 不一致(`onCopy` / `onChange` 等)。
+        // Runtime spread 等效 — DOM 收到 attrs 不挑剔(非 allowlist attrs 落 CustomSelect rest,
+        // 續 spread 到 trigger div,runtime 行為不變)。
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         // any-allow: rest 含 `onChange: FormEventHandler` 跟 Select onChange signature 衝突 — DOM runtime spread 安全(per codex P2 forward)
         {...(rest as any)}
@@ -290,6 +314,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     }
     return (
       <Combobox
+        width={width}
         ref={ref as React.Ref<HTMLDivElement>}
         size={size}
         variant={resolvedVariant}
@@ -297,6 +322,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         value={selectedNames}
         onChange={handleMultiChange}
         searchable
+        // 2026-07-14 deep-audit fix:searchIn 補 forward(原漏傳 → pill 模式永遠 Combobox default 'menu',
+        // documented multi opt-in `searchIn='trigger'` silently 無效;stack branch 已傳,對齊 M30 forward 全 surface)
+        searchIn={searchIn}
         searchPlaceholder={searchPlaceholder}
         // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty hint('請選擇人員')
         // — semantic clean separation。2026-07-04 Q4 拍板完成 1-cycle 承諾:emptyPlaceholder forward
@@ -353,6 +381,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
 
   return (
     <Combobox
+      width={width}
       ref={mergedStackRef}
       size={size}
       variant={resolvedVariant}
@@ -472,3 +501,14 @@ export const peoplePickerMeta = {
 } as const
 
 export { PeoplePicker }
+// 2026-07-10 C14 export 缺口修(R2 同類:定義存在但無 export 面,consumer 想守 PersonValue 鏈
+// import 不到 → 被逼手刻)。person-display 表面隨 PeoplePicker subpath + root barrel 一併公開。
+export {
+  PersonDisplay,
+  MultiPersonDisplay,
+  PersonAvatarTag,
+  buildPersonProfileCard,
+  resolvePerson,
+  type PersonValue,
+  type PersonData,
+} from './person-display'

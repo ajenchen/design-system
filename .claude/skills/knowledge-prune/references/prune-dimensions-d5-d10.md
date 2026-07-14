@@ -33,6 +33,7 @@ Scan `~/.claude/.../memory/*.md`:
 - 6 月無 git log 變動 + 不在 MEMORY.md index head = stale candidate(per existing D2 retire rule)
 - file 存在但 MEMORY.md 沒 entry = orphan(可能 retire 漏刪)
 - entry 存在但 file 不在 = broken pointer
+- **Planning orphan**(2026-07-10 hunt 補,原方向相反不掃 planning/):`ls .claude/planning/*.md` 逐檔 rg 檔名 across memory/*.md + MEMORY.md;無引用 = planning orphan 候選(存檔性質可標 archived,活的必補 memory pointer)
 
 **Output**:stale / orphan / broken pointer 3-class list
 

@@ -141,7 +141,7 @@ Narrative 必含:
 
 **Input**: shortlist(2-3 items)+ Phase 3.0 產出的 Object Map
 
-**Phase 3.0a — SSOT 5-step pre-check**:寫任何 candidate code 前必過 CLAUDE.md「SSOT 消費 canonical」+ memory `feedback_proactive_5layer_pipeline.md`「5-step pre-check」(SSOT 在 memory + CLAUDE.md,本 skill 不重複)。`check_story_invariants.sh` R1 anatomy(原 check_story_anatomy.sh folded 折入)PreToolUse 是最後安全網,但 5-step 是事前 discipline。
+**Phase 3.0a — SSOT 5-step pre-check**:寫任何 candidate code 前必過 CLAUDE.md「SSOT 消費 canonical」+ `node_modules/@qijenchen/design-system/ds-canonical/references/ssot-consultation.md`「5-step pre-check」(SSOT 在 memory + CLAUDE.md,本 skill 不重複)。`check_story_invariants.sh` R1 anatomy(原 check_story_anatomy.sh folded 折入)PreToolUse 是最後安全網,但 5-step 是事前 discipline。
 
 **Process**: 每個 candidate 建一個 exploration story,**各 candidate 共享 Object Map 但差異在 UI shape + CTAs 順序**。see `references/proposal-template.md` for structure。
 

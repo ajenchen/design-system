@@ -1,0 +1,1335 @@
+{
+ "componentsAudited": 64,
+ "storiesScanned": 929,
+ "material": 23,
+ "marginal": 89,
+ "byType": {
+  "jargon": 75,
+  "mixed-language": 18,
+  "verbose": 15,
+  "other": 4
+ },
+ "topComponents": [
+  [
+   "DataTable",
+   8
+  ],
+  [
+   "DatePicker",
+   6
+  ],
+  [
+   "Field",
+   4
+  ],
+  [
+   "FileViewer",
+   4
+  ],
+  [
+   "Pagination",
+   4
+  ],
+  [
+   "Alert",
+   3
+  ],
+  [
+   "Calendar",
+   3
+  ],
+  [
+   "Dialog",
+   3
+  ],
+  [
+   "FileItem",
+   3
+  ],
+  [
+   "InlineEdit",
+   3
+  ],
+  [
+   "Input",
+   3
+  ],
+  [
+   "Popover",
+   3
+  ]
+ ],
+ "perComponent": [
+  {
+   "component": "Accordion",
+   "storiesScanned": 15,
+   "issues": []
+  },
+  {
+   "component": "Alert",
+   "storiesScanned": 16,
+   "issues": [
+    {
+     "fileLine": "components/Alert/alert.stories.tsx:101-104",
+     "type": "jargon",
+     "原文": "✅ Close X 跟 refresh / share 同 Button iconOnly xs(chrome 輕量 action,chrome-header-height 幾何),Separator 分群。❌ 禁止混 Inline Action + Button iconOnly(違反 same-row consistency)。",
+     "問題": "這段是「展示」(showcase)頁使用者可見的說明文字,面向設計師/PM,卻塞滿工程簡寫:「chrome 輕量 action」「chrome-header-height 幾何」「same-row consistency」「Inline Action」。設計師無法理解「chrome-header-height 幾何」在講什麼,整句像 code review 註解而非給人看的說明。",
+     "建議": "改成人話,例如:「右上角這排(重新整理、分享、關閉)全用同一種最小尺寸的純圖示按鈕,並用分隔線分成兩群,保持同一列視覺一致。不要一群用純圖示按鈕、另一群用列內動作,會不整齊。」token/prop 名若要留給工程可移到不可見的 code 註解。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "components/Alert/alert.anatomy.stories.tsx:194",
+     "type": "jargon",
+     "原文": "未傳 handler 不渲染 X——controlled-only,無 handler 的 X 是死按鈕;2026-07-05 D4",
+     "問題": "使用者可見的行為說明裡夾了內部審計代號「2026-07-05 D4」與工程術語「controlled-only」「handler」。「2026-07-05 D4」對讀者完全無意義,是內部 changelog 外洩到 UI。",
+     "建議": "移除「2026-07-05 D4」內部代號;「controlled-only / 死按鈕」改成人話:「只有同時傳入關閉的處理函式時才顯示 X,避免出現按了沒反應的假按鈕。」",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "components/Alert/alert.anatomy.stories.tsx:206",
+     "type": "jargon",
+     "原文": "overlay surface(Dialog / Sheet / Popover)另走 `sm` + unbounded 負 margin trick",
+     "問題": "可見的規格說明用「unbounded 負 margin trick」這種工程口語形容排版手法,設計師讀不懂「trick」指的是什麼視覺結果。",
+     "建議": "若此對照對讀者有意義,改述效果(例:「浮層類元件的關閉鈕用較大尺寸並向外貼齊邊角」);純實作細節則移出可見散文。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "AppShell",
+   "storiesScanned": 10,
+   "issues": [
+    {
+     "fileLine": "components/AppShell/app-shell.anatomy.stories.tsx:128-129",
+     "type": "mixed-language",
+     "原文": "Desktop ≥ 768px → inline standard mode(右側 panel,不蓋 mask)/ Mobile < 768px → modal mode(Sheet from right,蓋 mask)",
+     "問題": "可見的行為說明中英夾雜偏重:「inline standard mode」「modal mode」「Sheet from right」「mask」「panel」等關鍵字全是英文,一句話中文只剩連接詞,設計師難以一眼理解兩種模式差別。",
+     "建議": "改成:「桌面(≥768px):右側面板直接嵌在頁面內,不蓋遮罩。手機(<768px):從右側滑出的抽屜,並蓋上半透明遮罩。」",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "AspectRatio",
+   "storiesScanned": 13,
+   "issues": [
+    {
+     "fileLine": "components/AspectRatio/aspect-ratio.principles.stories.tsx:246",
+     "type": "jargon",
+     "原文": "img 預設 inline-size,不會撐滿容器 → AspectRatio 鎖的空間內出現空白",
+     "問題": "「inline-size」是 CSS 底層術語,設計原則頁面向設計師,讀者不會知道「img 預設 inline-size」代表什麼。",
+     "建議": "改成:「圖片預設只佔自身原始尺寸,不會自動撐滿容器,於是鎖定的比例空間裡會露出空白。」",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "components/AspectRatio/aspect-ratio.principles.stories.tsx:99-100",
+     "type": "jargon",
+     "原文": "AspectRatio 鎖死比例,無法 hug content。文字 / 表單 / 按鈕等 content-driven 高度的區塊不包",
+     "問題": "可見說明用「hug content」「content-driven 高度」工程術語表達「高度隨內容變」的概念,設計師較難直接理解。",
+     "建議": "改成:「AspectRatio 會鎖死比例,高度不會隨內容長短伸縮;文字、表單、按鈕這類高度該跟著內容走的區塊不要包進來。」",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Avatar",
+   "storiesScanned": 13,
+   "issues": [
+    {
+     "fileLine": "components/Avatar/avatar.stories.tsx:91-93",
+     "type": "mixed-language",
+     "原文": "In Context — MenuItem / Avatar 作為 MenuItem 的 avatar slot,尺寸由 item-layout 系統決定。",
+     "問題": "標題「In Context — MenuItem」整句英文,與其他中文 story 標題不一致;說明句「avatar slot」「item-layout 系統」也中英夾雜。此頁其餘 story 皆中文標題(四模式/備援顯示/情境用例),此處風格突兀。",
+     "建議": "標題改「在 MenuItem 中使用」;說明改「Avatar 放進 MenuItem 的頭像位置時,尺寸會自動跟著清單列的排版規則走。」(MenuItem 元件名保留英文即可)",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Badge",
+   "storiesScanned": 13,
+   "issues": [
+    {
+     "fileLine": "components/Badge/badge.principles.stories.tsx:126",
+     "type": "jargon",
+     "原文": "改法:(a) 按鈕改 iconOnly + dot 疊 icon 角落、(b) 移除 dot 改用內部文字 badge(目前 DS 無 text-only badge,屬 tech debt)、(c) 移到 text 後 inline 小字「設定(新)」",
+     "問題": "可見的建議文字混入內部工程詞「tech debt」「text-only badge」,設計師/PM 讀到「屬 tech debt」無法理解與自己的關係。",
+     "建議": "「(目前 DS 無 text-only badge,屬 tech debt)」這類內部狀態不該出現在使用者可見說明,可刪除或改述為讀者能行動的替代方案;「inline 小字」改「後方接一段小字」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Breadcrumb",
+   "storiesScanned": 17,
+   "issues": [
+    {
+     "fileLine": "components/Breadcrumb/breadcrumb.stories.tsx:59-65",
+     "type": "jargon",
+     "原文": "點擊 ⋯ 開選單顯示折疊路徑;hover 走 neutral(fg-muted → foreground + neutral hover bg,消費 ItemInlineActionButton),與 BreadcrumbLink 的 primary-hover 區隔。",
+     "問題": "這是「展示」(showcase)頁使用者可見的說明,面向設計師,卻用 token 級敘述加「消費 ItemInlineActionButton」這種內部黑話。「hover 走 neutral(fg-muted → foreground + neutral hover bg,消費 ItemInlineActionButton)」設計師完全無法解讀。",
+     "建議": "改成人話:「點 ⋯ 會開選單列出被折疊的中間層級。滑鼠移上去時 ⋯ 用中性灰的高亮(和一般連結的主色高亮區隔開),對齊 Material / Atlassian / Ant 的做法。」token/primitive 名移到不可見的 code 註解。",
+     "severity": "material"
+    }
+   ]
+  },
+  {
+   "component": "BulkActionBar",
+   "storiesScanned": 11,
+   "issues": [
+    {
+     "fileLine": "components/BulkActionBar/bulk-action-bar.stories.tsx:129-134",
+     "type": "jargon",
+     "原文": "selection=[] → BulkActionBar 回傳 null,不佔 layout(對齊禁止事項 #3)",
+     "問題": "「展示」頁使用者可見文字用「回傳 null」(實作層講法)描述行為,並引用內部規格編號「禁止事項 #3」,對設計師/PM 無意義。",
+     "建議": "改成:「沒有選取任何項目時,BulkActionBar 完全不顯示,也不佔版面空間。」移除「回傳 null」與內部條號「禁止事項 #3」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "components/BulkActionBar/bulk-action-bar.anatomy.stories.tsx:189",
+     "type": "jargon",
+     "原文": "(可 i18n override;2026-07-06 自 toolbar 降級——未實作 APG toolbar 方向鍵契約,group 語意誠實,Gmail / Linear 同款)",
+     "問題": "可見的無障礙說明夾入內部 changelog「2026-07-06 自 toolbar 降級」與術語「APG toolbar 方向鍵契約」,讀者看不懂日期代號的意義。",
+     "建議": "移除「2026-07-06 自 toolbar 降級」內部日誌;若要保留 role 說明,改述為讀者可理解的一句(例:「採 group 角色,對齊 Gmail / Linear 的批次列做法」),技術契約細節移出可見文字。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Button",
+   "storiesScanned": 22,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Button/button.anatomy.stories.tsx:681",
+     "type": "jargon",
+     "原文": "設定 pressed 時 Button 自動寫 aria-pressed + data-state，樣式由 variant 的 data-[state=on] 分支套用。僅 secondary/tertiary/text 有視覺效果。",
+     "問題": "「樣式由 variant 的 data-[state=on] 分支套用」是 code 層黑話,設計師/PM 讀不懂(principles VariantRule L159 同款措辭)。",
+     "建議": "改講效果:「按下後,只有 secondary / tertiary / text 三種會呈現選中色。」aria-pressed / data-state 實作細節留 spec 與 code。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Button/button.principles.stories.tsx:284",
+     "type": "jargon",
+     "原文": "Button 內部自動把 badge 中心對齊 icon top-right corner(Material BadgedBox 設計準則)——不手刻 `relative + absolute -top-1 -right-1` 讓 badge 飄到按鈕 chrome 邊緣",
+     "問題": "「不手刻 relative + absolute -top-1 -right-1」「按鈕 chrome 邊緣」是 CSS/工程黑話,設計原則頁的讀者(設計師)無法理解用途。",
+     "建議": "改講效果:「badge 會自動貼齊 icon 右上角,不會飄到按鈕外緣。」CSS class 細節留給 code。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Calendar",
+   "storiesScanned": 11,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Calendar/calendar.stories.tsx:12",
+     "type": "mixed-language",
+     "原文": "事件檢視 canvas(月 view MVP)。對齊 Notion Calendar / Google Calendar;與 DatePicker(選日期 form control)**職責不同**,見 spec。",
+     "問題": "「事件檢視 canvas」「月 view MVP」「form control」中英夾雜——句構以中文為主卻塞入非術語英文(canvas / view / form control)。",
+     "建議": "「用來檢視事件的整頁月曆(目前只做月檢視)。和用來選日期的 DatePicker 欄位職責不同。」",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx:88",
+     "type": "jargon",
+     "原文": "event color = 12 categorical 色相,**消費 categorical-color SSOT**,與 Tag / Avatar 共用同一組",
+     "問題": "「消費 categorical-color SSOT」是內部工程術語(消費 / SSOT),使用者可見的色彩對照說明裡設計師讀不懂。",
+     "建議": "「事件顏色用 12 種類別色,和 Tag / Avatar 共用同一套色盤。」",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Calendar/calendar.anatomy.stories.tsx:91",
+     "type": "verbose",
+     "原文": "色名 1:1 對該色相的 `--color-*` primitive(零 offset);2026-06-04 修正前 red 與 orange 都誤接 deep-orange,現各自獨立可區分。",
+     "問題": "把內部修正日期與 bug 歷史(「2026-06-04 修正前…都誤接 deep-orange」)寫進使用者可見說明,對設計師是雜訊(L167 事件 tile 表格同段亦重複)。",
+     "建議": "只留結果:「red / orange 各自對應獨立色相,可清楚區分。」changelog 留 git / spec。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Carousel",
+   "storiesScanned": 11,
+   "issues": []
+  },
+  {
+   "component": "Chart",
+   "storiesScanned": 14,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Chart/chart.anatomy.stories.tsx:80",
+     "type": "jargon",
+     "原文": "ChartConfig 定義 desktop / mobile 兩類別分別對應 --chart-1 / --chart-2,ChartContainer 自動注入 scoped CSS var `--color-desktop` / `--color-mobile`,Recharts Bar `fill=\"var(--color-desktop)\"` 直接消費。",
+     "問題": "「自動注入 scoped CSS var」「直接消費」是實作層黑話,設計師無法理解色彩如何運作;整段偏開發者敘事。",
+     "建議": "精簡為「在 ChartConfig 幫每個類別指定色票,圖表就會自動套用對應顏色。」注入 / 消費等實作細節留 API 速查表。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Checkbox",
+   "storiesScanned": 12,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Checkbox/checkbox.stories.tsx:27",
+     "type": "jargon",
+     "原文": "純視覺 glyph（勾/叉 icon，Check/X）；語意由 context（如 DataTable 表頭 + 行標籤）提供，display 不暴露獨立 aria-label。",
+     "問題": "「純視覺 glyph」「語意由 context 提供」「display 不暴露獨立 aria-label」中英夾雜且偏工程;展示頁(最該用白話的一層)出現。",
+     "建議": "「只顯示勾/叉圖示,本身不帶標籤語意(由所在的表格欄位提供);要讓報讀器唸出勾選狀態,改用 edit / readonly 模式。」",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Chip",
+   "storiesScanned": 15,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Chip/chip.anatomy.stories.tsx:137",
+     "type": "jargon",
+     "原文": "Chip 採 pill-設計準則 選中規則(跟 SegmentedControl 共用;semantic.css SSOT,2026-07-06 拍板自 hover 階改 base)",
+     "問題": "「pill-設計準則」是英中硬拼的怪詞(讀來不像人話);「semantic.css SSOT,2026-07-06 拍板自 hover 階改 base」把檔名+內部決策日期寫進使用者說明。同款措辭在 StateBehavior L303、principles SelectedStyleRule L201 重複。",
+     "建議": "「Chip 的選中規則與 SegmentedControl 一致:用 primary 同時染邊框和文字,底色維持不變。」移除 pill-設計準則、檔名與決策日期。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "CircularProgress",
+   "storiesScanned": 12,
+   "issues": []
+  },
+  {
+   "component": "Coachmark",
+   "storiesScanned": 12,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:25",
+     "type": "jargon",
+     "原文": "Coachmark 是 Popover 的 composition pattern——消費 Popover 的浮層外殼 + overlay-surface Body/Footer padding,自己擁有的差異僅三點",
+     "問題": "「composition pattern」「消費 Popover 的浮層外殼」「overlay-surface Body/Footer padding」是工程術語,設計規格頁讀者難懂。",
+     "建議": "「Coachmark 沿用 Popover 的浮層外觀,只多三個差異:Header 可選、頂部有 Media 區、Footer 左右分列。」",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:338",
+     "type": "jargon",
+     "原文": "但刻意抑制 CTA 自動 focus(onOpenAutoFocus preventDefault 後 focus content 容器本身)……否則 non-modal focus-outside dismiss 會誤關閉浮層;2026-07-05 D4 修",
+     "問題": "「onOpenAutoFocus preventDefault」「non-modal focus-outside dismiss」是 Radix API / CSS 黑話,又夾內部修正紀錄「2026-07-05 D4 修」;Accessibility 段(L353)重複整段。設計師完全無法解讀。",
+     "建議": "「開啟時不會把焦點自動落在按鈕上,避免你還在讀內容時誤觸;按 Tab 才移到第一個按鈕。」API 名稱與修正日期留 spec / code。",
+     "severity": "material"
+    }
+   ]
+  },
+  {
+   "component": "Combobox",
+   "storiesScanned": 15,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:786",
+     "type": "jargon",
+     "原文": "量測在 useEffect 內首次 paint 後執行(確保 nested 場景所有 ref 已 attach),double-rAF 保證 layout 完成才量測;代價是可能 1-2 frame 閃爍,由 value-equal setState guard 收斂",
+     "問題": "StateBehavior 這條使用者可見說明幾乎全是實作細節黑話(useEffect / ref attach / double-rAF / value-equal setState guard),設計師/PM 完全讀不懂。就算是設計規格頁,說明「溢出如何運作」也不需要曝露 double-rAF 與 setState guard。",
+     "建議": "改成行為層人話,例如「先量容器與每個標籤的寬度,放不下的自動收進 +N;量測在畫面繪製後才做,可能有 1-2 幀閃動」。實作細節留 code 註解。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Command",
+   "storiesScanned": 8,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Command/command.principles.stories.tsx:44",
+     "type": "mixed-language",
+     "原文": "兩者皆 keyboard navigation 但 mental model 不同:",
+     "問題": "中文句子結構中夾入英文名詞片語 keyboard navigation / mental model,而同專案別處已用「鍵盤導覽」「心智模型」的中文寫法,不一致。",
+     "建議": "改「兩者都能鍵盤導覽,但心智模型不同」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "DataTable",
+   "storiesScanned": 46,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:834",
+     "type": "jargon",
+     "原文": "forward TanStack getSubRows + 共用 token --tree-indent-{sm,md,lg}(跨 TreeView 設計語言)。Click chevron 展/收;chevron click stopPropagation 不 fire row select。",
+     "問題": "展示層(設計師/PM 主要瀏覽的頁)使用者可見說明幾乎全是工程黑話:forward TanStack getSubRows、stopPropagation 不 fire row select。無法傳達「這個範例展示什麼」。",
+     "建議": "改「樹狀表格:點三角形展開/收合子任務;點三角形不會順帶選取整列」。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:1519",
+     "type": "jargon",
+     "原文": "v3 修正:enableRowDrag 自動拉高 overscan ≥ 5、drag 期間 freeze measureElement、snapToCursorModifier ghost 對齊游標(不鎖軸)",
+     "問題": "展示頁使用者可見敘述夾入內部版本號(v3 修正)與純實作名詞(overscan、freeze measureElement、snapToCursorModifier),這是工程 changelog 不是範例說明。",
+     "建議": "只留使用者看得到的效果:「200 列 + 虛擬捲動,拖曳時一邊往下捲動仍能正確對齊落點」。修正細節留 code 註解。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:211",
+     "type": "jargon",
+     "原文": "enableColumnReorder=true:hover header → grab cursor;拖曳期間 DragOverlay portal 顯示 ghost,\n          target column 邊緣顯 drop indicator(before/after 由 cursor 位置判定)。",
+     "問題": "展示頁說明堆疊 grab cursor / DragOverlay portal 顯示 ghost / drop indicator 等黑話,對照同檔上方 ColumnResize 的純中文說明(「拖 header 右側分隔線可調整欄寬…會變色提示」)明顯不一致且難懂。",
+     "建議": "改「把游標移到標題會出現可拖曳手勢,拖動時目標欄邊緣顯示落點提示線」。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:1472",
+     "type": "jargon",
+     "原文": "2px 主色 drop indicator 跨三個 region\n          同步標示落點(per-region useDraggable / useDroppable,不 auto-shift)。",
+     "問題": "使用者可見說明尾端塞入 per-region useDraggable / useDroppable,不 auto-shift 這種純程式黑話,設計師無法理解。",
+     "建議": "刪掉括號內實作說明,只留「2px 主色提示線在左固定欄、中段、右固定欄同步標出落點」。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:1216",
+     "type": "jargon",
+     "原文": "Out of stock 商品不可選 — 只 disable checkbox,row 內容正常 render(對齊 spec L2 五)。",
+     "問題": "「只 disable checkbox,row 內容正常 render」是黑話,且「(對齊 spec L2 五)」是內部 spec 條號洩漏到使用者可見文字,對讀者無意義。",
+     "建議": "改「缺貨商品不可勾選,只停用勾選框,列內容照常顯示」,拿掉 spec 條號。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:1385",
+     "type": "mixed-language",
+     "原文": "值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。",
+     "問題": "中文句夾入 default(×2)/ header / reset,而這些都有現成中文(預設值/標題列/重設)。",
+     "建議": "改「值與預設不同時標題列出現 ↻,點一下即可重設回預設」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:1971",
+     "type": "jargon",
+     "原文": "分頁列間距 tight、頁碼靠右\n          (spec「L5:分頁」canonical);與虛擬滾動互斥(分頁時 useVirtual 關閉)。",
+     "問題": "使用者可見說明含「(spec「L5:分頁」canonical)」內部條號洩漏 + 「useVirtual 關閉」實作黑話。",
+     "建議": "改「分頁列頁碼靠右;啟用分頁時不使用虛擬捲動(兩者互斥)」,拿掉 spec 引用與 useVirtual。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:134",
+     "type": "jargon",
+     "原文": "inline edit 視覺:cell 間加垂直分隔線(dtCellGrid)。display 態零恆顯 chevron(2026-07-08 A 案,editable affordance = hover outline);edit 態才有控件 chrome",
+     "問題": "這是 Storybook Controls 面板使用者可見的 argType 說明,卻塞入內部決策日期(2026-07-08 A 案)、code 名(dtCellGrid)、黑話(editable affordance / 控件 chrome),且「display 態零恆顯 chevron」語意破碎難解。",
+     "建議": "改「就地編輯外觀:儲存格間加分隔線;唯讀時不顯示下拉箭頭,滑過才用外框提示可編輯;進入編輯才出現控件」。移除內部決策代號。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "DateGrid",
+   "storiesScanned": 14,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/DateGrid/date-grid.principles.stories.tsx:256",
+     "type": "jargon",
+     "原文": "今日但未選 = 數字下方藍色底線 bar(after pseudo,告訴使用者「這是今天」,但不搶選中視覺)",
+     "問題": "使用者可見設計說明夾入 CSS 實作黑話「bar(after pseudo」;設計師只需知道視覺結果,不需知道用 ::after 偽元素做的。",
+     "建議": "改「今日但未選=數字下方一條藍色底線,告訴使用者這是今天,但不搶走選中的視覺重點」,拿掉 after pseudo。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "DatePicker",
+   "storiesScanned": 26,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:163",
+     "type": "jargon",
+     "原文": "error=true 時 trigger border 切 error palette,hover/focus 同步切 error-hover。",
+     "問題": "展示頁使用者可見說明幾乎整句都是 code/黑話(error=true、trigger border、error palette、error-hover),設計師/PM 讀不懂。",
+     "建議": "改「驗證失敗時外框轉紅色,滑過或聚焦時同步用較深的紅」。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:139",
+     "type": "jargon",
+     "原文": "雙 input + 中間箭頭。點 start input 開 popover + activeEnd='start';點 end input 同理。Auto-advance:選完 start 自動切 end。clearable=true → trigger 顯示 X 清空按鈕。",
+     "問題": "使用者可見範例說明直接貼入內部狀態碼 activeEnd='start' 與 clearable=true → trigger,以及 Auto-advance 等黑話,無法給非工程讀者理解。",
+     "建議": "改「兩個輸入框加中間箭頭:點開始欄開月曆選起日,選完自動跳到結束欄選迄日;有值時右側出現清除鈕」。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:299",
+     "type": "jargon",
+     "原文": "Range + showTime:點 start input → activeEnd='start' + TimeColumns 編 start 的時間;點 end input 同理。\n          兩端都填好 + 按確定才 commit(needConfirm=true 預設)。",
+     "問題": "使用者可見說明夾入 activeEnd='start'、TimeColumns、commit(needConfirm=true 預設)等純程式碼/黑話。",
+     "建議": "改「範圍+時間:點開始欄選起始日期與時間,點結束欄選結束;兩端都選好、按確定才會套用」。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:229",
+     "type": "verbose",
+     "原文": "footer 渲染 gate = showTime || needConfirm(2026-07-05 D4 修 single 漏 || needConfirm 時「點了日期什麼都不會發生」的死路)",
+     "問題": "needConfirm 範例的 docs 描述冗長且塞入內部 bug 修復 changelog(footer 渲染 gate = showTime || needConfirm、2026-07-05 D4 修…死路),對使用者是雜訊。同 story 內另有一句乾淨人話說明,這段可整段刪。",
+     "建議": "docs 描述只留使用者要知道的:「日期選錯成本高時(合約生效日等),點日期先暫存,按確定才真正寫入」。移除 gate 公式與修復日期。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:178",
+     "type": "jargon",
+     "原文": "showTime 啟用後:popover 右側出現 H/M 滾選欄;footer「此刻 / 確定」(needConfirm=true 預設)。Value 變 ISO datetime。",
+     "問題": "使用者可見說明含 popover / footer / needConfirm=true 預設 / Value 變 ISO datetime 等黑話。",
+     "建議": "改「開啟時間後:浮層右側出現時/分滾選;底部有『此刻／確定』;選取值會帶上時間」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:49",
+     "type": "jargon",
+     "原文": "支援 2026-04-02 / 2026/04/02 等格式,Enter / Blur 解析,\n            不合法輸入標 aria-invalid。",
+     "問題": "「Enter / Blur 解析,不合法輸入標 aria-invalid」對非工程讀者偏黑話(Blur、aria-invalid)。",
+     "建議": "改「支援 2026-04-02、2026/04/02 等格式;按 Enter 或離開欄位即解析,格式錯誤會標示為無效」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "DescriptionList",
+   "storiesScanned": 14,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/DescriptionList/description-list.principles.stories.tsx:147",
+     "type": "mixed-language",
+     "原文": "cols=1(vertical stack)— 長清單、窄容器、mobile-friendly",
+     "問題": "標題在中文句中夾入 vertical stack / mobile-friendly(下一條同 story 亦有 grid / desktop 寬容器)。屬非術語的英文形容詞,可用中文。",
+     "建議": "改「cols=1(垂直堆疊)— 長清單、窄容器、行動裝置適用」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Dialog",
+   "storiesScanned": 19,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Dialog/dialog.stories.tsx:199",
+     "type": "mixed-language",
+     "原文": "<Button>開啟 Modal</Button>",
+     "問題": "展示中使用者可見的觸發按鈕文字「開啟 Modal」中英夾雜且偏佔位感;同檔其他範例按鈕都是真實情境文案(如「邀請成員加入專案」)。",
+     "建議": "改成情境化中文,如「建立專案」或「開啟表單」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Dialog/dialog.stories.tsx:299",
+     "type": "jargon",
+     "原文": "<Button variant=\"tertiary\">開啟成員列表(大 item:avatar+desc)</Button>",
+     "問題": "ListBody 三個觸發按鈕的括號(此處大 item:avatar+desc,另有『中 item:title+desc+Switch』L45、『小 item:text only』L328)把 DS 內部分層術語塞進使用者可見按鈕文字,設計師看到「大 item:avatar+desc」會困惑。",
+     "建議": "括號改人話或移除,如「開啟成員列表(含頭像與說明)」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Dialog/dialog.principles.stories.tsx:307",
+     "type": "mixed-language",
+     "原文": "單一「確定」按鈕的 Dialog 等於強迫使用者 acknowledge 訊息",
+     "問題": "中文句中夾入英文動詞 acknowledge(非術語),可直接用中文。",
+     "建議": "改「單一『確定』按鈕的 Dialog 等於強迫使用者確認訊息」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "DropdownMenu",
+   "storiesScanned": 18,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:838",
+     "type": "jargon",
+     "原文": "Trigger 點擊 → `data-state=\"open\"` → `animate-in fade-in-0 zoom-in-95 slide-in-from-top-2`。\n          外部點擊 / Esc / 選 item → `data-state=\"closed\"` → `animate-out fade-out-0 zoom-out-95`。\n          Origin 由 `--radix-dropdown-menu-content-transform-origin` 自動跟著 trigger side/align 旋轉。",
+     "問題": "設計規格 StateBehavior 使用者可見說明整段是 Tailwind class 與 CSS 變數字串堆疊(animate-in fade-in-0 zoom-in-95…、--radix-…-transform-origin),對讀者只需知道「開/關有淡入淡出縮放動畫、方向跟隨觸發位置」。",
+     "建議": "改成行為描述:「點擊觸發後選單以淡入+輕微放大出現,關閉時淡出縮小;動畫展開方向會跟著觸發位置」。實際 class 留 code。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Empty",
+   "storiesScanned": 12,
+   "issues": []
+  },
+  {
+   "component": "Field",
+   "storiesScanned": 25,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:89",
+     "type": "verbose",
+     "原文": "<Field mode=\"readonly\"> — 鎖定表單:文字控件灰框;boolean/單選 = 灰框 + 勾/叉 icon/選中項(2026-06-12 拍板);Rating 星星鎖定、Slider 鎖互動保留視覺",
+     "問題": "使用者可見的段落標頭夾了內部決策日期「(2026-06-12 拍板)」,且「boolean/單選 = 灰框 + 勾/叉 icon」語意密集像實作筆記,設計師/PM 讀起來吃力。",
+     "建議": "移除「(2026-06-12 拍板)」這種內部決策記號(屬 code comment),標頭精簡成人話,例如「唯讀模式:文字欄變灰框;勾選/單選顯示已選狀態;星等與滑桿鎖住但保留視覺」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:101",
+     "type": "other",
+     "原文": "<Field mode=\"display\"> — 有展示態的控件自動切純展示（Select / DatePicker / Checkbox / Switch 修復後生效）",
+     "問題": "「修復後生效」是開發修 bug 的內部語,對讀者沒有意義(讀者不知道曾經壞過),留在可見標頭裡是雜訊。",
+     "建議": "去掉「修復後生效」,直接描述行為:「純展示模式:有展示態的控件(Select / DatePicker / Checkbox / Switch)自動切成唯讀呈現」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:154",
+     "type": "jargon",
+     "原文": "這是 padding-top: calc((field-height - 1lh) / 2) 的基本情境。",
+     "問題": "使用者可見的說明文字直接貼 CSS calc 公式,設計師/PM 完全讀不懂;這屬於實作細節不該出現在畫面說明。",
+     "建議": "把公式移到 code comment,可見文字用人話:「單行標籤的文字中線應與輸入框文字中線對齊」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:444",
+     "type": "jargon",
+     "原文": "Button 高度與 `field-height` 共用同一組 token,放進 inline control area 自然對齊 Input 中線,horizontal label 公式也直接套用,不需要任何特例。",
+     "問題": "使用者可見說明中英夾雜且滿是實作黑話(field-height / token / inline control area / horizontal label 公式),非人話。",
+     "建議": "改人話:「上傳按鈕的高度和輸入框一致,放進欄位時會自動對齊,水平佈局也不需要特別設定」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "FieldControlGroup",
+   "storiesScanned": 9,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.stories.tsx:20",
+     "type": "jargon",
+     "原文": "多個 Field controls 視覺接合成一個 input frame(border-collapse)。對齊 Ant Space.Compact / Bootstrap input-group idiom。",
+     "問題": "這是使用者最先看到的元件描述,卻含 CSS 實作名「border-collapse」與「idiom」,設計師/PM 不易理解。",
+     "建議": "「把多個輸入控件視覺接合成一體(共用邊框),例如國碼+電話、幣別+金額。對齊 Ant Space.Compact / Bootstrap input-group。」——保留 benchmark 名(合法),去掉 border-collapse / idiom。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "FileItem",
+   "storiesScanned": 18,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/FileItem/file-item.stories.tsx:95-96",
+     "type": "jargon",
+     "原文": "同樣 pattern 在 compact mode:status slot 幾何與 delete action 一致(兩 mode 統一 Button xs 24),center 自動對齊",
+     "問題": "這是懸停替換 demo 下方的可見 caption,整句幾乎全是實作黑話(status slot 幾何 / delete action / 兩 mode 統一 Button xs 24 / center 自動對齊),設計師/PM 完全讀不懂它在示範什麼。",
+     "建議": "改人話:「緊湊樣式也是同一套規則:狀態圖示與刪除鈕的大小、位置一致,垂直置中對齊」。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/FileItem/file-item.stories.tsx:80-82",
+     "type": "mixed-language",
+     "原文": "↓ 游標移入任一 row:completed 綠 ✓ 變 Download ↓,error 紅 ✗ 變 Retry ⟲",
+     "問題": "可見 caption 中英夾雜,句子結構被英文詞(row / completed / Download / error / Retry)反覆打斷,不是流暢中文。",
+     "建議": "「游標移入任一列:已完成的綠勾會變成下載鈕,失敗的紅叉會變成重試鈕」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:104",
+     "type": "jargon",
+     "原文": "左側 Avatar 48px square 顯示縮圖或檔案類型 icon,右側檔名 + 大小 + 進度 bar。掃描模式(text-body 14px + leading-compact;兩 mode 統一),資訊容量較高",
+     "問題": "設計原則的可見說明混入 CSS class 名(text-body 14px + leading-compact;兩 mode 統一),對閱讀原則的設計師是雜訊。(line 124 的 compact note 同樣問題)",
+     "建議": "把 CSS 細節移到 code comment,可見文字保留人話:「左側縮圖或檔案圖示,右側檔名、大小與進度條,資訊量較高」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "FileUpload",
+   "storiesScanned": 15,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/FileUpload/file-upload.stories.tsx:152",
+     "type": "mixed-language",
+     "原文": "buttonLabel=\"Choose Excel file\" // i18n-allow: story label",
+     "問題": "此 story 唯一可見的按鈕文字用英文「Choose Excel file」,與同檔其他 story(「上傳你的履歷」「上傳附件」)的中文語言不一致;繁中 DS 展示裡出現英文按鈕會顯得突兀。",
+     "建議": "改「選擇 Excel 檔案」以維持語言一致;若刻意要示範英文產品 UI,整個情境(title/description)也應一致為英文。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "FileViewer",
+   "storiesScanned": 22,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.stories.tsx:377-379",
+     "type": "jargon",
+     "原文": "情境:專案備份 zip 檔案無對應 renderer,FallbackRenderer 兜底顯示檔名 +「請下載檢視」訊息。Toolbar 隱藏 zoom controls(capabilities.zoom = false)。",
+     "問題": "使用者可見的情境說明暴露內部元件名(FallbackRenderer)與程式碼表達式(capabilities.zoom = false),設計師/PM 讀不懂,把實作內部語當成場景描述。",
+     "建議": "「情境:zip 等無法預覽的檔案,改顯示檔名和『請下載檢視』提示,工具列會自動隱藏縮放按鈕」。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.stories.tsx:375",
+     "type": "jargon",
+     "原文": "開啟無 renderer 支援的檔案",
+     "問題": "使用者實際點擊的按鈕文字含「renderer」黑話。",
+     "建議": "「開啟不支援預覽的檔案」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.stories.tsx:99",
+     "type": "jargon",
+     "原文": "支援 ← → 切換 / I 切換說明欄 / 編輯說明後 onBlur 持久化。",
+     "問題": "「onBlur 持久化」是工程黑話混入使用者說明,設計師/PM 不懂 onBlur。",
+     "建議": "「支援 ← → 換圖 / 按 I 開關說明欄 / 編輯說明後點空白處自動儲存」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.stories.tsx:227-229",
+     "type": "mixed-language",
+     "原文": "情境:設計 review 中,engineer 需要 zoom 看 spacing / color / font 細節。用滾輪或 +/- 縮放,拖曳 pan。",
+     "問題": "可見情境說明中英夾雜密度過高(review / engineer / zoom / spacing / color / font / pan),讀來破碎。",
+     "建議": "「情境:設計審查時,工程師需要放大看間距、色彩、字級等細節。用滾輪或 +/- 縮放,拖曳移動畫面。」",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "HoverCard",
+   "storiesScanned": 10,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/HoverCard/hover-card.stories.tsx:299-300",
+     "type": "jargon",
+     "原文": "特殊 tier 才需 override(motion.spec.md,當前 700ms / 200ms)——避免 hover 過路誤觸發 fetch waterfall;close 延遲讓 user 誤滑出可回來。",
+     "問題": "可見說明含「fetch waterfall」「override」黑話(HoverCard 為 Internal 元件,受眾較技術,故僅列 marginal)。",
+     "建議": "「特殊情況才需覆寫延遲——避免游標只是路過就觸發連續載入;關閉延遲則讓使用者不小心滑出後還能滑回來」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "InlineEdit",
+   "storiesScanned": 6,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.stories.tsx:135",
+     "type": "jargon",
+     "原文": "name: 'Status 就地編輯(read = Tag,SSOT = Select display mode)'",
+     "問題": "這是 Storybook 側欄可見的 story 名稱,卻含 DS 內部架構黑話(SSOT = Select display mode / read = Tag);設計師掃側欄時看不懂,違反 story name 必人話原則。",
+     "建議": "名稱改「狀態就地編輯(讀取時顯示為標籤)」;「SSOT = Select display mode」這類架構理由移到 code comment 或 docs.description。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.stories.tsx:95",
+     "type": "jargon",
+     "原文": "read + hover —— 灰底 bg-neutral-hover + rounded-md(非邊框)",
+     "問題": "三態 demo 的可見 caption 直接寫 CSS class 名(bg-neutral-hover / rounded-md;line 101 的 edit caption 同樣有 border / input),對讀者是雜訊。",
+     "建議": "「懸停:出現淺灰底(圓角,不是邊框)」;line 101 改「編輯:切成真正的輸入框(邊框+焦點外框)」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.stories.tsx:88",
+     "type": "mixed-language",
+     "原文": "name: '三態:read / hover / edit'",
+     "問題": "側欄可見 story 名稱的三個狀態用英文(read / hover / edit),與前綴「三態:」中文不一致;story name 準則傾向 humanize 為中文。",
+     "建議": "「三態:讀取 / 懸停 / 編輯」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Input",
+   "storiesScanned": 15,
+   "issues": [
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Input/input.stories.tsx:30",
+     "type": "jargon",
+     "原文": "純展示（read-only 內容）— 無 input chrome / 無互動 affordance",
+     "問題": "「input chrome」「affordance」是工程/設計術語,對 PM 或一般讀者不好懂;這是展示頁對使用者說明模式用途的散文,不是 prop 名。",
+     "建議": "改人話,例如「純顯示唯讀內容,沒有輸入框外框、不能點也不能改」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Input/input.stories.tsx:82",
+     "type": "jargon",
+     "原文": "顯示/隱藏密碼 — 宣告式 API，Field 自動決定 icon 尺寸和 hover 背景",
+     "問題": "這是「顯示/隱藏密碼」示範的說明,「宣告式 API」是實作風格黑話,對看示範的人是離題資訊。",
+     "建議": "聚焦示範本身:「點眼睛圖示切換密碼明碼,圖示尺寸與 hover 背景自動處理」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Input/input.anatomy.stories.tsx:246",
+     "type": "verbose",
+     "原文": "naked = 無 chrome，host cell 提供 border/focus（@internal cell-as-input）；bare 2026-07-09 退役",
+     "問題": "Props 表(使用者可見)裡塞了「bare 2026-07-09 退役」這種變更記錄雜訊——已退役的 variant + 日期不該出現在 API 說明。",
+     "建議": "移除退役 changelog,只保留現行 variant 的說明。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "LinkInput",
+   "storiesScanned": 15,
+   "issues": [
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:268",
+     "type": "jargon",
+     "原文": "display 態改包 Field naked wrapper（D-path opt-in，DataTable cell display↔edit 像素對齊；本元件 edit 無 endIcon，故僅 wrapper 無 ItemSuffix）",
+     "問題": "使用者可見的 prop 說明幾乎全是內部黑話(「D-path opt-in」「ItemSuffix」「naked wrapper」),讀者無法理解這個 prop 做什麼。",
+     "建議": "用一句話講用途:「display 模式下改用透明外框,讓 DataTable 的顯示/編輯切換像素對齊」,內部細節留 spec。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Menu",
+   "storiesScanned": 17,
+   "issues": []
+  },
+  {
+   "component": "Notice",
+   "storiesScanned": 12,
+   "issues": [
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Notice/notice.principles.stories.tsx:48",
+     "type": "jargon",
+     "原文": "自身有 dismiss 按鈕 + onDismiss callback,但不管 dismiss 後的 mount / unmount 生命週期,也無 auto-dismiss 計時",
+     "問題": "「何時不用」說明用了 React 黑話「mount / unmount 生命週期」,設計師/PM 讀不懂差別在哪。",
+     "建議": "改「但關掉後不負責把它從畫面移除,也不會自己倒數關閉」。(Notice 雖是 internal primitive,此頁仍屬對讀者說明的散文)",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "NumberInput",
+   "storiesScanned": 13,
+   "issues": [
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:748",
+     "type": "jargon",
+     "原文": "hyphen - + fg-disabled（M24 state > emphasis）",
+     "問題": "可見說明字裡漏出內部規則代號「M24 state > emphasis」,讀者不知 M24 是什麼。",
+     "建議": "移除 M24 代號,寫「停用時空值用連字號,顏色跟著變灰(停用色蓋過次要色)」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "OverflowIndicator",
+   "storiesScanned": 11,
+   "issues": [
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/OverflowIndicator/overflow-indicator.principles.stories.tsx:46",
+     "type": "mixed-language",
+     "原文": "展示已知數量的 collapse;「我有 N 個 item,看不下去」+1 visual,點開展開或 expand",
+     "問題": "中英亂夾(collapse / item / +1 visual / expand)且語意含糊,「看不下去」「點開展開或 expand」冗贅重複,讀起來像草稿。",
+     "建議": "改乾淨中文:「項目數量已知且不多時,顯示前幾個、其餘折成 +N,點開看完整清單」。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:548",
+     "type": "verbose",
+     "原文": "tabIndex=0 + role=\"button\" + aria-haspopup=\"dialog\"；2026-06-01 #13 由純 passive 改 focusable，修 WCAG 2.1.1 違反",
+     "問題": "無障礙說明中夾帶「2026-06-01 #13 由純 passive 改 focusable」這種變更記錄/issue 編號,對讀者是雜訊。",
+     "建議": "保留行為說明(可鍵盤聚焦、hover/focus 展開),移除日期與 issue 編號。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Pagination",
+   "storiesScanned": 10,
+   "issues": [
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Pagination/pagination.stories.tsx:20",
+     "type": "verbose",
+     "原文": "當前頁 `aria-current=\"page\"`,選中 = 主色描邊+染字不染底;選中之上 hover 升 hover 階、按壓 active 階。",
+     "問題": "展示頁 caption 把 anatomy 級的視覺/狀態規格與 aria 屬性全塞進來(這些在設計規格頁已詳述),展示層應只說這個 demo 給人看什麼。",
+     "建議": "開頭「客服工單佇列 128 筆、每頁 20」保留即可,狀態/描邊細節刪掉留給設計規格頁。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Pagination/pagination.stories.tsx:38",
+     "type": "verbose",
+     "原文": "分頁完整功能 own 在本元件(SSOT),layout = 資訊左、操作群(頁碼+每頁筆數)右,對齊 Ant 源碼結構;換每頁筆數自動回第 1 頁。",
+     "問題": "冗長且中英夾雜:「own 在本元件」是 Chinglish,「SSOT」「對齊 Ant 源碼結構」「layout =」是內部/實作黑話,不適合展示頁對使用者的說明。",
+     "建議": "精簡成「搜尋結果頁:顯示總筆數 + 每頁筆數選單,左資訊右操作;換每頁筆數會自動回第 1 頁」。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Pagination/pagination.stories.tsx:62",
+     "type": "jargon",
+     "原文": "恆 ≤ 7 格位、雙側 … 摺疊(boundary/sibling = 1/1,MUI 預設同款)",
+     "問題": "「boundary/sibling = 1/1」是 API 參數黑話,展示 caption 的讀者無法解讀。",
+     "建議": "改「最多顯示 7 個位置,頭尾各留 1 個、當前頁左右各 1 個,其餘用 … 收合」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/Pagination/pagination.stories.tsx:89",
+     "type": "jargon",
+     "原文": "照常渲染保持版面穩定(Ant hideOnSinglePage=false + MUI 同);total=0 則整個不渲染",
+     "問題": "「Ant hideOnSinglePage=false」是第三方 API 屬性名,直接出現在給使用者看的說明裡。",
+     "建議": "改「只有一頁時照常顯示,避免版面跳動;完全沒資料(0 筆)才整個隱藏」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "PeoplePicker",
+   "storiesScanned": 15,
+   "issues": [
+    {
+     "fileLine": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project/packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:81",
+     "type": "verbose",
+     "原文": "display 模式渲 ChevronDown + naked wrapper(opt-in 逃生門;2026-07-08 A 案後 DataTable 預設不傳)",
+     "問題": "Props 說明夾帶內部決策代號「A 案」與日期 changelog,讀者無從理解「A 案」是什麼。",
+     "建議": "只說用途:「display 模式選擇性顯示下拉箭頭與透明外框(進階逃生門,一般情況不需要)」,移除 A 案與日期。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Popover",
+   "storiesScanned": 11,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Popover/popover.anatomy.stories.tsx:22",
+     "type": "jargon",
+     "原文": "Popover 是 Radix passthrough——點擊觸發的浮層容器…本 DS 橋接 elevation / radius / border token,不改 Radix API。",
+     "問題": "元件總覽第一句給設計師/PM 看,「Radix passthrough」「橋接 elevation/radius/border token,不改 Radix API」是純工程實作說法,讀者無法從中理解元件用途。",
+     "建議": "用人話:「點一下彈出的浮層容器,內容自由放;外觀(陰影/圓角/邊框)已套好系統樣式」。lib 名保留即可,刪掉 passthrough / 橋接 API 這類實作敘述。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Popover/popover.anatomy.stories.tsx:247",
+     "type": "jargon",
+     "原文": "Radix 提供 data-state 切換 + DS Tailwind animate 驅動(popover.tsx L70-71):進場 `fade-in + zoom-in-95 + slide-from-side`,離場鏡像。",
+     "問題": "使用者可見的『開啟/關閉』行為說明夾入程式碼檔名行號(popover.tsx L70-71)與 Tailwind class 名,設計師看不懂也不需要。",
+     "建議": "改「開啟時浮層從觸發點淡入並微放大『長出來』,關閉時反向」,移除 code 檔:行 與 class 名。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Popover/popover.anatomy.stories.tsx:199",
+     "type": "verbose",
+     "原文": "只鎖版面間距(header py-tight 精簡);ui-size 跟 page → 內部控件對齊觸發點(2026-06-15 改,原 data-density master switch)",
+     "問題": "色彩對照表的說明欄夾入變更歷史「(2026-06-15 改,原 data-density master switch)」,對讀者是雜訊。",
+     "建議": "刪掉括號內 changelog,只留「內部控件尺寸跟隨頁面」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "ProfileCard",
+   "storiesScanned": 12,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:367",
+     "type": "other",
+     "原文": "ProfileCard 的設計準則 消費方式:放進 HoverCardContent 內。",
+     "問題": "「設計準則 消費方式」是 canonical 被機械替換成「設計準則」後留下的破碎中文,語意不通。同一 artifact 重複出現於 principles:FixedWidthRule「單一元件 設計準則 寬度固定」(:166)、「固定寬度是 設計準則 設計決策」(:189)。",
+     "建議": "改「ProfileCard 的標準用法:放進 HoverCardContent 內」;一併修正 principles 兩處被 substitution 破壞的句子。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "ProgressBar",
+   "storiesScanned": 11,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:12",
+     "type": "jargon",
+     "原文": "量化 linear 進度(determinate progress)視覺 primitive。0–100% 已知進度、單向推進、可預期終點。",
+     "問題": "元件總說明(docs 頁最上方)夾「determinate progress」「視覺 primitive」術語,設計師/PM 不易懂。",
+     "建議": "「顯示已知進度的長條(0–100%),單向推進、終點可預期;未知進度或小空間改用 CircularProgress」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx:363",
+     "type": "jargon",
+     "原文": "affix=\"value\" — 靜態 poll 場景",
+     "問題": "標題用「poll」(工程輪詢術語),讀者看不懂這個 affix 何時用。",
+     "建議": "改「affix=\"value\" — 需要顯示精確百分比時」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:56",
+     "type": "mixed-language",
+     "原文": "匯入 1,250 筆客戶資料。單一 prominent 進度條,使用者會盯著整個流程完成。",
+     "問題": "中文句中夾英文形容詞「prominent」。",
+     "建議": "「單一醒目的進度條」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "RadioGroup",
+   "storiesScanned": 13,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:633",
+     "type": "jargon",
+     "原文": "所有 item 經 useResolvedFieldDisabled 繼承 disabled——consumer 不需逐 item 傳 disabled(SSOT:field-controls.spec.md cascade 段)。",
+     "問題": "使用者可見的『整組 disabled』說明直接寫出 hook 名 useResolvedFieldDisabled 與 spec 檔路徑 + cascade 術語,設計師完全無法理解。",
+     "建議": "「整組放進停用的 Field 時,裡面每個選項會自動一起變灰,不需逐一設定」。hook 名與 spec 路徑只留在 code 註解。",
+     "severity": "material"
+    }
+   ]
+  },
+  {
+   "component": "Rating",
+   "storiesScanned": 13,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Rating/rating.anatomy.stories.tsx:349",
+     "type": "verbose",
+     "原文": "Rating 是 filled identity 視覺(主要資料點),跟 Avatar 同重量才能在 row 內 visual weight 對齊。…(下方 :383 段又以「因為一顆星是 filled identity 視覺(主要資料點),視覺份量要跟 Avatar 齊」幾乎原文重講一次)",
+     "問題": "「filled identity 視覺」「visual weight 對齊」中英夾雜術語;且同一個「星大小對齊 Avatar 份量」的理由在 SizeMatrix 的表格 Desc 與下方段落重複講兩次,冗長。",
+     "建議": "精簡成一句人話「星星是主要資料點,大小對齊頭像的視覺份量;外框高度則對齊 Field」,刪掉重複段落。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "ScrollArea",
+   "storiesScanned": 14,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.stories.tsx:214",
+     "type": "jargon",
+     "原文": "表格本體消費真 DataTable(height=\"auto\" 無高度約束,捲動由 ScrollArea own)。",
+     "問題": "「消費真 DataTable」是 DS 內部黑話,「捲動由 ScrollArea own」中文句夾英文動詞 own,對讀者無意義。同寫法見 BothDirections(:233)。",
+     "建議": "「表格用真正的 DataTable;捲動交給外層 ScrollArea 處理」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "SegmentedControl",
+   "storiesScanned": 12,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.anatomy.stories.tsx:27",
+     "type": "mixed-language",
+     "原文": "內部結構 mirror Button(gap-1、label px-1、badge gap-1)。",
+     "問題": "「mirror」是英文動詞夾在中文句;並列出 gap-1/px-1 等實作 class,對讀者無用。",
+     "建議": "「內部間距沿用 Button 的設定(視覺肌肉記憶一致)」,class 細節移到 code 註解。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Select",
+   "storiesScanned": 17,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Select/select.stories.tsx:225",
+     "type": "jargon",
+     "原文": "select 欄位預設純文字渲染（cell IS variant）——meta.options 提供 value → label 對應；需 Tag 視覺時在 column meta.display='tag' opt-in",
+     "問題": "這段使用者可見說明是純開發者 API 黑話:「cell IS variant」「meta.options」「column meta.display='tag' opt-in」,設計師/PM 無法解讀。",
+     "建議": "「表格內的下拉欄位預設顯示純文字(用 options 的 value 對到 label);要顯示彩色標籤時,在該欄設定 display='tag'」。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Select/select.stories.tsx:116",
+     "type": "jargon",
+     "原文": "Tag 標籤 + 顏色(tagVariant)，readonly/disabled 用 tagPadding",
+     "問題": "「tagPadding」是內部 CSS 變數/實作名,出現在使用者說明裡。",
+     "建議": "刪除「用 tagPadding」;需要的話改「唯讀/停用時標籤置中對齊」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Select/select.anatomy.stories.tsx:227",
+     "type": "verbose",
+     "原文": "「plain」表樸素文字呈現,跟 Button variant=\"text\" 區隔(2026-05-01 從 'text' 改名,避免 prop value 跨元件衝突)。",
+     "問題": "說明夾入改名變更歷史與其 rationale「(2026-05-01 從 'text' 改名,避免 prop value 跨元件衝突)」,對讀者是雜訊。",
+     "建議": "移除括號內 changelog,只留「plain = 純文字呈現」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "SelectionControl",
+   "storiesScanned": 11,
+   "issues": [
+    {
+     "fileLine": "selection-item.stories.tsx:16-18 (meta docs.description)",
+     "type": "verbose",
+     "原文": "SelectionItem 是 Checkbox 與 RadioGroup 共用的 item 佈局 primitive——提供 control + optional prefix(icon/avatar) + content(label/description) 的 3-slot 結構,並處理 `py = (field-height - 1lh) / 2` 的 padding 公式讓單行高度對齊同 size 的 Input。",
+     "問題": "單句同時塞結構(3-slot)、padding 數學公式、與 App 用法。`py = (field-height - 1lh) / 2` 對閱讀 Storybook 的人是實作噪音。",
+     "建議": "拆句;公式移到「設計規格」頁,meta 只留『Checkbox / RadioGroup 共用的橫向選取列;App 請用 Checkbox / RadioGroup,勿直接用本 primitive』。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "selection-item.stories.tsx:73 (WithPrefixIcon caption)",
+     "type": "jargon",
+     "原文": "Figma-like permission scope picker — control + icon(24px 閾值內 inline)+ label + description。",
+     "問題": "展示層 caption 應描述業務情境,這裡卻是半英文場景名 + anatomy 結構式(control + icon...inline + label),讀者看不出是什麼畫面。",
+     "建議": "改情境句,如『權限授權清單:每列一個權限,勾選代表授予(如 Figma scope 授權頁)』。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "selection-item.stories.tsx:112-113 (WithPrefixAvatarBlock caption)",
+     "type": "jargon",
+     "原文": "多選 reviewer — control + avatar(32px block 模式,跟 control 一起對齊 text block center)+ name + role。",
+     "問題": "同上 — showcase caption 用結構詞(block 模式 / text block center)而非業務情境描述。",
+     "建議": "改情境句,如『指派審查者:每列一位成員,可多選(頭像 + 姓名 + 職稱)』。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "SelectMenu",
+   "storiesScanned": 14,
+   "issues": [
+    {
+     "fileLine": "select-menu.anatomy.stories.tsx:610-615 (SizeMatrix Desc)",
+     "type": "verbose",
+     "原文": "實際像素隨 page density(2026-06-15: PopoverContent 改鎖 `layout-space=md`、ui-size 繼承 page → 下拉項目跟觸發點 / 頁面 density 一致,不再被鎖死 md-scale)。",
+     "問題": "user-visible Desc 內嵌帶日期的 commit changelog(2026-06-15 改鎖…)+ 內部術語(不再被鎖死 md-scale),對設計師是噪音。",
+     "建議": "移除 changelog,只留結論『下拉尺寸跟隨觸發點 / 頁面密度』;演進記錄放 spec.md 或 git。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "select-menu.anatomy.stories.tsx:697-698 (StateBehavior Desc)",
+     "type": "jargon",
+     "原文": "搜尋無結果時顯示 Empty primitive,以 flex items-center justify-center + minHeight 撐高並垂直水平置中。",
+     "問題": "已有中文「垂直水平置中」,前面又貼 CSS class(flex items-center justify-center + minHeight)重複且是實作細節。",
+     "建議": "刪 CSS class,留『以 Empty 元件置中顯示、撐起最小高度』。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Separator",
+   "storiesScanned": 9,
+   "issues": []
+  },
+  {
+   "component": "Sheet",
+   "storiesScanned": 13,
+   "issues": [
+    {
+     "fileLine": "sheet.anatomy.stories.tsx:144 (SideMatrix Desc)",
+     "type": "other",
+     "原文": "消費者禁止直接傳、需授權(canonical 見 sheet.tsx L23-27 + showcase AR35)。",
+     "問題": "user-visible Desc 內出現原始碼位置(sheet.tsx L23-27)與內部代號(AR35),閱讀者無從理解。",
+     "建議": "刪去 code 位置與 AR 代號,或改成『詳見本元件規格』。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "sheet.anatomy.stories.tsx:241 (StateBehavior Desc)",
+     "type": "jargon",
+     "原文": "Radix 提供 data-state 切換 + DS Tailwind animate 驅動進離場動畫(slide-in-from-側邊 + fade-in overlay,300ms;sheet.tsx L69-78),離場鏡像。",
+     "問題": "實作細節(data-state / Tailwind animate / code file:line)灌進設計師可見的狀態說明,且『slide-in-from-側邊』中英夾雜。",
+     "建議": "改『開啟時從側邊滑入 + 遮罩淡入(約 300ms),關閉時反向』,移除 code ref。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Sidebar",
+   "storiesScanned": 18,
+   "issues": [
+    {
+     "fileLine": "sidebar.stories.tsx:488-494 (IntegrationSidebar PageContent description)",
+     "type": "jargon",
+     "原文": "SidebarProvider uniformPrefix opt-in 後,CSS :has() 偵測整個 sidebar 子樹的混用 prefix,nav icon(16px)和 brand logo(24px)在 24px 固定槽內共同對齊,兩種 label x 完全一致。... 預設關閉(school A,explicit 立場)。",
+     "問題": "展示頁說明用重度工程術語(CSS :has() 偵測子樹、label x)與內部代號(school A,explicit 立場),設計師 / PM 完全無法理解這個 demo 在講什麼。",
+     "建議": "改人話:『開啟 uniformPrefix 後,icon 導覽項與 logo 整合項會對齊到同一條左緣(如 Notion / Linear 整合區)。預設關閉』。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "sidebar.stories.tsx:360-364 (MixedContent PageContent description)",
+     "type": "mixed-language",
+     "原文": "上方 SidebarMenu 是 designer 設計好的主導覽,下方 TreeView 是使用者自建的 project 資料。整個 sidebar 同時只有一個 active,切到 icon 模式後 TreeView 整段隱藏。",
+     "問題": "designer / project / active 同句中英夾雜,且這些字在本 DS 別處已有中文對應(設計師 / 專案 / 選中)。",
+     "建議": "『上方是設計時定好的主導覽,下方是使用者自建的專案資料;整個側邊欄同時只有一項為選中狀態…』。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "sidebar.anatomy.stories.tsx:316 (SizeMatrix Desc;同 argTypes:286)",
+     "type": "mixed-language",
+     "原文": "`SidebarProvider` 的 size prop 會自動 propagate 到所有 row 元件,不用每個 button 各自傳。",
+     "問題": "『propagate 到所有 row 元件』中英夾雜,propagate 有中文對應詞(傳遞)。",
+     "建議": "『size 會自動傳遞到所有列元件,不必逐一設定』。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Skeleton",
+   "storiesScanned": 13,
+   "issues": []
+  },
+  {
+   "component": "Slider",
+   "storiesScanned": 15,
+   "issues": []
+  },
+  {
+   "component": "Steps",
+   "storiesScanned": 19,
+   "issues": [
+    {
+     "fileLine": "steps.anatomy.stories.tsx:421 (IndentAlignment Desc)",
+     "type": "jargon",
+     "原文": "刻意打破 item-layout 的 24px 閾值規則——不管 indicator 尺寸、不管有無 description,一律 inline 對齊。Column rhythm 優先於「大 prefix 視覺重量平衡文字塊」。",
+     "問題": "『Column rhythm 優先於「大 prefix 視覺重量平衡文字塊」』術語密度過高,設計師難以解讀。",
+     "建議": "改『不論指示圓大小、有無描述,指示圓一律對齊標題第一行,讓整欄的圓垂直對齊(比用大圖示平衡文字塊更重要)』。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "steps.stories.tsx:189 (FocusRingCombinations StepDescription)",
+     "type": "jargon",
+     "原文": "中性底(bg-secondary)數字 + ring(若 focused)",
+     "問題": "user-visible 的 StepDescription 直接寫 CSS token『bg-secondary』,對讀者是實作噪音。",
+     "建議": "『灰底數字 + 聚焦時顯示外環』。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Switch",
+   "storiesScanned": 11,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Switch/switch.principles.stories.tsx:121",
+     "type": "jargon",
+     "原文": "兩者都不可切換、不在 tab order 內(standalone),機制不同:readonly 用 `pointer-events-none`(視覺正常);disabled 走 native `disabled` + `cursor-not-allowed`(降透明度)。Field 內 readonly 灰框則可聚焦(tabIndex=0)",
+     "問題": "設計原則頁(設計師/PM 讀)整段塞 CSS/DOM 實作術語:tab order、pointer-events-none、native disabled、cursor-not-allowed、tabIndex=0,不是行為本質描述。",
+     "建議": "改講行為:「readonly 與 disabled 都不能切換、也不會被鍵盤 Tab 選到;差別在 readonly 保持正常顏色(值看得清),disabled 變半透明(暗示目前用不到);表單裡的 readonly 例外仍可被聚焦。」實作細節留 spec/code。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Switch/switch.stories.tsx:26",
+     "type": "jargon",
+     "原文": "純視覺 勾/叉 icon;語意由 context（如 DataTable 表頭 + 行標籤）提供,display 不暴露獨立 aria-label。需螢幕報讀器可讀請用 edit / readonly。",
+     "問題": "展示頁說明用「語意由 context 提供」「display 不暴露獨立 aria-label」等工程說法,設計師不易懂。",
+     "建議": "改「display 只顯示勾/叉圖示,本身不帶文字標籤——意思靠周圍內容(例如表格欄名 + 該列標題)交代;若需螢幕報讀器讀出開關狀態,改用 edit 或 readonly。」",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Tabs",
+   "storiesScanned": 17,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:377",
+     "type": "jargon",
+     "原文": "共用 `patterns/horizontal-overflow/horizontal-overflow.spec.md` 的 hooks 和 primitives:useScrollEdges(偵測左右邊界)、OverflowScrollArrow(捲動箭頭)、OverflowMenuTriggerButton(menu 觸發)。Chip 也消費同一套",
+     "問題": "使用者可見說明直接貼內部檔案路徑 + hook/primitive 名(useScrollEdges / OverflowScrollArrow / OverflowMenuTriggerButton),對讀者是實作雜訊。",
+     "建議": "只需「溢出的捲動箭頭與導覽選單機制與 Chip 共用同一套,行為與視覺一致」,內部 hook/路徑留 spec。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:122",
+     "type": "mixed-language",
+     "原文": "sm★default=overlay / chrome / dense / md=future tier 無 use case / lg=獨立 tabs 取代 chrome header",
+     "問題": "Controls 面板說明中英混雜(future tier 無 use case、chrome)且句構破碎。",
+     "建議": "「sm(預設)= 浮層 / 工具列 / 密集場景;md = 保留階梯,目前無建議用途;lg = 獨立分頁列取代頁首」。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Tag",
+   "storiesScanned": 13,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Tag/tag.stories.tsx:36",
+     "type": "jargon",
+     "原文": "Tag 內部統一 avatar 為 16px（跟 icon 一致），消費端不用指定尺寸",
+     "問題": "展示頁對設計師用「消費端」(= 使用元件的工程師)這種開發黑話;同檔 meta「語義由消費端決定」同問題。",
+     "建議": "「Tag 會自動把頭像縮成 16px(跟圖示一樣大),使用時不必自己設尺寸。」meta 可改「顏色的意義由放它的情境決定」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:441",
+     "type": "verbose",
+     "原文": "Subtle 模式有色 variant 文字用 --color-{hue}-7 primitive（step-7，不隨 dark mode 反轉），neutral 用 foreground。Solid 模式 step-6 背景 + on-emphasis 配對文字:夠深的 hue 用白字（--on-emphasis），亮色 hue（yellow/amber/orange/lime）用深字（--on-emphasis-dark），green 維持白字（documented exception）",
+     "問題": "單段塞滿 token 名與例外規則,冗長且夾雜英文(on-emphasis / documented exception),讀者抓不到重點。",
+     "建議": "拆成「Subtle:淺底 + 深字」「Solid:深底 + 對比字(亮色系深字,其餘白字)」兩句,token 細節交給下方對照表。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Textarea",
+   "storiesScanned": 13,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:129",
+     "type": "jargon",
+     "原文": "display — 純展示(渲 div 取代 textarea,whitespace-pre-wrap 保留多行)",
+     "問題": "使用者可見標題出現 CSS/實作術語(渲 div 取代 textarea、whitespace-pre-wrap)。",
+     "建議": "「display — 純檢視(以純文字呈現,保留原本的換行與段落)」。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Textarea/textarea.principles.stories.tsx:117",
+     "type": "jargon",
+     "原文": "Textarea 橫向撐開會破壞 form 佈局...世界級 DS 都只開 vertical。TS 型別擋不了 className 覆蓋,但設計上禁止",
+     "問題": "設計原則說明夾入「TS 型別擋不了 className 覆蓋」實作細節,對設計師無意義。",
+     "建議": "刪該句或改「這是設計規範,請勿改成可水平縮放」;型別/className 細節留 code 註解。",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "TimePicker",
+   "storiesScanned": 19,
+   "issues": []
+  },
+  {
+   "component": "Toast",
+   "storiesScanned": 12,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx:54",
+     "type": "other",
+     "原文": "自動關閉時間(ms);含 action 預設加長(2026-07-05 D4)",
+     "問題": "內部稽核代號「2026-07-05 D4」洩漏到使用者可見文案,並在 principles ActionRule / DurationRule 多處重複,對讀者無意義。",
+     "建議": "移除「2026-07-05 D4」代號,只保留「含 action 時預設延長關閉時間」的說明。",
+     "severity": "marginal"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx:160",
+     "type": "jargon",
+     "原文": "3. Theme layer | data-theme + text-foreground | content token 在此 re-resolve(讓 Icon/Text 切到 inverse theme)",
+     "問題": "三層架構表以「content token 在此 re-resolve」「切到 inverse theme」實作黑話說明,超出設計師理解。",
+     "建議": "「文字與圖示的顏色在這一層重新套用,讓它們在反色底色上仍清楚可讀。」",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "Tooltip",
+   "storiesScanned": 10,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/Tooltip/tooltip.anatomy.stories.tsx:198",
+     "type": "verbose",
+     "原文": "其中 delayDuration（500ms）由 DS Tooltip wrapper（Root 預設值,對齊 motion token SSOT;Radix Root prop 優先於 Provider 同名設定）統一；skipDelayDuration（300ms）沿用 Radix 內建 default，由消費端 app／storybook root 顯式同步設定，DS wrapper 本身不 carry 這個值。",
+     "問題": "一段話塞滿實作與治理術語(Root 預設值、motion token SSOT、Radix Root prop 優先、消費端 app、DS wrapper 本身不 carry 這個值),又冗長又夾英文動詞,設計師/PM 完全讀不懂。",
+     "建議": "只保留使用者需知:「首次 hover 等 500ms 才顯示;在 300ms 內移到下一個觸發器可即時切換。」實作與 Provider 細節移到 spec/code。",
+     "severity": "material"
+    },
+    {
+     "fileLine": "packages/design-system/src/components/Tooltip/tooltip.anatomy.stories.tsx:162",
+     "type": "jargon",
+     "原文": "全域 Provider，控制 skip window 與共享暖機狀態（全產品一個）；單一 tooltip 的 delay 由 Root 預設 500ms 決定，優先於 Provider",
+     "問題": "「skip window」「Root 預設...優先於 Provider」對非工程讀者是黑話。",
+     "建議": "「全站共用一個 Provider,管理連續 tooltip 的即時切換窗口;單一 tooltip 的延遲(500ms)由元件預設決定。」",
+     "severity": "marginal"
+    }
+   ]
+  },
+  {
+   "component": "TreeView",
+   "storiesScanned": 17,
+   "issues": [
+    {
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.stories.tsx:273",
+     "type": "jargon",
+     "原文": "子 chevron 應對齊父 icon 的起始位置,子 icon 應對齊父 label 的起始位置。這裡混合有 / 無 children 的 node 驗證 chevron placeholder 佔位(leaf 無條件留等寬空白);icon 無自動佔位——無 icon 的 node(README.md / public)label 起點前移,屬「Icon 使用策略」的混用反例,此處僅作 indent 結構驗證。",
+     "問題": "展示頁(縮排結構對齊驗證)說明充斥 chevron placeholder / leaf / node / indent 等術語,像內部 QA 註記而非給讀者的說明。",
+     "建議": "用人話:「子項目的箭頭對齊上一層圖示、子項目的圖示對齊上一層文字;沒有子項目的列會留等寬空位讓文字對齊。」術語留 spec。",
+     "severity": "marginal"
+    }
+   ]
+  }
+ ]
+}

@@ -1,15 +1,15 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // code-quality-allow: file-size — Select 含 3 子元件(NativeSelect/CustomSelect/ReadonlyDisplay)+ helpers + 4-mode renderer + Field SSOT consumption,split-into-files 會破壞 file-local helper closure
-// @renderer-symmetry-allow: pre-existing Select architecture(2026-05-08 D-path)— selectedItemRenderer 由 CustomSelectTriggerContent 消費(edit + trigger 模式),ReadonlyDisplay 走 separate bare-span path(no D-path)。display→edit unify deferred 下 cycle per spec contract (a) note。本 turn 只加 `nakedCellRowModeAlign` import,no behavior change to renderer symmetry contract。
+// @renderer-symmetry-allow: 2026-07-08 WM 戰役 A 案回歸修正 — ReadonlyDisplay 現已消費 selectedItemRenderer(display bare-span / D-path / readonly / disabled 四分支),對齊 field-controls.spec.md 共享 contract (a)「display/readonly/disabled/edit 4 mode 共享同一 renderer」。前 note「display→edit unify deferred」已兌現(值內容層);chrome 結構 unify(D-path)仍為 opt-in showDisplayEndIcon。
 import * as React from 'react'
 import { X, ChevronDown } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, EMPTY_DISPLAY, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
+import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
+import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { SelectMenu, forwardKeyToListbox, useActiveDescendant, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 import { useControllable } from '@/design-system/hooks/use-controllable'
@@ -53,11 +53,58 @@ export interface SelectGroupConfig {
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
+/**
+ * 原生 `<select>` 屬性 allowlist(2026-07-14 API 策展 D,user 拍板「全部收窄」)。
+ *
+ * 舊契約 `extends Omit<SelectHTMLAttributes, ...>` 型別承諾**全部**原生 select 屬性,但桌機
+ * 自訂 combobox(div trigger + hidden input mirror)只有部分真生效 — 其餘 silent no-op /
+ * 被元件內部覆寫,「型別承諾 ≠ 實作出口」= footgun。改 `Pick<>` 顯式 allowlist,**只承諾
+ * 兩路徑(desktop CustomSelect / mobile NativeSelect)皆有實作出口的屬性**,盤點以 code 為準:
+ *
+ * - `id` — 桌機 trigger div / mobile `<select>`,皆 `idProp ?? fieldCtx?.id`
+ * - `name` / `form` / `required` — 桌機經 hidden input mirror(D2 2026-07-13,見 hiddenInputEl
+ *   docblock)/ mobile 原生 `<select>` spread
+ * - `disabled` — 兩路徑 `useResolvedFieldDisabled` cascade → mode 分流
+ * - `className` / `style` — 兩路徑 field wrapper
+ * - `onFocus` / `onBlur` — 桌機 rest spread 到 focusable trigger(tabIndex=0)/ mobile spread
+ * - `onKeyDown` — 桌機 consumer handler 先跑再走元件導覽(dim-9)/ mobile 原生
+ * - `aria-label` / `aria-describedby` / `aria-errormessage` — 兩路徑顯式接線(fieldCtx fallback)
+ * - `autoFocus` / `autoComplete` — **mobile-only**:NativeSelect 原生 `<select>` 生效;桌機
+ *   custom combobox 無原生對應 = documented no-op(桌機 autofill 由 hidden input mirror 的
+ *   option-match onChange guard 承擔)
+ * - `data-*` — 兩路徑 spread passthrough(dim-9 契約;index signature 顯式承諾,見下)
+ *
+ * 被砍者(原 extends 承諾但從未生效 / 被元件覆寫,不再進型別):`multiple` / `children` /
+ * `tabIndex`(桌機恆 0)/ `aria-labelledby`(桌機由 fieldCtx.labelId / aria-label 管理,
+ * consumer 值會被覆寫)/ 其餘 generic HTMLAttributes(title / dir / onClick 等)。
+ * 需要時先接線(兩路徑等效)再入表,**不回 extends 全開**。
+ *
+ * 世界級對照:自訂 combobox 皆走 curated 原生屬性子集,無人 extends 全部 SelectHTMLAttributes —
+ * Radix Select.Root 顯式列舉 name/disabled/required/form/autoComplete
+ * (radix-ui.com/primitives/docs/components/select#root)/ Headless UI Listbox name/form/disabled
+ * (headlessui.com/react/listbox#using-with-html-forms)/ React Aria Select name/autoComplete/
+ * isDisabled/isRequired(react-spectrum.adobe.com/react-aria/Select.html)。
+ */
 export interface SelectProps
-  extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size' | 'value' | 'defaultValue' | 'onChange'> {
+  extends Pick<
+    React.SelectHTMLAttributes<HTMLSelectElement>,
+    // ── 兩路徑皆真生效 ──
+    | 'id' | 'className' | 'style'
+    | 'name' | 'form' | 'required' | 'disabled'
+    | 'onFocus' | 'onBlur' | 'onKeyDown'
+    | 'aria-label' | 'aria-describedby' | 'aria-errormessage'
+    // ── mobile-only(NativeSelect 原生 <select> 生效;桌機 custom combobox documented no-op)──
+    | 'autoFocus' | 'autoComplete'
+  > {
+  /** `data-*` passthrough(桌機 trigger div rest spread / mobile `<select>` spread;dim-9 契約)。 */
+  [dataAttribute: `data-${string}`]: unknown
   mode?: FieldMode
   /** Field chrome variant. Default = context.variant ?? 'default'. Per-prop override. */
   variant?: FieldVariant
+  /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮:value 寬 + slot 元素寬 + gap +
+   *  field 內 padding;chrome 與互動不變。場景 = detail pane inline metadata。
+   *  SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
+  width?: FieldWidth
   error?: boolean
   size?: 'sm' | 'md' | 'lg'
   options: SelectOption[]
@@ -104,13 +151,16 @@ export interface SelectProps
    */
   showDisplayEndIcon?: boolean
   /**
-   * Trigger 內「已選項目」客製 render(2026-05-07 v15.5)。
+   * 「已選項目」客製 render(2026-05-07 v15.5;2026-07-08 A 案回歸修正擴及 4 mode)。
    *
-   * 設了 → trigger 不走純文字 / Tag 預設 path,改用 consumer 提供的 ReactNode(收 selectedOpt)。
+   * 設了 → 已選值不走純文字 / Tag 預設 path,改用 consumer 提供的 ReactNode(收 selectedOpt)。
+   * **display / readonly / disabled / edit 4 mode 共享同一 renderer**(field-controls.spec.md
+   * 共享 contract (a),禁 edit-only)— renderer 輸出屬「值內容」(status icon+text 等語意呈現),
+   * display 態照常渲染;A 案撤的是 affordance(chevron/outline),非值內容(field.spec.md L6 分層)。
    * Searchable+open 仍走 input(搜尋優先)。Empty value(no selection)仍走 placeholder。
    *
    * 用例:PeoplePicker 用此 slot 把 single 選中的 person render 成 PersonDisplay
-   * (avatar + name)而非純文字 label。對齊 PeoplePicker = Select wrapper SSOT。
+   * (avatar + name)而非純文字 label;DataTable status 欄 icon+text。對齊 PeoplePicker = Select wrapper SSOT。
    */
   selectedItemRenderer?: (selectedOpt: SelectOption) => React.ReactNode
   /** 搜尋無結果提示(2026-07-04 Q4 拍板接線 — 原 spec 宣稱可覆寫但 prop 從未轉發)。
@@ -295,19 +345,26 @@ CustomSelectTriggerContent.displayName = 'CustomSelectTriggerContent'
 
 // ── Shared readonly/disabled/display render ─────────────────────────────────
 function ReadonlyDisplay({
-  mode, variant: variantProp, size, options, value, display, startIcon: StartIcon, className, placeholder, showDisplayEndIcon,
-}: Pick<SelectProps, 'mode' | 'variant' | 'size' | 'options' | 'value' | 'display' | 'startIcon' | 'className' | 'placeholder' | 'showDisplayEndIcon'>) {
+  mode, variant: variantProp, width, size, options, value, display, startIcon: StartIcon, className, placeholder, showDisplayEndIcon, selectedItemRenderer,
+}: Pick<SelectProps, 'mode' | 'width' | 'size' | 'options' | 'value' | 'display' | 'startIcon' | 'className' | 'placeholder' | 'showDisplayEndIcon' | 'selectedItemRenderer'> & {
+  /** @internal 2026-07-14 API 策展 E:內部 render helper 吃 FieldVariantInternal(naked 由 cell-registry 通道傳入)*/
+  variant?: FieldVariantInternal
+}) {
   const resolvedMode = mode ?? 'readonly'
+  const emptyDisplay = useFieldEmptyDisplay()
   const variant = variantProp ?? 'default'
   const sz = size ?? 'md'
   const iconSize = getIconSize(sz)
-  const label = options?.find(o => o.value === value)?.label ?? value
+  // selectedOpt 提前 hoist(2026-07-08 A 案回歸修正):display / D-path / readonly / disabled
+  // 四分支都需要 — renderer 值內容(field-controls.spec.md contract (a) 4-mode 共享)+ tagVariant 查找。
+  const selectedOpt = options?.find(o => o.value === value)
+  const label = selectedOpt?.label ?? value
   const iconColor = resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted'
   const isTextDisplay = display !== 'tag'
   // K10+K14 fix(2026-05-04):disabled mode placeholder/empty 顯示色 → fg-disabled(neutral-6),非 fg-muted(neutral-7)
   //   user canonical:disabled 顯著性優於 muted。同時 plain mode 必須 respect placeholder prop(之前忽略 = bug)
-  const emptyColorCls = resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted'
-  const emptyText = placeholder ?? EMPTY_DISPLAY
+  const emptyColorCls = fieldEmptyColorClass(resolvedMode)
+  const emptyText = placeholder ?? emptyDisplay
 
   // mode='display':2 path(2026-05-08 D path Phase 1 Select canary)
   //   ❌ 預設(無 showDisplayEndIcon):純內容輸出 bare span/Tag(原行為,backward compat)
@@ -320,21 +377,35 @@ function ReadonlyDisplay({
       // 2026-05-14 I2 fix(spec contract (e) display typography canonical):bare span 必套
       // `fieldDisplayTextClass(sz)`(sm/md→text-body,lg→text-body-lg)— 對齊跨 Field
       // family display 視覺尺寸統一。
-      if (!value) return <span className={cn(fieldDisplayTextClass(sz), 'text-fg-muted', className)}>{emptyText}</span>
+      if (!value) return <span className={cn(fieldDisplayTextClass(sz), emptyColorCls, className)}>{emptyText}</span>
+      // 2026-07-08 A 案回歸修正:selectedItemRenderer(值內容:status icon+text 等語意呈現)
+      // display 態照常渲染 — 無 chrome 無 chevron,只有值內容本身。分層原則(field.spec.md L6):
+      // 本 renderer 歸「值內容」,恆顯;A 案撤的是 affordance(chevron/outline),非值內容。
+      // 對齊 field-controls.spec.md 共享 contract (a)「4 mode 共享同一 renderer(禁 edit-only)」。
+      if (selectedItemRenderer && selectedOpt) {
+        return (
+          <span className={cn(fieldDisplayTextClass(sz), 'inline-flex items-center min-w-0', nakedCellRowModeAlign, className)}>
+            {selectedItemRenderer(selectedOpt)}
+          </span>
+        )
+      }
       if (isTextDisplay) return <span className={cn(fieldDisplayTextClass(sz), 'truncate', className)}>{label}</span>
-      const selOpt = options?.find(o => o.value === value)
-      const tVariant = selOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
+      const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
       return <Tag size={sz} color={tVariant} className={className}>{label}</Tag>
     }
     // D path opt-in: Field naked-display wrapper + ItemSuffix ChevronDown
-    const selOpt = options?.find(o => o.value === value)
-    const tVariant = selOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
+    const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
     return (
       <div
-        className={cn(fieldWrapperStyles({ mode: 'display', variant, size: sz }), value && !isTextDisplay && tagPadding[sz], className)}
+        className={cn(fieldWrapperStyles({ mode: 'display', variant, width, size: sz }), value && !isTextDisplay && tagPadding[sz], className)}
         data-field-mode="display"
       >
-        {isTextDisplay ? (
+        {selectedItemRenderer && value && selectedOpt ? (
+          // renderer 優先(同 CustomSelectTriggerContent 優先序):值內容歸 renderer,chevron 歸 D-path chrome
+          <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign)}>
+            {selectedItemRenderer(selectedOpt)}
+          </span>
+        ) : isTextDisplay ? (
           <span className={cn(bareInputStyles, 'flex-1 min-w-0 truncate', !value && emptyColorCls)}>
             {value ? label : emptyText}
           </span>
@@ -356,9 +427,25 @@ function ReadonlyDisplay({
   const showIndicator = variant === 'naked' ? !!showDisplayEndIcon : resolvedMode === 'disabled'
   const ariaDisabled = resolvedMode === 'disabled' ? true : undefined
 
+  // 2026-07-08 A 案回歸修正:readonly / disabled 同樣消費 selectedItemRenderer(值內容 4-mode
+  // 共享,field-controls.spec.md contract (a);對照 PeoplePicker readonly/disabled 渲 PersonDisplay
+  // 先例)。renderer 優先於 isTextDisplay / Tag 預設 path(同 CustomSelectTriggerContent 優先序);
+  // disabled 時 wrapper span 帶 text-fg-disabled 供未自帶色的文字繼承(M24 disabled > muted)。
+  if (selectedItemRenderer && value && selectedOpt) {
+    return (
+      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), className)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
+        {StartIcon && <ItemPrefix><StartIcon size={iconSize} className={cn('pointer-events-none', iconColor)} aria-hidden /></ItemPrefix>}
+        <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign, resolvedMode === 'disabled' && 'text-fg-disabled')}>
+          {selectedItemRenderer(selectedOpt)}
+        </span>
+        {showIndicator && <ItemSuffix className="pointer-events-none"><ChevronDown size={iconSize} className={cn('shrink-0', iconColor)} aria-hidden /></ItemSuffix>}
+      </div>
+    )
+  }
+
   if (isTextDisplay) {
     return (
-      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, size: sz }), className)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
+      <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), className)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className={cn('pointer-events-none', iconColor)} aria-hidden /></ItemPrefix>}
         <span className={cn('flex-1 min-w-0 truncate', resolvedMode === 'disabled' && 'text-fg-disabled')}>
           {value ? label : <span className={emptyColorCls}>{emptyText}</span>}
@@ -368,11 +455,10 @@ function ReadonlyDisplay({
     )
   }
 
-  const selectedOpt = options?.find(o => o.value === value)
   const tagVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
 
   return (
-    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, size: sz }), value && tagPadding[sz], className)} style={{ paddingRight: 'var(--field-px)' }} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
+    <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), value && tagPadding[sz], className)} style={{ paddingRight: 'var(--field-px)' }} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
       {value ? <Tag size={sz} color={tagVariant}>{label}</Tag> : <span className={emptyColorCls}>{emptyText}</span>}
       {showIndicator && <ItemSuffix className="pointer-events-none"><ChevronDown size={iconSize} className={cn('shrink-0', iconColor)} aria-hidden /></ItemSuffix>}
     </div>
@@ -383,10 +469,13 @@ function ReadonlyDisplay({
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ mode, variant: variantProp, error: errorProp = false, size: sizeProp, options, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp,
+  ({ mode, variant: variantProp, width, error: errorProp = false, size: sizeProp, options, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp,
     // 2026-07-04:Custom-path-only props 顯式 destructure 丟棄(不 spread 到原生 <select> 消 React
     // unknown-prop warning);各 prop docblock 已註「僅 Custom path 生效」語意
-    searchable: _searchable, groups: _groups, loading: _loading, minRows: _minRows, emptyText: _emptyText, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer: _selectedItemRenderer,
+    // 2026-07-08 A 案回歸修正:selectedItemRenderer 從丟棄名單移出 — Native path 的
+    // ReadonlyDisplay(display/readonly/disabled)同樣消費值內容 renderer(contract (a) 4-mode
+    // 共享,值內容不因 pointer type 而異);native <select> edit 路徑仍不消費(原生 option 無法客製 render)。
+    searchable: _searchable, groups: _groups, loading: _loading, minRows: _minRows, emptyText: _emptyText, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer,
     ...props }, ref) => {
     const fieldCtx = useFieldContext()
     const error = useResolvedFieldInvalid(errorProp)
@@ -395,7 +484,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     const size = useResolvedFieldSize(sizeProp)
     // 2026-06-08 SSOT:mode 經 useResolvedFieldMode(prop > 有效 disabled > fieldCtx.mode > 'edit');修 <Field mode="display"> 漏 cascade
     const resolvedMode = useResolvedFieldMode({ mode, disabled })
-    const variant: FieldVariant = useResolvedFieldVariant(variantProp)
+    const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
     const iconSize = getIconSize(size)
     // 2026-05-21 D3 audit:Controlled / Uncontrolled dual-mode via 既有 SSOT hook(同 CustomSelect)
     const [value, setValue] = useControllable<string | null>({
@@ -414,7 +503,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     }, [ref])
 
     if (resolvedMode !== 'edit') {
-      return <ReadonlyDisplay mode={resolvedMode} variant={variant} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} showDisplayEndIcon={showDisplayEndIcon} />
+      return <ReadonlyDisplay mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} showDisplayEndIcon={showDisplayEndIcon} selectedItemRenderer={selectedItemRenderer} />
     }
 
     const selectEl = (
@@ -453,7 +542,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
 
     if (!isTextDisplay) {
       return (
-        <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }), value && tagPadding[size], 'relative',
+        <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), value && tagPadding[size], 'relative',
           className)}
           style={{ paddingRight: 'var(--field-px)' }} data-field-mode="edit" data-error={error ? '' : undefined}>
           {value ? <Tag size={size} color={nativeTagVariant} className="shrink-0 relative z-10 pointer-events-none">{label}</Tag> : <span className="text-fg-muted">{placeholder ?? '選擇...'}</span>}
@@ -466,7 +555,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     }
 
     return (
-      <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
+      <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }),
         className)}
         data-field-mode="edit" data-error={error ? '' : undefined}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
@@ -484,7 +573,10 @@ NativeSelect.displayName = 'NativeSelect'
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode, variant: variantProp, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, minRows, emptyText, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel }, ref) => {
+  ({ mode, variant: variantProp, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, minRows, emptyText, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, style: styleProp,
+    // 2026-07-14 API 策展 D:mobile-only props(allowlist 註記)desktop 顯式丟棄 — div trigger 無原生
+    // 對應,不 spread 進 DOM(對稱 NativeSelect 丟棄 custom-path-only props 的既有 pattern)
+    autoFocus: _autoFocus, autoComplete: _autoComplete, ...rest }, ref) => {
     const fieldCtx = useFieldContext()
     const error = useResolvedFieldInvalid(errorProp)
     const disabled = useResolvedFieldDisabled(disabledProp)
@@ -492,7 +584,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     const size = useResolvedFieldSize(sizeProp)
     // 2026-06-08 SSOT:mode 經 useResolvedFieldMode(prop > 有效 disabled > fieldCtx.mode > 'edit');修 <Field mode="display"> 漏 cascade
     const resolvedMode = useResolvedFieldMode({ mode, disabled })
-    const variant: FieldVariant = useResolvedFieldVariant(variantProp)
+    const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
     const iconSize = getIconSize(size)
     // 2026-05-21 D3 audit:Controlled / Uncontrolled dual-mode via 既有 SSOT hook(M17 對齊,取代自刻 isControlled pattern)。
     // Phase B codex 抓:之前 Custom clear 走 `onChange?.('')` 沒 setInternalValue → uncontrolled clear 失效。useControllable 統一 setter 修。
@@ -571,7 +663,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
 
     // Early return AFTER all hooks(disabled / readonly / display mode 走 ReadonlyDisplay)
     if (resolvedMode !== 'edit') {
-      return <ReadonlyDisplay mode={resolvedMode} variant={variant} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} showDisplayEndIcon={showDisplayEndIcon} />
+      return <ReadonlyDisplay mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} showDisplayEndIcon={showDisplayEndIcon} selectedItemRenderer={selectedItemRenderer} />
     }
 
     // 2026-05-21 D3 Phase B codex 抓:Custom clear 用 setValue 不直接 onChange,uncontrolled clear 才能真清 internal state。
@@ -583,6 +675,44 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
       <ItemSuffix>
         <ChevronDown size={iconSize} className={cn('text-fg-muted transition-transform', open && 'rotate-180')} aria-hidden />
       </ItemSuffix>
+    )
+
+    // ── Hidden input form mirror(2026-07-13 D2 拍板 Option A;MUI SelectInput idiom)──
+    // 桌機自訂 combobox 無原生 form control,`name` / `required` / `form` 歷史上被靜默丟棄
+    // (mobile NativeSelect 卻經 {...props} 生效 = 雙路徑提交語義不對稱 footgun)。
+    // 補 visually-hidden `<input>` 鏡像,讓桌機也參與原生表單(裸 <form> submit / FormData):
+    // - value **單向鏡射**受控 state(useControllable)= projection,非第二 SSOT(M17);
+    //   空值時 value=''(不採 Radix hidden <select> 完整 option tree — 其無空 option 時
+    //   default 第一項,radix-ui/primitives issue #3521 documented footgun)
+    // - 原生 required 僅收顯式 `required` prop(裸表單 opt-in);fieldCtx.required 續走
+    //   aria-required + useFormValidation(RHF)方法論(form-validation.spec.md 規則 1-9),
+    //   不對既有 Field+RHF consumer 注入瀏覽器原生 bubble
+    // - onChange 唯一用途 = 瀏覽器 autofill:match 既有非 disabled option 才經 canonical
+    //   setter 寫回(對齊 MUI SelectInput handleChange 同款 guard),其餘輸入忽略
+    // - aria-hidden + tabIndex={-1}:AT 與 Tab 序皆不見(semantics 由 role=combobox trigger
+    //   own);form-validation 規則 8 focus-first-error 以 DOM name 定位 → 可聚焦 mirror →
+    //   trigger focus-within 顯示 focus 邊框(桌機 Select 脫離「非 native 控件略過」fallback)
+    // 世界級對照:MUI Select 非原生模式 opacity-0 hidden input 攜 name/required
+    // (github.com/mui/material-ui .../Select/SelectInput.js;Select.test.js 官方測試涵蓋
+    // required 阻止提交 + FormData 值)+ React Spectrum HiddenSelect(github.com/adobe/
+    // react-spectrum .../@react-aria/select/src/HiddenSelect.tsx)+ Headless UI Listbox
+    // name → hidden input kept in sync(headlessui.com/react/listbox#using-with-html-forms)。
+    const hiddenInputEl = (
+      <input
+        type="text"
+        name={name}
+        form={form}
+        value={value ?? ''}
+        onChange={(e) => {
+          const matched = options.find((o) => o.value === e.target.value && !o.disabled)
+          if (matched) setValue(matched.value)
+        }}
+        required={required || undefined}
+        disabled={disabled}
+        aria-hidden="true"
+        tabIndex={-1}
+        className="absolute bottom-0 left-0 w-full opacity-0 pointer-events-none"
+      />
     )
 
     const triggerContent = (
@@ -612,6 +742,16 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
 
     const trigger = (
       <div
+        // passthrough(2026-07-14 dim-9 修;同日 API 策展 D 收窄):SelectProps allowlist
+        // (Pick<SelectHTMLAttributes>,見 SelectProps docblock)承諾的 data-* / onFocus /
+        // onBlur 等 attrs,mobile NativeSelect 經 {...props} spread 到 <select> 生效,desktop
+        // 原本完整列舉全丟 → 同一 <Select> API 隨 pointer type 靜默失效(consumer data-testid /
+        // onBlur mobile 有、desktop 無)。rest 先 spread —— component 契約 attrs(role / aria-* /
+        // id / tabIndex / onKeyDown / className)在後,不可被覆寫;consumer onKeyDown 經
+        // onKeyDownProp 在 handler 內先跑(見下)。mobile-only attrs(autoFocus / autoComplete)
+        // 已在 destructure 層丟棄不進 rest(div trigger 無原生語意;desktop 表單語意由 hidden
+        // input mirror 承擔,見 D2 docblock)。
+        {...(rest as unknown as React.HTMLAttributes<HTMLDivElement>)}
         ref={ref}
         id={idProp ?? fieldCtx?.id}
         role="combobox"
@@ -623,23 +763,36 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         // (field-context.ts labelId jsDoc 明文);consumer aria-label 優先(對齊 slider.tsx:166 guard canonical)。
         aria-labelledby={ariaLabel ? undefined : fieldCtx?.labelId}
         aria-invalid={error || undefined}
-        aria-required={fieldCtx?.required || undefined}
+        // D2(2026-07-13):顯式 required prop 同步進 aria-required(mirror 本身 aria-hidden,
+        // AT 看不到其 required;語意由 trigger 播報 — 對齊 mobile 原生 <select required> 行為)
+        aria-required={(required || fieldCtx?.required) || undefined}
         aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
         aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
         tabIndex={0}
         className={cn(
-          fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
+          fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }),
           !isTextDisplay && value && !searchable && tagPadding[size],
           // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
           // state machine `data-[state=open]:border-border-hover`(灰深)處理 open。
           // 2026-07-04 Q1:error border 同樣收進 fieldWrapperStyles error variant(error 勝 focus 色)。
-          'cursor-pointer',
+          // D2(2026-07-13):`relative` = hidden input mirror 的 absolute 定位容器
+          // (fieldWrapperStyles base 無 relative;對齊 NativeSelect tag 分支同款顯式加法)。
+          'relative cursor-pointer',
           className,
         )}
-        style={!isTextDisplay ? { paddingRight: 'var(--field-px)' } : undefined}
+        style={styleProp || !isTextDisplay ? { ...styleProp, ...(!isTextDisplay ? { paddingRight: 'var(--field-px)' } : undefined) } : undefined}
         data-field-mode="edit"
         data-error={error ? '' : undefined}
         onKeyDown={(e) => {
+          // passthrough(dim-9):consumer onKeyDown 先跑 —— 對齊 native path(<select> 上
+          // consumer handler 同樣最先收到);component 導覽邏輯照舊在後。
+          onKeyDownProp?.(e as unknown as React.KeyboardEvent<HTMLSelectElement>)
+          // 2026-07-14 dim-10 修:內層清除按鈕(SelectClearButton → ItemInlineAction <button>)
+          // 的 Enter/Space 會 bubble 到本 handler 被 preventDefault 吞掉 → 鍵盤無法清除。
+          // 事件源自 descendant button 時不執行 trigger 鍵盤邏輯(保留原生 activation)。
+          // 注意:不能一刀切 e.target !== e.currentTarget — searchable inline <input> 的
+          // 鍵盤事件仍需下方 forwardKeyToListbox 轉送選單導覽。
+          if (e.target !== e.currentTarget && (e.target as HTMLElement).closest?.('button')) return
           // 2026-07-05 D4 P0:open 後 ArrowUp/Down/Enter 轉送 cmdk root(見 select-menu.tsx
           // forwardKeyToListbox docblock — 原「open 後不攔讓方向鍵導覽」在跨 DOM 子樹機制上不成立)
           if (open && forwardKeyToListbox(listboxId, e)) return
@@ -657,6 +810,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         {triggerContent}
         {clearEl}
         {chevronEl}
+        {hiddenInputEl}
       </div>
     )
 

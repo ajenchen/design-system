@@ -1,0 +1,31 @@
+{
+  "dim": 17,
+  "title": "Prop value 跨元件認知衝突(同字串在不同元件的語義衝突)",
+  "mechanism": "grep prop literal DS-wide;同字串在不同元件是否有衝突語義(如 variant=\"text\")",
+  "filesScanned": 155,
+  "scanScope": "全 78 非-story component tsx + 77 component ts;semantic props: variant/mode/status/align/size/shape/role/appearance/display/type,DS-wide value-string cross-component map",
+  "historicalCheck": {
+    "variant_text_collision": "CLOSED — 全 DS 內 variant='text' 一律 Button 低強度文字按鈕語義(FileItem/Pagination/FileViewer 等皆消費 Button variant,無自定義衝突);歷史 FileItem text/picture 已改 mode: compact/rich,不再撞 Button variant='text'。",
+    "consistentSharedValues": "多數跨元件共用字串語義一致(good hygiene):Avatar↔PeoplePicker status(online/away/busy/offline 皆 presence)、sm/md/lg size scale、compact/rich density(FileItem↔FileUpload)、start/end overlay align、success/error/warning tone。"
+  },
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:30,63 vs Button/Coachmark/SelectMenu align",
+      "問題": "prop 'align' 值語彙跨元件衝突:DataTable column align='left'|'right'|'center'(cell 文字對齊)vs Button/Coachmark/SelectMenu align='start'|'center'|'end'(浮層相對錨點定位)。同 prop 名同值字串 'center' 在兩處語義不同——一個是 cell 內文字置中、一個是浮層置中定位;且 physical(left/right)vs logical(start/end)兩套詞彙並存。",
+      "severity": "marginal",
+      "建議": "兩者各自對齊世界級 idiom(Ant Table align=left/right/center、Radix align=start/center/end),可辯護,故 marginal。建議在 DataTable spec 明文標註此為刻意的『文字對齊 physical 詞彙』區隔(documented exception),避免後續 audit 誤判 drift;若要根治可將 DataTable 該 prop 更名 textAlign 消歧義。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:396-397",
+      "問題": "BreadcrumbItemProps extends React.ComponentPropsWithoutRef<'li'> 卻宣告 role?: 'root'|'middle'|'current'|'ellipsis',覆蓋(shadow)原生/ARIA 的 role 屬性,把 role 語義從『ARIA role』改成『breadcrumb 序列位置』。這與 Notice role?: 'status'|'alert'(正確的 ARIA role 用法,notice.tsx:93)語義衝突——同 prop 字串 'role' 一處是 HTML/ARIA 保留語義、一處是自定義位置列舉;且值 'current' 看似對應 aria-current 實則無關(aria-current 另在 507 行單獨設)。",
+      "severity": "marginal",
+      "建議": "BreadcrumbItem 未 export(僅 breadcrumb.tsx 內部由 index 分派),非 consumer-facing,故 marginal 而非 material。建議內部 prop 更名 position 或 itemRole,避免 shadow 原生 <li> role 型別與 ARIA 語義混淆;或加註解說明此為內部位置語義非 ARIA。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/FileUpload/file-upload.tsx:50 + FileItem/file-item.tsx:65 vs ProgressBar/progress-bar.tsx:59",
+      "問題": "prop 'status' 於同一概念域(非同步操作進度)跨元件用不同值詞彙:FileUpload/FileItem status='uploading'|'completed'|'error' vs ProgressBar status='inProgress'|'success'|'error'。'error' 一致,但 'completed'≈'success'、'uploading'≈'inProgress' 表同義卻用不同字串,開發者在兩元件間切換時預期 'completed' 卻要寫 'success'。",
+      "severity": "marginal",
+      "建議": "兩者 spec 皆有記載(progress-bar.spec.md:104 註解 inProgress/success/error),屬 documented 但跨元件不一致的『同義異字』(Dim 17 反向:非同字異義而是異字同義),認知負荷 marginal。建議收斂為單一 async-progress 狀態詞彙 SSOT,或在 spec 明文標註 file-lifecycle(uploading/completed)vs generic-task(inProgress/success)的刻意區隔理由。"
+    }
+  ]
+}

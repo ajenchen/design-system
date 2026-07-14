@@ -1,0 +1,101 @@
+{
+ "component": "Slider",
+ "claimsVerified": 473,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.tsx:16",
+   "宣稱": "**Range mode 免費**:Radix 原生支援 `value: number[]`,傳多值自動多 thumb",
+   "真實code行為": "Radix 1.3.6 只管理多值，不會建立 Thumb；DS wrapper 於 slider.tsx:75-78、140-175 依陣列長度自行渲染 Thumb。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.tsx:17",
+   "宣稱": "**Hover / active 用 elevation 陰影**:不用色變,避免暗示「這是 button」",
+   "真實code行為": "除 elevation 外，hover 會改為 `border-primary-hover`，active 改為 `border-primary-active`；見 slider.tsx:152-155。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.tsx:66",
+   "宣稱": "<Field mode=\"readonly\"> → 鎖互動保留視覺(readonly ≠ disabled,不降色)",
+   "真實code行為": "readonly 僅套用 `pointer-events-none` 與 Thumb `tabIndex=-1`；既有或程式化 focus 不會被移除，Radix 鍵盤 handler 仍能改值。見 slider.tsx:85、143-144。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.tsx:88",
+   "宣稱": "鎖互動、保留正常視覺……pointer-events-none 擋滑鼠,thumb tabIndex=-1 擋鍵盤。",
+   "真實code行為": "`tabIndex=-1` 只移出循序 Tab 順序，不會停用既有／程式 focus 上的 Arrow、Page、Home、End 事件；readonly 未映射為 Radix `disabled`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.tsx:110",
+   "宣稱": "兩個 token 綁在一起,不論什麼 state 都一致。",
+   "真實code行為": "只在 rest／disabled 同 token；hover／focus／active 僅改 Thumb border，Range 不變。見 slider.tsx:114-128、147-157。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:104",
+   "宣稱": "Range 填滿色和 Thumb border 色**永遠是同一個 token**",
+   "真實code行為": "僅 rest／disabled 成立；hover／focus 使用 `primary-hover`、active 使用 `primary-active`，Range 仍為 `primary`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:126",
+   "宣稱": "onValueCommit={(value) => void}  // 放開滑鼠時才觸發",
+   "真實code行為": "Radix 1.3.6 在 Home、End、Arrow、Page 鍵造成有效變更時也以 `commit:true` 立即觸發 `onValueCommit`；見 dist/index.js:165-175。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:132",
+   "宣稱": "orientation=\"horizontal\" // 不支援 vertical",
+   "真實code行為": "`SliderProps` 已明確 Omit `orientation`；horizontal 是 Radix 內部預設，不是公開 typed prop。見 slider.tsx:52-56。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:139",
+   "宣稱": "Radix Slider 原生支援多 thumb——只要 `value` / `defaultValue` 傳長度 > 1 的 array,就自動渲染對應數量的 thumb",
+   "真實code行為": "Radix 支援多值及 Range 計算，但自動建立相應 Thumb 是 DS wrapper 的 `thumbCount` 與 `Array.from(...).map(...)` 實作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:219",
+   "宣稱": "在 `<Field mode=\"readonly\">` 內 = **鎖互動、保留正常視覺**(pointer-events-none + thumb tabIndex=-1 + aria-readonly on thumb)",
+   "真實code行為": "滑鼠與新的 Tab 入口被擋，但已聚焦或程式聚焦的 Thumb 仍可用鍵盤改值；`aria-readonly` 不會停用 Radix 更新 handler。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:225",
+   "宣稱": "**Left / Right Arrow**:- / + `step`",
+   "真實code行為": "只適用預設 LTR、非 inverted；公開的 `dir`／`inverted` 可反轉左右鍵方向。見 Radix dist/index.js:207-209、252。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:239",
+   "宣稱": "focus 用 border 加深(同 hover 視覺),不加 ring / halo",
+   "真實code行為": "focus 使用 `border-primary-hover`，其 light-mode 語意是「淺一階 lift」，不是加深；slider.tsx:149-151 亦明記舊稱「加深」方向錯誤。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:27",
+   "宣稱": "Radix Slider 原生支援多 thumb——只要 `value` / `defaultValue` 傳 array 長度 > 1,自動渲染對應 thumb",
+   "真實code行為": "Thumb 數量由 DS wrapper 在 slider.tsx:75-78、140-175 自行計算及渲染，不是 Radix Root 原生行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:40",
+   "宣稱": "['value / defaultValue', 'number[]', '—', '[single] 或 [min, max] range mode']",
+   "真實code行為": "`value` 無預設，但 Radix 的 `defaultValue` 預設為 `[min]`；min 預設 0，因此有效預設為 `[0]`。見 Radix dist/index.js:82-83。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:42",
+   "宣稱": "['onValueCommit', '(value: number[]) => void', '—', '放開滑鼠才觸發(防抖用)']",
+   "真實code行為": "鍵盤 Arrow、Page、Home、End 的有效變更同樣立即觸發 `onValueCommit`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:47",
+   "宣稱": "['minStepsBetweenThumbs', 'number', '—', 'range mode 兩 thumb 最小距離']",
+   "真實code行為": "Radix 1.3.6 明確預設 `minStepsBetweenThumbs = 0`；見 dist/index.js:82。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:178",
+   "宣稱": "Range 色和 Thumb border 色永遠同 token",
+   "真實code行為": "只在 default／disabled 同 token；hover／focus／active 的 Thumb border 會變而 Range 不變。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:213",
+   "宣稱": "← / →：- / + step",
+   "真實code行為": "`dir=\"rtl\"` 或 `inverted` 會反轉左右鍵的增減方向；此宣稱未限定 LTR、非 inverted。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:233",
+   "宣稱": "role、aria-* 屬性、鍵盤導覽都由 primitive 提供",
+   "真實code行為": "Radix 提供 role、value ARIA 與鍵盤處理；但 wrapper 自行產生 `aria-label`／多 Thumb suffix、接線 Field `aria-labelledby`，並加入 readonly `aria-readonly`。見 slider.tsx:143-174。"
+  }
+ ]
+}

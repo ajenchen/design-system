@@ -551,7 +551,7 @@ export const ColorMatrix = {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-1">
         <H3>State 色彩對照</H3>
-        <Desc>單選用 bg-neutral-selected 背景指示選中，多選用 Checkbox 勾選——背景不變。disabled 時所有元素統一 fg-disabled。色塊即時渲染，切 dark mode 自動更新。</Desc>
+        <Desc>單選用 bg-neutral-selected 背景指示選中，多選用 Checkbox 勾選——背景不變。disabled 時文字 / startIcon 用 fg-disabled、tag / endContent / startContent 用 opacity-disabled、checkbox 走自身 disabled、avatar 不變暗。色塊即時渲染，切 dark mode 自動更新。</Desc>
       </div>
 
       {/* Single-select */}
@@ -745,10 +745,10 @@ export const SizeMatrix = {
                   <MenuItem size={sz} startIcon={Mail} description="每日摘要信件">
                     電子郵件通知
                   </MenuItem>
-                  <MenuItem size={sz} avatar={{ alt: "Alice", color: "indigo" as const }}>
+                  <MenuItem size={sz} avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: "Alice", color: "indigo" as const }}>
                     Alice Chen
                   </MenuItem>
-                  <MenuItem size={sz} avatar={{ alt: "Bob", color: "magenta" as const }} description="工程部門">
+                  <MenuItem size={sz} avatar={{ src: "https://i.pravatar.cc/48?u=bob-wang", alt: "Bob", color: "magenta" as const }} description="工程部門">
                     Bob Wang
                   </MenuItem>
                   <MenuItem size={sz} checkbox checked={true} startIcon={Bell}>

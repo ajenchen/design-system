@@ -20,7 +20,7 @@ benchmark:
 
 **Layout Family**:self-contained(form composition layout-primitive,非 4-Family element layout — 對齊 frontmatter `family: self-contained`)。
 
-**多個 Field controls 視覺接合成一個 input frame**(border-collapse pattern)。對齊 ButtonGroup 同類接合 idiom — `<X>Group` 命名一致(X = button → ButtonGroup;X = field control → FieldControlGroup)。
+**多個 Field controls 視覺接合成一個 input frame**(border-collapse pattern)。命名對齊 ButtonGroup 的 `<X>Group` idiom(X = button → ButtonGroup;X = field control → FieldControlGroup),**但兩者機制不同**:ButtonGroup 是 gap 分離群組(`flex gap-2`,子按鈕之間留 8px),本元件才是 border-collapse 接合(負 margin 重疊 border,子無 gap)。
 
 **自建 + 理由**:無單一 Radix / shadcn 對應 primitive(shadcn 沒提供;Radix 沒對應)。對齊 [Ant `Space.Compact`](https://ant.design/components/space#spacecompact)(verified source)mechanism + [Bootstrap `.input-group`](https://getbootstrap.com/docs/5.3/forms/input-group/)(verified SCSS)idiom 自建。
 
@@ -46,7 +46,7 @@ benchmark:
 | `FieldGroup` | 多 Field 垂直堆疊 | gap 分離 | layout primitive |
 | **`FieldControlGroup`** | 多 control 橫向接合 | border collapse | layout primitive(本元件)|
 | `RadioGroup` / `CheckboxGroup` | 1 question 多 options | 各自獨立 | semantic group(ARIA role)|
-| `ButtonGroup` | 多 Button 接合 | border collapse | layout primitive(同 mechanism) |
+| `ButtonGroup` | 多 Button 分組 | gap 分離(`flex gap-2`) | layout primitive(**不同 mechanism**,非 border-collapse 接合) |
 
 ## API
 
@@ -149,6 +149,11 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 ```
 保留 global `bg-disabled`(neutral-2 灰底)— disabled state 視覺主要由 bg 承載。
 
+**⚠️ 選擇器覆蓋範圍(2026-07-13 誠實標註 — code 現況,非 uniform)**:disabled state 的兩道視覺處理走**不同選擇器、覆蓋不同 child 類型**,並非對所有 disabled 子一致生效:
+- **z-index 降 0**:`[&>*[disabled]]:z-0` + `[&>*:has([disabled])]:z-0` — 認**原生 `[disabled]` 屬性**。覆蓋 Button(原生 `<button disabled>`)、Input / NumberInput(wrapper 內含原生 `<input disabled>`,`:has()` 命中)。
+- **border-opaque override**:`[&>*[data-field-mode="disabled"]]` — 認 **Field 家族 wrapper 的 `data-field-mode="disabled"`**。覆蓋所有 Field controls(Select / Input / Combobox / DatePicker…)。
+- **覆蓋落差(已知)**:disabled **Select**(桌機自訂 trigger = `<div>`,無原生 `[disabled]`)→ 得 border-opaque 但**不降 z-0**;disabled **Button**(無 `data-field-mode`)→ 降 z-0 但**不得 border-opaque**。要讓兩道處理對所有 disabled 子一致覆蓋需統一兩選擇器(視覺行為改動 → 走設計拍板,非本文件範圍)。
+
 **為什麼用 `--border-opaque` 而非 `--border`**:`--border`(neutral-5 = 15% alpha)會跟 cell bg compositing — 灰底上 composite 略深(物理對比結果)。**`--border-opaque`** semantic token(其 primitive 後盾為 `--color-neutral-5-opaque`,solid #D9D9D9)不分 bg 永遠同色,divider 在 white edit cell 跟 grey disabled cell 上視覺完全一致。
 
 **Token 系統設計**:`--border-opaque` 在 `semantic.css` 新增(grep `--border-opaque:` 查定義行,不寫死行號避免漂移),語意「視覺等同 `--border` 但 alpha-immune」。對齊 [Ant Design `colorBorderSecondary`](https://ant.design/docs/react/customize-theme#seedtoken) solid idiom — Ant 用此 token 在 table 外框 + row divider(non-white bg 場景),跟 input alpha border 視覺層級分。
@@ -168,7 +173,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 ## 邊界案例
 
 - **子高度不一**:容器 `items-stretch`,但 field controls 自帶固定 `h-field-*`,不會被拉齊——混 size 即視覺高低差(故禁止,見禁止事項)
-- **某子 disabled、某子 edit**:機制上可行(disabled 子降 z-0 + K12 border 維持 divider),但語意一體應一致(見禁止事項);**全組 disabled** 走 K12 canonical(見 States)
+- **某子 disabled、某子 edit**:機制上可行(disabled 子降 z-0 + K12 border 維持 divider,實際覆蓋依 child 類型而異 — 見 K12「選擇器覆蓋範圍」note),但語意一體應一致(見禁止事項);**全組 disabled** 走 K12 canonical(見 States)
 - **極窄容器**:無特化處理——固定寬 children(`w-[Xpx]`)溢出容器、`flex-1` children 壓縮;子自管 width 的對價,consumer 自行配置
 - **單一 child**:radius 選擇器 `:first-child:not(:last-child)` 不命中,圓角完整保留(等同未包 group,但此時應直接用 Field)
 
@@ -186,7 +191,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 ## 相關
 
 - `../Field/field.spec.md` — FieldGroup(多 Field 垂直堆疊近親,gap 分離)的 home
-- `../Button/button-group.tsx` — 同 border-collapse mechanism 的 Button 版(無獨立 spec,機制同源)
+- `../Button/button-group.tsx` — 命名 idiom 近親(`<X>Group`);但 ButtonGroup 是 **gap 分離**(`flex gap-2`),非 border-collapse 接合,兩者機制不同(無獨立 spec)
 - `../Field/field-controls.spec.md` — children(Input / Select / DatePicker 等)共用 Field control 規則
 - `../Checkbox/checkbox.spec.md` / `../RadioGroup/radio-group.spec.md` — semantic group 近親(1 question 多 options,非本元件 scope)
 

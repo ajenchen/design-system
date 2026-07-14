@@ -1,0 +1,28 @@
+{
+  "dim": 7,
+  "title": "Spec Rule B 邊界案例 — 7-dim 邊界覆蓋(空值/驗證/loading/a11y/近親分界/常見誤解/links)",
+  "filesScanned": 86,
+  "mechanism": "每 spec 過 7-dim 邊界覆蓋;適用狀態必明文或 pointer,不適用明文『本元件無 X 狀態』,禁沉默省略。互動元件必含 ## A11y 預設 段;純視覺 indicator 豁免但需明寫無互動。",
+  "verdict": "largely-clean",
+  "summary": "DS-wide 86 spec.md 全掃。SegmentedControl template 紀律已 DS-wide 傳播:全部 68 component spec 皆有 何時用/何時不用(近親分界)/邊界案例(空值+loading)/A11y 預設/相關 links,或用 Field-family pointer(form-validation.spec.md / field-controls.spec.md)+ 明文非適用聲明(『consumer 用 <Empty>』/『本 wrapper 無內建 loading』/『本元件無互動狀態』)。token spec(density/elevation/radius/typography 等)+ 分類 taxonomy(element-anatomy)+ 資料模型 SSOT(filter-operators)為不同 genre,7-dim 不適用,合法豁免。純視覺 indicator(Badge/Tag/Separator/Skeleton)皆明寫無互動聲明。僅 3 個 shared/pattern SSOT 缺 consolidated A11y 段,全 marginal。無 material 缺口。",
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:12",
+      "問題": "Field 家族行為 SSOT 缺 consolidated `## A11y 預設` 段。此 spec own 多個 a11y-relevant canonical 決策 — readonly focus-visible ring(WCAG 2.4.7,L87)、loading `aria-busy`(L110)、error `aria-invalid`(L152)、endAction 必帶 `aria-label`(L406)— 但散在各 section,無統一 a11y 段或指回各控件 A11y 的 pointer。對照 SegmentedControl template 皆有明確 `## A11y 預設` 段。",
+      "severity": "marginal",
+      "建議": "非硬缺口 — 各具體 field 控件(Input/Select/DatePicker 等)各自 spec 都有 `## A11y 預設` 段,coverage 存在於 component 層。建議在本 SSOT 補一段短 `## A11y 預設(家族共用)` 收斂散落的 aria-busy/aria-invalid/readonly-ring 共用契約 + 一行『各控件 ARIA/Keyboard 詳各自 spec A11y 段』pointer,讓 own a11y canonical 的 SSOT 自身可檢索。"
+    },
+    {
+      "fileLine": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:3",
+      "問題": "Row 結構 SSOT(全 DS 最大 SSOT,規範『任何未來的 row 元件』L155)缺 `## A11y 預設` 段或 a11y pointer。Row primitive 是互動元素(鍵盤導覽、role、selection 狀態),a11y 目前只散在個別 consumer spec(menu-item / selection-item),本結構 SSOT 未收斂共用 a11y 契約(如 selection indicator role、control tabIndex/aria-hidden 慣例僅 L432 一處零星出現)。",
+      "severity": "marginal",
+      "建議": "本 spec 為結構 canonical,a11y 合理下放各 consumer;但既是『任何未來 row 元件』的建立指南,建議補一行 pointer 『row a11y(role/keyboard/selection ARIA)見各 consumer spec A11y 段;共用 selection-indicator 語意見 selection-item.spec.md』,把 7-dim 的 a11y 維度顯式閉環,避免新 row 元件作者漏掉。"
+    },
+    {
+      "fileLine": "packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:100",
+      "問題": "Inline Action pattern SSOT 的 a11y 要求已明文於「實作要求」段(必須有 `aria-label` L103、必須有 Tooltip L105、decorative indicator 用 `aria-hidden` L116),但無 dedicated `## A11y 預設` 標題,與 DS-wide 其他 spec 的 a11y-section 慣例不一致。",
+      "severity": "marginal",
+      "建議": "a11y 內容實質已覆蓋(非沉默省略),僅標題慣例不齊。建議把「實作要求」中的 aria-label/Tooltip/aria-hidden 三條抽成 `## A11y 預設` 段(或在該段加 anchor),使 DS-wide a11y 段可機械檢索一致。"
+    }
+  ]
+}

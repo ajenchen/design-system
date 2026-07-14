@@ -19,10 +19,11 @@ ls -la ~/.codex/auth.json                                              # 3 Auth(
 node_modules/.bin/codex exec \
   --dangerously-bypass-approvals-and-sandbox \   # user-authorized;codex shell 可跑 audit script
   --skip-git-repo-check -C "$PWD" \              # 同 repo root → 同 spec.md / scripts / node_modules
-  -c model_reasoning_effort=low \                # 避大 brief plan-turn 燒 budget(per memory Rule 3)
   --output-last-message /tmp/codex-phaseB.md \   # 截 verdict artifact 供 Step 4.5 diff
   < brief.md > /tmp/codex-phaseB.log 2>&1 &
 ```
+
+**最強模型算力強制(2026-07-10 user directive)**:**禁帶 `-c model_reasoning_effort` / `-m` 降檔 flag** — `~/.codex/config.toml`(最強 model + xhigh)= SSOT,不帶即繼承。大 brief 死局對策 = 只拆更小 single-axis brief,不降 effort(詳 memory Rule 3)。
 
 **安全護欄(bypass 解鎖 shell 但仍禁寫源)**:
 - Brief 必含「**禁 edit / delete / write `packages/design-system/src/**` 及任何 DS 源**;只跑唯讀 audit script + grep + Playwright screenshot」。
@@ -59,19 +60,37 @@ node_modules/.bin/codex exec \
 
 ## 你的任務(Phase B,獨立)
 
-1. **全盤閱讀**(per A.0 file list,不 sample):
-   - CLAUDE.md / `.claude/rules/*` / `.claude/references/*`
-   - `packages/design-system/src/**/*.spec.md` 全部(brief-gen 時跑 `find packages/design-system/src -name '*.spec.md' | wc -l` 取真數,當前 ~83,禁硬寫)
-   - `packages/design-system/src/tokens/**/*.spec.md` + `packages/design-system/src/patterns/**/*.spec.md`
-   - `~/.claude/.../memory/MEMORY.md` index + active project memory
+**⚠️ 本 brief 的 SSOT 宣告(2026-07-10 user「codex 和 Claude 在 deep audit 所做的所有事包括所有判斷標準、稽核任務等都應是 SSOT」)**:
+你要做的稽核 = **Claude 的 deep audit Phase A 完整鏡像,只差模型**。任務 / 判準 / 流程的**唯一真相來源(SSOT)= 這些檔,你必逐字讀並遵循**,本 brief 只補「檔案得不到的動態」(user 原話 / Claude Phase A 摘要 / live dim 清單):
+- `.claude/skills/deep-audit-cross-codex/SKILL.md` Phase A 全段(A.0 全盤閱讀 / A.1 全 dim / **A.1b per-component claim-vs-code 對抗** / A.4 verify-to-perfection)—— **你做 A.0→A.1→A.1b→A.4 每一步,標準與 Claude 同**
+- `.claude/skills/design-system-audit/SKILL.md` dim 表 + `references/audit-prompts.md` 每-dim rubric(你的判準 = Claude 的判準)
+- 下方逐條 = 上述 SSOT 的**執行清單摘要**,若與 SSOT 檔衝突以 SSOT 檔為準(未來 Phase A 新增步驟自動經此傳到你,不需改本 brief)
 
-2. **全 dim deep audit NO-SAMPLE**(對齊 `.claude/skills/design-system-audit/SKILL.md` Group A-Q 全 dim):
+
+1. **全盤閱讀 — 逐字鏡射 Claude A.0 六項**(2026-07-10 user directive「codex 擁有/閱讀的資訊要跟 Claude 一模一樣」;泛 glob ≠ 對等,hook 5️⃣ 驗錨點):
+   1. `CLAUDE.md` 全文
+   2. `.claude/rules/{meta-patterns,spec-rules,ui-development,story-rules,self-verify}.md` 全文
+   3. `.claude/references/{ssot-index,ssot-consultation,build-ui-canonicals,naming-conventions}.md`
+   4. `packages/design-system/src/**/*.spec.md` 全部(brief-gen 時跑 `find packages/design-system/src -name '*.spec.md' | wc -l` 取真數,禁硬寫)
+   5. `packages/design-system/src/tokens/**/*.spec.md` + `packages/design-system/src/patterns/**/*.spec.md` 全部
+   6. repo `.claude/memory/MEMORY.md` index + active project memory files(repo mirror,codex 讀得到)
+   **A.0 第 6 項的「session 對話脈絡」是唯一結構性拿不到的 — 以本 brief 第 1 段(user 原話 verbatim,Step 0.05)+ 第 2 段(Claude Phase A 結果摘要)補償,此為明文契約非省略**
+   **環境對等**:`-C "$PWD"` 同 repo root = 同 spec / 同 scripts / 同 node_modules;bypass sandbox = 可跑跟 Claude 一模一樣的 tsc / invariant / playwright(M31 Step 2 verify 對稱)
+
+2. **全 dim deep audit NO-SAMPLE — 判準對等**(對齊 `.claude/skills/design-system-audit/SKILL.md` Group A-Q 全 dim):
+   - **判準對等(2026-07-10 user「兩邊都用同樣的完美標準去稽核同樣的完整項目」)**:codex **必讀** `.claude/skills/design-system-audit/references/audit-prompts.md`(每 dim 的 rubric)+ SKILL.md dim 表,**逐 dim 套用該 rubric 判**(= Claude 的 dim sub-agent 判準 SSOT,SKILL.md:257)。**禁**只憑 dim 名 / 自己理解判 —— 那是標準不對稱。
    - **live dim 清單由 Claude brief-gen 時注入**:跑 `node scripts/dispatch-audit-dims.mjs --summary` 把編號 / batch 貼進 brief,並要求 codex **自己再跑一次自確認**(read-only 跑不了 → 用 bypass 跑;禁硬寫 dim 數字,per SKILL.md SSOT-integrity invariant)
    - 每 dim 全 DS-wide 掃,禁 sample top N
+   - **回覆必附「dim 覆蓋對帳段」**(2026-07-10 加,回程可驗):列出本 brief 實際掃過的 dim 號 +
+     每 dim 一行「N files scanned / M findings(或 0 after 全掃)」。拆多 brief 時每份都要附
+     —— B.2 會彙總對 dispatch 清單逐號對帳,缺號 = 補 brief 再跑,不齊不得進 B.3 比稿
    - **機械維度 codex 自己跑**(bypass sandbox,做跟 Claude 一樣的事):`npx tsc -b` / `node scripts/audit-content-quality.mjs --check` / 相關 `node scripts/*-invariants.mjs` / Playwright screenshot(sequential navigate→wait→screenshot→evaluate,per memory Rule 2,禁 batch unsafe)。**貼每個 command 的 literal stdout 當 cite**;真跑不了的(帳號 / 網路 scoped)明標「mechanical-uncoverable, eyeball-only」讓 Claude B.2 補跑
    - 每 finding 必 cite: <file:line> + <quote> + <違反 spec / rule>
 
-3. **整理完整報告**(P0 / P1 / P2 分類):
+3. **A.1b — per-component claim-vs-code 對抗驗證(MANDATORY,NO-SAMPLE;= Claude SKILL A.1b 鏡像,歷史最高產出 pass)**:
+   對**每個** component + pattern(全 62+,禁 sample):Read 該元件 `.tsx` **+ 它 wrap 的 lib**(Radix / cmdk / react-day-picker / sonner 等)source,對該元件**所有** anatomy / a11y / principles / spec / docblock 宣稱**逐句**比對真實 code:鍵盤 map / ARIA role / focus 行為 / prop 存在性 / 預設值 / native-vs-custom / token。**「自上次無 code 改動」≠ 可跳過**(content 宣稱可在 code 沒變下就是假的)。輸出 per-component `{component, claimsVerified: N, falseClaims: [{fileLine, 宣稱, 真實 code 行為}]}`。錨:2026-05-30 此 pass 抓 403 findings / 202 FALSE_CLAIM。
+
+4. **整理完整報告**(P0 / P1 / P2 分類):
    ```
    ### Codex Phase B audit
    - P0: <list>
@@ -87,7 +106,7 @@ node_modules/.bin/codex exec \
    - <題 1>: Claude 立場 / 你立場 / spec.md path:line 引文 / world-class ≥3 家對照
    ```
 
-4. **禁**:
+5. **禁**:
    - frame 答案進 Claude 思路(不可 paraphrase Claude 結論)
    - sample / heavy agent skip(NO-SAMPLE STRICT)
    - pass-through 共識（必獨立 own report）

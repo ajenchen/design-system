@@ -105,7 +105,7 @@ const STATUS_LABEL: Record<StatusType, string> = {
  * 各自不一致(同 person 在 DataTable / PeoplePicker / avatar.principles 看起來不同)。
  *
  * v11 canonical(歷史):ProfileCard 當時 always renders 4 default sections — 缺 data → 顯
- * `EMPTY_PLACEHOLDER`("—")。現行:default fields 縮為 2(v15.7)+ status 條件 render(v12),
+ * `EMPTY_PLACEHOLDER`("-")。現行:default fields 縮為 2(v15.7)+ status 條件 render(v12),
  * 「視覺結構 SSOT 在此元件,不依賴 consumer」原則不變。
  *
  * ── 對齊 world-class ──
@@ -128,7 +128,7 @@ const DEFAULT_FIELD_LABEL: Record<ProfileCardDefaultFieldKey, string> = {
   employeeNumber: 'Employee number',
 }
 
-const FIELD_PLACEHOLDER = '—'
+const FIELD_PLACEHOLDER = '-'
 
 export interface ProfileCardProps extends React.HTMLAttributes<HTMLDivElement> {
   name: string
@@ -139,7 +139,7 @@ export interface ProfileCardProps extends React.HTMLAttributes<HTMLDivElement> {
   actions?: React.ReactNode
   /**
    * Consumer 傳的 field 資料(partial)。預設 keys 走 `NAMECARD_DEFAULT_FIELD_KEYS` —
-   * 只有 id / employeeNumber 兩個 default field 永遠 render(缺資料顯 `—`);email / phone /
+   * 只有 id / employeeNumber 兩個 default field 永遠 render(缺資料顯 `-`);email / phone /
    * department / location 等其他欄位一律 opt-in by consumer 透過本 prop 傳入。Consumer 想新增
    * 自訂 field 直接傳入(在 default 之後 append),想 override default key value 也直接傳。
    */
@@ -178,7 +178,7 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
     //
     // **Dedup canonical(2026-05-07 v15.8 fix Bug E)**:consumer 的 `fields` array 若含
     // label 撞 default(eg. 「ID」「Employee number」),consumer 值 win — defaults 那一行
-    // 跳過(否則 same label 連 render 兩次,如 default placeholder `—` + consumer 真值)。
+    // 跳過(否則 same label 連 render 兩次,如 default placeholder `-` + consumer 真值)。
     // 這是遷移期 forgiving 行為:DEV warn 提示應改用 `defaultFieldValues`,但 production
     // 不破壞既有 consumer。對齊 React `key` 唯一性 + Linear / Slack profile card 一 label
     // 一 row idiom。
@@ -292,7 +292,7 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
                   message 是一組;沒 status 就沒 status message)。缺 statusMessage 顯 placeholder。 */}
               <DescriptionList>
                 <DescriptionItem label="Status message">
-                  {statusMessage ?? <span className="text-fg-muted">{FIELD_PLACEHOLDER}</span>}
+                  {statusMessage ?? <span className="text-foreground">{FIELD_PLACEHOLDER}</span>}
                 </DescriptionItem>
               </DescriptionList>
             </div>
@@ -304,7 +304,7 @@ const ProfileCard = React.forwardRef<HTMLDivElement, ProfileCardProps>(
               {allFields.map((f) => (
                 <DescriptionItem key={f.label} label={f.label}>
                   {f.value === FIELD_PLACEHOLDER
-                    ? <span className="text-fg-muted">{FIELD_PLACEHOLDER}</span>
+                    ? <span className="text-foreground">{FIELD_PLACEHOLDER}</span>
                     : f.value}
                 </DescriptionItem>
               ))}

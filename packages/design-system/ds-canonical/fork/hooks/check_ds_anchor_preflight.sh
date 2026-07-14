@@ -4,7 +4,8 @@
 #
 # Purpose: PreToolUse Edit/Write/MultiEdit 偵測 production tsx wrap DS primitive
 # (`<Sidebar>` / `<AppShell>` / `<DataTable>` / `<Dialog>` / `<Field>` 等)
-# 沒同 turn 跑過 Grep / Read DS canonical baseline → 軟 BLOCKER 提醒 propose 前必出 3-column owner table。
+# 沒同 turn 跑過 Grep / Read DS canonical baseline → P0 BLOCKER(exit 2,2026-07-07 治理進化方向 2 升級;
+# escape CLAUDE_BYPASS_DS_ANCHOR=1 audit-logged),propose 前必出 3-column owner table。
 #
 # Scope:同 check_substantive_edit_approval_preflight.sh extended scope
 #   - node_modules/@qijenchen/design-system/src/**.tsx (DS internal)

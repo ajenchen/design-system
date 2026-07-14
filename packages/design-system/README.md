@@ -115,10 +115,11 @@ Token `--font-sans` stack = `Roboto, -apple-system, BlinkMacSystemFont, "Segoe U
 
 | 路徑 | 內容 |
 |---|---|
-| `@qijenchen/design-system` | Top barrel — components / patterns / hooks / lib utilities |
+| `@qijenchen/design-system` | Top barrel — components / patterns / hooks / lib utilities / token JS mirrors。**策展後 front-door**(2026-07-14 API 策展):named re-exports,`*Meta`(componentMeta 建置/稽核 metadata)與 internal 單元不在此 |
+| `@qijenchen/design-system/components/<Dir>`、`…/patterns/<dir>` | Per-component subpath — 完整 `export *`(含 `*Meta`;internal 單元「包裝後 + 自行確認」的唯一管道)|
 | `@qijenchen/design-system/styles/tokens` | CSS aggregator(全 token + Tailwind `@theme inline`)|
 | `@qijenchen/design-system/hooks/<name>` | 單一 hook subpath |
-| `@qijenchen/design-system/tokens/<category>` | Token JS 模組(eg `motion`, `icon-size`)— CSS 透過 `styles/tokens` aggregator |
+| `@qijenchen/design-system/tokens/<path>` | Token JS 模組(編譯品;eg `tokens/motion/motion`、`tokens/uiSize/icon-size`)— 原始 `.ts` / `.spec.md` 不經此路徑曝露;CSS 透過 `styles/tokens` aggregator |
 
 **禁** import:
 - `@qijenchen/design-system/src/...`(internal source path,未來 SSOT 結構改會壞)

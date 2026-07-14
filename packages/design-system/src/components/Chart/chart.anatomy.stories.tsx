@@ -56,10 +56,13 @@ const visitorConfig = {
 
 // 訂閱方案分布(對標 Stripe dashboard)
 const subscriptionData = [
-  { tier: 'Free',    users: 820, fill: 'var(--color-free)' },
-  { tier: 'Pro',     users: 340, fill: 'var(--color-pro)' },
-  { tier: 'Team',    users: 180, fill: 'var(--color-team)' },
-  { tier: 'Enterprise', users: 42, fill: 'var(--color-enterprise)' },
+  // nameKey='tier' 的值必須等於 subscriptionConfig 的 key(小寫);顯示標籤由 config.label 提供
+  //   (shadcn pie canonical:data 的 nameKey 欄位 = 小寫 config key,如 { browser: 'chrome' })。
+  //   曾用大寫 'Free' → getPayloadConfig 以 'Free' 查 config 落空 → 圖例標籤全空(2026-07-13 修)。
+  { tier: 'free',       users: 820, fill: 'var(--color-free)' },
+  { tier: 'pro',        users: 340, fill: 'var(--color-pro)' },
+  { tier: 'team',       users: 180, fill: 'var(--color-team)' },
+  { tier: 'enterprise', users: 42,  fill: 'var(--color-enterprise)' },
 ]
 
 const subscriptionConfig = {

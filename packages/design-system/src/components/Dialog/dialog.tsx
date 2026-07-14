@@ -5,8 +5,10 @@ import { X as XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/design-system/components/Button/button"
+import { ButtonDivider } from "@/design-system/components/Button/button-group"
 import { SurfaceHeader, SurfaceFooter, type SurfaceHeaderProps } from "@/design-system/patterns/overlay-surface/overlay-surface"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
+import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
 
 /**
  * Dialog (Modal) — Radix Dialog + 設計系統 token
@@ -22,7 +24,7 @@ import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
  *
  * ── 高度行為 ──
  * 預設：height 填滿 viewport（扣除 inset），body 捲動。防止動態內容跳動。
- * height="auto"：高度隨內容，超過 viewport 時 max-height 安全帽。
+ * autoHeight（boolean）：高度隨內容，超過 viewport 時 max-height 安全帽。
  */
 
 const Dialog = DialogPrimitive.Root
@@ -106,7 +108,8 @@ const DialogContent = React.forwardRef<
         className={cn(
           "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
           "flex flex-col bg-surface-raised rounded-lg border border-border",
-          "data-[state=open]:animate-in data-[state=closed]:animate-out motion-reduce:animate-none",
+          surfaceMotion,
+          "data-[state=open]:animate-in data-[state=closed]:animate-out",
           "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
           "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           "data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]",
@@ -129,35 +132,67 @@ const DialogContent = React.forwardRef<
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
 // DialogHeader: SurfaceHeader + Close 按鈕(Dialog 特有)
-// justify-between 讓 children 與 Close 分左右;Close 用 Radix DialogPrimitive.Close 包裝。
+// Close 靠右由「第一 child flex-1 grow」達成(justify-between 已移除,見 return 註解);Close 用 Radix DialogPrimitive.Close 包裝。
 // 2026-05-18 audit gap fix:type 用 SurfaceHeaderProps 對齊 — DialogHeader 是 SurfaceHeader
-// 薄包裝,withTabs / lockDensity 等 props 透過 spread 已 forward,但 TS type 沒 expose
+// 薄包裝,withTabs / tabsSlot props 透過 spread 已 forward,但 TS type 沒 expose
 // 導致 consumer 不能用 `<DialogHeader withTabs>` 而只能寫 `as any` 繞。Type lift 修
 // per header-canonical.spec.md W1 跨 6 consumer 同契約。
+export interface DialogHeaderProps extends SurfaceHeaderProps {
+  /**
+   * Header 級操作 cluster(2026-07-08 WM 戰役 codify — 關閉鈕分隔線 SSOT 化)。
+   *
+   * 提供時 render 在 Close X 左側,DS 自動在 actions 與 Close 之間放 `<ButtonDivider>`
+   * (action-bar.spec.md:281「最右側為關閉/解除按鈕 → 分隔線必須(誤觸保護)」;
+   * 幾何 = ButtonDivider mx-1 於 gap-2 cluster → 12px 對稱,同 spec「分隔線幾何」段)。
+   *
+   * 用例:任務詳情 prev/next 導覽、header 級溢出選單(⋮)。
+   * Consumer 傳 `<Button variant="text" iconOnly …>`(text variant 自動 data-unbounded,
+   * 不撐高 chrome header)。**禁**在 children 內自刻 cluster + divider(分隔線落點歸 DS)。
+   */
+  actions?: React.ReactNode
+}
+
 const DialogHeader = React.forwardRef<
   HTMLDivElement,
-  SurfaceHeaderProps
->(({ className, children, ...props }, ref) => (
-  // 2026-05-18:className 不再硬加 justify-between(冗餘:row 1 是 flex items-center gap-2,
-  // 第一 child flex-1 grow 自然 push close X 靠右,跟 justify-between 同視覺)。
-  // 並且 column mode(tabsSlot 提供)justify-between 會把 row 1 / row 2 上下推開 = 破裂。
-  // tabsSlot via `...props` spread 自動 forward(type 來自 SurfaceHeaderProps)。
-  <SurfaceHeader
-    ref={ref}
-    className={className}
-    {...props}
-  >
-    <div className="flex-1 min-w-0">{children}</div>
-    {/* Dismiss X(chrome-slot canonical,v5):Button 本身 native sm(28 md / 32 lg,touch target 亦同),
-        但 `dismiss` prop 自動標 `data-unbounded`,SurfaceHeader CSS rule 對其套負 my 讓
-        layout 佔位 = 24(`data-dismiss` 僅作 openAutoFocus 排除 marker,與縮位無關),
-        header = 24 + 2×tight = 48 / 56 chrome-header-height ✓。
-        詳 overlay-surface.spec.md「Chrome dismiss size canonical」*/}
+  DialogHeaderProps
+>(({ className, children, actions, ...props }, ref) => {
+  // Dismiss X(chrome-slot canonical,v5):Button 本身 native sm(28 md / 32 lg,touch target 亦同),
+  // 但 `dismiss` prop 自動標 `data-unbounded`,SurfaceHeader CSS rule 對其套負 my 讓
+  // layout 佔位 = 24(`data-dismiss` 僅作 openAutoFocus 排除 marker,與縮位無關),
+  // header = 24 + 2×tight = 48 / 56 chrome-header-height ✓。
+  // 詳 overlay-surface.spec.md「Chrome dismiss size canonical」
+  const closeButton = (
     <DialogPrimitive.Close asChild>
       <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" />
     </DialogPrimitive.Close>
-  </SurfaceHeader>
-))
+  )
+  return (
+    // 2026-05-18:className 不再硬加 justify-between(冗餘:row 1 是 flex items-center gap-2,
+    // 第一 child flex-1 grow 自然 push close X 靠右,跟 justify-between 同視覺)。
+    // 並且 column mode(tabsSlot 提供)justify-between 會把 row 1 / row 2 上下推開 = 破裂。
+    // tabsSlot via `...props` spread 自動 forward(type 來自 SurfaceHeaderProps)。
+    <SurfaceHeader
+      ref={ref}
+      className={className}
+      {...props}
+    >
+      <div className="flex-1 min-w-0">{children}</div>
+      {actions != null ? (
+        // actions 提供 → 右側一體 cluster:{actions} + ButtonDivider + Close。
+        // 分隔線 = 關閉保護 canonical(action-bar.spec.md:281),由 DS 放,consumer 零自刻。
+        // gap-2 + ButtonDivider mx-1 = 兩側 12px 對稱(action-bar.spec.md「分隔線幾何」)。
+        <div className="flex items-center gap-2 shrink-0">
+          {actions}
+          <ButtonDivider />
+          {closeButton}
+        </div>
+      ) : (
+        // 無 actions → 原結構(Close 直接是 SurfaceHeader child),行為零回歸
+        closeButton
+      )}
+    </SurfaceHeader>
+  )
+})
 DialogHeader.displayName = "DialogHeader"
 
 // DialogBody: flex-1 ScrollArea + chrome padding(對齊 overlay-surface SSOT + ScrollArea canonical)
@@ -169,7 +204,7 @@ DialogHeader.displayName = "DialogHeader"
 // 不再提供 `flush` variant(2026-05-01 移除,先前曾叫 `variant="list"`)。
 // **canonical pattern** = consumer 自管 list outer wrapper + 用 `className` override 撤掉 chrome padding:
 // ```tsx
-// <DialogBody className="!px-0 !pt-0 !pb-0">
+// <DialogBody className="!px-0 !pt-0 !pb-0">  ← @tabs-content-gap-ok: JSDoc 文件範例(list-as-region canonical,非 tabs !pt-0 hack)
 //   <div className="py-2">  {/* list outer wrapper 自帶 py-2(menu group canonical)*/}
 //     {items.map(item => <MenuItem className="px-[var(--layout-space-loose)] rounded-md" />)}
 //   </div>
@@ -187,7 +222,7 @@ const DialogBody = React.forwardRef<
   HTMLDivElement,
   React.ComponentPropsWithoutRef<typeof ScrollArea>
 >(({ className, children, ...props }, ref) => (
-  <ScrollArea ref={ref} data-dialog-body className="flex-1 min-h-0" {...props}>
+  <ScrollArea fillX ref={ref} data-dialog-body className="flex-1 min-h-0" {...props}>
     <div
       className={cn(
         "px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)] pb-[var(--layout-space-bottom)]",

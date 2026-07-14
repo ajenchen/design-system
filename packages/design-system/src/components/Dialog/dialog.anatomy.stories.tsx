@@ -83,6 +83,7 @@ export const Overview: Story = {
               {[
                 ['autoHeight', 'boolean', 'false', 'true=隨內容 / false=填滿 viewport(body 捲動)'],
                 ['maxWidth', 'string | number', "'512px'", 'Content 最大寬度(傳 number 視為 px,亦可傳 CSS 值如 32rem),受 viewport inset 限制'],
+                ['actions(DialogHeader)', 'ReactNode', '—', 'Header 級操作 cluster(prev/next/⋮);DS 自動在 actions 與 Close X 間放 ButtonDivider(關閉誤觸保護,action-bar.spec.md:281)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}

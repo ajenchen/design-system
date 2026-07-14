@@ -19,7 +19,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Popover 是 Radix passthrough——點擊觸發的浮層容器,提供定位 / 動畫 / 焦點管理 / click-outside 關閉。內容完全由 consumer 決定(可放任何 React 元素)。本 DS 橋接 elevation / radius / border token,不改 Radix API。</Desc>
+        <Desc>Popover 是點擊觸發的浮層容器,提供定位 / 動畫 / 焦點管理 / click-outside 關閉。內容完全由 consumer 決定(可放任何 React 元素)。本 DS 在 Radix Popover 上橋接 elevation / radius / border token,並覆寫兩處 a11y 行為(非全等 Radix,詳「A11y 預設」段 DS 覆寫):開啟焦點落在 body 首個互動元素(而非 Radix 預設 close X)、以及自動接線 aria-labelledby(有 PopoverTitle 時)。</Desc>
         <div className="flex items-center gap-4">
           <Popover>
             <PopoverTrigger asChild>
@@ -45,7 +45,7 @@ export const Overview: Story = {
 
       <div>
         <H3>Props 速查</H3>
-        <Desc>Popover / PopoverTrigger / PopoverContent 直接沿用 Radix Popover 的同名 API,只多接上設計系統的 token,行為與 props 與 Radix 一致。Props 依宣告元件分兩類——定位類(align / side / sideOffset / collisionPadding)寫在 {'<PopoverContent>'} 上,開關 / modal 類(open / onOpenChange / defaultOpen / modal)寫在最外層 {'<Popover>'}(Root)上;寫錯元件不會生效(見「所屬元件」欄)。完整 API 見 <a href="https://www.radix-ui.com/primitives/docs/components/popover" className="underline" target="_blank" rel="noreferrer">Radix Popover 官方文件</a>。</Desc>
+        <Desc>Popover / PopoverTrigger / PopoverContent 沿用 Radix Popover 的同名 prop（定位 / 開關 / modal 等 props 與 Radix 一致），並接上設計系統 token。**例外**:PopoverContent 覆寫兩處 a11y 行為(`onOpenAutoFocus` 讓開啟焦點落 body 首個互動元素、自動接線 `aria-labelledby`),故行為非全等 Radix，詳「A11y 預設」段。Props 依宣告元件分兩類——定位類(align / side / sideOffset / collisionPadding)寫在 {'<PopoverContent>'} 上,開關 / modal 類(open / onOpenChange / defaultOpen / modal)寫在最外層 {'<Popover>'}(Root)上;寫錯元件不會生效(見「所屬元件」欄)。完整 API 見 <a href="https://www.radix-ui.com/primitives/docs/components/popover" className="underline" target="_blank" rel="noreferrer">Radix Popover 官方文件</a>。</Desc>
         <div className="overflow-x-auto">
           {/* @anatomy-exempt-next: Props 速查表為純文件對照(prop/type/default),非元件資料展示;DataTable 過重 */}
           <table className="text-caption border-collapse">

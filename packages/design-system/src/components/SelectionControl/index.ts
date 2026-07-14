@@ -2,4 +2,5 @@
 // Re-export pattern enables package.json exports map subpath:
 //   import { ... } from '@qijenchen/design-system/{components,patterns}/<Dir>'
 // Regenerate: node scripts/gen-component-indexes.mjs
+export * from './boolean-value'
 export * from './selection-item'

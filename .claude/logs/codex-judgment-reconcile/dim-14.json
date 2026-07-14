@@ -1,0 +1,148 @@
+{
+  "dim": 14,
+  "title": "命名一致性 — codex B.3 比稿裁定",
+  "role": "B.3 codex-judgment-reconcile",
+  "codexRaw": 18,
+  "note": "codex 自標全 18 條為 marginal。獨立去 code 驗證後:2 條實為 material(codex 低估),0 false_positive(codex 未捏造、全為真 observation,只是多屬 prose/copy-edit 瑣碎)。Claude 同 dim 3 findings(onChange/onValueChange split、mode overload、isActive)與 codex 18 條完全不交集 → 兩 material 皆 Claude 漏。",
+  "verdicts": [
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Alert/alert.tsx:1; AppShell/app-shell.tsx:329 (mass claim 183 檔)",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "真實現象(EN prose 出現於註解),但 CLAUDE.md 語言一致性明文『技術術語保留英』+ 機械 marker 後 rationale 為專案認可風格。大範圍 vague claim、無具體逐條 defect、多屬 sanctioned style。低可行動性。"
+    },
+    {
+      "idx": 2,
+      "fileLine": "filter-operators.spec.md:1; element-anatomy.spec.md:3; inline-action.spec.md:3; item-anatomy.spec.md:3; orphan-tokens.spec.md:13; token-system.spec.md:3",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "H1 追加 taxonomy/SSOT 限定屬模板小偏離;且多為 patterns/tokens sub-spec(非 component spec,H1『# {Name} 設計原則』模板本就針對 component)。低stakes。"
+    },
+    {
+      "idx": 3,
+      "fileLine": "CircularProgress/circular-progress.spec.md:204; Slider/slider.spec.md:243; Steps/steps.spec.md:401",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "Do/Don't 英文章名 — Claude 同 dim cleanCheck 明列為 naming-conventions.md documented 約定俗成技術術語 exception。真 inconsistency 但屬 sanctioned exception,低stakes。"
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:35,88",
+      "codexSeverity": "marginal",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "reasoning": "驗證屬實且為 spec 自我矛盾:同檔 L25 明文『SelectionControl=概念群組資料夾名、主要 primitive=selection-item.tsx/SelectionItem』,但 L35『SelectionControl 是 internal primitive』+ L88『共用源頭一定是 SelectionControl』直接違反該檔自訂 convention。H1 為『SelectionItem 設計原則』、component=SelectionItem。讀者會混淆 primitive 究竟叫 SelectionControl 或 SelectionItem。屬『spec 矛盾』material 判準,2-word 修即可。"
+    },
+    {
+      "idx": 5,
+      "fileLine": "Carousel/carousel.spec.md:49; Chip/chip.spec.md:148,149; DataTable/data-table.spec.md:433,435; SelectMenu/select-menu.spec.md:71,182; Tabs/tabs.spec.md:141,152",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "驗證屬實(tabs.spec.md L141『滾動』vs L152『捲動』同檔並存,同 referent)。真 within-file 同義詞不一致,但屬 copy-edit 瑣碎、無語意/行為影響。"
+    },
+    {
+      "idx": 6,
+      "fileLine": "FileUpload/file-upload.spec.md:25,96; resize-handle/resize-handle.spec.md:41,78",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "驗證屬實(file-upload.spec.md L25『拖曳』vs L96『拖拉』同檔)。真 within-file 不一致,copy-edit 級。"
+    },
+    {
+      "idx": 7,
+      "fileLine": "Alert/alert.spec.md:183",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "停用/禁用 同段並存屬 copy-edit 瑣碎。單點、低stakes。"
+    },
+    {
+      "idx": 8,
+      "fileLine": "DataTable/data-table.spec.md:428; FileViewer/file-viewer.spec.md:65,255; SegmentedControl/segmented-control.spec.md:223,242; TimePicker/time-picker.spec.md:20,27",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "交互/互動 同檔並存,真 inconsistency 但 copy-edit 級。"
+    },
+    {
+      "idx": 9,
+      "fileLine": "Sidebar/sidebar.spec.md:151,701; Skeleton/skeleton.spec.md:17,89; item-anatomy.spec.md:28,517",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "驗證屬實(skeleton.spec.md L17『使用者』vs L89『用戶』)。真 within-file 不一致,copy-edit 級。"
+    },
+    {
+      "idx": 10,
+      "fileLine": "Breadcrumb/breadcrumb.spec.md:107,126",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "回饋/反饋 同檔並存,copy-edit 級瑣碎。"
+    },
+    {
+      "idx": 11,
+      "fileLine": "DropdownMenu/dropdown-menu.spec.md:35",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "『ToolBar』大小寫非標準,但 DS 無 Toolbar 元件(ls components 無),codex『既有詞彙 Toolbar』canonical 前提偏弱;僅為與 Chinese『工具列』相鄰的一次性 prose 英文詞。trivial。"
+    },
+    {
+      "idx": 12,
+      "fileLine": "FieldControlGroup/field-control-group.spec.md:55,90,92,141,144,156",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "驗證屬實(FCG 縮寫 6 處)。屬該檔自身 spec shorthand、有上下文;降低可搜尋性是真的小缺點,但 Token 命名『禁自創縮寫』規則 scope 針對 token 命名非 spec prose。marginal。"
+    },
+    {
+      "idx": 13,
+      "fileLine": "PeoplePicker/people-picker.spec.md:115,141,143,144,182",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "驗證屬實(L182『圓形 +N chip』)但屬『常見誤解』段描述視覺概念,codex 自己也承認純描述視覺時用一般名詞 OK。OverflowIndicator 元件確實存在,但此處非 code 引用。marginal。"
+    },
+    {
+      "idx": 14,
+      "fileLine": "tokens/elevation/elevation.spec.md:45",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "L45 prose list 用簡稱『Dropdown』(元件實為 DropdownMenu),同檔 L49 卻正確用『DropdownMenu』→ 真 within-file 不一致引用真元件。但屬 prose 簡稱、讀者可懂、低stakes。marginal。"
+    },
+    {
+      "idx": 15,
+      "fileLine": "tokens/color/primitives.css:73,74,262,263",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "驗證屬實(--_na1..9)。但為內部 private 計算 helper(leading `_` = 私有變數 CSS idiom,如 open-props),同行 comment『Neutral 共用 alpha 步階』已解釋 na=neutral-alpha;非 consumer-facing token API。Token 命名規則 scope 為 semantic/primitive token 非內部 helper。marginal。"
+    },
+    {
+      "idx": 16,
+      "fileLine": "FileViewer/file-viewer.principles.stories.tsx:83,92",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "驗證屬實(metadata:{回報人,環境} + 回報人 於 L92 再現)。CJK object key 技術上是 code identifier,但屬 story fixture demo 顯示用 metadata(key 兼作 Jira 欄位顯示 label,全檔為中文 demo)。Claude cleanCheck scope 為『變數/函式/型別』— object literal data key 不在該 scope 且所有真 var/fn/type 皆英文,故未直接證偽 Claude。情境依賴(demo 顯示資料),marginal。"
+    },
+    {
+      "idx": 17,
+      "fileLine": "Calendar/calendar.principles.stories.tsx:127 (MvpScope); CircularProgress/circular-progress.principles.stories.tsx:187 (UsageScenarioRule)",
+      "codexSeverity": "marginal",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "reasoning": "驗證屬實且違反 documented SSOT:story-writing category-templates.md:147 明列 migration 表『UsageScenarioRule / WhatItIs / MvpScope → WhenToUse』(deprecated 舊命名)。Calendar 已有 UsageGuidance(L37)卻仍留 MvpScope(L127);CircularProgress 已有 UsageGuidance(L48)卻仍留 UsageScenarioRule(L187)→ 兩檔皆為未遷移 leftover 舊命名 export。跨元件(2 檔)documented naming drift,屬 material。"
+    },
+    {
+      "idx": 18,
+      "fileLine": "TimePicker/time-picker.principles.stories.tsx:74,101,124",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "reasoning": "驗證屬實(RuleMinuteStepForMeetings/RuleRangeComposition/RuleClearNoLabelButton = Rule 前綴)vs CircularProgress 用 Rule 後綴(IndeterminateVsDeterminateRule/SizeMatchContextRule)+ story-rules Vs*Rule 後綴慣例 → 真跨元件語序不一致。但無明文 SSOT 表禁 Rule 前綴形(不同於 #17 有明列 deprecation),且為內部 story export identifier(reader-facing 是 name: 欄)。marginal。"
+    }
+  ],
+  "stats": {
+    "codexRaw": 18,
+    "material_confirmed": 2,
+    "marginal": 16,
+    "false_positive": 0,
+    "claudeMissed": 2
+  },
+  "topMaterial": [
+    "selection-item.spec.md L35/L88 稱『SelectionControl 是 internal primitive/共用源頭』與同檔 L25 明文『SelectionControl=概念群組資料夾、primitive=SelectionItem』自我矛盾,應改 SelectionItem",
+    "Calendar+CircularProgress 已有 canonical UsageGuidance 卻仍留 story-writing SSOT(category-templates.md:147)明列 deprecated 的 MvpScope/UsageScenarioRule export → 未遷移舊命名跨元件漂移"
+  ]
+}

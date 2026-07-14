@@ -74,8 +74,10 @@ export const Overview = {
                   <div className="h-full rounded-full bg-info" style={{ width: '45%' }} />
                 </div>
               </div>
+              {/* 2026-07-14 dim-55 修:`--magenta`/`--magenta-subtle` 不存在(semantic magenta namespace
+                  只有 hover/active)→ anatomy 圖解標記屬 categorical 靜態色,消費 primitive step token */}
               <span className="rounded px-2 py-0.5 text-[11px] font-mono border border-dashed"
-                style={{ borderColor: 'var(--magenta)', backgroundColor: 'var(--magenta-subtle)', color: 'var(--magenta)' }}>affix</span>
+                style={{ borderColor: 'var(--color-magenta-6)', backgroundColor: 'var(--color-magenta-1)', color: 'var(--color-magenta-7)' }}>affix</span>
             </div>
             <span className="text-[10px] text-fg-muted font-mono">wrapper: flex items-center gap-2 · bar: flex-1 min-w-0</span>
           </div>

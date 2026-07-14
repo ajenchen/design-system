@@ -164,8 +164,8 @@ export const Inspector: Story = {
               </div>
               <div className="flex items-center gap-1.5">
                 border:{' '}
-                <TokenCell token={state === 'drag-over' ? '--primary' : '--border'} />
-                <span className="text-fg-muted">(idle `--border` 元件邊框;hover=drag-over 統一 `--primary`,純 border-driven)</span>
+                <TokenCell token={state === 'drag-over' ? '--primary-hover' : '--border'} />
+                <span className="text-fg-muted">(idle `--border` 元件邊框;hover=drag-over 統一 `--primary-hover`(blue-5),純 border-driven)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 icon glyph: <TokenCell token={state === 'disabled' ? '--fg-disabled' : '--foreground'} />
@@ -225,12 +225,12 @@ export const ColorMatrix: Story = {
                 <Td>
                   <TokenCell token="--foreground" />
                 </Td>
-                <Td>`--border` 元件邊框(非 `--divider`);hover → border 切 `--primary`(同 drag-over)</Td>
+                <Td>`--border` 元件邊框(非 `--divider`);hover → border 切 `--primary-hover`(同 drag-over)</Td>
               </tr>
               <tr>
                 <Td mono>drag-over = hover</Td>
                 <Td>
-                  <TokenCell token="--primary" />
+                  <TokenCell token="--primary-hover" />
                 </Td>
                 <Td>
                   <TokenCell token="--surface" />
@@ -238,7 +238,7 @@ export const ColorMatrix: Story = {
                 <Td>
                   <TokenCell token="--foreground" />
                 </Td>
-                <Td>hover 與 drag-over 統一:純 border-driven(只切 `--primary` 邊框,底色維持 surface,對齊 Ant Dragger)</Td>
+                <Td>hover 與 drag-over 統一:純 border-driven(只切 `--primary-hover` 邊框,底色維持 surface,對齊 Ant Dragger)</Td>
               </tr>
               <tr>
                 <Td mono>disabled</Td>
@@ -353,7 +353,7 @@ export const StateBehavior: Story = {
               <tr>
                 <Td mono>dragenter</Td>
                 <Td>檔案拖入區塊</Td>
-                <Td>`data-state="drag-over"`(border-primary;底色維持 surface,純 border-driven = hover)</Td>
+                <Td>`data-state="drag-over"`(border-primary-hover;底色維持 surface,純 border-driven = hover)</Td>
               </tr>
               <tr>
                 <Td mono>dragleave</Td>

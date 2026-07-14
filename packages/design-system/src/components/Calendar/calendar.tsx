@@ -27,10 +27,11 @@ import { SegmentedControl, SegmentedControlItem } from '@/design-system/componen
  * ── Layout Family ──
  * 非 4-Family,屬 page-composite(多區塊 Toolbar + Grid + EventTile)。
  *
- * ── MVP scope(本次 session)──
+ * ── MVP scope ──
  * - 月 view 完整(toolbar / grid / event tile / today highlight / outside days)
- * - 週 / 日 view 是 tech debt
- * - 拖拉增刪 event 是 tech debt
+ * - 週 / 日 view + size lg = **roadmap:尚未實作,目前只渲染月檢視**(誠實 API,
+ *   props 保留給未來增量,2026-07-14 user 拍板;行為明細見 spec「狀態 > 邊界案例」)
+ * - 拖拉增刪 event 是 roadmap(見 spec「MVP vs 後續增量」)
  *
  * ── 與 DatePicker 的區分 ──
  * DatePicker 是「選日期」form control;Calendar 是「看事件」page canvas。
@@ -58,7 +59,11 @@ export interface CalendarEvent {
 export type CalendarView = 'month' | 'week' | 'day'
 
 export interface CalendarProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
-  /** 當前 view(MVP 只 'month',其餘 view tech debt) */
+  /**
+   * 當前 view。**roadmap:`'week'` / `'day'` 尚未實作,目前只渲染月檢視**——
+   * 傳入不報錯:grid 仍為月檢視,僅 `data-view` 同步 + SegmentedControl 週/日項 disabled
+   * (誠實 API;見 calendar.spec.md「狀態 > 邊界案例」+「MVP vs 後續增量」)。
+   */
   view?: CalendarView
   defaultView?: CalendarView
   onViewChange?: (view: CalendarView) => void
@@ -84,7 +89,10 @@ export interface CalendarProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   /** 自訂 event tile 渲染 */
   renderEventTile?: (event: CalendarEvent) => React.ReactNode
 
-  /** size(MVP 只 md;lg 為 tech debt) */
+  /**
+   * size。**roadmap:`'lg'` 尚未實作,視覺與 `'md'` 相同**——傳入不報錯,
+   * 僅設 `data-size` attribute,無任何 CSS 消費(誠實 API;prop 保留給未來 cell 密度增量)。
+   */
   size?: 'md' | 'lg'
   className?: string
 
@@ -113,7 +121,18 @@ const EVENT_ALLDAY_ACCENT = CAT_ACCENT
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function coerceDate(value: string | Date): Date {
-  return value instanceof Date ? value : new Date(value)
+  if (value instanceof Date) return value
+  // date-only ISO("YYYY-MM-DD")用本地午夜建構,不走 new Date(str)。
+  // 原因:`new Date('2026-06-15')` 按 UTC 午夜解析,而 eventsByDate 分桶以本地
+  // getFullYear/Month/Date 讀取 → 負 UTC 時區(西半球)的 all-day 事件被移到前一天
+  // (真實 timezone bug)。手動 split 建本地 Date,與分桶的本地讀取一致。
+  // 含時間的字串(YYYY-MM-DDTHH:mm,無 offset)ES 規範本就以本地解析,走原生 new Date()。
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.exec(value)
+  if (dateOnly) {
+    const [y, m, d] = value.split('-').map(Number)
+    return new Date(y, m - 1, d)
+  }
+  return new Date(value)
 }
 
 // eventsOnDate(per-cell 全 events 掃描)已由 eventsByDate bucketing memo 取代並移除
@@ -160,7 +179,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     [referenceDateProp, onReferenceDateChange],
   )
 
-  // View state(MVP 只用 month,其他 tech debt)
+  // View state(roadmap:week/day 尚未實作,受控值照收但 grid 恆為月檢視)
   const [internalView, setInternalView] = React.useState<CalendarView>(defaultView)
   const currentView = viewProp ?? internalView
   const setView = React.useCallback(

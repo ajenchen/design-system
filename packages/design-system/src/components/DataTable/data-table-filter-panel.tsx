@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // same-row-mixed-allow: header chrome corner buttons(close)跟 row inline actions(trash)不在同 row
-// code-quality-allow: file-size — 2026-05-03 M21 retract:filter-value-picker.tsx(187 行 / 1 consumer)inline 回本檔。panel 從 505 → 687 行,進 transition zone 但未過 800 hard cap。等 inline filter UI 接入第 2 consumer 再考慮抽出。
+// code-quality-allow: file-size — 2026-05-03 M21 retract:filter-value-picker.tsx(187 行 / 1 consumer)inline 回本檔(505 → 687 行)。2026-07-14 deep-audit 誠實更新:現 822 行,**已過 800 hard cap** — 非 stale escape 留著;拆檔候選 = filter-value-picker 區段(等第 2 個 consumer 接入)+ nested-group renderer,屬結構 refactor 需獨立 branch 做 + 完整驗證,列入 file-size escalation 追蹤,禁再增量。
 import * as React from 'react'
 import { Plus, Trash2, X as XIcon, RotateCcw } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -439,6 +439,9 @@ function DataTableFilterPanelInner<TData>({
         field: prefilledColumnId,
         op: getDefaultOperator(colInfo.type),
         value: '',
+        // 2026-07-14 deep-audit fix:補 datePrecision(原漏 → datetime(includeTime=true)欄
+        // prefill 掉到 undefined=day 精度忽略 ms;對齊初始 add / changeField 路徑的 datePrecisionOf)
+        datePrecision: datePrecisionOf(colInfo),
       }
       if (value.mode === 'flat') {
         onChange({ ...value, children: [...value.children, cond] })

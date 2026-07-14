@@ -22,7 +22,9 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 2026-07-14 dim-66:10 → 20 — push 前補跑 audit.yml 完整等價 gate(typecheck + lint +
+    # 全 apps build + playwright + a11y),對齊 audit.yml timeout-minutes:15 + sync 自身開銷。
+    timeout-minutes: 20
     permissions:
       contents: write
     steps:
@@ -34,18 +36,28 @@ jobs:
 
       - name: Show payload(dispatch only)
         if: github.event_name == 'repository_dispatch'
+        # 2026-07-14:client_payload 不直接 ${{ }} 內插進 run script —— payload 由外部 dispatch
+        # 提供,可含 shell syntax(GitHub 官方列名 script-injection anti-pattern,本 job 持有
+        # contents-write token)。改走 env var,shell 展開安全。
+        env:
+          DS_VERSION: ${{ github.event.client_payload.version }}
+          DS_TAG: ${{ github.event.client_payload.tag }}
+          DS_COMMIT: ${{ github.event.client_payload.commit }}
         run: |
-          echo "DS published version: ${{ github.event.client_payload.version }}"
-          echo "DS tag: ${{ github.event.client_payload.tag }}"
-          echo "DS commit: ${{ github.event.client_payload.commit }}"
+          echo "DS published version: $DS_VERSION"
+          echo "DS tag: $DS_TAG"
+          echo "DS commit: $DS_COMMIT"
 
       - name: Update @qijenchen/* to latest @beta
+        env:
+          # 2026-07-14:同上 —— payload 進 env var 不內插 run script(anti script-injection)。
+          DS_VERSION: ${{ github.event.client_payload.version }}
         run: |
           npm install --legacy-peer-deps
           # 2026-05-30 codex Phase B P2 fix:`npm update` 只更新 lockfile 不改寫 package.json spec → spec drift
           # (fork 卡 ^beta.36 而 lockfile 已 beta.38)。改 explicit `npm install @pkg@version --save` 把 spec 同步寫進
           # package.json,用 dispatch payload version(release.yml 帶);無 payload 時 fallback @beta dist-tag。
-          VERSION="${{ github.event.client_payload.version }}"
+          VERSION="$DS_VERSION"
           # 2026-06-07 fix:design-system-published dispatch 送 `github.ref_name`=`v0.1.0-beta.NN`(帶 v);
           # npm range `^v0.1.0-beta.NN` 非法 → install 炸。剝掉開頭 v,兼容兩種 dispatch 格式(robust at consumer)。
           VERSION="${VERSION#v}"
@@ -89,10 +101,17 @@ jobs:
           echo "⚠️ DS canonical template drift — syncing to PW"
           cp "$DS_CANONICAL" "$PW_TEMPLATE"
 
-      - name: Verify build still pass
+      # 2026-07-14 dim-66 修:本 job 用 GITHUB_TOKEN push — GitHub 對 workflow-triggered push
+      # **不會**觸發 `on: push` 的 Audit workflow(官方 recursive-trigger 防護)→ 原本只 build
+      # apps/template 就直推 main,root typecheck / internal-import lint / 其他 apps build / a11y
+      # 全未驗。改在 push 前跑 audit.yml 完整等價 gate(任一 fail = 不 commit 不 push,fail-closed)。
+      - name: Full audit gate(audit.yml 等價;GITHUB_TOKEN push 不觸發下游 Audit)
         run: |
-          cd apps/template
+          npm run typecheck
+          npm run lint:imports
           npm run build
+          npx playwright install --with-deps chromium
+          node scripts/audit-consumer-a11y.mjs
 
       - name: Commit + push if changed
         run: |

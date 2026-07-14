@@ -1,0 +1,27 @@
+{
+  "dim": 68,
+  "title": "Stories-vs-spec canonical drift",
+  "mechanism": "DS-wide grep of all stories/anatomy/principles for anti-spec patterns — story demonstrates a usage its own spec explicitly forbids",
+  "filesScanned": 283,
+  "scanScope": "All 205 *.stories.tsx (DS-wide grep, NO-SAMPLE) cross-referenced against ~78 *.spec.md forbidden-rule lines",
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.stories.tsx:89 (+104-106); checkbox.anatomy.stories.tsx:570-585",
+      "severity": "material",
+      "問題": "Checkbox 的展示層(VerticalGroup/Horizontal)與 anatomy 層(SizeMatrix)所有『有 label 的選項』一律用 `<SelectionItem control={<Checkbox/>} label htmlFor>` 直接組出——但 selection-item.spec.md:43 白紙黑字『直接用 <SelectionItem> ❌ 禁止』、spec:35/37『internal primitive,不直接使用/不需也不准裸用,透過 Checkbox 消費』。而 checkbox.tsx:87-100 明明有 public `label`/`description` prop(『提供時 Checkbox 自動透過 SelectionItem 包裝』)。DS-wide grep 證實:沒有任何一個 checkbox story 用 public `<Checkbox label=\"X\">` API(全部 label 都走被 spec 禁的內部 primitive)。等於元件的 canonical 展示範例通篇教 consumer 用『spec 明令禁止的內部件』,而從不示範自己的公開 API。a11y 因有傳真 control + htmlFor 尚可運作,但這是 story↔spec↔public-API 三方漂移。",
+      "建議": "把 checkbox 展示/anatomy 的有 label 選項改成 public API `<Checkbox label=\"Electronics\" description=\"...\">`(size 由 Checkbox size prop 帶,htmlFor 自動生成),讓 canonical 範例示範公開用法;若團隊確認『control-passed composition』是刻意保留的合法低階用法,則 selection-item.spec.md:43 的絕對『禁止』措辭需改為『裸用(無真 control)禁止;傳入真 control 的組合用法(radio-group.tsx:59 稱 形狀 2 組合用法)允許』以消解 spec-vs-code 矛盾。二擇一,不可讓 spec 禁令與展示範例並存。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:24-50 vs radio-group.principles.stories.tsx:62-64,102-104 / radio-group.anatomy.stories.tsx:594-595",
+      "severity": "material",
+      "問題": "RadioGroup 的展示層(radio-group.stories Modes:edit/display/readonly/disabled)用被禁的 `<SelectionItem control={<RadioGroupItem value id/>} label htmlFor>`,但同元件的 principles 層與 anatomy 層卻用 public `<RadioGroupItem value label description>`(auto-wrap SelectionItem)。同一元件三層 story 自我矛盾:principles/anatomy 用對(公開 API),展示層用被 selection-item.spec.md:43 禁止的內部 primitive。這證明公開 `label` API 完全可用(principles/anatomy 已示範),展示層用內部件純屬 drift,無技術必要。",
+      "建議": "把 radio-group.stories Modes 四模式的 `<SelectionItem control={<RadioGroupItem.../>}>` 收斂成 `<RadioGroupItem value=\"monthly\" label=\"月付方案\" description=\"...\">`,與同元件 principles/anatomy 層一致,讓三層 story 一律示範公開 API。此為與 Finding 1 同根的 SelectionItem 直用漂移,建議兩元件一起收(對齊 CLAUDE.md『改一處必看三處』)。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Toast/toast.stories.tsx:44-77",
+      "severity": "marginal",
+      "問題": "toast.stories 的 StaticToast helper 直接 import 並渲染 `<Notice>`,並在 story 內手工重建 Toast 的 theme 反轉邏輯(isInverse 判 neutral/success、warning/error/info 各自 bg + data-theme)。Notice spec:98 說『App 層級不直接使用 <Notice>,透過 Alert/Toast』。此處雖是 DS 內部 story(為 M15 ephemeral toast 做可截圖靜態快照,屬合理 workaround、且檔頭有註解說明),但『在 story 裡手刻 Toast 內部主題邏輯』有 fidelity 風險:若真實 sonner-based Toast 的反轉邏輯日後改動,此靜態展示會 silently 與 production 漂移,而 story 仍宣稱代表 Toast 外觀。",
+      "建議": "低優先。可接受現況(有 M15 rationale + 檔頭註解),但建議把 StaticToast 的主題反轉邏輯抽成 Toast 元件與 story 共用的 SSOT(例如 Toast 匯出一個 render-only 的 presentational 元件供靜態快照),避免 story 手抄 production 邏輯造成日後 drift;或在 StaticToast 加註解明確標示『此為近似重建,非真實 Toast 渲染路徑』。"
+    }
+  ]
+}

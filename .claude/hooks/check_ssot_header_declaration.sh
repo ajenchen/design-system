@@ -3,13 +3,15 @@
 # (2026-07-07 治理進化方向 3 洞 a:原 check_ssot_consultation.sh 2026-05-XX retired 後,
 #  CLAUDE.md「# SSOT 消費 canonical」+ ssot-consultation.md:30-51 強制的檔頭宣告段
 #  **無任何機械驗證** — 內部盤點實證。本 hook = 精簡復活版,只驗「新檔有無宣告段」,
-#  不驗宣告品質(品質靠 audit dim 1 + M18/M29)。)
+#  不驗宣告品質(品質靠 audit dim 5 + dim 54 + M18/M29)。)
 #
 # Scope(ratchet,對齊 Polaris stylelint-adoption 策略):
 #   - 只攔 **Write 新檔**(components/ patterns/ 的 .tsx,磁碟上不存在)— 存量檔 Edit 豁免
 #   - stories / test / index.ts 豁免
 #   - escape:內容含 `@ssot-header-exempt: <rationale>`(audit 可追)
 # P0 BLOCKER(user 2026-05-27「SSOT canonical 必 P0」doctrine)。
+
+source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -euo pipefail
 

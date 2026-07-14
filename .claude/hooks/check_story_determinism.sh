@@ -11,6 +11,8 @@
 # 第一期 WARN(exit 0):存量 10 檔(dry-run 2026-07-07,DateGrid 家族為主)未清,
 # 誤殺率驗證期後升 P0(對齊 handcraft 偵測同節奏;roadmap 方向 1 KPI 隨頻回顧)。
 
+source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+
 set -euo pipefail
 INPUT=$(cat)
 TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""')

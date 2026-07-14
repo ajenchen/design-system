@@ -9,6 +9,7 @@ import type { FieldMode, FieldVariant } from "@/design-system/components/Field/f
 import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldSize } from "@/design-system/components/Field/field-context"
 import { fieldWrapperStyles } from "@/design-system/components/Field/field-wrapper"
 import { SelectionItem } from "@/design-system/components/SelectionControl/selection-item"
+import { BooleanValueIcon } from "@/design-system/components/SelectionControl/boolean-value"
 import type { LucideIcon } from "lucide-react"
 import type { AvatarData } from "@/design-system/components/Avatar/avatar"
 import { CheckboxGroupContext } from "./checkbox-group"
@@ -110,7 +111,7 @@ export interface CheckboxProps
   /**
    * Field mode(2026-05-05 Phase B3 align):
    *   edit     — 一般可互動 checkbox(預設)
-   *   display  — **純展示**:渲染 ✓ / —(無互動 primitive、無 input chrome);
+   *   display  — **純展示**:渲染 Check / X icon(true=勾 / false=叉,無互動 primitive、無 input chrome);
    *              對齊 Carbon read-only / DataTable boolean cell 場景。取代既有 BooleanDisplay。
    *   readonly — 同 readOnly prop:checkbox 視覺保留 + 鎖互動 + a11y readonly signal
    *   disabled — 同 disabled prop:降色 + 鎖互動
@@ -208,16 +209,19 @@ const Checkbox = React.forwardRef<
     } = props
 
     // ── mode='display'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
-    // 純展示模式:無互動 primitive、渲染 ✓ / —(checked=true → ✓ / 其他 → —)。取代 BooleanDisplay。
+    // 純展示模式:無互動 primitive、渲染 Check / X icon(true=勾 / false=叉,中性 foreground 色)。
+    // boolean 值展示符號 SSOT = SelectionControl/boolean-value.tsx(勾/叉 icon + 中性色 + M22 世界級對照)。取代 BooleanDisplay。
     if (resolvedMode === 'display') {
       const isChecked = checkedProp === true
-      return isChecked
-        ? <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="text-foreground">✓</span>
-        : <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="text-fg-muted">—</span>
+      return (
+        <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="inline-flex">
+          <BooleanValueIcon checked={isChecked} size={resolvedBoxSize} />
+        </span>
+      )
     }
 
-    // ── mode='readonly' in Field(2026-06-12 user 拍板「灰框 + ✓/—」)─────────────
-    // Field 內 readonly boolean = readonly 灰框 chrome + display 同款值語言 ✓/—。
+    // ── mode='readonly' in Field(2026-06-12 拍板「灰框 + 勾/叉」;2026-07-09 ✓/— glyph → Check/X icon)─
+    // Field 內 readonly boolean = readonly 灰框 chrome + display 同款值語言(勾/叉 icon)。
     // 灰框消費 fieldWrapperStyles 同一 cva = 與 Input readonly 字面同源(SSOT,改一處全動)。
     // 理由:同一張 readonly 表單裡文字控件有 bg-readonly 灰框鎖定訊號,boolean 保留全彩
     // 控件會誤導「仍可操作」(世界級 0/4 用原樣鎖互動:Salesforce=✓ 靜態 glyph /
@@ -244,7 +248,7 @@ const Checkbox = React.forwardRef<
             className,
           )}
         >
-          {isChecked ? <span className="text-foreground">✓</span> : <span className="text-fg-muted">—</span>}
+          <BooleanValueIcon checked={isChecked} size={boxSize} />
         </div>
       )
     }
@@ -273,11 +277,12 @@ const Checkbox = React.forwardRef<
           props.onClick?.(event)
         }}
       >
-        <CheckboxPrimitive.Indicator className="grid place-content-center text-current">
-          {props.checked === 'indeterminate'
-            ? <Minus style={{ width: iconPx, height: iconPx }} strokeWidth={iconStrokeWidth} />
-            : <Check style={{ width: iconPx, height: iconPx }} strokeWidth={iconStrokeWidth} />
-          }
+        {/* 圖示切換走 Radix data-state(CSS),非 props.checked(JS)—— uncontrolled
+            defaultChecked="indeterminate" 時 props.checked=undefined,JS 判斷會錯渲 Check;
+            data-state 涵蓋 controlled/uncontrolled 全部轉換(Radix 為 SSOT)。 */}
+        <CheckboxPrimitive.Indicator className="group/indicator grid place-content-center text-current">
+          <Minus className="hidden group-data-[state=indeterminate]/indicator:block" style={{ width: iconPx, height: iconPx }} strokeWidth={iconStrokeWidth} />
+          <Check className="hidden group-data-[state=checked]/indicator:block" style={{ width: iconPx, height: iconPx }} strokeWidth={iconStrokeWidth} />
         </CheckboxPrimitive.Indicator>
       </CheckboxPrimitive.Root>
     )

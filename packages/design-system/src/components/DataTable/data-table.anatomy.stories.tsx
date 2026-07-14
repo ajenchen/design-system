@@ -1,7 +1,8 @@
 // @anatomy-rationale:
 //   SizeMatrix represented as RowHeightMatrix per row-density semantics —
-//     DataTable 的 size 不是字級放大而是 row-height tier(compact / cozy /
-//     comfortable),語意對應「掃描 vs 閱讀」資料密度而非元件大小。命名沿用
+//     DataTable 的 size 主軸是 row-height tier(compact / cozy /
+//     comfortable),語意對應「掃描 vs 閱讀」資料密度;lg 同時連動字級放大
+//     (sm/md → text-body / lg → text-body-lg,對齊 Field,SSOT fieldDisplayTextClass)。命名沿用
 //     Linear / Notion / Airtable 業界共識(row density,非 component size)。
 //   StateBehavior covered by ColorMatrix「Row 狀態色彩」段(default / hover /
 //     selected / disabled)+ Features「排序」段。Row 互動是 row-level
@@ -131,7 +132,7 @@ export const Inspector: Story = {
     bordered: { control: 'boolean', description: '外框(嵌入已帶框容器時可設 false 避免雙重邊框)' },
     pinnedLeft: { control: 'boolean', description: 'Pin 產品名稱欄到左側,橫向捲動時保持可見' },
     pinnedRight: { control: 'boolean', description: 'Pin 上架日期欄到右側' },
-    inlineEdit: { control: 'boolean', description: 'inline edit 視覺:cell 間加垂直分隔線(dtCellGrid)。Select 欄 chevron 由 column meta.editable 控制(showDisplayEndIcon),非本 prop' },
+    inlineEdit: { control: 'boolean', description: 'inline edit 視覺:cell 間加垂直分隔線(dtCellGrid)。display 態零恆顯 chevron(2026-07-08 A 案,editable affordance = hover outline);edit 態才有控件 chrome' },
     height: {
       control: 'select',
       options: ['auto', '300px'],
@@ -171,8 +172,9 @@ export const ColumnTypes: Story = {
     const columns = [
       col.accessor('name', { header: 'text', meta: { type: 'string', width: 200 } }),
       col.accessor('price', { header: 'currency', meta: { type: 'currency', prefix: '$', width: 120 } }),
-      col.accessor('stock', { header: 'select(Tag)', meta: { type: 'select', options: STATUS_OPTIONS, width: 140 } }),
-      col.accessor('available', { header: 'boolean(✓/—)', meta: { type: 'boolean', width: 100 } }),
+      // display:'tag' opt-in 讓 demo 與 header「select(Tag)」名實相符(SelectCell 預設 plain 純文字)
+      col.accessor('stock', { header: 'select(Tag)', meta: { type: 'select', options: STATUS_OPTIONS, width: 140, display: 'tag' } }),
+      col.accessor('available', { header: 'boolean(勾選框)', meta: { type: 'boolean', width: 100 } }),
       col.accessor('launchDate', { header: 'date', meta: { type: 'date', width: 140 } }),
     ]
 
@@ -194,7 +196,7 @@ export const ColumnTypes: Story = {
                 <tr><Td mono>number</Td><Td mono>{`<NumberInput mode="display">`}</Td><Td>right</Td><Td>數量、年齡</Td></tr>
                 <tr><Td mono>currency</Td><Td mono>{`<NumberInput mode="display">`}(+ prefix)</Td><Td>right</Td><Td>金額、價格</Td></tr>
                 <tr><Td mono>date</Td><Td mono>{`<DatePicker mode="display">`}</Td><Td>left</Td><Td>日期、時間戳</Td></tr>
-                <tr><Td mono>boolean</Td><Td mono>{`<Checkbox mode="display">`}(✓ / —)</Td><Td>left</Td><Td>啟用 / 可見</Td></tr>
+                <tr><Td mono>boolean</Td><Td mono>{`<Checkbox mode="display">`}(勾 / 叉 icon)</Td><Td>left</Td><Td>啟用 / 可見</Td></tr>
                 <tr><Td mono>select</Td><Td mono>{`<Select mode="display">`}</Td><Td>left</Td><Td>狀態、類別</Td></tr>
                 <tr><Td mono>multiSelect</Td><Td mono>{`<Combobox mode="display">`}</Td><Td>left</Td><Td>多選 tags</Td></tr>
                 <tr><Td mono>person</Td><Td mono>PersonDisplay / MultiPersonDisplay</Td><Td>left</Td><Td>指派者、reviewer</Td></tr>
@@ -202,7 +204,7 @@ export const ColumnTypes: Story = {
               </tbody>
             </table>
           </div>
-          <p className="text-footnote text-fg-muted mt-3">擴充新 type:在 `column-types.ts` 註冊 `renderDisplay` + `align`,自動跟所有 DataTable 整合</p>
+          <p className="text-footnote text-fg-muted mt-3">擴充新 type:在 `cell-registry.tsx` 的 `cellRegistry` map 註冊對應 Cell component(display/edit 渲染 SSOT);`column-types.ts` 只設 `align` / default metadata。兩處對齊後自動跟所有 DataTable 整合</p>
         </div>
       </div>
     )
@@ -260,8 +262,8 @@ export const AlignmentRule: Story = {
     return (
       <div className="flex flex-col gap-8">
         <div>
-          <H3>Column type 決定對齊(由 column-types.ts 定義,不讓 consumer 手動設)</H3>
-          <Desc>數字靠右方便縱向比較位數(Excel / 會計軟體 / 財務系統共識);文字靠左方便閱讀;boolean 靠左跟其他文字欄一致,維持掃視時的左緣節奏。Consumer 不需要設 `align`,column type 就決定了。</Desc>
+          <H3>Column type 提供對齊預設(column-types.ts 定義),consumer 可用 meta.align 覆寫</H3>
+          <Desc>數字靠右方便縱向比較位數(Excel / 會計軟體 / 財務系統共識);文字靠左方便閱讀;boolean 靠左跟其他文字欄一致,維持掃視時的左緣節奏。Consumer 通常不需要設 `align`——column type 已給預設;需要時仍可用 `meta.align` 在 column 層級覆寫。</Desc>
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
         </div>
 
@@ -273,7 +275,7 @@ export const AlignmentRule: Story = {
               <tbody>
                 <tr><Td>text / select / person / date / link</Td><Td mono>left</Td><Td>閱讀從左到右</Td></tr>
                 <tr><Td>number / currency</Td><Td mono>right</Td><Td>縱向比較位數(小數點縱向對齊)</Td></tr>
-                <tr><Td>boolean(✓ / —)</Td><Td mono>left</Td><Td>跟其他文字欄一致靠左,維持掃視時的左緣節奏</Td></tr>
+                <tr><Td>boolean(勾 / 叉 icon)</Td><Td mono>left</Td><Td>跟其他文字欄一致靠左,維持掃視時的左緣節奏</Td></tr>
                 <tr><Td>actions(在 cell 內的按鈕)</Td><Td mono>right</Td><Td>動線尾端,不干擾資料掃視</Td></tr>
               </tbody>
             </table>
@@ -437,10 +439,10 @@ export const ColorMatrix: Story = {
             </thead>
             <tbody>
               <tr><Td mono>text / date / number / currency</Td><Td><TokenCell token="--foreground" /></Td></tr>
-              <tr><Td mono>select(Tag)</Td><Td>Tag 的 variant 色(green / yellow / red / blue…)</Td></tr>
+              <tr><Td mono>select</Td><Td>預設 plain 純文字 foreground;`meta.display='tag'` opt-in 才走 Tag 的 variant 色(green / yellow / red / blue…)</Td></tr>
               <tr><Td mono>person</Td><Td>Avatar + foreground 文字</Td></tr>
               <tr><Td mono>link</Td><Td><TokenCell token="--primary" /></Td></tr>
-              <tr><Td mono>boolean</Td><Td><TokenCell token="--fg-secondary" display="— / ✓ 均用 fg-secondary" /></Td></tr>
+              <tr><Td mono>boolean</Td><Td>naked Checkbox(true = <TokenCell token="--primary" display="primary 底白勾" /> / false = 空框 <TokenCell token="--border" />),非 X / Check icon</Td></tr>
             </tbody>
           </table>
         </div>
@@ -513,7 +515,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"DataTable 用一般 div 搭配表格語意標記,而非原生 table 元素——因為虛擬捲動需要絕對定位每一列,而 table 的佈局模型做不到。輔助技術(螢幕報讀器)會把它當成表格朗讀。\n\n  表格語意  :最外層標記為表格、每一列標記為列、每一格標記為儲存格,表頭那一格標記為欄位標題。\n\n  排序  :可排序的表頭會標示目前的排序方向(升冪 / 降冪 / 未排序),報讀器讀得出來。\n\n  選取  :每一列的勾選框都有說明文字(由使用方傳入,沒傳就用「選取此列」),全選框的說明文字是「全選可見列」。\n\n  鍵盤  :一般表格模式下,用 Tab 進入表格後可操作排序與勾選;方向鍵在儲存格之間移動是試算表模式(spreadsheetMode)才開啟的功能,不是預設。列上的更多操作都收進右側的「更多」選單,確保不用滑鼠也能用。\n\n  焦點  :鍵盤聚焦時顯示清楚的外框,與整個設計系統的聚焦樣式一致。\n\n  驗證  :Storybook 無障礙檢查面板應該沒有嚴重問題;全程鍵盤可操作,不必用到滑鼠;文字對比度達到無障礙標準。"}</p>
+      <p className="whitespace-pre-line">{"DataTable 用一般 div 搭配表格語意標記,而非原生 table 元素——因為虛擬捲動需要絕對定位每一列,而 table 的佈局模型做不到。輔助技術(螢幕報讀器)會把它當成表格朗讀。\n\n  表格語意  :最外層標記為表格、每一列標記為列、每一格標記為儲存格,表頭那一格標記為欄位標題。\n\n  排序  :可排序的表頭會標示目前的排序方向(升冪 / 降冪 / 未排序),報讀器讀得出來。\n\n  選取  :每一列的勾選框都有說明文字(由使用方傳入,沒傳就用「選取此列」),全選框的說明文字是「全選可見列」。\n\n  鍵盤  :一般表格模式下,用 Tab 進入表格後可操作排序與勾選;方向鍵在儲存格之間移動是試算表模式(spreadsheetMode)才開啟的功能,不是預設。列上的更多操作(`rowActions` 為使用方提供的 callback,DataTable 不代管收納)建議在 3 個以上時由使用方自行收進右側的「更多」選單,以確保不用滑鼠也能操作全部動作。\n\n  焦點  :一般元件(排序鈕 / 勾選框)鍵盤聚焦時顯示清楚外框,與設計系統聚焦樣式一致;啟用選取 / 試算表模式時,表格本身可被 Tab 聚焦,焦點以「選取儲存格」的方框呈現(表格外層刻意不另畫外框),初次 Tab 尚未選取儲存格時焦點落在表格容器。\n\n  驗證  :Storybook 無障礙檢查面板應該沒有嚴重問題;全程鍵盤可操作,不必用到滑鼠;文字對比度達到無障礙標準。"}</p>
     </div>
   ),
 }

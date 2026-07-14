@@ -16,7 +16,7 @@ import type { FieldSize } from '@/design-system/components/Field/field-context'
  *
  * **Naming rationale**(2026-05-04):
  * - Taxonomic 一致:FieldGroup(多 Field 堆疊)/ FieldControlGroup(多 control 接合)— scope 區分
- * - Idiom 一致:ButtonGroup(多 Button 接合)同 pattern,只是 X = field control
+ * - 命名 idiom 一致:與 ButtonGroup 共享 <X>Group 命名(X = field control);但**機制不同** — ButtonGroup 是 gap 分離群組(flex gap-2),本元件才是 border-collapse 接合(負 margin 重疊 border)
  * - 不撞 RadioGroup/CheckboxGroup(那是 1-question 多 options semantic group)
  *
  * **Behavior canonical**(verified Ant compact-item.ts L21-58):

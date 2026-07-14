@@ -1,0 +1,114 @@
+{
+ "dim": 14,
+ "filesScanned": 492,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Alert/alert.tsx:1; packages/design-system/src/components/AppShell/app-shell.tsx:329",
+   "問題": "全掃 386 個 TS/TSX 後，183 檔有自然語言註解中英混用：173 檔在機械 marker 後留下英文 rationale，41 檔另有 86 個一般英文 prose block，兩集合重疊 31 檔。",
+   "severity": "marginal",
+   "建議": "保留 marker、API、品牌與技術 identifier，將 free-form rationale 和一般敘述統一改為繁中。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/filter-operators.spec.md:1; packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md:3; packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:3; packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:3; packages/design-system/src/tokens/orphan-tokens.spec.md:13; packages/design-system/src/tokens/token-system.spec.md:3",
+   "問題": "6 個 H1 在 canonical `# {名稱} 設計原則` 後追加 SSOT、taxonomy 或分類限定，偏離精確 H1 模板。",
+   "severity": "marginal",
+   "建議": "H1 僅保留名稱與「設計原則」，把版本、taxonomy、SSOT 身分移到 frontmatter 或首段正文。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:204; packages/design-system/src/components/Slider/slider.spec.md:243; packages/design-system/src/components/Steps/steps.spec.md:401",
+   "問題": "3 份 spec 自創英文章名 `Do / Don't`，與 DS 既有繁中章名 vocabulary 不一致。",
+   "severity": "marginal",
+   "建議": "依內容拆為「何時用」與「禁止事項」，或至少統一採既有「禁止事項」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:35,88",
+   "問題": "正文把資料夾／概念群組 `SelectionControl` 說成 internal primitive；實際 primitive、H1 與檔名均為 `SelectionItem`。",
+   "severity": "marginal",
+   "建議": "兩處改稱 `SelectionItem`；`SelectionControl` 僅用於資料夾或概念群組。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:49; packages/design-system/src/components/Chip/chip.spec.md:148,149; packages/design-system/src/components/DataTable/data-table.spec.md:433,435; packages/design-system/src/components/SelectMenu/select-menu.spec.md:71,182; packages/design-system/src/components/Tabs/tabs.spec.md:141,152",
+   "問題": "同一 scroll referent 在同份 spec 內交替稱「滾動」與「捲動」。",
+   "severity": "marginal",
+   "建議": "各 owner spec 統一採「捲動」，code identifier `scroll` 保持英文。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.spec.md:25,96; packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:41,78",
+   "問題": "同一 drag 行為在單檔內交替使用「拖拉」與「拖曳」。",
+   "severity": "marginal",
+   "建議": "統一採既有 ARIA 與 owner vocabulary「拖曳」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Alert/alert.spec.md:183",
+   "問題": "同一段對同一 disabled 概念交替使用「停用」與「禁用」。",
+   "severity": "marginal",
+   "建議": "整段統一為「停用」；實際 prop `disabled` 保持英文。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.spec.md:428; packages/design-system/src/components/FileViewer/file-viewer.spec.md:65,255; packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:223,242; packages/design-system/src/components/TimePicker/time-picker.spec.md:20,27",
+   "問題": "同一 interaction referent 在各自 spec 內交替稱「交互」與「互動」。",
+   "severity": "marginal",
+   "建議": "自然語言統一採「互動」，技術 identifier 保留英文。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:151,701; packages/design-system/src/components/Skeleton/skeleton.spec.md:17,89; packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:28,517",
+   "問題": "同一使用者角色在單檔內交替稱「使用者」與「用戶」。",
+   "severity": "marginal",
+   "建議": "統一採「使用者」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:107,126",
+   "問題": "同一互動 feedback 在單檔內交替稱「回饋」與「反饋」。",
+   "severity": "marginal",
+   "建議": "統一採「回饋」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:35",
+   "問題": "使用非 canonical 大小寫 `ToolBar`，與既有詞彙 `Toolbar` 不一致。",
+   "severity": "marginal",
+   "建議": "改為 `Toolbar`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:55,90,92,141,144,156",
+   "問題": "文件自創縮寫 `FCG`，使 component vocabulary 與可搜尋的正式 identifier `FieldControlGroup` 脫節。",
+   "severity": "marginal",
+   "建議": "正文統一使用 `FieldControlGroup`；若確需縮寫，先在 canonical glossary 明文定義。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.spec.md:115,141,143,144,182",
+   "問題": "實作使用 canonical `OverflowIndicator`，spec 卻反覆另稱「+N chip」，造成跨元件詞彙斷裂。",
+   "severity": "marginal",
+   "建議": "引用元件時改稱 `OverflowIndicator`；僅描述視覺時使用一般名詞「+N 溢出指示」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/elevation/elevation.spec.md:45",
+   "問題": "DS 元件清單使用不存在的別名 `Dropdown`，實際 canonical 元件為 `DropdownMenu`。",
+   "severity": "marginal",
+   "建議": "改為 `DropdownMenu`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/color/primitives.css:73,74,262,263",
+   "問題": "9 個 CSS custom properties 使用底線與未定義縮寫 `--_na1` 至 `--_na9`，違反 kebab-case 命名。",
+   "severity": "marginal",
+   "建議": "改為具語義的 kebab-case，例如 `--neutral-alpha-1` 至 `--neutral-alpha-9`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:83,92",
+   "問題": "Story fixture 使用中文 property identifiers `回報人`、`環境`，且 `回報人` 再次出現；DS code identifier 應全英文。",
+   "severity": "marginal",
+   "建議": "改用英文 key 搭配中文 label mapping；若純屬顯示資料，至少改為明確的字串鍵。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.principles.stories.tsx:127; packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:187",
+   "問題": "Principles exports `MvpScope` 與 `UsageScenarioRule` 是 story-writing SSOT 明列的舊 naming drift，且兩檔均已有 `UsageGuidance`。",
+   "severity": "marginal",
+   "建議": "把內容整合進既有 `UsageGuidance`，移除重複的舊命名 export。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:74,101,124",
+   "問題": "3 個 principles exports 使用反序的 `RuleXxx`，與 DS-wide `{Concept}Rule` 語序衝突。",
+   "severity": "marginal",
+   "建議": "分別改為 `MeetingMinuteStepRule`、`RangeCompositionRule`、`ClearNoLabelButtonRule` 等 Rule 後綴形式。"
+  }
+ ]
+}

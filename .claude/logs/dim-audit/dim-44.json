@@ -1,0 +1,36 @@
+{
+  "dim": 44,
+  "title": "Public vs Internal classification",
+  "mechanism": "intent-based (是否想讓 consumer 直接 import);enumerate ALL 64 components + 6 patterns,per-row 判 public/internal;cross-check 3 mechanisms 一致性(spec frontmatter isInternal ↔ root barrel index.ts 排除 ↔ storybook title Design System/Internal)",
+  "filesScanned": 72,
+  "enumeration_summary": {
+    "total_units": 70,
+    "components": 64,
+    "patterns": 6,
+    "internal_units": 10,
+    "internal_components": ["Command", "DateGrid", "HoverCard", "Menu", "Notice", "OverflowIndicator", "SelectMenu", "SelectionControl"],
+    "internal_patterns": ["horizontal-overflow", "overlay-surface"],
+    "public_units": 60,
+    "mechanical_consistency": "所有 10 internal 單元三機制齊備且一致(frontmatter isInternal/internal:true + 排除 root barrel + Design System/Internal[ /Patterns] 標題 + @internal jsDoc marker);56 public components + element-anatomy/header-canonical/resize-handle public patterns + action-bar(spec-only 無 runtime export)= 全數對齊;所有 internal 單元 consumer 消費關係已抽查證實(Notice←Alert/Toast、OverflowIndicator←SelectMenu/ScrollArea/Combobox/PeoplePicker/Avatar/HoverCard),分類 intent 正確"
+  },
+  "findings": [
+    {
+      "fileLine": ".claude/rules/ui-development.md:20",
+      "問題": "Public-vs-Internal 分類 SSOT 正文把 `<ItemIcon>` / `<ItemAvatar>` 明列為 Internal primitive 的 canonical 範例(『MenuItem 內部 slot,consumer 用 <MenuItem> 不用裸 slot』),但實況相反:ItemIcon/ItemAvatar 由 patterns/element-anatomy/item-anatomy.tsx export(item-anatomy.tsx:479/521),而 element-anatomy 在 root barrel(packages/design-system/src/index.ts)是 PUBLIC 前門 export(`export * from './patterns/element-anatomy/index'`),且 gen-design-system-barrel.mjs 註解明確聲明『element-anatomy 維持 public』並以『apps/template import { ItemAvatar }』為理由。反而 MenuItem 自身才是 internal(components/Menu isInternal)。正文舉例把 public anatomy primitive 當成 internal 招牌範例,且方向恰好反了——這正是同檔 line 20/31 自己警示過『2026-07-10 spec-internal 矛盾曾誤導判定 MenuItem consumer 不可用』的同一 class 矛盾,會誤導未來分類決策(有人可能為『修矛盾』把 element-anatomy 標 internal,反而打斷 apps/template 的 public 消費)。",
+      "severity": "material",
+      "建議": "以 code intent 為準(element-anatomy 權威 public):把 ui-development.md line 20 的 internal 範例清單移除 ItemIcon/ItemAvatar,或改寫成『item-anatomy 公開 anatomy primitive(public,consumer 可組合),對比之下 MenuItem 才是 internal slot 組裝殼』。保留 SurfaceHeader/Body/Footer、useOverflowItems 作 internal 範例即可。"
+    },
+    {
+      "fileLine": ".claude/rules/ui-development.md:31",
+      "問題": "分類 SSOT 聲稱『現行 11 個 internal 單元全走 frontmatter』,但機械真值為 10 個(8 components:Command/DateGrid/HoverCard/Menu/Notice/OverflowIndicator/SelectMenu/SelectionControl + 2 patterns:horizontal-overflow/overlay-surface)。gen-design-system-barrel.mjs 執行輸出亦印『internal(subpath-only)... 10』,frontmatter grep 與 root barrel 排除清單皆為 10。此為分類 SSOT 內的 stale 計數 drift。",
+      "severity": "marginal",
+      "建議": "把 line 31 的『11 個 internal 單元』改為『10 個』(以 generator 輸出為機械 SSOT)。或改寫成不 hardcode 數字、pointer 到 generator 輸出,避免再度 drift(對齊 CLAUDE.md『SSOT 數字禁 hardcode 多處』)。"
+    },
+    {
+      "fileLine": "packages/design-system/src/index.ts:82",
+      "問題": "committed root barrel 與 generator 重新生成結果 drift:`node scripts/gen-design-system-barrel.mjs --check` 報 FAIL,唯一差異 = 缺 `export * from './tokens/motion/overlay-motion'`(overlay-motion.ts 於 2026-07-11 新增,barrel 未重跑)。generator 遞迴收 tokens/**/*.ts 為 public front-door,故其分類 intent 為 public(overlayMotion / surfaceMotion className 工具);目前該 public token 工具未從 root 前門 export,consumer 無法直接 import,屬 public-exposure gap。release:preflight `--check` 會攔,但當前 branch 已 drift。",
+      "severity": "marginal",
+      "建議": "重跑 `node scripts/gen-design-system-barrel.mjs` 讓 committed index.ts 補回 overlay-motion export(機械自動修復,無需人工判斷)。若 overlayMotion/surfaceMotion 實際不欲對 consumer 公開,則應在 generator 加 token 級 internal 排除規則——但依現行『token JS mirrors 皆 public』canonical(2026-07-08 categorical-color 事件)預設 public 較合理。"
+    }
+  ]
+}

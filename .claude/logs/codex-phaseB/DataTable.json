@@ -1,0 +1,306 @@
+{
+ "component": "DataTable",
+ "claimsVerified": 2081,
+ "falseClaims": [
+  {
+   "fileLine": "data-table.spec.md:47",
+   "宣稱": "DataTable 是平面 row，不支援階層展開收合。",
+   "真實code行為": "已掛載 getExpandedRowModel、轉發 getSubRows，並渲染 depth、chevron 與 aria-expanded，支援 nested rows。"
+  },
+  {
+   "fileLine": "data-table.spec.md:50",
+   "宣稱": "跨 cell 選取超出範圍。",
+   "真實code行為": "spreadsheetMode 已支援 Shift+click 矩形跨-cell range selection；只有公式計算仍未支援。"
+  },
+  {
+   "fileLine": "data-table.spec.md:99",
+   "宣稱": "固定行高模式所有 row 同高。",
+   "真實code行為": "即使 autoRowHeight=false，只要任一 cell 有 error，該 row 也會自動切成 auto-height。"
+  },
+  {
+   "fileLine": "data-table.spec.md:142",
+   "宣稱": "指定 type 自動獲得對齊、渲染、排序、篩選行為。",
+   "真實code行為": "type 直接驅動對齊、cell renderer 與 filter operator；排序仍由 TanStack accessor/type inference 決定，沒有依 type 安裝 sortingFn。"
+  },
+  {
+   "fileLine": "data-table.spec.md:157",
+   "宣稱": "1–2 個 row actions 並排；3+ 自動收進 MoreVertical dropdown。",
+   "真實code行為": "rowActions 是任意 ReactNode callback，DataTable 原樣渲染，沒有計數或自動收納邏輯。"
+  },
+  {
+   "fileLine": "data-table.spec.md:268",
+   "宣稱": "row selection aria-label fallback 是 \"Select row\"。",
+   "真實code行為": "實際 fallback 是「選取此列」。"
+  },
+  {
+   "fileLine": "data-table.spec.md:278",
+   "宣稱": "selectable=\"single\" 可 opt-in 整 row click 選取。",
+   "真實code行為": "只有 40px selection cell／Radio 具有選取 onClick；row container 沒有 row-click selection handler。"
+  },
+  {
+   "fileLine": "data-table.spec.md:304",
+   "宣稱": "panel 建立 date condition 時都會固化 datePrecision。",
+   "真實code行為": "prefilledColumnId 路徑建立 condition 時漏寫 datePrecision。"
+  },
+  {
+   "fileLine": "data-table.spec.md:350",
+   "宣稱": "mode 在 mount 後鎖死。",
+   "真實code行為": "mode 是每次 render 直接讀取的普通 prop，沒有 mount lock 或 runtime guard。"
+  },
+  {
+   "fileLine": "data-table.spec.md:437",
+   "宣稱": "跨頁已選 ids 翻頁不清除。",
+   "真實code行為": "pagination 下 getRowModel().rows 只有當頁；預設 cleanup 會把不在當頁的 include-mode ids 清掉。"
+  },
+  {
+   "fileLine": "data-table.spec.md:484",
+   "宣稱": "DataTable 非 radio-group。",
+   "真實code行為": "selectable=\"single\" 時整張 role=\"table\" 會被 Radix RadioGroup.Root 包住；Radix 真實 DOM 外層為 role=\"radiogroup\"。"
+  },
+  {
+   "fileLine": "data-table.spec.md:494",
+   "宣稱": "預設模式方向鍵無作用。",
+   "真實code行為": "single-selection 模式的 Radix RadioGroup 具有 roving focus；方向鍵會移動並選取其他 row radio，即使 spreadsheetMode=false。"
+  },
+  {
+   "fileLine": "filter-operators.spec.md:243",
+   "宣稱": "空值由 isConditionComplete 判定 incomplete。",
+   "真實code行為": "空陣列不會被 isConditionComplete 判為 incomplete；multi-select/person 空值先被視為 active，之後才由 operator evaluation pass-through。"
+  },
+  {
+   "fileLine": "data-table.anatomy.stories.tsx:3-5",
+   "宣稱": "DataTable 的 size 不是字級放大，只是 row-height tier。",
+   "真實code行為": "size 同時改 row height 與 typography；lg header/cell 使用 text-body-lg，sm/md 使用 text-body。"
+  },
+  {
+   "fileLine": "data-table.anatomy.stories.tsx:174",
+   "宣稱": "該 select column 顯示為 Tag。",
+   "真實code行為": "story 未設 meta.display=\"tag\"；SelectCell 預設 display=\"plain\"，實際為純文字。"
+  },
+  {
+   "fileLine": "data-table.anatomy.stories.tsx:205",
+   "宣稱": "新增 type 到 column-types.ts 註冊 renderDisplay + align。",
+   "真實code行為": "column-types.ts 沒有 renderDisplay；renderer 必另在 cell-registry.tsx 註冊。"
+  },
+  {
+   "fileLine": "data-table.anatomy.stories.tsx:263-264",
+   "宣稱": "不讓 consumer 手動設定 align。",
+   "真實code行為": "公開的 column.meta.align 可覆寫，且 render 時優先於 columnTypeDefaults。"
+  },
+  {
+   "fileLine": "data-table.anatomy.stories.tsx:440",
+   "宣稱": "select 預設顯示 Tag variant 色。",
+   "真實code行為": "select 預設是 plain display；只有 meta.display=\"tag\" 才渲染 Tag。"
+  },
+  {
+   "fileLine": "data-table.anatomy.stories.tsx:516",
+   "宣稱": "列上的更多操作都收進右側「更多」選單。",
+   "真實code行為": "DataTable 不建立更多選單；rowActions 回傳內容原樣輸出。"
+  },
+  {
+   "fileLine": "data-table.anatomy.stories.tsx:516",
+   "宣稱": "鍵盤聚焦時顯示清楚的外框。",
+   "真實code行為": "selection/spreadsheet 模式的 table root 是 tab stop，卻明確套用 outline-none、focus-visible:outline-none；初始 Tab focus 沒有可見指示。"
+  },
+  {
+   "fileLine": "data-table.principles.stories.tsx:97",
+   "宣稱": "DataTable 是平面 row，階層展開應改用 TreeView。",
+   "真實code行為": "DataTable 已實作 nested rows、展開狀態、chevron 與深度縮排。"
+  },
+  {
+   "fileLine": "data-table.principles.stories.tsx:110-111",
+   "宣稱": "DataTable 不支援跨 cell 選取或 Excel 功能。",
+   "真實code行為": "spreadsheetMode 已支援 cell selection、range、方向鍵導覽與 cell editing；未支援的是公式等完整試算表能力。"
+  },
+  {
+   "fileLine": "data-table.principles.stories.tsx:149-150",
+   "宣稱": "新增 type 在 column-types.ts 註冊 renderer。",
+   "真實code行為": "renderer SSOT 是 cell-registry.tsx；column-types.ts 只管 type/default metadata。"
+  },
+  {
+   "fileLine": "data-table.principles.stories.tsx:228-229",
+   "宣稱": "Consumer 不可自訂 empty 視覺。",
+   "真實code行為": "DataTableProps 公開 emptyState?: ReactNode，且會直接渲染 consumer 傳入的自訂 node。"
+  },
+  {
+   "fileLine": "cell-registry.tsx:119",
+   "宣稱": "autoRowHeight 由 table 決定，consumer 不需設定 meta.wrap。",
+   "真實code行為": "DataTable 外層只有在 autoRowHeight && meta.wrap===true 時才避開 TruncateCell；未設 wrap 的 string cell 仍走單行截斷。"
+  },
+  {
+   "fileLine": "cell-registry.tsx:432-436",
+   "宣稱": "UrlCell edit mode 使用 LinkInput，保留 URL parse／hostname 行為。",
+   "真實code行為": "UrlCell edit branch 實際使用 plain Input；LinkInput 只存在於 display branch。"
+  },
+  {
+   "fileLine": "data-table-column-visibility-panel.tsx:13",
+   "宣稱": "reset 按鈕使用 onReset prop。",
+   "真實code行為": "props 沒有 onReset；只有 resettable boolean，點擊後直接 onVisibilityChange({})。"
+  },
+  {
+   "fileLine": "data-table-filter-panel.tsx:3",
+   "宣稱": "檔案為 687 行，尚未超過 800 hard cap。",
+   "真實code行為": "目前為 819 行，已超過宣稱的 hard cap。"
+  },
+  {
+   "fileLine": "data-table-filter-panel.tsx:62",
+   "宣稱": "nested root 保證 1+ group，每個 group 保證 1+ condition。",
+   "真實code行為": "使用者可刪至零個 root group，也可留下零 condition 的空 group。"
+  },
+  {
+   "fileLine": "data-table-filter-panel.tsx:66",
+   "宣稱": "FilterTree state 由本檔自管。",
+   "真實code行為": "panel 是 value/onChange controlled component，state 由 consumer 管理。"
+  },
+  {
+   "fileLine": "data-table-sort-manager.tsx:22-24",
+   "宣稱": "「加排序」位於 footer。",
+   "真實code行為": "CTA inline 放在 SurfaceBody；沒有 footer。"
+  },
+  {
+   "fileLine": "data-table-interaction-layer.tsx:34",
+   "宣稱": "layer 使用 absolute positioning，相對 container origin。",
+   "真實code行為": "layer 實際是 position:fixed、inset:0，座標相對 viewport。"
+  },
+  {
+   "fileLine": "data-table-interaction-layer.tsx:39-42",
+   "宣稱": "目前只有 editor rect placeholder，真正 portal editor 是 future。",
+   "真實code行為": "ActiveEditorHost 與 activeEditorRender 已接線並可渲染真正 editor；placeholder 只是無 children fallback。"
+  },
+  {
+   "fileLine": "data-table-interaction-layer.tsx:60-63",
+   "宣稱": "InteractionLayer 渲染 bg-fill RangeRect。",
+   "真實code行為": "rangeCellIds 被忽略；range fill 由 DataTable cell 的 data-range-cell CSS 繪製。"
+  },
+  {
+   "fileLine": "data-table-interaction-layer.tsx:91-92",
+   "宣稱": "getCellRect 回傳 page-absolute coordinates。",
+   "真實code行為": "getBoundingClientRect 回傳 viewport-relative coordinates，並搭配 fixed layer。"
+  },
+  {
+   "fileLine": "data-table-interaction-layer.tsx:225-230",
+   "宣稱": "目前只有 HoverCellRect，Selection／Editor／Range 待後續加入。",
+   "真實code行為": "selection ring 與 ActiveEditorHost 已存在；RangeRect 已退役。"
+  },
+  {
+   "fileLine": "data-table-interaction-layer.tsx:281-283",
+   "宣稱": "getCellRect 回傳 container-relative coordinates。",
+   "真實code行為": "實際回傳 viewport-relative coordinates。"
+  },
+  {
+   "fileLine": "data-table-interaction-layer.tsx:343-351",
+   "宣稱": "存在 CellRangeFill private primitive。",
+   "真實code行為": "檔內沒有 CellRangeFill；range background 位於 DataTable cell CSS。"
+  },
+  {
+   "fileLine": "data-table.tsx:100-101",
+   "宣稱": "fixed-height row 的 error 會被裁切，consumer 應開 autoRowHeight。",
+   "真實code行為": "任何 cell error 都會自動令該 row 使用 effectiveAutoRow，無需 consumer 開啟 autoRowHeight。"
+  },
+  {
+   "fileLine": "data-table.tsx:112",
+   "宣稱": "inlineEdit 會讓 select 類欄位顯示指示器。",
+   "真實code行為": "picker display branches 刻意不傳 showDisplayEndIcon；inlineEdit 只增加 cell grid。"
+  },
+  {
+   "fileLine": "data-table.tsx:116-119",
+   "宣稱": "啟用 InteractionLayer 後 hover、editor、selected、range 都由 layer 繪製。",
+   "真實code行為": "range 仍由 cell CSS 繪製，layer 完全忽略 rangeCellIds。"
+  },
+  {
+   "fileLine": "data-table.tsx:133-141",
+   "宣稱": "點擊 table 內 empty area 會清除 cell selection。",
+   "真實code行為": "清除 effect 只處理 pointerdown 落在整個 table outer 外；table 內非 cell 空白不會清除。"
+  },
+  {
+   "fileLine": "data-table.tsx:204-207",
+   "宣稱": "每個 region 都同時 useDraggable + useDroppable，mirror 取得相同 transform。",
+   "真實code行為": "只有 center primary 使用 useDraggable+useDroppable；left/right mirror 只 useDroppable，並以 useDndContext 同步 dim state。"
+  },
+  {
+   "fileLine": "data-table.tsx:290-292",
+   "宣稱": "overlay close 會呼叫 onCellCommit。",
+   "真實code行為": "picker 的 onOpenChange(false) 走 onCancel；只有選值時的 onChange 才 commit。"
+  },
+  {
+   "fileLine": "data-table.tsx:449-454",
+   "宣稱": "各 region 使用多個 useSortable，primary 有 left 時取 left。",
+   "真實code行為": "已不使用 useSortable；primary 永遠是 center，mirror 只 useDroppable。"
+  },
+  {
+   "fileLine": "data-table.tsx:480-483",
+   "宣稱": "left/center/right 各 mount useSortable 並共享 transform。",
+   "真實code行為": "已拆為 SourceRowProvider(useDraggable+useDroppable)與 MirrorRowProvider(useDroppable only)。"
+  },
+  {
+   "fileLine": "data-table.tsx:596-606",
+   "宣稱": "DraggableHeaderCell 使用 useSortable 並注入 transform。",
+   "真實code行為": "實際使用 useDraggable + useDroppable，source 留原位，不採 sortable auto-transform。"
+  },
+  {
+   "fileLine": "data-table.tsx:661-664",
+   "宣稱": "drag Button 只是視覺 affordance，listeners 掛在 row。",
+   "真實code行為": "目前是 button-only drag；Button 接 activator、listeners、attributes，rowListeners 為 undefined。"
+  },
+  {
+   "fileLine": "data-table.tsx:672-673",
+   "宣稱": "任何 row drag 進行時所有 drag button 都隱藏。",
+   "真實code行為": "source button 在 ctx.isDragging 時強制保持 visible；只有其他 rows 的按鈕隱藏。"
+  },
+  {
+   "fileLine": "data-table.tsx:1083-1085",
+   "宣稱": "per-column enableResizing 決定 width 行為，沒有 auto-default。",
+   "真實code行為": "width mode 由 table-level enableColumnResize 決定；per-column opt-out 使用 meta.resizable。"
+  },
+  {
+   "fileLine": "data-table.tsx:1381-1382",
+   "宣稱": "V scroll 移到 left／center／right 各 region 自己。",
+   "真實code行為": "left/right 是 overflow-hidden，只由 center-body 的 scrollTop 同步；真正的 V scroll 只發生在 center。"
+  },
+  {
+   "fileLine": "data-table.tsx:1393-1397",
+   "宣稱": "rangeCellIds 會交給 layer 畫 outer ring。",
+   "真實code行為": "outer ring 已退役；layer 忽略 rangeCellIds，只保留 cell CSS background。"
+  },
+  {
+   "fileLine": "data-table.tsx:1570-1576",
+   "宣稱": "picker display 透過 showDisplayEndIcon／ItemSuffix 顯示型別 icon。",
+   "真實code行為": "cell-registry 已刻意不傳 showDisplayEndIcon；picker display 態零恆顯型別 icon。"
+  },
+  {
+   "fileLine": "data-table.tsx:1682-1684",
+   "宣稱": "per-picker ItemSuffix 仍由 showDisplayEndIcon opt-in 擁有。",
+   "真實code行為": "同一 stale claim；目前各 picker display branch不傳該 prop。"
+  },
+  {
+   "fileLine": "data-table.tsx:2555-2562",
+   "宣稱": "mirror 是同 id 多 draggable instance，且 row div 接 drag listeners。",
+   "真實code行為": "mirror 只有 droppable；source/mirror hook 已分離，rowListeners／rowAttributes 均為空。"
+  },
+  {
+   "fileLine": "data-table.tsx:2642-2645",
+   "宣稱": "centerBody 使用 scrollbar-gutter:stable 預留垂直捲軸寬度。",
+   "真實code行為": "centerBody 明確未設定 scrollbar-gutter，註解後段也承認刻意不用。"
+  },
+  {
+   "fileLine": "data-table.tsx:2666-2669",
+   "宣稱": "三個 region 各自具有垂直捲動。",
+   "真實code行為": "pinned regions 使用 overflow-hidden；垂直捲動只在 center，兩側僅同步 scrollTop。"
+  },
+  {
+   "fileLine": "data-table.tsx:2735-2740",
+   "宣稱": "range 由 InteractionLayer 統一繪製。",
+   "真實code行為": "range 由 data-range-cell CSS 繪製。"
+  },
+  {
+   "fileLine": "data-table.tsx:2860-2864",
+   "宣稱": "layer 仍會畫 RangeOuterRing。",
+   "真實code行為": "RangeOuterRing 已退役，InteractionLayer 完全忽略 range ids。"
+  },
+  {
+   "fileLine": "data-table.tsx:2893-2898",
+   "宣稱": "SortableContext 只包含 top-level rows，藉此限制同層重排。",
+   "真實code行為": "目前完全沒有 SortableContext；限制由 parentMap collision filter 實作，只有 drag handle 被限制在 top-level。"
+  }
+ ]
+}

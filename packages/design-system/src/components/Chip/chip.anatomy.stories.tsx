@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 import type { Meta, StoryObj } from '@storybook/react'
+import { useState } from 'react'
 import { Star, Tag as TagIcon } from 'lucide-react'
 import { Chip, ChipGroup } from './chip'
 import { H3, Desc, Td, Th, TokenCell, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
@@ -108,23 +109,31 @@ export const Inspector: InspectorStory = {
       description: 'overflow 行為:wrap(換行,預設)/ scroll(fade mask)/ menu(收入 Dropdown)',
     },
   },
-  render: (args) => {
-    const groupProps =
-      args.type === 'multiple'
-        ? ({ type: 'multiple' as const, defaultValue: args.selected ? ['featured'] : [] })
-        : ({ type: 'single' as const, defaultValue: args.selected ? 'featured' : '' })
-    return (
-      <div className="max-w-md border border-border rounded-md p-3">
-        <ChipGroup layout={args.layout} {...groupProps}>
-          <Chip value="featured" startIcon={args.withStartIcon ? Star : undefined}>精選</Chip>
-          <Chip value="new" startIcon={args.withStartIcon ? TagIcon : undefined}>新品</Chip>
-          <Chip value="sale">特價</Chip>
-          <Chip value="limited">限量</Chip>
-          <Chip value="discontinued" disabled={args.disabled}>下架</Chip>
-        </ChipGroup>
-      </div>
-    )
-  },
+  // 2026-07-14 dim-26 修:原 mount-only defaultValue — Controls 切 selected 不生效,且
+  // layout=menu 違反 chip.spec.md:190「menu 模式需要 controlled ChipGroup(value + onValueChange)」
+  // (chip.tsx:298 runtime warn)。改 controlled inner(repo anatomy 慣例 useState Inner)+
+  // key remount 讓 Controls 切換 type / selected 即時反映。
+  render: (args) => <InspectorControlled key={`${args.type}-${args.selected}`} {...args} />,
+}
+
+const InspectorControlled = (args: InspectorArgs) => {
+  const [multiValue, setMultiValue] = useState<string[]>(args.selected ? ['featured'] : [])
+  const [singleValue, setSingleValue] = useState<string>(args.selected ? 'featured' : '')
+  const groupProps =
+    args.type === 'multiple'
+      ? ({ type: 'multiple' as const, value: multiValue, onValueChange: setMultiValue })
+      : ({ type: 'single' as const, value: singleValue, onValueChange: setSingleValue })
+  return (
+    <div className="max-w-md border border-border rounded-md p-3">
+      <ChipGroup layout={args.layout} {...groupProps}>
+        <Chip value="featured" startIcon={args.withStartIcon ? Star : undefined}>精選</Chip>
+        <Chip value="new" startIcon={args.withStartIcon ? TagIcon : undefined}>新品</Chip>
+        <Chip value="sale">特價</Chip>
+        <Chip value="limited">限量</Chip>
+        <Chip value="discontinued" disabled={args.disabled}>下架</Chip>
+      </ChipGroup>
+    </div>
+  )
 }
 
 export const ColorMatrix: Story = {
@@ -366,6 +375,19 @@ export const StateBehavior: Story = {
   ),
 }
 
+// menu layout 必為 controlled(spec 禁止事項:uncontrolled menu 無法同步狀態);故獨立成元件用 useState
+const MENU_LAYOUT_OPTIONS = ['電子產品', '家具', '食品', '服飾', '書籍', '運動', '玩具', '美妝', '家電']
+function MenuLayoutExample() {
+  const [value, setValue] = useState<string[]>(['電子產品'])
+  return (
+    <ChipGroup type="multiple" layout="menu" value={value} onValueChange={(v) => setValue(v as string[])}>
+      {MENU_LAYOUT_OPTIONS.map((label) => (
+        <Chip key={label} value={label}>{label}</Chip>
+      ))}
+    </ChipGroup>
+  )
+}
+
 export const LayoutMatrix: Story = {
   name: '排版（換行 vs 捲動 vs 選單）',
   render: () => (
@@ -374,7 +396,8 @@ export const LayoutMatrix: Story = {
         <H3>wrap(預設)</H3>
         <Desc>超出容器自然換行。適合空間充裕的 filter panel。</Desc>
         <div className="max-w-md border border-border rounded-md p-3">
-          <ChipGroup type="multiple" defaultValue={['a']}>
+          {/* defaultValue 必對應真實 chip value(chip value=中文 label);原 'a' 無對應 → 初始 0 選取的死示範 */}
+          <ChipGroup type="multiple" defaultValue={['電子產品']}>
             {['電子產品', '家具', '食品', '服飾', '書籍', '運動', '玩具', '美妝', '家電'].map(label => (
               <Chip key={label} value={label}>{label}</Chip>
             ))}
@@ -386,7 +409,8 @@ export const LayoutMatrix: Story = {
         <H3>scroll</H3>
         <Desc>水平捲動 + fade mask(共用 `horizontal-overflow` pattern,跟 Tabs 一致)。適合空間受限但希望保留 chip 視覺的場景。</Desc>
         <div className="max-w-md border border-border rounded-md p-3">
-          <ChipGroup type="multiple" layout="scroll" defaultValue={['a']}>
+          {/* defaultValue 必對應真實 chip value(chip value=中文 label);原 'a' 無對應 → 初始 0 選取的死示範 */}
+          <ChipGroup type="multiple" layout="scroll" defaultValue={['電子產品']}>
             {['電子產品', '家具', '食品', '服飾', '書籍', '運動', '玩具', '美妝', '家電'].map(label => (
               <Chip key={label} value={label}>{label}</Chip>
             ))}
@@ -398,11 +422,7 @@ export const LayoutMatrix: Story = {
         <H3>menu(show-all navigator dropdown)</H3>
         <Desc>所有 chip 留在單行水平捲動容器,全部可見可點(不隱藏);dropdown 永遠列出全部 chip 供快速勾選(對齊 Chrome tab dropdown / VS Code editor tabs)。適合 chip 很多但使用者不常切後面的場景。</Desc>
         <div className="max-w-md border border-border rounded-md p-3">
-          <ChipGroup type="multiple" layout="menu" defaultValue={['a']}>
-            {['電子產品', '家具', '食品', '服飾', '書籍', '運動', '玩具', '美妝', '家電'].map(label => (
-              <Chip key={label} value={label}>{label}</Chip>
-            ))}
-          </ChipGroup>
+          <MenuLayoutExample />
         </div>
       </div>
     </div>

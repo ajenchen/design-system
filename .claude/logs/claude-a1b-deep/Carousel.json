@@ -1,0 +1,19 @@
+{
+  "component": "Carousel",
+  "implBasis": "embla-carousel-react v8 (shadcn API structure) — a11y grouped model verified against APG/Embla",
+  "claimsVerified": 43,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:156",
+      "宣稱": "Dots『active 加寬(非變色)』/『為什麼 active 加寬而非變色』(line 226 亦重申『active 加寬不變色』)",
+      "真實code行為": "carousel.tsx:353/355 inactive = `bg-on-emphasis/60`、active = `bg-on-emphasis`(不透明度 60%→100%)。active 除加寬外亦提升不透明度(視覺變亮),並非純粹只加寬不變外觀;『非變色』對不透明度變化是 overclaim(hue 不變但明度變)",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Carousel/carousel.anatomy.stories.tsx:393",
+      "宣稱": "SizeMatrix Dot inactive: 『小到不搶主視覺,大到仍可點擊(符合 minimum touch target 配合 hit-area)』",
+      "真實code行為": "carousel.tsx:350 hit-area = before `-inset-y-[9px] -inset-x-[3px]` → 24px 高 × 12px 寬(視覺 dot 6×6)。水平 12px < WCAG 2.5.8 的 24px 最小目標,dot 中心距亦僅 12px < 24px(不滿足 spacing 例外);『符合 minimum touch target』水平方向為 overclaim",
+      "severity": "marginal"
+    }
+  ]
+}

@@ -161,12 +161,19 @@ expect_pass_silent "N4. DS internal stories → excluded silent"
 run_hook "Read" "$CONSUMER_STORY" "$CONTENT_VIOLATION"
 expect_pass_silent "N5. tool=Read → silent"
 
-# N6. over-broad guard A:bare <Dialog>(no DS. namespace prefix)→ silent
+# N6. over-broad guard A:bare <Dialog>(no DS. namespace prefix)from consumer-local import → silent
 #     consumer 用自己的 local Dialog,不是高風險 DS primitive → 不該 fire
 CONTENT_BARE='import { Dialog } from "./local-dialog";
 export const Basic = () => <Dialog open>hi</Dialog>;'
 run_hook "Write" "$CONSUMER_STORY" "$CONTENT_BARE"
-expect_pass_silent "N6. bare <Dialog> (no DS. prefix) → silent (over-broad guard)"
+expect_pass_silent "N6. bare <Dialog> (local import) → silent (over-broad guard)"
+
+# P5. named-import 除鏽 POSITIVE(2026-07-10):bare <Dialog> 但由 DS package named-import 進來
+#     → 是真 DS Dialog(fork 慣用 named import 繞過 <DS.> 前綴)→ 無 marker 必 BLOCK
+CONTENT_NAMED='import { Dialog, Button } from "@qijenchen/design-system";
+export const Basic = () => <Dialog open><Button>ok</Button></Dialog>;'
+run_hook "Write" "$CONSUMER_STORY" "$CONTENT_NAMED"
+expect_block "P5. named-import <Dialog> from DS pkg 無 marker → BLOCK" "CONSUMER-STORY-BASELINE BLOCKER"
 
 # N7. over-broad guard B:comment / prose mentioning "Dialog DataTable Sheet" but no JSX usage → silent
 CONTENT_PROSE='// This story demonstrates a layout. We avoid Dialog and DataTable here.

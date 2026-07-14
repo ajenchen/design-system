@@ -1,0 +1,13 @@
+{
+  "component": "AspectRatio",
+  "implBasis": "Radix (@radix-ui/react-aspect-ratio, thin passthrough wrapper)",
+  "claimsVerified": 24,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.anatomy.stories.tsx:63",
+      "宣稱": "Props 速查 asChild 說明：『Radix Slot pattern——把 ratio 行為合併到 children 元素』",
+      "真實code行為": "Radix AspectRatio 內部是兩層 div：外層永遠渲染的 padding-bottom wrapper（承載 ratio）+ 內層 Primitive.div（position:absolute inset:0）。asChild 只作用在內層絕對定位容器（把它 merge 進 children），外層 ratio(padding-bottom) wrapper 永遠是純 div、不合併到 children。因此 asChild 合併的是『絕對定位容器』而非『ratio 行為』——node_modules/@radix-ui/react-aspect-ratio/dist/index.js 驗證。",
+      "severity": "marginal"
+    }
+  ]
+}

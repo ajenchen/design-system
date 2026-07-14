@@ -1,0 +1,36 @@
+{
+ "dim": 22,
+ "filesScanned": 376,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:353",
+   "問題": "AppShellAside 有 bg-surface 與左邊框，但共用 body 將 children 直接放入無 padding 的 ScrollArea；mobile Sheet 亦以 p-0 共用此 body，兩種模式都可能讓內容貼邊，且 spec 無例外。",
+   "severity": "material",
+   "建議": "由共用 body 消費 SurfaceBody，或提供 p-[var(--layout-space-loose)]；full-bleed list 另設明確 override 並在 spec 記錄例外。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.principles.stories.tsx:86",
+   "問題": "有 border/rounded 的外層 div 沒有 inner padding，直接緊貼本身已有完整邊界的 Calendar，造成雙層邊界與零 breathing。",
+   "severity": "marginal",
+   "建議": "外層只保留 h-80 尺寸約束並移除 border/rounded/overflow，讓 Calendar 單獨持有 surface。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.principles.stories.tsx:110",
+   "問題": "外層 bordered wrapper 無 inner padding，與自帶 border 的 Calendar 緊貼，重複形成零間距視覺邊界。",
+   "severity": "marginal",
+   "建議": "移除 wrapper 的視覺邊界、只保留高度；若確實要做獨立 panel，則補 layout-space padding。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.principles.stories.tsx:135",
+   "問題": "外層 border 容器沒有 inner padding，直接包住自帶邊界的 Calendar，形成相貼的雙層框線。",
+   "severity": "marginal",
+   "建議": "讓 wrapper 僅負責高度，邊界交由 Calendar；若保留 panel 邊界則補 tokenized padding。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:316",
+   "問題": "外層 border wrapper 無 padding，直接包預設 bordered=true 的 DataTable，額外 story 邊界與元件邊界貼合；這不是 DataTable 本體合法的 edge-to-edge grid 結構。",
+   "severity": "marginal",
+   "建議": "移除外層 border/rounded；若外層必須持有 table frame，則傳 bordered={false}，避免雙層相貼邊界。"
+  }
+ ]
+}

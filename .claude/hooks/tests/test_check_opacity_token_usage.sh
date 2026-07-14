@@ -56,6 +56,18 @@ expect_warn() {
   fi
 }
 
+# #71 soft WARN tier(micro_gap / fraction):exit 0(不 block)+ stderr 含 'soft flag'
+expect_soft_flag() {
+  local name="$1"
+  if [ "$EXIT" = "0" ] && echo "$STDERR_TEXT" | grep -qF "soft flag"; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (expected exit=0 + 'soft flag', got exit=$EXIT)"
+    echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+  fi
+}
+
 echo "=== check_opacity_token_usage tests ==="
 
 # 1. raw opacity-30 → warn
@@ -100,6 +112,33 @@ const a = "opacity-25"
 const b = "opacity-75"
 '
 expect_warn "7. multi opacity-N values → warn" "opacity-25"
+
+# ── #71 micro_gap / fraction soft WARN tier(2026-07-11 接線)──────────────────
+FP71="/repo/packages/design-system/src/components/Calendar/calendar.tsx"
+
+# 8. gap-0.5(micro gap)→ soft flag(exit 0,非 block)
+run_hook "$FP71" 'const a = <div className="gap-0.5" />'
+expect_soft_flag "8. gap-0.5 micro gap → soft WARN(非 block)"
+
+# 9. w-1/3(registry fraction)→ soft flag(exit 0)
+run_hook "$FP71" 'const a = <div className="w-1/3" />'
+expect_soft_flag "9. w-1/3 registry fraction → soft WARN"
+
+# 10. w-1/2(合法,不在 registry 14 條)→ silent(不誤殺)
+run_hook "$FP71" 'const a = <div className="w-1/2" />'
+expect_pass_silent "10. w-1/2(合法留白)→ silent 不誤殺"
+
+# 11. gap-2(合法)→ silent
+run_hook "$FP71" 'const a = <div className="gap-2" />'
+expect_pass_silent "11. gap-2(合法)→ silent"
+
+# 12. 硬 violation + gap-0.5 → exit 2(hard block 不被 soft tier 弱化)
+run_hook "$FP71" 'const a = <div className="text-muted-foreground gap-0.5" />'
+expect_warn "12. 硬 violation + gap-0.5 → exit 2 block" "shadcn alias"
+
+# 13. gap-0.5 + @token-registry-ok escape → silent
+run_hook "$FP71" 'const a = <div className="gap-0.5" /> // @token-registry-ok: skeleton bone'
+expect_pass_silent "13. gap-0.5 + escape → silent"
 
 echo ""
 echo "=== Summary ==="

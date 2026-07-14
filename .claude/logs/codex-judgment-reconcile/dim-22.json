@@ -1,0 +1,71 @@
+{
+  "dim": 22,
+  "title": "視覺容器 inner breathing — 有邊界容器(card/panel/overlay)是否缺 inner padding",
+  "role": "B.3 比稿裁定員 — 逐條裁定 codex dim-22 findings 對照真實 code + Claude same-dim findings",
+  "codexRaw": 5,
+  "claudeVerdict": "CLEAN (0 finding) — 全 DS delegation 模型(p-0 委派 SurfaceBody / items / consumer)判定 breathing 皆有來源",
+  "summary": {
+    "material_confirmed": 0,
+    "marginal": 5,
+    "false_positive": 0,
+    "claudeMissed": 0
+  },
+  "judgments": [
+    {
+      "n": 1,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:353",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "groundTruth": "AppShellAside root = 'bg-surface border-l border-divider'(bordered panel,L353);body = <ScrollArea className=\"flex-1 min-h-0\">{children}</ScrollArea>(L323-325)確實無 padding。BUT code comment L300 明文文件化『body(ScrollArea + layoutSpace 規則 1B 父層 padding)』= 消費 layoutSpace 規則 1 Pattern B(父層/consumer 管 padding,layoutSpace.spec.md『規則 1』表)。真實 consumer 皆自帶 padding:IssueDetail(stories.tsx:214 px-loose pt-tight pb-bottom)+ anatomy story:38 wrap padding div。Mobile Sheet path(L335 p-0 + renderFrame)= 同 delegation。",
+      "reasoning": "codex 讀 code 正確(body 無 padding + 依賴 consumer),但過度升級為 material。這是 documented Pattern 1B delegation,與 AppShell main content(padding=0 by design,anatomy story L46-47 明文)同一 intentional 模型;強制 inner padding 反而破壞 full-bleed content(flush hover-bg list / DataTable in aside)。codex 自己的建議也承認需 full-bleed override。真實 gap 僅『delegate 給 raw consumer children 而非 DS-guaranteed SurfaceBody(不像 Dialog/Sheet)』= 輕微 robustness 差異,值得 spec 補一句 delegation 例外,但非 must-fix defect。→ marginal(情境依賴 + documented pattern),非 material,非 false_positive(codex 未讀錯)。",
+      "claudeAlsoCaught": false,
+      "claudeMissedMaterial": false
+    },
+    {
+      "n": 2,
+      "fileLine": "packages/design-system/src/components/Calendar/calendar.principles.stories.tsx:86",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "groundTruth": "Calendar root(calendar.tsx:242-243)已自帶 'bg-surface rounded-md border border-divider overflow-hidden w-full h-full'。Story 外層 wrap '<div className=\"h-80 border border-divider rounded-md overflow-hidden\">' → 兩層同色 border-divider + rounded-md 相貼 = 真實 redundant double border(視覺 ~2px + 內外 rounded 差 1px 角落 double-arc)。",
+      "reasoning": "觀察屬實(真雙層邊界),但(a)僅 story 檔(文件範例,非 production component);(b)codex 的 dim-22 framing『缺 inner padding』誤診 — 正確 fix 是移除外層 border(留 h-80 高度約束),非補 padding(補 padding 會變 border+gap+Calendar-border 三層更糟)。屬 story cleanup / redundant wrapper,非 dim-22 breathing defect。→ marginal(吹毛求疵 + 錯 dim 歸類 + story-only)。",
+      "claudeAlsoCaught": false,
+      "claudeMissedMaterial": false
+    },
+    {
+      "n": 3,
+      "fileLine": "packages/design-system/src/components/Calendar/calendar.principles.stories.tsx:110",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "groundTruth": "同 finding 2 pattern — ColorSemantic story L110 外層 'h-80 border border-divider rounded-md overflow-hidden' wrap 自帶 border 的 Calendar。真實 redundant double border。",
+      "reasoning": "同 finding 2:真實但 story-only + dim-22『缺 padding』誤診(fix = 移外層 border 非補 padding)。marginal。",
+      "claudeAlsoCaught": false,
+      "claudeMissedMaterial": false
+    },
+    {
+      "n": 4,
+      "fileLine": "packages/design-system/src/components/Calendar/calendar.principles.stories.tsx:135",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "groundTruth": "同 finding 2/3 pattern — MvpScope story L135 外層 'h-80 border border-divider rounded-md overflow-hidden' wrap 自帶 border 的 Calendar。真實 redundant double border。",
+      "reasoning": "同 finding 2:真實但 story-only + 錯 dim framing。marginal。3 個 Calendar 實例共享同一 anti-pattern(self-bordered 元件包多餘 border wrapper),跨實例但仍 story-scope、codex 自標 marginal,不升 material。",
+      "claudeAlsoCaught": false,
+      "claudeMissedMaterial": false
+    },
+    {
+      "n": 5,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:316",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "groundTruth": "DataTable defaultVariants.bordered=true(data-table.tsx:64-65 → 'border border-divider' on root L2616),story:317 無傳 bordered → 預設帶 border。Story:316 外層 wrap '<div className=\"border border-border rounded-md\">' → 外 rounded + border-border(shadcn alias)相貼 內 square border-divider DataTable = 真實 redundant border + rounded-vs-square 角落 mismatch。",
+      "reasoning": "觀察屬實(雙層邊界 + 角落 mismatch),但(a)僅 anatomy story 檔;(b)dim-22『缺 inner padding』誤診 — 正確 fix 是移外層 border 或傳 bordered={false},非補 padding。附註:外層用 'border-border' = banned shadcn compat alias(ui-development.md Tailwind rule 4),屬 dim-5 範疇非 codex 本 finding 所指。→ marginal(story-only + 錯 dim framing)。",
+      "claudeAlsoCaught": false,
+      "claudeMissedMaterial": false
+    }
+  ],
+  "reconcileNotes": [
+    "禁照抄 codex 標籤:codex finding 1 自標 material,實地驗為 documented Pattern 1B delegation → 降 marginal。",
+    "禁全盤否定:0 false_positive — 5 條 codex 觀察在 code 層全屬實(AppShell body 確無 padding、Calendar/DataTable 確自帶 border 被多餘 wrapper 包)。差異在 severity 與 dim 歸類,非事實錯誤。",
+    "codex 系統性 pattern:把『self-bordered 元件包多餘 border wrapper』(4 story 實例)+『consumer-delegated padding panel』(1 component)全歸 dim-22『缺 inner breathing』。實際多為 redundant-wrapper / intentional-delegation,非 missing-padding。dim framing 偏移是 codex 低 precision 的主因。",
+    "Claude same-dim CLEAN 判定正確:AppShellAside 依 Pattern 1B delegation(與 Dialog/Sheet p-0 委派同族),non-story component 層無真 material 漏抓。Calendar/DataTable story redundant border 屬 story-quality 而非 dim-22 breathing,Claude 未列入 dim-22 findings 合理。claudeMissed=0。"
+  ]
+}

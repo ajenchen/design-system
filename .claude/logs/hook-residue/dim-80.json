@@ -1,0 +1,8 @@
+{
+  "dim": 80,
+  "hook": "check_storybook_addon_packaging.sh (r1_addon_subdir_ship)",
+  "residueCount": 0,
+  "findings": [],
+  "verified": true,
+  "note": "Addon main 檔 relative subdir import 對應目錄存在性檢查。兩個 addon main(.storybook/addons/ds-devmode/preview.ts + packages/storybook-config/addons/ds-devmode/preview.ts)皆 import './utils/'，且對應 utils/ 目錄存在。無缺漏 subdir ship residue。"
+}

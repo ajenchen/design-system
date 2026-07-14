@@ -1,0 +1,211 @@
+{
+  "batch": "batch12",
+  "scope": "OverflowIndicator, ProgressBar, Rating, ScrollArea, Separator, Skeleton, Tag, Toast",
+  "method": "Each codex finding deduped + verified against actual tsx/spec/stories + wrapped-lib source (Radix hover-card/scroll-area/menu, sonner 2.0.7). Claude deep logs cross-checked for overlap.",
+  "components": {
+    "OverflowIndicator": {
+      "material_confirmed": [
+        {
+          "fileLine": "overflow-indicator.spec.md:125 + overflow-indicator.anatomy.stories.tsx:548",
+          "宣稱": "HoverCard 內展開的可互動內容(人員 tag / ProfileCard)由各自內容元件負責 focus 管理",
+          "真實code行為": "Radix HoverCardContent 每次 render 的 effect 強制把所有 tabbable descendants setAttribute('tabindex','-1') (node_modules/@radix-ui/react-hover-card/dist/index.mjs:172-177,unconditional)。OverflowIndicator 無 focus transfer/trap → 鍵盤 Tab 無法進入浮層內的 Tag dismiss / ProfileCard actions。這推翻 spec 選 HoverCard 而非 Tooltip 的核心理由(line 40「溢出內容可能需要互動」)——對鍵盤使用者不成立",
+          "claudeAlsoCaught": false,
+          "fixHint": "spec 標註 HoverCard 內互動內容鍵盤不可達的 Radix 限制,或改用 Popover/Dialog(可 focus-trap)承載真正需鍵盤互動的溢出內容;至少不宣稱 focus 由子元件管理"
+        },
+        {
+          "fileLine": "overflow-indicator.principles.stories.tsx:70-71 (Pattern 3)",
+          "宣稱": "水平容器(Tabs / Breadcrumb)寬度不夠 → 搭配水平溢出處理 + OverflowIndicator,把中段或末端收合成 `…` 或 `+N`(呈現為現行 consumer pattern)",
+          "真實code行為": "spec:33 明文 Tabs/水平 chip 溢出走 horizontal-overflow pattern 的 OverflowMenuTriggerButton(DropdownMenu affordance)**非** OverflowIndicator,並標「規劃中/未來」;spec:116 亦載兩者「目前無直接消費關係」。且元件兩 shape 分支硬寫 `+{count}`(tsx:109/128),無任何輸出 `…` 的 prop/分支。principles story 把 spec 否定的 consumer 關係當現行 pattern 教,且教了元件做不到的 `…` 收合",
+          "claudeAlsoCaught": false,
+          "fixHint": "Pattern 3 改述為 OverflowMenuTriggerButton(對齊 spec:33),或明標 OverflowIndicator 目前不消費於 Tabs/Breadcrumb + 移除 `…` 措辭"
+        }
+      ],
+      "marginal_count": 9,
+      "false_positive_count": 0,
+      "false_positive_examples": [],
+      "marginal_notes": "spec:4-5 frontmatter variants/sizes:{} (Phase-2 未填 metadata,body 有 sm/md/lg) / spec:46 Tooltip「不可互動」設計 rationale 泛化 / spec:58-60,73 + anatomy SIZE_SPECS 把 circle-only min-w-5/6 併入共用 height 欄(tag 分支無 min-w) / spec:121-123 APG「對齊 pattern」措辭空泛(role=button 無 Enter/Space、aria-haspopup=dialog 但 popup 無 role=dialog——deliberate DS-wide hovercard canonical,spec:123 已 document deviation) / anatomy:374 Avatar Group / anatomy:384 Breadcrumb 列為 consumer 未標未來 / principles:46「點開展開」實為 hover/focus 非 click"
+    },
+    "ProgressBar": {
+      "material_confirmed": [
+        {
+          "fileLine": "progress-bar.spec.md:90 (選擇 flowchart)",
+          "宣稱": "flowchart 分支「頁面級 / 表單級 / 上傳列表 / 大區塊 → ProgressBar」——把『上傳列表』route 到 ProgressBar",
+          "真實code行為": "同 spec 的『何時不用』(line 49)/『與 FileItem 的分界』(line 137-139)/『常見誤解』(line 182「上傳列表自己拼 ProgressBar + 檔名」列為誤用)全部要求檔案上傳走 FileItem,不直接消費 ProgressBar。flowchart:90 與這三段直接矛盾",
+          "claudeAlsoCaught": false,
+          "fixHint": "flowchart:90 把『上傳列表』改成 FileItem 分支(或移除),對齊 line 49/137/182 的 FileItem boundary"
+        },
+        {
+          "fileLine": "progress-bar.spec.md:220 (相關段)",
+          "宣稱": "FileItem 內部消費 ProgressBar 的 4px 單一高度",
+          "真實code行為": "file-item.tsx:130 `height={isRich ? undefined : 2}` — FileItem compact mode 傳 height=2(2px),只有 rich 用預設 4px。tsx docblock(progress-bar.tsx:66)自身也說 escape hatch 是給 FileItem「壓低到 2px」,spec:110 亦承認 compact override。spec:220 的「4px 單一高度」既與 code 矛盾也自我矛盾",
+          "claudeAlsoCaught": false,
+          "fixHint": "spec:220 改「FileItem rich 用 4px、compact override 為 2px」"
+        },
+        {
+          "fileLine": "progress-bar.principles.stories.tsx:103-133",
+          "宣稱": "Rule 用 3 檔案手拼(Paperclip + 檔名 + raw ProgressBar)示範多檔上傳列表並標 ✅;caption「每檔一條,整體進度由使用者自然感知(2/3 完成)」",
+          "真實code行為": "(a) 示範的 hand-assembled 上傳列表(raw ProgressBar + 檔名 + Paperclip)正是 spec:49/139/182 明禁的 pattern(檔案情境一律 FileItem);principles 全篇(105-320)大量用檔案上傳 mockup 教 ProgressBar,與 FileItem boundary 系統性衝突。(b) 3 檔 value=100 success / 62 inProgress / 0 inProgress = 只有 1 檔完成,caption「2/3 完成」數錯(實 1/3)",
+          "claudeAlsoCaught": false,
+          "fixHint": "上傳列表示範改用 FileItem(或改成非檔案的批次/quota 情境);caption 改「1/3 完成」"
+        },
+        {
+          "fileLine": "progress-bar.principles.stories.tsx:325,335",
+          "宣稱": "note「FileItem compact mode 檔名那行已經提供足夠情境(百分比)」→ bar 不加 affix",
+          "真實code行為": "file-item.tsx:198 百分比 span 只在 `status === 'uploading' && isRich` 渲染;FileItem compact mode 完全不顯示百分比數字。note 對 FileItem compact 的描述與 code 相反",
+          "claudeAlsoCaught": false,
+          "fixHint": "note 改述為 rich mode,或改用非 FileItem 的『上下文已有進度文字』場景"
+        }
+      ],
+      "marginal_count": 15,
+      "false_positive_count": 0,
+      "false_positive_examples": [],
+      "marginal_notes": "props-leak 主題(多為 marginal):ProgressBarProps extends Radix Root → max/getValueLabel/asChild/style/children/ARIA 未 doc 且 {...props} 在 style/max 後 spread 可覆寫(spec 只列 4 props) / height 標『非公開』但確為 public prop(docblock 已自認) / affix 型別 ReactNode 但實作只留 element/string/number 且 !affixNode 丟棄 0 與空字串 / affix=value 顯示 Math.round(clamp) 非原始 value / aria-valuenow clamped / spec:210「依 value 狀態切換」實為 status-driven 措辭 / anatomy:24 cva 對應表 stale(**Claude 也抓到,marginal**) / anatomy:265 status-icon PropRow 不分 inProgress / anatomy:306 value=60 標題 vs success row=100 / spec:153 affix=value 例『FileItem 45%』(FileItem 實為外部 span) / principles:307 取消按鈕無 onClick / stories:39 Default aria-label 固定『進度45%』不隨 value control"
+    },
+    "Rating": {
+      "material_confirmed": [
+        {
+          "fileLine": "rating.tsx:190,238-289 (StarIcon) + rating.spec.md:175 + rating.anatomy.stories.tsx:495 + rating.principles.stories.tsx:250",
+          "宣稱": "half precision 提供每顆星左右兩個 hover/click 半區,讓使用者(滑鼠)選 10 個半星刻度",
+          "真實code行為": "左右半區(tsx:269-285)僅在 `isHalf` 才 render,而 `isHalf = precision==='half' && fillRatio>0 && fillRatio<1`(tsx:190)。從 defaultValue=0 / 任何整數值,所有星 fillRatio 為 0 或 1 → 全走 !isHalf 分支(單一整星 zone,onHover/onClick(false))。滑鼠從整數態**無法**產生半星:hover 單 zone 只設整數 hoverValue,半區永不出現。半星滑鼠選取實質壞掉,只有鍵盤(0.5 step)或 controlled 小數值可達",
+          "claudeAlsoCaught": false,
+          "fixHint": "!isHalf 分支在 precision='half' 時也需拆左右半 zone(左半→onHover/onClick(halfFirst=true)),讓滑鼠從空/整數態即可選半星"
+        },
+        {
+          "fileLine": "rating.spec.md:39 + rating.spec.md:205 vs rating.principles.stories.tsx:182-190",
+          "宣稱": "spec:39/205 稱純資訊分類標記(「熱門」「Beta」「新品/NEW」)應改用 Badge",
+          "真實code行為": "principles:182-190 明文並實際 render `<Tag color=...>熱門</Tag>`,且說「分類標籤用 Tag——Badge 是通知計數/紅點(badge.spec:不用 Badge 做分類標籤)」。DS canonical(badge.spec + 命名規範)分類標記用 Tag 非 Badge → spec:39/205 說 Badge 是內部矛盾 + 錯元件教學",
+          "claudeAlsoCaught": false,
+          "fixHint": "spec:39/205 的分類標記近親改為 Tag(對齊 principles + badge.spec)"
+        },
+        {
+          "fileLine": "rating.spec.md:107",
+          "宣稱": "`aria-invalid` 透過 FieldContext 自動傳入",
+          "真實code行為": "rating.tsx 只 import size/disabled/mode 三個 field resolver(line 5),無 invalid resolver、JSX(156-186)無 aria-invalid 輸出。Rating 不從 FieldContext 自動讀 invalid;只有 consumer 顯式傳才經 {...props} 轉發。與 Input/Select 等真的 resolve invalid 的 Field 控件不同",
+          "claudeAlsoCaught": false,
+          "fixHint": "移除 spec:107 的自動 aria-invalid 宣稱,或在 tsx 補 useResolvedFieldInvalid 使宣稱成真"
+        },
+        {
+          "fileLine": "rating.spec.md:166,208",
+          "宣稱": "Rating 共用 `--warning` 的 evaluation-color 例外『已 documented 於 color.spec.md「共用 --warning 色相但語境不同」段落』",
+          "真實code行為": "grep color.spec.md 無 rating/評分/黃星/evaluation/該例外段落,亦無 reciprocal pointer。cross-reference 指向不存在的段落(dangling SSOT pointer)",
+          "claudeAlsoCaught": false,
+          "fixHint": "在 color.spec.md 補該 evaluation-color 例外段 + reciprocal pointer,或修正 rating.spec.md:166/208 的引用位置"
+        }
+      ],
+      "marginal_count": 11,
+      "false_positive_count": 0,
+      "false_positive_examples": [],
+      "marginal_notes": "spec 28/32/36 container px(sm28/md32/lg36)僅預設 density 值(h-field-* token density-aware,pedantic) / useResolvedFieldSize 有 FieldSurfaceSizeContext 中間層非只 xs / readOnly aria-label『必填』blanket(Field 內自動 aria-labelledby 免填,tsx:164) / 超界 value 鍵盤只單向 clamp(value=8/max=5 按 Left 得 7,edge) / fillRatio 不做 0.5 rounding(4.7→70% 非半星,readOnly 平均分場景合理) / submit/pressed-toggle story 無 onClick(靜態 story 常態) / full 模式鍵盤可達 0(Home) / --warning CSS var 可被 ancestor 覆寫(非機械鎖) / Inspector 未含 loading/aria-busy / principles:73 引用不存在的 `Vs*Rule` stories(dangling)。另註:Claude 抓到 ratingMeta.states 含 'active' 無 active 樣式(codex 未列,marginal)"
+    },
+    "ScrollArea": {
+      "material_confirmed": [
+        {
+          "fileLine": "scroll-area.spec.md:108 + scroll-area.anatomy.stories.tsx:448",
+          "宣稱": "consumer 提供 `aria-label` 即可為聚焦的 Viewport 補 accessible name",
+          "真實code行為": "scroll-area.tsx:47 `{...props}` spread 到 Root,Viewport(tabIndex=0 的 focusable 元素,line 58-64)只拿 tabIndex+className,無 viewportProps/aria-label 通道。consumer 的 aria-label 落在外層 Root div,不會命名真正被 tab 聚焦的 Viewport → 依 spec 建議加 aria-label 達不到宣稱目的",
+          "claudeAlsoCaught": false,
+          "fixHint": "新增 viewportProps(或把 aria-label 轉發到 Viewport),讓 focusable scroll region 真正拿到 accessible name"
+        },
+        {
+          "fileLine": "scroll-area.spec.md:135 + scroll-area.tsx:16-17,23 (docblock) + principles.stories.tsx:258",
+          "宣稱": "DataTable 是 ScrollArea 的主要 consumer,ScrollArea 是 DataTable 橫向捲動跑版(Windows 吃 17px)的解法來源/遷移動機",
+          "真實code行為": "production DataTable 中央區用 native `overflow-x-auto overflow-y-auto` + JS scrollLeft 同步(data-table.tsx:2702/1388/2641,並註明刻意避雙 scrollbar);全 DataTable 唯一 ScrollArea 消費是次要的 column-visibility panel(垂直小浮層,data-table-column-visibility-panel.tsx:164),與橫向跑版無關。ScrollArea 的旗艦 rationale/consumer 宣稱與 DataTable 實作不符",
+          "claudeAlsoCaught": false,
+          "fixHint": "spec:135 + docblock 改列真實 consumer(column-visibility panel / Sheet / Dialog body),移除 DataTable 橫向捲動主 consumer 宣稱;順修 principles 軸向混淆(水平 scrollbar 吃高度非右側寬度)"
+        }
+      ],
+      "marginal_count": 13,
+      "false_positive_count": 0,
+      "false_positive_examples": [],
+      "marginal_notes": "docblock/spec:36「捲動時浮出(hover/scroll 自動顯示)」——Radix 預設 type='hover'(node_modules 驗 line 33)只 pointerenter/leave,hover 與 scroll 互斥,措辭 conflate(tsx 有 @benchmark-unverified-blanket) / dir 預設非純 'ltr'(先 DirectionProvider) / thumb inset:vertical border-l-transparent+p-[1px] → 前緣 2px、餘 1px(透明 border,pedantic px) / 鍵盤 spec 已註『瀏覽器原生行為』(四向措辭略 overclaim) / spec:123「唯一 state visible/hidden 非 prop 可控」漏 focus-visible/thumb-hover 且 type/scrollHideDelay 經 {...props} 可控 / anatomy 稱 hover『淡入』但只 transition-colors 無 opacity fade(600ms hide delay 存在) / principles:207『Radix 預設只處理 vertical』實為 DS wrapper 硬渲染 vertical ScrollBar(tsx:67)。軸向混淆(水平 scrollbar 吃高度)= downstream of DataTable material finding"
+    },
+    "Separator": {
+      "material_confirmed": [
+        {
+          "fileLine": "separator.spec.md:60-62 + anatomy.stories.tsx:91 + principles.stories.tsx:90",
+          "宣稱": "Card/Dialog/Sheet 容器邊線、DataTable 格線、Tabs 底線基準 使用 CSS `border border-border`(--border neutral-5)",
+          "真實code行為": "三者實際全用 `border-divider`:Sheet 四向 border-divider(sheet.tsx:76-81)、DataTable 外框/row/cell border-divider(data-table.tsx:58,64,2383,2513)、Tabs TabsList `border-b border-divider`(tabs.tsx:133,且 line 124 註明 2026-05-18 依 user 明文從 border-border 改 border-divider)。spec 對 3 個真實 consumer 教錯 token,且與 spec:71『分隔線一律用 --divider』自我矛盾;Tabs 那筆更是 user 已改過但 Separator spec 未同步(stale)",
+          "claudeAlsoCaught": false,
+          "fixHint": "spec:60-62 + anatomy:91 + principles:90 把 Sheet/DataTable/Tabs 移出 border-border 例;它們是 content divider = --divider"
+        },
+        {
+          "fileLine": "separator.principles.stories.tsx:104-118",
+          "宣稱": "Rule『預設 decorative=true — 純視覺分隔,screen reader 跳過』的示例",
+          "真實code行為": "示例 render 的是 `<DropdownMenuSeparator/>`(principles:114),Radix Menu Separator 固定 `role=\"separator\"`(node_modules/@radix-ui/react-menu/dist/index.mjs:563),SR **會**朗讀——與『decorative=true,SR 跳過(role=none)』相反;且 DropdownMenuSeparator 非 DS Separator(spec:33 明載),無 decorative prop。demo 與 a11y 教學點矛盾",
+          "claudeAlsoCaught": false,
+          "fixHint": "示例改 render 真的 DS `<Separator decorative />`(role=none)來演示 SR 跳過"
+        },
+        {
+          "fileLine": "separator.stories.tsx:70,73 (Vertical toolbar)",
+          "宣稱": "toolbar 群組分隔用 `<Separator orientation=\"vertical\" className=\"h-5\" />`(gap-2 容器 + size='sm' 控件,無 mx-1)",
+          "真實code行為": "action-bar.spec.md「分隔線幾何」SSOT(separator.spec.md:81 指向它)規定標準情境(sm 控件 / gap-2)= `h-6 mx-1`,`h-5 mx-1` 僅供 dense(xs 控件 / gap-1)。此 Vertical story 是 sm+gap-2 標準情境卻用 h-5(dense 值)且完全漏 mx-1 → 違反 SSOT 幾何兩處(高度錯 + 缺對稱 margin),DS 自家 showcase 教錯幾何",
+          "claudeAlsoCaught": false,
+          "fixHint": "Vertical story 改 `className=\"h-6 mx-1\"`(對齊 action-bar.spec.md:292-293)"
+        }
+      ],
+      "marginal_count": 12,
+      "false_positive_count": 0,
+      "false_positive_examples": [],
+      "marginal_notes": "spec:89『唯一變因 orientation』漏 decorative(改 ARIA) + 繼承 asChild/div props / spec:89/94 稱 orientation/horizontal×vertical 在 TokenMatrix 實際在 Overview(TokenMatrix 只 token+決策表) / spec:104 + anatomy:122 把 sidebar/menu group 舉為 semantic(decorative=false)但實為 CSS [&+&]/::before 無 role(與 spec:41-42 內部不一致) / spec:105『永遠 non-interactive』passthrough 理論可加 tabIndex(spec 陳述『無互動』本身正確,符合 task 指引) / anatomy 稱『只有 2 props』/『只 Overview+TokenMatrix 2 story』實有 3(含 Accessibility) / principles:69 引用不存在 `Vs*Rule`(dangling)"
+    },
+    "Skeleton": {
+      "material_confirmed": [],
+      "marginal_count": 5,
+      "false_positive_count": 0,
+      "false_positive_examples": [],
+      "marginal_notes": "spec:73 + anatomy:4/14/44『形狀(含 rounded)完全由 consumer className 決定』——skeleton.tsx:10 有內建 rounded-md 預設(w/h 才是完全 consumer 決定;rounded 有 sensible 預設可覆寫,pedantic ×4 同主題)。spec:89 WCAG 2.2.2 Pause/Stop/Hide『honor prefers-reduced-motion 即滿足』——codex 主張一般模式仍 2s infinite pulse 無 pause 控制;但 spec 自訂 Skeleton <3s 用途 → 未達 2.2.2『>5s』觸發門檻,且 opacity pulse 是否構成 2.2.2 'moving' 本可辯,prefers-reduced-motion 為業界慣見 posture → arguable WCAG lawyering,非清楚 defect。整體:此 leaf 元件 codex 只出低價值 pedantry,0 material(與 Claude 0 一致)"
+    },
+    "Tag": {
+      "material_confirmed": [
+        {
+          "fileLine": "tag.tsx:256 (states) + tag.tsx:264 (ring) + tag.spec.md:265 + tag.anatomy.stories.tsx:4-6,661",
+          "宣稱": "Tag 為純展示 indicator,無 hover/focus/active/selected/disabled 互動狀態;states:['default'];ring:[];靜態 Tag(無 onRemove)無 keyboard/ARIA role/focus state",
+          "真實code行為": "截斷時 Tag root 取得 `tabIndex=0`(tsx:180)+ `focus-visible:ring-2 ring-ring`(tsx:185)+ 被 Radix Tooltip 包成 hover/focus trigger(tsx:211-216,開啟時 Radix 加 aria-describedby)。此互動是 2026-07-06 為 truncation a11y 刻意加的,但 meta.states/ring 與 spec/anatomy 的『純展示無 focus』宣稱未同步 → states/ring metadata 事實錯誤(truncated + focus-visible + tooltip open/closed 狀態存在,root 消費 ring-ring)",
+          "claudeAlsoCaught": false,
+          "fixHint": "meta.states 補 truncated/focus-visible,ring 補 ['ring-ring'];spec/anatomy『無 focus』改述為『截斷時條件性 focus + tooltip』(spec:275 keyboard 段已 document,惟 StateBehavior/meta 未對齊)"
+        },
+        {
+          "fileLine": "tag.spec.md:167 vs tag.spec.md:277",
+          "宣稱": "spec:167 solid Tag 合規門檻 = WCAG large/bold 3:1『solid Tag 視為大粗字』;spec:277 A11y 驗證 = WCAG AA ≥ 4.5:1(text)",
+          "真實code行為": "Tag 字體為 12px/font-medium(500) 或 14px/font-normal(400)(cva tsx:41-43),皆非 WCAG large text(≥18px 或 ≥14px bold);把 solid Tag『視為大粗字』套 3:1 門檻是錯誤 WCAG 分類。且 spec:167(3:1)與 spec:277(4.5:1)兩門檻互相矛盾;green solid 白字實測 2.47:1(spec:167 自載)連 3:1 都不過。屬 user 拍板 documented tradeoff 但用了不成立的 large/bold 正當化",
+          "claudeAlsoCaught": false,
+          "fixHint": "spec:167 改述為『categorical 裝飾 Tag 接受 <4.5:1 的 documented exception』而非宣稱符合 large/bold 3:1;統一 spec:277 門檻表述"
+        }
+      ],
+      "marginal_count": 13,
+      "false_positive_count": 0,
+      "false_positive_examples": [],
+      "marginal_notes": "tag.tsx:19 docblock『max-w-40』stale(實為 inline style min(var,10rem),值同 160px) / spec:53 lg『when: touch/prominent CTA』generic 模板(lg=md 24px alias,Tag 非 CTA) / spec:71『styled span,無 external primitive base』實為 div + 消費 ItemInlineActionButton + Radix Tooltip / spec:223/anatomy:252/principles:149,162 dark-mode 色描述(『其餘白字』漏 neutral solid dark→深字;『淺底深字』『深底白字』僅描述 light mode) / spec:229 Tag 間 gap-1 vs 多數 showcase 用 gap-2 / spec:273 prefix icon『讓 SR 理解 context』但 icon aria-hidden(tsx:202) / spec:274/anatomy:661 aria-label『移除{label}』僅 string children 或 dismissLabel 時(非字串無 label→僅『移除』,prop doc 已註) / anatomy:441 step-7 dark 反轉 / anatomy:531 solid dismiss hover 用 CAT_INTERACT semantic(非 primitive)token"
+    },
+    "Toast": {
+      "material_confirmed": [
+        {
+          "fileLine": "toast.spec.md:159",
+          "宣稱": "含 action 的 toast『該 button 在 async 動作中 consumer 可 disable,視覺繼承 Button SSOT(text-fg-disabled + cursor-not-allowed)』",
+          "真實code行為": "ToastOptions.action 型別 = `{ label: string; onClick: () => void }`(toast.tsx:27),無 disabled 欄位、無 Button-props passthrough;ToastInner 的 action Button(toast.tsx:45)也未接/傳 disabled。公開 API 根本無法 disable action button → spec 描述了不存在的能力 + 不會觸發的 disabled 樣式",
+          "claudeAlsoCaught": false,
+          "fixHint": "移除 spec:159 的可 disable 宣稱,或擴 ToastOptions.action 支援 disabled 並在 ToastInner 轉發"
+        },
+        {
+          "fileLine": "toast.spec.md:160",
+          "宣稱": "Loading:Sonner 提供 `toast.promise(promise, { loading, success, error })`,loading 階段渲 spinner + `loadingText`,本元件不需 wrap",
+          "真實code行為": "(a) DS 匯出的是自訂 `toast()` 函式(toast.tsx:85),非 sonner 的 toast,**無 `.promise` 方法** → consumer 對 DS import 呼叫 `toast.promise` 會失敗;(b) sonner 的 promise data 用 `loading` 欄位,不存在 `loadingText`(node_modules/sonner/dist/index.mjs:240-249)。spec 教了 wrong-API(欄位名錯 + DS export 無此方法)",
+          "claudeAlsoCaught": false,
+          "fixHint": "若要支援,DS toast 需 re-export/wrap sonner `.promise`;否則 spec:160 標明 DS 目前不暴露 toast.promise,並修 loadingText→loading"
+        }
+      ],
+      "marginal_count": 20,
+      "false_positive_count": 0,
+      "false_positive_examples": [],
+      "marginal_notes": "多為 sonner-internal 行為/動畫細節與 docblock 精度:計時器亦於 document hidden 暫停(sonner visibilitychange line 115,docblock『僅 hover/pointer/⌥T』漏列) / docblock『SonnerToaster 不轉發 ref』+ DS wrapper _ref 未用(ref 靜默丟棄) / position:fixed 實套在內層 <ol data-sonner-toaster>(sonner CSS)非 <section> / spec:47『sonner action 模式』實為 sonnerToast.custom + 自訂 Button / spec:84,anatomy:320 action aria-label 建議(API 無自訂元素通道,可見 label 已提供 name) / spec:131,138,163 固定 360px:sonner @media(max-width:600px)改 calc(100% - offsets*2) responsive / hotkey ⌥T setExpanded(true)/onBlur 不 setExpanded(false) / anatomy:5『無尺寸決策』實有 w-[360px]/rounded-lg/Button xs / anatomy:82 controls 需點『觸發』鈕 / anatomy:218 生命週期數值來源歸因 / anatomy:225 duration ??vs sonner || (0 fallback) + 自動離場為垂直非向右 / anatomy:237,253 hover 展開上限 visibleToasts=3、bottom 新 toast 在底 front 舊往上排"
+    }
+  },
+  "summary": {
+    "total_material_confirmed": 19,
+    "total_marginal": 98,
+    "total_false_positive": 0,
+    "claude_missed_all_material": true,
+    "claude_overlap": "唯一 codex↔Claude 重疊 = ProgressBar anatomy:24 cva-對應表 stale comment(雙方皆 marginal)。所有 19 個 material 全被 Claude 漏(Claude 8 元件僅出 2 marginal false-claims)。",
+    "signal_quality": "codex 高召回、雜訊多(~5:1 marginal:material)但零 false_positive——技術觀察全部正確,只是 materiality 分布廣。真金藏在 spec↔code↔story 三方矛盾 + wrapped-lib 真行為(Radix hover-card tabindex=-1 / Radix menu role=separator / sonner responsive + 無 .promise export)+ SSOT 幾何/token 漂移,全是 Claude 純讀 spec 掃不到的層。"
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "dim": 9,
+  "title": "shadcn passthrough 完整度",
+  "judge": "Claude B.3 比稿裁定員",
+  "codexRaw": 25,
+  "claudeResult": "CLEAN — 0 findings",
+  "summary": {
+    "material_confirmed": 4,
+    "marginal": 21,
+    "false_positive": 0,
+    "claudeMissed": 4
+  },
+  "verdictFramework": "asChild 大多為 Radix ComponentPropsWithoutRef 透傳繼承 = shadcn 世界級 canonical 一致(M23)→ latent 陷阱但無現實 consumer 用途 → marginal;僅 spec 明文矛盾(Chip)或 asymmetric passthrough(同 API 隨 breakpoint/pointer 改變行為)或 declared-prop 靜默丟棄(id)→ material。codex 讀 code 準確,幾乎全部只是 severity 高估(pedantic marginal),非誤讀,故 false_positive=0。",
+  "verdicts": [
+    {
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.tsx:43",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "AccordionTrigger 經 ComponentPropsWithoutRef<Trigger> 繼承 asChild,渲染 {children}+ChevronDown 2 child → 若 consumer 傳 asChild 確會 React.Children.only throw。但這正是 shadcn AccordionTrigger 原樣結構(世界級 canonical, M23),無 spec 宣稱支援,無現實 consumer 用途。latent 陷阱,pedantic。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.tsx:75",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "AccordionContent 渲染 <Content>{...props}<div>{children}</div></Content>,單一 child(div)→ asChild merge 到 div,consumer 元素成孫節點但不 throw。技術上 ref/host 契約錯置屬實,但單 child 無 crash + 無現實用途。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:333",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "reason": "驗證屬實:AppShellAside 是 forwardRef 元件,desktop 分支 <aside ref={ref} className={cn(...,className)}>(L349/L354)接 ref+className;mobile SheetContent 分支(L333-339)兩者皆未轉交 — ref 在 mobile 失效、consumer className(如寬度覆寫)靜默丟棄。同一 API 隨 breakpoint 改變行為 = 真 passthrough asymmetry defect。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:241;275",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "ArrowProps={className,'aria-label'}(L226-230)確實只收 2 prop,不 spread 任意 button DOM props(偏離 shadcn CarouselPrevious 的 ...props spread)。但箭頭是 curated affordance(variant/size/onClick=scrollPrev 鎖定),aria-label 已暴露(主要 a11y 需求),data-*/onFocus 遺失影響低。curated design choice,marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Chart/chart.tsx:52",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "reason": "驗證屬實:ChartContainerProps extends ComponentProps<'div'>(promise native id),impl 取 id 生成 chartId=`chart-${id}`,root div 只掛 data-chart={chartId}(L62),NOT id={id} → consumer <ChartContainer id='q3'> 後 getElementById('q3')=null。常用 prop 靜默丟棄 = 真 passthrough defect(雖與 shadcn 同 quirk,對 world-class DS 品質仍應修)。低嚴重度但確認 material。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Chart/chart.tsx:159;296",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "ChartTooltipContentProps / ChartLegendContentProps 皆 extends ComponentProps<'div'>(L137/L289)但 destructure 無 ...rest 亦不 spread → id/data-*/aria-*/events 丟(className 有 forward)。屬實 type-vs-impl gap,但兩者是 Recharts adapter(由 Recharts 以 content={...} 內部渲染注入 active/payload),consumer 幾乎不直接傳 DOM props → 影響低。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:257",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "屬實:display/readonly 分支 destructure 出 asChild:_asChild(L206)剝除;edit 分支 rootEl 用 {...props}(L266)含 asChild+children,但顯式 <Indicator> 覆蓋 consumer child + Radix Root 單 child=Indicator → 無 crash,asChild 無意義。mode-dependent 屬實但 Field 控件無人 slot,pedantic。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Chip/chip.tsx:99",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "reason": "驗證屬實 + 真缺陷:chip.spec.md L79 及 L198 明文『不支援 asChild』,但 ChipProps extends ComponentPropsWithoutRef<ToggleGroupPrimitive.Item>(L82-83)繼承 asChild + {...props} 透傳(L102);Chip 渲染 startIcon+span(label)+span(suffix) 多 child → consumer 若信 TS 型別傳 asChild 直接 Slot 多 child crash。spec-vs-code 明文矛盾 = material。Claude 宣稱『spec 提及 asChild 皆與 code 一致』= 誤,漏此矛盾。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:225",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "DialogBody 繼承 ScrollArea 的 asChild,下游固定 ScrollArea(Viewport+ScrollBar+Corner)多 sibling → 若傳 asChild 會 throw。屬實 latent 陷阱,但 DialogBody 是 curated chrome(className 明文 forward 到 inner div,L218-220),無 spec 宣稱 asChild 支援,無現實用途。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:135;186",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "屬實:Content/SubContent 繼承 asChild,單一 child = <RowSizeProvider>(L163/L193),asChild 會 merge 到 Context.Provider(非 DOM)→ 定位/ref 落空。比 shadcn(直渲 children)更 broken,但為 portalized overlay content,無 consumer 傳 asChild 之現實。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:251;320;362;396;444",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "Item/SubTrigger/CheckboxItem/Label/RadioItem 繼承 asChild,固定以內建 MenuItem 為單一直接 child → asChild merge 到 MenuItem,consumer 元素被忽略但不 throw。技術上 host 錯置屬實,menu item 有固定 anatomy(startIcon/avatar/description/tag/badge),無現實 slot 用途。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:950",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "屬實:FileViewerProps extends Omit<ComponentPropsWithoutRef<DialogPrimitive.Content>,'onOpenChange'>(L735-739)僅 Omit onOpenChange → 繼承 asChild+children,但 FileViewer 是 files-driven fullscreen composite 固定 render tree。asChild/children 無意義但 API 明顯以 files 為主,無現實誤用。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.tsx:127",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "InlineEditProps 為純 curated interface,NOT extends HTMLAttributes<HTMLDivElement>(驗證定義只有 curated 欄位)→ 並未『繼承/宣稱』native props,故非 declared-but-dropped。codex 讀 code 正確(確不接受 native props)但把『刻意 curated composite API』(Claude 已明文記為合理設計 + MUI/Polaris curated composite 慣例)視為 material defect = severity 高估。設計取向分歧,marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.tsx:108",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "ProgressBarProps extends Omit<ComponentProps<Root>,'value'>(L55)仍含 asChild;Root 單一 child = Indicator(L119)→ asChild merge 到 Indicator,無 crash。self-contained 進度條無 slot 現實。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:97",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "屬實:RadioGroup display/readonly 分支 destructure asChild:_asChild(L97)剝除,僅 edit 分支保留;mode-dependent asChild。但 RadioGroup 是 Field 控件,無人以 asChild 換根,pedantic latent。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:275",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "RadioGroupItem 繼承 asChild,固定以 Indicator 為單一 child(L297)→ merge 到 Indicator,無 crash。host 錯置屬實但無現實用途。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:44",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "屬實:ScrollArea props 繼承 asChild,Root 固定含 Viewport+ScrollBar+Corner 三 child(L58-68)→ 若傳 asChild 會 React.Children.only throw。但 spec 明載 self-contained primitive(無 slot 結構),此為 shadcn ScrollArea 同款結構,無現實 slot 用途。latent 陷阱,marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:77",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "ScrollBar 繼承 asChild,固定單一 child = Thumb(L93)→ merge 到 Thumb,單 child 不 throw(codex 未宣稱 crash,僅 host 錯置);ScrollBar 不接 consumer children,asChild 無意義但無害。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:262",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "SegmentedControlItem 繼承 asChild 且輸出 icon+label+badge 多 child expression → 若傳 asChild 會 throw。屬實 latent,但固定多槽 anatomy 無現實 slot 用途,對齊 Tabs/Chip 同族。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Select/select.tsx:530",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "reason": "驗證屬實 + 真缺陷:SelectProps extends Omit<SelectHTMLAttributes,...>(L56-57)promise data-*/onFocus/onBlur/name;NativeSelect(mobile)destructure ...props(L433)並 {...props} spread 到 <select>(L475)→ 轉發;CustomSelect(desktop, L530)完整列舉 props 無 ...rest → 全丟。同一 <Select> API 隨 pointer type 靜默改變行為(consumer data-testid/onBlur mobile 生效 desktop 消失)= 真 passthrough asymmetry。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:165",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "SheetBody 同 DialogBody 繼承 ScrollArea asChild,固定 ScrollArea+內層 padding div 多 child → 若傳 asChild 會 throw。curated chrome,無 spec 宣稱支援,無現實用途。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Slider/slider.tsx:81",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "屬實:SliderProps extends Omit<ComponentPropsWithoutRef<Root>,'children'|'orientation'>(L55)刻意 Omit children 卻遺留 asChild;Root 固定 Track+Range+多 Thumb → 若傳 asChild 必 throw。作者已 curated 型別(Omit children)卻漏 asChild = 稍強訊號,但 self-contained slider 無現實 slot。marginal(可順手 Omit asChild)。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Switch/switch.tsx:244",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "Switch 繼承 asChild(display/readonly 分支 L198 剝除 _asChild),edit 分支 {...props}(L253)含 asChild,Root 單一 child = Thumb(L266)→ merge 到 Thumb,無 crash。Field 控件無現實 slot。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:479",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "屬實:TabsTriggerProps extends ComponentPropsWithoutRef<TabsPrimitive.Trigger>(L431-432)繼承 asChild,渲染 icon+label+suffix 多 child → 若傳 asChild 會 React.Children.only throw。對齊 shadcn TabsTrigger 同款(icon+text),無 spec 宣稱支援,無現實用途。latent 陷阱,marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Tooltip/tooltip.tsx:30",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "reason": "TooltipContent 繼承 asChild,渲染 <Content>{...props}<div data-theme='dark'>{children}</div></Content>(L48)單一 wrapper div child → asChild merge 到 wrapper div,consumer 成孫節點但不 throw。host 契約錯置屬實,無現實用途。marginal。"
+    }
+  ]
+}

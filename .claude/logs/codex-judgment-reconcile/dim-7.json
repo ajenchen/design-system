@@ -1,0 +1,140 @@
+{
+  "dim": 7,
+  "title": "Spec Rule B 邊界案例 — 7-dim 邊界覆蓋(空值/驗證/loading/a11y/近親分界/常見誤解/links)",
+  "role": "B.3 比稿裁定員 — 逐條裁定 codex dim-7 findings 對照真實 code + Claude same-dim findings",
+  "codexRaw": 15,
+  "summary": {
+    "material_confirmed": 4,
+    "marginal": 10,
+    "false_positive": 1,
+    "claudeMissed": 4
+  },
+  "claudeFindings": [
+    "field-controls.spec.md:12 — 缺 consolidated ## A11y 預設 段(marginal)",
+    "item-anatomy.spec.md:3 — Row SSOT 缺 a11y pointer(marginal)",
+    "inline-action.spec.md:100 — a11y 內容有但無 dedicated ## A11y 預設 標題(marginal)"
+  ],
+  "claudeVerdict": "largely-clean / 無 material — 全掃 86 spec 只出 3 個 a11y-section-heading marginal",
+  "judgments": [
+    {
+      "fileLine": "packages/design-system/src/components/Badge/badge.spec.md:184,317",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruth": "badge.tsx:82 `if (!dot && count == null) return null` → count=undefined/null 整顆不渲染,count=0 渲染 '0'(2026-07-05 D4 deliberate)。badge.tsx:94 `role={role ?? 'status'}` 預設 role=status live-region + consumer override。grep badge.spec.md 全檔:無 '邊界案例' 段、無 'null/undefined/count==0' 文字、無障礙段(L317-368)只寫 aria-label pattern,完全不提預設 role=status 與 override。",
+      "reasoning": "兩項皆 source-verified 屬實且 spec 沉默。dim 7 判準要求邊界(空值)明文 + 已實作 a11y 行為入 a11y 段。Badge 有真實 count-null/0 分支 + 預設 role=status 皆未文件化 = 真違反該 dim 判準。material。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:147,178-185",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruth": "bulk-action-bar.tsx:24-27,95: 2026-07-06 user 拍板 role 'toolbar'→'group',toolbarAriaLabel @deprecated + 新 ariaLabel prop。spec:180 仍寫 `role=\"toolbar\"`;spec API(L158-163)只列 toolbarAriaLabel,漏新 ariaLabel。",
+      "reasoning": "真 spec-vs-code drift:code 已 role=group(誠實移除空 toolbar roving 承諾)+ 新 ariaLabel API,spec 未同步仍宣告 role=toolbar 且漏 ariaLabel。屬跨 code/spec 漂移 + 錯值,solid material。async loading ownership 那半是 marginal 但 role drift 本身足以 material。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:216-226,269-276",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruth": "tag.tsx:72 `dismissLabel?: string` prop 存在;tag.tsx:112 `aria-label={label ? `移除 ${label}` : '移除'}` + L155 `label = typeof children==='string' ? children : ''` → 非字串 children 且無 dismissLabel → aria-label 只得籠統『移除』。grep tag.spec.md:props 表(L222)只列 onRemove,無 dismissLabel(全檔無 dismissLabel 字);L274 寫 removable aria-label='移除 {tagLabel}' 但未涵蓋非字串 children 邊界。",
+      "reasoning": "spec 漏列已存在的 dismissLabel prop(spec-vs-code 不完整)+ 非文字 children removable a11y 邊界未覆蓋。屬存在 prop 未文件化 + 真違反 dim 7 a11y 邊界判準。material。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:111,214-218",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruth": "breadcrumb.spec.md:111 startIcon 一律 `aria-hidden`,且明文背書首項 Home icon 業界慣例(Material/Atlassian)。spec:216 明寫『空 label 渲染空節點(元件皆不 guard)』→ 元件不 guard。故 `<BreadcrumbLink startIcon={Home} href='/' />` 無 children = icon-only <a>,唯一 icon 又 aria-hidden = 無 accessible name。邊界案例段(L214-221)列 empty/中段無 href/loading/RTL 但漏此 icon-only a11y 邊界。",
+      "reasoning": "背書 Home-icon pattern(realistic)+ 元件不 guard + icon aria-hidden → 真可產生無 accessible name 的可點連結(WCAG 2.4.4/4.1.2)。spec 邊界段列他項卻漏此項 = 真 a11y 邊界缺口。material。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:115",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "accordion.tsx:51,54 用 DS-wide 共享 `disabled:text-fg-disabled`(非 codex 所稱『AccordionItem 自身 disabled token』);Radix 自動處理 disabled keyboard 略過,A11y 段(L95-102)已寫『Radix Accordion 自動處理鍵盤』。spec:115 disabled 指向 ../Field/field-controls.spec.md。",
+      "reasoning": "codex 前提『有自身 disabled token』factually 略錯——用的是 DS 共享 token,且 field-controls 依 M24 own disabled-token 語意,故指過去非全然『錯誤委派』。keyboard 略過已由 A11y 段(Radix auto)覆蓋。pointer 跨到非 Field 家族 SSOT 是輕微 spec hygiene 瑕疵,非該修缺陷。marginal(codex material 過度)。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Chip/chip.spec.md:79,137-189",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "chip.tsx:104-105 `{StartIcon && <StartIcon aria-hidden/>}` + `{children != null && <span>{children}</span>}` → children optional,可 icon-only。但 spec:79 & 198 明文列 iconOnly 為『不支援 / ❌』。single deselect 為 ChipGroup 行為 nuance。",
+      "reasoning": "spec 已明文禁 iconOnly(概念層有覆蓋),只是 type 未機械 enforce children 非空——a11y 風險被明文 ban 緩解。single-deselect 屬 behavior 而非 dim-7 邊界。技術上對但情境窄 + spec 非沉默。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:233-241",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "spec:238『未傳 value/defaultValue → 違反 radio 語意,consumer 必提供 default value』+ L254 ❌『必須有 default value』。故元件恆有值 → invalid-empty 不可能 → component-level validation 本質 N/A。spec 覆蓋 value 邊界但未明文『validation N/A』。",
+      "reasoning": "value 邊界 substantively 已覆蓋(恆有值);codex 稱『validation 未定』半屬 false alarm(validation 本質 N/A)。唯一真缺 = 未用『本元件 validation N/A』明文閉環(dim 7 要求不適用需明寫)。此為小 completeness nit,非 material。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:191-198",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": true,
+      "groundTruth": "inline-action.spec.md 實作要求已明文『必須有 aria-label + Tooltip』(L100-116,Claude 亦於本 spec:100 提 a11y 段標題 nit)。邊界案例(L191-194)未列空字串 label / async pending。",
+      "reasoning": "空字串 label → 空 aria-label 屬 degenerate consumer error(spec 已要求 aria-label 存在,隱含非空);async pending 對 icon-button inline action 屬過度要求。Claude 已從 a11y-heading 角度碰同 spec。技術上對但 pedantic。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Tooltip/tooltip.spec.md:88-92",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "tooltip.tsx:26,48 children 透傳(optional),理論可空。spec:88-92 邊界段未明文禁空 content / 未寫 async 改用 HoverCard/Popover。",
+      "reasoning": "空 TooltipContent 屬 degenerate consumer error(所有 children-passthrough 元件皆可空);loading 對 sync hover primitive 明顯 N/A。技術上對但 pedantic,非真缺陷。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:252-260",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "邊界段涵蓋 0/1 項,未界定遠端 slide/媒體 loading ownership。",
+      "reasoning": "spec-completeness nit(loading 責任下放 consumer 屬合理默認)。codex 自標 marginal,同意。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/LinkInput/link-input.spec.md:109; Slider/slider.spec.md:173; Textarea/textarea.spec.md:109",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "三 Field-related spec 未各補一行 loading N/A 明文;Field 家族 loading 由 Field/Form 外層承擔(field-controls 慣例)。",
+      "reasoning": "Field 家族 loading 外部化為既定默認,補一行明文屬 nicety。codex 自標 marginal,同意。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Popover/popover.spec.md:153-160",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "邊界段未把 anatomy story 已明文的 empty/loading/validation ownership(consumer 負責)同步進 spec rationale。",
+      "reasoning": "story 已有契約,只是未回填 spec;下放 consumer 合理。codex 自標 marginal,同意。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:259-267",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "ChromeHeader children 非必填,空 header 仍渲染固定高度 + border;spec/story 未定義此 empty 邊界。",
+      "reasoning": "空 chrome header 屬 consumer 不會刻意造的 degenerate 情境;pattern SSOT 補 empty 明文屬 completeness。codex 自標 marginal,同意。marginal。"
+    },
+    {
+      "fileLine": "packages/design-system/src/tokens/typography/typography.spec.md:28-41",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "groundTruth": "typography 是 token/foundation spec;Claude verdict 明列 token spec(density/elevation/radius/typography)為不同 genre、7-dim 不適用合法豁免。spec-rules.md a11y 段要求只涵蓋『互動元件』與『純視覺 indicator』,未要求 token spec 帶 WCAG a11y 段。",
+      "reasoning": "zoom/reflow/text-spacing/visual-vs-semantic-heading 是真 a11y 議題但依現行 DS canonical,token spec 豁免 7-dim,且該 a11y 通常於 component/usage 層 own。屬 foundation doc 的 enhancement 而非『該修缺陷』。marginal(codex material 拉高)。"
+    },
+    {
+      "fileLine": "packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:20-23; tokens/density/density.spec.md:5-13; tokens/radius/radius.spec.md:7-12",
+      "codexSeverity": "marginal",
+      "verdict": "false_positive",
+      "claudeAlsoCaught": false,
+      "groundTruth": "related-links 維度:三 spec 皆有『相關』段列 consumer(ResizeHandle→DataTable/Sidebar 等;Radius→consumer;Density→uiSize/layoutSpace)。是否『列名稱而非可追 pointer』屬格式偏好;Dim 3 reciprocal pointer 由 add-reciprocal-pointers.mjs 自動維護,links 維度本就存在。",
+      "reasoning": "codex 要求把 related-links 從『列 consumer 名』升級成『精確可追 spec pointer』屬格式吹毛,links 維度實質已存在(非沉默省略),且 reciprocal pointer 有機械維護。無真缺口——判 false_positive(codex 拿既存且合規的 links 段當缺陷)。"
+    }
+  ]
+}

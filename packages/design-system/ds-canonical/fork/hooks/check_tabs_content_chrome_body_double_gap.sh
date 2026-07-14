@@ -52,6 +52,34 @@ if ! echo "$FILE" | grep -qE '(packages/design-system/src/|/apps/|(^|/)apps/)'; 
 CONTENT=$(cat "$FILE" 2>/dev/null)
 [ -z "$CONTENT" ] && exit 0
 
+# ── Check 3(2026-07-08 WM 戰役 R4:root 偵測,不只 symptom)──
+# WM 實證:app 把 TabsList 塞 DialogBody + `!pt-0` hack 對抗 primitive,TabsContent 加了 mt-0
+# 就繞過 Check 2 —— 但 root 錯誤是「沒用 DialogHeader tabsSlot canonical」(雙線 + 底線內縮 +
+# spacing owner 自組)。偵測兩個 root 簽名(任一 → BLOCK 指路 tabsSlot):
+#   (a) DialogBody/SheetBody/SurfaceBody className 含 `!pt-0`(important 對抗 primitive 的 pt owner)
+#   (b) <TabsList 出現在含 DialogBody 的同段 new content 且無 tabsSlot 字樣
+ROOT_SIG_A=$(printf '%s\n' "$CONTENT" | grep -nE '(DialogBody|SheetBody|SurfaceBody)[^>]*className=[^>]*!pt-0' | grep -v '@tabs-content-gap-ok:' || true)
+ROOT_SIG_B=""
+if printf '%s\n' "$CONTENT" | grep -q '<TabsList' && printf '%s\n' "$CONTENT" | grep -qE '<(DialogBody|SheetBody|SurfaceBody)\b' && ! printf '%s\n' "$CONTENT" | grep -q 'tabsSlot' && ! printf '%s\n' "$CONTENT" | grep -q '@tabs-content-gap-ok:'; then
+  ROOT_SIG_B=$(printf '%s\n' "$CONTENT" | grep -n '<TabsList' | head -3)
+fi
+if [ -n "$ROOT_SIG_A" ] || [ -n "$ROOT_SIG_B" ]; then
+  cat >&2 << 'EOF_C3'
+🚨 TABS-IN-BODY ROOT BLOCKER(P0,2026-07-08 WM 戰役 — 攔 root 非 symptom)
+
+  偵測到「TabsList 手塞 chrome body / body 用 !pt-0 hack」簽名 —— 這是「沒用 header tabsSlot
+  canonical」的 root 錯誤(後果:header 與 TabsList 雙底線、tabs 底線被 body padding 內縮不滿寬、
+  spacing owner 鏈自組)。WM ProjectSettings/TypeSettings 錨例。
+
+  ── 正解 ──
+  <Tabs> wrap → <DialogHeader tabsSlot={<TabsList/>}> → <DialogBody><TabsContent className="mt-0">
+  照 dialog.stories.tsx#WithTabsInHeader 逐字結構(header-canonical.spec.md Rule W2)。
+  Escape:`// @tabs-content-gap-ok: <rationale>`(例:tabs 本來就不屬 header 的內容分頁場景)
+EOF_C3
+  exit 2
+fi
+
+
 # ══ Check 2:overlay body 自身用固定 macro gap-N → 該用 layout-space token(2026-07-01 Sheet gap-4 錨例)══
 # Root(layoutSpace.spec.md 規則 2/3):浮層 body 直接堆疊內容的垂直 gap 屬 macro layout-space,該用
 #   density-scaling token(並列 = loose / functional 交互 = tight),非固定 gap-N(lg 不縮放 → 跟 DS
@@ -156,6 +184,7 @@ while IFS= read -r ln; do
   fi
   UNJUSTIFIED="${UNJUSTIFIED}${ln}: $(echo "$cur" | sed 's/^[[:space:]]*//')\n"
 done <<< "$CANDIDATES"
+
 
 if [ -z "$UNJUSTIFIED" ]; then exit 0; fi
 

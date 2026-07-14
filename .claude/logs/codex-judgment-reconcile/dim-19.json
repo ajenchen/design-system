@@ -1,0 +1,53 @@
+{
+  "dim": 19,
+  "title": "Home-name-vs-scope 一致性",
+  "role": "B.3 比稿裁定員 — 逐條裁定 codex dim-19 findings 對照真實 code + Claude same-dim findings",
+  "codexRaw": 4,
+  "summary": {
+    "material_confirmed": 1,
+    "marginal": 3,
+    "false_positive": 0,
+    "claudeMissed": 1
+  },
+  "verdicts": [
+    {
+      "codexIndex": 1,
+      "fileLine": ".claude/skills/bug-fix-rhythm/SKILL.md:3,20",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "groundTruth": "SKILL.md:3 description = 'Batch-end-verify rhythm + parallel tool batch + user-listed N-rule MUST-ALL...'; :20 trigger 'user 列 numbered N 條規則(規則1..N / Q1..QN / image 標 1234)→ MUST-ALL checklist'. codex 讀對:trigger 確含一般 numbered rules,不只 bug fix。",
+      "reasoning": "codex 事實無誤但屬吹毛求疵。(a) skill 本體(title:6 '多 fix session 的 rhythm'、:19 '≥2 fixes'、:24-27 明列不 invoke = surgical fix/refactor/typo/docs)整體定位就是 fix-session 執行節奏;numbered-rules 只是『multi-item MUST-ALL work』的代理訊號,通常伴隨 fix。name 捕捉主用例合理,description 立即澄清完整 scope,無 reader 混淆。(b) dim 19 Claude 定義 scope = DS artifacts(components/patterns/tokens/specs/stories),.claude/skills/ 命名嚴格說 out-of-dim-scope(codex 掃 392 檔 > Claude 292 才納入)。世界級 DS skill/command 命名慣以主 intent 命名不窮舉 trigger。非該修缺陷。",
+      "claudeAlsoCaught": false
+    },
+    {
+      "codexIndex": 2,
+      "fileLine": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:5; packages/design-system/src/tokens/layoutSpace/layoutSpace.css:8-18",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "groundTruth": "layoutSpace.spec.md:5 charter = 'Layout Space 定義頁面與容器的巨觀間距 token,隨 density 自動縮放'(macro-only)。layoutSpace.css:15-18 卻定義 4 枚 --item-gap-label-desc-{reading,reading-lg,scanning,scanning-lg} = element/item 級 micro-spacing(2px label↔desc gap)。CSS 註解(:12)自陳 'Primary consumer: <ItemContent mode> primitive'。grep 證 primary consumer = patterns/element-anatomy/item-anatomy.tsx。token-system.spec.md Co-location 3(:137-146)只講 layoutSpace vs uiSize 拆檔,全程未提 item-gap tokens。",
+      "reasoning": "真 charter-vs-content 漂移,正中 dim 19 靶心:(1) 宣告 scope『巨觀/macro』≠ 實際內容含 micro item-gap;(2) token prefix `--item-gap-*` ≠ 本 home 的 `--layout-space-*` family(異前綴 = 概念不同家);(3) 概念 owner 明確是 element-anatomy(primary consumer + item-anatomy.spec 為其消費 SSOT),非 layout primitive;(4) 反諷:同 spec『該用 token vs 刻意固定』段(:148-161)自述『micro/控件內部間距 → magic number 合法,不要 token 化』,與本 home 竟 tokenize micro item-gap 內在張力;(5) token-system Co-location 3 對 uiSize 有明文對照卻對 item-gap 零記載 = 未文件化的 scope 伸展。非 false positive(codex 讀對)亦非純 pedantic — maintainer 會實際想修(擴 charter+補 Co-location 記載 像 uiSize 那樣,或 relocate 到 element-anatomy)。lightweight material 但確為該 dim 該抓的跨檔 scope drift。",
+      "claudeAlsoCaught": false,
+      "claudeMissed": true
+    },
+    {
+      "codexIndex": 3,
+      "fileLine": "packages/design-system/src/tokens/elevation/elevation.spec.md:5,43; packages/design-system/src/tokens/elevation/overlay-geometry.ts:2",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "groundTruth": "elevation.spec.md:5 = 'Elevation 定義陰影層級'。overlay-geometry.ts 確住 elevation/ 且 export OVERLAY_SIDE_OFFSET/OVERLAY_COLLISION_PADDING(平面定位)。但 elevation.spec.md:43-59 §『浮層間距(sideOffset)』整段明文記載此 geometry + SSOT pointer 指向 overlay-geometry.ts;overlay-geometry.ts:2 header 反向 cite 'Canonical source: elevation.spec.md § 浮層間距 sideOffset'。雙向 cross-reference。",
+      "reasoning": "codex 觀察屬實(sideOffset 非『深度』)但屬 documented + defensible = marginal,非該修缺陷:(1) scope 在 home 自己的 spec 內完整明文,非 silent drift;(2) 雙向 cite 已建立 SSOT 追溯;(3) 概念上 overlay = elevation-200 浮起面,浮起面相對 trigger 的幾何住『elevation/浮層』域有正當理由;(4) 『elevation 只能是陰影』是 codex 的 narrow 解讀,實際 home scope(如 spec 所文件化)含浮層 floating-surface geometry。dim 19 判準 = 宣告 scope vs 實際 scope 一致;此處實際 scope 已在 spec 擴明,故不構成 drift。",
+      "claudeAlsoCaught": false
+    },
+    {
+      "codexIndex": 4,
+      "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:35,88",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "groundTruth": "frontmatter component=SelectionItem、H1『SelectionItem 設計原則』、export/file=selection-item.tsx。:35 '**SelectionControl 是 internal primitive**'、:88 '共用源頭一定是 SelectionControl' 用 folder 名當 primitive 名。但 :25 明文『關於資料夾命名: SelectionControl/ 是概念群組名稱... spec/file 以 main primitive 為準命名(見 menu-item.spec 先例)』documented convention。",
+      "reasoning": "codex 讀對且與 Claude same-dim finding #1 完全同條(雙方獨立命中 = 有真實訊號),雙方皆標 marginal。真為 minor 內部術語不一致(:35/:88 該用 SelectionItem 指 primitive、SelectionControl 只該指資料夾),但:(1) :25 已 document folder=概念群組 convention,讀者讀過即懂;(2) 屬 spec wording polish 非功能缺陷;(3) 共識 severity=marginal。裁定 marginal — 該修但屬 cleanup 非 material defect。",
+      "claudeAlsoCaught": true
+    }
+  ],
+  "claudeFindingsCrossCheck": "Claude same-dim(dim-audit/dim-19.json)4 findings 全 marginal:(1) SelectionControl:35,88 = codex#4 同條;(2) SelectionControl:25 Field 先例引用不精確;(3) header-canonical 4-name;(4) element-anatomy umbrella folder。Claude 全掃聚焦 components/patterns 命名,未觸 token home charter-vs-content(layoutSpace item-gap)→ 即 codex#2 為 Claude 漏的唯一真 material。",
+  "notes": "codex 4 findings 中 1 真 material(#2 layoutSpace item-gap scope drift,Claude 漏)/ 3 marginal(#1 skill 命名 pedantic+out-of-core-scope、#3 elevation overlay-geometry 已文件化 defensible、#4 SelectionControl wording 雙方共識 marginal)/ 0 false positive。codex 標 3 material 中 2 降為 marginal(#1 #3 過度 material 化)= 符合『高 recall 低 precision, 禁照抄標籤』。"
+}

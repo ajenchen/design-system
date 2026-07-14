@@ -39,7 +39,7 @@ export const Overview: Story = {
               {[
                 ['value / defaultValue', 'number[]', '—', '[single] 或 [min, max] range mode'],
                 ['onValueChange', '(value: number[]) => void', '—', '拖曳中每次值變動'],
-                ['onValueCommit', '(value: number[]) => void', '—', '放開滑鼠才觸發(防抖用)'],
+                ['onValueCommit', '(value: number[]) => void', '—', '互動結束觸發:滑鼠放開,或鍵盤 Arrow/Page/Home/End 每次有效變更(防抖用)'],
                 ['min / max', 'number', '0 / 100', '值範圍'],
                 ['step', 'number', '1', '步進'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '**只影響容器外高**,不影響 track/thumb 尺寸'],
@@ -175,8 +175,8 @@ export const ColorBindingRule: Story = {
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
-        <H3>Range 色和 Thumb border 色永遠同 token</H3>
-        <Desc>Thumb 坐落在 range 的端點上,border 是 range 的視覺延續。兩者同色時看起來像「range 包住 thumb」——thumb 白底是「被 range 圍住的空心洞」,而不是「thumb 浮在 range 上面的異物」。</Desc>
+        <H3>Range 色和 Thumb border 色在 rest / disabled 兩態同 token</H3>
+        <Desc>Thumb 坐落在 range 的端點上,border 是 range 的視覺延續。兩者同色時看起來像「range 包住 thumb」——thumb 白底是「被 range 圍住的空心洞」,而不是「thumb 浮在 range 上面的異物」。<strong>互動態(hover / active / focus)只動 thumb border 色階</strong>(hover / focus 升 primary-hover、active 深至 primary-active),Range 填色恆 primary — 下表只列 rest / disabled 兩態的綁定。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>State</Th><Th>Range bg</Th><Th>Thumb border</Th><Th>共享 token</Th></tr></thead>

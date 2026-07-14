@@ -12,7 +12,7 @@ import { Notice, useInverseTheme, SUBTLE_ICON_COLOR, type NoticeVariant } from '
  * 在 theme boundary 設 text-foreground 強制 re-resolve。
  *
  * ── Appearance ──
- * subtle: 淺底色 + 四邊 1px border(色相 hover 色)。不設 data-theme,跟隨頁面。
+ * subtle: 淺底色 + 四邊 1px border(色相 text 色 = icon 同色,見下方 SUBTLE_CONTAINER 註)。不設 data-theme,跟隨頁面。
  * solid: 跟 Toast 對齊:
  *   neutral → data-theme={inverse} + bg-surface-raised（同層翻轉）
  *   info/success/error → bg on outer, data-theme="dark" on inner

@@ -23,7 +23,7 @@ OverflowIndicator 是 **`+N` 溢出指示器 + HoverCard 顯示隱藏內容**—
 
 ## 何時用 / 何時不用
 
-**OverflowIndicator 是 internal primitive**——由需要處理「溢出 +N」的元件消費，不直接使用。
+**OverflowIndicator 是 internal primitive**——不進 root barrel front-door、不裸用；由需要處理「溢出 +N」的元件消費；consumer 需要時可經 per-component subpath 包裝並自行確認後使用（`.claude/rules/ui-development.md`「Root barrel front-door 排除」SSOT，internal ≠ 禁用）。
 
 | 場景 | 正確做法 |
 |------|---------|
@@ -44,6 +44,8 @@ OverflowIndicator 是 **`+N` 溢出指示器 + HoverCard 顯示隱藏內容**—
 - **一般 +N**：穩定顯示、使用者可把滑鼠移到浮層上閱讀
 
 Tooltip 純文字、不可互動、滑鼠離開 trigger 即消失——不適合承載這些需求。
+
+**注意**:浮層內互動(tag dismiss / nested ProfileCard)為**滑鼠增強**——Radix HoverCard content 鍵盤不可達(見「A11y 預設」鍵盤限制),鍵盤等效操作由主列可見項承擔,勿把唯一操作入口放在浮層內。
 
 ### trigger 不用 Tag 元件
 
@@ -120,7 +122,7 @@ OverflowIndicator 是 **composite**(HoverCard trigger + tag-styled `+N` span + H
 
 **ARIA / Pattern**:對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 pattern。
 
-**互動行為**:trigger 為 `+N` 計數 span,**keyboard-focusable**(`tabIndex=0` + `role="button"` + `aria-haspopup="dialog"`,對齊 Avatar hoverCard canonical),HoverCard 在 hover 或 trigger 取得 focus 時自動展開——無「按 Enter 開選單」的鍵盤指令,也沒有 click 切換。(2026-06-01 #13:原設計純 passive 不可聚焦 → 鍵盤使用者無法開啟 HoverCard 看溢出內容,違 WCAG 2.1.1;改 focusable)
+**互動行為**:trigger 為 `+N` 計數 span,**keyboard-focusable**(`tabIndex=0`;**不掛 `role="button"` / `aria-haspopup`**——2026-07-14 對齊 Avatar hoverCard canonical 2026-07-06 拆除:trigger 無 activation 行為,宣告 button/haspopup 卻按 Enter 無反應 = 對 AT 空承諾),HoverCard 在 hover 或 trigger 取得 focus 時自動展開——無「按 Enter 開選單」的鍵盤指令,也沒有 click 切換。(2026-06-01 #13:原設計純 passive 不可聚焦 → 鍵盤使用者無法開啟 HoverCard 看溢出內容,違 WCAG 2.1.1;改 focusable)。**鍵盤限制**:HoverCard 內容(tag dismiss / nested ProfileCard)僅滑鼠可互動——Radix 把 content 內 tabbable node 設 `tabindex="-1"`(hover-card.spec.md「A11y 預設」),鍵盤等效操作由主列可見項承擔。
 
 **Focus**:trigger 是 tab stop(keyboard 可達 + focus-visible ring,讓鍵盤使用者也能 focus 開啟 HoverCard 看溢出內容);HoverCard 內展開的可互動內容(如人員 tag / ProfileCard)由各自的內容元件負責 focus 管理。
 

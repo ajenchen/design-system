@@ -58,7 +58,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
 
 const MODE_DESC: Record<ModeKey, string> = {
   edit:     '表單可編輯欄位 — bg-surface + border + hover/focus 回饋',
-  display:  '純展示資料 — 無 chrome（transparent + !px-0 !py-0 零內距，field-wrapper.tsx Path Ⅰ）+ 文字正常色，空值顯示 —（em dash）',
+  display:  '純展示資料 — 無 chrome（transparent + !px-0 !py-0 零內距，field-wrapper.tsx Path Ⅰ）+ 文字正常色，空值顯示半形 -（hyphen，同 value 前景色）',
   readonly: '不可編輯但可見 — bg-readonly(neutral-2) + 無邊框 + 文字正常色',
   disabled: '被停用的欄位 — bg-disabled(neutral-2) + 無邊框 + 文字灰化',
 }
@@ -211,8 +211,9 @@ export const Overview = {
           {MODES.map((m) => (
             <div key={m} className="flex items-center gap-4">
               <div className="w-64 shrink-0">
-                {/* display mode 讀 value(非 defaultValue)渲染 <span>;其餘 mode 用 defaultValue 保持 uncontrolled */}
-                {m === 'display' ? (
+                {/* display + readonly 讀 controlled value:兩者「空值」皆走 <span> 顯 '-'(input.tsx:121),
+                    demo 要展示有值狀態故傳 value;edit / disabled 用 defaultValue 保持 uncontrolled */}
+                {(m === 'display' || m === 'readonly') ? (
                   <Input mode={m} value="Wireless Bluetooth Headphones" size="md" />
                 ) : (
                   <Input mode={m} defaultValue="Wireless Bluetooth Headphones" size="md" />
@@ -242,7 +243,7 @@ export const Overview = {
             <tbody>
               {[
                 ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'mode 未顯式指定時依序推導：有效 disabled（prop 或 <Field disabled>）→ fieldCtx.mode → native readOnly → edit；顯式 mode prop 永遠最優先（field-context.ts useResolvedFieldMode）'],
-                ['variant', "'default' | 'bare'", "'default'", '視覺 chrome（正交於 mode）；bare = 透明、hover/focus 才出現 border，用於 toolbar inline editing'],
+                ['variant', "'default'", "'default'", '視覺 chrome（正交於 mode；公開型別僅 default，2026-07-14 收窄）；naked = 無 chrome，host cell 提供 border/focus（@internal cell-as-input）；bare 2026-07-09 退役'],
                 ['error', 'boolean', 'false', '紅色邊框僅 edit 模式生效；aria-invalid 不分 mode（readonly / disabled 渲染的 input 同樣帶）'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '高度與字體，與 Button 共用 field-height token'],
                 ['startIcon', 'LucideIcon', '—', '左側靜態 icon，fg-muted，pointer-events-none'],
@@ -698,11 +699,11 @@ export const StateBehavior = {
           </div>
         </div>
 
-        {/* Click-through behavior */}
+        {/* startIcon pointer-events (non-intercepting) */}
         <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">點擊穿透 — startIcon pointer-events-none</span>
+          <span className="text-caption font-medium text-fg-secondary">startIcon 不攔截點擊 — pointer-events-none</span>
           <div className="flex flex-col gap-2 max-w-sm">
-            <span className="text-[11px] text-fg-muted">點擊 icon 區域，focus 穿透到 input。endAction 有自己的點擊行為，不穿透。</span>
+            <span className="text-[11px] text-fg-muted">startIcon（SVG）帶 pointer-events-none，不攔截點擊、不擋文字選取（不成為死區）。注意：點 icon 區域**不會** focus input（icon 與 input 為 sibling，無 click-to-focus）。endAction 是互動元素，有自己的點擊行為。</span>
             <Input
               startIcon={Search}
               value={query}

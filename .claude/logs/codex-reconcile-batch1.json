@@ -1,0 +1,118 @@
+{
+  "_meta": {
+    "task": "B.3/B.4 codex-vs-Claude reconciliation for FALSE_CLAIM deep audit (Accordion / Alert / AppShell)",
+    "method": "Deduped codex raw (~79 w/ parallel-run variants) → 42 unique. Verified each against actual code (tsx/spec/stories/demo-helpers) + Radix source (react-dialog + react-accordion) as ground truth. Cross-ref Claude's a1b-deep json.",
+    "signal_summary": "material=8 marginal=32 false_positive=2 (of 42 unique). ~19% material, 76% marginal precision/framing overclaims, 5% false positive.",
+    "verified_library_facts": [
+      "react-dialog/dist/index.mjs L146-148: modal onCloseAutoFocus preventDefault()+triggerRef.current?.focus() → null trigger = focus lost (confirms AppShell no-restore-focus)",
+      "react-accordion/dist/index.mjs L17,108-168: ACCORDION_KEYS excludes Tab, triggers all natively tabbable (no roving) → 'Tab→next trigger' correct for text-only content, wrong only w/ focusable content"
+    ]
+  },
+  "Accordion": {
+    "material_confirmed": [
+      {
+        "fileLine": "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx:109",
+        "宣稱": "Rule title '獨立收合多段(每段各自是否展開)' + note '不是互斥' — 緊接 demo",
+        "真實code行為": "demo 用 `type='single'`(L112):single 模式開新 item 自動收合前一個 = 一次只一段開,無法『每段各自是否展開』。DS 自家 UsageGuidance L68 明文『非互斥可同時展開 = type=multiple』→ 本 Rule 宣稱『不是互斥』卻用 single = demo 與自述矛盾 + 與 DS 內部定義衝突",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc: demo 改 `type='multiple'` 才真正示範『每段各自展開/非互斥』(對齊 UsageGuidance L68);或改 note 不寫『不是互斥』(single 即一次一段)。低-中 severity 措辭/demo 對齊"
+      }
+    ],
+    "marginal_count": 7,
+    "marginal_examples": [
+      {"fileLine": "anatomy.stories.tsx:469-470", "宣稱": "Tab/Shift+Tab — 聚焦下/上一個 trigger", "why": "純文字 content 下正確(Radix ACCORDION_KEYS 無 Tab、trigger 皆 tabbable、content 無 focusable → Tab 落下一 trigger);僅展開 content 含 input/button 時 Tab 先進 content。content-dependent 精度,非必修。source-verified"},
+      {"fileLine": "anatomy.stories.tsx:106,108", "宣稱": "AccordionTrigger/Content children ReactNode 必填", "why": "『必填』是 usage-contract(無 label trigger 無意義);TS 型別 children?: ReactNode optional。世界級 DS 常於 usage 表標 required,codex 拘泥 TS optionality"},
+      {"fileLine": "anatomy.stories.tsx:101", "宣稱": "value / onValueChange — string | string[]", "why": "Props 表把 value/onValueChange 併列標 value 之型;onValueChange 實為 callback。壓縮表格 shorthand + '受控模式' 描述已釐清,非 wrong-API teaching"}
+    ],
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      {
+        "fileLine": "accordion.spec.md:91",
+        "宣稱": "item 被收合時內部焦點隨 content 隱藏而消失,鍵盤使用者失去落點",
+        "whyWrong": "spec 禁止事項 L91 明確 scope 到『尤其 single 模式展開他段會自動收合本段』的場景;該場景下焦點在 content 內、content 隱藏 → 焦點確實丟失。codex 自己的『真實』亦承認『受控/程式化收合仍聚焦 content descendant 時會失去焦點』= 正是 spec 描述情境。a11y rationale 正確,codex over-nuance。code cite: single auto-collapse = Radix onValueChange 收合本 item,content unmount 帶走內部 focus"
+      }
+    ]
+  },
+  "Alert": {
+    "material_confirmed": [
+      {
+        "fileLine": "packages/design-system/src/components/Alert/alert.spec.md:86",
+        "宣稱": "禁止事項『兩個 action 區域不混用:chrome corner 只放 close X;body action row 只放 CTA』+ Corner action group 佈局 canonical L116-121 ASCII 底部獨立 [CTA1][CTA2] body action row",
+        "真實code行為": "Alert 無底部 body action row。Notice(notice.tsx L150-170)把 endContent(CTA)與 dismiss X 一起 render 進單一 ItemSuffix(h-[1lh] shrink-0 ml-auto = 對齊第一行、靠右上)。CTA 從 endContent 進來只會在右上角同一行,結構上產不出 spec 圖示的『底部整列 CTA + 上方 corner』雙區;且與自家 anatomy Props(endContent=『右側操作區』)互相矛盾",
+        "claudeAlsoCaught": true,
+        "fixHint": "改 doc: 移除 L112-137『Corner action group 佈局 canonical』底部 body action row 圖示(code 產不出),改為單一右上 suffix(icon+title+desc | [CTA][X])描述,對齊 anatomy endContent 定義。Claude 已於 spec:116 抓同缺陷(sibling)"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/Alert/alert.spec.md:164",
+        "宣稱": "『## 為何無 Inspector / SizeMatrix』+ L164『無 Inspector』rationale + L167 story 清單『保留 Overview + ColorMatrix + StateBehavior + PlacementMatrix』(略 Inspector)",
+        "真實code行為": "alert.anatomy.stories.tsx L59 已 export Inspector(InspectorStory,含 variant/appearance/placement/dismissible controls + argTypes)。spec 明文宣稱不存在的 feature 實際存在 + story 清單漏列 = 直接矛盾",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc: 刪『無 Inspector』rationale 段,把 Inspector 加進 L167 清單(現 anatomy = Overview/Inspector/ColorMatrix/PlacementMatrix/StateBehavior/Accessibility)"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/Alert/alert.principles.stories.tsx:59",
+        "宣稱": "『判斷不確定時...改用近親元件(見 `Vs*Rule` stories)』",
+        "真實code行為": "本檔 exports = UsageGuidance / VariantRule / PlacementRule / AppearanceRule;無任何 Vs*Rule story(近親比較已併入 UsageGuidance『vs 近親』段,見 L32 註解『合併自舊 VsToastVsDialogRule』)。指向不存在的 story = broken/stale cross-reference",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc: L59 改指向 UsageGuidance 內『vs 近親』段(同 story),或移除該 pointer"
+      }
+    ],
+    "marginal_count": 7,
+    "marginal_examples": [
+      {"fileLine": "alert.spec.md:93", "宣稱": "role/aria-live 依 variant 自動套用,無 per-instance 切換 API", "why": "『無 per-instance 切換 API』指無專用 prop 切 severity(屬實)。codex 指 code L134 {...props} 在 role/aria-live 後可 spread-override = 每個帶 ...props passthrough 元件都有的 escape hatch,非『API』。精度 overclaim"},
+      {"fileLine": "alert.spec.md:155 + anatomy.stories.tsx:176", "宣稱": "inline(預設)圓角 + 邊框 / PlacementMatrix inline Border=有", "why": "inline placement 只給 rounded-md(alertVariants L54),border 來自 appearance=subtle(SUBTLE_CONTAINER);solid+inline 無 border。但預設 appearance=subtle → 預設 inline Alert 確有 border+圓角,doc 描述預設案例正確,僅 border 歸因於 placement 軸不精"},
+      {"fileLine": "alert.principles.stories.tsx:161", "宣稱": "Fixed 讓使用者無論在哪頁都看到同一條訊息", "why": "placement='fixed' 僅改 rounded-none/border-none/loose px(非 position:fixed/Portal/跨頁掛載);spec L76 自己已註『非 position fixed 浮層』。『無論哪頁都看到』是 usage-intent,取決 consumer 掛載位置。同 AppShell 不重渲染類 usage-intent overclaim"}
+    ],
+    "false_positive_count": 0,
+    "false_positive_examples": []
+  },
+  "AppShell": {
+    "material_confirmed": [
+      {
+        "fileLine": "packages/design-system/src/components/AppShell/app-shell.spec.md:208 + app-shell.anatomy.stories.tsx:157",
+        "宣稱": "mobile Sheet 消費 sheet.spec.md canonical『...focus trap + restore focus』/ anatomy『Sheet open focus 在 Aside 內,Esc 關回 trigger(Radix Dialog 內建)』",
+        "真實code行為": "focus trap/Esc/outside-close 成立,但 AppShellAside(app-shell.tsx L330-342)用 controlled Sheet 且無 SheetTrigger。Radix Dialog modal onCloseAutoFocus(react-dialog/dist/index.mjs L146-148)= event.preventDefault() + context.triggerRef.current?.focus();triggerRef 為 null → focus 不還原到外部開啟鈕,反被 preventDefault 擋掉 FocusScope 預設還原 → 落 <body>。SOURCE-VERIFIED",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 code(建議): AppShellAside SheetContent 加 onCloseAutoFocus 手動 focus 回外部 opener(consumer 傳入 openerRef)或改 doc 移除『restore focus』宣稱。a11y 缺陷,rank 最高"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/AppShell/app-shell.spec.md:266",
+        "宣稱": "『兩者(⌘B/⌘.)消費既有 Sidebar keyboard shortcut 機制,AppShell 不發明新機制』",
+        "真實code行為": "⌘. 由 AppShell 自有 useEffect + window.addEventListener('keydown')(app-shell.tsx L179-188)註冊 = 新機制,非消費 Sidebar;且缺 Sidebar handler 的 IME composition / input-textarea-contenteditable / defaultPrevented guard。spec L263 自己也標 ⌘.『新加』→ L266『不發明新機制』對 ⌘. 為假 + 內部自相矛盾(僅 ⌘B 屬實 delegate)",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc: L266 分開講 — ⌘B delegate Sidebar SSOT(本 component 不 register)、⌘. 為 AppShell 自有 window listener(new);可順補 code 加 input/IME guard 避免打字時誤觸"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:35",
+        "宣稱": "JSDoc『Sidebar 元素(必傳 Sidebar primitive,per Consumer 紀律)』",
+        "真實code行為": "型別 `sidebar?: React.ReactNode`(optional,收任意 ReactNode,不機械強制)。spec L324 已 2026-06-10 user 拍板『措辭必→應對齊 code 真實』、principles L66 亦作『應傳(型別收 ReactNode 不機械強制)』→ tsx JSDoc『必傳』stale,與已批准的『應』措辭 + optional 型別衝突",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 doc: app-shell.tsx L35 JSDoc『必傳』→『應傳』對齊 spec L324 + principles L66。低 severity 但屬已拍板措辭 drift"
+      },
+      {
+        "fileLine": "packages/design-system/src/components/AppShell/_demo-helpers.tsx:196",
+        "宣稱": "AccountMenu comment『互動感由 focus ring + hover 提供,不放大到 field height』",
+        "真實code行為": "AccountMenu trigger(L199-210 button)僅 focus-visible:ring* classes,無任何 hover class;內含 raw <Avatar size={24}> 亦無 hover prop → comment 宣稱的 hover 反饋不存在(僅 focus ring 成立)",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 code(建議): 加 hover:bg 反饋(對齊 GitHub/Gmail global-bar avatar hover 慣例)或改 comment 移除 hover。低 severity(demo-helper comment)"
+      }
+    ],
+    "marginal_count": 18,
+    "marginal_examples": [
+      {"fileLine": "app-shell.spec.md:264 + anatomy.stories.tsx:154", "宣稱": "Tab 第一站 focus Skip to content link", "why": "SkipToMain 是 AppShell root 第一個 child = 子樹內第一 focusable;若 document 在 AppShell 前有 focusable 則非整頁第一。prompt 明列此類為 marginal(Tab first station holds within subtree)"},
+      {"fileLine": "app-shell.spec.md:179 + spec.md:274 + anatomy.stories.tsx:88", "宣稱": "primary-header 的 Header scope = global / site-wide banner(header 是 local 還是 global 的二選一)", "why": "header prop 恆 local(L109 明文),globalHeader 才 global;spec 多處把 primary-header 的『header』框成 global 是 framing 精度問題,L99-111 已詳述正確 model(primary-header = sidebar + 額外 global header,local header 仍在)。spec:274 另含真 a11y smell:globalHeader + local header 皆 body-scoped <header> → 兩個 implicit banner(值得補註但非必修,banner outcome 對兩者仍成立)。Claude 於 anatomy:146 抓相關過度一般化(marginal)"},
+      {"fileLine": "app-shell.spec.md:317", "宣稱": "0 新 CSS variable", "why": "code 確有 local inline custom property --app-shell-aside-modal-width(app-shell.tsx L335-336,JS 值傳入 Tailwind arbitrary class 的 plumbing var,非 tokens.css 設計 token)。字面 overclaim,但 token-discipline 精神(無新設計 token)成立 = 純字面 pedantry"},
+      {"fileLine": "app-shell.spec.md:39 + principles.stories.tsx:24", "宣稱": "跨頁切換 sidebar 不重渲染 / 捲動位置不丟失", "why": "AppShell 只把 sidebar 當 ReactNode slot render,無 memoization/mount-persistence;是否不重渲染/保 scroll 取決 consumer 是否跨 route 維持同一 DOM instance。usage-intent 絕對式 overclaim。Claude 亦於 principles:24 抓此(marginal)"},
+      {"fileLine": "app-shell.spec.md:251-252", "宣稱": "所有 modal overlay(Dialog/Sheet/Popover/HoverCard)+ Mask 蓋整個 AppShell", "why": "Dialog/Sheet 為 modal 有 mask;DS Popover Radix modal 預設 false、HoverCard non-modal 無 mask → 把四者一律稱 modal-with-mask 不精。但屬 spec 明標『不是 AppShell scope』(L249)的 peripheral 註,不影響 AppShell 用法"},
+      {"fileLine": "app-shell.spec.md:227 + principles.stories.tsx:68", "宣稱": "AppShell.Main 是空殼 layout primitive / 禁 <AppShell.Main> 強制 padding", "why": "無 AppShell.Main export(exports = AppShell/AppShellAside/useAppShell);children 直接進內部 native <main>。『AppShell.Main』是 main slot 的概念命名 shorthand(API skeleton L64 已明示 children 直入),禁止語境不會誤導 consumer import。Mantine/Ant 有真 <AppShell.Main> 故命名易誤解,但 API 段已釐清"}
+    ],
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      {
+        "fileLine": "app-shell.spec.md:220",
+        "宣稱": "Header:始終可見(both mode)",
+        "whyWrong": "codex 讀成『header 必然渲染(可缺席即矛盾)』。實為 Mobile 段(L216-221)語意:sidebar mobile 收成 Sheet 抽屜,而 header『不』收、維持可見 = 與 sidebar 收合對比,非宣稱 header 強制存在。code truthy-conditional `{header && ...}`(L226)是正常 optional 渲染,與『mobile 不收成抽屜』語意無衝突。codex 誤讀『始終可見』為『強制 mandatory』"
+      }
+    ]
+  }
+}

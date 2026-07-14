@@ -97,10 +97,18 @@ Rating 的 **container 高度消費 `--field-height-*` token**(sm=28 / md=32 / l
 Rating 可直接塞進 `<Field>`(讓使用者能套 Field label / error / hint 共用機制):
 
 ```tsx
-<Field>
+// 驗證時機走 form-validation.spec.md canonical(blur + submit,不在初始 / 操作中即時報錯)
+// —— error 由 form.errors 驅動,非 `rating === 0` 立即判(那會讓初始未觸碰欄位直接紅框)。
+const form = useFormValidation({
+  initialValues: { rating: 0 },
+  validate: { rating: (v) => (v === 0 ? '請至少給 1 星' : undefined) },
+  onSubmit: async (values) => { /* ... */ },
+})
+
+<Field invalid={!!form.errors.rating}>
   <FieldLabel required>整體滿意度</FieldLabel>
-  <Rating value={rating} onChange={setRating} size="md" />
-  {rating === 0 && <FieldError>請至少給 1 星</FieldError>}
+  <Rating {...form.getInputProps('rating')} size="md" />
+  <FieldError>{form.errors.rating}</FieldError>
 </Field>
 ```
 

@@ -167,6 +167,55 @@ jobs:
       # `release` job gate on `needs: [smoke-shard]` block publish unless all 4 shards 全綠。
       # 對齊 Jest / Playwright / Vitest `--shard=N/M` canonical(industry standard)。
 
+      # Claude plugin marketplace distribution(Phase 7 — 2026-05-23 ship per real Anthropic spec)
+      # Distribution model:**GitHub-direct**(不走 Anthropic public marketplace)
+      #   - Consumers add this repo as marketplace:`/plugin marketplace add github:qijenchen/design-system`
+      #   - Plugin install:`/plugin install design-system@qijenchen-ds`
+      #   - Version pinning:tag v0.x.x → marketplace.json + plugin.json `version` field bumped manually pre-tag
+      #     OR omit version → commit SHA used(per Anthropic plugin spec auto-versioning)
+      # No CLI publish step needed for GitHub-direct — GitHub repo IS the marketplace.
+      # Anthropic-marketplace submission(future):manual via claude.ai/settings/plugins/submit
+      #
+      # 2026-07-14 dim-66 修:本 BLOCKER 原排在 npm publish / dist-tag repoint / GitHub Release /
+      # consumer dispatch **之後** — 繞過本機 preflight 直接推錯 tag 時,會先產生不可逆發布才紅燈。
+      # Gate 必須在所有 publish 動作之前(fail-closed before irreversible side effects)。
+      - name: Verify plugin manifest version sync(BLOCKER - 2026-05-25 Phase 4.12 upgrade)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          # Per user 2026-05-25「不要有偏移的情況,包括所有檔案包括所有 plugin 都是」
+          # 升 warning → error:tag push 前 package.json / plugin.json / marketplace.json
+          # 版本必對齊 = 防 npm 跟 plugin 永遠同步。
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          DS_VERSION=$(jq -r '.version' packages/design-system/package.json)
+          SB_VERSION=$(jq -r '.version' packages/storybook-config/package.json)
+          PLUGIN_VERSION=$(jq -r '.version' .claude-plugin/plugin.json)
+          MARKETPLACE_META_VERSION=$(jq -r '.metadata.version' .claude-plugin/marketplace.json)
+          MARKETPLACE_PLUGIN_VERSION=$(jq -r '.plugins[] | select(.name=="design-system") | .version // empty' .claude-plugin/marketplace.json)
+
+          echo "Tag:                $TAG_VERSION"
+          echo "design-system:      $DS_VERSION"
+          echo "storybook-config:   $SB_VERSION"
+          echo "plugin.json:        $PLUGIN_VERSION"
+          echo "marketplace.meta:   $MARKETPLACE_META_VERSION"
+          echo "marketplace.plugin: $MARKETPLACE_PLUGIN_VERSION"
+
+          fail=0
+          for label_ver in "design-system:$DS_VERSION" "storybook-config:$SB_VERSION" "plugin.json:$PLUGIN_VERSION" "marketplace.meta:$MARKETPLACE_META_VERSION" "marketplace.plugin:$MARKETPLACE_PLUGIN_VERSION"; do
+            label="${label_ver%%:*}"
+            ver="${label_ver##*:}"
+            if [ "$ver" != "$TAG_VERSION" ]; then
+              echo "::error::$label version($ver)≠ tag($TAG_VERSION)— version drift detected"
+              fail=1
+            fi
+          done
+
+          if [ "$fail" -eq 1 ]; then
+            echo "::error::Pre-tag must sync ALL 5 versions: design-system + storybook-config + plugin.json + marketplace.metadata + marketplace.plugins[design-system]"
+            echo "::error::Re-run: scripts/bump-version.mjs(future)or manual sed all 5 files before tag push."
+            exit 1
+          fi
+          echo "✓ all versions in sync with tag $TAG_VERSION"
+
       - name: Publish to npm
         if: startsWith(github.ref, 'refs/tags/v')
         env:
@@ -231,6 +280,9 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN }}
+          # 2026-07-14:ref_name 不直接 ${{ }} 內插進 run script(GitHub 官方 script-injection
+          # anti-pattern;tag 名允許 $ ( ) ; 等 shell metacharacters)。改走 env var 安全展開。
+          REF_NAME: ${{ github.ref_name }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "::warning::PRODUCT_WORKSPACE_DISPATCH_TOKEN 未設 — skip ds-published dispatch(CROSS_REPO_TOKEN job / Dependabot daily 仍 fallback)"
@@ -241,53 +293,11 @@ jobs:
           gh api repos/ajenchen/ds-product-template/dispatches \
             -f "event_type=ds-published" \
             -f "client_payload[version]=$VERSION" \
-            -f "client_payload[tag]=${{ github.ref_name }}" \
+            -f "client_payload[tag]=$REF_NAME" \
             || echo "::warning::ds-published dispatch failed(token 權限?)— fork user 仍有 Dependabot daily fallback"
 
-      # Claude plugin marketplace distribution(Phase 7 — 2026-05-23 ship per real Anthropic spec)
-      # Distribution model:**GitHub-direct**(不走 Anthropic public marketplace)
-      #   - Consumers add this repo as marketplace:`/plugin marketplace add github:qijenchen/design-system`
-      #   - Plugin install:`/plugin install design-system@qijenchen-ds`
-      #   - Version pinning:tag v0.x.x → marketplace.json + plugin.json `version` field bumped manually pre-tag
-      #     OR omit version → commit SHA used(per Anthropic plugin spec auto-versioning)
-      # No CLI publish step needed for GitHub-direct — GitHub repo IS the marketplace.
-      # Anthropic-marketplace submission(future):manual via claude.ai/settings/plugins/submit
-      - name: Verify plugin manifest version sync(BLOCKER - 2026-05-25 Phase 4.12 upgrade)
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          # Per user 2026-05-25「不要有偏移的情況,包括所有檔案包括所有 plugin 都是」
-          # 升 warning → error:tag push 前 package.json / plugin.json / marketplace.json
-          # 版本必對齊 = 防 npm 跟 plugin 永遠同步。
-          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          DS_VERSION=$(jq -r '.version' packages/design-system/package.json)
-          SB_VERSION=$(jq -r '.version' packages/storybook-config/package.json)
-          PLUGIN_VERSION=$(jq -r '.version' .claude-plugin/plugin.json)
-          MARKETPLACE_META_VERSION=$(jq -r '.metadata.version' .claude-plugin/marketplace.json)
-          MARKETPLACE_PLUGIN_VERSION=$(jq -r '.plugins[] | select(.name=="design-system") | .version // empty' .claude-plugin/marketplace.json)
-
-          echo "Tag:                $TAG_VERSION"
-          echo "design-system:      $DS_VERSION"
-          echo "storybook-config:   $SB_VERSION"
-          echo "plugin.json:        $PLUGIN_VERSION"
-          echo "marketplace.meta:   $MARKETPLACE_META_VERSION"
-          echo "marketplace.plugin: $MARKETPLACE_PLUGIN_VERSION"
-
-          fail=0
-          for label_ver in "design-system:$DS_VERSION" "storybook-config:$SB_VERSION" "plugin.json:$PLUGIN_VERSION" "marketplace.meta:$MARKETPLACE_META_VERSION" "marketplace.plugin:$MARKETPLACE_PLUGIN_VERSION"; do
-            label="${label_ver%%:*}"
-            ver="${label_ver##*:}"
-            if [ "$ver" != "$TAG_VERSION" ]; then
-              echo "::error::$label version($ver)≠ tag($TAG_VERSION)— version drift detected"
-              fail=1
-            fi
-          done
-
-          if [ "$fail" -eq 1 ]; then
-            echo "::error::Pre-tag must sync ALL 5 versions: design-system + storybook-config + plugin.json + marketplace.metadata + marketplace.plugins[design-system]"
-            echo "::error::Re-run: scripts/bump-version.mjs(future)or manual sed all 5 files before tag push."
-            exit 1
-          fi
-          echo "✓ all versions in sync with tag $TAG_VERSION"
+      # (Verify plugin manifest version sync BLOCKER 已前移至 Publish 之前 — 2026-07-14 dim-66
+      #  gate-ordering 修,見上方 step;fail-closed 必須先於不可逆 publish/dispatch side effects。)
 
   notify-consumers:
     # 2026-05-25 Phase 4.13 — Cross-repo immediate SSOT sync(per user 永久 directive

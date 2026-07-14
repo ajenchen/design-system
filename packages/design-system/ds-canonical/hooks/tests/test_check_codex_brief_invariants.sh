@@ -8,8 +8,9 @@
 #     · bare mention(`ls .../codex` / `mycodex exec` / git commit msg 含 "codex")→ silent
 #     · `--help` / `--version` 等 introspection flag → silent
 #   - 命中 codex exec/review → 擷取 brief content(cat-pipe / $(cat) / stdin `<` / inline arg)
-#   - Brief 必含 4 invariant keyword,缺任一 → exit 2 BLOCKER:
+#   - Brief 必含 7 invariant keyword,缺任一 → exit 2 BLOCKER:
 #       1️⃣ 全盤閱讀  2️⃣ Triple-verify  3️⃣ 禁抽樣  4️⃣ 禁列檔
+#       5️⃣ 輸入對等(A.0 鏡射錨點)  6️⃣ 判準對等(audit-prompts rubric)  7️⃣ A.1b(per-component claim-vs-code)
 #   - Escape:brief 含 `@codex-brief-invariant-skip:` → silent exit 0
 #
 # Positive(should BLOCK exit 2):缺 invariant 的 brief。
@@ -48,6 +49,9 @@ cat > "$GOOD_BRIEF" <<'EOF'
 2. triple-verify per finding(grep + Read + canonical exception check)
 3. 禁抽樣 — DS-wide ALL files,sub-agent sampled = reject
 4. 禁列檔 — 只讀 12 file,直接出 verdict
+5. 閱讀清單鏡射 A.0:CLAUDE.md + .claude/rules/meta-patterns.md 等 5 rules + 4 references + 全 spec.md + memory MEMORY.md index
+6. 判準對等:codex 讀 design-system-audit/references/audit-prompts.md 每 dim rubric,逐 dim 套用
+7. A.1b per-component claim-vs-code 對抗驗證:讀每元件 .tsx + wrap lib 逐句驗宣稱
 EOF
 
 # Partial brief:缺 invariant 3(禁抽樣);其餘 3 個 keyword 齊
@@ -146,7 +150,7 @@ run_hook "git commit -m \"${CX} collab notes\""
 expect_pass_silent "5. git commit msg 含 codex,無 exec/review → silent"
 
 # 6. inline codex exec WITH all 4 invariants → silent
-GOOD_INLINE="${CX} exec \"全盤閱讀全部 source。triple-verify per finding。禁抽樣 DS-wide ALL files。禁列檔 只讀 10 file 直接出 verdict。\""
+GOOD_INLINE="${CX} exec \"全盤閱讀全部 source(鏡射 A.0:meta-patterns rules + memory MEMORY.md index)。triple-verify per finding。禁抽樣 DS-wide ALL files。禁列檔 只讀 10 file 直接出 verdict。判準對等:讀 audit-prompts.md 逐 dim rubric。A.1b per-component claim-vs-code 對抗驗證讀 .tsx 逐句驗宣稱。\""
 run_hook "$GOOD_INLINE"
 expect_pass_silent "6. inline brief 全 4 invariant → silent"
 
@@ -157,6 +161,43 @@ expect_pass_silent "7. cat-pipe full-brief file → silent"
 # 8. \$(cat) arg-substitution full brief → silent
 run_hook "${CX} exec \"\$(cat $GOOD_BRIEF)\""
 expect_pass_silent "8. \$(cat) full-brief file → silent"
+
+# 8b. 4 invariant 齊但缺輸入對等錨點(泛 glob 閱讀清單)→ BLOCK(2026-07-10 5️⃣)
+NOPARITY_BRIEF="$TMP_DIR/noparity-brief.md"
+cat > "$NOPARITY_BRIEF" <<'EOF'
+# Codex deep-audit brief
+1. 全盤閱讀全部 source(.claude/rules/* 泛 glob,禁憑記憶)
+2. triple-verify per finding(grep + Read + canonical exception check)
+3. 禁抽樣 — DS-wide ALL files,sub-agent sampled = reject
+4. 禁列檔 — 只讀 12 file,直接出 verdict
+EOF
+run_hook "cat $NOPARITY_BRIEF | ${CX} exec"
+expect_block "8b. 缺輸入對等錨點(泛 glob)→ BLOCK" "5️⃣"
+
+# 8c. 5 invariant 齊但缺判準對等(audit-prompts)→ 6️⃣ BLOCK(2026-07-10)
+NORUBRIC_BRIEF="$TMP_DIR/norubric-brief.md"
+cat > "$NORUBRIC_BRIEF" <<'EOF'
+# Codex deep-audit brief
+1. 全盤閱讀全部 source(.claude/rules/meta-patterns.md + memory MEMORY.md,禁憑記憶)
+2. triple-verify per finding(grep + Read + canonical exception check)
+3. 禁抽樣 — DS-wide ALL files,sub-agent sampled = reject
+4. 禁列檔 — 只讀 12 file,直接出 verdict
+EOF
+run_hook "cat $NORUBRIC_BRIEF | ${CX} exec"
+expect_block "8c. 缺判準對等(無 audit-prompts)→ BLOCK" "6️⃣"
+
+# 8d. 1️⃣-6️⃣ 齊但缺 A.1b(per-component claim-vs-code)→ 7️⃣ BLOCK(2026-07-10)
+NOA1B_BRIEF="$TMP_DIR/noa1b-brief.md"
+cat > "$NOA1B_BRIEF" <<'EOF'
+# Codex deep-audit brief
+1. 全盤閱讀全部 source(.claude/rules/meta-patterns.md + memory MEMORY.md,禁憑記憶)
+2. triple-verify per finding(grep + Read + canonical exception check)
+3. 禁抽樣 — DS-wide ALL files,sub-agent sampled = reject
+4. 禁列檔 — 只讀 12 file,直接出 verdict
+5. 判準對等:讀 design-system-audit/references/audit-prompts.md 每 dim rubric,逐 dim 套用
+EOF
+run_hook "cat $NOA1B_BRIEF | ${CX} exec"
+expect_block "8d. 缺 A.1b(per-component claim-vs-code)→ 7️⃣ BLOCK" "7️⃣"
 
 # 9. stdin redirect full brief → silent
 run_hook "${CX} exec < $GOOD_BRIEF"

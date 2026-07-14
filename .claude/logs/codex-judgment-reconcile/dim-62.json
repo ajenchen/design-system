@@ -1,0 +1,91 @@
+{
+  "dim": 62,
+  "title": "Fork-user Netlify onboarding canonical — codex finding 比稿裁定",
+  "role": "B.3 比稿裁定員",
+  "groundTruth": "每條 finding 去實際 code Read 驗證(scripts/setup-netlify-access.mjs / netlify.toml ×2 / template README ×2 / ds-product-template CLAUDE.md / docs/02 / basic-auth.ts)",
+  "summary": {
+    "codexRaw": 8,
+    "material_confirmed": 3,
+    "marginal": 5,
+    "false_positive": 0,
+    "claudeMissed": 3
+  },
+  "judgments": [
+    {
+      "codexIndex": 1,
+      "fileLine": "scripts/setup-netlify-access.mjs:103-115",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "evidence": "Line 110-111 走 `netlify sites:create --name=...` + `netlify link --name=...`。`sites:create` 建空站、`link` 只把本機 dir 綁 siteId,兩者皆不連 GitHub repo 做 continuous deployment;缺 --with-ci、未走 `netlify init`。因此 happy-path 下 GitHub push 不會觸發 Netlify build → 違背 netlify.toml(template L7)『每次 push main → Netlify auto rebuild』與 setup 印出的『push main 觸發 deploy』整條承諾。`netlify init` fallback(L114)僅在 sites:create throw 時 fire,正常路徑 CD 永遠沒接。",
+      "nuance": "兩個子claim中,`api --json` 不支援那半有 graceful fallback(`2>/dev/null ... || echo personal`,即使 flag 無效也退回 personal slug,故該半屬 marginal / 略誇大);但『sites:create+link 不建 Git CD』這半是真 material 缺陷,主導本 finding 判為 material_confirmed。",
+      "recommendedFix": "改用 `netlify init`(或受支援的 repo-connect 流程)真正 wire Git CD,link 後 read-back 驗證 repository linkage 才宣告完成。"
+    },
+    {
+      "codexIndex": 2,
+      "fileLine": "scripts/setup-netlify-access.mjs:117-125",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "evidence": "L119 `const siteSlug = state.siteSlug || siteId`。標準 `.netlify/state.json` 只含 `{\"siteId\": \"<uuid>\"}`,無 `siteSlug` key → fallback 到 siteId(UUID)。L124-125 用 siteSlug 拼 `https://app.netlify.com/projects/<uuid>/configuration/env` 與 `https://<uuid>.netlify.app`。UUID 不是 subdomain slug,`<uuid>.netlify.app` 不 resolve,dashboard URL 也指錯 → 使用者拿到壞掉的密碼設定連結與分享網址。script 早在 L107 已知真 site name(autoSiteName),本可直接用。",
+      "recommendedFix": "改用 autoSiteName,或 link 後以 `netlify api getSite` / `status --json` 取真實 `name` / `ssl_url` / `admin_url`,勿以 site ID 推測網址。"
+    },
+    {
+      "codexIndex": 3,
+      "fileLine": "netlify.toml:11; template/ds-product-template/netlify.toml:25; template/ds-product-template/CLAUDE.md:82 (codex 引 75-82); README:76",
+      "codexSeverity": "material",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "evidence": "兩份 netlify.toml 註解(root L11 / template L25)均寫『Per-branch deploy previews 預設啟用(任何 branch push → 自動 preview URL)』;CLAUDE.md L82 / README L76 均寫草稿預覽『`npm run setup:netlify` 會設定 / 設定』branch deploys。但 (a) Netlify branch deploys 預設不啟用(default 只 deploy production branch,需 dashboard 開『Deploy all branches』,且此設定不在 netlify.toml 可配),(b) setup script L164-171 僅『印 dashboard URL 提示手動開啟』,唯一 API 呼叫(L170)只設 `skip_prs:false`(PR-based deploy preview),不碰 branch deploys。故『預設啟用 / script 會設定』為 doc-vs-code 漂移,草稿分支自動預覽(整條『預覽→確認→上線』workflow 核心)對 fresh fork 會斷。",
+      "nuance": "CLAUDE.md L82 / README L76 有 fallback 註記(『未啟用時→改用 main 密碼保護站當預覽』)緩解使用者衝擊,但不修正 netlify.toml『預設啟用』與『script 會設定』兩個假 claim。屬跨檔一致性 material 缺陷。",
+      "recommendedFix": "由 setup 真正啟用 branch deploys 並 read-back 驗證,或把後台開關列為必要人工斷點、刪除『預設啟用 / script 會設定』宣稱。"
+    },
+    {
+      "codexIndex": 4,
+      "fileLine": "template/README.md:7-9; template/ds-product-template/README.md:15-21; scripts/setup-netlify-access.mjs:59-60",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "evidence": "文件把『private team repo + 免費 Netlify onboarding』寫成無條件成立。Netlify free tier 對 organization-owned private repo / private-repo team Git contributors 確有計費/限制,理論上組織 private repo 多人 workflow 可能卡在連 repo。但此為情境依賴(取決帳號類型 / repo ownership / 是否 org-owned),多數 fork user(個人或小團隊 personal private repo)不受影響;code 本身無硬缺陷,屬使用情境警語缺漏。",
+      "recommendedFix": "(選)明列免費路徑的 repo ownership 限制;setup 可偵測 remote owner/visibility,遇 org-private 給 Pro / 替代 hosting 引導。"
+    },
+    {
+      "codexIndex": 5,
+      "fileLine": "template/ds-product-template/CLAUDE.md:53-70",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "evidence": "『🆘 Claude 引導 Netlify onboarding』(L53-59)未預先說明『gh 未安裝/未登入』fallback;但 setup script L64-76 runtime 已有 gh auth pre-check + 續行 prompt。屬 doc 完整度 nit(script 已 handle),非功能缺陷。",
+      "recommendedFix": "(選)補 `gh` 未裝/未登入中文 fallback,並把 GitHub OAuth 與 Netlify OAuth 分開講清。"
+    },
+    {
+      "codexIndex": 6,
+      "fileLine": "scripts/setup-netlify-access.mjs:59",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "evidence": "L59 console.log 硬寫『100GB bandwidth』。Netlify 對新帳號已改 credit-based(月 300 credits）,此為 legacy 行銷數字漂移。但僅 console 訊息、非功能路徑,低衝擊、易漂移。",
+      "recommendedFix": "改寫為現行 credit 制或避免硬編容量數字、指向官方 pricing。"
+    },
+    {
+      "codexIndex": 7,
+      "fileLine": "template/ds-product-template/netlify/edge-functions/basic-auth.ts:28-39",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": false,
+      "evidence": "L32 `allowed.has(atob(header.slice(6)))`:atob 回 Latin-1 byte string,env 的 `creds`(Deno.env.get)是 UTF-8 Unicode string。非 ASCII 帳密(如中文)瀏覽器以 UTF-8 bytes base64,atob 解回的 byte-string ≠ Unicode 字串 → 固定 401;ASCII 帳密正常。技術上屬實的 correctness 細節,但所有引導/範例(`alice:pw1 bob:pw2`)皆 ASCII、非 ASCII 帳密為罕見且不建議的 edge case,衝擊有限。",
+      "recommendedFix": "以 TextDecoder 將 base64 bytes 解成 UTF-8 後比較,或在 setup/README/env 引導明確限制帳密僅 ASCII。"
+    },
+    {
+      "codexIndex": 8,
+      "fileLine": "template/ds-product-template/docs/02-create-new-product.md:56",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": true,
+      "evidence": "L56 引 `netlify.toml:14 build.command = \"npm run build-storybook\"`,但 template netlify.toml L13=command、L14=publish → off-by-one 行號。Claude 同 dim finding #3 亦抓到同一 file:line,故非 claudeMissed。屬脆弱硬編行號 marginal。",
+      "recommendedFix": "改引 `netlify.toml:13 build.command`,或去掉行號只寫 `[build].command`。"
+    }
+  ],
+  "claudeMissedNote": "codex 3 條 material(index 1/2/3,皆 setup script 與 deploy chain 的實作缺陷)Claude 同 dim 4 條 findings 全未涵蓋(Claude 專注 doc 用詞漂移:plugin-era wording / Renovate→Dependabot / off-by-one / DS root edge-function 描述不符),漏了 setup-netlify-access.mjs 執行層的 CD-not-wired / UUID-URL / branch-deploy claim 三個真缺陷。claudeMissed=3。",
+  "precisionNote": "codex 8 findings:3 material(37.5%)+ 5 marginal(62.5%)+ 0 false_positive。marginal 佔比與『codex 高 recall 低 precision(~60-76% pedantic 雜訊)』預期吻合;但 material 三條皆為真實可 reproduce 的 setup/deploy 缺陷,不可照抄 marginal 標籤全盤否定。codex 自標 4 material 中,index 4(private repo 限制)實為情境依賴 → 降為 marginal。"
+}

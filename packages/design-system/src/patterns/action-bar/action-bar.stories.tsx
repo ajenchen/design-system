@@ -35,8 +35,11 @@ const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }
   <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
 )
 
+/* 2026-07-14 Dim 90 修:Action Bar 無 production container,本檔 toolbar frame 是主要參考
+   實作 — 水平內距原本 px-4 / px-3 hardcode(不隨 layout density 縮放且三處不一致),統一改
+   chrome 水平內距 canonical `px-[var(--layout-space-loose)]`(對齊 chrome-header.tsx 同 token)。 */
 const ToolbarFrame = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="flex items-center justify-between w-full px-4 min-h-[52px] border border-border rounded-lg bg-surface">
+  <div className="flex items-center justify-between w-full px-[var(--layout-space-loose)] min-h-[52px] border border-border rounded-lg bg-surface">
     <span className="text-body font-bold text-foreground shrink-0 mr-4">{title}</span>
     {children}
   </div>
@@ -317,7 +320,7 @@ export const Dividers: Story = {
             </ButtonGroup>
           </ToolbarFrame>
           <Label>靠右對齊 — 有框業務操作接無框工具操作，視覺差異已足夠，不加分隔線</Label>
-          <div className="flex items-center w-full px-4 h-[52px] border border-border rounded-lg bg-surface">
+          <div className="flex items-center w-full px-[var(--layout-space-loose)] h-[52px] border border-border rounded-lg bg-surface">
             <ButtonGroup>
               <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
               <Button variant="tertiary" size="sm" startIcon={Download}>匯出</Button>
@@ -421,7 +424,7 @@ export const Overflow: Story = {
         title="群組溢出（例外）— 各群組各自管理，只在合併選單會讓使用者困惑時才用"
         note="當多個群組的低頻操作領域差異大到「放進同一個選單使用者會搞不清這是哪個群組的」時，才讓各群組各自管理溢出。每個群組溢出的右側必須加分隔線（群組溢出邊界）。以 Rich Text Editor 為例：文字格式、插入元素、歷史操作三個群組功能差異極大，合併選單語意混亂"
       >
-        <div className="flex items-center w-full px-3 h-[52px] border border-border rounded-lg bg-surface">
+        <div className="flex items-center w-full px-[var(--layout-space-loose)] h-[52px] border border-border rounded-lg bg-surface">
           <ButtonGroup>
             {/* 群組 A：文字格式 + 溢出 */}
             <Button variant="text" size="sm" iconOnly startIcon={Bold} aria-label="粗體" />

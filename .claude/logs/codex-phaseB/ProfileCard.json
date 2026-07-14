@@ -1,0 +1,141 @@
+{
+ "component": "ProfileCard",
+ "claimsVerified": 326,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.tsx:41",
+   "宣稱": "onChat 未傳會 dev-warn",
+   "真實code行為": "僅 onChat 與 onCall 同時未傳才警告；只漏 onChat 時不警告。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.tsx:149",
+   "宣稱": "defaultFieldValues 缺任一 key 時會顯示 placeholder 並 console.warn",
+   "真實code行為": "缺 key 會顯示「-」，但 partial object 缺 key 不警告；只有整個 prop 未傳才警告。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.tsx:211",
+   "宣稱": "沒傳任何 default-field key 會提示補完",
+   "真實code行為": "傳入空物件 {} 時沒有任何 key，但因物件為 truthy，不會警告。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.spec.md:45",
+   "宣稱": "HoverCard 負責浮層外殼（radius／border／shadow）",
+   "真實code行為": "HoverCardContent 明確不提供視覺外殼；canonical Avatar consumer 才加入背景、邊框、圓角與陰影。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.spec.md:66",
+   "宣稱": "View more 永遠可見",
+   "真實code行為": "Footer 由 onViewMore 條件渲染；callback 未傳時完全不存在，spec:123 亦明載此條件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.spec.md:101-103",
+   "宣稱": "跨 story／consumer 必須統一使用 Chat + Audio call，只有展示 1／3 actions 時可例外",
+   "真實code行為": "anatomy 的一般雙 action 範例使用「傳訊 + 追蹤」，principles 使用「Chat + Call」，均非數量差異例外。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.spec.md:158",
+   "宣稱": "Popover 有 focus trap",
+   "真實code行為": "Radix Popover 1.1.15 預設 modal=false，non-modal content 的 trapFocus=false；只有 modal=true 才 trap focus。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.spec.md:162",
+   "宣稱": "Status badge／Avatar status 圓點均通過 WCAG AA",
+   "真實code行為": "多個 status token 未達非文字 3:1；light bg-muted 上 online 約 2.26:1、away 1.37:1、offline 1.69:1，dark offline 約 2.74:1。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.spec.md:170",
+   "宣稱": "SectionMatrix 是 side-by-side 組合矩陣",
+   "真實code行為": "SectionMatrix 根容器使用 flex flex-col，五組範例垂直堆疊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.spec.md:170",
+   "宣稱": "HoverCardIntegration 是 canonical usage pattern",
+   "真實code行為": "該 story 手刻 HoverCard／Trigger／Content；principles:44-46 明定 canonical 是 Avatar hoverCard prop，且禁止 story 手刻三件套。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:8",
+   "宣稱": "Overview 的 Layout Token 已列出所有尺寸值",
+   "真實code行為": "表格漏列 Status badge 的 px-3 py-2、gap-2、status stack gap-3、dot w-2.5 h-2.5 等實際尺寸。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:83",
+   "宣稱": "Info fields 缺值顯示「—」",
+   "真實code行為": "FIELD_PLACEHOLDER 實際是半形「-」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:108",
+   "宣稱": "defaultFieldValues 缺值顯示「—」",
+   "真實code行為": "實際 placeholder 是半形「-」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:150",
+   "宣稱": "Inspector 可切換各 section 的開關",
+   "真實code行為": "withFields=false 只移除 consumer 自訂 fields；預設 ID／Employee number 區仍渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:173",
+   "宣稱": "withFields 控制是否顯示 Info fields",
+   "真實code行為": "它只控制自訂 fields；DescriptionList 與兩個 default fields 永遠存在。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:212-213",
+   "宣稱": "Minimal 只有 profile header + View more",
+   "真實code行為": "未傳 fields/defaultFieldValues 時仍渲染 ID 與 Employee number，因此另含 Info fields。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:357",
+   "宣稱": "手動 HoverCardIntegration 是標準用法範例",
+   "真實code行為": "該例直接組內部 HoverCard 三件套；canonical public 路徑是 Avatar hoverCard prop。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:451",
+   "宣稱": "Header 與 View more 始終固定可見",
+   "真實code行為": "該 story 未傳 onViewMore，View more 根本不渲染；只有存在時才是固定 footer。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:464",
+   "宣稱": "無 status 時只有 actions（profile header + actions）",
+   "真實code行為": "兩個 default Info fields 仍永遠渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:487",
+   "宣稱": "缺資料欄位顯示「—」",
+   "真實code行為": "實際 placeholder 是半形「-」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:505",
+   "宣稱": "鍵盤使用者可 Tab 到同檔整合範例的 avatar，自動顯示 card",
+   "真實code行為": "該範例以 HoverCardTrigger asChild 包無 tabIndex 的 span；Radix 不增加 tab stop，因此無法 Tab 到。Avatar hoverCard 路徑才加入 tabIndex=0。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:505",
+   "宣稱": "Popover 有 focus trap",
+   "真實code行為": "預設 DS／Radix Popover 是 non-modal，trapFocus=false。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:505",
+   "宣稱": "Status badge／Avatar status 圓點均過 WCAG AA",
+   "真實code行為": "多個 status dot 對相鄰 surface 低於 3:1；文字標籤雖提供冗餘語意，仍不能證成圓點本身均通過對比。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.principles.stories.tsx:133",
+   "宣稱": "唯一觸發點是 avatar hover",
+   "真實code行為": "ProfileCard 不含 trigger contract，可置於任意 HoverCard trigger；spec:27 亦明列 @username hover。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.principles.stories.tsx:134",
+   "宣稱": "ProfileCard 的觸發點只有 avatar，沒有別的",
+   "真實code行為": "元件本身 trigger-agnostic，且同元件 spec 明列非 avatar 的 @username trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.principles.stories.tsx:165",
+   "宣稱": "ProfileCard 永遠 320px",
+   "真實code行為": "320px 只是預設 class；透傳的 style 可直接改寬度，className 也在 cn 最後合併並可覆寫。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.principles.stories.tsx:205",
+   "宣稱": "default fields 缺值顯示「—」",
+   "真實code行為": "實際 placeholder 是半形「-」。"
+  }
+ ]
+}

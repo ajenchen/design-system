@@ -1,0 +1,29 @@
+{
+  "dim": 8,
+  "title": "7-維度 對標覆蓋 (7 world-class benchmark dimensions per spec)",
+  "mechanism": "Each component/pattern spec covers the 7 world-class DS dimensions (何時用/何時不用 · 近親分界 · 常見誤解/禁止 · 相關links · 空值 · 驗證時機 · Loading/a11y) benchmarked vs Polaris/Material/Ant/Atlassian/Carbon/Apple HIG; N/A dimensions require a one-line rationale.",
+  "filesScanned": 86,
+  "scanBreakdown": {
+    "componentSpecs": 67,
+    "patternSpecs": 8,
+    "tokenSpecs": 11,
+    "readInFull": ["SegmentedControl (template)", "Notice", "CircularProgress", "Steps", "Chart", "Slider", "Tag", "Chip", "AppShell", "Accordion", "Dialog", "DropdownMenu", "Calendar", "DateGrid", "Tooltip", "Combobox", "PeoplePicker", "DescriptionList", "FileItem", "SelectionItem", "OverflowIndicator", "header-canonical", "overlay-surface"],
+    "grepAll": 86
+  },
+  "scopeApplied": "Token specs excluded from component-7dim (they document token systems, no component:field except motion). Internal primitives (Notice, SelectionItem) + wrapper components (PeoplePicker) exempt from full coverage per audit-prompts.md line 28 documented scope default.",
+  "findings": [],
+  "verdict": "CLEAN — 0 genuine gaps. Every component & pattern spec covers all applicable 7 dimensions with N/A rationale where a dimension does not apply. All initial suspicions (CircularProgress/Steps missing 禁止事項, Chart missing empty/loading, Notice missing misuses, Calendar/DateGrid/Tag/Chip/Slider/Dialog/DropdownMenu missing near-neighbor boundary, header-canonical missing when-to-use) were false positives killed by adversarial full-read: sections exist under alternate headings (Do/Don't, 邊界案例, 何時不用 tables covering near-neighbors, 選哪個 header decision table).",
+  "falsePositivesKilled": [
+    "CircularProgress — has 'Do/Don't' (❌ Don't) covering misuses + '定位+姊妹元件分界' + '邊界案例' covering Empty/Loading/Dark",
+    "Steps — has 'Do/Don't' + '邊界案例' with explicit Loading + Empty(0 steps); 何時不用 table covers Tabs/Breadcrumb/RadioGroup/ProgressBar/Timeline",
+    "Chart — full 7 dims incl '近親元件分界', '常見誤解', '邊界案例' (空資料/Loading explicit)",
+    "Notice — internal primitive (isInternal) with ❌ 禁止 in 何時用/何時不用 table + 邊界案例 (Empty/Loading); exempt",
+    "AppShell — 禁止事項 present as ❌ 禁 list (L323-327) + 常見誤解 (L106/168) + 邊界狀態 (L29 explicit disabled/loading/empty N/A)",
+    "Accordion — 禁止事項 + 常見誤解 + empty/loading (L115) + near-neighbor via TreeView/DescriptionList/Tabs in 禁止事項",
+    "Tag/Chip/Slider/Dialog/DropdownMenu/Calendar/DateGrid/Tooltip — near-neighbor boundaries fully covered in 何時不用 comparison tables",
+    "header-canonical — '選哪個 header' decision table (when-to-use) + '何時不用(when NOT to use)' L30",
+    "Combobox — Loading (L125) + 邊界案例 Empty(no results/no value) + 驗證時機",
+    "DescriptionList — 空值呈現 (L176) + Loading/Empty 邊界案例 (L198-199)",
+    "PeoplePicker — 空狀態 (L80) + loading delegated to wrapped Combobox; wrapper exempt"
+  ]
+}

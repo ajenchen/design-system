@@ -191,7 +191,7 @@ Track 色鎖 `var(--secondary)`(= neutral-3,與 ProgressBar track 一致)。
 
 ## 視覺與幾何鐵律
 
-- **正方形不可妥協**:`style={{ width: size, height: size }}` 強制。本體絕不加 margin / padding
+- **正方形**:外層 span `style={{ width: size, height: size }}` + 內層 `<svg width height>` 雙重鎖尺寸——svg 顯式 width / height 兜底,即使 consumer 傳 `style` 覆寫外層 span,圓形圖形仍維持正方比例。本體絕不加 margin / padding
 - **SVG 雙 circle**:track(`var(--secondary)`) + arc(`currentColor`),stroke-linecap round,rotate -90deg 從 12 點起始
 - **strokeWidth 動態 scale**:`Math.max(2, Math.round(size / 10))` 維持跨尺寸視覺比例(逐值結果由公式推導,不另列舉)
 - **Indeterminate arc**:固定 25%(`INDETERMINATE_ARC_RATIO=0.25`),外層 `animate-spin` 旋轉整個 span(Material 流派)
@@ -223,8 +223,8 @@ CircularProgress 是**最薄的 circular progress primitive**,刻意避免多維
 
 - **無 Inspector**:variant 只有 value 有無(indeterminate / determinate 兩態),互動切換式 Inspector 可展的決策點少。`UsageInButton` / `UsageInline` 已覆蓋真實 consumer context
 - **ColorMatrix N/A**:arc 預設固定 `text-info`(consumer 傳 `className="text-current"` 才繼承 host,見上方「顏色策略」),track 固定 `var(--secondary)`,無 own variant × state 色彩組合可 matrix 對照。色彩不隨狀態變色(完成 / 失敗由 consumer swap 整個元件),`UsageInButton` / `UsageInline` 真實 context 已示範,獨立 ColorMatrix story 會是冗餘
-- **SizeMatrix N/A — 無 separate SizeMatrix story**:size 是自由 number(非 sm/md/lg tier),由 Button / Input 等 consumer 容器內部依規則程式化縮放,`UsageInButton` / `UsageInline` 真實 context 已涵蓋 16 / 24 / 32 / 48 等常用值的行為差異,比靜態 matrix 更貼近消費情境
-- **無 StateBehavior**:無 hover / focus / active,唯一「狀態」是 value 變化(已在 Determinate story 動態演示)
+- **SizeMatrix N/A — 無 separate SizeMatrix story**:size 是自由 number(非 sm/md/lg tier),由 Button / Input 等 consumer 容器內部依規則程式化縮放,`UsageInButton` / `UsageInline` 真實 context 已涵蓋 16(cell / upload row)/ 20(Input lg)/ 24(inline 預設)等常用值的行為差異,比靜態 matrix 更貼近消費情境(48 的全頁 overlay 尺寸見展示層 `FullScreenOverlay`)
+- **無 StateBehavior**:無 hover / focus / active,唯一「狀態」是 value 變化(determinate 靜態值示範於 `UsageInline`「Determinate inline」段;元件不含 timer / RAF 動態演示,進度值由 consumer 傳入驅動)
 
 對應 anatomy story:`Overview` + `UsageInButton` + `UsageInline` + `Accessibility`(2026-05-17 per story-rules 6-canonical)。缺 canonical 5 多數項的 rationale 即本段。
 

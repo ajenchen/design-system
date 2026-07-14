@@ -1,0 +1,91 @@
+{
+ "component": "CircularProgress",
+ "claimsVerified": 238,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.tsx:40",
+   "宣稱": "無 value → role=\"status\" + aria-label（如傳）或 aria-hidden（否則）",
+   "真實code行為": "只有非空 aria-label 或 label 時才設 role=\"status\"；兩者皆無時沒有 role，僅設 aria-hidden=true。視覺 label 也會成為 aria-label fallback。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.tsx:65",
+   "宣稱": "ReactNode → 客製 affix",
+   "真實code行為": "僅渲染 ReactElement、string、number；合法 ReactNode array／Portal 被忽略，且無 label 時數字 0 會被 truthy guard 丟掉。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.tsx:70",
+   "宣稱": "拆 sub-fn 會複雜化 local state / ref / context binding",
+   "真實code行為": "函式沒有 local state 或 context，只有 forwarded ref；long-function suppression 理由與 source 不符。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:49",
+   "宣稱": "value 有無只切換 dashoffset 計算 + animate-spin class",
+   "真實code行為": "value 還控制 affix rendering、progressbar/status/無 role、aria-valuenow/min/max，以及 determinate-only transition class。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:84-85",
+   "宣稱": "Determinate affix 支援 'value' | React.ReactNode",
+   "真實code行為": "型別雖接受完整 ReactNode，runtime 僅渲染 ReactElement/string/number；Iterable、Portal 與部分合法值不會出現。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:185",
+   "宣稱": "aria-label={aria-label ?? label}",
+   "真實code行為": "實作依「非空字串」判斷；aria-label=\"\" 且 label 非空時會回退至 label，並非 nullish-coalescing 行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:194",
+   "宣稱": "style={{ width: size, height: size }} 強制，正方形不可妥協",
+   "真實code行為": "style 留在 props 並於顯式 style 後 spread；consumer style 可覆寫 width/height，使外層 span 非正方形。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:226",
+   "宣稱": "UsageInButton / UsageInline 已涵蓋 16 / 24 / 32 / 48 等常用值",
+   "真實code行為": "這兩個 anatomy stories 直接展示的 CircularProgress 僅有 size=16 與預設 24，沒有 32 或 48。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:227",
+   "宣稱": "value 變化已在 Determinate story 動態演示",
+   "真實code行為": "不存在 Determinate export；三份 stories 也沒有 state、timer、RAF 或 play 動態更新，所有 value 都是固定值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.anatomy.stories.tsx:47",
+   "宣稱": "strokeWidth 動態 scale = max(2, size/10)",
+   "真實code行為": "實作為 Math.max(2, Math.round(size / 10))；例如 size=26 時實際為 3，而非 2.6。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.anatomy.stories.tsx:50-52",
+   "宣稱": "Button / Input / Empty 等 context 會由容器自動縮放其他尺寸",
+   "真實code行為": "CircularProgress 不感知 context；Empty 情境由 consumer 明傳 size={48}，不是 Empty 自動縮放。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.anatomy.stories.tsx:72",
+   "宣稱": "'value' | ReactNode 都會作為 Determinate 右側附加內容",
+   "真實code行為": "runtime 未支援完整 ReactNode surface；array／Iterable／Portal 被忽略，無 label 時數字 0 也不渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.anatomy.stories.tsx:173",
+   "宣稱": "本元件不可聚焦",
+   "真實code行為": "HTMLAttributes 的 tabIndex 會經 props spread 轉發；tabIndex={0} 可使 span 進入 Tab 順序。元件只是預設不可聚焦、無內建鍵盤 map。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:62",
+   "宣稱": "永遠旋轉的裝飾會讓螢幕閱讀器持續收到 loading 通知",
+   "真實code行為": "緊接示例未傳 label／aria-label，因此輸出無 role 且 aria-hidden=true；純 CSS spin 也不會持續更新 live region。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:236-237",
+   "宣稱": "Button / Field endAction / Tag 內是 16px，不能更大",
+   "真實code行為": "同 spec 明訂 lg context 使用 20px；size prop 亦為自由 number、沒有 16px 上限。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.stories.tsx:18-19",
+   "宣稱": "範例涵蓋 Stripe 付款送出、GitHub PR merging、Figma 雲端同步、Notion workspace loading、Google Drive 上傳",
+   "真實code行為": "本檔沒有 Stripe 付款、GitHub PR merging 或明示的 Figma 情境；docblock 的 scenario list 已與 exports 漂移。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.stories.tsx:34-37",
+   "宣稱": "其他尺寸由 consumer context 自動縮放（Empty = iconSize），不是讓 consumer 挑 size",
+   "真實code行為": "元件公開自由 number 的 size prop且不讀 context；Empty 示例由 consumer 明傳 size={48}。"
+  }
+ ]
+}

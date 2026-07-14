@@ -1,0 +1,192 @@
+{
+ "dim": 72,
+ "filesScanned": 498,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/scripts/gen-component-indexes.mjs:79",
+   "問題": "component barrels 的無差別 `export *` 讓 54 個只供 story 編譯的 `*Meta`、內部 Context 與低階 layout helpers 成為 package root API。",
+   "severity": "material",
+   "建議": "以公開 symbol manifest 產生具名 exports，排除 metadata、Context 與 implementation helpers，並加入 root API snapshot/denylist gate。"
+  },
+  {
+   "fileLine": "packages/design-system/src/index.ts:92",
+   "問題": "明列為 internal primitive 的 `use-overflow-items` 整模組由 root 匯出，洩漏 hooks 與內部型別。",
+   "severity": "material",
+   "建議": "自 root barrel 移除，只留 internal subpath，並讓 generator 對 hooks 採公開 allowlist。"
+  },
+  {
+   "fileLine": "packages/design-system/package.json:39",
+   "問題": "`./tokens/*` wildcard 可解析 stories、spec.md、registry JSON 與零散 CSS；34 個可達檔案中僅 5 個是承諾的 runtime token modules。",
+   "severity": "material",
+   "建議": "改成生成式明確 export map，只公開 token JS 與正式 CSS 入口。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:39",
+   "問題": "`globalHeader` 可與 `primary-sidebar` layout 同時傳入，但該分支會靜默忽略內容。",
+   "severity": "material",
+   "建議": "以 `layout` 建立 discriminated union；sidebar 分支令 `globalHeader?: never`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.tsx:235",
+   "問題": "`ButtonProps` 可表達多組規格禁止的組合，包括 iconOnly 搭 endIcon/badge、pressed 或 danger 搭不支援 variant，以及 dismiss 搭衝突 variant。",
+   "severity": "material",
+   "建議": "依一般、toggle、iconOnly、dismiss 模式拆成 discriminated union，以 `never` 排除衝突 props。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Calendar/calendar.tsx:62",
+   "問題": "公開 `view` 接受 week/day、`size` 接受 lg，但目前只有 month 與固定 md 生效，其餘是 no-op 預留表面。",
+   "severity": "material",
+   "建議": "先收斂為已實作值；功能完成並有契約與 stories 後再擴充聯集。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:60",
+   "問題": "作為 Radix `asChild` 單一 trigger 的 `children` 被型別化為任意 `ReactNode`，字串、Fragment、陣列及多節點皆能通過編譯後在執行期失敗。",
+   "severity": "material",
+   "建議": "收斂為單一 `ReactElement`，並加 `Children.only` 或開發期驗證。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:431",
+   "問題": "root-public `ComboboxProps` 暴露 5 個 PeoplePicker measurement/DOM protocol props；其中 `tagAreaPaddingLeftPx` 沒有有效 consumer。",
+   "severity": "material",
+   "建議": "移入私有 adapter/context，刪除無 consumer prop；`@internal` 註記不能替代實際出口隔離。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:91",
+   "問題": "`tableOptions` 暴露大範圍 `Partial` TanStack options，可重複或覆寫 DS 擁有的 state、handlers、row models 與 identity 契約。",
+   "severity": "material",
+   "建議": "改成審核過的窄型別，只開放確實支援的欄位；其餘能力使用語意 props。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:157",
+   "問題": "公開 `totalCount` 在實作中零消費，屬完全無效果的 API。",
+   "severity": "material",
+   "建議": "自 `DataTableProps` 移除，或放到真正需要總數的整合元件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.spec.md:294",
+   "問題": "`FilterCondition.op` 使用任意 string、`value` 使用 unknown，但 operator registry 是封閉集合，拼錯 operator 仍可通過型別。",
+   "severity": "material",
+   "建議": "由 registry 推導 operator 聯集，並按 operator 建立具體 value shape。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:121",
+   "問題": "兩個 experimental implementation switches 與正式 `spreadsheetMode` 同時公開，可形成互相矛盾的布林組合，且沒有非 story consumer。",
+   "severity": "material",
+   "建議": "公開面只保留語意層 `spreadsheetMode`；實驗切片移到未匯出的內部 feature config。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.tsx:66",
+   "問題": "公開 `size` 不會 cascade 至子控制項，規格與實作均確認目前是 no-op。",
+   "severity": "material",
+   "建議": "完成 context cascade 前先移除；實作一致傳遞後再公開。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-types.ts:43",
+   "問題": "內部 substrate 值 `naked` 混入公開 `FieldVariant`，使多個 root-public field controls 都可繞過 canonical chrome/focus 邊界。",
+   "severity": "material",
+   "建議": "拆成 public 與 internal variant types，DataTable 路徑改用私有 wrapper/context。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:48",
+   "問題": "公開 renderer capabilities 預留 `rotate`、`pageNumber`，但 MVP shell 完全不讀取或實作，形成不存在的能力承諾。",
+   "severity": "material",
+   "建議": "目前只保留已實作 capability；其他能力完成後再加入版本化契約。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:735",
+   "問題": "高階 FileViewer 繼承整包 Radix Dialog Content props，公開 `asChild`、`forceMount`、focus 與 outside-interaction 等可破壞既定 shell 行為的底層逃生門。",
+   "severity": "material",
+   "建議": "改成 FileViewer 語意 props allowlist，只保留必要 DOM、data、aria 與 className 能力。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.tsx:61",
+   "問題": "非 string 泛型依契約必須提供 `renderEdit`，公開型別卻一律選填；預設路徑會把任意 T 當 string 編輯並再斷言回 T。",
+   "severity": "material",
+   "建議": "建立條件式或 discriminated props：string 分支可省略，非 string 分支必填 `renderEdit`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.tsx:15",
+   "問題": "`precision` 接受任意 number，未表達規格的 0–6 整數範圍；負數或極端值可使 `Intl.NumberFormat` 拋出 RangeError。",
+   "severity": "material",
+   "建議": "型別收斂為 0–6，並為動態 JavaScript 輸入加入整數範圍 guard。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:54",
+   "問題": "單選與多選由 value shape 隱式推斷，null 時模式不明；多選專用 props 在單選會被忽略，callback 契約亦不對稱。",
+   "severity": "material",
+   "建議": "新增 `multiple` discriminant，分別精確定義 value、callback 與模式專用 props。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.tsx:73",
+   "問題": "公開 `height` 是只供 FileItem 使用的 internal escape hatch，讓一般 consumer 可繞過固定 4px invariant。",
+   "severity": "material",
+   "建議": "自公開 props 移除，改由 FileItem 私有 adapter、variant 或內部 CSS custom property 傳遞。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:80",
+   "問題": "`value` 與 `defaultValue` 可同時省略，但 radio 語意契約要求始終存在選取項，型別仍允許無選取狀態。",
+   "severity": "material",
+   "建議": "使用 controlled/uncontrolled union，要求至少提供 `value` 或 `defaultValue`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:56",
+   "問題": "`SelectProps` 繼承近乎完整 native select attributes，但只有 touch/native 路徑會 spread；desktop custom 路徑會遺失 name、form、required、focus/blur 與 data attributes。",
+   "severity": "material",
+   "建議": "公開介面改為兩條路徑都能兌現的 allowlist；需要表單語意者補一致的 hidden native control/forwarding。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:45",
+   "問題": "`SelectOption.tagVariant?: string` 命名與型別皆過寬；實際值被硬 cast 後傳給 `Tag.color`，任意錯字都能通過型別。",
+   "severity": "material",
+   "建議": "改為 `tagColor?: NonNullable<TagProps['color']>`；相容期可保留 typed deprecated alias。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.spec.md:19",
+   "問題": "公開 Sheet contract 只允許 right side，但 root-public `SheetContent` 仍暴露 top、bottom、left 等 Sidebar substrate 能力。",
+   "severity": "material",
+   "建議": "公開 `SheetContent` 固定 right；其他方向移到 private/internal substrate。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:331",
+   "問題": "TreeItem 的 children 契約只允許 TreeItem，型別卻接受任意 ReactNode；非樹節點內容仍會觸發 expandable 判定並破壞 registry、鍵盤與 ARIA 結構。",
+   "severity": "material",
+   "建議": "收斂為 TreeItem ReactElement 集合，並補執行期結構驗證。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:72",
+   "問題": "移除 callback 已命名 `onRemove`，但其 accessible-name prop 仍叫 `dismissLabel`，未對齊同 DS 的 `removeAriaLabel` canonical。",
+   "severity": "marginal",
+   "建議": "改名 `removeAriaLabel`，並提供短期 deprecated alias。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:456",
+   "問題": "meta variant 仍接受但忽略 `id`、`isActive`，公開 API 可建立無效果設定。",
+   "severity": "marginal",
+   "建議": "依 variant 建立 union；meta 分支將兩個 props 設為 `never`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.spec.md:295",
+   "問題": "tag display 與 `startIcon` 依規格互斥，但目前可同時傳入，只能靠渲染優先序消解。",
+   "severity": "marginal",
+   "建議": "以 display 為 discriminant，tag 分支令 `startIcon?: never`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:66",
+   "問題": "`icon` 與 `avatar` 依規格互斥，`TagProps` 卻允許同時提供。",
+   "severity": "marginal",
+   "建議": "以互斥 prefix union 表達 icon、avatar 或皆無三種分支。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:102",
+   "問題": "Checkbox/Radio item 的 `icon` 與 `avatar` 依規格互斥，但公開 props 允許衝突組合。",
+   "severity": "marginal",
+   "建議": "抽出共用 mutually-exclusive prefix union，讓衝突在編譯期失敗。"
+  },
+  {
+   "fileLine": "packages/design-system/src/patterns/header-canonical/chrome-header.tsx:39",
+   "問題": "`lockDensity` 已無 consumer，且規格記錄其會造成 header/body density 錯位，仍以未 deprecated 的公開 prop 保留。",
+   "severity": "marginal",
+   "建議": "標記 deprecated 並於下一個 breaking release 移除；density lock 僅由 surface root 擁有。"
+  }
+ ]
+}

@@ -3,6 +3,7 @@
 # 2026-05-17 ship — codex Q4 verdict「post-audit stop hook / final report validator」最合理 trigger 位置。
 #
 # Triggers: 任何 Write/Edit 到 `.claude/logs/audit-report-*.json` OR `.claude/memory/project_audit_progress.md`
+#           OR `*/C1-final-report*.md`(2026-07-14 加:C.1 決策清單真實載體,原 scope 漏 = Validator H/K 永不 fire)
 #
 # 驗證:
 #   (a) NO-SAMPLE invariant — report 不含「sample top N / subset / pick top X」keyword
@@ -25,6 +26,7 @@ FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
 case "$FILE_PATH" in
   */audit-report-*.json) ;;
   */project_audit_progress.md) ;;
+  */C1-final-report*.md) ;;
   *) exit 0 ;;
 esac
 
@@ -80,7 +82,7 @@ fi
 BENCH_DEBT=$(grep -rc '@benchmark-unverified-blanket' "$PROJECT_DIR/packages/design-system/src/" 2>/dev/null | awk -F: '{s+=$2} END{print s+0}')
 BENCH_DEBT=${BENCH_DEBT:-0}
 if [ "$BENCH_DEBT" -gt 0 ]; then
-  WARNINGS="${WARNINGS}\n  ⚠️ [D] Benchmark cite debt:${BENCH_DEBT} 處 `@benchmark-unverified-blanket` marker — 對應 prune D9(M22 cite debt)"
+  WARNINGS="${WARNINGS}\n  ⚠️ [D] Benchmark cite debt:${BENCH_DEBT} 處「@benchmark-unverified-blanket」marker — 對應 prune D9(M22 cite debt)"
   TRIGGER_PRUNE=1
 fi
 
@@ -119,13 +121,16 @@ if [ "$DIM_COUNT" -ge 10 ]; then   # 只對 full/deep-audit 規模 report 要求
     WARNINGS="${WARNINGS}\n  🔴 [I] D3/D4/D5 domain-skill chain 證據缺席:report 未提及${_D345_MISSING}。稽核 canonical 6-維度表(CLAUDE.md)deep 規模必 chain 三 domain skill(或明寫豁免理由 + skill 名)。補跑/補記再出 report。"
     TRIGGER_PRUNE=1; CRITICAL_FAIL=1
   fi
-fi
 
-# ─ Validator BLOCK gate(2026-05-31 fix infra-audit self-finding:原 hook 只 exit 0 + additionalContext
-#   soft-inject = 我過度宣稱「BLOCKER」。改:C/F/G critical fail → stderr + exit 2 真 block PostToolUse)─
-if [ "${CRITICAL_FAIL:-0}" -eq 1 ]; then
-  printf '🚨 AUDIT-REPORT VALIDATOR BLOCK(C/F/G critical):%b\n\n此 deep-audit report 不合格,補齊上述後重出 report。' "$WARNINGS" >&2
-  exit 2
+  # ─ Validator J: codex dim 覆蓋對帳(2026-07-10 user「codex 稽核一模一樣所有項目,有確保嗎?」)─
+  #   report 顯示 Phase B / codex 比稿有跑 → 必含「dim 覆蓋對帳」表(彙總 codex 各 brief 蓋到的
+  #   dim 號 vs dispatch 清單逐號對;SKILL B.2 Step 0 契約的報告端機械閘 — 保證鏈第三段)。
+  if grep -qiE 'Phase B|codex 比稿|cite battle|dual-track' "$FILE_PATH" 2>/dev/null; then
+    if ! grep -qiE 'dim 覆蓋對帳|dim 對帳|coverage tally' "$FILE_PATH" 2>/dev/null; then
+      WARNINGS="${WARNINGS}\n  🔴 [J] Codex dim 覆蓋對帳缺席:report 提及 Phase B/比稿但無「dim 覆蓋對帳」表(codex 各 brief 蓋到的 dim 號 vs dispatch 清單逐號對,缺號 = 補 brief)。per SKILL B.2 Step 0(2026-07-10),不齊不得宣稱雙軌全覆蓋。"
+      TRIGGER_PRUNE=1; CRITICAL_FAIL=1
+    fi
+  fi
 fi
 
 # ─ Validator H: 拍板清單 SSOT-理由 強制(2026-06-11 user 第 3 次糾正「要我拍板的都是 SSOT 的 UI/UX 嗎」)─
@@ -139,6 +144,59 @@ if grep -qE '待你拍板|拍板清單' "$FILE_PATH" 2>/dev/null; then
     CRITICAL_FAIL=1
     WARNINGS="${WARNINGS}\n  • Validator H:拍板清單 ${_Q_COUNT} 題但僅 ${_R_COUNT} 題標「SSOT 理由」— 寫不出理由的題 = 非 SSOT,移回 AUTO 自己做,不問 user。"
   fi
+fi
+
+# ─ Validator K: 決策品質四要件(2026-07-13 user verbatim「需我拍板的議題,不是應該確保你和 codex 來回
+#   討論辯論出來的共識與解法有研究過世界級的設計且符合我們需求與一致設計語言和設計原則並確保 SSOT?
+#   現在跟未來都應該要確保這件事永遠成立」;SSOT = deep-audit SKILL C.1「🔒 決策品質四要件」。
+#   命名注:SKILL 2026-07-13 初稿寫「Validator I」,但 I 已被 D3/D4/D5 chain(2026-07-04)佔用 → 定 K)─
+#   報告含「待你拍板」/「拍板清單」section 時:section 內每個決策 block(切分同 Validator H heading regex)
+#   必含全部四要件 marker:(1) SSOT-check(SSOT/既有拍板)(2) ≥3 世界級 cite(世界級/URL)
+#   (3) codex 辯論 verdict(codex)(4) design-fit(設計語言/設計原則/design-fit)。缺任一 → 該題不成熟
+#   → BLOCK(exit 2)。Detection conservative:只掃本 hook file scope(audit report / C1-final-report)
+#   的拍板 section;無決策 block(「無待拍板」)= 合法 pass。
+if grep -qE '待你拍板|拍板清單' "$FILE_PATH" 2>/dev/null; then
+  _K_MISSING=$(node -e '
+    try {
+      const fs = require("fs");
+      const txt = fs.readFileSync(process.argv[1], "utf8");
+      const m = txt.search(/待你拍板|拍板清單/);
+      if (m < 0) { console.log(""); process.exit(0); }
+      const lines = txt.slice(m).split("\n");
+      const headRe = /^\s*(?:\d+[.、)]|#{2,}\s*決策)/;
+      const blocks = []; let cur = null;
+      for (const ln of lines) {
+        if (headRe.test(ln)) { if (cur !== null) blocks.push(cur); cur = ln; }
+        else if (cur !== null) cur += "\n" + ln;
+      }
+      if (cur !== null) blocks.push(cur);
+      const req = [
+        ["SSOT-check", /SSOT|既有拍板/],
+        ["世界級cite", /世界級|https?:\/\//],
+        ["codex-verdict", /codex/i],
+        ["design-fit", /設計語言|設計原則|design-fit/],
+      ];
+      const miss = [];
+      blocks.forEach((b, i) => {
+        const lack = req.filter(([, re]) => !re.test(b)).map(([n]) => n);
+        if (lack.length) miss.push("決策" + (i + 1) + " 缺[" + lack.join("/") + "]");
+      });
+      console.log(miss.join(";"));
+    } catch (e) { console.log(""); }
+  ' "$FILE_PATH" 2>/dev/null || echo "")
+  if [ -n "$_K_MISSING" ]; then
+    CRITICAL_FAIL=1
+    WARNINGS="${WARNINGS}\n  🔴 [K] 決策四要件不全:${_K_MISSING} — 每個送 user 拍板的決策必含 (1)SSOT-check(先 grep 既有 canonical/已拍板)(2)≥3 世界級 cite(WebFetch 真 source + URL)(3)codex 辯論 verdict(4)設計語言/原則 fit。缺 = 該題不成熟,退回研究/辯論(deep-audit SKILL C.1 四要件),禁送 user。"
+  fi
+fi
+
+# ─ Validator BLOCK gate(2026-05-31 fix infra-audit self-finding:原 hook 只 exit 0 + additionalContext
+#   soft-inject = 我過度宣稱「BLOCKER」。改:critical fail → stderr + exit 2 真 block PostToolUse。
+#   2026-07-10 user「只有 SSOT UI/UX 才交拍板,要確保」:Validator H 原在本 gate 之後 = CRITICAL_FAIL 白設
+#   死旗(hunt finding #62)→ 搬到 gate 前,H 現在真擋)─
+if [ "${CRITICAL_FAIL:-0}" -eq 1 ]; then
+  printf '🚨 AUDIT-REPORT VALIDATOR BLOCK(C/F/G/H/I/J/K critical):%b\n\n此 deep-audit report 不合格,補齊上述後重出 report。' "$WARNINGS" >&2
+  exit 2
 fi
 
 # ─ Validator E: prune-chain-trigger emit ──────────────────────────────────

@@ -25,6 +25,9 @@
 
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* Overlay 進出場動畫 utilities(tw-animate-css;7 浮層消費)*/
+@import "tw-animate-css";
+
 @import './../tokens/color/primitives.css';
 @import './../tokens/color/semantic.css';
 @import './../tokens/typography/typography.css';

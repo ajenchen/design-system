@@ -1,0 +1,86 @@
+{
+  "dim": 90,
+  "title": "Layout-space macro 合規 sweep — codex finding 比稿裁定",
+  "role": "B.3 比稿裁定員",
+  "judgmentBasis": "GROUND TRUTH = 真實 code(逐條 Read 驗證 fileLine)+ layoutSpace.spec.md 判準(該用 token vs 刻意固定 邊界段)+ dim mechanism「只抓 macro 結構違規,禁 flag 合法 magic number」",
+  "codexRaw": 7,
+  "summary": {
+    "material_confirmed": 2,
+    "marginal": 5,
+    "false_positive": 0,
+    "claudeMissed": 1
+  },
+  "keyFraming": "此 dim 的 mechanism 明文『禁 flag 合法 magic number』。codex 7 findings 中 5 條是 story demonstration scaffolding(壓縮示意卡 / 手刻 input / max-w-sm demo)—— 這些 gap 是『為視覺平衡刻意調的值(設計裁量)』legit magic number,dim 邊界段明列不該 token 化。真 material 只有 2 條:(a)有 documented spec canonical + 同檔 sibling 打臉的 DescriptionList drift;(b)唯一 reference impl(無 production tsx)+ 內部 px-4/px-3 不一致的 action-bar。codex 高 recall 低 precision 如預期(5/7 = 71% marginal noise)。",
+  "verdicts": [
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.stories.tsx:150,169",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "codeVerified": "屬實。L150 `<div className=\"max-w-[640px] flex flex-col gap-4\">` 包兩個手刻 input field + Accordion;L169 AccordionContent 內 `<div className=\"flex flex-col gap-3\">` 包兩個手刻 input。",
+      "reasoning": "AdvancedOptions story 用手刻 `<input>`(非 Field 元件)示範 Accordion『進階選項可隱藏』行為;form 是示意 scaffolding 非 canonical 參考實作。gap-4=16px 恰為 loose md 值(md 密度下視覺正確,僅不 scale 到 lg);gap-3 是 AccordionContent 內部節奏。技術上 parallel field 該用 token scale,但屬示意卡設計裁量 = dim mechanism『禁 flag 合法 magic number』範疇。技術上對但吹毛求疵 → marginal。"
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx:278",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "codeVerified": "屬實。ContentRule 內 `<div className='flex flex-col gap-3'>` 包兩個手刻 input(專案識別碼 / 自訂網域)於 AccordionContent 內。",
+      "reasoning": "principles story 示範『Accordion 可放簡單表單欄位』;兩個手刻 input 在 AccordionContent 內的 gap-3 是壓縮示意 scaffolding。非 production code 也非 documented canonical。示意用途的 gap = 設計裁量 legit magic number。技術上 parallel 該 loose 但情境依賴 → marginal。"
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.principles.stories.tsx:67,81,104,106",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "codeVerified": "屬實。示意卡 `<div className=\"border border-border rounded-lg p-4 space-y-3\">` 內 CheckboxGroup + action row `<div className=\"flex gap-2 pt-2\">`(儲存/取消)。content→action ≈ space-y-3(12)+pt-2(8)= 20px。",
+      "reasoning": "codex 過度標 material。此為 checkbox.principles.stories 示範『Checkbox vs Switch 語意』的壓縮示意卡(p-4 小卡),教學點是心智模型差異非 form 間距。規則 4 concept A『commitment 前留白 48px』是給真實 form/dialog 的決策 moment;在 16px padding 的示意小卡裡塞 48px 內部 gap = category error(視覺會壞)。情境依賴 + 示意卡設計裁量 → 降級 marginal。負面 Switch 範例(104,106)同理。"
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/DescriptionList/description-list.stories.tsx:58",
+      "codexSeverity": "marginal",
+      "verdict": "material_confirmed",
+      "claudeCaught": false,
+      "codeVerified": "屬實且為真 drift。L58 `<div className=\"text-body font-medium mb-3\">訂單摘要</div>` 硬寫 mb-3;同檔 L97 `<div className=\"text-body font-medium mb-[var(--layout-space-tight)]\">檔案資訊</div>` 正確消費 token —— 同檔同 pattern 一對一打臉。",
+      "reasoning": "codex 過度保守標 marginal,實為 material。三重證據:(1)description-list.spec.md:127-147『Section heading 模式』明文 canonical —— heading→first-item gap 必須用 `var(--layout-space-tight)` density-aware token,L133 給出精確範例,L141 明言『若拉大 gap(例 mb-4)heading 看似分離』;(2)同檔 L97 sibling 已正確消費 token = 直接 in-file 漂移(非 discretion);(3)違反 dim 判準(macro heading→content 該 scale 卻硬寫,mb-3 md=12px 但不 scale 到 lg 16px)。documented canonical + same-file drift = 真該修缺陷。"
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/Field/field.principles.stories.tsx:255",
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "codeVerified": "屬實。NotForFormActionsRule 內 max-w-sm demo:FieldGroup(兩 Field)後 `<div className=\"mt-4 flex gap-2 justify-end\">`(取消/儲存)。content→footer = mt-4(16px)。",
+      "reasoning": "codex 過度標 material。此 principles story 教學點是『form action 放 footer 不放 Field 內』的位置語意,非間距量級;為 max-w-sm 壓縮示意。雖明列 footer + content→action pattern(規則 4 concept A 建議 48),但壓縮示意卡塞 48px 會不成比例。情境依賴 + 示意設計裁量 → 降級 marginal(不到 must-fix)。"
+    },
+    {
+      "idx": 6,
+      "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:133",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeCaught": false,
+      "codeVerified": "屬實。`<div className=\"flex flex-col gap-3 w-full\">` 包兩個 parallel Field(申請人姓名 / 申請人身分證),示範 FileUpload variant=\"button\" inline in form。",
+      "reasoning": "示範 FileUpload『表單內 inline field』用途的壓縮 scaffolding。兩 parallel Field gap-3(12=tight)技術上按規則 3 parallel 該 loose(16/24),但這是 story 示意卡教學 FileUpload variant 非 form-layout canonical。示意設計裁量 legit magic number,dim mechanism『禁 flag 合法 magic number』→ marginal。"
+    },
+    {
+      "idx": 7,
+      "fileLine": "packages/design-system/src/patterns/action-bar/action-bar.stories.tsx:39,320,424",
+      "codexSeverity": "marginal",
+      "verdict": "material_confirmed",
+      "claudeCaught": true,
+      "codeVerified": "屬實。action-bar/ 目錄僅 spec.md + stories.tsx,無 production tsx → stories 是此 pattern 唯一 reference impl。L39 ToolbarFrame helper `px-4 min-h-[52px]`;L320 `px-4 h-[52px]`;L424 `px-3 h-[52px]`。內部 px-4 ×2 vs px-3 ×1 不一致。",
+      "reasoning": "Claude+codex 雙方皆抓(共識)。雖標記 marginal,獨立判定為 material:(1)action-bar 無 production container tsx,stories 是 pattern 唯一參考實作 —— 消費者照抄的 canonical;(2)內部 px-4/px-3 不一致 = 同類 chrome frame 該一致卻漂 4px;(3)違反 action-bar.spec.md 規則 6『chrome 水平 padding = px-[var(--layout-space-loose)]』+ M23(d) nearest-canonical(真 canonical BulkActionBar.tsx:102 已用 px-loose py-tight)。唯一 reference impl 的 chrome-padding 漂移 + 內部不一致 = 真該修。"
+    }
+  ],
+  "topMaterial": [
+    "DescriptionList/description-list.stories.tsx:58 — 訂單摘要 section heading 硬寫 mb-3,應為 mb-[var(--layout-space-tight)];同檔 L97 sibling 已正確消費 token + spec:127-147 明文 canonical = 真 in-file 漂移(claude 漏抓)",
+    "action-bar/action-bar.stories.tsx:39,320,424 — 唯一 reference impl(無 production tsx)三個 toolbar frame chrome padding 硬寫 px-4/px-4/px-3(內部不一致 + 不 density-scale),應對齊 BulkActionBar px-[var(--layout-space-loose)](claude 已抓)"
+  ],
+  "claudeMissedDetail": [
+    "DescriptionList section-heading mb-3 drift(idx 4)—— Claude clearedCandidates 未提及 DescriptionList,漏了此 documented-canonical + same-file sibling 打臉的真 material。"
+  ]
+}

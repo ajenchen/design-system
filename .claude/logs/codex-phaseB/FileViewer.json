@@ -1,0 +1,291 @@
+{
+ "component": "FileViewer",
+ "claimsVerified": 733,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:23",
+   "宣稱": "Radix 提供 aria-modal 的結構優勢",
+   "真實code行為": "Radix Dialog 1.1.15 預設輸出 role=\"dialog\"、aria-describedby、aria-labelledby，但沒有 aria-modal；見 @radix-ui/react-dialog/dist/index.js:256-283。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:53",
+   "宣稱": "Anatomy 是完整 5 件套",
+   "真實code行為": "rubric canonical 是含 Accessibility 的六件套；anatomy 也實際 export 六個 canonical stories，另有 RendererRegistry extra（anatomy:79,289,464,600,740,1015,1121）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:143",
+   "宣稱": "close 會 unmount 所有 state",
+   "真實code行為": "close 只 setOpen(false)；infoOpen、zoom、fitRequest、capabilities 等 shell state 仍留在持續掛載的 FileViewer（file-viewer.tsx:790-835,993）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:202",
+   "宣稱": "onLoad 自動 fit-to-page",
+   "真實code行為": "fit ratio 會被 clamp 至 10–400%；所需倍率低於 10% 時圖片仍溢出，無法保證完整 fit-page（image-renderer.tsx:79-115）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:204",
+   "宣稱": "zoom > 100% 時可拖曳 pan",
+   "真實code行為": "程式與 wrapped library 都沒有 scale>1 的 panning gate；能否位移取決於 panning enabled 與 content/container bounds（image-renderer.tsx:222-247；react-zoom-pan-pinch:318-350）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:205",
+   "宣稱": "每 tick 約 3%，library multiplicative 乘算、log 等距；可切 smoothScroll API",
+   "真實code行為": "v4.0.3 預設 smooth=true，以 0.03×abs(deltaY) 後 additive 加減 scale；型別只有 smooth?:boolean，沒有 smoothScroll 或 smoothStep（react-zoom-pan-pinch:1259-1272,1359-1373；index.d.ts:175-186）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:208",
+   "宣稱": "centerView 自動處理 scale、置中、animation、bounds",
+   "真實code行為": "centerView 只計算幾何中心並 animate，沒有 min/max scale 或 position bounds clamp（react-zoom-pan-pinch:1044-1053,1150-1159）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:209",
+   "宣稱": "Fit to width/page 經 centerView 重新置中",
+   "真實code行為": "fit effect 只更新 zoom；重複選相同倍率時 React state 不變，centerView effect 又會同倍率 early-return，因此不會重新置中（image-renderer.tsx:183-206）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:210",
+   "宣稱": "centerZoomedOut: true 讓 ≤100% 自動 center",
+   "真實code行為": "library 依 scaled content 是否小於 wrapper 決定置中，不以 100% natural-scale 為門檻（react-zoom-pan-pinch:205-232）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:211",
+   "宣稱": "user 看哪，zoom 完看哪，視覺焦點不漂移",
+   "真實code行為": "只有 wheel path 以 pointer 為 anchor；按鈕、preset、fit、輸入都呼叫 centerView，會把既有 pan/focal point 改成整張內容中心（image-renderer.tsx:183-197）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:213",
+   "宣稱": "0 鍵在 file-viewer.tsx:863；雙擊在 image-renderer.tsx:144",
+   "真實code行為": "現行位置分別是 file-viewer.tsx:887-891 與 image-renderer.tsx:170-181；image-renderer.tsx:144 是 resize transform state。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:278",
+   "宣稱": "說明是依 readOnly prop 切換的 Textarea",
+   "真實code行為": "readOnly 且空值時 DS Textarea 直接輸出 display div，不是 textarea（Textarea/textarea.tsx:195-216）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:282",
+   "宣稱": "Readonly placeholder 改為「尚無說明」",
+   "真實code行為": "readOnly 空值走 display div + emptyDisplay；非空時有 value，兩種情況都不顯示該 placeholder（Textarea/textarea.tsx:195-238）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:312",
+   "宣稱": "焦點在 input/textarea/contentEditable 時不觸發快捷鍵",
+   "真實code行為": "FileViewer 自寫 handler 會 return，但 Radix Escape 是 capture-phase document listener，仍會關閉 viewer（file-viewer.tsx:863-903；react-use-escape-keydown:40-49）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:363",
+   "宣稱": "role=\"dialog\" + aria-modal=\"true\"",
+   "真實code行為": "role=\"dialog\" 存在，但 Radix Content 沒有輸出 aria-modal；modal isolation 另由 hideOthers/focus machinery 實作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:365",
+   "宣稱": "Focus trap：焦點鎖在 viewer 內",
+   "真實code行為": "FileViewer 取消 mount autofocus 且未把焦點移入 viewer；FocusScope 跳過 focusFirst，初始焦點可留在外部（file-viewer.tsx:960-962；react-focus-scope:107-121）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:373",
+   "宣稱": "preventDefault 讓鍵盤從 viewport 開始",
+   "真實code行為": "程式沒有 focus viewport，viewport 也沒有 tabIndex；preventDefault 只取消 Radix 初始聚焦（file-viewer.tsx:960-962,1001-1004）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.spec.md:383",
+   "宣稱": "InfoPanel scroll 實作位於 file-viewer.tsx:493",
+   "真實code行為": "ScrollArea 現位於 file-viewer.tsx:510；line 493 是 close button 註解。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:12",
+   "宣稱": "Canonical 5 stories",
+   "真實code行為": "canonical 是六件套且本檔已 export Accessibility；另有 RendererRegistry extra。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:13-14",
+   "宣稱": "固定 chrome 尺寸；FileViewer 不隨 density 放大",
+   "真實code行為": "Toolbar/InfoPanel header 繼承 page density；InfoPanel 與 Filmstrip 多個 padding/gap 也使用 density-aware token（file-viewer.tsx:354-365,511-515,593,613-622）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:86-89",
+   "宣稱": "renderer registry 按 MIME 決定誰渲染",
+   "真實code行為": "registry 依任意 canRender(file) predicate；內建 image renderer 也接受副檔名命中，不是 MIME-only（file-viewer.tsx:140-146；can-render-image.ts:11-14）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:187",
+   "宣稱": "FileViewer 是預設 export",
+   "真實code行為": "實作只有 named export `export { FileViewer }`，沒有 default export（file-viewer.tsx:1128）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:232",
+   "宣稱": "readOnly=true → InfoPanel textarea readOnly",
+   "真實code行為": "僅非空 description 會輸出原生 textarea；空值 readOnly 走 display div（Textarea/textarea.tsx:195-238）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:607-612",
+   "宣稱": "所有 chrome 維度 fixed px/rem；只有 Button 與 ZoomInput 隨 density",
+   "真實code行為": "header、InfoPanel padding/gap、Filmstrip padding/thumb gap 都會隨 page density/token 改變（file-viewer.tsx:354-365,511-515,593,613-622）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:829",
+   "宣稱": "滾輪是 multiplicative 連續縮放",
+   "真實code行為": "react-zoom-pan-pinch wheel path 使用 targetScale=scale+delta×step，屬 additive。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:848",
+   "宣稱": "Pan：zoom > 100% 時拖曳",
+   "真實code行為": "panning 沒有 100% gate；是否能移動由內容尺寸與 bounds 決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:906",
+   "宣稱": "editable focus 時全部不觸發",
+   "真實code行為": "Radix Escape capture listener仍會 dismiss；只攔到 FileViewer 自寫的 Arrow/+/-/0/F/I handler。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:907",
+   "宣稱": "所有 keyboard 動作都有 toolbar button 對應",
+   "真實code行為": "左右切檔對應 viewport arrows；0 是 Input；fit/preset 是 role=\"menuitem\"，並非全是 toolbar button。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:939-948",
+   "宣稱": "+/- 對應 button 是 ZoomInput dropdown",
+   "真實code行為": "+/- 各有獨立 Plus/Minus Button；dropdown 是 chevron trigger，內容為 fit/preset items（file-viewer.tsx:221-318）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:1126",
+   "宣稱": "Radix 自動處理 aria-modal=\"true\"",
+   "真實code行為": "Radix 1.1.15 沒有輸出 aria-modal attribute。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:1126",
+   "宣稱": "Focus trap：焦點鎖在 viewer 內",
+   "真實code行為": "取消 mount autofocus 後沒有替代 focus；初始焦點可留在 viewer 外，直到焦點實際進入 Content 後 trapping 才生效。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:1126",
+   "宣稱": "preventDefault 讓鍵盤從 viewport 開始",
+   "真實code行為": "viewport 不可聚焦且沒有 focus()；焦點仍留在先前元素。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:20-21",
+   "宣稱": "每條 Rule 必搭配真實業務場景與 live 互動",
+   "真實code行為": "多個 Rule 僅渲染靜態 Label，沒有 live interaction，例如同檔:275-286,480-491,528-532,627-631。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:261",
+   "宣稱": "close unmount 所有 state",
+   "真實code行為": "close 只 setOpen(false)；多個 shell state 仍保留於 FileViewer hooks。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:284",
+   "宣稱": "所有 viewer 控制都集中在 toolbar",
+   "真實code行為": "prev/next buttons、filmstrip thumbs 與 overflow arrows 都位於 toolbar 外（file-viewer.tsx:596-668,1026-1077）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:426",
+   "宣稱": "readOnly 無 description 時顯示「尚無說明」placeholder",
+   "真實code行為": "DS Textarea 此時渲染 display div + emptyDisplay，不使用 placeholder。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:432",
+   "宣稱": "readOnly textarea focus 不進游標",
+   "真實code行為": "非空值會渲染原生 `<textarea readOnly>`；原生 readonly textarea 仍可 focus、選取文字、放置 caret 與複製。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:474",
+   "宣稱": "按鈕會開啟 Dashboard review + info panel",
+   "真實code行為": "按鈕只 setOpen(true)，沒有 info-open prop；infoOpen 初值仍為 false，須再按 I/Info（同檔:473-476；file-viewer.tsx:816-821）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:482",
+   "宣稱": "巢狀 Sheet/Dialog 會讓兩層 focus-trap 打架，Esc 不知道關哪個",
+   "真實code行為": "Radix FocusScope stack 會 pause 外層、移除內層後 resume；DismissableLayer 僅讓最高層處理 Escape。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:484",
+   "宣稱": "Sheet on FileViewer = focus-trap 雙層 + Esc 語義衝突",
+   "真實code行為": "Radix 已有 nested FocusScope stack 與 topmost Escape 規則，不會因兩層本身產生所宣稱的競爭／不確定性。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:574-615",
+   "宣稱": "快捷鍵每個都有對應 button",
+   "真實code行為": "0 對應原生 Input；fit/preset 對應 Radix `<div role=\"menuitem\">`，不是 button。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:57-59",
+   "宣稱": "按 file MIME 決定 renderer",
+   "真實code行為": "resolveRenderer 依任意 registered canRender(file) predicate，內建 image predicate 亦支援副檔名。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:63",
+   "宣稱": "Radix DialogPrimitive 提供 aria-modal",
+   "真實code行為": "Radix Content 沒有輸出 aria-modal；只輸出 role、aria-describedby、aria-labelledby。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:126-127",
+   "宣稱": "Fallback 存放在陣列第二段",
+   "真實code行為": "唯一陣列是 userRegistered；image 與 fallback 是 resolveRenderer 內的硬寫後續分支（file-viewer.tsx:128-146）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:530-535",
+   "宣稱": "檔案資訊 section header 使用 FieldLabel 同款 typography",
+   "真實code行為": "實際渲染 raw span `text-body font-normal`，不是 FieldLabel（file-viewer.tsx:537-539）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:702",
+   "宣稱": "descriptionPlaceholderReadOnly 是 readOnly textarea placeholder",
+   "真實code行為": "readOnly 空值輸出 display div；非空值已有 value，該 placeholder 沒有實際可顯示狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:752",
+   "宣稱": "readOnly=true 時 description 是 readOnly textarea",
+   "真實code行為": "空 description 會由 DS Textarea 改輸出 display div；只有非空時才是 `<textarea readOnly>`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:960-961",
+   "宣稱": "preventDefault 後把焦點留給 viewport",
+   "真實code行為": "只取消 Radix autofocus；viewport 沒有 tabIndex、ref.focus() 或其他替代聚焦。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:1118",
+   "宣稱": "selected 縮圖使用 bg-neutral-selected",
+   "真實code行為": "active thumbnail 使用 ring-2 ring-primary；bg-neutral-selected 實際用於 zoom preset item（file-viewer.tsx:289-299,629-644）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/image-renderer.tsx:17",
+   "宣稱": "fit-to-width = image width 填滿 container width",
+   "真實code行為": "ratio 會 clamp 並 floor 成整數百分比；例如 83.33% 變 83%，不會精確填滿（image-renderer.tsx:79-100）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/image-renderer.tsx:18",
+   "宣稱": "fit-to-page = image 完整可見",
+   "真實code行為": "MIN_SCALE=0.1；所需倍率低於 10% 時仍會溢出（image-renderer.tsx:32,94-100）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/image-renderer.tsx:96-99",
+   "宣稱": "Floor 後 image 永遠完整可見",
+   "真實code行為": "MIN_SCALE 仍可讓超大圖片溢出；fit-width 亦刻意允許垂直 overflow。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/image-renderer.tsx:183-184",
+   "宣稱": "centerView 同時處理 bounds",
+   "真實code行為": "v4.0.3 centerView 只計算幾何中心並 animate，沒有 min/max scale 或 position bounds clamp。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/image-renderer.tsx:225",
+   "宣稱": "TransformWrapper ref type not exported",
+   "真實code行為": "ReactZoomPanPinchRef 與精確的 ReactZoomPanPinchContentRef 都有 export；TransformWrapper ref 也宣告為後者（index.d.ts:137-155,350-351,399）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/image-renderer.tsx:238",
+   "宣稱": "wheel step 0.03 = 每 tick約 3% scale",
+   "真實code行為": "smooth 預設 true，實際 step 是 0.03×abs(deltaY)，依裝置事件 delta 改變。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/image-renderer.tsx:240",
+   "宣稱": "wheel zoom 是 multiplicative 乘算、log 等距",
+   "真實code行為": "wheel path 使用 additive `targetScale = scale + delta × step`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/image-renderer.tsx:241-242",
+   "宣稱": "可切到 smoothScroll API",
+   "真實code行為": "installed v4.0.3 只公開 top-level smooth?:boolean 與 wheel.step；沒有 smoothScroll 或 smoothStep。"
+  }
+ ]
+}

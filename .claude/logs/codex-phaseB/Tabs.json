@@ -1,0 +1,146 @@
+{
+ "component": "Tabs",
+ "claimsVerified": 294,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:2",
+   "宣稱": "當前 515 < cap 800",
+   "真實code行為": "檔案目前為 558 行；仍低於 800，但 515 已過期。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:28",
+   "宣稱": "切 view（不是切 value）；切 value 用 SegmentedControl",
+   "真實code行為": "Tabs API 只處理任意 string value，無法區分 view/value；tabs.spec.md:55 更明定此二分法過度簡化，應依規模、角色、生命週期判斷。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:37",
+   "宣稱": "Trigger 寬度永遠由內容決定（hug content）",
+   "真實code行為": "有 inlineAction 時，tabs.tsx:475-483 會增加 iconSize + 4/8px 的 paddingRight，Trigger 不再純由內容寬度決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:198",
+   "宣稱": "左右 always-visible arrows",
+   "真實code行為": "箭頭依邊界條件渲染：起點沒有左箭頭，終點沒有右箭頭，只有中段可能同時顯示。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:252",
+   "宣稱": "Menu 永遠顯示全部 tabs",
+   "真實code行為": "只枚舉第一層 children 且要求 element 自身有 string value；React Fragment 不會被 Children.toArray 展開，Fragment 內的 TabsTrigger 不會進 dropdown。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:252",
+   "宣稱": "active 的用 checked 標記（單選語意）",
+   "真實code行為": "實際使用一般 DropdownMenuItem 的 selected CSS 背景，DOM role 仍是 menuitem，沒有 aria-checked、menuitemradio 或 checked indicator。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:394",
+   "宣稱": "Trigger 無水平 padding — 寬度 = 內容寬度",
+   "真實code行為": "inlineAction 分支會加入右側 paddingRight 預留獨立 action 空間。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:396",
+   "宣稱": "底線等於內容寬度",
+   "真實code行為": "inlineAction 存在時，left-0/right-0 的 pseudo-element 會跨過含 paddingRight 的完整 Trigger，而非純內容寬度。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.spec.md:100",
+   "宣稱": "inline 高度 / icon size / suffix 結構漂移以 button.tsx 為主",
+   "真實code行為": "高度由 Tabs 自有 --tab-height-* 控制，icon size 取自共享 ICON_SIZE token；只有 suffix gap 結構鏡射 Button。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.spec.md:142",
+   "宣稱": "menu dropdown 列全部 tab",
+   "真實code行為": "menu 只列第一層、直接帶 string value 的 children；Fragment 或 wrapper 內的 TabsTrigger 會被漏掉。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.spec.md:152",
+   "宣稱": "點開 DropdownMenu 列出全部 tab",
+   "真實code行為": "React.Children.toArray 不展開 Fragment；現有 Inspector 的四個 Fragment 內 tabs 全不會成為 menu item。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.spec.md:164",
+   "宣稱": "Trigger 寬度永遠由內容決定（hug content）",
+   "真實code行為": "inlineAction 會令 Trigger 增加固定右側預留 padding。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.spec.md:173",
+   "宣稱": "Trigger 本身仍 hug content",
+   "真實code行為": "有 inlineAction 時，Trigger box 包含 actionPaddingRight 預留區，不是純內容寬度。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.spec.md:214",
+   "宣稱": "未選 trigger 使用一般 weight",
+   "真實code行為": "tabs.tsx:390 對所有 trigger 無條件套 font-medium；未選與 selected 都是 medium。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.spec.md:215",
+   "宣稱": "disabled 無底線",
+   "真實code行為": "Radix 的 selected 與 disabled 可同時成立；active+disabled 仍取得 after:bg-primary，且 disabled 樣式沒有清除底線。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.spec.md:233",
+   "宣稱": "size × variant matrix 已在 anatomy 完整呈現",
+   "真實code行為": "Tabs 沒有 visual variant prop；frontmatter、tabsMeta 的 variants 均為空，CVA 只有 size。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.spec.md:233",
+   "宣稱": "density 由 size prop 表達",
+   "真實code行為": "size 只選 sm/md/lg token tier；同一 size 的 tab-height 與 layout-space token仍由 data-density 獨立切換。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.spec.md:259",
+   "宣稱": "OverflowMatrix（scroll / menu / fade 三模式）",
+   "真實code行為": "公開模式是 none、scroll、menu；fade 是 scroll/menu 內的條件式 mask 效果，不是第三種 mode。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.spec.md:279",
+   "宣稱": "←/→ — 切 tab",
+   "真實code行為": "只符合預設 horizontal + automatic；vertical 使用 ↑/↓，activationMode='manual' 時方向鍵只移焦點、不切換 selected value。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.spec.md:283",
+   "宣稱": "整組 tabs 為單一 tab stop",
+   "真實code行為": "只有 TabsTrigger 集合是單一 roving stop；inlineAction、scroll arrows、menu navigator 均是額外可聚焦按鈕。無 focus trap 的宣稱則正確。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:127",
+   "宣稱": "menu navigator dropdown 列全部 tab",
+   "真實code行為": "Inspector 把後四個 tabs 包在 Fragment；dropdown 實際只列前三個直接 children。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:135",
+   "宣稱": "成員 tab 顯示 3、通知顯示 12",
+   "真實code行為": "實際把 3 放在「成員」、12 放在「設定」；Inspector 沒有「通知」tab。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:261",
+   "宣稱": "selected underline 使用 --primary-hover／2px primary-hover",
+   "真實code行為": "tabs.tsx:406 使用 after:bg-primary，即 primary base。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:264",
+   "宣稱": "disabled 的 Underline(::after) 為「—」",
+   "真實code行為": "selected+disabled 會同時輸出 data-state='active' 與 disabled；active primary underline 不會被 disabled 樣式清除。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:335",
+   "宣稱": "超出容器時，左右兩端出現 scroll arrow + fade mask",
+   "真實code行為": "箭頭與 mask 依滾動邊界變化；起點只有右側、終點只有左側，中段才可能兩側同時出現。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:399",
+   "宣稱": "Trigger 不加任何水平 padding；selected underline 剛好 fit label",
+   "真實code行為": "inlineAction 會加入 paddingRight；底線覆蓋完整 Trigger box，含 icon、badge、endIcon 與 action 預留區，不只 label。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:412",
+   "宣稱": "←/→ — 在 tab 之間移動／切換",
+   "真實code行為": "此 map 只完整描述預設 horizontal；vertical 改用 ↑/↓，manual activation 下方向鍵只移焦點，Enter/Space 才切換。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:412",
+   "宣稱": "整組 tabs 是單一 tab stop",
+   "真實code行為": "TabsTrigger 集合是單一 roving stop，但 inlineAction 與 overflow 控制按鈕各自增加 Tab stop；「無 focus trap」仍與 Radix 原始碼一致。"
+  }
+ ]
+}

@@ -1,0 +1,161 @@
+{
+ "component": "Avatar",
+ "claimsVerified": 524,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:23",
+   "宣稱": "文字 fallback 字體 = size × 0.5",
+   "真實code行為": "數字模式使用 Math.round(size × 0.5)，奇數尺寸不是精確乘積；fill 模式使用 50cqi。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:72-74",
+   "宣稱": "Portal 後的 HoverCardContent 會繼承 trigger subtree theme。",
+   "真實code行為": "HoverCardContent 經 Radix Portal 掛到 document.body，CSS 不繼承 trigger subtree。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:110",
+   "宣稱": "solid 是 step-6 背景 + on-emphasis 前景，其餘 hue 規則套用全色彩。",
+   "真實code行為": "預設 neutral 的 solid 是 --color-neutral-9 + --inverse-fg；不是 step-6/on-emphasis，dark theme 前景也不是白色。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:186-189",
+   "宣稱": "Status dot 是 avatar 的 28%，clamp 8–16px。",
+   "真實code行為": "只有數字 size 套公式；size=\"fill\" 時固定 10px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:273-274",
+   "宣稱": "presence 資訊整合到 parent avatar 的 aria-label。",
+   "真實code行為": "status 從未併入 accessible name；label 只取 alt／View profile，status span 本身為 aria-hidden。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:322-323",
+   "宣稱": "HoverCardContent 不設 max-height，由 ProfileCard 自己限高。",
+   "真實code行為": "實際 HoverCardContent wrapper 固定套 available-height max-height。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:324-327",
+   "宣稱": "Portal 會繼承 trigger subtree 的 dark theme，令 ProfileCard 變黑。",
+   "真實code行為": "Portal DOM 位於 body，不經 trigger subtree 的 CSS inheritance chain。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:352-358",
+   "宣稱": "Person avatar 預設必有 hover ProfileCard。",
+   "真實code行為": "AvatarData.hoverCard 是 optional，沒有 person discriminator、預設值或自動建立 ProfileCard 的路徑。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:25",
+   "宣稱": "純視覺 atom——img + 文字 fallback 組合。",
+   "真實code行為": "公開元件另組合 icon、status、Badge、Field/Table context；帶 hoverCard 時還會成為可聚焦的 Radix HoverCard trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:49",
+   "宣稱": "任何 person avatar 預設顯示 ProfileCard，不是 opt-in。",
+   "真實code行為": "hoverCard?: ReactNode 是 opt-in API；未傳時不渲染 HoverCard。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:74",
+   "宣稱": "適用 ALL person avatars，無例外。",
+   "真實code行為": "同一元件 docblock 明列 ProfileCard 內部 person Avatar 不 forward hoverCard；API 也無全域強制。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:92",
+   "宣稱": "tabIndex canonical 確保 keyboard 可達 ProfileCard content。",
+   "真實code行為": "focus 只會延遲開啟 preview；Radix HoverCard 把 Content 內所有 tabbable descendants 設為 tabindex=\"-1\"，無 focus move 或 focus trap，鍵盤不能 Tab 進 actions。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:116",
+   "宣稱": "Icon 模式只在有 icon，或 src 失敗且無 alt 時觸發。",
+   "真實code行為": "src、icon、alt 全無時也會進 Icon mode，顯示預設 User icon。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:117",
+   "宣稱": "Text 模式要求有 alt 且無 src/icon。",
+   "真實code行為": "src 存在但載入失敗時，只要無 icon 且有 alt，也會進 Text mode；無 src 不是必要條件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:215",
+   "宣稱": "dotSize 永遠是 clamp(8, round(avatarSize × 0.28), 16)。",
+   "真實code行為": "size=\"fill\" 時 dotSize 固定 10px，不依父容器實際尺寸計算。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:243",
+   "宣稱": "alt 必傳。",
+   "真實code行為": "AvatarProps.alt 是 optional，亦無 runtime guard。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:244",
+   "宣稱": "無 alt 時會降級 initials/icon，且一律不會產生無 SR 標的元素。",
+   "真實code行為": "無 alt 不可能產生 initials；成功圖片會得到 alt=\"\"，無圖/失敗時則是 aria-hidden User/icon 加無 accessible name 的 wrapper。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:245",
+   "宣稱": "presence 訊號已整合進 parent alt。",
+   "真實code行為": "元件只隱藏 status dot，並不把 status 附加到 alt／aria-label。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:246",
+   "宣稱": "badgeCount 的 nested Badge 會提供 role=status + aria-label 計數語意。",
+   "真實code行為": "hoverCard + badgeCount 時外層 role=\"img\" 令 descendants presentational；Badge 語意被 flatten，外層 aria-label 也不含 count。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:194",
+   "宣稱": "solid 一律 step-6；yellow/amber/orange/lime 深字，其餘白字。",
+   "真實code行為": "neutral solid 使用 --color-neutral-9 + --inverse-fg；dark theme 的 --inverse-fg 是深字，且不是 step-6。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:197",
+   "宣稱": "person avatar 預設必帶 hoverCard。",
+   "真實code行為": "hoverCard optional，Avatar 不辨識 person，也不會自動產生 ProfileCard。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:314-317",
+   "宣稱": "Inspector 的 Image mode blueprint 顯示 iconPx 與 icon。",
+   "真實code行為": "Image mode 實際是 img w-full h-full object-cover；故事卻錯誤顯示 icon 尺寸與標籤。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:386",
+   "宣稱": "開發只需設定 size 和 color。",
+   "真實code行為": "Image/Icon/Text 分別仍需 src、icon、alt；shape 與 solid 也需另行設定。只有內部尺寸計算是自動的。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:646",
+   "宣稱": "Avatar 沒有 hover / focus / active。",
+   "真實code行為": "有 hoverCard 時會加入 tabIndex、focus-visible ring，Radix Trigger 也會在 pointer enter／focus 開卡；只有 active state 不存在。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:681",
+   "宣稱": "status dot 尺寸為 avatar 的 28%，clamp 8–16px。",
+   "真實code行為": "size=\"fill\" 時固定 10px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:702",
+   "宣稱": "alt 必傳。",
+   "真實code行為": "alt 是 optional，且無 runtime 必填檢查。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:702",
+   "宣稱": "沒有 alt 時圖片會降級為首字或 icon，不會留下無報讀內容的頭像。",
+   "真實code行為": "有效 src 仍渲染 alt=\"\" 圖片；無圖/失敗時顯示 aria-hidden User/icon，可能完全沒有 SR 身份名稱。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:702",
+   "宣稱": "在線狀態整合進頭像本身的 alt。",
+   "真實code行為": "元件不串接 status；該 story 的 status 範例也只傳人名，presence 不會被報讀。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:702",
+   "宣稱": "有 hoverCard 時頭像會變成可 Tab 聚焦的按鈕，鍵盤可打開名片浮層。",
+   "真實code行為": "DOM 是可聚焦的 div role=\"img\"，不是 button，也無 Enter/Space；focus 可開 preview，但 Radix 移除內容 tab stops，鍵盤無法進入名片 actions。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:125",
+   "宣稱": "沒有 src／圖片失敗就顯示 initials。",
+   "真實code行為": "若有 icon 會先顯示 icon；無/空 alt 則顯示預設 User icon，並非一律 initials。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:156",
+   "宣稱": "在線狀態整合進頭像的 alt 文字。",
+   "真實code行為": "範例只傳 Ada/Alex/Ben/Bella，元件也不會自動附加 status；presence 實際被 aria-hidden。"
+  }
+ ]
+}

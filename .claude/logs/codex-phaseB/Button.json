@@ -1,0 +1,136 @@
+{
+ "component": "Button",
+ "claimsVerified": 830,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.tsx:2",
+   "宣稱": "「當前 528 < cap 800」",
+   "真實code行為": "檔案目前為 576 行；仍低於 800，但行數宣稱已過期。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:20",
+   "宣稱": "「text：★ iconOnly cva default」",
+   "真實code行為": "cva 的 defaultVariants.variant 是 tertiary；只有 Button runtime 的 resolvedVariant 在 iconOnly=true 且未指定 variant 時才改成 text。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.tsx:41,289,318-327",
+   "宣稱": "「iconOnly prop 讓任何尺寸變正方形」／「aspect-square 鎖 width=height」",
+   "真實code行為": "fullWidth 或垂直 ButtonGroup 會再套 w-full；配合固定 h-field-* 時寬高皆為明確值，aspect-square 無法維持正方形。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:232,262,270",
+   "宣稱": "「iconOnly 讓任何尺寸變正方形」且嚴格為「只有一個 icon」",
+   "真實code行為": "iconOnly+fullWidth 可成為滿寬矩形；nativeChildren 仍渲染 children、badge、endIcon，runtime 僅對 badge/endIcon 發 dev warning，並未禁止或移除。這也與同檔 402 行垂直群組一律 fullWidth 衝突。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.anatomy.stories.tsx:197,217,261,435,592",
+   "宣稱": "「icon-only 模式只保留 startIcon，變正方形並自動 tooltip」",
+   "真實code行為": "iconOnly 不移除 label/badge/endIcon；fullWidth 時不保證正方形；asChild 時明確不包內建 Tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.tsx:274,312",
+   "宣稱": "loading 時 startIcon 自動換成 spinner、自動 disabled，badge/endIcon 維持顯示",
+   "真實code行為": "只對 native 分支成立；asChild 分支只渲染 consumer child，沒有 spinner/startIcon/badge/endIcon，也不輸出 native disabled。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:307-311",
+   "宣稱": "loading「顯示 CircularProgress」且 CircularProgress「永遠在左側」",
+   "真實code行為": "asChild loading 只有 aria-busy、aria-disabled 與 click guard，不渲染 CircularProgress。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.anatomy.stories.tsx:257,262",
+   "宣稱": "startIcon 在 loading 時替換為 spinner；loading＝CircularProgress＋自動 disabled＋aria-busy",
+   "真實code行為": "asChild 路徑沒有 CircularProgress 或 native disabled，只有 ARIA 與 guard。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.tsx:483-498",
+   "宣稱": "asChild 的 functional guard 會阻斷 disabled/loading 功能",
+   "真實code行為": "Radix Slot 先執行 slotted child 自帶的 onClick，再執行 Button guard；child callback 的副作用已發生，之後才 preventDefault/stopPropagation。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:276",
+   "宣稱": "iconOnly tooltip 是「元件保證的行為」，開發者不需另包 Tooltip",
+   "真實code行為": "只有 aria-label 為字串且非 asChild 時才包 Tooltip；Button 自己的 asChild JSDoc 也明載此時不啟動。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:171",
+   "宣稱": "「深色底按鈕（primary、secondary+danger）」",
+   "真實code行為": "secondary+danger 實際是 bg-surface＋紅字＋紅框的 outlined surface，不是深色填滿背景。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:200-201",
+   "宣稱": "danger 疊加後會改成紅色，且與 variant「互相獨立」",
+   "真實code行為": "tertiary/link 沒有 danger 視覺；secondary/text 與 pressed 並用時，data-state/aria-pressed selector 會覆蓋 danger 紅色，兩軸並不獨立。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.anatomy.stories.tsx:253",
+   "宣稱": "「danger：套用紅色，與 variant 正交」",
+   "真實code行為": "只有 primary/secondary/text 有 danger compound；pressed 亦可覆蓋 secondary/text 的 danger 色。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:416",
+   "宣稱": "「tertiary + danger 與 secondary 視覺完全相同」",
+   "真實code行為": "tertiary+danger 沒有匹配 compound，仍是一般 tertiary；secondary+danger 則是紅字紅框，兩者不同。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:300-302",
+   "宣稱": "disabled 時品牌／狀態色完全移除、danger 消失，且 disabled 視覺優先於 pressed",
+   "真實code行為": "僅 native :disabled 分支成立；asChild 使用 aria-disabled，只套 cursor/opacity，原 variant、danger、pressed 色仍保留。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:313",
+   "宣稱": "loading 時 ChevronDown 維持顯示，「指示下拉仍可展開」",
+   "真實code行為": "native 路徑雖保留 endIcon，卻同時設為 disabled，因此不能展開；asChild 路徑則不渲染 Button 的 endIcon。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.tsx:539-564",
+   "宣稱": "buttonMeta 是 variant/size/state 矩陣的結構化 canonical",
+   "真實code行為": "states 陣列漏掉已實作、且 anatomy 明列的 loading state。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.tsx:566-570",
+   "宣稱": "buttonMeta tokens 已按 buttonVariants 真實 class「補齊」",
+   "真實code行為": "仍漏 --neutral-selected-hover、--neutral-selected-active 等實際消費 token。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.anatomy.stories.tsx:494-507",
+   "宣稱": "「橫向看同 variant 的 state 變化」",
+   "真實code行為": "Button 只在 disabled 欄收到 disabled prop；hover/active 欄仍渲染 default 視覺，只有旁邊的 token annotation 改變。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.anatomy.stories.tsx:91-94,390,405,431,552-580",
+   "宣稱": "尺寸表列出 token resolved value，且「density 切換由系統自動處理」",
+   "真實code行為": "顯示值硬寫為 sm/md/lg＝28/32/36px；density=lg 時真實 token 是 32/36/40px，但 Inspector/SizeMatrix 數字不會更新。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.anatomy.stories.tsx:631",
+   "宣稱": "狀態章節涵蓋「Loading / Disabled / Checked」",
+   "真實code行為": "Button 沒有 checked prop/state；該章實際涵蓋 pressed。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:371",
+   "宣稱": "SurfaceHeader／SurfaceFooter 都內建 data-unbounded CSS rule",
+   "真實code行為": "CHROME_UNBOUNDED_SLOT 只套在 SurfaceHeader；SurfaceFooter 沒有該 selector。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:441; packages/design-system/src/components/Button/button.anatomy.stories.tsx:707",
+   "宣稱": "「文字對比 ≥ 4.5:1（WCAG AA）」",
+   "真實code行為": "現行 token 實算失敗：light primary-hover 約 3.56、error-hover 約 3.28；dark primary 約 4.09、primary-hover 約 3.01、error 約 3.80、error-hover 約 2.81。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.principles.stories.tsx:169-174",
+   "宣稱": "link variant「帶使用者前往其他頁面」",
+   "真實code行為": "示範是沒有 href、asChild 或 onClick 的原生 Button，點擊不會導覽。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:27,118-124,236; packages/design-system/src/components/Button/button.principles.stories.tsx:195-201",
+   "宣稱": "xs 一處被定義為主要供 icon-only toolbar、帶 label 應改 sm；另一處卻把 labeled xs 卡片 CTA 標成正確",
+   "真實code行為": "runtime 接受 labeled xs 且不警告；文件對同一合法輸出給出互斥指引。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:15,182; packages/design-system/src/components/Button/button.tsx:17,552; packages/design-system/src/components/Button/button.principles.stories.tsx:83-95,132-136",
+   "宣稱": "secondary 一處限定正負選項並存，另一處定義為陪襯 primary 的一般次要 action",
+   "真實code行為": "runtime 只提供同一 secondary 視覺，不辨識使用情境；各文件的語意 canonical 互相矛盾。"
+  }
+ ]
+}

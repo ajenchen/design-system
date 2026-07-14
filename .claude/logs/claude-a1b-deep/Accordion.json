@@ -1,0 +1,9 @@
+{
+  "component": "Accordion",
+  "implBasis": "Radix Accordion (@radix-ui/react-accordion) + shadcn structure",
+  "claimsVerified": 41,
+  "notes": "Verified keyboard map (ArrowUp/Down/Home/End roving, disabled filtered), ARIA (trigger aria-expanded/aria-controls via Collapsible.Trigger native button; content role=region+aria-labelledby), disabled→native button disabled (Tab skip + Arrow skip), token/px values (py-4=16px, pb-4=16px, gap-2=8px, chevron 16px, text-body=14px, duration-200), hover text-fg-secondary, disabled semantic text-fg-disabled + chevron override, focus ring-2/ring-ring/offset-2, all Props-table rows, ColorMatrix 5 states, SizeMatrix fixed values, principles LinkTo story names (FAQ/設定分組/進階選項可隱藏 all exist), referenced components (TreeView/DescriptionList/Tabs all exist), no DS Collapsible (docblock 'not built' accurate). Component is exceptionally clean — nearly all claims match code.",
+  "falseClaims": [
+    {"fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:33", "宣稱": "何時用: '單邊 sidebar 多分類(淺層分組):notion-style 工作區 sidebar 的 section 收合' — 背書用 Accordion 收合 sidebar 導覽 section", "真實code行為": "同 spec 禁止事項 L90 明文『不用 Accordion 做主要導航(主導航用 Tabs / Sidebar,Accordion 是 content-level 收合)』。『notion-style 工作區 sidebar section 收合』屬主要導航一部分 → 兩 spec 段落對讀者呈現互相矛盾的指引(可用 vs 禁用同一場景)", "severity": "marginal"}
+  ]
+}

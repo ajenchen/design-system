@@ -826,7 +826,7 @@ export const StateBehavior: Story = {
               <tr>
                 <Td>連續 / 任意值</Td>
                 <Td mono>滾輪(step 0.03)/ ZoomInput 打字</Td>
-                <Td>multiplicative 連續縮放,任意 %(非 preset;spec「Wheel step canonical」);ZoomInput preset menu 才跳 preset</Td>
+                <Td>連續縮放,任意 %(非 preset;react-zoom-pan-pinch wheel = `scale + delta×step` 加法線性,非 multiplicative;spec「Wheel step canonical」);ZoomInput preset menu 才跳 preset</Td>
               </tr>
               <tr>
                 <Td>Reset 100%</Td>
@@ -903,7 +903,8 @@ export const StateBehavior: Story = {
       <div>
         <H3>Keyboard shortcut 對照</H3>
         <Desc>
-          Focus 在 input / textarea / contentEditable 時**全部不觸發**(避免打字被快捷鍵劫持)。
+          Focus 在 input / textarea / contentEditable 時,FileViewer 自管的快捷鍵(← → / +・−・0 / F / I)**全部不觸發**(避免打字被快捷鍵劫持)。
+          **例外:Esc** 由 Radix DismissableLayer 以 document capture-phase 監聽,不受此排除影響 —— 在 InfoPanel textarea 內按 Esc 仍會關閉整個 viewer。
           所有 keyboard 動作都有 toolbar button 對應(a11y + tablet / touch 可用性)。
         </Desc>
         <div className="overflow-x-auto">
@@ -1123,7 +1124,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `file-viewer.spec.md` 「A11y 預設」段。摘要:\n\nRadix DialogPrimitive 自動處理:\n-  role=\"dialog\"  +  aria-modal=\"true\" \n-  <DialogPrimitive.Title> (sr-only)自動成  aria-labelledby  目標——screen reader 開啟時讀「檔案檢視器:{file.name}」\n- Focus trap:焦點鎖在 viewer 內\n- Esc 關閉(Radix DismissableLayer);Backdrop click 關閉為自寫 geometric onClick handler(非 Radix outside-click — Content 為 fixed inset-0 全螢幕覆蓋,判斷 click 落在 img rect 外才關)\n\n自加的 a11y:\n- 所有 iconOnly button 皆有  aria-label (中文,跟 DS 其他元件風格一致)\n- Filmstrip  role=\"group\"  + thumb  <button>  +  aria-current (非 tablist:選圖導航非切 tabpanel)\n- InfoPanel 用  <aside aria-label=\"檔案詳細資訊\">  語意標記\n-  onOpenAutoFocus  preventDefault:避免焦點自動跑進第一個 tabbable(讓鍵盤從 viewport 開始)"}</p>
+      <p className="whitespace-pre-line">{"詳 `file-viewer.spec.md` 「A11y 預設」段。摘要:\n\nRadix DialogPrimitive 自動處理:\n-  role=\"dialog\" （Radix 1.1.x 不輸出 aria-modal 屬性;modal 隔離靠 focus trap + hideOthers 對背景兄弟樹加 aria-hidden,非 aria-modal）\n-  <DialogPrimitive.Title> (sr-only)自動成  aria-labelledby  目標——screen reader 開啟時讀「檔案檢視器:{file.name}」\n- Focus trap:焦點一旦進入 Content 即鎖在 viewer 內\n- Esc 關閉(Radix DismissableLayer,document capture-phase 監聽 → 即使焦點在 InfoPanel textarea 內按 Esc 仍會關閉整個 viewer);Backdrop click 關閉為自寫 geometric onClick handler(非 Radix outside-click — Content 為 fixed inset-0 全螢幕覆蓋,判斷 click 落在 img rect 外才關)\n\n自加的 a11y:\n- 所有 iconOnly button 皆有  aria-label (中文,跟 DS 其他元件風格一致)\n- Filmstrip  role=\"group\"  + thumb  <button>  +  aria-current (非 tablist:選圖導航非切 tabpanel)\n- InfoPanel 用  <aside aria-label=\"檔案詳細資訊\">  語意標記\n-  onOpenAutoFocus  preventDefault:僅取消 Radix 自動聚焦(焦點留在觸發按鈕、不主動移入 viewport);焦點實際進入 Content 後 FocusScope 才啟動 trap"}</p>
     </div>
   ),
 }

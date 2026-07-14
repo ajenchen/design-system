@@ -1,0 +1,136 @@
+{
+ "component": "Switch",
+ "claimsVerified": 237,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:86",
+   "宣稱": "12px check 使用 strokeWidth 3.5，render 約 1.75px。",
+   "真實code行為": "sm/md 的 `checkStroke` 實為 3；12px Lucide icon 的幾何線寬為 1.5px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:89",
+   "宣稱": "strokeWidth 3.5 → 3 的 effective render 差 0.08px。",
+   "真實code行為": "Lucide 24×24 viewBox 在 12px 下為 1.75px → 1.5px，差 0.25px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:175",
+   "宣稱": "horizontal Field 內一律自動齊右。",
+   "真實code行為": "`ml-auto` 只套到一般 Radix Root；`display` 與 Field-readonly 均提前 return，未套用 `alignRightInField`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:187",
+   "宣稱": "display／Field-readonly 分支已轉發 id、data-*、aria-* 等其餘 DOM props。",
+   "真實code行為": "`id` 已先解構成 `idProp`，不在 `restDomProps`；兩分支仍丟失 id，display 也丟失 consumer `className`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:362",
+   "宣稱": "cva 只有 unchecked、checked、disabled、readonly、focus-visible 狀態。",
+   "真實code行為": "cva 另有 unchecked:hover 與 checked:hover 規則。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:368",
+   "宣稱": "`switchMeta.tokens.bg` 列出實際消費的背景 token。",
+   "真實code行為": "陣列漏列同檔實際消費的 `bg-border-hover`、`bg-primary-hover`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:95",
+   "宣稱": "32×20、52×32、40×24 全部是 2:1。",
+   "真實code行為": "三組比例分別為 1.6:1、1.625:1、約 1.667:1；僅本元件的 40×20、48×24 是 2:1。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:113",
+   "宣稱": "Switch on/off 的唯一視覺載體是顏色，灰階後兩態無法分辨。",
+   "真實code行為": "checked 同時讓 Thumb 位移 20/24px 並顯示 Check；位置與圖形也承載狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:118",
+   "宣稱": "Switch 沒有形狀差異，灰階後 state 失傳。",
+   "真實code行為": "ON/OFF 仍有 Thumb 位置與 Check 顯隱差異。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:156",
+   "宣稱": "所有 horizontal Field 內的 Switch 都自動 `ml-auto`。",
+   "真實code行為": "display 與 Field-readonly 分支沒有 `ml-auto`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:175",
+   "宣稱": "settings list 會由元件自動 `ml-auto` 齊右。",
+   "真實code行為": "display 或 Field-readonly Switch 不會套用此自動對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:179",
+   "宣稱": "`ml-0` 是唯一需明示 override 的行為，其他 layout 都自動處理。",
+   "真實code行為": "特殊模式未自動齊右；display 分支甚至不套用 consumer `className`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:197",
+   "宣稱": "disabled 改用灰階會讓 on/off 無法區分。",
+   "真實code行為": "Thumb 左右位置與 Check 顯隱仍可區分兩態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:205",
+   "宣稱": "狀態色已完全內嵌在 `StateBehavior` story。",
+   "真實code行為": "Story 沒有 hover 狀態／token；code 另消費 `bg-border-hover`、`bg-primary-hover`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:230",
+   "宣稱": "UI 元素對比符合 WCAG AA ≥ 3:1。",
+   "真實code行為": "OFF `bg-border` 在亮色 canvas 的對比約 1.41:1、暗色約 2.13:1，均未達 3:1。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:6",
+   "宣稱": "StateBehavior 的 Track／Thumb／Check 欄已涵蓋色彩 token 矩陣。",
+   "真實code行為": "矩陣漏掉 hover 使用的 `bg-border-hover`、`bg-primary-hover`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:43",
+   "宣稱": "`checked / defaultChecked` 都能表示受控／非受控 ON/OFF 狀態。",
+   "真實code行為": "`mode=\"display\"` 只讀 `checkedProp === true`，完全忽略 `defaultChecked`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:65",
+   "宣稱": "Inspector 可切換 `checked` 並即時查看狀態。",
+   "真實code行為": "Inspector 未定義 `checked` arg/control，只提供初始化用的 `defaultChecked`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:91",
+   "宣稱": "label 留空會只渲染 Switch 本體。",
+   "真實code行為": "code 只排除 null／undefined；空字串仍渲染 `<label>` wrapper 與空文字 span。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:181",
+   "宣稱": "on/off 唯一差異是顏色，灰階後兩態一模一樣。",
+   "真實code行為": "Thumb 位移與 Check 顯隱仍不同。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:182",
+   "宣稱": "Switch 只靠顏色承載狀態。",
+   "真實code行為": "Switch 同時使用 Thumb 位置與 Check icon。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:224",
+   "宣稱": "UI 元素對比符合 WCAG AA ≥ 3:1。",
+   "真實code行為": "OFF track／相鄰表面的實際對比低於 3:1。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.principles.stories.tsx:135",
+   "宣稱": "on/off 唯一載體是顏色，灰階後 disabled ON/OFF 一模一樣。",
+   "真實code行為": "ON 還會右移 Thumb 並顯示 Check；OFF 位於左側且隱藏 Check。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.principles.stories.tsx:162",
+   "宣稱": "Switch 屬於純顏色承載 state。",
+   "真實code行為": "位置與 Check 圖形也承載 checked state。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.principles.stories.tsx:167",
+   "宣稱": "灰階後 disabled ON 和 OFF 視覺一模一樣。",
+   "真實code行為": "Thumb 位置與 Check 顯隱仍不同。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.principles.stories.tsx:169",
+   "宣稱": "Switch 是系統內唯一靠顏色承載 state 的元件。",
+   "真實code行為": "Switch 自身就不只靠顏色，還使用 Thumb translate 與 Check opacity。"
+  }
+ ]
+}

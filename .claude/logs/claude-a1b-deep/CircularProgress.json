@@ -1,0 +1,13 @@
+{
+  "component": "CircularProgress",
+  "implBasis": "self-built SVG (dual circle track+arc) + Tailwind animate-spin",
+  "claimsVerified": 28,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.tsx:26",
+      "宣稱": "Indeterminate mode「arc 固定 25%,外層 animate-spin 旋轉,視覺同 Spinner」(spec.md:17/49「旋轉 partial arc,Spinner 樣式」+ spec.md:197「Material 流派」)",
+      "真實code行為": "code 無條件渲染 track circle(circle stroke='var(--secondary)',lines 145-152)於兩態皆然,indeterminate 也顯示一圈完整的淡 track ring 襯在旋轉的 25% arc 之後。傳統 Spinner / Material indeterminate CircularProgress 無 determinate track;「Spinner 樣式 / Material 流派」與實際帶 track ring 的呈現略有出入",
+      "severity": "marginal"
+    }
+  ]
+}

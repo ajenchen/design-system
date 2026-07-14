@@ -1,11 +1,11 @@
 {
-  "ts": "2026-07-07T12:39:08.481Z",
+  "ts": "2026-07-10T03:59:30.570Z",
   "counts": {
-    "hooks": 55,
+    "hooks": 56,
     "mRules": 31,
-    "auditDims": 90,
+    "auditDims": 91,
     "auditDimMin": 1,
-    "auditDimMax": 90,
+    "auditDimMax": 91,
     "skills": 22,
     "specTraits": 11
   },
@@ -56,6 +56,7 @@
     ".claude/hooks/check_datatable_invariants.sh",
     ".claude/hooks/check_dim_count_drift.sh",
     ".claude/hooks/check_ds_anchor_preflight.sh",
+    ".claude/hooks/check_dynamic_tailwind_class.sh",
     ".claude/hooks/check_escape_marker_abuse.sh",
     ".claude/hooks/check_field_controls_contracts.sh",
     ".claude/hooks/check_field_family_invariants.sh",

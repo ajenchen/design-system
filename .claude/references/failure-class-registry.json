@@ -1,0 +1,145 @@
+{
+  "_meta": {
+    "invariant": "每類被抓過的 failure class 必須終有 ship 到 consumer 的機械防線(user 2026-07-10 verbatim「建立治理的基本原則」)。status 三態:protected(已有 MECHANICAL_CONSUMER / DS_API_FIXED 防線)/ remediating(必帶 plan 指標)/ judgment(regex 不可判,必帶 auditDim 兜底)。gate = scripts/audit-failure-class-coverage.mjs --check(deep-audit dim 91 chain)。",
+    "source": ".claude/logs/failure-class-coverage-matrix.json(2026-07-10 41-agent 對抗 workflow,每 verdict cite 驗證)",
+    "addRule": "新 failure class(deep-audit / user 抓 / codex 抓)→ 本 registry 加 row;沒 row 或 status 缺 = gate 紅燈。remediation 落地後把 status 升 protected 並記 landedAt。"
+  },
+  "classes": [
+    {
+      "id": "phantom-layout-token",
+      "name": "幻覺 layout token / utility",
+      "status": "protected",
+      "note": "check_layout_space_magic_numbers PHANTOM 白名單(SHIP_AS_IS)+ opacity hook 第 10 類幻覺 state 尾綴(2026-07-10)"
+    },
+    {
+      "id": "handcraft-mini-table",
+      "name": "手刻 mini-table(grid-cols 黏死欄寬)",
+      "status": "protected",
+      "note": "r3 偽表格簽名 + magic-hook grid-cols px(皆 SHIP_AS_IS)"
+    },
+    {
+      "id": "handcraft-menu-item-row",
+      "name": "手刻 menu-item 可點列",
+      "status": "protected",
+      "landedAt": "2026-07-10",
+      "note": "根因 MenuItem startContent(beta.84)+ r3 nav-row 簽名(hover+selected 成對)"
+    },
+    {
+      "id": "export-chain-break",
+      "name": "export 斷鏈逼手刻(R2)",
+      "status": "protected",
+      "note": "DS_API_FIXED — barrel generator + preflight --check drift gate;beta.84 發版後 consumer 正式接上"
+    },
+    {
+      "id": "contrast-pair-violation",
+      "name": "對比配對違規(亮色底 × text-white)",
+      "status": "protected",
+      "landedAt": "2026-07-10",
+      "note": "r3 C5 簽名 → CAT_SOLID pair"
+    },
+    {
+      "id": "handcraft-form-validation",
+      "name": "手刻表單驗證 state",
+      "status": "protected",
+      "note": "r3 useFormValidation 零消費簽名(SHIP_AS_IS)"
+    },
+    {
+      "id": "selectmenu-direct-use",
+      "name": "SelectMenu internal 直用",
+      "status": "protected",
+      "note": "r3 C7 簽名(<SelectMenu 直用 → BLOCK,escape @selectmenu-direct-ok:;select-menu.spec.md:53 明文禁直用特例)",
+      "landedAt": "2026-07-10"
+    },
+    {
+      "id": "handcraft-header-tabs",
+      "name": "頁內手刻 header+TabsList(未走 tabsSlot)",
+      "status": "judgment",
+      "note": "dialog/surface 半邊已有 check_tabs_content_chrome_body_double_gap P0(SHIP_AS_IS);頁內 h2+TabsList 存在合法場景(TypeSettings 內容層分頁 @tabs-content-gap-ok 錨例)= context 判斷,倉促 regex = 誤殺",
+      "auditDim": "product-ui-audit + header-canonical.spec.md Rule W4"
+    },
+    {
+      "id": "spacing-tier-semantic",
+      "name": "spacing 親疏語義誤用(tier 選錯)",
+      "status": "judgment",
+      "auditDim": "90(layout-space macro judgment sweep)+ product-ui-audit",
+      "note": "合法 token 用錯 tier = context 判斷,regex 不可判;magic/phantom 機械半邊已 protected"
+    },
+    {
+      "id": "search-action-position",
+      "name": "業務 search 被推工具層位置",
+      "status": "protected",
+      "landedAt": "2026-07-10",
+      "note": "r3 C10 簽名(spacer+Search Input);業務 vs 工具判定本身 judgment → escape @search-right-ok"
+    },
+    {
+      "id": "dialog-chrome-double-x",
+      "name": "dialog chrome 雙 X / header 操作不走 actions",
+      "status": "protected",
+      "landedAt": "2026-07-10",
+      "note": "r3 C11 簽名(DialogHeader 250 字窗)"
+    },
+    {
+      "id": "field-width-misuse",
+      "name": "Field 家族硬寬 / hug-fill 語義",
+      "status": "protected",
+      "landedAt": "2026-07-10",
+      "note": "硬寬 w-N 機械(r3 C12);hug vs fill 語義選擇 = judgment 半邊歸 product-ui-audit"
+    },
+    {
+      "id": "handcraft-section-header",
+      "name": "手刻可收合 section header",
+      "status": "protected",
+      "note": "R3-7 拍板 codify 進 item-anatomy.spec.md「可收合 section header 組合 canonical」(組合非元件,隨 npm ship)+ r3 C13 簽名(Chevron+justify-between+可點且無共用元件 → BLOCK)",
+      "landedAt": "2026-07-10"
+    },
+    {
+      "id": "avatar-anatomy-misuse",
+      "name": "avatar row-context 直用(未走 ItemAvatar/PersonValue 鏈)",
+      "status": "judgment",
+      "note": "前置已清:PersonValue/PersonDisplay/PersonAvatarTag 2026-07-10 補進 export 面(probe 驗 root barrel 解析)= 正道可 import;「row context 內 raw Avatar」判定 = context 判斷,regex 不可判(Avatar 合法 standalone 場景遍地)",
+      "auditDim": "product-ui-audit + item-anatomy.spec.md:178(Prefix 垂直對齊)"
+    },
+    {
+      "id": "datatable-density-structure",
+      "name": "DataTable 密度/tree 佔位/inline-create idle 未消費",
+      "status": "judgment",
+      "note": "tree 佔位半邊 DS_API_FIXED(data-table.tsx sibling-aware,beta.84 生效);size 密度選擇與 idle 列樣式 = context 判斷(嵌入式 vs 主表格),spec 隨 npm ship 供讀",
+      "auditDim": "product-ui-audit + data-table.spec.md:71/80(size 密度)+ :360(inline-create idle)"
+    },
+    {
+      "id": "always-edit-cell",
+      "name": "恆-edit cell(display 態渲染 edit 控件)",
+      "status": "judgment",
+      "note": "機械半邊已上:story-baseline-registry antiPattern datatable-always-edit-cell(cell: 直渲 edit 控件 → R8 BLOCK,unless onCellCommit/editable/display);custom cell 元件包裹子集 regex 看不進去 + RoleCell 拍板反例證實 context 判斷 → judgment 兜底",
+      "auditDim": "product-ui-audit + data-table.spec.md:373(indicator A 案)"
+    },
+    {
+      "id": "separator-geometry",
+      "name": "分隔線幾何(黏按鈕無 mx)",
+      "status": "protected",
+      "landedAt": "2026-07-10",
+      "note": "r3 C17 簽名 + magic-hook divider 行豁免(治理自我打架修正)"
+    },
+    {
+      "id": "count-label-concat",
+      "name": "計數括號串接(children 層)",
+      "status": "protected",
+      "landedAt": "2026-07-10",
+      "note": "r3 C18 簽名(children 錨定,aria attr 合法)"
+    },
+    {
+      "id": "two-pane-dialog",
+      "name": "兩欄 dialog 版型 canonical 缺席",
+      "status": "protected",
+      "landedAt": "2026-07-10",
+      "note": "user 拍板:組合非元件(對齊 Atlassian/MUI composition verdict)→ overlay-surface.spec.md「兩欄 dialog 組合 canonical」(隨 npm ship)+ r3 C19 簽名(共用捲軸機械攔)"
+    },
+    {
+      "id": "handcraft-link-underline",
+      "name": "連結字手刻 underline",
+      "status": "protected",
+      "landedAt": "2026-07-10",
+      "note": "r3 C20 簽名(no-underline / hover:underline 形不誤殺)"
+    }
+  ]
+}

@@ -165,7 +165,12 @@ function generate() {
    ═══════════════════════════════════════════════════════════════════════ */
 
 `
-  const imports = ordered
+  // Overlay 進出場動畫 utilities(tw-animate-css;7 浮層消費 animate-in/fade/zoom/slide + --tw-enter-* 變數)。
+  // 2026-07-11 加:原 class 寫了但外掛沒裝 = 動畫全 no-op。必在 tokens 前、`@import "tailwindcss"` 後
+  // (entry globals.css 已先 import tailwindcss)。tw-animate-css 為 DS package dependency,consumer
+  // `@import tokens` 一次拿到。SSOT = motion.css 動畫 token → overlay-motion 共用類綁 --tw-* 變數。
+  const twAnimateBlock = '/* Overlay 進出場動畫 utilities(tw-animate-css;7 浮層消費)*/\n@import "tw-animate-css";\n\n'
+  const imports = twAnimateBlock + ordered
     .map((f) => `@import './../tokens/${relative(TOKENS_DIR, f)}';`)
     .join('\n')
 

@@ -1,6 +1,6 @@
 // @principles-rationale: Merged WhenNotToUse + CircularVsSkeletonRule into a single
 // `UsageGuidance` story (3 sections — 何時用 / 何時不用 / vs 近親) per 2026-04-26 user
-// mandate. IndeterminateVsDeterminateRule / UsageScenarioRule / SizeMatchContextRule
+// mandate. IndeterminateVsDeterminateRule / ConsumptionScenarioRule / SizeMatchContextRule
 // kept as separate principles.
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -52,7 +52,7 @@ export const UsageGuidance: Story = {
       <Section title="何時用">
         <p className="text-caption text-fg-muted max-w-[720px] leading-relaxed mb-6">
           CircularProgress 用於「使用者觸發 async 動作後的即時回饋」與「全頁 / 浮層的 loading 訊號」。
-          詳細情境 → UsageScenarioRule(Button loading / Inline 表單驗證 / Empty 全頁 overlay)。
+          詳細情境 → 「常見消費場景」story(Button loading / Inline 表單驗證 / Empty 全頁 overlay)。
         </p>
       </Section>
 
@@ -184,8 +184,11 @@ export const IndeterminateVsDeterminateRule: Story = {
   ),
 }
 
-export const UsageScenarioRule: Story = {
-  name: '使用情境',
+// 2026-07-14 rename per audit Dim 14:原 name「使用情境」與同檔 UsageGuidance「使用指引」/
+// SizeMatchContextRule「尺寸對應使用情境」語意撞名,讀者難分。本 story 教的是「CircularProgress
+// 內嵌於 Button / Input / Empty 的常見消費場景」,name 改為可區辨的人話。
+export const ConsumptionScenarioRule: Story = {
+  name: '常見消費場景（內嵌於 Button / Input / Empty）',
   render: () => (
     <div>
       <Rule

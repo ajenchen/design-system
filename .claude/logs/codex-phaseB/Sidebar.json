@@ -1,0 +1,306 @@
+{
+ "component": "Sidebar",
+ "claimsVerified": 1086,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:82",
+   "宣稱": "「整個 sidebar 同時只有一個 active item。」",
+   "真實code行為": "SidebarProvider 的 activeId 只協調 SidebarMenuButton；TreeView 使用獨立的 selectedIds/onSelectedChange，isActive prop 也可讓多顆 MenuButton 同時 active。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:130",
+   "宣稱": "「混用 icon/avatar 時套用固定 24px 槽。」",
+   "真實code行為": "getUniformPrefixSlotStyle(size) 回傳 sm/md/lg = 20/24/24px；sm 不是 24px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:256",
+   "宣稱": "「--sidebar-menu-icon-size 維持 1rem 固定。」",
+   "真實code行為": "uiSize.css 在 data-density/data-ui-size=lg 時覆寫成 1.25rem。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:278",
+   "宣稱": "「ItemPrefix wrapper 被撐到 24，effective prefix width = 24。」",
+   "真實code行為": "混用槽寬隨 row size；sm 為 20px，只有 md/lg 為 24px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:303",
+   "宣稱": "「提供 viewportInsetTop 時，sidebar 會改用該 top 並扣除高度。」",
+   "真實code行為": "insetStyle 只套用桌機 offcanvas/icon 分支；collapsible='none' 與 mobile Sheet 提前 return，完全忽略此 prop。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:390",
+   "宣稱": "「outer narrows 時 clip inner 272px overflow。」",
+   "真實code行為": "inner width 取 var(--sidebar-width)，目前預設為 15rem／240px，不是 272px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:407",
+   "宣稱": "「Inline style 繞 JIT 確保 272px。」",
+   "真實code行為": "inline style 設為 var(--sidebar-width)，目前預設解析為 240px，且可由 consumer 覆寫。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:474",
+   "宣稱": "「SidebarHeader / SidebarFooter 固定高度 var(--chrome-header-height)，水平 padding 使用 loose token。」",
+   "真實code行為": "只有 Header 消費 ChromeHeader；Footer 是 content-based 的 flex/py-2/border-t，沒有固定高度或自身 px-loose。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:491",
+   "宣稱": "「collapsed header 內容置中在 48px square。」",
+   "真實code行為": "rail 寬度隨 density；md 為 48px，lg 實際為 68px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:520",
+   "宣稱": "「lg density: (64-24)/2 = 20。」",
+   "真實code行為": "lg token 為 2×24px loose + 20px icon = 68px，因此 padding 是 (68-24)/2 = 22px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:604",
+   "宣稱": "「collapsible group 時 label 變 trigger。」",
+   "真實code行為": "SidebarGroupLabel 保持 div role='presentation'；只有尾端 chevron button 被 Collapsible.Trigger 包覆。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:619",
+   "宣稱": "「SidebarGroupLabel 變 trigger、SidebarGroupContent 變 Content。」",
+   "真實code行為": "Content 確實變為 Collapsible.Content，但 Label 本身不變成 trigger，只有其 chevron 子按鈕是 trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:670",
+   "宣稱": "「Collapsible 在 icon 模式下整個隱藏，consumer 可覆寫成顯示。」",
+   "真實code行為": "SidebarGroup Root 沒有 icon-mode hidden class；預設仍渲染，consumer 反而必須自行加 class 才能隱藏。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:875",
+   "宣稱": "「Icon 模式鎖高為 field-height，content 用 justify-center 居中。」",
+   "真實code行為": "目前沒有 collapsed height lock 或 justify-center；row 維持 padding-derived auto height，prefix 靠計算後的 left padding 置中。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:890",
+   "宣稱": "「撤回所有 group-data-[collapsible=icon] overrides，collapsed 只靠 outer clip。」",
+   "真實code行為": "同一 cva 仍有 label sr-only，以及 icon/avatar collapsed padding overrides。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:949",
+   "宣稱": "「meta variant 不傳 id，TS 階段提醒。」",
+   "真實code行為": "id?: string 與 variant 沒有 discriminated union；TypeScript 接受 variant='meta' 與 id 同時傳入。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:973",
+   "宣稱": "「傳 id 後整個 sidebar 的 single-selection 自動成立，不會寫出啞 item。」",
+   "真實code行為": "只自動連接 SidebarMenuButton；TreeView selection 獨立，id 仍為 optional，isActive 也可手動製造多個 active。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:1213",
+   "宣稱": "「SidebarMenuSkeleton 跟實際 item 同高不跳動。」",
+   "真實code行為": "padding 以 1lh 計算，但 skeleton child 固定 h-4 且無 min-height；md 實測約 29.8125px，MenuButton 為 32px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:59",
+   "宣稱": "「小螢幕收合為 icon bar，大螢幕展開完整 label。」",
+   "真實code行為": "小於 768px 的 offcanvas/icon 分支改用 Sheet；collapsible='none' 保持靜態 div，沒有 mobile icon rail。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:145",
+   "宣稱": "「扁平導覽在 Icon 模式顯示 icon + tooltip。」",
+   "真實code行為": "Tooltip 是 optional tooltip prop；未傳時完全不渲染 Tooltip，也不會由 label 自動推導。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:146",
+   "宣稱": "「TreeView 在 Icon 模式整區隱藏。」",
+   "真實code行為": "Sidebar 與 TreeView 都沒有對應的 icon-mode hide selector；TreeView 仍在 clipped sidebar 內渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:194",
+   "宣稱": "「icon 模式下，扁平區顯示 icon + tooltip。」",
+   "真實code行為": "只有顯式傳入 tooltip prop 的 MenuButton 才產生 Tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:194",
+   "宣稱": "「TreeView 整段隱藏。」",
+   "真實code行為": "沒有自動隱藏 TreeView 的實作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:208",
+   "宣稱": "「Chrome header / footer 高度：density-responsive shared token。」",
+   "真實code行為": "只有 SidebarHeader 使用 chrome-height token；SidebarFooter 是內容決定高度。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:244",
+   "宣稱": "「放在 SidebarHeader / SidebarFooter 裡的元件必須能容納在這個高度內。」",
+   "真實code行為": "Footer 沒有該固定高度限制，可容納 1～N 個 items。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:301",
+   "宣稱": "「TreeView 在 icon 模式整個隱藏。」",
+   "真實code行為": "Sidebar/TreeView source 沒有任何實作此規則的 CSS selector。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:431",
+   "宣稱": "「混用偵測命中 → 套用固定 24px 槽。」",
+   "真實code行為": "槽寬為 AVATAR_SIZE.inline[size]，sm/md/lg 分別是 20/24/24px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:490",
+   "宣稱": "「不論 MainNav / TreeView / Favorites / 任何 group，選任何 item 都會自動 deselect 其他。」",
+   "真實code行為": "Provider 只管理 SidebarMenuButton activeId；TreeView 有獨立 Set-based selection，沒有自動 cross-family deselect。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:507",
+   "宣稱": "「consumer 無法寫出啞 item。」",
+   "真實code行為": "id 與 onClick 都是 optional；兩者皆未傳的 MenuButton 仍呈現可點樣式，但不會更新 selection。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:542",
+   "宣稱": "「collapsible 影響 label 是否 trigger。」",
+   "真實code行為": "Label 從未成為 trigger；collapsible 只新增尾端 chevron trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:585",
+   "宣稱": "「Canonical 實作：ItemInlineAction + ItemSuffix。」",
+   "真實code行為": "SidebarMenuButton 使用 ItemInlineAction，但未 import/use ItemSuffix；suffix 容器是自行建立的 absolute span。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:597",
+   "宣稱": "「768px 以下自動切 Sheet 抽屜。」",
+   "真實code行為": "offcanvas/icon 會切 Sheet，但 collapsible='none' 在 isMobile 判斷前 return，仍是一般 div。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:619",
+   "宣稱": "「--sidebar-width-icon：md=48 / lg=64。」",
+   "真實code行為": "lg density 為 2×24px + 20px = 68px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:620",
+   "宣稱": "「size=lg 時 --sidebar-menu-icon-size override 為 1.25rem。」",
+   "真實code行為": "SidebarProvider size 只進 React RowSizeContext，不產生 data-ui-size；CSS override 由全域 density/ui-size attribute 驅動。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:644",
+   "宣稱": "「Mobile 只有全寬 sheet / 關閉兩種狀態。」",
+   "真實code行為": "collapsible='none' 在 mobile 仍渲染固定 div，是第三種實際狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:650",
+   "宣稱": "「icon 模式由 Sidebar 透過 CSS 自動隱藏 TreeView。」",
+   "真實code行為": "Sidebar 和 TreeView source 都沒有該 CSS。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:674",
+   "宣稱": "「為何無 Inspector。」",
+   "真實code行為": "sidebar.anatomy.stories.tsx 已在 line 267 export Inspector。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:680",
+   "宣稱": "「StateBehavior story 展示 icon mode Tooltip 代償、跨 session cookie 還原。」",
+   "真實code行為": "該 story 的 live MenuButton 沒傳 tooltip；Provider 只寫 cookie，story 沒有讀 cookie、remount 或以 defaultOpen 還原。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:689",
+   "宣稱": "「Tooltip 僅 hover 提示。」",
+   "真實code行為": "Radix TooltipTrigger 同時在 keyboard focus 時開啟 Tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:690",
+   "宣稱": "「Mobile Sheet restore focus to trigger。」",
+   "真實code行為": "focus trap 與 Esc dismiss 確實存在；但 Sidebar 未渲染 SheetTrigger，Radix close handler 阻止 fallback 後只嘗試 focus null triggerRef，因此不保證回到 SidebarTrigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:692",
+   "宣稱": "「SidebarTrigger Tab 第一站即可達。」",
+   "真實code行為": "Trigger 位於 consumer-controlled DOM，元件沒有 tabIndex、focus priority 或重排；典型 Sidebar-first markup 會先遇到 sidebar 內的互動元素。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:703",
+   "宣稱": "「Collapsed mode 只留 icon + tooltip。」",
+   "真實code行為": "label 會 sr-only，但 Tooltip 只在顯式傳入 tooltip prop 時存在。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:703",
+   "宣稱": "「TreeView 整區隱藏。」",
+   "真實code行為": "沒有自動 TreeView hide selector。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:142",
+   "宣稱": "「SidebarFooter（固定高）。」",
+   "真實code行為": "Footer 是 content-based py-2/border-t；同檔 line 165、206 也正確寫成高度由內容決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:242",
+   "宣稱": "「跟 MenuButton 同 row height 的 loading 狀態。」",
+   "真實code行為": "Skeleton h-4 與 1lh-derived padding 不相等；md 實測約 29.8125px，MenuButton 為 32px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:273",
+   "宣稱": "「切 activeId 觀察不同 active 位置。」",
+   "真實code行為": "Inspector 把 activeId 傳成 defaultActiveId；React useState 只在 mount 消費預設值，Controls 後續改值不會更新 selection。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:599",
+   "宣稱": "「default / hover / active / selected / disabled 色彩由 ColorMatrix 完整呈現。」",
+   "真實code行為": "ColorMatrix 只有 default/hover/selected/disabled；SidebarMenuButton 也刻意沒有 :active press state。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:671",
+   "宣稱": "「hover menu button 自動出現 Tooltip（顯示 label）。」",
+   "真實code行為": "Tooltip 為 opt-in prop；該 story 的 live buttons 也未傳 tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:681",
+   "宣稱": "「Mobile 一律走 Sheet overlay，不受 collapsible prop 影響。」",
+   "真實code行為": "collapsible='none' 提前 return，一律不進 mobile Sheet。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:683",
+   "宣稱": "「任何 focus 位置都可觸發；input / textarea 內仍會 toggle。」",
+   "真實code行為": "keydown handler 明確跳過 input、textarea、contenteditable，也跳過 defaultPrevented 與 IME composing。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:717",
+   "宣稱": "「最小寬度即使 consumer 覆寫也不可低於 240px。」",
+   "真實code行為": "--sidebar-width-min 是可覆寫 custom property，className 也能覆寫 min-width；none/mobile 分支更未使用該 min-width class。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:722",
+   "宣稱": "「icon 收合寬度 md=48 / lg=64。」",
+   "真實code行為": "lg density 實際為 68px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:727",
+   "宣稱": "「size=lg 時 --sidebar-menu-icon-size override。」",
+   "真實code行為": "SidebarProvider size 不控制該 CSS token；它由 data-density/data-ui-size=lg 控制。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:741",
+   "宣稱": "「SidebarHeader / SidebarFooter / page header 都用 chrome-height token。」",
+   "真實code行為": "SidebarFooter 不消費該 token。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:753",
+   "宣稱": "「Sidebar header / footer 固定高度。」",
+   "真實code行為": "只有 Header 固定；Footer 高度由內容決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:769",
+   "宣稱": "「任何焦點位置都能觸發；input / textarea 內仍會 toggle。」",
+   "真實code行為": "editable targets 已被明確排除。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:769",
+   "宣稱": "「768px 以下自動切換成 Sheet。」",
+   "真實code行為": "collapsible='none' 不會切 Sheet。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:769",
+   "宣稱": "「關閉後焦點回到觸發按鈕。」",
+   "真實code行為": "Sidebar mobile composition 沒有 SheetTrigger；Radix 無已註冊 triggerRef 可供 restore。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.principles.stories.tsx:442",
+   "宣稱": "「TreeView 在 icon 模式整個隱藏。」",
+   "真實code行為": "Sidebar/TreeView 沒有實作自動隱藏 selector。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.principles.stories.tsx:480",
+   "宣稱": "「SidebarMenuButton 和 TreeView 都讀單一 React.useState<string> activeId；選中一方會取消另一方。」",
+   "真實code行為": "SidebarMenuButton 讀 Provider activeId:string；TreeView 讀獨立 selectedIds:Set<string>，需 consumer 額外 adapter 才能互斥，story 本身未橋接。"
+  }
+ ]
+}

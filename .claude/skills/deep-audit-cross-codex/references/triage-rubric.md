@@ -59,6 +59,27 @@
 
 **收斂真正靠**:決定性 CI gate(`tsc` / invariant script / hook BLOCKER）+ **寫入時紀律**,**不是** audit loop。deep-audit 是**週期性工具**(release / SSOT 大改 / 季度),不該對「沒變的內容」反覆跑。對齊 Linux kernel `checkpatch.pl` deterministic pre-submit / Toyota TPS Jidoka(機器發現異常自停,非人工反覆巡）。
 
+## C.1 final report template(骨架;canonical 規則〔SSOT 理由 / 決策品質四要件〕住 SKILL C.1,本檔不重述)
+
+```
+## Deep Audit Cross-Codex 完整報告(N 日期)
+
+### Phase A 結果
+- 全 dim findings: <P0/P1/P2> / Autonomous landed: <N 項> commit <hash>
+- SSOT-UI/UX 已拍板: <M 項> / 待拍板: <列出 + 簡述>
+
+### Phase B 結果
+- Codex 抓 Claude 漏: <N 項> / Claude 抓 Codex 漏: <M 項> / Cite battle: <K 題,各題 verdict + evidence>
+- 共識 SSOT-UI/UX 待拍板: <列出 + 簡述> / 共識 autonomous landed: <N 項> commit <hash>
+- dim 覆蓋對帳表(B.2 Step 0 契約):dim 號 × Claude 掃了 / codex 掃了,缺號 = 補 brief
+
+### 待你拍板(中文人話)
+<決策 1-N(per A.2 format;每題必附「SSOT 理由:」+ 決策品質四要件 marker,canonical 詳 SKILL C.1)>
+
+### Verify artifact
+- tsc / invariant / content-quality / visual probe 全 PASS + file:line + diff link;backlog 項必附 verifyCmd+fixedSignal(可攜指令),對帳 = `node scripts/verify-backlog.mjs`(2026-07-07 軌道 3;anchor:C1 十筆考古 9 筆早已修)
+```
+
 ## 共識決策(Phase B.5)同 format
 
 Phase B 共識(Claude + Codex 雙 verify PASS)走相同 propose / autonomous 分流:

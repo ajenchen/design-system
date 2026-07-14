@@ -61,6 +61,11 @@ run('overlay-density-lock-placement(防 density lock 設在 header 非 surface �
 run('code-quality-audit', 'node scripts/code-quality-audit.mjs --scope=packages/design-system/src/components --check')
 run('content-quality', 'node scripts/audit-content-quality.mjs --check')
 run('governance-counters', 'node scripts/sync-governance-counters.mjs --check')
+// 2026-07-10 user「每類病根必有防線,稽核應確認這個基本原則」→ dim 91 常設閘進發版鏈:
+// registry 每 failure class 必 protected / remediating+plan / judgment+auditDim,缺 = 擋發版。
+run('failure-class coverage(dim 91,每類病根必有防線)', 'node scripts/audit-failure-class-coverage.mjs --check')
+run('hook-test coverage(BLOCKER hook 必有 test 檔)', 'node scripts/audit-hook-test-coverage.mjs --check')
+run('gate meta-test coverage(checker gate 必有 meta-test;ratchet 只擋新洞)', 'node scripts/audit-gate-meta-test-coverage.mjs --check')
 run('gen-figma-make-artifacts', 'node scripts/gen-figma-make-artifacts.mjs --check')
 run('root barrel internal-exclusion(dim-72)', 'node scripts/gen-design-system-barrel.mjs --check')
 run('plugin-structure-validate', 'node scripts/plugin-structure-validate.mjs')

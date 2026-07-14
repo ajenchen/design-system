@@ -112,7 +112,8 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
     const showDesc = isRich ? !!description : (status === 'error' && !!description)
 
     // Hover 行為 canonical(2026-04-23 user 校準):**FileItem 永不顯示 hover-bg**。
-    // 三種型態都有永久 visual anchor:rich = border card / compact 無 status = bg-secondary /
+    // 各型態都有永久 visual anchor:rich surface=form = border card / rich surface=upload-manager
+    // = avatar 48 thumbnail 作 item 邊界(無邊框)/ compact 無 status = bg-secondary /
     // compact 有 status = 底部 progress bar(分隔線型 affordance)——再加 hover-bg 是
     // double-emphasis,視覺雜。世界級共識(Slack / Notion / Figma / Gmail 皆無 hover-bg):
     // permanent-anchored 元件 hover 只靠 cursor + action icon fade / border highlight,
@@ -144,8 +145,8 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
     const slotHw = 'var(--field-height-xs)'
 
     const hoverAction =
-      status === 'completed' && onDownload ? { icon: Download, onClick: onDownload, label: '下載' } :
-      status === 'error' && onRetry        ? { icon: RotateCw, onClick: onRetry,    label: '重試' } :
+      status === 'completed' && onDownload ? { icon: Download, onClick: onDownload, label: `下載 ${name}` } :
+      status === 'error' && onRetry        ? { icon: RotateCw, onClick: onRetry,    label: `重試 ${name}` } :
       null
 
     const statusSlot = statusConfig ? (
@@ -237,9 +238,10 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
     // 底色同樣指向 `--color-neutral-3`。對齊 Badge low / ProgressBar track SSOT。
     const compactStaticBg = !progressBar ? 'bg-secondary' : ''
 
-    // ── rich(含縮圖完整呈現)——AR17 canonical:加邊框 + gap-2 ──
-    // Rich mode 是「檔案 card」風格,外框讓每個 row 視覺上是獨立 card
-    // (Slack / Notion / Linear attachment 慣例)
+    // ── rich(含縮圖完整呈現)——AR17 canonical:surface=form 加邊框 card / surface=upload-manager 無邊框 ──
+    // Rich surface=form 是「檔案 card」風格,外框讓每個 row 視覺上是獨立 card(Slack / Notion /
+    // Linear attachment 慣例);surface=upload-manager 無邊框,avatar 作 item 邊界(面板自身是容器,
+    // 見 file-item.spec.md「邊框 / 背景」表)
     if (isRich) {
       return (
         <div

@@ -439,7 +439,7 @@ export const PrefixAlignment: Story = {
             <div className="border border-divider rounded-md p-4 bg-muted">
               <SelectionItem
                 control={<Checkbox defaultChecked />}
-                avatar={{ alt: 'Ada Chen', color: 'indigo' }}
+                avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
                 label="Ada Chen"
               />
             </div>
@@ -451,7 +451,7 @@ export const PrefixAlignment: Story = {
             <div className="border border-divider rounded-md p-4 bg-muted">
               <SelectionItem
                 control={<Checkbox defaultChecked />}
-                avatar={{ alt: 'Ada Chen', color: 'indigo' }}
+                avatar={{ src: 'https://i.pravatar.cc/64?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
                 label="Ada Chen"
                 description="Design Engineer · Frontend team"
               />

@@ -122,7 +122,16 @@ declare module '@tanstack/react-table' {
     precision?: number
     locale?: string
     /** Select/multiSelect options — maps value to display label */
-    options?: Array<{ value: string; label: string }>
+    /** select/multiSelect 選項:消費 Select 的 SelectOption 完整 schema(M30 wrapper-extends-primitive;
+     *  2026-07-08 原 {value,label} 窄型別讓 icon/description/iconClassName 傳不進 = 假 SSOT)*/
+    options?: Array<import('../Select/select').SelectOption>
+    /** select cell 的 trigger/display 自訂渲染(轉發 Select.selectedItemRenderer;status 彩色 icon 場景)*/
+    selectedItemRenderer?: (opt: import('../Select/select').SelectOption) => React.ReactNode
+    /** select cell 顯示模式(轉發 Select.display;cell-registry SelectCell 消費 `meta?.display`)。
+     *  default `'plain'` 純文字;`'tag'` opt-in 內容導向 Tag 視覺(status / category 彩色標籤,
+     *  搭配 options 的 `tagVariant`)。2026-07-14 deep-audit 補型別:runtime 一直消費此欄位
+     *  (cell-registry.tsx SelectCell displayMode),但 ColumnMeta 漏宣告 → typed consumer 傳不進(假 SSOT)。 */
+    display?: 'plain' | 'tag'
     /** Date: Intl.DateTimeFormat options */
     formatOptions?: Intl.DateTimeFormatOptions
     /**

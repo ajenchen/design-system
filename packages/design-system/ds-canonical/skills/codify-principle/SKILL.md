@@ -95,7 +95,7 @@ Per layer 一個 commit:
 - 跳過的 layer + rationale: {if any}
 ```
 
-更新 `.claude/logs/codified-principles.jsonl` log:
+更新 `.claude/logs/codified-principles.jsonl` log(lazy-create on first run — 檔案不存在時本步驟建立它;截至 2026-07-10 尚未有 run 建檔):
 ```json
 {"date":"2026-04-26", "principle":"...", "scope":"...", "layers":["ssot","hook","audit","scaffold","memory"], "commits":[...]}
 ```
@@ -128,7 +128,7 @@ User 親自確認 scope / type / affected homes 是否正確,禁 AI 單方面決
 ## References
 
 - `~/.../memory/MEMORY.md` — index of codified principles
-- `.claude/logs/codified-principles.jsonl` — execution log
+- `.claude/logs/codified-principles.jsonl` — execution log(lazy-create on first run,見 Phase 7)
 - CLAUDE.md `# 治理 canonical` 8-home — home 識別 rules
 - CLAUDE.md `# Meta-Pattern 預警` M14 / M19 — 上游 pipeline rules
 

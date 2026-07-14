@@ -2,9 +2,10 @@
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
-import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
+import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
-import { EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'
+import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
+import { useControllable } from '@/design-system/hooks/use-controllable'
 
 /**
  * Textarea — 多行文字輸入
@@ -29,8 +30,8 @@ import { EMPTY_DISPLAY } from '@/design-system/components/Field/field-wrapper'
  * 預設 rows={3}。消費者可透過 rows prop 調整，或透過 min-h-* className 覆寫。
  */
 
-// Phase B1(2026-05-05):新增 chrome variant(default / bare),mode×chrome 的 chrome 規則由
-// compoundVariants 決定,鏡射 fieldWrapperStyles 對齊 canonical(Phase D 將整併進 fieldWrapperStyles)。
+// Phase B1(2026-05-05):chrome variant(default / naked;`bare` 2026-07-09 退役),mode×chrome 的
+// chrome 規則由 compoundVariants 決定,鏡射 fieldWrapperStyles 對齊 canonical(Phase D 將整併進 fieldWrapperStyles)。
 const textareaVariants = cva(
   [
     'w-full rounded-md',
@@ -51,10 +52,9 @@ const textareaVariants = cva(
         readonly: '',
         disabled: '',
       },
-      // chrome 對齊 fieldWrapperStyles.variant(default / bare / naked)。
+      // chrome 對齊 fieldWrapperStyles.variant(default / naked;2026-07-09 `bare` 退役)。
       variant: {
         default: '',
-        bare: '',
         naked: '',
       },
       size: {
@@ -89,46 +89,24 @@ const textareaVariants = cva(
       {
         mode: 'readonly',
         variant: 'default',
-        className: 'bg-readonly border border-transparent',
+        // 2026-07-13 a11y(WCAG 2.4.7):readonly 有值渲 native <textarea readOnly> 可鍵盤聚焦,base
+        //   outline-none + border-transparent 無焦點指示 → 鏡射 field-wrapper.tsx readonly ring idiom
+        //   (field-controls.spec.md「readonly focus ring」)。textarea 為裸 focusable element,直接用
+        //   focus-visible:(非 :has()),僅鍵盤聚焦顯示、滑鼠點擊不觸發。
+        className: 'bg-readonly border border-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
       },
       {
         mode: 'disabled',
         variant: 'default',
         className: 'bg-disabled border border-transparent cursor-not-allowed text-fg-disabled',
       },
-      // bare chrome × mode(對齊 fieldWrapperStyles bare 規則)
-      {
-        mode: 'edit',
-        variant: 'bare',
-        className: [
-          'bg-transparent border border-transparent',
-          'hover:border-border',
-        ],
-      },
-      { mode: 'edit', variant: 'bare', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
+      // (2026-07-09 `bare` chrome × mode compounds 退役已移除;error:true 為 variant-agnostic 保留)
       {
         mode: 'edit',
         error: true,
         className: 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error',
       },
-      {
-        mode: 'display',
-        variant: 'bare',
-        className: 'bg-transparent border border-transparent',
-      },
-      {
-        mode: 'readonly',
-        variant: 'bare',
-        className: 'bg-transparent border border-transparent',
-      },
-      // 2026-07-05 fix(deep-audit A.1b,鏡射下方 naked 2026-05-13 codex V2 fix):移除 bare×disabled
-      //   的 `opacity-disabled` blanket — 同 class 已用具體 `text-fg-disabled` token swap,兩策略同時
-      //   套用違 opacity.spec.md「不可混用」canonical(0.45 × token 疊加 = 過度褪色)。
-      {
-        mode: 'disabled',
-        variant: 'bare',
-        className: 'bg-transparent border border-transparent cursor-not-allowed text-fg-disabled',
-      },
+      // (2026-07-09 display×bare / readonly×bare / disabled×bare compounds 退役已移除)
       // naked chrome × mode — cell-as-input substrate(2026-05-06 v14 revert v12)。
       //   v12 `!absolute -inset-px` autoRowHeight 不相容 → revert v9 baseline + 保留 v13.3
       //   focus !important。focus-visible 用 textarea 自身 selector(focusable element)。
@@ -176,7 +154,7 @@ export interface TextareaProps
   /**
    * Visual chrome(正交於 mode);Phase B1(2026-05-05)新增。透傳自 FieldContext.variant,per-prop override。
    * - `'default'` — 完整 chrome(form 場景)
-   * - `'bare'` — 透明 variant,hover/focus 才 reveal inner border(toolbar / inline editing)
+   * (2026-07-09 `bare` variant 退役;naked = cell-as-input substrate,@internal)
    * - `'naked'` — 完全無 chrome,cell-as-input(host cell 提供 border + focus frame,對齊 Airtable / Notion / Excel cell editing)
    */
   variant?: FieldVariant
@@ -197,6 +175,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       readOnly,
       rows = 3,
       value,
+      defaultValue,
       id: idProp,
       'aria-describedby': ariaDescribedByProp,
       'aria-errormessage': ariaErrorMessageProp,
@@ -207,44 +186,84 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     // Field context 整合：disabled / mode / chrome / invalid / size / id 都能從 context 繼承
     const fieldCtx = useFieldContext()
     // chrome 透傳:per-prop override context
-    const variant: FieldVariant = useResolvedFieldVariant(variantProp)
+    const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
     const error = useResolvedFieldInvalid(errorProp)
     const size = useResolvedFieldSize(sizeProp)
     // 2026-06-08 SSOT:mode 經 useResolvedFieldMode 統一解析(prop > 有效 disabled > fieldCtx.mode > readOnly > 'edit')
     const resolvedMode: FieldMode = useResolvedFieldMode({ mode: modeProp, disabled, readOnly })
+    const emptyDisplay = useFieldEmptyDisplay()
     const isEditable = resolvedMode === 'edit'
     const isDisplay = resolvedMode === 'display'
     const inputId = idProp ?? fieldCtx?.id
     const ariaDescribedBy = ariaDescribedByProp ?? fieldCtx?.descriptionId
     const ariaErrorMessage = ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)
 
-    // ── display mode:純展示,渲染 <div> 取代 <textarea>(white-space:pre-wrap 保留多行) ──
+    // ── display mode(+ readonly 空值)純展示,渲染 <div> 取代 <textarea>(white-space:pre-wrap 保留多行) ──
     // 對齊 Carbon read-only / Cloudscape display-mode
-    if (isDisplay) {
-      const displayValue = value != null && value !== '' ? String(value) : null
+    // 2026-07-08 user 拍板:readonly 空值也走 display-div 顯 '-'(readonly **有值** 仍走下方
+    // native <textarea readOnly> 保留選取/複製語意 — field-controls.spec.md「null / undefined 值」)。
+    // 2026-07-13 fix:空值判斷需認得 uncontrolled defaultValue — readonly / display 也要顯示內容,
+    //   不可誤判為空值渲 '-'(原為靜態 value ?? defaultValue)。
+    // 2026-07-14 R2(dual-model consensus,同 Input input.tsx):resolved value 改走 useControllable
+    // 內部 SSOT(Radix idiom)。原靜態版有 typing-stale gap:uncontrolled 打字後外部切
+    // display / readonly 仍顯示 stale defaultValue。uncontrolled 時 native textarea 由
+    // value={resolved} 內部驅動(defaultValue 只作初始值,不落 DOM attribute),同時修
+    // remount-stale(切 display 再回 edit 從 defaultValue attribute 重掛)+ form.reset() stale
+    // (HTML 標準 reset 不發 input event,下方 reset bridge 修)。controlled(傳 value)時
+    // useControllable 純 passthrough,行為與原本完全一致。consumer onChange 不接進 hook
+    // (保留 native event signature),於 <textarea> onChange 另行轉發。
+    const isControlled = value !== undefined
+    const [resolved, setResolved] = useControllable<string | number | readonly string[]>({
+      value: value as string | number | readonly string[] | undefined,
+      defaultValue: defaultValue ?? '',
+    })
+    const displayValue = resolved != null && resolved !== '' ? String(resolved) : null
+    const showDisplaySpan = isDisplay || (resolvedMode === 'readonly' && displayValue == null)
+
+    // form.reset() bridge(uncontrolled only):reset 恢復 defaultValue 但不發 input event →
+    // 手動把 resolved 歸位 defaultValue。keyed on showDisplaySpan:display 分支不掛 native
+    // textarea,回 edit 重掛時 effect 重跑補掛 listener。
+    const innerRef = React.useRef<HTMLTextAreaElement | null>(null)
+    React.useEffect(() => {
+      if (isControlled || showDisplaySpan) return
+      const form = innerRef.current?.form
+      if (!form) return
+      const handleReset = () => setResolved(defaultValue ?? '')
+      form.addEventListener('reset', handleReset)
+      return () => form.removeEventListener('reset', handleReset)
+    }, [isControlled, showDisplaySpan, defaultValue, setResolved])
+    // Merge refs(LinkInput setRef idiom,link-input.tsx:138)
+    const setRef = React.useCallback((el: HTMLTextAreaElement | null) => {
+      innerRef.current = el
+      if (typeof ref === 'function') ref(el)
+      else if (ref) (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = el
+    }, [ref])
+
+    if (showDisplaySpan) {
+      const spanMode = isDisplay ? 'display' : 'readonly'
       return (
         <div
           id={inputId}
-          data-field-mode="display"
+          data-field-mode={spanMode}
           aria-describedby={ariaDescribedBy}
           className={cn(
-            textareaVariants({ mode: 'display', variant: variant, size }),
+            textareaVariants({ mode: spanMode, variant: variant, size }),
             'whitespace-pre-wrap break-words',
-            displayValue == null && 'text-fg-muted',
+            displayValue == null && fieldEmptyColorClass(resolvedMode),
             className,
           )}
         >
-          {displayValue ?? EMPTY_DISPLAY}
+          {displayValue ?? emptyDisplay}
         </div>
       )
     }
 
     return (
       <textarea
-        ref={ref}
+        ref={setRef}
         id={inputId}
         rows={rows}
-        value={value as string | number | readonly string[] | undefined}
+        value={resolved}
         disabled={resolvedMode === 'disabled'}
         readOnly={resolvedMode === 'readonly'}
         aria-invalid={error || undefined}
@@ -258,6 +277,11 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           className
         )}
         {...props}
+        // 置於 {...props} 後:寫回 resolved SSOT(controlled 時 useControllable 內部為 no-op)再轉發 consumer onChange。
+        onChange={(e) => {
+          setResolved(e.target.value)
+          props.onChange?.(e)
+        }}
       />
     )
   }
@@ -280,6 +304,8 @@ export const textareaMeta = {
   },
   // states 對齊 cva compoundVariants + anatomy ColorMatrix 真實 state 集合;
   //   text input 無 'active'(按下)視覺態(Material/Polaris/Carbon TextArea 共識)。
+  //   'focus-visible' 泛指 focus 態:default chrome 實為 focus-within(滑鼠+鍵盤皆亮),naked chrome
+  //   為 focus-visible(鍵盤限定),readonly 有值態為 focus-visible ring(見上方 compoundVariants)。
   states: ['default', 'hover', 'focus-visible', 'readonly', 'disabled', 'error'],
   tokens: {
     bg: ['bg-disabled', 'bg-readonly', 'bg-surface'], // 2026-07-04 補:readonly×default cva 實際消費(spec「Readonly 特例」主打 token)

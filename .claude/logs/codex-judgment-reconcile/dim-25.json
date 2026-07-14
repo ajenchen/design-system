@@ -1,0 +1,32 @@
+{
+  "dim": 25,
+  "dimTitle": "Story 必要性 grounding(per-component 全掃 過 2-test:spec-tied / removal-degrade)",
+  "codexRaw": 1,
+  "role": "B.3 比稿裁定員 — 逐條裁定 codex dim-25 findings 對照真實 code + Claude same-dim findings",
+  "summary": "codex 僅 1 條 finding,自標 marginal。與 Claude same-dim 唯一 finding 完全同一 fileLine(tooltip.stories.tsx:62 Placement),雙方獨立收斂。去 code 驗證:codex 所有事實宣稱屬實(Placement 確為 anatomy PlacementReference 的嚴格子集),但屬 story earn-existence 情境依賴判斷(showcase placement demo 是世界級 DS 常見合法慣例),非該修硬缺陷 → marginal。非 false_positive(事實正確),非 material(雙方皆標 marginal + 情境依賴 + 無壞 prop/錯值/漂移)。",
+  "verdicts": [
+    {
+      "codexIndex": 0,
+      "fileLine": "packages/design-system/src/components/Tooltip/tooltip.stories.tsx:62",
+      "codexSeverity": "marginal",
+      "verdict": "marginal",
+      "claudeAlsoCaught": true,
+      "claudeFileLine": "packages/design-system/src/components/Tooltip/tooltip.stories.tsx:62(marginal,同一則,推理一致)",
+      "groundTruthCheck": {
+        "showcasePlacement": "tooltip.stories.tsx:62-99 export const Placement — grid 四方向 defaultOpen 矩陣,button label 抽象代號 Top/Left/Right/Bottom,無 @story-trait-rationale 註解(非 documented exception)",
+        "anatomyPlacementReference": "tooltip.anatomy.stories.tsx:352-401 export const PlacementReference('方向與間距')— 渲染同一組四方向(top/right/bottom/left)defaultOpen 矩陣,且更完整:多含 sideOffset 說明、Radix 碰撞偵測翻轉說明、進/出場動畫方向對照表(3.)",
+        "specCrossRef": "tooltip.spec.md:112 明文『對應 anatomy story:保留 Overview + Inspector + 元件特有 PlacementReference(4 種 side 方向對照 + side-aware 動畫表)』— 確認 PlacementReference 為 placement 文件指定 owner。codex 引 spec.md:112 屬實。",
+        "factuallyTrue": true,
+        "isSubset": "Placement(展示層)是 PlacementReference(anatomy)的嚴格子集,事實成立"
+      },
+      "reasoning": "codex 事實宣稱全部屬實(cross-ref spec.md:112 準確、anatomy 更完整、Placement 為子集),故非 false_positive。但判 marginal 而非 material 因:(1) 這是 dim 25 story earn-existence 類本質偏 pedantic 的冗餘判斷,無壞 prop / 錯值 / 跨元件漂移 / demo 矛盾 / 真 bug;(2) showcase 層 placement/position demo 是世界級 DS(Radix / shadcn / Material 官方 tooltip docs 均在主展示層示範 side)廣泛且可辯護的合法慣例,是否 retire 屬情境依賴判斷,非明確缺陷;(3) codex + Claude 雙方獨立皆自標 marginal;(4) codex 附帶的『label 抽象代號弱觸 mindset #4』codex 自己也 hedge 為『弱觸』= pedantic add-on。有 retire 先例(MenuItem WithStartIcon)使其為合理 retire 候選,但『候選』本身即情境依賴 = marginal 定義。",
+      "shouldFix": "optional — 若要收斂可比照 MenuItem WithStartIcon retire 展示層 Placement 留 @story-trait-rationale 指向 anatomy;或改真實業務情境(表格 header 右緣 icon-only tooltip 走 side=left / sidebar 收合鈕走 side=right)。非硬缺陷,不阻擋。"
+    }
+  ],
+  "stats": {
+    "material_confirmed": 0,
+    "marginal": 1,
+    "false_positive": 0,
+    "claudeMissed": 0
+  }
+}

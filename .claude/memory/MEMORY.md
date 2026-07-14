@@ -5,8 +5,7 @@
 - [project_goal.md](project_goal.md) — World-class DS where CLAUDE.md + specs ensure AI faithfully executes design principles
 
 ## Project (active work)
-- [project_beta81_deep_audit_closure.md](project_beta81_deep_audit_closure.md) — beta.81 deep-audit 收斂發版;error×focus 照 Mantine canonical;backlog → C.1 報告
-- [project_cprime_governance_shipped.md](project_cprime_governance_shipped.md) — C-prime fork 治理已發版 beta.70(committed-config + npm,免 plugin);**雲端端到端 100% 蓋章(2026-06-17 user 真機):proactive 指引 + 機械強制(PostToolUse P0 BLOCKER 實際 fire)兩半皆親證生效**
+- [project_wm_ds_alignment_campaign.md](project_wm_ds_alignment_campaign.md) — WM↔DS 對齊戰役:雙 repo branch 備齊等雙 push gate;R3 7 題拍板中;handoff 在 WM docs
 - [project_governance_evolution_roadmap.md](project_governance_evolution_roadmap.md) — 稽核=永久機構、謂詞化=機械化引擎雙柱;方向 1-3 已落地(判準化 harvest / fail-closed / 造輪三洞),4-7 分期各有 trigger;SSOT → planning/2026-07-07-governance-evolution-roadmap.md
 
 ## Feedback (workflow / collaboration discipline)
@@ -27,7 +26,7 @@
 
 ## Reference
 - [reference_deploy_targets.md](reference_deploy_targets.md) — Deploy targets + URL 3-strategy 自動推導 + per-user override + transport self-awareness + Netlify 免費密碼 = Edge Function Basic Auth(STORYBOOK_BASIC_AUTH)+ Claude Code 直連 sandbox 雲端主路徑 + clone-on-demand(2026-06-11 合併 deploy_url_auto_detect;2026-07-07 合併 netlify_basic_password)
-- [reference_cloud_governance_loading.md](reference_cloud_governance_loading.md) — 雲端 sandbox 治理載入實證:committed .claude 全 4 hook event 會 fire / plugin 不可靠(#63028/#62174)/ --cloud 需 TTY / skills 不認 node_modules(2026-06-16)
+- [reference_cloud_governance_loading.md](reference_cloud_governance_loading.md) — 雲端 sandbox 治理載入實證:committed .claude 全 4 hook event 會 fire / plugin 不可靠(#63028/#62174)/ --cloud 需 TTY / skills 不認 node_modules(2026-06-16)+ C-prime fork 治理 shipped beta.70、雲端端到端 100% 蓋章:proactive 指引 + 機械強制皆親證生效(2026-07-14 合併 project_cprime)
 
 ---
 **Prune history**(細節在 .claude/memory/retired/ + git log):
@@ -36,3 +35,4 @@
 - 2026-06-02 quality-first prune:story_baseline fold + deep-audit 家族 Rule-of-3 清(19→18)
 - 2026-06-11 D8 headroom:codex directives→dual_track / deploy_url→deploy_targets 合併 + css-aggregator retire(教訓入 CLAUDE.md 失敗記憶索引;19→16;修 stale ×3)
 - 2026-07-07 D8 headroom:netlify_basic_password→deploy_targets 合併(同部署域 D1 consolidation,invariant 零損;19→18)
+- 2026-07-14 D8 headroom:project_cprime_governance_shipped→reference_cloud_governance_loading 合併(campaign 已完結 + 同雲端治理域 + 同 originSession D1 consolidation,invariant 零損;19→18)

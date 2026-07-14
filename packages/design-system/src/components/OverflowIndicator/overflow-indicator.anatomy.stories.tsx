@@ -15,11 +15,11 @@ import { Tag } from '@/design-system/components/Tag/tag'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 
-const personHover = (name: string) => (
+const personHover = (name: string, src?: string) => (
   <ProfileCard
     name={name}
     subtitle="Design｜D-0042｜EMP-1001"
-    avatar={{ alt: name }}
+    avatar={{ src, alt: name }}
     status="online"
     statusMessage="Out of Office: Back on Monday."
     actions={<ProfileCardDefaultActions />}
@@ -31,6 +31,8 @@ const personHover = (name: string) => (
   />
 )
 const P = { A: 'Alan Chen', B: 'Betty Wu', C: 'Charlie Lee' } as const
+// 真實人像(2026-07-08 sweep):u=EMP-100x 對齊 dialog.stories.tsx MEMBERS 同名人物(跨 story 同人同照)
+const P_SRC = { A: 'https://i.pravatar.cc/48?u=EMP-1001', B: 'https://i.pravatar.cc/48?u=EMP-1002', C: 'https://i.pravatar.cc/48?u=EMP-1003' } as const
 import { H3, Desc, Td, Th, Swatch } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
@@ -322,11 +324,11 @@ function OverflowInspector() {
               </tr>
               <tr>
                 <Td mono>openDelay</Td>
-                <Td mono>500ms（HOVER_DELAY_PLAIN_MS）</Td>
+                <Td mono>500ms（MOTION_DELAY_PLAIN_MS）</Td>
               </tr>
               <tr>
                 <Td mono>closeDelay</Td>
-                <Td mono>200ms（HOVER_DELAY_CLOSE_MS）</Td>
+                <Td mono>200ms（MOTION_DELAY_CLOSE_MS）</Td>
               </tr>
             </tbody>
           </table>
@@ -489,9 +491,9 @@ export const SizeMatrix: Story = {
                 <Td mono>sm</Td>
                 <Td>
                   <div className="flex items-center">
-                    <Avatar alt={P.A} color="indigo" size={20} hoverCard={personHover(P.A)} />
+                    <Avatar src={P_SRC.A} alt={P.A} color="indigo" size={20} hoverCard={personHover(P.A, P_SRC.A)} />
                     <span className="-ml-1.5">
-                      <Avatar alt={P.B} color="magenta" size={20} hoverCard={personHover(P.B)} />
+                      <Avatar src={P_SRC.B} alt={P.B} color="magenta" size={20} hoverCard={personHover(P.B, P_SRC.B)} />
                     </span>
                     <span className="-ml-1.5">
                       <OverflowIndicator count={3} shape="circle" size="sm">
@@ -519,7 +521,7 @@ export const SizeMatrix: Story = {
                 <Td mono>md</Td>
                 <Td>
                   <div className="flex items-center">
-                    <Avatar alt={P.A} color="indigo" size={24} hoverCard={personHover(P.A)} />
+                    <Avatar src={P_SRC.A} alt={P.A} color="indigo" size={24} hoverCard={personHover(P.A, P_SRC.A)} />
                     <span className="-ml-1.5">
                       <OverflowIndicator count={4} shape="circle" size="md">
                         <div className="p-1 text-caption">…</div>
@@ -543,7 +545,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"摘要:\n\n  ARIA / Pattern  :對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 pattern。\n\n  互動行為  :\n\n  +N trigger 是 keyboard-focusable 計數 span（tabIndex=0 + role=\"button\" + aria-haspopup=\"dialog\"；2026-06-01 #13 由純 passive 改 focusable，修 WCAG 2.1.1 違反）。HoverCard 在 hover 或 trigger 取得 focus 時自動展開，沒有「按 Enter 開選單」的鍵盤指令，也沒有 click 切換。\n\n  Focus  :trigger 是 tab stop（focus-visible ring，鍵盤使用者可 focus 開啟 HoverCard 看溢出內容）；HoverCard 內展開的可互動內容（人員 tag / ProfileCard）由各自內容元件負責 focus 管理。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation；HoverCard 內容透過 hover 或 focus 自動顯示（非鍵盤指令觸發）。WCAG AA contrast ≥ 4.5:1（text）/ 3:1（UI）。"}</p>
+      <p className="whitespace-pre-line">{"摘要:\n\n  ARIA / Pattern  :對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 pattern。\n\n  互動行為  :\n\n  +N trigger 是 keyboard-focusable 計數 span（tabIndex=0；不掛 role/aria-haspopup——無 activation 行為的宣告是對 AT 空承諾，2026-07-14 對齊 Avatar hoverCard canonical 拆除；2026-06-01 #13 由純 passive 改 focusable，修 WCAG 2.1.1 違反）。HoverCard 在 hover 或 trigger 取得 focus 時自動展開，沒有「按 Enter 開選單」的鍵盤指令，也沒有 click 切換。\n\n  Focus  :trigger 是 tab stop（focus-visible ring，鍵盤使用者可 focus 開啟 HoverCard 看溢出內容）；HoverCard 內展開的可互動內容（人員 tag / ProfileCard）由各自內容元件負責 focus 管理。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation；HoverCard 內容透過 hover 或 focus 自動顯示（非鍵盤指令觸發）。WCAG AA contrast ≥ 4.5:1（text）/ 3:1（UI）。"}</p>
     </div>
   ),
 }

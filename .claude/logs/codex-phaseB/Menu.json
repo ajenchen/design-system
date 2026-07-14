@@ -1,0 +1,36 @@
+{
+ "component": "Menu",
+ "claimsVerified": 214,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:160",
+   "宣稱": "`--neutral-selected`（selected 勝）；消費者（DropdownMenu highlighted）同規則",
+   "真實code行為": "MenuItem 的 selected × hover 維持 selected 背景，但 DropdownMenu 的 selected × highlighted 使用 `bg-neutral-selected-active`，並非相同規則。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:35,216; packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:276-277",
+   "宣稱": "`startIcon`、`avatar`、`startContent` 三者互斥／不可同時使用",
+   "真實code行為": "三者是獨立 optional props，亦由三個獨立分支渲染；沒有 type union、優先順序或 runtime gate，能同時出現。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:554",
+   "宣稱": "disabled 時所有元素統一 fg-disabled。",
+   "真實code行為": "只有 label、description、startIcon 使用 disabled foreground；tag、endContent、startContent 使用 `opacity-disabled`，checkbox 使用自身 disabled 樣式，avatar 不變暗。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:289; packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:777",
+   "宣稱": "直接使用時 MenuItem 預設渲染 `role=\"option\"`，並帶 `aria-selected`／`aria-disabled`",
+   "真實code行為": "預設 `checked=false`、`disabled=false` 時，兩個 ARIA 屬性皆因 `value || undefined` 而被省略；只有狀態為 true 時才輸出。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:293",
+   "宣稱": "Tab — focus container",
+   "真實code行為": "MenuItem 沒有 Tab handler；Radix Menu 會攔截 Tab，cmdk 也沒有將 Tab 映射為 focus container，因此不存在此共同鍵盤行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.principles.stories.tsx:77",
+   "宣稱": "一律使用 MenuItem，才能確保所有選單列的對齊與間距一致。",
+   "真實code行為": "MenuItem 是供 SelectMenu、Combobox、DropdownMenu 等 wrapper 消費的非 focusable internal primitive；產品端應使用具備完整互動語意的 wrapper，而非一律直接使用 MenuItem。"
+  }
+ ]
+}

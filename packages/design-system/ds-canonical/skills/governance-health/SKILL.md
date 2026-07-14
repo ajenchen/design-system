@@ -37,7 +37,7 @@ ls -la .claude/logs/*.jsonl
 
 | Metric | Source | 判斷 |
 |--------|--------|------|
-| **Hook fire count**(per hook,6 月窗)| `hook-fires.jsonl` parse path column | 0 fire = retire 候選;>50 fire = hot rule |
+| **Hook fire count**(per hook,6 月窗)| `hook-fires-per-hook.jsonl`(+ `.jsonl.YYYYMM` rotation 檔)或 `npm run audit:hook-quality`(產 hook-quality-report.json 含 fire_count_6mo/dead 分類);**`hook-fires.jsonl` 記的是 governance-file 編輯軌跡(hot files 分析用),無 hook 名欄** | 0 fire = retire 候選;>50 fire = hot rule |
 | **Skill invoke count**(per skill,3 月窗)| `skill-invokes.jsonl`(若存在)| 0 = dead;< 3 = under-used |
 | **User correction signals**(per session)| `user-corrections.jsonl` count + sample | 總累積 > 20 = 需 codify |
 | **File size trend**(weekly snapshot)| `metric-snapshots.jsonl`(若存在)| CLAUDE.md 增速 > 5 line/week = sprawl alert |

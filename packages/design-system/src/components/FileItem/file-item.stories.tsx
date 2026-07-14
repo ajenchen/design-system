@@ -93,7 +93,7 @@ export const HoverSwap = {
       </div>
       <div>
         <div className="text-caption text-fg-muted mb-2">
-          同樣 pattern 在 compact mode:status slot 幾何與 delete action 一致(兩 mode 統一 Button xs 24),center 自動對齊
+          緊湊樣式也是同一套規則:狀態圖示與刪除鈕的大小、位置一致,垂直置中對齊
         </div>
         {/* Compact list 統一 gap-1(canonical 簡化) */}
         <div className="flex flex-col gap-1">
@@ -156,30 +156,41 @@ export const Clickable = {
     }
     return (
       <>
-        <div className="flex flex-col gap-2 max-w-md">
-          {attachmentFiles.map((f, i) => {
-            const isImage = i < 2 // 前兩個 rich card(有 thumbnail)
-            const sizeLabel = f.description ?? (f.size != null ? `${(f.size / 1024 / 1024).toFixed(1)} MB` : '—')
-            return isImage ? (
-              <FileItem
-                key={f.id}
-                mode="rich"
-                name={f.name}
-                description={sizeLabel}
-                thumbnailSrc={f.url}
-                onClick={() => openAt(i)}
-                actions={deleteBtn}
-              />
-            ) : (
-              <FileItem
-                key={f.id}
-                mode="compact"
-                name={f.name}
-                onClick={() => openAt(i)}
-                actions={deleteBtn}
-              />
-            )
-          })}
+        {/* 2026-07-14 Dim 68 修:原本同一 list 依檔案類型混 rich(圖片)+ compact(文件),
+            違反 file-item.spec.md「❌ 不混用 rich + compact 在同一 list」(Invariant 1 —
+            高度差破壞 row rhythm)。改拆兩個區段:圖片整組 rich、文件整組 compact,
+            同區段 mode 統一(spec 建議的分區段做法);FileViewer index 跨兩區段連續。 */}
+        <div className="flex flex-col gap-4 max-w-md">
+          <div className="flex flex-col gap-1.5">
+            <h3 className="text-caption font-medium text-fg-muted">圖片</h3>
+            <div className="flex flex-col gap-2">
+              {attachmentFiles.slice(0, 2).map((f, i) => (
+                <FileItem
+                  key={f.id}
+                  mode="rich"
+                  name={f.name}
+                  description={f.description ?? (f.size != null ? `${(f.size / 1024 / 1024).toFixed(1)} MB` : '—')}
+                  thumbnailSrc={f.url}
+                  onClick={() => openAt(i)}
+                  actions={deleteBtn}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <h3 className="text-caption font-medium text-fg-muted">文件</h3>
+            <div className="flex flex-col gap-1">
+              {attachmentFiles.slice(2).map((f, i) => (
+                <FileItem
+                  key={f.id}
+                  mode="compact"
+                  name={f.name}
+                  onClick={() => openAt(i + 2)}
+                  actions={deleteBtn}
+                />
+              ))}
+            </div>
+          </div>
         </div>
         <FileViewer files={attachmentFiles} open={open} onOpenChange={setOpen} index={index} onIndexChange={setIndex} />
       </>

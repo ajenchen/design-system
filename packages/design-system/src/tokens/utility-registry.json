@@ -5,7 +5,8 @@
     "owner": "packages/design-system/src/tokens/utility-registry.json",
     "consumed_by": [
       ".claude/hooks/check_opacity_token_usage.sh",
-      ".claude/skills/design-system-audit/references/audit-prompts.md Dim 5"
+      ".claude/skills/design-system-audit/references/audit-prompts.md Dim 5",
+      ".claude/hooks/lib/_token_hygiene.sh"
     ],
     "spec_sources": [
       "packages/design-system/src/tokens/typography/typography.spec.md L118-156",
@@ -19,23 +20,38 @@
       "_added": "2026-05-17 per audit Dim 47 codex 比稿後 codify;補 anatomy stories Inspector panel UI 跟 DS surface 分層 carve-out",
       "anatomy_stories_inspector": {
         "scope": "*.anatomy.stories.tsx — Inspector panel / Side legend / Section H3 decoration UI",
-        "allowed_utilities": ["tracking-wider", "font-semibold", "text-[10px]", "text-[11px]", "text-[12px]", "leading-none"],
+        "allowed_utilities": [
+          "tracking-wider",
+          "font-semibold",
+          "text-[10px]",
+          "text-[11px]",
+          "text-[12px]",
+          "leading-none"
+        ],
         "rationale": "Anatomy stories Inspector panel 是 storybook-internal 教學工具 UI(展示元件結構的 side legend / footnote / uppercase header),非 DS component surface。需視覺辨識(uppercase label + 寬 letter-spacing / 小字 metadata)跟 DS 主元件 typography 分層。對齊 Carbon storybook addon、Material storybook addon 共識:tool UI 不受 token-first 約束。`leading-none` 2026-05-21 D1 codex 抓 badge.anatomy L117/118 後加入(10-11px monospace inspector label 需要緊湊 line-height,跟 DS body/body-lg `leading-compact 1.3` 場景分層)。",
         "audit_dim_53_fix": "Dim 47 sub-agent 抓 anatomy stories tracking-wider / font-semibold / text-[NN] / leading-none 多處違反 = false positive(本例外段 codify 後豁免)"
       },
       "token_stories_section_label": {
         "scope": "packages/design-system/src/tokens/**/*.stories.tsx — SectionLabel helper(uppercase + wider tracking section header)",
-        "allowed_utilities": ["tracking-wider", "font-semibold"],
+        "allowed_utilities": [
+          "tracking-wider",
+          "font-semibold"
+        ],
         "rationale": "Token stories(color / typography / radius / elevation / opacity / uiSize / layoutSpace / density)是 token 展示 storybook,用 SectionLabel(`uppercase + tracking-wider`)分區 swatch 群組,跟 anatomy stories Inspector panel 同 storybook-internal teaching UI 性質,非 DS component surface。Phase A audit 2026-05-21 codify。"
       },
       "principles_stories_codepre": {
         "scope": "*.principles.stories.tsx — <pre><code> code sample blocks",
-        "allowed_utilities": ["text-xs", "text-sm"],
+        "allowed_utilities": [
+          "text-xs",
+          "text-sm"
+        ],
         "rationale": "Code sample 區塊用 <pre><code> + monospace font,需小字呈現程式碼 — 跟 DS prose 不同層級。Polaris / Carbon storybook code blocks 同樣使用 smaller font。"
       },
       "icon_as_text_and_numeric_in_circle": {
         "scope": "Production tsx — icon-as-text / numeric-in-circle / single-line short text in fixed-h container",
-        "allowed_utilities": ["leading-none"],
+        "allowed_utilities": [
+          "leading-none"
+        ],
         "rule_one_liner": "icon-as-text / numeric-in-circle 一律用 `leading-none`(不用 `leading-compact`)",
         "rationale": "2026-05-23 Path B codify per user verbatim「或是其實根本不用分?」+「照你建議」:統一 leading-none,不分 fixed-box vs derived-h。對齊 Material UI Avatar `line-height: 1` / Polaris Badge `line-height: 1` / Carbon Tag(不顯式設,等效 1)世界級共識。視覺驗證:固定高度容器 + items-center 主導,line-height 1.0 vs 1.3 vs 1.5 視覺零差別(playwright probe `scripts/probe-leading-migration.mjs` Steps step-number box delta = 0px)。廢除原 2026-05-21 F1 Badge 從 leading-none → leading-compact migration(over-engineered,違 mindset #1 不取巧不發明)+ 原 production_layout_positioning_anchor exception(改 affirmative canonical 不需 exception)。",
         "current_consumers": [
@@ -52,46 +68,129 @@
   },
   "typography": {
     "allow": [
-      "text-h1", "text-h2", "text-h3", "text-h4", "text-h5", "text-h6",
-      "text-body", "text-body-lg", "text-caption", "text-footnote",
-      "leading-compact", "leading-normal",
-      "font-normal", "font-medium", "font-bold",
+      "text-h1",
+      "text-h2",
+      "text-h3",
+      "text-h4",
+      "text-h5",
+      "text-h6",
+      "text-body",
+      "text-body-lg",
+      "text-caption",
+      "text-footnote",
+      "leading-compact",
+      "leading-normal",
+      "font-normal",
+      "font-medium",
+      "font-bold",
       "tracking-shortcut"
     ],
     "block": {
-      "size_raw": ["text-xs", "text-sm", "text-base", "text-lg", "text-xl", "text-2xl", "text-3xl", "text-4xl", "text-5xl", "text-6xl", "text-7xl", "text-8xl", "text-9xl"],
-      "weight_raw": ["font-thin", "font-extralight", "font-light", "font-semibold", "font-extrabold", "font-black"],
+      "size_raw": [
+        "text-xs",
+        "text-sm",
+        "text-base",
+        "text-lg",
+        "text-xl",
+        "text-2xl",
+        "text-3xl",
+        "text-4xl",
+        "text-5xl",
+        "text-6xl",
+        "text-7xl",
+        "text-8xl",
+        "text-9xl"
+      ],
+      "weight_raw": [
+        "font-thin",
+        "font-extralight",
+        "font-light",
+        "font-semibold",
+        "font-extrabold",
+        "font-black"
+      ],
       "leading_numeric": "leading-{N}(use leading-compact / leading-normal token)",
-      "tracking_raw": ["tracking-tighter", "tracking-tight", "tracking-wide", "tracking-wider", "tracking-widest"],
+      "tracking_raw": [
+        "tracking-tighter",
+        "tracking-tight",
+        "tracking-wide",
+        "tracking-wider",
+        "tracking-widest"
+      ],
       "tracking_raw_rationale": "Block raw Tailwind tracking-* utility(unscoped letter-spacing leaks 跨元件不一致)。需要 wider letter-spacing 場景必 codify role-specific semantic utility — 例如 `tracking-shortcut`(鍵盤快捷鍵 hint,0.1em,對應 --tracking-shortcut token)。新 role 必走 typography.css 新增 `--tracking-<role>` + `@utility tracking-<role>`,再 allow 進本 registry。",
       "inline_style": "style={{ fontSize: ..., lineHeight: ... }}",
       "rationale_path": "packages/design-system/src/tokens/typography/typography.spec.md L118-156"
     }
   },
   "radius": {
-    "allow": ["rounded-xs", "rounded-sm", "rounded-md", "rounded-lg", "rounded-full", "rounded-[inherit]"],
+    "allow": [
+      "rounded-xs",
+      "rounded-sm",
+      "rounded-md",
+      "rounded-lg",
+      "rounded-full",
+      "rounded-[inherit]"
+    ],
     "allow_note": "rounded-[inherit] 是 passthrough 非 radius 值(clip 到父容器圓角,token utility 無法表達;anchor scroll-area.tsx Viewport)— 唯一合法 arbitrary bracket",
     "block": {
-      "out_of_range": ["rounded-xl", "rounded-2xl", "rounded-3xl"],
+      "out_of_range": [
+        "rounded-xl",
+        "rounded-2xl",
+        "rounded-3xl"
+      ],
       "ambiguous_default": "rounded(use rounded-md explicit)",
-      "arbitrary_value": ["rounded-[6px]", "rounded-[var(--radius-md)]"],
+      "arbitrary_value": [
+        "rounded-[6px]",
+        "rounded-[var(--radius-md)]"
+      ],
       "inline_style": "style={{ borderRadius: ... }}",
       "rationale_path": "packages/design-system/src/tokens/radius/radius.spec.md L57-71"
     }
   },
   "opacity": {
-    "allow": ["opacity-0", "opacity-100", "opacity-disabled"],
+    "allow": [
+      "opacity-0",
+      "opacity-100",
+      "opacity-disabled"
+    ],
     "block": {
-      "numeric_tier": ["opacity-5", "opacity-10", "opacity-20", "opacity-25", "opacity-30", "opacity-40", "opacity-50", "opacity-60", "opacity-70", "opacity-75", "opacity-80", "opacity-90", "opacity-95"],
+      "numeric_tier": [
+        "opacity-5",
+        "opacity-10",
+        "opacity-20",
+        "opacity-25",
+        "opacity-30",
+        "opacity-40",
+        "opacity-50",
+        "opacity-60",
+        "opacity-70",
+        "opacity-75",
+        "opacity-80",
+        "opacity-90",
+        "opacity-95"
+      ],
       "arbitrary_value": "opacity-[0.N](use --opacity-disabled or token swap)",
       "rationale_path": "packages/design-system/src/tokens/opacity/opacity.spec.md L53-57",
       "philosophy": "Single semantic token(0.45)vs Tailwind multi-tier(對齊 Polaris / Material / Apple 單值哲學)"
     }
   },
   "elevation": {
-    "allow": ["shadow-[var(--elevation-100)]", "shadow-[var(--elevation-100-hover)]", "shadow-[var(--elevation-200)]", "shadow-[var(--elevation-200-hover)]"],
+    "allow": [
+      "shadow-[var(--elevation-100)]",
+      "shadow-[var(--elevation-100-hover)]",
+      "shadow-[var(--elevation-200)]",
+      "shadow-[var(--elevation-200-hover)]"
+    ],
     "block": {
-      "tailwind_size": ["shadow-sm", "shadow", "shadow-md", "shadow-lg", "shadow-xl", "shadow-2xl", "shadow-inner"],
+      "tailwind_size": [
+        "shadow-sm",
+        "shadow",
+        "shadow-md",
+        "shadow-lg",
+        "shadow-xl",
+        "shadow-2xl",
+        "shadow-inner"
+      ],
       "rationale_path": "packages/design-system/src/tokens/elevation/elevation.spec.md",
       "philosophy": "DS 採 2-tier elevation(100 / 200)語意而非 Tailwind size ladder"
     }
@@ -99,26 +198,64 @@
   "spacing": {
     "allow_canonical": "對齊 spec(gap-2/3/4/6/8 等;layout-space token via var())",
     "warn": {
-      "micro_gap": ["gap-px", "gap-0.5", "gap-1.5"],
+      "micro_gap": [
+        "gap-px",
+        "gap-0.5",
+        "gap-1.5"
+      ],
       "rationale": "<4px gap 通常違反 item-anatomy slot 幾何。Allow exception in spec.md(Skeleton bone / inline action 等)but flag for human review."
     }
   },
   "sizing": {
     "warn": {
-      "fraction": ["w-1/3", "w-2/3", "w-1/4", "w-3/4", "w-1/5", "w-2/5", "w-3/5", "w-4/5", "w-1/6", "w-5/6", "w-1/12", "w-5/12", "w-7/12", "w-11/12"],
+      "fraction": [
+        "w-1/3",
+        "w-2/3",
+        "w-1/4",
+        "w-3/4",
+        "w-1/5",
+        "w-2/5",
+        "w-3/5",
+        "w-4/5",
+        "w-1/6",
+        "w-5/6",
+        "w-1/12",
+        "w-5/12",
+        "w-7/12",
+        "w-11/12"
+      ],
       "rationale": "Fraction width 通常 inside DS component = layout SSOT 漂移。Allow if component spec owns layout(eg. Field labelWidth 比例)but flag。"
     }
   },
   "shadcn_alias": {
     "block": {
-      "color_alias": ["bg-popover", "text-popover-foreground", "text-muted-foreground", "bg-accent", "text-accent-foreground", "bg-destructive", "bg-background", "text-background", "border-input"],
+      "color_alias": [
+        "bg-popover",
+        "text-popover-foreground",
+        "text-muted-foreground",
+        "bg-accent",
+        "text-accent-foreground",
+        "bg-destructive",
+        "bg-background",
+        "text-background",
+        "bg-card",
+        "text-card-foreground",
+        "text-primary-foreground",
+        "border-input"
+      ],
       "rationale": "shadcn compat alias 不聯動 DS dark mode。改用 direct token(--surface-raised / --fg-muted / --error 等)",
       "rationale_path": "CLAUDE.md `# 失敗記憶索引` shadcn compat alias 回流"
     }
   },
   "primitive_color_as_utility": {
     "block": {
-      "primitive_class": ["bg-neutral-1", "bg-neutral-2", "text-blue-6", "text-red-7", "border-blue-3"],
+      "primitive_class": [
+        "bg-neutral-1",
+        "bg-neutral-2",
+        "text-blue-6",
+        "text-red-7",
+        "border-blue-3"
+      ],
       "rationale": "primitive 色名作 utility = 越過 semantic 層。用 semantic utility(bg-surface / text-fg-secondary 等)或 var() bracket(bg-[var(--color-blue-6)])"
     }
   }

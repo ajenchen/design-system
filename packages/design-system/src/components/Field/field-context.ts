@@ -1,8 +1,9 @@
 import * as React from 'react'
-import type { FieldMode, FieldVariant } from './field-types'
+import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from './field-types'
+import { EMPTY_DISPLAY } from './field-wrapper'
 
 // ── Types ──
-export type { FieldMode, FieldVariant }
+export type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth }
 export type FieldOrientation = 'vertical' | 'horizontal'
 export type FieldSize = 'sm' | 'md' | 'lg'
 export type FieldControlLayout = 'inline' | 'block'
@@ -29,7 +30,8 @@ export interface FieldContextValue {
   descriptionId: string
   errorId: string
   mode: FieldMode
-  /** 視覺外殼透傳(2026-05-05)。default = 含 border+bg;bare = 透明 variant,hover/focus reveal。
+  /** 視覺外殼透傳(2026-05-05)。default = 含 border+bg;naked = cell-as-input(edit×naked 自畫 border-based state machine;display/readonly/disabled×naked 用 transparent border 由 host cell 供邊框);`bare` 2026-07-09 退役;naked 2026-07-14 型別收窄至
+   *  FieldVariantInternal(@internal)— 公開 `<Field variant>` 只收 default,故本欄位維持 FieldVariant。
    *  child Field control 自動繼承,per-control prop override 可覆寫。詳 field-types.ts。 */
   variant: FieldVariant
   disabled: boolean
@@ -202,10 +204,12 @@ export function useResolvedFieldMode({
 }
 
 /**
- * Resolve Field control 的 **variant**(default / bare / naked 視覺外殼)— 2026-06-08 SSOT。
+ * Resolve Field control 的 **variant**(default / naked 視覺外殼;`bare` 2026-07-09 退役)— 2026-06-08 SSOT。
  * 優先序:顯式 prop > FieldContext.variant > 'default'。與既有各控件公式一字不差(Δ=0),統一以利 gate 強制。
+ * 2026-07-14 API 策展 E:入參 / 回傳 widen 為 FieldVariantInternal — naked 僅 DataTable cell-registry
+ * 經 @internal 通道傳入(公開 prop 型別 = FieldVariant,不含 naked)。
  */
-export function useResolvedFieldVariant(variantProp?: FieldVariant | null): FieldVariant {
+export function useResolvedFieldVariant(variantProp?: FieldVariantInternal | null): FieldVariantInternal {
   const fieldCtx = React.useContext(FieldContext)
   return variantProp ?? fieldCtx?.variant ?? 'default'
 }
@@ -231,4 +235,64 @@ export function FieldSurfaceSizeProvider({
   children: React.ReactNode
 }): React.ReactElement {
   return React.createElement(FieldSurfaceSizeContext.Provider, { value: size }, children)
+}
+
+/**
+ * Table-cell 可編輯訊號(2026-07-08 user 拍板)— 獨立於 FieldSurfaceContext / FieldSurfaceSizeContext
+ * 的純 boolean context,由 host(DataTable cell registry)注入該 cell 是否可編輯,讓 useFieldEmptyDisplay
+ * 分流「可編輯 cell 空 display → 空白」vs「不可編輯 cell 空 display → '-'」。
+ * value = boolean primitive(stable when unchanged),不破壞 cell memo identity(同 TableScrollContext /
+ * FieldSurfaceSizeContext L119-121 canonical);絕不污染 FieldContext(useFieldContext() 在 cell 內仍 null)。
+ */
+const FieldSurfaceEditableContext = React.createContext<boolean>(false)
+
+export function FieldSurfaceEditableProvider({
+  isEditable,
+  children,
+}: {
+  isEditable: boolean
+  children: React.ReactNode
+}): React.ReactElement {
+  return React.createElement(FieldSurfaceEditableContext.Provider, { value: isEditable }, children)
+}
+
+/**
+ * 空值顯示分流(2026-07-08 user 拍板,verbatim「...都用"-"...我從頭到尾哪裡有說要用全形的」):
+ *
+ * | 情境                                           | 空值顯示 |
+ * |------------------------------------------------|----------|
+ * | table-cell **可編輯** 的 display 靜止態        | **空白 `''`**(不佔位,affordance = hover outline)|
+ * | table-cell **不可編輯**(readonly cell)        | **半形 `-`** |
+ * | standalone display / readonly / form / toolbar | **半形 `-`** |
+ *
+ * 收斂式:`surface==='table-cell' && isEditable ? '' : EMPTY_DISPLAY`。
+ * 可編輯 form / edit 輸入框走 native placeholder(不經此 hook)。boolean → unchecked / disabled →
+ * 同上文字 + text-fg-disabled(M24),各控件自理。
+ * 世界級對照:table-cell blank = MUI X / AG Grid / Ant core / Notion / Airtable grid 域共識;
+ * 非 table `-` = Ant ProTable `columnEmptyText`(見 field-wrapper.tsx EMPTY_DISPLAY 註)。
+ * SSOT 條文 → field-controls.spec.md「null / undefined 值」;全 Field family display/readonly/disabled
+ * 空值渲染必經此 hook,禁直接引 EMPTY_DISPLAY 常數(genre 分流會漏)。
+ */
+export function useFieldEmptyDisplay(): string {
+  const surface = useFieldSurface()
+  const isEditable = React.useContext(FieldSurfaceEditableContext)
+  return surface === 'table-cell' && isEditable ? '' : EMPTY_DISPLAY
+}
+
+/**
+ * 空值符號「-」顏色分流(2026-07-09 user 拍板 verbatim「「-」代表的是不可編輯只拿來供檢視的值
+ * 所以應該跟readonly 的value同樣顏色吧」):
+ *
+ * 「-」是「不可編輯、供檢視的值」→ 同 readonly value 色 = `text-foreground`
+ * (field-wrapper.tsx base `text-foreground`),**非** `text-fg-muted`(muted 是「可編輯 placeholder
+ * 提示」的裝飾語意;空值符號不是提示、是被檢視的值狀態)。
+ * disabled 態維持 `text-fg-disabled`(M24 disabled 顯著性 > foreground/muted,不可被蓋)。
+ *
+ * SSOT:全 Field family display/readonly/disabled 空值 span 消費此 helper,傳入已 resolve 的
+ * resolvedMode。純函式(非 hook)—— resolvedMode 已由 useResolvedFieldMode 解析(含控件自身
+ * disabled prop,context hook 讀不到);故以 resolvedMode 為入參,可條件呼叫、不受 Rules of Hooks 限制。
+ * 世界級對照:Ant read-only / Carbon read-only value = 正常前景色;placeholder 才 muted。
+ */
+export function fieldEmptyColorClass(resolvedMode: FieldMode): string {
+  return resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-foreground'
 }

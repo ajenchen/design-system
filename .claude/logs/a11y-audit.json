@@ -1,6 +1,6 @@
 {
-  "ts": "2026-06-10T20:19:24.485Z",
-  "total": 944,
+  "ts": "2026-07-12T06:34:55.303Z",
+  "total": 973,
   "violationsByStory": {
     "design-system-components-accordion-設計規格--overview": [
       {
@@ -673,7 +673,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 16
+        "nodes": 17
       }
     ],
     "design-system-components-bulkactionbar-設計規格--inspector": [
@@ -873,7 +873,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 12
+        "nodes": 14
       }
     ],
     "design-system-components-calendar-設計規格--inspector": [
@@ -881,7 +881,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 12
+        "nodes": 14
       }
     ],
     "design-system-components-calendar-設計規格--color-matrix": [
@@ -889,7 +889,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 16
+        "nodes": 18
       }
     ],
     "design-system-components-calendar-設計規格--state-behavior": [
@@ -897,7 +897,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 22
+        "nodes": 24
       }
     ],
     "design-system-components-calendar-設計原則--usage-guidance": [
@@ -905,7 +905,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 10
+        "nodes": 12
       }
     ],
     "design-system-components-calendar-設計原則--color-semantic": [
@@ -913,7 +913,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 9
+        "nodes": 10
       }
     ],
     "design-system-components-calendar-設計原則--mvp-scope": [
@@ -921,7 +921,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 8
+        "nodes": 10
       }
     ],
     "design-system-components-calendar-展示--team-calendar": [
@@ -929,7 +929,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 13
+        "nodes": 15
       }
     ],
     "design-system-components-calendar-展示--content-publishing-schedule": [
@@ -937,7 +937,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 10
+        "nodes": 12
       }
     ],
     "design-system-components-calendar-展示--empty-calendar": [
@@ -945,7 +945,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 8
+        "nodes": 10
       }
     ],
     "design-system-components-carousel-設計規格--overview": [
@@ -1245,14 +1245,6 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 3
-      }
-    ],
-    "design-system-components-chip-設計規格--inspector": [
-      {
-        "id": "color-contrast",
-        "impact": "serious",
-        "help": "Elements must meet minimum color contrast ratio thresholds",
         "nodes": 1
       }
     ],
@@ -1261,7 +1253,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 9
+        "nodes": 8
       }
     ],
     "design-system-components-chip-設計規格--selection-matrix": [
@@ -1269,7 +1261,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 5
+        "nodes": 2
       }
     ],
     "design-system-components-chip-設計規格--size-matrix": [
@@ -1277,7 +1269,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 2
+        "nodes": 1
       }
     ],
     "design-system-components-chip-設計規格--state-behavior": [
@@ -1285,7 +1277,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 6
+        "nodes": 4
       }
     ],
     "design-system-components-chip-設計規格--layout-matrix": [
@@ -1301,7 +1293,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 12
+        "nodes": 10
       }
     ],
     "design-system-components-chip-設計原則--layout-rule": [
@@ -1309,7 +1301,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 9
+        "nodes": 6
       }
     ],
     "design-system-components-chip-設計原則--selected-style-rule": [
@@ -1317,15 +1309,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 8
-      }
-    ],
-    "design-system-components-chip-展示--default": [
-      {
-        "id": "color-contrast",
-        "impact": "serious",
-        "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 1
+        "nodes": 5
       }
     ],
     "design-system-components-chip-展示--states": [
@@ -1333,7 +1317,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 2
+        "nodes": 1
       }
     ],
     "design-system-components-chip-展示--with-badge": [
@@ -1341,15 +1325,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 3
-      }
-    ],
-    "design-system-components-chip-展示--single-selection": [
-      {
-        "id": "color-contrast",
-        "impact": "serious",
-        "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 1
+        "nodes": 2
       }
     ],
     "design-system-components-circularprogress-設計規格--overview": [
@@ -1421,7 +1397,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 6
+        "nodes": 5
       }
     ],
     "design-system-components-circularprogress-設計原則--size-match-context-rule": [
@@ -1697,7 +1673,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 6
+        "nodes": 7
       }
     ],
     "design-system-internal-command-設計原則--usage-guidance": [
@@ -2059,7 +2035,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 2
+        "nodes": 3
       }
     ],
     "design-system-components-datatable-展示--row-drag-with-virtualization": [
@@ -2070,12 +2046,20 @@
         "nodes": 1
       }
     ],
+    "design-system-components-datatable-展示--with-pagination": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 2
+      }
+    ],
     "design-system-internal-dategrid-設計規格--overview": [
       {
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 3
+        "nodes": 5
       }
     ],
     "design-system-internal-dategrid-設計規格--inspector": [
@@ -2083,7 +2067,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 29
+        "nodes": 31
       }
     ],
     "design-system-internal-dategrid-設計規格--color-matrix": [
@@ -2099,7 +2083,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 3
+        "nodes": 10
       }
     ],
     "design-system-internal-dategrid-設計規格--state-behavior": [
@@ -2107,7 +2091,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 4
+        "nodes": 10
       }
     ],
     "design-system-internal-dategrid-設計原則--usage-guidance": [
@@ -2115,7 +2099,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 12
+        "nodes": 14
       }
     ],
     "design-system-internal-dategrid-設計原則--mode-rule": [
@@ -2123,7 +2107,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 4
+        "nodes": 10
       }
     ],
     "design-system-internal-dategrid-設計原則--visual-token-rule": [
@@ -2131,7 +2115,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 3
+        "nodes": 5
       }
     ],
     "design-system-internal-dategrid-設計原則--locale-rule": [
@@ -2155,7 +2139,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 1
+        "nodes": 3
       }
     ],
     "design-system-internal-dategrid-展示--range": [
@@ -2163,7 +2147,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 3
+        "nodes": 8
       }
     ],
     "design-system-internal-dategrid-展示--inline": [
@@ -2171,7 +2155,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 4
+        "nodes": 7
       }
     ],
     "design-system-components-datepicker-設計規格--overview": [
@@ -2201,7 +2185,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 43
+        "nodes": 42
       }
     ],
     "design-system-components-datepicker-設計規格--size-matrix": [
@@ -2328,6 +2312,14 @@
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
         "nodes": 3
+      }
+    ],
+    "design-system-components-datepicker-展示--need-confirm-date-only-open": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 8
       }
     ],
     "design-system-components-datepicker-展示--show-time-range-popover-open": [
@@ -2499,6 +2491,14 @@
       }
     ],
     "design-system-components-dialog-展示--list-body": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1
+      }
+    ],
+    "design-system-components-dialog-展示--header-actions": [
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -2688,12 +2688,6 @@
     ],
     "design-system-components-field-設計規格--orientation-matrix": [
       {
-        "id": "aria-input-field-name",
-        "impact": "serious",
-        "help": "ARIA input fields must have an accessible name",
-        "nodes": 1
-      },
-      {
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
@@ -2701,12 +2695,6 @@
       }
     ],
     "design-system-components-field-設計規格--size-matrix": [
-      {
-        "id": "aria-input-field-name",
-        "impact": "serious",
-        "help": "ARIA input fields must have an accessible name",
-        "nodes": 3
-      },
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -2732,12 +2720,6 @@
     ],
     "design-system-components-field-設計規格--field-group-behavior": [
       {
-        "id": "aria-input-field-name",
-        "impact": "serious",
-        "help": "ARIA input fields must have an accessible name",
-        "nodes": 1
-      },
-      {
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
@@ -2745,12 +2727,6 @@
       }
     ],
     "design-system-components-field-設計原則--usage-guidance": [
-      {
-        "id": "aria-input-field-name",
-        "impact": "serious",
-        "help": "ARIA input fields must have an accessible name",
-        "nodes": 1
-      },
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -2767,12 +2743,6 @@
       }
     ],
     "design-system-components-field-設計原則--orientation-rule": [
-      {
-        "id": "aria-input-field-name",
-        "impact": "serious",
-        "help": "ARIA input fields must have an accessible name",
-        "nodes": 1
-      },
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -2809,7 +2779,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 7
+        "nodes": 3
       }
     ],
     "design-system-components-field-展示--block-control-radio-group": [
@@ -2844,57 +2814,27 @@
         "nodes": 3
       }
     ],
-    "design-system-components-fieldcontrolgroup-設計規格--overview": [
-      {
-        "id": "aria-input-field-name",
-        "impact": "serious",
-        "help": "ARIA input fields must have an accessible name",
-        "nodes": 2
-      },
-      {
-        "id": "label",
-        "impact": "critical",
-        "help": "Form elements must have labels",
-        "nodes": 1
-      }
-    ],
-    "design-system-components-fieldcontrolgroup-設計規格--size-matrix": [
-      {
-        "id": "aria-input-field-name",
-        "impact": "serious",
-        "help": "ARIA input fields must have an accessible name",
-        "nodes": 3
-      },
+    "design-system-components-field-展示--form-validation": [
       {
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 3
-      },
+        "nodes": 2
+      }
+    ],
+    "design-system-components-fieldcontrolgroup-設計規格--size-matrix": [
       {
-        "id": "label",
-        "impact": "critical",
-        "help": "Form elements must have labels",
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
         "nodes": 3
       }
     ],
     "design-system-components-fieldcontrolgroup-設計規格--state-behavior": [
       {
-        "id": "aria-input-field-name",
-        "impact": "serious",
-        "help": "ARIA input fields must have an accessible name",
-        "nodes": 2
-      },
-      {
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 3
-      },
-      {
-        "id": "label",
-        "impact": "critical",
-        "help": "Form elements must have labels",
         "nodes": 3
       }
     ],
@@ -2903,7 +2843,7 @@
         "id": "aria-input-field-name",
         "impact": "serious",
         "help": "ARIA input fields must have an accessible name",
-        "nodes": 3
+        "nodes": 2
       },
       {
         "id": "color-contrast",
@@ -2915,22 +2855,6 @@
         "id": "label",
         "impact": "critical",
         "help": "Form elements must have labels",
-        "nodes": 1
-      }
-    ],
-    "design-system-components-fieldcontrolgroup-展示--phone-number": [
-      {
-        "id": "aria-input-field-name",
-        "impact": "serious",
-        "help": "ARIA input fields must have an accessible name",
-        "nodes": 1
-      }
-    ],
-    "design-system-components-fieldcontrolgroup-展示--currency-amount": [
-      {
-        "id": "aria-input-field-name",
-        "impact": "serious",
-        "help": "ARIA input fields must have an accessible name",
         "nodes": 1
       }
     ],
@@ -3324,6 +3248,22 @@
         "nodes": 6
       }
     ],
+    "design-system-components-inlineedit-展示--task-title": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1
+      }
+    ],
+    "design-system-components-inlineedit-展示--states": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 3
+      }
+    ],
     "design-system-components-input-設計規格--overview": [
       {
         "id": "color-contrast",
@@ -3335,7 +3275,13 @@
         "id": "label",
         "impact": "critical",
         "help": "Form elements must have labels",
-        "nodes": 4
+        "nodes": 3
+      },
+      {
+        "id": "scrollable-region-focusable",
+        "impact": "serious",
+        "help": "Scrollable region must have keyboard access",
+        "nodes": 1
       }
     ],
     "design-system-components-input-設計規格--inspector": [
@@ -3363,7 +3309,7 @@
         "id": "label",
         "impact": "critical",
         "help": "Form elements must have labels",
-        "nodes": 7
+        "nodes": 6
       }
     ],
     "design-system-components-input-設計規格--size-matrix": [
@@ -3377,7 +3323,7 @@
         "id": "label",
         "impact": "critical",
         "help": "Form elements must have labels",
-        "nodes": 12
+        "nodes": 9
       }
     ],
     "design-system-components-input-設計規格--state-behavior": [
@@ -3399,7 +3345,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 5
+        "nodes": 4
       },
       {
         "id": "label",
@@ -3419,7 +3365,7 @@
         "id": "label",
         "impact": "critical",
         "help": "Form elements must have labels",
-        "nodes": 4
+        "nodes": 2
       }
     ],
     "design-system-components-input-設計原則--start-icon-rule": [
@@ -3505,12 +3451,6 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 1
-      },
-      {
-        "id": "label",
-        "impact": "critical",
-        "help": "Form elements must have labels",
         "nodes": 1
       }
     ],
@@ -3714,22 +3654,6 @@
         "nodes": 3
       }
     ],
-    "design-system-internal-menu-展示--avatar-inline": [
-      {
-        "id": "nested-interactive",
-        "impact": "serious",
-        "help": "Interactive controls must not be nested",
-        "nodes": 3
-      }
-    ],
-    "design-system-internal-menu-展示--avatar-block": [
-      {
-        "id": "nested-interactive",
-        "impact": "serious",
-        "help": "Interactive controls must not be nested",
-        "nodes": 3
-      }
-    ],
     "design-system-internal-menu-展示--multi-select": [
       {
         "id": "button-name",
@@ -3793,7 +3717,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 9
+        "nodes": 10
       }
     ],
     "design-system-internal-notice-設計原則--usage-guidance": [
@@ -4048,6 +3972,78 @@
         "nodes": 3
       }
     ],
+    "design-system-components-pagination-設計規格--overview": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1
+      }
+    ],
+    "design-system-components-pagination-設計規格--inspector": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1
+      }
+    ],
+    "design-system-components-pagination-設計規格--color-matrix": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 2
+      }
+    ],
+    "design-system-components-pagination-設計規格--state-behavior": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 2
+      }
+    ],
+    "design-system-components-pagination-設計原則--usage-guidance": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 8
+      }
+    ],
+    "design-system-components-pagination-展示--default": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1
+      }
+    ],
+    "design-system-components-pagination-展示--full-bar": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1
+      }
+    ],
+    "design-system-components-pagination-展示--many-pages": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1
+      }
+    ],
+    "design-system-components-pagination-展示--states": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 3
+      }
+    ],
     "design-system-components-peoplepicker-設計規格--overview": [
       {
         "id": "aria-input-field-name",
@@ -4270,7 +4266,7 @@
         "nodes": 1
       }
     ],
-    "design-system-internal-profilecard-設計規格--overview": [
+    "design-system-components-profilecard-設計規格--overview": [
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -4278,7 +4274,7 @@
         "nodes": 2
       }
     ],
-    "design-system-internal-profilecard-設計規格--section-matrix": [
+    "design-system-components-profilecard-設計規格--section-matrix": [
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -4286,7 +4282,7 @@
         "nodes": 5
       }
     ],
-    "design-system-internal-profilecard-設計規格--color-matrix": [
+    "design-system-components-profilecard-設計規格--color-matrix": [
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -4294,7 +4290,7 @@
         "nodes": 5
       }
     ],
-    "design-system-internal-profilecard-設計規格--hover-card-integration": [
+    "design-system-components-profilecard-設計規格--hover-card-integration": [
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -4302,7 +4298,7 @@
         "nodes": 3
       }
     ],
-    "design-system-internal-profilecard-設計規格--state-behavior": [
+    "design-system-components-profilecard-設計規格--state-behavior": [
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -4310,7 +4306,7 @@
         "nodes": 4
       }
     ],
-    "design-system-internal-profilecard-設計原則--usage-guidance": [
+    "design-system-components-profilecard-設計原則--usage-guidance": [
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -4318,7 +4314,7 @@
         "nodes": 6
       }
     ],
-    "design-system-internal-profilecard-設計原則--trigger-context-rule": [
+    "design-system-components-profilecard-設計原則--trigger-context-rule": [
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -4326,7 +4322,7 @@
         "nodes": 11
       }
     ],
-    "design-system-internal-profilecard-設計原則--fixed-width-rule": [
+    "design-system-components-profilecard-設計原則--fixed-width-rule": [
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -4334,7 +4330,7 @@
         "nodes": 3
       }
     ],
-    "design-system-internal-profilecard-設計原則--section-rule": [
+    "design-system-components-profilecard-設計原則--section-rule": [
       {
         "id": "color-contrast",
         "impact": "serious",
@@ -4673,7 +4669,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 18
+        "nodes": 7
       }
     ],
     "design-system-components-scrollarea-設計規格--inspector": [
@@ -4697,7 +4693,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 14
+        "nodes": 4
       }
     ],
     "design-system-components-scrollarea-設計規格--orientation-behavior": [
@@ -4705,7 +4701,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 8
+        "nodes": 2
       }
     ],
     "design-system-components-scrollarea-設計原則--usage-guidance": [
@@ -4721,7 +4717,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 14
+        "nodes": 6
       }
     ],
     "design-system-components-scrollarea-設計原則--solves-data-table-bug": [
@@ -4729,13 +4725,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 11
-      },
-      {
-        "id": "scrollable-region-focusable",
-        "impact": "serious",
-        "help": "Scrollable region must have keyboard access",
-        "nodes": 1
+        "nodes": 3
       }
     ],
     "design-system-components-scrollarea-設計原則--out-of-scope-rule": [
@@ -4767,7 +4757,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 8
+        "nodes": 2
       }
     ],
     "design-system-components-scrollarea-展示--both-directions": [
@@ -4775,7 +4765,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 9
+        "nodes": 1
       }
     ],
     "design-system-components-segmentedcontrol-設計規格--overview": [
@@ -4783,7 +4773,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 5
+        "nodes": 4
       }
     ],
     "design-system-components-segmentedcontrol-設計規格--size-matrix": [
@@ -4829,7 +4819,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 12
+        "nodes": 11
       }
     ],
     "design-system-components-segmentedcontrol-設計原則--size-limits": [
@@ -4837,7 +4827,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 5
+        "nodes": 3
       }
     ],
     "design-system-components-segmentedcontrol-設計原則--icon-only-rule": [
@@ -4845,7 +4835,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 7
+        "nodes": 5
       }
     ],
     "design-system-components-segmentedcontrol-設計原則--full-width-rule": [
@@ -4853,15 +4843,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 10
-      }
-    ],
-    "design-system-components-segmentedcontrol-展示--view-switcher": [
-      {
-        "id": "color-contrast",
-        "impact": "serious",
-        "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 1
+        "nodes": 9
       }
     ],
     "design-system-components-select-設計規格--overview": [
@@ -5973,7 +5955,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 20
+        "nodes": 18
       }
     ],
     "design-system-components-tabs-設計原則--size-selection": [
@@ -6006,15 +5988,15 @@
     ],
     "design-system-components-tabs-展示--with-suffix": [
       {
-        "id": "aria-valid-attr-value",
+        "id": "aria-required-children",
         "impact": "critical",
-        "help": "ARIA attributes must conform to valid values",
+        "help": "Certain ARIA roles must contain particular children",
         "nodes": 1
       },
       {
-        "id": "nested-interactive",
-        "impact": "serious",
-        "help": "Interactive controls must not be nested",
+        "id": "aria-valid-attr-value",
+        "impact": "critical",
+        "help": "ARIA attributes must conform to valid values",
         "nodes": 1
       }
     ],
@@ -6171,7 +6153,7 @@
         "id": "label",
         "impact": "critical",
         "help": "Form elements must have labels",
-        "nodes": 4
+        "nodes": 3
       }
     ],
     "design-system-components-textarea-設計規格--color-matrix": [
@@ -6185,7 +6167,7 @@
         "id": "label",
         "impact": "critical",
         "help": "Form elements must have labels",
-        "nodes": 3
+        "nodes": 2
       }
     ],
     "design-system-components-textarea-設計規格--rows-resize-matrix": [
@@ -6229,7 +6211,7 @@
         "id": "label",
         "impact": "critical",
         "help": "Form elements must have labels",
-        "nodes": 2
+        "nodes": 1
       }
     ],
     "design-system-components-textarea-設計原則--no-icon-rule": [
@@ -6407,7 +6389,7 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 5
+        "nodes": 9
       }
     ],
     "design-system-components-toast-展示--interactive": [
@@ -6552,12 +6534,6 @@
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
         "nodes": 3
-      },
-      {
-        "id": "nested-interactive",
-        "impact": "serious",
-        "help": "Interactive controls must not be nested",
-        "nodes": 2
       }
     ],
     "design-system-components-treeview-展示--indent-alignment": [
@@ -6630,12 +6606,6 @@
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
         "nodes": 17
-      },
-      {
-        "id": "nested-interactive",
-        "impact": "serious",
-        "help": "Interactive controls must not be nested",
-        "nodes": 2
       }
     ],
     "design-system-patterns-item-anatomy--reading-modes": [
@@ -6671,7 +6641,57 @@
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 33
+        "nodes": 34
+      }
+    ],
+    "design-system-internal-patterns-horizontal-overflow--scroll-mode": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 11
+      },
+      {
+        "id": "scrollable-region-focusable",
+        "impact": "serious",
+        "help": "Scrollable region must have keyboard access",
+        "nodes": 1
+      }
+    ],
+    "design-system-internal-patterns-horizontal-overflow--menu-mode": [
+      {
+        "id": "aria-hidden-focus",
+        "impact": "serious",
+        "help": "ARIA hidden element must not be focusable or contain focusable elements",
+        "nodes": 1
+      },
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1
+      }
+    ],
+    "design-system-internal-patterns-overlay-surface--three-part-structure": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1
+      }
+    ],
+    "design-system-internal-patterns-overlay-surface--body-scroll": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1
+      },
+      {
+        "id": "scrollable-region-focusable",
+        "impact": "serious",
+        "help": "Scrollable region must have keyboard access",
+        "nodes": 1
       }
     ],
     "design-system-tokens-color--primitives": [
@@ -6768,18 +6788,34 @@
         "nodes": 8
       }
     ],
+    "design-system-tokens-motion--overview": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 10
+      }
+    ],
+    "design-system-tokens-motion--delay-feel": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 1
+      }
+    ],
     "design-system-tokens-opacity--overview": [
       {
         "id": "aria-prohibited-attr",
         "impact": "serious",
         "help": "Elements must only use permitted ARIA attributes",
-        "nodes": 6
+        "nodes": 1
       },
       {
         "id": "color-contrast",
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
-        "nodes": 15
+        "nodes": 5
       }
     ],
     "design-system-tokens-radius--overview": [
@@ -6811,30 +6847,46 @@
         "help": "Elements must meet minimum color contrast ratio thresholds",
         "nodes": 3
       }
+    ],
+    "design-system-tokens-uisize--overview": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 9
+      }
+    ],
+    "apps-template-composition-fidelity-replica--icon-only-replica": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": 3
+      }
     ]
   },
   "summary": {
-    "totalViolations": 5528,
+    "totalViolations": 5514,
     "byRule": {
-      "color-contrast": 5022,
-      "label": 95,
-      "scrollable-region-focusable": 11,
+      "color-contrast": 5055,
+      "label": 77,
+      "scrollable-region-focusable": 13,
       "aria-required-parent": 36,
       "aria-valid-attr-value": 22,
       "button-name": 98,
       "aria-progressbar-name": 47,
-      "aria-input-field-name": 153,
-      "aria-required-children": 2,
-      "aria-hidden-focus": 2,
-      "nested-interactive": 24,
+      "aria-input-field-name": 136,
+      "aria-required-children": 3,
+      "aria-hidden-focus": 3,
+      "nested-interactive": 13,
       "aria-allowed-attr": 3,
       "role-img-alt": 1,
       "image-alt": 2,
-      "aria-prohibited-attr": 10
+      "aria-prohibited-attr": 5
     },
     "bySeverity": {
-      "critical": 258,
-      "serious": 5270,
+      "critical": 241,
+      "serious": 5273,
       "moderate": 0,
       "minor": 0
     }

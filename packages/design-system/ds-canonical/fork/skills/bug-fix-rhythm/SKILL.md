@@ -103,7 +103,7 @@ Read / Grep / Glob 多檔需求 → **single message multi-tool-call**:
 ```bash
 npx tsc -b                                    # type
 npm run hooks:test                            # invariant
-node scripts/visual-audit-<target>.mjs        # pixel-quantified per M32(a)
+node scripts/visual-audit.mjs --scope=changed # pixel-quantified per M32(a)(或 --scope=component:<X>)
 ```
 
 **MUST-ALL re-check**(per Phase 0 checklist):
@@ -147,11 +147,11 @@ node scripts/visual-audit-<target>.mjs        # pixel-quantified per M32(a)
 | `/visual-audit` | 單次視覺對齊 | Phase 3 sub-step,本 skill 包它 |
 | `/component-quality-gate` | stakeholder gate | 不重疊(stakeholder vs daily bug fix) |
 | `stop_self_audit.sh`(hook) | claim-verify gap 攔 | 本 skill Phase 3 是 active side;hook 是 passive trip-wire |
-| `check_pixel_quantified_audit.sh`(hook) | M32(a) audit script 必 pixel | 本 skill Phase 3 跑該 audit |
+| `check_pixel_quantified_audit.sh`(hook) | M32(a) audit script(`scripts/visual-audit*.mjs`,canonical = `visual-audit.mjs`)必 pixel | 本 skill Phase 3 跑該 audit |
 
 **3 層 防線**:
 - **本 skill**(active workflow):MUST-ALL checklist + batch-end-verify rhythm
-- **stop_self_audit.sh / check_codex_collab_5step.sh**(passive hook):claim-verify gap 攔
+- **stop_self_audit.sh**(passive hook,claim-verify gap,BLOCKER)+ **check_codex_collab_5step.sh**(passive hook,codex-collab commit 缺 cite+verify+verdict marker,P1 soft stderr 不 block)
 - **M20 / M32(a)**(meta-rule):上游 invariant
 
 ---

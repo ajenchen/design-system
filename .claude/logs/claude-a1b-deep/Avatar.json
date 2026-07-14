@@ -1,0 +1,31 @@
+{
+  "component": "Avatar",
+  "implBasis": "self-built (native <img> + CSS; wraps DS HoverCard + Badge for optional slots)",
+  "claimsVerified": 34,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:702",
+      "宣稱": "無障礙 story：『當頭像帶有 hoverCard 時，頭像本身會變成可用 Tab 聚焦的按鈕並顯示聚焦框』",
+      "真實code行為": "avatar.tsx:252-257 focusableProps 設 role='img'（非 button）+ tabIndex=0 + aria-label。2026-07-06 已『拆除 role=button / aria-haspopup』（tsx:244-251 註解 + spec.md:89 明文『不掛 role=button』）。a11y story 稱其為『按鈕』與 code 的 role='img' 及 spec 明文相矛盾，教錯 ARIA 語義。",
+      "severity": "material"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Avatar/avatar.stories.tsx:17",
+      "宣稱": "展示 story 標題『四模式』+ 內文『四種內容模式』（avatar.stories.tsx:17/21）",
+      "真實code行為": "code 只有 3 個內容分支 showImage/showIcon/showText（avatar.tsx:180-182）；spec.md『三種內容模式』表（L109-117）+ anatomy Overview『三種內容模式』（anatomy:137）皆稱三種。第 4 項『預設 User icon』是 showIcon 分支的 fallback（FallbackIcon = Icon ?? User），非獨立模式。展示層『四模式』相對 code+spec 過度計數。",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:15",
+      "宣稱": "docblock 標題『三種內容模式（按優先順序）：』之後卻列出 1-4 共四個編號項目（src / icon / alt / 都沒有→User）",
+      "真實code行為": "docblock 自身內部矛盾：header 說『三種』但列 4 項。code 有 3 content 分支。header 數字與列表項數不一致。",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:370",
+      "宣稱": "avatarMeta.states 註解：『本身無自有 hover/active(spec L279；hoverCard 互動屬 HoverCard)』",
+      "真實code行為": "該『StateBehavior 範疇』canonical 文字在 avatar.spec.md L252-260（## StateBehavior 範疇 段），非 L279。L279 落在 spec 的『## 相關』段（../HoverCard 指標）。註解引用的 spec 行號 stale。",
+      "severity": "marginal"
+    }
+  ]
+}

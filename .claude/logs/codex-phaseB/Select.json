@@ -1,0 +1,126 @@
+{
+ "component": "Select",
+ "claimsVerified": 376,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:3,111-117,338,384-387; packages/design-system/src/components/Select/select.spec.md:228; packages/design-system/src/components/Select/select.anatomy.stories.tsx:326",
+   "宣稱": "selectedItemRenderer 在 edit／display／readonly／disabled 四模式共享。",
+   "真實code行為": "觸控裝置的 NativeSelect edit 路徑完全不使用 renderer；只有 Custom edit 與非 edit 的 ReadonlyDisplay 路徑使用。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:28-35",
+   "宣稱": "SelectOption 繼承 SelectMenuOption 後，新增欄位會自動傳到底層、不會 drift。",
+   "真實code行為": "SelectMenuOption.iconClassName 雖被型別繼承，menuOptions mapping 未轉發，桌機選單列會靜默遺失該欄位。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:56-57",
+   "宣稱": "SelectProps 支援其繼承的原生 select attributes。",
+   "真實code行為": "只有 Native 路徑 spread 剩餘 attributes；Custom 路徑沒有 ...props，name、form、required、autoFocus、onBlur、data-* 等在桌機被忽略。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:91; packages/design-system/src/components/Select/select.anatomy.stories.tsx:320",
+   "宣稱": "minRows 會為空狀態與少量選項保留最小列數。",
+   "真實code行為": "minRows 只設定 CommandEmpty 的 min-height；有 1–2 個非空選項時列表仍依內容自然縮合。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:97-99; packages/design-system/src/components/Select/select.spec.md:81-84; packages/design-system/src/components/Select/select.anatomy.stories.tsx:324",
+   "宣稱": "onOpenChange 會通知 open state 的變更。",
+   "真實code行為": "Native 路徑直接丟棄此 prop；Custom 的 Enter、Space、ArrowDown、Escape 鍵盤路徑直接 setOpen，繞過 callback。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:101-105",
+   "宣稱": "showDisplayEndIcon 只在 display mode 生效，readonly／disabled 不受影響。",
+   "真實code行為": "variant=\"naked\" 時，readonly 與 disabled 的 Chevron indicator 也由 showDisplayEndIcon 控制。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:554-555",
+   "宣稱": "trigger 的 aria-controls 指向 listbox 容器 id。",
+   "真實code行為": "該 id 掛在 role=\"dialog\" 的 Radix PopoverContent；內層 cmdk role=\"listbox\" 使用另一個自動產生的 id。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:695; packages/design-system/src/components/Select/select.spec.md:326",
+   "宣稱": "選單展開後不攔方向鍵。",
+   "真實code行為": "open 時會 preventDefault，再將 ArrowUp、ArrowDown、Enter 重新派送給 cmdk root。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.spec.md:24,106; packages/design-system/src/components/Select/select.principles.stories.tsx:99",
+   "宣稱": "Select 恰好選一個、永遠單選。",
+   "真實code行為": "null、初始空值與 clearable 允許零選擇；此外 SelectProps 未排除原生 multiple，Native 路徑會將它 spread 到 <select multiple>，形成裝置相依的破損多選模式。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.spec.md:66",
+   "宣稱": "Uncontrolled Select 適合一次性 form submit，consumer 不需讀取目前值。",
+   "真實code行為": "桌機 CustomSelect 是 div combobox，沒有 hidden form control，且忽略 name／form attributes；原生 FormData 無法取得其 internal value。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.spec.md:105",
+   "宣稱": "Select option 是單行純文字，無法承載多行描述或圖文。",
+   "真實code行為": "桌機路徑會轉發並渲染 icon、avatar、description、group 等 rich MenuItem 內容。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.spec.md:232,244-245; packages/design-system/src/components/Select/select.anatomy.stories.tsx:284-285,475,490",
+   "宣稱": "plain 使用原生 select；tag 使用 Tag 加隱藏原生 select overlay，點擊穿透到底層 select。",
+   "真實code行為": "這只符合觸控 Native edit 路徑；桌機兩種模式均使用 div combobox、Popover 與 Command，沒有原生或隱藏 select。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.spec.md:237",
+   "宣稱": "startIcon 設定時恆顯。",
+   "真實code行為": "mode=\"display\" 的 bare 與 D-path 分支都不渲染 StartIcon。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.anatomy.stories.tsx:227",
+   "宣稱": "startIcon 代表 value 的圖示。",
+   "真實code行為": "startIcon 是固定的 field-level indicator；隨選值變動的圖示是 option.icon。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.spec.md:238",
+   "宣稱": "未設定 startIcon 時會 fallback 到 option.icon。",
+   "真實code行為": "option.icon 只在 plain edit 路徑渲染；display、readonly、disabled 的 ReadonlyDisplay 都忽略它。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.spec.md:247",
+   "宣稱": "disabled 的 Tag Select 會保留 ChevronDown。",
+   "真實code行為": "default variant 會保留；variant=\"naked\" 時預設不保留，須由 showDisplayEndIcon 顯式開啟。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.spec.md:304-306; packages/design-system/src/components/Select/select.anatomy.stories.tsx:2-5",
+   "宣稱": "Select 無自有 state 行為，mode×state ColorMatrix 已完整涵蓋 StateBehavior。",
+   "真實code行為": "Select 自行管理 open、search、trigger→input 切換、鍵盤路由、clear visibility 與 Chevron rotation，並非只繼承 Field／MenuItem 狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.spec.md:330; packages/design-system/src/components/Select/select.anatomy.stories.tsx:555,825",
+   "宣稱": "Focus 固定為 primary 藍框、1px、無 ring。",
+   "真實code行為": "只有 edit 且非 error 時為 primary；error focus 保持 border-error，readonly／disabled Select 也沒有 primary focus target。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.spec.md:330; packages/design-system/src/components/Select/select.anatomy.stories.tsx:825",
+   "宣稱": "手機原生 select 另有系統 focus ring。",
+   "真實code行為": "Native select 套用 appearance-none 與 bareInputStyles 的 outline-none；可見焦點由外層 Field focus-within 邊框提供，沒有可保證的獨立 UA ring。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.anatomy.stories.tsx:48-54,523,540",
+   "宣稱": "readonly mode 沒有 icon token（icon='—'）。",
+   "真實code行為": "readonly plain 若設定 startIcon，ReadonlyDisplay 仍會渲染 muted icon；只有 Chevron 不顯示。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.anatomy.stories.tsx:319",
+   "宣稱": "loading 會取代 options 顯示 CircularProgress。",
+   "真實code行為": "Spinner 只在沒有可顯示選項的 CommandEmpty 出現；既有 options 會保留。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.principles.stories.tsx:189",
+   "宣稱": "反例會同時顯示左側 Flag icon 與右側 Tag。",
+   "真實code行為": "tag render branch 完全忽略 startIcon，因此該反例不會顯示 Flag。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.principles.stories.tsx:295",
+   "宣稱": "手機原生 select 會叫出作業系統滾輪 picker。",
+   "真實code行為": "程式只渲染原生 <select>；UI 由平台決定，iOS 可為 wheel，Android 常為 dialog／list，且同 spec:36 已如此區分。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.principles.stories.tsx:302-303",
+   "宣稱": "tag 與 plain 的差別只在選中值如何呈現。",
+   "真實code行為": "桌機 tag 也會改變 popup option：抑制 option.icon，並以 renderLabel 將有 tagVariant 的選項渲染成 Tag。"
+  }
+ ]
+}

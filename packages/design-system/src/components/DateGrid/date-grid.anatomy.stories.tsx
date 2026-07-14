@@ -38,7 +38,7 @@ interface PartSpec {
 const PARTS: Record<PartKey, PartSpec> = {
   caption:      { label: '月份標題',    bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: 'text-body font-medium' },
   nav:          { label: 'Nav 按鈕',    bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: 'Button variant=text size=xs iconOnly · hover 藍圈' },
-  weekday:      { label: '星期標頭',    bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: 'text-body font-medium · h-7' },
+  weekday:      { label: '星期標頭',    bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: 'text-body font-medium · h-field-sm(28/32 隨 density)' },
   day:          { label: '日格(default)', bg: 'transparent',   text: '--foreground',  border: 'transparent', extra: 'h-field-sm w-[var(--field-height-sm)] rounded-full' },
   daySelected:  { label: 'Selected',     bg: '--primary',       text: 'white',         border: 'transparent' },
   dayToday:     { label: 'Today(未選)', bg: 'transparent',     text: '--foreground',  border: 'transparent', extra: '數字下方藍色底線(underline bar)' },
@@ -83,7 +83,7 @@ export const Overview = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>結構(Anatomy)</H3>
-        <Desc>DateGrid 由四個區塊組成:月份 caption、星期標頭、日期網格、左右 nav 按鈕。所有區塊透過 classNames prop 覆寫 react-day-picker 預設樣式,不引入原生 .rdp-* class。</Desc>
+        <Desc>DateGrid 由四個區塊組成:月份 caption、星期標頭、日期網格、左右 nav 按鈕。各區塊以 classNames prop 用 DS token 覆寫 react-day-picker 的視覺樣式;元件載入 RDP style.css 作結構基底,未覆寫的結構 key 沿用原生 .rdp-* 預設。</Desc>
 
         <div className="inline-flex flex-col gap-2 border-2 border-dashed border-primary/30 rounded-lg p-4 bg-surface">
           <div className="flex items-center justify-between gap-2">
@@ -211,7 +211,7 @@ export const Inspector = {
                 <Legend c={Z.pad} label="外層 p-3" />
                 <Legend c={Z.head} label="月份 caption h-field-xs" />
                 <Legend c={Z.grid} label="日格 h-field-sm" />
-                <Legend c={Z.cell} label="星期標頭 h-7" />
+                <Legend c={Z.cell} label="星期標頭 h-field-sm" />
               </div>
 
               <div className="inline-flex flex-col gap-0 rounded-md overflow-hidden" style={{ padding: 12, background: Z.pad.bg, border: `2px solid rgba(0,0,0,0.1)` }}>
@@ -248,7 +248,7 @@ export const Inspector = {
               <PropRow label="外層 padding">p-3 · 12px</PropRow>
               <PropRow label="月份並排 gap">gap-4 · 16px</PropRow>
               <PropRow label="日格尺寸">h-field-sm · 28×28 (md) / 32×32 (lg)</PropRow>
-              <PropRow label="星期標頭">h-7 · 28px(寬度 table-native 自動)</PropRow>
+              <PropRow label="星期標頭">h-field-sm · md 28 / lg 32(與 day cell 同 token 同節奏;寬度 table-native 自動)</PropRow>
               <PropRow label="Nav 按鈕">size=xs iconOnly · 24×24</PropRow>
               <PropRow label="Cell gap">border-spacing-1 · 4px(H+V)</PropRow>
             </div>

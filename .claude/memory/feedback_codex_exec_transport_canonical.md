@@ -42,23 +42,36 @@ cat brief.md | node_modules/.bin/codex exec --skip-git-repo-check \
 
 **Anchor 2026-05-27**:User 要求「ensure codex 把所有元件都驗證過並截圖」+ explicit authorize「codex 並不會動到你的檔案，對吧？那就照你建議做」。Final 62/62 PASS,artifact `.claude/snapshots/codex-visual-audit-2026-05-27/audit-report.json`。
 
-## Rule 3 — 大型 brief 死局 / Success pattern = 小 focused brief + low reasoning + bypass(2026-05-29 new)
+## Rule 3 — 大型 brief 死局 / Success pattern = 小 focused brief + 最強模型算力 + bypass(2026-07-10 user 強制升級)
 
 **Anti-pattern**:DISCUSS-ONLY 大型 6+ 軸 brief + xhigh / medium reasoning effort = 模型在 plan turn 燒掉 budget,沒輸出 verdict。Anchor 2026-05-29 turn:r1 / r2(xhigh)/ r3(medium)/ r4(medium + bypass)全失敗,只 echo brief 0 substantive output。
 
-**Success pattern**(r5/r6 verified):
+**2026-07-10 user 強制 directive(verbatim「deep audit cross codex 應強制使用 codex 最新最強的模型與算力」)**:
+**禁任何 `-c model_reasoning_effort` / `-m` 降檔 override** —— `~/.codex/config.toml` 已設最強
+(**無 model pin** + **effort = probe 出的最高可用檔**,2026-07-10 實測 ultra > xhigh)= SSOT — model:解 pin 隨 CLI default 跟最新;effort:檔位支援是 server 執行期資料(enum 已有 max/ultra),靜態不可知 → `scripts/check-codex-freshness.mjs --probe` 由高往低實測、**自動改 config pin + cache**;CLI 換版 → check 紅燈 → B.0 自動重探。「不用 user 提醒」全機械。codex exec 不帶任何 effort/model flag 即繼承最強。
+2026-05-29 的死局根因是 **brief 太大**(xhigh + 6 軸 DISCUSS-ONLY brief 燒光 budget),
+不是 effort 本身 —— 對策只允許「拆更小 focused brief」,不允許降 effort(低檔省成本
+= 稽核品質打折,違 user directive)。若 xhigh + 小 brief 仍死局 → 再縮 brief / 減軸,記錄實測。
+
+**Success pattern(升級版)**:
 1. `--dangerously-bypass-approvals-and-sandbox`
-2. `-c model_reasoning_effort=low`
-3. **拆 N 個 single-axis focused brief 並行**(每 brief 1 軸,各 25k tokens 真完成)
+2. **不帶** effort/model override(繼承 config.toml 最強)
+3. **拆 N 個 single-axis focused brief 並行**(每 brief 1 軸;這是 2026-05-29 實證的真成功要素)
 4. Brief 含「禁寫 plan」/「直接從 ### A1 verdict 開始輸出」directive
 
 ```bash
-# parallel dispatch pattern
+# parallel dispatch pattern(最強模型算力,禁降檔)
 echo "<focused single-axis brief>" | node_modules/.bin/codex exec \
   --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
-  -c model_reasoning_effort=low > /tmp/codex-r6a.md 2>&1 &
+  > /tmp/codex-r6a.md 2>&1 &
 # ... repeat for r6b, r6c
 ```
+
+## Codex 失敗守衛(2026-07-10 user directive「codex 額度不足你會知道嗎?應通知你,你要通知我讓我處理」)
+
+**缺口**:codex quota/rate 耗盡 → codex exit≠0 + last-message 空;若把「空輸出」當「codex 0 findings = 全乾淨」= false-green,且 user 不知情無法處理。
+
+**規則(硬)**:所有 audit / dual-track 的 `codex exec` **必經單一守衛入口** `node scripts/codex-run-guarded.mjs`(--brief/--stdin)。它分類 outcome:SUCCESS / QUOTA / AUTH / EMPTY / ERROR / TRANSPORT_MISSING(exit code 0/4/5/7/6/7/3)。**任何非 SUCCESS → 立即 STOP + `PushNotification` 通知 user**(QUOTA=額度耗盡請 user 充值/換帳號/等重置;AUTH=請 user `codex login`),**禁**把空/錯輸出當 clean 或 0-findings 續跑。classifier 純函式 + 單元測 `scripts/test-codex-run-guarded.mjs`(9/9,含 429/usage-limit/out-of-usage/401/login/empty/bad-model/signal)。錨:2026-07-10 我自己的 Anthropic subagent 額度耗盡(workflow 半途 fail),user 抓「codex 的也要這樣偵測+通知」。
 
 ## Mechanical enforcement
 

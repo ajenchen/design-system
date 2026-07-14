@@ -200,47 +200,79 @@ export const InlineCommand: Story = {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Story 3:Theme switcher(純動作 command,無 form value 儲存)
+   Story 3:純動作指令(action command,無 form value 儲存)
+   2026-07-14 dim-68 修:原「外觀切換器」只 2 項固定 action 配搜尋框 —— 正向示範了
+   command.spec.md:75 明文禁止的「< 6 項短選單用 Command」誤用(短選單該用 DropdownMenu /
+   SegmentedControl)。改為快速動作清單(7 項、2 群組),保留本 story 獨有教學點:
+   「選中立即執行、不保留 form value」的純 action palette。
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const ThemeSwitcherDemo = () => {
+const ActionCommandDemo = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [lastAction, setLastAction] = useState<string | null>(null)
 
   return (
     <div className="flex flex-col gap-3 max-w-md">
       <p className="text-caption text-fg-muted">
-        純 action palette — 選中立即執行(切 theme),不保留 form value。
+        純 action palette — 選中立即執行(切 theme / 觸發動作),不保留 form value。
+        動作多到需要搜尋才用 Command;&lt; 6 項的短選單用 DropdownMenu(spec「與 DropdownMenu 的分界」)。
       </p>
       <div
         className="rounded-lg border border-border bg-surface-raised overflow-hidden"
         style={{ boxShadow: 'var(--elevation-100)' }}
       >
         <Command>
-          <CommandInput placeholder="切換外觀…" />
+          <CommandInput placeholder="輸入指令…" />
           <CommandList>
-            <CommandEmpty>沒有符合的外觀</CommandEmpty>
+            <CommandEmpty>沒有符合的指令</CommandEmpty>
             <CommandGroup heading="外觀">
-              <CommandItem onSelect={() => setTheme('light')}>
+              <CommandItem onSelect={() => { setTheme('light'); setLastAction('切換淺色模式') }}>
                 <Sun />
                 <span>淺色模式</span>
                 {theme === 'light' && <CommandShortcut>當前</CommandShortcut>}
               </CommandItem>
-              <CommandItem onSelect={() => setTheme('dark')}>
+              <CommandItem onSelect={() => { setTheme('dark'); setLastAction('切換深色模式') }}>
                 <MoonStar />
                 <span>深色模式</span>
                 {theme === 'dark' && <CommandShortcut>當前</CommandShortcut>}
               </CommandItem>
             </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading="快速動作">
+              <CommandItem onSelect={() => setLastAction('建立新文件')}>
+                <Plus />
+                <span>建立新文件</span>
+                <CommandShortcut>⌘N</CommandShortcut>
+              </CommandItem>
+              <CommandItem onSelect={() => setLastAction('開啟收件匣')}>
+                <Inbox />
+                <span>開啟收件匣</span>
+              </CommandItem>
+              <CommandItem onSelect={() => setLastAction('加入我的最愛')}>
+                <Star />
+                <span>加入我的最愛</span>
+              </CommandItem>
+              <CommandItem onSelect={() => setLastAction('封存目前頁面')}>
+                <Archive />
+                <span>封存目前頁面</span>
+              </CommandItem>
+              <CommandItem onSelect={() => setLastAction('開啟設定')}>
+                <Settings />
+                <span>開啟設定</span>
+                <CommandShortcut>⌘,</CommandShortcut>
+              </CommandItem>
+            </CommandGroup>
           </CommandList>
         </Command>
       </div>
+      {lastAction && <p className="text-caption text-fg-muted">已執行:{lastAction}</p>}
     </div>
   )
 }
 
-export const ThemeSwitcher: Story = {
-  name: '外觀切換器',
-  render: () => <ThemeSwitcherDemo />,
+export const ActionCommand: Story = {
+  name: '純動作指令',
+  render: () => <ActionCommandDemo />,
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

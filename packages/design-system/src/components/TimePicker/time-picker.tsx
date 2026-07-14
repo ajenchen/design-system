@@ -3,16 +3,15 @@ import * as React from 'react'
 import { X, Clock } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
+import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
 import {
   fieldWrapperStyles,
   bareInputStyles,
-  EMPTY_DISPLAY,
   fieldDisplayTextClass,
 } from '@/design-system/components/Field/field-wrapper'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
-import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
+import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { Button } from '@/design-system/components/Button/button'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import {
@@ -191,7 +190,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     const disabled = useResolvedFieldDisabled(disabledProp)
     // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="display"> 漏 cascade
     const resolvedMode = useResolvedFieldMode({ mode, disabled })
-    const variant: FieldVariant = useResolvedFieldVariant(variantProp)
+    const emptyDisplay = useFieldEmptyDisplay()
+    const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
     const isEditable = resolvedMode === 'edit'
     // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
@@ -204,7 +204,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     const setOpen = React.useCallback((next: boolean) => { setOpenState(next); onOpenChange?.(next) }, [onOpenChange])
 
     const currentParts = React.useMemo(() => isoToTimeParts(value), [value])
-    // draft 僅在 panel 開啟時用來處理 commit(OK button)的暫存
+    // draft = panel 開啟期間的暫存:供 eager commit(每次欄選 commitDraft 即 commit)+ disabledTime 重算;OK 按鈕只 setOpen(false) 關 Panel,不做 commit
     const [draft, setDraft] = React.useState<TimeParts>(
       () => currentParts ?? { hours: 0, minutes: 0, seconds: 0 },
     )
@@ -260,7 +260,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
       if (!showDisplayEndIcon) {
         // 2026-05-14 I2 fix(spec contract (e) display typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
-        if (!value) return <span className={cn(fieldDisplayTextClass(size), 'text-fg-muted', className)}>{EMPTY_DISPLAY}</span>
+        if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
         return <span className={cn(fieldDisplayTextClass(size), 'truncate', className)}>{formatTime(value, { formatOptions, locale })}</span>
       }
       return (
@@ -268,8 +268,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
           className={cn(fieldWrapperStyles({ mode: 'display', variant, size }), className)}
           data-field-mode="display"
         >
-          <span className={cn(bareInputStyles, 'flex-1 min-w-0 truncate', !value && 'text-fg-muted')}>
-            {value ? formatTime(value, { formatOptions, locale }) : EMPTY_DISPLAY}
+          <span className={cn(bareInputStyles, 'flex-1 min-w-0 truncate', !value && fieldEmptyColorClass(resolvedMode))}>
+            {value ? formatTime(value, { formatOptions, locale }) : emptyDisplay}
           </span>
           {EndIconCmp && (
             <ItemSuffix className="pointer-events-none">
@@ -297,7 +297,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
           >
             {value
               ? formatTime(value, { formatOptions, locale })
-              : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
+              : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
             }
           </span>
           {/* 2026-06-26 類型身份 indicator:edit 顯示 / readonly 不顯示 / disabled 保留(fg-disabled);naked cell 依 showDisplayEndIcon=isEditable(修 disabled cell 漏顯 bug)*/}
@@ -344,6 +344,10 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             aria-expanded={open}
             onKeyDown={(e) => {
               if (disabled) return
+              // 2026-07-14 dim-10 修:內層「清除時間」ItemInlineAction button 的 Enter/Space
+              // 會 bubble 到本 handler 被 preventDefault 吞掉(按鈕 activation 被取消、panel 反而開)。
+              // trigger 鍵盤邏輯只在事件源自 trigger div 本身時執行。
+              if (e.target !== e.currentTarget) return
               // Enter / Space / ArrowDown / Alt+ArrowDown → 開 panel(APG combobox required + Select canonical)
               if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
                 e.preventDefault()
@@ -385,7 +389,9 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             )}
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        {/* a11y(2026-07-14 dim-10):Radix PopoverContent 輸出 role="dialog",無 title 需
+            accessible name(WAI-ARIA dialog required);對齊 date-picker.tsx:1040「日期區間選擇」同款 DS default。 */}
+        <PopoverContent className="w-auto p-0" align="start" aria-label="選擇時間" /* i18n-allow: DS default dialog label */>
           {/* Panel 對齊 ref/timepicker.png:2-3 個 SelectMenu 式欄位並排,分隔線分開。
               Width 依欄數由 TimeColumns 決定:2 欄 w-40 / 3 欄 w-60。
               Height 由 wrapper 控:216px 預設(扣 footer 後 list 約可見 5-6 items)。

@@ -1,0 +1,1 @@
+{"component":"TreeView","implBasis":"自建 ARIA tree(role=tree/treeitem/group,aria-activedescendant virtual focus,單一 tab stop),自建鍵盤 handler;Radix Collapsible 僅用於 children 展開高度動畫(animate-collapsible);@dnd-kit/core 做 Figma-style drag(distance:5,X+Y 雙軸)。已對照 code 逐項驗鍵盤 map / ARIA / focus / drag。","claimsVerified":35,"falseClaims":[]}

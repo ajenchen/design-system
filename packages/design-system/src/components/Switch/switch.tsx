@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
 import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldSize } from '@/design-system/components/Field/field-context'
 import { fieldWrapperStyles } from '@/design-system/components/Field/field-wrapper'
+import { BooleanValueIcon } from '@/design-system/components/SelectionControl/boolean-value'
 
 /**
  * Switch — 開關控件
@@ -24,7 +25,7 @@ import { fieldWrapperStyles } from '@/design-system/components/Field/field-wrapp
  *   ON:  track primary, thumb 白色 + 2px primary border + primary check icon
  *   disabled: opacity-disabled（整體透明度）
  *   readOnly(standalone): 視覺同一般態，但 pointer-events-none + aria-readonly
- *   readOnly(Field 內): 渲染 readonly 灰框 + ✓/—(2026-06-12 拍板,= Input readonly 同視覺語言)
+ *   readOnly(Field 內): 渲染 readonly 灰框 + 勾/叉 icon(2026-06-12 拍板,= Input readonly 同視覺語言)
  *
  * ── label / description / readOnly ──
  * Switch 可以透過 `label` 和 `description` props 在元件內直接渲染緊鄰的文字，
@@ -45,7 +46,7 @@ import { fieldWrapperStyles } from '@/design-system/components/Field/field-wrapp
  * readOnly 模式：
  *   <Switch readOnly checked={true} label="..." />
  *   standalone:視覺維持 ON/OFF 正確狀態,但無法互動、不在 tab order 內、寫入 aria-readonly。
- *   Field 內:渲染 readonly 灰框 + ✓/—(不渲染 toggle;見 forwardRef 內 readonly 分支)。
+ *   Field 內:渲染 readonly 灰框 + 勾/叉 icon(不渲染 toggle;見 forwardRef 內 readonly 分支)。
  *   與 disabled 的差異：readonly 不降色（可讀），disabled 降色（弱化）。
  */
 
@@ -110,18 +111,18 @@ export interface SwitchProps
    */
   description?: React.ReactNode
   /**
-   * readonly 模式:standalone = 鎖定互動但維持 ON/OFF 視覺;Field 內 = 灰框 + ✓/—。
+   * readonly 模式:standalone = 鎖定互動但維持 ON/OFF 視覺;Field 內 = 灰框 + 勾/叉 icon。
    * 與 disabled 的差異:readonly 不降色(可讀),disabled 降色(弱化)。
-   * DataTable cell 非編輯態用 mode="display"(✓/—),非 readOnly。
+   * DataTable cell 非編輯態用 mode="display"(勾/叉 icon),非 readOnly。
    */
   readOnly?: boolean
   /**
    * Field mode(2026-05-05 Phase B3 align):
    *   edit     — 一般可互動 Switch(預設)
-   *   display  — **純展示**:渲染 ✓ / —(無互動 primitive、無 input chrome);
+   *   display  — **純展示**:渲染 勾/叉 icon(無互動 primitive、無 input chrome);
    *              對齊 Carbon read-only / DataTable boolean cell。
    *              `display` 完全無 toggle 形體;`readonly` 視場景(field-types.ts)。
-   *   readonly — standalone 同 readOnly prop(保留視覺鎖互動);Field 內 = 灰框 + ✓/—
+   *   readonly — standalone 同 readOnly prop(保留視覺鎖互動);Field 內 = 灰框 + 勾/叉 icon
    *   disabled — 同 disabled prop
    */
   mode?: FieldMode
@@ -200,17 +201,20 @@ const Switch = React.forwardRef<
     } = props
 
     // ── mode='display'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
-    // 純展示模式:無互動 toggle、渲染 ✓ / —。與 Checkbox display 對齊(同 boolean primitive)。
+    // 純展示模式:無互動 toggle、渲染 Check / X icon。與 Checkbox display 對齊(同 boolean primitive,
+    // 共用 SelectionControl/boolean-value.tsx SSOT — 勾/叉 icon + 中性 foreground 色)。
     if (resolvedMode === 'display') {
       const isChecked = checkedProp === true
-      return isChecked
-        ? <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="text-foreground">✓</span>
-        : <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="text-fg-muted">—</span>
+      return (
+        <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="inline-flex">
+          <BooleanValueIcon checked={isChecked} size={resolvedBoxSize} />
+        </span>
+      )
     }
 
-    // ── mode='readonly' in Field(2026-06-12 user 拍板「灰框 + ✓/—」,與 Checkbox 同款)──
+    // ── mode='readonly' in Field(2026-06-12 拍板「灰框 + 勾/叉」,與 Checkbox 同款;2026-07-09 glyph → Check/X icon)──
     // Field 內 readonly boolean = fieldWrapperStyles readonly 灰框(= Input readonly 同源)
-    // + ✓/— 值語言;standalone readOnly(settings list)維持原樣鎖互動。詳 checkbox.tsx 同段註解。
+    // + 勾/叉 icon 值語言;standalone readOnly(settings list)維持原樣鎖互動。詳 checkbox.tsx 同段註解。
     if (effectiveReadOnly && insideField) {
       const isChecked = (checkedProp ?? defaultCheckedProp) === true
       const boxSize = resolvedBoxSize
@@ -231,7 +235,7 @@ const Switch = React.forwardRef<
             className,
           )}
         >
-          {isChecked ? <span className="text-foreground">✓</span> : <span className="text-fg-muted">—</span>}
+          <BooleanValueIcon checked={isChecked} size={boxSize} />
         </div>
       )
     }

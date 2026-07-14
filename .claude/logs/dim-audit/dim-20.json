@@ -1,0 +1,26 @@
+{
+  "dim": 20,
+  "title": "Spec 硬寫機械化值檢查 — spec.md 硬寫 px/hex/Tailwind class 該引 token",
+  "filesScanned": 86,
+  "scanScope": "全 86 spec.md（components 67 + patterns 8 + tokens 11）NO-SAMPLE grep：px / hex / 非-token radius / 非-token shadow / arbitrary Tailwind [値] / 原色名-as-utility / backtick 裸 px；候選再讀 tsx/css 對抗二驗殺假陽性",
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/tokens/color/color.spec.md:232",
+      "problem": "warning 文字色表格中，`bg-warning-subtle` 對應的文字色寫 `text-[yellow-7]`（step-7）。這是 (1) malformed Tailwind — `text-[yellow-7]` 不是合法 CSS 值，會 silent 失效（同 file-item.spec.md:143 自己警告的 `bg-neutral-3` silent 失效同一 failure class，合法寫法是 `text-[var(--color-yellow-7)]`）；(2) 違反 ui-development.md 規則 5「禁 primitive 色名作 utility」；(3) 該欄同表上一列用的是 semantic token `text-on-emphasis-dark`，本列卻硬寫 primitive 色名——不一致。實際上已有 semantic token `--warning-text`(= yellow-7，semantic.css:245) → utility `text-warning-text`，且 code（Notice.tsx:58 / Alert.anatomy warning）真的消費的就是 `text-warning-text`。color SSOT 的 prescriptive 欄位寫了跟 code 不符且會失效的硬值。",
+      "severity": "material",
+      "suggestion": "把 `text-[yellow-7]`（step-7）改為 semantic token `text-warning-text`（對齊 Notice/Alert code 實作 + 同表 sibling row 的 token 寫法）。若真要展示 primitive 後盾，補註 `（= --color-yellow-7）` 但欄位主值必為 `text-warning-text`。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:166",
+      "problem": "圓角規格寫「`circle` = `9999px`、`square` = `4px`（avatar.tsx radius ternary）」，直接把 raw px 當 canonical。實作 avatar.tsx:177 `const radius = shape === 'circle' ? '9999px' : '4px'` → `borderRadius: radius` 也硬寫。radius.spec.md SSOT 已定義 `--radius-full`=9999px、`--radius-md`=4px，且 radius 規則明文「所有 4px 圓角一律用 rounded-md」；avatar.tsx:27 註解自己也寫「square → rounded-md (4px)」、focus ring（avatar.tsx:263）用的是 `rounded-full`/`rounded-md` class。body 圓角走 inline style 無法用 class，但可用 `var(--radius-full)`/`var(--radius-md)`。硬寫 raw px = radius token 改值時 avatar 不跟隨（drift 風險）。",
+      "severity": "marginal",
+      "suggestion": "spec 與 avatar.tsx 的 radius ternary 改引 token：`shape === 'circle' ? 'var(--radius-full)' : 'var(--radius-md)'`，spec 文字改為「circle = rounded-full(--radius-full) / square = rounded-md(--radius-md)，經 inline style var() 注入」。消除 raw 9999px/4px 對 radius SSOT 的 drift 風險。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:227",
+      "problem": "TreeView context padding-x 表：`'sidebar'` 列引 token `--layout-space-loose`(md=16/lg=24)，但 `'menu'` 列硬寫 `12px`（對齊 MenuItem）。實作 tree-view.tsx:68 `menu: '12px'` 也是裸字串。同表 sibling 用 token、本列硬寫，且 12px 這個「menu item 水平 padding」值在 MenuItem/DropdownMenu 亦各自散寫（px-3），無共享 token 承載，屬 raw magic number 跨元件重複。有 documented rationale（overlay lock md + 對齊 MenuItem），故非 material，但仍是「該有共享 token 卻硬寫」的一致性缺口。",
+      "severity": "marginal",
+      "suggestion": "評估把 overlay/menu 的固定 12px item 水平 padding 抽為共享 token（如 `--menu-item-px`），讓 TreeView menu context / MenuItem / DropdownMenu 同一 SSOT；短期至少比照其他 documented constant（如 ProfileCard 320px、TimePicker h-[216px]）在 spec 明標『menu 專用固定常數（非跨元件 token，因 overlay lock md）』，跟 sibling 的 token 寫法在文字上對齊。"
+    }
+  ]
+}

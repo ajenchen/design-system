@@ -1,7 +1,6 @@
 // @story-trait-rationale: hasSizes 由 anatomy.stories.tsx SizeMatrix / 狀態(States)story 的 md/lg 對照 owns size showcase;Default scenario 由 四模式(Modes) / 狀態(States) / 搭配標籤(WithLabel)等真實業務情境 story 覆蓋,不另開抽象 Default/AllSizes。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Switch } from './switch'
-import { SelectionItem } from '@/design-system/components/SelectionControl/selection-item'
 
 const meta: Meta<typeof Switch> = {
   title: 'Design System/Components/Switch/展示',
@@ -23,7 +22,7 @@ export const Modes: Story = {
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">display</h3>
         <Switch mode="display" checked />
-        <p className="text-caption text-fg-muted mt-1">純視覺 ✓ / —；語意由 context（如 DataTable 表頭 + 行標籤）提供，display 不暴露獨立 aria-label。需螢幕報讀器可讀請用 edit / readonly。</p>
+        <p className="text-caption text-fg-muted mt-1">純視覺 勾/叉 icon；語意由 context（如 DataTable 表頭 + 行標籤）提供，display 不暴露獨立 aria-label。需螢幕報讀器可讀請用 edit / readonly。</p>
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
@@ -70,7 +69,10 @@ export const States: Story = {
   ),
 }
 
-/* ── 搭配 SelectionItem ── */
+/* ── 搭配標籤 ── */
+// 2026-07-14 dim-68 修:原直用 internal <SelectionItem control={...}>(selection-item.spec.md
+// 明定僅 Checkbox / RadioGroup 消費路徑;Switch 不在其中)→ 改公開 `<Switch label description>`
+// (switch.spec.md「label / description 整合」canonical:label 左 / switch 右,自動 wire htmlFor)。
 export const WithLabel: Story = {
   name: '搭配標籤',
   render: () => (
@@ -78,27 +80,10 @@ export const WithLabel: Story = {
       {(['sm', 'md', 'lg'] as const).map(size => (
         <div key={size}>
           <p className="text-caption text-fg-muted mb-1">size="{size}"</p>
-          <div className="grid">
-            <SelectionItem
-              size={size}
-              control={<Switch id={`sw-${size}-a`} size={size} defaultChecked />}
-              label="啟用通知"
-              description="接收電子郵件和推播通知"
-              htmlFor={`sw-${size}-a`}
-            />
-            <SelectionItem
-              size={size}
-              control={<Switch id={`sw-${size}-b`} size={size} />}
-              label="自動更新"
-              htmlFor={`sw-${size}-b`}
-            />
-            <SelectionItem
-              size={size}
-              control={<Switch id={`sw-${size}-c`} size={size} disabled />}
-              label="維護模式（管理員限定）"
-              htmlFor={`sw-${size}-c`}
-              disabled
-            />
+          <div className="grid gap-2">
+            <Switch size={size} defaultChecked label="啟用通知" description="接收電子郵件和推播通知" />
+            <Switch size={size} label="自動更新" />
+            <Switch size={size} disabled label="維護模式（管理員限定）" />
           </div>
         </div>
       ))}

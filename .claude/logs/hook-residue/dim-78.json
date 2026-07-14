@@ -1,0 +1,8 @@
+{
+  "dim": 78,
+  "hook": "check_codex_brief_invariants.sh (4th invariant 禁列檔)",
+  "residueCount": 0,
+  "findings": [],
+  "verified": true,
+  "note": "PreToolUse(Bash)command-time gate:偵測 codex exec/review 的 brief content 缺『禁列檔 / 禁 rg --files / 只讀 N file / 直接出 verdict』keyword。無持久化 guarded file → 無 residue 概念。Canonical brief-template.md + codex-collab/SKILL.md 皆帶該 invariant keyword。.claude/tmp/ 內歷史 brief 為 dev-artifact,非 hook 現行守護對象。"
+}

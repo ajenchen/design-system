@@ -2,8 +2,8 @@
 //   Inspector / ColorMatrix / SizeMatrix / StateBehavior N/A — Command 是
 //   headless Internal primitive(cmdk passthrough),不被 App 直接消費,而是透過
 //   SelectMenu 等外層元件呈現。色彩 / 尺寸 / 狀態都由消費方(SelectMenu / Combobox /
-//   PeoplePicker)決定並在各自的 anatomy 詳述。本檔僅保留 Overview 教結構與
-//   消費路徑。
+//   PeoplePicker)決定並在各自的 anatomy 詳述。本檔保留 Overview(教結構與
+//   消費路徑)+ Accessibility(6-canonical 中適用的 2 個;2026-05-17 per Dim 13 加)。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Settings, User, LogOut, FileText } from 'lucide-react'
 import {

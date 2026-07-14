@@ -85,7 +85,7 @@ export const UsageGuidance: Story = {
             size="sm"
             iconOnly
             startIcon={MessageSquare}
-            aria-label="訊息 (150+)"
+            aria-label="訊息 (150 則)"
             overlayBadge={<Badge count={150} max={99} variant="critical" />}
           />
           <Label>3 vs 42 vs 99+ 觸發不同 urgency 感</Label>

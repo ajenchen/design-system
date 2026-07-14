@@ -34,38 +34,38 @@ const D: Record<string, string> = {
 
 const actionBtn = <Button variant="tertiary" size="xs">查看詳情</Button>
 
-export const SubtleSingleLine = {
-  name: '低調單行',
+// 2026-07-14 audit Dim 28(story 拆分原則):原 Subtle/Solid × SingleLine/WithDescription
+// 四 story 依 appearance variant 拆細 = 「≥2 variants 拆細」反 pattern(該合對照 grid);
+// 合併為單行 / 含說明兩 story,各以 subtle vs solid 並排對照(appearance trait grid 本體
+// 由 anatomy ColorMatrix owns)。
+export const SingleLine = {
+  name: '單行（低調 vs 實心對照）',
   render: () => (
-    <div className="flex flex-col gap-3 max-w-lg">
-      {ALL.map((v) => <Alert key={v} variant={v} appearance="subtle" title={L[v]} endContent={actionBtn} />)}
+    <div className="grid grid-cols-2 gap-6 max-w-5xl">
+      {(['subtle', 'solid'] as const).map((appearance) => (
+        <div key={appearance} className="flex flex-col gap-3">
+          <span className="text-caption text-fg-muted font-medium">
+            {appearance === 'subtle' ? 'Subtle — 頁面內嵌預設(淺底 + 邊框)' : 'Solid — 高強調(飽和底色)'}
+          </span>
+          {ALL.map((v) => <Alert key={v} variant={v} appearance={appearance} title={L[v]} endContent={actionBtn} />)}
+        </div>
+      ))}
     </div>
   ),
 }
 
-export const SolidSingleLine = {
-  name: '實心單行',
+export const WithDescription = {
+  name: '含說明文字（低調 vs 實心對照）',
   render: () => (
-    <div className="flex flex-col gap-3 max-w-lg">
-      {ALL.map((v) => <Alert key={v} variant={v} appearance="solid" title={L[v]} endContent={actionBtn} />)}
-    </div>
-  ),
-}
-
-export const SubtleWithDescription = {
-  name: '低調含說明文字',
-  render: () => (
-    <div className="flex flex-col gap-3 max-w-lg">
-      {ALL.map((v) => <Alert key={v} variant={v} appearance="subtle" title={L[v]} description={D[v]} endContent={actionBtn} />)}
-    </div>
-  ),
-}
-
-export const SolidWithDescription = {
-  name: '實心含說明文字',
-  render: () => (
-    <div className="flex flex-col gap-3 max-w-lg">
-      {ALL.map((v) => <Alert key={v} variant={v} appearance="solid" title={L[v]} description={D[v]} endContent={actionBtn} />)}
+    <div className="grid grid-cols-2 gap-6 max-w-5xl">
+      {(['subtle', 'solid'] as const).map((appearance) => (
+        <div key={appearance} className="flex flex-col gap-3">
+          <span className="text-caption text-fg-muted font-medium">
+            {appearance === 'subtle' ? 'Subtle — 頁面內嵌預設(淺底 + 邊框)' : 'Solid — 高強調(飽和底色)'}
+          </span>
+          {ALL.map((v) => <Alert key={v} variant={v} appearance={appearance} title={L[v]} description={D[v]} endContent={actionBtn} />)}
+        </div>
+      ))}
     </div>
   ),
 }
@@ -99,8 +99,8 @@ export const CornerActionGroup = {
       </div>
 
       <span className="text-caption text-fg-muted">
-        ✅ Close X 跟 refresh / share 同 Button iconOnly xs(chrome 輕量 action,chrome-header-height 幾何),Separator 分群。
-        ❌ 禁止混 Inline Action + Button iconOnly(違反 same-row consistency)。
+        ✅ 右上角這排(重新整理、分享、關閉)全用同一種最小尺寸的純圖示按鈕,並用分隔線分成兩群,保持同一列視覺一致。
+        ❌ 不要一群用純圖示按鈕、另一群用列內動作,會不整齊。
       </span>
     </div>
   ),

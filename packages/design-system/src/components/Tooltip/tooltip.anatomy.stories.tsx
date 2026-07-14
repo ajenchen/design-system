@@ -159,7 +159,7 @@ export const Overview = {
             <thead><tr><Th>零件</Th><Th>元素</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['TooltipProvider', '<TooltipPrimitive.Provider>', '全域 Provider，控制 warm-up delay 參數（全產品一個）'],
+                ['TooltipProvider', '<TooltipPrimitive.Provider>', '全域 Provider，控制 skip window 與共享暖機狀態（全產品一個）；單一 tooltip 的 delay 由 Root 預設 500ms 決定，優先於 Provider'],
                 ['Tooltip', '<TooltipPrimitive.Root>', '單一 tooltip 實例的容器'],
                 ['TooltipTrigger', '<TooltipPrimitive.Trigger>', '觸發器，搭配 asChild 套用至任意子元素'],
                 ['TooltipContent', '<TooltipPrimitive.Content>', '浮動內容區，透過 Portal 渲染'],
@@ -195,7 +195,7 @@ export const Overview = {
       {/* Warm-up pattern */}
       <div className="flex flex-col gap-3">
         <H3>Warm-up Pattern（暖機模式）</H3>
-        <Desc>全產品統一一組時間參數，不因 tooltip 類型或位置而異。其中 delayDuration（500ms）由 DS Tooltip wrapper（Root 預設值,對齊 motion token SSOT;Radix Root prop 優先於 Provider 同名設定）統一；skipDelayDuration（300ms）沿用 Radix 內建 default，由消費端 app／storybook root 顯式同步設定，DS wrapper 本身不 carry 這個值。</Desc>
+        <Desc>全產品統一一組時間參數，不因 tooltip 類型或位置而異：首次 hover 需停留 500ms 才顯示（確認是刻意停留）；顯示後 300ms 內把游標移到下一個觸發器可即時切換、不用重新等待。</Desc>
         <div className="flex flex-col gap-1.5 text-caption max-w-[600px]">
           <div className="flex items-start gap-2 py-1.5 border-b border-divider">
             <span className="text-fg-muted w-5 shrink-0 font-mono">1.</span>
@@ -338,7 +338,7 @@ export const Inspector = {
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <H3>元件檢閱器</H3>
-        <Desc>切換方向查看 tooltip 的 placement。右側面板列出所有 design token 及其對應值。</Desc>
+        <Desc>切換方向查看 tooltip 的 placement。右側面板列出主要 design token 及其對應值。</Desc>
       </div>
       <InspectorInner />
     </div>
@@ -407,7 +407,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"ARIA / Pattern:沿用 Radix tooltip 的無障礙預設(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/tooltip#accessibility)。\n\n  鍵盤行為:\n\n- Tab — focus 到觸發器時顯示\n- Esc — 關閉\n\n  焦點:hover / focus 浮層,非 modal——focus 開啟浮層但不鎖住焦點,焦點仍留在觸發器,按 Esc 關閉。觸發器有可見 focus ring(2px 外框)。\n\n  驗證:Storybook a11y addon 面板應 0 個 critical 違規;純鍵盤即可完整操作(無需滑鼠)。文字對比 ≥ 4.5:1、UI 元素對比 ≥ 3:1(WCAG AA)。"}</p>
+      <p className="whitespace-pre-line">{"ARIA / Pattern:沿用 Radix tooltip 的無障礙預設(role / aria-* / 鍵盤導覽)。詳 [Radix Accessibility docs](https://www.radix-ui.com/primitives/docs/components/tooltip#accessibility)。\n\n  鍵盤行為:\n\n- Tab — focus 到觸發器時顯示\n- Esc — 關閉\n\n  焦點:hover / focus 浮層,非 modal——focus 開啟浮層但不鎖住焦點,焦點仍留在觸發器,按 Esc 關閉。觸發器的 focus ring 由 asChild 包的可聚焦子元件提供(Tooltip 本身是透傳 Trigger、不加樣式)。\n\n  驗證:Storybook a11y addon 面板應 0 個 critical 違規;純鍵盤即可完整操作(無需滑鼠)。文字對比 ≥ 4.5:1、UI 元素對比 ≥ 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

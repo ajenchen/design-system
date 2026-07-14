@@ -1,4 +1,4 @@
-// @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#NumberAlignment
+// @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { ScrollArea, ScrollBar } from './scroll-area'

@@ -66,7 +66,7 @@ export const Overview: Story = {
             <tbody>
               {[
                 ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'Field mode'],
-                ['variant', "'default' | 'bare' | 'naked'", "'default'", 'Field chrome variant(對齊 Select / Combobox)'],
+                ['variant', "'default'", "'default'", 'Field chrome variant(對齊 Select / Combobox;naked = @internal cell-as-input,2026-07-14 型別收窄至 FieldVariantInternal)'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '對齊 field-height tier'],
                 ['value', 'PersonValue | PersonValue[] | null', '—', '單選 / 多選(類型決定模式)'],
                 ['onChange', '(value: PersonValue[]) => void', '—', '值變更 callback(永遠 emit array)'],
@@ -78,7 +78,7 @@ export const Overview: Story = {
                 ['pillShowAvatar', 'boolean', 'true', "multiDisplay='pill' 時是否顯示 avatar prefix"],
                 ['pillWrap', 'boolean', 'true', 'pill 模式是否允許換行'],
                 ['searchIn', "'menu' | 'trigger'", "'menu'", '搜尋型態(menu 浮層內 / trigger inline;multi 才有意義)'],
-                ['showDisplayEndIcon', 'boolean', 'false', 'display 模式渲 ChevronDown + naked wrapper(DataTable cell 對齊)'],
+                ['showDisplayEndIcon', 'boolean', 'false', 'display 模式渲 ChevronDown + naked wrapper(opt-in 逃生門;2026-07-08 A 案後 DataTable 預設不傳)'],
                 ['defaultOpen', 'boolean', 'false', 'uncontrolled 初始開啟狀態'],
                 ['onOpenChange', '(open: boolean) => void', '—', 'open 狀態變更 callback'],
                 ['disabled', 'boolean', 'false', '停用'],
@@ -97,7 +97,7 @@ export const Overview: Story = {
 export const Inspector: Story = {
   name: '元件檢閱器',
   parameters: {
-    docs: { description: { story: '右側 Controls 切 props 即時 render,取代 Figma inspect。切 `mode` 看 edit / display / readonly / disabled 視覺差異,切 `size` 對照 field-height tier,切 `variant` 看 default / bare / naked chrome 差異。' } },
+    docs: { description: { story: '右側 Controls 切 props 即時 render,取代 Figma inspect。切 `mode` 看 edit / display / readonly / disabled 視覺差異,切 `size` 對照 field-height tier,切 `variant` 看 default / naked chrome 差異。' } },
   },
   args: {
     mode: 'edit',
@@ -112,7 +112,7 @@ export const Inspector: Story = {
   },
   argTypes: {
     mode: { control: 'radio', options: ['edit', 'display', 'readonly', 'disabled'] },
-    variant: { control: 'radio', options: ['default', 'bare', 'naked'] },
+    variant: { control: 'radio', options: ['default', 'naked'] },
     size: { control: 'radio', options: ['sm', 'md', 'lg'] },
     disabled: { control: 'boolean' },
     showDisplayEndIcon: { control: 'boolean' },

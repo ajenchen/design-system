@@ -1,0 +1,10 @@
+[
+ "DataTable/data-table-filter-panel.tsx 拆檔(finding『822 行已過 800 hard cap 需拆檔』的結構半部)— 屬結構 refactor 需獨立 branch + 完整驗證;本輪已誠實更新 stale 行數 escape comment(505→687→822)+ 標記禁再增量並列 file-size escalation 追蹤,拆檔候選 = filter-value-picker 區段 + nested-group renderer",
+ "radio-group.stories.tsx + switch.stories.tsx 仍有同類 <SelectionItem control> 裸用 drift(audit-decisions-researched.json D4 recommendation 已點名『依原則一併收斂』)— 不在本次指派 scope(D4 只點名 checkbox 兩檔)且同 working tree 有並行 agent 作業(checkbox.anatomy 檔曾被並行修改),為避免撞檔未動;非設計歧見,建議後續批次以公開 label prop 收斂",
+ "codex-dim72 packages/design-system/package.json:39 `./tokens/*` wildcard export — 破壞性 public API surface 變更(策展式公開 vs 維持全開)已列 .claude/logs/audit-decision-list.json 等 user 拍板,不得自決收窄 npm export map",
+ "hook-dim74 17 檔 trigger-only overlay stories — 稽核自身已判定非 genuine 視覺覆蓋缺口(severity=marginal;每個 overlay primitive 在自身 canonical stories 皆有 open-snapshot 覆蓋,M15 系統級不缺;HoverCard/ProfileCard 為 documented escape)→ 無需改動,不列 fixed 避免虛報",
+ "codex-dim72 packages/design-system/src/components/Field/field-types.ts:43 — internal substrate 值 `naked` 混入公開 FieldVariant union(型別層零防護,consumer 可 <Input variant=\"naked\"> 繞過 canonical chrome/focus)。Reconcile verdict 指定修法 = 拆 public/internal variant types + DataTable cell-registry 改走私有 wrapper/context = 跨 Field 全家族 API 結構重整(SSOT-affecting API 語意),超出 doc/bug/a11y autonomous 範圍,需 user 拍板。現況緩解:field-controls.spec.md:65 已明文 naked 為 @internal 只 DataTable 消費。",
+ "claude-dim72/codex-dim72 gen-component-indexes.mjs:79 — 62 個 *Meta 收出 root barrel = published npm API surface 縮減(破壞性),dim72 SKILL 本身定義為 tightening-roadmap 分期 ship;且 compile-stories/audit-story-quality 雙份 regex + WM consumer repo 需同步協調 → 需 user 拍板",
+ "codex-dim72 select.tsx:56 — SelectProps 從 extends 全 native select attrs 改 allowlist + hidden native forwarding = 公開 API 語意重設計(哪些 prop 進 allowlist 是設計判斷)→ 需 user 拍板",
+ "codex-dim10 tree-view.tsx:305 — 鍵盤拖曳重排:spec 已誠實記錄現況(tree-view.spec.md:386 惟拖曳重排例外/現況記錄);dnd-kit KeyboardSensor 與既有 2026-07-05 D4 拍板的單一 tab stop 虛擬焦點模型衝突,真修需新鍵盤互動 canonical(鍵位 + announcement 設計)→ 需 user 拍板"
+]

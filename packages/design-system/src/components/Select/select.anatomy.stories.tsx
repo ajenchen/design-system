@@ -305,7 +305,7 @@ export const Overview = {
             <tbody>
               {[
                 ['mode', "'edit'|'display'|'readonly'|'disabled'", "'edit'", 'FieldMode 四模式——edit 可編輯 / display 純展示 / readonly 顯示值不可改 / disabled 灰化'],
-                ['variant', "'default'|'bare'|'naked'", "'default'", 'Field chrome variant(預設繼承 context.variant)'],
+                ['variant', "'default'", "'default'", 'Field chrome variant(預設繼承 context.variant;naked = @internal cell-as-input,2026-07-14 型別收窄至 FieldVariantInternal)'],
                 ['display', "'plain'|'tag'", "'plain'", '顯示模式——plain 純文字，tag 用 Tag 元件呈現'],
                 ['size', "'sm'|'md'|'lg'", "'md'", '尺寸，與 Button 同 size 並排高度一致'],
                 ['options', 'SelectOption[]', '—', '選項列表 { value, label }'],
@@ -322,8 +322,8 @@ export const Overview = {
                 ['error', 'boolean', 'false', '紅色邊框 + aria-invalid（僅 edit 模式有視覺效果）'],
                 ['defaultOpen', 'boolean', 'false', 'uncontrolled 初始開啟(DataTable cell click→1 step open)'],
                 ['onOpenChange', '(open: boolean) => void', '—', 'open 狀態變更 callback'],
-                ['showDisplayEndIcon', 'boolean', 'false', 'display 模式渲 ChevronDown(DataTable cell 對齊)'],
-                ['selectedItemRenderer', '(opt: SelectOption) => ReactNode', '—', 'trigger 已選項目客製 render(PeoplePicker 用)'],
+                ['showDisplayEndIcon', 'boolean', 'false', 'display 模式渲 ChevronDown(opt-in 逃生門;2026-07-08 A 案後 DataTable 預設不傳 — display 態零恆顯 icon)'],
+                ['selectedItemRenderer', '(opt: SelectOption) => ReactNode', '—', '已選項目客製 render;4 mode 共享(edit/display/readonly/disabled,contract (a))— display 態渲值內容無 chrome(PeoplePicker / status 欄用)'],
                 ['disabled', 'boolean', '—', '原生屬性；未傳 mode 時 resolve 為 disabled 樣式（顯式 mode prop 恆優先，見 useResolvedFieldMode）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>

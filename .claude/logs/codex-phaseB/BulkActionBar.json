@@ -1,0 +1,81 @@
+{
+ "component": "BulkActionBar",
+ "claimsVerified": 214,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.tsx:41",
+   "宣稱": "「length === 0 時自動隱藏」",
+   "真實code行為": "第 90 行僅在 selection.length === 0 且 totalSelected 為 0/未設時回 null；totalSelected > 0 仍顯示。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.tsx:47",
+   "宣稱": "「hidden 數量，顯示在 count 區 inline」",
+   "真實code行為": "第 133–135 行另要求 hiddenByFilter > 0；傳入 0 或負數不顯示。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:49",
+   "宣稱": "「BulkActionBar｜selection.length > 0」",
+   "真實code行為": "第 90 行亦支援 selection 為空但 totalSelected > 0 的反向選取情境。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:78",
+   "宣稱": "「自然高度 56md / 68lg」",
+   "真實code行為": "Button 高度 32/36px 加上下 padding 12/16px 後，root 尚有 1px border-t；實際外框自然高度為 57/69px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:85",
+   "宣稱": "「hiddenByFilter prop 傳入時」顯示 hidden status",
+   "真實code行為": "第 133–135 行只有 hiddenByFilter > 0 才顯示；僅傳入 prop 不足。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:119",
+   "宣稱": "「{selection.length > 0 && <BulkActionBar ... />}」",
+   "真實code行為": "此 canonical 範例會在 selection=[]、totalSelected>0 時阻止 mount，繞過元件內建的反向選取例外。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:149",
+   "宣稱": "「hidden 數量，顯示在 count 區 inline」",
+   "真實code行為": "第 133–135 行僅顯示正數；API 說明漏掉 >0 條件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:158-163",
+   "宣稱": "BulkActionBarLabels 僅列 count、clear、hiddenSuffix、toolbarAriaLabel",
+   "真實code行為": "TSX 第 24–27 行另有優先使用的 ariaLabel?: string；toolbarAriaLabel 已 deprecated、僅作 fallback。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:180",
+   "宣稱": "「BulkActionBar 整體用 role=\"toolbar\"」",
+   "真實code行為": "TSX 第 95–99 行刻意使用 role=\"group\"，且未實作 APG toolbar 方向鍵契約。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:203",
+   "宣稱": "「selection.length === 0……必須完全藏」",
+   "真實code行為": "第 89–90 行在 totalSelected > 0 時仍渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:215",
+   "宣稱": "「高度由消費者所在 placement 決定」",
+   "真實code行為": "元件沒有 placement/size prop；自身 padding token、md clear Button 與 border 撐出高度，consumer 僅負責 positioning 或額外 className 覆寫。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:217",
+   "宣稱": "「高度繼承 placement 的 toolbar/footer 容器」",
+   "真實code行為": "root 沒有高度繼承或 placement variant；高度由自身內容、padding 與 border 決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.anatomy.stories.tsx:36",
+   "宣稱": "「自然高度 56md / 68lg」",
+   "真實code行為": "root 的 1px border-t 使實際外框自然高度為 57/69px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.principles.stories.tsx:75",
+   "宣稱": "「length=0 自動藏」",
+   "真實code行為": "totalSelected > 0 時，即使 selection.length=0 仍顯示。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.principles.stories.tsx:88",
+   "宣稱": "「selection > 0 浮現，= 0 完全藏」",
+   "真實code行為": "公開且已實作的 totalSelected > 0 例外不會完全隱藏。"
+  }
+ ]
+}

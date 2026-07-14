@@ -1,13 +1,12 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { AspectRatio } from './aspect-ratio'
 
 /**
  * AspectRatio 展示——固定長寬比容器,常用於圖片 / 截圖 / illustration 鎖比例。
- * 展示範例對標世界級產品的真實情境(Airbnb listing hero、Stripe product 卡、
- * Instagram 方圖、YouTube cinematic banner),consumer 包 <img className="w-full
- * h-full object-cover" /> 是標準用法。設計規則詳見 `aspect-ratio.spec.md`。
+ * 展示範例對標世界級產品的真實情境(Stripe product 卡、YouTube cinematic banner),
+ * consumer 包 <img className="w-full h-full object-cover" /> 是標準用法。
+ * 全比例對照矩陣由設計規格層 StandardRatios owns。設計規則詳見 `aspect-ratio.spec.md`。
  */
 
 const meta: Meta = {
@@ -17,37 +16,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const Figure = ({
-  children, caption,
-}: { children: React.ReactNode; caption: string }) => (
-  <figure className="flex flex-col gap-2">
-    {children}
-    <figcaption className="text-footnote text-fg-muted">{caption}</figcaption>
-  </figure>
-)
-
 // ── Stories ───────────────────────────────────────────────────────────────────
-
-export const HeroBanner16x9: Story = {
-  name: '16:9 主視覺橫幅',
-  render: () => (
-    <div className="max-w-[720px]">
-      <h3 className="text-body font-bold text-foreground mb-1">Airbnb listing hero</h3>
-      <p className="text-caption text-fg-muted mb-5 max-w-[600px] leading-relaxed">
-        寬螢幕影片、feature 截圖、listing cover 標配——16/9 是最主流的 web hero ratio(Vercel、Airbnb、Linear hero section)。
-      </p>
-      <AspectRatio ratio={16 / 9} className="bg-muted rounded-lg overflow-hidden">
-        <img
-          src="https://picsum.photos/seed/airbnb-hero/800/450"
-          alt="Beachfront cottage in Santorini"
-          className="w-full h-full object-cover"
-        />
-      </AspectRatio>
-    </div>
-  ),
-}
+// HeroBanner16x9 / SquareAvatar1x1 / CommonRatios retired 2026-07-14 per audit Dim 24(story 重複性):
+// 比例是數值 prop 非 affordance,逐值 story 無獨立教學原則;全比例對照矩陣已由
+// anatomy StandardRatios(aspect-ratio.anatomy.stories.tsx,5 ratio 含 21/9 / 3/4)owns。
+// 展示層保留真實業務場景:ProductPhoto4x3(教 CLS 防坍塌)+ Ultrawide21x9(cinematic 寬幅情境)。
 
 export const ProductPhoto4x3: Story = {
   name: '4/3 產品照片 + 防版面跳動對照',
@@ -94,29 +67,6 @@ export const ProductPhoto4x3: Story = {
   ),
 }
 
-export const SquareAvatar1x1: Story = {
-  name: '1:1 社群方形貼文',
-  render: () => (
-    <div className="max-w-[600px]">
-      <h3 className="text-body font-bold text-foreground mb-1">Instagram-style 方形貼文</h3>
-      <p className="text-caption text-fg-muted mb-5 max-w-[600px] leading-relaxed">
-        方形貼文預覽、avatar、icon preview 標配——1/1 讓 feed grid 對齊一致。
-      </p>
-      <div className="grid grid-cols-3 gap-1">
-        {['coffee', 'mountain', 'city', 'sunset', 'plant', 'food'].map(seed => (
-          <AspectRatio key={seed} ratio={1} className="bg-muted overflow-hidden">
-            <img
-              src={`https://picsum.photos/seed/${seed}/400/400`}
-              alt={seed}
-              className="w-full h-full object-cover"
-            />
-          </AspectRatio>
-        ))}
-      </div>
-    </div>
-  ),
-}
-
 export const Ultrawide21x9: Story = {
   name: '21:9 影院橫幅',
   render: () => (
@@ -136,35 +86,3 @@ export const Ultrawide21x9: Story = {
   ),
 }
 
-export const CommonRatios: Story = {
-  name: '常用 比例 一覽',
-  render: () => (
-    <div className="flex flex-col gap-8 max-w-[720px]">
-      <p className="text-caption text-fg-muted max-w-[600px] leading-relaxed">
-        DS 標準 ratio 視覺對照——選擇對應情境的數值。
-      </p>
-      <div className="grid grid-cols-2 gap-4">
-        <Figure caption="16/9 — 寬螢幕 hero / 影片">
-          <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden">
-            <img src="https://picsum.photos/seed/r16-9/640/360" alt="" className="w-full h-full object-cover" />
-          </AspectRatio>
-        </Figure>
-        <Figure caption="4/3 — 產品照 / 截圖">
-          <AspectRatio ratio={4 / 3} className="bg-muted rounded-md overflow-hidden">
-            <img src="https://picsum.photos/seed/r4-3/600/450" alt="" className="w-full h-full object-cover" />
-          </AspectRatio>
-        </Figure>
-        <Figure caption="1/1 — 方形 / avatar">
-          <AspectRatio ratio={1} className="bg-muted rounded-md overflow-hidden">
-            <img src="https://picsum.photos/seed/r1-1/400/400" alt="" className="w-full h-full object-cover" />
-          </AspectRatio>
-        </Figure>
-        <Figure caption="3/4 — 直式 portrait">
-          <AspectRatio ratio={3 / 4} className="bg-muted rounded-md overflow-hidden">
-            <img src="https://picsum.photos/seed/r3-4/450/600" alt="" className="w-full h-full object-cover" />
-          </AspectRatio>
-        </Figure>
-      </div>
-    </div>
-  ),
-}

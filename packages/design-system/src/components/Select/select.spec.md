@@ -19,6 +19,8 @@ benchmark:
 
 ## 定位
 
+> 寬度軸:`width="fill|hug"`(default fill;hug = 依內容收縮,detail pane inline metadata 用)— SSOT → `Field/field-controls.spec.md`「寬度軸(width: fill / hug)」。
+
 Select 是**單選下拉的表單 control**——從 3+ 選項中挑恰好一個，選項收在 dropdown 內展開。**裝置自適應雙路徑**:觸控裝置(`pointer: coarse`)走原生 `<select>` 取平台原生 picker;桌機走自建 combobox(`role="combobox"` + Radix Popover + Command 渲染 SelectMenu)。詳下方「實作:裝置自適應雙路徑」段。
 
 共用規則見 `field-controls.spec.md`。本文件只記錄 Select 特有的原則。
@@ -36,6 +38,26 @@ Select 是**單選下拉的表單 control**——從 3+ 選項中挑恰好一個
 
 **此分流是「裝置」軸，與 `searchable` 正交**：`searchable` 只決定桌機 combobox 的 trigger 要不要顯搜尋輸入框，**不**決定走原生還是 combobox。一個不可搜尋的桌機 Select 仍是完整自建 combobox（可捲動 / 點選，只是沒搜尋框）。
 
+### 原生表單參與(desktop hidden input mirror,2026-07-13 D2 拍板)
+
+`name` / `required` / `form` 在型別 allowlist 內(`SelectProps` 以 `Pick<SelectHTMLAttributes>` 顯式允收,2026-07-14 API 策展 D),兩路徑提交語義必須一致(歷史上桌機靜默丟棄 name、mobile 生效 — 此不對稱從未被拍板,屬 footgun,2026-07-13 修):
+
+| 路徑 | 機制 |
+|---|---|
+| 觸控(NativeSelect)| 真原生 `<select>`,`name` / `required` / `form` 直接生效 |
+| 桌機(CustomSelect)| **visually-hidden `<input>` 鏡像**(`aria-hidden` + `tabIndex={-1}` + opacity-0,絕對定位於 trigger 內):`value` 單向鏡射受控 state,`name` / `form` forward → 裸 `<form>` submit 收得到值;顯式 `required` prop forward → 原生 required 擋 submit |
+
+**設計規則**:
+
+- **型別 = allowlist,不 extends 全開(2026-07-14 API 策展 D,user 拍板「全部收窄」)**:`SelectProps` 只 `Pick<>` 兩路徑皆有實作出口的原生屬性(`id`/`className`/`style`/`name`/`form`/`required`/`disabled`/`onFocus`/`onBlur`/`onKeyDown`/`aria-label`/`aria-describedby`/`aria-errormessage` + mobile-only `autoFocus`/`autoComplete` + `data-*` passthrough);「型別承諾 ≠ 實作出口」者(`multiple`/`aria-labelledby`/`tabIndex` 等)不進型別,需要時先接線(兩路徑等效)再入表 — 完整盤點依據見 `select.tsx` SelectProps docblock
+- **單向 projection,非第二 SSOT(M17)**:mirror 的 value 恆來自既有 canonical state(`useControllable`);唯一寫回通道是瀏覽器 autofill,且僅在 match 既有非 disabled option 時經 canonical setter 生效(MUI SelectInput 同款 guard)
+- **空值 = `value=''`**:無選擇時送空字串,**不** default 第一項——採 MUI 式**單一 hidden input**而非 Radix BubbleSelect 完整 `<select>` option tree(後者無空 option 時 default 第一項,radix-ui/primitives issue #3521 documented footgun;2026-07-13 codex 辯論 verdict)
+- **原生 required 僅收顯式 `required` prop**(裸表單 opt-in):`<Field required>` 的 context required 續走 `aria-required` + `useFormValidation`(RHF)方法論(`form-validation.spec.md` 規則 1-9),不對既有 Field+RHF consumer 注入瀏覽器原生 bubble
+- **a11y 不變**:mirror `aria-hidden` + 不入 Tab 序,semantics 仍由 `role="combobox"` trigger own;顯式 `required` prop 同步進 trigger `aria-required`(對齊 mobile 原生 `<select required>` 播報)
+- **副作用(升級)**:`useFormValidation` 規則 8(focus-first-error 以 DOM name 定位)桌機 Select 現在可被定位——focus 落 mirror → trigger `focus-within` 顯示 focus 邊框,不再落入「非 native 控件略過」fallback
+
+**世界級對照**:MUI Select 非原生模式同步 opacity-0 hidden input 攜 `name`/`required`(官方測試涵蓋 required 阻止提交 + FormData 值,[github.com/mui/material-ui Select.test.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Select/Select.test.js))/ React Spectrum [HiddenSelect](https://github.com/adobe/react-spectrum/blob/main/packages/%40react-aria/select/src/HiddenSelect.tsx) / Headless UI Listbox `name` → [hidden input kept in sync](https://headlessui.com/react/listbox#using-with-html-forms)。Ant 走純 Form.Item(React state)派;本 DS 因型別已承諾 `name`/`form`/`required`,「同一 public API 依裝置改變提交語義」比補 projection 更危險(codex verdict),故補鏡像。
+
 ---
 
 ## Controlled / Uncontrolled dual-mode(Dim 26,2026-05-21 D3 audit ship)
@@ -44,24 +66,11 @@ Select 是**單選下拉的表單 control**——從 3+ 選項中挑恰好一個
 
 ### Controlled 模式(consumer 自管 state)
 
-傳 `value` + `onChange`,Select **不**自管 state:
-
-```tsx
-const [country, setCountry] = useState('tw')
-<Select value={country} onChange={setCountry} options={...} />
-```
-
-**何時用**:Form library(react-hook-form / Formik)/ Redux / 跨元件 sync / server-state driven。
+傳 `value` + `onChange`(如 `<Select value={country} onChange={setCountry}>`),Select **不**自管 state。**何時用**:Form library(react-hook-form / Formik)/ Redux / 跨元件 sync / server-state driven。
 
 ### Uncontrolled 模式(Select 自管 state)
 
-不傳 `value`(可傳 `defaultValue` 設初始值),Select 內部 `useState`,變更時 fire `onChange` callback 通知 consumer:
-
-```tsx
-<Select defaultValue="tw" onChange={(v) => console.log('changed:', v)} options={...} />
-```
-
-**何時用**:純展示 / 一次性表單 submit / consumer 不需要 read 當前值。
+不傳 `value`(可傳 `defaultValue` 設初始值,如 `<Select defaultValue="tw" onChange={...}>`),Select 內部自管,變更時 fire `onChange` 通知 consumer。**何時用**:純展示 / 一次性表單 submit / consumer 不需要 read 當前值。
 
 ### 為什麼支援 dual-mode(非 controlled-only)
 
@@ -71,8 +80,7 @@ const [country, setCountry] = useState('tw')
 
 ### 歷史
 
-- **2026-05-21 前**:刻意 controlled-only,理由「內部狀態複雜易 race」
-- **2026-05-21 D3 audit**:per Dim 26 verify + user 拍板(「決策三照妳建議」),補 `defaultValue` + 互斥 signal。NativeSelect / CustomSelect 統一走既有 `useControllable` hook,`valueProp !== undefined` 為 controlled signal(對齊 M17 SSOT)
+原刻意 controlled-only(「內部狀態複雜易 race」);**2026-05-21 D3 audit** per Dim 26 verify + user 拍板(「決策三照妳建議」)補 `defaultValue` + 互斥 signal — NativeSelect / CustomSelect 統一走既有 `useControllable` hook,`valueProp !== undefined` 為 controlled signal(M17 SSOT)。
 
 ### Open-pair 例外:open 軸維持 uncontrolled-only(2026-06-12 deep-audit R2 補)
 
@@ -222,6 +230,8 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 | `tag` | 選項有色彩語意，顏色加速掃視（狀態：紅黃綠） |
 
 **命名 rationale**(2026-05-01 從 `'text'` 改 `'plain'`):跨元件 prop value 衝突防避 — `Button variant="text"` 表「無 chrome 文字按鈕」,跟 Select.display 的「純文字呈現」是兩個不同概念,共用 `'text'` 字面值會造成 consumer 認知衝突(命名三 test 第 3 條)。改 `'plain'` 後語意專屬:plain = 樸素文字呈現,對立 tag = 用 Tag 元件呈現。
+
+**`selectedItemRenderer` 優先於兩種顯示模式**(2026-07-08 A 案回歸修正):設定時已選值改渲 consumer renderer 輸出(status icon+text / PersonDisplay 等),且 **edit / display / readonly / disabled 4 mode 共享同一 renderer**(`field-controls.spec.md` 共享 contract (a),禁 edit-only)。renderer 輸出屬「值內容」— `mode="display"` 照常渲染(無 chrome 無 chevron);與 affordance(chevron/outline)分層見 `field.spec.md` L6。
 
 ### plain 模式
 

@@ -77,15 +77,16 @@ export const ICON_SIZE: Record<RowSize, number> = {
  * - **block**(有 description,avatar 跨越 label + desc 兩行)→ 對齊文字塊中心
  *   sm: 32, md: 32, lg: 40
  *
- * **用法**:所有 row primitive 的 consumer(包含 `asChild` pattern 的 Sidebar / Tree
- * consumer)**必須**從本 module import 這個常數,**不可硬寫 `size={24}`**。
- * 硬寫會讓 sm 變體的 avatar 尺寸錯誤、跟 ICON_SIZE 對齊規則脫鉤。
+ * **用法**:row context 的 consumer(包含 `asChild` pattern 的 Sidebar / Tree
+ * consumer)**必須**用 `<ItemAvatar>` / `<ItemIcon>` helper 元件(自動查
+ * RowSizeContext 對表),**禁止** `import { AVATAR_SIZE }` 手動查表、**不可硬寫
+ * `size={24}`** — 硬寫會讓 sm 變體的 avatar 尺寸錯誤、跟 ICON_SIZE 對齊規則脫鉤。
+ * 詳 item-anatomy.spec.md「Helper 程式化封裝 + review 防線」段。
  *
  * ```tsx
- * import { AVATAR_SIZE } from "@/design-system/patterns/element-anatomy/item-anatomy"
+ * import { ItemAvatar } from "@/design-system/patterns/element-anatomy/item-anatomy"
  *
- * const { size } = useSidebar()  // RowSize
- * <Avatar size={AVATAR_SIZE.inline[size]} />
+ * <ItemAvatar alt="Alan" color="blue" />  // 自動查 AVATAR_SIZE.inline[rowSize]
  * ```
  *
  * Canonical 消費者:MenuItem 直接 import 本檔 `AVATAR_SIZE`(menu-item.tsx,消費 .block/.inline;re-export 已完成,MenuItem 無內部查表)。

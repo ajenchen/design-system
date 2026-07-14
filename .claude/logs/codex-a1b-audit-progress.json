@@ -1,0 +1,69 @@
+{
+ "_meta": {
+  "purpose": "Codex A.1b(逐元件 claim-vs-code 對抗)62-元件 marathon 進度 + 每元件 verdict",
+  "directive": "user 2026-07-11「都要這樣跑」+「只有影響 SSOT-UI/UX 的才停下問我,中文人話」",
+  "pipeline": "codex-run-guarded 跑 tight brief(過 7-invariant 閘)→ Claude Step 4.5 逐條驗證(非 pass-through)→ 真 drift 自動修(doc 對齊 code)/ pedantic 駁回 / SSOT-UI/UX design-call 進 batch 給 user",
+  "total_components": 62,
+  "done": 3,
+  "pending_user_decisions": [
+   "浮層動畫 token 設計語言(motion workflow wgxto9cag 產提案中)",
+   "Tooltip 長字=已決定加 break-words(done)"
+  ],
+  "motion_phases_done": "Phase 1(token 統一 --motion-*)+ 2(裝 tw-animate-css 動畫復活)+ 3(7 浮層綁 token SSOT + 一致性收斂)+ 4(motion.spec.md 動畫 canonical)全完成 + 驗證",
+  "batch2_animation_findings_resolved": "HoverCard/Popover 的 ~15 條『fade/zoom/slide 無 CSS 動畫不生效』根因 = motion Phase 2 裝 tw-animate-css 已根治(動畫真的會動);spec 動畫宣稱現為真。剩非動畫 doc-honest findings(pure-primitive overclaim/pointer-grace/focus-selector/aria-token/line-drift)折進之後的全 DS full-scan batch(per 全掃優先鐵律)",
+  "MISSED_by_piecemeal_scope": {
+   "finding": "motion 動畫工程把範圍框在『7 浮層 enter/exit』,漏掃 collapse 動畫域(TreeView animate-collapsible 150ms / Accordion animate-accordion 200ms,硬寫 base.css:67-91,ease-out 非 Material 曲線,不在 --motion-* token)",
+   "cross_component_drift": "accordion 200 / collapsible 150 兩值不一致 + 都不對齊浮層 tier(150/250)+ easing 用 ease-out 非 --motion-easing-*",
+   "disposition": "進全 DS full-scan batch 決策(是否 tokenize collapse duration/easing + 對齊設計語言);不 piecemeal 修(避免重蹈覆轍)",
+   "lesson": "user 2026-07-11 抓:全掃優先才抓得到跨元件 drift;我 workflow 只掃 overlays = 仍是 scoped 抽樣"
+  }
+ },
+ "components": {
+  "Tooltip": {
+   "codexRun": "bq4mnhq6t (SUCCESS, gpt-5.6-sol+ultra)",
+   "claimsVerified": 174,
+   "codexFlagged": 12,
+   "realDrift_autoFixed": [
+    "anat:162 Provider delay 描述(Root 500 覆蓋 Provider)",
+    "anat:341 『所有 token』→『主要 token』(漏 HOVER_DELAY_PLAIN_MS/OVERLAY_COLLISION_PADDING)",
+    "anat:410 focus ring 來自 asChild 子元件非 Tooltip 本身",
+    "prin:112 grace 區維持開啟非計時延遲",
+    "prin:120 移入浮層內容保持開啟",
+    "prin:200 label 改『模式示意』(靜態 demo 恆顯示,無 overflow 偵測)"
+   ],
+   "pedanticRejected": [
+    "spec:52/98 + prin:68『hover 才能看到』— UX 論點(觸控無法觸發)成立,codex 挑『focus 也開啟』過度字面",
+    "anat:164 asChild『任意子元素』— 口語,Radix Slot 單元素約束屬 pedantic"
+   ],
+   "designCalls_SSOT_UIUX": [
+    "spec:84/91『長字不截斷』vs code overflow-hidden 無 break-words → 改 doc(承認會裁)or 改 code(加 break-words 真不裁)?設計決定"
+   ],
+   "focusTrapFalsePositive": "無 — codex 正確驗出 Tooltip 不 trap(歷史熱點沒誤報)"
+  },
+  "HoverCard": {
+   "codexRun": "btgk70lak SUCCESS",
+   "claimsVerified": 403,
+   "codexFlagged": 27,
+   "themes": {
+    "animation_broken_ROOT": "~7 條同根:fade/zoom/slide class 無 CSS(外掛未裝)→ 動畫全 no-op。VERIFIED 真(built CSS 0 rule)。系統性,7 浮層共病 → 待 motion workflow + user 拍板",
+    "pure_primitive_overclaim": "spec/anatomy 說『只提供 z-index/動畫/sideOffset』但 wrapper 還做 Portal/collision/align/viewport/flex/outline → doc-honest 修",
+    "pointer_grace": "『hover 離開即消失』vs disableHoverableContent=false pointer-grace 保持開 → doc-honest 修(同 Tooltip)",
+    "aria_token_mismatch": "role=button vs img / aria-haspopup 未設 / bg-surface-raised metadata 未消費 → 逐條驗後修",
+    "principles_dead_link": "示例 a 無 href/onClick 但說『可點進去』→ 修範例或描述"
+   }
+  },
+  "Popover": {
+   "codexRun": "btgk70lak SUCCESS",
+   "claimsVerified": 735,
+   "codexFlagged": 26,
+   "themes": {
+    "animation_broken_ROOT": "同 HoverCard 根因(popover.tsx:103-104 class 無 CSS)",
+    "focus_selector_incomplete": "auto-focus selector 只查 input/textarea/select/button,漏 a[href]/[tabindex]/contenteditable → 真 code 限制,待驗後決定改 code 或 doc",
+    "hideClose_overclaim": "『一律附右上 X』但 PopoverHeader 接 hideClose → doc-honest 修",
+    "modal_close_only": "『modal 必須按 Close 才能關』但 Esc/outside 仍可 dismiss → doc-honest 修",
+    "line_number_drift": "spec 引 popover.tsx:69 實為 :102 / max-h 值 doc 缺 fallback 100vh → doc-honest 修",
+    "aria_labelledby_conditional": "『PopoverTitle 自動接 aria-labelledby』只在未傳自訂 id 時 → doc-honest 修(補條件)"
+   }
+  }
+ }
+}

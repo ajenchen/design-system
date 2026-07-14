@@ -1,0 +1,76 @@
+{
+ "component": "Sheet",
+ "claimsVerified": 402,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:33",
+   "宣稱": "兩者 API 結構 1:1 對應,差異只在 side / 動畫 / 初始寬度",
+   "真實code行為": "DialogContent 另有 maxWidth、autoHeight 與 viewport-height 行為；SheetContent 另有 side，公開 API 與高度行為不只上述三項不同。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:36-37",
+   "宣稱": "改 overlay-surface.tsx 四者自動跟進",
+   "真實code行為": "SheetBody 與 DialogBody 都自行硬寫 ScrollArea 內層 padding；修改 overlay-surface.tsx 的 SurfaceBody 不會讓兩者自動跟進。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:71",
+   "宣稱": "Animation canonical:300ms 雙向一致",
+   "真實code行為": "SheetContent 的 surfaceMotion 綁定 --motion-duration-surface=250ms；進場與退場另使用不同 easing。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:127",
+   "宣稱": "type 對齊 SurfaceHeaderProps,withTabs / lockDensity expose",
+   "真實code行為": "SurfaceHeaderProps 只有 withTabs、tabsSlot 與原生 div attributes，沒有 lockDensity prop。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.spec.md:31",
+   "宣稱": "內容過於複雜需全螢幕時改用 fullscreen Dialog",
+   "真實code行為": "DialogContent 沒有 fullscreen prop、variant 或 canonical mode；預設仍保留 viewport inset。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.spec.md:65",
+   "宣稱": "`Inspector` 即時切換 SheetContent 三個關鍵維度:`side`、`width`、`showFooter`，並聚焦容器層級的可試玩 prop",
+   "真實code行為": "只有 side 是 SheetContent prop；width 是映射成 className 的 story arg，showFooter 是控制是否渲染 SheetFooter 的 story arg。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.spec.md:107",
+   "宣稱": "`empty.spec.md:167` loading compose SSOT",
+   "真實code行為": "Empty 確實支援 CircularProgress composition，但目前 L167 是 DataTable empty row；loading composition 位於 L168。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.spec.md:135",
+   "宣稱": "Radix primitive 自管 focus trap / restoration / visible ring",
+   "真實code行為": "Radix 管理 focus trap、Tab loop 與 restoration；2px visible ring 由 DS base.css 的全域 :focus-visible 提供，不是 Radix 行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.anatomy.stories.tsx:86",
+   "宣稱": "右側 Controls 切 SheetContent props；切 `width` 看自訂寬度覆寫",
+   "真實code行為": "width 不是 SheetContent prop，而是 InspectorArgs，之後才轉成 sm:max-w-* className。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.anatomy.stories.tsx:241",
+   "宣稱": "slide-in-from-側邊 + fade-in overlay，300ms",
+   "真實code行為": "Sheet 面板使用 250ms surfaceMotion；Overlay 未套 surfaceMotion，沿用 tw-animate-css 的 150ms 預設，兩者都不是 300ms。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx:85",
+   "宣稱": "改用近親元件(見 `Vs*Rule` stories)",
+   "真實code行為": "本檔只 export UsageGuidance、SidePropRule、HeaderFooterStructureRule，沒有任何 Vs*Rule story。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx:91",
+   "宣稱": "Sheet — 從邊緣滑入,側邊工作流程 / 複雜表單 / 長時間編輯",
+   "真實code行為": "owner spec L53/L58 把複雜表單歸給 Dialog，L95 禁止 Sheet 承載全頁複雜或多步流程；principles 與 spec 相反。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx:159",
+   "宣稱": "Sheet 可長、可複雜;Dialog 短、視線聚集",
+   "真實code行為": "owner spec 限制 Sheet 複雜度並把複雜表單歸給 Dialog；Dialog code 支援 viewport-fill 與 body scrolling，沒有只能承載短內容的限制。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx:195-198",
+   "宣稱": "Mobile 大量內容、沉浸編輯 → full/fullscreen Dialog",
+   "真實code行為": "Dialog 沒有 fullscreen API、variant 或 canonical mode。"
+  }
+ ]
+}

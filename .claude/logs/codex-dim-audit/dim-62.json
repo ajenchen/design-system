@@ -1,0 +1,54 @@
+{
+ "dim": 62,
+ "filesScanned": 16,
+ "findings": [
+  {
+   "fileLine": "scripts/setup-netlify-access.mjs:103-115",
+   "問題": "自動建站路徑同時有兩個斷點：現行 netlify-cli 26.2.0 的 `api` 不支援 `--json`，account slug 解析會失效；即使修掉該 flag，`sites:create` 未帶 `--with-ci`，後續 `link` 也只連本機，不會建立 Git continuous deployment，故 push 不會自動部署。[Netlify CLI api](https://cli.netlify.com/commands/api/)、[init 說明](https://cli.netlify.com/commands/init/)",
+   "severity": "material",
+   "建議": "改用 `netlify init` 或受支援的 `sites:create --with-ci` 流程，移除無效 flag，並 read-back 驗證 repository linkage 後才宣告完成。"
+  },
+  {
+   "fileLine": "scripts/setup-netlify-access.mjs:117-125",
+   "問題": "`.netlify/state.json` 只保證含 `siteId`，沒有 `siteSlug`；程式把 UUID 當 slug 拼成 dashboard 與 `.netlify.app` 網址，會輸出錯誤的密碼設定連結及分享網址。[Netlify CLI link 指引](https://docs.netlify.com/api-and-cli-guides/cli-guides/get-started-with-cli/)",
+   "severity": "material",
+   "建議": "link 後用 `getSite`／`status --json` 取得真實 `name`、`ssl_url`、`admin_url`，不要以 site ID 推測網址；同步修正 deploy-url 的同類邏輯。"
+  },
+  {
+   "fileLine": "netlify.toml:11; template/ds-product-template/netlify.toml:25; template/ds-product-template/CLAUDE.md:75-82",
+   "問題": "兩份 netlify.toml 都宣稱 branch deploy 預設啟用，CLAUDE.md 又稱 setup script 會設定；實際 script 僅提示手動開啟，API 只嘗試設定 PR preview。Netlify 預設不產生 branch deploy，草稿分支自動預覽鏈因此會斷。[Netlify Branch deploys](https://docs.netlify.com/deploy/deploy-types/branch-deploys/)",
+   "severity": "material",
+   "建議": "由 setup 真正啟用並 read-back 驗證 Branch deploys=All，或把後台開關列為必要人工斷點並刪除「預設啟用／script 會設定」宣稱。"
+  },
+  {
+   "fileLine": "template/README.md:7-9; template/ds-product-template/README.md:15-21; scripts/setup-netlify-access.mjs:59-60",
+   "問題": "文件把 private team repo 與免費 Netlify onboarding 寫成無條件成立；但新帳號 Free/Personal 不支援 organization-owned private repos，也不支援 private-repo team Git contributors，團隊把 template 建在組織 private repo 時會在連 repo 處卡住。[Netlify credit-plan limits](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/credit-based-pricing-plans/)",
+   "severity": "material",
+   "建議": "明列免費路徑的 repo ownership限制；setup 應偵測 Git remote owner/visibility，遇 organization-private 或多人 private workflow 時提供 Pro 或替代 hosting 的具體中文引導。"
+  },
+  {
+   "fileLine": "template/ds-product-template/CLAUDE.md:53-70",
+   "問題": "Access-control 的 Claude onboarding 話術漏掉 canonical 明定的「GitHub CLI 未登入」處理；執行 script 時雖會提示 `gh auth login`，CLAUDE.md 的預先引導與真實斷點清單仍不完整。",
+   "severity": "marginal",
+   "建議": "補上 `gh` 未安裝／未登入的中文 fallback，並把 GitHub OAuth 與 Netlify OAuth 分開說清楚。"
+  },
+  {
+   "fileLine": "scripts/setup-netlify-access.mjs:59",
+   "問題": "對即將建立的新帳號宣稱免費方案有 100GB bandwidth，已是 legacy 資訊；目前新帳號 Free 為每月 300 credits，頻寬、production deploy、request 都會消耗 credits。[Netlify pricing](https://www.netlify.com/pricing/)",
+   "severity": "marginal",
+   "建議": "改寫為目前的 300-credit 制，或避免硬編易漂移的容量數字並指向官方 pricing。"
+  },
+  {
+   "fileLine": "template/ds-product-template/netlify/edge-functions/basic-auth.ts:28-39",
+   "問題": "challenge 宣告 UTF-8，但程式直接把 `atob()` 的 byte 字串與 env Unicode 字串比較；實測 ASCII 帳密可通過，中文等非 ASCII 帳密固定回 401。",
+   "severity": "marginal",
+   "建議": "以 `TextDecoder` 將 Base64 bytes 解成 UTF-8 後比較，或在 setup、README 與 env 引導中明確驗證並限制帳密只能用 ASCII。"
+  },
+  {
+   "fileLine": "template/ds-product-template/docs/02-create-new-product.md:56",
+   "問題": "文件引用 `netlify.toml:14` 為 `build.command`，但實際 command 在第 13 行，第 14 行是 publish，行號已 drift。",
+   "severity": "marginal",
+   "建議": "改引 `netlify.toml:13`，或移除脆弱的固定行號、直接引用 `[build].command`。"
+  }
+ ]
+}

@@ -66,7 +66,7 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
 
 | 場景 | 改用 | 原因 |
 |------|------|------|
-| 同時需要日期 + 時間 | **DatePicker with time** 或 `<DatePicker> + <TimePicker>` 並列 | TimePicker 本身不帶日期;需配 DatePicker 組合 |
+| 同時需要日期 + 時間 | **`<DatePicker showTime>`**(canonical 2026-05-02,Ant idiom;非獨立並列組合,見 date-picker.spec「showTime」段) | TimePicker 本身不帶日期;datetime 是單一 picker 職責 |
 | 時間範圍(from-to) | **兩個 `<TimePicker>`** 並列 + 之間 `<ArrowRight>` | TimePicker **MVP 不支援 range**,用組合達成(對齊 Ant `TimePicker.RangePicker` 的 composition 思路 — [source](https://github.com/react-component/picker/blob/master/src/PickerInput/RangePicker.tsx)) |
 | 純文字時間輸入(秒有意義的科學測量) | `<Input>` + mask / regex validation | TimePicker 的 column UX 不適合大量精確輸入 |
 | 倒數計時 / 相對時間 | 自行渲染 `MM:SS` 倒數 | TimePicker 是 wall-clock time,不是 duration |
@@ -199,7 +199,7 @@ Panel 展開後的 column picker 結構:
 詳見 `../Field/field-controls.spec.md`(共用規則)。
 
 ### Empty 值
-`value={null}` / `value=""` / `value=undefined` 都視為空,trigger 顯示 `placeholder`。Display 模式空值顯示 `—`(對齊 `EMPTY_DISPLAY`)。
+`value={null}` / `value=""` / `value=undefined` 都視為空,trigger 顯示 `placeholder`。Display 模式空值顯示半形 `-`(對齊 `EMPTY_DISPLAY`,text-foreground)。
 
 ### 驗證時機
 - **每次欄位選取(時 / 分 / 秒任一改變)當下即 commit value 給 `onChange`**(eager commit,非 OK 才送)。OK 鈕(「確定」)只負責關閉 Panel,不另行 commit。`此刻` 按鈕則一次 commit 當前時間並關閉 Panel
@@ -274,7 +274,7 @@ trigger 的互動狀態(focus / invalid / disabled / readonly)完全繼承 `../F
 
 - **Disabled**:Field SSOT own;trigger 自動 disabled(`text-fg-disabled` + 不開 picker),Display mode + disabled 維持時間格式但 token 切 disabled。
 - **Loading**:TimePicker 為 sync UI(time math 在 client),無 loading state。極端 case(後端 disabled-times list)應由 consumer 先 disable trigger 直到 fetch 完成。
-- **Empty(no value)**:`value=null` 為合法 initial state,trigger 顯 placeholder;**未傳 `placeholder` 時 default = 格式遮罩**(`HH:MM`,showSeconds=true 時 `HH:MM:SS`),非固定文案。`null` + Display mode 顯 `—`(em dash + `text-fg-muted`)對齊 Input display empty 慣例。
+- **Empty(no value)**:`value=null` 為合法 initial state,trigger 顯 placeholder;**未傳 `placeholder` 時 default = 格式遮罩**(`HH:MM`,showSeconds=true 時 `HH:MM:SS`),非固定文案。`null` + Display mode 顯半形 `-`(hyphen + `text-foreground`,disabled → fg-disabled)對齊 Input display empty 慣例。
 - **Empty(disabled all times)**:極端場景(`disabledHours` / `disabledMinutes` 覆蓋全範圍),panel column 全 disabled,鍵盤焦點停留無導覽目標。
 - **Panel 開啟中外部 value 變更**:controlled 單向資料流——欄位選中即時反映新 value,並 scroll-into-view(`behavior:'smooth'`,mount 後的變更;見「Spacing + 結構」的 Scroll-into-view 條)。
 - **Dark mode / density**:走 Field + Popover SSOT 自動 adapt;panel column item 由 MenuItem SSOT 控 density。

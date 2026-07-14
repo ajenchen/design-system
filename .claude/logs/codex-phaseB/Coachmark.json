@@ -1,0 +1,161 @@
+{
+ "component": "Coachmark",
+ "claimsVerified": 357,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark-story-helpers.tsx:13",
+   "宣稱": "壓暗 overlay 保證 icon+label 在任何 gradient 色上都 ≥ 4.5:1。",
+   "真實code行為": "僅疊加固定 bg-black/30；--color-yellow-6 疊黑後白字對比約 3.04:1，未達一般文字 AA 4.5:1。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark-story-helpers.tsx:32",
+   "宣稱": "均勻壓暗 overlay 可保底白字在任何 gradient 色上都通過 AA。",
+   "真實code行為": "固定 30% 黑遮罩無法保證任意底色；yellow-6 即為約 3.04:1 的反例。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:21",
+   "宣稱": "完全消費 Popover 的焦點管理，不自寫浮層邏輯。",
+   "真實code行為": "Coachmark 覆寫 onOpenAutoFocus，preventDefault 後自行聚焦 content 容器，改變 Popover 預設 autofocus。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:31-35",
+   "宣稱": "寬度、外殼 padding／裁切、Footer justify-between 是 Coachmark 唯一自有的視覺決策。",
+   "真實code行為": "Coachmark 另以 !border-t-0 移除 SurfaceFooter 分隔線，並直接設定 Media、Title、Description、Step 與 action 的色彩／字級／variant。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:34",
+   "宣稱": "外殼移除 Popover 的預設 padding。",
+   "真實code行為": "PopoverContent 預設本來就沒有 padding；Coachmark 的 p-0 是重複宣告，未移除任何 Popover 預設值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:156",
+   "宣稱": "進到 step 2+ 後 Skip 自動隱藏。",
+   "真實code行為": "實作不讀 step.current；只依 onPrev 是否存在及 isSingleStep 隱藏。step.current=2 但未傳 onPrev 時仍會顯示 Skip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:168",
+   "宣稱": "Skip 僅第一步顯示。",
+   "真實code行為": "真正條件是 onSkip && !onPrev && !isSingleStep，並未判斷目前是否第一步。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:169",
+   "宣稱": "focus content 後按一下 Tab 即達推進 CTA。",
+   "真實code行為": "Tab 依 DOM 順序前進；有 Header 時先到 Close X，無 Header 時也可能先到 Previous 或 Skip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:199",
+   "宣稱": "bg／shadow／radius／padding 一律繼承 Popover。",
+   "真實code行為": "Coachmark 自行加入 p-0，且同 spec 第 34 行也將外殼 padding 列為 Coachmark 自有差異，段落間互相矛盾。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:206",
+   "宣稱": "Tab 第一下即達 content 內第一個 CTA。",
+   "真實code行為": "有 kind/Header 時第一個 tabbable 是 Close X；其他配置可能先到 Previous 或 Skip，不保證到 Next／Done。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:206",
+   "宣稱": "關閉時焦點 return to trigger。",
+   "真實code行為": "Radix non-modal Popover 僅在沒有 outside interaction 時回焦 trigger；pointer／focus-outside dismissal 不會回焦。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:215",
+   "宣稱": "disabled 繼承 Popover。",
+   "真實code行為": "CoachmarkProps 與 Radix Popover Root 都沒有 disabled prop；只能由 consumer 自行停用 trigger element。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:37-41",
+   "宣稱": "focus content 後 Tab 第一下即達 content 內第一個 CTA。",
+   "真實code行為": "程式未重排 tab order；Header Close、Previous 或 Skip 均可能排在 Next／Done 前。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:43-45",
+   "宣稱": "Dialog、Popover、Coachmark 共用同一套 Header／Body／Footer padding，改 Dialog 就三邊自動跟進。",
+   "真實code行為": "DialogBody 使用 px-loose、pt-tight、pb-layout-space-bottom；Popover／Coachmark Body 使用 px-loose、py-tight。修改 dialog.tsx 也不會傳播至另外兩者。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:60",
+   "宣稱": "children: React.ReactNode。",
+   "真實code行為": "children 被送入 PopoverTrigger asChild；Radix Slot 實際要求單一、可接收 trigger props/ref 的 React element。字串會不渲染 trigger，多個 children 會拋錯。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:77",
+   "宣稱": "標題是 bold。",
+   "真實code行為": "Body title 實際使用 font-medium。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:106",
+   "宣稱": "consumer 可透過 title prop 直接覆寫 kind 的預設 header title。",
+   "真實code行為": "headerTitle 只由 kind 推導；title 另渲染為 Body h3。自訂 Header 必把 ReactNode 傳給 kind。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:171-176",
+   "宣稱": "focus 容器後 Tab 第一下即達第一個 CTA。",
+   "真實code行為": "實作只聚焦容器，沒有跳過 Header Close 或前置 Footer actions。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:25",
+   "宣稱": "Coachmark 自己擁有的差異僅 Header、Media、Footer justify-between 三點。",
+   "真實code行為": "另有自訂 autofocus、Footer 分隔線移除、內文 typography／color 與 action variant 等差異。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:59",
+   "宣稱": "Footer 條件為 step || onSkip || onNext || onPrev。",
+   "真實code行為": "實際為 step || showSkip || onNext || onPrev；showSkip 還要求 onSkip && !onPrev && !isSingleStep。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:71",
+   "宣稱": "children 的可用型別為 ReactNode。",
+   "真實code行為": "PopoverTrigger asChild 的真實 runtime contract 是單一、可承接 props/ref 的 React element。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:83",
+   "宣稱": "isLastStep=true 時 Next 文字改為 Done。",
+   "真實code行為": "沒有 onPrev 時會被判為 single-step，顯示 doneLabel（預設「知道了」）；只有有 onPrev 的多步最後一步才顯示 Done。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:189",
+   "宣稱": "Coachmark 自有的色彩決策僅 Media bg 和 Step 計數。",
+   "真實code行為": "Coachmark 也直接指定 Title 的 text-foreground 與 Description 的 text-fg-secondary。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:329",
+   "宣稱": "isLastStep + onNext 時 Next 文字變 Done。",
+   "真實code行為": "該條件沒有 onPrev，因此實際走 single-step 並顯示 doneLabel，而非 Done。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:338",
+   "宣稱": "Tab 第一下即達第一個 CTA。",
+   "真實code行為": "有 Header 時第一個 tabbable 是 Close X，之後才是 Footer actions。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:338",
+   "宣稱": "關閉時 return to trigger。",
+   "真實code行為": "Click-outside／focus-outside 關閉不回 trigger；Esc 或內部 Close 等未發生 outside interaction 的關閉才回焦。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:353",
+   "宣稱": "Tab 第一下即達第一個 CTA。",
+   "真實code行為": "Header Close X 或前置 Footer action 可能是第一個 tab stop。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:353",
+   "宣稱": "關閉時 return to trigger。",
+   "真實code行為": "Radix non-modal 的回焦是條件式；outside-interaction dismissal 不回 trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:188",
+   "宣稱": "破壞性決策不能讓使用者點旁邊跳過。",
+   "真實code行為": "此 DialogContent 未攔截一般 pointer-down outside；Radix DismissableLayer 會執行 dismiss，點 backdrop 可直接關閉。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:278",
+   "宣稱": "使用者點 Skip、按 Esc、點擊別處都能關閉。",
+   "真實code行為": "此 story 傳入固定 controlled open=true、沒有 onOpenChange，onSkip 也是 no-op；三條路徑都無法關閉該範例。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:293",
+   "宣稱": "使用者可按 Skip 退出 tour。",
+   "真實code行為": "該範例的 onSkip 是空函式，open 又固定為 true；按 Skip 無法退出或關閉。"
+  }
+ ]
+}

@@ -1,0 +1,19 @@
+{
+  "dim": 32,
+  "title": "Filter operator registry SSOT",
+  "role": "B.3 比稿裁定員 — codex material/marginal reconciliation vs real code + Claude findings",
+  "codexRaw": 0,
+  "codexRawNote": "codex-dim-audit/dim-32.json 實測 findings:[]（scanned 608 files）。codex 對 dim 32 產出 0 findings，無任何 finding 需逐條裁定。已驗證此為合法 clean-verdict 而非 broken run：SSOT owner packages/design-system/src/components/DataTable/filter-operators.ts 存在，operator dropdown UI 與 stories 正確消費 OPERATOR_REGISTRY / getOperatorSpec / DEFAULT_OPERATOR / getValueShape（consumers 已 grep 確認），符合 Claude cleanEvidence。",
+  "verdicts": [],
+  "summary": {
+    "material_confirmed": 0,
+    "marginal": 0,
+    "false_positive": 0,
+    "claudeMissed": 0
+  },
+  "claudeSideNote": "Claude 自身（dim-audit/dim-32.json）找到 1 條 marginal finding：data-table.stories.tsx demo FilterTree fixture 硬寫 op 字面值（op:'contains'/'is'/'is_relative'），因 FilterCondition.op 型別為寬鬆 op:string 無編譯期關聯 → drift-resilience gap，但屬 story 示範程式無 production 風險，Claude 自標 marginal / borderline 非必修。此非 codex raise 之 finding，故不計入 codex 裁定統計（material_confirmed / marginal / false_positive 皆針對 codex findings）。claudeMissed 針對『codex material 而 Claude 漏』= 0（codex 無任何 material）。",
+  "groundTruthChecks": [
+    "packages/design-system/src/components/DataTable/filter-operators.ts — SSOT owner 存在（12141 bytes），檔頭明列『禁止 component 內 hardcode op 字串，一律走 OPERATOR_REGISTRY[columnType]』。",
+    "registry consumers（grep 確認）：data-table-filter-panel.tsx（UI 生成消費）+ FieldControlGroup 三 stories（exemplary）+ filter-tree.ts / column-types.ts（predicate 真值，spec 明列合法）。"
+  ]
+}

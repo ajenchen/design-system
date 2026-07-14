@@ -1,0 +1,16 @@
+{
+  "dim": 9,
+  "title": "shadcn passthrough 完整度",
+  "filesScanned": 78,
+  "mechanism": "DS-wide 全掃 components/*.tsx 驗 forwardRef/displayName/asChild/...props/data-state 齊全",
+  "result": "CLEAN — 0 material / 0 marginal findings",
+  "verification": {
+    "forwardRef": "全部渲染元素的 public 元件皆 forwardRef;零-forwardRef 檔(time-columns/image-renderer/field-wrapper/boolean-value/person-display/cell-registry/data-table-sort-manager/data-table-column-visibility-panel/data-table-interaction-layer/_demo-helpers/coachmark-story-helpers)皆 @internal 或 helper/sub-part/registry,合理不需 forwardRef",
+    "displayName": "每個 forwardRef 元件皆有 displayName 賦值(逐一 grep 驗證);表面 fwdRef>dispName 的 gap(Combobox/Empty/Switch/RadioGroup/Avatar/Textarea/Checkbox/DateGrid/Toast/filter-panel)全為註解內提及 'forwardRef' 字串造成假陽;DataTable 用 generic-cast `(DataTable as any).displayName` pattern",
+    "propsSpread": "全部 leaf/element 元件皆 spread {...props} 且 className 先 destructure(無 override bug);curated composite(SelectMenu/InlineEdit/DataTable panels)用 domain-specific curated API,合理不 spread 任意 HTML props",
+    "asChild": "34 檔支援 asChild/Slot polymorphism;spec 提及 asChild 皆與 code 一致 — AspectRatio 經 {...props} spread 透傳給 Radix Root(spec L128 明載)、AppShell 是 consumer 用 DropdownMenuTrigger asChild 語境、Toast spec L146 明載非 forwardRef+asChild canonical 例外;無 spec-vs-code drift",
+    "refForwarding": "全部 attach ref 或明文記錄 drop;4 個 documented drop(SelectMenu L152 / DateGrid L79 / Toast L96 / Combobox L565)皆有 rationale;Tag 用 callback ref merge",
+    "dataState": "SegmentedControl 消費 Radix data-[state=on](L184);Steps/Menu/FileItem/Switch/Checkbox 用自有 data-*;custom 元件用 aria/data-* 皆合理"
+  },
+  "findings": []
+}

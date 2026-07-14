@@ -1,0 +1,25 @@
+{
+  "component": "DateGrid",
+  "implBasis": "react-day-picker v9.14.0 (DayPicker) wrapped with DS token classNames + components override",
+  "claimsVerified": 30,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:128",
+      "宣稱": "`week header 同寬，h-field-sm`(星期標頭消費 --field-height-sm token,density-aware md=28 / lg=32)",
+      "真實code行為": "weekday classNames 實際用固定 `h-7`(L111 `'h-7 align-middle text-center'`),非 `h-field-sm` token。h-7 恆 28px 不隨 density 縮放 → lg 密度時星期標頭 28px、日 cell(真 h-field-sm)32px,兩者不再等高。spec 宣稱的 token 與 code 不符。",
+      "severity": "material"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DateGrid/date-grid.tsx:264",
+      "宣稱": "meta.tokens.ring: ['ring-primary', 'ring-ring']",
+      "真實code行為": "全檔無裸 `ring-primary` 被套用為 class;hover ring 已於 2026-07-07 改成 `ring-primary-hover`(L127),focus 用 `ring-ring`(L128)。meta 列的 'ring-primary' 是改前殘留 stale token。",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DateGrid/date-grid.tsx:50",
+      "宣稱": "docblock: range track 色 `--neutral-selected = neutral-2，semantic.css L84/L340`",
+      "真實code行為": "token 值正確(--neutral-selected = var(--color-neutral-2)),但引用行號 stale:實際 semantic.css 說明在 L90、定義在 L360(非 L84/L340)。",
+      "severity": "marginal"
+    }
+  ]
+}

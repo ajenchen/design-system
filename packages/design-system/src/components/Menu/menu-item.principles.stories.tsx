@@ -74,7 +74,7 @@ export const CompositionRules: Story = {
         <h4>Pattern 3 — ContextMenu + MenuItem(右鍵選單,未來)</h4>
         <p>右鍵觸發 contextual action → 預留消費者(Radix ContextMenu + MenuItem 同 layout primitive)。</p>
 
-        <p className="text-fg-muted">禁止:在產品頁面裡自己用 <code>&lt;div&gt;</code> 拼一列選單(像 <code>&lt;div className="flex px-2 py-1.5"&gt;</code>)— 一律使用 MenuItem,才能確保所有選單列的對齊與間距一致。各區塊的對齊規則(左側圖示/頭像在 24px 內對齊、文字往下堆疊、右側標記可有可無)由選項列共用設計準則統一規範。</p>
+        <p className="text-fg-muted">禁止:在產品頁面裡自己用 <code>&lt;div&gt;</code> 拼一列選單(像 <code>&lt;div className="flex px-2 py-1.5"&gt;</code>)— 一律透過上方的 MenuItem 系選單元件(DropdownMenu / SelectMenu 等,內部消費 MenuItem),才能確保所有選單列的對齊與間距一致。MenuItem 本身是 internal 排版元件,在產品頁面直接裸用會失去外層選單的無障礙 / 鍵盤 / 焦點管理(詳 spec「何時用 / 何時不用」)。各區塊的對齊規則(左側圖示/頭像在 24px 內對齊、文字往下堆疊、右側標記可有可無)由選項列共用設計準則統一規範。</p>
       </div>
     </div>
   ),

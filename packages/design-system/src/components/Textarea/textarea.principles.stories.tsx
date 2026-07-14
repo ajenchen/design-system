@@ -154,7 +154,7 @@ export const NoIconRule: Story = {
     <div>
       <Rule
         title="Textarea 不支援 startIcon / endAction"
-        note="Textarea 是多行閱讀區,icon 放在框內會跟多行文字位置衝突(icon 是跟第一行對齊還是 center?)。世界級 DS(Material / Chakra / Ant)textarea 都不放內嵌 icon。需要 icon 請放 Field 外(例如 Field 的 startIcon 或標題旁)"
+        note="Textarea 是多行閱讀區,icon 放在框內會跟多行文字位置衝突(icon 是跟第一行對齊還是 center?)。世界級 DS(Material / Chakra / Ant)textarea 都不放內嵌 icon。需要 icon 請放 Textarea 外部(例如 Field 的標題 FieldLabel 旁)"
       >
         <Label warn>(型別設計)TextareaProps 不接受 startIcon / endAction,設計上就擋住</Label>
       </Rule>

@@ -1,0 +1,156 @@
+{
+ "dim": 24,
+ "filesScanned": 205,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Alert/alert.principles.stories.tsx:143",
+   "問題": "PlacementRule 的 inline「即將到期」與 fixed「系統維護中」兩個正例重複 anatomy PlacementMatrix（alert.anatomy.stories.tsx:145）；只有 fixed 不應放在內容區的反例具獨特教學。",
+   "severity": "material",
+   "建議": "移除兩個重複正例並連到 anatomy，僅保留 principles 的誤用反例與決策說明。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.stories.tsx:139",
+   "問題": "CommonRatios 的四種比例完整落在 anatomy StandardRatios（aspect-ratio.anatomy.stories.tsx:167）的五種比例矩陣內，沒有新增情境。",
+   "severity": "material",
+   "建議": "退役 CommonRatios，或改成具有真實內容裁切與版面限制的業務範例。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Badge/badge.stories.tsx:47",
+   "問題": "Dot 的情境已被 anatomy ColorMatrix 與 SizeMatrix（badge.anatomy.stories.tsx:430、489）完整覆蓋。",
+   "severity": "material",
+   "建議": "移除裸矩陣重複；若保留 showcase，改成通知、狀態指示等完整業務組合。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.stories.tsx:30",
+   "問題": "Default 的 indeterminate、value=60、value=90 加 value affix 三例，全數重複 anatomy Overview 與 UsageInline（circular-progress.anatomy.stories.tsx:37、121）。",
+   "severity": "material",
+   "建議": "由 anatomy 統一承載狀態機制；showcase 改為具體非同步任務或直接退役。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:135",
+   "問題": "NumberAlignment 唯一教學的數字與金額靠右規則，已由 anatomy AlignmentRule（data-table.anatomy.stories.tsx:250）完整呈現。",
+   "severity": "material",
+   "建議": "移除重複 story，從 showcase 連到 anatomy 的 alignment 規則。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:69",
+   "問題": "Modes 使用相同日期呈現四種 mode，與 anatomy 的四模式矩陣（date-picker.anatomy.stories.tsx:219）完全重複。",
+   "severity": "material",
+   "建議": "保留 anatomy 矩陣；showcase 改為單一真實流程或退役。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:96",
+   "問題": "Clearable 的清除狀態與行為同時重複 anatomy StateBehavior（date-picker.anatomy.stories.tsx:672）及 principles ClearableRule（date-picker.principles.stories.tsx:181）。",
+   "severity": "marginal",
+   "建議": "anatomy 保留操作呈現、principles 保留決策規則，移除 showcase 的第三份實作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:320",
+   "問題": "Display 的四種格式設定逐項重複 anatomy 的 display/locale 矩陣（date-picker.anatomy.stories.tsx:706、751）。",
+   "severity": "material",
+   "建議": "退役 Display，或改為具有在地化需求與輸入輸出約束的業務情境。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Dialog/dialog.principles.stories.tsx:175",
+   "問題": "HeightBehaviorRule 的 viewport-fill 通知與 autoHeight 確認兩情境，語意上完整重複 anatomy HeightBehavior（dialog.anatomy.stories.tsx:149）；僅文案與 maxWidth 微調，未增加新限制。",
+   "severity": "material",
+   "建議": "高度機制留在 anatomy；principles 改成不重畫元件的選擇規則與反例。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.stories.tsx:23",
+   "問題": "SearchNoResults 的圖示、標題、描述與 action 又逐字重畫於 principles UsageGuidance 與 NextActionRule（empty.principles.stories.tsx:53、158）。",
+   "severity": "marginal",
+   "建議": "保留 showcase 作為唯一完整呈現，principles 以規則文字及 LinkTo 引用。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:98",
+   "問題": "ModeRule 的 rich 與 compact 範例使用近乎相同資料與情境重複 anatomy ModeMatrix（file-item.anatomy.stories.tsx:178）。",
+   "severity": "material",
+   "建議": "principles 僅保留模式選擇準則並連到 anatomy，不再複製兩套 rendered fixture。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.stories.tsx:19",
+   "問題": "Modes 以相同商品值重複 anatomy 四模式矩陣（input.anatomy.stories.tsx:207），其中 disabled Tooltip 決策又出現在 principles ModeRule（input.principles.stories.tsx:97）。",
+   "severity": "material",
+   "建議": "矩陣歸 anatomy、決策歸 principles；showcase 改為有表單脈絡的單一代表情境。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.stories.tsx:41",
+   "問題": "Empty 的空值顯示已被 principles DisplayStateRule 與 EmptyRule（link-input.principles.stories.tsx:102、163）完整覆蓋。",
+   "severity": "marginal",
+   "建議": "移除重複 Empty，或補成具有載入、編輯與提交生命週期的業務案例。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.stories.tsx:56",
+   "問題": "Validation 的空 URL、失焦驗證及輸入後清錯流程重複 principles ValidationRule（link-input.principles.stories.tsx:136），後者還涵蓋更多鍵盤行為。",
+   "severity": "marginal",
+   "建議": "保留較完整的 canonical story；另一份改用 LinkTo，不再重畫相同驗證流程。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.stories.tsx:23",
+   "問題": "Modes 以相同 $2490 值重複 anatomy 四模式矩陣（number-input.anatomy.stories.tsx:202）。",
+   "severity": "material",
+   "建議": "退役 showcase Modes，或改成價格、數量等具有不同約束的真實使用情境。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.stories.tsx:73",
+   "問題": "FormatOptions 的四組 value 與 props 逐項重複 anatomy（number-input.anatomy.stories.tsx:218），前三組又出現在 principles（number-input.principles.stories.tsx:159）。",
+   "severity": "material",
+   "建議": "格式機制集中在 anatomy；principles 僅說明選擇規則，移除 showcase 的第三份矩陣。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:35",
+   "問題": "Default 的 value=45、inProgress、value affix 與 360px 寬度，重複 anatomy AffixBehavior（progress-bar.anatomy.stories.tsx:350）。",
+   "severity": "marginal",
+   "建議": "移除 Default，讓 anatomy 成為該 props 組合的唯一示範。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:49",
+   "問題": "BatchTask 的 CSV 1,250 筆、已處理 812 筆、65% 與剩餘 28 秒，幾乎逐項重複 principles 的批次任務案例（progress-bar.principles.stories.tsx:196）。",
+   "severity": "marginal",
+   "建議": "保留 showcase 的完整業務案例；principles 改為規則摘要與 LinkTo。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Separator/separator.stories.tsx:80",
+   "問題": "InDropdownMenu 的重新命名、複製連結、分隔線及刪除選單，完整重複 principles DecorativeSemanticRule（separator.principles.stories.tsx:99），且 spec 指定此 primitive 應由 DropdownMenu 擁有。",
+   "severity": "material",
+   "建議": "退役 Separator 內的重複選單故事，改連到 DropdownMenu 的 canonical 範例。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Skeleton/skeleton.stories.tsx:24",
+   "問題": "Default 的三行 full/full/3⁄4 文字骨架逐項重複 anatomy CommonShapes（skeleton.anatomy.stories.tsx:50）。",
+   "severity": "material",
+   "建議": "移除裸骨架重複；showcase 若保留，應呈現完整內容區塊的載入狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.stories.tsx:21",
+   "問題": "SizeAlignment 只重畫三個裸 Slider 尺寸，與 anatomy SizeMatrix（slider.anatomy.stories.tsx:122）完整重複，未實現檔案所稱的跨元件 alignment 情境。",
+   "severity": "material",
+   "建議": "退役此 story，或真正加入 Input／NumberInput 組合來驗證對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.stories.tsx:97、packages/design-system/src/components/Tabs/tabs.stories.tsx:119",
+   "問題": "OverflowScroll 與 OverflowMenu 分別是 anatomy OverflowMatrix（tabs.anatomy.stories.tsx:329）的完整子集；相同八個泛用標籤與窄容器未形成新的業務情境。",
+   "severity": "material",
+   "建議": "由 anatomy 保留兩種 overflow 機制；showcase 合併成真正有內容與選擇理由的單一案例，否則退役。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.stories.tsx:103",
+   "問題": "ShopBusinessHours 與 principles RuleRangeComposition（time-picker.principles.stories.tsx:101）同為 10:00 至 22:00、兩個受控 picker 加箭頭的營業時間案例。",
+   "severity": "material",
+   "建議": "保留 showcase 作為唯一完整案例，principles 只說明沒有內建 range 的組合規則並 LinkTo。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tooltip/tooltip.stories.tsx:62",
+   "問題": "Placement 的四方向展示是 anatomy PlacementReference（tooltip.anatomy.stories.tsx:352）的完整子集，沒有額外內容或限制。",
+   "severity": "material",
+   "建議": "退役 showcase Placement；若需 showcase，改成會影響 placement 選擇的真實狹窄版面情境。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx:148",
+   "問題": "IndentRule 的層級縮排公式與無子節點 chevron placeholder 兩條規則，完整重複 anatomy IndentMatrix（tree-view.anatomy.stories.tsx:302）；更換節點文案未產生新情境。",
+   "severity": "material",
+   "建議": "縮排視覺驗證集中在 anatomy；principles 保留決策文字並以 LinkTo 引用。"
+  }
+ ]
+}

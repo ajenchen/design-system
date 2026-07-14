@@ -230,6 +230,118 @@ expect_silent "25. P8 nearmiss shadow-[var(--elevation-100)] → silent"
 run_hook "$PROD_TSX" 'export const C = () => <div className="max-w-[600px] grid-cols-[1fr_2fr]">x</div>'
 expect_silent "26. P8 nearmiss max-w-[600px]/grid-cols-[...](非色字 shadow)→ silent"
 
+# ── 手刻 menu-item 可點列(2026-07-10 WM TypeSettingsDialog 左 rail 錨例)──
+# 27. POSITIVE:手刻 button + hover:bg-neutral-hover + bg-neutral-selected 成對 → BLOCK
+run_hook "$PROD_TSX" 'const cls = `flex w-full items-center gap-2 rounded-md hover:bg-neutral-hover ${sel ? "bg-neutral-selected" : ""}`; export const C = () => <button type="button" className={cls}>Task</button>'
+expect_block "27. 手刻 nav row(hover+selected 成對)→ BLOCK"
+
+# 28. NEGATIVE:同簽名 token 出現但已消費 <MenuItem>(正道)→ silent
+run_hook "$PROD_TSX" 'export const C = () => <MenuItem size="sm" selected startContent={<Badge/>}>Task</MenuItem> /* hover:bg-neutral-hover bg-neutral-selected */'
+expect_silent "28. 消費 <MenuItem> → silent"
+
+# 29. NEGATIVE:只有 hover 無 selected(單純 hover row,非 menu-item family 簽名)→ silent
+run_hook "$PROD_TSX" 'export const C = () => <button className="hover:bg-neutral-hover">row</button>'
+expect_silent "29. 只 hover 無 selected → silent"
+
+# 30. NEGATIVE:escape marker → silent
+run_hook "$PROD_TSX" 'export const C = () => <div className="hover:bg-neutral-hover bg-neutral-selected">x</div> // @nav-row-handcraft-ok: calendar cell 非 menu 語義'
+expect_silent "30. @nav-row-handcraft-ok escape → silent"
+
+# ── 2026-07-10 批次 A(治理覆蓋 matrix 收官)──
+# 31. C5 POSITIVE:亮色底 + text-white 對比配對違規 → BLOCK
+run_hook "$PROD_TSX" 'export const T = () => <span className="bg-[var(--color-amber-6)] text-white size-4">A</span>'
+expect_block "31. C5 亮色底+text-white 配對 → BLOCK"
+
+# 32. C5 NEGATIVE:CAT_SOLID 正道(深字桶自帶 on-emphasis-dark)→ silent
+run_hook "$PROD_TSX" 'export const T = () => <span className={`size-4 ${CAT_SOLID[hue]}`}>A</span>'
+expect_silent "32. C5 消費 CAT_SOLID → silent"
+
+# 33. C18 POSITIVE:children 計數括號串接 → BLOCK
+run_hook "$PROD_TSX" 'export const H = () => <span>{group.label} ({items.length})</span>'
+expect_block "33. C18 {label} ({count}) 串接 → BLOCK"
+
+# 34. C18 NEGATIVE:aria-label 字串層(attr 非 children)→ silent
+run_hook "$PROD_TSX" 'export const H = () => <span aria-label={`${label} (${count})`}>{label}</span>'
+expect_silent "34. C18 aria-label 括號形 → silent"
+
+# 35. C17 POSITIVE:vertical Separator 無 mx → BLOCK
+run_hook "$PROD_TSX" 'export const B = () => <><Button>A</Button><Separator orientation="vertical" className="h-6" /><Button>B</Button></>'
+expect_block "35. C17 vertical Separator 無 mx → BLOCK"
+
+# 36. C17 NEGATIVE:h-6 mx-1 canonical → silent
+run_hook "$PROD_TSX" 'export const B = () => <><Button>A</Button><Separator orientation="vertical" className="h-6 mx-1" /><Button>B</Button></>'
+expect_silent "36. C17 h-6 mx-1 canonical → silent"
+
+# 37. C20 POSITIVE:手刻 underline 連結字 → BLOCK
+run_hook "$PROD_TSX" 'export const D = () => <span className="text-primary underline">upload</span>'
+expect_block "37. C20 裸 underline 連結 → BLOCK"
+
+# 38. C20 NEGATIVE:no-underline(合規移除底線)→ silent
+run_hook "$PROD_TSX" 'export const D = () => <a className="no-underline text-primary">upload</a>'
+expect_silent "38. C20 no-underline → silent"
+
+# 39. C10 POSITIVE:spacer 把 Search 推最右 → BLOCK
+run_hook "$PROD_TSX" 'export const T = () => <div><Button>Add</Button><span className="flex-1" /><Input placeholder="Search employees" /></div>'
+expect_block "39. C10 業務 search 被推最右 → BLOCK"
+
+# 40. C10 NEGATIVE:search 在業務層(無 spacer 前置)→ silent
+run_hook "$PROD_TSX" 'export const T = () => <div><Button>Add</Button><Input placeholder="Search employees" /><span className="flex-1" /></div>'
+expect_silent "40. C10 search 歸業務層 → silent"
+
+# 41. C11 POSITIVE:DialogHeader 手放 X(雙 X)→ BLOCK
+run_hook "$PROD_TSX" 'export const D = () => <DialogHeader><DialogTitle>Edit</DialogTitle><Button iconOnly startIcon={X} aria-label="Close" /></DialogHeader>'
+expect_block "41. C11 DialogHeader 雙 X → BLOCK"
+
+# 42. C11 NEGATIVE:header 操作走 actions slot → silent
+run_hook "$PROD_TSX" 'export const D = () => <DialogHeader actions={<Button iconOnly startIcon={X} aria-label="Prev" />}><DialogTitle>Edit</DialogTitle></DialogHeader>'
+expect_silent "42. C11 actions slot → silent"
+
+# 43. C12 POSITIVE:Select 硬寬 w-36 → BLOCK
+run_hook "$PROD_TSX" 'export const F = () => <Select className="w-36" options={opts} />'
+expect_block "43. C12 Select 硬寬 w-36 → BLOCK"
+
+# 44. C12 NEGATIVE:width="hug" 語義軸 → silent
+run_hook "$PROD_TSX" 'export const F = () => <Select width="hug" options={opts} />'
+expect_silent "44. C12 width=hug → silent"
+
+# 45. named-import 除鏽 POSITIVE:無 DS. 前綴的 LinkInput placeholder-only 也要抓 → BLOCK
+run_hook "$PROD_TSX" 'export const L = () => <LinkInput placeholder="https://" />'
+expect_block "45. named-import <LinkInput placeholder-only → BLOCK(除鏽)"
+
+# ── C19 兩欄 dialog 共用捲軸(2026-07-10 user 拍板組合 canonical)──
+# 46. POSITIVE:兩欄(border-l)+ 只有 1 個 ScrollArea = 共用捲軸 → BLOCK
+run_hook "$PROD_TSX" 'export const D = () => <DialogBody><ScrollArea><div className="flex"><div>main</div><aside className="border-l">meta</aside></div></ScrollArea></DialogBody>'
+expect_block "46. C19 兩欄共用單一 ScrollArea → BLOCK"
+
+# 47. NEGATIVE:各欄自帶 ScrollArea(組合 canonical)→ silent
+run_hook "$PROD_TSX" 'export const D = () => <DialogBody><div className="flex"><ScrollArea>main</ScrollArea><aside className="border-l"><ScrollArea>meta</ScrollArea></aside></div></DialogBody>'
+expect_silent "47. C19 各欄自帶 ScrollArea → silent"
+
+# 48. NEGATIVE:escape → silent
+run_hook "$PROD_TSX" 'export const D = () => <DialogBody><div className="flex border-l">x</div></DialogBody> // @two-pane-dialog-ok: 非兩欄,版面裝飾線'
+expect_silent "48. C19 @two-pane-dialog-ok escape → silent"
+
+# ── C7 SelectMenu 直用 + C13 手刻 section header(2026-07-10 收官)──
+# 49. C7 POSITIVE:<SelectMenu> 直用 → BLOCK
+run_hook "$PROD_TSX" 'export const M = () => <SelectMenu options={opts} onSelect={pick} />'
+expect_block "49. C7 <SelectMenu> 直用 → BLOCK"
+
+# 50. C7 NEGATIVE:<Select>(正道)→ silent
+run_hook "$PROD_TSX" 'export const M = () => <Select options={opts} onChange={pick} />'
+expect_silent "50. C7 <Select> 正道 → silent"
+
+# 51. C13 POSITIVE:手刻可收合標題列(Chevron + justify-between + button)→ BLOCK
+run_hook "$PROD_TSX" 'export const H = () => <button onClick={toggle} className="flex w-full items-center justify-between"><span>Description</span><ChevronDown className="size-4" /></button>'
+expect_block "51. C13 手刻可收合標題列 → BLOCK"
+
+# 52. C13 NEGATIVE:共用 SectionHeader 元件(正道)→ silent
+run_hook "$PROD_TSX" 'export const H = () => <SectionHeader title="Description" collapsed={c} onToggle={toggle} />'
+expect_silent "52. C13 共用 SectionHeader → silent"
+
+# 53. C13 NEGATIVE:escape(非 section 標題語義)→ silent
+run_hook "$PROD_TSX" 'export const P = () => <button onClick={next} className="flex justify-between">next<ChevronRight /></button> // @section-header-ok: 分頁導航非 section 標題'
+expect_silent "53. C13 @section-header-ok escape → silent"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

@@ -110,7 +110,8 @@ export interface FieldProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
   /**
    * 視覺外殼(2026-05-05)。
    * - `default`(預設)— 含 border + bg(一般 form input)
-   * - `bare` — 透明 variant,hover/focus reveal(cell-as-input substrate;VS Code/Figma toolbar idiom)
+   * - `naked` — cell-as-input(@internal;不在公開 FieldVariant 型別 — 2026-07-14 收窄至 FieldVariantInternal;2026-07-09 `bare` 退役)。edit×naked 自畫 border-based state
+   *   machine(rest/hover/focus/error);display/readonly/disabled×naked 用 transparent border,host cell 提供視覺邊框
    *
    * 透傳機制:Field 一次宣告,所有 child Field control 自動繼承(per-control prop override 可覆寫)。
    */

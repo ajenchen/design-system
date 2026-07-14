@@ -83,6 +83,25 @@ export interface TreeDragEndEvent {
   position: TreeDropPosition
 }
 
+/**
+ * 鍵盤重排(`Cmd/Ctrl+Shift+方向鍵`,2026-07-14 v1)的 SR 播報文案 — zh-TW 預設,
+ * per-key merge 覆寫(i18n 覆寫點)。詳 tree-view.spec.md「鍵盤重排」。
+ * @public
+ */
+// code-quality-allow: dead-export — public prop type — consumer 覆寫播報文案的參數型別
+export interface TreeReorderAnnouncements {
+  /** 同層上/下移完成。`index` / `count` = 移動後在同層的 1-based 序數 / 同層總數 */
+  moved?: (args: { label: string; targetLabel: string; position: 'before' | 'after'; index: number; count: number }) => string
+  /** 移入 folder 完成。folder 原本收合(children 尚未 mount)時序數不可知 → `index` / `count` 為 undefined */
+  movedInside?: (args: { label: string; folderLabel: string; index?: number; count?: number }) => string
+  /** 移出到上層完成。`level` = 移動後所在層(1-based,同 aria-level 語意) */
+  movedOut?: (args: { label: string; parentLabel: string; level: number }) => string
+  /** 邊界 no-op:top(已在最上方)/ bottom(已在最下方)/ not-folder(無可移入的 folder)/ root(已在最外層) */
+  blocked?: (args: { reason: 'top' | 'bottom' | 'not-folder' | 'root'; label: string; targetLabel?: string }) => string
+  /** sr-only 操作說明(tree 容器 `aria-describedby` 指向;僅 `draggable` 時渲染) */
+  instructions?: string
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Constants
 // ═══════════════════════════════════════════════════════════════════════════
@@ -92,10 +111,41 @@ export interface TreeDragEndEvent {
 
 // indentStep = chevronSize + gap-2(8px)。值 {24,24,28} 與 CSS token `--tree-indent-{sm,md,lg}`
 // (`tokens/uiSize/uiSize.css`)**完全一致、必須同步維護**(改一處要兩處一起改;非「token 取代 literal」)。
-// 為何兩源並存:本元件 render 用此 JS literal 算 `indentPx`(L808 inline calc 需 number)+ drop-indicator
-// pointer 數學(L352,需 number 做 px 命中判斷,CSS var 在 JS 計算層拿不到);DataTable nested rows
+// 為何兩源並存:本元件 render 用此 JS literal 算 `indentPx`(TreeItem inline calc 需 number)+ drop-indicator
+// pointer 數學(handleDragOver px 命中判斷,CSS var 在 JS 計算層拿不到);DataTable nested rows
 // 則走 CSS token 的 Tailwind class(跨元件視覺一致)。結構對齊:子 chevron 對齊父 icon,子 icon 對齊父 label。
 const INDENT_STEP: Record<SizeKey, number> = { sm: 24, md: 24, lg: 28 }
+
+// ── 鍵盤重排(keyboard reorder,2026-07-14 v1)常數 ──
+// 鍵位 = Cmd/Ctrl+Shift+方向鍵,對齊 Notion 移動 block 鍵位(https://www.notion.com/help/keyboard-shortcuts,
+// WebFetch 驗證紀錄 .claude/logs/treeview-keyboard-dnd-design.md#L25);
+// modifier 層與 APG tree 導覽鍵(無 modifier 的 ↑↓→←)完全正交,零衝突。
+const REORDER_ARROW_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
+type ReorderArrowKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
+
+// 鍵盤重排 SR 播報預設文案(zh-TW;consumer 經 `reorderAnnouncements` prop per-key 覆寫)。
+// 格式 =「結果 + 序數位置」— 非視覺使用者靠「第 n 項,共 m 項」建立位置模型
+// (世界級 cite 詳 tree-view.spec.md「鍵盤重排」段,M22)。
+// i18n-allow-block: DS default SR-only 播報文案,prop 可覆寫(同 select-menu.tsx SelectMenuLiveStatus 先例)
+const DEFAULT_REORDER_ANNOUNCEMENTS: Required<TreeReorderAnnouncements> = {
+  moved: ({ label, targetLabel, position, index, count }) =>
+    `已將『${label}』移到『${targetLabel}』${position === 'before' ? '之前' : '之後'},第 ${index} 項,共 ${count} 項`,
+  movedInside: ({ label, folderLabel, index, count }) =>
+    index !== undefined && count !== undefined
+      ? `已將『${label}』移入『${folderLabel}』,第 ${index} 項,共 ${count} 項`
+      : `已將『${label}』移入『${folderLabel}』`,
+  movedOut: ({ label, parentLabel, level }) =>
+    `已將『${label}』移出到『${parentLabel}』之後,第 ${level} 層`,
+  blocked: ({ reason, targetLabel }) => {
+    switch (reason) {
+      case 'top': return '已在最上方'
+      case 'bottom': return '已在最下方'
+      case 'not-folder': return targetLabel ? `無法移入:『${targetLabel}』不是資料夾` : '無法移入'
+      case 'root': return '已在最外層'
+    }
+  },
+  instructions: '按 Cmd(Ctrl)+Shift+方向鍵可重新排列項目',
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Context
@@ -210,6 +260,12 @@ export interface TreeViewProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   draggable?: boolean
   /** Drag 結束時觸發,提供 sourceId、targetId、position。Consumer 負責 reorder。 */
   onDragEnd?: (event: TreeDragEndEvent) => void
+  /**
+   * 鍵盤重排(`Cmd/Ctrl+Shift+方向鍵`)的 SR 播報文案覆寫(per-key merge;zh-TW 預設)。
+   * 僅在 `draggable` 時生效;含 `instructions`(sr-only 操作說明)。
+   * @public
+   */
+  reorderAnnouncements?: TreeReorderAnnouncements
   /** ARIA label */
   'aria-label'?: string
 }
@@ -224,6 +280,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       expandOnSelect = false,
       draggable = false,
       onDragEnd: onDragEndProp,
+      reorderAnnouncements: reorderAnnouncementsProp,
       expandedIds: controlledExpanded,
       onExpandedChange,
       selectedIds: controlledSelected,
@@ -287,6 +344,18 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     // useId 確保多棵 TreeView 同頁 / node id 跨樹重複時 DOM id 不撞。
     const activeDescendantPrefix = React.useId()
 
+    // ── 鍵盤重排 SR 播報(2026-07-14 v1;詳 spec「鍵盤重排」)──
+    // 單一 polite live region 覆寫式更新(textContent 替換非 append → 快速連按天然只播最新)。
+    // 不可借 dnd-kit DndContext 內建 live region — 它只播 dnd-kit 管理的 drag session,
+    // 自建鍵盤路徑觸不到。消費 select-menu.tsx SelectMenuLiveStatus role="status" 先例。
+    const [reorderAnnouncement, setReorderAnnouncement] = React.useState('')
+    const announcements = React.useMemo(
+      () => ({ ...DEFAULT_REORDER_ANNOUNCEMENTS, ...reorderAnnouncementsProp }),
+      [reorderAnnouncementsProp]
+    )
+    // sr-only 操作說明節點 id(tree 容器 aria-describedby 指向;僅 draggable 渲染)
+    const reorderInstructionsId = `${activeDescendantPrefix}tree-reorder-instructions`
+
     // ── Keyboard vs mouse detection ──
     // focus ring 只在鍵盤操作時顯示,滑鼠點擊用 bg-neutral-selected 表達選中,不顯示 ring
     const isKeyboardRef = React.useRef(false)
@@ -300,6 +369,26 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     // Ref for toggleExpand — handleDragOver 定義在 toggleExpand 之前(hook 順序限制),
     // 用 ref 打斷 temporal dead zone。
     const toggleExpandRef = React.useRef<(id: string) => void>(() => {})
+
+    // ── Node registry ──(2026-07-14 上移至 drag handlers 之前:isInSubtree 消費 getNodeInfo,
+    // 而 handleDragOver / handleDragEnd / 鍵盤 reorder 都消費 isInSubtree)
+    const { registerNode, unregisterNode, getNodeInfo } = useNodeRegistry()
+
+    // 子樹判定:candidate 是否位於 rootId 的子樹內(含相等)。沿 registry parentId 鏈上溯。
+    // 雙路共用 SSOT:pointer 路徑 descendant drop guard(2026-07-14 R6 修:原 handleDragOver 只擋
+    // `over.id === active.id` 未擋 descendants → 可發出 targetId ∈ source 子樹的非法事件,
+    // consumer 按 remove→insert 實作會讓整個子樹靜默消失)+ 鍵盤 reorder commit 前防禦 assert。
+    const isInSubtree = React.useCallback(
+      (candidateId: string, rootId: string): boolean => {
+        let cur: string | null = candidateId
+        while (cur != null) {
+          if (cur === rootId) return true
+          cur = getNodeInfo(cur)?.parentId ?? null
+        }
+        return false
+      },
+      [getNodeInfo]
+    )
 
     const sensors = useSensors(
       useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -323,7 +412,10 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     //
     const handleDragOver = React.useCallback((event: DragOverEvent) => {
       const { over, active } = event
-      if (!over || over.id === active.id) {
+      // 2026-07-14 R6 descendant guard:over 是 active 自己「或其子樹內節點」→ 無效目標,
+      // 不設 dropTarget(拖 folder 進自己子樹會發出非法 TreeDragEndEvent;guard SSOT = isInSubtree,
+      // 鍵盤 reorder 路徑共用同一 helper)。
+      if (!over || isInSubtree(String(over.id), String(active.id))) {
         if (autoExpandTimerRef.current) { clearTimeout(autoExpandTimerRef.current); autoExpandTimerRef.current = null }
         setDropTarget(null)
         return
@@ -406,7 +498,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       } else {
         if (autoExpandTimerRef.current) { clearTimeout(autoExpandTimerRef.current); autoExpandTimerRef.current = null }
       }
-    }, [expandedIds])
+    }, [expandedIds, isInSubtree])
 
     const dropTargetRef = React.useRef(dropTarget)
     dropTargetRef.current = dropTarget
@@ -415,7 +507,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       if (autoExpandTimerRef.current) { clearTimeout(autoExpandTimerRef.current); autoExpandTimerRef.current = null }
       const { active, over } = event
       const dt = dropTargetRef.current
-      if (over && active.id !== over.id && dt) {
+      // descendant guard 同 handleDragOver(dt 已由 dragOver guard 保證為 null,此為 belt-and-braces)
+      if (over && !isInSubtree(String(over.id), String(active.id)) && dt) {
         onDragEndProp?.({
           sourceId: String(active.id),
           targetId: String(over.id),
@@ -424,16 +517,13 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       }
       setDraggingId(null)
       setDropTarget(null)
-    }, [onDragEndProp])
+    }, [onDragEndProp, isInSubtree])
 
     const handleDragCancel = React.useCallback(() => {
       if (autoExpandTimerRef.current) { clearTimeout(autoExpandTimerRef.current); autoExpandTimerRef.current = null }
       setDraggingId(null)
       setDropTarget(null)
     }, [])
-
-    // ── Node registry ──
-    const { registerNode, unregisterNode, getNodeInfo } = useNodeRegistry()
 
     // ── Actions ──
     const toggleExpand = React.useCallback(
@@ -464,6 +554,168 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         })
       },
       [selectionMode, setSelectedIds]
+    )
+
+    // ── Keyboard reorder(Cmd/Ctrl+Shift+方向鍵,2026-07-14 v1)──
+    // 設計 SSOT:tree-view.spec.md「鍵盤重排」。與 pointer 路徑共用 TreeDragEndEvent 契約 +
+    // onDragEnd prop + registry(consumer API 零改動);每按一下立即 commit(無 grab-mode /
+    // 無預覽,對齊 Notion Cmd/Ctrl+Shift+Arrow 移動 block:https://www.notion.com/help/keyboard-shortcuts,
+    // WebFetch 驗證紀錄 .claude/logs/treeview-keyboard-dnd-design.md#L25)。
+    // 不用 dnd-kit KeyboardSensor — 其 activator 需可接收 DOM focus
+    // (https://dndkit.com/api-documentation/sensors/keyboard),與 row tabIndex={-1} +
+    // aria-activedescendant 虛擬焦點模型結構性不相容(2026-07-05 D4 拍板不翻案)。
+
+    // 播報用 label 文字:registry label 是 ReactNode — string 直接用,否則退 DOM row textContent。
+    const getNodeLabelText = React.useCallback(
+      (id: string): string => {
+        const info = getNodeInfo(id)
+        if (typeof info?.label === 'string') return info.label
+        const rowEl = treeRef.current?.querySelector<HTMLElement>(`[data-tree-row="${id}"]`)
+        return rowEl?.textContent?.trim() || id
+      },
+      [getNodeInfo]
+    )
+
+    // code-quality-allow: long-function — 四鍵語意(同層上下 / 移入 / 移出)+ 邊界播報結構緊密,
+    // 拆 sub-fn 會跨 fn 傳 siblings / announce state 反而複雜(同 handleKeyDown 先例)
+    const handleKeyboardReorder = React.useCallback(
+      (key: ReorderArrowKey) => {
+        const tree = treeRef.current
+        if (!tree || !focusedId) return
+        const sourceId = focusedId
+        const sourceEl = tree.querySelector<HTMLElement>(`[data-tree-id="${sourceId}"]`)
+        // disabled node 不可移(鍵盤導覽本就跳過 disabled,此為防禦 guard)
+        if (!sourceEl || sourceEl.getAttribute('aria-disabled') === 'true') return
+
+        const label = getNodeLabelText(sourceId)
+        // 同層 siblings(DOM 序)。focused node 可見 ⇒ 其 parent 已展開 ⇒ 全 siblings 已 mount。
+        const parentId = sourceEl.dataset.treeParentId || null
+        const visibleItems = Array.from(
+          tree.querySelectorAll<HTMLElement>('[role="treeitem"]:not([hidden])')
+        )
+        const siblings = visibleItems.filter((el) => (el.dataset.treeParentId || null) === parentId)
+        const sourceIndex = siblings.findIndex((el) => el.dataset.treeId === sourceId)
+        if (sourceIndex < 0) return
+        const isEnabled = (el: HTMLElement) => el.getAttribute('aria-disabled') !== 'true'
+
+        // 發出與 pointer 路徑同型的 TreeDragEndEvent,並排定 re-render 後 scrollIntoView
+        // (既有 effect 只在 isFocused 變化時跑;同 id 移動不 re-fire,故此處補)。
+        const commit = (targetId: string, position: TreeDropPosition): boolean => {
+          // 結構安全 assert:四鍵語意(sibling 間 / 進 prev sibling / 出 parent)結構上
+          // 不可能移進自己子樹;防禦性仍擋(與 pointer descendant guard 共用 isInSubtree SSOT)。
+          if (targetId === sourceId || isInSubtree(targetId, sourceId)) return false
+          onDragEndProp?.({ sourceId, targetId, position })
+          requestAnimationFrame(() => {
+            treeRef.current
+              ?.querySelector<HTMLElement>(`[data-tree-id="${sourceId}"]`)
+              ?.scrollIntoView({ block: 'nearest' })
+          })
+          return true
+        }
+
+        // 同層移動後的 1-based 新序數(播報用):移除 source 再插入的模擬;同層總數不變。
+        const movedIndex = (targetId: string, position: 'before' | 'after'): number => {
+          const order = siblings.map((el) => el.dataset.treeId).filter((id) => id !== sourceId)
+          const tIdx = order.indexOf(targetId)
+          return (position === 'before' ? tIdx : tIdx + 1) + 1
+        }
+
+        switch (key) {
+          case 'ArrowUp':
+          case 'ArrowDown': {
+            // disabled sibling 不可當 target 錨點(pointer useDroppable 同樣 disable)——
+            // 相鄰 sibling disabled 時錨到最近 enabled sibling 並翻轉 before/after 表達同一插槽
+            // (可達位置與 pointer 一致);整個方向皆無 enabled sibling → 視同邊界。
+            const dir = key === 'ArrowUp' ? -1 : 1
+            const boundary = dir < 0 ? ('top' as const) : ('bottom' as const)
+            const adjacent = siblings[sourceIndex + dir]
+            if (!adjacent) {
+              setReorderAnnouncement(announcements.blocked({ reason: boundary, label }))
+              return
+            }
+            let target: HTMLElement | undefined
+            let position: 'before' | 'after' = dir < 0 ? 'before' : 'after'
+            if (isEnabled(adjacent)) {
+              target = adjacent
+            } else {
+              for (let i = sourceIndex + dir; i >= 0 && i < siblings.length; i += dir) {
+                if (isEnabled(siblings[i])) { target = siblings[i]; break }
+              }
+              position = dir < 0 ? 'after' : 'before' // 錨到最近 enabled sibling 的另一側 = 相鄰插槽
+            }
+            if (!target) {
+              setReorderAnnouncement(announcements.blocked({ reason: boundary, label }))
+              return
+            }
+            const targetId = target.dataset.treeId!
+            if (commit(targetId, position)) {
+              setReorderAnnouncement(
+                announcements.moved({
+                  label,
+                  targetLabel: getNodeLabelText(targetId),
+                  position,
+                  index: movedIndex(targetId, position),
+                  count: siblings.length,
+                })
+              )
+            }
+            return
+          }
+          case 'ArrowRight': {
+            // 移入:成為最近 enabled 上一 sibling 的子項(沿用 pointer「inside 限 folder」規則)
+            let target: HTMLElement | undefined
+            for (let i = sourceIndex - 1; i >= 0; i--) {
+              if (isEnabled(siblings[i])) { target = siblings[i]; break }
+            }
+            if (!target) {
+              setReorderAnnouncement(announcements.blocked({ reason: 'not-folder', label }))
+              return
+            }
+            const targetId = target.dataset.treeId!
+            if (target.dataset.treeHasChildren !== 'true') {
+              setReorderAnnouncement(
+                announcements.blocked({ reason: 'not-folder', label, targetLabel: getNodeLabelText(targetId) })
+              )
+              return
+            }
+            const wasExpanded = expandedIds.has(targetId)
+            if (commit(targetId, 'inside')) {
+              // 移入 collapsed folder:允許 + 自動展開(pointer 500ms hover auto-expand 的鍵盤對應物)
+              if (!wasExpanded) toggleExpand(targetId)
+              // 序數:consumer 對 inside 的慣例語意 = append 到 children 尾端;
+              // folder 原收合 → children 未 mount 無從計數 → 播報省略序數(誠實不猜)。
+              const childCount = wasExpanded
+                ? visibleItems.filter((el) => el.dataset.treeParentId === targetId).length
+                : undefined
+              setReorderAnnouncement(
+                announcements.movedInside({
+                  label,
+                  folderLabel: getNodeLabelText(targetId),
+                  index: childCount !== undefined ? childCount + 1 : undefined,
+                  count: childCount !== undefined ? childCount + 1 : undefined,
+                })
+              )
+            }
+            return
+          }
+          case 'ArrowLeft': {
+            // 移出:成為 parent 的下一個 sibling(outdent)
+            if (!parentId) {
+              setReorderAnnouncement(announcements.blocked({ reason: 'root', label }))
+              return
+            }
+            const parentEl = tree.querySelector<HTMLElement>(`[data-tree-id="${parentId}"]`)
+            const level = Number(parentEl?.getAttribute('aria-level') ?? '1')
+            if (commit(parentId, 'after')) {
+              setReorderAnnouncement(
+                announcements.movedOut({ label, parentLabel: getNodeLabelText(parentId), level })
+              )
+            }
+            return
+          }
+        }
+      },
+      [focusedId, expandedIds, toggleExpand, onDragEndProp, getNodeLabelText, isInSubtree, announcements]
     )
 
     // ── Context value ──
@@ -524,14 +776,27 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         isKeyboardRef.current = true
         if (!treeRef.current) return
 
+        // ── 鍵盤重排:Cmd/Ctrl+Shift+方向鍵(2026-07-14 v1,詳 spec「鍵盤重排」)──
+        // 必排在下方「無焦點時方向鍵先聚焦第一項」分支之前(該分支不分 modifier 攔 Arrow*);
+        // 非 modifier 導覽路徑(下方 switch)完全不變。
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && REORDER_ARROW_KEYS.includes(e.key)) {
+          if (!draggable) return // 未啟用拖曳 → 整組 no-op(modifier 組合不落入導覽 switch)
+          e.preventDefault() // 阻止瀏覽器原生行為(捲動 / 文字選取)
+          if (draggingId !== null) return // pointer 拖曳進行中 → 互斥,忽略鍵盤重排
+          handleKeyboardReorder(e.key as ReorderArrowKey)
+          return
+        }
+
         // 取得所有可見的 treeitem
         const items = Array.from(
-          treeRef.current.querySelectorAll<HTMLElement>('[role="treeitem"]:not([hidden])')
+          // a11y:排除 disabled 節點 → 鍵盤導覽/選取/展開全跳過(APG:disabled 不可鍵盤操作)
+          treeRef.current.querySelectorAll<HTMLElement>('[role="treeitem"]:not([hidden]):not([aria-disabled="true"])')
         )
         const currentIndex = items.findIndex(
           (el) => el.dataset.treeId === focusedId
         )
-        if (currentIndex < 0 && items.length > 0 && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+        // a11y:沒焦點時任一方向鍵先聚焦第一個(含 ArrowLeft/Right,原漏 → AT 無 activedescendant 可讀)
+        if (currentIndex < 0 && items.length > 0 && ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
           // 沒有焦點時,任何方向鍵先聚焦第一個
           setFocusedId(items[0].dataset.treeId ?? null)
           e.preventDefault()
@@ -603,17 +868,26 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           }
         }
       },
-      [focusedId, expandedIds, toggleExpand, select, setFocusedId]
+      [focusedId, expandedIds, toggleExpand, select, setFocusedId, draggable, draggingId, handleKeyboardReorder]
     )
 
     const treeEl = (
       <div
+        // {...props} 在最前:內部 role/style(--tree-px)/onKeyDown/tabIndex 必須勝過 consumer
+        // 誤傳(原 spread 在最後 → consumer style 會整組蓋掉 --tree-px、onKeyDown 蓋掉鍵盤導覽)
+        {...props}
         ref={treeRef}
         role="tree"
         aria-multiselectable={selectionMode === 'multiple' || undefined}
         // Virtual focus:DOM focus 停在容器(單一 tab stop),aria-activedescendant 指向目前 node
         // 的 DOM id,讓 AT 朗讀目前焦點 node(對齊 WAI-ARIA TreeView APG aria-activedescendant 模式)。
         aria-activedescendant={focusedId ? `${activeDescendantPrefix}treeitem-${focusedId}` : undefined}
+        // 鍵盤重排操作說明(sr-only,僅 draggable;與 consumer 傳入的 aria-describedby 合併)
+        aria-describedby={
+          [props['aria-describedby'], draggable ? reorderInstructionsId : undefined]
+            .filter(Boolean)
+            .join(' ') || undefined
+        }
         className={cn(
           // TreeView root 不加任何 py——呼吸空間由外層容器負責:
           //   - 在 SidebarGroup 內: SidebarGroup py-2 提供
@@ -629,8 +903,18 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         } as React.CSSProperties}
         onKeyDown={handleKeyDown}
         onMouseDown={handleMouseDown}
+        // a11y APG:Tab 進入時初始化 virtual focus(優先 selected,其次第一個可用節點);
+        // 原本無 onFocus init → focusedId=null → aria-activedescendant undefined,AT 讀不到目前節點
+        onFocus={(e) => {
+          ;(props as React.HTMLAttributes<HTMLDivElement>).onFocus?.(e)
+          if (e.target === e.currentTarget && !focusedId && treeRef.current) {
+            const first =
+              treeRef.current.querySelector<HTMLElement>('[role="treeitem"][aria-selected="true"]:not([hidden]):not([aria-disabled="true"])') ??
+              treeRef.current.querySelector<HTMLElement>('[role="treeitem"]:not([hidden]):not([aria-disabled="true"])')
+            if (first) setFocusedId(first.dataset.treeId ?? null)
+          }
+        }}
         tabIndex={0}
-        {...props}
       >
         {children}
       </div>
@@ -640,7 +924,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
       <TreeViewContext.Provider value={contextValue}>
         {/* RowSizeProvider:讓 TreeView 子樹內任何 <ItemIcon> / <ItemAvatar> /
             <ItemInlineAction> 自動讀到對的 size,跟 SidebarProvider 同一條規則。
-            未來 TreeView 接 inlineActions API 後也吃這個 context。 */}
+            inlineActions API 也吃這個 context。 */}
         <RowSizeProvider value={size}>
         {/* 永遠包 DndContext(hooks 不能 conditional call)。不 draggable 時無 sensors = 不可拖 */}
         <DndContext
@@ -651,6 +935,22 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           onDragCancel={handleDragCancel}
         >
           {treeEl}
+          {draggable && (
+            <>
+              {/* 鍵盤重排 SR 播報 — TreeView 自有 sr-only polite live region(單一節點覆寫式更新;
+                  消費 select-menu.tsx SelectMenuLiveStatus 先例)。渲染在 role="tree" 之外
+                  (tree 的合法 children 只有 treeitem / group);dnd-kit DndContext 內建 live region
+                  只播 dnd-kit drag session,自建鍵盤路徑觸不到,故必須自有。 */}
+              <div role="status" aria-live="polite" className="sr-only">
+                {reorderAnnouncement}
+              </div>
+              {/* 鍵盤重排操作說明 — tree 容器 aria-describedby 指向(對齊 dnd-kit
+                  screenReaderInstructions 慣例:https://dndkit.com/guides/accessibility) */}
+              <div id={reorderInstructionsId} className="sr-only">
+                {announcements.instructions}
+              </div>
+            </>
+          )}
           {draggable && (
             <DragOverlay dropAnimation={null}>
               {draggingId ? (() => {
@@ -946,7 +1246,8 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               //   - default text 維持 fg-secondary muted(跟 single 對齊 hierarchy)
               //   - selected → 視覺信號只在 checkbox(auto-render below),text 不變、bg 不變
               //   - 對齊 SelectMenu multi pattern(menu-item.tsx:194-195 selected → bg only;multi → checkbox only)
-              !disabled && !isSelected && 'text-fg-secondary',
+              // multi-selected 也維持 fg-secondary(上方註解「text 不變」;原 !isSelected 條件讓 multi-selected 掉到繼承色)
+              !disabled && (!isSelected || selectionMode === 'multiple') && 'text-fg-secondary',
               !disabled && isSelected && selectionMode === 'single' && 'text-foreground',
               isDropTarget && dropTarget?.position === 'inside' && dropIndicatorInside,
               !disabled && 'hover:bg-neutral-hover hover:text-foreground',
@@ -967,7 +1268,8 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             // aria-describedby(鍵盤拖曳指示):role=button 污染 treeitem 語意、tabIndex=0
             // 讓每 row 變 DOM tab stop 破壞單一 tab stop 虛擬焦點模型(DOM focus 在 row 上按
             // Enter 會 bubble 到容器 handleKeyDown 但 handler 操作 state focusedId → 錯位);
-            // sensors 僅 PointerSensor(無 KeyboardSensor),這些 attrs 換不到鍵盤拖曳能力。
+            // sensors 僅 PointerSensor(無 KeyboardSensor),這些 attrs 換不到鍵盤拖曳能力;
+            // 鍵盤重排(2026-07-14 v1)走容器 handleKeyDown 的 Cmd/Ctrl+Shift+Arrow 分支,非 dnd-kit sensor。
             // aria-roledescription 保留在上方 treeitem 元素(有 role 才合法)。
             {...(draggable ? dragListeners : {})}
             {...props}
@@ -1074,7 +1376,10 @@ export const treeViewMeta = {
 
   },
   sizes: {
-
+    // 對齊 tree-view.spec.md frontmatter(compile-stories --check 驗 key 一致)
+    sm: { typography: 'body', indent: 24 },
+    md: { typography: 'body', indent: 24 }, // default
+    lg: { typography: 'body-lg', indent: 28 },
   },
   // 'selected' = single-selection 持續選中(bg-neutral-selected + aria-selected);'active' 移除 —
   // 全檔無 Tailwind 按壓 utility,無按壓專屬視覺態(2026-07-07 詞彙統一對抗稽核補修)。

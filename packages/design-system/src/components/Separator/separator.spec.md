@@ -78,7 +78,7 @@ Consumer 在 JSX 裡明確放置分隔線的場景：
 
 ## 邊界案例
 
-- **Vertical 方向**：`h-full` 取父容器高度——父容器無確定高度（auto）時 separator 高度為 0、不可見；需父容器有確定高度或 flex row 的 stretch 對齊
+- **Vertical 方向**：`h-full` 取父容器高度——父容器無確定高度（auto）時 separator 高度為 0、不可見；需父容器有確定高度或 flex row 的 stretch 對齊。**例外(toolbar / action region 群組分隔)**:實務上一律**縮短高度**(`h-6 mx-1` 等),不 full-height — 幾何 SSOT → `patterns/action-bar/action-bar.spec.md`「分隔線幾何」段(2026-07-08 codify;版面切分 divider 不適用、零 gap)
 - **空容器 / 0 寬**：horizontal `w-full` 隨父寬，父寬為 0 時無可見線；Separator 不自帶 min-width / min-height
 - **厚度固定 1px**（`h-px` / `w-px`）、非互動無 hover / focus——無 size / state 變體（見下「為何無 …」段）
 
@@ -88,7 +88,7 @@ Separator 是**視覺分隔 primitive**(一條 1px 線),結構極薄:
 
 - **無 Inspector**:Separator 唯一變因是 `orientation`(horizontal / vertical),已在 `TokenMatrix` 對照呈現。互動 Inspector 無進一步可調 prop。
 - **無 ColorMatrix**:Separator 固定用 `--divider` token(比 border 更淡的語意分隔色),dark mode 由 semantic token 自動切換。無變體。加 color variant 會誤用成「狀態訊號」(分隔應是中性的)。
-- **無 SizeMatrix**:Separator 固定 1px 厚度(線應該是線),長度由 container 決定(`w-full` / `h-full`)。無 sm/md/lg tier。
+- **無 SizeMatrix**:Separator 固定 1px 厚度(線應該是線),長度由 container 決定(`w-full` / `h-full`;toolbar 群組分隔例外縮短,見「邊界案例」+ action-bar.spec.md「分隔線幾何」)。無 sm/md/lg tier。
 - **無 StateBehavior**:非互動元件,無 hover / focus / active / selected / disabled。
 
 對應 anatomy story:保留 `Overview` + `TokenMatrix`(horizontal × vertical + `--divider` vs `--border` 用法對照)。

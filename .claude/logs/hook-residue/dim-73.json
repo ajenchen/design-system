@@ -1,0 +1,14 @@
+{
+  "dim": 73,
+  "hook": "check_full_story_visual_interaction_sweep.sh",
+  "residueCount": 0,
+  "findings": [
+    {
+      "fileLine": ".claude/snapshots/codex-visual-audit-2026-05-27/audit-report.json",
+      "問題": "storyResults=62 < manifest.totalStories=929 且無 _sampling_allowed escape。但為 2026-05-27 歷史 codex 視覺稽核 snapshot dev-artifact(非 production/canonical),寫入當時 manifest total 遠小於 929(hook 檔頭記 2026-07-04 才修 stale 916)。非現行 production guarded file，材質性 residue = 0。",
+      "severity": "marginal"
+    }
+  ],
+  "verified": true,
+  "note": "Guard scope = /tmp/*-sweep + .claude/snapshots/*audit-report.json where storyResults < manifest.totalStories. 唯一命中為歷史 snapshot dev-artifact，非生產路徑。無材質性 residue。"
+}

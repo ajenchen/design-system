@@ -1,0 +1,108 @@
+{
+ "dim": 8,
+ "filesScanned": 86,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Badge/badge.spec.md:184",
+   "問題": "Count 模式未定義空值契約；實作對 null/undefined 不渲染，對 0 則顯示「0」，但 spec 未說明兩者差異與理由。",
+   "severity": "material",
+   "建議": "補「空值／0」規則，明定 null、undefined、0 與 dot 模式的呈現，並讓 spec、型別、code、story 一致。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:252",
+   "問題": "邊界狀態已處理單一與零 items，卻未交代非同步 slides 載入時的 Loading 策略或責任歸屬。",
+   "severity": "marginal",
+   "建議": "明定 Carousel 不持有 loading；資料未完成時由 consumer 以等尺寸 Skeleton 或既有內容替代，避免短暫空 Carousel。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:103",
+   "問題": "Field 範例在 rating=0 時立即顯示 FieldError，會讓初始或仍在操作中的欄位直接報錯，與表單 canonical 的 blur＋submit 驗證時機衝突。",
+   "severity": "material",
+   "建議": "指向 `Field/form-validation.spec.md`，並將範例改為依 touched、submitted 或 `form.errors.rating` 顯示錯誤。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:205",
+   "問題": "Tag 以文字 label 為核心，但 Props 與邊界案例未定義空 children；目前型別允許省略、實作也會渲染空 pill，dismiss 時只剩無上下文的「移除」。",
+   "severity": "material",
+   "建議": "明定非空 label/children 契約，決定 null 或空字串應拒絕還是不渲染，並同步型別、runtime guard 與 stories。"
+  },
+  {
+   "fileLine": "packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:17",
+   "問題": "互動狀態表涵蓋 hover、active、open、focus、disabled，卻沒有 Loading 契約；`InlineActionConfig` 也只有 icon、label、onClick，非同步動作無 busy 語意或防重複觸發規則。",
+   "severity": "material",
+   "建議": "明定 Inline Action 不支援 Loading 時必改用 Button；若要支援，需規範 disabled/aria-busy、防重複觸發及穩定幾何。"
+  },
+  {
+   "fileLine": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:443",
+   "問題": "規格要求 suffix Switch 設 `tabIndex=-1` 與 `aria-hidden`、由 row 成為唯一操作靶，卻未要求 row 暴露 toggle role 與 checked state；輔助技術可能只讀到一般 option/menuitem。",
+   "severity": "material",
+   "建議": "選單情境優先使用 `DropdownMenuCheckboxItem`；若保留 MenuItem＋Switch，外層必成為唯一 ARIA owner，提供合適 role 與 `aria-checked`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:76",
+   "問題": "「何時不用」未涵蓋外觀與 separator role 最接近的靜態 Separator，全文也沒有 DS 相關 spec links。",
+   "severity": "marginal",
+   "建議": "補 ResizeHandle vs Separator 分界：可拖曳並改變尺寸才用 ResizeHandle，純分隔用 Separator；並連到 Separator、DataTable、Sidebar、AppShell 等 owner spec。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/color/color.spec.md:3",
+   "問題": "色彩使用、分界、誤用與對比 a11y 已涵蓋，但未明文說明 empty、Loading 不由色彩 token 持有，驗證時機也沒有 Form/Field owner pointer。",
+   "severity": "marginal",
+   "建議": "補一行狀態分權：Color 只提供狀態色彩，empty／Loading 與表單驗證時機由 consuming component、Form、Field spec 負責。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/density/density.spec.md:3",
+   "問題": "Density dial 的使用、分界與 anti-pattern 完整，但沒有明文交代 empty、驗證時機與 Loading 為 token-level N/A。",
+   "severity": "marginal",
+   "建議": "補一行：Density 只控制 ui-size/layout-space，資料空值、表單驗證與 async state 由 consumer component own。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/elevation/elevation.spec.md:16",
+   "問題": "層級表只界定 elevation-100/200 何時使用，未說明何時完全不用 elevation，也未區分 flat/border-only surface、z-index 與陰影層級。",
+   "severity": "material",
+   "建議": "新增「何時不用／近親分界」：沒有浮起或遮蓋語意的平面 region 不加陰影，border 與 z-index 不等於 elevation；同時交代 runtime-state 維度不適用。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:3",
+   "問題": "巨觀間距的使用與近親判斷完整，但未交代 empty、驗證、Loading、a11y 的適用性或 consumer ownership。",
+   "severity": "marginal",
+   "建議": "補一行：LayoutSpace 不持有 runtime state，這些行為與無障礙責任由使用 token 的元件 spec 定義。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/motion/motion.spec.md:17",
+   "問題": "Loading 已明確委派 consumer、reduced-motion 也有規則，但 empty 與表單驗證時機仍沉默，未明文標示 N/A。",
+   "severity": "marginal",
+   "建議": "在定位補充 Motion token 不持有資料空值或表單驗證時機。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/opacity/opacity.spec.md:24",
+   "問題": "spec 允許 Rating、DataTable 的 Loading 重用 `opacity-disabled`，但 A11y 段只說明 disabled；未明確指出 opacity 只負責視覺、Loading 仍需 busy／進度與互動政策。",
+   "severity": "marginal",
+   "建議": "補 Loading owner pointer：consumer 必提供 `aria-busy`、可感知進度並明定是否阻擋互動；另交代 empty、驗證為 N/A。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/radius/radius.spec.md:3",
+   "問題": "Radius tier 分界與誤用完整，但沒有相關元件/spec links；「省略 radius」也不能取代 empty、驗證、Loading、a11y 的 N/A 說明。",
+   "severity": "marginal",
+   "建議": "新增相關章節連到 elevation、overlay-surface 與主要 consumer owner，並以一行交代 runtime-state 維度不適用。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/token-system.spec.md:3",
+   "問題": "上游 token 架構已有使用、分層、反 pattern 與 family links，卻未交代 empty、驗證、Loading 為 N/A，也未明示 a11y 由哪些下游 family 負責。",
+   "severity": "marginal",
+   "建議": "補跨 family 狀態分權：前三項 N/A；a11y 由 color、motion、typography、uiSize、opacity 等 family spec own。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/typography/typography.spec.md:3",
+   "問題": "Typography 沒有 A11y 預設；雖比較 Dynamic Type 並提供 10px footnote，仍未規範文字縮放、zoom/reflow、使用者字型偏好、極小字限制或驗證方式。",
+   "severity": "material",
+   "建議": "新增 A11y 段，規定縮放後不可截斷或溢出、極小字的使用邊界及驗證方式；同時交代 empty、驗證、Loading 為 N/A。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/uiSize/uiSize.spec.md:3",
+   "問題": "24px 互動高度地板已提供 a11y coverage，但 empty、驗證時機與 Loading 仍未明文標示 N/A。",
+   "severity": "marginal",
+   "建議": "補一行：UiSize token 不持有資料、表單或 async state，三項由 consumer component spec own。"
+  }
+ ]
+}

@@ -1,5 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#NumberAlignment
+// @story-baseline: packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx#AlignmentRule
 import type { Meta, StoryObj } from '@storybook/react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Skeleton } from './skeleton'
@@ -21,16 +21,9 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-export const Default: Story = {
-  name: '預設',
-  render: () => (
-    <div className="flex flex-col gap-2 max-w-md">
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-3/4" />
-    </div>
-  ),
-}
+// Default retired 2026-07-14 per audit Dim 24(story 重複性):「預設」的三行文字骨架
+// pattern 與 DocumentLoading 段落骨架完全同構,且抽象「預設」違「範例必真實業務場景」;
+// 由 UserProfileCard / TaskListLoading / DocumentLoading 等真實情境 story 覆蓋。
 
 export const UserProfileCard: Story = {
   name: '個人資料卡載入',

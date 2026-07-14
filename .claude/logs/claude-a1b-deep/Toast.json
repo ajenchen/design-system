@@ -1,0 +1,1 @@
+{"component":"Toast","implBasis":"sonner(浮動管理,toast.custom + unstyled)+ 消費 Notice primitive(layout/icon/theme,與 Alert 共用);role/aria-live 由本 DS 依 variant 手動設在 outer wrapper。已對照 sonner@2.0.7 source 驗證。","claimsVerified":26,"falseClaims":[]}

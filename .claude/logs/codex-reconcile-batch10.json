@@ -1,0 +1,194 @@
+{
+  "batch": 10,
+  "components": ["Switch", "Tabs", "Textarea", "TimePicker"],
+  "reconciler": "Claude (B.3 比稿 adjudication vs actual code + Claude deep findings)",
+  "Switch": {
+    "material_confirmed": [
+      {
+        "fileLine": "switch.spec.md:113 / :118 / :197 + anatomy:181/182 + principles:135/162/167/169",
+        "宣稱": "Switch on/off 的唯一視覺載體是顏色（track bg-primary vs bg-border），形狀完全相同，灰階後兩態無法分辨；Switch 是系統內唯一靠顏色承載 state 的元件",
+        "真實code行為": "code 同時位移 Thumb（switch.tsx:272 data-[state=checked]:translate-x-5 / lg translate-x-6）並顯示 Check icon（:280 group-data-[state=checked]:opacity-100）。on/off 由 顏色+位置+勾號 三者承載。spec 自身 L77 也寫『ON thumb 右滑』——L113『唯一顏色/形狀相同』內部矛盾。連帶使『灰階 swap 會讓 state 失傳』的 opacity-vs-灰階 rationale 前提失真（灰階後位置+勾號仍可分辨）。重複 9 處。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改寫 rationale：改用 opacity 的真正理由是『disabled=整體弱化』慣例，而非『唯一顏色載體』；刪除『唯一/形狀完全相同/系統唯一靠顏色』等與 code 矛盾的絕對措辭。同步 3 檔。"
+      },
+      {
+        "fileLine": "switch.tsx:368 (switchMeta.tokens.bg) + tsx:362 comment + spec.md:205 + anatomy:6 rationale/StateBehavior table",
+        "宣稱": "switchMeta.tokens.bg 列出實際消費 bg token；cva 只有 unchecked/checked/disabled/readonly/focus-visible；狀態色已完全內嵌 StateBehavior story",
+        "真實code行為": "2026-07-06 加了 hover 態（tsx:69 data-[state=unchecked]:hover:bg-border-hover、:70 data-[state=checked]:hover:bg-primary-hover）但 metadata/story/spec 未同步：tokens.bg=[bg-border,bg-on-emphasis,bg-primary] 漏 bg-border-hover / bg-primary-hover；tsx:362 comment 列 cva 狀態時漏 hover；anatomy StateBehavior 表（:141-148）無 hover 列；spec:205『完全內嵌 StateBehavior』因此不成立。",
+        "claudeAlsoCaught": false,
+        "fixHint": "tokens.bg 補 bg-border-hover / bg-primary-hover；StateBehavior 表加 hover 列；修 tsx:362 comment 與 spec:205 涵蓋 hover。"
+      },
+      {
+        "fileLine": "switch.tsx:187 (display / readonly 分支 prop 轉發)",
+        "宣稱": "display／Field-readonly 分支已轉發 id、data-*、aria-* 等其餘 DOM props",
+        "真實code行為": "id 於外層 destructure 成 idProp（tsx:152），不在 restDomProps；display 分支 <span {...restDomProps}>（:209）與 readonly 分支 <div {...restDomProps}>（:223）都未 set id={inputId}，consumer id 丟失。display 分支更 hardcode className=\"inline-flex\"（:209），完全丟棄 consumer className（className 於 :142 destructure 未再套用）。",
+        "claudeAlsoCaught": false,
+        "fixHint": "display/readonly 分支補 id={inputId}；display span 補 className merge（cn('inline-flex', className)）。"
+      },
+      {
+        "fileLine": "switch.tsx:175/180-181 + spec.md:156/175/179",
+        "宣稱": "在 horizontal Field 內一律自動 ml-auto 齊右；ml-0 是唯一需明示 override 的行為，其他 layout 都自動處理",
+        "真實code行為": "alignRightInField（tsx:180-181）只套用到 edit 主路徑 rootEl（:246 cn(switchVariants, alignRightInField, className)）；display 分支（:206 early return）與 Field-readonly 分支（:218 early return）皆未套 alignRightInField。horizontal Field 內 readonly/display Switch 不會齊右 → 與同排 editable Switch 對不齊。spec『所有 horizontal Field 內的 Switch 都自動 ml-auto』overclaim。",
+        "claudeAlsoCaught": false,
+        "fixHint": "display span 與 readonly div className 也 merge alignRightInField，或修 spec 明示 display/readonly 分支的對齊行為。"
+      },
+      {
+        "fileLine": "switch.spec.md:95",
+        "宣稱": "世界級對照 iOS UISwitch 32×20 / Material 3 52×32 / GitHub Primer 40×24——全部 pill 比例 2:1",
+        "真實code行為": "三組實際比例為 32×20=1.6:1、52×32=1.625:1、40×24=1.667:1，均非 2:1。只有本 DS 自己的 40×20 / 48×24 才是 2:1。benchmark 事實錯誤（且用以支撐『canonical 2:1』論述，反而世界級對照多非 2:1）。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改為『世界級 switch 為獨立 pill 比例（1.6–1.67:1），本 DS 取 2:1』，或刪除誤導的『全部 2:1』字樣。"
+      }
+    ],
+    "marginal_count": 8,
+    "false_positive_count": 0,
+    "marginal_examples": [
+      "switch.tsx:86/:89 stroke docblock stale：註解稱 12px 用 3.5(render 1.75px)、差 0.08px，實際 SPECS checkStroke=3(render 1.5px)、真差 0.25px — 但為自我修正註解，值本身(3)正確，comment-only",
+      "switch.spec.md:230 / anatomy:224 WCAG：OFF bg-border 對比 <3:1 — 可辯 a11y nuance(affordance 由 thumb+border 承載，WCAG 1.4.11 有例外)，非明確 false claim",
+      "switch.anatomy:43/:65 display mode 忽略 defaultChecked（:207 只讀 checkedProp===true）；Inspector 只提供 defaultChecked 控制卻描述為切 checked — 邊角行為差異，低影響",
+      "switch.anatomy:91 label='' 空字串仍渲 label wrapper（:288 用 == null 非 falsy）；Inspector 清空 label 控制→'' 不會『只渲 switch 本體』— edge case，低影響"
+    ]
+  },
+  "Tabs": {
+    "material_confirmed": [
+      {
+        "fileLine": "tabs.anatomy.stories.tsx:127/161-168 (Inspector overflow=menu) + tabs.tsx:287-290/353-360 + spec.md:142/152",
+        "宣稱": "menu 模式 dropdown 列全部 tab（menu navigator 列全部 tab，全 trigger 可見）",
+        "真實code行為": "Inspector 把後 4 個 tab（billing/integrations/security/api）包在 Fragment <>…</>（:162-167）。MenuTabsList 用 React.Children.toArray（tabs.tsx:288）不展開 Fragment → menu map（:353）讀 Fragment.props.value=undefined → typeof!=='string' return null（:360）→ 這 4 個 tab 不進 dropdown。overflow='menu' 時 Inspector dropdown 只列前 3 個直接 children（demo 實際壞掉）；且 cloneElement 對 Fragment 傳 ref 會噴 React warning。揭露 code 限制：MenuTabsList 只處理直接、帶 string value 的 children。",
+        "claudeAlsoCaught": false,
+        "fixHint": "MenuTabsList flatten Fragment（遞迴抽 TabsTrigger 後代）再 map；或修 Inspector 不用 Fragment 包 trigger（直接展開），並在 spec 明示 menu 模式要求直接 children。"
+      },
+      {
+        "fileLine": "tabs.anatomy.stories.tsx:261 (ColorMatrix selected Underline TokenCell)",
+        "宣稱": "selected underline = --primary-hover（display '2px primary-hover'）",
+        "真實code行為": "tabs.tsx:406 data-[state=active]:after:bg-primary = --primary base（2026-07-06 拍板 hover→base）。ColorMatrix 表格列 stale，且與同檔 footnote :275『2px primary line』、Overview footnote :39、StateBehavior :322、spec.md:213（bg-primary）自相矛盾。",
+        "claudeAlsoCaught": true,
+        "fixHint": "TokenCell token 改 --primary display '2px primary'。"
+      },
+      {
+        "fileLine": "tabs.spec.md:214 (未選 trigger weight)",
+        "宣稱": "未選 trigger 使用『一般 weight』（暗示比 selected 的 font-medium 輕）",
+        "真實code行為": "tabs.tsx:390 base cva 對所有 trigger 無條件套 font-medium；:403 active 再套 font-medium（冗餘）。未選與 selected 都是 medium，唯一差異是色（fg-secondary→foreground）。spec 暗示的 weight 對比不存在。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec 改為『未選=text-fg-secondary + font-medium（與 selected 同 weight，僅色不同）』。"
+      },
+      {
+        "fileLine": "tabs.anatomy.stories.tsx:135 (Inspector withBadges argType desc)",
+        "宣稱": "withBadges → 成員 tab 顯示 3、通知顯示 12",
+        "真實code行為": "Inspector 只有 overview/members/settings（:96/:131），無『通知』tab。實際 badge 3 在成員（:150）、12 在設定（:157）。描述提及不存在的『通知』tab（複製自 Overview/ColorMatrix 佈局），設定=12 卻寫成通知=12。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改為『成員 tab 顯示 3、設定顯示 12』。"
+      }
+    ],
+    "marginal_count": 20,
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      "tabs.spec.md:100『inline 高度 / icon size / suffix 結構漂移以 button.tsx 為主』— codex 讀成『高度/icon 值繼承自 button.tsx』並反駁。實為『對標 Button 的結構範式（固定高度 token + icon 查表 + suffix gap）』，spec 同段 L93 已明示 --tab-height-* 為 Tabs 自有 token；spec 內部一致，codex 誤讀 對標/漂移歸屬 為 literal value 繼承。"
+    ],
+    "marginal_examples": [
+      "hug-content 叢集（tsx:37/:394/:396、spec:164/:173、anatomy:399）：『Trigger 寬度永遠由內容決定』；inlineAction 時 tabs.tsx:476 加 paddingRight，underline 也跨到 padding — 但 inlineAction 加 padding 已於 spec L89 記載，『永遠』略絕對，doc 完整性 nuance",
+      "arrow always-visible（tsx:198、anatomy:335）：comment/desc 稱『左右 always-visible arrows』；實際 edge-conditional（tabs.tsx:239/242 !atStart/!atEnd）— comment/desc 不精確",
+      "keyboard 完整性（spec:279/:283、anatomy:412×2）：←/→ 切 tab 只述 default horizontal+automatic；vertical 用 ↑/↓、manual 只移焦點；inlineAction/arrow/menu 為額外 tab stop — 對 default 正確，非 default 未涵蓋",
+      "active+disabled underline（spec:215、anatomy:264）：disabled 樣式未清 after:bg-primary，active+disabled 仍有底線 — 罕見 edge",
+      "spec:233：size×variant matrix / density 由 size prop 表達 — Tabs 無 variant（frontmatter/tabsMeta variants={}），density 經 data-density 獨立於 size；邊角 bullet 措辭鬆",
+      "spec:259：OverflowMatrix『scroll/menu/fade 三模式』— overflow mode 實為 none/scroll/menu，fade 是 scroll/menu 內的 mask 子效果，非第三 mode（與 spec:136 自相矛盾）",
+      "tabs.tsx:2 file-size comment『當前 515』實際 558 行（仍 <800）；tabs.tsx:28 view/value 二分 vs spec:55『過度簡化』；tabs.tsx:252 active 用 selected bg 而非 aria-checked/menuitemradio（a11y nuance）"
+    ]
+  },
+  "Textarea": {
+    "material_confirmed": [
+      {
+        "fileLine": "textarea.tsx:199-200 + spec.md:103 + anatomy:143/:246 + principles:135",
+        "宣稱": "支援 uncontrolled（只 defaultValue）；mode='readonly' + defaultValue 呈現唯讀內容",
+        "真實code行為": "readonly 分支只檢查 value：displayValue=value!=null&&value!==''?…:null（:199），readonly&&displayValue==null → 渲空值 div 顯 emptyDisplay（'-'）（:200-215）。傳 mode='readonly' defaultValue='…'（無 value）→ value=undefined → 渲『-』，defaultValue 被丟棄。anatomy ModeMatrix readonly（:143）、ColorMatrix readonly（:246）、principles ReadonlyRule（:135）三個 readonly demo 全用 defaultValue → 全部顯示 '-' 而非內容（stakeholder-visible 壞掉）。display 用 value= 則正常。spec:103『uncontrolled 只 defaultValue』模式對 readonly 不成立。",
+        "claudeAlsoCaught": false,
+        "fixHint": "readonly 判空改採 value ?? defaultValue（對齊 Switch readonly 分支 checkedProp ?? defaultCheckedProp）；或把 stories 改用 value=（controlled）。"
+      },
+      {
+        "fileLine": "textarea.tsx:34-45/89-92 + spec.md:99",
+        "宣稱": "三 mode 的色彩/互動/aria 規則 Textarea 全部對齊 Field Controls",
+        "真實code行為": "readonly Textarea（有值→native <textarea readOnly>）套 base outline-none（:38）+ readonly×default compound（:89-92 bg-readonly border-transparent），全無 focus-visible ring → 鍵盤聚焦可 focus 卻無焦點指示（WCAG 2.4.7）。Field Controls SSOT 2026-07-09 已補 readonly focus ring（field-wrapper.tsx:144 [&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1；field-controls.spec.md:223 明文）。Textarea readonly compound 未鏡射此 SSOT → 互動規則未全對齊 + a11y gap。",
+        "claudeAlsoCaught": false,
+        "fixHint": "readonly×default compound 補 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1（textarea 為裸 native element，直接用 focus-visible: 非 :has()）。"
+      },
+      {
+        "fileLine": "textarea.spec.md:154 + textarea.tsx:80/122/258",
+        "宣稱": "focus-visible:!border-primary 由 default 與 naked 兩種 edit 態直接套用",
+        "真實code行為": "只有 naked edit compound 用 focus-visible:!border-primary（:122）；default edit compound 用 focus-within:!border-primary（:80）。focus-within 在滑鼠點擊/程式聚焦也亮，focus-visible 只鍵盤聚焦。spec 對 default 態的具名 class 不存在於 code；tokensMeta states 也列 focus-visible 未反映 default=focus-within。",
+        "claudeAlsoCaught": true,
+        "fixHint": "spec:154 改為 default=focus-within / naked=focus-visible 分列；tsx:258 states 註記 default 為 focus-within。"
+      },
+      {
+        "fileLine": "textarea.principles.stories.tsx:157 (NoIconRule note)",
+        "宣稱": "需要 icon 請放 Field 外（例如 Field 的 startIcon 或標題旁）",
+        "真實code行為": "FieldProps 無 startIcon prop（grep Field/*.tsx 僅見 Input.startIcon / Select.startIcon control API 與 Button startIcon）；Field wrapper 與 Textarea 都不提供 startIcon。教學指向不存在的 Field.startIcon API。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改為『放在 Field 的 label 旁 / Textarea 外部』，移除『Field 的 startIcon』誤導。"
+      }
+    ],
+    "marginal_count": 12,
+    "false_positive_count": 0,
+    "marginal_examples": [
+      "tsx:17 / principles:125『readonly 保留邊框、只改底色』— readonly×default 實為 border-transparent（無可見邊框）+ bg-readonly；spec L66/L107 與 story title 已正確描述為『保留 padding + 底色標示閱讀區』，僅 docblock/section-comment 措辭鬆",
+      "tsx:153 naked『完全無 chrome，host 提供 border+focus』— naked edit 自帶 border-border/hover/focus-visible:border-primary（:108-122），僅非-edit 態才 chromeless；@internal variant，doc 過度簡化",
+      "tsx:156 error『正交於 mode』— error border compound 只匹配 edit（:100），display/readonly/disabled 無 error 視覺（設計上合理），doc 略 overclaim",
+      "spec:111/anatomy:2/anatomy:238『空值顯半形 -』『5 state』— emptyDisplay 由 useFieldEmptyDisplay() context-dependent（可編輯 cell 回空字串）；ColorMatrix 表 6 列 / 並排格 4 個 / rationale 稱 5 — 計數與涵蓋不一致，低影響",
+      "spec:131『無 Textarea 特有 state 行為』— 與 focus-within/visible 分歧 + readonly 特例（spec 自身 L105-107）矛盾，措辭 overclaim",
+      "spec:146 / anatomy:301 aria：spec 稱 aria-describedby 連 description/error；code describedby 只 descriptionId、error 走 aria-errormessage（:229-230）— ARIA 機制描述不精確",
+      "anatomy:283『永遠 resize-y』未提 naked !resize-none（spec L74 已載）"
+    ]
+  },
+  "TimePicker": {
+    "material_confirmed": [
+      {
+        "fileLine": "scroll-area.tsx:58-59 (Viewport tabIndex=0) + time-columns.tsx:150/156-157 + spec.md:190/191/192 + anatomy:275/276/277 + time-columns:110-111",
+        "宣稱": "整組 column 單一 tab stop；↑/↓ 欄內切 option 每次移動即 commit；Home/End 跳首尾；Tab 切換 column（時→分→秒）（virtual-focus via aria-activedescendant）",
+        "真實code行為": "DS ScrollArea Viewport 為 axe fix 硬帶 tabIndex={0}（scroll-area.tsx:58）；每欄 = Viewport(tabIndex0) > listbox div(tabIndex0)（time-columns.tsx:150→156）→ 每欄兩個 tab stop（非單一）。keydown handler 只掛在 listbox（:157），事件不會從 focus 於父層 Viewport 下傳；Radix Popover 開啟時 FocusScope 焦點落在第一個 focusable = Viewport（非 listbox）→ ↑/↓/Home/End 觸發的是 Viewport 原生捲動，不選值、不 commit。footer『此刻/確定』另兩個 stop，Tab 在 Popover 內循環。documented 鍵盤模型與實際不符（核心 keyboard 選值不 work 需先多按一次 Tab）。",
+        "claudeAlsoCaught": false,
+        "fixHint": "TimeColumn 內 ScrollArea Viewport 設 tabIndex={-1}（改由 listbox 承 focus），或把 listbox keydown 提到 Viewport / 開啟時顯式 focus listbox；同步修正 spec/anatomy 鍵盤表與『single tab stop』宣稱。"
+      },
+      {
+        "fileLine": "time-columns.tsx:101-102/155 + spec.md:158/279 + anatomy:266",
+        "宣稱": "開啟跳到 selected 置中、外部 value 變更 smooth scroll-into-view、aria-selected 反映當前 value、aria-activedescendant 指向 active option",
+        "真實code行為": "off-step value（如 minuteStep=15 而分鐘=07）不在 buildRange values 內：scroll effect values.indexOf(selected)=-1 直接 return（:101-102，不捲動）；無 option isSelected→所有 aria-selected=false；但 aria-activedescendant 仍無條件拼 `${baseId}-opt-${selected}`（:155），該 option 未渲染 → aria-activedescendant 指向不存在的 DOM id（懸空 ARIA 參照，a11y bug）。可由 consumer 傳非 step 對齊 value 觸發。",
+        "claudeAlsoCaught": false,
+        "fixHint": "aria-activedescendant 只在 values.includes(selected) 時輸出（否則 undefined）；off-step value 可考慮 snap 到最近 step 或補一個 selected 佔位。"
+      },
+      {
+        "fileLine": "time-picker.tsx:207 (draft comment)",
+        "宣稱": "inline comment：draft 僅在 panel 開啟時用來處理 commit（OK button）的暫存",
+        "真實code行為": "commit 為 eager：commitDraft（:229-232）在每次欄位選取（TimeColumns onChange，:397）當下 setDraft+onChange。『確定』(OK) onClick 只 setOpen(false)（:421），不 commit。draft 亦供 disabledTime 重算（:221）。comment 的『(OK button)』與元件 canonical 矛盾（spec:205『OK 只關 Panel 不 commit』+ spec:258 常見誤解『OK 才 commit → 錯』）。stale/誤導 comment。",
+        "claudeAlsoCaught": true,
+        "fixHint": "comment 改為『draft = 開啟期間的暫存，供 eager commit 與 disabledTime 重算；OK 只關 Panel』。"
+      }
+    ],
+    "marginal_count": 14,
+    "false_positive_count": 0,
+    "marginal_examples": [
+      "spec:275 Display+disabled：useResolvedFieldMode 顯式 mode 優先（field-context.ts:198 if(mode)return mode）→ mode='display'+disabled=true 走 display 分支不套 text-fg-disabled，spec『token 切 disabled』不成立 — 罕見組合、display 本已唯讀，低影響",
+      "spec:250 / anatomy:8『TimePicker 層級無自有 state 行為，panel 開關由 Popover 處理』— TimePicker 持 open/draft state、trigger onKeyDown、eager commit、disabledTime 重算；語境為『為何無 StateBehavior story』(視覺態)，codex 以行為邏輯過度字面反駁",
+      "spec:280『panel column item 由 MenuItem SSOT 控 density』— TimeColumn 為自建 <button> 直接用 h-field-sm/text-body/bg-neutral-selected（time-columns.tsx:164-185），未消費 MenuItem 元件；色 token 對齊 SelectMenu canonical 但 density 機制描述不精確",
+      "tsx:45 docblock『三欄 scrollable list』— showSeconds 預設 false 為兩欄（tsx:390 comment 正確作 2-3 欄）",
+      "tsx:144/:257 showDisplayEndIcon『Field naked wrapper / naked variant』— 實際用 resolved variant（:194 default），showDisplayEndIcon 只切 wrapper+suffix 不強制 naked；DataTable cell 用例 naked 來自 context 故行為正確，doc 命名錯 variant",
+      "tsx:392 comment『TimeColumns 本身 h-full』— TimeColumns root 為 flex-row + parent 傳 flex-1 min-h-0，h-full 在各欄 ScrollArea",
+      "time-columns:16 docblock『disabledHours/disabledMinutes/disabledSeconds』— TimeColumnsDisabled 實為 {hours,minutes,seconds}（:34-38），長名只在 TimePicker DisabledTimeResult；internal primitive docblock 命名錯",
+      "time-columns:147 comment『~7 items』— 216px 含 ~53px footer + py-2，實約 5-6（spec:160 已正確作 5-6，comment stale）",
+      "time-columns:171 comment『WAI-ARIA roving』— 實為 aria-activedescendant virtual-focus（options 恒 tabIndex=-1），術語標錯（與 :110 comment 自相矛盾）",
+      "spec:202/:277 Display 空值『半形 -』— useFieldEmptyDisplay surface-dependent，可編輯 cell 回空字串"
+    ]
+  },
+  "summary": {
+    "signal_quality": "Codex high-recall/low-precision as expected: heavy dedup (Switch 26→5 roots, Tabs 28→4, Textarea 19→4, TimePicker 27→3), lots of comment-staleness / edge-case / doc-oversimplification noise (marginal), but each component hid ≥1 genuine code/a11y defect that Claude's shallow pass (0–1 findings/component) entirely missed.",
+    "material_confirmed_total": 16,
+    "claude_missed_total": 12,
+    "claude_also_caught_total": 3,
+    "false_positive_total": 1,
+    "strongest_material_finds_claude_missed": [
+      "Textarea: readonly + defaultValue silently renders '-' (uncontrolled readonly broken) — 3 stakeholder-visible readonly demos actually broken",
+      "TimePicker: ScrollArea Viewport tabIndex=0 makes documented keyboard time-selection model non-functional (focus lands on Viewport, arrows scroll not select)",
+      "Textarea: readonly Textarea lacks WCAG 2.4.7 focus ring — drift from 2026-07-09 Field Controls readonly-focus-ring SSOT",
+      "Tabs: menu-overflow dropdown drops Fragment-wrapped triggers (Inspector demo shows 3/7 tabs when overflow=menu)",
+      "Switch: opacity-vs-greyscale rationale ('唯一顏色載體') contradicts code (thumb translate + Check icon) — repeated 9×"
+    ]
+  }
+}

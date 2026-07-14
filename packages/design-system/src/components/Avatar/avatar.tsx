@@ -5,7 +5,7 @@ import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CAT_SUBTLE_TOKENS, CAT_SOLID_TOKENS, type CategoricalColor } from '@/design-system/tokens/categorical-color'
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/design-system/components/HoverCard/hover-card'
-import { HOVER_DELAY_RICH_MS, HOVER_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
+import { MOTION_DELAY_RICH_MS, MOTION_DELAY_CLOSE_MS } from '@/design-system/tokens/motion/motion'
 import { Badge } from '@/design-system/components/Badge/badge'
 import { useResolvedFieldDisabled, useTableIsScrolling } from '@/design-system/components/Field/field-context'
 
@@ -174,7 +174,10 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     const fontSizePx = Math.round(numSize * 0.5)
     const variantKey: VariantKey = solid ? 'solid' : 'subtle'
     const colors = COLOR_MAP[variantKey]?.[color] ?? COLOR_MAP.subtle.neutral
-    const radius = shape === 'circle' ? '9999px' : '4px'
+    // 2026-07-14 dim-20 修:inline style 不能用 rounded-* class,但可消費 radius token
+    // (radius.spec.md:18 canonical「所有 4px 圓角一律用 rounded-md」+ :86 禁硬寫值;
+    // token 改值 Avatar 跟隨 — M17 SSOT 傳播)。
+    const radius = shape === 'circle' ? 'var(--radius-full)' : 'var(--radius-md)'
 
     // 決定內容
     const showImage = src && !imgError
@@ -249,14 +252,19 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     // 是 ARIA 禁用組合(axe aria-prohibited-attr,serious;2026-07-06 拆 role="button" 後裸露)。
     // Avatar 語義本質 = 身份圖像 → `role="img"` 讓 aria-label 合法、子孫自動 presentational、
     // 且不對 AT 承諾任何互動行為 — 與「拆假承諾」拍板意圖一致(emoji span / MUI Avatar img alt 同款語義)。
+    // a11y:role="img" 讓子孫 presentational → 內層 Badge 的 count 語義被壓平,SR 讀不到。
+    // 解:badgeCount 併入外層 aria-label(對齊 Slack「單一 accessible name 含未讀數」做法)。
     const focusableProps = hoverCard
       ? {
           tabIndex: 0,
           role: 'img',
-          'aria-label': alt ?? 'View profile',
+          'aria-label':
+            typeof badgeCount === 'number' && badgeCount > 0
+              ? `${alt ?? 'View profile'}, ${badgeAriaLabel ?? `${badgeCount} unread`}`
+              : (alt ?? 'View profile'),
         }
       : {}
-    // 2026-05-31:focus ring 圓角跟隨 shape(circle→rounded-full / square→rounded-md,對齊 body 的 `radius` 變數 '9999px'/'4px'),
+    // 2026-05-31:focus ring 圓角跟隨 shape(circle→rounded-full / square→rounded-md,對齊 body 的 `radius` 變數 var(--radius-full)/var(--radius-md)),
     // 原寫死 rounded-full 會讓方形 avatar(實體)配 hoverCard 時出現圓形 ring。hoverCard 為通用行為(任意內容),
     // 方形 avatar 合法可配(內容非 ProfileCard 而已),故 ring 必跟形狀。
     const focusableClass = hoverCard
@@ -312,7 +320,7 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     if (!hoverCard || isTableScrolling) return baseEl
 
     return (
-      <HoverCard openDelay={HOVER_DELAY_RICH_MS} closeDelay={HOVER_DELAY_CLOSE_MS}>
+      <HoverCard openDelay={MOTION_DELAY_RICH_MS} closeDelay={MOTION_DELAY_CLOSE_MS}>
         <HoverCardTrigger asChild>
           {baseEl}
         </HoverCardTrigger>

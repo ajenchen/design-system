@@ -2,7 +2,8 @@
 component: Chip
 family: 3
 variants: {}
-sizes: {}
+sizes:
+  sm: { when: "單一尺寸(h-field-sm 28/32 依 density、icon 16、text-body)— 對齊 chip.tsx componentMeta" }
 traits:
   - hasInteractiveStates
 benchmark:
@@ -201,11 +202,11 @@ Chip 的 overflow 處理有三種模式：
 - ❌ 把 Chip 塞進 Field 當 form control——規模語意不對，用 SegmentedControl
 - ❌ Menu 模式搭配 uncontrolled（只給 `defaultValue`）——menu items 無法同步狀態，TS 不擋但 runtime 會看到 menu 勾選失效
 
-## 為何無 Inspector
+## 設計規格 story 結構
 
-Chip 決策維度是「selection 行為(single / multi / menu)」× layout(連體 / 間隔)× overflow——已在 `SelectionMatrix` / `LayoutMatrix` 兩張結構矩陣覆蓋。互動 Inspector 無法呈現 selection model 的差異(需要 side-by-side 對照)。
+Chip 決策維度是「selection type(`single` / `multiple`)」×「layout(`wrap` / `scroll` / `menu`)」× overflow——由 `Inspector`(互動切換 type / selected / disabled / startIcon / layout)、`SelectionMatrix`、`LayoutMatrix` 三者覆蓋。
 
-ColorMatrix 已建:展示 default / hover / selected / disabled 四狀態的 bg / border / text / icon token 對照,採 pill-canonical 規則(`--primary-hover` 同步染 border + text,bg 維持 surface 不染色),對齊 SegmentedControl / Tabs 未選 hover。
+ColorMatrix:展示 default / hover / selected / disabled 四狀態的 bg / border / text / icon token 對照,採 pill-設計準則:selected 時 `--primary` 同時染 border + text(selected × hover 深化為 `--primary-hover`),底色維持 `--surface` 不染色,對齊 SegmentedControl / Tabs。
 
 ---
 

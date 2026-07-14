@@ -10,7 +10,7 @@
  *   - Locked 欄位(`lockedIds`)— 顯 Lock icon,不可 toggle / 不可 drag
  *   - 可選 search filter(`searchable`,跨欄位 label match)
  *   - 可選 column drag reorder(`onColumnOrderChange` 傳 → 啟 DnD)
- *   - 可選 reset 按鈕(`onReset`,header 區 RotateCcw)
+ *   - 可選 reset 按鈕(`resettable: boolean` opt-in,header 區 RotateCcw;點擊 `onVisibilityChange({})` 還原全顯示,無獨立 onReset prop)
  *   - Bidirectional bulk toggle(footer button:全可見 → 全部隱藏 / 任一隱藏 → 顯示全部)
  *
  * **Why 抽 primitive**(per Issue 3 Rule-of-3):RoadmapAllInOne + WithBulkActions + 未來 product

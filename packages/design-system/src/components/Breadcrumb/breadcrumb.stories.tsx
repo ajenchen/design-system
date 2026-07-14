@@ -56,12 +56,13 @@ export const InteractiveEllipsis: Story = {
   name: '可互動省略',
   render: () => (
     <div className="flex flex-col gap-4">
+      {/* 內部實作(對 consumer 不可見):BreadcrumbEllipsis 永遠 render <button> + DropdownMenuTrigger
+          asChild 注入 dropdown 行為;hover 走 neutral(fg-muted → foreground + neutral hover bg,消費
+          ItemInlineActionButton),刻意與 BreadcrumbLink 的 primary-hover 語言區隔。 */}
       <div className="text-caption text-fg-muted max-w-xl">
-        BreadcrumbEllipsis 永遠是 <code>&lt;button&gt;</code>,搭配
-        <code> DropdownMenuTrigger asChild </code>把 dropdown 行為注入。
-        點擊 <code>⋯</code> 開選單顯示折疊路徑;hover 走 neutral(fg-muted → foreground
-        + neutral hover bg,消費 ItemInlineActionButton),與 BreadcrumbLink 的
-        primary-hover 區隔。對齊 Material / Atlassian / Ant Design 作法。
+        點 <code>⋯</code> 會開選單,列出被折疊起來的中間層級。滑鼠移上去時 <code>⋯</code> 用中性灰的高亮
+        (和一般連結的主色高亮刻意分開,讓「展開選單」和「跳到某一層」兩種動作一眼可辨),對齊 Material /
+        Atlassian / Ant Design 的做法。
       </div>
       <Breadcrumb>
         <BreadcrumbList>

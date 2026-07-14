@@ -43,10 +43,10 @@ export const UsageGuidance: Story = {
       <div className="prose prose-sm max-w-prose">
       <p>處理超出空間的 2 種策略:</p>
       <ul>
-        <li><strong>OverflowIndicator(本元件)</strong>—展示已知數量的 collapse;「我有 N 個 item,看不下去」+1 visual,點開展開或 expand</li>
-        <li><strong>ScrollArea</strong>—未知數量或極多 item 時 scroll;讓使用者捲動瀏覽全部</li>
+        <li><strong>OverflowIndicator(本元件)</strong>—項目數量已知且不多時,顯示前幾個、其餘折成 <code>+N</code>,點開看完整清單</li>
+        <li><strong>ScrollArea</strong>—項目數量未知或極多時,讓使用者捲動瀏覽全部</li>
       </ul>
-      <p className="text-fg-muted">判斷:item 數可數且少(≤ 100)→ OverflowIndicator;太多或不知數 → ScrollArea。</p>
+      <p className="text-fg-muted">判斷:項目數可數且少(≤ 100)→ OverflowIndicator;太多或未知數量 → ScrollArea。</p>
     </div>
     </div>
   ),

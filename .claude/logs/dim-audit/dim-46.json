@@ -1,0 +1,29 @@
+{
+  "dim": 46,
+  "title": "Manual vs Mechanical boundary — trait-derived 手寫 exports 該機械生成卻手寫",
+  "mechanism": "Per-元件 grep .stories.tsx(非 anatomy/principles),trait-derived matrix export(AllSizes/AllVariants/WithIcon/States size×state 矩陣)手寫在展示層而非遷入 anatomy(auto-compile) 或加 // @story-trait-rationale 檔頭豁免 = anti-pattern",
+  "filesScanned": 79,
+  "scope": "全 79 個 component/pattern/token 展示層 .stories.tsx(排除 63 anatomy + 63 principles)DS-wide grep;交叉比對 anatomy StateBehavior/SizeMatrix + check_story_invariants.sh R3 escape convention",
+  "canonical": ".claude/skills/design-system-audit/references/audit-prompts.md:1153 (Dim 46) + check_story_invariants.sh R3(@story-trait-rationale escape)+ 2026-06-11 hook note L288-294(矩陣類 showcase home 在 anatomy 層)",
+  "clean_context": "26 個展示層 .stories.tsx 已正確加 // @story-trait-rationale 檔頭豁免(matrices 遷 anatomy);0 個展示層仍有 AllSizes/AllVariants/ColorMatrix/SizeMatrix 命名的 trait export。此 dim 大體乾淨,僅 3 個 States 矩陣漏補豁免/漏遷。Pagination States(邊界情境)/InlineEdit States(三態行為模型,無 anatomy)/ Input+DatePicker SizeAlignment(跨元件 Button 對齊情境)/ Toast WithDescription(light/dark theme 反轉行為)/ Checkbox Modes(四模式設計語言)經對抗驗證 = 合法情境,非 trait 矩陣,不報。",
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.stories.tsx:42",
+      "問題": "展示層 `export const States`(name 狀態)手寫 md/lg 兩 size × on/off/indeterminate/disabled 六態的完整 trait 矩陣(caption 直接標「md（16px，預設）」「lg（20px）」列舉 cva size)。此矩陣已被 anatomy 層 SizeMatrix(checkbox.anatomy.stories.tsx:449)+ StateBehavior(:526)雙重覆蓋,屬「該機械生成卻手寫」重複。且無 // @story-trait-rationale 檔頭豁免 —— 對照:結構幾乎相同的 Switch States(switch.stories.tsx:41,同樣 md/lg × 態)已在檔頭加豁免說明,Checkbox 漏補。",
+      "severity": "material",
+      "建議": "二擇一:(a) 刪展示層 States 矩陣、size×state 對照統一由 anatomy SizeMatrix + StateBehavior owns(對齊 2026-06-11 hook convention);或 (b) 若刻意保留展示層 states 對照,比照 Switch 在檔頭加 `// @story-trait-rationale: hasSizes/hasInteractiveStates 由 anatomy SizeMatrix/StateBehavior owns,此處保留精簡 states 對照供展示`。優先 (a) 消除 anatomy 重複、降 drift 風險。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Chip/chip.stories.tsx:36",
+      "問題": "展示層 `export const States`(name 狀態,caption「Default / hover / selected / disabled」)是 interactive-state trait 對照,已被 anatomy StateBehavior(chip.anatomy.stories.tsx:296)覆蓋。檔頭僅有 @benchmark-unverified-blanket,無 @story-trait-rationale trait 豁免。屬展示層 hand-written trait matrix 未遷 anatomy 亦未豁免。",
+      "severity": "marginal",
+      "建議": "state 對照統一遷/歸 anatomy StateBehavior owns;若保留精簡展示則檔頭補 `// @story-trait-rationale: hasInteractiveStates 由 anatomy StateBehavior owns` 與 Switch 一致。"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Menu/menu-item.stories.tsx:130",
+      "問題": "展示層 `export const States`(name 狀態)列舉 default/selected/disabled 三態 = interactive-state trait 對照,手寫在展示層。MenuItem anatomy(menu-item.anatomy.stories.tsx)無 StateBehavior export,故 state 對照全落在展示層而非 auto-compile-able anatomy 層,違反「矩陣類 showcase home 在 anatomy 層」convention;檔頭無 @story-trait-rationale 豁免。",
+      "severity": "marginal",
+      "建議": "將 default/selected/disabled state 對照遷入 menu-item.anatomy.stories.tsx 補一個 StateBehavior export(對齊 Chip/Switch/Pagination anatomy 有 StateBehavior),展示層改留真實選單情境;或檔頭加 @story-trait-rationale 說明為何 states 留展示層。"
+    }
+  ]
+}

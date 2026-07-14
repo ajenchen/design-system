@@ -159,7 +159,9 @@ interface BulkActionBarLabels {
   count: (n: number) => string         // default 「已選 {n} 項」
   clear: string                         // default 「清除選取」(X aria-label)
   hiddenSuffix: (hidden: number) => string  // default 「· {hidden} 個被 filter 隱藏」
-  toolbarAriaLabel: string              // default 「批次操作」
+  ariaLabel?: string                    // root role="group" 的 aria-label(2026-07-06 新主 key;未傳 fallback toolbarAriaLabel)
+  /** @deprecated 2026-07-06 role 已降級 "group"(見 a11y 段),改用 ariaLabel;此 key 保留 backward-compat,值仍作 fallback。default 「批次操作」 */
+  toolbarAriaLabel: string
 }
 ```
 
@@ -177,7 +179,7 @@ interface BulkActionBarLabels {
 
 ## a11y 預設
 
-- BulkActionBar 整體用 `role="toolbar"` + `aria-label`(default `"批次操作"`,可 override)
+- BulkActionBar 整體用 `role="group"` + `aria-label`(default `"批次操作"`,由 `labels.ariaLabel ?? labels.toolbarAriaLabel` 決定,可 override)。**降級 rationale(2026-07-06 user 拍板)**:原宣告 `role="toolbar"` 但未實作 APG toolbar 方向鍵 roving 契約(AT 告知「工具列」但方向鍵無反應 = 空承諾);改 `role="group"` 語意誠實,Tab 序照 DOM(見下)。Gmail / Linear bulk bar 實務同款。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 - count 文字用 `aria-live="polite"` + `aria-atomic="true"`(selection 變更時 SR 整句重讀「已選 3 項」)
 - Clear button:`aria-label="清除選取"`
 - Hint banner 用 `role="status"` + `aria-live="polite"`(state 切換時通知)

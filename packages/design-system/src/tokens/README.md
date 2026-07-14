@@ -26,7 +26,7 @@
 |---|---|---|
 | `color/` / `typography/` / `radius/` / `elevation/` / `opacity/` / `layoutSpace/` / `density/` | **Public** — consumer-layer(`src/app` / `src/explorations`)直接消費 | UI 開發者寫 `text-body` / `bg-primary` / `--layout-space-loose` 等 |
 | `uiSize/`(`--field-height-*` / `--tab-height-*` / `--table-row-*` / `--tree-indent-*`)| **Internal primitive** — DS 內部 component 消費,consumer 不直接用 | Button / Input / Tabs / DataTable / TreeView 等 primitive 內部消費;consumer 用 `<Button size="sm">` 不用 `h-[var(--field-height-sm)]` |
-| `motion/`(`--hover-delay-*`)| **Internal primitive** — DS overlay 元件內部消費,consumer 不直接用 | Tooltip / HoverCard / Avatar / OverflowIndicator 的 hover open / close delay;consumer 用元件預設,不直接讀 token |
+| `motion/`(`--motion-delay-*`)| **Internal primitive** — DS overlay 元件內部消費,consumer 不直接用 | Tooltip / HoverCard / Avatar / OverflowIndicator 的 hover open / close delay;consumer 用元件預設,不直接讀 token |
 
 **Internal token 規則**(`uiSize/` / `motion/` 適用):
 - **不必補 Storybook stories**(consumer 不直接看;審查 grep 結果:`src/app` + `src/explorations` 0 個檔案直接消費 uiSize token,2026-05-17 verified)

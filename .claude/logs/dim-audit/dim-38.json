@@ -1,0 +1,34 @@
+{
+  "dim": 38,
+  "title": "Inline-action gap canonical",
+  "mechanism": "grep ItemInlineAction sibling gap DS-wide — inline action 間距對齊 canonical",
+  "canonical": {
+    "ssot": "packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:82",
+    "rule": "多個 Inline Action 並排 → 間距 gap-2 (8px),對齊 fieldWrapperStyles 元素間距",
+    "primitive_owner": "packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx:740 (ItemSuffix: h-[1lh] shrink-0 ml-auto flex items-center gap-2)",
+    "propagation_channels": [
+      "ItemSuffix primitive gap-2 (item-anatomy.tsx:740)",
+      "fieldWrapperStyles gap-2 all sizes (field-wrapper.tsx:61-63)",
+      "Sidebar suffixNode span explicit gap-2 (sidebar.tsx:1115)"
+    ]
+  },
+  "verified_consumers": [
+    "TreeView tree-view.tsx:1020,1024 — ItemSuffix gap-2 (multiple inlineActions)",
+    "Sidebar sidebar.tsx:1115 — flex items-center gap-2 span (multiple inlineActions)",
+    "Combobox combobox.tsx:632,811 — ItemSuffix gap-2 (clear X + chevron)",
+    "Select select.tsx:505,518,701 — clear X + chevron siblings via fieldWrapper gap-2",
+    "DatePicker date-picker.tsx:592-612 — clear X + ItemSuffix(calendar) via fieldWrapper gap-2",
+    "TimePicker time-picker.tsx:368-385 — clear X + ItemSuffix(clock) via fieldWrapper gap-2",
+    "PeoplePicker people-picker.tsx:223,250 — ItemSuffix gap-2",
+    "Notice notice.tsx:156 — ItemSuffix gap-2 (endContent + dismiss)",
+    "DataTable column-visibility-panel row — drag + toggle (both ItemInlineActionButton, separated by label, row gap-2)",
+    "item-anatomy.stories.tsx:1598 — demo group gap-2"
+  ],
+  "adversarial_checks": [
+    "ItemSuffix className gap override grep → 0 hits (no primitive gap broken)",
+    "gap-1/gap-3/gap-0/!gap in inline-action host tsx → only FileViewer thumbnail/empty-state (not inline-action containers)",
+    "flex container with 2+ ItemInlineAction and gap != 2 (whole src) → 0 hits"
+  ],
+  "findings": [],
+  "verdict": "CLEAN — inline-action sibling gap canonical (gap-2 / 8px) fully propagated DS-wide via ItemSuffix primitive + fieldWrapperStyles + Sidebar explicit gap-2. Zero drift."
+}

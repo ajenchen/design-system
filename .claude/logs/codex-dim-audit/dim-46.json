@@ -1,0 +1,36 @@
+{
+ "dim": 46,
+ "filesScanned": 79,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.stories.tsx:75",
+   "問題": "`Default` 手寫全部 5 個 variant，實質是改名的 `AllVariants`；anatomy `ColorMatrix` 已完整覆蓋，且檔首 rationale 與實際內容矛盾，不構成合理豁免。",
+   "severity": "material",
+   "建議": "將 `Default` 收斂為單一最小代表範例，完整 variant 軸統一由 anatomy/mechanical matrix 管理，並修正過時 rationale。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.stories.tsx:85",
+   "問題": "`WithDescription` 以手寫 `VARIANTS` 產出 5 variants × light/dark 完整矩陣；既有註解顯示曾因漏值而補齊，已證實 manual drift。anatomy `ColorMatrix` 已有 canonical，檔首亦無豁免。",
+   "severity": "material",
+   "建議": "移除展示層完整矩陣，由 anatomy 單一承擔；showcase 僅保留有獨特教學價值的真實 Toast 情境。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.stories.tsx:42",
+   "問題": "`States` 手寫 md/lg × unchecked/checked/indeterminate × enabled/disabled 矩陣，與 anatomy `ColorMatrix`、`SizeMatrix`、`StateBehavior` 重複；檔案前 5 行沒有有效 trait rationale。",
+   "severity": "material",
+   "建議": "退役展示層 `States`，由 anatomy matrices 統一承載；若確有不同教學目的，須在檔首寫明具體且可驗證的 rationale。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.stories.tsx:36",
+   "問題": "`States` 手刻 default/hover/selected/disabled 對照，anatomy `StateBehavior` 已覆蓋，且無檔首 trait rationale。",
+   "severity": "marginal",
+   "建議": "退役展示層 state 對照；若保留，須在檔首說明其不可由 anatomy matrix 取代的教學價值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.stories.tsx:130",
+   "問題": "`States` 手刻 default/selected/disabled；spec 已明定狀態由 anatomy `ColorMatrix` 完整承載並刻意不另建 `StateBehavior`，此處屬重複手寫且無檔首豁免。",
+   "severity": "marginal",
+   "建議": "退役展示層 `States`，維持 anatomy `ColorMatrix` 為唯一矩陣 owner；不要新增會再次重複的 `StateBehavior`。"
+  }
+ ]
+}

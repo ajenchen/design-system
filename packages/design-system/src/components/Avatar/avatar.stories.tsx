@@ -24,6 +24,8 @@ export const Modes = {
         </p>
       </div>
       <div className="flex items-center gap-6">
+        {/* 刻意示範內容模式優先序:Text fallback / 預設 User icon 兩項**必須**無 src(fallback 行為
+            示範 story,2026-07-08 demo 人像真實化 sweep 豁免保留) */}
         {[
           { label: 'Image', el: <Avatar size={40} src="https://i.pravatar.cc/80?u=a" alt="Alice" /> },
           { label: 'Icon', el: <Avatar size={40} icon={Building2} color="blue" /> },
@@ -95,13 +97,13 @@ export const InContext = {
         <div className="flex flex-col gap-2">
           <span className="text-caption font-medium text-fg-secondary">無 description（inline）</span>
           <div className="w-[280px] border border-divider rounded-lg py-1 bg-surface">
-            <MenuItem avatar={{ src: "https://i.pravatar.cc/48?u=a1", alt: "Alice" }}>
+            <MenuItem avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: "Alice" }}>
               Alice Chen
             </MenuItem>
-            <MenuItem avatar={{ alt: "Bob", color: "blue" }}>
+            <MenuItem avatar={{ src: "https://i.pravatar.cc/48?u=bob-wang", alt: "Bob", color: "blue" }}>
               Bob Wang
             </MenuItem>
-            <MenuItem avatar={{ alt: "Carol", color: "purple" }}>
+            <MenuItem avatar={{ src: "https://i.pravatar.cc/48?u=carol-lee", alt: "Carol", color: "purple" }}>
               Carol Lee
             </MenuItem>
           </div>
@@ -110,19 +112,19 @@ export const InContext = {
           <span className="text-caption font-medium text-fg-secondary">有 description（block）</span>
           <div className="w-[320px] border border-divider rounded-lg py-1 bg-surface">
             <MenuItem
-              avatar={{ src: "https://i.pravatar.cc/64?u=a2", alt: "Alice" }}
+              avatar={{ src: "https://i.pravatar.cc/64?u=alice-chen", alt: "Alice" }}
               description="前端工程師"
             >
               Alice Chen
             </MenuItem>
             <MenuItem
-              avatar={{ alt: "Carol", color: "magenta" }}
+              avatar={{ src: "https://i.pravatar.cc/64?u=carol-lee", alt: "Carol", color: "magenta" }}
               description="產品設計師"
             >
               Carol Lee
             </MenuItem>
             <MenuItem
-              avatar={{ alt: "Dave", color: "turquoise" }}
+              avatar={{ src: "https://i.pravatar.cc/64?u=dave-lin", alt: "Dave", color: "turquoise" }}
               description="跨部門協作專案"
             >
               Dave Lin

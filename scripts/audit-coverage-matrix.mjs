@@ -137,6 +137,7 @@ const COVERAGE = {
   88: { tier: 'DETERMINISTIC', mechanism: 'scripts/check-dangling-infra-ref.mjs --check + scripts/check-skill-deadref.mjs --check' },
   89: { tier: 'HOOK-ENFORCED', mechanism: 'check_tabs_content_chrome_body_double_gap.sh(write-time P0:Check 1 tabs double-gap + Check 2 overlay-body fixed macro gap)+ audit-time DS-wide sweep per SKILL dim row' },
   90: { tier: 'PURE-JUDGMENT', mechanism: 'LLM layout-space macro 合規 DS-wide 全掃(NO-SAMPLE;regex 分不出 macro/micro);判準 = layoutSpace.spec.md「該用 token vs 刻意固定」邊界段;每 finding 對抗二次驗證(2026-07-01 錨:35 raw → 8 confirmed)' },
+  91: { tier: 'DETERMINISTIC', mechanism: 'scripts/audit-failure-class-coverage.mjs --check(failure-class registry 每 class 必 protected/remediating+plan/judgment+auditDim;fail-closed;2026-07-10 user「每類病根必有防線」基本原則機械化)' },
 }
 
 // expected dim count = SSOT(governance-counters auditDims);fallback COVERAGE map size。

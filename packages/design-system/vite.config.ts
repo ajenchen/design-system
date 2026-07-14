@@ -19,6 +19,20 @@ const componentEntries = Object.fromEntries(
     ]),
 )
 
+// 2026-07-14 API 策展 A(tokens/* exports 收窄至 dist 編譯品):token JS mirrors 也要 explicit
+// entries — 純 re-export facade(如 tokens/uiSize/icon-size.ts 只轉出口 element-anatomy 的
+// ICON_SIZE)非 entry 時會被 rollup 收合省略 → dist/tokens/uiSize/icon-size.js 不存在 →
+// package.json `./tokens/*` → dist 映射 ERR_MODULE_NOT_FOUND。entry 化保證每個 token 模組
+// 都有對應 dist chunk(對齊 componentEntries 同款理由)。
+const tokenEntries = Object.fromEntries(
+  globSync('src/tokens/**/*.ts', { cwd: __dirname })
+    .filter((p) => !p.endsWith('.d.ts') && !p.endsWith('.spec.ts'))
+    .map((p) => [
+      p.replace(/^src\//, '').replace(/\.ts$/, ''),
+      path.resolve(__dirname, p),
+    ]),
+)
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -34,6 +48,7 @@ export default defineConfig({
       entry: {
         index: path.resolve(__dirname, 'src/index.ts'),
         ...componentEntries,
+        ...tokenEntries,
       },
       formats: ['es'],
       fileName: 'index',

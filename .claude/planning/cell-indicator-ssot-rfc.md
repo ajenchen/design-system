@@ -252,3 +252,14 @@ per codex round 5 Q1 5 layers defense:
 
 但若 user 想一步到位走 spec 文字直讀 → **(A)**。
 若 user 接受短期 known limitation → **(E)**。
+
+---
+
+## 2026-07-08 拍板更新(v16 — A 案:display 態撤恆顯 indicator)
+
+User 問「editable cell 是否要顯示指示型 icon 佔據一個位置?」→ 7 路調查(內部全盤 + 6 家 source-code 級 benchmark)後拍板 **A 案**:
+
+- **世界級 6/6 一面倒**(product-table 域):Ant(editable-cells:idle 純文字,hover 顯 input 形 border,恆留 24px 尾端留白但不放 icon)/ MUI X(singleSelect display = 純文字 valueFormatter)/ AG Grid(無內建 indicator,官方推 cell 背景色標可編)/ Atlaskit inline-edit(v1 hover-pencil 於 2017 v2.0.0 明文移除,9 版未回歸;hover = bg tint)/ Notion / Airtable(click-to-edit,零 idle icon)。唯一恆顯派 = Google Sheets Chip/Arrow(spreadsheet 域、user 可選檔位,另 Plain text = 零 indicator 也是合法檔位);Excel = selected 才顯且浮 cell 外緣。
+- **落地**:cell-registry 6 個 picker 站停傳 `showDisplayEndIcon`;url 站改 `isEditable === true`(wrapper-only,修 I1 等式);prop 保留為 opt-in 逃生門;editable affordance 統一 = hover outline(L4)+ boolean live Checkbox + url hover Pencil(功能性入口非型別 indicator)。
+- **推翻**:2026-05-10「Indicator = editable affordance」+ 2026-06-26 cell 例外恆顯 — 兩次拍板均在無此輪 benchmark 下做成,user 2026-07-08 重判。
+- 改A壞B 防線:只動旋鈕 3(cell-registry 傳值端);5 控件 gate expression(select.tsx:360 等)的非 naked 臂(form field readonly/disabled 行為)一字未動。

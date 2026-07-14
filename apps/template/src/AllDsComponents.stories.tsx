@@ -47,7 +47,9 @@ export const ImportSmoke: Story = {
       <p className="text-caption text-fg-secondary">
         本 story 只驗 import 全部解析。**禁** render DS components in PW(per codex M31 synthesis 2026-05-27).
         Per-component visual canonical → DS deployed Storybook:{' '}
-        <a href={DS_STORYBOOK_URL} target="_blank" rel="noopener" className="text-info underline">
+        {/* 連結字走 Action—Primary canonical(text-primary + hover 換色,不用 underline;
+            r3 C20 pattern,對齊 principles stories LinkTo 同款 — 2026-07-14 dim-71 修) */}
+        <a href={DS_STORYBOOK_URL} target="_blank" rel="noopener" className="text-primary hover:text-primary-hover font-medium">
           ajenchen-design-system.netlify.app
         </a>
       </p>

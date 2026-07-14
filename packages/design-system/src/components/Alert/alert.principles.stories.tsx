@@ -56,7 +56,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Alert/展示" name="右上角操作群組"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">右上角操作群組</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見 <code>Vs*Rule</code> stories)。</p>
+      <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見本頁下方「vs 近親」段)。</p>
     </div>
 
       {/* vs 近親 — VsToastVsDialogRule — 原 VsToastVsDialogRule */}

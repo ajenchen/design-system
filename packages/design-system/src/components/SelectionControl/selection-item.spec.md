@@ -26,13 +26,13 @@ SelectionItem 是 **Checkbox 和 RadioGroup 共用的 item 佈局 primitive**—
 
 **實作基礎**：自建 internal primitive——純視覺佈局 + padding 公式，無 external primitive base。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 2（List item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「List item layout」章節的 reading-mode 規格。SelectionItem 是 Family 2 的 SelectionItem variant：prefix 放 Checkbox/Radio indicator 而非 icon/avatar。
+**Layout Family**：CLAUDE.md 4-Family Model **Family 2（List item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「List item layout」章節的 reading-mode 規格。SelectionItem 是 Family 2 的 SelectionItem variant：`control` slot 放 Checkbox/Radio indicator，`prefix` slot 專供 icon/avatar——兩者是獨立 slot、可並存（如 `<Checkbox icon>` 同時有 indicator + icon，見「結構」段的 3-slot 圖）。
 
 ---
 
 ## 何時用 / 何時不用
 
-**SelectionControl 是 internal primitive**——不直接使用，透過 Checkbox / RadioGroup 消費。
+**SelectionItem 是 internal primitive**——不直接使用，透過 Checkbox / RadioGroup 消費。**裸用禁止；內部由 Checkbox / RadioGroup 組合消費允許**——consumer 與展示範例一律走公開 `<Checkbox label>` / `<RadioGroupItem label>` 路徑（自動 wire id/htmlFor）；primitive 自家 stories 展示自身 API 為唯一裸用豁免。
 
 **icon / avatar prefix 消費路徑(2026-06-12 M30 修)**:`<Checkbox icon={...}>` / `<RadioGroupItem avatar={...}>` 直接轉發本 primitive 的既有槽(本檔「3-slot 結構」+ selection-item.tsx jsDoc 為對齊規則 SSOT)——不需也不准裸用 `<SelectionItem>`。
 
@@ -85,7 +85,7 @@ Checkbox 和 Radio 視覺幾乎完全一致（差異只在形狀 `rounded-md` vs
 ## 禁止事項
 
 - ❌ 直接在 JSX 用 `<SelectionItem>`——透過 Checkbox / Radio 消費
-- ❌ 在 Checkbox / Radio 之外複製 SelectionItem 邏輯——共用源頭一定是 SelectionControl
+- ❌ 在 Checkbox / Radio 之外複製 SelectionItem 邏輯——共用源頭一定是 SelectionItem（`SelectionControl/` 僅為概念群組資料夾名，見「關於資料夾命名」note）
 - ❌ 改動 `py` padding 公式只針對某一 variant——Checkbox 和 Radio 必須同步
 
 ---

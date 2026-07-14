@@ -27,6 +27,8 @@
 | focus-visible | `outline: 2px solid var(--ring)` | — |
 | 宿主 disabled | 不渲染 inline action | — |
 
+**Loading(明文 N/A)**:inline action **無 loading 態**——icon 級靶子沒有空間承載 spinner 且換渲會位移幾何,故不設 `aria-busy` / spinner surface。async 動作(row approve / retry / API delete)兩條路:(a) 觸發後由宿主層呈現 in-flight 結果(row pending 樣式 / Toast / optimistic update);(b) 需要使用者可感知的進行中狀態 → **升級為 `<Button loading>`**(Button spec「loading」段:CircularProgress + 自動 disabled + `aria-busy`),不用 inline action。double-trigger 防護由 consumer handler 冪等 / 重入 guard 承擔(對齊 `form-validation.spec.md`「Double-submit 防護」)。
+
 **Overlay trigger canonical**(2026-04-29 訂 / 2026-05-02 改 / 2026-05-05 prop 化):trigger 透過 `asChild` 作 DropdownMenu / Popover / Tooltip / HoverCard trigger 時,Radix 自動 set `data-state="open"`,**trigger 維持 host hover 樣式**直到浮層關閉。對齊**狀態極簡派**(shadcn / Radix Themes / Material — 不另開 4th token);避免 state 增生 + 跨 host(neutral / colored)規則同步。
 
 **2026-05-05 修正:overlay vs in-place 語意分離**。`Radix Collapsible.Trigger` 也 emit 同 `data-state="open"`,但語意完全不同(展開內容**接在下方非 floating**,user 不需追溯)。原 `ItemInlineActionButton` 將規則**無條件**套用於所有 `data-state=open`,造成 Sidebar collapsible group label 的 chevron 展開時殘留 hover bg(2026-05-05 user reported)。修正:`ItemInlineActionButton` 加 `overlayTrigger?: boolean` prop,**default `false`**。consumer 顯式宣告:

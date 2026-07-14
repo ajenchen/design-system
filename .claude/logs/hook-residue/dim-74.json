@@ -1,0 +1,14 @@
+{
+  "dim": 74,
+  "hook": "check_overlay_open_focus_escape_probe.sh",
+  "residueCount": 0,
+  "findings": [
+    {
+      "fileLine": "17 個 DS stories 檔含 overlay Trigger 無 open 機制/escape(代表:AppShell/app-shell.stories.tsx:109 PopoverTrigger、FileViewer/file-viewer.principles.stories.tsx:150 DialogTrigger、Tabs/tabs.stories.tsx:64 DropdownMenuTrigger、Breadcrumb/breadcrumb.stories.tsx:74、Input/input.stories.tsx:42 TooltipTrigger、+ 各 principles/anatomy)",
+      "問題": "此類為 principles/anatomy 文件 story 或 overlay 為附帶內容(非該 story 主體)的 trigger-only 用法。非 genuine 視覺覆蓋缺口:每個 overlay primitive 在自身 canonical stories.tsx 皆有 open-snapshot 覆蓋(Tooltip=6 / DropdownMenu=6 / Dialog=6 / Popover=3 / Sheet=2 open 機制命中)。M15 系統級覆蓋不缺。HoverCard 3 檔 + ProfileCard 為 documented escape,不計。",
+      "severity": "marginal"
+    }
+  ],
+  "verified": true,
+  "note": "Material genuine 違規 = 0。Hook 為 per-hunk write-time nudge;flagged 檔皆為文件/附帶 overlay,primitive 本身覆蓋完整。"
+}

@@ -1,0 +1,33 @@
+{
+  "dim": 28,
+  "title": "Manual story 拆分原則(WithStartIcon/WithEndIcon 該合被拆 anti-pattern)",
+  "judgmentSSOT": ".claude/rules/story-rules.md 範例最高準則「拆分原則」+ earn-existence 2-test",
+  "codexRaw": 1,
+  "claudeSameDim": { "findings": 0, "verdict": "CLEAN — 0 finding" },
+  "verdicts": [
+    {
+      "codexFinding": "Alert 展示層 SubtleSingleLine / SolidSingleLine / SubtleWithDescription / SolidWithDescription 將同一 Alert affordance 的 appearance × description prop variations 拆成四個 stories,各自重複完整 5-variant grid;spec 已指定 anatomy ColorMatrix 負責 variant × appearance;檔首 @story-trait-rationale 非合法 @story-split-rationale 例外。",
+      "codexSeverity": "material",
+      "fileLine": "packages/design-system/src/components/Alert/alert.stories.tsx:37-71",
+      "verdict": "material_confirmed",
+      "claudeAlsoCaught": false,
+      "groundTruthEvidence": [
+        "alert.stories.tsx:37-71 — 4 stories 確為 2×2 prop matrix:appearance{subtle,solid} × description{none,present},每個 render 都 `ALL.map` 全 5 variant(neutral/info/warning/error/success)。屬 dim 28 目標 pattern(同 affordance 內 prop-variation 拆多 story),且比 canonical WithStartIcon+WithEndIcon 例(拆 1 prop)更嚴重(拆 2 props)。",
+        "alert.anatomy.stories.tsx:100-143 ColorMatrix — 已完整呈現 Subtle(5 variant + description)+ Solid(3 variant + description)+ Variant×Theme 表 = variant × appearance 的 SSOT。展示層 4 story 與此重複。",
+        "alert.spec.md:164 — spec 明文『已在 ColorMatrix 完整呈現 variant × appearance 矩陣』確認 ColorMatrix 是 variant×appearance SSOT owner;展示層再鋪一次 = SSOT 重複。",
+        "alert.stories.tsx:1-3 檔首 @story-trait-rationale 自述『本 showcase 提供真實業務 scenario 而非 trait grid 重複展示』——但 4 story 全是 `ALL.map` 全 variant grid(trait grid),自相矛盾;且無任何 @story-split-rationale 為 appearance×description 2×2 拆分背書。",
+        "DS-wide grep:appearance=subtle/solid split 只出現在 Alert 一個 showcase 檔(唯一 outlier)。sibling Toast(共用同一 Notice primitive + 同 appearance 概念)showcase 只有 WithDescription + Interactive 真實 scenario,把 variant/appearance grid 留給 anatomy — 證明 DS 慣例是『showcase = scenario / anatomy = matrix』,Alert 違反此慣例非遵循它。",
+        "earn-existence 2-test:SolidSingleLine / SolidWithDescription 教的『solid 視覺重量』已在 anatomy ColorMatrix Solid 段;移除後 spec 理解不 degrade → 未 earn existence。"
+      ],
+      "nuance": "codex 提議『移除四個矩陣、只留 Controls』方向正確但 remediation 稍激進(展示層宜保留 1-2 個真實 in-context scenario:如 settings 頁單一 Alert)。核心缺陷(4 個 grid-repetition story 重複 anatomy ColorMatrix SSOT + 違自身 @story-trait-rationale + DS-wide outlier vs Toast)經 code+spec 驗證屬實 = material。非 P0 bug,屬 story hygiene / 拆分紀律,應收斂。"
+    }
+  ],
+  "stats": {
+    "codexRaw": 1,
+    "material_confirmed": 1,
+    "marginal": 0,
+    "false_positive": 0,
+    "claudeMissed": 1
+  },
+  "claudeMissAnalysis": "Claude dim-28 判 CLEAN,scan 僅聚焦 literal WithStartIcon+WithEndIcon / icon-position 拆分對(coexisting_start_end_pairs: 0),未把 Alert 的 appearance×description 2×2 grid 拆分納入候選 → 漏抓此 prop-variation-split class。此為真 material,Claude 漏 = claudeMissed 1。"
+}

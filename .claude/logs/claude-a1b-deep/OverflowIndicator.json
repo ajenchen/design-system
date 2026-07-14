@@ -1,0 +1,1 @@
+{"component":"OverflowIndicator","implBasis":"自建 internal primitive; wraps DS HoverCard (Radix-based) + tagVariants styling; +N trigger span (circle=bg-muted / tag=tagVariants). Motion delays consume MOTION_DELAY_PLAIN_MS(500)/MOTION_DELAY_CLOSE_MS(200) tokens","claimsVerified":30,"falseClaims":[]}

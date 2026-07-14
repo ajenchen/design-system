@@ -10,26 +10,29 @@ const meta: Meta = {
 export default meta
 
 // 2026-07-04 audit:補 'info'(NoticeVariant 5 值,原漏 → 靜態雙 theme 對照未涵蓋全 variant)
+// 2026-07-14 Dim 68 修:原 warning =「訂閱 7 天後停用 + 續訂 CTA」= 持久帳務狀態 + 強制 CTA,
+// 違反 toast.spec.md「持久性系統狀態(方案過期)→ Alert」+「❌ 不把需要 user action 的內容
+// 放 Toast(action 僅限復原類非必要後手)」。改為短暫操作回饋(匯入部分完成)+ 非必要「查看」後手。
 const VARIANTS: NoticeVariant[] = ['neutral', 'info', 'success', 'warning', 'error']
 const LABELS: Record<string, string> = {
   neutral: '檔案已複製到剪貼簿',
   info: '新版本 v2.4 可用',
   success: '專案已儲存',
-  warning: '即將到期的訂閱',
+  warning: '匯入部分完成',
   error: '無法連線伺服器',
 }
 const ACTIONS: Record<string, string> = {
   neutral: '復原',
   info: '查看更新',
   success: '查看',
-  warning: '續訂',
+  warning: '查看',
   error: '重試',
 }
 const DESCRIPTIONS: Record<string, string> = {
   neutral: '「Q3 營收報表.xlsx」已加入剪貼簿',
   info: '重新整理頁面即可套用新功能',
   success: '變更已同步到所有成員',
-  warning: '7 天後將停用,請前往結算頁續訂',
+  warning: '120 筆已匯入,3 筆格式錯誤被略過',
   error: '請檢查網路後再試一次',
 }
 
@@ -120,7 +123,7 @@ export const Interactive = {
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" onClick={() => toast({ title: '檔案已複製到剪貼簿', action: { label: '復原', onClick: () => {} } })}>複製檔案</Button>
         <Button variant="secondary" onClick={() => toast({ variant: 'success', title: '專案已儲存', description: '變更已同步到所有成員', action: { label: '查看', onClick: () => {} } })}>儲存專案</Button>
-        <Button variant="secondary" onClick={() => toast({ variant: 'warning', title: '即將到期的訂閱', description: '7 天後將停用,請前往結算頁續訂', action: { label: '續訂', onClick: () => {} } })}>訂閱提醒</Button>
+        <Button variant="secondary" onClick={() => toast({ variant: 'warning', title: '匯入部分完成', description: '120 筆已匯入,3 筆格式錯誤被略過', action: { label: '查看', onClick: () => {} } })}>匯入資料</Button>
         <Button variant="secondary" onClick={() => toast({ variant: 'error', title: '無法連線伺服器', description: '請檢查網路後再試一次', action: { label: '重試', onClick: () => {} } })}>斷線示範</Button>
       </div>
       <Toaster />

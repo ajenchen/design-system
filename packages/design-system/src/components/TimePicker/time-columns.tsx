@@ -147,12 +147,16 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
   //   - TimePicker:wrap in h-[216px] container(預設 ~7 items)
   //   - DatePicker showTime / Range:flex-row items-stretch + calendar 一起決定高度(自動同高)
   return (
-    <ScrollArea className={cn('flex-1 h-full', withDivider && 'border-r border-divider')}>
+    // viewportTabIndex=-1:焦點直接落 listbox(有 keydown),消除「Viewport+listbox 雙 tab stop
+    // + 焦點落 Viewport 時 ↑/↓ 觸發原生捲動非選值」a11y bug(axe 由 listbox tabIndex=0 滿足)
+    <ScrollArea viewportTabIndex={-1} className={cn('flex-1 h-full', withDivider && 'border-r border-divider')}>
       <div
         ref={listRef}
         role="listbox"
         aria-label={label}
-        aria-activedescendant={selected != null ? `${baseId}-opt-${selected}` : undefined}
+        // guard values.includes:off-step value(如 minuteStep=15 但分=07)的 option 未渲染,
+        // 指向未渲染 id = 懸空 ARIA 參照(AT 讀空);僅真實渲染的 option 才掛
+        aria-activedescendant={selected != null && values.includes(selected) ? `${baseId}-opt-${selected}` : undefined}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         className="flex flex-col py-2 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px]"

@@ -8,7 +8,7 @@ const meta: Meta = {
     docs: {
       description: {
         component: `
-色彩 token 系統。元件只使用語義 token，不直接引用原始色票。
+色彩 token 系統。互動 / 狀態語意一律使用語義 token；categorical 靜態多色場景（Tag / Avatar / Calendar event）依 spec 直接消費 primitive 色票（見 color.spec.md「消費規則」）。
 
 完整規則：\`packages/design-system/src/tokens/color/color.spec.md\`
         `,
@@ -85,7 +85,7 @@ export const Primitives: Story = {
     docs: {
       description: {
         story:
-          '原始色票（Layer 1）。元件**不得直接使用**，一律透過語義 token。\n\n' +
+          '原始色票（Layer 1）。互動 / 狀態語意**不得直接使用** primitive，一律透過語義 token；例外：Tag / Avatar / Calendar 等 categorical 多色區分場景直接消費 primitive（color.spec.md「消費規則」）。\n\n' +
           '**已映射為語義 token 的色相：** blue → primary、deep-orange → error + notification、green → success、yellow → warning\n\n' +
           '**其餘色相（orange、amber、lime、turquoise、indigo、purple、magenta、red）** 保留給 data visualization、categorization tag、avatar 等需要多色區分的場景。',
       },
@@ -223,7 +223,7 @@ export const Semantic: Story = {
     docs: {
       description: {
         story:
-          'Primary = 互動入口（按鈕、連結）。Info = 系統狀態（in-progress、active）。subtle 為淡底填充，用於 tag、banner、checked 背景。',
+          'Primary = 互動入口（按鈕、連結）。Info = 系統狀態（in-progress、active）。subtle 為淡底填充，用於 badge、banner、checked 背景（Tag 的多色淡底走 categorical primitive step-1，非 semantic subtle，見「原始色票」）。',
       },
     },
   },

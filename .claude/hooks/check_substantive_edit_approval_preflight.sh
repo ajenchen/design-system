@@ -2,19 +2,20 @@
 # check_substantive_edit_approval_preflight.sh — Pre-action gate for substantive design edits.
 #
 # Purpose: PRE-flight 偵測 packages/design-system/src/**.{tsx,ts,css} edit + last 5 user msgs 無
-# approval keyword → SOFT inject context warning。
+# approval keyword → P0 BLOCKER(stderr + exit 2;2026-05-15 由 soft warn 升級,
+# per memory/feedback_ship_then_revert_anti_pattern.md SSOT)。
 #
-# 對比 stop_self_audit.sh post-action BLOCKER:本 hook 是 PRE-action soft warn,
-# 讓 AI 看到 context 後 self-decide(propose-only OR cite approval verbatim),
+# 對比 stop_self_audit.sh post-action BLOCKER:本 hook 是 PRE-action gate,
+# 在 edit 落地前就攔(propose-only OR cite approval verbatim + bypass env),
 # 避免「edit → stop hook BLOCKER → revert」waste cycle(user 抓 2026-05-12 anti-pattern)。
 #
 # 對齊 Option 3 hybrid(M32 split 後 (f) ship gate 的 PRE-flight 補位):
-# - PreToolUse soft warn = info inject(本 hook)
-# - Stop hook BLOCKER = enforcement(stop_self_audit.sh Mechanism 4)
+# - PreToolUse P0 BLOCKER = pre-action enforcement(本 hook)
+# - Stop hook BLOCKER = post-action backstop(stop_self_audit.sh Mechanism 4)
 # - AI inline self-statement = discipline(M31 Layer A/C marker + 本 hook context)
 #
-# Why pre-action soft instead of hard BLOCK:false-positive 風險(legit bug fix 可能撞)+
-# inject info 比 reject 更尊重 AI judgment + 配合 existing stop hook backstop。
+# False-positive escape:CLAUDE_BYPASS_DESIGN_APPROVAL=1(audit-logged → logs/approval-bypass.jsonl),
+# 需 cite user approval verbatim quote 在 commit message + reply。
 #
 # 對齊:CLAUDE.md `# 稽核 canonical` Audit-vs-execute 分權 + M31 Layer A/C + M32(f) ship gate。
 

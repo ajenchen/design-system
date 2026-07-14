@@ -374,8 +374,7 @@ export const FallbackUnknownType: Story = {
           開啟無 renderer 支援的檔案
         </Button>
         <p className="text-footnote text-fg-muted text-center max-w-[520px] leading-relaxed">
-          情境:專案備份 zip 檔案無對應 renderer,FallbackRenderer 兜底顯示檔名 +
-          「請下載檢視」訊息。Toolbar 隱藏 zoom controls(capabilities.zoom = false)。
+          情境:zip 等無法預覽的檔案,改顯示檔名和「請下載檢視」提示,工具列會自動隱藏縮放按鈕。
         </p>
         <FileViewer files={unknownFile} open={open} onOpenChange={setOpen} />
       </div>

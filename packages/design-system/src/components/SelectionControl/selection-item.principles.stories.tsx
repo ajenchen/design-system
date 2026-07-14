@@ -62,10 +62,10 @@ export const CompositionRules: Story = {
         <p>SelectionItem 是 Family 2 reading-mode row layout primitive,由 Checkbox / RadioGroup 兩個 consumer 在「list-as-page settings」場景消費,**不直接放在 app code**:</p>
 
         <h4>Pattern 1 — Checkbox + SelectionItem(多選 settings list)</h4>
-        <p>多選 + 每個 row 大塊 description / icon → <LinkTo kind="Design System/Components/Checkbox/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Checkbox</span></LinkTo> 內部消費 SelectionItem(prefix 放 Checkbox indicator / content 放 label + description)。對齊 Notion 通知設定 / Slack notification preferences idiom。</p>
+        <p>多選 + 每個 row 大塊 description / icon → <LinkTo kind="Design System/Components/Checkbox/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Checkbox</span></LinkTo> 內部消費 SelectionItem(control 放 Checkbox indicator / prefix 可選放 icon 或 avatar / content 放 label + description)。對齊 Notion 通知設定 / Slack notification preferences idiom。</p>
 
         <h4>Pattern 2 — RadioGroup + SelectionItem(單選 plan picker)</h4>
-        <p>單選 + 每個 row 大塊描述(plan tier / tier features)→ <LinkTo kind="Design System/Components/RadioGroup/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">RadioGroup</span></LinkTo> 內部消費 SelectionItem(prefix 放 Radio indicator / content 多行)。對齊 Stripe plan picker / Linear pricing tier idiom。</p>
+        <p>單選 + 每個 row 大塊描述(plan tier / tier features)→ <LinkTo kind="Design System/Components/RadioGroup/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">RadioGroup</span></LinkTo> 內部消費 SelectionItem(control 放 Radio indicator / prefix 可選放 icon 或 avatar / content 多行)。對齊 Stripe plan picker / Linear pricing tier idiom。</p>
 
         <h4>Field 包覆規則</h4>
         <p>Checkbox / RadioGroup 在 form context 內 → 外層用 <LinkTo kind="Design System/Components/Field/展示" name="垂直"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Field</span></LinkTo> 統一 label + helper + error(對齊 Field 4-Family Layout 慣例)。Field 處理 wrapper level 的 ARIA + error,SelectionItem 處理 row level 的 layout。</p>

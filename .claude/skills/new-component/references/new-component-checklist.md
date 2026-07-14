@@ -65,7 +65,7 @@
 ## Phase 6 — Self quality-gate chain
 
 - [ ] Invoke `/component-quality-gate` skill
-- [ ] 45 項全綠
+- [ ] 35 項全綠
 - [ ] Phase 4.5 visual audit Layer A 過(0 contrast / 0 geometry violation)
 - [ ] Phase 4.5 Layer B AI 視覺判斷過(或有 documented rationale)
 - [ ] 回報 user「元件 {Name} 建立完成,已過 create + review 雙 gate」

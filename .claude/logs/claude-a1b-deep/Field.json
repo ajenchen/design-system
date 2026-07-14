@@ -1,0 +1,1 @@
+{"component":"Field","implBasis":"自建 form layout container + state context (engine-agnostic; spec 定位 explicitly rejects RHF Controller coupling); state machine chrome in field-wrapper.tsx cva compoundVariants","claimsVerified":35,"falseClaims":[]}

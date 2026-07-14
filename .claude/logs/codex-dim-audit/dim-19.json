@@ -1,0 +1,30 @@
+{
+ "dim": 19,
+ "filesScanned": 392,
+ "findings": [
+  {
+   "fileLine": ".claude/skills/bug-fix-rhythm/SKILL.md:3,20",
+   "問題": "`bug-fix-rhythm/` 名稱只涵蓋修 bug，但實際強制範圍包含任何 numbered rules、Q1…QN 或圖片標號，未限定內容必須是 bug fix；一般編號問題也可能誤觸修復 workflow，folder 名低估實際 scope。",
+   "severity": "material",
+   "建議": "若保留通用 trigger，改名為可涵蓋批次執行與 MUST-ALL checklist 的名稱，如 `batch-execution-rhythm/`；否則把 trigger 明確限縮為 multi-fix session 內的編號修復需求。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:5; packages/design-system/src/tokens/layoutSpace/layoutSpace.css:8",
+   "問題": "`layoutSpace/` 宣告只管理頁面與容器的巨觀間距，實際卻收納 element-level 的 `--item-gap-label-desc-*` micro-spacing tokens；這也與 token-system 將此 home 定位為 L4 macro layout 的範圍不符。",
+   "severity": "material",
+   "建議": "把四個 item-gap tokens 移至 `element-anatomy` 所有的 pattern-local token home，或建立明確的 item-spacing token family；若確定要統管所有 spacing，則需同步擴大 folder 名、spec 與 token-system charter。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/elevation/elevation.spec.md:5,43; packages/design-system/src/tokens/elevation/overlay-geometry.ts:2",
+   "問題": "`elevation/` 名稱與定位是陰影及視覺深度，實際卻同時擁有 sideOffset、collisionPadding 等 overlay positioning geometry；平面定位規則不屬 elevation，folder 名低估 canonical scope。",
+   "severity": "material",
+   "建議": "將常數與定位規則移至明確的 `overlay-geometry` pattern/home；`elevation/` 僅保留陰影與深度規則，並留下跨文件 pointer。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:35,88",
+   "問題": "此 spec 的 canonical primitive、frontmatter、H1 與實作 export 均為 `SelectionItem`，但兩處把概念 home 名 `SelectionControl` 當成 primitive／共用實作名；repo 並不存在 `SelectionControl` export，造成 home 名與實際 scope 混用。",
+   "severity": "marginal",
+   "建議": "兩處改稱 `SelectionItem`；若第 88 行刻意指資料夾 home，明寫 `SelectionControl/selection-item.tsx`。保留已文件化的 `SelectionControl/` family folder 名即可。"
+  }
+ ]
+}

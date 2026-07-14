@@ -1,0 +1,51 @@
+{
+ "component": "Command",
+ "claimsVerified": 226,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.spec.md:21",
+   "宣稱": "token 值對齊 MenuItem / Input / Empty 的 canonical token",
+   "真實code行為": "Empty 部分不成立；CommandEmpty 僅轉傳 className/props，沒有預設樣式或 token（command.tsx:90）。同 spec:119 也明載為 pure className passthrough。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.spec.md:91",
+   "宣稱": "Consumer 無需額外處理 a11y",
+   "真實code行為": "cmdk 的 label 無預設值；未傳時 combobox 沒有 accessible name。CommandDialog 也未自帶 DialogTitle。Radix 預設 modal 確實 trap focus，但初始焦點落在 DialogContent 而非 CommandInput，關閉後亦不保證還原至外部 opener；consumer 仍需補標籤、dialog 命名與焦點處理。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.spec.md:118",
+   "宣稱": "behavior 全部由 cmdk library 處理",
+   "真實code行為": "搜尋、過濾與虛擬選取由 cmdk 處理；CommandDialog 的 modal、focus 與 Escape 行為來自 DS Dialog/Radix，CommandList 的捲動與 viewport focus 行為來自 DS ScrollArea（command.tsx:31、79）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.spec.md:120",
+   "宣稱": "Command 搜尋框與 list items 的尺寸由 consumer SelectMenu 決定",
+   "真實code行為": "CommandInput 自帶 h-11/py-3，CommandItem 自帶 px-3/py-1.5；CommandDialog 又覆寫成 input h-12、item py-3（command.tsx:39、56、138）。Command 無 size prop 為真，但預設尺寸不是全由 consumer tier 決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:2-3",
+   "宣稱": "Command 是 headless Internal primitive（cmdk passthrough）",
+   "真實code行為": "它不是 headless；根容器、輸入框、群組、項目、分隔線與 shortcut 均自帶視覺 class（command.tsx:23、56、110、125、138、154）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:4-5",
+   "宣稱": "色彩 / 尺寸 / 狀態都由消費方決定",
+   "真實code行為": "Command 自己定義預設色彩、輸入與項目尺寸，以及 selected/disabled 狀態樣式；consumer 只能另外 override（command.tsx:23、39、56、138）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:5-6",
+   "宣稱": "本檔僅保留 Overview",
+   "真實code行為": "同檔另於 line 99 export Accessibility。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:34",
+   "宣稱": "選項與空狀態的樣式直接寫在 Command 內",
+   "真實code行為": "CommandItem 有內建樣式，但 CommandEmpty 沒有任何預設樣式或 token，只轉傳 className/props（command.tsx:90）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:104",
+   "宣稱": "Consumer 無需額外處理 a11y",
+   "真實code行為": "未提供 Command label 時 combobox 無 accessible name；CommandDialog 亦未自帶 DialogTitle，且初始／還原焦點仍需處理。ARIA roles 本身存在，不代表 consumer 無需補完整 a11y 接線。"
+  }
+ ]
+}

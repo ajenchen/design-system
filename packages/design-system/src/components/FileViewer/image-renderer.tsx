@@ -4,6 +4,7 @@ import {
   TransformWrapper,
   TransformComponent,
   type ReactZoomPanPinchRef,
+  type ReactZoomPanPinchContentRef,
 } from 'react-zoom-pan-pinch'
 import type { FileRendererProps } from './file-viewer-types'
 
@@ -41,7 +42,7 @@ export const ImageRenderer: React.FC<FileRendererProps> = ({
   fitRequest,
   onCapabilitiesChange,
 }) => {
-  const apiRef = React.useRef<ReactZoomPanPinchRef | null>(null)
+  const apiRef = React.useRef<ReactZoomPanPinchContentRef | null>(null)
   const imgRef = React.useRef<HTMLImageElement | null>(null)
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const [loaded, setLoaded] = React.useState(false)
@@ -123,12 +124,38 @@ export const ImageRenderer: React.FC<FileRendererProps> = ({
     const container = containerRef.current
     if (!container) return
     let rafId = 0
+    // manual mode 視覺中心保持需要前次容器尺寸(比對 delta 反推新 position)
+    let prevW = container.clientWidth
+    let prevH = container.clientHeight
     const obs = new ResizeObserver(() => {
       if (rafId) cancelAnimationFrame(rafId)
       rafId = requestAnimationFrame(() => {
         rafId = 0
         const mode = lastFitModeRef.current
-        if (mode === 'manual') return
+        const newW = container.clientWidth
+        const newH = container.clientHeight
+        if (mode === 'manual') {
+          // 2026-07-08 Q2 補洞(user「畫布在各種情況都能完美適應」):manual zoom 下容器 resize
+          //(InfoPanel 開合 / Filmstrip 增減 / 視窗 RWD / 裝置旋轉 — 同一咽喉點全涵蓋)
+          // = **scale 不變、視覺中心點保持**(Figma / Photoshop canonical;原本 early-return
+          // 什麼都不做 → transform 座標絕對值,容器變窄內容偏移)。
+          // 幾何:舊容器中心對到的內容點 (cx,cy),resize 後把同一內容點放到新容器中心。
+          const api = apiRef.current
+          if (api && (newW !== prevW || newH !== prevH)) {
+            const { positionX, positionY, scale } = api.state
+            const cx = (prevW / 2 - positionX) / scale
+            const cy = (prevH / 2 - positionY) / scale
+            programmaticZoomRef.current = true
+            api.setTransform(newW / 2 - cx * scale, newH / 2 - cy * scale, scale, 0)
+            // setTransform 同步無動畫;下一 frame 解 flag(防 onTransform 誤標 manual→已是 manual,保守處理)
+            requestAnimationFrame(() => { programmaticZoomRef.current = false })
+          }
+          prevW = newW
+          prevH = newH
+          return
+        }
+        prevW = newW
+        prevH = newH
         const scale = computeFitScale(mode)
         if (scale == null) return
         onZoomChange(clampToPct(scale))
@@ -196,8 +223,8 @@ export const ImageRenderer: React.FC<FileRendererProps> = ({
   return (
     <div ref={containerRef} className="w-full h-full overflow-hidden" onDoubleClick={handleDoubleClick}>
       <TransformWrapper
-        // any-allow: react-zoom-pan-pinch TransformWrapper ref type not exported; API surface stable per lib docs
-        ref={apiRef as any}
+        // TransformWrapper ref = ReactZoomPanPinchContentRef(dist/index.d.ts:351 + export L399);型別有 export → 用真型別,不需 as any
+        ref={apiRef}
         initialScale={1}
         minScale={MIN_SCALE}
         maxScale={MAX_SCALE}
@@ -211,9 +238,10 @@ export const ImageRenderer: React.FC<FileRendererProps> = ({
         // Wheel zoom canonical:
         // - `step: 0.03` = 每 tick ~3% scale,對齊 Figma / Preview.app 細緻度
         //   (原 0.1 = 10% 太粗,接近 Google Slides 離散慣例)
-        // - multiplicative 等距:library 內部 scale factor 乘算,log 視覺等距
-        // 註:原本用 `smoothStep: 0.005` 但當前 lib type 不含該 key;若需 trackpad 細緻,
-        // 升級 react-zoom-pan-pinch 到有此 prop 的版本或切到 `smoothScroll` API
+        // - wheel zoom = `scale + delta × step` 加法線性(handleCalculateWheelZoom,
+        //   dist/index.esm.js:1265;非 multiplicative/log —— 乘算 exp 只用於 setup smooth 的按鈕 zoom path)
+        // 註:lib 型別無 `smoothStep` / `smoothScroll` key(僅 setup `smooth?:boolean` 走按鈕 exp、
+        // 不影響 wheel);trackpad 平滑度目前無對應 wheel prop 可調
         wheel={{ step: 0.03 }}
         // Q3 雙擊改自定 handler:lib `mode: 'reset'` 永遠 reset 到 initialScale=1 → 100%,
         // 失去 fit ↔ 100% toggle UX(Apple Photos / Drive canonical)。disabled lib 預設 + 自定 onDoubleClick。

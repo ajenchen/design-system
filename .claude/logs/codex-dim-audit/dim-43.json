@@ -1,0 +1,402 @@
+{
+ "dim": 43,
+ "filesScanned": 63,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx:272",
+   "問題": "note 只重述可放閱讀內容或輕量輸入，未說明重焦點互動在收合時會失去焦點這個核心判準。",
+   "severity": "marginal",
+   "建議": "補上收合不應中斷持續互動或讓焦點失去落點的因果理由。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx:86",
+   "問題": "核心判準以「distinguisher =」的英文公式速記呈現，不像公開文件的人話。",
+   "severity": "marginal",
+   "建議": "改成「唯一判準是頁首作用範圍只服務目前頁面，還是整個應用程式」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx:68",
+   "問題": "「src 還沒 ready」把可直接中文化的普通英文混入中文；src、layout、CLS 等技術詞本身無問題。",
+   "severity": "marginal",
+   "建議": "改成「圖片尚未載入完成時」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:173",
+   "問題": "note 使用 Markdown 粗體符號，但 Rule 只將字串放進普通 p，公開頁會顯示裸星號。",
+   "severity": "marginal",
+   "建議": "改用真正的 strong 元素，或移除 Markdown marker、直接用人話表達重點。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:219",
+   "問題": "另一則 note 同樣把 Markdown 粗體符號放進純字串，公開頁會顯示裸星號。",
+   "severity": "marginal",
+   "建議": "改用真正的 strong 元素，或改寫成不依賴 Markdown 的純文字。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Badge/badge.principles.stories.tsx:97",
+   "問題": "note 內的 Markdown 粗體符號由普通 p 直接渲染，星號會原樣出現在頁面。",
+   "severity": "marginal",
+   "建議": "使用 ReactNode 與 strong，或移除星號並改成完整句子。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Badge/badge.principles.stories.tsx:272",
+   "問題": "這則獨立 note 同樣使用不會被解析的 Markdown 粗體符號。",
+   "severity": "marginal",
+   "建議": "改用真正的 strong 元素，或移除 Markdown marker。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Badge/badge.principles.stories.tsx:323",
+   "問題": "note 說不能只靠顏色，卻把 aria-label 當成解法；aria-label 只進入 accessibility tree，無法為看得見畫面但辨色困難的人提供非色彩線索，示範仍只靠兩顆不同顏色的 dot。",
+   "severity": "material",
+   "建議": "保留 aria-label 作為輔助科技補充，並在視覺上增加文字、圖形、位置或樣式差異。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Badge/badge.principles.stories.tsx:377",
+   "問題": "這則 note 也把 Markdown 粗體符號放進不解析 Markdown 的純字串。",
+   "severity": "marginal",
+   "建議": "改用 strong，或移除星號、以自然中文強調重點。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.principles.stories.tsx:212",
+   "問題": "「broken UX」以普通英文口語承載結論，公開繁中說明不夠自然；link、UX 等技術詞本身可保留。",
+   "severity": "marginal",
+   "建議": "改成「會破壞使用者預期」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.principles.stories.tsx:141",
+   "問題": "tertiary note 只列取消、輔助操作與卡片 CTA 等情境，沒有說明這些情境共通的視覺層級理由。",
+   "severity": "marginal",
+   "建議": "補充 tertiary 保有可發現性、但不與唯一主要動作競爭注意力的判準。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.principles.stories.tsx:171",
+   "問題": "note 把前往其他頁面教成 button 行為，示範也渲染原生 button；owner spec 明定純導覽應使用 Link 或 anchor，實作已有 asChild 支援 Router Link。",
+   "severity": "material",
+   "建議": "純導覽改示範 Button asChild 搭配 Link 或 anchor；只有觸發事件時才使用原生 button。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chart/chart.principles.stories.tsx:235",
+   "問題": "把 GitHub contribution graph 列為 Line chart 案例不正確；它是按日期格狀呈現強度的 calendar heatmap。",
+   "severity": "marginal",
+   "建議": "改用真正的時間序列折線案例，例如流量、部署耗時或錯誤率趨勢。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chart/chart.principles.stories.tsx:259",
+   "問題": "note 說 Pie／Donut 只適用 3–4 類，但同檔後段把 5 類 Pie 當正確示範，owner spec 的上限也是 5，頁內口徑互相矛盾。",
+   "severity": "material",
+   "建議": "統一為最多 5 個可辨類別；若偏好 3–4 類，應明說是建議而非硬性上限。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.principles.stories.tsx:150",
+   "問題": "note 宣稱 radio 不允許未選狀態且必須有 default value；RadioGroup owner spec 明定未選初始態合法，實作也不要求 defaultValue。",
+   "severity": "material",
+   "建議": "改成通常可預選，但需要使用者主動表態時可從未選開始，再由 required 驗證。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.principles.stories.tsx:201",
+   "問題": "選中與 hover 規則雖正確，公開 note 卻塞入 semantic.css、SSOT、決策日期與變更沿革等內部 metadata，削弱可讀性與可重用性。",
+   "severity": "marginal",
+   "建議": "刪除檔名、日期與沿革，只用人話說明持續選中使用 primary base、hover 才升階。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:62",
+   "問題": "note 宣稱常駐旋轉會讓螢幕閱讀器持續收到 loading 通知；無 label 的示範實際 aria-hidden，有 role=status 時純 CSS 旋轉也不會持續改變 live-region 內容。",
+   "severity": "material",
+   "建議": "保留常駐裝飾會誤導視覺使用者的理由；無障礙說明改成只在真實狀態變化時提供可播報文字。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:103",
+   "問題": "note 中的 Markdown 粗體符號由普通 p 原樣顯示。",
+   "severity": "marginal",
+   "建議": "改用 ReactNode 與 strong，或直接寫成本設計系統不提供 success／error variant。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.principles.stories.tsx:62",
+   "問題": "note 把 Markdown 粗體符號放進普通字串，公開頁會顯示原始星號。",
+   "severity": "marginal",
+   "建議": "以真正的 strong 呈現重點，或移除 Markdown marker。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:143",
+   "問題": "Rule 直接以 p 顯示 note 字串，不解析 Markdown，因此粗體符號會原樣露出。",
+   "severity": "marginal",
+   "建議": "移除星號，或將 note 改成 ReactNode 並使用 strong。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:192",
+   "問題": "「效能不受資料量影響」是錯誤絕對化；虛擬化只限制可見 DOM，完整 row model、資料處理與記憶體仍隨資料量增加。",
+   "severity": "material",
+   "建議": "改成只渲染可見列可降低 DOM 與繪製成本，但資料建模和記憶體仍受資料量影響。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:251",
+   "問題": "這則 note 的 Markdown 粗體符號同樣會由普通 p 原樣顯示。",
+   "severity": "marginal",
+   "建議": "以真正的 strong 呈現，或改成不依賴 Markdown 的自然句子。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DatePicker/date-picker.principles.stories.tsx:70",
+   "問題": "note 還以「未來若需要 Date Range／DateTime」敘述，但現行 DatePicker.Range 與 showTime 已存在，屬過時資訊。",
+   "severity": "material",
+   "建議": "改成 Range 與日期時間需求都擴充既有 DatePicker／DateGrid，不另引第二套日期元件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DescriptionList/description-list.principles.stories.tsx:254",
+   "問題": "note 把 Link 與 Tag／Badge 一起稱為無需操作的展示元件；owner spec 明確把 Link 視為合法的導覽型內容，它仍是可操作導覽。",
+   "severity": "material",
+   "建議": "改成允許展示型與導覽型內容，禁止的是編輯或業務動作控件，並明列 Link 為導覽例外。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.principles.stories.tsx:119",
+   "問題": "判斷法把需要保留選中狀態一律導向 Select，漏掉 owner spec 明列的 CheckboxItem／RadioItem 即時設定例外。",
+   "severity": "material",
+   "建議": "改以是否寫回欄位並由 trigger 持續顯示表單值作分界；即時生效的顯示設定或排序仍可用 DropdownMenu。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.principles.stories.tsx:35",
+   "問題": "核心規則以「Filter row(field + op + value)」等整組英文與內部速記呈現，公開讀者難以直接理解。",
+   "severity": "marginal",
+   "建議": "保留元件與 prop 識別字，其餘改成完整繁中，例如「篩選列＝欄位＋運算子＋值」，並說明直接子元件限制是為避免圓角與邊框接合失效。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:224",
+   "問題": "note 只說上傳中應可取消並使用 X icon，沒有說明取消能力為何必要，無法推導哪些長任務需要它。",
+   "severity": "marginal",
+   "建議": "補上傳可能耗時或選錯檔案，取消能降低中止成本並避免錯誤送出的理由。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:269",
+   "問題": "「action 必須 persistent visible」用普通英文片語承載核心規則，繁中公開說明不夠自然。",
+   "severity": "marginal",
+   "建議": "改成「關鍵動作必須持續顯示」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:256",
+   "問題": "dual-path 規則雖與 spec、實作一致，note 卻以內部更新日期、變更沿革與 consumer 等速記包裝，像 changelog 而非公開教學。",
+   "severity": "marginal",
+   "建議": "刪除日期與沿革，直接說明 files prop 與自行組合 FileItem 兩條合法路徑。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:215",
+   "問題": "「90% 情境沒人讀 metadata」沒有研究或 owner rationale 支撐，是假精準比例；320px 規則本身則有依據。",
+   "severity": "marginal",
+   "建議": "刪除 90%，改以詳細資料通常是次要任務、預設開啟會縮小主要檢視區來說明。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:261",
+   "問題": "note 宣稱 macOS、Windows、Web 的關閉按鈕都在右側，但現行 macOS 視窗控制位於左側，跨平台佐證不正確。",
+   "severity": "marginal",
+   "建議": "把理由限縮為本設計系統與 Web viewer 的 toolbar 排序一致，不要聲稱 macOS 也採右側關閉。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:482",
+   "問題": "note 宣稱巢狀 Radix modal 會讓兩層 focus trap 打架、Esc 不知道關哪層；Radix 會暫停外層 FocusScope，且只讓最上層 DismissableLayer 處理 Esc。",
+   "severity": "material",
+   "建議": "若仍禁止巢狀浮層，應改用多層遮罩、資訊架構與關閉路徑複雜等 UX 理由。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:489",
+   "問題": "另一則 note 同樣以「焦點陷阱崩壞」解釋禁止 nested FileViewer，與 Radix 的堆疊行為不符。",
+   "severity": "material",
+   "建議": "承認 Radix 可管理焦點與 Esc 堆疊，改以 overlay、狀態及認知複雜度說明產品規則。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx:96",
+   "問題": "note 暗示觸控使用者點 trigger 可取得完整資訊，但範例 anchor 沒有 href 或 onClick，Radix HoverCard 又排除 touch pointer，所述 fallback 實際不存在。",
+   "severity": "material",
+   "建議": "讓 trigger 提供真實 href／onClick，並明說必須另有可點擊的完整資訊入口。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx:142",
+   "問題": "note 宣稱 Tooltip 離開 trigger 就立刻消失；wrapper 未設 disableHoverableContent，Radix 預設會建立 pointer grace area，游標可以移入 Content。",
+   "severity": "material",
+   "建議": "以 Tooltip 僅承載短文字、非互動內容的語意與無障礙 contract 說明分界，不要引用不存在的即時消失行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.principles.stories.tsx:152",
+   "問題": "note 把 Enter 觸發 blur、Escape 還原原值說成瀏覽器 form／原生 input 行為，但兩者都是 LinkInput 自訂 handler，並非原生契約。",
+   "severity": "marginal",
+   "建議": "改成本設計系統的可取消編輯慣例，直接說明元件行為，不要歸因於瀏覽器保證。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.principles.stories.tsx:50",
+   "問題": "規則 prose 宣稱 Alert 會處理 unmount；Alert 實作是 controlled-only，不會自行移除，只會把 onDismiss 交給 consumer。",
+   "severity": "material",
+   "建議": "改成 Alert 提供 onDismiss 與 live region，consumer 必須在 callback 中更新狀態並 unmount。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:75",
+   "問題": "note 把行動裝置彈出數字鍵盤列為電話欄位使用數值輸入的傷害，但同句建議的 type=tel 也會提供電話／數字鍵盤。",
+   "severity": "marginal",
+   "建議": "移除鍵盤理由，保留數值語意、格式化與前導零會破壞電話或郵遞區號的真正問題。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.principles.stories.tsx:74",
+   "問題": "note 以 assign task、PR reviewer、avatar-first 等普通產品文案混入中文；這些不是必須保留的元件或 API 識別字。",
+   "severity": "marginal",
+   "建議": "改成「指派任務、PR 審查者、以頭像優先辨識」等自然繁中。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.principles.stories.tsx:107",
+   "問題": "另一則 note 以「技術 stack」等普通英文混寫；Combobox、Avatar 等元件名本身可保留。",
+   "severity": "marginal",
+   "建議": "改成「技術棧」或「技術標籤」，保留必要的元件專名即可。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Popover/popover.principles.stories.tsx:136",
+   "問題": "判準本身正確，但以 ignore 等普通英文和電報式中英速記呈現，不像自然繁中。",
+   "severity": "marginal",
+   "建議": "改成「可略過的篩選、設定或快速切換用 Popover；不可略過的確認、多步表單或破壞性操作用 Dialog」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Popover/popover.principles.stories.tsx:234",
+   "問題": "note 同樣錯稱 Tooltip 離開 trigger 就消失、無法移入浮層；Radix 預設支援 hoverable content 與 pointer grace area。",
+   "severity": "material",
+   "建議": "保留 Tooltip 不放互動元素的結論，但改以短文字、非互動語意與無障礙 contract 為理由。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx:132",
+   "問題": "示範三檔進度為 100%、62%、0%，實際只有 1/3 完成，child prose 卻寫 2/3。",
+   "severity": "marginal",
+   "建議": "把文案改成 1/3，或調整各檔狀態讓示範與完成數量一致。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:80",
+   "問題": "note 絕對宣稱 readOnly Rating 必填 aria-label，與 owner spec 和實作在 Field 內由 FieldLabel 自動提供 aria-labelledby 的合法路徑矛盾。",
+   "severity": "material",
+   "建議": "改成 standalone readOnly 必須有描述性 accessible name；Field 內應說明既有標籤關聯，不要一律要求 aria-label。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:230",
+   "問題": "「平均分必定有小數」不正確；note／spec 又把 precision=half 說成 0.5 步進，但 4.7 範例與實作會渲染第五顆星 70%，實際是任意比例。",
+   "severity": "material",
+   "建議": "改成平均分常含小數；決定要量化為 0.5，或明確文件化連續比例填色，精確值仍由文字與 accessible name 表達。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.principles.stories.tsx:53",
+   "問題": "核心分界以 keyboard-navigable、mental model、read selected、non-form 等普通英文與內部速記密集混寫。",
+   "severity": "marginal",
+   "建議": "改成完整繁中：SelectMenu 把選項寫回欄位，Command 則立即執行命令。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.principles.stories.tsx:76",
+   "問題": "note 把「選項 ≤20」當成絕對判準；Select owner spec 明定選項標籤性質優先，數量只依少量、10–50、超過 50 提供啟發，形成衝突口徑。",
+   "severity": "material",
+   "建議": "移除 20 的硬門檻，依選項語意、辨識成本與 owner spec 的搜尋級距決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.principles.stories.tsx:133",
+   "問題": "note 中的 Markdown 粗體符號由普通 p 原樣顯示。",
+   "severity": "marginal",
+   "建議": "改用 ReactNode 與 strong，或移除 Markdown marker。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.principles.stories.tsx:152",
+   "問題": "note 說 Switch 的 ON/OFF 唯一靠顏色，但實作同時以 thumb 左右位移及 checked Check icon 表達狀態，整段 opacity 理由建立在錯誤前提上。",
+   "severity": "material",
+   "建議": "承認位置、圖形與顏色共同承載狀態；若保留 opacity，改以 disabled 視覺一致性與色彩層級說明。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.principles.stories.tsx:218",
+   "問題": "另一則獨立 note 的 Markdown 粗體符號同樣會原樣顯示。",
+   "severity": "marginal",
+   "建議": "改用真正的 strong，或移除星號。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.principles.stories.tsx:119",
+   "問題": "readonly/display 規則雖正確，公開 note 卻夾帶內部拍板日期及 mode、standalone、settings-list 等密集治理速記。",
+   "severity": "marginal",
+   "建議": "刪除決策日期，改用完整繁中說明 readonly 與 disabled 的使用差異。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.principles.stories.tsx:135",
+   "問題": "note 宣稱 ON/OFF 的唯一視覺載體是顏色；實作還以 thumb 位移及 checked Check icon 表達狀態，與文字矛盾，且 Markdown 粗體符號會原樣顯示。",
+   "severity": "material",
+   "建議": "承認位置、圖形與顏色共同承載狀態；若保留 opacity，改以維持色彩層級與系統一致性說明並同步修正 spec。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.principles.stories.tsx:167",
+   "問題": "note 再次斷言灰階後 disabled ON/OFF 視覺完全相同；實作仍保留 thumb 位置差異與 checked 圖示，結論不正確。",
+   "severity": "material",
+   "建議": "不要宣稱灰階會使狀態不可辨識；如仍採 opacity，應陳述真正設計理由並同步修正 owner spec。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.principles.stories.tsx:187",
+   "問題": "尺寸 note 的 32／40 未標示分別對應 md／lg density，並混用不必要的公開文件速記。",
+   "severity": "marginal",
+   "建議": "展開為「sm 在 md／lg 密度下分別高 32／40px」，其餘改成完整繁中。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.principles.stories.tsx:199",
+   "問題": "40／48 同樣未說明 density，且 future tier、recommended use case、new consumer 等內部治理語降低可讀性。",
+   "severity": "marginal",
+   "建議": "明確標出 md／lg 密度，並把治理速記改成「目前保留、尚無建議使用情境」等人話。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.principles.stories.tsx:213",
+   "問題": "48／56 未標示 density，page-level hero 等表述也過度速記；數值本身與 spec、實作一致。",
+   "severity": "marginal",
+   "建議": "展開數值與密度對應，並以自然繁中描述頁面層級的使用情境。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:150",
+   "問題": "「99% 場景」沒有證據且不是 owner spec 規則；spec 只規定 subtle 用於一般被動分類、solid 應維持少數。",
+   "severity": "marginal",
+   "建議": "改成「大多數一般分類場景使用 subtle；solid 僅保留給少數高訊號狀態」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:240",
+   "問題": "note 只列 LucideIcon、16px、繼承文字色等結果，沒有解釋統一尺寸與繼承色的視覺理由。",
+   "severity": "marginal",
+   "建議": "補充這能維持 Tag 內部基線與色彩一體，避免 icon 形成第二視覺層級。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:250",
+   "問題": "note 只給多選 Combobox 成員使用 avatar＋name 的案例，沒有說明何時需要 avatar、何時純文字或 icon 即可。",
+   "severity": "marginal",
+   "建議": "補上人員選值需辨識同名或身份時使用 avatar＋name，非人員類別維持文字或 icon 的判準。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:64",
+   "問題": "故事仍教日期＋時間使用 DatePicker 與 TimePicker 並列，但現行 canonical、owner spec 與實作都要求 DatePicker showTime。",
+   "severity": "material",
+   "建議": "改成同時選日期與時間使用 DatePicker showTime；只有獨立純時間欄位才使用 TimePicker。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:74",
+   "問題": "15 分鐘間隔的理由只存在 source JSDoc，rendered story 只顯示結論，沒有可見 rule note。",
+   "severity": "marginal",
+   "建議": "把避免無意義粒度、兼顧常見排程需求的理由移入可見說明。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:101",
+   "問題": "以兩個 TimePicker 組合範圍的 MVP 與語意理由只寫在 JSDoc，公開 Storybook 沒有 rule note。",
+   "severity": "marginal",
+   "建議": "把採組合而非新增 Range primitive 的判準移入可見段落。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:124",
+   "問題": "以 X 做 inline clear 而非文字按鈕的原因只存在 JSDoc，公開頁只剩結論。",
+   "severity": "marginal",
+   "建議": "把對齊全站清除慣例及節省欄位空間的理由移入可見 note。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.principles.stories.tsx:168",
+   "問題": "「good/bad」是可直接中文化的普通英文，不屬必要技術識別字。",
+   "severity": "marginal",
+   "建議": "改成「沒有明確正向或負向語意的通知」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx:125",
+   "問題": "note 把按鈕或連結一律導向 HoverCard；Radix HoverCard 會把內容中的 tabbable 元素設為 tabindex=-1，會造成鍵盤不可達的操作。",
+   "severity": "material",
+   "建議": "只有非關鍵、pointer-only 的補充可用 HoverCard；需要鍵盤操作的按鈕或連結應用 Popover，更重流程使用 Dialog 或 Sheet。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx:143",
+   "問題": "另一則判斷 note 再次把所有「移到浮層上做事」的需求導向 HoverCard，忽略內容無法由鍵盤 Tab 進入的限制。",
+   "severity": "material",
+   "建議": "補上鍵盤可達性分流：非關鍵 pointer 補充用 HoverCard，真正互動操作用 Popover。"
+  }
+ ]
+}

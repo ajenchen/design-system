@@ -129,7 +129,7 @@ export const UsageGuidance: Story = {
               </div>
             </div>
           </Frame>
-          <Label>✅ 每檔一條,整體進度由使用者自然感知(2/3 完成)</Label>
+          <Label>✅ 每檔一條,整體進度由使用者自然感知(1 檔完成、2 檔進行中)</Label>
         </Rule>
 
         <Rule

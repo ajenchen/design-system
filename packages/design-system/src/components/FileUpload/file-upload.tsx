@@ -16,7 +16,7 @@ import { Button } from '@/design-system/components/Button/button'
  *
  * ── 4 狀態(2026-06-03 修正)──
  * idle     (default) — border-dashed border-border  bg-surface
- * hover = drag-over  — border-primary(統一,純 border-driven,底維持 surface)
+ * hover = drag-over  — border-primary-hover(統一,純 border-driven,底維持 surface;2026-07-06 對齊 Ant colorPrimaryHover)
  * loading            — CircularProgress;cursor-progress(無 pointer-events-none)
  * disabled           — bg-disabled + 文字 fg-disabled(語意 token,非 opacity)+ cursor-not-allowed
  *

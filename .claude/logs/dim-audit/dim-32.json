@@ -1,0 +1,21 @@
+{
+  "dim": 32,
+  "title": "Filter operator registry SSOT",
+  "mechanism": "grep consumer hardcode filter op string DS-wide — 該消費 registry 卻硬寫",
+  "filesScanned": 12,
+  "ssotOwner": "packages/design-system/src/components/DataTable/filter-operators.ts (OPERATOR_REGISTRY / DEFAULT_OPERATOR / getOperatorSpec / getValueShape)",
+  "cleanEvidence": [
+    "data-table-filter-panel.tsx:109-116,701-706 — operator dropdown 與 default op 全走 OPERATOR_REGISTRY / DEFAULT_OPERATOR / getOperatorSpec / getValueShape,無硬寫 op UI 生成。唯一 literal op:'' (L138) 是『未選 field』sentinel,非 operator。",
+    "field-control-group.stories.tsx:138 / .anatomy.stories.tsx:26 / .principles.stories.tsx:22 — 皆 consume OPERATOR_REGISTRY.string,並帶明文『audit dim 32 — 禁 hardcode op 字串』註解(exemplary)。",
+    "filter-tree.ts:187-189,316-450 — matchOperator switch + PERSON_CAPABLE_OPS/DATE_SINGLE_OPS/TEXT_OPS 硬寫 op 字串,但屬 evaluator 的 predicate 邏輯 / 行為分類;registry 只存 {op,label,labelEn,valueShape},無 predicate 語意可消費。spec 明列此為『code 真值』。判定=合法,非違規。",
+    "data-table.tsx『Filter by this』(L182) 僅 emit columnId,default op 由 panel getDefaultOperator 解析;column-types.ts 無 op 硬寫;apps/ + templates/ + explorations/ 無任何 filter consumer。"
+  ],
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:1289-1291,1318-1319,1325-1326,1352,1376,1380,1418",
+      "問題": "11 處 demo FilterTree fixture 硬寫 op 字面值(op: 'contains' / 'is' / 'is_relative'),而 FilterCondition.op 型別為寬鬆的 op: string(filter-tree.ts:53),與 OPERATOR_REGISTRY 的 op key 無編譯期關聯。這些是 story 作者手選的示範狀態,非 operator 下拉 UI 生成(後者已正確消費 registry),所以不是 dim 32 核心的『該消費 registry 生 UI 卻硬寫』違規;但屬 drift 韌性缺口:若日後 registry op key 改名(如 contains → text_contains),這些 story 不會 tsc 報錯,condition 靜默變 incomplete → pass-through → 篩選示範失效卻無告警。",
+      "severity": "marginal",
+      "建議": "borderline / 非必修。若要收斂:(a) 把 FilterTree/FilterCondition 的 op 從 op: string 收緊為由 OPERATOR_REGISTRY 推導的 union(export type OperatorKey = ...),讓 story 及所有 consumer 的 op 字面值獲得編譯期驗證;或 (b) 至少讓 demo fixture 引用 registry 常數而非裸字串。對照 FieldControlGroup 三個 story 已示範正確消費 registry 的做法。此為示範程式,無 production 風險,可留待型別收緊時一併處理。"
+    }
+  ]
+}

@@ -18,6 +18,7 @@
 | 資料表格(含 header / sorting / sticky) | `<table><thead>...</thead><tbody>...</tbody></table>` | `<DataTable columns={...} data={...} />` |
 | 檔案上傳列表 | `<div>filename</div><ProgressBar /><Paperclip />` | `<FileItem mode="compact" />` or `<FileUpload>` |
 | 表單欄位(label + control + error) | `<label>...</label><input/><span className="text-error">...</span>` | `<Field><FieldLabel>...<Input />...<FieldError/>` |
+| 表單提交驗證(何時顯錯 / 提交可點性) | 手刻 `useState(showErrors)` + `submitAttempt` 旗標自組顯錯時機 | `useFormValidation`(Field 家族 hook,`intent:'create'` = 提交恆可點、點擊時 validate 顯錯;搭 `<FieldError>`)|
 | 全頁 / 區域 loading | `<div className="absolute inset-0 flex center"><Spinner /></div>` | `<Empty icon={<CircularProgress />} description="..." />` |
 | 確認對話框 | raw `<div className="fixed inset-0 bg-black/50">...<button>OK</button>` | `<Dialog>` + `<DialogHeader>` etc |
 | 分隔線 | `<hr className="..." />` or `<div className="h-px bg-..."/>` | `<Separator />`(必要時)or CSS border(見 separator.spec) |
@@ -60,7 +61,7 @@
 - 以上都沒命中 → 才可自建,但 **建完要立刻回來加行**(防下一個人又重造輪子)
 - **本規則同樣適用 story / consumer / exploration code**:不 hand-craft 已有 prop 能做的事(如 Input loading 走 `loading` prop 不自刻 `<div className="relative"><input/><div className="absolute">` / 全頁 loading 走 `<Empty icon={<CircularProgress/>}/>` 不自刻 `absolute inset-0`)。遇缺口**回元件 spec 擴 API**,不自刻繞過 — hand-craft 視覺對齊 bug 上游
 
-具體 anti-pattern signals → `/design-system-audit` Dim 21;pixel-level 視覺 regression(API 用對但視覺仍跑掉)→ `/visual-audit`(D5)抓(原 memory `project_pending_tasks` 已 retire)。
+具體 anti-pattern signals → `design-system-audit/references/audit-prompts.md`「L1. 手刻繞 DS canonical」+ Dim 71 consumer 手刻(Pattern 10;現行 Dim 21 已是「連續 item list wrapper gap」,勿誤指);pixel-level 視覺 regression(API 用對但視覺仍跑掉)→ `/visual-audit`(D5)抓(原 memory `project_pending_tasks` 已 retire)。
 
 ---
 

@@ -279,7 +279,8 @@ export const MultiStepBestPracticesRule: Story = {
       >
         <Coachmark
           open
-          image={<MediaGradient from="var(--color-blue-6)" to="var(--color-cyan-6)" icon={FolderPlus} label="Workspace" />}
+          // 2026-07-14 Dim 55:--color-cyan-6 不存在(12 hue 無 cyan)→ 改既有 turquoise
+          image={<MediaGradient from="var(--color-blue-6)" to="var(--color-turquoise-6)" icon={FolderPlus} label="Workspace" />}
           title="建立你的第一個 Workspace"
           description="Workspace 是團隊協作的主要空間,所有專案、文件、成員都在這裡集中管理。"
           step={{ current: 1, total: 3 }}

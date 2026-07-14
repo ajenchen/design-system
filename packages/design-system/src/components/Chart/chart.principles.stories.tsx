@@ -256,7 +256,7 @@ export const ChartTypeRule: Story = {
 
       <Rule
         title="Pie / Donut — 整體的組成比例"
-        note="呈現『誰佔了整體的多少 %』,只適用 3-4 類。超過就改用 Bar(類別對比時比例已暗含在柱高裡)。Google Analytics 的流量來源、App Store 的 OS 分布。"
+        note="呈現『誰佔了整體的多少 %』,最多 5 類(類別配色上限,見「最多 5 類別」)。超過先合併「其他」;仍不夠改用 Bar(類別對比時比例已暗含在柱高裡)。Google Analytics 的流量來源、App Store 的 OS 分布。"
       >
         <div className="w-full max-w-sm">
           <ChartContainer config={osShareConfig}>

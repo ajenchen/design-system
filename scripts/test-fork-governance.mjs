@@ -55,6 +55,10 @@ const CASES = [
   { hook: 'check_consumer_app_invariants.sh', tool: 'Write', enforce: true,
     violation: 'export const X=()=><table><thead><th>a</th></thead></table>',
     clean: 'import {DataTable} from "@qijenchen/design-system"\nexport const X=()=><DataTable columns={c} data={d}/>' },
+  // 2026-07-10 隊列 14:偽表格(R4 分支)專屬 case — 防該分支 regress 靜默(raw <table> case 蓋不到它)
+  { hook: 'check_consumer_app_invariants.sh', tool: 'Write', enforce: true,
+    violation: 'const MINI_TABLE_ROW_PAD="px-3 py-2"\nexport const X=()=><div className="grid grid-cols-[88px_72px_1fr] bg-muted font-medium">h</div>',
+    clean: 'import {DataTable} from "@qijenchen/design-system"\nexport const X=()=><DataTable size="sm" height="auto" columns={c} data={d}/>' },
   { hook: 'check_layout_space_magic_numbers.sh', tool: 'Write', enforce: true,
     violation: 'export const X=()=><div className="gap-13 mt-7">x</div>',
     clean: 'export const X=()=><div className="gap-[var(--layout-space-tight)]">x</div>' },

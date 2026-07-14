@@ -172,7 +172,7 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
               </Button>
             </li>
           ) : (
-            // Ellipsis 純指示不可點(Ant / MUI / shadcn 同);寬度對齊數字鈕保持節奏
+            // Ellipsis 純指示不可點(MUI / shadcn 同;Ant 為可點 jump-5 派,見 spec);寬度對齊數字鈕保持節奏
             <li
               key={slot}
               aria-hidden

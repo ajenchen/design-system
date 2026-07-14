@@ -86,7 +86,7 @@ export const StateCascade: Story = {
         </div>
       </div>
       <div>
-        <p className="text-body-sm font-medium text-fg-secondary mb-3">{'<Field mode="readonly"> — 鎖定表單:文字控件灰框;boolean/單選 = 灰框 + ✓/—/選中項(2026-06-12 拍板);Rating 星星鎖定、Slider 鎖互動保留視覺'}</p>
+        <p className="text-body-sm font-medium text-fg-secondary mb-3">{'<Field mode="readonly"> — 鎖定表單:文字控件灰框;boolean/單選 = 灰框 + 勾/叉 icon/選中項(2026-06-12 拍板);Rating 星星鎖定、Slider 鎖互動保留視覺'}</p>
         <div className="flex flex-wrap gap-x-8 gap-y-4 max-w-3xl">
           <Field mode="readonly" className="w-44"><FieldLabel>負責人</FieldLabel><Input value="王小明" onChange={() => {}} /></Field>
           <Field mode="readonly" className="w-44"><FieldLabel>同意條款</FieldLabel><Checkbox checked /></Field>

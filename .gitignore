@@ -126,3 +126,6 @@ __pycache__/
 
 # Standalone working docs (not part of DS package)
 ds-competitive-positioning.md
+
+# WM 產品設計稿素材(user 本機參考用,不入 DS repo)
+reference/

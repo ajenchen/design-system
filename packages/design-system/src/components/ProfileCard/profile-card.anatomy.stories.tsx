@@ -1,5 +1,8 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
+// @overlay-open-skip: 本檔絕大多數 story 直接 render ProfileCard(內容不藏在浮層,snapshot 可見);
+//   唯一 HoverCard demo 只示範「hover 整合」消費方式,open-state 內容已由同檔直接 render 的
+//   stories 完整快照,forced defaultOpen 反而讓浮層蓋住旁邊的說明。
 // @anatomy-rationale:
 //   SizeMatrix N/A — ProfileCard 是固定寬度(320px)hover content template,
 //     不提供 size prop;所有尺寸 token 已於 Overview「Layout Token」段列出
@@ -51,12 +54,7 @@ export const Overview: Story = {
             subtitle="Design Engineer · Engineering"
             status="online"
             statusMessage="目前 Sprint 23 衝刺中,訊息可能稍慢回覆"
-            actions={
-              <>
-                <Button variant="primary" size="sm" startIcon={MessageCircle}>傳訊</Button>
-                <Button variant="tertiary" size="sm" startIcon={UserPlus}>追蹤</Button>
-              </>
-            }
+            actions={<ProfileCardDefaultActions />}
             fields={[
               { label: 'Email', value: 'ada.chen@example.com' },
               { label: '團隊', value: 'Engineering' },
@@ -228,18 +226,13 @@ export const SectionMatrix: Story = {
 
       <div>
         <H3>+ Actions</H3>
-        <Desc>加上快速動作——留言區 hover 顯示「傳訊」/「追蹤」,減少跳轉 profile 頁的摩擦。</Desc>
+        <Desc>加上快速動作——留言區 hover 顯示「Chat」/「Audio call」(canonical `ProfileCardDefaultActions`),減少跳轉 profile 頁的摩擦。</Desc>
         <div className="border border-dashed border-divider rounded-md p-4 inline-block">
           <ProfileCard
             name="Diana Lin"
             subtitle="Engineering Manager"
             status="online"
-            actions={
-              <>
-                <Button variant="primary" size="sm" startIcon={MessageCircle}>傳訊</Button>
-                <Button variant="tertiary" size="sm" startIcon={UserPlus}>追蹤</Button>
-              </>
-            }
+            actions={<ProfileCardDefaultActions />}
           />
         </div>
       </div>
@@ -271,12 +264,7 @@ export const SectionMatrix: Story = {
             subtitle="Design Engineer · Engineering"
             status="online"
             statusMessage="目前專案 Sprint 23 衝刺中"
-            actions={
-              <>
-                <Button variant="primary" size="sm" startIcon={MessageCircle}>傳訊</Button>
-                <Button variant="tertiary" size="sm" startIcon={UserPlus}>追蹤</Button>
-              </>
-            }
+            actions={<ProfileCardDefaultActions />}
             fields={[
               { label: 'Email', value: 'ada.chen@example.com' },
               { label: '團隊', value: 'Engineering' },
@@ -366,14 +354,14 @@ export const HoverCardIntegration: Story = {
         </Desc>
         <div className="border border-border rounded-lg p-6 flex items-center gap-8">
           {[
-            { name: 'Ada Chen（範例人名）', subtitle: 'Design Engineer', status: 'online' as const },
-            { name: 'Alice Wang', subtitle: 'Frontend Engineer', status: 'busy' as const },
-            { name: 'Bob Chen', subtitle: 'PM, Growth', status: 'away' as const },
+            { name: 'Ada Chen', subtitle: 'Design Engineer', status: 'online' as const, avatarUrl: 'https://i.pravatar.cc/80?u=ada-chen' },
+            { name: 'Alice Wang', subtitle: 'Frontend Engineer', status: 'busy' as const, avatarUrl: 'https://i.pravatar.cc/80?u=alice-wang' },
+            { name: 'Bob Chen', subtitle: 'PM, Growth', status: 'away' as const, avatarUrl: 'https://i.pravatar.cc/80?u=bob-chen' },
           ].map(p => (
             <HoverCard key={p.name}>
               <HoverCardTrigger asChild>
                 <span className="inline-block cursor-pointer">
-                  <Avatar alt={p.name} size={40} status={p.status} />
+                  <Avatar src={p.avatarUrl} alt={p.name} size={40} status={p.status} />
                 </span>
               </HoverCardTrigger>
               <HoverCardContent align="start" className="p-0">{/* sideOffset 不 override — spec 禁止事項(default 即 OVERLAY_SIDE_OFFSET) */}
@@ -381,6 +369,7 @@ export const HoverCardIntegration: Story = {
                   name={p.name}
                   subtitle={p.subtitle}
                   status={p.status}
+                  avatar={{ src: p.avatarUrl, alt: p.name }}
                   fields={[
                     { label: 'Email', value: `${p.name.split(' ')[0].toLowerCase()}@example.com` },
                     { label: '團隊', value: 'Engineering' },

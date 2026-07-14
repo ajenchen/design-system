@@ -2,15 +2,15 @@
   "_meta": {
     "purpose": "C-prime fork-mode governance corpus 分類 SSOT。build-fork-governance.mjs 消費此檔生成 ds-canonical/fork/。--check 若有任何 .claude/hooks/*.{sh,py} 未分類則 FAIL(防漏接新 hook)。",
     "source": "workflow wf_4070529c-5af critic agent(讀全 53 hook + inventory 對抗分類)+ Claude 組裝 2026-06-16",
-    "total": 54,
+    "total": 57,
     "tally": {
-      "SHIP_AS_IS": 10,
-      "SHIP_REWRITTEN": 4,
+      "SHIP_AS_IS": 12,
+      "SHIP_REWRITTEN": 5,
       "REPLACE": 1,
       "DROP": 39
     },
     "known_coverage_gaps": [
-      "post_edit_dispatcher 的 _overlay_handcraft(擋 consumer 手刻 overlay header,非 SurfaceHeader/Popover primitive)+ _code_quality 兩個 fork-relevant 檢查,改判 DROP 後目前無 standalone 涵蓋 → 待 promote 成 standalone fork hook(harness 驗證後加)。layout-space 部分已由 check_layout_space_magic_numbers 涵蓋,無 gap。"
+      "post_edit_dispatcher 的 _code_quality fork-relevant 檢查改判 DROP 後無 standalone 涵蓋 → 待 promote 成 standalone fork hook(harness 驗證後加)。_overlay_handcraft 的 header 手刻由 R9 涵蓋(2026-07-08);其 Check 2.5 raw-row 型中 menu-item family(hover+selected 成對)由 r3 nav-row 簽名涵蓋(2026-07-10),其餘 raw-row 型仍 gap;layout-space 由 check_layout_space_magic_numbers 涵蓋。"
     ],
     "buckets_def": {
       "SHIP_AS_IS": "已 fork-aware(scope apps/** 或 layout-agnostic,DS 內部路徑乾淨 exit 0)→ 原樣 ship 進 fork settings。註(2026-06-18):build emit() 對【所有】bucket(含 SHIP_AS_IS)套一個 universal display-path 改寫 `#*/my-project/`→`$CLAUDE_PROJECT_DIR`(純 soft-warn 訊息路徑顯示、不動 exit/BLOCKER 邏輯)→ SHIP_AS_IS 行為語意仍 verbatim,只 display path 適配 fork",
@@ -64,6 +64,10 @@
     {
       "hook": "check_story_determinism.sh",
       "reason": "path-agnostic *.stories.tsx 寫入哨(裸 new Date()/Date.now/Math.random → warn + @nondeterministic-ok escape);fork apps 自有 stories 同受換日 flake 之害,規則自包無 DS-repo 依賴。"
+    },
+    {
+      "hook": "check_dynamic_tailwind_class.sh",
+      "reason": "scope packages/design-system/src + apps/**/src(*.tsx/ts),layout-agnostic:攔動態 Tailwind class(h-…-${x} 模板字串 Tailwind 靜態掃不到→靜默不生成規則)。apps/** branch fork 產品 code 同風險該守;非 apps/DS 路徑 exit 0;escape // @dynamic-tailwind-allow layout-agnostic。"
     }
   ],
   "SHIP_REWRITTEN": [
@@ -80,12 +84,17 @@
     {
       "hook": "check_ds_anchor_preflight.sh",
       "transform": "canonical-read 目標 packages/design-system/src/**/spec.md → node_modules/@qijenchen/design-system/src/**/spec.md(pass-regex 認 node_modules spec read)",
-      "reason": "scope apps/** soft inject(exit 0 不 brick),但 M29 nag 指向 fork 不存在的 DS spec path = 半廢 nag。repoint 後有用。"
+      "reason": "scope apps/**;2026-07-07 治理進化方向 2 已升 P0 BLOCKER(exit 2;2026-07-10 修 stale「soft inject」描述)。M29 nag 原指向 fork 不存在的 DS spec path,repoint node_modules 後有用。"
     },
     {
       "hook": "inject_deploy_url_after_push.sh",
       "transform": "確認 deploy-URL 推導邏輯不依賴 DS-internal path(generic Netlify/git remote 推導)",
       "reason": "每次 push 吐 deploy URL,fork 一樣需要(scenario-definition fork dim 63)。"
+    },
+    {
+      "hook": "check_story_invariants.sh",
+      "transform": "override 檔 scripts/fork-hook-overrides/check_story_invariants.sh:只 ship R8(registry antiPatterns simplified-mock 攔截,registry 讀 corpus ../../references/ 相對路徑 + node_modules fallback)+ R9(手刻 overlay/chrome header 簽名 BLOCKER);scope 擴 apps/**/*.tsx + *.stories.tsx;其餘 8 條 DS-author 撰寫紀律 rule 不 ship。",
+      "reason": "2026-07-08 WM 戰役 R4:preamble M23(d) 明文承諾 R8/R9 機械強制,原判 DROP = doc-vs-corpus drift(承諾防線沒 ship)。WM detail modal 手刻 header 實證 fork 需要此防線。"
     }
   ],
   "REPLACE": [
@@ -207,10 +216,6 @@
     {
       "hook": "check_spec_class_drift.sh",
       "reason": "DS-author spec.md 反向 drift。"
-    },
-    {
-      "hook": "check_story_invariants.sh",
-      "reason": "DS-author story archetype/baseline registry(scope DS src stories)。"
     },
     {
       "hook": "check_storybook_addon_packaging.sh",

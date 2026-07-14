@@ -1,0 +1,9 @@
+**Verdict：主張 A。** 建議採 MUI 式單一、受控的 visually-hidden `<input>`，不要複製完整 `<select>` option tree。
+
+- [Radix Select](https://www.radix-ui.com/primitives/docs/components/select) 支援 `name/required`；而空值誤交第一項已於 [2026-06 release](https://www.radix-ui.com/primitives/docs/overview/releases#new-unstable-composition-parts) 修正，#3521 不是現行 footgun。
+- [Headless UI Listbox](https://headlessui.com/react/listbox#using-with-html-forms) 用同步 hidden input 支援 FormData／裸提交。
+- MUI 非原生 Select 也是同步的 opacity-zero input，傳入 `name/required`；官方測試涵蓋 [required 阻止提交](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Select/Select.test.js#L2506-L2532)與 [FormData 值](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Select/Select.test.js#L2640-L2674)。
+- Claude 漏掉的強反例是 opinionated 的 [React Spectrum Picker](https://react-spectrum.adobe.com/v3/Picker.html)；其 [HiddenSelect](https://github.com/adobe/react-spectrum/blob/main/packages/%40react-aria/select/src/HiddenSelect.tsx) 同樣提供原生表單參與。
+- Ant 確實走 B：由 [Form.Item](https://ant.design/components/form/#formitem) 注入 `value/onChange` 管理表單。
+
+理由：目前是**同一 public API 依裝置改變提交語義**，而型別已承諾 `name/form/required`；這比新增一個衍生 DOM carrier 更危險。鏡像只要 `value` 單向來自既有 canonical state，就只是 projection，不是第二個 SSOT。MUI 的普通 text input 方案亦避免 Radix 舊有「無空 option → 第一項」問題。Claude 對 #3521、#3365 的風險有時效性誇大；若仍選 B，應做 breaking contract：移除這些 props 並消除 mobile 的偶發原生參與，不能只補文件。

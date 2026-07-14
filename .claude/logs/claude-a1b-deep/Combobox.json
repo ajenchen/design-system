@@ -1,0 +1,19 @@
+{
+  "component": "Combobox",
+  "implBasis": "dual-path: desktop=CustomCombobox→SelectMenu(Popover+Command/cmdk); touch=NativeCombobox→hidden native <select>",
+  "claimsVerified": 38,
+  "falseClaims": [
+    {
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:108",
+      "宣稱": "「## Tag 操作 → ### 新增選擇」段落:『原生 `<select>` 只顯示未選中的選項——已選中的不重複出現在下拉』(以此作為新增選擇的一般機制)",
+      "真實code行為": "此僅描述 mobile/touch 的 NativeCombobox 路徑(combobox.tsx:601 `unselected = options.filter(...)`)。DEFAULT(桌機)走 CustomCombobox→SelectMenu(combobox.tsx:834 傳全部 menuOptions + value + multiple),已選項仍留在清單中並以打勾標示、可再點一次 toggle 移除。spec 的『新增選擇』段只寫 native-only,對主要的桌機預設路徑描述錯誤/缺漏(anatomy.stories:868/894 與 principles.stories:205-206 都正確描述雙路徑,唯獨此 spec 段落沒更新)",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:104",
+      "宣稱": "「### 全部清除」:clear all 按鈕『位於最右側,ChevronDown 左邊』",
+      "真實code行為": "clear 按鈕並非最右側元素;ItemSuffix 內順序為 [showClear, chevronEl](combobox.tsx:813-825 / native 634-642),ChevronDown 才是最右側。『位於最右側』與同句『ChevronDown 左邊』互相矛盾(clear 在 chevron 左邊 = 非最右)",
+      "severity": "marginal"
+    }
+  ]
+}

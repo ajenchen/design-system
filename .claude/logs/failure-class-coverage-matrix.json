@@ -1,0 +1,1076 @@
+{
+  "classCount": 20,
+  "matrix": [
+    {
+      "class": "幻覺 layout token / utility(寫了不存在的 class → silent no-op)",
+      "findings": [
+        "registry phantom-layout-token:gap-[var(--layout-space-distant)] CSS 未定義 → silent 0 → 區塊黏死",
+        "registry phantom-hover-utility:hover:bg-neutral-hovered 幻覺 utility,hover 靜默失效(3 檔)",
+        "前半#8 content 區塊黏一起未遵循 layout-space(根因即幻覺 distant token)",
+        "後半#3 TypeSettings status 各區塊黏在一起沒 layout-space",
+        "後半#21 ImportExport step 區塊黏在一起"
+      ],
+      "verdict": "MECHANICAL_CONSUMER",
+      "defenses": [
+        {
+          "layer": "hook",
+          "artifact": "check_layout_space_magic_numbers.sh — PHANTOM 白名單攔截:regex `var\\(--layout-space-[a-z-]+\\)` 抓全部 layout-space var,再 `grep -v (loose|tight|bottom)` 白名單反濾 → `--layout-space-distant` 必中 → exit 2 P0 BLOCKER(逐段心算驗證:簽名含 var(--layout-space-distant),第一段 match、白名單不放行)。Scope L32-34:.tsx/.ts 且 skip packages/design-system/src + node_modules → 正是 consumer/app code",
+          "cite": ".claude/hooks/check_layout_space_magic_numbers.sh:56-66",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "fork 出貨鏈實證:分類 SHIP_AS_IS(fork-hook-classification.json:53,reason 明寫 consumer apps/** fork-relevant)→ build-fork-governance.mjs emit 進 npm 包 ds-canonical/fork/hooks/(byte-copy 已含 PHANTOM 段,fork copy :56 同行驗證)→ manifest.json 註冊 PostToolUse(:16-19)→ design-system package.json files 含 'ds-canonical'(beta.83)。雲端 e2e 已親證 fork PostToolUse P0 BLOCKER 實際 fire(memory project_cprime_governance_shipped)",
+          "cite": "packages/design-system/ds-canonical/fork/manifest.json:16",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "preflight",
+          "artifact": "release-preflight 跑 `build-fork-governance.mjs --check`(新 hook 未分類 = FAIL + 生成物 vs SSOT drift gate + 假 fork harness 防假生效)— 保證此 hook 的出貨鏈每次發版不斷鏈;test-fork-governance.mjs:58-60 harness 對合成 fork 驗 enforce(violation exit 2 / clean exit 0,不靜默 no-op)",
+          "cite": "scripts/release-preflight.mjs:72",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "eslint",
+          "artifact": "no-undefined-layout-token — allowlist Set(['loose','tight','bottom'])對 `--layout-space-([a-zA-Z][\\w-]*)` 全形式掃描(className/style/template literal/自定義宣告),無 escape marker(幻覺 token 無合法場景)。但 plugin 未發佈 npm(npm view E404 實測)、fork/consumer 未消費 → 目前對 consumer 零防護",
+          "cite": "packages/eslint-plugin/rules/no-undefined-layout-token.js:24-26",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "preflight",
+          "artifact": "layout-space-utility-invariant.mjs — 只掃 packages/design-system/src(walk(SRC)),且只抓「裸 utility 名」變體(px-loose/py-tight/gap-cozy),不抓 var() 幻覺 token → 對本簽名與 consumer 皆不覆蓋(僅同族 silent-fail 鄰接防線)",
+          "cite": "scripts/layout-space-utility-invariant.mjs:24-27",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "layoutSpace.css SSOT 僅定義 loose/tight/bottom 三顆(md/lg density 兩組值)— 幻覺名屬「寫了不存在的東西」,DS API 端無法根治(任何字串都可能被幻覺),白名單機械閘是正確架構;hook/eslint 白名單皆 cite 此 SSOT 衍生",
+          "cite": "packages/design-system/src/tokens/layoutSpace/layoutSpace.css:4-6",
+          "shipsToConsumer": true
+        }
+      ],
+      "gapNote": "主簽名(layout-space 幻覺 token)= MECHANICAL_CONSUMER 成立。但姊妹簽名 hover:bg-neutral-hovered(幻覺 semantic color utility,findings 中 3 檔)是真缺口,現有全部防線漏網:(1) _token_hygiene.sh Check 4(:71)與 check_opacity_token_usage.sh 第 9 類(:133)的 primitive-color regex 都要求數字尾綴 `-(neutral|blue|...)-[0-9]+`,`-hovered` 非數字不匹配;且 _token_hygiene scope 只有 packages/design-system/src/(components|patterns) 不含 consumer。(2) utility-registry.json 10 個 category 全是 block-list,無 semantic-color allowlist category 可反查幻覺名。(3) eslint 無對應 rule(no-undefined-layout-token 只管 --layout-space-* namespace)。(4) 無 preflight/CI gate 驗「className 用到的 semantic utility 真存在於 built CSS」。最小補法(按 ROI 排序):(a) 在 fork 已出貨的 check_opacity_token_usage.sh(SHIP_REWRITTEN,fires on apps/**)加第 10 類:比照 PHANTOM 白名單模式,從 semantic.css @theme 橋接名生成 allowlist(或先上零誤判錯字尾綴 block:`\\b(hover:|active:)?(bg|text|border|ring)-[a-z][a-z-]*-(hovered|focussed|pressed|actived|selected-hovered)\\b`),並同步 build-fork-governance 重生 + test-fork-governance 加 violation case;(b) eslint plugin 加 no-undefined-semantic-utility(鏡像 no-undefined-layout-token 的 allowlist 架構,SSOT 讀 utility-registry.json 新 semantic_color.allow);(c) 發佈 @qijenchen/eslint-plugin-design-system 到 npm + wire 進 fork template CI — plugin README 自己已寫明動機「write-time hook 只擋當下 diff,無法回頭掃既有 code;ESLint 版可以」,這是本 class 從 write-time-only 升級到 CI 全量掃的關鍵一步,且 no-undefined-layout-token 已寫好卻因未發佈對 consumer 零防護。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "手刻 mini-table(grid-cols 黏死欄寬 + 假 SSOT 常數)",
+      "findings": [
+        "registry mini-table-datatable:5 個手刻 mini-table → DataTable(rowActions/selectable/meta.width)",
+        "後半#2 TypeSettings 狀態表格自己刻沒用 data-table",
+        "後半#8 member table 又造輪(→ DataTable meta.width)"
+      ],
+      "verdict": "MECHANICAL_CONSUMER",
+      "defenses": [
+        {
+          "layer": "hook",
+          "artifact": "check_consumer_app_invariants.sh r3_ds_primitive_misuse「偽表格簽名」— grid-cols-\\[ + (bg-muted|bg-neutral-selected) + ROW_PAD|MINI_TABLE|<div grid font-medium> 三條件 AND → P0 BLOCKER exit 2;scope (^|/)(apps|consumer)/.*\\.(tsx|ts)$ 含 production tsx;escape @handcraft-table-ok:。用違規簽名字串實跑 3 條件全 MATCH(MINI_TABLE_ROW_PAD 同時命中 ROW_PAD 與 MINI_TABLE)",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:243(scope :168)",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_layout_space_magic_numbers.sh pattern (d) grid-(cols|rows)-\\[[^]]*[0-9]+px[^]]*\\] 抓 grid-cols-[88px_72px_1fr] 黏死欄寬(WM mini-table 88px/72px 實證擴的 scope);同 regex spacing 家族另抓假 SSOT 常數內容 px-3 py-2 → P0 BLOCKER。scope = 全部 .tsx/.ts 排除 packages/design-system/src + node_modules(consumer repo 全域,DS src 在 fork 位於 node_modules 自然排除)。實跑兩段皆 MATCH",
+          "cite": ".claude/hooks/check_layout_space_magic_numbers.sh:51(scope :32-34)",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "兩支 hook 在 fork-hook-classification.json 皆 SHIP_AS_IS(check_consumer_app_invariants :25 / check_layout_space_magic_numbers :53);生成 corpus 實體已含同一 R4 mini-table 簽名(fork/hooks/check_consumer_app_invariants.sh:243 + fork/hooks/check_layout_space_magic_numbers.sh:51)並註冊進 fork manifest",
+          "cite": "scripts/fork-hook-classification.json:25,53 + packages/design-system/ds-canonical/fork/manifest.json:6,16",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "preflight",
+          "artifact": "release-preflight 每次發版跑 build-fork-governance.mjs --check(新 hook 未分類 = FAIL + corpus drift gate)+ test-fork-governance.mjs 假 fork harness,兩支 hook 皆列 enforce:true 案例(violation 必 exit 2 / clean 必放行 / 禁 silent no-op)→ 保證 consumer 端防線不會 false-green 或漏 ship",
+          "cite": "scripts/release-preflight.mjs:72-73 + scripts/test-fork-governance.mjs:55-61",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "build-ui-canonicals.md ❌→✅ 對照表:raw table → <DataTable columns data>(隨 ds-canonical/references ship 進 fork)+ data-table.spec.md「嵌入式表格」height=auto canonical(DataTable size=sm/rowActions/selectable/meta.width 能力齊備,消費即可不必手刻)",
+          "cite": ".claude/references/build-ui-canonicals.md:18 + packages/design-system/src/components/DataTable/data-table.spec.md:80",
+          "shipsToConsumer": true
+        }
+      ],
+      "gapNote": "Verdict 成立(雙 hook P0 BLOCKER + SHIP_AS_IS + fork manifest 註冊 + preflight harness 防 false-green),但有 4 個 residual 縮窄點值得補:(1) r3 偽表格簽名是 3 條件 AND — 未來 mini-table 若 header 不用 bg-muted/bg-neutral-selected(改 bg-surface-raised 或無 header 底)且常數命名不含 ROW_PAD/MINI_TABLE、header 無 font-medium,r3 分支靜默;此時只剩 layout_space pattern (d) 靠 px 欄寬兜底,若欄寬改用 fr/auto(非字面 px)兩支都不 fire。最小補法:r3 條件 2 放寬為「任一 bg-* class 出現在含 grid-cols-[ 的同段」或加第 4 分支「grid-cols-[ + 同檔 .map( 渲染 rows」。(2) fragment-split 繞過:r3 只掃單次 Edit 的 new_string 片段(r1 有落盤整檔補查,r3 沒有)— 常數宣告與 grid-cols 用法分兩次 Edit 寫入時 3-AND 永不同片段共現;最小補法:r3 仿 r1 L41 補「[ -f $FILE ] && grep 整檔」的簽名複查。(3) eslint 層零覆蓋:no-arbitrary-tailwind-values.js:57 明寫 grid template 不屬管轄,且 @qijenchen/eslint-plugin-design-system 未發佈 npm、consumer 未消費 → 無 editor/CI lint 防線;最小補法:該 rule 擴 grid-(cols|rows)-[…px…] 家族 + 發佈供 fork devDependency。(4) harness 案例未打中本分支:test-fork-governance.mjs:56 violation 用 raw <table>、:59 用 gap-13,皆非 mini-table 簽名 → hook 若 R4 分支 regress,harness 不會抓;最小補法:CASES 加一組 MINI_TABLE_ROW_PAD + grid-cols-[88px…] + bg-muted violation。",
+      "verified": false,
+      "correction": "修正後 verdict:維持 MECHANICAL_CONSUMER — 5 條 defenses 全數實證成立(cite 逐字核對 + 真 payload 實跑:r3 @ .claude/hooks/check_consumer_app_invariants.sh:243 對 apps/demo/src/MiniTable.tsx 簽名 exit 2;check_layout_space_magic_numbers.sh:51 同 payload exit 2 且 BLOCKER 輸出同列常數行 px-3 py-2 與 grid-cols-[88px_72px_1fr] 行;scripts/fork-hook-classification.json:25,53 SHIP_AS_IS ✓;fork corpus 兩檔 :243/:51 逐字同 ✓;ds-canonical/fork/manifest.json:6,16 PostToolUse 註冊 ✓;scripts/release-preflight.mjs:72-73 ✓;scripts/test-fork-governance.mjs:55-60 enforce:true ✓;.claude/references/build-ui-canonicals.md:18 ✓ 且 ship 於 ds-canonical/references/ ✓;data-table.spec.md:80 ✓;另本 repo .claude/settings.json:317,358 + hooks/hooks.json:175,216 亦有註冊)。GapNote (3)(4) 屬實(packages/eslint-plugin/rules/no-arbitrary-tailwind-values.js:57 明寫「grid template 等不屬本 rule 管轄」+ npm view @qijenchen/eslint-plugin-design-system → E404 未發佈 + apps/*/package.json 零消費;harness :56 用 raw <table>、:59 用 gap-13 皆非 mini-table R4 簽名)。但 GapNote (1)(2) 兩處過度陳述,有實跑反例:【修正 1】GapNote(1)「若欄寬改用 fr/auto 兩支都不 fire」不成立 — 只要假常數內容仍是 magic spacing(px-3 py-2),check_layout_space_magic_numbers.sh:51 第一段 spacing 家族 regex 與 grid-cols 無關照抓(實跑證據:BLOCKER 輸出第一行即 `1:const MINI_TABLE_ROW_PAD = \"px-3 py-2\"`,獨立於 pattern (d));「此時只剩 pattern (d) 兜底」也與 defense 2 自己宣稱的「spacing 家族另抓假 SSOT 常數內容」自相矛盾。要兩支全靜默還需常數內容 token 化(px-[var(--layout-space-…)]),此時「假 SSOT 常數」這半個 violation class 已消解,真殘缺口只剩「手刻表格結構本身」(比 GapNote 寫的窄)。【修正 2】GapNote(2)「常數宣告與 grid-cols 用法分兩次 Edit 寫入時 3-AND 永不同片段共現」不成立 — 條件 3(check_consumer_app_invariants.sh:243 `grep -qiE 'ROW_PAD|MINI_TABLE|…'`)掃的是整個 CONTENT 片段非僅宣告行,典型用法片段 `className={cn(\"grid grid-cols-[…] bg-muted\", MINI_TABLE_ROW_PAD)}` 自含常數名 → 用法 Edit 單獨即 3-AND 共現 fire;且常數宣告 Edit 單獨已被 layout hook spacing 家族攔。真正殘留的 fragment-split 缺口窄得多:header(bg)與 rows 拆片段、且 rows 片段同時無 bg/常數名/font-medium 才繞過。GapNote(2) 的事實基礎(r3 無落盤整檔複查 — 僅 :180 CONTENT-only escape 檢查,r1 :41 才有整檔 grep)與補法建議仍正確有效。四個縮窄點的「最小補法」建議均可保留。"
+    },
+    {
+      "class": "手刻 menu-item 可點列(左 rail nav row 未消費 item-anatomy 元件)",
+      "findings": [
+        "後半#1 TypeSettingsDialog 左 rail 手刻 TYPE_NAV_ROW_CLASS <button>,未消費 menu-item/item-anatomy(2026-07-10 re-audit OPEN;收官判定=DS 缺 public nav-list primitive、MenuItem isInternal 不在 barrel → WM 手刻已正確用 token,DS 增益機會另議)"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "hook",
+          "artifact": "lib/_overlay_handcraft.sh Check 2.5「自刻 MenuItem-like row」— 唯一 class-specific 防線,但 (a) regex 只匹配 <div + flex + gap-[12] + px-[var(--layout-space-loose)] + hover:bg-neutral-hover + rounded 固定順序,簽名 <button + px-tight + rounded-md 在前 → 四重不匹配,連 DS repo 都不 fire;(b) 即使 fire 也僅 WARN(additionalContext,exit 0)非 BLOCKER;(c) 宿主 post_edit_dispatcher.sh 在 fork 分類 = DROP(fork-hook-classification.json:173-175),且 json:13 known_coverage_gaps 宣稱「已由 R9 涵蓋」對此 raw-row check 是錯誤宣稱(R9 只涵蓋 header 簽名)",
+          "cite": ".claude/hooks/lib/_overlay_handcraft.sh:65",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_layout_space_magic_numbers.sh — P0 BLOCKER,SHIP_AS_IS(fork-hook-classification.json:52-55),scope 含 apps/**;regex \\b(py)-([1-9][0-9]?(\\.[0-9])?)\\b 會抓簽名中的 py-1.5 — 但純 incidental:token-compliant 手刻列(py-tight 家族)完全繞過,非 class-level 防線",
+          "cite": ".claude/hooks/check_layout_space_magic_numbers.sh:51",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_consumer_app_invariants.sh r3 Pattern 10 raw-primitive 家族 — SHIP_AS_IS(json:24-27)scope apps/** production tsx,實作 build-ui-canonicals ❌→✅ 表的 table/img rounded-full/select/hr/偽表格 grid-cols/form-validation,但漏 :17「列表項目 row → MenuItem」列 = M34 spec-broad/hook-narrow gap → 對本 class 不 fire",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:230-260",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "fork override check_story_invariants.sh R9 hand_craft_overlay_header — SHIP_REWRITTEN 到 fork,但簽名限 <div + px-[var(--layout-space-loose)] + border-b border-divider(overlay/chrome header),nav row 無 border-divider → 不匹配本 class",
+          "cite": "scripts/fork-hook-overrides/check_story_invariants.sh:100-104",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "eslint",
+          "artifact": "@qijenchen/eslint-plugin-design-system — 4 rules(no-arbitrary-tailwind-values/no-dynamic-tailwind-class/no-shadcn-compat-alias/no-undefined-layout-token)全 token-level,無 nav-row/primitive-consumption rule;未發佈 npm、repo 內無任何 eslint config 消費",
+          "cite": "packages/eslint-plugin/rules/(4 檔)+ packages/eslint-plugin/package.json:2-3",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "preflight",
+          "artifact": "無此 class 的 deterministic gate。姊妹 class 有 checkbox-group-handcraft-invariant.mjs(手刻容器包多 Checkbox)但只掃 DS repo、非 nav row;release:preflight 全 DS-side,fork 不跑",
+          "cite": "scripts/checkbox-group-handcraft-invariant.mjs:2",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "spec",
+          "artifact": "build-ui-canonicals.md「列表項目 row(icon+text+action)❌ 手刻 div → ✅ <MenuItem> + slot components」+ :43 item-anatomy 單列 row primitive 表 + :56 自我檢查腳本;SHIP_AS_IS via inject 進 fork preamble(fork-governance-classification.json:41「寫任何 .tsx 該預載」)— 注入式指引靠 AI 讀,非機械強制",
+          "cite": ".claude/references/build-ui-canonicals.md:17",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "根因未消除(反向確認,非防線):MenuItem 標 @internal「end-user app 請用 wrapper 元件」、Menu 明列排除於 root barrel(index.ts:68-77 isInternal 清單),DS 無 public nav-list primitive;收官判定自認「DS 增益機會另議」= deferred。Consumer 想守規也無 canonical 可消費 → 手刻(用對 token)目前是 fork 唯一可行路",
+          "cite": "packages/design-system/src/components/Menu/menu-item.tsx:2 + packages/design-system/src/index.ts:74",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "機械 class-level 防線不存在:唯一 class-specific check(_overlay_handcraft Check 2.5)regex 四重不匹配本簽名(<button≠<div、px-tight≠px-loose、無 flex/gap、順序不符)、僅 WARN、且宿主 post_edit_dispatcher 對 fork = DROP;ship 到 fork 的攔截只有 incidental py-1.5 magic-number(換 py-tight 即繞過)。真正到 consumer 的 class 防線只剩注入式 doc(build-ui-canonicals.md:17)。另發現 fork-hook-classification.json:13 known_coverage_gaps「_overlay_handcraft 已由 R9 涵蓋」是錯誤宣稱(R9 只涵蓋 header check,不涵蓋 Check 2.5 raw-row)。補法(依序):(1) 先解 DS API 根因 — 公開 nav-list primitive(改 menu-item spec frontmatter isInternal 重跑 barrel generator,或提供公開 NavList/SidebarNav wrapper);根因不解就先上機械攔截會把 fork 鎖死(無合法替代可改,重蹈 REPLACE bucket「PRIMARY BRICK」教訓),這也是收官判定認定 WM 手刻正確的原因。(2) primitive 公開後,在 check_consumer_app_invariants.sh r3 Pattern 10 家族(已 SHIP_AS_IS,加了自動 ship)新增 nav-row 簽名,對齊 build-ui-canonicals.md:17:tag-agnostic <(button|a|div) + 同一 className 內 hover:bg-neutral-hover 與 (bg-neutral-selected|aria-current|cursor-pointer) 共現的可點列簽名 + @ds-misuse-allow escape。(3) 同步把 lib/_overlay_handcraft.sh Check 2.5 regex 修 broad(tag-agnostic、px token 家族、順序無關)或併入 r3,並修正 fork-hook-classification.json:13 的 false coverage claim。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "export 斷鏈逼手刻(R2:DS 有但 unimportable → WM 造輪 350 行)",
+      "findings": [
+        "registry filter-panel-ds:350 行手刻 filter query-builder → DataTableFilterPanel(FilterTree + evaluateTree)",
+        "registry column-visibility-ds:手刻欄顯示面板(HTML5 drag + Eye rows)→ DataTableColumnVisibilityPanel",
+        "後半#15 filter 樣式偏移 DS data-table filter",
+        "後半#16 面板 X 左無分隔線(手刻版缺;DS 版 onClose 自帶 ButtonDivider)",
+        "R2 CAT_SOLID unimportable(逼 TypeIcon 硬寫 → 連動 C5 對比違規)"
+      ],
+      "verdict": "DS_API_FIXED",
+      "defenses": [
+        {
+          "layer": "DS-API",
+          "artifact": "barrel export 補鏈(實例級):root barrel 收 DataTable/index(→ data-table-filter-panel + data-table-column-visibility-panel + sort-manager)+ tokens/categorical-color;DataTableFilterPanel(data-table-filter-panel.tsx:640)、FilterTree/evaluateTree(:46-52)、DataTableColumnVisibilityPanel(data-table-column-visibility-panel.tsx:67)、CAT_SOLID(categorical-color.ts:72)全 importable;dist 編譯產物實證 dist/index.d.ts:60 + dist/components/DataTable/index.d.ts:2-3(commit 1dda7bec)",
+          "cite": "packages/design-system/src/index.ts:22,83 + components/DataTable/index.ts:6-7",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "generator 類別級根治:findFeatureSiblings 把 `<mainStem>-*.tsx` spec 教學公開 sub-feature 檔一律隨 index re-export(排除 .stories/-story-helpers/@internal);collectTokenTs 遞迴收 tokens/**/*.ts JS mirrors 進 root barrel — 未來新元件 sub-file / token mirror 結構上不可能再斷鏈(檔頭註解直接錨定本 failure class:「WM 被迫整包重造 FilterPanel 350 行」「CAT_SOLID 未 export」)",
+          "cite": "scripts/gen-component-indexes.mjs:55-60 + scripts/gen-design-system-barrel.mjs:17-28",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "auto_regen_ds_barrel.sh(PostToolUse):DS src components/patterns/hooks/lib 任何 Write/Edit 自動重跑 gen-component-indexes.mjs + gen-design-system-barrel.mjs,write-time 防 stale index;fork-hook-classification.json 判 DROP(DS-author barrel 重生器,consumer 不編 DS barrel — 對此 class 而言 DROP 是正確歸位,防線本來就該在 DS 端)",
+          "cite": ".claude/hooks/auto_regen_ds_barrel.sh:31-43",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "preflight",
+          "artifact": "release-preflight deterministic 發版閘:`gen-design-system-barrel.mjs --check`(committed root index.ts != 重新生成 → exit 1 擋發版,--check 邏輯 gen-design-system-barrel.mjs:154-160)+ `dogfood-prepublish-verify.mjs`(npm pack → fresh consumer install → root barrel import DataTable → vite build);DS 側閘,保護的是 consumer 收到的已發佈 npm surface",
+          "cite": "scripts/release-preflight.mjs:65,99",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_consumer_app_invariants.sh r3(SHIP_AS_IS,隨 npm ds-canonical/fork/hooks/ ship 進 consumer repo):攔鄰近 handcraft 類 — raw <table>(:236-238)、偽表格 grid-cols+header-bg+ROW_PAD 簽名(:243-245)、手刻表單 validation showErrors+FieldError 無 useFormValidation(:255-257);但【無】filter-engine(evaluateConditions/query-builder)與欄顯示面板簽名 — 本 class 的手刻簽名不在其 regex 覆蓋內,只擋得到「手刻結果長得像表格」的子集",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:230-257 + scripts/fork-hook-classification.json SHIP_AS_IS[0]",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "build-ui-canonicals.md 超級規則「任何視覺/行為命中既有元件 → 必消費,不 hand-craft raw HTML 繞過」+ 常見手刻 vs canonical 對照表(隨 fork preamble ship,dogfood canonicalChecks 驗 preamble.md 必在 npm pack 內);但對照表【無】「進階 filter 面板 / 欄顯示面板 → DataTableFilterPanel/DataTableColumnVisibilityPanel」row — 對本 class 是 doc-only 泛規則",
+          "cite": ".claude/references/build-ui-canonicals.md:9 + packages/design-system/ds-canonical/fork/preamble.md:353",
+          "shipsToConsumer": true
+        }
+      ],
+      "gapNote": "判 DS_API_FIXED 的根據:root cause(canonical 存在但 unimportable)已在 DS 端類別級消除(generator 慣例 + write-time auto-regen + preflight --check + dogfood 四層),修好後 consumer 不再被「逼」手刻。但有 4 個 caveat/殘洞:(1)【最重要:發版 gate 未過】fix commits 1dda7bec + a06cd623 只在 working branch 2026-07-08-wm-rootcause-fixes,git merge-base 驗證 NOT in origin/main、NOT in v0.1.0-beta.83 tag(npm view latest = beta.83)→ 今天開的新 fork 裝到的仍是斷鏈版,DS_API_FIXED 要等 user trigger publish(beta.84)走完發版鏈才對 consumer 真生效;defenses[0] shipsToConsumer 因此標 false。(2)per-component index 無 deterministic 發版閘:gen-component-indexes.mjs 有 --check mode(:132-139)但全 repo grep 無人接線(release-preflight 只跑 gen-design-system-barrel --check = root index.ts);per-component index 陳舊(新 sub-file 加了、index 沒重生)只靠 PostToolUse hook best-effort,hook 沒 fire(手動 git 操作/外部編輯)就 silent ship。最小補法:release-preflight.mjs run 列表加 `node scripts/gen-component-indexes.mjs --check` 一行。(3)dogfood 只 import 6 個 root name(不含 DataTableFilterPanel/CAT_SOLID),不驗「spec/llms.txt 教學的 named export 真在 dist」— 若未來某 export 被 @internal 誤標仍 false-green。最小補法:dogfood main.tsx 加 named-import assert(DataTableFilterPanel、CAT_SOLID)或以 llms.txt 驅動 export-coverage 斷言。(4)consumer 端「自願造輪」無機械簽名:r3 無 filter-engine pattern(evaluateConditions / conditions+conjunction state + operator switch-map),eslint-plugin 4 rules(no-arbitrary-tailwind-values/no-dynamic-tailwind-class/no-shadcn-compat-alias/no-undefined-layout-token)全 Tailwind/token 向且 package 未發佈 npm(UNLICENSED、consumer 未消費)→ 未來 consumer 非被逼也手刻 filter 面板時只有 doc 層。最小補法:r3 加零誤判簽名(同檔 useState 存 conditions/conjunction('AND'|'OR')+ operator switch/map + 無 import DataTableFilterPanel → BLOCKER,escape @filter-engine-ok)+ build-ui-canonicals.md 對照表補「filter 面板/欄顯示面板 → DataTableFilterPanel/DataTableColumnVisibilityPanel + evaluateTree」row(preamble 同步重生 ship)。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "對比違規 / 硬寫色值(亮色底白字,未走 token pair)",
+      "findings": [
+        "registry type-icon-cat-solid:TypeIcon 硬寫 bg var + text-white(亮 hue 對比違規)→ CAT_SOLID token pair(亮 hue 深字)"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "spec",
+          "artifact": "tag.spec.md「Solid 文字色規則(on-emphasis 配對)」— 亮底深字桶 yellow/amber/orange/lime 必 --on-emphasis-dark、深底白字 --on-emphasis、green documented exception;SSOT 機械對應 tokens/categorical-color.ts",
+          "cite": "packages/design-system/src/components/Tag/tag.spec.md:167",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "CAT_SOLID(:72)+ CAT_SOLID_TOKENS {bg,text} pair(:119)存在且隨 npm package export — 正確 primitive 可消費,但 opt-in 非強制,consumer 手寫 text-white 疊 bg var 不會被 API 阻止(≠ DS_API_FIXED)",
+          "cite": "packages/design-system/src/tokens/categorical-color.ts:72",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "preflight",
+          "artifact": "categorical-color-invariants.mjs I4:機械驗 CAT_SOLID 每 hue on-solid 對比 ≥3:1(oklch→相對亮度,green exempt),chained 進 release-preflight.mjs:52 — 但只讀 DS tokens/categorical-color.ts 定義檔,守 token pair 定義端,不掃 consumer usage;DS release chain only",
+          "cite": "scripts/categorical-color-invariants.mjs:103",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_consumer_app_invariants.sh r3 Pattern 8(硬寫色值/字級/shadow)— scope apps|consumer *.tsx/*.ts(:168)且 fork 分類 SHIP_AS_IS(fork-hook-classification.json:24-27),hook 本身會 ship;但 regex 只抓 bg-[#hex|rgb|hsl] / text-[Npx] / shadow-sm..2xl:`text-white` 無 bracket 不匹配、`bg-[var(--…)]` 於 :216 明文豁免(「零誤判優先:只抓 hardcoded」)→ 對本簽名不 fire = ship 了也不保護此 class",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:217",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "eslint",
+          "artifact": "no-arbitrary-tailwind-values 只管 spacing/sizing/typography magic 數值,:57 明文「color hex …不屬本 rule 管轄」;其餘 3 rule(no-shadcn-compat-alias / no-dynamic-tailwind-class / no-undefined-layout-token)皆不覆蓋對比配對;且 @qijenchen/eslint-plugin-design-system 未發佈 npm、consumer 未消費",
+          "cite": "packages/eslint-plugin/rules/no-arbitrary-tailwind-values.js:57",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "lib/_token_hygiene.sh — scope 僅 packages/design-system/src/(components|patterns)/*.tsx(:23),不含 apps/**;5 個 check(shadcn alias / [--foo] / shadow / primitive 色名 utility / overflow)無一匹配 text-white 或 bg-[var(--…)] 組合;check_opacity_token_usage.sh 9 category 同樣不含 text-white 且 category 9 修法反而推薦 bg-[var(--color-N)] 寫法",
+          "cite": ".claude/hooks/lib/_token_hygiene.sh:23",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "缺口本質:此簽名是「配對違規」(亮 hue bg var × 白字組合)而非「單 utility 違規」,現有全部機械防線都是單 utility regex(bg-[#hex]、text-[Npx]、shadow-*、primitive 色名)——`text-white` 是合法具名 utility、`bg-[var(--color-X-N)]` 是被 utility-registry 推薦的 token 寫法,兩者各自合法、組合違規,無任何 hook/eslint/CI 檢查配對。I4 preflight 只守 DS token 定義檔(categorical-color.ts),consumer usage 端零覆蓋;eslint plugin 未發佈 npm。連 DS repo 自己的元件 tsx 手寫同簽名也不會被機械攔(此 finding 即靠 AI audit 抓到,非 hook)。最小補法:在 check_consumer_app_invariants.sh r3 加 Pattern 11(該 hook 已是 SHIP_AS_IS,加了自動隨 fork corpus ship,一次補 DS+consumer 兩側 write-time):同段 flatten content 同時含 `\\btext-white\\b`(或 text-[var(--on-emphasis)])與 `bg-\\[var\\(--color-(yellow|amber|orange|lime)-[0-9]`(深字桶 hue 清單 = tag.spec.md:167 / categorical-color.ts I4 isDark 桶,建議由 categorical-color.ts 機械生成避免 hardcode 二處 per M17)→ P0 BLOCKER,修法指向消費 CAT_SOLID / CAT_SOLID_TOKENS pair,escape `@cat-solid-ok: <rationale>`。次選補強:eslint 加 no-unpaired-solid-text rule 同源鏡射(但需先發佈 npm 才保護 consumer,現階段 hook 路徑是唯一會到 consumer 的載體)。",
+      "verified": false,
+      "correction": "修正 verdict:DOC_ONLY → CI_RUNTIME_GATED(render-dependent;write-time 仍零覆蓋)。六條原 defenses 逐字核實全對(tag.spec.md:167 / categorical-color.ts:72,119 / categorical-color-invariants.mjs:103 + release-preflight.mjs:52 / check_consumer_app_invariants.sh:168,216-217 Pattern 8 regex 確不匹配 text-white 與 bg-[var(--…)],fork-hook-classification.json:24-27 SHIP_AS_IS 屬實,且 2026-07-08 新增 patterns 亦不覆蓋 / no-arbitrary-tailwind-values.js:57 + npm E404 / _token_hygiene.sh:23),但 verdict 漏列 3 道已驗證會抓本 class 的 runtime 機械 gate:(1) .github/workflows/a11y-and-size.yml:42 `a11y:check --gate`(push main + daily cron,pipefail,無 continue-on-error)→ scripts/audit-a11y.mjs:117-118 AxeBuilder withTags(['wcag2a','wcag2aa'])掃全部 story,axe color-contrast rule 帶 wcag2aa tag 必中白字疊 yellow-6;baseline gate(.claude/baselines/a11y-baseline.json 存在,audit-a11y.mjs:198-216)fail 新增 violation;workflow :29 明文「任何新 a11y 違規(含新 white-on-bright 對比)= CI 紅」,audit-a11y.mjs:216 修法文字點名 green 綠底白字 exception——此 gate 即為本 class 設計。(2) .github/workflows/visual-regression.yml:73(push+PR main,:38 pipefail)→ visual-audit.mjs --scope=all 每 scenario scanContrast(:407,WCAG 4.5/3.0 :233-235)+ axe 含 'color-contrast'(:424),totalContrastViolations>0 → exit 1(:661-668)= PR 階段紅。(3) consumer 端非零覆蓋:.storybook/main.ts:19 收 apps/**/*.stories → in-repo consumer stories 被 (1)(2) 掃;fork consumer 由 template/ds-product-template/.github/workflows/audit.yml(push+PR)跑 scripts/audit-consumer-a11y.mjs(runOnly ['wcag2a','wcag2aa'] :50,violations → exit 1 :73),mirror-to-published-template.yml:32 隨 template ship。GapNote 三句被證偽:「現有全部機械防線都是單 utility regex」「consumer usage 端零覆蓋」「連 DS repo 自己的元件 tsx 手寫同簽名也不會被機械攔/此 finding 靠 AI audit 非 hook」。真實 gap 收窄為:write-time/static 零覆蓋(無 hook/eslint 攔配對簽名於編輯時)+ runtime gate render-dependent(未渲染進 story/built-page 的 state 會漏)+ a11y gate 非 PR 階段(post-merge + cron;PR 階段由 visual-regression contrast 補)。GapNote 提議的 check_consumer_app_invariants r3 Pattern 11(write-time 配對 regex,hue 清單由 categorical-color.ts 機械生成 per M17)仍為合理補強,但定位改為 defense-in-depth 第四層,非唯一防線。"
+    },
+    {
+      "class": "手刻表單驗證(showErrors/dirty/valid state 造輪)",
+      "findings": [
+        "registry form-validation-canonical:手刻 showErrors/submitAttempt 全換 useFormValidation(8 form,規則 1-9)",
+        "前半#11 表單永遠 enable / 點擊才顯錯(Create 恆可點)",
+        "後半#20 Import/Create 按鈕預設 enable(禁 disabled={!valid})"
+      ],
+      "verdict": "MECHANICAL_CONSUMER",
+      "defenses": [
+        {
+          "layer": "hook",
+          "artifact": "check_consumer_app_invariants.sh r3_ds_primitive_misuse 手刻表單 validation 簽名規則(useState + \\b(showErrors|showError|submitAttempt|attemptedSubmit)\\b + FieldError 共現 + 無 useFormValidation import → exit 2 P0 BLOCKER;escape = @form-validation-ok:)。Scope L168 `(^|/)(apps|consumer)/.*\\.(tsx|ts)$` 含 apps/** production tsx + stories;PostToolUse Write|Edit|MultiEdit(.claude/settings.json:317 / hooks/hooks.json:175);L177 換行 flatten 防多行繞過",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:255",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "Fork 治理 corpus 已含同規則:fork-hook-classification.json 將 check_consumer_app_invariants.sh 分類 SHIP_AS_IS(SHIP_AS_IS 陣列第 1 條),已建 corpus packages/design-system/ds-canonical/fork/hooks/check_consumer_app_invariants.sh:255 逐字含此規則,manifest.json bucket=SHIP_AS_IS",
+          "cite": "scripts/fork-hook-classification.json:25",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "useFormValidation hook(form-validation.spec 規則 1-9「不可配置預設」可執行層,含 submitDisabled = Create 永遠 enabled / Update disabled-until-dirty、blur 驗證、submit 全驗、first-error anchor)— root barrel export 鏈:field.tsx:542 → Field/index.ts:5 → src/index.ts:28,npm 包 ship 到 consumer。屬 enabling API(給正確路),非「想犯也犯不了」級根治",
+          "cite": "packages/design-system/src/components/Field/field.tsx:542",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "form-validation.spec.md 規則 1-9 + Submit Button 狀態表(Create 永遠 enabled / Update disabled-until-dirty;直接覆蓋 findings 前半#11、後半#20 條文)+ L130 世界級對照(Stripe/Notion/Material 共識)",
+          "cite": "packages/design-system/src/components/Field/form-validation.spec.md:12",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "eslint",
+          "artifact": "無對應 rule — packages/eslint-plugin/rules/ 僅 4 條(no-arbitrary-tailwind-values / no-dynamic-tailwind-class / no-shadcn-compat-alias / no-undefined-layout-token),且 @qijenchen/eslint-plugin-design-system npm E404 未發佈 → 此層對本 class 零防護",
+          "cite": "packages/eslint-plugin/rules:1",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "verdict = MECHANICAL_CONSUMER(hook 抓簽名 + SHIP_AS_IS ship 進 fork + scope 含 apps/**),但有 4 個殘餘窄縫:(1) 規則是三重條件 — 需 FieldError 共現(check_consumer_app_invariants.sh:255):fork 若連錯誤顯示也手刻(raw <p className=\\\"text-danger\\\">,不用 DS FieldError)→ 不 fire;建議第三條件放寬為 `FieldError|text-danger|role=\\\"alert\\\"` 類 error-render 訊號。(2) r3 只讀 edit fragment(L171 new_string,無 r1 式 L41 整檔 fallback):增量 Edit 把 showErrors state 加進不含 FieldError 的片段 → false-negative;建議 r3 比照 r1 補「檔已落 disk → 整檔再掃」。(3) findings #11/#20 的 `disabled={!valid}` 子簽名單獨出現(不伴隨 showErrors state)時無任何 hook 攔,只有 spec 條文;建議 r3 加 pattern:`<(DS\\\\.)?Button[^>]*disabled=\\\\{!` + submit/type=\\\"submit\\\" 語境雙條件。(4) scripts/test-fork-governance.mjs 無此規則的 harness test case(違 _meta.harness_must_verify「每條 SHIP_AS_IS 該擋的擋」宣稱)→ 建議補 synthetic fixture(showErrors+FieldError 檔案 expect exit 2 / @form-validation-ok expect exit 0),防未來 regex 改壞靜默 no-op。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "SelectMenu internal primitive 直用(違 select-menu.spec.md:53)",
+      "findings": [
+        "registry select-menu-no-direct-use:consumer 直用 <SelectMenu> + 手刻 Button trigger 組合(WorkItemDetailDialog 殘餘)→ 遷 <Select width=\"hug\"> 清零"
+      ],
+      "verdict": "MECHANICAL_DS_ONLY",
+      "defenses": [
+        {
+          "layer": "DS-API",
+          "artifact": "dim-72 root barrel 排除:SelectMenu 不進 root front-door(index.ts:67-77 註解列 components/SelectMenu),由 gen-design-system-barrel.mjs 讀 spec frontmatter isInternal 自動排除(:92-93)。效果:consumer 寫 `import { SelectMenu } from '@qijenchen/design-system'` 會在 consumer 自己的 tsc/bundler 直接 fail(此半段機械且隨 npm ship)。但 exports map `./components/*`(package.json:31)讓 subpath import `@qijenchen/design-system/components/SelectMenu` 仍合法解析到 dist/components/SelectMenu/index.js —— 違規路徑未封死,故非 DS_API_FIXED",
+          "cite": "packages/design-system/src/index.ts:77 + scripts/gen-design-system-barrel.mjs:92-93 + packages/design-system/package.json:31",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "preflight",
+          "artifact": "release:preflight deterministic gate『root barrel internal-exclusion(dim-72)』= `gen-design-system-barrel.mjs --check`,防「標了 isInternal 但忘重跑 generator 漏回 root barrel」drift。只守 DS 端 export surface,不掃 consumer 用法",
+          "cite": "scripts/release-preflight.mjs:65",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "spec",
+          "artifact": "select-menu.spec.md:53「直接在 JSX 中用 <SelectMenu> ❌ 禁止」+ :37「internal primitive 不直接使用」表(正確做法 = Select searchable / Combobox / PeoplePicker)。npm files 含 `src/**/*.spec.md`(package.json:11)→ spec 文字實際 ship 進 consumer node_modules + llms.txt;但為 doc-layer,靠 AI 讀,無機械 fire",
+          "cite": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:53 + packages/design-system/package.json:11",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "ui-development.md Public-vs-Internal canonical(:20 internal ≠ 禁用、subpath「包裝後 + 自行確認」才可用;:33 dim-72 SSOT)。fork-governance-classification.json homes.rules 列 ui-development.md = SHIP_REWRITTEN via inject → fork 會收到此 canonical 文字;仍 doc-layer 非機械,且其「subpath 包裝後可用」措辭給 AI 合理化裸用的空間(無機械線區分『包裝過』vs『裸用』)",
+          "cite": ".claude/rules/ui-development.md:20,33 + scripts/fork-governance-classification.json(homes.rules → ui-development.md SHIP_REWRITTEN)",
+          "shipsToConsumer": true
+        }
+      ],
+      "gapNote": "缺口:違規簽名「subpath import + 裸 `<SelectMenu>` JSX + 手刻 Button trigger」在未來 fork 會穿過全部機械層。逐層實證:(1) write-time hook — 唯一掃 consumer production tsx 的 check_consumer_app_invariants.sh r3_ds_primitive_misuse(SHIP_AS_IS,fork-hook-classification.json:25;scope `(apps|consumer)/.*\\.(tsx|ts)$` = check_consumer_app_invariants.sh:168)的 Pattern 1-10(:184-260)逐條心算:`<DS\\.CircularProgress`/`<DS\\.RadioGroupItem`/`<DS\\.DataTable`/`<DS\\.LinkInput`/`<DS\\.Empty`/`<DS\\.AppShell`/`<table\\b`/`grid-cols-\\[`/`<img rounded-full`/`<select\\b`(case-sensitive 且 t→M 無 \\b,雙重不匹配 `<SelectMenu`)/`<hr\\b`/useFormValidation — 零命中;且多數 pattern 綁 `<DS\\.` namespace prefix,named-import 直用連既有類別都繞過。(2) lint-ds-internal-imports.mjs 有 ship 進 template(build-published-template-mirror.mjs:66 + mirror workflow),但 FORBIDDEN_PATTERNS 只擋 `/src/`、`/dist/`(scripts/lint-ds-internal-imports.mjs:20-23),`components/SelectMenu` 是合法 exported subpath → 不擋。(3) eslint plugin 僅 4 條 Tailwind/token 規則(packages/eslint-plugin/index.js:23-29),無 internal-primitive 規則,且未發佈 npm、consumer 未消費。(4) DS repo 內 grep 全 hooks 亦無任何 `<SelectMenu` 直用偵測(僅 wrapper-schema M30 與 overlay-handcraft exempt 提及)——連 DS repo 自身 apps/ 重犯也不會被 hook 攔,靠的只有 root-barrel 排除的 import 摩擦 + spec 文字。最小補法(建議):在 check_consumer_app_invariants.sh r3 加 Pattern 11「internal primitive 裸用」:偵測 consumer 檔含 `from '@qijenchen/design-system/(components|patterns)/(SelectMenu|Command|Menu|DateGrid|HoverCard|Notice|OverflowIndicator|SelectionControl|horizontal-overflow|overlay-surface)'` 或 `<(SelectMenu|Command)\\b` JSX,無 `@internal-primitive-wrapped: <rationale>` escape → BLOCKER,修法指向 `<Select width=\\\"hug\\\" searchable>` / Combobox / PeoplePicker(引 select-menu.spec.md:53);因該 hook 已是 SHIP_AS_IS,下次發版經 fork-governance corpus 自動到位。internal 名單勿 hardcode(M17):由 spec frontmatter isInternal 生成(同 gen-design-system-barrel.mjs 訊號)或至少與 index.ts:70-80 排除清單同步註記。第二道(可選):lint-ds-internal-imports.mjs 加同名單 FORBIDDEN subpath(帶 wrapper-marker escape),補 hook 只掃 AI write-time diff 的全量掃描缺口——此 script 已在 template mirror allowlist,ship 成本為零。",
+      "verified": true,
+      "correction": "OK(微註 2 處 cite 精度,不影響 verdict:defense-3 次要 cite「:37 internal primitive 不直接使用」實為 select-menu.spec.md:45(主 cite :53 精確);GapNote (4) 稱「overlay-handcraft exempt 提及」實為 check_story_invariants.sh:423 人話-lint EXEMPT 名單 + check_field_controls_contracts.sh:38 訊息文字 — 「零 <SelectMenu 直用偵測」的操作性結論經全 hooks 反向掃描屬實。其餘全部 file:line 逐一真讀驗證精確:index.ts:67+77 / gen-design-system-barrel.mjs:92-93 / package.json:11+31 / release-preflight.mjs:65 / ui-development.md:20+33 / fork-governance-classification.json:29 / fork-hook-classification.json:25 / check_consumer_app_invariants.sh:168+184-268(Pattern 1-10 零命中,`<select\\b` case-sensitive+無 t→M 邊界雙重不匹配屬實)/ lint-ds-internal-imports.mjs:21-22 / build-published-template-mirror.mjs:66 / eslint-plugin/index.js:24-28(4 條 Tailwind/token 規則、無 publish workflow、apps/ 零消費)。MECHANICAL_DS_ONLY 成立:root barrel 排除(機械、隨 npm ship)只封 front-door,subpath `@qijenchen/design-system/components/SelectMenu`(src/components/SelectMenu/index.ts 存在 → dist subpath 合法解析)+ 裸 JSX 簽名在 DS 端與 consumer 端均無任何機械層攔截。"
+    },
+    {
+      "class": "手刻 header/tabs(未消費 header tabsSlot primitive)",
+      "findings": [
+        "registry tabs-in-header-slot:頁內/dialog 內手刻 TabsList → header tabsSlot(W2 baseline)",
+        "後半#5 明明定義過 modal header with tabs 卻不用(→ DialogHeader tabsSlot)",
+        "後半#10 MyWork tabs 單獨出現應類 header(→ ChromeHeader tabsSlot,高度/延伸邊界)",
+        "後半#4 TypeSettings 右欄 title+tabs 應 header-with-tabs(PARTIAL:對齊 W4 flush-stack 但仍手刻 div+h2+TabsList;pane-header 屬 R3)"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "hook",
+          "artifact": "check_tabs_content_chrome_body_double_gap.sh Check 3 ROOT_SIG_B:<TabsList> 與 <DialogBody|SheetBody|SurfaceBody> 同檔且無 tabsSlot 字樣 → P0 exit 2 指路 DialogHeader tabsSlot;scope 含 apps/**(:46-47);fork 分類 SHIP_AS_IS(fork-hook-classification.json:60-63)。僅覆蓋 dialog/sheet/surface 情境(後半#5);頁內/pane 手刻 h2+TabsList 檔內無 chrome body tag → 不觸發",
+          "cite": ".claude/hooks/check_tabs_content_chrome_body_double_gap.sh:63",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "fork override check_story_invariants.sh R8+R9(SHIP_REWRITTEN,scope 擴 apps/**/*.tsx)— ship 到 fork 但抓不到本簽名:R8 啟動需 content 含 <Sidebar|DataTable|ChromeHeader>(:67),手刻 h2+TabsList 無這些 tag;R9 簽名 = px-[var(--layout-space-loose)]+border-b border-divider 同 div(:104),h2+TabsList 不匹配;registry 無 tabs 條目",
+          "cite": "scripts/fork-hook-overrides/check_story_invariants.sh:66-104",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "chrome_header_dispatcher.sh 家族 — _header_with_tabs_border.sh 需 <[A-Z]*Header JSX ≥1 才啟動(:55,:63),手刻無 Header 元件 → HEADERS=0 靜默 exit 0;_chrome_header_handcraft.sh 需 h-[var(--chrome-header-height)]+border-divider 簽名(:62)且 scope 僅 DS components;fork 分類 DROP(fork-hook-classification.json:228-231 明寫 chrome-header 家族 enforcement 刻意不送 fork)",
+          "cite": ".claude/hooks/lib/_header_with_tabs_border.sh:55-63",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "spec",
+          "artifact": "header-canonical.spec.md Rule W2 + tabsSlot 實作機制(:146-152)+ SurfaceHeaderProps tabsSlot prop 表(:263)+ ❌ withTabs-無-tabsSlot 不推薦(:186);baseline story dialog.stories.tsx#WithTabsInHeader(ds-story-manifest.json:631)。spec 隨 npm package src/**/spec.md ship 到 fork node_modules,但靠人/AI 讀,無機械強制",
+          "cite": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:142",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "tabsSlot primitive 已存在:ChromeHeader/SurfaceHeader column-mode 契約(chrome-header.tsx:49-58 HEADER_TABS_SLOT_WRAPPER_CLASS SSOT)+ DialogHeader spread forward(dialog.tsx:170-171)+ overlay-surface.tsx — 正解可消費,但 API 存在不阻止手刻 → 非 DS_API_FIXED",
+          "cite": "packages/design-system/src/patterns/header-canonical/chrome-header.tsx:49-58",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "eslint",
+          "artifact": "無對應規則 — packages/eslint-plugin/rules/ 僅 no-arbitrary-tailwind-values / no-dynamic-tailwind-class / no-shadcn-compat-alias / no-undefined-layout-token 4 條,grep TabsList|tabsSlot|header 零命中;且 plugin 未發佈 npm、repo 內零 consumer 引用",
+          "cite": "packages/eslint-plugin/package.json:2",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "覆蓋分裂:4 findings 中僅「dialog/sheet/surface 內手刻 TabsList」(後半#5 + finding 1 的 dialog 半邊)有 ship 到 consumer 的 P0 機械防線(check_tabs_content_chrome_body_double_gap.sh Check 3 ROOT_SIG_B,SHIP_AS_IS,該子集已達 MECHANICAL_CONSUMER 等級,勿重複造);但範例簽名本身 = 頁內/pane 手刻 <h2>{title}</h2>+<TabsList size=\\\"sm\\\">(後半#10 MyWork、後半#4 TypeSettings)在 DS 與 fork 兩側零機械防線,只剩 W2 spec 條文 → 整類以最弱環節判 DOC_ONLY。具體缺口:(1) finding 1 宣稱的 registry「tabs-in-header-slot」條目不存在 — story-baseline-registry.json:12-106 components 僅 Sidebar/DataTable/ChromeHeader,無任何 tabs 條目;(2) R8 啟動條件需 <ChromeHeader|Sidebar|DataTable> wrap(check_story_invariants.sh:638 / fork override:67),手刻恰恰沒有這些 tag = 結構性盲區;(3) R9 簽名(px-loose+border-b border-divider)與 h2+TabsList 正交;(4) _header_with_tabs_border 需 Header 元件才啟動且 dispatcher fork DROP;(5) eslint 無規則且未發佈;(6) release preflight 無此簽名 gate。最小補法(擇 a 為主):(a) 擴 check_tabs_content_chrome_body_double_gap.sh Check 3 加 ROOT_SIG_C — flatten 後偵測 <h[1-4]>…</h[1-4]> 與 <TabsList 同檔近距共現(如 300 字元窗)且無 tabsSlot、無 @tabs-content-gap-ok escape → P0 指路 ChromeHeader/DialogHeader/SurfaceHeader tabsSlot;此 hook 已 SHIP_AS_IS,擴 regex 一處即自動隨 corpus 發版到所有 fork,單點 SSOT。(b) 次選:registry 補 Tabs key + tabs-in-header-slot antiPattern(severity block),並把 R8 COMP loop 加 Tabs(DS-author check_story_invariants.sh:635 與 fork override:66 兩處同步)— 缺點是 R8 啟動 gate 需同步改成認 <TabsList,改動面較大。落地後跑 hook smoke(echo JSON | bash hook)+ 對 WM 後半#4/#10 原始違規檔做回歸驗證該擋能擋。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "spacing 親疏語義誤用(loose/tight tier 用錯 + 2px label-desc token 未消費)",
+      "findings": [
+        "後半#6b MembersTab toolbar→table 用 loose 應 tight(layoutSpace.spec.md:67;2026-07-10 re-audit OPEN,已修)",
+        "後半#7 tabs 下 content 沒遵循 layout-space(→ TabsContent mt-0 單一 gap owner)",
+        "後半#23 list-item/field/button 間 tier(heading→fields=tight / step 間=loose,依親疏三規)",
+        "前半#6 section-header↔「no description」應用 2px gap token",
+        "後半#22 step title↔description 2px gap"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "hook",
+          "artifact": "check_layout_space_magic_numbers.sh(P0 BLOCKER exit 2)— 簽名2「手刻 space-y-1」確定命中:L51 regex 含 space-y scale 家族(\\b(p|px|…|space-y|…)-(0\\.5|[1-9][0-9]?…)\\b),gap-[2px]/mt-0.5 同樣命中;L56 幻覺 token 白名單只放行 --layout-space-{loose,tight,bottom},且 --item-gap-label-desc-* 屬不同 namespace 不會誤攔正確修法。但簽名1「gap-[var(--layout-space-loose)] 用錯位置」= 合法 token,regex 心算不命中(var 值非 magic、loose 在白名單)→ 本 hook 對 tier 語義誤用零覆蓋",
+          "cite": ".claude/hooks/check_layout_space_magic_numbers.sh:51",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_tabs_content_chrome_body_double_gap.sh Check 1(TabsContent 在 DialogBody/SheetBody/SurfaceBody 內無 mt-0 → P0 exit 2)= 歸屬 finding 後半#7 的專屬防線;Check 2 攔 overlay body 固定 gap-[4-9]。限制:窄 gate 只在 chrome-body containment 內生效(L128 gate),平頁 tabs 下 content 的 layout-space 違規不在 scope;Check 2 的 grep -v 'gap-\\[var' 明確放行 token → 同樣不管 tier 對錯",
+          "cite": ".claude/hooks/check_tabs_content_chrome_body_double_gap.sh:128-212",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "lib/_layout_space_canonical.sh(WARN-only additionalContext,非 BLOCKER)— 唯一涉及 tier 語義的機械檢查,但方向相反:只抓「tight 誤用該 loose」(Check 1 mt/mb-tight 近 block、Check 3 flex-col gap-tight 全 inline),對 findings 的「loose 誤用該 tight(toolbar→table)」零檢查;且掛載者 post_edit_dispatcher.sh 在 fork 分類 = DROP(lib helper 沒隨 corpus ship → fork 內全 no-op false-green,classification _meta 自承)",
+          "cite": ".claude/hooks/lib/_layout_space_canonical.sh:28-44",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "fork corpus 實證:packages/design-system/ds-canonical/fork/hooks/ 內含 check_layout_space_magic_numbers.sh + check_tabs_content_chrome_body_double_gap.sh,regex 與 DS 原版 diff 相同(SHIP_AS_IS verbatim);兩支分類理由明寫 scope 含 apps/**、skip node_modules(memory:C-prime beta.70 雲端 e2e 已親證 PostToolUse P0 實 fire)",
+          "cite": "scripts/fork-hook-classification.json:44-47(check_layout_space_magic_numbers)+ :56-59(check_tabs_content…)",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "eslint",
+          "artifact": "no-arbitrary-tailwind-values(同源 hook 的全量掃版)— 只抓 bracket arbitrary magic(gap-[8px]),PREFIXES+`-\\[…\\]` pattern 不匹配裸 scale class `space-y-1`,也放行 var(--…);no-undefined-layout-token 只擋幻覺 --layout-space-*(loose 合法)→ 對本 class 兩簽名皆覆蓋不到 tier 語義,且 plugin 未發佈 npm(version 0.1.0-beta.1 UNLICENSED)、repo 內無 eslint.config.* 接線、release-preflight/audit-preflight grep 均無 eslint gate → consumer 完全吃不到",
+          "cite": "packages/eslint-plugin/rules/no-arbitrary-tailwind-values.js:37-58",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "preflight",
+          "artifact": "release-preflight.mjs 含 layout-space-utility-invariant(裸 px-loose silent-fail)+ layout-space-story-coherence(token overview story 值 drift)兩道 deterministic gate — 守的是 DS 端 token 基礎設施,不判 consumer 端 tier 親疏用法;只在 DS repo 發版鏈跑,consumer repo 無此 gate",
+          "cite": "scripts/release-preflight.mjs:55-59",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "spec",
+          "artifact": "layoutSpace.spec.md 親疏 3 級表明文「toolbar → table = 規則 3 tight」(:67)+ 決策樹「toolbar→table → tight」(:182);2px label-desc token 家族定義於 layoutSpace.css:15-18(--item-gap-label-desc-{reading,scanning}(-lg),註明 SelectionItem/MenuItem/DescriptionList 等 DS 內建消費者)— 條文完整但靠人/AI 讀,無機械強制;fork 端僅有 check_ds_anchor_preflight.sh(SHIP_REWRITTEN soft inject,exit 0 不 block)nag 去讀 node_modules 內 spec",
+          "cite": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:67",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "本 class 是「半機械」split,判 DOC_ONLY 因 class 核心簽名(tier 親疏語義)無任何機械防線:(A)已機械且 ship 到 consumer 的半邊 — 手刻 magic spacing(space-y-1/gap-[2px]/mt-0.5)被 check_layout_space_magic_numbers.sh P0 攔(SHIP_AS_IS,corpus regex diff-identical,雲端 e2e 親證);TabsContent-in-chrome-body(後半#7)被 check_tabs_content_chrome_body_double_gap.sh Check 1 P0 攔(SHIP_AS_IS)。(B)零機械的半邊 — 「合法 token 但 tier 用錯」(後半#6b gap-loose 於 toolbar→table 應 tight;後半#23 親疏三規;前半#6/後半#22 用 tight 12px 代替 2px label-desc token)所有層全放行:magic hook 放行 var() token、phantom/eslint 白名單含 loose/tight、_layout_space_canonical.sh 只查反方向(tight→loose)且 WARN-only 又隨 dispatcher DROP 不 ship、preflight 只守 DS 端 token 基建 → 只剩 layoutSpace.spec.md:67/:182 條文。二次傷害:magic hook 的修法訊息(該 hook L104-107)只指路 loose/tight/bottom,不提 --item-gap-label-desc-* 2px 家族 → AI 修 space-y-1 時會被導向 tight 12px = 從簽名2修成簽名1。最小補法(3 條):(1)在已 SHIP_AS_IS 的 check_tabs_content_chrome_body_double_gap.sh(layout-space guardian 家族,不增 hook 數)加 Check 4 窄簽名:同檔 toolbar/filter-bar 簽名緊鄰 <DataTable|<table 且其間 wrapper 用 (mt|mb|gap)-[var(--layout-space-loose)] → P0 + @layout-space-tier-ok: escape(對齊 R9/Check 3 零誤判窄 gate 手法);(2)check_layout_space_magic_numbers.sh 修法訊息補 label↔description 場景指路 gap-[var(--item-gap-label-desc-reading)](2px)—— 一行訊息改動,SHIP_AS_IS 自動帶到 fork;(3)若要 eslint 成為 consumer CI 防線:發佈 @qijenchen/eslint-plugin-design-system + fork template 接 eslint.config,並把 no-arbitrary-tailwind-values 補裸 scale 家族(現只抓 bracket 值,對 space-y-1 也是漏的)。反方向 tier check(_layout_space_canonical.sh)若要保留價值需 promote 成 standalone P0 並加進 fork-hook-classification SHIP_AS_IS(現狀 DROP+WARN = 雙重無效)。非 DS_API_FIXED:2px gap 雖已內建於 DS primitives(layoutSpace.css:15-18 列 SelectionItem/DescriptionList 等),但 consumer 手排 label+desc div stack 無 primitive-forcing 攔截(r3 Pattern 10 只抓 table/img/select/hr)。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "search/action 位置語義(搜尋左、操作右;業務 search 歸業務層)",
+      "findings": [
+        "後半#6 MembersTab search 在右/actions(Add/Import)在左,違 action-bar.spec.md:23「左搜尋右操作」(2026-07-10 re-audit OPEN;已修:業務 search 歸業務層 spec:69/76)"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "spec",
+          "artifact": "action-bar.spec.md 世界級對照「Search + filter(左搜尋右操作)」+「Search 的角色判斷」段(:59-77):業務 search 歸業務層與 filter/sort 同區(:69)、工具 search 放最右(:77)— 純文字,靠人/AI 讀",
+          "cite": "packages/design-system/src/patterns/action-bar/action-bar.spec.md:23",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "Fork preamble 事前指引層(SessionStart 注入)點名 action-bar spec 為必查 + build-ui-canonicals「橫向操作按鈕列 → patterns/action-bar」對照行 — proactive doc 指引,非機械擋",
+          "cite": "packages/design-system/ds-canonical/fork/preamble.md:146",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_ds_anchor_preflight.sh — 唯一會在此寫入點 fire 的 consumer 側 P0 hook(scope 含 apps/*.tsx :41-46;內容含 <Button>/<Tabs> 命中 DS_PRIMITIVES_RE :56 → 30 turns 內無 canonical Read 則 exit 2 :143;fork SHIP_REWRITTEN)。但為 generic process gate(只驗「讀過 canonical」),不驗 ordering 內容 — session 內讀過任何 spec 即靜默放行;WM 違規 2026-07-10 re-audit 仍 OPEN 實證擋不住此 class",
+          "cite": ".claude/hooks/check_ds_anchor_preflight.sh:56",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_story_invariants.sh R7 / registry chromeheader-span-flex-1 — 簽名心算 NO MATCH:regex 要求 <ChromeHeader 前綴 160 字內(registry.json:95),MembersTab action row 在 tab panel 非 ChromeHeader;且 R7 scope 僅 *.stories.tsx(:523-526)、fork override 只 ship R8+R9(fork-hook-classification.json:96)→ 對此 class 零防護,僅列證非防線",
+          "cite": ".claude/hooks/check_story_invariants.sh:584",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "eslint",
+          "artifact": "packages/eslint-plugin/rules/ 僅 4 條(no-arbitrary-tailwind-values / no-dynamic-tailwind-class / no-shadcn-compat-alias / no-undefined-layout-token),grep search|action|flex-1 零命中;未發佈 npm、workspace 零消費 → 無防線",
+          "cite": "packages/eslint-plugin/rules/no-arbitrary-tailwind-values.js:1",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "action-bar 為「組合指南(無 runtime 元件)」— 無 <ActionBar> component 可 by-construction 強制 search 左/actions 右,consumer 手拼 flex row 自由排 → 根因未在 DS 端消除",
+          "cite": "packages/design-system/src/patterns/action-bar/action-bar.spec.md:458",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "product-ui-audit SKILL 檢查表「橫向按鈕列 → action-bar pattern vs 自己 flex gap-2 按鈕組」— AI-judgment audit 層(非機械、非 deterministic),且 fork 端 skills 不認 node_modules(memory reference_cloud_governance_loading)→ 不可靠",
+          "cite": ".claude/skills/product-ui-audit/SKILL.md:69",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "缺口:此 failure class 的機械防線為零 — 全 56 hooks 無任何 regex 匹配「spacer/actions 在前、Search Input 在後」簽名(check_consumer_app_invariants r3 Pattern 1-10 全不相關;R7/registry 的 flex-1 規則被 <ChromeHeader 前綴鎖死且不 ship fork;eslint 4 rules 無關且未發佈;release-preflight 無 consumer gate)。唯一 fire 的 check_ds_anchor_preflight 是 generic「讀過 canonical 沒」process gate,WM 違規實證穿透。DS 端也無 <ActionBar> runtime 元件可根治(spec:458 明文組合指南)。最小補法(對齊 2026-07-08 WM 戰役 R4 harvest 先例 — 偽表格/手刻 validation 同一 harvest 進 r3):在 check_consumer_app_invariants.sh r3 加 Pattern 11「search-right 簽名」— content flatten 後 grep -qE '(className=\\\"[^\\\"]*flex-1[^\\\"]*\\\"[^>]*/?>|ml-auto)[^<]*<[^>]{0,200}(DS\\\\.)?Input[^>]*placeholder=\\\"(Search|搜尋)' (spacer/ml-auto 在 Search Input 之前 = search 被推到右側),escape marker `@search-right-ok: <rationale>`(工具 search 依 spec:77 合法置最右)。r3 已是 SHIP_AS_IS(fork-hook-classification.json:25)→ 補進去後跑 build-fork-governance regen + 發版即自動 ship 到全部 fork,無需改 classification。語義半邊(業務 vs 工具 search 歸層判斷)本質需讀 context,留 dim 71 類 judgment audit + preamble 指引,機械閘只收高信心簽名(零誤判優先,同 r3 家風)。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "dialog chrome 手刻(雙 X / header actions 未走 slot)",
+      "findings": [
+        "前半#9 modal header 兩個 X(consumer 手刻 close 與內建 Close 疊加)",
+        "registry dialog-header-actions:prev/next/⋮ + 關閉鈕左分隔線應走 DialogHeader actions slot(action-bar.spec.md:281)",
+        "handoff 圖二/圖三批:divider 遷 DialogHeader actions,ButtonDivider 由 DS 放"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "DS-API",
+          "artifact": "DialogHeader `actions` slot:提供時 DS 自動渲 {actions} + ButtonDivider + 內建 Close X(正道存在、divider 落點歸 DS);但 children 仍是自由 ReactNode、內建 Close 無條件渲染 → consumer 塞第二顆 X 的違規仍可寫出,非根絕",
+          "cite": "packages/design-system/src/components/Dialog/dialog.tsx:138-193",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "dialog.spec.md「### Header actions slot(2026-07-08)」段:header 級操作(prev/next/⋮)必走 actions slot + ❌禁 children 自刻 cluster + divider(WM 錨例);隨 npm 包 src ship 到 consumer node_modules,靠 AI 讀、非機械",
+          "cite": "packages/design-system/src/components/Dialog/dialog.spec.md:108-115",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "DialogHeaderProps.actions JSDoc:「禁在 children 內自刻 cluster + divider(分隔線落點歸 DS)」+ cite action-bar.spec.md:281 誤觸保護;IDE hover 可見,非機械",
+          "cite": "packages/design-system/src/components/Dialog/dialog.tsx:140-148",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_story_invariants.sh R1-B『dismiss via label』— 只抓文字關閉鈕 `>關閉/Close</Button>`,iconOnly 自閉合第二顆 X 不匹配(修法建議恰是『改用 iconOnly X』,無法辨識重複 X);scope 僅 *.stories.tsx;fork override 不 ship R1",
+          "cite": ".claude/hooks/check_story_invariants.sh:39,132-141",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "R8 story_archetype_registry — registry 只有 Sidebar/DataTable/ChromeHeader 三 key,findings 所稱 dialog-header-actions entry 全 repo 0 hit(未實作);且 DS 版與 fork override 的 component loop 都硬編三元件,即使補 registry entry 也不會被讀",
+          "cite": ".claude/hooks/check_story_invariants.sh:635 + scripts/fork-hook-overrides/check_story_invariants.sh:66 + .claude/references/story-baseline-registry.json(components keys)",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "R9 hand_craft_overlay_header(fork SHIP_REWRITTEN 有 ship,scope apps/**/*.tsx)— 簽名限『手刻 <div px-loose + border-b border-divider>』;本 class 用的是真 DialogHeader primitive → 簽名不匹配,防線擦身而過",
+          "cite": "scripts/fork-hook-overrides/check_story_invariants.sh:33-38,104",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_consumer_app_invariants.sh r3 ds_primitive_misuse(SHIP_AS_IS,scope apps/consumer .tsx)— Pattern 1-10 全為其他 class(CircularProgress/RadioGroup/DataTable/偽表格/raw select…),無 dialog header X / actions slot 偵測",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:155-293 + scripts/fork-hook-classification.json SHIP_AS_IS[0]",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "lib/_overlay_handcraft.sh Check 5(same-row mixing)— 要求 ItemInlineActionButton 共現且明文排除 dismiss Button(grep -cv 'dismiss');本簽名無 ItemInlineActionButton → 不匹配;且僅 WARN 級,fork 分類 post_edit_dispatcher = DROP",
+          "cite": ".claude/hooks/lib/_overlay_handcraft.sh:110-121 + fork-hook-classification.json DROP(post_edit_dispatcher)",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "eslint",
+          "artifact": "僅 4 rules(no-dynamic-tailwind-class / no-shadcn-compat-alias / no-arbitrary-tailwind-values / no-undefined-layout-token),無 dialog chrome 相關 rule;plugin 未發佈 npm、consumer 未消費",
+          "cite": "packages/eslint-plugin/rules/(4 檔)+ packages/eslint-plugin/package.json:name/version",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "preflight",
+          "artifact": "scripts/ 無任何 deterministic gate 掃此 class(rg DialogHeader scripts/ 僅命中 fork override 自身);release:preflight 為 DS-repo 側,不掃 consumer code",
+          "cite": "scripts/fork-hook-overrides/check_story_invariants.sh(唯一 hit)",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "缺口本質:此 class 是「用了真 primitive 但錯用法」(真 DialogHeader + children 塞第二顆 X / header 操作不走 actions slot),而現有全部機械網的簽名都是「手刻假 primitive」(R9 手刻 div header、R1-A 手刻 row、r3 raw table/select)或「文字 label 關閉鈕」(R1-B)— 對 primitive-misuse-inside-primitive 全盲。具體:R1-B regex 要求文字 children(iconOnly 自閉合不匹配,.claude/hooks/check_story_invariants.sh:132);R8 registry 無 Dialog key 且兩處 loop 硬編 Sidebar/DataTable/ChromeHeader(:635 + fork override:66)— findings 引用的「registry dialog-header-actions」entry 實際不存在(全 repo 0 hit,handoff 提案未落地 = M23(d) forcing-function 教訓的紙防線);R9 簽名被真 DialogHeader 繞過;r3 無此 pattern;_overlay_handcraft Check 5 明文排除 dismiss 且 fork DROP;eslint 未發佈;preflight 無 consumer gate。DS API(actions slot + 自動 ButtonDivider + 內建 Close,dialog.tsx:138-193)只保證正道存在,不使歪道不可行。最小補法(推薦 a,一改雙邊生效):在 check_consumer_app_invariants.sh r3 加 Pattern 11 — 該 hook 已 SHIP_AS_IS + 已有 CONTENT flatten(:177),零新基建:(a1) 雙 X 簽名:片段含 `<DialogHeader` 或 `<SheetHeader` 且同段出現 close Button 簽名(`<Button[^>]*(startIcon=\\{X\\}|icon=\\{<X|aria-label=\"(關閉|Close)\")`)→ P0 BLOCKER「內建 Close 已由 DS 渲,children 第二顆 X = 雙 X」+ @ds-misuse-allow escape;(a2) slot 繞過簽名:`<DialogHeader`(無 `actions=`)且 children 內 iconOnly Button 與 (ButtonDivider|<Separator orientation=\"vertical\") 共現 → 「header 級操作走 actions={...}」。補法 b(registry 路線,較貴):story-baseline-registry.json 加 Dialog entry + 同步把 Dialog 加進兩處硬編 loop(否則 entry 死字),且 DS-author 版 R8 scope 僅 *.stories.tsx、self-family skip :610 含 */Dialog/* — production tsx 覆蓋仍得靠 fork override 或補法 a。補完跑 sync-ds-canonical + release:preflight 讓 corpus ship,並在 dialog.spec.md「Header actions slot」段補 hook 名 cite(對齊 M23(d)「承諾防線必 ship」)。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "Field 寬度語義誤用(硬寬溢出 / 該 hug 不 hug / 該 fill 不 fill)",
+      "findings": [
+        "前半#3 右欄輸入框溢出容器(硬寫定寬)",
+        "前半#5 task/todo dropdown 寬應 hug + 內容垂直置中(→ <Select width=\"hug\">)",
+        "前半#10 rich editor 應 fill 容器(w-full)",
+        "registry field-width-hug:詳情 metadata hug 僅主欄頂部 Type/Status(233bd87 右欄撤回 fill 預設)"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "spec",
+          "artifact": "field-controls.spec.md「寬度軸(width: fill / hug)」SSOT — hug 定義 + 何時用 + w-fit max-w-full 行為;唯一覆蓋 w-36 簽名與 hug/fill 語義選錯的條文,靠人/AI 讀",
+          "cite": "packages/design-system/src/components/Field/field-controls.spec.md:200-211",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "正確替代 API 已鋪線:FieldWidth = 'fill'|'hug'(field-types.ts:59)+ fieldWrapperStyles width 軸 fill='w-full'/hug='w-fit max-w-full' defaultVariants width:'fill'(field-wrapper.tsx:74-76,245)+ Select/Combobox/DatePicker/PeoplePicker 轉發(select.tsx:63-64)。但 select.tsx:390 cn(fieldWrapperStyles(...), className) passthrough 不擋 consumer 硬寫 w-36 → 是 enabler 非 enforcer,非 DS_API_FIXED",
+          "cite": "packages/design-system/src/components/Field/field-wrapper.tsx:74-76",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_layout_space_magic_numbers.sh(P0 BLOCKER,scope=consumer .tsx/.ts、skip DS src L34;SHIP_AS_IS → fork 會有)。regex 對 width 只攔 bracket px「\\bw-\\[[0-9]+(\\.[0-9]+)?px\\]」(w-[640px] 類);scale-number alternation 只綁 spacing prefixes(p|px|...|me),不含 w- → 簽名 w-36/w-40 逐段心算確認漏網。僅覆蓋本 class 的 w-[Npx] 子簽名",
+          "cite": ".claude/hooks/check_layout_space_magic_numbers.sh:51",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_consumer_app_invariants.sh r3 ds_primitive_misuse(SHIP_AS_IS json:25-27,scope apps/**)— consumer DS 誤用家族 hook Pattern 1-10 全查過,無任何 width/hug/fill pattern → 本 class 零覆蓋(但它是補洞的自然 home)",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:184-260",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "eslint",
+          "artifact": "no-arbitrary-tailwind-values — CLASS_PATTERN 只匹配 PREFIX-[...] bracket 形(L37-40),w 在 PREFIXES(L29)故 w-[144px] 中、w-36 scale class 不中;且 plugin 未發佈 npm、consumer 未消費",
+          "cite": "packages/eslint-plugin/rules/no-arbitrary-tailwind-values.js:37-40",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "preflight",
+          "artifact": "release-preflight.mjs deterministic gates(categorical-color / motion-delay / layout-space-utility / field-cascade-resolve 等)無 field-width gate;且為 DS repo release 側,非 consumer 側",
+          "cite": "scripts/release-preflight.mjs:52-87",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_ds_anchor_preflight.sh(SHIP_REWRITTEN → fork nag repoint node_modules/@qijenchen/design-system/src/**/spec.md)— soft inject exit 0,提醒讀 spec 但不擋,非機械防線",
+          "cite": "scripts/fork-hook-classification.json:85-88",
+          "shipsToConsumer": true
+        }
+      ],
+      "gapNote": "缺口:(1) 簽名主體 w-36/w-40(Tailwind scale-class 硬寬)在 DS repo 與 fork 都無任何機械攔截 — check_layout_space_magic_numbers.sh:51 的 width 分支只攔 bracket px(w-[Npx]),scale-number 分支只綁 spacing prefixes 不含 w-;eslint rule 同為 bracket-only 且未發佈。(2) hug/fill 語義選錯(前半#5/#10:該 hug 不 hug、該 fill 不 fill)本質判斷類,現只有 field-controls.spec.md:200-211 條文,靠人讀。最小補法:A(主修,機械)在 check_consumer_app_invariants.sh r3 加 Pattern 11「Field-family 硬寬簽名」— 零誤判雙條件(沿用 R9/r3 風格):同段 content 有 <(DS\\.)?(Select|Combobox|DatePicker|PeoplePicker)\\b 且其 className 含 \\bw-(\\d+|\\[[0-9]+(px|rem)\\])\\b → BLOCKER,訊息指向 width=\\\"hug\\\"/fill 預設 + field-controls.spec.md:200,escape 用 @field-width-ok:<rationale>;r3 已 SHIP_AS_IS(json:25-27),改一處 + 跑 build-fork-governance.mjs 重生 → fork 自動獲得(注意:不建議直接在 layout_space hook 加裸 \\bw-\\d+ — w-4/h-4 icon sizing 極常見會誤殺,必須綁 Field-family 元件雙條件)。B(次修)同簽名補進 eslint plugin(新 rule 或擴 no-arbitrary-tailwind-values)+ 發佈/wire 進 fork template lint,否則 consumer 永遠吃不到 CI 層。C(語義類)hug/fill 選錯無法零誤判機械化 → 維持 spec + product-ui-audit dim 覆蓋,可在 r3 BLOCKER 訊息附「詳情 metadata hug 僅主欄頂部」registry 摘要(233bd87 anchor)當 soft 指引。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "手刻可收合 section header(N 份同構標題列造輪)",
+      "findings": [
+        "registry section-header-shared:Description/Attachments/Child work items 三份同構手刻標題列 → 共用 SectionHeader",
+        "前半#7 Activity 應可收合(SectionHeader 同 Description pattern)",
+        "R3 第 7 題 collapsible section header(拍板:SectionHeader 留 WM 客製,layout 全消費 DS canonical:chevron=title 後 suffix inline action / description 用 item-gap-label-desc / endSlot 垂直置中)"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "spec",
+          "artifact": "item-anatomy.spec.md「Chevron 方向慣例」— suffix ChevronDown + rotate-180 = section header canonical(R3 第 7 題拍板所依:chevron = title 後 suffix inline action)",
+          "cite": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:889-916",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "fork preamble M23(d) 手刻浮層/chrome header 子規則(泛化原則:手刻 header = drift 必消費 primitive)— SessionStart 注入 fork;但僅泛則,無 collapsible section header 具體條目",
+          "cite": "packages/design-system/ds-canonical/fork/preamble.md:78",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "最近親機械防線 = fork override check_story_invariants R9,但簽名要求 px-[var(--layout-space-loose)] + border-b border-divider 同 className — 本 class 簽名(flex items-center justify-between + ChevronDown)兩 token 皆無 → 不 fire;R8 registry gate 硬編碼 Sidebar/DataTable/ChromeHeader 且 registry 無 SectionHeader 條目 → 不 fire。列出僅證明「管道存在、rule 缺席」",
+          "cite": "scripts/fork-hook-overrides/check_story_invariants.sh:66,104",
+          "shipsToConsumer": true
+        }
+      ],
+      "gapNote": "缺口:此 class 在 DS repo 與未來 fork 皆零機械防線 — (a) 所有 handcraft 簽名 hook 都綁 chrome/overlay token(R9 px-loose+border-divider:fork-hook-overrides/check_story_invariants.sh:104;_chrome_header_handcraft.sh:62 要 chrome-header-height;_overlay_handcraft.sh:39 且 fork DROP;check_pattern_invariants.sh C.4:171 要 h-[1lh]+shrink-0),而本 class 簽名是無 token 的 `flex items-center justify-between` + ChevronDown toggle,全部漏接;(b) r3_ds_primitive_misuse(SHIP_AS_IS,fork 必得)Pattern 1-10 無 section header 條目(check_consumer_app_invariants.sh:184-260);(c) eslint plugin 4 rules 不相關且未發佈 npm;(d) DS 無 SectionHeader primitive(R3-7 拍板留 WM 客製)→ 非 DS_API_FIXED,未來 fork 只能再手刻;(e) fork preamble 手刻 vs canonical 對照表(preamble.md:355-370)無「可收合 section 標題列」row。最小補法(對齊 M23(d) forcing-function 教訓「mindset 無 hook 兜底 = 紙老虎」+ 2026-07-08 WM 戰役偽表格簽名先例):在 check_consumer_app_invariants.sh r3 加一條內容簽名 Pattern(SHIP_AS_IS 管道,fork 自動獲得):同片段 `<div[^>]*flex[^\"]*items-center[^\"]*justify-between` + `Chevron(Down|Right)[^>]*rotate`(或 setOpen/setExpanded toggle state)且無 `<SectionHeader|<Accordion` 消費 → BLOCKER,escape `@section-header-ok: <rationale>`;訊息 cite item-anatomy.spec.md:889 chevron 方向慣例 + R3-7 layout 拍板(chevron=suffix inline action / item-gap-label-desc / endSlot 垂直置中)。註:走 R8 registry 路徑無效 — R8 觸發條件是「content wraps 已註冊 component tag」,手刻者不寫 <SectionHeader> tag,對「未消費」class 天生抓不到,必須走 r3 內容簽名 idiom。同步在 preamble 對照表補一 row 讓 proactive 指引層對齊。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "avatar anatomy 未消費 canonical(置位/垂直置中/PersonValue 鏈)",
+      "findings": [
+        "前半#1 sidebar header avatar 應置右 + footer avatar 垂直置中(→ WorkspaceBrand + flex-1 spacer + ItemAvatar h-[1lh])",
+        "handoff 圖二/圖三批:人像真實化 — pravatar 固定 u= + 7 處 raw Avatar src → Member.avatarUrl → toPersonValue → DS PersonValue.avatarUrl 全鏈"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "hook",
+          "artifact": "check_sidebar_menu_button_implicit_wrap.sh — 唯一 exact-match 機械防線,但僅蓋「<SidebarMenuButton 無 asChild> 內含 <Avatar|ItemAvatar>」子案(footer 垂直堆疊錨例);regex `<(ItemAvatar|Avatar)\\b` 對簽名 <Avatar src={member.avatarUrl}> 會 fire,exit 2 P0;scope 任何 *.tsx 含 apps/**",
+          "cite": ".claude/hooks/check_sidebar_menu_button_implicit_wrap.sh:37-46,86",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_ds_anchor_preflight.sh — M29 process 閘:apps/**.tsx 寫 <Avatar…>(DS_PRIMITIVES_RE 含 Avatar)且近 ~30 turns 無 spec.md/stories.tsx Read/Grep → exit 2 P0(2026-07-07 升級);但讀過任一 canonical 即靜音,不驗結果是否真消費 ItemAvatar/PersonValue = 非簽名級防線;fork 分類 SHIP_REWRITTEN(path transform 保留 enforcement;注意 json:87 描述「soft exit 0」已 stale)",
+          "cite": ".claude/hooks/check_ds_anchor_preflight.sh:56 + fork-hook-classification.json:85-88",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_story_invariants.sh R8 + story-baseline-registry antiPatterns(sidebar-header-simplified-span :24 / sidebar-footer-two-line :42)— 鄰接防線:抓 header 簡化 span mock 與 footer 兩行 text-xs,但兩條 regex 對 raw <Avatar src> 簽名皆 miss(不驗置位/flex-1 spacer/ItemAvatar 消費);fork override 只 ship R8+R9,scope 擴 apps/**/*.tsx",
+          "cite": ".claude/references/story-baseline-registry.json:23-45 + scripts/fork-hook-overrides/check_story_invariants.sh:33-38,65-97",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_consumer_app_invariants.sh r3 Pattern「手刻 <img rounded-full> 頭像 → 必用 <Avatar>」— 低一層鄰接防線(防手刻 img,不防 raw <Avatar> 誤用);SHIP_AS_IS scope apps/**",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:246-248 + scripts/fork-hook-classification.json:24-27",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "lib/_person_data_richness.sh(經 post_edit_dispatcher.sh:51)— PersonData sparse literal soft 提醒:regex 只配單行字串 literal `{ name:'…', avatarUrl:'…' }`,配不上 <Avatar src={member.avatarUrl}> JSX 簽名;PostToolUse additionalContext 恆 exit 0 非 BLOCKER;宿主 dispatcher fork 分類 DROP",
+          "cite": ".claude/hooks/lib/_person_data_richness.sh:30,42 + scripts/fork-hook-classification.json:173-175",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "eslint",
+          "artifact": "@qijenchen/eslint-plugin-design-system 僅 4 rule(no-arbitrary-tailwind-values / no-shadcn-compat-alias / no-undefined-layout-token / no-dynamic-tailwind-class),無 avatar/anatomy/PersonValue rule;且未發佈 npm、consumer 未消費",
+          "cite": "packages/eslint-plugin/index.js:24-29",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "preflight",
+          "artifact": "scripts/release-preflight.mjs — grep avatar|person 零 hits,無此 class 的 deterministic gate",
+          "cite": "scripts/release-preflight.mjs:1",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "spec",
+          "artifact": "item-anatomy.spec.md「程式化規則(row context only):consumer 必須用 <ItemAvatar>/<ItemIcon>,禁止硬寫 <Avatar size={N}/>」— 明文且自稱『程式化』但一般情境零 hook 兌現;spec.md 隨 npm package src/ ship,fork AI 讀得到(靠讀,非機械)",
+          "cite": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:542",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "sidebar.spec.md SidebarFooter user 區單行 + ItemAvatar hoverCard ProfileCard canonical(垂直置中/footer 錨例的條文層);sidebar.spec.md:601 WorkspaceBrand + flex-1 responsive 條文(置位);people-picker.spec.md:193 avatarUrl 欄位",
+          "cite": "packages/design-system/src/components/Sidebar/sidebar.spec.md:133,601 + packages/design-system/src/components/PeoplePicker/people-picker.spec.md:193",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "反向證據(非防線):PersonValue/PersonData(avatarUrl)定義於 person-display.tsx:25,52 但未 re-export(people-picker.tsx:33,482 export 清單無、PeoplePicker/index.ts 只 export people-picker)→ consumer import 不到 DS 型別走 toPersonValue 鏈;WorkspaceBrand 僅 story helper(sidebar.stories.tsx:57)非 export;Avatar 必須維持 public export(header-canonical chrome 正當用 raw <Avatar size={24}>)→ API 層無法根絕 raw 直用",
+          "cite": "packages/design-system/src/components/PeoplePicker/person-display.tsx:25,52 + people-picker.tsx:482 + sidebar.stories.tsx:57",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "主簽名(row context 內 raw <Avatar src={member.avatarUrl}> 直用、未走 ItemAvatar h-[1lh]/PersonValue 鏈)在 consumer 側無簽名級機械防線:唯一 exact-match hook 只蓋 SidebarMenuButton-無-asChild 子案;ds_anchor_preflight 是「讀過 canonical 即放行」的 process 閘不驗結果;registry R8 兩條 sidebar antiPattern 對本簽名 miss;person_data_richness 簽名不符 + soft + fork DROP;eslint 無 rule 且未發佈;release-preflight 無 gate。item-anatomy.spec.md:542 明文自稱「程式化規則」卻零兌現 = M23(d) 紙老虎 / M34 spec-broad-hook-narrow gap 的教科書案例。附帶缺口:(a) PersonValue/PersonDisplay 未 export → consumer 想守 PersonValue 鏈也 import 不到;(b) WorkspaceBrand 只是 story helper → 「置右 + flex-1 spacer」只能手抄;(c) pravatar 固定 u= 決定性零防線(check_story_determinism 只抓 new Date/Math.random);(d) fork-hook-classification.json:87 對 ds_anchor 的「soft exit 0」描述已 stale(hook 已升 exit 2)。最小補法(按 ROI 排序):(1) 在 check_consumer_app_invariants.sh r3(SHIP_AS_IS,fork 自動獲得)加 Pattern 11:content flatten 後偵測 row-context 簽名(<SidebarFooter|<SidebarMenu|<MenuItem|<SelectMenu|<TreeView|<DataTable 同段)含 `<Avatar\\b[^>]*src=` 且該段無 `<ItemAvatar` → P0 BLOCKER,SidebarHeader/ChromeHeader block 豁免(per header-canonical 4.5 chrome 正當 raw Avatar)+ escape `@raw-avatar-ok: <rationale>`——兌現 item-anatomy.spec.md:542;(2) people-picker.tsx 補 `export { PersonDisplay, MultiPersonDisplay, type PersonValue, type PersonData }` 打通鏈的 API 載體;(3) story-baseline-registry 補 antiPattern:`<SidebarHeader>` 內 `<Avatar` 後 400 字元窗無 `flex-1` → warn(置位/spacer 半機械化);(4) check_story_determinism.sh 加 `pravatar.cc` URL 無 `u=` 參數 → warn;(5) 修 fork-hook-classification.json:87 stale 描述。",
+      "verified": false,
+      "correction": "修正後 verdict:DOC_ONLY 維持不變(逐項真讀 code 驗證,主簽名 <Avatar src={...}> in row context 確無 consumer 側簽名級機械防線;9/10 defenses + gapNote 主分析 + 附帶缺口 (a)(c)(d) + 修法 ROI 全數 file:line 驗證屬實)。僅 2 處修正:【1】defense #10 / gapNote (b)「WorkspaceBrand 僅 story helper(sidebar.stories.tsx:57)非 export」不精確 — packages/design-system/src/components/AppShell/_demo-helpers.tsx:80 有 `export const WorkspaceBrand`(含 AcmeSidebar :124、flex-1 spacer :154、:145 註明「brand 左 + flex-1 + account 右」結構),隨 npm files `src/**/*.{tsx,ts,css}`(package.json files 欄)ship,且正是 sidebar.spec.md:601 指名的 reference(`AppShell/_demo-helpers.tsx` `AcmeSidebar`)。但 package-API 層不可達:AppShell/index.ts 僅 `export * from './app-shell'`、exports map `./components/*`→`./dist/components/*/index.js` 只達 index barrel、root src/index.ts 只 re-export index 鏈 → 「consumer 只能手抄」功能性結論仍成立;惟最小補法應增列選項:把 _demo-helpers(參數化後)升入 AppShell barrel,比 gapNote 補法 (3) registry antiPattern 半機械化更直接打通「置位」載體。【2】defenses 漏列鄰接 hook check_chrome_header_avatar_canonical.sh(SHIP_AS_IS,fork-hook-classification.json:48-51):只攔反方向(SidebarHeader 內 <ItemAvatar,hook :47-49 regex),對本簽名 miss、不影響 verdict,但 gapNote 補法 (1) 的 SidebarHeader/ChromeHeader 豁免設計必須 cross-ref 此 hook(兩 hook 夾出「chrome 用 raw Avatar / row 用 ItemAvatar」完整雙向 canonical,豁免寫錯會互相矛盾)。其餘關鍵確認:check_sidebar_menu_button_implicit_wrap.sh :37-46 regex 僅 SidebarMenuButton-無-asChild block 內 fire、:86 exit 2 ✓;check_ds_anchor_preflight.sh :56 含 Avatar、:143 exit 2、:98 讀過任一 canonical 即靜音的 process 閘 ✓;json:87「soft exit 0」stale ✓;registry :24/:36/:42 三條 regex 對 <Avatar src= 全 miss ✓;consumer r3 全 <DS\\. prefix + Pattern 10 只抓 raw HTML(:246-248 img rounded-full)✓;_person_data_richness.sh :30 單行 literal regex 配不上 JSX、:42 exit 0、dispatcher DROP(json:172-175)✓;eslint 4-rule(index.js:24-29)+ npm E404 未發佈 ✓;release-preflight avatar|person 零 hits ✓;item-anatomy.spec.md:542 明文 + npm ship ✓;PersonValue/PersonData(person-display.tsx :23-25,:53)無任何 barrel re-export(people-picker.tsx export 僅 :33/:54/:468/:482)✓;反向掃 hooks 目錄無其他簽名級防線(peoplepicker_ssot_drift scope 僅 DS 內 3 檔 :26-27;story_determinism :28 無 pravatar 檢查;avatar_hovercard 在 retired/)✓。"
+    },
+    {
+      "class": "DataTable 密度/結構 API 未消費(row-height size / tree 佔位 / inline-create idle)",
+      "findings": [
+        "前半#2a table row-height 過高非 md(→ size=\"sm\";手刻恆-edit StatusCell 撐高刪除)",
+        "前半#2b 巢狀應如 tree-view 保留 arrow 空間、leaf 也佔位(DS siblingHasExpand,DEPENDS-ON-beta84)",
+        "handoff 待辦 3:create row idle 態對齊 data-table.spec.md「Inline create row」canonical(拍板只定義 idle 態)"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "DS-API",
+          "artifact": "tree 佔位半部已根治:siblingHasExpand 自動 sibling-aware 佔位(isFirstContent 時掃同層 siblingRows.some(getCanExpand),depth-0 leaf 自動拿 w-4+mr-2 佔位,consumer 只需照 spec:397 接 tableOptions.getSubRows/getRowCanExpand,佔位不再是 consumer 責任)。⚠️ DEPENDS-ON-beta84:fix 在 branch 2026-07-08-wm-rootcause-fixes(commit a06cd623),git merge-base 驗證不在 main(main=beta.83 bump 12cc91c2),npm latest=0.1.0-beta.83;publish-gate 已 staged 待 user trigger(commit ff59868c)。發版後 consumer 想犯也犯不了",
+          "cite": "packages/design-system/src/components/DataTable/data-table.tsx:1738-1740",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "size 密度 canonical:「Size 不等於 density,是這張表格的結構決策」+ 嵌入式表格模式條文。無任何 hook 檢查 <DataTable> 未帶 size prop——密度選擇是 context-dependent 判斷,現況純靠 AI 讀 spec(spec.md 檔案隨 npm package ship 進 node_modules,fork 端 check_ds_anchor_preflight SHIP_REWRITTEN repoint 後 soft nag 讀 spec,exit 0 不擋)",
+          "cite": "packages/design-system/src/components/DataTable/data-table.spec.md:71",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "Inline create row idle 態 canonical(2026-07-08 WM 戰役 codify,user 拍板只定義 idle 態):高度 h-table-row-{size}/左 padding --table-cell-px/typography fieldDisplayTextClass+fg-muted/整列 hover。:362 明文「點擊後編輯內容 consumer 自組,不 canonical 化、不加 DS API」= 這半部 by design 永遠 doc-only,無 DS 元件可消費、無 hook 偵測手刻 idle 列",
+          "cite": "packages/design-system/src/components/DataTable/data-table.spec.md:360-369",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "Leaf placeholder 條文「同層 sibling 有 expandable 時 leaf 也佔位」(原只有條文無實作 = WM 漏網根因,現由上列 DS-API 行實作接手)",
+          "cite": "packages/design-system/src/components/DataTable/data-table.spec.md:402",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "近鄰但不攔本簽名:check_consumer_app_invariants.sh r3 只攔「繞過 DataTable」——Pattern 10 raw <table>(:236-238)+ WM R4 偽表格 div-grid 簽名(:243-244,fix 訊息才引用 size=\"sm\" canonical)+ Pattern 3 <DS.DataTable 單欄 minimal(:196);r2 story-baseline 要求 <DS.DataTable story 帶 @story-baseline marker(:121-152)。心算對 regex 結果:「<DataTable> 未帶 size + 未接 tree + 手刻 idle 列」零 fire。並且 DataTable-specific patterns 綁 <DS\\. namespace prefix,named import <DataTable> 全數繞過(偽表格/raw-table 兩條是 prefix-agnostic 例外)。SHIP_AS_IS(fork-hook-classification.json:23-27)= hook 會 ship 到 fork,但對本簽名是 false-negative",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:196",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_datatable_invariants.sh:r1 getRowId(:37-42)/ r2+B.2 column size:NUMBER→meta.width(:62,138-141,那是 px-vs-density namespace 衝突,非「未帶密度 prop」)/ B.3 filter-sort sibling sync(:87-111)——三條全與本簽名無關;且 fork 分類 DROP(fork-hook-classification.json:141-143「DS-author DataTable 元件內部 invariant」)= consumer repo 根本沒有這支",
+          "cite": ".claude/hooks/check_datatable_invariants.sh:138",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "preflight",
+          "artifact": "data-table-invariants.mjs 只驗 DS 自家 storybook-static canonical stories 的 5 條 pixel invariant(cell width/height delta 等),grep release-preflight.mjs 0 hit = 未 chain 進發版 gate,僅 npm run test:datatable-invariants 手跑;與 consumer 端 DataTable 用法零關係。audit-data-table-row-mode-ssot.mjs 同為 DS-side。另 row-height 過高的 DS 側 bug(h-table-row-${size} 模板字串 Tailwind 掃不到)已由 commit 1bcf705a literal map 修掉(同樣待 beta.84)",
+          "cite": "scripts/data-table-invariants.mjs:1-10",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "整 class 判 DOC_ONLY:三個半部中「size=\\\"sm\\\" 密度未帶」與「inline-create idle 手刻不對齊」只有 spec 條文(spec:71/:80、:360-369),無任何機械防線 fire;「tree 佔位」半部已 DS-API 根治(data-table.tsx:1738-1740 自動 sibling-aware)但 npm latest 仍 beta.83、fix 未進 main,發版 beta.84 前 consumer 仍會踩。eslint-plugin(@qijenchen/eslint-plugin-design-system,4 rules 全 Tailwind/token 類)無 DataTable rule 且未發佈 npm = 零貢獻。額外系統性缺口:check_consumer_app_invariants r2/r3 的 DataTable/primitive patterns 綁 <DS\\\\. prefix,named import <DataTable> 全繞過(false-negative 家族)。最小補法:(a) beta.84 publish(已 staged 待 user trigger)→ tree 佔位半部升 DS_API_FIXED,零 hook 成本;(b) check_consumer_app_invariants.sh r3 加一條 prefix-agnostic 密度提示 pattern:同檔 <(DS\\\\.)?DataTable\\\\b 無 size= 且有嵌入語境訊號(Dialog/Sheet/SurfaceBody/TabsContent 同檔或 height=\\\"auto\\\")→ P1 soft warn 指 spec:71/:80 + escape @datatable-density-ok:(密度是 context 判斷,P0 會誤傷全頁主表格,對齊 feedback_ssot_mechanical_p0 需 per-line escape 才可升 P0);(c) 同 hook 加 idle 列手刻簽名:DataTable 同檔 + Plus icon +「新增/Add」列 + 無 h-table-row token → warn 指 spec:360-369;(d) 把 r2/r3 全部 <DS\\\\.X regex 改 <(DS\\\\.)?X\\\\b 除鏽 named-import 繞過;(e) 若要 eslint 層成為 consumer 防線,需發佈 plugin + 進 template eslint preset(目前無此機制)。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "edit-in-place 顯示/編輯態語義(恆-edit 框 vs display+hover affordance)",
+      "findings": [
+        "後半#11 MyWorkPage 表格應全可編輯(PARTIAL:拍板 A 案僅統一 Status select column)",
+        "後半#9 role 輸入框應 fill cell 同 owner 欄(→ Select variant=\"naked\" size=\"sm\" cell-registry canonical)",
+        "handoff 待辦 2:WorkItemTable 恆-edit StatusCell 刪除 / ChildWorkItems / MyWorkPage 靜態 cell → meta.editable + hover outline + onCellCommit(indicator A 案)",
+        "handoff 圖二/圖三批:title inline-edit — display 態純文字 + hover 框 field-wrapper token + fill 寬 + 開窗 focus 不落 title"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "spec",
+          "artifact": "data-table.spec.md 編輯 canonical:meta.editable + onCellCommit(blur/Enter commit、Esc cancel)+「display 態零恆顯型別 icon,editable affordance = hover outline」",
+          "cite": "packages/design-system/src/components/DataTable/data-table.spec.md:373 + :167",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "field.spec.md L4(nakedCellEditableDisplayHover hover outline SSOT)/ L6(2026-07-08 A 案 display 態零恆顯拍板)+ inline-edit.spec.md read/hover/edit 三態 canonical(read=純文字+隱形 Pressable、hover=bg tint、edit=Field 控件;含 Atlassian inline-edit cite)",
+          "cite": "packages/design-system/src/components/Field/field.spec.md:419,421;components/InlineEdit/inline-edit.spec.md:16,26-56",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "正道 primitive 已備(opt-in,非 preventive):DataTable meta.editable/isEditable + cell-registry display/edit 分流、InlineEdit 元件 root export、nakedCellEditableDisplayHover const;但 TanStack cell: render fn 開放,consumer 恆渲染 <Select>/<Input> 型別擋不住",
+          "cite": "packages/design-system/src/components/DataTable/cell-registry.tsx:52;src/index.ts:33;components/Field/field-wrapper.tsx:332",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_consumer_app_invariants.sh r3(SHIP_AS_IS,scope apps/** tsx)— 本類**零覆蓋**:Pattern 1-10 無恆-edit/InlineEdit 簽名;:249 只抓小寫 native <select\\b(case-sensitive),<DS.Select> 恆-edit cell 不匹配",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:168,185-260,249;scripts/fork-hook-classification.json:25",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_field_family_invariants.sh A.3.2(SHIP_AS_IS,scope *components/*.tsx 含 apps/**/components)— 僅相鄰子面向:fork 若『手寫』hover:outline-border/focus-within:outline-primary 會 BLOCK;核心簽名(恆-edit、根本沒寫 hover ring)不 fire",
+          "cite": ".claude/hooks/check_field_family_invariants.sh:152;scripts/fork-hook-classification.json:41",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_datatable_invariants.sh — 只有 getRowId WARN + size:number→meta.width WARN,無 editable 規則;且 fork 分類 DROP(consumer repo 根本沒有)",
+          "cite": ".claude/hooks/check_datatable_invariants.sh:37-42,62,138;scripts/fork-hook-classification.json:141",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "fork override check_story_invariants.sh R8 registry 通道存在,但 story-baseline-registry.json DataTable entry 僅 3 條 toolbar filter/sort antiPatterns,無 edit-in-place 條目;R9=手刻 overlay header 不相干",
+          "cite": ".claude/references/story-baseline-registry.json:48-85;scripts/fork-hook-classification.json:95-96",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "eslint",
+          "artifact": "@qijenchen/eslint-plugin-design-system 僅 4 rules(no-dynamic-tailwind-class / no-arbitrary-tailwind-values / no-shadcn-compat-alias / no-undefined-layout-token),全 Tailwind/alias 紀律,無本類 rule;未發佈 npm、無 CI workflow 消費",
+          "cite": "packages/eslint-plugin/rules/(4 檔)+ packages/eslint-plugin/package.json:2-3",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "preflight",
+          "artifact": "scripts/data-table-invariants.mjs — DS repo 自身 storybook-static 的 display↔edit 幾何 gate(I1-I5:寬高 0 delta 等),驗 DS DataTable 實作品質,不掃 consumer 用法;跑在 DS release preflight,不在 consumer 側",
+          "cite": "scripts/data-table-invariants.mjs:1-11,47",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "缺口:spec canonical 完整(data-table.spec.md:373/167 + inline-edit.spec.md 三態)且 DS API 正道已備(meta.editable + onCellCommit + InlineEdit + nakedCellEditableDisplayHover),但**零機械防線**認得違規簽名 —— fork 在 apps/** 寫 `cell: () => <Select .../>` 恆-edit 或 title 恆 `<Input>`,現有 9 支相關 hook/gate 無一 fire(r3 的 `<select\\b` 只抓小寫 native;A.3.2 抓的是反方向「手寫 hover ring」;datatable hook 是 DROP 且無 editable 規則)。TanStack cell render fn 開放 → DS 端型別無法根治,必須 write-time 攔。最小補法(2 步,均走已 SHIP 通道 fork 自動獲得):(1) 擴 check_consumer_app_invariants.sh r3(SHIP_AS_IS)加 pattern:content 有 ColumnDef/accessorKey/columns: 上下文 + `cell:` render 出現 `<(DS\\.)?(Select|Combobox|PeoplePicker|DatePicker|TimePicker|Input)\\b`、且整檔無 `editable`/`onCellCommit` → P0 BLOCKER 指向 data-table.spec.md:373(escape `@always-edit-cell-allow: <rationale>`);同 hook 加 title-InlineEdit 零消費簽名(仿 2026-07-08 useFormValidation 偵測 shape:`<Input` 綁 title/name 類 value + 無 `InlineEdit` import → 提示 InlineEdit)。(2) story-baseline-registry.json DataTable entry 加 antiPattern(id: datatable-always-edit-cell)讓 fork R8 通道雙保險。長期:eslint-plugin 發佈後補 AST 級 rule(能精準判 cell render fn 回傳 edit control,regex 只能近似)。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "分隔線幾何(黏按鈕無間距,未走 ButtonDivider canonical)",
+      "findings": [
+        "後半#13 due date 字樣前分隔線與 SegmentedControl 區隔(→ Separator h-6 mx-1)",
+        "後半#18 分隔線黏按鈕(→ ButtonGroup + ButtonDivider,mx-1 built-in)",
+        "後半#19 action-bar 分隔線邏輯一致(action-bar.spec.md:281 幾何)",
+        "handoff 待辦 5:MyWorkPage h-6 mx-1 / RichTextEditor h-5 mx-1(dense);版面切分 divider 明文排除"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "spec",
+          "artifact": "action-bar.spec.md「分隔線幾何」段(2026-07-08 WM 戰役 codify):canonical = <Separator orientation=\"vertical\" className=\"h-6 mx-1\"/> 於 gap-2 容器(兩側 8+4=12px 對稱);ButtonGroup 同款幾何 = ButtonDivider mx-1;dense 降 h-5 mx-1;禁 h-full/單側 margin;版面切分 divider 明文排除(:290)",
+          "cite": "packages/design-system/src/patterns/action-bar/action-bar.spec.md:288-296",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "separator.spec.md vertical 例外條文:toolbar/action region 群組分隔一律縮短高度(h-6 mx-1 等)不 full-height,幾何 SSOT pointer → action-bar.spec.md「分隔線幾何」段;:34 另記 ButtonDivider 是 raw div role=separator 非 DS Separator。隨 npm 出貨(package.json files 含 src/**/*.spec.md)但純文字、無機械強制",
+          "cite": "packages/design-system/src/components/Separator/separator.spec.md:81",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "ButtonDivider primitive:mx-1 my-1 + self-stretch w-px bg-divider built-in(:87),role=separator(:85),export(:96),JSDoc 例示 ButtonGroup 用法(:68-77)。API 存在且隨 npm ship,但 Separator 仍是開放 primitive——consumer 裸寫 <Separator orientation=\"vertical\"/> 貼按鈕照樣 build 過,API 存在 ≠ 強制,非 DS_API_FIXED",
+          "cite": "packages/design-system/src/components/Button/button-group.tsx:79-96",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "最近似 hook = check_consumer_app_invariants.sh r3(SHIP_AS_IS per fork-hook-classification.json,scope apps|consumer 全 .tsx/.ts,多行已 flatten :177)——但其分隔線 pattern 只攔手刻 <hr\\b(:258-260),對 DS <Separator> 誤用簽名零匹配;逐支心算其餘 hook regex(check_story_invariants R9 :709 = px-loose+border-b border-divider 手刻 header 簽名 / check_layout_space_magic_numbers :51 = 攔「寫了 magic 間距」非「缺間距」)皆不覆蓋此簽名 → 此層實質不存在",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:258",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "eslint",
+          "artifact": "@qijenchen/eslint-plugin-design-system 僅 4 rule(no-arbitrary-tailwind-values / no-shadcn-compat-alias / no-undefined-layout-token / no-dynamic-tailwind-class),無 Separator/ButtonDivider 相關 rule;且未發佈 npm、consumer 未消費(無 publishConfig,repo 內僅 ds-canonical 文件引用)",
+          "cite": "packages/eslint-plugin/index.js:24-29",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "缺口:此 class 在 DS repo 與 fork 兩側都無任何機械防線,只有 spec 條文(action-bar.spec.md:288-296 + separator.spec.md:81,隨 npm 出貨供閱讀)。逐層實證:(1) 無 hook regex 匹配裸 <Separator orientation=\\\"vertical\\\"/> 貼按鈕——r3 只攔 <hr\\b(check_consumer_app_invariants.sh:258),R9 攔的是 px-loose+border-b border-divider 手刻 header(check_story_invariants.sh:709),magic-number hook 攔「多寫」非「漏寫」(check_layout_space_magic_numbers.sh:51);(2) eslint plugin 無相關 rule 且未發佈;(3) 無 CI/preflight gate(visual-assertions.json:404 僅 DS 端 separator-horizontal 截圖);(4) ds-canonical fork corpus 零提及 ButtonDivider/h-6 mx-1/分隔線幾何(build-ui-canonicals.md:24 只有 <hr> 行);(5) ButtonDivider API 存在但 Separator 是開放 primitive,想犯照樣犯。另有反向 friction:fork 照 spec 手寫 className=\\\"h-6 mx-1\\\" 的正確修法反而命中 SHIP_AS_IS 的 check_layout_space_magic_numbers P0(mx-1 中 :51 regex、h-6 不中),需 @layout-space-magic-ok escape——治理現在懲罰 canonical 修法、放行違規簽名,自我打架。最小補法:(a) 在 check_consumer_app_invariants.sh r3(已 SHIP_AS_IS、scope 正確、flatten 已處理多行)加 pattern:flattened content 匹配 <(DS\\.)?Separator\\b[^>]*orientation=[\\\"']vertical[\\\"'] 且該 tag className 無 mx- → BLOCKER,訊息指 ButtonGroup 內用 <ButtonDivider/>(mx-1 built-in)、toolbar 用 h-6 mx-1(cite action-bar.spec.md:288),escape 標記 @separator-geometry-ok:;(b) 同步在 check_layout_space_magic_numbers.sh 對含 <Separator/ButtonDivider 的行豁免 mx-1(或至少訊息補「divider 幾何走 ButtonDivider」),消除 canonical-fix-vs-hook 衝突;(c) 若 eslint plugin 日後發佈,補對應 rule 兌現 index.js:7-9 宣稱的「editor+CI+write-time 三處防線」。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "計數/badge 呈現語義(純文字串接 vs Badge/count suffix canonical)",
+      "findings": [
+        "後半#12 chips「all」後應放 badge 非純文字(→ <Chip badge={<Badge count/>}>)",
+        "後半#14「unstarted 2」格式 — 標題左、純數字右 space-between + tabular-nums,括號僅留 aria 層(item-anatomy Row header 計數 suffix)",
+        "後半#17 filter 按鈕啟用應變 badge checked-style(→ Button pressed + badge={<Badge count/>})",
+        "handoff 待辦 4:count 改「標題左、純數字右 space-between」(user 拍板)"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "spec",
+          "artifact": "item-anatomy.spec.md「Row header 計數 suffix」canonical — 明文禁『Unstarted (2)』括號串接,規定標題左/純數字右 space-between + fg-muted + font-normal + tabular-nums、count=0 不渲染、括號僅 aria/純文字匯出層;附 6 家世界級 cite(Primer CounterLabel / Ant Badge / Atlassian Badge);互動導覽元素計數走 badge slot",
+          "cite": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:176",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "tabs.spec.md badge slot canonical(badge 傳達 tab 待處理計數)— 覆蓋 finding #17 filter/chips 類互動元素計數應走 badge slot 的條文依據",
+          "cite": "packages/design-system/src/components/Tabs/tabs.spec.md:87",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "正道 API 已存在:Badge count prop(count 模式 null 不渲染)/ Chip badge prop / Button badge prop — 但 children 是自由文本,API 無法阻止 `${label} (${count})` 純字串串接,故僅是『可用的對照正道』非根治",
+          "cite": "packages/design-system/src/components/Badge/badge.tsx:69 + Chip/chip.tsx:86-87 + Button/button.tsx:276-277",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_consumer_app_invariants.sh r3(唯一 consumer 端內容式 P0 hook,fork 分類 SHIP_AS_IS)— 逐 pattern 核對後【零覆蓋】此簽名:Pattern 1-10 全是元件誤用/raw primitive/硬寫色值,無任何 count/badge/括號串接 regex;全 hooks 目錄 digit-in-parens 負向掃描僅 gap-[0-9](check_item_list_gap.sh:36)不匹配",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:182-260 + scripts/fork-hook-classification.json:25",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "eslint",
+          "artifact": "@qijenchen/eslint-plugin-design-system 僅 4 條 Tailwind/token 規則(no-arbitrary-tailwind-values / no-shadcn-compat-alias / no-undefined-layout-token / no-dynamic-tailwind-class),無 badge/count 規則;且未發佈 npm、consumer 未消費",
+          "cite": "packages/eslint-plugin/index.js:11-14",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "preflight",
+          "artifact": "scripts/ 全目錄掃描(計數/count-suffix/CounterLabel/tabular-nums)零命中 — release-preflight 只 gate DS 發版,不掃 consumer 寫入,對此 class 無防線",
+          "cite": "scripts/release-preflight.mjs:1(存在但 scope 不含此 class)",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "缺口:spec canonical(item-anatomy.spec.md:176,2026-07-08 WM 戰役 user 拍板)已完整且隨 npm 包 ship 進 consumer node_modules,但整條機械鏈零覆蓋 — 無 hook regex、無 eslint 規則、無 deterministic script 會在 fork consumer 寫出 `${label} (${count})` 時 fire。這正是 M34 spec-broad/hook-narrow gap 的又一例(同 2026-07-08 偽表格 R4 補洞前的狀態)。最小補法:在 check_consumer_app_invariants.sh r3(fork-hook-classification 已列 SHIP_AS_IS,擴 regex 後 fork 自動獲得)加一個 pattern:(a) template-literal 形 `grep -qE '\\$\\{[A-Za-z0-9_.]+\\} ?\\(\\$\\{[A-Za-z0-9_.]+\\}\\)'` 抓 `${label} (${count})`;(b) JSX 相鄰表達式形 `grep -qE '\\{[A-Za-z0-9_.]+\\}[^<>{]*\\(\\{[A-Za-z0-9_.]*(count|Count|length|total|size)[A-Za-z0-9_.]*\\}\\)'` 抓 `{label} ({count})`。錯誤訊息 cite item-anatomy.spec.md:176(row header → suffix space-between + tabular-nums)+ chip.tsx:87 / button.tsx:277 / badge.tsx:69(互動元素 → badge={<Badge count/>});escape marker `@count-in-label-ok: <rationale>`(aria-label / 純文字匯出層合法用途)。注意 r3 已 flatten 換行,regex 需容忍屬性跨行後的空格。次優先:eslint plugin 發佈後鏡射同規則(roadmap 方向 4 editor+CI+AI 三處防線)。",
+      "verified": true,
+      "correction": "OK"
+    },
+    {
+      "class": "兩欄 dialog 版型 canonical 缺席(R3:divider 到底/composer 歸位/獨立捲)",
+      "findings": [
+        "前半#4 modal 版型 4 子項:兩欄 / 分隔線貫穿到底 / comment composer 釘左欄底 / 左欄上方 divider-header tight(末項 re-audit PARTIAL 未實作,列 user 產品決策)",
+        "handoff 待辦 1:composer 歸左欄底(拍板 A)+ 左右欄各自 ScrollArea 獨立捲;右欄 w-72(拍板:兩欄結構屬產品客製不進 DS)"
+      ],
+      "verdict": "UNGOVERNED",
+      "defenses": [
+        {
+          "layer": "hook",
+          "artifact": "check_consumer_app_invariants.sh r2_story_baseline — 擦邊非命中:consumer .stories.tsx 用 <DS.Dialog> 無 @story-baseline marker 才 P0 BLOCKER;只逼引 baseline 註記,不驗版型;production .tsx 不在 r2 scope;且 regex 綁 `<DS\\.` namespace 形式,named import 直接繞過。r3 Pattern 1-10(L185-260)無任何兩欄/共用 ScrollArea/border-l 簽名",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:111-129",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_pattern_invariants.sh C.1 overlay scroll chain — 不會 fire:前置條件 content 含 `<SurfaceBody`(L52)+ panel root `w-[`(L57);本簽名用 Dialog/DialogBody + 裸 `<div className=\"flex\">`,兩條件皆不成立;且僅 P1 WARN stderr 非 BLOCKER",
+          "cite": ".claude/hooks/check_pattern_invariants.sh:51-57",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_story_invariants.sh R9(fork override 同款)— 不匹配:零誤判簽名 = `px-[var(--layout-space-loose)]` + `border-b border-divider` 同 div(手刻浮層 header);本簽名是 `border-l` 欄分隔線 + 共用 ScrollArea,regex 逐段核對無交集",
+          "cite": "scripts/fork-hook-overrides/check_story_invariants.sh:104",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_layout_space_magic_numbers.sh — 不匹配:regex 只抓 spacing 家族 magic number + w-[Npx] + grid-cols-[Npx](L48);`flex`/`border-l`/`w-72`(scale class 非 arbitrary)皆不落網;抓到的只會是同檔偶發的 p-4/gap-3 = 另一 failure class",
+          "cite": ".claude/hooks/check_layout_space_magic_numbers.sh:48",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "eslint",
+          "artifact": "packages/eslint-plugin 僅 4 rules(no-arbitrary-tailwind-values / no-dynamic-tailwind-class / no-shadcn-compat-alias / no-undefined-layout-token),無版型結構 rule;且 @qijenchen/eslint-plugin-design-system npm view 404 未發佈,consumer 零消費",
+          "cite": "packages/eslint-plugin/rules/ + packages/eslint-plugin/package.json:2-3",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "preflight",
+          "artifact": "composition-fidelity-visual-diff.mjs — identity-opt-in only:檔頭明文「單獨 @story-baseline = conformance 意圖,不做 identity diff;禁拿產品範本(內容刻意不同)pixel 比 DS showcase」→ 產品客製兩欄 dialog 永不進 pixel 比對;release-preflight.mjs 是 DS 發版 gate 不掃 consumer",
+          "cite": "scripts/composition-fidelity-visual-diff.mjs:5-8",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "spec",
+          "artifact": "overlay-surface.spec.md「Body overflow canonical」只 own『Dialog/Sheet body 必用 ScrollArea』— 違規者確實用了一顆(共用),條文不禁止兩欄共捲/divider 不貫穿/composer 未釘底;DS repo 全庫 grep「兩欄」無 dialog 版型 canonical,拍板結論(composer 歸左欄底 + 各自 ScrollArea + w-72)只存 WM repo handoff docs,未來 fork 拿不到",
+          "cite": "packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md:41-64",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "Dialog 無兩欄 body export(grep columns/split/pane/aside 零命中);「DialogBody 兩欄組合 API(Wave-3a 發現)」明列 Backlog 未實作;拍板「兩欄結構屬產品客製不進 DS」→ 根因未在 DS 端消除",
+          "cite": ".claude/memory/project_wm_ds_alignment_campaign.md:15",
+          "shipsToConsumer": false
+        }
+      ],
+      "gapNote": "缺口:此 failure class 被拍板「兩欄結構屬產品客製不進 DS」後,canonical 只落在 WM repo handoff docs — DS repo 無 spec 條文、無 hook regex、無 eslint rule、無 CI gate 覆蓋此簽名;未來 fork 寫出「兩欄共用單一 ScrollArea + border-l 不貫穿 + composer 未釘底」完全零攔截(連 soft warn 都沒有)。擦邊防線(r2 baseline marker / C.1 scroll-chain WARN)前置條件皆不成立。最小補法(二擇一或並行):(1) 擴 check_consumer_app_invariants.sh r3 加 WM-R4 式 pattern:content 同段含 `<(DS\\\\.)?Dialog(Body|Content)?` + `<div[^>]*className=\\\"[^\\\"]*flex` + `border-l` 且 `<(DS\\\\.)?ScrollArea` 出現 ≤1 次 → P0 BLOCKER,訊息引拍板 A(左右欄各自 ScrollArea 獨立捲 / divider self-stretch 貫穿 body / composer 釘左欄底 border-t),escape `// @two-pane-dialog-ok: <rationale>`;r3 已 SHIP_AS_IS,加了 fork 自動吃到。並同步在 build-ui-canonicals.md ❌→✅ 表加一列(該表是 Pattern 10 家族的 SSOT 驅動源)。(2) 根治:實作 Backlog「DialogBody 兩欄組合 API」(如 DialogSplitBody:panes 各自 ScrollArea + divider 貫穿 + 左欄 footer slot)→ 升 DS_API_FIXED,consumer 想犯也犯不了。另註:r2/r3 多數既有 pattern regex 綁 `<DS\\\\.` namespace 形式,fork 若用 named import(`import { Dialog } from '@qijenchen/design-system'`)會系統性繞過,新 pattern 建議寫成 `(DS\\\\.)?` 可選前綴。",
+      "verified": false,
+      "correction": "修正後 verdict:仍 UNGOVERNED(class 級無 signature 攔截成立),但 defenses 漏列 1 條 + GapNote 一句絕對化陳述錯誤。(1) 漏列 defense:check_ds_anchor_preflight.sh — scope 含 `*/apps/*.tsx` consumer production(.claude/hooks/check_ds_anchor_preflight.sh:43),DS_PRIMITIVES_RE 匹配 `<Dialog\\b` 與 `<ScrollArea\\b` 的 named-import 形式(:56,恰好補 r2/r3 綁 `<DS\\.` 的盲區——兩者互補後 named import 並非「系統性繞過所有 hook」),且 2026-07-07 已由 soft warn 升 **exit 2 P0 BLOCKER**(檔尾 :141-143「P0 BLOCKER(2026-07-07 治理進化方向 2…)exit 2」),並以 SHIP_REWRITTEN 真實 ship 進 fork(packages/design-system/ds-canonical/fork/hooks/check_ds_anchor_preflight.sh 同樣 exit 2,canonical-read 目標已 repoint node_modules)。故 GapNote「未來 fork 寫出此簽名完全零攔截(連 soft warn 都沒有)」不成立——會有 conditional P0 BLOCKER fire(當 30-turn transcript 無 DS spec/story read 且無 @story-baseline/3-column marker 時)。(2) 但此 hook 屬「擦邊非命中」:process 閘 signature-blind,任一 canonical read 即靜默放行(:98-101),且它逼你讀的 canonical(dialog.spec.md / overlay-surface.spec.md)本身無兩欄版型條文(grep 兩欄/pane 零命中;overlay-surface.spec.md「Body overflow canonical」只要求用 ScrollArea)→ 合規讀完照樣寫出違規,class 仍實質無治理,UNGOVERNED 維持。(3) 附帶 stale:scripts/fork-hook-classification.json:85-87 該 hook reason 仍寫「soft inject(exit 0 不 brick)」,與現行 exit 2 不符,GapNote 補法若引 classification 需同步修。(4) 次要 cite 漂移:check_layout_space_magic_numbers.sh 的 MAGIC_LINES regex 實在 :51(cite :48 是註解區),claim 內容(flex/border-l/w-72 不落網)正確;另 scroll-area.spec.md:131 有「WM 兩欄 dialog 右欄被裁 33px」字樣但屬 fillX viewport 陷阱 invariant,不構成兩欄版型 canonical,不推翻 spec-defense。其餘 8 條 defense cite 逐一核對全部屬實(r2 :111/124 綁 <DS\\. ✓、r3 Pattern 1-10 L184-260 無兩欄簽名 ✓、C.1 :52 SurfaceBody+:57 w-[ 前置不成立且僅 P1 ✓、fork R9 :104 px-loose+border-b 無交集 ✓、eslint 4 rules 未發佈(memory 07-10「未發 npm/未被 fork 消費」佐證)✓、composition-fidelity :6-8 identity-opt-in ✓、Dialog 無 split/pane export ✓、WM memory :15 Backlog ✓、r3 SHIP_AS_IS fork-hook-classification.json:25 ✓)。最小補法建議仍有效,唯 GapNote 措辭應改為「無 signature 級攔截;唯一會 fire 的是 M29 process 閘(conditional P0,一次 spec read 即消音且指向的 canonical 無此條文)」。"
+    },
+    {
+      "class": "連結字 affordance 手刻(未走 FileUpload slot + Action—Primary 色語義)",
+      "findings": [
+        "handoff 圖二/圖三批:dropzone「upload」連結字 — 應走 FileUpload children slot + color.spec「Action—Primary 無底線」"
+      ],
+      "verdict": "DOC_ONLY",
+      "defenses": [
+        {
+          "layer": "hook",
+          "artifact": "check_story_invariants.sh R10 link_canonical — 全 repo 唯一 underline 相關 regex,但三重 miss:(1) regex `text-primary([[:space:]]+[a-z0-9:_-]+)*[[:space:]]+hover:underline` 要求 text-primary 前綴 + hover:underline,裸 `className=\"underline\"` 不匹配;(2) scope 只收 *.stories.tsx(:39 `case \"$FILE_PATH\" in *.stories.tsx) ;; *) exit 0`),production tsx 直接放行;(3) 即使命中也只 P1 WARN 不 block。fork override scripts/fork-hook-overrides/check_story_invariants.sh 只 ship R8+R9,全檔 grep underline = 0 → R10 不進 consumer",
+          "cite": ".claude/hooks/check_story_invariants.sh:735",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_consumer_app_invariants.sh r3_ds_primitive_misuse — scope 命中 consumer production tsx(:168 `(apps|consumer)/.*\\.(tsx|ts)$`)且 fork 分類 SHIP_AS_IS(hook 本體會進 consumer),但 Pattern 1-10(:184-260:CircularProgress/RadioGroupItem/DataTable/LinkInput/Empty/硬寫色值:217/AppShell raw slot:225/raw table:236/div-grid 偽表格:243/img rounded-full:246/select:249/form-validation:255/hr:258)無任何 link-text/underline 簽名 → 對本 class 不 fire,consumer 不受保護",
+          "cite": ".claude/hooks/check_consumer_app_invariants.sh:168",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "hook",
+          "artifact": "check_ds_anchor_preflight.sh — DS_PRIMITIVES_RE 含 FileUpload(:56),scope 含 */apps/*.tsx(:41-46),P0 exit 2(:143);fork 分類 SHIP_REWRITTEN(canonical-read 目標改 node_modules spec 路徑)會進 consumer 並 fire。但這是 process 閘非簽名閘:內容 wrap <FileUpload> 且近 30 turns 無 spec/story read trace 才 block;AI 讀過任一 canonical 即靜默放行,underline span 照 ship。純手刻 dropzone(無 <FileUpload>)只落 :60-71 handcraft 分支(≥3 個 flex+border className 才 WARN,exit 0 不 block,且 <span underline> 行本身不計入簽名)",
+          "cite": ".claude/hooks/check_ds_anchor_preflight.sh:56",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "eslint",
+          "artifact": "@qijenchen/eslint-plugin-design-system — 僅 4 rules(no-dynamic-tailwind-class / no-arbitrary-tailwind-values / no-shadcn-compat-alias / no-undefined-layout-token),`underline` 是標準 Tailwind utility 不觸發任何 rule;且 package UNLICENSED、無 publishConfig、未發佈 npm,consumer 未消費",
+          "cite": "packages/eslint-plugin/package.json:2",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "preflight",
+          "artifact": "release-preflight.mjs — grep underline 0 hits,無本 class 的 deterministic gate;且 preflight 只管 DS 發版鏈,不掃 consumer 寫入,非本 class 的 home",
+          "cite": "scripts/release-preflight.mjs:1",
+          "shipsToConsumer": false
+        },
+        {
+          "layer": "DS-API",
+          "artifact": "FileUpload children 插槽存在且隨 npm ship(`children?: React.ReactNode` :87-88 + `children ?? (預設 Empty)` :343;spec「## children 插槽 vs 預設結構」file-upload.spec.md:90)— 正確 API 已備,但 children 是自由 ReactNode,consumer 傳手刻 underline span 完全合法通過 tsc → root cause 未在 DS 端消除,非 DS_API_FIXED",
+          "cite": "packages/design-system/src/components/FileUpload/file-upload.tsx:87",
+          "shipsToConsumer": true
+        },
+        {
+          "layer": "spec",
+          "artifact": "color.spec.md「Action — Primary」(:180)canonical:「連結 hover = 換色(text-primary-hover),不用底線」且明寫「story 導覽連結由 check_story_invariants.sh R10 機械防 drift(P1 warn)」= spec 自己承認機械防線只蓋 story 層。spec 檔隨 npm package ship(design-system package.json files 含 src/**/*.spec.md)+ fork 版 anchor-preflight 重導 node_modules spec 路徑,但純文字靠 AI 讀,無機械強制",
+          "cite": "packages/design-system/src/tokens/color/color.spec.md:195",
+          "shipsToConsumer": true
+        }
+      ],
+      "gapNote": "缺口:違規簽名(裸 `underline` 連結字,非 `text-primary hover:underline`)連 DS repo 端都無任何機械防線命中 — R10 regex 太窄(要求 text-primary 前綴 + hover: 變體)+ scope 只 stories + fork 不 ship;consumer 側唯一會 fire 的 anchor-preflight 是簽名盲的 process 閘(讀過 canonical 即放行)。僅剩 color.spec.md:195 + file-upload.spec.md:90 條文靠人/AI 讀 = DOC_ONLY。最小補法(1 條 pattern,自動 ship):在 check_consumer_app_invariants.sh r3_ds_primitive_misuse(fork 分類 SHIP_AS_IS,加了即進未來所有 fork,免改 fork-hook-classification.json)Pattern 10 家族尾端加 link-affordance 簽名:`echo \\\"$CONTENT\\\" | grep -qE '<(span|a|button|div)[^>]*className=\\\"[^\\\"]*\\\\bunderline\\\\b'`(注意排除 `no-underline` 與 `hover:underline` 已含蓋;LinkInput 例外是 DS 元件內部實作,consumer 手寫不適用,誤判面窄),violation 訊息 cite file-upload.spec.md:90(dropzone 連結字走 children slot / 預設 Empty)+ color.spec.md:195(Action—Primary 換色無底線 → 改 text-primary hover:text-primary-hover),escape 沿用既有 `@ds-misuse-allow:`。次要補強(選配):(a) DS 端把 R10 regex 放寬抓裸 underline + scope 擴 production tsx(防 DS repo 自身 story 以外復發);(b) eslint plugin 加 no-handcrafted-link-affordance rule — 但 plugin 未發佈前對 consumer 無效,發佈是前置條件。",
+      "verified": false,
+      "correction": "Verdict DOC_ONLY 本身正確,7 條 defenses 全部逐字驗證屬實(R10 regex check_story_invariants.sh:735 要求 text-primary 前綴+hover:underline 裸 underline 不匹配 + :39 scope 只 *.stories.tsx + P1 warn 不 block;r3 check_consumer_app_invariants.sh:168 scope 命中但 Pattern 家族 :218-:259 無 link 簽名;check_ds_anchor_preflight.sh:56 含 FileUpload + :143 exit 2 但簽名盲 process 閘;eslint 4 rules 無 publishConfig;preflight 0 hits;file-upload.tsx:87-88/:343 children slot + spec :90;color.spec.md:180/:195 隨 npm ship 但純文字)+ 17 個 consumer-shipping hooks 反向掃描無漏網。唯一錯誤在 GapNote 補法 regex:「注意排除 no-underline」claim 為假 — 實測 printf '<span className=\"no-underline\">' | grep -E '<(span|a|button|div)[^>]*className=\"[^\"]*\\bunderline\\b' 命中(hyphen 是 non-word char,\\b 在 no- 與 underline 之間成立 word boundary),而 no-underline 是合規 utility(移除底線 = 符合 color.spec.md:195 canonical)→ 照抄該 regex 會 false-fire。修正簽名(space/quote 錨定 token 邊界,排除 no-/焦點變體前綴的 - 與 :,同時因 R10 不 ship fork 應把 hover:underline 一併抓):grep -qE '<(span|a|button|div)[^>]*className=\"([^\"]* )?(hover:)?underline( [^\"]*)?\"'(實測:裸 underline 命中、hover:underline 命中、no-underline 不命中)。其餘 gapNote 內容(缺口描述 / r3 SHIP_AS_IS 為最小補法 home / escape 沿用 @ds-misuse-allow: / cite file-upload.spec.md:90 + color.spec.md:195)全對。"
+    }
+  ]
+}

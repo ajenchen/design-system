@@ -1,0 +1,222 @@
+{
+  "batch": 11,
+  "components": ["AspectRatio", "Chart", "CircularProgress", "DescriptionList", "Empty", "FieldControlGroup", "FileItem", "Notice"],
+  "reconciledBy": "Claude Opus 4.8 — B.3 比稿 reconciliation (verified vs actual code + node_modules where relevant)",
+  "AspectRatio": {
+    "material_confirmed": [
+      {
+        "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.spec.md:96",
+        "宣稱": "極端 ratio:`1/10` 極扁 / `10/1` 極窄高",
+        "真實code行為": "REVERSED。ratio = 寬/高;Radix padding-bottom = 100/ratio。ratio=1/10=0.1 → padding-bottom 1000% → 高=10×寬 = 極窄高(不是極扁);ratio=10/1=10 → 高=0.1×寬 = 極扁。spec 把兩者寫反。",
+        "claudeAlsoCaught": false,
+        "fixHint": "對調:`1/10` 極窄高 / `10/1` 極扁"
+      }
+    ],
+    "marginal_count": 12,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "notes": "其餘 12 條皆 Radix 兩層 wrapper 結構的 pedantry(className 落內層絕對容器 / props 型別繼承全 div props / children 不自動填滿)或 demo-fidelity 吹毛(principles 輪播三張圖都 ratio=1 = 同比例、object-cover 無可裁切) — 技術上對但非 material。Claude 自己抓的 asChild 內層絕對容器點與 codex 同源(marginal)。"
+  },
+  "Chart": {
+    "material_confirmed": [
+      {
+        "fileLine": "chart.anatomy.stories.tsx:116,128 + Inspector:217",
+        "宣稱": "Pie 的 ChartConfig.key 與 dataKey 對齊;Overview Pie legend 顯示類別 label",
+        "真實code行為": "RENDERING BUG。subscriptionConfig keys 是小寫 free/pro/team/enterprise,但 subscriptionData.tier 是大寫 Free/Pro/...。ChartLegendContent 用 nameKey='tier' → getPayloadConfig 解出 configLabelKey='Free'(大寫)→ 不在 config → 回退 config['tier']=undefined → itemConfig undefined → 渲染 `{itemConfig?.label}` = 空。Overview + Inspector 的 Pie legend 標籤全部空白(只剩色點無文字)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "config keys 改成與 tier 值大小寫一致(Free/Pro/...),或給 data 加小寫 key + nameKey 指向它。Claude 完全漏(claimsVerified 36, falseClaims 0)。"
+      },
+      {
+        "fileLine": "chart.stories.tsx:113,148 (BarChartRevenue / LineChartResponseTime)",
+        "宣稱": "Desc 教『indicator=\"dashed\"/\"line\" 讓 tooltip 指示器呼應視覺』",
+        "真實code行為": "DEMO 矛盾。ChartTooltipContent L224:`formatter && item.value!==undefined && item.name ? formatter(...) : (<>indicator+label+value</>)`。兩 story 都傳了 formatter → formatter 分支取代整個預設 row,indicator(dashed/line)根本不渲染。教學宣稱的指示器實際看不到。",
+        "claudeAlsoCaught": false,
+        "fixHint": "formatter 分支需保留 indicator,或移除 formatter 改用 ChartTooltipContent 預設值渲染。"
+      }
+    ],
+    "marginal_count": 13,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "notes": "其餘 13 條是 spec/docblock 對 recharts 整合的 over-claim(『所有視覺改用 DS token』實則 tooltip cursor / axis line / 原生 ChartTooltip alias 未 token 化;RTL/dot-fill/legend-toggle 未由 wrapper 處理;Pie 方向鍵導覽是否可用 = 有爭議的 recharts 行為)— 技術上多半對但屬 nuance。code comment chart.tsx:201 引 spec L146(實為 L165)= 行號漂移。Claude 這批全漏了 2 個真 bug。"
+  },
+  "CircularProgress": {
+    "material_confirmed": [
+      {
+        "fileLine": "circular-progress.spec.md:227",
+        "宣稱": "唯一『狀態』是 value 變化(已在 Determinate story 動態演示)",
+        "真實code行為": "不存在 Determinate story export(只有 Overview/UsageInButton/UsageInline/Accessibility),且三份 stories 全部 value 固定、無 state/timer/RAF/play — 沒有任何『動態演示』。spec 引用不存在的 story + 不存在的動態行為。",
+        "claudeAlsoCaught": false,
+        "fixHint": "刪除『Determinate story 動態演示』宣稱,或改述『determinate 靜態值示範於 UsageInline』。"
+      },
+      {
+        "fileLine": "circular-progress.spec.md:226",
+        "宣稱": "UsageInButton / UsageInline 真實 context 已涵蓋 16 / 24 / 32 / 48 等常用值的行為差異",
+        "真實code行為": "兩 story 只出現 size 16(Cell inline / Button/Input lg=20)+ 24(預設),沒有 32 或 48。且 anatomy comment L50-53 明寫『其他尺寸不示範』— spec 自我矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改成『涵蓋 16 / 20 / 24』或補 32/48 示範。"
+      },
+      {
+        "fileLine": "circular-progress.spec.md:194 (code circular-progress.tsx:141-142)",
+        "宣稱": "正方形不可妥協:`style={{ width: size, height: size }}` 強制",
+        "真實code行為": "code:`style={{width,height}} {...props}` — `style` 未被 destructure,留在 props 且在顯式 style 之後 spread → consumer 傳 `style` 會整個覆寫(非 merge)width/height。『不可妥協』的保證不成立(inner <svg> 仍帶 width/height 尺寸故視覺多半仍方,但外層 span 尺寸可被 consumer style 覆寫)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "merge:`style={{ width: size, height: size, ...style }}` 並 destructure 出 style;或 spec 承認 svg 兜底、移除『不可妥協』絕對語。低嚴重度。"
+      },
+      {
+        "fileLine": "circular-progress.stories.tsx:18-19",
+        "宣稱": "範例均對標 Stripe 付款送出、GitHub PR merging、Figma 雲端同步、Notion workspace loading、Google Drive 上傳",
+        "真實code行為": "STALE docblock。實際 stories:GitHub repo 搜尋 + 泛用檔案上傳列 + 泛用 sync 表格 + Acme workspace 切換。無 Stripe 付款、無 GitHub PR merging、無明示 Figma 情境 — scenario list 已與 exports 漂移。",
+        "claudeAlsoCaught": false,
+        "fixHint": "更新 docblock 場景清單對齊實際 stories。低嚴重度。"
+      }
+    ],
+    "marginal_count": 13,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "notes": "marginal 多為 affix 型別(ReactNode 宣稱 vs runtime 只收 element/string/number)、long-fn suppression 理由(無 local state/context 實情)、aria-label ?? 實為非空判斷、strokeWidth 省略 Math.round、『本元件不可聚焦』(預設對、consumer 可加 tabIndex)、principles『螢幕閱讀器持續收到 loading』(該例無 label 反而 aria-hidden)。技術對但非 material。"
+  },
+  "DescriptionList": {
+    "material_confirmed": [
+      {
+        "fileLine": "description-list.anatomy.stories.tsx:180-190 + principles.stories.tsx:184-188",
+        "宣稱": "『長 value 超過欄寬自然換行撐高 grid cell』/『窄容器 cols=2 email 與職稱都會斷行』",
+        "真實code行為": "vertical `<dd>`(L117)無 `break-all` / `overflow-wrap` / `min-w-0`(只有 horizontal dd L108 有)。demo 的無空白長 email(very.long.email@... / ada.chen@example.com)在 vertical grid cols=2 窄容器內 word-break:normal 無斷點 → 不換行、撐爆欄寬/溢出。caption 宣稱『自然換行』對 email 不成立;只有帶空白的職稱會斷。spec L178 自己承認『vertical 無空白長字串需 consumer 自加 break-all』— demo 未加,反而示範了失敗態。",
+        "claudeAlsoCaught": false,
+        "fixHint": "demo email 加 `break-all`,或改用可斷字的長 value 示範。"
+      },
+      {
+        "fileLine": "description-list.spec.md:129 (violated by description-list.stories.tsx:58)",
+        "宣稱": "section heading → first item 的 gap 必須等於 item→item gap,都走 `var(--layout-space-tight)`(density-aware)",
+        "真實code行為": "OrderSummary story L58 heading 用硬寫 `mb-3`(12px 定值,不隨 density),違反 spec 明訂的 canonical。Horizontal story L97 才正確用 token。預設密度下 mb-3≈tight(皆 12px)故視覺同,但不 track density。",
+        "claudeAlsoCaught": false,
+        "fixHint": "OrderSummary L58 `mb-3` → `mb-[var(--layout-space-tight)]`。低嚴重度。"
+      },
+      {
+        "fileLine": "description-list.principles.stories.tsx:240-241",
+        "宣稱": "反例 caption『這是自訂 layout 模擬 key-right-value-left』",
+        "真實code行為": "L231-238 先 render key(span 姓名/Email)再 render value + `justify-between` → 實際呈現 key-LEFT / value-RIGHT。caption 寫『key-right-value-left』與 demo 相反(也與同 story 上方 note『label 左 / value 右』矛盾)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "caption 改『key-left-value-right』或『label 左 value 右』。低嚴重度。"
+      }
+    ],
+    "marginal_count": 13,
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      {
+        "fileLine": "description-list.principles.stories.tsx:249",
+        "宣稱": "codex:story 標題『唯讀:不放互動元件』卻渲染帶 href 的 anchor = 矛盾",
+        "為何FP": "story 本身明確區分:展示型 Link(L253『value 可以是 Link 但必須是展示性質』)允許,操作型 Button/Input(L288)禁止;spec L197 亦 codify『展示/導覽型 ReactNode(Tag/Badge/Link)允許』。story 內部一致,非矛盾,codex 過度字面化 anchor=互動。"
+      }
+    ],
+    "notes": "marginal 多為 `last:border-b-0`(『每 item 加 border』省略末項例外,標準 divider 慣例)、cols 僅 vertical 生效(prop jsdoc L46 已正確,只 story 描述省略 caveat)、spec:199『空 dl 讀 empty list』與 L179『部分 SR 不視 dl 為 list』內部輕微張力、max-w-2xl=672px 非『700px+』、gap-x-4 vs gap-4(Claude 也抓,marginal)。"
+  },
+  "Empty": {
+    "material_confirmed": [
+      {
+        "fileLine": "empty.spec.md:135-136 + empty.anatomy.stories.tsx:147-149",
+        "宣稱": "正例:Table 空狀態(最簡)`<Empty description=\"沒有資料\" />`;ScenarioMatrix `<Empty description=\"無資料\" />`",
+        "真實code行為": "內部矛盾。spec 禁止事項 L175 明列『title/description 太抽象(「Nothing here」「No data」)』為 ❌,但消費範例 L136 用『沒有資料』、anatomy L149 用『無資料』作正面示範 — 正是被禁的 generic copy。元件原樣顯示抽象字串,不補資料種類/原因/下一步。",
+        "claudeAlsoCaught": false,
+        "fixHint": "統一:若容許最簡 table-empty 用『無資料』則放寬 L175 措辭;否則改正面範例為具體文案(如『找不到符合條件的訂單』,SlotCombinations L206 已是好例)。"
+      }
+    ],
+    "marginal_count": 8,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "notes": "marginal:icon ReactElement『原樣渲染』在 disabled 時會加 span.contents wrapper + [&_svg] 染 fg-disabled(code L53-56 已內註,contents 不影響 layout);description『必填/唯一 slot』是刻意 semantic-vs-TS-optional framing(spec 一致採用,L102 承認 code 不擋空);anatomy L70 其實已正確記 fg-secondary/fg-muted 條件色(codex 挑 L86 簡述)。皆技術對但非 material。"
+  },
+  "FieldControlGroup": {
+    "material_confirmed": [
+      {
+        "fileLine": "field-control-group.tsx:19 + spec.md:23,49,189",
+        "宣稱": "ButtonGroup(多 Button 接合)同 pattern / 同 border-collapse mechanism / 『機制同源的 Button 版』",
+        "真實code行為": "假的 cross-component 教學。button-group.tsx 實作是 `flex gap-2`(8px 分離群組),無負 margin、無 radius 剝除、無 z-index、無 border-collapse。ButtonGroup 根本不是接合式。spec L189 指 button-group.tsx『同 border-collapse mechanism』完全錯。",
+        "claudeAlsoCaught": false,
+        "fixHint": "移除 ButtonGroup 作為 border-collapse 類比;ButtonGroup 是 gap 分離群組,近親分界表應如實標註。"
+      },
+      {
+        "fileLine": "field-control-group.spec.md:166",
+        "宣稱": "Storybook a11y addon panel 0 critical violation",
+        "真實code行為": "principles UsageGuidance story:Mode B 的 3 個 Select/Input(L113-116)全無 aria-label 且未包 Field;搜尋 Input(L41)只有 placeholder(非 accessible name)。native `<input>` 僅 placeholder → axe 報 critical 『label』violation。宣稱與實際 story 不符(anatomy stories 都有補 aria-label,principles 沒有)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "principles 未包 Field 的 Select/Input 補 aria-label,或 spec 限縮宣稱範圍。"
+      },
+      {
+        "fileLine": "field-control-group.tsx:89 vs 103 + spec.md:71,141,171",
+        "宣稱": "States:disabled 子 z-index 0(且 K12 border-opaque override 同時生效)",
+        "真實code行為": "雙 selector 不一致:z-0 用 `[&>*[disabled]]` / `:has([disabled])`(原生 disabled 屬性),但 K12 border 用 `[&>*[data-field-mode=\"disabled\"]]`。disabled Select(渲 data-field-mode + aria-disabled、無原生 [disabled])→ 得 border-opaque 但仍 z-2;disabled Button(有原生 [disabled]、無 data-field-mode)→ 得 z-0 但無 border override。spec 宣稱兩者統一對 disabled 子生效,實際互斥各中一半。",
+        "claudeAlsoCaught": false,
+        "fixHint": "兩 selector 對齊(都認 data-field-mode 或都認 [disabled]),或 spec 明述各 selector 對應的 control 類型。低嚴重度(需確認 Select 是否真無原生 [disabled])。"
+      }
+    ],
+    "marginal_count": 8,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "notes": "marginal:items-stretch『同高』(spec L170 自己承認 field-height 不被拉齊)、Popover density vs ui-size 混談、『每 Select/Input 自帶 aria-label』(實為 consumer 責任)、`!w-[Xpx]` 是否必需(codex 稱 tailwind-merge 會 dedupe 不需 !;但 spec 標為 2026-05-04 真實 bug 逃生艙,未逐一驗 field-wrapper cn 結構故存疑)、anatomy『無 interactive prop』忽略 block prop、neutral-5-opaque dark theme 值差異。"
+  },
+  "FileItem": {
+    "material_confirmed": [
+      {
+        "fileLine": "file-item.spec.md:153,176,117 + file-item.tsx:115,240",
+        "宣稱": "rich = `border + rounded-md + bg-surface` 永遠 card(永久 anchor);『Rich mode 無邊框』列為 ❌ 反例(L176);tight-stack『consumer 移除 border 並 0 gap 相連』(L117)",
+        "真實code行為": "與已實作的 `surface=\"upload-manager\"` 無邊框 rich 模式(tsx L253 只套 rounded-md,無 border/bg;spec L141/197 documented)直接矛盾。spec 一邊 ship 無邊框 rich、一邊把『rich 無邊框』列反例 + 稱 rich『永遠 card』;tsx 註解 L115『rich = border card』、L240『rich canonical:加邊框』皆 stale。且 L117『0 gap 相連』與 List wrapper canonical L285『rich upload-manager 用 --layout-space-tight 12px』矛盾。2026-06-03 surface 重構未貫徹到 Hover-canonical 表 + 反例 + tsx 註解。",
+        "claudeAlsoCaught": false,
+        "fixHint": "Hover-canonical 表 L151-155 rich 行加 surface 分岔;刪 L176『rich 無邊框』反例;L117 0-gap 改 12px tight;tsx L115/L240 註解對齊 surface 分支。"
+      },
+      {
+        "fileLine": "file-item.tsx:147-175 (violates spec.md:423) + anatomy.stories.tsx:335",
+        "宣稱": "spec L423:Download/retry 的 aria-label 必須帶檔名,『單純「下載」缺檔名 SR user 無法區分多 row』",
+        "真實code行為": "內建 hoverAction(onDownload/onRetry)硬編碼 `label:'下載'` / `label:'重試'`(tsx L147-148),Button aria-label 直接用該 label(L175)— 無檔名、無 locale、無 override prop。元件自己的內建按鈕違反自己 spec L423 的硬性要求,且 consumer 無法修(不接受 label override)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "hoverAction aria-label 帶入 `${name}`(如『下載 report.pdf』),或加 downloadAriaLabel/retryAriaLabel override prop。"
+      },
+      {
+        "fileLine": "file-item.spec.md:22",
+        "宣稱": "結構繼承 item-anatomy「List item layout」的 reading-mode 規格",
+        "真實code行為": "FileItem 固定傳 ItemContent `mode=\"scanning\"`(tsx L216),且 spec 自己 Typography 段 L55-66『兩 mode 都 scanning』。L22『reading-mode 規格』與元件實際 + 自家後文矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "L22『reading-mode』→『scanning-mode』。低嚴重度。"
+      }
+    ],
+    "marginal_count": 22,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "notes": "marginal 反映 codex 在 FileItem 的高召回低精度:justify-between/center『對齊 avatar』只在內容≤48px(spec L105-108 已 documented multi-line 溢出);tsx L222 inner-interactive 註解含 ProgressBar/Avatar-hoverCard(實際非 focusable/未傳);ProgressBar height『internal-only』(慣例非強制,已公開 export);Button text variant 預設色 fg-muted vs foreground(跨元件、未驗 Button);onClick-only row 無鍵盤等價(spec L425/L482 已自承 trade-off + known-gap);principles 靜態 demo 按鈕無 onClick(illustrative showcase 常態);rich avatar 無 thumbnail 時 fallback 是檔名首字非檔案類型 icon。皆技術對但非 material defect。"
+  },
+  "Notice": {
+    "material_confirmed": [
+      {
+        "fileLine": "notice.tsx:35 + spec.md:28,50,60,111 (contradicted by alert.tsx:123)",
+        "宣稱": "Notice/Alert/Toast notification banner family『px-4 py-3 固定不隨 density』(family canonical)",
+        "真實code行為": "Alert placement=\"fixed\" 傳 `className='px-[var(--layout-space-loose)]'` 給 Notice(alert.tsx L123),覆寫 Notice 的 px-4,改用 density-aware 水平 padding(16/24px 隨 density)。Alert 自己註解 L111-113 明說『fixed 用 loose px(density-aware)』。family『px 固定不隨 density』的絕對宣稱被主要 consumer Alert 的 fixed placement 違反(py-3 確實固定)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec/tsx 的 family 宣稱加例外:『Alert fixed placement 水平 padding 改 density-aware 以對齊大佈局』。"
+      },
+      {
+        "fileLine": "notice.spec.md:4",
+        "宣稱": "frontmatter `variants: {}`(空)",
+        "真實code行為": "元件有 `variant?: NoticeVariant` 5 值(neutral/info/success/warning/error,預設 neutral,切 status icon),spec 本文 Variant 表 L64-71 亦列 5 值。frontmatter variants:{} 與自家 Variant 表 + 元件 prop 矛盾(tsx noticeMeta L215 亦空)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "frontmatter variants 填 5 值(對齊 alertMeta 慣例),或註明刻意不宣告的理由。低嚴重度(metadata 完整性)。"
+      }
+    ],
+    "marginal_count": 19,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "notes": "marginal:singleton MO『只做一次 DOM read』(實為 1 MO 但 N subscriber 各 getInverseTheme 讀 documentElement = N reads;優化本身真實)、『Notice 只負責 layout+icon,色彩全由 consumer』(Notice 內部 ItemContent 定 desc fg-secondary、Button dismiss 定 fg-muted;但無 bg/base color 大體對)、anatomy『title font-medium』(實為有 desc 才加)、anatomy『Alert 預設可 dismiss』(同段 L490 已澄清 X 需 dismissible+onDismiss)、stories『Toast solid/不可 dismiss/sonner 自動關』(internal primitive 的模擬 showcase 用 illustrative 標籤,非 production Toast 斷言)。皆技術/字面對但非 material。"
+  },
+  "summary": {
+    "total_codex_findings": 136,
+    "total_material_confirmed": 19,
+    "all_material_missed_by_claude": true,
+    "strongest": [
+      "Chart Pie legend 空標籤(config key 大小寫不符)= 真 rendering bug",
+      "Chart formatter 抑制 indicator = demo 矛盾 bug",
+      "DescriptionList vertical dd 無 break-all → 長 email 溢出 = demo 示範失敗態",
+      "FileItem rich『永遠 card』/『無邊框=反例』vs 已 ship 的 surface=upload-manager 無邊框 = spec 自我矛盾",
+      "FileItem 內建 download/retry aria-label 硬編『下載/重試』無檔名 = 違反自家 a11y spec",
+      "FieldControlGroup『ButtonGroup 同 border-collapse』= 假 cross-component 教學(ButtonGroup 是 gap-2 分離)",
+      "Notice family『px 固定不隨 density』vs Alert fixed placement density-aware px = spec-vs-code 矛盾"
+    ]
+  }
+}

@@ -1,8 +1,11 @@
 name: Visual Regression
 
-# Phase 5.2 2026-05-25 — DS-wide visual regression CI
+# Phase 5.2 2026-05-25 — visual regression CI(curated-scenario model)
 #
-# Pixel diff every story screenshot vs committed snapshots-baseline/.
+# Pixel diff scripts/visual-assertions.json 的 curated scenarios(2026-07-14 誠實化:
+# 目前 111 條,約佔全 DS ~900+ story exports 的 1 成 — representative curation,
+# 對齊 Chromatic curated snapshot 模型,「非」every-story 全覆蓋;新關鍵 story 記得補 scenario)
+# vs committed snapshots-baseline/。
 # Fail = block merge(防止視覺 drift ship 進 main)。
 #
 # 對齊 Chromatic / Percy / BackstopJS 的 self-hosted visual diff infra
@@ -16,6 +19,9 @@ name: Visual Regression
 #   3. `gh run download <run> -n visual-regression-diffs -D /tmp/vr` → 人工核對 breached 圖內容 = 有意變更
 #   4. 把 breached 那幾張 ubuntu PNG 覆蓋進 snapshots-baseline/ → commit + push
 #   5. 重跑本 workflow → 0 diff pass
+#
+# Fail-closed(2026-07-14 dim-66):baseline 缺失 / story 404 / dimension mismatch 不再 silent
+# pass — visual-audit.mjs 計入 exit gate。scenario 新增後必須用上述流程補 ubuntu baseline PNG。
 #
 # Skip mechanism: PR title 含「[skip-visual]」可暫繞(emergency only,需 audit reason 進 commit msg)
 
@@ -38,10 +44,10 @@ defaults:
 
 jobs:
   visual-regression:
-    name: Visual Regression Diff(DS-wide pixel match)
+    name: Visual Regression Diff(curated scenarios pixel match)
     if: "!contains(github.event.head_commit.message, '[skip-visual]') && !contains(github.event.pull_request.title, '[skip-visual]')"
     runs-on: ubuntu-latest
-    timeout-minutes: 45  # ~1000 stories × screenshot + diff ≈ 20-30 min
+    timeout-minutes: 45  # ~111 curated scenarios × screenshot + diff(headroom 給 scenario 增長)
 
     steps:
       - uses: actions/checkout@v4

@@ -1,0 +1,6 @@
+{
+  "component": "Chart",
+  "implBasis": "shadcn-style wrapper over recharts v3.8.1 — accessibilityLayer/tabIndex/role source-verified in node_modules",
+  "claimsVerified": 36,
+  "falseClaims": []
+}

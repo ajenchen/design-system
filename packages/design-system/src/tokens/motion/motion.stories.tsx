@@ -15,11 +15,15 @@ const meta: Meta = {
     docs: {
       description: {
         component: `
-Motion token 系統。目前唯一 token 家族 = **hover delay 3-tier**(「hover 觸發 → 延遲 N ms → overlay 顯示」)——目的不是動畫長度,是「user 真的想看」過濾器;overlay 開閉的 enter / exit 動畫由 Radix data-state + CSS 處理,系統**無** duration / easing token。
+Motion token 系統。\`--motion-*\` 統一前綴下**兩個 sub-family**(2026-07-11 Phase 1-4 起;原「唯一家族 = hover delay」敘述已過時):
+
+**(A) delay 3-tier**(「hover 觸發 → 延遲 N ms → overlay 顯示」)——目的不是動畫長度,是「user 真的想看」過濾器。
+
+**(B) 進出場動畫**(overlay fade/zoom/slide 的 duration / easing / 幾何)——\`--motion-duration-{overlay,surface}\` + \`--motion-easing-{enter,exit}\` + \`--motion-enter-{distance,scale}\`,由 tw-animate-css 的 \`--tw-duration\` / \`--tw-ease\` 變數綁定;共用 SSOT = \`overlay-motion.ts\`(overlayMotion / surfaceMotion)。
 
 完整規則:\`packages/design-system/src/tokens/motion/motion.spec.md\`
 
-**JS mirror**:Radix props(\`delayDuration\` / \`openDelay\` / \`closeDelay\`)只吃 number 不認 CSS var,故 consumer 消費 \`motion.ts\` 的 \`HOVER_DELAY_PLAIN_MS\` / \`HOVER_DELAY_RICH_MS\` / \`HOVER_DELAY_CLOSE_MS\`(與 \`motion.css\` 同值鏡像)。
+**JS mirror**:Radix props(\`delayDuration\` / \`openDelay\` / \`closeDelay\`)只吃 number 不認 CSS var,故 consumer 消費 \`motion.ts\` 的 \`MOTION_DELAY_PLAIN_MS\` / \`MOTION_DELAY_RICH_MS\` / \`MOTION_DELAY_CLOSE_MS\`(與 \`motion.css\` 同值鏡像)。
         `,
       },
     },
@@ -59,22 +63,71 @@ export const Overview: Story = {
       </p>
 
       <DelayRow
-        token="--hover-delay-plain"
+        token="--motion-delay-plain"
         value="500ms"
         usage="純文字提示——被動 hint,user 真停留才觸發,避免滑過列表時 N 次視覺擾動"
         consumers="Tooltip / OverflowIndicator"
       />
       <DelayRow
-        token="--hover-delay-rich"
+        token="--motion-delay-rich"
         value="700ms"
         usage="內容預覽——含 fetch / multi-section,避免列表掃視誤觸發 fetch waterfall"
         consumers="HoverCard / ProfileCard / Avatar"
       />
       <DelayRow
-        token="--hover-delay-close"
+        token="--motion-delay-close"
         value="200ms"
         usage="通用關閉緩衝——mouse leave 後 200ms 內移回不會關(誤滑出容錯)"
         consumers="所有 hover overlay"
+      />
+
+      {/* 2026-07-14 Dim 68 修:補 (B) 進出場動畫 sub-family 展示 — 原頁只列 delay,
+          與 motion.css / motion.spec.md 兩 sub-family 現況 drift(「系統無 duration/easing token」已過時)。
+          世界級對照值 cite:tokens/motion/motion.spec.md#L113-L116 表(m3.material.io/styles/motion/easing-and-duration
+          + carbondesignsystem.com/guidelines/motion/overview,spec frontmatter benchmark 段)。 */}
+      <h2 className="text-h3 mb-2 mt-10">進出場動畫 Tokens</h2>
+      <p className="text-body text-fg-secondary mb-6">
+        Overlay fade/zoom/slide 的 duration / easing / 幾何,由 tw-animate-css 的
+        <code>--tw-duration</code> / <code>--tw-ease</code> 變數綁定;共用 SSOT =
+        <code>overlay-motion.ts</code>(overlayMotion / surfaceMotion)。世界級對照見
+        <code>motion.spec.md</code>「進出場動畫 token」表。
+      </p>
+
+      <DelayRow
+        token="--motion-duration-overlay"
+        value="150ms"
+        usage="輕量浮層進出場(對照表 cite: motion.spec.md#L113)"
+        consumers="Tooltip / Popover / HoverCard / DropdownMenu"
+      />
+      <DelayRow
+        token="--motion-duration-surface"
+        value="250ms"
+        usage="模態面板進出場——面積大、位移遠,慢一階(對照表 cite: motion.spec.md#L114)"
+        consumers="Dialog / Sheet / FileViewer"
+      />
+      <DelayRow
+        token="--motion-easing-enter"
+        value="0,0,0,1"
+        usage="進場減速曲線——快起、平滑落定(對照表 cite: motion.spec.md#L115)"
+        consumers="所有 overlay 進場"
+      />
+      <DelayRow
+        token="--motion-easing-exit"
+        value="0.3,0,1,1"
+        usage="出場加速曲線(對照表 cite: motion.spec.md#L116)"
+        consumers="所有 overlay 出場"
+      />
+      <DelayRow
+        token="--motion-enter-distance"
+        value="0.5rem"
+        usage="slide 進場位移(沿用現行 slide-*-2 幾何,cite: motion.css#L24)"
+        consumers="slide 型進場 overlay"
+      />
+      <DelayRow
+        token="--motion-enter-scale"
+        value="0.95"
+        usage="zoom 進場 scale(沿用現行 zoom-95 幾何,cite: motion.css#L25)"
+        consumers="zoom 型進場 overlay"
       />
 
       <p className="text-caption text-fg-muted mt-6">

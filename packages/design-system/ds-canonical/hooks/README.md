@@ -79,7 +79,7 @@
 ## Anti-bloat 落地
 
 - **L1 Pre-write**:`check_file_size_budget.sh` + `check_story_invariants.sh`(內含 principles canonical + l3 primitive 等 5 個合一)等(PreToolUse 阻擋 / 警告)
-- **L2 Per-commit**:`log_governance_fires.sh` → `.claude/logs/hook-fires.jsonl`(governance file 編輯軌跡)+ `log_skill_invokes.sh`
+- **L2 Per-edit**(PostToolUse Write|Edit|MultiEdit,script 內自過濾 governance file):`log_governance_fires.sh` → `.claude/logs/hook-fires.jsonl`(governance file 編輯軌跡)+ `log_skill_invokes.sh`
 - **L3 Periodic**:`/knowledge-prune` skill 季度跑,retire ≥ 5%
 
 ## 這裡**不收**(反例)

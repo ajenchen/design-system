@@ -17,6 +17,7 @@ import {
 } from './sidebar'
 import { ItemAvatar } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
+import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/設計規格',
@@ -115,7 +116,7 @@ const SidebarPreview = ({
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <button type="button">
-                    <ItemAvatar alt="Alan Chen" color="blue" />
+                    <ItemAvatar src="https://i.pravatar.cc/48?u=EMP-1001" alt="Alan Chen" color="blue" />
                     <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">Alan Chen</span>
                   </button>
                 </SidebarMenuButton>
@@ -139,7 +140,7 @@ export const Overview: Story = {
       <div className="flex flex-col gap-2">
         <H3>結構（Anatomy）</H3>
         <Desc>
-          Sidebar 是三段式結構——SidebarHeader（固定高）、SidebarContent（可捲動）、SidebarFooter（固定高）。
+          Sidebar 是三段式結構——SidebarHeader（固定高 `--chrome-header-height`）、SidebarContent（可捲動）、SidebarFooter（高度由內容決定，shrink-0 靠底 + border-t）。
           Content 內放一或多個 SidebarGroup，每個 group 有 py-2 呼吸空間 + 自動內縮分隔線。
           Group 內放 SidebarMenu（扁平 row）或 TreeView（階層 row），兩者共用 item-layout row geometry。
         </Desc>
@@ -651,10 +652,13 @@ export const StateBehavior: Story = {
                 </SidebarContent>
               </Sidebar>
               <div className="flex-1 flex flex-col">
-                <div className="h-10 border-b border-divider flex items-center px-3 gap-2">
+                {/* 2026-07-14 audit Dim 68:主內容 header 消費 ChromeHeader(原手刻 h-10=40px 破壞
+                    與 SidebarHeader 共用 --chrome-header-height 的兩側 chrome 對齊 — sidebar.spec.md
+                    「Chrome header 不跟 size 變」段;對齊 sidebar.stories.tsx PageContent baseline)*/}
+                <ChromeHeader className="bg-surface">
                   <SidebarTrigger />
-                  <span className="text-caption text-fg-muted">Dashboard</span>
-                </div>
+                  <span className="text-body-lg font-medium">Dashboard</span>
+                </ChromeHeader>
                 <div className="flex-1 px-4 py-3 text-caption text-fg-muted">
                   點 SidebarTrigger 或按 Cmd/Ctrl+B,觀察 sidebar 縮到 48px(icon mode)。再按一次展開。
                 </div>
@@ -668,7 +672,7 @@ export const StateBehavior: Story = {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">行為 3:Icon mode 時 label 隱藏 → Tooltip 代償</span>
         <Desc>
-          collapse 到 icon mode 時 label 文字隱藏,滑鼠 hover menu button 自動出現 Tooltip(顯示 label)補償 — 對齊 Linear / GitHub 慣例,避免 icon-only 狀態讓使用者忘記每個 icon 的含義。SidebarMenuButton 內建此行為(`tooltip` prop)。
+          collapse 到 icon mode 時 label 文字隱藏,滑鼠 hover menu button(**需 per-button 傳 `tooltip` prop**,opt-in)才出現 Tooltip(顯示 label)補償 — 對齊 Linear / GitHub 慣例,避免 icon-only 狀態讓使用者忘記每個 icon 的含義。SidebarMenuButton 內建此行為(`tooltip` prop)。
         </Desc>
       </div>
 
@@ -678,9 +682,9 @@ export const StateBehavior: Story = {
         <ul className="text-caption text-fg-secondary space-y-1.5 ml-4 list-disc">
           <li>`collapsible="offcanvas"` 用於主內容為主的 app(sidebar 是啟動器,使用者常關);`collapsible="icon"` 用於深度導覽 app(sidebar 是常駐工作區)。</li>
           <li>open state 寫 cookie `sidebar_state`(7 天 max-age);Provider 只寫不讀,還原由 consumer 讀 cookie 傳 `defaultOpen`(避免 SSR hydration flash)。</li>
-          <li>Mobile(&lt;768px)一律走 Sheet overlay,不受 `collapsible` prop 影響——小螢幕 sidebar 永遠不佔固定空間。</li>
+          <li>Mobile(&lt;768px)時 `offcanvas`(預設)/ `icon` 走 Sheet overlay,小螢幕不佔固定空間;**`collapsible="none"` 例外**——`none` 在 `isMobile` 判斷前提前 return,mobile 下仍是固定寬度側欄,不進 Sheet。</li>
           <li>Icon mode 下 active item 的 `bg-neutral-selected` 仍然顯示,但 label 不可見——提供最小視覺指引讓使用者知道「當前在哪」。</li>
-          <li>Cmd+B / Ctrl+B 全域快捷鍵由 SidebarProvider 監聽,任何 focus 位置都可觸發——目前未排除文字輸入框,在 input / textarea 內按下仍會 toggle 並攔掉預設行為(無 disableShortcut opt-out)。</li>
+          <li>Cmd+B / Ctrl+B 全域快捷鍵由 SidebarProvider 監聽,但有三道 guard(2026-07-05 D4 修):`defaultPrevented`(app editor 已處理同鍵時不 double-fire)/ `isComposing`(IME 組字中不攔)/ 可編輯 target(`input` / `textarea` / `contentEditable` 內按 Cmd/Ctrl+B **不 toggle**,讓位給 bold 等編輯語意)。仍無 `disableShortcut` opt-out。</li>
         </ul>
       </div>
     </div>
@@ -719,7 +723,7 @@ export const ChromeTokens: Story = {
             <tr>
               <Td><TkVal token="--sidebar-width-icon" value="calc(2 × loose + icon)" /></Td>
               <Td mono>calc()</Td>
-              <Td>icon 收合模式寬度(2026-05-21 v3 改 geometry formula;md=48 / lg=64,保證 icon center x 展開/收合一致)</Td>
+              <Td>icon 收合模式寬度(2026-05-21 v3 改 geometry formula;md = 2×16+16 = 48 / lg = 2×24+20 = 68,保證 icon center x 展開/收合一致)</Td>
             </tr>
             <tr>
               <Td><TkVal token="--sidebar-menu-icon-size" value="1rem (16px)" /></Td>
@@ -738,7 +742,7 @@ export const ChromeTokens: Story = {
       <div className="flex flex-col gap-2">
         <H3>Chrome header token(共享)</H3>
         <Desc>
-          SidebarHeader / SidebarFooter / 主內容 page header 都用這個 token,確保跨元件同高對齊。Density-responsive。
+          SidebarHeader / 主內容 page header 都用這個 token,確保跨元件同高對齊。Density-responsive。（SidebarFooter 為 content-based，高度由內容決定，不消費此 token。）
         </Desc>
         <table className="min-w-full text-left border-collapse">
           <thead>
@@ -750,7 +754,7 @@ export const ChromeTokens: Story = {
           <tbody>
             <tr>
               <Td mono>--chrome-header-height</Td>
-              <Td>Sidebar header / footer 固定高度；density 解析值見 uiSize.spec.md</Td>
+              <Td>Sidebar header 固定高度（footer 為 content-based，不消費此 token）；density 解析值見 uiSize.spec.md</Td>
             </tr>
           </tbody>
         </table>
@@ -766,7 +770,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"-   收合切換鍵：Cmd+B(Mac)/ Ctrl+B(Windows)是業界慣例(VS Code / Linear / shadcn 都用),Sidebar 內建並會攔下這組鍵,避免穿透到瀏覽器書籤列。任何焦點位置都能觸發;目前未排除文字輸入框——在 input / textarea 內按下仍會 toggle(無 disableShortcut opt-out)。\n\n-   收合按鈕:SidebarTrigger 內建 aria-label「切換側邊欄」,讓螢幕報讀使用者知道按鈕用途;consumer 可傳 aria-label 覆寫(i18n)。SidebarGroupLabel 的收合 chevron 另有 toggleAriaLabel prop(預設「展開或收合」)。\n\n-   當前項目:選中的 menu item 帶 data-active,呈現選取底色(bg-neutral-selected)作為視覺指引;即使收合成 icon-only 模式,選取底色仍然保留,使用者一眼知道現在在哪一頁。\n\n-   手機尺寸:768px 以下自動切換成從旁滑出的抽屜(Sheet),內建焦點鎖定、Esc 關閉、關閉後焦點回到觸發按鈕。"}</p>
+      <p className="whitespace-pre-line">{"-   收合切換鍵：Cmd+B(Mac)/ Ctrl+B(Windows)是業界慣例(VS Code / Linear / shadcn 都用),Sidebar 內建並會攔下這組鍵,避免穿透到瀏覽器書籤列。任何焦點位置都能觸發;任何焦點位置都能觸發,但有三道 guard(2026-07-05 D4):app 已處理同鍵(defaultPrevented)/ IME 組字中(isComposing)/ 可編輯 target(input / textarea / contentEditable 內讓位給 bold 等編輯語意)時不 toggle。仍無 disableShortcut opt-out。\n\n-   收合按鈕:SidebarTrigger 內建 aria-label「切換側邊欄」,讓螢幕報讀使用者知道按鈕用途;consumer 可傳 aria-label 覆寫(i18n)。SidebarGroupLabel 的收合 chevron 另有 toggleAriaLabel prop(預設「展開或收合」)。\n\n-   當前項目:選中的 menu item 帶 data-active,呈現選取底色(bg-neutral-selected)作為視覺指引;即使收合成 icon-only 模式,選取底色仍然保留,使用者一眼知道現在在哪一頁。\n\n-   手機尺寸:768px 以下自動切換成從旁滑出的抽屜(Sheet),內建焦點鎖定、Esc 關閉;關閉後焦點還原走 Radix FocusScope 預設(還原到開啟前聚焦元素),因 mobile Sheet 無顯式 SheetTrigger,不保證回到觸發按鈕。"}</p>
     </div>
   ),
 }

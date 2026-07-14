@@ -23,15 +23,15 @@ benchmark:
 
 Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延遲時間(對齊 token 名 `delay` 術語)。**目的不是動畫長度,是「user 真的想看」過濾器** — 短暫滑過不該觸發 expensive overlay(ProfileCard fetch 資料 / Tooltip 視覺擾動)。
 
-**Scope 邊界**:本 token 系統僅管 hover open / close 延遲;overlay 開啟後的 fetch loading 視覺(skeleton / 留空)屬各 consumer 元件 spec(HoverCard / ProfileCard),不在 motion token scope。
+**Scope**:motion token 統一在 `--motion-*` 前綴下,兩個 sub-family:(A)**delay**(hover 開/關延遲,見下)(B)**進出場動畫**(overlay fade/zoom/slide 的 duration/easing/幾何,見「進出場動畫 token」段)。overlay 開啟後的 fetch loading 視覺(skeleton / 留空)屬各 consumer 元件 spec,不在 motion token scope。
 
 ## 三層 tier 系統
 
 | Token | 值 | 用於 | 為何 |
 |---|---|---|---|
-| `--hover-delay-plain` | `500ms` | Tooltip 純文字提示 | 被動 hint,需 user「真停留」才觸發,避免滑過列表時 N 次視覺擾動。對齊 Material 3 plain tooltip 500ms / Apple HIG ~500ms / shadcn-Radix default 500ms 主流共識 | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
-| `--hover-delay-rich` | `700ms` | HoverCard / ProfileCard 內容預覽 | 含 avatar / fields / actions 的 rich content(可能含 fetch)。User 必須「真的想看」才停留 700ms,避免列表掃視時誤觸發 N 個 fetch waterfall |
-| `--hover-delay-close` | `200ms` | 所有 overlay 關閉 | Mouse leave 後給 200ms 緩衝(user 可能誤滑出再回來)。對齊 UX 共識「close delay ≤ open delay」+ 既有 Avatar `closeDelay={200}` 值 |
+| `--motion-delay-plain` | `500ms` | Tooltip 純文字提示 | 被動 hint,需 user「真停留」才觸發,避免滑過列表時 N 次視覺擾動。對齊 Material 3 plain tooltip 500ms / Apple HIG ~500ms / shadcn-Radix default 500ms 主流共識 | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+| `--motion-delay-rich` | `700ms` | HoverCard / ProfileCard 內容預覽 | 含 avatar / fields / actions 的 rich content(可能含 fetch)。User 必須「真的想看」才停留 700ms,避免列表掃視時誤觸發 N 個 fetch waterfall |
+| `--motion-delay-close` | `200ms` | 所有 overlay 關閉 | Mouse leave 後給 200ms 緩衝(user 可能誤滑出再回來)。對齊 UX 共識「close delay ≤ open delay」+ 既有 Avatar `closeDelay={200}` 值 |
 
 ## 為何不用單一值 / 為何不沿用過去 200ms
 
@@ -45,11 +45,11 @@ Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延
 
 | 場景 | 用哪 token | 為何 |
 |---|---|---|
-| Icon-only Button → 顯示文字提示 | `--hover-delay-plain` | 純文字輔助 |
-| Avatar / Username → 顯示完整人物卡 | `--hover-delay-rich` | 含 fetch + multi-section content |
-| OverflowIndicator → 顯示隱藏列表 | `--hover-delay-plain` | 純列表展開,無 fetch |
-| Tag / Chip → 顯示說明 | `--hover-delay-plain` | 純文字 |
-| 任何 overlay 關閉延遲 | `--hover-delay-close` | universal |
+| Icon-only Button → 顯示文字提示 | `--motion-delay-plain` | 純文字輔助 |
+| Avatar / Username → 顯示完整人物卡 | `--motion-delay-rich` | 含 fetch + multi-section content |
+| OverflowIndicator → 顯示隱藏列表 | `--motion-delay-plain` | 純列表展開,無 fetch |
+| Tag / Chip → 顯示說明 | `--motion-delay-plain` | 純文字 |
+| 任何 overlay 關閉延遲 | `--motion-delay-close` | universal |
 | Click-triggered Popover / Dialog | — | N/A,click 不適用 hover delay |
 | Tooltip 鍵盤 focus 觸發 | — | N/A,直接顯示(對齊 WAI-ARIA APG) |
 
@@ -61,18 +61,18 @@ Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延
 
 ### Anti-pattern 避免命名
 
-- ❌ `--hover-delay-tooltip` / `--hover-delay-hovercard` — 元件名綁定 → 新元件(Popover variant)用哪個?
+- ❌ `--motion-delay-tooltip` / `--motion-delay-hovercard` — 元件名綁定 → 新元件(Popover variant)用哪個?
 - ❌ `--delay-200` / `--delay-300` — 用值不用語意 → 改值要 rename
 - ❌ `--motion-hover-fast` / `--motion-hover-slow` — fast/slow 在 hover 語境語意模糊(對 user 來說「fast」應該是 instant?)
 - ❌ `--hover-time` / `--mouseover-pause` — 自創縮寫,跨人不可讀
 
 ## 消費者
 
-- `components/Avatar/avatar.tsx` — HoverCard openDelay / closeDelay 消費 `HOVER_DELAY_RICH_MS` / `HOVER_DELAY_CLOSE_MS`(原硬寫 300/200,migrate 到 token)
-- `components/HoverCard/hover-card.tsx` — Root 預設 `openDelay`=`--hover-delay-rich` / `closeDelay`=`--hover-delay-close`(Radix HoverCard 無 Provider;2026-06-11 落地,原宣稱與 code 脫鉤)
-- `components/Tooltip/tooltip.tsx` — Radix Provider 預設 delayDuration override 為 `--hover-delay-plain`
-- `components/ProfileCard/profile-card.tsx`(consumer of HoverCard)— 繼承 `--hover-delay-rich`
-- `components/OverflowIndicator/overflow-indicator.tsx`(consumer)— 用 `--hover-delay-plain`
+- `components/Avatar/avatar.tsx` — HoverCard openDelay / closeDelay 消費 `MOTION_DELAY_RICH_MS` / `MOTION_DELAY_CLOSE_MS`(原硬寫 300/200,migrate 到 token)
+- `components/HoverCard/hover-card.tsx` — Root 預設 `openDelay`=`--motion-delay-rich` / `closeDelay`=`--motion-delay-close`(Radix HoverCard 無 Provider;2026-06-11 落地,原宣稱與 code 脫鉤)
+- `components/Tooltip/tooltip.tsx` — Radix Provider 預設 delayDuration override 為 `--motion-delay-plain`
+- `components/ProfileCard/profile-card.tsx`(consumer of HoverCard)— 繼承 `--motion-delay-rich`
+- `components/OverflowIndicator/overflow-indicator.tsx`(consumer)— 用 `--motion-delay-plain`
 - 任何 future overlay hover consumer 必 import 此 token(per M17 SSOT 必可傳播)
 
 ## 世界級對照
@@ -103,3 +103,20 @@ Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
 - `hover-card.spec.md`
+
+## 進出場動畫 token(2026-07-11 加,user 拍板)
+
+Overlay(Tooltip/Popover/HoverCard/DropdownMenu/Dialog/Sheet/FileViewer)的 fade/zoom/slide 進出場動畫,值統一 token 化(原各元件硬寫 zoom-95/slide-2/duration-300 = M17 假 SSOT)。由 tw-animate-css(Tailwind v4,= shadcn 官方機制)的 `--tw-duration`/`--tw-ease` 變數綁定;共用 SSOT = `overlay-motion.ts`(overlayMotion/surfaceMotion)。
+
+| Token | 值 | 用於 | 世界級對照 |
+|---|---|---|---|
+| `--motion-duration-overlay` | `150ms` | 輕量浮層(Tooltip/Popover/HoverCard/DropdownMenu) | Material short3 / Carbon moderate-01 / Polaris 150 / tw-animate-css 預設 **四家一致** |
+| `--motion-duration-surface` | `250ms` | 模態面板(Dialog/Sheet/FileViewer,面積大位移遠→慢一階) | Material medium1 / Polaris 250 / Carbon moderate-02(240) |
+| `--motion-easing-enter` | `cubic-bezier(0,0,0,1)` | 進場(減速,快起平滑落定) | Material standard-decelerate(企業級中性沉穩) |
+| `--motion-easing-exit` | `cubic-bezier(0.3,0,1,1)` | 出場(加速) | Material standard-accelerate |
+| `--motion-enter-distance` | `0.5rem`(8px) | slide 位移 | shadcn/Radix canonical(= 現行 slide-*-2) |
+| `--motion-enter-scale` | `0.95` | zoom scale | shadcn default(= 現行 zoom-95) |
+
+**幾何原型分層(正當差異,不強行抹平)**:輕量 popup = fade+zoom+slide-side(8px);模態置中 = fade+zoom+slide-center(Dialog/FileViewer);邊緣抽屜 = slide-edge 100%、正當無 zoom(Sheet)。統一的是**時長/曲線/reduced-motion 守衛**(motion-reduce:animate-none 全 7 浮層),非幾何原型(對齊 Material standard-vs-emphasized / Carbon productive-vs-expressive tier 分層)。
+
+**a11y**:prefers-reduced-motion 下 `motion-reduce:animate-none` 全 7 浮層統一關進出場動畫(overlay-motion SSOT 保證,無漏)。

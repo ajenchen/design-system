@@ -1,0 +1,31 @@
+{
+  "dim": 38,
+  "title": "Inline-action gap canonical — codex vs Claude 比稿裁定",
+  "codexRaw": 1,
+  "claudeFindings": 0,
+  "claudeVerdict": "CLEAN — inline-action sibling gap (gap-2/8px) fully propagated DS-wide; Tabs NOT in Claude's verified_consumers list (coverage gap, but not a material miss per below)",
+  "judgments": [
+    {
+      "codexSeverity": "material",
+      "verdict": "marginal",
+      "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:476",
+      "codexClaim": "badge/endIcon 與 inlineAction 同時存在時,inlineAction 已是獨立 sibling,卻沿用 suffix 內部 gap-1 只保留 4px,違反 sibling gap-2(8px) canonical。",
+      "codeGroundTruth": "actionPaddingRight = hasAction ? iconSize + (hasSuffix ? 4 : 8) : undefined (tabs.tsx:476). 幾何驗證屬實:action 為 absolute right-0 sibling,trigger paddingRight 預留 iconSize + gap;實際 content→action 視覺間距 = gap = 4px(有 suffix)/ 8px(僅 action)。codex 讀 code 正確,4px 真實存在,非 false positive。",
+      "whyNotMaterial": [
+        "dim-38 canonical(inline-action.spec.md:82)『多個 Inline Action 並排 → gap-2』字面覆蓋的是「多個 inline action 彼此」(如 Select clear-X + chevron),不是「單一 inline action 挨著 decorative suffix(badge/endIcon)」。此 case 未被該判準直接涵蓋。",
+        "Tabs 自有 documented 較緊 suffix gap 系統:tabs.spec.md:85 明文『suffix 內 gap-1(4px)對標 Button suffix wrapper』——Tabs 對 fieldWrapper gap-2 是 documented exception。suffix→inlineAction 的確切間距 spec 未明文規定(gray zone)。",
+        "code 有 documented rationale(tabs.tsx:472-474『幾何與巢狀版一致』)。且若改 gap-2 會造成右側 cluster 間距不均(badge─4px─endIcon─8px─action),破壞視覺一致性。",
+        "屬 4px-vs-8px 的 spec-underspecified 精細間距判斷,情境依賴,兩方皆有合理論據——technically-valid pedantry 而非明確該修缺陷。"
+      ],
+      "materialCounterArgument": "inlineAction 語意上是 distinct interactive slot(自己的 handler、split-click),按 slot-gap canonical(gap-2)理應與前一 slot(suffix)分開 gap-2 以強化『這是獨立 click target』的視覺 affordance。此論點成立,故非 false_positive;但因上述 gray-zone + documented exception,升不到 material。",
+      "claudeAlsoCaught": false,
+      "claudeCoverageNote": "Claude dim-38 verified_consumers 未列 Tabs(漏掃此元件),但因本 finding 裁定為 marginal 而非 material,不計入 claudeMissed。"
+    }
+  ],
+  "stats": {
+    "material_confirmed": 0,
+    "marginal": 1,
+    "false_positive": 0,
+    "claudeMissed": 0
+  }
+}

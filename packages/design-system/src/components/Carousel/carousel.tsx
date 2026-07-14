@@ -97,6 +97,14 @@ const Carousel = React.forwardRef<
       setSelectedIndex(a.selectedScrollSnap())
     }, [])
 
+    // reInit(動態 slide 增減 / options 變更)必刷新 scrollSnaps —— onSelect 只讀 select
+    // 狀態不含 scrollSnapList;若不在此補,dots 數量 stale(舊 dots 殘留 / 縮減不更新)。
+    const onReInit = React.useCallback((a: CarouselApi) => {
+      if (!a) return
+      setScrollSnaps(a.scrollSnapList())
+      onSelect(a)
+    }, [onSelect])
+
     const scrollPrev = React.useCallback(() => api?.scrollPrev(), [api])
     const scrollNext = React.useCallback(() => api?.scrollNext(), [api])
     const scrollTo = React.useCallback((i: number) => api?.scrollTo(i), [api])
@@ -110,13 +118,13 @@ const Carousel = React.forwardRef<
       if (!api) return
       setScrollSnaps(api.scrollSnapList())
       onSelect(api)
-      api.on('reInit', onSelect)
+      api.on('reInit', onReInit)
       api.on('select', onSelect)
       return () => {
         api?.off('select', onSelect)
-        api?.off('reInit', onSelect) // D3 fix: previously leaked — stale closure on remount
+        api?.off('reInit', onReInit) // D3 fix: previously leaked — stale closure on remount
       }
-    }, [api, onSelect])
+    }, [api, onSelect, onReInit])
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
       // 鍵盤方向對齊內容捲動方向(APG 建議):horizontal → ←/→;vertical → ↑/↓

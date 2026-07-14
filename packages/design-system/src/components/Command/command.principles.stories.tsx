@@ -30,7 +30,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Internal/Command/展示" name="行內搜尋清單"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">行內搜尋清單 — Gmail 式 sidebar 信件資料夾過濾</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Internal/Command/展示" name="外觀切換器"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">外觀切換器 — 選中立即執行的純動作清單</span></LinkTo>
+          <LinkTo kind="Design System/Internal/Command/展示" name="純動作指令"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">純動作指令 — 選中立即執行的快速動作清單</span></LinkTo>
         </li>
         <li>
           <LinkTo kind="Design System/Internal/Command/展示" name="無結果狀態"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">搜尋無結果時的空狀態文案(CommandEmpty)</span></LinkTo>

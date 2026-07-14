@@ -39,7 +39,7 @@ export const Overview: Story = {
               <tr><Td>completed</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--info" size="sm" /><span>filled info + white check icon</span></span></Td><Td><TokenCell token="--fg-secondary" display="fg-secondary" /></Td><Td><TokenCell token="--info" display="bg-info" /></Td></tr>
               <tr><Td>current(= value)</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--info" size="sm" /><span>filled info + white number + ring</span></span></Td><Td><TokenCell token="--foreground" display="foreground" /></Td><Td><TokenCell token="--border" display="bg-border" /></Td></tr>
               <tr><Td>upcoming</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--muted" size="sm" /><span>filled muted + fg-disabled number</span></span></Td><Td><TokenCell token="--fg-secondary" display="fg-secondary" /></Td><Td><TokenCell token="--border" display="bg-border" /></Td></tr>
-              <tr><Td>error</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--error" size="sm" /><span>bg-error + white icon</span></span></Td><Td><TokenCell token="--error-text" display="error-text" /></Td><Td>—</Td></tr>
+              <tr><Td>error</Td><Td><span className="inline-flex items-center gap-1.5"><Swatch value="--error" size="sm" /><span>bg-error + white icon</span></span></Td><Td><TokenCell token="--error-text" display="error-text" /></Td><Td><TokenCell token="--border" display="bg-border" /></Td></tr>
             </tbody>
           </table>
         </div>
@@ -185,7 +185,7 @@ export const ColorMatrix: Story = {
                 <Td mono>completed</Td>
                 <Td><TokenCell token="--info" /></Td>
                 <Td>—(同 bg)</Td>
-                <Td><TokenCell token="white" display="白色 Check icon" /></Td>
+                <Td><TokenCell token="--on-emphasis" display="白色 Check icon" /></Td>
                 <Td><TokenCell token="--fg-secondary" /></Td>
                 <Td><TokenCell token="--info" display="bg-info" /></Td>
               </tr>
@@ -209,9 +209,9 @@ export const ColorMatrix: Story = {
                 <Td mono>error</Td>
                 <Td><TokenCell token="--error" /></Td>
                 <Td>—(同 bg)</Td>
-                <Td><TokenCell token="white" display="白色 X icon" /></Td>
+                <Td><TokenCell token="--on-emphasis" display="白色 X icon" /></Td>
                 <Td><TokenCell token="--error-text" /></Td>
-                <Td>—</Td>
+                <Td><TokenCell token="--border" display="bg-border" /></Td>
               </tr>
             </tbody>
           </table>

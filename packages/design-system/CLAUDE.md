@@ -32,12 +32,12 @@
 
 ## 行數預算(Anthropic 對齊)
 
-CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap 800。SKILL ≤ 250 / spec ≤ 300(foundational SSOT 例外 ≤ 800-1200)/ memory **per-file ≤ 100 lines** + **MEMORY.md index ≤ 20 entries**(soft 18 / hard 20,session-start hook 攔)。Hooks **26 soft / 60 hard**(SSOT = `session_start_governance_check.sh` Check 7 threshold logic,2026-05-27 升 50→55→60 per codex M31 P0 hooks + baseline + primitive-misuse 3 new hooks)。動態值見 `scripts/sync-governance-counters.mjs` 跑出為準(snapshot 2026-07-07:**31 M-rules / 90 audit dims / 55 hooks** — 數字僅供 sanity check,真值以 script 輸出為準避 drift)。
+CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap 800。SKILL ≤ 250 / spec ≤ 300(foundational SSOT 例外 ≤ 800-1200)/ memory **per-file ≤ 100 lines** + **MEMORY.md index ≤ 20 entries**(soft 18 / hard 20,session-start hook 攔)。Hooks **26 soft / 60 hard**(SSOT = `session_start_governance_check.sh` Check 7 threshold logic,2026-05-27 升 50→55→60 per codex M31 P0 hooks + baseline + primitive-misuse 3 new hooks)。動態值見 `scripts/sync-governance-counters.mjs` 跑出為準(snapshot 2026-07-10:**31 M-rules / 91 audit dims / 56 hooks** — 數字僅供 sanity check,真值以 script 輸出為準避 drift)。
 
 ## Anti-bloat L1-L3
 
 - **L1 Pre-write**:`check_file_size_budget.sh`(+ governance hooks listed in `.claude/hooks/` — dynamic SSOT,不在 CLAUDE.md hardcode 個別 hook)
-- **L2 Per-commit**:`log_governance_fires.sh` → `.claude/logs/hook-fires.jsonl`
+- **L2 Per-edit**(PostToolUse Write|Edit|MultiEdit governance-file 寫入):`log_governance_fires.sh` → `.claude/logs/hook-fires.jsonl`
 - **L3 Periodic**(季度 / `--deep`):`/knowledge-prune` skill,retire ≥ 5%
 
 ## 加規則前必過 3 題
@@ -65,7 +65,7 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 | D5 視覺品質 | `/visual-audit`(Layer A mechanical + B AI) |
 | D6 原則自檢 | `design-system-audit/references/principle-audit-protocol.md` |
 
-**Consistency 類稽核必 Phase 0 全掃再判**(避免單元件看漏系統 drift)。
+**Consistency 類稽核必 Phase 0 全掃再判**(避免單元件看漏系統 drift)。**Deep audit 全掃優先 + 決策 batch-at-end 鐵律**(2026-07-11 user directive;Claude + codex 雙方永遠遵守):先全 DS 掃完(全元件全 dim NO-SAMPLE)→ 跨元件去重 findings → **最後一次**列「真問題 + 只影響 SSOT-UI/UX」決策清單給 user 拍板;非-SSOT = Claude+codex 共識 autonomous 做完美;**禁**稽核途中一個元件一個元件問 user。SSOT → deep-audit-cross-codex SKILL Phase A「全掃優先」段。
 
 **Audit-vs-execute 分權**:動 canonical substantive meaning → STOP 提議;對齊 / 表達統一 / 清 duplicate / 補 pointer → AUTO(對齊 knowledge-prune SKILL Phase 2 P0+P1 scope)。
 
@@ -73,7 +73,7 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 
 # SSOT 消費 canonical
 
-寫視覺 code 前必查對照 — 沒列 = 自創。**完整對照表 + 強制 checklist** → `.claude/references/ssot-consultation.md`(SSOT owner;含 9 項決策對應 SSOT + 新元件 tsx 開頭「── 消費的 SSOT ──」段強制要求)。原 `check_ssot_consultation.sh` 已 retired;2026-07-07 以 `check_ssot_header_declaration.sh` 精簡復活(新建 production tsx 必帶「── 消費的 SSOT ──」段,P0)+ mindset #2 + audit dim 1 + check_canonical_propagation 接手。
+寫視覺 code 前必查對照 — 沒列 = 自創。**完整對照表 + 強制 checklist** → `.claude/references/ssot-consultation.md`(SSOT owner;含 9 項決策對應 SSOT + 新元件 tsx 開頭「── 消費的 SSOT ──」段強制要求)。原 `check_ssot_consultation.sh` 已 retired;2026-07-07 以 `check_ssot_header_declaration.sh` 精簡復活(新建 production tsx 必帶「── 消費的 SSOT ──」段,P0)+ mindset #2 + audit dim 5 + dim 54 + check_canonical_propagation 接手。
 
 # 任務導航表
 
@@ -142,7 +142,7 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 
 | 動作類別 | 預設 |
 |---------|-----|
-| **SSOT-affecting UI/UX**(增刪改 component / token / spec 視覺結構 / 跨元件 design language) | **ASK** — 中文具體人話講選項 + tradeoff,user 拍板才動。**Enforcement scope split**:production code(`src/**/*.{tsx,ts,css}`)由 `check_substantive_edit_approval_preflight.sh` PreToolUse 攔截;`*.spec.md` 視覺結構 / canonical / SSOT 段落 edit 由 `stop_self_audit.sh` 補位 post-action 攔截(避免 spec typo false-positive BLOCKER)|
+| **SSOT-affecting UI/UX**(增刪改 component / token / spec 視覺結構 / 跨元件 design language) | **ASK** — 中文具體人話講選項 + tradeoff,user 拍板才動。**Enforcement scope split**:production code(`src/**/*.{tsx,ts,css}`)由 `check_substantive_edit_approval_preflight.sh` PreToolUse 攔截;`*.spec.md` 視覺結構 / canonical / SSOT 段落 edit 由 `stop_self_audit.sh` 補位 post-action 攔截 — **僅覆蓋 codex-collab turn**(Mechanism 4 codex-reply branch;Claude-solo turn 靠本 canonical + M18 自律)(避免 spec typo false-positive BLOCKER)|
 | Bug fix / clean / refactor / 命名一致 / test / audit / verify | **AUTO** — 整批做完 + 完整驗證 + 撤回機制(M33 反 defer) |
 | Governance / hook / skill / spec **內部**(typo / pointer / 結構 — 不動 canonical meaning)| **AUTO** — audit-vs-execute 分權 |
 | Perf / a11y / 漸進遷移(不動 SSOT)| **AUTO** — 整批 + verify |
@@ -154,8 +154,8 @@ CLAUDE.md target ≤ 200(Anthropic best-practice)/ transition ≤ 400 / hard cap
 **Trigger phrase auto-pipeline**(M19 升級):「依原則自主」/「不需問」/「馬不停蹄」/「全部做完」/「自動」→ 進 autonomous mode,僅 SSOT-affecting UI/UX 停下 ASK。
 
 **2026-05-23 永久 reinforcement(user verbatim,hook 機械強制)**:
-- **Triple-verify before propose**(M18 Q0 universal gate):propose / 列 option / 發現「問題」(含 codex / deep audit findings)前必 inline 跑 (1) grep DS-wide (2) Read spec.md / tsx (3) 對照 canonical exception。三題全過才 propose;任一 NO → 自動撤回不煩 user。Hook `check_propose_pre_grep_verify.sh`。Anchor:2026-05-18 Sheet/inline-action/SurfaceBody false positive、2026-05-23 Badge `text-[10px]` 誤判為 drift(badge.spec.md「字體例外」段 documented exception)
-- **SSOT auto-sync invariant**:M-rule count / hook count / dim count / npm scope / version / plugin name 等跨 file 數字禁 hardcode 多處;SSOT in `session_start_governance_check.sh` Check 7 / `meta-patterns.md` / `design-system-audit/SKILL.md` / `package.json` / `.claude-plugin/plugin.json`;其他 file reference 或 `scripts/sync-governance-counters.mjs` 機械對齊,drift 偵測 auto fix
+- **Triple-verify before propose**(M18 Q0 universal gate):propose / 列 option / 發現「問題」(含 codex / deep audit findings)前必 inline 跑 (1) grep DS-wide (2) Read spec.md / tsx (3) 對照 canonical exception。三題全過才 propose;任一 NO → 自動撤回不煩 user。Hook `check_propose_pre_grep_verify.sh` 僅對 planning/reports/handoff md 內 propose 文做 cite-presence P1 soft check;reply 通道靠 M18 mindset + `check_propose_without_benchmark.sh` UserPromptSubmit 提醒。Anchor:2026-05-18 Sheet/inline-action/SurfaceBody false positive、2026-05-23 Badge `text-[10px]` 誤判為 drift(badge.spec.md「字體例外」段 documented exception)
+- **SSOT auto-sync invariant**:M-rule count / hook count / dim count / npm scope / version / plugin name 等跨 file 數字禁 hardcode 多處;SSOT in `session_start_governance_check.sh` Check 7 / `meta-patterns.md` / `design-system-audit/SKILL.md` / `package.json` / `.claude-plugin/plugin.json`;其他 file reference 或 `scripts/sync-governance-counters.mjs` 機械對齊,drift 偵測 fail-closed(release:preflight `--check` + session-start Check 10 inject 修復 directive)
 
 # 遇不確定時的協議
 
@@ -197,4 +197,4 @@ Vite + React + TypeScript + Tailwind v4 + shadcn/ui + Storybook + 自訂 Design 
 - `.claude/rules/story-rules.md` — paths: `**/*.stories.tsx`(三層定位 + Title + 範例最高準則)
 
 # 元件完成 + Exploration
-merge 前 invoke `/component-quality-gate`(45 項 + visual + clean-code 三層)。正式 `packages/design-system/src/`(Phase 1 後 npm workspace 內化)vs 比稿 `src/explorations/`(hook `block_prototype_imports.py` 強制隔離);比稿 `*.v1.stories.tsx` + `notes.md`,定案升級 patterns/ 或 components/。Skills:`/prototype` / `/component-quality-gate` / `/delivery-handoff`。
+merge 前 invoke `/component-quality-gate`(35 項 + visual + clean-code 三層)。正式 `packages/design-system/src/`(Phase 1 後 npm workspace 內化)vs 比稿 `src/explorations/`(hook `block_prototype_imports.py` 強制隔離);比稿 `*.v1.stories.tsx` + `notes.md`,定案升級 patterns/ 或 components/。Skills:`/prototype` / `/component-quality-gate` / `/delivery-handoff`。

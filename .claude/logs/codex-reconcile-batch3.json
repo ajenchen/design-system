@@ -1,0 +1,200 @@
+{
+  "_meta": {
+    "task": "B.3/B.4 dual-model reconcile — picker/menu family (Select/Combobox/PeoplePicker/SelectMenu)",
+    "ground_truth": "actual .tsx/.spec.md/.stories.tsx + node_modules/cmdk@1.1.1 source",
+    "codex_signal": "high-recall, LOW false-positive on this family: nearly every 'falseClaim' is technically accurate; the imprecision is materiality (true-but-immaterial marginal), NOT wrongness. Only 1 outright false_positive found across all 4 components.",
+    "cross_component_drifts": [
+      "iconClassName: SelectMenuOption gained iconClassName (2026-07-08) but BOTH Select (select.tsx:581-592) and Combobox (combobox.tsx:718-727) menuOptions mappings drop it; docblocks claim '不會drift / forward全surface' — falsified. Status-colored option icons silently uncolored in desktop dropdowns.",
+      "loading '取代options' overclaim: corrected in select.spec.md:280 (2026-07-04 Q3) but NOT propagated to select.anatomy.stories.tsx:319, combobox.spec.md:127, combobox.tsx:387 — exactly the drift flagged in the task brief.",
+      "combobox-role accessible name: Select wires aria-labelledby={fieldCtx.labelId} onto its div-combobox (select.tsx:667) but Combobox does not (combobox.tsx:738-746) — Combobox inside <Field><FieldLabel> without aria-label has NO accessible name (axe aria-input-field-name)."
+    ]
+  },
+  "Select": {
+    "material_confirmed": [
+      {
+        "fileLine": "select.tsx:28-35 (docblock) + 581-592 (menuOptions mapping)",
+        "宣稱": "SelectOption extends SelectMenuOption 後,任何新增 field 都自動繼承、不會 drift;menuOptions forward 全 surface。",
+        "真實code行為": "menuOptions mapping 手動重建物件 { value,label,icon,avatar,description,disabled,group },未轉發 SelectMenuOption.iconClassName（2026-07-08 加入 primitive）。桌機選單列 status 類彩色 icon 靜默失色。docblock『不會 drift』被 mapping 本身 falsify（M30 wrapper-primitive surface drift）。",
+        "claudeAlsoCaught": false,
+        "fixHint": "menuOptions map 補 `iconClassName: opt.icon ? opt.iconClassName : undefined`（與 Combobox 同步）。"
+      },
+      {
+        "fileLine": "select.spec.md:105",
+        "宣稱": "『選項需要多行描述或圖文並列 → RadioGroup』理由:『Select option 是單行純文字,無法承載多行描述或圖文』。",
+        "真實code行為": "SelectOption extends SelectMenuOption(avatar/description/icon),select.tsx:581-590 forward avatar+description,SelectMenu→MenuItem 渲染兩行 avatar+description（PeoplePicker single 即靠此）。桌機 Select option 可承載 avatar+description,capability 陳述錯誤。設計指引（比較型內容用 RadioGroup）本身成立,但技術理由『無法承載圖文』是假。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改理由為『需要並列比較 / 逐項閱讀評估的內容用 RadioGroup』,刪『無法承載圖文』（Select 支援 avatar+description 單描述行）。"
+      },
+      {
+        "fileLine": "select.anatomy.stories.tsx:227",
+        "宣稱": "Anatomy Desc:『可搭配 startIcon 代表 value 的圖示』。",
+        "真實code行為": "spec icon-binding matrix + 同檔 props table(line 321)皆定義 startIcon = field-level indicator（與選中值無關,muted）、value icon 走 option.icon。line 227 自我矛盾於 line 321 且違反 spec。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改『startIcon 為固定的 field-level 指示 icon;代表 value 的圖示走 option.icon』,對齊 line 321 + spec:235-238。"
+      },
+      {
+        "fileLine": "select.anatomy.stories.tsx:319",
+        "宣稱": "loading argType/props table:『dropdown 開啟時取代 options 顯 CircularProgress』。",
+        "真實code行為": "spinner 只在 filtered.count===0（無可顯示選項）時佔 CommandEmpty slot（select-menu.tsx:397-404）,已有 options 保留不清空。select.spec.md:280（2026-07-04 Q3）已修正措辭並明指原『取代』是過度宣稱,但同元件 anatomy 未同步 → 自我矛盾。",
+        "claudeAlsoCaught": true,
+        "fixHint": "改『無可顯示選項時 empty slot 顯 CircularProgress（有 options 時不取代）』,對齊 select.spec.md:280。"
+      },
+      {
+        "fileLine": "select.principles.stories.tsx:182-189",
+        "宣稱": "反例 `<Select display='tag' startIcon={Flag}>` + Label『↑ 左側 Flag icon 和右邊 Tag 都在傳達…』——示範 tag 模式加 startIcon 的錯誤視覺。",
+        "真實code行為": "tag 顯示分支（CustomSelectTriggerContent tag branch 289-299 / ReadonlyDisplay tag 414-419 / NativeSelect tag 497-508）完全不渲染 StartIcon → Flag 永不出現。反例無法渲染出它描述的錯誤視覺(demo 與描述矛盾)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "反例改以文字/示意圖標註『若 tag 加 startIcon』或改用能渲染的模式;code 已強制忽略 tag-mode startIcon,故 live demo 無法示範,需靜態說明。"
+      }
+    ],
+    "marginal_count": 19,
+    "false_positive_count": 0,
+    "false_positive_examples": []
+  },
+  "Combobox": {
+    "material_confirmed": [
+      {
+        "fileLine": "combobox.tsx:40 (docblock) + 715-717 (docblock) + 718-727 (menuOptions mapping)",
+        "宣稱": "menuOptions forward 全 SelectMenuOption surface（avatar/description/disabled/icon/group）。",
+        "真實code行為": "mapping 未轉發 iconClassName（同 Select 的 M30 drift）。docblock 列舉『全 surface』但 iconClassName 遺漏 → status 類彩色 icon 在多選 dropdown 失色。",
+        "claudeAlsoCaught": false,
+        "fixHint": "menuOptions map 補 `iconClassName: opt.iconClassName`（與 Select 同步）。"
+      },
+      {
+        "fileLine": "combobox.spec.md:127 + combobox.tsx:387",
+        "宣稱": "loading:『dropdown body 內取代 options 顯 CircularProgress + loadingText』。",
+        "真實code行為": "forward 同一顆 SelectMenu;spinner 只在 filtered.count===0 時佔 empty slot（select-menu.tsx:397-404）,有 options 保留。且無 loadingText prop/文字（render 為純 spinner `<Empty icon={CircularProgress}/>`）。sibling select.spec.md:280 已於 2026-07-04 修正『不取代』,未 propagate 到 Combobox（改一處未看三處）。",
+        "claudeAlsoCaught": true,
+        "fixHint": "spec:127 + tsx:387 對齊 select.spec.md:280『無可顯示選項時 empty slot 顯 CircularProgress;有 options 保留』,刪『取代 options』與不存在的『loadingText』。"
+      },
+      {
+        "fileLine": "combobox.spec.md:135",
+        "宣稱": "『Combobox 不傳 emptyText,走 SelectMenu primitive default』。",
+        "真實code行為": "ComboboxProps 已公開 emptyText（combobox.tsx:398-399,2026-07-04 Q4 接線）且 CustomCombobox 明確 `emptyText={emptyText}` 傳給 SelectMenu（line 833）。spec 陳述 stale — consumer 讀此會誤以為無法覆寫空狀態文字。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改『Combobox 公開 emptyText 並轉發 SelectMenu（default「沒有符合的選項」)』。"
+      },
+      {
+        "fileLine": "combobox.tsx:738-746 (trigger) vs combobox.spec.md:167-173 A11y",
+        "宣稱": "桌機觸發區是有 accessible name 的 role=combobox 容器（A11y 雙路徑設計）。",
+        "真實code行為": "CustomCombobox trigger 只有 aria-label={ariaLabel},缺 `aria-labelledby={fieldCtx.labelId}`（sibling Select select.tsx:667 有,並註明 div-role=combobox 的 <label for> 無效）。放進 <Field><FieldLabel> 而無顯式 aria-label 時,combobox div 無 accessible name（axe aria-input-field-name serious）。跨元件不一致(Select 有、Combobox 漏)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "trigger 補 `aria-labelledby={ariaLabel ? undefined : fieldCtx?.labelId}`,對齊 select.tsx:667。"
+      },
+      {
+        "fileLine": "combobox.principles.stories.tsx:192-193",
+        "宣稱": "Label『↑ 點 Tag 的 X 移除;右側 clear all 一次清除;新增從 dropdown 選擇』。",
+        "真實code行為": "該 `<Combobox>` 未傳 clearable(default false),showClear=false → 不渲染 clear-all control。Label 描述的『右側 clear all』不存在(demo 與描述矛盾)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "該範例加 `clearable` 使 clear-all 真的渲染,或從 Label 刪『右側 clear all 一次清除』。"
+      }
+    ],
+    "marginal_count": 37,
+    "false_positive_count": 0,
+    "false_positive_examples": []
+  },
+  "PeoplePicker": {
+    "material_confirmed": [
+      {
+        "fileLine": "people-picker.tsx:265-289 (single branch) vs people-picker.spec.md:79 + tsx:72-73 (searchPlaceholder docblock)",
+        "宣稱": "『搜尋 placeholder 預設「搜尋人員…」,可透過 searchPlaceholder 覆寫;展開後出現在浮層搜尋框』。",
+        "真實code行為": "single mode 包 `<Select searchable>`（inline-trigger）且完全未把 searchPlaceholder 傳給 Select（Select 也無 searchPlaceholder prop）→ single 的搜尋 placeholder 實為 `placeholder`（「請選擇人員」)。searchPlaceholder 僅對桌機 multi panel-top（searchIn='menu'）生效。最常見的 single assignee 場景 silently 忽略此公開 prop。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:79 註明 searchPlaceholder 僅多選 panel-search 生效;或 single 場景改述其搜尋提示取自 placeholder。"
+      },
+      {
+        "fileLine": "people-picker.tsx:262-289 (single branch) vs tsx:59-61 (width docblock)",
+        "宣稱": "`width='fill'|'hug'` 是 PeoplePicker 全模式的寬度軸。",
+        "真實code行為": "single branch 沒把 width 傳給 Select（multi pill line 299 / stack line 363 皆有傳）→ 最常見的 single edit path 完全忽略 width。",
+        "claudeAlsoCaught": false,
+        "fixHint": "single `<Select>` 補 `width={width}`（與 multi 對齊）。"
+      },
+      {
+        "fileLine": "people-picker.tsx:293-346 (pill branch) vs spec:99-100,167 (searchIn multi opt-in)",
+        "宣稱": "『所有 multi mode 都可用 searchIn=\"trigger\"』（inline 搜尋 opt-in）。",
+        "真實code行為": "只有 stack branch 轉傳 searchIn（line 371）;pill branch 漏傳 → pill 永遠是 Combobox default 'menu'。documented capability 在 pill 模式 silently 無效。",
+        "claudeAlsoCaught": false,
+        "fixHint": "pill `<Combobox>` 補 `searchIn={searchIn}`,或 spec 註明 searchIn='trigger' 僅 stack 模式。"
+      },
+      {
+        "fileLine": "people-picker.spec.md:99-100",
+        "宣稱": "API 範例 `<PeoplePicker multi searchIn='trigger' />` 與 `<PeoplePicker multi />`。",
+        "真實code行為": "PeoplePickerProps 無 `multi` prop;單/多選由 `value` 是否為陣列決定（isMulti = Array.isArray(value)，line 145）。範例教了不存在的 prop。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改 API 範例為 `<PeoplePicker value={person} />`（single）/ `<PeoplePicker value={[...]} searchIn='trigger' />`（multi）。"
+      },
+      {
+        "fileLine": "people-picker.spec.md:240",
+        "宣稱": "『其主 API 為 declarative（value / onChange / size / mode / options...）』。",
+        "真實code行為": "不存在 `options` prop;公開資料 prop 名稱是 `people`（tsx:68）。列了不存在的 prop 名。",
+        "claudeAlsoCaught": false,
+        "fixHint": "把 `options` 改成 `people`。"
+      },
+      {
+        "fileLine": "people-picker.spec.md:213 + tsx:231-256 (disabled branch) + person-display.tsx:107-133",
+        "宣稱": "『disabled:灰化整個 field,不可互動』。",
+        "真實code行為": "disabled branch 只建帶 aria-disabled 的靜態 div,內部照渲 PersonDisplay→PersonAvatar→Avatar 帶 buildPersonProfileCard hoverCard（未傳 disabled、非 table-scrolling 時仍 build）→ Avatar 影像不 dim、HoverCard 仍可 focus/hover 開 ProfileCard。『不可互動』被 falsify。",
+        "claudeAlsoCaught": false,
+        "fixHint": "disabled 分支對內部 Avatar/PersonDisplay 傳 disabled（抑制 hoverCard + dim）,或 spec 註明 disabled 仍保留 avatar ProfileCard hover（若為刻意設計）。"
+      },
+      {
+        "fileLine": "person-display.tsx:19-22 (docblock)",
+        "宣稱": "『ProfileCard 永遠顯示同一組 sections（… + 4 default fields + …）— 缺資料顯 placeholder,不會 collapse』。",
+        "真實code行為": "buildPersonProfileCard 只傳 defaultFieldValues={{ id, employeeNumber }} = 2 個 default fields（同檔 line 36-38 NAMECARD_DEFAULT_FIELD_KEYS 明文 2 keys）;且 status undefined 時整個 status block 省略（line 28-31 明文『隱藏整 status block』=會 collapse）。docblock 與同檔 line 28-38 自我矛盾（stale）。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改『2 個 default fields（id + employeeNumber）;status undefined 時 status block 省略（collapse）』。"
+      },
+      {
+        "fileLine": "person-display.tsx:290-299 (docblock) vs 314-318 (code)",
+        "宣稱": "docblock『位置 absolute top-0 right-0（button 右上角貼齊 avatar 右上角,完全在 avatar 內 — user-confirmed canonical）』。",
+        "真實code行為": "實際 class `absolute -top-px -right-1 z-10`（上 -1px / 右 -4px,凸出 avatar 外）,且同 button 內 line 314-317 comment 亦明述 asymmetric -top-px -right-1『right 凸 4px』。docblock 與 20 行下的 code + comment 直接矛盾（stale visual-canonical docblock）。",
+        "claudeAlsoCaught": false,
+        "fixHint": "docblock 位置改『absolute -top-px -right-1（top -1px / right -4px,右緣凸 4px）』,對齊 code + line 314-317 comment。"
+      }
+    ],
+    "marginal_count": 23,
+    "false_positive_count": 0,
+    "false_positive_examples": []
+  },
+  "SelectMenu": {
+    "material_confirmed": [
+      {
+        "fileLine": "select-menu.spec.md:3 (frontmatter family:4) + 26 (body) + select-menu.tsx:542 (selectMenuMeta.family:4)",
+        "宣稱": "spec body line 26『Layout Family:非上述 family — composite / multi-section（自 own layout）』。",
+        "真實code行為": "frontmatter `family: 4` 與 selectMenuMeta.family=4 都宣告 family 4,與 body line 26『非 1-4』互相矛盾。Layout Family 聲明（CLAUDE.md 必填）自我不一致。（附:frontmatter `sizes:{}` 空但元件支援 sm|md|lg,屬全家族 Phase-1 mechanical migration 系統性空值,非 SelectMenu 特有。）",
+        "claudeAlsoCaught": false,
+        "fixHint": "統一 family 聲明:composite overlay 實質非 Field-control layout → frontmatter/meta 與 body 對齊為同一值（傾向 body 的 composite/self-layout,或明確定為 4 並移除 body 矛盾句）。"
+      },
+      {
+        "fileLine": "select-menu.spec.md:170-174 (為何無 ColorMatrix) + anatomy:3-6",
+        "宣稱": "『SelectMenu 不擁有獨立色彩決策,無自己的 bg/border/hover 決策,item 色彩全由 MenuItem 決定』。",
+        "真實code行為": "2026-07-05 D4 refactor 後:PopoverContent 自設 bg-surface-raised + border + elevation（tsx:314-319）;外層 CommandItem 擁有 hover(bg-neutral-hover base)+ persistent-selected(bg-neutral-selected)+ selected×cursor(bg-neutral-selected-active)背景（tsx:434-437）;內層 MenuItem 被強制 !bg-transparent（tsx:455）。色彩 ownership 已從 MenuItem 上移到 SelectMenu/CommandItem 層,spec rationale stale。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改述『SelectMenu 消費 DS semantic token,但 hover/selected 互動 bg owner 是外層 CommandItem、surface/border/elevation 由 PopoverContent 決定;內層 MenuItem 純視覺透明』,對齊 tsx:428-437 D4 註解。"
+      },
+      {
+        "fileLine": "select-menu.tsx:356-359 (docblock/label) — verified vs node_modules/cmdk@1.1.1 dist/index.js",
+        "宣稱": "『cmdk 永遠渲 sr-only <label htmlFor={inputId}>,僅 searchable 時傳 label,避免 orphan label 指向不存在的 input』。",
+        "真實code行為": "cmdk 1.1.1 無條件 createElement('label',{htmlFor:inputId,id:labelId,...},R) — `label` prop（R）只決定內容,不決定 label 元素是否渲染。non-searchable 時無 CommandPrimitive.Input（tsx:362 條件渲染),故 hidden `<label htmlFor={inputId}>` 仍存在且 htmlFor 指向不存在的 input。傳 label={undefined} 並未如註解所稱『避免 orphan label』（a11y 假宣稱,需讀 lib source 才抓到）。",
+        "claudeAlsoCaught": false,
+        "fixHint": "修正註解（label prop 不控制 label 元素渲染);若要真消 orphan,需 upstream cmdk 或包裝層處理 non-searchable 的 label htmlFor。"
+      },
+      {
+        "fileLine": "select-menu.spec.md:32,96,163,182 (locator cites)",
+        "宣稱": "各處『select-menu.tsx:162-166 / :230-235 / :127-130』為對應規則真實住所。",
+        "真實code行為": "行號漂移:useControllable open dual-mode 實在 tsx:187-191（:162-166 是 destructure params);createLabel default 在 :164、showCreate 隱藏邏輯 :261-266、create row render :466-490（:230-235 是 allState useMemo);forwardRef rationale 在 :151-155（:127-130 是 contentId jsDoc）。cite 指向無關 code（M32 locator drift）。",
+        "claudeAlsoCaught": true,
+        "fixHint": "更新 spec cite 行號:open→187-191、creatable→164/261-266/466-490、forwardRef→151-155。"
+      }
+    ],
+    "marginal_count": 12,
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      {
+        "fileLine": "select-menu.spec.md:225 / anatomy:809",
+        "宣稱": "『已有選值時,開啟即以 aria-activedescendant 指向已選 option』",
+        "whyWrong": "codex 稱『selectedItemId 起初 undefined,要等 cursor value 改變才取得 active descendant』,但 useActiveDescendant（tsx:588-612）內建 requestAnimationFrame 初始補讀 + MutationObserver,專為捕捉 cmdk 開啟時的 auto-highlight（tsx:601-603 註解明文『初始補讀…cmdk 初始 auto-highlight…rAF 讀當下狀態兜底』)。Command defaultValue={selectedOption?.value}（tsx:356）讓已選 item 開啟即 data-selected=true,rAF read 會設 activeId → trigger input 開啟即取得指向已選 option 的 aria-activedescendant。spec 陳述成立,codex 誤判。"
+      }
+    ]
+  }
+}

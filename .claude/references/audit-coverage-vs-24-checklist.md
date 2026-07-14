@@ -45,7 +45,7 @@
 
 | 真缺項 | 補的形式 | Commit |
 |---|---|---|
-| #13 i18n 硬寫字串 | `.claude/hooks/check_hardcoded_strings.sh` PostToolUse,flag DS primitive tsx(非 stories)CJK ≥ 3 chars / 英文 sentence-case label;支援 `// i18n-allow: {rationale}` 白名單 | 本次 session |
+| #13 i18n 硬寫字串 | `post_edit_dispatcher.sh → lib/_hardcoded_strings.sh` PostToolUse flag(2026-05-13 由獨立 hook `check_hardcoded_strings.sh` folded 進 dispatcher lib),flag DS primitive tsx(非 stories)CJK ≥ 3 chars / 英文 sentence-case label;支援 `// i18n-allow: {rationale}` 白名單 | 本次 session |
 | #3 Controlled / Uncontrolled + #12 Form dual-mode | `design-system-audit` Dim 26(新 Group J)— 掃 form + overlay 元件 value/defaultValue / open/defaultOpen / checked/defaultChecked 的 pair 完整性;V1-V4 violation types | 本次 session |
 | #23 edge case(null / empty / rapid / success) | `/ux-audit` Phase 5 從 3 態 → 5 態 + null-safety + rapid-interaction + edge case corollary | 本次 session |
 

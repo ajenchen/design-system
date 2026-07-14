@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-07-06T11:37:10.794Z"
+    "generatedAt": "2026-07-11T02:28:20.684Z"
   },
   "components": {
     "accordion": {
@@ -627,6 +627,7 @@
           "design-system-components-dialog-展示--long-content",
           "design-system-components-dialog-展示--destructive",
           "design-system-components-dialog-展示--list-body",
+          "design-system-components-dialog-展示--header-actions",
           "design-system-components-dialog-展示--with-tabs-in-header",
           "design-system-components-dialog-展示--open-snapshot"
         ],
@@ -880,6 +881,22 @@
       "openSnapshotIds": [],
       "exception": null
     },
+    "inlineedit": {
+      "tiers": {
+        "展示": [
+          "design-system-components-inlineedit-展示--task-title",
+          "design-system-components-inlineedit-展示--metadata-fields",
+          "design-system-components-inlineedit-展示--states",
+          "design-system-components-inlineedit-展示--select-tag-field",
+          "design-system-components-inlineedit-展示--multiline-description",
+          "design-system-components-inlineedit-展示--vertical-field-form"
+        ],
+        "設計規格": [],
+        "設計原則": []
+      },
+      "openSnapshotIds": [],
+      "exception": null
+    },
     "input": {
       "tiers": {
         "展示": [
@@ -941,6 +958,7 @@
           "design-system-internal-menu-展示--with-description",
           "design-system-internal-menu-展示--avatar-inline",
           "design-system-internal-menu-展示--avatar-block",
+          "design-system-internal-menu-展示--with-start-content",
           "design-system-internal-menu-展示--states",
           "design-system-internal-menu-展示--multi-select",
           "design-system-internal-menu-展示--groups",
@@ -1259,6 +1277,7 @@
       "tiers": {
         "展示": [
           "design-system-components-select-展示--modes",
+          "design-system-components-select-展示--hug-width",
           "design-system-components-select-展示--display-mode",
           "design-system-components-select-展示--size-alignment",
           "design-system-components-select-展示--clearable",
@@ -1702,6 +1721,6 @@
       "exception": null
     }
   },
-  "totalComponents": 63,
-  "totalStories": 920
+  "totalComponents": 64,
+  "totalStories": 929
 }

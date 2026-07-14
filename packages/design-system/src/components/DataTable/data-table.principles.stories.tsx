@@ -93,10 +93,10 @@ export const UsageGuidance: Story = {
       </Rule>
 
       <Rule
-        title="❌ 不用 DataTable 表達階層結構（部門 / 資料夾）"
-        note="DataTable 是平面 row。階層結構（可展開收合）改用 TreeView。Notion 的資料庫可以 expand row，但階層樹用 TreeView"
+        title="❌ 不用 DataTable 表達深層階層結構（部門 / 資料夾 tree）"
+        note="DataTable 支援淺層 nested-rows（展開子列，如任務 / 子任務）；但深層多階縮排 + 大量節點的 folder / dept tree 語意仍屬 TreeView。Notion 的資料庫可以 expand row，但側欄階層樹用 TreeView"
       >
-        <Label warn>階層結構用 TreeView，支援無限深度展開 / 收合</Label>
+        <Label warn>深層階層樹用 TreeView（無限深度展開 / 收合）；淺層子列 DataTable 可用</Label>
       </Rule>
 
       <Rule
@@ -107,10 +107,10 @@ export const UsageGuidance: Story = {
       </Rule>
 
       <Rule
-        title="❌ 不用 DataTable 做試算表（公式、跨 cell 選取）"
-        note="DataTable 是資料展示，不支援 Excel 功能。需要試算表能力 → AG Grid Enterprise / Handsontable。Airtable 確實像表，但 DataTable 不是設計來做這個"
+        title="❌ 不用 DataTable 做公式 / cell-level 計算"
+        note="DataTable 的 spreadsheetMode 支援跨 cell 選取 / Shift 矩形範圍 / 方向鍵導覽 / cell 編輯；但公式與 cell-level 計算超出範圍 → AG Grid Enterprise / Handsontable。Airtable 確實像表，但 DataTable 不是設計來做這個"
       >
-        <Label warn>試算表功能用專門 library，不往 DataTable 塞</Label>
+        <Label warn>公式 / 計算用專門 library，不往 DataTable 塞；跨 cell 選取 / 編輯用 spreadsheetMode</Label>
       </Rule>
     </div>
     </div>
@@ -140,14 +140,14 @@ export const ColumnTypeRule: Story = {
 
         <Rule
           title="❌ 手寫 cell render 自訂格式化"
-          note="每 column 自己寫 `cell: (info) => ...` 會繞過 `mode='display'` 系統——**格式化邏輯會漂移**。一個 table 的 price 顯示「$2,490」,另一個 table 的 price 顯示「2490」,一個 boolean 顯示「✓」,另一個 boolean 顯示「是」——整個系統 format 失去一致性"
+          note="每 column 自己寫 `cell: (info) => ...` 會繞過 `mode='display'` 系統——**格式化邏輯會漂移**。一個 table 的 price 顯示「$2,490」,另一個 table 的 price 顯示「2490」,一個 boolean 顯示勾 icon,另一個 boolean 顯示「是」——整個系統 format 失去一致性"
         >
           <Label warn>除非真的需要 `mode='display'` 無法提供的客製視覺,否則一律走 meta.type 系統。客製化時完全跳過 type 讓 display 渲染不要干預</Label>
         </Rule>
 
         <Rule
-          title="擴充新 type:到 column-types.ts 註冊"
-          note="新增資料類型(如 `percentage`、`relative-time`)在 `column-types.ts` 註冊 renderDisplay + align,自動跟所有 DataTable 整合。不在單一 table 硬寫"
+          title="擴充新 type:到 cell-registry.tsx 註冊"
+          note="新增資料類型(如 `percentage`、`relative-time`)在 `cell-registry.tsx` 的 `cellRegistry` map 註冊對應 Cell component(display/edit 渲染 SSOT);`column-types.ts` 只設 align / default metadata。兩處對齊後自動跟所有 DataTable 整合,不在單一 table 硬寫"
         >
           <Label>讓 column type 系統成為 single source of truth,所有 table 受惠同一次更新</Label>
         </Rule>

@@ -215,8 +215,8 @@
       "file": "alert-corner-action-group.png"
     },
     {
-      "id": "design-system-components-alert-展示--subtle-with-description",
-      "file": "alert-subtle.png"
+      "id": "design-system-components-alert-展示--with-description",
+      "file": "alert-with-description.png"
     },
     {
       "id": "design-system-components-alert-設計規格--color-matrix",
@@ -293,8 +293,8 @@
       "file": "appshell-overview.png"
     },
     {
-      "id": "design-system-components-aspectratio-展示--hero-banner-16-x-9",
-      "file": "aspectratio-hero-banner-16-x-9.png"
+      "id": "design-system-components-aspectratio-展示--product-photo-4-x-3",
+      "file": "aspectratio-product-photo-4-x-3.png"
     },
     {
       "id": "design-system-components-avatar-展示--modes",
@@ -353,6 +353,10 @@
       "file": "hovercard-person-profile-card.png"
     },
     {
+      "id": "design-system-components-inlineedit-展示--states",
+      "file": "inlineedit-states.png"
+    },
+    {
       "id": "design-system-components-input-展示--modes",
       "file": "input-modes.png"
     },
@@ -361,7 +365,7 @@
       "file": "linkinput-basic.png"
     },
     {
-      "id": "design-system-internal-profilecard-設計規格--overview",
+      "id": "design-system-components-profilecard-設計規格--overview",
       "file": "profilecard-basic.png"
     },
     {
@@ -371,6 +375,10 @@
     {
       "id": "design-system-internal-overflowindicator-展示--combobox-tag-overflow",
       "file": "overflowindicator-combobox-tag-overflow.png"
+    },
+    {
+      "id": "design-system-components-pagination-展示--full-bar",
+      "file": "pagination-full-bar.png"
     },
     {
       "id": "design-system-components-peoplepicker-展示--single",
@@ -409,8 +417,8 @@
       "file": "sidebar-icon-collapse.png"
     },
     {
-      "id": "design-system-components-skeleton-展示--default",
-      "file": "skeleton-default.png"
+      "id": "design-system-components-skeleton-展示--document-loading",
+      "file": "skeleton-document-loading.png"
     },
     {
       "id": "design-system-components-slider-設計規格--overview",

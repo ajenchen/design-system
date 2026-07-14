@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
+import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta = {
   title: 'Design System/Tokens/Density',
@@ -178,7 +179,7 @@ export const LayoutSpace: Story = {
   parameters: {
     docs: {
       description: {
-        story: '版面間距 token。用於頁面側邊、header 內距、底部留白。',
+        story: '版面間距 token。用於頁面側邊、header 內距、內容到 action buttons 的結論留白。',
       },
     },
   },
@@ -187,7 +188,10 @@ export const LayoutSpace: Story = {
       <ColHeader cols={LS_COLS} />
       <TokenRow attr="data-layout-space" cols={LS_COLS} token="--layout-space-loose"  md="16px" lg="24px" desc="頁面側邊、內容區外層" isSolid={false} />
       <TokenRow attr="data-layout-space" cols={LS_COLS} token="--layout-space-tight"  md="12px" lg="16px" desc="Header 上下內距" isSolid={false} />
-      <TokenRow attr="data-layout-space" cols={LS_COLS} token="--layout-space-bottom" md="48px" lg="48px" desc="頁面底部留白" isSolid={false} />
+      {/* 2026-07-14 audit Dim 68:bottom ≠ 通用「頁面底部留白」— layoutSpace.spec.md 定義為
+          「結論留白:內容到 action buttons(commitment 前視覺暫停)」;無 action 的容器底依
+          bounded / unbounded / element 用 loose / 0 / tight(spec 規則 4)*/}
+      <TokenRow attr="data-layout-space" cols={LS_COLS} token="--layout-space-bottom" md="48px" lg="48px" desc="內容 → action buttons 結論留白" isSolid={false} />
     </div>
   ),
 }
@@ -223,9 +227,18 @@ export const PageLayout: Story = {
             ))}
           </div>
         </div>
+        {/* 2026-07-14 audit Dim 68:bottom 是「內容 → action buttons」結論留白(layoutSpace.spec.md
+            規則 4 line 1)— 原 demo 把它畫成無 action 的通用頁尾 band = 教錯用法。補 action row
+            讓 48px 留白真的落在 content 與 commitment 之間。 */}
         <div style={{ height: 'var(--layout-space-bottom)', borderTop: '1px dashed var(--border)' }}
           className="flex items-center justify-center">
-          <span className="text-caption text-fg-muted">bottom space</span>
+          <span className="text-caption text-fg-muted">bottom 48 — 內容 → action 結論留白</span>
+        </div>
+        <div
+          className="flex justify-end"
+          style={{ padding: `0 var(--layout-space-loose) var(--layout-space-tight)` }}
+        >
+          <Button variant="primary">儲存變更</Button>
         </div>
       </div>
     )

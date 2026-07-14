@@ -1,0 +1,8 @@
+{
+  "dim": 79,
+  "hook": "check_tailwind_wildcard_in_docs.sh",
+  "residueCount": 0,
+  "findings": [],
+  "verified": true,
+  "note": "Anti-pattern var(--X-*) / var(--X-A/B/C) wildcard/slash enum 於 Tailwind 實際掃描範圍(src/ + packages/design-system + packages/storybook-config + .storybook)的 .md/.ts/.tsx/.css/.json = 0 命中。無 build-risk residue。(.claude/** 為 @source not 排除,hook 檔頭記已含 antiPattern 12 檔 build 連綠零風險,不計。)"
+}

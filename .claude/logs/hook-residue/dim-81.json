@@ -1,0 +1,8 @@
+{
+  "dim": 81,
+  "hook": "check_storybook_addon_packaging.sh (r2_preset_cjs)",
+  "residueCount": 0,
+  "findings": [],
+  "verified": true,
+  "note": "掃 addons/<name>/preset.ts 之 code-level createRequire / require.resolve / fileURLToPath(import.meta.url)。.storybook/addons/ds-devmode/preset.ts = 0 命中;packages/storybook-config/addons/ds-devmode/preset.ts 命中僅出現在 // 註解行(教學文件化 anti-pattern),hook 之 CONTENT_CODE 已 strip 註解 → 不觸發。canonical 走 preset.cjs。無 code-level residue。"
+}

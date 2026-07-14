@@ -1,0 +1,53 @@
+=== DETERMINISTIC dim battery 2026-07-12T05:16:45Z ===
+── dim 2: spec deadlinks
+   exit=0 | ✅ 0 死連結 — 所有 spec.md pointer 都指向存在的檔 
+── dim 3: reciprocal pointers
+   exit=1 | ❌ Dim 3 reciprocal-pointer drift:7 spec(s) 的「被引用」back-pointer 缺/過時: 
+── dim 5: orphan tokens
+   exit=1 |   ❌ --motion-enter-distance @ motion.css:40   ❌ --motion-enter-scale @ motion.css:41 ❌ 2 real orphan token(s) — retire or codify structural-keep category 
+── dim 15: content quality (cross-doc)
+   exit=0 | ✅ No content drift detected 
+── dim 16: layout-family frontmatter
+   exit=0 | ✅ 全 primary spec 都有 Layout Family 宣告. 
+── dim 27: code quality
+   exit=0 |     packages/design-system/src/components/SelectMenu/select-menu.tsx:1  615 lines > 500 budget (cap 800)     packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:1  526 lines > 500 budget (cap 800) Total: 11(P0=0 / P1=11) 
+── dim 36: datatable row-mode ssot
+   exit=0 | ✓ No violations — all cell-render wrappers consume per-row state correctly 
+── dim 40: story quality (title/name/placeholder)
+   exit=1 |    Placeholder violations: 0    Name mixed-English violations: 5(Dim 41b,掃 967 names) ❌ Violations detected: 
+── dim 85: ds-canonical mirror fresh
+   exit=0 | ✓ ds-canonical mirror in sync with .claude SSOT (0 drift) 
+── dim 86: plugin structure
+   exit=1 | ✗ hooks.json(plugin)↔ settings.json(dev)hook-set sync: hook-set drift(plugin 54 vs dev 55): ❌ Plugin structure validation FAILED(1 errors) 
+── dim 88: dangling infra ref
+   exit=1 |    Scanned 112 governance docs    Bucket B(dangling LIVE — no annotation, FAIL):   2    .claude/memory/project_wm_ds_alignment_campaign.md:10  →  verify.mjs 
+── dim 88b: skill deadref
+   exit=0 |    Scanned 87 docs ✅ No forbidden line-number / removed-section refs 
+── dim 91: failure-class coverage
+   exit=0 | === Failure-class coverage(dim 91)=== classes: 20 — protected 15 / remediating 0 / judgment 5 ✅ 每類病根都有防線 / 具體 plan / audit-dim 兜底 
+── dim 84: 2-scenario architecture
+   exit=0 |   [32mPASS: 22[0m   [31mFAIL: 0[0m [32m✅ All auto-testable cases PASS[0m 
+=== light battery done; heavy (visual-audit --matrix / composition-fidelity / verify-published-deploy / dogfood-prepublish / a11y axe / size-limit) need storybook build or network — run separately ===
+── dim 23: story compile drift
+   exit=1 | 
+── dim 45: mechanical output structural (compile-stories)
+   exit=0 | (same compile-stories run as dim 23)
+── dim 41: story name jargon (audit-story-quality)
+   exit=1 | (dim 40 audit-story-quality run: 5 mixed-English names — same script covers 40/41/42)
+── dim 42: placeholder/abstract (audit-story-quality)
+   exit=0 | (dim 40 audit-story-quality run: 0 placeholder violations)
+── dim 48: orphan token detector (audit-orphan-tokens)
+   exit=0 | (dim 5 audit-orphan-tokens run: 0 real orphans — same script covers 5/48)
+── dim 50: bundle size budget
+   exit=0 |   Size limit: 46 kB   Size:       42.68 kB with all dependencies, minified and gzipped    
+── dim 83: verify-published-deploy(需 published npm + network)
+   exit=0 |  ✅ 跨 repo 交付健康(source→published 同步) 
+── dim 87: dogfood-prepublish-verify(需 npm pack + build)
+   exit=1 | >fcst.... stop_self_audit.sh ❌ ds-canonical mirror drift — run `npm run sync:ds-canonical` then re-commit before publish 
+── heavy deterministic battery done
+── dim 49: audit-a11y.mjs
+   exit=1 |   [20/973] design-system-components-alert-設計規格--state-behavior — 1 violation type(s)   [40/973] design-system-components-appshell-展示--primary-sidebar-with-tabs 
+── dim 77: composition-fidelity-visual-diff.mjs
+   exit=0 | ✅ 0 個 identity-opt-in mapping → skip pixel/DOM identity diff。 
+── dim 51: theme/density visual matrix
+   exit=0 | 

@@ -1,0 +1,290 @@
+{
+  "Command": {
+    "material_confirmed": [
+      {
+        "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:5-6",
+        "宣稱": "@anatomy-rationale 註解「本檔僅保留 Overview 教結構與消費路徑」",
+        "真實code行為": "同檔 line 99 亦 export `Accessibility` story(2026-05-17 per audit Dim 13 加)。'僅保留 Overview' 是加 Accessibility 前的 stale rationale,與現況不符。",
+        "claudeAlsoCaught": false,
+        "fixHint": "rationale 改「保留 Overview + Accessibility(6-canonical 中適用的 2 個)」"
+      }
+    ],
+    "marginal_count": 8,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "marginal_examples": [
+      {"fileLine": "command.spec.md:120 / anatomy:4-5", "note": "「尺寸/色彩由 consumer SelectMenu 決定」略誇 — CommandInput/Item 有 baked-in h-11/px-3/py-1.5 + bg-surface-raised/data-selected token;真點(無 size/variant prop)成立,rationale 措辭 imprecise。內部 rationale 級,marginal。"},
+      {"fileLine": "command.spec.md:91 / anatomy:104", "note": "「Consumer 無需額外處理 a11y」對 cmdk role wiring 成立;但 accessible-name(未傳 label 時 combobox 無名)+ CommandDialog 無 DialogTitle 需 consumer 補。Command 為 internal(SelectMenu wrap 負責 label),marginal a11y 措辭。"},
+      {"fileLine": "anatomy:34", "note": "「選項與空狀態的樣式直接寫在 Command 內」— CommandEmpty 為純 className passthrough 無自帶 class(spec:119 自承)。Claude 亦抓(rated marginal),故此列 marginal。"}
+    ]
+  },
+  "DataTable": {
+    "material_confirmed": [
+      {
+        "fileLine": "data-table-filter-panel.tsx:433-459 (spec.md:304)",
+        "宣稱": "spec:304「panel 建 date condition 時都會固化 datePrecision(includeTime→ms/day)」",
+        "真實code行為": "cell ⌄ 選單「Filter by this」的 prefill effect 建 condition 時只帶 {kind,id,field,op,value},漏 `datePrecision`;其餘路徑(L129 初 add / L597 / L802 changeField)都帶 `datePrecision: datePrecisionOf(col)`。→ prefill 的 datetime(includeTime=true)欄 filter 掉到 undefined=day 精度,忽略 ms。真 dropped-field code bug。",
+        "claudeAlsoCaught": false,
+        "fixHint": "prefill cond 補 `datePrecision: datePrecisionOf(colInfo)`,對齊 L597/L802"
+      },
+      {
+        "fileLine": "data-table-column-visibility-panel.tsx:13",
+        "宣稱": "docblock「可選 reset 按鈕(`onReset`,header 區 RotateCcw)」",
+        "真實code行為": "props 無 `onReset`;只有 `resettable?: boolean`(L62/L75),reset 直接 `onVisibilityChange({})`(L106)。docblock 指向不存在的 prop。",
+        "claudeAlsoCaught": false,
+        "fixHint": "docblock 改「resettable(boolean)啟用 reset 鈕,點擊 onVisibilityChange({})」"
+      },
+      {
+        "fileLine": "data-table.anatomy.stories.tsx:205 + data-table.principles.stories.tsx:149-150",
+        "宣稱": "「擴充新 type:在 `column-types.ts` 註冊 `renderDisplay` + align」(anatomy footnote + principles Rule)",
+        "真實code行為": "column-types.ts 只有 `align` + default metadata(L29-45),無 `renderDisplay`。renderer SSOT = cell-registry.tsx 的 `cellRegistry` map(L489-501,type→Cell component)。教錯檔案 — consumer 照做在 column-types.ts 加 renderDisplay 無效。wrong-API teaching,×2 story 位置。",
+        "claudeAlsoCaught": false,
+        "fixHint": "兩處改「在 cell-registry.tsx cellRegistry 註冊 Cell component;column-types.ts 只設 align/default metadata」"
+      },
+      {
+        "fileLine": "cell-registry.tsx:433-436",
+        "宣稱": "UrlCell docblock「現改用 LinkInput edit mode → 保留 URL parse/hostname + 鍵盤 commit/cancel」",
+        "真實code行為": "UrlCell edit branch(L473-482)用 plain `<Input variant=naked>`,非 LinkInput;LinkInput 只在 display branch(L445)。L468-472 code comment 自己解釋為何 revert 回 plain Input(controlled value 衝突)。docblock 與實作矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "docblock 改「edit branch = plain Input(controlled 衝突 revert);display branch = LinkInput;URL 驗證 deferred 到 onCommit」"
+      },
+      {
+        "fileLine": "data-table-filter-panel.tsx:3",
+        "宣稱": "code-quality-allow docblock「panel 從 505 → 687 行,進 transition zone 但未過 800 hard cap」",
+        "真實code行為": "檔案現為 819 行(wc -l),已超過所宣稱的 800 hard cap;687 為 stale 行數。既是 stale count 也是 governance 違規(過 hard cap)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "更新行數 + 過 800 hard cap 需拆檔或走 file-size escalation,非 stale escape 留著"
+      },
+      {
+        "fileLine": "data-table.spec.md:157 + data-table.anatomy.stories.tsx:516",
+        "宣稱": "「收納邏輯:1-2 個 → 並排;3+ → 自動收進 MoreVertical dropdown」+ a11y story「列上的更多操作都收進右側『更多』選單,確保不用滑鼠也能用」",
+        "真實code行為": "`rowActions?: (row)=>ReactNode`(L92)為 raw callback,DataTable 直接 `{rowActions!(row.original)}`(L2410/L2539)原樣渲染,無計數/無自動 MoreVertical 收納邏輯。收納須 consumer 自建。spec 的「自動收進」+ a11y story 的「都收進更多選單」= 描述元件不具備的行為。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec/story 改「consumer 自行實作 1-2 inline + 3+ MoreVertical 收納(DataTable 不代管)」,或提供 helper"
+      },
+      {
+        "fileLine": "data-table.spec.md:268",
+        "宣稱": "「row checkbox aria-label fallback `\"Select row\"`」",
+        "真實code行為": "實際 fallback 為中文 `'選取此列'`(prop JSDoc L164 + `getRowAriaLabel?.() ?? '選取此列'` L1619)。spec 記錯 fallback 值(英 vs 中)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec:268 改 fallback 為 `'選取此列'`"
+      },
+      {
+        "fileLine": "data-table.anatomy.stories.tsx:174",
+        "宣稱": "欄類型 story 的 select 欄 header 標籤「select(Tag)」暗示渲染為 Tag",
+        "真實code行為": "該 column 未設 `meta.display='tag'`;SelectCell 預設 `displayMode = meta?.display ?? 'plain'`(cell-registry:304)= 純文字。demo 顯示 plain 與 header「(Tag)」標籤矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "header 改「select(plain)」或該欄補 `meta: { display: 'tag' }` 讓 demo 名實相符"
+      },
+      {
+        "fileLine": "data-table.anatomy.stories.tsx:3-5",
+        "宣稱": "@anatomy-rationale「DataTable 的 size 不是字級放大而是 row-height tier」",
+        "真實code行為": "size 同時改字級:spec:75 明載 sm/md→text-body(14)、lg→text-body-lg(16),SSOT=fieldDisplayTextClass()。「不是字級放大」與 spec:75 + code 矛盾(lg 確實放大字級)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "rationale 改「size 主軸 = row-height/density,同時 lg 連動字級 text-body-lg(對齊 Field)」"
+      },
+      {
+        "fileLine": "data-table.spec.md:47 + data-table.principles.stories.tsx:97",
+        "宣稱": "「DataTable 是平面 row,不支援階層展開收合」(何時不用 / principles Rule),導向 TreeView",
+        "真實code行為": "code 已掛 getExpandedRowModel(L1183)+ getSubRows forward + getIsExpanded/aria-expanded(L1732/1849/1894)+ depth 縮排 chevron;spec:62 自己列「Nested rows ✅ 完成」。'不支援階層展開' 與 shipped L4 nested-rows + spec:62 內部矛盾(設計導引可保留但措辭需區分 shallow expand vs deep tree)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改「DataTable 支援 shallow nested-rows(L4);深層 folder/dept tree 仍用 TreeView」— 對齊 spec:62"
+      },
+      {
+        "fileLine": "data-table.spec.md:50 + data-table.principles.stories.tsx:110-111",
+        "宣稱": "「試算表(公式/跨 cell 選取)超出範圍」/「不支援 Excel 功能(跨 cell 選取)」",
+        "真實code行為": "spreadsheetMode 已支援 cell selection / Shift 矩形 range / 方向鍵導覽 / cell editing(spec:494 + interaction-layer selectedCellId/rangeCellIds + spec:445 overlay)。唯『公式/cell-level 計算』未支援。'不支援跨 cell 選取' 與 shipped spreadsheetMode 矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "改「不做公式/cell 計算;跨 cell 選取/編輯有 spreadsheetMode 支援」"
+      },
+      {
+        "fileLine": "data-table.anatomy.stories.tsx:263-264",
+        "宣稱": "H3「Column type 決定對齊(由 column-types.ts 定義,不讓 consumer 手動設)」",
+        "真實code行為": "`align = meta?.align ?? columnTypeDefaults[type].align`(data-table.tsx:1675/2150)— 公開 `meta.align` 可覆寫且優先於 type default;spec:142 亦明載「可在 column 層級覆寫」。'不讓 consumer 手動設' 與 override + spec 矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "H3 改「column type 提供對齊預設,consumer 可用 meta.align 覆寫(非必要)」"
+      },
+      {
+        "fileLine": "data-table.anatomy.stories.tsx:516 (Accessibility 焦點段)",
+        "宣稱": "「焦點:鍵盤聚焦時顯示清楚的外框,與整個設計系統的聚焦樣式一致」",
+        "真實code行為": "selection/spreadsheet 啟用時 table root 是 tab stop(tabIndex=0,L2626)卻套 `outline-none focus:outline-none focus-visible:outline-none`(L2616,刻意抑制 outer 藍框改靠 cell rect)。初次 Tab 落在 root(尚無 selected cell)無可見焦點指示 → 與『顯示清楚外框』宣稱不符,WCAG 2.4.7 邊緣。",
+        "claudeAlsoCaught": false,
+        "fixHint": "a11y story 註明 root focus 靠 cell selection rect(root outline 抑制);或補 root focus-visible 指示"
+      },
+      {
+        "fileLine": "data-table.tsx:449-454 / 480-483 / 596-606 / 206-207 / 661-664 (+ 2555-2562 / 2893-2898)",
+        "宣稱": "多處 drag docblock 描述 useSortable + SortableContext / 「每 region useDraggable+useDroppable」/ 「listeners 掛在 row div(v15.2)」/ SortableContext top-level 限制",
+        "真實code行為": "L38 明寫「砍 useSortable + SortableContext 用 useDraggable + useDroppable」;實作 SourceRowProvider=useDraggable+useDroppable、MirrorRowProvider=只 useDroppable(L514/575)、DraggableHeaderCell=useDraggable+useDroppable(L626-627)、button-only drag rowListeners=undefined(L461-467,v15.6)、無 SortableContext(L2902)。多 v2/v14.2/v15.2 era JSDoc 未同步 = stale docblock 群,誤導維護者。",
+        "claudeAlsoCaught": false,
+        "fixHint": "批次更新 drag JSDoc 對齊 v15 Path B(useDraggable+useDroppable / source-mirror split / button-only / 無 SortableContext)"
+      },
+      {
+        "fileLine": "data-table-interaction-layer.tsx:343-351 / 60-63 / 39-42 / 34 / 225-230",
+        "宣稱": "「三個 private primitive:CellRingOverlay / CellRangeFill / ActiveEditorHost」/ rangeCellIds「Layer renders bg-fill RangeRect」/ ActiveEditorHost「Future/placeholder」/ layer「absolute 對 container origin」/「HoverCellRect only」",
+        "真實code行為": "檔內無 `CellRangeFill`(只 CellRingOverlay/ClipMask/ActiveEditorHost);rangeCellIds 已 retire 被忽略(L239-240 `rangeCellIds: _rangeCellIds`,range 靠 CSS [data-range-cell]);ActiveEditorHost 已接線渲染(L319-323 activeEditorRender);layer 實為 position:fixed inset:0 viewport(L287);SelectionRing 亦已渲染。多 scaffold docblock 描述已 retire/已實作/已改架構的狀態 = stale,含引用不存在 primitive。",
+        "claudeAlsoCaught": false,
+        "fixHint": "清 interaction-layer scaffold docblock:刪 CellRangeFill、rangeCellIds RangeRect、ActiveEditorHost future、container-origin/absolute 等 stale 描述"
+      },
+      {
+        "fileLine": "data-table.tsx:2643 (2640-2645 header 註解)",
+        "宣稱": "「scrollbar-gutter: stable 放在 centerBody(真正有 V scroll 的 container)」",
+        "真實code行為": "centerBody(L2690-2702)className `overflow-x-auto overflow-y-auto` 無 scrollbar-gutter;L2698-2699 明寫「**不**用 scrollbar-gutter: stable」。header 段註解 L2643 stale/矛盾(說 gutter 放 centerBody,實則刻意不用)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "修 L2643 註解對齊 L2698 決策(不用 scrollbar-gutter,content-fit 乾淨優先)"
+      }
+    ],
+    "marginal_count": 14,
+    "false_positive_count": 1,
+    "false_positive_examples": [
+      {
+        "fileLine": "data-table.spec.md:437",
+        "宣稱": "codex:「跨頁已選 ids 翻頁不清除」為誤,稱『預設 cleanup 會把不在當頁的 include-mode ids 清掉』",
+        "whyWrong": "未見任何 off-page selection cleanup effect;TanStack rowSelection 為 id-keyed object 預設跨頁持久(getRowModel 只回當頁不影響 selection state)。spec:437「翻頁不清除」實為正確,codex 的 cleanup 論述無 code 依據 → false positive。"
+      }
+    ],
+    "marginal_examples": [
+      {"fileLine": "spec.md:350", "note": "「動態切換 mode…mount 後鎖死」是 ❌ 禁止事項的 prescriptive guidance(勿切 mode 會丟 group),非宣稱 runtime lock;codex 讀成行為 claim。borderline FP/marginal。"},
+      {"fileLine": "spec.md:484 / 494", "note": "single mode 確實 wrap RadioGroupPrimitive.Root(role=radiogroup 外層 + 方向鍵 roving);但 spec:272/490 已揭露 single→Radio/RadioGroup wrapping,spec:484『非 radio-group』指整體 grid pattern。方向鍵 radio-roving 是窄邊緣。marginal a11y 措辭。"},
+      {"fileLine": "spec.md:99 / data-table.tsx:100-101", "note": "固定行高 error cell 自動切 auto-height(effectiveAutoRowForCell)確有,但 spec:447 另段已 document error overflow 行為。edge exception,marginal。"},
+      {"fileLine": "多 data-table.tsx range/showDisplayEndIcon/V-scroll 註解 (112/116-119/1393-1397/1570-1576/1682-1684/2666-2669/2735-2740/2860-2864)", "note": "range 已 retire(靠 CSS)、picker display 不傳 showDisplayEndIcon、pinned region overflow-hidden 只 center V-scroll — 多與已確認的 stale-docblock/architecture 模式一致但屬內部低衝擊註解,未逐條 pixel 驗;歸 marginal。"}
+    ]
+  },
+  "DateGrid": {
+    "material_confirmed": [
+      {
+        "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:128 (+ anatomy:45/272 / date-grid.tsx:264 meta)",
+        "宣稱": "「week header 使用 h-field-sm(density-aware md=28/lg=32,消費 --field-height-sm token)」",
+        "真實code行為": "weekday classNames 用固定 `h-7`(date-grid.tsx:111),day cell 用 `h-field-sm w-[var(--field-height-sm)]`(L117)。lg density 時 --field-height-sm→32,day cell 32 但 weekday 恆 28 → 兩者不等高。spec token 宣稱與 code 不符。",
+        "claudeAlsoCaught": true,
+        "fixHint": "weekday 改 `h-field-sm` 對齊 day cell,或 spec 改稱固定 h-7 非 token"
+      },
+      {
+        "fileLine": "date-grid.spec.md:25 + date-grid.anatomy.stories.tsx:86",
+        "宣稱": "「所有 classNames 透過 classNames prop 注入,避免引入原生 .rdp-* 樣式」",
+        "真實code行為": "date-grid.tsx:10 `import 'react-day-picker/style.css'` — 確實載入 RDP 原生 stylesheet;classNames 只覆寫有列的 key,未覆寫者仍留 rdp-* default class(含 rdp-root)。'避免引入原生 rdp-*' 不成立。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec 改「載入 RDP style.css 為基底,以 classNames 覆寫視覺 key 的 token;未覆寫結構 key 保留 rdp-* default」"
+      },
+      {
+        "fileLine": "date-grid.principles.stories.tsx:307",
+        "宣稱": "「Consumer 決定 locale,DateGrid 不內建語言」",
+        "真實code行為": "date-grid.tsx 內建 zh-TW Intl.DateTimeFormat formatters(L63-65 ZH_FULL_DATE/ZH_MONTH_YEAR/ZH_WEEKDAY)+ 繁中 SR label defaults(L191-196 labels)。locale prop 只控 RDP 可見日期格式/週首;SR 語言為硬編中文 default(需傳 labels 覆寫)。'不內建語言' 不成立。",
+        "claudeAlsoCaught": false,
+        "fixHint": "principles 改「日期顯示格式/週首由 locale;SR label 內建繁中 default 可傳 labels 覆寫」"
+      }
+    ],
+    "marginal_count": 21,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "marginal_examples": [
+      {"fileLine": "tsx:24 / spec:125 / spec:126 / spec:170", "note": "多處『12px gap』pixel 宣稱漏算 table border-spacing-1 的外側 4px → 實 16/20/24px。真但屬 pixel-precision 細節(visual-audit 級),marginal。"},
+      {"fileLine": "tsx:206 / spec:75 / anatomy:136 / anatomy:565", "note": "『未傳 mode = 非互動純展示』— RDP 傳 onDayClick 亦渲互動 button。consumer 幾乎不會只傳 onDayClick 無 mode,edge。marginal。"},
+      {"fileLine": "tsx:264 / anatomy:45/272", "note": "meta.tokens.ring 列 `ring-primary`(未用)漏 `ring-primary-hover`(hover 實用,L127)。componentMeta 元資料 drift,低衝擊。Claude 亦 rated marginal。"}
+    ]
+  },
+  "DatePicker": {
+    "material_confirmed": [
+      {
+        "fileLine": "date-picker.tsx:56-66 (comment L62)",
+        "宣稱": "「預設 YYYY/MM/DD(直接組,locale-independent + 視覺穩定)」",
+        "真實code行為": "formatDate 對 date-only ISO string 走 `new Date(value)`(L56)→ ECMAScript 以 UTC 解析 'YYYY-MM-DD',再 getFullYear/Month/Date 取 local → 負時區(如 LA UTC-8)把 2026-04-02 顯示成 2026/04/01(前移一天)。同檔 isoToDate(L93 `new Date(y,m-1,d)`)才是 TZ-safe 正解;formatDate 用錯 pattern = 真時區 off-by-one bug。",
+        "claudeAlsoCaught": false,
+        "fixHint": "formatDate 改用 isoToDate(iso) 取 local Date 再組字串,勿 new Date(datePartString)"
+      },
+      {
+        "fileLine": "date-picker.tsx:105-110 (parser docblock)",
+        "宣稱": "typed input parser「支援 DD/MM/YYYY / DD-MM-YYYY(EU locale)」",
+        "真實code行為": "parseDateInput(L117-149)只有 ISO(YYYY[-/.]MM[-/.]DD)branch + native `new Date(trimmed)` fallback;無 EU DD/MM parser。`31/12/2026`/`31-12-2026` 於 native Date.parse = Invalid(月 31 非法),模糊值按 MM/DD 解讀。docblock 誇大 EU 格式支援(L135-136 自承 'v1 fallback Date.parse ambiguous')。",
+        "claudeAlsoCaught": false,
+        "fixHint": "docblock 移除 EU DD/MM 支援聲明,或真的加 EU parser branch"
+      },
+      {
+        "fileLine": "date-picker.tsx:112 (parser)",
+        "宣稱": "docblock「Invalid → valid=false + iso=null」(完整校驗)",
+        "真實code行為": "ISO branch 只驗月份 rollover(`date.getMonth() !== m-1`,L125),不驗 HH/MM/SS 範圍。`2026-01-01 25:99:99` → JS 正規化仍非 NaN、月未變 → 回 valid=true,iso 組成 `...T25:99:99`(未正規化的越界時間)。時間分量校驗缺口。",
+        "claudeAlsoCaught": false,
+        "fixHint": "ISO time branch 加 hh<24 / mm<60 / ss<60 範圍檢查,越界回 valid=false"
+      },
+      {
+        "fileLine": "date-picker.spec.md:320",
+        "宣稱": "邊界案例「DateGrid 內 cell 尺寸固定不隨 density(密度敏感不可變區)」",
+        "真實code行為": "與同 spec L128『density-aware md=28/lg=32』+ code `h-field-sm w-[var(--field-height-sm)]`(--field-height-sm 於 [data-density=lg] override 2rem/32px)直接矛盾;cell 尺寸實隨 density 縮放。",
+        "claudeAlsoCaught": true,
+        "fixHint": "spec:320 改「cell 尺寸 density-aware(md=28/lg=32),對齊 L128」;移除『固定不漂移』誤述"
+      }
+    ],
+    "marginal_count": 32,
+    "false_positive_count": 0,
+    "false_positive_examples": [],
+    "marginal_examples": [
+      {"fileLine": "spec:231/232/310/315 / tsx:315/342/440 (needConfirm 群)", "note": "typed-input Enter/Blur 直接 onChange 繞過 needConfirm/draft-confirm;spec 稱『needConfirm 時確定才提交』。真行為 nuance 但屬多條重疊、未逐條 pixel 驗,歸 marginal。"},
+      {"fileLine": "spec:103 / anatomy:809", "note": "『DateGrid cell 有 5 種語意視覺』實 7 種(normal/today/disabled/selected/range-middle/hover/outside)。文件完整度 count,marginal。"},
+      {"fileLine": "spec:270 (Claude 亦抓 marginal)", "note": "單一 DatePicker clear 發 onChange('') 空字串非 null;只 Range 才 [null,null]。spec 『value 變 null』對單一不精確。marginal。"}
+    ]
+  },
+  "Field": {
+    "material_confirmed": [
+      {
+        "fileLine": "field-wrapper.tsx:17 / :53 + field-controls.spec.md:65 + field.anatomy.stories.tsx:76 + field.tsx:113",
+        "宣稱": "「naked — 無 chrome,host cell 自管 border/focus」/「naked hover/focus 也不出 border」(多檔一致宣稱)",
+        "真實code行為": "edit×naked compound(field-wrapper.tsx:182-196)明確套 `border border-border` + `hover:border-border-hover` + `focus-within:!border-primary`(L196)+ 共用 error compound(L157-161 mode=edit error=true 紅框,variant 不分)。即 v14 起 naked 是 border-based state machine(L169/L300-302 自述『state ring 已下沉 Field default state machine border-based』),自己畫 rest/hover/open/focus/error border。『naked 無 chrome / hover-focus 不出 border』為 pre-v14 stale intent,系統性 false claim(≥5 檔)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "全數改「edit×naked 自畫 border/hover/focus/error(border-based state machine);只 display/readonly/disabled×naked 為 transparent border」"
+      },
+      {
+        "fileLine": "field.anatomy.stories.tsx:41 / :414 / :416 (+ form-validation.spec.md:155)",
+        "宣稱": "「FieldError 僅 invalid 時顯示」/「Default 狀態不渲染」/「Disabled 狀態不渲染」(+ 跨欄 error 用 aria-live=polite)",
+        "真實code行為": "FieldError(field.tsx:453-475)不讀 ctx.invalid;唯一 gate 是 `children==null/false/''→return null`(L460),children 非空則任何 Field 狀態(含 default/disabled)都渲染 `text-error-text` + `role=\"alert\"`(L466/468)。故是 children-gated 非 invalid-gated;且固定 role=alert 非 aria-live=polite。story 對機制描述錯(Disabled Field 塞 FieldError 仍以 alert 渲紅字)。",
+        "claudeAlsoCaught": false,
+        "fixHint": "story 改「FieldError 依 children 有無渲染(consumer 條件傳 error 文字),固定 role=alert;非讀 Field.invalid 自動隱藏」"
+      },
+      {
+        "fileLine": "form-validation.spec.md:44 / :60 / :84 / :103 / :154",
+        "宣稱": "「Submit 失敗 focus/scroll 到第一個錯誤欄位」/「9 條方法論已全編成不可違反的 hook 預設」/「handleSubmit 內建 anchor 第一個錯誤」(blanket 宣稱)",
+        "真實code行為": "同 spec L89 自承 first-error focus 只對可由 DOM `name` 定位的 native input 生效,非 native 控件(Select/Combobox/RadioGroup 等)被略過。headline blanket 宣稱與 L89 admitted 限制內部矛盾 = a11y 能力 overclaim。",
+        "claudeAlsoCaught": false,
+        "fixHint": "headline 改「first-error focus 涵蓋 native name-locatable input;非 native 控件 fallback(對齊 L89)」"
+      },
+      {
+        "fileLine": "field-controls.spec.md:156",
+        "宣稱": "「Form wrapper 可透過 context 注入 `error` prop」",
+        "真實code行為": "Field 公開 prop 與 context key 均為 `invalid`(field.tsx:122/160/211/269);`error` 只是 fieldWrapperStyles 內部 cva 軸名(L84),非公開 prop/context。spec 引用不存在的 `error` prop。",
+        "claudeAlsoCaught": false,
+        "fixHint": "spec 改注入 `invalid` prop;釐清 `error` 僅內部 cva 軸"
+      },
+      {
+        "fileLine": "field-wrapper.tsx:349",
+        "宣稱": "「State ring 3 const 仍留(下方)」",
+        "真實code行為": "檔內只剩 1 個 ring const `nakedCellEditableDisplayHover`(L332,L296 自述 'sole remaining ring const');`nakedCellRowModeAlign`(L294)是 alignment helper 非 ring。'3 const' 與 L296 矛盾 = stale count。",
+        "claudeAlsoCaught": false,
+        "fixHint": "L349 改「唯一 ring const nakedCellEditableDisplayHover;nakedCellRowModeAlign 為 alignment helper」"
+      },
+      {
+        "fileLine": "field-wrapper.tsx:142 + field-controls.spec.md:223",
+        "宣稱": "readonly「`:has(:focus-visible)` 僅鍵盤聚焦顯示,滑鼠點擊不觸發」",
+        "真實code行為": "readonly 有值渲 native `<input readOnly>`(L136);瀏覽器對 text input 的 :focus-visible 啟發式在滑鼠點擊時亦 match(text-entry 控件恆視為 focus-visible)→ 點擊 readonly input 也會顯 ring。同 spec L219 亦明載『點擊與 Tab 都會觸發』,與 L223『滑鼠不觸發』自相矛盾。",
+        "claudeAlsoCaught": false,
+        "fixHint": "註解/spec 改「native text input 的 :focus-visible 滑鼠點擊亦觸發(對齊 L219);勿宣稱僅鍵盤」"
+      }
+    ],
+    "marginal_count": 12,
+    "false_positive_count": 2,
+    "false_positive_examples": [
+      {
+        "fileLine": "field-wrapper.tsx:105",
+        "宣稱": "codex:「focus dominates everything,游標在輸入框必藍」與 error 紅矛盾",
+        "whyWrong": "同一 docblock L118-119 立即修訂『2026-07-04 Q1:focus dominates everything 對 error 讓位』,且 cva 已拆 error:false(藍)/error:true(紅)compound(L123/L160)。docblock 自我修正 + code 正確,codex 斷章取 L105。marginal→FP。"
+      },
+      {
+        "fileLine": "field.anatomy.stories.tsx:46/54 + principles:150/166",
+        "宣稱": "codex:「所有資料相關邏輯(含驗證)在 Field Control」與 useFormValidation 分離矛盾",
+        "whyWrong": "story 陳述的是 DS 設計哲學(control 承載資料呈現/native type/invalid 呈現),useFormValidation 是 form 層 orchestration 引擎 — 兩者分權非矛盾。codex 把設計原則讀成 impl 宣稱。marginal/FP。"
+      }
+    ],
+    "marginal_examples": [
+      {"fileLine": "field.spec.md:78/103 + field.tsx:25/29", "note": "『control area 一律 min-h-field + items-center』/『horizontal label 一律 padding-top 公式』— 只 inline layout 如此;block(RadioGroup/CheckboxGroup)走 flex-col/padding-top 分支(field.tsx:361-368)。blanket『一律』imprecise,內部 layout nuance。marginal。"},
+      {"fileLine": "field-controls.spec.md:63", "note": "『一個 fieldWrapperStyles cva + 兩條正交軸』— cva 實有 mode/variant/size/width/error 5 軸(field-wrapper.tsx:43-88)。概念 vs 字面軸數,marginal。"},
+      {"fileLine": "field-wrapper.tsx:354", "note": "『不可編輯空值 text-fg-muted』codex 稱應 text-foreground/text-fg-disabled — 未讀 field-controls empty-value 段確認 canonical,存疑。marginal。"}
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import { useState } from 'react'
 import type { Meta } from '@storybook/react'
+import { ChevronUp, ChevronDown, MoreVertical } from 'lucide-react'
 import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogBody, DialogFooter, DialogTitle, DialogClose,
 } from './dialog'
@@ -47,7 +48,7 @@ function NotificationSettings() {
         <DialogHeader>
           <DialogTitle>通知設定</DialogTitle>
         </DialogHeader>
-        <DialogBody className="!px-0 !pt-0 !pb-0">
+        <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
           <div className="flex flex-col py-2">
             {items.map((n) => (
               // item-anatomy Family 2:[content: title + desc(--item-gap-label-desc-scanning gap)] [ItemSuffix: Switch]
@@ -239,7 +240,7 @@ export const LongContent = {
         {/* Body 放 list canonical(2026-05-01):body 撤 chrome padding(`!px-0 !pt-0 !pb-0`)+ list outer
             wrapper 自帶 `py-2`(menu group 8px breathing)+ item 自帶 `px-loose rounded-md`
             (hover bg flush 到 chrome 邊)。30 筆超出 viewport → 驗證預設高度(填滿)+ body 區捲動。 */}
-        <DialogBody className="!px-0 !pt-0 !pb-0">
+        <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
           <div role="list" className="flex flex-col py-2">
             {MEMBERS.map((m, i) => (
               <MemberRow key={m.empNum} member={m} index={i} />
@@ -284,7 +285,7 @@ export const Destructive = {
 /**
  * ListBody — body 放 list 的 canonical pattern(Material / Polaris / Atlassian / Linear /
  * GitHub Primer 共識:overlay body 裝 list 時 body 不加 vertical padding,節奏源 = item 自己的 py)。
- * 我方 canonical(2026-05-01):`<DialogBody className="!px-0 !pt-0 !pb-0">` + list wrapper `py-2`
+ * 我方 canonical(2026-05-01):`<DialogBody className="!px-0 !pt-0 !pb-0">`(@tabs-content-gap-ok: list-as-region 文件範例,非 tabs !pt-0 hack)+ list wrapper `py-2`
  * + item 自帶 `px-loose rounded-md`。不加 `flush` variant — 加 1 row(search / banner)就破功,
  * 保留 chrome padding 較穩。以下三個範例對應不同 list-item tier(item-anatomy Family 2 / MenuItem)。
  */
@@ -301,7 +302,7 @@ export const ListBody = {
           <DialogHeader>
             <DialogTitle>成員列表</DialogTitle>
           </DialogHeader>
-          <DialogBody className="!px-0 !pt-0 !pb-0">
+          <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
             <div role="list" className="flex flex-col py-2">
               {MEMBERS.slice(0, 6).map((m, i) => (
                 <MemberRow key={m.empNum} member={m} index={i} />
@@ -330,7 +331,7 @@ export const ListBody = {
           <DialogHeader>
             <DialogTitle>選擇標籤</DialogTitle>
           </DialogHeader>
-          <DialogBody className="!px-0 !pt-0 !pb-0">
+          <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
             <div role="list" className="flex flex-col py-2">
               {['Bug', 'Feature', 'Improvement', 'Research', 'Documentation', 'Refactor', 'Test'].map((t) => (
                 // 小 item 純文字 label → 用 **MenuItem** primitive(世界級 Linear Cmd+K / Polaris OptionList
@@ -352,6 +353,66 @@ export const ListBody = {
         </DialogContent>
       </Dialog>
     </div>
+  ),
+}
+
+/**
+ * 標頭操作(actions slot,2026-07-08 WM 戰役 codify — 關閉鈕分隔線 SSOT 化)
+ *
+ * 真實場景:任務詳情 modal(Jira / Linear / Asana 任務檢視)— header 級 prev / next 導覽
+ * + ⋮ 溢出選單,操作對象是「dialog 承載的這筆任務」本身(非欄位級、非 confirm/cancel)。
+ *
+ * - `<DialogHeader actions={…}>`:DS 自動在 actions 與內建 Close X 之間放 `<ButtonDivider>`
+ *   (action-bar.spec.md:281「最右側為關閉/解除按鈕 → 分隔線必須(誤觸保護)」;
+ *   幾何 = mx-1 於 gap-2 cluster → 12px 對稱)。**Consumer 禁自刻 cluster + divider**。
+ * - 按鈕 = `variant="text" iconOnly`(text 自動 data-unbounded,不撐高 48px chrome header;
+ *   對齊 action-bar「溢出按鈕一律最低視覺重量」)。
+ */
+export const HeaderActions = {
+  name: '標頭操作',
+  render: () => (
+    <Dialog defaultOpen>
+      <DialogTrigger asChild>
+        <Button variant="tertiary">開啟任務詳情</Button>
+      </DialogTrigger>
+      <DialogContent autoHeight maxWidth={520}>
+        <DialogHeader
+          actions={
+            <>
+              <Button variant="text" iconOnly size="sm" startIcon={ChevronUp} aria-label="上一筆任務" />
+              <Button variant="text" iconOnly size="sm" startIcon={ChevronDown} aria-label="下一筆任務" />
+              <Button variant="text" iconOnly size="sm" startIcon={MoreVertical} aria-label="更多操作" />
+            </>
+          }
+        >
+          <DialogTitle>WM-142 結帳流程改版</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div className="flex flex-col gap-[var(--layout-space-loose)]">
+            <p className="text-body">
+              重新設計結帳步驟,將付款方式與發票資訊合併為單一步驟,預期提升行動端轉換率。
+            </p>
+            <div className="flex flex-col gap-2">
+              {[
+                ['指派人', 'Alan Chen'],
+                ['狀態', '進行中'],
+                ['截止日', '2026-07-18'],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center gap-3">
+                  <span className="w-16 shrink-0 text-caption text-fg-secondary">{label}</span>
+                  <span className="text-body">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="tertiary">關閉</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   ),
 }
 

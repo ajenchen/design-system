@@ -80,6 +80,8 @@ export const MAIN_NAV = [
 export const WorkspaceBrand = () => (
   <div className="flex items-center gap-2 min-w-0">
     {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical; sync with `--chrome-header-avatar-size` */}
+    {/* Workspace brand = 組織識別(非人)→ 首字 letter mark;2026-07-08 人像真實化 sweep 刻意保留,
+        真實人像僅套用於 person avatar(組織用人臉照片會誤導身份) */}
     <Avatar size={24} shape="square" color="blue" solid alt="Acme Inc" />
     <span className="text-body-lg font-medium truncate group-data-[collapsible=icon]:hidden">Acme Inc</span>
   </div>
@@ -93,13 +95,14 @@ export const UserFooter = () => (
       <SidebarMenuButton asChild>
         <div role="group" aria-label="當前使用者">
           <ItemAvatar
+            src="https://i.pravatar.cc/48?u=EMP-1001"
             alt="Alan Chen"
             color="blue"
             hoverCard={
               <ProfileCard
                 name="Alan Chen"
                 subtitle="Design｜D-0042"
-                avatar={{ alt: 'Alan Chen', color: 'blue' }}
+                avatar={{ src: 'https://i.pravatar.cc/80?u=EMP-1001', alt: 'Alan Chen', color: 'blue' }}
                 status="online"
                 actions={<ProfileCardDefaultActions />}
               />
@@ -190,7 +193,7 @@ export function AcmeSidebar({
 // (非 ProfileCard——ProfileCard 是看「別人」的人員卡,預設動作 Chat/通話用在自己身上不對)。
 // 消費 SSOT:
 //   - <Avatar size={24}>(header-canonical.spec.md 4.5 chrome header avatar:brand + account 同 24px;
-//     sync with --chrome-header-avatar-size)。互動感由 focus ring + hover 提供,不放大到 field height。
+//     sync with --chrome-header-avatar-size)。互動感由 focus-visible ring 提供(無 hover bg,chrome 輕量 entry),不放大到 field height。
 //   - <DropdownMenu>(個人資料 / 設定 / 登出;baseline = dropdown-menu.stories.tsx Groups)
 //   - 放置 / 邊距對稱 canonical → app-shell.spec.md「帳號入口(Account entry)放置 SSOT」段
 export function AccountMenu() {
@@ -203,7 +206,7 @@ export function AccountMenu() {
           className="flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
         >
           {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical(brand + account 同尺寸); sync with --chrome-header-avatar-size */}
-          <Avatar size={24} alt="Alan Chen" color="blue" />
+          <Avatar size={24} src="https://i.pravatar.cc/48?u=EMP-1001" alt="Alan Chen" color="blue" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

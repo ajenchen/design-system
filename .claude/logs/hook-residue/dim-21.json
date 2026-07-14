@@ -1,0 +1,1 @@
+{"dim":21,"hook":"check_item_list_gap.sh","residueCount":0,"findings":[],"verified":true,"note":"DS-wide 掃 packages/design-system/src + apps 非-story *.tsx:尋 >=2 個 <FileItem> 或 <MenuItem variant=rich> 且 parent 無 gap-N/space-y-N 的檔 = 0 命中。hook 為 WARN(exit 0),audit-time grep backstop 確認無殘留。"}

@@ -19,10 +19,10 @@ Hover 觸發的**可互動浮層**，基於 Radix HoverCard。
 
 **實作基礎**：基於 Radix HoverCard——純行為 primitive，只提供觸發邏輯、定位、動畫，不含視覺樣式。
 
-**分類**：Internal primitive——consumer 不直接 import;由 Avatar(`hoverCard`)/ OverflowIndicator / ProfileCard 場景組合消費(frontmatter `isInternal`:root barrel 排除,storybook `Design System/Internal/HoverCard`)。
+**分類**：Internal primitive——不進 root barrel front-door、不裸用;DS 內由 Avatar(`hoverCard`)/ OverflowIndicator / ProfileCard 場景組合消費;consumer 需要時可經 per-component subpath 包裝並自行確認後使用(`.claude/rules/ui-development.md`「Root barrel front-door 排除」SSOT,internal ≠ 禁用)(frontmatter `isInternal`:root barrel 排除,storybook `Design System/Internal/HoverCard`)。
 
-- **是**：hover 顯示可互動內容（按鈕、連結、可選取文字）的浮層容器
-- **不是**：Tooltip（純文字提示、不可互動、hover 離開即消失）
+- **是**：hover 顯示可互動內容（按鈕、連結、可選取文字——**滑鼠互動**；鍵盤進不了卡片，見「A11y 預設」）的浮層容器，定位為滑鼠 / focus 使用者的補充閱讀 surface
+- **不是**：Tooltip（純文字提示、不可互動、hover 離開即消失）；也不是鍵盤可操作的互動浮層（那是 Popover）
 
 **Layout Family**：非上述 family — composite / multi-section（多區塊組合，自 own layout）。
 
@@ -53,12 +53,12 @@ Hover 觸發的**可互動浮層**，基於 Radix HoverCard。
 | | HoverCard | Tooltip |
 |---|---|---|
 | 觸發 | hover | hover |
-| **內容可互動** | 是（按鈕、連結、hover 子元素） | 否（純文字） |
+| **內容可互動** | 是——限滑鼠（Radix 設 content 內 tabbable node 為 `tabindex="-1"`，鍵盤不可達，見「A11y 預設」） | 否（純文字） |
 | 停留行為 | 滑鼠移到浮層上不消失 | 滑鼠離開 trigger 即消失 |
 | 視覺樣式 | 由 consumer 決定（亮色 card 或深色 tooltip 風格皆可） | 統一深色背景 |
 | 典型用例 | ProfileCard、內容預覽、溢出清單 | icon 用途、shortcut、截斷文字補全 |
 
-**Fallback**：需要放按鈕 / 連結 → HoverCard；一句話純文字 → Tooltip。
+**Fallback**：需要放按鈕 / 連結（滑鼠增強）→ HoverCard；鍵盤必須可操作的互動浮層 → Popover；一句話純文字 → Tooltip。
 
 **本節是 HoverCard vs Tooltip 的 SSOT**，Tooltip spec 指回本節。
 

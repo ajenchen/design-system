@@ -10,7 +10,8 @@ import { useFieldContext, useResolvedFieldMode, useResolvedFieldDisabled, useRes
 import { SelectionItem } from "@/design-system/components/SelectionControl/selection-item"
 import type { LucideIcon } from "lucide-react"
 import type { AvatarData } from "@/design-system/components/Avatar/avatar"
-import { EMPTY_DISPLAY, fieldWrapperStyles } from "@/design-system/components/Field/field-wrapper"
+import { fieldWrapperStyles } from "@/design-system/components/Field/field-wrapper"
+import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 
 // ── RadioGroup display mode ─────────────────────────────────────────────────
 // RadioGroup mode='display' 時:Group 不渲染 Radix primitive(無 radio 視覺),
@@ -44,6 +45,11 @@ export interface RadioGroupProps
 // (item 已支援 readOnly prop + data-[readonly] 樣式;Radix Root 無 readOnly,故用 context)。
 const RadioGroupReadonlyContext = React.createContext(false)
 
+// group-level disabled(standalone <RadioGroup disabled>)→ context 傳給 items,讓 SelectionItem
+// label/description 也降 text-fg-disabled(Radix Root disabled 只 propagate 給 radio 圈、不碰 label 色)。
+// 對齊本檔 RadioGroupReadonlyContext 既有模式 + spec「Disabled」邊界案例(Group-level disabled 視覺繼承 SelectionItem SSOT text-fg-disabled)。
+const RadioGroupDisabledContext = React.createContext(false)
+
 // walk children 找 control.value === selectedValue 的 SelectionItem label(display / readonly-in-Field 共用)
 function findSelectedRadioLabel(children: React.ReactNode, selectedValue: string | undefined): React.ReactNode {
   let selectedLabel: React.ReactNode = null
@@ -73,6 +79,7 @@ const RadioGroup = React.forwardRef<
 >(({ className, mode, variant: _chrome, value, defaultValue, ...props }, ref) => {
   // 2026-06-08 SSOT cascade:resolvedMode 經 resolver hook 讀 fieldCtx(原 root 完全不讀 → <Field disabled>/<Field mode> 失效)
   const resolvedMode = useResolvedFieldMode({ mode, disabled: (props as { disabled?: boolean }).disabled })
+  const emptyDisplay = useFieldEmptyDisplay()
   const fieldCtx = useFieldContext()
   // readonly 灰框 size:走 SSOT resolver(RadioGroup 無 size prop → ctx > 'md')
   const resolvedBoxSize = useResolvedFieldSize(undefined, 'md') as 'sm' | 'md' | 'lg'
@@ -100,7 +107,7 @@ const RadioGroup = React.forwardRef<
   if (resolvedMode === 'display') {
     const selectedValue = (value ?? defaultValue) as string | undefined
     if (!selectedValue) {
-      return <div {...restDomProps} ref={ref as React.Ref<HTMLDivElement>} role="group" className={cn('grid', className)}><span className="text-fg-muted">{EMPTY_DISPLAY}</span></div>
+      return <div {...restDomProps} ref={ref as React.Ref<HTMLDivElement>} role="group" className={cn('grid', className)}><span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span></div>
     }
     const selectedLabel = findSelectedRadioLabel(props.children, selectedValue)
     return (
@@ -136,7 +143,7 @@ const RadioGroup = React.forwardRef<
       >
         {selectedValue
           ? <span className="text-foreground">{selectedLabel ?? selectedValue}</span>
-          : <span className="text-fg-muted">{EMPTY_DISPLAY}</span>}
+          : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>}
       </div>
     )
   }
@@ -145,20 +152,34 @@ const RadioGroup = React.forwardRef<
   // mode='readonly' → context 傳 readOnly 給 items(item 渲染為 data-[readonly] 鎖互動 + aria-readonly)。
   return (
     <RadioGroupReadonlyContext.Provider value={resolvedMode === 'readonly'}>
-      <RadioGroupPrimitive.Root
-        className={cn("grid", className)}
-        value={value}
-        defaultValue={defaultValue}
-        {...props}
-        disabled={resolvedMode === 'disabled'}
-        ref={ref}
-      />
+      <RadioGroupDisabledContext.Provider value={resolvedMode === 'disabled'}>
+        <RadioGroupPrimitive.Root
+          className={cn("grid", className)}
+          value={value}
+          defaultValue={defaultValue}
+          // Field 內:role="radiogroup" 的 <div> 無法被 <label for> 命名 → 自讀 fieldCtx 接
+          // aria-labelledby / aria-invalid / aria-describedby(field-context.ts「下游 control 需自讀
+          // labelId」;對齊 slider.tsx / Rating / TimePicker 的 fieldLabelId 接線 + 上方 readonly-in-Field 分支)。
+          // standalone(無 Field)時皆 undefined,consumer 的 {...props} aria-* 照舊生效(置於 spread 前故可被覆蓋)。
+          aria-labelledby={fieldCtx?.labelId}
+          aria-invalid={fieldCtx?.invalid || undefined}
+          aria-describedby={fieldCtx?.descriptionId}
+          // a11y(2026-07-14 dim-10):readonly 語意放 radiogroup(aria-readonly 合法 role;
+          // 對齊上方 readonly-in-Field 分支 L133)。item(role=radio)不帶 aria-readonly —
+          // axe 實證 radio 不允許該屬性,item 靠 data-readonly + tabIndex + click guard 鎖互動。
+          aria-readonly={resolvedMode === 'readonly' || undefined}
+          {...props}
+          disabled={resolvedMode === 'disabled'}
+          ref={ref}
+        />
+      </RadioGroupDisabledContext.Provider>
     </RadioGroupReadonlyContext.Provider>
   )
 })
 RadioGroup.displayName = 'RadioGroup'
 // Field layout 宣告：RadioGroup 是 block primitive（多項堆疊），
-// 進入 <Field> 時 control area 自動切 items-start + padding-top 公式對齊。
+// 進入 <Field> 時 control area 自動切 items-start（block 分支不設 min-h、不加 padding-top,
+// 高度由內容決定;額外加 paddingTop 會 double padding — field.tsx block control area SSOT）。
 // Convention 詳見 components/Field/field.spec.md「Control area:Inline vs Block」段落。
 ;(RadioGroup as unknown as { fieldLayout: 'block' }).fieldLayout = 'block'
 
@@ -261,7 +282,10 @@ const RadioGroupItem = React.forwardRef<
     // RadioGroupItem 的 label 是「該選項」的 label（每 item 各自擁有），
     // FieldLabel 則是整個 RadioGroup 的 label。
     // 因此 RadioGroupItem 的 label 不因 Field context 被忽略。
-    const resolvedDisabled = useResolvedFieldDisabled(disabled)
+    // group-level disabled(standalone <RadioGroup disabled>)也要降 label/description 色 —— Radix Root
+    // disabled 只 propagate 給 radio 圈,label 色由 SelectionItem disabled 決定,故讀 RadioGroupDisabledContext 補上。
+    const groupDisabled = React.useContext(RadioGroupDisabledContext)
+    const resolvedDisabled = useResolvedFieldDisabled(disabled) || groupDisabled
     // group-level readonly(RadioGroup mode='readonly')或 item-level readOnly,任一 true 即鎖互動。
     const groupReadonly = React.useContext(RadioGroupReadonlyContext)
     const effectiveReadonly = readOnly || groupReadonly
@@ -274,7 +298,9 @@ const RadioGroupItem = React.forwardRef<
         id={inputId}
         ref={ref}
         disabled={resolvedDisabled}
-        aria-readonly={effectiveReadonly || undefined}
+        // a11y(2026-07-14 dim-10):item(role=radio)不帶 aria-readonly — axe 實證 radio 不允許
+        // 該屬性(readonly 語意由 Root role=radiogroup 宣告,見上方 L167-170)。item 靠
+        // data-readonly + tabIndex + click guard 鎖互動。
         data-readonly={effectiveReadonly || undefined}
         tabIndex={effectiveReadonly ? -1 : undefined}
         className={cn(radioItemVariants({ size }), className)}
@@ -331,7 +357,7 @@ export const radioGroupMeta = {
   },
   sizes: {
     // iconSize = 渲染指示器尺寸(對齊 checkbox/switch meta 慣例:checkbox iconSize=真 Check glyph 12/12/16)。
-    // Radio 指示器是 filled dot 非 glyph,真值 = dotSize 8/8/10(radio-group.tsx:179);
+    // Radio 指示器是 filled dot 非 glyph,真值 = 上方 `const dotSize` map 8/8/10;
     // 控件框 16/16/20 與 Checkbox 對齊但那是 box 非「指示器」,不入此鍵(避免 metadata 語意 drift)。
     sm: { fieldHeight: 28, iconSize: 8, typography: 'body' },
     md: { fieldHeight: 32, iconSize: 8, typography: 'body' },

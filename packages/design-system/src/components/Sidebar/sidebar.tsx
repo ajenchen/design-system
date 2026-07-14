@@ -172,14 +172,14 @@ const SidebarProvider = React.forwardRef<
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
         const openState = typeof value === "function" ? value(open) : value
-        if (setOpenProp) {
-          setOpenProp(openState)
-        } else {
-          _setOpen(openState)
-        }
+        // 受控/非受控分岔依「有沒有傳 open prop」判定(同上方 activeId pattern),
+        // 不依「有沒有傳 onOpenChange」——否則 uncontrolled + onOpenChange 場景
+        // internal state 永不更新,sidebar 凍結(同 SelectMenu R2 已修 bug class)。
+        if (openProp === undefined) _setOpen(openState)
+        setOpenProp?.(openState)
         document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
       },
-      [setOpenProp, open]
+      [openProp, setOpenProp, open]
     )
 
     const toggleSidebar = React.useCallback(() => {
@@ -306,6 +306,10 @@ const Sidebar = React.forwardRef<
      * 從該值起算(`top: viewportInsetTop / height: calc(100svh - viewportInsetTop)`),
      * 讓 global header 不被覆蓋(AppShell primary-header mode 必傳)。
      * 對齊 Mantine `layout="default"` navbar 高度扣 header 慣例。
+     *
+     * ⚠️ 作用範圍:**僅桌機 `offcanvas` / `icon` 分支**套用 insetStyle。
+     * `collapsible="none"`(於 isMobile 前提前 return 固定 div)與 mobile Sheet
+     * 兩分支不套此 inset —— 該兩模式下 global header 仍會被覆蓋(未接線)。
      */
     viewportInsetTop?: string
   }
@@ -471,13 +475,15 @@ SidebarInput.displayName = "SidebarInput"
 
 // ── Shell regions ──────────────────────────────────────────────────────────
 
-// SidebarHeader / SidebarFooter:
-//   - 固定高度 `var(--chrome-header-height)`(md=48 / lg=56,density-responsive)
-//   - 跨元件 chrome header 共享同一個 token,自動跟主內容 page header 對齊
+// SidebarHeader(固定高度 chrome slot)vs SidebarFooter(content-based):
+//   - SidebarHeader:固定高度 `var(--chrome-header-height)`(md=48 / lg=56,density-responsive),
+//     跨元件 chrome header 共享同一個 token,自動跟主內容 page header 對齊
+//   - SidebarFooter:高度由內容決定(`shrink-0 py-2 border-t`,不消費 chrome-header-height、
+//     無自身固定高度),見下方 SidebarFooter 定義的 docblock + spec「Chrome 內容的約束」段
 //   - 水平 padding 用 loose token(跟 items 的 px 對齊)
 //   - 邊框是結構邊界(分隔 fixed/scroll 區),full-width 不內縮
 //
-// 為什麼 density-responsive:chrome 裡放的 button 綁定 field-height token,
+// 為什麼 Header density-responsive:chrome 裡放的 button 綁定 field-height token,
 // 會隨 density 變大。Chrome 如果不跟著放大,lg density 下 padding 會被擠壓。
 const SidebarHeader = React.forwardRef<
   HTMLDivElement,
@@ -516,10 +522,11 @@ const SidebarHeader = React.forwardRef<
         //                                JS 端透過 WorkspaceBrand RowSizeProvider value="md"
         //                                + AVATAR_SIZE.inline.md spec-coupled 共識 sync。
         //
-        // Numerical equivalence to v13 `loose-4` 公式(verified):
-        //   md density: (48-24)/2 = 12 = loose-4 = 12 ✓ identical
-        //   lg density: (64-24)/2 = 20 = loose-4 = 20 ✓ identical
-        // → v14 upgrade 純 SSOT chain robustness,0 視覺改變。
+        // Collapsed pl 幾何值(rail-centered,--sidebar-width-icon = 2*loose + menu-icon):
+        //   md density: (48-24)/2 = 12  ·  lg density: (68-24)/2 = 22
+        //   (lg width = 2×24+20 = 68,非 stale 64;avatar-size = 24 both densities)
+        // 註:已撤回的 v13 `loose-4` 近似在 lg 給 20,與新 rail-幾何精確值 22 不同 —
+        //     v14 以 SSOT chain 公式取代該近似,md 兩者恰好都是 12。
         "group-data-[collapsible=icon]:!pl-[calc((var(--sidebar-width-icon)-var(--chrome-header-avatar-size))/2)]",
         "group-data-[collapsible=icon]:!pr-0",
         "transition-[padding] duration-200 ease-linear motion-reduce:duration-0",
@@ -602,8 +609,9 @@ SidebarContent.displayName = "SidebarContent"
 // ── Group ──────────────────────────────────────────────────────────────────
 
 // SidebarGroupContext——讓 `SidebarGroupLabel` 和 `SidebarGroupContent` 知道當前
-// 所在的 group 是否 collapsible,以自動切換渲染模式(label 變 trigger,content 變
-// `Collapsible.Content`)。沒有 context 就是舊行為(非 collapsible 的 plain div)。
+// 所在的 group 是否 collapsible,以自動切換渲染模式(label 尾端 chevron button 變
+// `Collapsible.Trigger`、content 變 `Collapsible.Content`;label 本身維持
+// `role="presentation"` div,不升格為 button)。沒有 context 就是舊行為(plain div)。
 type SidebarGroupContextValue = {
   collapsible: boolean
 }
@@ -617,13 +625,14 @@ function useSidebarGroup() {
  * SidebarGroup
  *
  * 預設是非互動的 plain group(div)。當 `collapsible` = true 時自動切換成 Radix
- * Collapsible:SidebarGroupLabel 變 trigger、SidebarGroupContent 變 Content、
- * 自動渲染 chevron 於 label 尾端、chevron 依 open state 旋轉。
+ * Collapsible:SidebarGroupLabel 尾端自動渲染 chevron button 作為 `Collapsible.Trigger`
+ * (承載 aria-expanded / data-state,依 open state 旋轉),SidebarGroupContent 變 Content;
+ * label 本身維持 `role="presentation"` div,不升格為 button。
  *
  * ── API 設計決策 ──
  * 為什麼是 group 層級的 prop 而不是 label 層級?因為「group 是否可收合」是結構層
- * 的決定,影響 group 所有子 primitive 的渲染模式(label 變 button、content 變
- * animated container)。把 prop 放在 label 上會讓 content 不知道自己該不該被包,
+ * 的決定,影響 group 子 primitive 的渲染模式(label 尾端 chevron 變 trigger button、
+ * content 變 animated container)。把 prop 放在 label 上會讓 content 不知道自己該不該被包,
  * 形成跨元件的 prop drilling。放在 group 上用 context 傳遞是 React 的標準做法。
  */
 const SidebarGroup = React.forwardRef<
@@ -667,8 +676,10 @@ const SidebarGroup = React.forwardRef<
         open={open}
         onOpenChange={onOpenChange}
         className={baseClass}
-        // Collapsible 在 icon 模式下整個隱藏(跟 TreeView 一樣——icon rail 沒空間放展開的 tree)
-        // Consumer 若要在 icon 模式顯示整個 group,自行傳 className 覆寫
+        // 註:此 Collapsible.Root 本身**不**自帶 icon 模式隱藏 class(baseClass 無
+        // `group-data-[collapsible=icon]:hidden`),icon 模式下預設仍渲染。若要在 icon rail
+        // 隱藏整個可收合 group(icon rail 沒空間放展開的 tree),consumer 自行傳
+        // `className="group-data-[collapsible=icon]:hidden"` 覆寫。
         {...(props as React.ComponentProps<typeof CollapsiblePrimitive.Root>)}
       >
         {children}
@@ -872,9 +883,10 @@ SidebarMenuItem.displayName = "SidebarMenuItem"
  *   - hover:      bg-neutral-hover
  *   - selected:   bg-neutral-selected(data-active=true)
  *
- * Icon 模式:button 保持 w-full 填滿 sidebar icon rail,鎖高為 field-height-{size},
- * content 用 justify-center 居中,label span 以 sr-only 視覺隱藏(a11y tree 保留,
- * 2026-07-05 D4——SR 仍讀得到 accessible name)。
+ * Icon 模式:button 保持 w-full 填滿 sidebar icon rail,**無 height lock / 無 justify-center**
+ * (2026-05-21 v4 C* 撤回 `!h-[...]`——row height 永遠 stable,collapsed 只 outer clip);
+ * prefix(icon / avatar)靠 `!pl-[calc((rail - prefix-width)/2)]` 公式置中對齊 rail,
+ * label span 以 sr-only 視覺隱藏(a11y tree 保留,2026-07-05 D4——SR 仍讀得到 accessible name)。
  */
 const sidebarMenuButtonVariants = cva(
   [

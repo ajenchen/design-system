@@ -15,12 +15,14 @@ import { Avatar, type AvatarData } from '@/design-system/components/Avatar/avata
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 
 /** Person avatar hover canonical helper — avatar.spec.md DS-wide rule:
- *  profile-card.spec.md 重要資訊 canonical(status / statusMessage / fields 皆必含) */
+ *  profile-card.spec.md 重要資訊 canonical(status / statusMessage / fields 皆必含)
+ *  真實人像(2026-07-08 sweep):固定 u= key 保 determinism(對齊 avatar.stories.tsx pravatar 慣例)*/
+const avatarSrc = (name: string, px = 96) => `https://i.pravatar.cc/${px}?u=${name.toLowerCase().replace(/\s+/g, '-')}`
 const personHover = (name: string, subtitle?: string) => (
   <ProfileCard
     name={name}
     subtitle={subtitle ?? 'Design｜D-0042｜EMP-1001'}
-    avatar={{ alt: name }}
+    avatar={{ src: avatarSrc(name), alt: name }}
     status="online"
     statusMessage="Out of Office: Back on Monday!"
     actions={<ProfileCardDefaultActions />}
@@ -1034,10 +1036,10 @@ export const AlignmentThreshold = {
 
           {/* Live example */}
           <MenuFrame width={360}>
-            <MenuItem size="md" avatar={{ alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") }} description="Design team lead">
+            <MenuItem size="md" avatar={{ src: avatarSrc("Alice Chen", 64), alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice Chen", "Design team lead") }} description="Design team lead">
               Alice Chen
             </MenuItem>
-            <MenuItem size="md" avatar={{ alt: "Bob", color: "yellow" as const, hoverCard: personHover("Bob Wang", "Backend engineer") }} description="Backend engineer">
+            <MenuItem size="md" avatar={{ src: avatarSrc("Bob Wang", 64), alt: "Bob", color: "yellow" as const, hoverCard: personHover("Bob Wang", "Backend engineer") }} description="Backend engineer">
               Bob Wang
             </MenuItem>
           </MenuFrame>

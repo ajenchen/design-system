@@ -1,0 +1,1 @@
+{"component":"Menu","implBasis":"MenuItem = internal layout primitive (plain <div role=option|presentation>), NO Radix import; keyboard/focus delegated to consumers (SelectMenu via cmdk / DropdownMenu via Radix); consumes item-anatomy ItemContent + itemPrefixAlignVariants + ICON_SIZE/AVATAR_SIZE/ROW_PADDING_BY_SIZE SSOT","claimsVerified":42,"falseClaims":[]}

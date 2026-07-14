@@ -38,7 +38,7 @@ export const UsageGuidance: Story = {
         </ul>
         <div className="mt-3">
           <FieldControlGroup block>
-            <Input className="flex-1" startIcon={Search} placeholder="搜尋..." />
+            <Input className="flex-1" startIcon={Search} placeholder="搜尋..." aria-label="搜尋" />
             <Button variant="primary">搜尋</Button>
           </FieldControlGroup>
         </div>
@@ -101,8 +101,8 @@ export const UsageGuidance: Story = {
         <Field>
           <FieldLabel>聯絡電話</FieldLabel>
           <FieldControlGroup block>
-            <Select className="!w-[88px]" options={CODES} value="+886" onChange={() => {}} />
-            <Input className="flex-1" placeholder="912 345 678" />
+            <Select className="!w-[88px]" options={CODES} value="+886" onChange={() => {}} aria-label="國碼" />
+            <Input className="flex-1" placeholder="912 345 678" aria-label="電話號碼" />
           </FieldControlGroup>
         </Field>
         <p className="text-caption text-fg-muted mt-2">Field label / description / error 對 group 整體生效;children 的 size 各自從外層 Field context 繼承(FCG 不傳遞 size)。</p>
@@ -111,9 +111,9 @@ export const UsageGuidance: Story = {
       <section>
         <h2 className="text-body-lg font-bold mb-3">Mode B — Filter row 場景</h2>
         <FieldControlGroup block>
-          <Select className="!w-[140px]" options={FIELDS} value="name" onChange={() => {}} />
-          <Select className="!w-[120px]" options={OPS} value="contains" onChange={() => {}} />
-          <Input className="flex-1" defaultValue="無線滑鼠" />
+          <Select className="!w-[140px]" options={FIELDS} value="name" onChange={() => {}} aria-label="篩選欄位" />
+          <Select className="!w-[120px]" options={OPS} value="contains" onChange={() => {}} aria-label="篩選運算子" />
+          <Input className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />
         </FieldControlGroup>
       </section>
     </div>

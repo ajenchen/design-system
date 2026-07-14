@@ -291,9 +291,9 @@ export const Overview = {
             <span className="text-[11px] text-fg-secondary font-medium">空值</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
               <span className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
-                style={{ borderColor: 'var(--info)', backgroundColor: 'var(--info-subtle)', color: 'var(--info)' }}>— (em dash)</span>
+                style={{ borderColor: 'var(--info)', backgroundColor: 'var(--info-subtle)', color: 'var(--info)' }}>- (hyphen)</span>
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">text-fg-muted</span>
+            <span className="text-[10px] text-fg-muted font-mono">text-foreground</span>
           </div>
         </div>
       </div>

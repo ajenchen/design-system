@@ -59,6 +59,9 @@ const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
       <ChartContext.Provider value={ctxValue}>
         <div
           ref={ref}
+          // 2026-07-14 audit Dim 9(passthrough 完整度):id 原被 destructure 只拿去組 data-chart,
+          // native id attr 靜默吞掉 —— consumer 傳 id 期待 DOM id(anchor / aria 參照)必須落地。
+          id={id}
           data-chart={chartId}
           className={cn(
             // 整體視覺套用本 DS typography + token

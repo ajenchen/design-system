@@ -36,7 +36,9 @@ import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-ge
  *      同樣規則)。CTA = `isLastStep ? 'Done' : 'Next'`
  *   4. **抑制 CTA 自動 focus,焦點落在 content 容器** — `onOpenAutoFocus` preventDefault
  *      後 focus content 容器本身(非第一個 CTA),避免使用者還在讀 body 時按 Enter 誤推進;
- *      Tab 第一下即達 content 內第一個 CTA。焦點不可停在 trigger:non-modal Popover 下
+ *      按 Tab 才移到 content 內按鈕:**單步無 header** 時第一個 tabbable 即推進 CTA;**有 header
+ *      (kind / headerTitle 會渲 PopoverHeader 右上 Close X)或多步** 時 DOM 順序上 Close X /
+ *      Previous / Skip 在推進 CTA 之前,需多按幾下 Tab。焦點不可停在 trigger:non-modal Popover 下
  *      焦點在 DismissableLayer 外按 Tab 會觸發 focus-outside dismiss 誤關閉
  *      (2026-07-05 D4;對齊 dialog.tsx handleOpenAutoFocus `?? content` fallback,見 spec「A11y 預設」)。
  *
@@ -56,8 +58,13 @@ export interface CoachmarkProps extends Omit<React.HTMLAttributes<HTMLDivElement
   /** 預設打開(uncontrolled initial state)— 2026-05-15 audit Dim 26 V1 fix per user verbatim「A:1」approval */
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
-  /** 觸發 anchor 元素。通常傳 trigger element;Coachmark 浮層會定位於此 */
-  children: React.ReactNode
+  /**
+   * 觸發 anchor 元素——**必為單一 React element**(內部走 `<PopoverTrigger asChild>` =
+   * Radix Slot 契約;傳 string / fragment / 多元素會 `React.Children.only` runtime 炸,
+   * 見 CLAUDE.md 失敗記憶索引「asChild + Slot」條)。與 Popover / Tooltip / HoverCard
+   * 同一錨點契約;型別收緊為 ReactElement 讓契約在 compile 期顯現。
+   */
+  children: React.ReactElement
   /** 頂部 media 區(圖片 / illustration / video 等);不傳則無 media */
   image?: React.ReactNode
   /**

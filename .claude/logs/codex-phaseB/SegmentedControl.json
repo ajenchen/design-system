@@ -1,0 +1,71 @@
+{
+ "component": "SegmentedControl",
+ "claimsVerified": 56,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:14",
+   "宣稱": "基於 Radix ToggleGroup（寫死 type=\"single\"）",
+   "真實code行為": "TypeScript API 雖 Omit type，但 runtime 未移除 type，且末尾 {...props} 會覆蓋前面的 type=\"single\"；JS／as any 可傳 type=\"multiple\" 令 Radix 進入 multiple 分支。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:256",
+   "宣稱": "SegmentedControl wrapper 固定 single，不開放切換",
+   "真實code行為": "僅合法 TypeScript surface 不開放；runtime 並未固定，type=\"multiple\" 可經末尾 props spread 覆寫。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:18",
+   "宣稱": "切 value（不是切 view）",
+   "真實code行為": "元件只輸出選值，並未限制 consumer 如何使用；選值可合法驅動局部 chart、list 或 form section 的內容變化。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:19",
+   "宣稱": "切 view → Tabs",
+   "真實code行為": "只有切換整塊 container 結構時才應用 Tabs；局部內容 view 可由 SegmentedControl 切換，value-vs-view 並非真正分界。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:153",
+   "宣稱": "任何 size / icon 都自然正方形",
+   "真實code行為": "iconOnly 與 fullWidth 並用時，固定 h-field-* 高度加上 flex-1 等分寬度會產生長方形；aspect-square 無法鎖住 flex-grow 後的寬度。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:201",
+   "宣稱": "iconOnly 時每個 item 變正方形",
+   "真實code行為": "只在非 fullWidth 或父寬恰好匹配時成立；iconOnly + fullWidth 通常會產生等分長方形。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.anatomy.stories.tsx:260",
+   "宣稱": "iconOnly 時每個 item 變正方形",
+   "真實code行為": "fullWidth=true 時 item 同時取得 flex-1 與 aspect-square，實際寬度由父容器等分，可能遠大於固定高度。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.anatomy.stories.tsx:58",
+   "宣稱": "value / defaultValue 為必填",
+   "真實code行為": "兩個 prop 都是 optional；皆未傳時 internal value 初始化為空字串，runtime 不 throw、不 warn，並呈現無選中項。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.anatomy.stories.tsx:6",
+   "宣稱": "StateBehavior 已完整對照 state 色彩矩陣",
+   "真實code行為": "表格未覆蓋 selected:hover 的 text-primary-hover／border-primary-hover，也未完整呈現 disabled×selected 的 z-index 行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:262",
+   "宣稱": "狀態色已在 StateBehavior 完整覆蓋",
+   "真實code行為": "StateBehavior 未列實作中的 selected:hover primary-hover 色彩，因此不是完整覆蓋。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.anatomy.stories.tsx:172",
+   "宣稱": "Disabled 的 Z-index 為「—」",
+   "真實code行為": "disabled 且 selected 的 item 仍命中 data-state=on:z-10；disabled override 只重設色彩，沒有清除 z-index。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.principles.stories.tsx:105",
+   "宣稱": "5 個以上選項時不應使用 SegmentedControl",
+   "真實code行為": "同元件 spec 與本 story 後段均允許 2–5 個；只有超過 5 個才應改用其他元件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.principles.stories.tsx:108",
+   "宣稱": "5+ 選項 → Select / RadioGroup",
+   "真實code行為": "恰好 5 個仍屬合法範圍，正確門檻是 >5。"
+  }
+ ]
+}

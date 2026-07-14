@@ -361,7 +361,7 @@ const CHROME_UNBOUNDED_SLOT =
 
 **禁止**:`w-[640px]` 單獨用(❌ 斷鏈)/ `flex flex-col h-full` 無 `min-h-0`(❌ flex item 不 shrink,scroll 失效)。
 
-**DS-wide consumer 必檢點**:`grep '<PopoverContent\|<HoverCardContent\|<DialogContent\|<SheetContent'` 內第一層 wrapper 是否含 `flex flex-col h-full`(若該 panel 用 SurfaceBody)。Hook `check_pattern_invariants.sh` C.1(原 `check_overlay_panel_scroll_chain.sh` 已 folded;2026-05-31 infra-audit 修 dangling ref)機械化攔截。
+**DS-wide consumer 必檢點**:`grep '<PopoverContent\|<HoverCardContent\|<DialogContent\|<SheetContent'` 內第一層 wrapper 是否含 `flex flex-col h-full`(若該 panel 用 SurfaceBody)。Hook `check_pattern_invariants.sh` C.1(原 `check_overlay_panel_scroll_chain.sh` 已 folded;2026-05-31 infra-audit 修 dangling ref)write-time 機械化警示(P1 WARN stderr,僅掃本次 edit fragment 不 block);DS-wide 全掃(上述 grep 必檢點)走 audit。
 
 ---
 
@@ -380,6 +380,27 @@ const CHROME_UNBOUNDED_SLOT =
 **Hook**:`.claude/hooks/post_edit_dispatcher.sh`(原 `check_overlay_handcraft.sh` 已 folded;2026-05-31 infra-audit 修 dangling ref)攔此 pattern;escape hatch `// overlay-handcraft-allow: <reason>` 同/前行。
 
 ---
+
+## 兩欄 dialog 組合 canonical(2026-07-10 user 拍板:組合,不做元件)
+
+「左內容 + 右 metadata」兩欄 dialog(工作項詳情類)**是產品層組合,不收進 DS 元件**——對齊
+Atlassian(modal-dialog 無宣告式兩欄 API,官方以 composition 範例示範)與 MUI(Dialog 無 split
+API,欄由 layout primitive 組)。DS 只 codify 組合鐵律(違規簽名由 consumer 防線
+`check_consumer_app_invariants.sh` r3 機械攔):
+
+1. **各欄自帶 `<ScrollArea>` 獨立捲動**——禁兩欄共用單一 ScrollArea / 共用一條捲軸(每欄
+   套上方「Body overflow canonical」模板,padding 進 viewport 內層 div)。
+2. **divider = 右欄(`<aside>`)自持 `border-l border-divider`,貫穿 body 頂到底**——非獨立
+   div、非只切半高。
+3. **欄底 footer(如 comment composer)釘在所屬欄內**(欄內 `SurfaceFooter` chrome),
+   非 dialog 全寬 footer——對齊 Atlassian 官方兩欄範例把 ModalFooter 巢狀進左欄。
+4. **header 維持全寬**,分欄從 body 才開始。
+
+**Archetype**(照抄結構,禁憑記憶手刻):WM `WorkItemDetailDialog.tsx`(產品實證,2026-07-08
+拍板落地)/ DS 內部同構先例 `file-viewer.tsx` InfoPanel(`<aside class="w-80 shrink-0 flex-col
+border-l border-divider">`)/ Atlassian `modal-dialog/examples/101-full-height-illustration.tsx`
+(per-column `flex:1 + minHeight:0 + overflow auto`)。完整研究引文 →
+`.claude/planning/2026-07-10-dialog-split-body-proposal.md`(元件化提案被 user 否決的紀錄)。
 
 ## 不屬本 primitive 的職責
 

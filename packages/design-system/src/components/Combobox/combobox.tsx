@@ -4,9 +4,9 @@
 import * as React from 'react'
 import { X, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, EMPTY_DISPLAY, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
-import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
+import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
+import { fieldWrapperStyles, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
@@ -326,8 +326,9 @@ function ComboboxTagStack({
   value?: string[] | null; options?: ComboboxOption[]; tagSize?: 'sm' | 'md' | 'lg'
   wrap?: boolean; containerRef?: React.RefObject<HTMLDivElement | null>; disabled?: boolean
 }) {
+  const emptyDisplay = useFieldEmptyDisplay()
   const ownRef = React.useRef<HTMLDivElement>(null)
-  if (!value || value.length === 0) return <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
+  if (!value || value.length === 0) return <span className={fieldEmptyColorClass(disabled ? 'disabled' : 'display')}>{emptyDisplay}</span>
   const items = value.map(v => ({ value: v, label: options?.find(o => o.value === v)?.label ?? v }))
   const disabledClass = disabled ? 'bg-disabled text-fg-disabled' : undefined
 
@@ -366,6 +367,10 @@ export interface ComboboxProps {
   mode?: FieldMode
   /** Field chrome variant. Default = context.variant ?? 'default'. Per-prop override. */
   variant?: FieldVariant
+  /** 寬度軸 — `fill` 填滿容器(default)/ `hug` 依內容收縮:value 寬 + slot 元素寬 + gap +
+   *  field 內 padding;chrome 與互動不變。場景 = detail pane inline metadata。
+   *  SSOT → field-controls.spec.md「寬度軸(width: fill / hug)」。 */
+  width?: FieldWidth
   error?: boolean
   size?: 'sm' | 'md' | 'lg'
   options: ComboboxOption[]
@@ -485,9 +490,13 @@ const getIconSize = (size: string) => ICON_SIZE[size as 'sm' | 'md' | 'lg']
 // ── Shared readonly/disabled/display render ─────────────────────────────────
 
 function ReadonlyMultiSelect({
-  mode, variant: variantProp, size, options, value, wrap, className, showDisplayEndIcon = false,
-}: Pick<ComboboxProps, 'mode' | 'variant' | 'size' | 'options' | 'value' | 'wrap' | 'className' | 'showDisplayEndIcon'>) {
+  mode, variant: variantProp, width, size, options, value, wrap, className, showDisplayEndIcon = false,
+}: Pick<ComboboxProps, 'mode' | 'width' | 'size' | 'options' | 'value' | 'wrap' | 'className' | 'showDisplayEndIcon'> & {
+  /** @internal 2026-07-14 API 策展 E:內部 render helper 吃 FieldVariantInternal(naked 由 cell-registry 通道傳入)*/
+  variant?: FieldVariantInternal
+}) {
   const resolvedMode = mode ?? 'readonly'
+  const emptyDisplay = useFieldEmptyDisplay()
   const variant = variantProp ?? 'default'
   const sz = size ?? 'md'
   const iconSize = sz === 'lg' ? 20 : 16
@@ -503,20 +512,20 @@ function ReadonlyMultiSelect({
     if (!showDisplayEndIcon) {
       // 2026-05-14 I2 fix(spec contract (e) display typography canonical):empty bare span 套
       // `fieldDisplayTextClass(sz)`(sm/md→text-body,lg→text-body-lg)— 對齊跨 Field family 統一。
-      if (!hasTags) return <span className={cn(fieldDisplayTextClass(sz), 'text-fg-muted', className)}>{EMPTY_DISPLAY}</span>
+      if (!hasTags) return <span className={cn(fieldDisplayTextClass(sz), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
       return (
         <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap} />
       )
     }
     return (
       <div
-        className={cn(fieldWrapperStyles({ mode: 'display', variant, size: sz }), hasTags && tagPadding[sz], className)}
+        className={cn(fieldWrapperStyles({ mode: 'display', variant, width, size: sz }), hasTags && tagPadding[sz], className)}
         data-field-mode="display"
       >
         {hasTags ? (
           <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap} />
         ) : (
-          <span className={cn('flex-1 min-w-0', 'text-fg-muted')}>{EMPTY_DISPLAY}</span>
+          <span className={cn('flex-1 min-w-0', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
         )}
         <ItemSuffix className="pointer-events-none">
           <ChevronDown size={iconSize} className="shrink-0 text-fg-muted" aria-hidden />
@@ -527,7 +536,7 @@ function ReadonlyMultiSelect({
 
   return (
     <div ref={containerRef}
-      className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, size: sz }), hasTags && tagPadding[sz],
+      className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), hasTags && tagPadding[sz],
         // 2026-05-18 #6A Round 1 Step 1/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:451):
         // readonly/disabled path 對齊 L293 display wrapper 已 ship 的 overflow-hidden fix。
         // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 display 不對稱。
@@ -540,7 +549,7 @@ function ReadonlyMultiSelect({
         <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap}
           containerRef={containerRef} disabled={resolvedMode === 'disabled'} />
       ) : (
-        <span className="text-fg-muted">{EMPTY_DISPLAY}</span>
+        <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
       )}
       {/* 2026-06-26 類型身份 indicator:edit 顯示 / readonly 不顯示(純值、不可開下拉) / disabled 保留(fg-disabled,對齊原生 <select disabled>);naked cell 依 showDisplayEndIcon */}
       {(variant === 'naked' ? !!showDisplayEndIcon : resolvedMode === 'disabled') && (
@@ -567,12 +576,16 @@ function ReadonlyMultiSelect({
 type ComboboxInternalProps = ComboboxProps & { __triggerRef?: React.Ref<HTMLDivElement> }
 
 function NativeCombobox({
-  mode, variant: variantProp, error = false, size = 'md', options, value = [], onChange, placeholder,
+  mode, variant: variantProp, width, error = false, size = 'md', options, value = [], onChange, placeholder,
   className, disabled: disabledProp, wrap = false, clearable = false, showDisplayEndIcon = false,
   __triggerRef,
+  'aria-label': ariaLabel,
 }: ComboboxInternalProps) {
+  // a11y(2026-07-14 dim10):touch/native 路徑同樣接 fieldCtx — id 讓 FieldLabel htmlFor
+  // 命名 native <select>;describedby/errormessage/required 對齊 desktop CustomCombobox trigger。
+  const fieldCtx = useFieldContext()
   const disabled = useResolvedFieldDisabled(disabledProp)
-  const variant: FieldVariant = useResolvedFieldVariant(variantProp)
+  const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
   // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="display"> 漏 cascade
   const resolvedMode = useResolvedFieldMode({ mode, disabled })
   const iconSize = getIconSize(size)
@@ -588,7 +601,7 @@ function NativeCombobox({
   const tagAreaRef = React.useRef<HTMLDivElement>(null)
 
   if (resolvedMode !== 'edit') {
-    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
+    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
   }
 
   const items = value.map(v => ({ value: v, label: options.find(o => o.value === v)?.label ?? v }))
@@ -597,6 +610,15 @@ function NativeCombobox({
 
   const selectDropdown = unselected.length > 0 ? (
     <select ref={selectRef} value="" onChange={(e) => handleAdd(e.target.value)}
+      // a11y(2026-07-14 dim10):accessible name — FieldLabel htmlFor 經 id 命名 native select;
+      // consumer aria-label 優先,否則 fieldCtx.labelId fallback(對齊 select.tsx:240 accname 優先序)。
+      id={fieldCtx?.id}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabel ? undefined : fieldCtx?.labelId}
+      aria-invalid={error || undefined}
+      aria-required={fieldCtx?.required || undefined}
+      aria-describedby={fieldCtx?.descriptionId}
+      aria-errormessage={error ? fieldCtx?.errorId : undefined}
       className={cn('bg-transparent outline-none border-none p-0 text-[inherit] font-[inherit] leading-[inherit] text-fg-muted cursor-pointer appearance-none',
         value.length > 0 ? 'absolute inset-0 w-full h-full opacity-0 z-0 cursor-pointer' : 'relative z-10 flex-1 min-w-20')}>
       <option value="" disabled>{placeholder ?? '選擇...'}</option>
@@ -605,7 +627,7 @@ function NativeCombobox({
   ) : null
 
   return (
-    <div ref={__triggerRef} className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }), value.length > 0 && tagPadding[size], 'relative',
+    <div ref={__triggerRef} className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), value.length > 0 && tagPadding[size], 'relative',
       wrap && 'items-start py-1', className)}
       style={{ paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode="edit" data-error={error ? '' : undefined}
       onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}>
@@ -642,7 +664,7 @@ function NativeCombobox({
 // ── Custom Combobox (desktop — consumes SelectMenu) ───────────────────
 
 function CustomCombobox({
-  mode, variant: variantProp, error: errorProp = false, size = 'md', options, value = [], onChange, placeholder,
+  mode, variant: variantProp, width, error: errorProp = false, size = 'md', options, value = [], onChange, placeholder,
   className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, loading, searchIn = 'menu',
   searchPlaceholder = '搜尋…', // i18n-allow: DS default
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default
@@ -668,7 +690,7 @@ function CustomCombobox({
   const disabled = useResolvedFieldDisabled(disabledProp)
   // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="display"> 漏 cascade
   const resolvedMode = useResolvedFieldMode({ mode, disabled })
-  const variant: FieldVariant = useResolvedFieldVariant(variantProp)
+  const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
   const iconSize = getIconSize(size)
   const showClear = clearable && value.length > 0 && resolvedMode === 'edit'
   const [open, setOpen] = React.useState(defaultOpen)
@@ -723,7 +745,7 @@ function CustomCombobox({
   )
 
   if (resolvedMode !== 'edit') {
-    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
+    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
   }
 
   const chevronEl = <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted transition-transform', open && 'rotate-180')} aria-hidden />
@@ -734,11 +756,14 @@ function CustomCombobox({
       id={fieldCtx?.id}
       role="combobox" aria-expanded={open} aria-haspopup="listbox" aria-controls={listboxId} tabIndex={0}
       aria-label={ariaLabel}
+      // a11y(2026-07-14 dim-10):div-based role=combobox 的 <label for> 無效,接 FieldLabel labelId
+      // (field-context.ts labelId jsDoc);consumer aria-label 優先 — 與 sibling select.tsx:705 同款 guard。
+      aria-labelledby={ariaLabel ? undefined : fieldCtx?.labelId}
       aria-invalid={error || undefined}
       aria-required={fieldCtx?.required || undefined}
       aria-describedby={fieldCtx?.descriptionId}
       aria-errormessage={error ? fieldCtx?.errorId : undefined}
-      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }), value.length > 0 && tagPadding[size], 'relative cursor-pointer',
+      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), value.length > 0 && tagPadding[size], 'relative cursor-pointer',
         wrap && 'items-start py-1',
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
         // 統一處理 — open=灰深(data-state)/ focus=藍;2026-07-04 Q1:error 亦收進 error variant。
@@ -752,6 +777,15 @@ function CustomCombobox({
       //   open 後不 preventDefault 讓方向鍵自由流向選單導覽)。
       // 純 additive:此 trigger 原無 onKeyDown,不覆寫既有 handler;open 邏輯仍走 setOpen SSOT。
       onKeyDown={(e) => {
+        // a11y(2026-07-14 dim-10):Enter/Space 來自 descendant 互動元素(Tag 移除 / clear 按鈕)
+        // 時直接放行 —— 否則下方 preventDefault 會取消 native button activation(鍵盤永遠按不動
+        // 按鈕)。guard 限 Enter/Space + button 類:search input 的 Enter 仍走 cmdk 選項選取
+        // (forwardKeyToListbox),Escape / 方向鍵仍走 combobox 導覽。
+        if (
+          (e.key === 'Enter' || e.key === ' ') &&
+          e.target !== e.currentTarget &&
+          (e.target as HTMLElement).closest?.('button, a, [role="button"]')
+        ) return
         // 2026-07-05 D4 P0:open 後 ArrowUp/Down/Enter 轉送 cmdk root(select-menu.tsx forwardKeyToListbox)
         if (open && forwardKeyToListbox(listboxId, e)) return
         if (e.key === 'Enter' || e.key === ' ') {

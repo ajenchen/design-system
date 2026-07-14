@@ -1,0 +1,34 @@
+{
+  "name": "@qijenchen/eslint-plugin-design-system",
+  "version": "0.1.0-beta.1",
+  "description": "DS write-time hooks 同源的 ESLint flat-config 規則 — token-first Tailwind discipline,editor + CI + AI 三處防線(roadmap 方向 4)",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "rules",
+    "lib",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\""
+  },
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin",
+    "design-system",
+    "tailwind",
+    "design-tokens"
+  ],
+  "peerDependencies": {
+    "eslint": ">=9"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=18.18"
+  }
+}

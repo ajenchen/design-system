@@ -1,0 +1,126 @@
+{
+ "component": "Steps",
+ "claimsVerified": 497,
+ "falseClaims": [
+  {
+   "fileLine": "steps.tsx:265",
+   "宣稱": "Interleave horizontal connectors between items",
+   "真實code行為": "未 interleave；迴圈只 clone item，connector 實際在各非末項的 HorizontalLayout 內渲染（steps.tsx:269-286,605-610）。"
+  },
+  {
+   "fileLine": "steps.spec.md:62；steps.principles.stories.tsx:96,102",
+   "宣稱": "使用者可自由跳步（非線性流程）應改用 Tabs。",
+   "真實code行為": "`linear={false}` 明確讓所有非 disabled step 可點，元件與 principles 自身亦提供非線性 Steps 情境（steps.tsx:124-126）。"
+  },
+  {
+   "fileLine": "steps.spec.md:171,228-239",
+   "宣稱": "Content state 跟 Focus 正交；矩陣包含 focused upcoming。",
+   "真實code行為": "兩者共用 `value` 推導；一般 item 一旦 `value` 命中便成為 current，所以 focused upcoming／reachable 不可達（steps.tsx:114-116,350）。"
+  },
+  {
+   "fileLine": "steps.spec.md:175",
+   "宣稱": "`upcoming` 為 `var(--muted)` + `fg-disabled`。",
+   "真實code行為": "僅 linear md/lg 如此；non-linear upcoming 是 `var(--secondary)` + `var(--foreground)`（steps.tsx:731-738）。"
+  },
+  {
+   "fileLine": "steps.spec.md:176",
+   "宣稱": "`current` 為 `bg-info` + 白字數字。",
+   "真實code行為": "僅 linear md/lg 如此；non-linear current 是 secondary + foreground，sm linear current 則是無數字的空心環（steps.tsx:647-670,718-725）。"
+  },
+  {
+   "fileLine": "steps.spec.md:287",
+   "宣稱": "紅 ✕ indicator + 紅 label + 紅 description。",
+   "真實code行為": "StepDescription 不讀 error state；除 disabled 外固定為 `text-fg-secondary`（steps.tsx:816-835）。"
+  },
+  {
+   "fileLine": "steps.spec.md:306",
+   "宣稱": "藍色 connector 必須跟 `completedValues` 一對一對應。",
+   "真實code行為": "connector 依最終 computed state 判斷；completed 與 error 重疊時 error 優先，connector 會是灰色（steps.tsx:111-116,546-557,593-608）。"
+  },
+  {
+   "fileLine": "steps.spec.md:326",
+   "宣稱": "點 completed step 觸發 `onValueChange`——僅此而已。",
+   "真實code行為": "`expansion=\"multiple\"` 時還會切換該 step 的 expanded 狀態（steps.tsx:355-361）。"
+  },
+  {
+   "fileLine": "steps.spec.md:347",
+   "宣稱": "horizontal 時 `expansion` prop 被忽略。",
+   "真實code行為": "horizontal 只是不渲染 content；multiple 模式點擊仍修改 expandedSet，切回 vertical 後可觀察該狀態（steps.tsx:353-361,419-423,850-854）。"
+  },
+  {
+   "fileLine": "steps.spec.md:390",
+   "宣稱": "所有狀態集中在 parent，因此不可能多個 current。",
+   "真實code行為": "元件自管 uncontrolled `internalValue` 與 `expandedSet`；StepItem value 也無唯一性檢查，重複 value 可讓多項同時 current/focused（steps.tsx:200-207,232-243,314,350）。"
+  },
+  {
+   "fileLine": "steps.spec.md:429",
+   "宣稱": "`errorValues` 中斷流程。",
+   "真實code行為": "errorValues 只改視覺 state，未參與 reachability 或 value 更新 guard；parent 仍可推進，completed+error 重疊也可解鎖下一步（steps.tsx:112,138-150,204-208）。"
+  },
+  {
+   "fileLine": "steps.spec.md:461",
+   "宣稱": "sr-only 是螢幕報讀器唯一狀態來源。",
+   "真實code行為": "元件另外輸出 `aria-current=\"step\"`、`aria-disabled` 與展開 ARIA，sr-only 並非唯一狀態訊號（steps.tsx:385-386,456-462）。"
+  },
+  {
+   "fileLine": "steps.spec.md:468",
+   "宣稱": "採 native button sequential Tab。",
+   "真實code行為": "實作是自訂 `<div role=\"button\" tabIndex={0}>` 加鍵盤 handler，不是 native button（steps.tsx:443-455）。"
+  },
+  {
+   "fileLine": "steps.spec.md:470；steps.anatomy.stories.tsx:445",
+   "宣稱": "focus management 由元件 own。",
+   "真實code行為": "元件沒有 `focus()`、roving 或 focus trap；焦點移動依瀏覽器 sequential Tab，元件僅設定 tabIndex、Enter/Space handler 與 focus-visible outline（steps.tsx:443-470）。"
+  },
+  {
+   "fileLine": "steps.anatomy.stories.tsx:40,193",
+   "宣稱": "`current (= value)`。",
+   "真實code行為": "state 優先順序是 override → error → completed → value=current；value 同時存在於 errorValues／completedValues 時，content state 並非 current（steps.tsx:111-116）。"
+  },
+  {
+   "fileLine": "steps.anatomy.stories.tsx:42,209-214",
+   "宣稱": "error 的右側 Connector 為「—」。",
+   "真實code行為": "非末項 error 仍渲染 connector，顏色為 `bg-border`；只有 completed 才是 `bg-info`（steps.tsx:536,543-563,606-608）。"
+  },
+  {
+   "fileLine": "steps.anatomy.stories.tsx:61,112,384",
+   "宣稱": "`linear=true` 保證僅能順序前進。",
+   "真實code行為": "linear 僅禁止 upcoming；completed、current、error、reachable 均可點，parent 也能直接傳任意 value，元件不強制 progression（steps.tsx:119-126,204-208）。"
+  },
+  {
+   "fileLine": "steps.anatomy.stories.tsx:67",
+   "宣稱": "`<StepLabel>` children 必填。",
+   "真實code行為": "StepItem children 與 StepLabel 均未被型別或 runtime 強制；layout 允許 labelNode 為 null（steps.tsx:409-423,778-806）。"
+  },
+  {
+   "fileLine": "steps.anatomy.stories.tsx:188,212",
+   "宣稱": "completed Check／error X 使用 `white` token。",
+   "真實code行為": "兩者實際消費 semantic token `var(--on-emphasis)`，不是 literal `white` token（steps.tsx:709-717,765-768）。"
+  },
+  {
+   "fileLine": "steps.anatomy.stories.tsx:320,323,333,384-385",
+   "宣稱": "LinearVsNonlinear 實例可點回查或自由跳轉。",
+   "真實code行為": "兩邊都傳 controlled `value`，卻沒有 `onValueChange`；點擊或 Enter/Space 不會改變畫面中的 current step（steps.tsx:200-208,355-361）。"
+  },
+  {
+   "fileLine": "steps.anatomy.stories.tsx:395",
+   "宣稱": "繼續流程前必須先解除 errorValues。",
+   "真實code行為": "沒有此 guard；errorValues 與 value 獨立，parent 可在錯誤仍存在時推進 value（steps.tsx:112,204-208）。"
+  },
+  {
+   "fileLine": "steps.principles.stories.tsx:114",
+   "宣稱": "絕不在 StepItem 各自宣告 state，否則可能出現多個 current。",
+   "真實code行為": "公開 API 明確支援 `state?: 'error'` override；該 override 只能建立 error，無法建立多個 current（steps.tsx:109-112,311-317）。"
+  },
+  {
+   "fileLine": "steps.principles.stories.tsx:143,149-150",
+   "宣稱": "Ring 是唯一的 focus 表達。",
+   "真實code行為": "外環跟隨 `value === steps.value`，不是 DOM focus；focused 還會改變 label 色，而真正鍵盤焦點另有 focus-visible outline（steps.tsx:350,470,657,757,798-800）。"
+  },
+  {
+   "fileLine": "steps.principles.stories.tsx:266",
+   "宣稱": "Steps 是純 controlled 元件。",
+   "真實code行為": "支援 `defaultValue` + internalValue 的 uncontrolled 模式，是 controlled/uncontrolled 雙模（steps.tsx:168-170,200-207）。"
+  }
+ ]
+}

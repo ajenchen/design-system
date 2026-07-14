@@ -1,3 +1,4 @@
+// @internal — DS-internal 單元(Field 家族 chrome 基底,consumer 用 Field/Input 等 wrapper 不直用);不隨 index.ts re-export 進 npm public surface。
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import { cva } from 'class-variance-authority'
 
@@ -11,9 +12,11 @@ import { cva } from 'class-variance-authority'
 //   readonly — bg-readonly(neutral-2), 無邊框, 文字正常色(input chrome 但鎖定;token 獨立於 disabled)
 //   disabled — bg-disabled(neutral-2), 無邊框, 文字灰化
 //
-// 2 種視覺外殼(variant):
+// 2 種視覺外殼(variant;2026-07-09 `bare` 退役後):
 //   default — 完整 chrome(form input 場景)
-//   bare    — 透明 chrome(cell-as-input substrate / Toolbar inline editing)
+//   naked   — cell-as-input substrate(DataTable);**edit×naked 自畫 border-based state machine**
+//              (border-border → hover:border-border-hover → focus-within:border-primary → error 紅框);
+//              display/readonly/disabled×naked 用 transparent border,由 host cell 提供視覺邊框
 //
 // 高度:固定 h = field-height token(rem),與 Button 共用同一組 token。
 
@@ -32,7 +35,9 @@ export const fieldWrapperStyles = cva(
     // 修一處全 Field family 跟動(Input/Select/Combobox/DatePicker/TimePicker/LinkInput/
     // Textarea/NumberInput/PeoplePicker)— 對齊 M17/M19/M23 一處 SSOT + data-table.spec.md:233
     // 「禁硬裁無 ellipsis」DS canonical + MUI X DataGrid / Ant Table column.ellipsis 共識。
-    'inline-flex items-center w-full min-w-0 rounded-md',
+    // 2026-07-08 width 軸:`w-full` 從 base 移入 `width` variant(fill = 原行為 default,
+    // 零回歸;hug = w-fit 依內容收縮)。詳 field-controls.spec.md「寬度軸(width: fill / hug)」。
+    'inline-flex items-center min-w-0 rounded-md',
     'text-foreground font-normal',
     'transition-colors duration-150',
   ],
@@ -47,19 +52,32 @@ export const fieldWrapperStyles = cva(
       variant: {
         // default — 完整 Field wrapper chrome(bg-surface、明顯 border、hover/focus 回饋)
         default: '',
-        // bare — 透明 variant,hover / focus 才出現 border。適用 Toolbar inline editing
-        // (FileViewer zoom input / chart config / rich text toolbar number input 等)。
-        // 世界級對照:VS Code settings / Figma toolbar number / Notion prop input。
-        bare: '',
-        // naked — 完全無 variant,hover/focus 也不出 border。適用 cell-as-input
-        // (host cell 自管 border + focus visual,內部 input 純文字承載)。
+        // naked — cell-as-input(Notion / Airtable / Excel canonical)。**edit×naked 自畫** border +
+        // hover:border-border-hover + focus-within:border-primary + error 紅框(v14 border-based state
+        // machine,見下方 compoundVariants L182-196);display/readonly/disabled×naked 用 transparent
+        // border 由 host cell 提供視覺邊框,內部 input 純文字承載。
         // 世界級對照:Airtable / Notion / Excel / Google Sheets cell editing。
+        // (2026-07-09 `bare` variant 已退役 — 見 field-types.ts FieldVariant 註解;
+        //  被 import 的 `bareInputStyles` 常數是內層 input 重置樣式、與此不同物、保留。)
         naked: '',
       },
       size: {
         sm: 'text-body h-field-sm px-[var(--field-px)] gap-2',
         md: 'text-body h-field-md px-[var(--field-px)] gap-2',
         lg: 'text-body-lg h-field-lg px-[var(--field-px)] gap-2',
+      },
+      // width(2026-07-08 user 拍板,正交軸):寬度軸 — 只改寬度,chrome / hover / focus /
+      // error / mode compoundVariants 全部不動(user verbatim「框線和互動和樣式都不變,
+      // 只有寬度有變而已 … 把 field 和 value 的寬度都改成 hug」)。
+      //   fill(default)— `w-full` 填滿容器 = 與移軸前 base 完全等價(零回歸不變量)
+      //   hug — `w-fit` 依內容收縮:value 寬 + 各 slot 元素寬 + gap + field 內 padding;
+      //         `max-w-full` 保證窄容器不溢出(min-w-0 保留,仍可 truncate)
+      // Benchmark(M22):shadcn v4 SelectTrigger 預設 `w-fit`
+      //   https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/select.tsx
+      //   Radix Select Trigger intrinsic sizing https://www.radix-ui.com/primitives/docs/components/select
+      width: {
+        fill: 'w-full',
+        hug: 'w-fit max-w-full',
       },
       // error(2026-07-04 Q1 拍板,SSOT 集中):原散在各控件的 error border classes 因
       // focus-within:!border-primary(!important)被蓋 = dead code(聚焦永遠藍)。
@@ -119,7 +137,18 @@ export const fieldWrapperStyles = cva(
       {
         mode: 'readonly',
         variant: 'default',
-        className: 'bg-readonly border border-transparent',
+        // 2026-07-09 A11y fix(WCAG 2.4.7 Focus Visible):readonly **有值** 渲染 native `<input readOnly>`
+        // = 可 Tab 聚焦、可選取/複製,但原 compound 無任何 focus 指示 → 鍵盤使用者聚焦不可見 = 違反。
+        // 補 focus ring 採 **ring idiom**(`ring-2 ring-ring ring-offset-1`,與 Button/Checkbox/Tabs/
+        // Switch 同一套 focus-visible canonical;`--ring == --primary` semantic.css:334)而非 edit mode
+        // 的 `border-primary` idiom —— readonly 邊框 transparent 無可染;且 ring 語義 = 「可聚焦但非文字
+        // 輸入」(對齊 button/tab/checkbox 這類 focusable-非-text-entry 控件的視覺語言)。
+        // `:has(:focus-visible)`:readonly 渲 native `<input readOnly>`。⚠️ 瀏覽器對 text-entry 控件的
+        // :focus-visible 啟發式在滑鼠點擊時**亦 match**(text input 恆視為 focus-visible,對齊
+        // field-controls.spec.md「Focus 行為」段『文字輸入永遠 focus-visible、CSS 無法區分點擊與 Tab』),
+        // 故點擊 readonly input 也會顯 ring,勿宣稱僅鍵盤觸發(button 的 focus-visible 才滑鼠不觸發,
+        // input 不同;真要滑鼠抑制需 JS 追蹤 input modality,屬 API 擴充)。
+        className: 'bg-readonly border border-transparent [&:has(:focus-visible)]:ring-2 [&:has(:focus-visible)]:ring-ring [&:has(:focus-visible)]:ring-offset-1',
       },
       {
         // 2026-05-13 R3.5(per codex Q3 verdict + user 拍「想盡辦法 auto-handle prereq」):
@@ -130,42 +159,14 @@ export const fieldWrapperStyles = cva(
         variant: 'default',
         className: 'bg-disabled border border-transparent cursor-not-allowed',
       },
-      // bare variant chrome by mode
-      {
-        mode: 'edit',
-        variant: 'bare',
-        className: [
-          'bg-transparent border border-transparent',
-          'hover:border-border',
-          // 同 default chrome v13.3 SSOT:focus-within !important 強制勝過 data-state
-          //(2026-07-04 Q1:同 default,focus 藍移到 error:false compound)
-          'data-[state=open]:border-border',
-        ],
-      },
-      { mode: 'edit', variant: 'bare', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
+      // (2026-07-09 `bare` variant 退役:原 edit×bare / edit×bare×error compounds 已移除。)
       // error chrome(mode=edit 限定,variant 不分 — naked cell 內 error 同樣紅框,保留既有控件層行為):
       {
         mode: 'edit',
         error: true,
         className: 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error',
       },
-      {
-        mode: 'display',
-        variant: 'bare',
-        // bare + display:cell-as-input default state(無 variant,完全融入 cell;hover/focus 才有 affordance 等 user 點下去切 edit mode)
-        className: 'bg-transparent border border-transparent',
-      },
-      {
-        mode: 'readonly',
-        variant: 'bare',
-        className: 'bg-transparent border border-transparent',
-      },
-      {
-        // 2026-05-13 R3.5:移除 `opacity-disabled` blanket(per Avatar self-dim canonical)
-        mode: 'disabled',
-        variant: 'bare',
-        className: 'bg-transparent border border-transparent cursor-not-allowed',
-      },
+      // (2026-07-09 `bare` variant 退役:原 display×bare / readonly×bare / disabled×bare compounds 已移除。)
       // naked variant — cell-as-input substrate(Notion / Airtable / Excel canonical)
       //
       // ── 2026-05-06 v14:revert v12 → v9 baseline + keep v13.3 ──
@@ -248,6 +249,7 @@ export const fieldWrapperStyles = cva(
       mode: 'edit',
       variant: 'default',
       size: 'md',
+      width: 'fill',
       error: false,
     },
   }
@@ -351,12 +353,18 @@ export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hove
 //   - 多行 wrapper items-start  → slot 1lh 鎖頂 = 第一行中線
 //   不需 conditional `group-data-[row-mode=auto]/cell:` — 我前 v4 自加的 conditional 是過度設計。
 //
-// State ring 3 const 仍留(下方)— 是 Field naked 專屬,MenuItem / TreeView 用 bg hover 不用 outline。
+// State ring 唯一 const `nakedCellEditableDisplayHover` 仍留(下方 L332,見其自述「sole remaining ring const」)— 是 Field naked 專屬,MenuItem / TreeView 用 bg hover 不用 outline。
 // `nakedCellRowModeAlign`(wrapper 級)仍留 — 是 cell-context row-mode → wrapper alignment 適配,正交 slot 級。
 
 // ── Empty Value Display ─────────────────────────────────────────────────────
 
-export const EMPTY_DISPLAY = '—'
+// 2026-07-08 user 拍板(verbatim「我從頭到尾哪裡有說要用全形的」):空值符號 = **半形 hyphen
+// `-`(U+002D)**，非全形 em dash `—`(U+2014)。不可編輯(readonly / standalone display /
+// table 不可編輯 cell)空值一律此符號 + `text-fg-muted`。分流邏輯 SSOT = field-context.ts
+// `useFieldEmptyDisplay()`(table-cell 可編輯 → 空白；其餘 → 本常數)。
+// 世界級對照:Ant ProTable `columnEmptyText` 預設 `'-'`(U+002D 半形)
+//   https://github.com/ant-design/pro-components/blob/master/src/table/Table.tsx
+export const EMPTY_DISPLAY = '-'
 
 /**
  * 2026-05-14 I2 fix(per field-controls.spec.md contract (e) display typography canonical):

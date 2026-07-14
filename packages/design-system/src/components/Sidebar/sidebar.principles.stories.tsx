@@ -324,10 +324,10 @@ export const GroupHeaderRules: Story = {
                   <SidebarGroupContent>
                     <SidebarMenu>
                       <SidebarMenuItem>
-                        <SidebarMenuButton startIcon={Folder}>Project A</SidebarMenuButton>
+                        <SidebarMenuButton id="web-app" startIcon={Folder}>Web App</SidebarMenuButton>
                       </SidebarMenuItem>
                       <SidebarMenuItem>
-                        <SidebarMenuButton startIcon={Folder}>Project B</SidebarMenuButton>
+                        <SidebarMenuButton id="mobile-app" startIcon={Folder}>Mobile App</SidebarMenuButton>
                       </SidebarMenuItem>
                     </SidebarMenu>
                   </SidebarGroupContent>
@@ -373,13 +373,15 @@ export const SettingsScenario: Story = {
               若子頁等重要且需一鍵直達,用 SidebarGroupLabel 當純視覺分段標題,子項全部是獨立頂層 SidebarMenuItem。
               少見,只在子項確實高頻使用時才用。
             </Desc>
-            <MiniSidebar>
+            {/* 導覽項必帶穩定 id(sidebar.spec.md「禁止:SidebarMenuButton 不傳 id」)—
+                id 進 SidebarProvider 單一 activeId selection 模型,漏 id = 啞 item 無法 active。 */}
+            <MiniSidebar activeId="settings-general">
               <SidebarContent>
                 <SidebarGroup>
                   <SidebarGroupContent>
                     <SidebarMenu>
-                      <SidebarMenuItem><SidebarMenuButton startIcon={Inbox}>Inbox</SidebarMenuButton></SidebarMenuItem>
-                      <SidebarMenuItem><SidebarMenuButton startIcon={Folder}>Projects</SidebarMenuButton></SidebarMenuItem>
+                      <SidebarMenuItem><SidebarMenuButton id="inbox" startIcon={Inbox}>Inbox</SidebarMenuButton></SidebarMenuItem>
+                      <SidebarMenuItem><SidebarMenuButton id="projects" startIcon={Folder}>Projects</SidebarMenuButton></SidebarMenuItem>
                     </SidebarMenu>
                   </SidebarGroupContent>
                 </SidebarGroup>
@@ -387,9 +389,9 @@ export const SettingsScenario: Story = {
                   <SidebarGroupLabel>Settings</SidebarGroupLabel>
                   <SidebarGroupContent>
                     <SidebarMenu>
-                      <SidebarMenuItem><SidebarMenuButton startIcon={Settings}>General</SidebarMenuButton></SidebarMenuItem>
-                      <SidebarMenuItem><SidebarMenuButton startIcon={Users}>Team</SidebarMenuButton></SidebarMenuItem>
-                      <SidebarMenuItem><SidebarMenuButton startIcon={FileText}>Billing</SidebarMenuButton></SidebarMenuItem>
+                      <SidebarMenuItem><SidebarMenuButton id="settings-general" startIcon={Settings}>General</SidebarMenuButton></SidebarMenuItem>
+                      <SidebarMenuItem><SidebarMenuButton id="settings-team" startIcon={Users}>Team</SidebarMenuButton></SidebarMenuItem>
+                      <SidebarMenuItem><SidebarMenuButton id="settings-billing" startIcon={FileText}>Billing</SidebarMenuButton></SidebarMenuItem>
                     </SidebarMenu>
                   </SidebarGroupContent>
                 </SidebarGroup>

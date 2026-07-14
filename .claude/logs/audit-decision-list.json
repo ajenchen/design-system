@@ -1,0 +1,100 @@
+{
+  "summary": "Categorize 367 confirmed material into autonomous-fix vs SSOT-UI/UX decisions + group decisions",
+  "agentCount": 9,
+  "logs": [
+    "triage done: autonomous doc 255 / code 67 / a11y 34 / decision-candidates 11"
+  ],
+  "result": {
+    "autonomousTotals": {
+      "autonomousDoc": 255,
+      "autonomousCode": 67,
+      "autonomousA11y": 34,
+      "decision": 11
+    },
+    "decisionCandidateCount": 11,
+    "decisions": [
+      {
+        "標題": "公開設定裡有「設了也沒作用」的選項,要不要清掉",
+        "現況": "表格(DataTable)的「總筆數 totalCount」實際不會被拿去算、月曆(Calendar)的「週/日檢視」和「大尺寸」設了也只會顯示月檢視 — 對外型別看得到、但都是空功能,容易讓人以為能用。",
+        "選項": [
+          "誠實移除:把這些沒作用的值從公開設定拿掉,「有寫就是能用」。缺點:屬破壞性變更(實測目前無人使用),優點:對外不承諾做不到的功能。",
+          "保留當 roadmap 佔位:留著等未來實作,先對外佔位。缺點:對外承諾了目前做不到的功能、容易誤導,違反「誠實 API」原則。"
+        ],
+        "建議": "移除(對齊世界級 DS 不曝露空功能);除非月曆的週/日檢視是已排程要做的,才保留並在文件明標「roadmap,尚未實作」。",
+        "相關findings": [
+          "packages/design-system/src/components/DataTable/data-table.tsx:157 (totalCount no-op prop)",
+          "packages/design-system/src/components/Calendar/calendar.tsx:62 (view week/day + size lg no-op)"
+        ]
+      },
+      {
+        "標題": "Select 在桌面版會默默「吃掉」表單設定,補齊還是收窄",
+        "現況": "下拉選單(Select)型別看起來支援所有原生表單屬性(name/required/送出表單/focus 事件),但只有手機/原生模式真的生效,桌面自訂模式會默默丟掉 — 放進表單送出時抓不到值、required 驗證也不作用。",
+        "選項": [
+          "補實作:桌面版底層補一個隱藏原生控件,讓 name/required/表單送出都真的生效。缺點:工程量較大;優點:符合世界級 Select「本來就該能參與表單」的期待。",
+          "收窄型別:把做不到的屬性從對外介面拿掉,只留真正支援的。缺點:Select 變成不能參與表單,能力受限。"
+        ],
+        "建議": "補實作 — 表單參與是下拉選單的基本能力(Radix/世界級 DS 都做),收窄會讓 Select 在真實表單場景不可用。",
+        "相關findings": [
+          "packages/design-system/src/components/Select/select.tsx:56 (繼承 native 屬性,desktop 自訂路徑丟失 name/form/required/focus/blur)"
+        ]
+      },
+      {
+        "標題": "對外公開的清單現在「什麼都塞」,要不要改成只公開該公開的",
+        "現況": "打包給外部使用的公開清單目前是「全部掃出去」,結果把三類本不該對外的東西也公開了 —(1) 62 個純建置用的內部資料 (2) 標記為「內部零件」的組合件(MenuItem/DateGrid/SelectMenu)(3) 設計變數目錄整包曝露(連原始碼與規格文件都能被外部 import);另外 ItemIcon/ItemAvatar 兩份文件互相打架(治理規則說內部件、元件規格與官方範本卻當公開組合 slot 在用)。",
+        "選項": [
+          "策展式公開:只公開設計上真的要給外部用的組合件(如把 ItemIcon/ItemAvatar 明訂為公開 slot),其餘內部件/建置資料/原始碼一律關前門。缺點:一次性破壞性變更(實測目前無外部真依賴);優點:對外契約乾淨、維護負擔明確、對齊世界級 curated public API。",
+          "維持全開:不動,零破壞、前向相容。缺點:對外等於承諾維護一堆本不該公開的內部表面,日後想改內部件就會 break 別人。"
+        ],
+        "建議": "走策展式,並把 ItemIcon/ItemAvatar 正式定為公開組合 slot(對齊規格與 app 範本的實際用法),其餘內部件/建置資料/原始碼關前門;因是破壞性變更,發版時標明。",
+        "相關findings": [
+          "packages/design-system/src/components/RadioGroup/radio-group.tsx:328 (+61 同類 *Meta 經 export * 進 root barrel)",
+          "packages/design-system/scripts/gen-component-indexes.mjs:79 (barrel export * 曝露 internal primitives MenuItem/DateGrid/SelectMenu)",
+          "packages/design-system/package.json:39 (tokens/* wildcard 曝露 src/tokens 原始碼含 .ts/.spec.md)",
+          ".claude/rules/ui-development.md:20 (ItemIcon/ItemAvatar 判為 internal,與 item-anatomy spec + app template 公開用法衝突)"
+        ]
+      },
+      {
+        "標題": "Checkbox 範例都用一種「規格明令禁止」的寫法,放寬還是改範例",
+        "現況": "所有 Checkbox 展示與拆解範例都用「把控件當參數傳進去」的組合寫法(<SelectionItem control={<Checkbox/>} label>),但共用底層規格白紙黑字「禁止直接用 SelectionItem」,而 RadioGroup 內部程式又把這寫法當合法用法 — 規格/範例/內部程式三方不一致(規格禁止的理由是「會失去 ARIA/鍵盤/表單」,但傳入 Checkbox 後這些其實由 Checkbox 提供,禁止理由對這寫法不成立)。",
+        "選項": [
+          "放寬規格:承認「有傳入控件」的組合寫法合法,把「絕對禁止」改成「禁止的是沒有控件的裸用法」。缺點:對外多一種公開組合模式要維護。",
+          "維持禁止、改範例:規格照舊,把 Checkbox 展示範例全改成對外正式的 <Checkbox label> 寫法,組合寫法僅留內部使用。缺點:要改一批範例。"
+        ],
+        "建議": "維持禁止當公開用法,把展示/anatomy 範例改用公開的 <Checkbox label> API(組合寫法純內部由 RadioGroup 消費),規格補一句釐清「裸用=禁止、內部組合=允許」;理由:對外只暴露一種清楚的正式用法,符合「SelectionItem 是內部件」的既有定位。",
+        "相關findings": [
+          "packages/design-system/src/components/Checkbox/checkbox.stories.tsx:89 (+104-106)",
+          "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:570-585",
+          "packages/design-system/src/components/SelectionControl/selection-item.spec.md:43 (禁止直接用 SelectionItem)",
+          "packages/design-system/src/components/RadioGroup/radio-group.tsx:59 (內部把 control-passed 當合法「形狀 2 組合用法」)"
+        ]
+      },
+      {
+        "標題": "選單「已選項 + 鍵盤游標」的底色,MenuItem 和 DropdownMenu 現在不一致",
+        "現況": "MenuItem 規格與 DropdownMenu 規格「都」寫「選中底色是唯一指示器,滑鼠/鍵盤游標不可洗掉它」(維持 neutral-selected),但 DropdownMenu 的實際程式(為了鍵盤游標對比/無障礙)在「已選項+鍵盤游標」時把底色加深到 neutral-selected-active — 結果 MenuItem 不變、DropdownMenu 加深、兩份規格都沒跟上程式。",
+        "選項": [
+          "統一「加深」:承認鍵盤游標落在已選項上也需要看得見(無障礙),讓 MenuItem 一起加深並更新兩份規格。缺點:改動較大、要驗證所有選單。",
+          "統一「不洗掉」:把 DropdownMenu 程式改回 neutral-selected 對齊既有規格。缺點:鍵盤使用者較難看出游標正停在已選項上。",
+          "保留差異但補文件:承認 DropdownMenu 因鍵盤導覽的無障礙需求例外加深,更新兩份規格明文記錄此例外。缺點:同類元件行為不完全一致。"
+        ],
+        "建議": "先確認「鍵盤游標停在已選項上」是否真需要額外對比(無障礙角度通常需要):需要→選「統一加深」最一致;想最小改動→選「保留差異補文件」;避免選「統一不洗掉」把已驗證的無障礙修正退回。",
+        "相關findings": [
+          "packages/design-system/src/components/Menu/menu-item.spec.md:160 (selected×hover 維持 neutral-selected)",
+          "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:267 (selected×highlighted 深化 neutral-selected-active)",
+          "packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:212 (2026-07-04 spec 仍說維持 neutral-selected,與 code drift)"
+        ]
+      },
+      {
+        "標題": "Coachmark 的錨點元素要不要改成更嚴格的單一元素契約",
+        "現況": "引導提示(Coachmark)指向的錨點元素目前接受任意內容(寬鬆 ReactNode),而 DS 其他浮層(Popover/Tooltip/HoverCard)的觸發器都用較嚴格的 asChild 單一元素契約(把浮層樣式直接套在你自己的元素上)。",
+        "選項": [
+          "收成 asChild:要求傳單一元素,與其他浮層一致、定位更可控。缺點:破壞性變更,原本傳多個/裸文字的消費者要改。",
+          "維持彈性:保留任意內容,Coachmark 自己包一層定位容器。缺點:與其他浮層不一致、錨點定位較不可控。"
+        ],
+        "建議": "收成 asChild 與其他浮層 primitive 統一(降低認知成本、定位更可控);屬破壞性變更需標明發版,但爭議低可快速拍板。",
+        "相關findings": [
+          "packages/design-system/src/components/Coachmark/coachmark.tsx:60 (children ReactNode → asChild)"
+        ]
+      }
+    ]
+  }
+}

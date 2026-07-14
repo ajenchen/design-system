@@ -1,0 +1,26 @@
+{
+  "dim": 28,
+  "title": "Manual story 拆分原則(WithStartIcon/WithEndIcon 該合被拆 anti-pattern)",
+  "mechanism": "per-component grep *.stories.tsx 找同一 affordance 內 prop-variation 被拆成多 story(❌ WithStartIcon+WithEndIcon → ✓ WithIcon grid);判準 SSOT = .claude/rules/story-rules.md 範例最高準則「拆分原則」",
+  "filesScanned": 79,
+  "scope": "全 79 showcase *.stories.tsx(64 components + 6 patterns + 9 tokens;排除 anatomy/principles 層)全掃 NO-SAMPLE",
+  "findings": [],
+  "verdict": "CLEAN — 0 finding",
+  "evidence": {
+    "literal_anti_pattern_retired_with_rationale": [
+      "components/Button/button.stories.tsx:132 — `WithStartIcon` retired(Dim 25 earn-existence),startIconRule 已教同 principle",
+      "components/Chip/chip.stories.tsx:52 — @story-trait-rationale WithIcon retired 2026-05-15 F-migration(anatomy 擁 icon slot showcase)",
+      "components/Input/input.stories.tsx:70 — @story-trait-rationale WithIcon retired 2026-05-15 F-migration",
+      "components/Menu/menu-item.stories.tsx:59 — @story-trait-rationale WithStartIcon retired 2026-05-17 per audit Dim 24/25(違 story-rules.md L42 explicit ban)",
+      "components/SegmentedControl/segmented-control.stories.tsx:1 — @story-trait-rationale 6 stories(含 WithStartIcon)retire 2026-05-17,收斂成單一 ViewSwitcher 情境入口"
+    ],
+    "similar_named_pairs_verified_legitimate": [
+      "components/SelectionControl/selection-item.stories.tsx WithPrefixIcon(前綴圖示,24px inline)vs WithPrefixAvatarBlock(前綴頭像,32px block 對齊 text-block center)— 不同 affordance + 不同 alignment 常量,'Compound 有 new constraint 才分' 合規;primitive 結構文件(tags !dev)",
+      "components/Menu/menu-item.stories.tsx AvatarInline(無 description → inline 20/24px)vs AvatarBlock(+ description → block 32/40px)— item-anatomy 的 inline-vs-block avatar 對齊常量,distinct teaching,comment L59-62 明文保留理由",
+      "components/Tabs/tabs.stories.tsx WithSuffix(尾端 inline-action split-click 複合)vs AllWithStartIcon(首端 startIcon '全有全無' canonical 規則)— 不同 affordance,'不同 affordance 必分' 合規,非 same-affordance icon-position 拆分",
+      "components/Field/field.stories.tsx WithSlider / SliderAlignsWithOtherFields / SliderWithLiveNumberInput — 三 story 各教基本包裝 / 跨欄位基線對齊 / 雙向綁定,distinct constraint 各自 earn existence"
+    ],
+    "coexisting_start_end_pairs": "0 — DS-wide 無任何 showcase 檔同時存在 WithStartIcon+WithEndIcon(或 Left/Right icon-position)同 affordance 拆分對"
+  },
+  "note": "此 dim 歷史上曾廣泛違反(Button/Chip/Input/Menu/SegmentedControl 皆有 WithStartIcon 拆分),但已於 2026-05-15~05-17 F-migration + Dim 24/25 strict re-run 全數 retire,並在原檔留 @story-trait-rationale 記錄退場理由。剩餘 icon/prefix/suffix 類 story 皆單一 position 或教不同 affordance/常量。誠實回報 CLEAN,非湊數。"
+}

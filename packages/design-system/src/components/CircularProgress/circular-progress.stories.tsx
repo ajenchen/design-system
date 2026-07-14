@@ -15,8 +15,8 @@ import { DataTable } from '@/design-system/components/DataTable/data-table'
  * - 無 value → indeterminate 旋轉(取代舊 Spinner 用法)
  * - 有 value → determinate arc + track(可量化進度,如 inline 上傳 %)
  *
- * 範例均對標世界級產品的真實使用場景(Stripe 付款送出、GitHub PR merging、
- * Figma 雲端同步、Notion workspace loading、Google Drive 上傳)。
+ * 範例均對標世界級產品的真實使用場景(GitHub 儲存庫搜尋、檔案上傳佇列、
+ * 雲端同步狀態表格、workspace 切換載入)。
  * 設計規則詳見 `circular-progress.spec.md`。
  */
 

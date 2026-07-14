@@ -198,7 +198,7 @@ export const SelectedStyleRule: Story = {
     <div>
       <Rule
         title="選中 = primary text + border，底色不變"
-        note="對齊 SegmentedControl / Tabs 的選中 canonical(primary base 同時染文字和線條;semantic.css SSOT,2026-07-06 拍板自 hover 階改 base——瞬時弱、持續強)。用 bg 強調會讓 chip 看起來變成「按鈕」,混淆多選濾鏡的語意"
+        note="對齊 SegmentedControl / Tabs 的選中 canonical:primary 底色同時染文字和線條(瞬時 hover 用弱色、持續選中用強色)。用 bg 強調會讓 chip 看起來變成「按鈕」,混淆多選濾鏡的語意"
       >
         <ChipGroup type="multiple" defaultValue={['react', 'ts']}>
           <Chip value="react">React</Chip>

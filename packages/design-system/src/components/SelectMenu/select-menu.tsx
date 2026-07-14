@@ -44,6 +44,8 @@ export interface SelectMenuOption {
   label: string
   description?: string
   icon?: LucideIcon
+  /** icon 染色 className(2026-07-08:status 類彩色 option;M30 primitive schema 擴充) */
+  iconClassName?: string
   avatar?: AvatarData
   disabled?: boolean
   group?: string
@@ -352,8 +354,13 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           // `state.value ||` guard 不覆蓋(dist source 驗證);Popover 關閉即 unmount(無
           // forceMount)→ 每次開啟 remount 重新生效。需搭配下方 CommandItem value={opt.value}。
           defaultValue={selectedOption?.value}
-          // 2026-07-06 A11y:combobox accessible name — cmdk 永遠渲 sr-only <label htmlFor={inputId}>,
-          // 僅 searchable(真的有 input)時傳,避免 orphan label 指向不存在的 input id。
+          // 2026-07-06 A11y:combobox accessible name。2026-07-14 修正註解(cmdk 1.1.1 dist 實證):
+          // cmdk **無條件**渲 sr-only <label htmlFor={inputId}>(dist/index.mjs
+          // `createElement("label",{htmlFor:U.inputId,id:U.labelId,...},b)` — label prop 只決定
+          // 文字內容,不決定 label 元素是否渲染)。故 non-searchable 時「空 label + htmlFor 指向
+          // 不存在的 input」仍存在(upstream cmdk 限制;空 label 無 accessible name,不產生朗讀
+          // 內容)。僅 searchable(真的有 input)時傳內容 = 避免 non-searchable 帶 search
+          // placeholder 的 accessible name 卻無對應 input;真要消除 orphan label 需 upstream 修。
           label={searchable ? searchPlaceholder : undefined}
           className="bg-transparent"
         >
@@ -437,6 +444,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                       <MenuItem
                         size={size}
                         startIcon={opt.icon}
+                        startIconClassName={opt.iconClassName}
                         avatar={opt.avatar}
                         description={opt.description}
                         checkbox={multiple}
@@ -535,7 +543,12 @@ SelectMenu.displayName = 'SelectMenu'
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const selectMenuMeta = {
   component: 'SelectMenu',
-  family: 4,
+  // 2026-07-14 修 family 自我矛盾:原 Phase-1 mechanical 填 4(Field control),與 spec body
+  // 「Layout Family:非上述 family — composite / multi-section」矛盾。SelectMenu 是 Popover +
+  // Command composite overlay(trigger 由 consumer Select / Combobox own,Family 4 是 trigger
+  // 側 field control 的事);對齊 DS composite 慣例(Accordion / Command / Popover meta 皆
+  // family: null + spec frontmatter composite)。
+  family: null, // non-family composite / overlay(對齊 spec frontmatter composite)
   variants: {
 
   },

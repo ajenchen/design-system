@@ -146,7 +146,7 @@ export const ScenarioMatrix: Story = {
       <div>
         <H3>Table 空資料</H3>
         <div className="border border-border rounded-lg p-8">
-          <Empty description="無資料" className="py-12" />
+          <Empty description="還沒有訂單" className="py-12" />
         </div>
       </div>
 

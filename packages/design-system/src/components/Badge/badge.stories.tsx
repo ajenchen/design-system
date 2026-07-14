@@ -48,8 +48,10 @@ export const Dot: Story = {
   name: '圓點模式',
   render: () => (
     <div className="flex items-center gap-4">
-      <Badge dot variant="critical" />
-      <Badge dot variant="high" />
+      {/* dot 無文字 → 必帶 aria-label(badge.spec.md 禁止事項:「dot 模式不帶 aria-label——
+          無文字的 dot 對 screen reader 完全不存在」) */}
+      <Badge dot variant="critical" aria-label="有緊急待處理事項" />
+      <Badge dot variant="high" aria-label="有新通知" />
       <span className="text-caption text-fg-muted">6×6px attention 點 —— 只 critical / high(單一注意點,不分 medium/low)</span>
     </div>
   ),

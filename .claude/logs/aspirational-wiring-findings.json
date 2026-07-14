@@ -1,0 +1,894 @@
+{
+ "_meta": {
+  "source": "aspirational-wiring-hunt wf_8c020486-ae8(2026-07-10;521 claims,117 confirmed;chunks 33/40-43 + ~120 adversarial 因 session 配額未跑,19:00 後補)",
+  "fixedInSession_2026_07_10": [
+   ".claude/references/drag-canonical.md:3",
+   ".claude/references/governance-audit-coverage.md:13",
+   ".claude/references/governance-audit-coverage.md:15",
+   ".claude/references/governance-audit-coverage.md:16",
+   ".claude/references/governance-audit-coverage.md:20",
+   ".claude/references/governance-audit-coverage.md:22",
+   ".claude/references/item-anatomy-recipe.md:201",
+   ".claude/references/README.md:42",
+   ".claude/references/ssot-consultation.md:53",
+   "CLAUDE.md:200",
+   ".claude/skills/deep-audit-cross-codex/SKILL.md:229"
+  ],
+  "resumeWorkflow": {
+   "runId": "wf_8c020486-ae8",
+   "scriptPath": "/Users/chenqiren/.claude/projects/-Users-chenqiren-Library-CloudStorage-GoogleDrive-qijenchen-gmail-com--------my-project/3fb5856b-7b97-40a4-afa1-5db311326bea/workflows/scripts/aspirational-wiring-hunt-wf_8c020486-ae8.js"
+  },
+  "status_2026_07_10_2130": {
+   "wave1_commit": "947f2f5a(13 條 + Validator H 上膛 + 2 隱藏 bug)",
+   "wave2_commit": "8f540026(11/12 組 ~90 條,誠實描述優先)",
+   "BLOCKED_credit_reset": "Jul 14 10am(Asia/Taipei)— 以下需 subagent/credit 恢復後補",
+   "remaining": [
+    "group11(design-system-audit SKILL.md 22條)= 已驗證解決:全 (planned)/soft BLOCKER/16 cat/plugin-install stale 標記現況 = 0(第二波順手同修掃掉);content-quality --check 無漂移",
+    "~50 條 adversarial 二次驗證未跑(多數對應 finding 已於 wave1/2 修;未驗 = 低風險殘留)",
+    "upgradeCandidates(升機制路線,~40 條)= 刻意未做(誠實描述優先,非 defer);SSOT-affecting 需 user 拍板才動",
+    "deep audit cross codex:需 (a) credit 恢復 (b) 新 session=Fable 5(本 session Opus 4.8)— user 條件未滿足,未跑"
+   ]
+  },
+  "verification_2026_07_10_mainloop": {
+   "method": "主迴圈逐 finding 對照 live 檔案(非憑 stale JSON;line-shift 用 whole-file search 繞過)",
+   "result": "117/117 drift-correction 全驗證已落地(114 heuristic-confirmed + 3 suspicious 近看 resolved + 18 no-quote 逐一對 live 檔 resolved)",
+   "suspicious_closed": [
+    "#13 ssot-consultation:53 已改 check_ssot_header_declaration",
+    "#44 pixel-audit hook glob 已放寬 visual-audit*.mjs",
+    "#66 SKILL:134 已改 lib/_overlay_handcraft + PostToolUse WARN"
+   ],
+   "bug_already_closed": [
+    "#26/#30 block_prototype_imports.py:29 已有 os.path.relpath 絕對路徑正規化"
+   ],
+   "upgradeCandidates_deferred_pending_signoff": {
+    "note": "「升機制」路線:多為 P0 BLOCKER 偵測加寬 = brick 風險(對齊今日 N6 教訓:加寬 BLOCKER 未 breadth-test → 誤殺)。誠實描述已落地(doc honest);機制加寬需 user 拍板 + 逐條 breadth-test",
+    "mechanism_widening": [
+     "#14 check_naming_and_abstraction D.3 regex 加寬 color-opacity",
+     "#39 stop_self_audit M7 加分支要求 adversarial-Workflow 證據",
+     "#71 check_opacity_token_usage 加 gap/fraction category",
+     "#87 utility-registry 補 3 shadcn alias"
+    ],
+    "cosmetic_refactor": [
+     "#79 inject hook heredoc→jq(純輸出格式,無 enforcement 變更)"
+    ]
+   },
+   "unrun_original_scan": "wiring-hunt 原始 521 claims 的 chunks 33/40-43 + ~120 adversarial 因當時 subagent 配額未跑;主迴圈可補掃(非真卡死)"
+  },
+  "upgradeCandidates_resolved_2026_07_11": {
+   "directive": "user 選『先做完 5 條升機制再跑 codex』",
+   "results": {
+    "#79 post-main-ssot inject": "silent-inject bug 修:heredoc stdout → jq hookSpecificOutput.additionalContext(對齊 inject_deploy_url idiom);live hook 實測注入成功",
+    "#14 naming D.3 regex": "已在既有 code(regex 已是 var(--color-[a-z][a-z-]*-[0-9]{1,2}) widened 版;ssot-index:20 已有 hook 全名)— breadth-test 確認抓 deep-orange-9/red-10 不誤殺 semantic",
+    "#71 opacity gap/fraction": "接線為 soft WARN(非 P0 block,registry rationale「flag for human review」;避免誤殺 4 個既有 micro-gap 檔;fraction 用 registry 明列 14 條不含 w-1/2)+ 13/13 test + dim 47 doc 更新",
+    "#87 token_hygiene SSOT-drive": "SHADCN_PATTERN 改由 registry jq 組(12 條含 text-background,hardcoded fallback);registry consumed_by 加 _token_hygiene;0 既有 text-background 用途=不 brick;WARN-style 本就不 block",
+    "#39 adversarial-audit discipline": "誠實標註為紀律(非機械閘)+ 記錄為何不機械化 —— 硬做 BLOCKER 會自我 brick(額度耗盡無法 dispatch Workflow → 每個 completion 被擋);未來可選 soft WARN。不建自 brick 的閘 = 對齊今日 N6 教訓"
+   },
+   "verify": "run-all 79/79 + content-quality clean + counters clean + fork --check PASS + harness PASS + #71 opacity test 13/13"
+  }
+ },
+ "findings": [
+  {
+   "cite": ".claude/references/audit-coverage-vs-24-checklist.md:48",
+   "verdict": "STALE",
+   "evidence": "宣稱的 `.claude/hooks/check_hardcoded_strings.sh` 已不存在該路徑 — 2026-05-13 consolidation fold 成 `.claude/hooks/lib/_hardcoded_strings.sh`,由 post_edit_dispatcher.sh:48 chain(settings.json:346 註冊 PostToolUse Write|Edit|MultiEdit)。機制本身完整:lib/_hardcoded_strings.sh:28 scope DS components/patterns tsx、:31 skip stories、:110 CJK ≥3 detection、:146 English sentence-case、:60+:88 `// i18n-allow` 白名單(含 block-level)。機制已變(獨立 hook → dispatcher lib)描述沒跟。",
+   "fix": "audit-coverage-vs-24-checklist.md:48 改寫為「`post_edit_dispatcher.sh → lib/_hardcoded_strings.sh` PostToolUse flag(2026-05-13 folded)」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/build-ui-canonicals.md:64",
+   "verdict": "STALE",
+   "evidence": "「手刻 anti-pattern signals → design-system-audit Dim 21」已失準:SKILL.md 現行 Dim 21(Group H)=「連續 item list wrapper gap」,非手刻 signals;audit-prompts.md:698 明文「L1. Stories / consumer code 手刻繞 DS canonical …(legacy cross-ref — 不在 SKILL.md dim table;原佔 dim 21 slot,renumber 避免與現行 dim 21『連續 item list wrapper gap』撞號)」。手刻 signals 現住 audit-prompts.md L1 + SKILL.md:191 Dim 71 Pattern 10(consumer raw primitive)。後半 /visual-audit(D5)正常。",
+   "fix": "build-ui-canonicals.md:64 改指「design-system-audit/references/audit-prompts.md『L1 手刻繞 DS canonical』+ Dim 71(consumer 手刻 Pattern 10)」,不再引 Dim 21。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/drag-canonical.md:3",
+   "verdict": "ORPHAN",
+   "evidence": "`stale-pending-prune` marker 全 repo 唯一出現處就是 drag-canonical.md 自己(grep -rn .claude/ 只回 1 檔);宣稱的消費者 /knowledge-prune 無任何步驟掃 references/ stale marker:SKILL.md:81-88 D2 scope = dead hooks(audit:hook-quality)/ stale memories(memory/*.md)/ unused skills,references/ 不在內;實證:marker 2026-05-18 標「下次 /knowledge-prune 評估」,其後 ≥6 次 prune(MEMORY.md prune history 05-27/05-28/05-29/06-02/06-11/07-07)全部跑過而 marker 原封不動 = 消費點不存在",
+   "fix": "二擇一:(a) knowledge-prune SKILL D2 scan 加一行 `rg -l 'stale-pending-prune' .claude/references/` → 命中即列 retire/update 候選;(b) 當場兌現 marker 自己的承諾 — 評估後 update「現況 audit」表或標 inactive,移除 pending 措辭",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/governance-audit-coverage.md:13",
+   "verdict": "OVERCLAIM",
+   "evidence": "「deep-audit A.0 全讀」不含 skills:deep-audit SKILL.md:60-68 A.0 強制 read sweep 六項 = CLAUDE.md / .claude/rules ×5 / references ×4 / 全 spec.md / memory — **無 `.claude/skills/*/SKILL.md`**;phase-a-workflow.md:3-38 canonical file list 同樣零 skills 條目。row 13 弱軸備註還寫「內容正確性靠 A.0 read + prune」= 依賴一個根本不讀 SKILL.md 的步驟。其餘三機制真:D7(knowledge-prune SKILL.md:111)/ check_file_size_budget.sh:44 SKILL.md BUDGET=250 / governance-health skill 存在(月度 metric 掃 skill-invokes.jsonl);×22 實測 `ls .claude/skills/*/SKILL.md | wc -l` = 22",
+   "fix": "二擇一:(a) deep-audit SKILL.md A.0 sweep 加第 7 項「`.claude/skills/*/SKILL.md` ×22 全讀」+ phase-a-workflow.md 同步(讓宣稱成立);(b) row 13 刪「deep-audit A.0 全讀」、弱軸備註改「內容正確性僅靠 prune D7 + governance-health,無 read 閘」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/governance-audit-coverage.md:15",
+   "verdict": "OVERCLAIM",
+   "evidence": "三機制只有 1 個真涵蓋 references/:(1) check_canonical_propagation.sh 檔內 grep 'references' 0 命中,scope 明定 E.1 `*.principles.stories.tsx` / E.2 ts,tsx L3-import / E.3 `*.spec.md`(check_canonical_propagation.sh:13-15)— **完全不稽核 .claude/references/**,cite 錯 hook;(2) counters「live-count 檔」:sync-governance-counters.mjs liveCountFiles(:218-227)與 mRuleTextFiles(:127-136)兩清單合計 **0 個 `.claude/references/` 檔**(只有 skill 底下的 references/ 子目錄檔),連 governance-audit-coverage.md 自己的「hooks(56)/×22/76 .mjs」計數都沒被 counter 管;(3) 唯 dim 91 registry gate 真:audit-failure-class-coverage.mjs:26 讀 `.claude/references/failure-class-registry.json`、registry 缺失即 fail-closed(:32),chain 進 release-preflight.mjs:66",
+   "fix": "row 15 改 cite 真實稽核者:「dim 91 registry gate(failure-class)+ check_story_invariants R8(story-baseline-registry.json 消費)+ prune D1/D4 季度」並刪 check_canonical_propagation;若要讓 counters 宣稱成立,把含計數的 .claude/references/governance-audit-coverage.md 加入 sync-governance-counters.mjs liveCountFiles",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/governance-audit-coverage.md:16",
+   "verdict": "OVERCLAIM",
+   "evidence": "「沒 pointer = D8 抓 orphan」不成立:D8 scan scope = `~/.claude/.../memory/*.md`(prune-dimensions-d5-d10.md:32-36),抓的三類是 stale memory / 「memory file 存在但 MEMORY.md 沒 entry」/ 「entry 存在但 file 不在」— **方向相反**,不掃 `.claude/planning/`;knowledge-prune SKILL.md + prune-dimensions-d5-d10.md 全文 grep 'planning' 0 命中。planning doc 失去 memory pointer 時(memory 檔被 prune/合併)無任何維度會 flag 該 planning doc 為 orphan",
+   "fix": "prune-dimensions-d5-d10.md D8 加一行 scan:「`ls .claude/planning/*.md` 逐檔 grep memory/*.md + MEMORY.md 是否被引用;無引用 = planning orphan 候選(存檔性質可標 archived,活的必補 pointer)」;或 row 16 改寫為「靠 D1/D4 季度文字掃 + C.0b 收尾對照,無 orphan 偵測」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/governance-audit-coverage.md:20",
+   "verdict": "OVERCLAIM",
+   "evidence": "knowledge-prune SKILL.md:81-87 D2 只列三個掃描對象:dead hooks(audit-hook-quality 讀 hook-fires-per-hook.jsonl)/ stale memories / unused skills(skill-invokes.jsonl)— 完全沒有 `.claude/commands/`(gov-status.md)與 `.claude/agents/`(canonical-reviewer.md)的 bullet;references/prune-dimensions-d5-d10.md 與 governance-health SKILL.md rg \"commands|agents\" 皆 0 hit。commands 只「間接可能」被抓(slash command 走 Skill tool 會被 log_skill_invokes.sh:18-21 記進 skill-invokes.jsonl,但 D2 文字只說掃 skills,不保證枚舉 commands home);agents 走 Task tool,無任何 invoke log、無任何 scan bullet → 「D2 dead 偵測兜底」對 agents 是零消費點",
+   "fix": "最小修:knowledge-prune SKILL D2 補一 bullet「commands:一併枚舉 .claude/commands/*.md 對照 skill-invokes.jsonl(slash command 同走 Skill tool log);agents:.claude/agents/*.md 用 git log recency + transcript grep 判 dead」;或把 coverage row 稽核者欄誠實改為「D2(commands 經 skill-invokes log;agents 目前無偵測,人工季度)」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/governance-audit-coverage.md:22",
+   "verdict": "OVERCLAIM",
+   "evidence": "機制本體真:scripts/check-codex-freshness.mjs:87-99 CLI installed vs npm latest 落後即 exit 1(訊息指示自動 npm i -D @openai/codex@latest)、:101-106 config.toml 有 model pin 即 exit 1、:108-143 effort probe/cache — 「CLI 落後自動升 + 禁 model pin」屬實;B.0 消費點也真(deep-audit SKILL.md:150 brief codex 前必先跑)。但時機欄「每次 codex 使用」超前宣稱:codex-collab SKILL.md(一般 codex 使用的 M31 canonical)rg \"freshness|check-codex\" = 0 hit,.claude/hooks/ 也無任何 hook 在 codex exec 時 chain 此 script(rg check-codex-freshness 只中 deep-audit SKILL + 本 coverage 表 + memory 描述)→ deep-audit Phase B 以外的 codex 使用(codex-collab 路徑)無 gate",
+   "fix": "最小修二選一:(a) codex-collab SKILL Step 0 transport 段加「dispatch 前必跑 node scripts/check-codex-freshness.mjs(--offline 可)」;(b) coverage 表時機欄改「deep-audit B.0 前置(codex-collab 一般路徑未接)」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/item-anatomy-recipe.md:201",
+   "verdict": "STALE",
+   "evidence": "4 條 rg guard 中 2 條指向已不存在的舊路徑:item-anatomy-recipe.md:207 `rg '<ItemPrefix>\\s*<[A-Z]' src/design-system` 與 :214 `rg \"group/action...\" src/design-system` — 實測 `ls src/design-system` = No such file or directory(Phase 1 已遷 packages/design-system/src,該路徑存在確認);rg 對不存在路徑直接 error(exit 2),guard 的判準「任何一條結果非空 = drift 要修」對這兩條永遠失真。:210-211 兩條已用新路徑正常",
+   "fix": "最小修:item-anatomy-recipe.md:207 與 :214 的 `src/design-system` 改為 `packages/design-system/src`(2 處字串替換)",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/README.md:42",
+   "verdict": "OVERCLAIM",
+   "evidence": "「orphan file 定期 prune 會 retire」無對應消費點:knowledge-prune SKILL.md D1-D4(:70-107)與 references/prune-dimensions-d5-d10.md D5-D10 沒有任何維度枚舉 .claude/references/ 檔案驗 citedness — D2(:81-87)只掃 hooks/memories/skills,D8(prune-dimensions:30-37)orphan 只限 memory home,governance-health SKILL rg orphan = 0 hit;scripts/check-dangling-infra-ref.mjs 是反向檢查(doc cite 的 target 必存在),不抓「存在但零 cite」的 reference;即 references 出現 orphan 檔,現行 prune 流程沒有一步會 fire",
+   "fix": "最小修:knowledge-prune SKILL D2 加 bullet「references orphan:枚舉 .claude/references/*,rg 檔名 across .claude/skills/ + CLAUDE.md + packages/**/*.spec.md,0 cite = retire 候選」;或 check-dangling-infra-ref.mjs 加 --orphan 反向 mode 進 preflight",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/scenario-definition.md:26",
+   "verdict": "OVERCLAIM",
+   "evidence": "scripts/setup-netlify-access.mjs 存在且 edge-function 機制真接線(template netlify.toml:21-23 [[edge_functions]] path=\"/*\" function=\"basic-auth\" + netlify/edge-functions/basic-auth.ts 存在,mirror ALLOWLIST 也含),但 script **不設** STORYBOOK_BASIC_AUTH env var — 檔頭自述(setup-netlify-access.mjs:26-27)「What's NOT automatable…5. 設 STORYBOOK_BASIC_AUTH env var — script 印 dashboard URL + step-by-step,user 加一條 env var(30 秒)」;實作(:123-159)只印 dashboard URL + 問 user「已設好?(y/N)」。宣稱「npm run setup:netlify 設 Netlify env」= 存在但沒做到「設」這件事(automates 的是 CLI install/login/sites:create/link)",
+   "fix": "最小修:scenario-definition.md:26 改寫為「npm run setup:netlify(自動 site create/link + **引導**在 Netlify dashboard 設 STORYBOOK_BASIC_AUTH env var…)」;或升級 script 用 `netlify env:set STORYBOOK_BASIC_AUTH` 真自動化後保留原句",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/scenario-definition.md:59",
+   "verdict": "STALE",
+   "evidence": "path filter 真存在且 doc 列的 5 組 path 全在 workflow(mirror-to-published-template.yml:27-45:apps/template/**、create-app/setup-netlify-access/check-plugin-installed/build-published-template-mirror.mjs、.devcontainer/**、template/ds-product-template/**、package.json),但機制 2026-06-16 已改雙觸發:新增 `workflow_run: workflows:[\"Release\"] types:[completed]`(yml:52-57)且成為發版主路徑(push 路徑在版本未上 npm 時 graceful skip,yml:150-157 else 分支 exit 0)— doc §3 仍只寫「Trigger:DS push main + template-affecting paths」。path list 也 drift(workflow 另有 audit-consumer-a11y/deploy-url/lint-ds-internal-imports/sync-all/refresh-fork-launchers/verify-consumer-css-entry + packages/*/package.json)",
+   "fix": "scenario-definition.md §3 Trigger 段補「雙觸發:workflow_run[Release success] = 發版主路徑 + push main(scaffold paths,版本未上 npm 時 graceful skip)」,path 列表改成 pointer「以 yml paths 為準」不逐條複寫",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/scenario-definition.md:72",
+   "verdict": "STALE",
+   "evidence": "fail-loud 半句 WIRED:yml Push step `if [ -z \"$CROSS_REPO_TOKEN\" ]` → 印中文一次性 setup 指引(PAT 建法 3 步)+ exit 1(mirror-to-published-template.yml:86-97),不 silent succeed ✓。但「force-push」半句機制已變:workflow 註解明寫「Clone-and-overlay(非 force-push 整 tree),保留 published repo 既有 .github/workflows」,實作 = git clone + `rsync -a --checksum --delete --exclude='.github/workflows'` + fetch-rebase-retry 迴圈 `git push \"$REPO_URL\" main`(無 --force,5 次重試,yml:~100-184)— 2026-05-29 PAT workflow-scope 問題 + 2026-06-07 競態修改後就不是 force-push 了",
+   "fix": "scenario-definition.md §3 Push 行(:72)+ M7 test row「Force-push idempotent」改寫為「clone-and-overlay rsync --checksum + fetch-rebase-retry push(保留 .github/workflows)」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/ssot-consultation.md:53",
+   "verdict": "STALE",
+   "evidence": "line 53 寫「check_ssot_consultation.sh(retired;改靠 mindset #2 + check_canonical_propagation.sh)」— check_canonical_propagation.sh 確實存在且 registered(.claude/settings.json:200),但機制已再進化沒跟上:2026-07-07 `check_ssot_header_declaration.sh` 精簡復活(真存在,.claude/hooks/check_ssot_header_declaration.sh:1-40:Write 新建 components/patterns production tsx 缺「── 消費的 SSOT ──」段 → P0 BLOCKER,@ssot-header-exempt escape),registered .claude/settings.json:276 + hooks/hooks.json:134。CLAUDE.md `# SSOT 消費 canonical` 段已寫復活,ssot-consultation.md(本檔正是該段宣告的 SSOT owner)line 53 仍停在 retired-only 敘述 — 恰是本檔強制的檔頭段如今有機械驗證卻自述「無 hook」",
+   "fix": "ssot-consultation.md:53 改為「原 check_ssot_consultation.sh retired;2026-07-07 以 check_ssot_header_declaration.sh 精簡復活(Write 新建 production tsx 無宣告段 → P0 BLOCKER;品質靠 audit dim 1 + check_canonical_propagation.sh)」,對齊 CLAUDE.md 現行文字",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/ssot-index.md:20",
+   "verdict": "OVERCLAIM",
+   "evidence": "消費點存在:check_naming_and_abstraction.sh:132-163 D.3(P1 WARN,registered settings.json:208)掃 tsx 內 `var(--color-[a-z]+-[0-9](-opaque)?)`。但 regex 沒做到「禁 primitive 色名」全稱宣稱:實測 `var(--color-deep-orange-9)`(hyphen hue,`[a-z]+` 不含 `-`)與 `var(--color-red-10)`(雙位數 step,`[0-9]` 只吃單位數)皆不命中,而兩者是真實 primitive token(primitives.css:119,240)— 整條 deep-orange hue + 全 hue step-10 逃逸(M7 broad-vs-narrow gap)",
+   "fix": "D.3 regex 改 `var\\(--color-[a-z][a-z-]*-[0-9]{1,2}(-opaque)?\\)`(順帶 ssot-index.md:20 補 hook 全名 check_naming_and_abstraction.sh 便查)",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/ssot-index.md:34",
+   "verdict": "ORPHAN",
+   "evidence": "消費點不存在:design-system-audit/SKILL.md:146 的 Dim 38 = 「Inline-action gap canonical」,非 ssot-index 反 grep verify;`git log -S \"ssot-index\"` 對 SKILL.md 零 commit(從未接線),且 ssot-index.md 創檔 commit e524dc99 當時 Dim 38 已是 inline-action gap(創檔即錯指,非後來 renumber)。全 audit skill grep 「ssot-index / 反 grep」0 hit — 無任何 dim 執行本 index 的反 grep verify",
+   "fix": "ssot-index.md:34 刪錯指「audit Dim 38」,改指真實機制:「重大 round 結束 → 逐 row 反 grep owner spec/code 驗仍一致(/deep-audit-cross-codex Phase A 必讀清單已含本檔,phase-a-workflow.md:15)」;或真要 dim 級機械化 → 補一個 index-drift dim 再回填編號",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/ssot-index.md:38",
+   "verdict": "STALE",
+   "evidence": "機制已變描述沒跟:check_ds_anchor_preflight.sh:141-143 已於 2026-07-07(治理進化方向 2,對齊 user「SSOT canonical 必 P0 禁 soft」doctrine)升 `exit 2` P0 BLOCKER(bypass CLAUDE_BYPASS_DS_ANCHOR=1 audit-logged :103-108),ssot-index 仍寫「soft warn」;偵測面也已擴:非只 Field/DataTable/patterns,而是 DS primitive wrap 名單(:56)+ apps/** consumer(:43)+ 純手刻簽名 WARN 分支(:59-71)。同類 stale 已在 fork-classification 修過(2026-07-10),本檔此行漏同步",
+   "fix": "ssot-index.md:38 改「check_ds_anchor_preflight.sh(live,P0 BLOCKER,2026-07-07 升級;偵測 DS primitive wrap in production tsx/apps,bypass CLAUDE_BYPASS_DS_ANCHOR=1 audit-logged)」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/structural-token-retention.md:3",
+   "verdict": "STALE",
+   "evidence": "機制已變描述沒跟:SKILL.md:168 Dim 48 已 2026-05-21 升級為 chain deterministic script `scripts/audit-orphan-tokens.mjs --check`(明寫「不用 raw grep var()」),structural-keep 分類器內建於 script、classification SSOT = `tokens/orphan-tokens.spec.md`(script 檔頭 Cite 行),外加 baseline gate(2026-05-30)— 非「sub-agent 先過本 table」流程。本檔殘餘消費僅剩 SKILL.md:305 全 dim 通用 triple-verify layer (c) cross-check",
+   "fix": "本檔檔頭改述現制:「Dim 48 = audit-orphan-tokens.mjs --check(分類 SSOT → tokens/orphan-tokens.spec.md);本檔 6 類 table 供全 dim sub-agent findings cross-check(SKILL dispatch template layer c)」,或整檔併入 orphan-tokens.spec.md 留 pointer(Rule-of-3 收斂)",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/structural-token-retention.md:21",
+   "verdict": "STALE",
+   "evidence": "宣稱的 triple-verify 三層(var() grep / template-literal grep / 6 類 cross-check)已被 script 取代:audit-orphan-tokens.mjs 檔頭列 5 條 consumption path(var() / @theme bridge / @utility body / class-name match / JS literal mirror)+ structural-keep 分類器 + baseline gate,涵蓋且超過本段手動 grep 協議;SKILL.md:301-305 現行 sub-agent「Triple-verify finding rule」是另一套三層(file:line cite / spec 禁止事項 / canonical cross-check 含本檔),與本段描述不同。描述停在 2026-05-17 sub-agent 手動 grep 時代",
+   "fix": "本段重寫為 pointer:「retire 判定走 scripts/audit-orphan-tokens.mjs --check(5 消費路徑 + baseline gate);sub-agent findings 通用 triple-verify 見 design-system-audit SKILL.md dispatch template」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/references/structural-token-retention.md:42",
+   "verdict": "STALE",
+   "evidence": "SKILL.md:168 Dim 48 row 未 cite 本檔(cite 的 SSOT 是 `tokens/orphan-tokens.spec.md`),「Dim 48 sub-agent prompt 必 cite 本檔」的綁定不存在;本檔實際被 cite 之處 = SKILL.md:305 全 dim 通用 dispatch prompt template layer (c)(非 Dim 48 專屬),且 audit-prompts.md 無 dim 48 prompt。宣稱寫於 sub-agent 時代,Dim 48 改 script 後沒跟",
+   "fix": "「引用」段第 2 條改「.claude/skills/design-system-audit/SKILL.md:305 sub-agent dispatch template layer (c)(全 dim findings cross-check 通用)」,刪「Dim 48 prompt 必 cite 本檔」措辭",
+   "adversarial": null
+  },
+  {
+   "cite": "CLAUDE.md:40",
+   "verdict": "STALE",
+   "evidence": "機制本體 wired:log_governance_fires.sh:26-48 governance file 寫入 → append .claude/logs/hook-fires.jsonl(log 活躍,最新 entry 2026-07-10)。但描述「L2 Per-commit」與現行為不符:settings.json:391 註冊為 PostToolUse Write|Edit|MultiEdit = **per-edit** 觸發(hook 檔頭 :3 自述「log governance-relevant file writes」),非 per-commit;無任何 git-commit 觸發路徑",
+   "fix": "CLAUDE.md:40 改「L2 Per-edit(PostToolUse Write|Edit|MultiEdit governance-file 寫入):`log_governance_fires.sh` → `.claude/logs/hook-fires.jsonl`」— 一行措辭修正,機制不動",
+   "adversarial": {
+    "cite": "CLAUDE.md:40",
+    "agree": true,
+    "correction": "STALE 判定成立,對抗搜反證全數落空:(1) settings.json JSON-parse 證實 log_governance_fires.sh 唯一註冊在 PostToolUse + matcher Write|Edit|MultiEdit(settings.json:391;hooks.json:249 plugin mirror 同 event/matcher)= per-edit;(2) repo 真有 per-commit 路徑(.husky/pre-commit,core.hooksPath=.husky/_)但全文讀畢只跑 sync-memory/sync-version/sync-ds-canonical/DataTable invariants,零引用 log_governance_fires.sh 或 hook-fires.jsonl;.git/hooks 僅 *.sample;(3) 全庫 grep hook-fires.jsonl 唯一 writer = log_governance_fires.sh:48;(4) log 粒度佐證 per-edit:2026-07-10T04:53:15/04:53:43/04:54:48 三 entry 90 秒內(tool=\"Write\"),commit 頻率不可能。補強修法(M10 改一處看三處):除 CLAUDE.md:40 外,.claude/hooks/README.md:82 同句「L2 Per-commit」也 stale,兩處 source 一起改為「L2 Per-edit(PostToolUse Write|Edit|MultiEdit,script 內 case :26-28 自過濾 governance file)」;mirror(packages/design-system/CLAUDE.md:40 + ds-canonical/hooks/README.md:82)由 .husky/pre-commit 的 sync-ds-canonical.mjs 於 commit 時自動再生,勿手改。另注意 hook 檔頭 :3 自述「PostToolUse: log governance-relevant file writes」與新措辭一致,機制本體不動。"
+   }
+  },
+  {
+   "cite": "CLAUDE.md:76(audit dim 1 + check_canonical_propagation 接手)",
+   "verdict": "OVERCLAIM",
+   "evidence": "check_canonical_propagation.sh 消費點存在(settings.json:200 PreToolUse)且真跑 E.1 principles 命名 / E.2 L3 primitive import BLOCK / E.3 spec-impl default warn(hook lines 46-187)— 但三者無一驗「SSOT 消費宣告」品質。而 design-system-audit/SKILL.md:44 的 dim 1 =「cva defaultVariants 三方漂移」,與 SSOT 消費完全無關(真相關的是 dim 5 Token 消費紀律 SKILL.md:48、dim 54 nearest-canonical SKILL.md:174)。check_ssot_header_declaration.sh:6 檔頭同樣誤引「品質靠 audit dim 1」。宣稱 dim 1 接手 = 指向不做該事的機制。",
+   "fix": "把 CLAUDE.md:76 與 check_ssot_header_declaration.sh:6 的「audit dim 1」改為「audit dim 5 + dim 54」(或在某 dim 明文加入「消費的 SSOT 宣告品質」檢查再引用)。",
+   "adversarial": null
+  },
+  {
+   "cite": "CLAUDE.md:145(production code 由 preflight hook PreToolUse 攔;*.spec.md 由 stop_self_audit.sh 補位 post-action 攔)",
+   "verdict": "OVERCLAIM",
+   "evidence": "前半真:check_substantive_edit_approval_preflight.sh:31-49 PreToolUse 限 tsx/ts/css(spec.md 不進 case → 確實留給補位)、近 5 user msg 無 approval → exit 2 P0(:98-113),註冊 settings.json:236。後半 OVERCLAIM:stop_self_audit.sh 對 *.spec.md substantive edit 的攔截只存在於 Mechanism 4 的 codex-reply branch 內 — :151 `if [ \"$CODEX_REPLY_READ\" -gt 0 ]` 為外閘,\\.spec\\.md 的 SUBSTANTIVE_EDIT_RE(:182)與 design-no-approval jq 掃描(:225-251)全在此閘內。Claude-solo turn(未讀 codex reply)改 spec.md canonical 段落無 approval → 全檔無任何 mechanism 攔,claim 的「補位 post-action 攔截」對主要情境(非 codex turn)不成立。",
+   "fix": "最小修:把 stop_self_audit.sh :225-251 的 Edit/Write-production+approval 檢查抽出 codex branch 成獨立 mechanism,偵測範圍加 `\\.spec\\.md`(可保留 diff 規模 / canonical-keyword heuristic 避 typo false-positive);或改 CLAUDE.md:145 如實寫「spec.md 補位僅覆蓋 codex-collab turn」。",
+   "adversarial": null
+  },
+  {
+   "cite": "CLAUDE.md:157(Triple-verify before propose … Hook check_propose_pre_grep_verify.sh)",
+   "verdict": "OVERCLAIM",
+   "evidence": "hook 存在且註冊(settings.json:264 / hooks.json:122,PreToolUse Edit|Write|MultiEdit),但實際行為遠窄於「hook 機械強制」triple-verify 的宣稱(section 標題明寫 hook 機械強制):(1) 檔案範圍只 */planning|reports|handoff/*.md(:30-33)— M18 錨例(Sheet/inline-action/SurfaceBody)那種 chat reply 直接 propose 的主通道完全不可見;(2) 只檢「propose keyword 而無 file:line cite」(:44,:54),不驗三題(grep DS-wide / Read spec.tsx / canonical exception 對照)本身有無真跑;(3) P1 soft stderr + exit 0(:56-70),非 BLOCKER — 與本 repo 自家 doctrine「SSOT canonical 必 P0 非 P1 WARN」(memory feedback_ssot_mechanical_p0_not_p1)也不合。",
+   "fix": "最小修:CLAUDE.md:157 / meta-patterns M18 把「Hook check_propose_pre_grep_verify.sh 機械強制」改為如實描述「hook 僅對 planning/reports/handoff md 內 propose 文做 cite-presence P1 soft check;reply 通道靠 M18 mindset + check_propose_without_benchmark.sh UserPromptSubmit 提醒」;要真機械強制則在 stop hook 加「本 turn assistant 含 propose/選項 keyword 而 turn 內 Grep/Read trace < N → warn」。",
+   "adversarial": null
+  },
+  {
+   "cite": "CLAUDE.md:158",
+   "verdict": "OVERCLAIM",
+   "evidence": "偵測半邊全 wired:scripts/sync-governance-counters.mjs:74-268 建 drifts[](hooks/M-rules/dims/npm scope/plugin manifest/mirror allowlist),:319 `--check` exit 1;消費點 .claude/hooks/session_start_governance_check.sh:250-258(Check 10 每 session 跑 --quiet 注入 PRUNE_TRIGGERS)+ scripts/release-preflight.mjs:63(`--check` fail-closed)。實跑輸出 31 M-rules/91 dims/56 hooks、0 drift。但「auto fix」不存在:全檔唯一寫檔是 :300 log JSON(.claude/logs/governance-counters.json),無 --fix mode、無任何改寫 hardcoded 數字的 code path;修復靠 AI 收 session-start 注入 directive 後手動改,非機械 auto fix。",
+   "fix": "CLAUDE.md:158「drift 偵測 auto fix」改寫為「drift 偵測 fail-closed(release:preflight --check + session-start Check 10 inject 修復 directive)」;或真給 script 加 --fix mode 自動改寫 liveCountFiles 中的 stale 數字。",
+   "adversarial": null
+  },
+  {
+   "cite": "CLAUDE.md:200",
+   "verdict": "STALE",
+   "evidence": "「45 項」數字沒跟:.claude/skills/component-quality-gate/references/checklist.md 實際 checkbox = 35(awk 分段 Spec 12 / Code 13 / Stories 6 / Ship 4);SKILL.md:3 description、:87 簽結報告、:96 references 均自稱 35 項;只有 checklist.md:1 標題「完整 45 項」與 CLAUDE.md:200「45 項」寫 45。skill 本身存在且宣稱的三層真在(SKILL.md:56-73 Phase 4.5 Layer A/B visual、:54 chain code-quality-audit clean-code)。",
+   "fix": "CLAUDE.md:200 + packages/design-system/CLAUDE.md 同行 + checklist.md:1 的「45 項」→「35 項」;可加進 sync-governance-counters.mjs countPatterns(如 /\\b(\\d+)\\s*項/ scoped to quality-gate files)機械對齊。",
+   "adversarial": null
+  },
+  {
+   "cite": "CLAUDE.md:200",
+   "verdict": "OVERCLAIM",
+   "evidence": "block_prototype_imports.py 存在且 registered(.claude/settings.json:313,PostToolUse matcher Write|Edit|MultiEdit),但 :57-58 `should_check` 要求 `path.startswith(\"src/\")`(相對路徑)— harness Edit/Write tool_input.file_path 一律絕對路徑,永不匹配 → block 分支(:100-106 exit 2)實務上永不 fire。功能實測:同一含 explorations import 的檔,relative \"src/test.tsx\" → exit 2 攔截;absolute \"/tmp/hooktest/src/test.tsx\" → exit 0 放行。「強制隔離」目前是死邏輯。",
+   "fix": "在 should_check 前 normalize:`root = os.environ.get('CLAUDE_PROJECT_DIR', ...)`,絕對路徑先 `os.path.relpath(path, root)` 再比 `src/` prefix(同時保留相對路徑分支);加一筆 tests/ 用絕對路徑的 regression case。",
+   "adversarial": null
+  },
+  {
+   "cite": "packages/design-system/CLAUDE.md:145",
+   "verdict": "OVERCLAIM",
+   "evidence": "前半 WIRED:check_substantive_edit_approval_preflight.sh:38-49 scope(packages/design-system/src + apps + node_modules DS)、:98-113 無 approval keyword → exit 2 P0 BLOCKER,registered settings.json:236 PreToolUse。後半沒做到:stop_self_audit.sh 全檔 7 mechanisms 中 `\\.spec\\.md` 只出現在 Mechanism 4 sub-check(:181-188 SUBSTANTIVE_EDIT_RE),而該 sub-check 包在 `if [ \"$CODEX_REPLY_READ\" -gt 0 ]`(:151)之內 — 只有「本 turn 讀過 codex reply」的 turn 才會攔 spec.md edit。一般(非 codex)turn 改 spec.md 視覺結構/canonical 段落且無 approval → 無任何 post-action 攔截,「補位攔截」宣稱只在 codex-collab turn 成立。",
+   "fix": "二選一:(a) stop_self_audit.sh 加 codex-independent sub-check — 掃 this-turn Edit/Write `*.spec.md`(排除 typo-scale diff)+ 近 5 user msg 無 APPROVAL_RE → WARN/BLOCK;(b) 最小改字:root+mirror CLAUDE.md:145 改「*.spec.md 補位攔截目前僅覆蓋 codex-collab turn(stop_self_audit Mechanism 4),非 codex turn 靠 discipline」。",
+   "adversarial": null
+  },
+  {
+   "cite": "packages/design-system/CLAUDE.md:157",
+   "verdict": "OVERCLAIM",
+   "evidence": "check_propose_pre_grep_verify.sh 存在且 registered(settings.json:264 PreToolUse Edit|Write|MultiEdit),但做的遠小於宣稱:(a) :30-33 只 fire 在 `*/planning/*.md|*/reports/*.md|*/handoff/*.md` 檔案寫入 — triple-verify 的主戰場(chat 內 propose,含 2026-05-18 Sheet/inline-action/SurfaceBody 三個錨例)完全不在攔截面;(b) :56-70 P1 soft warn、恆 exit 0,無 BLOCK;(c) 只驗「content 有無 file:line cite」(:54),不驗三題中的 grep DS-wide / Read spec / canonical exception 任何一題。「三題全過才 propose…Hook 機械強制」與實況(窄面 soft cite-presence check)落差大。",
+   "fix": "最小修:root+mirror CLAUDE.md:157 + meta-patterns.md M18 行補註「hook = P1 soft,僅涵蓋 planning/reports/handoff 檔內 propose 的 cite-presence;chat propose 由 discipline + stop hook 補」。要真機械強制則需 Stop-hook 掃 last-assistant propose keyword + 本 turn Grep/Read trace(同 stop_self_audit M31 Phase-A-first 手法)。",
+   "adversarial": null
+  },
+  {
+   "cite": "packages/design-system/CLAUDE.md:158",
+   "verdict": "OVERCLAIM",
+   "evidence": "偵測半邊 WIRED:scripts/sync-governance-counters.mjs 實算 hooks/M-rules/dims/skills(L34-66)、掃 curated live-count 檔含 root+mirror CLAUDE.md/plugin.json/marketplace.json 的 count drift(L216-249)、npm scope/version 驗證,--check fail-closed(L319),且真被 chain:release-preflight.mjs:63(--check gate)+ session_start_governance_check.sh:250-257(--quiet 報告)。但「auto fix」無機械實作:全檔唯一 write 是 governance-counters.json 報告(L300),不重寫任何 referencing file — drift 修復靠 AI 讀報告手修。「機械對齊…drift 偵測 auto fix」的 auto-fix 半句超前宣稱。",
+   "fix": "最小改字:root+mirror CLAUDE.md:158「drift 偵測 auto fix」→「drift 偵測 fail-closed(release:preflight gate + session-start 報告),AI 依報告修」;或給 script 加 --fix mode 真自動改寫 live-count 檔。",
+   "adversarial": null
+  },
+  {
+   "cite": "packages/design-system/CLAUDE.md:200",
+   "verdict": "OVERCLAIM",
+   "evidence": "兩個機械點各有一洞:(1) block_prototype_imports.py:60 `should_check` 要求 path.startswith(\"src/\"),但 Edit/Write 的 file_path 是絕對路徑(tool schema 強制)→ 實測:絕對路徑 + 檔內含 exploration import → exit 0 不攔;相對路徑才 exit 2。hook registered(settings.json:313 PostToolUse)但對真實 edits 形同虛設,「強制隔離」沒做到。(2)「45 項」是 stale 數字:checklist.md 實際 checkbox = 35(Spec 12 + Code 13 + Stories 6 + Ship 4,grep -c '\\- \\[ \\]' = 35),SKILL.md:3/:87/:96 也全說 35 項;僅 checklist.md:1 標題殘留「完整 45 項」。",
+   "fix": "(1) block_prototype_imports.py should_check 前先把絕對路徑轉 CLAUDE_PROJECT_DIR 相對(os.path.relpath),再比對 src/ prefix;加一則絕對路徑 test。(2) root+mirror CLAUDE.md:200 + checklist.md:1「45 項」→「35 項」(或反向補齊真 45 項,但 SKILL 現況 SSOT = 35)。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/rules/meta-patterns.md:36",
+   "verdict": "STALE",
+   "evidence": "機制本體活著:log_skill_invokes.sh registered(settings.json PostToolUse Skill)→ .claude/logs/skill-invokes.jsonl 實存且持續寫入(最新 entry 2026-07-07);knowledge-prune SKILL.md:59/:85 真消費該 log。但 threshold 描述沒跟:SKILL.md:85 skills 的 retire rule =「skill-invokes.jsonl **3 月** 0 invoke(除非 rare-event skill)」;6 月是 hooks 的 dead 門檻(SKILL.md:83 fire_count_6mo / description 'dead hooks (6mo 0 fire)')。meta-patterns:36 把 hook 的 6 月套到 skill 上,與機制的 3 月不符。",
+   "fix": "meta-patterns.md:36「6 月 fire 或 rare-event 豁免」→「3 月 invoke 或 rare-event 豁免(hooks 才是 6 月)」,對齊 knowledge-prune/SKILL.md:85 SSOT。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/rules/meta-patterns.md:50",
+   "verdict": "STALE",
+   "evidence": "skill 實存(.claude/skills/scan-similar-bugs/SKILL.md)但機制已變、M10 row 描述沒跟:SKILL.md「對位其他 skill」段明文 2026-05-12 codex 重構「per-fix → batch-end」,When-to-invoke 段寫「multi-issue session 結束後**一次**(不是每 fix 一次)」;機械 enforcement = session_start_governance_check.sh:119-145 Check 6,偵測 24h 內 fix commit 無對應 invoke 後僅 soft REMINDER「**考慮** invoke」,非強制。M10 仍寫「每 fix commit 後…強制」= 節奏(per-fix vs batch-end)與強度(強制 vs 提醒)雙重過時。",
+   "fix": "meta-patterns.md:50 M10 row 改「Mechanical 落地:batch-end(session ≥2 fix commits)跑一次 /scan-similar-bugs;session_start Check 6 偵測漏跑 → soft 提醒」,對齊 scan-similar-bugs/SKILL.md 2026-05-12 重構。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/rules/meta-patterns.md:58(M18 check_propose_pre_grep_verify)",
+   "verdict": "OVERCLAIM",
+   "evidence": "消費點存在(registered PreToolUse settings.json:264;SSOT propose-options/SKILL.md:34-60 Q0 段真存在),但「機械強制 Q0」超claim:hook 是 P1 soft — check_propose_pre_grep_verify.sh:10-11 自述「P1 warn(stderr exit 0,Claude 自決撤回)」、:56-68 只 stderr、:70 永遠 exit 0 不 block;且 path scope 僅 */planning/*.md|*/reports/*.md|*/handoff/*.md(:30-33),propose 主通道(chat reply)完全碰不到。本 repo 語彙「機械強制」= P0 BLOCKER(對照同檔 M30「機械強制(P0 BLOCKER)」vs M31「機械化攔(P1 soft)」+ memory feedback_ssot_mechanical_p0_not_p1_warn doctrine)。",
+   "fix": "meta-patterns.md:58 改寫為「機械化警告(P1 soft,scope=planning/reports/handoff md)」;或依 2026-05-27 P0-not-P1 doctrine 把 hook 升 exit 2(escape <!-- @propose-pre-verified --> 已備,:49-51)再保留「機械強制」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/rules/meta-patterns.md:61(M21 check_premature_abstraction 宣稱 retired/未實作)",
+   "verdict": "STALE",
+   "evidence": "宣稱「retired/未實作;mindset enforcement」,但該檢查已機械實作且是 P0 BLOCKER:.claude/hooks/check_naming_and_abstraction.sh:5「D.1 premature abstraction(原 check_premature_abstraction,P0 BLOCK)」(2026-05-08 cluster D fold),:46-93 真做 M21 的事 — Write 新元件名 = <Existing>+Time/Range/Color/... suffix 且基底 dir 存在 → record_worst 2 → exit 2 BLOCK(:87、:165),escape = 檔頭 @separate-component-rationale(:66);registered PreToolUse at settings.json(check_naming_and_abstraction)。「未實作、僅 mindset」與現況(P0 機械 BLOCK)不符。",
+   "fix": "meta-patterns.md:61 改「Hook:folded 入 check_naming_and_abstraction.sh D.1(P0 BLOCK,2026-05-08 cluster D consolidation;escape @separate-component-rationale)」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/rules/meta-patterns.md:62(M22 check_benchmark_citation 宣稱 P1 soft)",
+   "verdict": "STALE",
+   "evidence": "宣稱「機械化警告(P1 soft)」,但 hook 已升 P0 BLOCKER:check_benchmark_citation.sh:85 輸出「[P0 BLOCKER]」、:102-105 註解「P0 BLOCKER(2026-07-07 治理進化方向 2:對齊 user 2026-05-27 doctrine…)」+ :105 exit 2 真 block。機制已變、M22 row 描述沒跟(正是「宣稱 soft 已升 P0」典型)。Registered PreToolUse settings.json:212。",
+   "fix": "meta-patterns.md:62 改「機械強制(P0 BLOCKER exit 2,2026-07-07 升級;escape @benchmark-unverified 逐句 / @benchmark-citation-allow / @benchmark-unverified-blanket 檔級)」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/rules/meta-patterns.md:70",
+   "verdict": "STALE",
+   "evidence": "三機制中兩個 WIRED:ssot-index.md 存在(Usage 3 步「先查 index → 跳 owner spec → 沒命中 grep spec.md」+ high-risk owner table)、codex-collab/SKILL.md:107「### Step 0.1:DS Anchor Preflight(M29 mandatory)」存在。但 hook 宣稱「soft warn」已失真:check_ds_anchor_preflight.sh:141-143 於 2026-07-07 升級為 P0 BLOCKER `exit 2`(檔內註解「對齊 user 2026-05-27 SSOT canonical 必 P0 禁 soft doctrine;bypass env CLAUDE_BYPASS_DS_ANCHOR=1 已備且 audit-logged」)。同 class stale 還在 ssot-index.md:38「check_ds_anchor_preflight.sh(live,soft warn)」與 design-system-audit/SKILL.md:177「write-time soft BLOCKER」。",
+   "fix": "meta-patterns.md:70「Hook `check_ds_anchor_preflight.sh` soft warn」→「Hook `check_ds_anchor_preflight.sh` P0 BLOCKER(exit 2,2026-07-07 升級;bypass CLAUDE_BYPASS_DS_ANCHOR=1 audit-logged)」;同 commit 一併修 ssot-index.md:38 與 design-system-audit/SKILL.md:177 同句(M10 改一處看三處)。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/rules/meta-patterns.md:74",
+   "verdict": "OVERCLAIM",
+   "evidence": "Detection 本體存在:stop_self_audit.sh:368-386 Mechanism 4「M33 stop-hook overfire reflex detection」雙條件(:376 DEFER_RE 下個 session/context budget/省工... + :377 PUSHBACK_RE 沒理由不做/繼續/做完)。但嚴重度不是 P0:檔內 :374 明寫「兩條件成立 → WARN」,fire 僅 append WARNINGS → log self-audit-warnings.jsonl(:418-423)→ 次 turn inject_pending_self_audit.sh:180-229 additionalContext 軟注入;stop_self_audit.sh 的 decision:block 路徑(:425-514)只給 claim-verify / codex-design / codex-verify / transport / completeness 五類,M33 mechanism 無 block 路徑。宣稱「P0 detection」= 嚴重度超前宣稱(同 class 於 M20 entry 內文「→ BLOCKER」)。",
+   "fix": "最小修:meta-patterns.md:74 M33 retired 註解「P0 detection」→「P1 warn detection(stop_self_audit Mechanism 4 + 次 turn auto-inject)」,並同步弱化 M20 entry 該 sub-rule 的「→ BLOCKER」措辭為「→ WARN + next-turn inject」;或反向把 Mechanism 4 升 decision:block 使名實相符(擇一,前者成本最低)。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/rules/self-verify.md:34",
+   "verdict": "OVERCLAIM",
+   "evidence": "三者中兩者 WIRED:check_substantive_edit_approval_preflight.sh(production code exit 2 P0,:98-113)+ check_ds_anchor_preflight.sh(M29 anchor,:143 exit 2)。但「stop_self_audit.sh(spec/canonical 補位)」沒做到宣稱:該 hook 唯一 spec-edit 攔截(SUBSTANTIVE_EDIT_RE :182 含 \\.spec\\.md、design-no-approval :225-251)全部嵌在 `if [ \"$CODEX_REPLY_READ\" -gt 0 ]`(:151)內 — 非 codex-collab turn 的 *.spec.md canonical edit 零攔截;preflight hook 又明確 exempt *.spec.md(check_substantive :39 case 只收 tsx/ts/css;check_ds_anchor :49 明 skip *.spec.md);check_canonical_propagation E.3 只驗 spec-impl default alignment 非 approval。CLAUDE.md 同句「*.spec.md 視覺結構 edit 由 stop_self_audit.sh 補位」同樣過寬",
+   "fix": "stop_self_audit.sh 加 codex-independent 機制:本 turn Edit/Write *.spec.md(jq tool_use 掃)+ 近 5 真 user msgs 無 APPROVAL_RE(復用 lib/_approval_re.sh)→ warn/block;或把 self-verify.md:34 + CLAUDE.md 描述改實況「spec 補位僅涵蓋 codex-collab turn(Mechanism 4)」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/rules/self-verify.md:37",
+   "verdict": "ORPHAN",
+   "evidence": "「獨立對抗稽核」全 repo 機械層 0 消費點:grep .claude/{hooks,skills,references} 僅 self-verify.md:37/:49 prose 自引。無任何 hook 偵測「宣告完成 + 中型以上(≥3 檔/canonical 改動)+ 無 Workflow dispatch」;stop_self_audit.sh Mechanism 7 的 SCAN_RE(:93)接受單純 `grep -r`/`rg` 自掃就放行 — 正是本條說 self-grep 不夠的情境,卻無機械強制升級。check_audit_sample_escape.sh(Agent|Task|Workflow matcher)只管已派發 audit 的 sample-escape,不強制派發本身。列在「Mechanical enforcement」段但純靠 AI 記憶",
+   "fix": "最小修:stop_self_audit.sh Mechanism 7 加分支 — completion claim + (EDIT_COUNT≥3 或 diff 含 canonical path)時,SCAN_RE 之外額外要求 transcript 有 `\"name\":\"(Workflow|Task|Agent)\"` dispatch trace,缺 → 同 BLOCKER;或把本 bullet 標「紀律(非機械)」移出 Mechanical enforcement 段",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/rules/self-verify.md:38",
+   "verdict": "OVERCLAIM",
+   "evidence": "兩 script 本身 fail-able(audit-content-quality.mjs:425 exit 1 / extract-canonical-rules.mjs:117 exit 1),但「Pre-commit 各 fail = block」不成立:(a) 真 pre-commit 入口 .husky/pre-commit(git core.hooksPath=.husky/_)只跑 sync-memory / version-sync / ds-canonical / 條件式 DataTable invariants,兩支都不在鏈上;(b) Stop hook 註冊(.claude/settings.json:426/:430)command 尾 `| grep … | head … || true` 永遠 exit 0 = 純報告不 block;(c) extract-canonical-rules.mjs 全庫唯一機械消費就是該 `|| true` Stop hook — 無任何 blocking 消費點;audit-content-quality 的 blocking 消費在 release-preflight.mjs:62(push tag 前),非 pre-commit",
+   "fix": "最小修:.husky/pre-commit 追加兩支(可條件式:staged 檔含 .md/.claude 才跑,fail → exit 1);或改寫 self-verify.md:38 為實況「Stop hook 每 turn 報告(non-blocking)+ release:preflight content-quality 阻擋」並把 extract-canonical-rules 補進 release-preflight.mjs gate 清單",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/rules/story-rules.md:16",
+   "verdict": "OVERCLAIM",
+   "evidence": "R1 根本不作用於 anatomy 層:check_story_invariants.sh:70 `case \"$FILE_PATH\" in *anatomy.stories.tsx|*principles.stories.tsx) return 0`(2026-06-11 deep-audit 豁免,檔內 :60-69 註解自述)——表格把 R1 掛在 `*.anatomy.stories.tsx` 那列,但 R1 對該檔型永遠 skip。且 R1 內容 = 展示層 hand-craft raw JSX 偵測(A.1 item-anatomy/A.2 table/A.3 loading/A.4 field/B dismiss/C overlay,:94-153),從未驗「6-canonical(Overview/Inspector/ColorMatrix/SizeMatrix/StateBehavior/Accessibility)exports 存在」。Dim 13 存在(design-system-audit/SKILL.md:71)但寫「5 mandatory sections」vs 本行「6-canonical」亦有 5-vs-6 措辭 drift。",
+   "fix": "story-rules.md:16 Hook 欄改為「—(6-canonical 由 Dim 13 batch verify + compile-stories.mjs --check;R1 anatomy = 展示層 hand-craft 偵測,2026-06-11 起豁免 anatomy 檔)」;若要 write-time 強制 6-canonical,需在 check_story_invariants.sh 加新 rule 檢 anatomy 檔 6 exports。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/rules/story-rules.md:42",
+   "verdict": "OVERCLAIM",
+   "evidence": "scripts/compile-stories.mjs 全檔 grep 無 writeFileSync/appendFile——它從不寫任何 stories 檔,也不產任何 story `name:` 欄位;輸出是 stdout POC markdown(header 自述「default: print to stdout」)+ `--check` drift detection(:183-195)。『元件總覽』只出現在 :126 `lines.push(\\`# ${componentName} 元件總覽\\n\\`)` = markdown 標題,非 name 欄。實際 stories 裡的 `name: '元件總覽'`(如 packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:15)是 checked-in 手寫 convention,非本 script 產物。宣稱「compile-stories.mjs auto-generate 已產生中文 name」= 機制沒做到宣稱的事。",
+   "fix": "story-rules.md:42 改寫:「anatomy 6-story canonical 的中文 name('元件總覽' 等)為 checked-in convention(R4/R5 name 檢查看守);compile-stories.mjs 僅做 spec/tsx componentMeta key drift `--check`,不產生 stories 或 name 欄」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/bug-fix-rhythm/SKILL.md:102",
+   "verdict": "STALE",
+   "evidence": "前兩項 WIRED:`npx tsc -b` 通用;`npm run hooks:test` 存在(package.json:29 → `.claude/hooks/tests/run-all.sh` 真存在)。但 `node scripts/visual-audit-<target>.mjs` 家族已於 commit a2360e99(2026-05-30)整批刪除 18 支(git log --diff-filter=D 證實 visual-audit-app-shell/-breadcrumb-*/-issue* 全滅);現行 canonical = `scripts/visual-audit.mjs`(單一 runner,--scope=changed|component:NAME|all,visual-audit.mjs:18-20,64,含 getBoundingClientRect pixel 量測)。SKILL:104 指令照抄會找不到檔。",
+   "fix": "SKILL.md:104 改為 `node scripts/visual-audit.mjs --scope=changed`(或 `--scope=component:<X>`)。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/bug-fix-rhythm/SKILL.md:148",
+   "verdict": "STALE",
+   "evidence": "Hook 本體正確且已註冊:check_pixel_quantified_audit.sh:37-42 真掃 getAttribute/hasAttribute 有而 getBoundingClientRect/offsetTop 零 → PostToolUse additionalContext 警告(settings.json PostToolUse Write|Edit|MultiEdit 已證)。但其 file-path glob(:24)= `*/scripts/visual-audit-*.mjs|*.js`,該檔案家族已於 a2360e99(2026-05-30)全刪、現行 canonical `scripts/visual-audit.mjs` 不含 hyphen 尾綴不被 glob 命中 → hook 現守著 0 個現存檔;SKILL「本 skill Phase 3 跑該 audit」也指向同一已 retired 檔名 pattern(見 :102 條)。",
+   "fix": "最小修:hook :24 glob 放寬為 `*/scripts/visual-audit*.mjs`(涵蓋 canonical visual-audit.mjs),SKILL.md:148 描述同步指 visual-audit.mjs。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/bug-fix-rhythm/SKILL.md:152",
+   "verdict": "OVERCLAIM",
+   "evidence": "stop_self_audit.sh 半句成立(Mechanism 1 claim-verify BLOCKER,見 :147 條)。check_codex_collab_5step.sh 半句不成立:它是 PreToolUse(Bash git commit)hook,trigger 限 commit message 含 codex/Layer A/B/dual-track/cite battle keyword(:58),檢的是 M31 三 marker(spec cite/verify/verdict,:68-83),且檔頭 :21-23 + :89 + :107-108 明文「Soft warning(P1):exit 0 但 stderr 印警告 — 不 block commit」— 既非 claim-verify gap 偵測器、也「攔」不住任何東西。",
+   "fix": "SKILL.md:152 拆開:「stop_self_audit.sh(claim-verify gap,BLOCKER)/ check_codex_collab_5step.sh(codex-collab commit 缺 cite+verify+verdict marker,P1 soft stderr)」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/code-quality-audit/SKILL.md:19",
+   "verdict": "OVERCLAIM",
+   "evidence": "check_file_size_budget.sh 真存在且已註冊(settings.json:187 PreToolUse Edit|Write|MultiEdit),但其 case(:28-46)只管治理 md(CLAUDE.md/memory/*.spec.md/SKILL.md),.tsx 落到 `*) exit 0` 完全不在 scope(git log -S'tsx' 對該 hook 零 hit = 從來沒管過 tsx);500/800 數字只出現在 foundational spec row(:41-42),非「該 hook 的 policy」單一值。tsx 500/800 真 SSOT 在 scripts/code-quality-audit.mjs:36-37(FILE_SIZE_BUDGET_TSX=500/TRANSITION_CAP=800)+ lib/_code_quality.sh:56-62。「spec 同 check_file_size_budget.sh policy」指錯 policy owner。",
+   "fix": "SKILL.md:19 改 cite `scripts/code-quality-audit.mjs:36-37` + `lib/_code_quality.sh` 為 tsx 500/800 SSOT(check_file_size_budget.sh 註明僅治理 md、數字精神一致而非同一 policy)。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/code-quality-audit/SKILL.md:57",
+   "verdict": "STALE",
+   "evidence": "`check_code_quality.sh` 已不存在為 standalone hook(.claude/hooks/ 無此檔):commit 3d4aee66「consolidate sub-hooks into lib/ — top-level 27→11」renamed 為 lib/_code_quality.sh,經 post_edit_dispatcher.sh:49 消費(settings.json:346 PostToolUse Write|Edit|MultiEdit)。行為本身相符(_code_quality.sh:17 src/ tsx|ts scope;:32-53 any 無 any-allow;:56-63 tsx >800 file-size)— 只是掛名過時;tests/test_check_code_quality.sh:4 都已改指 `../lib/_code_quality.sh`,獨剩 SKILL:57+:62 兩處舊名。",
+   "fix": "SKILL.md:57 與 :62 改為「post_edit_dispatcher.sh → lib/_code_quality.sh」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/codex-collab/SKILL.md:54",
+   "verdict": "STALE",
+   "evidence": "兩個負向宣稱仍真:check_codex_brief_verbatim.sh 確未實作(.claude/hooks/ 與 retired/ 均無此檔);check_codex_brief_invariants.sh 全 5 個 check(:80-106)無一檢 `## User 原話` heading → 「不涵蓋 verbatim-relay」正確。但「只 cover 全盤閱讀/triple-verify/禁抽樣/禁列檔」enumeration 已過時:hook 於 2026-07-10 新增第 5 invariant「輸入對等」(:101-106,檢 brief 必含 meta-patterns + MEMORY.md 具名鏡射,缺 → exit 2 BLOCKER)— 機制已擴、描述沒跟。",
+   "fix": "SKILL.md:54 括號清單補「+ 輸入對等(2026-07-10)」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/codex-collab/SKILL.md:141",
+   "verdict": "OVERCLAIM",
+   "evidence": "Queue 檔真存在且真被 skill 流程寫入(.claude/memory/codex-brief-queue.jsonl 18 entries;transport.md:45 append 流程),但「每 session start 必讀」零機械接線:grep .claude/hooks/*.sh 'brief-queue' = 0 hit;session_start_governance_check.sh Check 1-7(含 :78-87)無任何 queue 掃描;SKILL.md 只在 invoke 時載入,未 invoke codex-collab 的 session 根本不會讀 queue。另實際 status 值 drafted(1)/stale-superseded(5)不在 :142 宣告 schema(pending/deferred/replied/exhausted)內,schema 描述已 drift。",
+   "fix": "session_start_governance_check.sh 加一條 Check:jq 掃 codex-brief-queue.jsonl status==\"pending\" → REMINDERS inject「有 N 條 pending brief,resume tracking」;同時 SKILL.md:142 schema 行補列 drafted / stale-superseded。或最小改字:把「每 session start 必讀」降級為「本 skill invoke 時必讀」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/codex-collab/SKILL.md:249",
+   "verdict": "STALE",
+   "evidence": "design-system-audit/SKILL.md:356-364 的 Phase 4.5 現為「Governance sprawl check」(2026-05-17 升),chain 的是 /knowledge-prune(default light report-only / deep full Phase 0-5),全檔 grep 'codex-collab|deep-audit-cross' 無任何 Phase 4.5 invoke codex-collab 的字句;且 design-system-audit 無「Phase 5」可讓 codex reply 進(:366 Phase 4 即 Final report,phase 序 3→3.5→4.5→4)。codex 二審機制已移至獨立 /deep-audit-cross-codex skill(Phase B codex 同流程稽核 + 比稿)。宣稱是 2026-05-10 era 舊接線,機制已變描述沒跟。",
+   "fix": "codex-collab/SKILL.md:247-249「Deep Audit 整合」段 + :90 When-to-invoke #3 改指「deep audit 走 /deep-audit-cross-codex Phase B(codex 同流程稽核+比稿)」,刪「Phase 4.5 自動 invoke 本 skill / Codex reply 進 Phase 5」措辭。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/codify-principle/SKILL.md:98",
+   "verdict": "ORPHAN",
+   "evidence": ".claude/logs/codified-principles.jsonl 不存在(ls: No such file or directory);grep 全 repo(.claude/ + scripts/,含 .sh/.mjs/.md)消費者僅 skill 自身兩處 self-reference(SKILL.md:98 + :131);無任何 hook/script writer;.claude/logs/skill-invokes.jsonl 亦無 codify-principle 紀錄——「每次 codify 更新 execution log」的 log 從未被建立或寫入,宣稱的機械點是孤兒。",
+   "fix": "最小修法:建立空 .claude/logs/codified-principles.jsonl 並在 SKILL.md Phase 7 標明 append 為強制步驟(可從 git log grep codify/原則 commits backfill 數筆);或把 :98/:131 改註「lazy-create on first run」使描述誠實。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/component-quality-gate/SKILL.md:49",
+   "verdict": "STALE",
+   "evidence": "宣稱 rationale 本身屬實:root tsconfig.json:2 確為 \"files\": [](純 references),`npx tsc --noEmit` 在 root 會 silent pass,故禁用有據;但本 gate Phase 4 逐條走的 checklist SSOT(SKILL.md:96 稱 references/checklist.md 為完整 35 項 home)在 Phase 4 Ship section 第 61 行仍寫「`npx tsc --noEmit` 無錯誤」= SKILL 明文禁用的指令——SKILL 升級 tsc -b 時 checklist 沒同步,機械執行面(照 checklist 打勾)與宣稱直接矛盾,M10 改一處看三處違反。",
+   "fix": "references/checklist.md:61 改「`npx tsc -b` 無錯(禁 --noEmit;型別 surface 改動加跑 `npm run build:lib`,對齊 .claude/rules/self-verify.md Post-edit)」;順手同修 design-system-audit/SKILL.md:341 同款 `npx tsc --noEmit` 殘留。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/component-quality-gate/SKILL.md:71",
+   "verdict": "STALE",
+   "evidence": "核心 gate 真:WCAG contrast scan(visual-audit.mjs:131-232)+ geometry assertions(:408)+ `--scope=component:`(:533-534,ARGS_KV :55-64 吃 npm run 透傳)+ violations>0 → exit 非 0(:661-665);但宣稱的「retina」已變:visual-audit.mjs:63 `RETINA = ARGS_SET.has('--retina') // 預設 1x…--retina opt-in for debug`、:329 `deviceScaleFactor: opts.retina ? 2 : 1` — 預設 1x(2x 超 Layer B 2000px 可讀限制),retina 只剩 opt-in debug,描述沒跟。",
+   "fix": "SKILL.md:71 括號改「WCAG / 幾何 assertion / 1x snapshot(--retina opt-in)」;順手同修 visual-audit.mjs:7 檔頭 docblock 仍寫「retina PNG」的同源 drift。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/deep-audit-cross-codex/SKILL.md:9",
+   "verdict": "OVERCLAIM",
+   "evidence": "references/upstream-directives-r-mapping.md 存在且有「機械強制 R18-R26 對齊」節(:25-33),但清單實際只有 R18/R19/R20/R21/R22/R24/R25/R26 共 8 條 — R23 缺號,`git log -p --all -S R23` 對 SKILL.md 與 reference 皆 0 hit(從未存在),檔內也無缺號註記;宣稱的連續範圍 9 條實為 8 條,對照 2026-05-29 verbatim(:23)「…一致的設計語言和確保 ssot…」的「確保 SSOT」子句正是缺的那格。",
+   "fix": "upstream-directives-r-mapping.md:30 後補一行「- R23 確保 SSOT → 檔頭 SSOT integrity invariant + M17/M23(上游 `# SSOT 消費 canonical`)」;或改 SKILL.md:9 標示實際涵蓋號(並注 R23 折入處)。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/deep-audit-cross-codex/SKILL.md:54",
+   "verdict": "STALE",
+   "evidence": "「Hooks fire 信任 plugin 機制」機制已變描述沒跟:同檔 :45 自己寫「免 plugin,2026-06-17 改版」;template/ds-product-template/.claude/settings.json:3 _comment_governance 明寫「不需 /plugin install」、fork hooks 全走 committed fork-governance-dispatcher.sh(committed-config-first);memory reference_cloud_governance_loading 亦記「plugin 不可靠(#63028/#62174)」。fork-mode safety invariant 這行仍叫 AI「信任 plugin」= 指向已棄機制。",
+   "fix": "SKILL.md:54 改「Hooks fire 信任 committed C-prime 治理鏈(settings.json → fork-governance-dispatcher.sh 讀 manifest.json;免 plugin,2026-06-17 改版)— skill 不重複實作 hook logic」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/deep-audit-cross-codex/SKILL.md:84 — DETERMINISTIC(22)+ HOOK(42)由 CI/write-time hook 兜底(含 22/26 infra dim)",
+   "verdict": "STALE",
+   "evidence": "兜底機制真:ci.yml:129-256 chain compile-stories --check / story-quality:check / audit:coverage-matrix --check / audit-content-quality --check 等 deterministic 腳本,write-time hooks 56 支註冊 settings.json。但數字已漂:.claude/logs/audit-coverage-matrix.json(generated 2026-07-10)= DETERMINISTIC 24 / HOOK-ENFORCED 40 / PURE-JUDGMENT 27,total 91 ≠ 宣稱 22/42;「22/26 infra dim」在 matrix 無 infra 欄位可對(fields 只有 tier/mechanism),為 2026-05-30 hardcode snapshot 無法機械驗",
+   "fix": "SKILL.md:84 去 hardcode tier 數,改「以 npm run audit:coverage-matrix 輸出 / audit-coverage-matrix.json 動態值為準(snapshot 標日期)」,或納入 scripts/sync-governance-counters.mjs 同步;「22/26 infra」同步刪或改 dynamic(matrix 補 infra 分類欄才可宣稱)",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/deep-audit-cross-codex/SKILL.md:88 — gen-ds-story-manifest.mjs 枚舉全部單元(全 926 name)",
+   "verdict": "OVERCLAIM",
+   "evidence": "腳本存在且 wired(package.json postbuild-storybook + release.yml audit gate),但 scripts/gen-ds-story-manifest.mjs:43 regex `^design-system-(?:components|internal)-([^-]+(-[^-]+)?)-(展示|設計規格|設計原則)--` 只收 components/internal 且元件名 ≤2 段 → 實測 index.json 969 個 DS story 只入 928,漏 41 個:design-system-patterns-*(action-bar/item-anatomy/header-anatomy/resize-handle 等 18)+ design-system-tokens-*(19)+ internal-patterns 3 段名(horizontal-overflow/overlay-surface 4)。「枚舉全部單元」不成立 — 正是同段自訂的 scope-gap(漏 anatomy/principles)failure class;926 亦為 stale snapshot(現 928)",
+   "fix": "story-name 類 dim 的枚舉 SSOT 改直接讀 storybook-static/index.json 全 entries(972),或放寬 manifest regex 收 patterns/tokens + 多段名;SKILL 例子至少標明「component/internal stories only」scope",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/deep-audit-cross-codex/SKILL.md:108 — Validator F 檢查 per-component coverage,缺 = BLOCKER",
+   "verdict": "OVERCLAIM",
+   "evidence": "check_audit_post_report_validator.sh:91-95 真讀:F 只 `grep -qiE 'story-vs-code|FALSE_CLAIM|claimsVerified|宣稱.*(真實|code)|A\\.1b|逐句比對'` — report 任一處出現一個 keyword 即過,完全沒數 component(62 個)是否各有 verdict。BLOCKER 半真(keyword 全缺 → CRITICAL_FAIL → :136-138 exit 2),但「檢查 per-component coverage」(SKILL:103 另稱『per-component 覆蓋率閘』)沒做到 — 只驗 A.1b pass 有無被提及,單一 component 的 verdict 就能讓 61 個漏掉的過閘",
+   "fix": "F 改覆蓋率計數:讀 packages/design-system/ds-story-manifest.json components 清單(64 個),grep report 中 per-component claimsVerified 條目數 < component 數 → BLOCK(仿 G 的 count 法);或最小改 SKILL:103/:108 措辭降為「檢查 A.1b 證據存在(keyword 級),逐 component 覆蓋由 A.1b 流程自律」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/deep-audit-cross-codex/SKILL.md:117 — check_propose_pre_grep_verify.sh 機械強制 Q0",
+   "verdict": "OVERCLAIM",
+   "evidence": "hook 已註冊 settings.json PreToolUse Edit|Write|MultiEdit,但 (a) :30-33 path gate 只 fire 在 */planning/*.md、*/reports/*.md、*/handoff/*.md — reply 層 propose 與其他檔案 propose 零覆蓋;(b) :11 檔頭自述「P1 warn(stderr exit 0,Claude 自決撤回)」,:56-70 偵測到 propose keyword 無 cite 也只 printf stderr 後 exit 0 — 無任何 block。宣稱「機械強制」實為窄 scope soft 提醒,違自家 feedback_ssot_mechanical_p0_not_p1_warn 原則(SSOT canonical 必 P0 BLOCKER 禁 P1 warn)",
+   "fix": "二選一:升 P0 — 無 cite 時 exit 2(保留 @propose-pre-verified escape)並考慮補 Stop-hook transcript 掃 reply 層 propose;或最小改 SKILL:117 + meta-patterns M18 措辭為「hook soft warn 提示 Q0(僅 planning/reports/handoff 檔寫入)」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/deep-audit-cross-codex/SKILL.md:118 — check_propose_discipline.sh r1 機械強制中文人話 format",
+   "verdict": "OVERCLAIM",
+   "evidence": "hook 註冊 settings.json Stop 事件、r1 確實機械 grep 本 turn assistant reply(decision-prompt regex + Python jargon density ≥10):32-61,但 :68 明寫「Soft warn,不 BLOCK turn(exit 0)」— r1 永遠 exit 0 純 stderr;整檔只有 r2_cite_required(cite 缺)是 exit 2 BLOCKER(:136)。宣稱「機械強制」的中文人話 format 實際無強制力;檔頭 :5 merge 註「BLOCKER 級別不變」對 r1 也是誤述(原檔即 warn)",
+   "fix": "r1 jargon 超標 + 決策 prompt 時升 exit 2(加 escape 註記對齊 feedback_ssot_mechanical_p0_not_p1_warn),或最小改 SKILL:118 標注「r1 = soft warn 自我修正訊號;r2 cite = BLOCKER」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/deep-audit-cross-codex/SKILL.md:229",
+   "verdict": "OVERCLAIM",
+   "evidence": "Validator H 存在且真數題數 vs SSOT-理由數(check_audit_post_report_validator.sh:144-151),但唯一的 exit-2 BLOCK gate 在 :136-139 且只在 H **之前**跑 — H 於 :149 設 CRITICAL_FAIL=1 是死賦值,永不 block;H 也不設 TRIGGER_PRUNE,小型 report(<10 dim)時 :171-176 的 additionalContext 不發,H 訊息只落 jsonl log(:162-169)。「機械強制」宣稱不成立,實際為 log-only(deep 規模時頂多隨 Validator E 的 soft context 帶出)",
+   "fix": "把 Validator H 段(:141-152)搬到 :134 BLOCK gate 之前;或在 H 之後補第二道 `[ ${CRITICAL_FAIL:-0} -eq 1 ] && exit 2` gate",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/delivery-handoff/SKILL.md:65",
+   "verdict": "OVERCLAIM",
+   "evidence": "SKILL.md:65 實文 = `rg -o -- '--[a-z-]+' <feature files> | sort | uniq -c`(有 `--` 分隔符,指令本身可跑),但 regex 字元類缺 0-9:實測 DS token 名 382 個中 175 個(46%)含數字(--chart-1..5、--black-a02、--neutral 系 alpha step、--color-amber-1 等,tokens/*.css 全掃),這些全被截斷合併成 `--chart-` / `--black-a` 之類假 key → 「機械計數」對近半 token 名產出錯誤合併計數,沒做到宣稱的 per-token 使用統計",
+   "fix": "SKILL.md:65 改為 `rg -o -- '--[a-z][a-z0-9-]*' <feature files> | sort | uniq -c`(字元類補數字,首字母仍限 a-z 避免誤抓 CSS 註解破折號)",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:8",
+   "verdict": "STALE",
+   "evidence": "宣稱「88-dim registry SSOT」但實跑 node scripts/dispatch-audit-dims.mjs → total: 91(task #101 已加 dim 91;CLAUDE.md 07-10 snapshot 也已寫 90+)。此硬數字落在雙重防護盲區:check_dim_count_drift.sh:31-33 豁免 SSOT 檔自身、sync-governance-counters.mjs 的 regex(:99 `The N audit dimensions`、:107 title `(N dimensions`、:230 `N audit dims`)全對不上「88-dim」寫法 → 機械同步蓋不到,已 drift 3。另「check_dim_count_drift 全 parse 此檔」不實 — 該 hook 從不 parse 本檔,只對下游寫入 pattern-match(見 hook 全文,SKILL.md path 直接 exit 0)。",
+   "fix": "line 8 改非數字表達(「N-dim,N 以 dispatch-audit-dims.mjs 輸出為準」)或把 `\\b(\\d+)-dim\\b` pattern 加進 sync-governance-counters.mjs curated 掃描;「全 parse 此檔」改為「dispatch-audit-dims.mjs / deep-audit parse 此檔;check_dim_count_drift enforce 下游禁 hardcode(不 parse)」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:78",
+   "verdict": "OVERCLAIM",
+   "evidence": "A.1b 半邊為真:deep-audit-cross-codex/SKILL.md:91 A.1b「MANDATORY,NO-SAMPLE,per-component」+ :100-101 明列 docblock-vs-code + spec-internal cross-section(= dim 15 的 2026-06-04 新增項)+ CP-A1b(:254)缺任一 component verdict 不可進 A.2。Validator F 也實存且 CRITICAL exit 2 真 block(check_audit_post_report_validator.sh:87-95,:134-139)。但 F 不是「覆蓋率閘」— 它只是 keyword-presence 閘:report 提 ≥10 dim 時 grep 'story-vs-code|FALSE_CLAIM|claimsVerified|A\\.1b|逐句比對' 任一命中即過(:92),report 提 1 次「A.1b」就過 F,完全不量測 per-component 覆蓋率;per-component 覆蓋僅靠 CP-A1b prose checkpoint(LLM 自律)無機械 tally。",
+   "fix": "SKILL.md:78 wording 改「Validator F = A.1b 證據存在閘(CRITICAL BLOCK)+ CP-A1b per-component 覆蓋(checkpoint)」;或擴 F:tally report 內 component verdict 數 vs components/ 目錄總數(65)才配稱覆蓋率閘。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:126",
+   "verdict": "STALE",
+   "evidence": "宣稱「Hook check_story_slot_split(planned)」但機制早已實作上線:folded 進 check_story_invariants.sh R2(:7 header 記「R2 slot_split(原 lib/check_story_slot_split.sh,Pre)」;rule_slot_split :168-231 涵蓋 dim 28 全部 3 反 pattern — WithStartIcon+WithEndIcon(:184-189)/ Default+AllVariants(:191-196)/ ≥2 variant 拆細(:197-201)+ @story-split-rationale 檔首 allowlist(:176-180)),record_worst 2 = exit 2 真 BLOCK,已註冊 .claude/settings.json:196,350,且有 test(tests/test_check_story_invariants.sh:100-109)。「planned」描述沒跟上機制已 live 的現實。",
+   "fix": "SKILL.md:126「Hook check_story_slot_split(planned)write-time block 同源」改「Hook `check_story_invariants.sh` R2 slot_split(live write-time BLOCK;原 check_story_slot_split folded)同源」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:134",
+   "verdict": "STALE",
+   "evidence": "Check 6 邏輯存在且 regex 與宣稱逐字一致:.claude/hooks/lib/_overlay_handcraft.sh:140-157(`(flush|naked|bare|stripped|unpadded|noPadding|paddingless)\\??:\\s*boolean`、scope `components/(Dialog|Sheet|Popover)/*.tsx` 非 stories、escape `overlay-body-stripped-variant-allow:`)。但兩點描述沒跟上機制:(a) hook 名 `check_overlay_handcraft.sh` 已不存在 — 2026-05-13 dispatcher consolidation 改名 lib/_overlay_handcraft.sh,由 post_edit_dispatcher.sh:52 `run_helper` 消費;(b)「Hook 是 write-time block」錯 — 檔頭 :19 自述「WARN-style (additionalContext) — AI reads + fixes next iteration」,PostToolUse 註冊(settings.json:346),dispatcher 恆 `exit 0`(post_edit_dispatcher.sh:66)= post-write warn,非 block。",
+   "fix": "SKILL.md:134 改「對應 hook lib/_overlay_handcraft.sh Check 6(post_edit_dispatcher 消費)」+「Hook 是 write-time block」→「Hook 是 PostToolUse WARN(additionalContext,非 block)」;若原意要 block 則把 Check 6 抽升 PreToolUse exit 2。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:144",
+   "verdict": "STALE",
+   "evidence": "宣稱「planned」但機制早已實作:.claude/hooks/check_field_family_invariants.sh:5 檔頭「A.1 naked row-mode propagation(原 check_naked_row_mode_propagation,P0 BLOCKER)」— 2026-05-08 cluster A consolidation 折入;:74-88 body 真做 dim 宣稱的事(naked variant consumer wrapper 未 import/apply `nakedCellRowModeAlign` → P0 BLOCK,修法指向 field-wrapper SSOT);PreToolUse 註冊 settings.json:220。同表 Dim 34/35 已更新為 folded 寫法,36-39 漏更新。",
+   "fix": "SKILL.md:144「Hook check_naked_row_mode_propagation(planned)」→「Hook `check_field_family_invariants.sh` A.1(原 check_naked_row_mode_propagation folded;P0 BLOCKER)同源」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:145",
+   "verdict": "STALE",
+   "evidence": "宣稱「planned」但已實作:.claude/hooks/check_field_family_invariants.sh:7「A.3 Field state ring SSOT(原 check_field_state_token_consume 3 sub-rules,P0 BLOCKER)」;:132-165 三 sub-rule 正是 dim 宣稱內容 — A.3.1 inset shadow ring(:140)、A.3.2 自寫 `(hover|focus-within|focus-visible|data-[state=open]):outline-(border|primary)`(:152)、A.3.3 per-control open=blue override(:163-165,v13.3「禁 open 時 per-control border 轉 primary」);PreToolUse 註冊 settings.json:220。",
+   "fix": "SKILL.md:145「Hook check_field_state_token_consume(planned)」→「Hook `check_field_family_invariants.sh` A.3(原 check_field_state_token_consume folded;P0 BLOCKER)同源」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:146",
+   "verdict": "STALE",
+   "evidence": "宣稱「planned」但已實作:.claude/hooks/check_pattern_invariants.sh:6「C.2 inline-action canonical gap(原 check_inline_action_canonical_gap,P1 WARN stderr)」;:87-108 body 真驗宣稱 canonical(ItemInlineAction consumer 用非 gap-2 的 gap class → WARN,:105 直引 inline-action.spec.md:80「sibling gap 必 gap-2 (8px)」與 dim 引文同錨);PreToolUse 註冊 settings.json:204;escape `@inline-action-gap-allow`(:17)。",
+   "fix": "SKILL.md:146「Hook check_inline_action_canonical_gap(planned)」→「Hook `check_pattern_invariants.sh` C.2(原 check_inline_action_canonical_gap folded;P1 WARN)同源」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:147",
+   "verdict": "STALE",
+   "evidence": "宣稱「planned」但已實作:.claude/hooks/check_pattern_invariants.sh:8「C.4 row slot handcraft(原 check_row_slot_handcraft,P0 BLOCK exit 2)」;:162-185 body 真做 dim 宣稱的事 — 偵測自刻 `h-[1lh]`+`shrink-0`+`flex`+`items-center` slot wrapper(:171 token 無序比對),修法指向 `<ItemPrefix>`/`<ItemSuffix>`(:181-183,引 item-anatomy.spec.md:175+190);P0 BLOCK;PreToolUse 註冊 settings.json:204;escape `@row-slot-handcraft-allow`(:19)。",
+   "fix": "SKILL.md:147「Hook check_row_slot_handcraft(planned)」→「Hook `check_pattern_invariants.sh` C.4(原 check_row_slot_handcraft folded;P0 BLOCK)同源」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:167",
+   "verdict": "OVERCLAIM",
+   "evidence": ".claude/hooks/check_opacity_token_usage.sh 存在(settings.json:232 註冊)且 rename 宣稱準確(check_tailwind_token_registry.sh 確實不存在),但宣稱檢的「gap-px|0.5|1.5 / w-fraction」hook 完全沒做:全檔 10 個 grep category(L77-144:opacity/text/font/leading/tracking/rounded/rounded-arb/shadow/shadcn/primitive/phantom-state)無任何 gap-* 或 w-fraction 偵測;registry 有 block 定義(utility-registry.json:102 micro_gap、:108 fraction)但零 consumer。且「讀 registry SSOT」實為存在性 gate + fallback(L55-71),block patterns 全 hardcode 不 parse JSON",
+   "fix": "最小修:check_opacity_token_usage.sh 加兩個 category grep(\\bgap-(px|0\\.5|1\\.5)\\b 與 \\bw-[0-9]+/[0-9]+\\b),對齊 registry micro_gap/fraction block;或退而改 SKILL dim 47 刪去 gap/w-fraction 字句並註明 registry-only 未接線",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:169",
+   "verdict": "STALE",
+   "evidence": "addon 已裝(packages/storybook-config/addons-preset.ts:12 + package.json:106),但機制已進化:scripts/audit-a11y.mjs 是真正 audit-grade deterministic runner(npm run a11y:check package.json:32;headless axe 對每 story 跑,withTags(['wcag2a','wcag2aa']) L117 含 color-contrast AA;baseline-diff gate L189),dim 49 與 audit-prompts.md:1183 都還停在「via Storybook a11y addon ... 需 install @storybook/addon-a11y + CI integration」— addon 早已裝、CI runner 早已建,照 dim 文字走的 auditor 不會 chain a11y:check(違本專案 NO-SAMPLE 必 chain deterministic script 紀律)",
+   "fix": "dim 49 + audit-prompts.md#49 改寫:「MUST chain npm run a11y:check(scripts/audit-a11y.mjs,headless axe wcag2a/2aa + baseline-diff gate);addon 已裝(addons-preset.ts:12)為 dev-time 輔助」,刪「需 install」句",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:170",
+   "verdict": "STALE",
+   "evidence": "宣稱「需建 package.json size-limit 段 + per-component manifest」但已全部建成:package.json:129 size-limit 段(DS bundle 300KB / DS CSS 30KB / Button 等 per-component entries)+ scripts size/size:why(:30-31)+ deterministic gate scripts/check-bundle-size.mjs --check(package.json:56,budget SSOT packages/design-system/bundle-budget.json,--init 現值+10% headroom = 宣稱的 regress>10% gate)且已 chain 進 release-preflight.mjs:89(2026-07-07 治理進化收尾,check-bundle-size.mjs 檔頭自述本 gap 已補)。dim 描述停在建成前",
+   "fix": "dim 50 改寫為現況:size-limit 段 + bundle-budget.json + check:bundle-size 已 chain release-preflight(引 release-preflight.mjs:89),刪「需建」句",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:171",
+   "verdict": "OVERCLAIM",
+   "evidence": "scripts/visual-audit.mjs 有 --matrix=theme-density(L69-73 自標 Dim 51),但 (1) 真值僅 4-cell light/dark × md/lg(L78-83);hc / RTL cell 已明文移除 — L75-77「preview.tsx globals 真值只有 theme{light,dark}×density{md,lg} — 原 hc/dir:rtl cell 注入未知 global = Storybook 靜默忽略 = 假覆蓋;RTL/high-contrast 屬 DS-wide 未決策,DS 落地後再擴 cell」;(2)「screenshot diff;baseline drift > Δ% → flag」對 matrix 不存在 — L87「--matrix 與 --update-baseline 不可併用(cell 截圖無 baseline 槽)」= matrix 是 capture-only 無 diff。宣稱 6-cell diff,實作 4-cell 截圖",
+   "fix": "最小修:dim 51 改寫 4-cell(light/dark × md/lg)真值 + hc/RTL 標「DS-wide 未決策,globals 落地後擴 cell」+ 刪或標 future「drift Δ% flag」(要落實需給 matrix cell 建 baseline 槽)",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:172",
+   "verdict": "STALE",
+   "evidence": "三個 check_*.sh 檔名已不存在:2026-05-26 Track C fold 成 chrome_header_dispatcher.sh + lib/_tab_lg_chrome_header_equal.sh / lib/_header_with_tabs_border.sh / lib/_chrome_header_handcraft.sh(dispatcher.sh:2-16 檔頭明載 fold 歷史;settings.json:256 只註冊 dispatcher)。W3/W1 邏輯真存在且活著(_tab_lg_chrome_header_equal.sh:40-58 parse uiSize.css 兩 token md/lg 值 assert 相等;_header_with_tabs_border.sh:5-8 count(withTabs)≥count(header)),且 severity 已升:2026-05-31 三 SSOT helper exit 2 傳播(dispatcher:36-46)、handcraft 2026-06-06 升 P0(dispatcher:48-53)— dim 52 仍寫舊 standalone 名、未反映 P0 現況",
+   "fix": "dim 52 hook 欄改「chrome_header_dispatcher.sh(settings.json 註冊)→ lib/_tab_lg_chrome_header_equal(W3)/ _header_with_tabs_border(W1)/ _chrome_header_handcraft,全 P0 exit 2 傳播」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:174",
+   "verdict": "STALE",
+   "evidence": "兩處描述落後:(1)「R8 write-time soft warn」已過時 — check_story_invariants.sh:595「2026-06-02 升 P0 BLOCKER(block-severity antiPattern)」+ L675「[ \"$SEV\" = \"block\" ] && record_worst 2」→ exit 2 真 block(registry 內多數條目 severity=block);warn-severity 才 stderr-only(2026-07-04 補實作 L642)。(2)「variantRules」key 不存在 story-baseline-registry.json — 實名 components.DataTable.toolbar.buttonCanonical(variant:text/size:sm/iconOnly/pressed,registry L60-67);registry _meta.purpose L4 也還講 variantRules = registry 自身同步 drift。requiredHelpers(L15)/antiPatterns(L22)真存在且 R8 真讀 registry(hook L613,647 jq 讀 + regex self-test L657-662 + multiline flatten L653-654)",
+   "fix": "dim 54(d)與 registry _meta.purpose 的 variantRules 改名 buttonCanonical(或 registry key rename 對齊);「soft warn」改「block-severity P0 BLOCKER / warn-severity stderr(2026-06-02 升級)」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:177",
+   "verdict": "STALE",
+   "evidence": "消費點存在且註冊(.claude/settings.json PreToolUse Edit|Write|MultiEdit 註冊 check_ds_anchor_preflight.sh;hook 真掃 transcript 600 行找 Grep/Read spec.md/stories.tsx trace,check_ds_anchor_preflight.sh:77-100),但 SKILL 宣稱「write-time soft BLOCKER」已過時 — hook 2026-07-07 治理進化方向 2 已升 P0 硬 BLOCKER:check_ds_anchor_preflight.sh:141-143 明寫「P0 BLOCKER…升級不增誤殺」+ `exit 2`(escape = CLAUDE_BYPASS_DS_ANCHOR=1,:103-108)。hook 檔頭 :7「軟 BLOCKER 提醒」註解同樣 stale。此與已修錨例(fork-classification 的 ds_anchor soft stale)是不同檔 — SKILL.md:177 本身漏改",
+   "fix": "SKILL.md:177「write-time soft BLOCKER」→「write-time P0 BLOCKER(exit 2,2026-07-07 升級;CLAUDE_BYPASS_DS_ANCHOR escape audit-logged)」;順手同步 check_ds_anchor_preflight.sh:7 檔頭註解「軟 BLOCKER」字樣",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:180",
+   "verdict": "STALE",
+   "evidence": "消費點存在且註冊(.claude/settings.json UserPromptSubmit:455-458;transcript 掃 ~400 行數 WebFetch/WebSearch tool_use < 2 → stdout inject exit 0,check_propose_without_benchmark.sh:36-67),但描述的 trigger keyword 廣度沒跟上 2026-05-26 收緊:SKILL 宣稱偵測「propose / 建議 / 方案 / 看法 / visual / behavior keyword」,實際 PROPOSE_TRIGGER_RE(:31)無「看法」「visual」「behavior」bare keyword(hook 註解 :30 明言「拿掉…design/behavior/互動 太籠統的 false-positive triggers」),建議也只 match「建議…方案/做法」組合。另 hook :16 已自述升「P0 措辭 directive 注入(非 soft 建議)」,SKILL 仍寫「soft inject 提醒」— M7/M34 broad-claim-vs-narrow-regex gap",
+   "fix": "SKILL.md:180 keyword 清單改對齊實際 regex(propose me / give me options / 列option / 建議方案·做法 / 哪個比較 / 對齊哪家 / 比稿 / 要怎麼設計 / 該用哪個 / design tradeoff / recommend / world-class 對照),並把「soft inject 提醒」改「P0 directive context inject(exit 0 by design — UserPromptSubmit 不可 exit 2)」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:184",
+   "verdict": "OVERCLAIM",
+   "evidence": "hook 存在且註冊 PostToolUse Bash(.claude/settings.json:298-301),偵測 `git push origin main`(check_post_main_ssot_propagate.sh:44)+ HEAD~1..HEAD SSOT-affecting paths diff(:56,regex 與宣稱清單一致)都真做;但「inject 提議 bump」沒做到 — 輸出是純 `cat <<EOF` stdout + exit 0(:66-90),而 PostToolUse 純 stdout **不注入 AI context(只進 transcript)**,此 root cause 本 repo 已在 inject_deploy_url_after_push.sh:232-236 codify(2026-05-29「原 printf 輸出讓 AI 看不到…必須輸出 JSON hookSpecificOutput.additionalContext 才會真注入」),本 hook 卻沒同步修 = bump 提議實際到不了 AI,是假 inject",
+   "fix": "對齊 inject_deploy_url_after_push.sh:236 idiom:把 :66-89 heredoc 收進變數後改 `jq -n --arg ctx \"$MSG\" '{hookSpecificOutput:{hookEventName:\"PostToolUse\",additionalContext:$ctx}}'` 輸出",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:186",
+   "verdict": "STALE",
+   "evidence": "(a)(b) wired:release.yml:223-245「Dispatch ds-product-template sync」用 `event_type=ds-published` repository_dispatch(另 :319 design-system-published);template sync-design-system.yml:12-13 接 repository_dispatch types [design-system-published, ds-published, ds-ssot-changed]。但 (d)「每 component .spec.md ↔ ≥1 visual scenario(2026-06-11 全 component 達標)」已不成立:InlineEdit 有 inline-edit.spec.md + stories title 'Design System/Components/InlineEdit/展示',而 scripts/visual-assertions.json(111 scenarios,最後更新 2026-06-12)zero 筆 inlineedit scenario(`jq '.scenarios[].id' | grep -i inline` 只命中 internal-notice 的 inline-variants)= 新元件加入後 manifest 沒跟,全達標宣稱漂移;且 audit-coverage-matrix.mjs:115 dim 66 為 PURE-JUDGMENT,無 deterministic gate 防此漂",
+   "fix": "最小:補 InlineEdit ≥1 scenario 進 scripts/visual-assertions.json;治本:spec↔scenario 覆蓋寫成 deterministic check(掃 components/*/【*.spec.md】對 visual-assertions.json scenario id)chain 進 release:preflight,SKILL.md:186 (d) 改 cite 該 check 而非凍結的「2026-06-11 全達標」快照",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:211",
+   "verdict": "STALE",
+   "evidence": "script 本體 WIRED:test-2-scenario-architecture.mjs 自述 20 case(A 6 + B 7 + Mirror 7),A1-A6 / B1-B7+B-dep / M0-M7 全在(M0 :119-124、M1 allowlist 對齊 :205-215、M2-M5 :218-241、M6 idempotent :244-252、M7 manual :255),transform 驗證 B1/B-dep dsVersionRegex `*`→npm version(:136-181),fail exit 1。但 SKILL:211 描述「排除 .claude/skills(governance 走 plugin install)」機制已變沒跟:build-published-template-mirror.mjs:238-240 明寫『.claude/skills|commands|agents 移出 blanket 封鎖 → 改 name-aware allowlist(2026-06-18 C-prime skill delivery)』,:266-280 用 ds-canonical/fork/manifest.json name-allowlist 放行 fork-relevant 子集(template/ds-product-template/.claude/skills/ 實際 ship 9 skills),且 :248-252 明寫 plugin-first 時代已移除、治理本體走 npm(memory 亦記 beta.70 committed-config + npm 免 plugin)",
+   "fix": "SKILL.md:211 把「排除 .claude/skills(governance 走 plugin install)」改為「.claude/{skills,commands,agents} 走 fork-manifest name-allowlist(fork-relevant 子集 committed 進 mirror;非 fork 名 = 洩漏擋下;治理本體走 npm ds-canonical,非 plugin)」,對齊 build-published-template-mirror.mjs:238-280 現行為",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:234",
+   "verdict": "STALE",
+   "evidence": "接線本體 WIRED:audit-content-quality.mjs --check 存在且輸出『✅ No content drift detected』(:421-422,violation exit 1 :425);extract-canonical-rules.mjs 輸出『✅ All extracted rule keywords covered by audit-content-quality.mjs』(:119)。但宣稱「16 cat」已過時:violations 物件(audit-content-quality.mjs:31-51)實有 17 個 category(numbering / nonAnatomyNumbering / linkTo / stub / missingName / placeholderContent / emptyStory / englishPlaceholder / anatomyCanonicalName / anatomyNumberingGap / showcaseDefault / perSizeSplit / principlesCore / asciiArt / noRealBrand / thinDescription / abstractName)— 描述沒跟上加 category 的機制演進",
+   "fix": "SKILL.md:234 「(16 cat)」改「(17 cat)」;更佳(對齊 CLAUDE.md SSOT auto-sync invariant 禁多處 hardcode 數字):去掉數字改寫「(category 集以 script violations 鍵為準)」,一勞永逸",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:249",
+   "verdict": "OVERCLAIM",
+   "evidence": "scripts/audit-preflight.mjs:142 `coverageMap: VERBOSE ? coverageMap : undefined` — 預設(非 --verbose)跑法下,存到 .claude/logs/audit-preflight-{date}.json 的 report 只有 counts + gaps 清單,沒有「每原則 → audit dim 對應」matrix 本體。實測 audit-preflight-2026-07-03.json keys = [ts, filesCount, principles, auditDims, coverageGaps, gaps],coverageMap 不存在。宣稱「Coverage matrix 每原則 → audit dim 對應 — 存 log JSON」只做到 gap 摘要,對應表本體僅活在 .claude/references/principle-dim-map.json + --verbose 模式。",
+   "fix": "最小修法:audit-preflight.mjs:142 拿掉 VERBOSE gate(persist 的 JSON 永遠含 coverageMap;console 輸出可續 gate),或 SKILL.md:249 改述「gap 摘要存 log;完整每原則→dim 對應 SSOT = principle-dim-map.json(--verbose 可 dump)」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/design-system-audit/SKILL.md:311",
+   "verdict": "OVERCLAIM",
+   "evidence": "stop_self_audit.sh:209 SAMPLE_RE='sample top [0-9]+|sampled top|subset|pick top [0-9]+|top hot|too many to scan|sampled components' — 無「SKIP」「heavy agent」keyword(那些 pattern 只在 check_audit_sample_escape.sh:60);且 L215-216 命中僅 append WARNINGS(soft,寫 self-audit-warnings.jsonl 由下 turn inject_pending_self_audit 注入),未設任何 CRITICAL_* flag → 檔尾 decision:block 區(stop_self_audit.sh:432 起)只對 CRITICAL_CLAIM_VERIFY / CODEX_* / COMPLETENESS 發 block。宣稱的「SKIP/heavy agent 覆蓋 + BLOCKER inject」兩點都沒做到。",
+   "fix": "二選一:(a) SKILL.md:311 改述「stop_self_audit.sh NO-SAMPLE = soft WARN 下 turn 注入(keyword: sample top N/subset/pick top/top hot/too many to scan/sampled components);SKIP/heavy-agent + BLOCKER 級由 check_audit_sample_escape.sh exit 2 承擔」;(b) 升 hook:SAMPLE_RE 補 skip/heavy-agent pattern + 命中設 CRITICAL flag 走 decision:block。(a) 較小且不重疊既有 BLOCKER 防線。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/governance-health/SKILL.md:40",
+   "verdict": "STALE",
+   "evidence": "SKILL.md:40 表格列「Hook fire count(per hook,6 月窗)| `hook-fires.jsonl` parse path column」,但 hook-fires.jsonl 記的是 governance-file edits(log_governance_fires.sh:20-29 只寫 {ts,tool,path=被編輯檔},實測條目 {\"tool\":\"Edit\",\"path\":\"CLAUDE.md\"} 無 hook 名);per-hook fire 真實住所 = hook-fires-per-hook.jsonl(_log-fire.sh:13-14 明寫「與 hook-fires.jsonl 分離:後者記 governance-file edits,本 log 記 per-hook fire」,實測條目 {\"hook\":\"check_solo_workflow.sh\"} 且 2026-07-10 仍活躍)。照 SKILL:40 parse path column 會得到幾乎全 hook 0 fire → 假 retire 候選。knowledge-prune SKILL:83 已改用正確 source(audit-hook-quality.mjs 讀 per-hook log),governance-health 這行沒跟上。",
+   "fix": "SKILL.md:40 source 欄改「`hook-fires-per-hook.jsonl`(+ `.jsonl.YYYYMM` rotation 檔)」或直接「`npm run audit:hook-quality`(產 hook-quality-report.json 含 fire_count_6mo/dead 分類)」;hook-fires.jsonl 留給 hot governance files 分析列。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/new-component/SKILL.md:141",
+   "verdict": "STALE",
+   "evidence": "check_principles_canonical.sh 已不存在 — 不在 .claude/hooks/ 也不在 .claude/hooks/retired/(兩處 ls 確認);機制已 folded 進 check_canonical_propagation.sh(該檔 :5 檔頭「E.1 principles canonical(原 check_principles_canonical,P0 BLOCK new file / P1 warn existing)」,:46-108 E.1 body 真做 @principles-rationale + WhenToUse/WhenNotToUse/VsRule 檢查,registered settings.json:200)。機制活著但 SKILL 指名的 hook 檔名已死 = 描述沒跟上。",
+   "fix": "new-component SKILL.md:141 改「Hook check_canonical_propagation.sh E.1(原 check_principles_canonical.sh folded)write-time 攔不符」— 對齊 DSA dim 30 已用的寫法。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/product-ui-audit/SKILL.md:53",
+   "verdict": "OVERCLAIM",
+   "evidence": "registry 存在且有消費點(check_opacity_token_usage.sh:55-58 讀 utility-registry.json、:129 報 shadcn alias violations),但「完整 deny-list SSOT」不成立:utility-registry.json:114 shadcn_alias.block.color_alias 只 9 條,缺 bg-card / text-card-foreground / text-primary-foreground — 而 SKILL 此行 inline 列 11 條、主要 write-time 防線 .claude/hooks/lib/_token_hygiene.sh:38 SHADCN_PATTERN 也 hardcode 11 條且完全不讀 registry。即 inline 是 claimed SSOT 的 superset(主從關係倒置),且「新增 alias 改 registry」不會傳播到 _token_hygiene.sh 這條主 enforcement。",
+   "fix": "最小修:(1) utility-registry.json shadcn_alias.block.color_alias 補 bg-card / text-card-foreground / text-primary-foreground 三條(使 registry ⊇ 所有 consumer 清單);(2) _token_hygiene.sh SHADCN_PATTERN 改由 jq 從 registry 組(`jq -r '.shadcn_alias.block.color_alias|join(\"|\")'`),並把 _token_hygiene.sh 加進 registry _meta.consumed_by。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/product-ui-audit/SKILL.md:58",
+   "verdict": "OVERCLAIM",
+   "evidence": "前兩段真接線:lib/_token_hygiene.sh:35-95 確有宣稱的 5-check(1 shadcn alias / 2 v4 [--foo] shorthand / 3 hardcoded shadow / 4 primitive-color-as-utility / 5 native overflow),post_edit_dispatcher.sh:47 run_helper 消費它、settings.json:346 註冊 PostToolUse。但「check_opacity_token_usage.sh 讀 utility-registry.json」不成立:hook :55-60 只做 `[ -f \"$REGISTRY\" ]` 存在性測試(缺檔才 fallback opacity-only),全部 block list 是 :77-143 hardcode grep pattern,整檔 3 個 jq 全用在 INPUT(:27,28,47),0 個 jq/read 作用在 REGISTRY 內容 — registry 從未被解析消費,只當存在性 gate + 錯誤訊息指標。另 hook 已升 P0 exit 2(:169-171),SKILL 未宣稱嚴重度故不計 stale。",
+   "fix": "二選一最小修:(a) hook 用 jq 讀 utility-registry.json block list 驅動各 category 檢查(真 SSOT 消費);或 (b) SKILL.md:58 改措辭「check_opacity_token_usage.sh 對齊 utility-registry.json 類別(pattern hardcode 於 hook,registry 僅存在性 fallback gate)」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/product-ui-audit/SKILL.md:173",
+   "verdict": "OVERCLAIM",
+   "evidence": "SKILL.md:173 Phase 4 verify =「npx tsc --noEmit 通過」。root tsconfig.json:2 為 `\"files\": []` + 純 references → repo root 跑 `npx tsc --noEmit` 型別檢查零檔案、恆綠 silent pass,gate 驗不到任何東西。component-quality-gate/SKILL.md:49 明文「`npx tsc -b` 無錯(**禁用 `--noEmit`**,root tsconfig `files: []` silent pass)」— 同 repo 兩 skill 打架,product-ui-audit 是錯的一方(.claude/rules/self-verify.md Post-edit 亦以 tsc -b + build:lib 為 canonical)。",
+   "fix": "SKILL.md:173 改「`npx tsc -b` 無錯(禁 --noEmit,root files:[] silent pass;動型別 surface 加跑 `npm run build:lib`)」,對齊 component-quality-gate L49 + self-verify.md。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/product-ui-audit/SKILL.md:186",
+   "verdict": "STALE",
+   "evidence": "主體真接線:package.json:24 `visual-audit: node scripts/visual-audit.mjs --auto-start`;scripts/visual-audit.mjs:65 `--urls` CSV / :64 `--scope`(component:NAME,檔頭 :19)/ :131-232 WCAG 2.1 對比(contrastRatio + AA 4.5:1/3.0 分級 + 豁免)/ :250-310 geometry assertions 讀 visual-assertions.json / :45 輸出 snapshots/ + report.json,violation exit 1 可 gate。但「retina screenshot」已變:mjs:63 `const RETINA = ARGS_SET.has('--retina') // 預設 1x…--retina opt-in for debug`、:323-325「deviceScaleFactor 預設 1(非 retina)— 2x 會讓 snapshot 達 2880px」— 預設早已改 1x,SKILL(及 mjs 檔頭 :7 自己的舊註解)沒跟。",
+   "fix": "SKILL.md:186「retina screenshot」改「1x screenshot(retina 需 `--retina` opt-in)」;順手同步 visual-audit.mjs:7 檔頭stale註解。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/propose-options/SKILL.md:62",
+   "verdict": "OVERCLAIM",
+   "evidence": "hook 存在且註冊(settings.json:264 PreToolUse Edit|Write|MultiEdit)、P1 soft warn(stderr + exit 0,hook :56-68)✓。但偵測邏輯與宣稱不符兩處:(1) scope 非「*.md」— hook :30-33 只 fire 於 `*/planning/*.md|*/reports/*.md|*/handoff/*.md`,其餘 md 全 exit 0;(2) 條件非「近 N turn 無 grep/Read tool call」— hook :53-56 檢的是「content 內無 file:line cite」(regex 找 `path.tsx:N` 反引號 cite),整檔完全不讀 transcript / turn 歷史。hook 自己檔頭 :9-11 描述(cite-based)才是準的,SKILL 描述的 turn-based 機制從未存在。",
+   "fix": "SKILL.md:62 改寫對齊 hook 實作:「planning/reports/handoff 下 *.md 含拍板 keyword 且 content 無 file:line cite → P1 stderr warn(escape:檔頭 <!-- @propose-pre-verified -->)」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/propose-options/SKILL.md:172",
+   "verdict": "STALE",
+   "evidence": "pre_write_subsumption_check.sh 已在 .claude/hooks/retired/pre_write_subsumption_check.sh(active hooks 目錄無此檔),settings.json / hooks/hooks.json 均無註冊(rg 'pre_write_subsumption' 只命中 retired/、planning doc 與兩份 SKILL.md)。SKILL 表格 :172 列為 live「(hook)| Edit/Write 已發生時」且無 retired 標註(對比同表 :173/:174 都有標),:177 進一步宣稱「4 個正交…全 cover」— write 前層實際無機械覆蓋。",
+   "fix": "SKILL.md:172 比照 :173/:174 格式標「(retired/未實作 — 現由 check_file_size_budget.sh + enforce_home_charter 類 pre-write hook 部分補位)」並修 :177「全 cover」措辭;scan-similar-bugs/SKILL.md:171 同一 stale 引用一併修。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/scan-similar-bugs/SKILL.md:25",
+   "verdict": "STALE",
+   "evidence": "機制存在:session_start_governance_check.sh:119-147 Check 6(SessionStart 註冊 settings.json:440)— git log 抓 24h 內 fix commit(:121),再掃 .claude/logs/skill-invokes.jsonl 24h 內有無 scan-similar-bugs invoke(:126-141),沒有 → REMINDERS 提醒(:143-145)✓。但門檻與宣稱不符:hook :122 `if [ -n \"$RECENT_FIX_COMMITS\" ]` = ≥1 個 fix commit 即觸發,無「≥2」計數;窗口是「24 hours ago」非「上 session」。宣稱的 ≥2 情境被涵蓋(超集),但描述未跟實作。",
+   "fix": "SKILL.md:25 改「session_start_governance_check.sh Check 6 偵測 24h 內 ≥1 fix commit 且 skill-invokes log 24h 無 scan-similar-bugs → soft 提醒」(或 hook 加計數門檻對齊 ≥2,擇一 SSOT)。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/scan-similar-bugs/SKILL.md:171",
+   "verdict": "STALE",
+   "evidence": "pre_write_subsumption_check.sh 已 retire:現位於 .claude/hooks/retired/pre_write_subsumption_check.sh(commit 63d54ff0「refactor(hooks): retire 4 reminder-style hooks (29 → 25)」),settings.json / hooks/hooks.json 均無註冊(grep 0 hit),hooks/README.md 現役表也無此 hook。SKILL 對位表仍列為現役 hook = 機制已退場描述沒跟。",
+   "fix": "SKILL.md:171 該 row 改為「(retired 2026-06;新 file/M-row 治理由 session_start_governance_check.sh + enforce_home_charter.sh 現役防線接手)」或直接刪 row。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/story-auto-compile-migrate/SKILL.md:31",
+   "verdict": "OVERCLAIM",
+   "evidence": "compile-stories.mjs --check 模式(:183-194)做不到宣稱的「得清單:每元件 {Name}(reason: ...)」:有 drift 時只印 drift + exit 1、完全不含任何 skipped 字樣(實測 `--all --check` 輸出 grep -c skipped = 0,因 Chip/Input 現有 drift 提前 exit :191);0 drift 時也只印彙總 count「N skipped(migration 未做)」(:193),無每元件 reason。每元件 reason 清單只在非 --check 模式印(:202-203)且字首大寫「Skipped(」不被 grep \"skipped\" 匹配。宣稱的指令在任何情況都產不出宣稱的清單。",
+   "fix": "Phase 0 指令改 `node scripts/compile-stories.mjs --all 2>&1 | grep \"Skipped\"`(default 模式印每元件 + reason),或給 compile-stories.mjs --check 分支補印 per-component skipped 清單。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/story-auto-compile-migrate/SKILL.md:150",
+   "verdict": "STALE",
+   "evidence": "獨立 hook check_story_compile_drift.sh 不存在(find 全庫含 retired/ 均 0 hit);功能已 fold 為 .claude/hooks/lib/_story_compile_drift.sh(:38 跑 `node compile-stories.mjs <Comp> --check`,:41-44 drift → additionalContext,功能與宣稱相符),由 post_edit_dispatcher.sh:54 run_helper 執行、settings.json 註冊於 PostToolUse(hooks/README.md:39 記 2026-05-13 dispatcher fold)。SKILL 仍用舊獨立 hook 名 = 機制已搬家描述沒跟。",
+   "fix": "SKILL.md:150 改「hook `post_edit_dispatcher.sh` → `lib/_story_compile_drift.sh`(原 check_story_compile_drift.sh folded)+ Dim 23」。順修:lib/_story_compile_drift.sh:44 hookSpecificOutput 的 hookEventName 印 \"PreToolUse\" 但實掛 PostToolUse,應改一致以免 additionalContext 被 runner 忽略。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/story-writing/SKILL.md:28",
+   "verdict": "STALE",
+   "evidence": "registry 存在且真被機械消費(check_story_invariants.sh R8 :614 REGISTRY path + :650 jq 讀 .components[$c].antiPatterns 的 severity/regex/unlessRegex);baseline / requiredHelpers / antiPatterns+severity 三欄屬實(Sidebar entry 全有)。但宣稱的第 4 欄 `variantRules` 不存在:實際 DataTable 用 `toolbar.buttonCanonical`(內容 text+sm+iconOnly+pressed 與 SKILL 舉例相符)、ChromeHeader 用 `requiredStructure`。另 registry `$schema` 指向 story-baseline-registry.schema.json 但該檔不存在(dead pointer)。",
+   "fix": "SKILL.md:32 bullet 改實際欄名(`toolbar.buttonCanonical`(DataTable)/`requiredStructure`(ChromeHeader))或 registry 統一改名 variantRules;補上或移除 $schema 指標。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/skills/story-writing/SKILL.md:122",
+   "verdict": "STALE",
+   "evidence": "pre_edit_spec_check.sh 實體在 .claude/hooks/retired/pre_edit_spec_check.sh(非 active 路徑);.claude/settings.json 與 hooks/hooks.json grep 均 0 註冊 = 不會 fire。story-writing:122 句構只把 check_sync_update.sh 標 retired,暗示 pre_edit_spec_check.sh 活在 `.claude/hooks/`(路徑也寫錯)。component-quality-gate/SKILL.md:102 才是正確版本(明標 retired;改靠 M3 mindset #3)。另 design-system-audit/references/rule-placement.md:146 同款 stale(L70 同檔卻標對 retired,自相矛盾)。",
+   "fix": "story-writing/SKILL.md:122 改為對齊 CQG L102 措辭:「`.claude/hooks/retired/pre_edit_spec_check.sh`(retired;三方連動改靠 M3 mindset #3)— check_sync_update.sh 亦 retired/未實作」;順修 rule-placement.md:146 同句構。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/memory/feedback_ai_ground_truth_unreliable_mechanical_primary.md:38",
+   "verdict": "STALE",
+   "evidence": "機制本體 WIRED:check_consumer_app_invariants.sh r3_ds_primitive_misuse(L155-381)存在、settings.json:317 註冊、Pattern 8 硬寫色值/字級/shadow 真在(L212-219 regex 抓 bg-[#hex]/text-[Npx]/shadow-md → exit 2)。但描述「7 anti-pattern」已過時:2026-06-11 merge 當時 7 條(Pattern 1-6+8),之後 Pattern 9(06-12 AppShell raw slot,L221-228)、Pattern 10(06-16 手刻 raw primitive 家族,L230-274)、WM 戰役 R4 簽名(07-08 偽表格/手刻 validation)、批次 A C5-C20 十餘條(07-10,L276-347)→ 現約 20+ 簽名,數字沒跟。",
+   "fix": "memory L38 去掉寫死數字:「check_consumer_app_invariants.sh(r3)— DS primitive misuse anti-pattern 家族(含 Pattern 8 硬寫色值/字級/shadow;簽名清單 SSOT = hook 本體,持續擴充)」。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/memory/feedback_audit_discipline_full_sweep_deterministic_preflight.md:56",
+   "verdict": "OVERCLAIM",
+   "evidence": ".claude/hooks/stop_self_audit.sh:209-217 — SAMPLE_RE + DEEP_AUDIT_RE 偵測存在,但 (a) 命中只 append WARNINGS(L216),從不設 CRITICAL_* flag → 檔尾 BLOCKER 區(L425-514)無對應分支,永遠只是 soft next-turn inject 非 BLOCKER;(b) 整段嵌在 `if [ \"$CODEX_REPLY_READ\" -gt 0 ]`(L151,fi 在 L252)內 → 只有「本 turn 讀過 codex-reply 檔」才會跑,一般 --deep dispatch turn 根本不掃。宣稱「→ BLOCKER」與現行為不符",
+   "fix": "最小修:memory :56 改寫為「stop_self_audit.sh 偵測(codex-reply turn)soft warn;真 BLOCKER = check_audit_sample_escape.sh exit 2」;或 code 側把 L209-217 搬出 CODEX_REPLY_READ 守衛 + 設 CRITICAL_NO_SAMPLE=1 接 decision:block 分支",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/memory/feedback_audit_discipline_full_sweep_deterministic_preflight.md:58",
+   "verdict": "ORPHAN",
+   "evidence": "stop_self_audit.sh 全檔(517 行)grep 'preflight' 僅 L240-241 兩行註解(指無關的 check_substantive_edit_approval_preflight.sh 名字);無任何「audit 但 24h 內無 preflight log → BLOCKER」邏輯;全 .claude/hooks/*.sh grep '24h|86400|mtime' × preflight = 0 命中。前半句(audit-preflight.mjs 必先跑)在 SKILL Phase 0.5 有 home,但宣稱的 stop_self_audit 機械強制不存在。最接近的是 post_edit_dispatcher.sh:55 → lib/_governance_coverage_check.sh(governance edit 後跑 --check 報 coverage gap)— 不同機制",
+   "fix": "最小修:memory :58 刪「stop_self_audit.sh 偵測…BLOCKER」半句、改指現行 lib/_governance_coverage_check.sh(post-edit coverage gap inject);或實作:stop_self_audit.sh 加 mechanism — THIS_TURN 含 design-system-audit --deep dispatch 且 ls .claude/logs/audit-preflight-*.json 24h 內無新檔 → CRITICAL → decision:block",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/memory/feedback_audit_discipline_full_sweep_deterministic_preflight.md:61",
+   "verdict": "OVERCLAIM",
+   "evidence": ".claude/skills/design-system-audit/references/audit-prompts.md — 逐項驗:(1) preflight directive 0 命中(唯一 'preflight' 在 :1323 是無關的 release:preflight);(2) deterministic script chain 0 命中(grep 'audit-story-quality|story-quality' = 0;dim 40/41/42 prompt 段 :1113-1129 只寫 regex/grep 說明,MUST-chain directive 只存在 SKILL.md :155-157 dim 表,不在 prompts 檔);(3) NO-SAMPLE 僅 8 處散在個別 dim prompt(:1133,1213,1243…),檔頭 template 段(:13-27「必先讀的 canonical」)無 3-directive 統一要求。宣稱「template 必含三 directives」— 檔案存在但沒做到",
+   "fix": "最小修:audit-prompts.md 檔頭「必先讀的 canonical」段補 memory L48-52 的 3-directive verbatim block(NO-SAMPLE / Dim 40-42 必 chain audit-story-quality.mjs --check / preflight log 必存在否則 BLOCKER);或 memory :61 改指「SKILL.md dim 表 + Phase 0.5/1 段」為 directive home",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/memory/feedback_codex_dual_track_synthesizer.md:67",
+   "verdict": "OVERCLAIM",
+   "evidence": "Skill auto-invoke 的機械表面 = SKILL frontmatter description,codex-collab/SKILL.md:3 只含「跟 codex 討論 / 比稿 / 確認」— 5 個宣稱 trigger 中只有「比稿」在 trigger surface;「dual-track」只在 SKILL body Step 0(b)(invoke 後才可見,不驅動 auto-invoke);「2nd opinion / 不打折 / 不省工」全庫 hooks grep 0 hit(settings.json UserPromptSubmit 僅 inject_pending_self_audit + check_propose_without_benchmark,皆不偵測這些詞),CLAUDE.md 任務導航表也只列「跟 codex 討論 / 多輪震盪 / 任何 codex 輸出」。5 詞中 3-4 詞無任何 auto-invoke 接線。",
+   "fix": "把缺的 trigger phrases 補進 codex-collab/SKILL.md:3 frontmatter description:「Invoke when user asks『跟 codex 討論 / 比稿 / 確認 / 2nd opinion / dual-track / 不打折 / 不省工』」(description 是 auto-invoke 唯一機械表面)。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/memory/feedback_nearest_same_purpose_canonical.md:24",
+   "verdict": "OVERCLAIM",
+   "evidence": "R8 半邊成立:check_story_invariants.sh:675 `[ \"$SEV\" = \"block\" ] && record_worst 2` → exit 2 P0 BLOCKER(僅 block-severity;warn-severity 條目 stderr-only)。R7 半邊不成立:R7 全函式(:517-588)無任何 record_worst — marker 缺失(:560-571)與 3 個 anti-pattern 偵測(:578-586)全是 echo >&2 純提醒,違反不會 block。宣稱「R7 marker-presence + R8 ⋯ → P0 BLOCKER」把 warn-only 的 R7 一併說成 BLOCKER",
+   "fix": "最小修法二選一:(a) memory L24 改寫為「R8 block-severity antiPattern → P0 BLOCKER;R7 marker-presence = stderr 提醒(P1)」;或 (b) 若要 R7 真 BLOCKER,在 rule_story_baseline_reference 的 HAS_BASELINE=0 分支(hook:560)加 record_worst 2(需先全庫掃無 marker 的既有 stories 避免誤擋)",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/memory/feedback_propose_discipline.md:44",
+   "verdict": "OVERCLAIM",
+   "evidence": "宣稱「PreToolUse Edit/Write 偵測 → BLOCKER」兩點皆不符實作:(1) 掛載事件是 Stop 非 PreToolUse — settings.json:418 將 check_propose_discipline.sh 註冊在 \"Stop\" 陣列(hooks.json:276 同),hook 檔頭 :2 自述「Stop ×2」,r1 讀 transcript_path 掃最後 assistant reply(hook:18-27)根本不是攔 Edit/Write;(2) 非 BLOCKER — r1 偵測決策 prompt + jargon 密度 ≥10 後僅 stderr warn 並 exit 0(hook:61-71,:68 註解明寫「Soft warn,不 BLOCK turn(exit 0)」)",
+   "fix": "memory L44 改寫為「check_propose_discipline.sh r1 = Stop hook,偵測 reply 含決策 prompt + jargon 密度 ≥10 → soft warn(exit 0)讓 AI self-correct」;若真要 BLOCKER 則將 r1 的 warn 分支改 exit 2(需評估 false-positive 率)",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/memory/feedback_propose_discipline.md:62",
+   "verdict": "STALE",
+   "evidence": "BLOCKER 真存在但事件描述錯:r2 明確 gate 在 Stop|SubagentStop(check_propose_discipline.sh:81-84 `case \"$EVENT\" in Stop|SubagentStop)`),掃最後 assistant reply 的 claim keyword(:98-104 規定/必配/canonical 寫等 11 詞)無 file:line cite(:110-115 cite regex)→ exit 2 真 BLOCKER(:117-137);settings.json:418 註冊在 Stop。宣稱的「PreToolUse 偵測」掛載點與現機制不符(是 post-turn 攔,不是 pre-edit 攔)",
+   "fix": "memory L62「PreToolUse 偵測」改「Stop hook(Stop|SubagentStop)偵測 reply 內 claim keyword 無 file:line cite → exit 2 BLOCKER;escape = @propose-cite-skip」",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/memory/feedback_ship_then_revert_anti_pattern.md:34",
+   "verdict": "STALE",
+   "evidence": "升級已完成,memory 仍寫「目前 P1 soft warn」:check_substantive_edit_approval_preflight.sh:98-113 現況即 P0 BLOCKER(stderr + exit 2,:99 訊息自標「2026-05-15 P0 升級」),:85-86 註解「Soft warn → P0 BLOCKER」、:89-96 CLAUDE_BYPASS_DESIGN_APPROVAL=1 override 寫 approval-bypass.jsonl。雙重描述漂移:hook 自己檔頭 :4-:17 註解也還寫「SOFT inject context warning / PRE-action soft warn」與 exit 2 行為矛盾。CLAUDE.md 自主執行 canonical 已寫「PreToolUse 攔截」= 現狀,唯本 memory 行與 hook 檔頭沒跟",
+   "fix": "memory L34 改「check_substantive_edit_approval_preflight.sh 已為 P0 BLOCKER(exit 2;override CLAUDE_BYPASS_DESIGN_APPROVAL=1 audit-logged)」+ 同步改 hook 檔頭 :2-:17 註解(刪 SOFT/soft warn 措辭,改述 P0 BLOCKER + bypass 機制)",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/memory/feedback_storybook_addon_preset_must_be_cjs.md:97",
+   "verdict": "OVERCLAIM",
+   "evidence": "BLOCKER 半條真接線:check_storybook_addon_packaging.sh:75-144 r2_preset_cjs 對 /addons/*/preset.ts 偵測 createRequire|require\\.resolve(L103)+ fileURLToPath(import.meta.url)(L106)→ exit 2,@preset-cjs-skip escape L94。但兩處與宣稱不符:(a) 宣稱「PreToolUse」,實際註冊 PostToolUse Write|Edit|MultiEdit(.claude/settings.json:337 + hooks/hooks.json:195);(b) 第二半條「preset.cjs 不存在 + package.json exports 點 .ts → WARN」全庫不存在 — 現行 hook 無此 rule,retired 原檔(.claude/hooks/retired/2026-06-11-prune-merge/check_storybook_addon_preset_cjs.sh)也從沒有,plugin-structure-validate.mjs grep 'preset' 0 hit = 從未實作的超前宣稱。",
+   "fix": "最小修:編 memory L97-99 — 「PreToolUse」改「PostToolUse」+ 刪「exports 點 .ts 無 .cjs → WARN」bullet(或依 P0-not-P1 doctrine 補實作:r3 rule 檢 storybook-config package.json exports './preset' 指 .ts 且同目錄無 preset.cjs → BLOCKER;二選一,不留紙上 WARN)。",
+   "adversarial": null
+  },
+  {
+   "cite": ".claude/memory/reference_deploy_targets.md:25",
+   "verdict": "STALE",
+   "evidence": "機制已變描述沒跟。per-user override 半句仍真:inject_deploy_url_after_push.sh:147-158 有 override 時 CANDIDATES 只剩 override(永遠 win),preview 分支也只認 override(:195-201)。curl 驗證仍在:verify_url(:101-108,HEAD,收 200|301|302)+ is_storybook_deploy sniff(:112-115,sb-manager|sb-addons|@storybook/core|storybook-static)。但「content sniff …防 squat false-positive」已不成立為硬閘:2026-06-07 fix(:171-187)把 sniff 降為排序器 — 200 但非 Storybook 內容的 candidate 現在收進 FALLBACK_URL 並以「✅ verified 200(內容非 Storybook — 可能 product app deploy)」回報為 production URL(:185-189),squat 站(anchor:design-system.netlify.app 200 但別人的)會被吐出 + 註記而非被擋。memory 2026-05-27 寫定後未跟上 06-07 行為改動",
+   "fix": "改 reference_deploy_targets.md:25 一句話:「必 curl HEAD 200(含 301/302)+ Storybook hallmark sniff 排序:200+Storybook 優先;200 非 Storybook 降級 fallback 回報並標注(2026-06-07 起 sniff 非硬閘,避免誤殺 product-app deploy)— squat 只被標注不被擋,user 仍需看註記」",
+   "adversarial": null
+  },
+  {
+   "cite": "packages/design-system/src/tokens/orphan-tokens.spec.md:121",
+   "verdict": "STALE",
+   "evidence": "宣稱的機械點 `npm run audit:tokens` 不存在:grep package.json + template/ds-product-template/package.json = 0 hit(root scripts 只有 story-quality:check 等),自稱「future add」從未兌現。但 CI gate 實際已接線、走的是另一條路:.github/workflows/release.yml:107 直接跑 `node scripts/audit-orphan-tokens.mjs --check` + scripts/release-preflight.mjs:51 `run('audit-orphan-tokens', 'node scripts/audit-orphan-tokens.mjs --check')` — 機制已落地但描述(npm alias + future 措辭)沒跟上現行為",
+   "fix": "最小修法二選一:(a) orphan-tokens.spec.md:121 改寫為「CI:release.yml deterministic-gates step + scripts/release-preflight.mjs 直呼 node scripts/audit-orphan-tokens.mjs --check」刪 future 措辭;或 (b) package.json 補 \"audit:tokens\": \"node scripts/audit-orphan-tokens.mjs --check\" 並讓 release.yml:107 / release-preflight.mjs:51 改呼 npm alias(單一住所)。(a) 較小、零行為改動",
+   "adversarial": null
+  },
+  {
+   "cite": "packages/design-system/src/tokens/uiSize/uiSize.spec.md:70",
+   "verdict": "OVERCLAIM",
+   "evidence": "grep 'field-height|uiSize|為什麼不' 遍 .claude/skills/design-system-audit/SKILL.md 全 dim 表 = 無任何 dim 專管「偏離 field-height 必有本格式 rationale」;實際只有弱間接路徑:audit-prompts.md:250(Rule B 邊界 dim 的 density 檢查「flag only if not using field-height tokens」)+ audit-prompts.md:197(Dim 5 抓 h-[32px] arbitrary px,但明寫 Don't flag Tailwind-native sizes → 用 h-10 偏離不會被抓)+ audit-prompts.md:20(任何含「為什麼/rationale/對照」的 prose 即豁免)。即:skill 不 enforce「按本格式」(三欄必填/位置在尺寸主章節/子標題格式皆無檢查),連「偏離必有 rationale」也只被泛用 consistency rule 弱覆蓋",
+   "fix": "二選一最小修:(a) 改 uiSize.spec.md:70 措辭為「由 audit-prompts.md 通用 rule 5 rationale-grep + Rule B density flag 間接把關;三欄格式為本 spec 約定,非機械 enforce」;(b) 在 design-system-audit 加 deterministic 檢查(偏離 field-height 的元件 spec 必含 `### 為什麼不` 標題 + 三欄),補進 audit-prompts.md 對應 dim",
+   "adversarial": null
+  },
+  {
+   "cite": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:543",
+   "verdict": "OVERCLAIM",
+   "evidence": "正面半邊真:ItemAvatar(item-anatomy.tsx:520)/ItemIcon(:475-487)自動查 RowSizeContext。但兩條「禁止」在 row-context(DS 內部/stories)零機械消費點:grep 全 live hooks 無任何規則擋 `import { AVATAR_SIZE }` 或 `<Avatar size={N}>` in row context(check_chrome_header_avatar_canonical.sh 攔的是反方向;check_sidebar_menu_button_implicit_wrap.sh 只攔非-asChild wrap;E.2 只擋 app-code 整模組 import 的側效);spec:627 自承「違反的話 review 會擋」= human review。且 owner docstring item-anatomy.tsx:80-91 仍教 asChild consumer「必須 import { AVATAR_SIZE }」+ `<Avatar size={AVATAR_SIZE.inline[size]} />` 範例 — 與 spec 禁令直接矛盾",
+   "fix": "最小修:(1) 改 item-anatomy.tsx:80-91 docstring 指向 <ItemAvatar> helper(移除教 import AVATAR_SIZE 的範例);(2) spec:543「程式化規則」措辭改「helper 程式化封裝 + review 防線」,或在 check_story_invariants.sh R1 加窄簽名(row-primitive asChild block 內 `<Avatar size={` / DS 外 `import { AVATAR_SIZE`)補機械閘",
+   "adversarial": null
+  },
+  {
+   "cite": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:834",
+   "verdict": "STALE",
+   "evidence": "check_item_content_primitive.sh 已在 .claude/hooks/retired/(非 live 目錄);settings.json 與 hooks/hooks.json grep `item_content_primitive` 零註冊;grep 全 live hooks + scripts 無任何 mt-0.5/gap-0.5 偵測接手(僅 check_tabs_content_chrome_body_double_gap.sh:143-144 註解順帶提及)。spec 仍以現在式宣稱「Hook … P1 warn」且 :835 的 @item-gap-exempt escape marker 已無消費者",
+   "fix": "改 item-anatomy.spec.md:833-835 Enforcement 段:標明該 hook 已 retired 並指向現行覆蓋(audit-time / mindset),或把 mt-0.5/gap-0.5 P1 規則折進既有 live hook(如 check_pattern_invariants.sh)再保留原文",
+   "adversarial": null
+  },
+  {
+   "cite": "packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md:364",
+   "verdict": "OVERCLAIM",
+   "evidence": "消費點存在:check_pattern_invariants.sh:50-85 C.1 + settings.json:204 PreToolUse 註冊。但 (1) C.1 是 P1 WARN stderr、exit 0、從不 record_worst(檔頭 :5 自述「P1 WARN stderr」;meta-patterns M25 也記「live P1 WARN」),spec 寫「機械化攔截」= 從未 block;(2) 偵測僅限本次 edit fragment 內 `<SurfaceBody` 與 `w-[` div 共現(check_pattern_invariants.sh:51-67),做不到 spec 同段宣稱的 DS-wide `<PopoverContent|<DialogContent...>` 必檢點覆蓋 — 嚴重度+覆蓋雙重超前宣稱",
+   "fix": "最小修:spec:364 措辭改「Hook check_pattern_invariants.sh C.1 write-time 機械化警示(P1 WARN,fragment-scope;DS-wide 全掃走 audit)」;若要真攔截需 C.1 升 record_worst 2 + @scroll-chain-allow escape(SSOT-affecting,走 ASK)",
+   "adversarial": null
+  },
+  {
+   "cite": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:237",
+   "verdict": "STALE",
+   "evidence": "描述沒跟上現況兩處:(1) `--divider-color` 不存在 — grep tokens/ + src/ 零 hit;真名 `--divider`(semantic.css:333)+ compat `--color-divider`(semantic.css:539),兩家族實際經 `border-divider` utility 消費;(2) A 家族(SurfaceHeader)code 零消費 `var(--chrome-header-height)`(overlay-surface.tsx grep 僅註解,:17 明寫棄用 min-h,對齊靠 24+2×tight 算式)→ 該 token 只有 B 家族(chrome-header.tsx:117,145,173)機械消費;`--layout-space-tight` 也僅 A 用(B fixed-height 無 py)。「兩家族 consume 同組 CSS variable(機械對齊)」實為聯集非交集 + token 名 drift",
+   "fix": "最小修:L240 `--divider-color` → `--divider`(消費形式 border-divider utility,semantic.css:333);L238 --chrome-header-height 註明「B 家族 tsx 直接消費;A 家族 padding 算式對齊(等式由 W3 assert + overlay-surface.tsx anatomy 註解守)」;tight/loose 標注各家族實際消費者",
+   "adversarial": null
+  },
+  {
+   "cite": "packages/design-system/src/components/AppShell/app-shell.spec.md:324",
+   "verdict": "STALE",
+   "evidence": "型別半句仍真(app-shell.tsx:36 `sidebar?: React.ReactNode`,無 TS 強制);但「不做機械強制…本約定靠 story 示範 + audit 把關」已過期:check_consumer_app_invariants.sh:222-228 Pattern 9(2026-06-12 加)以 `\\b(header|sidebar|aside)=\\{ *<(div|header|nav|aside|section)\\b` + 同檔 `<AppShell` 雙條件機械攔 raw-element slot(P0 violation),hook 自身註解 :223-224 明寫「原註『靠 audit 把關』無機械閘 → 兌現成 P0」;hook 已註冊 settings.json:317 + hooks/hooks.json:175。spec :324-325 措辭沒跟上(:325 header 條同句式同過期);另 hook 註解 cite 的 app-shell.spec.md:296-299 行號也已漂到 :324-325。",
+   "fix": "最小修:app-shell.spec.md:324-325 把「本約定靠 story 示範 + audit 把關」改為「raw-element slot 簽名(sidebar={<div>} / header={<header>} 等)由 check_consumer_app_invariants.sh Pattern 9 機械攔(P0);TS 型別層仍收 ReactNode 不強制(wrapper 包一層繞過的殘餘 case 靠 story 示範 + audit)」;順手把 hook :223 的 spec 行號 cite 296-299 更新為現行 324-325(或改 cite 段落名避免行號漂移)。",
+   "adversarial": null
+  }
+ ]
+}

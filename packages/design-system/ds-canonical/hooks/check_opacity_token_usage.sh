@@ -135,6 +135,24 @@ if [ -n "$HITS_PRIMITIVE" ]; then
   VIOLATIONS="${VIOLATIONS}\n   [primitive color as utility] $(echo "$HITS_PRIMITIVE" | tr '\n' ' ')"
 fi
 
+# 10) 幻覺 semantic state 尾綴(2026-07-10 批次 A C1:WM hover:bg-neutral-hovered ×3 檔 silent no-op 實證。
+#     真尾綴只有 -hover/-active/-selected(+ selected-hover/selected-active);過去式/-pressed 全幻覺,
+#     Tailwind 靜默不生成 → hover 無效果、build 不報錯)
+HITS_PHANTOM_STATE=$(echo "$NEW_CONTENT" | grep -oE "\b(hover:|active:|focus:)?(bg|text|border|ring)-[a-z][a-z-]*-(hovered|actived|focussed|pressed)\b" | sort -u || true)
+if [ -n "$HITS_PHANTOM_STATE" ]; then
+  VIOLATIONS="${VIOLATIONS}\n   [phantom state suffix(silent no-op)] $(echo "$HITS_PHANTOM_STATE" | tr '\n' ' ')"
+fi
+
+# 11) micro gap(<4px)+ registry fraction width(#71 2026-07-11 接線)——
+#     registry micro_gap / fraction 的 rationale 明寫「flag for human review」(非硬禁)→ 走
+#     SOFT WARN 非 block(避免誤殺 Calendar/Chart/FileViewer/Carousel 等 4 個既有合法 micro-gap 用途)。
+#     fraction 用 registry 明列 14 條(w-1/3.. 不含 w-1/2 = 合法留白),避免廣捕 w-N/M 誤殺。
+HITS_MICROGAP=$(echo "$NEW_CONTENT" | grep -oE "\bgap-(px|0\.5|1\.5)\b" | sort -u || true)
+HITS_FRACTION=$(echo "$NEW_CONTENT" | grep -oE "\bw-(1/3|2/3|1/4|3/4|1/5|2/5|3/5|4/5|1/6|5/6|1/12|5/12|7/12|11/12)\b" | sort -u || true)
+SOFT_NOTES=""
+[ -n "$HITS_MICROGAP" ] && SOFT_NOTES="${SOFT_NOTES}\n   [micro gap <4px] $(echo "$HITS_MICROGAP" | tr '\n' ' ')"
+[ -n "$HITS_FRACTION" ] && SOFT_NOTES="${SOFT_NOTES}\n   [fraction width] $(echo "$HITS_FRACTION" | tr '\n' ' ')"
+
 if [ -n "$VIOLATIONS" ]; then
   cat >&2 <<'EOF_HEAD'
 
@@ -160,7 +178,17 @@ EOF_HEAD
 EOF_BODY
   # P0 BLOCKER(2026-07-07 治理進化方向 2:對齊 user 2026-05-27「SSOT canonical 必 P0」doctrine;
   # 檔級豁免(anatomy/principles stories / token 自家)+ 行級 escape 已備,升級不增誤殺)
+  # micro-gap/fraction soft note 附在硬 block 訊息尾(一起讓 AI 看到,但不影響 exit code 判定)
+  [ -n "$SOFT_NOTES" ] && { echo "" >&2; echo "   （另有 soft flag,非 block 原因）:" >&2; echo -e "$SOFT_NOTES" >&2; }
   exit 2
+fi
+
+# 只有 micro-gap / fraction soft note(無硬 violation)→ WARN 非 block(registry rationale「flag for human review」)
+if [ -n "$SOFT_NOTES" ]; then
+  echo "" >&2
+  echo "⚠️  Dim 47 soft flag(registry micro_gap / fraction「flag for human review」— 非 block,#71 接線):" >&2
+  echo -e "$SOFT_NOTES" >&2
+  echo "   <4px gap / registry fraction width 常違反 item-anatomy slot 幾何 / layout SSOT → 人工 review。合理則行尾 @token-registry-ok: <rationale>。" >&2
 fi
 
 exit 0

@@ -1,9 +1,9 @@
 {
-  "ts": "2026-07-07T11:49:16.585Z",
-  "expected_dims": 90,
-  "classified": 90,
+  "ts": "2026-07-10T03:59:30.615Z",
+  "expected_dims": 91,
+  "classified": 91,
   "tier_counts": {
-    "DETERMINISTIC": 23,
+    "DETERMINISTIC": 24,
     "HOOK-ENFORCED": 40,
     "PURE-JUDGMENT": 27,
     "UNKNOWN": 0
@@ -369,6 +369,10 @@
     "90": {
       "tier": "PURE-JUDGMENT",
       "mechanism": "LLM layout-space macro 合規 DS-wide 全掃(NO-SAMPLE;regex 分不出 macro/micro);判準 = layoutSpace.spec.md「該用 token vs 刻意固定」邊界段;每 finding 對抗二次驗證(2026-07-01 錨:35 raw → 8 confirmed)"
+    },
+    "91": {
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/audit-failure-class-coverage.mjs --check(failure-class registry 每 class 必 protected/remediating+plan/judgment+auditDim;fail-closed;2026-07-10 user「每類病根必有防線」基本原則機械化)"
     }
   }
 }

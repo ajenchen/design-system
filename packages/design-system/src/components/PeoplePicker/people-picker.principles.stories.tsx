@@ -175,13 +175,13 @@ export const EmptyStateRule: Story = {
     <div>
       <Rule
         title="edit 模式 — 未選時顯示「請選擇人員」佔位提示"
-        note="跟 Select / Combobox 的 placeholder 行為一致。不用 em-dash,因為 edit mode 是可操作的"
+        note="跟 Select / Combobox 的 placeholder 行為一致。不用半形連字號,因為 edit mode 是可操作的"
       >
         <PeoplePicker value={null} onChange={() => {}} people={team} />
       </Rule>
 
       <Rule
-        title="readonly — 未填時顯示 em-dash（—）"
+        title="readonly — 未填時顯示半形連字號（-）"
         note="跟所有 Field readonly 空值呈現一致。table cell 場景特別常見(未指派 assignee)"
       >
         <PeoplePicker mode="readonly" value={null} />
