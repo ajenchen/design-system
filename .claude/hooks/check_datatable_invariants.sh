@@ -85,13 +85,15 @@ EOF
 esac
 
 # ── B.3 filter↔sort sibling sync reminder(P2 reminder)────────────────────────
+# 2026-07-14 拆檔對齊:filter row/group renderer 移居 data-table-filter-group.tsx(@internal),
+# row-layout 類 sync 關注點跟著搬 → 兩檔皆觸發 filter 側 reminder(M7 hook regex 對齊 file layout)。
 case "$FILE_PATH" in
-  *data-table-filter-panel.tsx)
+  *data-table-filter-panel.tsx|*data-table-filter-group.tsx)
     cat >&2 <<EOF
 
 ┄┄┄ B.3 check_datatable_invariants — sibling sync reminder ┄┄┄
 
-[P2] 動到 filter panel → 是否需要對應修 data-table-sort-manager.tsx?
+[P2] 動到 filter panel(或其 row/group renderer)→ 是否需要對應修 data-table-sort-manager.tsx?
 Self-check:row gap / row layout / row meta button / chrome corner action /
 empty state 行為 / CTA button variant — sort row 是否同步?
 
@@ -102,7 +104,8 @@ EOF
 
 ┄┄┄ B.3 check_datatable_invariants — sibling sync reminder ┄┄┄
 
-[P2] 動到 sort manager → 是否需要對應修 data-table-filter-panel.tsx?
+[P2] 動到 sort manager → 是否需要對應修 data-table-filter-panel.tsx(row renderer 在
+data-table-filter-group.tsx)?
 Self-check:row gap / row layout / row meta button / chrome corner action /
 empty state 行為 / CTA button variant — filter row 是否同步?
 

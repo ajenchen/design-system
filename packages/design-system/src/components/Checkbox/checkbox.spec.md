@@ -20,6 +20,8 @@ benchmark:
   - Polaris Checkbox: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Checkbox
 ---
 
+<!-- @spec-budget-exception: SSOT-heavy 例外(CLAUDE.md 行數預算「foundational SSOT 例外 ≤800-1200」)— 本檔持有跨元件 SSOT:「與 Switch 的分界」(~45 行)+「Clamp 政策(Label/Description 行數)」(~35 行);2026-07-14 knowledge-prune P2 結論「殘餘超標內容全是 canonical,再砍必動 meaning」(.claude/logs/prune-p2-candidates.md)。 -->
+
 <!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Checkbox 設計原則

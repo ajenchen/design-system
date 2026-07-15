@@ -1,33 +1,23 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // same-row-mixed-allow: header chrome corner buttons(close)跟 row inline actions(trash)不在同 row
-// code-quality-allow: file-size — 2026-05-03 M21 retract:filter-value-picker.tsx(187 行 / 1 consumer)inline 回本檔(505 → 687 行)。2026-07-14 deep-audit 誠實更新:現 822 行,**已過 800 hard cap** — 非 stale escape 留著;拆檔候選 = filter-value-picker 區段(等第 2 個 consumer 接入)+ nested-group renderer,屬結構 refactor 需獨立 branch 做 + 完整驗證,列入 file-size escalation 追蹤,禁再增量。
 import * as React from 'react'
-import { Plus, Trash2, X as XIcon, RotateCcw } from 'lucide-react'
+import { Plus, X as XIcon, RotateCcw } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { cn } from '@/lib/utils'
 import { Button } from '@/design-system/components/Button/button'
-import { Select, type SelectOption } from '@/design-system/components/Select/select'
-import { Combobox } from '@/design-system/components/Combobox/combobox'
-import { Input } from '@/design-system/components/Input/input'
-import { NumberInput } from '@/design-system/components/NumberInput/number-input'
-import { DatePicker, DatePickerRange } from '@/design-system/components/DatePicker/date-picker'
-import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
-import type { PersonValue } from '@/design-system/components/PeoplePicker/person-display'
+import type { SelectOption } from '@/design-system/components/Select/select'
 import { SurfaceHeader, SurfaceBody, COMPACT_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
 import { PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
-import { FieldControlGroup } from '@/design-system/components/FieldControlGroup/field-control-group'
 import type { ColumnType } from './column-types'
 import { getColumnId, getColumnLabel, getColumnMeta } from './lib/column-meta'
 import {
-  OPERATOR_REGISTRY,
-  DEFAULT_OPERATOR,
-  DATE_RELATIVE_OPTIONS,
-  DATE_RELATIVE_GROUPS,
-  getOperatorSpec,
-  getValueShape,
-  type ValueShape,
-} from './filter-operators'
+  FilterRow,
+  GroupBlock,
+  getDefaultOperator,
+  datePrecisionOf,
+  type FilterColumn,
+} from './data-table-filter-group'
 import {
   createEmptyFilterTree,
   isFilterTreeActive,
@@ -64,6 +54,9 @@ export type { Conjunction, FilterCondition, FilterGroup, FilterTree, FilterTreeF
  * Source-of-truth:
  * - Operator definitions:`./filter-operators.ts` `OPERATOR_REGISTRY`(SSOT,禁 hardcode op 字串)
  * - Filter state:**FilterTree**(本檔自管;搭配 TanStack `globalFilter` 求值)
+ * - Row / nested-group renderer:`./data-table-filter-group.tsx`;value picker:
+ *   `./data-table-filter-value-picker.tsx`(皆 @internal — 2026-07-14 file-size 拆檔,
+ *   本檔只留 orchestration:columns 抽取 / FilterTree mutators / panel chrome)
  *
  * 詳:`./filter-operators.spec.md`
  */
@@ -73,17 +66,8 @@ export type { Conjunction, FilterCondition, FilterGroup, FilterTree, FilterTreeF
 let _idSeed = 0
 const newId = () => `f${++_idSeed}-${Date.now().toString(36)}`
 
-// ── Helpers — internal types ────────────────────────────────────────────
-
-interface FilterColumn {
-  id: string
-  label: string
-  type: ColumnType
-  options?: Array<{ value: string; label: string }>
-  /** People pool for person/multiPerson filter picker(對齊 cell-registry meta.people SSOT)*/
-  people?: Array<{ name: string; avatarUrl?: string; description?: string }>
-  includeTime?: boolean
-}
+// ── Helpers — column extraction + condition factories ──────────────────
+// (FilterColumn type + operator helpers 住 ./data-table-filter-group.tsx)
 
 function extractColumns<TData>(columns: ColumnDef<TData, any>[]): FilterColumn[] {
   const out: FilterColumn[] = []
@@ -105,20 +89,6 @@ function extractColumns<TData>(columns: ColumnDef<TData, any>[]): FilterColumn[]
   }
   return out
 }
-
-function getOperatorOptions(type?: ColumnType): SelectOption[] {
-  const registry = type && OPERATOR_REGISTRY[type] ? OPERATOR_REGISTRY[type] : OPERATOR_REGISTRY.string
-  return registry.map((op) => ({ value: op.op, label: op.label }))
-}
-
-function getDefaultOperator(type?: ColumnType): string {
-  return (type && DEFAULT_OPERATOR[type]) || DEFAULT_OPERATOR.string
-}
-
-// Q6(2026-07-04):date 欄位把比對精度寫進 condition(includeTime=true → ms,否則 day)。
-// 'time' 欄暫不寫(值非完整日期,truncate 語意不成立;見 filter-operators.spec v3 time 註)。
-const datePrecisionOf = (col: FilterColumn | undefined): 'day' | 'ms' | undefined =>
-  col?.type === 'date' ? (col.includeTime ? 'ms' : 'day') : undefined
 
 const newCondition = (firstCol: FilterColumn | undefined): FilterCondition => ({
   kind: 'cond',
@@ -152,217 +122,6 @@ const newEmptyGroup = (): FilterGroup => ({
   conjunction: 'or',
   children: [newEmptyCondition()],
 })
-
-// ── Internal — FilterValuePicker(value-picker switcher per ValueShape)──
-//
-// 2026-05-03 M21 retract:本 helper 原本獨立檔 `filter-value-picker.tsx`,
-// claim「未來 inline filter UI 共用」但只 1 consumer(本 panel)= 違 M21
-// premature abstraction。inline 回 panel,日後若真有第 2 consumer 再抽。
-
-interface FilterValuePickerColInfo {
-  id: string
-  label: string
-  options?: Array<{ value: string; label: string }>
-  /** Person pool — person/multiPerson filter picker 用(2026-05-07 升級,SSOT 對齊 cell-registry) */
-  people?: Array<{ name: string; avatarUrl?: string; description?: string }>
-}
-
-interface FilterValuePickerProps {
-  shape: ValueShape | null
-  value: unknown
-  onChange: (v: unknown) => void
-  colInfo?: FilterValuePickerColInfo
-  disabled?: boolean
-  /** 用 column.label 組「{label} 篩選值」(panel 每 row 不顯式 label,a11y 必填) */
-  ariaLabel?: string
-  /** Forward 給內部 Field control 的 className(2026-05-04 #2 fix)
-   *  避免外層包 wrapper div 破壞 FieldControlGroup CSS variants(rounded radii / margin overlap) */
-  className?: string
-}
-
-function FilterValuePicker({
-  shape,
-  value,
-  onChange,
-  colInfo,
-  disabled,
-  ariaLabel,
-  className,
-}: FilterValuePickerProps) {
-  if (!shape || disabled) {
-    return <Input size="sm" value="" onChange={() => {}} placeholder="輸入值…" disabled aria-label={ariaLabel} className={className} />
-  }
-
-  switch (shape) {
-    case 'none':
-      return null
-
-    case 'text':
-      return (
-        <Input
-          size="sm"
-          value={String(value ?? '')}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="輸入值…"
-          aria-label={ariaLabel}
-          className={className}
-        />
-      )
-
-    case 'number':
-      return (
-        <NumberInput
-          size="sm"
-          value={typeof value === 'number' ? value : null}
-          onChange={(v) => onChange(v ?? '')}
-          placeholder="輸入數字…"
-          aria-label={ariaLabel}
-          className={className}
-        />
-      )
-
-    case 'date_single':
-      return (
-        <DatePicker
-          size="sm"
-          value={typeof value === 'string' ? value : null}
-          onChange={(v) => onChange(v ?? '')}
-          aria-label={ariaLabel}
-          className={className}
-        />
-      )
-
-    case 'date_range':
-      return (
-        <DatePickerRange
-          size="sm"
-          value={Array.isArray(value) && value.length === 2
-            ? (value as [string | null, string | null])
-            : null}
-          onChange={(v) => onChange(v)}
-          aria-label={ariaLabel}
-          className={className}
-        />
-      )
-
-    case 'date_relative': {
-      // 群組分類:Past / Current / Future(對齊 Linear / Notion idiom),走 Select.groups → SelectMenu
-      const opts: SelectOption[] = DATE_RELATIVE_OPTIONS.map((o) => ({
-        value: o.value,
-        label: o.label,
-        group: o.group,
-      }))
-      return (
-        <Select
-          size="sm"
-          options={opts}
-          groups={DATE_RELATIVE_GROUPS as unknown as Array<{ key: string; label: string }>}
-          value={String(value ?? '')}
-          onChange={(v) => onChange(v)}
-          placeholder="選擇相對日期"
-          aria-label={ariaLabel}
-          className={className}
-        />
-      )
-    }
-
-    case 'select_single': {
-      const opts: SelectOption[] = (colInfo?.options ?? []).map((o) => ({
-        value: o.value,
-        label: o.label,
-      }))
-      return (
-        <Select
-          size="sm"
-          options={opts}
-          value={String(value ?? '')}
-          onChange={(v) => onChange(v)}
-          placeholder="選擇值"
-          aria-label={ariaLabel}
-          className={className}
-        />
-      )
-    }
-
-    case 'select_multi': {
-      const opts = (colInfo?.options ?? []).map((o) => ({
-        value: o.value,
-        label: o.label,
-      }))
-      const arr = Array.isArray(value) ? (value as string[]) : []
-      return (
-        <Combobox
-          size="sm"
-          options={opts}
-          value={arr}
-          onChange={(v) => onChange(v)}
-          placeholder="選擇值…"
-          aria-label={ariaLabel}
-          className={className}
-        />
-      )
-    }
-
-    case 'datetime_single':
-      return (
-        <DatePicker
-          size="sm"
-          showTime
-          value={typeof value === 'string' ? value : null}
-          onChange={(v) => onChange(v ?? '')}
-          aria-label={ariaLabel}
-          className={className}
-        />
-      )
-
-    case 'datetime_range':
-      return (
-        <DatePickerRange
-          size="sm"
-          showTime
-          value={Array.isArray(value) && value.length === 2
-            ? (value as [string | null, string | null])
-            : null}
-          onChange={(v) => onChange(v)}
-          aria-label={ariaLabel}
-          className={className}
-        />
-      )
-
-    // person_single / person_multi — 走 PeoplePicker(2026-05-07 升級,對齊 cell-registry SSOT)。
-    // colInfo.people 來自 column meta.people。Filter value:
-    //   - person_single:存 PersonValue | null(picker emit array,我們取 [0])
-    //   - person_multi:存 PersonValue[]
-    case 'person_single': {
-      const v = value as PersonValue | null | undefined
-      return (
-        <PeoplePicker
-          size="sm"
-          value={v ?? null}
-          people={colInfo?.people ?? []}
-          onChange={(next) => onChange(next[0] ?? null)}
-          aria-label={ariaLabel}
-          className={className}
-        />
-      )
-    }
-    case 'person_multi': {
-      const v = Array.isArray(value) ? (value as PersonValue[]) : []
-      return (
-        <PeoplePicker
-          size="sm"
-          value={v}
-          people={colInfo?.people ?? []}
-          onChange={(next) => onChange(next)}
-          aria-label={ariaLabel}
-          className={className}
-        />
-      )
-    }
-    default:
-      return null
-  }
-}
 
 // ── Component Props ─────────────────────────────────────────────────────
 
@@ -644,179 +403,3 @@ export const DataTableFilterPanel = React.forwardRef(DataTableFilterPanelInner) 
   props: DataTableFilterPanelProps<TData> & { ref?: React.ForwardedRef<HTMLDivElement> }
 ) => React.ReactElement
 ;(DataTableFilterPanel as { displayName?: string }).displayName = 'DataTableFilterPanel'
-
-// ── ConjunctionLabel ───────────────────────────────────────────────────
-
-const CONJ_OPTIONS: SelectOption[] = [
-  { value: 'and', label: 'And' },
-  { value: 'or', label: 'Or' },
-]
-
-function ConjunctionLabel({
-  index, conjunction, onChange,
-}: { index: number; conjunction: Conjunction; onChange: (c: Conjunction) => void }) {
-  // index === 0:首 row 顯示靜態「Where」label
-  // index === 1:**唯一可改**的 AND/OR Select(連動整 group conjunction)
-  // index ≥ 2:被連動的 row,read-only 顯示當前 conjunction 文字(同 Where 視覺,A6 canonical)
-  //   對齊 Airtable / Notion / Linear 共識 @benchmark-unverified(non-OSS)
-  //   px-[var(--field-px)] 對齊 Field 內部 padding 12px(Q13)
-  if (index === 0) {
-    return <div className="w-20 shrink-0 text-body text-fg-muted px-[var(--field-px)] self-center">Where</div>
-  }
-  if (index >= 2) {
-    const label = conjunction === 'and' ? 'And' : 'Or'
-    return <div className="w-20 shrink-0 text-body text-fg-muted px-[var(--field-px)] self-center">{label}</div>
-  }
-  // index === 1:可切換的 AND/OR Select
-  // minRows={2} — And/Or 2 選項,顯式縮 menu 高度避免 reserve 3 row 空白(Q5)
-  return (
-    <div className="w-20 shrink-0">
-      <Select
-        size="sm"
-        options={CONJ_OPTIONS}
-        value={conjunction}
-        onChange={(v) => onChange(v as Conjunction)}
-        minRows={2}
-        aria-label="連接詞 — 同 group 共用"
-      />
-    </div>
-  )
-}
-
-// ── FilterRow(flat 用 + group 內共用) ──────────────────────────────
-
-function FilterRow({
-  index, condition, conjunction, filterableColumns, fieldOptions,
-  onChangeConjunction, onChangeField, onChangeOp, onChangeValue, onRemove,
-}: {
-  index: number
-  condition: FilterCondition
-  conjunction: Conjunction
-  filterableColumns: FilterColumn[]
-  fieldOptions: SelectOption[]
-  onChangeConjunction: (c: Conjunction) => void
-  onChangeField: (v: string) => void
-  onChangeOp: (v: string) => void
-  onChangeValue: (v: unknown) => void
-  onRemove: () => void
-}) {
-  const colInfo = filterableColumns.find((c) => c.id === condition.field)
-  const operatorOptions = getOperatorOptions(colInfo?.type)
-  const hasField = !!condition.field
-  const opSpec = colInfo ? getOperatorSpec(colInfo.type, condition.op) : null
-  const valueShape: ValueShape | null = colInfo && opSpec
-    ? getValueShape(opSpec, colInfo.type, colInfo.includeTime)
-    : null
-  // op 'is_set' / 'is_not_set' 等 shape='none' → 無 value cell,op 自動 expand 填剩餘寬
-  // 對齊 Notion / Airtable / Linear filter row 行為
-  // 注意:valueShape=null(初始無 field 選)時仍 render value cell(disabled placeholder)— 只 'none' 才 fold
-  const hasValueCell = valueShape !== 'none'
-
-  // FieldControlGroup 接合 field + op + value 視覺(2026-05-04 E refactor + 多輪 fix):
-  //   - border collapse 取代 3 顆獨立 Select 並排,對齊 Airtable / Linear / Notion filter row idiom
-  //   - ConjunctionLabel + Trash 在 group 外層(meta actions,不屬 control 一體)
-  //   - **#5 fix**:row 內水平 gap = `gap-2` (8px),layoutSpace 規則 5 緊密相關
-  //   - **#9 fix**:cell 用 `min-w-[]`(field 160 / op 120),value flex-1 min-w-0,讓 long label 可撐寬
-  //   - **#2 fix**:FilterValuePicker 直接是 FieldControlGroup direct child(無 wrapper div),CSS variants 命中正確
-  return (
-    <div className="flex items-center gap-2">
-      <ConjunctionLabel index={index} conjunction={conjunction} onChange={onChangeConjunction} />
-      {/* **#9 fix(2026-05-04 v4)**:Field controls trigger `w-full` override 外 className,改用 Tailwind `!`
-          important 強制 override(`!w-[160px]` / `!w-[120px]`),value 用 `!flex-1 !min-w-0`。
-          Select 元件本身沒 destructure `style` prop 所以 inline style flex-basis 行不通,只能用 className。 */}
-      <FieldControlGroup block className="flex-1 min-w-0">
-        {/* 2026-05-23 Phase A.4 Decision 2:`!w-[160px]` / `!w-[120px]` → tokens
-            `--data-table-filter-field-width` / `--data-table-filter-op-width`(SSOT in uiSize.css)
-            Behavior preserved 完好如初:flat + nested 同 width(token 是 design constant) */}
-        <Select
-          className="!w-[var(--data-table-filter-field-width)] flex-shrink-0"
-          size="sm"
-          options={fieldOptions}
-          value={condition.field}
-          onChange={onChangeField}
-          placeholder="選擇欄位"
-          aria-label="篩選欄位"
-        />
-        <Select
-          className={hasValueCell ? '!w-[var(--data-table-filter-op-width)] flex-shrink-0' : '!flex-1 !min-w-0'}
-          size="sm"
-          options={operatorOptions}
-          value={condition.op}
-          onChange={onChangeOp}
-          disabled={!hasField}
-          placeholder="運算子"
-          aria-label="篩選運算子"
-        />
-        {hasValueCell && (
-          <FilterValuePicker
-            shape={valueShape}
-            value={condition.value}
-            onChange={onChangeValue}
-            colInfo={colInfo}
-            disabled={!hasField}
-            ariaLabel={colInfo ? `${colInfo.label} 篩選值` : '篩選值'}
-            className="!flex-1 !min-w-0"
-          />
-        )}
-      </FieldControlGroup>
-      {/* Trash 用 text Button — filter row 是 form-control row,Field 同高對齊(28 md) */}
-      <Button variant="text" size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={onRemove} />
-    </div>
-  )
-}
-
-// ── GroupBlock(nested 用) ────────────────────────────────────────────
-
-function GroupBlock({
-  index, group, rootConjunction, filterableColumns, fieldOptions,
-  onChangeRootConjunction, onChangeGroupConjunction,
-  onChangeCondition, onRemoveCondition, onAddCondition, onRemoveGroup,
-}: {
-  index: number
-  group: FilterGroup
-  rootConjunction: Conjunction
-  filterableColumns: FilterColumn[]
-  fieldOptions: SelectOption[]
-  onChangeRootConjunction: (c: Conjunction) => void
-  onChangeGroupConjunction: (c: Conjunction) => void
-  onChangeCondition: (condId: string, patch: Partial<FilterCondition>) => void
-  onRemoveCondition: (condId: string) => void
-  onAddCondition: () => void
-  onRemoveGroup: () => void
-}) {
-  return (
-    <div className="flex items-start gap-2">
-      <div className="pt-2">
-        <ConjunctionLabel index={index} conjunction={rootConjunction} onChange={onChangeRootConjunction} />
-      </div>
-      {/* Group container 灰底 — `bg-muted`(`--muted` neutral-2,user 2026-05-09 拍板 Q3 A)。對齊 color.spec.md L651-654 「table header / tab / code block / skeleton」靜態低重要 surface semantic */}
-      <div className="flex-1 min-w-0 rounded-md bg-muted p-2 flex flex-col gap-2">
-        {group.children.map((cond, cIdx) => (
-          <FilterRow
-            key={cond.id}
-            index={cIdx}
-            condition={cond}
-            conjunction={group.conjunction}
-            filterableColumns={filterableColumns}
-            fieldOptions={fieldOptions}
-            onChangeConjunction={onChangeGroupConjunction}
-            onChangeField={(v) => {
-              const newCol = filterableColumns.find((c) => c.id === v)
-              onChangeCondition(cond.id, { field: v, op: getDefaultOperator(newCol?.type), value: '', datePrecision: datePrecisionOf(newCol) })
-            }}
-            onChangeOp={(v) => onChangeCondition(cond.id, { op: v, value: '' })}
-            onChangeValue={(v) => onChangeCondition(cond.id, { value: v })}
-            onRemove={() => onRemoveCondition(cond.id)}
-          />
-        ))}
-        {/* Q9 — text variant 對齊 inline 派 + 視覺輕量 */}
-        <div className="flex items-center justify-between">
-          <Button variant="text" size="sm" startIcon={Plus} onClick={onAddCondition}>加入巢狀篩選</Button>
-          {group.children.length === 0 && (
-            <Button variant="text" size="sm" startIcon={Trash2} danger onClick={onRemoveGroup}>移除空群組</Button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}

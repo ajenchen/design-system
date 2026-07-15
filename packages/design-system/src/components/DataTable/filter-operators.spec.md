@@ -1,6 +1,6 @@
 # Advanced Filter 設計原則(Operator × ColumnType × ValueShape SSOT,v3)
 
-> **狀態**:已落地 — registry 寫成 `filter-operators.ts`,`filter-tree.ts` + `data-table-filter-panel.tsx` 消費(原 draft 兩個升級條件皆已達成,2026-06-11 對齊)。
+> **狀態**:已落地 — registry 寫成 `filter-operators.ts`,`filter-tree.ts` + filter panel 家族消費(`data-table-filter-panel.tsx`;row/picker 直接消費點在 2026-07-14 拆檔子模組 `data-table-filter-group.tsx` / `data-table-filter-value-picker.tsx`)(原 draft 兩個升級條件皆已達成,2026-06-11 對齊)。
 > **M8 benchmark**:對照 ClickUp(CU)/ Airtable(AT)/ Notion(NT)三家。**v3 加 datetime / includeTime + 砍 number.between(2/3 業界共識)**。
 > **設計路線**:**ClickUp 為 baseline**,合理 + 不衝突 + 真實用的擴充採納。
 > **檔位**:暫放 DataTable/,若決定抽 `patterns/advanced-filter/` 再搬。
@@ -133,7 +133,7 @@
 | 1-to-1 比對 | ✓ `is` / `is_not`(picker 多選 OR-語意) | ✗ 不適用(陣列比單值 ambiguous) |
 | 集合運算 | ✗ 不適用 | ✓ `has_any_of` / `has_all_of` / `has_none_of` |
 
-差異**根源於 cell 資料形狀**,不是 picker 不同。Value picker 兩者都共用 `<Combobox>` DS 既有元件(code 真值 `data-table-filter-panel.tsx` select_multi case)。
+差異**根源於 cell 資料形狀**,不是 picker 不同。Value picker 兩者都共用 `<Combobox>` DS 既有元件(code 真值 `data-table-filter-value-picker.tsx` select_multi case;2026-07-14 拆檔自 panel)。
 
 ### `person`(4 ops — 跟 select 同邏輯)
 | op key | 中 | en | valueShape | CU | AT | NT |
@@ -238,7 +238,7 @@
 
 **技術坑(信心 85%,Phase B spec.md 詳)**:TanStack `ColumnFiltersState` per-column 一筆 filter value,N 條同 column 會 AND-chain 不能 OR。**業界標準解法**:棄用 `columnFilters`,改自管 FilterTree state + 用 `globalFilter` + 自訂 `globalFilterFn` 走樹求 boolean。
 
-## 8. 邊界案例(code 真值 — `filter-tree.ts` / `data-table-filter-panel.tsx`)
+## 8. 邊界案例(code 真值 — `filter-tree.ts` / filter panel 家族:`data-table-filter-panel.tsx` + `data-table-filter-group.tsx`)
 
 - **Condition 值空 / 未選 field**:視為 incomplete,求值 **pass-through**(不過濾任何 row);空值 ≠ `is_not_set`(後者是顯式 op)— `isConditionComplete` 守門
 - **群組刪光 condition**:空群組保留並 pass-through(true),panel 顯示「移除空群組」按鈕由 user 顯式刪除,不自動消失

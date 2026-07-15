@@ -246,12 +246,16 @@ export {
   FieldError,
   FieldGroup,
   FieldLabel,
+  getMenuListMinHeight,
   useFormValidation,
 } from './components/Field/index'
 export type {
   FieldGroupProps,
   FieldLabelProps,
+  FieldMode,
   FieldProps,
+  FieldVariant,
+  FieldWidth,
   FormFieldInputProps,
   UseFormValidationOptions,
   UseFormValidationReturn,

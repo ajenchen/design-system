@@ -272,6 +272,9 @@ function emitNamedReexports(indexAbsPath, fromSpecifier, ownerLabel, out) {
   const values = []
   const types = []
   for (const [name, { kind, origin }] of all) {
+    // /Internal$/ 慣例:internal-by-convention 型別通道(FieldVariantInternal 等)
+    // subpath-only,不進 root front-door(2026-07-14 API 策展 E 配套;value/type 皆擋)
+    if (/Internal$/.test(name)) continue
     if (/Meta$/.test(name)) {
       // API 策展 B:componentMeta(建置/稽核 metadata)收窄出 front-door。
       // 防呆:僅預期 value 形式的 `<camel>Meta`;type 名撞上 /Meta$/ → fail-loud 人工決策。

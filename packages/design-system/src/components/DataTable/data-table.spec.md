@@ -305,7 +305,7 @@ type FilterTreeNested = { mode: 'nested'; conjunction: 'and'|'or'; children: Fil
 
 ### 三、Operator × ValueShape SSOT
 
-`filter-operators.ts` 的 `OPERATOR_REGISTRY: Record<ColumnType, OperatorSpec[]>` 是唯一 truth。Panel 完全 data-driven:field 選 → load op set → 選 op → 由 `valueShape` dispatch picker(`filter-value-picker.tsx`)。`is_set` / `is_not_set` / `is_true` / `is_false`(`ValueShape='none'`)不渲 picker。
+`filter-operators.ts` 的 `OPERATOR_REGISTRY: Record<ColumnType, OperatorSpec[]>` 是唯一 truth。Panel 完全 data-driven:field 選 → load op set → 選 op → 由 `valueShape` dispatch picker(`data-table-filter-value-picker.tsx`,@internal;2026-07-14 file-size 拆檔自 panel)。`is_set` / `is_not_set` / `is_true` / `is_false`(`ValueShape='none'`)不渲 picker。
 
 ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 

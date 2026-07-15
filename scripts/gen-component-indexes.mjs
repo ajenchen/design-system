@@ -55,9 +55,16 @@ function findMainStems(dirPath, dirName) {
 // spec/principles 當 consumer API 教的公開 group 子元件(MUI ButtonGroup / Ant Space.Compact /
 // Chakra CheckboxGroup / Mantine Checkbox.Group 全 public),原 generator 只 export 主檔 =
 // 文件教得到、import 拿不到的機械缺口。約定:`<dir 內任意>-group.tsx` 一律隨 index 一併 re-export。
+// 2026-07-14 拆檔補洞:同 findFeatureSiblings,檔頭 10 行含 `@internal` marker 者排除
+// (錨例:DataTable/data-table-filter-group.tsx 是 @internal renderer 非公開 group 子元件;
+//  無此排除 → internal 被 index re-export 進 subpath + root barrel = 違 dim-72 internal canonical)。
 function findGroupSiblings(dirPath, mainStem) {
   return readdirSync(dirPath)
-    .filter((f) => f.endsWith('-group.tsx') && !f.includes('.stories.') && f !== mainStem + '.tsx')
+    .filter((f) => {
+      if (!f.endsWith('-group.tsx') || f.includes('.stories.') || f === mainStem + '.tsx') return false
+      const head = readFileSync(join(dirPath, f), 'utf8').split('\n').slice(0, 10).join('\n')
+      return !head.includes('@internal')
+    })
     .map((f) => f.replace(/\.tsx$/, ''))
     .sort()
 }
@@ -124,9 +131,15 @@ function main() {
   let writeCount = 0
 
   for (const { mainStems, indexPath, dirPath } of targets) {
+    // EXTRA_SUBPATH_STEMS:internal 型別通道(2026-06-05 拍板「internal 需 subpath 包裝後
+    // 消費」)的機械落實 — 這些 .ts 模組不進通用 sibling 規則(僅 .tsx),explicit 列名。
+    // root barrel 側由 /Internal$/ 名稱過濾擋前門(gen-design-system-barrel.mjs),subpath-only。
+    const EXTRA_SUBPATH_STEMS = { Field: ['field-types'] }
+    const dirName = dirPath.split('/').pop()
     const expected = generateIndexContent(mainStems, [
       ...mainStems.flatMap((stem) => findGroupSiblings(dirPath, stem)),
       ...mainStems.flatMap((stem) => findFeatureSiblings(dirPath, stem)),
+      ...(EXTRA_SUBPATH_STEMS[dirName] ?? []),
     ])
     const existing = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : null
     if (CHECK_MODE) {

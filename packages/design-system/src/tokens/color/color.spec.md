@@ -649,7 +649,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 | Token | 答 | 語意 | 典型場景(real consumer grep verified 2026-05-20) |
 |---|---|---|---|
-| `bg-muted`(neutral-2) | **是** | **靜態非互動 surface** — 退化 / placeholder / locked 視覺 | Skeleton(`skeleton.tsx:10`) / DataTable table header(`data-table.tsx:312 HEADER_BG`) / Calendar 非當月日格(`calendar.tsx:316`)/ Alert neutral(`alert.tsx:30`)/ DataTable filter-panel inner group container(`data-table-filter-panel.tsx:784`)/ tab 容器 / code block / scrollbar track(`semantic.css:367`)/ anatomy `<th>` |
+| `bg-muted`(neutral-2) | **是** | **靜態非互動 surface** — 退化 / placeholder / locked 視覺 | Skeleton(`skeleton.tsx:10`) / DataTable table header(`data-table.tsx:312 HEADER_BG`) / Calendar 非當月日格(`calendar.tsx:316`)/ Alert neutral(`alert.tsx:30`)/ DataTable filter-panel inner group container(`data-table-filter-group.tsx:202`,2026-07-14 拆檔自 filter-panel)/ tab 容器 / code block / scrollbar track(`semantic.css:367`)/ anatomy `<th>` |
 | `bg-secondary`(neutral-3) | **否,只是視覺退後一級** | **存在且微淡可辨** — 元素是正常狀態,但需要退後一級 | Tag neutral(`tag.tsx`)/ Slider rest track(`slider.tsx`)/ FileItem compact-B progress track(`file-item.tsx`)/ Badge low(`badge.tsx:37`)/ CircularProgress track(`circular-progress.tsx:150`)/ Steps fillBg(`steps.tsx:698,715`)/ ProgressBar track(`progress-bar.tsx`)|
 
 **判斷法**:「這個元素是『還沒準備好 / 不可操作』嗎?」

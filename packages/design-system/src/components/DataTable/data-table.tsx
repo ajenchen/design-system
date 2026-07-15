@@ -5,13 +5,16 @@
 // 每個檔過 M21 / M17 / Rule-of-3 三 test:
 //   - data-table.tsx(主,foundational)
 //   - data-table-filter-panel.tsx + data-table-sort-manager.tsx + data-table-column-visibility-panel.tsx(panel state 隔離)
+//   - data-table-filter-group.tsx + data-table-filter-value-picker.tsx(@internal;2026-07-14 filter panel
+//     過 800 hard cap 拆檔 — row/nested-group renderer + ValueShape picker,只被 panel 消費)
 //   - cell-registry.tsx(column type → cell display / edit 解析 SSOT)
 //   - data-table-interaction-layer.tsx + active-editor-controller.ts(spreadsheet overlay + portal editor)
 //   - column-types.ts + filter-operators.ts(✓ Rule-of-3 SSOT,3+ consumer)
 //   - filter-tree.ts(pure data + eval,test isolation)
 //   - lib/column-meta.ts(Internal SSOT,消 5 處 `(col as any)`)
 //   - + stories / spec / css
-// M21 retract:filter-value-picker.tsx 1 consumer → 已 inline 回 panel。
+// M21 retract:filter-value-picker.tsx 1 consumer → 2026-05-03 inline 回 panel(上列 2026-07-14
+//   @internal 拆檔非 M21 迴轉:非 public 抽象,file-size hard cap 驅動,consumer 仍只見 panel)。
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { Empty } from '@/design-system/components/Empty/empty'

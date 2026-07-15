@@ -1,16 +1,16 @@
 ---
 name: project-wm-ds-alignment-campaign
-description: WM↔DS 對齊戰役(2026-07-08)— R1-R4 + R3 七題 + indicator A 案全落地;雙 repo branch 備齊只剩 user 雙 push gate
+description: WM↔DS 對齊戰役(2026-07-08)— 全落地收官:beta.84 已發版、WM lockfile beta.84 + verify 13/13 真綠、CellSelect 包裝落地;唯一剩 WM main push 由 user
 metadata: 
   node_type: memory
   type: project
   originSessionId: 3fb5856b-7b97-40a4-afa1-5db311326bea
 ---
 
-WM(work-management)ds問題.pdf 46 findings 根因戰役。交接 SSOT = `work-management/docs/2026-07-08-ds-alignment-handoff.md`;對帳 `node docs/ds-alignment/verify.mjs`(**13/13 ✅ 對 installed DS**)。**⚠️ 非「全部完成」**——2026-07-10 5-agent 對抗 re-audit 見下方 `## 2026-07-10`,有 3 OPEN + 數項 DEPENDS-ON-DS-publish。
+WM(work-management)ds問題.pdf 46 findings 根因戰役。交接 SSOT = `work-management/docs/2026-07-08-ds-alignment-handoff.md`;對帳 `node docs/ds-alignment/verify.mjs`。**2026-07-14 收官**:beta.84 已發版 + WM lockfile 真綠(見文末「2026-07-14 發版收官」段);2026-07-10 re-audit 3 OPEN 已全收(見 `## 2026-07-10 收官 session`);**唯一剩:WM branch merge/push main 由 user**。
 
-- **DS branch `2026-07-08-wm-rootcause-fixes`**(pushed):R2 export 斷鏈修 + R4 防線(幻覺 token/偽表格/表單簽名/R8R9 fork override/escape repo-ratchet/eslint-plugin)+ R3 拍板 spec 批(pane-header 判準/inline-create idle/計數 suffix/分隔線幾何)+ **Field width=fill/hug 軸**(4 控件鋪線;Input/LinkInput/NumberInput VariantProps 排除 width 避 TS2320)+ **indicator A 案**(cell display 態零恆顯 icon,6/6 benchmark;cell-registry 停傳 showDisplayEndIcon,prop 留 opt-in;推翻 2026-05-10/06-26 兩次拍板,RFC 已追記)。**user 說「push」→ 自動發版 beta.84**。
-- **WM branch `2026-07-08-ds-alignment`**(pushed,6 commits):Wave-1/2/3a/3b 全落地 — FilterPanel/欄面板/CAT_SOLID/useFormValidation×8/composer 歸左欄+獨立捲/count space-between/divider 幾何/SectionHeader/metadata 全 hug/Status 三處統一 select column/幻覺 utility 清零。**beta.84 發版後跑 `npm i @qijenchen/design-system@beta` + verify.mjs 正式接上**。
+- **DS branch `2026-07-08-wm-rootcause-fixes`**(pushed):R2 export 斷鏈修 + R4 防線(幻覺 token/偽表格/表單簽名/R8R9 fork override/escape repo-ratchet/eslint-plugin)+ R3 拍板 spec 批(pane-header 判準/inline-create idle/計數 suffix/分隔線幾何)+ **Field width=fill/hug 軸**(4 控件鋪線;Input/LinkInput/NumberInput VariantProps 排除 width 避 TS2320)+ **indicator A 案**(cell display 態零恆顯 icon,6/6 benchmark;cell-registry 停傳 showDisplayEndIcon,prop 留 opt-in;推翻 2026-05-10/06-26 兩次拍板,RFC 已追記)。**已發版 beta.84(2026-07-14,見文末段)**。
+- **WM branch `2026-07-08-ds-alignment`**(pushed,6 commits):Wave-1/2/3a/3b 全落地 — FilterPanel/欄面板/CAT_SOLID/useFormValidation×8/composer 歸左欄+獨立捲/count space-between/divider 幾何/SectionHeader/metadata 全 hug/Status 三處統一 select column/幻覺 utility 清零。**beta.84 已接上:lockfile bump + verify 13/13 真綠(2026-07-14,見文末段)**。
 - R3 七題 user 逐題拍板紀錄在 handoff;indicator A 案 = display 零恆顯 icon、affordance = hover outline(field-controls.spec cell 條文已改寫)。
 - Backlog:DS API 缺口 5 項(panel i18n/條件數 helper/maxConditions/footer slot/now 注入)+ DialogBody 兩欄組合 API(Wave-3a 發現)+ prune P2 候選 hook `check_ssot_header_declaration.sh`(6 月 0 fire)。
 
@@ -28,10 +28,12 @@ WM(work-management)ds問題.pdf 46 findings 根因戰役。交接 SSOT = `work-m
 
 **2026-07-10 終局收官(user「不留任何待辦」)**:批次 A 全數處置 — r3 簽名 ×10 + PersonValue/PersonDisplay export(C14 前置,probe 驗 root barrel)+ item-anatomy「可收合 section header 組合 canonical」(R3-7 拍板 codify)+ registry antiPattern(C16 story 層)+ harness MINI_TABLE case;判斷類 5 項歸 judgment + auditDim(RoleCell/TypeSettings 拍板反例實證 regex 不可判)。**failure-class registry 終態:protected 15 / judgment 5 / remediating 0**。codex 三重對等(任務/資訊/閱讀鏡射 A.0,hook 5️⃣)+ 最強自動探測機(gpt-5.6-sol + ultra,CLI 換版自動重探)全上線。task #94/#100/#101/#102/#103 全 completed。
 
-**唯一剩:發 beta.84**(對外不可逆 + 觸發下游,照 solo-workflow 等 user 明確「push main/發版」trigger)。發版後 WM `npm i @qijenchen/design-system@beta` + lockfile bump → 對帳從「假綠」(本機 --no-save tarball)轉真綠。
+## 2026-07-14 發版收官
+
+**beta.84 已發版**(npm `latest` + `beta` dist-tag 皆 = 0.1.0-beta.84;deep-audit 戰役 367 material 修復同車,DS commit `9b7234bd` + internal 型別通道補完 `b7466895`)。**WM 已接上**:lockfile bump beta.82→beta.84 + **CellSelect 包裝落地**(naked 合法化包裝,WM commit `2979dc9`)→ `verify.mjs` **13/13 真綠對 published DS**(07-10 抓的「本機 --no-save tarball 假綠」問題根治;tsc 過)。**唯一剩:WM branch `2026-07-08-ds-alignment` merge/push main 由 user**(solo-workflow gate)。deep-audit baton ledger 已標 CAMPAIGN CLOSED(`.claude/planning/2026-07-14-deep-audit-baton.md`)。
 
 **2026-07-10 治理覆蓋 matrix(user「未來 consumer 是否被治理?」)**:41-agent workflow 逐 class 驗 — 20 class 僅 3 MECHANICAL_CONSUMER + 1 DS_API_FIXED,**14 DOC_ONLY + 1 UNGOVERNED = user 質疑成立**。已落地:MenuItem `startContent`(佔位=startIcon 同容器 SSOT)+ WM 左 rail 改包 MenuItem + r3 nav-row 簽名(31/31 test)+ 2 stale 治理描述修。**收官計畫 SSOT → `.claude/planning/2026-07-10-consumer-coverage-remediation.md`**(批次 A r3 簽名 ×14 / B eslint 發佈 + 兩欄 dialog 拍板 / C 常設閘 dim 91 failure-class registry);完整證據 → `.claude/logs/failure-class-coverage-matrix.json`。系統性:r2/r3 `<DS\.` 綁定 = named-import 全繞過,需除鏽。
 
 **DS backlog(4)更正保留**:hook 56/60 是「新防線成長」非 bloat——4「dead」全 false-positive(`_log-fire.sh`=sourced helper;`check_dynamic_tailwind_class`/`check_ssot_header_declaration`/`check_story_determinism` 全 07-07~09 新增剛出生),禁 retire。
 
-相關:[[feedback-solo-dev-workflow]](push gate)、[[project-cprime-governance-shipped]](fork corpus)。
+相關:[[feedback-solo-dev-workflow]](push gate)、[[reference-cloud-governance-loading]](fork corpus;2026-07-14 吸收原 project-cprime-governance-shipped)。

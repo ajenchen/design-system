@@ -5,7 +5,7 @@
 - [project_goal.md](project_goal.md) — World-class DS where CLAUDE.md + specs ensure AI faithfully executes design principles
 
 ## Project (active work)
-- [project_wm_ds_alignment_campaign.md](project_wm_ds_alignment_campaign.md) — WM↔DS 對齊戰役:雙 repo branch 備齊等雙 push gate;R3 7 題拍板中;handoff 在 WM docs
+- [project_wm_ds_alignment_campaign.md](project_wm_ds_alignment_campaign.md) — WM↔DS 對齊戰役收官:beta.84 已發版、WM lockfile 真綠 13/13、CellSelect 包裝落地;唯一剩 WM main push 由 user;handoff 在 WM docs
 - [project_governance_evolution_roadmap.md](project_governance_evolution_roadmap.md) — 稽核=永久機構、謂詞化=機械化引擎雙柱;方向 1-3 已落地(判準化 harvest / fail-closed / 造輪三洞),4-7 分期各有 trigger;SSOT → planning/2026-07-07-governance-evolution-roadmap.md
 
 ## Feedback (workflow / collaboration discipline)

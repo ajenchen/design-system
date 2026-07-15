@@ -20,7 +20,7 @@ cool 分類中 `fileExists=false` 的 5 筆(check_fork_user_plugin_install / che
 
 | 候選 | 理由 | 為何 P2 不 P1 |
 |---|---|---|
-| `project_wm_ds_alignment_campaign.md` retire/merge | WM↔DS 對齊戰役若已收官(R3 研究完成、baton 顯示待 user 最終拍板 + beta.84 發版 task #104 pending)則 campaign entry 轉 stale | 戰役是否真收官取決於 user 拍板 R1-R3 + 發版,**現在還沒**——不確定,不動 |
+| `project_wm_ds_alignment_campaign.md` retire/merge | WM↔DS 對齊戰役若已收官(R3 研究完成、baton 顯示待 user 最終拍板 + beta.84 發版 task #104 pending)則 campaign entry 轉 stale | 戰役是否真收官取決於 user 拍板 R1-R3 + 發版,**現在還沒**——不確定,不動。*(2026-07-14 後記:beta.84 已發版 + WM verify 真綠,memory 已更新為收官態;唯 WM main push 仍待 user,retire/merge 留下季 prune 判)* |
 
 ## Specs(>300 budget 殘量)
 
@@ -33,9 +33,11 @@ P1 收斂後:`checkbox.spec.md` 372→358、`select.spec.md` 362→346(消掉的
 
 **建議**:兩 spec 實質接近「foundational SSOT 例外(≤800-1200)」性質(各持有 2+ 個跨元件 SSOT 段);若 user 同意將此二檔標註為 SSOT-heavy 例外(或把 SSOT 段遷 pattern home),則 budget 壓力自然解除。
 
+**已處置:例外標註(2026-07-14,user「把所有任務都做完做到完整完美」收官指令)**:兩檔檔頭(frontmatter 後)已加 `@spec-budget-exception` HTML comment,標註 SSOT-heavy 例外 + 各自持有的 SSOT 清單(checkbox:Switch-分界 + Clamp 政策;select:RadioGroup-分界 + 3 筆拍板記錄)+ cite 本檔結論。深度重構選項(SSOT 遷 pattern home)不執行 — 動 SSOT 住所 = 拍板題,維持現狀。
+
 ## Skills(既有 open 候選,非本輪新增)
 
-- `codify-principle` + `codify-corrections` 合併為 `codify`(meta-patterns.md 2026-05-10 分析已列 marginal candidate,明文「user 後續 invoke /knowledge-prune 並 explicit approve 才動」)— 維持待拍板。
+- `codify-principle` + `codify-corrections` 合併為 `codify`(meta-patterns.md 2026-05-10 分析已列 marginal candidate,明文「user 後續 invoke /knowledge-prune 並 explicit approve 才動」)— **resolved: keep separate(2026-07-14,依 meta-patterns 既有分析)**:sharp-rule preference(codex Q-13)+ 兩 skill trigger 不同(live propose vs batch log)+ 各自 250 lines budget 內 + 合併時 destructive 風險 > 收益,決定維持分離。
 
 ---
 
