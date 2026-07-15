@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "date": "2026-07-15",
+    "method": "WebFetch raw source(Atlassian inline-edit / textfield / tokens 全逐行核對;Chakra v2 editable theme;zag-js editable machine)+ WebSearch(Jira/Linear/Notion 官方文件)",
+    "confidence_legend": "source-verified = raw code 逐行讀過;search-only = 僅官方文件/search snippet",
+    "local_baseline": {
+      "inline_edit_tsx": "packages/design-system/src/components/InlineEdit/inline-edit.tsx",
+      "read_geometry_now": "min-h-[--field-height-{size}] + items-center(單行)/ items-start py-1.5(多行)+ px-[--field-px] + border-transparent 1px 預留",
+      "focus_now": "commit/cancel 一律 returnFocusRef=true → 所有結算路徑(含 blur)都把 focus 送回 read 按鈕;read focus 指示 = [&:has(button:focus-visible)]:border-primary",
+      "field_vertical": "field.tsx L274/L289 flex flex-col gap-1(4px)+ 控件 h-field-{size};Textarea py-2(8px)+ px-[--field-px]"
+    }
+  },
+  "Q1_read_state_py_min_height": {
+    "answer": "世界級 = 「閱讀態幾何逐 token 抄對應 edit 控件」,非獨立值。(a) Atlassian InlineEditableTextfield read view:paddingBlock space.100(8px)/ paddingInline space.075(6px)/ font.body(14px/20px);Textfield edit input(desktop 非 compact)= paddingBlock space.100 / paddingInline space.075 / font.body —— token 對 token 完全相同;compact 兩邊同步 = paddingBlock space.050(4px)。外框高度差由「透明 border 預留」補齊:read wrapper 恆帶 border.width.selected(2px)透明 border;Textfield 舊 2px border 降 1px 時甚至加 1px 補償 padding『keep the same overall height』——高度奇偶校驗是被維護的 invariant,兩態皆 20+16+4 = 40px 零位移。(b) Chakra v2 Editable theme:preview 與 input baseStyle 完全同值(py:'1' + borderRadius:'md')——read 幾何 = edit 幾何同一份。(c) 多行:Atlassian 無官方 InlineEditableTextarea;依同 pattern(read py 抄該控件 py),推得多行 read py 應 = Textarea 的 py(本 DS = py-2/8px),頂對齊。單行若控件是『固定高 + 置中』定義呼吸(本 DS Input h-field 無 py),read 態同法用 min-h field-height + 置中 —— 原則一致:抄該 type 控件自己的垂直節奏機制,不發明第三套。",
+    "answer_confidence": "source-verified(Atlassian read/edit padding、Chakra theme、token 值全逐行核對)",
+    "cites": [
+      "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/inline-editable-textfield.tsx (readViewForTextFieldStyles: paddingBlock space.100 / paddingInline space.075; compact paddingBlock space.050)",
+      "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/textfield/src/text-field.tsx (inputStyle @media 30rem: paddingBlock space.100 / paddingInline space.075; compact space.050; 及 border 2px→1px 時 paddingBlock: token('border.width') 補償註解 'keep the same overall height')",
+      "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx (readViewWrapperStyles: borderWidth border.width.selected 透明預留)",
+      "https://github.com/chakra-ui/chakra-ui/blob/v2/packages/theme/src/components/editable.ts (preview 與 input baseStyle 同 py:'1' + borderRadius:'md')"
+    ]
+  },
+  "Q2_focus_after_blur_commit": {
+    "answer": "分路徑,兩家一致:(a) blur commit(滑鼠點外面)→ 不搶 focus,留在使用者點的地方。Atlassian tryAutoSubmitWhenBlur 先呼叫 doNotFocusOnEditButton() 才 submit;zag-js editable restoreFocus 開頭 `if (event.focusable) return`(interact-outside 目標可 focus → 不奪回)。(b) 鍵盤 Enter/Esc 結算 → focus 回 read 態 trigger(edit button / preview)。Atlassian use-button-focus-hook 註解原文:'puts the focus on the edit button after confirming using the confirm button or using the keyboard to confirm, but not when it is confirmed by wrapper blur';zag restoreFocus 預設 focus 回 editTrigger。(c) Atlassian 更細:滑鼠點 read view 進 edit(postReadViewClick)與滑鼠點 confirm/cancel 鈕(onMouseDown)也 set doNotFocusOnEditButton —— 凡 pointer 主導的 session,結算後一律不把 focus 塞回 read 按鈕;只有鍵盤主導才 focus 返回。",
+    "answer_confidence": "source-verified",
+    "cites": [
+      "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/hooks/use-button-focus-hook.tsx (preventFocusOnEditButtonRef 消費邏輯 + 註解)",
+      "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/inline-edit.tsx (tryAutoSubmitWhenBlur 內 doNotFocusOnEditButton(); postReadViewClick={doNotFocusOnEditButton}; Buttons onMouseDown doNotFocusOnEditButton)",
+      "https://github.com/chakra-ui/zag/blob/main/packages/machines/editable/src/editable.machine.ts (restoreFocus: if (event.focusable) return; 否則 focus finalFocusEl ?? editTriggerEl)"
+    ]
+  },
+  "Q3_read_focus_indicator_condition": {
+    "answer": "指示出現條件 = 「read trigger 真的持有 focus」,且因結構設計,實務上只有鍵盤路徑會發生:Atlassian 用 `&:focus + div`(非 :focus-visible)把 color.border.focused 2px 實線畫在 read wrapper —— 但滑鼠點擊落在 role=presentation 的內容 div,永遠不會 focus 到隱形 Pressable,所以 pointer 永遠不亮框。會亮的兩情境:(1) Tab 鍵走到 read view;(2) 鍵盤 Enter/Esc 結算後 focus 程式化返回 edit button → 藍框亮 —— 這是刻意的(鍵盤使用者結算後必須看得見焦點在哪,WCAG 2.4.7)。blur-commit 後:focus 沒有返回(Q2)→ 無任何指示,純閱讀態。結論:『blur 後回純閱讀態』只對 pointer 路徑成立;鍵盤結算後亮 focus 框是世界級刻意行為,不是殘留。",
+    "answer_confidence": "source-verified",
+    "cites": [
+      "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx (editButtonStyles '&:focus + div': borderColor color.border.focused / borderWidth border.width.focused; Pressable 為零尺寸 sibling,滑鼠點不到)",
+      "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/hooks/use-button-focus-hook.tsx (鍵盤結算 editButtonRef.current.focus() → :focus 亮框)",
+      "Atlassian tokens: border.width.focused = 2px / border.width.selected = 2px / border.width = 1px(tokens-raw/atlassian-shape.tsx source-verified)"
+    ]
+  },
+  "Q4_renderRead_content_geometry": {
+    "answer": "兩派並存,但幾何 SSOT 都不在 content 手上:(a) Atlassian 分兩層 —— wrapper(read-view.tsx)owns 邊框盒/hover/寬度/lineHeight:1 歸零,padding 委派給 readView render;但他們自家 canonical wrapper 產品(InlineEditableTextfield)的 readView = display:flex Box + 逐 token 抄 Textfield padding,且恆 render `{defaultValue || placeholder}` 保證永遠有一行 line box → 高度穩定不靠 min-height。(b) Chakra:theme 直接給 preview 固定幾何(py+radius),content 純 inline。裁決:『read wrapper 完全控幾何、content 純 inline』是更強的 SSOT 選擇(Chakra 同款;Atlassian 名義上委派、實務上自家 wrapper 也是抄定值 + flex 置中),對 Tag 等非文字內容:wrapper min-h(=field-height)+ items-center 保證垂直置中與佔位穩定,renderRead 不得自帶 py/min-h。空值恆 render placeholder 文字(非空 div)保底一行行高 —— Atlassian 實證做法。",
+    "answer_confidence": "source-verified",
+    "cites": [
+      "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx (wrapper: inline-block/width/border/hover/lineHeight 1;無 padding —— 委派)",
+      "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/inline-editable-textfield.tsx (readView: Box display flex + 抄 Textfield padding + {defaultValue || placeholder})",
+      "https://github.com/chakra-ui/chakra-ui/blob/v2/packages/theme/src/components/editable.ts (theme 層直接定 preview 幾何)"
+    ]
+  },
+  "Q5_height_occupancy_in_field_form": {
+    "answer": "Atlassian InlineEdit 內部把 read 與 edit 兩態都包進同一個 @atlaskit/form Field —— read 分支源碼註解原文:'Field is used here only for the label and spacing'。所以 form 內 InlineEdit 的佔位 = label + Field spacing + view,與放一顆真 TextField 完全同構;view 本身高度奇偶(read 40px = edit 40px,見 Q1 補償 padding 證據)保證整體零位移。結論:世界級做法 = inline-edit 在 form/Field 結構內的總佔位與同 size 真控件完全相等,label/gap 由 Field 框架統一提供,不因 read/edit 態改變。",
+    "answer_confidence": "source-verified",
+    "cites": [
+      "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/inline-edit.tsx (read 分支 <Field ... key=\"read-view\"> + 註解 'Field is used here only for the label and spacing')",
+      "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/textfield/src/text-field.tsx (border 減 1px 時加 1px 補償 padding 維持總高 —— 高度奇偶是被維護的 invariant)"
+    ]
+  },
+  "product_level_evidence": {
+    "jira_blur_save": {
+      "claim": "Jira 全系統/自訂欄位 inline edit 預設 save-on-blur(點別處/tab 走 = 自動存檔回閱讀態)",
+      "confidence": "官方 developer docs 文字(非截圖驗證)",
+      "cites": ["https://developer.atlassian.com/server/jira/platform/extending-inline-edit-for-jira-plugins/ ('Save on blur is the automatic saving of inline edits made to a field when it loses focus… All of JIRA's system and custom fields opt in to save on blur')"]
+    },
+    "linear_inline_edit": {
+      "claim": "Linear 官方 changelog:'Just click on the issue description or title to start editing. Your changes are saved automatically.'(click 進 edit + 自動存,無顯式 commit chrome)",
+      "confidence": "官方 changelog 原文(視覺細節 search-only)",
+      "cites": ["https://linear.app/changelog/2022-06-09-inline-editing"]
+    },
+    "notion_property_edit": {
+      "claim": "Notion database property = click value 即編輯,hover 才浮 affordance;blur 存檔回純顯示",
+      "confidence": "search-only(官方 help center 文字,無源碼/截圖)",
+      "cites": ["https://www.notion.com/help/database-properties"]
+    }
+  },
+  "validation_of_user_thesis": {
+    "verdict": "同意(3/4 主張 source-verified 與世界級一致),1 個修正點 + 2 個本 DS 現況 gap",
+    "agree": [
+      "『編輯態 = 原本 Field 控件零客製』:Atlassian editView = 真 Textfield(spread props + autoFocus),Chakra input = 真 input,一致 ✓",
+      "『閱讀態 py 有跡可循 = 抄該 type 控件的 py』:Atlassian read paddingBlock/Inline token 對 token 抄 Textfield(含 compact 同步);Chakra preview/input 同 py —— 正是世界級鐵律 ✓。引申:單行控件若以固定高+置中定義呼吸(本 DS Input),read 態就用 min-h field-height+置中;多行控件以 py 定義(本 DS Textarea py-2/8px),read 態就抄同 py",
+      "『Field vertical 內總佔位 = FieldLabel + gap + field-height,與真 Input 完全一樣』:Atlassian 兩態同包 @atlaskit/form Field('only for the label and spacing')+ view 高度奇偶 40px=40px ✓"
+    ],
+    "corrections": [
+      "修正點(唯一):『blur 後必須回到純閱讀態(無任何編輯/focus 指示)』只對 pointer-blur 路徑成立。鍵盤 Enter/Esc 結算後,Atlassian/zag 都刻意把 focus 送回 read trigger 且亮 focus 框(WCAG 2.4.7 鍵盤焦點必須可見)——鍵盤路徑的 focus 框是功能,不是殘留;若鍵盤結算後也強制無指示 = a11y 違規"
+    ],
+    "our_gaps_vs_worldclass": [
+      "GAP-1(focus theft):inline-edit.tsx commit()/cancel() 一律 returnFocusRef=true → blur-commit(使用者點了別的可 focus 目標)也把 focus 奪回 read 按鈕;Atlassian doNotFocusOnEditButton + zag `if (event.focusable) return` 都明確禁止此行為。spec L39『任一路徑結算後 focus 送回 read 按鈕』與世界級衝突,應改為『鍵盤結算才返回;blur 結算不搶』",
+      "GAP-2(多行 py drift):read 態多行 py-1.5(6px)≠ Textarea edit py-2(8px)——依 user thesis + Atlassian token 對 token 鐵律,應改 py-2 對齊(單行 min-h+置中已對)"
+    ]
+  }
+}

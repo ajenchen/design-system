@@ -202,7 +202,7 @@ Deep-audit 收尾(C.0a 旁)**必跑**:讀 `node scripts/audit-coverage-matrix.mj
 
 **每題必附「SSOT 理由:」一句**(= 為何這是「會影響 SSOT 的 UI/UX 增刪改」:新 API contract / 改 canonical 語意 / 新視覺 design language,三類之一,具體指出)。**寫不出 SSOT 理由 = 該題不是拍板題,移回 AUTO 自己做**(2026-06-11 user 第 3 次糾正 codify:bug fix / a11y 對齊 W3C / 對齊 spec 既有意圖 / story 內容 / 治理 / 補 rationale 文件 / dead code 清除,全部 AUTO 不問)。Hook `check_audit_post_report_validator.sh` Validator H 機械強制。
 
-**🔒 決策品質四要件(2026-07-13 user verbatim「需我拍板的議題,不是應該確保你和 codex 來回討論辯論出來的共識與解法有研究過世界級的設計且符合我們需求與一致設計語言和設計原則並確保 SSOT?現在跟未來都應該要確保這件事永遠成立」)—— 每個送 user 拍板的 decision 必全備,缺一即不成熟、退回研究/辯論、禁送 user**:
+**🔒 決策品質四要件(scope = 本 skill C.1 決策清單;user 直接下的設計任務照 user 指示走,codex 辯論僅在 M31 Step 0 條件〔自試卡關 OR user 點名〕才啟 — 2026-07-15 user 糾正「我有叫你跟 codex 辯論嗎」,勿過度延伸)(2026-07-13 user verbatim「需我拍板的議題,不是應該確保你和 codex 來回討論辯論出來的共識與解法有研究過世界級的設計且符合我們需求與一致設計語言和設計原則並確保 SSOT?現在跟未來都應該要確保這件事永遠成立」)—— 每個送 user 拍板的 decision 必全備,缺一即不成熟、退回研究/辯論、禁送 user**:
 1. **SSOT-check 先行**:先 grep 我方 spec + memory + user 歷史拍板,查**是否已有 canonical / 你已拍板過**。已有 → 對齊即可、移回 AUTO,**不重問**(錨例:2026-07-13 誤把 MenuItem-internal〔你 2026-06-05 Q2 已拍板「可 subpath 消費」〕+ menu selected×hover 色〔你 2026-07-04 Q2 已拍板 neutral-selected 且已 cite Ant/VS Code〕當「新決策」問你 → 應是 autonomous 對齊,不是拍板題)。
 2. **World-class ≥3 cite(M26)**:每個真決策的 recommendation 必附 **≥3 家世界級 DS 在該情況的真實做法**(WebFetch 真 source + URL,禁憑印象)。
 3. **Claude↔codex 雙軌辯論(M31)**:兩 model **各自獨立研究 + propose + cite battle → 共識**;禁單方憑感覺直接給 user。

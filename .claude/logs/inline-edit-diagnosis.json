@@ -1,0 +1,323 @@
+{
+  "ts": "2026-07-15T02:44:47.327Z",
+  "story": "design-system-components-inlineedit-展示--vertical-field-form",
+  "measurements": {
+    "assigneeRead": {
+      "label": {
+        "top": 33,
+        "bottom": 54,
+        "left": 33,
+        "height": 21,
+        "width": 386
+      },
+      "controlArea": {
+        "top": 58,
+        "bottom": 90,
+        "left": 33,
+        "height": 32,
+        "width": 386
+      },
+      "controlAreaComputed": {
+        "minHeight": "32px",
+        "alignItems": "center"
+      },
+      "inlineEditWrapper": {
+        "top": 60,
+        "bottom": 88,
+        "left": 21,
+        "height": 28,
+        "width": 410
+      },
+      "inlineEditComputed": {
+        "minHeight": "28px",
+        "paddingTop": "0px",
+        "paddingBottom": "0px",
+        "paddingLeft": "12px",
+        "alignItems": "center",
+        "borderTopWidth": "1px",
+        "marginLeft": "-12px"
+      },
+      "renderReadDiv": null,
+      "contentEl": {
+        "top": 63.5,
+        "bottom": 84.5,
+        "left": 34,
+        "height": 21,
+        "width": 384
+      },
+      "contentComputed": {
+        "minHeight": "auto",
+        "paddingTop": "0px",
+        "paddingBottom": "0px",
+        "height": "21px",
+        "lineHeight": "21px",
+        "fontSize": "14px",
+        "display": "block"
+      },
+      "contentTagName": "SPAN",
+      "contentCenterOffsetY": 0,
+      "labelToControlGap": 4,
+      "fieldTotalFootprint": 57,
+      "labelBottomToInlineEditBottom": 34
+    },
+    "statusRead": {
+      "label": {
+        "top": 106,
+        "bottom": 127,
+        "left": 33,
+        "height": 21,
+        "width": 386
+      },
+      "controlArea": {
+        "top": 131,
+        "bottom": 163,
+        "left": 33,
+        "height": 32,
+        "width": 386
+      },
+      "controlAreaComputed": {
+        "minHeight": "32px",
+        "alignItems": "center"
+      },
+      "inlineEditWrapper": {
+        "top": 133,
+        "bottom": 161,
+        "left": 21,
+        "height": 28,
+        "width": 410
+      },
+      "inlineEditComputed": {
+        "minHeight": "28px",
+        "paddingTop": "0px",
+        "paddingBottom": "0px",
+        "paddingLeft": "12px",
+        "alignItems": "center",
+        "borderTopWidth": "1px",
+        "marginLeft": "-12px"
+      },
+      "renderReadDiv": {
+        "top": 135,
+        "bottom": 159,
+        "left": 34,
+        "height": 24,
+        "width": 384
+      },
+      "contentEl": {
+        "top": 138.8,
+        "bottom": 158.8,
+        "left": 34,
+        "height": 20,
+        "width": 83.33
+      },
+      "contentComputed": {
+        "minHeight": "0px",
+        "paddingTop": "0px",
+        "paddingBottom": "0px",
+        "height": "20px",
+        "lineHeight": "15.6px",
+        "fontSize": "12px",
+        "display": "inline-flex"
+      },
+      "contentTagName": "DIV",
+      "contentCenterOffsetY": 1.8,
+      "labelToControlGap": 4,
+      "fieldTotalFootprint": 57,
+      "labelBottomToInlineEditBottom": 34
+    },
+    "descriptionRead": {
+      "label": {
+        "top": 179,
+        "bottom": 200,
+        "left": 33,
+        "height": 21,
+        "width": 386
+      },
+      "controlArea": {
+        "top": 204,
+        "bottom": 239,
+        "left": 33,
+        "height": 35,
+        "width": 386
+      },
+      "controlAreaComputed": {
+        "minHeight": "32px",
+        "alignItems": "center"
+      },
+      "inlineEditWrapper": {
+        "top": 204,
+        "bottom": 239,
+        "left": 21,
+        "height": 35,
+        "width": 410
+      },
+      "inlineEditComputed": {
+        "minHeight": "28px",
+        "paddingTop": "6px",
+        "paddingBottom": "6px",
+        "paddingLeft": "12px",
+        "alignItems": "flex-start",
+        "borderTopWidth": "1px",
+        "marginLeft": "-12px"
+      },
+      "renderReadDiv": null,
+      "contentEl": {
+        "top": 211,
+        "bottom": 232,
+        "left": 34,
+        "height": 21,
+        "width": 384
+      },
+      "contentComputed": {
+        "minHeight": "auto",
+        "paddingTop": "0px",
+        "paddingBottom": "0px",
+        "height": "21px",
+        "lineHeight": "21px",
+        "fontSize": "14px",
+        "display": "block"
+      },
+      "contentTagName": "SPAN",
+      "contentCenterOffsetY": 0,
+      "labelToControlGap": 4,
+      "fieldTotalFootprint": 60,
+      "labelBottomToInlineEditBottom": 39
+    },
+    "descriptionReadPy": {
+      "contentTopMinusWrapperTop": 7,
+      "wrapperBottomMinusContentBottom": 7,
+      "wrapperComputedPy": "6px / 6px"
+    },
+    "a11yReadState": [
+      {
+        "fieldIndex": 0,
+        "labelText": "Assignee",
+        "labelHtmlFor": ":r0:",
+        "htmlForTargetExists": false,
+        "labelId": ":r0:-label",
+        "readButtonAriaLabel": "編輯 assignee",
+        "readButtonAriaLabelledby": null,
+        "readButtonId": null
+      },
+      {
+        "fieldIndex": 1,
+        "labelText": "Status",
+        "labelHtmlFor": ":r1:",
+        "htmlForTargetExists": false,
+        "labelId": ":r1:-label",
+        "readButtonAriaLabel": "編輯 status",
+        "readButtonAriaLabelledby": null,
+        "readButtonId": null
+      },
+      {
+        "fieldIndex": 2,
+        "labelText": "Description",
+        "labelHtmlFor": ":r3:",
+        "htmlForTargetExists": false,
+        "labelId": ":r3:-label",
+        "readButtonAriaLabel": "編輯 description",
+        "readButtonAriaLabelledby": null,
+        "readButtonId": null
+      }
+    ],
+    "assigneeEditControl": {
+      "inputHeight": 21,
+      "inputChromeOuterHeight": 28,
+      "inputChromeComputed": {
+        "height": "28px",
+        "minHeight": "0px"
+      },
+      "controlAreaHeight": 32,
+      "labelToControlGap": 4,
+      "fieldTotalFootprint": 57,
+      "labelBottomToEditBottom": 34,
+      "inputId": ":r0:",
+      "inputAriaLabel": "assignee",
+      "inputAriaLabelledby": null,
+      "labelHtmlFor": ":r0:",
+      "htmlForTargetExists": true
+    },
+    "descriptionEditTextareaPy": {
+      "paddingTop": "8px",
+      "paddingBottom": "8px",
+      "ariaLabel": "description",
+      "id": ":r3:"
+    },
+    "c1_statusAfterSelectCommit": {
+      "backToRead": true,
+      "committedTagText": "Done",
+      "wrapperBorderTopColor": "rgba(0, 0, 0, 0)",
+      "activeElement": "BUTTON[aria-label=\"編輯 status\"]",
+      "activeIsReadButton": true,
+      "readButtonMatchesFocusVisible": false,
+      "wrapperHasFocusVisibleButton": false
+    },
+    "c2a_assigneeBlurToNeutral": {
+      "backToRead": true,
+      "committedText": "Alex Rivera Jr",
+      "wrapperBorderTopColor": "rgba(0, 0, 0, 0)",
+      "activeElement": "BUTTON[aria-label=\"編輯 assignee\"]",
+      "activeIsReadButton": true,
+      "readButtonMatchesFocusVisible": false,
+      "wrapperHasFocusVisibleButton": false
+    },
+    "c2b_clickOtherFieldWhileEditing": {
+      "descriptionEnteredEdit": true,
+      "descriptionTextareaExists": true,
+      "activeElement": "TEXTAREA[aria-label=\"description\"]",
+      "activeIsAssigneeReadButton": false,
+      "activeIsDescTextarea": true
+    },
+    "c3_clickEditThenEnterCommit": {
+      "backToRead": true,
+      "committedText": "Alex Rivera II",
+      "wrapperBorderTopColor": "oklch(0.54 0.22 258)",
+      "activeIsReadButton": true,
+      "readButtonMatchesFocusVisible": true,
+      "wrapperHasFocusVisibleButton": true
+    },
+    "c4_keyboardPath": {
+      "tabFocusVisibleOnReadButton": true,
+      "backToRead": true,
+      "wrapperBorderTopColor": "oklch(0.54 0.22 258)",
+      "activeIsReadButton": true,
+      "readButtonMatchesFocusVisible": true
+    },
+    "descriptionEditOuterBox": {
+      "textareaOuterHeight": 81,
+      "border": "1px",
+      "minHeight": "0px"
+    }
+  },
+  "rootCauses": [
+    {
+      "bug": "A. 高度佔位 vs Field vertical 標準",
+      "verdict": "單行 Δ=0(read footprint 57px = edit footprint 57px = Field(md)+Input(sm) 標準);多行 read/edit 內距 drift 2px/側(read py 6px+border 1px=7px vs Textarea py 8px+border 1px=9px,實測 descriptionReadPy=7 / textarea paddingTop=8px)。另 story 組合層:Field 預設 size=md → control area min-h 32px,InlineEdit 預設 sm 28px 居中其內(上下各 2px slack)— InlineEdit 不消費 fieldCtx.size,兩者互不知情",
+      "根因": "多行 py 值錯:inline-edit.tsx:105 multiline true 用 py-1.5(6px),而 :88 註解宣稱『對齊 Textarea py-2』但 Textarea 實測 py=8px → 6≠8,mode 切換文字垂直位移 2px/側。單行高度本身無超佔",
+      "cite": "packages/design-system/src/components/InlineEdit/inline-edit.tsx:105(py-1.5)+ :87-88(註解自相矛盾)+ Field/field.tsx:244(control area min-h-field-md 32px,Field 預設 md)"
+    },
+    {
+      "bug": "B. Tag 不置中",
+      "verdict": "Tag 中心低於 wrapper 中心 +1.8px(tag top gap 3.8px vs bottom gap 0.2px;contentCenterOffsetY=+1.8)。對照 Assignee plain 路徑 offset=0(完美置中)。Select mode=display bare 路徑無自帶 min-h/py(實測 Tag minHeight 0 / py 0,select.tsx:375-394 bare 分支直接回 <Tag>)",
+      "根因": "inline-edit.tsx:248 renderRead 包一層 block div(w-full min-w-0),Select bare 路徑的 Tag(inline-flex h-5=20px)在該 div 內走 inline layout baseline 對齊:div 繼承 14px/21px strut → line box 撐到 24px,Tag 沿 baseline 沉底(上 3.8px / 下 0.2px)。外層 items-center 置中的是 24px 的 div,不是 20px 的 Tag。plain 路徑 span 直接是 flex child 故無此問題",
+      "cite": "packages/design-system/src/components/InlineEdit/inline-edit.tsx:248 + Select/select.tsx:394(bare Tag)+ Tag/tag.tsx sm h-5"
+    },
+    {
+      "bug": "C. blur 後編輯指示殘留 + focus theft",
+      "verdict": "兩個獨立缺陷:(1) focus theft — click 進 edit → 打字 → click 頁面空白處 blur commit 後,焦點被搶回 read button(c2a 實測 activeElement=BUTTON[編輯 assignee],user 明明點了別處);(2) 藍框殘留 — click 進 edit → 打字 → Enter commit 後,read 態外框 = border-primary 藍(c3 實測 oklch(0.54 0.22 258)),與 edit 態同一 Field 藍框語言 → 看起來像還在編輯。純滑鼠路徑(c1 選 option / c2a click 空白)藍框不觸發(transparent);純鍵盤(c4)藍框顯示屬正確 a11y(焦點須可見)",
+      "根因": "inline-edit.tsx:167/:176 commit()/cancel() 無條件 returnFocusRef=true + :181-186 effect 無條件 refocus read button — 未區分 blur vs keyboard 結算路徑。Atlassian inline-edit 明確分流:blur auto-submit 呼叫 doNotFocusOnEditButton() 不搶焦點,只有 keyboard confirm 才 refocus(2026-07-15 WebFetch inline-edit.tsx 原始碼驗證)。藍框殘留 = refocus(Enter 為最後互動 → Chrome :focus-visible 繼承)× :95 [&:has(button:focus-visible)]:border-primary 用了與 edit 態相同的 border 視覺語言",
+      "cite": "packages/design-system/src/components/InlineEdit/inline-edit.tsx:95, :167, :176, :181-186;對照 https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/inline-edit.tsx(tryAutoSubmitWhenBlur → doNotFocusOnEditButton)"
+    }
+  ],
+  "fieldCtxGap": {
+    "grepEvidence": "grep fieldCtx|useFieldContext|FieldContext components/InlineEdit/ → 0 hits(InlineEdit 完全未接 Field context)",
+    "readState": {
+      "finding": "3 個 FieldLabel 的 htmlFor(:r0:/:r1:/:r3:)全部 dangling(htmlForTargetExists=false);read button accessible name 只有自身 aria-label(『編輯 assignee』等),無 aria-labelledby 接 FieldLabel;fieldCtx.labelId(:rN:-label)無人消費",
+      "impact": "SR 使用者聽不到 read 值與 FieldLabel 的關聯;點 FieldLabel 不會 focus/啟動 InlineEdit"
+    },
+    "editState": {
+      "finding": "預設 edit 路徑(Input/Textarea)因控件自己消費 fieldCtx 而意外接通:input id=:r0: / textarea id=:r3: → label htmlFor resolves(htmlForTargetExists=true)。但這是 Input 自己的功勞,InlineEdit 未傳遞;story 的 renderEdit <Select> 未 forward p[aria-label](Select 自行接 fieldCtx labelId 兜底)",
+      "impact": "custom renderEdit 是否有 accessible name 全靠控件自身是否消費 fieldCtx,InlineEdit 不保證"
+    },
+    "sizeDisabledCascade": "InlineEdit size 預設 sm 且不讀 fieldCtx.size(Field md → control area 32px vs wrapper 28px 實測);fieldCtx.disabled/mode 也未接(未 runtime 驗證,grep 證據)— 近期 Field disabled/mode cascade SSOT 戰役(commit b90ad7b9/88352819)修了 7 控件,InlineEdit 是漏網"
+  }
+}
