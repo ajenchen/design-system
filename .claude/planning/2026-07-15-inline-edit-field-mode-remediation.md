@@ -13,6 +13,11 @@
 - **不 collapse**(兩者 padding 不同)。砍 `readonly×naked`/`disabled×naked` 死格照舊。
 - **③(換行 padding)結構性解決**:InlineEdit view 委派 `<Control mode="view">`(default/plaintext)→ padding 自動 = 該控件 edit(Textarea py-2 / Combobox wrap py-1+gap-4 由各控件 view 自帶),Field 一改 InlineEdit 自動同步,**零 hardcode**。
 
+**⚠️ InlineEdit 對齊機制(2026-07-16 實證,plaintext 後視覺零變)**:
+- InlineEdit **保留 `-mx-field-px` + `w-calc`**(欄位左緣對齊 + hover 外擴),但 **read wrapper 自己那條 `px-field-px` 拿掉**(改由委派的控件 view mode 提供,否則雙倍 px)。`-mx` 消掉控件 view 的 px → 內容仍落欄位左緣(= FieldLabel 同左緣)。math 相同(都 field-px),**視覺位置/對齊/hover/read↔edit 零跳全不變**,差別只在 px/py **來源** hardcode→控件 view mode(SSOT 同步)。
+- vertical(flex-col):label 與內容同左緣。horizontal(grid label 欄+minmax 內容欄):-mx 在 controlArea 內對兩 orientation 皆成立,對齊原則不變。多行 py-2 來自 Textarea view(-mx 不動 py)。
+- **edge case**:`as="h1"` 標題型 InlineEdit(renderView=styled `<h1>` 非 Field 控件)無控件 view mode 可委派 → 保留自己的 px/min-h(+ -mx)。委派只套「值-控件」路徑(文字/Tag/日期)。
+
 **軸 2 — 就地編輯 host(InlineEdit ＝ DataTable cell,同一份語義)**:
 - `view`(顯示值,委派軸1 `view` mode 渲染;editable 時有 hover 入口)↔ `edit`(真控件輸入)。
 - `editable` 判準(布林/callback,預設 true):false → view 無 hover/入口、**不灰化**(對齊世界級 detail-pane + grid:Atlassian/Jira/MUI X/AG Grid **就地編輯無 disabled 態**)。
