@@ -23,7 +23,8 @@
 ### A3. DataTable cell 狀態(**可與 InlineEdit 分開做**)
 - **砍到 3 態**:`display`(不可編純值)/ `editable-idle`(可編+hover+click)/ `editing`。per-cell 鎖定折進 `editable:(row)=>false`(= MUI X isCellEditable 模型,對齊 2/3 主流 grid)。
 - **廢除誤用的「disabled」名**:column-types.ts:177 把 editable=false 叫 readonly、把灰化格叫 disabled,兩頭貼錯 + 灰化態全庫零消費。
-- **未定(本輪 Q1/Q2 研究中)**:若真要保留 Handsontable 式「灰化=這格被保護」顯性訊號,則留 4 態、正名 disabled→readonly,且該吃哪個 SSOT token(Q1)+ cell 各態命名世界級對照(Q2)。
+- **✅ 已定(round11)**:灰化鎖定態 = **readonly**(行為早就是:值算數/可選取/只擋編)。若保留 → 吃 field 既有 **`bg-readonly` + `mode="readonly"`**(跟 RadioGroup/Checkbox/Switch 同 SSOT;現吃 `bg-disabled` 是錯配),命名 **readonly**(現「disabled」三重 drift:世界級 Handsontable 叫 readOnly、同字串跨元件衝突、field 有 readonly cell 卻誤名 disabled)。零消費則砍。**無論留或砍,cell「disabled」名必廢**。命名 drift 收齊:meta.disabled→readonly / isCellDisabled→isCellReadonly / displayOrDisabled→displayOrReadonly / mode=disabled→readonly / bg-disabled→bg-readonly / column-types.ts:177 自述倒置。副作用:字色灰(neutral-6)→正常(readonly 值該讀清楚)。
+- **cell 命名 verdict**:`edit` ✓ / `display` ✓(對齊 field display + InlineEdit read + MUI view)/ 灰化鎖定 → `readonly`。
 
 ### A4. 明文 canonical(spec)
 - **field 4-mode**:editable / readonly / disabled / display,各定位 + 能否選取/送出(見下 §D 表)進 `field-controls.spec.md`。

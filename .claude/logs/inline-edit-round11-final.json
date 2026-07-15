@@ -1,0 +1,173 @@
+{
+  "meta": {
+    "date": "2026-07-15",
+    "round": 11,
+    "scope": "最終唯讀深研(禁改 code)。站 round7/9/10 上,解兩題:(Q1) DataTable『灰化鎖定 cell』現在逐行吃哪些 token/class(TD 層 vs field-wrapper 層)+ DS 有沒有把 readonly 跟 disabled 的視覺 token 分開定義 + 若真要保留『灰化鎖定 = readonly(htDimmed 式,可讀可選)』該吃哪邊 SSOT + 現吃 bg-disabled 是不是錯配根源。(Q2) DataTable cell 各狀態命名逐項列 + WebFetch MUI X / AG Grid / Handsontable cell 狀態 API 命名 + 對照我方 field 4-mode + InlineEdit read/edit 找 drift + 最該叫什麼。",
+    "method": "逐行讀 data-table.tsx(isCellDisabled :1048 / cellMode :1530-1533 / TD className :1785-1829,bg-disabled :1826)+ cell-registry.tsx(CellMode :58 / displayOrDisabled :119-120 / 各 cell display branch mode= :145-462)+ column-types.ts(meta.editable :164 / meta.disabled :180 / self-doc :177)+ field-wrapper.tsx(naked disabled compound :240-245 / readonly×default bg-readonly :137-152 / bareInputStyles text-fg-disabled cascade :280-281)+ semantic.css token 定義(:181-182,:340-341)+ color.spec.md 邊界段(:663);fresh WebFetch MUI X editing / AG Grid cell-editing / Handsontable disabled-cells 取 cell 狀態 API verbatim。",
+    "repoRoot": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project",
+    "builds_on": [".claude/logs/inline-edit-round7.json", ".claude/logs/inline-edit-round9-final.json", ".claude/logs/inline-edit-round10-final.json"]
+  },
+
+  "Q1_dimmed_cell_ssot": {
+    "headline": "**灰化鎖定 cell 現在的灰底來自 TD 層的 `bg-disabled`(data-table.tsx:1826),灰字來自內層 Field 走 `mode='disabled'` → `text-fg-disabled`(field-wrapper.tsx:280-281 cascade)—— 兩者吃的都是 disabled token,不是 field-wrapper 的 disabled compound(naked×disabled 是 bg-transparent,不提供灰底)。DS 有把 readonly 跟 disabled 的視覺 token 分開:`--bg-readonly`(semantic.css:341,2026-06-10 加)與 `--bg-disabled`(:340)是兩個獨立 owner token(同值 neutral-2 但可分離演進),color.spec.md:663 明文『readonly ≠ disabled(可聚焦/選取/提交,僅不可改值,Carbon「navigable but not operable」),不借 --bg-disabled 名』。readonly×default compound(field-wrapper.tsx:137-152)吃的正是 `bg-readonly`,RadioGroup/Checkbox/Switch 的 readonly 也吃它(同源)。verdict:**灰化鎖定 cell 行為 = readonly(round7 已證:值算數 + 文字可選取 + 只擋編輯),就該吃 field readonly SSOT —— TD 換 `bg-disabled`→`bg-readonly`、內層換 `mode='disabled'`→`mode='readonly'`,與 RadioGroup/Checkbox/Switch readonly 同一 SSOT(答案 = (a))。現吃 `bg-disabled` 正是『行為 readonly 但吃 disabled 樣式』的錯配根源。**",
+
+    "part1_current_consumption_line_by_line": {
+      "the_grey_background_source": {
+        "where": "data-table.tsx:1826",
+        "verbatim_code": "cellDisabled && 'bg-disabled cursor-not-allowed'",
+        "resolves_to": "`bg-disabled` utility → `--bg-disabled` semantic token → `var(--color-neutral-2)`(semantic.css:340)",
+        "layer": "**TD(<div role=cell> 外殼)層** —— 灰底是 cell 容器決定,不是內層 Field wrapper。",
+        "gated_by": "cellDisabled = isCellDisabled(meta, row)(data-table.tsx:1048-1056,讀 meta.disabled bool 或 (row)=>bool)"
+      },
+      "the_grey_text_source": {
+        "where": "cell-registry.tsx:119-120 `displayOrDisabled(isDisabled)` → 當 isDisabled 傳 `mode='disabled'` 給內層 Field(各 cell display branch:StringCell:145,146 / NumberCell:205 / DateCell:259 / TimeCell:292 / SelectCell:327 / MultiSelectCell:364 / PersonCell:392 / MultiPersonCell:412 / BooleanCell:437 / UrlCell:462)",
+        "resolves_to": "內層 Field wrapper 帶 `data-field-mode=disabled` → bareInputStyles `group-data-[field-mode=disabled]/field:text-fg-disabled`(field-wrapper.tsx:280-281)→ `--fg-disabled` = `var(--color-neutral-6)`(semantic.css:182)",
+        "layer": "**內層 Field**(bareInputStyles 內文字)—— 文字灰化來自 mode='disabled' cascade。"
+      },
+      "field_wrapper_naked_disabled_compound_is_NOT_the_grey": {
+        "where": "field-wrapper.tsx:240-245",
+        "verbatim_code": "['bg-transparent !rounded-none cursor-not-allowed !px-0 !py-0 !h-auto', 'border border-transparent']",
+        "finding": "**naked×disabled compound 是 `bg-transparent` —— 它只加 cursor-not-allowed + 透明 border,不提供任何灰底。** 灰底純由 TD 的 bg-disabled 提供(field-wrapper.tsx:238-239 註解自述『naked wrapper 只負責 substrate(透明 border + 抑制 cursor)… 對齊 DataTable cell-disabled TD 加 bg-disabled 表達 cell-level disabled state 的 SSOT 分權』)。"
+      },
+      "summary": "灰化鎖定 cell = TD `bg-disabled`(灰底,:1826)+ 內層 Field `mode='disabled'` → `text-fg-disabled`(灰字,:280-281)+ naked×disabled compound `cursor-not-allowed`(:243)。**三者全吃 disabled 語意 token。灰底來源是 TD 層,非 field-wrapper 的 disabled compound(那條是透明的)。**"
+    },
+
+    "part2_readonly_vs_disabled_tokens_ARE_separated": {
+      "answer": "**是,DS 已把 readonly 跟 disabled 的視覺 token 分開定義。**",
+      "token_definitions_verbatim": [
+        {"token": "--fg-muted", "value": "var(--color-neutral-7)", "cite": "semantic.css:181", "semantic": "placeholder / caption / 弱化 icon(裝飾性弱化,非 state)", "when": "空值符號 `-` / placeholder / caption"},
+        {"token": "--fg-disabled", "value": "var(--color-neutral-6)", "cite": "semantic.css:182", "semantic": "disabled 文字前景色(比 muted 深 = disabled 顯著性優於 muted,M24)", "when": "disabled state 內所有文字載體"},
+        {"token": "--bg-disabled", "value": "var(--color-neutral-2)", "cite": "semantic.css:340", "semantic": "互動元件 disabled 背景;state-pair family(配 --fg-disabled,一對一 sync)", "when": "Button / Input / Checkbox 等元件 disabled state 底色(color.spec.md:663)"},
+        {"token": "--bg-readonly", "value": "var(--color-neutral-2)", "cite": "semantic.css:341(2026-06-10 加)", "semantic": "readonly 鎖定欄位 chrome —— **同值 neutral-2 但獨立 owner**(≠ disabled:可聚焦/選取/提交,僅不可改值)", "when": "readonly 鎖定欄位底色(readonly×default compound field-wrapper.tsx:151)"}
+      ],
+      "ssot_boundary_statement": {
+        "cite": "color.spec.md:663",
+        "verbatim": "『邊界 — component disabled bg 不走 muted:Button / Input / Checkbox 等元件 disabled state 走 --bg-disabled semantic … **Readonly state 同理但用自己的 token --bg-readonly(2026-06-10):readonly ≠ disabled(可聚焦/選取/提交,僅不可改值,per Carbon「navigable but not operable」),不借 --bg-disabled 名**;也不走 --muted … 三者同值 neutral-2、owner 獨立,可分離演進。』",
+        "reading": "DS 已明文編碼 readonly 有專屬 `--bg-readonly` token,與 disabled 語意分立(即使值同 neutral-2)。→ 『readonly 該不該有自己的視覺 token』DS 早已回答『有』。"
+      },
+      "readonly_default_consumes_bg_readonly": {
+        "compound": "field-wrapper.tsx:137-152(readonly×default)",
+        "verbatim_bg": "'bg-readonly border border-transparent [&:has(:focus-visible)]:ring-2 …'",
+        "real_consumers": "RadioGroup(radio-group.tsx:139)/ Checkbox(checkbox.tsx:246)/ Switch(switch.tsx:233)全 call `fieldWrapperStyles({ mode:'readonly', variant:'default' })` 渲『Field 內唯讀』灰框(round10 verified)。→ **readonly 灰框已有 3 個真 SSOT 消費者,吃的是 bg-readonly。**",
+        "note": "但 readonly×naked compound(field-wrapper.tsx:227-234)是 **bg-transparent**(與 display×naked byte-identical)—— 跟 disabled×naked 一樣,naked 側的灰由 host cell(TD)提供,field-wrapper 只給透明 substrate。故 cell 若走 readonly,灰底仍該由 TD 提供(換 bg-readonly),不是靠 field-wrapper。"
+      }
+    },
+
+    "part3_verdict": {
+      "the_question": "灰化鎖定 cell(行為 readonly,可讀可選)該吃 (a) field 既有 readonly SSOT(bg-readonly,跟 RadioGroup/Checkbox/Switch 同源)還是 (b) cell 自己一套?",
+      "answer": "**(a) —— 吃 field 既有 readonly SSOT。cell readonly = field readonly 同一 SSOT。**",
+      "why": [
+        "行為已是 readonly(round7 verified:值算數 + 文字原生可選取複製 + 只擋編輯進入,非 inert)—— 語意上就該吃 readonly token,不是 disabled。",
+        "DS 已有專屬 `--bg-readonly` token(semantic.css:341)+ 明文邊界(color.spec.md:663『readonly ≠ disabled,不借 --bg-disabled 名』)—— 消費既有 canonical(M23),不自創。",
+        "RadioGroup/Checkbox/Switch 的 readonly 已吃 bg-readonly(radio-group.tsx:139 等)—— cell readonly 吃同 token = 跨 Field family 一致 readonly SSOT,不平行造第二套(M1/M17)。"
+      ],
+      "current_bg_disabled_IS_the_mismatch_root": "**是。** 現在灰化鎖定 cell 吃 `bg-disabled`(TD :1826)+ `mode='disabled'`→`text-fg-disabled`(:280-281)= 『行為 readonly、但吃 disabled 樣式 token』的錯配。column-types.ts:177 自己都寫『editable=false = readonly(可看不可編)』卻把這格 meta 命名成 disabled + 吃 disabled token —— 命名與 token 雙重錯位。",
+      "correct_ssot_attribution": {
+        "background_chrome": "`--bg-readonly`(semantic.css:341)—— data-table.tsx:1826 `bg-disabled`→`bg-readonly`。兩者同值 neutral-2,**灰底視覺 byte-identical**,只是換成語意正確的 owner token(可分離演進)。",
+        "inner_field_mode": "`mode='readonly'`(非 'disabled')—— cell-registry.tsx displayOrDisabled→displayOrReadonly。",
+        "cursor": "readonly 是否保留 cursor-not-allowed 是獨立小決策(MDN readonly 可 focus 可選取,慣例 cursor 用 default 或 text;可討論)。"
+      },
+      "honest_nuance_text_color_changes": "**誠實提醒:切 disabled→readonly 會讓內層文字從『灰化(text-fg-disabled neutral-6)』變回『正常色(readonly = 文字正常色,field-wrapper.tsx:12 明載)』。灰底(neutral-2)不變。** 這其實**更正確**:readonly 的值該可讀(Carbon「navigable but not operable」—— 值是真的、該讀得清楚),不該像失效控件那樣把字也灰掉;subtle 灰底(neutral-2)本身已足以標示『這格被鎖』。**但這是真 tradeoff**:若 user 要 Handsontable htDimmed 那種『連字都灰』的強烈鎖定訊號,那是一個**刻意偏離 DS readonly canonical(正常字色)的視覺決策**,需 user 明確拍板;若接受 DS readonly 語言(subtle 灰底 + 正常字),則直接吃 bg-readonly + mode='readonly' 最乾淨、最 SSOT。",
+      "ssot_affecting": "換 token + 換 mode + rename(見 Q2)跨 field family / public column meta = SSOT-affecting → user 拍板;本輪唯讀不執行。"
+    }
+  },
+
+  "Q2_cell_state_naming_worldclass": {
+    "headline": "**DataTable cell 命名兩對兩錯:`display`(靜止顯示態)+ `edit`(編輯態)對齊 field mode + InlineEdit(display≈read / edit=edit),世界級也一致(edit 普世共識;display 對應 MUI「view」/ Handsontable「read-only」概念,只是 DS 沿用自家 field mode 名 `display`,M23 既有 canonical 優先)—— 這兩個站得住。但『灰化鎖定態』現叫 `disabled`(meta.disabled / isDisabled / mode='disabled')= drift:(1) 世界級唯一內建灰化鎖定態的 Handsontable 把它叫 `readOnly`(htDimmed),沒有一家叫 disabled;MUI X / AG Grid 根本沒有 disabled cell,per-cell 鎖折進 `editable:(row)=>false` / `isCellEditable`。(2) 跟我方 field 4-mode 撞語意:field『disabled』= inert/不可 focus/不送出,但 cell『disabled』行為卻是 readonly(round7:值算數 + 可選取 + 只擋編)—— **同字串 `disabled` 在 cell 與 field 語意不同 = 違反 CLAUDE.md 命名 3-test #3(跨元件認知衝突)**。(3) field 有 readonly mode、cell 卻沒有(displayOrDisabled 永不回 readonly,cell-registry.tsx:119-120)—— 真正該叫 readonly 的態被誤命名 disabled。verdict:**灰化鎖定態該正名 `readonly`(對齊 Handsontable readOnly/htDimmed + field readonly mode + MDN readonly + Carbon『navigable but not operable』),display/edit 維持不變。『disabled』這名對 cell 必廢。**",
+
+    "part1_current_cell_state_naming_enumerated": {
+      "lifecycle_mode_axis": {
+        "type": "`CellMode = 'display' | 'edit'`(cell-registry.tsx:58)",
+        "resolved": "data-table.tsx:1530-1533 `cellMode: 'edit'|'display'` = `(isEditingThisCell && !disabled) ? 'edit' : 'display'` —— 只有兩個 lifecycle,disabled 不是第 3 個 mode。",
+        "maps_to": "cell.CellMode.display / cell.CellMode.edit"
+      },
+      "overlay_axis_and_meta_keys": [
+        {"name": "meta.editable", "type": "boolean | (row)=>boolean", "cite": "column-types.ts:164", "semantic": "column/per-row 可編否;false=唯讀(column-types.ts:177 自述『editable=false = readonly(可看不可編)』)"},
+        {"name": "meta.disabled", "type": "boolean | (row)=>boolean", "cite": "column-types.ts:180", "semantic": "column-types.ts:177 自述『disabled = 不可操作 state』,column-types.ts:167 註『orthogonal to editable readonly』—— 但 round7 實測行為 = readonly(值算數/可選取/只擋編),非 inert"},
+        {"name": "isCellEditable / isCellDisabled / canEditCell", "type": "helper callbacks", "cite": "data-table.tsx:isCellEditable(讀 meta.editable)/ isCellDisabled :1048-1056(讀 meta.disabled)/ canEditCell :1061-1064(editable && !disabled)", "semantic": "gate 判斷"},
+        {"name": "isEditable / isDisabled(CellComponentProps)", "type": "boolean props", "cite": "cell-registry.tsx:70,74", "semantic": "傳給 cell function;isDisabled 翻成內層 Field mode='disabled'"},
+        {"name": "displayOrDisabled", "type": "helper → 'display'|'disabled'", "cite": "cell-registry.tsx:119-120", "semantic": "**永不回 'readonly' —— cell 從不進 readonly mode**;isDisabled 時回 'disabled'(即上述灰化鎖定態)"}
+      ],
+      "self_documented_contradiction": "column-types.ts:177 明寫『editable=false = readonly(可看不可編);disabled = 不可操作 state』—— **code 自己一邊承認 editable=false 是 readonly,一邊把灰化鎖定格命名 disabled**;而 round7 實測灰化格行為 = readonly。→ 命名系統性倒置。"
+    },
+
+    "part2_worldclass_grid_cell_state_naming_verbatim": {
+      "mui_x_datagrid": {
+        "cell_mode_values": "`'view' | 'edit'`(『Each cell and row has two modes: edit and view』);enum `GridCellModes.View` / `GridCellModes.Edit`",
+        "editable_prop": "column `editable: true`",
+        "per_cell_lock": "`isCellEditable` per-row callback『must return true if the cell is editable, or false if not』—— **per-cell 鎖 = 回 false 變 non-editable,無獨立 disabled/readonly cell 概念**",
+        "url": "https://mui.com/x/react-data-grid/editing/",
+        "verified": "WebFetch 2026-07-15"
+      },
+      "ag_grid": {
+        "editable_prop": "`editable`『Set to true if this column is editable … Can also be a function to have different rows editable』",
+        "editing_state": "events `cellEditingStarted` / `cellEditingStopped` / `cellValueChanged`;`readOnlyEdit=true` → `cellEditRequest`",
+        "per_cell_lock": "**無獨立 disabled / readOnly cell 態**(column level)—— editable(bool 或 fn)控可編否",
+        "url": "https://www.ag-grid.com/react-data-grid/cell-editing/",
+        "verified": "WebFetch 2026-07-15"
+      },
+      "handsontable": {
+        "readonly": "`readOnly: true` → CSS class **`htDimmed`(greys out cell)**;『Copy works, paste doesn't work』;drag-to-fill blocked = **『read-only cells — visually dimmed, restricted functionality』**",
+        "non_editable": "`editor: false` → no CSS class(normal appearance);copy-paste works;『only direct editing prevented』= 『non-editable cells』",
+        "terminology_verbatim": "『Disabling a cell makes the cell read-only or non-editable. Both have similar outcomes』—— **灰化鎖定態 canonically 叫 `readOnly`(htDimmed),不叫 disabled**",
+        "url": "https://handsontable.com/docs/react-data-grid/disabled-cells/",
+        "verified": "WebFetch 2026-07-15"
+      },
+      "cross_source_summary": {
+        "static_display_state": "MUI X = `view`(GridCellModes.View)/ Handsontable = `read-only`(readOnly)or `non-editable`(editor:false)/ AG Grid = 無顯式靜止態名(只 !editing)。**沒一家叫 `display`** —— 但也沒一家叫別的統一名;MUI 的 `view` 最接近。",
+        "edit_state": "MUI `edit` / AG Grid `editing`(cellEditingStarted)/ Handsontable `editor` —— **edit 普世共識**。",
+        "dimmed_locked_state": "**只有 Handsontable 內建,且叫 `readOnly`(htDimmed);MUI X / AG Grid 無此態,per-cell 鎖折進 editable:(row)=>false / isCellEditable→false。沒有任何一家把灰化鎖定態叫 `disabled`。**"
+      }
+    },
+
+    "part3_alignment_with_our_field_4mode_and_inlineedit": {
+      "our_taxonomies": {
+        "field_4mode": "`'edit' | 'display' | 'readonly' | 'disabled'`(field-controls.spec.md:77 / field-wrapper.tsx:9-13)",
+        "inline_edit": "`read` / `edit`(round10:read 對齊 Atlassian readView,read 態委派 Field mode='display')",
+        "datatable_cell": "lifecycle `display` / `edit`(CellMode)+ overlay `disabled`(meta.disabled → mode='disabled');**無 readonly**"
+      },
+      "consistency_check": [
+        {"concept": "編輯態", "cell": "edit", "field": "edit", "inlineedit": "edit", "worldclass": "MUI edit / AG editing / Handsontable editor", "verdict": "**全一致 ✓** —— edit 是普世共識,零 drift。"},
+        {"concept": "靜止顯示態", "cell": "display(CellMode)", "field": "display(FieldMode)", "inlineedit": "read(委派 field display)", "worldclass": "MUI view / Handsontable read-only", "verdict": "**我方三方一致(cell display = field display,InlineEdit read 委派 display)✓**。世界級沒人叫 display(MUI 叫 view),但 M23 既有 canonical 優先 —— DS 統一用自家 field mode 名 `display`,跨 field/cell/InlineEdit 一致 > 對齊外部單一字面。可在 spec 補 benchmark 對照(= MUI view / Handsontable read-only)。**保留 display。**"},
+        {"concept": "灰化鎖定態", "cell": "disabled(meta.disabled / isDisabled / mode='disabled')", "field": "disabled = inert(不可 focus / 不送出)", "inlineedit": "N/A(InlineEdit 無此態)", "worldclass": "Handsontable = readOnly(htDimmed);MUI/AG = 無,折進 editable:false", "verdict": "**DRIFT ✗✗✗** —— 見下。"}
+      ],
+      "the_drift_precisely": {
+        "d1_worldclass": "世界級唯一內建灰化鎖定態(Handsontable)叫 `readOnly`,**沒有一家叫 disabled**;MUI/AG 根本無 disabled cell。→ 我方 `disabled` cell 命名離世界級最遠。",
+        "d2_cross_component_conflict": "**同字串 `disabled` 在 field = inert(不可 focus/不送出/AT 排除),在 cell = readonly 行為(round7:值算數 + 可選取複製 + 只擋編輯,非 inert)** —— 同名不同義 = 違反 CLAUDE.md『命名與語言一致性』3-test #3(跨元件認知衝突),歷史前例 FileItem `text` 撞 Button `variant=text`。",
+        "d3_missing_readonly": "field 有 readonly mode、InlineEdit read 態、但 cell 沒有 readonly(displayOrDisabled 永不回 readonly,cell-registry.tsx:119-120)—— **真正該叫 readonly 的態被錯命名成 disabled**,而 field-wrapper 裡真正的 readonly×naked compound(:227-234)因此零 cell 消費者(round10 判 dead)。正名後它才有真消費者。"
+      }
+    },
+
+    "part4_verdict": {
+      "what_each_state_should_be_called": [
+        {"state": "靜止顯示態", "keep_or_rename": "**保留 `display`**", "why": "(a) 對齊世界級靜止態概念(MUI view / Handsontable read-only);(b) 跨我方 field(display)+ InlineEdit(read 委派 display)一致 —— M23 既有 DS canonical 優先於對齊 MUI 字面 `view`;(c) 已完整 SSOT(CellMode / cellMode / displayOrX)。建議 spec 補 benchmark 對照行(= MUI view / Handsontable read-only)。"},
+        {"state": "編輯態", "keep_or_rename": "**保留 `edit`**", "why": "普世共識(MUI/AG/Handsontable/field/InlineEdit 全 edit/editing)。零 drift。"},
+        {"state": "灰化鎖定態(現叫 disabled)", "keep_or_rename": "**正名 `readonly`**", "why": "(a) 對齊 Handsontable readOnly/htDimmed(唯一內建此態的世界級 grid);(b) 對齊我方 field readonly mode + MDN readonly(可 focus 可選取可送出、僅不可改)+ Carbon『navigable but not operable』;(c) 行為早已是 readonly(round7 verified);(d) 消 field vs cell 的 `disabled` 同名不同義衝突;(e) 吃 Q1 的 bg-readonly SSOT。"},
+        {"state": "per-cell 條件鎖(無需灰化訊號時)", "keep_or_rename": "折進 `editable:(row)=>false`", "why": "= MUI X isCellEditable / AG editable-fn 模型 —— 落回 display 態(純值、無 affordance),不另立灰化態。若要灰化『被鎖』訊號才用 readonly。"}
+      ],
+      "all_naming_drifts_to_fix": [
+        {"drift": "meta.disabled → meta.readonly", "cite": "column-types.ts:180", "note": "public column meta rename(SSOT-affecting)"},
+        {"drift": "isCellDisabled → isCellReadonly / isDisabled prop → isReadonly", "cite": "data-table.tsx:1048 / cell-registry.tsx:74"},
+        {"drift": "displayOrDisabled → displayOrReadonly(回 'display'|'readonly')", "cite": "cell-registry.tsx:119-120"},
+        {"drift": "內層 Field mode='disabled' → mode='readonly'", "cite": "cell-registry.tsx:145-462 各 cell display branch"},
+        {"drift": "TD bg-disabled → bg-readonly", "cite": "data-table.tsx:1826(= Q1 token 修)"},
+        {"drift": "column-types.ts:177 自述文倒置(承認 editable=false 是 readonly,卻把灰化格 meta 命名 disabled)", "cite": "column-types.ts:167,177 註解重寫"},
+        {"drift": "啟用 field-wrapper readonly×naked compound(:227-234,現 dead round10)作正名後 lock cell 的真消費者", "cite": "field-wrapper.tsx:227-234"}
+      ],
+      "honest_note": "此正名跟 round9/10 完全一致收斂:round7『我方叫 disabled 的那格其實是 readonly 行為』/ round9『disabled 這名必廢』/ round10『disabled×naked 命運綁正名 readonly』—— 本輪把 token(Q1 bg-readonly)+ 命名(Q2 readonly)兩條線收在同一結論:**灰化鎖定態 = readonly,吃 bg-readonly,叫 readonly。** 現況『吃 bg-disabled + 叫 disabled』是 token 與命名同步錯配。",
+      "ssot_affecting": "rename public column meta(disabled→readonly)+ 換 token + 換 mode = SSOT-affecting → user 拍板;本輪唯讀不執行。"
+    },
+
+    "verdict": {
+      "worldclass_naming": "靜止態:MUI `view`(GridCellModes.View)/ Handsontable `read-only`(readOnly)/ AG 無顯式名。編輯態:MUI `edit` / AG `editing` / Handsontable `editor`(普世共識)。灰化鎖定態:**Handsontable `readOnly`(htDimmed)—— 沒一家叫 disabled;MUI/AG 無此態、折進 editable:(row)=>false**。",
+      "our_naming": "cell = display / edit(CellMode)+ disabled(overlay,meta.disabled)。display/edit 對齊 field + InlineEdit;disabled 是 drift。",
+      "should_be_called": "**display(保留)/ edit(保留)/ readonly(正名,取代 disabled)**。灰化鎖定態叫 readonly 最:(a) 對齊世界級(Handsontable readOnly + MUI/AG 無 disabled cell);(b) 跟 field 4-mode(readonly mode)+ InlineEdit(read/edit)一致、消『disabled 同名不同義』衝突;(c) 最 SSOT(吃 Q1 bg-readonly + 啟用既有 readonly×naked compound)。",
+      "drifts": "meta.disabled / isCellDisabled / isDisabled / displayOrDisabled / mode='disabled' / TD bg-disabled / column-types.ts:177 自述文 —— 全是把 readonly 行為的態誤命名/誤吃 disabled;正名 readonly 一次收齊。"
+    }
+  },
+
+  "final_two_line_answers": {
+    "Q1": "灰化鎖定 cell 的灰底來自 TD 層 `bg-disabled`(data-table.tsx:1826),灰字來自內層 Field `mode='disabled'`→`text-fg-disabled`(field-wrapper.tsx:280-281);field-wrapper 的 naked×disabled compound(:240-245)是 bg-transparent、不提供灰底。DS **已把 readonly/disabled token 分開**:`--bg-readonly`(semantic.css:341,2026-06-10)vs `--bg-disabled`(:340),同值 neutral-2 但獨立 owner,color.spec.md:663 明文『readonly ≠ disabled,不借 --bg-disabled 名』;readonly×default compound(field-wrapper.tsx:137-152)吃 bg-readonly,RadioGroup/Checkbox/Switch readonly 同源。**verdict = (a):灰化鎖定 cell 行為是 readonly(round7 證),就該吃 field readonly SSOT —— TD 換 bg-disabled→bg-readonly、內層換 mode='disabled'→'readonly',與 RadioGroup/Checkbox/Switch readonly 同一 SSOT。現吃 bg-disabled 正是『行為 readonly 卻吃 disabled 樣式』的錯配根源。** 誠實 tradeoff:切 readonly 後內層字從灰(text-fg-disabled)變回正常色(readonly=文字正常色),灰底不變 —— 這更正確(readonly 值該可讀,Carbon『navigable but not operable』);若要 Handsontable htDimmed 那種連字都灰,是刻意偏離 DS readonly canonical 的視覺決策,需 user 拍板。SSOT-affecting。",
+    "Q2": "DataTable cell 命名兩對一錯:`display`(靜止態,對齊 field display + InlineEdit read 委派;世界級對應 MUI view / Handsontable read-only,M23 沿用自家名 display 求跨元件一致)+ `edit`(普世共識)站得住;**灰化鎖定態現叫 `disabled` = drift** —— (1) 世界級唯一內建此態的 Handsontable 叫 `readOnly`(htDimmed),MUI X/AG Grid 根本無 disabled cell、per-cell 鎖折進 editable:(row)=>false / isCellEditable;沒一家叫 disabled;(2) field『disabled』=inert 但 cell『disabled』行為是 readonly(round7:值算數/可選取/只擋編)= 同名不同義違反命名 3-test #3;(3) field 有 readonly mode、cell 卻沒有(displayOrDisabled 永不回 readonly)。**該叫:display / edit 保留、灰化鎖定態正名 `readonly`**(對齊 Handsontable readOnly + field readonly + MDN readonly + Carbon navigable-not-operable + 吃 Q1 bg-readonly);drifts = meta.disabled / isCellDisabled / isDisabled / displayOrDisabled / mode='disabled' / TD bg-disabled / column-types.ts:177 自述文,正名 readonly 一次收齊。SSOT-affecting → user 拍板。"
+  }
+}
