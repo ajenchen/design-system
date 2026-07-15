@@ -2,7 +2,7 @@
 
 ## 🏁 CAMPAIGN CLOSED(2026-07-14)
 
-**全流程收官,無殘項**:待做 1-7 全 ✅(見下表)。**beta.84 已發版**(npm `latest`+`beta` = 0.1.0-beta.84;戰役 commit `9b7234bd` + internal 型別通道補完 `b7466895`)/ **WM 真綠**(lockfile bump beta.84 + CellSelect 包裝 WM `2979dc9`,verify.mjs 13/13 對 published DS)/ **本批收尾治理落盤**(Validator K + SKILL 瘦身 + knowledge-prune P0-P2 處置 + checkbox/select spec SSOT-heavy 例外標註)。唯一戰役外殘留:WM branch `2026-07-08-ds-alignment` merge/push main 由 user(solo-workflow gate,非本 ledger 範圍)。本檔轉歷史紀錄,不再更新。
+**全流程收官,無殘項**:待做 1-7 全 ✅(見下表)。**beta.84 已發版**(npm `latest`+`beta` = 0.1.0-beta.84;戰役 commit `9b7234bd` + internal 型別通道補完 `b7466895`)/ **WM 真綠**(lockfile bump beta.84 + CellSelect 包裝 WM `2979dc9`,verify.mjs 13/13 對 published DS)/ **本批收尾治理落盤**(Validator K + SKILL 瘦身 + knowledge-prune P0-P2 處置 + checkbox/select spec SSOT-heavy 例外標註)。戰役外殘留已於 2026-07-15 全收:WM main 已 merge/push(`4e83402`,verify 13/13 真綠後推)+ DS 收尾批已發版 **beta.85**(`463dc603`,internal 通道 + filter-panel 拆檔 + TreeView runtime 驗證同車)。本檔轉歷史紀錄,不再更新。
 
 **目的**:全流程狀態 SSOT。任何 session / 額度中斷後,讀本檔即可無損接續。每完成一項就更新本檔。
 **規則**:所有產出必落盤(禁只在對話記憶);本檔 + `.claude/logs/` artifacts = 完整可恢復狀態。

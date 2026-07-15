@@ -1,6 +1,6 @@
 ---
 name: project-wm-ds-alignment-campaign
-description: WM↔DS 對齊戰役(2026-07-08)— 全落地收官:beta.84 已發版、WM lockfile beta.84 + verify 13/13 真綠、CellSelect 包裝落地;唯一剩 WM main push 由 user
+description: WM↔DS 對齊戰役(2026-07-08)— 完整收官(2026-07-15):beta.84/85 已發版、WM main 已 push(4e83402,13/13 真綠)、零殘項
 metadata: 
   node_type: memory
   type: project
@@ -30,7 +30,7 @@ WM(work-management)ds問題.pdf 46 findings 根因戰役。交接 SSOT = `work-m
 
 ## 2026-07-14 發版收官
 
-**beta.84 已發版**(npm `latest` + `beta` dist-tag 皆 = 0.1.0-beta.84;deep-audit 戰役 367 material 修復同車,DS commit `9b7234bd` + internal 型別通道補完 `b7466895`)。**WM 已接上**:lockfile bump beta.82→beta.84 + **CellSelect 包裝落地**(naked 合法化包裝,WM commit `2979dc9`)→ `verify.mjs` **13/13 真綠對 published DS**(07-10 抓的「本機 --no-save tarball 假綠」問題根治;tsc 過)。**唯一剩:WM branch `2026-07-08-ds-alignment` merge/push main 由 user**(solo-workflow gate)。deep-audit baton ledger 已標 CAMPAIGN CLOSED(`.claude/planning/2026-07-14-deep-audit-baton.md`)。
+**beta.84 已發版**(npm `latest` + `beta` dist-tag 皆 = 0.1.0-beta.84;deep-audit 戰役 367 material 修復同車,DS commit `9b7234bd` + internal 型別通道補完 `b7466895`)。**WM 已接上**:lockfile bump beta.82→beta.84 + **CellSelect 包裝落地**(naked 合法化包裝,WM commit `2979dc9`)→ `verify.mjs` **13/13 真綠對 published DS**(07-10 抓的「本機 --no-save tarball 假綠」問題根治;tsc 過)。**WM main 已收官(2026-07-15)**:squash merge + push(`4e83402`,tsc 0 + verify 13/13 真綠後推,branch 已砍)。戰役零殘項;deep-audit baton ledger 標 CAMPAIGN CLOSED。DS 端後續 beta.85(internal 型別通道)已發版,WM 下次 bump 可換用 DS `WithFieldVariantInternal` 型別取代 CellSelect 本地 widen(optional)。
 
 **2026-07-10 治理覆蓋 matrix(user「未來 consumer 是否被治理?」)**:41-agent workflow 逐 class 驗 — 20 class 僅 3 MECHANICAL_CONSUMER + 1 DS_API_FIXED,**14 DOC_ONLY + 1 UNGOVERNED = user 質疑成立**。已落地:MenuItem `startContent`(佔位=startIcon 同容器 SSOT)+ WM 左 rail 改包 MenuItem + r3 nav-row 簽名(31/31 test)+ 2 stale 治理描述修。**收官計畫 SSOT → `.claude/planning/2026-07-10-consumer-coverage-remediation.md`**(批次 A r3 簽名 ×14 / B eslint 發佈 + 兩欄 dialog 拍板 / C 常設閘 dim 91 failure-class registry);完整證據 → `.claude/logs/failure-class-coverage-matrix.json`。系統性:r2/r3 `<DS\.` 綁定 = named-import 全繞過,需除鏽。
 
