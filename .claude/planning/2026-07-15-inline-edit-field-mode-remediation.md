@@ -7,10 +7,12 @@
 **軸 1 — Field 控件 chrome mode(表單語境,單一控件怎麼渲染)**:
 - `edit`(可編欄位)/ `readonly`(表單鎖定值算數,灰底可讀可選,吃 `bg-readonly`)/ `disabled`(表單「目前不適用」如選國家前的城市,灰底灰字不送出,**form 專屬**)/ **`view`(原 `display` 改名)**= 非表單的值呈現(cell/InlineEdit/詳情),值本體(文字/Tag/頭像)。
 
-**⚠️ view 的 padding SSOT(2026-07-15 修正,推翻「collapse view」+ refine 2026-05-13「display zero chrome」拍板)**:view **不 collapse 成單一**,`view×default` ≠ `view×naked`:
-- **`view×default`(form / InlineEdit)= `plaintext`**:**保留 px/py = 跟 edit 一模一樣**(px-field-px;Textarea 多行 py-2),只拿掉 border/bg/focus chrome(Bootstrap `.form-control-plaintext` 模型)。→ read↔edit 零跳、padding 跟 edit **同源自動同步**。**現況 `:135` 是 `!px-0 !py-0` 全拔 = 待修**(這是 InlineEdit 現在得外掛 padding + 多行漏的根源)。
-- **`view×naked`(cell)= 全拔 px/py + `!h-auto`**:cell 用 `table-cell-px`/row 給高。維持現況。
-- **不 collapse**(兩者 padding 不同)。砍 `readonly×naked`/`disabled×naked` 死格照舊。
+**✅ view padding 最終定案(2026-07-16 round14 收斂 — 推翻 round12「view×default=plaintext 不 collapse」,回到 collapse)**:
+- **view COLLAPSE 成單一 variant-agnostic**(= bare:透明無 chrome、無 padding、高度/幾何由容器給)。**view×default 0 消費者**(cell=naked / InlineEdit=自帶 geometry cva / form 鎖定=readonly / Tag·Date 格式=bare view)→ collapse。**user 從頭直覺對**;round12「keep view×default=plaintext」是為了「InlineEdit 委派 `<Input mode="view">` **元件**」模型,round13 因標題型委派會丟 `<h1>` outline 而否決該模型 → InlineEdit 改「自帶 geometry cva」→ view×default 就沒人用 → 回到 collapse。
+- **InlineEdit read cva 自帶 geometry**(不委派 Input 元件,對齊 Atlassian「read wrapper 給幾何盒 + 內容元素由場景決定」):`px-[var(--field-px)]` + **orientation-aware `-mx`**(vertical 用貼 label / horizontal 拔對齊 sibling,**選項 A,user 2026-07-16 拍板**)+ `min-h-field`(單行 items-center)+ `items-start py-2`(多行,對齊 Textarea edit `py-2`)+ hover + `[&:has(button:focus-visible)]:border-primary`。消費 `--field-px`/`--field-height-*` 同 field 控件 = SSOT via token。
+- **content 分兩類**:純值(plain span / 標題 `<h1>` 客製 typography)**共享這份 geometry cva**;**只有「值-格式化」(Select→Tag / Date→日期格式)委派 `<Control mode="view">`**(bare,取格式化邏輯,幾何仍由 InlineEdit cva 盒給)。
+- **③ 多行 py SSOT**:InlineEdit cva `py-2` == Textarea edit `py-2`(textarea.tsx:44)。Textarea py-2 是 class 非 token → **加 invariant 鎖**(assert InlineEdit 多行 read py == Textarea edit py,drift 即紅)確保 Field 一改就被抓。現況 InlineEdit 多行是 `py-1.5`(:105)= 待改 `py-2`。
+- **cva 動作**:`view×default`(:128-136)+ `view×naked`(:220-226)兩條**合成單一** `{ mode:'view', className:[bare naked 值 + !h-auto] }`(不指定 variant);砍 `readonly×naked`/`disabled×naked` 死格(+ Textarea 鏡像)。
 - **③(換行 padding)結構性解決**:InlineEdit view 委派 `<Control mode="view">`(default/plaintext)→ padding 自動 = 該控件 edit(Textarea py-2 / Combobox wrap py-1+gap-4 由各控件 view 自帶),Field 一改 InlineEdit 自動同步,**零 hardcode**。
 
 **⚠️ InlineEdit 對齊機制(2026-07-16 實證,plaintext 後視覺零變)**:
