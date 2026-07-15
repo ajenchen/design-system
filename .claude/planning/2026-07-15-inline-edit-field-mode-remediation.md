@@ -18,6 +18,10 @@
 - vertical(flex-col):label 與內容同左緣。horizontal(grid label 欄+minmax 內容欄):-mx 在 controlArea 內對兩 orientation 皆成立,對齊原則不變。多行 py-2 來自 Textarea view(-mx 不動 py)。
 - **edge case**:`as="h1"` 標題型 InlineEdit(renderView=styled `<h1>` 非 Field 控件)無控件 view mode 可委派 → 保留自己的 px/min-h(+ -mx)。委派只套「值-控件」路徑(文字/Tag/日期)。
 
+**⚠️ 2026-07-16 round13 修正(推翻上面兩點的細節,以此為準)**:
+- **Q1 -mx orientation-aware**:field-px=12px==gap-x-3=12px。horizontal 用 -mx → hover 底色吃掉整條 gap+貼死 label、read 文字比 sibling 左 12px(幾何實證)。**horizontal 拔 -mx**(read 值落內容欄左緣+field-px=對齊 sibling 控件+edit 零跳+hover 不溢);**vertical 保留 -mx**(值貼 label 左緣,user 原意)。讀 `fieldCtx.orientation`(FieldLabel 已有先例 field.tsx:334/362)。【選項 A;選項 B=全拔 -mx 更貼 Atlassian 但 vertical 值不再貼 label,待 user 選 A/B】
+- **Q2 幾何 SSOT 收斂(推翻「plain 委派 `<Input mode="view">` 元件」)**:InlineEdit read **幾何** = **一份 token-based cva**(消費 `--field-px`/`--field-height-*`,同 field 控件 token = SSOT via token),**plain 文字 + 標題 h1 都用它**(內層各放 `<span>`/`<h1>`,標題客製 typography 保 h1 outline);**只有「值-格式化」路徑(Select→Tag / Date→格式)才委派 `<Control mode="view">`** 取格式化邏輯。→ 避免「plain 委派 Input 元件 + heading 用 cva」的雙幾何來源 drift。多行 py 放這份 cva(=Textarea py-2,加 invariant 鎖同步)。對齊 Atlassian「read wrapper 給幾何盒 + 內容元素由場景決定」解耦。
+
 **軸 2 — 就地編輯 host(InlineEdit ＝ DataTable cell,同一份語義)**:
 - `view`(顯示值,委派軸1 `view` mode 渲染;editable 時有 hover 入口)↔ `edit`(真控件輸入)。
 - `editable` 判準(布林/callback,預設 true):false → view 無 hover/入口、**不灰化**(對齊世界級 detail-pane + grid:Atlassian/Jira/MUI X/AG Grid **就地編輯無 disabled 態**)。

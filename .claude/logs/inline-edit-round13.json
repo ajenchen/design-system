@@ -1,0 +1,171 @@
+{
+  "meta": {
+    "round": 13,
+    "date": "2026-07-16",
+    "mode": "read-only deep research + WebFetch (no code change)",
+    "scope": "InlineEdit 2 alignment details — Q1 horizontal -mx / Q2 heading delegate",
+    "prior": ".claude/planning/2026-07-15-inline-edit-field-mode-remediation.md (§16-19 對齊機制段)"
+  },
+
+  "shared_facts": {
+    "field_px": {
+      "value": "0.75rem = 12px",
+      "cite": "packages/design-system/src/tokens/uiSize/uiSize.css:30  (--field-px: 0.75rem; 固定不隨 size/density)"
+    },
+    "gap_x_3": {
+      "value": "0.75rem = 12px (Tailwind v4 default spacing scale, unit 3 = 3*0.25rem)",
+      "cite": "field.tsx:258 `grid gap-x-3`; no tailwind.config override found (grep tailwind.config* → no matches); @theme inline in uiSize.css:132 only adds spacing-field-* — base numeric scale untouched",
+      "note": "gap-x-3 (12px) == --field-px (12px) EXACTLY — 這是 -mx-field-px 剛好填滿整條 gap 的根因"
+    },
+    "field_height_sm": { "value": "1.75rem = 28px (md density)", "cite": "uiSize.css:23" },
+    "inlineedit_rootClass": {
+      "value": "-mx-[var(--field-px)] w-[calc(100% + 2*--field-px)]  — 套在 read AND edit 兩態",
+      "cite": "inline-edit.tsx:193 (rootClass); 套用 read=:244, edit=:233"
+    },
+    "inlineedit_read_cva_inner_px": {
+      "value": "px-[var(--field-px)] + min-h-[var(--field-height-{size})] + border border-transparent + hover:bg-neutral-hover",
+      "cite": "inline-edit.tsx:95 (inlineEditReadStyles base), :99-101 (size min-h)"
+    },
+    "field_horizontal_grid": {
+      "value": "gridTemplateColumns: var(--field-label-width, auto) minmax(0,1fr); gap-x-3; content 欄=第2欄, 內含 `flex flex-col gap-1` 包 controlArea+desc+error",
+      "cite": "field.tsx:253-281 (horizontal branch), :260 gridTemplateColumns, :258 gap-x-3, :274 content 欄 wrapper"
+    },
+    "field_vertical": {
+      "value": "flex flex-col gap-1；label 與 control 同欄, 皆 x=0 (Field 左緣)",
+      "cite": "field.tsx:285-303"
+    },
+    "orientation_exposed_to_child": {
+      "value": "YES — FieldContextValue.orientation: FieldOrientation ('vertical'|'horizontal'), child 可 useFieldContext()?.orientation 讀到",
+      "cite": "field-context.ts:41 (orientation in FieldContextValue), :53 useFieldContext(); field.tsx:214 provider 有塞 orientation"
+    },
+    "input_display_mode_element": {
+      "value": "<div className=fieldWrapperStyles(display)><span>text</span></div> — 根是硬寫 <div>, 內是 <span>；NO as/asChild 多型 (endSlot 的 asChild 無關 root)",
+      "cite": "input.tsx:161-194 (showDisplaySpan 分支), :164 root div, :181 inner span"
+    },
+    "field_wrapper_display_default_current": {
+      "value": "!px-0 !py-0 zero chrome (plaintext 修正尚未落地 — 仍全拔 px)",
+      "cite": "field-wrapper.tsx:129-135 (display×default compound = 'bg-transparent border border-transparent !px-0 !py-0')"
+    },
+    "field_wrapper_size_px": {
+      "value": "px-[var(--field-px)] h-field-{sm|md|lg} gap-2 (edit 態幾何)",
+      "cite": "field-wrapper.tsx:65-67"
+    }
+  },
+
+  "Q1_horizontal_mx": {
+    "verdict": "horizontal 必須 NOT 用 -mx。-mx 在 horizontal 幾何上是錯的：它讓 hover 底色吃掉整條 12px gap-x-3 並貼死 label,同時把 read 文字往左推 12px、跟 sibling 控件 text 錯開 12px。user 的假設 (Q1.3「horizontal 不用 -mx 也不會有對齊問題」) 幾何實證 = 正確。",
+
+    "geometry_horizontal_WITH_mx": {
+      "label_col_right_edge": "x = label-width",
+      "content_col_left (column2-left)": "x = label-width + 12 (gap-x-3)",
+      "inlineedit_box_left (rootClass -mx = -12)": "x = (label-width+12) - 12 = label-width  ← 貼到 label 欄右緣",
+      "read_text (box + border1 + px12)": "x = label-width + 1 + 12 = label-width + 13",
+      "sibling_Input_text (column2-left + border1 + px12)": "x = (label-width+12) + 1 + 12 = label-width + 25",
+      "text_misalignment": "read 文字比 sibling 控件文字左 12px (label-width+13 vs +25)",
+      "hover_bg_left_edge": "x = label-width = label 欄右緣 → 底色填滿整條 12px gap 並貼死 label",
+      "conclusion": "溢進 gap = YES(數學上剛好填滿:-mx 12px == gap 12px,不越過 label 但完全吃掉 label↔content 呼吸空間並抵住 label 文字)"
+    },
+
+    "geometry_horizontal_WITHOUT_mx": {
+      "inlineedit_box_left": "x = column2-left = label-width + 12 (呼吸 gap 保留)",
+      "read_text (box + border1 + px12 from 委派控件 view)": "x = label-width + 12 + 1 + 12 = label-width + 25  ← 與 sibling Input text 對齊",
+      "edit_Input_text (w-full 填欄, 無 -mx)": "x = label-width + 25 → read↔edit 零跳",
+      "hover_bg": "column2-left .. column2-right, 全在 content 欄內, gap-x-3 保留為 label↔bg 呼吸",
+      "conclusion": "零跳 + hover 不溢 gap + 對齊 sibling 控件 全部成立 — user Q1.3 正確"
+    },
+
+    "geometry_vertical_WHY_mx_works_there": {
+      "note": "vertical 沒有左鄰欄。Field 左緣=label 左緣=x=0。",
+      "WITH_mx": "box left = -12；read text = -12+1+12 = +1 ≈ x=0 = 與上方 label 齊左緣(content-like flush);hover bg 往左溢 12px 進 Field 外的 form padding(通常無害)。edit Input 同 -12 → text +1 → 零跳。",
+      "WITHOUT_mx": "read text = 0+1+12 = +13 = 內縮像 input value, 不與 label 齊(label 在 0)。這是 Atlassian 式 (read=edit input text 位置)。",
+      "why_horizontal_differs": "vertical 的 -mx 溢進的是『Field 外側 form padding』(無鄰居, 無害);horizontal 的 -mx 溢進的是『label↔content 之間 12px gap』(有左鄰欄, 吃掉呼吸 + 抵 label)。同一個 -mx trick 在 vertical 無害、在 horizontal 有害 — 因為鄰接關係不同。"
+    },
+
+    "planning_doc_error_flagged": {
+      "location": ".claude/planning/2026-07-15-...md §18",
+      "quote": "「horizontal(grid label 欄+minmax 內容欄):-mx 在 controlArea 內對兩 orientation 皆成立,對齊原則不變」",
+      "why_wrong": "對齊 TARGET 兩 orientation 不同:vertical target = 上方 label(同欄);horizontal target = 旁邊 sibling 控件(同欄但 label 在別欄)。-mx 讓 read 對齊『欄左緣-12』,在 vertical=label 齊, 在 horizontal=貼 label 欄右緣+錯開 sibling 12px。§18 斷言『皆成立』幾何不成立。"
+    },
+
+    "cleanest_solutions": {
+      "option_A_orientation_aware_mx": {
+        "desc": "保留 DS 現有 vertical『read 值齊 label 左緣 + hover 外溢』決策;只在 horizontal 拔掉 -mx。InlineEdit 讀 useFieldContext()?.orientation,horizontal 時 rootClass 不加 -mx / w-calc(改 w-full)。",
+        "feasible": "YES — orientation 已 expose (field-context.ts:41)。同 FieldLabel 已用 ctx.orientation 分兩套對齊策略的先例 (field.tsx:334 isHorizontal, :362-370)。",
+        "pro": "保住 vertical 的 label-flush read 值(content-like, DS 既定美學)",
+        "con": "read 值對齊在兩 orientation 不一致(vertical=label 齊 / horizontal=控件內縮齊);兩套幾何分支",
+        "world_class_alignment": "介於中間 — vertical 走 content-like, horizontal 走 Atlassian 式 control-inset"
+      },
+      "option_B_never_mx_atlassian_style": {
+        "desc": "完全拔掉 -mx。read 值一律委派控件 view mode 的 px-field-px 內縮(= edit input text 位置),兩 orientation 都零跳、hover 都不溢。",
+        "feasible": "YES — 但依賴 plaintext 修正先落地(field-wrapper.tsx:135 目前 !px-0 !py-0,委派後會 px=0 → 需先改成保留 px-field-px)",
+        "pro": "最 SSOT(無 orientation 分支、無 -mx、read=edit 位置一致);逐字對齊 Atlassian(read view padding-based, 非 negative-margin)",
+        "con": "vertical read 值不再與 label 齊左緣, 內縮 12px 像 input value(推翻 DS 既有 -mx label-flush 決策)",
+        "world_class_alignment": "最貼 Atlassian:read view 用 padding 內縮對齊 edit,不用 negative margin;Atlassian 官方且建議 negative whitespace 用 Bleed primitive 而非裸 negative token"
+      },
+      "recommendation": "若要最少改動 + 保住 DS 既定 vertical 美學 → Option A(orientation-aware,horizontal 拔 -mx)。若要最 SSOT + 最貼世界級 → Option B(全拔 -mx, read=edit input 位置)。兩者都根治 horizontal gap-bleed;差別只在 vertical read 值『齊 label(A)』vs『內縮齊 input(B)』的美學取捨 — 這條 = SSOT-affecting UI 決策, 需 user 拍板。"
+    },
+
+    "world_class_evidence": {
+      "atlassian_read_view_geometry": {
+        "finding": "readViewWrapperStyles = display:inline-block, boxSizing:border-box, width:auto, maxWidth:100%, borderColor:transparent, borderWidth:token('border.width.selected'), borderRadius token('radius.small','3px'), transition background 0.2s, &:hover backgroundColor token('color.background.neutral.subtle.hovered')。read wrapper 本身 NO padding / NO negative margin。",
+        "url": "https://raw.githubusercontent.com/pioug/atlassian-frontend-mirror/main/design-system/inline-edit/src/internal/read-view.tsx"
+      },
+      "atlassian_read_padding_align": {
+        "finding": "Atlassian read view container 用 paddingInline: space.075 + paddingBlock: space.100 對齊 text field padding → read 文字與 edit 文字對齊(padding-based, 零 negative margin);官方建議 negative whitespace 用 Bleed primitive 而非裸 negative token",
+        "url": "https://developer.atlassian.com/platform/forge/ui-kit/components/inline-edit/  +  https://atlassian.design/foundations/spacing"
+      },
+      "takeaway": "世界級標竿 (Atlassian) 對 read↔edit 對齊採『read 用 padding 內縮 = edit input text 位置』(= Option B 幾何),NOT『read 用 negative margin 拉到欄左緣』。DS 現用的 -mx 是 label-flush 變體(合理但非 Atlassian 主流),且該變體在 horizontal 必然 gap-bleed。",
+      "border_reserved_confirms_ours": "Atlassian read wrapper 恆帶 transparent border (border.width.selected) 預留邊框盒防態切換位移 — 與 DS inline-edit.tsx:95 `border border-transparent` 逐字同構(已對齊)"
+    }
+  },
+
+  "Q2_heading_delegate": {
+    "verdict": "user 直覺(幾何 SSOT + 只客製 typography + 保留 h1)方向正確,但『委派 <Input mode=\"view\"> 元件』對標題型 NOT 可行 — Input view mode 硬渲 <div><span>,無 as/asChild 多型,委派會丟掉 <h1> 文件大綱。最乾淨解 = InlineEdit 直接組 <h1 className={共享幾何 classes + heading typography}>,幾何來自與 plain 路徑同一份 token-based classes(非委派 Input 元件)。這其實正是現況結構,只需確保幾何來源與 plain 路徑統一。",
+
+    "current_structure": {
+      "heading_read_render": "<div className={rootClass + inlineEditReadStyles(size,multiline)}>  →  <Tag(as='h1') className={cn('w-full min-w-0', fieldDisplayTextClass(size), readClassName, ...)}>{String(value)}</Tag>  + 隱形 <button absolute inset-0>",
+      "cite": "inline-edit.tsx:239-277 (read return), :250-265 (Tag 分支), :95 (幾何 cva)",
+      "key_point": "幾何(px-field-px / min-h-field / hover / border-transparent / -mx)已在『外層 div』;h1 只是內層 text 載體 + readClassName 客製 typography。→ 幾何與 typography 已分離, h1 已保留。標題型現在就是『幾何(InlineEdit 自 cva)+ 客製 typography + 保留 h1』三者兼得。",
+      "planning_doc_claim": "§19 說標題型『無控件 view mode 可委派 → 保留自己的 px/min-h』— 措辭誤導:不是『無幾何可用』,是『不該委派 Input 元件(會丟 h1)』;幾何值本已 token-SSOT"
+    },
+
+    "can_delegate_input_view_component": {
+      "answer": "NO(對標題型)",
+      "reason1_element": "Input display mode root 硬寫 <div>(input.tsx:164),內層硬寫 <span>(input.tsx:181),無 as/asChild 讓 view root 變 h1。委派 → 渲 <div><span> → 丟 <h1> 文件大綱 (WCAG heading structure 破壞)。",
+      "reason2_no_formatting_ssot_gain": "值-控件委派(Select→Tag / Date→格式)有真 SSOT 效益:格式化邏輯住控件 view mode。標題型 NO 格式化邏輯 — 只是 String(value) + heading 字級。委派 Input view 只買到『幾何 classes』,買不到任何 formatting SSOT。",
+      "reason3_geometry_already_token_ssot": "幾何值(--field-px / --field-height-*)已是 token,InlineEdit cva (inline-edit.tsx:95,99-101) 與 field-wrapper size (field-wrapper.tsx:65-67) 消費同一批 var()。值層已 SSOT;只有『哪些 class』的結構重複 — 但重複的是結構非值, drift 風險低。"
+    },
+
+    "three_ways_to_get_geometry_plus_h1_plus_typography": {
+      "way_a_input_polymorphism": {
+        "desc": "給 Input view mode 加 as/asChild 多型讓它渲 h1",
+        "verdict": "REJECT — 大幅 API 擴張;且 <h1> 巢在 form-control 元件 (Input) 內語義怪 (Input 是輸入控件, 不該包 heading);過度工程"
+      },
+      "way_b_inlineedit_compose_h1_shared_geometry": {
+        "desc": "InlineEdit 直接組 <h1 className={共享幾何 class set + heading typography}>,幾何 class 來源與 plain 路徑同一份",
+        "verdict": "ADOPT — 最乾淨。保 h1 (文件大綱), 幾何 SSOT (與 plain 同源), typography 客製 (readClassName)。= 現況結構, 差別只需保證『plain 路徑不去委派 <Input> 元件、而是與 heading 共用同一 read 幾何 cva』,避免『plain 委派 Input view / heading 用 inlineEditReadStyles』雙來源 drift"
+      },
+      "way_c_keep_separate": {
+        "desc": "標題型完全獨立幾何(planning §19 原案)",
+        "verdict": "ACCEPTABLE 但次優 — 值已 token-SSOT 所以不算 drift 災難, 但結構上與 plain 路徑分家, 未來 Input view 幾何若變 (如 multiline py) 標題不跟"
+      }
+    },
+
+    "tension_flagged": {
+      "issue": "planning §14/§32 要 plain text 路徑委派 <Input mode=\"view\"> 元件取幾何;但 heading 不能委派 Input 元件(丟 h1)。若 plain 委派 Input / heading 用 inlineEditReadStyles → InlineEdit read 出現『兩個幾何來源』→ 若 Input view px 改 (如 multiline py-2) heading 不同步 = drift。",
+      "cleanest_resolution": "InlineEdit read 幾何統一為『一份 token-based cva (inlineEditReadStyles)』,plain text 與 heading 都用它(內層分別放 <span> / <h1> text 載體);只有『值-格式化』路徑 (Select→Tag / Date) 才委派 <Control mode=\"view\"> 取格式(那些控件 view 自帶內層幾何,需與外層對齊 = §39 multiline py 專項)。這樣 heading 與 plain 共幾何、h1 保留、Tag/Date 走格式委派 — 三路各得其所, 零雙來源 drift。"
+    },
+
+    "recommendation": "標題型 = 『委派幾何(與 plain 路徑共享同一 token-based read cva)+ 客製 typography(readClassName)+ 保留 <h1> 元素』。NOT 委派 <Input mode=\"view\"> 元件(會丟 h1 + 無 formatting 效益)。= user 提案的『SSOT 幾何 + 客製 typography』精神, 用『共享 class』落實而非『委派元件』。此為結構/SSOT 判斷(非純機械), 但不動 canonical 語義 → 屬 AUTO-執行範疇一旦 user 認可方向。",
+
+    "world_class_evidence": {
+      "atlassian_read_view_polymorphic_text": {
+        "finding": "Atlassian inline-edit 用 render-prop (readView/editView) 讓 consumer 自控 read 元素 → 可放任意標籤含 heading;read wrapper 只提供幾何盒(inline-block + transparent border + hover),不強制 <span>。→ 幾何盒與內容元素分離 = 支持『幾何盒 + 自訂 h1』模型",
+        "url": "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/types.tsx (readView/editView render prop)  +  read-view.tsx (readViewContainerStyles = {lineHeight:1}, 內容元素由 consumer 決定)"
+      },
+      "principle": "世界級 inline-edit (Atlassian) = 『read 幾何盒』與『read 內容元素』解耦, 內容元素由 consumer/場景決定 (含 heading)。DS 現況 (外層幾何 div + 內層 <Tag as> ) 已對齊此解耦;結論支持 way_b (組 h1 + 共享幾何), 反對 way_a (把 h1 塞進 Input 元件)。"
+    }
+  },
+
+  "verification_note": "全 read-only。幾何數字由 cite 檔案 file:line 精算 (field-px=12px / gap-x-3=12px / field-height-sm=28px 皆檔案實證);未跑 playwright pixel (本輪 = 研究非實作, pixel 驗證留給落地階段 per planning §C)。world-class 來源 = Atlassian frontend mirror 原始碼 (read-view.tsx cssMap) + Atlassian Forge/Design 官方 padding 值。"
+}
