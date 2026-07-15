@@ -1,0 +1,196 @@
+{
+  "meta": {
+    "date": "2026-07-15",
+    "round": 12,
+    "scope": "最終唯讀深研 + WebFetch(禁改 code)。兩題命名/語義根本考據:(Q1) readonly cell vs 不可編 display cell 到底差在哪 —— 世界級 grid 真的都『灰底 readonly、無 disabled cell』嗎?整欄不可編(ID/計算)vs 可編欄裡某格被鎖,差別只在灰底?readonly cell 跟 display cell 值不值得都存在?最乾淨 cell 態集。(Q2) 『靜止顯示』該叫 display / read / view?各層(form field / inline-edit / table cell)世界級 verbatim 命名 + 『display』世界級當 mode 名用嗎(還是自創)+ read(互動態)vs display(渲染 mode)是兩軸還是同一事兩名 + 三層最終一致命名方案(過 CLAUDE.md 命名 3-test)。",
+    "method": "fresh WebFetch 世界級 verbatim:AG Grid cell-editing / MUI X editing / Handsontable disabled-cells / Glide textcell(Q1 grid disabled-cell 存在性)+ MDN readonly attr / Material TextField / Polaris TextField / Carbon read-only-states-pattern(WebSearch)/ Ant Descriptions + Typography editable / Bootstrap form-control readonly-plaintext / PatternFly inline-edit / Atlassian atlaskit(Q2 三層命名)。逐項對照本專案:field-wrapper.tsx FieldMode='edit'|'display'|'readonly'|'disabled'(:9-13 註解 + field-controls.spec.md:77)+ cell-registry.tsx CellMode='display'|'edit'(:58)+ inline-edit.tsx read↔edit(spec:67)+ field-controls.spec.md:93-100 自家世界級對照表(Material/Polaris/Carbon 全 readonly)。",
+    "repoRoot": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project",
+    "builds_on": [".claude/logs/inline-edit-round9-final.json", ".claude/logs/inline-edit-round10-final.json", ".claude/logs/inline-edit-round11-final.json"],
+    "all_webfetch_verified": "2026-07-15"
+  },
+
+  "Q1_readonly_vs_display_cell": {
+    "headline": "**硬結論:世界級 grid 沒有『disabled cell』這概念 —— 一家都沒有。** AG Grid / MUI X / Glide 只有『可編 vs 不可編』一條線,不可編 cell 仍完全『可選取 / 可導航 / 可複製』,只是進不了 edit;沒有『不可 focus / 不可選 / 值不算數』的 cell。**只有 Handsontable 內建兩種不可編變體:`readOnly`(CSS `htDimmed`,灰化 + 額外擋 paste/drag-fill 保護值)vs `editor:false`(正常外觀,copy/paste/fill 全可、只擋手動編輯)** —— 而且兩者 canonically 都叫 read-only / non-editable,**沒有一家把灰化態叫 disabled**。所以:(A) 『readonly cell』(灰化鎖定,可讀可選)跟 (B) 『display cell』(純值、無灰底)差別**在我方 DataTable(無 paste/drag-fill,round7)其實就只剩那個灰底訊號** —— 灰底是『對比訊號』:只在**混合欄**(某些格可編、這格被鎖)有意義,對『整欄不可編』(ID/計算欄)是噪音。最乾淨、對齊兩大 React grid(MUI X / AG Grid)的 cell 態集 = **2 態:`display`(=view,靜止/不可編、可選可複製)+ `edit`**;**第 3 態 `readonly`(灰化)只在真有『可編欄裡條件性鎖某格』需求時才加**(Handsontable readOnly 是唯一世界級前例),而我方 meta.disabled 全庫 0 setter(round9)= 此需求目前根本不存在。**永遠不叫 disabled。**",
+
+    "part1_semantic_clarity": {
+      "the_two_kinds_the_user_asked_about": {
+        "kind_i_whole_column_non_editable": {
+          "example": "ID 欄 / 計算欄 / 系統時間戳 —— 整欄結構上不可編",
+          "worldclass_mechanism": "MUI X `editable: false`(欄級)/ AG Grid `editable: false`(欄級)/ Handsontable `columns[].editor: false`;cell 落在『靜止 display/view 態』永不進 edit",
+          "visual": "**無灰底、無鎖定訊號** —— 就是純值。因為整欄一致不可編,沒有『可編兄弟格』可對比,不需要訊號區分",
+          "user_mental_model": "『這是給我看的資料(ID / 算出來的值),本來就不是在這裡編的東西』—— 心智裡它根本不是輸入框,是展示。"
+        },
+        "kind_ii_locked_cell_in_editable_column": {
+          "example": "可編的『金額』欄,但『已鎖定訂單』那幾列的金額格暫時不可改(權限 / 依賴 / 狀態)",
+          "worldclass_mechanism": "MUI X `isCellEditable: (params) => false`(per-cell)/ AG Grid `editable: (params) => false`(per-row fn)/ Handsontable `cells()` 回 `readOnly: true`(唯一會加灰化 htDimmed 的)",
+          "visual": "**Handsontable 會灰化(htDimmed)以標示『被鎖』;MUI X / AG Grid 預設不灰化**,只是該格點了不進 edit(靠 app 自己加視覺提示)",
+          "user_mental_model": "『這格normally 可以編,但現在被鎖住了 —— 我讀得到 / 選得到 / 複製得到,只是改不了』。"
+        }
+      },
+      "is_the_difference_only_the_gray": {
+        "answer": "**在真正的 spreadsheet(Handsontable)裡不只是灰底 —— readOnly 還額外擋 paste / drag-fill / populateFromArray(保護值不被任何 mutation 路徑改動),non-editable(editor:false)只擋『手動編輯器』(值仍可被 paste/fill 改)。但在我方 DataTable(round7 已證無 paste / 無 drag-fill),這個行為差別坍縮 → 剩下的差別就只有那個灰底訊號 + 能不能進 edit。**",
+        "focus_select_tab": "**readonly cell 與 display cell 在 focus / 選取 / tab 上世界級一律相同 —— 都可 focus / 可選取 / 可 tab / 可複製**(Bootstrap『readonly inputs can still be focused and selected』/ Handsontable『read-only cells available for keyboard navigation and copying』/ MUI X『remain selectable and navigable』)。差別**不在**可否 focus/選/tab —— 而在 (1) 灰底訊號(有無)(2) 進不進 edit(display 從無 edit affordance;readonly 是『本可 edit 但被鎖』)(3) spreadsheet 場景多的 paste/fill 保護。**沒有任何世界級態會把 cell 變成不可 focus/不可選 —— 那是 disabled 的定義,而 disabled cell 不存在。**"
+      },
+      "user_mental_models_summary": {
+        "display_cell": "『這是展示給我看的值,這裡從來就不是拿來編的』(整欄不可編 or 任何格的非編輯靜止態)。",
+        "readonly_cell": "『這格normally 可編,但現在被鎖 —— 可讀可選可複製,就是不能改』(混合欄裡被鎖的那格;灰底 = 對比訊號)。",
+        "disabled_cell": "**不存在** —— 世界級無此心智。硬要類比 = 『這格死了、不可 focus、值不算』,但沒有一家 grid 這樣做。"
+      }
+    },
+
+    "part2_worldclass_disabled_cell_existence_verbatim": {
+      "ag_grid": {
+        "editable": "『Set to true if this column is editable, otherwise false. Can also be a function to have different rows editable.』",
+        "disabled_cell_concept": "**無。** WebFetch verdict:『No explicit disabled cell terminology exists … Non-editable cells remain fully selectable, navigable, and copyable — no mention of suppressing focus, navigation, or selection.』",
+        "readOnlyEdit": "`readOnlyEdit=true` → 編輯不直接 mutate,改 fire `cellEditRequest`(是『誰負責改值』的 pattern,不是一種 cell 態)",
+        "url": "https://www.ag-grid.com/react-data-grid/cell-editing/"
+      },
+      "mui_x_datagrid": {
+        "cell_modes": "『Each cell and row has two modes: edit and view.』enum `GridCellModes.View` / `GridCellModes.Edit`(**用 view,不用 display**)",
+        "isCellEditable": "『You can use the isCellEditable callback prop to define which individual cells the user can edit … must return true if the cell is editable, or false if not.』",
+        "disabled_cell_concept": "**無。** WebFetch verdict:『No mention exists of a disabled cell state … Non-editable cells are simply cells where isCellEditable returns false — they remain selectable and navigable; editing is prevented.』",
+        "display_word": "『Only view is used; display does not appear.』",
+        "url": "https://mui.com/x/react-data-grid/editing/"
+      },
+      "handsontable": {
+        "readOnly": "`readOnly: true` → **『Has an additional CSS class (htDimmed)』**(灰化保護視覺);『Copy works, paste doesn't work』『Drag-to-fill doesn't work』『Can't be changed by populateFromArray()』",
+        "non_editable": "`editor: false` → **『Has no additional CSS class』**(正常外觀);『Copy-paste works』『Drag-to-fill works』『Can be changed by populateFromArray()』;『only manual editing is blocked』",
+        "canonical_sentence": "『Disabling a cell makes the cell read-only or non-editable. Both have similar outcomes, with the following differences:』—— **灰化態叫 `readOnly`,不叫 disabled**",
+        "selectable": "『read-only cells available for keyboard navigation and copying data』",
+        "no_disabled_tertiary": "WebFetch verdict:『No tertiary disabled state preventing selection entirely mentioned.』",
+        "url": "https://handsontable.com/docs/react-data-grid/disabled-cells/"
+      },
+      "glide_data_grid": {
+        "readonly": "textcell `readonly`:『Determines if the cell will accept edit events.』",
+        "disabled_cell_concept": "**無。** WebFetch verdict:『No disabled property or concept … no reference to making cells non-selectable or non-focusable.』",
+        "url": "https://docs.grid.glideapps.com/api/cells/textcell"
+      },
+      "cross_source_summary": {
+        "disabled_cell_exists_anywhere": "**NO —— 4/4 grid 皆無『disabled cell』(不可 focus / 不可選 / 值不算數)。** 這概念在 grid 世界不存在。",
+        "non_editable_flavors": "全部非可編 cell 都落在兩選一:(a) **plain 不可編**(MUI/AG 預設 + Handsontable editor:false)= 正常外觀、無灰化、只是不進 edit = 我方 `display`;(b) **dimmed read-only**(唯 Handsontable readOnly / htDimmed)= 灰化 + 額外擋 paste/fill = 我方灰化『readonly』。",
+        "who_dims": "**只有 Handsontable 灰化(htDimmed);MUI X / AG Grid 根本不灰化非可編 cell。** 灰底不是普世 —— 是 spreadsheet 流派(Handsontable)才有的『鎖定對比訊號』。",
+        "static_state_name": "MUI X = `view`(GridCellModes.View);AG Grid = 無顯式靜止名(只 !editing);Handsontable = `read-only`/`non-editable`。**沒一家叫 `display`。**"
+      }
+    },
+
+    "part3_verdict": {
+      "q_does_disabled_cell_exist": "**不存在。** 沒有任何世界級 grid 有『disabled cell』(不可 focus / 不可選 / 值不算)。所有非可編 cell 都仍可選、可導航、可複製 —— 只是進不了 edit。→ 『disabled』對 cell 是 category error,必廢(收斂 round11:灰化鎖定態行為 = readonly,不是 disabled)。",
+      "q_worldclass_pattern": "世界級 cell 是『**editable + view/display(純值、可讀可選)**』二態為主流(MUI X view/edit、AG Grid);『**dimmed read-only(灰化鎖定)**』是 Handsontable(spreadsheet 流派)才加的第三態,用於『可編欄裡條件鎖某格』的對比訊號。三態同時存在的**只有 Handsontable**,而它的灰化態叫 `readOnly`。",
+      "q_do_readonly_and_display_cell_both_deserve_to_exist": {
+        "answer": "**視產品是否真有『可編欄裡條件性鎖某格且需視覺訊號』的場景而定 —— 目前我方沒有(meta.disabled 全庫 0 setter,round9),所以現在只有 `display` + `edit` 該活;灰化 readonly cell 是 speculative。**",
+        "reasoning": "(1) 灰底是**對比訊號**:只在混合欄(可編兄弟格 vs 被鎖格)有意義。對整欄不可編(ID/計算)= 噪音,那種欄該是 plain display 無灰底。→ **不該一律把非可編 cell 灰化**;灰底保留給『被鎖的可編格』。(2) 我方 DataTable 無 paste/drag-fill(round7),readonly vs display 的行為差(值保護)坍縮 → 差別只剩灰底訊號。(3) 兩大 React grid(MUI X / AG Grid)根本不做灰化 readonly cell —— 只有 view/display + edit,per-cell 鎖靠 `editable:(row)=>false` 落回 display。這是最主流、最乾淨。"
+      },
+      "cleanest_cell_state_set": {
+        "recommended_baseline_2_states": [
+          {"state": "`display`(= 對齊 MUI X `view`)", "user_mental_model": "『這是展示給我看的值,不是在這裡編的東西』—— 任何 cell 的非編輯靜止態 + 整欄不可編(ID/計算)。可選可複製,無灰底。", "worldclass": "MUI X GridCellModes.View / AG Grid !editing / Handsontable editor:false(正常外觀)"},
+          {"state": "`edit`", "user_mental_model": "『我正在改這個值』。", "worldclass": "MUI X GridCellModes.Edit / AG editing / Handsontable editor 普世共識"}
+        ],
+        "optional_3rd_state_only_if_needed": [
+          {"state": "`readonly`(灰化鎖定,dimmed)", "add_when": "**且僅當**產品真有『可編欄裡某格條件被鎖、且需要灰底告訴 user 這格跟兄弟格不同(被鎖)』的場景", "user_mental_model": "『這格normally 可編,但現在被鎖 —— 可讀可選可複製,就是改不了』。", "worldclass": "Handsontable `readOnly` / `htDimmed`(唯一世界級前例);對齊 field readonly mode + Carbon『navigable but not operable』", "current_status": "**我方目前 0 消費者(meta.disabled 全庫 0 setter,round9)→ 現在別 ship;有真需求再加,且叫 readonly 不叫 disabled。**"}
+        ],
+        "never": "**`disabled` cell —— 世界級零前例,必廢。** 若真要『這格死掉不可選』(極罕見),那也不是 cell 態問題,是整列/整區的 row-disabled / 權限 gating,不在 cell mode 軸。"
+      },
+      "is_the_gray_meaningful": "**有意義,但有條件。** 灰底 = 『被鎖 vs 可編』的對比訊號,只在混合欄有效。對整欄不可編 = 噪音(該 plain display)。→ 別把灰底當『所有非可編 cell』的通用皮;它是『被鎖的可編格』專用。這也是為何 MUI X / AG Grid 乾脆不灰化(它們的 per-cell 鎖多是條件邏輯,靠 app 決定要不要視覺提示)。",
+      "ssot_affecting": "cell 態集收斂(display+edit baseline / readonly 條件加 / disabled 廢)跨 column meta + cell-registry + TD token(接 round11 Q1 bg-readonly)= SSOT-affecting → user 拍板;本輪唯讀不執行。"
+    }
+  },
+
+  "Q2_display_read_view_naming": {
+    "headline": "**硬結論:『display』世界級沒有一家當 form-field mode / cell mode / inline-edit state 的名 —— 是我方自創。** Form field 層 6/6 世界級(HTML / Material / Polaris / Carbon / Ant / Bootstrap)不可編態一律叫 **read-only**;cell 層 MUI X 叫 **view**;inline-edit 層 Atlassian 叫 **readView** / PatternFly 叫 **read-only mode**。『display』只以**動詞**(Ant『Display multiple read-only fields』)或 CSS property 出現,**從不當 mode/state 名**。user 的直覺對:`display` 不世界級。**但關鍵不是『把 display 改叫 readonly』**(會撞我方既有 readonly),而是認清有**兩條軸**:(軸1)**互動 lifecycle**(user 在讀 vs 在編)—— 世界級 view↔edit(MUI X)/ read↔edit(Atlassian readVIEW·editVIEW,共同字根就是 *view*);(軸2)**Field chrome 渲染**(單控件怎麼畫)—— edit / readonly / disabled / **plaintext**。**兩軸該分開命名(Atlassian 自己就 readView(軸1)≠ readOnly(軸2)兩個不同字)。** 我方真正的 drift 是:**DataTable `CellMode='display'` 把 chrome 詞借去當『互動靜止態』的名 —— 但 cell 靜止態跟 InlineEdit `read` 是同一條軸(軸1),卻一個叫 display 一個叫 read。** 最乾淨方案:**軸1 統一用 `view`/`edit`(InlineEdit + cell 同名,對齊 MUI X + Atlassian readVIEW 字根 + edit 反義);軸2 Field chrome 保留 `edit`/`readonly`/`disabled` + 把 plaintext 那個 mode 從 `display` 正名 `plaintext`(Bootstrap `form-control-plaintext`『styled as plain text』—— 誠實標示它是 read-only 的 plaintext 渲染,非另一種語意態)。** 沒有任何世界級 DS 用『一個字打通三層』—— 最接近的是 MUI X 用 `view`(因它把 cell=field=editor 塌成同一物)。",
+
+    "part1_worldclass_verbatim_by_layer": {
+      "form_field_layer_show_a_value_not_editable": [
+        {"source": "HTML / MDN", "term": "`readonly` 屬性", "verbatim": "『makes the element not mutable, meaning the user can not edit the control』;『read-only controls can still function and are still focusable … disabled controls can not receive focus and are not submitted』", "display_used": "否 —— 無 display mode;另有 `<output>` 元素表計算值", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/readonly"},
+        {"source": "Material UI TextField", "term": "`disabled` + `InputProps={{ readOnly: true }}`", "verbatim": "有 `disabled` prop + `InputProps={{ readOnly: true }}`(標為 Read Only)", "display_used": "**否 —— WebFetch:『No dedicated display mode, view mode, plain variant, or read-only variant … lacks display mode terminology』**", "url": "https://mui.com/material-ui/react-text-field/"},
+        {"source": "Shopify Polaris TextField", "term": "`readOnly` / `disabled`", "verbatim": "`readOnly`『allows focus on the text field but prevents input or editing』;`disabled`『prevent the text field from receiving keyboard focus or inputs』", "display_used": "**否 —— WebFetch:『does not use display or view as field mode/state names』;無 plain variant**", "url": "https://polaris-react.shopify.com/components/selection-and-input/text-field"},
+        {"source": "Carbon Design System(read-only states pattern)", "term": "read-only state", "verbatim": "『components that users can review but not modify』;『read-only variation … allows the user to read the information but not interact with or change it』;『Transparent background for fields … Text color remains the same as in the enabled state … pass 4.5:1』;『when a component is temporarily unavailable pending user actions … should be temporarily disabled, not read-only』", "display_used": "否 —— 用 read-only / disabled;無 display", "url": "https://carbondesignsystem.com/patterns/read-only-states-pattern/"},
+        {"source": "Ant Design", "term": "Input `readOnly`;群組展示 = `Descriptions`", "verbatim": "Descriptions =『Display multiple read-only fields in a group』『Commonly displayed on the details page』", "display_used": "**display 只當動詞**(『Display … read-only fields』);state 名是 `read-only`", "url": "https://ant.design/components/descriptions"},
+        {"source": "Bootstrap 5", "term": "`readonly` + `.form-control-plaintext`", "verbatim": "『readonly inputs can still be focused and selected, while disabled inputs cannot』;『If you want to have `<input readonly>` elements … styled as plain text, replace `.form-control` with `.form-control-plaintext`』", "display_used": "**否 —— 一個 read-only 狀態,兩種渲染(field-box vs `plaintext`)。『plaintext』才是『純文字渲染』的世界級字**", "url": "https://getbootstrap.com/docs/5.3/forms/form-control/"},
+        {"source": "Atlassian(field)", "term": "無 field『display』mode", "verbatim": "Atlassian 沒有 form-field『display mode』;只有 inline-edit 的 `readView`/`editView`", "display_used": "否", "url": "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/types.tsx"}
+      ],
+      "form_field_layer_verdict": "**6/6 世界級 form DS 把不可編態叫 `read-only`(HTML readonly / Material readOnly / Polaris readOnly / Carbon read-only / Ant readOnly / Bootstrap readonly)。0/6 用 `display` 當 mode 名。** 我方 field-controls.spec.md:93-100 自家對照表也早記 Material/Polaris/Carbon 全 `readonly` —— 即我方 spec 自己就承認世界級用 readonly,卻另命名了個 `display` mode。**『純文字渲染 read-only』的世界級字 = Bootstrap `plaintext`,不是 display。**",
+
+      "inline_edit_layer_non_editing_state": [
+        {"source": "Atlassian atlaskit inline-edit(我方宣告主 benchmark)", "resting_term": "`readView`『The component shown when not in editView』", "editing_term": "`editView` + `isEditing`", "verbatim_root": "**read*View* / edit*View* —— 共同字根是 `view`**", "url": "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/types.tsx"},
+        {"source": "Chakra UI Editable", "resting_term": "`Editable.Preview`(preview)", "editing_term": "`Editable.Input`;doc『Enter edit mode』", "url": "https://www.chakra-ui.com/docs/components/editable"},
+        {"source": "PatternFly inline-edit", "resting_term": "『read-only mode』", "editing_term": "『edit mode』", "verbatim": "『switch between read-only and edit views』『returns to the read-only mode』", "url": "https://www.patternfly.org/components/inline-edit/design-guidelines"},
+        {"source": "Ant Design Typography(editable)", "resting_term": "無正式態名(callback onStart『Called when enter editable state』)", "editing_term": "`editing` boolean『Whether to be editable』", "url": "https://ant.design/components/typography"},
+        {"source": "MUI X(cell 兼 inline)", "resting_term": "`view`(GridCellModes.View)", "editing_term": "`edit`", "url": "https://mui.com/x/react-data-grid/editing/"}
+      ],
+      "inline_edit_layer_verdict": "靜止態光譜:`read`(Atlassian readView)/『read-only mode』(PatternFly)/ `preview`(Chakra)/ `view`(MUI X + Ant 非正式)。**『read』與『view』並列領先**(Atlassian readVIEW 兩者兼具)。**沒一家叫 display。** 我方 InlineEdit `read` 命中 Atlassian/PatternFly『read』家族(round10 已驗,站得住)。",
+
+      "table_cell_layer_static_state": [
+        {"source": "MUI X Data Grid", "static_term": "`view`(GridCellModes.View)", "edit_term": "`edit`(GridCellModes.Edit)", "verbatim": "『Each cell and row has two modes: edit and view』;『display does not appear』", "url": "https://mui.com/x/react-data-grid/editing/"},
+        {"source": "AG Grid", "static_term": "無顯式靜止名(!editing)", "edit_term": "`cellEditingStarted`", "url": "https://www.ag-grid.com/react-data-grid/cell-editing/"},
+        {"source": "Handsontable", "static_term": "`readOnly`(htDimmed 灰化)/ `editor:false`(non-editable 正常)", "edit_term": "`editor`", "url": "https://handsontable.com/docs/react-data-grid/disabled-cells/"}
+      ],
+      "table_cell_layer_verdict": "cell 靜止態:**MUI X `view`(唯一給了乾淨單字的);Handsontable 灰化態 `readOnly`。沒一家叫 `display`。** 我方 `CellMode='display'` 又是自創字。"
+    },
+
+    "part2_key_judgments": {
+      "j1_is_display_a_worldclass_field_mode_name": {
+        "answer": "**不是。是我方自創。** 統計:form field 層 0/6、cell 層 0/3、inline-edit 層 0/5 世界級用『display』當 mode/state 名。普世字是 **read-only**(form)/ **view**(cell)/ **read**(inline)。『display』只當動詞(Ant)或 CSS。→ **user 質疑正確:Field 把那 mode 叫『display』本身不世界級。**",
+        "why_not_simply_rename_display_to_readonly": "**因為我方 `display` 跟 `readonly` 是同一語意(都 read-only)的兩種 chrome —— 不能直接把 display 改叫 readonly(會撞既有 readonly mode)。** 世界級(Bootstrap / Carbon)把 read-only 當**單一語意態**、渲染分兩種:field-box(= 我方 `readonly` 灰框)vs plaintext(= 我方 `display` 純文字,Bootstrap `.form-control-plaintext`)。所以 `display` 的正解 = 它是『read-only 的 plaintext 渲染』,世界級字是 **plaintext**,不是 display 也不是 readonly。"
+      },
+      "j2_read_vs_display_two_axes_or_one_name_two_things": {
+        "answer": "**兩條不同軸 —— 而且世界級明確分開命名。**",
+        "axis_1_interaction_lifecycle": "『user 現在在讀 vs 在編』(runtime toggle)。世界級:`view`↔`edit`(MUI X)/ `read`↔`edit`(Atlassian readView·editView)/ `preview`↔`input`(Chakra)/『read-only mode』↔『edit mode』(PatternFly)。**InlineEdit `read`/`edit` + DataTable CellMode 都屬這軸。**",
+        "axis_2_field_chrome_render": "『單一控件怎麼畫』:editable-box / locked-box / plaintext / disabled-box。世界級:`edit` / `readOnly` / `plaintext` / `disabled`。**Field mode 屬這軸。**",
+        "worldclass_proof_they_are_separate": "**Atlassian 同一系統裡 `readView`(軸1 互動態)≠ `readOnly`(軸2 chrome)是兩個不同字** —— 直接證明這兩軸該分開命名,不該逼成同名。→ **InlineEdit `read` 態委派 Field chrome 是正確的兩軸映射,不是命名衝突。**(收斂 round10『開關 vs 燈泡』。)",
+        "the_real_drift": "**真正的 drift:DataTable `CellMode='display'` 把『軸2 的 chrome 詞(display)』借去命名『軸1 的互動靜止態』。** cell 的靜止態跟 InlineEdit `read` 是同一條軸(軸1 互動 lifecycle),卻一個叫 `display`、一個叫 `read` —— **同軸兩名,且其中一個(cell 的 display)還是從錯的軸借來的字。** InlineEdit `read` vs Field `display` 不衝突(兩軸);但 CellMode `display` vs InlineEdit `read`(同軸)才是要修的。"
+      },
+      "j3_one_word_across_three_layers": {
+        "answer": "**沒有任何世界級 DS 用『一個字打通三層』。最接近的是 MUI X 用 `view` —— 但那是因為 MUI X 把 cell = field = editor 塌成同一個物件**,所以一個 `view` 自然覆蓋三層。Atlassian 刻意分(`readView` 互動 ≠ `readOnly` chrome,兩字)。",
+        "implication": "我方架構把三層拆開(Field chrome / InlineEdit 編排 / DataTable cell),所以**本就該用『per-軸』字彙**,不硬塞一個字打通。但**可以把『兩個互動層(InlineEdit + cell)』統一在一個互動字(view/edit)下** —— 逼近 MUI X 的乾淨,同時保留 Field chrome 軸自己的字(readonly/plaintext/disabled)。"
+      }
+    },
+
+    "part3_final_naming_plan": {
+      "principle": "兩軸各用世界級字;每層消費正確的軸字;同軸內跨層同名。",
+      "axis_1_interaction_view_edit": {
+        "recommended": "**`view` / `edit`,InlineEdit + DataTable cell 同名。**",
+        "why_view": "(a) `view`/`edit` = MUI X GridCellModes 的原字對(MUI X 是我方 cell 主 benchmark);(b) Atlassian read**View**/edit**View** 的共同字根就是 `view` → `view`/`edit` 同時相容兩大 benchmark;(c) 乾淨反義對(『view mode / edit mode』業界通用);(d) **跟 Field `readonly` 零字面鄰接**(而 `read` 會緊挨 `readonly` 增加混淆);(e) 統一 InlineEdit + cell 於一字 = 最 SSOT,直接消掉『cell 叫 display / InlineEdit 叫 read』的同軸兩名 drift。",
+        "changes": ["DataTable `CellMode='display'|'edit'` → `'view'|'edit'`(對齊 MUI X 原字)", "InlineEdit 狀態 `read` → `view`(refine round10:round10 只否決了 read→**display**,沒比過 read vs view;cell 逼出『同軸統一』決策,且 view 是 readView 字根 + MUI cell 原字 + edit 反義,故此處收 view 一字打通兩互動層)"],
+        "honest_alt": "**若 user 更重 Atlassian 『read』字面(leading morpheme)> 跨層統一,可保 InlineEdit `read`、cell 用 `view` —— 但那留下同軸兩同義字(read/view),SSOT 較弱。硬建議 = `view`/`edit` 統一。**"
+      },
+      "axis_2_field_chrome_mode": {
+        "recommended": "**`edit` / `readonly` / `disabled` / `plaintext`。**",
+        "edit": "保留(普世)。",
+        "readonly": "**保留 —— 世界級原字**(HTML/Material/Polaris/Carbon/Bootstrap `readonly`)。這是『read-only 的 field-box 渲染』(灰框 bg-readonly);對應 Bootstrap `<input readonly>`(帶 .form-control)。",
+        "disabled": "保留(普世;inert / 不可 focus / 不送出)。",
+        "display_becomes_plaintext": "**`display` → `plaintext`**(或 `readonlyPlain`)。理由:它是『read-only 的 plaintext 渲染』(Bootstrap `.form-control-plaintext`『styled as plain text』;Carbon read-only『transparent background』;Ant『Display … read-only fields』的 plaintext 形態)。**正名為 `plaintext` 誠實標示它跟 `readonly` 同語意(都 read-only)、只差 chrome(純文字 vs field-box)**,消掉『display vs readonly』那個『好像 display 不是 read-only』的假對比。",
+        "delegation_reads_cleanly": "軸1 委派軸2:『cell/InlineEdit `view` 態 → 渲 Field `plaintext` chrome』/『`edit` 態 → 渲 Field `edit` chrome』。比現況『cell display 態 → 渲 Field display mode』『InlineEdit read 態 → 渲 Field display mode』(display 一字三處、語意含糊)乾淨。"
+      },
+      "even_cleaner_structural_ideal_optional": {
+        "note": "**最世界級-真實的結構**(Carbon / Bootstrap / HTML 實際做法):`mode` 只該有 3 個**語意**態 = `edit` / `readonly` / `disabled`(跟世界級逐字對齊);read-only 的『field-box vs plaintext』是**渲染修飾**(chrome variant / plain flag),不是第 4 個 mode。即 `<Field mode=\"readonly\" plain>` = plaintext read-only(Bootstrap readonly + .form-control-plaintext),`<Field mode=\"readonly\">` = box read-only。",
+        "tradeoff": "此結構最對齊世界級 + 最少語意態,但是**大重構**(mode 4→3 + 加渲染修飾軸,跨整個 Field family + DataTable + InlineEdit renderRead + field-controls.spec.md:57『取代 XxxDisplay 子元件』段)。**若不想大動,退而求其次 = 保 4 個扁平 mode 但把 `display` 正名 `plaintext`**(上一段),已消除『display 不世界級 / 假對比』兩病,churn 小很多。"
+      },
+      "answers_to_users_four_subquestions": {
+        "field_display_mode_should_be_called": "**`plaintext`(退而求其次,保 4 扁平 mode)或 收進 `mode=\"readonly\" + plain 修飾`(結構理想)。絕不是 `display`(0/6 世界級)、也不是 `view`(那是軸1 互動字、會撞)。** 它本質 = read-only 的 plaintext 渲染,世界級字 = Bootstrap `plaintext`。",
+        "inlineedit_resting_should_be_called": "**`view`**(統一軸1;對齊 MUI X + Atlassian readVIEW 字根 + edit 反義)。**該與 cell 同名**(同軸)。次選保 `read`(Atlassian 字面)但犧牲跨層統一。",
+        "cell_resting_should_be_called": "**`view`**(= MUI X GridCellModes.View 原字;與 InlineEdit 同軸同名)。從 `display` 正名。",
+        "three_layer_scheme": {
+          "axis_1_interaction": "`view` / `edit` —— **InlineEdit + DataTable cell 同名**(同軸統一)。",
+          "axis_2_field_chrome": "`edit` / `readonly` / `disabled` / `plaintext` —— **Field mode**。",
+          "shared_word": "`edit` 兩軸共用且**同義**(都 = 正在編輯)= 對齊,非衝突。",
+          "split_words": "`view`(軸1 互動)≠ `plaintext`/`readonly`(軸2 chrome)—— 刻意分,對齊 Atlassian readView≠readOnly。",
+          "delegation": "cell/InlineEdit `view` → Field `plaintext`;`edit` → Field `edit`。"
+        }
+      },
+      "naming_3test": {
+        "test1_existing_ds_vocab": "`edit`/`readonly`/`disabled` 已是 canonical;`view` 為新增但為軸1 純互動字(不與既有 chrome 字撞);`plaintext` 新增(取代 display)。過。",
+        "test2_two_worldclass": "`view`(MUI X cell + Atlassian readVIEW/editVIEW 字根,≥2)/ `readonly`(HTML/Material/Polaris/Carbon/Bootstrap,6)/ `plaintext`(Bootstrap `.form-control-plaintext`;Carbon『transparent』plaintext 形態)/ `edit`·`disabled`(普世)。過(`plaintext` 主 cite Bootstrap 為單一強 cite,屬 chrome 修飾字,可接受)。",
+        "test3_cross_component_conflict": "`view` 只在軸1(互動);`readonly`/`disabled`/`plaintext` 只在軸2(Field chrome);`edit` 兩軸同義。**無同字不同義**。⚠️ 唯一需留意:`plaintext`(Field mode)vs `naked`(Field variant,cell substrate)都連想『去 chrome』—— 但屬不同軸(mode=語意渲染 / variant=cell 底材)、字面不同、無 overlap;選 `plaintext`(非 `plain`)進一步與 naked 拉開。過。"
+      }
+    },
+
+    "the_precise_drift_diagnosis": "**user 感到的『不一致』其實有兩件事,一對一錯:** (1) **InlineEdit `read` 態 vs 它渲染的 Field `display` mode 名不同 —— 這是對的**(兩軸:互動 state ≠ chrome mode,Atlassian readView≠readOnly 同款),不該逼同名。(2) **但 DataTable `CellMode='display'` 把 chrome 詞借去命名互動靜止態 —— 這是錯的**:cell 靜止態 = InlineEdit `read` 同軸(軸1 互動),卻叫 `display`(軸2 chrome 字)。→ 修法:軸1 統一 `view`(cell + InlineEdit),軸2 Field chrome 的 plaintext-readonly 從 `display` 正名 `plaintext`。兩件一起做,`display` 這個一字三用(cell 態 / InlineEdit 委派目標 / Field chrome)的含糊字**整個退場**。",
+
+    "honest_tradeoffs": "**(a) 這是 SSOT-affecting 大改**(rename 跨 Field family mode + DataTable CellMode + InlineEdit state + spec 多處 + public `mode=\"display\"` API,含 field-controls.spec.md:57『取代 XxxDisplay』段)→ user 拍板,本輪唯讀不執行。(b) `display` 唯一的『罪』是不世界級 + 對 readonly 假對比;它內部自洽、有自我文件(field-wrapper.tsx:9-13)。若 user 覺得 churn 不值,**最小可接受修 = 只把 CellMode `display`→`view`(對齊 MUI X,消同軸 drift)、Field mode 暫留 `display` 但 spec 補『= read-only plaintext 渲染,對齊 Bootstrap plaintext / Carbon read-only』對照** —— 至少讓 cell 互動軸乾淨、且文件承認 display=readonly-plaintext。(c) 若要一步到位最世界級 = 走上方『結構理想』(mode 4→3 + plain 修飾),churn 最大但最對齊 Carbon/Bootstrap。**三檔可選,硬建議中檔:軸1 統一 view/edit + Field display→plaintext。**"
+  },
+
+  "final_answers": {
+    "Q1": "**世界級 grid 沒有『disabled cell』—— AG Grid / MUI X / Glide 4 家全無(WebFetch verbatim:非可編 cell『remain fully selectable, navigable, copyable』,只是進不了 edit;沒有不可 focus/不可選/值不算的 cell)。** 唯一內建灰化的是 Handsontable `readOnly`(CSS htDimmed,額外擋 paste/drag-fill),它 canonically 叫 read-only,**沒一家叫 disabled**;MUI X/AG Grid 根本不灰化非可編 cell。所以『readonly cell(灰化鎖定)vs display cell(純值)』的差別,在我方 DataTable(無 paste/fill,round7)**就只剩那個灰底訊號**;灰底是『對比訊號』,只在『可編欄裡某格被鎖』有意義(對整欄不可編 ID/計算欄 = 噪音,該 plain display)。focus/選取/tab 兩者世界級一律相同(都可)。**最乾淨 cell 態集 = 2 態:`display`(=MUI X view,靜止/不可編、可選可複製)+ `edit`;第 3 態 `readonly`(灰化)只在真有『條件鎖可編格 + 需視覺訊號』時才加(Handsontable readOnly 唯一前例),而我方 meta.disabled 全庫 0 setter = 此需求現在不存在 → 別 ship。永遠不叫 disabled(category error,必廢,收斂 round11)。** user 心智:display=『展示給我看的值』/ readonly=『normally 可編但現在被鎖,可讀可選改不了』/ disabled cell=不存在。SSOT-affecting → user 拍板。",
+    "Q2": "**『display』世界級不當 mode/state 名 —— 是我方自創,user 直覺對。** Form field 層 6/6(HTML readonly / Material readOnly / Polaris readOnly / Carbon read-only / Ant readOnly / Bootstrap readonly)叫 **read-only**;cell 層 MUI X 叫 **view**;inline-edit 層 Atlassian **readView** / PatternFly **read-only mode**;『display』只當動詞(Ant『Display … read-only fields』)。**但別直接 display→readonly(撞既有 readonly)** —— 認清兩軸:軸1 互動 lifecycle(user 在讀 vs 在編)= 世界級 view/edit(MUI X)· read/edit(Atlassian read**View**);軸2 Field chrome(控件怎麼畫)= edit/readonly/disabled/**plaintext**。兩軸世界級明確分名(Atlassian readView(軸1)≠ readOnly(軸2))。**真 drift = DataTable `CellMode='display'` 把 chrome 詞借去命名互動靜止態,但它跟 InlineEdit `read` 同軸(軸1)卻異名。** 最終方案:**軸1 統一 `view`/`edit`(InlineEdit + cell 同名,對齊 MUI X 原字 + Atlassian readVIEW 字根 + edit 反義 + 避 read/readonly 鄰接);軸2 Field chrome 保 edit/readonly/disabled + 把 plaintext 那個 mode 從 `display` 正名 `plaintext`(Bootstrap `.form-control-plaintext`『styled as plain text』,誠實標示它=read-only 的 plaintext 渲染、非另一語意態)。** 具體:Field『顯示值』mode → `plaintext`(非 display 非 view);InlineEdit 靜止態 → `view`(與 cell 同名);cell 靜止態 → `view`(=MUI X)。過 3-test(view 只在互動軸 / plaintext·readonly·disabled 只在 chrome 軸 / edit 兩軸同義 = 對齊非衝突;plaintext 選字避開 naked variant)。沒任何 DS 一字打通三層(MUI X 最近,用 view,因它塌了三層)。**硬建議中檔(軸1 view/edit 統一 + display→plaintext);結構理想 = mode 4→3 + plain 修飾(最對齊 Carbon/Bootstrap 但 churn 最大);最小檔 = 只 cell display→view + spec 補 display=readonly-plaintext 對照。** 全 SSOT-affecting → user 拍板,本輪唯讀不執行。"
+  }
+}

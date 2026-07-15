@@ -5,7 +5,13 @@
 **統一原則**:就地編輯 host(InlineEdit + DataTable cell)**完全同構、真 SSOT** —— 只有 `view ↔ edit` 兩態 + `editable` 判準閘(非第三態)。**不亂生狀態**。
 
 **軸 1 — Field 控件 chrome mode(表單語境,單一控件怎麼渲染)**:
-- `edit`(可編欄位)/ `readonly`(表單鎖定值算數,灰底可讀可選,吃 `bg-readonly`)/ `disabled`(表單「目前不適用」如選國家前的城市,灰底灰字不送出,**form 專屬**)/ **`view`(原 `display` 改名)**= 非表單的值呈現(cell/InlineEdit/詳情),零 chrome,值本體(文字/Tag/頭像 —— 故 **`view` 不是 `plaintext`**,plaintext 裝不下 Tag)。
+- `edit`(可編欄位)/ `readonly`(表單鎖定值算數,灰底可讀可選,吃 `bg-readonly`)/ `disabled`(表單「目前不適用」如選國家前的城市,灰底灰字不送出,**form 專屬**)/ **`view`(原 `display` 改名)**= 非表單的值呈現(cell/InlineEdit/詳情),值本體(文字/Tag/頭像)。
+
+**⚠️ view 的 padding SSOT(2026-07-15 修正,推翻「collapse view」+ refine 2026-05-13「display zero chrome」拍板)**:view **不 collapse 成單一**,`view×default` ≠ `view×naked`:
+- **`view×default`(form / InlineEdit)= `plaintext`**:**保留 px/py = 跟 edit 一模一樣**(px-field-px;Textarea 多行 py-2),只拿掉 border/bg/focus chrome(Bootstrap `.form-control-plaintext` 模型)。→ read↔edit 零跳、padding 跟 edit **同源自動同步**。**現況 `:135` 是 `!px-0 !py-0` 全拔 = 待修**(這是 InlineEdit 現在得外掛 padding + 多行漏的根源)。
+- **`view×naked`(cell)= 全拔 px/py + `!h-auto`**:cell 用 `table-cell-px`/row 給高。維持現況。
+- **不 collapse**(兩者 padding 不同)。砍 `readonly×naked`/`disabled×naked` 死格照舊。
+- **③(換行 padding)結構性解決**:InlineEdit view 委派 `<Control mode="view">`(default/plaintext)→ padding 自動 = 該控件 edit(Textarea py-2 / Combobox wrap py-1+gap-4 由各控件 view 自帶),Field 一改 InlineEdit 自動同步,**零 hardcode**。
 
 **軸 2 — 就地編輯 host(InlineEdit ＝ DataTable cell,同一份語義)**:
 - `view`(顯示值,委派軸1 `view` mode 渲染;editable 時有 hover 入口)↔ `edit`(真控件輸入)。
