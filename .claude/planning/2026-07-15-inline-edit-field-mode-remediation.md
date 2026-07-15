@@ -1,6 +1,35 @@
 # InlineEdit / Field-mode / Storybook 重整 — 追蹤總帳(2026-07-15)
 
-**狀態**:規格研究中(10+ 輪唯讀深研已完成),**尚未實作任何 code**(user 要先把規格全確認好)。
+## 🟢 最終確認模型(2026-07-15 user GO,SSOT — 蓋過下方研究過程中的中間結論)
+
+**統一原則**:就地編輯 host(InlineEdit + DataTable cell)**完全同構、真 SSOT** —— 只有 `view ↔ edit` 兩態 + `editable` 判準閘(非第三態)。**不亂生狀態**。
+
+**軸 1 — Field 控件 chrome mode(表單語境,單一控件怎麼渲染)**:
+- `edit`(可編欄位)/ `readonly`(表單鎖定值算數,灰底可讀可選,吃 `bg-readonly`)/ `disabled`(表單「目前不適用」如選國家前的城市,灰底灰字不送出,**form 專屬**)/ **`view`(原 `display` 改名)**= 非表單的值呈現(cell/InlineEdit/詳情),零 chrome,值本體(文字/Tag/頭像 —— 故 **`view` 不是 `plaintext`**,plaintext 裝不下 Tag)。
+
+**軸 2 — 就地編輯 host(InlineEdit ＝ DataTable cell,同一份語義)**:
+- `view`(顯示值,委派軸1 `view` mode 渲染;editable 時有 hover 入口)↔ `edit`(真控件輸入)。
+- `editable` 判準(布林/callback,預設 true):false → view 無 hover/入口、**不灰化**(對齊世界級 detail-pane + grid:Atlassian/Jira/MUI X/AG Grid **就地編輯無 disabled 態**)。
+
+**命名決策**:`display`→**`view`**(三層打通:MUI X cellMode=view / Atlassian readVIEW 字根 / edit 成對;過命名 3-test)。**撤回**:InlineEdit 加 disabled(round7 錯,detail-pane 鎖定=view 無入口,非灰化)。**廢除**:DataTable cell「disabled」(世界級 4 家全無 disabled cell = category error;meta.disabled 全庫 0 消費)。
+
+**最終系統詞彙(6 個,零重疊)**:`view / edit`(互動軸)+ `readonly / disabled`(chrome 軸,form 專屬)+ `editable`(閘)+ `hover`。
+
+**實作清單(全 GO)**:
+1. **Field mode `display`→`view`** DS-wide(field-wrapper cva mode + field-context FieldMode type + 全 `mode="display"` 消費點 + 各控件)。
+2. **cva 收斂**:view(原 display)收成單一 variant-agnostic compound + 砍 `readonly×naked`+`disabled×naked` 死格 + Textarea 鏡像。
+3. **InlineEdit**:state `read`→`view`、read=委派 Field view mode(零重刻幾何)、**加 `editable` prop(預設 true)**、**不加 disabled**、auto-sm(`fieldPreferredSize='sm'` static + Field 偵測)、接 fieldCtx cascade(size/labelId)、focus 分路徑(滑鼠乾淨/鍵盤藍框)、renderRead 行盒修(Tag 下沉)、spec「view↔edit 二態」。
+4. **DataTable cell**:CellMode `display`→`view`、**廢 disabled**(meta.disabled→移除;鎖定用 `editable:(row)=>bool`)、命名 drift 收齊。
+5. **canonical spec**:軸1 4-mode(edit/readonly/disabled/view)+ 軸2 就地編輯 host 統一模型(view/edit+editable)+ 每態一句時機,進 `field-controls.spec.md`。
+6. **storybook**:4 內容規範機械化 + 三層機械腳本 + 修 dim-11 假證據 + 補 InlineEdit anatomy·principles + DS-wide 掃 verification-intent names。
+
+**驗證到完美**:tsc / build:lib / typecheck:stories / data-table-invariants 39/39 / story-quality / three-layer / content-quality / storybook build + playwright pixel(鎖定 view vs InlineEdit view 零偏差、Tag 置中偏差~0)。**不改 a 壞 b**:每階段獨立驗證。
+
+---
+
+## (以下為研究過程紀錄,中間結論以上方最終模型為準)
+
+**狀態**:規格已確認(user GO 2026-07-15),實作中。
 **規則**:所有決策/共識/待辦落盤此檔,任何中斷後讀此即可無損接續。每有新拍板就更新。
 **分支**:`2026-07-15-inlineedit-storybook-remediation`(beta.86 bump 已 riding;working tree 只有研究 JSON,無 code 改動)。
 
