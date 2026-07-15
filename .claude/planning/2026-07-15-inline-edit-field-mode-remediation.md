@@ -113,3 +113,8 @@
 
 ## G. 額度/中斷 SOP
 本檔 + `.claude/logs/inline-edit-*.json` = 完整可恢復狀態。任何 session 讀 §A(共識)+ §B(未決)+ §C(驗證)即可無損接續。禁只留對話。
+
+## 🔬 round15 實證(2026-07-16,三題查死,有 file:line)
+- **① plain 多行 view**:inline-edit.tsx:259 multiline 套 `whitespace-pre-wrap break-words` + fieldDisplayTextClass;py 來自 InlineEdit cva(py-1.5→py-2)。支援,py 符合預期。
+- **② 世界級+SSOT**:Atlassian read-wrapper-owns-geometry;px=--field-px token / typography=fieldDisplayTextClass / 多行 py-2=Textarea + invariant 鎖。全 token-SSOT。
+- **③ view×default 0 production 消費者**:現況本來就 bare(!px-0 !py-0);`<Input/Textarea mode="display">` 直接 JSX=0、`<Field mode="display">`=0、cell 全 variant="naked"(cell-registry:145-160)。→ collapse view×default+naked 成單一 bare = 安全正確。**不需保留 view×default**。
