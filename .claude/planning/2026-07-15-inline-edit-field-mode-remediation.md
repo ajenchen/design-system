@@ -25,6 +25,8 @@
 
 **驗證到完美**:tsc / build:lib / typecheck:stories / data-table-invariants 39/39 / story-quality / three-layer / content-quality / storybook build + playwright pixel(鎖定 view vs InlineEdit view 零偏差、Tag 置中偏差~0)。**不改 a 壞 b**:每階段獨立驗證。
 
+**🔎 user 最初 4 個 layout 議題(必逐一驗到)**:① 高度佔位=label+4px+sm-field-height(auto-sm)② Tag 垂直置中零偏差(行盒修)③ **換行保持上下 padding**(多行文字=items-start+py-2 抄 Textarea / 多 Tag wrap=items-start+py-1+gap-4 抄 Combobox;若 delegate view mode wrap py 不對〔Textarea view 恐 !py-0 flush〕→ 補修 view mode wrap py 對齊各自 edit,read↔edit 零跳)④ blur 後純 view 無編輯指示(focus 分路徑)。**③ 最細,pixel 專項驗:多行/多tag 換行後上下 padding 保持 + read↔edit 零跳。**
+
 ---
 
 ## (以下為研究過程紀錄,中間結論以上方最終模型為準)
