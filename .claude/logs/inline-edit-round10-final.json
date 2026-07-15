@@ -1,0 +1,208 @@
+{
+  "meta": {
+    "date": "2026-07-15",
+    "round": 10,
+    "scope": "最終唯讀深研(禁改 code)。站 round7/8/9 上,解兩題:(Q1) mode(edit/readonly/disabled/display)× variant(default/naked)全 8 格矩陣稽核 —— 每格展開後樣式差別 + 真消費者(grep 全庫 file:line 或『0 消費』)+ 合理理由;哪些格站得住、哪些空該收;最乾淨 mode×variant 集合。(Q2) InlineEdit 兩態(read/edit)命名 —— 世界級叫什麼(Atlassian / Chakra / Ant / PatternFly WebFetch verbatim)+ 我方現況命名一致嗎 + read 會不會跟 Field mode display/readonly 打架 + 最該叫什麼。",
+    "method": "逐行讀 field-wrapper.tsx cva(base+size+width+全 compoundVariants :98-247)+ field-controls.spec.md:65(mode×variant 有效組合 SSOT canonical);fresh grep 全庫 fieldWrapperStyles 消費者(components+apps)+ cell-registry displayOrDisabled + mode='readonly'/'disabled' 真消費點 + meta.disabled setter;fresh WebFetch Atlassian atlaskit inline-edit types.tsx + Chakra Editable + Ant Typography editable + PatternFly inline-edit design-guidelines 取態命名 verbatim。",
+    "repoRoot": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project",
+    "builds_on": [".claude/logs/inline-edit-round7.json", ".claude/logs/inline-edit-round8-final.json", ".claude/logs/inline-edit-round9-final.json"]
+  },
+
+  "Q1_mode_variant_matrix": {
+    "headline": "**8 格(4 mode × 2 variant)裡 5 格真站得住、1 格 collapse、2 格空/未 demo。** 站得住:edit×default(form 殼,全 Field family 主消費)/ edit×naked(cell 主動編輯器,自畫 border state machine,天差地別必留)/ display×{default,naked}(round9 已證兩者 byte-identical → 該 collapse 成單一 variant-agnostic compound)/ readonly×default(RadioGroup/Checkbox/Switch + readonly 表單,3 個明確真消費者)/ disabled×default(`<Input disabled>` 表單,input.stories demo)。**該收的:readonly×naked = 全庫 0 消費者(spec field-controls.spec.md:65 自己承認『無 live consumer,保留為軸對稱』)—— 這是假對稱,該砍;disabled×naked = code path 可達但 0 demonstrated(meta.disabled 全庫 0 真 setter,round9),命運綁 round8/9『disabled→readonly 正名 or 砍』決策。** 關鍵結論:**variant 軸整體不冗餘(edit 的 form-殼-vs-cell-substrate 天差地別、default-側非-edit 三態全真),只有『display 整列 collapse』+『naked 側非-edit 兩格空/未 demo』該修 —— 跟 display 那種『整個 mode 冗餘』不同,variant 是 load-bearing 軸,只是 naked 欄尾巴太細。**",
+
+    "spec_ssot_owner": {
+      "file": "packages/design-system/src/components/Field/field-controls.spec.md:65",
+      "verbatim": "『**軸一 `mode`(4)× 軸二 `variant`(2)**:`variant` 只有 `default`(公開,完整 chrome)與 `naked`(`@internal`,cell-as-input…)。有效組合:default × {edit/display/readonly/disabled} 全用於表單/詳情;naked × {edit/display/disabled} 用於 DataTable 格;`naked+readonly` 目前無 live consumer(格子非 readonly 模式),保留 compound 為軸對稱。』",
+      "note": "spec 本身已列 7 有效組合(default 4 + naked 3)+ 明文承認 naked×readonly 無 live consumer。本輪 grep 逐格驗證此宣稱,並補『各格真消費者 file:line』+『display 整列 byte-identical 該 collapse』兩點 spec 未寫的。"
+    },
+
+    "matrix_8_cells": [
+      {
+        "cell": "edit × default",
+        "compound_loc": "field-wrapper.tsx:100-127(chrome)+ :127(error:false focus-primary)+ :164-168(error:true 共用)",
+        "expanded_style": "bg-surface + border border-border + hover:border-border-hover + focus-within:!border-primary + data-[state=open]:border-border-hover(= 完整 form input 殼,有底、有明顯框、有 hover/focus 回饋)",
+        "real_consumers": "**全 Field family 主要編輯態**:Input:200 / Select:545,558,773 / Combobox:630,766 / DatePicker:577,997 / TimePicker:362 / LinkInput:252,271 / NumberInput:164 / PeoplePicker:246(mode=resolvedMode 解析成 edit,variant 預設 default)",
+        "rationale": "表單/詳情頁的可編輯輸入框 —— DS 最核心、最高頻的 field chrome。",
+        "verdict": "**SOLID(core)。** 保留無疑。"
+      },
+      {
+        "cell": "edit × naked",
+        "compound_loc": "field-wrapper.tsx:189-202(chrome)+ :203(error:false)+ :164-168(error 共用)",
+        "expanded_style": "bg-transparent + !rounded-none + !h-full(滿格對齊 cell border)+ !px-[--table-cell-px] !py-[--table-cell-py] + border border-border + hover:border-border-hover + focus-within:!border-primary + autoRow items-start(= cell-as-input 自畫 border-based state machine)",
+        "real_consumers": "**cell-registry 編輯中 cell**:StringCell edit 分支 `<Input variant=\"naked\" autoFocus>`(cell-registry.tsx:180,無 mode → 落 defaultVariants mode='edit')/ Textarea autoRow edit(:158)/ Number/Select/Combobox/DatePicker/TimePicker/People/Link 各 edit 分支同;data-table-invariants I4 量此 !h-full(round8)",
+        "rationale": "Spreadsheet/grid 的即時 in-cell 編輯器 —— 邊框滿格對齊 cell、自帶 rest/hover/focus/error 狀態機。與 default 殼**天差地別**(!h-full vs h-field、table-cell padding vs field-px、!rounded-none vs rounded-md、透明底 vs bg-surface)。",
+        "verdict": "**SOLID(distinct)。** 保留 —— 這正是 variant 軸存在的理由。"
+      },
+      {
+        "cell": "display × default",
+        "compound_loc": "field-wrapper.tsx:128-136",
+        "expanded_style": "bg-transparent + border border-transparent + !px-0 !py-0 + (rounded-md 繼承 base = 視覺死 / h-field-md 繼承 size = vestigial 32px)。round9 逐格證:**除 height 外只差一個視覺死掉的 rounded**,其餘 bg/border/px/py/text/cursor/chrome 與 display×naked 逐字同。",
+        "real_consumers": "**API path 存在但 production app 0 個。** 消費點:Input:166(spanMode display,variant=default)/ Select:400 / Combobox:522 / DatePicker:491 / TimePicker:268 / LinkInput:165 / PeoplePicker:224 —— 皆 `<X mode=\"display\">` 且 variant 未指定(default)。實際 = 各元件 *.stories.tsx + field.stories.tsx:103 `<Field mode=\"display\">`;**apps/ grep 空(round8/9 VERIFIED)**。",
+        "rationale": "『純展示一個表單值』(Carbon read-only / Stripe display / Notion property)—— 合法公開 API(`<Input mode=\"display\">`),但目前無真 app 消費。",
+        "verdict": "**REAL API、0 app 消費 → 該 collapse(非砍)。** round9 Option B:因與 display×naked byte-identical(統一 height 後),兩條合併成單一 `{ mode:'display' }` variant-agnostic compound。"
+      },
+      {
+        "cell": "display × naked",
+        "compound_loc": "field-wrapper.tsx:220-226",
+        "expanded_style": "bg-transparent + !rounded-none + !px-0 !py-0 + !h-auto(hug,交容器)+ border border-transparent(host cell 提供框)",
+        "real_consumers": "**cell-registry 所有非編輯 cell(最高頻)**:StringCell:145,146 / Number:203 / Select/Combobox/DatePicker/TimePicker(:160,182,204…mode=displayOrDisabled→'display')/ People:392,412 / Checkbox:437 / LinkInput:462 —— 每個 cell 靜止態都命中這格",
+        "rationale": "DataTable 每一格的預設純值呈現 —— 高度交 row token、框交 host cell。DS 全表格靜止態的載體。",
+        "verdict": "**SOLID(highest-frequency)。** 保留;round9 Option B 把它當 collapse 後單一 display compound 的 className 基準(byte-identical,零 delta)。"
+      },
+      {
+        "cell": "readonly × default",
+        "compound_loc": "field-wrapper.tsx:137-152",
+        "expanded_style": "bg-readonly(neutral-2)+ border border-transparent + [&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1(WCAG 2.4.7 focus ring)= 鎖定但可見的灰底欄位 + 鍵盤 focus 環",
+        "real_consumers": "**3 個明確真消費者**:RadioGroup:139(`{ mode:'readonly', variant:'default' }` 灰框 + 選中項 label)/ Checkbox:246(灰框 + ✓/—)/ Switch:233(灰框 boolean);外加 readonly 表單輸入 Input.stories:36 / TimePicker.stories:46 / DatePicker.principles:145,150(`mode=\"readonly\"` variant 預設 default)",
+        "rationale": "表單中『不可編但可見、可 focus 可複製可送出』的鎖定欄位(MDN readonly attribute + field-controls.spec.md:82,87 Boolean/單選 readonly 灰框 canonical)。",
+        "verdict": "**SOLID(real, distinct)。** 保留 —— 這是 variant 軸在非-edit mode 唯一站得住的 default 消費證據。"
+      },
+      {
+        "cell": "readonly × naked",
+        "compound_loc": "field-wrapper.tsx:227-234",
+        "expanded_style": "bg-transparent + !rounded-none + !px-0 !py-0 + !h-auto + border border-transparent —— **與 display×naked(:220-226)逐字相同**(byte-identical dead twin)",
+        "real_consumers": "**0 個,全庫任何地方(component + story + app)。** 證據:cell-registry `displayOrDisabled()` 只回 'display'|'disabled'(cell-registry.tsx:119-120),**永不回 'readonly'** → cell 從不進 readonly mode;fresh grep `mode=\"readonly\"` + `naked` 全庫 = 0;spec field-controls.spec.md:65 自己承認『naked+readonly 目前無 live consumer,保留 compound 為軸對稱』。**Textarea 自家 mirror cva(textarea.tsx:135)也有同款 dead readonly×naked。**",
+        "rationale": "宣稱理由 = 『軸對稱』(spec:65)—— 但這是**假對稱**:與 display×naked byte-identical、無任何情境會讓 cell 進 readonly(格子要嘛 display 要嘛 disabled 要嘛 edit)。",
+        "verdict": "**DEAD / EMPTY —— 該收。** 砍此 compound(:227-234)+ Textarea mirror(:138 前的 :135)。『軸對稱』不是保留 dead code 的理由(違 M1/M17 —— duplicate 假 SSOT)。若 round8/9『disabled→readonly 正名』落地,則由『正名後的 readonly-lock cell』真正啟用此格(屆時它才有 live consumer);在那之前它是純 dead。"
+      },
+      {
+        "cell": "disabled × default",
+        "compound_loc": "field-wrapper.tsx:158-160",
+        "expanded_style": "bg-disabled(neutral-2)+ border border-transparent + cursor-not-allowed(灰殼 + 禁用游標;內部文字走 text-fg-disabled)",
+        "real_consumers": "**`<Input disabled>` / `<Field disabled>` 表單停用**:mode 經 useResolvedFieldMode 解析(field-controls.spec.md:168『有效 disabled → disabled』)→ variant 預設 default。demo:input.stories.tsx:44 `<Input mode=\"disabled\">`;cascade 消費者 = 全 Field family disabled prop(field-controls.spec.md:178 完整 cascade 清單)",
+        "rationale": "標準表單停用控件(MDN disabled:不可 mutate/focus/送出;灰化)—— 前置未滿足/無權限/暫時鎖(round8 三類)。公開 `disabled` prop,有 story demo。",
+        "verdict": "**REAL(public prop, demoed)。** 保留。"
+      },
+      {
+        "cell": "disabled × naked",
+        "compound_loc": "field-wrapper.tsx:240-245",
+        "expanded_style": "bg-transparent + !rounded-none + cursor-not-allowed + !px-0 !py-0 + !h-auto + border border-transparent(透明殼,cell TD 層另加 bg-disabled)",
+        "real_consumers": "**code path 可達但 0 demonstrated consumer。** cell-registry `displayOrDisabled(isDisabled)`→'disabled'(當 isCellDisabled 為真)會命中此格;但 round9 fresh grep 證 **meta.disabled 全庫 0 真 setter**(stories + apps/template 皆無);data-table stories 無任何 disabled cell demo(本輪 re-grep 確認)。完整 plumbing 在(column-types.ts:164-180 / isCellDisabled data-table.tsx:1046-1063 / TD bg-disabled),**零觸發**。Textarea mirror(textarea.tsx:138)同款。",
+        "rationale": "DataTable 個別 cell/row 停用 —— 但目前無任何 demo/app 用到,且 round7/8/9 已證『穿 disabled 皮、行為卻是 readonly』= 命名誤用。",
+        "verdict": "**REACHABLE plumbing、0 demonstrated —— 命運綁 round8/9 決策。** 若 disabled-cell 態正名為 readonly-lock(round9 lean)→ 此 compound 改走 readonly 語意;若砍灰化態(per-cell 鎖折進 editable:(row)=>bool)→ 此 compound 一併移除。**無論哪案,『disabled』這名該廢**(round9 verdict)。"
+      }
+    ],
+
+    "user_direct_questions": {
+      "does_edit_eat_variant": {
+        "answer": "**吃,且必留。** edit×default(form 自帶殼:bg-surface + border + hover/focus 回饋,全 Field family 主消費)vs edit×naked(cell-as-input:透明底 + !rounded-none + !h-full 滿格 + table-cell padding + 自畫 border state machine,cell-registry 編輯器)。兩者天差地別、各有大量真消費者。**這正是 variant 軸存在的根本理由。**",
+        "cite": "field-wrapper.tsx:100-127(default)vs :189-202(naked);消費 Input:200 vs cell-registry:180"
+      },
+      "does_readonly_eat_variant": {
+        "answer": "**只『名義上』吃 —— default 真、naked 空。** readonly×default 有 3 個明確真消費者(RadioGroup:139 / Checkbox:246 / Switch:233 + readonly 表單輸入),bg-readonly + focus ring 灰框。readonly×naked = **全庫 0 消費者**(cell 永不進 readonly:displayOrDisabled 只回 display|disabled),spec:65 自認『無 live consumer,保留為軸對稱』。→ **readonly 這一列的 naked 格是空的、該砍(假對稱)。**",
+        "cite": "readonly×default 真:radio-group.tsx:139 / checkbox.tsx:246 / switch.tsx:233;readonly×naked 空:cell-registry.tsx:119-120 displayOrDisabled 不回 readonly + field-controls.spec.md:65 自承 + Textarea mirror textarea.tsx:135 亦 dead"
+      },
+      "does_disabled_eat_variant": {
+        "answer": "**default 真、naked 是未觸發的 plumbing。** disabled×default(bg-disabled + cursor-not-allowed)有真消費:`<Input disabled>` / `<Field disabled>` cascade,input.stories:44 demo。disabled×naked code path 可達(cell isDisabled→'disabled')但 **meta.disabled 全庫 0 真 setter**(round9)+ 無 story demo → 0 demonstrated consumer。→ **disabled 這一列 default 站得住,naked 是空 plumbing,命運綁 round8/9『正名 readonly or 砍』。**",
+        "cite": "disabled×default 真:input.tsx useResolvedFieldMode + input.stories.tsx:44;disabled×naked 空:round9 meta.disabled 0 setter + 本輪 DT stories grep 無 disabled cell demo"
+      }
+    },
+
+    "cleanest_mode_variant_set": {
+      "keep_5_each_with_one_line_why": [
+        {"combo": "edit × default", "why": "表單可編輯輸入框的完整 chrome —— DS 最核心 field。真消費:全 Field family(Input:200…)。"},
+        {"combo": "edit × naked", "why": "DataTable in-cell 主動編輯器 —— 自畫 border state machine + !h-full 滿格,與 default 天差地別。真消費:cell-registry 編輯分支(:180…)。"},
+        {"combo": "display(variant-agnostic 單一 compound)", "why": "純值零 chrome 展示 —— default 與 naked byte-identical(round9),collapse 成一條 `{ mode:'display' }`(mode-only compound,cva 0.7.1 支援 + 本檔 :164-168 error compound 已有同款先例)。真消費:每個非編輯 cell(display×naked 高頻)+ `<X mode=\"display\">` 展示 API。"},
+        {"combo": "readonly × default", "why": "表單鎖定但可見的灰底欄位 + focus ring —— 唯一站得住的 readonly 格。真消費:RadioGroup:139 / Checkbox:246 / Switch:233。"},
+        {"combo": "disabled × default", "why": "表單停用控件(灰殼 + cursor-not-allowed)—— 公開 disabled prop。真消費:`<Input disabled>`,input.stories:44。"}
+      ],
+      "cut_or_resolve": [
+        {"combo": "readonly × naked", "action": "**砍(dead)。** 全庫 0 消費者 + 與 display×naked byte-identical + spec 自認假對稱。同步砍 Textarea mirror(textarea.tsx:135)。若日後 disabled→readonly 正名落地,由『正名後 lock cell』真正啟用它才復活。"},
+        {"combo": "disabled × naked", "action": "**綁決策(0 demonstrated)。** meta.disabled 全庫 0 setter。round9 lean:砍灰化態(per-cell 鎖折進 editable:(row)=>bool = MUI X 模型);若保留則正名 readonly。同步處理 Textarea mirror(textarea.tsx:138)。無論如何『disabled』這名該廢。"}
+      ],
+      "is_variant_axis_itself_redundant_like_display": {
+        "verdict": "**不冗餘 —— variant 是 load-bearing 軸,只是 naked 欄尾巴太細。** 跟 display mode 那種『整個 mode 冗餘(default==naked 逐格相同)』不同:variant 對 edit 是天差地別(form 殼 vs cell 狀態機)、對 default-側非-edit 三態全真(readonly×default / disabled×default 有真消費)。真正該修的只有:(a) display 整列 collapse(round9 Option B);(b) naked 欄的兩個非-edit 尾格(readonly×naked dead / disabled×naked 0-demo)。**收完後 variant 軸 = {edit,display} 兩 mode 明確用兩 variant,readonly/disabled 實質只用 default —— 這才是誠實的最乾淨集合。**",
+        "honest_note": "『保留為軸對稱』(spec:65)是 dead-code 常見藉口 —— M1/M17 禁假 SSOT/duplicate。乾淨做法 = 只保留有真消費者的 compound,軸對稱靠 cva 省略 key(wildcard)自然覆蓋,不靠平行 dead 條目。"
+      }
+    },
+
+    "verdict": {
+      "stands": "5 格站得住:edit×default / edit×naked / display×default / display×naked / readonly×default / disabled×default(注:display 兩格 byte-identical → collapse 成 1)。",
+      "empty_or_cut": "readonly×naked = 全庫 0 消費(dead,該砍);disable×naked = 0 demonstrated(plumbing,綁 round8/9 決策)。Textarea 自家 mirror 有同款兩格 dead/undemo,一併處理(改一處看三處)。",
+      "cleanest": "edit×default / edit×naked / display(單一 variant-agnostic)/ readonly×default / disabled×default。variant 軸整體必留(edit 天差地別 + default 非-edit 真);只砍 naked 側非-edit 兩尾格 + collapse display 列。",
+      "ssot_affecting": "砍/collapse 跨 Field family 共享 cva compound + Textarea mirror = SSOT-affecting → user 拍板;唯讀不執行。"
+    }
+  },
+
+  "Q2_inlineedit_state_naming": {
+    "headline": "**我方 read/edit 命名正確、世界級對齊、且不跟 Field mode 打架 —— 該保留 read/edit,不改成 display/edit。** 理由:(a) 世界級:read = Atlassian atlaskit `readView`/`editView`(我方 spec 宣告的**主要** benchmark,逐字對齊)+ PatternFly『read-only mode / edit mode』;edit 側全家一致(Atlassian editView / Chakra Input / Ant editing / PatternFly edit mode)。(b) 一致不打架:InlineEdit 的 read/edit 是**編排層(orchestration)互動態**(user 在讀 vs 在編),Field 的 edit/readonly/disabled/display 是**chrome 層**單控件視覺處理 —— 不同層級;read 態 render **委派** Field mode='display'(renderRead),edit 態委派 Field mode='edit',兩者平行乾淨,是『比喻:Field edit = 燈泡,InlineEdit = 開關』(field-controls.spec.md:67)。(c) 最 SSOT:renderRead / renderEdit / inlineEditReadStyles / data-editing / enterEdit / editing boolean 全庫一致用 read/edit。**唯一微 drift:spec 互動模型表頭寫『read / hover / edit 三態』,但 hover 是 read 的子態非第三態(code 只有 editing boolean 二態)—— 表達層小鬆,非命名 drift。**",
+
+    "part1_worldclass_verbatim": {
+      "editing_state_consensus": "**編輯態全家叫 edit/editing/input —— 我方 `edit` 完全對齊,零爭議。**",
+      "sources": [
+        {
+          "source": "Atlassian atlaskit inline-edit(我方 spec 宣告主要 benchmark)",
+          "read_state_term": "`readView`『The component shown when not in editView』",
+          "edit_state_term": "`editView`『The component shown when user is editing』+ `isEditing`『Sets whether the component shows the readView or the editView』;`onEdit`『Handler called when readView is clicked』",
+          "maps_to_ours": "read / edit —— **逐字對齊我方 read/edit**",
+          "url": "https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/types.tsx",
+          "verified": "WebFetch 2026-07-15"
+        },
+        {
+          "source": "Chakra UI Editable",
+          "read_state_term": "`<Editable.Preview />`(preview)",
+          "edit_state_term": "`<Editable.Input />`(input);doc 用『edit mode』描述編輯態、『Enter edit mode』觸發",
+          "maps_to_ours": "preview / input —— 顯示態叫 preview(非 read 非 display)",
+          "url": "https://www.chakra-ui.com/docs/components/editable",
+          "verified": "WebFetch 2026-07-15"
+        },
+        {
+          "source": "Ant Design Typography(editable)",
+          "read_state_term": "無正式態名 —— 以 callback 描述:`onStart`『Called when enter editable state』",
+          "edit_state_term": "`editing` boolean『Whether to be editable』;`onEnd`(Enter 離開)/ `onCancel`(ESC 離開)",
+          "maps_to_ours": "view/editing(顯示態無正式名,編輯態 = editing)",
+          "url": "https://ant.design/components/typography",
+          "verified": "WebFetch 2026-07-15"
+        },
+        {
+          "source": "PatternFly inline-edit(我方 spec benchmark 表列)",
+          "read_state_term": "『read-only mode』(non-editing 顯示態)",
+          "edit_state_term": "『edit mode』",
+          "maps_to_ours": "read-only / edit —— 顯示態叫 read-only(『read』家族)",
+          "url": "https://www.patternfly.org/components/inline-edit/design-guidelines",
+          "verified": "WebFetch 2026-07-15"
+        }
+      ],
+      "cross_source_summary": "**顯示態命名光譜**:`read`(Atlassian readView)/ `read-only mode`(PatternFly)/ `preview`(Chakra)/ `view`(Ant 非正式)。**編輯態**:全家 `edit`/`editing`/`input` 一致。→ 我方 `read` 命中 Atlassian(主 benchmark)+ PatternFly 的『read』家族;`edit` 是普世共識。**沒有任何一家把顯示態叫 `display`** —— 故若改成 display/edit 反而離世界級更遠。"
+    },
+
+    "part2_our_codebase_current_naming": {
+      "inline_edit_uses": "**read / edit(一致)。** 證據:`editing` boolean state(inline-edit.tsx:143)/ `renderRead` prop(:68)/ `renderEdit` prop(:61)/ `inlineEditReadStyles` cva(:91)/ `enterEdit`(:158)/ `data-editing` attr(:233,242)/ read 按鈕 aria『編輯 {label}』(:273)。spec 互動模型表(inline-edit.spec.md:28-33)用『read / read+hover / read+focus / edit』。**全用 read/edit,零 display/readonly 態名。**",
+      "field_mode_uses": "**edit / display / readonly / disabled(4 值 chrome 層)。** field-wrapper.tsx:9-13 + field-controls.spec.md:56-57,77。這是**單控件視覺處理**軸,非互動編排。",
+      "read_delegates_to_display": "**InlineEdit read 態 render 委派 Field mode='display'。** inline-edit.tsx:64-68 SSOT 鐵律:renderRead 顯 Tag/日期/label 要渲『對應控件的 mode=\"display\"』(如 `<Select mode=\"display\" display=\"tag\">`);edit 態委派 `<Input>`(Field edit mode)。→ read/edit(態)各自委派 display/edit(chrome mode)。"
+    },
+
+    "part3_does_read_clash_with_field_display_or_readonly": {
+      "the_question": "user 問:read 跟 Field mode 的 display 會不會打架(顯示態委派 display 卻叫 read)?read 跟 Field 的 readonly 會不會混?",
+      "answer_no_clash": "**不打架,因為是不同層級 + 不同詞。**",
+      "layer_separation": "InlineEdit read/edit = **orchestration 層互動態**(『user 現在在讀 / 在編』,一個 toggle 狀態機的兩端);Field display/readonly/disabled/edit = **chrome 層視覺處理**(單控件長怎樣)。read 態委派 display chrome、edit 態委派 edit chrome —— 這是**乾淨的兩層映射**,不是命名衝突。spec 早已編碼此分層:field-controls.spec.md:67『InlineEdit ≠ mode ≠ variant … 站在 mode 軸**之上**(Field edit = 燈泡,InlineEdit = 開關)』+ :69『naked = chrome 層 / InlineEdit = behavior 層,不同層級非冗餘』。",
+      "why_not_rename_to_display_edit": "**若把 read 改叫 display 以『對齊委派的 chrome』,反而更糟**:(a) 離世界級遠 —— 沒一家 inline-edit 把顯示態叫 display(Atlassian readView / Chakra preview / PatternFly read-only);(b) 混層 —— 把 orchestration 互動態(user 在讀)污染成 chrome 處理名(display);(c) 世界級命名顯示態都用『user 在做什麼』(read/view/preview)而非『chrome 長怎樣』(display)。**read 命名的是『使用者行為』,display 命名的是『視覺處理』—— read 在正確的抽象層。**",
+      "read_vs_readonly_adjacency": "**read(InlineEdit)vs readonly(Field)詞近但不衝突**:(a) InlineEdit **根本沒有 readonly 態**(round8 定案:永久唯讀值不 mount InlineEdit,直接渲 Field display)—— 故 InlineEdit 內無『read*』二詞並存,不會自撞;(b) 跨元件:read = 『可點進 edit 的閱讀態』(toggle 一端,能到達 edit);readonly = 『鎖死不可編的 chrome』(到不了 edit)—— 語義相反,spec 明分(inline-edit.spec.md:98『一律唯讀展示 → <Input mode=\"display\">,不需 Pressable』+ :106 近親分界表);(c) 命名 3-test(CLAUDE.md『命名與語言一致性』):test3 跨元件認知衝突 —— Field 用的是 `readonly`/`display` 全詞,InlineEdit 用裸 `read`,字串不同、語義層不同,不撞。",
+      "verdict_no_drift_here": "**read/edit 無命名 drift。** 唯一可挑的是**表達層**:inline-edit.spec.md:26 表頭『read / hover / edit 三態 canonical』把 hover 列成第三態,但 hover 是 read 的子態(code 只有 editing boolean = read↔edit 二態,inline-edit.tsx:143)。建議表頭改『read↔edit 二態(read 含 static/hover/focus 子態)』更精確 —— 屬 spec 措辭小修,非命名問題。"
+    },
+
+    "part4_recommendation": {
+      "keep": "**保留 read / edit。** 不改 display/edit,不改任何。",
+      "reasons_abc": {
+        "a_worldclass": "read 逐字對齊 Atlassian atlaskit `readView`/`editView`(我方宣告主 benchmark)+ PatternFly『read-only mode』;edit 是普世共識(Atlassian/Chakra/Ant/PatternFly 全一致)。沒一家顯示態叫 display → 改 display 反離世界級遠。",
+        "b_consistent_not_clashing": "read/edit(orchestration 互動態)與 Field display/readonly/disabled/edit(chrome 層)是不同層級;read→display / edit→edit 是乾淨兩層委派(spec:67『開關 vs 燈泡』已編碼);read 與 readonly 語義相反且 InlineEdit 無 readonly 態,不撞。",
+        "c_ssot": "renderRead/renderEdit/inlineEditReadStyles/data-editing/enterEdit/editing 全庫一致 read/edit,已是完整 SSOT。"
+      },
+      "minor_drift_to_note": "inline-edit.spec.md:26 表頭『read / hover / edit 三態』—— hover 是 read 子態非第三態,建議措辭改『read↔edit 二態』(code 只有 editing boolean)。純 spec 表達層小修,非命名 drift,非 SSOT-affecting。",
+      "ssot_affecting": "命名維持不動 = 無改動。spec 表頭措辭小修 = 表達層 typo 級,autonomous 可修(但本輪唯讀不執行)。"
+    },
+
+    "verdict": {
+      "worldclass_naming": "顯示態:Atlassian `readView`(read)/ PatternFly『read-only mode』/ Chakra `preview` / Ant view(非正式)。編輯態:全家 edit/editing/input。",
+      "our_naming": "read / edit,全庫一致(renderRead/renderEdit/editing/data-editing)。",
+      "should_be_called": "**read / edit —— 維持不變。** 對齊主 benchmark Atlassian readView/editView;與 Field mode(display/readonly/disabled)不打架(不同層級 + read≠readonly 語義相反 + InlineEdit 無 readonly 態);已完整 SSOT。改成 display/edit 會離世界級更遠 + 混淆 orchestration/chrome 兩層。",
+      "small_drift": "spec 表頭『三態』措辭(hover 非第三態)可小修為『read↔edit 二態』;非命名問題、非 SSOT-affecting。"
+    }
+  },
+
+  "final_two_line_answers": {
+    "Q1": "**8 格矩陣:5 格站得住(edit×default 全 Field family / edit×naked cell 編輯器 / display×default+display×naked 兩者 byte-identical 該 collapse / readonly×default RadioGroup·Checkbox·Switch / disabled×default `<Input disabled>`),2 格空該收(readonly×naked = 全庫 0 消費、spec:65 自認假對稱、byte-identical 於 display×naked → 砍;disabled×naked = code 可達但 meta.disabled 0 setter 0 demo → 綁 round8/9『正名 readonly or 砍』),Textarea mirror 有同款兩格一併處理。** 最乾淨集合 = edit×default / edit×naked / display(單一 variant-agnostic compound)/ readonly×default / disabled×default。**variant 軸整體不冗餘(edit form-殼-vs-cell-狀態機天差地別、default 側非-edit 真消費)—— 只砍 naked 側兩尾格 + collapse display 列;不像 display mode 那種整軸冗餘。** SSOT-affecting → user 拍板。",
+    "Q2": "**InlineEdit 兩態該叫 read / edit —— 維持現況、不改。** 世界級:read = Atlassian atlaskit `readView`(我方宣告主 benchmark,逐字對齊)+ PatternFly『read-only mode』;edit = 全家共識(Atlassian editView / Chakra Input / Ant editing / PatternFly edit mode);**沒一家顯示態叫 display**,故改 display/edit 反離世界級遠。與 Field mode(display/readonly/disabled)不打架:read/edit 是 orchestration 互動態(user 在讀 vs 在編)、Field mode 是 chrome 層(單控件視覺),read 態委派 Field display、edit 態委派 Field edit = 乾淨兩層(spec:67『開關 vs 燈泡』);read≠readonly(語義相反 + InlineEdit 根本無 readonly 態,round8)。已完整 SSOT(renderRead/renderEdit/editing/data-editing)。唯一微修 = spec 表頭『read/hover/edit 三態』的 hover 是 read 子態非第三態,措辭可改『read↔edit 二態』(表達層,非命名 drift、非 SSOT-affecting)。"
+  }
+}

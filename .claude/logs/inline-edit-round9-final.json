@@ -1,0 +1,152 @@
+{
+  "meta": {
+    "date": "2026-07-15",
+    "round": 9,
+    "scope": "最終唯讀深研(禁改 code)。站 round7 + round8-final 上,只解兩題:(Q2) display 態 default 與 naked 展開後除 height 還差不差?cva 到底該怎麼收成『display 只有一種、不吃 variant』—— Option A(default 補 !h-auto,留兩條)vs Option B(display 收成單一 mode-only compound,砍兩條);cva 技術支援嗎、blast radius、零風險嗎、證明只收 display 不吃 variant 但 variant 軸對非-display 仍必要。(Q3) 若第 4 態叫 readonly,純不可編叫什麼?display 對非工程清楚嗎?世界級怎麼命名這兩者?我方有沒有真消費『灰化鎖定』態?最簡潔模型幾態?",
+    "method": "逐行展開 field-wrapper.tsx cva(base + size + width + 全 compoundVariants);fresh grep 全庫 fieldWrapperStyles 消費者 / meta.disabled 真 setter / mode:'readonly' 真消費者 / partial-compound 既有先例;fresh WebFetch Handsontable disabled-cells 官方用詞 + MDN <output> + MDN readonly attribute + Ant Descriptions + MUI TextField。",
+    "repoRoot": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project",
+    "builds_on": [".claude/logs/inline-edit-round7.json", ".claude/logs/inline-edit-round8-final.json"],
+    "does_not_rerun": "round8 已定案:display 統一後 default→hug 唯一可見改變 = standalone story、DataTable cell 零 delta、I1-I7 全綠、readonly 不入 InlineEdit。本輪只深化 cva 收斂結構(A vs B)+ 命名模型 + 灰化態必要性。"
+  },
+
+  "Q2_cva_convergence": {
+    "headline": "**除 height 外,display×default 與 display×naked 展開後只差一個『視覺上死掉的 rounded』;bg/border/px/py/text/cursor 全逐字相同。統一 height 後兩者渲染 byte-identical。最乾淨 = Option B:把 display 收成單一 `{ mode:'display' }` mode-only compound(不指定 variant),砍掉 default×display 與 naked×display 兩條。cva 0.7.1 支援(省略 key = wildcard),且本檔已有同款 variant-agnostic 先例在 production 用。B 與 A 視覺輸出完全相同、但 B 少一條 compound + 結構上硬性鎖死『display 不吃 variant』(A 留兩條 happen-to-be-equal 會 drift)。B 零風險(對 DataTable cell byte-identical),blast radius = 與 A 相同(standalone story `<Input mode=display>` 32→hug)。**",
+
+    "part1_full_class_expansion_diff": {
+      "method": "把 mode=display 在 variant=default 與 variant=naked 兩路,各自從 base(:24-43)+ size(:64-68)+ width(:78-81)+ 命中 compound 全展開,逐 class 比對。",
+      "shared_base_both_paths": "base(:40-42):`inline-flex items-center min-w-0 rounded-md text-foreground font-normal transition-colors duration-150 group/field` + size(md,:66):`text-body h-field-md px-[var(--field-px)] gap-2` + width(fill,:79):`w-full`。**兩路 base+size+width 完全相同**。",
+      "display_default_compound": {
+        "where": "field-wrapper.tsx:128-136",
+        "raw_className": "'bg-transparent border border-transparent !px-0 !py-0'",
+        "net_after_important_and_twmerge": "bg-transparent · border border-transparent · !px-0 !py-0(蓋 size 的 px)· **rounded-md(base 未被蓋,留著)** · **h-field-md(size 未被蓋,留著 = 自帶 32px 高)**"
+      },
+      "display_naked_compound": {
+        "where": "field-wrapper.tsx:220-226",
+        "raw_className": "['bg-transparent !rounded-none !px-0 !py-0 !h-auto', 'border border-transparent']",
+        "net_after_important_and_twmerge": "bg-transparent · border border-transparent · !px-0 !py-0 · **!rounded-none(蓋 base rounded-md)** · **!h-auto(蓋 size h-field-md = 交容器 hug)**"
+      },
+      "axis_by_axis": [
+        {"axis": "高度 height", "default": "h-field-md 32px(繼承 size,無 override = vestigial)", "naked": "!h-auto(hug,交容器)", "diff": "**是 — 唯一真差別**"},
+        {"axis": "圓角 rounded", "default": "rounded-md(繼承 base)", "naked": "!rounded-none", "diff": "**視覺死** — 兩者 bg-transparent + border-transparent,無可見底/框可顯示圓角 → rounded-md vs none 在 display 態渲染看不出差別(no-op)"},
+        {"axis": "padding px/py", "default": "!px-0 !py-0", "naked": "!px-0 !py-0", "diff": "否 — 逐字同"},
+        {"axis": "背景 bg", "default": "bg-transparent", "naked": "bg-transparent", "diff": "否 — 逐字同"},
+        {"axis": "邊框 border", "default": "border border-transparent", "naked": "border border-transparent", "diff": "否 — 逐字同"},
+        {"axis": "文字 text", "default": "text-body + text-foreground(base+size)", "naked": "text-body + text-foreground(base+size)", "diff": "否 — 同源 base+size,display compound 都不碰 text"},
+        {"axis": "cursor", "default": "無(display 無互動)", "naked": "無(display 無互動)", "diff": "否 — display 兩路都 zero cursor override"},
+        {"axis": "hover/focus/error chrome", "default": "無", "naked": "無", "diff": "否 — display 態兩路皆 zero chrome"}
+      ],
+      "conclusion_confirmed_to_the_end": "**確認到底:除 height 外,唯一另一個字面差異是 rounded(md vs none),而它在 display 態視覺上死掉(透明底+透明框無從顯示圓角)。px/py/bg/border/text/cursor/chrome 全逐字相同。** 故 height 統一後,display×default 與 display×naked 的『可見渲染』完全一樣。"
+    },
+
+    "part2_A_vs_B_structure": {
+      "option_A": {
+        "what": "在 :135 default×display className 尾補 `!h-auto`(對稱 naked)。兩條 compound 都留。",
+        "result": "display×default 與 display×naked 字面近乎相同(可再補 `!rounded-none` 讓字面全等,視覺 no-op)。",
+        "pro": "diff 最小(1 token)。",
+        "con": "**留兩條 happen-to-be-equal 的 compound = latent 不一致 / 假選擇**(round8 自己已標記)。日後有人只改一條 → 靜默 drift。SSOT 是『兩條剛好相等』而非『結構上只有一種』。"
+      },
+      "option_B": {
+        "what": "把 display×default(:128-136)與 display×naked(:220-226)**兩條刪掉**,改成**一條 mode-only compound**:`{ mode: 'display', className: ['bg-transparent !rounded-none !px-0 !py-0 !h-auto', 'border border-transparent'] }`(className 抄 naked 現值 → 對 DataTable cell byte-identical)。**不指定 variant** → 只要 mode=display 就套、不管 variant=default/naked。",
+        "cva_supported": "**是,cva 0.7.1 原生支援**。cva compoundVariants 的匹配規則 = 對每條 compound,只檢查它『有列出』的 variant key;**省略的 key = wildcard(任何值都 match)**。`{ mode:'display' }` 省略 variant → display 態下 default 與 naked 都命中同一條。",
+        "already_proven_in_this_file": "**本檔已有 production 同款 variant-agnostic compound**:field-wrapper.tsx:164-168 `{ mode: 'edit', error: true, className: '...' }` —— **沒有 variant key**,註解明寫『error chrome(mode=edit 限定,variant 不分 — naked cell 內 error 同樣紅框)』(:163-168)。它對 edit×default×error 與 edit×naked×error 都 fire。→ B 的 `{ mode:'display' }` 與此完全同機制、同檔案先例,非新花樣。",
+        "coverage_complete": "variant 只有 default / naked 兩值(bare 2026-07-09 退役)。一條 `{ mode:'display' }` 覆蓋 display × {default, naked} 全部 = 零 gap。",
+        "does_not_touch_other_modes": "edit/readonly/disabled 各自的 default+naked compound 仍明列 variant → 不受 mode-only display compound 影響(它們只在對應 mode fire)。variant 軸對它們照常生效。",
+        "pro": "(1) 少一條 compound;(2) **結構上硬鎖『display 只有一種、不吃 variant』**—— 物理上不可能 drift(不是兩條剛好相等,是根本只有一條);(3) 消費既有先例(:164-168)+ 對齊 M17 SSOT 不重複 + mindset #1 不取巧;(4) 對 DataTable cell byte-identical(className 抄 naked 現值)。",
+        "con": "diff 比 A 大一點點(刪 2 加 1 vs 加 1 token)—— 但 mindset #1 明禁『以省 N edits 為由選 shortcut』,故此非扣分。"
+      },
+      "verdict": "**Option B。** A/B 視覺輸出完全相同(both = round8 統一版:default→hug、naked 零變);但 B 更乾淨、更硬 SSOT、且用了本檔已驗證的先例,不比 A 更冒險。A 唯一優勢是 diff 小,而 round8 自己就點出『留兩條 = latent 不一致 / 假選擇』—— B 正是根治它。**display 樣式該收在單一 mode-only compound(不是 base、不是保留兩條)**:不放 base 因 base 對所有 mode 生效(會污染 edit/readonly/disabled 的 rounded/height);放單一 `{ mode:'display' }` compound 才精準只作用 display。**要刪的兩條 = :128-136(display×default)+ :220-226(display×naked)**,合併為一。"
+    },
+
+    "part3_variant_axis_still_needed_for_non_display": {
+      "claim": "只收 display 這一個 mode 不吃 variant 是對的;不是把整個 variant 軸砍掉。",
+      "proof_non_display_modes_genuinely_differ_by_variant": [
+        {"mode": "edit", "default": "bg-surface + border-border + hover:border-border-hover + focus-within:!border-primary(form 殼,:101-127)", "naked": "transparent + !rounded-none + !h-full + table-cell padding + 自畫 border state machine(cell substrate,:190-203)", "same?": "**否 — 天差地別,不可收**"},
+        {"mode": "readonly", "default": "bg-readonly + [&:has(:focus-visible)]:ring-2 ring focus(有殼,:138-151)", "naked": "transparent + border-transparent(無殼,host cell 提供框,:228-233)", "same?": "**否 — 不可收**"},
+        {"mode": "disabled", "default": "bg-disabled + cursor-not-allowed(灰殼,:158-160)", "naked": "transparent + cursor-not-allowed(無灰殼,TD 提供 bg-disabled,:240-245)", "same?": "**否 — 不可收**"}
+      ],
+      "readonly_default_has_real_consumers": "readonly×default **有真消費者**:RadioGroup(radio-group.tsx:139)/ Checkbox(checkbox.tsx:246)/ Switch(switch.tsx:233)全 call `fieldWrapperStyles({ mode:'readonly', variant:'default' })` 渲『Field 內唯讀』灰框;cell 則用 readonly×naked 透明。→ readonly 的 default vs naked 真的分工,variant 軸必留。",
+      "why_only_display_collapses": "variant 軸當初拆的是 **chrome 模型**(form 殼 vs cell 基底)。chrome 對 edit/readonly/disabled 有意義(有殼 vs 無殼);對 **display 態沒意義**(display = zero chrome,無殼可分)。故唯獨 display 的 default==naked,唯獨 display 該收。**這證明 B 是精準收斂(只 display)而非破壞 variant 軸。**"
+    },
+
+    "verdict": {
+      "recommend": "**Option B(單一 mode-only display compound,砍兩條)。**",
+      "to_the_end_diff": "**確認到底:display×default vs display×naked 除 height 外只差『視覺死掉的 rounded』;bg/border/px/py/text/cursor/chrome 全逐字同。** 統一 height 後 byte-identical。",
+      "cleanest_cva": "刪 :128-136 + :220-226 兩條 → 合併為 `{ mode: 'display', className: ['bg-transparent !rounded-none !px-0 !py-0 !h-auto','border border-transparent'] }`。放單一 compound(非 base,非兩條)。",
+      "zero_risk": "**零風險。** (1) className 抄 naked 現值 → DataTable cell + 所有 naked display 消費者 byte-identical,零 delta;(2) mode-only compound 是本檔已 production 用的先例(:164-168 error compound);(3) blast radius 與 round8 Option A 完全相同 = 只 standalone story `<Input mode=display>` 32→hug(容器內 Field/InlineEdit/cell 零可見改變,round8 proof_1/2/3 全成立);(4) cn()+twMerge 在所有消費點 wrap(input.tsx:165/199、date-picker.tsx:491 等),!important + last-wins 保證 !h-auto/!rounded-none 蓋掉 base rounded-md/size h-field —— 與現在 naked 走的完全同機制。",
+      "verification_plan_when_landing": "`node scripts/data-table-invariants.mjs`(I1-I7 全綠)+ `npm run build:lib` + `npm run typecheck:stories`。",
+      "ssot_affecting": "改跨 Field family 共享 cva 結構 → SSOT-affecting → user 拍板;唯讀不執行。"
+    }
+  },
+
+  "Q3_naming_and_necessity": {
+    "headline": "**世界級用 DS 自家 FieldMode 已有的兩個名就對:純不可編 = `display`(純值展示、無欄位殼、不灰;= Handsontable editor:false / AG editable:false / HTML <output> / Ant Descriptions),灰化鎖定 = `readonly`(鎖定欄位、可 focus 可複製、灰/淺底;= Handsontable readOnly/htDimmed / MDN readonly attribute)。display 對非工程不模糊 —— 因為 consumer 面對的 knob 是 `editable: false`(『這欄不能編』),根本不用讀『display』這字;display 與 readonly 不搞混因為心智是『純資訊(像 label)』vs『被鎖的欄位(有欄位感)』,DS FieldMode 早用不同 token 編碼此分野。關鍵事實:**我方『灰化鎖定』態(meta.disabled)全庫 0 個真 setter —— 純 plumbing、零 story/template/app 消費,且現在還取錯名(叫 disabled、行為卻是 readonly)。** 故最簡 = 3 態核心(display / editable-idle / editing,對齊 MUI X + AG Grid),灰化第 4 態是 Handsontable-only 豐富度、目前無需求;要留就正名 readonly,不留就把 per-cell 鎖折進 `editable:(row)=>bool`。無論留不留,『disabled』這名必須廢(誤用 + 未用)。**",
+
+    "part1_the_naming_question": {
+      "two_non_editable_concepts": {
+        "concept_i_structural_non_editable": "整欄結構不可編(訂單編號 / 系統產生 email / 計算總額)。值就是拿來讀的,**沒有『本來可編、只是被鎖』的暗示** → 純值、不灰、無 affordance。",
+        "concept_ii_locked_cell_in_editable_column": "可編欄裡某格/某列被鎖(已出貨列的狀態格)。**灰化 = 相對同欄可編手足『我被保護了』的訊號**。"
+      },
+      "if_ii_is_readonly_what_is_i": "**i = `display`。** 用 DS 自家 FieldMode 既有名(field-wrapper.tsx:9-13 canonical):`display`『純展示、無 input chrome、無 affordance、read-only 內容展示給人看』/ `readonly`『bg-readonly、input chrome 但鎖定、token 獨立於 disabled』/ `disabled`『bg-disabled、文字灰化、inert』。→ **display 與 readonly 本就是 DS 兩個分立 mode + 分立 token,直接映射兩概念,不需發明新名(M23 消費既有)。**",
+      "is_display_clear_to_non_engineers": "**清楚,因為 consumer 不需碰『display』這字。** consumer 面對的 API 是 `meta.editable: false`(語意直白『這欄不能編』)—— 內部才 resolve 成 display render。『display』是 DS 內部 mode 名,非 consumer 心智負擔。",
+      "wont_readonly_vs_display_confuse": "**不會,只要心智框成:**\n- `display` = 『純資訊值』(像印在頁面的 label / 明細值)—— 無欄位感、不灰。整欄都這樣。\n- `readonly` = 『被鎖住的欄位』(本來是可填的格子、現在鎖了)—— 有欄位感、灰/淺底、可 focus 可複製。同欄其他格可編。\n這正是 DS FieldMode 已編碼的分野(display 無 bg vs readonly bg-readonly),也是世界級的分野(見 part2)。一句話分辨:**『這值本來就不是拿來編的』→ display;『這欄可編、但這格被鎖了』→ readonly。**"
+    },
+
+    "part2_worldclass_naming_verbatim": {
+      "concept_i_structural_non_editable_names": [
+        {"source": "Handsontable", "term": "`editor: false`", "verbatim": "『No additional CSS class』(不灰);『Copy-paste works』+『Drag-to-fill works』—— 只擋手動打字。", "url": "https://handsontable.com/docs/react-data-grid/disabled-cells/", "verified": true},
+        {"source": "AG Grid", "term": "`editable: false`", "verbatim": "『non-editable cell』—— 官方不給 native 灰化視覺,要區分自寫 cellStyle。", "url": "https://www.ag-grid.com/react-data-grid/cell-editing/", "verified": "round7/8 carryover"},
+        {"source": "MUI X DataGrid", "term": "view mode(`isCellEditable` 回 false)", "verbatim": "純值、無灰化;per-cell 不可編 = 把 cell 變 non-editable。", "url": "https://mui.com/x/react-data-grid/editing/", "verified": "round7/8 carryover"},
+        {"source": "HTML / MDN <output>", "term": "`<output>`", "verbatim": "『a container element into which a site or app can inject the results of a calculation or the outcome of a user action』;『value, name, and contents are NOT submitted』;implicit role=status + aria-live。→ 純顯示結果值的語意元素。", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/output", "verified": true},
+        {"source": "Ant Design", "term": "`Descriptions`(+ `Typography`)", "verbatim": "『display multiple read-only fields in a group』;『Commonly displayed on the details page』—— 明細頁純唯讀展示,非欄位。", "url": "https://ant.design/components/descriptions", "verified": true},
+        {"source": "本 DS FieldMode", "term": "`display`", "verbatim": "field-wrapper.tsx:10-11『純展示(無 input chrome、無 affordance);語意「read-only 內容,展示給人看」。對齊 Carbon read-only / PatternFly inline-edit hidden-input』。", "verified": "code"}
+      ],
+      "concept_ii_locked_dimmed_names": [
+        {"source": "Handsontable", "term": "`readOnly: true`", "verbatim": "CSS class `htDimmed`(灰化);『Copy works, paste doesn't work』+『Drag-to-fill doesn't work』。官方 rationale:『read-only cells provide stronger protection through visual dimming … strict data protection versus maintaining familiar user interactions』(editor:false 為後者)。", "url": "https://handsontable.com/docs/react-data-grid/disabled-cells/", "verified": true},
+        {"source": "HTML / MDN readonly attribute", "term": "`readonly`", "verbatim": "『makes the element not mutable, meaning the user can not edit the control』;與 disabled 差異:『read-only controls can still function and are still focusable, whereas disabled controls can not receive focus and are not submitted with the form and generally do not function as controls until they are enabled』。→ readonly 可 focus + 送出 + functional;disabled 皆不。", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/readonly", "verified": true},
+        {"source": "MUI Material TextField", "term": "`InputProps={{ readOnly: true }}` vs `disabled`", "verbatim": "同時有 readonly(via 標準 HTML 屬性)與 disabled 兩態並存;readonly 可 focus,disabled inert。", "url": "https://mui.com/material-ui/react-text-field/", "verified": true},
+        {"source": "本 DS FieldMode", "term": "`readonly`", "verbatim": "field-wrapper.tsx:12『bg-readonly(neutral-2), 無邊框, 文字正常色(input chrome 但鎖定;token 獨立於 disabled)』。", "verified": "code"}
+      ],
+      "cross_family_consensus": "**沒有一家把 concept i(純不可編)叫 readonly** —— 都叫 display / non-editable / editor:false / editable:false / <output> / Descriptions / plain text。**灰化鎖定(concept ii)才叫 readonly / readOnly(htDimmed)。** 這與 round7/8 發現一致:唯一內建灰化第 3 態的 Handsontable 把它 canonically 叫 readOnly 而非 disabled;MDN 亦定義 readonly=可 focus 可送出(= 我方灰化格的真行為)。→ 我方現在把灰化格叫 disabled 是 canonical 誤用。"
+    },
+
+    "part3_do_we_actually_use_the_dimmed_lock_state": {
+      "answer": "**沒有。meta.disabled 全庫 0 個真 setter。**",
+      "grep_evidence": {
+        "meta_disabled_setters": "fresh grep `disabled:` 當 column meta key,於 DataTable stories + apps/template + apps = **0 個**(全部命中是 `useSortable({ disabled })` / `RowDragHandle({ disabled })` / type 宣告 `disabled: boolean`,**無一是 cell meta.disabled 的 setter**)。",
+        "meta_editable_setters": "對比:`editable: true` 在 stories 到處都是(data-table.stories.tsx:247-254,548-559,617-621,1612-1624 …)—— editable 態被大量真消費,disabled 態零消費。",
+        "apps_empty": "apps/ 只有 template;template DataTable usage 亦無 meta.disabled。",
+        "plumbing_exists_but_unused": "type 宣告 column-types.ts:164-180(disabled?: boolean|(row)=>boolean)+ 邏輯 isCellDisabled(data-table.tsx:1048-1063)+ TD bg-disabled(:1826)+ range-fill 排除(:1781)全都在 —— **完整 plumbing、零 demonstrated consumer**。"
+      },
+      "and_it_is_misnamed": "column-types.ts:177 自己寫『editable=false = readonly(可看不可編);disabled = 不可操作 state』—— **code 自己把 editable=false 叫 readonly**,又把灰化格叫 disabled。但 round7/8 verified 灰化格行為 = readonly(值算數 + 文字可選取複製 + 只擋編輯,非 inert)。→ **命名雙重錯位**:editable=false 其實該叫 display(純值展示),灰化格其實該叫 readonly(鎖定)。現行 disabled 標籤兩頭不對。"
+    },
+
+    "part4_cleanest_model": {
+      "minimum_worldclass_is_3_states": "**核心最簡 = 3 態(對齊 MUI X + AG Grid,2 大主流 grid):**",
+      "three_state_core": [
+        {"state": "1. display(非可編)", "trigger": "meta.editable false/缺(整欄)或 editable:(row)=>false(單格)", "render": "純值、無灰、無 hover affordance、無 click-to-edit", "worldclass": "Handsontable editor:false / AG editable:false / MUI view / HTML <output> / Ant Descriptions", "consumer_一句話": "『這欄/這格的值本來就不是拿來編的』"},
+        {"state": "2. editable-idle", "trigger": "meta.editable true + 未 editing", "render": "純值 + hover cell outline(可編提示)+ cursor-pointer + click→edit", "worldclass": "Notion / Airtable hover-shows-border", "consumer_一句話": "『這欄可編、點我進編輯』"},
+        {"state": "3. editing", "trigger": "editingCellId 命中", "render": "naked 輸入框(edit×naked,!h-full border state machine)", "worldclass": "所有 grid 的 active editor", "consumer_一句話": "『正在編這格』"}
+      ],
+      "how_3_state_absorbs_per_cell_lock": "**per-cell 鎖折進 editable**:`editable: (row) => !row.shipped` → 已出貨列的格子 editable=false → 落回 display 態(純值、無灰、無 affordance)。這正是 **MUI X `isCellEditable` 模型**(per-cell 鎖 = per-cell non-editable,不另立灰化態)。→ 4→3,砍掉全庫零消費的灰化態,API 軸從 2 個(editable + disabled)收成 1 個(editable 吃 (row)=>bool)。",
+      "the_optional_4th_state_handsontable_enrichment": {
+        "when_to_keep_4": "**只有真的要『灰化 = 這格被保護』的顯性訊號時**(Handsontable readOnly / htDimmed 那種 UX;已出貨狀態格灰掉、讓 user 一眼知道不能改,而非靜默無 affordance)。",
+        "if_keep_rename_to_readonly": "留第 4 態 → **正名 disabled→readonly**(行為 round7/8 早已相符 = 值算數 + 可選取複製 + 只擋編)。啟用既有空的 readonly×naked compound(field-wrapper.tsx:228-233,現零消費者);灰底是獨立視覺決策(現來自 TD bg-disabled;可保留或改 bg-readonly 較淺)。trigger 走 per-cell predicate(建議 `meta.readonly:(row)=>row.shipped`,取代現 meta.disabled)。",
+        "worldclass": "= Handsontable readOnly(htDimmed,可複製)/ MDN readonly attribute(可 focus 可送出)"
+      },
+      "honest_recommendation": "**我方誠實 lean:先收成 3 態(砍灰化態,per-cell 鎖用 editable:(row)=>bool = MUI X 模型)。** 理由:(a) 灰化態全庫 0 消費;(b) 現名 disabled 誤用、如今根本不是正確可用狀態;(c) MUI X + AG Grid(2/3 主流 grid)都無獨立灰化態;(d) YAGNI + 隨時可加回。**但這是真 tradeoff**:若 user 要 Handsontable 式『灰化=被保護』的清楚訊號(已出貨格灰掉 vs 靜默無 affordance),則留 4 態並正名 readonly。**無論 3 或 4,現行『disabled』這名都必須廢**(誤用 concept ii + 零消費);『display』留給 concept i。",
+      "cannot_go_below_3": "不能再減到 2 —— display(無 affordance,不邀請編)vs editable-idle(hover affordance,邀請編)是必要分野(非可編欄不可邀請編、可編欄必須邀請);每家 grid 都有。editing 是 active input 獨立態。故最低 = 3。"
+    },
+
+    "verdict": {
+      "naming": "純不可編 = **display**(= Handsontable editor:false / AG editable:false / HTML <output> / Ant Descriptions / DS FieldMode display);灰化鎖定 = **readonly**(= Handsontable readOnly/htDimmed / MDN readonly attribute / DS FieldMode readonly)。**沒有一家把純不可編叫 readonly** → display 命名對、且 consumer 面對的是 `editable:false` 不必碰 display 字。display vs readonly 不搞混:『純資訊值(像 label)』vs『被鎖的欄位(有欄位感、灰)』。",
+      "do_we_use_dimmed_lock": "**否 — meta.disabled 全庫 0 setter(純 plumbing 零消費),且命名誤用(叫 disabled、行為是 readonly)。**",
+      "cleanest_model": "**最簡 = 3 態核心(display / editable-idle / editing,對齊 MUI X + AG Grid),per-cell 鎖折進 `editable:(row)=>bool`。** 灰化第 4 態是 Handsontable-only 豐富度、目前零需求;要留就正名 readonly + 啟用既有空 compound,不留就砍(誠實 lean:砍,YAGNI + 隨時可加回)。**兩案共通鐵律:廢掉『disabled』這名(誤用 + 未用)。**",
+      "ssot_affecting": "rename/砍 meta.disabled + 收 editable 軸 + 啟用/砍 compound = SSOT-affecting → user 拍板;唯讀不執行。"
+    }
+  },
+
+  "final_two_line_answers": {
+    "Q2": "display×default vs display×naked 展開後**除 height 外只差一個視覺死掉的 rounded**(bg/border/px/py/text/cursor/chrome 全逐字同),統一 height 後 byte-identical → **display 該收成單一 `{ mode:'display' }` mode-only compound(Option B,砍 :128-136 + :220-226 兩條),cva 0.7.1 支援且本檔 :164-168 已有同款 variant-agnostic 先例;B 對 DataTable cell byte-identical、零風險、blast radius 同 A(只 standalone story 32→hug),但比 A 更硬 SSOT(結構鎖死不吃 variant,不留兩條會 drift)。variant 軸對 edit/readonly/disabled 仍必留(有殼 vs 無殼真分工,readonly×default 有 RadioGroup/Checkbox/Switch 真消費者)—— 只 display 收。**",
+    "Q3": "純不可編 = **display**(Handsontable editor:false / AG editable:false / HTML <output> / Ant Descriptions;沒人叫它 readonly),灰化鎖定 = **readonly**(Handsontable readOnly/htDimmed / MDN readonly attribute);兩者不搞混因『純資訊值 vs 被鎖欄位』且 DS FieldMode 早用不同 token 編碼。**我方灰化態(meta.disabled)全庫 0 真 setter = 純 plumbing 零消費 + 命名誤用(叫 disabled 行為卻是 readonly)。** 最簡模型 = **3 態(display / editable-idle / editing,對齊 MUI X + AG Grid),per-cell 鎖折進 `editable:(row)=>bool`**;灰化第 4 態是 Handsontable-only 豐富度、零需求 → 誠實 lean 砍(YAGNI、可加回),要留就正名 readonly。無論如何『disabled』這名必廢。"
+  }
+}

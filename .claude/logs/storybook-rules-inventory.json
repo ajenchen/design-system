@@ -1,0 +1,151 @@
+{
+  "_meta": {
+    "generated": "2026-07-15",
+    "task": "Storybook 內容規範全盤 inventory + InlineEdit 展示 stories 違規對照 + deep audit 漏網分析",
+    "scope": "Part1 = NO-SAMPLE 規範 inventory(story-rules.md / story-writing SKILL+4 references / story-auto-compile.md / story-baseline-registry.json / check_story_invariants.sh R1-R10 / audit-story-quality.mjs / compile-stories.mjs / audit dims 11-13,23-25,28-30,40-46,54,68);Part2 = InlineEdit 6 story 逐條;Part3 = 漏網歸因 + 3 元件 scoping(非全掃)"
+  },
+  "rules": [
+    { "id": "S1", "rule": "三層定位:展示(.stories)=視覺目錄真實場景 / 設計規格(.anatomy)=6-canonical / 設計原則(.principles)=Polaris-aligned;混層=污染", "source": ".claude/rules/story-rules.md:11-17 + story-writing/SKILL.md:58-68", "guardian": "hook R1/R3(escape 豁免 anatomy)+ E.1 principles + dim 13/29/30" },
+    { "id": "S2", "rule": "三層存在性:Component category requiredStories='three-layer'(展示+anatomy+principles 檔都要有)", "source": "SKILL.md dim 11(category-matrix.json component.requiredStories) + story-governance/category-matrix.json", "guardian": "dim 11 = HOOK-ENFORCED residue-verify(AI 重放)— 無 deterministic 檔案存在 gate" },
+    { "id": "S3", "rule": "Title 2-namespace canonical:DS repo = Design System/{Tokens|Patterns|Components|Internal}/{Name}/{展示|設計規格|設計原則};Components/Internal 必 4-part", "source": "story-rules.md:19-36", "guardian": "audit-story-quality.mjs TITLE_CANONICAL regex(dim 40 deterministic)" },
+    { "id": "S4", "rule": "story name: field 必中文人話;純英 implementation label = drift;術語/元件名例外", "source": "story-rules.md:42", "guardian": "hook R4(P1 warn)+ R5/R5.5(PostToolUse advisory)+ audit-story-quality dim 41/41b(deterministic,但元件名/品牌 whitelist)" },
+    { "id": "S5", "rule": "name 禁 spec 內部代號 / jargon(L1-L9 / canonical / spec X / Phase N / Dim N / M-rule)", "source": "story-rules.md:65-67 + example-selection.md:23", "guardian": "audit-story-quality JARGON_PATTERNS(dim 41)+ hook R5" },
+    { "id": "S6", "rule": "name 禁含內部驗證意圖 / 實作描述(展示 story 是場景不是 test case)——只存在於精神條文『範例代表元件日常應該長這樣,不是 test case』,從未被 codify 成 name 判準", "source": "example-selection.md:50-53(適用範圍表)+ mindset #4", "guardian": "無(dim 40/41/42 rubric 未編入;dim 12 判準只含 placeholder/jargon/極端;R4/R5 regex 抓不到中文『對齊/驗證』)" },
+    { "id": "S7", "rule": "範例最高準則:精簡幹練、0 重複、每 story earn its existence(2-test:教別 story 沒教的原則 / 移除後 spec 理解 degrade)", "source": "story-rules.md:44-48", "guardian": "dim 24/25(PURE-JUDGMENT)" },
+    { "id": "S8", "rule": "範例必真實業務場景:合法來源=世界級 SaaS / 常見業務流程 / 元件原生慣用場景;禁佔位符/抽象代號/極端/視覺符號/spec 代號", "source": "example-selection.md:9-23 + CLAUDE.md mindset #4", "guardian": "audit-story-quality PLACEHOLDER_PATTERNS(dim 42)+ content-quality Check 4b/4d + dim 12(judgment)" },
+    { "id": "S9", "rule": "「人」test:遮 title/label 5 秒看懂情境;「舉一反三」test:讀者推得出自己產品怎麼用", "source": "example-selection.md:25-37 + SKILL.md Phase 2", "guardian": "dim 12/24/25(judgment only)" },
+    { "id": "S10", "rule": "展示 story ≠ test case(『範例代表元件日常應該長這樣』);anatomy 彈性但渲染範例仍須真實場景", "source": "example-selection.md:50-55", "guardian": "無機械;dim 12 judgment 間接" },
+    { "id": "S11", "rule": "Rule note 傳達原則(為什麼)非結論(是什麼)", "source": "example-selection.md:57-62", "guardian": "dim 43(judgment)" },
+    { "id": "S12", "rule": "視覺與文案品質:ToolbarFrame 統一容器 / 標題 2-4 字 / 排版三層級 / iconOnly aria-label", "source": "example-selection.md:63-71", "guardian": "無機械(a11y 部分歸 audit-a11y)" },
+    { "id": "S13", "rule": "語言一致:檔內註解語言一致(中文檔純中文,不中英夾雜;技術術語例外)", "source": "self-check.md:12 + CLAUDE.md「語言一致性」", "guardian": "無機械(R5.5/dim 41b 只掃 name: 欄位,不掃 comment/demo content)" },
+    { "id": "S14", "rule": "demo 內容(labels/values)語言一致性——未 codify:example-selection 接受英文 SaaS 情境(Jira/Stripe),但『同一 story 內英文 label + 中文 value 混搭』無任何明文規則", "source": "規範缺口(最接近:S9 人 test 的產品連貫性精神)", "guardian": "無(audit-story-quality 只掃 name;content-quality 4d 只抓 Hover me 類短語)" },
+    { "id": "S15", "rule": "展示 story description/rendered 文字禁 TS generic / API 簽名 / prop 名 jargon(stakeholder-facing 人話)", "source": "hook R6 檔內 rationale(2026-05-11 user 糾正)+ example-selection 精神", "guardian": "hook R6(只掃 description: 欄位——rendered JSX caption 文字無看守)+ dim 12 judgment" },
+    { "id": "S16", "rule": "Production-grade composition fidelity:wrap 既有 primitive 必先 grep baseline story + Read helpers,檔頭標 // @story-baseline: <path>#<StoryName>;禁 simplified mock", "source": "story-rules.md:50-53 + story-writing SKILL Phase 0.0", "guardian": "hook R7(warn,只認 Sidebar/ChromeHeader/DataTable/Dialog/Sheet)+ R8 registry(P0,僅 3 primitive 有 entry)+ dim 54" },
+    { "id": "S17", "rule": "Phase 0.0:registry 無 entry → STOP 先加 entry 才能寫 story(不能憑直覺寫 simplified mock)", "source": "story-writing/SKILL.md:35", "guardian": "無(R7/R8 反向只查已註冊 primitive;wrap Field/Select 等未註冊 primitive = 全盲)" },
+    { "id": "S18", "rule": "拆分原則:不同 affordance 必分 / AllVariants+AllSizes 各 1 / 同 affordance prop variations 用 Controls 不另開 / Compound 有 new constraint 才分", "source": "story-rules.md:55-59 + SKILL Phase 0.5", "guardian": "hook R2 slot_split(P0)+ dim 28" },
+    { "id": "S19", "rule": "trait-based v2:spec frontmatter traits: 宣告 → required core stories(hasVariants→AllVariants / hasSizes→AllSizes 或 anatomy SizeMatrix / hasInteractiveStates→Disabled|States / isOverlay→OpenSnapshot / isInputLike→WithError / isSelectionMulti→Group)", "source": "category-templates.md:25-46 + story-rules.md:61", "guardian": "hook R3(P0,讀 frontmatter)+ compile-stories anti-false-pass + dim 29" },
+    { "id": "S20", "rule": "Scope-N/A 例外:跳過 trait 必 spec.md 明文 rationale,禁止默默 skip", "source": "category-templates.md:66-74", "guardian": "無(R3 只驗『已宣告』traits;該宣告而未宣告的 trait(如有 size cva 卻無 hasSizes)無任何看守)" },
+    { "id": "S21", "rule": "Typical story counts:L1 standard 4-8 / overlay 6-12 / structural 8-12(對齊 Carbon/Polaris median)", "source": "category-templates.md:55-64", "guardian": "無(soft 參考)" },
+    { "id": "S22", "rule": "anatomy 6-story canonical(Overview/Inspector/ColorMatrix/SizeMatrix/StateBehavior/Accessibility 一字不差;取代必 spec rationale;改名禁止)", "source": "story-writing SKILL Phase 3 + anatomy-standard.md", "guardian": "content-quality Check 5a/5b + dim 13" },
+    { "id": "S23", "rule": "principles ≥ 2 stories 含 decision core(v3 UsageGuidance 整合式;deprecated 命名 Forbidden*/Donts/Pitfalls 禁)", "source": "category-templates.md:108-173", "guardian": "hook check_canonical_propagation E.1 + content-quality 5e + dim 30" },
+    { "id": "S24", "rule": "三方連動:cva defaultVariants 改 → grep 該元件所有檔案一次改完;spec 新 rule → principles 對應;三方矛盾 STOP", "source": "story-writing SKILL Phase 4 + mindset #3", "guardian": "hook check_story_compile_drift + compile-stories --check(dim 23/45)" },
+    { "id": "S25", "rule": "產生邏輯:stories canonical 段(variant 矩陣/token 對照/size×state)由 spec frontmatter + tsx componentMeta 機械編譯;人只寫 real-product scenarios", "source": ".claude/planning/story-auto-compile.md:9-61,193", "guardian": "compile-stories.mjs --check(僅驗已 migration 元件 key 對齊;未 migration = silent skip 報 skipped,exit 0)+ dim 23(P2 migration pending 必報)+ dim 45/46" },
+    { "id": "S26", "rule": "componentMeta export + spec YAML frontmatter 全元件必備(Phase 1+2,2026-05-01 曾宣稱 60/60 aligned)", "source": "story-auto-compile.md:3-8", "guardian": "compile-stories --check 對缺 meta 元件只報 skipped 不 fail;dim 23 要求 --deep 跑到全 migrated + 0 drift" },
+    { "id": "S27", "rule": "trait-derived matrix export 手寫在展示層而非 anatomy/auto-compile = anti-pattern(Manual vs Mechanical boundary)", "source": "SKILL.md dim 46 + category-templates v2", "guardian": "dim 46(PURE-JUDGMENT)+ R3 anatomy-credit 邏輯" },
+    { "id": "S28", "rule": "手刻反 pattern:raw item-anatomy row / raw <table> / 手刻 loading / 手刻 field / label 式 dismiss / 手刻 overlay / 手刻 chrome header(px-loose+border-divider)/ link hover:underline", "source": "check_story_invariants.sh R1(A.1-A.4,B,C)+ R9 + R10", "guardian": "hook R1(P0)/ R9(P0)/ R10(P1)+ dim 11 residue" },
+    { "id": "S29", "rule": "registry antiPatterns(Sidebar header span / MenuButton inline icon / footer 兩行 / DataTable toolbar tertiary / 恆-edit cell / ChromeHeader span flex-1 / 副標第二行)", "source": ".claude/references/story-baseline-registry.json components.*", "guardian": "hook R8(block=P0 / warn=stderr)+ dim 54/68" },
+    { "id": "S30", "rule": "isOverlay 元件必 OpenSnapshot(defaultOpen / useState(true))— visual-audit coverable(M15)", "source": "category-templates.md:40 + meta-patterns M15", "guardian": "hook R3 isOverlay branch + dim 29 + dim 73 full-story sweep" },
+    { "id": "S31", "rule": "Dim 40/41/42 稽核必 chain audit-story-quality.mjs --check,禁 sub-agent 抽樣/自我判斷替代(2026-05-23 user verbatim 反抽樣)", "source": "design-system-audit/SKILL.md:155-157 + audit-story-quality.mjs:5-19", "guardian": "deterministic battery(_deterministic-results.txt)+ verify-deep-audit-coverage.mjs" },
+    { "id": "S32", "rule": "Story 範例重複性(dim 24)/ 必要性 grounding(dim 25):跨 3 層列 scenario matrix,同 variant×size×state×情境 = noise retire", "source": "design-system-audit/SKILL.md:107-108", "guardian": "dim 24/25(PURE-JUDGMENT,Claude+codex 雙軌)" },
+    { "id": "S33", "rule": "escape marker 治理:@story-trait-rationale / @story-split-rationale / @anatomy-exempt / @story-baseline-allow 檔頭豁免必附真 reason", "source": "check_story_invariants.sh header:21-26", "guardian": "hook 只驗 marker 存在,不驗 reason 品質(marker hack 已有前科,hook L288-294 註解自承)" }
+  ],
+  "inlineEditViolations": [
+    {
+      "story": "VerticalFieldForm(name: '詳情面板:垂直排列 Field + InlineEdit(Tag 對齊)')",
+      "rule": "S6 name 禁內部驗證意圖 + S10 展示 story ≠ test case",
+      "evidence": "inline-edit.stories.tsx:201 name 尾綴「(Tag 對齊)」;:198-199 檔內註解自承目的=「驗證 Tag 值與 FieldLabel + 其他 plain 值的左緣視覺對齊」= 內部視覺 QA 意圖,非讀者場景。2026-07-14 bebfd777 preflight 抓中英夾雜只把 'vertical'→'垂直排列',保留 Tag 對齊(surface fix,M12 違反:regex 過了、invariant 沒過)"
+    },
+    {
+      "story": "VerticalFieldForm + SelectTagField",
+      "rule": "S7 0 重複 / earn-existence",
+      "evidence": "inline-edit.stories.tsx:151-168 與 :220-236 整段 STATUS_OPTIONS Select renderRead/renderEdit block 逐字複製;VerticalFieldForm 對 SelectTagField+MetadataFields 的唯一增量教學=『對齊驗證』(內部 QA,不 earn existence)→ retire/合併候選"
+    },
+    {
+      "story": "SelectTagField(name: '狀態就地編輯(讀取時顯示為標籤)')",
+      "rule": "S6 實作描述 vs 場景(borderline)",
+      "evidence": "inline-edit.stories.tsx:137 括號段描述 render 行為(讀取態顯示格式)而非業務情境;:134 註解自承「架構理由(移出 story name,per story-rules.md name 必人話)」= 前一版 name 塞架構 rationale,只修一半"
+    },
+    {
+      "story": "States(name: '三態:閱讀/懸停/編輯')",
+      "rule": "S15 rendered caption 禁 CSS/token 術語 + S6 實作態命名",
+      "evidence": "inline-edit.stories.tsx:91,95,101 canvas 內 rendered caption 直書「灰底 bg-neutral-hover + rounded-md(非邊框)」「真正的 Field 控件(border + focus 藍框 + input)」= CSS class/實作術語呈現給 stakeholder(同 class 被 codex dim-12 在 Accordion/Alert/AppShell anatomy 判 material,本檔展示層漏);name 為實作三態框架非場景(trait-required story,姑列 borderline)"
+    },
+    {
+      "story": "全檔(TaskTitle / MetadataFields / VerticalFieldForm)",
+      "rule": "S14 demo 內容語言混搭(+S13 精神)",
+      "evidence": "同一面板英文 label(Summary / Story points / Details / Assignee / Status / Description)+ 中文 value(「Safari 上點擊結帳時,e2e 測試會間歇性失敗」)+ 英文 value(Alex Rivera / Fix flaky checkout e2e test on Safari)混排 = 無一致產品語言;inline-edit.stories.tsx:26 vs :181 同檔兩種語言的同類內容。註:此規則本身未 codify(見 missAnalysis)"
+    },
+    {
+      "story": "TaskTitle",
+      "rule": "S9 人 test / 說明文字塞進範例",
+      "evidence": "inline-edit.stories.tsx:38-40 卡片內 rendered <p>「標題平常是純文字,滑鼠移入顯示灰底提示可編輯;點擊(或鍵盤 Tab + Enter)切成輸入框…」= 操作說明書文字渲染成產品內容(example-selection:30「改成具體業務場景,不是補說明文字」)"
+    },
+    {
+      "story": "元件層(全 6 story 之外)",
+      "rule": "S2 三層存在性(dim 11 component = three-layer)",
+      "evidence": "packages/design-system/src/components/InlineEdit/ 只有 stories.tsx,無 inline-edit.anatomy.stories.tsx 也無 inline-edit.principles.stories.tsx = 全 DS 唯一缺三層的 public component(全掃 64 components 驗證)"
+    },
+    {
+      "story": "元件層",
+      "rule": "S26 componentMeta 未 migration + S25 產生邏輯未接",
+      "evidence": "inline-edit.tsx 無 componentMeta export;compile-stories.mjs InlineEdit --check → 'skipped(migration 未做)';dim 23 要求 --deep 跑到全 migrated,campaign 收官仍留 InlineEdit+AppShell 2 個未 migration + Notice 現存 variants drift"
+    },
+    {
+      "story": "元件層",
+      "rule": "S20 trait 默默 skip(hasSizes)",
+      "evidence": "inline-edit.tsx:98-109 cva size variant(FieldSize sm/md/lg)存在,spec frontmatter 只宣告 hasInteractiveStates、sizes:{},無 hasSizes 也無『無 size 軸』N/A rationale(spec:54 只講預設 sm 拍板,非 N/A 宣告)→ R3/compile-stories 全靜默跳過;展示層與 anatomy 皆無 AllSizes/SizeMatrix"
+    },
+    {
+      "story": "全檔",
+      "rule": "S16/S17 @story-baseline 缺(wrap Field/Select primitive)",
+      "evidence": "檔頭無 // @story-baseline: marker;stories wrap <Field>+<FieldLabel>+<Select mode='display'>(消費 Select display SSOT)但 registry 無 Field/Select entry、SKILL Phase 0.0 步驟 4『No registry entry → STOP 先 add entry』未走;R7/R8 只認 5 個 primitive → 機械全盲(合規性=判斷層懸空)"
+    }
+  ],
+  "missAnalysis": {
+    "whatAuditSaid": [
+      "dim-12(Claude,filesScanned 205):『整體極乾淨…唯一偏差集中在 Field/Tabs/Steps 少數幾何/狀態展示型 showcase 用示意標註…全部 marginal,無 material』— InlineEdit 零提及;States captions 的 CSS 術語同 class 被判 marginal 放行",
+      "dim-12(codex):抓 Accordion/Alert/AppShell/Breadcrumb anatomy 層『實作術語充當文案』material — 同 class 在 InlineEdit 展示層漏",
+      "dim-24/25(Claude):InlineEdit 列入『深讀』清單但 0 findings — SelectTagField/VerticalFieldForm 複製 block + 驗證型 story 未觸 earn-existence 判斷;codex 軌 0 提及",
+      "dim-46(Claude):明文寫『InlineEdit States(三態行為模型,無 anatomy)…經對抗驗證 = 合法情境,不報』— 審計者知道 InlineEdit 無 anatomy,但只用來替 States 開脫,沒升級成 dim 11 finding",
+      "hook-residue dim-11:『全 public component 三層 stories 齊備 = 0 缺』= 假宣稱(InlineEdit 2026-07-09 已存在、battery 2026-07-12 跑)— 與 dim-46 自家 artifact 直接矛盾,無 cross-check",
+      "deterministic dim-40/41/42(audit-story-quality):exit 1 抓 5 個 name 中英夾雜 → 2026-07-14 bebfd777 修 4 個 name 讓 regex 轉綠;「(Tag 對齊)」因 Tag 在元件名 whitelist 天然假綠",
+      "dim-23(compile drift):exit=1 但輸出被截空;InlineEdit/AppShell 未 migration 未依『--deep 必跑到全 migrated』收斂即收官",
+      "dim-66:SKILL 明文『known gap:InlineEdit 尚無 visual scenario』= 已知缺口帶病收官"
+    ],
+    "categories": {
+      "a_rubric_missing": [
+        "『name 禁內部驗證/實作意圖』無任何 dim/hook/script 編入 — dim 40 只驗 title 格式、dim 41 只驗 jargon 代號、dim 12 判準只列 placeholder/jargon/極端;精神條文(展示 ≠ test case)存在 example-selection.md:50-53 但從未進 rubric",
+        "『demo 內容語言一致性』規則本身不存在 — 規範只 codify 到 name(story-rules:42)與註解(self-check:12);英文 SaaS 情境又是合法來源 → 同 story 英文 label+中文 value 混搭落在規則縫隙",
+        "『rendered JSX caption 禁 CSS/token 術語』只存在 R6 的 description: 欄位掃描,canvas rendered 文字無 rubric 條目(dim 12 judgment 籠統涵蓋但無明文判準)",
+        "『trait 該宣告而未宣告』(hasSizes 默默 skip)— category-templates:74 禁默默 skip,但無任何機制反向比對 cva 軸 vs traits 宣告"
+      ],
+      "b_agent_judgment_error": [
+        "hook-residue dim-11 假宣稱三層齊備(AI 重放 hook 邏輯的 residue-verify 本質仍是 self-judgment,違反 memory feedback_ai_ground_truth_unreliable_mechanical_primary)",
+        "dim-12 Claude 把『示意標註/實作術語當文案』整類降為 marginal 全放行;codex 同 dim 抓同 class 為 material — 兩軌結論矛盾未 synthesize(M31 step 5 未落實到此 dim)",
+        "dim-24/25 深讀 InlineEdit 卻 0 findings(複製 block + 驗證型 story 漏)",
+        "dim-46 對抗驗證發現『無 anatomy』事實卻未 cross-file 到 dim 11(dim 各自為政,無跨 dim finding 傳遞)",
+        "bebfd777 修 mixed-English 時最小改動滿足 regex、保留「(Tag 對齊)」= M12 surface-layer fix"
+      ],
+      "c_judgment_only_no_mechanical_guard": [
+        "三層檔案存在性:dim 11 tier=HOOK-ENFORCED 但 check_story_invariants R1 根本不驗檔案存在(只驗手刻 pattern);compile-stories 對未 migration 元件 silent skip exit 0;無『public component 必有 anatomy+principles 檔』的 deterministic gate",
+        "earn-existence / 重複性(dim 24/25)/ Rule note(dim 43)/ Manual-vs-Mechanical(dim 46)全 PURE-JUDGMENT 無機械底線",
+        "@story-baseline 覆蓋僅 registry 3 entry(Sidebar/DataTable/ChromeHeader)+ R7 5 primitive;wrap Field/Select 等其餘 60+ primitive 全盲",
+        "escape marker 只驗存在不驗 reason 品質(select.stories.tsx:44 mid-file『pre-existing trait gaps tracked separately』= defer 式 rationale 通關)"
+      ]
+    },
+    "rootPattern": "機械閘只覆蓋『字面/格式』規則(title regex、jargon 代號、placeholder 字串),『內容意圖』類規則(場景 vs 驗證意圖、產品語言連貫、教學價值、rendered 文字人話)全押在 judgment tier;judgment tier 又被 (1) residue-verify 用 AI 重放冒充機械證據 (2) marginal 判定稀釋 (3) dim 間 finding 不互通 三個機制漏掉。InlineEdit 是 campaign 中途(2026-07-09)誕生的新元件,沒有走 /new-component 三層 scaffold 或 /component-quality-gate 的紀錄,deep audit 的 per-component A.1b 軌有掃它但 story 治理 dims 對它全綠。"
+  },
+  "otherComponentsSample": {
+    "_note": "scoping 抽樣(Select/Tabs/Notice 3 檔深讀 + DS-wide name grep 1 條),非全掃",
+    "Select": [
+      "select.stories.tsx:127 name '尺寸與 Button 對齊' = S6 同類驗證意圖命名(同名 story 亦在 Input:56 / Combobox:64 / NumberInput:52 = 4 檔複製)",
+      "select.stories.tsx:41-59 Modes story canvas rendered h3 直書 'edit/display/readonly/disabled/readonly (null)' 實作 mode 名 + aria-label '狀態(edit mode demo)' 內部字樣 = S15 同類",
+      "select.stories.tsx:44 mid-file '@story-trait-rationale: pre-existing trait gaps tracked separately' = S33 defer 式 escape 通關",
+      "select.stories.tsx:207-210 英文商品 demo data(Wireless Headphones…)於中文檔 = S14 同類"
+    ],
+    "Tabs": [
+      "names 全人話場景、demo 內容全中文 — 乾淨(對照組)",
+      "tabs.stories.tsx:98,120 '溢出處理 — 水平捲動/⌄ 導覽選單' 行為描述型 name,borderline 但屬元件原生慣用場景,判可"
+    ],
+    "Notice": [
+      "names + demo 內容全中文真實業務(部署/付款失敗)— 乾淨(對照組)",
+      "但 compile-stories --check 現報 Notice variants spec-only drift(neutral/info/success/warning/error 不在 componentMeta)= S24/S26 現行 P0 drift"
+    ],
+    "dsWideEstimate": {
+      "verificationIntentNames": "grep name 含 對齊/驗證/測試/示範:15 hits,判讀後 ~11 個真『內部驗證意圖』story 名,散在 10 檔(TreeView:269 縮排結構對齊驗證 / Field:146 對齊公式驗證、:201 高度對齊 / Slider:22 容器尺寸對齊 / Input:56+Combobox:64+NumberInput:52+Select:127 尺寸與Button對齊 ×4 / DataTable:233 顯示與編輯位置驗證 / Steps:154 聚焦環正交示範 / Toast:119 互動測試 / InlineEdit:201 Tag對齊);另 4 hits(TimePicker 驗證錯誤 / LinkInput 失焦驗證 / Field 表單驗證)= 表單驗證業務功能,合法",
+      "mixedLanguageDemoContent": "抽 4 檔中 2 檔命中(InlineEdit/Select),2 檔乾淨(Tabs/Notice)→ 估 DS-wide 數十檔級;但規則未 codify,先要 user 拍板 canonical(全中文 / 允許英文但單 story 內一致 / 允許混搭)再掃",
+      "renderedImplementationJargon": "codex dim-12 已列 Accordion/Alert/AppShell/Breadcrumb(anatomy 層)+ 本次 InlineEdit States、Select Modes(展示層)→ 估 10-20 檔級,dim-12 artifact 內既有 findings 可直接復用",
+      "threeLayerMissing": "全掃(非抽樣):InlineEdit 是唯一缺 anatomy+principles 的 public component;componentMeta 未 migration = InlineEdit+AppShell 2 個;Notice 1 個現行 drift"
+    }
+  }
+}

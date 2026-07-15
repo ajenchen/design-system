@@ -1,0 +1,163 @@
+{
+  "meta": {
+    "date": "2026-07-15",
+    "scope": "唯讀深度研究(禁改 code)。回答 InlineEdit 重整前的 display-height SSOT 架構問題 + DataTable 破壞風險評估。",
+    "method": "逐行 code/spec/token 查證,每 claim 帶 file:line cite;禁憑印象。承接既有研究 inline-edit-geometry-ssot.json + inline-edit-worldclass.json。",
+    "repoRoot": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project",
+    "tokenBaseline": {
+      "field-height": "sm=28 / md=32 / lg=36px(預設密度)— tokens/uiSize/uiSize.css:23-25",
+      "table-row": "sm=32 / md=40 / lg=48px(預設密度)— tokens/uiSize/uiSize.css:33-35",
+      "decoupled": "--field-height-* 與 --table-row-* 是**兩組獨立 token family**,+8px offset(md:32 vs 40)。不是 alias、不互相 derive。uiSize.css:8-17 檔頭明分兩區塊。",
+      "tag-height": "sm=20 / md·lg=24px — tag.spec.md:197-201(引自 geometry log)",
+      "field-px": "12px 固定,不隨 size/density — uiSize.css:30"
+    }
+  },
+
+  "Q1_display_height_ssot": {
+    "verdict": "「field display = field-height」這句**只對 default variant + Input 這類自帶控件成立,對 DataTable cell(naked variant)與 Select display=tag 都不成立**。真正的 display-height SSOT 原則 = **『容器提供 field-height / row-height,display 內容為 intrinsic 高度、置中』**,不是『每個控件自帶 field-height』。Input 的自帶 h-field 是 default variant 的冗餘保險、非 SSOT 機制;cell 靠 row token、InlineEdit read 靠 read wrapper min-h。此 asymmetry 為 intentional,非 drift。",
+
+    "Q1_1_datatable_parity": {
+      "I1_to_I5_definition": {
+        "source": "data-table.spec.md:123(不變條件 6-2 段)+ scripts/data-table-invariants.mjs:2-8(檔頭)",
+        "I1": "cell width = column width(跟 padding/state/mode 無關)— data-table-invariants.mjs:118-120",
+        "I2": "display↔edit cell width 0 delta(<0.5px)— data-table-invariants.mjs:122",
+        "I3": "display↔edit **cell** height 0 delta(<0.5px;textarea field-sizing:content)— data-table-invariants.mjs:123",
+        "I4": "Field 填滿 cell 高度(edit 態 |cell.height − field.height| < 1px)— data-table-invariants.mjs:124",
+        "I5": "No-resize column ≥ meta.width — data-table-invariants.mjs:60-66",
+        "I6_I7_extra": "I6 = cell/header @lg font=16px(:149-153);I7 = fixed row 絕對高 == --table-row-{size} token(:162-171,2026-07-09 root-cause 防線,補 I1-I4 只驗『一致性』抓不到『絕對高度崩』的洞)"
+      },
+      "is_hard_invariant": "YES — 硬不變量。script failures>0 → exit 1 阻 commit(data-table-invariants.mjs:187-190);data-table.spec.md:123『L2 test + hook 守』+『改 columnSizeStyle / 切 layout 必跑 invariant test 才 commit』。",
+      "CRITICAL_nuance": "**I3 量的是 CELL rect 高度(role=cell),不是 field 高度**(data-table-invariants.mjs:79-124 量 `cell.getBoundingClientRect()`)。cell 高度來自 **ROW**,不是 field:(a) fixed row → row 掛 `h-table-row-{size}`(data-table.tsx:1465 map + :2539 `!effectiveAutoRow && rowHeight`);(b) auto row → row intrinsic = 最高 cell。cell 繼承 row 高。",
+      "cell_field_is_h_auto_not_field_height": "DataTable cell 內 Field display **不 reserve field-height** — naked variant compound 明寫 `!h-auto` override size 的 h-field:field-wrapper.tsx:220-226(display×naked)/ :228-234(readonly×naked)/ :240-246(disabled×naked)。edit×naked 則 `!h-full` 填滿 cell(field-wrapper.tsx:193)。故 cell 零位移(I3=0)= **row 同時撐 display+edit 兩態的 cell 高**,field display=!h-auto、edit=!h-full 都塞進 row 高內,**不是靠 field 自帶 field-height**。",
+      "user_premise_correction": "user 提的『display=field-height 是為了 cell 點擊進 edit 零位移』**對 cell 不精確**:cell 零位移的機制是 row token(I3/I7)+ edit `!h-full`(I4),display 是 `!h-auto`。row-height(40)≠ field-height(32)兩 token 本就不等 = 佐證 cell 高不等於 field-height。"
+    },
+
+    "Q1_2_display_height_source_per_control": {
+      "principle": "分兩層看 = **variant 軸**(default vs naked)決定高度來源,非控件種類。",
+      "default_variant_form_or_inline_edit_read_context": {
+        "Input mode=display": "**自帶 h-field-{size}**。fieldWrapperStyles size variant = `h-field-{size}`(field-wrapper.tsx:65-67);display×default compound 只 override `!px-0 !py-0`、**不動 height**(field-wrapper.tsx:135)→ h-field 保留。渲 <div fieldWrapper> 包 <span>(input.tsx:161-194)。",
+        "Select mode=display display=plain": "**裸 <span>,不套 fieldWrapperStyles、無 field-height**(select.tsx:392,無 showDisplayEndIcon 時)→ intrinsic 文字行高(~21px)。",
+        "Select mode=display display=tag": "**裸 <Tag>,無 wrapper、無 field-height**(select.tsx:393-394)→ Tag 高(sm20/md·lg24)。",
+        "Textarea/DatePicker/etc": "non-D-path 同 Select = 裸 bare-span(field-controls.spec.md:391 contract (e))、無自帶 field-height。",
+        "so_the_asymmetry": "**Input 這類 text-entry 控件 display 自帶 field-height;Select/Date/等 picker + tag 的 display 是 bare 內容、不自帶**。user 觀察到的『Input 自帶、Select display=tag 裸』屬實。"
+      },
+      "naked_variant_datatable_cell": {
+        "all_controls": "全部 → `!h-auto`(field-wrapper.tsx:220-246),高度一律由 row 提供。",
+        "select_tag_in_cell": "cell-registry.tsx:322-335 SelectCell display 傳 `variant=\"naked\" mode=\"display\" display={displayMode}` 但 **不傳 showDisplayEndIcon** → 走 select.tsx:393-394 **裸 Tag** path(連 fieldWrapper 都沒進)。高度來自 cell/row。"
+      }
+    },
+
+    "Q1_3_conclusion_intentional_vs_drift": {
+      "true_ssot": "display-height 的**真 SSOT = 容器(container)**,三個 host 各自提供 field-height/row-height + items-center 置中:(1) DataTable row = `h-table-row-{size}`(data-table.tsx:2539);(2) Field control area = `min-h-field-{size}` + items-center(field.tsx:244,field.spec.md:78);(3) InlineEdit read wrapper = `min-h-[var(--field-height-{size})]` + items-center(inline-edit.tsx:99-104)。display 內容(裸 Tag/span/formatted value)只負責『內容』,intrinsic 高,置中於容器。",
+      "input_self_reserve_is_redundant_not_ssot": "Input default variant 自帶 h-field 是**冗餘保險**(belt-and-suspenders):在有容器(Field control area / InlineEdit read)時被 min-h 吸收、無害;在 standalone `<Input mode=display>` 無容器時提供高度一致性。它**不是**高度 SSOT 機制。",
+      "intentional": "Select 裸 Tag = 純靠容器,**intentional**:Tag 是有自己視覺盒(pill)的內容,不該被拉成 field-height(24px pill 撐成 32px 會怪)。geometry log perTypeTable Select 段 + worldclass Q4『read wrapper 完全控幾何、content 純 inline』同結論。",
+      "residual_inconsistency": "唯一輕微不一致 = **standalone 無容器**時把 `<Input mode=display>`(32px)跟 `<Select display=plain>`(~21px)並排 → 高度不齊。但 canonical 用法永遠有容器(Field slot / cell / InlineEdit read),容器 min-h 抹平。此非 bug,是 Input 多做了自帶高度、Select 純容器依賴的表達差。",
+      "verdict": "**Intentional 非 drift。** 高度 SSOT = 容器提供。要 codify 的一句:『display mode 渲染值內容於 intrinsic 高;field-height/row-height reservation + 垂直置中由 host 容器(cell row / Field control-area / InlineEdit read wrapper)唯一擁有』。對齊 M17 一處幾何擁有者 + Atlassian read-view wrapper-owns-geometry。"
+    }
+  },
+
+  "Q2_delegate_safety_datatable": {
+    "headline_answer": "InlineEdit read 改成 delegate `<Control mode=\"display\">` **不會破 editable DataTable**;而且『補 Select display=tag 保留 field-height』這個改動**本身是不必要的**(InlineEdit read wrapper 已提供 min-h-field)。若真要動且 variant-scoped(只 default variant)→ naked cell 被 `!h-auto` 機械擋住 → I1-I4 不破。",
+
+    "Q2_1_needs_alignment": {
+      "same_render_diff_variant": "兩者 delegate **同一份 display code**(field-controls.spec.md:29-31『Form 和 DataTable 消費同一份 code』;inline-edit.spec.md:64/68 SSOT 鐵律 renderRead 渲 `<Control mode=display>`)。差別只在 **variant 軸**:InlineEdit renderRead consumer 寫 `<Select mode=\"display\" display=\"tag\">` **無 variant → default**(inline-edit.stories.tsx:151-152);cell 寫 `variant=\"naked\"`(cell-registry.tsx:327)。",
+      "no_conflict": "InlineEdit 在 Field 槽(default variant,高度靠 read wrapper min-h)vs cell 在 row(naked variant,高度靠 row token)→ 高度來源本就分離,**同 content render、不同 chrome/height owner,零衝突**。variant 軸 = 防火牆。"
+    },
+
+    "Q2_2_will_field_height_patch_break_I1_I4": {
+      "current_cell_tag_is_bare": "現況 cell 的 Select display=tag = **裸 <Tag>、完全沒進 fieldWrapperStyles**(select.tsx:393-394;cell-registry 不傳 showDisplayEndIcon)。所以現況 cell tag path 根本沒有 h-field 可談。",
+      "if_scoped_to_default_variant": "**NO,不破。** 就算把 Select display=tag 改成走 fieldWrapperStyles + h-field-{size},naked variant compound 的 `!h-auto`(field-wrapper.tsx:223,`!important`)會**覆蓋** size 的 h-field → cell 仍 intrinsic、仍由 row 撐高 → I3(cell 高 delta)不變。**variant 軸自動保護 cell**。",
+      "if_naive_unconditional_patch": {
+        "risk": "若有人天真地無條件加 h-field(裸 Tag → 固定高 wrapper 沒 variant guard):",
+        "fixed_row": "cell 高恆由 row token 撐,select tag 24→32 仍 < row(32/40/48)→ I3 仍 0。LOW risk。",
+        "auto_row_test_story": "I1-I4 測試 story = RowAutoHeightInlineEdit(data-table-invariants.mjs:47 + data-table.stories.tsx:232)= autoRowHeight。row 高 = 最高 cell;但 Note(textarea long-wrap 360px,data-table-invariants.mjs:58/73)壓倒性最高 → select tag 高度變不影響 row。實務 LOW risk,但**推理脆弱**。",
+        "canonical_violation": "會違反 naked `!h-auto` canonical(field-wrapper.tsx:220-226)+ field-controls.spec.md:65『display/readonly/disabled×naked 用 transparent border 由 host cell 供邊框』。"
+      },
+      "the_clean_truth": "**InlineEdit read 根本不需要 Select display=tag 自帶 field-height。** InlineEdit read wrapper 已提供 `min-h-[var(--field-height-{size})]` + items-center(inline-edit.tsx:99-104),裸 Tag 在其中置中即得高度 —— 跟 cell 讓 row 提供高度是**同一個原則**(容器提供)。所以『補 Select display=tag 保留 field-height』是**假需求**,不該做。保留裸 Tag、讓 InlineEdit read 容器提供高度即可。",
+      "known_micro_bug": "現況 renderRead 包 block div(inline-edit.tsx:248 `<div className=\"w-full min-w-0\">`)導致 Tag 在文字 baseline 行盒沉 +1.8px(geometry log Select 段 inlineEditReadRule cite session 3fb5856b:100549)。此為**垂直置中 micro-bug、非高度 reservation 問題**;修法 = renderRead 容器 flex items-center 或 lineHeight:1(Atlassian read-view lineHeight:1 同款),與『補 field-height』無關。"
+    },
+
+    "Q2_3_cleanest_single_ssot": {
+      "structure": "『InlineEdit read === locked display === DataTable cell display』三者同一份 SSOT 的最乾淨結構 = **高度由容器唯一提供,控件 display render 只出值內容(intrinsic 高)**:",
+      "height_owner_by_host": {
+        "datatable_cell": "row 提供(`h-table-row-{size}`,data-table.tsx:2539);field naked display=`!h-auto`。",
+        "inline_edit_read": "read wrapper 提供(`min-h-field-{size}`,inline-edit.tsx:99);renderRead 內容裸。",
+        "standalone_display_or_field_readonly": "Field control area 提供(`min-h-field-{size}`,field.tsx:244);或 Input 自帶(冗餘保險)。"
+      },
+      "control_display_render": "= 內容 only(裸 Tag / span / formatted value),intrinsic 高,**不自帶 field-height**(Input 的自帶為歷史冗餘、無害)。",
+      "codify_sentence": "『display mode 渲值內容於 intrinsic 高度;field-height/row-height 的 reservation + 垂直置中由 host 容器(cell row / Field control-area / InlineEdit read wrapper)唯一擁有。控件 display 分支禁自帶 min-h/py(Input 既有自帶 h-field 列為 documented 冗餘例外)。』對齊 M17 + worldclass log Q4 Atlassian『wrapper 完全控幾何、content 純 inline』。",
+      "already_de_facto": "此架構**現況已成立**(三容器都已提供 min-h/row-height,控件 display 已裸)。需要的是把它寫成明文 SSOT + 修 InlineEdit renderRead 的行盒 micro-bug + 接 InlineEdit 的 cascade(見 Q3),**不是**動 Select display=tag 高度。"
+    }
+  },
+
+  "Q3_sm_default_options": {
+    "current_state": {
+      "inline_edit_default_sm": "InlineEdit 自預設 size='sm' — inline-edit.tsx:136(destructure default)+ :109(inlineEditReadStyles defaultVariants size:'sm')+ inline-edit.spec.md:54(2026-07-09 user 拍板)。",
+      "zero_cascade": "InlineEdit **完全不接 Field cascade** — 只 `import type { FieldSize }`(inline-edit.tsx:25),grep 證實 0 個 useFieldContext/useResolvedFieldSize/useResolvedFieldDisabled。連 id/disabled 也 0 接線(FieldLabel htmlFor 懸空)。",
+      "field_default_md": "Field 預設 size='md'(field.tsx:158),control area = min-h-field-md=32px(field.tsx:244 MIN_H_CLASS[md])。"
+    },
+
+    "critical_diff_做法1_vs_什麼都不做": {
+      "什麼都不做(現況)": "`<Field>`(md,未傳 size)包 `<InlineEdit>`(自 sm):Field control area 掛 `min-h-field-md`=32px(field.tsx:244),InlineEdit read wrapper 掛 `min-h-field-sm`=28px(inline-edit.tsx:99)。flex items-center → **InlineEdit 佔位 = 容器 32px(slot 勝),edit `<Input size=sm>`=28px 置中於 32px 內** → 4px 錯位 = user 抓的『本該 28 卻 32』。且 id/disabled/size cascade 全斷。",
+      "做法1(Option A:InlineEdit 讀 Field size,sm standalone fallback)": "InlineEdit size = useResolvedFieldSize(sizeProp,'sm') → 在 `<Field md>` 內 → InlineEdit **變 md(32)**、read 32 = slot 32 = edit 32 → **對齊、零錯位,但不是 sm**。在 `<Field sm>` → 全 28。standalone → sm 28。",
+      "the_tension": "**關鍵誠實點**:『做法1 單獨』**達不到** user 字面要的『md Field 裡自動 sm』—— 它讓 InlineEdit **跟隨** Field(md 就 md),消除 28/32 錯位,但不會在 md Field 裡強制 28。要『md Field 裡強制 sm 且不錯位』唯一路徑 = **要嘛 Field 本身變 sm(Option a/b),要嘛 InlineEdit 不套外層 Field(Option c/standalone)**。若 InlineEdit 硬鎖 sm 但 Field 是 md → 28 在 32 slot 內 → 錯位反而回來。"
+    },
+
+    "options": [
+      {
+        "id": "a",
+        "name": "explicit <Field size=\"sm\">(consumer 每次寫)",
+        "mechanism": "consumer 顯式 `<Field size=\"sm\">`(field.tsx 已支援 size prop)+ InlineEdit 需接 cascade(做法1)才會讀到。",
+        "cost": "verbose、易忘;但 100% 可預測、零 magic、零破壞。detail-pane metadata 場景合理(field-controls.spec.md:207 hug 同場景)。",
+        "verdict": "可行,搭配做法1 為基座。"
+      },
+      {
+        "id": "b",
+        "name": "Field 偵測 child 是 InlineEdit → 自動 sm(React.Children 掃)",
+        "mechanism": "field.tsx 已有 child type 偵測先例(resolveSlotKind:77-84 讀 displayName / detectControlLayout:96-103 讀 type.fieldLayout static)。可加『任一 control child displayName==='InlineEdit' → size 降 sm』。InlineEdit.displayName 已設(inline-edit.tsx:285),偵測得到。",
+        "cost": "**脆弱** — 對 memo/HOC/styled wrapper 包過的 InlineEdit 偵測失效(displayName 被 wrapper 蓋);implicit magic 違反『Field 只管 layout+context』分離;renderEdit/composite 內層讀不到反向 size(geometry log Option C 同理由駁回:違 context 單向流)。",
+        "verdict": "**不推**(fragile + magic)。"
+      },
+      {
+        "id": "c",
+        "name": "InlineEdit 自 own label+control(不靠外層 Field,自己一定 sm)",
+        "mechanism": "現況 InlineEdit `label` prop 只組 aria-label(inline-edit.tsx:71,73『組 read 按鈕 aria-label + 控件 aria-label』),**不渲可見 FieldLabel**。Atlassian 模型 = InlineEdit 把 read+edit 兩態包進**自己的** form Field『only for the label and spacing』(worldclass log Q5 cite)。可讓 InlineEdit 自渲 FieldLabel + control area @ sm → 整包自洽 sm,不依賴外層 Field。",
+        "cost": "API 演進(label 變可見 label,或加新 prop)= SSOT-affecting → 需 user 拍板;但架構最乾淨、對齊 Atlassian『InlineEdit IS the field』。含意:**detail-pane 就不該再外包一層 `<Field>`**(inline-edit.spec.md:96 何時不用『表單欄位 → 直接用 <Field>』已暗示 InlineEdit 不是表單場景)。",
+        "verdict": "架構最正,但屬 API 改動(ASK user)。"
+      },
+      {
+        "id": "d",
+        "name": "Option A cascade + sm standalone fallback(做法1 本體)",
+        "mechanism": "`const size = useResolvedFieldSize(sizeProp, 'sm')` 取代 inline-edit.tsx:136 的 `size='sm'` destructure default。precedence prop > fieldCtx.size > surface-size > 'sm'。順手接 id/disabled cascade 修 0 接線。",
+        "cost": "非破壞、機械對齊 cascade SSOT(field-controls.spec.md:160-184);standalone 保留 sm(2026-07-09 拍板)。**但在 md Field 內會變 md 非 sm**(見 the_tension)。",
+        "verdict": "**機械基座必做**(修 28/32 錯位 + 修 cascade 0 接線)。"
+      }
+    ],
+
+    "recommendation": {
+      "primary": "**做法1 = Option d(cascade + sm standalone fallback)當機械基座** — 消除 28/32 錯位(InlineEdit read 對齊 Field slot 高)+ 修 id/disabled/size cascade 全斷。這是唯一能保證『不錯位』的機制。",
+      "for_auto_sm_want": "『Field 裝 InlineEdit 自動 sm』的真實達成 = **靠場景而非 magic**:InlineEdit 的 canonical home 是 detail-pane metadata / 標題(inline-edit.spec.md:90-92),那裡**通常不外包 `<Field>`** → InlineEdit standalone → 自然吃 sm 預設(28),零 consumer code。真的要放進表單式 Field 且要 sm → 顯式 `<Field size=\"sm\">`(Option a)。",
+      "reject": "Option b(Field 偵測 child 自動 sm)不推:fragile(memo/HOC wrapper 破偵測)+ magic + 違 Field layout/context 分離 + 若 InlineEdit 硬鎖 sm 在 md slot 反造新錯位。",
+      "future_option_c": "若想根治『InlineEdit 到底該不該外包 Field』→ Option c(InlineEdit 自 own label,對齊 Atlassian『Field is used here only for the label and spacing』)最正,但屬 API 改動 → ASK user 拍板。",
+      "honest_caveat": "誠實:沒有任一單一 code 改動能『md Field 裡自動變 sm 且不錯位』—— 這需要 Field 本身是 sm(顯式或 InlineEdit 自 own)。做法1 給的是『對齊(跟隨 Field)』,不是『強制 sm』。user 若真要後者,推 Option c(InlineEdit 不套外層 Field)。"
+    }
+  },
+
+  "Q4_hover_confirm": {
+    "verdict": "確認:InlineEdit 的 hover 灰底(`hover:bg-neutral-hover`,inline-edit.tsx:95)是它在 display 內容之上唯一加的東西,且**無任何『鎖定的 InlineEdit』路徑會錯誤顯示 hover** —— 因為 InlineEdit 根本沒有鎖定態。",
+    "evidence": {
+      "no_locked_state": "InlineEditProps(inline-edit.tsx:52-83)**無 disabled / readonly / locked prop**;grep 證實 inline-edit.tsx 內 0 個 disabled/readonly/readOnly/locked 分支。InlineEdit = 定義上永遠可編輯(geometry log disabledHistoryVerdict:『InlineEdit 無 disabled 態 — 不可編的欄位根本不用 InlineEdit,直接渲 display mode 純文字』,session 3fb5856b:89436/89565 + inline-edit.spec.md:98)。",
+      "hover_unconditional": "hover 灰底掛在 read 外層 div 的 inlineEditReadStyles(inline-edit.tsx:244),無條件套 `hover:bg-neutral-hover`(:95);read 態一定有 hover。",
+      "non_editable_uses_display": "非可編欄位 = 用 `<X mode=\"display\">` 純文字(inline-edit.spec.md:97-98『DataTable 密集可編輯格 → naked cell』/『一律唯讀展示 → <Input mode=display>』)。display mode default variant compound `bg-transparent border border-transparent !px-0 !py-0`(field-wrapper.tsx:135)+ 裸 Tag path(select.tsx:393-394)= **無 hover**。故『可編才有 hover』是結構性保證:不可編就不用 InlineEdit。",
+      "no_delegated_hover_leak": "renderRead delegate 的 `<Select mode=\"display\">`(default variant)自身無 hover(field-wrapper.tsx:129-136 display×default 無 hover class);故 InlineEdit read 唯一 hover 源 = InlineEdit wrapper 自己,無雙 hover、無 delegate 洩漏。"
+    },
+    "confirm": "無 bug 路徑。hover-only-when-editable 成立。"
+  },
+
+  "cross_cutting_findings": {
+    "F1": "row-height 與 field-height 是**兩組獨立 token**(md:40 vs 32),cell 零位移靠 row + naked `!h-auto`/`!h-full`,**不是**靠 field-height。動 field display 高度不會經由『共用 token』波及 row。",
+    "F2": "**動 display 模式不會破 DataTable** 的機械保證 = naked variant compound `!h-auto`(field-wrapper.tsx:220-246)。只要改動 variant-scoped(不亂拔 naked 的 !h-auto),cell I1-I4 天然免疫。",
+    "F3": "user 最擔心的『補 Select display=tag 保留 field-height 會破 select cell』→ **不必補**(InlineEdit read wrapper 已提供高度),且就算補、只要 default-variant-scoped 則 naked !h-auto 擋住 → 不破 I1-I4。",
+    "F4": "InlineEdit 真正的 gap = **0 cascade 接線**(size/id/disabled 全斷,inline-edit.tsx:25 只 import type)+ renderRead 行盒置中 micro-bug(:248),**不是** display 高度來源問題。"
+  }
+}

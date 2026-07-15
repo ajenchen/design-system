@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "date": "2026-07-15",
+    "method": "code/spec/git/session-transcript 逐行查證(禁憑印象);每 claim 帶 file:line cite",
+    "repoRoot": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project",
+    "tokenBaseline": {
+      "fieldHeight": "sm=28px / md=32px / lg=36px(default density)— tokens/uiSize/uiSize.css:22-25",
+      "fieldPx": "12px 固定不隨 size — tokens/uiSize/uiSize.css:30",
+      "tagHeight": "sm=20px / md=24px / lg=24px(與 md 同值)— components/Tag/tag.spec.md:197-201"
+    }
+  },
+
+  "perTypeTable": {
+    "principle": "user thesis + 世界級鐵律(source-verified):「read 態幾何逐 token 抄對應 edit 控件自己的垂直節奏機制」,非獨立值 — Atlassian InlineEditableTextfield read paddingBlock/Inline token 對 token 抄 Textfield、Chakra preview=input 同值。cite=.claude/logs/inline-edit-worldclass.json Q1(2026-07-15,source-verified)+ validation_of_user_thesis agree[1]",
+    "types": [
+      {
+        "type": "Input(單行文字)",
+        "editGeometry": "固定高 h-field-{size}(28/32/36)+ items-center + px-[var(--field-px)](12px),**無 py**(以「固定高+置中」定義呼吸)— field-wrapper.tsx:65-67(size variant)+ :40(inline-flex items-center);input.tsx:200 消費",
+        "displayGeometry": "同 wrapper 但 display×default compound = zero chrome:`bg-transparent border-transparent !px-0 !py-0`,固定高 h-field-{size} 保留、items-center、單行 truncate — field-wrapper.tsx:129-136 + input.tsx:161-194(:187 truncate)",
+        "wrap": "永遠單行(Input display 永遠 single-line,truncate ellipsis)— input.tsx:184-187 註解",
+        "ssot": "field-controls.spec.md:190-196(Size 表 h-field token)+ :389 contract(d) display zero chrome;field-controls.spec.md:71「單行 read 用 min-h-[--field-height-{size}]+flex 置中、無 py(與 Textarea py-2 不同)」",
+        "inlineEditReadRule": "read = min-h-[var(--field-height-{size})] + items-center,無 py。**現行 code 已對**(inline-edit.tsx:98-104)",
+        "verdict": "MATCH(spec=code=世界級)"
+      },
+      {
+        "type": "Textarea(多行文字)",
+        "editGeometry": "px-[var(--field-px)] py-2(8px 上下)固定,不綁 field-height,高度由 rows/resize-y — textarea.tsx:44 + textarea.spec.md:63「py-2(上下固定內距,多行需閱讀空間)」+ :91「padding 固定 px-[--field-px] py-2,三 size 相同」",
+        "displayGeometry": "display×default = `!px-0 !py-0` zero chrome + `whitespace-pre-wrap break-words`(保留換行)、高度隨內容 — textarea.tsx:83-88(compound)+ :251(pre-wrap);readonly 有值保留 padding + bg-readonly(textarea.spec.md:107)",
+        "wrap": "whitespace-pre-wrap break-words(display div)— textarea.tsx:251",
+        "ssot": "textarea.spec.md:63 + :91(py-2 明文)+ field-controls.spec.md:71(InlineEdit 多行契約)",
+        "inlineEditReadRule": "read 多行應 = items-start + **py-2(抄 Textarea 自己的 py)** + whitespace-pre-wrap。**現行 code = py-1.5(6px)≠ Textarea py-2(8px)= GAP-2 drift**(inline-edit.tsx:105 `true: 'items-start py-1.5'`;檔內 :88 註解自稱「對齊 Textarea py-2」與自己 code 矛盾);spec field-controls.spec.md:71 也寫 py-1.5 → **spec 同步要改**",
+        "verdict": "DRIFT — worldclass log GAP-2 cite:「read 態多行 py-1.5(6px)≠ Textarea edit py-2(8px)——依 user thesis + Atlassian token 對 token 鐵律,應改 py-2 對齊」(.claude/logs/inline-edit-worldclass.json our_gaps_vs_worldclass[1])"
+      },
+      {
+        "type": "Select 單選 tag(display=\"tag\")",
+        "editGeometry": "固定高 h-field-{size} + items-center;有 Tag 時水平 padding 換 tagPadding[size] = `px-[calc((var(--field-height-{size}) − tagHeight)/2)]`(tag 高 sm 1.25rem/20px、md·lg 1.5rem/24px)→ 上下(items-center 於固定高)與左右自然同值 = **tag 四邊等距** — select.tsx:19-23(tagPadding 定義)+ :545(edit 消費);右緣 re-assert paddingRight: var(--field-px)(select.tsx:461 + field-controls.spec.md:271)",
+        "displayGeometry": "非 D-path display = 純 `<Tag size>` 裸輸出,無 wrapper、無保留高度(select.tsx:392-394);readonly/disabled = fieldWrapperStyles(固定高)+ tagPadding + paddingRight --field-px(select.tsx:461)",
+        "wrap": "單選單行,不換行",
+        "ssot": "**tag.spec.md:230(明文 SSOT):「Field 內包含 Tag 時,Field 的 padding 改為 (field-height - tag-height) / 2,確保 tag 四邊等距」** + tag.spec.md:197-201(tag 高度表)+ field-controls.spec.md:280-289(Select 顯示模式 / tagPadding 只在有 Tag 時套用)",
+        "inlineEditReadRule": "read 單行 tag = min-h-field-{size} + items-center 即自然重現 (field-height−tag-height)/2 垂直等距 — **不需新 py 值,引用 tag.spec.md:230 公式即可**;renderRead 不得自帶 py/min-h(worldclass Q4 裁決:「read wrapper 完全控幾何、content 純 inline」)。已知 bug:現行 Tag 在 read 態下沉 +1.8px,根因 = renderRead 包 block div,Tag(20px)在 21px 文字 baseline 行盒內沉底(wrapper 置中的是 div 非 Tag)— session 3fb5856b transcript line 100549;修法方向 = renderRead 容器 flex items-center 或 line-height 歸零(Atlassian read-view lineHeight:1 同款)",
+        "verdict": "SSOT 已存在(tag.spec.md:230),InlineEdit read 應消費之;現行 renderRead 行盒 bug 待修"
+      },
+      {
+        "type": "Select/Combobox 多選 multi-tag wrap(含 PeoplePicker multi)",
+        "editGeometry": "wrap 模式 = `items-start py-1`(4px 上下)+ style height:auto + tag 間 gap = GAP 常數 4px;chevron/clear 鎖第一行:ItemSuffix `self-start` + style height=tagHeight(sm 20 / md·lg 24)— combobox.tsx:19(GAP=4)+ :630-632(edit wrap)+ :639(tagArea gap);非 wrap = 固定高 + items-center + overflow-hidden + +N",
+        "displayGeometry": "display(非 D-path)= ComboboxTagStack 裸輸出無 wrapper(combobox.tsx:511-518);readonly/disabled wrap = 同 edit 幾何(items-start py-1 + gap 4 + chevron 鎖第一行 + paddingRight --field-px re-assert)— combobox.tsx:539-559(2026-06-27 補漏接)",
+        "wrap": "flex-wrap,高度隨內容展開 — combobox.spec.md:81-86(版面模式表,行為層)",
+        "ssot": "chevron 第一行對齊 = **field-controls.spec.md:272 明文**(「容器 items-start + ItemSuffix self-start + height: tagHeight(sm 20 / md+lg 24),edit/readonly/disabled 全 mode 一致」);**但 wrap 的 py-1(4px)與 gap 4px 兩個值 spec 無明文 — 只住在 code(combobox.tsx:19 GAP、:545/:631 py-1),combobox.spec.md:81-86 只寫行為不寫值**",
+        "inlineEditReadRule": "若 InlineEdit 承載 multi-select read:抄 Combobox wrap 幾何(items-start + py-1 + gap 4px);誠實註記:此組值目前 code-only,若入 InlineEdit spec 應同步把 py-1/gap-4 codify 進 combobox.spec.md 或 field-controls.spec.md(否則第二個消費者出現 = M17 假 SSOT)",
+        "verdict": "code 真值明確;spec 只覆蓋 chevron 對齊,py/gap 值未 codify"
+      }
+    ]
+  },
+
+  "fieldVerticalVerdict": {
+    "codeTruth": "field.tsx:244 = `cn('flex items-center min-w-0', MIN_H_CLASS[size])` — **非寫死 md**;min-h 跟 **Field 自己的 size prop** 走(MIN_H_CLASS map field.tsx:59-63),而 Field size 預設 'md'(field.tsx:158)→ 未傳 size 的 <Field> control 區 = min-h-field-md = 32px。horizontal 與 vertical 共用同一 controlArea 變數(field.tsx:233-250),horizontal label 另用 min-h-field-{size}+justify-center(inline,field.tsx:362-365)或 paddingTop=calc((field-height−1lh)/2)(block,:367-370),grid items-start + 右欄 flex-col gap-1(:258,:274)",
+    "specTruth": "field.spec.md:78「Control area(任何 size)= min-h-field-{size} + flex items-center」+ :213「size:Control 自動同步尺寸(sm/md/lg)」— spec 模型 = **Field size 是 SSOT、control 經 context cascade 同步**,故 canonical 用法下 min-h 恆等於 control 高;field-controls.spec.md:160-184(cascade SSOT 表:size = prop > fieldCtx.size > surface-size > 'md')",
+    "smDefaultDecisionRecord": "**「Field 預設 sm」無拍板紀錄**(Field/Input/fieldWrapperStyles defaultVariants 全 md:field.tsx:158、field-wrapper.tsx:251、field-context.ts:153-157 fallback 'md')。唯一 sm 拍板 = **InlineEdit 尺寸預設 sm(2026-07-09 user 拍板)** — inline-edit.spec.md:54 + session 3fb5856b transcript line 88210(「預設用 sm(你拍板的)| 已從 md 改成 sm,實測 28px」)+ user-corrections.jsonl line 5(2026-07-15 user verbatim「若用 field vertical,其整個高度占位不是應該跟 field vertical 一模一樣嗎, field label + gap(4px?)+ **sm field height**吧?」)",
+    "verdict": "**既非 (a) spec 明文 md 預設之外的 drift、也非 (b)「code 寫死 md」— code 忠實實作 spec 的 Field-size-driven 模型。真 gap = InlineEdit 完全未接 Field cascade**:inline-edit.tsx 只 import FieldSize 型別(inline-edit.tsx:25),零 useFieldContext/useResolvedFieldSize 消費 → `<Field>`(預設 md)包 `<InlineEdit>`(預設 sm)時,control 區 min-h-field-md=32px、InlineEdit read=28px → 佔位 32 ≠ 28 = user 抓的「本該 28 卻 32」。同 session 已另抓「InlineEdit 在 <Field> 內 0 接線(FieldLabel htmlFor 懸空、size/disabled cascade 全斷)」(transcript line 100549)。世界級鐵律:Atlassian InlineEdit read/edit 兩態同包 form Field(『Field is used here only for the label and spacing』),form 內總佔位 = 同 size 真控件完全相等(worldclass log Q5,source-verified)",
+    "fixOptions": [
+      "Option A(建議,對齊 cascade SSOT + Atlassian Q5):InlineEdit size 改走 useResolvedFieldSize(sizeProp, 'sm') — precedence prop > fieldCtx.size > 'sm' standalone fallback。<Field size=\"sm\"> 內佔位 28 全鏈一致;standalone 預設 sm(2026-07-09 拍板)保留。順手接 id/disabled cascade(修 0 接線)",
+      "Option B(搭配 A):consumer 明傳 <Field size=\"sm\">(detail pane metadata 場景)— 現行 API 已支援;可補 spec 禁止事項「Field 內 control 顯式 size 必須 = Field size」+ hook 防線",
+      "Option C(不推):Field render-time 偵測 child.props.size 反向同步 min-h — 違 context 單向流,renderEdit/composite 內層讀不到,不可靠",
+      "Option D(不可行):移除 inline control area min-h — 破 Checkbox/Switch 等矮 primitive 的 field-height/2 中線錨(field.spec.md:138 核心原則)+ horizontal label 對齊公式(field.spec.md:119-132)",
+      "Option E(需 user 拍板,現無紀錄支持):Field 預設 size 改 sm — DS-wide breaking(全 Field family defaultVariants md),無既有拍板依據"
+    ],
+    "horizontalNote": "horizontal 佔位現況:grid `items-start` 兩欄(label 欄 var(--field-label-width,auto) / content 欄 minmax(0,1fr))+ gap-x-3;label(inline)= min-h-field-{size}+flex-col justify-center(短 label 中線對齊、長 label 齊頂);content 欄 flex-col gap-1 內含同一顆 controlArea(min-h-field-{size} items-center)→ **horizontal 佔位同樣由 Field size 決定,28/32 問題完全同構;入鐵律時 vertical/horizontal 應同一條:「control 區佔位 = field-height-{Field size},第一行中線錨 field-height/2」**(field.tsx:253-282 + field.spec.md:119-132,:136-176)"
+  },
+
+  "disabledHistoryVerdict": {
+    "conclusion": "**有明確拍板紀錄:InlineEdit 無 disabled 態 — 不可編輯的欄位根本不用 InlineEdit,直接渲染 display mode 純文字**。原「InlineEdit 無法表達 disabled/鎖定」是 audit Finding B,被 user 抓後撤回、task #97 已刪",
+    "records": [
+      {
+        "source": "session 3fb5856b transcript line 89422(user verbatim)",
+        "quote": "「\"InlineEdit 無法表達 disabled/鎖定\"你之前都說其唯讀狀態不用改變樣式了,那 disabled/鎖定不也是一樣道理使用唯獨狀態就好了?仔細研究查查」"
+      },
+      {
+        "source": "session 3fb5856b transcript line 89436(assistant 撤回結論)",
+        "quote": "「你講得對:鎖定/不可編輯的欄位,就用 mode=\"display\"(純文字、無互動),根本不該用 InlineEdit。InlineEdit 是給可編輯欄位用的;一個欄位如果不能編,你就不用 InlineEdit、改用 display/readonly。所以『InlineEdit 少了 disabled』不是真缺口——架構本來就用『不可編就換成 display』處理了。Finding B 撤回。」"
+      },
+      {
+        "source": "session 3fb5856b transcript line 89565(session summary 追認)",
+        "quote": "「Finding B over-flagged (user caught): I flagged 'InlineEdit can't express disabled' as a gap. User: '用唯讀狀態就好了吧?' — I retracted: locked field uses display mode, you don't use InlineEdit at all. Task #97 deleted.」+ 同段 refine:「readonly is FORM-only; detail page/InlineEdit block = display always」(readonly 灰框留給表單;詳情頁鎖定值一律 display 純文字)"
+      },
+      {
+        "source": "inline-edit.spec.md:98(已 codify 的 spec 條文)",
+        "quote": "「一律唯讀展示(不可編)→ 用 <Input mode=\"display\"> / 純文字,不需要 Pressable」(何時不用段);近親分界 :106 同款;InlineEditProps 型別面無 disabled prop(inline-edit.tsx:52-83)= code 層一致"
+      }
+    ],
+    "implication": "InlineEdit 重整提案**不應**加 disabled 態/prop;「不可編」的正確表達 = consumer 換渲染 `<XXX mode=\"display\">`(或表單內 readonly),與 2026-07 拍板及 spec 何時不用段一致"
+  }
+}

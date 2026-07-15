@@ -1,0 +1,245 @@
+{
+  "meta": {
+    "date": "2026-07-15",
+    "round": 8,
+    "scope": "最終唯讀深研(禁改 code)。定案『乾淨簡潔 + 對齊世界級 DS + 世界級程式』的最終狀態模型。三題:(Q1) InlineEdit 窮舉幾態 + disabled 使用時機世界級判準 /(Q2) 驗證 display 收斂(default 補 !h-auto)不破任何 display 消費者尤其 DataTable 高度 /(Q3) 『非可編-display』vs『readonly 灰化鎖定』世界級分不分 + 為何 + 最簡潔 cell 狀態模型。",
+    "method": "站 round5/6/7 已確定結論上(不重跑);逐行核對 inline-edit.tsx / field-wrapper.tsx / cell-registry.tsx / field.tsx / data-table-invariants.mjs;fresh grep 全庫 default×display 消費點;fresh WebFetch MDN disabled 定義 + Handsontable readOnly-vs-editor:false rationale + AG Grid editable + WebSearch disabled-vs-readonly 使用時機判準。",
+    "repoRoot": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project",
+    "builds_on": [".claude/logs/inline-edit-round5.json", ".claude/logs/inline-edit-round6.json", ".claude/logs/inline-edit-round7.json"]
+  },
+
+  "Q1_inlineedit_states": {
+    "headline": "**InlineEdit 最乾淨 = 3 態:read(委派 display)/ edit(輸入中)/ disabled(條件停用灰化)。readonly 根本不屬於 InlineEdit** —— 永久唯讀值不 mount InlineEdit,直接渲 display 元件(`<Input mode=\"display\">` / 純文字 / 對應控件 display mode)。這比 Chakra Editable(把 disabled + readOnly 都塞進同一個 Editable)更乾淨,因為我方 DS **有專屬的 display 承載層**(Field mode='display' / naked cell),readonly-value 的角色由它擔,不需 InlineEdit 過載。",
+
+    "current_code_state": {
+      "verified": "inline-edit.tsx 現況 = **只有 read + edit 兩態的 toggle 狀態機**,InlineEditProps **無 disabled / readonly prop**(inline-edit.tsx:52-83 grep 0 個)。`editing` boolean(:143)在 read↔edit 間切;無任何停用閘。",
+      "read_state": "read = renderRead 委派(格式化值,如 <Select mode=\"display\">)OR plain String(value);純文字視覺 + 隱形 Pressable(絕對定位透明 button,:270-276)+ hover bg-neutral-hover tint + 鍵盤 focus border-primary 藍框(inlineEditReadStyles :91-111)。",
+      "edit_state": "edit = 真正的 Field 控件(預設 <Input>,multiline→<Textarea>,:208-231);border + focus + input,回歸 field-controls edit canonical。blur/Enter commit、Esc cancel。"
+    },
+
+    "exhaustive_state_list": {
+      "count": 3,
+      "states": [
+        {
+          "state": "1. read(靜態閱讀態)",
+          "定位": "值平常被閱讀、偶爾才編輯 —— 純文字/格式化 renderRead 承載 + 隱形 Pressable 提供 click/鍵盤進 edit。",
+          "視覺": "純文字(透明邊框預留、無底色);hover=bg-neutral-hover tint;鍵盤 focus=border-primary 藍框。",
+          "行為": "click / Enter / Space → 進 edit。",
+          "cite": "inline-edit.tsx:91-111,239-277 / inline-edit.spec.md 互動模型表 L28-33"
+        },
+        {
+          "state": "2. edit(輸入中)",
+          "定位": "user 正在改這個值 —— 委派 Family 4 Field 控件。",
+          "視覺": "真正 Field 控件完整 chrome(border + focus 藍框 + input)。",
+          "行為": "blur/Enter commit → 回 read;Esc cancel → 還原不 commit;結算後 focus 送回 read 按鈕。",
+          "cite": "inline-edit.tsx:195-237 / field-controls edit canonical"
+        },
+        {
+          "state": "3. disabled(條件停用灰化 —— 本輪定案要加)",
+          "定位": "此欄**原則上可編**,但**此刻不該編 / 不能編**(前置未滿足 / 無權限 / 暫時鎖),且**條件改變後會恢復可編**。",
+          "視覺": "灰化控件形狀(bg-disabled + text-fg-disabled 灰字 + cursor-not-allowed),無 hover、不可點 —— 委派 Field mode='disabled' 既有 canonical token(field-wrapper.tsx:158-160)。",
+          "行為": "state overlay:壓在 read 態上、抑制進 edit;不是 toggle 的第 3 個位置,而是**閘**(對齊 DataTable cell 的 disabled overlay 架構,round7 Q3)。",
+          "cite": "要加 disabled prop → 委派 field-wrapper.tsx:158-160 disabled compound;架構同 DataTable cell state overlay(round7)"
+        }
+      ],
+      "structure_note": "乾淨的心智模型 = **2-態互動機(read↔edit)+ 1 個 disabled 閘 overlay**。read/edit 是同一值的兩種顯示;disabled 是壓在最上層的『現在不給編』閘(灰化 = 待會會開的訊號)。與 DataTable cell(display lifecycle + disabled overlay,round7)同構。"
+    },
+
+    "why_readonly_does_NOT_belong": {
+      "verdict": "**readonly 不屬於 InlineEdit。永久唯讀值(訂單編號、系統產生 email、計算總額)→ 根本不 mount InlineEdit,直接渲 display 元件。**",
+      "reason_1_semantic_contradiction": "InlineEdit 的本質 = 『read↔edit toggle 狀態機』(inline-edit.spec.md:22 定位)。一個**永遠不能編**的值套 InlineEdit = 自我矛盾(toggle 的一端永不到達)。",
+      "reason_2_spec_already_says_so": "inline-edit.spec.md「何時不用」L98 明文:『一律唯讀展示(不可編)→ 用 <Input mode=\"display\"> / 純文字,不需要 Pressable』。近親分界表 L106 亦明分:<Input mode=\"display\">=純展示不可編 / InlineEdit=read 態可點進 edit。",
+      "reason_3_readonly_inlineedit_collapses_to_display": "假設真做一個 readonly InlineEdit:它 = read 態去掉 hover/Pressable = 只剩 renderRead 委派的 display 輸出 = **等於直接渲那個 display 元件**。故 readonly prop 是零增益冗餘 API(違 M21 prop-variant 精神,round5 Q3_4 已證)。",
+      "vs_chakra_honest": "**誠實對照 Chakra**:Chakra Editable **有 disabled + readOnly 兩 prop**(round7 WebFetch VERIFIED,https://www.chakra-ui.com/docs/components/editable)。Chakra 把兩者都塞進 Editable,是因為它**沒有專屬的 display 承載層** —— 若要在同一版面把某些欄渲成不可編、又不想換元件,只能給 Editable 一個 readOnly。我方 DS **有** Field mode='display' / naked cell 這個專屬 display 層,readonly-value 的角色由它擔。故我方**拆責任**比 Chakra**過載**更乾淨:永久唯讀 → display 層;條件停用 → InlineEdit disabled。這不是缺 readOnly,是把它放對地方。"
+    },
+
+    "disabled_usage_timing_worldclass": {
+      "one_line_criterion": "**判準一句話:這欄若沒有這個限制本來是可編的,而限制解除後會恢復可編 → disabled。值本身就是拿來讀的、根本不是這欄的編輯用途 → readonly/display(且不 mount InlineEdit)。**",
+      "disabled_is_BROADER_than_prerequisite": "**不是只有『前置條件未滿足(選國家前的城市)』。** disabled 使用時機更廣,涵蓋至少 3 類,世界級共識:",
+      "three_real_cases": [
+        {
+          "case": "前置條件未滿足(dependency gate)",
+          "example": "選『國家』前,『城市』欄 disabled;勾『同意條款』前,『送出』鈕 disabled。",
+          "cite": "MDN + WebSearch:『conditionally disabling form fields based on user input, such as disabling a text field until a related checkbox is checked』(https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/disabled)"
+        },
+        {
+          "case": "無權限(permission)",
+          "example": "非管理員看到的『角色』欄:灰化不可改(但條件=升權後可改)。",
+          "cite": "WebSearch:『a text field is disabled temporarily due to permission issues / a disabled field might indicate that a user does not have permission to edit a field』(https://www.dhiwise.com/post/html-disabled-vs-readonly-make-your-forms-better)"
+        },
+        {
+          "case": "暫時鎖定(temporary / pending)",
+          "example": "儲存中 / 送出待伺服器回應時,整組欄位暫時 disabled 防重複提交;功能未啟用(feature flag off)。",
+          "cite": "MDN:『Feature disabled pending server response』(WebFetch VERIFIED)"
+        }
+      ],
+      "vs_readonly_one_liner": "**readonly = 值有意義、該被看見/選取/複製/送出,但本就不是拿來編的**(計算總額、系統產生編號、預填不可改資料)。WebSearch:『Use readonly to display values that are calculated dynamically, such as totals or summaries, which are essential for users to see but should not be editable』(https://www.dhiwise.com/post/html-disabled-vs-readonly-make-your-forms-better)。a11y 差:disabled 被螢幕閱讀器**略過**、不送出;readonly 被**朗讀**、會送出(MDN readonly + WebSearch)。",
+      "mdn_disabled_definition_verbatim": "MDN 原文定義:『The Boolean disabled attribute, when present, makes the element not mutable, focusable, or even submitted with the form.』行為對照:disabled(不可 mutate/不可 focus/不送出/不收事件/灰化)vs readonly(不可 mutate 但**可 focus/送出/收事件/外觀正常**)。(https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/disabled,WebFetch VERIFIED)"
+    },
+
+    "verdict": {
+      "clean_3_state": "**read / edit / disabled 三態乾淨合理。** read↔edit 是互動機、disabled 是 overlay 閘。readonly 不入 InlineoEdit(永久唯讀值 → 不 mount,渲 display 層)。",
+      "aligns_worldclass": "對齊 Chakra Editable(有 disabled 態)+ Polaris/MDN(disabled 是 editable 的一個 prop、與 readonly 分工);比 Chakra 更乾淨在於**不過載 readOnly**(我方 display 層擔此責)。Atlassian inline-edit 走另一路(無 disabled、只換 readView)—— 對『永久唯讀』夠用,但不覆蓋『條件停用會啟用』,故我方採 Chakra/Polaris 路線加 disabled。",
+      "disabled_timing": "disabled 使用時機 = 前置未滿足 / 無權限 / 暫時鎖(三類皆『現在不給編、之後會開』);永久唯讀值走 readonly/display 不走 disabled。",
+      "ssot_affecting": "加 disabled prop = InlineEdit 新 public API → SSOT-affecting → user 拍板;本研究唯讀不執行。"
+    }
+  },
+
+  "Q2_display_unify_safety_proof": {
+    "headline": "**改動零風險、DataTable 高度/display/互動零 delta。** default 與 naked 是 fieldWrapperStyles cva 裡**互相獨立的 compoundVariant 條目**,cva 依 variant 組合各自匹配 —— cell 全渲 variant=\"naked\" → 永遠只命中 naked compound,改 default compound 碰不到它。default×display-with-h-field 的真消費者 = **0 個 production**(全 stories + template,apps grep 空),唯一可見改變 = standalone `<Input mode=\"display\">` 在 story 從 32px 縮成文字行高(hug),對『純展示一個值』反更正確。",
+
+    "proof_1_default_and_naked_are_independent_compounds": {
+      "claim": "default 跟 naked 是獨立 compound,改 default×display 完全不碰 naked。",
+      "evidence": "field-wrapper.tsx compoundVariants 陣列(:98-247):display×default = 獨立條目 :128-136(`{ mode:'display', variant:'default', className:'bg-transparent border border-transparent !px-0 !py-0' }`);display×naked = 另一獨立條目 :220-226(`{ mode:'display', variant:'naked', className:['bg-transparent !rounded-none !px-0 !py-0 !h-auto', 'border border-transparent'] }`)。cva compoundVariants 依 `mode × variant` 精確匹配 —— 一個元件傳 variant=\"naked\" 只會 match naked 條目,default 條目的 className 不會被套。**在 :135 default 條目末尾加 `!h-auto` = 純字面上只改那一行、naked 條目一字不動。**",
+      "cell_all_naked_verified": "cell-registry.tsx **每一型 cell 全渲 variant=\"naked\"**(grep :145,146,160,182,204,224,258,275,291,304,326,341,363,378,392,397,412,419,437,462,493 全 naked);**cell-registry 內 0 個 variant=\"default\"**(fresh grep 空)。故 DataTable 所有 cell 命中 display×naked / edit×naked / disabled×naked,**與 default compound 完全隔離**。改 default 對 cell 是不可達的 code path。",
+      "verdict": "**獨立確認。改 default×display 對 DataTable = 物理上不可能有影響(不同 compound,cell 從不命中 default)。**"
+    },
+
+    "proof_2_all_default_display_consumers_enumerated": {
+      "method": "fresh grep 全庫(packages/design-system/src + apps)mode=display,排除 stories/spec/註解,逐一判 variant + 高度來源。",
+      "production_non_story_consumers_of_default_display_with_hfield": {
+        "count": 0,
+        "detail": "text-entry 家族(Input/NumberInput/Textarea/LinkInput)的 display×default(繼承 h-field 的那個)在 production **零非-story 消費點**。所有 production mode=display 消費者是:(a) DataTable cell-registry —— 全 **naked**(不受影響);(b) InlineEdit renderRead —— 委派 consumer 傳的 `<Select mode=\"display\">` 走**裸 Tag**(select.tsx:392-401,非 fieldWrapper h-field,不受影響)。**沒有任何 production 元件渲 default×display 的 text-entry。**",
+        "cite": "fresh grep:cell-registry 全 naked;inline-edit.tsx:247 renderRead 委派;select.tsx bare Tag path。round5/6 已 VERIFIED,本輪 re-grep 一致。"
+      },
+      "apps_zero": "apps/ 只有 template 目錄;fresh grep `mode=\"display\"` / `InlineEdit` / `<Field` 全 **empty**(零真 app 消費者)。VERIFIED(grep 空)。",
+      "where_default_display_appears": "只在 stories + DS template:各元件自家 *.stories.tsx demo(input.stories.tsx:31 等)+ field.stories.tsx:103(<Field mode=\"display\"> 集中 demo)。",
+      "what_changes_visually": [
+        {
+          "consumer": "standalone `<Input mode=\"display\">`(無容器,僅 input.stories.tsx:31)",
+          "change": "從 h-field 32px(sm 28)→ intrinsic 文字行高(~20px hug)。**唯一可見改變。** 對『純展示一個值』hug-text 反更正確(無憑空 32px 高盒)。"
+        },
+        {
+          "consumer": "`<Input mode=\"display\">` 包在 `<Field mode=\"display\">` 內(field.stories.tsx:103)",
+          "change": "**零可見改變** —— Field control area = `min-h-field-{size}` + items-center(field.tsx:244,MIN_H_CLASS :59-62),容器已獨立擁有高度、置中;Input display 縮 intrinsic 後仍在容器內垂直置中,行高不變。"
+        },
+        {
+          "consumer": "InlineEdit read 委派的 display(Select 裸 Tag)",
+          "change": "**零改變** —— 走 select.tsx bare Tag path,不經 fieldWrapper default compound;高度由 InlineEdit read wrapper min-h-field 提供(inline-edit.tsx:99-104)。"
+        },
+        {
+          "consumer": "DataTable cell(全 naked)",
+          "change": "**零改變** —— 不同 compound,見 proof_1。"
+        }
+      ],
+      "verdict": "**除 standalone story `<Input mode=\"display\">` 從 32→hug 外,無任何其他改變。** 所有容器內場景(Field / InlineEdit / cell)高度由容器擁有,display 縮 intrinsic 後被容器 min-h + items-center 吸收,零可見 delta。"
+    },
+
+    "proof_3_datatable_invariants_stay_green": {
+      "what_they_measure": "data-table-invariants.mjs 量的全是 **cell(naked)+ row** 的幾何,與 default×display 無關:",
+      "invariant_map": [
+        {"id": "I1", "measures": "display↔edit **cell** rect.width 一致(getBoundingClientRect on [role=\"cell\"],:79-120)", "touched_by_change": "否 —— cell 是 naked"},
+        {"id": "I2", "measures": "display↔edit cell width 0 delta(:122)", "touched_by_change": "否"},
+        {"id": "I3", "measures": "display↔edit cell height 0 delta(:123)", "touched_by_change": "否"},
+        {"id": "I4", "measures": "Field 填滿 cell 高度(edit.cellHeight vs edit.fieldHeight,:124)", "touched_by_change": "否 —— 量 edit×naked !h-full"},
+        {"id": "I5", "measures": "No-resize column width ≥ meta.width(:46-66)", "touched_by_change": "否"},
+        {"id": "I6", "measures": "全 cell-type @lg font=16px(:127-154)", "touched_by_change": "否 —— 字級軸"},
+        {"id": "I7", "measures": "fixed row 絕對高度 == --table-row-{size} token(:156-172)", "touched_by_change": "否 —— row token 高度,cell naked !h-auto,default 不參與"}
+      ],
+      "why_green": "全部 7 條 invariant 的 assertion 對象是 naked cell + row token 高度。change 只動 default×display compound,cell 從不命中 default(proof_1),故 I1-I7 的量測值**逐一不變** → 全綠。**特別 I3/I4/I7(高度類):cell 是 display×naked !h-auto / edit×naked !h-full,高度由 row `h-table-row-{size}` token 給(round5/7 VERIFIED),與 default 的 h-field 完全無關。**",
+      "verdict": "**推演 + cite 確認:改動後 I1-I7 全綠。DataTable 高度掛勾 = row token × naked cell,default×display 不在這條鏈上。**"
+    },
+
+    "verdict": {
+      "blast_radius_one_line": "**精確 blast radius = 只有 default-variant × display-mode 的 text-entry 顯示盒(Input/NumberInput/Textarea/LinkInput display span),其唯一可見實例 = standalone story 從 32px→hug;容器內(Field/InlineEdit/cell)零可見改變,DataTable(naked)零 delta。**",
+      "datatable_guarantee": "**DataTable 高度 / display / 互動:零 delta。** 三重保證:(1) cell 全 naked、與 default compound 物理隔離(proof_1);(2) DataTable 高度由 row token + naked !h-auto 提供、不碰 h-field(proof_3);(3) I1-I7 invariant 量的是 naked cell + row token,量測值不變 → 全綠。",
+      "verification_plan": "落地時我會跑三道機械驗證讓 user 放心:(a) `node scripts/data-table-invariants.mjs`(I1-I7 全綠,證 DataTable 高度/寬度/字級零 delta);(b) `npm run build:lib`(型別 surface + declaration emit 安全);(c) `npm run typecheck:stories`(所有 story 消費點 tsc 過)。",
+      "ssot_affecting": "改跨 Field family 共享 compound → SSOT-affecting → user 拍板;唯讀不執行。與 round5 path A / round7 Q2 一致。"
+    }
+  },
+
+  "Q3_display_vs_readonly_worldclass_rationale": {
+    "headline": "**世界級『分』—— 且最豐富的 grid(Handsontable)明確用兩個不同機制:`editor:false`(非可編、無灰化)vs `readOnly:true`(灰化鎖定 htDimmed、可複製)。差別本質:『非可編-display』是**整欄的結構屬性**(這值本就不是拿來編的);『readonly 灰化鎖定』是**某格的狀態 overlay**(在可編欄裡、被保護)。灰化正是後者的訊號、卻是前者的誤導,故不能合成一個。我方 DataTable 最乾淨 = 4 態(對齊兩正交軸),真修不在減數量、在把第 4 態從 disabled 正名為 readonly。**",
+
+    "concept_1_non_editable_display": {
+      "what_it_is": "整欄結構上不能編(ID / 系統產生編號 / 計算欄)—— 值就是個給人讀的值,沒有『本來可編、只是被鎖』的暗示。",
+      "our_current_render": "cell-registry displayOrDisabled(false)='display' → naked display 純值(text-foreground,無 bg、無灰、cursor 預設);空值 `-` fg-muted。**無灰化、無鎖訊號。**(cell-registry.tsx:140-146 / data-table.tsx:1519,round7 VERIFIED)",
+      "worldclass_render": {
+        "ag_grid": "editable=false → **正常渲染純值,無內建灰化/disabled 視覺**;要區分得自寫 cellStyle(官方無 native distinction)。WebFetch VERIFIED(https://www.ag-grid.com/react-data-grid/cell-editing/):『editable: boolean | EditableCallback, default false … does not document a native visual distinction for non-editable cells』。",
+        "handsontable_editor_false": "`editor:false` → **『Has no additional CSS class』(無灰化)**;copy/paste/drag-fill/程式更新照常,只擋手動打字。WebFetch VERIFIED(https://handsontable.com/docs/react-data-grid/disabled-cells/)。",
+        "mui_x": "只有 edit/view 兩 mode,view=純值無灰化(round5/6 VERIFIED)。"
+      },
+      "consensus": "**世界級共識:結構非可編 = 純值展示,無灰化、無鎖訊號。** 我方 state 1 對齊。"
+    },
+
+    "concept_2_readonly_dimmed_lock": {
+      "what_it_is": "可編欄裡某格/某列鎖定(同欄其他格可編)—— 灰化 = 『這欄能編,但這格因某狀態被保護』,需 sibling 對比才有意義。",
+      "worldclass_render": {
+        "handsontable_readOnly": "`readOnly:true` → **加 `htDimmed` CSS class(灰化視覺)**;copy 可用、paste 擋、drag-fill 擋、程式更新擋。WebFetch VERIFIED:『Applies the htDimmed CSS class to visually indicate the cell is protected』。",
+        "ag_grid_mui": "AG Grid / MUI X **無內建灰化鎖定態**(二態:editable vs non-editable-display);要灰化鎖定得自寫 cellStyle/cellClassRules。→ 此第 3 態是 Handsontable-specific 的豐富度。"
+      },
+      "our_current_render_is_readonly_wearing_disabled_skin": "我方叫它 disabled:TD bg-disabled + text-fg-disabled 灰字 + cursor-not-allowed(data-table.tsx:1826),但**行為 = readonly**(值算數、文字可原生選取複製、只抑制 edit-click + range-fill 排除;無 select-none、無 selection 排除)。round7 VERIFIED:『穿 disabled 皮的 readonly 行為』—— user『其實沒有真 disabled』說法對。"
+    },
+
+    "do_worldclass_distinguish_and_why": {
+      "answer": "**分。Handsontable 明分,且官方給出 rationale。**",
+      "handsontable_rationale_verbatim": "WebFetch VERIFIED(https://handsontable.com/docs/react-data-grid/disabled-cells/):『Handsontable provides both because different scenarios require different protection levels—strict lockdown versus selective user interaction control.』具體:`readOnly:true` = 『Maximum protection with clear visual feedback. Ideal when you want to prevent all modifications except direct user viewing and copying』;`editor:false` = 『Maintains normal spreadsheet functionality (paste, drag-fill, programmatic updates) while only blocking direct manual editing. Better for calculated fields or reference data that can be updated programmatically but shouldn't be manually typed』。",
+      "why_cannot_merge_into_one": "**兩者語意 + 表達力不同,合一必失真:**\n(a) 『非可編-display』是**整欄結構**(這值本就不是拿來編的)—— 灰化它會誤導成『本來可以編、只是暫時鎖』,製造不存在的『待會會開』暗示。\n(b) 『readonly 灰化鎖定』是**某格狀態 overlay**(在可編欄裡)—— 灰化正是它相對同欄可編手足的『我被保護了』訊號。\n(c) 合成一個 → 要嘛整個非可編欄全灰(誤導使用者以為整欄被鎖、而非本就唯讀),要嘛鎖定格不灰(使用者看不出這格為何唯獨不能編)。**灰化對一者是訊號、對另一者是噪音。**"
+    },
+
+    "business_example_for_non_engineer": {
+      "scenario": "訂單表(每列一張訂單):",
+      "column_A_non_editable": "**『訂單編號』欄** = 整欄不可編(系統自動產生)。→ 就是純文字,**不灰、不鎖**。因為它從頭到尾就是個『給你看/複製的編號』,沒有『可以編、只是被鎖』的意思。這是**非可編-display**。",
+      "column_B_readonly_lock": "**『出貨狀態』欄** = 可編欄(可把『備貨中』改成『已出貨』),但**已出貨的那幾列該格要鎖住**(不讓改回去)。→ 那幾格**灰化 + 鎖定語意**。因為同一欄其他列還能改,這幾格灰化是在說『這欄能改,但這格因為已出貨被保護了』。這是**readonly 灰化鎖定**。",
+      "why_they_feel_different_to_user": "『訂單編號』灰化會讓人困惑『它為什麼灰?我做錯什麼了嗎?』—— 但它本來就不該編,不需要任何『被鎖』的視覺。而『已出貨的狀態格』不灰,使用者會一直嘗試點它改、才發現改不動 —— 灰化提前告訴他『這格被保護了』。**一個需要灰化當訊號,一個灰化反成誤導。**"
+    },
+
+    "cleanest_cell_state_model": {
+      "verdict_4_states_cannot_simplify_below": "**4 態是對齊世界級的最簡,不能再減。** 它們映射到**兩個正交軸**(對齊 Handsontable editor:false / editable / readOnly 的能力集):",
+      "two_orthogonal_axes": {
+        "axis_1_editability_structural": "meta.editable(bool | (row)=>bool)= 這欄/格結構能不能編。",
+        "axis_2_per_cell_lock_state_overlay": "per-cell/per-row 鎖定 predicate(現 meta.disabled)= 可編欄裡某格被保護。"
+      },
+      "four_effective_states": [
+        {
+          "state": "1. 非可編-display",
+          "trigger": "meta.editable false/缺(整欄或整格結構不可編)",
+          "render": "純值,**無灰、無 hover affordance、無 click-to-edit**",
+          "worldclass": "= AG Grid editable=false / Handsontable editor:false / MUI view",
+          "distinct_because": "無 hover affordance、無 click-to-edit —— 跟『可編-idle』的差別"
+        },
+        {
+          "state": "2. 可編-idle-display",
+          "trigger": "meta.editable true + 未鎖 + 未 editing",
+          "render": "純值 + hover cell 邊框 outline(可編提示)+ cursor-pointer + click→edit",
+          "worldclass": "= Notion/Airtable hover-shows-border",
+          "distinct_because": "有『點我可編』的邀請(hover outline)"
+        },
+        {
+          "state": "3. editing",
+          "trigger": "editingCellId 命中該 cell",
+          "render": "naked 輸入框(edit×naked border state machine,!h-full)",
+          "worldclass": "= 所有 grid 的 active editor",
+          "distinct_because": "active input"
+        },
+        {
+          "state": "4. 鎖定(現 disabled 皮 → 該正名 readonly)",
+          "trigger": "meta.editable true **但** per-cell lock predicate true(如 (row)=>row.shipped)",
+          "render": "灰化 + 可選取複製、只擋編輯(現況 bg-disabled 灰字;正名後走 bg-readonly + readonly×naked compound)",
+          "worldclass": "= Handsontable readOnly(htDimmed,可複製)",
+          "distinct_because": "在可編欄裡、需 sibling 對比;灰化是『被保護』訊號"
+        }
+      ],
+      "the_real_fix_is_naming_not_count": "**真乾淨化不在減 4→3,而在把第 4 態從 `disabled` 正名為 `readonly`** —— 因為它行為就是 readonly(值算數 + 可選取複製 + 只擋編,round7 VERIFIED),對齊 Handsontable htDimmed(叫 readOnly)+ ARIA readonly(可讀可送出)+ 我方自家 FieldMode readonly。正名後啟用目前空的 readonly×naked compound(field-wrapper.tsx:228-234,現零消費者)。灰底是獨立可決策的視覺(現來自 TD-level bg-disabled;可保留 or 改 bg-readonly)。",
+      "triggers_to_avoid_consumer_confusion": {
+        "非可編-display": "`meta.editable: false`(或整欄不給 editable)—— 語意『這欄的值本來就不是拿來編的』→ 純值無灰。",
+        "readonly-灰化鎖定": "`meta.editable: true` + per-cell/per-row 鎖定 predicate 為真(如 `meta.readonly: (row)=>row.shipped`,現叫 meta.disabled)—— 語意『這欄可編,但這格因狀態被保護』→ 灰化可選取。",
+        "consumer_一句話分辨": "『值本來就不是拿來編的』→ editable:false(純值);『欄可編、但某些列/格因狀態要保護』→ readonly lock(灰化)。"
+      },
+      "if_truly_inert_disabled_ever_needed": "若真要一個**完全 inert 的 disabled cell**(不可選取、排除選取/加總)—— 需額外加 select-none + selection 排除。**目前無 demonstrated need**(round7),不預造。"
+    },
+
+    "verdict": {
+      "distinguish": "**世界級分(Handsontable 明分 editor:false vs readOnly,官方 rationale = strict lockdown vs selective interaction control);AG Grid/MUI 只二態、灰化鎖定要自寫,故第 3 態是 Handsontable 的豐富度。**",
+      "why": "非可編-display = 整欄結構屬性(灰化=誤導);readonly 灰化鎖定 = 某格狀態 overlay(灰化=訊號)。灰化對一者是訊號、對另一者是噪音 → 不能合一。",
+      "cleanest_model": "**4 態(非可編-display / 可編-idle / editing / 鎖定),映射 editable × lock 兩正交軸,對齊 Handsontable。不能再減。真乾淨化 = 把第 4 態從 disabled 正名 readonly(behavior 早已相符),啟用既有空的 readonly×naked compound。**",
+      "ssot_affecting": "rename meta.disabled 語意 → readonly + 啟用 compound = SSOT-affecting → user 拍板;唯讀不執行。"
+    }
+  },
+
+  "final_verdicts": {
+    "Q1": "**InlineEdit = 3 態:read / edit / disabled**(read↔edit 互動機 + disabled overlay 閘)。**readonly 不屬於 InlineEdit** —— 永久唯讀值不 mount InlineEdit,渲 display 元件(這比 Chakra 把 readOnly 塞進 Editable 更乾淨,因我方有專屬 display 層擔此責)。**disabled 使用時機判準一句話:這欄若沒這限制本來可編、限制解除會恢復可編 → disabled(前置未滿足 / 無權限 / 暫時鎖三類皆是,不只『城市選國家前』);值本就是拿來讀的、不是編輯用途 → readonly/display 不 mount InlineEdit。** 對齊 Chakra Editable(有 disabled 態)+ MDN/Polaris(disabled 與 readonly 分工)。SSOT-affecting → user 拍板。",
+    "Q2": "**display 收斂(default×display 補 !h-auto,field-wrapper.tsx:135)零風險、DataTable 零 delta。** 三重實證:(1) default 與 naked 是 cva 獨立 compound、cell 全 naked → 物理隔離,改 default 對 cell 不可達;(2) default×display-with-h-field 的 production 消費者 = 0(全 stories + template,apps grep 空),唯一可見改變 = standalone story `<Input mode=\"display\">` 32→hug,容器內(Field min-h / InlineEdit / cell)零可見改變;(3) data-table-invariants I1-I7 量的是 naked cell + row token 高度,與 default 無關 → 全綠。落地驗證 = `node scripts/data-table-invariants.mjs` + `build:lib` + `typecheck:stories`。SSOT-affecting → user 拍板。",
+    "Q3": "**世界級分『非可編-display』(整欄結構、無灰化)vs『readonly 灰化鎖定』(某格 overlay、htDimmed)** —— Handsontable 明分 editor:false vs readOnly,官方 rationale = strict lockdown vs selective interaction;AG Grid/MUI 只二態、灰化要自寫。**為何不能合一:灰化對非可編欄是誤導(暗示『待會會開』)、對鎖定格是訊號(相對同欄可編手足)。** 業務例:訂單編號欄=整欄不可編(純值不灰)/ 出貨狀態欄=可編但已出貨列鎖定(灰化)。**最簡潔模型 = 4 態(非可編-display / 可編-idle / editing / 鎖定),映射 editable × lock 兩正交軸,對齊 Handsontable,不能再減;真乾淨化在把第 4 態從 disabled 正名 readonly(behavior 早已相符),啟用既有空的 readonly×naked compound。** SSOT-affecting → user 拍板。"
+  }
+}

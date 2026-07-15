@@ -1,0 +1,171 @@
+{
+  "meta": {
+    "date": "2026-07-15",
+    "scope": "唯讀深度研究(禁改 code)。3 個 SSOT 架構問題:display 高度雙邏輯 / InlineEdit-in-Field auto-sm 最乾淨解 / cell disabled vs InlineEdit 無 disabled。目標:InlineEdit 乾淨當 field control 進 <Field> 且自動 sm、不破 Field。",
+    "method": "逐行 code/spec 查證,每 claim 帶 file:line;承接 inline-edit-ssot-deep.json + inline-edit-geometry-ssot.json,並對其 Q2/Option-b 結論做對抗性再驗(發現既有 static-property convention 改變脆弱度判斷)。",
+    "repoRoot": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project",
+    "canonical_usage_survey": {
+      "mode_display_consumers": "grep 全 repo(packages/ + apps/):production 消費點只有三類 host = (1) DataTable cell-registry.tsx(mode={displayOrDisabled(isDisabled)},9 型 cell)(2) Field stories 的 <Field mode=\"display\">(field.stories.tsx:103-108)(3) InlineEdit renderRead 內 <Select mode=\"display\" display=\"tag\">(inline-edit.stories.tsx:152/221)。其餘全是各元件 *.stories.tsx demo。**apps/ 零 mode=\"display\" / 零 InlineEdit / 零裸 <Field>**(grep apps --include=*.tsx = empty)。",
+      "standalone_no_container": "**無任何 production 消費點把 display 控件放在『完全無容器』下依賴其自帶高度**。所有 display 都活在 host 容器(cell row / Field control-area / InlineEdit read wrapper / story demo div)裡。故 Input 自帶 h-field vs Select tag 裸 的高度差,在真實 canonical 用法中被容器抹平、consumer 感知不到。"
+    }
+  },
+
+  "Q1_display_height_verdict": {
+    "headline": "『Input display 高 = field-height』**不是**一條普世原則,而是『display 重用了 edit 態同一個 fieldWrapperStyles 的 size variant(h-field-{size})』的副產物。真正的高度 SSOT = **host 容器提供高度 + 垂直置中**;display 內容本身應為 intrinsic。Input 保留 h-field 是『重用 edit wrapper』的自然結果、非設計需求;Select tag 裸 = intrinsic pill。兩者在容器內等價,唯一可見差在『無容器 standalone』(無 production 消費者)。",
+
+    "Q1_1_where_used_and_container_map": {
+      "question": "每個 display 用在哪種容器?有無完全 standalone 無容器?",
+      "answer_by_host": {
+        "datatable_cell": "cell-registry.tsx 9 型 cell 全 `mode={displayOrDisabled(isDisabled)}`(cell-registry.tsx:145-146/205/259/292/327/364/392/412/437/462)。高度來源 = ROW(`h-table-row-{size}`,data-table.tsx:2539),cell display 用 naked variant `!h-auto`(field-wrapper.tsx:220-226)→ 完全不自帶高度,靠 row 撐 + items-center。",
+        "field_control_area_readonly_display_form": "<Field mode=\"display\"> 包控件(field.stories.tsx:103-108)。高度來源 = Field control area `min-h-field-{size}` + items-center(field.tsx:244,field.spec.md:78)。**field.spec.md:37 明文:『form 的高度對齊由 Field 的 control area 負責,不由 primitive 本身負責』**。",
+        "inline_edit_read": "InlineEdit renderRead 內 <Select mode=\"display\" display=\"tag\">(inline-edit.stories.tsx:152)。高度來源 = InlineEdit read wrapper `min-h-[var(--field-height-{size})]` + items-center(inline-edit.tsx:99-104,inlineEditReadStyles)。",
+        "standalone_demo_only": "各元件 stories 的 <Input mode=\"display\">(input.stories.tsx:31)等 = demo,包在 story 容器內。**production 無『完全 standalone 無容器』消費點**(apps grep empty)。"
+      },
+      "conclusion": "3 個 canonical host(cell row / Field control-area / InlineEdit read wrapper)各自提供高度 + 置中;display 內容在其中置中。『完全 standalone 無容器』只出現在 story demo,無 production 依賴。"
+    },
+
+    "Q1_2_rationale_verification": {
+      "question": "field display 為何鎖 field-height?假設『display 高=edit 高 → read↔edit 零位移 + 同表單 readonly 與可編欄位同高』對嗎?",
+      "mechanism": "Input display 走 `fieldWrapperStyles({ mode:'display', variant, size })`(input.tsx:166)。h-field 住在 **size variant**(field-wrapper.tsx:65-67 `h-field-{size}`),**mode 無關**;display×default compound 只 override `!px-0 !py-0`(field-wrapper.tsx:129-135,**不動 height**)→ h-field 被 display 繼承。這是 contract『edit/readonly/disabled/display 4 mode 共享同一 renderer』(field-controls.spec.md:267/378(a))的機械結果:高度在 size 軸、display 沒特別去拔它。",
+      "user_hypothesis_verdict": "**部分對、需精確化。** 『read↔edit 零位移』確為 InlineEdit read wrapper 的明文契約(inline-edit.spec.md:47『min-h-[--field-height-{size}] 垂直置中』+ field-controls.spec.md:71『垂直單行時 read min-h = edit height 零跳』)—— 但『零位移』的**擁有者是 read wrapper / Field slot 的 min-h,不是 Input display 控件自帶的 h-field**。『同表單 readonly 與可編同高』亦真,但同樣由 **Field control area 的 min-h-field(field.spec.md:37/78)** 保證,非各控件自帶。故 Input 自帶 h-field 對『零位移/同高』兩目標**既非必要也非唯一來源**——容器已獨立保證。",
+      "readonly_nuance": "**readonly(有值)是唯一真正需要自帶 h-field 的 mode**:它渲 native `<input readOnly>` + bg-readonly 灰盒(field-wrapper.tsx:140-151,field-controls.spec.md:345),灰盒要有 field-height 才像個鎖定欄位框。**display 則無 chrome(透明 bg/border、!px-0 !py-0)**,其 h-field 是『看不見的預留高』——在容器內被吸收、standalone 時空佔。"
+    },
+
+    "Q1_3_unify_verdict": {
+      "user_concern": "Input display 自帶 field-height、Select tag display 裸(intrinsic)——兩種邏輯 consumer 怎知該預期哪種?會不會誤用?該不該統一成『所有 display 都 intrinsic、高度一律容器給』?移除 Input 自帶 field-height 會不會破哪裡?",
+      "is_it_a_consumer_hazard": "**在 canonical(有容器)用法下不是 hazard** —— 三個 host 容器全提供 min-h + 置中,consumer 從不依賴控件 display 自帶高度(field.spec.md:37『高度對齊由容器負責』)。所以 consumer 不需『預期哪種高度』:永遠是『容器給的高度』。唯一 asymmetry 暴露面 = standalone 無容器,而該場景**零 production 消費者**。故『誤用風險』實務上接近零,是 latent(潛在)不一致、非 active bug。",
+      "can_it_be_cleanly_unified": "**可以,且乾淨、低風險。** 做法 = 在 field-wrapper.tsx **display×default compound(:129-135)加 `!h-auto`**(完全比照 display×naked 已有的 `!h-auto`,field-wrapper.tsx:223)。效果:所有控件 display 變 intrinsic(Input display 跟 Select tag 一樣裸),高度 100% 容器擁有 → 單一心智模型。",
+      "what_breaks_check": {
+        "edit_mode": "不動(edit 仍靠 size variant h-field / naked !h-full)——`!h-auto` 只加在 display×default,edit compound(field-wrapper.tsx:98-127)不受影響。",
+        "readonly_disabled": "不動——readonly(:138-151)要灰盒、disabled(:158-160)要灰盒,兩者**保留** h-field(不加 !h-auto),語意正確。只有 display(透明無 chrome)改 intrinsic。",
+        "datatable_cell": "不動——cell 走 naked variant,display×naked 早已 `!h-auto`(field-wrapper.tsx:223)。",
+        "field_slot_and_inline_edit_read": "不破零位移——Field control area min-h(field.tsx:244)+ InlineEdit read wrapper min-h(inline-edit.tsx:99)獨立提供高度 + items-center,display 內容縮成 intrinsic 後仍在容器內置中,read↔edit 切換由容器 normalize、baseline 不跳。",
+        "standalone_no_container": "唯一可見變化 = standalone <Input mode=\"display\">(無容器)從 32px 縮成 intrinsic(~21px 文字行高)。**零 production 消費者(apps grep empty)**;且對『純展示一個值』而言 hug-text 反而比預留空 input 盒更正確。"
+      },
+      "must_input_keep_self_height_scenario": "查無『非要 Input display 自帶 field-height 不可』的 production 場景。readonly(需灰盒)是靠 readonly compound 自己的 h-field、非 display;autoWidth inline display(input.tsx:167)是 toolbar 用法但也在 inline-flex 容器內,且 edit↔display 由 wrapper 幾何統一。",
+      "verdict": "**建議統一為『display 一律 intrinsic、高度容器擁有』**,機制 = display×default compound 加 `!h-auto`(1 處 compound,對稱 display×naked 既有寫法),同步 codify 一句 SSOT:『display mode 渲值內容於 intrinsic 高;field-height/row-height reservation + 垂直置中由 host 容器(cell row / Field control-area / InlineEdit read wrapper)唯一擁有;readonly/disabled 保留自帶 h-field 因需渲灰盒』。理由:單一心智模型 + 對齊現況 de-facto(容器早已擁有高度,field.spec.md:37)+ 低風險(readonly/disabled/edit 不動、零 production standalone 依賴)+ 對齊 M17『SSOT 唯一擁有者』。**但這觸及跨元件共享 field-wrapper compound = SSOT-affecting → 需 user 拍板(本研究唯讀不執行)**。若 user 選保守『保持兩種』亦可接受(容器抹平差異),代價僅留 Input display 一個看不見的自帶高 + latent 不一致。",
+      "recommendation_if_keep_both": "若不統一,至少 codify『禁止把 display 控件放無容器場景並依賴其自帶高度;display 高度一律交容器』的使用規則(把 latent 不一致轉成明文契約),消除 consumer『該預期哪種高度』的疑慮。"
+    }
+  },
+
+  "Q2_field_inlineedit_sm_options_and_recommend": {
+    "current_bug_evidence": {
+      "the_exact_failing_case": "VerticalFieldForm story(inline-edit.stories.tsx:210-213):`<Field orientation=\"vertical\">`(size 未傳 → 預設 md,field.tsx:158)包 `<FieldLabel>Assignee</FieldLabel>` + `<StatefulInlineEdit label=\"assignee\">`(size 未傳 → InlineEdit 預設 sm,inline-edit.tsx:136)。",
+      "resulting_mismatch": "Field control area = `min-h-field-md`=32px(field.tsx:244,吃 Field.size=md)+ items-center;InlineEdit read wrapper = `min-h-field-sm`=28px(inline-edit.tsx:99,吃自身 size=sm)。→ InlineEdit 28px read 內容置中於 32px slot = **佔位 32、非 user 要的 28**,且 read↔edit 高度與 slot 錯位。",
+      "zero_cascade_root": "InlineEdit **完全不接 Field cascade**:只 `import type { FieldSize }`(inline-edit.tsx:25),grep 證實 0 個 useFieldContext / useResolvedFieldSize / useResolvedFieldDisabled。連 id 也不接 → FieldLabel htmlFor 指向 Field 生成 id、InlineEdit 隱形 button 只有 aria-label(inline-edit.tsx:273)無對應 id → **label htmlFor 懸空**(a11y gap)。"
+    },
+
+    "Q2_1_who_owns_slot_height": {
+      "question": "控件槽 min-h 吃 Field.size 還是 child control 的 size?其他控件反向一致還是槽強壓?矮控件(Checkbox)靠槽 min-h 置中——槽 min-h 能拿掉嗎?",
+      "slot_eats_field_size": "**槽 min-h 吃 Field.size**(field.tsx:244 `MIN_H_CLASS[size]`,`size` = Field 自己的 size prop,預設 md field.tsx:158)。**不吃 child 的 size**。",
+      "controls_read_ctx_reverse_consistent": "其他控件(Input/Select 等)透過 context 讀 `fieldCtx.size`(contextValue.size = Field.size,field.tsx:213;控件用 `useResolvedFieldSize(sizeProp, fallback)` 解析,field-context.ts:157-164,precedence prop > fieldCtx.size > surface-size > fallback)→ **控件反過來跟 Field.size 一致**,不是『槽強壓控件』。槽 min-h 與控件高度**同源於 Field.size**,故 canonical 下天然相等。InlineEdit 之所以錯位 = 它是唯一不讀 fieldCtx.size 的控件。",
+      "slot_min_h_cannot_be_removed": "**正確,槽 min-h 不能拿掉。** field.spec.md:168-172 明文:Checkbox/Switch/RadioGroupItem primitive **保持原生 16-20px、不為 form 拉高**;form 高度對齊 = 槽的 `min-h-field-{size}` + items-center 把矮 primitive 垂直置中(field.spec.md:37/78/138『第一行中線錨 field-height/2』)。拿掉 min-h → 矮控件失去 field-height 錨 + 破 horizontal label 對齊公式(field.spec.md:119-132)+ 破 FieldGroup 垂直韻律。geometry log Option D 同判(不可行)。"
+    },
+
+    "options": [
+      {
+        "id": "a",
+        "name": "consumer 每次顯式 <Field size=\"sm\">",
+        "auto_sm": "否(不是 auto,是每次手寫;違『除非明傳 size』的反面——變成必須每次傳 sm)",
+        "breaks_field": "否",
+        "fragile": "否(100% 可預測、零 magic)",
+        "ssot_clean": "是,但 verbose 易忘",
+        "note": "必須搭配把 InlineEdit 接上 useResolvedFieldSize(否則傳了 <Field size=sm> InlineEdit 仍讀不到)。無論選哪案,此案都應**保留支援**當顯式逃生門。"
+      },
+      {
+        "id": "b",
+        "name": "Field 偵測 control child 宣告 fieldPreferredSize → 預設 sm(靜態屬性偵測,非 displayName 字串)",
+        "mechanism": "**復用既有 convention**:field.tsx 已在 render 時讀 `child.type.fieldLayout` static 決定 block/inline(field.tsx:96-103 detectControlLayout)——RadioGroup/CheckboxGroup 掛 `(X as ...).fieldLayout='block'`(radio-group.tsx:184 / checkbox-group.tsx:93)。同法:InlineEdit 掛 static `fieldPreferredSize='sm'`,Field 加一個 detectPreferredSize(controlNodes),size resolution 改 `sizeProp ?? detected ?? 'md'`。→ contextValue.size=sm、slot=min-h-field-sm=28、InlineEdit 讀 fieldCtx.size=sm=28 → **28 全鏈一致 + auto-sm**;顯式 <Field size=\"md\"> 仍覆蓋。",
+        "auto_sm": "**是**(唯一達成 user 字面『Field 裝 InlineEdit 自動 sm、除非明傳 size』的 in-Field 機制)",
+        "breaks_field": "否(size resolution 加一層 fallback,不動槽/cascade 結構;矮控件 min-h 不受影響)",
+        "fragile": "**與既有 fieldLayout 偵測同級,非新脆弱**:靠 `node.type.fieldPreferredSize` static → 若 consumer 用 React.memo/HOC 包 InlineEdit,type 變 wrapper、static 讀不到——**但這正是現行 RadioGroup/CheckboxGroup fieldLayout 已接受的同一限制**(memo/HOC 也會破其 block 偵測),故不引入新脆弱類。用 static 屬性(非 displayName 字串)比字串比對更穩、renamesafe。InlineEdit 是 leaf 控件,consumer 極少 memo 包。",
+        "ssot_clean": "中上——復用既有 static-hint convention(field.tsx detectControlLayout 對稱),不新造機制。**唯一 tension**:讓 child 型別驅動 Field.size **預設** = 輕微反轉『Field.size 是 SSOT、控件往下同步』(field.spec.md:78/213);但 detectControlLayout 早已為 layout 做同一反轉(child RadioGroup 驅動 Field controlLayout=block),size 對稱;且只是**預設**、explicit size 永遠勝;InlineEdit 的 sm 本就是 user 拍板的 intrinsic 偏好(inline-edit.spec.md:54),類比『RadioGroup 天生 block』。"
+      },
+      {
+        "id": "c",
+        "name": "InlineEdit runtime 給 Field 一個 preferred size(context/prop 協定,child→parent)",
+        "mechanism": "單向資料流下 child render 時才存在,Field 的 slot 已在 child 讀 context **之前**渲完 → child 無法 runtime 反向改 parent 已定的 slot 高。要 parent 事先知道 child = 只能 render 前掃 children = **退化成 (b)**。",
+        "auto_sm": "否(runtime 版不可行)",
+        "breaks_field": "n/a",
+        "fragile": "n/a",
+        "ssot_clean": "不可行——React 單向流。geometry log Option C 同判(context 單向流、renderEdit/composite 內層讀不到反向 size)。『child 影響 parent slot』的合法形式 = render-time static 偵測 = (b)。"
+      },
+      {
+        "id": "d",
+        "name": "InlineEdit 讀 useResolvedFieldSize(sizeProp,'sm')(cascade 基座)",
+        "mechanism": "把 inline-edit.tsx:136 的 `size='sm'` destructure default 改成 `const size = useResolvedFieldSize(sizeProp, 'sm')`。precedence prop > fieldCtx.size > surface-size > 'sm'。順手接 id/disabled cascade 修 0 接線 + 懸空 label。",
+        "auto_sm": "**否——在 <Field>(md) 內 InlineEdit 變 md(32)、只達成對齊不達成 sm**(the tension:InlineEdit 跟隨 Field,md Field → md);standalone(fieldCtx=null)才回 sm。",
+        "breaks_field": "否(純機械對齊既有 cascade SSOT,field-controls.spec.md:160-184)",
+        "fragile": "否",
+        "ssot_clean": "是(對齊全 Field family cascade resolver 慣例)",
+        "note": "**修錯位 + 修 cascade 0 接線的必做基座**,但單獨無法達成 auto-sm。必與 (a) 或 (b) 疊。"
+      },
+      {
+        "id": "e",
+        "name": "surface-size 機制(FieldSurfaceSizeProvider)",
+        "mechanism": "field-context.ts:149/230-238 有 FieldSurfaceSizeContext,但方向 = **host→child**(DataTable cell 把 density size 往下給控件)。無法讓 InlineEdit 把 sm **往上**推給 Field 的 slot。方向錯。",
+        "auto_sm": "否(方向相反)",
+        "breaks_field": "否",
+        "fragile": "n/a",
+        "ssot_clean": "不適用此需求"
+      },
+      {
+        "id": "f",
+        "name": "InlineEdit 自 own FieldLabel + control area(不外包 <Field>,自己一定 sm;Atlassian 模型)",
+        "mechanism": "現況 InlineEdit `label` prop 只組 aria-label(inline-edit.tsx:71/273),不渲可見 label。Atlassian InlineEdit 把 read+edit 包進**自己的** Field『only for the label and spacing』(inline-edit-worldclass.json Q5)。可讓 InlineEdit 自渲 label + 自己一律 sm slot → 不依賴外層 Field。",
+        "auto_sm": "是(整包自洽 sm)",
+        "breaks_field": "否(但改變 API 語意:label 從 aria-only 變可見 label)",
+        "fragile": "否",
+        "ssot_clean": "架構最正(對齊 Atlassian『InlineEdit IS the field』),**但屬 API 演進 + 與現行 spec『表單欄位→直接用 <Field>,不用 InlineEdit』(inline-edit.spec.md:96)的 positioning 相衝** → 需 user 拍板重定位。含意:detail-pane 不再外包 <Field>。"
+      }
+    ],
+
+    "recommendation": {
+      "cleanest_path": "**(b)+(d) 合併** = 最乾淨且唯一真正達成 user 字面要求(『用 InlineEdit 的 Field 預設 sm、除非明傳 size』)的 in-Field 解:(d) 讓 InlineEdit 讀 useResolvedFieldSize 消除錯位 + 修 cascade 0 接線;(b) 讓 Field 偵測 control child 的 static `fieldPreferredSize='sm'`(復用既有 detectControlLayout/fieldLayout convention,field.tsx:96-103 + radio-group.tsx:184)把 Field.size **預設** 收斂成 sm。結果:`<Field><InlineEdit/></Field>` → slot 28 + InlineEdit 28 + cascade sm 全鏈一致 auto-sm;`<Field size=\"md\">` 顯式覆蓋;standalone InlineEdit → sm(inline-edit.spec.md:54 拍板保留)。",
+      "why_others_fail": {
+        "a_alone": "只提供顯式逃生門,不是 auto——變成『每次都要手寫 sm』,與 user『除非明傳 size 才不是 sm』相反。仍應保留支援。",
+        "c": "React 單向流不可行(runtime child 改不了已渲的 parent slot);其合法形式退化成 (b)。",
+        "d_alone": "只達成『對齊(跟隨 Field.size)』,md Field 內變 md 非 sm——不滿足 auto-sm。",
+        "e": "surface-size 是 host→child,方向相反,推不動 Field slot。",
+        "f": "達成 auto-sm 且架構最正(Atlassian),但屬 API 改動 + 與現行 spec positioning 衝突 → 更大決策,列為『若要根治 InlineEdit 該不該外包 Field』的 user 選項。"
+      },
+      "fragility_honest_note": "(b) 靠 `node.type.fieldPreferredSize` static,理論上 memo/HOC 包 InlineEdit 會斷偵測——**但這是現行 RadioGroup/CheckboxGroup fieldLayout 偵測早已接受的同一限制**(非新增脆弱類),且 InlineEdit 是 leaf 控件極少被 memo 包;用 static 屬性比 displayName 字串更穩。geometry/deep log 曾把 (b) 判為『fragile+magic 不推』——本研究對抗性再驗後修正:在**既有 detectControlLayout convention 之上**做 size 版,脆弱度與既有 canonical 同級、非過度 magic,且是唯一達成 user 字面 auto-sm 的 in-Field 機制。",
+      "design_tension_for_user": "(b) 讓 child 型別驅動 Field.size **預設**,輕微反轉 field.spec.md:78/213『Field.size SSOT 往下同步』——可接受因:detectControlLayout 早已為 layout 做同一反轉、只是預設(explicit 永遠勝)、InlineEdit 的 sm 是 user 拍板 intrinsic 偏好。**但仍屬 SSOT-affecting(改 Field size resolution + 加 static convention + 需同步 spec/hook)→ 建議 user 拍板;唯讀研究不執行**。",
+      "companion_fixes": "無論選哪案,(d) 的 id/disabled cascade 接線是必做基座(修懸空 FieldLabel htmlFor + <Field disabled> 對 InlineEdit 失效)。",
+      "world_class_alignment": "對齊 Atlassian InlineEdit『Field is used here only for the label and spacing』(inline-edit-worldclass.json Q5);(b) 的 static-hint 偵測對齊 MUI FormControl 讀 child 型別調整 + 本 DS 既有 fieldLayout='block' block-detection(radio-group.tsx:184)。"
+    }
+  },
+
+  "Q3_disabled_consistency_verdict": {
+    "Q3_1_datatable_cell_disabled_model": {
+      "question": "DataTable cell 的不可編/disabled/readonly 模型是什麼?非可編欄位怎麼渲染?有無 per-cell disabled?",
+      "two_orthogonal_axes": "cell 有**兩條正交軸**(codex Q3 verdict 2026-05-13,cell-registry.tsx:69-74 註 + data-table.tsx:1034-1064):(1) **isEditable** = `meta.editable: boolean | (row)=>boolean`(data-table.tsx:1034-1042)= 這欄/這 row 結構上能不能編;(2) **isDisabled** = `meta.disabled: boolean | (row)=>boolean`(data-table.tsx:1048-1056)= state overlay,與 display/edit lifecycle 正交。`canEditCell = isCellEditable && !isCellDisabled`(data-table.tsx:1061-1064)。",
+      "three_effective_states": {
+        "not_editable": "meta.editable 缺/false → cell 渲 `mode=\"display\"`(displayOrDisabled(false)='display',cell-registry.tsx:119-120)= 純值、無 affordance、無 hover outline(field.spec.md L4;data-table.spec.md:167/389)。",
+        "editable_not_disabled": "靜止 `mode=\"display\"` + hover outline affordance + click→edit(data-table.spec.md:167『editable affordance = hover outline』+ data-table.tsx:1694 onEditableCellClick)。",
+        "editable_but_disabled": "meta.disabled 對該 row true → cell 渲 `mode=\"disabled\"`(displayOrDisabled(true)='disabled',cell-registry.tsx:119)+ TD 加 `bg-disabled cursor-not-allowed`(data-table.tsx:1826)+ 抑制 edit 進入(data-table.tsx:1693-1694)+ `data-cell-disabled`(data-table.tsx:1781)。內部 Field 走 mode='disabled' 各控件具體 disabled token(非 wrapper blanket opacity,cell-registry.tsx:115-120 註 + color.spec.md:729)。"
+      },
+      "so_yes_per_cell_disabled": "**是,cell 有真正的 per-cell/per-row disabled 態**(meta.disabled 支援 (row)=>boolean → 同欄不同 row 可各自 disabled),與『非可編欄位一律 display』是**兩件不同的事**:非可編 = 結構(整欄不可編→display);disabled = state(此欄可編但此 row 暫鎖→灰化)。"
+    },
+
+    "Q3_2_consistency_with_inlineedit": {
+      "inline_edit_no_disabled": "InlineEdit **無 disabled/readonly/locked prop**(InlineEditProps inline-edit.tsx:52-83;grep 0 個 disabled 分支)。2026-07 user 拍板:不可編欄位**根本不用 InlineEdit**,直接渲 `<Input mode=\"display\">`/純文字(inline-edit.spec.md:98『一律唯讀展示(不可編)→ 用 <Input mode=\"display\">』+ geometry log disabledHistoryVerdict,session 3fb5856b:89436/89565『Finding B 撤回、task #97 刪』)。",
+      "is_it_inconsistent": "**表面上 cell 有 disabled 態、InlineEdit 沒有 = 不對稱,但這是 context-adapted 的合理不對稱,非 drift。** 兩者共享同一底層原則:**『可編 → 互動 affordance(hover outline / read chrome);不可編 → 純 display 無 affordance』**。差別在 cell 多出的第三態(editable-but-disabled 灰化)只在**有『同欄其他 row 可編』對比**的 grid 情境才有意義——灰化訊號=『這欄能編但這格暫鎖』。InlineEdit 是 detail-pane **standalone** 單欄,無 sibling 可編對比,一個鎖定欄位直接當唯讀資料(display 純文字)呈現最自然;若對它灰化反而像壞掉/inactive 的欄位。"
+    },
+
+    "verdict": {
+      "should_they_be_identical": "**不該強制一致——各自 context-correct。** 底層原則已一致(可編=affordance / 不可編=display);cell 的 disabled 第三態是 grid-only 需求(per-row state 在可編欄內,需區分『鎖定 row』vs『非可編欄』= 灰盒 vs 純值),standalone InlineEdit 無此對比需求故收斂成 display。",
+      "cell_disabled_is_justified": "**cell 保留 disabled 有道理、不該拿掉。** 對齊 grid 域世界級共識(Ant editable-cells / MUI X / AG Grid 皆有 per-cell editable + disabled/readonly 分軸);data-table.spec.md:252/277 亦有 row-level disabled(selection checkbox)的 grid 慣例。拿掉會失去『可編欄內鎖定特定 row』的表達力。",
+      "inline_edit_should_not_gain_disabled": "**InlineEdit 不該加 disabled prop。** 無 standalone 對比需求;且『鎖定的 InlineEdit』視覺≈InlineEdit read 去掉 hover/button = 幾乎等於 renderRead 的 display → 換渲 display 近乎零視覺 delta(inline-edit.spec.md:98/106)。加 disabled = 冗餘 API(違 M21 prop-variant 精神)。",
+      "what_each_could_learn": "結構上兩者無互學缺口——已各自 context-adapted。**唯一值得 codify 的共同原則**(可放進 field-controls.spec.md『框架地圖』或兩者 spec cross-ref):『可編 = 互動 affordance;不可編 = 純 display 無指示。cell 的 disabled 是 grid-only 的第三態(editable-but-locked,需 sibling 對比),standalone edit-in-place 無此態、以 display 表達鎖定』。此即『同一原則、host 情境決定要不要第三態』的明文化,消除『看起來不一致』的疑慮。"
+    }
+  },
+
+  "cross_cutting_summary": {
+    "F1": "三個 host(cell row `h-table-row` / Field control-area `min-h-field` / InlineEdit read wrapper `min-h-field`)已各自唯一擁有高度 + items-center;display 內容應為 intrinsic。Input 自帶 h-field 是重用 edit wrapper size variant 的副產物(field-wrapper.tsx:65-67),非設計需求。",
+    "F2": "InlineEdit 進 <Field> 的真 gap = **0 cascade 接線**(inline-edit.tsx:25 只 import type;無 useResolvedFieldSize/Disabled;懸空 FieldLabel htmlFor)+ 現行 VerticalFieldForm story(inline-edit.stories.tsx:210-213)已暴露 28-in-32-slot 錯位。",
+    "F3": "達成『Field-with-InlineEdit auto-sm』唯一 in-Field 機制 = (b) Field 靜態偵測 child fieldPreferredSize(復用 detectControlLayout convention)+ (d) InlineEdit 讀 fieldCtx.size 基座;純 (d) 只對齊不 sm;(f) Atlassian『InlineEdit 自 own label』是更根治但更大的 API/positioning 決策。",
+    "F4": "所有三題的『修』都觸及 SSOT-affecting(field-wrapper compound / Field size resolution / InlineEdit API / spec 條文)→ 需 user 拍板;本研究唯讀不執行,只給 file:line 實證 + 明確 verdict + 推薦。",
+    "honest_gaps": "查不到的:(1) 無任何 production standalone-無容器 display 消費者可用來『反證移除 Input 自帶高度會破壞什麼』——只能說 blast radius=story only(apps grep empty)。(2) (b) 的 memo/HOC 脆弱在真實 consumer 是否會發生無實測 data,只能以『InlineEdit 是 leaf 控件 + 與既有 fieldLayout 同限制』推論。"
+  }
+}

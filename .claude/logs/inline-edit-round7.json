@@ -1,0 +1,185 @@
+{
+  "meta": {
+    "date": "2026-07-15",
+    "round": 7,
+    "scope": "唯讀深研(禁改 code)。三題:(Q1) InlineEdit 需不需要 disabled?條件停用(選國家前的城市)怎麼處理,世界級怎麼做 /(Q2) display 該不該留 default + naked 兩個 variant(逐字比對 cva compound diff)/(Q3) DataTable 現在幾種 cell 狀態,那個叫 disabled 的是真 disabled 還是 readonly。",
+    "method": "逐行讀 field-wrapper.tsx / cell-registry.tsx / data-table.tsx / inline-edit.tsx;grep clipboard/select-none/isCellDisabled 判實際行為;WebFetch 世界級 editable-in-place(Atlassian inline-edit type defs / Chakra Editable / MUI X isCellEditable / PrimeReact)。承接 round5 + round6 + final-ssot,站其上再驗 + 補 user 新 framing(條件停用 ≠ 永久 readonly)。",
+    "repoRoot": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project"
+  },
+
+  "Q1_inlineedit_disabled_verdict": {
+    "headline": "**該加 disabled prop。** user 戳破的區分成立:之前『不可編就用 display / InlineEdit 無 disabled』講的是 **readonly(永久唯讀值)**;而 **條件停用(城市欄在選國家前 disabled、選了才 editable)是 disabled,不是 readonly**。畫成 display 純文字會誤導(看起來像永久唯讀值,不像『暫時不可用、待會會開』)。世界級對半分:Chakra Editable / Polaris TextField 給 editable-in-place **明確的 disabled 態**;Atlassian inline-edit **無 disabled**、靠換 readView。我方 InlineEdit 底層就是 Field 家族(有 mode='disabled' 的 canonical token),加 disabled prop = 補回它本該有的第 4 態、對齊自家 FieldMode 模型,且與『readonly→display』並存不矛盾(兩者答不同問題)。**SSOT-affecting(InlineEdit 新 API)→ user 拍板。**",
+
+    "worldclass_evidence": {
+      "chakra_editable": {
+        "url": "https://www.chakra-ui.com/docs/components/editable",
+        "finding": "Chakra Editable(edit-in-place)**同時有 `disabled` 和 `readOnly` 兩個 boolean prop**。doc 原文:disabled = 『Whether the editable is disabled.』/ readOnly = 『Whether the editable is read-only.』,並有獨立『Disabled』範例段『Use the disabled prop to disable the editable component.』。→ **一個 editable-in-place 元件明確保留 disabled 態,不是只有 readonly。** VERIFIED(WebFetch)。"
+      },
+      "atlassian_inline_edit": {
+        "url": "https://cdn.jsdelivr.net/npm/@atlaskit/inline-edit@12.0.8/dist/types/types.d.ts",
+        "finding": "@atlaskit/inline-edit InlineEditProps **無 isDisabled / disabled / readOnly 任何一個**。props = readView / editView / isEditing / onEdit / defaultValue / onConfirm(+ CommonProps: label / validate / isRequired / readViewFitContainerWidth / onCancel 等)。→ Atlassian 走『不給 disabled prop,不可編就渲靜態 readView』路線(= 我方之前的 display 路線)。**但這正是『永久唯讀』模型,沒回答『暫時停用會變可編』的訴求。** VERIFIED(WebFetch type defs)。"
+      },
+      "polaris_textfield": {
+        "url": "https://polaris-react.shopify.com/components/selection-and-input/text-field",
+        "finding": "(round6 已查)Polaris TextField **同時有 disabled + readOnly**:disabled『prevent … receive keyboard focus or inputs』(= 欄位暫時不相關/不可用);readOnly『allows focus … but prevents input or editing』(= 值該可見可 focus 可複製、不可改)。→ 表單類世界級把『暫時停用』與『唯讀值』當**兩個不同態**。VERIFIED(round6 carryover)。"
+      },
+      "mui_x_isCellEditable": {
+        "url": "https://mui.com/x/react-data-grid/editing/",
+        "finding": "MUI X『依相依欄位條件停用可編 cell』官方做法 = `isCellEditable` per-row callback(『define which individual cells the user can edit in a given row』,回傳 false 即不可編)。→ grid 域『條件停用』= 把 cell 變 non-editable,不是加 disabled 視覺旗標。但 grid 有 sibling 對比、detail-pane 沒有(見下)。VERIFIED(WebFetch)。"
+      }
+    },
+
+    "reasoning_our_case": {
+      "current_inline_edit_has_no_disabled": "inline-edit.tsx grep:InlineEditProps **無 disabled / readonly prop**(只有 read view 委派 `mode=\"display\"` 的 SSOT 註解,inline-edit.tsx:17/64-66/247)。今天 InlineEdit 只暴露 edit + display 兩態,缺 Field 模型的 readonly / disabled。VERIFIED。",
+      "the_two_are_genuinely_different": "user 的區分正確,兩者答不同問題:(a) **readonly / display = 永久唯讀值**——『這是個要讀的值,編輯本就不是這欄的用途』(訂單編號、系統產生 email、詳情面板純展示 meta)→ 純文字/display 剛好,因為它真的就是一個值。(b) **disabled = 條件/暫時停用**——『這欄原則上可編,只是前置條件還沒滿足』(選國家前的城市、勾同意前的送出)→ 這欄之後會變可編,現在畫成純文字會誤導使用者以為它是個固定唯讀值。",
+      "correct_presentation_for_conditional_disable": "(a) **灰化 + 無 hover + 不可點(真 disabled 視覺,跟 readonly 純文字不同)** —— 對齊 Chakra/Polaris。灰化控件形狀(不是純文字)本身就是『這是個會啟用的欄位、現在被停用』的訊號,正是 user 要的表達力。**不是** (b) 用別的元件:條件停用是**同一欄的一個 state**,不是換元件;consumer 自刻灰化 placeholder = drift(違 M23/M17)。",
+      "why_round5_6_said_no_but_not_contradiction": "round5/round6 判『InlineEdit 不加 disabled』是 scope 在**兩個舊 case**:①『可編欄內被鎖的 cell』(editable-but-locked,需 sibling 對比,detail-pane 無此對比)②『永久唯讀值→用 display』。**user 這次的 framing(條件/暫時停用會變可編)是那兩輪沒處理的第三個 case** → 屬 refine 補洞,非推翻。"
+    },
+
+    "verdict": {
+      "should_add_disabled": "**該加 `disabled` prop 給 InlineEdit**(對齊 Chakra Editable / Polaris TextField;補齊 InlineEdit 相對其底層 Field 模型缺的態)。",
+      "coexistence_with_readonly_display": "**並存不矛盾,分工清楚**:(1) **readonly = 永久唯讀值** → 渲純文字 / `<Input mode=\"display\">`(不進 InlineEdit,或 InlineEdit 不接 edit)。值就是值,無 affordance。(2) **disabled = 條件/暫時停用** → 灰化 InlineEdit(bg-disabled + text-fg-disabled + 無 hover + cursor-not-allowed + 不可點,委派給 Field mode='disabled' 既有 token)。灰化控件形狀 = 『待會會開』訊號。**判準一句話**:值本身就是唯讀資料 → display;欄位可編但前置未滿足 → disabled。",
+      "cleaner_solution_check": "無更乾淨解。替代『consumer 條件渲 InlineEdit vs 灰化 placeholder』更差(consumer 手刻灰化態 = drift + 條件停用是同一欄的 state 非換元件)。加 disabled prop 是 SSOT-clean(InlineEdit 已委派 Field control,mode='disabled' 是既有 canonical,只需接線)+ 世界級對齊(Chakra/Polaris disabled 是 editable 的 prop)。",
+      "ssot_affecting": "屬 InlineEdit 新 public API → SSOT-affecting → 依自主執行 canonical 必 user 拍板;本研究唯讀不執行。",
+      "honest_note": "誠實補:Atlassian 這家(無 disabled、只換 readView)代表另一種世界級路線,對『永久唯讀』夠用;但它不覆蓋 user 的『暫時停用會啟用』訴求。Chakra + Polaris 兩家(有 disabled)才對得上 user 的 case,故 verdict 傾向加。"
+    }
+  },
+
+  "Q2_display_variant_verdict": {
+    "headline": "**display 態下 default 跟 naked 只差『那個 vestigial 高度』+ 一個視覺上死掉的 rounded class;px/py/bg/border/chrome 全同。** 統一高度後兩者渲染**完全一樣** → display 就不該吃 variant 軸(display 就是 display,一種)。最乾淨 = (a) display 變 variant-agnostic:display×default compound 補 `!h-auto`(對稱既有 display×naked),一行改。variant 軸本身保留(edit/readonly/disabled 的 chrome 仍需要它);只有 display 這個 mode 收斂成單一輸出。",
+
+    "cva_compound_diff": {
+      "source": "field-wrapper.tsx(逐行核對)",
+      "display_default_compound": {
+        "where": "field-wrapper.tsx:128-136",
+        "className": "'bg-transparent border border-transparent !px-0 !py-0'",
+        "inherits": "base line 40 `rounded-md`(圓角)+ size variant lines 65-67 `h-field-{size}`(自帶高度)"
+      },
+      "display_naked_compound": {
+        "where": "field-wrapper.tsx:220-226",
+        "className": "['bg-transparent !rounded-none !px-0 !py-0 !h-auto', 'border border-transparent']"
+      },
+      "exact_diff": [
+        {
+          "軸": "高度(height)",
+          "default": "h-field-{size}(繼承 size variant,冗餘 vestigial — round5/6 已證『從沒為 display 保留高、只是沒 override』)",
+          "naked": "!h-auto(intrinsic,高度交容器)",
+          "substantive": "**是,唯一真差別**"
+        },
+        {
+          "軸": "圓角(rounded)",
+          "default": "rounded-md(繼承 base line 40)",
+          "naked": "!rounded-none",
+          "substantive": "**否 — 視覺上死的**:兩者都 `border-transparent` + `bg-transparent`,沒有可見邊框/底色去顯示圓角 → rounded-md vs rounded-none 在 display 態是 no-op,渲染完全看不出差別"
+        },
+        {
+          "軸": "padding(px/py)",
+          "default": "!px-0 !py-0",
+          "naked": "!px-0 !py-0",
+          "substantive": "否 — 完全相同"
+        },
+        {
+          "軸": "背景 bg",
+          "default": "bg-transparent",
+          "naked": "bg-transparent",
+          "substantive": "否 — 完全相同"
+        },
+        {
+          "軸": "邊框 border",
+          "default": "border border-transparent",
+          "naked": "border border-transparent",
+          "substantive": "否 — 完全相同"
+        },
+        {
+          "軸": "chrome(hover/focus/error state)",
+          "default": "無(display 態無互動 state)",
+          "naked": "無(display 態無互動 state)",
+          "substantive": "否 — display 態兩者都 zero chrome"
+        }
+      ],
+      "diff_summary": "**唯一真差別 = 高度(default 冗餘自帶 h-field / naked !h-auto)。** 另一個 rounded 差異視覺上死掉(透明底+透明框無從顯示圓角)。px/py/bg/border/chrome/state 全部逐字相同。"
+    },
+
+    "judgment": {
+      "if_height_unified_they_become_identical": "**是。** display×default 補 `!h-auto` 後,它跟 display×naked 的渲染輸出**完全一樣**(高度都 intrinsic 交容器、都 zero chrome、都 !px-0 !py-0 透明底透明框)。rounded 差異本就不可見。→ display 態下 variant 這個軸**不產生任何輸出差異** = display 就是一種東西,不該靠 variant 分。",
+      "no_real_difference_to_keep": "display 態沒有『必須留兩種』的真差別。round5/round6 已證:default×display **無真 production 消費者**(只在 stories + template);naked×display 是主力(DataTable cell)。兩者本就不是為 display 的高度分家 —— variant 軸當初拆的是 **chrome 模型**(form 殼 vs cell 基底,round5 Q1_3),那個對 edit/readonly/disabled 有意義,對『zero-chrome 的 display』沒意義。",
+      "variant_axis_still_matters_for_other_modes": "注意:variant 軸**不刪** —— edit×default(border/hover/focus)vs edit×naked(自畫 border state machine)、readonly/disabled 的 chrome 都真的靠 variant 分。問的只是 **display 這個 mode** 該不該分,答案是不該。"
+    },
+
+    "verdict": {
+      "cleanest": "**(a) display 變 variant-agnostic(高度容器給)。** 不是保留兩種各有時機 —— display 態下兩種輸出相同,留兩種 = latent 不一致 + 假選擇。",
+      "minimal_change": "field-wrapper.tsx:135 的 display×default className 加 `!h-auto`(對稱 :223 display×naked 既有寫法),一行。可選再加 `!rounded-none` 讓 className 字面完全一致,但視覺是 no-op、非必要。**不動** edit/readonly/disabled compounds(它們要 h-field 渲 chrome 灰盒/邊框)。blast radius(round5/6 verified)= story/template only(apps 零消費者、DataTable cell 早已 naked !h-auto、Field slot / InlineEdit read 都容器 min-h 提供高度)。",
+      "ssot_affecting": "改跨 Field family 共享 compound → SSOT-affecting → user 拍板;唯讀不執行。與 round5 path A 一致。"
+    }
+  },
+
+  "Q3_datatable_states_map": {
+    "headline": "**DataTable cell 有 4 種有效狀態**;lifecycle `cellMode` 只有 edit|display 兩個(data-table.tsx:1530-1533),『disabled』不是第 3 個 mode 而是 **state overlay**(保持 display lifecycle + 傳 isDisabled → 內層 Field mode='disabled')。**沒有 readonly cell 狀態**(helper 只回 display|disabled,cell-registry.tsx:119-120;readonly×naked compound 存在但零 cell 消費者)。關鍵:**我方叫 disabled 的那格,行為 = readonly(值算數、文字可選取、只鎖編輯),只是穿 disabled 的皮(灰底 + 灰字 + 禁用游標)。所以 user 說『我們叫 disabled 是不是其實沒有真 disabled』—— 對的。** 我方無任何真正 inert 的 disabled cell 態。",
+
+    "cell_states_enumerated": {
+      "count": 4,
+      "cellMode_only_two": "data-table.tsx:1530-1533 `cellMode: 'edit' | 'display'` —— 只有兩個 lifecycle mode。disabled 走 `(isEditingThisCell && !disabled) ? 'edit' : 'display'`(:1533)= disabled cell 永遠 display lifecycle,不進 edit。",
+      "states": [
+        {
+          "state": "1. 非可編-display(結構唯讀)",
+          "trigger": "meta.editable 缺/false → isEditable=false(data-table.tsx:1519 / cell-registry.tsx:143-146 `displayOrDisabled(false)='display'`)",
+          "行為": "純值。無 hover affordance、無 click-to-edit、無 tabIndex(onEditableCellClick=undefined 因 cellEditable=false)。可 focus:否。可選取複製:是(native 文字,無 select-none)。值算數:是",
+          "視覺": "純文字,bg 無、字色正常(text-foreground);cursor 預設。空值 `-` text-fg-muted",
+          "cite": "cell-registry.tsx:140-146 / data-table.tsx:1519,1694(cellEditable=false → click handler undefined)"
+        },
+        {
+          "state": "2. 可編-idle-display(有 affordance)",
+          "trigger": "meta.editable=true + 非 disabled + 非 editing(data-table.tsx:1683 cellEditable && :1694 !cellDisabled && !isEditingThisCell)",
+          "行為": "靜止 mode='display' + hover outline(nakedCellEditableDisplayHover)+ cursor-pointer + click→進 edit + 非-spreadsheet 可 Tab 聚焦 + Enter/F2 進 edit。可選取複製:是。值算數:是",
+          "視覺": "純值 + hover 時顯 cell 邊框 outline(Notion/Airtable 可編提示)+ cursor-pointer + focus-visible ring",
+          "cite": "data-table.tsx:1694-1727(click→edit)/ 1820(hover outline + cursor-pointer)/ 1823,1845-1849(Tab + Enter/F2)"
+        },
+        {
+          "state": "3. Editing(active input)",
+          "trigger": "editingCellId 命中該 cell + 非 disabled(data-table.tsx:1533 `isEditingThisCell && !disabled → 'edit'`)",
+          "行為": "內層 Field mode='edit' naked variant,自畫 border state machine(edit×naked,field-wrapper.tsx:190-203 `!h-full` border-based)。blur/Enter commit、Esc cancel",
+          "視覺": "naked 輸入框:透明底 + border-border → hover:border-border-hover → focus-within:!border-primary,撐滿 cell(!h-full)",
+          "cite": "data-table.tsx:1530-1533 / field-wrapper.tsx:190-203"
+        },
+        {
+          "state": "4. Disabled(state overlay)",
+          "trigger": "meta.disabled=true(bool 或 (row)=>bool,data-table.tsx:1048-1056 isCellDisabled;:1520,1684 cellDisabled)",
+          "行為": "保持 display lifecycle(不進 edit);內層 Field mode='disabled'(cell-registry.tsx:119-120,145-146)。**edit-click 被抑制**(:1694 `!cellDisabled` → onEditableCellClick=undefined → 無 tabIndex 無 click-to-edit)。**range-fill 排除**(:1780-1781 data-cell-disabled + css `:not([data-cell-disabled])`)。可選取複製:**是(無 select-none)**。值算數:**是(row 照樣可 checkbox 選、資料照樣在 dataset;cell disabled 與 row selection 正交)**",
+          "視覺": "TD `bg-disabled cursor-not-allowed`(:1826)+ 內層 text-fg-disabled 灰字(group-data-[field-mode=disabled])。灰底 + 灰字 + 禁用游標",
+          "cite": "data-table.tsx:1048-1056,1520,1684,1694,1780-1781,1826 / cell-registry.tsx:71-74,115-120"
+        }
+      ],
+      "no_readonly_cell_state": "**無 readonly cell 態。** cell helper `displayOrDisabled` 只回 'display' | 'disabled'(cell-registry.tsx:119-120);cell 從不傳 mode='readonly'。field-wrapper.tsx:228-234 的 readonly×naked compound 存在但零 cell 消費者(round6 verified;field-controls.spec.md:65『naked+readonly 無 live consumer』)。"
+    },
+
+    "is_our_disabled_real_disabled_or_readonly": {
+      "verified_behavior": {
+        "value_counts": "**是(值算數)。** cell disabled 只是 per-cell 鎖編輯;row 的 checkbox 選取完全正交、不受影響(isCellDisabled 只 gate edit-entry,grep 無任何 selection/aggregation 排除),資料照樣在 dataset。→ **不是** 真 disabled 表單欄位那種『不送出/不算數/inert』",
+        "text_selectable_copyable": "**是。** DataTable + Field wrapper 無任何 `select-none` 加在 cell 內容上(grep:select-none 全落在 header/checkbox chrome,非 cell body)→ 文字原生可選取。**補充**:DataTable **完全沒有 cell copy/clipboard feature**(grep clipboard/onCopy/navigator.clipboard 在 data-table.tsx 為空)→ 對『任何』cell 都沒有 app 級複製功能,原生瀏覽器選字複製對 disabled cell 照樣可用",
+        "what_is_actually_blocked": "只有:(a) 進入編輯(click-to-edit 抑制 + 無 tabIndex)(b) range-fill 覆蓋排除 (c) disabled **視覺**(bg-disabled 灰、text-fg-disabled 灰字、cursor-not-allowed)"
+      },
+      "verdict_it_is_readonly_behavior_disabled_skin": "**行為 = readonly(值算數 + 文字可選取複製 + 只鎖編輯),外觀 = disabled(灰底 + 灰字 + 禁用游標)。** 按 round6 世界級定義(readonly=不能改但能讀能複製、值算數、會送出;disabled=不適用、整個停用、不送出、AT inert):我方這格符合 **readonly**。它鎖編輯 —— 但 readonly 也鎖編輯。它**不是 inert**。",
+      "user_statement_correct": "**『我們叫 disabled 是不是其實沒有真 disabled』—— 對的。** 我方無任何真正 inert 的 disabled cell 態;所謂 disabled 其實是 readonly 行為 + disabled 樣式。對齊 round6 發現:grid 域唯一內建灰化『鎖定』態的 Handsontable 把它 canonically 叫 **readOnly(可讀可複製)** 而非 disabled。"
+    },
+
+    "worldclass_cell_state_set": {
+      "ag_grid_mui_x": "AG Grid / MUI X = **兩態**(editable ⇄ read-only-display),無內建 disabled/灰化態。MUI 的『條件停用』= `isCellEditable` per-row callback 把 cell 變 non-editable(不是 disabled 視覺旗標)。round6 + Q1 WebFetch VERIFIED。",
+      "handsontable": "Handsontable = 唯一內建灰化第三態,且**分兩種非可編**:`editor:false`(非可編、無 CSS)vs `readOnly:true`(灰化 htDimmed、**可複製可選**)。灰化-鎖定態 canonically 叫 **readOnly**,非 disabled。round6 VERIFIED。",
+      "consensus": "grid 域合理 cell 狀態集 ≈ 『editable(內含 idle-affordance / editing 子態)+ 非可編-display + 選配一個灰化-鎖定態(canonical 名 = readOnly,可讀可複製)』。"
+    },
+
+    "how_many_should_we_align_to": {
+      "our_4_behaviors_are_fine": "我方 4 個行為態(非可編-display / 可編-idle / editing / 鎖定)本身對齊最豐富的 Handsontable 模型,**不是過度設計**(round6 已判)。",
+      "the_real_fix_is_naming_semantics": "真問題不是『幾種』而是**第 4 態的命名/語意**:它行為 = readonly(值算數、可選取),卻叫 disabled、穿 disabled 皮 → 該對齊成 **readonly**(對齊 Handsontable + ARIA + 我方自家 FieldMode taxonomy)。**選項**:(a) 把 locked-cell 從 disabled 改走 readonly(行為早已相符;會啟用目前空的 readonly×naked compound;但需決定要不要保留灰底 —— 現況灰底來自 TD bg-disabled,readonly×naked wrapper 本身透明無灰,見下)(b) 保留 disabled 標籤但誠實承認它是 readonly 行為。**皆 SSOT-affecting → user 拍板。** 若真要一個 inert 的 disabled cell(不可選取、排除選取),需另加 select-none + selection 排除 —— 但目前無 demonstrated need。",
+      "side_note_naked_readonly_vs_display_identical": "佐證命名可行性:field-wrapper naked variant 下 readonly×naked(:228-234)與 display×naked(:220-226)className **完全相同**(都 bg-transparent !rounded-none !px-0 !py-0 !h-auto border-transparent);disabled×naked(:240-246)只多 cursor-not-allowed。cell disabled 的灰底其實來自 **TD-level** bg-disabled(data-table.tsx:1826),非 wrapper。故 rename locked→readonly 時,灰底是獨立可決策的視覺選擇(保留 TD 灰 or 去灰)。"
+    },
+
+    "cross_link_with_Q1": "誠實交叉:Q1 判 InlineEdit 需要**真** disabled(條件/暫時停用、灰化、待會會開)—— 那是正當的 disabled。Q3 判 DataTable 的『disabled』cell 其實是 readonly 行為。兩者不衝突(不同 host 不同需求),但一起揭露:我方『disabled』一詞用得鬆 —— cell 裡其實是 readonly,而 InlineEdit 那種條件停用才是真想要的 disabled。"
+  },
+
+  "final_verdicts": {
+    "Q1": "**該加 disabled prop 給 InlineEdit。** user 區分成立:readonly(永久唯讀值)≠ 條件停用(城市欄選國家前 disabled、選了才可編)。世界級對半:Chakra Editable / Polaris TextField 給 editable-in-place 明確 disabled 態(+readOnly);Atlassian inline-edit 無 disabled、只換 readView(= 永久唯讀模型,不覆蓋『暫時停用會啟用』)。條件停用該灰化 InlineEdit(委派 Field mode='disabled' 既有 token)、不是純文字(純文字誤導成永久唯讀)、也不是換元件(同一欄的 state)。並存:readonly-value→display(純文字)/ disabled→灰化 InlineEdit。SSOT-affecting → user 拍板。",
+    "Q2": "**display 該收斂成一種(variant-agnostic)。** display 態下 default vs naked 逐字比對:唯一真差別 = 高度(default 冗餘 h-field / naked !h-auto);另一 rounded 差異視覺上死掉(透明底框無從顯示圓角);px/py/bg/border/chrome 全同。統一高度後兩者渲染完全一樣 → display 不該吃 variant 軸。最乾淨 = display×default 補 `!h-auto`(對稱 display×naked,一行,field-wrapper.tsx:135)。variant 軸保留給 edit/readonly/disabled 的 chrome。blast radius = story/template only。SSOT-affecting → user 拍板。",
+    "Q3": "**DataTable 有 4 種 cell 狀態**(非可編-display / 可編-idle-display / editing / disabled);cellMode 只 edit|display,disabled 是 state overlay。**無 readonly cell 態**(readonly×naked compound 零消費者)。**我方叫 disabled 的那格,行為 = readonly(值算數、文字可選取、只鎖編輯),只是穿 disabled 皮(灰底+灰字+禁用游標)—— user『其實沒有真 disabled』說法對。** 世界級:AG/MUI 兩態、Handsontable 灰化-鎖定態叫 readOnly。我方 4 行為態不必減,真問題是第 4 態命名該從 disabled 對齊成 readonly(SSOT-affecting → user 拍板);若真要 inert disabled 需另加 select-none + selection 排除(目前無需求)。"
+  }
+}

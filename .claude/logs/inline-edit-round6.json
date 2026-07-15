@@ -1,0 +1,169 @@
+{
+  "meta": {
+    "date": "2026-07-15",
+    "round": 6,
+    "scope": "唯讀深研(禁改 code)。兩題:(Q1) mode=display 真消費者盤點 + default×display 是否冗餘 / (Q3) editable/readonly/disabled 世界級該不該分三個 + 極簡三態表。",
+    "method": "全庫 grep 逐一判 mode=display / mode=readonly 消費點(排除 spec/註解,分 production vs stories);逐行讀 field-types.ts / field-context.ts / field-wrapper.tsx / cell-registry.tsx / inline-edit.tsx;Q3 WebFetch 7 家真 source(MDN readonly / MDN aria-disabled / Polaris / Ant / Handsontable / AG Grid / MUI X)。承接 round5(inline-edit-round5.json),對其結論再驗。",
+    "repoRoot": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project"
+  },
+
+  "Q1_display_consumers_verdict": {
+    "headline": "default×display(會自帶 field-height 的那個)**沒有任何真實 production 消費者** —— 只出現在各元件 stories + field.stories.tsx:103。mode=display 的 production 消費者只有兩個:(1) DataTable cell(全 variant=naked → !h-auto,高度由 row 給)(2) InlineEdit renderRead(委派給 consumer 傳的 <Select mode=display display=tag>,走裸 Tag、非 h-field 的 default text-entry)。故『display 高度統一交容器』(default×display compound 補 !h-auto,對稱既有 naked×display)= 無痛,因為沒有 form-display 這種 standalone 消費者靠它的自帶高。",
+
+    "field_has_four_modes": {
+      "source": "field-types.ts:19 `FieldMode = 'edit' | 'display' | 'readonly' | 'disabled'`(field-types.ts:1-19 逐行註解 + field-context.ts:177-204 useResolvedFieldMode)。**是 4 個 mode,不是 3 個** —— user Q3 說的 editable/readonly/disabled 只涵蓋其中 3 個(editable=edit),display 是 DS 多出來的第 4 個『純展示』mode。",
+      "modes": [
+        {
+          "mode": "edit",
+          "定位": "一般可編輯 input(預設態 = user Q3 的 editable)",
+          "chrome_bg": "border + bg-surface + focus 藍框(field-wrapper.tsx:98-127)",
+          "可focus": "是",
+          "可選取複製": "是(native input)",
+          "高度": "h-field-{size}(size variant,field-wrapper.tsx:65-67)"
+        },
+        {
+          "mode": "display",
+          "定位": "純展示,無 input chrome、無互動 affordance;語意『這是 read-only 內容,展示給人看』(對齊 Carbon read-only / Notion property / Cloudscape display-mode,field-types.ts:5-6)",
+          "chrome_bg": "zero chrome — 透明底/無框,!px-0 !py-0(default×display compound field-wrapper.tsx:129-136);spec (d) field-controls.spec.md:389 明文『default mode=display 必 zero chrome』",
+          "可focus": "否(text-entry 走 display-span 非 native input;bare 控件走裸 span/Tag)",
+          "可選取複製": "文字可被滑鼠選取(純文字節點),但無 input 語意",
+          "高度": "**default → 繼承 h-field(冗餘副產物,沒 override height)** / naked → !h-auto intrinsic(field-wrapper.tsx:220-223)"
+        },
+        {
+          "mode": "readonly",
+          "定位": "input chrome 但鎖編;語意『這是表單欄位但目前不可改』(如 form 鎖部分欄位,field-types.ts:7/11-13)",
+          "chrome_bg": "bg-readonly(neutral-2)灰底 + border-transparent + focus ring(WCAG 2.4.7,field-wrapper.tsx:138-151)",
+          "可focus": "是(有值時渲 native <input readOnly>,可 Tab)",
+          "可選取複製": "是(保留選取/複製語意,field-controls.spec.md:345)",
+          "高度": "h-field-{size}(要渲灰盒才像鎖定框,不加 !h-auto)"
+        },
+        {
+          "mode": "disabled",
+          "定位": "input chrome + disabled state;語意『不適用/不可用』(field-types.ts:9)",
+          "chrome_bg": "bg-disabled(neutral-2)灰底 + border-transparent + cursor-not-allowed + 內部 text-fg-disabled 灰字(field-wrapper.tsx:158-160)",
+          "可focus": "否",
+          "可選取複製": "否",
+          "高度": "h-field-{size}(要渲灰盒,不加 !h-auto)"
+        }
+      ],
+      "display_vs_readonly_判別_SSOT": "field-types.ts:11-13 + field-context.ts:11-13 明文:『純展示資料(DataTable cell read / ProfileCard meta)→ display;表單欄位但目前不可改(form 鎖欄位)→ readonly』。差異:display 完全無 chrome、readonly 保留 input affordance signal(灰盒 + focus ring)。"
+    },
+
+    "consumer_map_mode_display": {
+      "method": "grep 全 repo(packages/ + apps/)mode=display,排除 spec.md 與註解行,分 production 元件 vs stories。",
+      "production_non_story_consumers": {
+        "count": 2,
+        "1_datatable_cell": {
+          "where": "cell-registry.tsx:145/146/205/259/292/327/364/392/412/437/462 —— 9-10 型 cell 全走 `mode={displayOrDisabled(isDisabled)}`(helper cell-registry.tsx:119 回 'display'|'disabled')",
+          "variant": "**naked**(全部,cell-registry.tsx 每處 `variant=\"naked\"`)→ display×naked compound `!h-auto`(field-wrapper.tsx:220-223)= 高度來源 = ROW `h-table-row-{size}` + items-center,field 本身不自帶高",
+          "render": "Input/Textarea/NumberInput/Select/Combobox/DatePicker/TimePicker/PeoplePicker/Checkbox/LinkInput 各自 display 分支的純值",
+          "note": "**display 的主力重消費者,但全是 naked、不是 default。**"
+        },
+        "2_inline_edit_read": {
+          "where": "InlineEdit renderRead 內 consumer 傳 `<Select mode=\"display\" display=\"tag\" size=\"sm\">`(inline-edit.stories.tsx:152/221 + inline-edit.spec.md:68 SSOT『read 態 Tag 委派給 Select display mode』)",
+          "variant": "default(無 variant)**但走 Select 裸 Tag path(select.tsx:392-401 bare span/Tag),非 fieldWrapper h-field**;高度來源 = InlineEdit read wrapper `min-h-field-{size}`(inline-edit.tsx:99-104)",
+          "render": "格式化值(Tag / 日期 / option label)。InlineEdit 自己 plain read 渲**裸文字 `<Tag>`**(inline-edit.tsx:250-265),**不是** `<Input mode=\"display\">`(親證:read 分支無任何 Input mount,只 String(value) 塞進 Tag)",
+          "note": "**只『委派』display 給 Select 裸 Tag,從不 mount default×display 的 text-entry 控件。**"
+        }
+      },
+      "default_display_with_h_field_only_in_stories": {
+        "which_controls": "只有 text-entry 家族(Input/NumberInput/Textarea/LinkInput)的 display×default 真的走 fieldWrapperStyles → 繼承 size variant h-field(input.tsx display-span 分支 → default×display compound 只 !px-0 !py-0、不動 height,field-wrapper.tsx:129-136 vs 65-67)。Select/Combobox/DatePicker/TimePicker/PeoplePicker display=default 渲裸 span/Tag,無 h-field。",
+        "instances": [
+          "各元件自家 *.stories.tsx demo(input.stories.tsx:31 `<Input mode=display>` / number-input.stories.tsx:35 / datepicker/select/combobox 等)",
+          "field.stories.tsx:103-108 `<Field mode=\"display\">` 包 Input/Select/DatePicker/NumberInput/Switch/Checkbox(唯一『表單/詳情 display』集中 demo,純 story)"
+        ],
+        "apps_zero": "apps/ 只有 `template` 目錄;grep `mode=\"display\"` / `mode=\"readonly\"` / `<Field` / `InlineEdit` 全 **empty**(零真 app 消費者)。VERIFIED(grep 空)。"
+      }
+    },
+
+    "consumer_map_mode_readonly": {
+      "method": "grep 全 repo mode=readonly 對照。",
+      "production_non_story_consumers": {
+        "count": 0,
+        "detail": "`mode=\"readonly\"` **零 production 非-story 消費點** —— 全部落在 *.stories.tsx / *.principles.stories.tsx / *.anatomy.stories.tsx。cell 不走 readonly(cell 的 helper 只回 display|disabled,cell-registry.tsx:119);field-controls.spec.md:65 明文『naked+readonly 目前無 live consumer』。"
+      },
+      "readonly_form_demos_in_stories": [
+        "field.stories.tsx:89-97 `<Field mode=\"readonly\">` 包 Input/Checkbox/Switch/RadioGroup/Rating/Slider(『鎖定表單』集中 demo)",
+        "field.principles.stories.tsx:122/126 `<Input mode=\"readonly\">`",
+        "field.anatomy.stories.tsx:345 `<Field mode=\"readonly\">`",
+        "各元件自家 stories/principles/anatomy(Input/NumberInput/Select/Combobox/DatePicker/TimePicker/LinkInput/Textarea/PeoplePicker/Rating/Slider readonly demo)"
+      ]
+    },
+
+    "judgments": {
+      "q1a_default_display_has_real_consumer": "**沒有真 production 消費者。** default×display(繼承 h-field 的那個)只出現在 stories(各元件 demo + field.stories.tsx:103)。真 production display 消費者只有 DataTable cell(naked,!h-auto)+ InlineEdit(委派給 Select 裸 Tag)。**兩者都不是 default×display-with-h-field。** apps 零。",
+      "q1b_form_readonly_goes_readonly_or_display": "**依 DS 自家 canonical 應走 `mode=\"readonly\"`(user 直覺正確)。** field-types.ts:11-13 / field-context.ts:11-13 明文『表單欄位但目前不可改 → readonly(灰盒 + 可選取複製 + focus ring)』。⚠️ 但現況兩條路都『只有 stories、零真 app』:field.stories.tsx 同時 demo 了 readonly form(:89)**和** display form(:101),spec 文字才是判準(form-locked=readonly / pure-display=display)。",
+      "q1c_detail_pane_readonly_value_goes_display_or_inline_edit": "**可編 → InlineEdit;不可編純展示 → display(或純文字)。** inline-edit.spec.md 定位 InlineEdit = detail-pane edit-in-place;不可編值不用 InlineEdit,渲 `<Input mode=\"display\">`/純文字(round5 引 inline-edit.spec.md:98)。**現況 code 無真實例(apps=template),只有 stories。**",
+      "q1_verdict": "**是 —— display mode(尤其 default variant)實質只被 DataTable cell(naked)+ InlineEdit(委派 Select)用。** default×display-with-h-field 沒有 standalone production 消費者。故『display 高度統一成容器給』(default×display compound 補 !h-auto,對稱既有 naked×display :223)= **更無痛**:沒有 form-display standalone 消費者靠那個自帶高,blast radius = story/template only,readonly/disabled/edit compound 不動(它們要灰盒/focus 保留 h-field)。乾淨結論 = round5 path A(unify intrinsic)成立。**SSOT-affecting(跨 Field family 共享 compound)→ 若要動需 user 拍板。**"
+    }
+  },
+
+  "Q3_readonly_vs_disabled_worldclass": {
+    "headline": "**世界級是『分 readonly + disabled 兩個不同東西』(editable 是預設態)—— 這在 HTML / ARIA / 表單類 DS 幾乎是普世共識,不是過度設計。** 差別一句話:readonly = 不能改但『能讀、能選取複製、會送出』;disabled = 『不適用、整個停用、不送出、AT 視為停用』。grid/cell 層則多半只做二態(可編 vs 唯讀展示),灰化第三態可選;唯一內建灰化第三態的 Handsontable 把它叫 **readOnly(可讀可複製)非 disabled**。",
+
+    "worldclass_evidence": {
+      "html_mdn": {
+        "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/readonly",
+        "finding": "MDN 原文:『read-only controls can still function and are still focusable, whereas disabled controls can not receive focus and are not submitted with the form and generally do not function as controls』。表:readonly = 可 focus✓/可選取複製✓/表單送出✓/不可改;disabled = 不可 focus✗/不送出✗/不可改。**兩個是不同 HTML 屬性、行為不同。**"
+      },
+      "aria_mdn": {
+        "url": "https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-disabled",
+        "finding": "aria-disabled = perceivable but not operable、值不送出(需手動抑制功能)、**保持 focusable 但語意停用**;aria-readonly = readable + focusable + 值不可改但**仍送出**。MDN 表:aria-disabled(operable=No/送出=No)vs aria-readonly(operable=部分:可讀不可編/送出=Yes)。→ **ARIA 層也明分兩個。**"
+      },
+      "polaris_textfield": {
+        "url": "https://polaris-react.shopify.com/components/selection-and-input/text-field",
+        "finding": "Polaris TextField **同時有 readOnly + disabled 兩 prop**。原文:disabled『prevent the text field from receive keyboard focus or inputs』;readOnly『allows focus on the text field but prevents input or editing』。用法:disabled = 欄位暫時不相關;readOnly = 值該可見可 focus(可選取複製)但不可編。**明確分兩態。**"
+      },
+      "ant_input": {
+        "url": "https://ant.design/components/input",
+        "finding": "Ant Input **官方只文件化 `disabled`** 為一級 prop;readonly 靠 native HTML input passthrough(『rest props 同原生 input』),非 DS 推廣概念。→ Ant 偏『disabled 是主 DS state、readonly=裸原生』,但仍承認兩者存在。"
+      },
+      "material3": {
+        "note": "M3 text-fields guidelines 頁 WebFetch 回空 body(SPA 無 SSR content),未能逐字引;已知 M3 有 disabled state,read-only 另循 read-only 呈現。標 @benchmark-partial(此頁未取到內文),不以其為判準來源;判準由 MDN/ARIA/Polaris 三家已足。"
+      }
+    },
+
+    "grid_cell_layer_evidence": {
+      "ag_grid": {
+        "url": "https://www.ag-grid.com/react-data-grid/cell-editing/",
+        "finding": "`editable` = bool 或 per-row callback(『Can also be a function to have different rows editable』)。**無內建 disabled/灰化態** —— 只有 editable vs non-editable-display;灰化要自寫 cellStyle。→ 預設二態。"
+      },
+      "mui_x": {
+        "url": "https://mui.com/x/react-data-grid/editing/",
+        "finding": "column `editable`(bool)+ `isCellEditable`(per-row callback)。官方:只有 edit / view 兩 mode,**無獨立 disabled/灰化態**。→ binary 二態。"
+      },
+      "handsontable": {
+        "url": "https://handsontable.com/docs/react-data-grid/disabled-cells/",
+        "finding": "**明分兩種非可編**:(a) `readOnly:true` → 加 `htDimmed` 灰化 class、**copy 可用 / paste 不可 / drag-fill 不可**;(b) `editor:false` → 無 CSS、**copy-paste 照常 / drag-fill 照常**。→ grid 域唯一內建『灰化第三態』,且**叫 readOnly(可讀可複製)不是 disabled**。"
+      },
+      "grid_consensus": "cell 層多數(AG Grid / MUI X)只做二態(可編 vs 唯讀展示);灰化『鎖定』第三態可選,唯一內建者 Handsontable 命名為 **readOnly(可讀可複製)**。我方 DataTable cell 走 `meta.editable × meta.disabled` 兩軸三態(round5 已驗),其『鎖定第三態』目前以 disabled 呈現,語意比 grid-canonical 的 readonly-dimmed 偏嚴 —— round5 已列此為可選 refine(locked cell 走 readonly vs disabled),本輪不重開。"
+    },
+
+    "極簡三態表": {
+      "說明": "給非工程也能一眼懂 —— 一列一態。註:DS 另有第 4 個 mode `display`(純展示、無 chrome、比 readonly 更輕,用於 cell/詳情『不是表單欄位、只是把值秀出來』),對齊 Carbon read-only / Notion property;下表聚焦 user 問的三態。",
+      "columns": ["狀態", "什麼意思", "何時用", "視覺", "能選取/複製?", "表單會送出?", "可 focus?"],
+      "rows": [
+        ["editable", "使用者可以改這個值", "正常可編輯欄位(預設)", "正常輸入框(邊框 + 底 + focus 藍)", "是", "是", "是"],
+        ["readonly", "不能改,但能看、能選取複製", "鎖定的表單欄位、系統產生的值(訂單編號、唯讀 email)", "灰底 + 無邊框(仍像個欄位框)", "是", "是", "是"],
+        ["disabled", "完全不能碰、不適用", "條件未滿足暫時停用(未選國家前的城市、未勾同意前的送出鈕)", "灰底 + 灰字 + 禁用游標", "否", "否", "否"]
+      ],
+      "一句話核心": "readonly 管『不能改但能讀能複製、值算數』;disabled 管『不適用、整個停用、值不算數』。差別在『你還能不能讀/選取/複製這個值』+『這值算不算數(送出)』。"
+    },
+
+    "recommendation_for_us": {
+      "verdict": "**三個都留 —— 對齊世界級(HTML/ARIA/Polaris 都分 readonly+disabled,editable 是預設),不是過度設計。合併會失去 a11y 語意與『能不能複製/送出』的表達力。**",
+      "when_to_use_each_one_liner": {
+        "editable": "使用者要改的欄位(預設態)。",
+        "readonly": "表單裡『鎖住但要讓人看/複製』的欄位(唯讀 email、系統產生編號)。詳情面板純展示則用 `display`(更輕、無 chrome),可編就用 InlineEdit。",
+        "disabled": "『現在不適用/條件未滿足』的欄位(未選 X 前禁用的 Y、未同意前禁用的按鈕)。"
+      },
+      "note_ds_has_a_fourth_mode": "誠實補一句:我方其實是 **4 個 mode**(edit=editable / readonly / disabled + 多一個 `display` 純展示)。display 比 readonly 更輕(無灰盒、無 focus),定位『這不是表單欄位,只是把值展示給人看』(cell read / 詳情 meta),對齊 Carbon read-only / Notion property / Cloudscape display-mode —— 這層是我方比多數表單庫多出來的、合理。所以 user Q3 的三態問題在我方對應到 edit/readonly/disabled 三個,display 是額外的展示層、不與這三個衝突。",
+      "open_question_carryover": "round5 的 grid open question 仍在:DataTable『可編欄內被鎖的 cell』該走 readonly-dimmed(可讀可複製,對齊 Handsontable/ARIA)還是現況的 disabled(偏嚴)—— SSOT-affecting,值 user 拍板;與本輪 Q3『該不該分三個』是不同層的問題(本輪答案是明確『該分』)。"
+    }
+  },
+
+  "final_verdicts": {
+    "Q1": "default×display(自帶 field-height 的)**無真 production 消費者** —— 只在 stories(各元件 demo + field.stories.tsx:103)。mode=display 真 production 消費者僅 2:DataTable cell(全 naked → !h-auto,高度由 row)+ InlineEdit renderRead(委派 consumer 傳的 Select 裸 Tag)。mode=readonly 真 production 消費者 = 0(全 stories)。apps=template 全零。故『display 高度統一交容器』(default×display 補 !h-auto)無痛,blast radius=story/template only。form-locked 依 DS canonical 應走 readonly(user 直覺對);詳情唯讀值可編走 InlineEdit、不可編走 display。",
+    "Q3": "世界級『分 readonly + disabled 兩個』是普世共識(MDN HTML / MDN ARIA / Polaris 明分;Ant 偏 disabled 為主但承認兩者;grid 層多為二態,灰化第三態可選且 Handsontable 命名為 readOnly)。三態一句話:editable=能改 / readonly=不能改但能讀能複製會送出 / disabled=不適用整個停用不送出。建議三個都留,不合併。我方另有第 4 個 mode `display`(純展示、無 chrome),定位輕於 readonly、對齊 Carbon/Notion,合理。"
+  }
+}

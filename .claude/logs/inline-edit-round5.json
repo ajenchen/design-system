@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "date": "2026-07-15",
+    "round": 5,
+    "scope": "唯讀深研(禁改 code)。獨立驗證前情 inline-edit-final-ssot.json + inline-edit-ssot-deep.json 三結論,逐行 file:line + WebFetch ≥3 家世界級對照。三題:(Q1) display 該不該拆 naked vs default / default×display 有無真消費者 /(Q2) auto-sm 解法(useResolvedFieldSize + static fieldPreferredSize)是否成立 + forwardRef 這關 /(Q3) cell 三態(readonly/disabled/editable)對齊世界級 or 過度設計。",
+    "method": "全庫 grep 逐一判定 mode=display 消費點 × variant × 高度來源;逐行讀 field-wrapper/field/inline-edit/field-context/radio-group/checkbox-group/cell-registry/data-table tsx;WebFetch AG Grid / MUI X / Handsontable / Ant + WebSearch readonly-vs-disabled ARIA 語意。對前情結論做對抗性再驗,凡我親證的標 VERIFIED,凡我修正的標 REFINED。",
+    "repoRoot": "/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project",
+    "token_baseline_reconfirmed": "field-height sm28/md32/lg36 (uiSize.css);table-row sm32/md40/lg48 — 兩獨立 token family。field-px=12px 固定。"
+  },
+
+  "Q1_display_variant_verdict": {
+    "headline": "default×display **不是 dead**,是 spec 明文宣告的『表單/詳情 display 路徑』(field-controls.spec.md:65『有效組合:default × {edit/display/readonly/disabled} 全用於表單/詳情』);但其**自帶 h-field 是冗餘副產物、非設計需求**。naked vs default 當初拆的是**兩種 chrome 模型**(form-input 自帶殼 vs cell-as-input 透明基底 由 host 供邊框+高度),display 高度差(default 留 h-field / naked 有 !h-auto)是下游後果、非拆分理由。建議:display 收斂成單一心智模型『內容 intrinsic、高度容器擁有』= 在 display×default compound 補 `!h-auto`(對稱 display×naked 既有寫法),**不刪 compound、只拔冗餘自帶高**。SSOT-affecting(跨元件共享 field-wrapper compound)→ ASK user。",
+
+    "Q1_1_consumer_map": {
+      "method": "grep 全 repo(packages + apps + src)mode=display 生產消費點,逐一判 variant + 高度來源。",
+      "which_controls_reserve_h_field_in_display_default": {
+        "verdict": "**只有 text-entry 家族(Input / NumberInput / Textarea / LinkInput)的 display×default 真的走 fieldWrapperStyles → 繼承 size variant 的 h-field**。Select / Combobox / DatePicker / TimePicker / PeoplePicker 的 display=default 渲**裸 span / 裸 Tag**(不進 fieldWrapper、無 h-field)。",
+        "evidence": [
+          "input.tsx:161-194 showDisplaySpan 分支渲 `<div className={fieldWrapperStyles({mode:spanMode, variant, size})}>` → default × display → 只 override !px-0 !py-0(field-wrapper.tsx:128-136)、**不動 height** → size variant `h-field-{size}`(field-wrapper.tsx:65-67)繼承。VERIFIED。",
+          "number-input.tsx:129 `fieldWrapperStyles({mode:resolvedMode, variant, size})` display 同走 h-field。VERIFIED。",
+          "select.tsx:392-394 display 預設渲 `<span>` / `<Tag>`(裸,無 fieldWrapper);只有 D-path opt-in(showDisplayEndIcon,select.tsx:397-410)才 wrap fieldWrapperStyles,而 D-path 僅 DataTable editable cell 用(naked)。VERIFIED。"
+        ]
+      },
+      "consumer_table": {
+        "datatable_cell (9-10 型)": "variant=naked mode={displayOrDisabled(isDisabled)} — cell-registry.tsx:145/146/205/259/292/327/364/392/412/437/462。走 display×naked → `!h-auto`(field-wrapper.tsx:220-226)。高度來源 = ROW `h-table-row-{size}`(data-table.tsx),cell items-center 撐。**這是 display 的主力重消費者。**",
+        "inline_edit_read": "renderRead 內 `<Select mode=\"display\" display=\"tag\" size=\"sm\">`(inline-edit.stories.tsx:152/221)— 無 variant → default,但走**裸 Tag path**(非 fieldWrapper h-field)。高度來源 = InlineEdit read wrapper `min-h-[var(--field-height-{size})]`(inline-edit.tsx:99-104)。",
+        "field_mode_display_form": "`<Field mode=\"display\">` 包 Input/NumberInput → 這些 text-entry 走 display×default **自帶 h-field**;但外層 Field control area `min-h-field-{size}`+items-center(field.tsx:244 / field.spec.md:78)已提供高度。**僅 field.stories.tsx:103-108 有實例(story)。**",
+        "standalone_input_display": "`<Input mode=\"display\">` 無容器 = **唯一暴露 h-field 自帶高的場景**;僅 input.stories.tsx:31(story)。",
+        "apps_zero": "**apps/(只有 template)grep = 0 個 mode=display / 0 Field / 0 InlineEdit / 0 readonly**。故所有 default×display 實例 = stories + DS template,無真 app 消費者。VERIFIED(grep 空)。"
+      }
+    },
+
+    "Q1_2_does_default_display_have_real_consumers": {
+      "question": "『display×default(會繼承 field-height)』到底有沒有真消費者?若真消費者全是 naked / bare-Tag,default×display 是不是 dead/多餘?",
+      "answer": "**compound 不 dead,自帶高才冗餘。** 兩層要分開:",
+      "layer_a_the_compound_itself": "display×default compound(zero-chrome:bg-transparent border-transparent !px-0 !py-0)**有真消費者且被 spec 宣告為 canonical**:field-controls.spec.md:65『有效組合:default × display 用於表單/詳情』。text-entry 控件(Input/NumberInput/Textarea/LinkInput)在 form / detail-pane display 態一定走它。目前實例僅 stories + template(無 apps),但這是**宣告態的表單 readonly-display 路徑**,不是 dead code — 移除它會讓 `<Field mode=\"display\">` 包 Input 無渲染分支。",
+      "layer_b_the_self_height": "display×default **繼承的 h-field 才是冗餘**(redundant, not dead):追蹤 compound 證實它從沒為 display 特別保留高度——只是 override padding(!px-0 !py-0)、沒去拔 size variant 的 h-field(field-wrapper.tsx:128-136 vs 65-67)。而它每次被用時都活在容器內(Field control-area min-h / InlineEdit read wrapper min-h / cell row / story div),容器已獨立擁有高度 + items-center → 這個 h-field 從不被感知(被容器吸收);唯一暴露面 = standalone 無容器 = 零 app 消費者。",
+      "verdict_dead_or_redundant": "**default×display compound = 非 dead(canonical 表單 display 路徑);其自帶 h-field = 冗餘(latent 不一致,非 active bug)。**"
+    },
+
+    "Q1_3_why_split_naked_vs_default_originally": {
+      "source": "field-wrapper.tsx 檔頭 + compound 註解 + git log(squash mega-commit,granular blame 有限,但 code 註解已 self-document rationale)。",
+      "naked_born_for": "**cell-as-input substrate**(DataTable)。field-wrapper.tsx:16-19『naked — cell-as-input(Notion / Airtable / Excel canonical);edit×naked 自畫 border-based state machine;display/readonly/disabled×naked 用 transparent border 由 host cell 提供視覺邊框』+ :52-62 + :170-188。核心:cell 的邊框/背景/高度由 **host cell + row** 提供,field 本身透明。",
+      "default_born_for": "**form-input 完整 chrome**:bg-surface + 明顯 border + hover/focus 回饋 + 自帶 field-height(field-wrapper.tsx:8-13 / 53 / 99-127)。self-contained 表單欄位。",
+      "display_naked_h_auto_born": "**2026-05-12 M32 root-invariant audit**(field-wrapper.tsx:204-226 逐行註記 Q1/Q2/Q3):autoRow tall cell + cell items-start 時,若 field 留 h-field-md(32)→ text 卡在 field 內置中而非 flush cell top+padding。root-layer fix = display×naked 加 `!h-auto` → field intrinsic → cell items-start 真 anchor text 到 cell.top+padding。**這是 cell 幾何需求,與 form 無關。**",
+      "display_default_h_field_born": "**無獨立設計動機 = 副產物**:display×default compound 只加 `!px-0 !py-0`(zero chrome,2026-05-13 Path Ⅰ,field-wrapper.tsx:129-136),從沒 touch height → size variant h-field 自然透出。= 『重用 edit wrapper 的 size variant』的機械結果。VERIFIED(compound 逐字核對:無任何 height override)。",
+      "conclusion": "naked vs default 拆的是 **chrome 模型**(cell 基底 vs form 殼);display 高度差是後果不是理由。故『display 該不該拆兩種』其實是誤設問題——**variant 軸(chrome 模型)本就該分**;真問題是『display 高度是否該統一交容器』。"
+    },
+
+    "Q1_4_should_display_converge": {
+      "recommendation": "**建議收斂:display 一律 intrinsic、高度容器唯一擁有。** 機制 = display×default compound(field-wrapper.tsx:128-136)加 `!h-auto`,對稱 display×naked(field-wrapper.tsx:223)既有寫法。效果:Input display 變 intrinsic(跟 Select 裸 Tag 一致)→ 單一心智模型『display 出值內容、容器給高度』。",
+      "blast_radius": {
+        "edit_untouched": "edit×default(field-wrapper.tsx:99-127)/ edit×naked !h-full(:190-202)不受影響——!h-auto 只加在 display×default。",
+        "readonly_disabled_untouched": "readonly×default(:137-152 bg-readonly 灰框)+ disabled×default(:153-161 bg-disabled 灰框)**保留** h-field(需渲灰盒)——不加 !h-auto。語意正確:readonly/disabled 有 chrome(灰盒)要 field-height 才像鎖定框;display 無 chrome(透明)故 intrinsic。",
+        "datatable_cell_untouched": "cell 早已 display×naked !h-auto,不動。I1-I4 幾何不變量(data-table-invariants.mjs)不受影響。",
+        "field_slot_inline_edit_read_untouched": "read↔edit 零位移不破:Field control-area min-h(field.tsx:244)+ InlineEdit read wrapper min-h(inline-edit.tsx:99)獨立提供高度+items-center;display 內容縮 intrinsic 後仍在容器內置中。",
+        "only_visible_change": "standalone `<Input mode=\"display\">`(無容器)從 32px 縮成文字行高(~20px)。**零 app 消費者**(apps grep 空);對『純展示一個值』hug-text 反更正確。"
+      },
+      "honest_two_defensible_paths": {
+        "path_A_unify_intrinsic": "加 !h-auto → 移除 latent 不一致 + 單一心智模型 + 對齊 M17『高度唯一擁有者=容器』+ 對齊現況 de-facto(容器早已擁有高度)。**我(round 5)傾向此案**。",
+        "path_B_keep_belt_and_suspenders": "保留 Input display 自帶 h-field 當 documented 冗餘保險(容器內無害,只 standalone 有差,而 standalone 零消費者)。代價僅留一個看不見的自帶高 + latent 不一致。若選此,至少 codify 使用規則『display 高度一律交容器,禁 standalone 依賴自帶高』把 latent 轉明文。",
+        "why_ask_user": "改 display×default = 跨全 Field family 共享 compound = **SSOT-affecting** → 依自主執行 canonical 必 ASK user 拍板;本研究唯讀不執行。"
+      }
+    },
+    "round5_delta_vs_prior": "VERIFIED 前情兩 log 的核心(default×display 留 h-field 是副產物 / 加 !h-auto 對稱 display×naked 是乾淨解 / 零 app 消費者)。REFINED:前情用詞近『可能多餘』,round 5 精確化 = **compound 非 dead(spec:65 宣告 canonical 表單 display 路徑),只有 self-height 冗餘**;且補上 naked-vs-default 拆分的真 rationale(chrome 模型,非高度)——澄清『display 該不該拆兩種』是誤設問題。"
+  },
+
+  "Q2_autosm_verification": {
+    "headline": "解法成立。(d) InlineEdit 讀 useResolvedFieldSize(prop,'sm') + (b) InlineEdit 掛 static `fieldPreferredSize='sm'` / Field 偵測 child static 預設 sm —— **forwardRef 這關過**(RadioGroup/CheckboxGroup 是現存活體證明:兩者皆 forwardRef 且 fieldLayout static 被 detectControlLayout 讀到)。(b)+(d) 必**兩者都要**,缺一不可。精確 precedence 兩條交互**收斂不打架**。SSOT-affecting(改 Field size resolution + 新 static convention)→ ASK user。",
+
+    "Q2_1_detectControlLayout_line_by_line": {
+      "source": "field.tsx:96-103 + 190-200",
+      "how_it_reads_child": "`detectControlLayout(controlNodes)`:`for (node of controlNodes) { if !isValidElement continue; const layout = (node.type as {fieldLayout?}).fieldLayout; if layout==='block' return 'block' } return 'inline'`。**讀 `node.type.fieldLayout` static**(非 displayName 字串,非 React.Children.map)。VERIFIED 逐行。",
+      "direct_child_only_not_recursive": "controlNodes 由 `React.Children.forEach(children, child => ...)`(field.tsx:190-196)扁平**單層**收集——React.Children 不遞迴進 Fragment/wrapper 子樹。故只看直接 child 的 type。VERIFIED。",
+      "how_control_is_picked_from_label": "resolveSlotKind(field.tsx:77-84)讀 `node.type.displayName`:'FieldLabel'/'FieldDescription'/'FieldError' 各歸 slot,**其餘一律 'control'**。FieldLabel + control 兩 child 時,FieldLabel 因 displayName 被濾進 labelNodes,control 進 controlNodes。VERIFIED。",
+      "multiple_children": "『任一 control 宣告 block 即整 area block』(first-block-wins,field.tsx:92-94 註 + :100 早 return)。size 版可同構定義『任一 control 宣告 preferred 即採(或 first-wins)』。"
+    },
+
+    "Q2_2_radio_checkbox_static_isomorphic": {
+      "radio_group": "radio-group.tsx:**RadioGroup = React.forwardRef**(Root return),`RadioGroup.displayName='RadioGroup'` 後 `;(RadioGroup as unknown as {fieldLayout:'block'}).fieldLayout='block'`(radio-group.tsx:184 附近)。VERIFIED forwardRef + static。",
+      "checkbox_group": "checkbox-group.tsx:73 **CheckboxGroup = React.forwardRef<HTMLDivElement, CheckboxGroupProps>**,`CheckboxGroup.displayName='CheckboxGroup'` 後 `;(CheckboxGroup as unknown as {fieldLayout:'block'}).fieldLayout='block'`(checkbox-group.tsx:96 附近)。VERIFIED forwardRef + static。",
+      "isomorphism": "InlineEdit **也是 forwardRef**(inline-edit.tsx:282 `const InlineEdit = React.forwardRef(InlineEditImpl) as (...) & {displayName?}`)+ displayName 用**完全相同**手法掛(inline-edit.tsx:285)。故 `;(InlineEdit as unknown as {fieldPreferredSize:'sm'}).fieldPreferredSize='sm'` 與 RadioGroup/CheckboxGroup 掛 fieldLayout **一字對稱**,detectPreferredSize 讀 `node.type.fieldPreferredSize` 與 detectControlLayout 讀 `node.type.fieldLayout` **同機制**。**同構、可行 = VERIFIED。**"
+    },
+
+    "Q2_3_adversarial_failure_modes": {
+      "i_forwardRef_static_readable": "**過。** 關鍵疑慮『InlineEdit 被 forwardRef 包 → child.type 讀得到 static 嗎?』——**RadioGroup + CheckboxGroup 就是現存活體反證**:兩者皆 forwardRef,fieldLayout static 掛在 forwardRef 物件上(forwardRef return 是 plain object `{$$typeof, render}`,可掛任意 static),detectControlLayout 讀 `node.type.fieldLayout` **已在生產成功運作**。static 掛在 forwardRef 物件、`element.type` 即該物件、`.fieldPreferredSize` 讀得到。displayName 同法掛同法讀(inline-edit.tsx:285)。**forwardRef 這關 = 明確過。**",
+      "ii_multi_conditional_fragment": "**與既有 fieldLayout 同一限制,非新脆弱類。** (a) 多控件:first-wins(同 detectControlLayout);(b) 條件 render `{cond && <InlineEdit/>}`:cond=false → React.Children forEach 收到 `false` → isValidElement(false)=false → skip;cond=true → 直接 child → 偵測到。OK;(c) **Fragment / div 包 InlineEdit → node.type = Fragment/'div' 非 InlineEdit → 偵測漏**——但**這正是 RadioGroup/CheckboxGroup fieldLayout 早已接受的同一限制**(包 wrapper 也破其 block 偵測)。不引入新脆弱類。InlineEdit 是 leaf 控件、consumer 極少 memo/Fragment 包。",
+      "iii_explicit_field_size_override": "**過,precedence 寫得出來。** `<Field size=\"md\">` 必須勝偵測 = `sizeProp ?? detected ?? 'md'`(prop 勝)。**這與既有 controlLayout precedence 一字對稱**:field.tsx:199-200 `controlLayout = controlLayoutProp ?? detectControlLayout(controlNodes)`。實作要把 destructure `size='md'` 改成 `size: sizeProp`(比照 `controlLayout: controlLayoutProp`,field.tsx:163)後 compute。VERIFIED template 存在。"
+    },
+
+    "Q2_4_precise_precedence_and_no_fight": {
+      "field_side": "`Field.size = explicitSizeProp ?? detectPreferredSize(controlNodes) ?? 'md'`(新增,對稱 controlLayout resolution)。contextValue.size = 此值(field.tsx:213)。",
+      "inline_edit_side": "`InlineEdit.size = useResolvedFieldSize(sizeProp, 'sm')` = `sizeProp ?? fieldCtx.size ?? surfaceSize ?? 'sm'`(field-context.ts:157-164 precedence VERIFIED)。",
+      "interaction_walk": {
+        "case_field_wraps_inlineedit_no_explicit": "Field 偵測 InlineEdit static → Field.size=sm → fieldCtx.size=sm → InlineEdit useResolvedFieldSize(undefined,'sm')=fieldCtx.size(sm)=sm。slot MIN_H_CLASS[sm]=min-h-field-sm=28(field.tsx:244)/ InlineEdit read min-h-field-sm=28(inline-edit.tsx:99)/ edit `<Input size=sm>`=28。**全鏈 28,收斂不打架。**",
+        "case_explicit_field_md": "`<Field size=\"md\"><InlineEdit/></Field>`:Field.size=prop 'md'(勝偵測)→ fieldCtx.size=md → InlineEdit 讀 md → slot 32 / read 32 / edit 32。一致。",
+        "case_standalone": "`<InlineEdit/>` 無 Field:fieldCtx=null → useResolvedFieldSize(undefined,'sm')='sm'。維持 sm(inline-edit.spec.md『尺寸預設=sm,2026-07-09 user 拍板』/ inline-edit.tsx:109 defaultVariants size:'sm')。VERIFIED 保留。",
+        "why_no_fight": "**兩條規則收斂而非衝突**:Field 的偵測**設定** fieldCtx.size=sm,InlineEdit 的 resolver **讀** fieldCtx.size=sm → 同源同值。若無 (b)、只有 (d):InlineEdit 跟隨 Field,但 Field 預設 md → InlineEdit md(非 sm)。若無 (d)、只有 (b):`<Field size=\"md\">` 顯式時 slot=32、InlineEdit 自身 default sm=28 → **28-in-32 錯位回來**。**故 (b)+(d) 缺一不可**:(b) 給 default sm,(d) 給 explicit-override 對齊 + 修 id/disabled cascade 0 接線(inline-edit.tsx:25 只 import type、grep 0 個 useFieldContext/useResolvedFieldSize/useResolvedFieldDisabled)。"
+      }
+    },
+
+    "Q2_5_is_there_cleaner_existing_mechanism": {
+      "surface_size_no": "FieldSurfaceSizeContext(field-context.ts:149/230-238)方向 = host→child(cell 把 density 往下推),**推不動 child→parent 的 Field slot**。方向錯。VERIFIED。",
+      "fieldctx_no": "fieldCtx 由 Field 寫、child 讀,單向。child 無法 runtime 回寫 parent 已渲的 slot(React 單向流)。要 parent 事先知道 child = render-time 掃 children = 退化成 (b)。",
+      "conclusion": "**無現成『child 把 preferred size 上推』機制,除了 render-time static 偵測(= detectControlLayout 那套)= 正是 (b)。故 (b) 是復用既有 convention 的最乾淨 in-Field 路徑,非新造 magic。**"
+    },
+
+    "Q2_6_verdict": {
+      "does_it_hold": "**成立。** (b)+(d) 合併是唯一達成 user 字面『用 InlineEdit 的 Field 預設 sm、除非明傳 size』的 in-Field 解;forwardRef gate 明確過(RadioGroup/CheckboxGroup 活體證明);precedence 收斂不打架;explicit override 寫得出來(對稱既有 controlLayout resolution)。",
+      "honest_caveats": [
+        "(b) 引入新 static convention `fieldPreferredSize` + 讓 child 型別驅動 Field **預設** size = 輕微反轉『Field.size 是 SSOT、控件往下同步』(field.spec.md:78 / field-controls.spec.md cascade 表)。**但**:detectControlLayout 早已為 layout 做同一反轉(child RadioGroup 驅動 controlLayout=block)、只是**預設**(explicit 永遠勝)、InlineEdit 的 sm 本是 user 拍板 intrinsic 偏好(inline-edit.spec.md)。屬 precedented + bounded 的反轉,非破格。",
+        "屬 SSOT-affecting(改 Field size resolution + 加 convention + 需同步 spec/hook)→ ASK user 拍板,唯讀不執行。"
+      ],
+      "even_cleaner_alternative_f": "若願重定位:Option (f) Atlassian 模型 = InlineEdit 自 own label + control area(一律 sm)、不外包 `<Field>`——對齊 Atlassian『Field is used here only for the label and spacing』。**架構最正**,但屬 API 演進(label aria-only→可見)+ 與現行 spec『表單欄位→直接用 <Field>』(inline-edit.spec.md:96)positioning 相衝 → 更大決策。(b)+(d) 是**現行架構內**最乾淨;(f) 是**願改 positioning 時**最乾淨。",
+      "round5_delta_vs_prior": "VERIFIED 前情兩 log 對 (b) 的『非新脆弱(與 fieldLayout 同限制)』判斷,並**補強成鐵證**:親自確認 RadioGroup+CheckboxGroup 皆 forwardRef 且 static 被讀 = forwardRef gate 的活體證明(前情僅推論)。REFINED:明確拆出『(b)+(d) 缺一不可』的機械原因(缺 d→md、缺 b→explicit 時錯位回來),前情較含糊帶過。"
+    }
+  },
+
+  "Q3_worldclass_cell_states": {
+    "headline": "cell 兩軸三態(isEditable × isDisabled,data-table.tsx:1061)**不是過度設計**——與 grid 域最豐富的 Handsontable 對齊(它明分 editor:false 非可編 vs readOnly-htDimmed 灰化兩態),且 AG Grid / MUI X / Ant 雖預設兩態(editable vs read-only-display)但灰化第三態皆可經 cellClass/render 達成。**唯一誠實 refine:我方第三態命名『disabled』語意比 grid-canonical 的『readonly-dimmed(可讀可選、只是不可編)』更嚴(disabled=inert)**——若『鎖定但仍可讀』是本意,readonly 語意對齊 Handsontable 更好。InlineEdit 無 disabled prop 正確(standalone、非可編→用 display),與 cell 非不一致而是 context-adapted。",
+
+    "Q3_1_our_model_verified": {
+      "two_axes": "cell 兩正交軸(data-table.tsx):(1) `isCellEditable`=meta.editable(bool | (row)=>bool,:1034-1042)= 結構能不能編;(2) `isCellDisabled`=meta.disabled(bool | (row)=>bool,:1048-1056)= state overlay。`canEditCell=isCellEditable && !isCellDisabled`(:1061-1064)。VERIFIED。",
+      "three_effective_states": {
+        "1_not_editable": "meta.editable 缺/false → `mode=\"display\"`(displayOrDisabled(false)='display',cell-registry.tsx:143-144)= 純值、無 affordance、無 hover outline。",
+        "2_editable_idle": "靜止 mode=\"display\" + hover outline affordance(nakedCellEditableDisplayHover)+ click→edit(onEditableCellClick=cellEditable && !cellDisabled,data-table.tsx:1694)。",
+        "3_editable_but_disabled": "meta.disabled 對該 row true → `mode=\"disabled\"`(displayOrDisabled(true)='disabled')+ TD `bg-disabled cursor-not-allowed`(data-table.tsx:1793)+ `data-cell-disabled`(:1781,供 range-fill `:not([data-cell-disabled])` 過濾)+ 抑制 edit 進入(onEditableCellClick 內含 !cellDisabled)+ 內部 Field mode='disabled' 各控件具體 disabled token(text-fg-disabled,非 wrapper blanket opacity)。VERIFIED。"
+      },
+      "so_yes_per_cell_disabled": "**是,真 per-cell/per-row disabled**(meta.disabled 支援 (row)=>boolean → 同欄不同 row 各自 disabled)。與『非可編欄一律 display』是兩件事:非可編=結構(整欄);disabled=state(此欄可編但此 row 暫鎖)。"
+    },
+
+    "Q3_2_world_class_webfetch": {
+      "ag_grid": {
+        "url": "https://www.ag-grid.com/react-data-grid/cell-editing/",
+        "finding": "`editable` = bool **或 callback(params)** per-row(官方:『Can also be a function to have different rows editable』)。另有 `readOnlyEdit`(true 時 cellEditRequest 取代 cellValueChanged)= **編輯 dispatch 模式旗標,非 cell 視覺態**。**預設無 out-of-box 灰化 disabled cell 態**;非可編 cell = read-only display(要灰化得自寫 cellClassRules/cellStyle)。→ **預設兩態(editable vs read-only-display)。**"
+      },
+      "mui_x_datagrid": {
+        "url": "https://mui.com/x/react-data-grid/editing/",
+        "finding": "column `editable`(bool)+ `isCellEditable` callback(GridCellParams,per-row)。官方明言『does not distinguish a separate disabled/greyed state;cells 只有 edit/view 兩 mode』。→ **binary 兩態,無第三 disabled 態。**"
+      },
+      "handsontable": {
+        "url": "https://handsontable.com/docs/react-data-grid/disabled-cells/",
+        "finding": "**明分兩種非可編**:(a) `readOnly:true` → 禁編/禁貼但**可複製可選**,加 **`htDimmed` CSS class(灰化視覺)**;(b) `editor:false` → 非可編但複製貼上照常、**無 CSS class**。→ **grid 域確有『灰化第三態』世界級先例,且與純非可編分開** = 直接對齊我方 state 1(display 純值)vs state 3(disabled 灰化)。**關鍵**:Handsontable 灰化態叫 **readOnly(可讀可選)**,非 disabled。"
+      },
+      "ant_table": {
+        "url": "https://ant.design/components/table#components-table-demo-edit-cell",
+        "finding": "Editable Cells 經 column.render 條件渲(純文字 vs input);無第一級 disabled cell 軸(要 disable 就 disable 內層 Form input)。→ 兩態為主,第三態靠自組。"
+      },
+      "readonly_vs_disabled_semantic": {
+        "source": "WebSearch — MDN aria-readonly / adrianroselli / kittygiraudel / gabriel-rodrigues (ARIA + HTML canonical)",
+        "finding": "**readonly** = 可 focus、**可選取可複製**、**表單會提交**、只是不可改;screen reader 仍可讀 + aria-readonly 告知。**disabled** = 不可 focus、不提交、**對 AT 隱形**、inert。**aria-disabled** = 中間態(可 focus/可尋、非功能)。→ user 提的『readonly=不可改但可讀可選 / disabled=完全鎖』**canonical 屬實**。"
+      }
+    },
+
+    "Q3_3_aligned_or_overengineered": {
+      "verdict_not_overengineered": "**不是過度設計。** grid 域現實:AG Grid / MUI X / Ant 預設**兩態**(editable vs read-only-display),但灰化第三態:(a) Handsontable **首級內建**(readOnly→htDimmed,且與純非可編 editor:false 分開)、(b) AG Grid / MUI 可經 cellClassRules/cellStyle 達成。我方把它做成 `meta.editable × meta.disabled` 兩軸 = 把『結構非可編』與『state 鎖定』正交拆清,**對齊最豐富 grid(Handsontable)+ 其他家可達成 pattern**。真實需求存在:整個『status』欄非可編=純值;某封存 row 暫鎖=灰化——兩者語意不同,值得分軸。",
+      "honest_refine_the_third_state_semantic": "**唯一該誠實提出的 refine(非說現況錯):我方第三態命名/語意是『disabled』(mode='disabled' + bg-disabled + 內部 text-fg-disabled 灰字),但 grid-canonical 的灰化第三態(Handsontable htDimmed)語意是『readOnly(可讀可選、只是鎖編)』。** 依 MDN/ARIA,disabled=inert/AT 隱形/更嚴;readonly=可讀可選/提交/AT 可讀。一個『可編欄內被鎖的 cell』,若本意是『你仍能看/複製這個值,只是現在不能改』→ **readonly 語意(bg-readonly 底 + 灰字不加深、保留可選)對齊 Handsontable + ARIA 更好**;若本意是『這格徹底不可互動』→ 現行 disabled 合理。**我方目前實作偏 disabled**(text-fg-disabled 灰字 + cursor-not-allowed;但注意實際只抑制 edit-click,未見全面封 selection — data-table.tsx:1793/1781),語意上介於兩者、偏 disabled 呈現。**這是值得 user 拍板的一個真設計問:locked-editable-cell 該 readonly-dimmed(可讀)還是 disabled(鎖死)?**",
+      "note_readonly_naked_combo_unused": "佐證:field-controls.spec.md:65 明載『naked+readonly 目前無 live consumer(格子非 readonly 模式),保留 compound 為軸對稱』——即 DS 目前 cell 的『鎖定態』走 disabled 而非 readonly,readonly×naked 是空 compound。若採上述 refine(locked cell 走 readonly),正好啟用這個既有但無人用的 compound。"
+    },
+
+    "Q3_4_inline_edit_consistency": {
+      "inline_edit_no_disabled": "InlineEditProps(inline-edit.tsx:52-83)**無 disabled/readonly/locked prop**(grep 0 個分支)。2026-07 user 拍板:不可編欄位**根本不用 InlineEdit** → 渲 `<Input mode=\"display\">` / 純文字(inline-edit.spec.md:98)。VERIFIED。",
+      "is_it_inconsistent_with_cell": "**表面不對稱,實為 context-adapted 合理不對稱,非 drift。** 兩者共享底層原則『可編→互動 affordance;不可編→純 display 無 affordance』。cell 多的第三態(editable-but-locked 灰化)**只在有 sibling 對比(同欄其他 row 可編)的 grid 情境才有意義**——灰化訊號=『這欄能編但這格暫鎖』。InlineEdit 是 detail-pane standalone 單欄、無 sibling 對比,一個鎖定值直接當唯讀資料(display 純文字)呈現最自然;對它灰化反像壞掉/inactive。",
+      "should_inline_edit_gain_disabled": "**不該加。** 無 standalone 對比需求;『鎖定的 InlineEdit』視覺≈read 去掉 hover/button≈renderRead display → 換渲 display 近零視覺 delta(inline-edit.spec.md:98/106)。加 disabled = 冗餘 API(違 M21 prop-variant 精神)。"
+    },
+
+    "Q3_5_verdict": {
+      "cell_three_state": "**對齊世界級、非過度設計**(Handsontable 首級內建灰化第三態 + editor:false/readOnly 分軸;AG Grid/MUI 兩態為主但可達成)。保留 isEditable × isDisabled 兩軸有表達力(可編欄內鎖定特定 row),拿掉會失去該能力。",
+      "the_real_open_question": "**readonly vs disabled 該分**——user 直覺對:grid-canonical 的『鎖定但可讀』第三態語意是 **readonly**(Handsontable htDimmed 可複製可選 / ARIA readonly 可讀提交),我方目前以 **disabled**(灰字 + cursor-not-allowed)呈現偏嚴。是否把 locked-editable-cell 從 disabled 改走 readonly(啟用既有空 compound naked×readonly、bg-readonly、可讀可選)= **值得 user 拍板的真設計決策**(SSOT-affecting)。",
+      "inline_edit": "InlineEdit 不加 disabled/readonly prop 正確;與 cell 非不一致,是同一原則下 host 情境決定要不要第三態。可 codify 一句共同原則(field-controls.spec.md 框架地圖 or 兩 spec cross-ref):『可編=互動 affordance;不可編=純 display 無指示。cell 的鎖定第三態(editable-but-locked,需 sibling 對比)standalone edit-in-place 無此態、以 display 表達鎖定』。",
+      "round5_delta_vs_prior": "VERIFIED 前情『cell 三態合理、InlineEdit 不該加 disabled』核心。**REFINED / 新增(前情漏)**:前情兩 log 皆判『cell disabled 對齊 grid 世界級共識』但**未實查各家 source**;round 5 WebFetch 實證發現 AG Grid/MUI/Ant 其實**預設只兩態**、真正內建灰化第三態的是 **Handsontable**,且 Handsontable 把它叫 **readOnly(可讀)非 disabled** → 據此提出前情完全沒有的**真 refine:我方第三態語意偏 disabled、grid-canonical 偏 readonly,locked-cell 該 readonly 還是 disabled 是未決真問**(對齊 user Q3 尾句直覺)。"
+    }
+  },
+
+  "cross_cutting": {
+    "F1_Q1": "default×display compound = canonical 表單/詳情 display 路徑(非 dead);其自帶 h-field = 冗餘副產物。naked vs default 拆的是 chrome 模型(cell 基底 vs form 殼),display 高度差是後果。收斂建議 = display×default 加 !h-auto(對稱 display×naked),blast radius = story/template only(apps 零)。SSOT-affecting → ASK。",
+    "F2_Q2": "(b)static fieldPreferredSize + (d)useResolvedFieldSize 成立;forwardRef gate 過(RadioGroup/CheckboxGroup 活體證明);(b)+(d) 缺一不可;precedence Field.size=explicit ?? detected ?? 'md' / InlineEdit.size=explicit ?? fieldCtx.size ?? 'sm' 收斂不打架。SSOT-affecting → ASK。(f)Atlassian 自 own label 是願改 positioning 時更正解。",
+    "F3_Q3": "cell 兩軸三態非過度設計(對齊 Handsontable + 可達成 pattern);真 open question = locked-editable-cell 該 readonly-dimmed(可讀,對齊 Handsontable/ARIA)還是 disabled(現況偏嚴);InlineEdit 不加 disabled 正確。",
+    "all_three_are_SSOT_affecting": "三題的『修』皆觸 SSOT(field-wrapper compound / Field size resolution + 新 static convention / cell locked-state readonly-vs-disabled 語意)→ 依自主執行 canonical 必 user 拍板;本研究唯讀不執行。",
+    "honest_gaps": "(1) apps/ 僅 template,無真 app 消費者可反證『移除 Input 自帶高會破什麼』——blast radius 只能斷言 story/template only。(2) (b) 的 Fragment/HOC 偵測漏在真實 consumer 是否發生無實測 data,只能以『與 fieldLayout 同限制 + InlineEdit 是 leaf 極少被包』推論。(3) 我方 disabled cell 是否全面封 selection(vs 僅抑制 edit-click)未逐行窮盡確認 data-table selection handler;觀察到的是抑制 edit-click(:1694)+ bg-disabled/cursor-not-allowed(:1793)+ range-fill 過濾(:1781),偏『鎖編但未見鎖選』——這反而更接近 readonly 行為,佐證 Q3 refine。"
+  }
+}
