@@ -13,7 +13,7 @@
 - **content 分兩類**:純值(plain span / 標題 `<h1>` 客製 typography)**共享這份 geometry cva**;**只有「值-格式化」(Select→Tag / Date→日期格式)委派 `<Control mode="view">`**(bare,取格式化邏輯,幾何仍由 InlineEdit cva 盒給)。
 - **③ 多行 py SSOT**:InlineEdit cva `py-2` == Textarea edit `py-2`(textarea.tsx:44)。Textarea py-2 是 class 非 token → **加 invariant 鎖**(assert InlineEdit 多行 read py == Textarea edit py,drift 即紅)確保 Field 一改就被抓。現況 InlineEdit 多行是 `py-1.5`(:105)= 待改 `py-2`。
 - **cva 動作**:`view×default`(:128-136)+ `view×naked`(:220-226)兩條**合成單一** `{ mode:'view', className:[bare naked 值 + !h-auto] }`(不指定 variant);砍 `readonly×naked`/`disabled×naked` 死格(+ Textarea 鏡像)。
-- **③(換行 padding)結構性解決**:InlineEdit view 委派 `<Control mode="view">`(default/plaintext)→ padding 自動 = 該控件 edit(Textarea py-2 / Combobox wrap py-1+gap-4 由各控件 view 自帶),Field 一改 InlineEdit 自動同步,**零 hardcode**。
+- ~~(round12 舊說法已刪:「InlineEdit view 委派控件 view mode 取 padding」被 round14 推翻 —— 幾何在 InlineEdit 自帶 cva,py-2 在 cva + invariant 鎖,見上方)~~
 
 **⚠️ InlineEdit 對齊機制(2026-07-16 實證,plaintext 後視覺零變)**:
 - InlineEdit **保留 `-mx-field-px` + `w-calc`**(欄位左緣對齊 + hover 外擴),但 **read wrapper 自己那條 `px-field-px` 拿掉**(改由委派的控件 view mode 提供,否則雙倍 px)。`-mx` 消掉控件 view 的 px → 內容仍落欄位左緣(= FieldLabel 同左緣)。math 相同(都 field-px),**視覺位置/對齊/hover/read↔edit 零跳全不變**,差別只在 px/py **來源** hardcode→控件 view mode(SSOT 同步)。
