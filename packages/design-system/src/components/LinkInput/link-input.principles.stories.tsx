@@ -59,7 +59,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/LinkInput/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">四模式</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/LinkInput/展示" name="展示樣式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">展示樣式</span></LinkTo>
+          <LinkTo kind="Design System/Components/LinkInput/展示" name="檢視樣式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">展示樣式</span></LinkTo>
         </li>
       </ul>
       <p className="text-fg-muted mt-3">判斷不確定時:先確認這個值是不是「儲存後使用者會想直接點開的完整網址」。若不是(例如純字串代號、email、內部路徑),改用 Input。下方「vs 近親」段有正反對照範例。</p>

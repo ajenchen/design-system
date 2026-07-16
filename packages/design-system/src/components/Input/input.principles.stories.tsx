@@ -51,7 +51,7 @@ export const UsageGuidance: Story = {
           <p>適合 Input 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           <ul className="space-y-1">
             <li><LinkTo kind="Design System/Components/Input/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">商品名稱欄位的編輯 / 純展示 / 唯讀 / 停用四模式</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/Input/展示" name="尺寸與 Button 對齊"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">搜尋列 — 輸入框與按鈕並排等高</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/Input/展示" name="三種尺寸"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">搜尋列 — 輸入框與按鈕並排等高</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/Input/展示" name="尾端操作"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">密碼顯示切換 / 搜尋清除等尾端操作</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/Input/展示" name="錯誤狀態"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Email 格式錯誤的驗證回饋</span></LinkTo></li>
           </ul>

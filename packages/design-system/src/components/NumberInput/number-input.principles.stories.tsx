@@ -52,7 +52,7 @@ export const UsageGuidance: Story = {
           <p>適合 NumberInput 的真實業務場景(點擊跳轉「展示」頁範例):</p>
           <ul className="space-y-1">
             <li><LinkTo kind="Design System/Components/NumberInput/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">四模式</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Components/NumberInput/展示" name="尺寸與 Button 對齊"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">尺寸與 Button 對齊</span></LinkTo></li>
+            <li><LinkTo kind="Design System/Components/NumberInput/展示" name="三種尺寸"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">尺寸與 Button 對齊</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/NumberInput/展示" name="格式化選項"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">格式化選項</span></LinkTo></li>
             <li><LinkTo kind="Design System/Components/NumberInput/展示" name="DataTable 整合"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">DataTable 整合</span></LinkTo></li>
           </ul>

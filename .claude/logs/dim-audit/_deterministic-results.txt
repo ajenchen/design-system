@@ -41,3 +41,13 @@
 ── dim 87: dogfood-prepublish-verify(需 npm pack + build)
    exit=1 | >fcst.... design-system-audit/SKILL.md ❌ ds-canonical mirror drift — run `npm run sync:ds-canonical` then re-commit before publish 
 ── heavy deterministic battery done
+── dim 23: compile-stories --all --check
+   exit=0 | ✅ 62 component(s) canonical aligned; 2 skipped(migration 未做)
+── dim 41: story-quality name jargon
+   exit=0 | CLEAN
+── dim 42: story-quality placeholder
+   exit=0 | CLEAN
+── dim 45: compile-stories generated rows
+   exit=0 | ✅ 62 component(s) canonical aligned; 2 skipped(migration 未做)
+── dim 48: orphan-tokens
+   exit=0 | ✅ check passed

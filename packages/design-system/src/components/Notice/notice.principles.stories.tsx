@@ -74,7 +74,7 @@ export const CompositionRules: Story = {
     <div>
       <Section title="Pattern 1 — Alert(persistent inline announcement)">
         <div className="prose prose-sm max-w-prose">
-          <p>需要「持續顯示直到 user 主動 dismiss」→ <LinkTo kind="Design System/Components/Alert/展示" name="低調單行"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Alert 低調單行</span></LinkTo>。Alert 內部消費 Notice + 加上 dismiss button + live region ARIA(error/warning → role="alert" assertive;info/success/neutral → role="status" polite)。</p>
+          <p>需要「持續顯示直到 user 主動 dismiss」→ <LinkTo kind="Design System/Components/Alert/展示" name="單行（低調 vs 實心對照）"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Alert 低調單行</span></LinkTo>。Alert 內部消費 Notice + 加上 dismiss button + live region ARIA(error/warning → role="alert" assertive;info/success/neutral → role="status" polite)。</p>
           <ul>
             <li>典型場景:付款失敗 banner / workspace 警告 / 重要通知 user 必看</li>
             <li>對齊世界級:Polaris <code>Banner</code> / Material <code>Banner</code> / Atlassian <code>InlineMessage</code> — 共識用「persistent + dismissible」</li>

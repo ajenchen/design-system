@@ -73,7 +73,7 @@ export const UsageGuidance: Story = {
                 <LinkTo kind="Design System/Components/Select/展示" name="顯示模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">顯示模式</span></LinkTo>
               </li>
               <li>
-                <LinkTo kind="Design System/Components/Select/展示" name="尺寸與 Button 對齊"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">尺寸與 Button 對齊</span></LinkTo>
+                <LinkTo kind="Design System/Components/Select/展示" name="三種尺寸"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">尺寸與 Button 對齊</span></LinkTo>
               </li>
               <li>
                 <LinkTo kind="Design System/Components/Select/展示" name="可清除"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">可清除</span></LinkTo>
