@@ -17,4 +17,4 @@
 
 **升級程序**:(1) 官方文件 cite;(2) 本 repo live 實測(canary probe / clean-room);(3) 記錄 provider+版本+日期+證據;(4) 更新本表同 commit。**降級**:發現 regression(如 provider 改版 discovery 變更)→ 立即降 Uncertified + 記錄。
 
-**Fork/template consumer surfaces**:consumer repo 的 Claude 治理 = C-prime corpus(實測蓋章 2026-07-14);consumer 的 Codex 治理 = **P2.4 已投影**(fork corpus `AGENTS.md` + `codex/hooks.json` + `codex/agents/skills/independent-review` + template checked-in `AGENTS.md`;假 fork harness 斷言生成物存在 + 指標不死鏈),**consumer 端 live 實測前仍 Uncertified**(P4.4 clean-room 排程;`.codex`/`.agents` 安裝到 fork root 的 sync-all 接線為 P2.4 §15 殘項)。
+**Fork/template consumer surfaces**:consumer repo 的 Claude 治理 = C-prime corpus(實測蓋章 2026-07-14);consumer 的 Codex 治理 = **P2.4 已投影 + P2.4b 已接線**(fork corpus `AGENTS.md` + `codex/hooks.json` + `codex/agents/skills/independent-review` + template checked-in `AGENTS.md`;既有 fork 經 `npm run sync-all` 送達 `.codex`/`.agents`/`AGENTS.md` 到 fork root — marker 政策 generated→刷新 / consumer-owned→不碰,harness 4h 斷言 2026-07-17),**consumer 端 live 實測前仍 Uncertified**(P4.4 clean-room 排程)。

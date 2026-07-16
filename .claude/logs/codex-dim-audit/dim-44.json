@@ -1,0 +1,48 @@
+{
+ "dim": 44,
+ "filesScanned": 70,
+ "findings": [
+  {
+   "fileLine": ".claude/skills/design-system-audit/references/audit-prompts.md:1141; .claude/rules/story-rules.md:34; packages/design-system/src/components/README.md:51; .claude/logs/audit-coverage-matrix.json:273",
+   "問題": "多個現行判準仍使用已退役的「預設視覺／裸 `<X>`／wrapper」三 test，README 另宣稱 internal 必住 `Internal/`；兩者皆違反 intent-based 與 in-place frontmatter canonical，會再次誤判公開 composition primitives。",
+   "severity": "material",
+   "建議": "全部改為指向 `ui-development.md` 的 public-API intent SSOT，並同步更新 coverage matrix 與 component-quality checklist。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.spec.md:23; packages/design-system/src/index.ts:591",
+   "問題": "整個 Command 單元標為 internal 並排除 root front-door，spec 卻明確指示 App 直接使用同檔匯出的完整 wrapper `CommandDialog`；public intent 與實際分類相反。",
+   "severity": "material",
+   "建議": "將 CommandDialog／CommandPalette 拆成公開單元並由 root 匯出；若只准 internal escape hatch，則撤回 App 直接使用的指引。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:96; packages/design-system/src/index.ts:420",
+   "問題": "`handleSheetOpenAutoFocus` 明標 `@internal`、目前只供 DS AppShell 使用，卻從 root front-door 匯出；註解又指示 consumer import，三方 intent 不一致。",
+   "severity": "material",
+   "建議": "若為 internal helper，從 root 排除並保留內部路徑；若是受支援的 consumer API，移除 `@internal` 並補入 Sheet spec。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.tsx:225; packages/design-system/src/components/Checkbox/checkbox-group.tsx:5; packages/design-system/src/index.ts:79",
+   "問題": "`ButtonGroupContext` 與 `CheckboxGroupContext` 都是 wrapper 與 child 間的 implementation context，只有 DS 內部 consumer，卻被 root front-door 公開；Checkbox context 亦在 index.ts:118 洩漏。",
+   "severity": "material",
+   "建議": "為兩個 Context 加 declaration-level `@internal`，從 root barrel 排除，內部元件維持 direct/subpath import。"
+  },
+  {
+   "fileLine": "packages/design-system/src/index.ts:544; packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx:449",
+   "問題": "Root front-door 匯出明標 internal 的 `RowSizeProvider`、`ItemInlineActionButton`、`ItemInlineAction` 及對應 props types；inline-action.spec.md:289 明文禁止 app-code 直接 import，現行 package root 可直接繞過限制。",
+   "severity": "material",
+   "建議": "從 root 移除這些 value/type exports、保留 pattern subpath；讓 barrel generator 支援 mixed public module 的 symbol-level `@internal` 排除。"
+  },
+  {
+   "fileLine": "packages/design-system/src/index.ts:613; packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.spec.md:4",
+   "問題": "`use-overflow-items` 已被 canonical 分類為 horizontal-overflow 的 internal utility，實際 consumer 也全是 DS 元件，但 root Hooks 區仍公開整個 module。",
+   "severity": "material",
+   "建議": "將該 hook module 標為 internal 並從 root hook generation 排除，只經 horizontal-overflow subpath 提供。"
+  },
+  {
+   "fileLine": "scripts/gen-design-system-barrel.mjs:238",
+   "問題": "Internal marker gate 只檢查單元內是否出現 `@internal` 文字；10 個 internal 單元的 62 個 exported symbols 均未取得 declaration-level JSDoc tag，因此 subpath IntelliSense 不會出現規則宣稱的 internal 警示。",
+   "severity": "marginal",
+   "建議": "改用 TypeScript AST 驗每個公開 declaration 的 `@internal` tag，或明確把 marker 降格為 module-only、撤回 IDE 警示宣稱。"
+  }
+ ]
+}

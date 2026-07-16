@@ -1,0 +1,141 @@
+{
+ "component": "TreeView",
+ "claimsVerified": 624,
+ "falseClaims": [
+  {
+   "fileLine": "tree-view.tsx:40-43；tree-view.spec.md:31-35；tree-view.anatomy.stories.tsx:43-50",
+   "宣稱": "TreeView 本身只負責三件事：遞迴渲染、展開／收合、鍵盤導覽與 ARIA tree。",
+   "真實code行為": "元件還直接管理 selection、pointer DnD、keyboard reorder、drop geometry、auto-expand 與 SR announcements。"
+  },
+  {
+   "fileLine": "tree-view.tsx:37-38；tree-view.spec.md:25,74；tree-view.anatomy.stories.tsx:20；tree-view.principles.stories.tsx:59",
+   "宣稱": "有 children 就可展開，沒有就是 leaf。",
+   "真實code行為": "實作以 React.Children.count(children)>0 判斷；children={false} 或空 Fragment 仍計為 1，會渲染可展開 chevron 與空 group。"
+  },
+  {
+   "fileLine": "tree-view.tsx:1071-1073；tree-view.spec.md:347；tree-view.anatomy.stories.tsx:82",
+   "宣稱": "設定 indicator 後 icon 不渲染、改渲染 indicator。",
+   "真實code行為": "render 使用 truthiness；合法 ReactNode indicator={0} 會被捨棄並繼續渲染 icon。"
+  },
+  {
+   "fileLine": "tree-view.spec.md:84,103",
+   "宣稱": "paddingLeft = depth × indentStep。",
+   "真實code行為": "實際總 paddingLeft 為 var(--tree-px) + depth×indentStep；root 也保留 context base padding。"
+  },
+  {
+   "fileLine": "tree-view.spec.md:131",
+   "宣稱": "single mode 一次只有一個 selected node。",
+   "真實code行為": "controlled selectedIds 與 defaultSelectedIds 未正規化；傳入多個 id 時 single mode 仍會同時渲染多個 selected node，只有後續 select() 才縮成一個。"
+  },
+  {
+   "fileLine": "tree-view.spec.md:193-195",
+   "宣稱": "ColorMatrix 提供完整 state × token 對照。",
+   "真實code行為": "code 有 default／hover／focused／selected／disabled 五態，但 ColorMatrix 僅列四態，完全省略 focus ring。"
+  },
+  {
+   "fileLine": "tree-view.spec.md:243-247",
+   "宣稱": "TreeView 放在 sidebar context 時，Sidebar icon mode 會透過 CSS 自動隱藏整區。",
+   "真實code行為": "SidebarGroup 沒有自動隱藏 TreeView；Sidebar 實作明文要求 consumer 自行傳 group-data-[collapsible=icon]:hidden。"
+  },
+  {
+   "fileLine": "tree-view.tsx:403-406；tree-view.spec.md:278",
+   "宣稱": "Drop Y 軸一律為上 25% before／中 50% inside／下 25% after。",
+   "真實code行為": "25/50/25 只適用 folder；leaf 使用上 50% before／下 50% after，永遠沒有 inside。"
+  },
+  {
+   "fileLine": "tree-view.spec.md:280",
+   "宣稱": "指標 ≤ folder 深度即 after，> folder 深度即 inside。",
+   "真實code行為": "X 軸只影響 folder 的下 25%；上 25% 固定 before，中 50% 固定 inside，均不看 X。"
+  },
+  {
+   "fileLine": "tree-view.tsx:469-479；tree-view.spec.md:280",
+   "宣稱": "leaf after 且指標較淺會自動升到 parent 的 after。",
+   "真實code行為": "drag-over 只把視覺 dropTarget 改成 parent；drag-end 仍以 over.id 的 leaf 作 targetId，consumer 收不到 parent/outdent 契約。"
+  },
+  {
+   "fileLine": "tree-view.spec.md:281",
+   "宣稱": "Auto-expand 離開目標或結束時會取消計時。",
+   "真實code行為": "結束會取消，但 shallow-leaf promotion 與 target DOM 查找失敗分支會提前 return，未清除先前 folder 的 timer。"
+  },
+  {
+   "fileLine": "tree-view.spec.md:369",
+   "宣稱": "IndentMatrix 涵蓋縮排與 guide line 規則。",
+   "真實code行為": "IndentMatrix 只展示 indentStep 與 chevron placeholder；沒有 guide line，showGuides 也尚未實作。"
+  },
+  {
+   "fileLine": "tree-view.spec.md:186,394；tree-view.anatomy.stories.tsx:431",
+   "宣稱": "每個 TreeItem 都寫入展開狀態、是否選取與所在層級。",
+   "真實code行為": "leaf 不渲染 aria-expanded；selectionMode='none' 時不渲染 aria-selected。只有 role 與 aria-level 全節點都有。"
+  },
+  {
+   "fileLine": "tree-view.tsx:342-344,882-884；tree-view.spec.md:406；tree-view.anatomy.stories.tsx:431",
+   "宣稱": "DOM focus 固定停在 tree 容器，整棵樹是單一 Tab 停靠點。",
+   "真實code行為": "只有 node virtual-focus 導覽是單一入口；inlineActions／inlineActionsSlot 會產生可 Tab 的原生按鈕，custom checkbox 也可保留 Tab stop，chevron 點擊後亦可取得 DOM focus。"
+  },
+  {
+   "fileLine": "tree-view.spec.md:406；tree-view.anatomy.stories.tsx:431",
+   "宣稱": "鍵盤 focus 會以 ring 標示目前位置。",
+   "真實code行為": "Tab 進入時 onFocus 只設定 focusedId，未將 isKeyboardRef 設為 true；root 也沒有自身 focus-visible 樣式，因此初次鍵盤進入沒有任何 focus ring。"
+  },
+  {
+   "fileLine": "tree-view.spec.md:406",
+   "宣稱": "aria-activedescendant 會指向目前 node。",
+   "真實code行為": "focused descendant 被 chevron 收合、移除或停用時沒有 focus repair；focusedId 保留舊值，aria-activedescendant 可指向已不存在的 DOM id。"
+  },
+  {
+   "fileLine": "tree-view.spec.md:171,402；tree-view.anatomy.stories.tsx:412,431",
+   "宣稱": "End 會移到最後一個可見 node。",
+   "真實code行為": "focusedId 缺失或失效時 currentIndex<0 的共用 fallback 對 End 也一律選 items[0]，實際移到第一個 node。"
+  },
+  {
+   "fileLine": "tree-view.spec.md:168,400；tree-view.anatomy.stories.tsx:409,431",
+   "宣稱": "已展開 node 按 → 會移到第一個 child。",
+   "真實code行為": "導覽先排除所有 disabled node，再盲取全域 items[currentIndex+1]；若直接 children 全 disabled，會跳到下一個非 child node或 no-op。"
+  },
+  {
+   "fileLine": "tree-view.anatomy.stories.tsx:431",
+   "宣稱": "不靠滑鼠也能完整操作。",
+   "真實code行為": "inline action button 的 Enter／Space 會冒泡到 tree root；root preventDefault 並執行 node selection，取消按鈕原生 click，除非 consumer 額外自行攔截事件。"
+  },
+  {
+   "fileLine": "tree-view.stories.tsx:1",
+   "宣稱": "hover／focus／selected／disabled 已由 anatomy StateBehavior story 覆蓋。",
+   "真實code行為": "StateBehavior 只呈現 selected-vs-expanded 與 hover inline actions，沒有 focus 或 disabled 實際狀態展示。"
+  },
+  {
+   "fileLine": "tree-view.anatomy.stories.tsx:323-334",
+   "宣稱": "Folder 2（可展開），用來展示同層 leaf 與 expandable folder 對齊。",
+   "真實code行為": "Folder 2 是 self-closing TreeItem、沒有 children，hasChildren=false；該層三個項目其實全是 leaf。"
+  },
+  {
+   "fileLine": "tree-view.stories.tsx:100-129",
+   "宣稱": "多選。",
+   "真實code行為": "custom onClick 因 props 最後 spread 而取代 handleRowClick；滑鼠只改外部 checked、aria-selected 不變，Enter／Space 只改 TreeView selectedIds、可見 checkbox 不變，pointer 與 keyboard selection 不一致。"
+  },
+  {
+   "fileLine": "tree-view.stories.tsx:229",
+   "宣稱": "拖到其他 node 中間會 inside 成為子項。",
+   "真實code行為": "只有已有 children 的 target 能 inside；leaf 中間仍依上下半部得到 before 或 after。"
+  },
+  {
+   "fileLine": "tree-view.tsx:876-877",
+   "宣稱": "內部 style(--tree-px) 必須勝過 consumer。",
+   "真實code行為": "style 先設定 --tree-px，再 spread props.style；consumer 的同名 CSS variable 會覆寫內部值。"
+  },
+  {
+   "fileLine": "tree-view.tsx:929",
+   "宣稱": "不 draggable 時無 sensors。",
+   "真實code行為": "sensors={undefined} 會觸發 dnd-kit DndContext 的 PointerSensor＋KeyboardSensor defaults；不可拖實際來自 useDraggable／useDroppable 的 disabled。"
+  },
+  {
+   "fileLine": "tree-view.tsx:1017-1019",
+   "宣稱": "checkbox 位於 icon 之後、label 之前。",
+   "真實code行為": "實際 render 順序是 chevron → checkbox → indicator／icon → label，checkbox 位於 icon 之前。"
+  },
+  {
+   "fileLine": "tree-view.tsx:1284",
+   "宣稱": "selectionMode='single'／'none' 不 render checkbox。",
+   "真實code行為": "條件是 checkbox || selectionMode==='multiple'；consumer 傳 checkbox 時，single／none 仍會渲染。"
+  }
+ ]
+}

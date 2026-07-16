@@ -1,0 +1,151 @@
+{
+ "component": "Coachmark",
+ "claimsVerified": 302,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:33",
+   "宣稱": "Multi-step 第一步會顯示 Skip。",
+   "真實code行為": "還必須傳入 onSkip；未傳時只有 Next。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:39-41",
+   "宣稱": "有 header 或多步時，推進 CTA 前一定有 Close／Previous／Skip，需多次 Tab。",
+   "真實code行為": "多步第一步可同時沒有 header 與 onSkip，此時第一次 Tab 就到 Next。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:45-47",
+   "宣稱": "改 Dialog，Dialog／Popover／Coachmark 三邊會自動跟進。",
+   "真實code行為": "三者各自消費 overlay-surface primitive；只有修改該 primitive 才同步，dialog.tsx 的局部修改不會傳播。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:62-65",
+   "宣稱": "string、Fragment、多元素都會 React.Children.only runtime crash，ReactElement 型別也會提前攔截。",
+   "真實code行為": "string runtime 回傳 null；Fragment 可通過 ReactElement 型別且不 throw，但 trigger props 不會落到內部 DOM；只有頂層多元素會 throw。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:84",
+   "宣稱": "title 為 bold。",
+   "真實code行為": "實作是 font-medium。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.tsx:113",
+   "宣稱": "consumer 可用 title prop 覆寫 kind 的預設 header title。",
+   "真實code行為": "title 只渲染 Body h3；自訂 header 必把 ReactNode 傳給 kind。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark-story-helpers.tsx:13",
+   "宣稱": "black/30 overlay 保證任何 gradient 上的 icon／label 都達 4.5:1。",
+   "真實code行為": "yellow-6 疊 black/30 後，白字對比約 3.04:1，未達 4.5:1。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark-story-helpers.tsx:32",
+   "宣稱": "保底白字在任何 gradient 色上都通過 AA。",
+   "真實code行為": "yellow-6 是現存反例，14px medium 白字僅約 3.04:1。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:21",
+   "宣稱": "完全消費 Popover 焦點管理，不自寫浮層邏輯。",
+   "真實code行為": "Coachmark 自訂 onOpenAutoFocus，取代 Popover 的預設 autofocus selector，改為 focus content 容器。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:31-35",
+   "宣稱": "列出的三項是 Coachmark 唯一自有視覺決策。",
+   "真實code行為": "實作另自有 Media bg、Body／Description／Step typography 與 gap、Footer !border-t-0 等決策。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:74",
+   "宣稱": "Coachmark 的觸發模型是由外部狀態控制。",
+   "真實code行為": "它也支援 defaultOpen；未傳 open 時，Radix Trigger 點擊會切換 uncontrolled state。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:103",
+   "宣稱": "多元素、Fragment、string 都會 runtime crash，且型別會提前攔截。",
+   "真實code行為": "Fragment 可通過型別且不 throw、string runtime 回傳 null；只有頂層多元素會 React.Children.only throw。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:120",
+   "宣稱": "Multi 第一步會顯示 Skip。",
+   "真實code行為": "只有傳入 onSkip 才顯示；表格缺少此必要條件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:169",
+   "宣稱": "有 header 或多步時，CTA 前必有 Close／Previous／Skip。",
+   "真實code行為": "無 header、無 onSkip 的多步第一步以 Next 為第一個 tabbable。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:206",
+   "宣稱": "多步時 Tab 會先經 Previous／Skip。",
+   "真實code行為": "多步第一步未傳 onSkip 時兩者都不存在；無 header 時第一個 tabbable 就是 Next。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:206",
+   "宣稱": "關閉時焦點一律 return to trigger。",
+   "真實code行為": "Escape、Close X 或內部動作關閉會回 trigger；outside-interaction dismissal 刻意保留外部焦點，不回 trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.spec.md:215",
+   "宣稱": "disabled 狀態繼承 Popover。",
+   "真實code行為": "Coachmark／Popover Root 沒有 disabled prop 或 state；只有 consumer 傳入的 trigger 可自行 disabled。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:25",
+   "宣稱": "Coachmark 自有差異僅 Header、Media、Footer justify-between 三點。",
+   "真實code行為": "另有寬度／裁切、custom autofocus、ARIA naming、CTA／Skip 分支及 Footer border override。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:45",
+   "宣稱": "第一步無 Previous 時為 Skip + Next。",
+   "真實code行為": "未傳 onSkip 時只有 Next。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:59",
+   "宣稱": "Footer 條件是 step || onSkip || onNext || onPrev。",
+   "真實code行為": "實作使用 step || showSkip || onNext || onPrev；single-step 或有 onPrev 時，raw onSkip 不保證 Footer render。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:83",
+   "宣稱": "isLastStep=true 時 Next 文字改 Done。",
+   "真實code行為": "無 onPrev 時會判為 single-step，使用 doneLabel；只有有 onPrev 的最後一步才是 Done。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:189",
+   "宣稱": "Coachmark 自有色彩決策僅 Media bg 與 Step 計數。",
+   "真實code行為": "它也明確指定 Title 的 text-foreground 與 Description 的 text-fg-secondary。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:329",
+   "宣稱": "isLastStep + onNext 時文字變 Done。",
+   "真實code行為": "若無 onPrev，該組合使用 doneLabel；Done 還需要 onPrev。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:338",
+   "宣稱": "關閉後焦點回到觸發元素。",
+   "真實code行為": "outside-interaction dismissal 不會 refocus trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:353",
+   "宣稱": "關閉後焦點回到觸發元素。",
+   "真實code行為": "outside-interaction dismissal 是明確例外。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:188",
+   "宣稱": "破壞性 Dialog 不能讓使用者點旁邊跳過。",
+   "真實code行為": "該 DialogContent 未 prevent onPointerDownOutside；點 overlay 會觸發 Radix onDismiss。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:273",
+   "宣稱": "第 1 步只有 Skip／Next。",
+   "真實code行為": "Skip 是 optional callback；未傳 onSkip 時只有 Next。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:278",
+   "宣稱": "示例可用 Skip、Esc 或點擊別處關閉。",
+   "真實code行為": "示例固定 open=true、未傳 onOpenChange，且 onSkip 是 no-op；三種方式都無法改變受控 open。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:294",
+   "宣稱": "示例可按 Skip 退出 tour。",
+   "真實code行為": "onSkip 不更新狀態且 open 固定為 true，按鈕不會退出。"
+  }
+ ]
+}

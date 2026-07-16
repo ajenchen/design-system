@@ -1,0 +1,136 @@
+{
+ "component": "Field",
+ "claimsVerified": 994,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-wrapper.tsx:23",
+   "宣稱": "高度固定為對應的 `field-height` token。",
+   "真實code行為": "`edit × naked` 使用 `h-full`，`view × naked` 使用 `h-auto`，不保證等於固定高度 token。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-wrapper.tsx:111-112",
+   "宣稱": "Focus dominates everything，包含 `error-rest`。",
+   "真實code行為": "藍色 focus compound 僅套用於 `error=false`；`error=true` 聚焦時仍維持紅色錯誤邊框。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-wrapper.tsx:204",
+   "宣稱": "Focus canonical 對 `default + bare` 相同。",
+   "真實code行為": "目前 variant 僅有 `default` 與 `naked`；`bare` 已退役。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-wrapper.tsx:353-356",
+   "宣稱": "非 editable 空值顯示 `-`，並使用 `text-fg-muted`。",
+   "真實code行為": "`FieldEmptyValue` 只輸出 `-`；文字色繼承 wrapper 的 `text-foreground`，disabled 才是 disabled 色。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.tsx:25-27",
+   "宣稱": "所有 control 都自動包在 `min-h-field-* + items-center` 的 control area。",
+   "真實code行為": "只有 inline layout 使用對應 min-height 與垂直置中；block layout 是 `flex-col items-start`，沒有該 min-height。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.tsx:29-38",
+   "宣稱": "水平 label 統一使用 padding-top 公式，多行時首行仍與 control 中線對齊。",
+   "真實code行為": "padding-top 公式只用於 block layout；inline layout 使用 `justify-center`，內容超過 field 高度時會改為頂部對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:89",
+   "宣稱": "三種 mode 僅有 background、border、text token 差異。",
+   "真實code行為": "mode 還改變 hover、focus、open、readonly ring、disabled cursor 等互動與視覺狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:216",
+   "宣稱": "DataTable 的 `naked` control 使用 `h-full`。",
+   "真實code行為": "只有 `edit × naked` 使用 `h-full`；`view × naked` 使用 `h-auto`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:22",
+   "宣稱": "包含 validation 在內的所有資料邏輯都存在 controls。",
+   "真實code行為": "驗證協調由獨立的 `useFormValidation` form layer 負責；`Field` 與個別 control 本身不實作該流程。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:78",
+   "宣稱": "任何 size 的 control area 都以對應 min-height 垂直置中。",
+   "真實code行為": "此機制只存在於 inline layout；block layout 沒有 min-height，且採 `items-start`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:103",
+   "宣稱": "水平 layout 的 label 與 control 一律首行置中對齊。",
+   "真實code行為": "長 inline label 高度超過 field 時會頂部對齊，不再維持首行中線對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:214",
+   "宣稱": "horizontal orientation 使用 padding-top 公式對齊 label。",
+   "真實code行為": "公式僅套用於 `horizontal + block`；inline control 透過 min-height 與 `justify-center` 對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:402",
+   "宣稱": "選取後均由 `onCloseAutoFocus` 恢復 trigger focus；點擊外部取消則不恢復。",
+   "真實code行為": "native Select 沒有 Radix close lifecycle；Popover non-modal 可在外部互動後抑制回焦，而 modal DropdownMenu 一般仍會回焦 trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:410",
+   "宣稱": "`naked` 完整繼承 default state machine，只改變物理尺寸與位置。",
+   "真實code行為": "`naked` 為 rest、hover、open、focus 分別定義了獨立 compound variants。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:418",
+   "宣稱": "L3 僅繼承 default，不重新定義狀態。",
+   "真實code行為": "L3 對應的 `naked` variant 重新定義了多個狀態 compound。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:440-443",
+   "宣稱": "Tab 會直接進入 control，keyboard interaction 全由內部 control 處理。",
+   "真實code行為": "帶 info 的 `FieldLabel` 會在 control 前渲染可聚焦的原生 button，Tab 可能先停在該按鈕。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:445",
+   "宣稱": "focus-visible ring 是 2px solid outline。",
+   "真實code行為": "edit mode 使用 1px border 色變化；readonly 使用 Tailwind ring box-shadow；Field root 本身沒有統一的 2px outline。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:41",
+   "宣稱": "`FieldError` 固定使用 `role=alert`。",
+   "真實code行為": "`role=alert` 是預設值，但 `...props` 在其後展開，呼叫端可以覆寫 role。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:74",
+   "宣稱": "未指定 `Field.size` 時預設為 `md`。",
+   "真實code行為": "Field 會先採用子 control 的 `fieldPreferredSize`；只有無偏好尺寸時才 fallback 至 `md`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:318",
+   "宣稱": "設定 `invalid` 會觸發 `FieldError` 顯示。",
+   "真實code行為": "`FieldError` 不讀取 `invalid`；是否渲染內容完全由呼叫端傳入的 children 決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:544",
+   "宣稱": "Tab 直接進入 control，所有鍵盤與 focus 行為均委派給 control。",
+   "真實code行為": "info label 會額外建立位於 control 前的可聚焦 button，並由 Tooltip 處理其 focus 行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.anatomy.stories.tsx:544",
+   "宣稱": "聚焦時統一顯示 2px solid focus outline。",
+   "真實code行為": "default edit、readonly 與 Field root 採用不同機制，並不存在統一的 2px solid outline。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:153",
+   "宣稱": "單行 horizontal label 使用 padding-top 公式置中。",
+   "真實code行為": "該 inline story 使用 min-height 與 `justify-center`；padding-top 公式只適用 block layout。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:164-165",
+   "宣稱": "多行 horizontal label 的第一行仍與 input 中線對齊。",
+   "真實code行為": "label 高度超過 field 時會切換為頂部對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:176-177",
+   "宣稱": "切換 size 會為所示 Input 重新計算 label padding-top。",
+   "真實code行為": "該範例是 inline layout，size 改變的是 min-height class，未套用 padding-top 公式。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:551-553",
+   "宣稱": "Slider、Input、NumberInput 並排於同一個 Field row，且外層高度跟隨各自 Field size。",
+   "真實code行為": "三個 control 位於垂直 FieldGroup 中的三個獨立 Field；size 只傳給 controls，Field 未收到 size 時仍依偏好偵測或 fallback `md`。"
+  }
+ ]
+}

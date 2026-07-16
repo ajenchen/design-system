@@ -87,7 +87,8 @@
 - [x] P2.1 研究 + live 實測完成 → `.claude/planning/2026-07-16-png-p2-codex-research.md`(Q1-Q5 官方 verbatim + probe A/B/C;summarizer 幻覺一例抓出丟棄)。
 - [x] P2.2(2026-07-16)`scripts/gen-codex-adapter.mjs`:生成 `.codex/hooks.json` — 3 支 provider-neutral hook 投影(tailwind_wildcard / benchmark_citation / main_branch_workbench;候選逐支讀 source 全過,main_branch 的 transcript 僅 escape-phrase 用、缺失 fail-closed 更嚴 → 合格),command **直指 `.claude/hooks/*.sh` SSOT 零複製**,event/matcher derive 自 settings.json;`_generated` banner(source/digest/告誡)+ eligibility 機械鎖;`--check` drift + breadth(手改兩生成物 → fail → regen 綠)PASS;wire release:preflight(SYNCS 段 + agents-bootstrap 後 gate;tamper baseline 51)+ `.gitignore` 驗 `.codex`/`.agents` 未 ignore。**Live 實測 ×2**:(a) codex hooks 檔 schema strict — top-level 只准 `description`/`hooks`,`_generated` unknown field → 「failed to parse hooks config」整檔靜默不載 → banner 收進 schema-native `description`;(b) 生成版行為驗證 — codex 檔案寫入工具觸發投影 hook(fire-log 122→123,bypass-hook-trust)= Edit/Write matcher 對 codex 檔案工具真命中。
 - [x] P2.3(2026-07-16)`.agents/skills/independent-review/SKILL.md`(gen-codex-adapter 生成):review 另一 provider 所著變更;rubric 指路 audit-prompts.md 同判準(禁自建規範);輸出 rule-ID/severity/evidence/resolution;fail-closed(`REVIEW-BLOCKED` / 禁 self-review 假扮)。**skills discovery live PASS**:probe 列出 `design-system:independent-review`(/tmp/png-p22-skills-probe-out.txt,CODEX-OUTCOME:SUCCESS)。
-- [x] P2.4 主體(2026-07-16)corpus 加 codex targets:`fork/AGENTS.md`(fork-context banner + preambleTransform)/ `fork/codex/hooks.json`(= PROJECTED ∩ fork-shipped,1 支)/ `fork/codex/agents/skills/independent-review` — 全進 governance.lock drift gate;template checked-in `AGENTS.md`(byte-copy scaffold);假 fork harness 新增 codex 5a-5d 斷言(banner / template byte-equal / hooks.json 指標不死鏈 / rubric shipped)全綠;cli-init 修+投影見 P1.4b。**殘項 P2.4b**:`.codex`/`.agents` 安裝到既有 fork root 的 sync-all 接線 + §15 契約(deterministic/idempotent/atomic/dry-run/json)對照補齊。
+- [x] P2.4 主體(2026-07-16)corpus 加 codex targets:`fork/AGENTS.md`(fork-context banner + preambleTransform)/ `fork/codex/hooks.json`(= PROJECTED ∩ fork-shipped,1 支)/ `fork/codex/agents/skills/independent-review` — 全進 governance.lock drift gate;template checked-in `AGENTS.md`(byte-copy scaffold);假 fork harness 新增 codex 5a-5d 斷言(banner / template byte-equal / hooks.json 指標不死鏈 / rubric shipped)全綠;cli-init 修+投影見 P1.4b。
+- [x] P2.4b(2026-07-17)`.codex`/`.agents` 安裝到既有 fork root 的 sync-all 接線 + §15 契約補齊:`refresh-fork-launchers.mjs` 新增 step 4 codex surface(manifest.codex 驅動;marker 政策 = generated(`build-fork-governance.mjs`/`gen-codex-adapter.mjs` marker)→ clobber 刷新 / consumer-owned(cli-init stub、手寫)→ 不碰 + codexSkipped 回報;`.agents/skills` 只 clobber 治理名)。§15 對照:deterministic ✓(輸出只依 corpus+dest)/ idempotent ✓(重跑 byte 收斂,harness 4h 斷言)/ atomic ✓(settings 走 tmp+rename;檔案 copy = per-file overwrite 重跑收斂,誠實標註非 transactional)/ dry-run ✓(`opts.dryRun` + CLI `--dry-run`,sync-all 用 `npm install --dry-run`)/ json ✓(CLI `--json` machine-readable)。送達通道 = `npm run sync-all`(主)+ SessionStart self-heal(僅 skills 未裝初次情境)。Harness 4h 六斷言全綠(送達 / user `.agents` 保留 / 竄改還原 / consumer-owned skip / 冪等 / dry-run 不寫);mirror 無 committed drift(release 時重建)。
 - [x] P2.5 Certified Surface Registry 建檔 → `.claude/references/certified-surfaces.md`(三態+證據;Codex cloud/IDE = Uncertified):Claude local(Certified,證據=本 repo 日常)/ Claude cloud(Certified-equivalent,證據=memory 2026-07-14 端到端蓋章;範圍=committed .claude)/ Codex CLI local(目標 Certified-equivalent:AGENTS.md discovery 實測 + preflight/CI 兜底)/ Codex cloud、IDE surfaces(Uncertified until tested)。
 
 ### Phase 3 — rule-ID 化 + waiver schema + coverage 100%
@@ -106,7 +107,7 @@
 | 4 golden adapter | ✅(等效)| drift gate = golden 比對(重生成 byte-diff)|
 | 6 positive / 7 negative fixtures | ✅ | hook tests(run-all.sh)+ breadth-tests(linkto/tamper/agents-bootstrap)+ 假 fork harness |
 | 8 mutation tests | ◑ | tamper ratchet(gate 移除)+ mirror drift;per-rule mutation 未全建(P4 殘)|
-| 9-11 CLI unit/idempotence/rollback | ◑ | sync 家族 idempotent(實跑證);正式 test 檔未建 |
+| 9-11 CLI unit/idempotence/rollback | ◑ | sync 家族 idempotent 有正式 test(harness 4a-4h:冪等/竄改還原/consumer-owned/dry-run,2026-07-17);rollback 未建 |
 | 12 dirty-worktree | ✅ | sync-ds-canonical rsync --checksum + fail-closed |
 | 13 npm pack tarball | ✅ | dogfood-prepublish-verify(pack + 內容斷言)|
 | 14-17 clean install 家族(npm/pnpm/ignore-scripts)| ◑ | npm 有(dogfood);pnpm/ignore-scripts 未測(P4 殘;pnpm 非官方支援 pm → 列 Unsupported 候選)|
@@ -125,7 +126,7 @@
 | 33 attestation reproducibility | ✅ | P3.4 pass-marker(digest 綁 HEAD)|
 | 34 governance weakening | ✅ | tamper ratchet + gate-meta-test + hook-test coverage |
 | 35 incompatible version | ✅ | sync-version-to-all-manifests + 5-manifest verify |
-| 36 interrupted/concurrent sync | ◑ | rsync 原子性部分;正式中斷測試未建 |
+| 36 interrupted/concurrent sync | ◑ | rsync 原子性部分 + settings.json 已 tmp+rename 原子替換(P2.4b);正式中斷測試未建 |
 | 37 user-owned config conflict | ✅ | cli-init 不覆蓋 + merge 提示 |
 | 38 fleet update PR | ✅ | Dependabot daily auto-PR 鏈 |
 結論:✅ 24 / ◑ 9 / ❌ 2(Codex cloud、Windows — 均已誠實列 Uncertified/Unsupported,不虛稱)。◑ 項若需補全屬 P4 長尾,依 user 優先序排。

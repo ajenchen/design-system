@@ -1,0 +1,126 @@
+{
+ "dim": 68,
+ "filesScanned": 207,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx:274",
+   "問題": "正向範例只包含一個 AccordionItem，違反單一區段不使用 Accordion 的規範。",
+   "severity": "material",
+   "建議": "加入至少兩個獨立的低頻區段；若只有一區，改用 details。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:143,173,234,427,473,600,608",
+   "問題": "多個正向 anatomy、Inspector 與矩陣範例的 icon/entity Avatar 未提供必要 alt，且不屬於明示的 missing-alt 防禦測試。",
+   "severity": "material",
+   "建議": "為所有正向 Avatar 補具體 alt，缺少 alt 的 fallback 僅保留於明確標示的無效用法 fixture。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Badge/badge.anatomy.stories.tsx:256,443,563",
+   "問題": "Inspector、ColorMatrix、SizeMatrix 的純圓點 Badge 未提供 aria-label，違反狀態指示器的無障礙契約。",
+   "severity": "material",
+   "建議": "為每個 dot Badge 補上符合情境的狀態 aria-label。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.stories.tsx:30,51,115; packages/design-system/src/components/BulkActionBar/bulk-action-bar.principles.stories.tsx:83,129,160; packages/design-system/src/components/BulkActionBar/bulk-action-bar.anatomy.stories.tsx:46,115,162,216",
+   "問題": "正向範例使用 Button tertiary+danger，但 Button canonical 僅支援 primary、secondary、text 的 danger；目前組合會靜默呈現為非 danger 樣式。",
+   "severity": "material",
+   "建議": "先收斂 BulkActionBar 與 Button SSOT，改用已支援的 secondary/text danger；若確需 tertiary danger，須先完成 Button 契約與實作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.stories.tsx:155",
+   "問題": "InlineCommand 正向範例只有四個項目，仍使用可搜尋 Command，違反少於六項的短清單禁令。",
+   "severity": "material",
+   "建議": "維持四項時改用 DropdownMenu；若要示範 Command，改成至少六個真實且需要搜尋的項目。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:1959",
+   "問題": "金額欄以自訂 cell 格式化，卻未宣告 currency 型別或右對齊 metadata，實際會落入左對齊。",
+   "severity": "material",
+   "建議": "使用欄位 meta 的 currency 型別與 prefix，交由 registry 統一格式化及右對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:302; packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:466; packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:221",
+   "問題": "三個正向範例把抽象的預設空狀態當成 canonical，甚至宣稱 consumer 不需自訂；這與 Empty 規範要求說明缺少何種資料衝突。",
+   "severity": "material",
+   "建議": "各範例提供符合業務情境的 emptyState，明確說明尚無商品、訂單或其他具體資料。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.stories.tsx:31; packages/design-system/src/components/DateGrid/date-grid.principles.stories.tsx:55",
+   "問題": "共用 helper 直接以 p-4 或 p-2 容器包住已自帶內距的 DateGrid，形成規範明禁的雙層 padding。",
+   "severity": "material",
+   "建議": "移除 DateGrid 外層 padding；標題或說明需要留白時，只對那些相鄰元素配置間距。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:266",
+   "問題": "回歸故事宣稱 range-middle 日期 hover 時應顯示 ring，但 DateGrid canonical 明定 selected/range-middle 必須抑制 hover ring。",
+   "severity": "material",
+   "建議": "改寫斷言為 range-middle 不顯示 hover ring，並把 hover-ring 示範移至未選取日期。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DescriptionList/description-list.anatomy.stories.tsx:221",
+   "問題": "anatomy 把 value slot 說成可放任意 ReactNode，範圍超過 spec，會誤導 consumer 放入禁止的 Button 或 Input。",
+   "severity": "marginal",
+   "建議": "限定為展示或導覽型內容，例如 Tag、Badge、Link，並明示不可放操作型控制元件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:455,458,461",
+   "問題": "SectionMatrix 正例使用兩個非 canonical 自訂 action，未消費 ProfileCardDefaultActions；spec 的手刻例外只涵蓋明示的 1-action 或 3-action 數量測試。",
+   "severity": "material",
+   "建議": "改用 ProfileCardDefaultActions；若要測 action 數量，須改成明確標示且符合例外範圍的數量矩陣。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:345",
+   "問題": "emptyText 引導使用者輸入 email 邀請外部成員，但 PeoplePicker 沒有 creatable/invite 行為，故事承諾了不存在的操作路徑。",
+   "severity": "material",
+   "建議": "改成中性的無結果文案；邀請外部成員應由獨立且明確的 action 承接。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Separator/separator.stories.tsx:32,39,46",
+   "問題": "Separator 正向故事直接渲染 internal MenuItem 拼裝靜態設定列，超出 MenuItem owner-story 例外，也不是合法的 menu/listbox consumer 模式。",
+   "severity": "material",
+   "建議": "靜態內容改用正確的 public row primitive；真正的選單情境由 DropdownMenu 或 SelectMenu wrapper 擁有。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Popover/popover.principles.stories.tsx:220; packages/design-system/src/components/Popover/popover.anatomy.stories.tsx:168,221,227",
+   "問題": "多個可開啟的正向 PopoverContent 使用 role=dialog，卻沒有 PopoverTitle、aria-label 或其他 accessible name。",
+   "severity": "material",
+   "建議": "為所有 headerless 或 naked Popover 範例補穩定 aria-label，或渲染可存取的 PopoverTitle。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx:210,219,229,272,286,299",
+   "問題": "多個正向 principles 範例以檔名、圖示和 ProgressBar 手拼檔案上傳 UI，違反檔案上下載情境一律由 FileItem 擁有的規範。",
+   "severity": "material",
+   "建議": "改成非檔案型進度情境；需要展示檔案上傳時，以 FileItem 作為 owner。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:293,538,578,601,624; packages/design-system/src/components/RadioGroup/radio-group.principles.stories.tsx:101,113,147; packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:74,89; packages/design-system/src/components/SelectionControl/selection-item.stories.tsx:55",
+   "問題": "多組正向 RadioGroup 沒有可存取的 group name；部分雖有可見 caption，卻未透過 Field 或 ARIA 建立關聯。",
+   "severity": "material",
+   "建議": "使用 Field+FieldLabel 並正確接線，或為每個 radiogroup 提供具體 aria-label/aria-labelledby。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.principles.stories.tsx:147",
+   "問題": "principles 把同意／不同意的二元 consent 當成 RadioGroup 正例，直接違反 RadioGroup 不承接 boolean agreement 的規範。",
+   "severity": "material",
+   "建議": "同意條款改用 Checkbox；即時開關設定使用 Switch，或把範例改成真正的多選一決策。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.stories.tsx:109",
+   "問題": "canonical UserFooter 正例沿用 md SidebarMenuButton 的 text-body，未達 spec 對 sidebar chrome 強制的 text-body-lg font-medium。",
+   "severity": "material",
+   "建議": "由 UserFooter 或其 owner wrapper 明確套用 canonical chrome typography，避免依賴 MenuButton 的一般項目預設值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/layoutSpace/layoutSpace.stories.tsx:67",
+   "問題": "故事把 layout-space-bottom 泛化為任何容器最底部的固定 48px，但 spec 僅允許它表示內容到 action buttons 的 commitment 留白；無 action 時須依容器角色分流。",
+   "severity": "material",
+   "建議": "改成 spec 的四分支規則：內容到 action 使用 bottom；無 action 的 bounded、unbounded、element 分別使用 loose、0、tight。"
+  },
+  {
+   "fileLine": "packages/design-system/src/tokens/opacity/opacity.stories.tsx:10,54",
+   "問題": "故事絕對宣稱非 disabled 的透明度需求都走 alpha 色階，遺漏已 codify 的 DataTable refresh-loading 與 drag-source opacity-disabled 重用例外。",
+   "severity": "marginal",
+   "建議": "保留單一 opacity token 的主軸，但明列這兩個封閉例外，避免被理解成可任意擴張的通則。"
+  }
+ ]
+}
