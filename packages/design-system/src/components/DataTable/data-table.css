@@ -133,9 +133,8 @@
    (在 cell content 之下),non-overlay。Per codex Q1 verdict 對齊 row selected idiom
    `--primary-subtle`(`data-table.spec.md`「L2 選取」段;原引 L170-174 之 selected-row bg 語意 2026-05-31 已廢除,改指現行段)。
    Layer 不再畫 RangeFill div(避免 layer fixed positioned bg 蓋 cell content)。 */
-/* 2026-05-13 V1.6 fix(codex caught medium severity):disabled cell bg dominance — disabled cell
-   included in spreadsheet range 不該被 range fill 蓋過,disabled state visual 必勝。 */
-[data-range-cell]:not([data-cell-disabled="true"]) {
+/* range fill bg(2026-07-16:cell disabled 態已廢除,原 `:not([data-cell-disabled])` exclusion 移除)。 */
+[data-range-cell] {
   background: var(--primary-subtle);
 }
 

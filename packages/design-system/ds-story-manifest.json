@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-07-14T14:23:30.051Z"
+    "generatedAt": "2026-07-16T07:56:35.028Z"
   },
   "components": {
     "accordion": {
@@ -885,8 +885,19 @@
           "design-system-components-inlineedit-展示--multiline-description",
           "design-system-components-inlineedit-展示--vertical-field-form"
         ],
-        "設計規格": [],
-        "設計原則": []
+        "設計規格": [
+          "design-system-components-inlineedit-設計規格--overview",
+          "design-system-components-inlineedit-設計規格--inspector",
+          "design-system-components-inlineedit-設計規格--state-behavior",
+          "design-system-components-inlineedit-設計規格--in-field-cascade",
+          "design-system-components-inlineedit-設計規格--accessibility"
+        ],
+        "設計原則": [
+          "design-system-components-inlineedit-設計原則--when-to-use",
+          "design-system-components-inlineedit-設計原則--when-not-to-use",
+          "design-system-components-inlineedit-設計原則--vs-control-view",
+          "design-system-components-inlineedit-設計原則--content-guidelines"
+        ]
       },
       "openSnapshotIds": [],
       "exception": null
@@ -1712,5 +1723,5 @@
     }
   },
   "totalComponents": 64,
-  "totalStories": 919
+  "totalStories": 928
 }

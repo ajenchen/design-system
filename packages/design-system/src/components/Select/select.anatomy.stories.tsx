@@ -304,7 +304,7 @@ export const Overview = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit'|'display'|'readonly'|'disabled'", "'edit'", 'FieldMode 四模式——edit 可編輯 / display 純展示 / readonly 顯示值不可改 / disabled 灰化'],
+                ['mode', "'edit'|'view'|'readonly'|'disabled'", "'edit'", 'FieldMode 四模式——edit 可編輯 / view 純展示 / readonly 顯示值不可改 / disabled 灰化'],
                 ['variant', "'default'", "'default'", 'Field chrome variant(預設繼承 context.variant;naked = @internal cell-as-input,2026-07-14 型別收窄至 FieldVariantInternal)'],
                 ['display', "'plain'|'tag'", "'plain'", '顯示模式——plain 純文字，tag 用 Tag 元件呈現'],
                 ['size', "'sm'|'md'|'lg'", "'md'", '尺寸，與 Button 同 size 並排高度一致'],

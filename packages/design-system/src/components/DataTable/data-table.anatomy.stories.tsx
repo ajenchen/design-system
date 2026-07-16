@@ -419,7 +419,7 @@ export const ColorMatrix: Story = {
           選取狀態由 __select__ 欄的 checkbox / radio 呈現,不套 row 底色;hover 與 selection 正交
           (已選 row 仍可有 hover 的 neutral-hover tint,但不疊額外 selected 底色)。
           isRowSelectable=false 僅 disable checkbox,row 不灰底(spec 禁止事項);
-          cell-level disabled(inline edit cellDisabled)才套 --bg-disabled。
+          （2026-07-16 cell disabled 態已廢除,cell 不再套 --bg-disabled;鎖定改用 editable=false 純 view 態）。
         </p>
       </div>
 

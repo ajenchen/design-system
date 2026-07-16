@@ -142,22 +142,29 @@ export const StateBehavior: Story = {
   ),
 }
 
-export const InFieldCascade: Story = {
-  name: '包進表單欄位:尺寸自動收斂與左緣對齊',
-  render: () => (
+// auto-sm 靠 Field 偵測 child 靜態 `fieldPreferredSize`(對齊 detectControlLayout 讀 fieldLayout)——
+//   **必 InlineEdit 為 Field 直接子**(包一層 wrapper 元件會遮蔽靜態,Field 偵測不到 → 退回 md)。
+function CascadeDemo() {
+  const [title, setTitle] = React.useState('Fix flaky checkout e2e test')
+  const [owner, setOwner] = React.useState('')
+  return (
     <div className="w-[420px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
-      {/* Field 偵測 InlineEdit 靜態 fieldPreferredSize='sm' → 未指定 size 時自動收 sm;
+      {/* Field 偵測 InlineEdit 靜態 fieldPreferredSize='sm' → 未指定 size 自動收 sm;
           vertical orientation → InlineEdit -mx 讓 view 值落 FieldLabel 同左緣 */}
       <Field className="mb-4">
         <FieldLabel>任務標題</FieldLabel>
-        <Stateful value="Fix flaky checkout e2e test" label="任務標題" />
+        <InlineEdit value={title} onCommit={setTitle} label="任務標題" />
       </Field>
       <Field>
         <FieldLabel>負責人</FieldLabel>
-        <Stateful value="" label="負責人" placeholder="指派…" />
+        <InlineEdit value={owner} onCommit={setOwner} label="負責人" placeholder="指派…" />
       </Field>
     </div>
-  ),
+  )
+}
+export const InFieldCascade: Story = {
+  name: '包進表單欄位:尺寸自動收斂與左緣對齊',
+  render: () => <CascadeDemo />,
 }
 
 export const Accessibility: Story = {

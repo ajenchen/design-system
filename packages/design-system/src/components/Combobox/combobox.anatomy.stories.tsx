@@ -306,7 +306,7 @@ export const Overview = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit'|'display'|'readonly'|'disabled'", "'edit'", 'FieldMode 四模式;顯式傳入時永遠最優先,不被 disabled 覆蓋'],
+                ['mode', "'edit'|'view'|'readonly'|'disabled'", "'edit'", 'FieldMode 四模式;顯式傳入時永遠最優先,不被 disabled 覆蓋'],
                 ['size', "'sm'|'md'|'lg'", "'md'", '尺寸，與 Button 共用 field-height token'],
                 ['options', 'ComboboxOption[]', '—', '選項列表（extends SelectMenuOption：value / label / icon / avatar / description / disabled / group）'],
                 ['value', 'string[]', '[]', '已選中的值陣列'],
