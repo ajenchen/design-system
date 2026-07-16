@@ -1,0 +1,48 @@
+{
+ "dim": 26,
+ "filesScanned": 450,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:215; packages/design-system/src/components/Checkbox/checkbox.tsx:232",
+   "問題": "V4：view 分支忽略 defaultChecked；Field-readonly 分支只重讀 checked ?? defaultChecked，切換 mode 時會丟失 uncontrolled Radix 的目前狀態。",
+   "severity": "material",
+   "建議": "在 wrapper 層建立共用 controllable checked state，讓 edit、view、readonly 消費同一 resolved 值並 compose onCheckedChange；補 mode-transition regression。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:207; packages/design-system/src/components/Switch/switch.tsx:219",
+   "問題": "V4：view 分支忽略 defaultChecked，Field-readonly 亦無法保留 uncontrolled toggle 後的目前值，mode 切換會回退初始狀態。",
+   "severity": "material",
+   "建議": "將 checked/defaultChecked/onCheckedChange 收斂為 wrapper-level controllable state，供所有 mode 分支共用。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:108; packages/design-system/src/components/RadioGroup/radio-group.tsx:125",
+   "問題": "V4：view 與 Field-readonly 以 value ?? defaultValue 推導選項；uncontrolled 使用者在 edit 中變更後切換 mode，會回退 defaultValue。",
+   "severity": "material",
+   "建議": "在 RadioGroup wrapper 層持有 controllable value，Radix Root、view、readonly 共用 resolvedValue 並 compose onValueChange。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:62; packages/design-system/src/components/PeoplePicker/people-picker.spec.md:28",
+   "問題": "controlled-only contract 被型別破壞：PeoplePickerProps 從 React.HTMLAttributes 繼承 defaultValue，consumer 可傳入假 uncontrolled API；runtime 又將其轉送後靜默忽略。",
+   "severity": "material",
+   "建議": "從 HTMLAttributes 明確 Omit defaultValue，並新增 type-level regression。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.tsx:108; packages/design-system/src/components/TimePicker/time-picker.spec.md:34",
+   "問題": "spec 明定 controlled-only，但 TimePickerProps 仍從 React.HTMLAttributes 暴露 defaultValue；該值可通過型別卻不會初始化時間狀態。",
+   "severity": "material",
+   "建議": "在 Omit 清單加入 defaultValue，並補 type-level regression。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.tsx:177",
+   "問題": "V2：multiple expansion 只提供 defaultExpanded 與 internal state，缺少 controlled expanded/onExpandedChange；spec 無 Uncontrolled-only rationale。",
+   "severity": "material",
+   "建議": "補完整 controlled/uncontrolled/callback pair，或在 Steps spec 明確記錄刻意只支援 uncontrolled 的理由。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:54",
+   "問題": "V1：asideOpen/onAsideOpenChange 有 controlled 路徑，但 uncontrolled 初值固定為 false，缺少 defaultAsideOpen；spec 無 fixed-default 例外 rationale。",
+   "severity": "material",
+   "建議": "新增 defaultAsideOpen 並用於初始化 internal state，或在 spec 明確說明固定關閉且不提供 default pair 的理由。"
+  }
+ ]
+}

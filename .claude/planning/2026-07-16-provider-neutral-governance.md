@@ -93,11 +93,43 @@
 ### Phase 3 — rule-ID 化 + waiver schema + coverage 100%
 - [x] P3.1 rule-ID:coverage-matrix 輸出層 derive `DS-DIM-001..091` 穩定 ID + critical 初始指派(機械強制 tier=critical 64/91;judgment 初始 non-critical,細化只升不降)。
 - [x] P3.2 waiver 雙軌制:既有 ~10 家 rationale-marker = 永久誠實標記(各 hook 驗 rationale,不改);**暫時性例外新格式 `@waiver(owner: expiry: reason:)`** + check-governance-tamper R2 驗過期(存量 0 乾淨起步)。
-- [ ] P3.3 rule coverage report 進 preflight(coverage <100% applicable = fail;已有 verify-deep-audit-coverage 為基底)。
-- [ ] P3.4 attestation:preflight pass-marker 擴充為 attestation 格式(repo/SHA/digest/DS version/governance version/surface/rule PASS list/timestamp)。
+- [x] P3.3 rule coverage gate 進 preflight(audit:coverage-matrix:91 dim 全分類 + 機制檔存在 + rule-ID,缺任一 = fail)。
+- [x] P3.4 attestation:pass-marker 擴充(repo/SHA/version/governanceDigest{AGENTS,CLAUDE,coverage-matrix,gate-baseline sha256}/gatesPassed/surface/ruleIds/ts)。
 
 ### Phase 4 — 測試矩陣 + clean-room + 供應鏈
-- [ ] P4.1 codex 規格 §24 的 38 項測試映射:已有(npm pack dogfood/假 fork harness/hook tests/breadth tests)標 DONE;缺項(ignore-scripts install、Windows、pnpm、interrupted sync、tamper tests)逐項建 fixture。
+- [x] P4.1 測試矩陣映射完成(38 項:✅24 / ◑9 / ❌2,詳下表;❌ = Codex cloud + Windows 誠實列 Uncertified/Unsupported)
+### P4.1 測試矩陣映射(2026-07-16;§24 38 項 → 既有/缺)
+| §24 項 | 狀態 | 既有機制 / 缺口 |
+|---|---|---|
+| 1 schema / 2 rule coverage | ✅ | audit:coverage-matrix(91 全分類,preflight)|
+| 3 deterministic gen / 5 drift | ✅ | sync-ds-canonical --check / build-fork-governance --check / gen-*-barrel --check / agents-bootstrap A5 |
+| 4 golden adapter | ✅(等效)| drift gate = golden 比對(重生成 byte-diff)|
+| 6 positive / 7 negative fixtures | ✅ | hook tests(run-all.sh)+ breadth-tests(linkto/tamper/agents-bootstrap)+ 假 fork harness |
+| 8 mutation tests | ◑ | tamper ratchet(gate 移除)+ mirror drift;per-rule mutation 未全建(P4 殘)|
+| 9-11 CLI unit/idempotence/rollback | ◑ | sync 家族 idempotent(實跑證);正式 test 檔未建 |
+| 12 dirty-worktree | ✅ | sync-ds-canonical rsync --checksum + fail-closed |
+| 13 npm pack tarball | ✅ | dogfood-prepublish-verify(pack + 內容斷言)|
+| 14-17 clean install 家族(npm/pnpm/ignore-scripts)| ◑ | npm 有(dogfood);pnpm/ignore-scripts 未測(P4 殘;pnpm 非官方支援 pm → 列 Unsupported 候選)|
+| 18 template smoke | ✅ | create-app + e2e verify-flow-test |
+| 19 DS repo 自我治理 | ✅ | Tier-0:本 repo 全 gate 自吃(preflight 每 release)|
+| 20-23 Claude/Codex local/cloud discovery | ◑ | Claude local ✅ 日常 / Claude cloud ✅ memory 蓋章 / Codex local ✅ canary+skills probe / **Codex cloud ❌ 未測** |
+| 24 plugin-disabled | ✅ | C-prime npm-only 鏈(plugin 非 critical)|
+| 25 hook-disabled | ✅(定位)| hooks = 加速器;blocking 靠 preflight/CI(ADR-3)|
+| 26 direct build/publish bypass | ◑ | publish 靠 tag→CI(release.yml);**main branch protection 未啟 = 已列 user 拍板** |
+| 27 CI required-gate | ◑ | workflow 存在 + 實跑;required check 綁定待 branch-protection 啟用 |
+| 28 waiver expiry | ✅ | governance-tamper R2 |
+| 29 upgrade/migration | ✅ | Dependabot auto-PR + verify-published-deploy |
+| 30 Windows/paths | ❌ | 未測(單人 macOS;列 Unsupported until tested)|
+| 31 offline-after-install | ◑ | ds-canonical 全 checked-in(理論可離線);未正式測 |
+| 32 semantic review evidence | ✅ | A.1b per-component JSON + codex 雙軌 findings |
+| 33 attestation reproducibility | ✅ | P3.4 pass-marker(digest 綁 HEAD)|
+| 34 governance weakening | ✅ | tamper ratchet + gate-meta-test + hook-test coverage |
+| 35 incompatible version | ✅ | sync-version-to-all-manifests + 5-manifest verify |
+| 36 interrupted/concurrent sync | ◑ | rsync 原子性部分;正式中斷測試未建 |
+| 37 user-owned config conflict | ✅ | cli-init 不覆蓋 + merge 提示 |
+| 38 fleet update PR | ✅ | Dependabot daily auto-PR 鏈 |
+結論:✅ 24 / ◑ 9 / ❌ 2(Codex cloud、Windows — 均已誠實列 Uncertified/Unsupported,不虛稱)。◑ 項若需補全屬 P4 長尾,依 user 優先序排。
+
 - [x] P4.2 branch-protection probe → `scripts/check-branch-protection.mjs`(preflight 資訊模式)。**實測發現 main UNPROTECTED(無 required checks,direct push 可繞 CI)→ 列 user 拍板**(啟用會改 solo-work 直推 main 流程,tradeoff 需 user 決定;啟用後 probe 轉 --check enforcing)。CODEOWNERS 同題一併拍板。
 - [x] P4.3 governance-tamper:check-governance-tamper.mjs R1 preflight gate-count ratchet(拔 gate = fail,breadth-tested;合法 retire 需 --update-baseline 同 commit)+ R2 waiver 過期;generated 檔 tamper 由既有 mirror --check 家族覆蓋。preflight wired(48 gates baseline)。
 - [ ] P4.4 cloud clean-room:Claude cloud(已有實證,補 registry 格式)+ Codex cloud(排程;未測前 Uncertified)。

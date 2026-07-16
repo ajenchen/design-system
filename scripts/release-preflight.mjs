@@ -76,6 +76,7 @@ run('agents-bootstrap(PNG:AGENTS.md ≤32KiB + CLAUDE.md @import + Rule Index �
 // PNG P4.2:branch-protection probe(資訊模式 — main 現無 required checks,已列 user 拍板;user 啟用後改 --check enforcing)
 run('branch-protection probe(informational)', 'node scripts/check-branch-protection.mjs')
 run('governance-tamper(preflight gate-count ratchet + time-boxed waiver 過期)', 'node scripts/check-governance-tamper.mjs --check')
+run('rule coverage(91 dim 全分類 + 機制檔案存在 + rule-ID;PNG P3.3)', 'npm run --silent audit:coverage-matrix')
 run('inline-edit view geometry invariant(多行 py == Textarea edit py,read↔edit 零跳鎖)', 'node scripts/inline-edit-view-geometry-invariant.mjs')
 run('ds-canonical drift check', 'node scripts/sync-ds-canonical.mjs --check')
 // C-prime #5(2026-06-17 codex 共識 C3 future-SSOT 閘):fork 治理 corpus 必過(a) classify 漏接閘
@@ -160,12 +161,21 @@ import { execSync as _ex } from 'node:child_process'
   }
 }
 
-// ⑤ pass-marker(綁 HEAD sha)
+// ⑤ pass-marker(綁 HEAD sha)— PNG P3.4:attestation 格式(repo/SHA/版本/治理 digest/gates PASS 清單/surface)
 const head = execSync('git rev-parse HEAD').toString().trim()
 mkdirSync('.claude/logs', { recursive: true })
+const crypto = await import('node:crypto')
+const sha256 = (f) => { try { return crypto.createHash('sha256').update(readFileSync(f)).digest('hex').slice(0, 16) } catch { return null } }
 writeFileSync(
   '.claude/logs/release-preflight-pass.json',
-  JSON.stringify({ head, version: uniq[0], ts: new Date().toISOString() }, null, 2) + '\n',
+  JSON.stringify({
+    head, version: uniq[0], ts: new Date().toISOString(),
+    repo: 'ajenchen/design-system',
+    governanceDigest: { agentsMd: sha256('AGENTS.md'), claudeMd: sha256('CLAUDE.md'), coverageMatrix: sha256('.claude/logs/audit-coverage-matrix.json'), preflightGateBaseline: sha256('.claude/references/preflight-gate-baseline.json') },
+    gatesPassed: stepNum,
+    surface: process.env.CLAUDECODE ? 'claude-code-local' : process.env.CODEX_SANDBOX ? 'codex' : 'shell',
+    ruleIds: 'DS-DIM-001..091(coverage → .claude/logs/audit-coverage-matrix.json)',
+  }, null, 2) + '\n',
 )
 console.log(`\n✅ RELEASE PREFLIGHT PASS @ ${head.slice(0, 8)}  version=${uniq[0]}`)
 console.log('   pass-marker 已寫(綁此 HEAD)→ 現在可安全 tag + push tag。')
