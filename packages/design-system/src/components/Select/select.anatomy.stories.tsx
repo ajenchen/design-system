@@ -258,9 +258,15 @@ export const Overview = {
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-medium">edit</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
-              {[{ name: 'Tag', color: 'turquoise' }, { name: 'Tag', color: 'success' }, { name: 'Tag', color: 'info' }, { name: 'Tag', color: 'magenta' }].map((s) => (
-                <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
-                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
+              {/* turquoise/magenta 為 primitive(無 semantic token)→ 顯式 --color-{hue}-{6,1,7}(ProgressBar 同款修法) */}
+              {[
+                { name: 'Tag', border: 'var(--color-turquoise-6)', bg: 'var(--color-turquoise-1)', text: 'var(--color-turquoise-7)' },
+                { name: 'Tag', border: 'var(--success)', bg: 'var(--success-subtle)', text: 'var(--success)' },
+                { name: 'Tag', border: 'var(--info)', bg: 'var(--info-subtle)', text: 'var(--info)' },
+                { name: 'Tag', border: 'var(--color-magenta-6)', bg: 'var(--color-magenta-1)', text: 'var(--color-magenta-7)' },
+              ].map((s, i) => (
+                <span key={i} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
+                  style={{ borderColor: s.border, backgroundColor: s.bg, color: s.text }}>{s.name}</span>
               ))}
             </div>
             <span className="text-[10px] text-fg-muted font-mono">Tag: pointer-events-none · 點擊穿透到觸發點開選單</span>
@@ -323,7 +329,7 @@ export const Overview = {
                 ['defaultOpen', 'boolean', 'false', 'uncontrolled 初始開啟(DataTable cell click→1 step open)'],
                 ['onOpenChange', '(open: boolean) => void', '—', 'open 狀態變更 callback'],
                 ['showDisplayEndIcon', 'boolean', 'false', 'display 模式渲 ChevronDown(opt-in 逃生門;2026-07-08 A 案後 DataTable 預設不傳 — display 態零恆顯 icon)'],
-                ['selectedItemRenderer', '(opt: SelectOption) => ReactNode', '—', '已選項目客製 render;4 mode 共享(edit/display/readonly/disabled,contract (a))— display 態渲值內容無 chrome(PeoplePicker / status 欄用)'],
+                ['selectedItemRenderer', '(opt: SelectOption) => ReactNode', '—', '已選項目客製 render;4 mode 共享(edit/view/readonly/disabled,contract (a))— view 態渲值內容無 chrome(PeoplePicker / status 欄用)'],
                 ['disabled', 'boolean', '—', '原生屬性；未傳 mode 時 resolve 為 disabled 樣式（顯式 mode prop 恆優先，見 useResolvedFieldMode）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>

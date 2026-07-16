@@ -31,7 +31,7 @@ export const Modes: Story = {
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">display</h3>
-        <RadioGroup mode="view" value="yearly" aria-label="付款方案(display mode demo)">
+        <RadioGroup mode="view" value="yearly" aria-label="付款方案(view 模式示範)">
           <RadioGroupItem value="monthly" label="月付方案" />
           <RadioGroupItem value="yearly" label="年付方案" description="每年 $2,990，省下兩個月" />
           <RadioGroupItem value="lifetime" label="終身方案" />

@@ -141,10 +141,10 @@ export interface SelectProps
    *  DataTable cell-as-input 用:open=false 時 cell 自動 exit edit mode(避免 dismiss 後卡住)。 */
   onOpenChange?: (open: boolean) => void
   /**
-   * Display mode 顯 picker intrinsic end icon(2026-05-08 D path Phase 1)。
+   * View mode 顯 picker intrinsic end icon(2026-05-08 D path Phase 1)。
    * 預設 false:`mode="view"` 純展示 bare span(向後相容)。
    * `variant="naked" && mode="view"` 場景(DataTable cell)opt-in 設 true → wrap 進
-   * Field naked-display + 渲 ChevronDown ItemSuffix。**只 display mode 生效**;readonly /
+   * Field naked-display + 渲 ChevronDown ItemSuffix。**只 view mode 生效**;readonly /
    * disabled / edit 已有 Field wrapper + suffix(不受此 prop 影響)。
    * Authority:`data-table.spec.md:204` + `inline-action.spec.md:157`「Field family endAction(自動繼承)」。
    * @default false
@@ -154,9 +154,9 @@ export interface SelectProps
    * 「已選項目」客製 render(2026-05-07 v15.5;2026-07-08 A 案回歸修正擴及 4 mode)。
    *
    * 設了 → 已選值不走純文字 / Tag 預設 path,改用 consumer 提供的 ReactNode(收 selectedOpt)。
-   * **display / readonly / disabled / edit 4 mode 共享同一 renderer**(field-controls.spec.md
+   * **view / readonly / disabled / edit 4 mode 共享同一 renderer**(field-controls.spec.md
    * 共享 contract (a),禁 edit-only)— renderer 輸出屬「值內容」(status icon+text 等語意呈現),
-   * display 態照常渲染;A 案撤的是 affordance(chevron/outline),非值內容(field.spec.md L6 分層)。
+   * view 態照常渲染;A 案撤的是 affordance(chevron/outline),非值內容(field.spec.md L6 分層)。
    * Searchable+open 仍走 input(搜尋優先)。Empty value(no selection)仍走 placeholder。
    *
    * 用例:PeoplePicker 用此 slot 把 single 選中的 person render 成 PersonDisplay
@@ -379,7 +379,7 @@ function ReadonlyDisplay({
       // family display 視覺尺寸統一。
       if (!value) return <span className={cn(fieldDisplayTextClass(sz), emptyColorCls, className)}>{emptyText}</span>
       // 2026-07-08 A 案回歸修正:selectedItemRenderer(值內容:status icon+text 等語意呈現)
-      // display 態照常渲染 — 無 chrome 無 chevron,只有值內容本身。分層原則(field.spec.md L6):
+      // view 態照常渲染 — 無 chrome 無 chevron,只有值內容本身。分層原則(field.spec.md L6):
       // 本 renderer 歸「值內容」,恆顯;A 案撤的是 affordance(chevron/outline),非值內容。
       // 對齊 field-controls.spec.md 共享 contract (a)「4 mode 共享同一 renderer(禁 edit-only)」。
       if (selectedItemRenderer && selectedOpt) {

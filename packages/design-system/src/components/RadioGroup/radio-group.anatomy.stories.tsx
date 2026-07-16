@@ -169,9 +169,14 @@ export const Overview = {
           <div className="flex flex-col gap-2 items-start">
             <span className="text-[11px] text-fg-muted font-medium">搭配 SelectionItem</span>
             <div className="inline-flex items-center border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-2">
-              {[{ name: 'control', color: 'info' }, { name: 'control', color: 'success' }, { name: 'control', color: 'magenta' }].map((s) => (
-                <span key={s.name} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
-                  style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
+              {/* magenta 為 primitive(無 --magenta semantic token)→ 顯式 --color-magenta-{6,1,7}(ProgressBar 同款修法) */}
+              {[
+                { name: 'control', border: 'var(--info)', bg: 'var(--info-subtle)', text: 'var(--info)' },
+                { name: 'control', border: 'var(--success)', bg: 'var(--success-subtle)', text: 'var(--success)' },
+                { name: 'control', border: 'var(--color-magenta-6)', bg: 'var(--color-magenta-1)', text: 'var(--color-magenta-7)' },
+              ].map((s, i) => (
+                <span key={i} className="rounded px-2 py-1 text-[11px] font-mono border border-dashed"
+                  style={{ borderColor: s.border, backgroundColor: s.bg, color: s.text }}>{s.name}</span>
               ))}
             </div>
             <span className="text-[10px] text-fg-muted font-mono">flex items-start gap-2 · control 在一行文字高度的容器內置中</span>

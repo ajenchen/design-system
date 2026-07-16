@@ -257,14 +257,17 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     //   Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix Clock,
     //   與 edit 同結構消除 cell display↔edit 像素偏移(Layer-B padding mismatch)。
     if (resolvedMode === 'view') {
+      // 2026-07-16 DA3 fix:view 分支補 {...props} spread(aria-label 等 DOM attr 原本靜默丟失;
+      // Switch 同型 2026-07-04 已修,本檔漏 — M10 同型)。
       if (!showDisplayEndIcon) {
         // 2026-05-14 I2 fix(spec contract (e) display typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
-        if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
-        return <span className={cn(fieldDisplayTextClass(size), 'truncate', className)}>{formatTime(value, { formatOptions, locale })}</span>
+        if (!value) return <span {...props} className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
+        return <span {...props} className={cn(fieldDisplayTextClass(size), 'truncate', className)}>{formatTime(value, { formatOptions, locale })}</span>
       }
       return (
         <div
+          {...props}
           className={cn(fieldWrapperStyles({ mode: 'view', variant, size }), className)}
           data-field-mode="view"
         >

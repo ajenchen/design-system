@@ -119,9 +119,9 @@ export interface SwitchProps
   /**
    * Field mode(2026-05-05 Phase B3 align):
    *   edit     — 一般可互動 Switch(預設)
-   *   display  — **純展示**:渲染 勾/叉 icon(無互動 primitive、無 input chrome);
+   *   view  — **純展示**:渲染 勾/叉 icon(無互動 primitive、無 input chrome);
    *              對齊 Carbon read-only / DataTable boolean cell。
-   *              `display` 完全無 toggle 形體;`readonly` 視場景(field-types.ts)。
+   *              `view` 完全無 toggle 形體;`readonly` 視場景(field-types.ts)。
    *   readonly — standalone 同 readOnly prop(保留視覺鎖互動);Field 內 = 灰框 + 勾/叉 icon
    *   disabled — 同 disabled prop
    */
@@ -201,7 +201,7 @@ const Switch = React.forwardRef<
     } = props
 
     // ── mode='view'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
-    // 純展示模式:無互動 toggle、渲染 Check / X icon。與 Checkbox display 對齊(同 boolean primitive,
+    // 純展示模式:無互動 toggle、渲染 Check / X icon。與 Checkbox view 對齊(同 boolean primitive,
     // 共用 SelectionControl/boolean-value.tsx SSOT — 勾/叉 icon + 中性 foreground 色)。
     if (resolvedMode === 'view') {
       const isChecked = checkedProp === true

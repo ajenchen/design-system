@@ -40,7 +40,7 @@ export const Modes: Story = {
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">display</h3>
-          <Combobox mode="view" options={categoryOptions} value={value} aria-label="類別(display mode demo)" />
+          <Combobox mode="view" options={categoryOptions} value={value} aria-label="類別(view 模式示範)" />
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>

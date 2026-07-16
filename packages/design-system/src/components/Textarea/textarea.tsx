@@ -11,12 +11,12 @@ import { useControllable } from '@/design-system/hooks/use-controllable'
  * Textarea — 多行文字輸入
  *
  * ── 定位 ────────────────────────────────────────────────────────────────
- * 多行版本的 Input，edit / display / readonly / disabled 四態與 Input 邏輯一致(Phase B1 2026-05-05)。
+ * 多行版本的 Input，edit / view / readonly / disabled 四態與 Input 邏輯一致(Phase B1 2026-05-05)。
  * 不同於 Input：
  *   - 沒有固定 field-height（高度由 rows 或 min-h 決定）
  *   - 沒有 startIcon / endAction（textarea 慣例不放 icon）
  *   - readonly 呈現保留邊框與 padding，只改底色，讓多行文字有合理閱讀區
- *   - display 渲染 <div> + white-space:pre-wrap 保留多行文本
+ *   - view 渲染 <div> + white-space:pre-wrap 保留多行文本
  *
  * ── Padding 規則 ───────────────────────────────────────────────────────
  * 多行內容必須有上下內距才能閱讀舒適。不沿用 Input 的 items-center，
@@ -149,7 +149,7 @@ const textareaVariants = cva(
 export interface TextareaProps
   extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'size'>,
     Omit<VariantProps<typeof textareaVariants>, 'mode' | 'variant'> {
-  /** Field display mode */
+  /** Field view mode */
   mode?: FieldMode
   /**
    * Visual chrome(正交於 mode);Phase B1(2026-05-05)新增。透傳自 FieldContext.variant,per-prop override。
@@ -198,7 +198,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const ariaDescribedBy = ariaDescribedByProp ?? fieldCtx?.descriptionId
     const ariaErrorMessage = ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)
 
-    // ── display mode(+ readonly 空值)純展示,渲染 <div> 取代 <textarea>(white-space:pre-wrap 保留多行) ──
+    // ── view mode(+ readonly 空值)純展示,渲染 <div> 取代 <textarea>(white-space:pre-wrap 保留多行) ──
     // 對齊 Carbon read-only / Cloudscape display-mode
     // 2026-07-08 user 拍板:readonly 空值也走 display-div 顯 '-'(readonly **有值** 仍走下方
     // native <textarea readOnly> 保留選取/複製語意 — field-controls.spec.md「null / undefined 值」)。

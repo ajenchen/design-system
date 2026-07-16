@@ -120,8 +120,8 @@ export const Modes: Story = {
 }
 
 /* ── Display（DataTable cell 用）── */
-export const Display: Story = {
-  name: '展示樣式',
+export const View: Story = {
+  name: '檢視樣式',
   render: () => (
     <div className="flex flex-col gap-3">
       <LinkInput mode="view" value="https://www.example.com/path/to/page" />

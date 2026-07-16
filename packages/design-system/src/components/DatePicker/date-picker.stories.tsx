@@ -316,8 +316,8 @@ export const ShowTimeRange: Story = {
 }
 
 /* ── Display（DataTable cell 用）── */
-export const Display: Story = {
-  name: '展示樣式',
+export const View: Story = {
+  name: '檢視樣式',
   render: () => (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">

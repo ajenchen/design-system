@@ -45,7 +45,7 @@ export const Modes: Story = {
         {/* @story-trait-rationale: pre-existing trait gaps tracked separately */}
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">display</h3>
-          <Select mode="view" options={statusOptions} value={value} aria-label="狀態(display mode demo)" />
+          <Select mode="view" options={statusOptions} value={value} aria-label="狀態(view 模式示範)" />
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>

@@ -1,10 +1,27 @@
 # DA3(deep-audit round 3)findings ledger — 累積 triage 用(batch-at-end)
 
-## A.3 批修進度
-- ✅ F1 spec display sweep:20 檔 47 處(content-quality PASS / tsc 0 / 假陽性 0;data-table invariant script label 採「加註保留」以 code 為準)
-- ⏳ F2 Field/InlineEdit canonical / F3 tsx+behavior / F4 hooks / F5 SKILL+LinkTo
-- ✅ smoke --full 0 console error;heavy battery 5/6(dim 87 mirror drift = F5 編 SKILL 中預期,commit 前 sync 再跑)
-- 缺 5 deterministic 標記(23/41/42/45/48)= F4 修完 Notice 後補跑
+## A.3 批修進度(commit bde8973c 保全;F2-F5 撞額度 10pm 重置)
+- ✅ F1 完成(20 檔 47 處);✅ F2/F4/F5 大部落地(gate 全綠證實);✅ F3 部分(Checkbox defaultChecked ✓ / tag.spec ✓)
+- ✅ 全 gate 綠:tsc/typecheck:stories/content-quality/story-quality/compile-stories 62 aligned/invariants 39/39/6 hooks bash -n
+
+### A.3 殘項(додати額度後收尾;abort 時從此接續)
+F3 剩(spot-check 證實未做):
+- [ ] TimePicker view 分支 spread props(照 switch.tsx restDomProps 同型)+ M10 掃其他控件 view 分支
+- [ ] color.spec.md:275 --on-emphasis 白名單刪 turquoise
+- [ ] select.tsx :144/:157/:3/:381 display docblock → view;RadioGroup tsx :16/:30/:277;Switch tsx docblock;boolean-value :1/:26
+- [ ] Story Modes 卡標題/aria-label display 殘留(Select:47/RadioGroup:33-34/Switch/Checkbox/Combobox/DatePicker/Input:31/NumberInput:35/TimePicker:42)
+- [ ] export const Display → View ×2(date-picker.stories:319 / link-input.stories:123)+ grep LinkTo 舊名
+- [ ] anatomy 不存在 token 修(RadioGroup:172-174 / Select:260-263 → var(--color-magenta-6) 等,照 ProgressBar 已修版)
+- [ ] Rating stories InField touched-gating;Rating spec:39/:213 Badge→Tag
+- [ ] PeoplePicker anatomy ColorMatrix 重寫(bg-neutral-selected 無勾號)
+- [ ] DateGrid anatomy weekday h-field-sm + ring-primary-hover ×3
+- [ ] Switch anatomy ×2 + principles + DatePicker anatomy:251 + Textarea anatomy:37 + Select anatomy:325-326/:48 display 殘留
+- [ ] tag.tsx docblock ×2 + tag.anatomy prose ×2 + tag.principles 深字清單
+F2/F4/F5 待驗收項(gate 綠但未逐項確認):
+- [ ] F2 的 8 項(field-controls contract d / inline-edit.spec 大修 / LinkInput VERIFY 結論)逐項 spot-check
+- [ ] F4 的 dim74 存量 15 檔清單(agent 應回報但被額度吞)→ 重掃
+- [ ] F5 的 32 項 spot-check(SKILL 死引用 / LinkTo / 雜項)
+- [ ] deterministic 5 dims 標記補跑(23/41/42/45/48)→ coverage ledger Claude 側 100%
 
 規則:全掃完才 triage;非-SSOT = AUTO 批修;SSOT-UI/UX = C.1 拍板清單(四要件)。
 
