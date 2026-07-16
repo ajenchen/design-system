@@ -1,0 +1,12 @@
+{
+ "dim": 25,
+ "filesScanned": 207,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.stories.tsx:115",
+   "問題": "Clearable story 只展示 Select trigger 的 clearable 功能；SelectMenu 本身無此 API，且其 spec 明定 trigger/field state 由 Select、Combobox 等外層元件負責。Select 已有相同 canonical story，因此它未具象化 SelectMenu 原則，移除也不會降低 spec 理解。",
+   "severity": "marginal",
+   "建議": "退役此 story 並移除 principles 頁的對應連結；clearable 教學留在 Select，SelectMenu 展示只保留搜尋、多選、creatable、選項狀態等自身能力。"
+  }
+ ]
+}

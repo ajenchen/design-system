@@ -1,5 +1,5 @@
 {
-  "ts": "2026-07-10T03:59:30.615Z",
+  "ts": "2026-07-16T15:02:57.021Z",
   "expected_dims": 91,
   "classified": 91,
   "tier_counts": {
@@ -12,367 +12,549 @@
   "coverage_by_dim": {
     "1": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "cva 三方漂移 — story-auto-compile-migrate + compile-stories.mjs --check chain"
+      "mechanism": "cva 三方漂移 — story-auto-compile-migrate + compile-stories.mjs --check chain",
+      "id": "DS-DIM-001",
+      "critical": true
     },
     "2": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/audit-spec-deadlinks.mjs --check(掃 83 spec.md cross-ref pointer,assert target 存在;2026-05-30 從誤分 PURE-JUDGMENT 修正)"
+      "mechanism": "scripts/audit-spec-deadlinks.mjs --check(掃 83 spec.md cross-ref pointer,assert target 存在;2026-05-30 從誤分 PURE-JUDGMENT 修正)",
+      "id": "DS-DIM-002",
+      "critical": true
     },
     "3": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/add-reciprocal-pointers.mjs --check(2026-05-31 加 --check verify gate;原本只 mutator 無 gate=紙上 DETERMINISTIC,infra-audit 修)"
+      "mechanism": "scripts/add-reciprocal-pointers.mjs --check(2026-05-31 加 --check verify gate;原本只 mutator 無 gate=紙上 DETERMINISTIC,infra-audit 修)",
+      "id": "DS-DIM-003",
+      "critical": true
     },
     "4": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_opacity_token_usage.sh(write-time P0 BLOCKER exit 2,2026-07-07 治理進化方向 2 升級;per-line escape @token-registry-ok)+ utility-registry.json SSOT + audit-time DS-wide grep 確認 residue"
+      "mechanism": "check_opacity_token_usage.sh(write-time P0 BLOCKER exit 2,2026-07-07 治理進化方向 2 升級;per-line escape @token-registry-ok)+ utility-registry.json SSOT + audit-time DS-wide grep 確認 residue",
+      "id": "DS-DIM-004",
+      "critical": true
     },
     "5": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/audit-orphan-tokens.mjs --check(0 真孤兒 verdict)"
+      "mechanism": "scripts/audit-orphan-tokens.mjs --check(0 真孤兒 verdict)",
+      "id": "DS-DIM-005",
+      "critical": true
     },
     "6": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Spec 文字品質 AI judgment;dispatch 必 DS-wide 全 spec.md(82 files),禁 sample;含 file:line per finding"
+      "mechanism": "Spec 文字品質 AI judgment;dispatch 必 DS-wide 全 spec.md(82 files),禁 sample;含 file:line per finding",
+      "id": "DS-DIM-006",
+      "critical": false
     },
     "7": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Spec 邊界案例 AI judgment;dispatch 必 DS-wide 全 spec.md 每 spec 過 7-dim 覆蓋"
+      "mechanism": "Spec 邊界案例 AI judgment;dispatch 必 DS-wide 全 spec.md 每 spec 過 7-dim 覆蓋",
+      "id": "DS-DIM-007",
+      "critical": false
     },
     "8": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "7-維對標 AI judgment;dispatch 必 DS-wide 全 spec.md;每 spec 7-dim per row"
+      "mechanism": "7-維對標 AI judgment;dispatch 必 DS-wide 全 spec.md;每 spec 7-dim per row",
+      "id": "DS-DIM-008",
+      "critical": false
     },
     "9": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "shadcn passthrough 完整度 — dispatch agent DS-wide 全掃 components/*.tsx 驗 forwardRef/displayName/asChild/...props/data-state 齊;無 write-time hook(2026-05-31 infra-audit 修:原誤標 HOOK-ENFORCED 且 cite 無關的 check_codex_collab_5step.sh(codex hook+soft-warn),實際是 audit-time grep)"
+      "mechanism": "shadcn passthrough 完整度 — dispatch agent DS-wide 全掃 components/*.tsx 驗 forwardRef/displayName/asChild/...props/data-state 齊;無 write-time hook(2026-05-31 infra-audit 修:原誤標 HOOK-ENFORCED 且 cite 無關的 check_codex_collab_5step.sh(codex hook+soft-warn),實際是 audit-time grep)",
+      "id": "DS-DIM-009",
+      "critical": false
     },
     "10": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "a11y aria-label DS-wide AI judgment + scripts/audit-a11y.mjs(axe-core deterministic);dispatch 必 全 components grep aria-label coverage"
+      "mechanism": "a11y aria-label DS-wide AI judgment + scripts/audit-a11y.mjs(axe-core deterministic);dispatch 必 全 components grep aria-label coverage",
+      "id": "DS-DIM-010",
+      "critical": false
     },
     "11": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_story_invariants.sh R1 anatomy(原 check_story_anatomy.sh)+ 3-layer file existence DS-wide grep"
+      "mechanism": "check_story_invariants.sh R1 anatomy(原 check_story_anatomy.sh)+ 3-layer file existence DS-wide grep",
+      "id": "DS-DIM-011",
+      "critical": true
     },
     "12": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Story 人話 AI judgment;dispatch 必 DS-wide 全 stories 過 placeholder/jargon test"
+      "mechanism": "Story 人話 AI judgment;dispatch 必 DS-wide 全 stories 過 placeholder/jargon test",
+      "id": "DS-DIM-012",
+      "critical": false
     },
     "13": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_story_invariants.sh R1 anatomy 5-section structural enforce(原 check_story_anatomy.sh)"
+      "mechanism": "check_story_invariants.sh R1 anatomy 5-section structural enforce(原 check_story_anatomy.sh)",
+      "id": "DS-DIM-013",
+      "critical": true
     },
     "14": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "結構核心已謂詞化:chain scripts/naming-structure-invariant.mjs(PascalCase/kebab/主檔,deterministic,2026-07-07 C.0b harvest 首跑);語義部分(hook naming / 章名中文 / identifier 語言)仍 AI judgment DS-wide"
+      "mechanism": "結構核心已謂詞化:chain scripts/naming-structure-invariant.mjs(PascalCase/kebab/主檔,deterministic,2026-07-07 C.0b harvest 首跑);語義部分(hook naming / 章名中文 / identifier 語言)仍 AI judgment DS-wide",
+      "id": "DS-DIM-014",
+      "critical": false
     },
     "15": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/audit-content-quality.mjs --check(cross-doc drift)"
+      "mechanism": "scripts/audit-content-quality.mjs --check(cross-doc drift)",
+      "id": "DS-DIM-015",
+      "critical": true
     },
     "16": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/audit-layout-family-frontmatter.mjs --check(primary spec 必有 family: frontmatter;2026-05-30 從誤分 PURE-JUDGMENT 修正)"
+      "mechanism": "scripts/audit-layout-family-frontmatter.mjs --check(primary spec 必有 family: frontmatter;2026-05-30 從誤分 PURE-JUDGMENT 修正)",
+      "id": "DS-DIM-016",
+      "critical": true
     },
     "17": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Prop value cross-component semantic conflict — dispatch 必 grep prop literal DS-wide"
+      "mechanism": "Prop value cross-component semantic conflict — dispatch 必 grep prop literal DS-wide",
+      "id": "DS-DIM-017",
+      "critical": false
     },
     "18": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "post_edit_dispatcher.sh → lib/_token_hygiene.sh(shadcn compat alias ban write-time;dispatcher 已 registered settings.json)+ DS-wide grep audit-time;2026-05-31 字串精確化(原寫 check_token_hygiene.sh standalone 不存在,實際 active 路徑是 dispatcher source lib)"
+      "mechanism": "post_edit_dispatcher.sh → lib/_token_hygiene.sh(shadcn compat alias ban write-time;dispatcher 已 registered settings.json)+ DS-wide grep audit-time;2026-05-31 字串精確化(原寫 check_token_hygiene.sh standalone 不存在,實際 active 路徑是 dispatcher source lib)",
+      "id": "DS-DIM-018",
+      "critical": true
     },
     "19": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Home-name-vs-scope AI judgment;dispatch 必 DS-wide enumerate folder vs actual scope"
+      "mechanism": "Home-name-vs-scope AI judgment;dispatch 必 DS-wide enumerate folder vs actual scope",
+      "id": "DS-DIM-019",
+      "critical": false
     },
     "20": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Spec 硬寫機械化值 — dispatch 必 grep DS-wide spec.md 找 px / hex / Tailwind class lists"
+      "mechanism": "Spec 硬寫機械化值 — dispatch 必 grep DS-wide spec.md 找 px / hex / Tailwind class lists",
+      "id": "DS-DIM-020",
+      "critical": false
     },
     "21": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_item_list_gap.sh write-time WARN(exit 0 additionalContext,非 block)+ audit-time grep backstop"
+      "mechanism": "check_item_list_gap.sh write-time WARN(exit 0 additionalContext,非 block)+ audit-time grep backstop",
+      "id": "DS-DIM-021",
+      "critical": true
     },
     "22": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "視覺容器 inner breathing — dispatch agent DS-wide 全掃有邊界容器是否缺 inner padding;原 check_container_breathing.sh 已 retired 無 active 替代(2026-05-31 infra-audit 修假分類,原誤標 HOOK-ENFORCED)"
+      "mechanism": "視覺容器 inner breathing — dispatch agent DS-wide 全掃有邊界容器是否缺 inner padding;原 check_container_breathing.sh 已 retired 無 active 替代(2026-05-31 infra-audit 修假分類,原誤標 HOOK-ENFORCED)",
+      "id": "DS-DIM-022",
+      "critical": false
     },
     "23": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/compile-stories.mjs --all --check(drift / migration pending)"
+      "mechanism": "scripts/compile-stories.mjs --all --check(drift / migration pending)",
+      "id": "DS-DIM-023",
+      "critical": true
     },
     "24": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Story 範例重複性 AI judgment;dispatch 必 per-component DS-wide 列 stories scenario matrix"
+      "mechanism": "Story 範例重複性 AI judgment;dispatch 必 per-component DS-wide 列 stories scenario matrix",
+      "id": "DS-DIM-024",
+      "critical": false
     },
     "25": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Story 必要性 grounding DS-wide AI judgment;dispatch 必 per-component 全掃 過 2-test(spec-tied / removal-degrade)"
+      "mechanism": "Story 必要性 grounding DS-wide AI judgment;dispatch 必 per-component 全掃 過 2-test(spec-tied / removal-degrade)",
+      "id": "DS-DIM-025",
+      "critical": false
     },
     "26": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Controlled/Uncontrolled dual-mode AI judgment;dispatch 必 DS-wide form-like + overlay-like enumerate dual-mode pair check"
+      "mechanism": "Controlled/Uncontrolled dual-mode AI judgment;dispatch 必 DS-wide form-like + overlay-like enumerate dual-mode pair check",
+      "id": "DS-DIM-026",
+      "critical": false
     },
     "27": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/code-quality-audit.mjs --scope=all(any/dead-export/long-fn/magic-number)"
+      "mechanism": "scripts/code-quality-audit.mjs --scope=all(any/dead-export/long-fn/magic-number)",
+      "id": "DS-DIM-027",
+      "critical": true
     },
     "28": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Manual story split principle DS-wide AI judgment;dispatch 必 per-component grep stories.tsx WithStartIcon/WithEndIcon split anti-pattern"
+      "mechanism": "Manual story split principle DS-wide AI judgment;dispatch 必 per-component grep stories.tsx WithStartIcon/WithEndIcon split anti-pattern",
+      "id": "DS-DIM-028",
+      "critical": false
     },
     "29": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_story_invariants.sh R3 category trait-based DS-wide enforce(原 check_story_category.sh)"
+      "mechanism": "check_story_invariants.sh R3 category trait-based DS-wide enforce(原 check_story_category.sh)",
+      "id": "DS-DIM-029",
+      "critical": true
     },
     "30": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_canonical_propagation.sh E.1 principles canonical DS-wide enforce(原 check_principles_canonical.sh)"
+      "mechanism": "check_canonical_propagation.sh E.1 principles canonical DS-wide enforce(原 check_principles_canonical.sh)",
+      "id": "DS-DIM-030",
+      "critical": true
     },
     "31": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "post_edit_dispatcher.sh → lib/_overlay_handcraft.sh WARN(exit 0,2026-05-31 修 dangling ref:原寫 check_overlay_handcraft.sh standalone 不存在,已 fold 成 lib helper)+ grep ban stripped-padding boolean variant audit-time"
+      "mechanism": "post_edit_dispatcher.sh → lib/_overlay_handcraft.sh WARN(exit 0,2026-05-31 修 dangling ref:原寫 check_overlay_handcraft.sh standalone 不存在,已 fold 成 lib helper)+ grep ban stripped-padding boolean variant audit-time",
+      "id": "DS-DIM-031",
+      "critical": true
     },
     "32": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Filter operator registry SSOT consumption — dispatch 必 grep consumer hardcode op string DS-wide"
+      "mechanism": "Filter operator registry SSOT consumption — dispatch 必 grep consumer hardcode op string DS-wide",
+      "id": "DS-DIM-032",
+      "critical": false
     },
     "33": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Component classification + abstraction discipline DS-wide AI judgment;5 sub-dims per-component 全掃"
+      "mechanism": "Component classification + abstraction discipline DS-wide AI judgment;5 sub-dims per-component 全掃",
+      "id": "DS-DIM-033",
+      "critical": false
     },
     "34": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_field_family_invariants.sh A.4 disabled placeholder color(原 check_disabled_placeholder_color.sh,P1 stderr)"
+      "mechanism": "check_field_family_invariants.sh A.4 disabled placeholder color(原 check_disabled_placeholder_color.sh,P1 stderr)",
+      "id": "DS-DIM-034",
+      "critical": true
     },
     "35": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_pattern_invariants.sh C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain.sh,P1 WARN)"
+      "mechanism": "check_pattern_invariants.sh C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain.sh,P1 WARN)",
+      "id": "DS-DIM-035",
+      "critical": true
     },
     "36": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/audit-data-table-row-mode-ssot.mjs(已 wire ci.yml verify;cell-render wrapper 消費 per-row state;2026-05-30 從誤分 PURE-JUDGMENT 修正)"
+      "mechanism": "scripts/audit-data-table-row-mode-ssot.mjs(已 wire ci.yml verify;cell-render wrapper 消費 per-row state;2026-05-30 從誤分 PURE-JUDGMENT 修正)",
+      "id": "DS-DIM-036",
+      "critical": true
     },
     "37": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_field_family_invariants.sh(focus-dominates border-primary state machine;2026-05-30 從誤分 PURE-JUDGMENT 修正)"
+      "mechanism": "check_field_family_invariants.sh(focus-dominates border-primary state machine;2026-05-30 從誤分 PURE-JUDGMENT 修正)",
+      "id": "DS-DIM-037",
+      "critical": true
     },
     "38": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Inline-action gap canonical — dispatch 必 grep ItemInlineAction sibling gap DS-wide"
+      "mechanism": "Inline-action gap canonical — dispatch 必 grep ItemInlineAction sibling gap DS-wide",
+      "id": "DS-DIM-038",
+      "critical": false
     },
     "39": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_pattern_invariants.sh C.4(row-slot handcraft,2026-05-30 fixed order-independent regex + 從誤分 PURE-JUDGMENT 修正)"
+      "mechanism": "check_pattern_invariants.sh C.4(row-slot handcraft,2026-05-30 fixed order-independent regex + 從誤分 PURE-JUDGMENT 修正)",
+      "id": "DS-DIM-039",
+      "critical": true
     },
     "40": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/audit-story-quality.mjs --check(title canonical 全 196 stories deterministic)"
+      "mechanism": "scripts/audit-story-quality.mjs --check(title canonical 全 196 stories deterministic)",
+      "id": "DS-DIM-040",
+      "critical": true
     },
     "41": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/audit-story-quality.mjs --check(name jargon 全 350 names deterministic)"
+      "mechanism": "scripts/audit-story-quality.mjs --check(name jargon 全 350 names deterministic)",
+      "id": "DS-DIM-041",
+      "critical": true
     },
     "42": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/audit-story-quality.mjs --check(placeholder 全 stories deterministic)"
+      "mechanism": "scripts/audit-story-quality.mjs --check(placeholder 全 stories deterministic)",
+      "id": "DS-DIM-042",
+      "critical": true
     },
     "43": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Rule note 品質 AI judgment;dispatch 必 DS-wide 全 principles.stories rule notes per-component sample-free read"
+      "mechanism": "Rule note 品質 AI judgment;dispatch 必 DS-wide 全 principles.stories rule notes per-component sample-free read",
+      "id": "DS-DIM-043",
+      "critical": false
     },
     "44": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Internal vs Components 三 test DS-wide — dispatch 必 enumerate ALL Internal folder + components,3-test per row"
+      "mechanism": "Internal vs Components 三 test DS-wide — dispatch 必 enumerate ALL Internal folder + components,3-test per row",
+      "id": "DS-DIM-044",
+      "critical": false
     },
     "45": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/compile-stories.mjs --all + grep generated rows full coverage"
+      "mechanism": "scripts/compile-stories.mjs --all + grep generated rows full coverage",
+      "id": "DS-DIM-045",
+      "critical": true
     },
     "46": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Manual vs Mechanical boundary — dispatch 必 grep DS-wide stories trait-derived hand-written exports"
+      "mechanism": "Manual vs Mechanical boundary — dispatch 必 grep DS-wide stories trait-derived hand-written exports",
+      "id": "DS-DIM-046",
+      "critical": false
     },
     "47": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "post_edit_dispatcher.sh → lib/_token_hygiene.sh(utility-registry.json SSOT compliance write-time)+ DS-wide grep audit-time;2026-05-31 字串精確化(原寫 check_token_hygiene.sh standalone 不存在)"
+      "mechanism": "post_edit_dispatcher.sh → lib/_token_hygiene.sh(utility-registry.json SSOT compliance write-time)+ DS-wide grep audit-time;2026-05-31 字串精確化(原寫 check_token_hygiene.sh standalone 不存在)",
+      "id": "DS-DIM-047",
+      "critical": true
     },
     "48": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/audit-orphan-tokens.mjs --check(0 真孤兒 structural-keep classifier)"
+      "mechanism": "scripts/audit-orphan-tokens.mjs --check(0 真孤兒 structural-keep classifier)",
+      "id": "DS-DIM-048",
+      "critical": true
     },
     "49": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/audit-a11y.mjs(axe-core WCAG 2A+AA all stories deterministic;separate workflow .github/workflows/a11y-and-size.yml)"
+      "mechanism": "scripts/audit-a11y.mjs(axe-core WCAG 2A+AA all stories deterministic;separate workflow .github/workflows/a11y-and-size.yml)",
+      "id": "DS-DIM-049",
+      "critical": true
     },
     "50": {
       "tier": "DETERMINISTIC",
-      "mechanism": "size-limit npx + package.json per-component manifest(deterministic CI gate)"
+      "mechanism": "size-limit npx + package.json per-component manifest(deterministic CI gate)",
+      "id": "DS-DIM-050",
+      "critical": true
     },
     "51": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/visual-audit.mjs --matrix=theme-density-rtl 6-cell baseline diff"
+      "mechanism": "scripts/visual-audit.mjs --matrix=theme-density-rtl 6-cell baseline diff",
+      "id": "DS-DIM-051",
+      "critical": true
     },
     "52": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "chrome_header_dispatcher.sh:tab_lg_equal + header_with_tabs_border BLOCKER(exit 2 傳播,2026-05-31 folded-hook-audit);chrome_header_handcraft WARN(Phase 3 未升)"
+      "mechanism": "chrome_header_dispatcher.sh:tab_lg_equal + header_with_tabs_border BLOCKER(exit 2 傳播,2026-05-31 folded-hook-audit);chrome_header_handcraft WARN(Phase 3 未升)",
+      "id": "DS-DIM-052",
+      "critical": true
     },
     "53": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_spec_class_drift.sh write-time WARN(exit 0,非 block)+ audit-time grep backstop"
+      "mechanism": "check_spec_class_drift.sh write-time WARN(exit 0,非 block)+ audit-time grep backstop",
+      "id": "DS-DIM-053",
+      "critical": true
     },
     "54": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_story_invariants.sh R8 story_archetype_registry + .claude/references/story-baseline-registry.json"
+      "mechanism": "check_story_invariants.sh R8 story_archetype_registry + .claude/references/story-baseline-registry.json",
+      "id": "DS-DIM-054",
+      "critical": true
     },
     "55": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Token cross-namespace mapping integrity — dispatch agent DS-wide 全掃 semantic.css 12-hue mapping(L246-273)逐 hue 驗 →primitive step 正確;無 deterministic hook(2026-05-31 infra-audit 修假分類,原誤標 HOOK-ENFORCED 卻無 cite hook)"
+      "mechanism": "Token cross-namespace mapping integrity — dispatch agent DS-wide 全掃 semantic.css 12-hue mapping(L246-273)逐 hue 驗 →primitive step 正確;無 deterministic hook(2026-05-31 infra-audit 修假分類,原誤標 HOOK-ENFORCED 卻無 cite hook)",
+      "id": "DS-DIM-055",
+      "critical": false
     },
     "56": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "chrome_header_dispatcher.sh:_app_shell_primary_header_consistency BLOCKER(exit 2 傳播,2026-05-31 修 stdin parsing + dispatcher propagate;escape @app-shell-primary-header-allow)"
+      "mechanism": "chrome_header_dispatcher.sh:_app_shell_primary_header_consistency BLOCKER(exit 2 傳播,2026-05-31 修 stdin parsing + dispatcher propagate;escape @app-shell-primary-header-allow)",
+      "id": "DS-DIM-056",
+      "critical": true
     },
     "57": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_ds_anchor_preflight.sh write-time WARN(exit 0,inject context 讓 AI 自決,L130-132;M29 anchor)+ stop_self_audit Stop hook backstop。2026-05-31 誠實標 WARN(原寫「soft BLOCKER」是矛盾詞)"
+      "mechanism": "check_ds_anchor_preflight.sh write-time WARN(exit 0,inject context 讓 AI 自決,L130-132;M29 anchor)+ stop_self_audit Stop hook backstop。2026-05-31 誠實標 WARN(原寫「soft BLOCKER」是矛盾詞)",
+      "id": "DS-DIM-057",
+      "critical": true
     },
     "58": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_plugin_fork_health.sh r1_plugin_install SessionStart(原 check_fork_user_plugin_install.sh,2026-06-11 prune merge)"
+      "mechanism": "check_plugin_fork_health.sh r1_plugin_install SessionStart(原 check_fork_user_plugin_install.sh,2026-06-11 prune merge)",
+      "id": "DS-DIM-058",
+      "critical": true
     },
     "59": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_substantive_edit_approval_preflight.sh scope apps/** + node_modules/@qijenchen"
+      "mechanism": "check_substantive_edit_approval_preflight.sh scope apps/** + node_modules/@qijenchen",
+      "id": "DS-DIM-059",
+      "critical": true
     },
     "60": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_propose_without_benchmark.sh UserPromptSubmit(M26)"
+      "mechanism": "check_propose_without_benchmark.sh UserPromptSubmit(M26)",
+      "id": "DS-DIM-060",
+      "critical": true
     },
     "61": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_item_list_gap.sh + check_datatable_invariants.sh r2(原 check_data_table_size_num_to_meta_width.sh;M16 + M23c)WARN(exit 0,非 block)+ audit-time grep backstop"
+      "mechanism": "check_item_list_gap.sh + check_datatable_invariants.sh r2(原 check_data_table_size_num_to_meta_width.sh;M16 + M23c)WARN(exit 0,非 block)+ audit-time grep backstop",
+      "id": "DS-DIM-061",
+      "critical": true
     },
     "62": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Fork Netlify onboarding canonical — dispatch 必 DS-wide enumerate netlify.toml / manager-head / setup-netlify / CLAUDE.md Access-control 段"
+      "mechanism": "Fork Netlify onboarding canonical — dispatch 必 DS-wide enumerate netlify.toml / manager-head / setup-netlify / CLAUDE.md Access-control 段",
+      "id": "DS-DIM-062",
+      "critical": false
     },
     "63": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "inject_deploy_url_after_push.sh PostToolUse + scripts/deploy-url.mjs"
+      "mechanism": "inject_deploy_url_after_push.sh PostToolUse + scripts/deploy-url.mjs",
+      "id": "DS-DIM-063",
+      "critical": true
     },
     "64": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_post_main_ssot_propagate.sh PostToolUse Bash"
+      "mechanism": "check_post_main_ssot_propagate.sh PostToolUse Bash",
+      "id": "DS-DIM-064",
+      "critical": true
     },
     "65": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_chrome_header_avatar_canonical.sh PreToolUse multiline regex BLOCKER(exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_CHROME_HEADER_AVATAR)"
+      "mechanism": "check_chrome_header_avatar_canonical.sh PreToolUse multiline regex BLOCKER(exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_CHROME_HEADER_AVATAR)",
+      "id": "DS-DIM-065",
+      "critical": true
     },
     "66": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Immediate cross-repo dispatch + visual parity — dispatch 必 DS-wide enumerate release.yml dispatch step + sync workflow + visual-assertions coverage"
+      "mechanism": "Immediate cross-repo dispatch + visual parity — dispatch 必 DS-wide enumerate release.yml dispatch step + sync workflow + visual-assertions coverage",
+      "id": "DS-DIM-066",
+      "critical": false
     },
     "67": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_sidebar_menu_button_implicit_wrap.sh PreToolUse multiline regex BLOCKER(exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP)"
+      "mechanism": "check_sidebar_menu_button_implicit_wrap.sh PreToolUse multiline regex BLOCKER(exit 2,2026-05-31 folded-hook-audit 升級;verified clean on canonical + env escape CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP)",
+      "id": "DS-DIM-067",
+      "critical": true
     },
     "68": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Stories-vs-spec drift systematic — dispatch 必 DS-wide 全 stories/anatomy/principles grep anti-spec pattern(@canonical-pattern / @anti-pattern marker)"
+      "mechanism": "Stories-vs-spec drift systematic — dispatch 必 DS-wide 全 stories/anatomy/principles grep anti-spec pattern(@canonical-pattern / @anti-pattern marker)",
+      "id": "DS-DIM-068",
+      "critical": false
     },
     "69": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_consumer_app_invariants.sh r1_no_ds_catalog PostToolUse BLOCKER(原 check_consumer_no_ds_catalog.sh,2026-06-11 prune merge)"
+      "mechanism": "check_consumer_app_invariants.sh r1_no_ds_catalog PostToolUse BLOCKER(原 check_consumer_no_ds_catalog.sh,2026-06-11 prune merge)",
+      "id": "DS-DIM-069",
+      "critical": true
     },
     "70": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_consumer_app_invariants.sh r2_story_baseline PostToolUse BLOCKER + ds-story-manifest.json(原 check_consumer_story_baseline.sh)"
+      "mechanism": "check_consumer_app_invariants.sh r2_story_baseline PostToolUse BLOCKER + ds-story-manifest.json(原 check_consumer_story_baseline.sh)",
+      "id": "DS-DIM-070",
+      "critical": true
     },
     "71": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_consumer_app_invariants.sh r3_ds_primitive_misuse BLOCKER(原 check_consumer_ds_primitive_misuse.sh)"
+      "mechanism": "check_consumer_app_invariants.sh r3_ds_primitive_misuse BLOCKER(原 check_consumer_ds_primitive_misuse.sh)",
+      "id": "DS-DIM-071",
+      "critical": true
     },
     "72": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "DS API surface tightening per-component review(tightening-roadmap.md)— dispatch 必 DS-wide enumerate ALL component API surface"
+      "mechanism": "DS API surface tightening per-component review(tightening-roadmap.md)— dispatch 必 DS-wide enumerate ALL component API surface",
+      "id": "DS-DIM-072",
+      "critical": false
     },
     "73": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_full_story_visual_interaction_sweep.sh(length === manifest.totalStories,sample = reject)"
+      "mechanism": "check_full_story_visual_interaction_sweep.sh(length === manifest.totalStories,sample = reject)",
+      "id": "DS-DIM-073",
+      "critical": true
     },
     "74": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_overlay_open_focus_escape_probe.sh BLOCKER"
+      "mechanism": "check_overlay_open_focus_escape_probe.sh BLOCKER",
+      "id": "DS-DIM-074",
+      "critical": true
     },
     "75": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_plugin_fork_health.sh r2_plugin_freshness SessionStart fork-user(原 check_plugin_freshness.sh)"
+      "mechanism": "check_plugin_fork_health.sh r2_plugin_freshness SessionStart fork-user(原 check_plugin_freshness.sh)",
+      "id": "DS-DIM-075",
+      "critical": true
     },
     "76": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_escape_marker_abuse.sh(≥3 distinct OR ≥5 total BLOCK [consumer] + per-line justification gate 空理由 BLOCK [consumer+DS] + 廣義 *-allow regex,2026-05-31)"
+      "mechanism": "check_escape_marker_abuse.sh(≥3 distinct OR ≥5 total BLOCK [consumer] + per-line justification gate 空理由 BLOCK [consumer+DS] + 廣義 *-allow regex,2026-05-31)",
+      "id": "DS-DIM-076",
+      "critical": true
     },
     "77": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/composition-fidelity-visual-diff.mjs + .github/workflows/composition-fidelity.yml pixelmatch per-mapping"
+      "mechanism": "scripts/composition-fidelity-visual-diff.mjs + .github/workflows/composition-fidelity.yml pixelmatch per-mapping",
+      "id": "DS-DIM-077",
+      "critical": true
     },
     "78": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_codex_brief_invariants.sh 4th invariant(禁列檔)"
+      "mechanism": "check_codex_brief_invariants.sh 4th invariant(禁列檔)",
+      "id": "DS-DIM-078",
+      "critical": true
     },
     "79": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_tailwind_wildcard_in_docs.sh P0 BLOCKER"
+      "mechanism": "check_tailwind_wildcard_in_docs.sh P0 BLOCKER",
+      "id": "DS-DIM-079",
+      "critical": true
     },
     "80": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_storybook_addon_packaging.sh r1_addon_subdir_ship P0 BLOCKER(原 check_addon_subdir_ship.sh,2026-06-11 prune merge)"
+      "mechanism": "check_storybook_addon_packaging.sh r1_addon_subdir_ship P0 BLOCKER(原 check_addon_subdir_ship.sh,2026-06-11 prune merge)",
+      "id": "DS-DIM-080",
+      "critical": true
     },
     "81": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_storybook_addon_packaging.sh r2_preset_cjs P0 BLOCKER(原 check_storybook_addon_preset_cjs.sh)"
+      "mechanism": "check_storybook_addon_packaging.sh r2_preset_cjs P0 BLOCKER(原 check_storybook_addon_preset_cjs.sh)",
+      "id": "DS-DIM-081",
+      "critical": true
     },
     "82": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_consumer_app_invariants.sh r4_app_story_title P0 BLOCKER(原 check_consumer_app_story_title.sh)"
+      "mechanism": "check_consumer_app_invariants.sh r4_app_story_title P0 BLOCKER(原 check_consumer_app_story_title.sh)",
+      "id": "DS-DIM-082",
+      "critical": true
     },
     "83": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/verify-published-deploy.mjs(mirror run success + published main.ts === local + --live render)"
+      "mechanism": "scripts/verify-published-deploy.mjs(mirror run success + published main.ts === local + --live render)",
+      "id": "DS-DIM-083",
+      "critical": true
     },
     "84": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/test-2-scenario-architecture.mjs(20 test + Mirror M0-M7)"
+      "mechanism": "scripts/test-2-scenario-architecture.mjs(20 test + Mirror M0-M7)",
+      "id": "DS-DIM-084",
+      "critical": true
     },
     "85": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/sync-ds-canonical.mjs --check(npm mirror == .claude SSOT)"
+      "mechanism": "scripts/sync-ds-canonical.mjs --check(npm mirror == .claude SSOT)",
+      "id": "DS-DIM-085",
+      "critical": true
     },
     "86": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/plugin-structure-validate.mjs(5-manifest version + symlink == source)"
+      "mechanism": "scripts/plugin-structure-validate.mjs(5-manifest version + symlink == source)",
+      "id": "DS-DIM-086",
+      "critical": true
     },
     "87": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/dogfood-prepublish-verify.mjs(npm install + build-storybook consumer view)"
+      "mechanism": "scripts/dogfood-prepublish-verify.mjs(npm install + build-storybook consumer view)",
+      "id": "DS-DIM-087",
+      "critical": true
     },
     "88": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/check-dangling-infra-ref.mjs --check + scripts/check-skill-deadref.mjs --check"
+      "mechanism": "scripts/check-dangling-infra-ref.mjs --check + scripts/check-skill-deadref.mjs --check",
+      "id": "DS-DIM-088",
+      "critical": true
     },
     "89": {
       "tier": "HOOK-ENFORCED",
-      "mechanism": "check_tabs_content_chrome_body_double_gap.sh(write-time P0:Check 1 tabs double-gap + Check 2 overlay-body fixed macro gap)+ audit-time DS-wide sweep per SKILL dim row"
+      "mechanism": "check_tabs_content_chrome_body_double_gap.sh(write-time P0:Check 1 tabs double-gap + Check 2 overlay-body fixed macro gap)+ audit-time DS-wide sweep per SKILL dim row",
+      "id": "DS-DIM-089",
+      "critical": true
     },
     "90": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "LLM layout-space macro 合規 DS-wide 全掃(NO-SAMPLE;regex 分不出 macro/micro);判準 = layoutSpace.spec.md「該用 token vs 刻意固定」邊界段;每 finding 對抗二次驗證(2026-07-01 錨:35 raw → 8 confirmed)"
+      "mechanism": "LLM layout-space macro 合規 DS-wide 全掃(NO-SAMPLE;regex 分不出 macro/micro);判準 = layoutSpace.spec.md「該用 token vs 刻意固定」邊界段;每 finding 對抗二次驗證(2026-07-01 錨:35 raw → 8 confirmed)",
+      "id": "DS-DIM-090",
+      "critical": false
     },
     "91": {
       "tier": "DETERMINISTIC",
-      "mechanism": "scripts/audit-failure-class-coverage.mjs --check(failure-class registry 每 class 必 protected/remediating+plan/judgment+auditDim;fail-closed;2026-07-10 user「每類病根必有防線」基本原則機械化)"
+      "mechanism": "scripts/audit-failure-class-coverage.mjs --check(failure-class registry 每 class 必 protected/remediating+plan/judgment+auditDim;fail-closed;2026-07-10 user「每類病根必有防線」基本原則機械化)",
+      "id": "DS-DIM-091",
+      "critical": true
     }
   }
 }

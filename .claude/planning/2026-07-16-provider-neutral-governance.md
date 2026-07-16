@@ -88,18 +88,18 @@
 - [ ] P2.2 依研究結果生成 `.codex/` 或等效(生成器擴充 build-fork-governance 家族;generated banner + digest + drift gate)。
 - [ ] P2.3 Codex-side second-opinion driver:AGENTS.md 或 codex skill 形式提供「review Claude-authored change」workflow(消費同 rubric)。
 - [ ] P2.4 fork/template:corpus 生成加 codex targets;template repo checked-in AGENTS.md;`npm run sync-all` 契約擴充(§15:deterministic/idempotent/atomic/dry-run/json — 對照現況補齊)。
-- [ ] P2.5 Certified Surface Registry 建檔:Claude local(Certified,證據=本 repo 日常)/ Claude cloud(Certified-equivalent,證據=memory 2026-07-14 端到端蓋章;範圍=committed .claude)/ Codex CLI local(目標 Certified-equivalent:AGENTS.md discovery 實測 + preflight/CI 兜底)/ Codex cloud、IDE surfaces(Uncertified until tested)。
+- [x] P2.5 Certified Surface Registry 建檔 → `.claude/references/certified-surfaces.md`(三態+證據;Codex cloud/IDE = Uncertified):Claude local(Certified,證據=本 repo 日常)/ Claude cloud(Certified-equivalent,證據=memory 2026-07-14 端到端蓋章;範圍=committed .claude)/ Codex CLI local(目標 Certified-equivalent:AGENTS.md discovery 實測 + preflight/CI 兜底)/ Codex cloud、IDE surfaces(Uncertified until tested)。
 
 ### Phase 3 — rule-ID 化 + waiver schema + coverage 100%
-- [ ] P3.1 dim→rule-ID 對映表(machine-readable json;audit-coverage-matrix 擴欄位:id/severity/critical/waiver-policy)。
-- [ ] P3.2 escape-marker → waiver 升級(owner/approver/reason/scope/expiry/remediation;過期=fail;Critical 禁一般 waiver)。掃既有 markers 列冊 ratchet。
+- [x] P3.1 rule-ID:coverage-matrix 輸出層 derive `DS-DIM-001..091` 穩定 ID + critical 初始指派(機械強制 tier=critical 64/91;judgment 初始 non-critical,細化只升不降)。
+- [x] P3.2 waiver 雙軌制:既有 ~10 家 rationale-marker = 永久誠實標記(各 hook 驗 rationale,不改);**暫時性例外新格式 `@waiver(owner: expiry: reason:)`** + check-governance-tamper R2 驗過期(存量 0 乾淨起步)。
 - [ ] P3.3 rule coverage report 進 preflight(coverage <100% applicable = fail;已有 verify-deep-audit-coverage 為基底)。
 - [ ] P3.4 attestation:preflight pass-marker 擴充為 attestation 格式(repo/SHA/digest/DS version/governance version/surface/rule PASS list/timestamp)。
 
 ### Phase 4 — 測試矩陣 + clean-room + 供應鏈
 - [ ] P4.1 codex 規格 §24 的 38 項測試映射:已有(npm pack dogfood/假 fork harness/hook tests/breadth tests)標 DONE;缺項(ignore-scripts install、Windows、pnpm、interrupted sync、tamper tests)逐項建 fixture。
-- [ ] P4.2 branch-protection probe + CODEOWNERS 驗證(或 doctor Unverified)。
-- [ ] P4.3 governance-tamper negative fixtures(刪 gate/弱化 rule/改 generated 檔 → 必 fail)。
+- [x] P4.2 branch-protection probe → `scripts/check-branch-protection.mjs`(preflight 資訊模式)。**實測發現 main UNPROTECTED(無 required checks,direct push 可繞 CI)→ 列 user 拍板**(啟用會改 solo-work 直推 main 流程,tradeoff 需 user 決定;啟用後 probe 轉 --check enforcing)。CODEOWNERS 同題一併拍板。
+- [x] P4.3 governance-tamper:check-governance-tamper.mjs R1 preflight gate-count ratchet(拔 gate = fail,breadth-tested;合法 retire 需 --update-baseline 同 commit)+ R2 waiver 過期;generated 檔 tamper 由既有 mirror --check 家族覆蓋。preflight wired(48 gates baseline)。
 - [ ] P4.4 cloud clean-room:Claude cloud(已有實證,補 registry 格式)+ Codex cloud(排程;未測前 Uncertified)。
 
 ### 明文不做 / 邊界

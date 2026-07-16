@@ -8,6 +8,8 @@
 - [project_wm_ds_alignment_campaign.md](project_wm_ds_alignment_campaign.md) — WM↔DS 對齊戰役完整收官:beta.84/85 已發版、WM lockfile 真綠 13/13、CellSelect 包裝落地;WM main 已 push(4e83402,CAMPAIGN CLOSED);handoff 在 WM docs
 - [project_governance_evolution_roadmap.md](project_governance_evolution_roadmap.md) — 稽核=永久機構、謂詞化=機械化引擎雙柱;方向 1-3 已落地(判準化 harvest / fail-closed / 造輪三洞),4-7 分期各有 trigger;SSOT → planning/2026-07-07-governance-evolution-roadmap.md
 
+- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG:AGENTS.md 治理核心上線(codex 原生 discovery 實測 PASS);P2-4 進行;軌道 SSOT = planning/2026-07-16-provider-neutral-governance.md
+
 ## Feedback (workflow / collaboration discipline)
 - [feedback_codex_dual_track_synthesizer.md](feedback_codex_dual_track_synthesizer.md) — Codex dual-track + ASK gate 嚴格 + triple-verify + brief 三 invariant + Phase-A-first + auto-mode 禁問(2026-06-11 合併 05-23 directives)
 - [feedback_audit_discipline_full_sweep_deterministic_preflight.md](feedback_audit_discipline_full_sweep_deterministic_preflight.md) — 稽核三 invariant:NO-SAMPLE 全盤 / 必 chain deterministic script / Preflight scan(合 3 file)

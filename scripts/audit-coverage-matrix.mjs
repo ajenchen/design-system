@@ -209,6 +209,13 @@ const report = {
   coverage_by_dim: COVERAGE,
 }
 
+// PNG P3.1(2026-07-16):穩定 rule-ID + Critical 初始指派(id 永不重用;critical 初始 = 有機械強制者
+//   〔DETERMINISTIC/HOOK-ENFORCED〕,PURE-JUDGMENT 初始 non-critical — 後續逐 dim 細化只升不降)。
+for (const [n, d] of Object.entries(COVERAGE)) {
+  d.id = 'DS-DIM-' + String(n).padStart(3, '0')
+  if (d.critical === undefined) d.critical = d.tier !== 'PURE-JUDGMENT'
+}
+
 const LOG_DIR = path.join(ROOT, '.claude/logs')
 if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
 const __coverageOut = path.join(LOG_DIR, 'audit-coverage-matrix.json')

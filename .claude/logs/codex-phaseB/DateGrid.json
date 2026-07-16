@@ -1,0 +1,161 @@
+{
+ "component": "DateGrid",
+ "claimsVerified": 386,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.tsx:6",
+   "宣稱": "real source URLs added inline at lines 38 + 111",
+   "真實code行為": "第 38、111 行皆無 URL；實際來源連結位於第 43 行。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.tsx:78",
+   "宣稱": "DayPicker 未對外 forward ref 到單一 DOM 節點（內部有多 div）",
+   "真實code行為": "RDP 9.14 明確渲染單一 Root div；真正情況是 DayPicker API 沒有公開 ref forwarding，並非沒有單一 root 可附著。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.tsx:97",
+   "宣稱": "muted 色透過 Button override 內部加",
+   "真實code行為": "nav override 沒加 muted class；Button text variant 使用 text-foreground，hover 是 bg-neutral-hover。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.tsx:208",
+   "宣稱": "未傳 mode 的非互動 grid，day cell 走 labelGridcell",
+   "真實code行為": "RDP 以 mode !== undefined || onDayClick !== undefined 判定互動；未傳 mode 但傳 onDayClick 時仍渲染 DayButton 並走 labelDayButton。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.tsx:266",
+   "宣稱": "tokens.ring: ['ring-primary', 'ring-ring']",
+   "真實code行為": "實作消費 hover:ring-primary-hover 與 focus-visible:ring-ring；沒有 runtime ring-primary，metadata 也漏列 ring-primary-hover。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:25",
+   "宣稱": "DS token 管視覺層、rdp-* 提供結構層",
+   "真實code行為": "未覆寫的 week number、dropdown 等 surface 仍由 RDP style.css 提供 opacity、字級、尺寸、border、radius 等視覺樣式，不只是結構。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:75",
+   "宣稱": "未傳 mode 時 grid 為非互動純展示（day 渲染純文字非 button，不可選）",
+   "真實code行為": "未傳 mode 但提供 onDayClick 時仍會渲染可互動 DayButton；只是沒有 RDP selection hook。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:125",
+   "宣稱": "左右 chevron 按鈕到邊距 = 最左最右日期 cell 到邊距（12px）",
+   "真實code行為": "root→nav 是 12px；border-spacing-1 在 table 外緣另留 4px，因此 root→首末 cell 是 16px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:126",
+   "宣稱": "caption 到頂 = 最後一排日期到底（均 12px）",
+   "真實code行為": "caption 到頂是 12px；最後一排 cell 下方另有 4px table outer border-spacing，因此到底為 16px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:159",
+   "宣稱": "button 圓的 corner triangle 看到 pseudo bg",
+   "真實code行為": "range_start/end 的 rounded-l-full／rounded-r-full 會讓外側 corner triangles 保持透明；tsx 第 160–161 行也明載 pseudo 不覆蓋該區。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:179",
+   "宣稱": "autoFocus prop 自動 focus 到選中日（或今天）",
+   "真實code行為": "只會聚焦目前已渲染且可聚焦的 DayButton；disabled、hidden、outside 被排除，選中日／今天不可用時改落第一個 focusable day，無 mode/onDayClick 時沒有 DayButton 可聚焦。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:190",
+   "宣稱": "DayPicker 內部是多 div 結構、未對外 forward ref 到單一 DOM 節點",
+   "真實code行為": "RDP 有明確單一 Root div；正確原因只是 DayPicker API 未公開 ref forwarding。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:192",
+   "宣稱": "classNames 等 API 經 {...props} 直接 spread 至 DayPicker",
+   "真實code行為": "classNames 已被解構並透過 explicit classNames object 合併，不在 {...props} 中；components 則留在 remainder，最後 spread 甚至可整體覆蓋 DS nav injection。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:204",
+   "宣稱": "全 disabled 時，Tab 走 roving tabIndex，整個 grid 只停一格",
+   "真實code行為": "全 disabled 時沒有 focus target；所有 day button 都是 tabIndex=-1/native disabled，日期 grid 有 0 個 Tab stop。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:206",
+   "宣稱": "grid 寬度為 intrinsic（7 × cell + 4px gap + p-3）",
+   "真實code行為": "p-3 不屬 table intrinsic width；border-spacing:4px 對 7 欄包含 8 份 spacing。md table 為 7×28+8×4=228px，root 再加 24px padding 為 252px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:40",
+   "宣稱": "Nav 按鈕：hover 藍圈",
+   "真實code行為": "Button text variant hover 是 bg-neutral-hover；DateGrid 未替 nav 加 hover ring，只有 focus-visible ring。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:45",
+   "宣稱": "dayHover border: '--primary'",
+   "真實code行為": "日格 hover 使用 hover:ring-primary-hover，消費 --primary-hover。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:86",
+   "宣稱": "RDP style.css 作結構基底，未覆寫的結構 key 沿用原生預設",
+   "真實code行為": "未覆寫的 optional surfaces 也沿用 RDP 的視覺 CSS，包括尺寸、opacity、border 與 radius，不只是結構。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:136",
+   "宣稱": "未傳 mode 時 grid 為非互動純展示",
+   "真實code行為": "提供 onDayClick 即使沒有 mode，RDP 仍渲染可互動 DayButton。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:137",
+   "宣稱": "selected：受控值",
+   "真實code行為": "RDP 9.14 只有在 onSelect 存在時才把 selected 當 controlled value；否則 selected 只是內部 selection state 的初始值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:138",
+   "宣稱": "onSelect：(value) => void",
+   "真實code行為": "完整 OnSelectHandler 是 (selected, triggerDate, modifiers, event) => void，共四個參數。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:144",
+   "宣稱": "autoFocus：掛載時聚焦到選中日（或今日）",
+   "真實code行為": "僅聚焦已渲染且 focusable 的目標；選中日／今日不可用時會 fallback，無互動 DayButton 時不會產生 DOM focus。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:272",
+   "宣稱": "Hover ring：--primary",
+   "真實code行為": "實作 token 是 --primary-hover。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:423",
+   "宣稱": "星期標頭：h-7",
+   "真實code行為": "實作是 h-[var(--field-height-sm)]，md 28px、lg density 32px，不是固定 h-7。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:528",
+   "宣稱": "第一次點設 from、第二次點設 to，中間自動填滿",
+   "真實code行為": "RDP 預設 min=0 時，空 range 第一次點擊即得到 {from:date,to:date}；此 story 又預載完整 range 且未設 resetOnSelect，下一次點擊會直接調整既有端點。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:562",
+   "宣稱": "role=\"gridcell\" + aria-selected on each day cell",
+   "真實code行為": "每個 td 都有 role=\"gridcell\"，但只有 selected cell 輸出 aria-selected=\"true\"；未選日省略該 attribute。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:565",
+   "宣稱": "showOutsideDays 時 outside cell 仍 render 可互動 button",
+   "真實code行為": "showOutsideDays 只控制補格顯示；只有 mode 或 onDayClick 使 grid interactive 時，outside cell 才是 DayButton。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.principles.stories.tsx:274",
+   "宣稱": "點擊阻擋靠 react-day-picker 給 button 的 native disabled 屬性",
+   "真實code行為": "一般 disabled day 使用 native disabled；目前 focused 的 day 若變 disabled 則使用 aria-disabled，點擊另由 RDP handler 檢查 disabled modifier 後 return。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.principles.stories.tsx:293",
+   "宣稱": "✅ ring-1 ring-primary",
+   "真實code行為": "DateGrid hover canonical 是 ring-[1.5px] ring-primary-hover；focus canonical 是 ring-2 ring-ring，沒有 ring-1 ring-primary。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.stories.tsx:137",
+   "宣稱": "第一次點擊設起日，第二次點擊設迄日，中間自動填滿",
+   "真實code行為": "此 story 初始已有完整 range 且 resetOnSelect 預設 false；下一次點擊會調整現有 from/to，不會固定重啟兩步流程。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DateGrid/date-grid.stories.tsx:173",
+   "宣稱": "Calendar 是 inline primitive，不自包 Popover",
+   "真實code行為": "此 story import/render 的 primitive 是 DateGrid；Calendar 是另一個 event-view 元件。"
+  }
+ ]
+}
