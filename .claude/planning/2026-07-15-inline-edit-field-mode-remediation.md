@@ -48,9 +48,27 @@
 
 ---
 
+## ✅ 實作完成(2026-07-16,Model A 全落地 + 對抗稽核 + pixel probe)
+
+**6 commit(working branch `2026-07-15-inlineedit-storybook-remediation`,未 push;等 Netlify preview user gate)**:
+c3c1a09f 更名+Model A cva+InlineEdit委派+cell disabled廢除 / 37aa63c4 storybook 治理機械化+三層補齊 /
+63f5c71e spec view mode / 952033c4 對抗 loose ends+pixel probe / ff82fcdc 對抗 F1/F2/F3 / b2049e0a 治理閘進 preflight。
+
+**驗證全綠**:tsc -b 0 / build:lib 0(型別 surface deploy-safe)/ typecheck:stories 0 / data-table-invariants 39/39 /
+story-quality CLEAN / three-layer 0 缺 / inline-edit-view-geometry-invariant PASS / content-quality CLEAN /
+storybook build 0 / **pixel probe 4/4**(read↔edit 水平零跳 Δ=0、多行 py-2 上下對稱 Δ=0、Tag 置中 Δ=0、auto-sm=field-height-sm Δ=2)。
+
+**3-agent 對抗稽核**:cell 廢除 + auto-sm 零回歸(agent 3 逐路 trace 確認);抓 + 修 F2(standalone -mx 溢出)、
+F1(補機械鎖 script)、F3(min-w-0)、number-input tight-pipe、spec mode-union DS-wide。
+
+**FOREVER 機械強制**(user「no sampling」):三層閘 + geometry invariant + 4 storybook 內容規範(verification-intent
++ css-jargon 新增,breadth-tested)全進 release:preflight。**唯一剩 = user push main trigger**(規矩:Netlify preview gate)。
+
+---
+
 ## (以下為研究過程紀錄,中間結論以上方最終模型為準)
 
-**狀態**:規格已確認(user GO 2026-07-15),實作中。
+**狀態**:✅ 實作完成(見上方「實作完成」段),等 user push trigger。
 **規則**:所有決策/共識/待辦落盤此檔,任何中斷後讀此即可無損接續。每有新拍板就更新。
 **分支**:`2026-07-15-inlineedit-storybook-remediation`(beta.86 bump 已 riding;working tree 只有研究 JSON,無 code 改動)。
 
