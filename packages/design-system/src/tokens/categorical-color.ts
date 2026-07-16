@@ -64,8 +64,8 @@ export const CAT_SUBTLE: Record<CategoricalHue, string> = {
 /**
  * solid 模式 class:step-6 底 + on-emphasis 配對文字。
  * 文字色依「step-6 底亮度」分桶(WCAG ≥3:1 大粗字門檻,2026-06-04 user「以最低為原則」):
- *   - 夠深的色底 → `text-on-emphasis`(白):blue / deep-orange / red / turquoise / indigo / purple / magenta
- *   - 太亮的色底 → `text-on-emphasis-dark`(深):yellow / amber / orange / lime(白字連 3:1 都不過)
+ *   - 夠深的色底 → `text-on-emphasis`(白):blue / deep-orange / red / indigo / purple / magenta
+ *   - 太亮的色底 → `text-on-emphasis-dark`(深):yellow / amber / orange / lime / turquoise(白字連 3:1 都不過;turquoise 2026-07-16 dark 色相修正後 L=0.68 白字 2.77 → 切深字,兩 mode 5.65/6.47 全過)
  *   - ★ green 例外:白字 2.47 連 3:1 都不過,但 user 拍板維持白字(綠底白字慣見觀感)= documented exception。
  * 對比為 oklch→相對亮度實測(scripts/categorical-color-invariants.mjs 機械驗,green 列 exempt)。
  */
@@ -78,7 +78,7 @@ export const CAT_SOLID: Record<CategoricalHue, string> = {
   orange: 'bg-[var(--color-orange-6)] text-on-emphasis-dark',
   amber: 'bg-[var(--color-amber-6)] text-on-emphasis-dark',
   lime: 'bg-[var(--color-lime-6)] text-on-emphasis-dark',
-  turquoise: 'bg-[var(--color-turquoise-6)] text-on-emphasis',
+  turquoise: 'bg-[var(--color-turquoise-6)] text-on-emphasis-dark',
   indigo: 'bg-[var(--color-indigo-6)] text-on-emphasis',
   purple: 'bg-[var(--color-purple-6)] text-on-emphasis',
   magenta: 'bg-[var(--color-magenta-6)] text-on-emphasis',
@@ -125,7 +125,7 @@ export const CAT_SOLID_TOKENS: Record<CategoricalHue, { bg: string; text: string
   orange: { bg: 'var(--color-orange-6)', text: 'var(--on-emphasis-dark)' },
   amber: { bg: 'var(--color-amber-6)', text: 'var(--on-emphasis-dark)' },
   lime: { bg: 'var(--color-lime-6)', text: 'var(--on-emphasis-dark)' },
-  turquoise: { bg: 'var(--color-turquoise-6)', text: 'var(--on-emphasis)' },
+  turquoise: { bg: 'var(--color-turquoise-6)', text: 'var(--on-emphasis-dark)' },
   indigo: { bg: 'var(--color-indigo-6)', text: 'var(--on-emphasis)' },
   purple: { bg: 'var(--color-purple-6)', text: 'var(--on-emphasis)' },
   magenta: { bg: 'var(--color-magenta-6)', text: 'var(--on-emphasis)' },

@@ -372,7 +372,11 @@
   --color-green-10: oklch(from var(--color-green-6) calc(l + (1 - l) * 0.75) calc(c * 0.14) h);
 
   /* Turquoise */
-  --color-turquoise-6:  oklch(0.57 0.10 225);
+  /* 2026-07-16 user 拍板修正:原 oklch(0.57 0.10 225)為複製 spec 假想範例的錯值 — 全 12 色相唯一
+     dark 改色相(196→225 = 偏藍)、唯一 L 降(其餘全升)、唯一 C 升,三重違反設計語言。
+     修回 H=196(同 light,Apple systemBlue/Teal dark 同樣色相恆定);L 照 11 色相經驗律內插
+     (L≤0.58 → +0.05 / L≥0.70 → +0.03;0.64 居中 → +0.04)= 0.68;C 照 ×0.95 2dp 慣例 = 0.09。 */
+  --color-turquoise-6:  oklch(0.68 0.09 196);
   --color-turquoise-1:  oklch(from var(--color-turquoise-6) l c h / calc(0.12 / l));
   --color-turquoise-2:  oklch(from var(--color-turquoise-6) calc(l * 0.28) calc(c * 0.65) h);
   --color-turquoise-3:  oklch(from var(--color-turquoise-6) calc(l * 0.44) calc(c * 0.82) h);
