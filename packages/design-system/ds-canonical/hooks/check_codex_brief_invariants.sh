@@ -115,7 +115,9 @@ fi
 # 我的 dim sub-agent 判準 SSOT),並要求逐 dim 套用 —— 只給 dim 編號 = codex 憑自己理解判 =
 # 判斷標準不對稱(user 錨:「我基於治理判、codex 可能沒有」)。
 if ! echo "$BRIEF_CONTENT" | grep -qi 'audit-prompts'; then
-  MISSING="${MISSING}  • 6️⃣ 判準對等 invariant 缺(brief 必給 codex `design-system-audit/references/audit-prompts.md` 每-dim rubric + 要求逐 dim 套用同一判準;只給 dim 編號 = codex 憑己意判 = 標準不對稱)\n"
+  # 2026-07-16 fix:原文用 raw backtick 包路徑在雙引號字串內 = command substitution 每 fire 執行該路徑
+  # (stderr 噪音 + 訊息路徑消失)→ 改 \` escape。
+  MISSING="${MISSING}  • 6️⃣ 判準對等 invariant 缺(brief 必給 codex \`design-system-audit/references/audit-prompts.md\` 每-dim rubric + 要求逐 dim 套用同一判準;只給 dim 編號 = codex 憑己意判 = 標準不對稱)\n"
 fi
 
 # 7️⃣ A.1b 對等(2026-07-10 user「所有稽核任務都應對等」全盤盤點抓):brief 必要求 codex 做
@@ -130,11 +132,15 @@ if [ -n "$MISSING" ]; then
   printf '\n  Brief 缺以下 invariant:\n' >&2
   printf '%b' "$MISSING" >&2
   printf '\n  Per memory/feedback_codex_brief_invariants_2026_05_23.md + codex-collab/references/brief-template.md:\n' >&2
-  printf '  必含三 invariant 明文(verbatim):\n' >&2
+  printf '  必含七 invariant 明文(verbatim;2026-07-16 同步實數 — 原訊息只列 3,跟上方檢查 7 條 drift):\n' >&2
   printf '    1. 全盤閱讀全部 source(列舉 N files / DS-wide / 禁憑記憶)\n' >&2
   printf '    2. Triple-verify per finding(grep + Read + canonical exception check)\n' >&2
   printf '    3. 禁抽樣(DS-wide ALL files / sub-agent sample admission = reject)\n' >&2
-  printf '\n  修方向:brief content 補上三 invariant 文字。\n' >&2
+  printf '    4. 禁列檔(禁 rg --files / find 全 repo;只讀 brief 列的 file,直接出 verdict)\n' >&2
+  printf '    5. 輸入對等(閱讀清單具名鏡射 A.0:meta-patterns.md rules + memory MEMORY.md index)\n' >&2
+  printf '    6. 判準對等(附 design-system-audit/references/audit-prompts.md 每-dim rubric,逐 dim 套用)\n' >&2
+  printf '    7. A.1b 對等(per-component claim-vs-code 對抗驗證 = Claude A.1b 鏡像)\n' >&2
+  printf '\n  修方向:brief content 補上缺的 invariant 文字(母版 = codex-collab/references/brief-template.md「七 invariant」段)。\n' >&2
   printf '  Escape(極罕見): brief 含 `// @codex-brief-invariant-skip: <rationale>`\n' >&2
   exit 2
 fi

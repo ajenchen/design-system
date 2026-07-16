@@ -1,1 +1,54 @@
-{"component":"Field","implBasis":"自建 form layout container + state context (engine-agnostic; spec 定位 explicitly rejects RHF Controller coupling); state machine chrome in field-wrapper.tsx cva compoundVariants","claimsVerified":35,"falseClaims":[]}
+{
+  "component": "Field(家族 5 檔全讀:field.tsx / field-wrapper.tsx / field-context.ts / field-types.ts / field-edit-keys.ts;spec = field.spec.md + field-controls.spec.md)",
+  "implBasis": "自建 form layout 容器(slot by displayName + FieldContext)+ fieldWrapperStyles cva(mode×variant×size×width×error)+ resolver hooks SSOT(useResolvedFieldSize/Disabled/Mode/Variant/Invalid)+ Model A view mode(view×default = edit 幾何減 chrome,保留 px/h,只拔 border/bg;view×naked = bare)+ makeEditSettleKeyHandler(IME guard)",
+  "claimsVerified": [
+    "Model A view×default compound = 'bg-transparent border border-transparent'(無 !px-0 !py-0),size 軸 px/h 保留(field-wrapper.tsx:129-143)= field-controls.spec.md L67「軸一 view mode」宣稱一致;textarea.tsx view×default 同法保留 px py-2 ✓",
+    "readonly×naked / disabled×naked 死格移除宣稱 = code 真實(cva 無該 compounds);有效組合 default×4 + naked×{edit,view} ✓",
+    "readonly focus ring([&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1)+「滑鼠點擊也 match、勿宣稱僅鍵盤」誠實標註 = code(field-wrapper.tsx:158)+ spec Focus 段一致",
+    "cascade resolver 表(field-controls.spec.md L168-176)5 hooks precedence 逐一對 field-context.ts:157-224 一致(size: prop>ctx>surface>fallback / mode: prop>disabled>ctx.mode>readOnly>edit / etc.)",
+    "scripts/check-field-cascade-resolve.mjs 存在(機械強制宣稱屬實)",
+    "block primitive 宣告:RadioGroup(radio-group.tsx:184)+ CheckboxGroup(checkbox-group.tsx:93)= spec「已宣告 block」清單含檔行 cite 精確",
+    "detectControlLayout(first-block-wins)+ detectPreferredSize(first-declared-wins)+ size 三層優先序 = spec/docblock 宣稱一致(field.tsx:96-117,213-218)",
+    "horizontal label 對齊雙策略(inline: min-h+flex-col justify-center / block: padding-top calc((h-1lh)/2))= code field.tsx:380-388 ✓",
+    "FieldGroup gap map(compact gap-3 / normal gap-4 / loose gap-6)+ horizontalLabelWidth context cascade = code(field.tsx:517-535)✓;Switch horizontal ml-auto(switch.tsx:181)✓",
+    "FieldLabel required 星號(fg-muted 貼齊無 gap、disabled 降 fg-disabled、aria-hidden)+ info icon(16px、fg-muted→fg-secondary、disabled 不渲染)= code ✓",
+    "FieldError role=alert + 無內容不渲染 ✓;label/desc/error 固定 text-body ✓",
+    "field state machine v13.3 表(rest/hover/focus/open/error compound)逐 row 對 field-wrapper compoundVariants 一致(focus-within:!border-primary error:false / error:true 紅框全程)",
+    "空值分流 useFieldEmptyDisplay(table-cell&&editable→'' 其餘 '-')+ fieldEmptyColorClass(disabled→fg-disabled 其餘 text-foreground)= code field-context.ts:276-298 ✓;Input readonly 空值走 view-span 顯 '-'(input.tsx:118-140)✓",
+    "field-edit-keys:IME guard(isComposing + keyCode 229)+ commitOnEnter:false 時內建 Cmd/Ctrl+Enter = code ✓;宣稱 3 consumer(cell string/number + InlineEdit)屬實",
+    "anatomy 8 story(Overview/Inspector/OrientationMatrix/SizeMatrix/StateBehavior/ColorMatrix/FieldGroupBehavior/Accessibility)= spec 宣稱清單完整命中",
+    "FieldVariant 收窄(公開 'default';naked 走 FieldVariantInternal @internal)+ bare 退役紀錄 = code field-types.ts ✓"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "Field/field-controls.spec.md:394(共享 contract (d))",
+      "宣稱": "「(d) Default variant display = zero chrome SSOT:default mode='view' **必** zero chrome…Impl:field-wrapper.tsx + textarea.tsx compoundVariants mode:'display'+variant:'default' 加 `!px-0 !py-0`」",
+      "真實code行為": "2026-07-16 Model A(同檔 L67)已明文推翻 Path Ⅰ:view×default **保留** px/py/h、只拔 border/bg(field-wrapper.tsx:129-143 / textarea.tsx:84-88 無 !px-0 !py-0)。contract (d) 整段未更新 → spec-internal 自相矛盾(L67 vs L394)+ 與 code 相反;且沿用舊 mode 名 'display'。hook check_field_controls_contracts.sh 的 [contract (d)] 實際檢的是 field-px,與本段 zero-chrome 宣稱亦對不上",
+      "severity": "P1"
+    },
+    {
+      "fileLine": "Field/field.spec.md:209(FieldContext 表 mode row)",
+      "宣稱": "mode = `edit` / `display` / `readonly` / `disabled`",
+      "真實code行為": "FieldMode = 'edit' | 'view' | 'readonly' | 'disabled'(field-types.ts:21;2026-07-16 round16 display→view 更名)。ff82fcdc 已做 DS-wide display→view sync 但漏掉本 row",
+      "severity": "P2"
+    },
+    {
+      "fileLine": "Field/field.spec.md:256(FieldLabel info icon 段)",
+      "宣稱": "cite「field.tsx L391-416」與「(L403)」",
+      "真實code行為": "info icon block 現位於 field.tsx:422-435、`info && !disabled` 在 :422 — 行號 drift(實質行為宣稱本身正確)",
+      "severity": "P3"
+    },
+    {
+      "fileLine": "Field/field-controls.spec.md:160(Error 正交段)",
+      "宣稱": "cite「field.tsx:122/211」(invalid context key 位置)",
+      "真實code行為": "FieldProps.invalid 在 field.tsx:137、contextValue.invalid 在 :233 — 行號 drift(invalid 命名宣稱本身正確)",
+      "severity": "P3"
+    },
+    {
+      "fileLine": "Field/field.spec.md:202-215(FieldContext 欄位表)",
+      "宣稱": "表列 context 欄位 = id/descriptionId/errorId/mode/disabled/required/invalid/size/orientation/hasFieldWrapper",
+      "真實code行為": "FieldContextValue 另有 labelId(a11y aria-labelledby)/ variant / controlLayout / surface?(field-context.ts:24-48)— 表不完整(非錯述,漏列 4 欄)",
+      "severity": "P3"
+    }
+  ]
+}

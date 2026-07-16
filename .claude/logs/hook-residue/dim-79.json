@@ -3,6 +3,5 @@
   "hook": "check_tailwind_wildcard_in_docs.sh",
   "residueCount": 0,
   "findings": [],
-  "verified": true,
-  "note": "Anti-pattern var(--X-*) / var(--X-A/B/C) wildcard/slash enum 於 Tailwind 實際掃描範圍(src/ + packages/design-system + packages/storybook-config + .storybook)的 .md/.ts/.tsx/.css/.json = 0 命中。無 build-risk residue。(.claude/** 為 @source not 排除,hook 檔頭記已含 antiPattern 12 檔 build 連綠零風險,不計。)"
+  "notes": "以 hook 現行 regex `var\\(--[a-z][a-z0-9-]*([*/]+[a-z0-9-]*)+\\)` 全庫掃 .md/.sh/.ts/.tsx/.css/.json(排除 node_modules/.git/.claude{tmp,logs}/storybook-static/dist/hook 自身):0 hit。@tailwind-wildcard-allow escape 只出現在 hook 自身 + test + SKILL 文件說明,零 code 濫用。fork mirror 逐 byte SYNC。display→view 更名不涉此 hook。"
 }

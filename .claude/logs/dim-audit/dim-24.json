@@ -1,45 +1,15 @@
 {
   "dim": 24,
-  "title": "Story 範例重複性",
-  "mechanism": "per-component DS-wide 列 stories scenario matrix — 找重複/冗餘 story",
-  "filesScanned": 64,
-  "scope_note": "全 64 個 component 展示層 *.stories.tsx 建 scenario matrix(export 名 + config + 教學原則);深讀 23 個高重複訊號檔(DatePicker/Alert/RadioGroup/Checkbox/Switch/Button/LinkInput/Select/Menu/TimePicker/SelectMenu/FileViewer/DescriptionList/Coachmark/AspectRatio/Accordion/Skeleton/Notice/DataTable/Combobox/InlineEdit/Steps + RadioGroup anatomy)。anatomy/principles 檔有 prescribed 6-canonical / Polaris 結構,不在『範例重複性』scope。",
+  "title": "Story 範例重複性(Manual stories cross-3-file 不該 scenario 重疊)",
+  "filesScanned": 207,
+  "mechanism": "DS-wide:Glob 全 207 stories files,按 79 個 component/pattern 目錄分組。兩道機械前哨 + 判讀:(1) 同目錄 sibling files 相同 export const 名 → 1 hit;(2) 同目錄相同 story name:'中文名' → 16 hits(15 為共用 mock fixture 資料的 name: 欄位,非 story 名,殺掉);對唯一真重複讀雙方 story body 判 scenario 重疊度 + earn-existence test",
+  "verdict": "1 marginal after 全掃 207 files:DataTable EmptyState 在 anatomy 與展示檔重複 data=[] 空表 scenario;其餘跨檔同名全為共用 fixture 假陽性",
   "findings": [
     {
-      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:95",
-      "severity": "material",
-      "問題": "RadioGroup `Disabled` story 冗餘。disabled 覆蓋已存在於 (a) 同檔 `Modes` story 的 disabled 列(mode=\"disabled\",L49-54)與 (b) anatomy StateBehavior『Mutual Exclusion + Disabled Item Matrix』(radio-group.anatomy.stories.tsx L567+,state 表含 disabled 欄)。同 Family 的 Checkbox 與 Switch 都已退役各自的獨立 `Disabled` story(checkbox.stories.tsx L111-113 註解:『Disabled retired 2026-05-17 per audit Dim 24/25... RadioGroup 同 Family 已 retire 同類』)——但 RadioGroup 的 Disabled 實際上『沒』退役,該註解宣稱失真。這是跨 Family 不一致 + 真冗餘。",
-      "建議": "退役 RadioGroup `Disabled`(L95-103),對齊 Checkbox/Switch;disabled 由 Modes 的 disabled 列 + anatomy StateBehavior Disabled Matrix owns。同時修正 checkbox.stories.tsx L112 失真註解『RadioGroup 同 Family 已 retire 同類』(改為正確描述,或於退役 RadioGroup Disabled 後讓該句成真)。"
-    },
-    {
-      "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.stories.tsx:33,:97",
-      "severity": "material",
-      "問題": "AspectRatio 出現典型『AllVariants grid + 個別 variant story』重疊。`CommonRatios`(L139)以對照 grid 展示 16/9、4/3、1/1、3/4。`HeroBanner16x9`(L33,ratio 16/9)與 `SquareAvatar1x1`(L97,ratio 1/1)只是重新展示 CommonRatios 已含的比例值,無獨立教學原則。相對地 `ProductPhoto4x3`(L52)earn existence(教 CLS 防坍塌 + 未載入 placeholder 這個獨立原則),`Ultrawide21x9`(L120)展示 CommonRatios『未含』的 21/9。違 story-rules.md L42『AllVariants 對照各 1』——比例是數值 prop,不是 affordance,不該逐值另開 story。",
-      "建議": "退役 HeroBanner16x9 + SquareAvatar1x1(16/9 與 1/1 已在 CommonRatios 對照,無獨立原則);保留 CommonRatios(全比例對照)+ ProductPhoto4x3(教 CLS)+ Ultrawide21x9(21/9 為 CommonRatios 未含比例)。若偏好保留真實 hero 場景,反向做法是把 CommonRatios 收斂並把獨立原則(CLS / 21:9)併入場景 story。"
-    },
-    {
-      "fileLine": "packages/design-system/src/components/TimePicker/time-picker.stories.tsx:86",
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:454",
+      "問題": "anatomy 的 EmptyState(name:'空狀態',data=[] 預設空表)與 data-table.stories.tsx:296 展示檔 EmptyState 的「預設空狀態」sub-scenario 渲染完全同一畫面(columns + data=[] 預設 Empty)。anatomy 版差異僅在 Desc 文字(教「消費 Empty primitive」);展示版已含預設 + 自訂 emptyState 兩段且同樣 import Empty。同 scenario ≥2 file = noise(rubric),earn-existence test 1「教別 story 沒教的事」僅靠 prose 撐",
       "severity": "marginal",
-      "問題": "TimePicker `FlightDepartureTime` 是唯一無獨立 prop 的業務場景 story(純 `<TimePicker value onChange placeholder>` HH:mm)。其餘場景各錨定一個 distinct 特性:MeetingSlot→minuteStep + Field 雙欄、ShopBusinessHours→兩 picker 組合出範圍、EventTimestamp→showSeconds+clearable、EmployeeShiftSchedule→disabledTime、Disabled→disabled、WithError→Field error。FlightDepartureTime 的 baseline 用法被 MeetingSlot 的 Field+TimePicker 涵蓋,placeholder 也在 ShopBusinessHours/WithError 出現。",
-      "建議": "評估退役 FlightDepartureTime(唯一無 distinct prop 的場景);若要保留『最簡 HH:mm baseline』參考,考慮與 MeetingSlot 合併或明確標註其 earn-existence 理由。"
-    },
-    {
-      "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.stories.tsx:270",
-      "severity": "marginal",
-      "問題": "FileViewer `GmailAttachmentPreview` 的 config(`readOnly showFilmstrip`)是 `NotionGallery`(`readOnly showFilmstrip initialIndex` + grid trigger)的子集,未展示任何 NotionGallery 沒有的 FileViewer 能力。其餘 story 各有 distinct config:JiraAttachments(可編輯說明 + I 切換說明欄 + metadata)、NotionGallery(grid trigger + initialIndex + readOnly)、FigmaDesignReview(單檔 zoom/pan)、EventPhotosCollection(6 縮圖 filmstrip 溢出 scroll fade)、FallbackUnknownType(fallback renderer)。Gmail 的『下載導向』訴求未反映在任何獨立 prop。",
-      "建議": "評估退役 GmailAttachmentPreview(readOnly+filmstrip 為 NotionGallery 子集,無新增能力);若要保留 Gmail 場景,讓它展示 NotionGallery 未涵蓋面向(如 download action 專屬行為)。"
-    },
-    {
-      "fileLine": "packages/design-system/src/components/Coachmark/coachmark.stories.tsx:157",
-      "severity": "marginal",
-      "問題": "Coachmark `TipsMultiStep` 幾乎完整複製 `MultiStepTour` 的多步驟結構(only-active-step render + step counter + prev/skip/next,連 anti-race 寫法都相同——L163 註解自承『同 MultiStepTour』)。唯一 distinct 教學是 `kind=\"tips\"`(auto-header 文字『使用技巧』vs MultiStepTour 的 `kind=\"new-features\"`『新功能介紹』),屬單一 prop 變體。多步驟機制已由 MultiStepTour 完整教學,為換一個 kind 值另開整段重複的多步驟 story 違 story-rules.md L42『同 affordance 內 prop variations 用 Controls 不另開』。",
-      "建議": "評估把 TipsMultiStep 的 `kind=\"tips\"` 差異併入 MultiStepTour(用 Controls 或單一 Coachmark 展示 kind 對照);避免整段多步驟結構重複。"
-    },
-    {
-      "fileLine": "packages/design-system/src/components/Notice/notice.stories.tsx:95",
-      "severity": "marginal",
-      "問題": "Notice `DeploymentSuccess`(subtle + success + endContent action)與 `InlineVariants` 的 success 列(subtle + success + 『了解更多』action,L157-160)config 幾乎相同,無獨立原則。其餘 hero/場景 story 各加 distinct config:BillingFailed(solid appearance,而 InlineVariants 全 subtle)、ToastLikeSolid(dismissible=false)、NeutralTitleOnly(無 icon)——唯 DeploymentSuccess 的 subtle-success-with-action 與 grid 的 success 列重疊。",
-      "建議": "評估退役 DeploymentSuccess(subtle success + action 已在 InlineVariants 涵蓋);若要保留 subtle-vs-solid 的 hero 對照,讓 DeploymentSuccess 展示 InlineVariants 未涵蓋面向(如 dismiss 行為或單行 vs 含說明的 layout 差異)。"
+      "建議": "retire/merge 候選:把 anatomy EmptyState 的「消費 Empty primitive SSOT」教學句併入展示檔 EmptyState 的 Desc(或 anatomy 解剖圖層),擇一保留 data=[] 渲染。屬 story 層非 SSOT-UI/UX,可 autonomous"
     }
   ]
 }

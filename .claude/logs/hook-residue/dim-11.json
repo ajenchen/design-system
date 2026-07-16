@@ -1,1 +1,7 @@
-{"dim":11,"hook":"check_story_invariants.sh R1 anatomy","residueCount":2,"findings":[{"fileLine":"packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:91","問題":"展示 story(name 'DataTable 儲存格內進度')手刻 raw <table>/<thead>/<tbody>/<tr>/<td> demo ProgressBar-in-cell,未消費 <DataTable>。R1 A.2 = raw <table> outside DataTable dir,無 @anatomy-exempt marker → hook 會 block,屬既有殘留","severity":"material"},{"fileLine":"packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx:196","問題":"展示 story(name 'DataTable 人員欄位')手刻 raw <table> demo OverflowIndicator-in-cell,未消費 <DataTable>。R1 A.2 違規,無 @anatomy-exempt marker","severity":"material"}],"verified":true,"note":"R1 anatomy hook(dim 11 matrix 所引)DS-wide 掃 79 展示 stories:A.1(raw item-anatomy row)/A.3(手刻 loading)/A.4(手刻 field)/B(dismiss via label Button,awk ±4 行 context 精確重放 0 fire)/C(手刻 overlay,+6 行 context 0 fire)皆 0;唯 A.2 raw <table> 2 命中(item-anatomy.stories.tsx 多筆命中屬 hook *anatomy.stories.tsx 豁免 glob,非殘留)。dim 11 語意(3-layer 檔存在 coverage)另驗:全 public component 三層 stories 齊備 = 0 缺。"}
+{
+ "dim": 11,
+ "hook": "check_story_invariants.sh R1 anatomy + scripts/check-three-layer-stories.mjs + scripts/category-classification-invariant.mjs",
+ "residueCount": 0,
+ "findings": [],
+ "notes": "3-layer 存在性 56/56 public 元件齊備;category 三訊號一致 79/79。R1 六型 handcraft(A.1 row/A.2 table/A.3 loading/A.4 field/B dismiss-label/C overlay)on-disk 重掃展示層 stories = 0 違規;唯一命中 item-anatomy.stories.tsx 教學對照表,@anatomy-exempt rationale 成立(pattern SSOT 文件表)。20 個檔級 @anatomy-exempt marker 全為 anatomy/principles doc-table rationale — 且該兩型檔 2026-06-11 起已 path-level 豁免,markers 屬冗餘無害非濫用。"
+}

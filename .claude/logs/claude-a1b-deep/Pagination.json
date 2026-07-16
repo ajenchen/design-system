@@ -1,1 +1,26 @@
-{"component":"Pagination","implBasis":"shadcn Pagination DOM 骨架 (nav > div > ul > li + aria-current=page); controlled event-driven, 資料模型 total/pageSize 對齊 Ant Pagination; 全部按鈕消費 DS Button (text/secondary variant); 摺疊演算法照 MUI usePagination boundary/sibling=1/1","claimsVerified":24,"falseClaims":[]}
+{
+  "component": "Pagination",
+  "implBasis": "shadcn DOM 骨架(nav>ul>li)+ DS Button 純 variant 組裝 + Select sm(size changer)+ useControllable dual-mode + MUI usePagination 摺疊演算法(boundary/sibling 1/1)",
+  "claimsVerified": [
+    "spec:66 摺疊 ≤ 7 格(boundary 1 + sibling 1)— pagination.tsx:22-58 getPaginationRange(totalPages <= 7 不摺疊)吻合",
+    "spec:67 ellipsis 非互動(MoreHorizontal + aria-hidden 不可點)— pagination.tsx:176-182 吻合",
+    "spec:68 上下頁 iconOnly + 邊界 disabled — pagination.tsx:145-153,186-194 吻合",
+    "spec:73-74 全按鈕零視覺客製(上下頁/未選 = text;當前頁 = secondary = primary 描邊+染字+不染底,hover 升階 active 深一階無灰底)— button.tsx:93-119(secondary bg-surface text-primary border-primary…;text bg-transparent hover:bg-neutral-hover)吻合;唯一 className = 等寬幾何(tsx:168)吻合",
+    "spec:95-99 邊界表(total<=0 → null;單頁照常渲染;page 越界 clamp;pageSize<=0 clamp 至 1;500+ 頁恆 ≤7 格)— pagination.tsx:125-132 吻合",
+    "spec:85-86 showTotal「第 x–y 筆,共 N 筆」+ pageSizeOptions 消費 Select sm + 換 pageSize 自動回第 1 頁(reset-to-1 派)— pagination.tsx:214-236 吻合;同值重選不重置頁碼(tsx:229)亦與 comment 吻合",
+    "spec:25 dual-mode page/pageSize(useControllable)— pagination.tsx:113-122 吻合",
+    "spec:125-130 A11y(nav aria-label=Pagination / aria-current=page 非 aria-pressed / ellipsis aria-hidden / 上下頁 aria-label 預設上一頁下一頁可覆寫 / 無自訂 key handler 無 roving tabindex)— pagination.tsx:167,176-182,105-106,202 + 全檔無 keydown 吻合",
+    "anatomy StateBehavior「點擊當前頁 fire onPageChange(同頁)不會取消選中」— useControllable setValue 無同值 short-circuit(use-controllable.ts:36-44 恆 call onChange)吻合",
+    "anatomy ColorMatrix 四態 token(text variant transparent border 佔位 / hover neutral-hover / selected primary 描邊染字 surface 底 / disabled fg-disabled)— button.tsx:93-119 吻合",
+    "pageSize 不在 options → 補進清單頭 — pagination.tsx:137-140 吻合(spec 未載此細節,code comment 自洽)",
+    "spec:75 群組間距 --layout-space-tight(density-aware)— pagination.tsx:206,218 吻合"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "pagination.anatomy.stories.tsx:30(Overview Desc)",
+      "宣稱": "DOM =「nav[aria-label=Pagination] > ul > li(shadcn 骨架)」",
+      "真實code行為": "實際 DOM = nav > div(操作群)> ul > li(pagination.tsx:199-238;完整形態另有最左 span)。spec.md:25 已正確寫「nav >(操作群 div)> ul > li」,anatomy Desc 少一層 div — 對 axe landmark/結構無實質影響",
+      "severity": "minor"
+    }
+  ]
+}

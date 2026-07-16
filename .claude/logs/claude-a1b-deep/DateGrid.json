@@ -1,25 +1,19 @@
 {
   "component": "DateGrid",
-  "implBasis": "react-day-picker v9.14.0 (DayPicker) wrapped with DS token classNames + components override",
-  "claimsVerified": 30,
+  "implBasis": "react-day-picker@9 薄包裝(classNames token 覆寫 + components nav override + labels 中文 default);RDP 行為逐項對 node_modules/react-day-picker/dist/esm/DayPicker.js 驗證(keyboard map / data-* attrs / DayButton disabled/aria-disabled / navLayout around)",
+  "claimsVerified": 61,
   "falseClaims": [
     {
-      "fileLine": "packages/design-system/src/components/DateGrid/date-grid.spec.md:128",
-      "宣稱": "`week header 同寬，h-field-sm`(星期標頭消費 --field-height-sm token,density-aware md=28 / lg=32)",
-      "真實code行為": "weekday classNames 實際用固定 `h-7`(L111 `'h-7 align-middle text-center'`),非 `h-field-sm` token。h-7 恆 28px 不隨 density 縮放 → lg 密度時星期標頭 28px、日 cell(真 h-field-sm)32px,兩者不再等高。spec 宣稱的 token 與 code 不符。",
+      "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:421-424",
+      "宣稱": "SizeMatrix 表「星期標頭」row:尺寸「h 28px(寬 table-native 自動)」+ Token/class「h-7」",
+      "真實code行為": "weekday 已於 2026-07-14 從固定 h-7 改為 `h-[var(--field-height-sm)]`(date-grid.tsx:113,註明「修 h-7 固定 drift」)= md 28 / lg 32 隨 density。同檔 Inspector(anatomy:251)與 PARTS.weekday(anatomy:41)都已更新為「h-field-sm(28/32 隨 density)」— 僅 SizeMatrix 這格漏改,檔內自相矛盾且與 code 不符。",
       "severity": "material"
     },
     {
-      "fileLine": "packages/design-system/src/components/DateGrid/date-grid.tsx:264",
-      "宣稱": "meta.tokens.ring: ['ring-primary', 'ring-ring']",
-      "真實code行為": "全檔無裸 `ring-primary` 被套用為 class;hover ring 已於 2026-07-07 改成 `ring-primary-hover`(L127),focus 用 `ring-ring`(L128)。meta 列的 'ring-primary' 是改前殘留 stale token。",
-      "severity": "marginal"
-    },
-    {
-      "fileLine": "packages/design-system/src/components/DateGrid/date-grid.tsx:50",
-      "宣稱": "docblock: range track 色 `--neutral-selected = neutral-2，semantic.css L84/L340`",
-      "真實code行為": "token 值正確(--neutral-selected = var(--color-neutral-2)),但引用行號 stale:實際 semantic.css 說明在 L90、定義在 L360(非 L84/L340)。",
-      "severity": "marginal"
+      "fileLine": "packages/design-system/src/components/DateGrid/date-grid.anatomy.stories.tsx:45,272 + date-grid.tsx:266",
+      "宣稱": "hover ring 色 = `--primary`(PARTS.dayHover border:'--primary' / Inspector「Hover ring → --primary」)+ dateGridMeta.tokens.ring 列 'ring-primary'",
+      "真實code行為": "2026-07-07 user 拍板「瞬時 hover 進 primary 家族 = hover 階」後,day button hover ring 已改 `hover:ring-primary-hover`(date-grid.tsx:129;docblock:40 與 spec:111 均已更新)。檔內全文已無 ring-primary utility — anatomy 兩處 + componentMeta tokens.ring 仍宣稱舊 `--primary`/'ring-primary',為拍板後未 propagate 的 3 個殘留點。",
+      "severity": "material"
     }
   ]
 }

@@ -1,1 +1,7 @@
-{"dim":4,"hook":"check_opacity_token_usage.sh","residueCount":0,"findings":[],"verified":true,"note":"DS-wide grep(packages/design-system/src *.tsx/*.css,排除 *.stories.tsx/*.test/*.spec.tsx + tokens/{opacity,typography,radius,elevation,color}/ + @token-registry-ok escape)全 11 類 block category(opacity tier / text-xs..9xl / font weight / leading numeric / tracking / rounded xl-3xl / rounded arbitrary / shadow size / shadcn alias / primitive color / phantom state suffix)= 0 命中。唯一 primitive-color grep hit(file-item.tsx:234 `bg-neutral-3`)為 rationale 註解解釋為何不用該 utility,非實際 className 用法,非殘留。"}
+{
+ "dim": 4,
+ "hook": "check_opacity_token_usage.sh(P0 BLOCKER;registry SSOT = tokens/utility-registry.json)",
+ "residueCount": 0,
+ "findings": [],
+ "notes": "DS-wide 全 11 類 block category(opacity/typography size+weight/leading/tracking/radius incl arbitrary/shadow/shadcn alias/primitive color/phantom state suffix)掃 production tsx+css = 0 hit;@token-registry-ok escape marker 全庫 0 個 = 無濫用。唯一 grep hit 是 file-item.tsx:235 rationale 註解(引述『bg-neutral-3 不是合法 utility』教訓),非用法。"
+}

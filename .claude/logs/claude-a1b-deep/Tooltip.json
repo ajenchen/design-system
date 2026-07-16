@@ -1,1 +1,40 @@
-{"component":"Tooltip","implBasis":"Radix Tooltip(@radix-ui/react-tooltip)+ 橋接 DS token;delayDuration 預設 MOTION_DELAY_PLAIN_MS(500ms),collisionPadding/sideOffset 消費 OVERLAY_* 常數(=8),data-theme=dark inner wrapper,max-w-[280px] break-words。已對照 Radix source 驗證 role=tooltip / 非 modal 不 focus-trap。","claimsVerified":29,"falseClaims":[]}
+{
+  "component": "Tooltip",
+  "implBasis": "Radix Tooltip(Provider/Root/Trigger/Content + Portal)+ MOTION_DELAY_PLAIN_MS(motion.ts)+ OVERLAY_SIDE_OFFSET/OVERLAY_COLLISION_PADDING(overlay-geometry.ts)+ --tooltip token(semantic.css)",
+  "claimsVerified": [
+    "delayDuration 預設 = MOTION_DELAY_PLAIN_MS = 500(motion.ts:12 = --motion-delay-plain 500ms motion.css:31);Root 與 Provider 皆設,Root prop 優先 = spec 出現時機段 + anatomy warm-up 段一致",
+    "skipDelayDuration 300 = Radix Provider 預設(anatomy warm-up 表宣稱值正確)",
+    "sideOffset 預設 8(OVERLAY_SIDE_OFFSET=8)、collisionPadding 預設 8(OVERLAY_COLLISION_PADDING=8)= spec Edge collision 段 + anatomy Props 表一致",
+    "max-w-[280px] + break-words = spec 最大寬度 280px 段一致;px-3 py-2 text-body = anatomy Inspector blueprint 12px/8px/14px 正確",
+    "--tooltip token:light = neutral-9-opaque / dark = neutral-5-opaque(semantic.css:176,400)= anatomy Token Details 面板兩行精確",
+    "內容 wrapper <div data-theme=\"dark\" class=\"contents\">(code L48)= spec 子元素色彩段『永遠套 dark theme token』+ anatomy rationale『強制 data-theme=dark』一致",
+    "elevation-200 shadow + z-50 + rounded-md(4px)+ overlayMotion + side-aware slide-in 動畫表 = anatomy PlacementReference 動畫表與 cva class 一一對應",
+    "align 預設 center(Radix 預設,輕量浮層例外)+ side 預設 top = anatomy Props 表正確",
+    "無 size/variant prop、tooltipMeta states ['default'] = code 一致;spec 為何無 ColorMatrix/SizeMatrix/StateBehavior 的『無 variant / 無 size prop』部分為真",
+    "a11y:non-modal、focus 留在 trigger、Esc 關閉、focus ring 由 trigger 自身提供 = Radix 行為 + code(Tooltip 本體無 ring class)一致",
+    "principles『Radix grace 區維持開啟(移入浮層)』= Radix Tooltip disableHoverableContent 預設 false 行為正確"
+  ],
+  "falseClaims": [
+    {
+      "id": "TT-1",
+      "severity": "moderate",
+      "location": "tooltip.spec.md:108(為何無 ColorMatrix)",
+      "claim": "『Tooltip 固定一種視覺(dark surface + white text,跟頁面主題反轉)…Dark mode 自動由 inverse theme 處理』",
+      "reality": "code 是固定 data-theme=\"dark\"(非 useInverseTheme 反轉),bg 用 --tooltip token:light mode = neutral-9(近黑)、dark mode = neutral-5(中灰,仍深底白字,並非反轉成亮底)。『跟頁面主題反轉 / inverse theme』與 code 不符 — 同元件 anatomy rationale(L3-4)反而正確寫『色彩固定 + 強制 data-theme=dark』,spec 與 anatomy 自相矛盾。真正 inverse 的是 Toast neutral/success(useInverseTheme),Tooltip 不是"
+    },
+    {
+      "id": "TT-2",
+      "severity": "moderate",
+      "location": "tooltip.principles.stories.tsx:55(UsageGuidance LinkTo)",
+      "claim": "LinkTo 指向展示頁 story name=\"方向\"",
+      "reality": "展示層 Placement/方向 story 已於 2026-07-14 retire(tooltip.stories.tsx:61-64 註明 canonical home = anatomy PlacementReference)— LinkTo 斷鏈,principles 連結未隨 retire 同步"
+    },
+    {
+      "id": "TT-3",
+      "severity": "minor",
+      "location": "tooltip.spec.md:112(對應 anatomy story 句)",
+      "claim": "『Inspector(delay / placement 互動試玩)』",
+      "reality": "anatomy Inspector 只有 side(placement)一個控制軸(tooltip.anatomy.stories.tsx:224-239),無 delay 控制;warm-up/delay 是 Overview 靜態段落。『delay 互動試玩』不存在"
+    }
+  ]
+}

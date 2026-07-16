@@ -1,13 +1,19 @@
 {
   "component": "Coachmark",
-  "implBasis": "Popover composition (Radix Popover via DS Popover primitive) + AspectRatio",
-  "claimsVerified": 32,
+  "implBasis": "Popover composition(PopoverHeader/Title/Body/Footer,w-72→w-80 寬一階,data-layout-space=md 鎖)+ AspectRatio(media 16:9)+ DS Button footer;onOpenAutoFocus preventDefault→focus content 容器",
+  "claimsVerified": 31,
   "falseClaims": [
     {
-      "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:88",
-      "宣稱": "Props 速查表把 className 的「Default」欄列為 'w-80 p-0 overflow-hidden'",
-      "真實code行為": "className prop 無預設值(undefined);'w-80 p-0 overflow-hidden' 是 coachmark.tsx:170 `cn('w-80 p-0 overflow-hidden', className)` 恆套在 PopoverContent 的 base classes,並非 className prop 的 default。把 base classes 標為 prop default 易誤導 consumer",
-      "severity": "marginal"
+      "fileLine": "coachmark.anatomy.stories.tsx:71(Props 速查表 children row)",
+      "宣稱": "children type = ReactNode",
+      "真實code行為": "CoachmarkProps.children: React.ReactElement(coachmark.tsx:67,2026-07-05 型別收緊,asChild Slot 單 element 契約);spec.md:103 已同步為 ReactElement,anatomy 表未同步 — 照表傳 string/fragment 會 React.Children.only runtime 炸",
+      "severity": "low"
+    },
+    {
+      "fileLine": "coachmark.principles.stories.tsx:156-167(UsageGuidance「系統主動推送」示範)",
+      "宣稱": "單步 feature-discovery 示範(AI 助理,無多步 context)",
+      "真實code行為": "示範未傳 isLastStep 也無 onPrev → isSingleStep=false → CTA 渲染「Next」+ Skip 顯示;違反同 spec 禁止事項「單步驟 CTA 不叫 Next」(展示層 FeatureDiscovery 正確傳 isLastStep 得「知道了」)— principles 示範默演 anti-pattern",
+      "severity": "low"
     }
   ]
 }

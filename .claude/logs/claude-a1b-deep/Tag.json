@@ -1,1 +1,69 @@
-{"component":"Tag","implBasis":"純視覺 atom — styled <div> span + 可選 dismiss button(走 ItemInlineActionButton),無 external primitive base;截斷用 Canvas measureText 偵測 + Radix Tooltip 包全文","claimsVerified":27,"falseClaims":[]}
+{
+  "component": "Tag",
+  "implBasis": "純視覺 atom(styled div,無 primitive base)+ categorical-color.ts SSOT(CAT_SUBTLE/CAT_SOLID/CAT_INTERACT)+ ItemInlineActionButton(dismiss)+ Tooltip(截斷)+ Canvas measureText",
+  "claimsVerified": [
+    "12 色相 1:1 對 --color-{hue}-* 零 offset(CATEGORICAL_HUES 12 + neutral)= spec Color 表/meta variants 13 色一致",
+    "subtle = step-1 底 + step-7 字(CAT_SUBTLE)、neutral = bg-secondary text-foreground = spec Subtle 欄一致",
+    "solid neutral = bg-neutral-9 + text-inverse-fg;dismiss neutral 特例 --inverse-neutral-hover/active = spec Dismiss 表一致",
+    "solid dismiss = CAT_INTERACT --{hue}-hover/active semantic token(shade change 派)= spec『Dismiss 行為』一致",
+    "尺寸 sm h-5(20px) text-caption font-medium / md·lg h-6(24px) text-body font-normal,px-1 + text px-1(4px),icon 統一 16px = spec 尺寸表/anatomy SIZE_SPECS/meta 全一致",
+    "截斷:預設 cap min(var(--combobox-tag-area-inline-size,10rem),10rem)=160px;unbounded=true 交 parent constrain;Canvas measureText 偵測 + 自動包 Tooltip = spec 邊界案例一致",
+    "截斷時條件 tabIndex=0 + focus-visible ring(APG tooltip focus-open,2026-07-06 拍板)= spec A11y Keyboard 例外一致(code L180)",
+    "靜態 Tag = <div data-tag-root> 無 role;removable 走 ItemInlineActionButton aria-label『移除 {label}』= spec A11y 一致",
+    "icon/avatar 互斥 dev-mode console.warn(2026-07-05)= spec Props 表 + principles IconRule 描述一致",
+    "rounded-md = 4px(--radius-md: 4px,radius.css:16)= spec/anatomy Radius 宣稱正確",
+    "anatomy TOKEN_MAP 由 CAT_SUBTLE_TOKENS/CAT_SOLID_TOKENS stripVar 機械衍生 — ColorMatrix 表格本體自動與 code 同步(含 turquoise 深字,表格不 drift)",
+    "dismiss 幾何:icon 16 / hover-bg 18 → sm 呼吸 1px / md·lg 3px = spec 表算術一致"
+  ],
+  "falseClaims": [
+    {
+      "id": "TG-1",
+      "severity": "major",
+      "location": "tag.spec.md:162(Subtle vs Solid 色彩對照表 turquoise row)",
+      "claim": "turquoise Solid 文字 = `--on-emphasis`(白)",
+      "reality": "categorical-color.ts CAT_SOLID.turquoise = 'text-on-emphasis-dark'(深字;2026-07-16 dark turquoise-6 色相修正 L=0.68 白字 2.77 不過 3:1 → 切深字,兩 mode 5.65/6.47 全過,見 categorical-color.ts:68)。spec 表列白字 = FALSE"
+    },
+    {
+      "id": "TG-2",
+      "severity": "major",
+      "location": "tag.spec.md:138 + :167(Solid 模式段 + Solid 文字色規則)",
+      "claim": "深字組 =『yellow / amber / orange / lime』(L167 明寫『四個』)",
+      "reality": "深字組現為 5 個:yellow/amber/orange/lime/turquoise(CAT_SOLID + CAT_SOLID_TOKENS)。漏 turquoise、『四個』計數錯"
+    },
+    {
+      "id": "TG-3",
+      "severity": "moderate",
+      "location": "tag.spec.md:223(Props 表 solid row)",
+      "claim": "『yellow/amber/orange/lime 用深字,其餘白字』",
+      "reality": "turquoise 也深字 — 『其餘白字』不成立(同 TG-2 stale 清單)"
+    },
+    {
+      "id": "TG-4",
+      "severity": "moderate",
+      "location": "tag.tsx:54(SOLID_CLASSES 註解)+ :73(TagProps.solid docblock)",
+      "claim": "『深字 --on-emphasis-dark(亮 hue:yellow/amber/orange/lime)』×2 處",
+      "reality": "docblock-vs-code:同檔消費的 CAT_SOLID 已含 turquoise 深字;兩處註解清單 stale"
+    },
+    {
+      "id": "TG-5",
+      "severity": "moderate",
+      "location": "tag.anatomy.stories.tsx:252(Overview Props 表)+ :441(ColorMatrix Desc)",
+      "claim": "『yellow/amber/orange/lime 用深字,其餘白字』/『亮色 hue(yellow/amber/orange/lime)用深字』",
+      "reality": "prose 漏 turquoise(下方機械衍生表格反而正確顯示 turquoise = --on-emphasis-dark → 同一 story 內文字與表格自相矛盾)"
+    },
+    {
+      "id": "TG-6",
+      "severity": "minor",
+      "location": "tag.principles.stories.tsx:162(SubtleVsSolidRule)",
+      "claim": "標題『Solid — 深底白字,需要視覺強調時』",
+      "reality": "5 個亮 hue 的 solid 是深字;同 story 範例 <Tag color=\"yellow\" solid> 自身即渲染深字,標題泛稱『白字』與自己的範例矛盾"
+    },
+    {
+      "id": "TG-7",
+      "severity": "minor",
+      "location": "tag.anatomy.stories.tsx:661(Accessibility story)",
+      "claim": "『靜態 Tag(無 onRemove)…無 keyboard / ARIA role / focus state』",
+      "reality": "截斷時靜態 Tag 有條件 tabIndex=0 + focus-visible ring(tag.tsx:180,185;2026-07-06 拍板,spec A11y 已載明例外)— anatomy 摘要漏更新此例外"
+    }
+  ]
+}

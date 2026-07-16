@@ -20,7 +20,8 @@ import { cn } from '@/lib/utils'
  * 捲動時浮現(hover / scroll 自動顯示)。
  *
  * ── 何時用 ──
- * - DataTable 橫向捲動(水平跑版最明顯場景)
+ * - 寬內容橫向捲動(寬表格類 demo / 程式碼區塊;例外:DataTable 中央捲動區走 native
+ *   overflow-x-auto + scrollLeft 同步,不用 ScrollArea — 見 scroll-area.spec.md「何時用」)
  * - Sheet / Dialog 垂直內容捲動(body 太長)
  * - Sidebar nav 長列表
  * - 任何「內容可能溢出容器」且「跨 OS 視覺必須一致」的場景

@@ -1,1 +1,49 @@
-{"component":"Textarea","implBasis":"native <textarea> + 橋接 DS token(edit 態裸 textarea / display 態裸 div),cva mode×variant×size×error 4 軸;無 fieldWrapper composite","claimsVerified":22,"falseClaims":[{"fileLine":"textarea.spec.md:154","宣稱":"「DS focus-visible 邊框(`focus-visible:!border-primary`)由 <textarea> 自身的 cva compoundVariants 直接套用(textarea.tsx default/naked edit 態)」— 明確把 `focus-visible:!border-primary` class 歸屬給 default 與 naked 兩種 edit 態","真實code行為":"只有 naked edit compoundVariant 用 `focus-visible:!border-primary`(textarea.tsx:122);default edit compoundVariant 實際用的是 `focus-within:!border-primary`(textarea.tsx:80),不是 focus-visible。兩者行為不同:focus-within 在滑鼠點擊聚焦時也顯示主色邊框,focus-visible 只在鍵盤聚焦時。spec 對 default 態的具名 class 不存在於 code。","severity":"material"}]}
+{
+  "component": "Textarea",
+  "implBasis": "native <textarea> + cva(mode×variant×size×error compoundVariants,鏡射 fieldWrapperStyles)+ useResolvedField* cascade + useControllable(2026-07-14 R2)+ useFieldEmptyDisplay/fieldEmptyColorClass",
+  "claimsVerified": [
+    "view×default = Model A(2026-07-16 round16):保留 base px-[var(--field-px)] py-2,只 bg-transparent border-transparent(code L83-89)— field-controls.spec.md:75『view×default 不可 collapse 成 !py-0』與新 code 一致",
+    "readonly×naked / disabled×naked 死格已刪(code L137-138 註明鏡射 field-wrapper + 全庫 0 消費)",
+    "readonly×default = bg-readonly + border-transparent + focus-visible ring(WCAG 2.4.7,2026-07-13)= spec Readonly 特例 + anatomy ColorMatrix readonly row 一致",
+    "disabled = bg-disabled + text-fg-disabled + placeholder fg-disabled + cursor-not-allowed = spec/anatomy 一致",
+    "edit×default = bg-surface border-border hover:border-border-hover + focus-within:!border-primary;error = border-error(+hover/focus)= anatomy ColorMatrix edit/focus/error rows 一致",
+    "px-[var(--field-px)] = 12px(uiSize.css:30)+ py-2 8px = docblock『Padding 規則』宣稱值正確",
+    "size 只控字體 sm/md text-body / lg text-body-lg,rows 預設 3、resize-y、naked !resize-none !h-full = spec Size/Rows 段一致",
+    "view/readonly-empty 走 display <div>(whitespace-pre-wrap break-words)顯 '-';readonly 有值走 native <textarea readOnly>(選取/複製)= spec + field-controls.spec.md:350 兩派統一一致",
+    "useControllable resolved SSOT + form.reset() bridge + merge refs = field-controls.spec.md:350 2026-07-14 補註完全對應",
+    "naked edit = !px/py-[--table-cell-*] + border + !leading-[1.5];view×naked = !px-0 !py-0 !h-full(intentional divergence documented)= code 一致",
+    "aria-invalid / aria-required / aria-describedby / aria-errormessage / data-field-mode 接線 = spec A11y 一致",
+    "anatomy story 結構 Overview/Inspector/SizeMatrix/ModeMatrix/ColorMatrix/RowsResizeMatrix/Accessibility = spec 宣稱完全對應",
+    "textareaMeta tokens bg-disabled/bg-readonly/bg-surface + states 集合 = cva 真實消費一致"
+  ],
+  "falseClaims": [
+    {
+      "id": "TX-1",
+      "severity": "major",
+      "location": "textarea.spec.md:107(Readonly 特例段)",
+      "claim": "『`variant=\"naked\"`(cell-as-input substrate)readonly 透明且 `!px-0 !py-0`(`textarea.tsx` compoundVariants,intentional divergence)』",
+      "reality": "readonly×naked compound 已於 2026-07-16 round16 移除(textarea.tsx:137-138 死格註記;DataTable cell 廢 disabled 態 + readonly 從不入 naked,全庫 0 消費)。cva 已無此格 — 若真傳 readonly+naked 只會拿 base px/py + 無 chrome,與宣稱的『透明 + !px-0 !py-0』不符。spec 引用不存在的 compoundVariants = FALSE_CLAIM(死格殘留宣稱)"
+    },
+    {
+      "id": "TX-2",
+      "severity": "moderate",
+      "location": "textarea.tsx:14 + :19(檔頭 docblock)",
+      "claim": "『edit / display / readonly / disabled 四態』『display 渲染 <div> + white-space:pre-wrap』",
+      "reality": "FieldMode 值為 'view' 非 'display'(cva mode key = view,code 判 isView);docblock 用舊名 display = mode='view' 更名殘留(與 Switch SW-1 同型)"
+    },
+    {
+      "id": "TX-3",
+      "severity": "minor",
+      "location": "textarea.anatomy.stories.tsx:37(Props 表 mode 說明)+ :129(ModeMatrix H3『display — 純展示』)",
+      "claim": "說明文字以『display』稱呼純展示模式",
+      "reality": "type 欄與 story code 正確用 'view'(mode=\"view\");標籤文字 display 舊名殘留,讀者無法以 mode=\"display\" 重現"
+    },
+    {
+      "id": "TX-4",
+      "severity": "minor",
+      "location": "textarea.spec.md:111(邊界案例 空值)",
+      "claim": "『display / readonly 態 value 為空…渲染半形 `-` + text-foreground(disabled → fg-disabled)』",
+      "reality": "disabled 模式從不進 display-span 分支(showDisplaySpan = isView || readonly-empty,code L221),fieldEmptyColorClass 只會收到 view/readonly → 恆 text-foreground;『disabled → fg-disabled』在 Textarea 的空值渲染路徑 unreachable(disabled 空值走 native textarea + placeholder)"
+    }
+  ]
+}

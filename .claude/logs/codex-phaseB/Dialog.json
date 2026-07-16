@@ -1,96 +1,61 @@
 {
  "component": "Dialog",
- "claimsVerified": 600,
+ "claimsVerified": 385,
  "falseClaims": [
   {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.spec.md:15",
-   "宣稱": "body benchmark claims 均有逐句 `@benchmark-unverified` 標記",
-   "真實code行為": "全文只有此處 marker；body 內的 benchmark claims 並未逐句標記。"
+   "fileLine": "packages/design-system/src/components/Dialog/dialog.spec.md:138",
+   "宣稱": "進場：fade-in + zoom-in-95 + slide-in-from-center",
+   "真實code行為": "實作使用 fade-in-0、zoom-in-95、slide-in-from-left-1/2、slide-in-from-top-[48%]；Tailwind v4 動畫從左上偏移處移向置中位置，不是 from-center。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Dialog/dialog.spec.md:139",
+   "宣稱": "離場：fade-out + zoom-out-95 + slide-out-to-center",
+   "真實code行為": "實作使用 fade-out-0、zoom-out-95、slide-out-to-left-1/2、slide-out-to-top-[48%]；Dialog 從置中位置往左上偏移離場，不是 to-center。"
   },
   {
    "fileLine": "packages/design-system/src/components/Dialog/dialog.spec.md:171",
-   "宣稱": "nested Dialog 時「使用者無法預測 Esc 關哪一層」",
-   "真實code行為": "Radix DismissableLayer 只讓最高層處理 Escape，FocusScope 也會暫停外層；關閉順序為 deterministic topmost-first。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.spec.md:186",
-   "宣稱": "關閉時焦點返回 trigger 元素",
-   "真實code行為": "僅在 mounted DialogTrigger 存在且 consumer 未 prevent `onCloseAutoFocus` 時成立；實作是 optional `triggerRef.current?.focus()`。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:27",
-   "宣稱": "`height=\"auto\"` 啟用內容高度模式",
-   "真實code行為": "公開 API 與實作只使用 `autoHeight?: boolean`；不存在 `height=\"auto\"` 模式。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:79,201",
-   "宣稱": "開啟時會 focus／找到 body 第一個「有意義互動元素」",
-   "真實code行為": "只取第一個未帶 disabled 的 input／textarea／select／button DOM match，未檢查 hidden、visibility、tabIndex 或 focus 是否成功；失敗後也不會再走 fallback。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:80",
-   "宣稱": "Radix 預設 first tabbable 一定是 Close X",
-   "真實code行為": "Radix 按 DOM 順序選第一個 tabbable；使用 `DialogHeader actions` 時 actions 位於 Close 前，會先取得焦點。"
+   "宣稱": "modal 疊 modal 會形成焦點陷阱地獄（使用者無法預測 Esc 關哪一層）",
+   "真實code行為": "Radix FocusScope 會暫停外層 focus scope、關閉內層後再恢復；DismissableLayer 只讓最高層處理 Esc，因此 Esc 確定關閉最上層 Dialog。禁止巢狀 Dialog 可保留為設計政策，但此 library 行為理由不實。"
   },
   {
    "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:82",
-   "宣稱": "找不到 body target 就 focus container",
-   "真實code行為": "實際順序是 body target → footer 第一顆可用 button → content container。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:135",
-   "宣稱": "`justify-between` 讓 children 與 Close 分左右",
-   "真實code行為": "目前沒有 `justify-between`；靠第一個 child 的 `flex-1` 推動 Close，同檔 170–172 亦明載該 class 已移除。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:137",
-   "宣稱": "`withTabs / lockDensity` 等 SurfaceHeader props 已 forward／由 type lift 暴露",
-   "真實code行為": "`withTabs`、`tabsSlot` 存在；`SurfaceHeaderProps` 沒有 `lockDensity`，也沒有 density-lock 邏輯。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:262",
-   "宣稱": "四種常見 maxWidth tier",
-   "真實code行為": "同一 story 與 Inspector 實際都列出五種：400、480、512、560、720。"
+   "宣稱": "input/textarea/select/button(排除 data-dismiss)focus;找不到就 focus container(不 focus X)。",
+   "真實code行為": "實際 fallback 是 firstBodyTarget → firstFooterButton → content；找不到 body target 時會先聚焦 footer 第一顆按鈕，不是直接聚焦 container。"
   },
   {
    "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:323",
-   "宣稱": "Dialog 提供五種觸發方式",
-   "真實code行為": "API 只有一個 DialogTrigger；表格實際混列 Trigger、三種 dismiss path 與 programmatic close。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:324",
-   "宣稱": "禁用 overlay-click 和 Esc 即可強迫使用者按 Cancel／確認",
-   "真實code行為": "這只阻止兩種 dismiss；Header Close X 仍可關閉，footer 兩顆 Button 也未綁 onClick 或 DialogClose。"
+   "宣稱": "destructive 場景應該 disable overlay-click 和 ESC(強迫使用者按 Cancel / 確認按鈕)",
+   "真實code行為": "停用 Escape／outside pointer 後，DialogHeader 內建 Close X 仍可直接關閉；範例的 Cancel／確認按鈕也沒有 onClick 或 DialogClose，並未形成強制二選一。"
   },
   {
    "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:337",
-   "宣稱": "外部 Trigger 是預設可用的關閉方式",
-   "真實code行為": "預設 modal 開啟後 Radix 會禁用背景 pointer interaction，Overlay 亦位於 Trigger 上方；外部 Trigger 不是可操作的 close path。"
+   "宣稱": "關閉方式：Click trigger(外部)；預設：✓",
+   "真實code行為": "modal 開啟後 Radix 會停用外部 pointer events、隱藏背景並 trap focus；外部 trigger 雖綁定 onOpenToggle，使用者實際無法點它關閉 Dialog。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:371-372",
-   "宣稱": "使用者會被強迫明確按「取消」或「永久刪除」",
-   "真實code行為": "Close X 仍可離開；兩顆 footer Button 本身也沒有任何 close／action handler。"
+   "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:371",
+   "宣稱": "destructive 動作應該強迫使用者明確按「取消」或「永久刪除」",
+   "真實code行為": "右上 Close X 仍可 dismiss；兩顆 footer Button 又沒有關閉或執行 handler，因此不會強迫使用者從這兩個動作中選擇。"
   },
   {
    "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:388",
-   "宣稱": "Esc 與外部點擊禁用後「必須明確選擇」",
-   "真實code行為": "Esc／outside 確實被阻止，但 Close X 仍有效，因此不構成 force-decision。"
+   "宣稱": "ESC 與點擊外部均已禁用,必須明確選擇。",
+   "真實code行為": "Escape／outside 確實被阻止，但 Close X 仍可關閉；footer 的取消／刪除按鈕本身則沒有行為，所以「必須明確選擇」不成立。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:404",
-   "宣稱": "Open 時 focus 必落在 body 第一個有意義互動元素",
-   "真實code行為": "程式只嘗試 focus 第一個 tag-selector match；隱藏或不可聚焦元素可攔截搜尋，且 focus 失敗不會續找或 fallback。"
+   "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:465",
+   "宣稱": "fade-in + zoom-in-95 + slide-in-from-center",
+   "真實code行為": "實際動畫為 fade-in-0、zoom-in-95、slide-in-from-left-1/2、slide-in-from-top-[48%]，從左上偏移處移向中心。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:406",
-   "宣稱": "Close 時 focus 自動回到原 trigger",
-   "真實code行為": "這是有條件行為；無 DialogTrigger 的 defaultOpen／controlled composition 沒有返回目標，consumer 也可 prevent `onCloseAutoFocus`。"
+   "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:466",
+   "宣稱": "fade-out + zoom-out-95 + slide-out-to-center",
+   "真實code行為": "實際動畫為 fade-out-0、zoom-out-95、slide-out-to-left-1/2、slide-out-to-top-[48%]，從中心往左上偏移離場。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:482",
-   "宣稱": "Focus return：關閉時焦點返回 trigger 元素",
-   "真實code行為": "Radix 只 optional-focus 現存 trigger ref；沒有 Trigger 或 `onCloseAutoFocus` 被阻止時不成立。"
+   "fileLine": "packages/design-system/src/components/Dialog/dialog.stories.tsx:428",
+   "宣稱": "`<Tabs>` wrap 整 DialogContent",
+   "真實code行為": "實際階層相反：DialogContent 是外層，Tabs 是其子節點，只包住 DialogHeader 與 DialogBody。"
   }
  ]
 }

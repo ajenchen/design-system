@@ -78,7 +78,7 @@ originSessionId: a689a78e-f264-4c1f-b881-0859a7a12135
 
 ## Rule 3 — Codex exec mode 大 brief 死局(SSOT 詳 `feedback_codex_exec_transport_canonical.md` Rule 3)
 
-精要:拆 N 個 single-axis focused brief 並行 + `model_reasoning_effort=low` + bypass flag;**禁** 6-軸 mega brief + xhigh(plan turn 燒光 budget 沒 verdict)。
+精要:拆 N 個 single-axis focused brief 並行 + bypass flag;**禁任何 `-c model_reasoning_effort` / `-m` 降檔 override**(config.toml 最強檔 = SSOT;2026-05-29 死局根因是 brief 太大非 effort,降檔 = 稽核品質打折);**禁** 6-軸 mega brief(plan turn 燒光 budget 沒 verdict)。
 
 ## Rule 4 — 兩個 repo 都全雲端可操作 = clone-on-demand
 

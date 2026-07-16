@@ -208,12 +208,18 @@ export function useInverseTheme(): 'dark' | 'light' {
 }
 
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)
-// Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
+// 2026-07-16 dim 78/DA3:variants 補齊 — 對齊 notice.spec.md frontmatter 5 variants(SSOT)
+// + alertMeta `{ purpose }` idiom(Alert 是 Notice 直接 consumer,同 5-variant 語意)。
+// variant 語意 = status icon 選擇(per spec「Variant」表);色彩由消費者 data-theme 控制。
 export const noticeMeta = {
   component: 'Notice',
   family: 2, // Family 2（List item layout）消費者 — 對齊 notice.spec.md frontmatter family: 2 + body「Layout Family」段
   variants: {
-
+    neutral: { purpose: '一般訊息、系統公告;無情緒色、不掛 status icon(title-only icon-less 形態)' },
+    info: { purpose: '資訊提示(版本更新、流程說明);Info icon' },
+    success: { purpose: '操作成功確認;CircleCheck icon' },
+    warning: { purpose: '可恢復警告(未儲存變更、連線不穩);TriangleAlert icon' },
+    error: { purpose: '錯誤(操作失敗、權限不足);XCircle icon' },
   },
   sizes: {
 

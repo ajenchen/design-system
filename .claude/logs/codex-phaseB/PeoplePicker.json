@@ -1,161 +1,211 @@
 {
  "component": "PeoplePicker",
- "claimsVerified": 286,
+ "claimsVerified": 493,
  "falseClaims": [
   {
-   "fileLine": "people-picker.tsx:39-48,84-95; people-picker.spec.md:20,60-61,71,90,223; people-picker.anatomy.stories.tsx:28,40,77-79,324-325; people-picker.principles.stories.tsx:57,73-74,137,149",
-   "宣稱": "已選值與多選模式都有 Avatar 視覺；stack 會疊合並顯示 +N，pill 預設顯示 Avatar。",
-   "真實code行為": "coarse-pointer 時 Select／Combobox 改走 NativeSelect／NativeCombobox；原生選項與 trigger 只顯示文字，NativeCombobox 不消費 tagRenderer、overflowShape 或 pillShowAvatar。桌機 pillShowAvatar=false 也明確支援純文字 pill。"
+   "fileLine": "people-picker.tsx:30",
+   "宣稱": "「保持此檔 ≤500 行」。",
+   "真實code行為": "people-picker.tsx 目前為 514 行，既定檔案預算已失真。"
   },
   {
-   "fileLine": "people-picker.spec.md:22; people-picker.anatomy.stories.tsx:28",
-   "宣稱": "「已選值 render 用 PersonDisplay（Avatar + Name）」",
-   "真實code行為": "只有桌機 single 與 stack length=1 使用 PersonDisplay；pill 使用 Tag，stack length≥2 使用 PersonAvatarTag，原生 edit path 使用文字渲染。"
+   "fileLine": "people-picker.tsx:46-55; people-picker.spec.md:20-22,61,71,115-117,124,141-144,175; people-picker.anatomy.stories.tsx:28,40,310-312,324-325; people-picker.principles.stories.tsx:57,74,137,149; people-picker.stories.tsx:13",
+   "宣稱": "選項與已選值皆以 Avatar／Avatar + Name 呈現；多人使用 Avatar stack、圓形 +N；外觀等同 Select。",
+   "真實code行為": "coarse-pointer 路徑改用 NativeSelect／NativeCombobox：option、single value 與 multi Tag 均為純文字，overflow 為通用矩形 +N，沒有 Avatar renderer、stack 或 PersonDisplay；multi 實際 wrap Combobox。"
   },
   {
-   "fileLine": "people-picker.tsx:97-103; people-picker.spec.md:77,91-92; people-picker.anatomy.stories.tsx:28,135,310-312",
-   "宣稱": "PeoplePicker 永遠使用 Popover／Command／cmdk 搜尋，single 永遠 inline-search。",
-   "真實code行為": "coarse-pointer path 使用原生 `<select>`，丟棄 searchable、searchIn、emptyText、defaultOpen 等 custom-path props，沒有 Popover、cmdk 或文字搜尋 UI。"
+   "fileLine": "people-picker.tsx:108-112; people-picker.spec.md:77,91-92,126,162-167; people-picker.anatomy.stories.tsx:135,310-312,338",
+   "宣稱": "「PeoplePicker 永遠支援搜尋（內部使用 Command/cmdk）」；single 永遠 inline-search；edit 固定展開 Popover + Command。",
+   "真實code行為": "native 路徑沒有 cmdk、Popover 或搜尋輸入；NativeSelect 丟棄 searchable／emptyText，NativeCombobox 忽略 searchIn／searchPlaceholder／emptyText。"
   },
   {
-   "fileLine": "people-picker.tsx:72-73,124; people-picker.spec.md:79; people-picker.anatomy.stories.tsx:75,352-354",
-   "宣稱": "「searchPlaceholder 預設『搜尋人員…』，可覆寫搜尋框 placeholder；展開後出現在浮層搜尋框」",
-   "真實code行為": "single branch 沒把 searchPlaceholder 傳給 Select；single 使用 trigger-inline input，placeholder 取自 `placeholder`。multi trigger-search 也不用 searchPlaceholder；它只對桌機 multi panel-top 搜尋生效。"
+   "fileLine": "people-picker.stories.tsx:153",
+   "宣稱": "非同步名錄載入前先顯示姓名縮寫，載入後自動補上 Avatar。",
+   "真實code行為": "僅 desktop custom multi renderer 成立；NativeCombobox 始終顯示文字 Tag，載入前後均不渲染 initials/avatar。"
   },
   {
-   "fileLine": "people-picker.tsx:97-103; people-picker.spec.md:92,99,167; people-picker.anatomy.stories.tsx:80",
-   "宣稱": "所有 multi mode 都可用 `searchIn='trigger'`。",
-   "真實code行為": "只有 stack branch 轉傳 searchIn；pill branch漏傳，因此維持 Combobox 預設 `menu`。原生 multi path 亦忽略此 prop。"
+   "fileLine": "people-picker.tsx:90-93; people-picker.anatomy.stories.tsx:82-83",
+   "宣稱": "defaultOpen 提供初始開啟狀態，onOpenChange 回報 open 狀態。",
+   "真實code行為": "僅 desktop custom 路徑有效；NativeSelect 明確丟棄兩者，NativeCombobox 也沒有相應 open state。"
   },
   {
-   "fileLine": "people-picker.spec.md:99-100",
-   "宣稱": "API 範例為 `<PeoplePicker multi searchIn='trigger' />` 與 `<PeoplePicker multi />`。",
-   "真實code行為": "PeoplePickerProps 沒有 `multi` prop；單／多選由 `value` 是否為陣列決定。"
+   "fileLine": "people-picker.tsx:58-60; people-picker.spec.md:240-242",
+   "宣稱": "ref 與所有 HTML root props 會轉送到單一 trigger/root。",
+   "真實code行為": "view early-return 丟棄 ref/rest；Combobox 不轉送未知 DOM attrs；single native 的 ref 實際指向 HTMLSelectElement，與公開 HTMLDivElement ref 型別不符。"
+  },
+  {
+   "fileLine": "people-picker.tsx:67-69",
+   "宣稱": "width='fill'／'hug' 會控制 PeoplePicker 寬度。",
+   "真實code行為": "預設 view 且未顯示 end icon 的 early-return 分支完全忽略 width。"
+  },
+  {
+   "fileLine": "people-picker.tsx:94-106; people-picker.spec.md:61,71; people-picker.anatomy.stories.tsx:77-79",
+   "宣稱": "multiDisplay、pillShowAvatar、pillWrap 定義多人顯示方式。",
+   "真實code行為": "只影響 edit custom 路徑；view／readonly／disabled 固定走 stack，native touch 亦忽略 tag renderer 與 wrap 設定。"
+  },
+  {
+   "fileLine": "people-picker.anatomy.stories.tsx:350-359",
+   "宣稱": "single 的 searchPlaceholder 會在展開後出現在浮層搜尋欄。",
+   "真實code行為": "single PeoplePicker 未轉傳 searchPlaceholder；Select 的搜尋 input 位於 trigger，提示文字取自 placeholder。"
+  },
+  {
+   "fileLine": "people-picker.tsx:116-119,211-212; people-picker.anatomy.stories.tsx:81",
+   "宣稱": "showDisplayEndIcon=true 會讓 view/display 使用 naked Field wrapper。",
+   "真實code行為": "它只增加 wrapper 與 ChevronDown；fieldWrapperStyles 仍收到 resolvedVariant，不會自動切成 naked。"
+  },
+  {
+   "fileLine": "people-picker.tsx:63; people-picker.anatomy.stories.tsx:100",
+   "宣稱": "mode 可使用 display。",
+   "真實code行為": "FieldMode 僅有 edit、view、readonly、disabled；display 不是合法值。"
+  },
+  {
+   "fileLine": "people-picker.anatomy.stories.tsx:100,115",
+   "宣稱": "使用者可透過公開 variant prop 切換 default／naked。",
+   "真實code行為": "PeoplePickerProps.variant 使用 FieldVariant，而公開 FieldVariant 只有 default；naked 是內部 variant。"
+  },
+  {
+   "fileLine": "person-display.tsx:20-24,277-285; people-picker.anatomy.stories.tsx:14; people-picker.principles.stories.tsx:36; people-picker.stories.tsx:22-23",
+   "宣稱": "所有 person avatar hover 都會顯示完整 ProfileCard。",
+   "真實code行為": "disabled 或 DataTable scrolling 時 hoverCard 明確設為 undefined，不建立 ProfileCard。"
+  },
+  {
+   "fileLine": "person-display.tsx:194-196",
+   "宣稱": "disabled 會抑制全 stack 的 ProfileCard hoverCard 並讓整個 stack dim。",
+   "真實code行為": "visible avatars 會停用，但 +N 仍可聚焦並開啟 HoverCard；hidden-list 內容亦未整體套用相同 dim 行為。"
+  },
+  {
+   "fileLine": "person-display.tsx:173",
+   "宣稱": "+N hover 顯示 Tooltip。",
+   "真實code行為": "OverflowIndicator 使用可聚焦、可互動的 HoverCard，不是 Tooltip。"
+  },
+  {
+   "fileLine": "people-picker.principles.stories.tsx:149",
+   "宣稱": "+N hover 可查看完整名單。",
+   "真實code行為": "desktop HoverCard 只列 overflow/hidden items，不包含已顯示的人員；native 路徑又沒有該 Avatar-stack HoverCard。"
+  },
+  {
+   "fileLine": "person-display.tsx:306-307",
+   "宣稱": "surface-strong-hover 在 light 對應 neutral-5、dark 對應 neutral-7。",
+   "真實code行為": "semantic token 在 light 與 dark 均映射至 neutral-7-opaque。"
+  },
+  {
+   "fileLine": "person-display.tsx:334",
+   "宣稱": "dismiss badge 使用 2px white ring。",
+   "真實code行為": "box-shadow 顏色使用 var(--surface)，深色模式並非白色。"
+  },
+  {
+   "fileLine": "people-picker.spec.md:50,182,222",
+   "宣稱": "現有 Avatar.Group 可作為多人/team display 實作。",
+   "真實code行為": "設計系統沒有 Avatar.Group／AvatarGroup 實作或 export；其他規格亦將它標為未來元件。"
   },
   {
    "fileLine": "people-picker.spec.md:127",
-   "宣稱": "single mode 存在「open + panel-search、選 1 人」狀態。",
-   "真實code行為": "single 固定包 `<Select searchable>` 並使用 inline-trigger；PeoplePicker 沒有可切換 single panel-search 的 API，此狀態不可達。"
+   "宣稱": "single 存在 open + panel-search 狀態。",
+   "真實code行為": "single 固定使用 Select 的 inline trigger search；searchIn 僅由 multi Combobox 消費。"
   },
   {
-   "fileLine": "people-picker.tsx:448-449; people-picker.spec.md:135",
-   "宣稱": "multi length=1 開啟 inline search 時，人名會被 input cursor 取代。",
-   "真實code行為": "tagRenderer 在 length=1 始終回傳 PersonDisplay（Avatar + Name），Combobox 再把 input 當 trailing 節點附後；結果是 Avatar + Name + cursor。"
+   "fileLine": "people-picker.spec.md:133-135; people-picker.tsx:469-470",
+   "宣稱": "multi length=1 且 searchIn='trigger' 開啟後，人名會被輸入區取代，只剩 Avatar + cursor。",
+   "真實code行為": "tagRenderer 無條件回傳包含 Avatar+Name 的 PersonDisplay；Combobox 只把 input 追加在後方，沒有隱藏人名。"
+  },
+  {
+   "fileLine": "people-picker.spec.md:137-142",
+   "宣稱": "該表描述 multi length≥2 trigger。",
+   "真實code行為": "同一表格第 142 行又定義 length=0，規格範圍自相矛盾。"
+  },
+  {
+   "fileLine": "people-picker.spec.md:175",
+   "宣稱": "single trigger／multi stack 的第一個 Avatar 距左側固定 12px。",
+   "真實code行為": "touch edit 完全不渲染 Avatar；固定 inset 僅存在 custom Field-wrapper 路徑。"
   },
   {
    "fileLine": "people-picker.spec.md:191-201; people-picker.anatomy.stories.tsx:390",
-   "宣稱": "文件中的物件型別是完整 PersonData。",
-   "真實code行為": "實際 PersonData 還有 `onChat?`、`onCall?`；anatomy 所列型別另漏 status、statusMessage、id、employeeNumber、fields、onViewProfile。"
+   "宣稱": "列出的介面／物件是完整 PersonData。",
+   "真實code行為": "spec 遺漏 onChat、onCall；anatomy 的三欄位 subset 另遺漏 status、statusMessage、id、employeeNumber、fields 與 action handlers。"
   },
   {
-   "fileLine": "people-picker.spec.md:213",
-   "宣稱": "「disabled：灰化整個 field，不可互動」",
-   "真實code行為": "mode='disabled' 只建立帶 aria-disabled 的靜態 wrapper，沒有提供 disabled Field context；內部 Avatar 不會自動 dim，仍有 tabIndex 與 HoverCardTrigger，可由 focus／hover 開啟 ProfileCard。"
+   "fileLine": "people-picker.spec.md:212",
+   "宣稱": "readonly 的已選人員一律顯示 Avatar + Name。",
+   "真實code行為": "multi value 長度大於 1 時使用不顯示姓名的 Avatar stack。"
   },
   {
-   "fileLine": "people-picker.tsx:50-52,282-287,318-321,440-442; people-picker.spec.md:240-242",
-   "宣稱": "ref 與 `...rest`（data-testid、onBlur、onFocus、任意 aria-*）都會 forward 到 trigger root。",
-   "真實code行為": "display branches 不掛 ref／rest；desktop CustomSelect／CustomCombobox只接白名單 props，會丟棄多數 rest；touch single 甚至回傳 HTMLSelectElement，與 PeoplePicker 宣告的 HTMLDivElement ref 不一致。"
+   "fileLine": "people-picker.spec.md:213; people-picker.tsx:253-254",
+   "宣稱": "disabled 會灰化整個 field，完全不可互動，沒有 HoverCard 或 tab stop。",
+   "真實code行為": "multi overflow 的 +N 仍有 tabIndex=0 並可開啟 HoverCard，其自身前景／背景色也覆蓋繼承的 disabled 顏色。"
   },
   {
-   "fileLine": "people-picker.tsx:59-61",
-   "宣稱": "`width='fill'|'hug'` 是 PeoplePicker 全模式的寬度軸。",
-   "真實code行為": "editable single branch沒有把 width 傳給 Select，因此最常見的 single edit path 完全忽略 width。"
+   "fileLine": "people-picker.spec.md:252",
+   "宣稱": "disabled=true 必使 resolvedMode='disabled'。",
+   "真實code行為": "useResolvedFieldMode 以明確 mode 優先；例如 mode='view' 與 disabled 同時存在時仍解析為 view。"
   },
   {
-   "fileLine": "people-picker.tsx:79-82; people-picker.anatomy.stories.tsx:82-83",
-   "宣稱": "defaultOpen／onOpenChange 是一般性的開啟狀態 API。",
-   "真實code行為": "NativeSelect 明確丟棄兩者，NativeCombobox也未接線；只在 desktop custom path 生效。"
-  },
-  {
-   "fileLine": "people-picker.tsx:111-112; people-picker.anatomy.stories.tsx:85",
-   "宣稱": "`aria-label` 是通用 a11y label。",
-   "真實code行為": "display branches不轉傳 aria-label；NativeCombobox亦不接 aria-label／rest，因此 touch multi edit path 沒有此 accessible name。"
-  },
-  {
-   "fileLine": "people-picker.tsx:169-173",
-   "宣稱": "「mergedStackRef 接到的 root 就是 `[role=combobox]` div」",
-   "真實code行為": "只對 CustomCombobox 成立；NativeCombobox root 是沒有 role=combobox 的 div。"
-  },
-  {
-   "fileLine": "people-picker.tsx:105-108,198-201; people-picker.anatomy.stories.tsx:81",
-   "宣稱": "showDisplayEndIcon=true 會讓 display 強制使用 naked wrapper，且只影響 display。",
-   "真實code行為": "display 使用的是 resolvedVariant，不會強制 naked；readonly／disabled 的 naked branch 也用 showDisplayEndIcon 決定是否渲染 ChevronDown。"
-  },
-  {
-   "fileLine": "people-picker.spec.md:240",
-   "宣稱": "PeoplePicker 主 API 包含 `options`。",
-   "真實code行為": "不存在 `options` prop；公開資料 prop 名稱是 `people`。"
+   "fileLine": "people-picker.spec.md:253; people-picker.anatomy.stories.tsx:338",
+   "宣稱": "people=[]／搜尋無結果時必顯示共用 emptyText。",
+   "真實code行為": "僅 custom SelectMenu 路徑成立；native paths 忽略 emptyText，且沒有搜尋結果面板。"
   },
   {
    "fileLine": "people-picker.spec.md:256",
-   "宣稱": "people 清單更新時，edit path 找不到已選人員會降級成有 initials 的純名字顯示，且已選顯示不依賴 people。",
-   "真實code行為": "single edit 找不到對應 option 時 selectedItemRenderer 不執行，只顯示純文字名字並失去 Avatar／initials；rich display 實際依賴 people 中仍有該 option。"
+   "宣稱": "edit path 找不到已選 person 時一律以名字 initials fallback。",
+   "真實code行為": "single custom Select 找不到 selected option 時只顯示純文字 selectedLabel，不會執行 selectedItemRenderer；native 路徑亦只有文字。"
   },
   {
-   "fileLine": "people-picker.anatomy.stories.tsx:68-70,84",
-   "宣稱": "mode／variant／size／disabled 的固定預設分別是 edit／default／md／false。",
-   "真實code行為": "四者皆先經 Field context／surface cascade；表中數值只是沒有 context 時的最後 fallback，不是無條件預設。"
-  },
-  {
-   "fileLine": "people-picker.anatomy.stories.tsx:214-215",
-   "宣稱": "「field 外觀跟 Select／Combobox 完全一致，差別只在前方多出 Avatar」",
-   "真實code行為": "multi stack 另有固定 field-px override、zero gap、負 margin 疊合、圓形 +N、visible-count override 與 hidden-tag renderer；不只是增加 Avatar prefix。"
-  },
-  {
-   "fileLine": "people-picker.anatomy.stories.tsx:241-244,424",
-   "宣稱": "edit focus(open) 一律使用 `--primary`／focus-within border-primary。",
-   "真實code行為": "預設 multi panel-top 開啟後焦點移到 Portal 內的 Command input，trigger 不再 focus-within，只套 data-state=open 的 border-hover；只有 single／trigger-search 等焦點仍在 trigger subtree 的路徑才是 primary。"
-  },
-  {
-   "fileLine": "people-picker.anatomy.stories.tsx:272-273,289-290",
-   "宣稱": "selected row 沒有背景、文字 medium，並顯示 16px Check；selected+hover 使用 neutral-hover。",
-   "真實code行為": "SelectMenu 沒有 Check icon；single selected 使用 bg-neutral-selected，virtual focus疊加時使用 bg-neutral-selected-active，文字沒有 medium weight；multi 使用 leading Checkbox。"
-  },
-  {
-   "fileLine": "people-picker.anatomy.stories.tsx:295-296",
-   "宣稱": "MenuItem block tier 會把 row 固定拉高到 40／56。",
-   "真實code行為": "沒有固定 40／56 row tier；高度由 ROW_PADDING_BY_SIZE 的 density公式、size、內容行高與 Avatar block size共同形成。"
-  },
-  {
-   "fileLine": "people-picker.anatomy.stories.tsx:310-312,324-325",
-   "宣稱": "StateBehavior 範例可選取 assignee、勾選多個 reviewer。",
-   "真實code行為": "兩個範例都是 controlled value 搭配 `onChange={() => {}}`；事件會觸發，但 value 永不更新，選取／勾選結果不會持續呈現。"
-  },
-  {
-   "fileLine": "person-display.tsx:19-22",
-   "宣稱": "ProfileCard 永遠有 4 個 default fields，缺資料顯 placeholder且不 collapse。",
-   "真實code行為": "builder只傳 id與employeeNumber兩個 default fields；status undefined 時整個 status block會省略，未提供的 custom fields也不會存在。"
-  },
-  {
-   "fileLine": "person-display.tsx:162-164",
-   "宣稱": "「+N hover 出 tooltip」",
-   "真實code行為": "OverflowIndicator 明確使用互動式 HoverCard，並刻意不使用 Tooltip。"
-  },
-  {
-   "fileLine": "person-display.tsx:298-299",
-   "宣稱": "dismiss button 位於 `absolute top-0 right-0`，完全在 Avatar 內。",
-   "真實code行為": "實際 class 是 `absolute -top-px -right-1`，向上 1px、向右 4px 凸出 Avatar。"
+   "fileLine": "people-picker.spec.md:233",
+   "宣稱": "ModeMatrix 展示 single／multi matrix。",
+   "真實code行為": "ModeMatrix 實際展示 edit、view、readonly、disabled、readonly-empty；single／multi 對照位於 Overview。"
   },
   {
    "fileLine": "people-picker.spec.md:274; people-picker.anatomy.stories.tsx:424",
-   "宣稱": "ARIA／Pattern 對齊 W3C APG combobox pattern。",
-   "真實code行為": "開啟 inline search 後焦點在沒有 role=combobox／aria-expanded／aria-controls 的 child input，combobox role留在已失焦 outer div；aria-controls 又指向 role=dialog 的 PopoverContent ancestor，而非真正 cmdk listbox。這不符合 [W3C APG combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) 對 focused combobox 與 popup關聯的要求。"
+   "宣稱": "ARIA pattern 對齊 W3C APG。",
+   "真實code行為": "desktop aria-controls 指向 role=dialog 的 PopoverContent，而非 cmdk listbox；搜尋開啟後焦點移入內層 input，但 combobox／expanded／controls 留在失焦的外層 div，未符合所宣稱的 [W3C APG Combobox Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) focus/ownership 模式。"
   },
   {
    "fileLine": "people-picker.anatomy.stories.tsx:424",
-   "宣稱": "「Tab — 聚焦到觸發按鈕」",
-   "真實code行為": "desktop trigger 是 `<div role=\"combobox\" tabIndex={0}>`，touch path 是原生 `<select>`；沒有 trigger button。"
+   "宣稱": "「Tab — 聚焦到觸發按鈕」。",
+   "真實code行為": "desktop trigger 是 div[role=combobox][tabIndex=0]，touch 路徑是原生 select；兩者都不是 button。"
   },
   {
-   "fileLine": "people-picker.spec.md:280-281; people-picker.anatomy.stories.tsx:424",
-   "宣稱": "字母鍵直接 type-ahead搜尋，↑／↓直接導覽人員。",
-   "真實code行為": "desktop closed trigger 對字母沒有 handler；ArrowDown只負責開啟，ArrowUp沒有動作。必須先開啟並聚焦搜尋 input後，字母與方向鍵才執行搜尋／cmdk導覽。"
+   "fileLine": "people-picker.spec.md:280; people-picker.anatomy.stories.tsx:424",
+   "宣稱": "字母鍵可從 trigger 直接 type-ahead／邊打字邊搜尋。",
+   "真實code行為": "closed desktop trigger 的 keydown 只處理 Enter、Space、ArrowDown、Escape；必須先開啟並讓搜尋 input 取得焦點才能輸入。"
   },
   {
-   "fileLine": "people-picker.anatomy.stories.tsx:424",
-   "宣稱": "「Storybook 無障礙檢查面板應 0 個嚴重問題」",
-   "真實code行為": "該檔 standalone PeoplePicker stories未提供 FieldLabel或aria-label；closed CustomSelect／CustomCombobox 的 role=combobox 因此可能同時沒有 aria-label與aria-labelledby，不能成立零 serious violation保證。"
+   "fileLine": "people-picker.spec.md:282; people-picker.anatomy.stories.tsx:424",
+   "宣稱": "Enter 可普遍執行選擇／取消選擇。",
+   "真實code行為": "single Enter 不能清除已選值；touch multi 的 native select 只能新增，移除必須另外操作 Tag dismiss。"
+  },
+  {
+   "fileLine": "people-picker.spec.md:284; people-picker.anatomy.stories.tsx:241-244,424",
+   "宣稱": "edit focus(open) 一律以 --primary border 表示。",
+   "真實code行為": "預設 multi menu-search 開啟後，焦點移至 portal input；trigger 失去 focus-within，只套用 data-state=open 的 --border-hover。"
+  },
+  {
+   "fileLine": "people-picker.anatomy.stories.tsx:270-290",
+   "宣稱": "selected row 無背景、文字 medium、尾端有 16px Check；selected+hover 使用 neutral-hover。",
+   "真實code行為": "single selected 使用 bg-neutral-selected，active 使用 bg-neutral-selected-active，且沒有尾端 Check；multi 使用前綴 Checkbox。"
+  },
+  {
+   "fileLine": "people-picker.anatomy.stories.tsx:295-296",
+   "宣稱": "Avatar 24／32 會固定產生 40／56px dropdown row。",
+   "真實code行為": "MenuItem avatar tier 實際為 inline 20／24、block 32／40；row 高度還受 padding、density 與文字 line-height 影響，並非固定 40／56。"
+  },
+  {
+   "fileLine": "people-picker.anatomy.stories.tsx:68-70,84",
+   "宣稱": "mode、variant、size、disabled 的預設值無條件為 edit、default、md、false。",
+   "真實code行為": "有效值會先繼承 Field context，只有 context 與顯式 prop 均缺席時才使用各 fallback。"
+  },
+  {
+   "fileLine": "people-picker.spec.md:91,124,126,150-154,160,240",
+   "宣稱": "所列 implementation file:line anchors 指向對應 trigger、renderer、placeholder、padding 與 passthrough 邏輯。",
+   "真實code行為": "這些 anchors 已漂移並指向無關程式碼；實作目前分布於 Select 約 270-301／743+、Combobox 754+、PersonDisplay 161-165、PeoplePicker 409 等位置。"
+  },
+  {
+   "fileLine": "people-picker.tsx:344,352,468",
+   "宣稱": "Tag L175、Combobox L286、Select L201 是目前對應 SSOT 行。",
+   "真實code行為": "三個 inline-comment 行號均已漂移，不再指向 mask、cap removal 或 selectedItemRenderer 實作。"
+  },
+  {
+   "fileLine": "people-picker.stories.tsx:1",
+   "宣稱": "trait rationale 位於 L62／L72。",
+   "真實code行為": "目前 rationale 已位移至約 L63／L73，原 anchors 不再精確。"
   }
  ]
 }

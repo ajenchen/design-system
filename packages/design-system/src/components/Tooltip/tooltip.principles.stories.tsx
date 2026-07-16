@@ -52,7 +52,7 @@ export const UsageGuidance: Story = {
               <LinkTo kind="Design System/Components/Tooltip/展示" name="非 Button 元素"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">非 Button 元素</span></LinkTo>
             </li>
             <li>
-              <LinkTo kind="Design System/Components/Tooltip/展示" name="方向"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">方向</span></LinkTo>
+              <LinkTo kind="Design System/Components/Tooltip/展示" name="基本用法"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">基本用法</span></LinkTo>
             </li>
             <li>
               <LinkTo kind="Design System/Components/Tooltip/展示" name="長文字"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">長文字</span></LinkTo>

@@ -1,91 +1,221 @@
 {
  "component": "SelectMenu",
- "claimsVerified": 602,
+ "claimsVerified": 360,
  "falseClaims": [
   {
-   "fileLine": "select-menu.spec.md:5,26",
-   "宣稱": "`sizes: {}`，且 Layout Family 不屬 1–4。",
-   "真實code行為": "元件支援 `sm | md | lg`、預設 `md`；`selectMenuMeta.family` 與 spec frontmatter 都宣告 family 4，和 line 26 互相矛盾。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:34",
+   "宣稱": "CommandInput（搜尋框）",
+   "真實code行為": "未使用 DS CommandInput；搜尋欄實際是自建 wrapper 內的 CommandPrimitive.Input。"
   },
   {
-   "fileLine": "select-menu.tsx:34; select-menu.anatomy.stories.tsx:285,611-614",
-   "宣稱": "搜尋框使用 DS `CommandInput`。",
-   "真實code行為": "實際渲染 raw `CommandPrimitive.Input` 加自建 wrapper，未 import／使用 DS `CommandInput`。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:36",
+   "宣稱": "CommandGroup → MenuItem",
+   "真實code行為": "實際結構是 CommandGroup → CommandItem（role=option）→ MenuItem（role=presentation）；CommandItem 才是選取與 ARIA owner。"
   },
   {
-   "fileLine": "select-menu.tsx:107,310-312; select-menu.spec.md:79-81",
-   "宣稱": "預設與 trigger 同寬，因此 start／end 多數情況視覺相同。",
-   "真實code行為": "實作是 `w-auto` 加 `minWidth=max(trigger-width,15rem)`；只保證寬度下限，窄 trigger 時浮層至少 15rem，內容也可繼續撐寬。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:107",
+   "宣稱": "minWidth 預設跟隨 trigger 寬度",
+   "真實code行為": "預設為 max(trigger width, 15rem)，且內容仍可把浮層撐得更寬。"
   },
   {
-   "fileLine": "select-menu.spec.md:50-51,57-58,205-207; select-menu.principles.stories.tsx:73",
-   "宣稱": "searchable 會切換到 SelectMenu；PeoplePicker／Select 固定以 SelectMenu + cmdk + MenuItem 實作。",
-   "真實code行為": "Select／Combobox 依 touch device 切 Native 與 Custom；touch path 不渲染 SelectMenu，desktop Custom path 則不論 searchable 都使用 SelectMenu。PeoplePicker 間接繼承同一分流。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:123-125",
+   "宣稱": "AT 經 contentId 容器可定位內部 cmdk listbox",
+   "真實code行為": "contentId 設在 role=dialog 的 PopoverContent；內部 listbox 有另一個自動 id，兩者沒有直接 ARIA 關聯。"
   },
   {
-   "fileLine": "select-menu.spec.md:35",
-   "宣稱": "元件內部具有 range state。",
-   "真實code行為": "實作只有 open、search，以及由外部 value 派生的 selectedValues；沒有 range state。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:291",
+   "宣稱": "純鍵盤路由：滑鼠點擊路徑完全不碰",
+   "真實code行為": "non-searchable 的 autofocus handler 沒有輸入模式判斷；滑鼠開啟也會 preventDefault 並聚焦 cmdk root。"
   },
   {
-   "fileLine": "select-menu.spec.md:172-174; select-menu.anatomy.stories.tsx:3-6",
-   "宣稱": "SelectMenu 沒有自己的 bg／border／hover 色彩決策，item 色彩全由 MenuItem 決定。",
-   "真實code行為": "SelectMenu 自設 surface、border、elevation，外層 CommandItem 擁有 hover、persistent-selected 與 selected×cursor 背景；內層 MenuItem 被強制透明。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:292",
+   "宣稱": "selector miss → root=null → no-op fallback",
+   "真實code行為": "root 缺失時仍已 preventDefault，會取消 Radix 預設 autofocus，並非 no-op。"
   },
   {
-   "fileLine": "select-menu.anatomy.stories.tsx:186",
-   "宣稱": "creatable 只在「無結果」時顯示 create option。",
-   "真實code行為": "條件是 search 非空且不存在 label 完全相同的選項；即使仍有其他 fuzzy matches，create option 也會顯示。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:310-312",
+   "宣稱": "SelectMenu 走「跟 trigger 同寬」canonical",
+   "真實code行為": "實作只有 min-width=max(trigger width,15rem) 且允許內容撐寬，並未強制同寬。"
   },
   {
-   "fileLine": "select-menu.anatomy.stories.tsx:699",
-   "宣稱": "Creatable 預設顯示「建立 xxx」。",
-   "真實code行為": "預設 `createLabel` 是「直接使用『xxx』」；該 story 沒有覆寫它。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:328",
+   "宣稱": "攔 onPointerDownOutside",
+   "真實code行為": "實際沒有傳 onPointerDownOutside；使用的是同時涵蓋 pointer 與 focus outside 的 onInteractOutside。"
   },
   {
-   "fileLine": "select-menu.anatomy.stories.tsx:300",
-   "宣稱": "RowSizeProvider 讓 MenuItem 自動讀取 size。",
-   "真實code行為": "MenuItem 由 SelectMenu 顯式傳入 `size={size}`；context 自動讀取只適用會消費 RowSizeContext 的 item-slot primitives。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:476-479",
+   "宣稱": "__create__ prefix 可避免與實際 option value 衝突",
+   "真實code行為": "option.value 沒有保留命名空間限制；既有值仍可等於 __create__${search} 而碰撞。"
   },
   {
-   "fileLine": "select-menu.tsx:291",
-   "宣稱": "non-searchable autofocus 是純鍵盤路由，滑鼠點擊路徑完全不碰。",
-   "真實code行為": "handler 沒有 input-modality gate；滑鼠開啟同樣會 preventDefault 並把 DOM focus 移到 `[cmdk-root]`。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:555-557",
+   "宣稱": "sizes: {}",
+   "真實code行為": "公開 size prop 支援 sm/md/lg、預設 md，並實際控制搜尋框與 MenuItem 尺寸。"
   },
   {
-   "fileLine": "select-menu.tsx:292,294-297",
-   "宣稱": "找不到 `[cmdk-root]` 時是 no-op fallback、無回歸。",
-   "真實code行為": "程式在 query 前已無條件 `preventDefault()`；selector miss 仍取消 Radix 預設 autofocus，並非 no-op。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:5",
+   "宣稱": "sizes: {}",
+   "真實code行為": "SelectMenuProps.size 支援 sm/md/lg 且 runtime 預設 md；同一 spec 也列出三種尺寸。"
   },
   {
-   "fileLine": "select-menu.tsx:328-330",
-   "宣稱": "nested portal fix 攔截 `onPointerDownOutside`。",
-   "真實code行為": "實作沒有掛該 handler；真正掛的是同時涵蓋 pointerdown／focusin 的 `onInteractOutside`。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:35",
+   "宣稱": "內部狀態複雜（search filter / range / menu open state）",
+   "真實code行為": "SelectMenu 沒有 range state、prop 或 handler；multiple 陣列選取也不是 range。"
   },
   {
-   "fileLine": "select-menu.tsx:357-359",
-   "宣稱": "僅 searchable 時傳 label，可避免 non-searchable orphan label。",
-   "真實code行為": "cmdk 1.1.1 無條件渲染 hidden `<label htmlFor=inputId>`；`label={undefined}` 只讓內容為空，仍指向不存在的 input。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:50",
+   "宣稱": "Select with searchable（內部會切換到 SelectMenu 模式）",
+   "真實code行為": "desktop CustomSelect 不論 searchable 都使用 SelectMenu；touch/mobile 則改用 NativeSelect。"
   },
   {
-   "fileLine": "select-menu.spec.md:225; select-menu.anatomy.stories.tsx:809",
-   "宣稱": "已有選值時，開啟即以 `aria-activedescendant` 指向已選 option。",
-   "真實code行為": "cmdk `defaultValue` 只初始化 value；`selectedItemId` 起初仍是 undefined。row 雖為 selected，內部 input／list 要等 cursor value 後續改變才取得 active descendant。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:51",
+   "宣稱": "Combobox with searchable（內部會切換到 SelectMenu 模式）",
+   "真實code行為": "desktop CustomCombobox 不論 searchable 都使用 SelectMenu；touch/mobile 改用 NativeCombobox。"
   },
   {
-   "fileLine": "select-menu.spec.md:225; select-menu.anatomy.stories.tsx:809",
-   "宣稱": "關閉時 focus 一律回 trigger。",
-   "真實code行為": "Escape、選取或 API close 等未發生 outside interaction 的路徑會回 trigger；pointer／focus outside 關閉時，Radix non-modal Popover 刻意不 restore。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:52",
+   "宣稱": "Combobox + creatable prop",
+   "真實code行為": "Combobox API 沒有 creatable、onCreate 或 createLabel，也未轉發這些 props。"
   },
   {
-   "fileLine": "select-menu.spec.md:212; select-menu.anatomy.stories.tsx:809",
-   "宣稱": "combobox／listbox／option role 與 aria-activedescendant 全由 cmdk 固有提供。",
-   "真實code行為": "non-searchable 不渲染 cmdk Input，`[cmdk-root]` 是無 role 的 `tabIndex=-1` div；combobox role 若存在由 consumer trigger 提供，PopoverContent 本身則是 `role='dialog'`。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:57",
+   "宣稱": "Select searchable 模式會切換到 SelectMenu 浮層",
+   "真實code行為": "是否使用 SelectMenu 由 pointer modality 決定，不是由 searchable 決定。"
   },
   {
-   "fileLine": "select-menu.tsx:310-312; select-menu.spec.md:32,96,163,182",
-   "宣稱": "所列行號仍是對應規則的真實住所。",
-   "真實code行為": "多個 locator 已漂移：寬度規則在 spec 79-81；open dual-mode 在 tsx 174-191；creatable 判斷在 261-266；forwardRef rationale 在 151-155。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:58",
+   "宣稱": "Combobox searchable 模式會切換到 SelectMenu 浮層",
+   "真實code行為": "custom path 一直使用 SelectMenu；touch path 使用 NativeCombobox，searchable 不是切換條件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:79",
+   "宣稱": "SelectMenu width 預設跟 trigger（input）同寬",
+   "真實code行為": "實作只保證 min-width=max(trigger width,15rem)，並允許 max-content 撐寬。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:89",
+   "宣稱": "單選 value 為 string | null",
+   "真實code行為": "公開型別未依 multiple discriminated；單選仍接受 string[] 與 undefined。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:90",
+   "宣稱": "多選 value 為 string[]",
+   "真實code行為": "公開型別未依 multiple discriminated；多選仍接受 string、null 與 undefined。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:209",
+   "宣稱": "Select searchable 時切換到 SelectMenu",
+   "真實code行為": "實際由 pointer modality 選 NativeSelect 或 CustomSelect；custom path 不論 searchable 都使用 SelectMenu。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:210",
+   "宣稱": "Combobox searchable 多選時切換到 SelectMenu",
+   "真實code行為": "custom path 不論 searchable 都使用 SelectMenu；touch path 使用 NativeCombobox。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:211",
+   "宣稱": "PeoplePicker 永遠使用 SelectMenu",
+   "真實code行為": "PeoplePicker 間接包裝 Select/Combobox；touch/mobile 路徑會改用 NativeSelect/NativeCombobox。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:225",
+   "宣稱": "Tab（multi）移動 focus 到 footer buttons",
+   "真實code行為": "footer 只有在 multiple、存在 selectable option 且 search 為空時渲染；其餘 multi 狀態沒有該焦點目標。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:229",
+   "宣稱": "開啟時 active-descendant 虛擬焦點落在第一個／已選 option",
+   "真實code行為": "non-searchable 時焦點在沒有 aria-activedescendant 的 cmdk root；該屬性位於未聚焦的 List。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:229",
+   "宣稱": "關閉時 focus 回 trigger",
+   "真實code行為": "Radix non-modal Popover 遇 pointer/focus outside 關閉時刻意不回焦 trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx:4",
+   "宣稱": "items 色彩由消費的 MenuItem 決定",
+   "真實code行為": "hover、cursor 與 selected 背景由外層 CommandItem 擁有；內層 MenuItem 被強制為透明背景。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx:285",
+   "宣稱": "CommandInput",
+   "真實code行為": "結構實際使用 raw CommandPrimitive.Input；同檔其他說明也明確區分兩者。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx:300",
+   "宣稱": "MenuItem 會自動讀取 RowSizeProvider 尺寸",
+   "真實code行為": "MenuItem 不讀該 context；SelectMenu 是以 size={size} 顯式傳入，context 僅供 Item* slots 使用。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx:699",
+   "宣稱": "預設 creatable 文案為「建立 xxx」",
+   "真實code行為": "未傳 createLabel 時實際文案是「直接使用『xxx』」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx:809",
+   "宣稱": "Tab（multi）→ footer buttons",
+   "真實code行為": "footer 還要求有 selectable option 且 search 為空；僅 multiple 不足以產生該目標。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx:809",
+   "宣稱": "開啟時 active-descendant 落在第一個／已選 option",
+   "真實code行為": "non-searchable 的聚焦 cmdk root 沒有 aria-activedescendant；初始 defaultValue 也不會建立 selectedItemId。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx:809",
+   "宣稱": "關閉時 focus 回 trigger",
+   "真實code行為": "outside pointer/focus interaction 關閉 non-modal Popover 時不會回焦 trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.principles.stories.tsx:46",
+   "宣稱": "非 form action → Command",
+   "真實code行為": "一般短 action menu 的對應元件是 DropdownMenu；Command 是搜尋／command-palette primitive，不能由「非 form action」單一條件決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.principles.stories.tsx:58",
+   "宣稱": "action → Command",
+   "真實code行為": "action list 的 canonical counterpart 是 DropdownMenu；Command 並非所有 action 的通用公開入口。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.principles.stories.tsx:73",
+   "宣稱": "Select（內部 SelectMenu + cmdk + MenuItem）",
+   "真實code行為": "只符合 desktop CustomSelect；touch/mobile Select 直接渲染 NativeSelect。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.principles.stories.tsx:83",
+   "宣稱": "Combobox 支援建立新標籤",
+   "真實code行為": "Combobox API 與實作均沒有 creatable、onCreate 或 createLabel。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.stories.tsx:1",
+   "宣稱": "error state 由 Select.stories.tsx 與 Combobox.stories.tsx 的 WithError 覆蓋",
+   "真實code行為": "兩個 story 檔都沒有 WithError export，檔內註解反而將其列為既有 coverage gap。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.stories.tsx:26",
+   "宣稱": "Select 作為觸發點，點擊開啟 SelectMenu",
+   "真實code行為": "只有 desktop CustomSelect 開啟 SelectMenu；touch/mobile 點擊的是 NativeSelect。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.stories.tsx:51",
+   "宣稱": "searchable：觸發點變 input，打字即篩選",
+   "真實code行為": "只適用 desktop CustomSelect；touch/mobile NativeSelect 丟棄 searchable，沒有搜尋 input。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.stories.tsx:75",
+   "宣稱": "Combobox：checkbox 多選，浮層不關閉",
+   "真實code行為": "只適用 desktop CustomCombobox；touch/mobile 使用原生 NativeCombobox，沒有 checkbox SelectMenu 浮層。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.stories.tsx:92",
+   "宣稱": "searchable：浮層內搜尋框，關鍵字保留可連續勾選",
+   "真實code行為": "只適用 desktop CustomCombobox 的 menu-search path；touch/mobile NativeCombobox 沒有 SelectMenu 搜尋框。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.stories.tsx:138",
+   "宣稱": "已選中（勾選標記）",
+   "真實code行為": "此 story 是單選；multiple=false 時不渲染 checkbox／勾選標記，只顯示 selected 背景。"
   }
  ]
 }

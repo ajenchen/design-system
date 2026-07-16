@@ -1,1 +1,15 @@
-{"component":"FieldControlGroup","implBasis":"自建 border-collapse layout primitive (aligned to Ant Space.Compact compact-item.ts + Bootstrap input-group); no lib base","claimsVerified":22,"falseClaims":[]}
+{
+  "component": "FieldControlGroup",
+  "implBasis": "自建 border-collapse 接合 wrapper(對齊 Ant Space.Compact + Bootstrap input-group):[&>*+*]:-ml-px 重疊 border、first/middle/last radii 規則、z-index 2/3/0、disabled child border-[var(--border-opaque)](K12);size prop = no-op;block prop = flex w-full",
+  "claimsVerified": [
+    "行為機制 6 條(保留 border+radius / -ml-px / z 2→3→0 / radii first-r-none·middle-none·last-l-none / inline-flex↔flex w-full / items-stretch)逐條對 code field-control-group.tsx:83-95 ✓",
+    "size no-op 宣稱三處一致(docblock / spec「Size」段 / meta 註解):code 確實 `size: _size = 'md'` 未消費、無 Provider 無 cloneElement ✓",
+    "K12 disabled border:[&>*[data-field-mode=\"disabled\"]]:border-[var(--border-opaque)] = code :103;--border-opaque 定義存在(semantic.css:332,primitive 後盾 neutral-5-opaque)✓",
+    "spec「選擇器覆蓋範圍(2026-07-13 誠實標註)」= code 精確:z-0 認 [disabled]/:has([disabled]),border-opaque 認 data-field-mode — 兩道選擇器覆蓋落差已誠實文件化,非 drift",
+    "ButtonGroup 對比宣稱(gap 分離 flex gap-2)= button-group.tsx:51 ✓",
+    "單一 child 邊界宣稱(:first-child:not(:last-child) 不命中 → 圓角完整)= selector 邏輯正確",
+    "anatomy @anatomy-rationale(Inspector/ColorMatrix N/A)與 spec frontmatter variants{}/sizes{}/traits[] 一致;Overview/SizeMatrix/StateBehavior/Accessibility 內容宣稱(z-index / radii / error z 行為)與 code 一致",
+    "「子必 direct child、無 runtime 偵測」誠實標註 = code 無偵測 ✓"
+  ],
+  "falseClaims": []
+}

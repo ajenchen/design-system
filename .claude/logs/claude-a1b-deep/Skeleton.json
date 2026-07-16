@@ -1,1 +1,14 @@
-{"component":"Skeleton","implBasis":"shadcn passthrough — plain CSS opacity-pulse div (animate-pulse rounded-md bg-muted motion-reduce:animate-none), no lib","claimsVerified":13,"falseClaims":[]}
+{
+  "component": "Skeleton",
+  "implBasis": "shadcn passthrough — 純 styled div(animate-pulse + rounded-md + bg-muted + motion-reduce:animate-none),無 external primitive",
+  "claimsVerified": [
+    "spec「底色固定 bg-muted(2026-05-20 修 drift bg-secondary)」= skeleton.tsx:10;anatomy rationale 同步標注",
+    "spec A11y「動畫 honor prefers-reduced-motion(skeleton.tsx:10 motion-reduce:animate-none)」行號精確命中",
+    "spec「無內建 ARIA、{...props} 原樣傳遞、aria-busy 由 consumer 容器 own」= code 純 div 無任何 aria 屬性;TableRowLoading story 示範 consumer 層 aria-busy='true'(skeleton.stories.tsx:89)言行一致",
+    "skeletonMeta family 'self-contained' 字串對齊 spec frontmatter;states [] = spec「無 StateBehavior:只有顯示/不顯示」(comment cite spec L77,實句起 L76,1 行漂移)",
+    "spec「為何無 Inspector/ColorMatrix/SizeMatrix/StateBehavior」與 anatomy 檔頭 @anatomy-rationale + 實際 story 清單(Overview/CommonShapes/DesignPrinciple/Accessibility)一致",
+    "禁止事項「>10s 硬上限 / >3s 建議換手」spec 內部兩處(L65 / L90)互相一致;principles DurationRule 同步",
+    "TableRowLoading 消費真 DataTable + 註明 data-table.spec.md「禁內建 loading prop」職責邊界,cross-file 宣稱與 DataTable spec 分工相符"
+  ],
+  "falseClaims": []
+}

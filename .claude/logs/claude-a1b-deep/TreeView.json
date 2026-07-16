@@ -1,1 +1,40 @@
-{"component":"TreeView","implBasis":"自建 ARIA tree(role=tree/treeitem/group,aria-activedescendant virtual focus,單一 tab stop),自建鍵盤 handler;Radix Collapsible 僅用於 children 展開高度動畫(animate-collapsible);@dnd-kit/core 做 Figma-style drag(distance:5,X+Y 雙軸)。已對照 code 逐項驗鍵盤 map / ARIA / focus / drag。","claimsVerified":35,"falseClaims":[]}
+{
+  "component": "TreeView",
+  "implBasis": "自建 ARIA tree(role=tree/treeitem/group + aria-activedescendant virtual focus)+ Radix Collapsible(僅高度動畫)+ dnd-kit core(PointerSensor distance:5,無 KeyboardSensor)+ item-anatomy SSOT(ICON_SIZE/ROW_PADDING_BY_SIZE/ItemPrefix/ItemIcon/ItemSuffix/ItemInlineAction)+ drag-visual.ts SSOT",
+  "claimsVerified": [
+    "INDENT_STEP {sm:24,md:24,lg:28} = chevronSize(16/16/20)+ gap-2(8)公式;與 --tree-indent-* token 同步註記;meta sizes indent 24/24/28 一致",
+    "context px:sidebar = var(--layout-space-loose)(16/24 density)/ menu = 12px;--tree-px CSS var + calc(var(--tree-px)+indentPx)= spec 使用脈絡表一致",
+    "ROW_PADDING_BY_SIZE = text-body(-lg) leading-compact + py-calc((field-height-*−1lh)/2)= spec Node 高度公式 + Label typography 段精確一致",
+    "單選/多選視覺 SSOT:single selected = text-foreground + bg-neutral-selected;multiple selected = text/bg 皆不變 + auto-render Checkbox(tabIndex=-1 aria-hidden)= spec 對照表(2026-05-26 lock)與 code L1250-1254/1286-1293 逐格一致",
+    "多選不支援 Shift/Ctrl+Click(handleRowClick 不讀 modifier)= spec 明文一致",
+    "chevron:fg-muted→hover foreground、rotate-90、點擊只 expand(stopPropagation);leaf 無條件等寬 placeholder;icon 無自動佔位 = spec 佔位規則/禁止事項與 code 一致",
+    "expandOnSelect 連帶展開僅 pointer(handleRowClick);Enter/Space 只 select,展開走 →/← = spec 展開/收合段與 handleKeyDown 一致",
+    "鍵盤導覽全表(↑↓→← Home End Enter/Space + disabled skip + 無焦點時方向鍵聚焦第一項 + onFocus init 優先 selected)= spec/anatomy KeyboardMatrix 與 handleKeyDown 逐鍵一致",
+    "鍵盤重排 Cmd/Ctrl+Shift+方向鍵(2026-07-14 v1):四鍵語意/每按即 commit/同 TreeDragEndEvent 契約/draggable 才生效/pointer 拖曳互斥/disabled 錨點翻轉/移入 collapsed folder 自動展開/邊界 no-op 播報 = spec 鍵盤重排表與 handleKeyboardReorder 逐條一致",
+    "SR 播報:自有 sr-only role=status polite live region(覆寫式)+ aria-describedby instructions(僅 draggable、渲染在 role=tree 之外)+ zh-TW 預設文案 + reorderAnnouncements per-key 覆寫 + collapsed folder 序數誠實省略 = spec SR 播報段與 DEFAULT_REORDER_ANNOUNCEMENTS/render 一致",
+    "drag:PointerSensor distance:5、X+Y 雙軸(25/50/25 folder、50/50 leaf + X 軸深度提升)、auto-expand 500ms、descendant guard isInSubtree 雙路共用(2026-07-14 R6)= spec Drag and Drop 段與 handleDragOver/handleDragEnd 一致",
+    "drag 視覺:dragSourceClass=opacity-disabled(45%)、dropIndicatorRow 2px bg-primary h-0.5 + indent left、dropIndicatorInside=bg-primary-subtle、DragOverlay ghost bg-surface + elevation-200 + truncate max-w-[200px] = spec 視覺段與 drag-visual.ts/code 一致",
+    "ARIA:tree/treeitem/group、aria-multiselectable(多選)、aria-expanded(僅 expandable)、aria-selected(非 none)、aria-level=depth+1、aria-roledescription(draggable 時,消費 dnd-kit attr)、只 spread dragListeners 不 spread attributes(防 role=button 污染)= spec ARIA 表 + A11y 段一致",
+    "virtual focus:容器 tabIndex=0 單 tab stop、row tabIndex=-1、aria-activedescendant=${prefix}treeitem-${id}(useId 防撞)、ring-2 ring-ring ring-inset 僅鍵盤(isKeyboardRef)= spec Focus 段一致;inline actions 為獨立 tab stop 的限定說明誠實",
+    "aria-setsize/posinset 刻意省略(全節點在 DOM + DOM 序 = 閱讀序)= spec 宣稱與 code 一致",
+    "不用 dnd-kit KeyboardSensor 的理由(activator 需 DOM focus,與虛擬焦點不相容)= code 註解 + spec 一致;sensors 僅 PointerSensor 驗證為真",
+    "anatomy story 結構 Overview/Inspector/SizeMatrix/ColorMatrix/IndentMatrix/StateBehavior/KeyboardMatrix/Accessibility = spec 宣稱完全對應;principles LinkTo 5 個 story name 全部命中展示層真實 name",
+    "Tree Guides『未來 showGuides prop,初版不實作,目前無此 prop』= code 無 showGuides,誠實"
+  ],
+  "falseClaims": [
+    {
+      "id": "TV-1",
+      "severity": "minor",
+      "location": "tree-view.spec.md:8(frontmatter sizes.lg.when)",
+      "claim": "lg =『text-body-lg、px-4 py-2、indent 28』",
+      "reality": "TreeItem row 的實際幾何:水平 padding = var(--tree-px)(context 決定,inline style 覆蓋)、垂直 = ROW_PADDING_BY_SIZE py-calc((field-height-lg−1lh)/2),非 px-4 py-2。px-4 py-2 只出現在 DragOverlay ghost 的 lg 分支(tree-view.tsx:963)。frontmatter 與 spec 本文『Node 高度』『使用脈絡』兩段自相矛盾(本文正確)"
+    },
+    {
+      "id": "TV-2",
+      "severity": "minor",
+      "location": "lib/drag-visual.ts:9(module docblock Pattern 段;TreeView 消費的 SSOT,adjacent)",
+      "claim": "『Source element:`opacity-30`(半透)』+ Token usage 段『opacity-30:Tailwind 30% opacity』",
+      "reality": "實際 export dragSourceClass = 'opacity-disabled'(= var(--opacity-disabled) 0.45,同檔 L44-49 註解自述 2026-05-06 v14.5.2 改版)。module 檔頭 Pattern/Token 段仍寫 opacity-30 = 檔內 docblock-vs-export drift(TreeView spec 本身正確寫 opacity-disabled 45%)"
+    }
+  ]
+}

@@ -1,1 +1,61 @@
-{"component":"Input","implBasis":"Native <input> wrapped in fieldWrapperStyles (Field Family 4). Consumes Field context (size/disabled/mode/variant/invalid cascade), ICON_SIZE SSOT, bareInputStyles, ItemInlineAction/ItemPrefix, CircularProgress.","claimsVerified":20,"falseClaims":[]}
+{
+  "component": "Input",
+  "implBasis": "native <input> + fieldWrapperStyles cva(Field family SSOT)+ useControllable(2026-07-14 R2)+ ItemPrefix/ItemInlineAction(item-anatomy)",
+  "claimsVerified": [
+    "input.spec.md:97-99 <Input mode=\"view\"> identity display + 空值半形 '-' text-foreground — code input.tsx:139-192 displayValue/useFieldEmptyDisplay/fieldEmptyColorClass(field-context.ts:296-298 non-disabled → text-foreground)吻合",
+    "input.spec.md:105+117 loading:endAction slot 自動 CircularProgress + aria-busy + input 仍可編輯 — input.tsx:207,243-244 吻合(loading 蓋 endSlot 與 endAction)",
+    "input.spec.md:116 disabled:endAction 僅 edit 渲染 / text-fg-disabled / cursor-not-allowed — input.tsx:231,245-250 + field-wrapper.tsx:165-168 吻合",
+    "input.spec.md:180 aria-invalid/aria-required/aria-describedby/aria-errormessage — input.tsx:225-228 全存在(fieldCtx fallback)",
+    "input.spec.md:188 outline-none + focus 由 wrapper focus-within:!border-primary — bareInputStyles(field-wrapper.tsx:261)+ edit×default compound(field-wrapper.tsx:129)吻合",
+    "input.anatomy.stories.tsx:245 mode 推導序(顯式 prop > 有效 disabled > fieldCtx.mode > readOnly > edit)— field-context.ts:189-204 useResolvedFieldMode 吻合",
+    "input.anatomy.stories.tsx:61+429 view = edit 幾何減 chrome(transparent bg/border 保留 px/height,Model A round16)— field-wrapper.tsx:140-143 view×default compound 吻合",
+    "input.anatomy.stories.tsx:33-41 COLOR_MAP(view transparent / readonly --bg-readonly / disabled --bg-disabled+--fg-disabled)— field-wrapper.tsx:142,158,167 吻合",
+    "input.tsx:39 endSlot 優先於 endAction — input.tsx:243-250 三元鏈吻合(loading > endSlot > endAction)",
+    "inputMeta sizes fieldHeight 28/32/36 + icon 16/16/20 — uiSize.css:23-25 field-height token + icon-size.ts ICON_SIZE tier 吻合",
+    "input.tsx:120-133 readonly 空值走 display-span 顯 '-' / uncontrolled defaultValue 被 view 判定認得 — input.tsx:134-140 useControllable resolved 吻合(anatomy ColorMatrix/SizeMatrix defaultValue 用法可正確渲染)"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "input.principles.stories.tsx:131",
+      "宣稱": "Table cell 用 <Input mode='view'>(零視覺 chrome、無左右 padding;wrapper 高度同 readonly)",
+      "真實code行為": "round16 Model A(2026-07-16):view×default 保留 px-[var(--field-px)] 12px 左右內距 + h-field-* 高度,只拔 bg/border(field-wrapper.tsx:131-143)。「無左右 padding」= 舊 Path Ⅰ !px-0 宣稱,已被推翻;無 padding 的是 view×naked(cell substrate,僅 DataTable cell-registry @internal 通道)",
+      "severity": "major"
+    },
+    {
+      "fileLine": "input.principles.stories.tsx:134",
+      "宣稱": "→ 用 <Input mode=\"display\" />",
+      "真實code行為": "FieldMode = 'edit'|'view'|'readonly'|'disabled'(field-types.ts:21)。mode=\"display\" 已不存在(display→view 更名);現在式推薦不存在的 API 值,tsc 下該字串 literal 會報錯",
+      "severity": "major"
+    },
+    {
+      "fileLine": "input.anatomy.stories.tsx:246",
+      "宣稱": "Props 表 variant 行:naked = 無 chrome,host cell 提供 border/focus(@internal cell-as-input)",
+      "真實code行為": "edit×naked 由 field-wrapper 自畫 border-based state machine(border-border → hover:border-border-hover → focus-within:!border-primary → error 紅框,field-wrapper.tsx:196-210),非 host cell 提供。input.spec.md:140 已明文糾正(『非「完全無 border」、亦非「host cell 自管」』),anatomy props 表殘留舊宣稱 = spec-vs-story 內部矛盾",
+      "severity": "medium"
+    },
+    {
+      "fileLine": "input.stories.tsx:29-31",
+      "宣稱": "四模式 story 段落標題 'display' + aria-label '(display mode demo)'",
+      "真實code行為": "實際傳 mode=\"view\";mode 名已更名 view,標題/aria-label 現在式殘留舊名(非「原 display」歷史 anchor 措辭)",
+      "severity": "minor"
+    },
+    {
+      "fileLine": "input.anatomy.stories.tsx:214,337",
+      "宣稱": "comment『display + readonly 讀 controlled value』/『display mode 讀 value 渲染 <span>』",
+      "真實code行為": "同檔 code 用 m === 'view' / mode === 'view';comment 現在式殘留 display 舊名",
+      "severity": "minor"
+    },
+    {
+      "fileLine": "field-controls.spec.md:394 contract (d)(cross-file lens,Input 家族 SSOT owner spec)",
+      "宣稱": "Default variant display = zero chrome SSOT:default mode='view' 必 zero chrome;Impl = field-wrapper.tsx compoundVariants mode:'display'+variant:'default' 加 !px-0 !py-0",
+      "真實code行為": "round16 Model A(同 spec L67 明文推翻 Path Ⅰ):view×default = bg-transparent border-transparent 保留 px/height(field-wrapper.tsx:140-143),code 無 !px-0 !py-0 compound;且 mode:'display' key 已不存在。contract (d) 段是 spec-internal 矛盾 + 舊宣稱現在式殘留",
+      "severity": "major"
+    },
+    {
+      "fileLine": "input.anatomy.stories.tsx:455",
+      "宣稱": "Inspector Style panel:Focus = border-primary(1px — 無 ring),無條件顯示於所有 mode",
+      "真實code行為": "readonly mode 聚焦(native <input readOnly> 可 Tab)顯 ring-2 ring-ring ring-offset-1(field-wrapper.tsx:158,2026-07-09 WCAG 2.4.7 fix);「無 ring」僅對 edit 成立",
+      "severity": "minor"
+    }
+  ]
+}

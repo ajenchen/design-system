@@ -1,13 +1,6 @@
 {
   "component": "Breadcrumb",
-  "implBasis": "self-built on native HTML (nav/ol/li/a/span) + Radix Slot (asChild) + DS Tooltip/DropdownMenu/ItemInlineActionButton",
-  "claimsVerified": 33,
-  "falseClaims": [
-    {
-      "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:607",
-      "宣稱": "breadcrumbMeta.states = ['default', 'hover', 'active', 'focus-visible', 'disabled'] — 宣稱 disabled 為一種狀態",
-      "真實code行為": "code 無任何 element-level disabled 實作：BreadcrumbLink 只有 hover/focus-visible class（tsx:454-462），BreadcrumbPage 是 aria-disabled 的 current-page span 但無 disabled variant 樣式。showcase 檔頭（breadcrumb.stories.tsx:2）明文『無 element-level disabled mode』、spec 互動狀態 Disabled row（spec:128）說『通常 breadcrumb link 不會 disabled』。meta 列 'disabled'（及無 DS 樣式的 'active'）為 Phase 1 mechanical placeholder 未清，與 story 檔頭明文相矛盾。",
-      "severity": "marginal"
-    }
-  ]
+  "implBasis": "shadcn 結構(native nav/ol/li/a/span + Radix Slot asChild)+ DS 擴充(declarative items auto-collapse / TruncatedLabel / flex-shrink hierarchy)。驗證項:BreadcrumbPage role=link+aria-disabled+aria-current=page(tsx:504-508 = spec/anatomy 表)/ Separator li role=presentation aria-hidden shrink-0 / Link hover:text-primary-hover + focus ring-2 ring-ring ring-offset-1(tsx:459-461)/ Page text-foreground 不加粗 / BREADCRUMB_ICON_SIZE 16/16/20 + TEXT_CLASS body/body/body-lg(= spec frontmatter + anatomy SizeMatrix)/ Ellipsis 消費 ItemInlineActionButton:type=button(item-anatomy.tsx:609)、md=icon16+hoverBg18(ICON_SIZE.md=16、INLINE_ACTION_HOVER_BG_SIZE.md=18)、focus-visible:outline-2 outline-ring(:625)、hover text-foreground+bg-neutral-hover、overlayTrigger data-[state=open] 視覺鎖 — anatomy ColorMatrix/StateBehavior 表全對 / maxItems=4 default、itemsBefore/After=1、afterN≥1、compositional 同步 collapse + role=ellipsis 顯式傳(spec 註記與 cloneWithRole ?? 邏輯一致)/ collapsed 項 asChild anchor 進 DropdownMenuItem / 手動 Ellipsis 未接 Dropdown 無展開行為(CollapseMatrix 註記誠實)/ tooltip.principles:190「資訊補救」與 inline-action.spec L106-131 predicate 行號 cite 皆準確 / principles+anatomy LinkTo 名稱(可互動省略/宣告式 API + 自動收合/整合 React Router / Next.js Link)全部存在",
+  "claimsVerified": 44,
+  "falseClaims": []
 }

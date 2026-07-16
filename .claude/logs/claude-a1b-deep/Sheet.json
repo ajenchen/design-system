@@ -1,1 +1,24 @@
-{"component":"Sheet","implBasis":"Radix Dialog side variant (shadcn Sheet base) — @radix-ui/react-dialog","claimsVerified":22,"falseClaims":[{"fileLine":"sheet.tsx:71","宣稱":"docblock: 'Animation canonical:300ms 雙向一致'","真實code行為":"cva base 消費 surfaceMotion (tokens/motion/overlay-motion.ts) = var(--motion-duration-surface) = 250ms (motion.css:37)。實際 duration 已 normalize 到 250ms,docblock 仍寫 300ms — 陳舊","severity":"material"},{"fileLine":"sheet.anatomy.stories.tsx:241","宣稱":"StateBehavior Desc: '進離場動畫...fade-in overlay,300ms;sheet.tsx L69-78'","真實code行為":"實際 animation duration = surfaceMotion 250ms (--motion-duration-surface, motion.css:37);story 面向使用者仍宣稱 300ms — 陳舊/錯值","severity":"material"}]}
+{
+  "component": "Sheet",
+  "implBasis": "@radix-ui/react-dialog(side variant)+ overlay-surface SurfaceHeader/Footer + ScrollArea + surfaceMotion token",
+  "claimsVerified": [
+    "spec「消費者 API 僅 side=right;top/bottom/left 為 DS 內部基建」= sheetVariants defaultVariants side:'right'(sheet.tsx:85-88)+ 檔頭 canonical(:26-28);showcase AR35 anchor 存在(sheet.stories.tsx:124-126,LeftNavigation 已移除)",
+    "尺寸宣稱:right/left = w-3/4 + sm:max-w-md(448px)(:80-82)= spec「mobile 佔 75% 寬」+ anatomy SizeMatrix;top/bottom auto ✓",
+    "動畫宣稱:panel 250ms = surfaceMotion → --motion-duration-surface: 250ms(motion.css:37);overlay fade 無 duration override → tw-animate 預設 ~150ms;motion-reduce:animate-none 兩處(:56,:73)",
+    "handleSheetOpenAutoFocus:body 首個 input/textarea/select/button(排除 data-dismiss)→ footer button → content fallback(:98-108)= docblock + Dialog canonical 對齊",
+    "SheetHeader close X = <Button data-dismiss iconOnly dismiss size='sm' startIcon={X} aria-label='關閉'>(:146)逐字對齊 spec「關閉按鈕」段",
+    "SheetBody = ScrollArea flex-1 min-h-0 + inner div px-loose/pt-tight/pb-bottom + className forward 到 inner(:164-178)= spec Padding SSOT + 邊界案例 Scroll 段",
+    "SheetTitle text-body-lg font-medium truncate / SheetDescription mt reading-lg + text-body text-fg-secondary(:194,:208)= anatomy ColorMatrix 主次文字",
+    "spec A11y「Restoration 例外:controlled-without-trigger 需自建 onCloseAutoFocus」cite date-picker.tsx:1061 → 實碼 :1062-1065 onCloseAutoFocus snapshot 還原(1 行漂移,anchor 有效)",
+    "sheetMeta states ['default'](surface container 無 disabled)與 spec 邊界案例一致;Inspector 三 controls(side/width/showFooter)= spec Inspector 段",
+    "邊界案例 Loading cite empty.spec.md:168 → 實檔該區為 Empty 消費者表(SelectMenu loading compose row),anchor 有效"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "sheet.spec.md:19 + sheet.anatomy.stories.tsx:144",
+      "宣稱": "「canonical 見 sheet.tsx L23-27」",
+      "真實code行為": "side canonical docblock 實際落在 sheet.tsx:20-28(「── 其他 side ──」段起自 :26);L23-25 為 padding/API 行。行號漂移 1-3 行、anchor 內容存在,非語意錯誤",
+      "severity": "cosmetic"
+    }
+  ]
+}

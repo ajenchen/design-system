@@ -279,6 +279,14 @@ fi
 if [ -f package.json ] && grep -q '"@qijenchen/design-system"' package.json 2>/dev/null && [ ! -d node_modules/@qijenchen/design-system ]; then
   ENV_SMOKE="${ENV_SMOKE}\n    - Consumer repo 引用 @qijenchen/design-system 但 node_modules 沒裝(跑 npm install)。"
 fi
+# (e) 長駐 bypass env 偵測(2026-07-16 加):CLAUDE_BYPASS_* 設計為單次 audit-logged escape,
+# session 進程繼承殘留(export 後沒 unset / shell profile 誤設)= 對應 approval / anchor / solo-workflow
+# 閘每次 edit 都靜默放行 = 治理失效。泛掃 CLAUDE_BYPASS_ prefix(機械生成精神,新 bypass var 自動涵蓋;
+# 已知住戶:DESIGN_APPROVAL / SOLO_WORKFLOW / DS_ANCHOR / MAIN_WORKBENCH / ESCAPE_MARKER_AUDIT 等)。
+LINGERING_BYPASS=$(env 2>/dev/null | grep -E '^CLAUDE_BYPASS_[A-Z_]+=' | grep -vE '=0?$' | cut -d= -f1 | sort | paste -sd, -)
+if [ -n "${LINGERING_BYPASS:-}" ]; then
+  ENV_SMOKE="${ENV_SMOKE}\n    - ⚠ bypass env 長駐,approval 閘失效中:${LINGERING_BYPASS}(bypass 應單次使用即 unset;跑 \`unset ${LINGERING_BYPASS%%,*}\` 或檢查 shell profile / 啟動環境是否誤 export)。"
+fi
 if [ -n "$ENV_SMOKE" ]; then
   PRUNE_TRIGGERS="${PRUNE_TRIGGERS}\n- 🩺 env-smoke(non-blocking,環境健檢):${ENV_SMOKE}"
 fi

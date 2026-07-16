@@ -384,8 +384,9 @@ export interface ComboboxProps {
   /** 啟用搜尋 */
   searchable?: boolean
   /** Loading state(2026-05-15 audit B fix per user verbatim「dropdown 隨時可開,讀取在 panel 中間 CircularProgress」)。
-   *  Forward 給 SelectMenu primitive SSOT;dropdown 開啟時取代 options 顯 CircularProgress + loadingText。
-   *  Trigger 不變(user 隨時可開)。對齊 MUI Autocomplete `loadingText` + Field SSOT + Empty 元件 compose。*/
+   *  Forward 給 SelectMenu primitive SSOT;spinner 只在無可顯示選項時佔 CommandEmpty slot 顯 CircularProgress
+   *  (已有 options 保留顯示,不取代)。Trigger 不變(user 隨時可開)。
+   *  對齊 MUI Autocomplete「loading 只在無 suggestions 時顯 loadingText」+ Field SSOT + Empty 元件 compose。*/
   loading?: boolean
   /** 搜尋框位置：menu（浮層內，預設）或 trigger（inline input） */
   searchIn?: 'menu' | 'trigger'

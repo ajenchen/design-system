@@ -1,1 +1,24 @@
-{"component":"SelectionControl","implBasis":"Self-built internal layout primitive (SelectionItem) shared by Checkbox / RadioGroup; no external primitive base","claimsVerified":24,"falseClaims":[]}
+{
+  "component": "SelectionControl",
+  "implBasis": "自建 internal layout primitive(selection-item.tsx,無 external primitive base)+ boolean-value.tsx(lucide Check/X);由 Checkbox / RadioGroup wrap 消費",
+  "claimsVerified": [
+    "spec「py = (field-height - 1lh) / 2」= cva sm/md/lg py calc(selection-item.tsx:39-41);field-height 28/32/36 @md density(uiSize.spec.md:17-19)與 anatomy SIZE_SPECS 一致",
+    "ICON_SIZE 16/16/20 + AVATAR_SIZE inline 20/24/24 / block 32/32/40 消費 item-anatomy.tsx:66/94 SSOT;anatomy PrefixAlignment 表逐格相符",
+    "useBlock = avatar && !icon && description && block>24(selection-item.tsx:227)= spec「avatar block 模式例外」+ anatomy 24px 閾值表",
+    "icon 永遠 inline(icon 存在時 useBlock 恆 false)= spec/anatomy「icon 不走 24px 閾值」",
+    "spec A11y focus 宣稱 vs 控件層 code:checkbox.tsx:26 / radio-group.tsx:195 皆 focus-visible:outline-none + ring-2 ring-ring ✓;--ring = var(--primary)(semantic.css:334)",
+    "spec「差異只在 rounded-md vs rounded-full」= checkbox.tsx:22 rounded-md / radio-group.tsx:191 rounded-full",
+    "spec「control(Checkbox/Radio)無 loading prop(tsx 驗證)」= 兩檔 grep loading 0 hits",
+    "disabled → label/desc/icon 統一 text-fg-disabled + label cursor-not-allowed + aria-disabled(selection-item.tsx:177-192)= spec M24 段 + anatomy props 表",
+    "labelMaxLines/descMaxLines 預設 'none' + line-clamp-1..6 map = anatomy props 表",
+    "selectionItemMeta(family 2 / sizes sm-md-lg / states default+disabled)與 spec frontmatter 一致"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "boolean-value.tsx:1,26",
+      "宣稱": "「boolean 值展示符號 SSOT(display / readonly 態)」「Checkbox / Switch 的 display + readonly 態…消費此 SSOT」",
+      "真實code行為": "FieldMode 已更名 display→view:field-types.ts:21 = 'edit' | 'view' | 'readonly' | 'disabled',union 無 'display'。docblock 為更名殘留(branch context display→view residue),機械 grep mode 名會 miss",
+      "severity": "minor"
+    }
+  ]
+}

@@ -1,1 +1,36 @@
-{"dim":29,"hook":"check_story_invariants.sh R3 category","residueCount":0,"findings":[],"verified":true,"note":"R3 邏輯逐元件精確重放:每 component 展示 story 讀其 spec.md frontmatter traits + category-matrix.json traitShape(internal=optional / pattern=false / token=false → skip;僅 component=true 檢),逐 trait 驗 P0 required exports(hasSizes→AllSizes/SizeMatrix;hasInteractiveStates→Disabled/States/Modes/StateBehavior;isOverlay→OpenSnapshot/defaultOpen;isInputLike→WithError;isSelectionMulti→Group)= 0 P0 違規。含 anatomy-層 credit + @story-trait-rationale escape 邏輯。"}
+{
+ "dim": 29,
+ "hook": "check_story_invariants.sh R3 category(trait-based,@story-trait-rationale escape)",
+ "residueCount": 7,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.stories.tsx:1",
+   "問題": "isInputLike → WithError/ErrorState 全缺(展示層無 error story)。marker rationale=『pre-existing Default/WithError trait gap…tracked separately』— 全庫 planning/memory 無對應 tracking artifact,spec 邊界案例亦無 WithError N/A rationale(dim 29(c) 要求)→ marker 屬 deferral 非 design rationale,遮 hook 而 gap 永存。修法二擇一:補 WithError story,或如 link-input.stories.tsx:1 寫明『error 由 Field state machine 覆蓋』design rationale。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.stories.tsx:1",
+   "問題": "同 Combobox:isInputLike WithError 缺 + 『tracked separately』deferral marker 無 tracking。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.stories.tsx:1",
+   "問題": "同 Combobox:isInputLike WithError 缺 + 『tracked separately』deferral marker 無 tracking。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx:1",
+   "問題": "同 Combobox:isInputLike WithError 缺 + 『tracked separately』deferral marker 無 tracking;people-picker.spec.md error/invalid 0 mention(N/A rationale 亦缺)。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.stories.tsx",
+   "問題": "[P1-warn class] isStructural:無 Default/AllVariants(anatomy 亦無 ColorMatrix),無 marker 無 rationale。3 個 scenario stories(SearchNoResults/NoTasks/NoPermission)實質覆蓋,但缺 sibling(Switch/SegmentedControl)同型選擇之 documented rationale。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.stories.tsx",
+   "問題": "[P1-warn class] 無 Default/AllVariants(anatomy 無 ColorMatrix),無 marker/rationale;本 branch『InlineEdit 三層補齊』未補此項(6 scenario stories 存在,States 覆蓋 hasInteractiveStates)。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DescriptionList/description-list.stories.tsx:109",
+   "問題": "[P1-warn class] 無 Default/AllVariants;檔內 @story-trait-rationale(:109)只講 HorizontalDivided retire,不覆蓋 Default gap — 但 R3 以 content-anywhere match 整檔沉默 = marker 副作用遮蔽(escape 粒度 gap)。"
+  }
+ ],
+ "notes": "49 個 trait-shaped spec 全掃。Justified escapes(排除,rationale 成立):LinkInput(error 由 Field fieldCtx 覆蓋,design rationale 明文)/ Textarea(anatomy ModeMatrix+SizeMatrix owns matrices,F migration 文件)/ Switch+SegmentedControl(2026-05-17 Dim 24 trait-grid 去重 retire,rationale 完整)。"
+}

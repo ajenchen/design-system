@@ -1,10 +1,25 @@
 {
   "component": "AppShell",
-  "implBasis": "Self-built grid/flex layout (no Radix primitive); consumes Sidebar / ChromeHeader / Sheet / ScrollArea / useIsNarrowViewport",
-  "claimsVerified": 55,
-  "notes": "Verified layout modes (primary-sidebar vs primary-header row structure), header banner mechanics (chrome-header renders <header> in 3 branches, div-wrapped body-scoped → implicit banner), ⌘. aside toggle (e.key==='.' + meta/ctrl, preventDefault), ⌘B delegated to Sidebar (not registered in AppShell), aside width clamp 240-640/default 320/xl=1280 breakpoint-keyed, resolveAsideWidth logic, mobile breakpoint 768 (isNarrow = innerWidth<768), inline vs modal(Sheet side=right) aside, ScrollArea+min-h-0 scroll ownership, main padding=0/overflow-y-auto/tabIndex=-1/id=app-shell-main, SkipToMain #app-shell-main focus:z-50 (only z in root), no z-index on root, useAppShell returns {layout,asideOpen,setAsideOpen,isMobile}, all props exist, SizeMatrix clamp examples, principles/anatomy LinkTo story names all exist (主側欄佈局—Linear/主側欄佈局+頁面分頁/主標頭佈局—全域+本地兩層), demo-helper exports (AcmeSidebar/PageHeader/GlobalHeader/AccountMenu) all exist.",
+  "implBasis": "自建 flex layout composite(無 Radix base)+ 消費 Sidebar/ChromeHeader/Sheet/ScrollArea。驗證項:useIsNarrowViewport 768(hooks:3)/ aside clamp 240-640 default 320(app-shell.tsx:111-124)/ ⌘. listener 無 IME guard(spec 誠實聲明 gap,對齊)/ sidebar key 'b'(sidebar.tsx:63)/ ChromeHeader 三分支皆 <header>(chrome-header.tsx:107,140,168)/ Sidebar 無 <nav>(grep 0 hit)/ sheet.spec.md:98 = aria-labelledby 禁令(cite 準確)/ controlled-Sheet 自建回焦 snapshot(app-shell.tsx:342-357 與 spec L208 一致)/ _demo-helpers AcmeSidebar includeWorkspaceBrand||isMobile、AccountMenu、GlobalHeader rightSlot??AccountMenu 全對齊 spec responsive 精修子句",
+  "claimsVerified": 46,
   "falseClaims": [
-    {"fileLine": "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx:24", "宣稱": "'在議題列表、看板、報表等頁面間切換時,左側導覽不重渲染、捲動位置不丟失' — 絕對式宣稱跨頁切換 sidebar 不重渲染、scroll position 保留", "真實code行為": "AppShell 只把 `sidebar` 當 ReactNode slot render;是否重渲染 / scroll 是否保留完全取決於 consumer 是否跨 route 保持同一個 Sidebar element 實例掛載。若 consumer 每頁重建 sidebar 或重掛 AppShell,sidebar 就會重渲染 + 丟 scroll。AppShell 本身不保證此行為 → 絕對式宣稱應是條件式(depends on consumer DOM instance)", "severity": "marginal"},
-    {"fileLine": "packages/design-system/src/components/AppShell/app-shell.anatomy.stories.tsx:146", "宣稱": "A11y: '`<header>`(ChromeHeader)在兩種模式下都只被 `<div>` 包覆(body-scoped、與 `<main>` 並排而非子層)'", "真實code行為": "在 primary-header mode 有兩個 header:globalHeader 是 root flex-col 第一個 child(在 row2 之上,**非** main column 的 sibling,與 `<main>` 不並排);只有 local header 才在 main column 內與 `<main>` 並排。spec.md A11y 表(L274-275)有正確分兩列處理,唯 anatomy 這句以『兩種模式下都...與 main 並排』過度一般化(banner outcome 對兩者仍成立,但『與 main 並排』對 global header 不成立)", "severity": "marginal"}
+    {
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.anatomy.stories.tsx:157",
+      "宣稱": "「Focus trap:Sheet open 時 focus 在 Aside 內,Esc 關回 trigger(Radix Dialog 內建)」",
+      "真實code行為": "app-shell.tsx:342-357 + app-shell.spec.md:208 明文:controlled Sheet 無 SheetTrigger → Radix 內建回焦失效(triggerRef=null),回焦是 AppShellAside 2026-07-14 自建 opener snapshot + onCloseAutoFocus preventDefault 手動還原(opener 卸載 fallback #app-shell-main)。行為結果相同但機制歸因錯誤 — anatomy story 未跟上 R1 修正",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.stories.tsx:71,153",
+      "宣稱": "「per data-table.spec L193 canonical(Button text xs iconOnly,固定 24px)」",
+      "真實code行為": "rowActions canonical 實際在 data-table.spec.md:153;L193 現為「捲軸(pinned header/column)」段 — stale 行號 ref(內容存在但指錯位置)",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.stories.tsx:377",
+      "宣稱": "「@usage-ref: app-shell.spec.md L74(primary-header 2-layer model)」",
+      "真實code行為": "spec L74 現為 useAppShell hook export code block;primary-header 2-layer model 段在 ~L99-111 — stale 行號 ref",
+      "severity": "marginal"
+    }
   ]
 }

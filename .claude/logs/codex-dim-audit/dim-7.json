@@ -4,93 +4,171 @@
  "findings": [
   {
    "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:115",
-   "問題": "disabled 錯誤委派給 Field family；實作與 story 顯示 AccordionItem 有自身的 disabled token、原生 disabled 與鍵盤略過行為。",
+   "問題": "disabled 邊界誤指向不擁有 Accordion 的 Field Controls SSOT；規格未界定 Root 與 Item disabled 的差異、鍵盤跳過及 ARIA 行為。",
    "severity": "material",
-   "建議": "改寫為 Accordion 專屬 disabled 契約，明列 Tab／方向鍵略過與文字、chevron 降色規則。"
+   "建議": "在 Accordion spec 記錄 Root／Item 的 disabled 傳播、Trigger 聚焦與啟動行為，並移除錯誤的 Field Controls 指路。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Badge/badge.spec.md:184,317",
-   "問題": "漏載 count 的空值契約：null／undefined 整顆不渲染，但 0 會顯示；A11y 段也漏寫實作與 stories 已存在的預設 `role=status` live-region 及 override 行為。",
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:243",
+   "問題": "規格宣稱 alt 必傳，但實作型別允許省略；省略時 fallback icon 為 aria-hidden，外層也沒有 accessible name。",
    "severity": "material",
-   "建議": "補齊 null／0／正數／max 分界，以及預設播報、parent 整合 accessible name、避免重複播報的 override 規則。"
+   "建議": "型別強制 alt；裝飾用途要求顯式 alt=\"\"，或新增明確的 decorative 模式。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:111,214-218",
-   "問題": "startIcon 一律 `aria-hidden`，但 link/page children 可省略；實作可產生只有圖示、沒有 accessible name 的 breadcrumb item。現有空值段僅描述空節點，未封住此 A11y 邊界。",
+   "fileLine": "packages/design-system/src/components/Badge/badge.spec.md:325",
+   "問題": "A11y 段漏掉實作預設 role=\"status\"：Badge 會成為 polite live region，內容更新可能被主動播報。",
    "severity": "material",
-   "建議": "禁止無 label item並收緊型別／runtime guard；若允許 icon-only，則強制 `aria-label` 並補 story。"
+   "建議": "補齊預設播報、明確 role 覆寫及隱藏時機；若要支援無 role，需同步修正目前 undefined 仍回退 status 的 API。"
   },
   {
-   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:147,178-185",
-   "問題": "async 批次 action 的 loading ownership 完全未定；同時 spec 仍宣告 `role=toolbar`，但 source 與 Accessibility story 已改為 `role=group`，API 也漏載新 `labels.ariaLabel`。",
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:216",
+   "問題": "規格接受空 label，但 startIcon 會 aria-hidden，且元件沒有預設 aria-label，可能產生無名稱的 breadcrumb link／current page。",
    "severity": "material",
-   "建議": "定義 Button loading、bar mount、防重送及同列 action／clear 鎖定規則；同步改為 group＋DOM Tab 契約並補新 label API。"
+   "建議": "禁止空 label，或要求沒有可見文字時必傳 aria-label，並以型別或 runtime guard 落實。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:252-260",
-   "問題": "邊界段涵蓋零項與單項，卻未界定遠端 slide／媒體的 loading 責任，資料未到與真正 empty 的分界沉默。",
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:187",
+   "問題": "只規範 disabled action，未定義常見非同步批次操作的 loading ownership；觸發項、其他 actions、clear、selection 保留及失敗行為均無契約。",
+   "severity": "material",
+   "建議": "明定 consumer 如何呈現 Button loading、停用衝突操作與 clear、保留 selection 至 settle，並定義 aria-busy 及成功／失敗路徑。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.spec.md:276",
+   "問題": "規格無條件保證 iconOnly Button 自動產生 Tooltip，但 asChild 路徑刻意不包 Tooltip。",
+   "severity": "material",
+   "建議": "改成僅 iconOnly 且非 asChild 時自動產生；asChild consumer 必須自行管理 child 的 aria-label 與 Tooltip，並同步修正同檔第 437 行。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:193",
+   "問題": "CarouselItem 只有 role=\"group\" 與 aria-roledescription=\"slide\"，沒有投影片名稱或位置；實作與 stories 也未提供 aria-label。",
+   "severity": "material",
+   "建議": "要求或自動產生「第 N 張，共 M 張：名稱」，並允許 consumer 覆寫。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:197",
+   "問題": "根容器在 capture 階段攔截所有後代方向鍵，未排除 input、textarea、select、contenteditable 或內嵌互動元件，會劫持游標與選值操作。",
+   "severity": "material",
+   "建議": "只處理 carousel controls 或非可編輯 target，並加入 editable-target guard。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:255",
+   "問題": "邊界涵蓋 0／1 item，卻未定義 canonical 遠端圖片的 loading／error ownership；慢載或失敗時可能只顯示空白 slide。",
    "severity": "marginal",
-   "建議": "明載 Carousel 無 loading prop，由 consumer 以 AspectRatio＋Skeleton或媒體狀態處理，並區分未載入與零項 Empty。"
+   "建議": "明文委派 consumer 使用固定 AspectRatio、Skeleton 與 error fallback，並說明載入期間 controls／dots 的行為。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Chip/chip.spec.md:79,137-189",
-   "問題": "`type=single` 宣稱 radio 語意，但 wrap／scroll 路徑可 deselect 成空字串、showcase 靠 consumer guard、menu 路徑又不可取消；另 spec 禁 iconOnly，型別與 render 卻允許省略 children，形成圖示全 `aria-hidden` 的無名控制。",
-   "severity": "material",
-   "建議": "拍板 single 是否允許空值並在 ChipGroup 統一強制；同時要求非空文字 children，或正式支援 icon-only並強制 `aria-label`。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/LinkInput/link-input.spec.md:109; packages/design-system/src/components/Slider/slider.spec.md:173; packages/design-system/src/components/Textarea/textarea.spec.md:109",
-   "問題": "三個 Field-related spec 均未交代 loading；source／stories 無 loading或 `aria-busy`，現有 Field pointer 又只明確涵蓋其他 state，無法判斷是繼承、外層承擔或刻意不支援。",
+   "fileLine": "packages/design-system/src/components/Chip/chip.spec.md:121",
+   "問題": "ChipGroup 未定義零選項邊界；實作會渲染空 ToggleGroup，與其他選擇元件以 Empty 取代空 group 的規則不一致。",
    "severity": "marginal",
-   "建議": "各補一行明確 N/A／分權：本體無 loading，async validation、fetch或 submit pending 由 Field／Form／consumer 外層表達。"
+   "建議": "補上 no-options 規則：不渲染空 group，由 consumer 顯示 Empty 或隱藏該 filter。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Popover/popover.spec.md:153-160",
-   "問題": "邊界段未列 empty／loading／validation ownership；anatomy story 已明文由 trigger與 content consumer 負責，規則卻未進 spec rationale home。",
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:127",
+   "問題": "規格稱 loading 會取代 options；實際僅在沒有可顯示結果時透過 CommandEmpty 顯示 spinner，既有 stale options 仍保留。",
+   "severity": "material",
+   "建議": "同步 SelectMenu owner 契約，明寫無可顯示選項才顯示 spinner，以及既有 options 的保留行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:135",
+   "問題": "規格稱 Combobox 不傳 emptyText 且永遠使用預設值，但公開 API 已有 emptyText，desktop 路徑也確實轉交 SelectMenu。",
    "severity": "marginal",
-   "建議": "把既有 story 契約同步進 spec，指明 Skeleton／Empty／Alert及內容內 Field validation 的責任。"
+   "建議": "文件化 emptyText 的自訂能力、預設值及 touch native 路徑的限制。"
   },
   {
-   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:233-241",
-   "問題": "元件可作 Field 表單輸入，但 validation 邊界未定；source 只繼承 size／disabled，沒有 required、invalid、`aria-invalid`或錯誤描述接線。「必須有 default value」仍未說明 consumer error與 ARIA ownership。",
+   "fileLine": "packages/design-system/src/components/Command/command.spec.md:100",
+   "問題": "Loading 指引把 SelectMenu 錯述為以 spinner 取代整個 CommandList；實際只使用 CommandEmpty slot，且存在結果時會保留 stale options。",
    "severity": "material",
-   "建議": "明定固定有值所以 component-level validation N/A，或完整定義 Field invalid＋FieldError與 group ARIA 契約。"
+   "建議": "改寫 SelectMenu 的實際 loading 行為；自訂 CommandDialog 若需整體替換，另標為 consumer-owned 策略。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:216-226,269-276",
-   "問題": "未定義空白／非文字 children；source 允許省略 children，且 removable Tag 在非字串 label 時只產生籠統的「移除」。Spec 也漏列已存在的 `dismissLabel` prop。",
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.spec.md:149",
+   "問題": "accessible-name 規則只對預設 Empty 成立；官方支援任意 children 覆寫，icon／branding-only children 會使外層 role=\"button\" 沒有名稱。",
    "severity": "material",
-   "建議": "要求非空可見 label；非字串且可移除時強制 `dismissLabel`，並把空白／非文字 label 納入邊界案例。"
+   "建議": "要求自訂 children 含可見文字或 root aria-label，並加入型別契約或開發期警告。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Tooltip/tooltip.spec.md:88-92",
-   "問題": "邊界狀態未處理空 content與 loading；source 直接透傳可省略的 children，能形成空 tooltip／空描述，且 spec 未明示 async 提示應改用何種元件。",
+   "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.spec.md:39",
+   "問題": "規格宣稱所有 commit／cancel 路徑都把焦點送回 read button；實作僅 Enter／Escape 返回，blur 與 Tab 結算刻意保留新焦點。",
    "severity": "material",
-   "建議": "禁止空 TooltipContent；明載 Tooltip 不承載 async/loading，需要取資料或 Skeleton 時改用 HoverCard／Popover。"
+   "建議": "明確區分鍵盤 Enter／Escape 與 pointer blur／Tab blur 的焦點策略。"
   },
   {
-   "fileLine": "packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:191-198",
-   "問題": "邊界段漏掉空 label與 pending：空字串會同時產生空 `aria-label`及空 tooltip；高階 config 也無 loading／disabled契約，async action可能重複觸發且無回饋。",
-   "severity": "material",
-   "建議": "要求 label 為非空描述文字；明定 async action由 host disable／隱藏並呈現 pending，或改用 Button，必要時補 `aria-busy`與防重入。"
-  },
-  {
-   "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:259-267",
-   "問題": "ChromeHeader children 非必填，無 children、tabsSlot、leadingRail 時仍渲染固定高度與 border 的空 header；spec與 stories未定義此 empty 邊界。",
+   "fileLine": "packages/design-system/src/components/Popover/popover.spec.md:153",
+   "問題": "邊界段未交代 empty、loading、error、validation 與 disabled ownership，亦未指回已有 consumer-content 規則的 overlay owner。",
    "severity": "marginal",
-   "建議": "明定無任何可見內容時不渲染 ChromeHeader，並說明 tabs-only與 leadingRail-only 是否為合法例外。"
+   "建議": "明寫 shell 本身不擁有這些狀態；Empty、Skeleton、Alert 與 Field validation 由 PopoverBody consumer 負責並連回 owner。"
   },
   {
-   "fileLine": "packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:20-23; packages/design-system/src/tokens/density/density.spec.md:5-13; packages/design-system/src/tokens/radius/radius.spec.md:7-12",
-   "問題": "三份 spec 的 related-links 維度未閉環：ResizeHandle與Radius只列 consumer 名稱、無可追 spec pointer；Density未指回 uiSize／layoutSpace owner，也漏傳 UI Size 的最小互動尺寸 A11y pointer。",
+   "fileLine": "packages/design-system/src/components/Popover/popover.spec.md:167",
+   "問題": "規格稱 autofocus 會落在 body 第一個互動元素，但實作 selector 漏掉 link、tabindex 與 contenteditable，這些內容會改為聚焦容器。",
    "severity": "marginal",
-   "建議": "補精確「相關」連結：ResizeHandle連 DataTable／Sidebar／AppShell，Density連 uiSize／layoutSpace及 hit-target規則，Radius連 token-system／overlay／主要 consumer。"
+   "建議": "擴充 focusable selector，或縮窄文件保證並要求特殊內容覆寫 onOpenAutoFocus。"
   },
   {
-   "fileLine": "packages/design-system/src/tokens/typography/typography.spec.md:28-41",
-   "問題": "Typography 直接影響可讀性且包含 10px／12px小字，但 spec與 story均未涵蓋 200%文字縮放／reflow、WCAG text-spacing override、視覺 `text-h*`與語意 heading分離等 A11y邊界。",
+   "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:39",
+   "問題": "近親分界把「熱門／Beta／新品」等文字分類導向 Badge，違反 Badge 僅用於 count／dot、文字分類使用 Tag 的 SSOT，且 Badge API 不接受此類文字內容。",
    "severity": "material",
-   "建議": "補 A11y段，規定 zoom／reflow與使用者 text-spacing不得破版、utility不取代 h1–h6語意，並限制 10／12px僅用於非連續閱讀場景。"
+   "建議": "改為導向 Tag，並同步修正同檔第 213 行的重複敘述。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:233",
+   "問題": "作為 Field-related control，規格未交代 validation；固定選項且恆有一值雖可判定部分驗證不適用，但缺少明文邊界。",
+   "severity": "marginal",
+   "建議": "補充 invalid UI 由外層 Field／consumer 負責、元件無 invalid prop，並說明恆有一值時 required validation 不適用。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:52",
+   "問題": "近親指路要求使用 Combobox + creatable，但公開 Combobox 沒有 creatable／onCreate API，也未轉交至 SelectMenu；直接使用 internal SelectMenu 又被禁止。",
+   "severity": "material",
+   "建議": "若要公開 creatable，替 Combobox 完整暴露相關 API；否則改寫指路，明示目前沒有公開 wrapper。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:123",
+   "問題": "value／defaultValue 接受任意 number[]，卻未定義空陣列；value=[] 時 wrapper 仍產生 thumb，但 Radix 沒有對應值，最終沒有可操作的 slider。",
+   "severity": "material",
+   "建議": "將值型別收斂為非空 tuple，或加入 runtime guard 並定義空陣列 fallback。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:279",
+   "問題": "規格以繼承 Radix 概括 ARIA，但單 thumb 不會自動產生 accessible name；Slider 在 Field 外且未傳 aria-label／aria-labelledby 時會成為無名稱控件。",
+   "severity": "material",
+   "建議": "要求 standalone Slider 提供 accessible name，並記錄 Field label 自動接線與多 thumb 命名規則。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:274",
+   "問題": "規格保證移除按鈕名稱包含 tagLabel，但 children 可為非文字或空值；實作只從 string children 取名，dismissLabel 又未寫入規格，會退化成多個同名「移除」按鈕。",
+   "severity": "material",
+   "建議": "文件化 dismissLabel，對非 string children 強制非空值，並禁止空 Tag。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.spec.md:216",
+   "問題": "規格只記錄 Field 內的 aria-labelledby；standalone TimePicker 沒有預設 aria-label，role=\"combobox\" 可成為無名稱控件。",
+   "severity": "material",
+   "建議": "要求 standalone 使用時傳 aria-label／aria-labelledby，或提供可靠 fallback，並用型別或 runtime 檢查落實。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tooltip/tooltip.spec.md:58",
+   "問題": "此規格同樣無條件保證 iconOnly Button 自動包 Tooltip，漏掉 Button asChild 不會包裝的正式例外。",
+   "severity": "material",
+   "建議": "將保證限定為 iconOnly 且非 asChild；明寫 asChild consumer 必須自行提供 accessible name 與 Tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tooltip/tooltip.spec.md:88",
+   "問題": "邊界段未定義空 content；實作仍會渲染帶 padding 的空 role=\"tooltip\" 浮層。",
+   "severity": "marginal",
+   "建議": "明寫 content 為 null 或空字串時不掛 TooltipContent／Tooltip，trigger 原樣保留。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:185",
+   "問題": "role=\"tree\" 需要 accessible name，但規格僅列出 aria-label，未標示必填或替代路徑；實作 prop optional 且沒有預設名稱。",
+   "severity": "material",
+   "建議": "將 aria-label 或 aria-labelledby 定為必備契約，並以型別、開發期警告或安全預設落實。"
+  },
+  {
+   "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:267",
+   "問題": "API 未界定空 children；實作仍會繪製固定高度的空 header row，搭配 tabsSlot 時會額外出現整行空白。",
+   "severity": "marginal",
+   "建議": "明寫沒有 title／actions 時不渲染 ChromeHeader；純 tabs 使用規格指定的 standalone Tabs。"
   }
  ]
 }

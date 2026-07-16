@@ -1,19 +1,37 @@
 {
   "component": "Combobox",
-  "implBasis": "dual-path: desktop=CustomCombobox→SelectMenu(Popover+Command/cmdk); touch=NativeCombobox→hidden native <select>",
-  "claimsVerified": 38,
+  "implBasis": "wrapper over SelectMenu (Popover + cmdk) on desktop; hidden native <select> on touch; Field family (fieldWrapperStyles/useResolvedField* SSOT)",
+  "claimsVerified": 54,
   "falseClaims": [
     {
-      "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:108",
-      "宣稱": "「## Tag 操作 → ### 新增選擇」段落:『原生 `<select>` 只顯示未選中的選項——已選中的不重複出現在下拉』(以此作為新增選擇的一般機制)",
-      "真實code行為": "此僅描述 mobile/touch 的 NativeCombobox 路徑(combobox.tsx:601 `unselected = options.filter(...)`)。DEFAULT(桌機)走 CustomCombobox→SelectMenu(combobox.tsx:834 傳全部 menuOptions + value + multiple),已選項仍留在清單中並以打勾標示、可再點一次 toggle 移除。spec 的『新增選擇』段只寫 native-only,對主要的桌機預設路徑描述錯誤/缺漏(anatomy.stories:868/894 與 principles.stories:205-206 都正確描述雙路徑,唯獨此 spec 段落沒更新)",
-      "severity": "marginal"
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:127",
+      "宣稱": "Loading 段:「dropdown body 內取代 options 顯 <Empty icon={<CircularProgress size={48}/>}/>」(loading 時以 spinner 取代選項)",
+      "真實code行為": "loading forward 給 SelectMenu;spinner 只渲染於 cmdk CommandEmpty(select-menu.tsx:402-408)= 僅在 filtered options 為 0(無可顯示選項)時出現,有 options 時選項照常顯示、不被取代。sibling select.spec.md 2026-07-04 Q3 已修正為「不取代」,Combobox spec 未 propagate(round-2 pass2 已抓、至今未修)。",
+      "severity": "material"
     },
     {
-      "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:104",
-      "宣稱": "「### 全部清除」:clear all 按鈕『位於最右側,ChevronDown 左邊』",
-      "真實code行為": "clear 按鈕並非最右側元素;ItemSuffix 內順序為 [showClear, chevronEl](combobox.tsx:813-825 / native 634-642),ChevronDown 才是最右側。『位於最右側』與同句『ChevronDown 左邊』互相矛盾(clear 在 chevron 左邊 = 非最右)",
-      "severity": "marginal"
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:386-388",
+      "宣稱": "loading prop docblock:「dropdown 開啟時取代 options 顯 CircularProgress + loadingText」",
+      "真實code行為": "(1)「取代 options」不成立(同上,spinner 僅佔 CommandEmpty slot);(2)「loadingText」不存在 — Combobox / SelectMenu 均無 loadingText prop,loading 時渲染純 <Empty icon={<CircularProgress/>}/> 無可見文字(SR-only live region「載入中…」是視覺隱藏播報,非 loadingText 元素)。round-2 pass2 已抓、至今未修。",
+      "severity": "material"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:135",
+      "宣稱": "邊界案例 Empty(no search results):「Combobox 不傳 emptyText,走 SelectMenu primitive default」",
+      "真實code行為": "Combobox 自 2026-07-04 Q4 起公開 `emptyText?: string` prop(combobox.tsx:398-399)並 forward 給 SelectMenu(combobox.tsx:861)。spec 此句為接線前的舊描述 — consumer 可傳 emptyText 客製無結果文案,「不傳」已不成立(default 沒傳時走 primitive default 仍對,但條文斷言的是 API 不存在)。",
+      "severity": "material"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:52",
+      "宣稱": "SelectMenu 何時不用表:「可建立新選項(creatable tag)| 用 `Combobox` + `creatable` prop」",
+      "真實code行為": "ComboboxProps 無 creatable / onCreate prop(combobox.tsx:366-485 全表面無此欄),且 combobox.spec.md:135 明文「Combobox 不暴露 creatable / onCreate prop(僅 SelectMenu primitive 本身支援)」— cross-file 指路指向不存在的 Combobox API,兩 spec 互相矛盾。",
+      "severity": "material"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.stories.tsx:42-43",
+      "宣稱": "四模式 story 第二張卡 heading 文字「display」+ aria-label「(display mode demo)」",
+      "真實code行為": "傳入 prop 為 mode=\"view\";FieldMode 已於 2026-07-16 display→view 更名(field-wrapper.tsx:9-12),mode=\"display\" 已不存在。story reader-facing 標籤仍教一個已廢棄的 mode 名,與同檔其餘卡(edit/readonly/disabled 標籤=prop 值)不一致。",
+      "severity": "material"
     }
   ]
 }

@@ -1,1 +1,7 @@
-{"dim":31,"hook":"post_edit_dispatcher.sh → lib/_overlay_handcraft.sh (Check 6 stripped-padding boolean variant)","residueCount":0,"findings":[],"verified":true,"note":"DS-wide grep components/{Dialog,Sheet,Popover}/**/*.tsx(排除 *.stories.tsx)尋 (flush|naked|bare|stripped|unpadded|noPadding|paddingless)?:boolean prop 宣告(排除 overlay-body-stripped-variant-allow escape)= 0 命中。overlay body 未重新引入 2026-05-01 已移除的 stripped-padding boolean variant。"}
+{
+ "dim": 31,
+ "hook": "post_edit_dispatcher.sh → lib/_overlay_handcraft.sh(6 checks)+ audit-time stripped-variant grep",
+ "residueCount": 0,
+ "findings": [],
+ "notes": "(a) stripped-padding boolean variant:Dialog/Sheet/Popover/FileViewer/overlay-surface tsx 0 hit。(b) px-loose+border-divider 手刻簽名(multi-line cn() 版,hook 單行 regex 抓不到的形):4 檔命中全屬 primitive owner — overlay-surface.tsx:155,196(SurfaceHeader/Footer SSOT 定義本體)/ bulk-action-bar.tsx:93(bottom-toolbar canonical,cite Linear/Apple Mail/Notion)/ calendar.tsx:270(page-composite Toolbar,calendar.spec.md:160 owns)/ file-viewer.tsx:588(filmstrip chrome,spec-owned,R9 isOverlay 家豁免)。(c) 3 個 same-row-mixed-allow markers(sort-manager/filter-panel/data-table.stories)rationale 驗證成立(chrome corner vs row 不同 row)。(d) 噪音預告(非違規):column-visibility-panel.tsx / data-table.tsx / file-viewer.tsx / sidebar.tsx 同型 different-row 合法混用但無 marker,未來編輯將吃 Check 5 WARN — marker 一致性缺口,P2 补 marker 即可。(e) raw Checkbox:cell-registry.tsx(boolean cell renderer)與 tree-view.stories.tsx(tree row 多選)均屬 row-anatomy 合法 context,hook path-exempt regex 過窄(只認 data-table.tsx/tree-view.tsx)之 FP 域,非違規。"
+}

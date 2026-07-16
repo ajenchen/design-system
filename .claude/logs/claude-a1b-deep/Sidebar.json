@@ -1,1 +1,24 @@
-{"component":"Sidebar","implBasis":"Radix Collapsible + Radix Slot (shadcn Sidebar rewrite) + DS token bridge","claimsVerified":30,"falseClaims":[{"fileLine":"sidebar.spec.md:674-676","宣稱":"'## 為何無 Inspector' — Sidebar 無 Inspector,已由 Overview + SizeMatrix + ColorMatrix + StateBehavior + ChromeTokens 五 story 完整覆蓋,主張互動 Inspector 不需要","真實code行為":"sidebar.anatomy.stories.tsx:267 有完整實作的 `export const Inspector`(name '元件檢閱器',帶 args/argTypes size/activeId/width + SidebarPreview render)。spec 段落標題與內文直接與 story 檔矛盾;且實際 anatomy 有 7 story(含 VariantMatrix),非 spec 列的五 story — 陳舊 spec 段","severity":"material"}]}
+{
+  "component": "Sidebar",
+  "implBasis": "Radix Collapsible + Radix Slot(shadcn Sidebar 改寫)+ item-anatomy ROW_PADDING/ICON_SIZE/AVATAR_SIZE/ItemIcon/ItemLabel/ItemInlineAction SSOT + Sheet(mobile)+ ChromeHeader(SidebarHeader 基底)",
+  "claimsVerified": [
+    "持久化/快捷鍵:cookie sidebar_state 7 天、Provider 只寫不讀(sidebar.tsx:180)= spec + anatomy「還原由 consumer 讀 cookie 傳 defaultOpen」;Cmd/Ctrl+B 三 guard(defaultPrevented/isComposing/editable target,:202-211)+ 無 disableShortcut opt-out = spec A11y 段逐句相符",
+    "collapsible='none' 於 isMobile 判斷前提前 return 固定 div(:333-346)= spec Mobile 例外段「mobile 下仍固定側欄,不進 Sheet」+ anatomy 行為規則 bullet;viewportInsetTop 僅桌機分支套用 = docblock ⚠️ 與 spec 一致",
+    "tokens 全命中:--sidebar-width 15rem / --sidebar-width-min 240px / --sidebar-width-mobile 18rem / --sidebar-menu-icon-size 1rem(lg override 1.25rem)/ --sidebar-width-icon calc(2×loose+icon)(uiSize.css:64-68,:89)= spec 尺寸規範表 + anatomy ChromeTokens;md=48/lg=68 幾何推導正確",
+    "chrome header:SidebarHeader = ChromeHeader(h-[--chrome-header-height] 48/56,uiSize.css:55/103)+ collapsed pl 公式消費 --chrome-header-avatar-size(header-canonical.css:7);SidebarFooter content-based py-2 border-t(:554)= spec 2026-06-12 doc-to-code 修正,三處(spec/anatomy Overview/ChromeTokens)一致",
+    "single-selection:僅 SidebarMenuButton 接 SidebarContext;TreeView 自有 selectedIds、grep 無 useSidebar(tree-view.tsx)= spec「結構保證範圍」誠實聲明;meta variant isActive 恆 false + data-[active=true]:bg-transparent(:968-971,:1052)= spec「傳了也會被忽略」",
+    "collapsed a11y:label sr-only(cva :934)+ badge/inline-actions hidden(:1130,:1217)= spec「Collapsed accessible name」;不設 aria-current='page'(:1111 僅 data-active)= spec 誠實聲明;disabled 不自動 aria-disabled + cva aria-disabled: 樣式雙軌(:921-922,:1092-1094)= spec 邊界案例",
+    "SidebarGroupLabel role='presentation' + 尾端 chevron = Collapsible.Trigger asChild 包 ItemInlineActionButton(:768-798)+ ChevronDown rotate-180 + toggleAriaLabel 預設「展開或收合」= spec Group 收合段 + anatomy a11y 文",
+    "uniformPrefix 預設 false + :has() icon×avatar 偵測(:279-280)= spec 全域 prefix 對齊段;ItemLabel 自帶 data-sidebar='menu-label'(item-anatomy.tsx:263)→ IntegrationSidebar asChild 路徑 icon 模式隱藏成立",
+    "inline actions paddingRight = loose + N×icon + (N-1)×8 + 8(:1096-1104)= spec「Consumer 不需要計算 paddingRight」公式;host disabled 整段不渲染(:1092-1094)= spec 表「Host disabled 時|不渲染」+ MixedContent story delta 範例",
+    "anatomy ColorMatrix(default fg-secondary / hover neutral-hover+foreground / selected neutral-selected 字重不變 / disabled fg-disabled)逐格 = cva :916-923;StateBehavior 敘述(offcanvas/icon/none、48px rail、cookie)與 code 相符;mobile Sheet 無 SheetTrigger(:350)= spec focus 還原不保證回 trigger 誠實聲明"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "sidebar.spec.md:3(frontmatter family: 1)vs sidebar.tsx:1289(sidebarMeta family: null)",
+      "宣稱": "spec frontmatter + body 宣告「Family 1(Menu item layout)消費者」;tsx meta 標 family: null // non-family composite / overlay / layout",
+      "真實code行為": "兩檔對「元件 family」表述不一致:spec 視角 = row 消費 Family 1 anatomy;meta 視角 = 元件本體是 composite shell。同構矛盾在 SelectMenu 已於 2026-07-14 修(spec 改 composite + meta null 對齊),Sidebar 未同步同一表述規範 — 表達層 drift,非行為 bug",
+      "severity": "low"
+    }
+  ]
+}

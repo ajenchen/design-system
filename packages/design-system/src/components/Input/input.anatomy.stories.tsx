@@ -243,7 +243,7 @@ export const Overview = {
             <tbody>
               {[
                 ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'mode 未顯式指定時依序推導：有效 disabled（prop 或 <Field disabled>）→ fieldCtx.mode → native readOnly → edit；顯式 mode prop 永遠最優先（field-context.ts useResolvedFieldMode）'],
-                ['variant', "'default'", "'default'", '視覺 chrome（正交於 mode；公開型別僅 default，2026-07-14 收窄）；naked = 無 chrome，host cell 提供 border/focus（@internal cell-as-input）；bare 2026-07-09 退役'],
+                ['variant', "'default'", "'default'", '視覺 chrome（正交於 mode；公開型別僅 default，2026-07-14 收窄）；naked = cell-as-input substrate（@internal）：edit×naked 自畫 border-based state machine（border → hover → focus-within primary → error 紅框），view×naked 才由 host cell 提供視覺邊框；bare 2026-07-09 退役'],
                 ['error', 'boolean', 'false', '紅色邊框僅 edit 模式生效；aria-invalid 不分 mode（readonly / disabled 渲染的 input 同樣帶）'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '高度與字體，與 Button 共用 field-height token'],
                 ['startIcon', 'LucideIcon', '—', '左側靜態 icon，fg-muted，pointer-events-none'],
@@ -452,7 +452,7 @@ const InspectorInner = () => {
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Style</span></div>
             <PropRow label="Radius"><TkVal token="rounded-md" value="4px" /></PropRow>
             <PropRow label="Border"><TkVal token="border" value="1px solid" /></PropRow>
-            <PropRow label="Focus"><TkVal token="border-primary" value="1px — 無 ring" /></PropRow>
+            <PropRow label="Focus"><TkVal token="border-primary" value="1px — 無 ring（readonly 例外:ring-2 ring-ring,WCAG 2.4.7）" /></PropRow>
             <PropRow label="Transition"><TkVal token="transition-colors" value="150ms" /></PropRow>
           </div>
         </div>
@@ -675,7 +675,7 @@ export const StateBehavior = {
 
         {/* Focus behavior */}
         <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">Focus — border-primary（1px），無 ring</span>
+          <span className="text-caption font-medium text-fg-secondary">Focus — border-primary（1px），無 ring（readonly 例外:ring-2 ring-ring focus 指示,WCAG 2.4.7）</span>
           <div className="flex flex-col gap-2 max-w-sm">
             <span className="text-[11px] text-fg-muted">文字輸入永遠 focus-visible（瀏覽器規範），click 和 Tab 觸發相同效果。點擊下方 input 或用 Tab 切換觀察。</span>
             <Input placeholder="點擊或 Tab 觀察 focus 邊框" />

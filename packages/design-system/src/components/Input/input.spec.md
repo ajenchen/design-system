@@ -92,17 +92,17 @@ endAction(host 內嵌 inline action)vs 獨立 `<Button iconOnly>` 的分界詳 `
 
 ---
 
-## Display
+## View
 
 `<Input mode="view">` 是 identity 顯示：
 - 有值：原樣輸出
-- null / undefined / 空字串：半形 `-`（hyphen），`text-foreground`（display/readonly 供檢視值同色;disabled → fg-disabled）
+- null / undefined / 空字串：半形 `-`（hyphen），`text-foreground`（view/readonly 供檢視值同色;disabled → fg-disabled）
 
 ---
 
 ## Loading
 
-`loading?: boolean`(Field SSOT,詳 `Field/field-controls.spec.md` L70-115):右側 endAction 自動顯 `<CircularProgress/>` + `aria-busy="true"`;input 維持可編輯(Ant Input.Search editable 派,反 Material readonly 派,適合 search debounce)。
+`loading?: boolean`(Field SSOT,詳 `Field/field-controls.spec.md`「Loading state」段 ~L93-138):右側 endAction 自動顯 `<CircularProgress/>` + `aria-busy="true"`;input 維持可編輯(Ant Input.Search editable 派,反 Material readonly 派,適合 search debounce)。
 
 ## 禁止事項
 

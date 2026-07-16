@@ -1,1 +1,25 @@
-{"component":"Notice","implBasis":"自建 layout primitive (Family 2 reading-md); consumes item-anatomy ItemPrefix/ItemContent/ItemSuffix + ICON_SIZE.md + Button iconOnly dismiss xs; controlled-only, no lib wrap","claimsVerified":35,"falseClaims":[]}
+{
+  "component": "Notice",
+  "implBasis": "@internal layout primitive(Alert / Toast 消費);ItemPrefix/ItemContent/ItemSuffix(item-anatomy)+ Button iconOnly dismiss xs + useSyncExternalStore theme observer",
+  "claimsVerified": [
+    "spec:43-49 Typography reading-md(title text-body 14/1.5;desc text-body + fg-secondary;gap --item-gap-label-desc-reading;icon 16 ICON_SIZE.md)— notice.tsx:68(text-body, 無 leading-compact)+ ItemContent 預設 mode='reading' descriptionTone='secondary'(item-anatomy.tsx:357-359)+ :138 ICON_SIZE.md 吻合",
+    "spec:53-59 padding 固定 px-4 py-3 gap-2 — NOTICE_LAYOUT(notice.tsx:62-70)吻合",
+    "spec:73 dismiss = Button iconOnly dismiss size=xs — notice.tsx:159-167 吻合;xs = h-field-xs 24px + icon 16(button.tsx:144,569)→ anatomy「16px icon / 24px hover bg」吻合",
+    "spec:88 Notice 不設 bg / text color(theme 由 consumer data-theme + text-foreground)— NOTICE_LAYOUT 無 bg/color token 吻合",
+    "spec:133 不提供 disable dismiss API(dismiss Button 不接收 consumer disabled)— notice.tsx:159-167 Button 無 disabled 透傳 吻合",
+    "spec:137 + tsx:78-83+120-128 X 渲染條件 = dismissible!==false 且 onDismiss!=null + dev-only console.warn(顯式 true 缺 handler)— notice.tsx:124-128 吻合;anatomy Props 速查同步吻合",
+    "spec:89-97(tsx docblock)role/aria-live 預設不帶、由 consumer 決定 — code 僅 props spread,無預設 role 吻合",
+    "spec:155-158 A11y(Tab 落 dismiss;endContent DOM 序在 dismiss 前;無 Esc handler;無 focus restoration)— notice.tsx:150-170 DOM 順序 + 全檔無 keydown 吻合",
+    "anatomy StateBehavior dismiss 色(fg-muted→foreground;bg transparent→neutral-hover→neutral-active)— button.tsx:490 dismiss override + text variant hover canonical 吻合",
+    "anatomy StateBehavior title truncate 單行 / description 不截 — ItemContent labelTruncate 預設 true(item-anatomy.tsx:363,403),Notice 未傳 descriptionClassName truncate 吻合",
+    "noticeMeta family 2 + states ['default'](無互動 primitive)— spec「邊界案例」吻合"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "notice.anatomy.stories.tsx:355(Inspector Layout tokens 表)",
+      "宣稱": "title font = text-body · reading 1.5 · font-medium(無條件列出)",
+      "真實code行為": "font-medium 僅在有 description 時加(notice.tsx:147 labelClassName={description ? 'font-medium' : undefined});title-only 時為 font-normal。Inspector 有 description 開關但 token 表不隨動 — 同檔 Slot 對照表(:127)寫法正確(「有 desc 時 font-medium」),此表為無條件 overclaim",
+      "severity": "minor"
+    }
+  ]
+}

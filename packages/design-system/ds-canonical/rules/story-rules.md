@@ -22,7 +22,7 @@ paths:
 
 | Repo / Path | Title pattern | 用途 |
 |---|---|---|
-| **DS repo** `packages/design-system/**/*.stories.tsx` | `Design System/{Tokens|Patterns|Components|Internal}/{Name}/{展示|設計規格|設計原則}` | DS 元件 / token / pattern building block |
+| **DS repo** `packages/design-system/**/*.stories.tsx` | `Design System/{Tokens|Patterns|Components|Internal|Internal Patterns}/{Name}/{展示|設計規格|設計原則}` | DS 元件 / token / pattern building block |
 | **Consumer apps**(template / fork repos)`apps/**/*.stories.tsx` | `Apps/{app-kebab-name}/{Page Purpose}` | 產品 UI composition demo(eg. `Apps/order-dashboard/AppShell Dashboard`)|
 
 **Why 不統一**:DS 是 building block library(可重用元件),consumer apps 是 product UI 真實 composition demo(整頁、整 flow)。Namespace 不同 = Storybook sidebar 兩塊清楚分區。

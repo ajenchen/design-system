@@ -1,156 +1,216 @@
 {
  "dim": 9,
- "filesScanned": 78,
+ "filesScanned": 80,
  "findings": [
   {
    "fileLine": "packages/design-system/src/components/Accordion/accordion.tsx:43",
-   "問題": "AccordionTrigger 透傳 Radix asChild，卻固定同時渲染 consumer child 與 Chevron，啟用後違反 Slot 單一 child 契約並在 runtime 拋錯。",
+   "問題": "AccordionTrigger 繼承 asChild，但固定輸出內容與 Chevron 兩個子節點；Radix Slot 會因多子節點在執行期拋錯。",
    "severity": "material",
-   "建議": "提供真正的單一 consumer-host 分支；否則從型別移除 asChild，並在 spec 記錄固定 Chevron anatomy。"
+   "建議": "若保留 asChild，讓 primitive 只接收單一可替換 host；否則從型別移除 asChild 並在 spec 記錄固定 anatomy。"
   },
   {
    "fileLine": "packages/design-system/src/components/Accordion/accordion.tsx:75",
-   "問題": "AccordionContent 公開 asChild，但實際 slot 到內建 div；consumer 元素仍是孫節點，沒有成為 Content root，ref/DOM host 契約錯置。",
-   "severity": "material",
-   "建議": "讓 consumer element 成為唯一直接 child，或移除 asChild 並文件化不支援理由。"
+   "問題": "AccordionContent 的 asChild 只會替換固定的內層 div，consumer 提供的元素無法成為 Content host。",
+   "severity": "marginal",
+   "建議": "改成真正的單一 consumer host，或移除 asChild 並文件化內容 wrapper。"
   },
   {
-   "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:333",
-   "問題": "AppShellAside 的 desktop aside 接收 forwarded ref 與 className，mobile SheetContent 分支卻兩者皆遺失，造成同一 API 隨 breakpoint 改變。",
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:60",
+   "問題": "AppShellAside 沒有 DOM attributes／rest props 通道，mobile SheetContent 與 desktop aside 都無法接收 id、data-*、ARIA 或事件。",
    "severity": "material",
-   "建議": "mobile 分支同步轉交 ref，並將 consumer className 合併進 SheetContent。"
+   "建議": "加入排除 title 衝突的 HTMLElement attrs，將 rest props 轉交兩個分支的實際 DOM root。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:241; packages/design-system/src/components/Carousel/carousel.tsx:275",
-   "問題": "CarouselPrevious、CarouselNext 僅接 className 與 aria-label，未將安全的 button DOM props 透傳到實際 Button，data-*、額外 aria-*、focus/event props 均不可用。",
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:234",
+   "問題": "CarouselPrevious／CarouselNext 只接受 className 與 aria-label；ref 指向 Button，卻無法傳入其餘 button props，且 className 實際套在定位 wrapper。",
    "severity": "material",
-   "建議": "以 Omit<Button props, 元件自管鍵> 建立 ArrowProps，將 rest props spread 到 Button；wrapper 樣式另設 prop。"
+   "建議": "以 Button props 為基底，拆出 wrapperClassName，將 rest props 送到 Button 並 compose onClick。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Chart/chart.tsx:52",
-   "問題": "ChartContainerProps 宣告接受原生 div id，實作卻取走 id 只生成 data-chart，root DOM 遺失 consumer id。",
+   "fileLine": "packages/design-system/src/components/Chart/chart.tsx:202",
+   "問題": "ChartTooltipContentProps 宣告完整 div props，但 root div 未 spread 剩餘屬性，data-*、ARIA、style 與事件會靜默失效。",
    "severity": "material",
-   "建議": "分離 chart scope id 與 native id，或至少把原始 id 同步掛回 root div。"
+   "建議": "分離 Recharts 專屬欄位後，將 DOM-safe rest props 轉交 root div。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Chart/chart.tsx:159; packages/design-system/src/components/Chart/chart.tsx:296",
-   "問題": "ChartTooltipContent、ChartLegendContent 均繼承 div props，但沒有收集及 spread rest props，id、style、data-*、aria-* 與事件會被靜默丟棄。",
+   "fileLine": "packages/design-system/src/components/Chart/chart.tsx:305",
+   "問題": "ChartLegendContentProps 宣告完整 div props，但 root div 未 spread 剩餘屬性。",
    "severity": "material",
-   "建議": "剔除 adapter 專屬欄位後，將其餘 DOM props spread 到各自 root div；或提供明確 rootProps。"
+   "建議": "收集並轉交 DOM-safe rest props，保留元件自管的 legend 欄位。"
   },
   {
    "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:257",
-   "問題": "Checkbox 繼承 asChild/children，但 edit 分支的固定 Indicator 覆蓋 consumer child，display/readonly 分支又剝除 asChild，公開 polymorphic API 不成立。",
-   "severity": "material",
-   "建議": "固定 compound anatomy 若不支援換根，應 Omit asChild、children 並補 spec；否則實作一致的單一 consumer-host 分支。"
+   "問題": "Checkbox 繼承 asChild／children，卻以固定 Indicator 覆蓋 consumer child；asChild 最終替換的是 Indicator，不是 consumer host。",
+   "severity": "marginal",
+   "建議": "從公開型別移除 asChild／children並文件化固定 anatomy，或另做真正的單一 Slot host。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Chip/chip.tsx:99",
-   "問題": "spec 已明載 Chip 不支援 asChild，但 ChipProps 仍繼承並透傳它；固定 icon、label、suffix 多 child 結構會觸發 Slot runtime error。",
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:885",
+   "問題": "Combobox 沒有共同 DOM attrs passthrough；公開 ref 只送到 edit trigger，view／readonly／disabled 的顯示 root 不會收到 ref。",
    "severity": "material",
-   "建議": "依既有 spec 從 public type Omit asChild，必要時加 asChild?: never 防止誤用。"
+   "建議": "建立跨 mode 的 rootProps/ref 契約；若無穩定 root，應縮窄 API 並明確記錄例外。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Dialog/dialog.tsx:225",
-   "問題": "DialogBody 從 ScrollArea 繼承 asChild；下游固定 Viewport、Scrollbar、Corner 多 sibling，啟用時會觸發 Slot 單一 child 錯誤。",
+   "fileLine": "packages/design-system/src/components/DataTable/data-table-column-visibility-panel.tsx:133",
+   "問題": "DataTableColumnVisibilityPanel 是公開主元件，卻回傳 Fragment，沒有 forwardRef、DOM rest props 或穩定 root，且無 documented no-root 例外。",
    "severity": "material",
-   "建議": "在 DialogBody props 排除 asChild 並文件化固定 body anatomy，或重構為真正單一 slottable root。"
+   "建議": "增加可接 ref/rest props 的 panel root；若 Fragment 是必要協議，應在 spec 記錄並提供 containerProps/ref 通道。"
   },
   {
-   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:135; packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:186",
-   "問題": "DropdownMenuContent、DropdownMenuSubContent 的 asChild 會 slot 到 RowSizeProvider；定位、ref、data-state 等 props 被 Context Provider 吞掉，無法落到 DOM host。",
+   "fileLine": "packages/design-system/src/components/DataTable/data-table-filter-panel.tsx:315",
+   "問題": "DataTableFilterPanel 已 forwardRef，但公開 API 只有 className，root div 無法接收其他 DOM props。",
    "severity": "material",
-   "建議": "移除並文件化 asChild，或讓 consumer DOM element 成為 Slot 唯一 child，再把 Provider 移入其內容。"
+   "建議": "擴充適當的 div attributes，將 ref 與 rest props 一起送到 panel root。"
   },
   {
-   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:251; packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:320; packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:362; packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:396; packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:444",
-   "問題": "Item、SubTrigger、CheckboxItem、Label、RadioItem 均公開 asChild，卻固定把內建 MenuItem 當直接 child；consumer 元素不會成為真正 Radix root，anchor menu item 的 ref、狀態與鍵盤語意皆錯置。",
+   "fileLine": "packages/design-system/src/components/DataTable/data-table-sort-manager.tsx:110",
+   "問題": "DataTableSortManager 沒有 forwardRef，Props 亦未提供 root DOM props passthrough。",
    "severity": "material",
-   "建議": "為 asChild 建立 consumer element 唯一直接 child 的路徑；無法保留固定 MenuItem anatomy 者應 Omit asChild 並補 spec。"
+   "建議": "依 FilterPanel 的 generic forwardRef cast 模式補上 ref、HTML attributes 與 root spread。"
   },
   {
-   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:950",
-   "問題": "FileViewerProps 繼承 Dialog Content 的 asChild 與 children，但固定 viewer subtree 覆蓋 consumer children；asChild 只會 slot 到內建 dark-theme div。",
+   "fileLine": "packages/design-system/src/components/DatePicker/date-picker.tsx:490",
+   "問題": "showDisplayEndIcon 的 view root 未接 ref/rest props；readonly／disabled root 雖 spread props，仍遺失 ref，超出 spec 僅允許的預設裸 view 例外。",
    "severity": "material",
-   "建議": "從 FileViewer public props Omit asChild、children，並在 spec 明載 fullscreen composite 採固定 render tree。"
+   "建議": "為非預設裸 view 的各 mode 建立一致 root ref/props 接線，必要時調整公開 ref 型別。"
   },
   {
-   "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.tsx:127",
-   "問題": "InlineEdit 兩態皆有穩定 root div，卻不接受或透傳原生 root props；id、data-*、aria-* 與 DOM events 無法使用，且 spec 無例外。",
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:165",
+   "問題": "DropdownMenuContent 的 asChild 直接作用於 RowSizeProvider；Radix 注入的 ref、className、data-state 等會被 Provider 吃掉，consumer host 不會成為 Content root。",
    "severity": "material",
-   "建議": "InlineEditProps 繼承適當的 HTMLAttributes<HTMLDivElement>，收集 rest props 並 spread 到 read/edit 兩個 root。"
+   "建議": "把 Provider 移到可替換 host 內側，確保 Content 的直接 child 是 consumer 單一元素；或移除 asChild 並記錄原因。"
   },
   {
-   "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.tsx:108",
-   "問題": "ProgressBar 繼承 Radix Root asChild，但固定 Indicator 覆蓋 consumer child；啟用後 host 會錯誤落到 Indicator。",
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:195",
+   "問題": "DropdownMenuSubContent 同樣讓 asChild clone RowSizeProvider，導致 ref、樣式與 Radix data attributes 無法落到 DOM。",
    "severity": "material",
-   "建議": "固定 track/indicator anatomy 下 Omit asChild、children 並補 spec，或另做真正的單一 consumer-host 分支。"
+   "建議": "重排 Provider 與 Slot 層級，或從公開型別移除 asChild 並文件化。"
   },
   {
-   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:97",
-   "問題": "RadioGroup 的 asChild 僅 edit path 有效；display 與 Field-readonly 分支會剝除 asChild 並丟棄 consumer host，形成 mode-dependent public API。",
-   "severity": "material",
-   "建議": "所有 mode 提供一致的 Slot-safe host；否則從 API 排除 asChild，並明文記錄不支援原因。"
+   "fileLine": "packages/design-system/src/components/Field/field.tsx:519",
+   "問題": "FieldGroup 的 gap 是純 className variant，卻以 ternary 管理，未使用 cva。",
+   "severity": "marginal",
+   "建議": "把 compact／normal／loose 收進 FieldGroup cva variants。"
   },
   {
-   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:275",
-   "問題": "RadioGroupItem 透傳 asChild 後仍固定以 Indicator 為直接 child，consumer host 被丟棄，ref/DOM root 落到錯誤節點。",
-   "severity": "material",
-   "建議": "提供 consumer-owned 單一 child 路徑，或移除 asChild 並文件化固定 indicator anatomy。"
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.tsx:84",
+   "問題": "FieldControlGroup 的 block 是純 className boolean variant，未由 cva 管理。",
+   "severity": "marginal",
+   "建議": "將 block 收斂為 cva boolean variant，統一 variant 型別與 class 組合。"
   },
   {
-   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:44",
-   "問題": "ScrollArea 公開 asChild，但 Root 固定含 Viewport、ScrollBar、Corner 多個 children；啟用會直接觸發 React.Children.only runtime error。",
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.tsx:225",
+   "問題": "FileUpload 從 HTML div props 抽出 onClick，但 button variant 未呼叫 consumer handler，造成正式 variant 靜默丟失公開 DOM prop。",
    "severity": "material",
-   "建議": "從 public props Omit asChild 並補 composite anatomy rationale，或重新設計單一 host 契約。"
+   "建議": "在 button variant compose consumer onClick 與開檔行為，並明確定義 props/ref 的 canonical host。"
   },
   {
-   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:77",
-   "問題": "ScrollBar 公開 asChild，卻固定以 Thumb 作直接 child；consumer host 被忽略，Thumb 被錯當 scrollbar root。",
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.tsx:160",
+   "問題": "LinkInput 預設 view 分支未套用公開 className；同 mode 的有圖示分支卻會套用，形成分支不一致。",
    "severity": "material",
-   "建議": "排除並文件化 asChild，或新增真正的 consumer-host 分支並正確保留 Thumb anatomy。"
+   "建議": "讓所有 view root 統一合併 className；若裸顯示有意限制 passthrough，需在 spec 明列。"
   },
   {
-   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:262",
-   "問題": "SegmentedControlItem 繼承 asChild，但固定輸出 icon、label、badge 多個 child expression；合法 asChild 用法會觸發 Slot 單一 child錯誤。",
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:962",
+   "問題": "FileViewer 在固定 fullscreen className 之後 spread props；consumer className 會整組覆寫定位、層級與動畫類別。",
    "severity": "material",
-   "建議": "建立明確的單一 consumer-host 分支，或 Omit asChild 並記錄固定多槽 anatomy。"
+   "建議": "先解構 className，再以 cn 合併 consumer 樣式與必要 shell 類別。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Select/select.tsx:530",
-   "問題": "Select mobile NativeSelect 會轉發 rest props，desktop CustomSelect 卻完整列舉 props 而無 rest；data-*、onFocus、onBlur 等依 pointer type 靜默消失。",
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:213",
+   "問題": "PeoplePicker 的 view 分支未轉交 ref/rest props；裸顯示分支連 className 也遺失，違反 spec 的 root props 契約。",
    "severity": "material",
-   "建議": "拆分可跨 select/div 的安全 root DOM attrs並轉交 desktop trigger；select-only attrs則明確 mapping 或文件化。"
+   "建議": "讓所有 view root 接收 ref、className 與 DOM-safe props，或採用穩定單一 root。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:165",
-   "問題": "SheetBody 從 ScrollArea 暴露 asChild，但其固定 ScrollArea與內層 padding div 最終觸發多 child Slot錯誤。",
-   "severity": "material",
-   "建議": "SheetBody props 應排除 asChild 並文件化固定 chrome anatomy；除非另建合法單一 host 路徑。"
+   "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.tsx:55",
+   "問題": "ProgressBar 暴露 Radix asChild／children，但固定 Indicator 覆蓋 consumer child，asChild 只會替換內部 Indicator。",
+   "severity": "marginal",
+   "建議": "移除無效的 asChild／children，或重構成真正的單一 consumer host。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Slider/slider.tsx:81",
-   "問題": "SliderProps 已排除 children，卻仍暴露 asChild；Root 固定 Track、Range、多 Thumb，啟用必然觸發 Slot runtime error。",
-   "severity": "material",
-   "建議": "同步 Omit asChild 並在 spec 說明多節點 Slider anatomy 不支援 Slot。"
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:102",
+   "問題": "RadioGroup 繼承 asChild，但 view 與 Field-readonly 分支直接剝除，造成同一 prop 隨 mode 靜默失效。",
+   "severity": "marginal",
+   "建議": "跨 mode 提供一致 Slot host；否則從公開型別移除 asChild 並記錄原因。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:244",
-   "問題": "Switch 繼承並透傳 asChild，但固定 Thumb 覆蓋 consumer child；consumer host 被忽略，Thumb 被錯當 switch root。",
-   "severity": "material",
-   "建議": "移除並文件化 asChild，或實作 consumer-owned host 且正確保留 Thumb anatomy。"
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:297",
+   "問題": "RadioGroupItem 的 asChild 會作用於固定 Indicator，而非 consumer 指定元素。",
+   "severity": "marginal",
+   "建議": "移除 asChild／children或重新設計單一 consumer host。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:479",
-   "問題": "TabsTrigger 暴露 asChild，卻固定建立 icon、label、suffix 多個 children；啟用時會觸發 React.Children.only runtime error。",
+   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:49",
+   "問題": "ScrollArea 繼承 asChild，但 Root 固定包含 Viewport、ScrollBar、Corner 多個子節點；Radix Slot 會在執行期拋錯。",
    "severity": "material",
-   "建議": "新增 Slot-safe 單一 child 分支，或從 props 排除 asChild 並補 spec。"
+   "建議": "從 props 移除 asChild 並文件化固定 anatomy，或另加真正可換根的外層 Slot。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Tooltip/tooltip.tsx:30",
-   "問題": "TooltipContent 暴露 asChild，但 Radix 實際 slot 到內建 data-theme div；consumer 元素仍是孫節點，ref 與 DOM host 契約錯置。",
+   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:82",
+   "問題": "ScrollBar 繼承 asChild／children，但固定 Thumb 使 Slot host 錯置到內部 Thumb。",
+   "severity": "marginal",
+   "建議": "移除 asChild／children，或讓 consumer 的單一元素成為真正 host。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:263",
+   "問題": "SegmentedControlItem 繼承 asChild，卻固定輸出 icon、label、badge 等多個 child；常見組合會觸發 Radix Slot 單子節點錯誤。",
    "severity": "material",
-   "建議": "讓 consumer element 直接成為 Content 唯一 child並合併 theme/classes，或排除 asChild 並記錄例外。"
+   "建議": "移除 asChild 並將 children 定義為 label，或先合成真正的單一可替換 host。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:505",
+   "問題": "Select 的非 edit 分支未把 ref、id、style、data-*、事件與 ARIA allowlist 轉交 ReadonlyDisplay，與檔內明載的跨路徑契約矛盾。",
+   "severity": "material",
+   "建議": "讓 ReadonlyDisplay 接收 rootProps/ref，或建立穩定 wrapper，只過濾真正不適用的 select 專屬屬性。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:168",
+   "問題": "SheetBody 繼承 ScrollArea 的 asChild，傳入後會落入 ScrollArea 固定多子節點的 Slot 執行期錯誤。",
+   "severity": "material",
+   "建議": "從 SheetBody props 移除 asChild，並在 spec 記錄固定 scroll-body anatomy。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:350",
+   "問題": "Sidebar mobile 分支把 div rest props spread 到非 DOM 的 Sheet Root，且 ref/className 未送到 SheetContent；同一 API 隨 breakpoint 失效。",
+   "severity": "material",
+   "建議": "僅將 dialog state 傳給 Sheet Root，將 ref、className 與 DOM props 轉交 SheetContent。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.tsx:55",
+   "問題": "Slider 已移除 children，卻仍暴露 asChild；固定 Track 加至少一個 Thumb，使 Radix Slot 必然遇到多子節點並拋錯。",
+   "severity": "material",
+   "建議": "把 asChild 一併加入 Omit，並文件化 Slider 的固定 anatomy。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:98",
+   "問題": "Switch 繼承 asChild／children；靜態 mode 會剝除它們，edit mode 則以固定 Thumb 覆蓋 consumer child，無一致 Slot host。",
+   "severity": "marginal",
+   "建議": "移除 asChild／children，或全面建立跨 mode 一致的單一 Slot host。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:499",
+   "問題": "TabsTrigger 繼承 asChild，但固定輸出 icon、label、suffix 等子節點；多槽組合會觸發 Radix Slot 單子節點錯誤，單槽時也只會替換內部 span。",
+   "severity": "material",
+   "建議": "移除 asChild並文件化多槽 anatomy，或重構成單一 consumer host。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.tsx:242",
+   "問題": "Textarea 的 view／readonly-empty 顯示 div 未轉交 forwardRef 或剩餘 DOM props，切換 mode 後 data-*、事件與 ARIA 會失效。",
+   "severity": "material",
+   "建議": "為顯示 root 接上 DOM-safe props/ref，並調整 ref 型別或採用穩定 wrapper。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.tsx:259",
+   "問題": "TimePicker view 分支未轉交 ref/rest props；readonly／disabled 雖 spread props仍漏 ref。",
+   "severity": "material",
+   "建議": "抽出跨 mode 共用的 root props/ref 接線，或建立穩定根節點。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tooltip/tooltip.tsx:23",
+   "問題": "TooltipContent 繼承 asChild，但 consumer children 被包在固定 dark-theme div；Slot 只會替換該內部 div。",
+   "severity": "marginal",
+   "建議": "移除 asChild並文件化 theme wrapper，或把 theme、ref、props 合併到 consumer 的單一 Slot child。"
   }
  ]
 }

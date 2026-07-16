@@ -1,1 +1,29 @@
-{"component":"HoverCard","implBasis":"Wraps Radix @radix-ui/react-hover-card (Root/Trigger/Content); DS adds z-index, overlayMotion (150ms overlay duration), sideOffset, Portal, viewport-aware max-h chain. Internal primitive (isInternal).","claimsVerified":14,"falseClaims":[{"fileLine":"hover-card.anatomy.stories.tsx:146","宣稱":"Accessibility story: 觸發元素的可聚焦性需 consumer 自補（例如 Avatar 的 hoverCard 在元件內手動加 tabIndex=0 + role=\"button\" + aria-haspopup=\"dialog\"）","真實code行為":"avatar.tsx:252-257 focusableProps = { tabIndex: 0, role: 'img', 'aria-label' }. role=\"button\" 與 aria-haspopup=\"dialog\" 已於 2026-07-06 拆除 (avatar.tsx:244 註解 + spec.md:144「不掛 role/aria-haspopup」). 此 story 為 stale docblock，與現行 code 及自家 spec 相矛盾，教錯 a11y API。","severity":"material"}]}
+{
+  "component": "HoverCard",
+  "implBasis": "基於 Radix HoverCard(@internal,root barrel 排除):純行為 primitive — Root 內建 delay SSOT(openDelay=MOTION_DELAY_RICH_MS 700 / closeDelay=MOTION_DELAY_CLOSE_MS 200)+ Content = Portal + z-50 + overlayMotion 動畫 + sideOffset=OVERLAY_SIDE_OFFSET(8)+ collisionPadding=12 + viewport-aware max-h flex chain(M25);零視覺樣式",
+  "claimsVerified": [
+    "delay 宣稱:MOTION_DELAY_RICH_MS=700 / MOTION_DELAY_CLOSE_MS=200(motion.ts:15,18)= spec 禁止事項「rich 700 open / close 200 內建」✓",
+    "sideOffset 預設 8:OVERLAY_SIDE_OFFSET=8(overlay-geometry.ts:11)✓;collisionPadding=12(視覺 ≥8px 邊距 rationale)= spec 邊界案例 ✓",
+    "純行為宣稱:Content className 無 bg/border/shadow/padding/rounded — code 屬實;consumer 二例(ProfileCard 亮 / OverflowIndicator 暗)分工宣稱與 import 現況一致",
+    "Portal 到 body(逃逸 trigger dark subtree — user bug anchor)= code HoverCardPrimitive.Portal ✓(M3 對齊)",
+    "viewport-aware max-h(--radix-hover-card-content-available-height)+ flex flex-col overflow-hidden min-h-0(M25 chain)= code :57 = spec 邊界案例 ✓",
+    "isInternal 三方一致:tsx @internal 檔頭 / spec frontmatter isInternal / stories title 全走 Design System/Internal/HoverCard/*",
+    "「為何無 Inspector/ColorMatrix/SizeMatrix/StateBehavior」= anatomy 實況(僅 Overview + VisualVariants + Accessibility)✓",
+    "A11y 宣稱:Radix hover-card 無 role/aria-*、content tabbable 設 tabindex=-1(鍵盤不可達)、非 modal 無 focus trap — 對齊 Radix 官方文件與 1.1.x 行為;spec 與 Tooltip 分界表同步標註鍵盤限制 ✓",
+    "motion-reduce 豁免(overlayMotion,對齊 overlay 家族)= code :60 ✓"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "hover-card.tsx:88(hoverCardMeta.tokens.bg)",
+      "宣稱": "tokens.bg = ['bg-surface-raised']",
+      "真實code行為": "hover-card.tsx 全檔 0 個 bg class(純行為 primitive,視覺歸 consumer);bg-surface-raised 是 ProfileCard 等 consumer 的 token。meta 把 consumer token 記在 primitive 名下,與「不提供 bg」spec 宣稱互相矛盾",
+      "severity": "P3"
+    },
+    {
+      "fileLine": "hover-card.spec.md:67-70(純行為 primitive 段「只提供」清單)",
+      "宣稱": "HoverCardContent 只提供 z-50 / 動畫 / sideOffset",
+      "真實code行為": "另提供 viewport-aware max-h + flex chain + collisionPadding=12 + transform-origin(:53-66)— spec 其他段(邊界案例)有寫,但「只提供」清單不完整(輕微內部不一致,非錯述)",
+      "severity": "P3"
+    }
+  ]
+}

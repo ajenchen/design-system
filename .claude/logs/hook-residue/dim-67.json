@@ -1,1 +1,16 @@
-{"dim":67,"hook":"check_sidebar_menu_button_implicit_wrap.sh","residueCount":0,"findings":[],"verified":true,"note":"Anti-pattern = <SidebarMenuButton> without asChild whose body contains <Avatar>/<ItemAvatar> (implicit vertical-stack wrap). Scanned 301 non-node_modules .tsx with hook's exact python block-match logic. 0 SidebarMenuButton blocks lacking asChild while containing Avatar/ItemAvatar."}
+{
+  "dim": 67,
+  "hook": "check_sidebar_menu_button_implicit_wrap.sh",
+  "wiring": "OK — PreToolUse Edit|Write|MultiEdit(settings.json:248 + hooks.json:106);mirror sync;exit 2 P0 BLOCKER 屬實(L86);19 fires 2026-07-16",
+  "smoke": "not run(存量掃描以同一 python 邏輯全庫 replicate)",
+  "residueCount": 0,
+  "findings": [
+    {
+      "severity": "P3",
+      "type": "escape-usage + hardening gap(out-of-repo signal)",
+      "detail": "governance-bypass.jsonl 累計 74 條 sidebar-menu-button-wrap-bypass,全指向 fork 路徑(/repo/apps/template/src/UserFooter.tsx),本 repo 無此檔。另:本 hook 與 dim-65 sibling 不同,匹配前**未 strip 註解**(chrome_header hook 2026-06-11 R2 #9 已加 comment-strip)— fork 檔若含 citation 註解(<Avatar> 字樣在 {/* */} 內)會 false-positive 迫使反覆 bypass;建議 port 同款 strip 邏輯(M7 sibling-sync)",
+      "evidence": ".claude/logs/governance-bypass.jsonl(74 events)+ hook L32-46 無 comment-strip vs check_chrome_header_avatar_canonical.sh L39-45 有"
+    }
+  ],
+  "notes": "存量掃描:全 tsx SidebarMenuButton(無 asChild)block 內含 <Avatar|ItemAvatar> — 0 DRIFT"
+}

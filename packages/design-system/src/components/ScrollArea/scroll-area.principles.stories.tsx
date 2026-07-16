@@ -255,7 +255,7 @@ export const SolvesDataTableBug: Story = {
 
       <Rule
         title="解法 — ScrollArea overlay 捲軸,跨 OS 一致不吃寬度"
-        note="同一份表格,改用 ScrollArea 包起來、額外渲染 horizontal ScrollBar。macOS 與 Windows 呈現完全一致,右側 Status 欄不被裁切。這是 DataTable 遷移到 ScrollArea 的主要動機。"
+        note="同一份表格,改用 ScrollArea 包起來、額外渲染 horizontal ScrollBar。macOS 與 Windows 呈現完全一致,右側 Status 欄不被裁切。此組合限外層包 height='auto' 表格的 demo 場景;DataTable 中央捲動區本體走 native overflow-x-auto(pinned column 結構需求,見 scroll-area.spec.md「何時用」例外 + data-table.spec.md「捲軸 canonical」)。"
       >
         <div className="w-[560px]">
           <ScrollArea className="border border-success/40 rounded-md bg-surface">

@@ -1,19 +1,6 @@
 {
   "component": "Chip",
-  "implBasis": "Radix ToggleGroup (+ horizontal-overflow pattern, DropdownMenu for menu layout)",
-  "claimsVerified": 31,
-  "falseClaims": [
-    {
-      "fileLine": "packages/design-system/src/components/Chip/chip.anatomy.stories.tsx:108",
-      "宣稱": "Inspector argType `layout` 描述:'menu(收入 Dropdown)'(暗示 chips 被收進 dropdown 隱藏)",
-      "真實code行為": "menu layout 是 show-all navigator:所有 chip 永遠留在水平捲動容器可見可點(spec.md:182「不套 invisible / visibility:hidden——所有 chip 都正常可見可點」),dropdown 只是額外列出全部 chip 供快速勾選,並非把 chip 收進去隱藏",
-      "severity": "marginal"
-    },
-    {
-      "fileLine": "packages/design-system/src/components/Chip/chip.principles.stories.tsx:186",
-      "宣稱": "menu 模式範例標註「單行 + ⋯ 展開全部選項」,以 ⋯(ellipsis / MoreHorizontal)符號代表 menu trigger",
-      "真實code行為": "menu trigger 是 OverflowMenuTriggerButton,其 startIcon={ChevronDown}(horizontal-overflow.tsx:207),非 ⋯ ellipsis;spec.md:149/183 亦寫 ChevronDown。principles 用 ⋯ 與實際 ChevronDown icon 不一致",
-      "severity": "marginal"
-    }
-  ]
+  "implBasis": "Radix ToggleGroup(Item/Root)+ horizontal-overflow pattern(useScrollEdges/useScrollByPage 80%/buildFadeMask/OverflowScrollArrow/OverflowMenuTriggerButton)+ DropdownMenuCheckboxItem(menu layout)",
+  "claimsVerified": 26,
+  "falseClaims": []
 }

@@ -3,6 +3,5 @@
   "hook": "check_escape_marker_abuse.sh",
   "residueCount": 0,
   "findings": [],
-  "verified": true,
-  "note": "三 gate 全清:(a) 空理由 marker(@x-allow: 空 / bare @benchmark-unverified)於 apps/ + packages/design-system/src = 0;(b) consumer per-file 密度:唯一持 marker 檔 = apps/template/src/AllDsComponents.stories.tsx(sanctioned portal,cap 6)distinct=3 total=4,未達閾;(c) repo 級 apps/** 總 marker = 4 < ratchet cap 10。"
+  "notes": "全掃 apps/**(consumer)per-file 數量 gate:0 檔達 ≥3 distinct / ≥5 total(portal cap 6 亦未達);repo 級 ratchet 存量 4/10 cap;justification gate:apps + packages/design-system/src 空理由 marker 0 個。fork mirror(ds-canonical/fork/hooks)diff 僅 build-fork-governance.mjs:125 的 intentional path rewrite(packages/design-system/src → node_modules/@qijenchen/...),非 drift。廣義 MARKER_RE(@<x>-allow 家族)無 enum 漏抓;display→view 更名不涉此 hook。"
 }

@@ -1,1 +1,34 @@
-{"component":"Toast","implBasis":"sonner(浮動管理,toast.custom + unstyled)+ 消費 Notice primitive(layout/icon/theme,與 Alert 共用);role/aria-live 由本 DS 依 variant 手動設在 outer wrapper。已對照 sonner@2.0.7 source 驗證。","claimsVerified":26,"falseClaims":[]}
+{
+  "component": "Toast",
+  "implBasis": "sonner 2.0.7(sonnerToast.custom + unstyled)+ Notice primitive(layout/icon/useInverseTheme)+ Button(action/dismiss)。sonner source 逐項驗證(node_modules/sonner/dist)",
+  "claimsVerified": [
+    "sonner VISIBLE_TOASTS_AMOUNT = 3(spec『預設只顯示最近 3 則』)+ 超出以 data-visible=false 隱藏(CSS opacity:0 pointer-events:none)= spec 禁止事項 #3 精確",
+    "sonner 全庫 0 createPortal(grep -c = 0)= spec『非 portal,就地渲染 <section> + position:fixed』精確",
+    "sonner 唯一 aria-live = 外層 section 'polite';runtime 0 個 role = spec『sonner 本身 0 role,只有外層 polite region』精確;nested live region 限制誠實揭露",
+    "role/aria-live 由 DS wrapper 設:error/warning → role=alert+assertive、其餘 → status+polite(code L52-54,62,75)= spec/anatomy a11y 表一致;Notice 預設不帶 role(notice.tsx:89 確認)",
+    "sonner hotkey 預設 ['altKey','KeyT'](⌥T/Alt+T)→ setExpanded(true) 暫停 = spec 鍵盤替代路徑宣稱精確",
+    "計時器暫停條件 = expanded || interacting || isDocumentHidden;onFocus 只做 focus-within 追蹤不暫停 → 『Tab 鍵盤焦點不暫停倒數』= sonner source 驗證為真",
+    "duration 預設 action ? 10000 : 4000(code L88)= spec API 段 + anatomy Inspector/StateBehavior + principles DurationRule 全一致",
+    "action 執行後自動 dismiss(code L45)— anatomy『點 action button 執行 callback + 關閉 toast』宣稱為真(code 註解自證此宣稱起效日)",
+    "swipe 門檻 SWIPE_THRESHOLD=45 / velocity>0.11(sonner source)= anatomy StateBehavior『滑動 ≥45px 或 velocity>0.11』精確;進場 ~400ms = sonner styles.css 400ms 動畫",
+    "三層 container(shadow wrapper rounded-lg elevation-200 / bg layer / data-theme layer)+ variant×theme 映射表(neutral·success inverse 同層、info·error dark、warning light)= code 兩分支與 spec/anatomy/展示 StaticToast 全一致",
+    "Toaster:position 預設 bottom-right + unstyled + w-[360px] = spec 寬度 360px 段一致;forwardRef 簽名保留但 sonner 不轉發 ref(註解誠實)",
+    "toastMeta family 2 / states ['default'] / tokens bg-error·bg-info·bg-surface-raised·bg-warning = code 真實消費一致"
+  ],
+  "falseClaims": [
+    {
+      "id": "TO-1",
+      "severity": "moderate",
+      "location": "toast.principles.stories.tsx:48(UsageGuidance LinkTo)",
+      "claim": "LinkTo 指向展示頁 story name=\"互動測試\"",
+      "reality": "toast.stories.tsx 的 Interactive story name 為『點擊觸發通知』(L119),無名為『互動測試』的 story — LinkTo 斷鏈(story 更名後 principles 連結未同步)"
+    },
+    {
+      "id": "TO-2",
+      "severity": "minor",
+      "location": "toast.spec.md:82(A11y 預設)",
+      "claim": "『見 .tsx L49-51 / L59 / L72』行號 cite",
+      "reality": "實際 isCritical/liveRole 邏輯在 L52-54、role 屬性在 L62 與 L75(L72 是 const theme 行)。±3 行 drift — cite 段落方向正確但行號 stale"
+    }
+  ]
+}

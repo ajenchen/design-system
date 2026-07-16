@@ -1,0 +1,26 @@
+{
+  "ts": "2026-07-16T13:08:27.942Z",
+  "filesCount": {
+    "total": 494,
+    "componentTsx": 87,
+    "storiesShowcase": 78,
+    "storiesAnatomy": 64,
+    "storiesPrinciples": 64,
+    "specMd": 86,
+    "tokens": 23
+  },
+  "principles": {
+    "mRules": 31,
+    "specTraits": 11,
+    "hookInvariants": 44,
+    "rules": 6,
+    "total": 86
+  },
+  "auditDims": 91,
+  "coverageGaps": 3,
+  "gaps": [
+    "hook:dynamic_tailwind_class (unmapped — 必補 principle-dim-map.json entry)",
+    "hook:ssot_header_declaration (unmapped — 必補 principle-dim-map.json entry)",
+    "hook:story_determinism (unmapped — 必補 principle-dim-map.json entry)"
+  ]
+}

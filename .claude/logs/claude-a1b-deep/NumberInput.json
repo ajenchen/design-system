@@ -1,1 +1,45 @@
-{"component":"NumberInput","implBasis":"自建 Field-family (Family 4) control; native <input type=text inputMode=decimal> + internal draft-string state; consumes fieldWrapperStyles + bareInputStyles + ItemInlineAction + formatNumber (toLocaleString); no lib wrap","claimsVerified":40,"falseClaims":[{"fileLine":"number-input.spec.md:112","宣稱":"科學記號輸入(1e5):Number(raw) parse 為 100000,非 NaN 即觸發 onChange(number-input.tsx:136-138)","真實code行為":"Number(raw)/onChange(parsed) 邏輯實際在 handleChange 的 number-input.tsx:150-152;行 136-138 是 display 分支的 </span></div> 收尾標籤,與 parse 無關。行為描述正確但 line-ref stale","severity":"marginal"},{"fileLine":"number-input.anatomy.stories.tsx:48","宣稱":"readonly cva = `bg-readonly border border-transparent`(field-wrapper.tsx:109)","真實code行為":"readonly compound className 實際在 field-wrapper.tsx:144(bg-readonly border border-transparent + focus-visible ring);行 109 是 edit compound 內的 Material Design 3 註解。行為描述正確但 line-ref stale","severity":"marginal"}]}
+{
+  "component": "NumberInput",
+  "implBasis": "native <input type=text inputMode=decimal> + fieldWrapperStyles;controlled-only(defaultValue Omit);draft string 中間態(2026-07-05 D4);非 edit 一律 formatted <span>",
+  "claimsVerified": [
+    "spec:24 controlled-only + defaultValue 型別 Omit — number-input.tsx:41-45 吻合",
+    "spec:59 千分位無獨立 prop(toLocaleString 自動)/ spec:111 負數超大數字自動 — formatNumber(number-input.tsx:24-34)吻合",
+    "spec:68-71+108 view/readonly 共用 formatNumber;空值半形 '-' text-foreground(disabled → fg-disabled)— number-input.tsx:126-143(fieldEmptyColorClass + emptyDisplay)吻合",
+    "spec:109 NaN 忽略不觸發 onChange / ''與'-' → onChange(null) — number-input.tsx:147-159 吻合",
+    "spec:110 draft 中間態(輸入期間 draft 優先;parse 成功即時 onChange;blur/Enter commit 清 draft;Escape 棄 draft 非 pre-edit revert)— number-input.tsx:114-123,176-183 吻合",
+    "spec:112 科學記號 1e5 → Number parse 100000 觸發 onChange — 吻合(行號 cite 150-152 實為 155-157,off-by-4,行為正確)",
+    "spec:100 無 step stepper(type=text inputMode=decimal)— number-input.tsx:172-173 吻合,全檔無 stepper",
+    "spec:107 無 loading prop / 無 aria-busy — NumberInputProps + 全檔 grep 吻合",
+    "spec:128 A11y:aria-* 僅 edit mode(native input 自身消費 fieldCtx 設 aria-invalid/required/describedby/errormessage);view/readonly/disabled = div+span 不轉發 aria — number-input.tsx:126-144(non-edit 分支無 {...props} spread)+ :184-187 吻合",
+    "spec:135 focus 由 wrapper focus-within:!border-primary,input outline-none — bareInputStyles + edit×default compound 吻合",
+    "anatomy Props 表(error 僅 edit 生效 / endSlot 僅 edit 且優先於 endAction / mode 推導序)— number-input.tsx:126,164,191-196 + useResolvedFieldMode 吻合",
+    "anatomy StateBehavior(readonly+error 無紅框 / readonly 不渲染 endAction / edit null = 空白 / disabled null = '-'+fg-disabled)— number-input.tsx 對應分支全吻合",
+    "anatomy MODE_DESC.view = Model A(透明 bg/border 保留 px/高度)— field-wrapper.tsx:140-143 吻合(NumberInput 非 edit 分支確實消費 fieldWrapperStyles,與 LinkInput 裸 span 不同)"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "number-input.stories.tsx:34-35",
+      "宣稱": "四模式 story 段落標題 'display' + aria-label '(display mode demo)'",
+      "真實code行為": "實際傳 mode=\"view\";display→view 更名後現在式殘留舊名(同 Input/LinkInput showcase 同款殘留)",
+      "severity": "minor"
+    },
+    {
+      "fileLine": "number-input.principles.stories.tsx:165",
+      "宣稱": "note「prefix 出現在 readonly / display / disabled 與 DataTable cell 的格式化值」",
+      "真實code行為": "mode 名已更名 'view'(field-types.ts:21);「display」現在式殘留(同檔 :66-68 已正確用 mode='view',檔內用語不一致)",
+      "severity": "minor"
+    },
+    {
+      "fileLine": "number-input.anatomy.stories.tsx:48",
+      "宣稱": "comment「readonly cva = bg-readonly border border-transparent(field-wrapper.tsx:109)」",
+      "真實code行為": "readonly×default compound 現位於 field-wrapper.tsx:144-158(且 2026-07-09 起追加 [&:has(:focus-visible)]:ring-2 focus ring);:109 是 edit×default focus 註解區。class 內容仍對、行號 cite 漂移 + 未反映 ring 增補(NumberInput readonly 渲 span 不可聚焦,ring 對其無效,故僅 cite 層問題)",
+      "severity": "minor"
+    },
+    {
+      "fileLine": "number-input.anatomy.stories.tsx:785(Accessibility story)",
+      "宣稱": "「外層 Field 自動補上標籤、錯誤狀態與描述的關聯」",
+      "真實code行為": "aria-invalid/aria-required/aria-describedby/aria-errormessage 由 NumberInput 的 native input **自身**消費 fieldCtx 設定(number-input.tsx:184-187),非 Field wrapper 注入 — spec.md:128 已明文糾正此機制(「非由 Field wrapper 注入」),anatomy a11y story 措辭與 spec 相左(outcome 對、機制歸屬錯)",
+      "severity": "minor"
+    }
+  ]
+}

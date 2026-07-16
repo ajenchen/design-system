@@ -1,1 +1,21 @@
-{"component":"FileItem","implBasis":"自建 composite (Icon/Avatar + ItemContent/ItemPrefix item-anatomy primitives + ProgressBar + Button); no external primitive base","claimsVerified":35,"falseClaims":[]}
+{
+  "component": "FileItem",
+  "implBasis": "組合元件(Family 2 消費者):ItemPrefix/ItemContent(scanning)+ ProgressBar SSOT(height 2/4)+ Button xs hover-swap;mode compact/rich × surface form/upload-manager 決定 padding/邊框/背景;永不 hover-bg(permanent-anchored canonical)",
+  "claimsVerified": [
+    "Padding 表 4 格全對:compact form px(12)+py-2 / compact um px-0 py-2 / rich form px-3 py-3 border card / rich um px-0 py-0 rounded-md(file-item.tsx:255,289-299)",
+    "邊框/背景表:compact 無 progress → bg-secondary(!progressBar 判定,:239)/ 有 status → 無 bg 只靠 bar;bg-secondary vs bg-neutral-3 rationale = code 註解一致",
+    "Hover canonical「永不 hover-bg」= code onClick 只給 cursor-pointer(:121),無任何 hover:bg",
+    "hover-swap:completed+onDownload→Download / error+onRetry→RotateCw;passive icon aria-hidden 淡出 + Button xs 淡入,group-hover + group-has-[:focus-visible](2026-07-05 D4 鍵盤同步)= code :147-181",
+    "status slot 幾何 = var(--field-height-xs)(24px,uiSize.css:22)+ suffix [&>[data-unbounded]]:my-[calc((1lh-var(--field-height-xs))/2)] trick = spec「幾何一致性」宣稱逐字一致",
+    "Rich layout invariant:minHeight=48 + justify-between(有 bar)/justify-center(無 bar)+ gap-2 + row items-start = code :271-277;items-start 例外(違 item-anatomy 24px 規則)spec 已明文",
+    "ProgressBar SSOT:PROGRESS_STATUS_MAP(uploading→inProgress/completed→success/error→error)+ completed 強制 100 + compact height 2 = code :36-42,109,127-134;ProgressBar 確為 Radix Progress 包裝 ✓",
+    "compact bar offset 同源:left = padX+16+0.5rem / right = padX(:314-323)= spec「與 compactPadX 同源」宣稱 ✓",
+    "a11y:row 無 role=button/tabIndex(rowA11y={},nested-interactive 規避)= spec A11y 段一致;ProgressBar aria-label 帶檔名 ✓",
+    "compact 只有 error 顯 description(:112)= docblock/spec 一致;rich uploading 顯 {progress}%(:199-201)",
+    "suffix h-[1lh] 24px 閾值 = code suffixAlign ✓;無 disabled prop = spec 邊界宣稱 ✓",
+    "upload-manager 浮層面板 composition(殼 token / SurfaceHeader+PopoverTitle+COMPACT_HEADER_SLOT / SurfaceBody / compact !pt-1 / gap tight vs gap-1)= stories UploadManagerSurface / UploadManagerCompactSurface 逐項對齊 spec;demo 檔名宣稱命中 exports",
+    "FileUpload 依 fileListMode 套 gap(rich gap-2 mt-2 / compact gap-1 mt-1)= spec List wrapper canonical「control→list gap 同 form gap」✓",
+    "超長檔名 truncate 宣稱:ItemContent label 預設 min-w-0 flex-1 truncate(item-anatomy.tsx:264)✓"
+  ],
+  "falseClaims": []
+}

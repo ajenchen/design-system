@@ -1,39 +1,15 @@
 {
   "dim": 6,
-  "title": "Spec Rule A 文字品質(視覺形狀/實作細節 · 術語一致 · 禁止事項完整)",
+  "title": "Spec Rule A 文字品質",
   "filesScanned": 86,
-  "mechanism": "Spec 文字品質:不描述視覺形狀/實作細節(屬 story);術語一致;禁止事項列所有常見誤用。SSOT = .claude/rules/spec-rules.md:20 + naming-conventions.md",
-  "note": "DS-wide 全 86 spec.md NO-SAMPLE 全掃。此 dim 大致乾淨(成熟且高度稽核過)——僅剩 marginal 術語/章節標題一致性 drift,無 material 違規。已對抗二次驗證殺假陽性:Slider ❌-count=1 但實有『常見錯誤(避免)』完整 prohibitions(誤判排除);radius/uiSize/CircularProgress 講形狀 = token/元件本體主題(合法);Carousel/Switch 圓形 = documented exception + rationale(合法);color.spec hex = 色票定義(合法);element-anatomy/opacity/orphan-tokens 無禁止事項 = taxonomy/token/治理 doc 合法豁免。",
+  "mechanism": "DS-wide:find 全 86 spec.md 逐檔跑 3 類 rg — (1) 視覺形狀詞(窄長形/圓圓的/凸起/扁平/跳動/崩潰/看起來像/凸出/空心洞 等)(2) 實作洩漏(::after/::before/CSS literal/className dump/raw px in prose,awk fence-aware + table-aware 排除 code fence 與表格列與 tokens/ spec)(3) 逐 hit 讀上下文判 rationale-vs-pollution(「避免跳動」類 CLS 設計理由 / 扁平選單語意詞 / 歷史 bug narrative / M22 benchmark 引文全數豁免)",
+  "verdict": "0 material / 1 marginal after 全掃 86 files:視覺形狀詞 hit 全為設計理由語境(避免跳動 = CLS rationale、扁平導覽 = 語意詞),非形狀污染;唯一殘留 = date-picker.spec.md 以 Tailwind class 字面量重述 range stadium 實作(DateGrid 抽出後 owner spec 已用「class 細節見 tsx」delegation)",
   "findings": [
     {
-      "fileLine": "components/Slider/slider.spec.md:243 (+ Steps/steps.spec.md:401, CircularProgress/circular-progress.spec.md:204)",
-      "問題": "章節標題用英文『## Do / Don't』,但全 DS 67 個 spec 用繁中『禁止事項』作 canonical prohibition header。違反 naming-conventions『❌ 自創 spec 章節標題格式(既有用某詞就不要另寫英文版)』。3 個 spec 自成一格用英文標題,破壞跨元件章節術語一致。",
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.spec.md:235",
+      "問題": "prose 內含實作層 class 字面量 `before:rounded-l-full / rounded-r-full` + pseudo selector 描述 range stadium。DateGrid 抽出後此 canonical 的 owner 是 date-grid.spec.md「Range track canonical」(該處已 delegation「class 細節見 tsx」),DatePicker spec 重述實作細節 = Rule A 實作洩漏 + 潛在雙 home 漂移",
       "severity": "marginal",
-      "建議": "把這 3 個 spec 的『## Do / Don't』改為與其餘 67 spec 一致的繁中章節標題(如『禁止事項』或『何時用 / 禁止事項』),Do 清單併入『何時用』、Don't 清單併入『禁止事項』,維持全庫章節術語 SSOT。"
-    },
-    {
-      "fileLine": "components/Carousel/carousel.spec.md:49 (+ Chip/chip.spec.md:148,161,165; Tabs/tabs.spec.md:141,146; SelectMenu/select-menu.spec.md:182; DataTable/data-table.spec.md:433)",
-      "問題": "『scroll』一詞在同一份 spec 內同時寫『捲動』與『滾動』(術語不一致)。最明顯:Carousel:49 同一表格列同時出現『列表捲動』與『橫向滾動』;Chip 對同一 scroll variant 混用 4:4;Tabs 混 2:2。DS 主流用『捲動』(overlay-surface=7、DataTable=13),『滾動』為零星漂移(『虛擬滾動』為既有固定複合詞、可豁免,但一般 scroll 應統一)。",
-      "severity": "marginal",
-      "建議": "統一一般 scroll 用『捲動』(對齊 overlay-surface/DataTable 主流拼寫);僅保留『虛擬滾動』作固定複合術語。Carousel:49、Chip scroll 段優先修。"
-    },
-    {
-      "fileLine": "patterns/resize-handle/resize-handle.spec.md:41,78 (+ components/FileUpload/file-upload.spec.md:25,96,138)",
-      "問題": "『drag』一詞混用『拖曳』與『拖拉』。resize-handle:41 的 aria-label(user-facing)用『拖曳調整欄寬』,但 :78 prose 用『拖拉調整尺寸』;file-upload 用『拖曳』(25/138)與『拖拉』(96)並存。同義詞交替使用違反『術語一致』。",
-      "severity": "marginal",
-      "建議": "全 DS 統一『拖曳』(較正式、且已用於 aria-label user-facing 字串),把散落的『拖拉』改為『拖曳』。"
-    },
-    {
-      "fileLine": "components/Alert/alert.spec.md:183",
-      "問題": "同一段落內對『disable』同一概念混用『停用』(dismiss 停用 API ×2)與『禁用』(持久通知不該被禁用)。單段落內術語不一致。",
-      "severity": "marginal",
-      "建議": "同段落統一擇一(建議『停用』對齊 disabled 語意),把『不該被禁用』改為『不該被停用』。"
-    },
-    {
-      "fileLine": "components/Steps/steps.spec.md:224-225",
-      "問題": "spec prose 直接寫死實作級 CSS 值與機制:『box-shadow 不佔 layout(zero layout impact)』+ 精確 `0 0 0 2px var(--surface), 0 0 0 4px <ringColor>`。『zero layout impact』即 spec-rules:20 明列禁入 spec 的『zero layout shift』實作細節模式;精確 box-shadow 字面值屬 .tsx(可程式化規則)。此段設計理由(focus 用外環避免連結線幾何位移,L253)本身合法且應留,但實作級 CSS 字面值 + 該片語屬 story/tsx。",
-      "severity": "marginal",
-      "建議": "保留設計理由(為何用不佔 layout 的外環),把精確 box-shadow 字面值收進 .tsx cva,prose 只留公式/理由描述;移除『zero layout impact』這類 story-級措辭,改述『focus 外環不改變 bounding box → 連結線幾何恆一致』的原則語言。"
+      "建議": "date-picker.spec.md:235 降為一行 pointer 指 date-grid.spec.md「Range track canonical」,刪 class 字面量(保留 Ant benchmark cite 於 owner spec)"
     }
   ]
 }

@@ -5,7 +5,7 @@
 - [project_goal.md](project_goal.md) — World-class DS where CLAUDE.md + specs ensure AI faithfully executes design principles
 
 ## Project (active work)
-- [project_wm_ds_alignment_campaign.md](project_wm_ds_alignment_campaign.md) — WM↔DS 對齊戰役收官:beta.84 已發版、WM lockfile 真綠 13/13、CellSelect 包裝落地;唯一剩 WM main push 由 user;handoff 在 WM docs
+- [project_wm_ds_alignment_campaign.md](project_wm_ds_alignment_campaign.md) — WM↔DS 對齊戰役完整收官:beta.84/85 已發版、WM lockfile 真綠 13/13、CellSelect 包裝落地;WM main 已 push(4e83402,CAMPAIGN CLOSED);handoff 在 WM docs
 - [project_governance_evolution_roadmap.md](project_governance_evolution_roadmap.md) — 稽核=永久機構、謂詞化=機械化引擎雙柱;方向 1-3 已落地(判準化 harvest / fail-closed / 造輪三洞),4-7 分期各有 trigger;SSOT → planning/2026-07-07-governance-evolution-roadmap.md
 
 ## Feedback (workflow / collaboration discipline)
@@ -14,7 +14,7 @@
 - [feedback_solo_dev_workflow.md](feedback_solo_dev_workflow.md) — 1 chat = 1 working branch;Netlify preview = user gate;user 拍板才 push main(M28)
 - [feedback_ship_then_revert_anti_pattern.md](feedback_ship_then_revert_anti_pattern.md) — SSOT-UI/UX edit 必先 propose verbatim approval,違 = hook BLOCKER(2026-05-15)
 - [feedback_propose_discipline.md](feedback_propose_discipline.md) — 中文人話(禁 jargon,2026-05-31 擴大至**所有 reply**,user 看不懂英文)+ file:line cite(claim「規定/必配」沒 cite = 撤回)(2026-05-15 + 2026-05-27 + 2026-05-31,合 3 file)
-- [feedback_codex_exec_transport_canonical.md](feedback_codex_exec_transport_canonical.md) — 地端 transport `node_modules/.bin/codex` 3-test + visual audit `--dangerously-bypass-approvals-and-sandbox`(user authorize)+ 大 brief 死局 → 拆 N focused brief + low reasoning(2026-05-29 合 2 file)
+- [feedback_codex_exec_transport_canonical.md](feedback_codex_exec_transport_canonical.md) — 地端 transport `node_modules/.bin/codex` 3-test + visual audit `--dangerously-bypass-approvals-and-sandbox`(user authorize)+ 大 brief 死局 → 拆 focused brief、禁 effort 降檔(2026-05-29 合 2 file)
 - [feedback_push_always_call.md](feedback_push_always_call.md) — 每 substantive turn 結尾必 call PushNotification,不自我 suppress(2026-05-17)
 - [Storybook addon preset MUST be .cjs](feedback_storybook_addon_preset_must_be_cjs.md) — beta.27-.31 5 連敗 root cause: 強制 CJS evaluation,bypass Node ESM/esbuild-register CJS-interop 衝突(2026-05-28)
 - [feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md](feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md) — SSOT canonical = 必 P0 BLOCKER 機械強制 with per-line escape comment;禁 P1 WARN soft signal(2026-05-27)

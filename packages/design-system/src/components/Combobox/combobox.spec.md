@@ -124,7 +124,7 @@ value 軸 controlled-only;open 軸方向相反 — **uncontrolled-only**:`defaul
 
 ## Loading
 
-`loading?: boolean`(forward 給 SelectMenu SSOT,2026-05-15 audit B 補):dropdown body 內取代 options 顯 `<Empty icon={<CircularProgress size={48}/>}/>`(消費 既有 empty.spec.md「現有消費者」SelectMenu loading row SSOT)。Trigger 不變,user 隨時可開。對齊 Ant AutoComplete loading idiom。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+`loading?: boolean`(forward 給 SelectMenu SSOT,2026-05-15 audit B 補;措辭對齊 `select.spec.md`「Loading」2026-07-04 Q3 拍板 — 不清空 stale options):spinner 只在**無可顯示選項時**佔 empty slot 顯 `<Empty icon={<CircularProgress size={48}/>}/>`(cmdk `CommandEmpty` 機制;已有 options 時保留顯示,不取代)。Trigger 不變,user 隨時可開。對齊 MUI Autocomplete「loading 只在無 suggestions 時顯 loadingText」共識(cite 詳 select.spec.md 同段)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
 ---
 
@@ -132,7 +132,7 @@ value 軸 controlled-only;open 軸方向相反 — **uncontrolled-only**:`defaul
 
 - **Disabled**:Field SSOT own(`Field/field-controls.spec.md`)。trigger / tag dismiss / 搜尋 input 全部 disabled,token 走 M24 state precedence(`text-fg-disabled`);已選 Tag 的 dismiss X 自動隱藏(見「readonly / disabled 的 Tag」段)。
 - **Loading**:已 codify(見「Loading」段)。
-- **Empty(no search results)**:dropdown body 內渲 SelectMenu 預設 `emptyText`「沒有符合的選項」(Combobox 不傳 `emptyText`,走 SelectMenu primitive default)。Combobox 不暴露 `creatable` / `onCreate` prop(僅 SelectMenu primitive 本身支援),故 Combobox consumer 無「建立 "xxx"」row。
+- **Empty(no search results)**:dropdown body 內渲 `emptyText`(Combobox 暴露 `emptyText` prop 並 forward 給 SelectMenu;未傳時走 SelectMenu 預設「沒有符合的選項」)。Combobox 不暴露 `creatable` / `onCreate` prop(僅 SelectMenu primitive 本身支援),故 Combobox consumer 無「建立 "xxx"」row。
 - **Empty(no value selected)**:multi mode `value=[]` 時 trigger 顯 placeholder(如「請選擇」);empty state 不渲 tag 區。
 - **Dark mode / density**:走 Field + SelectMenu SSOT 自動 adapt。
 

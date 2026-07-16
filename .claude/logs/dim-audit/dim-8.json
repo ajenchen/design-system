@@ -1,29 +1,21 @@
 {
   "dim": 8,
-  "title": "7-維度 對標覆蓋 (7 world-class benchmark dimensions per spec)",
-  "mechanism": "Each component/pattern spec covers the 7 world-class DS dimensions (何時用/何時不用 · 近親分界 · 常見誤解/禁止 · 相關links · 空值 · 驗證時機 · Loading/a11y) benchmarked vs Polaris/Material/Ant/Atlassian/Carbon/Apple HIG; N/A dimensions require a one-line rationale.",
-  "filesScanned": 86,
-  "scanBreakdown": {
-    "componentSpecs": 67,
-    "patternSpecs": 8,
-    "tokenSpecs": 11,
-    "readInFull": ["SegmentedControl (template)", "Notice", "CircularProgress", "Steps", "Chart", "Slider", "Tag", "Chip", "AppShell", "Accordion", "Dialog", "DropdownMenu", "Calendar", "DateGrid", "Tooltip", "Combobox", "PeoplePicker", "DescriptionList", "FileItem", "SelectionItem", "OverflowIndicator", "header-canonical", "overlay-surface"],
-    "grepAll": 86
-  },
-  "scopeApplied": "Token specs excluded from component-7dim (they document token systems, no component:field except motion). Internal primitives (Notice, SelectionItem) + wrapper components (PeoplePicker) exempt from full coverage per audit-prompts.md line 28 documented scope default.",
-  "findings": [],
-  "verdict": "CLEAN — 0 genuine gaps. Every component & pattern spec covers all applicable 7 dimensions with N/A rationale where a dimension does not apply. All initial suspicions (CircularProgress/Steps missing 禁止事項, Chart missing empty/loading, Notice missing misuses, Calendar/DateGrid/Tag/Chip/Slider/Dialog/DropdownMenu missing near-neighbor boundary, header-canonical missing when-to-use) were false positives killed by adversarial full-read: sections exist under alternate headings (Do/Don't, 邊界案例, 何時不用 tables covering near-neighbors, 選哪個 header decision table).",
-  "falsePositivesKilled": [
-    "CircularProgress — has 'Do/Don't' (❌ Don't) covering misuses + '定位+姊妹元件分界' + '邊界案例' covering Empty/Loading/Dark",
-    "Steps — has 'Do/Don't' + '邊界案例' with explicit Loading + Empty(0 steps); 何時不用 table covers Tabs/Breadcrumb/RadioGroup/ProgressBar/Timeline",
-    "Chart — full 7 dims incl '近親元件分界', '常見誤解', '邊界案例' (空資料/Loading explicit)",
-    "Notice — internal primitive (isInternal) with ❌ 禁止 in 何時用/何時不用 table + 邊界案例 (Empty/Loading); exempt",
-    "AppShell — 禁止事項 present as ❌ 禁 list (L323-327) + 常見誤解 (L106/168) + 邊界狀態 (L29 explicit disabled/loading/empty N/A)",
-    "Accordion — 禁止事項 + 常見誤解 + empty/loading (L115) + near-neighbor via TreeView/DescriptionList/Tabs in 禁止事項",
-    "Tag/Chip/Slider/Dialog/DropdownMenu/Calendar/DateGrid/Tooltip — near-neighbor boundaries fully covered in 何時不用 comparison tables",
-    "header-canonical — '選哪個 header' decision table (when-to-use) + '何時不用(when NOT to use)' L30",
-    "Combobox — Loading (L125) + 邊界案例 Empty(no results/no value) + 驗證時機",
-    "DescriptionList — 空值呈現 (L176) + Loading/Empty 邊界案例 (L198-199)",
-    "PeoplePicker — 空狀態 (L80) + loading delegated to wrapped Combobox; wrapper exempt"
+  "title": "7-維度 對標覆蓋",
+  "filesScanned": 75,
+  "mechanism": "DS-wide:components(68)+ patterns(7)全 spec 建 7-dim heading 矩陣(何時用/何時不用/分界/誤解禁止/相關/空值/驗證/a11y+loading rg),41 個 MISSING 候選逐一二次驗證(Chip/Notice/Dialog/Textarea/TimePicker/Steps/CircularProgress/Sidebar 等的分界與禁止實為表格內覆蓋 = grep false negative;讀 heading 結構確認);token spec 不適用 7-dim template 排除;空值 miss 套 judgment(boolean control / nav / behavior primitive 天然 N/A)",
+  "verdict": "0 material / 2 marginal after 全掃 75 element+pattern specs:41 個候選中 39 個為 false negative 或 scope 豁免;元件 spec 7-dim 覆蓋率高(Button/SegmentedControl/Badge 全中);僅 2 個 sub-spec 缺 N/A 一行說明",
+  "findings": [
+    {
+      "fileLine": "packages/design-system/src/components/Field/form-validation.spec.md:1",
+      "問題": "機制型 sub-spec 無「何時用 / 何時不用」段亦無一行 N/A 說明(rubric:某維度 N/A 時須一行說明)。Field 家族 delegation 可辯護,但缺明文",
+      "severity": "marginal",
+      "建議": "定位段補一行「本檔為 Field 家族 validation 機制 SSOT,何時用/何時不用歸 field.spec.md」"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DataTable/filter-operators.spec.md:1",
+      "問題": "operator registry sub-spec 缺「常見誤解 / 相關」維度且無 N/A 一行(何時不用歸 data-table.spec.md 未明示)",
+      "severity": "marginal",
+      "建議": "檔頭補一行 scope 說明 pointer 指 data-table.spec.md,明示本檔僅 registry 資料契約"
+    }
   ]
 }

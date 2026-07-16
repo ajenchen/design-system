@@ -1,1 +1,43 @@
-{"component":"FileViewer","implBasis":"Self-built composite consuming Radix DialogPrimitive directly (edge-to-edge fullscreen) + DS primitives (Button/Input/Empty/ChromeHeader/DropdownMenu/ScrollArea/horizontal-overflow) + renderer registry (ImageRenderer lazy + FallbackRenderer). Motion: Overlay=surfaceMotion fade-only (L945-947), Content=surfaceMotion fade+zoom (L955-958) — verified against motion.css (--motion-duration-surface 250ms) + overlay-motion.ts.","claimsVerified":30,"falseClaims":[{"fileLine":"file-viewer.spec.md:213","宣稱":"雙擊 toggle 邏輯引用 `image-renderer.tsx:144`（『兩者不同(image-renderer.tsx:144)』）","真實code行為":"image-renderer.tsx:144 實為 ResizeObserver reflow 數學（`const cy = (prevH / 2 - positionY) / scale`），與雙擊無關。實際 handleDoubleClick 在 image-renderer.tsx:171-181。行號因 code 位移而 stale（描述的雙擊行為本身正確，僅指標行號漂移）。","severity":"marginal"}]}
+{
+  "component": "FileViewer(+ image-renderer.tsx / file-viewer-types.ts / can-render-image.ts)",
+  "implBasis": "自建 composite:直接消費 Radix DialogPrimitive(edge-to-edge fullscreen,不用 DS Dialog wrapper)+ renderer registry(user-registered → ImageRenderer(React.lazy)→ FallbackRenderer 兜底)+ ChromeHeader Toolbar / InfoPanel(w-80, memo)/ Filmstrip(h-24, horizontal-overflow, memo)+ useControllable open 鏡像;ImageRenderer 消費 react-zoom-pan-pinch(natural size + transform scale,MIN 0.1 / MAX 4.0,wheel step 0.03,ResizeObserver 單一咽喉點自適應)",
+  "claimsVerified": [
+    "aria-modal 宣稱(spec:23/:363 + anatomy Accessibility):@radix-ui/react-dialog@1.1.15 dist grep 0 命中 aria-modal — 「1.1.x 不輸出 aria-modal、靠 hideOthers」TRUE",
+    "renderer resolution 順序(user → image → fallback 永遠 true)= code resolveRenderer :140-147;FallbackRenderer mount emit {zoom:false}(capability contract)✓",
+    "鍵盤表 7 鍵逐鍵對 code :864-904(←→ 需 files>1 / +−0F 需 capabilities.zoom / I 永遠);INPUT/TEXTAREA/contentEditable 排除 ✓;Esc 走 Radix capture-phase 不受排除(spec 例外標註正確)",
+    "ZoomInput:presets 10..400 / clamp 10-400 對齊 MIN_SCALE 0.1 / MAX_SCALE 4.0 / maxLength=5 / 非法值 blur 還原 / ± 跳 preset 邊界 disabled / 選單 fit 上 preset 下 + Separator / 當前 preset bg-neutral-selected — 全對 code",
+    "wheel step 0.03 + 加法線性宣稱 / limitToBounds / centerZoomedOut / doubleClick disabled + 自定 fit↔100 toggle(±5pt)= image-renderer.tsx :237-249,:172-182",
+    "畫布自適應 codify:容器 ResizeObserver 單一咽喉點(非 window resize)+ fit mode 重算 / manual scale 不變+視覺中心保持(setTransform 反推)+ rAF debounce + programmaticZoomRef 防誤標 = code :122-169 逐項一致",
+    "切檔不重設 zoom(shell 無 setZoom(100);renderer watch file.url + cache 命中 img.complete 主動觸發)= code :68-78 = spec ✓",
+    "clampToPct Math.floor(對稱置中,~1% under-fill)+ fit 受 MIN 10% 夾制邊界誠實標註 = code :95-102",
+    "arrows idle-fade 2.5s(armVisible + mousemove/mouseleave + focus-within:opacity-100)+ 第一/最後不 render = code :906-921,:1026-1078",
+    "backdrop click geometric handler(closest button 排除 + img rect 內不關)= code :1012-1024 = spec A11y「非 Radix outside-click」宣稱 ✓",
+    "Toolbar 三分區 + 順序 zoom→info→download→close + 兩處 X 走 Button dismiss + Separator 分群 = code Toolbar ✓;ChromeHeader 繼承 page density(無 lockDensity)= code(chrome-header h-[var(--chrome-header-height)])✓",
+    "InfoPanel:w-80 / ChromeHeader 等高 / Field+FieldLabel+Textarea(readOnly 分流:空值顯 '-' 非 placeholder — textarea.tsx useFieldEmptyDisplay)/ DescriptionList horizontal divided / onBlur 有變更才 onDescriptionChange / readOnly 不觸發 = code :458-557",
+    "Filmstrip:showFilmstrip && files.length>1 / thumb 64 固定 / gap tight token / active ring-2 ring-primary vs ring-1 ring-border hover / scrollIntoView center / role=group + aria-current(非 tablist)/ 非 image FileText+ext = code :574-672",
+    "open 受控/非受控鏡像(useControllable;uncontrolled defaultOpen 快捷鍵/Esc/backdrop 全生效)= code :790-794 = docblock 修復註解一致",
+    "D3 bundle 宣稱:ImageRenderer React.lazy + canRenderImage 拆檔(靜態 import 純 util)= code 屬實;Suspense fallback=null = spec Loading 段(shell 不提供全頁 loading)一致",
+    "視覺 token 表(bg-overlay / outer 無 bg / chrome bg-surface-raised / border-divider / data-theme dark subtree + Portal 內 DropdownMenuContent 顯式 dark)= code 逐項 ✓",
+    "labels i18n 15 keys 預設全走 DEFAULT_LABELS + partial merge = code ✓;files 空/index 超界 return null = spec Empty 行 ✓"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "file-viewer.spec.md:143(按鈕順序段 close 註)",
+      "宣稱": "「close = setOpen(false) 僅卸載 DialogContent 子樹;shell state(zoom / infoOpen / **index** 等 useState)保留 — 重開沿用上次」",
+      "真實code行為": "zoom / infoOpen 確實保留,但 index 在重開時被顯式重置:`open && indexProp===undefined → setInternalIndex(initialIndex)`(file-viewer.tsx:810-814)— uncontrolled 重開永遠回 initialIndex,非「沿用上次」。宣稱把 index 一併列入「保留」= 與 code 相反",
+      "severity": "P2"
+    },
+    {
+      "fileLine": "file-viewer.tsx:1118(fileViewerMeta states 註解)",
+      "宣稱": "「'selected' = 縮圖列當前頁持續選中(bg-neutral-selected)」",
+      "真實code行為": "縮圖列(Filmstrip)當前選中 = `ring-2 ring-primary`(:641);`bg-neutral-selected` 是 ZoomInput 選單當前 preset 的標示(:298)。註解把兩個不同 selected 視覺混為一談",
+      "severity": "P3"
+    },
+    {
+      "fileLine": "file-viewer.spec.md:213(雙擊 bullet cite)",
+      "宣稱": "cite「file-viewer.tsx:863」(0 鍵)與「image-renderer.tsx:144」(雙擊)",
+      "真實code行為": "'0' 鍵在 file-viewer.tsx:887-891、handleDoubleClick 在 image-renderer.tsx:172 — 行號 drift(行為宣稱本身正確)",
+      "severity": "P3"
+    }
+  ]
+}

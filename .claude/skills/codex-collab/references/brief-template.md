@@ -37,10 +37,14 @@ N. <SSOT 是否該抽到更上層 primitive?>
 - Counter-proposal request:挑戰我的 hypothesis,提第 4 條路
 - 必產 3-column cite table(claim / path:line / reasoning)
 
-## 🚨 三 invariant — 2026-05-23 user 永久 directive(缺一 = brief 不合格)
+## 🚨 七 invariant — 2026-05-23 user 永久 directive + 2026-07-10「任務/資訊/判準對等」directive(缺一 = brief 不合格,hook check_codex_brief_invariants.sh BLOCK)
 1. **全盤閱讀全部 source**(CLAUDE.md / 31 active M-rules / 5 rules/*.md / 91 audit dims SKILL.md / 全部 spec.md / 全部 stories / 全部 components / tokens / patterns / hooks / 全部 memory files / planning),**禁憑記憶**(spec/story/component/memory 數量隨時變動,故不硬編數字 — 一律「全部」;M-rule / audit-dim 數由 sync-governance-counters 機械守住)
 2. **Triple-verify per finding**:(a) grep DS-wide 確認 pattern 存在 (b) Read 對應 spec.md / tsx 確認 problem 真存在 (c) 對照既有 canonical 確認非 documented exception。任一 NO → 自動撤回,**禁無病呻吟**
 3. **禁抽樣** — DS-wide ALL files 全掃,context 不夠拆 stage 全跑完;sub-agent admission「I sampled / spot-check / representative」= audit incomplete reject
+4. **禁列檔** — 禁 `rg --files` / 禁 find 全 repo 列檔燒 reasoning(2026-05-27 codex 2× token-burn anchor);只讀 brief 列的 file(targeted rg / Read),不需報告探索過程,直接出 verdict
+5. **輸入對等**(2026-07-10「codex 擁有的資訊要跟 Claude 一模一樣」)— 閱讀清單逐字鏡射 Claude Phase A.0 六項,**必具名含** `.claude/rules/meta-patterns.md`(31 active M-rules)+ `.claude/memory/MEMORY.md` index(泛 glob ≠ 對等)
+6. **判準對等**(2026-07-10「兩邊用同樣完美標準稽核」)— brief 必附 `design-system-audit/references/audit-prompts.md` 每-dim rubric 並要求逐 dim 套用同一判準;只給 dim 編號 = codex 憑己意判 = 標準不對稱
+7. **A.1b 對等** — brief 必要求 codex 做 A.1b per-component claim-vs-code 對抗驗證(讀每元件 .tsx + wrap lib source 逐句驗宣稱);漏 = codex 少做 Claude 最高產出 pass(2026-05-30 抓 403 findings)= 任務不對等
 ```
 
 ## 歷史錨點

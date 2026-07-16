@@ -121,6 +121,11 @@
   --tab-height-md: 2.5rem;      /* 40px */
   --tab-height-lg: 3rem;        /* 48px */
 
+  /* 2026-07-16 dim 52 補洞:lg block(上方)有 override --chrome-header-height 3.5rem,
+     md-reset 原漏重設 → lg 祖先下 subtree lock md 時 chrome header 仍 56px,破 W3
+     像素相等恆等式(md-lock subtree 必須與 root md 逐 token 相等)。值 = :root md default。 */
+  --chrome-header-height: 3rem; /* 48px — md default */
+
   --tree-indent-sm: 1.5rem;     /* 24px — md default */
   --tree-indent-md: 1.5rem;     /* 24px — md default */
   --tree-indent-lg: 1.75rem;    /* 28px — md default */

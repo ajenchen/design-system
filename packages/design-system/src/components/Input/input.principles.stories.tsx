@@ -128,10 +128,10 @@ export const ModeRule: Story = {
 
       <Rule
         title="❌ 不用 readonly 作為 DataTable cell"
-        note="readonly 仍然有 padding + 視覺 chrome,密集列表會顯得鬆散。Table cell 用 `<Input mode='view'>`(零視覺 chrome、無左右 padding;wrapper 高度同 readonly)"
+        note="readonly 有底色 chrome(bg-readonly),密集列表會顯得鬆散。Table cell 用 `<Input mode='view'>`(Model A:edit 幾何減 chrome —— 保留 px 與高度,只拔 border/bg;cell 內經 naked variant 由 host cell 供 padding)"
       >
         <Input mode="readonly" value="alice@example.com" />
-        <Label warn>↑ 在 table cell 中會過高且有多餘 padding → 用 &lt;Input mode=&quot;display&quot; /&gt;</Label>
+        <Label warn>↑ 在 table cell 中有多餘底色 chrome → 用 &lt;Input mode=&quot;view&quot; /&gt;</Label>
       </Rule>
     </div>
   ),

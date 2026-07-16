@@ -1,1 +1,9 @@
-{"dim":60,"hook":"check_propose_without_benchmark.sh","residueCount":0,"findings":[],"verified":true,"note":"UserPromptSubmit M26 gate (inject P0 directive when propose keyword + <2 WebFetch/WebSearch in last ~20 turns). Runtime transcript-based reminder, exit 0 by design; no static code anti-pattern to leave file residue."}
+{
+  "dim": 60,
+  "hook": "check_propose_without_benchmark.sh",
+  "wiring": "OK — UserPromptSubmit(matcher \"\")in .claude/settings.json:458 + hooks/hooks.json:320;mirror sync;7 fires 2026-07-16",
+  "smoke": "trigger keyword(比稿/哪個比較)+ transcript 無 WebFetch → 注入 M26 P0 directive;非 trigger prompt 靜默;exit 0 by design(檔頭 documented:UserPromptSubmit exit 2 = 擋 user 輸入之錯誤語義,fail-closed 端在 check_propose_pre_grep_verify + stop_self_audit)",
+  "residueCount": 0,
+  "findings": [],
+  "notes": "inject 型 hook 無存量違規面;escape 機制不存在(無 bypass env)= 無濫用面"
+}

@@ -1,30 +1,8 @@
 {
   "dim": 90,
   "title": "Layout-space macro 合規 sweep",
-  "mechanism": "LLM layout-space macro DS-wide NO-SAMPLE;判準 layoutSpace.spec.md 該用 token vs 刻意固定 邊界段;每 finding 對抗二次驗證(只抓 macro 結構違規,禁 flag 合法 magic number)",
-  "canonicalRead": [
-    "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md",
-    "packages/design-system/src/tokens/layoutSpace/layoutSpace.css"
-  ],
-  "scope": "全 83 production tsx(78 components + 5 patterns)+ 全 stories DS-wide grep sweep(px-N / gap-N / pb-N / chrome-border-px / section-gap 簽名)+ 逐讀 ~18 candidate 檔 + component specs(ProfileCard / action-bar / Notice)",
-  "filesScanned": 279,
-  "verdict": "Production DS code 對 layout-space macro 合規幾乎乾淨:所有 chrome 表面(Dialog/Sheet/Sidebar/FileViewer/DataTable panels/Tabs/overlay-surface/chrome-header/Pagination/BulkActionBar/Alert/TimePicker/TreeView/DescriptionList/FileUpload/Coachmark 經 Popover primitive)一致消費 var(--layout-space-*)。1 marginal finding(pattern stories 手刻 chrome frame 漏 token)。",
-  "clearedCandidates": [
-    "Notice/notice.tsx:69 px-4 py-3 — 文件明載 notification banner family 固定不隨 density(notice.tsx:35 + overlay-surface.spec.md),legit magic number,不報",
-    "ProfileCard/profile-card.tsx:240,267,283,302,317 px-4 — spec 明載 fixed-geometry(320px 固定寬,line 84「單一元件獨有結構常數留 component code 不 token 化」),整卡不 density-scale → padding 固定一致,legit,不報",
-    "Field/field.tsx:500 gap-3/gap-4/gap-6 — 邊界表明列例外「FieldGroup 三級固定 gap 不隨 density」,legit,不報",
-    "Command/command.tsx:51 + SelectMenu/select-menu.tsx:364 px-3 — 浮層內 search-input row 與 cmdk item grid 對齊(item-level / 元件內部決定),非 chrome-surface macro;屬 item-anatomy 領域非本 dim,legit",
-    "Chart/chart.tsx:205 px-2.5 py-1.5 — tooltip micro padding,legit",
-    "DateGrid/date-grid.tsx:89 gap-4 months — calendar 控件內部 multi-month layout(fixed-geometry control 內部),marginal,不報",
-    "DataTable py-12 / Empty py-6/12 — empty-state outer padding consumer-decided(empty.spec.md line 20),legit",
-    "Dialog/dialog.principles.stories.tsx:192 space-y-4 + Field/field.stories.tsx:480 gap-4 — 同質 list(12+ notification 設定列 / labelWidth demo 列),邊界表「同質 list 列間距 = magic number 合法」,legit"
-  ],
-  "findings": [
-    {
-      "fileLine": "packages/design-system/src/patterns/action-bar/action-bar.stories.tsx:39,320,424",
-      "問題": "action-bar pattern 只有 spec + stories、無 production container tsx,故 stories 是此 pattern 唯一參考實作。三處手刻 action-bar chrome frame(border border-border rounded-lg bg-surface = 有邊界 chrome 表面)水平內距硬寫 px-4(L39/L320)、px-3(L424),未消費 layout-space canonical。違反規則 6「所有 chrome 表面水平左右 padding 統一 px-[var(--layout-space-loose)](density-aware)」+ 明列禁忌「硬寫 px-4 / 同 surface padding 不一致」。真正同目的 canonical BulkActionBar(bulk-action-bar.tsx:102)已用 px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]。額外:三 frame 內部不一致(px-4 ×2 vs px-3 ×1),且 h-[52px] 固定高度而非 BulkActionBar 的 padding-based py-tight sizing。lg density 下不縮放。M23(d)「nearest same-purpose canonical wins」— stories wrap primitive 前應抄 production baseline。",
-      "severity": "marginal",
-      "建議": "把三處手刻 frame 對齊 BulkActionBar 容器 canonical:px-[var(--layout-space-loose)] py-[var(--layout-space-tight)](取代 px-4/px-3 + h-[52px]),或直接 render BulkActionBar/ActionBar 容器。至少統一三 frame 為同一 loose token,消除 px-4/px-3 內部漂移。"
-    }
-  ]
+  "filesScanned": 85,
+  "mechanism": "先讀 layoutSpace.spec.md「該用 token vs 刻意固定」判準邊界(L150-161)+ 規則 1-6。85 個 production tsx(components + patterns)兩輪 regex sweep:大值(gap-5+/space-y-3+/p-5+/px-5+)+ 中值(gap-3/4、p-3/4、px-3/4、py-3/4、space-y-2/4)→ raw 候選逐一對抗覆核:SelectMenu Empty py-6(overlay density-lock md 元件內部 empty slot)/ FileViewer p-8(canvas 置中 filler,self-contained chrome)/ Tooltip px-3 py-2(檔內註解明寫「padding 寫死」canonical)/ Notice + Alert px-4 py-3(notification banner family「固定不隨 density」明文)/ DateGrid p-3 + DatePicker pt-3(幾何對齊 rationale 註解 canonical 不可動)/ FieldGroup gap-3/4/6(spec 邊界表點名合法刻意固定)/ CheckboxGroup gap-4(同質選項並排 list 間距)/ Chip px-3、menu-item px-3 gap-2、FileItem px-3 py-3(元件 spec padding 表記載,控件內部)/ Accordion py-4(row 內部)/ Chart legend gap-4(同質 legend list)→ 全數落入「micro / 同質 list / 元件內部刻意固定」合法類 → 0 confirmed。stories 補掃(space-y-4~8 + 帶 border/rounded 的 p-4 demo 卡框):prose/doc scaffolding 與 anatomy demo 框 = story 排版鷹架非 macro 結構教學(對齊 2026-07-01 對抗覆核殺 ProfileCard/apps-scaffold 前例);Dialog principles space-y-4 為同質 Input 填充列(scroll 行為 demo,同質 list 合法);header-canonical p-6 filler 為 overlay(density-lock md)demo 佔位 → 全 FP 殺。新 InlineEdit stories 已全消費 var(--layout-space-*) token(正向確認 branch 新 code 合規)。",
+  "verdict": "85 files scanned, 0 macro violations(對抗覆核後)",
+  "findings": []
 }

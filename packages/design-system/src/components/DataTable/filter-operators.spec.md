@@ -245,6 +245,8 @@
 - **巢狀深度**:1-level cap 由 TypeScript 型別鎖死(`FilterGroup.children: FilterCondition[]`),無 runtime guard;繞過型別塞入的非 condition 物件缺 `field`/`op` → incomplete → pass-through,不 crash
 - **relative 區間邊界**:全部 local time、雙端 inclusive(`startOfDay`–`endOfDay`);`past_7_days` = 7 天前 00:00 起**含今天整天**;week 以週一起算(`weekStartsOn: 1`)
 
+**A11y / Loading(明文 N/A)**:本 spec 是 Operator × ColumnType × ValueShape 資料模型 SSOT(非 UI 元件)——filter panel 的互動 a11y / loading 狀態屬 UI 層 owner(`data-table.spec.md` + filter panel 家族元件)與各 Field 控件 spec。
+
 ## 9. Phase B 進度
 
 - [x] ValueShape × DS 元件對照 — 完成,coverage 8/12 直接消費 + 4 預留;datetime 走 `<DatePicker showTime>` / `<DatePickerRange showTime>` prop variant(M21,非新元件)

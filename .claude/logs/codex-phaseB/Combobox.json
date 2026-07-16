@@ -1,231 +1,216 @@
 {
  "component": "Combobox",
- "claimsVerified": 289,
+ "claimsVerified": 560,
  "falseClaims": [
   {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:40",
-   "宣稱": "menuOptions mapping forward 全 SelectMenuOption surface",
-   "真實code行為": "mapping 未轉送 SelectMenuOption.iconClassName。"
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:21,171,175",
+   "宣稱": "「觸控偵測自動切換」；「手機／觸控裝置」走 native path。",
+   "真實code行為": "分支只檢查 matchMedia('(pointer: coarse)') 的 primary pointer；具觸控能力但 primary pointer 為 fine 的混合裝置仍走 CustomCombobox。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:186",
-   "宣稱": "已解決 Tag 先全顯再變 +N 的閃動",
-   "真實code行為": "visibleCount 初始為 totalCount，量測在首次 paint 後的 useEffect 執行，仍可能先全顯 1–2 frame。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:290",
-   "宣稱": "Flicker 由 useEffect 內 calc 解決",
-   "真實code行為": "useEffect 在 paint 後才執行；同步 calc 無法阻止初次全顯 paint。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:384",
-   "宣稱": "searchable 啟用搜尋",
-   "真實code行為": "NativeCombobox 不解構或消費 searchable，觸控路徑設定此 prop 無效果。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:386",
-   "宣稱": "loading 時取代 options 顯 CircularProgress + loadingText",
-   "真實code行為": "SelectMenu 僅在 filtered count=0 時顯示 spinner；非空 options 保留，沒有 loadingText prop，NativeCombobox 亦忽略 loading。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:390",
-   "宣稱": "searchIn='trigger' 使用 inline input",
-   "真實code行為": "inline input 只在 value.length>0 時渲染；value=[] 時只有 placeholder span，且 menu search 同時關閉。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:392",
-   "宣稱": "searchPlaceholder 在未有選項時顯示",
-   "真實code行為": "menu input 不依選項數決定 placeholder；trigger input 使用 placeholder 而非 searchPlaceholder，NativeCombobox 也忽略此 prop。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:394",
-   "宣稱": "searchAriaLabel 是搜尋框的 ARIA label",
-   "真實code行為": "只套在 trigger input；預設 searchIn='menu' 的搜尋框未收到它，NativeCombobox 亦忽略。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:400",
-   "宣稱": "aria-label 可在無 Field wrapper 時提供 combobox accessible name",
-   "真實code行為": "僅 CustomCombobox 使用；NativeCombobox 丟棄 aria-label。Field 路徑的 div-role combobox 也未接 fieldCtx.labelId。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:402",
-   "宣稱": "defaultOpen 提供 initial open state",
-   "真實code行為": "僅 CustomCombobox 消費；觸控 NativeCombobox 完全忽略 defaultOpen。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:405",
-   "宣稱": "onOpenChange 是 open state 變更 callback",
-   "真實code行為": "Enter、Space、ArrowDown、Escape 與 inline-input click 多條路徑直接呼叫 setOpen，未通知 onOpenChange；NativeCombobox 亦忽略此 prop。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:408",
-   "宣稱": "設 tagRenderer 後每個 selected tag 都走 consumer renderer",
-   "真實code行為": "只有 CustomCombobox 消費；NativeCombobox 固定渲染預設 Tag。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:418",
-   "宣稱": "renderHiddenTag 可客製 +N 內的 hidden items",
-   "真實code行為": "只有 CustomCombobox 轉交；NativeCombobox 未傳入此 prop。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:464",
-   "宣稱": "overflowShape='circle' 可切換 +N 形狀",
-   "真實code行為": "NativeCombobox 未轉送 overflowShape，觸控路徑固定使用預設 tag shape。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:469",
-   "宣稱": "visibleCountOverride 可 bypass DOM measurement",
-   "真實code行為": "NativeCombobox 未轉送 visibleCountOverride，觸控路徑仍走 DOM measurement。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:479",
-   "宣稱": "showDisplayEndIcon=true 時 display 走 fieldWrapperStyles(naked variant)",
-   "真實code行為": "ReadonlyMultiSelect 保留 caller variant，預設仍是 default；showDisplayEndIcon 不會強制 naked。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:682",
-   "宣稱": "開啟時會聚焦 inline search input、顯示 cursor",
-   "真實code行為": "value=[] 時 inline input 不存在，inputRef 為 null，focus 無效果。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:685",
-   "宣稱": "listboxId 建在 listbox 容器並供 aria-controls 指向",
-   "真實code行為": "id 掛在 Radix PopoverContent 的 role=dialog 容器；內層 cmdk role=listbox 使用另一個自產 id。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:715",
-   "宣稱": "forward 全 SelectMenuOption surface",
-   "真實code行為": "menuOptions mapping 遺漏 iconClassName。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:754",
-   "宣稱": "searchable 時不攔 Enter／Space；open 後方向鍵不 preventDefault、自由流向選單",
-   "真實code行為": "closed 時 handler 不判 searchable，會 preventDefault；open 時 forwardKeyToListbox 也會 preventDefault 後重新派送。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:764",
-   "宣稱": "Combobox 恆 searchable",
-   "真實code行為": "searchable 預設為 false。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:792",
-   "宣稱": "items.length===0 時 inline input 顯示 trigger placeholder",
-   "真實code行為": "input 位於 value.length>0 分支，items.length===0 永遠不可達。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:843",
-   "宣稱": "inline-searchable 開啟浮層即顯示 cursor",
-   "真實code行為": "空值時沒有 inline input，onOpenAutoFocus 的 focus 呼叫為 no-op。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:21",
-   "宣稱": "手機／觸控裝置走隱藏的原生 select",
-   "真實code行為": "value=[] 時 select 是 relative、非 opacity-0；全部選完時 selectDropdown=null，沒有 select。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:42",
-   "宣稱": "onOpenChange 通知 open 變更並 echo 內部 intent",
-   "真實code行為": "多條鍵盤與 input 路徑直接 setOpen，繞過 callback；NativeCombobox 也忽略 open pair。"
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:42,45; packages/design-system/src/components/Combobox/combobox.tsx:403-407",
+   "宣稱": "「onOpenChange（通知 callback）」；defaultOpen + onOpenChange 可讓 consumer 知道開關狀態。",
+   "真實code行為": "CustomCombobox 的鍵盤開關、Escape 與 inline-input click 直接 setOpen，未呼叫 consumer callback；NativeCombobox 完全忽略 defaultOpen/onOpenChange。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:127",
-   "宣稱": "loading 在 dropdown body 取代 options",
-   "真實code行為": "只有零結果時才顯示 loading Empty；非空 options 繼續顯示。"
+   "宣稱": "loading 且無可顯示選項時顯示 spinner，trigger 仍可隨時開啟。",
+   "真實code行為": "僅 CustomCombobox→SelectMenu 支援 loading；NativeCombobox 忽略 loading，且沒有未選選項時不渲染 select，無 picker 可開。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:135",
-   "宣稱": "Combobox 不傳 emptyText，走 SelectMenu default",
-   "真實code行為": "ComboboxProps 已公開 emptyText，且明確傳給 SelectMenu。"
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:136",
+   "宣稱": "「empty state 不渲 tag 區。」",
+   "真實code行為": "Native 與 Custom 路徑都固定渲染 tag-area 容器；value=[] 時只把內容換成 select 或 placeholder span。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:143",
-   "宣稱": "required + value=[]／null 會在 submit 時自動產生 error",
-   "真實code行為": "元件沒有 required/submit validation，只反映外部 Field invalid；value 型別亦不接受 null，傳 null 會在 value.length 路徑失敗。"
+   "宣稱": "「required + value=[] / null → submit 時 trigger error，aria-invalid=true + error border。」",
+   "真實code行為": "Combobox 沒有內建 submit validation，也不因 required/value 自行產生 error；value 型別不接受 null，runtime 傳 null 會因讀取 value.length 而拋錯。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:144",
-   "宣稱": "errorMessage prop 由 Field wrapper 顯示",
-   "真實code行為": "ComboboxProps 與 FieldProps 均無 errorMessage；錯誤文字需另渲染 FieldError。"
+   "宣稱": "「errorMessage prop 由 Field wrapper 顯示於下方。」",
+   "真實code行為": "ComboboxProps 與 FieldProps 都沒有 errorMessage；錯誤內容必須由 consumer 顯式組合 FieldError。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:146",
-   "宣稱": "Validation timing 預設 onBlur + onSubmit",
-   "真實code行為": "Combobox 不公開或轉送 onBlur，也沒有 submit validation/form registration。"
+   "宣稱": "「Validation timing：預設 onBlur + onSubmit，onChange 不立即 validate。」",
+   "真實code行為": "Combobox 沒有 onBlur/onSubmit/validate/name 或內建驗證時序；這屬於外部 form-validation 行為。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:154",
-   "宣稱": "單一鍵盤聚焦點 + 多滑鼠點擊區",
-   "真實code行為": "trigger 外，Tag dismiss、clear、+N、截斷 Tag 與 inline input 都可能成為獨立 Tab stop。"
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:154,177,179",
+   "宣稱": "「單一鍵盤聚焦點 + 多滑鼠點擊區」；鍵盤使用者不經過 Tag/click targets。",
+   "真實code行為": "除 trigger 外，Tag dismiss 與 clear-all 是原生 button、trigger search 是 input、+N 固定 tabIndex=0，截斷 Tag 亦可能 tabIndex=0；實際存在多個 Tab stop。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:173",
-   "宣稱": "aria-controls 指向選單",
-   "真實code行為": "實際指向 role=dialog 的 PopoverContent ancestor，不是 role=listbox。"
+   "宣稱": "「aria-controls 指向選單。」",
+   "真實code行為": "aria-controls 的 id 掛在 role=dialog 的 PopoverContent；真正 role=listbox 的 cmdk CommandList 使用另一個自動產生的 id。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:173",
+   "宣稱": "桌機 popup 預設包含搜尋與選項清單。",
+   "真實code行為": "searchable 預設 false；預設 popup 只有選項清單，搜尋為 opt-in。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:175",
-   "宣稱": "手機隱藏 select 始終提供可 Tab 聚焦的原生路徑",
-   "真實code行為": "全部選完時 select 不渲染；存在時也未接 Field label id 或公開 aria-label。"
+   "宣稱": "手機路徑使用 hidden、tab-focusable 的原生 select。",
+   "真實code行為": "select 僅在已有值且仍有未選項目時為透明 overlay；空值時是可見 select，全部選完或無選項時則完全不渲染。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:175",
-   "宣稱": "有值時點擊任何位置都會喚起原生 picker",
-   "真實code行為": "全部選完時沒有 select；dismiss 與 clear 點擊執行移除／清除，不會開 picker。"
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:40,733-744",
+   "宣稱": "「menuOptions mapping — forward all SelectMenuOption surface。」",
+   "真實code行為": "mapping 漏掉 iconClassName；group metadata 沒有相應 groups config 可供 SelectMenu 使用；Native 路徑也未把 opt.disabled 套到 option。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:177",
-   "宣稱": "鍵盤使用者不經過 Tag／欄位 click targets",
-   "真實code行為": "Tag dismiss、clear、+N、截斷 Tag 與 inline input 都可進入鍵盤焦點序。"
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:253-256,442-443",
+   "宣稱": "useOverflowCount 會按 wrapper.offsetWidth 累加量測。",
+   "真實code行為": "主要量測的是 wrapper 內 data-tag-root 的 getBoundingClientRect().width；wrapper.offsetWidth 只在找不到 tag root 時 fallback。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:179",
-   "宣稱": "這是單一鍵盤聚焦點的模式",
-   "真實code行為": "實際 DOM 同時存在多個原生 button、input、role=button/tabIndex=0 元素。"
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:384-478",
+   "宣稱": "searchable、loading、searchIn、emptyPlaceholder、defaultOpen、onOpenChange、tagRenderer、renderHiddenTag 與 overflow overrides 等公開 prop docblocks 未限定裝置或 mode 地宣稱其行為。",
+   "真實code行為": "NativeCombobox 靜默忽略上述 props；tagRenderer/renderHiddenTag 亦不適用非 edit 路徑。searchAriaLabel 只套到 trigger input，預設 menu-search 不使用它。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:567-576,890-893",
+   "宣稱": "Combobox.forwardRef 會把 ref forward 到 root div。",
+   "真實code行為": "只有 edit path 的 Native/Custom root 接收 ref；view、readonly、disabled 在此前 early-return 到不接 ref 的 ReadonlyMultiSelect。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:585-586",
+   "宣稱": "native 路徑的 describedby、errormessage、required 與 desktop trigger 對齊。",
+   "真實code行為": "Native 路徑未解析 Field invalid context；父層 Field invalid 不會產生 native aria-invalid、aria-errormessage 或 error border，與 Custom 路徑不一致。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:793",
+   "宣稱": "「Combobox is always searchable。」",
+   "真實code行為": "CustomCombobox 的 searchable 預設 false；NativeCombobox 更不消費 searchable。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:699-700,821-827,872-875",
+   "宣稱": "inline-search 開啟時會被 focus；items.length===0 時 input 使用 trigger placeholder。",
+   "真實code行為": "input 位於 value.length>0 分支，因此其 empty-placeholder 分支不可達；value=[] 時只有 span，searchIn='trigger' 又停用 menu search，auto-focus 最終只會嘗試 focus null ref。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:73",
+   "宣稱": "「sm height = 28px」",
+   "真實code行為": "只有預設 density 為 28px；data-ui-size=lg 時為 32px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:81",
+   "宣稱": "「md height = 32px」",
+   "真實code行為": "只有預設 density 為 32px；data-ui-size=lg 時為 36px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:89",
+   "宣稱": "「lg height = 36px」",
+   "真實code行為": "只有預設 density 為 36px；data-ui-size=lg 時為 40px。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:209",
-   "宣稱": "手機／觸控另走隱藏的原生 select",
-   "真實code行為": "空值時 select 可見；沒有未選選項時不渲染 select。"
+   "宣稱": "「桌機（預設）浮層選單（搜尋 + 選項清單）」",
+   "真實code行為": "searchable 預設 false，因此預設只有選項清單。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:209",
+   "宣稱": "「手機／觸控裝置另走隱藏的原生 select 結構」",
+   "真實code行為": "select 僅有值時透明；空值時可見，全部選完時不渲染。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:296",
-   "宣稱": "readonly／disabled 空值皆為 text-foreground",
-   "真實code行為": "disabled 路徑使用 fieldEmptyColorClass('disabled') 的 disabled 前景色；只有 readonly 是一般前景。"
+   "宣稱": "「readonly / disabled 空值：text-foreground」",
+   "真實code行為": "readonly 為 text-foreground；disabled 使用 text-fg-disabled。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:316",
+   "宣稱": "「clearable：有值時顯示 X clear all 按鈕」",
+   "真實code行為": "還必須是 edit mode；view、readonly、disabled 即使有值也不顯示。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:318",
+   "宣稱": "「disabled 是原生屬性」",
+   "真實code行為": "disabled 只參與 mode resolution；disabled 時在 select 前 early-return，原生 select 未取得 disabled attribute。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:501",
-   "宣稱": "Focus 使用 border-primary",
-   "真實code行為": "error=true 時 Field compound 保持 border-error；同檔 ERROR_COLORS 亦記為 error。"
+   "宣稱": "「Inspector Focus = border-primary」",
+   "真實code行為": "只在 error=false 時成立；error=true 聚焦仍使用 border-error。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:534",
+   "宣稱": "hover／focus 欄可橫向查看元件的 state 變化。",
+   "真實code行為": "這兩欄沒有施加相應 pseudo-state；state 值只切換 token annotation，元件 preview 仍是 default。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:637",
+   "宣稱": "tagPadding 的 calc() 確保 Tag 垂直置中。",
+   "真實code行為": "tagPadding 使用 px，只控制水平 padding；垂直置中來自 inline-flex items-center。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:786",
+   "宣稱": "double-rAF 保證 layout 完成後才量測。",
+   "真實code行為": "effect 先同步執行 calc()，其後才排 double-rAF；它是後續重算而非首次量測前置保證。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:894",
-   "宣稱": "有值時點擊欄位任何位置都觸發 showPicker",
-   "真實code行為": "全部選完時 selectDropdown=null；dismiss／clear 區域也不開 picker。"
+   "宣稱": "「點擊欄位任何位置都會觸發原生 picker」",
+   "真實code行為": "Tag dismiss 與 clear button 只執行移除／清空；外層也僅在 target===currentTarget 時呼叫 showPicker。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:898",
-   "宣稱": "Tags 區域是 relative z-10",
-   "真實code行為": "tagArea wrapper 只有 relative；z-10 套在個別 Tag，不在 Tags 區域容器。"
+   "宣稱": "「手機 Tags 區域：relative z-10」",
+   "真實code行為": "tag-area 容器只有 relative；z-10 是套在各個 Tag。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:899",
-   "宣稱": "chevron／clear 都是 pointer-events-auto",
-   "真實code行為": "ItemSuffix 與 ChevronDown 是 pointer-events-none；只有 clear 的內層 span 是 pointer-events-auto。"
+   "宣稱": "「chevron / clear：pointer-events-auto」",
+   "真實code行為": "ItemSuffix 與 Chevron 是 pointer-events-none；只有 clear 的內層 wrapper 是 pointer-events-auto。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:916",
-   "宣稱": "手機隱藏 select 是固定且可 Tab 聚焦的真正焦點",
-   "真實code行為": "空值時不隱藏；全部選完時 select 不存在，也沒有固定焦點。"
+   "宣稱": "觸控路徑恆為隱藏的原生 select。",
+   "真實code行為": "空值時 select 可見；全部選完時 select 不存在。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:916",
-   "宣稱": "搜尋框不是鍵盤介面，且兩條路徑維持單一 Tab focus",
-   "真實code行為": "搜尋框是原生可聚焦 input；Tag dismiss、clear、+N 與截斷 Tag 也增加 Tab stops。"
+   "宣稱": "Tag、Chevron、搜尋框不是鍵盤介面；鍵盤使用者不經過，且不加可聚焦角色。",
+   "真實code行為": "Tag dismiss 與 clear 是原生 button；trigger-search 與 menu-search 是 input；截斷 Tag 另可能有 tabIndex=0，因此實際存在多個鍵盤介面與 Tab stop。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.principles.stories.tsx:63",
+   "宣稱": "「尺寸與 Button 對齊」可跳轉到對應展示 story。",
+   "真實code行為": "目標 story 的實際 name 是「三種尺寸」；LinkTo 找不到所填 entry。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.principles.stories.tsx:75",
+   "宣稱": "可查看 `Vs*Rule` stories。",
+   "真實code行為": "本檔只匯出 UsageGuidance、WrapRule、TagOperationRule、OverflowRule，沒有任何 Vs*Rule story。"
   },
   {
    "fileLine": "packages/design-system/src/components/Combobox/combobox.principles.stories.tsx:193",
-   "宣稱": "此範例右側 clear all 可一次清除",
-   "真實code行為": "該範例未傳 clearable；預設 false，因此不渲染 clear-all control。"
+   "宣稱": "此範例右側有 clear all，可一次清除。",
+   "真實code行為": "範例沒有傳 clearable；其預設為 false，因此不渲染 clear-all action。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.principles.stories.tsx:205,206,209",
+   "宣稱": "再次點擊已選的 Electronics 會取消／移除。",
+   "真實code行為": "範例把 value 固定為 ['electronics'] 且 onChange 為空函式；元件雖發出新值，controlled story 不更新，畫面不會取消選取。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.stories.tsx:29,42,43",
+   "宣稱": "該模式名為 display。",
+   "真實code行為": "正式 FieldMode 與實際 prop 都是 view；display 已更名，但 comment、可見標籤及 aria-label 仍使用舊名稱。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.stories.tsx:43,47,51,55",
+   "宣稱": "view／readonly／disabled 範例傳入的 aria-label 會提供 accessible name。",
+   "真實code行為": "非 edit 路徑 early-return 到 ReadonlyMultiSelect，沒有轉發 aria-label；這些值不會落到 DOM。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.stories.tsx:135",
+   "宣稱": "searchIn='trigger' 提供 inline 搜尋框，可直接在欄位輸入。",
+   "真實code行為": "inline input 只在 value.length>0 時渲染；移除最後一項後只剩 span，menu search 又同時停用，因此空值狀態無搜尋輸入。"
   }
  ]
 }

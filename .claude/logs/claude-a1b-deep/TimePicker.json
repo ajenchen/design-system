@@ -1,1 +1,42 @@
-{"component":"TimePicker","implBasis":"自建 — trigger <div role=combobox> + fieldWrapperStyles,Popup 走 Popover(消費 overlay-surface),panel 主體自建 TimeColumns 三欄 scrollable listbox;display 走 Intl.DateTimeFormat;不引第三方 time library","claimsVerified":33,"falseClaims":[{"fileLine":"time-picker.tsx:207","宣稱":"inline comment:「draft 僅在 panel 開啟時用來處理 commit(OK button)的暫存」","真實code行為":"commit 是 eager — commitDraft(time-picker.tsx:229-232)在每次欄位選取(TimeColumns onChange)當下即 setDraft + onChange。「確定」(OK)按鈕 onClick 只 setOpen(false)(:421),不 commit。此註解的『(OK button)』與元件 canonical 相矛盾(spec.md:205『OK 只負責關閉 Panel,不另行 commit』+ spec.md:258 常見誤解『OK 才 commit → 錯』)。stale/誤導 comment。","severity":"marginal"}]}
+{
+  "component": "TimePicker",
+  "implBasis": "自建 trigger <div role=combobox> + fieldWrapperStyles + Popover(overlay-surface)+ TimeColumns primitive(ScrollArea + WAI-ARIA listbox)+ SurfaceFooter + Intl.DateTimeFormat(module cache)",
+  "claimsVerified": [
+    "controlled-only value(value+onChange,無 defaultValue)+ open 軸 uncontrolled-only(defaultOpen+onOpenChange,無 controlled open)= spec Dim 26 / R2 兩段與 code 一致",
+    "trigger 鍵盤:Enter/Space/ArrowDown 開 panel + Esc 關 + e.target guard(2026-07-14 dim-10 修內層清除鈕 bubble)= spec 鍵盤表一致",
+    "aria:role=combobox / aria-expanded / aria-haspopup=dialog / aria-labelledby=fieldCtx.labelId / PopoverContent aria-label『選擇時間』= spec A11y 段一致",
+    "panel:h-[216px] + TimeColumns flex-1 min-h-0 + SurfaceFooter px override tight + 此刻 mr-auto + 確定只 setOpen(false) = spec Spacing+結構段全一致",
+    "eager commit:每欄選取 commitDraft 即 onChange;OK 只關 panel;此刻 = step 對齊 commit + 關(alignToStep clamp ≤59,2026-07-05 邊界修)= spec 驗證時機/常見誤解一致",
+    "欄內 item:hover bg-neutral-hover / selected bg-neutral-selected text-foreground 滿欄 w-full / disabled fg-disabled cursor-not-allowed = spec 欄內 item 狀態表 + anatomy panel 表一致",
+    "TimeColumns:w-40(2欄)/w-60(3欄)+ flex-1 等分 + ScrollArea + scrollIntoView mount auto/後續 smooth + item h-field-sm = spec Panel 寬度/Spacing 段一致",
+    "listbox a11y:role=listbox aria-label hours/minutes/seconds + option aria-selected + aria-activedescendant(guard 未渲染 off-step 值)+ viewportTabIndex=-1 單 tab stop + ↑↓/Home/End = spec + anatomy Accessibility 一致",
+    "endIcon 預設 Clock、null 可關;clear 走 ItemInlineAction X + onChange('')(非文字按鈕)= spec API/Dismiss 段一致",
+    "sizes sm/md/lg 對 field-height 28/32/36 md density,default md(useResolvedFieldSize)= spec 尺寸表一致",
+    "Intl.DateTimeFormat 預設 {hour:2-digit,minute:2-digit,hour12:false} + locale en-US + dtfCache(2026-07-06 D3 perf)= spec 顯示格式化一致",
+    "anatomy story 結構 Overview/Inspector/ColorMatrix/SizeMatrix/ModeMatrix/PrecisionMatrix/Accessibility = spec『為何無 StateBehavior』段宣稱對應",
+    "timePickerMeta states/tokens(bg-neutral-hover/selected,無 active)= code 真實樣式一致"
+  ],
+  "falseClaims": [
+    {
+      "id": "TP-1",
+      "severity": "moderate",
+      "location": "time-picker.spec.md:275 + :277(邊界案例 Disabled / Empty)",
+      "claim": "『Display mode + disabled 維持時間格式但 token 切 disabled』/『null + Display mode 顯半形 -(…disabled → fg-disabled)』",
+      "reality": "useResolvedFieldMode 顯式 mode prop 永遠最優先(field-context.ts:182)→ mode=\"view\" + disabled 解析為 'view',view 分支(time-picker.tsx:259-281)完全無 disabled token 邏輯(text 恆常規、fieldEmptyColorClass 只收到 'view' → text-foreground)。『view+disabled 切 disabled token』組合在 code 中 unreachable = FALSE;不傳 mode 只傳 disabled 則走 readonly/disabled 分支(該處 fg-disabled 正確)"
+    },
+    {
+      "id": "TP-2",
+      "severity": "moderate",
+      "location": "time-picker.tsx:259-281(mode='view' 兩子路徑)vs time-picker.stories.tsx:42(Modes story)",
+      "claim": "Modes story 對 mode=\"view\" 傳 aria-label=\"會議時段(display mode demo)\"(暗示 view 態可帶 aria-label 供 SR 朗讀)",
+      "reality": "view 分支(bare span 與 showDisplayEndIcon wrapper 兩路)皆不 spread {...props} — consumer 的 aria-label / id / data-* 在 view 模式被靜默丟棄(readonly/disabled 分支 L290 有 spread)。與 Switch 2026-07-04 已修的同型 bug(M10 same-pattern),story 的 aria-label 實際不落 DOM"
+    },
+    {
+      "id": "TP-3",
+      "severity": "minor",
+      "location": "time-picker.stories.tsx:41(Modes story 小節標題)+ time-picker.tsx:144 docblock『Display 是否渲…』+ spec:202/277『Display 模式』",
+      "claim": "以『display』稱呼純展示模式",
+      "reality": "API 值為 mode=\"view\"(spec:83 API 段自己已正確列 'view');display 舊名散落 = mode='view' 更名殘留(branch-context 指認項)。標題與 code prop 值不符"
+    }
+  ]
+}

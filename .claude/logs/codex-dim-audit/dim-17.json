@@ -1,12 +1,18 @@
 {
  "dim": 17,
- "filesScanned": 155,
+ "filesScanned": 374,
  "findings": [
   {
-   "fileLine": "packages/design-system/src/components/DataTable/filter-operators.ts:23,48；packages/design-system/src/components/DataTable/data-table-filter-panel.tsx:171,200 ↔ packages/design-system/src/components/Button/button.tsx:112,251",
-   "問題": "DataTable 的 ValueShape／FilterValuePickerProps.shape 使用「text」表示由單行 <Input> 接值；Button variant=\"text\" 則表示低視覺權重、無 chrome 的動作樣式。同一 literal 分別代表輸入控制形狀與按鈕強調層級，語義實質不同，且相關 spec 未記載例外。DataTable helper 未公開匯出，影響範圍較低。",
+   "fileLine": "packages/design-system/src/components/Alert/alert.tsx:54 | packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx:510 | packages/design-system/src/components/Field/field-context.ts:9",
+   "問題": "Alert.placement=\"inline\" 表示內容內嵌卡片，對立值是頁級橫幅 fixed；ItemAvatar.mode 與 FieldControlLayout 的 inline 則表示第一行／單行對齊，對立值是 block。同一字串承載 surface placement 與 child layout 兩套不同認知。",
+   "severity": "material",
+   "建議": "保留 ItemAvatar／Field 的 inline|block layout canonical；將 Alert 改成語境明確的 API，例如 scope=\"embedded\"|\"global\"，並同步 spec 與 stories。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.tsx:251 | packages/design-system/src/components/DataTable/filter-operators.ts:23 | packages/design-system/src/components/DataTable/data-table-filter-value-picker.tsx:43",
+   "問題": "Button.variant=\"text\" 是無 chrome 的低權重 action 樣式；DataTable ValueShape=\"text\" 則是派送 Input 的篩選資料／picker 類型，同字不同義。DataTable 端目前為 internal，因此影響範圍較小。",
    "severity": "marginal",
-   "建議": "將 DataTable 的 ValueShape literal 改為「text_input」，同步 operator registry、FilterValuePicker switch 與相關 spec；保留 Button 公開 canonical 的「text」。"
+   "建議": "保留 Button 的公開 canonical；將 DataTable 內部 ValueShape 改為 text_input，並同步 operator registry、picker switch、spec 與 stories。"
   }
  ]
 }

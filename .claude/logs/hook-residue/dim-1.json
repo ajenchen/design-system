@@ -1,1 +1,23 @@
-{"dim":1,"hook":"lib/_cva_default_sync.sh (WARN) + compile-stories.mjs --check chain","residueCount":2,"findings":[{"fileLine":"packages/design-system/src/components/Chip/chip.spec.md (frontmatter sizes:{}) vs chip.tsx:392 (componentMeta sizes:{sm})","問題":"compile-stories --check 報 spec/tsx canonical drift:spec frontmatter sizes:{} 空,但 tsx chipMeta 已填 sizes.sm(fieldHeight 28/icon 16/body)。spec frontmatter 落後 tsx componentMeta(key-coverage drift,非 default-value 分歧;Chip 無 cva defaultVariants)","severity":"material"},{"fileLine":"packages/design-system/src/components/Input/input.spec.md (frontmatter variants:{}, sizes:{}) vs input.tsx:222-230 (componentMeta variants:{default}, sizes:{sm,md,lg})","問題":"compile-stories --check 報 spec/tsx canonical drift:spec frontmatter variants:{}/sizes:{} 皆空,但 tsx inputMeta 已填 variants.default + sizes.sm/md/lg。spec frontmatter 落後 tsx componentMeta","severity":"material"}],"verified":true,"note":"cva-defaultVariants DEFAULT-value 三方分歧(_cva_default_sync.sh 嚴格 scope)未見;殘留為 spec-frontmatter vs tsx-componentMeta 的 sizes/variants key-coverage drift,由 dim 1 matrix 所引 compile-stories --check chain 偵出(與 dim 23 scope 重疊)。node scripts/compile-stories.mjs --all --check 實跑 exit 非 0。"}
+{
+ "dim": 1,
+ "hook": "compile-stories.mjs --check chain + lib/_cva_default_sync.sh + lib/_story_compile_drift.sh",
+ "residueCount": 4,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.tsx:215",
+   "問題": "noticeMeta.variants = {} 空,但 notice.spec.md frontmatter 宣告 5 variants(neutral/info/success/warning/error)。`node scripts/compile-stories.mjs --all --check` 現行 FAIL『Notice: variants spec-only』= tsx↔spec 存量漂移(2026-04-24 Phase 1 mechanical migration 留的 Phase 2 fill 從未補)。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.spec.md:209",
+   "問題": "Field context props 表 mode 行仍列 `edit / display / readonly / disabled`;code SSOT field-types.ts:21 已是 `'edit' | 'view' | 'readonly' | 'disabled'`。本 branch display→view 更名漏網 spec ref(spec↔code 三方漂移同 class)。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:249",
+   "問題": "`mode` 段 header(:245)正確寫 `'edit' | 'view' | 'readonly' | 'disabled'`,但下方 bullet 仍名 `display` — 段內自相矛盾 + 與 field-types.ts 漂移;另 :250 disabled bullet 仍舉『如 DataTable disabled cell』例(cell disabled 態本 branch 已廢除,field-controls.spec.md:65 明寫)= stale 例證。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:138",
+   "問題": "checkbox 同段之 mirror 段(switch.spec.md『mode prop』):header(:136)寫 `view`,bullet 仍名 `display` — display→view 更名漏網。"
+  }
+ ]
+}

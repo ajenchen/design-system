@@ -156,6 +156,8 @@ Form validation 的 ARIA / 鍵盤行為(對齊 WCAG 3.3.1 Error Identification +
 - **Required indicator**:label 的 `*` 為純視覺、對讀屏隱藏(`aria-hidden="true"`,field.tsx:395);required 語意由內部輸入控件的 `aria-required`(input.tsx:188)承擔,避免讀屏讀出「asterisk」語義不清
 - **Color-only error 警告**:error border 紅色之外必有文字訊息(WCAG 1.4.1 不僅靠顏色)— 由 `<FieldError>` 文字承擔;DS **不**在 input 內放 error 狀態 icon(見 `field-controls.spec.md`「禁止事項」)
 
+**空值 / Loading(明文 N/A)**:本 spec 是跨 Field 控件的驗證時機原則(非 UI 元件)——空值渲染與 loading 狀態分屬各控件 spec(SSOT → `field-controls.spec.md`「null / undefined 值」+「Loading state」段)。
+
 ## 相關
 
 - `field.spec.md` — Field wrapper 的 error 視覺 chrome(紅框 + error message slot)

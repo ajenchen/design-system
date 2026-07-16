@@ -246,9 +246,9 @@ Indeterminate 是由父層邏輯控制的狀態，Checkbox 本身不會自動進
 
 `mode?: 'edit' | 'view' | 'readonly' | 'disabled'`(默認 inherit Field context 或 `'edit'`),對齊 `field-types.ts` FieldMode(完整 4-mode canonical SSOT → `Field/field-controls.spec.md`;本段鏡像 switch.spec.md 同名段):
 - `edit`(預設)— 可勾選的 Checkbox。
-- `display` — **純展示**:渲染 **Check icon(true=勾)/ X icon(false=叉)**,中性 `text-foreground` 色,非互動、無 input chrome,供 DataTable boolean cell 非編輯態共用。boolean 值符號 SSOT = `../SelectionControl/boolean-value.tsx`(勾/叉 icon + 中性色;M22 世界級:MUI X DataGrid Check/Close icon 中性色 / React-admin TrueIcon-FalseIcon;false 中性非紅 = 「否」值非「錯誤」)。
+- `view` — **純展示**:渲染 **Check icon(true=勾)/ X icon(false=叉)**,中性 `text-foreground` 色,非互動、無 input chrome,供 DataTable boolean cell 非編輯態共用。boolean 值符號 SSOT = `../SelectionControl/boolean-value.tsx`(勾/叉 icon + 中性色;M22 世界級:MUI X DataGrid Check/Close icon 中性色 / React-admin TrueIcon-FalseIcon;false 中性非紅 = 「否」值非「錯誤」)。
 - `readonly` — **Field 內(無 inline label)**= `fieldWrapperStyles` readonly 灰框 + 勾/叉 icon(與 Input readonly 同一視覺語言,2026-06-12 user 拍板;世界級:Salesforce output ✓ glyph / SAP 靜態文字);**standalone / 有 inline label**(SelectionItem row)= 正常色鎖互動(同下方 Read-only)。
-- `disabled` — 落到真 disabled chrome(`effectiveDisabled`,2026-06-12 修:mode='disabled' 直傳〔如 DataTable disabled cell〕與 `disabled` prop 等效,降色 + 不可 focus)。
+- `disabled` — 落到真 disabled chrome(`effectiveDisabled`,2026-06-12 修:mode='disabled' 直傳〔如 `<Field mode="disabled">` cascade〕與 `disabled` prop 等效,降色 + 不可 focus)。DataTable cell 無 disabled 態(已廢除);cell 非編輯態 = `view` 純展示。
 
 CheckboxGroup 是純 layout primitive — **不**持有 group-level selection state(無 `value` / `defaultValue` / `onValueChange`)。每個 `<Checkbox>` child 各自管自己的 `checked` / `defaultChecked` / `onCheckedChange`;CheckboxGroup 只透過 `CheckboxGroupContext` 告知 child「你在 group 裡」(保留各自 label)。
 

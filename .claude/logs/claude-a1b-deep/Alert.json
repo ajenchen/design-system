@@ -1,11 +1,19 @@
 {
   "component": "Alert",
-  "implBasis": "Notice primitive (Family 2, consumes item-anatomy ItemContent/ItemPrefix/ItemSuffix + Button dismiss); self-built cva for placement/appearance/theme",
-  "claimsVerified": 46,
-  "notes": "Verified role/aria-live (error+warning→alert/assertive, else status/polite), SUBTLE_CONTAINER + SOLID_HUE_BG + SOLID_HUE_THEME maps, ColorMatrix 5×2 variant×theme table (all bg/border/theme classes match code), placement inline=rounded-md(4px verified)/fixed=rounded-none+border-none, fixed px→--layout-space-loose (py stays py-3), Notice px-4/py-3/gap-2/text-body(14px)/icon 16px(ICON_SIZE.md), dismiss Button xs(h-field-xs=24px→24×24)+iconOnly+variant=text+fg-muted→hover foreground, focus ring-2/ring-ring/offset-1, showDismiss=dismissible!==false && onDismiss!=null, title required, ItemContent label default truncate(單行) + descriptionWrap default true, Props table defaults. Notice marked @internal.",
+  "implBasis": "自建 host(live region owner)wrap Notice internal primitive(notice.tsx:showDismiss = dismissible!==false && onDismiss!=null;dismiss X = Button iconOnly dismiss xs 24×24/icon16 source-verified button.tsx:569 + focus ring ring-offset-1 button.tsx:66;ItemSuffix/ItemContent 消費 item-anatomy,label truncate default / desc wrap default 驗證 item-anatomy.tsx:342-420)。solid theme 策略(SOLID_HUE_THEME warning=light 餘 dark)、error=deep-orange-6(semantic.css:227)、subtle border=--{hue}-text 全與 spec/anatomy 對齊",
+  "claimsVerified": 42,
   "falseClaims": [
-    {"fileLine": "packages/design-system/src/components/Alert/alert.tsx:15", "宣稱": "docblock: 'subtle: 淺底色 + 四邊 1px border(色相 hover 色)' — 宣稱 subtle border 用色相 hover 色", "真實code行為": "SUBTLE_CONTAINER (L29-35) border 用 `border-[var(--info-text)]` 等 hue-text 色,非 hover 色。同檔 L26-28 註解已明文『原借 --{hue}-hover... 改共用 hue-text』;docblock L15 摘要段沒同步更新 → stale docblock vs 現行 code(spec L145 已正確寫 hue-text,唯 tsx docblock 漂移)", "severity": "material"},
-    {"fileLine": "packages/design-system/src/components/Alert/alert.spec.md:116", "宣稱": "'Corner action group 佈局 canonical' 圖示兩區:上方 chrome corner action group + 底部獨立 'body action row' 放 [CTA1][CTA2](L120)", "真實code行為": "Alert 無底部 body action row。endContent + dismiss X 一起 render 進 Notice 的單一 ItemSuffix(`h-[1lh] shrink-0 ml-auto flex items-center` = 對齊第一行、靠右上),CTA 從 endContent 進來只會在右上角同一行,不是底部整列。anatomy Props 表(L45)自己也把 endContent 定義為『右側操作區』與 code 一致 → spec 圖示的底部 action row 教了 code 無法產生的佈局(且與自家 anatomy 互相矛盾)", "severity": "material"},
-    {"fileLine": "packages/design-system/src/components/Alert/alert.tsx:190", "宣稱": "alertMeta `states: ['default']` + 註解『Alert 本體無互動 state』", "真實code行為": "與 alert.spec.md frontmatter `traits: [hasVariants, hasInteractiveStates]`(L4-6)呈現交叉不一致 — 一處宣告有 interactive-states trait(驅動 StateBehavior story),另一處宣告本體無互動 state。兩者描述層不同但對讀者是表面矛盾", "severity": "marginal"}
+    {
+      "fileLine": "packages/design-system/src/components/Alert/alert.principles.stories.tsx:44-53",
+      "宣稱": "UsageGuidance LinkTo 指向展示層 story「低調單行」「實心單行」「低調含說明文字」「實心含說明文字」4 個名稱",
+      "真實code行為": "alert.stories.tsx 於 2026-07-14 audit Dim 28 已把 4 個 story 合併改名為「單行（低調 vs 實心對照）」與「含說明文字（低調 vs 實心對照）」— 4/5 個 LinkTo 指向不存在的 story name,點擊導航斷鏈(僅「右上角操作群組」仍有效)",
+      "severity": "material"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Alert/alert.spec.md:95",
+      "宣稱": "「CTA 按鈕:透過 endContent 放進右側操作區…size 固定為 `xs` tertiary」",
+      "真實code行為": "endContent 是 ReactNode 原樣 forward(alert.tsx:68 → notice.tsx ItemSuffix),code 無任何機制固定 size/variant;『固定』實為 consumer guidance 非 API 強制(showcase 亦有用 tertiary 但 size 由 consumer 傳)",
+      "severity": "marginal"
+    }
   ]
 }

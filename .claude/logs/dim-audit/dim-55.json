@@ -1,29 +1,8 @@
 {
   "dim": 55,
   "title": "Token cross-namespace mapping integrity",
-  "mechanism": "DS-wide 全掃 semantic.css 12-hue mapping 逐 hue 驗 → primitive step 正確",
-  "filesScanned": 143,
-  "scanScope": [
-    "packages/design-system/src/tokens/color/semantic.css (逐行驗 12 hue interaction + 5 semantic status + chart + status + inverse)",
-    "packages/design-system/src/tokens/color/primitives.css (12 hue × step 1-10 存在性 light+dark)",
-    "packages/design-system/src/tokens/categorical-color.ts (7 map × 12 hue 1:1 offset 檢查)",
-    "DS-wide rg 143 個含 var(--) 的 tsx/ts/css consumer(hue-namespace dead-var 掃描)",
-    "mechanical: node scripts/categorical-color-invariants.mjs (255 PASS / 0 FAIL)"
-  ],
-  "verifiedClean": {
-    "hueInteractionLight": "12 hue 全: --{hue}-hover→--color-{hue}-5(較亮) / --{hue}-active→--color-{hue}-7(較暗),每 hue 指向自己 primitive,零 cross-hue typo",
-    "hueInteractionDark": "12 hue 全: --{hue}-hover→--color-{hue}-7 / --{hue}-active→--color-{hue}-5(方向反轉,維持 hover 恆亮/active 恆暗)",
-    "semanticStatus": "primary/info→blue、error→deep-orange、success→green、warning→yellow;base=step6 hover=5 active=7 subtle=1 text=7,dark override 反轉,全對",
-    "categoricalSSOT": "categorical-color.ts 7 map(SUBTLE/SOLID/INTERACT/SUBTLE_TOKENS/SOLID_TOKENS/EVENT/ACCENT)key X 全對 --color-X-*,1:1 零 offset,255 mechanical invariant 全過",
-    "chartStatusInverse": "chart-1..5 / status-online|busy|away|offline / inverse-* 映射內部一致(chart-4 yellow-7 為 documented 對比例外,非 mapping bug)"
-  },
-  "findings": [
-    {
-      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx:78",
-      "問題": "affix 示範 pill 引用 3 個不存在的 token:borderColor/color 用 var(--magenta)、backgroundColor 用 var(--magenta-subtle)。magenta 這個 hue namespace 只定義了 --magenta-hover / --magenta-active(見 semantic.css:289-290 / 439-440),沒有 bare --magenta 也沒有 --magenta-subtle(全 DS 掃描 NONE DEFINED)。這是 cross-namespace mapping 破口 — 把『primitive 色階 namespace』(--color-magenta-6 / --color-magenta-1)誤當成『semantic hue namespace』來引用。結果:這 3 個 CSS 屬性拿到 invalid value 被丟棄,affix pill 渲染成無邊框、透明底、繼承文字色(magenta tint 完全消失),DS contributor 打開 ProgressBar anatomy 文件看到的是壞掉的示範。",
-      "severity": "marginal",
-      "建議": "改指正確 namespace 的 primitive step,對齊 categorical-color.ts 的 CAT_SUBTLE_TOKENS(magenta = bg var(--color-magenta-1) / text var(--color-magenta-7)):borderColor + color → var(--color-magenta-6)(或 -7)、backgroundColor → var(--color-magenta-1)。此為 anatomy story(文件層)dead-var,非 shipped 產品元件,故 marginal;但仍是真 bug(壞掉的視覺示範),批次修一行即可。"
-    }
-  ],
-  "note": "核心 semantic.css 12-hue mapping 本身 100% 乾淨(12 hue × light/dark × hover/active 全驗 + 5 semantic status + categorical 255 mechanical invariant 全過)。唯一 finding 是 ProgressBar anatomy 文件 story 誤用不存在的 hue-namespace token(dead var)。0 個 production 元件 mapping 錯誤。"
+  "filesScanned": 2,
+  "mechanism": "Read semantic.css 全 hue interaction mapping:light block L265-292 逐 hue 驗(blue / red / deep-orange / orange / amber / lime / green / yellow / turquoise / purple / magenta / indigo 共 12 hue,各 hover→primitive step-5、active→step-7,全一致);dark block L419-442 同 12 hue 方向反轉(hover→step-7、active→step-5,維持 hover lift / active press 跨 mode 一致)全齊。5 個 semantic 家族(primary / info / error / success / warning,L207-245)base→-6 / hover→-5 / active→-7 / subtle→-1 / text→-7 步進一致;dark override L405-414 同步反轉。red≠deep-orange 分離(2026-05-20 fix)維持正確。primitives.css 驗 12 hue 全存在(step-6 enumerate)+ 本輪 branch dark blue-6 0.63 / turquoise-6 hue 196 改動不影響 mapping(hover/active 經 oklch from 公式自動衍生)。",
+  "verdict": "12 hue + 5 semantic family checked, 0 mapping gaps",
+  "findings": []
 }

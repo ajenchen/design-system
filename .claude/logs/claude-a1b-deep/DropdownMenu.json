@@ -1,1 +1,7 @@
-{"component":"DropdownMenu","implBasis":"Radix DropdownMenu primitive (behavior/keyboard/ARIA) + MenuItem visual layer; spec 定位 declares 基於 Radix DropdownMenu(shadcn 包裝)","claimsVerified":28,"falseClaims":[]}
+{
+  "component": "DropdownMenu",
+  "implBasis": "Radix DropdownMenu(behavior)+ MenuItem primitive(visual);Radix 鍵盤宣稱對 node_modules/@radix-ui/react-menu dist 驗證(PageUp/Home FIRST_KEYS 命中)",
+  "claimsVerified": 72,
+  "falseClaims": [],
+  "note": "spec / tsx / anatomy / principles / showcase 逐句一致:data-[highlighted] canonical(非 :focus-visible)、selected×highlighted=bg-neutral-selected-active(2026-07-04 Q2 + 07-05 D4,spec:212=code:269/457)、RadioItem parent-bg 無 radio 控件、CheckboxItem checked 不套 row bg(anatomy ITEM_TOKEN_MAP 同)、Group auto-separation([&+&]:mt-2 pt-2 border-t;MenuGroup py-2 對照表與兩檔 code 完全等價)、shortcut prop vs DropdownMenuShortcut child 位置不等價的誠實描述(ml-auto 不生效)、sideOffset=8(OVERLAY_SIDE_OFFSET 實證)、minWidth max(180px,trigger-width)、size 表(field-height 28/32/36 + icon 16/16/20 + Checkbox h-4/h-4/h-5=16/16/20 實證)、typeahead textValue auto-forward、Esc root close + ← 逐層收合、trigger focus ring(2026-07-05 fix 已同步 spec)、MenuItem disabled suffix opacity-disabled(menu-item.tsx:305 = anatomy:652)。無 claim-vs-code drift。"
+}

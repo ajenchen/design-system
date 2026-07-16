@@ -1,1 +1,9 @@
-{"dim":69,"hook":"check_consumer_app_invariants.sh r1_no_ds_catalog","residueCount":0,"findings":[],"verified":true,"note":"Consumer .stories.tsx catalog anti-patterns (EveryDsComponent/AllDsComponents basename w/o portal, per-component-default title, Object.keys/entries(DS).map/forEach, >=5 distinct <DS.X>). Scanned apps/** + template/** stories. apps/template/src/AllDsComponents.stories.tsx has @consumer-catalog-allow: documented escape (line 2) + uses Object.keys(DS).sort() not .map/.forEach -> legitimate exception, not residue. No other catalog residue."}
+{
+  "dim": 69,
+  "hook": "check_consumer_app_invariants.sh r1_no_ds_catalog",
+  "wiring": "OK — PostToolUse Write|Edit|MultiEdit(settings.json:317 + hooks.json:179);mirror sync;25 fires 2026-07-16;PostToolUse 與 r1 檔頭「檔已落 disk 補查整檔 marker」設計一致",
+  "smoke": "hook 全檔 replay:apps/** 全部 tsx/ts(6 files)以 Write-simulation 餵原檔 content → rc=0 無輸出",
+  "residueCount": 0,
+  "findings": [],
+  "notes": "唯一 catalog 形檔 apps/template/src/AllDsComponents.stories.tsx 帶 documented escape `@consumer-catalog-allow: documented proxy portal — link 到 DS Storybook,不 hand-mock`(L2)= 正是 r1 允許的 portal proxy pattern,非濫用;無其他 escape marker 存量"
+}

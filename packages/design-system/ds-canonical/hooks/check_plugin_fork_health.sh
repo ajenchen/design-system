@@ -96,6 +96,13 @@ case "${EVENT:-}" in
   *) exit 0 ;;
 esac
 
+# 2026-07-16 dim 75 修:DS repo 本身 early-exit(對齊 r1 guard (a))。原本無此 guard →
+# candidate 3(.claude-plugin/plugin.json 在 DS repo 存在)讓 r2 在 DS repo fire,
+# 印 `npm run sync-all` 但 DS root package.json 無此 script(sync-all 是 fork/template 的
+# consumer script,見 template/ds-product-template/package.json)= 指引斷鏈;
+# 且 DS repo 是 SSOT 源頭,local 版本領先 published 是開發常態,不該 nag。
+[ -d "$(pwd)/packages/design-system/src" ] && exit 0
+
 # Find local plugin.json (DS plugin install path)
 PLUGIN_JSON=""
 for candidate in \
@@ -119,6 +126,15 @@ REMOTE_VERSION=$(curl -sS --max-time 5 \
 if [ -z "$REMOTE_VERSION" ] || [ "$REMOTE_VERSION" = "null" ]; then exit 0; fi
 
 if [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
+  # 2026-07-16 dim 75:指令按「指引在哪個 repo 語境印」推導,不 hardcode `npm run sync-all`
+  # (template-based fork 有此 script;老 fork / 部分裝態可能只有 scripts/sync-all.mjs 或都沒有)。
+  if jq -e '.scripts["sync-all"]' package.json >/dev/null 2>&1; then
+    SYNC_CMD="npm run sync-all"
+  elif [ -f scripts/sync-all.mjs ]; then
+    SYNC_CMD="node scripts/sync-all.mjs"
+  else
+    SYNC_CMD="npm install @qijenchen/design-system@beta @qijenchen/storybook-config@beta --legacy-peer-deps"
+  fi
   cat << EOF
 
 📦 DS governance update available:
@@ -126,7 +142,7 @@ if [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
    Latest published: $REMOTE_VERSION
 
 Run in terminal (1 command):
-  npm run sync-all  # npm install @beta(治理本體)+ 刷新接線骨架(committed launchers + settings + skills);npm-only,免 plugin
+  $SYNC_CMD  # npm install @beta(治理本體)+ 刷新接線骨架(committed launchers + settings + skills);npm-only,免 plugin
 
 
 (Per user 2026-05-27 directive「DS 增刪改自動同步」— this hook detects staleness on session start.)

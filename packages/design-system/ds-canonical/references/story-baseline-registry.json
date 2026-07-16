@@ -86,9 +86,9 @@
         {
           "id": "datatable-always-edit-cell",
           "regex": "cell:[^;]{0,160}<(DS\\.)?(Select|Combobox|PeoplePicker|DatePicker|TimePicker)\\b",
-          "unlessRegex": "onCellCommit|editable|mode=[\"']display",
+          "unlessRegex": "onCellCommit|editable|mode=[\"']view",
           "severity": "block",
-          "rationale": "cell: 直接渲染恆-edit 控件 = display 態渲染 edit chrome,違 data-table.spec.md:373 indicator A 案(display 零恆顯 + hover outline + meta.editable/onCellCommit)。custom cell 元件包裹的同違規 regex 看不進去 → 由 product-ui-audit judgment 兜底(failure-class registry always-edit-cell)"
+          "rationale": "cell: 直接渲染恆-edit 控件 = view 態渲染 edit chrome,違 data-table.spec.md:373 indicator A 案(view 零恆顯 + hover outline + meta.editable/onCellCommit)。custom cell 元件包裹的同違規 regex 看不進去 → 由 product-ui-audit judgment 兜底(failure-class registry always-edit-cell)。2026-07-16 dim 54:mode display→view 更名後 unlessRegex stale(0 hit)→ 對齊 view"
         }
       ]
     },

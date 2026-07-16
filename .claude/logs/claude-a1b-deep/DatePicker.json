@@ -1,24 +1,42 @@
 {
   "component": "DatePicker",
-  "implBasis": "self-built: DateGrid (react-day-picker) + Radix Popover + TimeColumns + Intl.DateTimeFormat",
-  "claimsVerified": 35,
+  "implBasis": "自建:div role=combobox trigger + Popover + DateGrid(RDP wrap)+ TimePickerSidePanel(TimeColumns);Range = PopoverAnchor + 雙 native button + mode='single' 自管 rangeModifiers",
+  "claimsVerified": 84,
   "falseClaims": [
     {
-      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.spec.md:320",
-      "宣稱": "邊界案例 Dark mode/density: `DateGrid 內 cell 尺寸固定不隨 density 漂移(date grid 為密度敏感不可變區)`",
-      "真實code行為": "直接矛盾同 spec L128 `density-aware：md=28×28 / lg=32×32` + code:DateGrid day cell = `h-field-sm w-[var(--field-height-sm)]`,--field-height-sm 在 [data-density=lg] override 為 2rem(32px,uiSize.css:91)。cell 尺寸實際隨 density 縮放,L320 宣稱『固定不漂移』與 L128 及 code 皆衝突。",
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.spec.md:296",
+      "宣稱": "A11y 段:「Popover content:role=\"dialog\";單一日期 popover **不重覆 `aria-label`**(由 trigger 的 role=combobox accessible name 標示),Range popover 加 aria-label=\"日期區間選擇\"」",
+      "真實code行為": "單一 DatePicker 的 PopoverContent **有**設 aria-label=\"日期選擇\"(date-picker.tsx:647-650,i18n-allow 註解「DS default dialog label」;2026-07-14 dim-10 修時把 accessible name 收斂到外層 PopoverContent)。spec 的「單一不重覆 aria-label」描述與現行 code 相反。",
       "severity": "material"
     },
     {
-      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.spec.md:128",
-      "宣稱": "`day cell 與 week header 尺寸 SSOT → date-grid.spec.md:120（消費 --field-height-sm token）`",
-      "真實code行為": "(a) week header 實際用固定 `h-7` 非 --field-height-sm(見 DateGrid 發現);(b) 指向的 date-grid.spec.md:120 落在『組合狀態』段,day-cell 尺寸 canonical 實際在 date-grid.spec.md:127-128,行號 pointer stale。",
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:79 + date-picker.anatomy.stories.tsx:251",
+      "宣稱": "四模式 story 第二張卡 heading「display」(prop 實傳 mode=\"view\")+ anatomy Props 表 mode 說明「**display** 為純內容輸出(DataTable cell 用)」",
+      "真實code行為": "FieldMode 已於 2026-07-16 display→view 更名,mode=\"display\" 不存在(type union anatomy 自己都列 'edit'|'view'|'readonly'|'disabled')。reader-facing 標籤/說明仍用已廢棄的舊 mode 名 — 與 Combobox Modes story 同 class 的 rename 殘留。",
+      "severity": "material"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.spec.md:271",
+      "宣稱": "Clearable 段:「清除後 value 變為 `null`」",
+      "真實code行為": "單一 DatePicker 的 clear X 與 typed-input 空字串 commit 都 emit `onChange?.('')`(date-picker.tsx:636 / :470)— onChange 型別 `(value: string) => void`,consumer 收到空字串非 null(`value === null` 判斷不會命中)。僅 Range 是 `onChange([null, null])`。",
       "severity": "marginal"
     },
     {
-      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.spec.md:270",
-      "宣稱": "Clearable: `清除後 value 變為 null`",
-      "真實code行為": "單一 DatePicker 的 onChange 型別是 `(value: string) => void`(L300),clear 實際 `onChange?.('')`(L604)發空字串,永不能發 null。value 變為 '' 而非 null(僅 DatePicker.Range 的 clear 才發 [null, null])。",
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:163",
+      "宣稱": "WithError story:「驗證失敗時外框轉紅色,滑過**或聚焦**時同步用較深的紅」",
+      "真實code行為": "error state machine(field-wrapper.tsx:171-175):hover 才升 `border-error-hover`(較深);focus-within 是 `!border-error`(**同** rest 紅,非較深)、focus+hover 也鎖 `!border-error`。「聚焦時用較深的紅」與 compound 不符。",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx:753",
+      "宣稱": "StateBehavior 空值段標題:「空值 — **統一**半形 hyphen(-)+ **foreground**」(下方含 disabled 空值示例)",
+      "真實code行為": "空值符號色走 fieldEmptyColorClass SSOT(field-context.ts:296-298):readonly / view = text-foreground,**disabled = text-fg-disabled**(M24 precedence,明文「不可被蓋」)。「統一 foreground」對 disabled row 不成立。",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.spec.md:298,128,320",
+      "宣稱": "cite 行號:「date-picker.tsx:554」(自建 onKeyDown)/「date-picker.tsx:1020-1026」(onCloseAutoFocus)/「date-grid.spec.md:120」(day cell 尺寸 SSOT)",
+      "真實code行為": "現址分別在 date-picker.tsx:572-575 / :1062-1068;date-grid.spec.md:120 現為「選中日 hover 底色升階」條,day cell 尺寸段在 :127(Spacing canonical)與 :135。三處 line-ref 均 stale(內容主張本身正確)。",
       "severity": "marginal"
     }
   ]

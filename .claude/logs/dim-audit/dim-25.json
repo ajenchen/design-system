@@ -1,16 +1,15 @@
 {
   "dim": 25,
-  "title": "Story 必要性 grounding(per-component 全掃 過 2-test:spec-tied / removal-degrade)",
-  "mechanism": "每 story 過 2-test:(a) 教別 story 沒教的原則?(b) 移除後 spec 理解 degrade?兩題皆 NO → 未 grounded",
-  "filesScanned": 205,
-  "scanNote": "全 205 story 檔於 export-inventory 層 NO-SAMPLE 全掃(970 named export);高冗餘風險子集深讀:TimePicker/Tabs/DatePicker/Menu/Skeleton/Separator/Notice/FileViewer/InlineEdit/Tooltip(+anatomy)/DataTable/Command/ScrollArea/Pagination/DateGrid/Chart/Coachmark/Empty。anatomy(6-canonical)+ principles(Polaris)兩層由 canonical 結構性 grounded,逐 export 對照未見未 grounded。",
-  "verdict": "此 dim 治理極乾淨——證據:Dim 24/25 已被主動執行(MenuItem WithStartIcon / AllSizes retired、Coachmark 移除 TextOnly+WithIllustration、Empty 2026-07-04 retired LoadFailure 反例)。多數 showcase 帶 @story-trait-rationale + 'matrix 由 anatomy own,不在此重複' 註解。僅 1 個真冗餘 story 漏網。",
+  "title": "Story 必要性 grounding(manual story 補足模糊原則的具象化)",
+  "filesScanned": 207,
+  "mechanism": "DS-wide:枚舉 70 展示檔全 345 manual stories(+ anatomy/principles 137 檔由 dim 24/28/30 機械前哨交叉覆蓋)。每檔 export 清單過 2-test 篩:重點判讀高密度 outlier(DataTable 30 / DatePicker 15 / Field 13 / TimePicker 8 逐 story 讀 body 驗 API 差異化教學)+ 本輪 display→view 更名 regression 掃(grep mode=\"display\" 殘留 + Display* export 名逐一開 body 驗)",
+  "verdict": "1 marginal after 全掃 207 files(345 展示 stories):outlier 元件逐 story 驗證各有獨立 API/行為教學(TimePicker 5 業務 story 分別教 minuteStep/預設粒度/range 組合/showSeconds/disabledTime,全 earn);唯 display→view 更名後 2 個 story export 名殘留舊軸名",
   "findings": [
     {
-      "fileLine": "packages/design-system/src/components/Tooltip/tooltip.stories.tsx:62",
-      "問題": "展示層 export const Placement(名『方向』)是四方向 top/right/bottom/left 的抽象 placement 矩陣(按鈕 label 直接寫 Top/Left/Right/Bottom),與 anatomy 層 tooltip.anatomy.stories.tsx 的 PlacementReference(名『方向與間距』)完全重疊——後者渲同一組四方向 defaultOpen 矩陣,且更完整(多含 sideOffset 說明 + collision 說明 + 進/出場動畫對照表)。過 2-test 皆 NO:(a) Placement 未教 PlacementReference 沒教的 Tooltip 原則(它是 anatomy 矩陣的嚴格子集);(b) 移除 Placement 後 spec 理解不 degrade(anatomy PlacementReference 保有完整 placement 文件)。與本專案已 retired 的 MenuItem WithStartIcon(理由『anatomy 已 cover』)同一類。附帶:label 用 Top/Left/Right/Bottom 抽象代號,亦弱觸 mindset #4『範例必真實業務場景』(展示層其餘 Default/NonButtonTrigger/LongText 皆真實情境)。",
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:319",
+      "問題": "export const Display(name:'展示樣式')story body 已全數改用 mode=\"view\"(更名正確落地),但 export 識別名仍為舊軸名 Display — 同案 link-input.stories.tsx:123 export const Display 亦然。story 與 spec「View mode(原 display 更名)」的 tie 因舊名弱化;Select 的 DisplayMode/DisplayModeRule 為 display?:'plain'|'tag' prop 教學,命名合法非同案(二次驗證排除)",
       "severity": "marginal",
-      "建議": "依本專案既有慣例處置:(1) placement 矩陣歸 anatomy PlacementReference own,展示層 retire 這則 Placement export(比照 MenuItem WithStartIcon retire + 留 @story-trait-rationale 註解指向 anatomy);或 (2) 若展示層要保留一則『方向』示範,改成真實業務情境(例:表格 header 右緣的 icon-only Button tooltip 因空間而走 side='left';sidebar 收合鈕 tooltip 走 side='right')以帶出 anatomy 沒有的『何時選哪個方向』決策,而非重畫抽象四向格。"
+      "建議": "DatePicker + LinkInput 兩處 export const Display → View(story id 會變,屬 story 層非 SSOT-UI/UX,可 autonomous batch;順手 grep 全庫 story export 無其他殘留 — 已驗證僅此 2 處)"
     }
   ]
 }

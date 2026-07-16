@@ -1,216 +1,176 @@
 {
  "component": "DropdownMenu",
- "claimsVerified": 433,
+ "claimsVerified": 444,
  "falseClaims": [
   {
-   "fileLine": "dropdown-menu.tsx:102",
-   "宣稱": "Content 的 py-2 是 Radix 預期行為，移除會影響 trigger focus offset",
-   "真實code行為": "Radix Menu 無 padding contract；roving focus 只依 collection refs 與 element.focus()，py-2 只改視覺 inset。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:56",
+   "宣稱": "Re-export for backward compat（內部命名）",
+   "真實code行為": "ICON_SIZE 只是檔案內的 const alias，未 export，也不在 export list。"
   },
   {
-   "fileLine": "dropdown-menu.tsx:226",
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:228",
    "宣稱": "avatar 與 startIcon 互斥",
-   "真實code行為": "兩者是獨立 optional props；同傳時 MenuItem 會同時渲染 StartIcon 與 Avatar。"
+   "真實code行為": "型別沒有互斥 union，runtime 也沒有 guard；兩者同傳時會一起轉交 MenuItem 並同時渲染。"
   },
   {
-   "fileLine": "dropdown-menu.tsx:428",
-   "宣稱": "RadioItem visual 使用 MenuItem 的 selected highlight",
-   "真實code行為": "RadioItem 未傳 selected 給 MenuItem；checked/highlighted 背景直接套在外層 Radix RadioItem，內層 MenuItem強制透明。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:157",
+   "宣稱": "SubContent 使用相同規格，包括 sideOffset。",
+   "真實code行為": "Surface class、shadow、sideOffset 相同，但 root Content 最小寬度是 max(180px, trigger width)，SubContent 固定為 180px，並非完整相同規格。"
   },
   {
-   "fileLine": "dropdown-menu.tsx:475",
-   "宣稱": "DropdownMenuShortcut child 以 ml-auto 靠右，且與 shortcut prop 視覺一致",
-   "真實code行為": "child 被包進 ItemContent 的 label span，不是 flex suffix item；ml-auto 無法靠右，與 endContent 路徑的 gap／對齊不等價。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:163",
+   "宣稱": "經 SizeContext 向下傳遞",
+   "真實code行為": "Context 傳遞存在，但 SizeContext 已被移除；實作名稱是 RowSizeContext，透過 RowSizeProvider/useRowSize 消費。"
   },
   {
-   "fileLine": "dropdown-menu.spec.md:72",
-   "宣稱": "DropdownMenuShortcut child 可用 ml-auto 塞在 children 內作為 escape hatch",
-   "真實code行為": "child 位於非 flex 的 label span，ml-auto 不會推到列尾。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:187",
+   "宣稱": "逐層收合用 ←",
+   "真實code行為": "只適用 LTR；Radix 2.1.16 在 RTL 使用 → 收合。Escape 關閉整棵 root 的前半句正確。"
   },
   {
-   "fileLine": "dropdown-menu.spec.md:73",
-   "宣稱": "shortcut prop 與 DropdownMenuShortcut child 視覺統一",
-   "真實code行為": "字體與顏色相同，但 child 不在 suffix slot，靠右位置、gap 與對齊均不一致。"
-  },
-  {
-   "fileLine": "dropdown-menu.spec.md:93",
-   "宣稱": "py-2 是 Radix 預期行為，移除會影響 trigger focus offset",
-   "真實code行為": "Radix primitive 不提供 padding；其 focus 演算法也不讀 CSS padding。"
-  },
-  {
-   "fileLine": "dropdown-menu.spec.md:109",
-   "宣稱": "DropdownMenuLabel 提供語義分類",
-   "真實code行為": "Radix Label 是 bare div；Group 雖有 role=group，但沒有 aria-labelledby／aria-label 關聯，accessibility tree 中 group name 為空。"
-  },
-  {
-   "fileLine": "dropdown-menu.spec.md:126",
-   "宣稱": "DropdownMenuShortcut child 以 ml-auto 靠右",
-   "真實code行為": "它實際嵌在 ItemContent label span，並非 suffix flex item。"
-  },
-  {
-   "fileLine": "dropdown-menu.spec.md:157",
-   "宣稱": "SubContent 使用與 Content 相同規格",
-   "真實code行為": "Content 最小寬度是 max(180px, trigger-width)，SubContent 固定 minWidth:180，不跟隨 SubTrigger 寬度。"
-  },
-  {
-   "fileLine": "dropdown-menu.spec.md:163",
-   "宣稱": "size 經 SizeContext 向下傳遞",
-   "真實code行為": "本地 SizeContext 已移除；實作使用 RowSizeProvider／RowSizeContext 與 useRowSize。"
-  },
-  {
-   "fileLine": "dropdown-menu.spec.md:187",
-   "宣稱": "逐層收合使用 ←",
-   "真實code行為": "僅適用 LTR；RTL 使用 →。"
-  },
-  {
-   "fileLine": "dropdown-menu.spec.md:188",
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:188",
    "宣稱": "→ 展開子選單",
-   "真實code行為": "僅適用 LTR；RTL 使用 ←。"
+   "真實code行為": "只適用 LTR；RTL 使用 ← 展開。"
   },
   {
-   "fileLine": "dropdown-menu.spec.md:189",
-   "宣稱": "← 收合子選單並回到 SubTrigger",
-   "真實code行為": "僅適用 LTR；RTL 使用 →。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:189",
+   "宣稱": "← 收合子選單，焦點回到 SubTrigger",
+   "真實code行為": "LTR 使用 ←；RTL 使用 →。兩種方向收合後才都會把焦點送回 SubTrigger。"
   },
   {
-   "fileLine": "dropdown-menu.spec.md:212",
-   "宣稱": "selected×highlighted 使用 bg-neutral-selected",
-   "真實code行為": "production class 是 data-[highlighted]:bg-neutral-selected-active。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:247",
+   "宣稱": "asChild 場景由子元件自帶同款 ring",
+   "真實code行為": "DropdownMenuTrigger 無條件注入 focus ring classes；Radix Slot 會將這些 classes 合併到 child。即使 child 沒自帶 ring，也會收到 wrapper 的 ring。"
   },
   {
-   "fileLine": "dropdown-menu.spec.md:212",
-   "宣稱": "CheckboxItem／RadioItem checked 都遵循相同 selected 背景規則",
-   "真實code行為": "RadioItem 有 checked 與 checked×highlighted 背景；CheckboxItem checked 只由 checkbox control 表示，highlighted 時仍是 neutral-hover。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:23",
+   "宣稱": "active/selected 是同一個狀態",
+   "真實code行為": "一般 Item 沒有 pointer-active 樣式；selected 才套 neutral-selected，highlight 是 neutral-hover，selected+highlighted 則是 neutral-selected-active。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:33",
-   "宣稱": "一般 Item 的 active／selected 都是 --neutral-selected",
-   "真實code行為": "未選中 highlighted 是 neutral-hover；selected rest 是 neutral-selected；selected×highlighted 是 neutral-selected-active。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:61-63",
+   "宣稱": "sm/md/lg 高度為 28/32/36px",
+   "真實code行為": "這只符合預設 md density；元件繼承 page density，lg density 的高度是 32/36/40px。表格未限定 density。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:39",
-   "宣稱": "CheckboxItem 的 active／selected 都維持 --surface-raised",
-   "真實code行為": "checked rest 沒有選中背景，但 highlighted 時是 neutral-hover；active 與 selected 不能合併成同一 token。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:164",
+   "宣稱": "浮層由 SizeContext 統一控制尺寸",
+   "真實code行為": "實際為 RowSizeProvider/RowSizeContext；SizeContext 是已淘汰的名稱。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:47",
-   "宣稱": "danger Item 的 active／selected 都是 --neutral-selected",
-   "真實code行為": "danger 只改文字色；背景仍區分 highlighted、selected 與 selected×highlighted 三種狀態。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:164",
+   "宣稱": "所有 Item 類型內部使用 MenuItem 進行視覺渲染",
+   "真實code行為": "DropdownMenuSeparator 直接渲染 Radix Separator，不使用 MenuItem。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:61",
-   "宣稱": "--field-height-sm 固定為 28px",
-   "真實code行為": "28px 僅是 md density；lg density 為 32px，story 的 resolved value 不會隨 density 更新。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:164",
+   "宣稱": "Radix primitive 只處理行為",
+   "真實code行為": "Outer Radix Item/CheckboxItem/RadioItem/SubTrigger 同時承載 highlighted、disabled、selected、checked 等視覺 classes；不只處理行為。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:62",
-   "宣稱": "--field-height-md 固定為 32px",
-   "真實code行為": "32px 僅是 md density；lg density 為 36px。"
-  },
-  {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:63",
-   "宣稱": "--field-height-lg 固定為 36px",
-   "真實code行為": "36px 僅是 md density；lg density 為 40px。"
-  },
-  {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:67",
-   "宣稱": "selected=true 時可作為單選項目",
-   "真實code行為": "selected 只加背景；外層仍是 role=menuitem，沒有 aria-checked／aria-selected、value 或 change contract；真正單選語義由 RadioItem 提供。"
-  },
-  {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:164",
-   "宣稱": "浮層由 SizeContext 控制尺寸",
-   "真實code行為": "實作使用 RowSizeProvider／RowSizeContext；SizeContext 已被移除。"
-  },
-  {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:164",
-   "宣稱": "所有 Item 類型都由 MenuItem 視覺渲染，Radix primitive 只處理行為",
-   "真實code行為": "Separator 直接渲染 Radix Separator；highlight／disabled／selected 背景也套在外層 Radix item，CheckboxItem 內更另有 role=checkbox 的 DS Checkbox。"
-  },
-  {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:238",
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:238",
    "宣稱": "Content size 經 SizeContext 傳遞",
-   "真實code行為": "實際透過 RowSizeProvider／useRowSize 傳遞。"
+   "真實code行為": "實際透過 RowSizeProvider/RowSizeContext 傳遞。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:244",
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:244",
    "宣稱": "avatar 與 startIcon 互斥",
-   "真實code行為": "型別與 runtime 都未互斥；同傳會同時渲染。"
+   "真實code行為": "API 與 runtime 都未實施互斥；兩者可同時傳入並同時渲染。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:254",
-   "宣稱": "CheckboxItem.checked 型別是 boolean",
-   "真實code行為": "繼承 Radix CheckedState，實際為 boolean | 'indeterminate'；wrapper 還會把 indeterminate 的內層視覺 coercion 成 checked。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:254",
+   "宣稱": "CheckboxItem checked 的型別是 boolean",
+   "真實code行為": "Wrapper 繼承 Radix CheckedState，實際型別為 boolean | \"indeterminate\"。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:790",
-   "宣稱": "closing frame 會 translateY(-5px)",
-   "真實code行為": "production exit 只有 fade-out 與 zoom-out，沒有 slide-out／exit translate。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:307",
+   "宣稱": "SubTrigger 的 active/selected Fill 沿用 Item 的 --neutral-selected",
+   "真實code行為": "SubTrigger 沒有 selected 狀態；open 與 highlighted 都使用 neutral-hover。Inspector token panel 與 production code、同檔 preview 不一致。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:844",
-   "宣稱": "data-state=closed frame 有 -8px 位移",
-   "真實code行為": "-8px slide 只屬 enter 的 slide-in-from-*；closed exit 沒有位移 utility，動畫完成後才 unmount。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:309-310",
+   "宣稱": "Checkbox preview 只在 active/selected 時顯示 checked",
+   "真實code行為": "Preview 傳入 checked={isCheckboxChecked || true}，結果永遠為 true，default/hover/disabled 也顯示 checked。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:850",
-   "宣稱": "blur 是預設 close 路徑",
-   "真實code行為": "預設 modal=true 時 FocusScope trapped，onFocusOutside 會 preventDefault；單純 blur／focus-out 不會關閉。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:839",
+   "宣稱": "開啟使用 slide-in-from-top-2",
+   "真實code行為": "Slide 方向依 Radix data-side 決定；只有浮層位於 trigger 下方時才從 top，top/left/right 各使用不同方向。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:857",
-   "宣稱": "Submenu 有 hover／focus 延遲展開",
-   "真實code行為": "100ms timer 僅在 mouse pointerMove；focus 本身不開啟，鍵盤須按 Enter／Space／方向鍵且立即開啟。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:841",
+   "宣稱": "transform origin 會隨 side/align 旋轉",
+   "真實code行為": "Radix 改變的是 transform-origin 座標；production animation 只有 fade、scale、slide，沒有 rotate transform。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:859",
-   "宣稱": "ArrowRight 展開、ArrowLeft 收合",
-   "真實code行為": "僅適用 LTR；RTL 的 open/close key 相反。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:844",
+   "宣稱": "closed 時 menu 未渲染，且為 opacity 0 / scale 95% / -8px",
+   "真實code行為": "退出動畫期間節點仍維持渲染，動畫結束才卸載；closed CSS 有 fade-out/zoom-out，但沒有 slide-out 或 -8px translate。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:888",
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:850",
+   "宣稱": "blur 是關閉選單的路徑",
+   "真實code行為": "預設 modal menu 會 trap focus，且 onFocusOutside 被 preventDefault；一般 blur 不會關閉 root。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:857",
+   "宣稱": "Submenu 有 hover/focus 延遲展開",
+   "真實code行為": "約 100ms timer 只由 mouse onPointerMove 啟動；單純 focus 不會自動展開，鍵盤需 Enter、Space 或對應方向鍵。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:859",
+   "宣稱": "ArrowRight 展開、ArrowLeft 收起",
+   "真實code行為": "只適用 LTR；RTL 為 ArrowLeft 展開、ArrowRight 收起。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:888",
    "宣稱": "焦點在 SubTrigger 時 ArrowRight 展開、ArrowLeft 回 parent",
-   "真實code行為": "僅適用 LTR；RTL 使用 ArrowLeft 展開、ArrowRight 回 parent。"
+   "真實code行為": "只適用 LTR；RTL 鍵位相反。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:944",
-   "宣稱": "CheckboxItem 等使用者關 menu 才 commit",
-   "真實code行為": "onCheckedChange 在每次 select 時立即執行；preventDefault 只阻止 menu 關閉。"
-  },
-  {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:945",
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:945",
    "宣稱": "DropdownMenuSub 永遠右側滑入",
-   "真實code行為": "RTL 初始 side=left；LTR 也可能因 avoidCollisions=true 被 Popper flip 到左側。"
+   "真實code行為": "RTL 的 preferred side 是左側；Radix collision avoidance 也可能翻轉實際 side。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:946",
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:946",
    "宣稱": "ArrowLeft 才逐層收合",
-   "真實code行為": "僅適用 LTR；RTL 使用 ArrowRight。"
+   "真實code行為": "只適用 LTR；RTL 使用 ArrowRight 收合並把焦點送回 SubTrigger。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:967",
-   "宣稱": "逐層收合使用左方向鍵",
-   "真實code行為": "僅適用 LTR；RTL 使用右方向鍵。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx:967",
+   "宣稱": "子選單逐層收合使用左方向鍵",
+   "真實code行為": "只適用 LTR；RTL 使用右方向鍵。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:967",
-   "宣稱": "語意角色、導覽與焦點管理不需額外設定",
-   "真實code行為": "icon-only Trigger 仍需 consumer 提供 accessible name，非字串 children 需明示 textValue；CheckboxItem 目前還產生 nested menuitemcheckbox／checkbox 語意。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.principles.stories.tsx:3-4",
+   "宣稱": "open-state 快照由 anatomy StateBehavior(defaultOpen) 涵蓋",
+   "真實code行為": "Anatomy StateBehavior 沒有使用 defaultOpen；真正的 defaultOpen 快照在展示檔 OpenSnapshot 與 ItemHover。"
   },
   {
-   "fileLine": "dropdown-menu.anatomy.stories.tsx:967",
-   "宣稱": "Storybook 無障礙檢查應為零項嚴重問題",
-   "真實code行為": "開啟 CheckboxItem 時，外層 menuitemcheckbox 內含 button role=checkbox；Axe 會報 nested-interactive，impact=serious。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.principles.stories.tsx:85",
+   "宣稱": "value 不保留（沒有「選中狀態」）",
+   "真實code行為": "Root 沒有 field value，但公開 API 有 DropdownMenuItem selected，以及帶 value 的 RadioGroup/RadioItem；絕對宣稱沒有選中狀態不成立。"
   },
   {
-   "fileLine": "dropdown-menu.principles.stories.tsx:316",
-   "宣稱": "DropdownMenuShortcut 以 ml-auto 靠右",
-   "真實code行為": "child 位於 ItemContent label span，不在 flex suffix slot，實際不會靠右。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.principles.stories.tsx:319",
+   "宣稱": "使用者熟悉快捷鍵後可跳過選單直接按快捷鍵",
+   "真實code行為": "shortcut prop 只渲染 muted 提示文字，沒有註冊 keyboard listener 或 command binding；consumer 必須另行實作快捷鍵。"
   },
   {
-   "fileLine": "dropdown-menu.principles.stories.tsx:332",
-   "宣稱": "shortcut 不可與 badge／自訂後綴混用",
-   "真實code行為": "buildEndContent 明確支援 badge、endIcon、shortcut 同槽並存；真正禁止的是同時使用 shortcut prop 與 DropdownMenuShortcut child 兩套 API。"
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.principles.stories.tsx:334-335",
+   "宣稱": "shortcut 不可與 badge 等自訂後綴混用",
+   "真實code行為": "buildEndContent 明確同時組合 badge、endIcon、shortcut；spec 禁止的是 shortcut prop 與 DropdownMenuShortcut child 兩種 shortcut API 同用。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx:1",
+   "宣稱": "OpenSnapshot 由 anatomy StateBehavior／Inspector 擁有",
+   "真實code行為": "本展示檔自己 export OpenSnapshot 並使用 defaultOpen；anatomy StateBehavior 沒有 defaultOpen。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.stories.tsx:1",
+   "宣稱": "showcase 展示角色切換情境",
+   "真實code行為": "全檔沒有角色 state 或角色選項；只有帳號動作、主題、欄位切換、排序與視覺快照。"
   }
  ]
 }

@@ -1,1 +1,19 @@
-{"component":"Separator","implBasis":"Radix Separator primitive (shadcn passthrough) — @radix-ui/react-separator","claimsVerified":17,"falseClaims":[]}
+{
+  "component": "Separator",
+  "implBasis": "@radix-ui/react-separator passthrough(decorative 預設 true;h-px/w-px + bg-divider)",
+  "claimsVerified": [
+    "spec/anatomy「decorative=true → role='none';false → role='separator' + aria-orientation 僅 vertical 輸出」= Radix react-separator source 行為(semanticProps 分支 + ariaOrientation 僅 vertical),spec 對 Radix 細節描述精確",
+    "token 宣稱:--divider = neutral-4(semantic.css:333)/ --border = neutral-5(:330)= spec Token 表 + anatomy TokenMatrix",
+    "cross-file consumer-list 全命中:ButtonDivider = raw div role='separator'(button-group.tsx:79-86,bg 非 border token)/ DropdownMenuSeparator = Radix Menu Separator + bg-divider(dropdown-menu.tsx:417-426)/ SidebarSeparator 消費 DS Separator(sidebar.tsx:563-581)/ MenuGroup [&+&]:border-divider(menu-item.tsx:338)/ SidebarGroup [&+&]:before pseudo-element(sidebar.tsx:655)",
+    "邊界案例「vertical h-full 需父容器確定高度」「厚度固定 1px」= code orientation 分支(separator.tsx:20)",
+    "separatorMeta states ['default'] + family self-contained 與 spec frontmatter 一致;無互動 ✓ 純 div"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "separator.principles.stories.tsx:63-64",
+      "宣稱": "UsageGuidance 何時用清單 LinkTo「在 DropdownMenu 內」→ kind='Design System/Components/Separator/展示' name='在 DropdownMenu 內'",
+      "真實code行為": "該展示 story(InDropdownMenu)已於 2026-07-14 retire(separator.stories.tsx:72-76 rationale 明文「canonical 範例由 DropdownMenu 展示層 owns」),展示層現僅存 水平/垂直/在 DescriptionList 區塊之間 —— LinkTo 指向不存在的 story = Storybook 斷鏈(retire 時漏掃 principles 反向引用)",
+      "severity": "medium"
+    }
+  ]
+}

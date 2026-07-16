@@ -1,13 +1,25 @@
 {
   "component": "Button",
-  "implBasis": "shadcn/ui Button + Radix Slot(asChild)+ cva",
-  "claimsVerified": 52,
+  "implBasis": "native <button> + Radix Slot(asChild)+ cva;iconOnly 自動包 DS Tooltip;CircularProgress loading spinner",
+  "claimsVerified": 32,
   "falseClaims": [
     {
-      "fileLine": "packages/design-system/src/components/Button/button.spec.md:276",
-      "宣稱": "『當 iconOnly 為 true 時，Button 自動以 aria-label 的值渲染 tooltip』— 無條件敘述",
-      "真實code行為": "button.tsx:524 tooltip 只在 `resolvedIconOnly && typeof ariaLabel === 'string' && !asChild` 三條件皆成立才渲染。iconOnly + asChild(docblock:241 另段承認)或缺 aria-label 時不渲染 tooltip；敘述省略了 asChild 例外與 aria-label 前提",
-      "severity": "marginal"
+      "fileLine": "button.tsx:579-584(buttonMeta.tokens)",
+      "宣稱": "「2026-07-14 deep-audit 二次補齊(掃 cva 全 bg-* class)」— tokens 列表已按 cva 真實 class 補齊",
+      "真實code行為": "fg 列表漏 --primary-hover / --primary-active:cva secondary/tertiary/link 消費 hover:text-primary-hover / active:text-primary-active(button.tsx:95-96,106-107,123-124),fg 只列到 --primary;error-hover/error-active 有列但 primary hover/active 家族沒列 → auto-compile token 矩陣缺項",
+      "severity": "low"
+    },
+    {
+      "fileLine": "button.stories.tsx:27(argTypes.danger description)",
+      "宣稱": "danger 僅 primary/secondary/text 支援(tertiary 視覺與 secondary+danger 重複)",
+      "真實code行為": "tertiary+danger 無對應 compoundVariant → 靜默渲染成一般 tertiary(灰、無紅色),並非「與 secondary+danger 視覺重複」;spec 禁止事項 L416 已明訂「並非等同 secondary」+ tsx L403 dev-warn 同述,story argTypes 理由句為 stale 舊說法",
+      "severity": "low"
+    },
+    {
+      "fileLine": "button.spec.md:276",
+      "宣稱": "「當 iconOnly 為 true 時,Button 自動以 aria-label 的值渲染 tooltip」(無條件)",
+      "真實code行為": "button.tsx:535 條件為 resolvedIconOnly && typeof ariaLabel === 'string' && !asChild — asChild 時不包 Tooltip(Radix Slot 單 child 限制);此例外只記載於 tsx ButtonProps jsDoc(L241-245),spec 未載,照 spec 實作 iconOnly+asChild 會誤以為有 tooltip",
+      "severity": "low"
     }
   ]
 }

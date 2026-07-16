@@ -1,1 +1,9 @@
-{"dim":70,"hook":"check_consumer_app_invariants.sh r2_story_baseline","residueCount":0,"findings":[],"verified":true,"note":"Consumer .stories.tsx using high-risk DS primitives (DataTable/Dialog/Sheet/Popover/DropdownMenu/Tooltip/HoverCard/LinkInput/RadioGroup/CircularProgress/AppShell/Sidebar) must carry @story-baseline: marker. Scanned all apps/** + template/** stories: no consumer story directly renders any high-risk primitive, so no marker required. AllDsComponents also has @consumer-catalog-allow escape. 0 residue."}
+{
+  "dim": 70,
+  "hook": "check_consumer_app_invariants.sh r2_story_baseline",
+  "wiring": "OK — 同 dim 69(同檔 pipeline,任一 rule exit 2 → 整體 exit 2);mirror sync;25 fires 2026-07-16",
+  "smoke": "hook 全檔 replay:apps/** 全 stories.tsx → rc=0(高風險 primitive 使用皆有 marker 或落在 @consumer-catalog-allow escape)",
+  "residueCount": 0,
+  "findings": [],
+  "notes": "baseline mapping SSOT packages/design-system/ds-story-manifest.json 實存;@story-baseline-allow 濫用 = 0(apps/** 無此 marker);neutralize_local_tags(2026-07-10 N6)shared helper 在檔,r2/r3 共用"
+}

@@ -60,7 +60,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Separator/展示" name="垂直"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">垂直分隔</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Separator/展示" name="在 DropdownMenu 內"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">在 DropdownMenu 內</span></LinkTo>
+          <LinkTo kind="Design System/Components/DropdownMenu/展示" name="基本"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">在 DropdownMenu 內(DropdownMenuSeparator,見 DropdownMenu 展示「基本」)</span></LinkTo>
         </li>
         <li>
           <LinkTo kind="Design System/Components/Separator/展示" name="在 DescriptionList 區塊之間"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">在 DescriptionList 區塊之間</span></LinkTo>

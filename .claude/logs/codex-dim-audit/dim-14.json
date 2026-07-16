@@ -1,114 +1,90 @@
 {
  "dim": 14,
- "filesScanned": 492,
+ "filesScanned": 496,
  "findings": [
   {
-   "fileLine": "packages/design-system/src/components/Alert/alert.tsx:1; packages/design-system/src/components/AppShell/app-shell.tsx:329",
-   "問題": "全掃 386 個 TS/TSX 後，183 檔有自然語言註解中英混用：173 檔在機械 marker 後留下英文 rationale，41 檔另有 86 個一般英文 prose block，兩集合重疊 31 檔。",
-   "severity": "marginal",
-   "建議": "保留 marker、API、品牌與技術 identifier，將 free-form rationale 和一般敘述統一改為繁中。"
+   "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:272; packages/design-system/src/components/Field/field.spec.md:24; packages/design-system/src/components/PeoplePicker/people-picker.spec.md:256; packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md:114; packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:161,171; packages/design-system/src/components/Checkbox/checkbox.stories.tsx:16,27,29; packages/design-system/src/components/Combobox/combobox.stories.tsx:29,42-43; packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:74,86,135,193,207,427,429,437; packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:135,145,150; packages/design-system/src/components/DataTable/data-table.stories.tsx:261,654; packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx:251,711,748,764; packages/design-system/src/components/DatePicker/date-picker.principles.stories.tsx:142,160,173; packages/design-system/src/components/DatePicker/date-picker.stories.tsx:79,318-319; packages/design-system/src/components/Field/field.anatomy.stories.tsx:76,152; packages/design-system/src/components/Input/input.anatomy.stories.tsx:214,337; packages/design-system/src/components/Input/input.stories.tsx:29-31; packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:268; packages/design-system/src/components/LinkInput/link-input.stories.tsx:103,122-123; packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:720; packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:101,165; packages/design-system/src/components/NumberInput/number-input.stories.tsx:21,34-35,97,136; packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:81,100,139; packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx:63,75; packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:18,33-34; packages/design-system/src/components/Select/select.anatomy.stories.tsx:325-326; packages/design-system/src/components/Select/select.stories.tsx:47-48; packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:41,81; packages/design-system/src/components/Switch/switch.principles.stories.tsx:119; packages/design-system/src/components/Switch/switch.stories.tsx:23,25; packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:37,129,204,208; packages/design-system/src/components/TimePicker/time-picker.stories.tsx:30,41-42; packages/design-system/src/components/Field/field-wrapper.tsx:296,301; packages/design-system/src/components/DataTable/cell-registry.tsx:258,290,325,362,384,404,442; packages/design-system/src/components/DataTable/data-table.tsx:99,1554-1555,1664-1665; packages/design-system/src/components/Input/input.tsx:19,118,140,143,184; packages/design-system/src/components/Textarea/textarea.tsx:19,152,201,221,224; packages/design-system/src/components/NumberInput/number-input.tsx:48; packages/design-system/src/components/LinkInput/link-input.tsx:33,246",
+   "問題": "`FieldMode` 已定為 `edit|view|readonly|disabled`，但 5 份 spec、26 個 story 檔及多個實作識別字／註解仍沿用退役名稱 `display`，造成契約與教學詞彙分裂。合法的 Select `display` prop 與明文保留的相容名稱已排除。",
+   "severity": "material",
+   "建議": "僅在 FieldMode 語境將 `display` 統一為 `view`／「檢視」，並同步改名 `DisplayMode`、`isDisplayMode` 等內部識別字；保留無關的 CSS、Select prop 與相容 API 名稱。"
   },
   {
-   "fileLine": "packages/design-system/src/components/DataTable/filter-operators.spec.md:1; packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md:3; packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:3; packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:3; packages/design-system/src/tokens/orphan-tokens.spec.md:13; packages/design-system/src/tokens/token-system.spec.md:3",
-   "問題": "6 個 H1 在 canonical `# {名稱} 設計原則` 後追加 SSOT、taxonomy 或分類限定，偏離精確 H1 模板。",
-   "severity": "marginal",
-   "建議": "H1 僅保留名稱與「設計原則」，把版本、taxonomy、SSOT 身分移到 frontmatter 或首段正文。"
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:38,49; packages/design-system/src/components/DataTable/data-table.spec.md:222; packages/design-system/src/components/DatePicker/date-picker.spec.md:43,54; packages/design-system/src/components/InlineEdit/inline-edit.spec.md:30; packages/design-system/src/components/LinkInput/link-input.spec.md:24; packages/design-system/src/components/NumberInput/number-input.spec.md:24; packages/design-system/src/components/PeoplePicker/people-picker.spec.md:28; packages/design-system/src/components/TimePicker/time-picker.spec.md:41,52",
+   "問題": "8 份 spec 將 controlled/uncontrolled helper 稱為不存在的 `useControllableState`，但 DS canonical 是 `use-controllable.ts` 匯出的 `useControllable`；DataTable 還誤述其他元件已使用前者。",
+   "severity": "material",
+   "建議": "全部改稱 `useControllable`，並按真實 consumer 修正 DataTable 的跨元件描述。"
   },
   {
-   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:204; packages/design-system/src/components/Slider/slider.spec.md:243; packages/design-system/src/components/Steps/steps.spec.md:401",
-   "問題": "3 份 spec 自創英文章名 `Do / Don't`，與 DS 既有繁中章名 vocabulary 不一致。",
-   "severity": "marginal",
-   "建議": "依內容拆為「何時用」與「禁止事項」，或至少統一採既有「禁止事項」。"
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:123,132,148; packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:118; packages/design-system/src/components/Empty/empty.spec.md:67; packages/design-system/src/components/Notice/notice.spec.md:59,67; packages/design-system/src/components/SelectMenu/select-menu.spec.md:73,150,205,212; packages/design-system/src/components/Sidebar/sidebar.spec.md:124,710; packages/design-system/src/components/Steps/steps.spec.md:66,78,89; packages/design-system/src/components/Tabs/tabs.spec.md:85,93,95,269; packages/design-system/src/components/TreeView/tree-view.spec.md:80,106,193,361; packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:66,166,585",
+   "問題": "10 份 spec、共 27 處仍把現行 `item-anatomy` pattern/module 稱為舊名 `item-layout`，其中 owner spec 甚至指向不存在的 module。",
+   "severity": "material",
+   "建議": "統一改為 `item-anatomy`；描述視覺結構時使用「row anatomy」，避免再把一般 item layout 概念寫成 module 名。"
   },
   {
-   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:35,88",
-   "問題": "正文把資料夾／概念群組 `SelectionControl` 說成 internal primitive；實際 primitive、H1 與檔名均為 `SelectionItem`。",
-   "severity": "marginal",
-   "建議": "兩處改稱 `SelectionItem`；`SelectionControl` 僅用於資料夾或概念群組。"
+   "fileLine": "packages/design-system/src/patterns/README.md:6,22,31; .claude/rules/ui-development.md:20; packages/design-system/src/hooks/use-overflow-items.ts:65,178",
+   "問題": "文件把 horizontal-overflow helper 稱為可呼叫的 `useOverflowItems` hook，但該 module 實際只匯出 `useScrollEdges` 與 `useOverflowIndices`，會引導使用者尋找不存在的 API。",
+   "severity": "material",
+   "建議": "文件改列實際兩個 hook；保留合規的 umbrella 檔名 `use-overflow-items.ts`。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:49; packages/design-system/src/components/Chip/chip.spec.md:148,149; packages/design-system/src/components/DataTable/data-table.spec.md:433,435; packages/design-system/src/components/SelectMenu/select-menu.spec.md:71,182; packages/design-system/src/components/Tabs/tabs.spec.md:141,152",
-   "問題": "同一 scroll referent 在同份 spec 內交替稱「滾動」與「捲動」。",
-   "severity": "marginal",
-   "建議": "各 owner spec 統一採「捲動」，code identifier `scroll` 保持英文。"
+   "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:39; packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx:55,77,111",
+   "問題": "全掃 969 個 story exports 後，仍有 4 個 story 缺少中文 `name`；函式型 exports 也未設 `storyName`，Storybook 因而洩漏英文 export 名。",
+   "severity": "material",
+   "建議": "為 ProgressBar story 補中文 `name`；將三個函式 story 改為含中文 `name` 的 StoryObj，或明確設定中文 `storyName`。"
   },
   {
-   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.spec.md:25,96; packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:41,78",
-   "問題": "同一 drag 行為在單檔內交替使用「拖拉」與「拖曳」。",
-   "severity": "marginal",
-   "建議": "統一採既有 ARIA 與 owner vocabulary「拖曳」。"
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.principles.stories.tsx:24,39,46; packages/design-system/src/components/SelectionControl/selection-item.spec.md:25",
+   "問題": "principles story 把概念群組／資料夾名 `SelectionControl` 當成實際 primitive 名；owner spec 已明定 primitive 為 `SelectionItem`。",
+   "severity": "material",
+   "建議": "元件本體與使用指引一律稱 `SelectionItem`；`SelectionControl` 僅保留作為群組、資料夾或 Storybook 分類名稱。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Alert/alert.spec.md:183",
-   "問題": "同一段對同一 disabled 概念交替使用「停用」與「禁用」。",
-   "severity": "marginal",
-   "建議": "整段統一為「停用」；實際 prop `disabled` 保持英文。"
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.tsx:44",
+   "問題": "公開 prop `onClear` 實際清除 selection，與 DS 將 `onClear` 保留給「清空欄位內容」的 callback 語義衝突。",
+   "severity": "material",
+   "建議": "改為 `onClearSelection` 或 `onDeselectAll`，並以 deprecated alias 提供必要的遷移期。"
   },
   {
-   "fileLine": "packages/design-system/src/components/DataTable/data-table.spec.md:428; packages/design-system/src/components/FileViewer/file-viewer.spec.md:65,255; packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:223,242; packages/design-system/src/components/TimePicker/time-picker.spec.md:20,27",
-   "問題": "同一 interaction referent 在各自 spec 內交替稱「交互」與「互動」。",
-   "severity": "marginal",
-   "建議": "自然語言統一採「互動」，技術 identifier 保留英文。"
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:83; packages/design-system/src/components/Calendar/calendar.tsx:110",
+   "問題": "同名公開 prop `createLabel` 在 SelectMenu 是 `(query) => string` formatter，在 Calendar 卻是靜態 CTA 字串；相同名稱代表不同型態與使用方式。",
+   "severity": "material",
+   "建議": "將 SelectMenu callback 改為 `formatCreateLabel` 或 `getCreateLabel`，靜態字串保留 `createLabel`。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:151,701; packages/design-system/src/components/Skeleton/skeleton.spec.md:17,89; packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:28,517",
-   "問題": "同一使用者角色在單檔內交替稱「使用者」與「用戶」。",
-   "severity": "marginal",
-   "建議": "統一採「使用者」。"
+   "fileLine": "packages/design-system/src/components/DescriptionList/description-list.tsx:33,49; packages/design-system/src/components/Checkbox/checkbox-group.tsx:67; packages/design-system/src/components/Field/field.tsx:133; packages/design-system/src/components/Steps/steps.tsx:175",
+   "問題": "DescriptionList 對相同的 vertical/horizontal 軸使用 `direction`，其他 DS 元件 canonical 均為 `orientation`；`direction` 亦容易與 LTR/RTL 語義混淆。",
+   "severity": "material",
+   "建議": "公開 prop 統一為 `orientation`，必要時短期保留 deprecated `direction` alias。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:107,126",
-   "問題": "同一互動 feedback 在單檔內交替稱「回饋」與「反饋」。",
-   "severity": "marginal",
-   "建議": "統一採「回饋」。"
+   "fileLine": "packages/design-system/src/components/Steps/steps.tsx:307-311; packages/design-system/src/components/Steps/index.ts:5",
+   "問題": "私有注入欄位 `__isLast` 被公開的 `StepItemProps` 繼承並由 barrel 匯出，私有命名與公開 API 邊界互相矛盾。",
+   "severity": "material",
+   "建議": "讓 injected props 僅存在於 private implementation intersection，或透過 context/index 推導末項，不要出現在 exported props。"
   },
   {
-   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:35",
-   "問題": "使用非 canonical 大小寫 `ToolBar`，與既有詞彙 `Toolbar` 不一致。",
+   "fileLine": "packages/design-system/src/components/DataTable/filter-operators.spec.md:259; packages/design-system/src/components/FileViewer/file-viewer.spec.md:267; packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md:120; packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:308; packages/design-system/src/components/Button/button.spec.md:105,130",
+   "問題": "spec 的章名或段落標籤仍使用非技術性的英文自然語句 `Sources`、`Why inline`、`When…`、`Notes`、`Members`，不符合 spec 繁中原則。",
    "severity": "marginal",
-   "建議": "改為 `Toolbar`。"
+   "建議": "分別改為「來源」「為何採 inline」「當……時」「備註」「成員」；真正的 API、型別與技術專名維持英文。"
   },
   {
-   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:55,90,92,141,144,156",
-   "問題": "文件自創縮寫 `FCG`，使 component vocabulary 與可搜尋的正式 identifier `FieldControlGroup` 脫節。",
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.spec.md:168; packages/design-system/src/components/Carousel/carousel.spec.md:136; packages/design-system/src/components/Checkbox/checkbox.spec.md:247; packages/design-system/src/components/Chip/chip.spec.md:190; packages/design-system/src/components/Command/command.spec.md:170; packages/design-system/src/components/Empty/empty.spec.md:126; packages/design-system/src/components/Sidebar/sidebar.spec.md:699; packages/design-system/src/components/Skeleton/skeleton.spec.md:89; packages/design-system/src/components/Switch/switch.spec.md:136; packages/design-system/src/components/Textarea/textarea.spec.md:43; packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:524; packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:31; packages/design-system/src/tokens/uiSize/uiSize.spec.md:85; packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:74; packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:90; packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx:283; packages/design-system/src/components/Sidebar/sidebar.principles.stories.tsx:166; packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:41; packages/design-system/src/tokens/uiSize/uiSize.stories.tsx:70",
+   "問題": "繁中內容殘留少數簡中／非 canonical 用詞：`派别`、`圖標`、`默認`、`菜單`、`文檔`、`用戶`、`字符`、`組件`，與 DS 壓倒性使用的繁中詞彙不一致。",
    "severity": "marginal",
-   "建議": "正文統一使用 `FieldControlGroup`；若確需縮寫，先在 canonical glossary 明文定義。"
+   "建議": "統一為「派別、圖示、預設、選單、說明文件、使用者、字元、元件」，並建立可機械檢查的繁中詞彙表。"
   },
   {
-   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.spec.md:115,141,143,144,182",
-   "問題": "實作使用 canonical `OverflowIndicator`，spec 卻反覆另稱「+N chip」，造成跨元件詞彙斷裂。",
+   "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:42,90,109; packages/design-system/src/components/DataTable/data-table.spec.md:387,389,391,428,433,437,439; packages/design-system/src/components/DateGrid/date-grid.spec.md:23; packages/design-system/src/components/FileUpload/file-upload.spec.md:96,139; packages/design-system/src/components/FileViewer/file-viewer.spec.md:65,295; packages/design-system/src/components/Sheet/sheet.spec.md:31; packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:242; packages/design-system/src/components/TimePicker/time-picker.spec.md:27; packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:12,69,74,105,183,213,221; packages/design-system/src/components/Carousel/carousel.spec.md:49,264; packages/design-system/src/components/Chip/chip.spec.md:149,162,166-167; packages/design-system/src/components/Pagination/pagination.spec.md:45,55,110,116; packages/design-system/src/components/SelectMenu/select-menu.spec.md:186; packages/design-system/src/components/Tabs/tabs.spec.md:141,146; packages/design-system/src/components/Calendar/calendar.spec.md:34,39,208,229-230,235; packages/design-system/src/components/DataTable/data-table.spec.md:123; packages/design-system/src/components/Textarea/textarea.spec.md:73; packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:78; packages/design-system/src/tokens/elevation/elevation.spec.md:21",
+   "問題": "同一概念跨元件混用「導航／導覽」「交互／互動」「滾動／捲動」「拖拉／拖拽／拖曳」；後者各組已有明顯 DS 多數詞，但少數 specs 與 stories 未跟隨。",
    "severity": "marginal",
-   "建議": "引用元件時改稱 `OverflowIndicator`；僅描述視覺時使用一般名詞「+N 溢出指示」。"
+   "建議": "將 navigation、interaction、scroll、drag 的繁中 canonical 分別定為「導覽、互動、捲動、拖曳」，再對 specs 與 stories 做定向替換。"
   },
   {
-   "fileLine": "packages/design-system/src/tokens/elevation/elevation.spec.md:45",
-   "問題": "DS 元件清單使用不存在的別名 `Dropdown`，實際 canonical 元件為 `DropdownMenu`。",
+   "fileLine": "packages/design-system/src/components/Accordion/accordion.tsx:88; packages/design-system/src/components/DataTable/data-table.tsx:181; packages/design-system/src/components/Field/field-context.ts:12; packages/design-system/src/components/Select/select.tsx:18; packages/design-system/src/hooks/use-controllable.ts:4; packages/design-system/src/lib/drag-visual.ts:255; packages/design-system/src/lib/i18n/i18n-context.tsx:89; packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx:535; packages/design-system/src/patterns/header-canonical/chrome-header.tsx:18; packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.tsx:16; packages/design-system/src/tokens/elevation/overlay-geometry.ts:2; packages/design-system/src/tokens/motion/motion.ts:2",
+   "問題": "390/390 個 TS/TSX 經註解 AST 全掃後，有 157 個檔案在單一檔內混用完整中文與英文自然語句；pragma、URL、程式片段、identifier 與純技術標記均已排除。",
    "severity": "marginal",
-   "建議": "改為 `DropdownMenu`。"
-  },
-  {
-   "fileLine": "packages/design-system/src/tokens/color/primitives.css:73,74,262,263",
-   "問題": "9 個 CSS custom properties 使用底線與未定義縮寫 `--_na1` 至 `--_na9`，違反 kebab-case 命名。",
-   "severity": "marginal",
-   "建議": "改為具語義的 kebab-case，例如 `--neutral-alpha-1` 至 `--neutral-alpha-9`。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:83,92",
-   "問題": "Story fixture 使用中文 property identifiers `回報人`、`環境`，且 `回報人` 再次出現；DS code identifier 應全英文。",
-   "severity": "marginal",
-   "建議": "改用英文 key 搭配中文 label mapping；若純屬顯示資料，至少改為明確的字串鍵。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Calendar/calendar.principles.stories.tsx:127; packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:187",
-   "問題": "Principles exports `MvpScope` 與 `UsageScenarioRule` 是 story-writing SSOT 明列的舊 naming drift，且兩檔均已有 `UsageGuidance`。",
-   "severity": "marginal",
-   "建議": "把內容整合進既有 `UsageGuidance`，移除重複的舊命名 export。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:74,101,124",
-   "問題": "3 個 principles exports 使用反序的 `RuleXxx`，與 DS-wide `{Concept}Rule` 語序衝突。",
-   "severity": "marginal",
-   "建議": "分別改為 `MeetingMinuteStepRule`、`RangeCompositionRule`、`ClearNoLabelButtonRule` 等 Rule 後綴形式。"
+   "建議": "每個檔案選定中文或英文作為 prose comment 語言並完整統一；技術識別字與引用內容維持原文。"
   }
  ]
 }

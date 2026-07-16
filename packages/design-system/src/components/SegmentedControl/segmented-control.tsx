@@ -15,8 +15,9 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
  * 內部 item 結構鏡射 Button，但兩者型別獨立。
  *
  * ── 定位 ──
- *   切 value（不是切 view）。塞得進 Field，Tabs 不行。
- *   切 view → Tabs；單一 on/off → Button pressed；>5 個選項 → Select。
+ *   互斥多選一的 compact control；選值可驅動下方內容變化（ViewSwitcher 合法——
+ *   「切 value 不能切 view」是錯的二分法，spec「定位」段）。塞得進 Field，Tabs 不行。
+ *   與 Tabs 分界看規模 / 結構角色（spec「與 Tabs 的分界」段）；單一 on/off → Button pressed；>5 個選項 → Select。
  *
  * ── Size（對齊 field-height / Button 系列）──
  *   xs   h-field-xs（24 固定）

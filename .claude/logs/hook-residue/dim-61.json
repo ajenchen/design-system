@@ -1,1 +1,9 @@
-{"dim":61,"hook":"check_item_list_gap.sh + check_datatable_invariants.sh","residueCount":0,"findings":[],"verified":true,"note":"M16 item-list gap (>=2 FileItem/MenuItem rich without gap-N/space-y-N) = 0 in production tsx. DataTable size:number without meta.width = 0 genuine (AppShell/_demo-helpers.tsx 'size: 1' is CSS-var name '--chrome-header-avatar-size: 1.5rem' inside a comment, false positive; data-table.tsx:1109 'size: 40' is DS-internal file explicitly excluded by hook). enableRowDrag without getRowId = 0. All hook mechanisms are WARN (exit 0)."}
+{
+  "dim": 61,
+  "hook": "check_item_list_gap.sh + check_datatable_invariants.sh r2",
+  "wiring": "OK — 兩支皆 PreToolUse Edit|Write|MultiEdit(settings.json:252/:224 + hooks.json:110/:86);mirror sync;各 19 fires 2026-07-16;r2 要求 EVENT==PreToolUse 與註冊一致",
+  "smoke": "not run(存量 grep 直接覆蓋偵測意圖)",
+  "residueCount": 0,
+  "findings": [],
+  "notes": "存量掃描:(a) apps/** + packages/design-system/src/** production tsx/ts 之 ColumnDef/DataTable context 內 raw `size: <number>` 且無 meta.width — 0 hit(DS internal data-table.tsx/cell-registry.tsx/column-types.ts 依 hook allowlist 排除);(b) production tsx ≥2 個 <FileItem>/<MenuItem variant=\"rich\"> 且無 gap-N/space-y-N — 0 hit。兩 rule 皆 WARN 級(exit 0)與 coverage matrix 宣稱一致"
+}

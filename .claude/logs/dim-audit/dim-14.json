@@ -1,37 +1,46 @@
 {
   "dim": 14,
   "title": "命名一致性",
-  "mechanism": "語義命名 DS-wide:hook naming / 章名中文 / identifier 語言一致 / 跨元件詞彙衝突",
-  "filesScanned": 267,
-  "scanScope": "全 86 spec.md + 全 181 production tsx/ts(components/patterns/hooks/tokens)+ naming-conventions.md / ui-development.md / props-naming.md / form-validation.spec.md",
-  "cleanChecks": [
-    "hook naming: 4 dedicated hooks(use-controllable / use-is-narrow-viewport / use-is-touch-device / use-overflow-items)+ Field use-form-validation 全 kebab-case use-*.ts;所有 hook function 全 camelCase useXxx;component-local hooks(useFieldContext / useInverseTheme / useActiveDescendant)co-located 合法。CLEAN",
-    "identifier 語言一致: DS-wide grep 無任何 CJK identifier(變數/函式/型別全英文);CJK 僅出現在註解(專案認可風格,技術術語保留英文)。CLEAN",
-    "spec 章節 canonical: 68 spec 用「何時用」統一;無任何 When to use/Usage 英文化;缺「何時用」的 3 個(filter-operators/field-controls/form-validation)為 sub-spec 合法。CLEAN",
-    "spec H1: 全 component spec 用「# {Name} 設計原則」;grep 誤判 2 個(frontmatter # 註解)已排除。CLEAN",
-    "file naming: 全 tsx/ts kebab-case;_demo-helpers.tsx = naming-conventions.md documented `_`-prefix demo helper convention,合法。CLEAN",
-    "英文章名(API/Props/Size/State/Loading/Anatomy/Do-Don't/active vs selected/Nested Theme 等): 全為約定俗成技術術語 = naming-conventions.md documented exception,非違規",
-    "variant 泛用重載(Button emphasis / Alert-Notice-Toast status / Badge priority / FileUpload layout): 世界級 DS 通用 idiom,非衝突",
-    "status 雙 value-set(presence dot vs lifecycle): props-naming.md 明文『刻意 overload,非隱性衝突』documented exception,非違規"
-  ],
+  "filesScanned": 300,
+  "mechanism": "DS-wide:(1) 63 component 資料夾 PascalCase + 全檔 kebab-case + suffix 白名單 + hooks 檔名 + token 資料夾構詞 machine check(全過);(2) 86 spec H1 frontmatter-aware 驗 `# {名} 設計原則`(全過);(3) 207 stories title 拆 part 數驗 namespace canonical(192 個 4-part + 15 個 3-part Tokens/Patterns 豁免);(4) 本輪 branch 重點 regression:rg 全庫掃 display→view 更名殘留(mode 語境的「display 態/模式/分支/path」)+ cell disabled 廢除殘留,逐 hit 讀上下文區分合法 `display` prop('plain'|'tag')vs 已退役 mode 名",
+  "verdict": "3 material / 2 marginal after 全掃:display→view 更名在 spec 正文與 user-visible story 文字留下混用殘留(FieldMode 已無 'display' 值)+ cell disabled 廢除漏改 data-table.spec.md 鍵盤閘門句 + 「Internal Patterns」title namespace 三 home 中 story-rules.md 白名單漏列(2026-07-03 phaseA 已列仍未修)",
   "findings": [
     {
-      "fileLine": "packages/design-system/src/components/Select/select.tsx:78 (onChange) vs packages/design-system/src/components/RadioGroup/radio-group.tsx:90 + SegmentedControl/segmented-control.tsx:82 + SelectMenu/select-menu.tsx:72 (onValueChange)",
-      "問題": "『值變更』callback 在同族選值控件出現兩種名:Select/Combobox/DatePicker/TimePicker/NumberInput/Input/LinkInput/PeoplePicker/Rating 用 `onChange`;RadioGroup/SegmentedControl/Tabs/Steps/SelectMenu 用 `onValueChange`;Checkbox/Switch 用 `onCheckedChange`。Select 與 RadioGroup 同為單選 Field 控件卻一個 onChange 一個 onValueChange。rationale 存在(Field getInputProps 引擎吃 onChange / Radix passthrough 用 onValueChange,form-validation.spec.md:89 有列 onChange-型控件清單)但**未收斂進 props-naming.md callback canonical**(該檔只 codify onClose/onDismiss/onRemove/onClear),屬散落式決策 → 未來新控件易漂移選錯名。",
-      "severity": "marginal",
-      "建議": "在 props-naming.md callback canonical 段補一列明文判準:『資料輸入型 Field 控件 = onChange(對齊 form-validation getInputProps 引擎);離散選擇/導覽 Radix 控件 = onValueChange/onCheckedChange(對齊 Radix idiom)』,把現有 split 從隱性慣例升成 documented canonical(比照 status overload 的處理法),消除新控件命名漂移風險。"
+      "fileLine": "packages/design-system/src/components/Select/select.anatomy.stories.tsx:326",
+      "問題": "user-visible prop 表列 selectedItemRenderer「4 mode 共享(edit/display/readonly/disabled)」— FieldMode 實際 = 'edit'|'view'|'readonly'|'disabled'(field-types.ts:21),'display' 已更名 'view',文件宣稱與型別事實不符;同類:textarea.anatomy.stories.tsx:37(union 寫 'view' 但描述寫「display 渲染」)、data-table.anatomy.stories.tsx:135、data-table.principles.stories.tsx:145",
+      "severity": "material",
+      "建議": "4 處 story 文字 display→view 批改(select.tsx:3 docblock 引 field-controls contract 的舊詞引文一併同步 — spec 本文已改為 view/readonly/disabled/edit)"
     },
     {
-      "fileLine": "packages/design-system/src/components/Field/field-types.ts:19 (FieldMode=edit|display|readonly|disabled) vs FileItem/file-item.tsx:54 (mode=compact|rich) vs DataTable/data-table-filter-panel.tsx:371 (mode=flat|nested)",
-      "問題": "`mode` prop 跨元件承載三種互不相關語義:Field 家族 = 狀態機(edit/display/readonly/disabled)、FileItem = 佈局密度(compact/rich)、DataTableFilterPanel = 樹結構(flat/nested)。三者皆 public/semi-public。雖 `mode` 屬泛用 discriminator(如 variant/type)且各元件自身 self-consistent + spec 內有定義,但不同於 `status`(props-naming.md 已明文標註『刻意 overload』),`mode` 的跨元件多義**未 documented as deliberate** → 觸及命名 test #3『同字串在其他元件已有不同語義』的認知衝突風險。",
-      "severity": "marginal",
-      "建議": "二選一:(a) 比照 status 在 props-naming.md 補一行『mode 為泛用 discriminator,各元件語義軸自帶(Field=狀態機/FileItem=密度/Filter=結構),刻意 overload 非衝突』將其正式化;(b) 若要更嚴,FileItem 密度改用更專屬名(如 density,對齊 compact/rich=scanning/reading 軸)。建議採 (a),成本低且與既有 status 處理一致。"
+      "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:186",
+      "問題": "spec 正文 view/display 混用:同句「有 view 渲染分支者…後二者 display = ✓/—…無 display 態…無 display/readonly 態」;同檔 :383「display 態照常渲染」「display path」;field.spec.md:421「display 態零恆顯型別 icon」;textarea.spec.md:30,112「display 態裸 <div>」;date-picker.spec.md:287「display 模式不生效」、:314「display + disabled 同傳走 display 分支」— canonical mode 名已定 'view',SSOT spec 正文保留舊詞 = 術語一致性違反(更名傳播不完整,M10)",
+      "severity": "material",
+      "建議": "6 檔 spec 內 mode 語境的「display 態/模式/分支」統一改「view 態」;「display path」若指內部 render branch 暱稱,擇一詞(view path)全庫統一;合法 `display` prop('plain'|'tag')與 showDisplayEndIcon prop 名不在此列"
     },
     {
-      "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:982 (isActive?: boolean, SidebarMenuButton public prop)",
-      "問題": "Sidebar 公開 prop `isActive` 用 `is`-前綴布林,與 DS 其餘公開布林 prop 一律裸命名(checked / selected / disabled / open / pressed / loading / danger / interactive / clearable)不一致;is/has 前綴在 DS 內幾乎只用於內部 context 值與 render-helper(isMobile / isDragging / isEditable / hasChildren 等)。",
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.spec.md:495",
+      "問題": "Enter/F2 進 edit 條件寫「cell 可編輯 + 非 boolean/url + 非 disabled 時」— cell「disabled」態本輪已廢除(cell-registry.tsx:111 round16、data-table.tsx:2060 code 註解已無「非 disabled」、field-controls.spec.md:65 死格移除),spec 鍵盤段殘留已不存在的 gate = spec≠code",
+      "severity": "material",
+      "建議": "刪「+ 非 disabled」,對齊 data-table.tsx:2060「若 cell editable + 非 boolean / url」(edit 入口統一 canEditCell)"
+    },
+    {
+      "fileLine": ".claude/rules/story-rules.md:25",
+      "問題": "DS repo title namespace 白名單 = {Tokens|Patterns|Components|Internal},但 ui-development.md:31 + patterns/README.md:22 + 實際 code(horizontal-overflow / overlay-surface stories)= `Design System/Internal Patterns/<Name>` — 「Internal Patterns」不在白名單,三 home 兩種答案;2026-07-03 deep-audit phaseA-preflight 已列此 drift 至今未收斂",
+      "severity": "material",
+      "建議": "story-rules.md:25 白名單補 `Internal Patterns`(或反向:兩檔 + 2 stories 收斂進 `Internal/`)— 擇一 SSOT 後 pointer 對齊,勿三 home 各寫",
+      "備註": "governance 檔非 packages/ 產物,嚴格說跨 dim 15/governance;因 dim 14 check 7 = Storybook title canonical 故收錄於此,交叉去重時以此為準"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/DataTable/cell-registry.tsx:258",
+      "問題": "tsx 註解層 display-mode 舊詞殘留(cell-registry ×3、textarea.tsx:19、input.tsx:143、combobox.tsx:348/420/636、people-picker.tsx:374、person-display.tsx:204、field-wrapper.tsx:363、radio-group.tsx:278、select.tsx:159/382、data-table.tsx:1814)— 註解非 API,但同檔已用 view 詞,長期漂移風險",
       "severity": "marginal",
-      "建議": "此為 shadcn Sidebar 原生 API(SidebarMenuButton `isActive`)verbatim 沿用,符合命名 test #2 世界級 idiom,故可維持;但建議在 sidebar.spec.md 或 props-naming.md 補一句『isActive 為 shadcn upstream API 保留,DS 公開布林通則仍為裸命名』的例外註記,避免被誤當成可仿效的新 pattern 向其他元件擴散。"
+      "建議": "順手批次 sed display 態→view 態(mode 語境)於註解層;ReadonlyDisplay / MultiPersonDisplay 等 identifier 不動(display=呈現義,非 mode 名)"
+    },
+    {
+      "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx:28",
+      "問題": "reader-facing title「Header Anatomy」vs 資料夾/spec 名「header-canonical / Header Canonical 設計原則」— 兩名並存(cross-ref 一致地用 Header Anatomy,build-ui-canonicals.md:45 同),但 sibling 慣例 element-anatomy 資料夾與 title 同名,此 pattern 資料夾與 title 異名",
+      "severity": "marginal",
+      "建議": "低優先:擇一(folder rename header-anatomy/ 或 title 改 Header Canonical);詳 dim 19 同條,去重以 dim 19 為 owner"
     }
   ]
 }

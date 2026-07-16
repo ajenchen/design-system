@@ -1,33 +1,15 @@
 {
   "dim": 26,
-  "title": "Controlled/Uncontrolled dual-mode",
-  "mechanism": "DS-wide form-like + overlay-like enumerate dual-mode pair — 兩模式行為一致",
-  "filesScanned": 66,
-  "canonical": {
-    "ssot_hook": "packages/design-system/src/hooks/use-controllable.ts",
-    "consumers_correct": ["Pagination", "SelectMenu(open)", "FileViewer", "Select", "DataTable"],
-    "hand_rolled_correct": ["Tabs", "Rating", "Steps", "Calendar", "TreeView", "AppShell", "Sidebar(activeId)"],
-    "radix_passthrough_correct": ["Dialog", "DropdownMenu", "Popover", "Sheet", "Tooltip", "HoverCard", "Accordion", "Menu", "Checkbox", "Switch", "RadioGroup", "Slider", "SegmentedControl", "Coachmark"],
-    "controlled_only_documented": ["LinkInput", "NumberInput", "Combobox(value)", "DatePicker(value)", "TimePicker(value)", "SelectMenu(value)", "InlineEdit"]
-  },
+  "title": "Controlled / Uncontrolled dual-mode coherence",
+  "filesScanned": 30,
+  "mechanism": "DS-wide:rubric 三類全枚舉(form controls 18:Input/Textarea/Select/Combobox/Checkbox/CheckboxGroup/RadioGroup/Switch/Slider/DatePicker/TimePicker/NumberInput/LinkInput/PeoplePicker/SelectMenu/Rating/SegmentedControl/InlineEdit;overlay 9:Dialog/Sheet/Popover/DropdownMenu/Tooltip/HoverCard/FileViewer/Coachmark/Command;tab-like 3:Tabs/Accordion/TreeView)。逐檔 grep value/defaultValue/checked/defaultChecked/open/defaultOpen + callback pair + Radix Root forward + V4 internal-state mirror(Input/Textarea resolved mirror、InlineEdit draft useEffect sync 逐一驗);single-mode 者交叉查 spec「Controlled-only rationale(Dim 26)」段。本輪 InlineEdit 委派重構 regression 重點驗",
+  "verdict": "1 marginal after 全掃 30 components:dual-mode 完整(Checkbox/Switch/Slider/Select/Rating/SegmentedControl/TreeView/Coachmark/FileViewer + Radix pass-through 全過;Input/Textarea 2026-07-13/14 mirror 修已落);controlled-only 家族 7 元件(Combobox/DatePicker/TimePicker/NumberInput/LinkInput/PeoplePicker/SelectMenu)spec 全有 rationale 段;唯本輪重構的 InlineEdit 為 controlled-only(value 必傳 + onCommit,無 defaultValue)但 spec 無同名 rationale 段",
   "findings": [
     {
-      "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:171-178",
-      "severity": "material",
-      "問題": "SidebarProvider 的 open dual-mode 分支寫錯,uncontrolled + onOpenChange 場景會凍結。open 定義為 `open = openProp ?? _open`(L171,nullish → 沒傳 open 就用 internal _open)。但 setOpen 的分支是 `if (setOpenProp) { setOpenProp(openState) } else { _setOpen(openState) }`(L175-178)——依『有沒有傳 onOpenChange callback』分岔,而非依『受控/非受控』分岔。當 consumer 走非受控但想被通知(傳 onOpenChange 不傳 open)時,setOpenProp 為 truthy → 只呼叫 setOpenProp、永不呼叫 _setOpen → internal _open 卡在 defaultOpen → open = `undefined ?? defaultOpen` 永遠不變 → 點 toggle / Cmd+B 只 fire callback,sidebar 視覺永遠不收合。這正是 DS 已在 SelectMenu 修過的 R2 bug(select-menu.tsx:183-186 註解明載『傳 onOpenChange 不傳 open 會讓 listener 蓋掉 internal setter → menu 開不了』,已改用 useControllable)。同檔 activeId 用的是正確 pattern(`if (activeIdProp === undefined) _setActiveId(id); onActiveChange?.(id)`,L159-166)——證明 open 這條是遺漏,非刻意設計。",
-      "建議": "改用 DS 既有 `useControllable`(對齊 SelectMenu / FileViewer / Select 已修 canonical):`const [open, setOpen] = useControllable<boolean>({ value: openProp, defaultValue, onChange: setOpenProp })`(cookie 寫入包進 wrapper setter)。或最小修:分支改為 `if (openProp === undefined) _setOpen(openState); setOpenProp?.(openState)`(照 activeId 同款守門)。同時把 cookie side-effect 保留在 wrapper。"
-    },
-    {
-      "fileLine": "packages/design-system/src/components/NumberInput/number-input.tsx:42",
-      "severity": "material",
-      "問題": "spec/code drift + defaultValue 洩漏到受控 input。number-input.spec.md:24 明文『本元件採 controlled-only:value + onChange,不支援 defaultValue uncontrolled fallback』,但 props interface `Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'|'value'|'onChange'|'type'>`(L42)沒有 Omit `defaultValue` → defaultValue 仍留在型別面。內部 `<input value={draft ?? (value != null ? String(value) : '')} ... {...props} />`(L171 + L184):input 的 value 永遠是 string(最差 fallback `''`)= 恆受控;若 consumer 傳 defaultValue,它經 {...props}(L184)灑到已受控的 input 上 → React『input contains both value and defaultValue』warning + defaultValue 靜默被忽略。同族 controlled-only sibling LinkInput 已於 2026-07-04/05 deep-audit A.1b 把這條機械封鎖(link-input.tsx:54 已 Omit 'defaultValue',檔內註解明載『spec controlled-only,型別面機械封鎖，原本仍在型別 surface 且經 {...props} spread』)——NumberInput 是同一修法漏掉的 sibling。",
-      "建議": "把 L42 Omit 補上 'defaultValue',與 LinkInput(link-input.tsx:54)完全同款:`Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'value' | 'defaultValue' | 'onChange' | 'type'>`。單行改,消除型別面洩漏 + spec/code 一致。"
-    },
-    {
-      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.tsx:778",
+      "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.tsx:57",
+      "問題": "InlineEdit 採 controlled-only(value: T 必傳 + onCommit;draft 內部管理,無 defaultValue uncontrolled fallback = rubric V1),但 inline-edit.spec.md 無「Controlled-only rationale(Dim 26)」段 — Field 家族其他 7 個 controlled-only 元件 spec 全有此段(慣例已建立)。邊界處:InlineEdit 是 mode 軸之上的編排層非 Field 控件本身,且 benchmark(Atlassian inline-edit 反而是 defaultValue+onConfirm uncontrolled)顯示此決策更需要 documented rationale",
       "severity": "marginal",
-      "問題": "DatePicker(單值)與 DateRangePicker 的 overlay open API 不對稱。單值 DatePicker 提供 `defaultOpen` + `onOpenChange`(L327-329 props、L409-410 wiring),支援非受控開啟 + 通知(DataTable cell-as-input『Enter 開浮層』canonical 靠這對);DateRangePicker 卻把 open 寫死 `const [open, setOpen] = React.useState(false)`(L778),props 完全沒有 defaultOpen / onOpenChange,連 defaultOpen 起始值都拿不到。兩個 sibling 在『overlay 非受控開啟』這條 dual-mode 面上表達不一致——不是行為壞掉,是 range 版少了單值版有的 API surface,cell-as-input 類用法無法對稱套用到 range。",
-      "建議": "DateRangePicker 補上 `defaultOpen?: boolean` + `onOpenChange?: (open: boolean) => void`,並照單值 DatePicker(L409-410)同款 wiring:`const [open, setOpenState] = React.useState(defaultOpen); const setOpen = useCallback((next) => { setOpenState(next); onOpenChange?.(next) }, [onOpenChange])`。讓 picker 家族 overlay open API 一致。若刻意不支援,應在 date-picker.spec.md 明寫 range 版 open 為內部管理、不開放 API 的理由(對齊 controlled-only 各 spec 同名段的作法)。"
+      "建議": "inline-edit.spec.md 補「Controlled-only rationale(Dim 26)」段:對齊 Field 家族同名段格式,說明 view↔edit 二態 + commit lifecycle 下 value 為 SSOT、draft 內部化的理由,並 cite Atlassian uncontrolled 對照(我方刻意不同)。純 spec 補述,不動 API"
     }
   ]
 }

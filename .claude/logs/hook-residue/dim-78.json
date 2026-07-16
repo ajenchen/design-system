@@ -1,8 +1,16 @@
 {
   "dim": 78,
-  "hook": "check_codex_brief_invariants.sh (4th invariant 禁列檔)",
-  "residueCount": 0,
-  "findings": [],
-  "verified": true,
-  "note": "PreToolUse(Bash)command-time gate:偵測 codex exec/review 的 brief content 缺『禁列檔 / 禁 rg --files / 只讀 N file / 直接出 verdict』keyword。無持久化 guarded file → 無 residue 概念。Canonical brief-template.md + codex-collab/SKILL.md 皆帶該 invariant keyword。.claude/tmp/ 內歷史 brief 為 dev-artifact,非 hook 現行守護對象。"
+  "hook": "check_codex_brief_invariants.sh(4th invariant 禁列檔;現行共 7 invariants)",
+  "residueCount": 2,
+  "findings": [
+    {
+      "fileLine": ".claude/skills/codex-collab/references/brief-template.md:40(「🚨 三 invariant」段)",
+      "問題": "P1 SSOT drift:brief template(所有 brief 的 canonical 母版)只 codify invariant 1-3,缺 4(禁列檔,2026-05-27)、5(輸入對等:未具名列 meta-patterns.md / MEMORY.md)、6(判準對等:無 audit-prompts.md ref)、7(A.1b claim-vs-code 對等)— 皆 2026-07-10 升級後 hook 已強制。照 template 逐字生成的 brief 在 codex exec 時必被 hook BLOCK(template-vs-hook 不同步)。逐 regex 驗證:inv4/5/6/7 全 MISSING。"
+    },
+    {
+      "fileLine": ".claude/hooks/check_codex_brief_invariants.sh:133-136",
+      "問題": "P3 hook 自身訊息 drift:BLOCK 訊息仍寫「必含三 invariant 明文」並只列 1-3,實際檢查 7 條 → 被擋的人照訊息補完 3 條仍會再被 5/6/7 擋(訊息未同步 2026-07-10 升級)。"
+    }
+  ],
+  "notes": "codex-brief-queue.jsonl 18 entries 全 replied / stale-superseded,無 pending 存量 brief 待補;escape @codex-brief-invariant-skip 全庫 0 濫用。"
 }

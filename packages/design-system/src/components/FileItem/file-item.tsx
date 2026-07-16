@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Button } from '@/design-system/components/Button/button'
 import { ProgressBar } from '@/design-system/components/ProgressBar/progress-bar'
-import { ItemContent, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ItemContent, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 /**
  * FileItem — 檔案顯示 / 上傳進度
@@ -134,9 +134,8 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
     ) : null
 
     // suffix 對齊 label 第一行(item-anatomy「24px 閾值對齊規則」小 suffix canonical):
-    // icons 16 ≤ 24 屬小 suffix,統一 `h-[1lh]` inline,不因 desc wrap 改公式。
-    // 兩 mode 同公式,跟 item-anatomy 一致。
-    const suffixAlign = 'h-[1lh]'
+    // icons 16 ≤ 24 屬小 suffix,統一 h-[1lh] inline(由 ItemSuffix primitive 提供),
+    // 不因 desc wrap 改公式。兩 mode 同公式,跟 item-anatomy 一致。
 
     // Status slot 幾何(2026-04-23 user 統一):rich + compact 都用 `var(--field-height-xs)`(24)
     // 容器,裡面 Button xs iconOnly variant="text"(auto data-unbounded)。
@@ -181,11 +180,14 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
       </span>
     ) : null
 
+    // 2026-07-16 dim 39/DA3:消費 ItemSuffix primitive(照 Notice 2026-06-15 已遷模式)。
+    // ItemSuffix base geometry(h-[1lh] shrink-0 ml-auto flex items-center gap-2)= 原手刻
+    // div 的 flex items-center gap-2 shrink-0 h-[1lh];多出的 ml-auto 為 no-op(左鄰
+    // ItemContent 是 flex-1,已把 suffix 推到右緣)→ 像素相等。hoverReveal 預設 false,
+    // 不干擾本檔自有的 statusSlot hover-swap 機制(group-hover/row 系)。
     const suffix = (
-      <div
+      <ItemSuffix
         className={cn(
-          'flex items-center gap-2 shrink-0',
-          suffixAlign,
           // data-unbounded chrome-canonical trick:let Button xs (24) live inside h-[1lh]
           // wrapper(compact ~18.2 / rich ~18.2 scanning)without pushing row height。
           // 視覺/hit area 仍 24,layout footprint 收斂到 1lh。同 overlay-surface
@@ -201,7 +203,7 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
         )}
         {statusSlot}
         {actions}
-      </div>
+      </ItemSuffix>
     )
 
     // content row — 消費 ItemContent primitive(封裝 label + desc + mt-gap token SSOT)。

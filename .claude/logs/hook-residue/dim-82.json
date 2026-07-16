@@ -1,8 +1,7 @@
 {
   "dim": 82,
-  "hook": "check_consumer_app_invariants.sh (r4_app_story_title)",
+  "hook": "check_consumer_app_invariants.sh r4_app_story_title",
   "residueCount": 0,
   "findings": [],
-  "verified": true,
-  "note": "apps/<name>/**/*.stories.(tsx|ts|mdx) title 必以 Apps/<app-name>/ 開頭。apps/template 3 檔全合規:App.stories.tsx='Apps/template/AppShell Dashboard'、AllDsComponents.stories.tsx='Apps/template/All DS Components (Portal)'、CompositionFidelityReplica.stories.tsx='Apps/template/Composition Fidelity Replica'。無錯 prefix residue。"
+  "notes": "apps/ 下 3 個 stories 檔(App / AllDsComponents / CompositionFidelityReplica)title 全為 'Apps/template/...' 正確 prefix;@app-story-title-skip 零使用;fork mirror 逐 byte SYNC。DS-internal stories 走 Design System/ namespace 不在本 dim scope。"
 }

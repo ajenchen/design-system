@@ -183,7 +183,7 @@ Field wrapper 透過 context 注入的 key 是 `invalid`(**非 `error`**;field.t
 - **欄位內的展示元素**（Avatar）→ 跟隨 `<Field disabled>` / `<Field mode="disabled">` **變淡**（視覺一致），用 fieldCtx 存在性 scope（DataTable cell 無 fieldCtx → 不影響）。
 - **獨立 action 元件**（Button）→ **不**自動 cascade；由 consumer 自控 `disabled`（對齊 MUI Button 無 FormControl 整合 + Ant 排除 custom／非表單控件）。
 
-注：有 view 渲染分支者（Input 家族 / Select / Combobox / DatePicker / TimePicker / PeoplePicker / **Checkbox** / **Switch**，後二者 display = ✓/—）完整響應 `<Field mode="view"/"readonly">` + `<Field disabled>`；**Slider / Rating 無 display 態但有 readonly cascade**（2026-06-12 補:Slider readonly = 鎖互動保留視覺;Rating readonly = 星星鎖定 role=img）+ 響應 `<Field disabled>`;**SegmentedControl 無 display/readonly 態**（僅 enabled/disabled）→ 只響應 `<Field disabled>`。**group 控件（Checkbox/RadioGroup/Switch/SegmentedControl）雖非 fieldWrapperStyles 消費者，仍一律經 resolver hook 解析**（gate Check 1b/2 強制）。
+注：有 view 渲染分支者（Input 家族 / Select / Combobox / DatePicker / TimePicker / PeoplePicker / **Checkbox** / **Switch**，後二者 view = ✓/—）完整響應 `<Field mode="view"/"readonly">` + `<Field disabled>`；**Slider / Rating 無 view 態但有 readonly cascade**（2026-06-12 補:Slider readonly = 鎖互動保留視覺;Rating readonly = 星星鎖定 role=img）+ 響應 `<Field disabled>`;**SegmentedControl 無 view/readonly 態**（僅 enabled/disabled）→ 只響應 `<Field disabled>`。**group 控件（Checkbox/RadioGroup/Switch/SegmentedControl）雖非 fieldWrapperStyles 消費者，仍一律經 resolver hook 解析**（gate Check 1b/2 強制）。
 
 **機械強制**：`scripts/check-field-cascade-resolve.mjs`（ci + release:preflight）—— 消費 `fieldWrapperStyles` 的控件若散落手刻 `fieldCtx?.{disabled,mode}` 解析（而非走 resolver hook）= fail，防新控件重演 cascade 漏接。
 
@@ -331,6 +331,8 @@ View 的消費者:
 - **InlineEdit view 態**:委派 `<Control mode="view">` 取格式化 + 幾何(read=edit 同一顆控件)
 - **Field readonly 模式**:內部使用相同的格式化邏輯
 
+**例外 — LinkInput / PeoplePicker 預設 view 路徑不包 wrapper**(code 為準,2026-07-16 明文):LinkInput `mode="view"` 預設(`showDisplayEndIcon=false`)= 裸 span/anchor(`fieldDisplayTextClass` + truncate),**不消費** `fieldWrapperStyles` / `fieldViewGeometry` —— view 值是可點擊連結,inline 嵌入取 flush 呈現(backward compat);`showDisplayEndIcon=true` opt-in 才包 `fieldWrapperStyles(view × resolvedVariant)` 取 cell view↔edit 像素對齊。PeoplePicker 預設 view 同模式(裸 `PersonDisplay`/`MultiPersonDisplay`)。詳 `link-input.tsx` / `people-picker.tsx` docblock。
+
 ### null / undefined 值(2026-07-08 user 拍板 — 半形 hyphen + editable × surface 分流)
 
 > **user verbatim**:「table cell 不可編輯的空值,單獨不可編輯的 display 的空值,單獨的 readonly 的空值都用"-";單獨可以編輯的 edit 輸入框的空值則是 placeholder;table cell 內可編輯的 display 的空值就是為空」+「我從頭到尾哪裡有說要用全形的」。
@@ -380,7 +382,7 @@ col.accessor('status', {
 
 ## 共享 contract(2026-05-12 Stream C — Selected renderer / Placeholder vocabulary / Cell surface)
 
-**(a) Selected value renderer**:rich display(avatar+name/icon+label)元件**必**提供 consumer renderer slot,**view/readonly/disabled/edit** 4 mode 共享同一 renderer(禁 edit-only)。`Select.selectedItemRenderer`(4 mode 已全接 — 2026-07-08 A 案回歸修正,view/readonly/disabled 的 ReadonlyDisplay 消費 renderer 輸出;renderer 輸出屬「值內容」,display 態照常渲染,與 affordance 分層見 `field.spec.md` L6)/ `Combobox.tagRenderer`(edit 已接;display path 走 ComboboxTagStack 預設 Tag,consumer tagRenderer unify 仍 deferred,見 `combobox.tsx` 檔頭 `@renderer-symmetry-allow`;現行唯一 tagRenderer consumer = PeoplePicker,其 display 走 MultiPersonDisplay 不經此 path,無實際丟失)/ PeoplePicker 走 `PersonDisplay`+`MultiPersonDisplay`+`Combobox.tagRenderer`。對齊 MUI Autocomplete `renderValue` / Ant Select `tagRender`+`labelRender`+`optionRender` / MUI DataGrid `renderCell`+`renderEditCell` 共享 params。 <!-- @benchmark-unverified -->
+**(a) Selected value renderer**:rich display(avatar+name/icon+label)元件**必**提供 consumer renderer slot,**view/readonly/disabled/edit** 4 mode 共享同一 renderer(禁 edit-only)。`Select.selectedItemRenderer`(4 mode 已全接 — 2026-07-08 A 案回歸修正,view/readonly/disabled 的 ReadonlyDisplay 消費 renderer 輸出;renderer 輸出屬「值內容」,view 態照常渲染,與 affordance 分層見 `field.spec.md` L6)/ `Combobox.tagRenderer`(edit 已接;view path 走 ComboboxTagStack 預設 Tag,consumer tagRenderer unify 仍 deferred,見 `combobox.tsx` 檔頭 `@renderer-symmetry-allow`;現行唯一 tagRenderer consumer = PeoplePicker,其 view 走 MultiPersonDisplay 不經此 path,無實際丟失)/ PeoplePicker 走 `PersonDisplay`+`MultiPersonDisplay`+`Combobox.tagRenderer`。對齊 MUI Autocomplete `renderValue` / Ant Select `tagRender`+`labelRender`+`optionRender` / MUI DataGrid `renderCell`+`renderEditCell` 共享 params。 <!-- @benchmark-unverified -->
 
 **(b) Placeholder vocabulary**(3 props 對 3 UI state,**不可混用**):
 - `placeholder` — trigger empty(沒選值,例「請選擇人員」)— Ant/Polaris/Carbon canonical
@@ -391,9 +393,9 @@ col.accessor('status', {
 
 **(c) Cell surface metrics**:Field family 在 cell 內**禁** hardcode padding(`tagAreaPaddingLeftPx={isEmpty ? undefined : 8}` 反 pattern)。改 **`FieldSurface` context**(`'form' | 'toolbar' | 'table-cell'`):`useFieldSurface()` 取值,`<FieldSurfaceProvider surface="table-cell">` 自動套於 `cell-registry.resolveCellComponent`。Consumer 用 `surface === 'table-cell'` 顯式 query(取代 `variant === 'naked'` heuristic)。**risk mitigation**:`avatar.left = cell.left + computed(--table-cell-px)`,禁再加 magic 8px(double-count)。**Token scope**:`--table-cell-px/py` 是 DataTable-scoped metric(CSS 定義在 `data-table.css`,Field naked variant 是 DataTable cell substrate sub-component 故 cross-path reference 不算真 cross-component),per 2026-05-13 codex Q2 verdict + AG Grid `cellHorizontalPadding`(grid theme param)/ MUI X `cellClassName`(per-cell)/ Carbon spacing scale primitive(不升 cell padding 全域 token)idiom — **不**升 `tokens/layoutSpace/` canonical。對齊 AG Grid cellRendererSelector / Material X DataGrid 共享 params / Notion property type registry。Hook `check_field_controls_contracts.sh` (contract c) 機械強制。 <!-- @benchmark-unverified -->
 
-**(d) Default variant display = zero chrome SSOT**(2026-05-13 user 拍板 Path Ⅰ + codex V2 verdict):default `mode='view'` **必** zero chrome。Display 純展示語意,真要包 chrome 走 `readonly` 或 `showDisplayEndIcon=true` opt-in。**Impl**:`field-wrapper.tsx` + `textarea.tsx` compoundVariants `mode:'display'+variant:'default'` 加 `!px-0 !py-0`。對齊 Carbon read-only / Stripe display / Notion property / Polaris readonly。Hook `check_field_controls_contracts.sh` (contract d) propose。 <!-- @benchmark-unverified -->
+**(d) View×default = edit 幾何減 chrome(Model A)SSOT**(2026-07-16 round16 user GO;推翻 2026-05-13 Path Ⅰ「zero chrome + `!px-0 !py-0`」拍板):default `mode='view'` = **edit 幾何減 chrome** —— 保留 size 軸 `px-[var(--field-px)]` + `h-field-*`(多行留 py),只拔 border/bg(透明)→ view 與 edit 同一顆控件、只差 chrome → read↔edit 零跳(與上方「軸一 view mode」段同一 canonical)。真要包 chrome 走 `readonly` 或 `showDisplayEndIcon=true` opt-in。**Impl**:`field-wrapper.tsx` view×default compound(`bg-transparent border-transparent`,幾何由 base + size 軸天然保留)+ `fieldViewGeometry(size, multiline)` helper(view×default 幾何 SSOT,供 InlineEdit 純值/標題路徑消費)。世界級對照:[Atlassian inline-edit read-view](https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx)(read=edit 幾何)+ Bootstrap [`.form-control-plaintext`](https://github.com/twbs/bootstrap/blob/main/scss/forms/_form-control.scss)(留 padding)。機械鎖:`scripts/inline-edit-view-geometry-invariant.mjs`(multiline py-2 = Textarea edit py-2 契約;注:hook `check_field_controls_contracts.sh` 的 contract (d) 為 field-px token 檢查,非本條)。
 
-**(e) Display typography canonical**(2026-05-14 user I2 + codex M31 verdict):Field family display path **必** consume `fieldWrapperStyles` size variants typography token — `sm/md → text-body`(14px line-height 1.5)/ `lg → text-body-lg`(16px)。**禁**:LinkInput / Select / Combobox 非 D-path 的 bare-span 直接 render 無 font-size class(瀏覽器 default 字體);**必**包 `text-body` (sm/md) / `text-body-lg` (lg) class。對齊跨 Field family display 視覺尺寸統一(user 抓 LinkInput display 字體跟其他 Field 不一致 = SSOT 違反 漏接 typography token)。**Impl**:LinkInput / Select / Combobox / DatePicker / TimePicker non-D-path bare-span 加 size-aware text class。world-class cite:MUI X DataGrid `Typography` consistent / Atlassian @atlaskit/textfield size-prop typography token / Polaris TextField typographyToken size-aware。 <!-- @benchmark-unverified -->
+**(e) View typography canonical**(2026-05-14 user I2 + codex M31 verdict):Field family view path **必** consume `fieldWrapperStyles` size variants typography token — `sm/md → text-body`(14px line-height 1.5)/ `lg → text-body-lg`(16px)。**禁**:LinkInput / Select / Combobox 非 D-path 的 bare-span 直接 render 無 font-size class(瀏覽器 default 字體);**必**包 `text-body` (sm/md) / `text-body-lg` (lg) class。對齊跨 Field family view 視覺尺寸統一(歷史 anchor:user 抓 LinkInput view 字體跟其他 Field 不一致 = SSOT 違反 漏接 typography token)。**Impl**:LinkInput / Select / Combobox / DatePicker / TimePicker non-D-path bare-span 加 size-aware text class(helper = `fieldDisplayTextClass`)。world-class cite:MUI X DataGrid `Typography` consistent / Atlassian @atlaskit/textfield size-prop typography token / Polaris TextField typographyToken size-aware。 <!-- @benchmark-unverified -->
 
 ---
 
@@ -413,7 +415,7 @@ col.accessor('status', {
 - ❌ endAction 不可傳入 ReactNode——使用 InlineActionConfig 宣告式 API
 - ❌ endAction 的 inline action 不可省略 `aria-label`（即 `label` 欄位）
 - ❌ 不可編輯 view / readonly 空值用全形 em dash `—` 或 `text-fg-muted`——半形 `-` + `text-foreground`(「-」是供檢視的值,同 readonly value 色;disabled → fg-disabled);可編輯 table cell view 空值為空白(見「null / undefined 值」分流表)
-- ❌ Field 的 readonly 模式不可用於 DataTable cell——readonly 有底色和 wrapper 開銷，table cell 用 Display 元件
+- ❌ Field 的 readonly 模式不可用於 DataTable cell——readonly 有底色和 wrapper 開銷，table cell 用 `mode="view"`
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

@@ -1,8 +1,12 @@
 {
   "dim": 81,
-  "hook": "check_storybook_addon_packaging.sh (r2_preset_cjs)",
-  "residueCount": 0,
-  "findings": [],
-  "verified": true,
-  "note": "掃 addons/<name>/preset.ts 之 code-level createRequire / require.resolve / fileURLToPath(import.meta.url)。.storybook/addons/ds-devmode/preset.ts = 0 命中;packages/storybook-config/addons/ds-devmode/preset.ts 命中僅出現在 // 註解行(教學文件化 anti-pattern),hook 之 CONTENT_CODE 已 strip 註解 → 不觸發。canonical 走 preset.cjs。無 code-level residue。"
+  "hook": "check_storybook_addon_packaging.sh r2_preset_cjs",
+  "residueCount": 1,
+  "findings": [
+    {
+      "fileLine": ".storybook/addons/ds-devmode/preset.ts:4 vs .storybook/main.ts:25",
+      "問題": "P3 doc-claim vs wiring 殘渣:preset.ts DEPRECATED 檔頭宣稱「不被任何 consumer 載入」,但 main.ts:25 仍註冊 './addons/ds-devmode/preset'(extensionless require 經 esbuild-register 解析到 preset.ts,不會自動找 .cjs)→ 實際載入的是 no-op stub(無害:真 entries 由 sharedAddons 的 '@qijenchen/storybook-config/addons/ds-devmode/preset' exports map → preset.cjs 提供,build 綠)。屬 dead wiring + 註解不實,建議刪 main.ts:25 該行或更新 preset.ts 檔頭。"
+    }
+  ],
+  "notes": "canonical 面健康:preset.cjs 兩處皆在且被 exports map(\"./addons/ds-devmode/preset\" → preset.cjs)消費;兩個 preset.ts 的 code 層(strip 註解後)零 createRequire / require.resolve / fileURLToPath(import.meta.url)— 反 pattern 僅出現在註解教學段,hook comment-strip 正確放行。@preset-cjs-skip 零使用。"
 }

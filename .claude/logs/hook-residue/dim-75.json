@@ -1,8 +1,16 @@
 {
   "dim": 75,
-  "hook": "check_plugin_fork_health.sh (r2_plugin_freshness)",
-  "residueCount": 0,
-  "findings": [],
-  "verified": true,
-  "note": "r2_plugin_freshness = SessionStart hook,比對本地 plugin.json version(0.1.0-beta.83)vs GitHub raw marketplace.json 遠端版本,不符 → 印 context nag(非 BLOCKER,非 file 寫入)。無持久化 file anti-pattern 可構成 residue;DS repo 內 r1 因存在 packages/design-system/src 早退。residue 概念不適用,材質 = 0。"
+  "hook": "check_plugin_fork_health.sh r2_plugin_freshness",
+  "residueCount": 2,
+  "findings": [
+    {
+      "fileLine": ".claude/hooks/check_plugin_fork_health.sh:104,129",
+      "問題": "r2 第 3 個 candidate 是 `${CLAUDE_PROJECT_DIR}/.claude-plugin/plugin.json` → 在 DS repo 本身也會 fire,但提示的修法 `npm run sync-all` 只存在於 template/ds-product-template/package.json,DS repo root package.json 無此 script → 指引在唯一常態 fire 場域不可執行(P2 guidance gap)。"
+    },
+    {
+      "fileLine": ".claude/logs/audit-coverage-matrix.json coverage_by_dim.75",
+      "問題": "mechanism 描述「SessionStart fork-user」部分過時:C-prime(2026-06-17)後 fork user 走 inject_fork_governance_preamble.sh 自動 npm install @beta + Dependabot;check_plugin_fork_health.sh 不在 ds-canonical/fork/manifest.json hooks 清單,fork 端實際不 fire — freshness 提示只達 legacy plugin 安裝路徑與 DS repo 自身(P3 doc drift,建議 matrix 註記 C-prime 主路徑)。"
+    }
+  ],
+  "notes": "健康面驗證:plugin.json = marketplace.json = 0.1.0-beta.86 對齊;raw GitHub URL(ajenchen/design-system)與 git remote 一致;curl 5s timeout fail-silent 不 brick。無 display keyword。"
 }

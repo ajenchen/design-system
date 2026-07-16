@@ -3,22 +3,28 @@
  "filesScanned": 86,
  "findings": [
   {
-   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:166",
-   "問題": "`circle = 9999px`、`square = 4px` 直接硬寫 radius，且 `.tsx` 同樣重複裸值；既有 SSOT 已提供 `--radius-full` 與 `--radius-md`，存在 token 調整後漂移風險。",
-   "severity": "marginal",
-   "建議": "spec 改記 shape 對應的 radius token；`avatar.tsx` inline style 改用 `var(--radius-full)`／`var(--radius-md)`。"
+   "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:8",
+   "問題": "frontmatter 的使用判準混入 `text-body-lg`、`px-4 py-2`、indent 28 等機械值；實際 row padding 已由 `ROW_PADDING_BY_SIZE` 與 context token 管理，這份描述已形成第二 SSOT 並與實作漂移。",
+   "severity": "material",
+   "建議": "frontmatter 只保留「觸控／大字級」等使用判準；縮排引用 `--tree-indent-*` 契約，typography、padding class 留在 tree-view.tsx。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Input/input.spec.md:149",
-   "問題": "`autoWidth` 行為表直接複寫 `inline-flex w-auto` 與 `field-sizing:content w-auto min-w-0` 完整實作 class list；相同 mechanics 已由 `input.tsx` 承載，並非設計判斷。",
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.spec.md:447",
+   "問題": "Cell error 直接硬寫 `14px` 與 `gap-1`；現行實作已消費 `text-body`，重述 token 當前解析值會在 typography token 調整後漂移。",
    "severity": "marginal",
-   "建議": "spec 只保留「寬度隨內容、受父容器上限約束」及 fallback contract，具體 class recipe 留在 `input.tsx`。"
+   "建議": "改引用 `text-body` typography token，只保留錯誤訊息位於內容下方的設計契約；具體 spacing utility 留在 data-table.tsx。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:153",
+   "問題": "`autoWidth` 行為表完整複寫 `inline-flex w-auto` 與 `field-sizing:content w-auto min-w-0` 的實作配方；這些 mechanics 已由 input.tsx 承載。",
+   "severity": "marginal",
+   "建議": "spec 只描述 wrapper 隨內容收縮、input 隨內容寬度變化及 fallback 行為，具體 utility 改指向 input.tsx。"
   },
   {
    "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:208",
-   "問題": "`MenuFooter` 直接規定 `border-t + py-2`，重複 `menu-item.tsx` 的可程式化 utility，且鄰文未說明 8px 為何必須在 spec 成為 canonical。",
+   "問題": "`MenuFooter` 直接硬寫 `border-t`、`py-2`，但未說明為何精確 class 必須留在 spec；同一配方已存在 menu-item.tsx。",
    "severity": "marginal",
-   "建議": "spec 改述 footer 以 divider 分隔並沿用 menu 垂直節奏，引用 owner pattern；具體 utility 留在 `menu-item.tsx`。"
+   "建議": "改述為「頂部分隔並沿用 menu 垂直節奏」，具體 utility 只留在 menu-item.tsx。"
   }
  ]
 }

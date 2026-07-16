@@ -71,7 +71,7 @@ description: UX behavior audit for design-system components and product UI. Chec
 1. **Animation duration**:< 200ms(micro)或 200-400ms(macro);超過 400ms 主畫面 → 可能 block 輸入
 2. **Reduce-motion respect**:`@media (prefers-reduced-motion: reduce)` 下動畫減到 0 或極短
 3. **Wheel zoom step 細緻**:> 10% 離散 = 非世界級(對齊 Figma / Preview.app ~3-5%)
-4. **Hover delay**:tooltip / hover-card 的 open delay(700ms for tooltip, 500ms for hover-card per DS canonical)
+4. **Hover delay**:tooltip / hover-card 的 open delay(500ms for tooltip, 700ms for hover-card,per `tokens/motion/motion.spec.md` 三層 tier SSOT)
 5. **Drag / pan**:pointer capture 正確;release on blur
 
 ### Phase 5 — Data / state coverage 五態(2026-04-24 擴充,補 24-checklist #23 edge case gap)

@@ -1,14 +1,23 @@
 {
   "dim": 74,
   "hook": "check_overlay_open_focus_escape_probe.sh",
-  "residueCount": 0,
+  "residueCount": 15,
   "findings": [
-    {
-      "fileLine": "17 個 DS stories 檔含 overlay Trigger 無 open 機制/escape(代表:AppShell/app-shell.stories.tsx:109 PopoverTrigger、FileViewer/file-viewer.principles.stories.tsx:150 DialogTrigger、Tabs/tabs.stories.tsx:64 DropdownMenuTrigger、Breadcrumb/breadcrumb.stories.tsx:74、Input/input.stories.tsx:42 TooltipTrigger、+ 各 principles/anatomy)",
-      "問題": "此類為 principles/anatomy 文件 story 或 overlay 為附帶內容(非該 story 主體)的 trigger-only 用法。非 genuine 視覺覆蓋缺口:每個 overlay primitive 在自身 canonical stories.tsx 皆有 open-snapshot 覆蓋(Tooltip=6 / DropdownMenu=6 / Dialog=6 / Popover=3 / Sheet=2 open 機制命中)。M15 系統級覆蓋不缺。HoverCard 3 檔 + ProfileCard 為 documented escape,不計。",
-      "severity": "marginal"
-    }
+    { "fileLine": "packages/design-system/src/components/Dialog/dialog.principles.stories.tsx", "問題": "DialogTrigger trigger-only:全檔無 defaultOpen / open={true} / play(),無 escape marker → snapshot 看不到 overlay content(hook 生效前存量)。" },
+    { "fileLine": "packages/design-system/src/components/Popover/popover.principles.stories.tsx", "問題": "Dialog/DropdownMenu/Popover/Tooltip 四種 Trigger 全 trigger-only,無任何 open 機制、無 escape marker。" },
+    { "fileLine": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx", "問題": "Dialog/Popover/Sheet Trigger trigger-only,無 open 機制、無 escape marker。" },
+    { "fileLine": "packages/design-system/src/components/Sheet/sheet.anatomy.stories.tsx", "問題": "SheetTrigger trigger-only,無 open 機制、無 escape marker。" },
+    { "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx", "問題": "Dialog/Popover Trigger trigger-only,無 open 機制、無 escape marker。" },
+    { "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.principles.stories.tsx", "問題": "DropdownMenuTrigger trigger-only,無 open 機制、無 escape marker。" },
+    { "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.stories.tsx", "問題": "DropdownMenuTrigger trigger-only(檔內 @story-trait-rationale 是別的 hook 的 escape,非 @overlay-open-skip)。" },
+    { "fileLine": "packages/design-system/src/components/Tabs/tabs.stories.tsx", "問題": "DropdownMenuTrigger(overflow menu)trigger-only,無 open 機制、無 escape marker。" },
+    { "fileLine": "packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx", "問題": "TooltipTrigger trigger-only,無 open 機制、無 escape marker。" },
+    { "fileLine": "packages/design-system/src/components/Input/input.stories.tsx", "問題": "TooltipTrigger trigger-only,無 open 機制、無 escape marker。" },
+    { "fileLine": "packages/design-system/src/components/Input/input.principles.stories.tsx", "問題": "TooltipTrigger trigger-only,無 open 機制、無 escape marker。" },
+    { "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.anatomy.stories.tsx", "問題": "DropdownMenuTrigger trigger-only(useState(true) 僅 checkbox item state,非 open),無 open 機制、無 escape marker。" },
+    { "fileLine": "packages/design-system/src/components/Separator/separator.principles.stories.tsx", "問題": "DropdownMenuTrigger trigger-only,無 open 機制、無 escape marker。" },
+    { "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:101,210,256,324,399", "問題": "controlled open={var} 但全部 useState(false) 起始 → snapshot 仍閉合;且 hook regex 只認 open={true|isOpen|isVisible},controlled 變數名不被認 → 下次 edit 會 false-block(regex 廣度 gap 同時存在)。" },
+    { "fileLine": "packages/design-system/src/components/AppShell/app-shell.stories.tsx:78-79,108,130", "問題": "PopoverTrigger controlled open={filterOpen|sortOpen} 皆 useState(false) 起始 → snapshot 閉合;同上 regex 廣度 gap(open={<其他變數>} 不被 hook 認)。" }
   ],
-  "verified": true,
-  "note": "Material genuine 違規 = 0。Hook 為 per-hunk write-time nudge;flagged 檔皆為文件/附帶 overlay,primitive 本身覆蓋完整。"
+  "notes": "regex 廣度 gap 2 項:(1) 只認 open={true|isOpen|isVisible},漏 controlled open={<var>}(init true 的合法寫法會被 false-block);(2) 漏 JSX bare `open` attribute(=true)。15 檔全為 hook(2026-05-27)生效前存量;修法 = 各檔補 OpenSnapshot 變體或 per-file escape + rationale。display→view 更名不涉此 hook。"
 }

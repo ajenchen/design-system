@@ -1,1 +1,29 @@
-{"component":"Tabs","implBasis":"Radix Tabs primitive (@radix-ui/react-tabs) wrapper + DS token bridge + horizontal-overflow pattern (useScrollEdges/OverflowScrollArrow/OverflowMenuTriggerButton); roving-focus keyboard","claimsVerified":35,"falseClaims":[{"fileLine":"tabs.anatomy.stories.tsx:261","宣稱":"ColorMatrix table row `selected` — Underline(::after) = `--primary-hover` (display '2px primary-hover')","真實code行為":"tabs.tsx:406 `data-[state=active]:after:bg-primary` — selected underline is `--primary` base, NOT primary-hover (2026-07-06 拍板 hover→base change). Stale row: contradicts its own footnote line 275 ('2px primary line'), Overview footnote line 39, StateBehavior line 322, and spec.md:213 which all say bg-primary","severity":"material"}]}
+{
+  "component": "Tabs",
+  "implBasis": "Radix Tabs + horizontal-overflow pattern(useScrollEdges/useScrollByPage/buildFadeMask/OverflowScrollArrow/OverflowMenuTriggerButton)+ DropdownMenu(menu 模式)+ ICON_SIZE / --tab-height-* / --layout-space-* tokens",
+  "claimsVerified": [
+    "size tokens:--tab-height sm 32/40、md 40/48、lg 48/56(uiSize.css:41-43,99-101)= spec size 表 + docblock + SizeMatrix 一致;lg = --chrome-header-height 48/56",
+    "cva defaultVariants size='sm' + TabsList default size='sm' = spec『★ cva default(2026-05-17 從 md 改 sm)』一致",
+    "trigger 結構 [startIcon][label][suffix(gap-1): badge+endIcon],slot 間 gap-2、無水平 padding、underline ::after bottom-[-1px] h-0.5 data-[state=active]:after:bg-primary = docblock/spec/anatomy/SpacingTokens 全一致",
+    "TABS_LIST_BASE border-b border-divider(2026-05-18 divider 拍板)+ selected 2px primary overlay = spec『Underline 與 TabsList border』段一致;semantic.css 確有『持續選中站 base』選中規則(L70-71)",
+    "gap = --layout-space-loose 16px md / 24px lg density(layoutSpace.css:4,23)= docblock/spec/SpacingTokens 宣稱值正確",
+    "TabsContent 內建 mt-[var(--layout-space-tight)](12px md)= spec『TabsContent 與 TabsList 間距』;雙重疊加警告數字 md 24 / lg 32 = 12×2 / 16×2 正確",
+    "寬度行為:none 模式 w-full、scroll/menu inner list min-w-full、TabsList 無水平 padding = spec 2026-06-12 拍板段與 code 一致",
+    "scroll 模式:overflow-x-auto + overflow-y-hidden + scrollbar 隱藏 + fade mask + arrow(SCROLL_PAGE_RATIO=0.8 = spec『捲 80% 容器寬』;arrow 容器 pointer-events-none + 內層 auto = horizontal-overflow.tsx:158,162)",
+    "menu 模式:show-all navigator、全部 trigger 留在捲動容器、canScroll 才顯 OverflowMenuTriggerButton、DropdownMenuItem selected={activeValue===value}(bg-neutral-selected)、onValueChange + scrollIntoView(inline:center) = spec menu 段一致",
+    "ICON_SIZE 16/16/20(item-anatomy.tsx owner)= spec startIcon 16/20px + meta iconSize 一致",
+    "inlineAction sibling 佈局(絕對定位非巢狀 button,paddingRight = icon 寬 + 4/8)= spec 內部結構 L89(2026-07-05 D4 修)與 code 一致",
+    "disabled:cursor-not-allowed + text-fg-disabled + native button disabled(不可聚焦)= spec 狀態表一致;Radix roving focus skip disabled = spec 邊界案例",
+    "anatomy story 結構 Overview/Inspector/SizeMatrix/ColorMatrix/StateBehavior/OverflowMatrix/SpacingTokens/Accessibility = spec『Anatomy story 結構』宣稱完全對應",
+    "Inspector 2026-07-14 修後 overflow 額外 triggers 跟 withIcons 全有全無(不再違反自家 startIcon 禁止事項)"
+  ],
+  "falseClaims": [
+    {
+      "id": "TB-1",
+      "severity": "minor",
+      "location": "tabs.tsx:2(code-quality-allow file-size 註解)",
+      "claim": "『當前 515 < cap 800』",
+      "reality": "檔案實際 578 行(wc -l)。stale 行數快照 — cap 內無實質風險,但註解數字與現實 drift"
+    }
+  ]
+}

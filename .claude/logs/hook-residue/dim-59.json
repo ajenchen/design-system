@@ -1,1 +1,16 @@
-{"dim":59,"hook":"check_substantive_edit_approval_preflight.sh","residueCount":0,"findings":[],"verified":true,"note":"Transactional PreToolUse approval gate (scans transcript for approval keyword on packages/design-system/src + apps/** + node_modules/@qijenchen edits). No static code anti-pattern to leave residue in files; enforcement is per-edit workflow, not a code signature. No code-residue possible."}
+{
+  "dim": 59,
+  "hook": "check_substantive_edit_approval_preflight.sh",
+  "wiring": "OK — PreToolUse Edit|Write|MultiEdit in .claude/settings.json:236 + hooks/hooks.json:94;hooks/scripts mirror sync;26 fires 2026-07-16",
+  "smoke": "env -u bypass 下 apps/** / node_modules/@qijenchen/** / packages/design-system/src/** 無 approval 皆 exit 2 BLOCK;無 transcript exit 0",
+  "residueCount": 1,
+  "findings": [
+    {
+      "severity": "P1",
+      "type": "escape-abuse / blanket-env-bypass",
+      "detail": "CLAUDE_BYPASS_DESIGN_APPROVAL=1 現存於本 session 進程環境(非 settings.json env block、非 shell profile — 由啟動 Claude Code 的 shell 繼承)→ 本 dim P0 BLOCKER 對整個 session 所有 substantive edit 靜默失效,僅剩 audit log。approval-bypass.jsonl 累計 158 entries,單日 2026-07-16 即 30 entries(Field/InlineEdit/tokens primitives.css 等 DS production edits 全走 bypass 分支)。env-var escape 粒度 = session-blanket,違 feedback_ssot_mechanical_p0_not_p1(escape 應 per-edit + cite verbatim);建議:hook 加 bypass 時效/單次性(如要求 bypass marker file with HEAD-bound ts)或 session-start 偵測長駐 bypass env 告警",
+      "evidence": ".claude/logs/approval-bypass.jsonl(30 entries dated 2026-07-16)+ live env probe [1] + settings/profile grep 均無 export 源"
+    }
+  ],
+  "notes": "殘留掃描期間本 verifier 產生之 3 條 smoke 測試 entries 已從 approval-bypass.jsonl 移除(158 維持原量)"
+}

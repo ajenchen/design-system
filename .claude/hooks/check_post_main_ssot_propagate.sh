@@ -41,7 +41,17 @@ CMD=$(echo "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null)
 [ "$TOOL" != "Bash" ] && exit 0
 
 # Match: git push origin main(NOT push to working branch, NOT push --delete)
-if ! echo "$CMD" | grep -qE '\bgit\s+push\s+(-u\s+)?origin\s+main\b'; then
+# 2026-07-16 dim 73/hooks 硬化(照 sibling inject_deploy_url_after_push.sh:43-46 已硬化 pattern 抄):
+# 原 `\bgit\s+push\s+(-u\s+)?origin\s+main\b` 漏 —
+#   - `git -C <dir> push origin main`(-C 變體)
+#   - `git push --force-with-lease origin main`(任意 flag 在 origin 前)
+#   - `git push origin HEAD:main` / `HEAD:refs/heads/main`(refspec 變體)
+#   - `ENV=x git push origin main`(env-prefix)
+# → 漏 fire = SSOT propagation gate 靜默失守。
+_ENVP='([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+)*'
+_GITPRE='git[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+|-[A-Za-z][^[:space:]]*[[:space:]]+)*push'
+_PUSHFLAGS='([[:space:]]+-{1,2}[A-Za-z][^[:space:]]*)*'
+if ! echo "$CMD" | grep -qE "(^|[;&|(])[[:space:]]*${_ENVP}${_GITPRE}${_PUSHFLAGS}[[:space:]]+origin[[:space:]]+((HEAD|[^[:space:]:]+):)?(refs/heads/)?main([[:space:]]|$|[;&|)])"; then
   exit 0
 fi
 if echo "$CMD" | grep -qE 'push\s+origin\s+--delete'; then
@@ -52,8 +62,15 @@ fi
 CWD=$(pwd)
 [ ! -d "$CWD/packages/design-system/src" ] && exit 0
 
-# Detect SSOT-affecting diff between HEAD~1 and HEAD
-SSOT_DIFF=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E '^(packages/design-system/src/|packages/storybook-config/(addons/|addons-preset\.ts|preview\.tsx|package\.json)|\.claude/(rules|hooks|skills|commands|references)/|\.claude-plugin/(plugin|marketplace)\.json|hooks/hooks\.json|CLAUDE\.md)' || true)
+# Detect SSOT-affecting diff in the pushed commit range
+# 2026-07-16 硬化:原 HEAD~1..HEAD 只看最後 1 commit — push 多 commit(fast-forward 累積 /
+# bump+fix 連發)時漏偵測前面 commits 的 SSOT paths。理想是 @{u}..HEAD,但 PostToolUse 跑在
+# push 成功「之後」,remote-tracking ref 已更新到 HEAD → @{u}..HEAD 恆空,不可用。
+# 保守改 HEAD~5..HEAD(單次 push >5 commits 在 squash-merge solo workflow 極罕見;
+# 淺 history(<5 commits)fallback root commit,不炸)。
+RANGE_BASE=$(git rev-parse --verify --quiet HEAD~5 2>/dev/null || git rev-list --max-parents=0 HEAD 2>/dev/null | head -1)
+[ -z "$RANGE_BASE" ] && RANGE_BASE="HEAD~1"
+SSOT_DIFF=$(git diff --name-only "$RANGE_BASE" HEAD 2>/dev/null | grep -E '^(packages/design-system/src/|packages/storybook-config/(addons/|addons-preset\.ts|preview\.tsx|package\.json)|\.claude/(rules|hooks|skills|commands|references)/|\.claude-plugin/(plugin|marketplace)\.json|hooks/hooks\.json|CLAUDE\.md)' || true)
 
 [ -z "$SSOT_DIFF" ] && exit 0
 
@@ -69,7 +86,7 @@ PKG_VERSION=$(jq -r '.version' "$CWD/packages/design-system/package.json" 2>/dev
 MSG=$(cat <<EOF
 🔄 SSOT propagation gate(post push origin main):
 
-📊 偵測:HEAD~1..HEAD 含 $SSOT_COUNT 個 SSOT-affecting file changes
+📊 偵測:${RANGE_BASE:0:12}..HEAD(push range,保守 ≤5 commits)含 $SSOT_COUNT 個 SSOT-affecting file changes
 📦 目前 npm version:$PKG_VERSION
 🎯 AI 必「全自動執行」(不需 user 再問 / 再確認 — per Step 5.5 2026-06-02 user directive Option A):
    bump → release:preflight → tag → push tag → Release workflow → npm publish → npm view 驗證

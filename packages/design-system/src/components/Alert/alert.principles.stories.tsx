@@ -41,16 +41,10 @@ export const UsageGuidance: Story = {
       <p>適合 Alert 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
-          <LinkTo kind="Design System/Components/Alert/展示" name="低調單行"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">低調單行</span></LinkTo>
+          <LinkTo kind="Design System/Components/Alert/展示" name="單行（低調 vs 實心對照）"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">單行(低調 vs 實心對照)</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Alert/展示" name="實心單行"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">實心單行</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Alert/展示" name="低調含說明文字"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">低調含說明文字</span></LinkTo>
-        </li>
-        <li>
-          <LinkTo kind="Design System/Components/Alert/展示" name="實心含說明文字"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">實心含說明文字</span></LinkTo>
+          <LinkTo kind="Design System/Components/Alert/展示" name="含說明文字（低調 vs 實心對照）"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">含說明文字(低調 vs 實心對照)</span></LinkTo>
         </li>
         <li>
           <LinkTo kind="Design System/Components/Alert/展示" name="右上角操作群組"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">右上角操作群組</span></LinkTo>

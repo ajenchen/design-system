@@ -1,1 +1,29 @@
-{"component":"Slider","implBasis":"Radix Slider primitive (@radix-ui/react-slider) wrapper + DS token bridge; cva size only controls container h-field-*","claimsVerified":31,"falseClaims":[{"fileLine":"slider.spec.md:132","宣稱":"API code block lists `orientation=\"horizontal\"` as a Slider prop (with note 不支援 vertical)","真實code行為":"slider.tsx:55 `Omit<...,'children'|'orientation'>` — orientation is stripped from SliderProps; consumer cannot pass it at all (TS error), so the prop shown in the API block does not exist on the type","severity":"marginal"}]}
+{
+  "component": "Slider",
+  "implBasis": "@radix-ui/react-slider + cva(size 只控 h-field-* 容器外高)+ Field context cascade(useResolvedFieldDisabled / useResolvedFieldMode / labelId)",
+  "claimsVerified": [
+    "視覺規格表逐格 = code:track h-1(4px)bg-secondary / disabled bg-muted;range bg-primary / disabled bg-border;thumb 16px bg-on-emphasis border-2 border-primary / disabled bg-canvas border-border(slider.tsx:96-163)",
+    "互動態:hover border-primary-hover + elevation-100 / active border-primary-active + elevation-200(2026-07-06 修已落地)/ focus-visible border-primary-hover 無 ring / disabled cursor-not-allowed + hover shadow 關閉 — spec States 表與 anatomy ColorMatrix 全相符",
+    "Range↔Thumb border 同色綁定 scope = rest/disabled 兩態(spec 2026-07-06 retract 修正)= code token 對(primary/primary、border/border),互動態只動 thumb border ✓",
+    "size 只控容器外高 h-field-sm/md/lg(28/32/36 @md density)+ flex items-center 垂直置中 = cva :40-44;meta sizes fieldHeight 28/32/36 ✓",
+    "Field cascade:<Field disabled>/<Field mode='disabled'> → fieldDisabled OR(:87);<Field mode='readonly'> → pointer-events-none + thumb tabIndex=-1 + aria-readonly、不降色(:85,:145-146)= spec Readonly 段(2026-06-12 拍板)逐句相符;cell 顯式 mode 最優先 + fieldCtx 隔離 = field-context SSOT 對齊(Model A / cell disabled 廢除 branch context ✓)",
+    "aria-label 策略:多 thumb 加 (N) 後綴;未傳時回 undefined 讓 Radix getLabel 補(2 thumb → Minimum/Maximum;>2 → Value N of M)— 對 Radix slider source getLabel 實證為真;aria-labelledby 接 FieldLabel labelId(:176)",
+    "thumbCount 推導 value→defaultValue→1(:75-78)= spec Range mode「傳長度>1 array 自動多 thumb」",
+    "鍵盤表(Arrow ±step / PageUp/Down ±step×10 / Home/End / Tab 多 thumb)= Radix 原生行為;onValueCommit 滑鼠放開 + 鍵盤有效變更觸發 ✓",
+    "Disabled 灰階派(非 opacity)論證與 code 一致(token swap,無 opacity utility);「thumb disabled 不可用 bg-muted(與 track 融色)」= code 用 bg-canvas ✓"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "slider.spec.md:132(API 段)",
+      "宣稱": "API 塊列 `orientation=\"horizontal\"  // 不支援 vertical(DS 尚無垂直變體;未來真有需求再擴充)`——暗示 orientation 是可傳 prop(值僅限 horizontal)",
+      "真實code行為": "SliderProps 已 Omit 'orientation'(slider.tsx:53-55,2026-07-07 deep-audit 殘項修:型別面機械封鎖)——傳 orientation(含 \"horizontal\")= TS error。spec API 塊未同步 Omit 修正;意圖(不支援 vertical)一致但 API 面誤導。附帶:spec/anatomy 鍵盤表「↑/↓(vertical-inverted 時相反)」對已封鎖 vertical 的元件為死條款",
+      "severity": "medium"
+    },
+    {
+      "fileLine": "slider.tsx:188(sliderMeta family: null)vs slider.spec.md:3(family: self-contained)",
+      "宣稱": "meta comment「family: null // self-contained(對齊 spec;同 rating.tsx 慣例)」",
+      "真實code行為": "spec frontmatter 用字串 'self-contained';skeletonMeta 同類元件用 family: 'self-contained' 字串對齊 — meta 表述雙軌(null+comment vs 字串),機械消費端(compile-stories)讀值不一致。表達層 drift,非行為 bug",
+      "severity": "low"
+    }
+  ]
+}

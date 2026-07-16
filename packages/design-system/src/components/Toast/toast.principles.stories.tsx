@@ -45,7 +45,7 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Toast/展示" name="有標題與描述"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">有 Title + Description</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Toast/展示" name="互動測試"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">互動測試</span></LinkTo>
+          <LinkTo kind="Design System/Components/Toast/展示" name="點擊觸發通知"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">點擊觸發通知</span></LinkTo>
         </li>
       </ul>
       <p className="text-fg-muted mt-3">判斷不確定時:先看下方「何時用 / 何時不用」的對照;若訊息重要到使用者必須看到、或需要使用者確認,就不該用 Toast,改用 Alert(持久顯示)或 Dialog(阻斷確認)。</p>

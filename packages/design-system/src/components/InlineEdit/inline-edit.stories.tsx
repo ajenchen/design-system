@@ -69,7 +69,7 @@ export const MetadataFields: Story = {
   ),
 }
 
-/* ── 三態 matrix:read / hover / edit（play 驅動 hover + edit 態顯示）── */
+/* ── 狀態 matrix:view / hover / edit（二態 canonical,hover 是 view 子態;play 驅動 hover + edit 態顯示）── */
 function StateRow({
   caption,
   children,
@@ -77,22 +77,23 @@ function StateRow({
 }: { caption: string; children: React.ReactNode } & React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div {...rest}>
-      <p className="mb-2 text-caption text-fg-muted">{caption}</p>
-      {/* px-field-px 抵銷 InlineEdit 的 -mx-field-px,讓文字左緣與說明對齊 */}
-      <div className="px-[var(--field-px)]">{children}</div>
+      {/* standalone(無 Field)的 InlineEdit 不帶 -mx(w-full),view 值自帶 px-field-px 內距
+          (fieldViewGeometry);caption 同步 px-field-px 讓說明與值文字左緣對齊 */}
+      <p className="mb-2 px-[var(--field-px)] text-caption text-fg-muted">{caption}</p>
+      {children}
     </div>
   )
 }
 
 export const States: Story = {
-  name: '三態:閱讀/懸停/編輯',
+  name: '狀態:檢視/懸停/編輯',
   render: () => (
     <div className="flex w-[440px] flex-col gap-6">
-      <StateRow caption="read(靜態)—— 純文字,透明邊框(預留、不可見)、無底色">
+      <StateRow caption="view(靜止)—— 純值,透明邊框(預留、不可見)、無底色">
         <StatefulInlineEdit value="Design review notes" label="標題" />
       </StateRow>
       <StateRow
-        caption="read + hover —— 灰底 bg-neutral-hover + rounded-md(非邊框)"
+        caption="view + hover —— 灰底 bg-neutral-hover + rounded-md(非邊框)"
         data-testid="inline-edit-hover-row"
       >
         <StatefulInlineEdit value="Design review notes" label="標題" />
@@ -120,10 +121,10 @@ export const States: Story = {
   },
 }
 
-/* ── 真實業務:工作項目 Status 就地編輯(型別化 read = Tag)──
-   SSOT 示範:read 態的 Tag **不是** InlineEdit 自刻,而是渲染 `<Select mode="view" display="tag">`
-   —— 「select 值 → Tag」的格式化 SSOT 住在 Select 的 display mode(= DataTable 格子消費的同一份)。
-   read 與 edit 用同一個 Select、只切 mode,格式零分歧。 */
+/* ── 真實業務:工作項目 Status 就地編輯(型別化 view = Tag)──
+   SSOT 示範:view 態的 Tag **不是** InlineEdit 自刻,而是渲染 `<Select mode="view" display="tag">`
+   —— 「select 值 → Tag」的格式化 SSOT 住在 Select 的 view mode(= DataTable 格子消費的同一份)。
+   view 與 edit 用同一個 Select、只切 mode,格式零分歧。 */
 const STATUS_OPTIONS = [
   { value: 'todo', label: 'To Do', tagVariant: 'neutral' },
   { value: 'in-progress', label: 'In Progress', tagVariant: 'blue' },
@@ -131,8 +132,8 @@ const STATUS_OPTIONS = [
   { value: 'done', label: 'Done', tagVariant: 'green' },
 ]
 
-// 架構理由(移出 story name,per story-rules.md name 必人話):read 態顯示為 Tag,SSOT = Select
-// 的 display mode —— InlineEdit 委派 Select 控件,read view 消費 Select 的 display 呈現(標籤/色點)。
+// 架構理由(移出 story name,per story-rules.md name 必人話):view 態顯示為 Tag,SSOT = Select
+// 的 view mode —— InlineEdit 委派 Select 控件,view 態消費 Select 的 view 呈現(標籤/色點)。
 export const SelectTagField: Story = {
   name: '狀態就地編輯(讀取時顯示為標籤)',
   render: () => {
@@ -145,13 +146,13 @@ export const SelectTagField: Story = {
           onCommit={setStatus}
           label="status"
           size="sm"
-          // read:Select 的 display mode 輸出 Tag(格式化 SSOT 住在 Select,InlineEdit 不自刻)。
+          // view:Select 的 view mode 輸出 Tag(格式化 SSOT 住在 Select,InlineEdit 不自刻)。
           // Tag **盒子左緣**對齊 label / 其他純文字值,tag 文字被 pill 內距自然縮排 —— 對齊 Meegle 實測
           // (PIL 量測 2026-07-10:Meegle pill box=label 左緣、text 縮排 ~8px@1x)。**不做 text outdent**。
           renderRead={(v) => (
             <Select mode="view" display="tag" size="sm" value={v} options={STATUS_OPTIONS} />
           )}
-          // edit:同一個 Select 切 edit mode + 立即開選單;選完即 commit 回 read
+          // edit:同一個 Select 切 edit mode + 立即開選單;選完即 commit 回 view
           renderEdit={(p) => (
             <Select
               autoFocus
@@ -173,7 +174,7 @@ export const SelectTagField: Story = {
 }
 
 /* ── 真實業務:工作項目 Description 多行就地編輯(Jira description 類)──
-   multiline:read 態換行顯示、edit 態預設 Textarea(Enter=換行、Cmd/Ctrl+Enter 或 blur 提交)。 */
+   multiline:view 態換行顯示、edit 態預設 Textarea(Enter=換行、Cmd/Ctrl+Enter 或 blur 提交)。 */
 export const MultilineDescription: Story = {
   name: '多行描述就地編輯(Jira 描述欄類)',
   render: () => {

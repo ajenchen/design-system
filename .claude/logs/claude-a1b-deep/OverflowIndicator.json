@@ -1,1 +1,29 @@
-{"component":"OverflowIndicator","implBasis":"自建 internal primitive; wraps DS HoverCard (Radix-based) + tagVariants styling; +N trigger span (circle=bg-muted / tag=tagVariants). Motion delays consume MOTION_DELAY_PLAIN_MS(500)/MOTION_DELAY_CLOSE_MS(200) tokens","claimsVerified":30,"falseClaims":[]}
+{
+  "component": "OverflowIndicator",
+  "implBasis": "@internal composite:tagVariants-styled +N trigger span + Radix HoverCard(openDelay=MOTION_DELAY_PLAIN_MS 500 / closeDelay=MOTION_DELAY_CLOSE_MS 200)+ ShrinkWrapList 量測",
+  "claimsVerified": [
+    "hover delay tier:code openDelay=PLAIN(500ms)+ closeDelay=CLOSE(200ms)(overflow-indicator.tsx:9,138)= motion.spec.md:50 對照表「OverflowIndicator → --motion-delay-plain(純列表展開無 fetch)」+ :52 close universal + motion.ts 鏡像值 — 三方一致(2026-06-11 已修正誤挑 rich 的舊 bug);anatomy Inspector(:326-331)500ms PLAIN / 200ms CLOSE 宣稱吻合",
+    "spec:58-66 尺寸表(circle:sm h-5/10px、md·lg h-6/12px;tag 走 tagVariants sm caption 12 / md·lg body 14)— overflow-indicator.tsx:22-32 triggerSize/triggerText + tag.tsx:40-44(sm h-5 text-caption / md·lg h-6 text-body)吻合",
+    "spec:74 count ≤ 0 return null — overflow-indicator.tsx:97 吻合;spec:75 大數值原樣 +N 無 99+ 縮寫 — 吻合",
+    "spec:125 a11y(tabIndex=0 focusable;不掛 role=button / aria-haspopup;無 Enter/click 指令;focus-visible ring)— overflow-indicator.tsx:99-131 兩分支皆吻合(2026-07-14 拆除 role 與 code 同步)",
+    "spec:103-109 shadcn passthrough(ref + ...props 落 trigger pill span、兩分支皆 data-overflow-indicator;HoverCard content 不暴露 ref)— overflow-indicator.tsx:104-131 吻合",
+    "spec:52 trigger 不用 Tag 元件(Tag 內建 truncation Tooltip 衝突)改套 tagVariants — code import tagVariants 非 Tag 吻合",
+    "anatomy 結構表(circle bg-muted text-foreground font-medium rounded-full;tag = tagVariants neutral bg-secondary;HoverCardContent bg-tooltip data-theme=dark rounded-lg;ShrinkWrapList flex-wrap gap-1 p-2 max-w-[280px])— overflow-indicator.tsx:86,109,119-126,142 + tag.tsx:37 全吻合",
+    "spec:77 children 變動觸發浮層寬度 re-measure — ShrinkWrapList useLayoutEffect deps [children] + rAF cancel(overflow-indicator.tsx:49-83)吻合",
+    "overflowIndicatorMeta states ['default','focus-visible'] — spec:95「本身無 hover/active/disabled/selected」+ code focus ring 吻合"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "overflow-indicator.anatomy.stories.tsx:384(ShapeMatrix 典型 consumer)+ overflow-indicator.stories.tsx「Breadcrumb 中段收合」story + principles.stories.tsx:33-34 連結",
+      "宣稱": "tag shape 典型 consumer =「Combobox multi-select tag 溢出 / Breadcrumb 收合」;showcase 以 OverflowIndicator 示範 Breadcrumb 中段收合",
+      "真實code行為": "DS Breadcrumb 收合 canonical = BreadcrumbEllipsis(MoreHorizontal + ItemInlineActionButton 作 DropdownMenuTrigger,breadcrumb.spec.md:96,149-151),click 開選單、非 hover 展開;Breadcrumb 全庫零 OverflowIndicator 消費(rg 驗證)。spec.md:118 也明文兩者「目前無直接消費關係、語義不同(click 開選單 vs hover 展開)」— anatomy/showcase/principles 把 Breadcrumb 列為 consumer 場景與自家 spec + Breadcrumb canonical 相左",
+      "severity": "medium"
+    },
+    {
+      "fileLine": "overflow-indicator.principles.stories.tsx:46",
+      "宣稱": "「其餘折成 +N,點開看完整清單」",
+      "真實code行為": "展開 = hover 或 focus 自動開(HoverCard),無 click 切換、無 Enter 指令(spec:125 明文「沒有 click 切換」;code 無 onClick/keydown)。「點開」措辭與互動模型相左(同檔 :65 已正確寫 hover 展開)",
+      "severity": "minor"
+    }
+  ]
+}

@@ -1,1 +1,21 @@
-{"dim":64,"hook":"check_post_main_ssot_propagate.sh","residueCount":0,"findings":[],"verified":true,"note":"PostToolUse Bash automation hook — on git push origin main with SSOT-affecting diff, injects version-bump/release-chain directive into AI context. Pure inject/automation, blocks nothing; no static code anti-pattern to leave file residue."}
+{
+  "dim": 64,
+  "hook": "check_post_main_ssot_propagate.sh",
+  "wiring": "OK — PostToolUse Bash(settings.json:304 + hooks.json:166);mirror sync;450 fires 2026-07-16;2026-07-11 #79 已修 hookSpecificOutput 真注入",
+  "smoke": "e2e:`git push origin main` 於 planning-only HEAD → 正確靜默(非 SSOT diff);SSOT path regex 對真 SSOT commit b90ad7b9 命中 16 files;regex 目標路徑(storybook-config addons/addons-preset.ts/preview.tsx/package.json、.claude-plugin/*.json、hooks/hooks.json、CLAUDE.md)全部實存無 layout drift",
+  "residueCount": 2,
+  "findings": [
+    {
+      "severity": "P2",
+      "type": "detection-breadth(M7 spec-broad/hook-narrow)",
+      "detail": "push-main matcher `\\bgit\\s+push\\s+(-u\\s+)?origin\\s+main\\b` 漏 `git -C <dir> push origin main`、`git push --force-with-lease origin main`(flag 在 origin 前)、`git push origin HEAD:main`(refspec)— 同 bug class 已於 sibling hook inject_deploy_url_after_push.sh 2026-06-07 硬化(_ENVP/_GITPRE/_PUSHFLAGS + refspec dst 解析),本 hook 未同步。canonical 主路徑(plain `git push origin main`)有蓋,漏的是邊緣 push 形",
+      "evidence": "matcher breadth test:6 forms 中 3 MISS(本次 verify 實測)"
+    },
+    {
+      "severity": "P2",
+      "type": "detection-window",
+      "detail": "SSOT diff 只看 HEAD~1..HEAD 單 commit;CLAUDE.md Step 5 允許 fast-forward merge(多 commit 一次 push main)→ 早於最後一 commit 的 SSOT 檔改動不進 diff = under-detect。squash-merge 主路徑(1 commit)不受影響。可改用 push 前 origin/main..HEAD range 或 @{push} reflog",
+      "evidence": "hook L56 `git diff --name-only HEAD~1 HEAD` + CLAUDE.md Git solo-work canonical Step 5「squash-merge OR fast-forward」"
+    }
+  ]
+}

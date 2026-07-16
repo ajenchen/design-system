@@ -1,1 +1,7 @@
-{"dim":34,"hook":"check_field_family_invariants.sh A.4 disabled placeholder color","residueCount":0,"findings":[],"verified":true,"note":"DS-wide 掃 components/**/*.tsx(非 story):5 檔含 placeholder:text-fg-muted(SelectMenu / DatePicker / Field field-wrapper / Textarea / Command)全部具備 disabled override(disabled:placeholder:text-fg-disabled OR group-data-[field-mode=disabled]/field:placeholder:text-fg-disabled OR resolvedMode==='disabled'&&text-fg-disabled)。A.4 第二偵測(<span text-fg-muted>{placeholder} 不分 mode)亦 0。= 0 殘留(M24 disabled>muted precedence 全守)。"}
+{
+ "dim": 34,
+ "hook": "check_field_family_invariants.sh A.4 disabled placeholder color(M24,P1 stderr)",
+ "residueCount": 0,
+ "findings": [],
+ "notes": "DS-wide on-disk 重掃兩 shape:placeholder:text-fg-muted 無 disabled override = 0;<span text-fg-muted>{placeholder} 不分 mode = 0。@disabled-color-allow marker 全庫 0 個。branch 新碼 InlineEdit(inline-edit.tsx:258 isEmpty→text-fg-muted)驗證:InlineEdit 明文無 disabled 態(檔頭 cite MUI X/AG Grid,鎖定=純 view 不灰化,對齊本 branch cell-disabled 廢除)→ muted 永不與 disabled 疊加,M24 合規。"
+}

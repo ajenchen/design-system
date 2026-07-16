@@ -1,13 +1,31 @@
 {
   "component": "Checkbox",
-  "implBasis": "@radix-ui/react-checkbox + cva + SelectionItem/BooleanValueIcon (keyboard delegated to Radix; spec:355 correctly points to Radix docs, no specific keymap overclaim)",
-  "claimsVerified": 48,
+  "implBasis": "Radix Checkbox primitive + SelectionItem(label 包裝)+ BooleanValueIcon(view/readonly 勾叉 SSOT)+ fieldWrapperStyles(readonly 灰框)+ Field resolver hooks cascade",
+  "claimsVerified": 30,
   "falseClaims": [
     {
-      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:357",
-      "宣稱": "A11y Focus: 『鍵盤聚焦時顯示 visible ring(focus-visible:ring-2 ring-ring ring-offset-1 per design-system focus-visible canonical)』— 泛指整個 Checkbox 控件",
-      "真實code行為": "主 cva(checkbox.tsx:26)確為 `ring-2 ring-ring ring-offset-1`,但 readonly-in-Field 分支(checkbox.tsx:247)的 focus ring 為 `ring-2 ring-ring`(無 ring-offset-1)。A11y 段之 blanket 敘述未涵蓋此 readonly 分支的 offset 缺省",
-      "severity": "marginal"
+      "fileLine": "checkbox.tsx:112-118(mode jsDoc)",
+      "宣稱": "mode 值列舉「display — 純展示:渲染 Check / X icon…」",
+      "真實code行為": "FieldMode union = 'edit' | 'view' | 'readonly' | 'disabled'(field-types.ts:21),無 'display';code 分支檢查 resolvedMode === 'view'(checkbox.tsx:214)— display→view rename 殘留於 API jsDoc,誤導 consumer 傳不存在的值(TS 會擋但文件錯)",
+      "severity": "medium"
+    },
+    {
+      "fileLine": "checkbox.spec.md:249",
+      "宣稱": "mode bullet 命名「display — 純展示…」",
+      "真實code行為": "同段 L247 型別行自己寫 mode?: 'edit' | 'view' | 'readonly' | 'disabled' — spec 內部自相矛盾(bullet 名 display vs 型別行 view),code 真值為 'view';branch 主題 display→view rename 漏改此 bullet",
+      "severity": "medium"
+    },
+    {
+      "fileLine": "checkbox.stories.tsx:27-29(Modes story)",
+      "宣稱": "卡片標題「display」",
+      "真實code行為": "同卡片 code 傳 mode=\"view\"(L28)— reader-facing 標題用已廢除的舊 mode 名,與 API 值不一致",
+      "severity": "low"
+    },
+    {
+      "fileLine": "checkbox.tsx:214-221(mode='view' 分支)vs checkbox.spec.md:249 宣稱",
+      "宣稱": "view/display 模式「渲染 Check icon(true=勾)/ X icon(false=叉)」(未區分 controlled/uncontrolled)",
+      "真實code行為": "view 分支只讀 checkedProp === true,忽略 defaultChecked → <Checkbox mode=\"view\" defaultChecked /> 渲染 X(叉);對照 readonly 分支 L232 正確讀 (checked ?? defaultChecked);另 checked=\"indeterminate\" 在 view 渲染 X,spec 未定義 view+indeterminate 行為",
+      "severity": "medium"
     }
   ]
 }

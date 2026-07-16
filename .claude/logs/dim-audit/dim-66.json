@@ -1,64 +1,8 @@
 {
   "dim": 66,
-  "title": "Immediate cross-repo dispatch + visual parity",
-  "mechanism": "DS-wide enumerate release.yml dispatch step + sync workflow + visual-assertions coverage manifest",
-  "filesScanned": 18,
-  "scanScope": [
-    ".github/workflows/release.yml",
-    ".github/workflows/ssot-sync-dispatch.yml",
-    ".github/workflows/visual-regression.yml",
-    ".github/workflows/composition-fidelity.yml",
-    ".github/workflows/mirror-to-published-template.yml",
-    "scripts/visual-audit.mjs",
-    "scripts/visual-assertions.json (111 scenarios)",
-    "scripts/composition-fidelity-visual-diff.mjs",
-    "packages/design-system/ds-story-manifest.json",
-    "snapshots-baseline/ (108 PNGs enumerated)",
-    ".claude/hooks/check_consumer_story_baseline.sh",
-    "929 component story exports enumerated for coverage"
-  ],
-  "findings": [
-    {
-      "fileLine": ".github/workflows/ssot-sync-dispatch.yml:63",
-      "severity": "material",
-      "問題": "sync workflow 仍帶 `GH_TOKEN: ${{ secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}` 假 fallback，正是 release.yml R2(line 226-229，2026-06-11)明文移除的反 pattern:GITHUB_TOKEN 對跨 repo dispatch(repos/ajenchen/ds-product-template)必 403(repo-scoped),fallback 形同虛設且掩蓋『secret 未設』的真相。修在 release.yml 卻沒同步到做同一件事(gh api .../dispatches)的 ssot-sync-dispatch.yml。加上 line 69 的 `|| echo` 吞掉失敗 → 真的沒設 secret 時 workflow 綠燈但零 dispatch(雙重掩蓋)。此為 M10『改一處看三處』漏傳播。",
-      "建議": "移除 `|| secrets.GITHUB_TOKEN`，改成跟 release.yml 一致:secret 未設即明確 `::warning::` skip(不用 GITHUB_TOKEN 硬打 403);並移除 line 69 的靜默 `|| echo` 或改成 `::warning::` 使失敗可見。與 release.yml dispatch step 對齊為單一 canonical 寫法。"
-    },
-    {
-      "fileLine": "scripts/visual-assertions.json (全 111 scenarios) + scripts/visual-audit.mjs:9,253",
-      "severity": "material",
-      "問題": "檔名/docstring 宣稱是『幾何 assertion:定義 DOM 測量 per story(FileViewer toolbar 4 slot 等高 / DatePicker 四邊 12px 對稱 / Calendar cell 等寬)』(visual-audit.mjs:9),但實際 111 個 scenario 全部只有 id+file(11 個另有 rationale),0 個帶 `assertions` 陣列。runGeometryAssertions(:253)對每個 scenario `if (!assertions || assertions.length===0) return []` → geometryViolations 永遠空,report 的 geometry gate 是死碼。此『visual-assertions coverage manifest』的 assertion 覆蓋率實為零,已退化成純截圖 manifest,docstring 舉的三個具體幾何例子在檔內全不存在。",
-      "建議": "二擇一:(a)若幾何 assertion 已被 pixel-diff baseline 取代,更新 visual-audit.mjs:9 docstring + rename 檔案為 visual-scenarios.json,誠實反映『screenshot 場景清單』本質,別再宣稱幾何測量;(b)若幾何 invariant(4-slot 等高 / 12px 對稱)仍是設計 canonical,把它們補回 scenarios 的 assertions 欄位,讓 runGeometryAssertions 真的有東西可驗。目前狀態是 docstring 給假信心。"
-    },
-    {
-      "fileLine": ".github/workflows/visual-regression.yml:5,41,44 vs scripts/visual-audit.mjs:529-530",
-      "severity": "material",
-      "問題": "visual-regression CI 宣稱 DS-wide 全覆蓋:line 5『Pixel diff every story screenshot』、line 41『DS-wide pixel match』、line 44『~1000 stories × screenshot』。但 CI 跑的 `visual-audit -- --scope=all`(:73)在 filterScenarios(visual-audit.mjs:529-530)只 `return allScenarios` = visual-assertions.json 的 111 scenario;而全 DS 有 929 個 component story export。實際覆蓋 111/929 ≈ 12%,非『every story / ~1000』。此 docstring 與現實嚴重背離,讓人誤以為視覺回歸是 DS-wide 完整閘,實為 curated 子集。",
-      "建議": "更新 docstring 誠實標『covers N curated scenarios in visual-assertions.json (~12% of stories), representative-curation model(對齊 Chromatic curated snapshot)』,或補足 scenario 使名副其實。至少 line 44『~1000 stories』要改成實際 scenario 數,避免假 DS-wide 信心。"
-    },
-    {
-      "fileLine": "scripts/visual-assertions.json (coverage gap)",
-      "severity": "material",
-      "問題": "11 個有真實 展示-tier stories 的 user-facing 元件在 visual-assertions manifest 中 0 scenario → scope=all 視覺回歸零 pixel-diff 保護:Command / InlineEdit / Notice / OverflowIndicator / Pagination / ProfileCard / SelectionControl / HoverCard / SelectMenu / Menu(DateGrid 屬 Calendar 內部,可豁免)。已逐一確認皆有 .stories.tsx + 展示 tier。53/64 元件有 scenario,這 11 個是實質破口。",
-      "建議": "為這 11 個 user-facing 元件各補至少 1 個 OpenSnapshot / 展示 canonical scenario 進 visual-assertions.json + 提交 ubuntu-render baseline(依 visual-regression.yml:11-18 流程)。優先 ProfileCard / Pagination / Notice / InlineEdit 等純展示元件。"
-    },
-    {
-      "fileLine": "scripts/visual-assertions.json (appshell/bulkactionbar/fieldcontrolgroup overview) + snapshots-baseline/",
-      "severity": "marginal",
-      "問題": "3 個 scenario 指向不存在的 baseline PNG:appshell-設計規格--overview→appshell-overview.png、bulkactionbar-設計規格--overview→bulkactionbar-overview.png、fieldcontrolgroup-設計規格--overview→fieldcontrolgroup-overview.png,皆不在 snapshots-baseline/。visual-audit.mjs:447 在 baseline 缺失時靜默 skip diff → 這 3 個 scenario 在 manifest 中『被列為覆蓋』但實際零回歸閘(假覆蓋)。無任何 hook/gate 驗 manifest↔baseline 同步(root cause;曾於 commit 4258911e 手動修 8 個 stale ID,顯示反覆漂移)。",
-      "建議": "補這 3 張 ubuntu-render baseline PNG,或若 scenario 已失效則從 manifest 移除。並加一支 deterministic gate(scripts 或 hook)驗 visual-assertions.json 每個 scenario.file 都有對應 baseline + scenario.id 仍是有效 story id,fail-closed 進 release:preflight,根治手動維護漂移。"
-    },
-    {
-      "fileLine": ".github/workflows/release.yml:242,325 + ssot-sync-dispatch.yml:66",
-      "severity": "marginal",
-      "問題": "同一『DS 變更→同步 consumer』目的散出 3 個不同 event 名 + 2 個不同 secret:tag push 同時發 `ds-published`(release.yml:242,PRODUCT_WORKSPACE_DISPATCH_TOKEN)與 `design-system-published`(release.yml:325 notify-consumers job,CROSS_REPO_TOKEN)到同一 repo;non-version push 發 `ds-ssot-changed`(ssot-sync-dispatch.yml:66)。兩個 tag-push event 語義完全相同卻異名,強迫 receiver(ds-product-template)註冊 3 個 handler;若 receiver `on: repository_dispatch: types:` 漏其一,該路徑靜默丟棄。雖 comment 說是刻意 dual-path(concurrency dedup),但 `ds-published` vs `design-system-published` 命名分歧是真漂移/維護風險。",
-      "建議": "統一 tag-push 兩路的 event 名(擇一,如都用 `design-system-published`),並在 repo README 或 workflow 註解列出 receiver 必註冊的完整 event-type 清單(ds-published/design-system-published/ds-ssot-changed)作 SSOT,避免跨 repo handler 漏接。長期考慮收斂成單一 secret + 單一 event,dual-path 的 fallback 價值 vs 命名/維護成本重估。"
-    },
-    {
-      "fileLine": ".github/workflows/composition-fidelity.yml + apps/template CompositionFidelityReplica.stories.tsx",
-      "severity": "marginal",
-      "問題": "dim 名的『visual parity』(DS canonical vs consumer 跨 repo pixel identity)由 composition-fidelity.yml 提供,但 identity-diff 是 opt-in(只比標 @composition-fidelity-mode 的 mapping),全庫僅 2 個 marker(都在 apps/template/CompositionFidelityReplica.stories.tsx)。即跨 repo 視覺 parity 實際只驗 1 個 replica 螢幕的 2 mapping,非 DS-wide。其餘 @story-baseline 是 conformance-only(不做跨 repo identity diff)。『visual parity』半個 dim 覆蓋極薄。",
-      "建議": "評估是否為多個代表性 composed 螢幕(如 AppShell + DataTable + Form)補 @composition-fidelity-mode replica mapping,提高跨 repo 視覺 parity 覆蓋;或在 composition-fidelity.yml docstring 明確標『opt-in targeted replica verification,非 DS-wide parity』,對齊實際範圍避免過度承諾。"
-    }
-  ]
+  "title": "Cross-repo dispatch + visual parity",
+  "filesScanned": 8,
+  "mechanism": "Enumerate + Read 整鏈 8 環節:(1) release.yml — smoke-shard 4/4 全綠 gate → audit gates(26 道 deterministic + apps/template build)→ pack dry-run dist 驗 → dogfood-prepublish-verify → 5-manifest version sync BLOCKER(2026-07-14 已前移至 publish 之前,fail-closed before irreversible)→ 冪等 publish(npm view guard + concurrency serialize)→ beta 自動 repoint latest → GitHub Release → dispatch `ds-published`(PRODUCT_WORKSPACE_DISPATCH_TOKEN,未設明確 ::warning:: skip 無假 fallback;ref_name 走 env var 防 script-injection);(2) notify-consumers job — CROSS_REPO_TOKEN dispatch `design-system-published` ✓;(3) ssot-sync-dispatch.yml — 非版本 main push 偵測 SSOT paths → dispatch `ds-ssot-changed`,event type 與 receiver 完全對齊 ✓;(4) mirror-to-published-template.yml — workflow_run [Release] success 主路徑(根治 timing race)+ push paths 與 mirror ALLOWLIST 同步(逐項比對含 refresh-fork-launchers / verify-consumer-css-entry)✓;(5) 接收端 sync-design-system.yml — on types [design-system-published, ds-published, ds-ssot-changed] 三 event 全收、concurrency serialize、payload 走 env var、version 剝 v 前綴兼容、--save 寫 spec 防 lockfile-only drift、fork-safe template sync(opt-out marker + @template-customized)、push 前 audit.yml 等價 full gate(GITHUB_TOKEN push 不觸發下游防護的補位)、rebase-retry×5 fail-closed ✓;(6) composition-fidelity.yml — opt-in marker 秒級 pre-step(0 marker → skip 重建),conformance 主防線走靜態 hook(composition-fidelity.md 分層模型,非 gap);(7) dogfood-prepublish-verify.mjs — fresh consumer install + vite build 模擬 ✓;(8) visual-assertions.json — 113 scenario 供 visual-audit 消費 ✓。PAT scope:兩 token 用途分離且未設時皆顯式 warning + Dependabot daily fallback,無沉默斷鏈。",
+  "verdict": "8 環節 checked, 0 gaps",
+  "findings": []
 }

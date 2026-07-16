@@ -13,7 +13,7 @@ import type { AvatarData } from "@/design-system/components/Avatar/avatar"
 import { fieldWrapperStyles } from "@/design-system/components/Field/field-wrapper"
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 
-// ── RadioGroup display mode ─────────────────────────────────────────────────
+// ── RadioGroup view mode ────────────────────────────────────────────────────
 // RadioGroup mode='view' 時:Group 不渲染 Radix primitive(無 radio 視覺),
 // 改由 RadioGroup 本體 walk props.children,找 control.value === selectedValue 的
 // SelectionItem,把它的 label 渲染為單一純文字 span(其他選項不顯示)。
@@ -27,7 +27,7 @@ export interface RadioGroupProps
   /**
    * Field mode(2026-05-05 Phase B3 align):
    *   edit     — 一般可互動 RadioGroup(預設)
-   *   display  — **純展示**:不渲染 Radix Root / 任何 radio 視覺;RadioGroup 本體 walk
+   *   view     — **純展示**:不渲染 Radix Root / 任何 radio 視覺;RadioGroup 本體 walk
    *              children,僅 control.value === group.value 那筆把 label 渲染為純文字 span。
    *              對齊 Carbon read-only / DataTable single-select cell read mode。
    *   readonly — standalone:ReadonlyContext 傳 items 鎖互動保留視覺;Field 內:灰框 + 選中項 label(不渲染 radio 群組)
@@ -50,7 +50,7 @@ const RadioGroupReadonlyContext = React.createContext(false)
 // 對齊本檔 RadioGroupReadonlyContext 既有模式 + spec「Disabled」邊界案例(Group-level disabled 視覺繼承 SelectionItem SSOT text-fg-disabled)。
 const RadioGroupDisabledContext = React.createContext(false)
 
-// walk children 找 control.value === selectedValue 的 SelectionItem label(display / readonly-in-Field 共用)
+// walk children 找 control.value === selectedValue 的 SelectionItem label(view / readonly-in-Field 共用)
 function findSelectedRadioLabel(children: React.ReactNode, selectedValue: string | undefined): React.ReactNode {
   let selectedLabel: React.ReactNode = null
   React.Children.forEach(children, (child) => {
@@ -87,8 +87,8 @@ const RadioGroup = React.forwardRef<
   // 對齊 Carbon read-only single-select(只顯示 selected 內容)+ Airtable / Notion read-only。
   // 實作:walk children 找 control.value === selectedValue 的 SelectionItem,render label plain text。
   // (不用 context dispatch 給 RadioGroupItem — SelectionItem layout wrapper 仍會渲染所有 item label)
-  // 2026-07-04 修:display / readonly-in-Field 分支的 <div> 原丟棄剩餘 props(id/data-*/aria-*)
-  // 且不轉發 forwardRef ref → 自家 radio-group.stories.tsx display demo 傳的 aria-label 都靜默失效。
+  // 2026-07-04 修:view / readonly-in-Field 分支的 <div> 原丟棄剩餘 props(id/data-*/aria-*)
+  // 且不轉發 forwardRef ref → 自家 radio-group.stories.tsx view demo 傳的 aria-label 都靜默失效。
   // 抽出 Radix 專屬 non-DOM props,其餘 DOM props 於兩分支 spread 轉發(與 Checkbox/Switch 同修);
   // edit 主路徑不受影響(Root 仍 spread 完整 props)。
   const {
@@ -274,8 +274,8 @@ const RadioGroupItem = React.forwardRef<
     const dotPx = dotSize[sizeKey]
 
     // 注意:RadioGroup mode='view' 的純文字渲染由 RadioGroup 本體 walk-children 處理
-    // (見上方 RadioGroup forwardRef 的 mode === 'view' 分支),RadioGroupItem 在 display
-    // mode 下不會被獨立 render,故此處無 display 分支。
+    // (見上方 RadioGroup forwardRef 的 mode === 'view' 分支),RadioGroupItem 在 view
+    // mode 下不會被獨立 render,故此處無 view 分支。
 
     // 注意：Radio 的 label 語意與 Checkbox/Switch 不同——
     // Checkbox/Switch 的 label 就是該 control 的唯一 label（被 Field context 接管），

@@ -1,19 +1,6 @@
 {
   "component": "BulkActionBar",
-  "implBasis": "self-built (div + DS Button/ButtonDivider; consumer-driven actions slot)",
-  "claimsVerified": 26,
-  "falseClaims": [
-    {
-      "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:180",
-      "宣稱": "a11y 預設：『BulkActionBar 整體用 `role=\"toolbar\"` + aria-label』",
-      "真實code行為": "bulk-action-bar.tsx:98 root 用 `role=\"group\"`（2026-07-06 user 拍板自 toolbar 降級——未實作 APG toolbar 方向鍵 roving 契約，改 group 語意誠實）。spec a11y 段仍寫 role=\"toolbar\"，與 code 及 anatomy story（anatomy:189 已正確寫 role=\"group\"）雙雙相矛盾。stale spec。",
-      "severity": "material"
-    },
-    {
-      "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:162",
-      "宣稱": "API 段 BulkActionBarLabels interface 只列 count / clear / hiddenSuffix / toolbarAriaLabel，並把 `toolbarAriaLabel: string // default 「批次操作」` 呈現為 aria-label 的 key",
-      "真實code行為": "bulk-action-bar.tsx:24-27 介面已新增 `ariaLabel?: string`（root aria-label 的新主 key，2026-07-06），且 `toolbarAriaLabel` 已標 @deprecated（僅作 fallback）。code 實際用 `labels.ariaLabel ?? labels.toolbarAriaLabel`（tsx:99）。spec API interface 漏列 ariaLabel 欄位、也未標 toolbarAriaLabel 為 deprecated——文件 drift。",
-      "severity": "marginal"
-    }
-  ]
+  "implBasis": "自建 plain block composite(消費 Button/ButtonDivider/layoutSpace)。驗證項:可見性判準 selection.length===0 && (totalSelected??0)===0 → null(tsx:90 = spec「Extend dataset pattern」反向選取例外)/ role=group + aria-label=ariaLabel??toolbarAriaLabel(tsx:98-99 = spec 2026-07-06 toolbar 降級 rationale,anatomy 同步)/ count span text-foreground font-medium tabular-nums + aria-live=polite aria-atomic(tsx:130 = spec Count text color canonical)/ hiddenByFilter>0 suffix text-fg-muted font-normal / clear X = Button variant=text size=md iconOnly dismiss(= spec Slot 表)/ px-loose py-tight + gap-2 + border-t border-divider + 無底色(= spec 視覺段)/ 自然高度 56/68 算式驗證(--field-height-md 32/36 uiSize.css:24,92 + --layout-space-tight 12/16)/ ButtonDivider mx-1(button-group.tsx:87)/ totalSelected number → count 顯示該值(tsx:132)/ labels deprecated toolbarAriaLabel fallback 一致 / hint banner 外包 Alert(role=status polite 與 alert.tsx info 分支一致)/ principles LinkTo(基本/提示擴選整個資料集)存在",
+  "claimsVerified": 32,
+  "falseClaims": []
 }

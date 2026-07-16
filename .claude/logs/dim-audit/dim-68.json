@@ -1,27 +1,21 @@
 {
   "dim": 68,
-  "title": "Stories-vs-spec canonical drift",
-  "mechanism": "DS-wide grep of all stories/anatomy/principles for anti-spec patterns — story demonstrates a usage its own spec explicitly forbids",
-  "filesScanned": 283,
-  "scanScope": "All 205 *.stories.tsx (DS-wide grep, NO-SAMPLE) cross-referenced against ~78 *.spec.md forbidden-rule lines",
+  "title": "Stories-vs-spec drift",
+  "filesScanned": 215,
+  "mechanism": "(1) story-baseline-registry.json 全 3 primitive × 8 antiPattern regex 以 python re 重放 215 個 stories/app tsx → 45 raw hit → 逐一二次驗證:R8 self-family skip(Popover/Sheet/DataTable 檔)+ registry rationale 自身「tertiary 只用 standalone/labeled context」→ action-bar.stories:127-128 為 text-vs-tertiary 邊界教學對照(Label 明寫 text=密集 toolbar 預設)、dropdown-menu.principles:236 / coachmark.principles:137 為 labeled standalone trigger、AppShell:114/136 實際 code 已是 canonical(variant=text iconOnly pressed + Popover wrap DataTableFilterPanel)→ 45/45 FP 殺。(2) 本輪 branch context 專掃:cell disabled 廢除 — data-table.anatomy:422 已記載廢除、data-table.spec.md 無 cell-disabled 殘留(row-selection disabled = checkbox-only,一致);InlineEdit 5 條禁止事項 vs 全 3 story 檔(空值 = placeholder 非 dash ✓ / edit 用 Field 控件 ✓)無矛盾;Sheet side 消費者限 right — stories 0 違規;dark 色改動不涉 stories。(3) spec ❌ 段 code-token 啟發式全掃(specs × 同 dir stories)raw hits 逐一覆核(header-canonical flex-col = 頁面 section wrapper 非 ChromeHeader children、item-anatomy items-start = 正確 pattern 引用)全 FP。(4) display→view 更名殘留 DS-wide grep — code 層 0 殘留(mode:'display' 在 tsx 全清),stories 教學文字層有殘留(下列 findings)。",
+  "verdict": "45 registry raw hits 全 FP 殺;2 marginal findings(更名 prose 殘留)after 全掃 215 files",
   "findings": [
     {
-      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.stories.tsx:89 (+104-106); checkbox.anatomy.stories.tsx:570-585",
-      "severity": "material",
-      "問題": "Checkbox 的展示層(VerticalGroup/Horizontal)與 anatomy 層(SizeMatrix)所有『有 label 的選項』一律用 `<SelectionItem control={<Checkbox/>} label htmlFor>` 直接組出——但 selection-item.spec.md:43 白紙黑字『直接用 <SelectionItem> ❌ 禁止』、spec:35/37『internal primitive,不直接使用/不需也不准裸用,透過 Checkbox 消費』。而 checkbox.tsx:87-100 明明有 public `label`/`description` prop(『提供時 Checkbox 自動透過 SelectionItem 包裝』)。DS-wide grep 證實:沒有任何一個 checkbox story 用 public `<Checkbox label=\"X\">` API(全部 label 都走被 spec 禁的內部 primitive)。等於元件的 canonical 展示範例通篇教 consumer 用『spec 明令禁止的內部件』,而從不示範自己的公開 API。a11y 因有傳真 control + htmlFor 尚可運作,但這是 story↔spec↔public-API 三方漂移。",
-      "建議": "把 checkbox 展示/anatomy 的有 label 選項改成 public API `<Checkbox label=\"Electronics\" description=\"...\">`(size 由 Checkbox size prop 帶,htmlFor 自動生成),讓 canonical 範例示範公開用法;若團隊確認『control-passed composition』是刻意保留的合法低階用法,則 selection-item.spec.md:43 的絕對『禁止』措辭需改為『裸用(無真 control)禁止;傳入真 control 的組合用法(radio-group.tsx:59 稱 形狀 2 組合用法)允許』以消解 spec-vs-code 矛盾。二擇一,不可讓 spec 禁令與展示範例並存。"
-    },
-    {
-      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:24-50 vs radio-group.principles.stories.tsx:62-64,102-104 / radio-group.anatomy.stories.tsx:594-595",
-      "severity": "material",
-      "問題": "RadioGroup 的展示層(radio-group.stories Modes:edit/display/readonly/disabled)用被禁的 `<SelectionItem control={<RadioGroupItem value id/>} label htmlFor>`,但同元件的 principles 層與 anatomy 層卻用 public `<RadioGroupItem value label description>`(auto-wrap SelectionItem)。同一元件三層 story 自我矛盾:principles/anatomy 用對(公開 API),展示層用被 selection-item.spec.md:43 禁止的內部 primitive。這證明公開 `label` API 完全可用(principles/anatomy 已示範),展示層用內部件純屬 drift,無技術必要。",
-      "建議": "把 radio-group.stories Modes 四模式的 `<SelectionItem control={<RadioGroupItem.../>}>` 收斂成 `<RadioGroupItem value=\"monthly\" label=\"月付方案\" description=\"...\">`,與同元件 principles/anatomy 層一致,讓三層 story 一律示範公開 API。此為與 Finding 1 同根的 SelectionItem 直用漂移,建議兩元件一起收(對齊 CLAUDE.md『改一處必看三處』)。"
-    },
-    {
-      "fileLine": "packages/design-system/src/components/Toast/toast.stories.tsx:44-77",
+      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:34 + TimePicker/time-picker.stories.tsx:42 + Input/input.stories.tsx:31 + DatePicker/date-picker.principles.stories.tsx:160,173 + Input/input.anatomy.stories.tsx:337 + InlineEdit/inline-edit.stories.tsx:125,135,148 + Combobox/combobox.stories.tsx:29",
+      "問題": "display→view 更名(field-controls.spec.md:81 canonical)後 stories prose/aria-label/註解殘留舊名:aria-label「(display mode demo)」×3、Rule note「Display 模式」×2、註解「display mode」×5 — code 值已全用 mode=\"view\" 但教學文字仍教舊術語,stories-vs-spec 術語 drift(aria-label 為 user-visible 字串)",
       "severity": "marginal",
-      "問題": "toast.stories 的 StaticToast helper 直接 import 並渲染 `<Notice>`,並在 story 內手工重建 Toast 的 theme 反轉邏輯(isInverse 判 neutral/success、warning/error/info 各自 bg + data-theme)。Notice spec:98 說『App 層級不直接使用 <Notice>,透過 Alert/Toast』。此處雖是 DS 內部 story(為 M15 ephemeral toast 做可截圖靜態快照,屬合理 workaround、且檔頭有註解說明),但『在 story 裡手刻 Toast 內部主題邏輯』有 fidelity 風險:若真實 sonner-based Toast 的反轉邏輯日後改動,此靜態展示會 silently 與 production 漂移,而 story 仍宣稱代表 Toast 外觀。",
-      "建議": "低優先。可接受現況(有 M15 rationale + 檔頭註解),但建議把 StaticToast 的主題反轉邏輯抽成 Toast 元件與 story 共用的 SSOT(例如 Toast 匯出一個 render-only 的 presentational 元件供靜態快照),避免 story 手抄 production 邏輯造成日後 drift;或在 StaticToast 加註解明確標示『此為近似重建,非真實 Toast 渲染路徑』。"
+      "建議": "batch sweep 全部改「view mode」;InlineEdit 註解涉 Select 自有 display prop(plain|tag)處改寫消歧(如「Select 的 view 態呈現(display='tag')」)"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:394",
+      "問題": "spec impl cite 仍寫 compoundVariants `mode:'display'+variant:'default'` — code 已更名 'view'(tsx 全庫 grep mode:'display' = 0),stale code-cite(cross-ref dim 53 reverse-drift 類)",
+      "severity": "marginal",
+      "建議": "改 cite 為 `mode:'view'+variant:'default'`(同段「Default variant display」措辭一併換 view)"
     }
   ]
 }

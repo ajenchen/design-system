@@ -1,1 +1,46 @@
-{"component":"PeoplePicker","implBasis":"組合元件 — single mode wraps <Select searchable>, multi mode (stack/pill) wraps <Combobox>; 已選值 render 用 PersonDisplay (Avatar+Name); Select/Combobox 內部 Popover+cmdk(Command)+SelectMenu。personToSelectOption forwards avatar+description (SelectOption extends SelectMenuOption) — 舊 weak-schema drop-avatar bug 已修","claimsVerified":31,"falseClaims":[{"fileLine":"people-picker.spec.md:126,154,160","宣稱":"cite `select.tsx:204-205` 為 `triggerEmptyPlaceholder = placeholder || '搜尋…'` + showSelectedOverlay span overlay 所在","真實code行為":"select.tsx:204 是 interface field `search: string`;實際 triggerEmptyPlaceholder 在 select.tsx:227, showSelectedOverlay 在 228, span overlay 在 246 — cite 行號 stale ~22 行,落在無關 interface","severity":"marginal"},{"fileLine":"people-picker.spec.md:153","宣稱":"cite `field-wrapper.tsx:244` 為 `bareInputStyles 含 truncate`","真實code行為":"field-wrapper.tsx:244 是 cva defaultVariants `width: 'fill'`;bareInputStyles const 在 253, `truncate` 在 261 — cite 行號 stale,落在無關 cva 段","severity":"marginal"},{"fileLine":"people-picker.spec.md:91","宣稱":"cite `combobox.tsx:728` 為 role=\"combobox\" div","真實code行為":"combobox.tsx:728 是 `group: opt.group` / filteredOptions map;role=\"combobox\" div 實際在 combobox.tsx:741 — cite 行號 stale","severity":"marginal"}]}
+{
+  "component": "PeoplePicker (+ person-display / people-picker-helpers / avatar-stack-overflow)",
+  "implBasis": "composite wrapper:single → <Select searchable selectedItemRenderer> / multi(stack+pill)→ <Combobox tagRenderer>;view/readonly/disabled 自渲 fieldWrapperStyles + PersonDisplay/MultiPersonDisplay;avatar stack overflow 走 deterministic formula primitive",
+  "claimsVerified": [
+    "spec:28 controlled-only(value 無 defaultValue)— PeoplePickerProps 無 value defaultValue 吻合(defaultOpen 屬 open state 非 value)",
+    "spec:61+71 multiDisplay stack(default)/ pill + pillShowAvatar(default true)/ pillWrap(default true → Combobox wrap)— people-picker.tsx:141-143,311-366 吻合",
+    "spec:79-80 searchPlaceholder 僅 multi searchIn='menu' 生效(single 走 Select placeholder)/ emptyText 走 SelectMenu search-empty — people-picker.tsx:288-292(Select 無 searchPlaceholder 轉發)+ :328,393 吻合",
+    "spec:212 readonly 保留 avatar hoverCard / spec:213 disabled 抑制 hoverCard + avatar dim(host-controlled opacity-disabled)— people-picker.tsx:255-259 disabled flag + person-display.tsx:109-141 PersonAvatar(disabled → hoverCard undefined + opacity-disabled)吻合",
+    "spec:252 disabled 保留 ChevronDown(fg-disabled)/ readonly 不顯示 / naked 依 showDisplayEndIcon — people-picker.tsx:261-266 條件式吻合",
+    "spec:253 loading prop 未暴露 — PeoplePickerProps 無 loading 吻合(spec 誠實記載 gap)",
+    "spec:256 people 查不到降級純名字 string 不報錯 — people-picker-helpers.ts:74-76 findPerson ?? name 吻合;showcase AsyncDirectoryLoad「名錄未到前 initials fallback」行為與 code 一致",
+    "spec §C/§D 多人 length=1 降階 PersonDisplay / length≥2 stack(-ml-0.5 overlap + 圓形 +N)— people-picker.tsx:464-482 tagRenderer 分支 + :424 overflowWrapperClassName + :431 overflowShape='circle' 吻合",
+    "spec §E Avatar 12px inset(form context 有 tag → !px-[var(--field-px)] inject;cell naked 不 inject)— people-picker.tsx:409 吻合",
+    "spec:255 multi value=[] → trigger placeholder 無 avatar stack — isEmpty 判定 + Combobox 空值 placeholder 吻合",
+    "avatar-stack-overflow slot-based formula(display + edit 共用;MultiPersonDisplay measured + PeoplePicker ResizeObserver 同 primitive)— person-display.tsx:209-233 + people-picker.tsx:171-201 吻合",
+    "2026-07-14 deep-audit 修已落地:single 補 width forward(tsx:282)/ pill 補 searchIn forward(tsx:327)— comment 宣稱與 code 一致",
+    "anatomy SizeMatrix(avatar 20/24/24、chevron 16/16/20、text-body/-lg)— person-display.tsx:92 AVATAR_PX + ICON_SIZE tier 吻合",
+    "principles EmptyStateRule(edit 顯 placeholder / readonly null 顯 '-')— people-picker.tsx:134,255-256 + fieldEmptyColorClass 吻合"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "people-picker.anatomy.stories.tsx:270-297(ColorMatrix「Dropdown 內 MenuItem 色彩」表)",
+      "宣稱": "selected 列:Bg = —(無)、Selected icon = Check 16px fg-muted、text = foreground(medium);selected+hover 列:bg = neutral-hover、Check 16px foreground;Desc 寫「selected 加 Check icon」",
+      "真實code行為": "DS 單選選中指示器 = bg-neutral-selected 背景高亮,「不用 ✓ 勾號」為 user 拍板 canonical(menu-item.spec.md:159-171);select-menu.tsx:441 實作 = bg-neutral-selected + selected×cursor 深化 bg-neutral-selected-active;select-menu.tsx / select.tsx 全檔零 Check import、零 font-medium(僅 header)。整張表 selected 行為與 canonical + code 完全相反(描述的是 shadcn Select 預設 check-icon 派)",
+      "severity": "major"
+    },
+    {
+      "fileLine": "people-picker.tsx:116-121(showDisplayEndIcon docblock)",
+      "宣稱": "設 true 時 display 走 fieldWrapperStyles(naked variant)+ ItemSuffix ChevronDown",
+      "真實code行為": "people-picker.tsx:224 用 variant: resolvedVariant(prop > fieldCtx > 'default');naked 僅 cell-registry 經 @internal 通道注入時生效。standalone showDisplayEndIcon=true = view×default(Model A 留 px/height)非 naked(與 LinkInput 同款 docblock-vs-code drift)",
+      "severity": "medium"
+    },
+    {
+      "fileLine": "people-picker.tsx:63 + people-picker.anatomy.stories.tsx:100,139 + people-picker.stories.tsx:75",
+      "宣稱": "docblock「Field mode(edit / display / readonly / disabled)」+ Inspector docs「切 mode 看 edit / display / readonly / disabled」+ ModeMatrix / showcase 段落標題 'display'",
+      "真實code行為": "FieldMode = 'edit'|'view'|'readonly'|'disabled'(field-types.ts:21);'display' 已更名 'view'(同檔 argTypes / mode=\"view\" 用法皆正確),列舉/標題為現在式殘留舊名",
+      "severity": "minor"
+    },
+    {
+      "fileLine": "people-picker.spec.md:91,124,126,150-154,160,240 + people-picker-helpers.ts:29,49 + avatar-stack-overflow.ts:84,93",
+      "宣稱": "多處 file:line 實作錨點 cite:select.tsx:204-205 / select.tsx:582 / combobox.tsx:728 / people-picker.tsx:371 / people-picker.tsx:111·L53·L131 / person-display.tsx:137-152·:150 / field-wrapper.tsx:244 / select.tsx:244 / person-display.tsx:80 / overflow-indicator.tsx:17",
+      "真實code行為": "全數行號漂移(抽查:triggerEmptyPlaceholder 實在 select.tsx:270,285;!px inject 實在 people-picker.tsx:409;PersonDisplay 實在 person-display.tsx:150-167;AVATAR_PX 實在 :92;triggerSize 實在 overflow-indicator.tsx:22;select.tsx:582 / combobox.tsx:728 內容與宣稱不符)。spec 自訂契約「改 code 必同步 cite」(spec:106)未被遵守 — 行為宣稱本身抽查皆真,僅錨點漂移",
+      "severity": "minor"
+    }
+  ]
+}

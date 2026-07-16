@@ -1,1 +1,7 @@
-{"dim":21,"hook":"check_item_list_gap.sh","residueCount":0,"findings":[],"verified":true,"note":"DS-wide 掃 packages/design-system/src + apps 非-story *.tsx:尋 >=2 個 <FileItem> 或 <MenuItem variant=rich> 且 parent 無 gap-N/space-y-N 的檔 = 0 命中。hook 為 WARN(exit 0),audit-time grep backstop 確認無殘留。"}
+{
+ "dim": 21,
+ "hook": "check_item_list_gap.sh(M16 write-time WARN)",
+ "residueCount": 0,
+ "findings": [],
+ "notes": "production tsx 0 檔有 ≥2 standalone FileItem/MenuItem-rich。Hook 跳過的 stories 層(dim 21 定義含 consumer stories)補掃:file-item 三層 + file-upload principles 全數消費 gap canonical 且帶 rationale 註解(rich→gap-2 防邊框相黏 / compact→gap-1 統一 2026-04-23 canonical)。0 residue。"
+}

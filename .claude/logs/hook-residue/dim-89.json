@@ -1,14 +1,7 @@
 {
   "dim": 89,
-  "hook": "check_tabs_content_chrome_body_double_gap.sh",
+  "hook": "check_tabs_content_chrome_body_double_gap.sh(Check 1 tabs double-gap + Check 2 overlay-body fixed gap + Check 3 root 簽名)",
   "residueCount": 0,
-  "findings": [
-    {
-      "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:156",
-      "問題": "JSDoc 註解範例 `// <SheetBody className=\"!px-0 !pt-0 !pb-0\">...` 匹配 Check3 ROOT_SIG_A(不 strip 註解),且缺 @tabs-content-gap-ok: escape marker(其對映 sibling dialog.tsx:207 已補該 marker)。非 genuine !pt-0 hack(文件範例,無視覺 bug),但為 latent hook false-positive — 未來任何 sheet.tsx edit(PostToolUse 讀全檔)會被 Check3 誤擋。",
-      "severity": "marginal"
-    }
-  ],
-  "verified": true,
-  "note": "Material genuine 違規 = 0。Check1:dialog.stories.tsx 內 TabsContent(462/474/488)全帶 className=mt-0,合規。Check2:overlay body 固定 macro gap-[4-9] = 0 命中。Check3:真 !pt-0 hack = 0;所有 !pt-0 命中皆為 documented(inline @tabs-content-gap-ok:)或註解範例。唯 sheet.tsx:156 註解缺 marker = marginal latent false-positive,建議補 @tabs-content-gap-ok: 對齊 dialog.tsx:207。"
+  "findings": [],
+  "notes": "DS-wide sweep(packages/design-system/src + apps 全 .tsx):Check 1(awk depth-counter 重跑,TabsContent 在 Dialog/Sheet/SurfaceBody 內無 mt-0)0 hit;Check 2(body 固定 gap-[4-9] 非 token)0 hit;Check 3a(body !pt-0 hack)/3b(TabsList in body 無 tabsSlot)0 hit。escape @tabs-content-gap-ok 現存 7 處(dialog.stories.tsx ×5 / dialog.tsx / sheet.tsx)全帶 per-line rationale(list-as-region canonical,非 tabs hack)= 合規使用非濫用;@overlay-body-gap-ok 零使用。fork mirror 逐 byte SYNC。"
 }

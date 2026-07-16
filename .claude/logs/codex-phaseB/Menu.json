@@ -1,36 +1,151 @@
 {
  "component": "Menu",
- "claimsVerified": 214,
+ "claimsVerified": 378,
  "falseClaims": [
   {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.tsx:12",
+   "宣稱": "Row primitive 共用常數統一從 item-layout pattern module 引入。",
+   "真實code行為": "實際來源是 patterns/element-anatomy/item-anatomy；目前沒有 item-layout module。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.tsx:19",
+   "宣稱": "MenuItem 只負責 layout。",
+   "真實code行為": "它還產生 role、ARIA/data state、互動狀態樣式，並在 disabled 時攔截 onClick/onKeyDown。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.tsx:20",
+   "宣稱": "互動行為由各 menu 的 Radix primitive 外層控制。",
+   "真實code行為": "DropdownMenu 使用 Radix Menu；SelectMenu 的 option 導覽與選取由 cmdk CommandItem 負責，Radix Popover只負責浮層。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.tsx:23",
+   "宣稱": "結構為 [checkbox?] [startIcon? | avatar?] [label + description?]。",
+   "真實code行為": "實作另有 startContent prefix，以及 tag/endContent suffix。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.tsx:71,75,78",
+   "宣稱": "startIcon、avatar、startContent 彼此互斥。",
+   "真實code行為": "三者是獨立 optional props，沒有型別或 runtime gate；同傳會全部渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.tsx:204",
+   "宣稱": "巢狀時外層 primitive 是唯一 ARIA state owner，包含 aria-checked。",
+   "真實code行為": "SelectMenu multi 的 cmdk outer 只以 aria-selected 表達虛擬游標，沒有表達 persistent checked state；內層 Checkbox 又被 aria-hidden/inert。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:22",
+   "宣稱": "MenuItem 只負責 layout。",
+   "真實code行為": "MenuItem 自己處理 role、ARIA/data state、disabled event guard 與多種互動狀態樣式。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:22",
+   "宣稱": "互動行為由各 menu 的 Radix primitive 外層控制。",
+   "真實code行為": "SelectMenu 的 item interaction owner 是 cmdk，不是 Radix Menu。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:32",
+   "宣稱": "suffix 為 [tag?]。",
+   "真實code行為": "suffix 同時支援 tag 與 endContent，兩者也可一起渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:35",
+   "宣稱": "startIcon 或 avatar 或 startContent（三者互斥）。",
+   "真實code行為": "API 與 runtime 均未實作互斥，同傳時會並排顯示。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:41",
+   "宣稱": "prefix icon 跟 label 同色，不是 fg-muted。",
+   "真實code行為": "這只是真正的預設值；公開的 startIconClassName 可設定 status 彩色 icon，disabled 時才由 fg-disabled 勝出。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:143",
+   "宣稱": "整個選單只有兩種 row 高度，不能有 desc 1～N 行。",
+   "真實code行為": "同檔允許 descMaxLines={2} 或 none；程式支援 1～6 行及不限行，因此可形成更多高度。"
+  },
+  {
    "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:160",
-   "宣稱": "`--neutral-selected`（selected 勝）；消費者（DropdownMenu highlighted）同規則",
-   "真實code行為": "MenuItem 的 selected × hover 維持 selected 背景，但 DropdownMenu 的 selected × highlighted 使用 `bg-neutral-selected-active`，並非相同規則。"
+   "宣稱": "DropdownMenu 的 selected × highlighted 是鍵盤 cursor 增強；滑鼠 hover 仍維持 neutral-selected。",
+   "真實code行為": "Radix 在 pointer hover 時也會 focus item 並設 data-highlighted，因此 selected × 滑鼠 hover 同樣變成 neutral-selected-active。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:35,216; packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:276-277",
-   "宣稱": "`startIcon`、`avatar`、`startContent` 三者互斥／不可同時使用",
-   "真實code行為": "三者是獨立 optional props，亦由三個獨立分支渲染；沒有 type union、優先順序或 runtime gate，能同時出現。"
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:186",
+   "宣稱": "Menu item 的 prefix icon 跟 label 同色。",
+   "真實code行為": "startIconClassName 可覆寫 icon 顏色；此句缺少「預設」限定。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:554",
-   "宣稱": "disabled 時所有元素統一 fg-disabled。",
-   "真實code行為": "只有 label、description、startIcon 使用 disabled foreground；tag、endContent、startContent 使用 `opacity-disabled`，checkbox 使用自身 disabled 樣式，avatar 不變暗。"
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:216",
+   "宣稱": "startIcon / avatar / startContent 三者不可同時使用。",
+   "真實code行為": "型別及 runtime 都未強制，三者可同時渲染。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:289; packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:777",
-   "宣稱": "直接使用時 MenuItem 預設渲染 `role=\"option\"`，並帶 `aria-selected`／`aria-disabled`",
-   "真實code行為": "預設 `checked=false`、`disabled=false` 時，兩個 ARIA 屬性皆因 `value || undefined` 而被省略；只有狀態為 true 時才輸出。"
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:260",
+   "宣稱": "ColorMatrix 已完整覆蓋 MenuItem state，因此不需 StateBehavior。",
+   "真實code行為": "矩陣缺 selected×hover 與 focus-visible；hover row 也沒有強制 hover，靜態預覽等同 default。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:264",
+   "宣稱": "ColorMatrix 含完整狀態色矩陣。",
+   "真實code行為": "矩陣只列 single/multi × default/hover/selected/disabled，未覆蓋已定義的 compound/focus state。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:289",
+   "宣稱": "直接使用時預設渲染 role=option 並帶 aria-selected / aria-disabled。",
+   "真實code行為": "預設只一定存在 role=option；兩個 ARIA state 僅在 selected/checked 或 disabled 為 true 時輸出。"
   },
   {
    "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:293",
-   "宣稱": "Tab — focus container",
-   "真實code行為": "MenuItem 沒有 Tab handler；Radix Menu 會攔截 Tab，cmdk 也沒有將 Tab 映射為 focus container，因此不存在此共同鍵盤行為。"
+   "宣稱": "Tab — focus container。",
+   "真實code行為": "裸 MenuItem 與 story listbox container 均不可 Tab 聚焦；Radix DropdownMenu 會阻止 Tab，SelectMenu 則在開啟時程式化聚焦 cmdk root/input。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:300",
+   "宣稱": "聚焦選項的背景由 MenuItem 的 focus-visible:bg-neutral-hover 提供。",
+   "真實code行為": "標準 SelectMenu/DropdownMenu option 的焦點在外層 cmdk/Radix node，內層 MenuItem 是 presentation 且強制透明；該 cva 樣式只對額外設為可聚焦的裸 MenuItem 生效。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:2",
+   "宣稱": "StateBehavior 已由 ColorMatrix 的 8 組合完整覆蓋。",
+   "真實code行為": "selected×hover、focus-visible 缺席，hover 預覽也未實際進入 hover state。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:209",
+   "宣稱": "完整 Anatomy 是 prefix（checkbox + icon 或 avatar）、content、suffix（tag）。",
+   "真實code行為": "prefix 還有 startContent，suffix 還有 endContent；完整結構已過期。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:271",
+   "宣稱": "Props 表呈現 MenuItem 的 Prop、Type、Default 與說明。",
+   "真實code行為": "表中漏掉有實際行為的 startContent 與 startIconClassName。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:276-277",
+   "宣稱": "startIcon 與 avatar 互斥。",
+   "真實code行為": "只有 Inspector 本地控制器強制二選一；MenuItem API 本身允許同時渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:562",
+   "宣稱": "ColorMatrix 的 hover row 預覽 hover state。",
+   "真實code行為": "hover row 沒傳任何 forced-hover class/state，未實際指向時與 default 預覽相同。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:777",
+   "宣稱": "直接使用時預設 role=option 並帶 aria-selected / aria-disabled。",
+   "真實code行為": "預設 item 不輸出兩個 ARIA state；只有對應 state 為 true 時才存在。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:777",
+   "宣稱": "聚焦時由 MenuItem cva 的 focus-visible 背景標示。",
+   "真實code行為": "一般 wrapper option 的 highlight owner 是外層 Radix data-highlighted 或 cmdk data-selected；內層 MenuItem 不取得焦點。"
   },
   {
    "fileLine": "packages/design-system/src/components/Menu/menu-item.principles.stories.tsx:77",
-   "宣稱": "一律使用 MenuItem，才能確保所有選單列的對齊與間距一致。",
-   "真實code行為": "MenuItem 是供 SelectMenu、Combobox、DropdownMenu 等 wrapper 消費的非 focusable internal primitive；產品端應使用具備完整互動語意的 wrapper，而非一律直接使用 MenuItem。"
+   "宣稱": "左側圖示／頭像在 24px 內對齊。",
+   "真實code行為": "24px 是 inline/block 閾值；有 description 的 avatar 實際為 32/32/40px，走 block 對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.stories.tsx:9",
+   "宣稱": "person avatar 必 hover → ProfileCard。",
+   "真實code行為": "hoverCard 是 optional；FullExample 的 Alice、Bob、Carol avatar 均未傳 hoverCard，不會出現 ProfileCard。"
   }
  ]
 }

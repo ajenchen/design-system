@@ -3,88 +3,46 @@
  "filesScanned": 86,
  "findings": [
   {
-   "fileLine": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:79-146; packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md:27-34; packages/design-system/src/components/DataTable/data-table.spec.md:157; packages/design-system/src/components/FileViewer/file-viewer.spec.md:79,164; packages/design-system/src/components/Sidebar/sidebar.spec.md:131; packages/design-system/src/tokens/color/color.spec.md:112; packages/design-system/src/tokens/uiSize/uiSize.spec.md:218-269",
-   "問題": "完整掃描確認 82/86 份 spec 至少一處混入可直接程式化的 raw px、JSX、Tailwind/CSS selector、DOM/hook/演算法或歷史修法，已形成實作 cookbook；合法 token 定義表、cva literal、SSOT class pointer 與 documented constant 已排除。",
+   "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:19,186,272,370,383,394,396,416; packages/design-system/src/components/Field/field.spec.md:24,209,357,419,421,431; packages/design-system/src/components/Input/input.spec.md:95,99; packages/design-system/src/components/NumberInput/number-input.spec.md:64,66,106,108,128; packages/design-system/src/components/Checkbox/checkbox.spec.md:249; packages/design-system/src/components/Switch/switch.spec.md:138; packages/design-system/src/components/Textarea/textarea.spec.md:30,111-112; packages/design-system/src/components/LinkInput/link-input.spec.md:88,111; packages/design-system/src/components/DatePicker/date-picker.spec.md:71,261,270,287,289,314,318; packages/design-system/src/components/TimePicker/time-picker.spec.md:108,202,275,277; packages/design-system/src/components/DataTable/data-table.spec.md:123,167,183,447; packages/design-system/src/components/PeoplePicker/people-picker.spec.md:256; packages/design-system/src/components/InlineEdit/inline-edit.spec.md:68,84; packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md:114; packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:161",
+   "問題": "FieldMode 的 `display`→`view` 更名仍有 15 份 spec 未同步；field-controls:394 更保留已淘汰的 `mode:'display'` 與零 padding 規則，直接牴觸同檔 65–67 的 Model A。",
    "severity": "material",
-   "建議": "spec 僅保留為何、何時用、行為契約與 owner pointer；class、selector、DOM、演算法移至 tsx/jsDoc/tests，視覺組裝移至 anatomy/story或 recipe。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/DescriptionList/description-list.spec.md:141; packages/design-system/src/patterns/action-bar/action-bar.spec.md:109,199; packages/design-system/src/components/Field/field.spec.md:299; packages/design-system/src/components/Field/form-validation.spec.md:39; packages/design-system/src/components/Popover/popover.spec.md:34; packages/design-system/src/components/Slider/slider.spec.md:98-115; packages/design-system/src/tokens/radius/radius.spec.md:25-52; packages/design-system/src/tokens/uiSize/uiSize.spec.md:204",
-   "問題": "多份 spec 以「黏在一起、漂在半空、歪七扭八、碎念、貼死、凹槽、浮起、崩潰」等視覺或物理隱喻表達規則，命中 Rule A。",
-   "severity": "material",
-   "建議": "改寫成可驗證的資訊層級、alignment、content-width、state carrier、overflow 或 ownership 契約；外觀比較交由 story。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/AppShell/app-shell.spec.md:42,321; packages/design-system/src/components/Calendar/calendar.spec.md:205; packages/design-system/src/components/DataTable/data-table.spec.md:451; packages/design-system/src/components/DataTable/filter-operators.spec.md:10; packages/design-system/src/components/Field/field-controls.spec.md:404; packages/design-system/src/components/FileViewer/file-viewer.spec.md:348; packages/design-system/src/components/HoverCard/hover-card.spec.md:112; packages/design-system/src/components/ProfileCard/profile-card.spec.md:142; packages/design-system/src/components/Select/select.spec.md:293; packages/design-system/src/components/Sidebar/sidebar.spec.md:635; packages/design-system/src/components/Steps/steps.spec.md:410; packages/design-system/src/tokens/motion/motion.spec.md:107; packages/design-system/src/tokens/opacity/opacity.spec.md:57",
-   "問題": "59 份 spec 的禁止段未收編同檔「何時不用／常見誤解／邊界」已明列的核心誤用；部分檔案甚至沒有可集中檢索的禁止段。",
-   "severity": "material",
-   "建議": "每檔以短 bullet 收斂全部常見誤用與替代元件，可 pointer 回詳細決策表，不必複製整段 rationale。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:204; packages/design-system/src/components/Slider/slider.spec.md:243; packages/design-system/src/components/Steps/steps.spec.md:401",
-   "問題": "三份 spec 使用英文 `Do / Don't` 章節，偏離全庫繁中 canonical「禁止事項」。",
-   "severity": "marginal",
-   "建議": "統一為「何時用／禁止事項」，Do 內容歸何時用，Don't 歸禁止事項。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:49; packages/design-system/src/components/Chip/chip.spec.md:148-177; packages/design-system/src/components/DataTable/data-table.spec.md:22,433; packages/design-system/src/components/SelectMenu/select-menu.spec.md:182; packages/design-system/src/components/Tabs/tabs.spec.md:141-146; packages/design-system/src/components/Pagination/pagination.spec.md:45,55",
-   "問題": "同一 scroll 概念混用「捲動／滾動」，其中 Carousel、Chip、DataTable、SelectMenu、Tabs 更在單檔內交替。",
-   "severity": "marginal",
-   "建議": "一般與虛擬 scroll 均統一用全庫主流「捲動」。"
-  },
-  {
-   "fileLine": "packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:41,78; packages/design-system/src/components/FileUpload/file-upload.spec.md:25,96",
-   "問題": "同一 drag 行為在單檔內混用「拖曳／拖拉」。",
-   "severity": "marginal",
-   "建議": "統一為已用於 aria-label 與多數 canonical 的「拖曳」。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Alert/alert.spec.md:183",
-   "問題": "同一段對 disabled API 混用「停用／禁用」。",
-   "severity": "marginal",
-   "建議": "統一為「停用」，對齊 Field family 的 disabled 用語。"
-  },
-  {
-   "fileLine": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:12; packages/design-system/src/components/Sidebar/sidebar.spec.md:701; packages/design-system/src/components/ScrollArea/scroll-area.spec.md:19; packages/design-system/src/components/FileUpload/file-upload.spec.md:139; packages/design-system/src/components/Combobox/combobox.spec.md:179",
-   "問題": "繁中詞彙出現少數離群寫法：`交互／用戶／反饋／導航／控制項`，與全庫主流 `互動／使用者／回饋／導覽／控件` 不一致。",
-   "severity": "marginal",
-   "建議": "建立並套用 spec 繁中詞彙表，統一採現有主流用語。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:35; packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:90; packages/design-system/src/components/LinkInput/link-input.spec.md:111; packages/design-system/src/components/PeoplePicker/people-picker.spec.md:115; packages/design-system/src/tokens/elevation/elevation.spec.md:45; packages/design-system/src/tokens/uiSize/uiSize.spec.md:3",
-   "問題": "出現未定義或非 canonical 別名：`ToolBar`、`FCG`、`display link-chip`、`+N chip`、`Dropdown`、`UiSize`。",
-   "severity": "marginal",
-   "建議": "分別統一為 `Toolbar`、`FieldControlGroup`、Link/display link、`OverflowIndicator`、`DropdownMenu`、`UI Size`。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/HoverCard/hover-card.spec.md:22; packages/design-system/src/components/Menu/menu-item.spec.md:227; packages/design-system/src/components/Notice/notice.spec.md:92; packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:26",
-   "問題": "四份 spec 把 internal 寫成 consumer 絕對不可 import，與 canonical「root barrel 排除，但可經 subpath 包裝並自行確認後使用」不一致。",
-   "severity": "material",
-   "建議": "統一 internal 定義：不得 root front-door／裸用；允許經 subpath、適當 wrapper 與責任確認後消費。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:18,35",
-   "問題": "H1、frontmatter 與實際 primitive 都是 `SelectionItem`，正文卻稱 `SelectionControl` 為 internal primitive；後者其實只是概念資料夾名。",
-   "severity": "material",
-   "建議": "正文一律稱 `SelectionItem` primitive，僅在資料夾群組語境使用 `SelectionControl/`。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.spec.md:3,16",
-   "問題": "frontmatter 宣告 `family: 4`，正文卻宣告 composite，僅 edit 態委派 Family 4，分類術語自相矛盾。",
-   "severity": "material",
-   "建議": "frontmatter 改為 composite/self-contained 分類，正文保留 edit 態消費 Family 4 的說明。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/HoverCard/hover-card.spec.md:24,56,61,122,144-154; packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:40,123-125",
-   "問題": "HoverCard 前段宣稱按鈕／連結等內容可互動，後段又確認 Radix 將內容 tabbable node 設為 `tabindex=-1`、鍵盤無法操作；OverflowIndicator 仍依前一說法承諾互動內容及 `role=button`。",
-   "severity": "material",
-   "建議": "將 HoverCard 定位為滑鼠／focus 補充閱讀 surface；鍵盤必須操作的內容改用 Popover，並同步修正 OverflowIndicator 的 role、aria 與內容承諾。"
+   "建議": "所有 FieldMode 語意統一改為 `view`，刪除舊 zero-chrome 契約；`Select.display`、`showDisplayEndIcon`、`PersonDisplay`、`fieldDisplayTextClass` 與 user-verbatim 等合法識別字不改。"
   },
   {
    "fileLine": "packages/design-system/src/components/FileUpload/file-upload.spec.md:25,84,111,120-123",
-   "問題": "定位稱 FileUpload 不負責已上傳清單，後文卻定義 `files`、`fileListMode` 並由 FileUpload 組裝 FileItem 清單，職責文字互相衝突。",
+   "問題": "定位宣稱 FileUpload 不負責已上傳清單，後文與實作卻明定 `files` 會組合 FileItem 並渲染內建清單，職責文字互相衝突。",
    "severity": "material",
    "建議": "改成「FileUpload 不 own 單筆 FileItem 視覺，但可 orchestrate 內建清單；consumer 自組清單亦合法」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:125,127; packages/design-system/src/components/HoverCard/hover-card.spec.md:154",
+   "問題": "125 行確認 HoverCard 內容的 tabbable node 被設為 `tabindex=-1`、僅滑鼠可互動，127 行卻又宣稱內容元件負責 focus management，形成 a11y 契約矛盾。",
+   "severity": "material",
+   "建議": "明示內容不接受鍵盤 focus；必須鍵盤操作的互動內容改用 Popover，刪除 focus-management 承諾。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.spec.md:46-49,323; packages/design-system/src/components/Badge/badge.spec.md:52-55,352; packages/design-system/src/components/Button/button.spec.md:78-83,406; packages/design-system/src/components/Calendar/calendar.spec.md:62-75,205; packages/design-system/src/components/Chart/chart.spec.md:56-59,72-79,140; packages/design-system/src/components/Checkbox/checkbox.spec.md:67-70,320; packages/design-system/src/components/Chip/chip.spec.md:38-42,196; packages/design-system/src/components/Coachmark/coachmark.spec.md:52,69-74,190; packages/design-system/src/components/DataTable/data-table.spec.md:46-51,451; packages/design-system/src/components/DatePicker/date-picker.spec.md:71-76,275; packages/design-system/src/components/Dialog/dialog.spec.md:158-169; packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:44-47,199; packages/design-system/src/components/FileViewer/file-viewer.spec.md:71-75,348; packages/design-system/src/components/HoverCard/hover-card.spec.md:112,121; packages/design-system/src/components/InlineEdit/inline-edit.spec.md:96,98-99,143; packages/design-system/src/components/Input/input.spec.md:47-48,107; packages/design-system/src/components/LinkInput/link-input.spec.md:40-44,101; packages/design-system/src/components/Popover/popover.spec.md:114-115,126-145; packages/design-system/src/components/ProgressBar/progress-bar.spec.md:49,52-56,162,178-184; packages/design-system/src/components/Select/select.spec.md:113-115,301; packages/design-system/src/components/Sheet/sheet.spec.md:41-43,93; packages/design-system/src/components/Sidebar/sidebar.spec.md:65-69,637; packages/design-system/src/components/Skeleton/skeleton.spec.md:36-40,60; packages/design-system/src/components/Slider/slider.spec.md:58,60-61,235-251; packages/design-system/src/components/Steps/steps.spec.md:59-62,401-410; packages/design-system/src/components/Switch/switch.spec.md:48,50,193; packages/design-system/src/components/Tag/tag.spec.md:102-104,253,265; packages/design-system/src/components/Textarea/textarea.spec.md:50-52,117; packages/design-system/src/components/TimePicker/time-picker.spec.md:70-72,256-263; packages/design-system/src/components/Tooltip/tooltip.spec.md:51-52,94; packages/design-system/src/components/TreeView/tree-view.spec.md:51-55,355",
+   "問題": "31 份 spec 的禁止段未收編同檔「何時不用／常見誤解」已明列的核心用途誤用，常只列實作限制，違反「禁止事項列所有常見誤用」。",
+   "severity": "material",
+   "建議": "在禁止段補短版 ❌ 索引與替代元件，可指回既有詳細表格，不重複 rationale。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:43-44,85; packages/design-system/src/components/Combobox/combobox.spec.md:66-67,150; packages/design-system/src/components/FileItem/file-item.spec.md:39,41-42,445; packages/design-system/src/components/NumberInput/number-input.spec.md:42-43,93; packages/design-system/src/components/Pagination/pagination.spec.md:45,49,112; packages/design-system/src/components/Rating/rating.spec.md:39-42,187; packages/design-system/src/components/Tabs/tabs.spec.md:48-49,237",
+   "問題": "另有 7 份 spec 的禁止段漏列較次要但已明文定義的邊界誤用。",
+   "severity": "marginal",
+   "建議": "以簡短 ❌ 或精確 section pointer 補齊，避免複製原段落。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:224-225",
+   "問題": "正文混入 `zero layout impact` 與精確雙層 box-shadow／像素字面值，屬結果措辭及 CSS 實作細節。",
+   "severity": "marginal",
+   "建議": "只保留「focus 外環不改變 bounding box，連接線幾何維持一致」的設計契約；精確 shadow 值移至 tsx、jsDoc 或測試。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:204; packages/design-system/src/components/Slider/slider.spec.md:243; packages/design-system/src/components/Steps/steps.spec.md:401; packages/design-system/src/tokens/density/density.spec.md:115; packages/design-system/src/tokens/token-system.spec.md:218; packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:308; packages/design-system/src/components/Carousel/carousel.spec.md:49,264; packages/design-system/src/components/Chip/chip.spec.md:149-178; packages/design-system/src/components/Tabs/tabs.spec.md:141-158; packages/design-system/src/components/SelectMenu/select-menu.spec.md:186; packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:41,78; packages/design-system/src/components/FileUpload/file-upload.spec.md:25,96,138; packages/design-system/src/components/Alert/alert.spec.md:181; packages/design-system/src/components/Field/form-validation.spec.md:118,126,138; packages/design-system/src/components/AppShell/app-shell.spec.md:168; packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:35; packages/design-system/src/tokens/uiSize/uiSize.spec.md:3",
+   "問題": "章節與用語存在平行詞彙：`Do / Don't`／`Anti-patterns`／`Notes` 對「禁止事項／備註」，一般 scroll 混用「捲動／滾動」，drag 混用「拖曳／拖拉」，另有同段「停用／禁用」、reader／user agency、`派别`、`ToolBar`、`UiSize` 等離群寫法。",
+   "severity": "marginal",
+   "建議": "統一繁中章節與詞彙：一般 scroll 用「捲動」、drag 用「拖曳」、actor 用「使用者」，並修為「派別／Toolbar／UI Size」；Do 內容歸「何時用」，Don't 歸「禁止事項」。"
   }
  ]
 }

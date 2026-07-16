@@ -1,13 +1,7 @@
 {
   "component": "DescriptionList",
-  "implBasis": "native dl/dt/dd + React context (self-built)",
-  "claimsVerified": 18,
-  "falseClaims": [
-    {
-      "fileLine": "packages/design-system/src/components/DescriptionList/description-list.tsx:28",
-      "宣稱": "docblock: `horizontal: label ↔ value: gap-x-4（16px）最小間距`",
-      "真實code行為": "horizontal DescriptionItem 實際用 `gap-4`(L99 `flex items-baseline justify-between gap-4`),非 `gap-x-4`。spec.md L98 正確寫 `gap-4`;docblock 這行 class 名 stale(視覺同 16px,但 class 不符)。",
-      "severity": "marginal"
-    }
-  ]
+  "implBasis": "self-built dl/dt/dd(context-driven direction/divided;vertical=CSS grid / horizontal=flex column);零外部 primitive",
+  "claimsVerified": 42,
+  "falseClaims": [],
+  "note": "spec / tsx docblock / anatomy / principles / showcase 五方逐句比對一致:typography(dt fg-secondary / dd foreground,2026-07-05 顯式宣告 fix 已落)、間距 token(--item-gap-label-desc-reading=2px 實測 layoutSpace.css:15;layout-space-tight;divided py+border-b last:border-b-0)、cols 1/2/3 grid、horizontal dd break-all min-w-0 text-right、空值 consumer 傳 '-'+text-foreground(元件不 normalize)、anatomy story 清單(spec:191 列 5 個 = 實際 5 exports)、principles LinkTo 目標名全部命中 showcase name。無 claim-vs-code drift。"
 }

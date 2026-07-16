@@ -1,1 +1,9 @@
-{"dim":63,"hook":"inject_deploy_url_after_push.sh","residueCount":0,"findings":[],"verified":true,"note":"PostToolUse Bash automation hook — detects git push origin <branch> and injects deploy URL(s) into AI context. Pure inject/automation, blocks nothing; no static code anti-pattern to leave file residue."}
+{
+  "dim": 63,
+  "hook": "inject_deploy_url_after_push.sh + scripts/deploy-url.mjs",
+  "wiring": "OK — PostToolUse Bash(settings.json:300 + hooks.json:162);mirror sync;450 fires 2026-07-16",
+  "smoke": "e2e:模擬 `git push origin 2026-06-10-bg-readonly-token` → Detection 2(netlify.toml + ~/.claude/local/deploy-targets.json override ajenchen/design-system)推導 preview URL https://2026-06-10-bg-readonly-token--ajenchen-design-system.netlify.app 並 curl verified 200,JSON hookSpecificOutput.additionalContext 真注入",
+  "residueCount": 0,
+  "findings": [],
+  "notes": "Detection 1(.netlify/state.json)在 DS repo 不存在 = 預期(dashboard-linked;hook 有 -f guard 不會誤跑 deploy-url.mjs error path);Detection 3 gh-pages(ci.yml)存在可觸發。2026-06-06/06-07 系列 matcher 硬化(env-prefix / -C / refspec / tag-skip)皆在檔內且 mirror 同步"
+}

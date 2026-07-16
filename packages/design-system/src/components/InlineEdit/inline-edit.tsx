@@ -170,8 +170,9 @@ function InlineEditImpl<T = string>(
     setEditing(false)
   }, [])
 
-  // 鍵盤結算後把 focus 送回 view 按鈕(commit(true)/cancel);滑鼠 blur(commit(false))不送回,
-  //   對齊 spec「鍵盤結算焦點回 view 按鈕、滑鼠 blur 純 view 不搶焦」。focus-visible 保證只有鍵盤顯藍框。
+  // 鍵盤結算後把 focus 送回 view 按鈕(commit(true)/cancel);滑鼠 blur(commit(false))刻意不送回——
+  //   對齊 inline-edit.spec.md「退出 edit 態(focus 分流)」:鍵盤結算焦點回 view 按鈕 + 藍框、
+  //   滑鼠 blur 回純 view 不搶焦。focus-visible 保證只有鍵盤路徑顯藍框。
   React.useEffect(() => {
     if (!editing && returnFocusRef.current) {
       returnFocusRef.current = false

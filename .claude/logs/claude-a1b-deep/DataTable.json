@@ -1,24 +1,25 @@
 {
   "component": "DataTable",
-  "implBasis": "self-built on TanStack Table (headless) — div+ARIA (role=table/columnheader/row/cell), self-built virtual scroll / 3-panel pin / spreadsheet keyboard / cell-registry 11 types; @dnd-kit for row drag",
-  "claimsVerified": 50,
+  "implBasis": "TanStack Table + TanStack Virtual + dnd-kit; div+ARIA(非 <table>); cell-registry type-keyed SSOT; 全讀 data-table.tsx / cell-registry.tsx / column-types.ts / data-table-interaction-layer.tsx / data-table.css / filter panel 關鍵段",
+  "claimsVerified": 118,
+  "branchContextCheck": "cell disabled 廢除已正確貫徹:CellMode='view'|'edit'(cell-registry.tsx:58)、meta.disabled 已刪(column-types.ts:165-167 註記)、canEditCell 收斂為 isCellEditable(data-table.tsx:1040-1047)、bg-disabled TD 灰化與 [data-cell-disabled] exclusion 已移除(data-table.css:136)、anatomy/story/principles 均已更新(anatomy:422 明記廢除)。display→view:code 全用 'view';spec/invariant-script 沿用「display↔edit」prose 術語但與 scripts/data-table-invariants.mjs 命名一致(非 API 宣稱),不計 FALSE",
   "falseClaims": [
     {
-      "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:443",
-      "宣稱": "ColorMatrix 色彩表: `boolean | X / Check icon 均用 foreground`",
-      "真實code行為": "BooleanCell 實際 render `<Checkbox variant=\"naked\">`(cell-registry.tsx:408 display + :416 edit,checked={value===true}),不是 X / Check icon。與同 spec L167(`live Checkbox`)、L382(`<Checkbox> 無 mode 切換`)自相矛盾;naked Checkbox 勾/空框,非 false 顯 X。ColorMatrix 教錯 render 元件。",
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.spec.md:495",
+      "宣稱": "A11y Keyboard 段:「Enter / F2:spreadsheet 模式下進 cell editing(cell 可編輯 + 非 boolean/url + **非 disabled** 時)」",
+      "真實code行為": "cell「disabled」態已於 2026-07-16 round16 廢除(column-types.ts:165-167 / data-table.tsx:1040-1042:isCellDisabled helper + meta.disabled 全移除,canEditCell 收斂為 isCellEditable)。實際 Enter/F2 gate = `meta.type 非 boolean/url + canEditCell(= meta.editable)`(data-table.tsx:2059-2071),不存在「disabled cell」條件 — spec 此句仍把已廢除的 cell disabled 態當現行 gate 描述。",
       "severity": "material"
     },
     {
-      "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:442",
-      "宣稱": "ColorMatrix meta.type 表 row: `link | --primary`",
-      "真實code行為": "已註冊 column type 是 `url`(cell-registry cellRegistry:500 `url: UrlCell`;columnTypes union 亦 url),無 meta.type=`link`。同檔 L85/L191 皆正確用 `url`,ColorMatrix 這行用了不存在的 type 名 `link`。",
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.css:114-122",
+      "宣稱": "dtCellGrid v3 註解:「Left panel 最右 cell 旁:panel `border-r border-divider`(data-table.tsx:2169/2213)」",
+      "真實code行為": "panel boundary 已於 2026-05-12 Round 5.2 改制為 `.dtPanelBoundaryRight/Left` inset box-shadow(本檔 L157-163 自述「不用 border-r/l border-divider outer edge」;data-table.tsx:2636/2660/2680/2723 消費 class)— v3 註解仍引舊 border-r 機制 + stale 行號 2169/2213(現址無此內容)。同檔前後段自相矛盾。",
       "severity": "marginal"
     },
     {
-      "fileLine": "packages/design-system/src/components/DataTable/cell-registry.tsx:419",
-      "宣稱": "inline comment: `size 傳入 → boolean 值 icon(Check/X)@lg 縮放對齊其他 cell`",
-      "真實code行為": "緊接下一行 render 的是 `<Checkbox variant=\"naked\">`(L416),非 Check/X icon。註解把 boolean cell 描述成 icon,與實際 Checkbox render 不符(同 ColorMatrix 那條的 code-comment 版本)。",
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.spec.md:375-383",
+      "宣稱": "Inline Edit per-ColumnType trigger 表列出 string / number-currency / date / select-multiSelect / person-multiPerson / boolean / url 七行",
+      "真實code行為": "cellRegistry 實有 11 type,表漏列 `time`(TimeCell:click cell → `<TimePicker>` defaultOpen,cell-registry.tsx:279-308)— time 是正式註冊 type(column-types.ts:15)且行為與 date 同 pattern,但 per-type 合約表沒有它的 trigger/edit 行。",
       "severity": "marginal"
     }
   ]

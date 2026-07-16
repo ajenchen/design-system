@@ -1,1 +1,27 @@
-{"component":"Menu","implBasis":"MenuItem = internal layout primitive (plain <div role=option|presentation>), NO Radix import; keyboard/focus delegated to consumers (SelectMenu via cmdk / DropdownMenu via Radix); consumes item-anatomy ItemContent + itemPrefixAlignVariants + ICON_SIZE/AVATAR_SIZE/ROW_PADDING_BY_SIZE SSOT","claimsVerified":42,"falseClaims":[]}
+{
+  "component": "Menu (MenuItem / MenuGroup / MenuFooter)",
+  "implBasis": "@internal row layout primitive(無 Radix 依賴);消費 item-anatomy SSOT(ROW_PADDING_BY_SIZE / itemPrefixAlignVariants / ItemContent / ICON_SIZE / AVATAR_SIZE)+ Checkbox / Avatar",
+  "claimsVerified": [
+    "spec:98-106 Size 表(label sm/md text-body、lg text-body-lg;desc caption/body;icon 16/16/20;checkbox 16/16/20)— ROW_PADDING_BY_SIZE(item-anatomy.tsx:145-147)+ ItemContent scanning tier(:387-390)+ ICON_SIZE + checkbox.tsx:41-43(h-4/h-4/h-5)全吻合",
+    "spec:78-90 avatar inline 20/24/24 / block 32/32/40 — AVATAR_SIZE(item-anatomy.tsx:94-97)吻合;無 desc 強制 inline(menu-item.tsx:176 isBlockAlign 需 description)吻合",
+    "spec:160 selected × hover = selected 勝(hover bg 只在 !selected)— menu-item.tsx:221-222 吻合",
+    "spec:173+219 disabled 分層(文字/startIcon fg-disabled;checkbox 自身 disabled;tag/endContent/startContent 容器 opacity-disabled;avatar 不變暗)— menu-item.tsx:225,249,260,279,305 吻合",
+    "spec:194 Group py-2 + [&+&]:border-t border-divider(Pattern A)/ spec:208 Footer border-t + py-2 — menu-item.tsx:338,357 吻合",
+    "spec:198-202 header = font-medium + fg-muted + 不可選不可 hover(pointer-events-none + role=presentation)— menu-item.tsx:185-199 吻合",
+    "spec:289 A11y 單一 owner gate(預設 role=option + aria-selected/aria-disabled;role=presentation 時抑制 ARIA state 僅留 data-*)— menu-item.tsx:209-218 吻合",
+    "spec:291-298 MenuItem 不實作 key handler(鍵盤由外層 own)— code 僅 guarded passthrough(:230-232),無自建 handler,吻合",
+    "spec:300 focus-visible:bg-neutral-hover + outline-none — cva base(:42-43)吻合",
+    "spec:112 suffix 寫死 h-[1lh] inline 對齊 — menu-item.tsx:304 吻合(spec 誠實標註實作限制)",
+    "spec:132-149 labelMaxLines/descMaxLines 預設 1、'none' sentinel、>6 不截斷 — menu-item.tsx:129-138,158-159 lineClampClass 吻合",
+    "anatomy Label-Desc 間距 --item-gap-label-desc-scanning[-lg] = 2px — layoutSpace.css:17-18 吻合;desc tone secondary/disabled — item-anatomy.tsx:372,375 吻合",
+    "anatomy 單選/多選 TOKEN_MAP(selected 多選背景 transparent、單選 --neutral-selected)— menu-item.tsx:221-222 吻合"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "menu-item.anatomy.stories.tsx:209(結構 Desc)+ :273-288(Props 表)+ menu-item.tsx:22-23(檔頭結構 docblock)",
+      "宣稱": "結構 =「prefix(checkbox + icon 或 avatar)、content、suffix(tag)」;Props 表列 14 props 且 disabled 行寫「tag / endContent 套 opacity-disabled」",
+      "真實code行為": "2026-07-10 起 prefix 第三槽 startContent(+ startIconClassName)已存在(menu-item.tsx:74-86,274-283),spec.md:32-39 已載明、同檔 ColorMatrix Desc(:554)也已含 startContent,唯 Overview 結構段 + Props 表 + tsx 檔頭 docblock 未更新 — 列舉式宣稱漏槽 = 檔內自相矛盾的 stale 殘留",
+      "severity": "minor"
+    }
+  ]
+}

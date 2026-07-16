@@ -339,7 +339,7 @@ Overlay family 套 v5 `data-unbounded` slot trick(Button unbounded → SurfaceHe
 
 ## Chrome 左右 inline padding
 
-→ SSOT `tokens/layoutSpace/layoutSpace.spec.md`「規則 1.1:Chrome inline padding canonical」(統一 `--layout-space-loose`,M8 8 家世界級對照 + 禁止事項)。
+→ SSOT `tokens/layoutSpace/layoutSpace.spec.md`「規則 6:Chrome 水平左右 padding(規則 1 specialization)」(統一 `--layout-space-loose`,M8 8 家世界級對照 + 禁止事項)。
 
 ---
 

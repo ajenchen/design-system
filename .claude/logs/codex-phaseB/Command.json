@@ -1,51 +1,66 @@
 {
  "component": "Command",
- "claimsVerified": 226,
+ "claimsVerified": 292,
  "falseClaims": [
   {
-   "fileLine": "packages/design-system/src/components/Command/command.spec.md:21",
-   "宣稱": "token 值對齊 MenuItem / Input / Empty 的 canonical token",
-   "真實code行為": "Empty 部分不成立；CommandEmpty 僅轉傳 className/props，沒有預設樣式或 token（command.tsx:90）。同 spec:119 也明載為 pure className passthrough。"
+   "fileLine": "packages/design-system/src/components/Command/command.tsx:69-72",
+   "宣稱": "`scrollIntoView({block:\"nearest\"})` 會向上找到 nearest scrollable ancestor，命中 ScrollArea.Viewport",
+   "真實code行為": "自動捲入結果成立，但 `block:\"nearest\"` 只控制區塊軸對齊；祖先範圍由 `container` 控制，省略時預設處理所有可捲動祖先，並非只選最近祖先。[CSSOM View](https://drafts.csswg.org/cssom-view-1/)"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.tsx:77",
+   "宣稱": "DataTable / Sheet / Sidebar / DropdownMenu / Command 皆走 ScrollArea",
+   "真實code行為": "Sheet、Sidebar、DropdownMenu、Command 使用 ScrollArea；DataTable 中央 body 使用原生 `overflow-x-auto overflow-y-auto`，並以 JavaScript 同步 header `scrollLeft`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.spec.md:59-62",
+   "宣稱": "只有「選項數量 > 10 且需要搜尋」才用 Command，否則用 DropdownMenu",
+   "真實code行為": "同 spec 第 57 行採「>10 或需要搜尋」，第 39／75 行只禁止少於 6 項；此 AND 判斷會錯誤排除 6–10 項但需要搜尋的清單，cmdk 本身也沒有項目數門檻。"
   },
   {
    "fileLine": "packages/design-system/src/components/Command/command.spec.md:91",
-   "宣稱": "Consumer 無需額外處理 a11y",
-   "真實code行為": "cmdk 的 label 無預設值；未傳時 combobox 沒有 accessible name。CommandDialog 也未自帶 DialogTitle。Radix 預設 modal 確實 trap focus，但初始焦點落在 DialogContent 而非 CommandInput，關閉後亦不保證還原至外部 opener；consumer 仍需補標籤、dialog 命名與焦點處理。"
+   "宣稱": "Consumer 無需額外處理 a11y，只保留 cmdk 結構及 Input/List/Item 即可",
+   "真實code行為": "DS Command 沒有預設 accessible label；cmdk 的隱藏 label 內容須由 root `label`／`aria-label` 提供。若也沒有可供瀏覽器 fallback 的 placeholder，單靠這些結構會得到空的 combobox accessible name。"
   },
   {
-   "fileLine": "packages/design-system/src/components/Command/command.spec.md:118",
-   "宣稱": "behavior 全部由 cmdk library 處理",
-   "真實code行為": "搜尋、過濾與虛擬選取由 cmdk 處理；CommandDialog 的 modal、focus 與 Escape 行為來自 DS Dialog/Radix，CommandList 的捲動與 viewport focus 行為來自 DS ScrollArea（command.tsx:31、79）。"
+   "fileLine": "packages/design-system/src/components/Command/command.spec.md:102",
+   "宣稱": "density 不由 Command 擁有，而由 SelectMenu 控制",
+   "真實code行為": "Command 沒有 density／tier channel；CommandInput、CommandItem 直接固定為 `h-11`、`py-1.5`，CommandDialog 又自行覆寫為 `h-12`、`py-3`。"
   },
   {
    "fileLine": "packages/design-system/src/components/Command/command.spec.md:120",
-   "宣稱": "Command 搜尋框與 list items 的尺寸由 consumer SelectMenu 決定",
-   "真實code行為": "CommandInput 自帶 h-11/py-3，CommandItem 自帶 px-3/py-1.5；CommandDialog 又覆寫成 input h-12、item py-3（command.tsx:39、56、138）。Command 無 size prop 為真，但預設尺寸不是全由 consumer tier 決定。"
+   "宣稱": "搜尋框與 list items 尺寸由 consumer SelectMenu 的 compact／reading tier 決定",
+   "真實code行為": "Command 沒有 compact／reading 或 Menu-tier API；基礎尺寸及 CommandDialog 尺寸都直接寫在 command.tsx。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.spec.md:170",
+   "宣稱": "SelectMenu 或 CommandDialog 已包進 search、popover、value-binding 與 global Cmd+K",
+   "真實code行為": "CommandDialog 只用 Radix Dialog 包住 `<Command>` 和 caller children；沒有內建 CommandInput、value binding 或 Cmd/Ctrl+K listener。展示 story 必須另外註冊 document keydown 並提供 Input/List。"
   },
   {
    "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:2-3",
-   "宣稱": "Command 是 headless Internal primitive（cmdk passthrough）",
-   "真實code行為": "它不是 headless；根容器、輸入框、群組、項目、分隔線與 shortcut 均自帶視覺 class（command.tsx:23、56、110、125、138、154）。"
+   "宣稱": "Command 是 headless primitive",
+   "真實code行為": "上游 cmdk 是 headless，但 DS Command wrapper 已內建背景、文字、圓角、間距、尺寸及 selected／disabled 視覺，因此 wrapper 本身不是 headless。"
   },
   {
    "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:4-5",
-   "宣稱": "色彩 / 尺寸 / 狀態都由消費方決定",
-   "真實code行為": "Command 自己定義預設色彩、輸入與項目尺寸，以及 selected/disabled 狀態樣式；consumer 只能另外 override（command.tsx:23、39、56、138）。"
-  },
-  {
-   "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:5-6",
-   "宣稱": "本檔僅保留 Overview",
-   "真實code行為": "同檔另於 line 99 export Accessibility。"
+   "宣稱": "色彩、尺寸、狀態都由 SelectMenu／Combobox／PeoplePicker consumer 決定",
+   "真實code行為": "Command、Input、Group、Separator、Item、Shortcut 已直接定義色彩與尺寸 token；CommandItem 也內建 selected／disabled 狀態樣式，CommandDialog 另有固定尺寸覆寫。"
   },
   {
    "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:34",
-   "宣稱": "選項與空狀態的樣式直接寫在 Command 內",
-   "真實code行為": "CommandItem 有內建樣式，但 CommandEmpty 沒有任何預設樣式或 token，只轉傳 className/props（command.tsx:90）。"
+   "宣稱": "空狀態樣式直接寫在 Command 內",
+   "真實code行為": "CommandEmpty 只透傳 `className` 與 props，沒有任何預設視覺 class；空狀態樣式由 consumer 提供。"
   },
   {
    "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:104",
-   "宣稱": "Consumer 無需額外處理 a11y",
-   "真實code行為": "未提供 Command label 時 combobox 無 accessible name；CommandDialog 亦未自帶 DialogTitle，且初始／還原焦點仍需處理。ARIA roles 本身存在，不代表 consumer 無需補完整 a11y 接線。"
+   "宣稱": "Consumer 無需額外處理 a11y，使用 CommandInput／CommandList／CommandItem 即可",
+   "真實code行為": "這些子元件不保證產生非空 accessible name；cmdk root 的 `label`／`aria-label` 沒有 DS 預設值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.stories.tsx:38",
+   "宣稱": "Select／Combobox／PeoplePicker 的 searchable 模式會自動切換到 SelectMenu",
+   "真實code行為": "native-vs-custom 路徑由 `useIsTouchDevice()` 決定：touch 使用原生 select 並丟棄 searchable；desktop 即使非 searchable 也使用 SelectMenu。searchable 只控制搜尋 UI／過濾，不是切換條件。"
   }
  ]
 }

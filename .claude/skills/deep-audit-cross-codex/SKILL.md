@@ -59,7 +59,7 @@ detect_mode snippet / 為何 2-mode 不是 3-mode(3-mode = dead code)/ mode×sco
 
 **禁** hardcode dim range numbers(eg.「Dims 1-15」/「Dims 34-56」)在 sub-agent prompt — 用 dispatch-audit-dims.mjs output 的 `dispatchPlan.suggestedBatches[].dimNumbers` 動態填。
 
-完整跑,**no sample / no escape**(對齊 `feedback_audit_full_sweep_not_sample.md` + `check_audit_sample_escape.sh` BLOCKER)。
+完整跑,**no sample / no escape**(對齊 `feedback_audit_discipline_full_sweep_deterministic_preflight.md` + `check_audit_sample_escape.sh` BLOCKER)。
 每 dim sub-agent prompt 必含「DS-wide 全盤,禁 sample top N」。
 
 **DETERMINISTIC dim 必驗「mode 真的有跑」(2026-06-11 加)**:script exit 0 ≠ 該 dim 宣稱的模式真的執行了 — 必看輸出證據(per-mode 計數 / cell label / scenario 數)確認 flag 真生效。Anchor:dim 51 `--matrix` flag 接受後 `MATRIX_CELLS` 定義但 main loop 從未消費(dead code),跑出來是無 matrix 的普通 scan + exit 0 = 連續假綠;另 cell 清單含 Storybook 不認識的 globals(hc/rtl)= 注入後靜默 fallback = 假覆蓋。兩層都要驗:flag→行為、行為→真值。
@@ -152,7 +152,7 @@ Brief 必含 4 段(完整 template SSOT → `references/phase-b-codex-brief.md`,
 保證鏈三段:brief 端(check_codex_brief_invariants.sh 攔缺 invariant 的 brief)→ 回程端(本對帳步)→ 報告端(對帳表進 report 供 report-validator 掃)。
 
 **禁 pass-through**(per M31 + `feedback_codex_dual_track_synthesizer.md`):
-- Step 4:M22/M23/M27/M8 4 題自檢
+- Step 4:M22/M23/M23(c)/M8 4 題自檢
 - **Step 4.5 verify each claim**:grep / WebFetch / run invariant script / counter-example scan
 - 每 codex claim 標 `✅ verified` / `❌ FALSE` / `⚠️ partial`
 
@@ -187,7 +187,7 @@ Deep-audit 收尾**必自動跑** `/knowledge-prune` deep — **前提鐵律:確
 
 Deep-audit 收尾(C.0a 旁)**必跑**:讀 `node scripts/audit-coverage-matrix.mjs` 的 PURE-JUDGMENT gap list,**選 top 1-3 個本輪已充分理解的 judgment 維度,當場寫成 deterministic script**(invariant .mjs / hook rule);寫不成的必記一行「為何不能謂詞化」(品味 / 需 LLM 讀 source / 外部演進類)。**雙柱模型**:完整稽核 = 永久機構(存量 / 外來 / 漂移 / 防線腐化 / 品味五類永遠需要);謂詞化 = 稽核的機械化引擎——每類問題轉謂詞後,同一謂詞對存量與外來元件全量零抽樣免費掃,稽核不縮編、機械部分逐季變厚。KPI(PURE-JUDGMENT 佔比 trend)由 `/governance-health` 月度追蹤。SSOT → `.claude/planning/2026-07-07-governance-evolution-roadmap.md`。錨例:2026-07-07 selected/active meta 謂詞、VR shifted-clock(當場謂詞化,存量 63 元件一次掃平)。
 
-### C.0b — 治理全軸覆蓋對照(2026-07-10 user「deep audit 會稽核所有治理軸嗎?要確保」)
+### C.0c — 治理全軸覆蓋對照(2026-07-10 user「deep audit 會稽核所有治理軸嗎?要確保」)
 
 收尾必讀 `.claude/references/governance-audit-coverage.md`(治理 home × 稽核者覆蓋表)逐 row 對照:
 (1) 本輪新增/改動的治理物(新 hook / script / reference / registry / home)在表上**有 row 嗎**?沒有 → 當場補 row(誰稽核它、多常跑);(2) 表上 4 個弱軸(gate script meta-test / SKILL claim-vs-behavior / eslint 發佈 / planning 靜置)狀態有變 → 更新。**沒對照 = C 階段不完整**。
@@ -229,7 +229,7 @@ Deep-audit 收尾(C.0a 旁)**必跑**:讀 `node scripts/audit-coverage-matrix.mj
 | **CP-P0** | Phase 0 結束 | Print detected mode(ds-repo / fork-user-repo),mode = non-ds 直接 exit;確認 user 跑對 repo |
 | **CP-A0** | A.0 結束 | 全盤閱讀清單給 user 看(列 N file read,per detected mode 切 scope),禁未讀就進 A.1 |
 | **CP-A1b** | A.1b 結束 | **每個** component/pattern 都有 story-vs-code adversarial verdict(讀 .tsx + wrap lib 逐句比對宣稱);**禁** 用「無 code 改動」跳過任一單元。缺任一 component verdict = 不可進 A.2(2026-05-30 403-finding 偷懶 anchor)|
-| **CP-A2** | A.2 SSOT-UI/UX propose | 中文人話 + 4-Q gate;**STOP** 等 user A/B 才動 code(fork-user-repo mode:propose scope 限 `apps/**`,禁 DS source)|
+| **CP-A2** | A.2 SSOT-UI/UX propose | 中文人話 + 7-Q gate;**STOP** 等 user A/B 才動 code(fork-user-repo mode:propose scope 限 `apps/**`,禁 DS source)|
 | **CP-B0** | B.0 codex transport | **solo mode(user opt-out)→ 整個 Phase B 跳過不進此 CP**;3-test 全 ❌ + cwd=fork → **auto-fallback Phase A only 印中文**,不 interactive ASK;cwd=ds-repo → 報 user;禁 Explore 替身 |
 | **CP-B4** | B.4 cite battle | evidence 對等 → STOP 等 user 拍板,**禁** AI 自決誰勝 |
 | **CP-C2** | C.2 push gate | 等 user「Push 到 main」trigger;禁 AI 自決 merge |

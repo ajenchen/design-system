@@ -1,20 +1,15 @@
 {
   "dim": 33,
-  "title": "Component classification + abstraction",
-  "filesScanned": 90,
-  "scope": "NO-SAMPLE 全掃:64 component spec.md + 8 pattern spec.md + tokens spec + root barrel index.ts + category-matrix.json (分類 SSOT) + ui-development.md (public/internal canonical) + naming-conventions.md",
-  "subDimsChecked": [
-    "分類 (component/internal/pattern/token/template):10 internal-flagged specs 全 grep + 驗證 barrel 排除一致 (56 public export = 64 dirs - 8 internal,0 leak);10 internal 元件全 grep consumer 確認真被內部消費非 orphan",
-    "抽象層級:每 spec Layout Family 宣告 (frontmatter family + body Layout Family 段) 全掃,63/64 component 有宣告 (3 個 sub-spec filter-operators/field-controls/form-validation 非 standalone 元件豁免)",
-    "prop-vs-separate (M21):suffix-pattern 元件全查 rationale — NumberInput/LinkInput (Input+suffix)、TimePicker (vs DatePicker showTime)、CircularProgress (vs ProgressBar)、InlineEdit、Sheet (vs Dialog side)、Combobox/PeoplePicker (vs Select) — 全部有 documented separate-component rationale (3-test 通過:distinct value contract / behavior / world-class precedent)"
-  ],
+  "title": "Component classification + abstraction discipline(5 子維)",
+  "filesScanned": 69,
+  "mechanism": "DS-wide:63 components + 6 patterns 全枚舉。(a) grep 全 stories title 分類 bucket 統計 + Internal 名單對 ui-development.md/patterns README canonical;(b) <Existing>+suffix 名單(NumberInput/LinkInput/TimePicker/DateGrid/SelectMenu/FieldControlGroup/PeoplePicker/CircularProgress/SelectionControl/InlineEdit)逐 spec 驗「定位/為何自建」rationale 段;(c) 每元件 impl 檔數 ≥3 者(DataTable 12/Field 6/PeoplePicker 4/FileViewer 4)逐檔驗 split 性質;(d) 本輪 branch-changed spec diff 驗 benchmark cite(Model A cite Atlassian+Bootstrap inline URL;色彩 WCAG 數值自證);(e) 本輪 dark blue-6/turquoise-6/--on-emphasis-dark 決策驗 token SSOT 落地鏈(primitives.css:291/379 + categorical-color.ts:76-81 + color.spec.md 例外段對齊)",
+  "verdict": "1 marginal after 全掃 69 單元:(b) 全 suffix 元件有定位 rationale 0 違;(c) 多檔全為 helper/types/file-size split 帶 code-quality-allow 或檔頭理由,非 5-file sub-component 反 pattern;(d)(e) 本輪色彩/Model A 改動 cite + SSOT 鏈完整;唯 (a) title 分類 taxonomy 三 home 不同步",
   "findings": [
     {
-      "fileLine": ".claude/rules/ui-development.md:31",
-      "問題": "Public/internal canonical 段寫死「現行 11 個 internal 單元全走 frontmatter」,但實際 grep isInternal 的 spec 只有 10 個 (Command / DateGrid / HoverCard / Menu / Notice / OverflowIndicator / SelectMenu / SelectionControl 8 元件 + horizontal-overflow / overlay-surface 2 pattern);root barrel index.ts 的 internal 排除註解也列 10 個。此 hardcode 計數已 drift,且無機械 sync (gen-design-system-barrel.mjs 只生成 barrel、不回寫此 doc 數字),下次增刪 internal 單元會再度不同步。",
+      "fileLine": ".claude/rules/story-rules.md:25",
+      "問題": "Title canonical 表列 4 bucket `{Tokens|Patterns|Components|Internal}`,但 ui-development.md:31 + packages/design-system/src/patterns/README.md:22 + scripts/audit-story-quality.mjs:40 / category-classification-invariant.mjs:34 皆認可第 5 bucket「Internal Patterns」(現有 2 住戶:overlay-surface / horizontal-overflow)。同 taxonomy 4 home 其中 1 home 漏列 = SSOT enum drift(M17;story-rules 是 *.stories.tsx path-scoped 主入口,AI 依它判 title 會誤判 Internal Patterns 為違規)",
       "severity": "marginal",
-      "建議": "把「11 個」改成「10 個」,或改成不寫死數字的措辭 (例:『現行 internal 單元全走 frontmatter isInternal』去掉計數),避免 governance doc 計數 drift。此為分類狀態的文件表述失準,非分類本身錯誤 (classification 機械層 barrel generator 一致、0 leak)。"
+      "建議": "story-rules.md L25 補「Internal Patterns」bucket(或改為 pointer 指 ui-development.md:31 為 taxonomy SSOT,其餘 home reference)— 表達層對齊,AUTO scope"
     }
-  ],
-  "cleanAssessment": "分類/抽象/prop-vs-separate 三 sub-dim 實質乾淨。全部 separate component (NumberInput/LinkInput/TimePicker/CircularProgress/InlineEdit/Sheet/Combobox/PeoplePicker/ProfileCard/Calendar) 皆帶 M21 3-test documented rationale (distinct value contract + behavior + world-class cite);10 個 internal 元件全被 DS 內部真消費 (非 orphan)、frontmatter isInternal ↔ barrel 排除機械一致 (56 public = 64-8,0 leak);近親分界 (Sheet↔Dialog / Tag↔Badge↔Chip / Calendar↔DateGrid↔DatePicker / ProgressBar↔CircularProgress) 皆 reciprocal 文件化。唯一 finding 為文件計數 drift。"
+  ]
 }

@@ -101,7 +101,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.2",
     "@changesets/cli": "^2.31.0",
-    "@openai/codex": "^0.144.1",
+    "@openai/codex": "^0.144.5",
     "@size-limit/preset-small-lib": "^12.1.0",
     "@storybook/addon-a11y": "^8.6.0",
     "@storybook/addon-docs": "8.6.0",

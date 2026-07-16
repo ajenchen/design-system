@@ -1,1 +1,25 @@
-{"component":"Steps","implBasis":"Composite (no external primitive; Radix/shadcn have no Steps) — Icon/number indicator + Text ordered sequence, consumes item-anatomy ItemPrefix/ItemSuffix; Carbon ProgressIndicator a11y model","claimsVerified":42,"falseClaims":[]}
+{
+  "component": "Steps",
+  "implBasis": "自建 compound(ol/li + context;無 external primitive,Radix/shadcn 無 Steps)+ item-anatomy ItemPrefix/ItemSuffix 消費;Carbon ProgressIndicator a11y 模型",
+  "claimsVerified": [
+    "computeState 優先序(override → error → completed → current → reachable(linear) → upcoming)= spec「自動推導」偽碼逐行相符(steps.tsx:102-117);error 優先 completed ✓ anatomy 行為規則 bullet",
+    "isClickable:disabled→false / non-linear→全可點 / linear→state!=='upcoming'(:119-127)= spec Linear vs Non-linear 表;非可點 header 無 role/tabIndex + cursor-not-allowed、不設 aria-disabled/data-disabled = spec 邊界案例「與 disabled prop 不同」精確",
+    "尺寸常數:INDICATOR_SIZE 8/24/32 + ICON 0/16/20 + SM_HIT_AREA 24(field-height-xs 地板)= spec Size 表 + frontmatter cite steps.tsx:18-28;indicator 數字字體同級(md=body 14 / lg=body-lg 16,:756)= spec「之前小一號是錯的」2026-06-11 R2 修已落地",
+    "focus ring:getOuterRingShadow = 0 0 0 2px surface + 0 0 0 4px ringColor(:44-46)= spec「surface gap + ring 兩層」;resolveRingColor(error→error-hover / non-linear current→border-hover / 其餘 info-hover,:48-52)= spec State×Focus 矩陣;box-shadow 零 layout impact ✓",
+    "non-linear current = bg-secondary + foreground(md/lg,:723-724)、sm 為 fg-disabled 灰點(:663)= spec「Non-linear 被選中 ≠ filled 藍」+ sm 特別條款;linear upcoming muted+fg-disabled vs non-linear upcoming secondary+foreground(:731-739)= spec 底色刻意不同 rationale",
+    "connector isBlue 僅 item.state==='completed'(:546,:593)= spec「當且僅當 stepA completed 藍」;current/error 右側 connector = border = anatomy ColorMatrix 表 + principles BlueConnectorLogic 範例",
+    "expansion:follow-active = focused / multiple = expandedSet + activate 永遠 setValue 再 toggle(:352-362)= spec Expansion 表;defaultExpanded 預設 none(normalizeExpanded)✓;horizontal StepContent 一律 null(:853)+ chevron 僅垂直 multiple = spec「水平模式無 content」",
+    "a11y:root ol aria-label 透傳 + li aria-current='step'(:385)+ sr-only「第 N 步,共 M 步,狀態」(:476,status map 已完成/進行中/錯誤/未開始)+ indicator aria-hidden + header role='button' + Enter/Space + aria-expanded / aria-controls 僅展開時輸出(:461-462)= spec A11y 段(2026-07-05 D4)逐句相符;sequential Tab 非 roving ✓",
+    "StepLabel 色彩優先序 disabled > error(text-error-text)> focused(foreground)> default(fg-secondary)(:794-800)= spec Label 色彩段;description 不變紅(恆 fg-secondary/disabled,:830)= spec「Description 沒有 error 變色」",
+    "scanning-family:label/header/connector leading-compact + description scanning gap token + caption(sm/md)/body(lg)(:468,:792,:825-834)= spec Family 2 scanning-mode 宣稱;indicator 永遠 inline 對齊 label 第一行(ItemPrefix h-[1lh],兩 layout)= spec 24px 閾值明文例外 + anatomy IndentAlignment + principles ColumnRhythm",
+    "parent-controlled:value controlled/uncontrolled 雙模、completedValues/errorValues 從不 mutate(activate 只 setValue)= spec「點擊 completed step 的行為」+ principles LinearBackClickDoesNotMutate;stepsMeta states = content-state 模型(upcoming/reachable/current/completed/error)與 spec 狀態表一致;anatomy story 清單(Inspector+Orientation/Color/Size/StateBehavior/IndentAlignment)= spec「Inspector 與矩陣分工」段"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "steps.anatomy.stories.tsx:320(StateBehavior LinearVsNonlinear 說明文)",
+      "宣稱": "linear(預設)面板註「僅 completed 可點回查,upcoming 不可達」",
+      "真實code行為": "linear 可點集合 = completed + current + error + reachable(下一個未完成)(isClickable + computeReachableValues;spec Linear 表正確列出)——說明文漏 current/reachable,略窄於實際行為。示範 demo 本身渲染正確,僅 caption 欠精確",
+      "severity": "cosmetic"
+    }
+  ]
+}

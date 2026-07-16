@@ -8,7 +8,7 @@
 # Triggers on consumer apps/**/*.stories.tsx edit. For each story using overlay
 # primitive, verify story contains:
 #   - `defaultOpen` prop OR
-#   - `open={true|isOpen}` controlled state OR
+#   - controlled `open={...}` / bare `open` boolean attr(2026-07-16 dim 74 加廣)OR
 #   - `play()` interaction function clicking trigger OR
 #   - `// @overlay-open-skip: <rationale>` per-story escape
 # Otherwise story is「trigger-only」= visual snapshot 看不到 overlay content (per
@@ -46,8 +46,17 @@ USED=$(echo "$CONTENT" | grep -oE "<(DS\.)?($OVERLAY_PRIMITIVES)Trigger\b" | sor
 if [ -z "$USED" ]; then exit 0; fi
 
 # Detect open-state mechanism
+# 2026-07-16 dim 74 regex 加廣:原只認 open={true|isOpen|isVisible} 3 個字面名 —
+# 漏 controlled `open={<任意變數/expression>}`(如 open={open} / open={!collapsed})與
+# bare `open` boolean attr(JSX `<Popover open>` = true)→ 合法 controlled story 被誤殺。
+#   - `open=\{[!a-zA-Z_]` 涵蓋任意 identifier / negation expression(含 true/isOpen/isVisible)
+#   - bare attr 兩形態:tag 內 `<Sheet open>` / `<Popover open onX>`(`<Tag[^<>]* open` 限同 tag,
+#     `[^<>]*` 不可跨 `>` → JSX 內文 / 註解 prose 的「open / close」不誤中)+ 多行 prop 排版
+#     「整行只有 open」(`^\s*open\s*$`)。存量驗證:Coachmark principles(行只有 open)pass、
+#     dropdown-menu.anatomy prose「浮層 open / close」不誤 pass。
+#   - defaultOpen 原本就有,保留
 HAS_OPEN=""
-if echo "$CONTENT" | grep -qE 'defaultOpen|open=\{(true|isOpen|isVisible)|play:\s*async|play\(.*click'; then
+if echo "$CONTENT" | grep -qE 'defaultOpen|open=\{[!a-zA-Z_]|<[A-Za-z][^<>]*[[:space:]]open([[:space:]>]|$)|^[[:space:]]*open[[:space:]]*$|play:\s*async|play\(.*click'; then
   HAS_OPEN="found"
 fi
 

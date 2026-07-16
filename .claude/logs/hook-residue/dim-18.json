@@ -1,1 +1,7 @@
-{"dim":18,"hook":"post_edit_dispatcher.sh → lib/_token_hygiene.sh (Check 1 shadcn compat alias)","residueCount":0,"findings":[],"verified":true,"note":"DS-wide grep packages/design-system/src/{components,patterns}/**/*.tsx(排除 *.stories.tsx)用 utility-registry.json shadcn_alias.block.color_alias 完整 deny-list(bg-popover / text-popover-foreground / text-muted-foreground / bg-accent / text-accent-foreground / bg-destructive / bg-background / text-background / bg-card / text-card-foreground / text-primary-foreground / border-input)= 0 命中。"}
+{
+ "dim": 18,
+ "hook": "post_edit_dispatcher.sh → lib/_token_hygiene.sh(5 checks:shadcn alias/[--foo]/shadow/primitive color/native overflow)",
+ "residueCount": 0,
+ "findings": [],
+ "notes": "components+patterns production tsx:shadcn alias(registry 12 條 superset)0 / [--foo] shorthand 0 / shadow-sm..inner 0 / primitive color utility 0。native overflow-y-auto 6 處(overlay-surface.tsx:183 / app-shell.tsx:231,266 / data-table.tsx:2700 / date-picker.tsx:661,1074)全帶 inline canonical rationale(M25 viewport-aware scroll canonical / DataTable 雙軸 scroll + scrollbar-gutter tradeoff 註解 / AppShell page-main scroll)= documented deviation of WARN-class check,非殘留違規。"
+}

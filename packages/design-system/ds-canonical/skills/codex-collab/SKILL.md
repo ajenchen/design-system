@@ -43,7 +43,7 @@ ls -la ~/.codex/auth.json                                              # 3 Auth(
 
 **Decision**:1 ✅ → local CLI(canonical per `references/transport.md:36-40`)/ 1 ❌ + 2 ✅ → global / 1+2 ❌ + 3 ✅ → `npm install`(`@openai/codex` 已 npm dep)/ 全 ❌ → 報 user。**禁 fallback Explore agent 當 codex**(M31 違反:Explore 同模型,不滿足 dual-track 第 2 bias)。
 
-**Anti-pattern**:`which codex` 失敗就斷言 unreachable → 嘗試 sudo install / 繞 M28 開 PR / Explore 替身。詳 `.claude/memory/feedback_codex_local_transport_node_modules.md`。
+**Anti-pattern**:`which codex` 失敗就斷言 unreachable → 嘗試 sudo install / 繞 M28 開 PR / Explore 替身。詳 `.claude/memory/feedback_codex_exec_transport_canonical.md`。
 
 **Hook 機械強制**:`stop_self_audit.sh` 偵測「codex/dual-track/比稿 keyword + 無 `node_modules/.bin/codex` cmd trace」→ BLOCKER。
 
@@ -64,7 +64,7 @@ ls -la ~/.codex/auth.json                                              # 3 Auth(
 | Step | Claude | Codex | 共通 invariant |
 |---|---|---|---|
 | **1 各自熟讀** | grep / read spec.md / canonical / source 真讀 | `exec -s read-only` grep / git show / read source | 憑印象 propose = M31 違反 |
-| **2 各自驗證** | `npx tsc -b` + invariant + audit script | **audit-verify**:`exec --dangerously-bypass-approvals-and-sandbox -C $PWD`(user-authorize)跑**同樣** tsc / invariant / .mjs / Playwright + 貼 stdout(per `references/phase-b-codex-brief.md` B.0.1);**純讀**:`exec -s read-only` grep / git show | 任一方未跑真 verify 撤回;**禁** codex 只目測機械維度(verify 不對稱違 M31 Step 2)|
+| **2 各自驗證** | `npx tsc -b` + invariant + audit script | **audit-verify**:`exec --dangerously-bypass-approvals-and-sandbox -C $PWD`(user-authorize)跑**同樣** tsc / invariant / .mjs / Playwright + 貼 stdout(per `../deep-audit-cross-codex/references/phase-b-codex-brief.md` B.0.1);**純讀**:`exec -s read-only` grep / git show | 任一方未跑真 verify 撤回;**禁** codex 只目測機械維度(verify 不對稱違 M31 Step 2)|
 | **3 各自視覺稽核** | playwright screenshot + DOM + pixel audit | code-read + diff + grep visual path | 只 code 跳 visual 違反 user directive |
 | **4 各自 cite-based propose** | 3-column:`spec.md path:line / 引文 / reasoning` | 同上獨立出 | hand-wave 無 cite 撤回 |
 | **5 整合完美版本**(NOT pass-through)| Agree → synthesize 補對方缺漏;Disagree → cite battle verify 對方 cite + counter-cite | 同上雙向 | **絕禁** Claude pass-through codex / 只一方驗證跳整合 |
@@ -108,7 +108,7 @@ User 說「跟 codex 討論 X」或本 skill 自動 trigger condition 滿足。
 
 ### Step 0.1:**DS Anchor Preflight**(M29 mandatory,2026-05-08)
 
-Brief 前必查 `.claude/references/ssot-index.md` + grep `*.spec.md` 找 anchor canonical,brief 內含 **3-column owner table**(`Candidate owner spec` / `Canonical sentence` / `Conflicting code/comment`)。**若 spec ≠ code → STOP 寫 RFC**(`.claude/planning/<topic>-rfc.md`),等 user 拍板才進 Step 0.5。詳 `.claude/memory/feedback_ds_anchor_preflight.md`。
+Brief 前必查 `.claude/references/ssot-index.md` + grep `*.spec.md` 找 anchor canonical,brief 內含 **3-column owner table**(`Candidate owner spec` / `Canonical sentence` / `Conflicting code/comment`)。**若 spec ≠ code → STOP 寫 RFC**(`.claude/planning/<topic>-rfc.md`),等 user 拍板才進 Step 0.5。詳 `.claude/rules/meta-patterns.md` M29。
 
 ### Step 0.5:**Claude own-version v1 + dimension matrix**(合併原 Step 0.5+0.6,anti-pass-through)
 
@@ -154,19 +154,19 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
 
 `mcp__github__subscribe_pr_activity` → 等 webhook event,**不 poll**(Anthropic best-practice,等推送)。
 
-### Step 4:Codex 回覆 → Claude 自檢(M22/M23/M27/M8)
+### Step 4:Codex 回覆 → Claude 自檢(M22/M23/M23(c)/M8)
 
 收到 codex reply 必跑 4 題自檢(避免 codex 也犯 M1/M22 錯):
 1. **M22 cite check**:codex 引的 benchmark 有 inline source?無 → reply 要求補
 2. **M23 DS-first**:codex 建議是否覆蓋 DS 既有 canonical?有 → 我手動驗 DS spec/token
-3. **M27 namespace**:codex 建議 prop name 是否撞 DS 既有?
+3. **M23(c) namespace**(former M27):codex 建議 prop name 是否撞 DS 既有?
 4. **M8 ≥3 source**:codex 只引 1 家 → reply 要求補到 3 家
 
 任一題失敗 → Step 4.5 仍要跑(自檢結果記下),Step 5 一併 report。
 
 ### Step 4.5:**獨立 verify codex 具體 claim**(不可省 — anti-pass-through)
 
-**Why**:Step 4 只 check 表面 cite,不 verify codex 結論。錨 2026-05-07 `775d879` pass-through + 2026-05-19 6+ 條讀前 N 行就斷 truncated(SSOT `memory/codex_collab_backfill_2026-05-19.md`)。
+**Why**:Step 4 只 check 表面 cite,不 verify codex 結論。錨 2026-05-07 `775d879` pass-through + 2026-05-19 6+ 條讀前 N 行就斷 truncated。
 **強制動作**(逐條 claim):
 0. **Last-verdict gate**(MUST 先跑):`tail -n 240 reply.md` grep `Verdict|tokens used|採納` 必命中;Read `--offset=$((total-240)) --limit=240`。禁讀前 N 行就斷 truncated。
 1. **Grep DS-internal**:codex 指的 file/token/pattern 真存在?`grep -rn` 確認
@@ -205,7 +205,7 @@ target PR:當前 working branch 的 PR(`mcp__github__list_pull_requests` 找到 
    - **重啟**(兩邊都不對 → 重新做)
 3. 列 final 方案,不再列 A/B/C 給 user 拍 unless 真歧義
 
-**強制 reply format**:Step 4 self-check(M22/M23/M27/M8)+ 4.5 verify 表 + 4.6 regression scan 表 + 5 接受/拒絕/修正 + final action(僅真歧義列 options)。錨例 `029b647` `f24998f` `775d879`。
+**強制 reply format**:Step 4 self-check(M22/M23/M23(c)/M8)+ 4.5 verify 表 + 4.6 regression scan 表 + 5 接受/拒絕/修正 + final action(僅真歧義列 options)。錨例 `029b647` `f24998f` `775d879`。
 
 ### Step 6:User approve → Claude 實作
 

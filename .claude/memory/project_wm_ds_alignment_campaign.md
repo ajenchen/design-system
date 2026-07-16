@@ -7,11 +7,11 @@ metadata:
   originSessionId: 3fb5856b-7b97-40a4-afa1-5db311326bea
 ---
 
-WM(work-management)ds問題.pdf 46 findings 根因戰役。交接 SSOT = `work-management/docs/2026-07-08-ds-alignment-handoff.md`;對帳 `node docs/ds-alignment/verify.mjs`。**2026-07-14 收官**:beta.84 已發版 + WM lockfile 真綠(見文末「2026-07-14 發版收官」段);2026-07-10 re-audit 3 OPEN 已全收(見 `## 2026-07-10 收官 session`);**唯一剩:WM branch merge/push main 由 user**。
+WM(work-management)ds問題.pdf 46 findings 根因戰役。交接 SSOT = `work-management/docs/2026-07-08-ds-alignment-handoff.md`;對帳 `node docs/ds-alignment/verify.mjs`。**2026-07-14 收官**:beta.84 已發版 + WM lockfile 真綠(見文末「2026-07-14 發版收官」段);2026-07-10 re-audit 3 OPEN 已全收(見 `## 2026-07-10 收官 session`);**WM main 已 push(4e83402,2026-07-15,零殘項)**。
 
-- **DS branch `2026-07-08-wm-rootcause-fixes`**(pushed):R2 export 斷鏈修 + R4 防線(幻覺 token/偽表格/表單簽名/R8R9 fork override/escape repo-ratchet/eslint-plugin)+ R3 拍板 spec 批(pane-header 判準/inline-create idle/計數 suffix/分隔線幾何)+ **Field width=fill/hug 軸**(4 控件鋪線;Input/LinkInput/NumberInput VariantProps 排除 width 避 TS2320)+ **indicator A 案**(cell display 態零恆顯 icon,6/6 benchmark;cell-registry 停傳 showDisplayEndIcon,prop 留 opt-in;推翻 2026-05-10/06-26 兩次拍板,RFC 已追記)。**已發版 beta.84(2026-07-14,見文末段)**。
+- **DS branch `2026-07-08-wm-rootcause-fixes`**(pushed):R2 export 斷鏈修 + R4 防線(幻覺 token/偽表格/表單簽名/R8R9 fork override/escape repo-ratchet/eslint-plugin)+ R3 拍板 spec 批(pane-header 判準/inline-create idle/計數 suffix/分隔線幾何)+ **Field width=fill/hug 軸**(4 控件鋪線;Input/LinkInput/NumberInput VariantProps 排除 width 避 TS2320)+ **indicator A 案**(cell view 態零恆顯 icon,6/6 benchmark;cell-registry 停傳 showDisplayEndIcon,prop 留 opt-in;推翻 2026-05-10/06-26 兩次拍板,RFC 已追記)。**已發版 beta.84(2026-07-14,見文末段)**。
 - **WM branch `2026-07-08-ds-alignment`**(pushed,6 commits):Wave-1/2/3a/3b 全落地 — FilterPanel/欄面板/CAT_SOLID/useFormValidation×8/composer 歸左欄+獨立捲/count space-between/divider 幾何/SectionHeader/metadata 全 hug/Status 三處統一 select column/幻覺 utility 清零。**beta.84 已接上:lockfile bump + verify 13/13 真綠(2026-07-14,見文末段)**。
-- R3 七題 user 逐題拍板紀錄在 handoff;indicator A 案 = display 零恆顯 icon、affordance = hover outline(field-controls.spec cell 條文已改寫)。
+- R3 七題 user 逐題拍板紀錄在 handoff;indicator A 案 = view 態零恆顯 icon、affordance = hover outline(field-controls.spec cell 條文已改寫)。
 - Backlog:DS API 缺口 5 項(panel i18n/條件數 helper/maxConditions/footer slot/now 注入)+ DialogBody 兩欄組合 API(Wave-3a 發現)+ prune P2 候選 hook `check_ssot_header_declaration.sh`(6 月 0 fire)。
 
 ## 2026-07-10 對抗 re-audit(5-agent)+ DS session 07-09/07-10 補

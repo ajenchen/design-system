@@ -1,12 +1,18 @@
 {
   "component": "Command",
-  "implBasis": "cmdk 1.1.1 passthrough (shadcn) + Radix Dialog (CommandDialog) + ScrollArea (CommandList)",
-  "claimsVerified": 24,
+  "implBasis": "shadcn passthrough over cmdk (+ Radix Dialog for CommandDialog); internal primitive consumed by SelectMenu; keyboard/ARIA claims verified against node_modules/cmdk/dist/index.mjs",
+  "claimsVerified": 33,
   "falseClaims": [
     {
-      "fileLine": "packages/design-system/src/components/Command/command.anatomy.stories.tsx:34",
-      "宣稱": "Overview 描述「選項與空狀態的樣式直接寫在 Command 內,不透過其他元件」",
-      "真實code行為": "CommandEmpty(command.tsx:90-99)是純 className passthrough,無任何自帶 styling class(spec.md:119 自己也承認「CommandEmpty 為純 className passthrough 無自帶 class」)。故「空狀態的樣式直接寫在 Command 內」不成立——空狀態根本沒有寫任何樣式;只有 CommandItem/CommandGroup/CommandInput 有 inline class",
+      "fileLine": "packages/design-system/src/components/Command/command.spec.md:100",
+      "宣稱": "Loading 邊界案例:「async option fetch 應由 consumer(SelectMenu / Cmd+K palette)在外層處理 — 將 <CommandList> body 切換為 <Empty icon={<CircularProgress size={48}/>}/>(對齊 empty.spec.md SelectMenu loading row SSOT)」",
+      "真實code行為": "被引為對齊對象的 SelectMenu 實作(select-menu.tsx:402-408)並非「切換 CommandList body」— spinner 渲於 cmdk CommandEmpty slot,僅在 filtered options=0 時可見;已有 options 時清單照常顯示不被切換。select.spec.md:288 已於 2026-07-04 Q3 拍板修正為「不取代」措辭,本行仍留舊「切換 body」描述。",
+      "severity": "marginal"
+    },
+    {
+      "fileLine": "packages/design-system/src/components/Command/command.spec.md:123",
+      "宣稱": "「對應 anatomy story:保留 `Overview`(展示 internal primitive 的 API surface……)」— 僅列 Overview 一個",
+      "真實code行為": "command.anatomy.stories.tsx 實際 export Overview + Accessibility 兩個 story(anatomy:99 `export const Accessibility`,name「無障礙」;檔頭 @anatomy-rationale 自己也寫「保留 Overview + Accessibility」)。spec 的 anatomy story 列舉漏列 Accessibility。",
       "severity": "marginal"
     }
   ]

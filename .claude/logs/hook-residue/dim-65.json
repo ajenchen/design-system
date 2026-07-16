@@ -1,1 +1,16 @@
-{"dim":65,"hook":"check_chrome_header_avatar_canonical.sh","residueCount":0,"findings":[],"verified":true,"note":"Anti-pattern = <SidebarHeader> block containing <ItemAvatar> (chrome header must use raw <Avatar size={24}>). Scanned 301 non-node_modules .tsx (DS Sidebar + apps/** + template) with hook's exact python comment-strip + block-match logic. 0 SidebarHeader blocks contain ItemAvatar. SidebarFooter ItemAvatar is legitimately allowed."}
+{
+  "dim": 65,
+  "hook": "check_chrome_header_avatar_canonical.sh",
+  "wiring": "OK — PreToolUse Edit|Write|MultiEdit(settings.json:244 + hooks.json:102);mirror sync;exit 2 P0 BLOCKER 屬實(L95);19 fires 2026-07-16",
+  "smoke": "not run(存量掃描以同一 python 邏輯全庫 replicate)",
+  "residueCount": 0,
+  "findings": [
+    {
+      "severity": "P3",
+      "type": "escape-usage observation(out-of-repo)",
+      "detail": "governance-bypass.jsonl 累計 77 條 chrome-header-avatar-bypass,全部指向 fork/cloud sandbox 路徑(/repo/my-project/apps/template/src/AppShell.tsx),本 repo 無此檔。同一檔反覆 bypass(至 2026-07-14)= fork 側疑有未修 drift 或殘留 false-positive;非本 repo 存量,標記供 fork 治理鏈(check_plugin_fork_health / C-prime)追蹤",
+      "evidence": ".claude/logs/governance-bypass.jsonl(77 events)"
+    }
+  ],
+  "notes": "存量掃描:apps/** + packages/design-system/src/** 全 tsx 以 hook 同款 comment-strip + SidebarHeader-block regex 掃 — 0 DRIFT;2026-06-11 R2 #9 comment-strip 修復在檔"
+}

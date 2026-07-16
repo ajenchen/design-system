@@ -1,1 +1,19 @@
-{"component":"FileUpload","implBasis":"Self-built HTML5 <input type=file> + drag-and-drop (dragDepth counting), role=button wrapper. Consumes Empty (default children), CircularProgress, FileItem (files list), Button. dropzone/button variants. Code uses border-primary-hover for hover=drag-over (2026-07-06 fix from border-primary base).","claimsVerified":22,"falseClaims":[{"fileLine":"file-upload.tsx:20","宣稱":"檔頭 4-狀態 docblock:「hover = drag-over — border-primary（統一，純 border-driven，底維持 surface）」","真實code行為":"className (file-upload.tsx:312) 實際用 `border-primary-hover`（--primary-hover = blue-5），非 `border-primary`（--primary = blue-6）。2026-07-06 修 code + spec(L62 已正確寫 border-primary-hover)，但此頂部 docblock 未同步 = stale，token 值 doc≠code。","severity":"material"},{"fileLine":"file-upload.spec.md:138","宣稱":"邊界案例「拖曳滑過內部子元素(2026-07-05 D4)... dragleave 帶 relatedTarget guard，避免經典 drag-flicker」","真實code行為":"code 用深度計數 (dragDepth ref, file-upload.tsx:135-138, 275-283)，並非 relatedTarget guard。tsx 註解 (137, 271-274) 明確指出 relatedTarget guard 在 Safari/WebKit 失效故已於 2026-07-06 換成深度計數。spec 仍描述被 code 明確廢棄的舊機制 = stale mechanism。","severity":"material"},{"fileLine":"file-upload.anatomy.stories.tsx:356","宣稱":"StateBehavior 狀態表:`data-state=\"drag-over\"`（border-primary；底色維持 surface，純 border-driven = hover）","真實code行為":"code (file-upload.tsx:312) drag-over 用 `border-primary-hover` 非 `border-primary`；Inspector 預覽 (anatomy.stories.tsx:136) 亦硬寫 `border-primary` mock，與實際元件渲染的 border-primary-hover(blue-5) 不符。wrong token value。","severity":"material"},{"fileLine":"file-upload.principles.stories.tsx:93","宣稱":"note「drag-over 只用邊框顏色(border-primary，底維持 surface 不變 bg)」+ 正例 demo (L96) 硬寫 `border-primary`","真實code行為":"實際元件 drag-over 邊框 = `border-primary-hover`(blue-5)，非 border-primary(blue-6)；principles 教學 note 與 demo mock 皆用舊 token = stale (同 2026-07-06 未propagate 之 drift)。","severity":"marginal"}]}
+{
+  "component": "FileUpload",
+  "implBasis": "自建(native <input type=file> hidden + drag events + dragDepth 深度計數):variant dropzone(role=button + 4 狀態 data-state)/ button(Button tertiary);預設 children = <Empty icon={Upload}>(SSOT 復用);files 清單經 <FileItem> 渲染(gap 依 fileListMode)",
+  "claimsVerified": [
+    "4 狀態視覺表逐格對 code:idle border-border bg-surface / hover=drag-over 統一 border-primary-hover(data-[state=idle]:hover + data-[state=drag-over],:306-312)/ loading cursor-progress + CircularProgress 48 + aria-busy / disabled bg-disabled + 邊框不變色 + Empty disabled + cursor-not-allowed",
+    "state 優先序 disabled > loading > drag-over > idle = code :171;isBlocked guard(click/key/drag)取代 pointer-events-none = spec/註解一致",
+    "深度計數 dragDepth(+1/−1,drop 歸零;不依賴 relatedTarget — Safari 恆 null)= code :134-138,268-295 = spec 邊界案例 2026-07-06 宣稱一致",
+    "blocked 時 dragover/drop 仍 preventDefault(擋瀏覽器整頁開檔導航)= code :284-292 = spec「操作被吞掉」宣稱 ✓",
+    "同檔重選:onChange 後 e.target.value=''(兩 variant 都有,:236-237,:333-334)= spec 邊界案例 ✓",
+    "multiple=false 多檔只取第一個(accepted.slice(0,1))/ onReject size/type 各觸發一次 / accept 支援 .ext・type/*・完整 MIME(matchAccept)= spec Props 行為逐條 ✓",
+    "a11y:role=button + tabIndex(blocked -1)+ Enter/Space 觸發 + aria-disabled + input className=hidden(移出 a11y 樹)= spec A11y 段 ✓",
+    "loading deferred 宣稱三方一致(spec 表 / anatomy 註解+Inspector 標註 / tsx docblock):showcase 無 loading story、prop 保留",
+    "files 清單:<ul aria-label> + FileItem(status→bar/✓/✗)+ onRemove X(Button xs text,不套 dismiss prop — 對齊 inline-action「onRemove 不觸發 dismiss」)+ removeAriaLabel 模板 = spec ✓",
+    "variant=button:Button variant=tertiary startIcon=Upload + loading/disabled + click-only(無 drag handlers)= spec 兩種觸發外觀表 ✓",
+    "children 覆寫 → 不渲染 Empty(children ?? <Empty>)✓;description 預設依 multiple 分流 ✓",
+    "gap 消費 FileItem List wrapper canonical(rich gap-2 mt-2 / compact gap-1 mt-1)= code :183"
+  ],
+  "falseClaims": []
+}

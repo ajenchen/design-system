@@ -1,1 +1,57 @@
-{"component":"InlineEdit","implBasis":"Self-built generic <T> read↔edit toggle state machine composing Field controls (default edit = <Input>/<Textarea>). Consumes makeEditSettleKeyHandler (Enter/Esc + IME guard SSOT), fieldDisplayTextClass, --field-px/--field-height tokens, invisible absolute <button> Pressable for read state.","claimsVerified":17,"falseClaims":[{"fileLine":"inline-edit.spec.md:138","宣稱":"A11y Keyboard 表格 edit 態欄:`Enter` commit（無條件敘述）","真實code行為":"多行模式 (multiline prop) 走 makeEditSettleKeyHandler({commitOnEnter:false}) → plain Enter = 換行 (不 commit)，Cmd/Ctrl+Enter 才 commit (field-edit-keys.ts:55-63 + inline-edit.tsx:217)。同一 spec L66 已正確載明多行 Enter=換行，故 A11y 表格與 L66 兩段互相矛盾；表格的絕對 Enter=commit 僅適用單行。","severity":"marginal"}]}
+{
+  "component": "InlineEdit",
+  "implBasis": "自建 composite(Model A round16):不自帶 geometry cva;renderRead 委派 <Control mode=\"view\">、純值/標題套 fieldViewGeometry(size,multiline);本體只給 orientation-aware -mx(fieldCtx&&vertical 才 -mx,F2 修)+ hover bg + [&:has(button:focus-visible)]:border-primary 藍框 + 隱形 Pressable;edit = 真 Field 控件(Input/Textarea mode=edit)+ makeEditSettleKeyHandler(IME guard);useResolvedFieldSize(prop,'sm') + static fieldPreferredSize='sm'(Field detectPreferredSize 收 sm)",
+  "claimsVerified": [
+    "tsx 檔頭 Model A 宣稱(不自帶 geometry cva / 委派控件 view / fieldViewGeometry helper)= code 真實(inline-edit.tsx:243-263)",
+    "editable 閘無 disabled:interface 無 disabled prop;editable=false → 無 hover/無 Pressable/不灰化(inline-edit.tsx:275,282)= spec/anatomy 宣稱一致",
+    "auto-sm:InlineEdit.fieldPreferredSize='sm'(:302)+ Field detectPreferredSize(field.tsx:110-117)+ size 三層優先序(field.tsx:218)全鏈真實",
+    "orientation-aware -mx:fieldCtx && vertical 才 -mx-[var(--field-px)]+w-calc;standalone/horizontal = w-full min-w-0(:192-195)— 與檔頭/anatomy InFieldCascade 註解一致",
+    "focus 分路徑:commit(true)鍵盤回焦 / commit(false)滑鼠 blur 不搶焦 / cancel 回焦(:155-180)— anatomy Accessibility story 宣稱正確",
+    "makeEditSettleKeyHandler 消費:單行 commitOnEnter 預設 / 多行 commitOnEnter:false + 內建 Cmd/Ctrl+Enter(field-edit-keys.ts:60)",
+    "view typography = fieldDisplayTextClass(size)(sm/md→text-body / lg→text-body-lg)+ multiline whitespace-pre-wrap ✓",
+    "data-editing / data-empty 可測性屬性存在(:236,248,268)",
+    "隱形 Pressable = absolute inset-0 button + aria-label「編輯 {label}」+ heading 與 button 分離 ✓",
+    "空值:isEmpty(null/''/空陣列)→ placeholder + text-fg-muted;draft 初值 = value ✓",
+    "scripts/inline-edit-view-geometry-invariant.mjs 存在且真驗 fieldViewGeometry 多行 py == Textarea edit py(py-2==py-2)",
+    "focus-visible 僅鍵盤顯藍框宣稱(anatomy):button 的 :focus-visible 滑鼠 click 不觸發,TRUE",
+    "spec 幾何典範「尺寸預設 sm(user 拍板)」= useResolvedFieldSize fallback 'sm' ✓"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "inline-edit.spec.md:45(幾何典範表「外框(read/edit 共用)」row)",
+      "宣稱": "外框 = `-mx-[var(--field-px)]` + `w-[calc(100% + 2*var(--field-px))]` 左右對稱外擴(無條件,read/edit 共用)",
+      "真實code行為": "F2 修正後(commit ff82fcdc)-mx 只在 `fieldCtx && orientation==='vertical'` 才套;standalone / horizontal = `w-full min-w-0`(inline-edit.tsx:192-195)。spec 表未更新 → 與 code + 檔頭 docblock + anatomy story 三方矛盾",
+      "severity": "P1"
+    },
+    {
+      "fileLine": "inline-edit.spec.md:39 + :141(退出 edit 態 / A11y Focus 管理)",
+      "宣稱": "「任一路徑結算後,focus 送回 read 按鈕」/「commit/cancel 結算後 focus 返回 read 按鈕(焦點不遺失)」",
+      "真實code行為": "只有鍵盤路徑(Enter commit(true) / Esc cancel)回焦;滑鼠 blur = commit(false) 刻意不回焦(inline-edit.tsx:154-180)。code 註解 :173 還引用「對齊 spec『鍵盤結算焦點回 view 按鈕、滑鼠 blur 純 view 不搶焦』」— spec 根本沒有這句(引用幻影條文);anatomy Accessibility story 已寫分流,spec 是三方唯一 stale",
+      "severity": "P1"
+    },
+    {
+      "fileLine": "inline-edit.spec.md:47(幾何典範表「垂直」row)",
+      "宣稱": "垂直 = min-h + 垂直置中(「**無 py token**——Field 家族本就以固定高度+置中定義呼吸,非 padding;故 InlineEdit 同法」)",
+      "真實code行為": "Model A 多行路徑 = `items-start py-2`(fieldViewGeometry multiline,field-wrapper.tsx:391;= Textarea edit py-2,invariant script 機械鎖)。「無 py」只對單行成立,spec 一刀切宣稱與 multiline code 矛盾",
+      "severity": "P2"
+    },
+    {
+      "fileLine": "inline-edit.stories.tsx:81-82(States story StateRow 註解 + px wrapper)",
+      "宣稱": "「px-field-px 抵銷 InlineEdit 的 -mx-field-px,讓文字左緣與說明對齊」",
+      "真實code行為": "States story 的 InlineEdit 全是 standalone(無 Field)→ F2 後不套 -mx,無東西可抵銷;wrapper px-[--field-px] + view 幾何自帶 px = 文字左緣比 caption 內縮 ~24px,註解宣稱的對齊已不成立(stale 佈局註解 + 視覺 drift)",
+      "severity": "P2"
+    },
+    {
+      "fileLine": "inline-edit.spec.md:86(狀態 data 屬性)",
+      "宣稱": "「read 元素 `data-empty`(空值)」供 audit/Playwright 斷言",
+      "真實code行為": "data-empty 只在預設 Tag 路徑(inline-edit.tsx:248);renderRead 格式化路徑無 data-empty(:243-245)。宣稱未標註此限制",
+      "severity": "P3"
+    },
+    {
+      "fileLine": "inline-edit.tsx:61 docblock vs inline-edit.stories.tsx:155-168 / anatomy:122-135",
+      "宣稱": "renderEdit「必用 mode=\"edit\"」",
+      "真實code行為": "自家 SelectTagField / StateBehavior 的 renderEdit `<Select>` 都沒顯式傳 mode=\"edit\"(靠 useResolvedFieldMode 預設 'edit' 兜住;在 <Field mode=\"view\"> 內會被 ctx cascade 蓋成 view = 潛在誤用示範)。docblock 鐵律與自家示範不一致",
+      "severity": "P3"
+    }
+  ]
+}

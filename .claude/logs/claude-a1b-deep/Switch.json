@@ -1,1 +1,54 @@
-{"component":"Switch","implBasis":"Radix Switch primitive (@radix-ui/react-switch, shadcn wrap) + DS token bridge; native <button role=switch>, toggles on Space+Enter (no keydown prevention)","claimsVerified":29,"falseClaims":[]}
+{
+  "component": "Switch",
+  "implBasis": "Radix Switch(@radix-ui/react-switch)+ BooleanValueIcon SSOT(SelectionControl/boolean-value.tsx)+ fieldWrapperStyles readonly + useResolvedField* cascade",
+  "claimsVerified": [
+    "尺寸 sm/md track 20×40(h-5 w-10)/ lg 24×48(h-6 w-12),thumb 20/24,check 12/16 = docblock+spec+SizeMatrix 三方一致",
+    "hover 升階:checked bg-primary→bg-primary-hover / unchecked bg-border→bg-border-hover(cva L69-70,spec L78 一致)",
+    "disabled = opacity-disabled 保留顏色(cva L58);spec『Disabled 用 opacity』rationale 一致",
+    "readonly standalone:pointer-events-none + aria-readonly + tabIndex=-1 + label/Root 雙 onClick preventDefault guard(spec 邊界案例 L185 = code L251/258/298)",
+    "readonly in Field:fieldWrapperStyles readonly 灰框 + BooleanValueIcon + role=switch/aria-checked/aria-readonly/tabIndex=0(spec 狀態表 L107 = code L218-241)",
+    "view 分支渲 BooleanValueIcon(勾/叉,中性 foreground)= spec/boolean-value SSOT 一致;2026-07-04 修後 restDomProps + ref 轉發於 view/readonly 分支",
+    "horizontal Field 自動 ml-auto(code L180)+ ml-0 覆寫錨例存在(field.stories.tsx:260-261,332-333)",
+    "label/description 整合:Field 內自動忽略(insideField)、label 左 switch 右、h-[1lh] 首行對齊、lg reading-lg gap token",
+    "switchMeta states 含 hover/checked 對齊 cva 真實樣式(2026-07-04/07-07 修後);tokens bg-border/bg-on-emphasis/bg-primary 全在 code",
+    "A11y:Radix switch role + Space/Enter toggle + focus-visible ring-2 ring-ring = spec/anatomy 一致",
+    "spec『被引用』checkbox/combobox/radio-group/select 四 spec 確實 reference switch.spec.md(grep 驗證)"
+  ],
+  "falseClaims": [
+    {
+      "id": "SW-1",
+      "severity": "moderate",
+      "location": "switch.tsx:120-127(SwitchProps.mode docblock)",
+      "claim": "mode 枚舉列出『display — 純展示…`display` 完全無 toggle 形體』",
+      "reality": "FieldMode union = 'edit'|'view'|'readonly'|'disabled'(field-types.ts:21),無 'display' 值;code 分支判 resolvedMode === 'view'(L206)。mode='view' 更名殘留 — 傳 mode=\"display\" 是 type error。同檔 readOnly docblock(L116)已正確寫 mode=\"view\",檔內自相矛盾"
+    },
+    {
+      "id": "SW-2",
+      "severity": "moderate",
+      "location": "switch.spec.md:138(`mode` prop 段 bullet)",
+      "claim": "bullet 名為『- `display` — 純展示…』",
+      "reality": "同段 header(L136)已正確宣告 union 'edit'|'view'|'readonly'|'disabled';bullet 用舊名 display = spec-internal 不一致 + 與 code 'view' 不符(rename 殘留)"
+    },
+    {
+      "id": "SW-3",
+      "severity": "minor",
+      "location": "switch.anatomy.stories.tsx:41(Overview props 表)+ :81(Inspector argTypes mode description)",
+      "claim": "說明欄寫『display 渲純展示 勾/叉 icon』",
+      "reality": "type 欄/options 正確列 'view',但描述文字用 'display' 舊名 — 讀者無法用 mode=\"display\" 重現"
+    },
+    {
+      "id": "SW-4",
+      "severity": "minor",
+      "location": "switch.stories.tsx:23-25(Modes story)",
+      "claim": "小節標題 <h3>display</h3> + 說明『display 不暴露獨立 aria-label』",
+      "reality": "code 實際 prop 是 mode=\"view\"(標題與 prop 值不符);且 2026-07-04 修後 view 分支 spread restDomProps(switch.tsx:209)— consumer 傳 aria-label 會落在 span 上,『不暴露獨立 aria-label』已非 code 事實(是本 story 自己沒傳)"
+    },
+    {
+      "id": "SW-5",
+      "severity": "minor",
+      "location": "switch.principles.stories.tsx:119(使用場景對照 note)",
+      "claim": "『DataTable cell 非編輯態 = mode display』",
+      "reality": "實際 API 值為 mode=\"view\"(switch.tsx L116 readOnly docblock 同句已寫 mode=\"view\");display 舊名殘留"
+    }
+  ]
+}

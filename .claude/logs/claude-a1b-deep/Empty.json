@@ -1,1 +1,18 @@
-{"component":"Empty","implBasis":"自建 layout primitive (居中垂直堆疊 icon/title/desc/action); icon slot 消費 Avatar; description 字級讀 RowSizeContext","claimsVerified":20,"falseClaims":[]}
+{
+  "component": "Empty",
+  "implBasis": "自建 layout primitive(flex-col items-center text-center):icon(LucideIcon 自動包 Avatar 48 neutral / ReactElement 原樣)→ mb-4 → title(text-body-lg medium)→ mt-[--item-gap-label-desc-reading-lg] desc(RowSizeContext 字級)→ mt-6 action;disabled context prop(fg-disabled swap)",
+  "claimsVerified": [
+    "spec「48px neutral Avatar + 28px icon」:Avatar getIconSize(48)=round(28.8/2)*2=28 ✓(avatar.tsx:51-52)",
+    "間距三宣稱(icon→text mb-4 / title→desc reading-lg token / desc→action mt-6)= code empty.tsx:71,86,93 ✓",
+    "desc 色彩條件式(disabled→fg-disabled;有 title/action→fg-secondary;孤身→fg-muted)= code :84 ✓ = spec Typography 段一致",
+    "desc 字級隨 RowSizeContext(lg→text-body-lg 否則 text-body,fallback md)= code :44-45 ✓",
+    "文字不限寬宣稱(span 收縮、無 max-width、無 w-full)= code ✓",
+    "disabled:LucideIcon 分支 [&_svg]:!text-fg-disabled + ReactElement 分支 contents wrapper 同樣染 svg(2026-07-07 補漏註解與 code 一致);icon-circle bg 維持 muted ✓",
+    "LucideIcon 走 Avatar → icon aria-hidden(avatar.tsx:227-228)= spec A11y「LucideIcon 自動 aria-hidden」✓",
+    "無 heading tag(title 只 <span>)= spec「Title slot heading level」宣稱 ✓",
+    "現有消費者表:DataTable flex-1 items-center justify-center py-12 wrapper(data-table.tsx:2423)/ SelectMenu py-6 + loading CircularProgress size 48(select-menu.tsx:402-408)逐字命中 ✓",
+    "anatomy story 清單(Overview/Inspector/Accessibility/ScenarioMatrix/SlotCombinations)= exports 完整命中;「為何無 ColorMatrix/SizeMatrix/StateBehavior」rationale 與 code(無 size/variant prop、唯一 state=disabled)一致",
+    "emptyMeta states ['default','disabled'] 與 interface 一致"
+  ],
+  "falseClaims": []
+}

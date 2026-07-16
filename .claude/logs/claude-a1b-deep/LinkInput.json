@@ -1,1 +1,55 @@
-{"component":"LinkInput","implBasis":"自建 Field-family (Family 4) control; 消費 fieldWrapperStyles + bareInputStyles + ItemInlineAction + useResolvedField* hooks; native <input type=url> + <a> anchor for link state (not a lib wrap)","claimsVerified":38,"falseClaims":[]}
+{
+  "component": "LinkInput",
+  "implBasis": "native <input type=url> + fieldWrapperStyles + renderLinkAnchor(裸 <a> helper)+ ItemInlineAction(Pencil);controlled-only(defaultValue Omit)",
+  "claimsVerified": [
+    "link-input.spec.md:52-62 兩種顯示狀態(link 狀態 = 合法 URL 且未編輯;input 狀態 = 編輯中/無值/格式錯)— link-input.tsx:178-179 showLink 條件吻合",
+    "link-input.spec.md:70-73+131-132 blur 驗證 / 打字清 error / Enter=blur / Escape 回復原值不觸發驗證 — link-input.tsx:191-221 handleBlur/handleChange/handleKeyDown 吻合",
+    "link-input.spec.md:75+105 protocol 驗證 http/https — link-input.tsx:12-20 isValidUrl 吻合",
+    "link-input.spec.md:87 顯示文字 = hostname 去 www,label 可覆寫 — link-input.tsx:22-28,34-35 吻合",
+    "link-input.spec.md:96-97 readonly 藍色連結可點擊無 Pencil / disabled 灰化不可點 — link-input.tsx:225-243(readonly → anchor;disabled → span text-fg-disabled 非 anchor)吻合",
+    "link-input.spec.md:24 controlled-only 不支援 defaultValue — link-input.tsx:54 型別層 Omit defaultValue 機械封鎖吻合",
+    "link-input.spec.md:125 aria-invalid/aria-describedby/aria-errormessage(+aria-required)— link-input.tsx:286-289 吻合;2026-07-05 D4 紅框與 aria 同源(useResolvedFieldInvalid)已落地(tsx:121,180)",
+    "anatomy Overview 互動流程表 7 行(點 link 開新分頁/Pencil 進編輯 rAF focus/blur 三分支/Enter/Escape)— link-input.tsx:182-221,247-264 全吻合",
+    "anatomy Pencil 色彩(fg-muted→foreground hover;bg neutral-hover/active;hover bg = icon+2)— item-anatomy.tsx:620,637,123 吻合",
+    "principles EmptyRule readonly 空值顯半形 '-' — useFieldEmptyDisplay + EMPTY_DISPLAY('-') + fieldEmptyColorClass(readonly)=text-foreground 吻合",
+    "view 空值/有值 bare-span 套 fieldDisplayTextClass(size)(contract (e) display typography)— link-input.tsx:160-161 吻合"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "link-input.tsx:74-78,152-153 + link-input.anatomy.stories.tsx:268",
+      "宣稱": "showDisplayEndIcon=true 時 display 走 fieldWrapperStyles(naked variant)包覆 anchor,與 cell edit 同 DOM 結構",
+      "真實code行為": "link-input.tsx:165 用 variant: resolvedVariant(= prop > fieldCtx > 'default');naked 僅在 DataTable cell-registry 經 @internal 通道注入時才生效。standalone showDisplayEndIcon=true 得到 view×default(Model A 留 px/height),非 naked。宣稱 hardcode naked = docblock-vs-code drift",
+      "severity": "medium"
+    },
+    {
+      "fileLine": "link-input.tsx:62",
+      "宣稱": "mode='view' 時 chrome 無視覺意義(display 完全無 wrapper);chrome 僅作用於 edit / readonly / disabled",
+      "真實code行為": "showDisplayEndIcon=true 時 view 有 wrapper 且 variant 決定幾何:view×default 留 px/height(field-wrapper.tsx:140-143)vs view×naked bare(:229-235),chrome 在 view 有視覺意義;「完全無 wrapper」僅 default path(showDisplayEndIcon=false 裸 span)成立。另現在式殘留 display 舊名",
+      "severity": "medium"
+    },
+    {
+      "fileLine": "link-input.tsx:154-162(對照 field-controls.spec.md:67+327 Model A 全家宣稱)",
+      "宣稱": "field-controls.spec.md:327「每個 Field 元件以 mode='view' 渲染…Model A 幾何:view×default = edit 幾何減 chrome(留 px/py/h-field)」",
+      "真實code行為": "LinkInput 預設 view 路徑(showDisplayEndIcon=false)render 裸 <span>,完全不消費 fieldWrapperStyles — 無 px、無 h-field 高度 → read↔edit 有跳動,違 Model A「view 與 edit 同一顆控件」宣稱。cross-file spec-vs-code 衝突(可能為 backward-compat 刻意保留,但 spec 未載明 LinkInput 例外)",
+      "severity": "medium"
+    },
+    {
+      "fileLine": "link-input.stories.tsx:103",
+      "宣稱": "四模式 story 段落標題 'display'",
+      "真實code行為": "實際傳 mode=\"view\";display→view 更名後現在式殘留舊名(同 Input showcase 同款殘留)",
+      "severity": "minor"
+    },
+    {
+      "fileLine": "link-input.spec.md:88 + link-input.tsx:30-33,62,74,148-153",
+      "宣稱": "spec「link / readonly / display 狀態超寬時 ellipsis」+ tsx 多處 comment/docblock 現在式使用「display mode / Display」稱呼",
+      "真實code行為": "FieldMode 值已更名 'view'(field-types.ts:21);非「原 display」歷史 anchor 措辭的現在式殘留",
+      "severity": "minor"
+    },
+    {
+      "fileLine": "link-input.anatomy.stories.tsx:76",
+      "宣稱": "Inspector disabled mode Placeholder token = --fg-muted",
+      "真實code行為": "disabled mode 不渲染 input(渲染 span,link-input.tsx:225-243),無 placeholder;若有 input placeholder 也應為 fg-disabled(M24 + bareInputStyles group-data-[field-mode=disabled]:placeholder:text-fg-disabled)",
+      "severity": "minor"
+    }
+  ]
+}

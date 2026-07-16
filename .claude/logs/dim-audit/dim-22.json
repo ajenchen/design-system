@@ -1,20 +1,8 @@
 {
   "dim": 22,
-  "title": "視覺容器 inner breathing — 有邊界容器(card/panel/overlay)是否缺 inner padding",
-  "filesScanned": 85,
-  "canonicalConsulted": [
-    "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md (規則 1 A/B/C padding source + bounded region → px-loose)",
-    "packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md (SurfaceHeader/Body/Footer px-loose py-tight SSOT + List-as-region 委派)",
-    ".claude/rules/ui-development.md (『視覺容器 breathing:有邊界 → 必 inner padding』pointer)"
-  ],
-  "method": "DS-wide 全掃 83 個 non-story tsx(components + patterns)+ 2 canonical spec。三道視覺邊界簽名 grep 全覆蓋:(1) elevation/shadow 浮層殼 (2) bg-surface-raised/bg-surface 面板卡片 (3) border border + rounded 卡片簽名。逐一 Read 驗證每個有邊界容器的 inner padding 來源(直接 px/py OR p-0 委派 SurfaceBody/items OR documented naked-by-design)。",
-  "findings": [],
-  "verdict": "CLEAN — 0 finding。全 DS 每個 card/panel/overlay 有邊界容器都提供 inner breathing。",
-  "evidenceOfCleanliness": [
-    "Overlay 殼(Dialog:110 / Sheet:72 / Popover:100 / DropdownMenu:44 / SelectMenu:314 / Command:38 / Coachmark:170)全用 p-0 或無 padding,委派 SurfaceBody(px-loose py-tight)/ 內層 items(Pattern C px-loose)/ DropdownMenu Content py-2 + item px。",
-    "Card 類(ProfileCard px-4 py-3 / FileItem rich form px-3 py-3 / Notice px-4 py-3 / Alert 委派 Notice / Toast 委派 Notice / Chart tooltip:205 px-2.5 py-1.5 / Tooltip:38 px-3 py-2 / TreeView drag overlay px-3~4)全帶 padding。",
-    "Documented delegation exceptions:Avatar NameCard(avatar.tsx:330『無 inner padding,consumer ProfileCard 自帶 px-4 py-3』)/ FileItem upload-manager rich(無邊框,avatar 作 item 邊界)/ HoverCard bare primitive(padding 由 consumer 決定,OverflowIndicator ShrinkWrapList p-2 / ProfileCard px-4 py-3)— 皆有明文 rationale。",
-    "Naked-by-design 非邊界元件(Empty / DescriptionList / Accordion / Chart canvas)無 border/bg → outer padding 屬 consumer,spec 明文,非本 dim 範疇。",
-    "機械強制存在:overlay-handcraft check(folded 入 post_edit_dispatcher.sh)攔手刻 chrome padding drift + check_pattern_invariants.sh。"
-  ]
+  "title": "視覺容器 inner breathing(consumer 層)",
+  "filesScanned": 283,
+  "mechanism": "DS-wide:Glob 全 283 tsx(components + patterns 含 stories)。Python 兩輪掃描:(1) 單行 className=\" 的 div/section/aside/header/footer/main/nav 帶 bg-(surface|neutral|primary|error|...)|border(非 0/transparent/divider/單邊)|shadow-elevation 且無 p-/px-/py-/pt-/pb- → 86 candidates;(2) 多行 className={cn(...)} 同邏輯(rubric 明示 hook 盲區)→ 3 candidates。逐筆二次驗證:frame wrapper + overflow-hidden(flush child 委派)/ border-dashed anatomy 標註框 / gap-px bg-divider 格線 hack / items-center 置中固定尺寸 tile / progress fill 條 / cva 內含 padding(alertVariants)/ Model A 委派幾何(InlineEdit view 由委派控件供 px-py)",
+  "verdict": "0 after 全掃 283 files;89 candidates(86 單行 + 3 多行)全數二次驗證為 false positive(置中 tile / 圖解標註 / fill bar / 委派 breathing / frame wrapper),無真 violation",
+  "findings": []
 }

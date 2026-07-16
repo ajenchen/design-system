@@ -1,1 +1,24 @@
-{"component":"SelectMenu","implBasis":"Composite — cmdk (search/keyboard) + shadcn Popover (float container) + MenuItem primitive (row layout)","claimsVerified":28,"falseClaims":[{"fileLine":"select-menu.spec.md:32","宣稱":"open 軸走 useControllable dual-mode,cite `select-menu.tsx:162-166`","真實code行為":"useControllable() call 實際在 select-menu.tsx:187-191;L162-166 是 destructure params (creatable/onCreate/createLabel/children/searchPlaceholder),與 useControllable 無關 — 陳舊行號","severity":"marginal"},{"fileLine":"select-menu.spec.md:96 & :163","宣稱":"creatable create row / 同名隱藏邏輯 cite `select-menu.tsx:230-235`","真實code行為":"createLabel default 在 L164、showCreate 隱藏邏輯在 L261-266、create row render 在 L466-490;L230-235 實為 allState useMemo — 陳舊行號指向無關 code","severity":"marginal"}]}
+{
+  "component": "SelectMenu",
+  "implBasis": "cmdk(Command / CommandPrimitive.Input / useCommandState)+ shadcn Popover + MenuItem/MenuFooter + Empty/CircularProgress;internal,由 Select / Combobox 直接消費、PeoplePicker 間接",
+  "claimsVerified": [
+    "spec 行號 cite 全命中:useControllable open 軸 :187-191 / createLabel 預設 :164 / creatable 顯隱判斷 :261-266 / create row render :471-495 / PopoverContent 視覺 :308-320 / CommandItem 互動 bg :439-442 / MenuItem 透明 :460、:489 / forwardRef rationale :151-154",
+    "sideOffset=8 = OVERLAY_SIDE_OFFSET(overlay-geometry.ts:11);align 僅 'start'|'end'(:104);minWidth = max(trigger-width, 15rem=240px)(:319)",
+    "empty minHeight = field-height × minRows + 16px = getMenuListMinHeight(field-types.ts:99-102);minRows 預設 3",
+    "spec「hover/selected owner = 外層 CommandItem」:command.tsx:138 data-[selected=true]:bg-neutral-hover base + 單選 bg-neutral-selected / selected×cursor bg-neutral-selected-active(:441)",
+    "A11y 宣稱 vs code:MenuItem role=presentation(:459/:489)/ CommandGroup heading 走 cmdk(:421)/ Command label 僅 searchable(:364)/ CommandList label=選項(:400)+ aria-busy(:397)/ footer role=checkbox + aria-checked mixed + tabIndex=0 + Enter/Space preventDefault(:513-527)/ SR live region role=status polite(:140-148)",
+    "cmdk defaultValue=已選 option 定 cursor 起點(:356)+ CommandItem value=opt.value + keywords 含 label/description(:429-430)",
+    "spec「Select / Combobox forward loading;PeoplePicker 尚未暴露」= select.tsx:824 / combobox.tsx:860 forward;people-picker.tsx grep loading 0 hits,且不直接 import select-menu ✓",
+    "CircularProgress 預設 24px(circular-progress.tsx:75)、Empty wrapper 內 48px(:407)= spec Loading 段;empty.spec.md:168 消費者表同步",
+    "anatomy SizeMatrix:search min-h calc(field+8px)=36/40/44、icon 16/16/20(tokens/uiSize/icon-size re-export item-anatomy SSOT)、font body/body-lg = code :368-384;PopoverContent data-layout-space=md(popover.tsx:94)= 2026-06-15 敘述",
+    "controlled-only value 軸(無 defaultValue prop)+ open 軸 dual-mode = spec Dim 26 段;selectMenuMeta family null 與 spec frontmatter composite 2026-07-14 修一致"
+  ],
+  "falseClaims": [
+    {
+      "fileLine": "select-menu.tsx:34(+ select-menu.anatomy.stories.tsx:285 ASCII 藍圖)",
+      "宣稱": "檔頭架構圖「├── CommandInput(搜尋框)」",
+      "真實code行為": "實際用 raw `CommandPrimitive.Input` + 自建 icon/min-h wrapper(:375),非 DS CommandInput——spec.md:70 與 anatomy 結構層表(:111)已正確標注,僅 tsx 檔頭圖與 Inspector ASCII 殘留舊名",
+      "severity": "cosmetic"
+    }
+  ]
+}
