@@ -76,7 +76,7 @@ export const Modes: Story = {
       </div>
       {/* @story-trait-rationale: pre-existing trait gaps tracked separately */}
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">display</h3>
+        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
         <DatePicker mode="view" value="2026-04-02" />
       </div>
       <div>
@@ -315,7 +315,7 @@ export const ShowTimeRange: Story = {
   },
 }
 
-/* ── Display（DataTable cell 用）── */
+/* ── View（DataTable cell 用）── */
 export const View: Story = {
   name: '檢視樣式',
   render: () => (

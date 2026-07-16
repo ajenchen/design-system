@@ -4,7 +4,7 @@
 //
 // 對齊 M17 SSOT consolidation + audit recommendation:
 //   原 `renderTypedValue` switch + `EditableCellContent` switch 兩條平行 type-switch 已 collapse
-//   為**一張 type → cell component** registry。每個 cell component 同時處理 display / edit mode,
+//   為**一張 type → cell component** registry。每個 cell component 同時處理 view / edit mode,
 //   靠底層 Field control 的 `mode` prop 切換。
 //
 // 設計原則:
@@ -116,16 +116,16 @@ const sizeForInput = (size: CellSize): CellSize => size
 
 function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel, onDraft }: CellComponentProps) {
   // 2026-05-14 I9 fix(per codex+Layer A 共識):meta.maxLines opt-in line-clamp。
-  // display autoRow 用 Tailwind arbitrary line-clamp 支援 N rows;edit textarea field-sizing
+  // view autoRow 用 Tailwind arbitrary line-clamp 支援 N rows;edit textarea field-sizing
   // 已 auto-grow to content,natural match clamp。
   // 2026-05-16 Round 5 audit Dim 27 fix:narrow type 取代 `as any` cast。
   const maxLines: number | undefined = (meta as { maxLines?: number } | undefined)?.maxLines
   const clampClass = maxLines && autoRowHeight ? `line-clamp-[${maxLines}]` : undefined
   // string type canonical(2026-05-05 v2 user 校正:input space ≥ display space):
-  //   - autoRowHeight: Textarea(display + edit)— display wrap text 撐高 row,edit textarea
+  //   - autoRowHeight: Textarea(view + edit)— view wrap text 撐高 row,edit textarea
   //     多行輸入、`!h-full` 填 cell。對齊 Notion long-text cell canonical。
-  //   - fixed: Input(display + edit)— 單行 truncate display,單行 input edit;Field naked intrinsic
-  //     高 = cell 高 = h-field-md,文字位置 display↔edit 完全一致。對齊 AG Grid / Material X-Grid。
+  //   - fixed: Input(view + edit)— 單行 truncate view,單行 input edit;Field naked intrinsic
+  //     高 = cell 高 = h-field-md,文字位置 view↔edit 完全一致。對齊 AG Grid / Material X-Grid。
   //   - autoRowHeight 是 table 框架決定(consumer 不需 per-column 設 meta.wrap)。
   //   - 互動(Textarea):Esc cancel / Cmd|Ctrl+Enter commit / blur commit;Enter 保留換行
   //   - 互動(Input):Esc cancel / Enter commit / blur commit
@@ -142,7 +142,7 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
     // 2026-05-14 I8 fix(per codex verdict + user 抓「edit cell shrink」):
     // 原 `wrapRows = value.length / 40` 字元估算不準(對應實際 column width 不同
     // → cell 進 edit shrink)。改 CSS `field-sizing: content`(Chrome 123+ / FF 122+ /
-    // Safari 17+)讓 textarea 自動 grow to content,匹配 display wrap 真實高度。
+    // Safari 17+)讓 textarea 自動 grow to content,匹配 view wrap 真實高度。
     // Fallback rows 仍保留給舊 browser(rows attr 在 field-sizing 支援時被覆蓋)。
     const newlineRows = (v.match(/\n/g) || []).length + 1
     const wrapRows = Math.ceil(v.length / 40)
@@ -186,8 +186,8 @@ function NumberCell({ value, meta, mode, size, onCommit, onCancel, onDraft }: Ce
   // currency 透過 columnType-aware prefix:type='currency' → 預設 '$'(可 override)
   const isCurrency = meta?.type === 'currency'
   const prefix = isCurrency ? (meta?.prefix ?? '$') : meta?.prefix
-  // React #310 fix:useState 必在 display early-return 前無條件呼叫。同一 memo'd cell instance
-  // 在 display↔edit 切換時被重用(render site 無 key={mode},data-table.tsx:1352),hook 數量不可變,
+  // React #310 fix:useState 必在 view early-return 前無條件呼叫。同一 memo'd cell instance
+  // 在 view↔edit 切換時被重用(render site 無 key={mode},data-table.tsx:1352),hook 數量不可變,
   // 否則 Rules of Hooks violation → React #310 crash。對齊 combobox/select hoist pattern。
   const initial = typeof value === 'number' ? value : null
   const [localValue, setLocalValue] = React.useState<number | null>(initial)
@@ -208,9 +208,9 @@ function NumberCell({ value, meta, mode, size, onCommit, onCancel, onDraft }: Ce
   }
   // Edit mode value pre-fill canonical(2026-05-05):NumberInput edit 強制 controlled
   // (`value={value ?? ''}`)— 若 NumberCell 以 `defaultValue` 傳入,NumberInput value=undefined → ''
-  // empty。對齊 cell-as-input「edit mode 自動帶入 display 值」(對齊 Notion / Airtable 共識),
+  // empty。對齊 cell-as-input「edit mode 自動帶入 view 值」(對齊 Notion / Airtable 共識),
   // 改用 local state controlled。User typing → setLocalValue;blur/Enter → onCommit(localValue)。
-  // (initial + useState 已 hoist 到 display-return 前 — 見上方 React #310 fix。)
+  // (initial + useState 已 hoist 到 view-return 前 — 見上方 React #310 fix。)
   return (
     <NumberInput
       autoFocus
@@ -237,11 +237,11 @@ function NumberCell({ value, meta, mode, size, onCommit, onCancel, onDraft }: Ce
 // (對齊 Airtable / Notion canonical:click 外即關)。
 const dismissOnClose = (onCancel?: () => void) => (open: boolean) => { if (!open) onCancel?.() }
 
-// Mode-keyed remount canonical(2026-05-05):display↔edit 切換時,因 React reconciliation 同 type 同
+// Mode-keyed remount canonical(2026-05-05):view↔edit 切換時,因 React reconciliation 同 type 同
 // position 會重用 instance,導致 `useState(defaultOpen)` 只在首次 mount 跑(那時 mode='view'
 // defaultOpen 沒給→預設 false)。後續 mode='edit' 即使傳 defaultOpen=true 也無效。
 // Fix:`key={mode}` 強制 React unmount + remount,每次切 mode 都重跑 useState init。
-// 對齊 Notion / Airtable cell-as-input「display 跟 edit 是不同 mount cycle」語義。
+// 對齊 Notion / Airtable cell-as-input「view 跟 edit 是不同 mount cycle」語義。
 
 function DateCell({ value, meta, mode, size, onCommit, onCancel }: CellComponentProps) {
   if (mode === 'view') {
@@ -255,7 +255,7 @@ function DateCell({ value, meta, mode, size, onCommit, onCancel }: CellComponent
         formatOptions={meta?.formatOptions}
         locale={meta?.locale}
         // 2026-07-08 user 拍板 A 案(推翻 2026-05-10/06-26 兩次拍板,per 6 家 benchmark 6/6 共識
-        // Ant/MUI X/AG Grid/Atlaskit/Notion/Airtable:display 態零恆顯型別 icon;editable
+        // Ant/MUI X/AG Grid/Atlaskit/Notion/Airtable:view 態零恆顯型別 icon;editable
         // affordance 統一 = hover outline(field.spec.md L4)。showDisplayEndIcon 不再傳
         //(prop 保留為 spreadsheet-flavored 消費端 opt-in 逃生門,見 field.spec.md L6)。
       />
@@ -287,7 +287,7 @@ function TimeCell({ value, meta, mode, size, onCommit, onCancel }: CellComponent
         size={size}
         formatOptions={meta?.formatOptions}
         locale={meta?.locale}
-        // showDisplayEndIcon 不傳 — 2026-07-08 A 案:display 態零恆顯 icon(同 DateCell 註)
+        // showDisplayEndIcon 不傳 — 2026-07-08 A 案:view 態零恆顯 icon(同 DateCell 註)
       />
     )
   }
@@ -308,7 +308,7 @@ function TimeCell({ value, meta, mode, size, onCommit, onCancel }: CellComponent
 }
 
 function SelectCell({ value, meta, mode, size, onCommit, onCancel }: CellComponentProps) {
-  // Display canonical(2026-05-05):cell IS variant,default plain text(no Tag pill 疊在 cell border 內)。
+  // View canonical(2026-05-05):cell IS variant,default plain text(no Tag pill 疊在 cell border 內)。
   // Consumer 可在 column meta.display='tag' opt-in 內容導向的 Tag 視覺(category 含色彩標籤等)。
   // 對齊 JTable / AG Grid「renderer/editor 視覺一致」canonical。
   const displayMode = (meta?.display as 'plain' | 'tag' | undefined) ?? 'plain'
@@ -322,7 +322,7 @@ function SelectCell({ value, meta, mode, size, onCommit, onCancel }: CellCompone
         options={meta?.options ?? []}
         size={size}
         display={displayMode}
-        // showDisplayEndIcon 不傳 — 2026-07-08 A 案:display 態零恆顯 icon(同 DateCell 註)
+        // showDisplayEndIcon 不傳 — 2026-07-08 A 案:view 態零恆顯 icon(同 DateCell 註)
         selectedItemRenderer={meta?.selectedItemRenderer}  // 2026-07-08 WM 戰役:status 類彩色 cell 顯示通道
       />
     )
@@ -359,7 +359,7 @@ function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommitLive,
         options={meta?.options ?? []}
         wrap={wrap}
         size={size}
-        // showDisplayEndIcon 不傳 — 2026-07-08 A 案:display 態零恆顯 icon(同 DateCell 註)
+        // showDisplayEndIcon 不傳 — 2026-07-08 A 案:view 態零恆顯 icon(同 DateCell 註)
       />
     )
   }
@@ -381,7 +381,7 @@ function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommitLive,
 
 function PersonCell({ value, mode, size, onCommit, onCancel, meta }: CellComponentProps) {
   if (mode === 'view') {
-    // 2026-07-08 A 案:display 態零恆顯 icon(同 DateCell 註)
+    // 2026-07-08 A 案:view 態零恆顯 icon(同 DateCell 註)
     return <PeoplePicker key="view" variant="naked" mode="view" value={value as PersonValue | null} size={size} />
   }
   return (
@@ -401,7 +401,7 @@ function PersonCell({ value, mode, size, onCommit, onCancel, meta }: CellCompone
 
 function MultiPersonCell({ value, mode, size, onCommitLive, onCancel, meta }: CellComponentProps) {
   if (mode === 'view') {
-    // 2026-07-08 A 案:display 態零恆顯 icon(同 DateCell 註)
+    // 2026-07-08 A 案:view 態零恆顯 icon(同 DateCell 註)
     return <PeoplePicker key="view" variant="naked" mode="view" value={(value as PersonValue[]) ?? []} size={size} />
   }
   // Multi 用 onCommitLive(commit 但不 exit edit)— 每勾一人即時生效,popover 持續開
@@ -439,7 +439,7 @@ function BooleanCell({ value, mode, meta, size, isEditable, onCommit }: CellComp
 
 /**
  * UrlCell(2026-07-14 docblock 對齊實作):
- *   display branch = `<LinkInput mode="view">`(URL parse / hostname
+ *   view branch = `<LinkInput mode="view">`(URL parse / hostname
  *   顯示一致性 SSOT);editable 互動:hover 時右側出 Pencil 鈕 → 進 edit(保留 link click 語意)。
  *   edit branch = plain `<Input variant="naked">`(LinkInput edit 的 controlled value 衝突
  *   revert,詳下方 edit branch 註解);URL 驗證 deferred 到 onCommit(consumer 端 validate)。
@@ -531,7 +531,7 @@ function buildCellWithSurface(Inner: ComponentType<CellComponentProps>, key: str
             漏傳 size 的 cell 也自動繼承(根治「新 cell 漏傳 size」class);size primitive 不破壞 memo identity。*/}
         <FieldSurfaceSizeProvider size={props.size}>
           {/* 2026-07-08 user 拍板:cell 可編輯訊號經獨立 boolean context 注給 child Field controls,
-              讓 useFieldEmptyDisplay 分流「可編輯 cell 空 display → 空白」vs「不可編輯 cell → '-'」。
+              讓 useFieldEmptyDisplay 分流「可編輯 cell 空 view → 空白」vs「不可編輯 cell → '-'」。
               boolean primitive 不破壞 memo identity(同 size context)。 */}
           <FieldSurfaceEditableProvider isEditable={props.isEditable ?? false}>
             <Inner {...props} />

@@ -248,7 +248,7 @@ export const Overview = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", "顯示模式；display 為純內容輸出（DataTable cell 用）。優先序：顯式 mode prop 永遠最優先，未傳 mode 時 disabled 才升 disabled（useResolvedFieldMode）；disabled 以 aria-disabled 表達（trigger 為 div role=combobox，非原生 disabled 屬性）"],
+                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", "顯示模式；view 為純內容輸出（DataTable cell 用）。優先序：顯式 mode prop 永遠最優先，未傳 mode 時 disabled 才升 disabled（useResolvedFieldMode）；disabled 以 aria-disabled 表達（trigger 為 div role=combobox，非原生 disabled 屬性）"],
                 ['error', 'boolean', 'false', '紅色邊框 + aria-invalid，僅 edit 模式生效'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '高度與字體，與 Button 共用 field-height token'],
                 ['value', 'string | null', '—', 'ISO date string（YYYY-MM-DD）'],
@@ -708,7 +708,7 @@ export const StateBehavior = {
           <span className="text-caption font-medium text-fg-secondary">格式化 — 預設 YYYY/MM/DD 直接組；傳 formatOptions / locale 走 Intl.DateTimeFormat</span>
           <div className="overflow-x-auto">
             <table className="border-collapse text-caption">
-              <thead><tr><Th>設定</Th><Th>readonly 預覽</Th><Th>Display 預覽</Th></tr></thead>
+              <thead><tr><Th>設定</Th><Th>readonly 預覽</Th><Th>view 預覽</Th></tr></thead>
               <tbody>
                 <tr>
                   <Td>預設（YYYY/MM/DD）</Td>
@@ -745,7 +745,7 @@ export const StateBehavior = {
               </tbody>
             </table>
           </div>
-          <span className="text-[11px] text-fg-muted">edit trigger 顯示文字與 Display 都用 Intl.DateTimeFormat 格式化（formatOptions / locale prop 對兩者皆生效,跨模式一致）。</span>
+          <span className="text-[11px] text-fg-muted">edit trigger 顯示文字與 view 都用 Intl.DateTimeFormat 格式化（formatOptions / locale prop 對兩者皆生效,跨模式一致）。</span>
         </div>
 
         {/* Empty value display */}
@@ -761,7 +761,7 @@ export const StateBehavior = {
               <DatePicker mode="disabled" value={null} className="w-48" />
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-[11px] text-fg-muted w-20 shrink-0">Display</span>
+              <span className="text-[11px] text-fg-muted w-20 shrink-0">view</span>
               <DatePicker mode="view" value={null} />
             </div>
           </div>

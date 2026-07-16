@@ -48,7 +48,7 @@ export { PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS, getPeoplePickerTagWrapperClass }
 //     差別在 tagRenderer 視覺):
 //       - **'stack'**(default,baseline 既有視覺)— Avatar 疊合 + `+N` overflow indicator,
 //         不可 wrap。tagRenderer 渲染 avatar stack(visible count 走 shared `avatar-stack-overflow`
-//         primitive deterministic formula,2026-05-15 Bug 3 fix;display 路徑 `<MultiPersonDisplay>` 同 primitive)。
+//         primitive deterministic formula,2026-05-15 Bug 3 fix;view 路徑 `<MultiPersonDisplay>` 同 primitive)。
 //         對齊 Notion / Linear / Atlassian / Slack 多人 quick-glance idiom。
 //       - **'pill'**(opt-in)— 每人 Tag pill,可 wrap。Wrap `<Combobox tagRenderer>`,
 //         tagRenderer 用 Tag 元件 `avatar` prop SSOT(不塞 children)。
@@ -60,7 +60,7 @@ export { PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS, getPeoplePickerTagWrapperClass }
 // component 內部 `...rest` forward 到 trigger 容器(對齊 DS 既有 Combobox / Select 慣例)。
 // `onChange` 衝突走 Omit(本 component 用 PersonValue[] custom signature)。
 export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
-  /** Field mode(edit / display / readonly / disabled),默認 inherit Field context 或 'edit' */
+  /** Field mode(edit / view / readonly / disabled),默認 inherit Field context 或 'edit' */
   mode?: FieldMode
   /** Field chrome variant(對齊 Select / Combobox)*/
   variant?: FieldVariant
@@ -113,9 +113,9 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
    */
   searchIn?: 'menu' | 'trigger'
   /**
-   * Display 是否渲 ChevronDown + Field naked wrapper(D-path opt-in,2026-05-08)
-   * — DataTable cell display↔edit 像素級對齊用。預設 false(裸 PersonDisplay,backward compat)。
-   * 設 true 時 display 走 fieldWrapperStyles(naked variant)+ ItemSuffix ChevronDown,
+   * View 態是否渲 ChevronDown + Field naked wrapper(D-path opt-in,2026-05-08)
+   * — DataTable cell view↔edit 像素級對齊用。預設 false(裸 PersonDisplay,backward compat)。
+   * 設 true 時 view 走 fieldWrapperStyles(naked variant)+ ItemSuffix ChevronDown,
    * 與 edit (Select / Combobox wrapped) 同 DOM 結構,消除 Layer-B padding mismatch。
    */
   showDisplayEndIcon?: boolean
@@ -156,8 +156,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   const isMulti = Array.isArray(value)
   const isEmpty = !value || (isMulti && value.length === 0)
 
-  // 2026-07-05 D3 P0 修:以下派生 + 4 hooks 原宣告在 display/readonly/single/pill 四個 early return
-  // 之後 — 同一 mounted instance 的 resolvedMode 於 edit↔display/disabled 切換(<Field mode>/<Field
+  // 2026-07-05 D3 P0 修:以下派生 + 4 hooks 原宣告在 view/readonly/single/pill 四個 early return
+  // 之後 — 同一 mounted instance 的 resolvedMode 於 edit↔view/disabled 切換(<Field mode>/<Field
   // disabled> cascade 正是 runtime 翻轉機制)時 hook 數 7→11 變動 → React #310 crash(與 Combobox
   // beta.76 / LinkInput 2026-07-04 同家族)。全部 hoist 到任何 early return 之前(對齊 select.tsx
   // 「所有 hooks 必在 early return 前 call」canonical);effect 加 mode/stack guard,邏輯不變。
@@ -209,7 +209,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   // ── mode='view' ────────────────────────────────────────────────────────
   // Default(showDisplayEndIcon=false):裸 PersonDisplay / MultiPersonDisplay — backward compat。
   // Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix ChevronDown,
-  // 與 edit (Select / Combobox wrapped) 同 DOM 結構消除 cell display↔edit 像素偏移。
+  // 與 edit (Select / Combobox wrapped) 同 DOM 結構消除 cell view↔edit 像素偏移。
   if (resolvedMode === 'view') {
     if (!showDisplayEndIcon) {
       if (isEmpty) return <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
@@ -371,7 +371,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   // **2026-05-15 Bug 3 fix(Claude+Codex Step 5 比稿 consensus)**:visible count 走 shared
   // `avatar-stack-overflow` primitive deterministic formula(取代 Combobox DOM offsetWidth-based
   // useOverflowCount + 60px fallback 不 deterministic),pass override 給 Combobox bypass internal
-  // measurement。`MultiPersonDisplay`(display path)同 primitive,display + edit 結果一致。
+  // measurement。`MultiPersonDisplay`(view path)同 primitive,view + edit 結果一致。
   // 對齊 user verbatim SSOT「同 cell width 同 overflow 判斷」+ codex Q3 consensus shared primitive。
   const handleMultiChange = (next: string[]) => {
     onChange?.(next.map(name => findPerson(people, name)))
@@ -430,10 +430,10 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // 既有 OverflowIndicator default 'circle' SSOT。
       overflowShape="circle"
       // 2026-05-15 Bug 3 fix:formula-based visible count override(避免 Combobox DOM measurement +
-      // 60px fallback 不 deterministic)。SSOT in `./avatar-stack-overflow.ts`,display + edit 共用。
+      // 60px fallback 不 deterministic)。SSOT in `./avatar-stack-overflow.ts`,view + edit 共用。
       visibleCountOverride={stackVisibleCount}
       // 2026-05-14 I4 fix(per codex+Layer A 共識):hidden items 在 `+N` overflow popover 顯
-      // Tag with avatar(對齊 display MultiPersonDisplay popover SSOT,user 抓 display vs edit
+      // Tag with avatar(對齊 view path MultiPersonDisplay popover SSOT,user 抓 display vs edit
       // overflow 視覺不一致)。
       renderHiddenTag={(item) => {
         const p = resolvePerson(findPerson(people, item.value))

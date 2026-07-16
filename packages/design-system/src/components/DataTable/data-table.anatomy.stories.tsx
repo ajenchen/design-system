@@ -71,7 +71,7 @@ export const Overview: Story = {
       <div className="flex flex-col gap-10">
         <div>
           <H3>Anatomy</H3>
-          <Desc>DataTable 基於 TanStack Table,透過 `meta.type` column type 系統自動套用對應 Field Control 的 Display 子元件渲染 cell。底層用 `&lt;div&gt;` + ARIA role(不用語義 `&lt;table&gt;`)——虛擬捲動需要絕對定位 row,frozen column 需要獨立 scroll 區域,table 的佈局模型兩者都不支援。</Desc>
+          <Desc>DataTable 基於 TanStack Table,透過 `meta.type` column type 系統自動套用對應 Field Control 的 view 態渲染 cell。底層用 `&lt;div&gt;` + ARIA role(不用語義 `&lt;table&gt;`)——虛擬捲動需要絕對定位 row,frozen column 需要獨立 scroll 區域,table 的佈局模型兩者都不支援。</Desc>
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
         </div>
 
@@ -83,7 +83,7 @@ export const Overview: Story = {
               <tbody>
                 <tr><Td>L1 Structure</Td><Td>DOM 結構 + 捲動行為</Td><Td mono>&lt;div&gt; + ARIA role="table/row/cell" + useVirtualizer</Td></tr>
                 <tr><Td>L2 Typography / Spacing</Td><Td>Row 高度 / Cell padding / 對齊</Td><Td mono>--table-row-* + --field-height-* token</Td></tr>
-                <tr><Td>L3 Cell Rendering</Td><Td>根據 meta.type 自動選 Display 元件</Td><Td mono>cell-registry.tsx cellRegistry 註冊 11 型:string/number/currency/date/time/select/multiSelect/person/multiPerson/boolean/url(column-types.ts 管 type union + 對齊預設)</Td></tr>
+                <tr><Td>L3 Cell Rendering</Td><Td>根據 meta.type 自動選對應 Cell 元件</Td><Td mono>cell-registry.tsx cellRegistry 註冊 11 型:string/number/currency/date/time/select/multiSelect/person/multiPerson/boolean/url(column-types.ts 管 type union + 對齊預設)</Td></tr>
                 <tr><Td>L4 Interactions</Td><Td>排序 / 選取 / 欄位拖動 / frozen column</Td><Td>TanStack Table features + 自訂 state</Td></tr>
               </tbody>
             </table>
@@ -132,7 +132,7 @@ export const Inspector: Story = {
     bordered: { control: 'boolean', description: '外框(嵌入已帶框容器時可設 false 避免雙重邊框)' },
     pinnedLeft: { control: 'boolean', description: 'Pin 產品名稱欄到左側,橫向捲動時保持可見' },
     pinnedRight: { control: 'boolean', description: 'Pin 上架日期欄到右側' },
-    inlineEdit: { control: 'boolean', description: 'inline edit 視覺:cell 間加垂直分隔線(dtCellGrid)。display 態零恆顯 chevron(2026-07-08 A 案,editable affordance = hover outline);edit 態才有控件 chrome' },
+    inlineEdit: { control: 'boolean', description: 'inline edit 視覺:cell 間加垂直分隔線(dtCellGrid)。view 態零恆顯 chevron(2026-07-08 A 案,editable affordance = hover outline);edit 態才有控件 chrome' },
     height: {
       control: 'select',
       options: ['auto', '300px'],
@@ -190,7 +190,7 @@ export const ColumnTypes: Story = {
           <H3>支援的 Column Types</H3>
           <div className="overflow-x-auto">
             <table className="text-caption border-collapse">
-              <thead><tr><Th>meta.type</Th><Th>Display 渲染</Th><Th>對齊</Th><Th>典型場景</Th></tr></thead>
+              <thead><tr><Th>meta.type</Th><Th>view 渲染</Th><Th>對齊</Th><Th>典型場景</Th></tr></thead>
               <tbody>
                 <tr><Td mono>string</Td><Td mono>{`<Input mode="view">`}</Td><Td>left</Td><Td>姓名、title、slug</Td></tr>
                 <tr><Td mono>number</Td><Td mono>{`<NumberInput mode="view">`}</Td><Td>right</Td><Td>數量、年齡</Td></tr>
@@ -204,7 +204,7 @@ export const ColumnTypes: Story = {
               </tbody>
             </table>
           </div>
-          <p className="text-footnote text-fg-muted mt-3">擴充新 type:在 `cell-registry.tsx` 的 `cellRegistry` map 註冊對應 Cell component(display/edit 渲染 SSOT);`column-types.ts` 只設 `align` / default metadata。兩處對齊後自動跟所有 DataTable 整合</p>
+          <p className="text-footnote text-fg-muted mt-3">擴充新 type:在 `cell-registry.tsx` 的 `cellRegistry` map 註冊對應 Cell component(view/edit 渲染 SSOT);`column-types.ts` 只設 `align` / default metadata。兩處對齊後自動跟所有 DataTable 整合</p>
         </div>
       </div>
     )
@@ -424,9 +424,9 @@ export const ColorMatrix: Story = {
       </div>
 
       <div>
-        <H3>Cell 內 Display element 色彩</H3>
+        <H3>Cell 內 view element 色彩</H3>
         <Desc>
-          Cell 內的資料元件(Tag / Person / Link / NumberDisplay)各自維持 Field Controls 的 display 色彩。
+          Cell 內的資料元件(Tag / Person / Link / NumberDisplay)各自維持 Field Controls 的 view 色彩。
           DataTable 不覆寫 cell 內的色彩 token,維持跨元件視覺統一。
         </Desc>
         <div className="overflow-x-auto">
@@ -434,7 +434,7 @@ export const ColorMatrix: Story = {
             <thead>
               <tr>
                 <Th>meta.type</Th>
-                <Th>Display 色彩</Th>
+                <Th>view 色彩</Th>
               </tr>
             </thead>
             <tbody>

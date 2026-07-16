@@ -12,7 +12,7 @@ import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useRes
  *
  * ── 使用情境 ──
  * - review / feedback:商品評分 / 服務評分(可編輯 + 唯讀兩種)
- * - display:已提交評分的唯讀呈現(商品清單星等)
+ * - view:已提交評分的唯讀呈現(商品清單星等)
  *
  * ── 視覺 ──
  * 填色用 `var(--warning)`(yellow-6,世界級黃星 convention;與 warning 語意共用色相

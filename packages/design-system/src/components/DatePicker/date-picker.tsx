@@ -328,9 +328,9 @@ export interface DatePickerProps
    */
   needConfirm?: boolean
   /**
-   * Display 是否渲 Calendar icon + Field naked wrapper(D-path opt-in,2026-05-08)
-   * — DataTable cell display↔edit 像素級對齊用。預設 false(裸 span,backward compat)。
-   * 設 true 時 display 走 fieldWrapperStyles(naked variant)+ ItemSuffix CalendarIcon,
+   * View 態是否渲 Calendar icon + Field naked wrapper(D-path opt-in,2026-05-08)
+   * — DataTable cell view↔edit 像素級對齊用。預設 false(裸 span,backward compat)。
+   * 設 true 時 view 走 fieldWrapperStyles(naked variant)+ ItemSuffix CalendarIcon,
    * 與 edit 同 DOM 結構,消除 Layer-B padding mismatch。
    */
   showDisplayEndIcon?: boolean
@@ -478,10 +478,10 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     // mode='view'(Phase B2 2026-05-05):純內容輸出 — 對齊原 DatePickerDisplay sub-component(retired)。
     //   Default(showDisplayEndIcon=false):無 Field wrapper / 無 Calendar icon — backward compat 裸 span。
     //   Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix Calendar,
-    //   與 edit 同結構消除 cell display↔edit 像素偏移(Layer-B padding mismatch)。
+    //   與 edit 同結構消除 cell view↔edit 像素偏移(Layer-B padding mismatch)。
     if (resolvedMode === 'view') {
       if (!showDisplayEndIcon) {
-        // 2026-05-14 I2 fix(spec contract (e) display typography canonical):bare span 套
+        // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
         if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
         return <span className={cn(fieldDisplayTextClass(size), 'truncate', className)}>{displayCommitted}</span>

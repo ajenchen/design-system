@@ -111,7 +111,7 @@ export interface CheckboxProps
   /**
    * Field mode(2026-05-05 Phase B3 align):
    *   edit     — 一般可互動 checkbox(預設)
-   *   display  — **純展示**:渲染 Check / X icon(true=勾 / false=叉,無互動 primitive、無 input chrome);
+   *   view     — **純展示**:渲染 Check / X icon(true=勾 / false=叉,無互動 primitive、無 input chrome);
    *              對齊 Carbon read-only / DataTable boolean cell 場景。取代既有 BooleanDisplay。
    *   readonly — 同 readOnly prop:checkbox 視覺保留 + 鎖互動 + a11y readonly signal
    *   disabled — 同 disabled prop:降色 + 鎖互動
@@ -192,7 +192,7 @@ const Checkbox = React.forwardRef<
     // readonly 灰框 size:走 SSOT resolver(prop > ctx > 'md',field-context.ts:150-161)
     const resolvedBoxSize = useResolvedFieldSize(size ?? undefined, 'md') as 'sm' | 'md' | 'lg'
 
-    // 2026-07-04 修:display / readonly-in-Field 分支的裸 span/div 原丟棄剩餘 props
+    // 2026-07-04 修:view / readonly-in-Field 分支的裸 span/div 原丟棄剩餘 props
     // (id/data-*/aria-*)且不轉發 forwardRef ref → consumer 的 aria-label 等靜默失效。
     // 抽出 Radix 專屬 non-DOM props,其餘 DOM props 於兩分支 spread 轉發(與 Switch/
     // RadioGroup 同修);edit 主路徑不受影響(rootEl 仍 spread 完整 props)。
@@ -221,7 +221,7 @@ const Checkbox = React.forwardRef<
     }
 
     // ── mode='readonly' in Field(2026-06-12 拍板「灰框 + 勾/叉」;2026-07-09 ✓/— glyph → Check/X icon)─
-    // Field 內 readonly boolean = readonly 灰框 chrome + display 同款值語言(勾/叉 icon)。
+    // Field 內 readonly boolean = readonly 灰框 chrome + view 同款值語言(勾/叉 icon)。
     // 灰框消費 fieldWrapperStyles 同一 cva = 與 Input readonly 字面同源(SSOT,改一處全動)。
     // 理由:同一張 readonly 表單裡文字控件有 bg-readonly 灰框鎖定訊號,boolean 保留全彩
     // 控件會誤導「仍可操作」(世界級 0/4 用原樣鎖互動:Salesforce=✓ 靜態 glyph /

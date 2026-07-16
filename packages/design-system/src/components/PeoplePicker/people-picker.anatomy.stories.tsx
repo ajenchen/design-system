@@ -78,7 +78,7 @@ export const Overview: Story = {
                 ['pillShowAvatar', 'boolean', 'true', "multiDisplay='pill' 時是否顯示 avatar prefix"],
                 ['pillWrap', 'boolean', 'true', 'pill 模式是否允許換行'],
                 ['searchIn', "'menu' | 'trigger'", "'menu'", '搜尋型態(menu 浮層內 / trigger inline;multi 才有意義)'],
-                ['showDisplayEndIcon', 'boolean', 'false', 'display 模式渲 ChevronDown + naked wrapper(opt-in 逃生門;2026-07-08 A 案後 DataTable 預設不傳)'],
+                ['showDisplayEndIcon', 'boolean', 'false', 'view 模式渲 ChevronDown + naked wrapper(opt-in 逃生門;2026-07-08 A 案後 DataTable 預設不傳)'],
                 ['defaultOpen', 'boolean', 'false', 'uncontrolled 初始開啟狀態'],
                 ['onOpenChange', '(open: boolean) => void', '—', 'open 狀態變更 callback'],
                 ['disabled', 'boolean', 'false', '停用'],
@@ -97,7 +97,7 @@ export const Overview: Story = {
 export const Inspector: Story = {
   name: '元件檢閱器',
   parameters: {
-    docs: { description: { story: '右側 Controls 切 props 即時 render,取代 Figma inspect。切 `mode` 看 edit / display / readonly / disabled 視覺差異,切 `size` 對照 field-height tier,切 `variant` 看 default / naked chrome 差異。' } },
+    docs: { description: { story: '右側 Controls 切 props 即時 render,取代 Figma inspect。切 `mode` 看 edit / view / readonly / disabled 視覺差異,切 `size` 對照 field-height tier,切 `variant` 看 default / naked chrome 差異。' } },
   },
   args: {
     mode: 'edit',
@@ -136,7 +136,7 @@ export const ModeMatrix: Story = {
         <PeoplePicker people={SAMPLE_PEOPLE} value={SAMPLE_PEOPLE[0]} onChange={() => {}} />
       </div>
       <div>
-        <H3>display</H3>
+        <H3>view</H3>
         <Desc>裸 PersonDisplay(Avatar + Name),無 field chrome——DataTable cell / detail panel 純顯示。</Desc>
         <PeoplePicker mode="view" people={SAMPLE_PEOPLE} value={SAMPLE_PEOPLE[0]} />
       </div>

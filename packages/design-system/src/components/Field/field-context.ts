@@ -30,7 +30,7 @@ export interface FieldContextValue {
   descriptionId: string
   errorId: string
   mode: FieldMode
-  /** 視覺外殼透傳(2026-05-05)。default = 含 border+bg;naked = cell-as-input(edit×naked 自畫 border-based state machine;display/readonly/disabled×naked 用 transparent border 由 host cell 供邊框);`bare` 2026-07-09 退役;naked 2026-07-14 型別收窄至
+  /** 視覺外殼透傳(2026-05-05)。default = 含 border+bg;naked = cell-as-input(edit×naked 自畫 border-based state machine;view×naked 用 transparent border 由 host cell 供邊框);`bare` 2026-07-09 退役;naked 2026-07-14 型別收窄至
    *  FieldVariantInternal(@internal)— 公開 `<Field variant>` 只收 default,故本欄位維持 FieldVariant。
    *  child Field control 自動繼承,per-control prop override 可覆寫。詳 field-types.ts。 */
   variant: FieldVariant
@@ -175,7 +175,7 @@ export function useResolvedFieldDisabled(disabledProp?: boolean | null): boolean
 }
 
 /**
- * Resolve Field control 的 **mode**(display / readonly / disabled / edit)— 2026-06-08 SSOT,統一兩派散落:
+ * Resolve Field control 的 **mode**(view / readonly / disabled / edit)— 2026-06-08 SSOT,統一兩派散落:
  *   舊 Input 派 `modeProp ?? fieldCtx?.mode ?? (...)` → `<Field disabled>` 時 ctx.mode 仍 'edit',漏 disabled chrome。
  *   舊 picker 派 `disabled ? 'disabled' : mode`(mode 預設 'edit')→ 完全不讀 fieldCtx.mode,`<Field mode="view">` 失效。
  * 統一優先序(world-class:MUI FormControl disabled 完整 cascade + 顯式 prop 永遠最優先):
@@ -240,7 +240,7 @@ export function FieldSurfaceSizeProvider({
 /**
  * Table-cell 可編輯訊號(2026-07-08 user 拍板)— 獨立於 FieldSurfaceContext / FieldSurfaceSizeContext
  * 的純 boolean context,由 host(DataTable cell registry)注入該 cell 是否可編輯,讓 useFieldEmptyDisplay
- * 分流「可編輯 cell 空 display → 空白」vs「不可編輯 cell 空 display → '-'」。
+ * 分流「可編輯 cell 空 view → 空白」vs「不可編輯 cell 空 view → '-'」。
  * value = boolean primitive(stable when unchanged),不破壞 cell memo identity(同 TableScrollContext /
  * FieldSurfaceSizeContext L119-121 canonical);絕不污染 FieldContext(useFieldContext() 在 cell 內仍 null)。
  */
@@ -261,16 +261,16 @@ export function FieldSurfaceEditableProvider({
  *
  * | 情境                                           | 空值顯示 |
  * |------------------------------------------------|----------|
- * | table-cell **可編輯** 的 display 靜止態        | **空白 `''`**(不佔位,affordance = hover outline)|
+ * | table-cell **可編輯** 的 view 靜止態        | **空白 `''`**(不佔位,affordance = hover outline)|
  * | table-cell **不可編輯**(readonly cell)        | **半形 `-`** |
- * | standalone display / readonly / form / toolbar | **半形 `-`** |
+ * | standalone view / readonly / form / toolbar | **半形 `-`** |
  *
  * 收斂式:`surface==='table-cell' && isEditable ? '' : EMPTY_DISPLAY`。
  * 可編輯 form / edit 輸入框走 native placeholder(不經此 hook)。boolean → unchecked / disabled →
  * 同上文字 + text-fg-disabled(M24),各控件自理。
  * 世界級對照:table-cell blank = MUI X / AG Grid / Ant core / Notion / Airtable grid 域共識;
  * 非 table `-` = Ant ProTable `columnEmptyText`(見 field-wrapper.tsx EMPTY_DISPLAY 註)。
- * SSOT 條文 → field-controls.spec.md「null / undefined 值」;全 Field family display/readonly/disabled
+ * SSOT 條文 → field-controls.spec.md「null / undefined 值」;全 Field family view/readonly/disabled
  * 空值渲染必經此 hook,禁直接引 EMPTY_DISPLAY 常數(genre 分流會漏)。
  */
 export function useFieldEmptyDisplay(): string {
@@ -288,7 +288,7 @@ export function useFieldEmptyDisplay(): string {
  * 提示」的裝飾語意;空值符號不是提示、是被檢視的值狀態)。
  * disabled 態維持 `text-fg-disabled`(M24 disabled 顯著性 > foreground/muted,不可被蓋)。
  *
- * SSOT:全 Field family display/readonly/disabled 空值 span 消費此 helper,傳入已 resolve 的
+ * SSOT:全 Field family view/readonly/disabled 空值 span 消費此 helper,傳入已 resolve 的
  * resolvedMode。純函式(非 hook)—— resolvedMode 已由 useResolvedFieldMode 解析(含控件自身
  * disabled prop,context hook 讀不到);故以 resolvedMode 為入參,可條件呼叫、不受 Rules of Hooks 限制。
  * 世界級對照:Ant read-only / Carbon read-only value = 正常前景色;placeholder 才 muted。

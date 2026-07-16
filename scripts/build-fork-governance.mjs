@@ -23,6 +23,8 @@ import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, rmSync
 import { join, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
+// PNG P2.4:codex surface 投影名單 + builder 單一 SSOT(gen-codex-adapter.mjs;fork 端不另判)
+import { PROJECTED as CODEX_PROJECTED, buildHooksJson, buildIndependentReviewSkill } from './gen-codex-adapter.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const HOOKS_DIR = join(ROOT, '.claude/hooks')
@@ -272,6 +274,36 @@ function buildCorpus() {
   writeFileSync(join(OUT_DIR, 'preamble.md'), preambleStr)
   lockEntries.push({ file: 'preamble.md', sha256: createHash('sha256').update(preambleStr).digest('hex') })
 
+  // ── codex surface(PNG P2.4):fork consumer 的 Codex 原生 discovery 投影 ──
+  // fork 端 Codex 治理三件套(佈局用非-dot 目錄避 npm dot-dir 打包 edge;安裝到 fork root 時
+  // 對映:AGENTS.md → <fork>/AGENTS.md、codex/hooks.json → <fork>/.codex/hooks.json、
+  // codex/agents/skills/* → <fork>/.agents/skills/*):
+  //   1. AGENTS.md — root AGENTS.md 投影(preambleTransform node_modules 視角 + fork-context banner)
+  //   2. codex/hooks.json — 只投影 provider-neutral eligible(gen-codex-adapter PROJECTED SSOT)
+  //      ∩ fork-shipped(classification SSOT)交集;command 指 npm ship 的 fork/hooks/(同步不漂)
+  //   3. codex/agents/skills/independent-review — second-opinion driver(rubric path 已 node_modules 化)
+  const emitRaw = (outRel, content, source) => {
+    const outPath = join(OUT_DIR, outRel)
+    mkdirSync(dirname(outPath), { recursive: true })
+    writeFileSync(outPath, content)
+    lockEntries.push({ file: outRel, sha256: createHash('sha256').update(content).digest('hex'), source })
+  }
+  const FORK_AGENTS_BANNER =
+    '> **Generated(禁手改)**:本檔由 `build-fork-governance.mjs` 從 DS repo root `AGENTS.md` 投影(path 已改 node_modules 視角);隨 DS 發版重生,fork 端以 npm / `npm run sync-all` 取得最新。\n' +
+    '> **你是 FORK PRODUCT 開發者**:遵循檔內設計紀律(mindset / SSOT 消費 / 命名 / 4-Family / 稽核觀念);**忽略 DS-author 的發版/治理維護鏈**(`release:preflight` / tag / npm publish / codex-collab / DS `scripts/*.mjs` gate — 那是 DS 維護者的);git 節奏照 fork 的「預覽 → 確認 → 上線」(詳本 repo CLAUDE.md)。Deep detail → `node_modules/@qijenchen/design-system/ds-canonical/`。\n\n'
+  const forkAgentsMd = FORK_AGENTS_BANNER + preambleTransform(readFileSync(join(ROOT, 'AGENTS.md'), 'utf8'))
+  emitRaw('AGENTS.md', forkAgentsMd, 'AGENTS.md(root)')
+  const forkShipped = new Set([...cls.SHIP_AS_IS, ...cls.SHIP_REWRITTEN].map((e) => e.hook))
+  const codexForkHooks = CODEX_PROJECTED.filter((p) => forkShipped.has(p.hook))
+  const forkHooksJson = JSON.stringify(buildHooksJson({
+    entries: codexForkHooks,
+    commandFor: (h) => `bash "$(git rev-parse --show-toplevel)/node_modules/@qijenchen/design-system/ds-canonical/fork/hooks/${h}"`,
+    sourceNote: 'node_modules/@qijenchen/design-system/ds-canonical/fork/hooks/(npm ship;SSOT = DS repo .claude/hooks;投影名單 = gen-codex-adapter PROJECTED ∩ fork-shipped)',
+  }), null, 2) + '\n'
+  emitRaw('codex/hooks.json', forkHooksJson, 'gen-codex-adapter.mjs PROJECTED ∩ fork classification')
+  emitRaw('codex/agents/skills/independent-review/SKILL.md', buildIndependentReviewSkill({ transform: preambleTransform }), 'gen-codex-adapter.mjs')
+  manifest.codex = { agentsMd: 'AGENTS.md', hooksJson: codexForkHooks.map((p) => p.hook), agentsSkills: ['independent-review'] }
+
   // ── launchers/(接線骨架:3 啟動器 + settings hooks 區塊,隨 npm ship 供 sync-all 刷新既有 fork)──
   // SSOT = template/ds-product-template/.claude/{hooks,settings.json}。讓「接線層」也完全同步(2026-06-17 補)。
   mkdirSync(join(OUT_DIR, 'launchers'), { recursive: true })
@@ -314,6 +346,9 @@ function buildCorpus() {
     if (existsSync(dstCat)) rmSync(dstCat, { recursive: true, force: true })
     if (existsSync(srcCat)) cpSync(srcCat, dstCat, { recursive: true })
   }
+  // committed scaffold:template AGENTS.md(PNG P2.4 — 新 fork session-1 即有 Codex 原生 bootstrap;
+  // = fork/AGENTS.md 的 byte-copy,generated 禁手改;stale 由 preflight git-clean gate + harness 攔)
+  writeFileSync(join(dirname(TPL_CLAUDE), 'AGENTS.md'), forkAgentsMd)
 
   return { manifest, lockEntries, count: lockEntries.length - 1 }
 }

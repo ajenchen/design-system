@@ -56,7 +56,7 @@ export const fieldWrapperStyles = cva(
         default: '',
         // naked — cell-as-input(Notion / Airtable / Excel canonical)。**edit×naked 自畫** border +
         // hover:border-border-hover + focus-within:border-primary + error 紅框(v14 border-based state
-        // machine,見下方 compoundVariants L182-196);display/readonly/disabled×naked 用 transparent
+        // machine,見下方 compoundVariants L182-196);view×naked 用 transparent
         // border 由 host cell 提供視覺邊框,內部 input 純文字承載。
         // 世界級對照:Airtable / Notion / Excel / Google Sheets cell editing。
         // (2026-07-09 `bare` variant 已退役 — 見 field-types.ts FieldVariant 註解;
@@ -210,7 +210,7 @@ export const fieldWrapperStyles = cva(
       { mode: 'edit', variant: 'naked', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
       {
         // 2026-05-12 fix v2(M32 root invariant audit):
-        //   Q1 root invariant?:cell-as-input display 視覺位置 = `cell.items-{X}` × `Field.height`
+        //   Q1 root invariant?:cell-as-input view 視覺位置 = `cell.items-{X}` × `Field.height`
         //                       兩變數函數;canonical = autoRow → Field intrinsic + cell.items-start
         //                       (text 在 cell top + cellPadding-y),fixed → Field h-field-md +
         //                       cell.items-center(text 在 cell vertical center)。
@@ -256,7 +256,7 @@ export const bareInputStyles = [
   // bareInputStyles 套上,placeholder 無 ellipsis → narrow cell(<160px)硬裁無 `...`(user round 3
   // 圖一證據)。加 truncate 後 `<input>` `text-overflow: ellipsis` 啟動,符合 user 「placeholder 直接被截掉沒有變...」
   // 該顯 ellipsis 的 SSOT。對齊 data-table.spec.md:233「禁硬裁無 ellipsis」+ field-controls.spec.md:286
-  // 共享 contract(a)「display/readonly/disabled/edit 4 mode 共享同一 renderer」semantic 對齊。
+  // 共享 contract(a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」semantic 對齊。
   'flex-1 min-w-0 truncate bg-transparent',
   'outline-none border-none p-0',
   'text-[inherit] font-[inherit] leading-[inherit]',
@@ -292,13 +292,13 @@ export const bareInputStyles = [
 // Audit:design-system-audit Group N(periodic batch verify)
 export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-start'
 
-// ── Cell-as-input Display Hover Ring(2026-05-05 v9 — sole remaining ring const)─
-// editable cell **display mode hover 提示**(「這 cell 可編,點 → 進 edit」affordance 信號)。
+// ── Cell-as-input View Hover Ring(2026-05-05 v9 — sole remaining ring const)─
+// editable cell **view mode hover 提示**(「這 cell 可編,點 → 進 edit」affordance 信號)。
 // 對齊 Notion / Airtable hover-cell-shows-border canonical。
 //
 // **為何只剩這一個**:Field naked **edit/focus/open state ring 已下沉到 Field default state
 // machine**(border-based,2026-05-05 v9 architectural rewrite),不需 outline 平行系統;
-// 但 display mode 沒 Field state(display = 純展示無互動),hover 提示需 cell wrapper 自加。
+// 但 view mode 沒 Field state(view = 純展示無互動),hover 提示需 cell wrapper 自加。
 //
 // **2026-05-09 v15.17 revert v15.16(user 未同意 ship)— 維持 v15.13 outline+offset:-1**
 //
@@ -351,7 +351,7 @@ export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hove
 // ── Empty Value Display ─────────────────────────────────────────────────────
 
 // 2026-07-08 user 拍板(verbatim「我從頭到尾哪裡有說要用全形的」):空值符號 = **半形 hyphen
-// `-`(U+002D)**，非全形 em dash `—`(U+2014)。不可編輯(readonly / standalone display /
+// `-`(U+002D)**，非全形 em dash `—`(U+2014)。不可編輯(readonly / standalone view /
 // table 不可編輯 cell)空值一律此符號 + `text-fg-muted`。分流邏輯 SSOT = field-context.ts
 // `useFieldEmptyDisplay()`(table-cell 可編輯 → 空白；其餘 → 本常數)。
 // 世界級對照:Ant ProTable `columnEmptyText` 預設 `'-'`(U+002D 半形)
@@ -359,9 +359,9 @@ export const nakedCellEditableDisplayHover = 'hover:outline hover:outline-1 hove
 export const EMPTY_DISPLAY = '-'
 
 /**
- * 2026-05-14 I2 fix(per field-controls.spec.md contract (e) display typography canonical):
- * Field family display path bare-span helper — `sm/md → text-body` / `lg → text-body-lg`,
- * 跨 9 元件 display 視覺尺寸統一(user 抓 LinkInput 字體跟其他 Field 不一致 = SSOT 違反)。
+ * 2026-05-14 I2 fix(per field-controls.spec.md contract (e) view typography canonical):
+ * Field family view path bare-span helper — `sm/md → text-body` / `lg → text-body-lg`,
+ * 跨 9 元件 view 視覺尺寸統一(user 抓 LinkInput 字體跟其他 Field 不一致 = SSOT 違反)。
  * Consumer:LinkInput / Select / Combobox / DatePicker / TimePicker non-D-path bare-span 套此 class。
  */
 export const fieldDisplayTextClass = (size: 'sm' | 'md' | 'lg'): string =>

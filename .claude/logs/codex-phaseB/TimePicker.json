@@ -1,0 +1,51 @@
+{
+ "component": "TimePicker",
+ "claimsVerified": 280,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-columns.tsx:92-96",
+   "宣稱": "scrollIntoView 會自動找到最近的 scrollable ancestor",
+   "真實code行為": "呼叫未指定 container；瀏覽器預設會處理所有 scrollable ancestors，可能連外層容器一起捲動，並非只限最近祖先。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-columns.tsx:145-148",
+   "宣稱": "TimePicker 的 216px 容器預設約可見 7 個 items",
+   "真實code行為": "216px 包含約 53px footer；列表實際約 163px，高度 28px 的 item 約可見 5–6 個。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-columns.tsx:175-176",
+   "宣稱": "目前鍵盤實作是 WAI-ARIA roving",
+   "真實code行為": "DOM focus 固定在 tabIndex=0 的 listbox，options 全為 tabIndex=-1，只更新 aria-activedescendant；這是 virtual focus，不是 roving tabindex。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.tsx:143-149,255-258",
+   "宣稱": "showDisplayEndIcon=true 時 view 會使用 naked wrapper，並與 edit 採相同 DOM 結構",
+   "真實code行為": "view 分支沿用獨立解析出的 variant，沒有強制 naked；edit 另有 PopoverTrigger、combobox ARIA、鍵盤 handler 與可選 clear action，DOM 結構也不相同。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.spec.md:28",
+   "宣稱": "Ant TimePicker、MUI DigitalClock、iOS picker 的共同行為包含 H/M/S 分欄、minuteStep、Now／OK footer 與 clearable",
+   "真實code行為": "引用的 MUI DigitalClock 是單一 MenuList 的完整時間選項，不提供 H/M/S 分欄，也不自行渲染 Now／OK footer 或 clear action。[MUI DigitalClock source](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DigitalClock/DigitalClock.tsx)"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.spec.md:248-250; packages/design-system/src/components/TimePicker/time-picker.anatomy.stories.tsx:3-9",
+   "宣稱": "TimePicker 沒有自己的 state 行為，panel 開關由 Popover primitive 處理，因此不需要 StateBehavior",
+   "真實code行為": "TimePicker 自行持有 open 與 draft state，實作 trigger 鍵盤開啟、開啟時重設 draft、欄位 eager commit、此刻 commit＋close、確定 close 與 clear 等狀態轉移；不只是被動繼承 Popover。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.spec.md:279",
+   "宣稱": "Panel 開啟時，外部 value 變更會反映並 smooth scroll-into-view",
+   "真實code行為": "只在 value 存在於該欄 values 時成立；例如 minuteStep=15、value=09:07 時 index=-1，effect 直接 return，沒有 selected option、highlight 或 scrollIntoView。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.tsx:127-130; packages/design-system/src/components/TimePicker/time-picker.stories.tsx:121-123",
+   "宣稱": "showSeconds=true 時 format 會自動升級為 HH:mm:ss",
+   "真實code行為": "showSeconds 只增加秒欄並讓 onChange 序列化含秒；formatTime 的預設 Intl options 固定只有 hour／minute，因此未另傳 formatOptions.second 時，trigger 仍只顯示 HH:mm。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.stories.tsx:138-155",
+   "宣稱": "disabledTime 指定的半夜時段不可選",
+   "真實code行為": "column options 確實 disabled，但「此刻」handleNow 完全不檢查 disabledTime；當目前時間落在禁用時段時，仍會 commit 該值並關閉 panel。"
+  }
+ ]
+}

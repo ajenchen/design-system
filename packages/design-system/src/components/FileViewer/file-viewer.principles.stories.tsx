@@ -423,7 +423,7 @@ export const ReadOnlyRule: Story = {
 
         <Rule
           title="✅ readOnly — 其他人上傳的 / 公開公告 / 只讀 link 分享"
-          note="readOnly=true 時說明區依 DS Textarea readonly canonical:有值 → 可聚焦選取但不可改的 native readonly textarea;空值 → display div 顯 emptyDisplay(`-`,非 placeholder);onDescriptionChange 不觸發。故 readonly 無 description 時顯示 `-`,不會出現「為這個檔案加上說明...」的編輯誘導 placeholder"
+          note="readOnly=true 時說明區依 DS Textarea readonly canonical:有值 → 可聚焦選取但不可改的 native readonly textarea;空值 → view div 顯 emptyDisplay(`-`,非 placeholder);onDescriptionChange 不觸發。故 readonly 無 description 時顯示 `-`,不會出現「為這個檔案加上說明...」的編輯誘導 placeholder"
         >
           <Button variant="tertiary" startIcon={FolderOpen} onClick={() => setRoOpen(true)}>
             開啟公司公告(readOnly)

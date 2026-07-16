@@ -43,7 +43,10 @@ else {
 let waivers = []
 try {
   const out = execSync(String.raw`grep -rnoE "@waiver\([^)]*\)" packages/design-system/src .claude apps scripts 2>/dev/null || true`, { encoding: 'utf8', cwd: ROOT })
-  waivers = out.split('\n').filter(Boolean).filter((l) => !l.includes('check-governance-tamper.mjs'))
+  // 排除:本 checker 自身 + planning docs(plan/RFC 描述 waiver「語法」的文字非真 waiver;
+  // 2026-07-16 false-positive:PNG plan P3.2 行的語法示意被 R2 誤判「格式不全」— 對齊
+  // check_tailwind_wildcard self-exemption precedent。真 waiver 只住 code/hook/spec。)
+  waivers = out.split('\n').filter(Boolean).filter((l) => !l.includes('check-governance-tamper.mjs') && !l.startsWith('.claude/planning/'))
 } catch { /* none */ }
 const today = new Date().toISOString().slice(0, 10)
 for (const w of waivers) {

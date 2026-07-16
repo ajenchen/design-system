@@ -1,4 +1,4 @@
-// @internal — boolean 值展示符號 SSOT(display / readonly 態);consumer 用 Checkbox / Switch 不直用。
+// @internal — boolean 值展示符號 SSOT(view / readonly 態);consumer 用 Checkbox / Switch 不直用。
 // ── 消費的 SSOT ──
 // - lucide-react Check / X(DS icon canonical:成功/勾 = Check、關閉/否 = X,見 ui-development.md「Icon canonical」)
 // - components/Field/field-context.ts(FieldSize 型別 → icon 尺寸對齊 value 文字)
@@ -23,7 +23,7 @@ const booleanIconSize: Record<FieldSize, string> = {
 
 /**
  * BooleanValueIcon — boolean 值的展示符號(true = Check 勾 / false = X 叉),中性 `text-foreground` 色。
- * Checkbox / Switch 的 display + readonly 態、DataTable boolean cell(經 Checkbox)全消費此 SSOT。
+ * Checkbox / Switch 的 view + readonly 態、DataTable boolean cell(經 Checkbox)全消費此 SSOT。
  */
 export function BooleanValueIcon({
   checked,

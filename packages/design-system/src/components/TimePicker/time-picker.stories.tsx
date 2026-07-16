@@ -27,7 +27,7 @@ export default meta
 
 type Story = StoryObj<typeof TimePicker>
 
-// @story-trait-rationale: pre-existing trait gaps tracked separately; this PR scope = add Modes story with display card.
+// @story-trait-rationale: pre-existing trait gaps tracked separately; this PR scope = add Modes story with view card.
 /* ── 四模式 ── */
 export const Modes: Story = {
   name: '四模式',
@@ -38,7 +38,7 @@ export const Modes: Story = {
         <TimePicker value="14:30" onChange={() => {}} aria-label="會議時段(edit mode demo)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">display</h3>
+        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
         <TimePicker mode="view" value="14:30" aria-label="會議時段(view 模式示範)" />
       </div>
       <div>

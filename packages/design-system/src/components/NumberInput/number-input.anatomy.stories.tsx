@@ -717,7 +717,7 @@ export const StateBehavior = {
           <span className="text-caption font-medium text-fg-secondary">格式化行為</span>
           <div className="overflow-x-auto">
             <table className="border-collapse text-caption">
-              <thead><tr><Th>情境</Th><Th>edit 模式</Th><Th>readonly / Display</Th></tr></thead>
+              <thead><tr><Th>情境</Th><Th>edit 模式</Th><Th>readonly / view</Th></tr></thead>
               <tbody>
                 {[
                   ['value = 2490, prefix="$"', '2490（raw 數值）', '$2,490（格式化）'],

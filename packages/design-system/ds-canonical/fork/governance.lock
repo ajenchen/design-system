@@ -2,6 +2,21 @@
   "_purpose": "sha256 of every shipped fork governance body + manifest (tamper-detect baseline)",
   "entries": [
     {
+      "file": "AGENTS.md",
+      "sha256": "52414efa4289281a6070a0fabdf08a97045197a90a072ca0a7550f01e79203c3",
+      "source": "AGENTS.md(root)"
+    },
+    {
+      "file": "codex/agents/skills/independent-review/SKILL.md",
+      "sha256": "4e0505a31083d5f07500ef0ea68726d7fe4986ef5541edddad5b10b5bbb2dc20",
+      "source": "gen-codex-adapter.mjs"
+    },
+    {
+      "file": "codex/hooks.json",
+      "sha256": "3b09d8d4a1dab1213842ede807b0473e3521ad5b7b7536967da320db8f34ed85",
+      "source": "gen-codex-adapter.mjs PROJECTED ∩ fork classification"
+    },
+    {
       "file": "hooks/block_prototype_imports.py",
       "sha256": "ee24825dc67147f38acdd7006ff8ed370079d30205425ebd38fadb1ec0e31331",
       "sourceHook": "block_prototype_imports.py",
@@ -21,7 +36,7 @@
     },
     {
       "file": "hooks/check_ds_anchor_preflight.sh",
-      "sha256": "34643184615d38854e361df6f745730e5710a966a6f363aa642f1fe29d59bdb5",
+      "sha256": "df682a95a88b52f8278722907c5ed29e61d31c0cd13d7c2112a3f9cae4bc38b1",
       "sourceHook": "check_ds_anchor_preflight.sh",
       "bucket": "SHIP_REWRITTEN"
     },
@@ -126,11 +141,11 @@
     },
     {
       "file": "manifest.json",
-      "sha256": "9f9133ff3ad96d9e52c0c248ddb8e14d0d8cb98a13d27246b601c641d8a946c9"
+      "sha256": "843d8d8ecd8536e9524e944e68602fa3b802f4a5aa40d6a77e0ff381d1bd3940"
     },
     {
       "file": "preamble.md",
-      "sha256": "9b16560369afb01e3d3ae3b15f6fec8215bcfe2faf3095b59960d2080064d510"
+      "sha256": "4cfba9c2013e766f8400d9331637d35d53e01386a69d161c4bf62b97bf72a912"
     },
     {
       "file": "skills/bug-fix-rhythm/SKILL.md",
@@ -174,7 +189,7 @@
     },
     {
       "file": "skills/product-ui-audit/SKILL.md",
-      "sha256": "a8255bbd662cc5db98414ed32b5ae7423b0e09a7d719f969c202ba02974a41c7"
+      "sha256": "1664a8ecb327469056182f0e3bb9951379165210e19a13b8a90714a6ddce4b18"
     },
     {
       "file": "skills/propose-options/SKILL.md",
@@ -214,7 +229,7 @@
     },
     {
       "file": "skills/ux-audit/SKILL.md",
-      "sha256": "28673c2f0207a0fa37f262ae8276d2b120b61c3329ada4d900fd6cdca42e35ed"
+      "sha256": "833d90921a8b5c51a4a93d17525d51cd81f75d6dc00c7c40f1872d5329088a13"
     },
     {
       "file": "skills/visual-audit/output/.gitkeep",
@@ -234,7 +249,7 @@
     },
     {
       "file": "skills/visual-audit/SKILL.md",
-      "sha256": "49463b40de654546e05dc62765d4d37ad41a7c745fbc660878f4ecb5a26e3ae8"
+      "sha256": "ccf7065ff856f1de095506fb41223c17b31b5602bc94a1c71e6d1871ef2c5a8e"
     }
   ]
 }

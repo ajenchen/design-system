@@ -34,7 +34,7 @@ export const Overview: Story = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'Field mode(display 渲染純文字 div;readonly 用底色 + padding 標示閱讀區)'],
+                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'Field mode(view 渲染純文字 div;readonly 用底色 + padding 標示閱讀區)'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", 'sm/md text-body,lg text-body-lg'],
                 ['rows', 'number', '3', '預設可見行數'],
                 ['placeholder', 'string', '—', '空值提示'],
@@ -126,7 +126,7 @@ export const ModeMatrix: Story = {
         />
       </div>
       <div>
-        <H3>display — 純展示(渲 div 取代 textarea,whitespace-pre-wrap 保留多行)</H3>
+        <H3>view — 純展示(渲 div 取代 textarea,whitespace-pre-wrap 保留多行)</H3>
         <Desc>對齊 Carbon read-only / Cloudscape display mode。常見於檢視已提交的留言 / 評論。</Desc>
         <Textarea
           mode="view"
@@ -201,11 +201,11 @@ export const ColorMatrix: Story = {
                 <Td><TokenCell token="--fg-muted" display="fg-muted" /></Td>
               </tr>
               <tr>
-                <Td mono>display</Td>
+                <Td mono>view</Td>
                 <Td>透明（zero-chrome，host context 提供邊界）</Td>
                 <Td>透明（無邊框）</Td>
                 <Td><TokenCell token="--foreground" display="foreground" /></Td>
-                <Td>—（display 無 placeholder；空值顯半形 -(hyphen)foreground）</Td>
+                <Td>—（view 無 placeholder；空值顯半形 -(hyphen)foreground）</Td>
               </tr>
               <tr>
                 <Td mono>readonly</Td>

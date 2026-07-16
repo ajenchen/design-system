@@ -20,9 +20,9 @@ export const Modes: Story = {
         <Switch defaultChecked aria-label="啟用通知(edit mode demo)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">display</h3>
+        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
         <Switch mode="view" checked />
-        <p className="text-caption text-fg-muted mt-1">純視覺 勾/叉 icon；語意由 context（如 DataTable 表頭 + 行標籤）提供，display 不暴露獨立 aria-label。需螢幕報讀器可讀請用 edit / readonly。</p>
+        <p className="text-caption text-fg-muted mt-1">純視覺 勾/叉 icon；語意由 context（如 DataTable 表頭 + 行標籤）提供，view 不暴露獨立 aria-label。需螢幕報讀器可讀請用 edit / readonly。</p>
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>

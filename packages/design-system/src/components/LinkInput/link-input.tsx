@@ -27,10 +27,10 @@ function formatHostname(url: string): string {
   }
 }
 
-// ── Display rendering(inline,2026-05-05 Phase B3 retire LinkInputDisplay)──
+// ── View rendering(inline,2026-05-05 Phase B3 retire LinkInputDisplay)──
 // 取代 LinkInputDisplay sub-component:純展示 a tag,無 input chrome、無 hover affordance。
 // edit mode 內 link state(showLink branch)也共用此 helper,確保「編輯態的 link 顯示」與
-// display mode 的視覺完全一致(SSOT)。
+// view mode 的視覺完全一致(SSOT)。
 function renderLinkAnchor(value: string, label?: string) {
   const displayText = label || formatHostname(value)
   return (
@@ -59,7 +59,7 @@ export interface LinkInputProps
    * - `'default'`(預設)— Field wrapper 完整 chrome(form / Field 內嵌)。
    * (2026-07-09 `bare` variant 退役;naked = cell-as-input substrate,@internal)
    *
-   * mode='view' 時 chrome 無視覺意義(display 完全無 wrapper);chrome 僅作用於 edit / readonly / disabled。
+   * mode='view' 時 chrome 無視覺意義(view 完全無 wrapper);chrome 僅作用於 edit / readonly / disabled。
    */
   variant?: FieldVariant
   error?: boolean
@@ -71,11 +71,11 @@ export interface LinkInputProps
   /** 自訂顯示文字（非編輯時） */
   label?: string
   /**
-   * Display 是否包 Field naked wrapper(D-path opt-in,2026-05-08)
-   * — DataTable cell display↔edit 像素級對齊用。預設 false(裸 anchor,backward compat)。
-   * 設 true 時 display 走 fieldWrapperStyles(naked variant)包覆 anchor,
+   * View 態是否包 Field naked wrapper(D-path opt-in,2026-05-08)
+   * — DataTable cell view↔edit 像素級對齊用。預設 false(裸 anchor,backward compat)。
+   * 設 true 時 view 走 fieldWrapperStyles(naked variant)包覆 anchor,
    * 與 cell edit (`<Input naked>`) 同 DOM 結構,消除 Layer-B padding mismatch。
-   * **本元件 edit 無 endIcon(UrlCell 用 plain Input edit)→ display 也無 ItemSuffix**(僅 wrapper)。
+   * **本元件 edit 無 endIcon(UrlCell 用 plain Input edit)→ view 也無 ItemSuffix**(僅 wrapper)。
    */
   showDisplayEndIcon?: boolean
 }
@@ -117,12 +117,12 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // 2026-07-05 D4:invalid 經 useResolvedFieldInvalid 統一接 fieldCtx.invalid(field-controls.spec.md
     // resolver 契約「error/invalid = prop OR fieldCtx.invalid」)— 原本紅框只吃 errorProp||localError、
     // aria-invalid 卻 inline 加 fieldCtx?.invalid → <Field invalid> 下 AT 聽到 invalid 視覺卻正常框
-    // (聚焦還變藍)。紅框與 aria 自此同源。宣告於 display early return 之前(Rules-of-Hooks)。
+    // (聚焦還變藍)。紅框與 aria 自此同源。宣告於 view early return 之前(Rules-of-Hooks)。
     const fieldInvalid = useResolvedFieldInvalid(errorProp)
 
     // ── Local state / refs ──────────────────────────────────────────────────
-    // 2026-07-04 Rules-of-Hooks 修:hooks 必在 display early return 之前宣告,
-    // 否則 mode 於 render 間切換 display↔edit 會改變 hook 呼叫數 → React #310 crash
+    // 2026-07-04 Rules-of-Hooks 修:hooks 必在 view early return 之前宣告,
+    // 否則 mode 於 render 間切換 view↔edit 會改變 hook 呼叫數 → React #310 crash
     // (同 beta.76 Combobox 同款修法;僅搬位置,hook 邏輯不變)。
     const [editing, setEditing] = React.useState(false)
     const [localValue, setLocalValue] = React.useState(value ?? '')
@@ -148,15 +148,17 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     // ── mode='view' ─────────────────────────────────────────────────────
     // 純展示:無 input chrome / 無 hover affordance / 無 Pencil edit 入口。
     // 取代既有 LinkInputDisplay sub-component(2026-05-05 Phase B3 retire)。
-    // Default(showDisplayEndIcon=false):無 wrapper 裸 anchor — backward compat。
+    // Default(showDisplayEndIcon=false):無 wrapper 裸 anchor — backward compat;為 contract (d)
+    // Model A(view×default = edit 幾何減 chrome、留 px)之明文例外,見 link-input.spec.md
+    // 「View 模式幾何(Model A 明文例外)」。
     // Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper 包覆 anchor,
     // 與 cell edit (`<Input naked>`) 同 DOM 結構消除像素偏移(無 ItemSuffix,因 edit 也無 endIcon)。
     if (resolvedMode === 'view') {
       if (!showDisplayEndIcon) {
-        // 2026-05-14 I2 fix(spec contract (e) display typography canonical):非 D-path bare
+        // 2026-05-14 I2 fix(spec contract (e) view typography canonical):非 D-path bare
         // anchor / span 必套 `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)
-        // — 對齊跨 Field family display 視覺尺寸統一。原無 font-size class → 用 browser default
-        // 字體 → 跟其他 Field display 不一致(user 抓 I2)。truncate 同需,長 URL ellipsis(I1)。
+        // — 對齊跨 Field family view 視覺尺寸統一。原無 font-size class → 用 browser default
+        // 字體 → 跟其他 Field view 不一致(user 抓 I2)。truncate 同需,長 URL ellipsis(I1)。
         if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), 'block truncate')}>{emptyDisplay}</span>
         return <span className={cn(fieldDisplayTextClass(size), 'block truncate')}>{renderLinkAnchor(value, label)}</span>
       }
@@ -243,7 +245,7 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       )
     }
 
-    // edit — link display mode（有合法 URL 且未在編輯中）
+    // edit — link 顯示分支（有合法 URL 且未在編輯中）
     if (showLink) {
       return (
         <div

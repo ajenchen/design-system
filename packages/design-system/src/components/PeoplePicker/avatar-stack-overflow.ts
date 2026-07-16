@@ -10,7 +10,7 @@
  *   4. **架構違反**:`MultiPersonDisplay` display path 用 canvas-based 算 / Combobox edit path 用 DOM offsetWidth
  *      → 同 cell width 兩 path 不同結果 → user verbatim「同寬 cell overflow 時間不一樣」SSOT 根本被違反
  *
- * **Fix**(per codex Q3 consensus):抽 pure formula + React hook,display + edit 兩 path **共用**。
+ * **Fix**(per codex Q3 consensus):抽 pure formula + React hook,view + edit 兩 path **共用**。
  *
  * **Deterministic formula**:
  * ```

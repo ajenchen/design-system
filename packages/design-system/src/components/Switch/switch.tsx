@@ -184,7 +184,7 @@ const Switch = React.forwardRef<
     const generatedId = React.useId()
     const inputId = idProp ?? fieldCtx?.id ?? generatedId
 
-    // 2026-07-04 修:display / readonly-in-Field 分支的裸 span/div 原丟棄剩餘 props
+    // 2026-07-04 修:view / readonly-in-Field 分支的裸 span/div 原丟棄剩餘 props
     // (id/data-*/aria-*)且不轉發 forwardRef ref → consumer 的 aria-label 等靜默失效。
     // 抽出 Radix 專屬 non-DOM props,其餘 DOM props 於兩分支 spread 轉發(與 Checkbox/
     // RadioGroup 同修);edit 主路徑不受影響(rootEl 仍 spread 完整 props)。

@@ -68,6 +68,10 @@ const CASES = [
   { hook: 'check_fork_product_quality.sh', tool: 'Write', enforce: false, neverBrick: true,
     violation: 'export const X=()=><table><thead><th>a</th></thead></table>',
     clean: 'export const X=()=><div>ok</div>' },
+  // PNG P2.4:codex-projected hook(fork/codex/hooks.json 唯一投影)— 違規必擋 / 乾淨必放
+  { hook: 'check_tailwind_wildcard_in_docs.sh', tool: 'Write', enforce: true,
+    violation: 'docs shorthand: `shadow-[var(--elevation-*)]`',
+    clean: 'math notation: var(--elevation-N) N∈{100,200}' },
 ]
 
 buildFixture()
@@ -298,6 +302,52 @@ const r1 = refreshLaunchers(SKEL)
   else skelResults.push('  scaffold drift: ✅ committed scaffold == 生成物(byte-equal)')
 }
 
+// 5) codex surface(PNG P2.4:AGENTS.md / codex/hooks.json / independent-review 投影「真生效」斷言)
+const codexResults = []
+{
+  const FORK_OUT = join(ROOT, 'packages/design-system/ds-canonical/fork')
+  const NM_PREFIX = 'node_modules/@qijenchen/design-system/ds-canonical/fork/hooks/'
+  // 5a fork AGENTS.md:存在 + fork-context banner + rules pointer 已 node_modules 化(死指標 = 投影失敗)
+  const agentsPath = join(FORK_OUT, 'AGENTS.md')
+  if (!existsSync(agentsPath)) { codexResults.push('  codex AGENTS.md: ❌ fork/AGENTS.md 不存在'); fail++ }
+  else {
+    const a = readFileSync(agentsPath, 'utf8')
+    const banner = a.includes('FORK PRODUCT')
+    const rewritten = a.includes('node_modules/@qijenchen/design-system/ds-canonical/rules/meta-patterns.md')
+    if (!banner || !rewritten) { codexResults.push(`  codex AGENTS.md: ❌ banner=${banner} / rules-path node_modules 化=${rewritten}`); fail++ }
+    else codexResults.push('  codex AGENTS.md: ✅ fork-context banner + pointer node_modules 化')
+  }
+  // 5b template committed AGENTS.md == fork/AGENTS.md(byte-equal;stale scaffold → 紅)
+  const tplAgents = join(ROOT, 'template/ds-product-template/AGENTS.md')
+  if (!existsSync(tplAgents) || readFileSync(tplAgents, 'utf8') !== readFileSync(agentsPath, 'utf8')) {
+    codexResults.push('  template AGENTS.md: ❌ 缺檔或 ≠ fork/AGENTS.md(重跑 build-fork-governance + commit)'); fail++
+  } else codexResults.push('  template AGENTS.md: ✅ committed scaffold == 生成物(byte-equal)')
+  // 5c codex/hooks.json:可 parse + 每 command 指向 npm fork hooks 且 hook 實檔存在(死指標 = codex 靜默無治理)
+  const hj = join(FORK_OUT, 'codex/hooks.json')
+  if (!existsSync(hj)) { codexResults.push('  codex hooks.json: ❌ fork/codex/hooks.json 不存在'); fail++ }
+  else {
+    let parsed = null
+    try { parsed = JSON.parse(readFileSync(hj, 'utf8')) } catch { /* parse fail ↓ */ }
+    const cmds = parsed ? Object.values(parsed.hooks || {}).flatMap((groups) => groups.flatMap((g) => (g.hooks || []).map((h) => h.command || ''))) : []
+    const badPath = cmds.filter((c) => !c.includes(NM_PREFIX) || !existsSync(join(FORK_OUT, 'hooks', (c.split(NM_PREFIX)[1] || '').replace(/"$/, ''))))
+    if (!parsed) { codexResults.push('  codex hooks.json: ❌ JSON parse fail'); fail++ }
+    else if (!cmds.length || badPath.length) { codexResults.push(`  codex hooks.json: ❌ command ${cmds.length} 條 / 死指標 ${badPath.length} 條`); fail++ }
+    else codexResults.push(`  codex hooks.json: ✅ parse + ${cmds.length} command 全指向存在的 npm fork hook`)
+  }
+  // 5d independent-review skill:frontmatter 合法 + rubric path 已 node_modules 化且 rubric 實檔在 shipped mirror
+  const ir = join(FORK_OUT, 'codex/agents/skills/independent-review/SKILL.md')
+  if (!existsSync(ir)) { codexResults.push('  independent-review: ❌ SKILL.md 不存在'); fail++ }
+  else {
+    const s = readFileSync(ir, 'utf8')
+    const fm = /^---[\s\S]*?\bname:\s*independent-review\b[\s\S]*?^---/m.test(s)
+    const rubricRel = 'skills/design-system-audit/references/audit-prompts.md'
+    const rubricRewritten = s.includes(`node_modules/@qijenchen/design-system/ds-canonical/${rubricRel}`)
+    const rubricShipped = existsSync(join(ROOT, 'packages/design-system/ds-canonical', rubricRel))
+    if (!fm || !rubricRewritten || !rubricShipped) { codexResults.push(`  independent-review: ❌ frontmatter=${fm} / rubric node_modules 化=${rubricRewritten} / rubric shipped=${rubricShipped}`); fail++ }
+    else codexResults.push('  independent-review: ✅ frontmatter 合法 + rubric 指向 shipped mirror 實檔')
+  }
+}
+
 console.log('=== 假 fork 測試 harness 結果 ===')
 console.log(`fixture: ${FIX}(apps/** + node_modules/@qijenchen/design-system/src,NO packages/design-system)`)
 console.log(results.join('\n'))
@@ -305,6 +355,8 @@ console.log('\n=== committed 模板治理流程(dispatcher/bootstrap/injection)=
 console.log(flowResults.join('\n'))
 console.log('\n=== 接線骨架刷新(sync-all refresh-fork-launchers:idempotent / 不 clobber / opt-out)===')
 console.log(skelResults.join('\n'))
+console.log('\n=== codex surface(PNG P2.4:AGENTS.md / hooks.json / independent-review)===')
+console.log(codexResults.join('\n'))
 console.log(`\ncrash 檢查(${allHooks.length} hook):${crashed.length ? '\n  ' + crashed.join('\n  ') : '✅ 無 syntax error / 無 exit-127'}`)
 console.log(`\n${fail === 0 ? '✅ FORK-GOVERNANCE HARNESS PASS — 無 false-green / 無 brick / 無 crash' : `❌ ${fail} 項 fail(見上）`}`)
 process.exit(fail === 0 ? 0 : 1)

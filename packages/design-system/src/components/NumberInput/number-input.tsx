@@ -45,7 +45,7 @@ export interface NumberInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'value' | 'defaultValue' | 'onChange' | 'type'>,
     Omit<VariantProps<typeof fieldWrapperStyles>, 'mode' | 'variant' | 'width'>,
     NumberFormatOptions {
-  /** Field display mode */
+  /** Field mode */
   mode?: FieldMode
   /**
    * Visual chrome(正交於 mode);Phase B1(2026-05-05)新增。
@@ -122,7 +122,7 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
     // 同 LinkInput 2026-07-04 修法)。
     const [draft, setDraft] = React.useState<string | null>(null)
 
-    // display / readonly / disabled 都顯示格式化值(span 取代 input)
+    // view / readonly / disabled 都顯示格式化值(span 取代 input)
     if (resolvedMode !== 'edit') {
       return (
         <div

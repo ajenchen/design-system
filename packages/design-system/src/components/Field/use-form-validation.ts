@@ -12,7 +12,7 @@
  * errors store / resetField;驗證「時機」由本 hook own(RHF 的 mode/reValidateMode 不外露)。
  *
  * ── 與 Field 家族的關係(engine-agnostic 分層,field.spec.md「定位」段)──
- * Field 保持純 layout + context(MUI FormControl 派,可用於 cell / display / 無引擎場景);
+ * Field 保持純 layout + context(MUI FormControl 派,可用於 cell / view / 無引擎場景);
  * 本 hook 住 form 層,錯誤經 consumer 一行 `<Field invalid={!!form.errors.x}>` 接入——
  * Field 層零耦合。這是「A 派的自由 + B 派的 DX」混合位置。
  *

@@ -114,5 +114,14 @@
     "visual-audit"
   ],
   "commands": [],
-  "agents": []
+  "agents": [],
+  "codex": {
+    "agentsMd": "AGENTS.md",
+    "hooksJson": [
+      "check_tailwind_wildcard_in_docs.sh"
+    ],
+    "agentsSkills": [
+      "independent-review"
+    ]
+  }
 }

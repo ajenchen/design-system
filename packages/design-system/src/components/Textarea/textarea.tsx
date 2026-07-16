@@ -120,7 +120,7 @@ const textareaVariants = cva(
           '!px-[var(--table-cell-px)] !py-[var(--table-cell-py)]',
           'border border-border',
           'hover:border-border-hover',
-          // textarea UA stylesheet 預設 line-height: normal(1.2-1.5 不定),會跟 display
+          // textarea UA stylesheet 預設 line-height: normal(1.2-1.5 不定),會跟 view
           // `<div>` text-body line-height: 1.5(21px @ 14px)不一致 → cell 進 edit 後 height
           // shift。顯式 leading 對齊 div 行為。
           '!leading-[1.5]',
@@ -200,15 +200,15 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 
     // ── view mode(+ readonly 空值)純展示,渲染 <div> 取代 <textarea>(white-space:pre-wrap 保留多行) ──
     // 對齊 Carbon read-only / Cloudscape display-mode
-    // 2026-07-08 user 拍板:readonly 空值也走 display-div 顯 '-'(readonly **有值** 仍走下方
+    // 2026-07-08 user 拍板:readonly 空值也走 view-div 顯 '-'(readonly **有值** 仍走下方
     // native <textarea readOnly> 保留選取/複製語意 — field-controls.spec.md「null / undefined 值」)。
-    // 2026-07-13 fix:空值判斷需認得 uncontrolled defaultValue — readonly / display 也要顯示內容,
+    // 2026-07-13 fix:空值判斷需認得 uncontrolled defaultValue — readonly / view 也要顯示內容,
     //   不可誤判為空值渲 '-'(原為靜態 value ?? defaultValue)。
     // 2026-07-14 R2(dual-model consensus,同 Input input.tsx):resolved value 改走 useControllable
     // 內部 SSOT(Radix idiom)。原靜態版有 typing-stale gap:uncontrolled 打字後外部切
-    // display / readonly 仍顯示 stale defaultValue。uncontrolled 時 native textarea 由
+    // view / readonly 仍顯示 stale defaultValue。uncontrolled 時 native textarea 由
     // value={resolved} 內部驅動(defaultValue 只作初始值,不落 DOM attribute),同時修
-    // remount-stale(切 display 再回 edit 從 defaultValue attribute 重掛)+ form.reset() stale
+    // remount-stale(切 view 再回 edit 從 defaultValue attribute 重掛)+ form.reset() stale
     // (HTML 標準 reset 不發 input event,下方 reset bridge 修)。controlled(傳 value)時
     // useControllable 純 passthrough,行為與原本完全一致。consumer onChange 不接進 hook
     // (保留 native event signature),於 <textarea> onChange 另行轉發。
@@ -221,7 +221,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const showDisplaySpan = isView || (resolvedMode === 'readonly' && displayValue == null)
 
     // form.reset() bridge(uncontrolled only):reset 恢復 defaultValue 但不發 input event →
-    // 手動把 resolved 歸位 defaultValue。keyed on showDisplaySpan:display 分支不掛 native
+    // 手動把 resolved 歸位 defaultValue。keyed on showDisplaySpan:view 分支不掛 native
     // textarea,回 edit 重掛時 effect 重跑補掛 listener。
     const innerRef = React.useRef<HTMLTextAreaElement | null>(null)
     React.useEffect(() => {

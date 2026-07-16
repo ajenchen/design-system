@@ -265,7 +265,7 @@ export const Overview = {
                 ['placeholder', 'string', "'https://'", '空值時的佔位文字'],
                 ['disabled', 'boolean', 'false', '等同 mode="disabled"'],
                 ['label', 'string', '—', '自訂顯示文字（覆蓋自動 hostname 提取）'],
-                ['showDisplayEndIcon', 'boolean', 'false', 'display 態改包 Field naked wrapper（D-path opt-in，DataTable cell display↔edit 像素對齊；本元件 edit 無 endIcon，故僅 wrapper 無 ItemSuffix）'],
+                ['showDisplayEndIcon', 'boolean', 'false', 'view 態改包 Field naked wrapper（D-path opt-in，DataTable cell view↔edit 像素對齊；本元件 edit 無 endIcon，故僅 wrapper 無 ItemSuffix）'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}

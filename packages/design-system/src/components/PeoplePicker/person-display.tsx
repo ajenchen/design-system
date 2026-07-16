@@ -186,7 +186,7 @@ function MultiPersonDisplay({
   max?: number
   /**
    * 2026-05-15 codex Round 5 C+ SSOT fix:`measured=true` 啟動 container-width 量測(取代 hardcode `max ?? 3`)
-   * → display + edit stack 同 algorithm(同 cell width → 同 overflow 判斷),不再 display 用固定 3 vs edit
+   * → view + edit stack 同 algorithm(同 cell width → 同 overflow 判斷),不再 view 用固定 3 vs edit
    * 用 useOverflowCount。對齊 field-controls.spec.md:286 「4-mode 共享 renderer」contract + user round 3
    * verbatim「同空間兩判斷點」SSOT directive。Default false 保 backward compat(non-cell context 仍 max ?? 3)。
    */
@@ -201,8 +201,8 @@ function MultiPersonDisplay({
   // 切換時 hook 數 0↔3 變動必 crash(現靠 consumer 三元切換 element type 偶然避開)。hoist 到 return 前。
   // 2026-05-15 Bug 3 fix(Claude+Codex Step 5 比稿 consensus):消費 shared `avatar-stack-overflow`
   // primitive。原 inline canvas-based formula 是 dual-implementation 違反 user SSOT「同 cell width 同
-  // overflow 判斷」(edit path 用 Combobox useOverflowCount DOM offsetWidth / display path 用 inline
-  // canvas)。**抽 primitive 統一**:display + edit 共用 `getAvatarStackVisibleCount` formula。
+  // overflow 判斷」(edit path 用 Combobox useOverflowCount DOM offsetWidth / view path 用 inline
+  // canvas)。**抽 primitive 統一**:view + edit 共用 `getAvatarStackVisibleCount` formula。
   // SSOT in `./avatar-stack-overflow.ts`,M14 mechanical guard 防 future drift。
   const containerRef = React.useRef<HTMLSpanElement>(null)
   const [measuredCount, setMeasuredCount] = React.useState<number | null>(null)

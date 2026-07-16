@@ -116,7 +116,7 @@ export const UsageGuidance: Story = {
 
       <Rule
         title="使用場景對照"
-        note="Readonly(standalone settings list):值重要、視覺不能弱化。表單 readonly = Field 內灰框 + 勾/叉 icon(2026-06-12 拍板);DataTable cell 非編輯態 = mode display。Disabled:外部條件造成暫時不可用(方案限制、權限不足)——傳達「現在用不到」"
+        note="Readonly(standalone settings list):值重要、視覺不能弱化。表單 readonly = Field 內灰框 + 勾/叉 icon(2026-06-12 拍板);DataTable cell 非編輯態 = mode view。Disabled:外部條件造成暫時不可用(方案限制、權限不足)——傳達「現在用不到」"
       >
         <Label>兩者都不可切換、不在 tab order 內(standalone),機制不同:readonly 用 `pointer-events-none`(視覺正常);disabled 走 native `disabled` + `cursor-not-allowed`(降透明度)。Field 內 readonly 灰框則可聚焦(tabIndex=0)</Label>
       </Rule>

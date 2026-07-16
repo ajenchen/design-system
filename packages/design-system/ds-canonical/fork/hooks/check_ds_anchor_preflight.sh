@@ -54,7 +54,28 @@ esac
 NEW_CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // .tool_input.new_string // ""' 2>/dev/null)
 
 # DS primitive 名單(wrap 這些就觸發 anchor preflight)
-DS_PRIMITIVES_RE='<(Sidebar|AppShell|DataTable|Dialog|Sheet|Popover|DropdownMenu|Field|FieldControlGroup|MenuItem|ItemAvatar|ItemLabel|ItemIcon|SegmentedControl|Tabs|TabsList|TabsTrigger|Combobox|Select|DatePicker|TimePicker|TreeView|Tooltip|Coachmark|FileViewer|ScrollArea|Avatar|Badge|Button|ChromeHeader|SurfaceHeader|SurfaceBody|SurfaceFooter|OverlaySurface|NameCard|Toast|FileUpload|DescriptionList|Chart|BulkActionBar|ActionBar|Carousel|Breadcrumb)\b'
+# 2026-07-16 dim 57 修 stale hardcode(含已改名 NameCard→ProfileCard、缺 InlineEdit 等 34 現役元件):
+# 元件名改「機械生成」— 由 components/ dir 動態 ls 派生(hook 每 fire 跑一次 find,成本 <10ms 可接受),
+# 新增/改名元件自動同步,不再靠人手維護清單。
+# 非-dir primitive(patterns/ export + sub-component:MenuItem/Item* slots/TabsList/ChromeHeader/
+# Surface*/OverlaySurface/ActionBar)無 dir 可派生 → 維護小清單於 _PATTERN_PRIMITIVES。
+_COMPONENTS_DIR=""
+for _root in "${CLAUDE_PROJECT_DIR:-}" "$(pwd)"; do
+  if [ -n "$_root" ] && [ -d "$_root/node_modules/@qijenchen/design-system/src/components" ]; then
+    _COMPONENTS_DIR="$_root/node_modules/@qijenchen/design-system/src/components"
+    break
+  fi
+done
+if [ -n "$_COMPONENTS_DIR" ]; then
+  _COMP_NAMES=$(find "$_COMPONENTS_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null | sort | paste -sd'|' -)
+fi
+# 靜態 fallback(consumer fork repo 無 node_modules/@qijenchen/design-system/src/ → 用 snapshot;
+# 與 DS repo components/ dir 同步,新增元件必補 — snapshot 2026-07-16,63 元件)
+if [ -z "${_COMP_NAMES:-}" ]; then
+  _COMP_NAMES='Accordion|Alert|AppShell|AspectRatio|Avatar|Badge|Breadcrumb|BulkActionBar|Button|Calendar|Carousel|Chart|Checkbox|Chip|CircularProgress|Coachmark|Combobox|Command|DataTable|DateGrid|DatePicker|DescriptionList|Dialog|DropdownMenu|Empty|Field|FieldControlGroup|FileItem|FileUpload|FileViewer|HoverCard|InlineEdit|Input|LinkInput|Menu|Notice|NumberInput|OverflowIndicator|Pagination|PeoplePicker|Popover|ProfileCard|ProgressBar|RadioGroup|Rating|ScrollArea|SegmentedControl|Select|SelectionControl|SelectMenu|Separator|Sheet|Sidebar|Skeleton|Slider|Steps|Switch|Tabs|Tag|Textarea|TimePicker|Toast|Tooltip|TreeView'
+fi
+_PATTERN_PRIMITIVES='MenuItem|ItemAvatar|ItemLabel|ItemIcon|TabsList|TabsTrigger|ChromeHeader|SurfaceHeader|SurfaceBody|SurfaceFooter|OverlaySurface|ActionBar'
+DS_PRIMITIVES_RE="<(${_COMP_NAMES}|${_PATTERN_PRIMITIVES})\b"
 
 # 沒 wrap DS primitive → 檢「純手刻」洞(2026-07-07 治理進化方向 3 洞 b:原本此分支直接放行,
 # 「該用 primitive 卻整個手刻」反而抓不到 — 內部盤點 file:line 證據見 planning/2026-07-07-governance-evolution-roadmap.md)

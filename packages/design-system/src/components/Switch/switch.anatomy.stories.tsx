@@ -38,7 +38,7 @@ export const Overview: Story = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'Field mode(默認 inherit Field context 或 edit);display 渲純展示 勾/叉 icon,語意由 context 提供'],
+                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'Field mode(默認 inherit Field context 或 edit);view 渲純展示 勾/叉 icon,語意由 context 提供'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '對齊 field size tier(sm 跟 md 視覺相同)'],
                 ['checked / defaultChecked', 'boolean', '—', 'ON/OFF 狀態(受控 / 非受控)'],
                 ['onCheckedChange', '(checked: boolean) => void', '—', '切換 callback'],
@@ -78,7 +78,7 @@ export const Inspector: InspectorStory = {
     mode: {
       control: 'radio',
       options: ['edit', 'view', 'readonly', 'disabled'],
-      description: 'Field mode;display 渲純展示 勾/叉 icon(語意由 context 提供)',
+      description: 'Field mode;view 渲純展示 勾/叉 icon(語意由 context 提供)',
     },
     size: {
       control: 'radio',

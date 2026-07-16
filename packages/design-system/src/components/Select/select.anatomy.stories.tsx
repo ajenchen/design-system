@@ -328,7 +328,7 @@ export const Overview = {
                 ['error', 'boolean', 'false', '紅色邊框 + aria-invalid（僅 edit 模式有視覺效果）'],
                 ['defaultOpen', 'boolean', 'false', 'uncontrolled 初始開啟(DataTable cell click→1 step open)'],
                 ['onOpenChange', '(open: boolean) => void', '—', 'open 狀態變更 callback'],
-                ['showDisplayEndIcon', 'boolean', 'false', 'display 模式渲 ChevronDown(opt-in 逃生門;2026-07-08 A 案後 DataTable 預設不傳 — display 態零恆顯 icon)'],
+                ['showDisplayEndIcon', 'boolean', 'false', 'view 模式渲 ChevronDown(opt-in 逃生門;2026-07-08 A 案後 DataTable 預設不傳 — view 態零恆顯 icon)'],
                 ['selectedItemRenderer', '(opt: SelectOption) => ReactNode', '—', '已選項目客製 render;4 mode 共享(edit/view/readonly/disabled,contract (a))— view 態渲值內容無 chrome(PeoplePicker / status 欄用)'],
                 ['disabled', 'boolean', '—', '原生屬性；未傳 mode 時 resolve 為 disabled 樣式（顯式 mode prop 恆優先，見 useResolvedFieldMode）'],
               ].map(([p, t, d, desc]) => (

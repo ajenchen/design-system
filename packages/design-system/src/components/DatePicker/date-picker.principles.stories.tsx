@@ -139,7 +139,7 @@ export const FormattingRule: Story = {
     <div>
       <Rule
         title="格式化跨模式一致 — 預設 YYYY/MM/DD,傳 formatOptions / locale 走 Intl.DateTimeFormat"
-        note="未傳格式 prop 時預設直接組 YYYY/MM/DD(locale-independent);傳 formatOptions + locale 才啟用 Intl.DateTimeFormat,同時控制 readonly / disabled 的 Display 文字與 edit trigger 顯示文字。跨模式一致、跨頁面可預期。Calendar popup 的月份語言由 Calendar 內部 locale 處理"
+        note="未傳格式 prop 時預設直接組 YYYY/MM/DD(locale-independent);傳 formatOptions + locale 才啟用 Intl.DateTimeFormat,同時控制 view / readonly / disabled 的格式化文字與 edit trigger 顯示文字。跨模式一致、跨頁面可預期。Calendar popup 的月份語言由 Calendar 內部 locale 處理"
       >
         <DatePicker
           mode="readonly"
@@ -157,7 +157,7 @@ export const FormattingRule: Story = {
 
       <Rule
         title="Edit trigger 文字也受 formatOptions / locale 控制"
-        note={'原本原生 <input type="date"> 的 trigger 格式受瀏覽器 locale 控制無法干預;改自建後,edit trigger 顯示的已選日期也走 Intl.DateTimeFormat——跟 Display 模式完全一致'}
+        note={'原本原生 <input type="date"> 的 trigger 格式受瀏覽器 locale 控制無法干預;改自建後,edit trigger 顯示的已選日期也走 Intl.DateTimeFormat——跟 view 模式完全一致'}
       >
         <DatePicker
           value="2026-05-15"
@@ -170,7 +170,7 @@ export const FormattingRule: Story = {
 
       <Rule
         title="null 值統一顯示半形連字號"
-        note="Display 模式 null / undefined 顯示半形 -(foreground,同 readonly value 色),與其他 Field 元件一致"
+        note="view 模式 null / undefined 顯示半形 -(foreground,同 readonly value 色),與其他 Field 元件一致"
       >
         <DatePicker mode="readonly" value={null} />
       </Rule>

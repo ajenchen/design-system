@@ -1,6 +1,6 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // code-quality-allow: file-size — Select 含 3 子元件(NativeSelect/CustomSelect/ReadonlyDisplay)+ helpers + 4-mode renderer + Field SSOT consumption,split-into-files 會破壞 file-local helper closure
-// @renderer-symmetry-allow: 2026-07-08 WM 戰役 A 案回歸修正 — ReadonlyDisplay 現已消費 selectedItemRenderer(display bare-span / D-path / readonly / disabled 四分支),對齊 field-controls.spec.md 共享 contract (a)「display/readonly/disabled/edit 4 mode 共享同一 renderer」。前 note「display→edit unify deferred」已兌現(值內容層);chrome 結構 unify(D-path)仍為 opt-in showDisplayEndIcon。
+// @renderer-symmetry-allow: 2026-07-08 WM 戰役 A 案回歸修正 — ReadonlyDisplay 現已消費 selectedItemRenderer(view bare-span / D-path / readonly / disabled 四分支),對齊 field-controls.spec.md 共享 contract (a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」。前 note「display→edit unify deferred」已兌現(值內容層);chrome 結構 unify(D-path)仍為 opt-in showDisplayEndIcon。
 import * as React from 'react'
 import { X, ChevronDown } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -144,7 +144,7 @@ export interface SelectProps
    * View mode 顯 picker intrinsic end icon(2026-05-08 D path Phase 1)。
    * 預設 false:`mode="view"` 純展示 bare span(向後相容)。
    * `variant="naked" && mode="view"` 場景(DataTable cell)opt-in 設 true → wrap 進
-   * Field naked-display + 渲 ChevronDown ItemSuffix。**只 view mode 生效**;readonly /
+   * Field naked-view + 渲 ChevronDown ItemSuffix。**只 view mode 生效**;readonly /
    * disabled / edit 已有 Field wrapper + suffix(不受此 prop 影響)。
    * Authority:`data-table.spec.md:204` + `inline-action.spec.md:157`「Field family endAction(自動繼承)」。
    * @default false
@@ -343,7 +343,7 @@ function CustomSelectTriggerContent({
 }
 CustomSelectTriggerContent.displayName = 'CustomSelectTriggerContent'
 
-// ── Shared readonly/disabled/display render ─────────────────────────────────
+// ── Shared readonly/disabled/view render ─────────────────────────────────
 function ReadonlyDisplay({
   mode, variant: variantProp, width, size, options, value, display, startIcon: StartIcon, className, placeholder, showDisplayEndIcon, selectedItemRenderer,
 }: Pick<SelectProps, 'mode' | 'width' | 'size' | 'options' | 'value' | 'display' | 'startIcon' | 'className' | 'placeholder' | 'showDisplayEndIcon' | 'selectedItemRenderer'> & {
@@ -355,7 +355,7 @@ function ReadonlyDisplay({
   const variant = variantProp ?? 'default'
   const sz = size ?? 'md'
   const iconSize = getIconSize(sz)
-  // selectedOpt 提前 hoist(2026-07-08 A 案回歸修正):display / D-path / readonly / disabled
+  // selectedOpt 提前 hoist(2026-07-08 A 案回歸修正):view / D-path / readonly / disabled
   // 四分支都需要 — renderer 值內容(field-controls.spec.md contract (a) 4-mode 共享)+ tagVariant 查找。
   const selectedOpt = options?.find(o => o.value === value)
   const label = selectedOpt?.label ?? value
@@ -369,14 +369,14 @@ function ReadonlyDisplay({
   // mode='view':2 path(2026-05-08 D path Phase 1 Select canary)
   //   ❌ 預設(無 showDisplayEndIcon):純內容輸出 bare span/Tag(原行為,backward compat)
   //      對齊原 SelectDisplay sub-component(retired)。readonly / disabled 仍走下方 fieldWrapperStyles。
-  //   ✅ showDisplayEndIcon=true(DataTable cell opt-in):Field naked-display wrapper +
+  //   ✅ showDisplayEndIcon=true(DataTable cell opt-in):Field naked-view wrapper +
   //      ChevronDown ItemSuffix。SSOT canonical 跟 readonly/edit/disabled mode 同 DOM 結構。
   //      Authority: data-table.spec.md:204 + inline-action.spec.md:157「Field family endAction」
   if (resolvedMode === 'view') {
     if (!showDisplayEndIcon) {
-      // 2026-05-14 I2 fix(spec contract (e) display typography canonical):bare span 必套
+      // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 必套
       // `fieldDisplayTextClass(sz)`(sm/md→text-body,lg→text-body-lg)— 對齊跨 Field
-      // family display 視覺尺寸統一。
+      // family view 視覺尺寸統一。
       if (!value) return <span className={cn(fieldDisplayTextClass(sz), emptyColorCls, className)}>{emptyText}</span>
       // 2026-07-08 A 案回歸修正:selectedItemRenderer(值內容:status icon+text 等語意呈現)
       // view 態照常渲染 — 無 chrome 無 chevron,只有值內容本身。分層原則(field.spec.md L6):
@@ -393,7 +393,7 @@ function ReadonlyDisplay({
       const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
       return <Tag size={sz} color={tVariant} className={className}>{label}</Tag>
     }
-    // D path opt-in: Field naked-display wrapper + ItemSuffix ChevronDown
+    // D path opt-in: Field naked-view wrapper + ItemSuffix ChevronDown
     const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
     return (
       <div
@@ -473,7 +473,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     // 2026-07-04:Custom-path-only props 顯式 destructure 丟棄(不 spread 到原生 <select> 消 React
     // unknown-prop warning);各 prop docblock 已註「僅 Custom path 生效」語意
     // 2026-07-08 A 案回歸修正:selectedItemRenderer 從丟棄名單移出 — Native path 的
-    // ReadonlyDisplay(display/readonly/disabled)同樣消費值內容 renderer(contract (a) 4-mode
+    // ReadonlyDisplay(view/readonly/disabled)同樣消費值內容 renderer(contract (a) 4-mode
     // 共享,值內容不因 pointer type 而異);native <select> edit 路徑仍不消費(原生 option 無法客製 render)。
     searchable: _searchable, groups: _groups, loading: _loading, minRows: _minRows, emptyText: _emptyText, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer,
     ...props }, ref) => {
@@ -661,7 +661,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
       [setValue]
     )
 
-    // Early return AFTER all hooks(disabled / readonly / display mode 走 ReadonlyDisplay)
+    // Early return AFTER all hooks(disabled / readonly / view mode 走 ReadonlyDisplay)
     if (resolvedMode !== 'edit') {
       return <ReadonlyDisplay mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} showDisplayEndIcon={showDisplayEndIcon} selectedItemRenderer={selectedItemRenderer} />
     }

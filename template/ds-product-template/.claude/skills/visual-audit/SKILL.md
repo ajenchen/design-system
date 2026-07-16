@@ -252,4 +252,3 @@ FAIL 項摘要:
 - `node_modules/@qijenchen/design-system/ds-canonical/skills/component-quality-gate/SKILL.md` — 元件合入 DS 前的 35 項 checklist;Ship phase 可 chain 本 skill
 - node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md `# 同 flex 列的互動 slot 幾何鐵律` — 本 skill checklist #3 的主要 canonical 來源
 - `node_modules/@qijenchen/design-system/ds-canonical/rules/ui-development.md`「建立 UI 前必讀」 → layout primitive / token spec 清單 — 本 skill「合格標準」的對照錨
-- `memory/project_pending_tasks`「視覺 regression 基建」條目 — 長期 tech debt(Chromatic / screenshot-diff)

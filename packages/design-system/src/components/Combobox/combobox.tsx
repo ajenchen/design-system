@@ -1,5 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @renderer-symmetry-allow: ComboboxTagStack(display path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer display-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx:426-444)PersonDisplay SSOT 對齊;其他 Combobox consumer 走 default `<Tag>` 純文字 backward-compat。
+// @renderer-symmetry-allow: ComboboxTagStack(view path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer view-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx:426-444)PersonDisplay SSOT 對齊;其他 Combobox consumer 走 default `<Tag>` 純文字 backward-compat。
 // code-quality-allow: file-size — Combobox 含 NativeCombobox/CustomCombobox/useOverflowCount/OverflowTagList/ComboboxTagStack 5 子元件 + 共用 helpers,split-into-files 會破壞 measurement closures + 重複 type definitions。
 import * as React from 'react'
 import { X, ChevronDown } from 'lucide-react'
@@ -237,7 +237,7 @@ interface OverflowTagListProps {
    * 2026-05-14 I4 fix(per codex M31 verdict + user 抓「display overflow 有 avatar / edit 無」):
    * Optional renderer for hidden items in `+N` overflow popover。Default fallback = `<Tag>{label}</Tag>`
    * (純文字 chip,backward-compat)。Consumer pass 此 prop 讓 hidden items 顯示同 avatar 視覺
-   * (對齊 display MultiPersonDisplay overflow popover Tag avatar SSOT)。
+   * (對齊 view path MultiPersonDisplay overflow popover Tag avatar SSOT)。
    */
   renderHiddenTag?: (item: { value: string; label: string }) => React.ReactNode
   onRemove?: (value: string) => void
@@ -297,7 +297,7 @@ function OverflowTagList({ containerRef, items, size, wrap, renderTag, renderHid
       {items.map((item, i) => (
         // 2026-05-14 I5 fix(per codex M31 verdict + user 抓「avatar stack 堆疊方向不一致」):
         // 加 z-index per-index — 前 item z 高(對齊 MultiPersonDisplay zIndex: visible.length - i
-        // canonical + MUI AvatarGroup surplus pattern)。display + edit stack 堆疊方向統一。
+        // canonical + MUI AvatarGroup surplus pattern)。view + edit stack 堆疊方向統一。
         <div key={item.value} ref={el => { tagEls.current[i] = el }} className={cn('shrink-0 max-w-full', tagWrapperClassName)} style={{ zIndex: items.length - i }}>{renderTag(item, i)}</div>
       ))}
       <div ref={overflowEl} className={cn('shrink-0', overflowWrapperClassName)}>
@@ -345,10 +345,10 @@ function ComboboxTagStack({
   )
 
   if (externalRef) return content
-  // 2026-05-05 v9 fix(Bug 4):display path 內 wrapper 必須 `flex-1 min-w-0`,否則在 cell flex
+  // 2026-05-05 v9 fix(Bug 4):view path 內 wrapper 必須 `flex-1 min-w-0`,否則在 cell flex
   // parent 下不認領完整可用寬度 → OverflowTagList 量得寬度小於 edit path → 顯 `+N` 多於 edit。
   // edit path tagAreaRef wrapper 已是 `flex-1 min-w-0`(NativeCombobox/CustomCombobox line 258 / 354),
-  // display 必對稱才 SSOT。
+  // view 必對稱才 SSOT。
   // 2026-05-15 F1 Q3 fix(per user round 3 verbatim「單人選取時 Tag 越界蓋 indicator」):
   // `overflow-visible` → `overflow-hidden` 讓 narrow cell width 強制 clip(Tag 內建 truncate
   // 處理 text ellipsis,stack `-ml-0.5` 負 margin 在 wrapper 內不受影響)。對齊
@@ -417,8 +417,8 @@ export interface ComboboxProps {
   tagRenderer?: (item: { value: string; label: string }, onRemove: () => void) => React.ReactNode
   /**
    * 2026-05-14 I4 fix:Optional renderer for hidden items in `+N` overflow popover
-   * (對齊 display MultiPersonDisplay overflow popover 含 avatar SSOT)。PeoplePicker stack
-   * pass 此 prop 讓 hidden items 顯 avatar + name(同 display path)。Default fallback
+   * (對齊 view path MultiPersonDisplay overflow popover 含 avatar SSOT)。PeoplePicker stack
+   * pass 此 prop 讓 hidden items 顯 avatar + name(同 view path)。Default fallback
    * `<Tag>{label}</Tag>` 純文字 backward-compat。
    */
   renderHiddenTag?: (item: { value: string; label: string }) => React.ReactNode
@@ -478,8 +478,8 @@ export interface ComboboxProps {
   visibleCountOverride?: number
   /**
    * Display 是否渲 ChevronDown + Field naked wrapper(D-path opt-in,2026-05-08)
-   * — DataTable cell display↔edit 像素級對齊用。預設 false(裸 tag stack,backward compat)。
-   * 設 true 時 display 走 fieldWrapperStyles(naked variant)+ ItemSuffix ChevronDown,
+   * — DataTable cell view↔edit 像素級對齊用。預設 false(裸 tag stack,backward compat)。
+   * 設 true 時 view 走 fieldWrapperStyles(naked variant)+ ItemSuffix ChevronDown,
    * 與 edit 同 DOM 結構,消除 Layer-B padding mismatch。
    */
   showDisplayEndIcon?: boolean
@@ -488,7 +488,7 @@ export interface ComboboxProps {
 // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反)
 const getIconSize = (size: string) => ICON_SIZE[size as 'sm' | 'md' | 'lg']
 
-// ── Shared readonly/disabled/display render ─────────────────────────────────
+// ── Shared readonly/disabled/view render ─────────────────────────────────
 
 function ReadonlyMultiSelect({
   mode, variant: variantProp, width, size, options, value, wrap, className, showDisplayEndIcon = false,
@@ -508,10 +508,10 @@ function ReadonlyMultiSelect({
   // mode='view'(Phase B2 2026-05-05):純內容輸出 — tag stack 不包 Field wrapper / 不 reserve 高度。
   //   對齊原 ComboboxDisplay sub-component(retired)。
   //   Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix ChevronDown,
-  //   與 edit 同結構消除 cell display↔edit 像素偏移(Layer-B padding mismatch)。
+  //   與 edit 同結構消除 cell view↔edit 像素偏移(Layer-B padding mismatch)。
   if (resolvedMode === 'view') {
     if (!showDisplayEndIcon) {
-      // 2026-05-14 I2 fix(spec contract (e) display typography canonical):empty bare span 套
+      // 2026-05-14 I2 fix(spec contract (e) view typography canonical):empty bare span 套
       // `fieldDisplayTextClass(sz)`(sm/md→text-body,lg→text-body-lg)— 對齊跨 Field family 統一。
       if (!hasTags) return <span className={cn(fieldDisplayTextClass(sz), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
       return (
@@ -539,8 +539,8 @@ function ReadonlyMultiSelect({
     <div ref={containerRef}
       className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), hasTags && tagPadding[sz],
         // 2026-05-18 #6A Round 1 Step 1/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:451):
-        // readonly/disabled path 對齊 L293 display wrapper 已 ship 的 overflow-hidden fix。
-        // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 display 不對稱。
+        // readonly/disabled path 對齊 L293 view wrapper 已 ship 的 overflow-hidden fix。
+        // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 view 不對稱。
         // 2026-06-27 對齊 edit path(L598-617):wrap 時 items-start + chevron self-start/tagHeight 鎖第一行;
         // paddingRight: var(--field-px) re-assert 右緣 12px(tagPadding 對稱 calc 會吃掉右緣,跟 edit 一致)。
         wrap ? 'flex-wrap items-start py-1' : 'overflow-hidden', className)}
@@ -634,7 +634,7 @@ function NativeCombobox({
       onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}>
       {/* 2026-05-18 F2 sync(per user verbatim「modifying 修好 PeoplePicker stack 後改壞 Combobox tag display」
           + 「tag 應該要判斷所在空間最多可以呈現幾個tag(包括＋n)去自動判斷何時要變成+n」):
-          edit path tagArea 對齊 display path L293 已 ship 的 `overflow-hidden` fix。原 `overflow-visible`
+          edit path tagArea 對齊 view path L293 已 ship 的 `overflow-hidden` fix。原 `overflow-visible`
           讓 tag 視覺越界蓋 chevron / +N indicator(useOverflowCount measurement 對但 CSS overflow 仍露)。
           M10 violation root cause:2026-05-15 F1 Q3 只 fix display path,edit + Native(L518)沒同步。 */}
       <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : 'overflow-hidden')} style={{ gap: GAP }}
@@ -798,7 +798,7 @@ function CustomCombobox({
         if (e.key === 'Escape') setOpen(false)
       }}>
       {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:648):
-          CustomCombobox edit non-wrap tagArea 對齊 L293 display + L451 readonly + L518 native edit 已 ship 的 overflow-hidden fix。
+          CustomCombobox edit non-wrap tagArea 對齊 L293 view + L451 readonly + L518 native edit 已 ship 的 overflow-hidden fix。
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。M10 propagation 完整 4-path align。 */}
       <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : 'overflow-hidden')} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
         {value.length > 0 ? (

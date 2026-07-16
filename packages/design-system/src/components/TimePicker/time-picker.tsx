@@ -63,7 +63,7 @@ export interface TimeFormatOptions {
 }
 
 // 2026-07-06 D3 perf:Intl.DateTimeFormat 是標準庫最貴 constructor 之一(locale data
-// resolution)。formatTime 無 cheap path,display/readonly/edit 每 render 必建;DataTable time 欄
+// resolution)。formatTime 無 cheap path,view/readonly/edit 每 render 必建;DataTable time 欄
 // 轉發 config 時每 cell × 每次表格 re-render 重建。module-level cache 重用實例(DateTimeFormat
 // 無狀態可安全重用),key = locale|JSON.stringify(options)。行為 Δ=0。
 const dtfCache = new Map<string, Intl.DateTimeFormat>()
@@ -141,9 +141,9 @@ export interface TimePickerProps
    */
   endIcon?: LucideIcon | null
   /**
-   * Display 是否渲 endIcon + Field naked wrapper(D-path opt-in,2026-05-08)
-   * — DataTable cell display↔edit 像素級對齊用。預設 false(裸 span,backward compat)。
-   * 設 true 時 display 也走 fieldWrapperStyles(naked variant)+ ItemSuffix Clock,
+   * View 態是否渲 endIcon + Field naked wrapper(D-path opt-in,2026-05-08)
+   * — DataTable cell view↔edit 像素級對齊用。預設 false(裸 span,backward compat)。
+   * 設 true 時 view 也走 fieldWrapperStyles(naked variant)+ ItemSuffix Clock,
    * 與 edit 同 DOM 結構,消除 Layer-B padding mismatch。
    */
   showDisplayEndIcon?: boolean
@@ -255,12 +255,12 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     // mode='view'(Phase B2 2026-05-05):純內容輸出 — 對齊原 TimePickerDisplay sub-component(retired)。
     //   Default(showDisplayEndIcon=false):無 Field wrapper / 無 Clock icon — backward compat 裸 span。
     //   Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix Clock,
-    //   與 edit 同結構消除 cell display↔edit 像素偏移(Layer-B padding mismatch)。
+    //   與 edit 同結構消除 cell view↔edit 像素偏移(Layer-B padding mismatch)。
     if (resolvedMode === 'view') {
       // 2026-07-16 DA3 fix:view 分支補 {...props} spread(aria-label 等 DOM attr 原本靜默丟失;
       // Switch 同型 2026-07-04 已修,本檔漏 — M10 同型)。
       if (!showDisplayEndIcon) {
-        // 2026-05-14 I2 fix(spec contract (e) display typography canonical):bare span 套
+        // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
         if (!value) return <span {...props} className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
         return <span {...props} className={cn(fieldDisplayTextClass(size), 'truncate', className)}>{formatTime(value, { formatOptions, locale })}</span>

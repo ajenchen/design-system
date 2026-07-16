@@ -1,0 +1,12 @@
+{
+ "dim": 38,
+ "filesScanned": 476,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/patterns/action-bar/action-bar.spec.md:293",
+   "問題": "把 `gap-1` dense action container 誤稱為 item-anatomy story 的 inline-action 群先例；實際上 Button xs 群使用 gap-1，ItemInlineAction 群使用 canonical gap-2，形成錯誤例外暗示。",
+   "severity": "marginal",
+   "建議": "改稱 Button xs action-group 先例，並明示不適用 ItemInlineAction；ItemInlineAction siblings 維持 gap-2。"
+  }
+ ]
+}

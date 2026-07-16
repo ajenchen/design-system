@@ -40,6 +40,8 @@ run('sync version → 5 manifests', 'node scripts/sync-version-to-all-manifests.
 run('sync ds-canonical mirror', 'node scripts/sync-ds-canonical.mjs')
 // C-prime fork governance corpus 從 .claude SSOT 重生(hooks + preamble,deterministic)→ 下方 --check 驗 + commit 進 tag。
 run('sync fork-governance corpus(hooks + preamble ← .claude SSOT)', 'node scripts/build-fork-governance.mjs')
+// PNG P2.2:codex 原生 surface(.codex/hooks.json + .agents/skills)從 .claude SSOT 重生 → 下方 --check 驗。
+run('sync codex adapter(.codex/hooks.json + .agents/skills ← .claude SSOT)', 'node scripts/gen-codex-adapter.mjs')
 // llms.txt/llms-full.txt 從 spec frontmatter build-time 重生(deterministic,禁手維護;對齊 Mantine
 // 「每 release 從 source 重生」)。SYNCS 段重生 → 下方 drift gate 驗 + commit 進 tag。
 run('sync llms.txt + llms-full.txt(從 spec frontmatter)', 'node scripts/gen-llms-txt.mjs')
@@ -73,6 +75,8 @@ run('story-quality', 'npm run --silent story-quality:check')
 run('three-layer stories(每 public 元件必備 anatomy+principles;取代 dim-11 AI 假證據)', 'node scripts/check-three-layer-stories.mjs --check')
 run('LinkTo integrity(story 改名/retire 反向引用斷鏈;DA3 C.0b 謂詞化)', 'node scripts/audit-linkto-integrity.mjs --check')
 run('agents-bootstrap(PNG:AGENTS.md ≤32KiB + CLAUDE.md @import + Rule Index 零死鏈 + 無雙 SSOT + npm mirror)', 'node scripts/check-agents-bootstrap.mjs --check')
+// PNG P2.2:codex adapter 生成物(.codex/hooks.json + .agents/skills)vs .claude SSOT drift + eligibility 鎖
+run('codex-adapter drift check(.codex + .agents ← SSOT;eligibility 機械鎖)', 'node scripts/gen-codex-adapter.mjs --check')
 // PNG P4.2:branch-protection probe(資訊模式 — main 現無 required checks,已列 user 拍板;user 啟用後改 --check enforcing)
 run('branch-protection probe(informational)', 'node scripts/check-branch-protection.mjs')
 run('governance-tamper(preflight gate-count ratchet + time-boxed waiver 過期)', 'node scripts/check-governance-tamper.mjs --check')

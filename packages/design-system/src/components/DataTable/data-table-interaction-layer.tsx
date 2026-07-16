@@ -64,7 +64,7 @@ interface DataTableInteractionLayerProps {
    * 在 ActiveEditorHost portal(z 3,float rect)render 之。
    *
    * Per codex Q6.2 outline:cell 永遠 mode="view"(SSOT preserved);portal host 渲
-   * mode="edit" 同 registry component;float pass-through + z-index 3 cover display below。
+   * mode="edit" 同 registry component;float pass-through + z-index 3 cover view below。
    */
   activeEditorRender?: (cellId: CellId, rect: CellRect) => React.ReactNode
 }
@@ -441,7 +441,7 @@ function ClipMask({ clipRect, children }: { clipRect: CellRect; children: React.
  *
  * Per codex Q2 verdict:不該進 CellRingOverlay primitive — 它是 host 不是 ring。
  *   - pointerEvents:auto(child Field 接收 click / keyboard)
- *   - background:var(--canvas)(opaque cover display Field below;Cell SSOT 保留)
+ *   - background:var(--canvas)(opaque cover view Field below;Cell SSOT 保留)
  *   - z-index 3(above hover / selected / range)
  *   - children = activeEditorRender 的回傳 React node
  *

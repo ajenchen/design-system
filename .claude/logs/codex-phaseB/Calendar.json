@@ -1,0 +1,106 @@
+{
+ "component": "Calendar",
+ "claimsVerified": 485,
+ "falseClaims": [
+  {
+   "fileLine": "calendar.spec.md:21",
+   "宣稱": "多區塊 layout 包含 Toolbar / Grid / EventTile / SidePanel。",
+   "真實code行為": "目前未渲染 SidePanel；sidebar 仍列在 roadmap。"
+  },
+  {
+   "fileLine": "calendar.spec.md:34",
+   "宣稱": "可在月／週／日 view 瀏覽並拖拉新增事件。",
+   "真實code行為": "目前恆為月 grid，週／日項 disabled；也沒有 drag 或 range handler，拖拉新增仍是 roadmap。"
+  },
+  {
+   "fileLine": "calendar.spec.md:112",
+   "宣稱": "YYYY-MM-DD 代表 all-day，YYYY-MM-DDTHH:mm 代表 timed。",
+   "真實code行為": "字串格式只影響日期解析；全天排序與視覺完全由 event.allDay 決定。"
+  },
+  {
+   "fileLine": "calendar.spec.md:126",
+   "宣稱": "Toolbar anatomy 為 prev → 月份標題 → next，且沒有今天按鈕。",
+   "真實code行為": "實際順序是 prev → 今天 → next → 月份標題 → view switcher → 條件式 CTA。"
+  },
+  {
+   "fileLine": "calendar.spec.md:140",
+   "宣稱": "所有 outside days 都使用弱化字色。",
+   "真實code行為": "today 落在顯示月的 outside day 時會套 bg-info + text-on-emphasis，不使用 text-fg-disabled。"
+  },
+  {
+   "fileLine": "calendar.spec.md:147",
+   "宣稱": "Outside day cell 一律弱化日期字色並使用較暗背景。",
+   "真實code行為": "背景仍是 bg-muted，但 today × outside 組合的日期文字由 today 樣式覆蓋為 text-on-emphasis。"
+  },
+  {
+   "fileLine": "calendar.spec.md:156",
+   "宣稱": "「+N more」目前不可點擊。",
+   "真實code行為": "計數 div 未阻止冒泡；提供 onDateClick 時，點擊會觸發父 gridcell 的 onDateClick，只是不會展開 popover。"
+  },
+  {
+   "fileLine": "calendar.spec.md:190",
+   "宣稱": "「+N more」弱化計數提示不可點擊。",
+   "真實code行為": "點擊會冒泡並觸發該日期的 onDateClick。"
+  },
+  {
+   "fileLine": "calendar.spec.md:211",
+   "宣稱": "每次 render 對 42 cells 分桶事件。",
+   "真實code行為": "eventsByDate 包在 useMemo，僅依賴變更時重算；演算法逐 event 展開日期區間，grid 也可能有 28、35 或 42 天。"
+  },
+  {
+   "fileLine": "calendar.spec.md:256",
+   "宣稱": "ARIA／Pattern 對齊 W3C APG 對應 pattern。",
+   "真實code行為": "只對齊 grid／row／gridcell 結構；尚無 APG grid 的 roving tabindex、方向鍵或 PageUp／PageDown 行為。"
+  },
+  {
+   "fileLine": "calendar.spec.md:268",
+   "宣稱": "MVP 所有互動元素皆可由 Tab 到達。",
+   "真實code行為": "renderEventTile 外層只有 onClick；consumer 未回傳 focusable child 時，該 tile 僅滑鼠可操作。"
+  },
+  {
+   "fileLine": "calendar.spec.md:270",
+   "宣稱": "focus-visible indicator 是 outline: 2px solid var(--ring)。",
+   "真實code行為": "日期按鈕與預設 event tile 明確使用 outline-none + ring-2 + ring-ring；Tailwind ring 是 box-shadow，不是 CSS outline。"
+  },
+  {
+   "fileLine": "calendar.tsx:46",
+   "宣稱": "YYYY-MM-DD 是 all-day，YYYY-MM-DDTHH:mm 是 timed。",
+   "真實code行為": "coerceDate 只依格式選擇解析方式；all-day 分類仍只讀 event.allDay。"
+  },
+  {
+   "fileLine": "calendar.tsx:336",
+   "宣稱": "Month grid 約有 5–6 rows。",
+   "真實code行為": "合法輸入可產生 4、5 或 6 rows；例如 2026-02 且 weekStartsOn=0 時為 4 rows。"
+  },
+  {
+   "fileLine": "calendar.tsx:371-372",
+   "宣稱": "今天與平日日期都是統一 24px 的圓形 hit-area。",
+   "真實code行為": "today 額外套 px-2；兩位數日期的寬度會大於 24px，形成 pill 而非 24×24 圓形。"
+  },
+  {
+   "fileLine": "calendar.anatomy.stories.tsx:134-136",
+   "宣稱": "Outside day 一律是 text-fg-disabled + bg-muted。",
+   "真實code行為": "today × outside 時仍有 bg-muted cell，但日期按鈕改用 bg-info + text-on-emphasis。"
+  },
+  {
+   "fileLine": "calendar.anatomy.stories.tsx:184",
+   "宣稱": "「+N more」目前不可點擊。",
+   "真實code行為": "它不是獨立 control，但 pointer click 會冒泡至 gridcell 並觸發 onDateClick。"
+  },
+  {
+   "fileLine": "calendar.anatomy.stories.tsx:202",
+   "宣稱": "所有 outside-month 日期數字都使用 text-fg-disabled。",
+   "真實code行為": "today × outside 組合會由 today 樣式覆蓋為 text-on-emphasis。"
+  },
+  {
+   "fileLine": "calendar.anatomy.stories.tsx:219",
+   "宣稱": "focus-visible ring 使用 outline: 2px solid var(--ring)。",
+   "真實code行為": "實作關閉 outline，改用 Tailwind ring-2 + ring-ring。"
+  },
+  {
+   "fileLine": "calendar.principles.stories.tsx:77",
+   "宣稱": "Calendar 是月／週／日 view 的行事曆檢視。",
+   "真實code行為": "目前只實作月 view；week／day 值仍渲染月 grid，且對應切換項 disabled。"
+  }
+ ]
+}

@@ -132,7 +132,7 @@ export const ColumnTypeRule: Story = {
     return (
       <div>
         <Rule
-          title="✅ 宣告 `meta.type`,DataTable 自動選對應 Display"
+          title="✅ 宣告 `meta.type`,DataTable 自動選對應 view 渲染"
           note="每個 Field Control 的 `mode='view'` 渲染(`<Input mode='view'>` / `<NumberInput mode='view'>` / `<Checkbox mode='view'>` 等)是該資料類型的唯一真實來源——format 邏輯、對齊、null 顯示都住一份。Consumer 只需宣告 type,不需重複造輪子"
         >
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
@@ -142,12 +142,12 @@ export const ColumnTypeRule: Story = {
           title="❌ 手寫 cell render 自訂格式化"
           note="每 column 自己寫 `cell: (info) => ...` 會繞過 `mode='view'` 系統——**格式化邏輯會漂移**。一個 table 的 price 顯示「$2,490」,另一個 table 的 price 顯示「2490」,一個 boolean 顯示勾 icon,另一個 boolean 顯示「是」——整個系統 format 失去一致性"
         >
-          <Label warn>除非真的需要 `mode='view'` 無法提供的客製視覺,否則一律走 meta.type 系統。客製化時完全跳過 type 讓 display 渲染不要干預</Label>
+          <Label warn>除非真的需要 `mode='view'` 無法提供的客製視覺,否則一律走 meta.type 系統。客製化時完全跳過 type 讓 view 渲染不要干預</Label>
         </Rule>
 
         <Rule
           title="擴充新 type:到 cell-registry.tsx 註冊"
-          note="新增資料類型(如 `percentage`、`relative-time`)在 `cell-registry.tsx` 的 `cellRegistry` map 註冊對應 Cell component(display/edit 渲染 SSOT);`column-types.ts` 只設 align / default metadata。兩處對齊後自動跟所有 DataTable 整合,不在單一 table 硬寫"
+          note="新增資料類型(如 `percentage`、`relative-time`)在 `cell-registry.tsx` 的 `cellRegistry` map 註冊對應 Cell component(view/edit 渲染 SSOT);`column-types.ts` 只設 align / default metadata。兩處對齊後自動跟所有 DataTable 整合,不在單一 table 硬寫"
         >
           <Label>讓 column type 系統成為 single source of truth,所有 table 受惠同一次更新</Label>
         </Rule>

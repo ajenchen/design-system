@@ -14,13 +14,17 @@
 //
 // Idempotent: re-run safe(skip if symlink exists pointing same place).
 
-import { existsSync, mkdirSync, symlinkSync, readlinkSync, lstatSync, unlinkSync } from 'node:fs'
+import { existsSync, mkdirSync, symlinkSync, readlinkSync, lstatSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join, relative, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const CWD = process.cwd()
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const PACKAGE_ROOT = join(__dirname, '..')  // = node_modules/@qijenchen/design-system/
+// 本檔 ship 在 package root(package.json bin: "./cli-init.mjs")→ __dirname 即
+// node_modules/@qijenchen/design-system/。2026-07-16 修(PNG §4 疑點證實為 bug):原
+// `join(__dirname, '..')` 指到 node_modules/@qijenchen/ → 所有 source「not found」→
+// init 全程靜默 skip(symlink 一個都沒建,假成功)。
+const PACKAGE_ROOT = __dirname
 
 function ensureSymlink(from, to, label) {
   const fromAbs = join(CWD, from)
@@ -70,6 +74,30 @@ if (existsSync(dsCLAUDEsrc)) {
     console.log(`✓ linked CLAUDE.design-system.md → ${rel}`)
   } else {
     console.log(`✓ CLAUDE.design-system.md already exists(skip)`)
+  }
+}
+
+// 3. AGENTS.md 投影到 consumer root(PNG P2.4:Codex 等 AGENTS.md 標準 agent 原生 discovery)
+//    Consumer-owned:存在則 skip + 提示 merge,絕不覆蓋。內容 = pointer stub(指 npm 內
+//    DS AGENTS.md 本體 → npm update 自動最新,stub 零 drift;對齊 ADR-1 禁 symlink 作唯一機制)。
+const consumerAgents = join(CWD, 'AGENTS.md')
+if (existsSync(join(PACKAGE_ROOT, 'AGENTS.md'))) {
+  if (!existsSync(consumerAgents)) {
+    writeFileSync(consumerAgents, `# AI agent instructions(this repo consumes @qijenchen/design-system)
+
+<!-- generated once by qijenchen-ds-init;consumer-owned — 建立後歸你維護,可自由增寫。 -->
+
+本 repo 消費 \`@qijenchen/design-system\`。**寫 UI / 設計決策前先讀 DS 治理核心**(隨 npm update 自動最新):
+
+- \`node_modules/@qijenchen/design-system/AGENTS.md\` — DS 治理核心(mindset / SSOT 消費 / 命名 / 4-Family)
+- \`node_modules/@qijenchen/design-system/ds-canonical/\` — rules / references / skills 全文
+- \`node_modules/@qijenchen/design-system/src/components/<Name>/<name>.spec.md\` + \`.stories.tsx\` — 元件何時用 / 官方 composition
+
+(在下方加入你產品自己的 instructions。)
+`)
+    console.log('✓ created AGENTS.md(pointer stub → DS 治理核心;consumer-owned,可自由增寫)')
+  } else {
+    console.log('✓ AGENTS.md already exists(skip;如要吃 DS 治理,手動 merge 一行指路 node_modules/@qijenchen/design-system/AGENTS.md)')
   }
 }
 

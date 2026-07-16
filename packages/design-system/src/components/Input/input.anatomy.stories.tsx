@@ -211,7 +211,7 @@ export const Overview = {
           {MODES.map((m) => (
             <div key={m} className="flex items-center gap-4">
               <div className="w-64 shrink-0">
-                {/* display + readonly 讀 controlled value:兩者「空值」皆走 <span> 顯 '-'(input.tsx:121),
+                {/* view + readonly 讀 controlled value:兩者「空值」皆走 <span> 顯 '-'(input.tsx:121),
                     demo 要展示有值狀態故傳 value;edit / disabled 用 defaultValue 保持 uncontrolled */}
                 {(m === 'view' || m === 'readonly') ? (
                   <Input mode={m} value="Wireless Bluetooth Headphones" size="md" />
@@ -334,7 +334,7 @@ const InspectorInner = () => {
               error={error}
               startIcon={hasStartIcon ? Search : undefined}
               endAction={hasEndAction && isEdit ? { icon: X, label: '清除', onClick: () => {} } : undefined}
-              // display mode 讀 value 渲染 <span>;其餘 mode 用 defaultValue 保持 uncontrolled
+              // view mode 讀 value 渲染 <span>;其餘 mode 用 defaultValue 保持 uncontrolled
               {...(mode === 'view'
                 ? { value: 'Wireless Bluetooth Headphones' }
                 : { defaultValue: 'Wireless Bluetooth Headphones' })}

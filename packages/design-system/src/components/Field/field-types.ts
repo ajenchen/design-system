@@ -27,7 +27,7 @@ export type FieldMode = 'edit' | 'view' | 'readonly' | 'disabled'
 //   default — 含 border + bg(一般 form input,= Ant outlined / MUI outlined)。公開 FieldVariant 唯一值
 //   naked   — @internal(FieldVariantInternal)。cell-as-input(host cell substrate)。edit×naked 自畫
 //             border-based state machine(rest → hover → focus-within:border-primary → error 紅框);
-//             display/readonly/disabled×naked 用 transparent border,由 host cell 提供視覺邊框。
+//             view×naked 用 transparent border,由 host cell 提供視覺邊框。
 //             對齊 Airtable / Notion / Excel cell editing。唯一合法消費者 = DataTable cell-registry
 //             (field-controls.spec.md「軸二 variant」明文)— consumer 直傳 `<Input variant="naked">`
 //             會繞過 canonical chrome / focus,故公開型別排除

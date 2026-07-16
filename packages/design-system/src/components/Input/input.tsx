@@ -16,7 +16,7 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
     Omit<VariantProps<typeof fieldWrapperStyles>, 'mode' | 'variant' | 'width'> {
-  /** Field display mode */
+  /** Field mode */
   mode?: FieldMode
   /**
    * Visual variant(正交於 mode),對齊 FieldContext.variant 透傳。
@@ -115,17 +115,17 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const iconColor = resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted'
 
-    // ── display mode(+ readonly 空值)純展示,渲染 <span> 取代 <input> ──
+    // ── view mode(+ readonly 空值)純展示,渲染 <span> 取代 <input> ──
     // 對齊 Carbon read-only / PatternFly inline-edit hidden-input / Cloudscape display-mode
-    // 2026-07-08 user 拍板:readonly 空值也走 display-span 顯 '-'(readonly **有值** 仍走下方
+    // 2026-07-08 user 拍板:readonly 空值也走 view-span 顯 '-'(readonly **有值** 仍走下方
     // native <input readOnly> 保留選取/複製語意 — field-controls.spec.md「null / undefined 值」)。
     // 2026-07-14 audit Dim 26(dual-mode coherence):uncontrolled `defaultValue` 也要被
-    // display / readonly-空值判定認得 — 原本只讀 `value`,uncontrolled Input 切 display 會誤顯 '-'。
+    // view / readonly-空值判定認得 — 原本只讀 `value`,uncontrolled Input 切 view 會誤顯 '-'。
     // 2026-07-14 R2(dual-model consensus,取代同日稍早 onChange-mirror 版):resolved value 改走
     // useControllable 內部 SSOT(Radix idiom,同 Select / Pagination 既有消費)。uncontrolled 時
     // native input 由 value={resolved} 內部驅動(defaultValue 只作初始值,不落 DOM attribute),
     // 修 mirror 版兩個真缺陷:
-    // (1) remount-stale — 切 display / readonly(native input unmount)再回 edit,native input 從
+    // (1) remount-stale — 切 view / readonly(native input unmount)再回 edit,native input 從
     //     defaultValue attribute 重掛 → 顯示 stale 初始值,與 mirror 判定分歧;
     // (2) form.reset() stale — HTML 標準 reset 不發 input event,onChange mirror 停在 reset 前的值
     //     (下方 reset bridge 修)。
@@ -140,7 +140,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const showDisplaySpan = isView || (resolvedMode === 'readonly' && displayValue == null)
 
     // form.reset() bridge(uncontrolled only):reset 恢復 defaultValue 但不發 input event →
-    // 手動把 resolved 歸位 defaultValue。keyed on showDisplaySpan:display 分支不掛 native input,
+    // 手動把 resolved 歸位 defaultValue。keyed on showDisplaySpan:view 分支不掛 native input,
     // 回 edit 重掛時 effect 重跑補掛 listener。
     const innerRef = React.useRef<HTMLInputElement | null>(null)
     React.useEffect(() => {
@@ -181,9 +181,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <span
             className={cn(
               bareInputStyles,
-              // B1 fix(2026-05-05):display mode 單行 ellipsis 截斷(對齊 Notion / Airtable / Linear
-              //   cell display canonical:single-line value 過長 → ellipsis。Textarea display 走 wrap path,
-              //   不在此處;Input display 永遠 single-line。)
+              // B1 fix(2026-05-05):view mode 單行 ellipsis 截斷(對齊 Notion / Airtable / Linear
+              //   cell display canonical:single-line value 過長 → ellipsis。Textarea view 走 wrap path,
+              //   不在此處;Input view 永遠 single-line。)
               'truncate',
               displayValue == null && fieldEmptyColorClass(resolvedMode),
             )}

@@ -26,7 +26,7 @@ export const Modes: Story = {
         <Input defaultValue="Wireless Bluetooth Headphones" placeholder="輸入商品名稱" aria-label="商品名稱(edit mode demo)" />
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">display</h3>
+        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
         <p className="text-caption text-fg-muted mb-3">純展示（read-only 內容）— 無 input chrome / 無互動 affordance</p>
         <Input mode="view" value="Wireless Bluetooth Headphones" aria-label="商品名稱(view 模式示範)" />
       </div>

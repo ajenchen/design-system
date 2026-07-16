@@ -15,7 +15,7 @@ type Story = StoryObj<typeof RadioGroupItem>
 // 「何時用」明文禁止裸用)→ 收斂為公開 <RadioGroupItem value label description>(自動 wire SelectionItem
 // + id/htmlFor),與同元件 principles / anatomy 層一致 — 三層 story 一律示範公開 API。
 
-// @story-trait-rationale: pre-existing trait gaps tracked separately; this PR scope = add Modes story with display card.
+// @story-trait-rationale: pre-existing trait gaps tracked separately; this PR scope = add Modes story with view card.
 /* ── 四模式 ── */
 export const Modes: Story = {
   name: '四模式',
@@ -30,7 +30,7 @@ export const Modes: Story = {
         </RadioGroup>
       </div>
       <div>
-        <h3 className="text-body font-bold text-foreground mb-2">display</h3>
+        <h3 className="text-body font-bold text-foreground mb-2">view</h3>
         <RadioGroup mode="view" value="yearly" aria-label="付款方案(view 模式示範)">
           <RadioGroupItem value="monthly" label="月付方案" />
           <RadioGroupItem value="yearly" label="年付方案" description="每年 $2,990，省下兩個月" />

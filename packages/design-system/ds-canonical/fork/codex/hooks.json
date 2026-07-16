@@ -1,0 +1,16 @@
+{
+  "description": "_generated: scripts/gen-codex-adapter.mjs — 禁手改(release:preflight `gen-codex-adapter --check` 驗 drift;重生 `node scripts/gen-codex-adapter.mjs`)。source: node_modules/@qijenchen/design-system/ds-canonical/fork/hooks/(npm ship;SSOT = DS repo .claude/hooks;投影名單 = gen-codex-adapter PROJECTED ∩ fork-shipped)。sourceDigest: check_tailwind_wildcard_in_docs.sh=51fcf04d3adc2a15。trust: Codex per-hook hash trust — TUI /hooks 一次 trust 或 exec 加 --dangerously-bypass-hook-trust;未 trust = 非互動下靜默跳過(fail-open)→ hooks 僅加速器,最終 authority = release:preflight + CI(AGENTS.md 檔頭宣告)。eligibility 判準與逐支理由 SSOT = gen-codex-adapter.mjs PROJECTED。",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/node_modules/@qijenchen/design-system/ds-canonical/fork/hooks/check_tailwind_wildcard_in_docs.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

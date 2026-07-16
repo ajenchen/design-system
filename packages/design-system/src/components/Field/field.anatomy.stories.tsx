@@ -73,7 +73,7 @@ export const Overview: Story = {
                 ['disabled', 'boolean', 'false', 'context.disabled 傳給 control'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", 'context.size 傳給 input-class control(Input / NumberInput / Select);primitive 不讀'],
                 ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'context.mode 傳給 Field Controls'],
-                ['variant', "'default'", "'default'", "視覺外殼(公開型別僅 'default',2026-07-14 收窄;naked = @internal FieldVariantInternal):default 含 border+bg / naked = DataTable cell substrate:edit×naked 自畫 border-based state machine(rest/hover/focus/error),display/readonly/disabled×naked 用 transparent border;2026-07-09 `bare` 退役"],
+                ['variant', "'default'", "'default'", "視覺外殼(公開型別僅 'default',2026-07-14 收窄;naked = @internal FieldVariantInternal):default 含 border+bg / naked = DataTable cell substrate:edit×naked 自畫 border-based state machine(rest/hover/focus/error),view×naked 用 transparent border;2026-07-09 `bare` 退役"],
                 ['controlLayout', "'inline' | 'block'", '(自動偵測)', '逃生艙:覆寫 control area 佈局(consumer 手寫 JSX 當 control 無法偵測時用)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
@@ -149,7 +149,7 @@ export const Inspector: Story = {
     mode: {
       control: 'radio',
       options: ['edit', 'view', 'readonly', 'disabled'],
-      description: 'Context 傳給控制元件:edit 可編輯 / display 純展示 / readonly 鎖定但保留輸入外觀 / disabled 停用',
+      description: 'Context 傳給控制元件:edit 可編輯 / view 純展示 / readonly 鎖定但保留輸入外觀 / disabled 停用',
     },
     required: { control: 'boolean', description: 'label 文字前加 * + aria-required' },
     invalid: { control: 'boolean', description: '觸發 error border + aria-invalid;本例以 FieldError 條件替換 FieldDescription(consumer 慣例,非元件行為)' },

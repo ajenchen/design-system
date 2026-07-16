@@ -258,7 +258,7 @@ export const RowAutoHeightInlineEdit: Story = {
       <div className="max-w-5xl">
         <p className="text-caption text-fg-muted mb-2">
           autoRowHeight=true。Note 欄位 wrap text 撐高 row。其他單行 cell 在高 row 中應**頂對齊**。
-          Click 任一 cell 進 edit:文字位置 display↔edit 不偏移(仍頂對齊),
+          Click 任一 cell 進 edit:文字位置 view↔edit 不偏移(仍頂對齊),
           frame 填 cell,Field 自帶 state ring(focus-within → primary)。
         </p>
         <DataTable
@@ -651,7 +651,7 @@ export const InlineEditWithSpreadsheetOverlay: Story = {
 
 /**
  * Issue 9 cell error system(2026-05-10):consumer-supplied `cellErrors` map shows error message
- * 14px text-error 在 display content 下方,gap-1 spacing。Edit cell 自動 clear visual error。
+ * 14px text-error 在 view content 下方,gap-1 spacing。Edit cell 自動 clear visual error。
  * Multi-error 用 array → ul li 分行。aria-describedby + aria-invalid for AT。
  *
  * 對齊 AG Grid `cellClassRules='ag-cell-error'` + Material X-DataGrid `errorMessage` cell prop +
@@ -1901,7 +1901,7 @@ export const RoadmapAllInOne: Story = {
    scripts/runtime-perf-datatable.mjs:20 仍指向本 story,gate 形同不可跑):──────────────────
    獨立 perf 量測 story — 同 Roadmap 13 cols rich-cell data(useRoadmapColumns SSOT),但**禁用**
    row drag / column reorder / column resize / selection / spreadsheet overlay,只保 inline edit
-   display。目的:隔離 feature-stack 疊加 cost(SortableRowProvider / filter / sort / columnOrder
+   view。目的:隔離 feature-stack 疊加 cost(SortableRowProvider / filter / sort / columnOrder
    state),驗證 rich cell 本體 scroll budget(avg ≤ 50ms / p95 ≤ 80ms / long-task ≤ 1,CPU 4x
    throttle)。**不動** RoadmapAllInOne demo IA(user 2026-05-10 directive 全合一)。
    重建版去掉原手刻說明 banner(px-loose + border-b border-divider = R9 chrome-header drift

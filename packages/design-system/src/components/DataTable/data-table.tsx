@@ -7,7 +7,7 @@
 //   - data-table-filter-panel.tsx + data-table-sort-manager.tsx + data-table-column-visibility-panel.tsx(panel state 隔離)
 //   - data-table-filter-group.tsx + data-table-filter-value-picker.tsx(@internal;2026-07-14 filter panel
 //     過 800 hard cap 拆檔 — row/nested-group renderer + ValueShape picker,只被 panel 消費)
-//   - cell-registry.tsx(column type → cell display / edit 解析 SSOT)
+//   - cell-registry.tsx(column type → cell view / edit 解析 SSOT)
 //   - data-table-interaction-layer.tsx + active-editor-controller.ts(spreadsheet overlay + portal editor)
 //   - column-types.ts + filter-operators.ts(✓ Rule-of-3 SSOT,3+ consumer)
 //   - filter-tree.ts(pure data + eval,test isolation)
@@ -96,7 +96,7 @@ export interface DataTableProps<TData>
   /**
    * Issue 9 cell error system(2026-05-10)。
    *
-   * Map of `${rowId}:${colId}` → error message(string | string[])。Cell display mode 在 content
+   * Map of `${rowId}:${colId}` → error message(string | string[])。Cell view mode 在 content
    * 下方渲 `text-body text-error` 訊息,gap-1 spacing。Multi-error 用 array → ul / li 分行渲。
    *
    * **使用建議**:
@@ -279,13 +279,13 @@ export interface DataTablePaginationOptions {
 //
 // 原 `renderTypedValue` switch + `EditableCellContent` switch 兩條平行 type-switch
 // 已 collapse 為單一 `cellRegistry`(./cell-registry.ts)— 每個 type → 一個 cell component,
-// 同時處理 display + edit mode(底層 Field control 的 mode prop)。對齊 M17 SSOT consolidation。
+// 同時處理 view + edit mode(底層 Field control 的 mode prop)。對齊 M17 SSOT consolidation。
 //
 // 對齊 Notion / Airtable type-aware inline edit canonical(詳 spec §十二):
 //   - string / number / currency:cell click → inline edit
 //   - date / time / select / multiSelect / person / multiPerson:cell click → 進 edit mode
 //   - boolean:不分 read/edit mode,直接 `<Checkbox>` 點即 toggle + commit
-//   - url:read = LinkInput display + hover Pencil button,click Pencil 才進 edit mode
+//   - url:read = LinkInput view + hover Pencil button,click Pencil 才進 edit mode
 //
 // Cell id format: `${rowId}__${columnId}`(編輯狀態 keying)
 // Commit: blur OR Enter OR overlay close → 呼叫 onCellCommit
@@ -393,10 +393,10 @@ function columnSizeStyle(
   //
   // **flex-basis: baseSize(2026-05-06 v14.2)**:把 baseSize 當 explicit basis(不是 `0%`)。
   // 為什麼:flex item base = basis + padding(box-sizing: border-box content-box 行為)。前 `0%`
-  // basis → cell padding 變 base 一部分。display(padding 12)vs edit(padding 0,Field 接管)
+  // basis → cell padding 變 base 一部分。view(padding 12)vs edit(padding 0,Field 接管)
   // 兩態 base 不同 → flex 重分配 → user 報「Price cell 進 edit 寬度縮 12px」
-  // (量測:Price display 130.5 → edit 118.5 = -12px)。
-  // explicit basis = baseSize 讓 padding 不參與 base 計算 → display↔edit 寬度穩定。
+  // (量測:Price view 130.5 → edit 118.5 = -12px)。
+  // explicit basis = baseSize 讓 padding 不參與 base 計算 → view↔edit 寬度穩定。
   return { flex: `1 1 ${baseSize}px`, minWidth: baseSize, maxWidth: maxSize }
 }
 
@@ -869,7 +869,7 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
 // 但 renderCellContent 每次 render 傳 3 個全新 inline closure(onCommit / onCommitLive /
 // onRequestEdit)+ `meta ?? {}` 新 object → memo shallow-compare 100% fail,防線靜默失效
 // (DataTableInner 任何 re-render — scroll / resize / drag / spreadsheet 選取 / portal keystroke —
-// 都讓全部 visible cells 的 Field display subtree 整棵重渲)。
+// 都讓全部 visible cells 的 Field view subtree 整棵重渲)。
 // Fix:中介 memo slot — 從 parent 接 stable callback(commitCell / cancelCellEdit / onCellCommit /
 // enterCellEdit)+ primitive rowId / colId,在 slot 內 useCallback 綁 per-cell closure;
 // props 全 primitive / stable reference → memo 真命中,unchanged cells render 成本歸零。
@@ -1484,7 +1484,7 @@ function DataTableInner<TData>(
   const hoverProps = (_idx: number): Record<string, never> => ({})
 
   // ── Cell render(Phase C 2026-05-05 — type-keyed registry SSOT)──
-  // 命中 columnType → 走 cellRegistry(display / edit mode 同元件 with `mode` prop);
+  // 命中 columnType → 走 cellRegistry(view / edit mode 同元件 with `mode` prop);
   // 無 columnType → consumer 自訂 cell.columnDef.cell。
   const renderCellContent = (cell: ReturnType<typeof rows[number]['getVisibleCells']>[number]) => {
     const meta = cell.column.columnDef.meta
@@ -1492,7 +1492,7 @@ function DataTableInner<TData>(
     const wrap = autoRowHeight && meta?.wrap === true
     // 已知 compound 欄位(Tag / PersonDisplay / LinkInput 等自帶 layout)直接 bypass TruncateCell,
     // 因為 `truncate` 的 inline baseline context 會破壞自訂 layout 的垂直對齊。
-    // 2026-05-09 D-path:date / time 加入(showDisplayEndIcon → Field naked-display 需 full width 才能
+    // 2026-05-09 D-path:date / time 加入(showDisplayEndIcon → Field naked-view 需 full width 才能
     //   右對齊 ItemSuffix。TruncateCell 的 `<span truncate min-w-0>` block-display 會 collapse Field
     //   to content size,讓 Calendar / Clock icon 緊貼 value text 而非右邊緣)。
     const isKnownCompound = colType === 'select' || colType === 'multiSelect' || colType === 'person' || colType === 'multiPerson' || colType === 'url' || colType === 'date' || colType === 'time'
@@ -1551,8 +1551,8 @@ function DataTableInner<TData>(
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
 
   // 2026-05-09 D-path retired:`getEditIndicator(colType)` parallel system 移除。
-  // Indicator authority 從 DataTable cellEl 移交 **Field naked-display branch via `showDisplayEndIcon` opt-in**
-  //   — Select / TimePicker / DatePicker / Combobox / PeoplePicker 5 picker 的 display mode 內建
+  // Indicator authority 從 DataTable cellEl 移交 **Field naked-view branch via `showDisplayEndIcon` opt-in**
+  //   — Select / TimePicker / DatePicker / Combobox / PeoplePicker 5 picker 的 view mode 內建
   //   `<ItemSuffix>` 渲對應 trigger icon(同 edit DOM 結構)。LinkInput URL anchor 例外(無 suffix)。
   // SSOT chain:cell-registry.tsx(opt-in props)→ Field component(intrinsic icon + ItemSuffix DOM)→
   //   item-anatomy ItemPrefix/ItemSuffix layout SSOT。詳 `.claude/planning/cell-indicator-ssot-rfc.md`。
@@ -1661,7 +1661,7 @@ function DataTableInner<TData>(
     const cellColId = cell.column.id
     const cellEditable = isCellEditable(meta, cell.row.original)
     const isEditingThisCell = editingCellId === cellEditId(cellRowId, cellColId)
-    // Indicator canonical(2026-05-09 D-path retire):**Field naked-display branch own** via
+    // Indicator canonical(2026-05-09 D-path retire):**Field naked-view branch own** via
     //   `showDisplayEndIcon` opt-in(per-picker `<ItemSuffix>` 渲 ChevronDown/Calendar/Clock)。
     //   DataTable cellEl 不再 render parallel indicator — SSOT 對齊 Field family。
     //   詳 `.claude/planning/cell-indicator-ssot-rfc.md` Step 9。
@@ -1744,7 +1744,7 @@ function DataTableInner<TData>(
         role="cell"
         // group/cell + data-row-mode:讓 Field naked 用 `group-data-[row-mode=...]/cell:items-X`
         // 從 cell 取 alignment(autoRowHeight=auto 頂對齊 / fixed=fixed 置中)。CSS propagation,
-        // Field API 不變;每個 mode 內 display↔edit 同 alignment(同 Field, 同 group → 同 items)。
+        // Field API 不變;每個 mode 內 view↔edit 同 alignment(同 Field, 同 group → 同 items)。
         // H1(2026-05-10):per-row error → effectiveAutoRowForCell 同 row.tsx effectiveAutoRow
         data-row-mode={effectiveAutoRowForCell ? 'auto' : 'fixed'}
         data-column-id={cell.column.id}
@@ -1792,7 +1792,7 @@ function DataTableInner<TData>(
           // Field naked edit border 仍 own(per Field SSOT)— 編輯時 Field 自帶 border 1px,
           // 跟 cell 4 邊 inset divider 視覺相疊(同 pixel)= 1 line visual,不雙線。
           inlineEdit && 'dtCellGrid',
-          onEditableCellClick && ['cursor-pointer', nakedCellEditableDisplayHover],  // editable cell display hover affordance(對齊 Notion / Airtable hover-cell-shows-border canonical)
+          onEditableCellClick && ['cursor-pointer', nakedCellEditableDisplayHover],  // editable cell view hover affordance(對齊 Notion / Airtable hover-cell-shows-border canonical)
           // a11y(2026-07-14 dim-10 修):非 spreadsheet inlineEdit cell 可 Tab 聚焦(見下方
           // tabIndex/onKeyDown)— focus-visible ring 對齊本檔 expand button / sortable header canonical。
           onEditableCellClick && !spreadsheetMode && 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
@@ -1801,7 +1801,7 @@ function DataTableInner<TData>(
         )}
         style={{
           ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id) }),
-          // Padding override 只在 inline-edit cell(naked Field 撐滿 cell);portal mode cell 走正常 display padding
+          // Padding override 只在 inline-edit cell(naked Field 撐滿 cell);portal mode cell 走正常 view padding
           ...(isEditingThisCell && !experimentalActiveEditorController ? {} : cellPadding),
           // Slice D Step 2(2026-05-10):flag 開時 set CSS variable 抑制 Field naked hover outline,
           // 讓 overlay layer 接管 hover ring paint(per RFC Contract 8 「one geometry owner, two paint owners」)。
@@ -1811,7 +1811,7 @@ function DataTableInner<TData>(
         onClick={onEditableCellClick}
         // a11y(2026-07-14 dim-10 修):非 spreadsheet 的 inlineEdit cell 原本只有 onClick —
         // 鍵盤 user 無法聚焦 cell、無法進入編輯(WCAG 2.1.1)。對齊 Atlassian InlineEdit
-        // read-view-focusable idiom:editable display cell 可 Tab 聚焦,Enter / F2 進 edit。
+        // read-view-focusable idiom:editable view cell 可 Tab 聚焦,Enter / F2 進 edit。
         // spreadsheetMode 不加(該模式走 table-level selectedCellId 鍵盤導覽 SSOT,per-cell
         // tab stop 會跟 roving 模型衝突);cell 內 embedded 控件事件不攔(target guard)。
         tabIndex={onEditableCellClick && !spreadsheetMode ? 0 : undefined}
