@@ -1,0 +1,55 @@
+{
+  "dim": 33,
+  "part": 0,
+  "range": [0, 5],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": ".claude/rules/story-rules.md:34",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story-rules.md:34 仍用「有預設視覺/直接渲染有視覺/消費者都包 wrapper」三 test,而 ui-development.md:14+26 已於 2026-06-06 明文 retire 空 render 類判準並記載 FieldControlGroup/ResizeHandle 誤判 anchor。兩 rule 判準矛盾屬實,修法 = 對齊既有 intent-based SSOT(AUTO)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:426",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "ComboboxProps 確含 5 個 @internal props(combobox.tsx:432/437/447/463/478)且 root barrel 匯出(index.ts:152);tagAreaPaddingLeftPx 無現行 consumer(combobox.tsx:455 自述 + people-picker.tsx:426 傳 undefined)、tsconfig 無 stripInternal、dist/components/Combobox/combobox.d.ts:128 仍可見。拆 public/internal props 或刪 prop = 動公開 API contract,需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/Command/command.tsx:31",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "四項矛盾全實:Command 全單元 internal 排除 root barrel(command.spec.md:8 isInternal、command.tsx:3-4、index.ts:591)但 spec:23/69 指定 CommandDialog 為 app Cmd+K 入口;principles:62「不直接放在 app code」/anatomy:3 未提 spec:78(2026-06-12 放寬)+ showcase:38/155 的 bordered-inline 例外;spec:118 稱 SelectMenu「公開消費入口」但 select-menu.spec.md:7-8 亦 isInternal。邊界重劃(public front-door / barrel)動公開 API contract 與 canonical 語意,需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:2",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "anatomy story:2-6 rationale 稱 size 為「row-height tier(compact/cozy/comfortable)…row density,非 component size」,與 data-table.spec.md:71「Size 不等於 density。Size 是這張表格的結構決策」canonical 直接衝突(spec size 為 sm/md/lg,無 compact/cozy/comfortable),且以 Linear/Notion/Airtable 外部術語覆蓋 DS 語言。修 story 措辭對齊 spec = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/FileItem/file-item.anatomy.stories.tsx:224",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story:224-228「Mode 決定 density…已覆蓋所有密度需求…Size tier 的區別在 mode 上已足夠表達」與 file-item.spec.md:24「兩者是資訊量不同的展示策略,不是同一結構的尺寸縮放」+ spec:55-66 兩 mode 皆 scanning 相牴觸,確混淆 mode/size/global density 三軸。修 story rationale 對齊 spec = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:115",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "anchor 屬實:accordion.spec.md:115 含 shadcn py-4/Ant paddingSM 12px/MUI minHeight 48/Carbon 等量化 claim,同段無 URL/#L/snapshot/@benchmark-unverified;@benchmark-cited(68 檔使用)確不在 hook 合法 escape 清單(check_benchmark_citation.sh:50,65 僅認 @benchmark-unverified/@benchmark-citation-allow/@benchmark-unverified-blanket)。機械掃描(spec 79 檔 586 行、story 120 檔、impl 70 檔含未 cite benchmark 名句)量級與 codex 語意過濾後 130 檔/404 段一致;補 cite 或加撤回 marker = 誠實措辭 AUTO。",
+      "dupWithClaude": false
+    }
+  ]
+}

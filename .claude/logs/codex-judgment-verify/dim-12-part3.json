@@ -1,0 +1,143 @@
+{
+  "dim": 12,
+  "part": 3,
+  "range": [51, 67],
+  "verdicts": [
+    {
+      "idx": 51,
+      "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx:139",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "header-canonical.stories.tsx:139 可見 body 確為「浮層內容區…(Dialog / Sheet / Popover body)」容器術語 placeholder;此檔屬展示層 .stories.tsx,不在 anatomy 藍圖彈性範圍(example-selection.md:54),應換真實內容。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 52,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx:67",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "app-shell.principles.stories.tsx:67-69 可見準則文字確含「header-canonical 派生」「layoutSpace 規則 1B」「layoutSpace.spec.md 6 條規則」內部代號,命中 dim-12 spec 代號禁項(audit-prompts.md:388)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 53,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx:134",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "app-shell.principles.stories.tsx:134 可見文字確為「(header-canonical 4.5 chrome header avatar)」,內部文件章節號露出於 Storybook,屬 spec 代號違項。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 54,
+      "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:80",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "circular-progress.principles.stories.tsx:80 渲染內容確為「載入項目 {i + 1}」= Item-N placeholder(audit-prompts.md:384 明列禁項);反例示範亦應用真實資料名。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 55,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:251",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "data-table.principles.stories.tsx:251 note 確以「對齊 spec.md L28」作結;且行號已漂移(spreadsheetMode 段實在 data-table.spec.md:26),證實易漂移之虞。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 56,
+      "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.principles.stories.tsx:94",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "story:94/100/112 確用「Mode A/Mode B」字母代號,但該詞為 spec canonical 術語(field-control-group.spec.md:92,103),story 與 spec 一致;正確修法須 spec+story 同步改名(canonical 用語變更),屬 SSOT 措辭決策需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 57,
+      "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:713",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "file-viewer.anatomy.stories.tsx:713 尺寸表確顯示「layoutSpace v6 規則 4」內部版本+規則編號;可保留引述的規則內容(溯源)但去除易漂移的 v6/編號代號。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 58,
+      "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:212",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "overflow-indicator.anatomy.stories.tsx:212 即時預覽渲染內容確為「隱藏項目 {i + 1}」編號 placeholder;anatomy 彈性僅限藍圖/inspect 面板,「元件渲染範例仍須真實場景」(example-selection.md:54)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 59,
+      "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:225",
+      "verdict": "VERIFIED",
+      "class": "REJECT",
+      "reason": "L224-238 確為 Unicode 方框「尺寸藍圖」,但此為 anatomy Inspector 的 canonical 規定結構(anatomy-standard.md:111「左側:即時預覽 + 尺寸藍圖」+ :191 藍圖完整性),且 example-selection.md:54 明文 anatomy「token 藍圖 / inspect 面板可用合成內容」;旁邊已有實際即時預覽(L206-217),非以 ASCII art 取代真元件。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 60,
+      "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx:195",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "selection-item.anatomy.stories.tsx:195 props 表說明欄確露出治理代號「(M24)」;應改寫成人話狀態優先原則(disabled 覆蓋 muted)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 61,
+      "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx:265",
+      "verdict": "VERIFIED",
+      "class": "REJECT",
+      "reason": "L262-275 確為 Unicode 方框尺寸藍圖,但同 idx 59:anatomy Inspector 尺寸藍圖為 canonical 規定(anatomy-standard.md:111,191;example-selection.md:54 anatomy 彈性),且上方 L245-256 已有真實內容即時預覽(「Admin 層級操作」),藍圖僅為尺寸標註輔助。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 62,
+      "fileLine": "packages/design-system/src/components/Steps/steps.stories.tsx:75",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "steps.stories.tsx:74-76 成功畫面 Button 文字確為「重新開始 demo」,meta 測試措辭非真實產品文案;可改「再填一份申請」等情境文案。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 63,
+      "fileLine": "packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx:195",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tooltip.principles.stories.tsx:195,198 渲染內容確為「非常長的專案名稱會被截斷(顯示完整版)」自我描述測試句,非真實專案名。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 64,
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.stories.tsx:141",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tree-view.stories.tsx:141-142,152-153 label 確為「這是一個很長的專案/檔案名稱會被截斷/自然換行…」自我描述測試句;展示層應用真實長檔名。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 65,
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.anatomy.stories.tsx:36",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "屬實:L36-43 live render 內容直書「AccordionTrigger(可點擊 header + chevron)」「下一個 AccordionItem」,L443-452 另有「可用區塊/點不開/正常展開」測試措辭;example-selection.md:54 明定 anatomy「元件渲染範例仍須真實場景」,slot 標示可改用 Button anatomy 式 schematic(button.anatomy.stories.tsx:203-216)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 66,
+      "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.stories.tsx:193",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "breadcrumb.stories.tsx:193 首項 label 確為「Long Organization Name」自我描述 placeholder(同組 194-195 為半真實名);應換真實組織長名。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 67,
+      "fileLine": "packages/design-system/src/components/Button/button.anatomy.stories.tsx:227",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "button.anatomy.stories.tsx:227,235 確以 `<Button …>{v}</Button>` 讓 variant 名(primary/secondary…)當可見 label,命中 audit-prompts.md:389「Variant names as visible labels」明列禁項;variant 名可留在旁欄,label 改真實動作文案。",
+      "dupWithClaude": false
+    }
+  ]
+}

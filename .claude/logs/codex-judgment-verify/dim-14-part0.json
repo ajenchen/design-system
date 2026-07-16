@@ -1,0 +1,119 @@
+{
+  "dim": 14,
+  "part": 0,
+  "range": [0, 13],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "packages/design-system/src/components/Field/field-types.ts:21 等(finding 引 105 個 file:line)",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "FieldMode='edit|view|readonly|disabled' 屬實(field-types.ts:21),但引用 105 處中 84 處 HEAD 已改為 view(Phase A A.3 批修,如 input.stories.tsx:31 / radio-group.stories.tsx:34 / select.stories.tsx:48);仍真的殘留約 20 處(people-picker.spec.md:256「display 路徑」/ element-anatomy.spec.md:114 / inline-action.spec.md:161,171 / number-input.principles.stories.tsx:101 / input.tsx:140 showDisplaySpan 識別字等),另 cell-registry.tsx:290 等為合法保留 prop 名 showDisplayEndIcon,finding 自稱已排除卻仍引用。",
+      "dupWithClaude": true
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:38,49 等 8 spec vs packages/design-system/src/hooks/use-controllable.ts:13",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "12 處引用行全數仍寫 `useControllableState`,但 DS 實際 export 為 `useControllable`(use-controllable.ts:13);data-table.spec.md:222 宣稱「Field / Switch / Checkbox 已用」亦不實 — 真實 consumer 為 Input/Textarea/Select/SelectMenu/Pagination/FileViewer/DataTable(grep import 證實 Switch/Checkbox 未用)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:66,166,585 等 10 spec 27 處",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "27 處引用行全數命中舊名 `item-layout`(avatar.spec:123,132,148 / steps.spec:66,78,89 / tabs.spec:85,93,95,269 等),repo 內無任何 item-layout module/檔案(find 0 hit),owner spec item-anatomy.spec.md:585 甚至寫「從 item-layout module import」指向不存在的 module。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/patterns/README.md:6,22,31; .claude/rules/ui-development.md:20; packages/design-system/src/hooks/use-overflow-items.ts:65,178",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "README.md:6,22,31 與 ui-development.md:20 均稱可呼叫的 `useOverflowItems` hook,但 use-overflow-items.ts 僅 export `useScrollEdges`(:65)與 `useOverflowIndices`(:178)及其型別,全庫 grep 無任何 useOverflowItems binding。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:39; packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx:55,77,111",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "progress-bar.stories.tsx:39 `export const Default` 無 name 欄(同檔 :54/:116 均有中文 name),header-canonical.stories.tsx:55/77/111 三個函式型 story export 全檔無 name/storyName;違 story-rules.md:42「Story name: field 必中文人話」。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.principles.stories.tsx:24,39,46; packages/design-system/src/components/SelectionControl/selection-item.spec.md:25",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "principles story :24「適合 SelectionControl 的真實業務場景」:39:46「SelectionControl rich row(本 primitive)」把群組名當 primitive 名;spec.md:25 明定 SelectionControl 僅為資料夾/概念群組名、main primitive = selection-item.tsx(SelectionItem)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.tsx:44",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "bulk-action-bar.tsx:44 公開 prop `onClear` 確為清除 selection,而 DS canonical 把 onClear 語意綁定「欄位清空 value」(button.spec.md:355、inline-action.spec.md:236),同名跨元件不同義成立;惟更名動公開 API contract(bulk-action-bar.spec.md:146 亦記載此名),需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 7,
+      "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:83; packages/design-system/src/components/Calendar/calendar.tsx:110",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "select-menu.tsx:83 `createLabel?: (query: string) => string`(formatter)vs calendar.tsx:110 `createLabel?: string`(靜態 CTA 文字),同名公開 prop 型態與用法不同屬實;更名屬公開 API contract 變更,需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 8,
+      "fileLine": "packages/design-system/src/components/DescriptionList/description-list.tsx:33,49; packages/design-system/src/components/Button/button-group.tsx:33",
+      "verdict": "PARTIAL",
+      "class": "ASK",
+      "reason": "DescriptionList 用 `direction`(description-list.tsx:33,49)且 CheckboxGroup:67 / Field:133 / Steps:175 用 `orientation` 屬實;但「其他 DS 元件 canonical 均為 orientation」不實 — ButtonGroup 同一 horizontal/vertical 軸也用 `direction`(button-group.tsx:33),統一方案需一併涵蓋且動公開 API,需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 9,
+      "fileLine": "packages/design-system/src/components/Steps/steps.tsx:307-314; packages/design-system/src/components/Steps/index.ts:5",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "steps.tsx:307-309 `StepItemInjectedProps { __isLast?: boolean }` 被 :311-314 公開 `StepItemProps` extends,index.ts:5 `export * from './steps'` barrel 匯出;私有注入欄位(:277 cloneElement 注入)洩入公開型別屬實,收斂為 internal intersection 屬型別衛生 refactor。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 10,
+      "fileLine": "packages/design-system/src/components/DataTable/filter-operators.spec.md:259; packages/design-system/src/components/FileViewer/file-viewer.spec.md:267; packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md:120; packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:308; packages/design-system/src/components/Button/button.spec.md:105,130",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "6 處全命中:「## Sources(M8 benchmark)」/「### Why inline」/「### When list 上方有…」/「## Notes」/「Members: **Button…**」均為英文自然語句章名/段落標籤,非技術專名,違 AGENTS.md「spec.md 繁中(技術術語保留英)」語言一致性原則。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 11,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.spec.md:168 等 19 處",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "19/19 引用行逐行機械驗證全命中(app-shell.spec:168 派别 / carousel.spec:136 圖標 / checkbox.spec:247 默認 / chip.spec:190 菜單 / empty.spec:126 文檔 / sidebar.spec:699 用戶 / textarea.spec:43 字符 / sidebar.principles:166 組件 等),確為簡中/非 canonical 用詞殘留。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 12,
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:42,90,109 等 48 處",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "48/48 引用行全命中少數詞(導航/交互/滾動/拖拉/拖拽),且 DS-wide 計數證實多數詞成立:導覽 318 vs 導航 20、互動 668 vs 交互 17、捲動 264 vs 滾動 35、拖曳 87 vs 拖拽 3 + 拖拉 34,定向替換即對齊既有多數 canonical。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 13,
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.tsx:88; packages/design-system/src/components/DataTable/data-table.tsx:181; packages/design-system/src/hooks/use-controllable.ts:4 等 12 樣本",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "12 個樣本引用行全為英文自然語句 prose 註解,且所在檔案均含大量中文註解(accordion.tsx 141 CJK 字元 / drag-visual.ts 715 / i18n-context.tsx 174 / motion.ts 70),單檔中英夾雜屬實,違 AGENTS.md「單一檔案不中英夾雜」;157 檔總數為 codex AST 全掃宣稱,樣本抽驗一致無反證。",
+      "dupWithClaude": false
+    }
+  ]
+}

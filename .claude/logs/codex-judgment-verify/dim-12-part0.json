@@ -1,0 +1,143 @@
+{
+  "dim": 12,
+  "part": 0,
+  "range": [0, 16],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.stories.tsx:206",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "file-viewer.stories.tsx:205-206 description 確含「對齊 spec 2.3 節「Frozen columns + row actions」」,命中 dim-12 rubric「spec 代號」禁則(audit-prompts.md:388)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Notice/notice.anatomy.stories.tsx:261",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "notice.anatomy.stories.tsx:261-271 以 <pre> 渲染 Unicode 方框線尺寸藍圖於可見區域,命中 rubric「Visual symbols / ASCII art」禁則(audit-prompts.md:387,rationale 明言 no legitimate use)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/Notice/notice.anatomy.stories.tsx:464",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "notice.anatomy.stories.tsx:464 title=`${VARIANT_LABEL[v]} — 標題文字`、:465 description=「本例展示 subtle surface 上的 icon / text 對比。」,均為規格式佔位文案而非真實通知內容。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:130",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "coachmark.anatomy.stories.tsx:130-131 title=「試試新功能」+ description=「這是 Coachmark 的說明文字;多行內容會自動換行…」,:140 Button child=「Anchor」,均非可辨識的真實導覽情境。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:274",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "coachmark.anatomy.stories.tsx:274 description=「單步 Coachmark,僅一個完成 CTA(知道了),無 step / Skip。」把元件結構說明當成可見內容,:280 anchor 亦顯示「Anchor」。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:295",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "真:295 media label=`Step ${N}`、:306 Button=「Step N」、:297 description 含 consumer/current step/anchor/feature 術語;假:「沒有真實導覽流程」— :296 title 實為「步驟 N:建立 Workspace/邀請成員/建立專案」真實流程。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:94",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "field.stories.tsx:94 FieldLabel=「未勾選範例」僅描述測試狀態,非業務欄位名(同組其他欄位如 :92「同意條款」均為真實欄位)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 7,
+      "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:156",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "field.stories.tsx:156「短 label」、:168「這是一個會換行的很長的 label 用來驗證多行情境」、:181/185/189「sm size / md size / lg size」全為驗證用途文字當作可見欄位標籤。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 8,
+      "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:283",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "field.stories.tsx:283/292/300 FieldLabel=「檢視模式(sm)/(md)/(lg)」,內部 size 值混入可見產品文案。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 9,
+      "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:483",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "真:483/487/491/495 FieldLabel=「80px/160px(預設常用)/240px(寬 label 欄)/30%(比例)」以寬度值當標籤;假:「技術性輸入提示」屬 placeholder= 屬性值,rubric 明列 DON'T flag(audit-prompts.md:392)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 10,
+      "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:534",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "field.stories.tsx:534 FieldLabel=「已鎖定」+ :536 FieldDescription=「不可調整的範例」,只描述元件 disabled 狀態,非業務情境(同 story 其他欄位「音量/價格區間」均真實)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 11,
+      "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:606",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "field.stories.tsx:605-608 FieldDescription 向使用者顯示「Slider 跟 NumberInput 同步…兩個元件高度透過 `h-field-md` 對齊」,實作細節混入產品文案 slot。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 12,
+      "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:643",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "field.stories.tsx:643 FieldDescription=「改成「產品路線圖 Q3」可觸發 submit 業務驗證(名稱重複)」,測試操作指令放在產品文案 slot 內。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 13,
+      "fileLine": "packages/design-system/src/components/Popover/popover.principles.stories.tsx:260",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "popover.principles.stories.tsx:260/273 trigger=「Popover」「Dialog」,:263/276 title=「Header」,:264/277 body=「Body 區域」,元件結構名當可見內容,命中 rubric variant-name-as-label 禁則(audit-prompts.md:389)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 14,
+      "fileLine": "packages/design-system/src/components/Steps/steps.anatomy.stories.tsx:254",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "steps.anatomy.stories.tsx:254-256 StepLabel=「第一步/第二步/第三步」抽象編號;同檔 :270-276 CHECKOUT_STEPS 證明真實流程寫法已存在可套用。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 15,
+      "fileLine": "packages/design-system/src/components/Steps/steps.anatomy.stories.tsx:424",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "steps.anatomy.stories.tsx:424/426/429 StepLabel=「簡短 label/帶有描述的 label/另一個 label」,:427 description 亦為佈局 meta 說明,均為文字長度佔位而非真實流程。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 16,
+      "fileLine": "packages/design-system/src/components/Toast/toast.stories.tsx:127",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "toast.stories.tsx:127 觸發按鈕=「斷線示範」為測試工具語言(同列 :124-126「複製檔案/儲存專案/匯入資料」均為真實動作,唯此鈕不一致)。",
+      "dupWithClaude": false
+    }
+  ]
+}

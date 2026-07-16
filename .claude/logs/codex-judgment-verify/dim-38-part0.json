@@ -1,0 +1,18 @@
+{
+ "dim": 38,
+ "part": 0,
+ "range": [
+  0,
+  0
+ ],
+ "verdicts": [
+  {
+   "fileLine": "packages/design-system/src/patterns/action-bar/action-bar.spec.md:293",
+   "verdict": "VERIFIED",
+   "class": "AUTO",
+   "reason": "屬實:action-bar.spec.md 分隔線幾何節(~:291)把 gap-1 dense 容器的 h-5 mx-1 稱「item-anatomy.stories.tsx inline-action 群先例」,實際該先例是 Button iconOnly 群(item-anatomy.stories.tsx:1565-1569 gap-1 + Separator h-5 mx-1;xs 群 :1590-1594 gap-1),ItemInlineAction 群用 canonical gap-2(:1598-1602)— 措辭誤標先例、幾何值本身無誤,改稱 Button action-group 先例即可(doc 對齊,不動 canonical 值)。",
+   "dupWithClaude": false,
+   "idx": 0
+  }
+ ]
+}

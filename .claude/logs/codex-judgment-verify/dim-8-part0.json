@@ -1,0 +1,95 @@
+{
+  "dim": 8,
+  "part": 0,
+  "range": [0, 10],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:338",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "checkbox.spec.md 相關段(:331-338)確無 form-validation 連結、全文無驗證時機定義;use-form-validation.ts:35-36/:92-93 對 Checkbox 僅 setFieldValue,且 :267-268 只做 form.setValue+shouldDirty(無 blur 驗證/編輯清錯)。v1 邊界已誠實載於 form-validation.spec.md:89(Checkbox/Switch 用 setFieldValue 自接),故補 pointer + 明載限制即可 = doc 對齊既有 canonical。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:196",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "狀態表(checkbox.spec.md:198-233)僅 unchecked/checked/indeterminate/hover/disabled,全檔 grep loading 0 hit 亦無 N/A 明文,違 .claude/references/spec-rules.md:43「不適用則明文『本元件無 X 狀態』,不沉默省略」(Tag spec:249 有正例)。補 N/A 誠實措辭 = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:147",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "bulk-action-bar.spec.md 全文無批次操作進行中的 loading/重複提交/選取保留契約(僅 a11y:187 講 disabled action 不藏);form-validation.spec.md:86 的 double-submit canonical 屬 form 層不覆蓋 batch action。補 consumer-owned 責任聲明(action Button 既有 loading/disabled API)= doc 對齊現況。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:252",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "邊界狀態段(carousel.spec.md:254-257)僅涵蓋單一 item/零 items/Autoplay/dark mode;全檔 grep loading/載入/skeleton 僅 :267 Empty(零 items),無媒體載入責任歸屬。違 spec-rules 邊界案例覆蓋規則(loading 不適用需明文),補 consumer-owned N/A 註記 = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/LinkInput/link-input.spec.md:111",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "link-input.spec.md:115 明列僅委派 focus/invalid/disabled/readonly;全檔與 link-input.tsx grep loading 皆 0 hit。field-controls.spec.md:112 loading canonical 只點名 Input/Combobox 支援、NumberInput 明文不支援,LinkInput 未表態 = 沉默省略,補 N/A 明文 = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:65",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "segmented-control.spec.md:67-73 重述 3 角度比較+Fallback,與 SSOT anchor tabs.spec.md:57-61 幾近逐句重複(且已現 drift:「結構角色」vs「角色」、fallback 措辭不同),違 .claude/references/spec-rules.md:25「被指方寫一行 pointer」+ :36「❌ 兩 spec 都寫完整對照」+ :28 Tabs owns。收斂為 pointer 不動 canonical 內容(留在 tabs.spec.md)= AUTO 清 duplicate。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:272",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "segmented-control.spec.md:272 Related 對 field-controls 僅提「size 繼承機制」;全檔 grep invalid/blur/表單值 0 hit,未表態驗證契約是 N/A、consumer-owned 或支援。補明文表態(radio 語意恆有值,invalid/blur 驗證 N/A 或 consumer-owned)= 誠實措辭 AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 7,
+      "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:121",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "spec API 段(slider.spec.md:121-133)未禁空陣列;slider.tsx:75-78 thumbCount fallback 1 → value=[] 仍渲染 1 個 Thumb(:142),而 Radix(node_modules/@radix-ui/react-slider/dist/index.mjs:443)value undefined → display:none → 軌道無可操作 thumb,claim 逐項屬實。degenerate input 硬化(正規化/契約明文)= bug-fix 類 AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 8,
+      "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:163",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "States 表(slider.spec.md:166-174)僅 Rest/Hover/Active/Focus/Disabled,全檔與 slider.tsx grep loading 0 hit,無 N/A 明文,違 spec-rules「不適用則明文」。補 Loading N/A 註記 = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 9,
+      "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:245",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "邊界案例(tag.spec.md:247-249)無空 label 條目;TagProps children optional 且 tag.tsx:204 無條件渲染 text span → 空膠囊成立、配 onRemove 只剩移除鈕(:205);spec:276「必有文字 label 或 prefix icon」允許 icon 替代,但 tsx:202 icon 為 aria-hidden → icon-only Tag 無 accessible name,tension 屬實。是否強制非空可見 label 或增 accessible-name API = 公開 API contract / a11y canonical 語意決策,需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 10,
+      "fileLine": "packages/design-system/src/components/Textarea/textarea.spec.md:97",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "textarea.spec.md 全檔與 textarea.tsx grep loading 0 hit,邊界案例(:111-113)僅空值/極長/resize;field-controls.spec.md:112 loading canonical 只點名 Input/Combobox 支援、NumberInput 明文例外,Textarea 未表態 = 沉默省略。補 N/A 明文(非同步狀態由 form 層 isSubmitting/FieldDescription 呈現,form-validation.spec.md:86-89 已有 home)= AUTO。",
+      "dupWithClaude": false
+    }
+  ]
+}

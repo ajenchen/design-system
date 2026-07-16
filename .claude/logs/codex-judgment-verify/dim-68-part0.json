@@ -1,0 +1,87 @@
+{
+  "dim": 68,
+  "part": 0,
+  "range": [0, 9],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx:274",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "principles L274-296 ✅ 正向 Rule 只渲染 1 個 AccordionItem,而 accordion.spec.md L40+L89 明定「單一 item 不用 Accordion(用 <details>)」。story 修正(補第二區段)不動 canonical,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:143,173,234,427,473,600,608",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "7 處引用行皆為 icon Avatar 無 alt(L143/173/234/427/473/600/608 逐行確認),violate avatar.spec.md L243「alt 必傳」canonical(entity avatar 用品牌/專案名),且均非明示的 missing-alt 防禦 fixture。a11y story 補修,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/Badge/badge.anatomy.stories.tsx:256,443,563",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "L256(Inspector)/L443(variant 矩陣)/L563(SizeMatrix)三處 <Badge dot> 均無 aria-label,violate badge.spec.md L334「Dot 模式…必須給 aria-label」。story a11y 補修,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.stories.tsx:30,51,115; bulk-action-bar.principles.stories.tsx:83,129,160; bulk-action-bar.anatomy.stories.tsx:46,115,162,216",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "引用行全數確認 tertiary+danger 用法,button.spec.md L416 明禁(無 compoundVariant 會靜默渲染成一般 tertiary,button.tsx L399-406 有 dev warn);但 bulk-action-bar.spec.md L84/L147/L197/L208 反向 mandate「tertiary danger」= 真 spec-vs-spec SSOT 衝突。收斂需改 Button danger 公開契約或改 BulkActionBar action variant canonical,SSOT-UI/UX substantive → ASK。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/Command/command.stories.tsx:155",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "InlineCommand(L155-200)僅 4 個 CommandItem 配 CommandInput,violate command.spec.md L75「❌ 不在短選單(< 6 項)用 Command」+ L39 短清單→DropdownMenu;鄰近 story 已有同 dim 修正紀錄(L204 comment)但本 story 未修。story 修正,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:1959",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "L1959 amount 欄手刻 cell `$${...toLocaleString()}` 且無 meta,而 DS canonical 為 meta:{type:'currency',prefix:'$'}(cell-registry.tsx L186-187/L500,anatomy L197/L277 currency→right 對齊;同檔 L99 即有正確用法),無 meta 落 string 左對齊。改消費 registry canonical,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:302; data-table.anatomy.stories.tsx:466; data-table.principles.stories.tsx:221",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "真:anatomy L466 與 principles L221 宣稱「Consumer 不需自訂,自動顯示標準空狀態」,與 empty.spec.md L175「❌ 文案太抽象,應描述缺什麼資料」衝突(default = Empty description='沒有資料',data-table.tsx L2423)。假:stories L302 是明示對照基線(L295 comment),下方 L305-312 即示範業務文案 emptyState「尚無商品」,並未把預設當唯一 canonical。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 7,
+      "fileLine": "packages/design-system/src/components/DateGrid/date-grid.stories.tsx:31; date-grid.principles.stories.tsx:55",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "stories L31 Card helper `p-4` 容器與 principles L55 Demo helper `p-2` 容器均直接包住自帶 p-3 的 DateGrid(L62-70/L95-96 確認),violate date-grid.spec.md L170「❌ Consumer 不可外加 padding wrapper」(hook C.3 P0 級 canonical)。story helper 修正,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 8,
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:266",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "L266 story description 斷言 range_middle hover 應「verify 藍色 1.5px ring 顯示」,但 date-grid.spec.md L119 已於 2026-07-05 修正為「range-middle…button hover ring 一併被 selected 的 ring-0 壓制」(明注舊句『hover ring 仍顯示』已改)。story 斷言對齊現行 canonical,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 9,
+      "fileLine": "packages/design-system/src/components/DescriptionList/description-list.anatomy.stories.tsx:221",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "anatomy L221-222 prose「value 可放任何 ReactNode…型別是寬鬆的 ReactNode」超出 spec 範圍:description-list.spec.md L167「❌ 不要在 dd 內嵌互動元件(Button/Input)」+ L197(2026-07-04 Q9 拍板:操作型禁止、展示/導覽型允許)。範例本身合規,僅 prose 措辭補限定,AUTO。",
+      "dupWithClaude": false
+    }
+  ]
+}

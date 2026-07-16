@@ -1,0 +1,143 @@
+{
+  "dim": 12,
+  "part": 2,
+  "range": [34, 50],
+  "verdicts": [
+    {
+      "idx": 34,
+      "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:351",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "dialog.anatomy.stories.tsx:351「預設 Dialog(試 ESC / 點 overlay)」、:355「一般表單 Dialog」、:358「可以按 ESC、點 overlay、或點右上 X 關閉。」皆在 HEAD 為可見內容,屬測試說明措辭混入產品文案。story-rules.md 禁止清單(佔位符/spec 內部代號)命中,改寫為真實表單任務屬非 SSOT 文案修正。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 35,
+      "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:376",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "dialog.anatomy.stories.tsx:376 觸發按鈕確為「Force-decide Dialog(禁 ESC / overlay)」,暴露內部模式;Dialog 內文本身已是真實場景(:385 刪除 42 筆訂單),僅 trigger 文案需改。非 SSOT 文案修正。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 36,
+      "fileLine": "packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx:92",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "hover-card.anatomy.stories.tsx:92 觸發按鈕文字確為「hover 看 Card」,是操作指令+元件名稱;卡片內容本身已真實(:96 Ada Chen)。改 trigger 為人名即可,非 SSOT。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 37,
+      "fileLine": "packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx:111",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "hover-card.anatomy.stories.tsx:111 觸發文字「hover 看 Tooltip 樣式」+ :114-116 浮層內容為 pattern 描述文字(「深色樣式——常見於 OverflowIndicator…」)而非實際溢出清單,兩點皆為真。非 SSOT 文案修正。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 38,
+      "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:402",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "menu-item.anatomy.stories.tsx:402 Inspector 的 Tag slot 內容確為泛稱「標籤」,而 MenuItem 主內容已真實(:404 電子郵件通知);Tag 改「每日」等真值即可。非 SSOT。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 39,
+      "fileLine": "packages/design-system/src/components/Select/select.principles.stories.tsx:279",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "select.principles.stories.tsx:279 note 文字確含「100 個 a/b/c 不需要搜尋」,但它是原則說明修辭而非選項資料——該 Rule(:277-282)未渲染任何大型清單,檔內實際渲染的選項資料用真實 SKU/分類(:255-257、:270 categoryOptions)。「大型清單以 a/b/c 描述選項屬不真實資料」的定性不準,惟 note 措辭可再具體化,屬非 SSOT 文案微調。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 40,
+      "fileLine": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx:267",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "sheet.principles.stories.tsx:267 按鈕文案確為「分享選項(mobile 常用 bottom)」,將裝置與 direction 規格混入按鈕;規格語意已在 Rule note(:263)完整說明,按鈕收斂為「分享」即可。非 SSOT。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 41,
+      "fileLine": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx:312",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "sheet.principles.stories.tsx:312 觸發按鈕確為「標準結構範例」,而 Sheet 內容是真實建立客戶流程(:316「建立新客戶」),trigger 應對齊情境。非 SSOT 文案修正。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 42,
+      "fileLine": "packages/design-system/src/components/Steps/steps.principles.stories.tsx:131",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "steps.principles.stories.tsx:131 StepDescription 確為「此頁為 current + error」,以內部 state jargon 當可見描述;周邊 StepLabel 已真實(基本資料/確認資料/付款)。改為業務錯誤訊息屬非 SSOT。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 43,
+      "fileLine": "packages/design-system/src/components/Switch/switch.stories.tsx:55",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "switch.stories.tsx:55-56 狀態矩陣的可見軸標籤確為「off+dis」「on+dis」縮寫;雖位於元件外 caption(狀態標註放外部本身合規),縮寫 jargon 仍可讀性不佳,改完整措辭屬非 SSOT 微調。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 44,
+      "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:329",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tag.anatomy.stories.tsx:329 Inspector 預覽的實際 Tag 內容確為泛稱「Label」;對照同層 Menu Inspector 已用真實內容(電子郵件通知),Tag 亦應可用真實標籤文字。非 SSOT。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 45,
+      "fileLine": "packages/design-system/src/components/Tooltip/tooltip.anatomy.stories.tsx:248",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tooltip.anatomy.stories.tsx:248 觸發按鈕確為「觸發器」、:250 TooltipContent 為「提示文字」,以元件結構名當實際內容,命中 story-rules 佔位符禁則。非 SSOT 文案修正。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 46,
+      "fileLine": "packages/design-system/src/components/Tooltip/tooltip.anatomy.stories.tsx:368",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tooltip.anatomy.stories.tsx:368 按鈕 child 直接渲染 side 值(top/right/bottom/left)、:370 Tooltip 內容為「提示文字」皆屬實;且 :364 已有外部 mono 標籤 side=\"{s}\",按鈕重複顯示 prop 值為冗餘。非 SSOT。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 47,
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx:83",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tree-view.principles.stories.tsx:83 確為「(範例省略)TreeView 是多展開,Accordion 是單展開,語意不同」,原則區塊無實例僅留省略聲明,屬未完成 placeholder。補實例或收斂區塊為非 SSOT 修正。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 48,
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx:178",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tree-view.principles.stories.tsx:178-181 確用「資料夾 A / 檔案 a.txt / 子資料夾 / 檔案 b.txt」抽象代號,對照同檔其他 Rule 已用真實資料(Documents/Resume.pdf :63-72),此處應同步真實化。非 SSOT。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 49,
+      "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx:71",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "header-canonical.stories.tsx:71 header 下方確僅「文件預覽內容區…」空殼佔位;header 本體已真實(:61 2026 Q1 財務報告.pdf),內容區可補摘要等輕量真值。非 SSOT 文案修正(marginal)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 50,
+      "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx:95",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "header-canonical.stories.tsx:95/:98/:101 三個 TabsContent 確僅重述「『概覽』分頁內容…」「『活動』分頁內容…」「『檔案』分頁內容…」,屬 tab 名重述式佔位。補真實摘要/紀錄/清單為非 SSOT。",
+      "dupWithClaude": false
+    }
+  ]
+}

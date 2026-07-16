@@ -1,0 +1,63 @@
+{
+  "dim": 26,
+  "part": 0,
+  "range": [0, 6],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:215; packages/design-system/src/components/Checkbox/checkbox.tsx:232",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "checkbox.tsx:215 view 分支只讀 `checkedProp === true` 忽略 defaultChecked;:232 readonly 讀 `checkedProp ?? defaultCheckedProp` 且 wrapper 不攔 onCheckedChange(uncontrolled 狀態留在 Radix Root),切 mode 確回退初始值。checkbox.spec.md:239-242 明文支援 uncontrolled、field-controls.spec.md:352 已為 Input/Textarea codify uncontrolled resolved-value 模型 → 屬對齊既有 canonical 的 bug fix。",
+      "dupWithClaude": true
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Switch/switch.tsx:207; packages/design-system/src/components/Switch/switch.tsx:219",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "switch.tsx:207 view 分支 `checkedProp === true` 忽略 defaultChecked;:219 readonly `checkedProp ?? defaultCheckedProp`,wrapper 無 controllable state(onCheckedChange 直傳 Radix Root switch.tsx:253),uncontrolled toggle 後切 mode 確回退初始值,與 Checkbox 同構缺口。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:108; packages/design-system/src/components/RadioGroup/radio-group.tsx:125",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "radio-group.tsx:108/:125 view 與 readonly-in-Field 皆以 `value ?? defaultValue` 推導,而 uncontrolled 現值存在 Radix Root(:158-159 直傳 value/defaultValue、wrapper 未攔 onValueChange)→ edit 中變更後切 mode 確回退 defaultValue。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:62; packages/design-system/src/components/PeoplePicker/people-picker.spec.md:28",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "people-picker.tsx:62 僅 `Omit<React.HTMLAttributes, 'onChange'>`,HTMLAttributes 含 defaultValue(node_modules/@types/react/index.d.ts:2907)→ 型別可傳、經 ...rest 轉送 trigger div 後靜默無效,違 people-picker.spec.md:28 controlled-only 宣告;DS 已有 Omit 'defaultValue' 先例(steps.tsx:166)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/TimePicker/time-picker.tsx:108; packages/design-system/src/components/TimePicker/time-picker.spec.md:34",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "time-picker.tsx:110-113 Omit 清單僅 'onChange'|'placeholder',defaultValue 仍從 HTMLAttributes 洩入型別(如 defaultValue=\"09:00\" 可通過 tsc)卻不初始化時間狀態,違 time-picker.spec.md:32-34「Controlled-only rationale(Dim 26)」宣告。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/Steps/steps.tsx:177",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "steps.tsx:165-178 只有 defaultExpanded、無 expanded/onExpandedChange,:232-243 expandedSet 純 internal state;steps.spec.md:339-343 僅解釋 defaultExpanded 結構、無 uncontrolled-only rationale(且 :363「API(parent-controlled)」哲學與此軸不一致)。補 controlled pair 屬公開 API contract 擴充,加 API 或明文 rationale 需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:54",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "app-shell.tsx:54-55 有 asideOpen/onAsideOpenChange controlled 路徑,但 :164 internal 初值固定 `useState(false)`、無 defaultAsideOpen;app-shell.spec.md 全文無 fixed-default 例外 rationale(grep 預設/default/asideOpen 均無)。新增 defaultAsideOpen 屬公開 API 擴充,需 user 拍板方向。",
+      "dupWithClaude": false
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "dim": 44,
+  "part": 0,
+  "range": [0, 6],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": ".claude/skills/design-system-audit/references/audit-prompts.md:1141; .claude/rules/story-rules.md:34; packages/design-system/src/components/README.md:51; .claude/logs/audit-coverage-matrix.json:273",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "四處全屬實:audit-prompts.md:1137-1141 dim 44 rubric、story-rules.md:34、components/README.md:50-52(「無預設視覺,必被 wrapper 包」+ Internal/ 住所)、audit-coverage-matrix.json「44」mechanism 均仍用已退役三 test;ui-development.md「Public vs Internal canonical」明文 2026-06-06 retire 舊測試、唯一判準 = public-API intent,且 folder canonical = in-place frontmatter 主路徑(現行 10 個 internal 全走 frontmatter、Internal/ 無住戶)。修法為把 stale 判準文字對齊既有 SSOT,不動 canonical 語意 → AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Command/command.spec.md:23; packages/design-system/src/index.ts:591",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "command.spec.md:23 明示「App 不直接使用 Command;若要 Command Palette 類 UX,用本檔 export 的 CommandDialog」= consumer 直接使用的 public intent,但整單元 frontmatter isInternal(command.spec.md:8)且被排除 root front-door(index.ts:587-591)。拆公開單元或撤回指引皆動公開 API contract / canonical 語意 → ASK。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:96; packages/design-system/src/index.ts:420",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "sheet.tsx:96-98 標 `@internal` 且註解指示「需自訂前置行為時 import 接力呼叫」,index.ts:420 卻由 root front-door 匯出;grep 全 repo 唯一 consumer = DS 內部 app-shell.tsx:21,349,三方 intent 不一致屬實。歸類(留 root 撤 @internal vs 排除 root)動公開 API contract → ASK。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/Button/button.tsx:225; packages/design-system/src/components/Checkbox/checkbox-group.tsx:5; packages/design-system/src/index.ts:79",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "button.tsx:225-231 註解明示 ButtonGroupContext 為 wrapper→child 注入 fullWidth 的實作 context(唯一 consumer button-group.tsx:47 + button.tsx:411),checkbox-group.tsx:5-14 同為防 fieldCtx 誤吞 label 的實作 context(唯一 consumer checkbox.tsx:164),兩者卻經 index.ts:79 / index.ts:118 root 公開且無 @internal 標記。從 root barrel 移除 = 動公開 API contract → ASK。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/index.ts:544; packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx:449",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "index.ts:544-572 root 匯出 RowSizeProvider / ItemInlineAction(Button) 及其 props types,但 item-anatomy.tsx:449,605,671 全標 `@internal — app code 禁直接 import`,inline-action.spec.md:289「app-code 不可直接 import L3 primitive」僅靠 hook E.2 攔 repo 內部,npm root export 確可繞過。修法需 barrel generator 支援 symbol-level 排除 + 移除 root 公開面 = 動公開 API contract → ASK。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/index.ts:613; packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.spec.md:4",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "horizontal-overflow.spec.md:2-4 frontmatter `internal: true` 且 scope 明列 use-overflow-items hooks 為「DS-internal consumer only」,grep 實證 consumer 全為 DS 內部(horizontal-overflow.tsx / tabs.tsx / chip.tsx / file-viewer.tsx),但 index.ts:613 `export * from './hooks/use-overflow-items'` 仍整 module 進 root front-door。從 root hook 區排除 = 動公開 API contract → ASK。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "scripts/gen-design-system-barrel.mjs:238",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "gen-design-system-barrel.mjs:238-247 `hasInternalMarker` 僅檢查 dir 內任一 tsx 含 `@internal` 字串(module-level text presence);實測 10 個 internal 單元的 marker 全是檔頭 file-level 註解(如 command.tsx:3 / boolean-value.tsx:1 行註解),exported declarations(粗估約 60 個 symbols)無 declaration-level JSDoc tag,IDE hover 不會顯示 ui-development.md 宣稱的 intellisense 警示。補 declaration-level tag + 強化 gate = 落實既有 canonical 的機械化對齊,不動 API/語意 → AUTO。",
+      "dupWithClaude": false
+    }
+  ]
+}

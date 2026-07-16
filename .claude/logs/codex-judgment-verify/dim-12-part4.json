@@ -1,0 +1,143 @@
+{
+  "dim": 12,
+  "part": 4,
+  "range": [68, 84],
+  "verdicts": [
+    {
+      "idx": 68,
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:300",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "checkbox.anatomy.stories.tsx:300 Inspector 預覽確用 label=\"Label text\" 佔位字串,命中 rubric placeholder 類。與 part2 idx 44(Tag Inspector 泛稱「Label」)同款判例。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 69,
+      "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.stories.tsx:38",
+      "verdict": "VERIFIED",
+      "class": "REJECT",
+      "reason": "事實為真(circular-progress.stories.tsx:30-43 Default 僅三個孤立進度環),但 Default=最 minimal 代表性範例是 DS canonical(story-writing/references/category-templates.md:29,對齊 Storybook 官方 + Carbon idiom),且 codex 建議的「搜尋 GitHub」情境已存在同檔 InlineAction story(:49-68);dim-12 rubric flag 清單(audit-prompts.md:381-391)無「孤立 Default」條,補進 Default 反違 story-rules「0 重複」。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 70,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:71",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "data-table.stories.tsx:71 generateLargeData 確以 `Product item ${i + 1} — ${category}` 生成可見產品名,命中 rubric「Item 1/2/3」placeholder 類。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 71,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:1669",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "data-table.stories.tsx:1669 title 附加 `(#${i + 1})`(另 :1919 同款)、:1674-1675 子列確為「子任務 A/B」抽象代號,命中 rubric abstract 代號類。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 72,
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx:907",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "date-picker.anatomy.stories.tsx:906-916「架構」<pre> 確以 Unicode 箭頭/線條(← │ ▼)拼出結構文字圖,命中 rubric visual symbols/ASCII art 類;與 part0 idx 1(Notice anatomy Unicode 方框線)同款判例。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 73,
+      "fileLine": "packages/design-system/src/components/DescriptionList/description-list.principles.stories.tsx:219",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "description-list.principles.stories.tsx:219-221 DescriptionItem 確以「此 label 是 neutral-8(text-fg-secondary)」/「此 value 是 neutral-9(text-foreground)」把 token 名當可見業務資料;同檔 :204-207 已示範真實欄位寫法(姓名/職稱)。與 part2 idx 42(Steps「此頁為 current + error」)同款判例。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 74,
+      "fileLine": "packages/design-system/src/components/Dialog/dialog.stories.tsx:45",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "dialog.stories.tsx:199「開啟 Modal」、:526「打開 Dialog」暴露元件名;:45/:299/:328 按鈕文案夾帶「(中 item:title+desc+Switch)」等結構術語。與 part0 idx 13(Popover principles trigger=「Popover」「Dialog」)同款判例。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 75,
+      "fileLine": "packages/design-system/src/components/Popover/popover.anatomy.stories.tsx:164",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "popover.anatomy.stories.tsx:166 trigger 可見文字 = `{side}/{align}`、:169 內容 = 「side=…, align=…」prop 值直出,命中 rubric variant-as-visible-label 類;與 part2 idx 46(tooltip.anatomy side 值當按鈕 child)同款判例。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 76,
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:43",
+      "verdict": "VERIFIED",
+      "class": "REJECT",
+      "reason": "事實為真(progress-bar.stories.tsx:39-46 Default 僅一條 45% 孤立進度條),但 Default=最 minimal 代表性範例是 DS canonical(story-writing/references/category-templates.md:29),codex 建議的匯入情境已存在同檔 BatchTask(:53-74「匯入客戶名單 812/1,250 筆」);dim-12 rubric flag 清單(audit-prompts.md:381-391)無「孤立 Default」條,重複補入違 story-rules「0 重複」。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 77,
+      "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx:281",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "select-menu.anatomy.stories.tsx:281-300 Inspector「浮層藍圖」<pre> 確以 Unicode 方框線(┌─│└)拼出元件結構圖,命中 rubric visual symbols 類;與 part0 idx 1 同款判例。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 78,
+      "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx:186",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "select-menu.anatomy.stories.tsx:186「直接使用「xxx」」、:699「建立 xxx」、:704 按鈕可見文字「點擊後搜尋不存在的字(如 \"zzz\")」確以 xxx/zzz 代稱搜尋字串,命中 rubric foo/bar placeholder 類。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 79,
+      "fileLine": "packages/design-system/src/components/Slider/slider.stories.tsx:30",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "slider.stories.tsx 展示層全部 3 story 可見標籤均為實作概念:「size = {size}(h-field-{size})」(:32-33)、「min=0, max=100, step=4」(:52-53)、「Live:/Committed:」(:91-93),無音量/預算等真實用途載體。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 80,
+      "fileLine": "packages/design-system/src/components/Tabs/tabs.principles.stories.tsx:124",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tabs.principles.stories.tsx:124 TabsContent 可見內容確為「(訂單頁的 toolbar、filters、table…)」結構備忘文字,非真實訂單內容;與 part2 idx 49/50(header-canonical TabsContent 重述佔位)同款判例。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 81,
+      "fileLine": "packages/design-system/src/components/Toast/toast.principles.stories.tsx:159",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "toast.principles.stories.tsx:159-162 觸發按鈕可見文字確為 variant 名「success/info/warning/error」、:170「neutral 範例」,命中 rubric variant-as-visible-label 類(toast payload 本身已真實:「已儲存」「已複製連結」等)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 82,
+      "fileLine": "packages/design-system/src/components/Toast/toast.principles.stories.tsx:186",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "toast.principles.stories.tsx:186 按鈕文字確為「預設 4000ms」、:203「較長 duration(有 description + action,預設 10000ms)」,把計時參數當可見操作文案;Rule title/note(:182/:190-192)已載同資訊,按鈕可改具體動作。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 83,
+      "fileLine": "packages/design-system/src/tokens/radius/radius.stories.tsx:50",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "radius.stories.tsx:50 真 Button child 確為元件名「Button」(同段 :51-53 Input/Tag/Card 為 mock 標本),無操作目的文案;與 part1 idx 27(Button variant 名復述)同類判例,marginal 屬實。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 84,
+      "fileLine": "packages/design-system/src/components/Tooltip/tooltip.stories.tsx:73",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tooltip.stories.tsx:73 LongText 觸發按鈕可見文字確為「長文字提示」,僅描述範例形式;TooltipContent 本身已是真實 API key 安全說明(:76-77),僅 trigger 標籤需人話化。",
+      "dupWithClaude": false
+    }
+  ]
+}

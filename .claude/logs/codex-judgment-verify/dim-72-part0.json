@@ -1,0 +1,119 @@
+{
+  "dim": 72,
+  "part": 0,
+  "range": [0, 13],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "packages/design-system/scripts/gen-design-system-barrel.mjs:275-284; packages/design-system/src/index.ts:79,118,231,249,329,334,420,545,551-557,567-568",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "index.ts 確實公開 ButtonGroupContext(:79)/CheckboxGroupContext(:118)/floatingLayerClass(:231)/getMenuListMinHeight(:249)/PeoplePicker helpers(:329-334)/handleSheetOpenAutoFocus(:420,sheet.tsx:96 標 @internal)/AVATAR_SIZE、ICON_SIZE、RowSizeProvider、ItemInlineAction 系列(:545-568,item-anatomy.tsx:449/:605/:671 標 @internal 且 spec 明禁 app-code 直用)。產生器只擋 /Internal$/ 與 /Meta$/ 名稱(gen-design-system-barrel.mjs:277-285),不解析 declaration-level @internal — 收窄 npm public surface 屬公開 API contract 決策。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx:335,395; packages/design-system/src/components/Menu/menu-item.tsx:112,125; packages/design-system/src/components/SelectionControl/selection-item.tsx:112,116,121-129; packages/design-system/src/components/DataTable/column-types.ts:72; packages/design-system/src/components/DataTable/cell-registry.tsx:122-123",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "四組 API 均收任意 number:descriptionClamp(item-anatomy.tsx:335)且 runtime interpolation `line-clamp-${n}`(:395);labelMaxLines/descMaxLines(menu-item.tsx:112,125;selection-item.tsx:112,116)>6 在 lineClampClass 靜默回空字串(selection-item.tsx:121-129);maxLines(column-types.ts:72)在 cell-registry.tsx:122-123 以 `line-clamp-[${maxLines}]` interpolation 產 Tailwind 無法靜態掃到的 class。收窄為 union = 公開型別 contract 變更。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/Slider/slider.tsx:55; packages/design-system/src/components/ScrollArea/scroll-area.tsx:37; packages/design-system/src/components/SegmentedControl/segmented-control.tsx:220; packages/design-system/src/components/Switch/switch.tsx:98",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "SliderProps 只 Omit 'children'|'orientation'(slider.tsx:55)、ScrollArea(scroll-area.tsx:36-48)、SegmentedControlItemProps(segmented-control.tsx:220)、SwitchProps(switch.tsx:99)皆繼承 Radix asChild 且固定渲染內部多 children(Slider Track+Thumbs/ScrollArea Viewport+ScrollBar+Corner/Item icon+label+badge)→ Slot 多 children 觸發 React.Children.only;Switch edit 路徑 {...props} spread(:253)+ 固定 Thumb JSX child(:266)→ asChild 時 semantics 落在內部 Thumb。Omit asChild = 公開 API contract 變更。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/Switch/switch.tsx:98; packages/design-system/src/components/TimePicker/time-picker.tsx:108; packages/design-system/src/patterns/resize-handle/resize-handle.tsx:38",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "三者型別皆含 children 但實作固定渲染自己 subtree:SwitchProps 繼承 Radix Root children(switch.tsx:99),view/readonly 分支明確丟棄(:199 `children: _children`)、edit 路徑被固定 Thumb JSX child 蓋掉(:266);TimePickerProps 經 HTMLAttributes 繼承 children(time-picker.tsx:108-112)但全檔零消費(view span/root div 均有固定 JSX children,:265-266);ResizeHandleProps 同(resize-handle.tsx:38),render 固定 hit-zone span + line。Omit children = 公開 API contract 變更。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/Steps/steps.tsx:311",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "export interface StepItemProps(steps.tsx:311-315)extends StepItemInjectedProps 讓內部注入的 __isLast(:307-309)進入公開型別;consumer 傳 __isLast 可直接改 connector 與末項間距(:371,:389)。Dunder 內部欄位移出公開型別屬機械 refactor(無合法 consumer 依賴),可 AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:61",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "TabsProps extends Radix Root 全 props 含 orientation(tabs.tsx:61),但 TABS_LIST_BASE 固定 `inline-flex items-stretch` + `border-b border-divider` 水平佈局(:150-152),scroll/menu overflow 亦全水平(horizontal-overflow pattern);傳 vertical 只改 Radix 鍵盤/ARIA 方向,視覺仍水平。排除 orientation 或補 vertical 實作 = 公開 API contract 決策。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:162,217",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "BreadcrumbItemSpec 含 asChild(breadcrumb.tsx:162),declarative renderItem 固定以 TruncatedLabel 為 BreadcrumbLink 的 Slot child(:217-219),而 TruncatedLabel({ children, fullText })不接收/轉發 href、ref 或任何 spread props(:42-43)→ asChild=true 時 anchor 語意與 href 靜默消失。從 ItemSpec 移除 asChild 或改 renderLink 契約 = 公開 API contract 決策。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 7,
+      "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:192-196,224-245",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "maxItems/itemsBeforeCollapse/itemsAfterCollapse 為互不約束 number(breadcrumb.tsx:186-196,僅 Math.max 下限 clamp :226-227),無 before+after<maxItems 驗證;實測邏輯:5 項 + maxItems=4/before=3/after=3 → collapsed=items.slice(3,2)=[](空 ellipsis dropdown)且 index 2 同時落在 before 與 after(:238-245,項目重複)。加驗證/改單一 collapse config = 公開 API 行為決策。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 8,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table-filter-panel.tsx:128-142,224-248,317-319,348-392",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "DataTableFilterPanelProps 同時收獨立 mode: 'flat'|'nested'(:130)與自帶 discriminant 的 value: FilterTree(:134),型別允許矛盾組合;rows/mutators 依 value.mode(:224-248 flatTree/nestedTree null-guard 靜默 no-op),寬度(:317-319)與 CTA 文案+onClick(:385-390)依 mode prop → mode='nested'+value.mode='flat' 時 CTA 顯「加入篩選器」但 addGroup 無反應。統一 discriminated union = 公開 API contract 重整。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 9,
+      "fileLine": "packages/design-system/src/components/DataTable/filter-tree.ts:53; packages/design-system/src/components/DataTable/filter-operators.ts:37-39",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "FilterCondition.op: string(filter-tree.ts:53)與 OperatorSpec.op: string(filter-operators.ts:39)對封閉 OPERATOR_REGISTRY;未知 op 經 getOperatorSpecLoose 回 null(filter-tree.ts:118-126)→ isConditionComplete 視為不完整靜默略過(:106-107),拼錯可通過編譯。以 as const 推導 union 收窄公開 exported 型別 = API contract 變更。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 10,
+      "fileLine": "packages/design-system/src/components/NumberInput/number-input.tsx:15; packages/design-system/src/components/DataTable/column-types.ts:122",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "precision?: number(number-input.tsx:15;column-types.ts:122)無範圍約束,spec 明定 >6 禁止(number-input.spec.md:96,:113);值直入 toLocaleString minimumFractionDigits/maximumFractionDigits(number-input.tsx:30-31),負數/小數會 RangeError 或異常格式。收窄為 0-6 union = 公開 API contract 變更。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 11,
+      "fileLine": "packages/design-system/src/components/Rating/rating.tsx:65",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "max?: number 無約束(rating.tsx:65),rating.spec.md:195 明文「❌ max 不設超過 7」+ :204「不設超過 7」,0/負數/小數/max=10 均通過型別。收窄為 1-7 union + runtime 驗證 = 公開 API contract 變更。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 12,
+      "fileLine": "packages/design-system/src/components/Select/select.tsx:45",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "SelectOption.tagVariant?: string(select.tsx:45),實作 4 處硬 cast `as 'blue'|'green'|'red'|'yellow'|'neutral'` 後傳 Tag color(:335,:393,:397,:458),拼錯或不支援值通過編譯且名稱(variant)未對齊 Tag 的 color canonical(tag.tsx:63 VariantProps color)。改 tagColor: TagProps['color'] = 公開 prop 更名 + 型別收窄,屬 API contract 決策。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 13,
+      "fileLine": "packages/design-system/src/components/Tag/tag.tsx:72",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "Tag 移除 callback 名 onRemove(tag.tsx:70)但 accessible-name prop 名 dismissLabel(:72),remove/dismiss 語意混用(tag.spec.md:222 onRemove vs :71/:236「dismiss button」);實作組合 `移除 ${label}`(tag.tsx:112)= 目標名而非完整 aria-label,prop 名本身未表達,且與 FileUpload 的 removeAriaLabel(file-upload.tsx:103)命名不一致。公開 prop 更名 = API contract 決策。",
+      "dupWithClaude": false
+    }
+  ]
+}

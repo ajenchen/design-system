@@ -1,0 +1,119 @@
+{
+  "dim": 7,
+  "part": 0,
+  "range": [0, 13],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:115",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "accordion.spec.md:115 確有「disabled state 詳 ../Field/field-controls.spec.md」指路,但 Accordion family=composite 非 Field 家族(field-controls.spec.md 僅 :268 引 Accordion 作 M24 precedent,不擁有它);全 spec 僅此一處提 disabled,無 Root/Item 傳播、鍵盤跳過、ARIA 行為記載(A11y 段 :95-102 未涵蓋 disabled)。修法=移錯誤指路+補記 Radix 既有行為文檔,屬 doc 對齊 code。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:243",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "spec :243 宣稱「alt 必傳」但 avatar.tsx:105 型別為 `alt?: string`;省略 alt 時走 icon fallback(tsx:184)且 icon `aria-hidden`(tsx:227-228),外層 role/aria-label 僅在 alt 存在時掛(tsx:214-215)→ 無 accessible name 屬實。修法(型別強制 alt 或新增 decorative 模式)動公開 API contract,需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/Badge/badge.spec.md:325",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "badge.tsx:94 預設 `role={role ?? 'status'}`(= polite live region,計數變化可被播報),但 badge.spec.md「無障礙」段(:319-348)與全檔均無 role=\"status\" / live region 記載(grep 0 hit)。補文檔=doc 對齊 code;另 tsx:90 註解稱可傳 role={undefined} 移除,實際 `?? ` 仍回退 status,建議段所指 API 弱點亦真。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:216",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "spec :216「空 label 渲染空節點(元件皆不 guard)」明文接受空 label;startIcon 恆 `aria-hidden`(breadcrumb.tsx:481,512),BreadcrumbLink/Page 無預設 aria-label(僅 nav :147 與 Ellipsis :578 有)→ 空 label + icon 項成無名稱 link/current page 屬實。修法(禁空 label 或強制 aria-label + 型別/runtime guard)= 新 canonical 規則 + API 面改動,需拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:187",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "spec :187 僅規範 disabled action(Button disabled + tooltip),全檔 grep loading/aria-busy/失敗/async 0 hit,非同步批次操作的 loading ownership、selection 保留、成功/失敗路徑均無契約屬實。補齊=新增行為 canonical 契約(UX 語意設計決策),需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/Button/button.spec.md:276",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "主引用 :276 已於 bde8973c 修為「iconOnly 為 true 且非 asChild 時」含 asChild 例外(HEAD 不再無條件宣稱);但同檔 :437「icon-only 模式傳入 aria-label 描述用途並自動包 Tooltip」殘留無條件措辭仍與 button.tsx:535 `!asChild` gate 不符 → 部分已修部分仍真。殘項為 doc 對齊 code。",
+      "dupWithClaude": true
+    },
+    {
+      "idx": 6,
+      "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:193",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "spec :193 + carousel.tsx:216-217 CarouselItem 僅 role=\"group\" + aria-roledescription=\"slide\",無「第 N 張,共 M 張」名稱(spec 自承 CarouselItem 不知自己 index),stories 亦未給 item aria-label(grep 僅 arrow/dot 有)屬實。自動產生位置名需 index registration 機制 = 行為/API 設計決策,需拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 7,
+      "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:197",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "carousel.tsx:129-135 handleKeyDown 對方向鍵一律 preventDefault + 切張,掛在根容器 onKeyDownCapture(tsx:170),無 input/textarea/select/contenteditable 的 editable-target guard → slide 內嵌可編輯元件時游標操作被劫持屬實。補 guard = 行為 bug fix,不動視覺 SSOT。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 8,
+      "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:255",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "邊界狀態段(:253-258)僅涵蓋單一 item/零 items/Autoplay/Dark mode,全檔 grep loading/Skeleton/error 0 hit,遠端圖片 loading/error ownership 未定義屬實。補「consumer own(AspectRatio+Skeleton+error fallback)」委派文檔沿用 Accordion(:115)/Breadcrumb 既有 delegation 慣例 = AUTO doc 補充。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 9,
+      "fileLine": "packages/design-system/src/components/Chip/chip.spec.md:121",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "chip.spec.md 無邊界狀態段(headings 全列無 zero-options 規則),chip.tsx:150-156 wrap 路徑無 children 仍渲染空 ToggleGroup Root 屬實;近親 carousel.spec.md:255「零 items 改用 <Empty> 不 render」有既定慣例可循。補 no-options 邊界文檔 = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 10,
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:127",
+      "verdict": "STALE",
+      "class": "NONE",
+      "reason": "bde8973c 前確為「dropdown body 內取代 options 顯 Empty」,但 HEAD :127 已修為「spinner 只在無可顯示選項時佔 empty slot;已有 options 時保留顯示,不取代」(措辭對齊 select.spec.md 2026-07-04 Q3 拍板),與實作一致。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 11,
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:135",
+      "verdict": "STALE",
+      "class": "NONE",
+      "reason": "bde8973c 前確寫「Combobox 不傳 emptyText,走 SelectMenu primitive default」,但 HEAD :135 已修為「Combobox 暴露 emptyText prop 並 forward 給 SelectMenu;未傳時走預設」,與 combobox.tsx:400,862 一致。touch native 路徑限制未文檔化屬建議層,主張已失效。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 12,
+      "fileLine": "packages/design-system/src/components/Command/command.spec.md:100",
+      "verdict": "STALE",
+      "class": "NONE",
+      "reason": "bde8973c 前確寫「將 <CommandList> body 切換為 <Empty>」,但 HEAD :100 已修為「在 <CommandEmpty> slot 內渲;spinner 只在無可顯示選項時出現;已有 options 保留顯示,不取代」,與 SelectMenu 實際行為及 select.spec.md 2026-07-04 拍板措辭一致。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 13,
+      "fileLine": "packages/design-system/src/components/FileUpload/file-upload.spec.md:149",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "spec :149 宣稱 accessible name 來自預設 Empty 的 title+description(name-from-content),但 file-upload.tsx:87-88 children 可整個覆寫(tsx:343 children ?? Empty),icon-only children 使 role=\"button\" wrapper(tsx:255)無名稱屬實;root 已 spread props(tsx:321,extends HTMLAttributes :57)可收 aria-label,故修法為 doc 限定宣稱 + 補 consumer a11y 要求 = AUTO。",
+      "dupWithClaude": false
+    }
+  ]
+}

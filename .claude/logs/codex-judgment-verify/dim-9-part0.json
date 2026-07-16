@@ -1,0 +1,151 @@
+{
+  "dim": 9,
+  "part": 0,
+  "range": [0, 17],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.tsx:43",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "accordion.tsx:38-41 props = ComponentPropsWithoutRef<Trigger>(含 asChild),而 :60-65 Trigger 固定渲染 children + ChevronDown 兩個子節點,consumer 傳 asChild 會觸發 Radix Slot React.Children.only runtime 錯。CLAUDE.md 失敗記憶索引已 codify 此 asChild 多子節點 bug class,修型別/anatomy 對齊屬 AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.tsx:75",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "accordion.tsx:75-84 Content spread props(含繼承的 asChild),但固定內層 <div className='pb-4'> 包住 children(:83)→ asChild 時 Slot 只 clone 該內層 div,consumer 元素無法成為 Content host。型別對齊/文件化屬 AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:60",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "app-shell.tsx:60-68 AppShellAsideProps 僅 title/width/children/className,無任何 HTMLElement attrs / rest props 通道;:296 destructure 亦只取此 4 prop,mobile Sheet 與 desktop aside 分支皆收不到 id/data-*/ARIA/事件。補 passthrough = 動公開 API contract,需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:234",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "carousel.tsx:234-238 ArrowProps 僅 className + aria-label;ref 掛在 Button(:263/:297)但無其他 button props 通道;className 實套在絕對定位 wrapper div(:259/:293)非 Button。建議的 Button-props 基底 + wrapperClassName 拆分屬公開 API contract 設計,需拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/Chart/chart.tsx:202",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "chart.tsx:140 ChartTooltipContentProps extends Omit<ComponentProps<'div'>,'color'> 宣告完整 div props,但 :162-178 destructure 無 rest、:202-210 root div 只接 ref/role/aria-live/className → 宣告的 data-*/style/事件靜默失效。讓 code 履行已宣告型別 contract = bug fix,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/Chart/chart.tsx:305",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "chart.tsx:292 ChartLegendContentProps extends React.ComponentProps<'div'>,但 :300 destructure 無 rest、:305-311 root div 只接 ref + className,宣告的 DOM props 全數丟失。同 idx 4 型別-實作 drift bug fix,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:257",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "checkbox.tsx:83-84 CheckboxProps extends ComponentPropsWithoutRef<Root>(含 asChild/children),而 :256-287 Root 以固定 Indicator 為 JSX child → consumer children 被覆蓋、asChild 時 Slot host 錯置為 Indicator。屬失敗記憶索引已 codify 的 asChild bug class,型別收斂/文件化 AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 7,
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:885",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "combobox.tsx:366-455 ComboboxProps 無共同 DOM attrs 通道(僅 className/aria-label);:885-897 公開 ref 轉 __triggerRef 只掛 edit trigger root(:631/:756),非 edit 走 ReadonlyMultiSelect(:605/:749)完全不收 ref。跨 mode rootProps/ref 契約設計 = 動公開 API contract,ASK。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 8,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table-column-visibility-panel.tsx:133",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "data-table-column-visibility-panel.tsx:67-76 為 plain function(無 forwardRef),Props(:46-65)無任何 DOM passthrough,:133-134 回傳 Fragment,檔頭 docblock 與 props 皆無 no-root 例外記載。要補 panel root 還是 spec 記載 Fragment 協議 + containerProps 屬 API 設計抉擇,ASK。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 9,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table-filter-panel.tsx:315",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "data-table-filter-panel.tsx:402 已 forwardRef,但 props(:128-147)DOM 層僅 className,root div(:315-321)只接 ref + className 無 rest 通道。擴充 div attributes = 動公開 API contract,ASK。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 10,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table-sort-manager.tsx:110",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "data-table-sort-manager.tsx:68 為 plain function 無 forwardRef,props(:38-49)僅 className 無 root DOM passthrough,root div(:110)無 ref 無 rest。補 forwardRef + HTML attributes = 動公開 API contract,ASK。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 11,
+      "fileLine": "packages/design-system/src/components/DatePicker/date-picker.tsx:490",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "date-picker.tsx:490-500 showDisplayEndIcon view root 只接 className(無 ref/rest);:507-511 readonly/disabled root spread props 但漏 ref(公開 ref 只掛 edit trigger :548);date-picker.spec.md:287 明文僅豁免「預設裸 view」不 spread props,showDisplayEndIcon 分支不在豁免內 = spec-code drift。對齊 spec 既有契約屬 bug fix AUTO(ref 型別若需擴另議)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 12,
+      "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:165",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "dropdown-menu.tsx:123-124 props extends ComponentPropsWithoutRef<Content>(含 asChild)且 :163 spread,而 Content 直接 child = RowSizeProvider(:165)→ asChild 時 Slot clone Provider,Radix 注入的 ref/className/data-state 被非 DOM 的 Provider 吞掉。asChild bug class 修復/型別收斂 AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 13,
+      "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:195",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "dropdown-menu.tsx:182-198 SubContent 同型:props 含繼承 asChild(:184)且 :193 spread,直接 child = RowSizeProvider(:195)→ asChild 時 ref/樣式/data attributes 無法落 DOM。同 idx 12,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 14,
+      "fileLine": "packages/design-system/src/components/Field/field.tsx:519",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "field.tsx:519 gapClass 以巢狀 ternary 管理 compact/normal/loose 純 className variant,未用 cva;違 ui-development.md「cva 適用:className-only 差異 → cva」既有 canonical。機械 refactor 不動 API/視覺,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 15,
+      "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.tsx:84",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "field-control-group.tsx:84 `block ? 'flex w-full' : 'inline-flex'` 為純 className boolean variant 以 ternary 管理,未收進 cva;同 idx 14 對齊 cva canonical 的 refactor,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 16,
+      "fileLine": "packages/design-system/src/components/FileUpload/file-upload.tsx:225",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "file-upload.tsx:57 props 型別含 onClick、:128 destructure 抽出、:163-167 handleClick 只接在 dropzone variant(:260);button variant(:225)spread 的 props 已無 onClick 且內部 Button onClick(:246-248)只開檔不呼叫 consumer handler → 公開 DOM prop 靜默丟失。compose consumer onClick = bug fix,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 17,
+      "fileLine": "packages/design-system/src/components/LinkInput/link-input.tsx:160",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "link-input.tsx:162-163 預設 view 裸 span 的 cn() 未合併公開 className,同 mode 的 showDisplayEndIcon 分支(:167)有合併 → 同檔分支不一致;Field 家族同款裸 view(date-picker.tsx:486-487 + date-picker.spec.md:287「className 各 mode 皆顯式接收」)canonical 皆合併 className,LinkInput 屬漏接 bug fix,AUTO。",
+      "dupWithClaude": true
+    }
+  ]
+}

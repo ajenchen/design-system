@@ -1,0 +1,143 @@
+{
+  "dim": 10,
+  "part": 1,
+  "range": [18, 34],
+  "verdicts": [
+    {
+      "idx": 18,
+      "fileLine": "packages/design-system/src/components/TimePicker/time-picker.anatomy.stories.tsx:31,108,109,110,172,176,180,208,212,216,220,249",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "所有 cited 行皆無 aria-label 且無 Field 包裹(含 Inspector args 無 aria-label,time-picker.anatomy.stories.tsx:233-241),trigger accname 僅靠 fieldCtx.labelId 或 consumer aria-label(time-picker.tsx:338-341)→ role=combobox 無名。同檔 ModeMatrix :191-196 已示範正確補法,且自家 A11y 說明 :264 明言「無 Field 時 consumer 需自帶 aria-label」。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 19,
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:403,548,563,591,594,729,777,812,843,870; combobox.principles.stories.tsx:84,144,152,192,208,226; combobox.stories.tsx:74,96,105; PeoplePicker/people-picker.principles.stories.tsx:109; SelectMenu/select-menu.stories.tsx:76,93",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "全部 cited 行的 Combobox 皆未傳 aria-label 且無 Field 包裹,而 combobox.tsx:617-618/:759-762 accname 僅來自 consumer aria-label 或 fieldCtx.labelId → role=combobox trigger 無名。同檔已有正確示範(combobox.stories.tsx:39-55 全帶 aria-label),cited 行漏補。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 20,
+      "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:30,44,52,124,136,193,313,327,340,355,397,405; people-picker.principles.stories.tsx:78,139,151,180; people-picker.stories.tsx:103,123",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "cited 行 PeoplePicker 皆未傳 aria-label(anatomy demo 0 個、principles 0 個;stories 僅 :71/:151 有、cited :103/:123 沒有),而 people-picker.tsx:123/:249 支援 aria-label passthrough → edit trigger 無 accessible name。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 21,
+      "fileLine": "packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:85,133,152,156,160; slider.principles.stories.tsx:68,79,138,144,197,222,233,237; slider.stories.tsx:36,55,85",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "單 thumb 實例為真:cited 行無 aria-label 無 Field,slider.tsx:169-176 單 thumb fallback = undefined → 無名(佔多數,含 Inspector args :64-71 無 aria-label)。但「Radix 不會自動產生名稱」對 2-thumb range 為誤:@radix-ui/react-slider dist/index.mjs:505-509 getLabel 提供 Minimum/Maximum 並於 :433 fallback 接上,cited 的 [20,80]/[30,70] range 實例有 generic name。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 22,
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:198,304,421,495,496,535,540; RadioGroup/radio-group.anatomy.stories.tsx:432; SelectionControl/selection-item.anatomy.stories.tsx:86,249,441,453,470,474,541,547; selection-item.stories.tsx:76,82,88,93,116,122,128; TreeView/tree-view.stories.tsx:105,108,109,115,118,119",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "cited 行全為裸 <Checkbox>/<RadioGroupItem> 無 aria-label(checkbox.tsx:241 accname 僅接 fieldCtx.labelId);SelectionItem stories 未傳 htmlFor(selection-item.stories.tsx grep 0 hit)故 label 未程式化關聯;TreeView stories consumer 自傳 checkbox 不走 tree-view.tsx:1293 auto-render 的 aria-hidden 路徑 → 無名可聚焦 checkbox。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 23,
+      "fileLine": "packages/design-system/src/components/Dialog/dialog.stories.tsx:68; Slider/slider.principles.stories.tsx:157,161,167,171; Switch/switch.anatomy.stories.tsx:28,29,94,115,119,123,154,158,162,166,170,174; switch.principles.stories.tsx:67,108,112,140,144,148,152",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "switch.anatomy / switch.principles 兩檔 aria-label 計數 = 0,cited 行皆裸 <Switch>,旁邊 span 文字(「Rest ON」「藍牙」等)未以 htmlFor/aria-labelledby 關聯;dialog.stories.tsx:68 Switch 在 ItemSuffix 內同樣無名。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 24,
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx:281,288; accordion.stories.tsx:153,160,175,182,195; OverflowIndicator/overflow-indicator.anatomy.stories.tsx:287; ProgressBar/progress-bar.anatomy.stories.tsx:192",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "Accordion 各 cited 行的 <label> 皆無 htmlFor、<input> 無 id/aria-label(只有相鄰視覺文字 + placeholder);overflow-indicator.anatomy:287 與 progress-bar.anatomy:192 的 type=range 只有相鄰 <H3>/<span> 未程式化關聯 → 原生 input 無 accessible name。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 25,
+      "fileLine": "packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx:34; hover-card.principles.stories.tsx:100,122,155; ProfileCard/profile-card.anatomy.stories.tsx:363; Tooltip/tooltip.principles.stories.tsx:194; tooltip.stories.tsx:52; Input/input.principles.stories.tsx:121; input.stories.tsx:43",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "cited triggers 全為不可聚焦載體:裸 Avatar / 無 href 的 <a>(hover-card.principles:100)/ span(:122、tooltip.stories:52)/ div(tooltip.principles:194)/ disabled Input 外包 div(input.principles:119-121、input.stories:42-44)→ 鍵盤無法 focus trigger 開啟浮層。違自家 canonical:hover-card.spec.md:144「Trigger 的可聚焦性需 consumer 自補(tabIndex=0)」+ tooltip.spec.md:127/:132「Tab focus trigger 時顯示;鍵盤完整可操作」。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 26,
+      "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:190; Avatar/avatar.principles.stories.tsx:65,69,90,91,235; avatar.stories.tsx:100,103,106,114,120,126; Dialog/dialog.stories.tsx:342",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "menu-item.tsx:214 MenuItem 預設 role='option';anatomy 檔的 MenuContainer(:189-191)是無 role 的 div(對照 menu-item.stories.tsx:40 已修為 role='listbox' 版本,anatomy 漏同步);avatar 兩檔 cited 行 MenuItem 置於 plain div;dialog.stories.tsx:335 外層是 role='list'(非 option 的合法 parent)→ aria-required-parent 違規為真。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 27,
+      "fileLine": "packages/design-system/src/components/Menu/menu-item.stories.tsx:39,159,160,161,165,228,229,233",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "menu-item.stories.tsx:40 MenuContainer = div role='listbox' 無 tabIndex/onKeyDown/aria-activedescendant(grep 全檔 0 hit),MenuItem 依 canonical 鍵盤委派給 parent(story-rules.md「MenuItem-as-listbox-child 鍵盤 delegation 例外」)但 demo container 未實作 keyboard owner → cited 行的 onClick 勾選 demo(:158-165、:227-233)鍵盤完全不可操作。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 28,
+      "fileLine": "packages/design-system/src/components/Popover/popover.anatomy.stories.tsx:168,221,227; popover.principles.stories.tsx:220; Sheet/sheet.principles.stories.tsx:182",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "Radix Popover Content 渲染 role='dialog'(@radix-ui/react-popover dist/index.mjs:243),DS 已提供 PopoverTitle→aria-labelledby 自動接線與 aria-label passthrough(popover.tsx:57-84),但 cited 各 PopoverContent 皆無 PopoverTitle / aria-label / aria-labelledby → 無名 dialog。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 29,
+      "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.principles.stories.tsx:156-160; SegmentedControl/segmented-control.principles.stories.tsx:84-88; Tabs/tabs.anatomy.stories.tsx(多處); tabs.principles.stories.tsx(多處); tabs.stories.tsx(多處)",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "Radix TabsTrigger 無條件輸出 aria-controls={contentId}(@radix-ui/react-tabs dist/index.mjs:114);breadcrumb.principles 與 segmented-control.principles 兩檔 TabsContent 計數 = 0,Tabs 三檔抽查 cited 行(stories:87-91/:103-112/:147-151、anatomy:46-55)皆為 triggers-only 無對應 panel → aria-controls 指向不存在 id。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 30,
+      "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:253,256",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tag.principles.stories.tsx:253/:256 的 <img src=…pravatar… className=\"w-4 h-4 rounded-full\"> 皆無 alt 屬性,人名已在 Tag 文字(Ada Chen / Alice)→ 應補 alt=\"\" 標裝飾。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 31,
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx:94,206,320,339-341,371,384-386,398,406,422; progress-bar.principles.stories.tsx:125,142,162,177,187,210,219,229,243,263,272,286,299,318; progress-bar.stories.tsx:67,110",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "cited 行 ProgressBar 皆無 aria-label(三檔僅有的 aria-label 在 Button/CircularProgress 或 :43 非 cited 行),Radix Progress 只給 role=progressbar + aria-valuenow 不給 name;自家 anatomy A11y 說明 :437 明言「Consumer 需補 aria-label 讓螢幕閱讀器辨認」→ 無名 progressbar 為真。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 32,
+      "fileLine": "packages/design-system/src/components/Rating/rating.anatomy.stories.tsx:184",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "Inspector 預設 mode='interactive'(rating.anatomy.stories.tsx:147),而 :191 aria-label={readOnly ? … : undefined} → 預設狀態下 standalone role=slider(rating.tsx:158)無 accessible name,違自家 rating.tsx:85-86「standalone 時必填」規範,axe aria-input-field-name 可重現。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 33,
+      "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:87",
+      "verdict": "VERIFIED",
+      "class": "REJECT",
+      "reason": "該行確實無 accessible name,但它是刻意的 ❌ 反例教學:rating.principles.stories.tsx:88 緊接 Label warn「❌ 無 aria-label,螢幕閱讀器讀不出分數」,:83 為對照 ✅ 正例——本 dim 判準(codex 自家 finding idx 29 亦宣告)「刻意錯誤示範已排除」,此條漏排除,不該修。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 34,
+      "fileLine": "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx:188; DatePicker/date-picker.anatomy.stories.tsx:246,810,861; Input/input.anatomy.stories.tsx:240; Steps/steps.stories.tsx:299",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "cited 各行皆為 overflow-x-auto 容器、無 tabIndex 且區內無可聚焦後代(table / pre / 純文字卡);carousel.principles:188 內容寬約 7×112px+間距 ≈ 856px > w-[480px] 容器,數學上必 overflow → scrollable-region-focusable 成立,其餘 props/token 表格為 codex axe 實測命中之同型 pattern。",
+      "dupWithClaude": false
+    }
+  ]
+}

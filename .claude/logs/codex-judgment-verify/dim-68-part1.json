@@ -1,0 +1,87 @@
+{
+  "dim": 68,
+  "part": 1,
+  "range": [10, 19],
+  "verdicts": [
+    {
+      "idx": 10,
+      "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:455,458,461",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "anatomy:455-464(實為 StateBehavior story,非 SectionMatrix,行號正確)用自訂「傳訊 primary + 加入團隊 tertiary」兩顆 action,未消費 ProfileCardDefaultActions;profile-card.spec.md:103 明定 canonical actions = Chat + Audio call,例外僅限明示的 single/3-action 數量展示,本例 2-action 且無明示不在例外內。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 11,
+      "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:345",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "anatomy:345 emptyText「試試輸入 email 邀請外部」承諾不存在的操作路徑;people-picker.spec.md:254 明文「無 creatable mode(人員不可建立)」且預設空狀態文案為中性「沒有符合的人員」。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 12,
+      "fileLine": "packages/design-system/src/components/Separator/separator.stories.tsx:32,39,46",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "separator.stories.tsx:32,39,46 直接渲染 3 個 MenuItem 拼靜態設定列;menu-item.spec.md:234 明定直接用 <MenuItem> ❌ 禁止、唯一例外 = MenuItem 自身 stories,Separator story 不在例外內(MenuItem frontmatter isInternal,menu-item.spec.md:9)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 13,
+      "fileLine": "packages/design-system/src/components/Popover/popover.principles.stories.tsx:220; packages/design-system/src/components/Popover/popover.anatomy.stories.tsx:168,221,227",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "4 處 PopoverContent 皆無 PopoverTitle 也無 aria-label(principles:220 篩選面板 / anatomy:168 PlacementMatrix / anatomy:221,227 SizeMatrix);popover.spec.md:175 明定「無 <PopoverTitle> 的 naked popover 需 consumer 自傳 aria-label,否則 role=dialog 無 accessible name」(popover.tsx:96-98 僅在有 title 註冊或 consumer 自傳時接線)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 14,
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx:210,219,229,272,286,299",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "6 處正向範例皆以 Paperclip icon + 檔名 + ProgressBar 手拼檔案上傳 UI(Q1_財報.xlsx / 簡報_final.pptx / 影片素材.mp4 等);progress-bar.spec.md:139「檔案上傳 UI 一律走 FileItem,不直接消費 ProgressBar」+ :182 禁止事項明列「上傳列表自己拼 ProgressBar + 檔名」。",
+      "dupWithClaude": true
+    },
+    {
+      "idx": 15,
+      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:293,538,578,601,624; packages/design-system/src/components/RadioGroup/radio-group.principles.stories.tsx:101,113,147; packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:74,89; packages/design-system/src/components/SelectionControl/selection-item.stories.tsx:55",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "全部 11 處 cited RadioGroup 皆 standalone 無 aria-label / Field 接線(radio-group.tsx:132-134 aria-labelledby 只在 fieldCtx 存在時掛),role=radiogroup 無 accessible name;radio-group.spec.md:100 禁止事項明列「❌ RadioGroup 沒有 group label」。部分處有可見 caption(stories:73 / selection-item:53)但未以 ARIA 關聯,與 finding 描述一致。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 16,
+      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.principles.stories.tsx:147",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "principles:147-151 渲染「我同意/我不同意」二元 consent RadioGroup 且 Label 稱其「合法」;radio-group.spec.md:55 何時不用明定布林 on/off → Switch / 單個 Checkbox(「布林不需要選一個的心智模型」),story 自己的 note(:145)也說 yes/no 用 Checkbox 或 Switch,demo 與規範自相矛盾。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 17,
+      "fileLine": "packages/design-system/src/components/Sidebar/sidebar.stories.tsx:109",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "stories:109 user name span 無 typography class,繼承 md SidebarMenuButton 的 text-body(item-anatomy.tsx:146 ROW_PADDING_BY_SIZE.md);sidebar.spec.md:261 明定 chrome header/footer 內所有 text element(含 user name)一律 text-body-lg font-medium,:133 更點名 UserFooter canonical 名字應 text-body-lg truncate。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 18,
+      "fileLine": "packages/design-system/src/tokens/layoutSpace/layoutSpace.stories.tsx:67",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story:67「容器最底部 → bottom(48 固定)」把 bottom 泛化為任何容器底部;layoutSpace.spec.md:114-121 + :200 明定 bottom 僅限「最後內容 → action buttons」(概念 A commitment 留白),無 action 時依角色分流 bounded→loose / unbounded→0 / element→tight。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 19,
+      "fileLine": "packages/design-system/src/tokens/opacity/opacity.stories.tsx:10,54",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story:10 與 :54 絕對宣稱「其他透明度需求走 alpha 色階,不另開 opacity token」,遺漏 opacity.spec.md:24 已 codify 的兩個 reuse 例外(DataTable 整表 refresh loading + drag source 半透,皆重用 --opacity-disabled 於非 disabled 情境,data-table.spec.md:189/:408)。",
+      "dupWithClaude": false
+    }
+  ]
+}

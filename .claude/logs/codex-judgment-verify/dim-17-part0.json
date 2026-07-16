@@ -1,0 +1,26 @@
+{
+ "dim": 17,
+ "part": 0,
+ "range": [
+  0,
+  1
+ ],
+ "verdicts": [
+  {
+   "fileLine": "packages/design-system/src/components/Alert/alert.tsx:54 | packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx:510 | packages/design-system/src/components/Field/field-context.ts:9",
+   "verdict": "VERIFIED",
+   "class": "ASK",
+   "reason": "三處引用皆屬實:alert.tsx:53-56 placement=inline|fixed 是 surface placement,item-anatomy.tsx:510 ItemAvatar.mode 與 field-context.ts:9 FieldControlLayout 的 inline|block 是 child 對齊佈局 — 同字兩套認知,且 AGENTS.md 命名 3 重 test 第 3 條明列此類衝突。惟改 Alert 公開 prop(如 scope=embedded|global)動公開 API contract + canonical 語意(alert.spec.md:154-157 已 codify inline/fixed 圓角 rationale,且對齊 Carbon InlineNotification idiom),須 user 拍板。",
+   "dupWithClaude": false,
+   "idx": 0
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.tsx:251 | packages/design-system/src/components/DataTable/filter-operators.ts:23 | packages/design-system/src/components/DataTable/data-table-filter-value-picker.tsx:43",
+   "verdict": "VERIFIED",
+   "class": "AUTO",
+   "reason": "button.tsx:251 variant 'text'(低權重樣式)與 filter-operators.ts:21-23 ValueShape 'text'(派送 <Input> 的 picker 型別,data-table-filter-value-picker.tsx:43 消費)同字不同義屬實;ValueShape 未出 root barrel(index.ts 無 export),改名屬 internal 命名一致 refactor,非 SSOT。",
+   "dupWithClaude": false,
+   "idx": 1
+  }
+ ]
+}

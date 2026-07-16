@@ -1,0 +1,55 @@
+{
+  "dim": 66,
+  "part": 0,
+  "range": [0, 5],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": ".github/workflows/release.yml:293,334; .github/workflows/ssot-sync-dispatch.yml:78; template/ds-product-template/README.md:21,80-85",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "三個 dispatch 點確實全 hardcode 指向 ajenchen/ds-product-template(release.yml:293、release.yml:334、ssot-sync-dispatch.yml:78),而 README.md:21 的「Use this template」建立獨立 repo 收不到 repository_dispatch,README.md:80-85 卻承諾「DS 任何 push main → fork repo 自動同步」。fork 端僅剩 dependabot.yml daily(template/ds-product-template/.github/dependabot.yml:9-10)非即時,宣稱與機制不符屬實。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": ".github/workflows/mirror-to-published-template.yml:100-110,184; template/ds-product-template/.github/workflows/sync-design-system.yml:104-114",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "mirror-to-published-template.yml:110 rsync `--exclude='.github/workflows'` + :184 明註「已保留未動」,repo 內無任何替代 workflow 同步通道(僅 verify-published-deploy.mjs 健檢)。已實測 gh api 抓 live 受方 sync-design-system.yml 與 canonical diff:live 版停在舊「Verify build still pass」(只 build apps/template),缺 2026-07-14 加的 typecheck/lint:imports/全 build/a11y Full audit gate(canonical :108-114),dispatch 確實打到 stale workflow。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": ".github/workflows/composition-fidelity.yml:20-25; .github/workflows/mirror-to-published-template.yml:51-55",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "composition-fidelity.yml:20-25 觸發僅 push main / pull_request / workflow_dispatch,無 workflow_run(Mirror)亦無 repository_dispatch;mirror(workflow_run on Release,mirror-to-published-template.yml:51-55)推 published repo 後不會回觸 DS repo 的 parity 重跑。DS push 觸發時 consumer checkout(composition-fidelity.yml:44-48)拿的是尚未被 mirror 更新的舊 consumer main,無法證明已發布版本最終 parity,屬實。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "scripts/visual-assertions.json:219,297,357,381,421; scripts/visual-audit.mjs:463-469,676-684",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "實測 manifest 113 scenarios、snapshots-baseline/ 僅 108 PNG,set-compare 缺的正是 alert-with-description / aspectratio-product-photo-4-x-3 / inlineedit-states / pagination-full-bar / skeleton-document-loading 五張(無多餘檔)。visual-audit.mjs:463-468 baseline 缺失記 diff error + :676-684 totalDiffErrors 進 exit 1 gate(fail-closed),現況必紅,屬實。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": ".github/workflows/release.yml:309-310",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "release.yml:310 寫「Fine-grained,scope: repo:write」— fine-grained PAT 無「repo:write」這種 scope(fine-grained 用 repository permissions 如 Contents: Read and write;repo 是 classic PAT scope),指引確實混淆兩制。同 repo mirror-to-published-template.yml:16 已正確寫「Contents: write」可為對照。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": ".github/workflows/release.yml:13-32; .github/workflows/mirror-to-published-template.yml:51-63",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "release.yml:13-32 workflow_dispatch 含 repoint-latest / clear-latest 維護模式,跑完 Release workflow 仍是 success;mirror-to-published-template.yml:51-54 workflow_run 觸發 + :63 job if 只查 `conclusion == 'success'`,未過濾 `workflow_run.event`,維護模式也會啟動 mirror。若 main 處於「已 bump 未 publish」窗口,workflow_run 路徑 5min poll 失敗即紅(:138-151),假紅風險屬實。",
+      "dupWithClaude": false
+    }
+  ]
+}

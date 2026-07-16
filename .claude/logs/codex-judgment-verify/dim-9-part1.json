@@ -1,0 +1,143 @@
+{
+  "dim": 9,
+  "part": 1,
+  "range": [18, 34],
+  "verdicts": [
+    {
+      "idx": 18,
+      "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:962",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "file-viewer.tsx:764-778 destructure 未抽 className,:952 固定 fullscreen cn() 之後 :962 才 {...props} — consumer 傳 className 會整組覆寫 fixed inset-0/z-50/動畫類。修法 = 抽出 className 走 cn 合併,屬 bug fix 不動 API 語意。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 19,
+      "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:213",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "view 分支屬實:裸顯示 :215-218 連 className 都沒套,D-path div :223-237 有 className 但無 ref/{...rest};readonly/disabled 分支 :244-250 有 ref+rest 對照成立,spec people-picker.spec.md:240-242 明載 root props 契約。同型修已有 canonical 先例(switch.tsx:209 view span 轉發),對齊即可。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 20,
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.tsx:55",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "progress-bar.tsx:55 僅 Omit 'value',Radix Progress Root 的 asChild/children 留在型別;:117 spread props 但 :119-122 固定 Indicator JSX child 覆蓋 consumer children,asChild 的 Slot host 落在 Indicator。修法(Omit 收窄公開型別)動 API contract,同 select.tsx:57 全部收窄先例走 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 21,
+      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:102",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "radio-group.tsx:25-26 extends Radix Root props(含 asChild),:102-104 view/Field-readonly 分支 destructure 剝除 _asChild,edit 分支 :171 {...props} 仍轉發 — 同一 prop 隨 mode 靜默失效屬實。是否 Omit asChild 統一型別 = 公開 API contract 決策。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 22,
+      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:297",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "RadioGroupItemProps :225-227 extends Radix Item props(含 asChild/children),:307 spread props 但 :321-326 固定 Indicator 為唯一 JSX child — asChild 的 Slot 只會 clone Indicator,consumer 元素永不成 host。修法動公開型別。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 23,
+      "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:49",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "scroll-area.tsx:37 型別含 Radix Root asChild,:52 spread 到 Root,而 Root 固定含 Viewport(:63)+ ScrollBar(:72)+ Corner(:73)三子節點 — asChild=true 必觸發 React.Children.only runtime 拋錯(CLAUDE.md 失敗記憶索引已列此陷阱類)。修法 = Omit asChild,動公開型別。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 24,
+      "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:82",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "ScrollBar :78-81 型別含 asChild/children 且未 destructure 抽除,:91 spread 後固定 Thumb(:98-100)為唯一 JSX child — asChild 的 Slot host 錯置到內部 Thumb。修法動公開型別。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 25,
+      "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:263",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "SegmentedControlItemProps :220-221 extends ToggleGroup Item props(含 asChild),:271 spread restProps,但 :273-279 固定輸出 StartIcon + label span + badge span 多子節點 — icon+label 常見組合遇 asChild 即 React.Children.only 拋錯。修法動公開型別。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 26,
+      "fileLine": "packages/design-system/src/components/Select/select.tsx:505",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "select.tsx:505-506 非 edit 分支只傳 className 等展示 props 給 ReadonlyDisplay,ref/id/style/data-*/事件/aria allowlist 全丟;與檔內 :57-100 user 拍板的兩路徑契約(:64 id、:68 style、:75 data-*、:99 index signature)矛盾屬實。修 = 讓 code 兌現已核准契約,對齊即可。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 27,
+      "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:168",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "sheet.tsx:166 SheetBody props = ComponentPropsWithoutRef<ScrollArea>(含 Radix Root asChild),:168 {...props} 轉發到 ScrollArea → scroll-area.tsx:52 spread 到固定三子節點 Root,asChild 必runtime 拋錯。修法 = Omit asChild + spec 記錄,動公開型別。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 28,
+      "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:350",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "sidebar.tsx:350 mobile 分支把 div rest props spread 到 Radix Sheet Root(非 DOM 元件,靜默丟棄),ref 未使用、consumer className 未達 SheetContent(:354 固定 className)— 同一 API 隨 breakpoint 失效屬實。props/className 該落在哪個 mobile root = 跨 breakpoint contract 決策(shadcn 上游同構)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 29,
+      "fileLine": "packages/design-system/src/components/Slider/slider.tsx:55",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "slider.tsx:55 已 Omit 'children'|'orientation' 但漏 asChild,:86 spread 到 Root,固定 Track(:96)+ ≥1 Thumb 多子節點 — asChild=true 必 React.Children.only 拋錯。修法 = asChild 併入 Omit,動公開型別(同檔 orientation Omit 有 2026-07-07 先例可援引)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 30,
+      "fileLine": "packages/design-system/src/components/Switch/switch.tsx:98",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "switch.tsx:98-99 extends Radix Root props(含 asChild/children),靜態分支 :198-199 destructure 剝除,edit 分支 :253 {...props} 轉發但 :266 固定 Thumb 覆蓋 consumer child — 無一致 Slot host 屬實。是否 Omit 統一 = 公開 API contract 決策。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 31,
+      "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:499",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "TabsTriggerProps :451-452 extends Radix Trigger props(含 asChild),:503 spread,但 :505-512 固定輸出 StartIcon/label span/suffix span 多子節點 — 多槽組合遇 asChild 拋 React.Children.only,單槽時 Slot 也只 clone 內部 span(:506)。修法動公開型別。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 32,
+      "fileLine": "packages/design-system/src/components/Textarea/textarea.tsx:242",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "textarea.tsx:242-258 view/readonly-empty 顯示 div 只掛 id/data-field-mode/aria-describedby/className,無 ref 轉發、無 {...props} spread — consumer data-*/事件/其餘 ARIA 靜默失效屬實。同型 view-branch 轉發已有 canonical 先例(switch.tsx:209 / radio-group.tsx:110-114 / time-picker.tsx 2026-07-16 修),對齊即可。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 33,
+      "fileLine": "packages/design-system/src/components/TimePicker/time-picker.tsx:259",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "「view 分支未轉交 rest props」已於 HEAD 修掉(time-picker.tsx:260-270 2026-07-16 DA3 fix 補 {...props});仍為真的是 ref:forwardRef<HTMLDivElement>(:157)但 view(:265-282)與 readonly/disabled(:289-293)分支皆未接 ref。殘餘 ref 部分照 radio-group.tsx:114 同型 cast 轉發即可。",
+      "dupWithClaude": true
+    },
+    {
+      "idx": 34,
+      "fileLine": "packages/design-system/src/components/Tooltip/tooltip.tsx:23",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "tooltip.tsx:25 型別含 Radix Content asChild,:26 destructure children 後包進固定 dark-theme div(:48),asChild 留在 :46 spread — Slot 的單一 child 是該 wrapper div,consumer 元素不會成為 Content host。修法(Omit 或重排 theme wrapper)動公開型別/結構。",
+      "dupWithClaude": false
+    }
+  ]
+}

@@ -192,3 +192,35 @@ P1 全是 round16/F2 後 spec 未同步(code+anatomy 一致是新的一方):
 - 0:dim 7/10/12/17
 
 ## 待收:a1b ×1(batch 3 Combobox..DropdownMenu);codex ×2;heavy battery
+
+## B.2 Step 4.5 — codex judgment findings 對抗驗證(2026-07-17,workflow wf_d320bda8 28 agents)
+
+**機械驗收**:360/360 verdicts 完整無漏(scripts 內聯 coverage check)。**Verdict**:VERIFIED 338 / PARTIAL 18 / STALE 4 / **FALSE 0**(codex 事實層極準,僅 4 條已被 A.3 批修先修掉)。**分流**:AUTO 282(非 SSOT:story 文案 / spec N/A 段 / a11y label / doc-code 對齊 / 命名一致)/ ASK 60(SSOT-UI/UX 候選 — C.1 前需 consolidation:同類合併 + SSOT-check 先行,寫不出 SSOT 理由者降回 AUTO)/ REJECT 14(true-but-canonical-exception,均已 cite)。dupWithClaude 12。
+
+| dim | V/P/F/S | AUTO/ASK/REJECT |
+|---|---|---|
+| 6 | 6/1/0/0 | 7/0/0 |
+| 7 | 23/1/0/4 | 19/5/0 |
+| 8 | 21/0/0/0 | 18/3/0 |
+| 9 | 34/1/0/0 | 17/18/0 |
+| 10 | 34/1/0/0 | 33/1/1 |
+| 12 | 82/3/0/0 | 80/1/4 |
+| 14 | 12/2/0/0 | 11/3/0 |
+| 17 | 2/0/0/0 | 1/1/0 |
+| 19 | 0/1/0/0 | 1/0/0 |
+| 20 | 3/1/0/0 | 4/0/0 |
+| 22 | 1/0/0/0 | 0/1/0 |
+| 24 | 28/4/0/0 | 20/3/9 |
+| 25 | 1/0/0/0 | 1/0/0 |
+| 26 | 7/0/0/0 | 5/2/0 |
+| 33 | 6/0/0/0 | 4/2/0 |
+| 38 | 1/0/0/0 | 1/0/0 |
+| 43 | 21/2/0/0 | 22/1/0 |
+| 44 | 7/0/0/0 | 2/5/0 |
+| 62 | 8/0/0/0 | 8/0/0 |
+| 66 | 6/0/0/0 | 6/0/0 |
+| 68 | 19/1/0/0 | 19/1/0 |
+| 72 | 14/0/0/0 | 1/13/0 |
+| 90 | 2/0/0/0 | 2/0/0 |
+
+ASK 60 條原始清單(consolidation 前)存 verdict files;verdict SSOT = `.claude/logs/codex-judgment-verify/dim-*.json`。

@@ -1,0 +1,143 @@
+{
+  "dim": 12,
+  "part": 1,
+  "range": [17, 33],
+  "verdicts": [
+    {
+      "idx": 17,
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.anatomy.stories.tsx:287",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tree-view.anatomy.stories.tsx:287 label=\"Documents(hover 試試)\"、:290 label=\"beach.jpg(selected)\" 確實把狀態標註混入可見節點名;:284 Desc 已說明何者 selected,標註屬重複。命中 dim 12 rubric(audit-prompts.md:384-388)測試指令/spec 代號禁則。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 18,
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.anatomy.stories.tsx:311",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tree-view.anatomy.stories.tsx:311-314 節點 label 為「L1 (depth 0)」到「L4 (depth 3)」抽象層級代號,命中 audit-prompts.md:385 abstract 代號禁則。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 19,
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.anatomy.stories.tsx:327",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tree-view.anatomy.stories.tsx:327-330 label 為「Folder(可展開)/Leaf 1(無 children)/Folder 2(可展開)/Leaf 3(無 children)」編號 placeholder,命中 audit-prompts.md:384 Item 1/2/3 類禁則。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 20,
+      "fileLine": "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:108",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "time-picker.principles.stories.tsx:108 FieldLabel 確為「營業時段(兩個 TimePicker + →)」,元件組成與箭頭符號混入產品文案;story name(:102)已表達組合規則,label 可只留「營業時段」。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 21,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.anatomy.stories.tsx:37",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "app-shell.anatomy.stories.tsx:37 AppShellAside title=\"Detail panel\"、:39 內文「Aside 內容(留白由使用此面板的內容自行管理)」皆為容器術語非業務場景,屬實。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 22,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.anatomy.stories.tsx:110",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "app-shell.anatomy.stories.tsx:110 標題「Toggle Aside demo」、:112 按鈕「{open ? 'Close' : 'Open'} Aside (cmd+.)」直接暴露元件名與 demo 措辭,屬實。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 23,
+      "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx:103",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "aspect-ratio.principles.stories.tsx:103「標題文字」+ :104-106 自我描述段落(「內容長度不固定的段落,包 AspectRatio 會強制裁切…」)皆為佔位/後設文案,非真實內容,屬實。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 24,
+      "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx:147",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "aspect-ratio.principles.stories.tsx:147「表單標題」、:148「這裡有一些說明文字,長度不固定。」為抽象佔位文案,屬實。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 25,
+      "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.anatomy.stories.tsx:345",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "breadcrumb.anatomy.stories.tsx:345「Link(預設 fg-secondary)」、:349「Hover 我(→ primary-hover)」、:353「Current Page(foreground, 不可點)」把 token 狀態說明與測試指令當可見項目,屬實;同檔 :368-378 已示範真實路徑寫法可對照。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 26,
+      "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.principles.stories.tsx:225",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "bulk-action-bar.principles.stories.tsx:225 反例區塊可見文字確為「(範例省略)有 Alert 元件不用是浪費」,原則頁直接顯示未完成 placeholder,屬實。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 27,
+      "fileLine": "packages/design-system/src/components/Button/button.stories.tsx:79",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "button.stories.tsx:79-83 按鈕文字「主要動作/次要動作/第三動作/純文字/連結樣式」為 variant 名復述,命中 audit-prompts.md:389 variant-names-as-visible-labels 禁則;:72-74 註解的 user 指示只要求 Default 展示五 variant,不限定 label 文字,改真實動作不衝突。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 28,
+      "fileLine": "packages/design-system/src/components/Button/button.stories.tsx:247",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "button.stories.tsx:246-248(及 :253、:259)以 caption span「→」串接原始/loading 兩鈕呈現「匯出 → 匯出中」,命中 story-writing example-selection.md:22 明列的「A → B → C」視覺符號表達式禁則;按鈕本體文案為真實動作故 severity marginal 合理。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 29,
+      "fileLine": "packages/design-system/src/components/Button/button.stories.tsx:328",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "button.stories.tsx:328-329 按鈕文字確為「Hover 我」「Focus 我」測試指令;此為 visual-audit pilot story(:318-321)但 play() 以 data-testid 定位,label 改真實動作不影響稽核功能,無 canonical 豁免。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 30,
+      "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:310",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "coachmark.principles.stories.tsx:310 media label=\"AI Illustration\"、:312 description=\"illustration 傳達概念,比純文字更快被理解\"、:317 觸發鈕「Anchor」皆為製作術語非真實導覽內容,屬實。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 31,
+      "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:336",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "coachmark.principles.stories.tsx:336 label=\"簡潔\"、:337 title=\"簡潔的 description\"、:338「兩行說明足以傳達核心價值…」以文案長度自述取代真實功能導覽,屬實(:343 另有「Anchor」觸發鈕)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 32,
+      "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:36",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "dialog.anatomy.stories.tsx:36 觸發按鈕確為「開啟 Dialog 範例」暴露元件名;Dialog 內容(:40 建立新專案)已是真實場景,僅 trigger 需對齊,severity marginal 合理。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 33,
+      "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:294",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "dialog.anatomy.stories.tsx:294 DialogTitle 為「示範 Dialog({w}px)」、:297 body 以「這是 maxWidth = {w}px 的 Dialog…」尺寸說明充當正文,屬實;:278-282 表格已列真實場景對照可取材。",
+      "dupWithClaude": false
+    }
+  ]
+}

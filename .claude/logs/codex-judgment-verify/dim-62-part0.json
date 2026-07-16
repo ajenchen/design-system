@@ -1,0 +1,71 @@
+{
+  "dim": 62,
+  "part": 0,
+  "range": [0, 7],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "scripts/setup-netlify-access.mjs:103-115",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "setup-netlify-access.mjs:110 確用 `netlify api listAccountsForUser --json`,實測 `netlify api --help` 只支援 --data/--list/--auth/--debug 無 --json;正常路徑 110-111 只跑 sites:create + link(不含 CI/repo 連結),與 :55「自動…連 repo」宣稱矛盾,push 不會觸發 CD。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": "scripts/setup-netlify-access.mjs:117-125; scripts/deploy-url.mjs:38-55",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "setup-netlify-access.mjs:119 與 deploy-url.mjs:40 皆 `state.siteSlug || siteId` 把 UUID 當 slug fallback,`netlify link` 寫入的 state.json 只保證 siteId;缺 siteSlug 時 :124-125 / deploy-url.mjs:53-55 產出的 dashboard 與 netlify.app URL 皆錯。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "netlify.toml:11; template/ds-product-template/netlify.toml:25; template/ds-product-template/CLAUDE.md:75-82; scripts/setup-netlify-access.mjs:164-170",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "netlify.toml:11 與 template netlify.toml:25 皆註解「Per-branch deploy previews 預設啟用」、CLAUDE.md:82 稱「setup:netlify 會設定」,但 script :164-170 只印 dashboard 步驟、API 呼叫僅設 skip_prs:false(PR preview);Netlify 官方 docs(WebFetch 驗證)明載 branch deploys 預設不啟用需手動開。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "template/README.md:7-9; template/ds-product-template/README.md:15-21",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "template/README.md:7-9 明寫「Repo = Private(team collaborators)+ Netlify 免費」為無條件路徑,README.md:15-21 onboarding 亦無任何 plan 限制警語;WebFetch Netlify credit-based plan docs 證實 Free 方案 private-repo Git contributors 與 organization-owned private repos 皆 Pro-only,該情境會卡住。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "template/ds-product-template/CLAUDE.md:53-70",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "CLAUDE.md:53-70 onboarding 引導與斷點清單(:61-68)全無 gh 未安裝/未登入處理;setup-netlify-access.mjs:63-76 只在未 login 時建議 `gh auth login`,gh CLI 不存在時無安裝 fallback(shOut 失敗回空字串同樣落入未 login 分支)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "scripts/setup-netlify-access.mjs:59",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "setup-netlify-access.mjs:59 硬編「100GB bandwidth」;WebFetch netlify.com/pricing 證實現行 Free 為 300 credits/月 credit 制(bandwidth 20 credits/GB、production deploy 15 credits),無固定 100GB 條目,屬易漂移 legacy 宣稱。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "template/ds-product-template/netlify/edge-functions/basic-auth.ts:28-39",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "basic-auth.ts:32 直接以 `atob()`(latin1 byte-string)比對 Deno.env 的 Unicode 字串,:39 卻宣告 charset=\"UTF-8\";非 ASCII 帳密經瀏覽器 UTF-8 編碼後永遠比對失敗固定 401。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 7,
+      "fileLine": "template/ds-product-template/docs/02-create-new-product.md:56",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "02-create-new-product.md:56 引用「netlify.toml:14 build.command」,實際 template/ds-product-template/netlify.toml:13 才是 command、:14 是 publish,行號引用錯一行。",
+      "dupWithClaude": false
+    }
+  ]
+}

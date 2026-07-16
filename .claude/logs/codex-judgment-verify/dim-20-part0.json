@@ -1,0 +1,42 @@
+{
+ "dim": 20,
+ "part": 0,
+ "range": [
+  0,
+  3
+ ],
+ "verdicts": [
+  {
+   "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:8",
+   "verdict": "PARTIAL",
+   "class": "AUTO",
+   "reason": "frontmatter 確混機械值 text-body/text-body-lg/indent 24/28(tree-view.spec.md:5-8)形成 second-SSOT 風險;但列舉的「px-4 py-2」不在 frontmatter(僅 tree-view.tsx:963 DragOverlay 內部),且值目前與實作一致(INDENT_STEP {24,24,28} tree-view.tsx:112-114、row padding 已註明 --tree-px 公式)—「已與實作漂移」不成立。",
+   "dupWithClaude": true,
+   "idx": 0
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.spec.md:447",
+   "verdict": "VERIFIED",
+   "class": "AUTO",
+   "reason": "data-table.spec.md:447 硬寫「error 14px text-error 下方 gap-1」,實作 data-table.tsx:1864 消費 `text-body text-error`(typography token)— spec 重述 token 當前解析值,token 調整即漂移,屬實。",
+   "dupWithClaude": false,
+   "idx": 1
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:153",
+   "verdict": "VERIFIED",
+   "class": "AUTO",
+   "reason": "input.spec.md:157-160 autoWidth 行為表逐字複寫 `inline-flex w-auto` / `field-sizing:content w-auto min-w-0` 實作配方(input.tsx 已承載),違 spec-rules.md「spec 不描述實作細節」職責分離,屬實。",
+   "dupWithClaude": false,
+   "idx": 2
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:208",
+   "verdict": "VERIFIED",
+   "class": "AUTO",
+   "reason": "menu-item.spec.md:208 硬寫 MenuFooter =「border-t + py-2」,同配方(且更完整含 border-divider)已在 menu-item.tsx:357,spec 重複 utility 配方無留存 rationale,屬實。",
+   "dupWithClaude": false,
+   "idx": 3
+  }
+ ]
+}

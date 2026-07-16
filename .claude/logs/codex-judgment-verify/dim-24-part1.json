@@ -1,0 +1,135 @@
+{
+  "dim": 24,
+  "part": 1,
+  "range": [16, 31],
+  "verdicts": [
+    {
+      "idx": 16,
+      "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx:57,97; overflow-indicator.anatomy.stories.tsx:431",
+      "verdict": "PARTIAL",
+      "class": "REJECT",
+      "reason": "組成重疊為真:anatomy SizeMatrix「Consumer 場景對照」表確有 Combobox tag(同款 bug/P0)與 avatar stack 兩列 live mini-demo(anatomy:506-532);但「單獨重演」不準——展示層兩 story 帶真實 HoverCard 展開內容(reviewer 名單)與業務場景(stories:57-125),anatomy 列 children 僅「…」placeholder。駁回退役:展示層 canonical 明定只留真實業務場景(stories.tsx:127-136 兩則 Dim 24/25 retire 註解即此分工),退役僅存的真實場景 story 會掏空展示層(story-rules.md:15)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 17,
+      "fileLine": "packages/design-system/src/components/Pagination/pagination.stories.tsx:14; pagination.principles.stories.tsx:34",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "兩者皆渲染 total=128 controlled Pagination(stories:14-27 vs principles:41-47),rendered 控件相同僅文案/初始頁不同,Default 無 principles LinkTo 依賴。退役 Default 不觸 R3 hook(anatomy 有 ColorMatrix,check_story_invariants.sh:304-306),且有 Slider Default retire per Dim 24 先例(slider.stories.tsx:15-16)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 18,
+      "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx:90,113; people-picker.anatomy.stories.tsx:129,303; people-picker.principles.stories.tsx:128",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "Single 是 edit/view/readonly/disabled 模式矩陣(stories:70-93)重複 anatomy ModeMatrix(anatomy:129-158);Multi(edit+readonly 多選,stories:96-116)重複 anatomy StateBehavior 多選 live(anatomy:321-333)與 principles SingleVsMultiRule(principles:128-168)。展示層放 generic 矩陣違反三層定位,retire 符合 earn-existence(story-rules.md:46-48)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 19,
+      "fileLine": "packages/design-system/src/components/Popover/popover.stories.tsx:23; popover.anatomy.stories.tsx:16; popover.principles.stories.tsx:71",
+      "verdict": "PARTIAL",
+      "class": "REJECT",
+      "reason": "trigger+checkbox body 三層重演為真(stories:23-53 / anatomy:24-42 / principles:92-106),但 principles 版無 PopoverFooter,「完整重演」不準。駁回收斂:anatomy Overview 是 6-canonical 必備 live 示範(story-rules.md:16)、principles UsageGuidance 為必備層且 LinkTo 指向展示 FilterPanel(popover.principles.stories.tsx:80),FilterPanel 另為 OpenSnapshot 的 base(stories:63-67);同場景跨層沿用是刻意一致,改「引用或純結構標註」會破壞各層自足教學。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 20,
+      "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.stories.tsx:44; profile-card.anatomy.stories.tsx:345; profile-card.principles.stories.tsx:128",
+      "verdict": "VERIFIED",
+      "class": "REJECT",
+      "reason": "「多 avatar hover 展開 ProfileCard」互動確在三層重演(stories:44-53 / anatomy:345-386 / principles:128-137)。駁回退役:Default 是展示層唯一 story(檔案僅 54 行單一 export),且示範 Avatar hoverCard prop 消費路徑 + statusMessage/actions/defaultFieldValues 完整內容(stories:26-37),與 anatomy 顯式 HoverCard 組合(anatomy:361-380)是不同 API 路徑;退役會使展示層歸零,違反三層定位(story-rules.md:13-15)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 21,
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:39,53; progress-bar.anatomy.stories.tsx:352; progress-bar.principles.stories.tsx:56",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "真:Default(stories:39-46,value=45/inProgress/affix=value/w-360)與 anatomy AffixBehavior 首例(anatomy:370-372)參數完全相同 = 重複。假:BatchTask 未被 principles 重演——principles UsageGuidance 僅 LinkTo 引用該 story(principles:65-66)無 live 複本,退役 BatchTask 反而斷 LinkTo(同 Toast/Separator 斷鏈教訓,ledger A.1b batch 7/8)。僅 Default 部分可 AUTO 清理。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 22,
+      "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:67; radio-group.anatomy.stories.tsx:476",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "VerticalGroup 是 sm/md/lg 直式群組矩陣(stories:67-83),重複 anatomy SizeMatrix 視覺預覽(anatomy:531-546 同為三 size 直式群組含 description/disabled item),且違反同檔自家 rationale「展示層保留 typical real-product 情境」(stories:62-64)。同檔 States/Disabled 已 per Dim 24 retire(stories:62,97-100),收斂為單 size 真實情境或退役皆 AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 23,
+      "fileLine": "packages/design-system/src/components/Rating/rating.stories.tsx:117; rating.anatomy.stories.tsx:399",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "Disabled(stories:117-133,value=4 disabled)確為 anatomy StateBehavior disabled live case(anatomy:470-479,value=4 disabled)換訂單文案版本。同 Family Checkbox/Switch/RadioGroup 已 retire 獨立 Disabled story per Dim 24(radio-group.stories.tsx:97-100 明文對齊),retire 為 AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 24,
+      "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.stories.tsx:206; scroll-area.principles.stories.tsx:185,238",
+      "verdict": "VERIFIED",
+      "class": "REJECT",
+      "reason": "重複為真:同 PRODUCT_COLUMNS Stripe 商品表 live 出現在 principles OrientationChoice(principles:209-217)與 SolvesDataTableBug(principles:246-268,Windows 17px 教學同展示層 caption stories:213)。駁回退役展示 story:它是 principles UsageGuidance 的 LinkTo 目標(scroll-area.principles.stories.tsx:102)且展示層 owns 真實業務場景(story-rules.md:15);若去重應收斂 principles 內嵌 demo,方向與建議相反。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 25,
+      "fileLine": "packages/design-system/src/components/Select/select.stories.tsx:101; select.anatomy.stories.tsx:588,684; select.principles.stories.tsx:156",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "DisplayMode(stories:101-123,plain/tag × edit/readonly)是 anatomy ColorMatrix「text vs tag 模式色彩差異」表(anatomy:648-675,plain/tag × edit/readonly/disabled)的嚴格子集;plain vs tag 選用原則另由 principles DisplayModeRule(principles:156-190)承載。retire 符合 earn-existence + 同 Family 先例,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 26,
+      "fileLine": "packages/design-system/src/components/Slider/slider.stories.tsx:21; slider.anatomy.stories.tsx:122",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "SizeAlignment(stories:21-42)重複 anatomy SizeMatrix(anatomy:122-140)的 sm/md/lg + root-only 高度規則(教學文字同義),且 demo 只有 dashed 容器無任何 sibling field control,「未實際展示跨元件對齊」為真。改為 Select/PeoplePicker SizeAlignment 同款(並排 Button,select.stories:126-145)或退役皆 AUTO;同檔 Default/Range/Disabled 已 per Dim 24 retire(stories:15-17,68-70)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 27,
+      "fileLine": "packages/design-system/src/components/Steps/steps.stories.tsx:153; steps.principles.stories.tsx:145",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "FocusRingCombinations(stories:153-202)與 principles RingIsFocusMarker(principles:145-176)同教「ring 是 focus marker、與 completed/current/error 正交」規則,前者僅多互動按鈕。規則教學屬 principles 層;同檔 AllStates 已 per Dim 46 retire 且明引「展示層應為典型使用情境,不是 trait grid」(stories:145-148),併入 principles 為 AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 28,
+      "fileLine": "packages/design-system/src/components/Switch/switch.stories.tsx:40,76; switch.anatomy.stories.tsx:97,132,188",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "States(stories:40-70)= md/lg × on/off/disabled grid,已由 anatomy SizeMatrix(anatomy:97-130)+ StateBehavior 六態 live grid(anatomy:151-176)覆蓋;WithLabel(stories:76-92)= sm/md/lg × label/description/disabled 矩陣,已由 anatomy LabelIntegration(anatomy:188-215)+ SizeMatrix 覆蓋。同 Family Dim 24 retire 先例成立,AUTO(retire + 補 rationale 註解)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 29,
+      "fileLine": "packages/design-system/src/components/Tabs/tabs.stories.tsx:82,144; tabs.anatomy.stories.tsx:14,307; tabs.principles.stories.tsx:228",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "AllWithStartIcon(stories:82-95)的「全 trigger 帶 startIcon」視覺已由 anatomy Overview slot 示範(anatomy:35-46 四 trigger 全帶 icon)與 principles TriggerSlots(principles:228-243 三 trigger 全帶 icon)覆蓋;Disabled(stories:144-155)重複 anatomy StateBehavior 的 disabled 列(anatomy:307-330)。retire AUTO;注意保留「全有全無」rule 註解語意(stories:84-85)搬至 principles。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 30,
+      "fileLine": "packages/design-system/src/components/TimePicker/time-picker.stories.tsx:103; time-picker.principles.stories.tsx:101",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "ShopBusinessHours(stories:103-119)與 principles RuleRangeComposition(principles:101-117)near-identical:同值(10:00/22:00)、同結構(兩 TimePicker + → + Field 營業時段),僅 placeholder 差異。二擇一 retire 為 AUTO(無 LinkTo 依賴,grep 無反向引用)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 31,
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.stories.tsx:268; tree-view.anatomy.stories.tsx:302; tree-view.principles.stories.tsx:148",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "indentStep = chevronSize + gap-2 公式與 leaf chevron placeholder 教學三重重複:showcase IndentAlignment(stories:268-300)/ anatomy IndentMatrix(anatomy:302-338)/ principles IndentRule(principles:148-184)。幾何歸 anatomy、規則歸 principles,retire 展示層版 AUTO(同檔 AllSizes retire 先例 stories:265);僅注意其含一個「icon 無自動佔位」混用反例小段(stories:277-278)可併入 principles。",
+      "dupWithClaude": false
+    }
+  ]
+}

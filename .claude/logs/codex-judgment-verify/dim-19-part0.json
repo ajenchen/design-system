@@ -1,0 +1,18 @@
+{
+ "dim": 19,
+ "part": 0,
+ "range": [
+  0,
+  0
+ ],
+ "verdicts": [
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:505",
+   "verdict": "PARTIAL",
+   "class": "AUTO",
+   "reason": "公開匯出與 cross-component 定位屬實(people-picker.tsx:503-512 export PersonDisplay/MultiPersonDisplay/PersonAvatarTag、root barrel index.ts:328-332、field-controls.spec.md:327「唯一現存 cross-component view primitive」);但「與 components/README.md:27 牴觸」不成立 — 同檔 compound 判準「同家族共享 context/命名/規則 → compound folder」(README.md:26-30)+ Checkbox/boolean-display.tsx 同型先例(README.md:22)+ field-controls.spec.md:327 本身已 codify 此共居現狀,真缺口僅剩 README compound 清單未載 PeoplePicker rationale(補文件 = AUTO;拆 folder 主張不採)。",
+   "dupWithClaude": false,
+   "idx": 0
+  }
+ ]
+}

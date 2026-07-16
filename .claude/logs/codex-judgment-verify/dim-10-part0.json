@@ -1,0 +1,151 @@
+{
+  "dim": 10,
+  "part": 0,
+  "range": [0, 17],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:216",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "carousel.tsx:208-227 CarouselItem 只有 role=group + aria-roledescription,全檔 grep aria-hidden/inert/inView 0 hit,offscreen slides 確實全留在 accessibility tree。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox-group.tsx:78",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "checkbox-group.tsx:73-88 role=group 無任何 aria-labelledby/describedby/invalid 接線,全檔不讀 Field context;對照 radio-group.tsx:164-166 確有同款接線可比照。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:216",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "checkbox.tsx:214-221 view 分支回傳無 role/name 的 span,內容僅 BooleanValueIcon 而 boolean-value.tsx:38 Icon 帶 aria-hidden → 預設用法下布林值在 a11y tree 消失。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/Command/command.tsx:123",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "command.tsx:119-128 CommandSeparator 直包 cmdk Separator(rendered role=separator)未覆寫 role,而 cmdk List 為 role=listbox,separator 非 listbox 合法 owned child(aria-required-children)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:2293",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "data-table.tsx:2292-2313 resize span 僅有 onPointerDownCapture/onTouchStart,無 tabIndex、無 onKeyDown、無 aria-valuenow/min/max,鍵盤無法調整欄寬(more-menu 的自動調寬 :2245-2265 非任意值替代)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:657",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "data-table.tsx:657 把 draggable.listeners 全 spread 到整個 header cell 且 column drag 無 setActivatorNodeRef(僅 row drag 有,:550),而 :2903-2905 sensors 含 KeyboardSensor → 巢狀按鈕(如 :2246 more-menu)Enter/Space 冒泡即被 dnd-kit 攔截 preventDefault 啟動拖曳。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "packages/design-system/src/components/DataTable/cell-registry.tsx:151",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "cell-registry.tsx:150-182(String Textarea/Input)、:214-230(NumberInput)等 edit 控件全無 aria-label/labelledby;全檔僅 :435('切換')與 :466('編輯連結')兩處泛用 label,均無欄名/列脈絡。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 7,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table-column-visibility-panel.tsx:155; packages/design-system/src/components/DataTable/data-table-sort-manager.tsx:200",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "visibility-panel:154-161 Input 僅 placeholder='搜尋欄位…' 無 aria-label;sort-manager:200/:205 兩個 Select 無 aria-label 也不在 Field 內,而 select.tsx:757-764 trigger 為 div role=combobox(name 僅能 author 提供)→ 無 accessible name。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 8,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:2500",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "共用 rowEl 在 :2500-2504 設 role=row + aria-rowindex,由 left/center/right 三 region(:2687/:2716/:2729)各自 render 同一 logical row → 同 rowindex 出現多個殘缺 row;header 亦被 renderHeaderRow(:2374-2383)per-region 拆成多個 role=row。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 9,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:2700",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "center body(:2690-2710)overflow-x/y-auto 但無 tabIndex;outer table tabIndex 僅在 enabled||spreadsheetMode(:2626)→ plain 唯讀 table 的可捲動區無可聚焦元素(scrollable-region-focusable)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 10,
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.tsx:774",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tree-view.tsx:862-868 Enter/Space 分支無條件 e.preventDefault() 後 select(),handleKeyDown(:774)綁在 root(:905)且無 interactive descendant 排除;inlineActions(:1024-1057)是 tree 內真按鈕,其 Enter/Space 冒泡後原生啟動被 preventDefault 吃掉。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 11,
+      "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:48,63",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "scroll-area.tsx:48-53 consumer props(含 aria-label)全 spread 到 Root;實際可聚焦的 Viewport(:63-68)只拿 tabIndex 與 className,無任何名稱轉傳機制。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 12,
+      "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:308",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "select-menu.tsx:308 起的 PopoverContent 未傳 aria-label/labelledby 也無 PopoverTitle 註冊;popover.tsx:58 明文 Radix content 為 role=dialog、:96-98 自動接線僅在有 title 或 consumer 傳入時生效 → dialog 無名。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 13,
+      "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:524",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "tabs.tsx:517-527 hasAction 時 wrapper span(內含真 inlineAction button)整體置於 TabsList(role=tablist)內,button 非 tablist 合法 owned child;修復需把 action 移出 tablist,動到 :485-494 記載的 sibling-layout canonical(與 SidebarMenuButton suffixNode 同款)結構,屬 SSOT 結構改動需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 14,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.stories.tsx:98; CircularProgress ×4; DataTable stories ×2; Dialog principles ×3; FieldControlGroup ×2; Input anatomy/principles/stories ×35; Textarea principles:143",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "逐行抽驗全部引用行(app-shell:98 / circular-progress 4 處 / data-table.stories:988,1750 / dialog.principles:86,87,215 / field-control-group:116,154 / input.anatomy 16 處 / input.principles 15 處 / input.stories:61,83,95,104 / textarea.principles:143)皆為 standalone Input 無 FieldLabel/aria-label/aria-labelledby,僅 placeholder 或 defaultValue。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 15,
+      "fileLine": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx ×14; textarea.principles.stories.tsx:68,111,135,167; textarea.stories.tsx:23",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "逐行抽驗 anatomy 14 處 + principles 4 處 + stories:23 全部為無 accessible name 的 Textarea(含 readonly/disabled 態),無 Field/FieldLabel 包裹也無 aria-label。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 16,
+      "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx ×9; number-input.principles.stories.tsx:134; number-input.stories.tsx:62",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "逐行抽驗 anatomy 9 處 + principles:134 + stories:62 全部 NumberInput 無 aria-label/FieldLabel;矩陣表頭文字未與 input 程式化關聯。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 17,
+      "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx ×8; link-input.principles.stories.tsx ×6; link-input.stories.tsx:32,48,63,82,99",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "逐行抽驗 anatomy 8 處(mode='edit' 直接渲染未命名 input)+ principles 6 處 + stories 5 處(view 起點按 Pencil 進 edit 後同樣無名)全部無 aria-label/FieldLabel。",
+      "dupWithClaude": false
+    }
+  ]
+}

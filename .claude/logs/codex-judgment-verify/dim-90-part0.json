@@ -1,0 +1,26 @@
+{
+ "dim": 90,
+ "part": 0,
+ "range": [
+  0,
+  1
+ ],
+ "verdicts": [
+  {
+   "fileLine": "packages/design-system/src/components/DescriptionList/description-list.principles.stories.tsx:81",
+   "verdict": "VERIFIED",
+   "class": "AUTO",
+   "reason": "屬實:principles 正向範例 section heading 硬寫 mb-2(description-list.principles.stories.tsx:81),spec 明定 heading→first-item gap 必走 `mb-[var(--layout-space-tight)]`(description-list.spec.md:129-133),同元件 showcase stories 已用 token(description-list.stories.tsx:59,98)— 對齊既有 canonical 的 story 修正。",
+   "dupWithClaude": false,
+   "idx": 0
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Dialog/dialog.principles.stories.tsx:85",
+   "verdict": "VERIFIED",
+   "class": "AUTO",
+   "reason": "屬實:正向範例以 space-y-3 排兩個 parallel Input(dialog.principles.stories.tsx:85-88),layoutSpace 規則 3「跨範疇 + parallel form fields = loose」(layoutSpace.spec.md:70,106),同元件正式表單 stories 用 gap-[var(--layout-space-loose)](dialog.stories.tsx:206,391,463)— 直接 canonical 漂移,story 修正 AUTO。",
+   "dupWithClaude": false,
+   "idx": 1
+  }
+ ]
+}

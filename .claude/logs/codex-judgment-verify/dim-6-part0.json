@@ -1,0 +1,63 @@
+{
+  "dim": 6,
+  "part": 0,
+  "range": [0, 6],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:19,186,272,370,383,394,396,416; field.spec.md:24,209,357,419,421,431; input.spec.md:95,99; number-input.spec.md:64,66,106,108,128; checkbox.spec.md:249; switch.spec.md:138; textarea.spec.md:30,111-112; link-input.spec.md:88,111; date-picker.spec.md:71,261,270,287,289,314,318; time-picker.spec.md:108,202,275,277; data-table.spec.md:123,167,183,447; people-picker.spec.md:256; inline-edit.spec.md:68,84; element-anatomy.spec.md:114; inline-action.spec.md:161",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "殘留部分為真:field.spec.md:24「display/readonly 純展示載體」、:357/:431「Display 規則」、field-controls.spec.md:19「DataTable Display 共用」、:272「display↔edit 像素對齊」、people-picker.spec.md:256「display 路徑」、element-anatomy.spec.md:114、inline-action.spec.md:161 仍用舊 display mode 語彙。但主打的 field-controls:394 `mode:'display'` 零 padding 段 HEAD 已改為 contract (c)/(d) Model A(field-controls.spec.md:394-396),且 input:95(## View)/checkbox:249/switch:138/date-picker/time-picker/data-table:167 等多數 cited 行已更名或屬合法識別字(A.3 批修 F1/F2 已落地,ledger 記錄)。",
+      "dupWithClaude": true
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/FileUpload/file-upload.spec.md:25,84,111,120-123",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "file-upload.spec.md:24 定位仍稱「不負責『已上傳檔案清單顯示』(那是 FileItem 的職責)」,但 :111 `files` prop 明定「傳入 → drop zone 下方渲染列表,每項經 FileItem」且 :120-123 dual-path canonical(2026-04-24)明認 FileUpload own 內建清單合法,職責文字互相衝突屬實;修法為措辭對齊既有 dual-path canonical,非動語意。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:125,127; packages/design-system/src/components/HoverCard/hover-card.spec.md:154",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "overflow-indicator.spec.md:125 明言 HoverCard 內容 tabbable node 被 Radix 強制 tabindex=-1 僅滑鼠可互動,:127 卻承諾「HoverCard 內展開的可互動內容由各自的內容元件負責 focus 管理」,對鍵盤使用者為空承諾、兩句矛盾;hover-card.spec.md:154 佐證鍵盤無法進入卡片內部。刪除 focus-management 承諾 = doc 對齊 code 誠實措辭。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "31 份 spec(app-shell/badge/button/calendar/chart/checkbox/chip/coachmark/data-table/date-picker/dialog/dropdown-menu/file-viewer/hover-card/inline-edit/input/link-input/popover/progress-bar/select/sheet/sidebar/skeleton/slider/steps/switch/tag/textarea/time-picker/tooltip/tree-view)「何時不用」vs「禁止事項」",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "canonical 確立於 .claude/rules/spec-rules.md:20「『禁止事項(❌)』列所有常見誤用」;抽驗 8 份(Badge:52-55 vs :352、Tooltip:51-52 vs :94-99、Button:78-83 vs :406、Input:47-48 vs :107、Sheet:41-43 vs :93、Checkbox:67-70 vs :320、Skeleton:36-40 vs :60、TreeView:51-55 vs :355)cited 行確為禁止段未收編的既列誤用,且 codex 多數精準排除已收編列(僅 Skeleton:38-39 輕微 over-cite),claim 成立;建議之 pointer 式補齊不違 anti-dup。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:43-44,85; Combobox/combobox.spec.md:66-67,150; FileItem/file-item.spec.md:39,41-42,445; NumberInput/number-input.spec.md:42-43,93; Pagination/pagination.spec.md:45,49,112; Rating/rating.spec.md:39-42,187; Tabs/tabs.spec.md:48-49,237",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "抽驗 7 份全部成立:Accordion:43-44(浮層收合/顯示更多)、NumberInput:42-43(DatePicker/Slider)、Pagination:45,49(無盡瀏覽/資料不足 2 頁)、Combobox:66-67(TreeView/Switch 群組)、FileItem:39,41-42(LinkInput/gallery/TreeView)、Tabs:48(兩態開關)皆未見於各自禁止段,且已收編列(如 Pagination:46-48、Combobox:64-65)被精準排除;僅 Rating:41(binary 已收編於 :187 段)輕微 over-cite,不推翻 per-file claim。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:224-225",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "HEAD steps.spec.md:224 含「zero layout impact」結果措辭、:225 含精確雙層 box-shadow 字面值「0 0 0 2px var(--surface), 0 0 0 4px <ringColor>」,違 spec-rules.md:20「不描述視覺形狀/實作細節(『zero layout shift』類屬 story 不進 spec)」;保留設計契約、細節移 tsx 屬表達層整理。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "circular-progress.spec.md:204; slider.spec.md:243(實為 244); steps.spec.md:401; density.spec.md:115; token-system.spec.md:218; layoutSpace.spec.md:308; carousel.spec.md:49,264; chip.spec.md:149-178; tabs.spec.md:141-158; select-menu.spec.md:186; resize-handle.spec.md:41,78; file-upload.spec.md:25,96,138; alert.spec.md:181; form-validation.spec.md:118,126,138; app-shell.spec.md:168; dropdown-menu.spec.md:35; uiSize.spec.md:3",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "逐點屬實:「## Do / Don't」(circular-progress:204/steps:401/slider:244)、「Anti-patterns」(density:115)+「反 pattern」(token-system:218)、「## Notes」(layoutSpace:308)、捲動/滾動混用(carousel:49 同一行雙寫、chip:149 vs :170、tabs:141 vs :158、select-menu:186)、拖曳/拖拉混用(resize-handle:41 vs :78、file-upload:24 vs :96)、停用/禁用同段(alert:181)、reader/user agency(form-validation:118,126,138)、「派别」(app-shell:168)、「ToolBar」(dropdown-menu:35)、「UiSize」(uiSize.spec.md:3)。統一詞彙屬表達層,對齊 AGENTS.md 語言一致性 + spec-rules.md:20 術語一致。",
+      "dupWithClaude": false
+    }
+  ]
+}

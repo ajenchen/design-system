@@ -1,0 +1,18 @@
+{
+ "dim": 25,
+ "part": 0,
+ "range": [
+  0,
+  0
+ ],
+ "verdicts": [
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.stories.tsx:115",
+   "verdict": "VERIFIED",
+   "class": "AUTO",
+   "reason": "屬實:Clearable story(select-menu.stories.tsx:104-118)實際 render `<Select clearable>`,SelectMenu 本身無 clearable API(select-menu.tsx 無此 prop),spec 明定 trigger/field state 由外層 Select/Combobox own(select-menu.spec.md:45,53,160),且 Select 已有同 canonical story(select.stories.tsx:148)。退役屬 story earn-existence 清理(story-rules.md「Earn-existence 2 test」),非 SSOT。",
+   "dupWithClaude": false,
+   "idx": 0
+  }
+ ]
+}

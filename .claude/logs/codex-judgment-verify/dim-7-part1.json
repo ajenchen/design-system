@@ -1,0 +1,119 @@
+{
+  "dim": 7,
+  "part": 1,
+  "range": [14, 27],
+  "verdicts": [
+    {
+      "idx": 14,
+      "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.spec.md:39",
+      "verdict": "STALE",
+      "class": "NONE",
+      "reason": "審核當下為真(bde8973c^ spec:39「任一路徑結算後,focus 送回 read 按鈕」與 code 分流相反),但同批修復 commit bde8973c 已改為 focus 分流明文(HEAD inline-edit.spec.md:43-47 + :160:滑鼠 blur 刻意不回焦、Enter/Esc 送回)。",
+      "dupWithClaude": true
+    },
+    {
+      "idx": 15,
+      "fileLine": "packages/design-system/src/components/Popover/popover.spec.md:153",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "popover.spec.md:153-159 邊界案例僅列極長內容/viewport/嵌套/dark/density,無 empty/loading/error/validation/disabled ownership 明文,違反 spec-rules 邊界 canonical「不適用則明文,不沉默省略」(.claude/references/spec-rules.md:43);owner 規則已存在於 overlay-surface.spec.md:34(loading/error/empty 屬 consumer 內容層)但 Popover 未指回。補 pointer = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 16,
+      "fileLine": "packages/design-system/src/components/Popover/popover.spec.md:167",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "spec:167 宣稱「焦點落在 body 第一個可互動元素」,但 popover.tsx:45-53 selector 只查 input/textarea/select/button,漏 a[href]/[tabindex]/[contenteditable],此類內容會 fallback 到 content.focus()(popover.tsx:54)。spec-vs-code 對齊修 = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 17,
+      "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:39",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "rating.spec.md:39 與 :213 把「熱門/Beta/新品」文字標記導向 Badge,違反 badge.spec.md:51/:55 SSOT(文字/版本/角色標記走 Tag,Badge 僅 count/dot 兩模式無文字承載,且 BadgeProps discriminated union 不接受文字)。對齊既有 canonical 改指向 Tag = AUTO。",
+      "dupWithClaude": true
+    },
+    {
+      "idx": 18,
+      "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:233",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "全 spec 無 validation/invalid 邊界明文(grep 僅 :288 a11y 驗證段,非表單驗證),邊界案例段(:233 起)列 8 項皆無 validation ownership,違反 spec-rules canonical「不適用則明文『本元件無 X 狀態』」(.claude/references/spec-rules.md:43)。補一行明文 = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 19,
+      "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:52",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "select-menu.spec.md:51「可建立新選項 → 用 Combobox + creatable prop」但 ComboboxProps(combobox.tsx:366 起)無 creatable/onCreate(僅 SelectMenu internal 有,select-menu.tsx:79-81),且 :52 明文禁止直接用 SelectMenu → 指路指向不存在的公開 API。解法分岔(公開 creatable API vs 改寫指路)涉公開 API contract 決策 → ASK。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 20,
+      "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:123",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "spec API 段(:121 起)value/defaultValue 型別 number[] 且全 spec 無空值/空陣列邊界(grep 0 hit);slider.tsx:75-78 value=[] 時 thumbCount fallback 1 仍渲染 thumb(:142),Radix 無對應值。補 runtime guard + spec 邊界明文 = AUTO(型別收斂為 tuple 才需另議)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 21,
+      "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:279",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "spec A11y 段(:279-281)只寫「繼承 Radix a11y 預設」,全 spec 無 aria-label/accessible name 字樣(grep 0 hit);slider.tsx:164-176 明示單 thumb 未傳 ariaLabel 時 Radix getLabel 不給名(僅 2+ thumb 有 Minimum/Maximum),standalone 單 thumb 即無名稱控件。a11y contract 補明文 = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 22,
+      "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:274",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tag.spec.md:274 保證 aria-label=「移除 {tagLabel}」,但 tag.tsx:155 僅從 string children 取名、非 string 時空字串 fallback 純「移除」(tag.tsx:112),且 dismissLabel prop(tag.tsx:71-72)未寫入 spec(grep exit 1)。文件化 dismissLabel + 對齊 code = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 23,
+      "fileLine": "packages/design-system/src/components/TimePicker/time-picker.spec.md:216",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "spec:216 僅記錄 Field 內 aria-labelledby 接線;time-picker.tsx:338-341 trigger role=combobox 的 aria-labelledby={fieldCtx?.labelId},standalone(無 fieldCtx)且 consumer 未傳 aria-label 時即無名稱控件,無預設 fallback。spec 補 standalone 要求 = a11y AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 24,
+      "fileLine": "packages/design-system/src/components/Tooltip/tooltip.spec.md:58",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tooltip.spec.md:58「Button iconOnly 已內建自動 tooltip,不需額外包」為無條件宣稱,但 button.tsx:241-243 明文 iconOnly+asChild 時內建 Tooltip wrapper 不啟動(Slot 不接受多 child),consumer 須自管。spec 對齊 code 既有例外 = AUTO(Button spec 同題已由 Claude 記錄,本條為 Tooltip spec 側)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 25,
+      "fileLine": "packages/design-system/src/components/Tooltip/tooltip.spec.md:88",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "spec 邊界狀態段(:88 起)僅列觸控/長文字/viewport 三項,無空 content 邊界;tooltip.tsx:30-49 TooltipContent 無條件渲染 px-3 py-2 殼(無 empty guard),children 空時仍出帶 padding 空浮層。補邊界明文/guard = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 26,
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:185",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "spec ARIA 表(:182-186)容器 role=tree 僅列 aria-label 未標必填、未列 aria-labelledby 替代路徑;tree-view.tsx:270 'aria-label'?: string optional,root(:875-890)無預設名稱,漏傳即無名稱 tree。a11y contract 補明文/警告 = AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 27,
+      "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:267",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "spec API 段(:258-267)未界定空 children;chrome-header.tsx:167-183 single-row 恆渲染 h-[--chrome-header-height] 固定高 row,tabsSlot 模式(:105-131)row 1 恆渲染,children 空時 tabs 上方多整行空白。spec 補「無 title/actions 不渲染、純 tabs 用 standalone Tabs」邊界明文 = AUTO。",
+      "dupWithClaude": false
+    }
+  ]
+}

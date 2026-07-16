@@ -1,0 +1,103 @@
+{
+  "dim": 43,
+  "part": 0,
+  "range": [0, 11],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx:66",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "app-shell.principles.stories.tsx:66-67 確含「型別收 ReactNode 不機械強制,2026-06-10 拍板」治理紀錄,且該 bullet 只給禁令沒給設計理由(上方 :54-59 vs Sidebar 段也未解釋 slot 必傳 Sidebar 的原因)。移除日期/機制、補理由屬表達層清理,不動 canonical 語意。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx:86",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "app-shell.principles.stories.tsx:86-99 確密集混用「distinguisher / Header scope / local / global / multi-workspace / bar / app」英文速記,違 reader-facing 中文人話紀律(story-rules.md「name field 必中文人話」精神 + feedback_propose_discipline 人話擴大)。人話化不改判準本身 → 表達層 AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:76",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "avatar.principles.stories.tsx:75-76 寫「沒 name / 必須至少有 name」,但 avatar.tsx:105 API 只有 `alt`(無 name prop),avatar.spec.md:243「alt 必傳」canonical 也全以 alt 為 fallback 與 accessible name。story 措辭對齊既有 API/spec = doc 對齊 code,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/Chart/chart.principles.stories.tsx:235",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "chart.principles.stories.tsx:235 確把「GitHub 的 contribution graph」列為 Line 場景;該圖實為 53×7 逐日方格 heatmap 非折線圖,範例事實錯誤(違 mindset #4 範例真實性)。換成真時間序列案例屬範例修正,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:62",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story:62 宣稱常駐旋轉讓螢幕閱讀器「持續收到 loading 通知」,但 circular-progress.tsx:40+130 實作為無 label 時 aria-hidden、有 label 時 role=status(polite,內容不變不重複朗讀),CSS 旋轉不觸發朗讀 — note 理由與實作不符。改寫正確理由 = doc 對齊 code,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:192",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "data-table.principles.stories.tsx:192 確寫「效能不受資料量影響」— 過度絕對:TanStack Virtual 只降已掛載 rows,row model / 排序 / 篩選 / 記憶體仍隨資料量增長。措辭收斂為誠實表述,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:215",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story:215 寫「FileUpload 只負責拖放偵測+觸發選檔,清單由 consumer 用 FileItem map 渲染」,但 :256 與 file-upload.tsx:97+174-187(`files` prop 內部 compose FileItem)證實 dual path — 兩則公開原則口徑矛盾。統一為雙路徑口徑 = doc 對齊 code,不動 API,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 7,
+      "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:256",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story:256 確含「2026-04-24 設計準則更新」changelog 日期 + 「dual path / own list via / OR consumer / composing」大量英文速記,公開原則不該收維護紀錄(同 idx 0 pattern)。人話化重寫屬表達層,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 8,
+      "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:261",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story:261 宣稱 close 靠右是「macOS / Windows / Web 一致」跨平台慣例,但 :277 又寫 macOS 視窗 chrome 用左上(且 macOS 現行仍左上,非僅「舊」)— 前後口徑矛盾 + 錯誤 benchmark 斷言(M22)。移除錯誤類比、保留 DS 影響力排序 canonical 理由,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 9,
+      "fileLine": "packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx:96",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story:96 note 宣稱觸控使用者「點擊人員 / 連結仍能取得完整資訊」,但範例 :100 的 `<a>` 無 href 也無 onClick,宣稱的 fallback 在範例中不存在(範例真實性違反)。補真實可導覽入口屬 story 範例修正,AUTO。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 10,
+      "fileLine": "packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx:142",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "「滑鼠離開 trigger 立刻消失」與 runtime 不符:tooltip.tsx 未設 disableHoverableContent,Radix 預設 hoverable content — 指標移入浮層會維持開啟(M2 必驗 rendered 行為)。但同措辭也在 owner spec hover-card.spec.md:25+:57 分界 canonical,修正必動 canonical 語意(甚至可能改設 disableHoverableContent)→ SSOT-affecting,需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 11,
+      "fileLine": "packages/design-system/src/components/Input/input.principles.stories.tsx:131",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "input.principles.stories.tsx:131 note 確含 `<Input mode='view'>` 原始 JSX 與「Model A / naked variant / host cell」內部黑話,公開原則應人話說「儲存格展示值走 view 模式」而機制留 spec(feedback_propose_discipline 人話紀律)。表達層 AUTO。",
+      "dupWithClaude": false
+    }
+  ]
+}

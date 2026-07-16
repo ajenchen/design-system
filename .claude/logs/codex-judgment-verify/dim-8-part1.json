@@ -1,0 +1,87 @@
+{
+  "dim": 8,
+  "part": 1,
+  "range": [11, 20],
+  "verdicts": [
+    {
+      "idx": 11,
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:44",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tree-view.spec.md:44 把「FAQ 多個可同時展開」歸給 TreeView,但 accordion.spec.md:50-52 明定 type=\"multiple\" 支援多開且 :30 列 FAQ 為主要用途,近親邊界互相矛盾屬實。修正方向由 Accordion owner canonical + TreeView 自身定位(遞迴階層,:47「平面資料不用」)決定 = 對齊既有 canonical。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 12,
+      "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:53",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tree-view.spec.md:53 推薦 SidebarMenuSubButton,但 sidebar.spec.md:155 明文「本 design system 完全不 export」且 grep sidebar.tsx 無任何 SidebarMenuSub 系列 export;tree-view.principles.stories.tsx:105 同樣錯誤。修正 = 對齊 sidebar.spec.md:163 三條正確路徑(doc 對齊 code)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 13,
+      "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:259",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "ChromeHeaderProps extends React.HTMLAttributes(chrome-header.tsx:46-47)故 children optional,無 children 時仍無條件渲染 h-[--chrome-header-height] + border-b(chrome-header.tsx:173,177);header-canonical.spec.md 全檔 grep 無 empty/loading 契約。補文件化現行行為 + consumer-owned 聲明 = doc 對齊 code。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 14,
+      "fileLine": "packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:81",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "resize-handle.spec.md:81 稱「那是 <Sheet> 自帶 handle」,但 grep Sheet spec/tsx/stories 全無 resize/drag handle 能力(sheet.tsx 僅 :98 handleSheetOpenAutoFocus 同名巧合)。移除不實指引 = doc 對齊 code。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 15,
+      "fileLine": "packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:20",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "resize-handle.spec.md:20-24 消費者清單只列名無可導航連結,全檔 120 行 grep 無 Related/相關 section 亦無 empty/loading/validation N/A 聲明;spec-rules.md:15 的 7 維度含「相關 links / 空值 / 驗證 / Loading」。補 pointer 與 N/A 聲明 = doc completeness。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 16,
+      "fileLine": "packages/design-system/src/tokens/radius/radius.spec.md:126",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "radius.spec.md 全檔 126 行以 rationale 收尾,grep 無「相關/Related」section,無法導向 token-system/elevation/overlay-surface 近親規格屬實(spec-rules.md:15 要求相關 links 維度)。補反向連結 = doc completeness。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 17,
+      "fileLine": "packages/design-system/src/tokens/token-system.spec.md:232",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "token-system.spec.md:233-240「相關」列 color/uiSize/typography/elevation/layoutSpace 但漏 Motion(tokens/motion/motion.spec.md 存在,全檔 grep motion 0 hits),亦無 runtime 狀態 consumer-owned 與各 family a11y 責任聲明。補連結 + 聲明 = doc completeness。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 18,
+      "fileLine": "packages/design-system/src/tokens/typography/typography.spec.md:41",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "typography.spec.md:41 允許 text-footnote 10px 用於法律/來源文字,全檔 204 行無 A11y section、無 200% zoom/reflow/語義 heading 護欄(僅 :77 註解略觸標題語義、:177 談 14px 可讀性 tradeoff)。新增 a11y 契約 = 對 typography token SSOT 增加新 normative canonical 規範,需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 19,
+      "fileLine": "packages/design-system/src/tokens/elevation/elevation.spec.md:5",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "elevation.spec.md:5 自述「定義陰影層級」但 :60-71「浮層共用樣式」混列 border/rounded-lg/sideOffset,全檔與 overlay-surface.spec.md 皆 grep 無 z-index/stacking owner;motion.spec.md:95 確把 elevation 描述為「overlay 視覺層(z-index)」錯誤。責任邊界重劃 + 新立 z-index owner = canonical 語意決策需 user 拍板(motion 連結描述單句修正部分可 AUTO)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 20,
+      "fileLine": "packages/design-system/src/tokens/opacity/opacity.spec.md:24",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "opacity.spec.md:24 codify DataTable refresh loading reuse、:67 列 Rating「disabled / loading 整塊」,但 :61-63 A11y 段只講 disabled/aria-disabled,全檔無 aria-busy/進度/互動封鎖委派聲明屬實。補 loading 委派 pointer 即對齊 consumer 既有 canonical(rating.spec.md:137 已 own aria-busy)= doc completeness。",
+      "dupWithClaude": false
+    }
+  ]
+}

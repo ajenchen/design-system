@@ -1,0 +1,18 @@
+{
+ "dim": 22,
+ "part": 0,
+ "range": [
+  0,
+  0
+ ],
+ "verdicts": [
+  {
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:327",
+   "verdict": "VERIFIED",
+   "class": "ASK",
+   "reason": "屬實:shared body `<ScrollArea className=\"flex-1 min-h-0\">` 無預設 padding(app-shell.tsx:327),桌面殼 bg-surface/border-l(:377-378)為 bounded surface(layoutSpace.spec.md:84 Pattern A 應元件自帶 px-loose)、mobile SheetContent p-0(:359),app-shell.spec.md Aside 節(193-219)僅記 scroll ownership 未載 body padding 例外;code 註解(:301)自稱走規則 1B 但 1B 限「純 layout primitive 無邊界」(layoutSpace.spec.md:85)不適用有邊界的 aside。加預設 padding 改公開 composite 視覺 + 需補 spec 例外 canonical → user 拍板。",
+   "dupWithClaude": false,
+   "idx": 0
+  }
+ ]
+}

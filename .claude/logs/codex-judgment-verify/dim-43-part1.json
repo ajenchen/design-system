@@ -1,0 +1,95 @@
+{
+  "dim": 43,
+  "part": 1,
+  "range": [12, 22],
+  "verdicts": [
+    {
+      "idx": 12,
+      "fileLine": "packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:66",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "number-input.principles.stories.tsx:65-66 標題「❌ 不用 NumberInput 做 DataTable 列表展示」與 note「DataTable 的 currency 欄位自動消費 <NumberInput mode='view'>」並存,字面互相衝突。純文字 note 也確實露出 JSX 字串 <NumberInput mode='view'>。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 13,
+      "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.principles.stories.tsx:46",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story :46「項目數可數且少(≤ 100)→ OverflowIndicator」的 100 門檻在 owner spec(overflow-indicator.spec.md 全文 grep 無 100/ScrollArea 依據)無出處,且與同段 :43「項目數量已知且不多」的少量描述不諧。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 14,
+      "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.principles.stories.tsx:68",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story :67-68 Pattern 3 教「Tabs 等水平容器溢出搭配 OverflowIndicator」,但 owner spec overflow-indicator.spec.md:33 明定 Tabs/水平 chip 列溢出走 horizontal-overflow 的 OverflowMenuTriggerButton(DropdownMenu affordance)**非** OverflowIndicator,:118 再確認兩者目前無直接消費關係、語義不同。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 15,
+      "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.principles.stories.tsx:166",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "profile-card.principles.stories.tsx:166 確有「對照 Material Snackbar 固定 344px」無 inline cite 斷言;Material 官方 344dp 是大螢幕最小寬(隨較長文案伸縮、上限 672dp),「固定」為誤引,且 Snackbar 與人員預覽卡非同目的近親(M22 violation)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 16,
+      "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx:279",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story :277-306 以「檔名(設計規範_v2.pdf/影片素材.mp4)+ 取消按鈕 + bytes」教 consumer 手組裸 ProgressBar 上傳 UI,直接違反 progress-bar.spec.md:139「檔案上傳 UI 一律走 FileItem,不直接消費 ProgressBar」與 :182 禁止事項,及同檔 :109-117 前文的 FileItem canonical。",
+      "dupWithClaude": true
+    },
+    {
+      "idx": 17,
+      "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:80",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "story :80 note 寫「readOnly Rating 的 aria-label 必填,描述幾星、共幾星、幾則評論」絕對規則,但 rating.spec.md:181 + rating.tsx:160-164 明定 Field 內由 aria-labelledby 自動指向 FieldLabel(免填),僅 standalone 必填;且 :83 正例 aria-label 本身無評論數,自證評論數非必要欄位。",
+      "dupWithClaude": true
+    },
+    {
+      "idx": 18,
+      "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:263",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "rating.principles.stories.tsx:263 確有「Amazon / Yelp / Google Reviews / Shopify / Airbnb / TripAdvisor 全部用黃星」無 cite 全稱斷言;Tripadvisor 官方採 bubble rating(圓點)非黃星,全稱 claim 為假,且違 M22 inline citation 要求。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 19,
+      "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:240",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tag.principles.stories.tsx:240 note 僅「用 LucideIcon,Tag 統一 16px。icon 顏色繼承 Tag 文字色」兩句結論,無固定尺寸與同色各自解決什麼問題的理由,違反 story canonical「Rule-note 原則>結論」(story-writing skill / story-rules.md)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 20,
+      "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:250",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "tag.principles.stories.tsx:250 note 僅「多選 Combobox 的已選成員用 avatar + name 組合」一句結論,未解釋頭像為何仍須搭配名稱辨識,讀者無法舉一反三,同違「原則>結論」canonical。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 21,
+      "fileLine": "packages/design-system/src/components/Textarea/textarea.principles.stories.tsx:164",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "textarea.principles.stories.tsx:163-164 該則 note 確實只有結論(「送出按鈕放下方,不塞進框內」無理由);但同 story 前一則 :156-157 已解釋框內放置與多行閱讀的位置衝突且 TextareaProps 型別不接受 startIcon/endAction,理由非全然缺席,僅該則未承接。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 22,
+      "fileLine": "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:74",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "三則 Rule 的 render 輸出(:74-94/:101-117/:124-138)確實只有結論與範例、理由困在原始碼註解(:96-100/:119-123)未呈現於 Storybook 公開頁面——此部分為真;但 15 分鐘 Rule 的理由同樣存在註解 :23-27(非缺失),且 :86 標題帶「(會議排程無意義)」一句 rendered 簡短理由,「三則全無呈現」略過廣。",
+      "dupWithClaude": false
+    }
+  ]
+}

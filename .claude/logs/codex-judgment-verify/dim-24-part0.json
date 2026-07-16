@@ -1,0 +1,135 @@
+{
+  "dim": 24,
+  "part": 0,
+  "range": [0, 15],
+  "verdicts": [
+    {
+      "idx": 0,
+      "fileLine": "packages/design-system/src/components/Avatar/avatar.stories.tsx:16,54; avatar.anatomy.stories.tsx:130,640",
+      "verdict": "VERIFIED",
+      "class": "REJECT",
+      "reason": "重複屬實:Modes 四模式 ⊂ anatomy Overview 三模式+預設說明(anatomy:137-156),Fallback 是 StateBehavior fallback chain 表(anatomy:645-676,含 icon 級)的子集。但 avatar.stories.tsx:45-48 已有 2026-05-17 Dim 24 audit codified rationale 明文保留 Modes/Fallback 為展示層 real-product 情境,退役兩者將令展示層僅剩 InContext、違 category-templates.md「Universal:Default 每元件必有」。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 1,
+      "fileLine": "packages/design-system/src/components/Badge/badge.stories.tsx:21; badge.anatomy.stories.tsx:126,489",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "Shape 三段(個位數正圓/多位數膠囊/max+ 溢出)全數被 anatomy Overview 規則(anatomy:134,146,157)與 SizeMatrix 預覽表(個位數/多位數/溢出 99+/Dot 真渲染,anatomy:546-565)覆蓋,溢出行另與同檔 MaxCount(stories:61)重複。退役屬清 duplicate,照 Avatar/Chip 先例補 @story-trait-rationale 即可(isMatrixHeavy ≥4 matrix 本就未滿足)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 2,
+      "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.stories.tsx:39; bulk-action-bar.principles.stories.tsx:188",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "屬實:WithFilterHidden(stories:42-47 selection=3+hiddenByFilter=2)與 HintBannerRule 第三個 Rule(principles:232-238 同 selection 3 項+hiddenByFilter=2)同情境,principles 版還多教「inline 進 count 區不開 banner」規則。展示版無新增約束,退役 = 清 duplicate。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 3,
+      "fileLine": "packages/design-system/src/components/Button/button.stories.tsx:113,161,237; button.anatomy.stories.tsx:190,489,546,634; button.principles.stories.tsx:209,245",
+      "verdict": "VERIFIED",
+      "class": "REJECT",
+      "reason": "重複屬實:Danger ⊂ ColorMatrix danger=true 表(anatomy:516-534)+DangerRule(principles:209);IconOnly 網格 ⊂ SizeMatrix iconOnly 覆寫/欄(anatomy:586-618);Loading 行為對照 ≡ StateBehavior loading 替換規則(anatomy:644-649)。但退役違 canonical:story-rules.md:57 拆分原則明文「不同 affordance 必分(IconOnly / FullWidth)」、category-templates.md hasInteractiveStates 行 Loading 視 prop 而定(Button 有 loading prop = trait-required)、button.stories.tsx:2 rationale 宣告 IconOnly 為 Default coverage 一環。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 4,
+      "fileLine": "packages/design-system/src/components/Checkbox/checkbox.stories.tsx:44; checkbox.anatomy.stories.tsx:404,442",
+      "verdict": "VERIFIED",
+      "class": "REJECT",
+      "reason": "屬實:States(off/on/indeterminate × enabled/disabled × md/lg)確為 ColorMatrix(anatomy:404)+SizeMatrix(anatomy:442)已涵蓋的 compact grid。但 checkbox.stories.tsx:1-3 檔頭 rationale 是 2026-07-14 audit Dim 46 的家族豁免決策(對齊 Switch)明文保留 States,且 isSelectionMulti trait 明文 mandate States story(category-templates.md isSelectionMulti 行),退役即違 trait canonical。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 5,
+      "fileLine": "packages/design-system/src/components/Chip/chip.stories.tsx:36; chip.anatomy.stories.tsx:139,305",
+      "verdict": "VERIFIED",
+      "class": "REJECT",
+      "reason": "屬實:States 的 default/hover/selected/disabled 已被 anatomy ColorMatrix(anatomy:139 狀態×色彩矩陣)與 StateBehavior(anatomy:305-334 四種狀態×Token 表)覆蓋。但 chip.spec.md traits 宣告 hasInteractiveStates,category-templates.md 要求展示層有 Disabled 級 state story,States 是展示層唯一 state/disabled 覆蓋,退役即 trait 違規(需 user 拍板豁免,非逕行退役)。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 6,
+      "fileLine": "packages/design-system/src/components/Combobox/combobox.stories.tsx:85; combobox.anatomy.stories.tsx:201,756; combobox.principles.stories.tsx:133",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "屬實:單行/wrap × edit/readonly 已被 anatomy Overview(edit 單行 :208 + edit wrap :245-265 + readonly/disabled :269-288)、Inspector mode×wrap 雙軸(anatomy:338-379)、StateBehavior 溢出/換行段(anatomy:756-789)覆蓋,選擇規則 ≡ principles WrapRule(:133-159)。WrapModes 非 trait-required(isInputLike 要求的是 WithError/WithHelpText/WithIcon),退役 = 清 duplicate。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 7,
+      "fileLine": "packages/design-system/src/components/Field/field.principles.stories.tsx:144; field.anatomy.stories.tsx:20",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "屬實且逐字級重複:ResponsibilityRule(principles:153-164)與 anatomy Overview(anatomy:28-39)用完全相同的 電子郵件+FieldDescription/密碼+FieldError 組合,教學內容同為 layout/context 責任界線(anatomy:26 Desc + :45-58 責任邊界表 vs principles:150 note)。退役或改反例 = 清 duplicate,principles 檔仍有其他 core exports。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 8,
+      "fileLine": "packages/design-system/src/components/FileItem/file-item.stories.tsx:42,61; file-item.anatomy.stories.tsx:178,285; file-item.principles.stories.tsx:98,159",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "屬實:Rich/Compact 的 mode × uploading/completed/error 網格已被 anatomy ModeMatrix(anatomy:183-200 rich+compact 各 status 列)與 StateBehavior 全狀態對照含 actions(anatomy:288-296)覆蓋,規則面 ≡ principles ModeRule(:98)+StatusProgressRule(:159)。展示層仍留 HoverSwap 等 consumer 行為 story,退役 generic grid = 清 duplicate。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 9,
+      "fileLine": "packages/design-system/src/components/FileUpload/file-upload.stories.tsx:20; file-upload.principles.stories.tsx:160",
+      "verdict": "PARTIAL",
+      "class": "AUTO",
+      "reason": "重複部分屬實:ResumeUpload(stories:20-33,accept .pdf,.doc,.docx + maxSize 5MB + 履歷 dropzone)與 principles MultipleRule 第一個 Rule(principles:168-175)近乎同款。但「未呈現續傳狀態」為誤讀 — Resume = 履歷(story name「單檔上傳」、title「上傳你的履歷」,stories:19,28),非「續傳」,該 story 從無續傳語意可言。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 10,
+      "fileLine": "packages/design-system/src/components/Input/input.stories.tsx:19,72; input.anatomy.stories.tsx:169,577,663; input.principles.stories.tsx:97,166",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "屬實:Modes ⊂ principles ModeRule(:97)+anatomy Inspector mode 軸;EndAction 密碼顯示/搜尋清除 ≡ principles EndActionRule 同款 showPwd/query demo(principles:163-175)+anatomy StateBehavior(:663),lg icon 20px ⊂ SizeMatrix(:577)。但「四模式」是 field-family 9 控件同款展示慣例(checkbox.stories.tsx:1-3 家族豁免 anchor),退役屬家族級展示層 curation,需 user 拍板不宜單件逕退。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 11,
+      "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.stories.tsx:137,178; inline-edit.anatomy.stories.tsx:101; inline-edit.principles.stories.tsx:122",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "屬實:SelectTagField 的 Select mode=view display=tag 委派 ≡ anatomy StateBehavior「格式化(Tag)」live row(anatomy:101 起,同款 Select 組合),MultilineDescription ≡ StateBehavior「多行」row + principles ContentGuidelines「多行用 multiline」「別把格式化 Tag 自刻」卡(principles:122-140)。退役 = 清 duplicate,展示層仍留 VerticalFieldForm 等 composition。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 12,
+      "fileLine": "packages/design-system/src/components/LinkInput/link-input.stories.tsx:24,41,56,93; link-input.anatomy.stories.tsx:199,654; link-input.principles.stories.tsx:102,136,163",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "四項重複皆屬實:Default ≡ DisplayStateRule 第一 Rule(principles:107-112)、Empty ≡ 其第二 Rule+EmptyRule(:163)、Validation ≡ ValidationRule 同款 live demo(:136-152)、Modes 的 edit/readonly/disabled ⊂ anatomy ColorMatrix/Inspector(檔頭 :3-5 宣告集中於 ColorMatrix)。但退役 Default 違 category-templates.md「Universal:Default 每元件必有」、Modes 屬 field-family 慣例 — 保留哪些需 user 拍板。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 13,
+      "fileLine": "packages/design-system/src/components/Menu/menu-item.stories.tsx:48,66,130; menu-item.anatomy.stories.tsx:531,548,658",
+      "verdict": "VERIFIED",
+      "class": "REJECT",
+      "reason": "子集關係屬實(States ⊂ ColorMatrix 單選 selected/disabled :548-560;Default ⊂ Inspector :531;description 已在 Inspector :371,397 + SizeMatrix :575,611)。但 menu-item.stories.tsx:59-62 是 2026-05-17 Dim 24/25 strict re-run 的 codified 決策,明文「WithDescription 教 icon+description block layout 是 distinct teaching,保留」;且 isInternal trait 要求展示層 1 Default(category-templates.md),退役 Default 即 trait 違規。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 14,
+      "fileLine": "packages/design-system/src/components/Notice/notice.stories.tsx:95,143; notice.anatomy.stories.tsx:74,373",
+      "verdict": "VERIFIED",
+      "class": "AUTO",
+      "reason": "屬實:InlineVariants 第一項與 anatomy Overview 內容完全相同(「Audit log 僅限 Business 方案」+ 同款 endContent Button,anatomy:88-95 vs stories:148-152),五 variant 全掃 ≡ VariantIconMap 變體×icon×語意(anatomy:369-385);DeploymentSuccess 為同構單 variant 例。Notice 為 isInternal(notice.spec.md traits),category-templates.md 建議 internal 展示層僅 1 Default + ≤1 composition,退役反而趨近 canonical。",
+      "dupWithClaude": false
+    },
+    {
+      "idx": 15,
+      "fileLine": "packages/design-system/src/components/NumberInput/number-input.stories.tsx:23,73,98; number-input.anatomy.stories.tsx:166,570,648; number-input.principles.stories.tsx:111,159",
+      "verdict": "VERIFIED",
+      "class": "ASK",
+      "reason": "屬實:Modes ⊂ anatomy Overview edit/readonly 格式化說明(:174)+Inspector/ColorMatrix mode 軸;FormatOptions ≡ principles FormatOptionsRule live prefix/suffix/precision(:159 起)+StateBehavior 格式化段(:648);InDataTable ≡ principles AlignmentRule 幾乎同款 DataTable(同商品資料+currency/number meta,principles:114-146)。但 Modes 屬 field-family 慣例且展示層 trait gap 已標 tracked(stories:21),一次退役 3/4 story 的 curation 需 user 拍板。",
+      "dupWithClaude": false
+    }
+  ]
+}
