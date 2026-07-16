@@ -70,6 +70,8 @@ run('gen-figma-make-artifacts', 'node scripts/gen-figma-make-artifacts.mjs --che
 run('root barrel internal-exclusion(dim-72)', 'node scripts/gen-design-system-barrel.mjs --check')
 run('plugin-structure-validate', 'node scripts/plugin-structure-validate.mjs')
 run('story-quality', 'npm run --silent story-quality:check')
+run('three-layer stories(每 public 元件必備 anatomy+principles;取代 dim-11 AI 假證據)', 'node scripts/check-three-layer-stories.mjs --check')
+run('inline-edit view geometry invariant(多行 py == Textarea edit py,read↔edit 零跳鎖)', 'node scripts/inline-edit-view-geometry-invariant.mjs')
 run('ds-canonical drift check', 'node scripts/sync-ds-canonical.mjs --check')
 // C-prime #5(2026-06-17 codex 共識 C3 future-SSOT 閘):fork 治理 corpus 必過(a) classify 漏接閘
 // (新增 hook 未分類 = FAIL)+(b) 生成物 vs SSOT drift gate,且(c) 假 fork harness 防假生效。
