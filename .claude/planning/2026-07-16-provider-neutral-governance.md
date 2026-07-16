@@ -81,7 +81,7 @@
 - [x] P1.3 新 `scripts/check-agents-bootstrap.mjs`:斷言 (a) AGENTS.md 存在且 ≤32KiB;(b) CLAUDE.md 首個非註解內容 = `@AGENTS.md`;(c) AGENTS.md 的 Rule Index 路徑全部存在(死鏈 = fail);(d) 兩檔無重複 normative 段(標題級 dedup 掃描)。wire 進 release:preflight + breadth-test。
 - [x] P1.4a npm files 加 `AGENTS.md` + `sync-ds-canonical.mjs` 鏡 AGENTS.md(shipped mirror 同步,gate A5 驗)— commit d88ceac2
 - [x] P1.4b(移入 P2.4,2026-07-16 done)`cli-init.mjs` AGENTS.md pointer-stub 投影(存在則 skip 不覆蓋)+ **§4 疑點證實為 bug 並修**:`PACKAGE_ROOT = join(__dirname,'..')` 指到 `node_modules/@qijenchen/` → 全 source not-found → init 靜默全 skip(clean-room 舊版重現 `⚠️ source not found`);修 `= __dirname` 後 fixture 斷言 symlink + stub 全建、rerun 冪等
-- [x] P1.5 驗收:battery 全綠(tsc/agents-bootstrap/mirror/counters/content-quality/linkto/hook smoke/dangling-ref);**codex canary probe 實測 PASS**(不讀檔答出「release:preflight與CI」= 原生 discovery 生效);Claude 端 `/memory` 列 AGENTS.md 待下 session 人工確認 — commit d88ceac2
+- [x] P1.5 驗收:battery 全綠(tsc/agents-bootstrap/mirror/counters/content-quality/linkto/hook smoke/dangling-ref);**codex canary probe 實測 PASS**(不讀檔答出「release:preflight與CI」= 原生 discovery 生效);**Claude 端 live canary PASS(2026-07-17)**:headless `claude -p` 全新 session、禁用全工具,答出「release:preflight+CI」+「6 條 mindset」並自述內容來自啟動時載入的 AGENTS.md(cite AGENTS.md:4)= @import 實測生效,與 codex canary 對稱 — commit d88ceac2
 
 ### Phase 2 — Codex surface 研究 + adapter(需 codex 官方 hooks/skills/config 文件研究)
 - [x] P2.1 研究 + live 實測完成 → `.claude/planning/2026-07-16-png-p2-codex-research.md`(Q1-Q5 官方 verbatim + probe A/B/C;summarizer 幻覺一例抓出丟棄)。

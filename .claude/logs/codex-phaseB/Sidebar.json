@@ -1,0 +1,191 @@
+{
+ "component": "Sidebar",
+ "claimsVerified": 990,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:131",
+   "宣稱": "prefix 混用時套用固定 24px 槽。",
+   "真實code行為": "槽寬來自 AVATAR_SIZE.inline[size]：sm=20px、md/lg=24px，並非固定 24px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:256",
+   "宣稱": "--sidebar-menu-icon-size 維持 1rem 固定。",
+   "真實code行為": "data-ui-size=\"lg\" 或 data-density=\"lg\" 時會覆寫成 1.25rem。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:512",
+   "宣稱": "sidebar-width-icon 與實際 menu icon 使用同一 icon-size，因此展開與收合中心相同。",
+   "真實code行為": "rail 寬度消費 density token，ItemIcon 尺寸消費 SidebarProvider row size；兩者可獨立變化。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:515",
+   "宣稱": "任何 avatar／loose／icon-size 改值，公式都會自動對齊 menu icon 中心。",
+   "真實code行為": "row size 與 density 不同軸；例如 lg density + md row 時，展開中心為 32px、收合中心為 34px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:723",
+   "宣稱": "SidebarGroupLabel 與 SidebarMenuButton 的唯一差異是 font-medium、text-fg-muted、pointer-events-none。",
+   "真實code行為": "兩者另有 role、cursor、hover/focus/selected/disabled 狀態及 collapsed hidden-vs-sr-only 等差異；MenuButton 本身也有 font-medium。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:963",
+   "宣稱": "meta variant 傳 id 時 TS 階段會提醒。",
+   "真實code行為": "Props 不是 discriminated union；variant=\"meta\" 與 id 可合法共存，沒有 TS 或 dev warning，只有 runtime 忽略 selection。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:1072",
+   "宣稱": "Sidebar 寬度 200ms transition 是唯一持續動畫。",
+   "真實code行為": "另有 Header padding、container left/right、menu color、suffix opacity 與 chevron transform 動畫。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:59",
+   "宣稱": "小螢幕收合為 icon bar，大螢幕展開完整 label。",
+   "真實code行為": "mobile 下 offcanvas/icon 都改走 Sheet；none 維持固定側欄，沒有 mobile icon rail。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:146",
+   "宣稱": "TreeView 在 icon 模式整區隱藏。",
+   "真實code行為": "Sidebar 沒有 TreeView hide selector；必須由 consumer 手動在外層 group 加 collapsed hidden class。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:194",
+   "宣稱": "icon 模式下 TreeView 整段隱藏。",
+   "真實code行為": "Sidebar 本身不會隱藏 TreeView；canonical story 是手動加 className 實現。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:301",
+   "宣稱": "TreeView 在 icon 模式整個隱藏。",
+   "真實code行為": "元件沒有對 TreeView 或其 group content 的自動 collapsed-hide 實作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:431",
+   "宣稱": "混用偵測命中後套用固定 24px 槽。",
+   "真實code行為": "sm 使用 20px，md/lg 才使用 24px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:507",
+   "宣稱": "consumer 無法寫出啞 item。",
+   "真實code行為": "id 與 onClick 都是 optional；兩者皆未傳時仍渲染有 hover/cursor affordance、但不改變任何 state 的 button。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:585",
+   "宣稱": "Canonical 實作是 ItemInlineAction + ItemSuffix。",
+   "真實code行為": "SidebarMenuButton 使用 ItemInlineAction，但 suffix host 是手刻 absolute span，沒有 import 或 render ItemSuffix。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:621",
+   "宣稱": "--sidebar-width-icon 公式保證 icon center 在展開／收合時一致。",
+   "真實code行為": "rail token 跟 density、ItemIcon 跟 row size；兩軸不一致時會產生 2px 中心偏差。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:622",
+   "宣稱": "--sidebar-menu-icon-size 的 1.25rem 是 size=lg override。",
+   "真實code行為": "override 由 data-ui-size=\"lg\" 或 data-density=\"lg\" 觸發，SidebarProvider size=\"lg\" 不會設定它。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:625",
+   "宣稱": "calc(2*loose + icon-size) 保證 collapse／expand icon center 一致。",
+   "真實code行為": "公式中的 rail icon-size 與 rendered ItemIcon 來自不同軸，只有數值碰巧相等時成立。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:646",
+   "宣稱": "Mobile 只有全寬 Sheet／關閉兩種狀態。",
+   "真實code行為": "collapsible=\"none\" 會在 mobile 保留固定 240px 側欄；Sheet 寬度也是 18rem，而非 viewport 全寬。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:652",
+   "宣稱": "icon 模式由 Sidebar 透過 CSS 自動隱藏 TreeView。",
+   "真實code行為": "Sidebar CSS 只隱藏自身 label、badge、action 等 slots，沒有 TreeView selector。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:688",
+   "宣稱": "無 SheetTrigger 時，關閉會走 FocusScope 預設並還原到開啟前焦點。",
+   "真實code行為": "Radix modal Dialog 會 preventDefault，再只嘗試聚焦 triggerRef；Sidebar 沒有 SheetTrigger，因此沒有 pre-open focus fallback 保證。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:690",
+   "宣稱": "Tab 順序固定為 Header → Content → Footer。",
+   "真實code行為": "Sidebar 原樣 render consumer children，不建立或重排三區；順序完全由 consumer DOM 決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:690",
+   "宣稱": "SidebarTrigger 是 Tab 第一站。",
+   "真實code行為": "SidebarTrigger 是獨立 export，Sidebar 不渲染或定位它，也不保證它是第一個可聚焦元素。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.spec.md:701",
+   "宣稱": "Collapsed mode 時 TreeView 整區隱藏。",
+   "真實code行為": "必須由 consumer 手動隱藏 TreeView 所在 group。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:243",
+   "宣稱": "SidebarMenuSkeleton 跟 MenuButton 同 row height。",
+   "真實code行為": "Skeleton 雖共用 row padding，但內容固定 h-4；MenuButton 內容高度採 1lh，因此各 size 的實際高度不同。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:274",
+   "宣稱": "Controls 改 activeId 會切換 active menu 位置。",
+   "真實code行為": "Story 傳的是 defaultActiveId；Provider 只在 useState 初始化時讀取，後續 Controls 更新不會同步。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:274",
+   "宣稱": "width 是 SidebarProvider control prop。",
+   "真實code行為": "SidebarProvider 沒有 width prop；SidebarPreview 也未 render Sidebar，width 只套在 story 外層 div。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:296",
+   "宣稱": "width control 是 Sidebar 的展開寬度（預設／最小 240）。",
+   "真實code行為": "它只修改 story wrapper，沒有修改 --sidebar-width、--sidebar-width-min 或實際 Sidebar。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:600",
+   "宣稱": "ColorMatrix 完整呈現 default／hover／active／selected／disabled。",
+   "真實code行為": "矩陣沒有 active row、漏掉真實 focus-visible state；MenuButton 也沒有獨立 active press 色彩。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:675",
+   "宣稱": "滑鼠 hover 後才出現 Tooltip。",
+   "真實code行為": "Radix Tooltip 也會在 trigger 取得鍵盤 focus 時開啟，hover 並非唯一入口。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:731",
+   "宣稱": "--sidebar-menu-icon-size 在 size=lg 時 override。",
+   "真實code行為": "override 由全域 data-ui-size/data-density=lg 觸發，Sidebar RowSizeContext size=\"lg\" 不會觸發。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:773",
+   "宣稱": "快捷鍵在任何焦點位置都能觸發。",
+   "真實code行為": "input、textarea、contenteditable、defaultPrevented 或 composing 狀態都會直接 return。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:773",
+   "宣稱": "768px 以下自動切換成 Sheet。",
+   "真實code行為": "collapsible=\"none\" 在 mobile 判斷前就返回固定 Sidebar；只有其他 modes 走 Sheet。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.anatomy.stories.tsx:773",
+   "宣稱": "Sheet 關閉後依 FocusScope 預設還原到開啟前焦點。",
+   "真實code行為": "Radix 已取消 FocusScope 預設還原並改聚焦 DialogTrigger；此處沒有 SheetTrigger，所以沒有該還原保證。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.principles.stories.tsx:280",
+   "宣稱": "實際 py 公式是 py-[calc((field-height-md-1lh)/2)]。",
+   "真實code行為": "實際 class 是 py-[calc((var(--field-height-md)-1lh)/2)]，宣稱漏了 var(--...)。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.principles.stories.tsx:281",
+   "宣稱": "GroupLabel 與 MenuButton 的差別只在 font-muted + pointer-events-none。",
+   "真實code行為": "兩者另有 cursor、hover/focus/selected/disabled 分支與 collapsed hidden-vs-sr-only 等差異。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.stories.tsx:120",
+   "宣稱": "Trigger 是唯一的 sidebar 切換入口。",
+   "真實code行為": "SidebarProvider 另有全域 Cmd/Ctrl+B 鍵盤入口。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Sidebar/sidebar.stories.tsx:193",
+   "宣稱": "SidebarTrigger 是灰框按鈕。",
+   "真實code行為": "Trigger 明傳 Button variant=\"text\"，預設為 bg-transparent、border-transparent，沒有可見灰框。"
+  }
+ ]
+}
