@@ -53,7 +53,7 @@ export const Modes: Story = {
 
 /* ── 尺寸與 Button 對齊 ── */
 export const SizeAlignment: Story = {
-  name: '尺寸與 Button 對齊',
+  name: '三種尺寸',
   render: () => (
     <div className="flex flex-col gap-4">
       {(['sm', 'md', 'lg'] as const).map(size => (

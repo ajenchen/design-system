@@ -266,7 +266,7 @@ export const DragAndDrop: Story = {
 // ── Indent 結構對齊驗證 ─────────────────────────────────────────────────
 
 export const IndentAlignment: Story = {
-  name: '縮排結構對齊驗證',
+  name: '多層縮排結構',
   render: () => (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">

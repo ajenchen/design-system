@@ -198,7 +198,7 @@ export const MultilineDescription: Story = {
 /* ── 真實業務:工作項目詳情面板 —— vertical Field(FieldLabel + control)+ InlineEdit ──
    混合 plain / Tag / 多行欄位,驗證 Tag 值與 FieldLabel + 其他 plain 值的左緣視覺對齊。 */
 export const VerticalFieldForm: Story = {
-  name: '詳情面板:垂直排列 Field + InlineEdit(Tag 對齊)',
+  name: '詳情面板:垂直欄位就地編輯',
   render: () => {
     const [status, setStatus] = React.useState('in-progress')
     const [desc, setDesc] = React.useState('Safari 上點擊結帳時,e2e 測試會間歇性失敗。')

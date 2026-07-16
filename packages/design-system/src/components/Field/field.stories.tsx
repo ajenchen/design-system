@@ -143,7 +143,7 @@ export const Horizontal: Story = {
 // ── Horizontal 垂直對齊公式驗證 ─────────────────────────────────────────
 
 export const HorizontalLabelAlignment: Story = {
-  name: '水平:標籤垂直對齊公式驗證',
+  name: '水平:標籤與控件垂直對齊',
   render: () => (
     <div className="max-w-3xl flex flex-col gap-8">
       <div>

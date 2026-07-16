@@ -49,7 +49,7 @@ export const Modes: Story = {
 
 /* ── 尺寸與 Button 對齊 ── */
 export const SizeAlignment: Story = {
-  name: '尺寸與 Button 對齊',
+  name: '三種尺寸',
   render: () => {
     const [sm, setSm] = React.useState<number | null>(2490)
     const [md, setMd] = React.useState<number | null>(2490)

@@ -230,7 +230,7 @@ export const ColumnReorder: Story = {
 
 /* ── 行高模式 — autoRowHeight prop(每 row 內容驅動高度) ── */
 export const RowAutoHeightInlineEdit: Story = {
-  name: '自動行高 × 就地編輯（顯示與編輯位置驗證）',
+  name: '自動行高 × 就地編輯',
   render: () => {
     // 2026-05-14 I7 fix(per codex verdict):note 初始化進 state 一次,commit 寫同一 state。
     // 原 `dataWithNotes = list.map(...)` 每 render derive 覆蓋 commit value → user 看似不能編。

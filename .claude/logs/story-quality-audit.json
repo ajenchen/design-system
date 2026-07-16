@@ -1,19 +1,21 @@
 {
-  "ts": "2026-07-06T12:30:22.205Z",
+  "ts": "2026-07-16T07:35:44.167Z",
   "scope": {
-    "total_story_files": 204,
-    "manual_story_files": 78
+    "total_story_files": 205,
+    "manual_story_files": 79
   },
   "violations": {
     "title_canonical": [],
     "name_jargon": [],
     "name_pure_english": [],
     "placeholder": [],
-    "name_mixed_english": []
+    "name_mixed_english": [],
+    "name_verification_intent": [],
+    "name_css_jargon": []
   },
   "totals": {
-    "titles_scanned": 204,
-    "names_scanned": 361,
-    "names_mixed_scanned": 958
+    "titles_scanned": 205,
+    "names_scanned": 360,
+    "names_mixed_scanned": 956
   }
 }

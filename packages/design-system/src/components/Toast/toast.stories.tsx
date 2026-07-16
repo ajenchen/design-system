@@ -116,7 +116,7 @@ export const WithDescription = {
 }
 
 export const Interactive = {
-  name: '互動測試',
+  name: '點擊觸發通知',
   render: () => (
     <div className="flex flex-col gap-4">
       <span className="text-caption text-fg-muted">點按鈕觸發 Toast</span>

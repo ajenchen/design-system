@@ -56,12 +56,31 @@ const PLACEHOLDER_PATTERNS = [
   { name: 'chinese-numeric-button', re: /按鈕[一二三四五六]/ },
   { name: 'test-numeric', re: /\bTest\s+\d\b/ },
 ]
+// 2026-07-16 verification-intent story name(user 抓「(Tag 對齊)」— story name 是 reader-facing 場景標籤,
+//   **不是**寫給自己看的驗證備註)。偵測:parenthetical 內含驗證關鍵詞,或 name 本身是驗證動詞。
+//   對齊 story-rules.md「name 必中文人話場景 / 禁 spec 內部代號」+ 範例最高準則(講原則非驗證)。
+const VERIFICATION_INTENT_PATTERNS = [
+  // 明確驗證詞彙(不含 對照/vs 等合法比較場景措辭,避免誤殺「低調 vs 實心對照」類真場景 story)
+  { name: 'paren-verify-note', re: /[(（][^)）]{0,24}(驗證|測試|檢查|確認|零跳|零偏|pixel|zero[- ]?jump|regression)[^)）]{0,10}[)）]/i },
+  // 「(元件 對齊/置中)」自我備註(user 抓「(Tag 對齊)」)—— 具體元件名 + 對齊動作 = QA 備註非場景
+  { name: 'paren-element-align-note', re: /[(（]\s*(Tag|標籤|Avatar|頭像|Icon|icon|文字|baseline|prefix|前綴|value|值)\s*(對齊|置中|偏移)\s*[)）]/ },
+  // QA 驗證複合詞(對齊驗證 / 位置驗證 / 結構驗證 / 公式驗證 / 互動測試 …)。**排除表單驗證語義**
+  //   (失焦驗證 / 表單驗證 / 驗證錯誤 / 驗證時機 = 真 form-validation 功能,不匹配 — 前綴詞不在清單)。
+  { name: 'qa-verify-compound', re: /(對齊|位置|結構|公式|尺寸|視覺|行高|置中|間距|互動|排版)(驗證|測試)/ },
+  { name: 'verify-verb-name', re: /^\s*(測試|驗證|檢查|對齊測試|回歸|regression)\s*$/ },
+]
+// 2026-07-16 CSS-jargon-as-caption(user 抓「禁 CSS 術語當 caption」)— story name 是給設計師看的人話,
+//   不該塞 Tailwind class / CSS 屬性名。偵測 utility class 形狀或 CSS 屬性關鍵詞。
+const CSS_JARGON_PATTERNS = [
+  { name: 'tailwind-class', re: /(?:^|\s|[(（])(!?p[xytrbl]?-\d|!?px-\[|items-(?:center|start|end)|justify-\w+|gap-\d|flex-\w+|min-h-|max-w-|leading-\[|text-\[|rounded-(?:md|lg|sm|full)|bg-(?:surface|transparent|neutral))/ },
+  { name: 'css-property', re: /\b(white-space|box-sizing|line-height|padding-(?:top|left|right|bottom)|margin-(?:top|left|right|bottom))\b/i },
+]
 const ENGLISH_WHITELIST = new Set(['Default','Primary','Secondary','FAQ','AppShell','MenuItem','Avatar','Tooltip','Button','API','UI','UX','URL','OK','PDF','CSV','JSON','XML','HTML','CSS','JS','TS','React'])
 
 const report = {
   ts: new Date().toISOString(),
   scope: { total_story_files: storyFiles.length, manual_story_files: manualStoryFiles.length },
-  violations: { title_canonical: [], name_jargon: [], name_pure_english: [], placeholder: [], name_mixed_english: [] },
+  violations: { title_canonical: [], name_jargon: [], name_pure_english: [], placeholder: [], name_mixed_english: [], name_verification_intent: [], name_css_jargon: [] },
   totals: { titles_scanned: 0, names_scanned: 0, names_mixed_scanned: 0 },
 }
 
@@ -148,7 +167,7 @@ for (const f of manualStoryFiles) {
   }
 }
 
-// Dim 41b scan — ALL storyFiles(含 anatomy/principles,修 scope gap)
+// Dim 41b scan — ALL storyFiles(含 anatomy/principles,修 scope gap)+ 2026-07-16 verification-intent + css-jargon
 for (const f of storyFiles) {
   const lines = fs.readFileSync(f, 'utf-8').split('\n')
   for (let i = 0; i < lines.length; i++) {
@@ -159,6 +178,12 @@ for (const f of storyFiles) {
     report.totals.names_mixed_scanned++
     const bad = (name.match(/[A-Za-z][A-Za-z0-9]*/g) || []).filter(w => !allowWord(w))
     if (bad.length) report.violations.name_mixed_english.push({ file: path.relative(ROOT, f), line: i + 1, name, bad: bad.join(',') })
+    for (const pat of VERIFICATION_INTENT_PATTERNS) {
+      if (pat.re.test(name)) report.violations.name_verification_intent.push({ file: path.relative(ROOT, f), line: i + 1, name, rule: pat.name })
+    }
+    for (const pat of CSS_JARGON_PATTERNS) {
+      if (pat.re.test(name)) report.violations.name_css_jargon.push({ file: path.relative(ROOT, f), line: i + 1, name, rule: pat.name })
+    }
   }
 }
 
@@ -185,7 +210,9 @@ const totalViolations =
   report.violations.name_jargon.length +
   report.violations.name_pure_english.length +
   report.violations.placeholder.length +
-  report.violations.name_mixed_english.length
+  report.violations.name_mixed_english.length +
+  report.violations.name_verification_intent.length +
+  report.violations.name_css_jargon.length
 
 console.log('═════════════════════════════════════════════════')
 console.log(`▶ Story Quality Audit — DS-wide deterministic scan`)
@@ -198,11 +225,13 @@ console.log(`   Name jargon violations: ${report.violations.name_jargon.length}`
 console.log(`   Name pure-English violations: ${report.violations.name_pure_english.length}`)
 console.log(`   Placeholder violations: ${report.violations.placeholder.length}`)
 console.log(`   Name mixed-English violations: ${report.violations.name_mixed_english.length}(Dim 41b,掃 ${report.totals.names_mixed_scanned} names)`)
+console.log(`   Name verification-intent violations: ${report.violations.name_verification_intent.length}(禁「(Tag 對齊)」類驗證備註)`)
+console.log(`   Name CSS-jargon violations: ${report.violations.name_css_jargon.length}(禁 Tailwind class / CSS 屬性當 caption)`)
 console.log('═════════════════════════════════════════════════')
 
 if (totalViolations > 0) {
   console.error('\n❌ Violations detected:')
-  for (const cat of ['title_canonical', 'name_jargon', 'name_pure_english', 'placeholder', 'name_mixed_english']) {
+  for (const cat of ['title_canonical', 'name_jargon', 'name_pure_english', 'placeholder', 'name_mixed_english', 'name_verification_intent', 'name_css_jargon']) {
     if (report.violations[cat].length) {
       console.error(`\n  [${cat}]`)
       for (const v of report.violations[cat].slice(0, 10)) console.error(`    ${v.file}:${v.line} — ${v.name || v.value}${v.rule ? ` (${v.rule})` : ''}`)
