@@ -106,9 +106,17 @@ F1(補機械鎖 script)、F3(min-w-0)、number-input tight-pipe、spec mode-unio
 - **補 InlineEdit anatomy + principles stories**。
 - **DS-wide 掃**:~11 個 verification-intent story names(尺寸與 Button 對齊×4、TreeView/Slider/Toast 等)humanize。
 
-## B. 本輪未決(Q1/Q2 研究中,2026-07-15)
-- **Q1**:table 灰化鎖定 cell 吃哪個 SSOT token?現況「disabled」cell 吃 bg-disabled+text-fg-disabled(TD 層);若真要 readonly-dimmed 該吃哪邊?
-- **Q2**:DataTable cell 各態命名是否世界級 + 一致設計語言(比照 InlineEdit read/edit 已驗證)?
+## B. 本輪未決 — ✅ 全數關閉(2026-07-16)
+- ~~Q1/Q2~~ → 已由最終模型收斂(cell disabled 廢除、view/edit 命名三層打通),見「實作完成」段。
+
+## B2. 2026-07-16 色彩 session(user 拍板追加,同 branch riding)
+- **dark blue-6 對比升級**:oklch(0.60→0.63 0.22 258)= #2c84ff;card/table/浮層 AA ✗→✓(4.63-4.67:1);
+  單一基準改值、階層公式全不動;端到端 --primary 計算值驗證 ✓(commit e64fb698)
+- **dark turquoise 色相修正**:oklch(0.57 0.10 225)→(0.68 0.09 196)— 原值 = 複製 spec 假想範例的錯值
+  (唯一 dark 改色相/L 降/C 升 三重違反);推導 = H 歸位 + L 經驗律內插 +0.04 + C ×0.95。連動 solid 白字
+  2.77 < 3:1 → 切 --on-emphasis-dark 深字組(canonical 機制,4 處同步)(commit 7bbeac58)
+- **3 文件 drift 修**:spec:504 例值 / categorical 順序註解 ×2 / orphan regex 幽靈色相(spec+script)
+- **knowledge-prune nudge 關閉**:hook-quality 58 hot/16 warm/7 cool/1 false-positive dead → 成熟無真冗餘
 
 ## C. 驗證計畫(實作後必跑)
 `npx tsc -b` / `npm run build:lib` / `npm run typecheck:stories` / `node scripts/data-table-invariants.mjs`(39/39)/ `node scripts/audit-story-quality.mjs --check` / `node scripts/check-three-layer-stories.mjs` / `audit-content-quality --check` / build storybook + playwright pixel 實測(鎖定 display vs InlineEdit read 零偏差、Tag 置中偏差 ~0)。
