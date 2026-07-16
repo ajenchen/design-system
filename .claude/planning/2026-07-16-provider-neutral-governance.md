@@ -79,8 +79,9 @@
 - [x] P1.1 建 `AGENTS.md`:從 CLAUDE.md 遷移 N 段(mindset/治理/稽核/SSOT/命名/導航/autonomous/協議/失敗記憶索引)+ 新增「Rule Index」段(指路 .claude/rules + audit-prompts + spec 家族)+「Independent second opinion」段 +「最終 authority = preflight/CI」宣告。
 - [x] P1.2 改 `CLAUDE.md` = `@AGENTS.md` + Claude 專屬段(hooks 機制、rules 載入說明、skills/commands 路徑、memory、plugin 邊界)。
 - [x] P1.3 新 `scripts/check-agents-bootstrap.mjs`:斷言 (a) AGENTS.md 存在且 ≤32KiB;(b) CLAUDE.md 首個非註解內容 = `@AGENTS.md`;(c) AGENTS.md 的 Rule Index 路徑全部存在(死鏈 = fail);(d) 兩檔無重複 normative 段(標題級 dedup 掃描)。wire 進 release:preflight + breadth-test。
-- [x] P1.4 npm files 加 `AGENTS.md`;`sync-ds-canonical.mjs` 鏡 AGENTS.md 進 ds-canonical;`cli-init.mjs` / fork corpus 投影 AGENTS.md 到 consumer(檢查 init 真實 root 計算 — codex 規格 §4 疑點順修)。
-- [x] P1.5 驗收:tsc/preflight 綠;Claude 端 `/memory` 應列出 AGENTS.md(下個 session 人工確認);codex 端 `codex exec` 一行 probe 確認 AGENTS.md 內容進 context(機械斷言:讓 codex 回答 AGENTS.md 內的 canary 句)。
+- [x] P1.4a npm files 加 `AGENTS.md` + `sync-ds-canonical.mjs` 鏡 AGENTS.md(shipped mirror 同步,gate A5 驗)— commit d88ceac2
+- [ ] P1.4b(移入 P2.4)`cli-init.mjs` / fork corpus 投影 AGENTS.md 到 consumer + init root 計算查驗(§4 疑點)
+- [x] P1.5 驗收:battery 全綠(tsc/agents-bootstrap/mirror/counters/content-quality/linkto/hook smoke/dangling-ref);**codex canary probe 實測 PASS**(不讀檔答出「release:preflight與CI」= 原生 discovery 生效);Claude 端 `/memory` 列 AGENTS.md 待下 session 人工確認 — commit d88ceac2
 
 ### Phase 2 — Codex surface 研究 + adapter(需 codex 官方 hooks/skills/config 文件研究)
 - [ ] P2.1 研究(WebFetch 當日官方):Codex project-level config、hooks 事件/可否 block、skills discovery(.agents/skills?)、cloud 行為、trust 模型。**live 實測**每一宣稱(canary probe),不推測。
