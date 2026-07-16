@@ -94,7 +94,7 @@ endAction(host 內嵌 inline action)vs 獨立 `<Button iconOnly>` 的分界詳 `
 
 ## Display
 
-`<Input mode="display">` 是 identity 顯示：
+`<Input mode="view">` 是 identity 顯示：
 - 有值：原樣輸出
 - null / undefined / 空字串：半形 `-`（hyphen），`text-foreground`（display/readonly 供檢視值同色;disabled → fg-disabled）
 

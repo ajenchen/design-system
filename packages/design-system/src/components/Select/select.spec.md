@@ -233,7 +233,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 **命名 rationale**(2026-05-01 從 `'text'` 改 `'plain'`):跨元件 prop value 衝突防避 — `Button variant="text"` 表「無 chrome 文字按鈕」,跟 Select.display 的「純文字呈現」是兩個不同概念,共用 `'text'` 字面值會造成 consumer 認知衝突(命名三 test 第 3 條)。改 `'plain'` 後語意專屬:plain = 樸素文字呈現,對立 tag = 用 Tag 元件呈現。
 
-**`selectedItemRenderer` 優先於兩種顯示模式**(2026-07-08 A 案回歸修正):設定時已選值改渲 consumer renderer 輸出(status icon+text / PersonDisplay 等),且 **edit / display / readonly / disabled 4 mode 共享同一 renderer**(`field-controls.spec.md` 共享 contract (a),禁 edit-only)。renderer 輸出屬「值內容」— `mode="display"` 照常渲染(無 chrome 無 chevron);與 affordance(chevron/outline)分層見 `field.spec.md` L6。
+**`selectedItemRenderer` 優先於兩種顯示模式**(2026-07-08 A 案回歸修正):設定時已選值改渲 consumer renderer 輸出(status icon+text / PersonDisplay 等),且 **edit / view / readonly / disabled 4 mode 共享同一 renderer**(`field-controls.spec.md` 共享 contract (a),禁 edit-only)。renderer 輸出屬「值內容」— `mode="view"` 照常渲染(無 chrome 無 chevron);與 affordance(chevron/outline)分層見 `field.spec.md` L6。
 
 ### plain 模式
 

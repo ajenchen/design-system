@@ -58,7 +58,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | 場景 | 改用 | 原因 |
 |------|------|------|
 | 日期輸入欄位 | `DatePicker` | DateGrid 是 inline,欄位需要 trigger + popup 結構 |
-| 純顯示單日期 | `<DatePicker mode="display">` / `Intl.DateTimeFormat` | 不需 interactive 月曆 |
+| 純顯示單日期 | `<DatePicker mode="view">` / `Intl.DateTimeFormat` | 不需 interactive 月曆 |
 | 時間選擇(時分) | `TimePicker`(見 `../TimePicker/time-picker.spec.md`)| DateGrid 只處理日期層級 |
 | 事件行事曆(日程本) | 專用行事曆元件 | DateGrid 是日期選擇;事件日誌需要 event overlay / drag / week/month view 切換 |
 

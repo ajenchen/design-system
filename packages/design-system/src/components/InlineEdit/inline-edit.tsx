@@ -184,12 +184,15 @@ function InlineEditImpl<T = string>(
   const Tag = as as React.ElementType
 
   // 對齊盒(orientation-aware,Model A round16):
-  //   vertical  → `-mx-field-px` + `w-calc` 把整塊拉到欄左緣(值貼 label,= 檔頭 read-view 負邊距對照;委派控件 view 的 px 被 -mx 抵消 → 落欄左緣)
-  //   horizontal→ 不用 -mx(值落內容欄左緣+field-px = 對齊 sibling 控件,hover 不吃 gap);純 `w-full`
+  //   Field 內 vertical → `-mx-field-px` + `w-calc` 把整塊拉到欄左緣(值貼 label,= 檔頭 read-view 負邊距對照;
+  //     委派控件 view 的 px 被 -mx 抵消 → 落欄左緣)
+  //   Field 內 horizontal / **standalone(無 fieldCtx)** → 不用 -mx(純 `w-full`,值內縮 px = 對齊 sibling 控件)。
+  //   ⚠️ standalone 必 `w-full`:-mx 會把 hover 底色 + Pressable 拉出容器 12px(容器無 padding 時溢出);
+  //     -mx 語義是「對齊 Field label 左緣」,無 Field 時無對齊對象。read↔edit 零跳兩路皆成立(都內縮 px)。
   const alignBleed =
-    orientation === 'vertical'
+    fieldCtx && orientation === 'vertical'
       ? '-mx-[var(--field-px)] w-[calc(100%_+_2_*_var(--field-px))]'
-      : 'w-full'
+      : 'w-full min-w-0'
 
   if (editing) {
     const editProps: InlineEditRenderProps<T> = {
@@ -265,7 +268,7 @@ function InlineEditImpl<T = string>(
       data-editing={false}
       data-editable={editable || undefined}
       className={cn(
-        'relative flex rounded-md border border-transparent transition-colors duration-150',
+        'relative flex min-w-0 rounded-md border border-transparent transition-colors duration-150',
         alignBleed,
         // editable 才有 hover 底色 + 鍵盤 focus 藍框(Field focus 語言,非 Button ring);
         //   editable=false = 純 view 鎖定,無入口、無藍框、不灰化。

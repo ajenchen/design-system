@@ -245,7 +245,7 @@ export const Overview = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit'|'display'|'readonly'|'disabled'", "'edit'", '顯示模式'],
+                ['mode', "'edit'|'view'|'readonly'|'disabled'", "'edit'", '顯示模式'],
                 ['error', 'boolean', 'false', '紅色邊框 + aria-invalid（僅 edit 生效）'],
                 ['size', "'sm'|'md'|'lg'", "'md'", '尺寸，與 Button 同 size 對齊'],
                 ['value', 'number | null', '—', '數值'],

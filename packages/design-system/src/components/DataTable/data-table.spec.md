@@ -72,7 +72,7 @@ DataTable 有三種尺寸（`sm`、`md`、`lg`），透過 `size` prop 控制。
 
 水平 padding 固定,不隨 size 或 density 變化(具體 token 見 `data-table.tsx`);垂直方向由行高模式決定(見第四節)。
 
-**Cell / header 字級隨 size,對齊 Field family。** 三種 size 的 cell 與 header 預設字級**必與同 size 的 Field 一致**:`sm`/`md` → `text-body`(14px)、`lg` → `text-body-lg`(16px),SSOT = `fieldDisplayTextClass()`(`field-wrapper.tsx`)。`lg` 行高放大時字級同步放大,避免「字小、行高大」失衡。**機制**:typed cell 由各自 Field 控件吃 `size` 自動套用(cell-registry 各 cell display mode 必傳 `size`,**禁漏傳**否則 fallback md 卡 14px);header 與非-Field 內容(consumer 自訂 cell)由 cell wrapper / header `cn(fieldDisplayTextClass(size))` 套用。`1lh`-based cell-py 公式(見第四節)隨字級自動吸收,row 高不變。
+**Cell / header 字級隨 size,對齊 Field family。** 三種 size 的 cell 與 header 預設字級**必與同 size 的 Field 一致**:`sm`/`md` → `text-body`(14px)、`lg` → `text-body-lg`(16px),SSOT = `fieldDisplayTextClass()`(`field-wrapper.tsx`)。`lg` 行高放大時字級同步放大,避免「字小、行高大」失衡。**機制**:typed cell 由各自 Field 控件吃 `size` 自動套用(cell-registry 各 cell view mode 必傳 `size`,**禁漏傳**否則 fallback md 卡 14px);header 與非-Field 內容(consumer 自訂 cell)由 cell wrapper / header `cn(fieldDisplayTextClass(size))` 套用。`1lh`-based cell-py 公式(見第四節)隨字級自動吸收,row 高不變。
 
 ### 二、高度模式(有高度約束 vs 無高度約束,決定可用的功能組合)
 

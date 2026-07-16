@@ -168,7 +168,7 @@ Q3. Row 多大?
 #### Content-role vs action-role 分層(附補充原理)
 
 Row 內元件分兩類,**size 規則不同**:
-- **Content-role**(display 資料):`<Input mode="display">` / Badge / Avatar / Tag → size 對應 row tier(sm row → sm)
+- **Content-role**(display 資料):`<Input mode="view">` / Badge / Avatar / Tag → size 對應 row tier(sm row → sm)
 - **Action-role**(互動觸發):row action icon → **固定 ≤ 24**,不參與 content size-pair
 
 Row action 的 affordance 是「次要功能」,不是 primary CTA。Button chrome 過度強調;用 **Button xs 24 固定** 提供 command affordance 但不侵蝕 content hierarchy。

@@ -80,7 +80,7 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
   value={time}                   // ISO "HH:mm" or "HH:mm:ss" | null
   onChange={setTime}
   size="sm" | "md" | "lg"        // 對齊 field-height family,default md
-  mode="edit" | "display" | "readonly" | "disabled"   // display = 純展示(DataTable cell 用)
+  mode="edit" | "view" | "readonly" | "disabled"   // view = 純展示值(DataTable cell 用)
   disabled={boolean}
   error={boolean}
   clearable={boolean}
