@@ -11,7 +11,7 @@
 //   node scripts/sync-ds-canonical.mjs --check    # dry-run: exit 1 if any drift, print drifting paths
 
 import { execSync } from 'node:child_process'
-import { readFileSync, copyFileSync } from 'node:fs'
+import { existsSync, readFileSync, copyFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -24,7 +24,7 @@ const DIR_PAIRS = ['commands', 'hooks', 'references', 'rules', 'skills'].map((d)
   src: `.claude/${d}/`,
   dest: `packages/design-system/ds-canonical/${d}/`,
 }))
-const FILE_PAIRS = [{ src: 'CLAUDE.md', dest: 'packages/design-system/CLAUDE.md' }]
+const FILE_PAIRS = [{ src: 'CLAUDE.md', dest: 'packages/design-system/CLAUDE.md' }, { src: 'AGENTS.md', dest: 'packages/design-system/AGENTS.md' }]
 
 // -rtc = recurse + preserve mtime + checksum compare (content, not mtime). -i itemizes changes.
 const flags = CHECK ? '-rtci --delete --dry-run' : '-rtci --delete'
@@ -53,7 +53,8 @@ for (const { src, dest } of DIR_PAIRS) {
 }
 // Single files: deterministic content compare (rsync -c on a single file dest mis-reports in dry-run).
 for (const { src, dest } of FILE_PAIRS) {
-  const same = readFileSync(join(ROOT, src), 'utf8') === readFileSync(join(ROOT, dest), 'utf8')
+  // dest 首次不存在 = 視為 drift → copy(2026-07-16 AGENTS.md 首次 mirror 修)
+  const same = existsSync(join(ROOT, dest)) && readFileSync(join(ROOT, src), 'utf8') === readFileSync(join(ROOT, dest), 'utf8')
   if (same) continue
   if (CHECK) drift.push(`[${src} → ${dest}]\n>f content differs`)
   else {

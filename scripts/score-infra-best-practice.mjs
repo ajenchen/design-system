@@ -28,9 +28,10 @@ const dimensions = [];
 // causes Claude to ignore actual instructions". Updated formula(對齊 hard cap 800):
 //   ≤ 200 → 100,201-400 → 70(transition acceptable),401-800 → 40(approaching hard cap),> 800 → 10
 {
-  const lines = safeWc('CLAUDE.md');
-  const score = lines <= 200 ? 100 : lines <= 400 ? 70 : lines <= 800 ? 40 : 10;
-  dimensions.push({ dim: 'D1 CLAUDE.md size(Anthropic target ≤ 200 / hard cap 800)', value: `${lines} lines`, score, max: 100 });
+  // PNG 2026-07-16:bootstrap = AGENTS.md(治理核心)+ CLAUDE.md(@import 薄殼),合計量測(target ≤250)
+  const lines = safeWc('AGENTS.md') + safeWc('CLAUDE.md');
+  const score = lines <= 250 ? 100 : lines <= 400 ? 70 : lines <= 800 ? 40 : 10;
+  dimensions.push({ dim: 'D1 bootstrap size(AGENTS+CLAUDE 合計,target ≤250 / hard cap 800)', value: `${lines} lines`, score, max: 100 });
 }
 
 // === D2: Skill SKILL.md size discipline ===

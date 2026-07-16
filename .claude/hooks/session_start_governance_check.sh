@@ -48,9 +48,9 @@ fi
 REMINDERS="${MEMSYNC_NOTE:-}"
 BLOCKERS=""
 
-# Check 1: CLAUDE.md size(soft 800 / hard 1000)
+# Check 1: bootstrap size(AGENTS.md + CLAUDE.md 合計;PNG 2026-07-16 治理核心遷 AGENTS.md)
 if [ -f CLAUDE.md ]; then
-  LINES=$(wc -l < CLAUDE.md | tr -d ' ')
+  LINES=$(( $(wc -l < CLAUDE.md | tr -d ' ') + $( [ -f AGENTS.md ] && wc -l < AGENTS.md | tr -d ' ' || echo 0 ) ))
   # 2026-04-26 tightened thresholds(對應 M19 + user 質問「auto self-improve」要更主動):
   # SSOT alignment per CLAUDE.md L35: target ≤ 200 / transition ≤ 400 / hard cap 800
   # Stratified soft warnings: 500 approaching / 600 strong / 800 hard-cap blocker

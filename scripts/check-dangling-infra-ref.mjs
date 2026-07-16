@@ -20,7 +20,7 @@ const CHECK = process.argv.includes('--check')
 // 2026-07-07(治理進化收尾):補 .github/workflows — CI yml 引用的 scripts/*.mjs|sh 同屬
 // infra-self ref(workflow 引不存在的 script = release/CI 靜默斷鏈),納入同一 3-bucket 檢查。
 const SCAN_DIRS = ['.claude/skills', '.claude/rules', '.claude/references', '.claude/commands', '.claude/memory', '.github/workflows']
-const SCAN_FILES = ['CLAUDE.md', 'packages/design-system/CLAUDE.md', '.claude/settings.json', '.claude/settings.local.json']
+const SCAN_FILES = ['AGENTS.md', 'CLAUDE.md', 'packages/design-system/CLAUDE.md', '.claude/settings.json', '.claude/settings.local.json']
 const EXCLUDE = /ds-canonical|\/planning\/|\/scratch\/|\/retired\/|\/tmp\/|node_modules/
 
 // ── annotation = 同行 marker 明確 disclaim「此 ref 本身故意不對應 live 檔」──

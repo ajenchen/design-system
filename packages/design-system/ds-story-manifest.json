@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-07-16T07:56:35.028Z"
+    "generatedAt": "2026-07-16T14:25:30.274Z"
   },
   "components": {
     "accordion": {
@@ -561,7 +561,7 @@
           "design-system-components-datepicker-展示--show-time-range-popover-open",
           "design-system-components-datepicker-展示--range-middle-hover-state",
           "design-system-components-datepicker-展示--show-time-range",
-          "design-system-components-datepicker-展示--display"
+          "design-system-components-datepicker-展示--view"
         ],
         "設計規格": [
           "design-system-components-datepicker-設計規格--overview",
@@ -937,7 +937,7 @@
           "design-system-components-linkinput-展示--validation",
           "design-system-components-linkinput-展示--size-alignment",
           "design-system-components-linkinput-展示--modes",
-          "design-system-components-linkinput-展示--display"
+          "design-system-components-linkinput-展示--view"
         ],
         "設計規格": [
           "design-system-components-linkinput-設計規格--overview",

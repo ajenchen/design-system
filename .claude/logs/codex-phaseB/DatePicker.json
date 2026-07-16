@@ -1,0 +1,221 @@
+{
+ "component": "DatePicker",
+ "claimsVerified": 511,
+ "falseClaims": [
+  {
+   "fileLine": "date-picker.tsx:26",
+   "宣稱": "formatOptions 預設為 year:numeric、month/day:2-digit",
+   "真實code行為": "未傳格式 props 時會跳過 Intl，直接組成 YYYY/MM/DD；該 options 只是在 Intl 分支內的 fallback。"
+  },
+  {
+   "fileLine": "date-picker.tsx:28",
+   "宣稱": "locale 預設為 en-US",
+   "真實code行為": "未傳 locale/formatOptions 時不使用 locale；en-US 只在顯式進入 Intl 分支後作 fallback。"
+  },
+  {
+   "fileLine": "date-picker.tsx:118",
+   "宣稱": "EU DD/MM/YYYY 輸入可走 formatOptions/locale",
+   "真實code行為": "parseDateInput 完全不接收 formatOptions/locale；兩者只影響顯示，不能解析 EU 日期。"
+  },
+  {
+   "fileLine": "date-picker.tsx:326-327",
+   "宣稱": "needConfirm 表示必須按 OK 才提交",
+   "真實code行為": "typeable 模式的 Enter／Blur 直接呼叫 onChange，繞過 needConfirm。"
+  },
+  {
+   "fileLine": "date-picker.tsx:331-334",
+   "宣稱": "showDisplayEndIcon=true 會使用 Field naked wrapper",
+   "真實code行為": "此 prop 只切換 wrapper 與 icon；variant 仍取 resolved variant，沒有強制 naked。"
+  },
+  {
+   "fileLine": "date-picker.tsx:353",
+   "宣稱": "Esc 會把 typed draft 重設為 committed value",
+   "真實code行為": "Esc 重設為 displayLive；needConfirm=true 時 displayLive 讀 pending draft，不一定是外部 committed value。"
+  },
+  {
+   "fileLine": "date-picker.tsx:480",
+   "宣稱": "showDisplayEndIcon opt-in 的 view 使用 Field naked wrapper",
+   "真實code行為": "view wrapper仍傳目前 resolved variant，未強制 naked。"
+  },
+  {
+   "fileLine": "date-picker.tsx:519-523",
+   "宣稱": "readonly 不顯示 Calendar indicator，disabled 保留 indicator",
+   "真實code行為": "naked + showDisplayEndIcon=true 的 readonly 仍顯示 icon；naked disabled 在 showDisplayEndIcon=false 時反而不顯示。"
+  },
+  {
+   "fileLine": "date-picker.tsx:549-552",
+   "宣稱": "typeable 時外層 div 已移除全部 aria-*",
+   "真實code行為": "Radix PopoverTrigger 仍把 aria-controls 注入外層 asChild div。"
+  },
+  {
+   "fileLine": "date-picker.tsx:588-590",
+   "宣稱": "內層 input 持有完整 APG editable-combobox 語意",
+   "真實code行為": "input 缺少 aria-controls；popup 關聯留在外層非 combobox div。"
+  },
+  {
+   "fileLine": "date-picker.tsx:737",
+   "宣稱": "date-only Range 使用 RDP mode='range' 配對邏輯與 auto-swap",
+   "真實code行為": "Range 固定傳 mode='single'，以 activeEnd、manual modifiers 和違序 disable 自管，沒有 RDP pairing／auto-swap。"
+  },
+  {
+   "fileLine": "date-picker.tsx:748",
+   "宣稱": "DatePicker.Range variant 支援 context default 與 per-prop override",
+   "真實code行為": "edit Range 的 fieldWrapperStyles 呼叫漏傳 variant，因此 prop/context 不影響 editable Range chrome。"
+  },
+  {
+   "fileLine": "date-picker.tsx:892",
+   "宣稱": "date-only Range 沒有 footer，不會走 handleConfirm",
+   "真實code行為": "date-only + needConfirm 會由 showTime || needConfirm gate 渲染 footer，並走 handleConfirm。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:36",
+   "宣稱": "controlled-only，value 與 onChange 必傳",
+   "真實code行為": "兩者在 DatePickerProps／RangeProps 都是 optional，runtime 也未強制成對提供。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:103",
+   "宣稱": "DateGrid cell 有 5 種語意視覺",
+   "真實code行為": "同段列出 6 個核心狀態，另又描述 outside month。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:173",
+   "宣稱": "選完 start 會切到 end 並等待選擇 end",
+   "真實code行為": "showTime 不會在選日後 auto-advance；已有 end 的 date-only range 還會立即關閉。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:180",
+   "宣稱": "點 date 後一律 auto-advance 至 end 等待選擇",
+   "真實code行為": "只有部分 date-only 流程會切 activeEnd；showTime 不切，已有完整區間時也不會留下 popup 等待。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:183",
+   "宣稱": "rangeModifiers 讀 committed start/end",
+   "真實code行為": "needConfirm=true 時 startIso/endIso 讀 draft，range track 會反映未提交端點。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:231",
+   "宣稱": "needConfirm=true 時按確定才 onChange",
+   "真實code行為": "typeable Enter／Blur 可直接 onChange。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:232",
+   "宣稱": "needConfirm 時「確定」是唯一 commit 路徑",
+   "真實code行為": "typeable Enter／Blur以及 trigger clear 都是其他直接 commit 路徑。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:285",
+   "宣稱": "剩餘 DOM attrs 會 spread 到當前 mode 的 root wrapper",
+   "真實code行為": "single view 的兩條分支以及 Range view 都未完整 spread props。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:287",
+   "宣稱": "只有未啟用 showDisplayEndIcon 的預設 view 不 spread props",
+   "真實code行為": "啟用 showDisplayEndIcon 的 view wrapper同樣不 spread props，Range view 也會遺失。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:295",
+   "宣稱": "外層原生 label 可替 div combobox 提供 accessible name",
+   "真實code行為": "div 不是 labelable element；必須以 aria-label／aria-labelledby 或 fieldCtx labelId 明確連結。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:307",
+   "宣稱": "required + value=null 會在 submit 時自動變成 aria-invalid 並出現 error border",
+   "真實code行為": "DatePicker 沒有 submit validation，也不檢查 required/value；只鏡射外部 Field error 狀態。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:309",
+   "宣稱": "typed input 解析失敗後，blur 會觸發 error message",
+   "真實code行為": "blur 只設定 inputInvalid／aria-invalid；元件不建立或觸發 error message。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:310",
+   "宣稱": "typed input 會在 submit 驗證，picker pick 會立即 onChange",
+   "真實code行為": "沒有 submit validation path；needConfirm=true 時 picker pick 只更新 draft，onChange 延後至確認。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:314",
+   "宣稱": "readonly 不顯示 Calendar icon，disabled 一律保留",
+   "真實code行為": "naked + showDisplayEndIcon=true 的 readonly 會顯示；naked disabled 預設反而可能不顯示。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:315",
+   "宣稱": "consumer 可將開啟後的 popover body 切成 Empty loading UI",
+   "真實code行為": "公開 API 沒有 body/render/loading slot，popover body 為內部固定 JSX，consumer 無法替換。"
+  },
+  {
+   "fileLine": "date-picker.spec.md:316",
+   "宣稱": "空值、無導覽目標時鍵盤焦點停留",
+   "真實code行為": "DateGrid 傳入 autoFocus；react-day-picker 會依序選 selected、today 或第一個 focusable day 並聚焦。"
+  },
+  {
+   "fileLine": "date-picker.anatomy.stories.tsx:59",
+   "宣稱": "edit 使用 button trigger",
+   "真實code行為": "預設單一 DatePicker trigger 是 div role='combobox'；typeable 是 input，只有 Range 端點使用 button。"
+  },
+  {
+   "fileLine": "date-picker.anatomy.stories.tsx:214",
+   "宣稱": "readonly／disabled 顯示值使用 Intl.DateTimeFormat",
+   "真實code行為": "未傳格式 props 的預設路徑直接組 YYYY/MM/DD，不呼叫 Intl。"
+  },
+  {
+   "fileLine": "date-picker.anatomy.stories.tsx:251",
+   "宣稱": "disabled trigger 是 div role='combobox'",
+   "真實code行為": "disabled 走無 Popover 的純 wrapper div，只有 aria-disabled，沒有 role='combobox' 或 tabIndex。"
+  },
+  {
+   "fileLine": "date-picker.anatomy.stories.tsx:753",
+   "宣稱": "readonly、disabled、Display 的空值連字號統一使用 foreground",
+   "真實code行為": "disabled 使用 text-fg-disabled；顏色由 Field mode helper 決定，並非統一 foreground。"
+  },
+  {
+   "fileLine": "date-picker.anatomy.stories.tsx:809",
+   "宣稱": "Cell state token 有 5 種標準",
+   "真實code行為": "下方表格實際列出 7 種。"
+  },
+  {
+   "fileLine": "date-picker.anatomy.stories.tsx:847",
+   "宣稱": "Calendar hover 使用 ring-primary",
+   "真實code行為": "DateGrid 使用 hover:ring-primary-hover。"
+  },
+  {
+   "fileLine": "date-picker.anatomy.stories.tsx:877",
+   "宣稱": "星期標頭高度固定為 h-7",
+   "真實code行為": "DateGrid 使用 density-aware 的 h-[var(--field-height-sm)]。"
+  },
+  {
+   "fileLine": "date-picker.anatomy.stories.tsx:936",
+   "宣稱": "外層 label 可直接命名 div combobox",
+   "真實code行為": "非 labelable div 不取得原生 label association；有效路徑是 aria-label／aria-labelledby／fieldCtx labelId。"
+  },
+  {
+   "fileLine": "date-picker.anatomy.stories.tsx:937",
+   "宣稱": "單一日期 dialog 由 trigger 名稱標示，dialog 本身不設 aria-label",
+   "真實code行為": "Radix dialog 不會繼承 trigger 名稱，且 PopoverContent 明確設定 aria-label='日期選擇'。"
+  },
+  {
+   "fileLine": "date-picker.principles.stories.tsx:126",
+   "宣稱": "Calendar hover token 是 ring-primary",
+   "真實code行為": "DateGrid 使用 ring-primary-hover。"
+  },
+  {
+   "fileLine": "date-picker.principles.stories.tsx:142",
+   "宣稱": "必須同時傳 formatOptions + locale 才啟用 Intl.DateTimeFormat",
+   "真實code行為": "實作條件是 formatOptions || locale，任一 prop 單獨存在就會啟用 Intl。"
+  },
+  {
+   "fileLine": "date-picker.stories.tsx:139",
+   "宣稱": "Range 是兩個輸入框，選完開始日後會自動跳到結束欄等待選擇",
+   "真實code行為": "兩端實際是 button；此 story 初始兩端已有值，重選 start 後會立即關閉 popover。"
+  },
+  {
+   "fileLine": "date-picker.stories.tsx:163",
+   "宣稱": "error 狀態在 hover 或 focus 時都使用較深的紅",
+   "真實code行為": "hover 使用 border-error-hover；focus-within 強制回 border-error，並非較深色。"
+  },
+  {
+   "fileLine": "date-picker.stories.tsx:199",
+   "宣稱": "Range popup 內 DateGrid 使用 mode='range'",
+   "真實code行為": "DatePicker.Range 傳 mode='single'，range 視覺由 manual modifiers 實作。"
+  }
+ ]
+}

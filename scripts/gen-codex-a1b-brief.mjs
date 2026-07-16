@@ -47,7 +47,7 @@ process.stdout.write(`# Codex A.1b — ${wrapped} claim-vs-code 對抗驗證
 
 ## 判準 context(輸入對等 — 讀為判準,不 echo;鏡射 Claude A.0)
 先快速消費作為「判準/命名/紀律」context(讀,禁 echo,禁逐條複述):
-- \`CLAUDE.md\` + \`.claude/rules/meta-patterns.md\`(31 M-rules,尤其 M23/M29/M32)+ \`.claude/rules/self-verify.md\`
+- \`AGENTS.md\`(治理核心;CLAUDE.md 為 @import 薄殼)+ \`.claude/rules/meta-patterns.md\`(31 M-rules,尤其 M23/M29/M32)+ \`.claude/rules/self-verify.md\`
 - \`.claude/references/naming-conventions.md\` + memory \`MEMORY.md\` index(專案脈絡)
 這套 = 你的判準,與 Claude 一致。
 

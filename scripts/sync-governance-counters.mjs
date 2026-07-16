@@ -84,8 +84,9 @@ if (fs.existsSync(sessStartPath)) {
   }
 }
 
-// CLAUDE.md hooks-text (loose: extract "Hooks **N soft / M hard**")
-const claudeMdPath = path.join(ROOT, 'CLAUDE.md')
+// Bootstrap hooks-text (loose: extract "Hooks **N soft / M hard**")。PNG 2026-07-16:治理核心
+// 遷 AGENTS.md(CLAUDE.md = @import 薄殼)→ 先讀 AGENTS.md,fallback CLAUDE.md。
+const claudeMdPath = ['AGENTS.md', 'CLAUDE.md'].map((f) => path.join(ROOT, f)).find((f) => fs.existsSync(f) && /Hooks\s+\*\*/.test(fs.readFileSync(f, 'utf-8'))) || path.join(ROOT, 'AGENTS.md')
 if (fs.existsSync(claudeMdPath)) {
   const c = fs.readFileSync(claudeMdPath, 'utf-8')
   const m = c.match(/Hooks\s+\*\*(\d+)\s+soft\s+\/\s+(\d+)\s+hard\*\*/)

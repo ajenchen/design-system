@@ -2,7 +2,7 @@
   "_meta": {
     "purpose": "Explicit semantic mapping: principle (M-rule / trait / hook) → audit dim cover",
     "ssot": ".claude/memory/feedback_audit_preflight_全盤查.md + design-system-audit/SKILL.md",
-    "updated": "2026-05-18",
+    "updated": "2026-07-16",
     "version": "1.0",
     "_principle": "禁 heuristic match;每原則必 explicit dim list。新原則加入必同 commit 加 entry,違 = hook BLOCK"
   },
@@ -536,6 +536,24 @@
         71
       ],
       "note": "2026-07-03 entry add per audit-preflight gap:write-time 攔隱式 wrap;audit-time dim 71 primitive misuse + A.1b composition cover"
+    },
+    "dynamic_tailwind_class": {
+      "dims": [
+        18
+      ],
+      "note": "動態拼 Tailwind class 不被掃描 silent 失效(2026-07-09 hook;dim 18 token hygiene 家族 cover;2026-07-16 PNG 補 entry)"
+    },
+    "ssot_header_declaration": {
+      "dims": [
+        5
+      ],
+      "note": "新 production tsx 必帶「── 消費的 SSOT ──」段(2026-07-07 hook;dim 5 SSOT 消費 cover;2026-07-16 補 entry)"
+    },
+    "story_determinism": {
+      "dims": [
+        46
+      ],
+      "note": "story 禁 Date.now/Math.random 非決定性(2026-07-09 hook;dim 46 cover;2026-07-16 補 entry)"
     }
   },
   "newDims_2026_05_17": {

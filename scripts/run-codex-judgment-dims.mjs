@@ -73,7 +73,7 @@ function brief(d) {
 - 只回一段 JSON:{"dim":${d.n},"filesScanned":N,"findings":[{"fileLine":"...","問題":"...","severity":"material|marginal","建議":"..."}]}。
 
 ## 判準 context(讀為判準,禁 echo)
-先快速消費 CLAUDE.md + .claude/rules/meta-patterns.md(M23/M29/M32)+ .claude/rules/ui-development.md + .claude/references/naming-conventions.md 作為判準。
+先快速消費 AGENTS.md(治理核心;CLAUDE.md 為 @import 薄殼)+ .claude/rules/meta-patterns.md(M23/M29/M32)+ .claude/rules/ui-development.md + .claude/references/naming-conventions.md 作為判準。
 
 ## Dim ${d.n} 稽核機制(NO-SAMPLE 全掃)
 ${d.mech}
