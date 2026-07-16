@@ -1,0 +1,216 @@
+{
+ "dim": 10,
+ "filesScanned": 272,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:216",
+   "問題": "視覺上未顯示的 slides 仍全部留在 accessibility tree，螢幕閱讀器會讀到畫面外內容。",
+   "severity": "material",
+   "建議": "依 Embla in-view 狀態同步管理 offscreen slides 的 aria-hidden/inert。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox-group.tsx:78",
+   "問題": "role=group 未串接 FieldLabel、描述與錯誤狀態，canonical Field 組合產生無名稱群組。",
+   "severity": "material",
+   "建議": "比照 RadioGroup 消費 Field context，接入 aria-labelledby、aria-describedby 與 aria-invalid。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:216",
+   "問題": "mode=view 只輸出 aria-hidden 圖示，布林值在 accessibility tree 中完全消失。",
+   "severity": "material",
+   "建議": "提供可讀的 true/false 靜態文字，或為語意容器建立本地化 accessible name。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.tsx:123",
+   "問題": "CommandSeparator 保留 role=separator，卻被直接放入 role=listbox，造成 aria-required-children hard failure。",
+   "severity": "material",
+   "建議": "純視覺分隔線改為 role=presentation/none，或移出 listbox ownership。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:2293",
+   "問題": "欄寬調整 separator 只有 pointer/touch handler，不能聚焦、沒有鍵盤操作與 aria-valuenow/min/max。",
+   "severity": "material",
+   "建議": "實作可聚焦 adjustable separator，以方向鍵調整並公開目前值與範圍。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:657",
+   "問題": "欄位 DnD listeners 掛在整個 header，未設定 activator node；巢狀排序或選單按鈕的 Enter/Space 會冒泡並啟動拖曳。",
+   "severity": "material",
+   "建議": "使用獨立且有名稱的 reorder handle，或設定 activator ref 並排除互動 descendants。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/cell-registry.tsx:151",
+   "問題": "String、Number、Date、Time、Select、Combobox、People、URL 等 edit controls 沒有欄名或列脈絡的 accessible name。",
+   "severity": "material",
+   "建議": "由 cell API 傳入穩定的欄標題與列脈絡，透過 aria-label 或 aria-labelledby 命名每個 editor。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table-column-visibility-panel.tsx:155; packages/design-system/src/components/DataTable/data-table-sort-manager.tsx:200",
+   "問題": "欄位搜尋 Input 只有 placeholder；排序列的欄位與方向 Select 也都沒有名稱，控制項無法辨識。",
+   "severity": "material",
+   "建議": "搜尋欄補 FieldLabel/aria-label；每列 Select 分別以排序欄位與排序方向命名。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:2500",
+   "問題": "pinned left/center/right panels 把單一 logical row 拆成多個相同 aria-rowindex 的 role=row，header 也被分割，AT 取得多個殘缺列。",
+   "severity": "material",
+   "建議": "維持單一 semantic row/header tree，將視覺鏡像設為 presentational 或隱藏。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:2700",
+   "問題": "真正承擔水平與垂直捲動的 center body 不可聚焦；plain table 可完全沒有可聚焦 descendant，axe serious 可重現。",
+   "severity": "material",
+   "建議": "把 center body 建成具名稱、focus ring 與 tabIndex=0 的 keyboard-scroll region。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TreeView/tree-view.tsx:774",
+   "問題": "tree root 會處理 public inlineActions 冒泡的 Enter/Space，preventDefault 後改為選取 virtual-focus row，按鈕原生啟動失效。",
+   "severity": "material",
+   "建議": "tree keyboard handler 先排除互動 descendant target，再處理導覽與 reorder keys。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:48,63",
+   "問題": "aria-label 被套到 Root，而非實際可聚焦的 Viewport，焦點所屬捲動區仍無名稱。",
+   "severity": "marginal",
+   "建議": "把 viewport ARIA props 轉傳至 Viewport，或提供專用 viewport label API。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:308",
+   "問題": "PopoverContent 產生 role=dialog，但沒有 title、aria-label 或 aria-labelledby；內層 listbox 的名稱不能替代外層 dialog 名稱。",
+   "severity": "marginal",
+   "建議": "加入 contextual PopoverTitle 或明確命名 Content。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:524",
+   "問題": "inlineAction 的真實 button 位於 role=tablist 內，違反 required children ownership，完整 axe 已命中 critical。",
+   "severity": "material",
+   "建議": "將 split action 移到 tablist 外的相鄰 toolbar/menu，再以視覺定位維持佈局。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.stories.tsx:98; packages/design-system/src/components/CircularProgress/circular-progress.anatomy.stories.tsx:139; packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:207,243; packages/design-system/src/components/CircularProgress/circular-progress.stories.tsx:63; packages/design-system/src/components/DataTable/data-table.stories.tsx:988,1750; packages/design-system/src/components/Dialog/dialog.principles.stories.tsx:86,87,215; packages/design-system/src/components/FieldControlGroup/field-control-group.stories.tsx:116,154; packages/design-system/src/components/Input/input.anatomy.stories.tsx:217,219,230,331,503,532,637,641,681,682,692,697,707,722,740,743; packages/design-system/src/components/Input/input.principles.stories.tsx:88,89,90,105,112,122,148,149,150,151,177,186,198,204,236; packages/design-system/src/components/Input/input.stories.tsx:61,83,95,104; packages/design-system/src/components/Textarea/textarea.principles.stories.tsx:143",
+   "問題": "這些 standalone Input demo 沒有 FieldLabel、aria-label 或 aria-labelledby；placeholder、value 與相鄰文字不構成程式化名稱。",
+   "severity": "marginal",
+   "建議": "使用 Field+FieldLabel；矩陣型 demo 則逐一提供包含用途或狀態的 aria-label。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:26,94,106,111,123,140,148,156,242,246,250,254,272,276; packages/design-system/src/components/Textarea/textarea.principles.stories.tsx:68,111,135,167; packages/design-system/src/components/Textarea/textarea.stories.tsx:23",
+   "問題": "Textarea demo，包括 readonly/disabled 狀態，沒有 accessible name。",
+   "severity": "marginal",
+   "建議": "包入 Field/FieldLabel，或為每個狀態 demo 補具體 aria-label。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:209,338,485,522,630,666,678,697,747; packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:134; packages/design-system/src/components/NumberInput/number-input.stories.tsx:62",
+   "問題": "edit-mode NumberInput 沒有程式化名稱；矩陣表頭不會自動成為 input accessible name。",
+   "severity": "marginal",
+   "建議": "補包含尺寸或狀態的 aria-label，或使用 FieldLabel。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:360,363,366,518,519,520,705,717; packages/design-system/src/components/LinkInput/link-input.principles.stories.tsx:76,90,110,120,146,171; packages/design-system/src/components/LinkInput/link-input.stories.tsx:32,48,63,82,99",
+   "問題": "部分 LinkInput 首次渲染即進入未命名 input；其餘按 Pencil 進入 edit branch 後同樣失去 accessible name。",
+   "severity": "marginal",
+   "建議": "所有 standalone LinkInput 傳 aria-label，或置於 Field/FieldLabel。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.anatomy.stories.tsx:31,108,109,110,172,176,180,208,212,216,220,249",
+   "問題": "TimePicker 的 role=combobox 沒有 aria-label 或 aria-labelledby。",
+   "severity": "marginal",
+   "建議": "為 overview、size、precision 與 inspector 實例提供描述用途及狀態的名稱。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:403,548,563,591,594,729,777,812,843,870; packages/design-system/src/components/Combobox/combobox.principles.stories.tsx:84,144,152,192,208,226; packages/design-system/src/components/Combobox/combobox.stories.tsx:74,96,105; packages/design-system/src/components/PeoplePicker/people-picker.principles.stories.tsx:109; packages/design-system/src/components/SelectMenu/select-menu.stories.tsx:76,93",
+   "問題": "standalone Combobox triggers 沒有 accessible name，axe aria-input-field-name 可重現。",
+   "severity": "marginal",
+   "建議": "傳 aria-label；矩陣名稱需包含 size、mode 或 state，或改由 FieldLabel 接線。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:30,44,52,124,136,193,313,327,340,355,397,405; packages/design-system/src/components/PeoplePicker/people-picker.principles.stories.tsx:78,139,151,180; packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx:103,123",
+   "問題": "edit-mode PeoplePicker/Combobox trigger 缺少 accessible name。",
+   "severity": "marginal",
+   "建議": "為每個 edit demo 補 aria-label 或使用 Field/FieldLabel。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:85,133,152,156,160; packages/design-system/src/components/Slider/slider.principles.stories.tsx:68,79,138,144,197,222,233,237; packages/design-system/src/components/Slider/slider.stories.tsx:36,55,85",
+   "問題": "Slider thumbs 沒有 aria-label 或 aria-labelledby；Radix 不會自動產生名稱。",
+   "severity": "marginal",
+   "建議": "每個 Slider 提供語意名稱；range slider 使用共同 label 並區分各 thumb。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:198,304,421,495,496,535,540; packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:432; packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx:86,249,441,453,470,474,541,547; packages/design-system/src/components/SelectionControl/selection-item.stories.tsx:76,82,88,93,116,122,128; packages/design-system/src/components/TreeView/tree-view.stories.tsx:105,108,109,115,118,119",
+   "問題": "孤立 checkbox/radio buttons 無 accessible name；部分 SelectionItem/TreeItem 的視覺 label 也沒有透過 id/htmlFor 與 control 關聯。",
+   "severity": "marginal",
+   "建議": "矩陣控制補 aria-label；複合項目以穩定 id/htmlFor 接線。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Dialog/dialog.stories.tsx:68; packages/design-system/src/components/Slider/slider.principles.stories.tsx:157,161,167,171; packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:28,29,94,115,119,123,154,158,162,166,170,174; packages/design-system/src/components/Switch/switch.principles.stories.tsx:67,108,112,140,144,148,152",
+   "問題": "Switch 是無文字 role=switch button，但相關 story 沒有 aria-label，旁邊設定名稱也未程式化關聯。",
+   "severity": "marginal",
+   "建議": "傳具體 aria-label，或以 FieldLabel/aria-labelledby 關聯。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx:281,288; packages/design-system/src/components/Accordion/accordion.stories.tsx:153,160,175,182,195; packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:287; packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx:192",
+   "問題": "原生 input/range 只有相鄰文字或 placeholder，未以 label/htmlFor 或 ARIA 命名。",
+   "severity": "marginal",
+   "建議": "文字欄位使用 id+label htmlFor；range inspector 補描述用途的 aria-label。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx:34; packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx:100,122,155; packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:363; packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx:194; packages/design-system/src/components/Tooltip/tooltip.stories.tsx:52; packages/design-system/src/components/Input/input.principles.stories.tsx:121; packages/design-system/src/components/Input/input.stories.tsx:43",
+   "問題": "HoverCard/Tooltip asChild 使用無 href 的 a、span、div 或不可聚焦 Avatar；disabled Input 外包 div 也不可聚焦，因此鍵盤無法取得浮層內容或停用原因。",
+   "severity": "material",
+   "建議": "改用 button 或有 href 的 link；純文字 trigger 建立正確語意與 focus/keyboard，停用原因改用 FieldDescription 或獨立 help trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:190; packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:65,69,90,91,235; packages/design-system/src/components/Avatar/avatar.stories.tsx:100,103,106,114,120,126; packages/design-system/src/components/Dialog/dialog.stories.tsx:342",
+   "問題": "MenuItem 預設 role=option，但這些 demo 沒有 role=listbox/group 父層，造成 aria-required-parent failure。",
+   "severity": "marginal",
+   "建議": "互動選項改用 SelectMenu/DropdownMenu；純展示使用 presentational role，或置於具名稱的 listbox。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.stories.tsx:39,159,160,161,165,228,229,233",
+   "問題": "MenuContainer 是不可聚焦的 div role=listbox，沒有 roving focus、aria-activedescendant 或方向鍵處理；其 onClick options 無法鍵盤操作。",
+   "severity": "material",
+   "建議": "改由 SelectMenu/Command 擔任 keyboard owner，或完整實作 listbox focus 與 ArrowUp/Down、Enter/Space 行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Popover/popover.anatomy.stories.tsx:168,221,227; packages/design-system/src/components/Popover/popover.principles.stories.tsx:220; packages/design-system/src/components/Sheet/sheet.principles.stories.tsx:182",
+   "問題": "PopoverContent/Sheet surface 產生 role=dialog，但沒有 title、aria-label 或 aria-labelledby。",
+   "severity": "marginal",
+   "建議": "加入可視或 sr-only title 串接 aria-labelledby，或明確提供 aria-label。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.principles.stories.tsx:156,158,159,160; packages/design-system/src/components/SegmentedControl/segmented-control.principles.stories.tsx:84,86,87,88; packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:46,48,49,52,55,210,212,213,214,289,291,292,295,298,315,317,318,319,320,342,344,345,346,347,348,349,350,351,363,365,366,367,368,369,370,371,372; packages/design-system/src/components/Tabs/tabs.principles.stories.tsx:116,120,121,122,189,191,192,201,204,205,206,215,217,218,236,238,239,240,249,251,252,253; packages/design-system/src/components/Tabs/tabs.stories.tsx:53,55,56,57,87,89,90,91,103,105,106,107,108,109,110,111,112,124,126,127,128,129,130,131,132,133,147,149,150,151",
+   "問題": "正向 Tabs demos 的 triggers 沒有同 value 的 TabsContent，aria-controls 因而指向不存在的 id；刻意錯誤示範已排除。",
+   "severity": "marginal",
+   "建議": "每個 trigger 補匹配 panel；純視覺矩陣則不要渲染成可互動 tab。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:253,256",
+   "問題": "avatar Tag 的 img 沒有 alt；人名已存在於 Tag 文字中。",
+   "severity": "marginal",
+   "建議": "將圖片標為裝飾並加 alt 空字串，避免重複朗讀。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx:94,206,320,339,340,341,371,384,385,386,398,406,422; packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx:125,142,162,177,187,210,219,229,243,263,272,286,299,318; packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:67,110",
+   "問題": "ProgressBar stories 的 role=progressbar 沒有 accessible name；可視百分比只提供值，不能取代名稱。",
+   "severity": "marginal",
+   "建議": "以 aria-label 或 aria-labelledby 描述每個進度所代表的工作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.anatomy.stories.tsx:184",
+   "問題": "Rating inspector 的互動輸入缺少 accessible name，axe aria-input-field-name 可重現。",
+   "severity": "marginal",
+   "建議": "提供描述評分用途的 aria-label 或 FieldLabel。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:87",
+   "問題": "role=img 的星等圖像群組沒有 accessible name。",
+   "severity": "marginal",
+   "建議": "提供包含分數的 aria-label；若純裝飾則移除 role=img 並隱藏於 accessibility tree。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx:188; packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx:246,810,861; packages/design-system/src/components/Input/input.anatomy.stories.tsx:240; packages/design-system/src/components/Steps/steps.stories.tsx:299",
+   "問題": "這些實際產生 overflow 的 story regions 不可聚焦，鍵盤無法直接捲動；完整 axe 命中 scrollable-region-focusable。",
+   "severity": "marginal",
+   "建議": "為真正可捲動容器加入 tabIndex=0、可見 focus ring，必要時以 role=region 與 accessible name 說明內容。"
+  }
+ ]
+}

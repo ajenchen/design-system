@@ -1,0 +1,96 @@
+{
+ "component": "FileUpload",
+ "claimsVerified": 713,
+ "falseClaims": [
+  {
+   "fileLine": "file-upload.tsx:15",
+   "宣稱": "上傳後的檔案清單顯示交給 consumer 用 FileItem 渲染。",
+   "真實code行為": "FileUpload 也提供內建 files 路徑；file-upload.tsx:176-218 自行 map 成 FileItem，並於 :354 渲染。"
+  },
+  {
+   "fileLine": "file-upload.spec.md:25",
+   "宣稱": "不負責「已上傳檔案清單顯示」。",
+   "真實code行為": "files prop 會讓 FileUpload 內建並渲染清單；FileItem 只擁有單列視覺。"
+  },
+  {
+   "fileLine": "file-upload.principles.stories.tsx:215",
+   "宣稱": "FileUpload 只負責拖放偵測與觸發選檔，清單由 consumer map FileItem。",
+   "真實code行為": "consumer map 只是合法替代路徑；FileUpload 本身也能透過 files prop own 清單。"
+  },
+  {
+   "fileLine": "file-upload.tsx:29",
+   "宣稱": "consumer 傳 children 則整個覆寫。",
+   "真實code行為": "children 只在 dropzone 且 loading=false 時生效；button variant 完全忽略 children，loading 也會改渲染 loading Empty。"
+  },
+  {
+   "fileLine": "file-upload.spec.md:94",
+   "宣稱": "傳 children 整個替換，不渲染 Empty。",
+   "真實code行為": "button variant 不讀 children；dropzone 在 loading=true 時仍渲染含 CircularProgress 的 Empty。"
+  },
+  {
+   "fileLine": "file-upload.anatomy.stories.tsx:93",
+   "宣稱": "children 傳入則整個覆寫預設 Empty 結構。",
+   "真實code行為": "僅非 loading 的 dropzone 分支如此；button 分支忽略 children。"
+  },
+  {
+   "fileLine": "file-upload.tsx:90",
+   "宣稱": "files 傳入後在 drop zone 下方渲染列表。",
+   "真實code行為": "fileListNode 放在兩個 variant 分支之後；button variant 時清單位於 Button 下方，沒有 dropzone。"
+  },
+  {
+   "fileLine": "file-upload.spec.md:111",
+   "宣稱": "files 傳入後在 drop zone 下方渲染列表。",
+   "真實code行為": "button variant 也支援 files，此時列表位於按鈕觸發器下方。"
+  },
+  {
+   "fileLine": "file-upload.anatomy.stories.tsx:96",
+   "宣稱": "內建檔案清單會在 drop zone 下方渲染。",
+   "真實code行為": "列表實際位於當前 variant 的觸發器下方；button variant 不存在 dropzone。"
+  },
+  {
+   "fileLine": "file-upload.anatomy.stories.tsx:94-95",
+   "宣稱": "loading 會以 CircularProgress 取代內容，loadingTitle 是 loading 標題。",
+   "真實code行為": "這只適用 dropzone；button variant 將 loading 傳給 Button，且完全不讀 loadingTitle。"
+  },
+  {
+   "fileLine": "file-upload.anatomy.stories.tsx:125",
+   "宣稱": "FileUpload 有 idle、drag-over、disabled 三個狀態，優先序為 disabled > drag-over > idle。",
+   "真實code行為": "runtime 有四態，實際優先序是 disabled > loading > drag-over > idle；loading 是仍可使用的公開 prop。"
+  },
+  {
+   "fileLine": "file-upload.anatomy.stories.tsx:415-417",
+   "宣稱": "multiple=false 拖入多檔時只取第一個，其餘靜默忽略且不進 onReject。",
+   "真實code行為": "所有檔案會先被驗證；size/type 不合格者仍分組進 onReject，最後才把第一個 accepted file 交給 onUpload。"
+  },
+  {
+   "fileLine": "file-upload.spec.md:69",
+   "宣稱": "loading 等於暫時不可互動。",
+   "真實code行為": "上傳觸發被擋，但內建清單的 onRemove 按鈕仍可操作，dropzone 的 consumer onClick 也仍會執行。"
+  },
+  {
+   "fileLine": "file-upload.spec.md:110",
+   "宣稱": "disabled 會完全停用。",
+   "真實code行為": "選檔與上傳被擋，但 file list 的移除按鈕未被 disabled；handleClick 也會無條件呼叫 consumer onClick。"
+  },
+  {
+   "fileLine": "file-upload.anatomy.stories.tsx:88",
+   "宣稱": "disabled 完全停用，互動由 isBlocked guard 擋。",
+   "真實code行為": "isBlocked 只擋上傳觸發；onRemove 與 consumer onClick 仍可執行。"
+  },
+  {
+   "fileLine": "file-upload.anatomy.stories.tsx:427",
+   "宣稱": "disabled 時 drag、click、Enter、Space 全部無反應，且各 handler 都由 isBlocked 擋。",
+   "真實code行為": "handleClick 在 guard 後仍呼叫 consumer onClick；dragover/drop 仍執行 preventDefault，內建清單移除也未被停用。"
+  },
+  {
+   "fileLine": "file-upload.tsx:301",
+   "宣稱": "icon、title、description 的垂直堆疊由外層 gap-2 控制。",
+   "真實code行為": "外層只有一個可見直接子元素 Empty，gap-2 無法控制 Empty 內部排列；內部間距由 Empty 自己擁有。"
+  },
+  {
+   "fileLine": "file-upload.stories.tsx:132",
+   "宣稱": "自訂上傳區一次最多 50 個檔案。",
+   "真實code行為": "元件沒有 maxFiles/maxCount；multiple=true 時會把所有通過 accept/maxSize 的檔案交給 onUpload。"
+  }
+ ]
+}

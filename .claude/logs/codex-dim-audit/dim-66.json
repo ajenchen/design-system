@@ -1,0 +1,42 @@
+{
+ "dim": 66,
+ "filesScanned": 8,
+ "findings": [
+  {
+   "fileLine": ".github/workflows/release.yml:293,334; .github/workflows/ssot-sync-dispatch.yml:78; template/ds-product-template/README.md:21,80-85",
+   "問題": "三個 repository_dispatch 發送點都只指向中央 ajenchen/ds-product-template；「Use this template」建立的是獨立 repo，不會收到廣播，因此既有 consumer repo 無法取得承諾的即時同步。",
+   "severity": "material",
+   "建議": "以 GitHub App 或 consumer registry 逐 repo dispatch 並驗證版本 ack；否則撤回 fork 自動同步宣稱，明確改為 Dependabot／手動更新。"
+  },
+  {
+   "fileLine": ".github/workflows/mirror-to-published-template.yml:100-110,184; template/ds-product-template/.github/workflows/sync-design-system.yml:104-114",
+   "問題": "Mirror 永久排除 .github/workflows，且無替代同步通道；live published receiver 已與 canonical 不同，仍缺完整 typecheck、import lint、全 app build 與 a11y gate，dispatch 實際打到 stale workflow。",
+   "severity": "material",
+   "建議": "用具 Workflows:write 權限的專用 token或 GitHub App 同步 workflows，並加入 canonical 與 published workflow hash 的 fail-closed gate。"
+  },
+  {
+   "fileLine": ".github/workflows/composition-fidelity.yml:20-25; .github/workflows/mirror-to-published-template.yml:51-55",
+   "問題": "Composition fidelity 只在 DS push／PR／手動執行；Release 完成後的 mirror 或 receiver 更新不會觸發重跑，因此比較時可能仍是舊 consumer，無法證明已發布版本的最終 visual parity。",
+   "severity": "material",
+   "建議": "在 mirror 成功後回 dispatch 或用 workflow_run 觸發 parity，並鎖定 release SHA、npm 版本與更新後 consumer commit。"
+  },
+  {
+   "fileLine": "scripts/visual-assertions.json:219,297,357,381,421; scripts/visual-audit.mjs:463-469,676-684",
+   "問題": "113 個 scenario 中有 5 個缺 committed Ubuntu baseline：Alert/WithDescription、AspectRatio/ProductPhoto4x3、InlineEdit/States、Pagination/FullBar、Skeleton/DocumentLoading；fail-closed runner 使 visual-regression 現況持續失敗。",
+   "severity": "material",
+   "建議": "補齊 5 張 Ubuntu baseline，並新增 manifest PNG 集合與 baseline PNG 集合完全相等的 deterministic gate。"
+  },
+  {
+   "fileLine": ".github/workflows/release.yml:309-310",
+   "問題": "PAT 指引寫成不存在的 fine-grained scope「repo:write」；repository_dispatch 的 fine-grained 權限應是目標 repo Contents:write，classic PAT 才使用 repo scope。",
+   "severity": "marginal",
+   "建議": "分開列明 fine-grained PAT 的 repository access＋Contents:Read and write，以及 classic PAT 的 repo scope。"
+  },
+  {
+   "fileLine": ".github/workflows/release.yml:13-32; .github/workflows/mirror-to-published-template.yml:51-63",
+   "問題": "Mirror 對所有成功的 Release workflow_run 都啟動，未排除 repoint-latest／clear-latest 手動維護模式，可能對未發布 main SHA 執行無謂 mirror 或產生 registry poll 假紅。",
+   "severity": "marginal",
+   "建議": "限制 workflow_run.event 為 push，僅接受 tag release 主路徑。"
+  }
+ ]
+}

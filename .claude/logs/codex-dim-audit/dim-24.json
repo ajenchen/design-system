@@ -1,0 +1,198 @@
+{
+ "dim": 24,
+ "filesScanned": 207,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.stories.tsx:16,54; packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:130,640",
+   "問題": "Modes／Fallback 重複 Overview／StateBehavior 的內容模式與 fallback chain，無新增約束。",
+   "severity": "material",
+   "建議": "退役兩個展示 story，由 anatomy 統一教學。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Badge/badge.stories.tsx:21; packages/design-system/src/components/Badge/badge.anatomy.stories.tsx:126,489",
+   "問題": "Shape 重複個位數正圓、多位數膠囊與 99+ overflow。",
+   "severity": "marginal",
+   "建議": "退役 Shape；保留具獨立邊界的 Dot／MaxCount。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.stories.tsx:39; packages/design-system/src/components/BulkActionBar/bulk-action-bar.principles.stories.tsx:188",
+   "問題": "WithFilterHidden 與 HintBannerRule 重複 selection=3、hiddenByFilter=2 情境。",
+   "severity": "marginal",
+   "建議": "退役 WithFilterHidden。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Button/button.stories.tsx:113,161,237; packages/design-system/src/components/Button/button.anatomy.stories.tsx:190,489,546,634; packages/design-system/src/components/Button/button.principles.stories.tsx:209,245",
+   "問題": "Danger、IconOnly、Loading 重複既有 variant／size／state 矩陣與語意規則。",
+   "severity": "material",
+   "建議": "退役三個展示 story；視覺與原則分留 anatomy／principles。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.stories.tsx:44; packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:404,442",
+   "問題": "States 是 ColorMatrix／SizeMatrix 已涵蓋狀態的 compact grid，無獨立 constraint。",
+   "severity": "material",
+   "建議": "退役 States 並修正檔頭 rationale。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.stories.tsx:36; packages/design-system/src/components/Chip/chip.anatomy.stories.tsx:139,305",
+   "問題": "States 的 default／hover／selected／disabled 是 anatomy 直接子集。",
+   "severity": "material",
+   "建議": "退役 States。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.stories.tsx:85; packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:201,756; packages/design-system/src/components/Combobox/combobox.principles.stories.tsx:133",
+   "問題": "WrapModes 重複 edit／readonly × single／wrap 的既有矩陣與規則。",
+   "severity": "material",
+   "建議": "退役 WrapModes。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Field/field.principles.stories.tsx:144; packages/design-system/src/components/Field/field.anatomy.stories.tsx:20",
+   "問題": "ResponsibilityRule 與 Overview 使用相同欄位並重複 layout/context 責任界線。",
+   "severity": "material",
+   "建議": "退役 ResponsibilityRule，或改成未涵蓋的反例。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.stories.tsx:42,61; packages/design-system/src/components/FileItem/file-item.anatomy.stories.tsx:178,285; packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:98,159",
+   "問題": "Rich／Compact 重複各 mode 的 uploading／completed／error generic grid。",
+   "severity": "material",
+   "建議": "退役兩個 generic story，保留具新行為的 consumer stories。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.stories.tsx:20; packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:160",
+   "問題": "ResumeUpload 重複 PDF／DOC／DOCX、5MB single-file dropzone，且未呈現續傳狀態。",
+   "severity": "material",
+   "建議": "退役 ResumeUpload。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.stories.tsx:19,72; packages/design-system/src/components/Input/input.anatomy.stories.tsx:169,577,663; packages/design-system/src/components/Input/input.principles.stories.tsx:97,166",
+   "問題": "Modes／EndAction 重複模式矩陣、密碼顯示、搜尋清除與 icon 尺寸教學。",
+   "severity": "marginal",
+   "建議": "退役 Modes／EndAction。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.stories.tsx:137,178; packages/design-system/src/components/InlineEdit/inline-edit.anatomy.stories.tsx:101; packages/design-system/src/components/InlineEdit/inline-edit.principles.stories.tsx:122",
+   "問題": "SelectTagField／MultilineDescription 重複既有 live state 與內容規則。",
+   "severity": "marginal",
+   "建議": "退役兩個展示 story。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/LinkInput/link-input.stories.tsx:24,41,56,93; packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:199,654; packages/design-system/src/components/LinkInput/link-input.principles.stories.tsx:102,136,163",
+   "問題": "Default、Empty、Validation、Modes 重複 display／empty／validation 與模式矩陣。",
+   "severity": "marginal",
+   "建議": "退役四個重複 story，保留具邊界或 composition 的案例。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Menu/menu-item.stories.tsx:48,66,130; packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:531,548,658",
+   "問題": "Default、WithDescription、States 分別是 Inspector、SizeMatrix、ColorMatrix 的子集。",
+   "severity": "marginal",
+   "建議": "退役三個展示 story。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.stories.tsx:95,143; packages/design-system/src/components/Notice/notice.anatomy.stories.tsx:74,373",
+   "問題": "DeploymentSuccess／InlineVariants 重複 Overview 與 VariantIconMap。",
+   "severity": "marginal",
+   "建議": "退役兩個展示 story。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.stories.tsx:23,73,98; packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:166,570,648; packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:111,159",
+   "問題": "Modes、FormatOptions、InDataTable 重複模式、格式與 DataTable 對齊規則。",
+   "severity": "marginal",
+   "建議": "退役三個重複 story。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx:57,97; packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:431",
+   "問題": "ComboboxTagOverflow／AvatarStackOverflow 是 SizeMatrix 既有兩列的單獨重演。",
+   "severity": "marginal",
+   "建議": "退役兩個展示 story。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.stories.tsx:14; packages/design-system/src/components/Pagination/pagination.principles.stories.tsx:34",
+   "問題": "Default 與 UsageGuidance 完全重複 total=128 的 controlled Pagination。",
+   "severity": "marginal",
+   "建議": "退役 Default。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx:90,113; packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:129,303; packages/design-system/src/components/PeoplePicker/people-picker.principles.stories.tsx:128",
+   "問題": "Single／Multi 重複模式矩陣、狀態與 single-vs-multi live demo。",
+   "severity": "marginal",
+   "建議": "退役 Single／Multi。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Popover/popover.stories.tsx:23; packages/design-system/src/components/Popover/popover.anatomy.stories.tsx:16; packages/design-system/src/components/Popover/popover.principles.stories.tsx:71",
+   "問題": "FilterPanel 的 trigger、checkbox body、footer 在三層完整重演。",
+   "severity": "marginal",
+   "建議": "保留 spec 指定的 showcase canonical；其餘改為引用或純結構標註。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.stories.tsx:44; packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:345; packages/design-system/src/components/ProfileCard/profile-card.principles.stories.tsx:128",
+   "問題": "Default 重複三個 Avatar hover 展開 ProfileCard 的既有互動。",
+   "severity": "marginal",
+   "建議": "退役 Default。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:39,53; packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx:352; packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx:56",
+   "問題": "Default／BatchTask 重複 value affix 與 CSV 匯入進度情境。",
+   "severity": "marginal",
+   "建議": "退役兩個重複 story。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:67; packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:476",
+   "問題": "VerticalGroup 重複 sm／md／lg 直式群組矩陣。",
+   "severity": "marginal",
+   "建議": "退役 VerticalGroup。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.stories.tsx:117; packages/design-system/src/components/Rating/rating.anatomy.stories.tsx:399",
+   "問題": "Disabled 是 StateBehavior disabled live case 的換文案版本。",
+   "severity": "marginal",
+   "建議": "退役 Disabled。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.stories.tsx:206; packages/design-system/src/components/ScrollArea/scroll-area.principles.stories.tsx:185,238",
+   "問題": "HorizontalProductTable 重複 Stripe 寬商品表與 Windows 捲軸占位問題。",
+   "severity": "material",
+   "建議": "退役 HorizontalProductTable。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.stories.tsx:101; packages/design-system/src/components/Select/select.anatomy.stories.tsx:588,684; packages/design-system/src/components/Select/select.principles.stories.tsx:156",
+   "問題": "DisplayMode 是 plain／tag × edit／readonly 既有矩陣的子集。",
+   "severity": "material",
+   "建議": "退役 DisplayMode。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.stories.tsx:21; packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:122",
+   "問題": "SizeAlignment 重複 sm／md／lg 與 root-only 高度規則，且未實際展示跨元件對齊。",
+   "severity": "material",
+   "建議": "退役或改成真正的 sibling field alignment。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.stories.tsx:153; packages/design-system/src/components/Steps/steps.principles.stories.tsx:145",
+   "問題": "FocusRingCombinations 重複 ring 與 completed／current／error 正交規則。",
+   "severity": "material",
+   "建議": "退役並將必要互動併入 canonical principles story。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.stories.tsx:40,76; packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:97,132,188",
+   "問題": "States／WithLabel 重複 size、state 與 label integration 矩陣。",
+   "severity": "material",
+   "建議": "退役兩個展示 story 並更新 rationale。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.stories.tsx:82,144; packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:14,307; packages/design-system/src/components/Tabs/tabs.principles.stories.tsx:228",
+   "問題": "AllWithStartIcon／Disabled 重複 trigger slot 原則與狀態矩陣。",
+   "severity": "material",
+   "建議": "退役兩個展示 story。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.stories.tsx:103; packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:101",
+   "問題": "ShopBusinessHours 重複 10:00→22:00 雙 TimePicker range composition。",
+   "severity": "material",
+   "建議": "退役 ShopBusinessHours。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TreeView/tree-view.stories.tsx:268; packages/design-system/src/components/TreeView/tree-view.anatomy.stories.tsx:302; packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx:148",
+   "問題": "IndentAlignment 重複 indentStep 公式與 leaf placeholder 對齊教學。",
+   "severity": "material",
+   "建議": "退役展示 story；幾何與原則分留 anatomy／principles。"
+  }
+ ]
+}

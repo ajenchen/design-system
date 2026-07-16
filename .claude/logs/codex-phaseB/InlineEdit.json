@@ -1,0 +1,181 @@
+{
+ "component": "InlineEdit",
+ "claimsVerified": 350,
+ "falseClaims": [
+  {
+   "fileLine": "inline-edit.tsx:6",
+   "宣稱": "接 size/orientation/labelId cascade",
+   "真實code行為": "只消費 size 與 orientation；未讀取 fieldCtx.labelId，view button 名稱只來自 label 或固定 fallback。"
+  },
+  {
+   "fileLine": "inline-edit.tsx:18",
+   "宣稱": "格式化 view 的幾何與間距皆由同一控件提供，read/edit 天生一致",
+   "真實code行為": "Select mode=view、display=tag 回傳 bare Tag，沒有 Field wrapper 的 px/min-height；edit Select 使用完整 Field 幾何。"
+  },
+  {
+   "fileLine": "inline-edit.tsx:21",
+   "宣稱": "read↔edit 零跳 = view 與 edit 同一顆控件",
+   "真實code行為": "預設路徑的 view 是 Tag，edit 是 Input 或 Textarea，並非同一顆控件。"
+  },
+  {
+   "fileLine": "inline-edit.tsx:41",
+   "宣稱": "commit 會執行 onCommit(next) 並回 view 態",
+   "真實code行為": "commit 一律回 view，但 draft 與 value 嚴格相等時不呼叫 onCommit。"
+  },
+  {
+   "fileLine": "inline-edit.tsx:45",
+   "宣稱": "進 edit 態時自動 focus 控件",
+   "真實code行為": "custom renderEdit 只收到 autoFocus=true，是否聚焦由 consumer 決定；desktop Select 明確丟棄 autoFocus。"
+  },
+  {
+   "fileLine": "inline-edit.tsx:58",
+   "宣稱": "blur / Enter 且草稿有變更時觸發 onCommit",
+   "真實code行為": "只對預設 Input 成立；multiline 的普通 Enter 是換行，custom renderEdit 也沒有自動 blur/Enter 接線。"
+  },
+  {
+   "fileLine": "inline-edit.tsx:62",
+   "宣稱": "非 string 值必傳 renderEdit",
+   "真實code行為": "renderEdit 對所有 T 都是 optional；型別未以 union/overload 強制，缺省時仍把 T cast 成 string 路徑執行。"
+  },
+  {
+   "fileLine": "inline-edit.tsx:80",
+   "宣稱": "label 會組出控件 aria-label",
+   "真實code行為": "預設 Input/Textarea 會套用；custom renderEdit 只收到可選值，consumer 可不轉交，現有 SelectTagField 即未轉交。"
+  },
+  {
+   "fileLine": "inline-edit.tsx:102",
+   "宣稱": "blur commit 不回焦、Enter commit 回焦、Esc cancel 回焦",
+   "真實code行為": "這套自動行為只涵蓋預設控件；multiline 普通 Enter 不結算，custom renderEdit 必須自行接 blur、Enter、Esc。"
+  },
+  {
+   "fileLine": "inline-edit.tsx:210",
+   "宣稱": "string-only 預設路徑；非 string 值必傳 renderEdit",
+   "真實code行為": "公開型別沒有強制此條件，非 string T 仍可省略 renderEdit。"
+  },
+  {
+   "fileLine": "inline-edit.tsx:245",
+   "宣稱": "格式化 Control mode=view 自帶 px/py/min-h",
+   "真實code行為": "Select mode=view、display=tag 的預設分支直接回傳 Tag，未套 fieldWrapperStyles，因此沒有這些 Field 幾何。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:18",
+   "宣稱": "格式化 view 態幾何同樣委派 Family 4",
+   "真實code行為": "Select Tag view 是 bare Tag，不經 Family 4 Field wrapper。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:39",
+   "宣稱": "edit 態 blur/Enter commit、Esc cancel",
+   "真實code行為": "multiline 普通 Enter 換行；custom renderEdit 沒有 primitive 自動鍵盤或 blur 接線。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:44",
+   "宣稱": "滑鼠 blur 會 commit 且不送回焦點",
+   "真實code行為": "只對內建 Input/Textarea 成立；canonical custom Select 沒有呼叫 p.commit 的 blur handler。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:45",
+   "宣稱": "Enter 會 commit 並把焦點送回 view button",
+   "真實code行為": "multiline 的普通 Enter 只換行；custom control 是否呼叫 p.commit 由 consumer 決定。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:46",
+   "宣稱": "Esc 會 cancel 並把焦點送回 view button",
+   "真實code行為": "內建控件成立；canonical custom Select 未接 p.cancel，Esc 只會處理 Select 自身選單。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:59",
+   "宣稱": "格式化 view/edit 是同一顆控件、只差 chrome，因此零偏移",
+   "真實code行為": "Select view Tag 缺少 edit Select 的 Field 水平內距與高度 wrapper，並非只差 chrome。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:67",
+   "宣稱": "兩路 view↔edit 皆零跳",
+   "真實code行為": "Select Tag 格式化路徑的 bare Tag 與 edit Field wrapper 幾何不同。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:84",
+   "宣稱": "非 string 值必傳 renderEdit",
+   "真實code行為": "renderEdit 的型別仍為 optional，沒有編譯期或 runtime guard。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:89",
+   "宣稱": "鍵盤結算 SSOT 是 Enter=commit / Esc=cancel",
+   "真實code行為": "multiline 明確使用 commitOnEnter=false；普通 Enter 不 commit。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:105",
+   "宣稱": "read 元素具有 data-empty",
+   "真實code行為": "data-empty 只加在預設 Tag；使用 renderRead 時 wrapper 與 consumer node 都不會自動取得。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:132",
+   "宣稱": "focus/commit/Esc 生命週期由 primitive 統一處理",
+   "真實code行為": "custom renderEdit 必須自行接 commit、cancel、blur 與鍵盤事件；canonical custom Select 並未完整接線。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:136",
+   "宣稱": "value=null 時進入 edit 的草稿初值是空字串",
+   "真實code行為": "enterEdit 直接把 value 寫入 draft；null 仍是 null，沒有 normalize 成空字串。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:151",
+   "宣稱": "edit 態控件帶 aria-label（= label）",
+   "真實code行為": "內建控件成立；custom renderEdit 只收到候選值，現有 SelectTagField 未把它傳給 Select。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:157",
+   "宣稱": "edit 態 Enter commit 並回焦 view button",
+   "真實code行為": "multiline 普通 Enter 不 commit；custom control 也不會自動執行此行為。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:158",
+   "宣稱": "edit 態 Esc cancel 並回焦 view button",
+   "真實code行為": "custom control 未接 p.cancel 時不成立；canonical Select story 就是此情況。"
+  },
+  {
+   "fileLine": "inline-edit.spec.md:160",
+   "宣稱": "進 edit 自動 focus；鍵盤結算回焦；滑鼠 blur 結算不回焦",
+   "真實code行為": "這不是 custom renderEdit 的保證；autoFocus、鍵盤與 blur 都須 consumer 接線，desktop Select 還會丟棄 autoFocus。"
+  },
+  {
+   "fileLine": "inline-edit.anatomy.stories.tsx:59",
+   "宣稱": "read↔edit 零跳因兩態是同一顆控件",
+   "真實code行為": "預設 anatomy 路徑是 read Tag 對 edit Input/Textarea。"
+  },
+  {
+   "fileLine": "inline-edit.anatomy.stories.tsx:87",
+   "宣稱": "blur / Enter 且草稿有變更時提交",
+   "真實code行為": "multiline 普通 Enter 不提交；custom renderEdit 也沒有自動結算。"
+  },
+  {
+   "fileLine": "inline-edit.anatomy.stories.tsx:90",
+   "宣稱": "非 string 值必傳 renderEdit",
+   "真實code行為": "公開 TypeScript API 未強制，renderEdit 對所有 T 均可省略。"
+  },
+  {
+   "fileLine": "inline-edit.anatomy.stories.tsx:94",
+   "宣稱": "label 會提供控件 aria-label",
+   "真實code行為": "只保證把值交給 renderEdit callback；custom consumer 不轉交時，實際控件沒有該 aria-label。"
+  },
+  {
+   "fileLine": "inline-edit.anatomy.stories.tsx:178",
+   "宣稱": "鍵盤 Enter/Esc 結算後回焦；滑鼠 blur 回純 view 不搶焦",
+   "真實code行為": "只完整涵蓋內建控件；multiline 普通 Enter不結算，custom control 需自行接線且 p.commit 永遠走回焦路徑。"
+  },
+  {
+   "fileLine": "inline-edit.stories.tsx:150",
+   "宣稱": "Tag 盒子左緣對齊其他純文字值",
+   "真實code行為": "standalone 純值路徑有 field-px，Select bare Tag 沒有，兩者左緣相差一個 --field-px。"
+  },
+  {
+   "fileLine": "inline-edit.stories.tsx:155",
+   "宣稱": "切 edit mode 後立即開啟 Select 選單",
+   "真實code行為": "desktop CustomSelect 消費 defaultOpen；mobile NativeSelect 明確丟棄 defaultOpen，因此不是跨 native/custom 的保證。"
+  },
+  {
+   "fileLine": "inline-edit.stories.tsx:200",
+   "宣稱": "Vertical Field 中 Tag 與 FieldLabel、plain value 左緣對齊",
+   "真實code行為": "vertical InlineEdit 的負 margin 預期由 view control 的 field-px 抵消；bare Select Tag 沒有該 padding，因此左移一個 --field-px。"
+  }
+ ]
+}

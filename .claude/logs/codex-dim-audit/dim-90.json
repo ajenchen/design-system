@@ -1,0 +1,18 @@
+{
+ "dim": 90,
+ "filesScanned": 378,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/DescriptionList/description-list.principles.stories.tsx:81",
+   "問題": "正向範例將 section heading → DescriptionList 的 macro gap 硬寫為 mb-2；spec 明定此間距須消費 density-aware layout-space-tight，同元件其他 stories 也已使用該 token。",
+   "severity": "material",
+   "建議": "改為 mb-[var(--layout-space-tight)]，對齊 DescriptionList section-heading canonical。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Dialog/dialog.principles.stories.tsx:85",
+   "問題": "Dialog 表單正向範例以 space-y-3 排列兩個 parallel fields；同元件正式表單 story 已使用 layout-space-loose，形成直接 canonical 漂移。",
+   "severity": "material",
+   "建議": "改為 flex flex-col gap-[var(--layout-space-loose)]，對齊 Dialog 表單與 layoutSpace Rule 3。"
+  }
+ ]
+}

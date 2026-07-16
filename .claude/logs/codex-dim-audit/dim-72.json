@@ -1,0 +1,90 @@
+{
+ "dim": 72,
+ "filesScanned": 85,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/scripts/gen-design-system-barrel.mjs:275-284; packages/design-system/src/index.ts:79,118,231,249,329,334,420,545,551-557,567-568",
+   "問題": "Root barrel 仍公開僅供 DS 內部 wiring 的 Context、raw Tailwind／尺寸 helper，以及已標記 @internal 或 spec 明禁 app-code 使用的 primitive；產生器只按 Internal／Meta 名稱過濾，未辨識 declaration-level @internal，讓實作細節成為 npm 契約。",
+   "severity": "material",
+   "建議": "改用明確 public allowlist，或讓產生器解析 @internal；移除 ButtonGroupContext、CheckboxGroupContext、floatingLayerClass、getMenuListMinHeight、PeoplePicker layout helpers、handleSheetOpenAutoFocus、AVATAR_SIZE／ICON_SIZE、RowSizeProvider 與 ItemInlineAction 系列等非 consumer API。"
+  },
+  {
+   "fileLine": "packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx:335,395; packages/design-system/src/components/Menu/menu-item.tsx:112,125; packages/design-system/src/components/SelectionControl/selection-item.tsx:112,116,121-129; packages/design-system/src/components/DataTable/column-types.ts:72; packages/design-system/src/components/DataTable/cell-registry.tsx:122-123",
+   "問題": "四組截行 API 均接受任意 number，但 canonical／實作只支援 1–6；無效值會靜默取消截斷，而 DataTable 還以 runtime interpolation 產生 Tailwind 無法靜態生成的 class。",
+   "severity": "material",
+   "建議": "建立共用 LineClamp = 1|2|3|4|5|6，需關閉時另含 'none'，並統一使用靜態 class map；若確需任意正整數，改用 WebkitLineClamp 並做 runtime 驗證。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Slider/slider.tsx:55; packages/design-system/src/components/ScrollArea/scroll-area.tsx:37; packages/design-system/src/components/SegmentedControl/segmented-control.tsx:220; packages/design-system/src/components/Switch/switch.tsx:98",
+   "問題": "元件從 Radix Root／Item 繼承 asChild，卻固定建立內部 children；Slider、ScrollArea、SegmentedControl 會把多個 children 交給 Slot 而可能觸發 React.Children.only，Switch 則會把 switch semantics 套到內部 Thumb，而非 consumer 提供的元素。",
+   "severity": "material",
+   "建議": "從公開 props 明確 Omit asChild；只有能保證接收並渲染單一 consumer ReactElement 的元件才公開 polymorphic escape hatch。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:98; packages/design-system/src/components/TimePicker/time-picker.tsx:108; packages/design-system/src/patterns/resize-handle/resize-handle.tsx:38",
+   "問題": "三個元件繼承 children，但實際固定渲染自己的 subtree，consumer 傳入的 children 會被靜默覆蓋，形成無法兌現的公開 API。",
+   "severity": "marginal",
+   "建議": "從各自繼承型別中 Omit children；若未來需要內容插槽，另定義有明確位置與型別的 slot prop。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.tsx:311",
+   "問題": "公開 StepItemProps 包含內部注入用的 __isLast，consumer 可直接改變 connector 與末項間距，且內部控制欄位因此成為 root API。",
+   "severity": "material",
+   "建議": "從公開 StepItemProps 移除 __isLast，另以 private injected-props intersection 供 Steps 內部 clone/render 使用。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:61",
+   "問題": "Tabs 繼承 orientation='vertical'，但 TabsList 的 layout、底線與 overflow 固定為水平；傳 vertical 只改變鍵盤方向及 ARIA，造成行為與視覺語意不一致。",
+   "severity": "material",
+   "建議": "目前先從公開 TabsProps 排除 orientation；待 vertical layout、indicator、overflow、spec 與 stories 完整後再開放。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:162,217",
+   "問題": "宣告式 BreadcrumbItemSpec 暴露 asChild，但渲染時固定把不轉發 href/ref 的 TruncatedLabel 當 Slot child；consumer 設定後仍無法得到 router link，導覽語意會靜默消失。",
+   "severity": "material",
+   "建議": "從 BreadcrumbItemSpec 移除 asChild；宣告式路徑若需 router integration，改成實際轉發的 renderLink／linkElement 契約，compositional BreadcrumbLink 可保留 asChild。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:192-196,224-245",
+   "問題": "maxItems、itemsBeforeCollapse、itemsAfterCollapse 是互不約束的 number；不合法組合可產生空 ellipsis 與重複項目，例如 5 項搭配 maxItems=4、before=3、after=3。",
+   "severity": "material",
+   "建議": "改為單一 collapse config，驗證正整數及 before + after < maxItems，並對超出 items 長度或重疊的組合給出明確開發期警告。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table-filter-panel.tsx:128-142,224-248,317-319,348-392",
+   "問題": "DataTableFilterPanel 同時接受獨立 mode 與已具 discriminant 的 value.mode／defaultValue.mode；型別允許互相矛盾，rows、寬度、CTA 與新增動作又分別依賴不同 mode，會產生錯誤文案甚至無反應操作。",
+   "severity": "material",
+   "建議": "移除重複的 mode prop並統一由 value.mode 推導；或改成 flat／nested discriminated props union，將 value、defaultValue、onChange 鎖在同一分支。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/filter-tree.ts:53; packages/design-system/src/components/DataTable/filter-operators.ts:37-39",
+   "問題": "FilterCondition.op 與 OperatorSpec.op 都是 string，但 operator registry 是封閉集合；拼錯或過期 operator 可通過編譯，最後被 evaluator 靜默視為不完整條件。",
+   "severity": "marginal",
+   "建議": "以 as const registry 推導 FilterOperator union；持久化資料仍可在 boundary 接收 string，但須驗證後才轉入 typed tree。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.tsx:15; packages/design-system/src/components/DataTable/column-types.ts:122",
+   "問題": "precision 接受任意 number，但 spec 上限為 6；負數、小數與超限值仍能通過型別並進入 Intl.NumberFormat。",
+   "severity": "material",
+   "建議": "建立共用 NumberPrecision = 0|1|2|3|4|5|6，供 NumberInput 與 DataTable 共用，並對 JavaScript／外部資料加 runtime guard。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.tsx:65",
+   "問題": "max 接受任意 number，但 spec 明定最多 7；0、負數、小數及文件明禁的 max=10 都能通過型別。",
+   "severity": "material",
+   "建議": "收窄為 1|2|3|4|5|6|7，並做 runtime 整數與範圍驗證；超過 7 的量表導向 Slider。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Select/select.tsx:45",
+   "問題": "SelectOption.tagVariant 是任意 string，實作卻多次硬 cast 後傳給 Tag.color；拼錯或不支援值能通過編譯，名稱也未對齊 Tag 的 color canonical。",
+   "severity": "marginal",
+   "建議": "改為 tagColor?: NonNullable<TagProps['color']>；需要相容期時保留已 deprecated 的 tagVariant alias。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:72",
+   "問題": "移除 callback 採 canonical onRemove，但 accessible-name 輸入卻叫 dismissLabel；remove 與 dismiss 語意不一致，名稱也未說清楚它是目標名稱或完整 aria-label。",
+   "severity": "marginal",
+   "建議": "若元件繼續組合 aria-label，改名 removeLabel；若由 consumer 提供完整 accessible name，改為 removeAriaLabel 並與 FileUpload 命名對齊。"
+  }
+ ]
+}

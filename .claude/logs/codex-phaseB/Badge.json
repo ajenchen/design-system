@@ -1,0 +1,121 @@
+{
+ "component": "Badge",
+ "claimsVerified": 148,
+ "falseClaims": [
+  {
+   "fileLine": "badge.tsx:90",
+   "宣稱": "Consumer 可 override（傳 role=\"img\" / role={undefined}）。",
+   "真實code行為": "role=\"img\" 可覆寫；role={undefined} 經 role ?? 'status' 後仍為 status，無法移除預設 role。"
+  },
+  {
+   "fileLine": "badge.spec.md:192",
+   "宣稱": "count 不傳（undefined/null）→ 整顆不渲染。",
+   "真實code行為": "Runtime guard 接受 null，但公開型別是 count?: number；typed consumer 傳 count={null} 會失敗。"
+  },
+  {
+   "fileLine": "badge.spec.md:197",
+   "宣稱": "Dot 適用在線狀態。",
+   "真實code行為": "dot 只提供 critical/high attention 色，沒有 online/presence tone；presence 由另一套狀態系統承擔。"
+  },
+  {
+   "fileLine": "badge.spec.md:217",
+   "宣稱": "max={99}（常見預設）。",
+   "真實code行為": "max 沒有預設值；省略時完整顯示 count，不會自動套用 99+。"
+  },
+  {
+   "fileLine": "badge.anatomy.stories.tsx:4",
+   "宣稱": "唯一行為層 logic 是 max overflow（99+）。",
+   "真實code行為": "另有缺少 count 時不渲染、dot/count 分流及不同預設 variant、文字抑制與預設 role 等行為。"
+  },
+  {
+   "fileLine": "badge.anatomy.stories.tsx:195",
+   "宣稱": "variant Type = 'low'|'medium'|'high'|'critical'。",
+   "真實code行為": "BadgeProps 是 discriminated union；dot:true 時 variant 只允許 critical|high。"
+  },
+  {
+   "fileLine": "badge.anatomy.stories.tsx:195",
+   "宣稱": "variant Default = 'low'。",
+   "真實code行為": "預設值依模式而異：count 是 low，dot 是 critical。"
+  },
+  {
+   "fileLine": "badge.anatomy.stories.tsx:197",
+   "宣稱": "count Type = number，dot 模式下忽略。",
+   "真實code行為": "公開型別在 dot:true 時是 count?: never；只有繞過型別時 runtime 才會忽略。"
+  },
+  {
+   "fileLine": "badge.anatomy.stories.tsx:198",
+   "宣稱": "max Type = number。",
+   "真實code行為": "max 只屬於 count 模式；dot:true 時公開型別是 max?: never。"
+  },
+  {
+   "fileLine": "badge.anatomy.stories.tsx:291",
+   "宣稱": "多位數才有 px-1 左右 padding；個位數靠 min-w-4 成為正圓。",
+   "真實code行為": "dot:false 的 cva class 永遠包含 px-1，個位數同樣具有左右 padding；故事藍圖只在多位數畫出 padding zone。"
+  },
+  {
+   "fileLine": "badge.anatomy.stories.tsx:357",
+   "宣稱": "rounded-full 的 resolved value 是 9999px。",
+   "真實code行為": "本專案 Tailwind 4.2.2 將 rounded-full 編譯為 border-radius: calc(infinity * 1px)。"
+  },
+  {
+   "fileLine": "badge.anatomy.stories.tsx:464",
+   "宣稱": "critical 的紅白對比。",
+   "真實code行為": "critical 使用 bg-notification text-on-emphasis；notification 明定為 deep-orange-6，非 categorical red。"
+  },
+  {
+   "fileLine": "badge.anatomy.stories.tsx:514",
+   "宣稱": "Count/Dot 的 rounded-full 都等於 9999px。",
+   "真實code行為": "rounded-full 實際編譯值是 calc(infinity * 1px)，不是 9999px。"
+  },
+  {
+   "fileLine": "badge.anatomy.stories.tsx:581",
+   "宣稱": "Badge 不可聚焦、無鍵盤互動。",
+   "真實code行為": "元件預設不在 tab order 且未內建 handler，但 props 繼承並轉發 HTMLAttributes；consumer 可用 tabIndex 聚焦並傳 onKeyDown。"
+  },
+  {
+   "fileLine": "badge.anatomy.stories.tsx:586",
+   "宣稱": "Badge level 的顏色是紅／藍／灰。",
+   "真實code行為": "實際四級 palette 是 deep-orange／藍／淺藍／灰。"
+  },
+  {
+   "fileLine": "badge.principles.stories.tsx:97",
+   "宣稱": "Dot 適用在線狀態。",
+   "真實code行為": "dot 僅有 critical/high attention variant，沒有 online/presence/success variant。"
+  },
+  {
+   "fileLine": "badge.principles.stories.tsx:146",
+   "宣稱": "Critical 的紅色從罕見獲得信號價值。",
+   "真實code行為": "critical 使用 notification deep-orange-6，不是 red token。"
+  },
+  {
+   "fileLine": "badge.principles.stories.tsx:184",
+   "宣稱": "升 critical → 紅色遍地都是。",
+   "真實code行為": "critical 實際渲染 notification deep-orange。"
+  },
+  {
+   "fileLine": "badge.principles.stories.tsx:191",
+   "宣稱": "critical 紅色觸發 action。",
+   "真實code行為": "critical 實際渲染 notification deep-orange。"
+  },
+  {
+   "fileLine": "badge.principles.stories.tsx:196",
+   "宣稱": "紅色稀缺性才有信號價值。",
+   "真實code行為": "本元件 critical 的稀缺色是 notification deep-orange。"
+  },
+  {
+   "fileLine": "badge.principles.stories.tsx:198",
+   "宣稱": "數一下紅色 badge。",
+   "真實code行為": "此段指 critical badge，但 critical 實際是 notification deep-orange。"
+  },
+  {
+   "fileLine": "badge.principles.stories.tsx:267",
+   "宣稱": "被強制 critical 紅色。",
+   "真實code行為": "critical 實際渲染 notification deep-orange。"
+  },
+  {
+   "fileLine": "badge.principles.stories.tsx:323",
+   "宣稱": "Badge 的 level 靠顏色（紅／藍／灰）。",
+   "真實code行為": "四級 palette 是 deep-orange／藍／淺藍／灰；同檔第 329 行也稱 critical 為橘。"
+  }
+ ]
+}

@@ -1,0 +1,216 @@
+{
+ "component": "FileViewer",
+ "claimsVerified": 649,
+ "falseClaims": [
+  {
+   "fileLine": "file-viewer.tsx:58-59",
+   "宣稱": "Renderer registry 按 MIME type dispatch。",
+   "真實code行為": "registry 接受任意 canRender predicate；內建 image renderer 還會依副檔名判斷，並非只按 MIME dispatch。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:21,166",
+   "宣稱": "擴充 PDF／Video／Code renderer 不需修改 shell；shell 無 hardcoded file type。",
+   "真實code行為": "shell 的 backdrop 邏輯直接 querySelector('img')，Filmstrip 也直接呼叫 canRenderImage；非 image renderer 並非完全可插拔。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:53",
+   "宣稱": "Canonical 固定 5 章。",
+   "真實code行為": "現行 audit rubric canonical 為 6 章，包含 Accessibility。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:124",
+   "宣稱": "ZoomInput 順序為 [−][%][+][⌄]。",
+   "真實code行為": "實際為 [−][Input（含 % 與內嵌 dropdown trigger）][+]。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:143",
+   "宣稱": "關閉只 unmount Content；重開維持相同 zoom／info 狀態。",
+   "真實code行為": "Radix Portal 內的 Overlay 與 Content 都會 unmount；ImageRenderer 重掛後 onLoad 可能重新計算 zoom，因此狀態並非完整保留。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:194",
+   "宣稱": "renderer 宣告 pageNumber capability 時，shell 自動顯示頁碼導覽。",
+   "真實code行為": "toolbar 只消費 capabilities.zoom；pageNumber 與 rotate 均未接入 UI。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:204",
+   "宣稱": "zoom > 100% 才可 pan。",
+   "真實code行為": "程式沒有 100% threshold；能否移動由內容尺寸與 react-zoom-pan-pinch bounds 決定。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:205",
+   "宣稱": "wheel 每次固定約 3%，smooth 僅套用 toolbar button。",
+   "真實code行為": "wheel 變化量為 step × |deltaY|，不是固定 3%；react-zoom-pan-pinch 的 smooth 預設也會作用於 wheel。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:207,211",
+   "宣稱": "wheel zoom 永遠以游標為 anchor，不漂移。",
+   "真實code行為": "limitToBounds 與 centerZoomedOut 會在邊界或內容小於 viewport 時重新置中／clamp，無法保證游標 anchor 絕對不漂移。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:209",
+   "宣稱": "重新選擇目前 fit mode 仍會重新置中。",
+   "真實code行為": "若計算出的 zoom 與目前數值相同，onZoomChange 不產生 state change，後續 centerView effect 不會執行。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:210",
+   "宣稱": "centerZoomedOut 在 zoom ≤ 100% 時置中。",
+   "真實code行為": "library 依縮放後內容與 wrapper 的各軸尺寸判斷，不以 100% 作為門檻。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:213",
+   "宣稱": "目前 zoom 在 fit 值 ±5 percentage points 內即視為 atFit。",
+   "真實code行為": "實作使用 Math.abs(diff) < 5；差值恰為 5 時不算 atFit。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:214,226",
+   "宣稱": "切換檔案一律重新 fit-page。",
+   "真實code行為": "fitRequest 不會在選檔時重設；先前的 fit-width 等 request 可能在新圖載入後重套，同 URL 的檔案也不會觸發依 file.url 的 load effect。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:341",
+   "宣稱": "圖片載入錯誤由 renderer 自行處理。",
+   "真實code行為": "ImageRenderer 沒有 onError、error state、fallback UI 或 ErrorBoundary。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:364",
+   "宣稱": "開啟時 screen reader 會讀出 title。",
+   "真實code行為": "雖有 aria-labelledby，但 onOpenAutoFocus 被取消且沒有替代 focus；焦點未進入 dialog 時不保證觸發讀屏宣告。"
+  },
+  {
+   "fileLine": "file-viewer.spec.md:373",
+   "宣稱": "開啟時焦點留在 trigger。",
+   "真實code行為": "元件沒有 Dialog.Trigger；defaultOpen 或程式化開啟時，焦點可能停在 body 或任意既有元素。"
+  },
+  {
+   "fileLine": "file-viewer.tsx:267-279",
+   "宣稱": "只設 data-theme 不足；DropdownMenuContent 必須另加 bg-surface-raised 與內層 data-theme。",
+   "真實code行為": "canonical DropdownMenuContent 已含 bg-surface-raised；Content 上的 data-theme 所定義變數會由子元素繼承，額外 class／wrapper 並非必要條件。"
+  },
+  {
+   "fileLine": "file-viewer.tsx:702-703",
+   "宣稱": "descriptionPlaceholderReadOnly 是唯讀模式 placeholder。",
+   "真實code行為": "唯讀空值由 Textarea 渲染成顯示用 div，非空值又不顯示 placeholder；此 prop 沒有可見 runtime 狀態。"
+  },
+  {
+   "fileLine": "file-viewer.tsx:825-827",
+   "宣稱": "選取新檔案時重設為 fit-page。",
+   "真實code行為": "選檔沒有重設 fitRequest；renderer 可能沿用上一個 fit mode，同 URL 也不觸發對應 effect。"
+  },
+  {
+   "fileLine": "file-viewer.tsx:960-961",
+   "宣稱": "取消 Radix auto-focus，將焦點留給 viewport。",
+   "真實code行為": "viewport 沒有 tabIndex、focus ref 或 focus()；程式只取消預設 focus，沒有把焦點移至 viewport。"
+  },
+  {
+   "fileLine": "image-renderer.tsx:18",
+   "宣稱": "fit-width 會填滿 viewport 寬度。",
+   "真實code行為": "計算值被 clamp 至最高 400%；很小的圖片可能仍無法填滿 viewport。"
+  },
+  {
+   "fileLine": "image-renderer.tsx:19,97-100",
+   "宣稱": "fit-page 會完整放入 viewport。",
+   "真實code行為": "fit scale 最低被 clamp 為 10%；極大圖片在 10% 仍可能超出 viewport。"
+  },
+  {
+   "fileLine": "image-renderer.tsx:53-54",
+   "宣稱": "lastFitMode 追蹤使用者最後的 zoom intent。",
+   "真實code行為": "toolbar ±、preset、輸入值及 0 shortcut 改變 zoom 時不會更新 lastFitMode；resize 可能重新套用較舊的 fit intent。"
+  },
+  {
+   "fileLine": "image-renderer.tsx:238-244",
+   "宣稱": "wheel 使用固定 step，smooth 只用於按鈕。",
+   "真實code行為": "library 依 deltaY 放大 step，且 smooth 預設同樣適用 wheel。"
+  },
+  {
+   "fileLine": "file-viewer.stories.tsx:296",
+   "宣稱": "活動照片集合關閉 filmstrip，以單張圖片為焦點。",
+   "真實code行為": "story 傳入 6 個檔案並設定 showFilmstrip，實際會顯示 filmstrip。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:12",
+   "宣稱": "Canonical 固定 5 章。",
+   "真實code行為": "現行 rubric canonical 為 6 章，包含 Accessibility。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:13-14",
+   "宣稱": "FileViewer 尺寸不隨 density scaling。",
+   "真實code行為": "ChromeHeader、layout spacing、Filmstrip gap、Button 與 ZoomInput 等均消費會隨 density 改變的 token／primitive。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:86-89",
+   "宣稱": "Renderer registry 依 MIME type dispatch。",
+   "真實code行為": "registry 使用任意 canRender predicate；內建圖片判斷也包含副檔名 fallback。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:187",
+   "宣稱": "FileViewer 是 default export。",
+   "真實code行為": "模組只提供 named export。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:232",
+   "宣稱": "readOnly=true 時 description 使用 textarea。",
+   "真實code行為": "唯讀非空值才是 native textarea；唯讀空值會改渲染為顯示用 div。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:236",
+   "宣稱": "15 個 labels／placeholders 都可完整自訂。",
+   "真實code行為": "descriptionPlaceholderReadOnly 沒有任何可見狀態，只有其餘 14 項會影響實際輸出。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:607-612",
+   "宣稱": "所有 chrome 尺寸固定，只有 Button／ZoomInput 會隨 density 改變。",
+   "真實code行為": "header 高度、layout-space padding／gap、Filmstrip gap 等其他 token 也會隨 density 改變。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:814",
+   "宣稱": "fit-page 比例就是 min(containerWidth/imageWidth, containerHeight/imageHeight)。",
+   "真實code行為": "計算結果還會經 10%–400% clamp 與 flooring；極端尺寸下不等於該原始比例。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:837-839",
+   "宣稱": "雙擊圖片切換 fit-page／fit-width。",
+   "真實code行為": "onDoubleClick 綁在整個 ImageRenderer container，沒有驗證 event target 是否為圖片；雙擊空白區也會觸發。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:837-839",
+   "宣稱": "與 fit 值相差 ±5 percentage points 內視為目前 fit。",
+   "真實code行為": "判斷為差值 < 5，恰好相差 5 時不成立。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:842-845",
+   "宣稱": "fit-width／fit-page 直接使用所列絕對公式。",
+   "真實code行為": "兩種模式皆受 10%–400% clamp 與 flooring 影響，極端圖片尺寸不符合宣稱公式。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:847-849",
+   "宣稱": "只有 zoom > 100% 才能 pan。",
+   "真實code行為": "沒有 zoom threshold；panning 是否產生位移取決於縮放後內容尺寸及 bounds。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:905-909",
+   "宣稱": "所有鍵盤操作都有對應的 toolbar button。",
+   "真實code行為": "方向鍵對應 viewport controls，0 對應輸入值，F 對應 dropdown menu item；並非全是 toolbar button。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:964-967",
+   "宣稱": "I 鍵永遠切換 info panel。",
+   "真實code行為": "焦點位於 input、textarea 或 contentEditable 時 handler 會直接返回。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:997-999",
+   "宣稱": "Renderer 自行處理圖片載入錯誤。",
+   "真實code行為": "ImageRenderer 沒有錯誤事件處理或 fallback UI。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:1075",
+   "宣稱": "zoom／rotate／pageNumber capabilities 會動態決定 toolbar controls。",
+   "真實code行為": "目前只有 capabilities.zoom 被 toolbar 消費。"
+  },
+  {
+   "fileLine": "file-viewer.anatomy.stories.tsx:1127",
+   "宣稱": "開啟後 screen reader 讀出 title，且焦點留在 trigger。",
+   "真實code行為": "取消 auto-focus 後沒有替代焦點目的地，也沒有 Dialog.Trigger；兩項行為均不受保證。焦點一旦進入 Content 後的 trap 行為則成立。"
+  }
+ ]
+}

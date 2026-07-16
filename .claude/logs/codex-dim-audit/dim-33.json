@@ -1,0 +1,42 @@
+{
+ "dim": 33,
+ "filesScanned": 460,
+ "findings": [
+  {
+   "fileLine": ".claude/rules/story-rules.md:34",
+   "問題": "Public/Internal 仍採已被 ui-development.md:14-26 明文淘汰的「預設視覺／直接渲染／是否被 wrapper」分類法；FieldControlGroup、ResizeHandle 等 public composition primitive 會被誤判。",
+   "severity": "material",
+   "建議": "刪除舊三 test，統一指向 intent-based public-API SSOT。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:426",
+   "問題": "Root-exported ComboboxProps 暴露 5 個標為 @internal 的 PeoplePicker 量測 hooks；其中 tagAreaPaddingLeftPx 無現行 consumer，建置後 declaration 仍可見，@internal 未形成 API 邊界。",
+   "severity": "material",
+   "建議": "分離 public ComboboxProps 與 wrapper-only internal props；root signature 只暴露 public surface，刪除無 consumer 的預留 prop。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Command/command.tsx:31",
+   "問題": "Command folder 整體標為 internal 並排除 root barrel，但 CommandDialog 被 spec 指定為 app 的 Cmd+K consumer wrapper；同時 principles/anatomy 宣稱 Command 不可直接放 app，showcase/spec 卻允許 bordered-inline 例外，且 spec 又把 internal SelectMenu 稱為公開入口，抽象邊界互相矛盾。",
+   "severity": "material",
+   "建議": "保留低階 Command primitives 為 internal，將 CommandDialog 建立為 public front-door；同步明定 bordered-inline subpath 例外，並把 SelectMenu 改稱 internal composite。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:2",
+   "問題": "Story 把 size 定義為 row-density、甚至稱為非 component size，與 data-table.spec.md:69-75 的「Size 不等於 density」直接衝突，並以外部產品術語覆蓋 DS canonical。",
+   "severity": "material",
+   "建議": "改稱 DataTable size 的 RowHeightMatrix 表現；先引用內部 spec，外部 benchmark 僅作有來源的輔證。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileItem/file-item.anatomy.stories.tsx:224",
+   "問題": "Story 以「Mode 決定 density」合理化無 size prop；但 file-item.spec.md:22-24、50-66 定義 compact/rich 為資訊量與結構策略，且兩者皆為 scanning，混淆 mode、size、global density 三軸。",
+   "severity": "material",
+   "建議": "改用 information-richness／structure mode rationale，明確分開 mode、size 與 density。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:115",
+   "問題": "M22 全量語意過濾後，仍有 74/86 specs 的 309 段、32 個 story files 的 41 段、24 個 implementation files 的 54 段實質 benchmark claim 缺同段官方來源或合法撤回；共 130 檔、404 段。大量 @benchmark-cited 亦不在合法 escape 清單。",
+   "severity": "material",
+   "建議": "逐段補官方 URL／GitHub source line／snapshot；無法驗證者加 @benchmark-unverified，並移除誤導性的 @benchmark-cited marker。"
+  }
+ ]
+}

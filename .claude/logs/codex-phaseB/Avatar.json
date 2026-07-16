@@ -1,0 +1,156 @@
+{
+ "component": "Avatar",
+ "claimsVerified": 318,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:23",
+   "宣稱": "文字 fallback 字體 = size × 0.5",
+   "真實code行為": "數字尺寸實際使用 Math.round(size × 0.5)；奇數或非整數尺寸不等於原始乘積。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:33",
+   "宣稱": "solid 深字 hue 只有 yellow/amber/orange/lime",
+   "真實code行為": "CAT_SOLID_TOKENS 目前也將 turquoise 映射到 --on-emphasis-dark。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:72-74",
+   "宣稱": "Portal 後的 HoverCardContent 會繼承 trigger subtree theme",
+   "真實code行為": "Radix Portal 將 Content 掛到 document.body，CSS inheritance 走 body/html，不經 trigger subtree。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:110",
+   "宣稱": "亮色 hue yellow/amber/orange/lime 使用深字",
+   "真實code行為": "turquoise 也使用 --on-emphasis-dark 深字。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:189-192",
+   "宣稱": "status dot 是 avatar 的 28%，clamp 8–16px",
+   "真實code行為": "公式只適用數字 size；size='fill' 時直接固定為 10px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:281-282",
+   "宣稱": "presence 已整合到 parent avatar 的 aria-label",
+   "真實code行為": "aria-label 只組合 alt 與 badgeCount，status 從未自動加入；status dot 同時被設為 aria-hidden。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:330-331",
+   "宣稱": "HoverCardContent 不設 max-height，完全由 ProfileCard 自約束",
+   "真實code行為": "DS HoverCardContent 固定帶有 max-h-[var(--radix-hover-card-content-available-height,100vh)]。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:334-335",
+   "宣稱": "巢狀 HoverCard Portal 會繼承 dark tooltip subtree 而變黑",
+   "真實code行為": "Portal content 是 document.body 下的節點，不會繼承 trigger 所在 tooltip subtree 的 data-theme。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.tsx:360-366",
+   "宣稱": "person AvatarData 預設必有 ProfileCard hover",
+   "真實code行為": "hoverCard 仍宣告為 optional，資料型別沒有 person/entity discriminant，也沒有預設 ProfileCard 或 runtime enforcement。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:49",
+   "宣稱": "person avatar 的 ProfileCard hover 是預設行為，不是 opt-in",
+   "真實code行為": "hoverCard 是 optional prop；未顯式傳入時元件直接回傳 baseEl，不建立 HoverCard。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:74",
+   "宣稱": "ALL person avatars 無例外都有 ProfileCard hover",
+   "真實code行為": "元件不判別 person/entity，也不自動建立 ProfileCard；列出的 stories 亦有多個 person Avatar 未傳 hoverCard。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:85-92",
+   "宣稱": "tabIndex canonical 可確保 keyboard user reach ProfileCard content",
+   "真實code行為": "focus 會開卡，但 Radix HoverCardContent 會把內容內所有 tabbable nodes 設為 tabindex=-1；沒有 focus transfer 或 focus trap，ProfileCard actions/onViewMore 無法用 Tab 抵達。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:172",
+   "宣稱": "on-emphasis 深字色只有 yellow/amber/orange/lime",
+   "真實code行為": "turquoise 同樣使用 --on-emphasis-dark。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:186",
+   "宣稱": "yellow/amber/orange/lime 四色用深字，其餘用白",
+   "真實code行為": "實際為五色；turquoise 也使用深字。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:186",
+   "宣稱": "Avatar solid 文字的 WCAG 合規門檻是 large/bold 3:1",
+   "真實code行為": "預設 32px Avatar 的 fallback text 為 16px、font-medium，不屬 large/bold text；rubric 對一般文字要求 4.5:1。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:215",
+   "宣稱": "dotSize = clamp(8, round(avatarSize × 0.28), 16)",
+   "真實code行為": "公式只適用數字 size；fill 模式固定為 10px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:237,243",
+   "宣稱": "alt 必傳",
+   "真實code行為": "AvatarProps 實際宣告 alt?: string，runtime 不強制，元件亦支援無 alt 的 User-icon fallback。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:244",
+   "宣稱": "沒有 alt 時會降級 initials/icon，且一律不會靜默渲染無 SR 標的元素",
+   "真實code行為": "無 alt 不可能產生 initials；圖片成功時輸出空 alt 的 img，圖片失敗或無 src 時輸出 aria-hidden User icon，兩者都可能沒有身份 accessible name。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.stories.tsx:21",
+   "宣稱": "四種內容模式",
+   "真實code行為": "實作只有 image、icon、text 三個內容分支；無 prop 時的 User 是 icon 分支的 FallbackIcon，不是第四種模式。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:75-79",
+   "宣稱": "壞 src 加空 alt 會渲染空 avatar",
+   "真實code行為": "onError 後會顯示預設 User icon；問題是缺少身份名稱，不是視覺空白。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:125",
+   "宣稱": "沒有 src或圖片載入失敗就顯示 initials",
+   "真實code行為": "只有非空 alt 且沒有 icon 時才顯示 initials；有 icon 時顯示該 icon，無 alt 時顯示 User icon。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:148",
+   "宣稱": "status dot 尺寸程式化為 28%",
+   "真實code行為": "數字 size 使用 clamp 公式；fill 模式固定為 10px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:151-156",
+   "宣稱": "示例把在線狀態整合進頭像 alt",
+   "真實code行為": "四個示例的 alt 只有 Ada/Alex/Ben/Bella，均未包含 online/busy/away/offline；狀態對 SR 完全靜默。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:39",
+   "宣稱": "亮 hue yellow/amber/orange/lime 使用深字",
+   "真實code行為": "衍生的 COLOR_TOKENS 也讓 turquoise 使用深字。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:194",
+   "宣稱": "yellow/amber/orange/lime 用深字，其餘白字",
+   "真實code行為": "turquoise 並非白字，同樣使用深字。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:197",
+   "宣稱": "person avatar 預設必帶 hoverCard",
+   "真實code行為": "公開 hoverCard prop 是 optional，沒有預設值或 runtime enforcement。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:646",
+   "宣稱": "Avatar 沒有 hover / focus / active",
+   "真實code行為": "帶 hoverCard 時 wrapper 有 hover-trigger、tabIndex=0 與 focus-visible ring；只有 active 不存在。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:681",
+   "宣稱": "status dot 尺寸為 avatar 的 28%（clamp 8–16px）",
+   "真實code行為": "fill 模式固定為 10px，不依父容器實際 Avatar 尺寸計算。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:702",
+   "宣稱": "沒有 alt 時會降級首字或 icon，不會留下無報讀內容的空頭像",
+   "真實code行為": "無 alt 無法產生首字；成功圖片為空 alt，default/error User icon 亦沒有 accessible name。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:702",
+   "宣稱": "在線狀態整合進頭像本身的 alt 文字",
+   "真實code行為": "元件不會自動合併 status 與 alt；consumer 必須自行提供含狀態的 alt，否則 aria-hidden 狀態點不會被報讀。"
+  }
+ ]
+}

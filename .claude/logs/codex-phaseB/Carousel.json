@@ -1,0 +1,156 @@
+{
+ "component": "Carousel",
+ "claimsVerified": 593,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.stories.tsx:2",
+   "宣稱": "arrow visibility hover-revealed / dots active state 由 Embla 內建處理",
+   "真實code行為": "箭頭顯隱與 dot 視覺狀態由 carousel.tsx 的本地 CSS、selectedIndex 與條件 class 處理；Embla 只提供 snap 狀態與事件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:130",
+   "宣稱": "orientation 對應的根容器方向鍵切換是 APG 建議",
+   "真實code行為": "這是元件自訂的 capture-phase 行為；[W3C APG Carousel](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/) grouped/basic 鍵盤契約只規定 Tab 順序與原生 button activation，未建議 root ArrowLeft/Right/Up/Down 導覽。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:232",
+   "宣稱": "arrow wrapper 存在僅為絕對定位與 hover/focus 可見性",
+   "真實code行為": "wrapper 亦負責 disabled 邊界隱藏及 pointer-events suppression（:has(button:disabled)）。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:330",
+   "宣稱": "目前實作採 APG grouped carousel 模型",
+   "真實code行為": "CarouselItem 沒有 APG 要求的 accessible slide name，current picker 也只設 aria-current、未設 APG grouped 指定的 aria-disabled=true，因此不是完整 grouped contract。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:336",
+   "宣稱": "根容器方向鍵＝切張",
+   "真實code行為": "handler 呼叫 Embla scrollPrev/scrollNext，實際切換的是 scroll snap；slidesToScroll 分組時一個 snap 可包含多張 slide。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:350",
+   "宣稱": "aria-current 告知 SR「你在這張」",
+   "真實code行為": "selectedIndex 來自 selectedScrollSnap()，標記的是目前 snap；分組或 multi-view 時不等於單一 CarouselItem。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:350",
+   "宣稱": "點擊 current dot 為 no-op",
+   "真實code行為": "沒有 current-index guard；click 仍呼叫 scrollTo(selectedIndex)，拖曳或慣性造成位置偏離時會重新對齊該 snap。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:352",
+   "宣稱": "dot 的 aria-label「跳至第 N 張」描述真實目標",
+   "真實code行為": "i 是 Embla scroll-snap index，不保證是 slide index；分組時目標可能是一組 slides。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:357",
+   "宣稱": "視覺 dot 維持 6×6 不變，僅擴大點擊目標",
+   "真實code行為": "selected dot 會由 w-1.5 變成 w-6，即由 6×6 變成 24×6。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:387",
+   "宣稱": "carouselMeta.tokens.bg 為空陣列",
+   "真實code行為": "dot 直接消費 bg-on-emphasis/60、bg-on-emphasis/80 與 bg-on-emphasis，metadata 漏列 --on-emphasis。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:20",
+   "宣稱": "單次只顯示一張 slide",
+   "真實code行為": "這只符合預設 basis-full；CarouselItem className 可覆寫 basis，spec 自己也示範 basis-1/3 多張並排。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:49",
+   "宣稱": "Carousel 是 snap-to 一次一張",
+   "真實code行為": "Embla 推進的是 scroll snap；slidesToScroll 或多張並排可讓一個 snap 對應多張 slides。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:68",
+   "宣稱": "dots 仍是「第 2 張／第 3 張」概念",
+   "真實code行為": "dots 由 scrollSnapList() 生成並以 snap index 導航；支援的 grouped/multi-view 配置不是逐 CarouselItem 編號。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:134",
+   "宣稱": "Button secondary 有 neutral 邊框",
+   "真實code行為": "Button secondary 實際為 border-primary；border-border 是 Carousel 使用的 tertiary。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:151",
+   "宣稱": "scrollTo(i) 直接跳該張",
+   "真實code行為": "scrollTo(i) 接受 snap index；一個 snap 可代表或顯示多張 slide。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:156",
+   "宣稱": "active dot 加寬（非變色）",
+   "真實code行為": "active 同時由 w-1.5 改為 w-6，並由 bg-on-emphasis/60 改為 bg-on-emphasis，背景 alpha 60%→100%。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:158",
+   "宣稱": "active 採寬度變化而非顏色變化",
+   "真實code行為": "實作同時改變寬度與 rendered background alpha。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:196",
+   "宣稱": "aria-label「跳至第 N 張」準確描述每個 dot",
+   "真實code行為": "N 是 snap index；grouped/multi-view 時應描述 snap 或 slide range。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:196",
+   "宣稱": "aria-current dot 代表「目前這張」",
+   "真實code行為": "aria-current 綁定 selectedScrollSnap()，代表目前 snap，不保證是一張 slide。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:201",
+   "宣稱": "本 DS 採 W3C APG grouped carousel 模型",
+   "真實code行為": "[W3C APG](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/)要求每張 slide 有 accessible name，且 current picker 設 aria-disabled=true；目前兩者皆未完整實作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:207",
+   "宣稱": "aria-current 與 APG 原文 aria-disabled 都是 APG 合法變體",
+   "真實code行為": "APG Grouped Carousel 明列 current picker 使用 aria-disabled=true，未列 aria-current 為替代契約；目前程式只設 aria-current。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:213",
+   "宣稱": "本 DS 不支援自動輪播",
+   "真實code行為": "Carousel 公開 plugins prop 並原樣傳給 useEmblaCarousel，因此支援 consumer 傳入 Autoplay；實際限制只是未內建、未預設啟用，也未提供暫停 UI。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:226",
+   "宣稱": "active dot 加寬不變色",
+   "真實code行為": "active 除了 6→24px，也將背景 alpha 由 60% 改為 100%。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.anatomy.stories.tsx:315",
+   "宣稱": "active 不靠變色而是加寬至 24px",
+   "真實code行為": "active 同時加寬並把 bg-on-emphasis/60 改成 bg-on-emphasis。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.anatomy.stories.tsx:394",
+   "宣稱": "6×6 inactive dot 配合 hit-area 符合 minimum touch target",
+   "真實code行為": "pseudo-element 只將 inactive target 擴為 12×24px，相鄰中心距 12px；既不足 24×24，24px spacing circles 亦相交，不符合 [WCAG 2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.anatomy.stories.tsx:453",
+   "宣稱": "點 dot 直接跳該張",
+   "真實code行為": "dot 跳至第 i 個 Embla snap；分組時不等於單一 slide。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.anatomy.stories.tsx:467",
+   "宣稱": "點底部 dot 直接跳至該張",
+   "真實code行為": "實際目標是 scroll snap，可能對應多張 slides。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.anatomy.stories.tsx:514",
+   "宣稱": "dot aria-label「跳至第 N 張」描述真實跳轉目標",
+   "真實code行為": "N 是 Embla snap index；grouped/multi-view 時可能對應 slide range。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.anatomy.stories.tsx:514",
+   "宣稱": "aria-current 表示「目前這張」",
+   "真實code行為": "目前索引來自 selectedScrollSnap()，表示目前 snap。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx:265",
+   "宣稱": "永遠可見 anti-pattern 與正式 Carousel arrow 的關鍵差異只在 wrapper 沒有 fade 邏輯",
+   "真實code行為": "anti-pattern Button 未套正式 CarouselPrevious/Next 的 rounded-full override，因此 shape 也不同。"
+  }
+ ]
+}
