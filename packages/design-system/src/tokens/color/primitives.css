@@ -285,7 +285,10 @@
   --color-neutral-9-opaque: color-mix(in srgb, white var(--_na9), black);
 
   /* Blue */
-  --color-blue-6:  oklch(0.60 0.22 258);
+  /* 2026-07-16 user 拍板:dark 主色對比升級 — 0.60→0.63(≈#2C84FF,對齊 Apple dark systemBlue)。
+     card/table/浮層 surface 上互動文字 4.07-4.10:1(AA ✗)→ 4.63-4.67:1(AA ✓);canvas 5.53:1。
+     其餘 1-10 階不手動指定,由本基準經下方既有相對公式自動推導(單一基準,設計語言不變)。 */
+  --color-blue-6:  oklch(0.63 0.22 258);
   --color-blue-1:  oklch(from var(--color-blue-6) l c h / calc(0.12 / l));
   --color-blue-2:  oklch(from var(--color-blue-6) calc(l * 0.28) calc(c * 0.65) h);
   --color-blue-3:  oklch(from var(--color-blue-6) calc(l * 0.44) calc(c * 0.82) h);

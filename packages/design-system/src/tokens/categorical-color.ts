@@ -24,7 +24,7 @@
  * **機械防線**:`scripts/categorical-color-invariants.mjs` I1(release:preflight 已 chain)強制 map 的 key X 的值含 `--color-X-`(名實一致,禁 offset;原引 hook 名不存在,2026-07-04 修)。
  */
 
-/** 12 個 categorical 色相(順序對齊 primitives.css / Storybook color token 列)。 */
+/** 12 個 categorical 色相。⚠️ 順序 = **categorical 指派序**(圖表系列鄰色最大區辨:blue→green→deep-orange→yellow→red…),**非** primitives.css 檔內宣告序 — 兩者本就不同,map 以名為 key 故功能無涉;**禁**為「對齊」重排(重排 = 圖表系列換色 = 視覺 breaking)。 */
 export const CATEGORICAL_HUES = [
   'blue',
   'green',

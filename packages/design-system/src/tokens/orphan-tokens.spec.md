@@ -44,7 +44,7 @@ benchmark:
 
 **Why**:Material 3「Key Colors & Tones」+ Atlassian「Full color spectrum」共識 — palette 是設計師調色盤 SSOT,缺中間階就斷層,新元件需消費中間色時不該 hot-add。**全色階是 capability,不是 cost**。
 
-**Regex**:`^--color-(amber|blue|brown|red|green|deep-orange|grey|indigo|lime|orange|pink|purple|teal|yellow|cyan)-\d+$`
+**Regex**:`^--color-(amber|blue|red|green|deep-orange|indigo|lime|orange|purple|yellow)-\d+$`
 
 ### 2. Magenta / Turquoise 專用 palette(14 token,structural)
 

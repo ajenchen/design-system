@@ -117,9 +117,9 @@ const orphans = [...declared.keys()].filter(d => !consumed.has(d)).sort()
 
 // Structural-keep classifier
 const cat = { palette: [], magentaTurquoise: [], maskAlpha: [], chartReserved: [], stateReserved: [], neutralPalette: [], sopSemantic: [], jsLiteralMirror: [], real: [] }
-const PALETTE_HUES = '(amber|blue|brown|red|green|deep-orange|grey|indigo|lime|orange|pink|purple|teal|yellow|cyan)'
+const PALETTE_HUES = '(amber|blue|red|green|deep-orange|indigo|lime|orange|purple|yellow)' // 10 真色相(magenta|turquoise 歸下方專用 rule);2026-07-16 修:原模板列 brown|grey|pink|teal|cyan 5 幽靈色相(不存在,曾害 Coachmark 用 cyan-6 silent 壞)
 const PALETTE_FULL = new RegExp(`^--color-${PALETTE_HUES}-\\d+$`)
-const PALETTE_STATE = new RegExp(`^--${PALETTE_HUES.replace('|magenta|turquoise', '|magenta|turquoise')}-(hover|active|focus|subtle|emphasis|disabled|text)$`)
+const PALETTE_STATE = new RegExp(`^--${PALETTE_HUES.replace(')', '|magenta|turquoise)')}-(hover|active|focus|subtle|emphasis|disabled|text)$`)
 const SOP_SEMANTIC = /^--(primary|error|success|warning|info)-(active|hover|text|subtle|emphasis|foreground|focus)$/
 const SOP_MOTION_DELAY = /^--motion-delay-(plain|rich|close)$/
 

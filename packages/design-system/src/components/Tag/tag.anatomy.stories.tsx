@@ -31,7 +31,7 @@ type SizeKey = 'sm' | 'md' | 'lg'
 type ColorSpec = { bg: string; text: string; border: string }
 type SolidSpec = 'subtle' | 'solid'
 
-// neutral + 全 12 色相(順序對齊 SSOT CATEGORICAL_HUES,1:1 對 primitives.css / color token 列)
+// neutral + 全 12 色相(順序對齊 SSOT CATEGORICAL_HUES = categorical 指派序;與 primitives.css 檔內宣告序本就不同,見 categorical-color.ts 注)
 const VARIANTS: VariantKey[] = ['neutral', ...CATEGORICAL_HUES]
 const SIZES: SizeKey[] = ['sm', 'md', 'lg']
 

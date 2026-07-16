@@ -501,7 +501,7 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 在 `primitives.css` 定義 base-6 值（只需指定 L、C、H），相對公式自動推導 1-10 階。如已存在則跳過。
 
 ```css
---color-turquoise-6: oklch(0.57 0.10 225);
+--color-turquoise-6: oklch(0.64 0.09 196);  /* light 真值(primitives.css:183);dark 另於 dark 區塊定義 */
 /* 1-5 / 7-10 自動由公式推導 */
 ```
 
