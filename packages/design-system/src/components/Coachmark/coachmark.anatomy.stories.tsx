@@ -68,7 +68,7 @@ export const Overview: Story = {
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
-              <tr><Td mono>children</Td><Td mono>ReactNode</Td><Td mono>—</Td><Td>anchor trigger element(Popover asChild)</Td></tr>
+              <tr><Td mono>children</Td><Td mono>ReactElement</Td><Td mono>—</Td><Td>anchor trigger element(Popover asChild Slot 單 element 契約,2026-07-05 型別收緊)</Td></tr>
               <tr><Td mono>open / onOpenChange</Td><Td mono>boolean / (o) =&gt; void</Td><Td mono>—</Td><Td>controlled 控制(多步 tour 必用)</Td></tr>
               <tr><Td mono>defaultOpen</Td><Td mono>boolean</Td><Td mono>—</Td><Td>uncontrolled 初始開啟狀態</Td></tr>
               <tr><Td mono>kind</Td><Td mono>'tips' | 'new-features' | ReactNode</Td><Td mono>—</Td><Td>有值則渲染 Header(tour-level title);'tips'→「使用技巧」、'new-features'→「新功能介紹」、ReactNode→自訂;multi-step tour 建議傳</Td></tr>

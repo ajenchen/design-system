@@ -152,7 +152,7 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 
 ## 邊界案例
 
-- **極長內容**:PopoverContent 設 `max-h-[var(--radix-popover-content-available-height)]`(popover.tsx:69),body 包 `<PopoverBody>`(SurfaceBody `flex-1 min-h-0 overflow-y-auto`)→ viewport 太小時 header / footer 留在視窗內、body 內捲。中間 wrapper 必 forward flex chain,詳 `../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」。
+- **極長內容**:PopoverContent 設 `max-h-[var(--radix-popover-content-available-height)]`(popover.tsx:103),body 包 `<PopoverBody>`(SurfaceBody `flex-1 min-h-0 overflow-y-auto`)→ viewport 太小時 header / footer 留在視窗內、body 內捲。中間 wrapper 必 forward flex chain,詳 `../../patterns/overlay-surface/overlay-surface.spec.md`「Viewport-aware scroll chain invariant」。
 - **Viewport 邊緣**:`collisionPadding = 8` 自動推開(見「Viewport 邊距 canonical」)。
 - **嵌套 Popover**:禁止(見「禁止事項」)。
 - **Dark mode**:殼走 semantic token 自動 adapt(見 `color.spec.md`)。

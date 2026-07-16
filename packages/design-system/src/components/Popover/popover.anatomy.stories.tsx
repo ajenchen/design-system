@@ -244,7 +244,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>開啟 / 關閉</H3>
-        <Desc>Radix 提供 data-state 切換 + DS Tailwind animate 驅動(popover.tsx L70-71):進場 `fade-in + zoom-in-95 + slide-from-side`,離場鏡像。所有方向都使用 side-aware slide 動畫,浮層看起來從 trigger 「長出來」。</Desc>
+        <Desc>Radix 提供 data-state 切換 + DS Tailwind animate 驅動(popover.tsx L105-106):進場 `fade-in + zoom-in-95 + slide-from-side`,離場 `fade-out + zoom-out`(無 slide-out,對齊 shadcn 慣例)。進場方向 side-aware slide,浮層看起來從 trigger 「長出來」。</Desc>
         <ul className="text-caption text-fg-muted list-disc pl-5 space-y-1">
           <li>點擊 trigger → 開啟</li>
           <li>點 Popover 外部 → 關閉(click outside)</li>

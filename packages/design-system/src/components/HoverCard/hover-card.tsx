@@ -85,8 +85,10 @@ export const hoverCardMeta = {
   },
   states: ['default'],
   tokens: {
-    bg: ['bg-surface-raised'],
-    fg: ['--foreground'],
+    // 2026-07-16 deep-audit A.1b:清 Phase-1 佔位 — HoverCard 為純行為 primitive,
+    // Content 不套任何 bg/fg(spec「純行為 primitive」段);bg-surface-raised 屬 consumer(ProfileCard)。
+    bg: [],
+    fg: [],
     ring: [],
   },
 } as const

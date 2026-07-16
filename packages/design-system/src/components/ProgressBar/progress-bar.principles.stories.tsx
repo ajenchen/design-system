@@ -7,6 +7,7 @@ import LinkTo from '@storybook/addon-links/react'
 import { Paperclip, X, FileText, Table as TableIcon } from 'lucide-react'
 import { ProgressBar } from './progress-bar'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
+import { FileItem } from '@/design-system/components/FileItem/file-item'
 import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta = {
@@ -105,31 +106,15 @@ export const UsageGuidance: Story = {
           note="每個檔案一條 ProgressBar 已足夠表達整體狀態(使用者自然從完成數量推算),再加一條總 bar 會造成視覺重複與同步邏輯漂移。Dropbox / Google Drive 都只顯示每檔 bar。"
         >
           <Frame width={480}>
-            <div className="flex flex-col gap-3">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Paperclip size={16} className="text-fg-muted" />
-                  <span className="text-body flex-1 truncate">會議記錄_0418.docx</span>
-                </div>
-                <ProgressBar value={100} status="success" affix="status-icon" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Paperclip size={16} className="text-fg-muted" />
-                  <span className="text-body flex-1 truncate">簡報素材.zip</span>
-                </div>
-                <ProgressBar value={62} status="inProgress" affix="value" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Paperclip size={16} className="text-fg-muted" />
-                  <span className="text-body flex-1 truncate">截圖.png</span>
-                </div>
-                <ProgressBar value={0} status="inProgress" />
-              </div>
+            {/* 上傳列表載體 = FileItem(compact list gap-1 canonical;內部消費 ProgressBar)—
+                不手組 Paperclip + 檔名 + ProgressBar(見下方「檔案上傳 UI → 用 FileItem」rule) */}
+            <div className="flex flex-col gap-1">
+              <FileItem mode="compact" name="會議記錄_0418.docx" status="completed" />
+              <FileItem mode="compact" name="簡報素材.zip" status="uploading" progress={62} />
+              <FileItem mode="compact" name="截圖.png" status="uploading" progress={0} />
             </div>
           </Frame>
-          <Label>✅ 每檔一條,整體進度由使用者自然感知(1 檔完成、2 檔進行中)</Label>
+          <Label>✅ 每檔一條(FileItem 內建),整體進度由使用者自然感知(1 檔完成、2 檔進行中)</Label>
         </Rule>
 
         <Rule

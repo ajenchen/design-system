@@ -24,7 +24,7 @@ const meta: Meta<typeof Button> = {
     },
     danger: {
       control: 'boolean',
-      description: '套用危險色（紅色）。僅 `primary` / `secondary` / `text` 支援（`tertiary` 視覺與 secondary+danger 重複、`link` 語義矛盾，見 spec 禁止事項）。',
+      description: '套用危險色（紅色）。僅 `primary` / `secondary` / `text` 支援（`tertiary` 無 danger compound——會靜默渲染成一般 tertiary、並非等同 secondary+danger；`link` 語義矛盾。見 spec 禁止事項）。',
     },
     size: {
       control: 'select',

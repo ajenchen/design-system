@@ -267,6 +267,6 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 - ↑/↓/←/→ 在日期格間 roving 移動、PageUp/Down 切月、Shift+PageUp/Down 切年、Esc 關閉 — 隨週 / 日 view 增量一併補上 roving tabindex
 - 此為**已知 a11y gap(非發佈 blocker)**:方向鍵 roving 是 APG grid pattern 建議;MVP 所有互動元素皆 Tab 可達(鍵盤可操作性已滿足),驗證基準見下方「驗證」
 
-**Focus**:focus-visible ring 對齊 DS canonical(`outline: 2px solid var(--ring)`);日期數字按鈕與事件 tile 皆有 ring。
+**Focus**:focus-visible ring 對齊 DS canonical(`ring-2 ring-ring`,box-shadow 實作 + `outline-none`,同 button.spec A11y 段);日期數字按鈕與事件 tile 皆有 ring。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。

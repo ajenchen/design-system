@@ -68,7 +68,7 @@ const ISSUE_COLUMNS = [
  *
  * Per codex Layer B D3(2026-05-20):row-driven Aside trigger 才符合 Linear/Notion/Jira/Airtable
  * production 真實情境。row 右側 dedicated action button(`Button variant="text" size="xs" iconOnly`
- * per data-table.spec L193 canonical)→ click 開 Aside + 被選 issue active visual(pressed prop)。
+ * per data-table.spec L153 rowActions canonical)→ click 開 Aside + 被選 issue active visual(pressed prop)。
  * AppShell header toggle 降級為 secondary show/hide 不是主入口。
  */
 function IssuesView({ selectedId, asideOpen, onSelectIssue }: { selectedId?: string; asideOpen: boolean; onSelectIssue: (issue: Issue) => void }) {
@@ -150,7 +150,7 @@ function IssuesView({ selectedId, asideOpen, onSelectIssue }: { selectedId?: str
         </div>
       </div>
       {/* DataTable:naked structure,layoutSpace 規則 1B 父層 mx 對齊 chrome 內容左右邊界。
-          rowActions:per data-table.spec L193 canonical(Button text xs iconOnly,固定 24px)+
+          rowActions:per data-table.spec L153 rowActions canonical(Button text xs iconOnly,固定 24px)+
           pressed={row.id === selectedId} 顯示當前選中(per codex D3 active visual)。 */}
       <div className="flex-1 min-h-0 mx-[var(--layout-space-loose)] mb-[var(--layout-space-loose)]">
         <DataTable
@@ -374,7 +374,7 @@ export const PrimarySidebarWithTabs: Story = {
 /**
  * primary-header mode(GitHub / Gmail / Slack 派)— global header 橫跨頂部 + local header 仍在 main col 頂。
  *
- * @usage-ref: app-shell.spec.md L74(primary-header 2-layer model)
+ * @usage-ref: app-shell.spec.md「primary-header = primary-sidebar + 一條 global header」段(2-layer model)
  * @usage-consumes: ChromeHeader + Sidebar viewportInsetTop + GlobalHeader + PageHeader + IssuesView
  *
  * 2026-05-21 v2 per user clarification「primary-header = primary-sidebar + 一條 global header」:

@@ -154,7 +154,7 @@ export const Accessibility: Story = {
         <li><strong>Skip to main</strong>:`Tab` 第一站 focus skip-link → jump 到 `#app-shell-main`(WCAG 2.4.1)</li>
         <li><strong>Keyboard shortcuts</strong>:`⌘B` / `Ctrl+B` toggle sidebar(消費 Sidebar SSOT)/ `⌘.` / `Ctrl+.` toggle aside</li>
         <li><strong>Modal Aside title</strong>:title 是必填 prop → 行動裝置上以 Sheet 形式開啟時,自動連結 `aria-labelledby`,讓螢幕報讀器讀得到面板名稱</li>
-        <li><strong>Focus trap</strong>:Sheet open 時 focus 在 Aside 內,Esc 關回 trigger(Radix Dialog 內建)</li>
+        <li><strong>Focus trap</strong>:Sheet open 時 focus 在 Aside 內;Esc 關閉後回焦 opener——controlled Sheet 無 SheetTrigger,Radix 內建回焦失效,由 AppShellAside 自建 opener snapshot + onCloseAutoFocus 手動還原(app-shell.tsx,2026-07-14)</li>
       </ul>
     </div>
   ),

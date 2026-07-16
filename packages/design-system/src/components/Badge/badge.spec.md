@@ -379,14 +379,14 @@ Badge 是**計數 / 狀態視覺指示器**,本身**非互動元件**:
 - Badge 通常依附在互動元件上(Button / Nav Item),那些元件有自己的 state——Badge 隨父層視覺連動,不擁有獨立 state。
 - 計數變化(`count` 更新)屬資料更新不是 UI state 切換。
 
-對應 anatomy story:保留 `Overview` + `Inspector` + `ColorMatrix` + `SizeMatrix`。
+對應 anatomy story:保留 `Overview` + `Inspector` + `ColorMatrix` + `SizeMatrix` + `Accessibility`。
 
 ---
 
 ## 相關
 
 - `../Tag/tag.spec.md` — 分類標籤、狀態標記（Badge vs Tag 的詳細對照在本 spec 定位段落）
-- `../Avatar/avatar.spec.md` — `badgeCount` 內部消費 `<Badge variant="critical">`（遵循本 spec）;`status` 是 Avatar 自有 presence SVG（非 Badge 系統）,兩者可並存,詳該 spec
+- `../Avatar/avatar.spec.md` — `badgeCount` 內部消費 `<Badge variant="critical">`（遵循本 spec）;`status` 是 Avatar 自有 presence dot（內部 `span` + inline backgroundColor,非 Badge 系統）,兩者可並存,詳該 spec
 - `../Button/button.spec.md` — iconOnly Button + Badge overlay 通知 icon 的組合模式
 - `../Chip/chip.spec.md` — 可互動 filter（不是 Badge 的用途）
 - `../CircularProgress/circular-progress.spec.md` — Loading 狀態指示(取代 Spinner)

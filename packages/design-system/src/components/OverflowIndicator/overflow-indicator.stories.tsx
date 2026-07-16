@@ -129,38 +129,14 @@ export const AvatarStackOverflow: Story = {
 //   (overflow-indicator.anatomy.stories.tsx)完整覆蓋,展示層只留真實業務場景;
 //   principles UsageGuidance 對應 LinkTo 已同步移除。
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Story 3:Breadcrumb 中段收合(+N 顯示隱藏路徑)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-export const BreadcrumbCollapse: Story = {
-  name: 'Breadcrumb 中段收合',
-  render: () => (
-    <div className="flex flex-col gap-3 max-w-lg">
-      <p className="text-caption text-fg-muted">
-        深層路徑過長時,中段收合為 +N,hover 看完整路徑。
-      </p>
-      <nav className="flex items-center gap-1 text-caption">
-        <span className="text-fg-muted hover:text-foreground cursor-pointer">Projects</span>
-        <span className="text-fg-muted">/</span>
-        <OverflowIndicator count={3} shape="tag" size="sm">
-          <div className="flex flex-col gap-1 text-caption">
-            <span>Platform</span>
-            <span>Infrastructure</span>
-            <span>Monitoring</span>
-          </div>
-        </OverflowIndicator>
-        <span className="text-fg-muted">/</span>
-        <span className="text-fg-muted hover:text-foreground cursor-pointer">Dashboards</span>
-        <span className="text-fg-muted">/</span>
-        <span className="text-foreground font-medium">API latency</span>
-      </nav>
-    </div>
-  ),
-}
+// @story-trait-rationale: BreadcrumbCollapse(Breadcrumb 中段收合)retired 2026-07-16 per
+//   deep-audit A.1b — DS Breadcrumb 收合 canonical = BreadcrumbEllipsis + DropdownMenu(click 開選單,
+//   breadcrumb.spec.md「BreadcrumbEllipsis」段),Breadcrumb 全庫零 OverflowIndicator 消費;
+//   本 story 示範與 canonical 相左的 hover +N 收合 = 誤導 consumer,故 retire;
+//   principles UsageGuidance 對應 LinkTo 已同步移除。
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Story 4:DataTable row 的指派人員溢出
+   Story 3:DataTable row 的指派人員溢出
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const rows = [

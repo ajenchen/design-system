@@ -1286,7 +1286,7 @@ SidebarMenuSkeleton.displayName = "SidebarMenuSkeleton"
 // Phase 2 fill needed: purpose descriptions + when rationale + world-class refs
 export const sidebarMeta = {
   component: 'Sidebar',
-  family: null, // non-family composite / overlay / layout
+  family: 1, // Family 1(Menu item layout)消費者 — 對齊 sidebar.spec.md frontmatter family: 1(SidebarMenuButton rows 消費 item-anatomy;同 tree-view.tsx 慣例)
   variants: {
     default: { when: '標準導覽 row,參與 single-selection' },
     meta: { when: 'Section 底部命令 row(Show more / 新增),不參與 selection' },

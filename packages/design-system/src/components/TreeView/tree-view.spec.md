@@ -5,7 +5,7 @@ variants: {}
 sizes:
   sm: { when: "緊湊清單(與 md 同視覺:text-body、indent 24;保留供密度語意)" }
   md: { when: "default 一般導覽樹" }   # ★ default
-  lg: { when: "touch / 大字級(text-body-lg、px-4 py-2、indent 28)" }
+  lg: { when: "touch / 大字級(text-body-lg、indent 28;row padding 由 --tree-px + field-height 公式)" }
 traits:
   - hasInteractiveStates
   - isStructural

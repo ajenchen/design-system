@@ -273,7 +273,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 
 完整 rationale(包含 2026-04-25 從 padding-formula 派切換的 bug origin)+ 4 家世界級對照 → **SSOT 在 `tokens/uiSize/uiSize.spec.md`「Icon-only 元件的 padding canonical」節**。本 spec 不重複,只 pointer。
 
-**icon-only 按鈕內建自動 tooltip：** 當 `iconOnly` 為 true 時，Button 自動以 `aria-label` 的值渲染 tooltip。開發者不需要額外包 `<Tooltip>`——tooltip 是元件保證的行為，不是開發者「記得要加」的外部組合。
+**icon-only 按鈕內建自動 tooltip：** 當 `iconOnly` 為 true 且非 `asChild` 時，Button 自動以 `aria-label` 的值渲染 tooltip（`asChild` 因 Radix Slot 單 child 限制不包 Tooltip，consumer 需自包）。開發者不需要額外包 `<Tooltip>`——tooltip 是元件保證的行為，不是開發者「記得要加」的外部組合。
 
 `aria-label` 是給螢幕閱讀器的，tooltip 是給所有人看的，兩者語意相同，由同一個值驅動。
 

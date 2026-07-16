@@ -158,7 +158,7 @@ export const UsageGuidance: Story = {
             image={<MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Bot} label="AI 助理" />}
             title="試試新的 AI 助理"
             description="在任何文件中按下 AI 按鈕,讓 Claude 幫你摘要、翻譯或改寫內容。"
-            onSkip={() => {}}
+            isLastStep
             onNext={() => {}}
             side="bottom"
             align="start"

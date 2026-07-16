@@ -24,7 +24,7 @@ import { ItemContent } from '@/design-system/patterns/element-anatomy/item-anato
  * 跨 consumer(avatar.principles / profile-card.stories / future product code)應該用
  * 同一組預設,避免每個範例各自發明 action 組合,讓 reader 誤以為 action 會隨情境自動變。
  *
- * ── 使用方式(hover context 必含 onViewMore,見 profile-card.spec.md 「View more」節)──
+ * ── 使用方式(hover context 必含 onViewMore — canonical owner 見 avatar.spec.md「onViewMore 為 hover context 必含」段;顯示條件見 profile-card.spec.md「View More」節)──
  *   <ProfileCard name="..." actions={<ProfileCardDefaultActions />} onViewMore={...} />
  *
  * ── 何時要換成自訂 action ──

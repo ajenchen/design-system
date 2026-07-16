@@ -1,0 +1,144 @@
+{
+ "dim": 43,
+ "filesScanned": 64,
+ "findings": [
+  {
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx:66",
+   "問題": "公開原則摻入 ReactNode 不機械強制、2026-06-10 拍板等治理紀錄，沒有說明 sidebar slot 為何必須使用 Sidebar。",
+   "severity": "marginal",
+   "建議": "移除日期與檢查機制，只保留使用 Sidebar 才能維持導覽行為與視覺一致性的理由。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx:86",
+   "問題": "核心選型規則密集混用 distinguisher、Header scope、local/global、multi-workspace、bar、app 等非必要英文，降低設計師與 PM 的可讀性。",
+   "severity": "marginal",
+   "建議": "改為繁中人話：唯一判準是標頭只服務目前頁面，還是服務整個產品；僅保留正式模式名稱。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:76",
+   "問題": "Rule 要求至少有 name，但 Avatar API 沒有 name prop；實作與 spec 都以 alt 作為替代文字、fallback 與可存取名稱。",
+   "severity": "material",
+   "建議": "改成即使有 src 也必須傳有意義的 alt，圖片失敗時以 alt 首字顯示；title 也把 name 改為 alt。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chart/chart.principles.stories.tsx:235",
+   "問題": "把 GitHub contribution graph 列為 Line chart 範例不正確；GitHub 官方描述它是 54 欄×8 列、逐格呈現每日資料的圖，不是折線圖。[GitHub 官方說明](https://github.blog/changelog/2023-03-02-accessibility-improvements-for-the-contribution-graph/)",
+   "severity": "marginal",
+   "建議": "換成真正的時間序列折線案例，例如 GitHub traffic views、issue 數量或 MRR 趨勢。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:62",
+   "問題": "note 宣稱常駐旋轉會讓螢幕閱讀器持續收到 loading 通知，但實作無 label 時是 aria-hidden；CSS 旋轉也不會持續觸發朗讀。",
+   "severity": "marginal",
+   "建議": "改用正確理由：永久旋轉會錯誤傳達仍在處理並造成持續動態干擾；裝飾用途應改用一般 Icon。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:192",
+   "問題": "效能不受資料量影響是過度絕對的結論；virtualizer 只降低已掛載 DOM 數，完整 row model、排序、篩選與記憶體成本仍會隨資料量增加。",
+   "severity": "marginal",
+   "建議": "改成大幅降低列渲染成本，並補充大量或遠端資料仍需分頁或伺服器端排序、篩選。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:215",
+   "問題": "此處宣稱 FileUpload 只負責觸發選檔、清單一律由 consumer 渲染，但第256行又說 FileUpload 可透過 files prop 自管清單，兩則公開原則互相矛盾。",
+   "severity": "material",
+   "建議": "統一為雙路徑原則：可交由 files prop 管理，也可自行組合 FileItem；兩條路都不得重畫 FileItem 內部結構。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:256",
+   "問題": "公開 note 寫成帶日期的 changelog 與偽程式碼，混入 dual path、own list via、OR consumer、composing 等大量英文速記，不符合人話要求。",
+   "severity": "marginal",
+   "建議": "移除日期與維護紀錄，改用繁中說清兩種清單管理方式，只保留 files、FileItem 等必要 API 名。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:261",
+   "問題": "以 macOS、Windows、Web 的關閉按鈕都靠右支持排序並不正確，且第277行又承認 macOS 視窗關閉鈕在左，前後口徑矛盾。",
+   "severity": "marginal",
+   "建議": "移除 macOS 跨平台斷言，直接以本 DS 的影響力排序與 dismiss-rightmost canonical 說明。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx:96",
+   "問題": "note 宣稱觸控使用者可點擊人員或連結取得完整資訊，但同一 Rule 的 anchor 沒有 href 或 onClick，範例未提供聲稱的 fallback。",
+   "severity": "marginal",
+   "建議": "把底層 trigger 做成真實可導覽連結或可點擊入口，並明示 HoverCard 只能是額外預覽。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx:142",
+   "問題": "說 Tooltip 在滑鼠離開 trigger 時立刻消失，與 Tooltip canonical 的 Radix grace 區行為不符；指標移往浮層時會暫時維持開啟。",
+   "severity": "marginal",
+   "建議": "改以內容語意區分：簡短且不可互動的說明用 Tooltip，需要在浮層內操作才用 HoverCard。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.principles.stories.tsx:131",
+   "問題": "純文字 note 塞入原始 JSX，以及 Model A、naked variant、host cell 等內部黑話，不是可舉一反三的使用原則。",
+   "severity": "marginal",
+   "建議": "改成人話說明表格儲存格已有自己的版面，展示值應走 view 模式，避免 readonly 外殼增加視覺重量；實作機制留在 spec。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:66",
+   "問題": "標題宣稱 DataTable 不用 NumberInput，note 卻說 DataTable 會自動使用 NumberInput 的 view 模式，前後結論衝突；純文字 note 也直接露出 JSX。",
+   "severity": "material",
+   "建議": "收斂為不要在表格內手動放可編輯 NumberInput；DataTable 會自動用 view 模式格式化數值，因為儲存格主要用於展示與比較。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.principles.stories.tsx:46",
+   "問題": "以 ≤100 作為 OverflowIndicator 與 ScrollArea 的分界未受 spec 或 source 支持，也和同段的少量集合描述矛盾；100 項並非合理的 HoverCard 預覽量。",
+   "severity": "material",
+   "建議": "移除任意數字，改以少量、已知且適合一次預覽，對比大量、未知或需要連續瀏覽；若確需門檻，先在 owner spec 建立依據。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.principles.stories.tsx:68",
+   "問題": "note 教導 Tabs 水平溢出搭配 OverflowIndicator，但 owner spec 明定應使用 horizontal-overflow 的 OverflowMenuTriggerButton 與 DropdownMenu，兩者沒有直接消費關係。",
+   "severity": "material",
+   "建議": "移除 Tabs 作為 OverflowIndicator pattern，保留 Combobox、PeoplePicker 等真實 +N 情境，並將水平溢出指向 horizontal-overflow canonical。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.principles.stories.tsx:166",
+   "問題": "Material Snackbar 固定344px並非正確 benchmark；官方明載中大型畫面應依較長文案水平伸縮，而且 Snackbar 也不是人員預覽卡的近親。[Material Snackbar](https://m2.material.io/components/snackbars/android)",
+   "severity": "material",
+   "建議": "保留避免切換人員時浮層左右跳動的本地理由；刪除錯誤類比，若需 benchmark 應改查同目的的 profile或hover card。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx:279",
+   "問題": "此 note 與範例教 consumer 用裸 ProgressBar 組檔名、取消與位元組進度，直接違反同檔前文及 spec 的檔案上傳 UI 一律使用 FileItem 分界。",
+   "severity": "material",
+   "建議": "改成非檔案型工作，例如取消大量資料匯入；檔案情境改展示 FileItem，或明說它是 FileItem 內部實作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:80",
+   "問題": "note 把 readOnly 一律必填 aria-label 且必含評論數寫成絕對規則，但 spec/source 明定 Field 內可由 aria-labelledby 指向 FieldLabel；評論數也不是必要欄位，正例本身便未包含。",
+   "severity": "material",
+   "建議": "改成 standalone readOnly Rating 必須有可存取名稱；Field 內可沿用 FieldLabel。內容至少說明目前分數與滿分，評論數僅在畫面確實呈現時加入。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:263",
+   "問題": "Amazon、Yelp、Google、Shopify、Airbnb、Tripadvisor 全部用黃星是錯誤的全稱 claim；Tripadvisor 官方使用 bubble rating。[Tripadvisor 官方說明](https://www.tripadvisor.com/business/insights/precision-bubble-rating-update-faq)",
+   "severity": "material",
+   "建議": "保留本系統選擇黃色 rating token 的本地理由，但撤掉全部與世界級一致；若保留 benchmark，逐家核實後只陳述真實共通範圍。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:240",
+   "問題": "圖示 note 只交代16px與繼承文字色的做法，沒有說明固定尺寸與同色各自解決什麼問題，屬結論式規格。",
+   "severity": "material",
+   "建議": "補充固定尺寸如何維持 Tag 前綴節奏，以及繼承文字色如何避免產生第二視覺焦點。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:250",
+   "問題": "頭像 note 只說多選 Combobox 使用 avatar加name，沒有解釋為何頭像仍須搭配名稱辨識，讀者無法類推到其他人員或組織標籤。",
+   "severity": "material",
+   "建議": "補充頭像只提供視覺辨識、名稱承載明確身份，兩者並用才能避免相似頭像或圖片失效造成誤認。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Textarea/textarea.principles.stories.tsx:164",
+   "問題": "note 只舉送出按鈕放在 Textarea 下方的例子，沒有解釋為何操作按鈕不能放進多行輸入框。",
+   "severity": "marginal",
+   "建議": "補充框內操作會占用或遮擋多行閱讀、捲動與調整高度空間，並由 Field 外層承接操作配置。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:74",
+   "問題": "會議15分鐘間隔、雙TimePicker範圍與X清除三則 Rule 的理由未呈現在 Storybook；後兩則理由只存在原始碼註解，公開頁面只剩結論與範例。",
+   "severity": "material",
+   "建議": "把既有註解中的理由移入可見 Rule note或說明段落，並補上15分鐘間隔如何降低無效選項、符合排程粒度的原則。"
+  }
+ ]
+}

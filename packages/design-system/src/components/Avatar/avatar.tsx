@@ -375,7 +375,7 @@ export const avatarMeta = {
   // — item-anatomy AVATAR_SIZE 查表 / ProfileCard 40 等),無 discrete tier → 兩欄留空為 intentional 非漏填
   variants: {},
   sizes: {},
-  states: ['default', 'focus-visible', 'disabled'], // 2026-06-11 R2:本身無自有 hover/active(spec L279;hoverCard 互動屬 HoverCard),
+  states: ['default', 'focus-visible', 'disabled'], // 2026-06-11 R2:本身無自有 hover/active(spec「StateBehavior 範疇」段;hoverCard 互動屬 HoverCard),
   tokens: {
     bg: ['bg-surface-raised'],
     fg: ['--foreground', '--on-emphasis'],

@@ -581,7 +581,7 @@ export const buttonMeta = {
     // 2026-07-14 deep-audit 二次補齊(掃 cva 全 bg-* class):+ neutral-selected-hover / neutral-selected-active
     // (neutral pressedTone compound 消費)+ error / error-hover / error-active(primary+danger bg-error 系)
     bg: ['--primary', '--primary-hover', '--primary-active', '--primary-subtle', '--bg-disabled', '--surface', '--neutral-hover', '--neutral-active', '--neutral-selected', '--neutral-selected-hover', '--neutral-selected-active', '--error', '--error-hover', '--error-active'],
-    fg: ['--on-emphasis', '--fg-disabled', '--foreground', '--primary', '--error', '--error-hover', '--error-active'],
+    fg: ['--on-emphasis', '--fg-disabled', '--foreground', '--primary', '--primary-hover', '--primary-active', '--error', '--error-hover', '--error-active'],
     ring: ['--ring'],
   },
   defaultVariant: 'tertiary',  // 2026-06-10 修 stale:對齊 cva defaultVariants(2026-06-06 labeled 預設改 tertiary,meta 漏同步)

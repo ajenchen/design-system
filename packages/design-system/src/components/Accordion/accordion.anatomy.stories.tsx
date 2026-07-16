@@ -40,7 +40,7 @@ export const Overview: Story = {
             </AccordionItem>
             <AccordionItem value="item-2">
               <AccordionTrigger>下一個 AccordionItem</AccordionTrigger>
-              <AccordionContent>每個 Item 之間由 border-b border-divider 分隔。</AccordionContent>
+              <AccordionContent>每個 Item(含最後一個)底部都有 border-b border-divider——divider 在 item 底緣,非僅 item 之間(shadcn 同款)。</AccordionContent>
             </AccordionItem>
           </Accordion>
         </div>

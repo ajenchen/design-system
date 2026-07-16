@@ -205,7 +205,7 @@ export const SectionMatrix: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Minimal — profile header + View more</H3>
-        <Desc>最小形式:avatar + name + subtitle + **View more**(hover context 必含,見 spec「View more canonical」)。@mention hover 場景 user 點 View more 跳完整 profile。</Desc>
+        <Desc>最小形式:avatar + name + subtitle + **View more**(hover context 必含 — canonical owner 見 avatar.spec.md「onViewMore 為 hover context 必含」段;顯示條件見本元件 spec「View More」節)。@mention hover 場景 user 點 View more 跳完整 profile。</Desc>
         <div className="border border-dashed border-divider rounded-md p-4 inline-block">
           <ProfileCard name="Alice Wang" subtitle="Frontend Engineer" onViewMore={() => {}} />
         </div>

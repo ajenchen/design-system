@@ -1,5 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// code-quality-allow: file-size — foundational composite(Tabs + overflow scroll mode + dropdown switcher + inline action slot)在單一 wrapper SSOT 內,拆分會破壞 a11y / focus management chain。當前 515 < cap 800。
+// code-quality-allow: file-size — foundational composite(Tabs + overflow scroll mode + dropdown switcher + inline action slot)在單一 wrapper SSOT 內,拆分會破壞 a11y / focus management chain。當前 ~578 < cap 800。
 import * as React from 'react'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { cva } from 'class-variance-authority'

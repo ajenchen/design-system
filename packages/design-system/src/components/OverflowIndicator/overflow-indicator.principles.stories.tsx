@@ -30,9 +30,6 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="人員頭像 疊合 +N"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">PR reviewer 頭像疊合 +N(只顯前 3 位)</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="Breadcrumb 中段收合"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Breadcrumb 中段收合</span></LinkTo>
-        </li>
-        <li>
           <LinkTo kind="Design System/Internal/OverflowIndicator/展示" name="DataTable 人員欄位"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">DataTable 人員欄位</span></LinkTo>
         </li>
       </ul>
@@ -43,7 +40,7 @@ export const UsageGuidance: Story = {
       <div className="prose prose-sm max-w-prose">
       <p>處理超出空間的 2 種策略:</p>
       <ul>
-        <li><strong>OverflowIndicator(本元件)</strong>—項目數量已知且不多時,顯示前幾個、其餘折成 <code>+N</code>,點開看完整清單</li>
+        <li><strong>OverflowIndicator(本元件)</strong>—項目數量已知且不多時,顯示前幾個、其餘折成 <code>+N</code>,hover 展開看完整清單</li>
         <li><strong>ScrollArea</strong>—項目數量未知或極多時,讓使用者捲動瀏覽全部</li>
       </ul>
       <p className="text-fg-muted">判斷:項目數可數且少(≤ 100)→ OverflowIndicator;太多或未知數量 → ScrollArea。</p>
@@ -67,8 +64,8 @@ export const CompositionRules: Story = {
         <h4>Pattern 2 — 人員頭像疊合 +N</h4>
         <p>一群人只顯示前幾位、其餘折成 `+M`。目前由列表元件自行把頭像疊合再放上 OverflowIndicator(形狀用圓形對齊頭像);未來規劃中的 Avatar 群組元件會把這段組合收進去。對齊 Slack 工作區成員預覽 / Linear 團隊成員的做法。</p>
 
-        <h4>Pattern 3 — Tabs / Breadcrumb 水平溢出</h4>
-        <p>水平容器(Tabs / Breadcrumb)寬度不夠 → 搭配水平溢出處理 + OverflowIndicator,把中段或末端收合成 `…` 或 `+N`。對齊 Material 可捲動 Tabs + 自動溢出選單 / GitHub Breadcrumb 收合的做法。</p>
+        <h4>Pattern 3 — Tabs 等水平容器溢出</h4>
+        <p>水平容器(如 Tabs)寬度不夠 → 搭配水平溢出處理 + OverflowIndicator,把末端收合成 `+N`。對齊 Material 可捲動 Tabs + 自動溢出選單的做法。注意:Breadcrumb 中段收合**不用**本元件——DS canonical 是 BreadcrumbEllipsis + DropdownMenu(click 開選單,見 breadcrumb.spec.md),與本元件 hover 展開語義不同。</p>
 
         <p className="text-fg-muted">禁止:在頁面程式碼裡自己手刻 `+N` <code>&lt;span&gt;</code>(會失去 hover 展開浮層與一致的形狀樣式)— 一律使用 OverflowIndicator。</p>
       </div>

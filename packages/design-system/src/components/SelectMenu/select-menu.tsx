@@ -31,7 +31,7 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
  * ── 架構 ──
  *   Popover（浮動容器）
  *     └── Command（cmdk，搜尋 + 鍵盤導覽）
- *           ├── CommandInput（搜尋框）
+ *           ├── CommandPrimitive.Input（搜尋框,raw cmdk + 自建 icon/min-h wrapper,非 DS CommandInput）
  *           ├── CommandList（選項列表）
  *           │     └── CommandGroup → MenuItem
  *           └── Footer（多選全選）

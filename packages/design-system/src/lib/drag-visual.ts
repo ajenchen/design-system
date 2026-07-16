@@ -6,7 +6,7 @@
  *
  * ## Pattern
  *
- * - **Source element**(被拖中的 row/column):`opacity-30`(半透,user 仍看得到原位)
+ * - **Source element**(被拖中的 row/column):`opacity-disabled`(= var(--opacity-disabled) 0.45 半透,user 仍看得到原位;2026-05-06 v14.5.2 由 opacity-30 改)
  *   — 不是 `opacity:0` 全隱形,因 user 拖太遠看不到「源頭」會迷失方向。對齊 TreeView 最早 v1 + Notion / Atlassian / Linear。
  * - **Ghost preview**(浮動 follow cursor):透過 dnd-kit `<DragOverlay>` portal,clone source 的 outerHTML
  *   strip transform/transition/opacity → render 在 portal 層,visually 跟 cursor 走。
@@ -26,7 +26,7 @@
  * - `bg-primary`:semantic state token(`--primary`)— 跟 focus state ring color 同 source(M23 一致)
  * - `bg-primary-subtle`:semantic primary subtle(`--primary-subtle`)— inside-drop dim background
  * - `h-0.5` / `w-0.5`:Tailwind size token = 2px(對齊 hairline divider thickness 概念)
- * - `opacity-30`:Tailwind 30% opacity(半透但仍清楚看到 outline)
+ * - `opacity-disabled`:DS token var(--opacity-disabled)= 0.45(半透但仍清楚看到 outline;見下方 v14.5.2 note)
  */
 
 import type * as React from 'react'

@@ -381,7 +381,7 @@ export const ShapeMatrix: Story = {
                   </OverflowIndicator>
                 </Td>
                 <Td mono>tagVariants neutral · rounded-md · 同 Tag 視覺</Td>
-                <Td>Combobox multi-select tag 溢出 / Breadcrumb 收合</Td>
+                <Td>Combobox multi-select tag 溢出(Breadcrumb 收合走 BreadcrumbEllipsis canonical,非本元件)</Td>
               </tr>
             </tbody>
           </table>
