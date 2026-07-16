@@ -162,22 +162,9 @@ declare module '@tanstack/react-table' {
      * Esc cancel / blur or Enter commit。Commit 觸發 `onCellCommit`。
      */
     editable?: boolean | ((row: TData) => boolean)
-    /**
-     * Inline disabled state(2026-05-13 Stream C Cluster B Q3 ship,per codex Q3 verdict):
-     * cell 不可操作 state(orthogonal to editable readonly)。
-     * - `true`:cell 永遠 disabled
-     * - `false` / undef(default):cell normal
-     * - `(row) => boolean`:per-row 動態(e.g. row.archived 或 row.locked 才 disabled)
-     *
-     * 視覺(per `color.spec.md` `--bg-disabled` component-state token):
-     * - TD 外殼:`bg-disabled` + `cursor-not-allowed` + 抑制 hover ring
-     * - Cell content(Field family):`mode='disabled'` → 各 Field type 內部走具體 disabled token
-     * - edit entry 抑制:disabled cell 點擊不進 edit(對齊 `editable && !disabled` invariant)
-     *
-     * 跟 `editable=false` 區分:editable=false = readonly(可看不可編);disabled = 不可操作 state。
-     * 對齊 MUI X `isCellEditable` + cellClassName / AG Grid `cellClassRules` / Notion locked properties。
-     */
-    disabled?: boolean | ((row: TData) => boolean)
+    // 2026-07-16 round16:cell `disabled` 已廢除。世界級 grid(MUI X isCellEditable / AG Grid editable /
+    //   Handsontable readOnly)皆無 disabled cell 態 — 鎖定用 `editable:(row)=>false`(可看不可編、不灰化),
+    //   非 disabled 灰化態。原 `disabled?: boolean | ((row)=>boolean)` + bg-disabled TD 灰化全移除(全庫 0 消費)。
     /**
      * Locked column — column reorder 不可拖,Notion 「primary column」 pattern。
      * 對齊 SKU / ID 等不可移欄位。

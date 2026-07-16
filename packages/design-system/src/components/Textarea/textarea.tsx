@@ -48,7 +48,7 @@ const textareaVariants = cva(
     variants: {
       mode: {
         edit: '',
-        display: '',
+        view: '',
         readonly: '',
         disabled: '',
       },
@@ -80,11 +80,13 @@ const textareaVariants = cva(
       },
       { mode: 'edit', variant: 'default', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
       {
-        mode: 'display',
+        // 2026-07-16 round16 Model A(user GO,推翻 2026-05-13 Path Ⅰ 的 `!px-0 !py-0`):
+        // Textarea view×default = **edit 幾何減 chrome** — 保留 base `px-[var(--field-px)] py-2`(= edit 內距),
+        // 只拔 border/bg。多行 read↔edit 零跳(view 與 edit 同一顆 Textarea、py-2 天生一致)。跟 Field wrapper
+        // view×default 同 SSOT(field-wrapper.tsx)。
+        mode: 'view',
         variant: 'default',
-        // 2026-05-13 Q3 Path Ⅰ:Textarea default display zero chrome,!px-0 !py-0 override base `px-[var(--field-px)] py-2`
-        // (跟 Input 同 SSOT,per field-controls.spec.md (d))
-        className: 'bg-transparent border border-transparent !px-0 !py-0',
+        className: 'bg-transparent border border-transparent',
       },
       {
         mode: 'readonly',
@@ -126,16 +128,14 @@ const textareaVariants = cva(
       },
       { mode: 'edit', variant: 'naked', error: false, className: 'focus-visible:!border-primary focus-visible:hover:!border-primary' },
       // 2026-05-13 Q1 R4 verify(per codex Q1 verdict 補 Textarea nuance):
-      // Textarea naked display/readonly/disabled 用 `!h-full`,**不**對齊 Field wrapper 的 `!h-auto`。
+      // Textarea view×naked 用 `!h-full`,**不**對齊 Field wrapper 的 `!h-auto`。
       // Why divergence:textarea 是 native form element 帶 intrinsic rows-based height,且 cell 內
       // multi-line text 需要撐滿 cell 而非依 line-height intrinsic。`!h-full` 讓 textarea 填滿 cell
       // 高度,文字 anchored to cell.top + cell padding(同視覺結果 Field wrapper autoRow !h-auto)。
       // 此 divergence intentional + documented;非 SSOT violation。
-      { mode: 'display', variant: 'naked', className: 'bg-transparent !rounded-none !h-full !resize-none !px-0 !py-0 border border-transparent !leading-[1.5]' },
-      { mode: 'readonly', variant: 'naked', className: 'bg-transparent !rounded-none !h-full !resize-none !px-0 !py-0 border border-transparent !leading-[1.5]' },
-      // 2026-05-13 codex V2 fix:移除 `opacity-disabled` blanket(對齊 field-wrapper.tsx naked R3 fix +
-      //   color.spec.md:729 逃生艙 rule)。Textarea 已用具體 `text-fg-disabled` token,不需要 wrapper opacity。
-      { mode: 'disabled', variant: 'naked', className: 'bg-transparent !rounded-none cursor-not-allowed text-fg-disabled !h-full !resize-none !px-0 !py-0 border border-transparent !leading-[1.5]' },
+      { mode: 'view', variant: 'naked', className: 'bg-transparent !rounded-none !h-full !resize-none !px-0 !py-0 border border-transparent !leading-[1.5]' },
+      // 2026-07-16 round16:`readonly×naked` / `disabled×naked` 死格移除(鏡射 field-wrapper.tsx;
+      //   DataTable cell 廢 disabled 態 + readonly 從不入 naked,全庫 0 消費)。
     ],
     defaultVariants: {
       mode: 'edit',
@@ -193,7 +193,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const resolvedMode: FieldMode = useResolvedFieldMode({ mode: modeProp, disabled, readOnly })
     const emptyDisplay = useFieldEmptyDisplay()
     const isEditable = resolvedMode === 'edit'
-    const isDisplay = resolvedMode === 'display'
+    const isView = resolvedMode === 'view'
     const inputId = idProp ?? fieldCtx?.id
     const ariaDescribedBy = ariaDescribedByProp ?? fieldCtx?.descriptionId
     const ariaErrorMessage = ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)
@@ -218,7 +218,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       defaultValue: defaultValue ?? '',
     })
     const displayValue = resolved != null && resolved !== '' ? String(resolved) : null
-    const showDisplaySpan = isDisplay || (resolvedMode === 'readonly' && displayValue == null)
+    const showDisplaySpan = isView || (resolvedMode === 'readonly' && displayValue == null)
 
     // form.reset() bridge(uncontrolled only):reset 恢復 defaultValue 但不發 input event →
     // 手動把 resolved 歸位 defaultValue。keyed on showDisplaySpan:display 分支不掛 native
@@ -240,7 +240,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     }, [ref])
 
     if (showDisplaySpan) {
-      const spanMode = isDisplay ? 'display' : 'readonly'
+      const spanMode = isView ? 'view' : 'readonly'
       return (
         <div
           id={inputId}

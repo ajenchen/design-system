@@ -113,7 +113,7 @@ export interface SwitchProps
   /**
    * readonly 模式:standalone = 鎖定互動但維持 ON/OFF 視覺;Field 內 = 灰框 + 勾/叉 icon。
    * 與 disabled 的差異:readonly 不降色(可讀),disabled 降色(弱化)。
-   * DataTable cell 非編輯態用 mode="display"(勾/叉 icon),非 readOnly。
+   * DataTable cell 非編輯態用 mode="view"(勾/叉 icon),非 readOnly。
    */
   readOnly?: boolean
   /**
@@ -158,7 +158,7 @@ const Switch = React.forwardRef<
 
     // Field context 偵測：在 Field 內時忽略自己的 label/description，避免雙層
     // 2026-05-31 #35:hooks(useFieldContext / useId)必在任何 conditional return 前呼叫(Rules of Hooks)。
-    // 原 mode='display' early return 寫在 hooks 之上 → runtime 切 mode 會 hook count 不一致 crash;已下移至 hooks 後。
+    // 原 mode='view' early return 寫在 hooks 之上 → runtime 切 mode 會 hook count 不一致 crash;已下移至 hooks 後。
     const fieldCtx = useFieldContext()
     // 2026-06-08 SSOT:<Field disabled>/<Field mode> cascade(原 disabled/mode 直傳 prop,漏 fieldCtx)
     const disabled = useResolvedFieldDisabled(disabledProp)
@@ -200,10 +200,10 @@ const Switch = React.forwardRef<
       ...restDomProps
     } = props
 
-    // ── mode='display'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
+    // ── mode='view'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
     // 純展示模式:無互動 toggle、渲染 Check / X icon。與 Checkbox display 對齊(同 boolean primitive,
     // 共用 SelectionControl/boolean-value.tsx SSOT — 勾/叉 icon + 中性 foreground 色)。
-    if (resolvedMode === 'display') {
+    if (resolvedMode === 'view') {
       const isChecked = checkedProp === true
       return (
         <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="inline-flex">

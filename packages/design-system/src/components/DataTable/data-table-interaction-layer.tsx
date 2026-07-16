@@ -63,7 +63,7 @@ interface DataTableInteractionLayerProps {
    * truthy → layer call this 拿 React node(已 bind value/onCommit/onCancel from controller),
    * 在 ActiveEditorHost portal(z 3,float rect)render 之。
    *
-   * Per codex Q6.2 outline:cell 永遠 mode="display"(SSOT preserved);portal host 渲
+   * Per codex Q6.2 outline:cell 永遠 mode="view"(SSOT preserved);portal host 渲
    * mode="edit" 同 registry component;float pass-through + z-index 3 cover display below。
    */
   activeEditorRender?: (cellId: CellId, rect: CellRect) => React.ReactNode

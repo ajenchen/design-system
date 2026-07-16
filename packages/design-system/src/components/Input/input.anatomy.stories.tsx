@@ -13,12 +13,12 @@ export default meta
    Types & Data
    ═══════════════════════════════════════════════════════════════════════════ */
 
-type ModeKey = 'edit' | 'display' | 'readonly' | 'disabled'
+type ModeKey = 'edit' | 'view' | 'readonly' | 'disabled'
 type StateKey = 'default' | 'hover' | 'focus' | 'error' | 'disabled'
 type SizeKey = 'sm' | 'md' | 'lg'
 type ColorSpec = { bg: string; text: string; border: string; placeholder: string }
 
-const MODES: ModeKey[] = ['edit', 'display', 'readonly', 'disabled']
+const MODES: ModeKey[] = ['edit', 'view', 'readonly', 'disabled']
 const EDIT_STATES: StateKey[] = ['default', 'hover', 'focus', 'error', 'disabled']
 const SIZES: SizeKey[] = ['sm', 'md', 'lg']
 
@@ -30,7 +30,7 @@ const COLOR_MAP: Record<ModeKey, Partial<Record<StateKey, ColorSpec>>> = {
     error:    { bg: '--surface',      text: '--foreground',  border: '--error',         placeholder: '--fg-muted' },
     disabled: { bg: '--bg-disabled',  text: '--fg-disabled', border: 'transparent',     placeholder: '--fg-disabled' },
   },
-  display: {
+  view: {
     default:  { bg: 'transparent',    text: '--foreground',  border: 'transparent',     placeholder: '--fg-muted' },
   },
   readonly: {
@@ -58,7 +58,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
 
 const MODE_DESC: Record<ModeKey, string> = {
   edit:     '表單可編輯欄位 — bg-surface + border + hover/focus 回饋',
-  display:  '純展示資料 — 無 chrome（transparent + !px-0 !py-0 零內距，field-wrapper.tsx Path Ⅰ）+ 文字正常色，空值顯示半形 -（hyphen，同 value 前景色）',
+  view:     '純展示值（非表單）— edit 幾何減 chrome（transparent bg/border，**保留 px-field-px 內距與高度**，Model A round16）+ 文字正常色，空值顯示半形 -（hyphen，同 value 前景色）。用在 cell / InlineEdit / 詳情',
   readonly: '不可編輯但可見 — bg-readonly(neutral-2) + 無邊框 + 文字正常色',
   disabled: '被停用的欄位 — bg-disabled(neutral-2) + 無邊框 + 文字灰化',
 }
@@ -213,7 +213,7 @@ export const Overview = {
               <div className="w-64 shrink-0">
                 {/* display + readonly 讀 controlled value:兩者「空值」皆走 <span> 顯 '-'(input.tsx:121),
                     demo 要展示有值狀態故傳 value;edit / disabled 用 defaultValue 保持 uncontrolled */}
-                {(m === 'display' || m === 'readonly') ? (
+                {(m === 'view' || m === 'readonly') ? (
                   <Input mode={m} value="Wireless Bluetooth Headphones" size="md" />
                 ) : (
                   <Input mode={m} defaultValue="Wireless Bluetooth Headphones" size="md" />
@@ -242,7 +242,7 @@ export const Overview = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'mode 未顯式指定時依序推導：有效 disabled（prop 或 <Field disabled>）→ fieldCtx.mode → native readOnly → edit；顯式 mode prop 永遠最優先（field-context.ts useResolvedFieldMode）'],
+                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'mode 未顯式指定時依序推導：有效 disabled（prop 或 <Field disabled>）→ fieldCtx.mode → native readOnly → edit；顯式 mode prop 永遠最優先（field-context.ts useResolvedFieldMode）'],
                 ['variant', "'default'", "'default'", '視覺 chrome（正交於 mode；公開型別僅 default，2026-07-14 收窄）；naked = 無 chrome，host cell 提供 border/focus（@internal cell-as-input）；bare 2026-07-09 退役'],
                 ['error', 'boolean', 'false', '紅色邊框僅 edit 模式生效；aria-invalid 不分 mode（readonly / disabled 渲染的 input 同樣帶）'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '高度與字體，與 Button 共用 field-height token'],
@@ -335,7 +335,7 @@ const InspectorInner = () => {
               startIcon={hasStartIcon ? Search : undefined}
               endAction={hasEndAction && isEdit ? { icon: X, label: '清除', onClick: () => {} } : undefined}
               // display mode 讀 value 渲染 <span>;其餘 mode 用 defaultValue 保持 uncontrolled
-              {...(mode === 'display'
+              {...(mode === 'view'
                 ? { value: 'Wireless Bluetooth Headphones' }
                 : { defaultValue: 'Wireless Bluetooth Headphones' })}
               key={mode}
@@ -361,7 +361,7 @@ const InspectorInner = () => {
             </div>
             <div className="flex items-center">
               <div className="flex items-center rounded-md overflow-hidden" style={{ height: 52, outline: `2px solid ${Z.dim.text}22` }}>
-                <BpZone w={44} color={Z.pad} label={mode === 'display' ? '!px-0' : s.pxToken} sub={mode === 'display' ? '0px' : `${s.px}px`} />
+                <BpZone w={44} color={Z.pad} label={s.pxToken} sub={`${s.px}px`} />
                 {hasStartIcon && (
                   <>
                     <BpZone w={44} color={Z.icon} label={`${s.icon}px`} sub="icon" />
@@ -375,7 +375,7 @@ const InspectorInner = () => {
                     <BpZone w={44} color={Z.action} label={`${s.icon}px`} sub="action" />
                   </>
                 )}
-                <BpZone w={44} color={Z.pad} label={mode === 'display' ? '!px-0' : s.pxToken} sub={mode === 'display' ? '0px' : `${s.px}px`} />
+                <BpZone w={44} color={Z.pad} label={s.pxToken} sub={`${s.px}px`} />
               </div>
               <div className="ml-3 flex items-center" style={{ height: 52 }}>
                 <svg width="10" height="52" className="shrink-0">
@@ -426,7 +426,7 @@ const InspectorInner = () => {
           <div className="px-4 py-1">
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Layout</span></div>
             <PropRow label="高度" dot={Z.dim.text}><TkVal token={s.heightToken} value={s.height} /></PropRow>
-            <PropRow label="左右內距" dot={Z.pad.text}><TkVal token={mode === 'display' ? '!px-0 !py-0' : s.pxToken} value={mode === 'display' ? '0px（零 chrome）' : `${s.px}px`} /></PropRow>
+            <PropRow label="左右內距" dot={Z.pad.text}><TkVal token={s.pxToken} value={`${s.px}px（view 保留 = edit 幾何減 chrome）`} /></PropRow>
             <PropRow label="元素間距" dot={Z.gap.text}><TkVal token={s.gapToken} value={`${s.gap}px`} /></PropRow>
             {hasStartIcon && (
               <PropRow label="Icon 尺寸" dot={Z.icon.text}>{s.icon}px</PropRow>

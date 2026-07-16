@@ -7,22 +7,24 @@
 **軸 1 — Field 控件 chrome mode(表單語境,單一控件怎麼渲染)**:
 - `edit`(可編欄位)/ `readonly`(表單鎖定值算數,灰底可讀可選,吃 `bg-readonly`)/ `disabled`(表單「目前不適用」如選國家前的城市,灰底灰字不送出,**form 專屬**)/ **`view`(原 `display` 改名)**= 非表單的值呈現(cell/InlineEdit/詳情),值本體(文字/Tag/頭像)。
 
-**✅ view padding 最終定案(2026-07-16 round14 收斂 — 推翻 round12「view×default=plaintext 不 collapse」,回到 collapse)**:
-- **view COLLAPSE 成單一 variant-agnostic**(= bare:透明無 chrome、無 padding、高度/幾何由容器給)。**view×default 0 消費者**(cell=naked / InlineEdit=自帶 geometry cva / form 鎖定=readonly / Tag·Date 格式=bare view)→ collapse。**user 從頭直覺對**;round12「keep view×default=plaintext」是為了「InlineEdit 委派 `<Input mode="view">` **元件**」模型,round13 因標題型委派會丟 `<h1>` outline 而否決該模型 → InlineEdit 改「自帶 geometry cva」→ view×default 就沒人用 → 回到 collapse。
-- **InlineEdit read cva 自帶 geometry**(不委派 Input 元件,對齊 Atlassian「read wrapper 給幾何盒 + 內容元素由場景決定」):`px-[var(--field-px)]` + **orientation-aware `-mx`**(vertical 用貼 label / horizontal 拔對齊 sibling,**選項 A,user 2026-07-16 拍板**)+ `min-h-field`(單行 items-center)+ `items-start py-2`(多行,對齊 Textarea edit `py-2`)+ hover + `[&:has(button:focus-visible)]:border-primary`。消費 `--field-px`/`--field-height-*` 同 field 控件 = SSOT via token。
-- **content 分兩類**:純值(plain span / 標題 `<h1>` 客製 typography)**共享這份 geometry cva**;**只有「值-格式化」(Select→Tag / Date→日期格式)委派 `<Control mode="view">`**(bare,取格式化邏輯,幾何仍由 InlineEdit cva 盒給)。
-- **③ 多行 py SSOT**:InlineEdit cva `py-2` == Textarea edit `py-2`(textarea.tsx:44)。Textarea py-2 是 class 非 token → **加 invariant 鎖**(assert InlineEdit 多行 read py == Textarea edit py,drift 即紅)確保 Field 一改就被抓。現況 InlineEdit 多行是 `py-1.5`(:105)= 待改 `py-2`。
-- **cva 動作**:`view×default`(:128-136)+ `view×naked`(:220-226)兩條**合成單一** `{ mode:'view', className:[bare naked 值 + !h-auto] }`(不指定 variant);砍 `readonly×naked`/`disabled×naked` 死格(+ Textarea 鏡像)。
-- ~~(round12 舊說法已刪:「InlineEdit view 委派控件 view mode 取 padding」被 round14 推翻 —— 幾何在 InlineEdit 自帶 cva,py-2 在 cva + invariant 鎖,見上方)~~
+**✅ view 幾何最終定案(2026-07-16 round16 — user GO Model A,推翻 round14 collapse)**:
+- **view = edit 幾何減 chrome**(不 collapse):view×default 保留 `px-[var(--field-px)]` + edit 的 py(單行 h-field / 多行 py-2)+ h-field,只拔 border/bg(透明)。**唯一改動 = 現況 `!px-0 !py-0`(bare)→ 留 px + py**。理由 = 唯一能對**所有內容型態**(純文字/多行/多 tag/avatar/日期)保證 read↔edit 零跳的模型:view 與 edit 是**同一顆控件**、只差 chrome → 幾何天生一致。
+- **view×naked ≠ view×default**(**不 collapse**,round14 合併是錯的):naked = bare(cell substrate,host TD 給 padding);default = edit 減 chrome(form read-only + InlineEdit 委派)。兩者本質不同用途。仍砍 `readonly×naked`/`disabled×naked` 死格(0 消費者,+ Textarea 鏡像)。
+- **InlineEdit read = 委派控件 view mode 取全幾何**(px/py/min-h/內部間距皆來自控件),**砍掉自帶 geometry cva**(round14 的 `inlineEditReadStyles` 刪除,消 M17 重複 SSOT)。InlineEdit 只保留:`-mx-field-px` + `w-calc`(拉到欄左緣 + hover 外擴,= Atlassian 負邊距)+ hover bg + `[&:has(button:focus-visible)]:border-primary` + 隱形 Pressable。**無自己的 px/py/min-h**。
+- **content 兩類、共用同一 view 幾何 SSOT**:(a) 值-格式化(Select→Tag / Date / avatar)→ `renderRead={(v) => <Control mode="view">}`,控件 view×default 提供全幾何 + 內部間距;(b) 純值 / 標題 `<h1>` → InlineEdit 把 **view×default 的幾何 class**(= `fieldViewGeometry(size,multiline)` helper,SSOT)套在 `<Tag as>` 上,保 h1 outline + 客製 typography。**兩路取同一份幾何**(helper == view×default compound class)。
+- **③ 多行 py 自動 SSOT**:多行委派 `<Textarea mode="view">`(py-2 = 它 edit py-2,edit 減 chrome)→ read/edit **同一顆 Textarea**,py 天生一致,**免另立 invariant**。純文字 h1 多行走 helper(helper 內含 multiline py-2 = Textarea)。
+- **Q1(多 tag/avatar/prefix 間距零偏移)根治**:內部間距歸控件(read=edit 同一顆 → 天生一致);換行 py 歸控件 view(= 它 edit 的 py,零猜測)。這正是 round14 InlineEdit-自帶-cva 對付不了 tag-wrap py 的漏洞。
 
-**⚠️ InlineEdit 對齊機制(2026-07-16 實證,plaintext 後視覺零變)**:
-- InlineEdit **保留 `-mx-field-px` + `w-calc`**(欄位左緣對齊 + hover 外擴),但 **read wrapper 自己那條 `px-field-px` 拿掉**(改由委派的控件 view mode 提供,否則雙倍 px)。`-mx` 消掉控件 view 的 px → 內容仍落欄位左緣(= FieldLabel 同左緣)。math 相同(都 field-px),**視覺位置/對齊/hover/read↔edit 零跳全不變**,差別只在 px/py **來源** hardcode→控件 view mode(SSOT 同步)。
-- vertical(flex-col):label 與內容同左緣。horizontal(grid label 欄+minmax 內容欄):-mx 在 controlArea 內對兩 orientation 皆成立,對齊原則不變。多行 py-2 來自 Textarea view(-mx 不動 py)。
-- **edge case**:`as="h1"` 標題型 InlineEdit(renderView=styled `<h1>` 非 Field 控件)無控件 view mode 可委派 → 保留自己的 px/min-h(+ -mx)。委派只套「值-控件」路徑(文字/Tag/日期)。
+**⚠️ InlineEdit 對齊機制(round16,Model A)**:
+- InlineEdit `-mx-field-px` + `w-calc` 把整塊拉到欄位左緣;委派的控件 view×default 自帶 px-field-px → 淨值:內容落欄左緣(read),edit `<Control mode="edit">` 同框 -mx → 值也落欄左緣 → **read/edit 零水平跳**(Atlassian 負邊距模型)。
+- **orientation-aware `-mx`(選項 A,user 2026-07-16 拍板保留)**:field-px=12px==gap-x-3=12px。vertical(flex-col)保留 -mx(值貼 label 左緣);horizontal(grid)拔 -mx(值落內容欄左緣+field-px=對齊 sibling 控件,hover 不溢吃 gap)。讀 `fieldCtx.orientation`(FieldLabel 先例 field.tsx:334/362)。
+- **三情境自洽**:①詳情面板全 InlineEdit(-mx→全對齊欄左)②表單 read-only 用 `<Control mode="view">`(inset px-field-px,值成一直行)③cell 用 view×naked(bare + TD padding)。
+- **標題型 `as="h1"`**:走純值路徑(helper 幾何 class 套 `<h1>`),非 blocker。
 
-**⚠️ 2026-07-16 round13 修正(推翻上面兩點的細節,以此為準)**:
-- **Q1 -mx orientation-aware**:field-px=12px==gap-x-3=12px。horizontal 用 -mx → hover 底色吃掉整條 gap+貼死 label、read 文字比 sibling 左 12px(幾何實證)。**horizontal 拔 -mx**(read 值落內容欄左緣+field-px=對齊 sibling 控件+edit 零跳+hover 不溢);**vertical 保留 -mx**(值貼 label 左緣,user 原意)。讀 `fieldCtx.orientation`(FieldLabel 已有先例 field.tsx:334/362)。【選項 A;選項 B=全拔 -mx 更貼 Atlassian 但 vertical 值不再貼 label,待 user 選 A/B】
-- **Q2 幾何 SSOT 收斂(推翻「plain 委派 `<Input mode="view">` 元件」)**:InlineEdit read **幾何** = **一份 token-based cva**(消費 `--field-px`/`--field-height-*`,同 field 控件 token = SSOT via token),**plain 文字 + 標題 h1 都用它**(內層各放 `<span>`/`<h1>`,標題客製 typography 保 h1 outline);**只有「值-格式化」路徑(Select→Tag / Date→格式)才委派 `<Control mode="view">`** 取格式化邏輯。→ 避免「plain 委派 Input 元件 + heading 用 cva」的雙幾何來源 drift。多行 py 放這份 cva(=Textarea py-2,加 invariant 鎖同步)。對齊 Atlassian「read wrapper 給幾何盒 + 內容元素由場景決定」解耦。
+**世界級實證(round16,M26 三源)**:
+- Bootstrap `.form-control-plaintext` SCSS = `padding: $input-padding-y 0`(留垂直、拔水平,對齊 label 場景)。https://github.com/twbs/bootstrap/blob/main/scss/forms/_form-control.scss
+- Atlassian inline-edit read-view wrapper 無 padding + 容器負邊距對齊 edit(= 我們 -mx)。https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/internal/read-view.tsx
+- **我們 view 用在 cell/inline-edit/詳情(對齊「edit 值位置」非 label)→ 水平垂直都留**(比 Bootstrap 更徹底,因用例不同);InlineEdit 再靠 -mx 拉到欄左。
 
 **軸 2 — 就地編輯 host(InlineEdit ＝ DataTable cell,同一份語義)**:
 - `view`(顯示值,委派軸1 `view` mode 渲染;editable 時有 hover 入口)↔ `edit`(真控件輸入)。
@@ -34,15 +36,15 @@
 
 **實作清單(全 GO)**:
 1. **Field mode `display`→`view`** DS-wide(field-wrapper cva mode + field-context FieldMode type + 全 `mode="display"` 消費點 + 各控件)。
-2. **cva 收斂**:view(原 display)收成單一 variant-agnostic compound + 砍 `readonly×naked`+`disabled×naked` 死格 + Textarea 鏡像。
-3. **InlineEdit**:state `read`→`view`、read=委派 Field view mode(零重刻幾何)、**加 `editable` prop(預設 true)**、**不加 disabled**、auto-sm(`fieldPreferredSize='sm'` static + Field 偵測)、接 fieldCtx cascade(size/labelId)、focus 分路徑(滑鼠乾淨/鍵盤藍框)、renderRead 行盒修(Tag 下沉)、spec「view↔edit 二態」。
+2. **cva(Model A,round16)**:view×default = **edit 減 chrome**(留 px-field-px + py + h-field,拔 border/bg;現況 `!px-0 !py-0` → 留 padding)+ view×naked = bare(**不 collapse 兩者**)+ 砍 `readonly×naked`+`disabled×naked` 死格 + Textarea 鏡像。抽 `fieldViewGeometry(size,multiline)` helper(view×default 幾何 class SSOT,供 InlineEdit 純值路徑共用)。
+3. **InlineEdit(Model A,round16)**:state `read`→`view`、**砍自帶 geometry cva(`inlineEditReadStyles` 刪)**、值-格式化路徑委派 `<Control mode="view">` 取全幾何、純值/h1 路徑套 `fieldViewGeometry` helper、保留 `-mx`(orientation-aware A 案)+hover+focus+pressable、**加 `editable` prop(預設 true)**、**不加 disabled**、auto-sm(`fieldPreferredSize='sm'` static + Field 偵測)、接 fieldCtx cascade(size/labelId/orientation)、focus 分路徑(滑鼠乾淨/鍵盤藍框)、renderRead 行盒修(Tag 下沉)、spec「view↔edit 二態」。
 4. **DataTable cell**:CellMode `display`→`view`、**廢 disabled**(meta.disabled→移除;鎖定用 `editable:(row)=>bool`)、命名 drift 收齊。
 5. **canonical spec**:軸1 4-mode(edit/readonly/disabled/view)+ 軸2 就地編輯 host 統一模型(view/edit+editable)+ 每態一句時機,進 `field-controls.spec.md`。
 6. **storybook**:4 內容規範機械化 + 三層機械腳本 + 修 dim-11 假證據 + 補 InlineEdit anatomy·principles + DS-wide 掃 verification-intent names。
 
 **驗證到完美**:tsc / build:lib / typecheck:stories / data-table-invariants 39/39 / story-quality / three-layer / content-quality / storybook build + playwright pixel(鎖定 view vs InlineEdit view 零偏差、Tag 置中偏差~0)。**不改 a 壞 b**:每階段獨立驗證。
 
-**🔎 user 最初 4 個 layout 議題(必逐一驗到)**:① 高度佔位=label+4px+sm-field-height(auto-sm)② Tag 垂直置中零偏差(行盒修)③ **換行保持上下 padding**(多行文字=items-start+py-2 抄 Textarea / 多 Tag wrap=items-start+py-1+gap-4 抄 Combobox;若 delegate view mode wrap py 不對〔Textarea view 恐 !py-0 flush〕→ 補修 view mode wrap py 對齊各自 edit,read↔edit 零跳)④ blur 後純 view 無編輯指示(focus 分路徑)。**③ 最細,pixel 專項驗:多行/多tag 換行後上下 padding 保持 + read↔edit 零跳。**
+**🔎 user 最初 4 個 layout 議題(必逐一驗到)**:① 高度佔位=label+4px+sm-field-height(auto-sm)② Tag 垂直置中零偏差(行盒修)③ **換行保持上下 padding**(Model A 根治:多行/多 tag 的 wrap py **來自委派控件 view mode = 它 edit 的 py**〔Textarea view py-2、Select-tag view 保它 edit 的 wrap py/gap〕→ read/edit 同一顆控件、py 天生一致;**故 view×default 不可 collapse 成 !py-0**,否則委派內容失去 wrap py)④ blur 後純 view 無編輯指示(focus 分路徑)。**③ 最細,pixel 專項驗:多行/多tag 換行後上下 padding 保持 + read↔edit 零跳。**
 
 ---
 

@@ -65,7 +65,7 @@ export const Overview: Story = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'Field mode'],
+                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'Field mode'],
                 ['variant', "'default'", "'default'", 'Field chrome variant(對齊 Select / Combobox;naked = @internal cell-as-input,2026-07-14 型別收窄至 FieldVariantInternal)'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '對齊 field-height tier'],
                 ['value', 'PersonValue | PersonValue[] | null', '—', '單選 / 多選(類型決定模式)'],
@@ -111,7 +111,7 @@ export const Inspector: Story = {
     emptyText: '沒有符合的人員',
   },
   argTypes: {
-    mode: { control: 'radio', options: ['edit', 'display', 'readonly', 'disabled'] },
+    mode: { control: 'radio', options: ['edit', 'view', 'readonly', 'disabled'] },
     variant: { control: 'radio', options: ['default', 'naked'] },
     size: { control: 'radio', options: ['sm', 'md', 'lg'] },
     disabled: { control: 'boolean' },
@@ -138,7 +138,7 @@ export const ModeMatrix: Story = {
       <div>
         <H3>display</H3>
         <Desc>裸 PersonDisplay(Avatar + Name),無 field chrome——DataTable cell / detail panel 純顯示。</Desc>
-        <PeoplePicker mode="display" people={SAMPLE_PEOPLE} value={SAMPLE_PEOPLE[0]} />
+        <PeoplePicker mode="view" people={SAMPLE_PEOPLE} value={SAMPLE_PEOPLE[0]} />
       </div>
       <div>
         <H3>readonly</H3>

@@ -256,7 +256,7 @@ export const Overview = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'FieldMode 四模式'],
+                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'FieldMode 四模式'],
                 ['variant', "'default'", "'default'", 'Field chrome variant（naked：cell-as-input 透明 chrome，@internal，2026-07-14 型別收窄至 FieldVariantInternal）'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '尺寸，與 Button 共用 token'],
                 ['error', 'boolean', 'false', '錯誤狀態，紅色邊框 + aria-invalid'],

@@ -25,7 +25,7 @@ export const Modes: Story = {
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">display</h3>
-        <Checkbox mode="display" checked />
+        <Checkbox mode="view" checked />
         <p className="text-caption text-fg-muted mt-1">純視覺 glyph（勾/叉 icon，Check/X）；語意由 context（如 DataTable 表頭 + 行標籤）提供，display 不暴露獨立 aria-label。需螢幕報讀器可讀的勾選請用 edit / readonly 模式。</p>
       </div>
       <div>

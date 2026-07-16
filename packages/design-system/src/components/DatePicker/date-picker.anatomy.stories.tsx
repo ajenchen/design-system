@@ -248,7 +248,7 @@ export const Overview = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", "顯示模式；display 為純內容輸出（DataTable cell 用）。優先序：顯式 mode prop 永遠最優先，未傳 mode 時 disabled 才升 disabled（useResolvedFieldMode）；disabled 以 aria-disabled 表達（trigger 為 div role=combobox，非原生 disabled 屬性）"],
+                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", "顯示模式；display 為純內容輸出（DataTable cell 用）。優先序：顯式 mode prop 永遠最優先，未傳 mode 時 disabled 才升 disabled（useResolvedFieldMode）；disabled 以 aria-disabled 表達（trigger 為 div role=combobox，非原生 disabled 屬性）"],
                 ['error', 'boolean', 'false', '紅色邊框 + aria-invalid，僅 edit 模式生效'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", '高度與字體，與 Button 共用 field-height token'],
                 ['value', 'string | null', '—', 'ISO date string（YYYY-MM-DD）'],
@@ -713,7 +713,7 @@ export const StateBehavior = {
                 <tr>
                   <Td>預設（YYYY/MM/DD）</Td>
                   <td className="p-2 border-b border-divider"><DatePicker mode="readonly" value="2026-04-02" /></td>
-                  <td className="p-2 border-b border-divider"><DatePicker mode="display" value="2026-04-02" /></td>
+                  <td className="p-2 border-b border-divider"><DatePicker mode="view" value="2026-04-02" /></td>
                 </tr>
                 <tr>
                   <Td mono>month: 'short'</Td>
@@ -721,7 +721,7 @@ export const StateBehavior = {
                     <DatePicker mode="readonly" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
                   </td>
                   <td className="p-2 border-b border-divider">
-                    <DatePicker mode="display" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
+                    <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'short', day: 'numeric' }} />
                   </td>
                 </tr>
                 <tr>
@@ -730,7 +730,7 @@ export const StateBehavior = {
                     <DatePicker mode="readonly" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
                   </td>
                   <td className="p-2 border-b border-divider">
-                    <DatePicker mode="display" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+                    <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
                   </td>
                 </tr>
                 <tr>
@@ -739,7 +739,7 @@ export const StateBehavior = {
                     <DatePicker mode="readonly" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
                   </td>
                   <td className="p-2 border-b border-divider">
-                    <DatePicker mode="display" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+                    <DatePicker mode="view" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
                   </td>
                 </tr>
               </tbody>
@@ -762,7 +762,7 @@ export const StateBehavior = {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-[11px] text-fg-muted w-20 shrink-0">Display</span>
-              <DatePicker mode="display" value={null} />
+              <DatePicker mode="view" value={null} />
             </div>
           </div>
         </div>

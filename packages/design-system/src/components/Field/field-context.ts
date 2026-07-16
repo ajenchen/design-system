@@ -177,11 +177,11 @@ export function useResolvedFieldDisabled(disabledProp?: boolean | null): boolean
 /**
  * Resolve Field control 的 **mode**(display / readonly / disabled / edit)— 2026-06-08 SSOT,統一兩派散落:
  *   舊 Input 派 `modeProp ?? fieldCtx?.mode ?? (...)` → `<Field disabled>` 時 ctx.mode 仍 'edit',漏 disabled chrome。
- *   舊 picker 派 `disabled ? 'disabled' : mode`(mode 預設 'edit')→ 完全不讀 fieldCtx.mode,`<Field mode="display">` 失效。
+ *   舊 picker 派 `disabled ? 'disabled' : mode`(mode 預設 'edit')→ 完全不讀 fieldCtx.mode,`<Field mode="view">` 失效。
  * 統一優先序(world-class:MUI FormControl disabled 完整 cascade + 顯式 prop 永遠最優先):
  *   1. 顯式 mode prop(caller / DataTable cell 的 displayOrDisabled)→ **永遠最優先**,故表格等顯式場景 inert
  *   2. 有效 disabled(prop 或 `<Field disabled>`)→ 'disabled'(完整 disabled chrome)
- *   3. FieldContext.mode(`<Field mode="display"/"readonly">`)→ 讓 mode cascade 真正生效
+ *   3. FieldContext.mode(`<Field mode="view"/"readonly">`)→ 讓 mode cascade 真正生效
  *   4. 本地 readOnly → 'readonly'
  *   5. 'edit'
  * cell:mode prop 必有 → step 1 命中、fieldCtx=null → 完全 inert(Δ=0)。`disabled` 傳已 resolve 的 boolean 或未預設 prop。

@@ -55,7 +55,7 @@ const Checkbox = CheckboxPublic as WithFieldVariantInternal<typeof CheckboxPubli
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type CellMode = 'display' | 'edit'
+export type CellMode = 'view' | 'edit'
 export type CellSize = 'sm' | 'md' | 'lg'
 
 export interface CellComponentProps {
@@ -68,10 +68,6 @@ export interface CellComponentProps {
   autoRowHeight: boolean
   /** 該 cell 是否可編。replaces 舊 `meta._editable` 私有 flag(Phase C M1 hack 移除)。 */
   isEditable?: boolean
-  /** 2026-05-13:cell 是否 disabled(state overlay,orthogonal to display/edit lifecycle)。
-   *  per codex Q3 verdict:不擴 CellMode='disabled',加 prop。各 Cell function 收 true 時
-   *  傳 `mode='disabled'` 給 inner Field control,各 Field 內部走具體 disabled token(非 wrapper opacity)。 */
-  isDisabled?: boolean
   /** Cell 進 edit mode → 提交新值(blur / Enter / option select 都觸發)— 提交後**自動 exit edit**。
    *  適用 single-shot commit:string / number / select(single)/ person(single)/ date / time / boolean / url。 */
   onCommit?: (next: unknown) => void
@@ -112,16 +108,13 @@ function makeKeyHandler(
 
 const sizeForInput = (size: CellSize): CellSize => size
 
-/** 2026-05-13 Q3 helper(per codex Q3 verdict):cell display + isDisabled → Field mode='disabled'。
- *  Cell display lifecycle 不擴 CellMode='disabled',而是各 Cell 在 display branch 翻譯 isDisabled
- *  → Field mode='disabled' prop。inner Field 內部走具體 disabled token(text-fg-disabled / bg-disabled 等),
- *  非 wrapper blanket opacity-disabled 逃生艙(per color.spec.md:729)。 */
-const displayOrDisabled = (isDisabled?: boolean): 'display' | 'disabled' =>
-  isDisabled ? 'disabled' : 'display'
+// 2026-07-16 round16:cell「disabled」態廢除(世界級 grid 無 disabled cell — MUI X / AG Grid /
+//   Handsontable 皆只有 editable/readonly;meta.disabled 全庫 0 消費)。cell view 態一律 mode="view",
+//   鎖定用 `editable:(row)=>false` 閘(= isCellEditable 模型)。原 displayOrDisabled helper 已移除。
 
 // ── Cell Components ──────────────────────────────────────────────────────────
 
-function StringCell({ value, meta, mode, size, isDisabled, autoRowHeight, onCommit, onCancel, onDraft }: CellComponentProps) {
+function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel, onDraft }: CellComponentProps) {
   // 2026-05-14 I9 fix(per codex+Layer A 共識):meta.maxLines opt-in line-clamp。
   // display autoRow 用 Tailwind arbitrary line-clamp 支援 N rows;edit textarea field-sizing
   // 已 auto-grow to content,natural match clamp。
@@ -137,13 +130,13 @@ function StringCell({ value, meta, mode, size, isDisabled, autoRowHeight, onComm
   //   - 互動(Textarea):Esc cancel / Cmd|Ctrl+Enter commit / blur commit;Enter 保留換行
   //   - 互動(Input):Esc cancel / Enter commit / blur commit
   const v = value != null ? String(value) : ''
-  if (mode === 'display') {
+  if (mode === 'view') {
     // size 必傳:DataTable cell 字級隨 size 變(sm/md text-body / lg text-body-lg),
     // 對齊 Field family size→font SSOT(field-wrapper.tsx:60-64)。漏傳 → fallback md → lg 表格
     // 字卡 14px 跟 Select/Date 等有傳 size 的 cell 不一致(2026-06-08 user 抓 frozen string 欄字偏小)。
     return autoRowHeight
-      ? <Textarea variant="naked" mode={displayOrDisabled(isDisabled)} value={v} size={size} className={clampClass} />
-      : <Input variant="naked" mode={displayOrDisabled(isDisabled)} value={v} size={size} />
+      ? <Textarea variant="naked" mode="view" value={v} size={size} className={clampClass} />
+      : <Input variant="naked" mode="view" value={v} size={size} />
   }
   if (autoRowHeight) {
     // 2026-05-14 I8 fix(per codex verdict + user 抓「edit cell shrink」):
@@ -189,7 +182,7 @@ function StringCell({ value, meta, mode, size, isDisabled, autoRowHeight, onComm
   )
 }
 
-function NumberCell({ value, meta, mode, size, isDisabled, onCommit, onCancel, onDraft }: CellComponentProps) {
+function NumberCell({ value, meta, mode, size, onCommit, onCancel, onDraft }: CellComponentProps) {
   // currency 透過 columnType-aware prefix:type='currency' → 預設 '$'(可 override)
   const isCurrency = meta?.type === 'currency'
   const prefix = isCurrency ? (meta?.prefix ?? '$') : meta?.prefix
@@ -198,11 +191,11 @@ function NumberCell({ value, meta, mode, size, isDisabled, onCommit, onCancel, o
   // 否則 Rules of Hooks violation → React #310 crash。對齊 combobox/select hoist pattern。
   const initial = typeof value === 'number' ? value : null
   const [localValue, setLocalValue] = React.useState<number | null>(initial)
-  if (mode === 'display') {
+  if (mode === 'view') {
     return (
       <NumberInput
         variant="naked"
-        mode={displayOrDisabled(isDisabled)}
+        mode="view"
         value={value as number | null}
         // size 必傳(同 StringCell)— currency/number cell 字級隨 DataTable size 變,對齊 Field SSOT。
         size={size}
@@ -245,18 +238,18 @@ function NumberCell({ value, meta, mode, size, isDisabled, onCommit, onCancel, o
 const dismissOnClose = (onCancel?: () => void) => (open: boolean) => { if (!open) onCancel?.() }
 
 // Mode-keyed remount canonical(2026-05-05):display↔edit 切換時,因 React reconciliation 同 type 同
-// position 會重用 instance,導致 `useState(defaultOpen)` 只在首次 mount 跑(那時 mode='display'
+// position 會重用 instance,導致 `useState(defaultOpen)` 只在首次 mount 跑(那時 mode='view'
 // defaultOpen 沒給→預設 false)。後續 mode='edit' 即使傳 defaultOpen=true 也無效。
 // Fix:`key={mode}` 強制 React unmount + remount,每次切 mode 都重跑 useState init。
 // 對齊 Notion / Airtable cell-as-input「display 跟 edit 是不同 mount cycle」語義。
 
-function DateCell({ value, meta, mode, size, isDisabled, onCommit, onCancel }: CellComponentProps) {
-  if (mode === 'display') {
+function DateCell({ value, meta, mode, size, onCommit, onCancel }: CellComponentProps) {
+  if (mode === 'view') {
     return (
       <DatePicker
-        key="display"
+        key="view"
         variant="naked"
-        mode={displayOrDisabled(isDisabled)}
+        mode="view"
         value={value as string | null}
         size={size}
         formatOptions={meta?.formatOptions}
@@ -283,13 +276,13 @@ function DateCell({ value, meta, mode, size, isDisabled, onCommit, onCancel }: C
   )
 }
 
-function TimeCell({ value, meta, mode, size, isDisabled, onCommit, onCancel }: CellComponentProps) {
-  if (mode === 'display') {
+function TimeCell({ value, meta, mode, size, onCommit, onCancel }: CellComponentProps) {
+  if (mode === 'view') {
     return (
       <TimePicker
-        key="display"
+        key="view"
         variant="naked"
-        mode={displayOrDisabled(isDisabled)}
+        mode="view"
         value={value as string | null}
         size={size}
         formatOptions={meta?.formatOptions}
@@ -314,17 +307,17 @@ function TimeCell({ value, meta, mode, size, isDisabled, onCommit, onCancel }: C
   )
 }
 
-function SelectCell({ value, meta, mode, size, isDisabled, onCommit, onCancel }: CellComponentProps) {
+function SelectCell({ value, meta, mode, size, onCommit, onCancel }: CellComponentProps) {
   // Display canonical(2026-05-05):cell IS variant,default plain text(no Tag pill 疊在 cell border 內)。
   // Consumer 可在 column meta.display='tag' opt-in 內容導向的 Tag 視覺(category 含色彩標籤等)。
   // 對齊 JTable / AG Grid「renderer/editor 視覺一致」canonical。
   const displayMode = (meta?.display as 'plain' | 'tag' | undefined) ?? 'plain'
-  if (mode === 'display') {
+  if (mode === 'view') {
     return (
       <Select
-        key="display"
+        key="view"
         variant="naked"
-        mode={displayOrDisabled(isDisabled)}
+        mode="view"
         value={value as string | null}
         options={meta?.options ?? []}
         size={size}
@@ -354,14 +347,14 @@ function SelectCell({ value, meta, mode, size, isDisabled, onCommit, onCancel }:
   )
 }
 
-function MultiSelectCell({ value, meta, mode, size, isDisabled, autoRowHeight, onCommitLive, onCancel }: CellComponentProps) {
+function MultiSelectCell({ value, meta, mode, size, autoRowHeight, onCommitLive, onCancel }: CellComponentProps) {
   const wrap = autoRowHeight && meta?.wrap === true
-  if (mode === 'display') {
+  if (mode === 'view') {
     return (
       <Combobox
-        key="display"
+        key="view"
         variant="naked"
-        mode={displayOrDisabled(isDisabled)}
+        mode="view"
         value={(value as string[] | null) ?? []}
         options={meta?.options ?? []}
         wrap={wrap}
@@ -386,10 +379,10 @@ function MultiSelectCell({ value, meta, mode, size, isDisabled, autoRowHeight, o
   )
 }
 
-function PersonCell({ value, mode, size, isDisabled, onCommit, onCancel, meta }: CellComponentProps) {
-  if (mode === 'display') {
+function PersonCell({ value, mode, size, onCommit, onCancel, meta }: CellComponentProps) {
+  if (mode === 'view') {
     // 2026-07-08 A 案:display 態零恆顯 icon(同 DateCell 註)
-    return <PeoplePicker key="display" variant="naked" mode={displayOrDisabled(isDisabled)} value={value as PersonValue | null} size={size} />
+    return <PeoplePicker key="view" variant="naked" mode="view" value={value as PersonValue | null} size={size} />
   }
   return (
     <PeoplePicker
@@ -406,10 +399,10 @@ function PersonCell({ value, mode, size, isDisabled, onCommit, onCancel, meta }:
   )
 }
 
-function MultiPersonCell({ value, mode, size, isDisabled, onCommitLive, onCancel, meta }: CellComponentProps) {
-  if (mode === 'display') {
+function MultiPersonCell({ value, mode, size, onCommitLive, onCancel, meta }: CellComponentProps) {
+  if (mode === 'view') {
     // 2026-07-08 A 案:display 態零恆顯 icon(同 DateCell 註)
-    return <PeoplePicker key="display" variant="naked" mode={displayOrDisabled(isDisabled)} value={(value as PersonValue[]) ?? []} size={size} />
+    return <PeoplePicker key="view" variant="naked" mode="view" value={(value as PersonValue[]) ?? []} size={size} />
   }
   // Multi 用 onCommitLive(commit 但不 exit edit)— 每勾一人即時生效,popover 持續開
   // 直到點外面;onOpenChange(false) → onCancel exit edit。對齊 multiSelect canonical。
@@ -427,14 +420,12 @@ function MultiPersonCell({ value, mode, size, isDisabled, onCommitLive, onCancel
   )
 }
 
-function BooleanCell({ value, mode, meta, size, isEditable, isDisabled, onCommit }: CellComponentProps) {
-  // boolean 不分 read/edit mode — display 渲 mode='display' 純展示;editable 時直接 toggle Checkbox
-  // 2026-05-13 codex V1 fix:editable=true + disabled=true 之前 fall through to live Checkbox,
-  // onCheckedChange 仍 fire(violate disabled contract)。Fix:`!isEditable || isDisabled` →
-  // 走 display branch,Checkbox 拿 disabled mode + 不接 onCheckedChange。
-  if (mode === 'display' && (!isEditable || isDisabled)) {
+function BooleanCell({ value, mode, meta, size, isEditable, onCommit }: CellComponentProps) {
+  // boolean 不分 read/edit mode — view 渲 mode='view' 純展示;editable 時直接 toggle Checkbox。
+  // 不可編(!isEditable)→ 走 view branch,Checkbox mode="view" 純展示不接 onCheckedChange。
+  if (mode === 'view' && !isEditable) {
     // size 傳入 → boolean 值 icon(Check/X)@lg 縮放對齊其他 cell(對齊 editable 分支同 size 邏輯)
-    return <Checkbox variant="naked" size={size === 'lg' ? 'lg' : 'md'} mode={displayOrDisabled(isDisabled)} checked={value === true} />
+    return <Checkbox variant="naked" size={size === 'lg' ? 'lg' : 'md'} mode="view" checked={value === true} />
   }
   return (
     <Checkbox
@@ -448,21 +439,21 @@ function BooleanCell({ value, mode, meta, size, isEditable, isDisabled, onCommit
 
 /**
  * UrlCell(2026-07-14 docblock 對齊實作):
- *   display branch = `<LinkInput mode={displayOrDisabled(isDisabled)}>`(URL parse / hostname
+ *   display branch = `<LinkInput mode="view">`(URL parse / hostname
  *   顯示一致性 SSOT);editable 互動:hover 時右側出 Pencil 鈕 → 進 edit(保留 link click 語意)。
  *   edit branch = plain `<Input variant="naked">`(LinkInput edit 的 controlled value 衝突
  *   revert,詳下方 edit branch 註解);URL 驗證 deferred 到 onCommit(consumer 端 validate)。
  */
-function UrlCell({ value, meta, mode, size, isDisabled, isEditable, onRequestEdit, onCommit, onCancel }: CellComponentProps) {
-  if (mode === 'display') {
+function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit, onCancel }: CellComponentProps) {
+  if (mode === 'view') {
     // showDisplayEndIcon ← D path Phase 2(2026-05-08):Field naked wrapper 包 anchor,與 Input edit 同 chrome。
     // LinkInput 此 prop = wrapper-only(無 icon,field.spec.md L6 例外)→ A 案(2026-07-08)不撤;
     // 但修 I1:原無條件 true 違反「= isEditable」knob 等式(field-controls.spec.md cell 例外),改等式。
     const display = (
-      <LinkInput variant="naked" mode={displayOrDisabled(isDisabled)} value={value as string | null} label={meta?.linkLabel} size={size} showDisplayEndIcon={isEditable === true} />
+      <LinkInput variant="naked" mode="view" value={value as string | null} label={meta?.linkLabel} size={size} showDisplayEndIcon={isEditable === true} />
     )
-    // 2026-05-13 codex V1 fix:disabled URL 不顯 Pencil affordance(parent onRequestEdit 已被攔但 UI 仍誤導)
-    if (!isEditable || isDisabled) return display
+    // 不可編 URL 不顯 Pencil affordance(純 view 顯示連結,無編輯入口)
+    if (!isEditable) return display
     // editable read mode:hover Pencil 鈕(對齊 spec 第十二段「url:read = 連結 + Pencil」)
     return (
       <span className="group/cell relative flex items-center w-full"> {/* @naked-row-mode-allow: URL hover-Pencil 是 inline action 不是 value content,items-center 鎖 Pencil 對齊行高第一行(autoRow 跟 fixed 皆同視覺正確) */}

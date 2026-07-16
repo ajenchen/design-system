@@ -316,9 +316,9 @@ function OverflowTagList({ containerRef, items, size, wrap, renderTag, renderHid
   )
 }
 
-// ── Internal tag-stack renderer (consumed by ReadonlyMultiSelect / mode='display') ───
+// ── Internal tag-stack renderer (consumed by ReadonlyMultiSelect / mode='view') ───
 //
-// Phase B2(2026-05-05):原 ComboboxDisplay sub-component 已 retire,改 inline `<Combobox mode="display">`。
+// Phase B2(2026-05-05):原 ComboboxDisplay sub-component 已 retire,改 inline `<Combobox mode="view">`。
 // 本 helper 只負責 tag-stack 內容渲染(OverflowTagList 消費),不包 Field wrapper。
 function ComboboxTagStack({
   value, options, tagSize = 'md', wrap = false, containerRef: externalRef, disabled = false,
@@ -328,7 +328,7 @@ function ComboboxTagStack({
 }) {
   const emptyDisplay = useFieldEmptyDisplay()
   const ownRef = React.useRef<HTMLDivElement>(null)
-  if (!value || value.length === 0) return <span className={fieldEmptyColorClass(disabled ? 'disabled' : 'display')}>{emptyDisplay}</span>
+  if (!value || value.length === 0) return <span className={fieldEmptyColorClass(disabled ? 'disabled' : 'view')}>{emptyDisplay}</span>
   const items = value.map(v => ({ value: v, label: options?.find(o => o.value === v)?.label ?? v }))
   const disabledClass = disabled ? 'bg-disabled text-fg-disabled' : undefined
 
@@ -504,11 +504,11 @@ function ReadonlyMultiSelect({
   const containerRef = React.useRef<HTMLDivElement>(null)
   const hasTags = (value?.length ?? 0) > 0
 
-  // mode='display'(Phase B2 2026-05-05):純內容輸出 — tag stack 不包 Field wrapper / 不 reserve 高度。
+  // mode='view'(Phase B2 2026-05-05):純內容輸出 — tag stack 不包 Field wrapper / 不 reserve 高度。
   //   對齊原 ComboboxDisplay sub-component(retired)。
   //   Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix ChevronDown,
   //   與 edit 同結構消除 cell display↔edit 像素偏移(Layer-B padding mismatch)。
-  if (resolvedMode === 'display') {
+  if (resolvedMode === 'view') {
     if (!showDisplayEndIcon) {
       // 2026-05-14 I2 fix(spec contract (e) display typography canonical):empty bare span 套
       // `fieldDisplayTextClass(sz)`(sm/md→text-body,lg→text-body-lg)— 對齊跨 Field family 統一。
@@ -519,8 +519,8 @@ function ReadonlyMultiSelect({
     }
     return (
       <div
-        className={cn(fieldWrapperStyles({ mode: 'display', variant, width, size: sz }), hasTags && tagPadding[sz], className)}
-        data-field-mode="display"
+        className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size: sz }), hasTags && tagPadding[sz], className)}
+        data-field-mode="view"
       >
         {hasTags ? (
           <ComboboxTagStack value={value} options={options} tagSize={sz} wrap={wrap} />
@@ -586,7 +586,7 @@ function NativeCombobox({
   const fieldCtx = useFieldContext()
   const disabled = useResolvedFieldDisabled(disabledProp)
   const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
-  // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="display"> 漏 cascade
+  // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="view"> 漏 cascade
   const resolvedMode = useResolvedFieldMode({ mode, disabled })
   const iconSize = getIconSize(size)
   const showClear = clearable && value.length > 0 && resolvedMode === 'edit'
@@ -688,7 +688,7 @@ function CustomCombobox({
   const fieldCtx = useFieldContext()
   const error = useResolvedFieldInvalid(errorProp)
   const disabled = useResolvedFieldDisabled(disabledProp)
-  // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="display"> 漏 cascade
+  // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="view"> 漏 cascade
   const resolvedMode = useResolvedFieldMode({ mode, disabled })
   const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
   const iconSize = getIconSize(size)

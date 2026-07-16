@@ -14,11 +14,11 @@ import { fieldWrapperStyles } from "@/design-system/components/Field/field-wrapp
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 
 // ── RadioGroup display mode ─────────────────────────────────────────────────
-// RadioGroup mode='display' 時:Group 不渲染 Radix primitive(無 radio 視覺),
+// RadioGroup mode='view' 時:Group 不渲染 Radix primitive(無 radio 視覺),
 // 改由 RadioGroup 本體 walk props.children,找 control.value === selectedValue 的
 // SelectionItem,把它的 label 渲染為單一純文字 span(其他選項不顯示)。
 // 對齊 Carbon read-only single-select(只顯示 selected 內容)+ Airtable / Notion read-only。
-// 實作在 RadioGroup forwardRef 內(見下方 mode === 'display' 分支)。
+// 實作在 RadioGroup forwardRef 內(見下方 mode === 'view' 分支)。
 
 // ── RadioGroup ──────────────────────────────────────────────────────────────
 
@@ -83,7 +83,7 @@ const RadioGroup = React.forwardRef<
   const fieldCtx = useFieldContext()
   // readonly 灰框 size:走 SSOT resolver(RadioGroup 無 size prop → ctx > 'md')
   const resolvedBoxSize = useResolvedFieldSize(undefined, 'md') as 'sm' | 'md' | 'lg'
-  // mode='display' — 純展示 selected option 的 label,不渲染任何 radio control 視覺。
+  // mode='view' — 純展示 selected option 的 label,不渲染任何 radio control 視覺。
   // 對齊 Carbon read-only single-select(只顯示 selected 內容)+ Airtable / Notion read-only。
   // 實作:walk children 找 control.value === selectedValue 的 SelectionItem,render label plain text。
   // (不用 context dispatch 給 RadioGroupItem — SelectionItem layout wrapper 仍會渲染所有 item label)
@@ -104,7 +104,7 @@ const RadioGroup = React.forwardRef<
     ...restDomProps
   } = props as RadioGroupProps & { asChild?: boolean }
 
-  if (resolvedMode === 'display') {
+  if (resolvedMode === 'view') {
     const selectedValue = (value ?? defaultValue) as string | undefined
     if (!selectedValue) {
       return <div {...restDomProps} ref={ref as React.Ref<HTMLDivElement>} role="group" className={cn('grid', className)}><span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span></div>
@@ -273,8 +273,8 @@ const RadioGroupItem = React.forwardRef<
     const sizeKey = size ?? 'md'
     const dotPx = dotSize[sizeKey]
 
-    // 注意:RadioGroup mode='display' 的純文字渲染由 RadioGroup 本體 walk-children 處理
-    // (見上方 RadioGroup forwardRef 的 mode === 'display' 分支),RadioGroupItem 在 display
+    // 注意:RadioGroup mode='view' 的純文字渲染由 RadioGroup 本體 walk-children 處理
+    // (見上方 RadioGroup forwardRef 的 mode === 'view' 分支),RadioGroupItem 在 display
     // mode 下不會被獨立 render,故此處無 display 分支。
 
     // 注意：Radio 的 label 語意與 Checkbox/Switch 不同——

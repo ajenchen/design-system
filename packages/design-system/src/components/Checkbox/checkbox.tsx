@@ -154,7 +154,7 @@ const Checkbox = React.forwardRef<
 
     // Field context:Checkbox 單獨塞進 Field(binary toggle)時,忽略自己的 label 讓 FieldLabel 接管
     // 2026-05-31 #35:hooks(useFieldContext / useContext / useId)必在任何 conditional return 前呼叫(Rules of Hooks)。
-    // 原 mode='display' early return 寫在 hooks 之上 → runtime 切 mode 會 hook count 不一致 crash;已下移至 hooks 後。
+    // 原 mode='view' early return 寫在 hooks 之上 → runtime 切 mode 會 hook count 不一致 crash;已下移至 hooks 後。
     //
     // **例外**:Checkbox 是 CheckboxGroup 的 child 時(multi-select 情境),**每個 checkbox
     // 的 label 是它自己的選項名**,FieldLabel 只是群組名稱 — 此時 label **必須保留**,
@@ -181,7 +181,7 @@ const Checkbox = React.forwardRef<
     const generatedId = React.useId()
     const inputId = idProp ?? (insideGroup ? generatedId : (fieldCtx?.id ?? generatedId))
 
-    // 2026-06-08 SSOT cascade:disabled + mode 經 resolver hook(原 raw prop → <Field disabled>/<Field mode="display"> 漏 cascade)
+    // 2026-06-08 SSOT cascade:disabled + mode 經 resolver hook(原 raw prop → <Field disabled>/<Field mode="view"> 漏 cascade)
     const resolvedDisabled = useResolvedFieldDisabled(disabled)
     const resolvedMode = useResolvedFieldMode({ mode, disabled, readOnly })
     const effectiveReadOnly = readOnly || resolvedMode === 'readonly'
@@ -208,10 +208,10 @@ const Checkbox = React.forwardRef<
       ...restDomProps
     } = props
 
-    // ── mode='display'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
+    // ── mode='view'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
     // 純展示模式:無互動 primitive、渲染 Check / X icon(true=勾 / false=叉,中性 foreground 色)。
     // boolean 值展示符號 SSOT = SelectionControl/boolean-value.tsx(勾/叉 icon + 中性色 + M22 世界級對照)。取代 BooleanDisplay。
-    if (resolvedMode === 'display') {
+    if (resolvedMode === 'view') {
       const isChecked = checkedProp === true
       return (
         <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="inline-flex">

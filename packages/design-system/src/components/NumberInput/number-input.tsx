@@ -34,7 +34,7 @@ function formatNumber(
 }
 
 // Phase B1(2026-05-05):NumberInputDisplay 退場。
-// 改用 `<NumberInput mode="display" value={...} prefix={...} ... />`,format 邏輯在 mode='display' 分支重用。
+// 改用 `<NumberInput mode="view" value={...} prefix={...} ... />`,format 邏輯在 mode='view' 分支重用。
 
 // ── Types ───────────────────────────────────────────────────────────────────
 

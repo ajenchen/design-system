@@ -594,7 +594,7 @@ export const InlineEdit: Story = {
  *   3. `spreadsheetMode` — Excel-like cell selection: click 1=select / click 2=edit /
  *      Shift+click=range / ArrowKeys=nav
  *   4. `experimentalActiveEditorController` — portal Field active editor(Slice D Step 5 D.3,
- *      cell 永遠 mode="display" SSOT preserved + portal host renders mode="edit")
+ *      cell 永遠 mode="view" SSOT preserved + portal host renders mode="edit")
  *
  * 驗證點:
  *   - hover editable cell → 1px overlay 邊框 var(--border-hover)

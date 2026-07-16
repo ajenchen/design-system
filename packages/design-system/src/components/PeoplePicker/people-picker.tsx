@@ -206,11 +206,11 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = el
   }, [ref])
 
-  // ── mode='display' ────────────────────────────────────────────────────────
+  // ── mode='view' ────────────────────────────────────────────────────────
   // Default(showDisplayEndIcon=false):裸 PersonDisplay / MultiPersonDisplay — backward compat。
   // Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix ChevronDown,
   // 與 edit (Select / Combobox wrapped) 同 DOM 結構消除 cell display↔edit 像素偏移。
-  if (resolvedMode === 'display') {
+  if (resolvedMode === 'view') {
     if (!showDisplayEndIcon) {
       if (isEmpty) return <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
       return isMulti
@@ -221,8 +221,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     return (
       <div
-        className={cn(fieldWrapperStyles({ mode: 'display', variant: resolvedVariant, width, size }), className)}
-        data-field-mode="display"
+        className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, width, size }), className)}
+        data-field-mode="view"
       >
         <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign)}>
           {isEmpty

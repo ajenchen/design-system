@@ -884,11 +884,10 @@ interface MemoCellSlotProps {
   value: any
   // any-allow: free-form consumer meta bag(同 CellComponentProps.meta)
   meta: Record<string, any>
-  mode: 'display' | 'edit'
+  mode: 'view' | 'edit'
   size: 'sm' | 'md' | 'lg'
   autoRowHeight: boolean
   isEditable: boolean
-  isDisabled: boolean
   onCommitCell: (rowId: string, colId: string, next: unknown) => void
   onCancelCell: (rowId: string, colId: string) => void
   onCellCommitLive?: (rowId: string, colId: string, next: unknown) => void
@@ -897,13 +896,12 @@ interface MemoCellSlotProps {
 
 const MemoCellSlot = React.memo(function MemoCellSlot({
   Cell, rowId, colId, value, meta, mode, size, autoRowHeight,
-  isEditable, isDisabled, onCommitCell, onCancelCell, onCellCommitLive, onEnterEdit,
+  isEditable, onCommitCell, onCancelCell, onCellCommitLive, onEnterEdit,
 }: MemoCellSlotProps) {
   const onCommit = React.useCallback((next: unknown) => onCommitCell(rowId, colId, next), [onCommitCell, rowId, colId])
   const onCommitLive = React.useCallback((next: unknown) => onCellCommitLive?.(rowId, colId, next), [onCellCommitLive, rowId, colId])
   const onCancel = React.useCallback(() => onCancelCell(rowId, colId), [onCancelCell, rowId, colId])
-  // disabled guard 保留原 renderCellContent inline closure 語意(`() => !disabled && setEditingCellId(...)`)
-  const onRequestEdit = React.useCallback(() => { if (!isDisabled) onEnterEdit(rowId, colId) }, [onEnterEdit, isDisabled, rowId, colId])
+  const onRequestEdit = React.useCallback(() => onEnterEdit(rowId, colId), [onEnterEdit, rowId, colId])
   return (
     <Cell
       value={value}
@@ -912,7 +910,6 @@ const MemoCellSlot = React.memo(function MemoCellSlot({
       size={size}
       autoRowHeight={autoRowHeight}
       isEditable={isEditable}
-      isDisabled={isDisabled}
       onCommit={onCommit}
       onCommitLive={onCommitLive}
       onCancel={onCancel}
@@ -1040,28 +1037,13 @@ function DataTableInner<TData>(
     },
     [],
   )
-  // 2026-05-13 Stream C Cluster B Q3 ship(per codex Q3 verdict + user 拍板「全部馬不停蹄做完」):
-  // Mirror isCellEditable pattern。`column.meta.disabled` 接 bool 或 (row) => boolean fn。
-  // cell disabled → (a) TD 加 `bg-disabled cursor-not-allowed` + 抑制 hover, (b) inner Field
-  // 透過 isDisabled prop 走 mode='disabled'(各 Field type 內部具體 disabled token,非 wrapper blanket opacity),
-  // (c) edit entry condition: `cellEditable && !cellDisabled`。
-  const isCellDisabled = React.useCallback(
-    // any-allow: free-form consumer meta — same rationale as L143 renderTypedValue
-    (meta: Record<string, any> | undefined, row: unknown): boolean => {
-      const d = meta?.disabled
-      if (typeof d === 'function') return d(row) === true
-      return d === true
-    },
-    [],
-  )
-  // 2026-05-13:canEditCell helper consolidation(per codex V4 follow-up + user「沒理由不做」拍板)
-  // 抽 4-site repeated `editable && !disabled` pattern。3 path sites(keyboard / Tab / InteractionLayer)
-  // call canEditCell;另 2 sites(renderCellContent + onEditableCellClick)用 already-computed `editable`/
-  // `disabled` 變數(因為 disabled 還要單獨給 isDisabled prop + bg-disabled class),不 collapse to helper。
+  // 2026-07-16 round16:cell「disabled」態廢除(世界級 grid 無 disabled cell;meta.disabled 全庫 0 消費)。
+  // 鎖定 cell = `editable:(row)=>false`(= isCellEditable 模型),非灰化 disabled 態。原 isCellDisabled
+  // helper + bg-disabled TD 灰化 + isDisabled prop 全移除;canEditCell 收斂為 isCellEditable。
   const canEditCell = React.useCallback(
     (meta: Record<string, unknown> | undefined, row: unknown): boolean =>
-      isCellEditable(meta, row) && !isCellDisabled(meta, row),
-    [isCellEditable, isCellDisabled],
+      isCellEditable(meta, row),
+    [isCellEditable],
   )
   const [sorting, setSorting] = React.useState<SortingState>(tableOptions?.state?.sorting as SortingState ?? [])
 
@@ -1517,20 +1499,18 @@ function DataTableInner<TData>(
     const rowId = cell.row.id
     const colId = cell.column.id
     const editable = isCellEditable(meta, cell.row.original)
-    const disabled = isCellDisabled(meta, cell.row.original)
     const isEditingThisCell = editingCellId === cellEditId(rowId, colId)
 
     let content: React.ReactNode
     if (colType) {
       const Cell = resolveCellComponent(colType)
       // 2026-05-10 Slice D Step 5(D.3 portal Field):當 portal flag 啟 + cell 編輯中 →
-      // cell 保持 display mode(SSOT preserved per codex Q6.2),portal layer 渲 edit Field 在上。
-      // 預設 inline-edit:isEditingThisCell ? edit : display。
-      // 2026-05-13 Q3 cell-disabled:disabled cell 永遠 display lifecycle(state overlay,不進 edit)。
-      const cellMode: 'edit' | 'display' =
+      // cell 保持 view mode(SSOT preserved per codex Q6.2),portal layer 渲 edit Field 在上。
+      // 預設 inline-edit:isEditingThisCell ? edit : view。
+      const cellMode: 'edit' | 'view' =
         (experimentalActiveEditorController && isEditingThisCell)
-          ? 'display'
-          : (isEditingThisCell && !disabled) ? 'edit' : 'display'
+          ? 'view'
+          : isEditingThisCell ? 'edit' : 'view'
       // 2026-07-05 D3 perf fix:改經 MemoCellSlot — 原 inline closure props 讓 CellWithSurface
       // memo 100% miss(詳 MemoCellSlot 檔頭註解)。
       content = (
@@ -1544,7 +1524,6 @@ function DataTableInner<TData>(
           size={size}
           autoRowHeight={autoRowHeight}
           isEditable={editable}
-          isDisabled={disabled}
           onCommitCell={commitCell}
           onCancelCell={cancelCellEdit}
           onCellCommitLive={onCellCommit}
@@ -1681,7 +1660,6 @@ function DataTableInner<TData>(
     const cellRowId = cell.row.id
     const cellColId = cell.column.id
     const cellEditable = isCellEditable(meta, cell.row.original)
-    const cellDisabled = isCellDisabled(meta, cell.row.original)
     const isEditingThisCell = editingCellId === cellEditId(cellRowId, cellColId)
     // Indicator canonical(2026-05-09 D-path retire):**Field naked-display branch own** via
     //   `showDisplayEndIcon` opt-in(per-picker `<ItemSuffix>` 渲 ChevronDown/Calendar/Clock)。
@@ -1690,8 +1668,7 @@ function DataTableInner<TData>(
     // Cell click → 進 edit mode(boolean 不需 — 自己 toggle;url 不需 — 走內部 Pencil button,Phase C 由 UrlCell 內處理)
     const cellSpreadsheetId = `${cellRowId}:${cellColId}`
     const isSelectedCell = spreadsheetMode && selectedCellId === cellSpreadsheetId
-    // 2026-05-13 Q3:cellDisabled → 抑制 editable click(對齊 `editable && !disabled` invariant)
-    const onEditableCellClick = cellEditable && !cellDisabled && colType !== 'boolean' && colType !== 'url' && !isEditingThisCell
+    const onEditableCellClick = cellEditable && colType !== 'boolean' && colType !== 'url' && !isEditingThisCell
       ? (e: React.MouseEvent) => {
         if (spreadsheetMode) {
           // Slice D Step 4 spreadsheet semantics(2026-05-10 user 拍板,2026-05-12 v2 fix):
@@ -1777,8 +1754,6 @@ function DataTableInner<TData>(
         // Phase 9 Issue 1 fix(2026-05-10):range cell bg fill via CSS [data-range-cell],
         // 不在 overlay layer(避免 layer fixed-position bg 蓋 cell content)。
         data-range-cell={spreadsheetMode && rangeCellIdSet.has(`${cell.row.id}:${cell.column.id}`) ? '' : undefined}
-        // 2026-05-13 V1.6:data-cell-disabled attribute 給 CSS `:not([data-cell-disabled])` 過濾,disabled cell 不被 range fill 蓋
-        data-cell-disabled={cellDisabled ? 'true' : undefined}
         // Issue 9 cell error(2026-05-10):aria-describedby 接 error message id 給 AT 讀
         aria-describedby={cellErrorId}
         aria-invalid={hasCellError || undefined}
@@ -1821,9 +1796,6 @@ function DataTableInner<TData>(
           // a11y(2026-07-14 dim-10 修):非 spreadsheet inlineEdit cell 可 Tab 聚焦(見下方
           // tabIndex/onKeyDown)— focus-visible ring 對齊本檔 expand button / sortable header canonical。
           onEditableCellClick && !spreadsheetMode && 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
-          // 2026-05-13 Q3 cell disabled SSOT(per codex Q3 verdict + user 拍板「全部馬不停蹄做完」):
-          // bg `--bg-disabled` component-state token(color.spec.md:671 owner)+ cursor 抑制 click affordance。
-          cellDisabled && 'bg-disabled cursor-not-allowed',
           // z-10 raise inline-edit cell;portal mode 不需(layer z-3 already on top)。
           isEditingThisCell && !experimentalActiveEditorController && 'z-10',
         )}
@@ -2085,8 +2057,7 @@ function DataTableInner<TData>(
         else if (e.key === 'ArrowLeft' && curColIdx > 0) { nextColIdx = curColIdx - 1 }
         else if (e.key === 'ArrowRight' && curColIdx < allCols.length - 1) { nextColIdx = curColIdx + 1 }
         else if (e.key === 'Enter' || e.key === 'F2') {
-          // Enter / F2 → 進 edit(若 cell editable + 非 boolean / url + 非 disabled)
-          // 2026-05-13 codex V1 fix:加 `!isCellDisabled(meta, row)` gate(對齊 mouse click invariant)
+          // Enter / F2 → 進 edit(若 cell editable + 非 boolean / url)。edit 入口統一走 canEditCell(= isCellEditable)。
           const row = table.getRowModel().rowsById[curRowId]
           const colDef = table.getAllLeafColumns().find((c) => c.id === curColId)
           // any-allow: column meta free-form
@@ -2142,7 +2113,7 @@ function DataTableInner<TData>(
     },
     // D3 dep-hygiene fix(2026-07-06):handler 內(portal edit Enter 分支)呼叫的是 canEditCell,
     // 非 isCellEditable — 原 deps 列 isCellEditable 是靠 canEditCell identity-stable 才無實害的
-    // stale-closure 地雷;改列真實依賴 canEditCell(其 useCallback deps 已含 isCellEditable + isCellDisabled)。
+    // stale-closure 地雷;改列真實依賴 canEditCell(其 useCallback deps 已含 isCellEditable)。
     [enabled, mode, hasAnySelection, selectableVisibleIds, setSelection,
      spreadsheetMode, selectedCellId, editingCellId, table, canEditCell]
   )
@@ -2779,7 +2750,7 @@ function DataTableInner<TData>(
         activeEditorEnabled={experimentalActiveEditorController}
         // Slice D Step 5(D.3 portal Field,2026-05-10):real portal Field render callback。
         // Layer 在 ActiveEditorHost(z 3 float rect)render `<Cell mode="edit" />` 同 registry。
-        // Cell wrapper 保持 mode="display"(SSOT preserved per codex Q6.2)。
+        // Cell wrapper 保持 mode="view"(SSOT preserved per codex Q6.2)。
         activeEditorRender={experimentalActiveEditorController ? (cellId) => {
           const lastColon = cellId.lastIndexOf(':')
           if (lastColon < 0) return null

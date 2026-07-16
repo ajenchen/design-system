@@ -34,7 +34,7 @@ export const Overview: Story = {
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
               {[
-                ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'Field mode(display 渲染純文字 div;readonly 用底色 + padding 標示閱讀區)'],
+                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'Field mode(display 渲染純文字 div;readonly 用底色 + padding 標示閱讀區)'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", 'sm/md text-body,lg text-body-lg'],
                 ['rows', 'number', '3', '預設可見行數'],
                 ['placeholder', 'string', '—', '空值提示'],
@@ -82,7 +82,7 @@ export const Inspector: Story = {
     defaultValue: '',
   },
   argTypes: {
-    mode: { control: 'radio', options: ['edit', 'display', 'readonly', 'disabled'] },
+    mode: { control: 'radio', options: ['edit', 'view', 'readonly', 'disabled'] },
     size: { control: 'radio', options: ['sm', 'md', 'lg'] },
     rows: { control: { type: 'number', min: 1, max: 20 } },
     error: { control: 'boolean', description: 'error 視覺(border-error + aria-invalid)' },
@@ -129,7 +129,7 @@ export const ModeMatrix: Story = {
         <H3>display — 純展示(渲 div 取代 textarea,whitespace-pre-wrap 保留多行)</H3>
         <Desc>對齊 Carbon read-only / Cloudscape display mode。常見於檢視已提交的留言 / 評論。</Desc>
         <Textarea
-          mode="display"
+          mode="view"
           rows={3}
           value="我覺得這個專案非常有潛力,建議加強 onboarding 的引導流程..."
         />

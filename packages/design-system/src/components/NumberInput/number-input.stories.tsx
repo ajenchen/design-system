@@ -32,7 +32,7 @@ export const Modes: Story = {
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">display</h3>
-          <NumberInput mode="display" value={value} prefix="$" aria-label="價格(display mode demo)" />
+          <NumberInput mode="view" value={value} prefix="$" aria-label="價格(display mode demo)" />
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>

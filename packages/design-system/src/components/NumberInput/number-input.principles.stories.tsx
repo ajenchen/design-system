@@ -63,9 +63,9 @@ export const UsageGuidance: Story = {
       <Section title="何時不用 + 替代方案">
         <Rule
           title="❌ 不用 NumberInput 做 DataTable 列表展示"
-          note="Table cell 用 `mode='display'` 渲染,不用 edit 模式輸入元件。DataTable 的 currency 欄位自動消費 `<NumberInput mode='display'>`"
+          note="Table cell 用 `mode='view'` 渲染,不用 edit 模式輸入元件。DataTable 的 currency 欄位自動消費 `<NumberInput mode='view'>`"
         >
-          <Label warn>Table cell 顯示值 → `mode='display'` 渲染,不用 edit Input</Label>
+          <Label warn>Table cell 顯示值 → `mode='view'` 渲染,不用 edit Input</Label>
         </Rule>
       </Section>
 

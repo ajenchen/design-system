@@ -133,16 +133,16 @@ export const ColumnTypeRule: Story = {
       <div>
         <Rule
           title="✅ 宣告 `meta.type`,DataTable 自動選對應 Display"
-          note="每個 Field Control 的 `mode='display'` 渲染(`<Input mode='display'>` / `<NumberInput mode='display'>` / `<Checkbox mode='display'>` 等)是該資料類型的唯一真實來源——format 邏輯、對齊、null 顯示都住一份。Consumer 只需宣告 type,不需重複造輪子"
+          note="每個 Field Control 的 `mode='view'` 渲染(`<Input mode='view'>` / `<NumberInput mode='view'>` / `<Checkbox mode='view'>` 等)是該資料類型的唯一真實來源——format 邏輯、對齊、null 顯示都住一份。Consumer 只需宣告 type,不需重複造輪子"
         >
           <DataTable columns={columns} data={SAMPLE_DATA} height="auto" />
         </Rule>
 
         <Rule
           title="❌ 手寫 cell render 自訂格式化"
-          note="每 column 自己寫 `cell: (info) => ...` 會繞過 `mode='display'` 系統——**格式化邏輯會漂移**。一個 table 的 price 顯示「$2,490」,另一個 table 的 price 顯示「2490」,一個 boolean 顯示勾 icon,另一個 boolean 顯示「是」——整個系統 format 失去一致性"
+          note="每 column 自己寫 `cell: (info) => ...` 會繞過 `mode='view'` 系統——**格式化邏輯會漂移**。一個 table 的 price 顯示「$2,490」,另一個 table 的 price 顯示「2490」,一個 boolean 顯示勾 icon,另一個 boolean 顯示「是」——整個系統 format 失去一致性"
         >
-          <Label warn>除非真的需要 `mode='display'` 無法提供的客製視覺,否則一律走 meta.type 系統。客製化時完全跳過 type 讓 display 渲染不要干預</Label>
+          <Label warn>除非真的需要 `mode='view'` 無法提供的客製視覺,否則一律走 meta.type 系統。客製化時完全跳過 type 讓 display 渲染不要干預</Label>
         </Rule>
 
         <Rule

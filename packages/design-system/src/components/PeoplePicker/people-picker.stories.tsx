@@ -73,7 +73,7 @@ const SinglePicker = () => {
       {/* @story-trait-rationale: pre-existing trait gaps tracked separately */}
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">display</h3>
-        <PeoplePicker mode="display" value={samplePeople[0]} />
+        <PeoplePicker mode="view" value={samplePeople[0]} />
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>

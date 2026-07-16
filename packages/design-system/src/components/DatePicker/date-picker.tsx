@@ -409,7 +409,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     const size = useResolvedFieldSize(sizeProp)  // B 組 cascade fix:<Field size>/cell surface-size 對 DatePicker 生效
     const error = useResolvedFieldInvalid(errorProp)
     const disabled = useResolvedFieldDisabled(disabledProp)
-    // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="display"> 漏 cascade
+    // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="view"> 漏 cascade
     const resolvedMode = useResolvedFieldMode({ mode, disabled })
     const emptyDisplay = useFieldEmptyDisplay()
     const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
@@ -475,11 +475,11 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       }
     }, [onChange, showTime])
 
-    // mode='display'(Phase B2 2026-05-05):純內容輸出 — 對齊原 DatePickerDisplay sub-component(retired)。
+    // mode='view'(Phase B2 2026-05-05):純內容輸出 — 對齊原 DatePickerDisplay sub-component(retired)。
     //   Default(showDisplayEndIcon=false):無 Field wrapper / 無 Calendar icon — backward compat 裸 span。
     //   Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix Calendar,
     //   與 edit 同結構消除 cell display↔edit 像素偏移(Layer-B padding mismatch)。
-    if (resolvedMode === 'display') {
+    if (resolvedMode === 'view') {
       if (!showDisplayEndIcon) {
         // 2026-05-14 I2 fix(spec contract (e) display typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
@@ -488,8 +488,8 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       }
       return (
         <div
-          className={cn(fieldWrapperStyles({ mode: 'display', variant, width, size }), className)}
-          data-field-mode="display"
+          className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size }), className)}
+          data-field-mode="view"
         >
           <span className={cn(bareInputStyles, 'flex-1 min-w-0 truncate', !value && fieldEmptyColorClass(resolvedMode))}>
             {value ? displayCommitted : emptyDisplay}
@@ -801,7 +801,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
     const size = useResolvedFieldSize(sizeProp)  // B 組 cascade fix:<Field size>/cell surface-size 對 DatePicker 生效
     const error = useResolvedFieldInvalid(errorProp)
     const disabled = useResolvedFieldDisabled(disabledProp)
-    // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="display"> 漏 cascade
+    // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="view"> 漏 cascade
     const resolvedMode = useResolvedFieldMode({ mode, disabled })
     const emptyDisplay = useFieldEmptyDisplay()
     const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
@@ -936,8 +936,8 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       return false
     }, [activeEnd, startDate, endDate])
 
-    // mode='display'(Phase B2 2026-05-05):純內容輸出 — 無 Field wrapper / 無 Calendar icon。
-    if (resolvedMode === 'display') {
+    // mode='view'(Phase B2 2026-05-05):純內容輸出 — 無 Field wrapper / 無 Calendar icon。
+    if (resolvedMode === 'view') {
       const hasAny = !!(startIso || endIso)
       if (!hasAny) return <span className={cn(fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
       return (

@@ -142,8 +142,8 @@ export interface SelectProps
   onOpenChange?: (open: boolean) => void
   /**
    * Display mode 顯 picker intrinsic end icon(2026-05-08 D path Phase 1)。
-   * 預設 false:`mode="display"` 純展示 bare span(向後相容)。
-   * `variant="naked" && mode="display"` 場景(DataTable cell)opt-in 設 true → wrap 進
+   * 預設 false:`mode="view"` 純展示 bare span(向後相容)。
+   * `variant="naked" && mode="view"` 場景(DataTable cell)opt-in 設 true → wrap 進
    * Field naked-display + 渲 ChevronDown ItemSuffix。**只 display mode 生效**;readonly /
    * disabled / edit 已有 Field wrapper + suffix(不受此 prop 影響)。
    * Authority:`data-table.spec.md:204` + `inline-action.spec.md:157`「Field family endAction(自動繼承)」。
@@ -366,13 +366,13 @@ function ReadonlyDisplay({
   const emptyColorCls = fieldEmptyColorClass(resolvedMode)
   const emptyText = placeholder ?? emptyDisplay
 
-  // mode='display':2 path(2026-05-08 D path Phase 1 Select canary)
+  // mode='view':2 path(2026-05-08 D path Phase 1 Select canary)
   //   ❌ 預設(無 showDisplayEndIcon):純內容輸出 bare span/Tag(原行為,backward compat)
   //      對齊原 SelectDisplay sub-component(retired)。readonly / disabled 仍走下方 fieldWrapperStyles。
   //   ✅ showDisplayEndIcon=true(DataTable cell opt-in):Field naked-display wrapper +
   //      ChevronDown ItemSuffix。SSOT canonical 跟 readonly/edit/disabled mode 同 DOM 結構。
   //      Authority: data-table.spec.md:204 + inline-action.spec.md:157「Field family endAction」
-  if (resolvedMode === 'display') {
+  if (resolvedMode === 'view') {
     if (!showDisplayEndIcon) {
       // 2026-05-14 I2 fix(spec contract (e) display typography canonical):bare span 必套
       // `fieldDisplayTextClass(sz)`(sm/md→text-body,lg→text-body-lg)— 對齊跨 Field
@@ -397,8 +397,8 @@ function ReadonlyDisplay({
     const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
     return (
       <div
-        className={cn(fieldWrapperStyles({ mode: 'display', variant, width, size: sz }), value && !isTextDisplay && tagPadding[sz], className)}
-        data-field-mode="display"
+        className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size: sz }), value && !isTextDisplay && tagPadding[sz], className)}
+        data-field-mode="view"
       >
         {selectedItemRenderer && value && selectedOpt ? (
           // renderer 優先(同 CustomSelectTriggerContent 優先序):值內容歸 renderer,chevron 歸 D-path chrome
@@ -482,7 +482,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     const disabled = useResolvedFieldDisabled(disabledProp)
     // 2026-05-31 #11:size 從 Field context cascade(對齊 Input/NumberInput + MUI FormControl)
     const size = useResolvedFieldSize(sizeProp)
-    // 2026-06-08 SSOT:mode 經 useResolvedFieldMode(prop > 有效 disabled > fieldCtx.mode > 'edit');修 <Field mode="display"> 漏 cascade
+    // 2026-06-08 SSOT:mode 經 useResolvedFieldMode(prop > 有效 disabled > fieldCtx.mode > 'edit');修 <Field mode="view"> 漏 cascade
     const resolvedMode = useResolvedFieldMode({ mode, disabled })
     const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
     const iconSize = getIconSize(size)
@@ -582,7 +582,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     const disabled = useResolvedFieldDisabled(disabledProp)
     // 2026-05-31 #11:size 從 Field context cascade(對齊 Input/NumberInput + MUI FormControl)
     const size = useResolvedFieldSize(sizeProp)
-    // 2026-06-08 SSOT:mode 經 useResolvedFieldMode(prop > 有效 disabled > fieldCtx.mode > 'edit');修 <Field mode="display"> 漏 cascade
+    // 2026-06-08 SSOT:mode 經 useResolvedFieldMode(prop > 有效 disabled > fieldCtx.mode > 'edit');修 <Field mode="view"> 漏 cascade
     const resolvedMode = useResolvedFieldMode({ mode, disabled })
     const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
     const iconSize = getIconSize(size)

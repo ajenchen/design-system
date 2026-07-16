@@ -53,7 +53,7 @@ export const Overview: Story = {
               <tr><Td>資料格式化(千分位/貨幣/locale)</Td><Td>—</Td><Td>✓ 管</Td></tr>
               <tr><Td>驗證邏輯</Td><Td>—</Td><Td>✓ 管(+ zod schema 於 form 層)</Td></tr>
               <tr><Td>readonly 呈現</Td><Td>—</Td><Td>✓ 管</Td></tr>
-              <tr><Td>DataTable cell 顯示</Td><Td>—</Td><Td>✓ 管(mode="display" 渲染分支)</Td></tr>
+              <tr><Td>DataTable cell 顯示</Td><Td>—</Td><Td>✓ 管(mode="view" 渲染分支)</Td></tr>
             </tbody>
           </table>
         </div>
@@ -72,7 +72,7 @@ export const Overview: Story = {
                 ['invalid', 'boolean', 'false', 'error 狀態 + context.invalid(觸發 aria-invalid)'],
                 ['disabled', 'boolean', 'false', 'context.disabled 傳給 control'],
                 ['size', "'sm' | 'md' | 'lg'", "'md'", 'context.size 傳給 input-class control(Input / NumberInput / Select);primitive 不讀'],
-                ['mode', "'edit' | 'display' | 'readonly' | 'disabled'", "'edit'", 'context.mode 傳給 Field Controls'],
+                ['mode', "'edit' | 'view' | 'readonly' | 'disabled'", "'edit'", 'context.mode 傳給 Field Controls'],
                 ['variant', "'default'", "'default'", "視覺外殼(公開型別僅 'default',2026-07-14 收窄;naked = @internal FieldVariantInternal):default 含 border+bg / naked = DataTable cell substrate:edit×naked 自畫 border-based state machine(rest/hover/focus/error),display/readonly/disabled×naked 用 transparent border;2026-07-09 `bare` 退役"],
                 ['controlLayout', "'inline' | 'block'", '(自動偵測)', '逃生艙:覆寫 control area 佈局(consumer 手寫 JSX 當 control 無法偵測時用)'],
               ].map(([p, t, d, desc]) => (
@@ -109,7 +109,7 @@ export const Overview: Story = {
 interface InspectorArgs {
   orientation: 'vertical' | 'horizontal'
   size: 'sm' | 'md' | 'lg'
-  mode: 'edit' | 'display' | 'readonly' | 'disabled'
+  mode: 'edit' | 'view' | 'readonly' | 'disabled'
   required: boolean
   invalid: boolean
   disabled: boolean
@@ -148,7 +148,7 @@ export const Inspector: Story = {
     },
     mode: {
       control: 'radio',
-      options: ['edit', 'display', 'readonly', 'disabled'],
+      options: ['edit', 'view', 'readonly', 'disabled'],
       description: 'Context 傳給控制元件:edit 可編輯 / display 純展示 / readonly 鎖定但保留輸入外觀 / disabled 停用',
     },
     required: { control: 'boolean', description: 'label 文字前加 * + aria-required' },

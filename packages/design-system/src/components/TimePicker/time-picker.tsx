@@ -188,7 +188,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     const size = useResolvedFieldSize(sizeProp)  // B 組 cascade fix
     const error = useResolvedFieldInvalid(errorProp)
     const disabled = useResolvedFieldDisabled(disabledProp)
-    // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="display"> 漏 cascade
+    // 2026-06-08 SSOT:mode 經 useResolvedFieldMode;修 <Field mode="view"> 漏 cascade
     const resolvedMode = useResolvedFieldMode({ mode, disabled })
     const emptyDisplay = useFieldEmptyDisplay()
     const variant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
@@ -252,11 +252,11 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
       setOpen(false)
     }
 
-    // mode='display'(Phase B2 2026-05-05):純內容輸出 — 對齊原 TimePickerDisplay sub-component(retired)。
+    // mode='view'(Phase B2 2026-05-05):純內容輸出 — 對齊原 TimePickerDisplay sub-component(retired)。
     //   Default(showDisplayEndIcon=false):無 Field wrapper / 無 Clock icon — backward compat 裸 span。
     //   Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix Clock,
     //   與 edit 同結構消除 cell display↔edit 像素偏移(Layer-B padding mismatch)。
-    if (resolvedMode === 'display') {
+    if (resolvedMode === 'view') {
       if (!showDisplayEndIcon) {
         // 2026-05-14 I2 fix(spec contract (e) display typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
@@ -265,8 +265,8 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
       }
       return (
         <div
-          className={cn(fieldWrapperStyles({ mode: 'display', variant, size }), className)}
-          data-field-mode="display"
+          className={cn(fieldWrapperStyles({ mode: 'view', variant, size }), className)}
+          data-field-mode="view"
         >
           <span className={cn(bareInputStyles, 'flex-1 min-w-0 truncate', !value && fieldEmptyColorClass(resolvedMode))}>
             {value ? formatTime(value, { formatOptions, locale }) : emptyDisplay}

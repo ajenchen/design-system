@@ -98,14 +98,14 @@ export const StateCascade: Story = {
         </div>
       </div>
       <div>
-        <p className="text-body-sm font-medium text-fg-secondary mb-3">{'<Field mode="display"> — 有展示態的控件自動切純展示（Select / DatePicker / Checkbox / Switch 修復後生效）'}</p>
+        <p className="text-body-sm font-medium text-fg-secondary mb-3">{'<Field mode="view"> — 有展示態的控件自動切純展示（Select / DatePicker / Checkbox / Switch 修復後生效）'}</p>
         <div className="flex flex-wrap gap-x-8 gap-y-4 max-w-3xl">
-          <Field mode="display" className="w-44"><FieldLabel>負責人</FieldLabel><Input value="王小明" onChange={() => {}} /></Field>
-          <Field mode="display" className="w-44"><FieldLabel>優先級</FieldLabel><Select options={CASCADE_PRIORITY} value="high" aria-label="優先級" /></Field>
-          <Field mode="display" className="w-44"><FieldLabel>截止日</FieldLabel><DatePicker value="2026-06-20" onChange={() => {}} /></Field>
-          <Field mode="display" className="w-44"><FieldLabel>數量</FieldLabel><NumberInput value={42} onChange={() => {}} /></Field>
-          <Field mode="display" className="w-44"><FieldLabel>已啟用</FieldLabel><Switch checked /></Field>
-          <Field mode="display" className="w-44"><FieldLabel>同意條款</FieldLabel><Checkbox checked /></Field>
+          <Field mode="view" className="w-44"><FieldLabel>負責人</FieldLabel><Input value="王小明" onChange={() => {}} /></Field>
+          <Field mode="view" className="w-44"><FieldLabel>優先級</FieldLabel><Select options={CASCADE_PRIORITY} value="high" aria-label="優先級" /></Field>
+          <Field mode="view" className="w-44"><FieldLabel>截止日</FieldLabel><DatePicker value="2026-06-20" onChange={() => {}} /></Field>
+          <Field mode="view" className="w-44"><FieldLabel>數量</FieldLabel><NumberInput value={42} onChange={() => {}} /></Field>
+          <Field mode="view" className="w-44"><FieldLabel>已啟用</FieldLabel><Switch checked /></Field>
+          <Field mode="view" className="w-44"><FieldLabel>同意條款</FieldLabel><Checkbox checked /></Field>
         </div>
       </div>
     </div>

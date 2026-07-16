@@ -102,6 +102,20 @@ function detectControlLayout(controlNodes: React.ReactNode[]): FieldControlLayou
   return 'inline'
 }
 
+/**
+ * 偵測 control child 的偏好尺寸——control primitive 在自己的檔案掛 static `fieldPreferredSize`
+ * (如 InlineEdit = 'sm',view 態無邊框,md 過大會讓版面鬆散),Field 未顯式指定 size 時收此偏好。
+ * 對齊 detectControlLayout 讀 `type.fieldLayout` 的機制(first-declared-wins);全部缺宣告 → null。
+ */
+function detectPreferredSize(controlNodes: React.ReactNode[]): FieldSize | null {
+  for (const node of controlNodes) {
+    if (!React.isValidElement(node)) continue
+    const pref = (node.type as { fieldPreferredSize?: FieldSize } | null | undefined)?.fieldPreferredSize
+    if (pref) return pref
+  }
+  return null
+}
+
 // ── Field ───────────────────────────────────────────────────────────────────
 
 export interface FieldProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'id'> {
@@ -155,7 +169,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
       mode = 'edit',
       variant = 'default',
       orientation = 'vertical',
-      size = 'md',
+      size: sizeProp,
       required = false,
       disabled: disabledProp = false,
       invalid = false,
@@ -198,6 +212,10 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
     // 解析 control layout：consumer 顯式指定 > primitive 自我宣告 > 預設 inline
     const controlLayout: FieldControlLayout =
       controlLayoutProp ?? detectControlLayout(controlNodes)
+
+    // 解析 size：consumer 顯式 > control primitive 偏好(如 InlineEdit='sm')> 預設 md
+    //   (對齊 controlLayout 三層優先序;InlineEdit 進 Field 不指定 size 時自動收 sm)
+    const size: FieldSize = sizeProp ?? detectPreferredSize(controlNodes) ?? 'md'
 
     const contextValue = React.useMemo<FieldContextValue>(
       () => ({

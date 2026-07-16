@@ -59,7 +59,7 @@ export interface LinkInputProps
    * - `'default'`(預設)— Field wrapper 完整 chrome(form / Field 內嵌)。
    * (2026-07-09 `bare` variant 退役;naked = cell-as-input substrate,@internal)
    *
-   * mode='display' 時 chrome 無視覺意義(display 完全無 wrapper);chrome 僅作用於 edit / readonly / disabled。
+   * mode='view' 時 chrome 無視覺意義(display 完全無 wrapper);chrome 僅作用於 edit / readonly / disabled。
    */
   variant?: FieldVariant
   error?: boolean
@@ -145,13 +145,13 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
     const focusRafIdRef = React.useRef<number>(0)
     React.useEffect(() => () => { if (focusRafIdRef.current) cancelAnimationFrame(focusRafIdRef.current) }, [])
 
-    // ── mode='display' ─────────────────────────────────────────────────────
+    // ── mode='view' ─────────────────────────────────────────────────────
     // 純展示:無 input chrome / 無 hover affordance / 無 Pencil edit 入口。
     // 取代既有 LinkInputDisplay sub-component(2026-05-05 Phase B3 retire)。
     // Default(showDisplayEndIcon=false):無 wrapper 裸 anchor — backward compat。
     // Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper 包覆 anchor,
     // 與 cell edit (`<Input naked>`) 同 DOM 結構消除像素偏移(無 ItemSuffix,因 edit 也無 endIcon)。
-    if (resolvedMode === 'display') {
+    if (resolvedMode === 'view') {
       if (!showDisplayEndIcon) {
         // 2026-05-14 I2 fix(spec contract (e) display typography canonical):非 D-path bare
         // anchor / span 必套 `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)
@@ -162,8 +162,8 @@ const LinkInput = React.forwardRef<HTMLInputElement, LinkInputProps>(
       }
       return (
         <div
-          className={cn(fieldWrapperStyles({ mode: 'display', variant: resolvedVariant, size }), className)}
-          data-field-mode="display"
+          className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, size }), className)}
+          data-field-mode="view"
         >
           <span className="flex-1 min-w-0 truncate">
             {value

@@ -101,7 +101,7 @@ export const Modes: Story = {
       {/* @story-trait-rationale: pre-existing trait gaps tracked separately */}
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">display</h3>
-        <LinkInput mode="display" value="https://github.com" />
+        <LinkInput mode="view" value="https://github.com" />
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
@@ -124,9 +124,9 @@ export const Display: Story = {
   name: '展示樣式',
   render: () => (
     <div className="flex flex-col gap-3">
-      <LinkInput mode="display" value="https://www.example.com/path/to/page" />
-      <LinkInput mode="display" value="https://github.com/user/repo" label="GitHub Repo" />
-      <LinkInput mode="display" value={null} />
+      <LinkInput mode="view" value="https://www.example.com/path/to/page" />
+      <LinkInput mode="view" value="https://github.com/user/repo" label="GitHub Repo" />
+      <LinkInput mode="view" value={null} />
     </div>
   ),
 }

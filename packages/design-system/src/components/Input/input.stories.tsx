@@ -28,7 +28,7 @@ export const Modes: Story = {
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">display</h3>
         <p className="text-caption text-fg-muted mb-3">純展示（read-only 內容）— 無 input chrome / 無互動 affordance</p>
-        <Input mode="display" value="Wireless Bluetooth Headphones" aria-label="商品名稱(display mode demo)" />
+        <Input mode="view" value="Wireless Bluetooth Headphones" aria-label="商品名稱(display mode demo)" />
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>

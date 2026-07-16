@@ -39,7 +39,7 @@ export const Modes: Story = {
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">display</h3>
-        <TimePicker mode="display" value="14:30" aria-label="會議時段(display mode demo)" />
+        <TimePicker mode="view" value="14:30" aria-label="會議時段(display mode demo)" />
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>

@@ -1,22 +1,24 @@
 // ── Field Mode ───────────────────────────────────────────────────────────────
 //
-// 4 模式 canonical(2026-05-05 expand to 4):
+// 4 模式 canonical(2026-05-05 expand;2026-07-16 round16 `display`→`view` 更名 + Model A 幾何):
 //   edit     — 一般可編輯 input(預設 variant:border + bg)
-//   display  — **純展示**(無 input chrome / 無互動 affordance);語意「這是 read-only 內容,展示給人看」
-//              對齊 Carbon read-only / PatternFly inline-edit hidden-input / Cloudscape display-mode
-//   readonly — input chrome + non-editable(保留 underline / border subtle 給 a11y signal「這是 input 但鎖了」)
-//              對齊 Carbon read-only-with-underline。差異:`display` 完全無 chrome;`readonly` 保留 input affordance signal
-//   disabled — input chrome + disabled state(灰底,不可互動,語意「不適用」)
+//   view     — **純展示值(非表單)**;語意「要呈現給人看的值本體」(cell / InlineEdit / 詳情)。
+//              **Model A**:view = edit 幾何減 chrome(透明 bg/border,**保留 px 內距 + 高度**)→ read↔edit
+//              零跳(view 與 edit 同一顆控件、只差 chrome)。對齊 Atlassian inline-edit(read=edit 幾何)
+//              + Bootstrap `.form-control-plaintext`(留 padding)。詳 field-controls.spec.md「軸一 view mode」。
+//   readonly — input chrome + non-editable(bg-readonly + a11y ring「這是 input 但鎖了」);表單語境、值仍算數可選取
+//   disabled — input chrome + disabled state(灰底,不可互動,不送出,語意「目前不適用」);表單專屬
 //
-// `display` vs `readonly` 判別:
-//   - 該位置語意上是「純展示資料」(如 DataTable cell read mode / ProfileCard meta) → `display`
-//   - 該位置是「表單欄位但目前不可改」(如 form 鎖部分欄位) → `readonly`
+// `view` vs `readonly` 判別:
+//   - 「純展示值、非表單」(DataTable cell / InlineEdit view / ProfileCard meta) → `view`
+//   - 「表單欄位但目前不可改、值仍送出」(form 鎖部分欄位) → `readonly`
 //
+// 命名(命名 3-test 全過):MUI X cellMode=view / Atlassian readVIEW 字根 / 與 edit 成對。
 // World-class refs(M22 verified):
 //   Carbon: https://carbondesignsystem.com/patterns/read-only-states-pattern/
 //   PatternFly: https://www.patternfly.org/components/inline-edit/design-guidelines/
 //   Cloudscape: https://cloudscape.design/patterns/general/disabled-and-read-only-states/
-export type FieldMode = 'edit' | 'display' | 'readonly' | 'disabled'
+export type FieldMode = 'edit' | 'view' | 'readonly' | 'disabled'
 
 // ── Field Variant ────────────────────────────────────────────────────────────
 //

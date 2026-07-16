@@ -121,7 +121,7 @@ export const States: Story = {
 }
 
 /* ── 真實業務:工作項目 Status 就地編輯(型別化 read = Tag)──
-   SSOT 示範:read 態的 Tag **不是** InlineEdit 自刻,而是渲染 `<Select mode="display" display="tag">`
+   SSOT 示範:read 態的 Tag **不是** InlineEdit 自刻,而是渲染 `<Select mode="view" display="tag">`
    —— 「select 值 → Tag」的格式化 SSOT 住在 Select 的 display mode(= DataTable 格子消費的同一份)。
    read 與 edit 用同一個 Select、只切 mode,格式零分歧。 */
 const STATUS_OPTIONS = [
@@ -149,7 +149,7 @@ export const SelectTagField: Story = {
           // Tag **盒子左緣**對齊 label / 其他純文字值,tag 文字被 pill 內距自然縮排 —— 對齊 Meegle 實測
           // (PIL 量測 2026-07-10:Meegle pill box=label 左緣、text 縮排 ~8px@1x)。**不做 text outdent**。
           renderRead={(v) => (
-            <Select mode="display" display="tag" size="sm" value={v} options={STATUS_OPTIONS} />
+            <Select mode="view" display="tag" size="sm" value={v} options={STATUS_OPTIONS} />
           )}
           // edit:同一個 Select 切 edit mode + 立即開選單;選完即 commit 回 read
           renderEdit={(p) => (
@@ -218,7 +218,7 @@ export const VerticalFieldForm: Story = {
             onCommit={setStatus}
             label="status"
             renderRead={(v) => (
-              <Select mode="display" display="tag" size="sm" value={v} options={STATUS_OPTIONS} />
+              <Select mode="view" display="tag" size="sm" value={v} options={STATUS_OPTIONS} />
             )}
             renderEdit={(p) => (
               <Select

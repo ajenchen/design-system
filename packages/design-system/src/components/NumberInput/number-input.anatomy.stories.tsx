@@ -19,12 +19,12 @@ type StateKey = 'default' | 'hover' | 'focus' | 'error' | 'disabled'
 type SizeKey = 'sm' | 'md' | 'lg'
 type ColorSpec = { bg: string; text: string; border: string }
 
-const MODES: ModeKey[] = ['edit', 'display', 'readonly', 'disabled']
+const MODES: ModeKey[] = ['edit', 'view', 'readonly', 'disabled']
 const SIZES: SizeKey[] = ['sm', 'md', 'lg']
 
 const MODE_DESC: Record<ModeKey, string> = {
   edit: '表單可編輯欄位，有邊框、hover / focus 回饋',
-  display: '純展示（read-only 內容），無 input chrome、無互動 affordance',
+  view: '純展示值（非表單）— edit 幾何減 chrome（透明 bg/border、保留 px 內距與高度，Model A）。用在 cell / InlineEdit / 詳情',
   readonly: '表單中不可編輯但可見，灰底、無邊框（input chrome 但鎖定）',
   disabled: '停用狀態，灰底、灰字、cursor-not-allowed',
 }
@@ -37,7 +37,7 @@ const TOKEN_MAP: Record<ModeKey, Record<StateKey, ColorSpec>> = {
     error:    { bg: '--surface',      text: '--foreground',   border: '--error' },
     disabled: { bg: '--bg-disabled',  text: '--fg-disabled',  border: 'transparent' },
   },
-  display: {
+  view: {
     default:  { bg: 'transparent',    text: '--foreground',   border: 'transparent' },
     hover:    { bg: 'transparent',    text: '--foreground',   border: 'transparent' },
     focus:    { bg: 'transparent',    text: '--foreground',   border: 'transparent' },
@@ -218,7 +218,7 @@ export const Overview = {
       {/* Format options */}
       <div className="flex flex-col gap-3">
         <H3>格式化選項</H3>
-        <Desc>格式化在 readonly / disabled 和 `mode="display"` 生效。edit 模式輸入 raw 數值（不套格式），確保使用者能直覺地修改。</Desc>
+        <Desc>格式化在 readonly / disabled 和 `mode="view"` 生效。edit 模式輸入 raw 數值（不套格式），確保使用者能直覺地修改。</Desc>
         <div className="flex flex-col gap-2">
           {([
             { label: 'prefix="$"', props: { prefix: '$' }, value: 2490 },

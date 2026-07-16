@@ -108,7 +108,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const resolvedMode: FieldMode = useResolvedFieldMode({ mode: modeProp, disabled, readOnly })
     const emptyDisplay = useFieldEmptyDisplay()
     const isEditable = resolvedMode === 'edit'
-    const isDisplay = resolvedMode === 'display'
+    const isView = resolvedMode === 'view'
     // error 合併:自身 error prop OR Field context invalid
     const resolvedError = useResolvedFieldInvalid(error)
     // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
@@ -137,7 +137,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       defaultValue: defaultValue ?? '',
     })
     const displayValue = resolved != null && resolved !== '' ? String(resolved) : null
-    const showDisplaySpan = isDisplay || (resolvedMode === 'readonly' && displayValue == null)
+    const showDisplaySpan = isView || (resolvedMode === 'readonly' && displayValue == null)
 
     // form.reset() bridge(uncontrolled only):reset 恢復 defaultValue 但不發 input event →
     // 手動把 resolved 歸位 defaultValue。keyed on showDisplaySpan:display 分支不掛 native input,
@@ -159,7 +159,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     }, [ref])
 
     if (showDisplaySpan) {
-      const spanMode = isDisplay ? 'display' : 'readonly'
+      const spanMode = isView ? 'view' : 'readonly'
       return (
         <div
           className={cn(
@@ -254,7 +254,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 )
 Input.displayName = 'Input'
 
-// Phase B1(2026-05-05):InputDisplay 退場。改用 `<Input mode="display" value={...} />`
+// Phase B1(2026-05-05):InputDisplay 退場。改用 `<Input mode="view" value={...} />`
 // 對齊 Carbon read-only / PatternFly inline-edit hidden-input / Cloudscape display-mode 統一 mode 模型。
 
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)

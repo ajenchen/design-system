@@ -77,7 +77,7 @@ export const Modes: Story = {
       {/* @story-trait-rationale: pre-existing trait gaps tracked separately */}
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">display</h3>
-        <DatePicker mode="display" value="2026-04-02" />
+        <DatePicker mode="view" value="2026-04-02" />
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
@@ -322,19 +322,19 @@ export const Display: Story = {
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
         <span className="text-caption text-fg-muted w-20">預設</span>
-        <DatePicker mode="display" value="2026-04-02" />
+        <DatePicker mode="view" value="2026-04-02" />
       </div>
       <div className="flex items-center gap-3">
         <span className="text-caption text-fg-muted w-20">完整月份</span>
-        <DatePicker mode="display" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+        <DatePicker mode="view" value="2026-04-02" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
       </div>
       <div className="flex items-center gap-3">
         <span className="text-caption text-fg-muted w-20">zh-TW</span>
-        <DatePicker mode="display" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
+        <DatePicker mode="view" value="2026-04-02" locale="zh-TW" formatOptions={{ year: 'numeric', month: 'long', day: 'numeric' }} />
       </div>
       <div className="flex items-center gap-3">
         <span className="text-caption text-fg-muted w-20">null</span>
-        <DatePicker mode="display" value={null} />
+        <DatePicker mode="view" value={null} />
       </div>
     </div>
   ),
