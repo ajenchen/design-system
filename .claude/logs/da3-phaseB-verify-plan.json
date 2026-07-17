@@ -1,0 +1,200 @@
+{
+ "totalClaims": 1245,
+ "totalComponents": 56,
+ "units": [
+  {
+   "unit": 0,
+   "components": [
+    "DatePicker"
+   ],
+   "claims": 43
+  },
+  {
+   "unit": 1,
+   "components": [
+    "SelectMenu"
+   ],
+   "claims": 43
+  },
+  {
+   "unit": 2,
+   "components": [
+    "Combobox"
+   ],
+   "claims": 42
+  },
+  {
+   "unit": 3,
+   "components": [
+    "FileViewer"
+   ],
+   "claims": 42
+  },
+  {
+   "unit": 4,
+   "components": [
+    "PeoplePicker"
+   ],
+   "claims": 41
+  },
+  {
+   "unit": 5,
+   "components": [
+    "Sidebar"
+   ],
+   "claims": 37
+  },
+  {
+   "unit": 6,
+   "components": [
+    "InlineEdit",
+    "DropdownMenu"
+   ],
+   "claims": 69
+  },
+  {
+   "unit": 7,
+   "components": [
+    "LinkInput",
+    "Slider"
+   ],
+   "claims": 66
+  },
+  {
+   "unit": 8,
+   "components": [
+    "DateGrid",
+    "Rating"
+   ],
+   "claims": 62
+  },
+  {
+   "unit": 9,
+   "components": [
+    "Avatar",
+    "Carousel"
+   ],
+   "claims": 60
+  },
+  {
+   "unit": 10,
+   "components": [
+    "Coachmark",
+    "Menu"
+   ],
+   "claims": 58
+  },
+  {
+   "unit": 11,
+   "components": [
+    "BulkActionBar",
+    "TreeView"
+   ],
+   "claims": 54
+  },
+  {
+   "unit": 12,
+   "components": [
+    "Field",
+    "Steps"
+   ],
+   "claims": 51
+  },
+  {
+   "unit": 13,
+   "components": [
+    "Chart",
+    "Input"
+   ],
+   "claims": 48
+  },
+  {
+   "unit": 14,
+   "components": [
+    "Badge",
+    "Toast",
+    "Button"
+   ],
+   "claims": 68
+  },
+  {
+   "unit": 15,
+   "components": [
+    "ProfileCard",
+    "ProgressBar",
+    "Select"
+   ],
+   "claims": 66
+  },
+  {
+   "unit": 16,
+   "components": [
+    "Textarea",
+    "FileItem",
+    "Calendar"
+   ],
+   "claims": 63
+  },
+  {
+   "unit": 17,
+   "components": [
+    "OverflowIndicator",
+    "SelectionControl",
+    "Switch"
+   ],
+   "claims": 58
+  },
+  {
+   "unit": 18,
+   "components": [
+    "Tabs",
+    "FileUpload",
+    "FieldControlGroup",
+    "Empty"
+   ],
+   "claims": 70
+  },
+  {
+   "unit": 19,
+   "components": [
+    "Breadcrumb",
+    "Notice",
+    "RadioGroup",
+    "Separator"
+   ],
+   "claims": 58
+  },
+  {
+   "unit": 20,
+   "components": [
+    "Sheet",
+    "CircularProgress",
+    "Command",
+    "Pagination",
+    "AspectRatio"
+   ],
+   "claims": 60
+  },
+  {
+   "unit": 21,
+   "components": [
+    "Chip",
+    "DescriptionList",
+    "Dialog",
+    "NumberInput",
+    "Checkbox",
+    "TimePicker"
+   ],
+   "claims": 63
+  },
+  {
+   "unit": 22,
+   "components": [
+    "SegmentedControl",
+    "Skeleton",
+    "ScrollArea"
+   ],
+   "claims": 23
+  }
+ ]
+}
