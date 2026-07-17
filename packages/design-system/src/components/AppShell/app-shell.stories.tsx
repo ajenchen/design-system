@@ -118,7 +118,6 @@ function IssuesView({ selectedId, asideOpen, onSelectIssue }: { selectedId?: str
             </PopoverTrigger>
             <PopoverContent align="end" className="w-auto p-0">
               <DataTableFilterPanel
-                mode="flat"
                 columns={ISSUE_COLUMNS as any}
                 value={filterTree}
                 onChange={setFilterTree}

@@ -1017,7 +1017,6 @@ export const WithBulkActions: Story = {
               </PopoverTrigger>
               <PopoverContent align="end" className="w-auto p-0">
                 <DataTableFilterPanel
-                  mode="flat"
                   columns={baseColumns}
                   value={filterTree}
                   onChange={setFilterTree}
@@ -1281,7 +1280,6 @@ export const FilterPanelEmpty: Story = {
     return (
       <div className="w-full max-w-[680px]">
         <DataTableFilterPanel
-          mode="flat"
           columns={[...FILTER_COLUMNS]}
           value={value}
           onChange={setValue}
@@ -1307,7 +1305,6 @@ export const FilterPanelWithConditions: Story = {
     return (
       <div className="w-full max-w-[680px]">
         <DataTableFilterPanel
-          mode="flat"
           columns={[...FILTER_COLUMNS]}
           value={value}
           onChange={setValue}
@@ -1344,7 +1341,6 @@ export const FilterPanelNested: Story = {
     return (
       <div className="w-full max-w-[680px]">
         <DataTableFilterPanel
-          mode="nested"
           columns={[...FILTER_COLUMNS]}
           value={value}
           onChange={setValue}
@@ -1369,7 +1365,6 @@ export const FilterPanelRelativeDate: Story = {
       <div className="w-full max-w-[680px]">
         <p className="text-caption text-fg-muted mb-3">時間下拉分 過去 / 目前 / 未來 三組（Linear/Notion 共識）。</p>
         <DataTableFilterPanel
-          mode="flat"
           columns={[...FILTER_COLUMNS]}
           value={value}
           onChange={setValue}
@@ -1397,7 +1392,6 @@ export const FilterPanelModified: Story = {
       <div className="w-full max-w-[680px]">
         <p className="text-caption text-fg-muted mb-3">值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。</p>
         <DataTableFilterPanel
-          mode="flat"
           columns={[...FILTER_COLUMNS]}
           value={value}
           defaultValue={initial}
@@ -1439,7 +1433,6 @@ export const FilterPanelLongTagOverflow: Story = {
       <div className="w-full max-w-[680px]">
         <p className="text-caption text-fg-muted mb-3">產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。</p>
         <DataTableFilterPanel
-          mode="flat"
           columns={[...longLabelColumns]}
           value={value}
           onChange={setValue}
@@ -1780,7 +1773,6 @@ export const RoadmapAllInOne: Story = {
               </PopoverTrigger>
               <PopoverContent align="end" className="w-auto p-0">
                 <DataTableFilterPanel
-                  mode="flat"
                   columns={columns}
                   value={filterTree}
                   onChange={setFilterTree}

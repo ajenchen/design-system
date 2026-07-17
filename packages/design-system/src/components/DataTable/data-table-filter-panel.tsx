@@ -126,8 +126,9 @@ const newEmptyGroup = (): FilterGroup => ({
 // ── Component Props ─────────────────────────────────────────────────────
 
 export interface DataTableFilterPanelProps<TData> {
-  /** flat(無 group)or nested(1-level group)— consumer 拍板 */
-  mode: 'flat' | 'nested'
+  // 2026-07-18 決策17:移除獨立 `mode` prop(單一真相源 = `value.mode` discriminant)——
+  //   舊設計 mode + value.mode 兩來源型別允許矛盾(mode='nested' 配 flat value → CTA 錯文案 + 死操作);
+  //   無外部消費者傳 mode(grep 0),全由 value.mode 推導。對齊 MUI X GridFilterModel / AG Grid 單一 model。
   /** 可被 filter 的 columns */
   columns: ColumnDef<TData, any>[]
   /** 當前 FilterTree(controlled) */
@@ -151,7 +152,6 @@ export interface DataTableFilterPanelProps<TData> {
 
 // 內部 fn — generic + ref 轉發。export 走 cast(對齊 DataTable 同 pattern)
 function DataTableFilterPanelInner<TData>({
-  mode,
   columns,
   value,
   onChange,
@@ -314,7 +314,7 @@ function DataTableFilterPanelInner<TData>({
     // 必加 `min-h-0` 才能讓 panel 在 PopoverContent max-h cap 下正確 shrink + body scroll。
     <div ref={ref} className={cn(
       'flex flex-col h-full min-h-0',
-      mode === 'nested'
+      value.mode === 'nested'
         ? 'w-[min(760px,calc(100vw-2rem))]'
         : 'w-[min(640px,calc(100vw-2rem))]',
       className,
@@ -387,9 +387,9 @@ function DataTableFilterPanelInner<TData>({
         <div>
           <Button
             variant="tertiary" size="sm" startIcon={Plus}
-            onClick={mode === 'flat' ? addFlatCondition : addGroup}
+            onClick={value.mode === 'flat' ? addFlatCondition : addGroup}
           >
-            {mode === 'nested' ? '加入篩選器' : '加篩選'}
+            {value.mode === 'nested' ? '加入篩選器' : '加篩選'}
           </Button>
         </div>
       </SurfaceBody>
