@@ -68,7 +68,9 @@ export interface TagProps
   avatar?: React.ReactNode
   /** 可移除——Tag 自動渲染 remove 按鈕並控制尺寸與互動樣式(從集合移除 item) */
   onRemove?: () => void
-  /** remove 按鈕的 aria-label 目標名(a11y)。children 為非字串 ReactNode 時建議傳,否則 SR 讀不出移除哪個 tag。預設取 string children。 */
+  /** remove 按鈕的 aria-label 目標名(a11y)。children 為非字串 ReactNode 時建議傳,否則 SR 讀不出移除哪個 tag。預設取 string children。對齊 FileUpload `removeAriaLabel`(同「移除集合項目」場景 + DS `<動作>AriaLabel` 命名慣例)。 */
+  removeAriaLabel?: string
+  /** @deprecated 2026-07-17 改名為 `removeAriaLabel`(對齊 FileUpload + onRemove callback 語意;dismiss 保留給 Alert/Notice/Toast「通知被忽略」)。舊名過渡一版後移除。 */
   dismissLabel?: string
   /** 深底模式（step-6 背景 + on-emphasis 配對前景;亮色 hue yellow/amber/orange/lime 用深字 --on-emphasis-dark,green 白字例外） */
   solid?: boolean
@@ -123,7 +125,7 @@ function TagDismiss({ onRemove, label, solid, color }: { onRemove: () => void; l
 }
 
 function TagInner(
-  { className, color, size, icon: Icon, avatar, onRemove, dismissLabel, solid, unbounded = false, children, style, ...props }: TagProps,
+  { className, color, size, icon: Icon, avatar, onRemove, removeAriaLabel, dismissLabel, solid, unbounded = false, children, style, ...props }: TagProps,
   forwardedRef: React.ForwardedRef<HTMLDivElement>,
 ) {
   const solidClass = solid ? SOLID_CLASSES[color ?? 'neutral'] : undefined
@@ -202,7 +204,7 @@ function TagInner(
       {Icon && <Icon size={16} aria-hidden />}
       {avatar && <span className="shrink-0 w-4 h-4 rounded-full overflow-hidden inline-grid place-content-center [&>*]:w-full [&>*]:h-full">{avatar}</span>}
       <span data-tag-text="" className="px-1 truncate min-w-0">{children}</span>
-      {onRemove && <TagDismiss onRemove={onRemove} label={dismissLabel || label} solid={solid} color={color ?? 'neutral'} />}
+      {onRemove && <TagDismiss onRemove={onRemove} label={removeAriaLabel ?? dismissLabel ?? label} solid={solid} color={color ?? 'neutral'} />}
     </div>
   )
 
