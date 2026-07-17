@@ -194,11 +194,23 @@ if [ -z "$URLS_FOUND" ] && [ -f "$CWD/netlify.toml" ]; then
     # Branch preview:always use `<branch>--<sitename>` pattern,but sitename unknown unless USER_OVERRIDE
     if [ -n "$USER_OVERRIDE" ]; then
       SITENAME=$(echo "$USER_OVERRIDE" | sed -E 's|https?://([^.]+)\.netlify\.app.*|\1|')
-      CANDIDATE="https://${BRANCH}--${SITENAME}.netlify.app"
+      # 2026-07-17 bug 修:DNS 單標籤硬上限 63 字元。`<branch>--<site>` 超過 → 該子網域**無法存在**
+      # (curl 連 header 都收不到,非 404)。舊版直接拼不截斷 → 長 branch 名吐「物理上不可能」的網址,
+      # verify 失敗後還印該 URL 誤導 user。修:超長時截 branch + 誠實標示「branch 名太長,預覽不可靠」。
+      BRANCH_SLUG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9-]/-/g; s/-+/-/g')
+      BUDGET=$(( 63 - ${#SITENAME} - 2 ))
+      TRUNCATED=0
+      if [ ${#BRANCH_SLUG} -gt $BUDGET ]; then
+        BRANCH_SLUG=$(echo "${BRANCH_SLUG:0:$BUDGET}" | sed -E 's/-+$//')
+        TRUNCATED=1
+      fi
+      CANDIDATE="https://${BRANCH_SLUG}--${SITENAME}.netlify.app"
       if [ "$(verify_url "$CANDIDATE")" = "OK" ]; then
         URLS_FOUND="${URLS_FOUND}🔍 Netlify PREVIEW(${BRANCH}): ${CANDIDATE}  ✅ verified 200\n"
+      elif [ $TRUNCATED -eq 1 ]; then
+        URLS_FOUND="${URLS_FOUND}⚠️ branch 名太長(『${BRANCH}』+ --${SITENAME} 超過 DNS 63 字元)→ Netlify 建不出預覽子網域;截斷版 ${CANDIDATE} 也未命中。可靠做法:縮短 branch 名(≤${BUDGET} 字元)重推,或合 main 後看正式站 https://${SITENAME}.netlify.app\n"
       else
-        URLS_FOUND="${URLS_FOUND}🔍 Netlify PREVIEW 推導: ${CANDIDATE}  ⚠️ 404(preview 未啟 OR build pending — Netlify build 2-3 min)\n"
+        URLS_FOUND="${URLS_FOUND}🔍 Netlify PREVIEW 推導: ${CANDIDATE}  ⚠️ 未命中(preview 未啟 / build pending / 此 branch 未啟 branch-deploy — 查 Netlify Dashboard Deploys)\n"
       fi
     else
       URLS_FOUND="${URLS_FOUND}🔍 Netlify PREVIEW(${BRANCH}) — sitename 未知;設 \$HOME/.claude/local/deploy-targets.json 後 hook 可推 preview URL\n"
