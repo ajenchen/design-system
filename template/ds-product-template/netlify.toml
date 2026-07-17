@@ -22,7 +22,8 @@
   path = "/*"
   function = "basic-auth"
 
-# Per-branch deploy previews 預設啟用(任何 branch push → 自動 preview URL)
+# Per-branch deploy previews 需在 Netlify dashboard 手動開啟(Site configuration → Build & deploy →
+#   Branch deploys → Deploy all branches)—— Netlify 預設只部署 production branch,branch deploys 非預設啟用。
 # Production deploy 走 main(production URL = 永遠最新 main 的 storybook)
 
 # ─── Access control(2026-05-26 per user directives)──────────────────────────

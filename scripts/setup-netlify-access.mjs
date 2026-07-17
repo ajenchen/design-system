@@ -32,7 +32,7 @@
 //   npm run setup:netlify -- --skip-prompts   # CI / 老手:跳過 confirmation prompt
 
 import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import readline from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
 
@@ -52,23 +52,34 @@ const skipPrompts = args.has('--skip-prompts')
 console.log('🔒 Netlify access control setup(免費方案 = Edge Function Basic Auth,讀 STORYBOOK_BASIC_AUTH env var)')
 console.log('')
 console.log('━━━ 流程概覽 ━━━')
-console.log('  自動: CLI install + gh check + OAuth login + site 建 + 連 repo')
+console.log('  自動: CLI install + gh check + OAuth login + site 建 + 連本機(link)')
 console.log('  手動: 開 dashboard URL → Environment variables 加 STORYBOOK_BASIC_AUTH = user:password(30 秒)')
+console.log('       + 連 GitHub repo(Git 持續部署)+ 開 Branch deploys(草稿預覽)— 詳下方步驟')
 console.log('  分享: 把 site URL + 帳密 私訊 stakeholder')
 console.log('')
-console.log('Netlify = 免費 deploy 平台(100GB bandwidth / per-branch preview / 0 maintenance)')
+console.log('Netlify = 免費 deploy 平台(免費方案採每月 credit 額度制,詳 https://www.netlify.com/pricing/;0 maintenance)')
 console.log('因為 fork 本 repo 必有 GitHub 帳號,Netlify 走 GitHub OAuth 自動建 account(<5 秒)')
 console.log('')
 
-// Step 0: gh CLI pre-check
-const ghOut = shOut('gh auth status 2>&1')
-if (ghOut.includes('Logged in')) {
+// Step 0: gh CLI pre-check(區分「未安裝」與「已裝但未登入」;GitHub CLI auth ≠ Netlify OAuth,兩者各自獨立)
+const ghInstalled = !!shOut('which gh')
+const ghOut = ghInstalled ? shOut('gh auth status 2>&1') : ''
+if (!ghInstalled) {
+  console.log('⚠️ 未偵測到 GitHub CLI(`gh`)— 後續步驟需用它讀 GitHub 帳號並連 fork repo。')
+  console.log('  先安裝:macOS `brew install gh` / Windows `winget install GitHub.cli` / 其他見 https://cli.github.com')
+  console.log('  裝好後跑:gh auth login(瀏覽器 OAuth,1 分鐘),再重跑本 setup。')
+  if (!skipPrompts) {
+    const proceed = await rl.question('  仍要繼續(略過 gh 相關自動化)?(y/N)> ')
+    if (!/^y/i.test(proceed)) { console.log('Aborted by user'); rl.close(); process.exit(1) }
+  }
+} else if (ghOut.includes('Logged in')) {
   const userMatch = ghOut.match(/account\s+(\S+)/)
   const ghUser = userMatch ? userMatch[1] : '(unknown)'
   console.log(`✓ GitHub CLI 已 login(account: ${ghUser})`)
 } else {
-  console.log('⚠️ GitHub CLI 未 login(影響後續 Netlify 連 fork repo)')
+  console.log('⚠️ GitHub CLI 已安裝但未 login(影響後續 Netlify 連 fork repo)')
   console.log('  建議先跑:gh auth login(瀏覽器 OAuth,1 分鐘)')
+  console.log('  註:這是 GitHub CLI 授權,與稍後的 `netlify login`(Netlify OAuth)是兩件不同的登入。')
   if (!skipPrompts) {
     const proceed = await rl.question('  繼續 setup?(y/N)> ')
     if (!/^y/i.test(proceed)) { console.log('Aborted by user'); rl.close(); process.exit(1) }
@@ -107,7 +118,8 @@ if (!existsSync('.netlify/state.json')) {
   const autoSiteName = `${ghUser}-${repoName}`.toLowerCase().replace(/[^a-z0-9-]/g, '-')
   console.log(`▶ Auto-create Netlify site "${autoSiteName}" + link this repo...`)
   try {
-    sh(`${netlifyCmd} sites:create --name="${autoSiteName}" --account-slug=$(${netlifyCmd} api listAccountsForUser --json 2>/dev/null | jq -r '.[0].slug // "personal"' 2>/dev/null || echo personal)`)
+    // 註:`netlify api <method>` 預設就輸出 JSON,無 `--json` flag(加了會被當未知參數)。
+    sh(`${netlifyCmd} sites:create --name="${autoSiteName}" --account-slug=$(${netlifyCmd} api listAccountsForUser 2>/dev/null | jq -r '.[0].slug // "personal"' 2>/dev/null || echo personal)`)
     sh(`${netlifyCmd} link --name=${autoSiteName}`)
   } catch {
     console.log('⚠️ Auto-create failed(site name 可能已存在)。Fall back to interactive netlify init...')
@@ -116,13 +128,40 @@ if (!existsSync('.netlify/state.json')) {
 }
 const state = JSON.parse(readFileSync('.netlify/state.json', 'utf8'))
 const siteId = state.siteId
-const siteSlug = state.siteSlug || siteId
-console.log(`✓ Linked site: ${siteId}`)
+
+// Resolve 真實 site metadata via API —— `.netlify/state.json` 只保證含 siteId,不含可當 DNS
+// subdomain 的 name。禁把 site UUID 當 slug(會產生錯誤 dashboard / production / branch URL)。
+const siteMeta = JSON.parse(shOut(`${netlifyCmd} api getSite --data '{"site_id":"${siteId}"}'`) || '{}')
+const siteName = siteMeta.name || state.siteSlug || ''
+const siteUrl = siteMeta.ssl_url || siteMeta.url || (siteName ? `https://${siteName}.netlify.app` : '')
+const adminUrl = siteMeta.admin_url || (siteName ? `https://app.netlify.com/projects/${siteName}` : '')
+const repoUrl = siteMeta?.build_settings?.repo_url || ''
+
+if (!siteName) {
+  console.log('⚠️ 無法從 Netlify API 取得 site name(subdomain)—— 請到 dashboard 確認 site 建立成功後再重跑本 setup。')
+}
+
+// 持久化真實 subdomain 供 deploy-url.mjs 讀(否則它拿 state.json 只有 siteId → 把 UUID 當 subdomain)。
+// `.netlify/` 已 gitignore(per-machine state),此 cache 不進 repo。
+try {
+  writeFileSync('.netlify/deploy-meta.json', JSON.stringify({ siteName, siteUrl, adminUrl }, null, 2))
+} catch { /* best-effort cache */ }
+
+// Read-back:`sites:create` + `link` 只建站 + 連本機資料夾,不會自動接上 GitHub 持續部署
+// (push → auto build 需 site 連 repo)。驗證 repository linkage 後才據實宣告。
+if (repoUrl) {
+  console.log(`✓ Git 持續部署已連結(${repoUrl})—— push 會自動觸發 build`)
+} else {
+  console.log('⚠️ 此 site 尚未連 GitHub repo —— push **不會**自動觸發部署(continuous deployment)。')
+  console.log('   要 push 自動部署,擇一:')
+  console.log('   • Netlify dashboard → Site configuration → Build & deploy → Link repository')
+  console.log('   • 或改跑 `netlify init`(互動式,會設定 Git 持續部署)')
+}
+console.log(`✓ Linked site: ${siteName || siteId}`)
 console.log('')
 
 // Step 4: Print dashboard URL + env-var Basic Auth guidance(免費 — Edge Function netlify/edge-functions/basic-auth.ts)
-const dashboardUrl = `https://app.netlify.com/projects/${siteSlug}/configuration/env`
-const siteUrl = `https://${siteSlug}.netlify.app`
+const dashboardUrl = `${adminUrl || `https://app.netlify.com/projects/${siteName || siteId}`}/configuration/env`
 
 console.log('━━━ 🔒 免費密碼保護設定(30 秒,設一條 env var)━━━')
 console.log('')
@@ -162,11 +201,12 @@ if (!skipPrompts) {
 console.log('')
 
 console.log('━━━ 🚦 啟用草稿預覽(branch deploys — 給「預覽 → 確認 → 上線」流程)━━━')
-console.log('  做產品時 AI 會推「草稿分支」,要 Netlify 給每個分支獨立預覽網址,需開 branch deploys:')
-console.log(`     ${`https://app.netlify.com/projects/${siteSlug}/configuration/deploys#branches-and-deploy-contexts`}`)
+console.log('  ⚠️ Netlify **預設不啟用** branch deploys(官方預設只部署 production branch),本 setup 也**不會**自動開;')
+console.log('     要 Netlify 給每個分支獨立預覽網址,需人工在 dashboard 開一次(這是必要人工斷點):')
+console.log(`     ${`${adminUrl || `https://app.netlify.com/projects/${siteName || siteId}`}/configuration/deploys#branches-and-deploy-contexts`}`)
 console.log('     → Branch deploys → 選「Deploy all branches」(1 個開關)')
-console.log('  開了之後:AI 推草稿分支 → 自動產生 https://<branch>--' + siteSlug + '.netlify.app 預覽網址(治理 hook 自動吐連結)。')
-// best-effort:至少把 deploy previews(PR)打開(API 可靠的部分);branch deploys 全開靠上面 dashboard
+console.log(`  開了之後:AI 推草稿分支 → 自動產生 https://<branch>--${siteName || '<site-name>'}.netlify.app 預覽網址(治理 hook 自動吐連結)。`)
+// best-effort:僅能把 deploy previews(PR-based)打開(updateSite skip_prs);branch deploys「全開」Netlify 無可靠公開 API,靠上面 dashboard 人工開
 try { execSync(`${netlifyCmd} api updateSite --data '{"site_id":"${siteId}","build_settings":{"skip_prs":false}}' 2>/dev/null`, { stdio: 'pipe' }); console.log('  ✓ deploy previews(PR-based 預覽)已試開') } catch { /* API 不保證,dashboard 為準 */ }
 console.log('  (未開 branch deploys 也行 → 用 main 的密碼保護站當團隊預覽:push main,團隊在唯一網址看、外人被密碼擋。)')
 console.log('')

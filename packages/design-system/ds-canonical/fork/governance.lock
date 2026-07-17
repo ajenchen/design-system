@@ -120,7 +120,7 @@
     },
     {
       "file": "hooks/inject_deploy_url_after_push.sh",
-      "sha256": "f5cd8597574f1b061b132a289337731f7dabac0c6666f1ca611d8316504b401c",
+      "sha256": "091ab70b5088bc25f947eea42915d91df3eb73bd6137df8a8c235093c25ff567",
       "sourceHook": "inject_deploy_url_after_push.sh",
       "bucket": "SHIP_REWRITTEN"
     },

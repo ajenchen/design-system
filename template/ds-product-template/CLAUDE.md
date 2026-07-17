@@ -52,11 +52,15 @@ node_modules/@qijenchen/design-system/ds-story-manifest.json                    
 
 ### 🆘 Claude 引導 Netlify onboarding(user 不熟 Netlify 時)
 1. **Netlify 是什麼**:免費 deploy 平台(類 Vercel),自動跑 Storybook 給 team 看 product UI。
-2. **沒帳號?**:`npm run setup:netlify` 開瀏覽器 GitHub OAuth → 自動建帳號。
-3. **設密碼(免費)**:後台加 1 個 env var `STORYBOOK_BASIC_AUTH`=`user:password`(Edge Function 擋,免費)。**別**叫 user 開 Dashboard Password Protection(那是 Pro $20/mo);**別**講「`_headers` Basic-Auth 免費」(也是 Pro)。
-4. **防 SEO** 已自動(`netlify.toml` ship `X-Robots-Tag noindex`)。
-5. **驗證**:push main 後 2-3 min,Netlify Deploys tab 綠勾 = OK。
-6. **Cloud-dev**:claude.ai/code 直連本 repo(sandbox 自動 clone + 治理自動跑)/ Codespaces(`.devcontainer` 已配)/ 本地 clone。
+2. **前置:GitHub CLI(`gh`)**——`setup:netlify` 用它讀 GitHub 帳號、連 fork repo。這與 Netlify 登入是**兩件不同的事**:
+   - **未安裝 `gh`**:先裝——macOS `brew install gh` / Windows `winget install GitHub.cli` / 其他見 <https://cli.github.com>。
+   - **裝了但未登入**:跑 `gh auth login`(瀏覽器 OAuth,1 分鐘)。這是 **GitHub CLI** 授權。
+   - 沒 `gh` 也能繼續,但連 repo / 建站命名的自動化會退化,建議先補齊。
+3. **沒帳號?**:`npm run setup:netlify` 開瀏覽器 **Netlify** GitHub OAuth(`netlify login`,與上面 `gh` 授權不同)→ 自動建 Netlify 帳號。
+4. **設密碼(免費)**:後台加 1 個 env var `STORYBOOK_BASIC_AUTH`=`user:password`(Edge Function 擋,免費)。**別**叫 user 開 Dashboard Password Protection(那是 Pro $20/mo);**別**講「`_headers` Basic-Auth 免費」(也是 Pro)。
+5. **防 SEO** 已自動(`netlify.toml` ship `X-Robots-Tag noindex`)。
+6. **驗證**:push main 後 2-3 min,Netlify Deploys tab 綠勾 = OK。
+7. **Cloud-dev**:claude.ai/code 直連本 repo(sandbox 自動 clone + 治理自動跑)/ Codespaces(`.devcontainer` 已配)/ 本地 clone。
 
 ### 🚦 真實「斷點」清單
 | # | 斷點 | 可自動? |
@@ -79,7 +83,7 @@ node_modules/@qijenchen/design-system/ds-story-manifest.json                    
 
 **重點**:你**不用為了「看」而特別下令 push** —— AI 做完會自動推草稿分支出預覽;你的「push / OK」是**上正式站**的關卡(對齊 DS 的 user-gate 精神,但 fork 端**沒有** bump 版本 / tag / npm publish / GitHub Pages 那些)。
 
-> ⚠️ 草稿預覽需 Netlify「branch deploys」啟用(`npm run setup:netlify` 會設定;或到 Netlify 後台開「Deploy all branches」)。未啟用時 → 改用 main 的密碼保護站當團隊預覽(push main → 團隊在唯一網址看,外人被密碼擋)。
+> ⚠️ 草稿預覽需 Netlify「branch deploys」啟用,而 **Netlify 預設不開**(預設只部署 production branch)。這是**必要人工斷點**:到 Netlify 後台 Site configuration → Build & deploy → Branch deploys → 選「Deploy all branches」開一次(`npm run setup:netlify` 只會印出這個設定連結與步驟,**不會**自動幫你開)。未開之前 → 改用 main 的密碼保護站當團隊預覽(push main → 團隊在唯一網址看,外人被密碼擋)。
 
 ## 🔄 Daily dev workflow
 | 事件 | 自動發生 |
