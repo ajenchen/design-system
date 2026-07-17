@@ -113,6 +113,9 @@ run('build-storybook', 'npm run --silent build-storybook')
 // iceberg)。本機不分 shard 串跑全 947(CI 才分 4)。先清 port 殘留 server 避免 bind 衝突 false-fail。
 run('clear smoke port 8920', 'lsof -ti:8920 | xargs kill -9 2>/dev/null || true')
 run('FULL storybook runtime smoke(947 story)', 'node scripts/storybook-smoke-test.mjs --full')
+// InlineEdit 對齊 + blur exit pixel invariant(2026-07-17 root cause 修的機械鎖):委派控件 view 左緣落 label
+// x=0(Δ≤1.5px)+ 點 Status 進 edit→blur→editing=0 回 display 無殘留。需 storybook-static(build 後才跑)。
+run('InlineEdit 對齊 + blur exit pixel invariant', 'node scripts/probe-inline-edit-align.mjs')
 run('dogfood pre-publish verify', 'node scripts/dogfood-prepublish-verify.mjs')
 
 // ④ 5-manifest version 一致性 verify(== release.yml BLOCKER L199)
