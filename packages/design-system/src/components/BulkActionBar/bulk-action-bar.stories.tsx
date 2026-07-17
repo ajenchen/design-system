@@ -27,7 +27,7 @@ export const Default: Story = {
             <Button variant="tertiary" size="md" startIcon={Archive}>封存</Button>
             <Button variant="tertiary" size="md" startIcon={TagIcon}>加標籤</Button>
             <Button variant="tertiary" size="md" startIcon={MoveRight}>移動</Button>
-            <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
+            <Button variant="tertiary" size="md" startIcon={Trash2}>刪除</Button>
           </>
         }
       />
@@ -96,7 +96,7 @@ export const WithExtendDatasetHint: Story = {
           actions={
             <>
               <Button variant="tertiary" size="md" startIcon={Download}>下載</Button>
-              <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
+              <Button variant="tertiary" size="md" startIcon={Trash2}>刪除</Button>
             </>
           }
         />

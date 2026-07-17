@@ -81,7 +81,7 @@ benchmark:
 
 ### Slot
 
-- **`actions`**:consumer 提供 **md** Buttons(size rationale 見「Size canonical」);`variant=tertiary`(主)/ `tertiary danger`(destructive)— **不用 primary**(留 dialog 確認最終 action)
+- **`actions`**:consumer 提供 **md** Buttons(size rationale 見「Size canonical」);**一律 `variant=tertiary`**(含 destructive — `Trash` 等 icon + label 已辨識危險)— **不用 primary、destructive 不上 danger 紅填色**(2026-07-17 user 拍板:批次刪除鈕點下去是**開確認 dialog**非直接刪,紅色強調留給 dialog 內確認最終不可逆 action;對齊 UX Movement / GitLab Pajamas「紅留給不可逆最終確認」+ button.spec.md「Inline destructive 不用高強調」)
 - **count 區**:`已選 {N} 項`(內建)+ inline filter hidden status `· {M} 個被 filter 隱藏`(`hiddenByFilter` prop 傳入時)
 - **clear**:`<Button iconOnly size=md variant=text dismiss />`(內建,觸發 `onClear`)
 
@@ -204,7 +204,7 @@ interface BulkActionBarLabels {
 - **底色**:**無底色 contrast**,跟 page 同色(`bg-canvas` / `bg-surface` 視 placement 繼承)。對齊 Notion / Linear minimalist — 用文字內容切換呈現「mode」,**不**用底色 highlight。**不像 Polaris 那種顯著底色變化** <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 - **邊界**:**無外框邊界**(融入 page chrome)— 恆 **`border-top` border-divider 切割 layout**(bar 是 page 結構,不是 floating overlay,不用 box-shadow 製造「浮層」誤導)。top-toolbar 變體為未來項(見「Size canonical」)
 - **與 table 的關係**:inline composition — bar 接在 DataTable 下方,toolbar 永遠保留(見「Placement」)
-- **Action variant**:`tertiary`(主)+ `tertiary danger`(destructive)— **不用 primary**(留給 dialog 確認最終 action)
+- **Action variant**:**一律 `tertiary`**(含 destructive,icon+label 辨識危險)— **不用 primary、不用 danger 紅填色**(紅色強調留給 dialog 內確認最終 action,見「Slot」rationale)
 
 ---
 
