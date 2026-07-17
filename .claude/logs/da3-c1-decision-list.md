@@ -139,7 +139,7 @@ FieldControlGroup 的規格和範例用「Mode A/B/C」字母代號,沒有產品
 | 15 | Combobox 跨 mode ref | ✅ 照建議 A(記例外) | user 授權 |
 | 16 | ColumnVisibilityPanel root | ✅ 照建議 A(加 root+驗 scroll) | user 授權 |
 | 17 | FilterPanel mode 重複 | ✅ 照建議 A(移除獨立 mode) | user 授權 |
-| **18** | 側邊欄留白 | **✅ 確認 A(加 px-loose py-tight,對齊 Dialog/Sheet)** | **user 指正正確;grep 證實 Dialog/Sheet body 共用 overlay-surface px-loose py-tight** |
+| **18** | 側邊欄留白 | **更正:非 bug、從沒被改壞**(git -S 證實 aside body 從未有內建 padding;範例留白是內容自帶 stories:208/214)。改為可選一致性決策:甲=維持內容自帶+補 spec 明文(推薦,對齊 Table/DataTable 裸結構、讓清單/表格貼邊)/ 乙=框架自加對齊 Dialog/Sheet(遷移面大,恐雙重 padding)。**待 user 選甲/乙** | **user 質疑「本來是壞的?」→ 查證:code 註解刻意走規則 1B(內容負責 padding),非 regression;我上輪誤信 codex「bug」框架已更正** |
 | **19** | 批次刪除鈕紅色 | **改推薦 B(刪除鈕用一般 tertiary+垃圾桶 icon,紅色留給確認框最終鈕)** | **user 直覺正確;spec 證實刪除鈕開確認框、非直接刪;世界級「紅留給不可逆最終確認」** |
 | 20 | Alert inline 命名 | ✅ 照建議(不動) | 對齊 Carbon idiom |
 | 21 | Mode A/B 改語意名 | ✅ 照建議 A(改名) | 對齊 FileItem 先例 |
