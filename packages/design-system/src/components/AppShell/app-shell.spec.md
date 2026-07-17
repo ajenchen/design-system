@@ -67,6 +67,8 @@ benchmark:
 
 Sub-component:`<AppShellAside title={...} width={400}>`(width consumer 自決 — `number` 或 `{ md, xl }` breakpoint-keyed,clamp `min-width: 240` / `max-width: 640`;**title prop required**,modal mode 走 Sheet → `aria-labelledby` 強制,per `sheet.spec.md`「禁止事項」(無 title → aria-labelledby 強制))。
 
+**Aside body padding(內容自帶,刻意 Pattern B)**:`<AppShellAside>` 的 body(ScrollArea 內)**不自帶 px/py**,由 consumer 塞入的 children 自行負責留白(對齊 `layoutSpace.spec.md` 規則 1B「父層/內容管 padding」的裸結構路線,同 Table / DataTable)。**理由**:aside 內容異質(清單需 hover 貼邊滿版、表格需 flush、表單才需 padding),框架統一加 padding 反而破壞清單/表格。與 Dialog / Sheet body 自帶 `px-loose py-tight` 的差異是**刻意**的(那兩者內容較單一)。consumer 放需留白的內容時,自帶 `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`(範例 `app-shell.stories.tsx` 即如此)。
+
 ### Hook export:`useAppShell()`(2026-05-21 D2 codify per Phase B codex catch)
 
 Public compound API hook,讓 consumer 自拼 custom aside / 自管 modal layout(對齊 Radix `useDialogContext` / MUI `useFormControl` / Mantine `useAppShellContext` 慣例)。

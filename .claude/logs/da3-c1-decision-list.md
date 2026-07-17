@@ -151,3 +151,9 @@ FieldControlGroup 的規格和範例用「Mode A/B/C」字母代號,沒有產品
 
 ## ⚠️ 實作紀律(2026-07-17,user 質疑第 18 後 codify)
 **每條決策實作前必 ground-truth 驗**:對真實程式碼 + git 歷史查證 finding 說的「壞了/缺失」是否屬實、是否 intentional、是否已修過(如 Tabs 2026-07-05)、severity 是否需實跑工具(axe/pixel)確認。**禁照 codex finding 框架盲修**。已抓到框架有問題者:18(從沒壞)、1(已修 nested-interactive)、5(Avatar alt 已必填)。
+
+
+## 實作進度(2026-07-17,受控小批 + 每條 ground-truth 驗)
+- ✅ **已實作 committed**:8(10px 註記)/ 9(Tooltip 分界 WCAG)/ 10(Command subpath 措辭)/ 18(甲 aside padding 明文)/ 20(Alert 不動,確認)/ 21(Mode→語意名)= 6 條 doc 類,全綠
+- ⏳ **待做**:1 Tabs axe(需先跑 axe)/ 2 asChild 收窄 / 3 barrel @internal / 4 bounded numeric / 5 空 label / 6 loading / 7 controlled / 11 creatable forward / 12 命名 / 13 Tag rename / 14 Carousel / 15 Combobox ref / 16 ColumnVisibility / 17 FilterPanel / 19 批次刪除鈕 = 15 條(code 類,逐條 ground-truth+驗)
+- ⏳ **其他軌**:剩餘 AUTO findings(中斷 batch 未完 + 4 reverted)/ Phase B 1273 驗證 / C.1 report
