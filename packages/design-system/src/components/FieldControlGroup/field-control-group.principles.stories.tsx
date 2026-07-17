@@ -91,13 +91,13 @@ export const UsageGuidance: Story = {
         <ul className="text-body text-fg-secondary list-disc pl-5 space-y-1">
           <li>Children 同 size — 不混用 sm/md/lg(視覺高度需一致)</li>
           <li>Children 自管 width — fixed selects + flex input 是典型 pattern</li>
-          <li>Mode A(包進 Field):size 從 Field context 自動繼承,children 不傳 size</li>
+          <li>繼承 Field 尺寸(包進 Field):size 從 Field context 自動繼承,children 不傳 size</li>
           <li>Children scope:Input / NumberInput / Select / Combobox / DatePicker / Button(對齊 Ant 限定 list)</li>
         </ul>
       </section>
 
       <section>
-        <h2 className="text-body-lg font-bold mb-3">Mode A — 包進 Field 當 control slot</h2>
+        <h2 className="text-body-lg font-bold mb-3">繼承 Field 尺寸 — 包進 Field 當 control slot</h2>
         <Field>
           <FieldLabel>聯絡電話</FieldLabel>
           <FieldControlGroup block>
@@ -109,7 +109,7 @@ export const UsageGuidance: Story = {
       </section>
 
       <section>
-        <h2 className="text-body-lg font-bold mb-3">Mode B — Filter row 場景</h2>
+        <h2 className="text-body-lg font-bold mb-3">Standalone 逐一設尺寸 — Filter row 場景</h2>
         <FieldControlGroup block>
           <Select className="!w-[140px]" options={FIELDS} value="name" onChange={() => {}} aria-label="篩選欄位" />
           <Select className="!w-[120px]" options={OPS} value="contains" onChange={() => {}} aria-label="篩選運算子" />

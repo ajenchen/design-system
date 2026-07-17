@@ -22,7 +22,7 @@ Hover 觸發的**可互動浮層**，基於 Radix HoverCard。
 **分類**：Internal primitive——不進 root barrel front-door、不裸用;DS 內由 Avatar(`hoverCard`)/ OverflowIndicator / ProfileCard 場景組合消費;consumer 需要時可經 per-component subpath 包裝並自行確認後使用(`.claude/rules/ui-development.md`「Root barrel front-door 排除」SSOT,internal ≠ 禁用)(frontmatter `isInternal`:root barrel 排除,storybook `Design System/Internal/HoverCard`)。
 
 - **是**：hover 顯示可互動內容（按鈕、連結、可選取文字——**滑鼠互動**；鍵盤進不了卡片，見「A11y 預設」）的浮層容器，定位為滑鼠 / focus 使用者的補充閱讀 surface
-- **不是**：Tooltip（純文字提示、不可互動、hover 離開即消失）；也不是鍵盤可操作的互動浮層（那是 Popover）
+- **不是**：Tooltip（純文字提示、**內容不可互動**；指標可短暫移到浮層屬 WCAG 1.4.13 hoverable grace，非「立即消失」）；也不是鍵盤可操作的互動浮層（那是 Popover）
 
 **Layout Family**：非上述 family — composite / multi-section（多區塊組合，自 own layout）。
 
@@ -54,7 +54,7 @@ Hover 觸發的**可互動浮層**，基於 Radix HoverCard。
 |---|---|---|
 | 觸發 | hover | hover |
 | **內容可互動** | 是——限滑鼠（Radix 設 content 內 tabbable node 為 `tabindex="-1"`，鍵盤不可達，見「A11y 預設」） | 否（純文字） |
-| 停留行為 | 滑鼠移到浮層上不消失 | 滑鼠離開 trigger 即消失 |
+| 停留行為 | 滑鼠可移到浮層互動不消失 | 滑鼠可短暫移到浮層（WCAG 1.4.13 grace，`tooltip.tsx` 未設 `disableHoverableContent`），但內容不可互動 |
 | 視覺樣式 | 由 consumer 決定（亮色 card 或深色 tooltip 風格皆可） | 統一深色背景 |
 | 典型用例 | ProfileCard、內容預覽、溢出清單 | icon 用途、shortcut、截斷文字補全 |
 

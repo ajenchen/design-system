@@ -89,7 +89,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 
 **FCG `size` prop 目前為 no-op**:本元件只負責 border-collapse 接合(border / radius / z-index),不傳遞 size 給 children(無 Context Provider / 無 cloneElement)。Children 的尺寸完全由 child 自己決定 — 以下三種來源:
 
-**Mode A**(包進 Field 當 control slot):children 各自透過 `useFieldContext().size` 讀外層 `<Field>` 的 size(是 Field 的 context,不是 FCG 的)。
+**繼承 Field 尺寸**(包進 Field 當 control slot):children 各自透過 `useFieldContext().size` 讀外層 `<Field>` 的 size(是 Field 的 context,不是 FCG 的)。
 ```tsx
 <Field size="lg">
   <FieldLabel>電話</FieldLabel>
@@ -100,7 +100,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 </Field>
 ```
 
-**Mode B**(standalone):**逐一給每個 child 設 `size`**(設 `<FieldControlGroup size>` 無效)。
+**Standalone 逐一設尺寸**:**逐一給每個 child 設 `size`**(設 `<FieldControlGroup size>` 無效)。
 ```tsx
 <FieldControlGroup>
   <Select size="md" className="!w-[120px]" options={fields} />
@@ -108,7 +108,7 @@ interface FieldControlGroupProps extends HTMLAttributes<HTMLDivElement> {
 </FieldControlGroup>
 ```
 
-**Mode C**(進 Popover,density 鎖 md):children 自然吃 md(Popover density canonical)。
+**Popover 鎖 md**(進 Popover,density 鎖 md):children 自然吃 md(Popover density canonical)。
 
 ## A11y 預設
 
