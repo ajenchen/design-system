@@ -175,6 +175,11 @@ export interface StepsProps
   orientation?: StepsOrientation
   expansion?: StepsExpansion
   defaultExpanded?: 'all' | 'none' | string[]
+  /** Controlled 展開集合(2026-07-18 user 拍板補完整雙向控制,對齊 TreeView expandedIds + Radix/MUI/Ant Accordion)。
+   *  傳入則由 consumer 掌控展開狀態(與 `defaultExpanded` 二選一);toggle 時經 `onExpandedChange` 回寫。 */
+  expanded?: string[]
+  /** Controlled 展開變更回呼(展開/收合 step 時觸發,回傳新的展開值陣列)。 */
+  onExpandedChange?: (expanded: string[]) => void
 }
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
@@ -191,6 +196,8 @@ const Steps = React.forwardRef<HTMLOListElement, StepsProps>(
       orientation = 'vertical',
       expansion = 'follow-active',
       defaultExpanded,
+      expanded: expandedProp,
+      onExpandedChange,
       className,
       children,
       ...props
@@ -229,18 +236,30 @@ const Steps = React.forwardRef<HTMLOListElement, StepsProps>(
       [childValues, completedValues],
     )
 
-    const [expandedSet, setExpandedSet] = React.useState<Set<string>>(() =>
+    // Controlled(expandedProp 傳入)/ uncontrolled(defaultExpanded 初值)dual-mode(2026-07-18)。
+    const isExpandedControlled = expandedProp !== undefined
+    const [expandedInternal, setExpandedInternal] = React.useState<Set<string>>(() =>
       normalizeExpanded(defaultExpanded, childValues),
     )
+    const expandedSet = isExpandedControlled ? new Set(expandedProp) : expandedInternal
 
     const toggleExpanded = React.useCallback((itemValue: string) => {
-      setExpandedSet(prev => {
+      const compute = (prev: Set<string>) => {
         const next = new Set(prev)
         if (next.has(itemValue)) next.delete(itemValue)
         else next.add(itemValue)
         return next
-      })
-    }, [])
+      }
+      if (isExpandedControlled) {
+        onExpandedChange?.([...compute(new Set(expandedProp))])
+      } else {
+        setExpandedInternal(prev => {
+          const next = compute(prev)
+          onExpandedChange?.([...next])
+          return next
+        })
+      }
+    }, [isExpandedControlled, expandedProp, onExpandedChange])
 
     const stepCount = React.Children.count(children)
 

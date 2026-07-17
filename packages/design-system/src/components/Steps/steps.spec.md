@@ -346,6 +346,8 @@ Description 在 error state 下維持 `text-fg-secondary`(跟其他 state 一樣
 
 `orientation="horizontal"` 時 `<StepContent>` 一律不渲染,`expansion` prop 被忽略。水平空間不夠塞 content 區,強塞會破壞 stepper 的掃視節奏。Consumer 可以共用同一份 JSX 在兩種 orientation 間切換,不會報錯。
 
+**展開 controlled/uncontrolled(2026-07-18 user 拍板補完整雙向)**:`multiple` 模式支援 controlled `expanded: string[]` + `onExpandedChange`(與 `defaultExpanded` uncontrolled 二選一)。理由:Steps 整體 API 哲學是 **parent 掌控狀態**(`value` / `completedValues` / `errorValues` 全 parent-controlled),唯獨展開狀態原只 uncontrolled 自相矛盾;且最近親 `TreeView` 就是完整雙向(`expandedIds` + `onExpandedChange` + `defaultExpandedIds`)。對齊 Radix/MUI/Ant Accordion 全數雙向。傳 `expanded` 時展開狀態由 consumer 掌控,toggle step 經 `onExpandedChange` 回寫新陣列。
+
 ---
 
 ## Orientation
