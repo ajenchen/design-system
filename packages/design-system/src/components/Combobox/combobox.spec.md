@@ -145,6 +145,10 @@ value 軸 controlled-only;open 軸方向相反 — **uncontrolled-only**:`defaul
 - multi mode 可附 `min` / `max` selected count 限制(consumer 自驗,Combobox 不獨立 own validation rules)
 - Validation timing:預設 onBlur + onSubmit,onChange 不立即 validate(避免邊選邊紅)
 
+## Ref 契約(cross-mode 例外,2026-07-17 user 拍板)
+
+Combobox 是 **4-mode field**(edit / view / readonly / disabled),各 mode 渲染**本質不同的 subtree**(edit = trigger + hidden select;view/readonly = `ReadonlyMultiSelect`)。**`ref` 只保證在 edit mode 指向 trigger root(`__triggerRef`)**;view / readonly / disabled mode **不保證穩定 root**(對齊 React「avoid over-exposing DOM nodes in higher-level components」)。需在任意 mode 取穩定 DOM root 的 consumer 應在外層自包一層容器,不依賴 Combobox `ref` 跨 mode 一致。與 T1 RadioGroup / Switch 的跨 mode 缺口採同一哲學(記錄例外,不硬造統一 host)。
+
 ---
 
 ## 禁止事項

@@ -157,3 +157,10 @@ FieldControlGroup 的規格和範例用「Mode A/B/C」字母代號,沒有產品
 - ✅ **已實作 committed**:8(10px 註記)/ 9(Tooltip 分界 WCAG)/ 10(Command subpath 措辭)/ 18(甲 aside padding 明文)/ 20(Alert 不動,確認)/ 21(Mode→語意名)= 6 條 doc 類,全綠
 - ⏳ **待做**:1 Tabs axe(需先跑 axe)/ 2 asChild 收窄 / 3 barrel @internal / 4 bounded numeric / 5 空 label / 6 loading / 7 controlled / 11 creatable forward / 12 命名 / 13 Tag rename / 14 Carousel / 15 Combobox ref / 16 ColumnVisibility / 17 FilterPanel / 19 批次刪除鈕 = 15 條(code 類,逐條 ground-truth+驗)
 - ⏳ **其他軌**:剩餘 AUTO findings(中斷 batch 未完 + 4 reverted)/ Phase B 1273 驗證 / C.1 report
+
+
+## 續實作(2026-07-18)
+- ✅ **6 批次 loading 契約**:ground-truth 發現 spec 172-180 段已含「批次操作進行中(loading/防重複/選取保留)」= 我推薦的 A 案 → finding stale,已滿足
+- ✅ **15 Combobox cross-mode ref 例外**:combobox.spec 加「Ref 契約」段(ref 只保證 edit mode 指 trigger,記錄例外)
+- ✅ **7-AppShell controlled rationale**:app-shell.spec 加「Aside 開關控制刻意單向」段(initial 固定關閉,不加 defaultAsideOpen)
+- ⏳ **7-Steps controlled**:待加 expanded/onExpandedChange(code)/ 剩 2/3/4/5/11/12/14/16/17
