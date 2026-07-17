@@ -398,6 +398,14 @@ export interface ComboboxProps {
   emptyPlaceholder?: string
   /** 搜尋無結果提示(2026-07-04 Q4 拍板接線)— forward SelectMenu primitive SSOT(default「沒有符合的選項」) */
   emptyText?: string
+  /** 可建立新選項(creatable tag,2026-07-18 user 拍板 forward)—— 搜尋非空且無完全同名既有選項時,
+   *  dropdown 顯 create row(Plus + `createLabel`);forward 給底層 SelectMenu(邏輯/顯示/互動 SSOT 住在 SelectMenu)。
+   *  僅 searchable 桌機路徑生效(需打字);native mobile 路徑不支援。對齊 Ant tags / react-select Creatable。 */
+  creatable?: boolean
+  /** 建立新選項 callback(forward SelectMenu `onCreate`)。 */
+  onCreate?: (value: string) => void
+  /** create row 文字格式(forward SelectMenu `createLabel`,預設「直接使用「{query}」」)。 */
+  createLabel?: (query: string) => string
   /** a11y:無 Field wrapper 時提供 role='combobox' 的 accessible name(axe aria-input-field-name) */
   'aria-label'?: string
   /** Initial open state(uncontrolled)— 對齊 Select.defaultOpen / Radix Popover canonical。
@@ -671,6 +679,9 @@ function CustomCombobox({
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default
   emptyPlaceholder = '選擇…', // i18n-allow: DS default
   emptyText,
+  creatable = false,
+  onCreate,
+  createLabel,
   defaultOpen = false,
   onOpenChange,
   __triggerRef,
@@ -864,6 +875,9 @@ function CustomCombobox({
       value={value}
       onValueChange={onChange as (value: string | string[]) => void}
       multiple
+      creatable={creatable}
+      onCreate={onCreate}
+      createLabel={createLabel}
       searchable={searchable && searchIn === 'menu'}
       searchPlaceholder={searchPlaceholder}
       size={size}

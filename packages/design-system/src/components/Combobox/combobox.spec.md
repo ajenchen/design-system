@@ -132,7 +132,7 @@ value 軸 controlled-only;open 軸方向相反 — **uncontrolled-only**:`defaul
 
 - **Disabled**:Field SSOT own(`Field/field-controls.spec.md`)。trigger / tag dismiss / 搜尋 input 全部 disabled,token 走 M24 state precedence(`text-fg-disabled`);已選 Tag 的 dismiss X 自動隱藏(見「readonly / disabled 的 Tag」段)。
 - **Loading**:已 codify(見「Loading」段)。
-- **Empty(no search results)**:dropdown body 內渲 `emptyText`(Combobox 暴露 `emptyText` prop 並 forward 給 SelectMenu;未傳時走 SelectMenu 預設「沒有符合的選項」)。Combobox 不暴露 `creatable` / `onCreate` prop(僅 SelectMenu primitive 本身支援),故 Combobox consumer 無「建立 "xxx"」row。
+- **Empty(no search results)**:dropdown body 內渲 `emptyText`(Combobox 暴露 `emptyText` prop 並 forward 給 SelectMenu;未傳時走 SelectMenu 預設「沒有符合的選項」)。Combobox **暴露 `creatable` / `onCreate` / `createLabel` prop 並 forward 給 SelectMenu**(2026-07-18 user 拍板;搜尋非空且無完全同名既有選項時,dropdown 顯 create row `Plus + createLabel`)——邏輯/顯示/互動 SSOT 住在 SelectMenu(`select-menu.tsx` :271-275 顯隱 / render)。僅 searchable 桌機路徑生效(native mobile 不支援)。對齊 Ant tags / react-select Creatable。
 - **Empty(no value selected)**:multi mode `value=[]` 時 trigger 顯 placeholder(如「請選擇」);empty state 不渲 tag 區。
 - **Dark mode / density**:走 Field + SelectMenu SSOT 自動 adapt。
 
