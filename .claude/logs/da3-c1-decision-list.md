@@ -113,3 +113,35 @@ FieldControlGroup 的規格和範例用「Mode A/B/C」字母代號,沒有產品
 
 這些經查證都對齊你以前已拍板的規矩或屬修 bug,我會直接做、完成後列在驗證表給你看,不佔你決策力:
 分頁籤直向型別收窄、內部符號排除(6 個)、麵包屑截行對齊 MUI、SelectMenu 內部改名、範例去重(3 個)、z-index 歸屬釐清、標籤色收窄、篩選運算子收窄、DOM 轉發補齊(4 個)。
+
+---
+
+# 使用者拍板結果(2026-07-17)
+
+**逐題查證後定案**(user 針對 7/8/11/18/19 提問 + 其餘授權「確保世界級+一致設計語言則照建議」):
+
+| # | 題目 | 定案 | 依據 |
+|---|------|------|------|
+| 1 | Tabs axe-critical | ✅ 照建議 A(移出+aria-owns) | user 授權 |
+| 2 | asChild 全域收窄 | ✅ 照建議 A(Omit) | 對齊 Select 收窄先例 |
+| 3 | barrel @internal 收緊 | ✅ 照建議 A + handleSheetOpenAutoFocus 保持 internal | 對齊 2026-06-05 拍板 |
+| 4 | 有界數字型別 | ✅ 照建議 B(不鎖+dev-warn) | 世界級 4 家一致 |
+| 5 | 空 label a11y | ✅ 照建議 B+C(dev-warn+自動位置名+decorative) | user 授權 |
+| 6 | 批次 loading 契約 | ✅ 照建議 A(最小契約) | user 授權 |
+| 7 | controlled 完整性 | ✅ Steps 補控制 / AppShell 記 rationale | user 理解後授權 |
+| **8** | 10px a11y | **降級**:只加一句 spec 用途限制(僅 storybook 註解/法律細字用,正式元件禁用)= AUTO;無正式元件消費,不做大規範 | **user 質疑「哪裡用到」→ grep 證實零正式消費** |
+| 9 | Tooltip 分界措辭 | ✅ 照建議 A(改用「可互動性」分界,程式不動) | user 授權 |
+| 10 | Command public/internal | ✅ 照建議 B(留 internal 走 subpath) | 對齊 2026-07-10 canonical |
+| **11** | creatable | **改推薦 A(forward 到公開 Select+Combobox)** | **user 指正 + grep 證實 SelectMenu 已完整實作邏輯/顯示/互動;成本 = 接線,非大功能** |
+| 12 | onClear/direction 改名 | ✅ 照建議 A(硬改名,先掃 apps=0) | 對齊 Tag 先例 |
+| 13 | Tag dismissLabel→removeAriaLabel | ✅ 照建議 A+alias | 對齊 FileUpload |
+| 14 | Carousel 箭頭 props | ✅ 照建議 B(開放+遷移註記) | user 授權 |
+| 15 | Combobox 跨 mode ref | ✅ 照建議 A(記例外) | user 授權 |
+| 16 | ColumnVisibilityPanel root | ✅ 照建議 A(加 root+驗 scroll) | user 授權 |
+| 17 | FilterPanel mode 重複 | ✅ 照建議 A(移除獨立 mode) | user 授權 |
+| **18** | 側邊欄留白 | **✅ 確認 A(加 px-loose py-tight,對齊 Dialog/Sheet)** | **user 指正正確;grep 證實 Dialog/Sheet body 共用 overlay-surface px-loose py-tight** |
+| **19** | 批次刪除鈕紅色 | **改推薦 B(刪除鈕用一般 tertiary+垃圾桶 icon,紅色留給確認框最終鈕)** | **user 直覺正確;spec 證實刪除鈕開確認框、非直接刪;世界級「紅留給不可逆最終確認」** |
+| 20 | Alert inline 命名 | ✅ 照建議(不動) | 對齊 Carbon idiom |
+| 21 | Mode A/B 改語意名 | ✅ 照建議 A(改名) | 對齊 FileItem 先例 |
+
+**淨變更 vs 原建議**:8 降級(理論題)、11 flip 成開放(功能已建好)、19 flip 成不上紅(開確認框)、18 確認。其餘照建議。
