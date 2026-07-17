@@ -139,6 +139,17 @@ function InlineEditImpl<T = string>(
   // 鍵盤結算後把 focus 送回 view 按鈕(a11y:焦點不遺失);滑鼠 blur 不送回(不搶焦)
   const returnFocusRef = React.useRef(false)
   const readButtonRef = React.useRef<HTMLButtonElement>(null)
+  // edit 態容器 ref(pointerdown-outside 用);與 forwarded ref merge。
+  // 顯式 `| null` → mutable overload(手動賦值 .current;`useRef<T>(null)` 會匹配 readonly RefObject overload)。
+  const editContainerRef = React.useRef<HTMLDivElement | null>(null)
+  const setEditContainerRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      editContainerRef.current = node
+      if (typeof ref === 'function') ref(node)
+      else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+    },
+    [ref],
+  )
 
   const setDraftValue = React.useCallback((next: T) => {
     draftRef.current = next
@@ -199,6 +210,30 @@ function InlineEditImpl<T = string>(
     }
   }, [editing])
 
+  // ── Pointerdown-outside exit(2026-07-17,blur 殘留 root cause 真修)──────────────
+  // focusout 不夠:overlay 控件(Select)點外面關 popover 時 Radix 把焦點送回 trigger(在 edit 子樹內)
+  //   → onBlur 不觸發 → 卡 editing。改用 document-level pointerdown-outside 偵測(對齊 Radix
+  //   DismissableLayer onPointerDownOutside https://www.radix-ui.com/primitives/docs/utilities/dismissable-layer
+  //   + Atlassian inline-edit click-outside 退出
+  //   https://github.com/pioug/atlassian-frontend-mirror/blob/main/design-system/inline-edit/src/inline-edit.tsx):
+  //   editing 時點在 edit 子樹外且不在本 edit popover 內的 pointerdown → commit 回 view。
+  //   保證任何控件(含 overlay)點外面都回 display,不靠 consumer 在 renderEdit 自接。
+  React.useEffect(() => {
+    if (!editing) return
+    const onPointerDown = (e: PointerEvent) => {
+      if (finalizedRef.current) return
+      const target = e.target as Element | null
+      if (!target) return
+      const box = editContainerRef.current
+      if (box && box.contains(target)) return // 點在 edit 子樹內(trigger 等)
+      // 點在本 edit 開的 Radix overlay 內(popper / listbox / dialog)→ dropdown 操作中,不結算
+      if (target.closest('[data-radix-popper-content-wrapper],[data-radix-select-viewport],[role="listbox"],[role="dialog"]')) return
+      commit(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+  }, [editing, commit])
+
   const isEmpty =
     value == null || (value as unknown) === '' || (Array.isArray(value) && value.length === 0)
   const Tag = as as React.ElementType
@@ -256,9 +291,10 @@ function InlineEditImpl<T = string>(
     )
     const editNode = renderEdit ? renderEdit(editProps) : defaultEditNode
     return (
-      // onBlur(focusout,bubbles)承載 exit-on-blur SSOT:任何 edit 控件 blur 離開 → 回 view。
+      // exit SSOT 雙保險:onBlur(focusout,tab-out / 非 overlay 控件)+ document pointerdown-outside(overlay
+      //   點外面 Radix 送焦回 trigger 時 focusout 不觸發之補位)。任何 edit 控件離開 → 回 view。
       // edit 態**不套** surface='inline-edit'(完全繼承原 field,含 tagPadding — Jira 式,user 2026-07-17 拍板)。
-      <div ref={ref} data-editing className={cn(alignBleed, className)} onBlur={handleEditBlur}>
+      <div ref={setEditContainerRef} data-editing className={cn(alignBleed, className)} onBlur={handleEditBlur}>
         {editNode}
       </div>
     )
@@ -266,11 +302,15 @@ function InlineEditImpl<T = string>(
 
   // view 態:外框只承載對齊盒 + (editable 時) hover bg + 鍵盤 focus 藍框;幾何由內容(委派控件 view / fieldViewGeometry)提供。
   const viewNode = renderRead ? (
-    // 格式化 view(consumer 傳 <Control mode="view"> 等)。**surface='inline-edit'**(2026-07-17)→ 委派控件
-    // view 態左 px 統一 `--field-px`(關掉 tagPadding / bare-span 0px / avatar inset),讓固定 `-mx-field-px`
-    // 精準抵消 → tag/avatar/值左緣落 label x=0。edit 態不套本 surface(完全繼承原 field,Jira 式)。
+    // 格式化 view(consumer 傳 <Control mode="view"> 等)。**對齊 SSOT(2026-07-17)**:委派控件的
+    // bare view 一律 0px 左內距(audit 證實 Select/Combobox/DatePicker/TimePicker/PeoplePicker/LinkInput
+    // 預設 view 皆裸 span/Tag),故 InlineEdit 用**與純值路徑同一個 `fieldViewGeometry(field-px + min-h +
+    // py)`** 包住 renderRead → 委派控件 view 左 px 統一 field-px、高度統一 field-height → 固定
+    // `-mx-field-px` 精準抵消 → tag/avatar/值左緣落 label x=0。不碰任何控件 tagPadding(bare view 本就不用)。
+    // surface='inline-edit' 保留為 per-control 逃生訊號(若某控件 bare view 有內部 inset 破壞對齊,該控件可
+    // 讀 surface 自抑;目前全控件 bare view=0px 不需)。
     <FieldSurfaceProvider surface="inline-edit">
-      <div className="flex w-full min-w-0">{renderRead(value)}</div>
+      <div className={fieldViewGeometry(size, multiline)}>{renderRead(value)}</div>
     </FieldSurfaceProvider>
   ) : (
     <Tag
