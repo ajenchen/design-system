@@ -1,0 +1,555 @@
+{
+ "total": 60,
+ "themes": [
+  {
+   "theme": "T1_asChild型別誠實化收窄",
+   "ssot_anchor": "select.tsx:57「API 策展 D user 拍板『全部收窄』」(Pick<> allowlist 收窄先例);FieldVariantInternal 型別通道先例",
+   "question": "asChild/children 繼承自 Radix 但元件有固定 anatomy → Slot 執行期錯誤或靜默覆蓋。是否系統性收窄公開型別(移除無法兌現的 asChild/children)?",
+   "items": [
+    {
+     "id": "d9i20",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.tsx:55",
+     "問題": "ProgressBar 暴露 Radix asChild／children，但固定 Indicator 覆蓋 consumer child，asChild 只會替換內部 Indicator。",
+     "建議": "移除無效的 asChild／children，或重構成真正的單一 consumer host。",
+     "verifyReason": "progress-bar.tsx:55 僅 Omit 'value',Radix Progress Root 的 asChild/children 留在型別;:117 spread props 但 :119-122 固定 Indicator JSX child 覆蓋 consumer children,asChild 的 Slot host 落在 Indicator。修法(Omit 收窄公開型別)動 API contract,同 select.tsx:57 全部收窄先例走 user 拍板。"
+    },
+    {
+     "id": "d9i21",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:102",
+     "問題": "RadioGroup 繼承 asChild，但 view 與 Field-readonly 分支直接剝除，造成同一 prop 隨 mode 靜默失效。",
+     "建議": "跨 mode 提供一致 Slot host；否則從公開型別移除 asChild 並記錄原因。",
+     "verifyReason": "radio-group.tsx:25-26 extends Radix Root props(含 asChild),:102-104 view/Field-readonly 分支 destructure 剝除 _asChild,edit 分支 :171 {...props} 仍轉發 — 同一 prop 隨 mode 靜默失效屬實。是否 Omit asChild 統一型別 = 公開 API contract 決策。"
+    },
+    {
+     "id": "d9i22",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:297",
+     "問題": "RadioGroupItem 的 asChild 會作用於固定 Indicator，而非 consumer 指定元素。",
+     "建議": "移除 asChild／children或重新設計單一 consumer host。",
+     "verifyReason": "RadioGroupItemProps :225-227 extends Radix Item props(含 asChild/children),:307 spread props 但 :321-326 固定 Indicator 為唯一 JSX child — asChild 的 Slot 只會 clone Indicator,consumer 元素永不成 host。修法動公開型別。"
+    },
+    {
+     "id": "d9i23",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:49",
+     "問題": "ScrollArea 繼承 asChild，但 Root 固定包含 Viewport、ScrollBar、Corner 多個子節點；Radix Slot 會在執行期拋錯。",
+     "建議": "從 props 移除 asChild 並文件化固定 anatomy，或另加真正可換根的外層 Slot。",
+     "verifyReason": "scroll-area.tsx:37 型別含 Radix Root asChild,:52 spread 到 Root,而 Root 固定含 Viewport(:63)+ ScrollBar(:72)+ Corner(:73)三子節點 — asChild=true 必觸發 React.Children.only runtime 拋錯(CLAUDE.md 失敗記憶索引已列此陷阱類)。修法 = Omit asChild,動公開型別。"
+    },
+    {
+     "id": "d9i24",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:82",
+     "問題": "ScrollBar 繼承 asChild／children，但固定 Thumb 使 Slot host 錯置到內部 Thumb。",
+     "建議": "移除 asChild／children，或讓 consumer 的單一元素成為真正 host。",
+     "verifyReason": "ScrollBar :78-81 型別含 asChild/children 且未 destructure 抽除,:91 spread 後固定 Thumb(:98-100)為唯一 JSX child — asChild 的 Slot host 錯置到內部 Thumb。修法動公開型別。"
+    },
+    {
+     "id": "d9i25",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:263",
+     "問題": "SegmentedControlItem 繼承 asChild，卻固定輸出 icon、label、badge 等多個 child；常見組合會觸發 Radix Slot 單子節點錯誤。",
+     "建議": "移除 asChild 並將 children 定義為 label，或先合成真正的單一可替換 host。",
+     "verifyReason": "SegmentedControlItemProps :220-221 extends ToggleGroup Item props(含 asChild),:271 spread restProps,但 :273-279 固定輸出 StartIcon + label span + badge span 多子節點 — icon+label 常見組合遇 asChild 即 React.Children.only 拋錯。修法動公開型別。"
+    },
+    {
+     "id": "d9i27",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:168",
+     "問題": "SheetBody 繼承 ScrollArea 的 asChild，傳入後會落入 ScrollArea 固定多子節點的 Slot 執行期錯誤。",
+     "建議": "從 SheetBody props 移除 asChild，並在 spec 記錄固定 scroll-body anatomy。",
+     "verifyReason": "sheet.tsx:166 SheetBody props = ComponentPropsWithoutRef<ScrollArea>(含 Radix Root asChild),:168 {...props} 轉發到 ScrollArea → scroll-area.tsx:52 spread 到固定三子節點 Root,asChild 必runtime 拋錯。修法 = Omit asChild + spec 記錄,動公開型別。"
+    },
+    {
+     "id": "d9i29",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/Slider/slider.tsx:55",
+     "問題": "Slider 已移除 children，卻仍暴露 asChild；固定 Track 加至少一個 Thumb，使 Radix Slot 必然遇到多子節點並拋錯。",
+     "建議": "把 asChild 一併加入 Omit，並文件化 Slider 的固定 anatomy。",
+     "verifyReason": "slider.tsx:55 已 Omit 'children'|'orientation' 但漏 asChild,:86 spread 到 Root,固定 Track(:96)+ ≥1 Thumb 多子節點 — asChild=true 必 React.Children.only 拋錯。修法 = asChild 併入 Omit,動公開型別(同檔 orientation Omit 有 2026-07-07 先例可援引)。"
+    },
+    {
+     "id": "d9i30",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/Switch/switch.tsx:98",
+     "問題": "Switch 繼承 asChild／children；靜態 mode 會剝除它們，edit mode 則以固定 Thumb 覆蓋 consumer child，無一致 Slot host。",
+     "建議": "移除 asChild／children，或全面建立跨 mode 一致的單一 Slot host。",
+     "verifyReason": "switch.tsx:98-99 extends Radix Root props(含 asChild/children),靜態分支 :198-199 destructure 剝除,edit 分支 :253 {...props} 轉發但 :266 固定 Thumb 覆蓋 consumer child — 無一致 Slot host 屬實。是否 Omit 統一 = 公開 API contract 決策。"
+    },
+    {
+     "id": "d9i31",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:499",
+     "問題": "TabsTrigger 繼承 asChild，但固定輸出 icon、label、suffix 等子節點；多槽組合會觸發 Radix Slot 單子節點錯誤，單槽時也只會替換內部 span。",
+     "建議": "移除 asChild並文件化多槽 anatomy，或重構成單一 consumer host。",
+     "verifyReason": "TabsTriggerProps :451-452 extends Radix Trigger props(含 asChild),:503 spread,但 :505-512 固定輸出 StartIcon/label span/suffix span 多子節點 — 多槽組合遇 asChild 拋 React.Children.only,單槽時 Slot 也只 clone 內部 span(:506)。修法動公開型別。"
+    },
+    {
+     "id": "d9i34",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/Tooltip/tooltip.tsx:23",
+     "問題": "TooltipContent 繼承 asChild，但 consumer children 被包在固定 dark-theme div；Slot 只會替換該內部 div。",
+     "建議": "移除 asChild並文件化 theme wrapper，或把 theme、ref、props 合併到 consumer 的單一 Slot child。",
+     "verifyReason": "tooltip.tsx:25 型別含 Radix Content asChild,:26 destructure children 後包進固定 dark-theme div(:48),asChild 留在 :46 spread — Slot 的單一 child 是該 wrapper div,consumer 元素不會成為 Content host。修法(Omit 或重排 theme wrapper)動公開型別/結構。"
+    },
+    {
+     "id": "d72i2",
+     "dim": 72,
+     "fileLine": "packages/design-system/src/components/Slider/slider.tsx:55; packages/design-system/src/components/ScrollArea/scroll-area.tsx:37; packages/design-system/src/components/SegmentedControl/segmented-control.tsx:220; packages/design-system/src/components/Switch/switch.tsx:98",
+     "問題": "元件從 Radix Root／Item 繼承 asChild，卻固定建立內部 children；Slider、ScrollArea、SegmentedControl 會把多個 children 交給 Slot 而可能觸發 React.Children.only，Switch 則會把 switch semantics 套到內部 Thumb，而非 consumer 提供的元素。",
+     "建議": "從公開 props 明確 Omit asChild；只有能保證接收並渲染單一 consumer ReactElement 的元件才公開 polymorphic escape hatch。",
+     "verifyReason": "SliderProps 只 Omit 'children'|'orientation'(slider.tsx:55)、ScrollArea(scroll-area.tsx:36-48)、SegmentedControlItemProps(segmented-control.tsx:220)、SwitchProps(switch.tsx:99)皆繼承 Radix asChild 且固定渲染內部多 children(Slider Track+Thumbs/ScrollArea Viewport+ScrollBar+Corner/Item icon+label+badge)→ Slot 多 children 觸發 React.Children.only;Switch edit 路徑 {...props} spread(:253)+ 固定 Thumb JSX child(:266)→ asChild 時 semantics 落在內部 Thumb。Omit asChild = 公開 API contract 變更。"
+    },
+    {
+     "id": "d72i3",
+     "dim": 72,
+     "fileLine": "packages/design-system/src/components/Switch/switch.tsx:98; packages/design-system/src/components/TimePicker/time-picker.tsx:108; packages/design-system/src/patterns/resize-handle/resize-handle.tsx:38",
+     "問題": "三個元件繼承 children，但實際固定渲染自己的 subtree，consumer 傳入的 children 會被靜默覆蓋，形成無法兌現的公開 API。",
+     "建議": "從各自繼承型別中 Omit children；若未來需要內容插槽，另定義有明確位置與型別的 slot prop。",
+     "verifyReason": "三者型別皆含 children 但實作固定渲染自己 subtree:SwitchProps 繼承 Radix Root children(switch.tsx:99),view/readonly 分支明確丟棄(:199 `children: _children`)、edit 路徑被固定 Thumb JSX child 蓋掉(:266);TimePickerProps 經 HTMLAttributes 繼承 children(time-picker.tsx:108-112)但全檔零消費(view span/root div 均有固定 JSX children,:265-266);ResizeHandleProps 同(resize-handle.tsx:38),render 固定 hit-zone span + line。Omit children = 公開 API contract 變更。"
+    },
+    {
+     "id": "d10i13",
+     "dim": 10,
+     "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:524",
+     "問題": "inlineAction 的真實 button 位於 role=tablist 內，違反 required children ownership，完整 axe 已命中 critical。",
+     "建議": "將 split action 移到 tablist 外的相鄰 toolbar/menu，再以視覺定位維持佈局。",
+     "verifyReason": "tabs.tsx:517-527 hasAction 時 wrapper span(內含真 inlineAction button)整體置於 TabsList(role=tablist)內,button 非 tablist 合法 owned child;修復需把 action 移出 tablist,動到 :485-494 記載的 sibling-layout canonical(與 SidebarMenuButton suffixNode 同款)結構,屬 SSOT 結構改動需 user 拍板。"
+    },
+    {
+     "id": "d72i5",
+     "dim": 72,
+     "fileLine": "packages/design-system/src/components/Tabs/tabs.tsx:61",
+     "問題": "Tabs 繼承 orientation='vertical'，但 TabsList 的 layout、底線與 overflow 固定為水平；傳 vertical 只改變鍵盤方向及 ARIA，造成行為與視覺語意不一致。",
+     "建議": "目前先從公開 TabsProps 排除 orientation；待 vertical layout、indicator、overflow、spec 與 stories 完整後再開放。",
+     "verifyReason": "TabsProps extends Radix Root 全 props 含 orientation(tabs.tsx:61),但 TABS_LIST_BASE 固定 `inline-flex items-stretch` + `border-b border-divider` 水平佈局(:150-152),scroll/menu overflow 亦全水平(horizontal-overflow pattern);傳 vertical 只改 Radix 鍵盤/ARIA 方向,視覺仍水平。排除 orientation 或補 vertical 實作 = 公開 API contract 決策。"
+    },
+    {
+     "id": "d72i6",
+     "dim": 72,
+     "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:162,217",
+     "問題": "宣告式 BreadcrumbItemSpec 暴露 asChild，但渲染時固定把不轉發 href/ref 的 TruncatedLabel 當 Slot child；consumer 設定後仍無法得到 router link，導覽語意會靜默消失。",
+     "建議": "從 BreadcrumbItemSpec 移除 asChild；宣告式路徑若需 router integration，改成實際轉發的 renderLink／linkElement 契約，compositional BreadcrumbLink 可保留 asChild。",
+     "verifyReason": "BreadcrumbItemSpec 含 asChild(breadcrumb.tsx:162),declarative renderItem 固定以 TruncatedLabel 為 BreadcrumbLink 的 Slot child(:217-219),而 TruncatedLabel({ children, fullText })不接收/轉發 href、ref 或任何 spread props(:42-43)→ asChild=true 時 anchor 語意與 href 靜默消失。從 ItemSpec 移除 asChild 或改 renderLink 契約 = 公開 API contract 決策。"
+    }
+   ]
+  },
+  {
+   "theme": "T2_root_barrel宣告層internal收緊",
+   "ssot_anchor": "ui-development.md:33「Root barrel front-door 排除(2026-06-05 dim-72 SSOT user Q2 拍板)」— 原則已定,generator 只在目錄粒度強制,宣告層 @internal 洩漏",
+   "question": "public 目錄內 @internal 宣告(ButtonGroupContext/RowSizeProvider/ItemInlineActionButton/handleSheetOpenAutoFocus/use-overflow-items/PeoplePicker hooks)仍從 root barrel 洩漏。是否擴充 generator 到宣告層 allowlist/@internal 解析?(移除 = npm API 破壞性變更)",
+   "items": [
+    {
+     "id": "d72i0",
+     "dim": 72,
+     "fileLine": "packages/design-system/scripts/gen-design-system-barrel.mjs:275-284; packages/design-system/src/index.ts:79,118,231,249,329,334,420,545,551-557,567-568",
+     "問題": "Root barrel 仍公開僅供 DS 內部 wiring 的 Context、raw Tailwind／尺寸 helper，以及已標記 @internal 或 spec 明禁 app-code 使用的 primitive；產生器只按 Internal／Meta 名稱過濾，未辨識 declaration-level @internal，讓實作細節成為 npm 契約。",
+     "建議": "改用明確 public allowlist，或讓產生器解析 @internal；移除 ButtonGroupContext、CheckboxGroupContext、floatingLayerClass、getMenuListMinHeight、PeoplePicker layout helpers、handleSheetOpenAutoFocus、AVATAR_SIZE／ICON_SIZE、RowSizeProvider 與 ItemInlineAction 系列等非 consumer API。",
+     "verifyReason": "index.ts 確實公開 ButtonGroupContext(:79)/CheckboxGroupContext(:118)/floatingLayerClass(:231)/getMenuListMinHeight(:249)/PeoplePicker helpers(:329-334)/handleSheetOpenAutoFocus(:420,sheet.tsx:96 標 @internal)/AVATAR_SIZE、ICON_SIZE、RowSizeProvider、ItemInlineAction 系列(:545-568,item-anatomy.tsx:449/:605/:671 標 @internal 且 spec 明禁 app-code 直用)。產生器只擋 /Internal$/ 與 /Meta$/ 名稱(gen-design-system-barrel.mjs:277-285),不解析 declaration-level @internal — 收窄 npm public surface 屬公開 API contract 決策。"
+    },
+    {
+     "id": "d44i2",
+     "dim": 44,
+     "fileLine": "packages/design-system/src/components/Sheet/sheet.tsx:96; packages/design-system/src/index.ts:420",
+     "問題": "`handleSheetOpenAutoFocus` 明標 `@internal`、目前只供 DS AppShell 使用，卻從 root front-door 匯出；註解又指示 consumer import，三方 intent 不一致。",
+     "建議": "若為 internal helper，從 root 排除並保留內部路徑；若是受支援的 consumer API，移除 `@internal` 並補入 Sheet spec。",
+     "verifyReason": "sheet.tsx:96-98 標 `@internal` 且註解指示「需自訂前置行為時 import 接力呼叫」,index.ts:420 卻由 root front-door 匯出;grep 全 repo 唯一 consumer = DS 內部 app-shell.tsx:21,349,三方 intent 不一致屬實。歸類(留 root 撤 @internal vs 排除 root)動公開 API contract → ASK。"
+    },
+    {
+     "id": "d44i3",
+     "dim": 44,
+     "fileLine": "packages/design-system/src/components/Button/button.tsx:225; packages/design-system/src/components/Checkbox/checkbox-group.tsx:5; packages/design-system/src/index.ts:79",
+     "問題": "`ButtonGroupContext` 與 `CheckboxGroupContext` 都是 wrapper 與 child 間的 implementation context，只有 DS 內部 consumer，卻被 root front-door 公開；Checkbox context 亦在 index.ts:118 洩漏。",
+     "建議": "為兩個 Context 加 declaration-level `@internal`，從 root barrel 排除，內部元件維持 direct/subpath import。",
+     "verifyReason": "button.tsx:225-231 註解明示 ButtonGroupContext 為 wrapper→child 注入 fullWidth 的實作 context(唯一 consumer button-group.tsx:47 + button.tsx:411),checkbox-group.tsx:5-14 同為防 fieldCtx 誤吞 label 的實作 context(唯一 consumer checkbox.tsx:164),兩者卻經 index.ts:79 / index.ts:118 root 公開且無 @internal 標記。從 root barrel 移除 = 動公開 API contract → ASK。"
+    },
+    {
+     "id": "d44i4",
+     "dim": 44,
+     "fileLine": "packages/design-system/src/index.ts:544; packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx:449",
+     "問題": "Root front-door 匯出明標 internal 的 `RowSizeProvider`、`ItemInlineActionButton`、`ItemInlineAction` 及對應 props types；inline-action.spec.md:289 明文禁止 app-code 直接 import，現行 package root 可直接繞過限制。",
+     "建議": "從 root 移除這些 value/type exports、保留 pattern subpath；讓 barrel generator 支援 mixed public module 的 symbol-level `@internal` 排除。",
+     "verifyReason": "index.ts:544-572 root 匯出 RowSizeProvider / ItemInlineAction(Button) 及其 props types,但 item-anatomy.tsx:449,605,671 全標 `@internal — app code 禁直接 import`,inline-action.spec.md:289「app-code 不可直接 import L3 primitive」僅靠 hook E.2 攔 repo 內部,npm root export 確可繞過。修法需 barrel generator 支援 symbol-level 排除 + 移除 root 公開面 = 動公開 API contract → ASK。"
+    },
+    {
+     "id": "d44i5",
+     "dim": 44,
+     "fileLine": "packages/design-system/src/index.ts:613; packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.spec.md:4",
+     "問題": "`use-overflow-items` 已被 canonical 分類為 horizontal-overflow 的 internal utility，實際 consumer 也全是 DS 元件，但 root Hooks 區仍公開整個 module。",
+     "建議": "將該 hook module 標為 internal 並從 root hook generation 排除，只經 horizontal-overflow subpath 提供。",
+     "verifyReason": "horizontal-overflow.spec.md:2-4 frontmatter `internal: true` 且 scope 明列 use-overflow-items hooks 為「DS-internal consumer only」,grep 實證 consumer 全為 DS 內部(horizontal-overflow.tsx / tabs.tsx / chip.tsx / file-viewer.tsx),但 index.ts:613 `export * from './hooks/use-overflow-items'` 仍整 module 進 root front-door。從 root hook 區排除 = 動公開 API contract → ASK。"
+    },
+    {
+     "id": "d33i1",
+     "dim": 33,
+     "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:426",
+     "問題": "Root-exported ComboboxProps 暴露 5 個標為 @internal 的 PeoplePicker 量測 hooks；其中 tagAreaPaddingLeftPx 無現行 consumer，建置後 declaration 仍可見，@internal 未形成 API 邊界。",
+     "建議": "分離 public ComboboxProps 與 wrapper-only internal props；root signature 只暴露 public surface，刪除無 consumer 的預留 prop。",
+     "verifyReason": "ComboboxProps 確含 5 個 @internal props(combobox.tsx:432/437/447/463/478)且 root barrel 匯出(index.ts:152);tagAreaPaddingLeftPx 無現行 consumer(combobox.tsx:455 自述 + people-picker.tsx:426 傳 undefined)、tsconfig 無 stripInternal、dist/components/Combobox/combobox.d.ts:128 仍可見。拆 public/internal props 或刪 prop = 動公開 API contract,需 user 拍板。"
+    }
+   ]
+  },
+  {
+   "theme": "T3_spec指路不存在API矛盾",
+   "ssot_anchor": "Command 單元標 internal + 排除 root barrel,但 spec 指示 App 直接用 CommandDialog = spec-internal 矛盾",
+   "question": "Command/CommandDialog:spec 要 App 直接用,但標 internal 且排除 front-door。resolve = 改 public OR 修 spec? 另 SelectMenu spec 指路 Combobox+creatable 但 ComboboxProps 無 creatable/onCreate API。",
+   "items": [
+    {
+     "id": "d33i2",
+     "dim": 33,
+     "fileLine": "packages/design-system/src/components/Command/command.tsx:31",
+     "問題": "Command folder 整體標為 internal 並排除 root barrel，但 CommandDialog 被 spec 指定為 app 的 Cmd+K consumer wrapper；同時 principles/anatomy 宣稱 Command 不可直接放 app，showcase/spec 卻允許 bordered-inline 例外，且 spec 又把 internal SelectMenu 稱為公開入口，抽象邊界互相矛盾。",
+     "建議": "保留低階 Command primitives 為 internal，將 CommandDialog 建立為 public front-door；同步明定 bordered-inline subpath 例外，並把 SelectMenu 改稱 internal composite。",
+     "verifyReason": "四項矛盾全實:Command 全單元 internal 排除 root barrel(command.spec.md:8 isInternal、command.tsx:3-4、index.ts:591)但 spec:23/69 指定 CommandDialog 為 app Cmd+K 入口;principles:62「不直接放在 app code」/anatomy:3 未提 spec:78(2026-06-12 放寬)+ showcase:38/155 的 bordered-inline 例外;spec:118 稱 SelectMenu「公開消費入口」但 select-menu.spec.md:7-8 亦 isInternal。邊界重劃(public front-door / barrel)動公開 API contract 與 canonical 語意,需 user 拍板。"
+    },
+    {
+     "id": "d44i1",
+     "dim": 44,
+     "fileLine": "packages/design-system/src/components/Command/command.spec.md:23; packages/design-system/src/index.ts:591",
+     "問題": "整個 Command 單元標為 internal 並排除 root front-door，spec 卻明確指示 App 直接使用同檔匯出的完整 wrapper `CommandDialog`；public intent 與實際分類相反。",
+     "建議": "將 CommandDialog／CommandPalette 拆成公開單元並由 root 匯出；若只准 internal escape hatch，則撤回 App 直接使用的指引。",
+     "verifyReason": "command.spec.md:23 明示「App 不直接使用 Command;若要 Command Palette 類 UX,用本檔 export 的 CommandDialog」= consumer 直接使用的 public intent,但整單元 frontmatter isInternal(command.spec.md:8)且被排除 root front-door(index.ts:587-591)。拆公開單元或撤回指引皆動公開 API contract / canonical 語意 → ASK。"
+    },
+    {
+     "id": "d7i19",
+     "dim": 7,
+     "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.spec.md:52",
+     "問題": "近親指路要求使用 Combobox + creatable，但公開 Combobox 沒有 creatable／onCreate API，也未轉交至 SelectMenu；直接使用 internal SelectMenu 又被禁止。",
+     "建議": "若要公開 creatable，替 Combobox 完整暴露相關 API；否則改寫指路，明示目前沒有公開 wrapper。",
+     "verifyReason": "select-menu.spec.md:51「可建立新選項 → 用 Combobox + creatable prop」但 ComboboxProps(combobox.tsx:366 起)無 creatable/onCreate(僅 SelectMenu internal 有,select-menu.tsx:79-81),且 :52 明文禁止直接用 SelectMenu → 指路指向不存在的公開 API。解法分岔(公開 creatable API vs 改寫指路)涉公開 API contract 決策 → ASK。"
+    }
+   ]
+  },
+  {
+   "theme": "T4_bounded_numeric_props",
+   "ssot_anchor": "maxLines(1-6)/precision(≤6)/max(≤7)/maxItems 等 canonical 有界但型別 accept any number",
+   "question": "有界數值 prop 是否型別層收窄(union / branded)或加 runtime clamp+warn?(收窄 = 型別破壞性)",
+   "items": [
+    {
+     "id": "d72i1",
+     "dim": 72,
+     "fileLine": "packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx:335,395; packages/design-system/src/components/Menu/menu-item.tsx:112,125; packages/design-system/src/components/SelectionControl/selection-item.tsx:112,116,121-129; packages/design-system/src/components/DataTable/column-types.ts:72; packages/design-system/src/components/DataTable/cell-registry.tsx:122-123",
+     "問題": "四組截行 API 均接受任意 number，但 canonical／實作只支援 1–6；無效值會靜默取消截斷，而 DataTable 還以 runtime interpolation 產生 Tailwind 無法靜態生成的 class。",
+     "建議": "建立共用 LineClamp = 1|2|3|4|5|6，需關閉時另含 'none'，並統一使用靜態 class map；若確需任意正整數，改用 WebkitLineClamp 並做 runtime 驗證。",
+     "verifyReason": "四組 API 均收任意 number:descriptionClamp(item-anatomy.tsx:335)且 runtime interpolation `line-clamp-${n}`(:395);labelMaxLines/descMaxLines(menu-item.tsx:112,125;selection-item.tsx:112,116)>6 在 lineClampClass 靜默回空字串(selection-item.tsx:121-129);maxLines(column-types.ts:72)在 cell-registry.tsx:122-123 以 `line-clamp-[${maxLines}]` interpolation 產 Tailwind 無法靜態掃到的 class。收窄為 union = 公開型別 contract 變更。"
+    },
+    {
+     "id": "d72i7",
+     "dim": 72,
+     "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:192-196,224-245",
+     "問題": "maxItems、itemsBeforeCollapse、itemsAfterCollapse 是互不約束的 number；不合法組合可產生空 ellipsis 與重複項目，例如 5 項搭配 maxItems=4、before=3、after=3。",
+     "建議": "改為單一 collapse config，驗證正整數及 before + after < maxItems，並對超出 items 長度或重疊的組合給出明確開發期警告。",
+     "verifyReason": "maxItems/itemsBeforeCollapse/itemsAfterCollapse 為互不約束 number(breadcrumb.tsx:186-196,僅 Math.max 下限 clamp :226-227),無 before+after<maxItems 驗證;實測邏輯:5 項 + maxItems=4/before=3/after=3 → collapsed=items.slice(3,2)=[](空 ellipsis dropdown)且 index 2 同時落在 before 與 after(:238-245,項目重複)。加驗證/改單一 collapse config = 公開 API 行為決策。"
+    },
+    {
+     "id": "d72i10",
+     "dim": 72,
+     "fileLine": "packages/design-system/src/components/NumberInput/number-input.tsx:15; packages/design-system/src/components/DataTable/column-types.ts:122",
+     "問題": "precision 接受任意 number，但 spec 上限為 6；負數、小數與超限值仍能通過型別並進入 Intl.NumberFormat。",
+     "建議": "建立共用 NumberPrecision = 0|1|2|3|4|5|6，供 NumberInput 與 DataTable 共用，並對 JavaScript／外部資料加 runtime guard。",
+     "verifyReason": "precision?: number(number-input.tsx:15;column-types.ts:122)無範圍約束,spec 明定 >6 禁止(number-input.spec.md:96,:113);值直入 toLocaleString minimumFractionDigits/maximumFractionDigits(number-input.tsx:30-31),負數/小數會 RangeError 或異常格式。收窄為 0-6 union = 公開 API contract 變更。"
+    },
+    {
+     "id": "d72i11",
+     "dim": 72,
+     "fileLine": "packages/design-system/src/components/Rating/rating.tsx:65",
+     "問題": "max 接受任意 number，但 spec 明定最多 7；0、負數、小數及文件明禁的 max=10 都能通過型別。",
+     "建議": "收窄為 1|2|3|4|5|6|7，並做 runtime 整數與範圍驗證；超過 7 的量表導向 Slider。",
+     "verifyReason": "max?: number 無約束(rating.tsx:65),rating.spec.md:195 明文「❌ max 不設超過 7」+ :204「不設超過 7」,0/負數/小數/max=10 均通過型別。收窄為 1-7 union + runtime 驗證 = 公開 API contract 變更。"
+    }
+   ]
+  },
+  {
+   "theme": "T5_空label_accessible_name契約",
+   "ssot_anchor": "props-naming.md accessible-name;各 spec「label 必傳」vs 型別 optional",
+   "question": "空 label → icon aria-hidden → 無 accessible name(Avatar/Breadcrumb/Chip/Carousel slide)。型別強制 required OR 預設 aria-label?",
+   "items": [
+    {
+     "id": "d7i1",
+     "dim": 7,
+     "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:243",
+     "問題": "規格宣稱 alt 必傳，但實作型別允許省略；省略時 fallback icon 為 aria-hidden，外層也沒有 accessible name。",
+     "建議": "型別強制 alt；裝飾用途要求顯式 alt=\"\"，或新增明確的 decorative 模式。",
+     "verifyReason": "spec :243 宣稱「alt 必傳」但 avatar.tsx:105 型別為 `alt?: string`;省略 alt 時走 icon fallback(tsx:184)且 icon `aria-hidden`(tsx:227-228),外層 role/aria-label 僅在 alt 存在時掛(tsx:214-215)→ 無 accessible name 屬實。修法(型別強制 alt 或新增 decorative 模式)動公開 API contract,需 user 拍板。"
+    },
+    {
+     "id": "d7i3",
+     "dim": 7,
+     "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:216",
+     "問題": "規格接受空 label，但 startIcon 會 aria-hidden，且元件沒有預設 aria-label，可能產生無名稱的 breadcrumb link／current page。",
+     "建議": "禁止空 label，或要求沒有可見文字時必傳 aria-label，並以型別或 runtime guard 落實。",
+     "verifyReason": "spec :216「空 label 渲染空節點(元件皆不 guard)」明文接受空 label;startIcon 恆 `aria-hidden`(breadcrumb.tsx:481,512),BreadcrumbLink/Page 無預設 aria-label(僅 nav :147 與 Ellipsis :578 有)→ 空 label + icon 項成無名稱 link/current page 屬實。修法(禁空 label 或強制 aria-label + 型別/runtime guard)= 新 canonical 規則 + API 面改動,需拍板。"
+    },
+    {
+     "id": "d8i9",
+     "dim": 8,
+     "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:245",
+     "問題": "未定義空 label 邊界；`children` 可省略而實作仍渲染空膠囊，可移除版本只剩「移除」按鈕。文件所稱可用 prefix icon 替代文字也和 icon 為 `aria-hidden` 的實作不一致。",
+     "建議": "要求非空可見 label，或提供明確 accessible name API；同步修正圖示可替代標籤的敘述並防止空內容。",
+     "verifyReason": "邊界案例(tag.spec.md:247-249)無空 label 條目;TagProps children optional 且 tag.tsx:204 無條件渲染 text span → 空膠囊成立、配 onRemove 只剩移除鈕(:205);spec:276「必有文字 label 或 prefix icon」允許 icon 替代,但 tsx:202 icon 為 aria-hidden → icon-only Tag 無 accessible name,tension 屬實。是否強制非空可見 label 或增 accessible-name API = 公開 API contract / a11y canonical 語意決策,需 user 拍板。"
+    },
+    {
+     "id": "d72i13",
+     "dim": 72,
+     "fileLine": "packages/design-system/src/components/Tag/tag.tsx:72",
+     "問題": "移除 callback 採 canonical onRemove，但 accessible-name 輸入卻叫 dismissLabel；remove 與 dismiss 語意不一致，名稱也未說清楚它是目標名稱或完整 aria-label。",
+     "建議": "若元件繼續組合 aria-label，改名 removeLabel；若由 consumer 提供完整 accessible name，改為 removeAriaLabel 並與 FileUpload 命名對齊。",
+     "verifyReason": "Tag 移除 callback 名 onRemove(tag.tsx:70)但 accessible-name prop 名 dismissLabel(:72),remove/dismiss 語意混用(tag.spec.md:222 onRemove vs :71/:236「dismiss button」);實作組合 `移除 ${label}`(tag.tsx:112)= 目標名而非完整 aria-label,prop 名本身未表達,且與 FileUpload 的 removeAriaLabel(file-upload.tsx:103)命名不一致。公開 prop 更名 = API contract 決策。"
+    },
+    {
+     "id": "d7i6",
+     "dim": 7,
+     "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:193",
+     "問題": "CarouselItem 只有 role=\"group\" 與 aria-roledescription=\"slide\"，沒有投影片名稱或位置；實作與 stories 也未提供 aria-label。",
+     "建議": "要求或自動產生「第 N 張，共 M 張：名稱」，並允許 consumer 覆寫。",
+     "verifyReason": "spec :193 + carousel.tsx:216-217 CarouselItem 僅 role=\"group\" + aria-roledescription=\"slide\",無「第 N 張,共 M 張」名稱(spec 自承 CarouselItem 不知自己 index),stories 亦未給 item aria-label(grep 僅 arrow/dot 有)屬實。自動產生位置名需 index registration 機制 = 行為/API 設計決策,需拍板。"
+    }
+   ]
+  },
+  {
+   "theme": "T6_prop命名跨元件衝突",
+   "ssot_anchor": "props-naming.md「4 名關閉/移除 callback」onClear 語意 = 清空欄位;direction vs orientation canonical",
+   "question": "onClear(BulkActionBar 清 selection vs canonical 清欄位)/ createLabel(SelectMenu formatter vs 靜態)/ direction(DescriptionList vs 全 DS orientation)命名衝突,是否統一更名?(公開 API rename)",
+   "items": [
+    {
+     "id": "d14i6",
+     "dim": 14,
+     "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.tsx:44",
+     "問題": "公開 prop `onClear` 實際清除 selection，與 DS 將 `onClear` 保留給「清空欄位內容」的 callback 語義衝突。",
+     "建議": "改為 `onClearSelection` 或 `onDeselectAll`，並以 deprecated alias 提供必要的遷移期。",
+     "verifyReason": "bulk-action-bar.tsx:44 公開 prop `onClear` 確為清除 selection,而 DS canonical 把 onClear 語意綁定「欄位清空 value」(button.spec.md:355、inline-action.spec.md:236),同名跨元件不同義成立;惟更名動公開 API contract(bulk-action-bar.spec.md:146 亦記載此名),需 user 拍板。"
+    },
+    {
+     "id": "d14i7",
+     "dim": 14,
+     "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:83; packages/design-system/src/components/Calendar/calendar.tsx:110",
+     "問題": "同名公開 prop `createLabel` 在 SelectMenu 是 `(query) => string` formatter，在 Calendar 卻是靜態 CTA 字串；相同名稱代表不同型態與使用方式。",
+     "建議": "將 SelectMenu callback 改為 `formatCreateLabel` 或 `getCreateLabel`，靜態字串保留 `createLabel`。",
+     "verifyReason": "select-menu.tsx:83 `createLabel?: (query: string) => string`(formatter)vs calendar.tsx:110 `createLabel?: string`(靜態 CTA 文字),同名公開 prop 型態與用法不同屬實;更名屬公開 API contract 變更,需 user 拍板。"
+    },
+    {
+     "id": "d14i8",
+     "dim": 14,
+     "fileLine": "packages/design-system/src/components/DescriptionList/description-list.tsx:33,49; packages/design-system/src/components/Checkbox/checkbox-group.tsx:67; packages/design-system/src/components/Field/field.tsx:133; packages/design-system/src/components/Steps/steps.tsx:175",
+     "問題": "DescriptionList 對相同的 vertical/horizontal 軸使用 `direction`，其他 DS 元件 canonical 均為 `orientation`；`direction` 亦容易與 LTR/RTL 語義混淆。",
+     "建議": "公開 prop 統一為 `orientation`，必要時短期保留 deprecated `direction` alias。",
+     "verifyReason": "DescriptionList 用 `direction`(description-list.tsx:33,49)且 CheckboxGroup:67 / Field:133 / Steps:175 用 `orientation` 屬實;但「其他 DS 元件 canonical 均為 orientation」不實 — ButtonGroup 同一 horizontal/vertical 軸也用 `direction`(button-group.tsx:33),統一方案需一併涵蓋且動公開 API,需 user 拍板。"
+    }
+   ]
+  },
+  {
+   "theme": "T7_DOM_passthrough_forwardRef缺口",
+   "ssot_anchor": "switch.tsx / radio-group.tsx rest-props+ref 轉發 canonical 先例(驗證者註:加轉發屬 additive 非破壞)",
+   "question": "AppShellAside/Carousel arrows/Combobox/DataTable 三 panel 缺 DOM passthrough+forwardRef。是否補齊(additive)?— 驗證者認為可能可降 AUTO",
+   "items": [
+    {
+     "id": "d9i2",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:60",
+     "問題": "AppShellAside 沒有 DOM attributes／rest props 通道，mobile SheetContent 與 desktop aside 都無法接收 id、data-*、ARIA 或事件。",
+     "建議": "加入排除 title 衝突的 HTMLElement attrs，將 rest props 轉交兩個分支的實際 DOM root。",
+     "verifyReason": "app-shell.tsx:60-68 AppShellAsideProps 僅 title/width/children/className,無任何 HTMLElement attrs / rest props 通道;:296 destructure 亦只取此 4 prop,mobile Sheet 與 desktop aside 分支皆收不到 id/data-*/ARIA/事件。補 passthrough = 動公開 API contract,需 user 拍板。"
+    },
+    {
+     "id": "d9i3",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:234",
+     "問題": "CarouselPrevious／CarouselNext 只接受 className 與 aria-label；ref 指向 Button，卻無法傳入其餘 button props，且 className 實際套在定位 wrapper。",
+     "建議": "以 Button props 為基底，拆出 wrapperClassName，將 rest props 送到 Button 並 compose onClick。",
+     "verifyReason": "carousel.tsx:234-238 ArrowProps 僅 className + aria-label;ref 掛在 Button(:263/:297)但無其他 button props 通道;className 實套在絕對定位 wrapper div(:259/:293)非 Button。建議的 Button-props 基底 + wrapperClassName 拆分屬公開 API contract 設計,需拍板。"
+    },
+    {
+     "id": "d9i7",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/Combobox/combobox.tsx:885",
+     "問題": "Combobox 沒有共同 DOM attrs passthrough；公開 ref 只送到 edit trigger，view／readonly／disabled 的顯示 root 不會收到 ref。",
+     "建議": "建立跨 mode 的 rootProps/ref 契約；若無穩定 root，應縮窄 API 並明確記錄例外。",
+     "verifyReason": "combobox.tsx:366-455 ComboboxProps 無共同 DOM attrs 通道(僅 className/aria-label);:885-897 公開 ref 轉 __triggerRef 只掛 edit trigger root(:631/:756),非 edit 走 ReadonlyMultiSelect(:605/:749)完全不收 ref。跨 mode rootProps/ref 契約設計 = 動公開 API contract,ASK。"
+    },
+    {
+     "id": "d9i8",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table-column-visibility-panel.tsx:133",
+     "問題": "DataTableColumnVisibilityPanel 是公開主元件，卻回傳 Fragment，沒有 forwardRef、DOM rest props 或穩定 root，且無 documented no-root 例外。",
+     "建議": "增加可接 ref/rest props 的 panel root；若 Fragment 是必要協議，應在 spec 記錄並提供 containerProps/ref 通道。",
+     "verifyReason": "data-table-column-visibility-panel.tsx:67-76 為 plain function(無 forwardRef),Props(:46-65)無任何 DOM passthrough,:133-134 回傳 Fragment,檔頭 docblock 與 props 皆無 no-root 例外記載。要補 panel root 還是 spec 記載 Fragment 協議 + containerProps 屬 API 設計抉擇,ASK。"
+    },
+    {
+     "id": "d9i9",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table-filter-panel.tsx:315",
+     "問題": "DataTableFilterPanel 已 forwardRef，但公開 API 只有 className，root div 無法接收其他 DOM props。",
+     "建議": "擴充適當的 div attributes，將 ref 與 rest props 一起送到 panel root。",
+     "verifyReason": "data-table-filter-panel.tsx:402 已 forwardRef,但 props(:128-147)DOM 層僅 className,root div(:315-321)只接 ref + className 無 rest 通道。擴充 div attributes = 動公開 API contract,ASK。"
+    },
+    {
+     "id": "d9i10",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table-sort-manager.tsx:110",
+     "問題": "DataTableSortManager 沒有 forwardRef，Props 亦未提供 root DOM props passthrough。",
+     "建議": "依 FilterPanel 的 generic forwardRef cast 模式補上 ref、HTML attributes 與 root spread。",
+     "verifyReason": "data-table-sort-manager.tsx:68 為 plain function 無 forwardRef,props(:38-49)僅 className 無 root DOM passthrough,root div(:110)無 ref 無 rest。補 forwardRef + HTML attributes = 動公開 API contract,ASK。"
+    },
+    {
+     "id": "d9i28",
+     "dim": 9,
+     "fileLine": "packages/design-system/src/components/Sidebar/sidebar.tsx:350",
+     "問題": "Sidebar mobile 分支把 div rest props spread 到非 DOM 的 Sheet Root，且 ref/className 未送到 SheetContent；同一 API 隨 breakpoint 失效。",
+     "建議": "僅將 dialog state 傳給 Sheet Root，將 ref、className 與 DOM props 轉交 SheetContent。",
+     "verifyReason": "sidebar.tsx:350 mobile 分支把 div rest props spread 到 Radix Sheet Root(非 DOM 元件,靜默丟棄),ref 未使用、consumer className 未達 SheetContent(:354 固定 className)— 同一 API 隨 breakpoint 失效屬實。props/className 該落在哪個 mobile root = 跨 breakpoint contract 決策(shadcn 上游同構)。"
+    },
+    {
+     "id": "d22i0",
+     "dim": 22,
+     "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:327",
+     "問題": "AppShellAside 的共用 body 以無 padding 的 ScrollArea 直接渲染任意 children；桌面外殼有 bg-surface/border-l，行動版 SheetContent 又覆寫 p-0，未包裝內容會貼邊，違反父 chrome 負責 breathing 的 SSOT，且 spec 未記載例外。",
+     "建議": "在 shared body 內加入預設 px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] wrapper；full-bleed list/table 再用明確 bodyClassName override，並在 app-shell.spec.md 記錄例外。",
+     "verifyReason": "屬實:shared body `<ScrollArea className=\"flex-1 min-h-0\">` 無預設 padding(app-shell.tsx:327),桌面殼 bg-surface/border-l(:377-378)為 bounded surface(layoutSpace.spec.md:84 Pattern A 應元件自帶 px-loose)、mobile SheetContent p-0(:359),app-shell.spec.md Aside 節(193-219)僅記 scroll ownership 未載 body padding 例外;code 註解(:301)自稱走規則 1B 但 1B 限「純 layout primitive 無邊界」(layoutSpace.spec.md:85)不適用有邊界的 aside。加預設 padding 改公開 composite 視覺 + 需補 spec 例外 canonical → user 拍板。"
+    }
+   ]
+  },
+  {
+   "theme": "T8_controlled_uncontrolled完整性",
+   "ssot_anchor": "React controlled/uncontrolled canonical;各 group 元件 controllable 先例",
+   "question": "AppShell multiple expansion 缺 controlled path;aside uncontrolled 初值固定 false。補 controlled API?",
+   "items": [
+    {
+     "id": "d26i5",
+     "dim": 26,
+     "fileLine": "packages/design-system/src/components/Steps/steps.tsx:177",
+     "問題": "V2：multiple expansion 只提供 defaultExpanded 與 internal state，缺少 controlled expanded/onExpandedChange；spec 無 Uncontrolled-only rationale。",
+     "建議": "補完整 controlled/uncontrolled/callback pair，或在 Steps spec 明確記錄刻意只支援 uncontrolled 的理由。",
+     "verifyReason": "steps.tsx:165-178 只有 defaultExpanded、無 expanded/onExpandedChange,:232-243 expandedSet 純 internal state;steps.spec.md:339-343 僅解釋 defaultExpanded 結構、無 uncontrolled-only rationale(且 :363「API(parent-controlled)」哲學與此軸不一致)。補 controlled pair 屬公開 API contract 擴充,加 API 或明文 rationale 需 user 拍板。"
+    },
+    {
+     "id": "d26i6",
+     "dim": 26,
+     "fileLine": "packages/design-system/src/components/AppShell/app-shell.tsx:54",
+     "問題": "V1：asideOpen/onAsideOpenChange 有 controlled 路徑，但 uncontrolled 初值固定為 false，缺少 defaultAsideOpen；spec 無 fixed-default 例外 rationale。",
+     "建議": "新增 defaultAsideOpen 並用於初始化 internal state，或在 spec 明確說明固定關閉且不提供 default pair 的理由。",
+     "verifyReason": "app-shell.tsx:54-55 有 asideOpen/onAsideOpenChange controlled 路徑,但 :164 internal 初值固定 `useState(false)`、無 defaultAsideOpen;app-shell.spec.md 全文無 fixed-default 例外 rationale(grep 預設/default/asideOpen 均無)。新增 defaultAsideOpen 屬公開 API 擴充,需 user 拍板方向。"
+    }
+   ]
+  },
+  {
+   "theme": "T9_story_spec_canonical措辭",
+   "ssot_anchor": "field-control-group.spec Mode A/B canonical;Button canonical variant 集;story dedup 0-重複原則",
+   "question": "Mode A/B 代號改語意名?Button tertiary+danger 是否合法組合?d24 story 重複矩陣去重(可能 AUTO)?Alert/ItemAvatar placement/mode 語意重疊?",
+   "items": [
+    {
+     "id": "d12i56",
+     "dim": 12,
+     "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.principles.stories.tsx:94",
+     "問題": "原則使用「Mode A／Mode B」分類，字母代號本身沒有產品語意。",
+     "建議": "改成「Field 內的複合控制」與「資料表篩選列」等描述性名稱。",
+     "verifyReason": "story:94/100/112 確用「Mode A/Mode B」字母代號,但該詞為 spec canonical 術語(field-control-group.spec.md:92,103),story 與 spec 一致;正確修法須 spec+story 同步改名(canonical 用語變更),屬 SSOT 措辭決策需 user 拍板。"
+    },
+    {
+     "id": "d68i3",
+     "dim": 68,
+     "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.stories.tsx:30,51,115; packages/design-system/src/components/BulkActionBar/bulk-action-bar.principles.stories.tsx:83,129,160; packages/design-system/src/components/BulkActionBar/bulk-action-bar.anatomy.stories.tsx:46,115,162,216",
+     "問題": "正向範例使用 Button tertiary+danger，但 Button canonical 僅支援 primary、secondary、text 的 danger；目前組合會靜默呈現為非 danger 樣式。",
+     "建議": "先收斂 BulkActionBar 與 Button SSOT，改用已支援的 secondary/text danger；若確需 tertiary danger，須先完成 Button 契約與實作。",
+     "verifyReason": "引用行全數確認 tertiary+danger 用法,button.spec.md L416 明禁(無 compoundVariant 會靜默渲染成一般 tertiary,button.tsx L399-406 有 dev warn);但 bulk-action-bar.spec.md L84/L147/L197/L208 反向 mandate「tertiary danger」= 真 spec-vs-spec SSOT 衝突。收斂需改 Button danger 公開契約或改 BulkActionBar action variant canonical,SSOT-UI/UX substantive → ASK。"
+    },
+    {
+     "id": "d24i10",
+     "dim": 24,
+     "fileLine": "packages/design-system/src/components/Input/input.stories.tsx:19,72; packages/design-system/src/components/Input/input.anatomy.stories.tsx:169,577,663; packages/design-system/src/components/Input/input.principles.stories.tsx:97,166",
+     "問題": "Modes／EndAction 重複模式矩陣、密碼顯示、搜尋清除與 icon 尺寸教學。",
+     "建議": "退役 Modes／EndAction。",
+     "verifyReason": "屬實:Modes ⊂ principles ModeRule(:97)+anatomy Inspector mode 軸;EndAction 密碼顯示/搜尋清除 ≡ principles EndActionRule 同款 showPwd/query demo(principles:163-175)+anatomy StateBehavior(:663),lg icon 20px ⊂ SizeMatrix(:577)。但「四模式」是 field-family 9 控件同款展示慣例(checkbox.stories.tsx:1-3 家族豁免 anchor),退役屬家族級展示層 curation,需 user 拍板不宜單件逕退。"
+    },
+    {
+     "id": "d24i12",
+     "dim": 24,
+     "fileLine": "packages/design-system/src/components/LinkInput/link-input.stories.tsx:24,41,56,93; packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:199,654; packages/design-system/src/components/LinkInput/link-input.principles.stories.tsx:102,136,163",
+     "問題": "Default、Empty、Validation、Modes 重複 display／empty／validation 與模式矩陣。",
+     "建議": "退役四個重複 story，保留具邊界或 composition 的案例。",
+     "verifyReason": "四項重複皆屬實:Default ≡ DisplayStateRule 第一 Rule(principles:107-112)、Empty ≡ 其第二 Rule+EmptyRule(:163)、Validation ≡ ValidationRule 同款 live demo(:136-152)、Modes 的 edit/readonly/disabled ⊂ anatomy ColorMatrix/Inspector(檔頭 :3-5 宣告集中於 ColorMatrix)。但退役 Default 違 category-templates.md「Universal:Default 每元件必有」、Modes 屬 field-family 慣例 — 保留哪些需 user 拍板。"
+    },
+    {
+     "id": "d24i15",
+     "dim": 24,
+     "fileLine": "packages/design-system/src/components/NumberInput/number-input.stories.tsx:23,73,98; packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:166,570,648; packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:111,159",
+     "問題": "Modes、FormatOptions、InDataTable 重複模式、格式與 DataTable 對齊規則。",
+     "建議": "退役三個重複 story。",
+     "verifyReason": "屬實:Modes ⊂ anatomy Overview edit/readonly 格式化說明(:174)+Inspector/ColorMatrix mode 軸;FormatOptions ≡ principles FormatOptionsRule live prefix/suffix/precision(:159 起)+StateBehavior 格式化段(:648);InDataTable ≡ principles AlignmentRule 幾乎同款 DataTable(同商品資料+currency/number meta,principles:114-146)。但 Modes 屬 field-family 慣例且展示層 trait gap 已標 tracked(stories:21),一次退役 3/4 story 的 curation 需 user 拍板。"
+    },
+    {
+     "id": "d17i0",
+     "dim": 17,
+     "fileLine": "packages/design-system/src/components/Alert/alert.tsx:54 | packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx:510 | packages/design-system/src/components/Field/field-context.ts:9",
+     "問題": "Alert.placement=\"inline\" 表示內容內嵌卡片，對立值是頁級橫幅 fixed；ItemAvatar.mode 與 FieldControlLayout 的 inline 則表示第一行／單行對齊，對立值是 block。同一字串承載 surface placement 與 child layout 兩套不同認知。",
+     "建議": "保留 ItemAvatar／Field 的 inline|block layout canonical；將 Alert 改成語境明確的 API，例如 scope=\"embedded\"|\"global\"，並同步 spec 與 stories。",
+     "verifyReason": "三處引用皆屬實:alert.tsx:53-56 placement=inline|fixed 是 surface placement,item-anatomy.tsx:510 ItemAvatar.mode 與 field-context.ts:9 FieldControlLayout 的 inline|block 是 child 對齊佈局 — 同字兩套認知,且 AGENTS.md 命名 3 重 test 第 3 條明列此類衝突。惟改 Alert 公開 prop(如 scope=embedded|global)動公開 API contract + canonical 語意(alert.spec.md:154-157 已 codify inline/fixed 圓角 rationale,且對齊 Carbon InlineNotification idiom),須 user 拍板。"
+    }
+   ]
+  },
+  {
+   "theme": "T10_loading_a11y_normative護欄",
+   "ssot_anchor": "ux-audit loading ownership;typography 10px;elevation/z-index 責任;Tooltip grace canonical;tagVariant/op/mode discriminant",
+   "question": "雜項 normative 護欄:async batch loading ownership / 10px footnote a11y / elevation-vs-border-vs-z 責任分離 / Tooltip 立即消失 vs grace / tagVariant|op|mode 開放 string 該收 union?",
+   "items": [
+    {
+     "id": "d7i4",
+     "dim": 7,
+     "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:187",
+     "問題": "只規範 disabled action，未定義常見非同步批次操作的 loading ownership；觸發項、其他 actions、clear、selection 保留及失敗行為均無契約。",
+     "建議": "明定 consumer 如何呈現 Button loading、停用衝突操作與 clear、保留 selection 至 settle，並定義 aria-busy 及成功／失敗路徑。",
+     "verifyReason": "spec :187 僅規範 disabled action(Button disabled + tooltip),全檔 grep loading/aria-busy/失敗/async 0 hit,非同步批次操作的 loading ownership、selection 保留、成功/失敗路徑均無契約屬實。補齊=新增行為 canonical 契約(UX 語意設計決策),需 user 拍板。"
+    },
+    {
+     "id": "d8i18",
+     "dim": 8,
+     "fileLine": "packages/design-system/src/tokens/typography/typography.spec.md:41",
+     "問題": "規格允許 10px footnote 用於法律／來源資訊，卻沒有最低可讀性、語義標題、文字縮放與 reflow 的無障礙護欄，可能使重要資訊在縮放或窄版下不可讀。",
+     "建議": "新增 A11y 契約：樣式 heading 不等於語義 heading；重要資訊不可只依賴微小 footnote，並驗證 200% zoom／文字縮放時不裁切或遺失。",
+     "verifyReason": "typography.spec.md:41 允許 text-footnote 10px 用於法律/來源文字,全檔 204 行無 A11y section、無 200% zoom/reflow/語義 heading 護欄(僅 :77 註解略觸標題語義、:177 談 14px 可讀性 tradeoff)。新增 a11y 契約 = 對 typography token SSOT 增加新 normative canonical 規範,需 user 拍板。"
+    },
+    {
+     "id": "d8i19",
+     "dim": 8,
+     "fileLine": "packages/design-system/src/tokens/elevation/elevation.spec.md:5",
+     "問題": "規格混列陰影與 overlay 邊框，卻未區分視覺 elevation、周界 border 與 stacking／z-index 的責任；`motion.spec.md:95` 已進一步把 elevation 誤稱為 z-index 視覺層。",
+     "建議": "明定 elevation 僅管理 shadow 深度，另行界定無陰影、border、radius、sideOffset 與 z-index 的 owner，並修正 Motion 的錯誤連結描述。",
+     "verifyReason": "elevation.spec.md:5 自述「定義陰影層級」但 :60-71「浮層共用樣式」混列 border/rounded-lg/sideOffset,全檔與 overlay-surface.spec.md 皆 grep 無 z-index/stacking owner;motion.spec.md:95 確把 elevation 描述為「overlay 視覺層(z-index)」錯誤。責任邊界重劃 + 新立 z-index owner = canonical 語意決策需 user 拍板(motion 連結描述單句修正部分可 AUTO)。"
+    },
+    {
+     "id": "d43i10",
+     "dim": 43,
+     "fileLine": "packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx:142",
+     "問題": "說 Tooltip 在滑鼠離開 trigger 時立刻消失，與 Tooltip canonical 的 Radix grace 區行為不符；指標移往浮層時會暫時維持開啟。",
+     "建議": "改以內容語意區分：簡短且不可互動的說明用 Tooltip，需要在浮層內操作才用 HoverCard。",
+     "verifyReason": "「滑鼠離開 trigger 立刻消失」與 runtime 不符:tooltip.tsx 未設 disableHoverableContent,Radix 預設 hoverable content — 指標移入浮層會維持開啟(M2 必驗 rendered 行為)。但同措辭也在 owner spec hover-card.spec.md:25+:57 分界 canonical,修正必動 canonical 語意(甚至可能改設 disableHoverableContent)→ SSOT-affecting,需 user 拍板。"
+    },
+    {
+     "id": "d72i12",
+     "dim": 72,
+     "fileLine": "packages/design-system/src/components/Select/select.tsx:45",
+     "問題": "SelectOption.tagVariant 是任意 string，實作卻多次硬 cast 後傳給 Tag.color；拼錯或不支援值能通過編譯，名稱也未對齊 Tag 的 color canonical。",
+     "建議": "改為 tagColor?: NonNullable<TagProps['color']>；需要相容期時保留已 deprecated 的 tagVariant alias。",
+     "verifyReason": "SelectOption.tagVariant?: string(select.tsx:45),實作 4 處硬 cast `as 'blue'|'green'|'red'|'yellow'|'neutral'` 後傳 Tag color(:335,:393,:397,:458),拼錯或不支援值通過編譯且名稱(variant)未對齊 Tag 的 color canonical(tag.tsx:63 VariantProps color)。改 tagColor: TagProps['color'] = 公開 prop 更名 + 型別收窄,屬 API contract 決策。"
+    },
+    {
+     "id": "d72i8",
+     "dim": 72,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table-filter-panel.tsx:128-142,224-248,317-319,348-392",
+     "問題": "DataTableFilterPanel 同時接受獨立 mode 與已具 discriminant 的 value.mode／defaultValue.mode；型別允許互相矛盾，rows、寬度、CTA 與新增動作又分別依賴不同 mode，會產生錯誤文案甚至無反應操作。",
+     "建議": "移除重複的 mode prop並統一由 value.mode 推導；或改成 flat／nested discriminated props union，將 value、defaultValue、onChange 鎖在同一分支。",
+     "verifyReason": "DataTableFilterPanelProps 同時收獨立 mode: 'flat'|'nested'(:130)與自帶 discriminant 的 value: FilterTree(:134),型別允許矛盾組合;rows/mutators 依 value.mode(:224-248 flatTree/nestedTree null-guard 靜默 no-op),寬度(:317-319)與 CTA 文案+onClick(:385-390)依 mode prop → mode='nested'+value.mode='flat' 時 CTA 顯「加入篩選器」但 addGroup 無反應。統一 discriminated union = 公開 API contract 重整。"
+    },
+    {
+     "id": "d72i9",
+     "dim": 72,
+     "fileLine": "packages/design-system/src/components/DataTable/filter-tree.ts:53; packages/design-system/src/components/DataTable/filter-operators.ts:37-39",
+     "問題": "FilterCondition.op 與 OperatorSpec.op 都是 string，但 operator registry 是封閉集合；拼錯或過期 operator 可通過編譯，最後被 evaluator 靜默視為不完整條件。",
+     "建議": "以 as const registry 推導 FilterOperator union；持久化資料仍可在 boundary 接收 string，但須驗證後才轉入 typed tree。",
+     "verifyReason": "FilterCondition.op: string(filter-tree.ts:53)與 OperatorSpec.op: string(filter-operators.ts:39)對封閉 OPERATOR_REGISTRY;未知 op 經 getOperatorSpecLoose 回 null(filter-tree.ts:118-126)→ isConditionComplete 視為不完整靜默略過(:106-107),拼錯可通過編譯。以 as const 推導 union 收窄公開 exported 型別 = API contract 變更。"
+    }
+   ]
+  }
+ ]
+}

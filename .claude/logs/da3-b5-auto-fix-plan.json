@@ -1,0 +1,2979 @@
+{
+ "total": 282,
+ "scoped": 266,
+ "sweep": 16,
+ "parallelUnits": [
+  {
+   "unit": 0,
+   "count": 24,
+   "items": [
+    {
+     "id": "d10i24",
+     "dim": 10,
+     "idx": 24,
+     "fileLine": "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx:281,288; packages/design-system/src/components/Accordion/accordion.stories.tsx:153,160,175,182,195; packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:287; packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx:192",
+     "問題": "原生 input/range 只有相鄰文字或 placeholder，未以 label/htmlFor 或 ARIA 命名。",
+     "建議": "文字欄位使用 id+label htmlFor；range inspector 補描述用途的 aria-label。",
+     "verdict": "VERIFIED",
+     "verifyReason": "Accordion 各 cited 行的 <label> 皆無 htmlFor、<input> 無 id/aria-label(只有相鄰視覺文字 + placeholder);overflow-indicator.anatomy:287 與 progress-bar.anatomy:192 的 type=range 只有相鄰 <H3>/<span> 未程式化關聯 → 原生 input 無 accessible name。"
+    },
+    {
+     "id": "d10i31",
+     "dim": 10,
+     "idx": 31,
+     "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx:94,206,320,339,340,341,371,384,385,386,398,406,422; packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx:125,142,162,177,187,210,219,229,243,263,272,286,299,318; packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:67,110",
+     "問題": "ProgressBar stories 的 role=progressbar 沒有 accessible name；可視百分比只提供值，不能取代名稱。",
+     "建議": "以 aria-label 或 aria-labelledby 描述每個進度所代表的工作。",
+     "verdict": "VERIFIED",
+     "verifyReason": "cited 行 ProgressBar 皆無 aria-label(三檔僅有的 aria-label 在 Button/CircularProgress 或 :43 非 cited 行),Radix Progress 只給 role=progressbar + aria-valuenow 不給 name;自家 anatomy A11y 說明 :437 明言「Consumer 需補 aria-label 讓螢幕閱讀器辨認」→ 無名 progressbar 為真。"
+    },
+    {
+     "id": "d12i36",
+     "dim": 12,
+     "idx": 36,
+     "fileLine": "packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx:92",
+     "問題": "人物卡觸發文字仍為「hover 看 Card」，是操作指令與元件名稱。",
+     "建議": "改用人物姓名或「查看 Ada Chen 資料」。",
+     "verdict": "VERIFIED",
+     "verifyReason": "hover-card.anatomy.stories.tsx:92 觸發按鈕文字確為「hover 看 Card」,是操作指令+元件名稱;卡片內容本身已真實(:96 Ada Chen)。改 trigger 為人名即可,非 SSOT。"
+    },
+    {
+     "id": "d12i37",
+     "dim": 12,
+     "idx": 37,
+     "fileLine": "packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx:111",
+     "問題": "Overflow 範例使用「hover 看 Tooltip 樣式」，且未提供實際溢出內容。",
+     "建議": "改成「+3 位協作者」並在浮層列出具名成員。",
+     "verdict": "VERIFIED",
+     "verifyReason": "hover-card.anatomy.stories.tsx:111 觸發文字「hover 看 Tooltip 樣式」+ :114-116 浮層內容為 pattern 描述文字(「深色樣式——常見於 OverflowIndicator…」)而非實際溢出清單,兩點皆為真。非 SSOT 文案修正。"
+    },
+    {
+     "id": "d12i49",
+     "dim": 12,
+     "idx": 49,
+     "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx:71",
+     "問題": "Header 下方僅顯示「文件預覽內容區」，屬空殼 placeholder。",
+     "建議": "補上文件摘要、擁有者與更新時間等內容。",
+     "verdict": "VERIFIED",
+     "verifyReason": "header-canonical.stories.tsx:71 header 下方確僅「文件預覽內容區…」空殼佔位;header 本體已真實(:61 2026 Q1 財務報告.pdf),內容區可補摘要等輕量真值。非 SSOT 文案修正(marginal)。"
+    },
+    {
+     "id": "d12i50",
+     "dim": 12,
+     "idx": 50,
+     "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx:95",
+     "問題": "各分頁正文只是重述「概覽／活動／檔案 分頁內容」。",
+     "建議": "分別呈現專案摘要、活動紀錄與檔案列表。",
+     "verdict": "VERIFIED",
+     "verifyReason": "header-canonical.stories.tsx:95/:98/:101 三個 TabsContent 確僅重述「『概覽』分頁內容…」「『活動』分頁內容…」「『檔案』分頁內容…」,屬 tab 名重述式佔位。補真實摘要/紀錄/清單為非 SSOT。"
+    },
+    {
+     "id": "d12i51",
+     "dim": 12,
+     "idx": 51,
+     "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx:139",
+     "問題": "浮層正文使用「浮層內容區（Dialog/Sheet/Popover body）」等容器術語。",
+     "建議": "改成專案設定或分享權限等具體任務內容。",
+     "verdict": "VERIFIED",
+     "verifyReason": "header-canonical.stories.tsx:139 可見 body 確為「浮層內容區…(Dialog / Sheet / Popover body)」容器術語 placeholder;此檔屬展示層 .stories.tsx,不在 anatomy 藍圖彈性範圍(example-selection.md:54),應換真實內容。"
+    },
+    {
+     "id": "d12i58",
+     "dim": 12,
+     "idx": 58,
+     "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:212",
+     "問題": "展開內容使用「隱藏項目 1…」等編號 placeholder。",
+     "建議": "改用團隊成員姓名、篩選標籤或檔案名稱。",
+     "verdict": "VERIFIED",
+     "verifyReason": "overflow-indicator.anatomy.stories.tsx:212 即時預覽渲染內容確為「隱藏項目 {i + 1}」編號 placeholder;anatomy 彈性僅限藍圖/inspect 面板,「元件渲染範例仍須真實場景」(example-selection.md:54)。"
+    },
+    {
+     "id": "d12i65",
+     "dim": 12,
+     "idx": 65,
+     "fileLine": "packages/design-system/src/components/Accordion/accordion.anatomy.stories.tsx:36",
+     "問題": "Accordion 內容直接顯示 AccordionTrigger、AccordionItem、header、chevron 及「點不開」等結構與測試措辭。",
+     "建議": "改用 FAQ 或訂閱方案情境，例如付款方式問題與完整回答。",
+     "verdict": "VERIFIED",
+     "verifyReason": "屬實:L36-43 live render 內容直書「AccordionTrigger(可點擊 header + chevron)」「下一個 AccordionItem」,L443-452 另有「可用區塊/點不開/正常展開」測試措辭;example-selection.md:54 明定 anatomy「元件渲染範例仍須真實場景」,slot 標示可改用 Button anatomy 式 schematic(button.anatomy.stories.tsx:203-216)。"
+    },
+    {
+     "id": "d14i4",
+     "dim": 14,
+     "idx": 4,
+     "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:39; packages/design-system/src/patterns/header-canonical/header-canonical.stories.tsx:55,77,111",
+     "問題": "全掃 969 個 story exports 後，仍有 4 個 story 缺少中文 `name`；函式型 exports 也未設 `storyName`，Storybook 因而洩漏英文 export 名。",
+     "建議": "為 ProgressBar story 補中文 `name`；將三個函式 story 改為含中文 `name` 的 StoryObj，或明確設定中文 `storyName`。",
+     "verdict": "VERIFIED",
+     "verifyReason": "progress-bar.stories.tsx:39 `export const Default` 無 name 欄(同檔 :54/:116 均有中文 name),header-canonical.stories.tsx:55/77/111 三個函式型 story export 全檔無 name/storyName;違 story-rules.md:42「Story name: field 必中文人話」。"
+    },
+    {
+     "id": "d24i21",
+     "dim": 24,
+     "idx": 21,
+     "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.stories.tsx:39,53; packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx:352; packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx:56",
+     "問題": "Default／BatchTask 重複 value affix 與 CSV 匯入進度情境。",
+     "建議": "退役兩個重複 story。",
+     "verdict": "PARTIAL",
+     "verifyReason": "真:Default(stories:39-46,value=45/inProgress/affix=value/w-360)與 anatomy AffixBehavior 首例(anatomy:370-372)參數完全相同 = 重複。假:BatchTask 未被 principles 重演——principles UsageGuidance 僅 LinkTo 引用該 story(principles:65-66)無 live 複本,退役 BatchTask 反而斷 LinkTo(同 Toast/Separator 斷鏈教訓,ledger A.1b batch 7/8)。僅 Default 部分可 AUTO 清理。"
+    },
+    {
+     "id": "d33i5",
+     "dim": 33,
+     "idx": 5,
+     "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:115",
+     "問題": "M22 全量語意過濾後，仍有 74/86 specs 的 309 段、32 個 story files 的 41 段、24 個 implementation files 的 54 段實質 benchmark claim 缺同段官方來源或合法撤回；共 130 檔、404 段。大量 @benchmark-cited 亦不在合法 escape 清單。",
+     "建議": "逐段補官方 URL／GitHub source line／snapshot；無法驗證者加 @benchmark-unverified，並移除誤導性的 @benchmark-cited marker。",
+     "verdict": "VERIFIED",
+     "verifyReason": "anchor 屬實:accordion.spec.md:115 含 shadcn py-4/Ant paddingSM 12px/MUI minHeight 48/Carbon 等量化 claim,同段無 URL/#L/snapshot/@benchmark-unverified;@benchmark-cited(68 檔使用)確不在 hook 合法 escape 清單(check_benchmark_citation.sh:50,65 僅認 @benchmark-unverified/@benchmark-citation-allow/@benchmark-unverified-blanket)。機械掃描(spec 79 檔 586 行、story 120 檔、impl 70 檔含未 cite benchmark 名句)量級與 codex 語意過濾後 130 檔/404 段一致;補 cite 或加撤回 marker = 誠實措辭 AUTO。"
+    },
+    {
+     "id": "d43i9",
+     "dim": 43,
+     "idx": 9,
+     "fileLine": "packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx:96",
+     "問題": "note 宣稱觸控使用者可點擊人員或連結取得完整資訊，但同一 Rule 的 anchor 沒有 href 或 onClick，範例未提供聲稱的 fallback。",
+     "建議": "把底層 trigger 做成真實可導覽連結或可點擊入口，並明示 HoverCard 只能是額外預覽。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story:96 note 宣稱觸控使用者「點擊人員 / 連結仍能取得完整資訊」,但範例 :100 的 `<a>` 無 href 也無 onClick,宣稱的 fallback 在範例中不存在(範例真實性違反)。補真實可導覽入口屬 story 範例修正,AUTO。"
+    },
+    {
+     "id": "d43i13",
+     "dim": 43,
+     "idx": 13,
+     "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.principles.stories.tsx:46",
+     "問題": "以 ≤100 作為 OverflowIndicator 與 ScrollArea 的分界未受 spec 或 source 支持，也和同段的少量集合描述矛盾；100 項並非合理的 HoverCard 預覽量。",
+     "建議": "移除任意數字，改以少量、已知且適合一次預覽，對比大量、未知或需要連續瀏覽；若確需門檻，先在 owner spec 建立依據。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story :46「項目數可數且少(≤ 100)→ OverflowIndicator」的 100 門檻在 owner spec(overflow-indicator.spec.md 全文 grep 無 100/ScrollArea 依據)無出處,且與同段 :43「項目數量已知且不多」的少量描述不諧。"
+    },
+    {
+     "id": "d43i14",
+     "dim": 43,
+     "idx": 14,
+     "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.principles.stories.tsx:68",
+     "問題": "note 教導 Tabs 水平溢出搭配 OverflowIndicator，但 owner spec 明定應使用 horizontal-overflow 的 OverflowMenuTriggerButton 與 DropdownMenu，兩者沒有直接消費關係。",
+     "建議": "移除 Tabs 作為 OverflowIndicator pattern，保留 Combobox、PeoplePicker 等真實 +N 情境，並將水平溢出指向 horizontal-overflow canonical。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story :67-68 Pattern 3 教「Tabs 等水平容器溢出搭配 OverflowIndicator」,但 owner spec overflow-indicator.spec.md:33 明定 Tabs/水平 chip 列溢出走 horizontal-overflow 的 OverflowMenuTriggerButton(DropdownMenu affordance)**非** OverflowIndicator,:118 再確認兩者目前無直接消費關係、語義不同。"
+    },
+    {
+     "id": "d43i16",
+     "dim": 43,
+     "idx": 16,
+     "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx:279",
+     "問題": "此 note 與範例教 consumer 用裸 ProgressBar 組檔名、取消與位元組進度，直接違反同檔前文及 spec 的檔案上傳 UI 一律使用 FileItem 分界。",
+     "建議": "改成非檔案型工作，例如取消大量資料匯入；檔案情境改展示 FileItem，或明說它是 FileItem 內部實作。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story :277-306 以「檔名(設計規範_v2.pdf/影片素材.mp4)+ 取消按鈕 + bytes」教 consumer 手組裸 ProgressBar 上傳 UI,直接違反 progress-bar.spec.md:139「檔案上傳 UI 一律走 FileItem,不直接消費 ProgressBar」與 :182 禁止事項,及同檔 :109-117 前文的 FileItem canonical。"
+    },
+    {
+     "id": "d6i2",
+     "dim": 6,
+     "idx": 2,
+     "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:125,127; packages/design-system/src/components/HoverCard/hover-card.spec.md:154",
+     "問題": "125 行確認 HoverCard 內容的 tabbable node 被設為 `tabindex=-1`、僅滑鼠可互動，127 行卻又宣稱內容元件負責 focus management，形成 a11y 契約矛盾。",
+     "建議": "明示內容不接受鍵盤 focus；必須鍵盤操作的互動內容改用 Popover，刪除 focus-management 承諾。",
+     "verdict": "VERIFIED",
+     "verifyReason": "overflow-indicator.spec.md:125 明言 HoverCard 內容 tabbable node 被 Radix 強制 tabindex=-1 僅滑鼠可互動,:127 卻承諾「HoverCard 內展開的可互動內容由各自的內容元件負責 focus 管理」,對鍵盤使用者為空承諾、兩句矛盾;hover-card.spec.md:154 佐證鍵盤無法進入卡片內部。刪除 focus-management 承諾 = doc 對齊 code 誠實措辭。"
+    },
+    {
+     "id": "d68i0",
+     "dim": 68,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/Accordion/accordion.principles.stories.tsx:274",
+     "問題": "正向範例只包含一個 AccordionItem，違反單一區段不使用 Accordion 的規範。",
+     "建議": "加入至少兩個獨立的低頻區段；若只有一區，改用 details。",
+     "verdict": "VERIFIED",
+     "verifyReason": "principles L274-296 ✅ 正向 Rule 只渲染 1 個 AccordionItem,而 accordion.spec.md L40+L89 明定「單一 item 不用 Accordion(用 <details>)」。story 修正(補第二區段)不動 canonical,AUTO。"
+    },
+    {
+     "id": "d68i14",
+     "dim": 68,
+     "idx": 14,
+     "fileLine": "packages/design-system/src/components/ProgressBar/progress-bar.principles.stories.tsx:210,219,229,272,286,299",
+     "問題": "多個正向 principles 範例以檔名、圖示和 ProgressBar 手拼檔案上傳 UI，違反檔案上下載情境一律由 FileItem 擁有的規範。",
+     "建議": "改成非檔案型進度情境；需要展示檔案上傳時，以 FileItem 作為 owner。",
+     "verdict": "VERIFIED",
+     "verifyReason": "6 處正向範例皆以 Paperclip icon + 檔名 + ProgressBar 手拼檔案上傳 UI(Q1_財報.xlsx / 簡報_final.pptx / 影片素材.mp4 等);progress-bar.spec.md:139「檔案上傳 UI 一律走 FileItem,不直接消費 ProgressBar」+ :182 禁止事項明列「上傳列表自己拼 ProgressBar + 檔名」。"
+    },
+    {
+     "id": "d7i0",
+     "dim": 7,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:115",
+     "問題": "disabled 邊界誤指向不擁有 Accordion 的 Field Controls SSOT；規格未界定 Root 與 Item disabled 的差異、鍵盤跳過及 ARIA 行為。",
+     "建議": "在 Accordion spec 記錄 Root／Item 的 disabled 傳播、Trigger 聚焦與啟動行為，並移除錯誤的 Field Controls 指路。",
+     "verdict": "VERIFIED",
+     "verifyReason": "accordion.spec.md:115 確有「disabled state 詳 ../Field/field-controls.spec.md」指路,但 Accordion family=composite 非 Field 家族(field-controls.spec.md 僅 :268 引 Accordion 作 M24 precedent,不擁有它);全 spec 僅此一處提 disabled,無 Root/Item 傳播、鍵盤跳過、ARIA 行為記載(A11y 段 :95-102 未涵蓋 disabled)。修法=移錯誤指路+補記 Radix 既有行為文檔,屬 doc 對齊 code。"
+    },
+    {
+     "id": "d7i27",
+     "dim": 7,
+     "idx": 27,
+     "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:267",
+     "問題": "API 未界定空 children；實作仍會繪製固定高度的空 header row，搭配 tabsSlot 時會額外出現整行空白。",
+     "建議": "明寫沒有 title／actions 時不渲染 ChromeHeader；純 tabs 使用規格指定的 standalone Tabs。",
+     "verdict": "VERIFIED",
+     "verifyReason": "spec API 段(:258-267)未界定空 children;chrome-header.tsx:167-183 single-row 恆渲染 h-[--chrome-header-height] 固定高 row,tabsSlot 模式(:105-131)row 1 恆渲染,children 空時 tabs 上方多整行空白。spec 補「無 title/actions 不渲染、純 tabs 用 standalone Tabs」邊界明文 = AUTO。"
+    },
+    {
+     "id": "d8i13",
+     "dim": 8,
+     "idx": 13,
+     "fileLine": "packages/design-system/src/patterns/header-canonical/header-canonical.spec.md:259",
+     "問題": "公開的 ChromeHeader 允許省略 children，而實作仍渲染固定高度及邊框；規格未定義空內容是否應消失或保留占位，也未說明操作 loading 的責任。",
+     "建議": "補上空 Header 的渲染契約，並明載 action 的 loading／disabled 由注入操作的 consumer 擁有；驗證標為 N/A。",
+     "verdict": "VERIFIED",
+     "verifyReason": "ChromeHeaderProps extends React.HTMLAttributes(chrome-header.tsx:46-47)故 children optional,無 children 時仍無條件渲染 h-[--chrome-header-height] + border-b(chrome-header.tsx:173,177);header-canonical.spec.md 全檔 grep 無 empty/loading 契約。補文件化現行行為 + consumer-owned 聲明 = doc 對齊 code。"
+    },
+    {
+     "id": "d9i0",
+     "dim": 9,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/Accordion/accordion.tsx:43",
+     "問題": "AccordionTrigger 繼承 asChild，但固定輸出內容與 Chevron 兩個子節點；Radix Slot 會因多子節點在執行期拋錯。",
+     "建議": "若保留 asChild，讓 primitive 只接收單一可替換 host；否則從型別移除 asChild 並在 spec 記錄固定 anatomy。",
+     "verdict": "VERIFIED",
+     "verifyReason": "accordion.tsx:38-41 props = ComponentPropsWithoutRef<Trigger>(含 asChild),而 :60-65 Trigger 固定渲染 children + ChevronDown 兩個子節點,consumer 傳 asChild 會觸發 Radix Slot React.Children.only runtime 錯。CLAUDE.md 失敗記憶索引已 codify 此 asChild 多子節點 bug class,修型別/anatomy 對齊屬 AUTO。"
+    },
+    {
+     "id": "d9i1",
+     "dim": 9,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/Accordion/accordion.tsx:75",
+     "問題": "AccordionContent 的 asChild 只會替換固定的內層 div，consumer 提供的元素無法成為 Content host。",
+     "建議": "改成真正的單一 consumer host，或移除 asChild 並文件化內容 wrapper。",
+     "verdict": "VERIFIED",
+     "verifyReason": "accordion.tsx:75-84 Content spread props(含繼承的 asChild),但固定內層 <div className='pb-4'> 包住 children(:83)→ asChild 時 Slot 只 clone 該內層 div,consumer 元素無法成為 Content host。型別對齊/文件化屬 AUTO。"
+    }
+   ]
+  },
+  {
+   "unit": 1,
+   "count": 23,
+   "items": [
+    {
+     "id": "d10i21",
+     "dim": 10,
+     "idx": 21,
+     "fileLine": "packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:85,133,152,156,160; packages/design-system/src/components/Slider/slider.principles.stories.tsx:68,79,138,144,197,222,233,237; packages/design-system/src/components/Slider/slider.stories.tsx:36,55,85",
+     "問題": "Slider thumbs 沒有 aria-label 或 aria-labelledby；Radix 不會自動產生名稱。",
+     "建議": "每個 Slider 提供語意名稱；range slider 使用共同 label 並區分各 thumb。",
+     "verdict": "PARTIAL",
+     "verifyReason": "單 thumb 實例為真:cited 行無 aria-label 無 Field,slider.tsx:169-176 單 thumb fallback = undefined → 無名(佔多數,含 Inspector args :64-71 無 aria-label)。但「Radix 不會自動產生名稱」對 2-thumb range 為誤:@radix-ui/react-slider dist/index.mjs:505-509 getLabel 提供 Minimum/Maximum 並於 :433 fallback 接上,cited 的 [20,80]/[30,70] range 實例有 generic name。"
+    },
+    {
+     "id": "d10i23",
+     "dim": 10,
+     "idx": 23,
+     "fileLine": "packages/design-system/src/components/Dialog/dialog.stories.tsx:68; packages/design-system/src/components/Slider/slider.principles.stories.tsx:157,161,167,171; packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:28,29,94,115,119,123,154,158,162,166,170,174; packages/design-system/src/components/Switch/switch.principles.stories.tsx:67,108,112,140,144,148,152",
+     "問題": "Switch 是無文字 role=switch button，但相關 story 沒有 aria-label，旁邊設定名稱也未程式化關聯。",
+     "建議": "傳具體 aria-label，或以 FieldLabel/aria-labelledby 關聯。",
+     "verdict": "VERIFIED",
+     "verifyReason": "switch.anatomy / switch.principles 兩檔 aria-label 計數 = 0,cited 行皆裸 <Switch>,旁邊 span 文字(「Rest ON」「藍牙」等)未以 htmlFor/aria-labelledby 關聯;dialog.stories.tsx:68 Switch 在 ItemSuffix 內同樣無名。"
+    },
+    {
+     "id": "d10i26",
+     "dim": 10,
+     "idx": 26,
+     "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:190; packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:65,69,90,91,235; packages/design-system/src/components/Avatar/avatar.stories.tsx:100,103,106,114,120,126; packages/design-system/src/components/Dialog/dialog.stories.tsx:342",
+     "問題": "MenuItem 預設 role=option，但這些 demo 沒有 role=listbox/group 父層，造成 aria-required-parent failure。",
+     "建議": "互動選項改用 SelectMenu/DropdownMenu；純展示使用 presentational role，或置於具名稱的 listbox。",
+     "verdict": "VERIFIED",
+     "verifyReason": "menu-item.tsx:214 MenuItem 預設 role='option';anatomy 檔的 MenuContainer(:189-191)是無 role 的 div(對照 menu-item.stories.tsx:40 已修為 role='listbox' 版本,anatomy 漏同步);avatar 兩檔 cited 行 MenuItem 置於 plain div;dialog.stories.tsx:335 外層是 role='list'(非 option 的合法 parent)→ aria-required-parent 違規為真。"
+    },
+    {
+     "id": "d10i27",
+     "dim": 10,
+     "idx": 27,
+     "fileLine": "packages/design-system/src/components/Menu/menu-item.stories.tsx:39,159,160,161,165,228,229,233",
+     "問題": "MenuContainer 是不可聚焦的 div role=listbox，沒有 roving focus、aria-activedescendant 或方向鍵處理；其 onClick options 無法鍵盤操作。",
+     "建議": "改由 SelectMenu/Command 擔任 keyboard owner，或完整實作 listbox focus 與 ArrowUp/Down、Enter/Space 行為。",
+     "verdict": "VERIFIED",
+     "verifyReason": "menu-item.stories.tsx:40 MenuContainer = div role='listbox' 無 tabIndex/onKeyDown/aria-activedescendant(grep 全檔 0 hit),MenuItem 依 canonical 鍵盤委派給 parent(story-rules.md「MenuItem-as-listbox-child 鍵盤 delegation 例外」)但 demo container 未實作 keyboard owner → cited 行的 onClick 勾選 demo(:158-165、:227-233)鍵盤完全不可操作。"
+    },
+    {
+     "id": "d12i32",
+     "dim": 12,
+     "idx": 32,
+     "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:36",
+     "問題": "觸發按鈕顯示「開啟 Dialog 範例」，暴露元件名稱。",
+     "建議": "依內容改成「建立新專案」。",
+     "verdict": "VERIFIED",
+     "verifyReason": "dialog.anatomy.stories.tsx:36 觸發按鈕確為「開啟 Dialog 範例」暴露元件名;Dialog 內容(:40 建立新專案)已是真實場景,僅 trigger 需對齊,severity marginal 合理。"
+    },
+    {
+     "id": "d12i33",
+     "dim": 12,
+     "idx": 33,
+     "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:294",
+     "問題": "尺寸矩陣使用「示範 Dialog（…px）」並以尺寸說明充當正文。",
+     "建議": "以刪除確認、邀請成員、編輯商品等真實案例呈現尺寸；數值放在外部。",
+     "verdict": "VERIFIED",
+     "verifyReason": "dialog.anatomy.stories.tsx:294 DialogTitle 為「示範 Dialog({w}px)」、:297 body 以「這是 maxWidth = {w}px 的 Dialog…」尺寸說明充當正文,屬實;:278-282 表格已列真實場景對照可取材。"
+    },
+    {
+     "id": "d12i34",
+     "dim": 12,
+     "idx": 34,
+     "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:351",
+     "問題": "Dialog 顯示「預設 Dialog」「一般表單 Dialog」「可以按 ESC」等測試說明。",
+     "建議": "改為具體表單任務，ESC 行為另置於範例註解。",
+     "verdict": "VERIFIED",
+     "verifyReason": "dialog.anatomy.stories.tsx:351「預設 Dialog(試 ESC / 點 overlay)」、:355「一般表單 Dialog」、:358「可以按 ESC、點 overlay、或點右上 X 關閉。」皆在 HEAD 為可見內容,屬測試說明措辭混入產品文案。story-rules.md 禁止清單(佔位符/spec 內部代號)命中,改寫為真實表單任務屬非 SSOT 文案修正。"
+    },
+    {
+     "id": "d12i35",
+     "dim": 12,
+     "idx": 35,
+     "fileLine": "packages/design-system/src/components/Dialog/dialog.anatomy.stories.tsx:376",
+     "問題": "觸發器「Force-decide Dialog（禁 ESC/overlay）」暴露內部模式與互動限制。",
+     "建議": "改成「刪除 42 筆訂單」等真實動作，限制條件移到元件外。",
+     "verdict": "VERIFIED",
+     "verifyReason": "dialog.anatomy.stories.tsx:376 觸發按鈕確為「Force-decide Dialog(禁 ESC / overlay)」,暴露內部模式;Dialog 內文本身已是真實場景(:385 刪除 42 筆訂單),僅 trigger 文案需改。非 SSOT 文案修正。"
+    },
+    {
+     "id": "d12i38",
+     "dim": 12,
+     "idx": 38,
+     "fileLine": "packages/design-system/src/components/Menu/menu-item.anatomy.stories.tsx:402",
+     "問題": "選單項旁使用泛稱 Tag「標籤」。",
+     "建議": "改成「已開啟」「每日」等可理解的狀態或頻率。",
+     "verdict": "VERIFIED",
+     "verifyReason": "menu-item.anatomy.stories.tsx:402 Inspector 的 Tag slot 內容確為泛稱「標籤」,而 MenuItem 主內容已真實(:404 電子郵件通知);Tag 改「每日」等真值即可。非 SSOT。"
+    },
+    {
+     "id": "d12i43",
+     "dim": 12,
+     "idx": 43,
+     "fileLine": "packages/design-system/src/components/Switch/switch.stories.tsx:55",
+     "問題": "狀態矩陣以「off+dis／on+dis」等縮寫作為可見標籤。",
+     "建議": "完整寫成「關閉且停用／開啟且停用」。",
+     "verdict": "VERIFIED",
+     "verifyReason": "switch.stories.tsx:55-56 狀態矩陣的可見軸標籤確為「off+dis」「on+dis」縮寫;雖位於元件外 caption(狀態標註放外部本身合規),縮寫 jargon 仍可讀性不佳,改完整措辭屬非 SSOT 微調。"
+    },
+    {
+     "id": "d12i74",
+     "dim": 12,
+     "idx": 74,
+     "fileLine": "packages/design-system/src/components/Dialog/dialog.stories.tsx:45",
+     "問題": "多個觸發按鈕顯示「開啟 Modal」「打開 Dialog」及 item:title+desc+Switch 等結構術語。",
+     "建議": "依內容改為「通知設定／建立客戶／查看成員／刪除專案」等產品動作。",
+     "verdict": "VERIFIED",
+     "verifyReason": "dialog.stories.tsx:199「開啟 Modal」、:526「打開 Dialog」暴露元件名;:45/:299/:328 按鈕文案夾帶「(中 item:title+desc+Switch)」等結構術語。與 part0 idx 13(Popover principles trigger=「Popover」「Dialog」)同款判例。"
+    },
+    {
+     "id": "d12i79",
+     "dim": 12,
+     "idx": 79,
+     "fileLine": "packages/design-system/src/components/Slider/slider.stories.tsx:30",
+     "問題": "多個 Slider story 僅顯示 size、min/max/step、Live/Committed 等實作概念，沒有真實用途。",
+     "建議": "改成音量、預算範圍或圖片品質等場景，使用「即時預覽／已套用」等語言。",
+     "verdict": "VERIFIED",
+     "verifyReason": "slider.stories.tsx 展示層全部 3 story 可見標籤均為實作概念:「size = {size}(h-field-{size})」(:32-33)、「min=0, max=100, step=4」(:52-53)、「Live:/Committed:」(:91-93),無音量/預算等真實用途載體。"
+    },
+    {
+     "id": "d20i3",
+     "dim": 20,
+     "idx": 3,
+     "fileLine": "packages/design-system/src/components/Menu/menu-item.spec.md:208",
+     "問題": "`MenuFooter` 直接硬寫 `border-t`、`py-2`，但未說明為何精確 class 必須留在 spec；同一配方已存在 menu-item.tsx。",
+     "建議": "改述為「頂部分隔並沿用 menu 垂直節奏」，具體 utility 只留在 menu-item.tsx。",
+     "verdict": "VERIFIED",
+     "verifyReason": "menu-item.spec.md:208 硬寫 MenuFooter =「border-t + py-2」,同配方(且更完整含 border-divider)已在 menu-item.tsx:357,spec 重複 utility 配方無留存 rationale,屬實。"
+    },
+    {
+     "id": "d24i26",
+     "dim": 24,
+     "idx": 26,
+     "fileLine": "packages/design-system/src/components/Slider/slider.stories.tsx:21; packages/design-system/src/components/Slider/slider.anatomy.stories.tsx:122",
+     "問題": "SizeAlignment 重複 sm／md／lg 與 root-only 高度規則，且未實際展示跨元件對齊。",
+     "建議": "退役或改成真正的 sibling field alignment。",
+     "verdict": "VERIFIED",
+     "verifyReason": "SizeAlignment(stories:21-42)重複 anatomy SizeMatrix(anatomy:122-140)的 sm/md/lg + root-only 高度規則(教學文字同義),且 demo 只有 dashed 容器無任何 sibling field control,「未實際展示跨元件對齊」為真。改為 Select/PeoplePicker SizeAlignment 同款(並排 Button,select.stories:126-145)或退役皆 AUTO;同檔 Default/Range/Disabled 已 per Dim 24 retire(stories:15-17,68-70)。"
+    },
+    {
+     "id": "d24i28",
+     "dim": 24,
+     "idx": 28,
+     "fileLine": "packages/design-system/src/components/Switch/switch.stories.tsx:40,76; packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:97,132,188",
+     "問題": "States／WithLabel 重複 size、state 與 label integration 矩陣。",
+     "建議": "退役兩個展示 story 並更新 rationale。",
+     "verdict": "VERIFIED",
+     "verifyReason": "States(stories:40-70)= md/lg × on/off/disabled grid,已由 anatomy SizeMatrix(anatomy:97-130)+ StateBehavior 六態 live grid(anatomy:151-176)覆蓋;WithLabel(stories:76-92)= sm/md/lg × label/description/disabled 矩陣,已由 anatomy LabelIntegration(anatomy:188-215)+ SizeMatrix 覆蓋。同 Family Dim 24 retire 先例成立,AUTO(retire + 補 rationale 註解)。"
+    },
+    {
+     "id": "d26i1",
+     "dim": 26,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/Switch/switch.tsx:207; packages/design-system/src/components/Switch/switch.tsx:219",
+     "問題": "V4：view 分支忽略 defaultChecked，Field-readonly 亦無法保留 uncontrolled toggle 後的目前值，mode 切換會回退初始狀態。",
+     "建議": "將 checked/defaultChecked/onCheckedChange 收斂為 wrapper-level controllable state，供所有 mode 分支共用。",
+     "verdict": "VERIFIED",
+     "verifyReason": "switch.tsx:207 view 分支 `checkedProp === true` 忽略 defaultChecked;:219 readonly `checkedProp ?? defaultCheckedProp`,wrapper 無 controllable state(onCheckedChange 直傳 Radix Root switch.tsx:253),uncontrolled toggle 後切 mode 確回退初始值,與 Checkbox 同構缺口。"
+    },
+    {
+     "id": "d43i2",
+     "dim": 43,
+     "idx": 2,
+     "fileLine": "packages/design-system/src/components/Avatar/avatar.principles.stories.tsx:76",
+     "問題": "Rule 要求至少有 name，但 Avatar API 沒有 name prop；實作與 spec 都以 alt 作為替代文字、fallback 與可存取名稱。",
+     "建議": "改成即使有 src 也必須傳有意義的 alt，圖片失敗時以 alt 首字顯示；title 也把 name 改為 alt。",
+     "verdict": "VERIFIED",
+     "verifyReason": "avatar.principles.stories.tsx:75-76 寫「沒 name / 必須至少有 name」,但 avatar.tsx:105 API 只有 `alt`(無 name prop),avatar.spec.md:243「alt 必傳」canonical 也全以 alt 為 fallback 與 accessible name。story 措辭對齊既有 API/spec = doc 對齊 code,AUTO。"
+    },
+    {
+     "id": "d68i1",
+     "dim": 68,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/Avatar/avatar.anatomy.stories.tsx:143,173,234,427,473,600,608",
+     "問題": "多個正向 anatomy、Inspector 與矩陣範例的 icon/entity Avatar 未提供必要 alt，且不屬於明示的 missing-alt 防禦測試。",
+     "建議": "為所有正向 Avatar 補具體 alt，缺少 alt 的 fallback 僅保留於明確標示的無效用法 fixture。",
+     "verdict": "VERIFIED",
+     "verifyReason": "7 處引用行皆為 icon Avatar 無 alt(L143/173/234/427/473/600/608 逐行確認),violate avatar.spec.md L243「alt 必傳」canonical(entity avatar 用品牌/專案名),且均非明示的 missing-alt 防禦 fixture。a11y story 補修,AUTO。"
+    },
+    {
+     "id": "d7i20",
+     "dim": 7,
+     "idx": 20,
+     "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:123",
+     "問題": "value／defaultValue 接受任意 number[]，卻未定義空陣列；value=[] 時 wrapper 仍產生 thumb，但 Radix 沒有對應值，最終沒有可操作的 slider。",
+     "建議": "將值型別收斂為非空 tuple，或加入 runtime guard 並定義空陣列 fallback。",
+     "verdict": "VERIFIED",
+     "verifyReason": "spec API 段(:121 起)value/defaultValue 型別 number[] 且全 spec 無空值/空陣列邊界(grep 0 hit);slider.tsx:75-78 value=[] 時 thumbCount fallback 1 仍渲染 thumb(:142),Radix 無對應值。補 runtime guard + spec 邊界明文 = AUTO(型別收斂為 tuple 才需另議)。"
+    },
+    {
+     "id": "d7i21",
+     "dim": 7,
+     "idx": 21,
+     "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:279",
+     "問題": "規格以繼承 Radix 概括 ARIA，但單 thumb 不會自動產生 accessible name；Slider 在 Field 外且未傳 aria-label／aria-labelledby 時會成為無名稱控件。",
+     "建議": "要求 standalone Slider 提供 accessible name，並記錄 Field label 自動接線與多 thumb 命名規則。",
+     "verdict": "VERIFIED",
+     "verifyReason": "spec A11y 段(:279-281)只寫「繼承 Radix a11y 預設」,全 spec 無 aria-label/accessible name 字樣(grep 0 hit);slider.tsx:164-176 明示單 thumb 未傳 ariaLabel 時 Radix getLabel 不給名(僅 2+ thumb 有 Minimum/Maximum),standalone 單 thumb 即無名稱控件。a11y contract 補明文 = AUTO。"
+    },
+    {
+     "id": "d8i7",
+     "dim": 8,
+     "idx": 7,
+     "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:121",
+     "問題": "`value`／`defaultValue` 接受 `number[]`，但未禁止空陣列；實作收到 `[]` 時仍建立 thumb，Radix 卻無對應值而將其隱藏，留下沒有可操作 thumb 的軌道。",
+     "建議": "把非空陣列列為 API 契約；省略值時使用 `[min]`，對空陣列應正規化、拒絕或提供明確 fallback。",
+     "verdict": "VERIFIED",
+     "verifyReason": "spec API 段(slider.spec.md:121-133)未禁空陣列;slider.tsx:75-78 thumbCount fallback 1 → value=[] 仍渲染 1 個 Thumb(:142),而 Radix(node_modules/@radix-ui/react-slider/dist/index.mjs:443)value undefined → display:none → 軌道無可操作 thumb,claim 逐項屬實。degenerate input 硬化(正規化/契約明文)= bug-fix 類 AUTO。"
+    },
+    {
+     "id": "d8i8",
+     "dim": 8,
+     "idx": 8,
+     "fileLine": "packages/design-system/src/components/Slider/slider.spec.md:163",
+     "問題": "States 未涵蓋 Loading，也未記錄此同步輸入 primitive 為何不適用 Loading。",
+     "建議": "明載 Loading 為 N/A；非同步狀態由父層或 Field 擁有，不在 thumb 上加入 spinner。",
+     "verdict": "VERIFIED",
+     "verifyReason": "States 表(slider.spec.md:166-174)僅 Rest/Hover/Active/Focus/Disabled,全檔與 slider.tsx grep loading 0 hit,無 N/A 明文,違 spec-rules「不適用則明文」。補 Loading N/A 註記 = AUTO。"
+    },
+    {
+     "id": "d90i1",
+     "dim": 90,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/Dialog/dialog.principles.stories.tsx:85",
+     "問題": "Dialog 表單正向範例以 space-y-3 排列兩個 parallel fields；同元件正式表單 story 已使用 layout-space-loose，形成直接 canonical 漂移。",
+     "建議": "改為 flex flex-col gap-[var(--layout-space-loose)]，對齊 Dialog 表單與 layoutSpace Rule 3。",
+     "verdict": "VERIFIED",
+     "verifyReason": "屬實:正向範例以 space-y-3 排兩個 parallel Input(dialog.principles.stories.tsx:85-88),layoutSpace 規則 3「跨範疇 + parallel form fields = loose」(layoutSpace.spec.md:70,106),同元件正式表單 stories 用 gap-[var(--layout-space-loose)](dialog.stories.tsx:206,391,463)— 直接 canonical 漂移,story 修正 AUTO。"
+    }
+   ]
+  },
+  {
+   "unit": 2,
+   "count": 20,
+   "items": [
+    {
+     "id": "d10i4",
+     "dim": 10,
+     "idx": 4,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:2293",
+     "問題": "欄寬調整 separator 只有 pointer/touch handler，不能聚焦、沒有鍵盤操作與 aria-valuenow/min/max。",
+     "建議": "實作可聚焦 adjustable separator，以方向鍵調整並公開目前值與範圍。",
+     "verdict": "VERIFIED",
+     "verifyReason": "data-table.tsx:2292-2313 resize span 僅有 onPointerDownCapture/onTouchStart,無 tabIndex、無 onKeyDown、無 aria-valuenow/min/max,鍵盤無法調整欄寬(more-menu 的自動調寬 :2245-2265 非任意值替代)。"
+    },
+    {
+     "id": "d10i5",
+     "dim": 10,
+     "idx": 5,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:657",
+     "問題": "欄位 DnD listeners 掛在整個 header，未設定 activator node；巢狀排序或選單按鈕的 Enter/Space 會冒泡並啟動拖曳。",
+     "建議": "使用獨立且有名稱的 reorder handle，或設定 activator ref 並排除互動 descendants。",
+     "verdict": "VERIFIED",
+     "verifyReason": "data-table.tsx:657 把 draggable.listeners 全 spread 到整個 header cell 且 column drag 無 setActivatorNodeRef(僅 row drag 有,:550),而 :2903-2905 sensors 含 KeyboardSensor → 巢狀按鈕(如 :2246 more-menu)Enter/Space 冒泡即被 dnd-kit 攔截 preventDefault 啟動拖曳。"
+    },
+    {
+     "id": "d10i6",
+     "dim": 10,
+     "idx": 6,
+     "fileLine": "packages/design-system/src/components/DataTable/cell-registry.tsx:151",
+     "問題": "String、Number、Date、Time、Select、Combobox、People、URL 等 edit controls 沒有欄名或列脈絡的 accessible name。",
+     "建議": "由 cell API 傳入穩定的欄標題與列脈絡，透過 aria-label 或 aria-labelledby 命名每個 editor。",
+     "verdict": "VERIFIED",
+     "verifyReason": "cell-registry.tsx:150-182(String Textarea/Input)、:214-230(NumberInput)等 edit 控件全無 aria-label/labelledby;全檔僅 :435('切換')與 :466('編輯連結')兩處泛用 label,均無欄名/列脈絡。"
+    },
+    {
+     "id": "d10i7",
+     "dim": 10,
+     "idx": 7,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table-column-visibility-panel.tsx:155; packages/design-system/src/components/DataTable/data-table-sort-manager.tsx:200",
+     "問題": "欄位搜尋 Input 只有 placeholder；排序列的欄位與方向 Select 也都沒有名稱，控制項無法辨識。",
+     "建議": "搜尋欄補 FieldLabel/aria-label；每列 Select 分別以排序欄位與排序方向命名。",
+     "verdict": "VERIFIED",
+     "verifyReason": "visibility-panel:154-161 Input 僅 placeholder='搜尋欄位…' 無 aria-label;sort-manager:200/:205 兩個 Select 無 aria-label 也不在 Field 內,而 select.tsx:757-764 trigger 為 div role=combobox(name 僅能 author 提供)→ 無 accessible name。"
+    },
+    {
+     "id": "d10i8",
+     "dim": 10,
+     "idx": 8,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:2500",
+     "問題": "pinned left/center/right panels 把單一 logical row 拆成多個相同 aria-rowindex 的 role=row，header 也被分割，AT 取得多個殘缺列。",
+     "建議": "維持單一 semantic row/header tree，將視覺鏡像設為 presentational 或隱藏。",
+     "verdict": "VERIFIED",
+     "verifyReason": "共用 rowEl 在 :2500-2504 設 role=row + aria-rowindex,由 left/center/right 三 region(:2687/:2716/:2729)各自 render 同一 logical row → 同 rowindex 出現多個殘缺 row;header 亦被 renderHeaderRow(:2374-2383)per-region 拆成多個 role=row。"
+    },
+    {
+     "id": "d10i9",
+     "dim": 10,
+     "idx": 9,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.tsx:2700",
+     "問題": "真正承擔水平與垂直捲動的 center body 不可聚焦；plain table 可完全沒有可聚焦 descendant，axe serious 可重現。",
+     "建議": "把 center body 建成具名稱、focus ring 與 tabIndex=0 的 keyboard-scroll region。",
+     "verdict": "VERIFIED",
+     "verifyReason": "center body(:2690-2710)overflow-x/y-auto 但無 tabIndex;outer table tabIndex 僅在 enabled||spreadsheetMode(:2626)→ plain 唯讀 table 的可捲動區無可聚焦元素(scrollable-region-focusable)。"
+    },
+    {
+     "id": "d12i27",
+     "dim": 12,
+     "idx": 27,
+     "fileLine": "packages/design-system/src/components/Button/button.stories.tsx:79",
+     "問題": "按鈕以「主要動作／次要動作／第三動作／純文字／連結樣式」重述 variant。",
+     "建議": "改成「送出申請／儲存草稿／取消／查看說明」等同一流程中的真實動作。",
+     "verdict": "VERIFIED",
+     "verifyReason": "button.stories.tsx:79-83 按鈕文字「主要動作/次要動作/第三動作/純文字/連結樣式」為 variant 名復述,命中 audit-prompts.md:389 variant-names-as-visible-labels 禁則;:72-74 註解的 user 指示只要求 Default 展示五 variant,不限定 label 文字,改真實動作不衝突。"
+    },
+    {
+     "id": "d12i28",
+     "dim": 12,
+     "idx": 28,
+     "fileLine": "packages/design-system/src/components/Button/button.stories.tsx:247",
+     "問題": "載入比較使用「匯出 → 匯出中」等箭頭串接文字，命中 visual-symbol 禁則。",
+     "建議": "改用分組標題區分操作前與載入中；按鈕只保留真實文案。",
+     "verdict": "VERIFIED",
+     "verifyReason": "button.stories.tsx:246-248(及 :253、:259)以 caption span「→」串接原始/loading 兩鈕呈現「匯出 → 匯出中」,命中 story-writing example-selection.md:22 明列的「A → B → C」視覺符號表達式禁則;按鈕本體文案為真實動作故 severity marginal 合理。"
+    },
+    {
+     "id": "d12i29",
+     "dim": 12,
+     "idx": 29,
+     "fileLine": "packages/design-system/src/components/Button/button.stories.tsx:328",
+     "問題": "按鈕直接寫「Hover 我／Focus 我」，是測試指令。",
+     "建議": "統一使用「查看帳單」等真實動作，互動狀態另置於範例標題。",
+     "verdict": "VERIFIED",
+     "verifyReason": "button.stories.tsx:328-329 按鈕文字確為「Hover 我」「Focus 我」測試指令;此為 visual-audit pilot story(:318-321)但 play() 以 data-testid 定位,label 改真實動作不影響稽核功能,無 canonical 豁免。"
+    },
+    {
+     "id": "d12i55",
+     "dim": 12,
+     "idx": 55,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:251",
+     "問題": "說明以「對齊 spec.md L28」作結，暴露易漂移的內部行號。",
+     "建議": "在當頁完整寫出 spreadsheetMode 的能力邊界，不依賴行號。",
+     "verdict": "VERIFIED",
+     "verifyReason": "data-table.principles.stories.tsx:251 note 確以「對齊 spec.md L28」作結;且行號已漂移(spreadsheetMode 段實在 data-table.spec.md:26),證實易漂移之虞。"
+    },
+    {
+     "id": "d12i67",
+     "dim": 12,
+     "idx": 67,
+     "fileLine": "packages/design-system/src/components/Button/button.anatomy.stories.tsx:227",
+     "問題": "多個 Button child 直接顯示 primary、secondary 等 variant 名稱。",
+     "建議": "改成「新增任務／儲存變更／取消／刪除任務」；variant 名稱只放在矩陣標題。",
+     "verdict": "VERIFIED",
+     "verifyReason": "button.anatomy.stories.tsx:227,235 確以 `<Button …>{v}</Button>` 讓 variant 名(primary/secondary…)當可見 label,命中 audit-prompts.md:389「Variant names as visible labels」明列禁項;variant 名可留在旁欄,label 改真實動作文案。"
+    },
+    {
+     "id": "d12i70",
+     "dim": 12,
+     "idx": 70,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:71",
+     "問題": "大量資料以「Product item 1／2／3…」生成產品名稱。",
+     "建議": "使用真實商品資料集，或由品類、品牌與型號組合合理名稱。",
+     "verdict": "VERIFIED",
+     "verifyReason": "data-table.stories.tsx:71 generateLargeData 確以 `Product item ${i + 1} — ${category}` 生成可見產品名,命中 rubric「Item 1/2/3」placeholder 類。"
+    },
+    {
+     "id": "d12i71",
+     "dim": 12,
+     "idx": 71,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:1669",
+     "問題": "Roadmap 資料使用「#N」及「子任務 A／B」複製案例。",
+     "建議": "改用真實 issue key 及具體子任務名稱。",
+     "verdict": "VERIFIED",
+     "verifyReason": "data-table.stories.tsx:1669 title 附加 `(#${i + 1})`(另 :1919 同款)、:1674-1675 子列確為「子任務 A/B」抽象代號,命中 rubric abstract 代號類。"
+    },
+    {
+     "id": "d17i1",
+     "dim": 17,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/Button/button.tsx:251 | packages/design-system/src/components/DataTable/filter-operators.ts:23 | packages/design-system/src/components/DataTable/data-table-filter-value-picker.tsx:43",
+     "問題": "Button.variant=\"text\" 是無 chrome 的低權重 action 樣式；DataTable ValueShape=\"text\" 則是派送 Input 的篩選資料／picker 類型，同字不同義。DataTable 端目前為 internal，因此影響範圍較小。",
+     "建議": "保留 Button 的公開 canonical；將 DataTable 內部 ValueShape 改為 text_input，並同步 operator registry、picker switch、spec 與 stories。",
+     "verdict": "VERIFIED",
+     "verifyReason": "button.tsx:251 variant 'text'(低權重樣式)與 filter-operators.ts:21-23 ValueShape 'text'(派送 <Input> 的 picker 型別,data-table-filter-value-picker.tsx:43 消費)同字不同義屬實;ValueShape 未出 root barrel(index.ts 無 export),改名屬 internal 命名一致 refactor,非 SSOT。"
+    },
+    {
+     "id": "d20i1",
+     "dim": 20,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.spec.md:447",
+     "問題": "Cell error 直接硬寫 `14px` 與 `gap-1`；現行實作已消費 `text-body`，重述 token 當前解析值會在 typography token 調整後漂移。",
+     "建議": "改引用 `text-body` typography token，只保留錯誤訊息位於內容下方的設計契約；具體 spacing utility 留在 data-table.tsx。",
+     "verdict": "VERIFIED",
+     "verifyReason": "data-table.spec.md:447 硬寫「error 14px text-error 下方 gap-1」,實作 data-table.tsx:1864 消費 `text-body text-error`(typography token)— spec 重述 token 當前解析值,token 調整即漂移,屬實。"
+    },
+    {
+     "id": "d33i3",
+     "dim": 33,
+     "idx": 3,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:2",
+     "問題": "Story 把 size 定義為 row-density、甚至稱為非 component size，與 data-table.spec.md:69-75 的「Size 不等於 density」直接衝突，並以外部產品術語覆蓋 DS canonical。",
+     "建議": "改稱 DataTable size 的 RowHeightMatrix 表現；先引用內部 spec，外部 benchmark 僅作有來源的輔證。",
+     "verdict": "VERIFIED",
+     "verifyReason": "anatomy story:2-6 rationale 稱 size 為「row-height tier(compact/cozy/comfortable)…row density,非 component size」,與 data-table.spec.md:71「Size 不等於 density。Size 是這張表格的結構決策」canonical 直接衝突(spec size 為 sm/md/lg,無 compact/cozy/comfortable),且以 Linear/Notion/Airtable 外部術語覆蓋 DS 語言。修 story 措辭對齊 spec = AUTO。"
+    },
+    {
+     "id": "d43i5",
+     "dim": 43,
+     "idx": 5,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:192",
+     "問題": "效能不受資料量影響是過度絕對的結論；virtualizer 只降低已掛載 DOM 數，完整 row model、排序、篩選與記憶體成本仍會隨資料量增加。",
+     "建議": "改成大幅降低列渲染成本，並補充大量或遠端資料仍需分頁或伺服器端排序、篩選。",
+     "verdict": "VERIFIED",
+     "verifyReason": "data-table.principles.stories.tsx:192 確寫「效能不受資料量影響」— 過度絕對:TanStack Virtual 只降已掛載 rows,row model / 排序 / 篩選 / 記憶體仍隨資料量增長。措辭收斂為誠實表述,AUTO。"
+    },
+    {
+     "id": "d68i5",
+     "dim": 68,
+     "idx": 5,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:1959",
+     "問題": "金額欄以自訂 cell 格式化，卻未宣告 currency 型別或右對齊 metadata，實際會落入左對齊。",
+     "建議": "使用欄位 meta 的 currency 型別與 prefix，交由 registry 統一格式化及右對齊。",
+     "verdict": "VERIFIED",
+     "verifyReason": "L1959 amount 欄手刻 cell `$${...toLocaleString()}` 且無 meta,而 DS canonical 為 meta:{type:'currency',prefix:'$'}(cell-registry.tsx L186-187/L500,anatomy L197/L277 currency→right 對齊;同檔 L99 即有正確用法),無 meta 落 string 左對齊。改消費 registry canonical,AUTO。"
+    },
+    {
+     "id": "d68i6",
+     "dim": 68,
+     "idx": 6,
+     "fileLine": "packages/design-system/src/components/DataTable/data-table.stories.tsx:302; packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:466; packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:221",
+     "問題": "三個正向範例把抽象的預設空狀態當成 canonical，甚至宣稱 consumer 不需自訂；這與 Empty 規範要求說明缺少何種資料衝突。",
+     "建議": "各範例提供符合業務情境的 emptyState，明確說明尚無商品、訂單或其他具體資料。",
+     "verdict": "PARTIAL",
+     "verifyReason": "真:anatomy L466 與 principles L221 宣稱「Consumer 不需自訂,自動顯示標準空狀態」,與 empty.spec.md L175「❌ 文案太抽象,應描述缺什麼資料」衝突(default = Empty description='沒有資料',data-table.tsx L2423)。假:stories L302 是明示對照基線(L295 comment),下方 L305-312 即示範業務文案 emptyState「尚無商品」,並未把預設當唯一 canonical。"
+    },
+    {
+     "id": "d7i5",
+     "dim": 7,
+     "idx": 5,
+     "fileLine": "packages/design-system/src/components/Button/button.spec.md:276",
+     "問題": "規格無條件保證 iconOnly Button 自動產生 Tooltip，但 asChild 路徑刻意不包 Tooltip。",
+     "建議": "改成僅 iconOnly 且非 asChild 時自動產生；asChild consumer 必須自行管理 child 的 aria-label 與 Tooltip，並同步修正同檔第 437 行。",
+     "verdict": "PARTIAL",
+     "verifyReason": "主引用 :276 已於 bde8973c 修為「iconOnly 為 true 且非 asChild 時」含 asChild 例外(HEAD 不再無條件宣稱);但同檔 :437「icon-only 模式傳入 aria-label 描述用途並自動包 Tooltip」殘留無條件措辭仍與 button.tsx:535 `!asChild` gate 不符 → 部分已修部分仍真。殘項為 doc 對齊 code。"
+    }
+   ]
+  },
+  {
+   "unit": 3,
+   "count": 12,
+   "items": [
+    {
+     "id": "d10i10",
+     "dim": 10,
+     "idx": 10,
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.tsx:774",
+     "問題": "tree root 會處理 public inlineActions 冒泡的 Enter/Space，preventDefault 後改為選取 virtual-focus row，按鈕原生啟動失效。",
+     "建議": "tree keyboard handler 先排除互動 descendant target，再處理導覽與 reorder keys。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tree-view.tsx:862-868 Enter/Space 分支無條件 e.preventDefault() 後 select(),handleKeyDown(:774)綁在 root(:905)且無 interactive descendant 排除;inlineActions(:1024-1057)是 tree 內真按鈕,其 Enter/Space 冒泡後原生啟動被 preventDefault 吃掉。"
+    },
+    {
+     "id": "d12i17",
+     "dim": 12,
+     "idx": 17,
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.anatomy.stories.tsx:287",
+     "問題": "樹節點直接顯示「hover 試試」「selected」等狀態標註。",
+     "建議": "使用乾淨的真實檔名；hover、selected 狀態放在元件外標示。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tree-view.anatomy.stories.tsx:287 label=\"Documents(hover 試試)\"、:290 label=\"beach.jpg(selected)\" 確實把狀態標註混入可見節點名;:284 Desc 已說明何者 selected,標註屬重複。命中 dim 12 rubric(audit-prompts.md:384-388)測試指令/spec 代號禁則。"
+    },
+    {
+     "id": "d12i18",
+     "dim": 12,
+     "idx": 18,
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.anatomy.stories.tsx:311",
+     "問題": "樹狀結構使用「L1（depth 0）」至「L4」等層級代號。",
+     "建議": "改為真實巢狀資料夾，如品牌資產／網站／圖片／封面。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tree-view.anatomy.stories.tsx:311-314 節點 label 為「L1 (depth 0)」到「L4 (depth 3)」抽象層級代號,命中 audit-prompts.md:385 abstract 代號禁則。"
+    },
+    {
+     "id": "d12i19",
+     "dim": 12,
+     "idx": 19,
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.anatomy.stories.tsx:327",
+     "問題": "節點使用「Folder 1／Leaf 1／Folder 2／Leaf 3」等編號 placeholder。",
+     "建議": "改成具體資料夾與檔案名稱。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tree-view.anatomy.stories.tsx:327-330 label 為「Folder(可展開)/Leaf 1(無 children)/Folder 2(可展開)/Leaf 3(無 children)」編號 placeholder,命中 audit-prompts.md:384 Item 1/2/3 類禁則。"
+    },
+    {
+     "id": "d12i47",
+     "dim": 12,
+     "idx": 47,
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx:83",
+     "問題": "元件選擇原則直接顯示「範例省略」。",
+     "建議": "補上 Accordion 與 TreeView 的真實資料結構比較，或移除空案例。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tree-view.principles.stories.tsx:83 確為「(範例省略)TreeView 是多展開,Accordion 是單展開,語意不同」,原則區塊無實例僅留省略聲明,屬未完成 placeholder。補實例或收斂區塊為非 SSOT 修正。"
+    },
+    {
+     "id": "d12i48",
+     "dim": 12,
+     "idx": 48,
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx:178",
+     "問題": "TreeItem 使用「資料夾 A／檔案 a.txt／檔案 b.txt」等抽象名稱。",
+     "建議": "改成「品牌資產／logo.svg／產品照片.zip」等真實專案樹。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tree-view.principles.stories.tsx:178-181 確用「資料夾 A / 檔案 a.txt / 子資料夾 / 檔案 b.txt」抽象代號,對照同檔其他 Rule 已用真實資料(Documents/Resume.pdf :63-72),此處應同步真實化。非 SSOT。"
+    },
+    {
+     "id": "d12i64",
+     "dim": 12,
+     "idx": 64,
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.stories.tsx:141",
+     "問題": "長標籤範例使用「這是一個很長的專案／檔案名稱會被截斷」等測試句。",
+     "建議": "改用真實的長資料夾與檔名。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tree-view.stories.tsx:141-142,152-153 label 確為「這是一個很長的專案/檔案名稱會被截斷/自然換行…」自我描述測試句;展示層應用真實長檔名。"
+    },
+    {
+     "id": "d20i0",
+     "dim": 20,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:8",
+     "問題": "frontmatter 的使用判準混入 `text-body-lg`、`px-4 py-2`、indent 28 等機械值；實際 row padding 已由 `ROW_PADDING_BY_SIZE` 與 context token 管理，這份描述已形成第二 SSOT 並與實作漂移。",
+     "建議": "frontmatter 只保留「觸控／大字級」等使用判準；縮排引用 `--tree-indent-*` 契約，typography、padding class 留在 tree-view.tsx。",
+     "verdict": "PARTIAL",
+     "verifyReason": "frontmatter 確混機械值 text-body/text-body-lg/indent 24/28(tree-view.spec.md:5-8)形成 second-SSOT 風險;但列舉的「px-4 py-2」不在 frontmatter(僅 tree-view.tsx:963 DragOverlay 內部),且值目前與實作一致(INDENT_STEP {24,24,28} tree-view.tsx:112-114、row padding 已註明 --tree-px 公式)—「已與實作漂移」不成立。"
+    },
+    {
+     "id": "d24i31",
+     "dim": 24,
+     "idx": 31,
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.stories.tsx:268; packages/design-system/src/components/TreeView/tree-view.anatomy.stories.tsx:302; packages/design-system/src/components/TreeView/tree-view.principles.stories.tsx:148",
+     "問題": "IndentAlignment 重複 indentStep 公式與 leaf placeholder 對齊教學。",
+     "建議": "退役展示 story；幾何與原則分留 anatomy／principles。",
+     "verdict": "VERIFIED",
+     "verifyReason": "indentStep = chevronSize + gap-2 公式與 leaf chevron placeholder 教學三重重複:showcase IndentAlignment(stories:268-300)/ anatomy IndentMatrix(anatomy:302-338)/ principles IndentRule(principles:148-184)。幾何歸 anatomy、規則歸 principles,retire 展示層版 AUTO(同檔 AllSizes retire 先例 stories:265);僅注意其含一個「icon 無自動佔位」混用反例小段(stories:277-278)可併入 principles。"
+    },
+    {
+     "id": "d7i26",
+     "dim": 7,
+     "idx": 26,
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:185",
+     "問題": "role=\"tree\" 需要 accessible name，但規格僅列出 aria-label，未標示必填或替代路徑；實作 prop optional 且沒有預設名稱。",
+     "建議": "將 aria-label 或 aria-labelledby 定為必備契約，並以型別、開發期警告或安全預設落實。",
+     "verdict": "VERIFIED",
+     "verifyReason": "spec ARIA 表(:182-186)容器 role=tree 僅列 aria-label 未標必填、未列 aria-labelledby 替代路徑;tree-view.tsx:270 'aria-label'?: string optional,root(:875-890)無預設名稱,漏傳即無名稱 tree。a11y contract 補明文/警告 = AUTO。"
+    },
+    {
+     "id": "d8i11",
+     "dim": 8,
+     "idx": 11,
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:44",
+     "問題": "規格建議 FAQ 需要多項同開時使用 TreeView，但 Accordion 本身已支援 single／multiple 且明定 FAQ 為主要用途，造成近親邊界互相矛盾。",
+     "建議": "將平面 FAQ 統一交給 Accordion 的 single／multiple 模式；TreeView 僅用於真正的遞迴階層資料。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tree-view.spec.md:44 把「FAQ 多個可同時展開」歸給 TreeView,但 accordion.spec.md:50-52 明定 type=\"multiple\" 支援多開且 :30 列 FAQ 為主要用途,近親邊界互相矛盾屬實。修正方向由 Accordion owner canonical + TreeView 自身定位(遞迴階層,:47「平面資料不用」)決定 = 對齊既有 canonical。"
+    },
+    {
+     "id": "d8i12",
+     "dim": 8,
+     "idx": 12,
+     "fileLine": "packages/design-system/src/components/TreeView/tree-view.spec.md:53",
+     "問題": "規格推薦不存在的 `SidebarMenuSubButton`；Sidebar 規格與實作均未匯出 SidebarMenuSub 系列，形成無法採用的對標指引。",
+     "建議": "階層導覽改用 TreeView；平面群組使用實際存在的 SidebarGroup 或頁內導覽，移除不存在的 API。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tree-view.spec.md:53 推薦 SidebarMenuSubButton,但 sidebar.spec.md:155 明文「本 design system 完全不 export」且 grep sidebar.tsx 無任何 SidebarMenuSub 系列 export;tree-view.principles.stories.tsx:105 同樣錯誤。修正 = 對齊 sidebar.spec.md:163 三條正確路徑(doc 對齊 code)。"
+    }
+   ]
+  },
+  {
+   "unit": 4,
+   "count": 12,
+   "items": [
+    {
+     "id": "d10i12",
+     "dim": 10,
+     "idx": 12,
+     "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.tsx:308",
+     "問題": "PopoverContent 產生 role=dialog，但沒有 title、aria-label 或 aria-labelledby；內層 listbox 的名稱不能替代外層 dialog 名稱。",
+     "建議": "加入 contextual PopoverTitle 或明確命名 Content。",
+     "verdict": "VERIFIED",
+     "verifyReason": "select-menu.tsx:308 起的 PopoverContent 未傳 aria-label/labelledby 也無 PopoverTitle 註冊;popover.tsx:58 明文 Radix content 為 role=dialog、:96-98 自動接線僅在有 title 或 consumer 傳入時生效 → dialog 無名。"
+    },
+    {
+     "id": "d10i19",
+     "dim": 10,
+     "idx": 19,
+     "fileLine": "packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:403,548,563,591,594,729,777,812,843,870; packages/design-system/src/components/Combobox/combobox.principles.stories.tsx:84,144,152,192,208,226; packages/design-system/src/components/Combobox/combobox.stories.tsx:74,96,105; packages/design-system/src/components/PeoplePicker/people-picker.principles.stories.tsx:109; packages/design-system/src/components/SelectMenu/select-menu.stories.tsx:76,93",
+     "問題": "standalone Combobox triggers 沒有 accessible name，axe aria-input-field-name 可重現。",
+     "建議": "傳 aria-label；矩陣名稱需包含 size、mode 或 state，或改由 FieldLabel 接線。",
+     "verdict": "VERIFIED",
+     "verifyReason": "全部 cited 行的 Combobox 皆未傳 aria-label 且無 Field 包裹,而 combobox.tsx:617-618/:759-762 accname 僅來自 consumer aria-label 或 fieldCtx.labelId → role=combobox trigger 無名。同檔已有正確示範(combobox.stories.tsx:39-55 全帶 aria-label),cited 行漏補。"
+    },
+    {
+     "id": "d10i20",
+     "dim": 10,
+     "idx": 20,
+     "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:30,44,52,124,136,193,313,327,340,355,397,405; packages/design-system/src/components/PeoplePicker/people-picker.principles.stories.tsx:78,139,151,180; packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx:103,123",
+     "問題": "edit-mode PeoplePicker/Combobox trigger 缺少 accessible name。",
+     "建議": "為每個 edit demo 補 aria-label 或使用 Field/FieldLabel。",
+     "verdict": "VERIFIED",
+     "verifyReason": "cited 行 PeoplePicker 皆未傳 aria-label(anatomy demo 0 個、principles 0 個;stories 僅 :71/:151 有、cited :103/:123 沒有),而 people-picker.tsx:123/:249 支援 aria-label passthrough → edit trigger 無 accessible name。"
+    },
+    {
+     "id": "d12i77",
+     "dim": 12,
+     "idx": 77,
+     "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx:281",
+     "問題": "可見說明以 Unicode 方框線拼出元件結構。",
+     "建議": "改成語意化巢狀清單、表格或實際 SelectMenu 預覽。",
+     "verdict": "VERIFIED",
+     "verifyReason": "select-menu.anatomy.stories.tsx:281-300 Inspector「浮層藍圖」<pre> 確以 Unicode 方框線(┌─│└)拼出元件結構圖,命中 rubric visual symbols 類;與 part0 idx 1 同款判例。"
+    },
+    {
+     "id": "d12i78",
+     "dim": 12,
+     "idx": 78,
+     "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.anatomy.stories.tsx:186",
+     "問題": "動態選項及按鈕使用「xxx」「zzz」表示搜尋字串。",
+     "建議": "改用「法務審核」標籤或不存在的審核人姓名等具體資料。",
+     "verdict": "VERIFIED",
+     "verifyReason": "select-menu.anatomy.stories.tsx:186「直接使用「xxx」」、:699「建立 xxx」、:704 按鈕可見文字「點擊後搜尋不存在的字(如 \"zzz\")」確以 xxx/zzz 代稱搜尋字串,命中 rubric foo/bar placeholder 類。"
+    },
+    {
+     "id": "d19i0",
+     "dim": 19,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:505",
+     "問題": "`PeoplePicker/` 名稱只涵蓋人員選擇，但此處將可獨立使用的 `PersonDisplay`、`MultiPersonDisplay`、`PersonAvatarTag` 連同 root barrel 公開；`Field/field-controls.spec.md:327` 更將 `PersonDisplay` 定位為唯一的 cross-component view primitive，可脫離 picker 用於 DataTable cell／detail panel。實際 scope 已超出 folder 名，且未見 compound-home 例外 rationale，與 `components/README.md:27`「可獨立使用則獨立 folder」牴觸。",
+     "建議": "將 `person-display.tsx` 與專屬 helper 拆至 `PersonDisplay/`，補獨立 spec、stories 與 barrel，再由 `PeoplePicker` 消費；若維持共居，則改用能涵蓋 picker＋display 的家族 home 名，並在 charter 明載 compound rationale。",
+     "verdict": "PARTIAL",
+     "verifyReason": "公開匯出與 cross-component 定位屬實(people-picker.tsx:503-512 export PersonDisplay/MultiPersonDisplay/PersonAvatarTag、root barrel index.ts:328-332、field-controls.spec.md:327「唯一現存 cross-component view primitive」);但「與 components/README.md:27 牴觸」不成立 — 同檔 compound 判準「同家族共享 context/命名/規則 → compound folder」(README.md:26-30)+ Checkbox/boolean-display.tsx 同型先例(README.md:22)+ field-controls.spec.md:327 本身已 codify 此共居現狀,真缺口僅剩 README compound 清單未載 PeoplePicker rationale(補文件 = AUTO;拆 folder 主張不採)。"
+    },
+    {
+     "id": "d24i6",
+     "dim": 24,
+     "idx": 6,
+     "fileLine": "packages/design-system/src/components/Combobox/combobox.stories.tsx:85; packages/design-system/src/components/Combobox/combobox.anatomy.stories.tsx:201,756; packages/design-system/src/components/Combobox/combobox.principles.stories.tsx:133",
+     "問題": "WrapModes 重複 edit／readonly × single／wrap 的既有矩陣與規則。",
+     "建議": "退役 WrapModes。",
+     "verdict": "VERIFIED",
+     "verifyReason": "屬實:單行/wrap × edit/readonly 已被 anatomy Overview(edit 單行 :208 + edit wrap :245-265 + readonly/disabled :269-288)、Inspector mode×wrap 雙軸(anatomy:338-379)、StateBehavior 溢出/換行段(anatomy:756-789)覆蓋,選擇規則 ≡ principles WrapRule(:133-159)。WrapModes 非 trait-required(isInputLike 要求的是 WithError/WithHelpText/WithIcon),退役 = 清 duplicate。"
+    },
+    {
+     "id": "d24i18",
+     "dim": 24,
+     "idx": 18,
+     "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx:90,113; packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:129,303; packages/design-system/src/components/PeoplePicker/people-picker.principles.stories.tsx:128",
+     "問題": "Single／Multi 重複模式矩陣、狀態與 single-vs-multi live demo。",
+     "建議": "退役 Single／Multi。",
+     "verdict": "VERIFIED",
+     "verifyReason": "Single 是 edit/view/readonly/disabled 模式矩陣(stories:70-93)重複 anatomy ModeMatrix(anatomy:129-158);Multi(edit+readonly 多選,stories:96-116)重複 anatomy StateBehavior 多選 live(anatomy:321-333)與 principles SingleVsMultiRule(principles:128-168)。展示層放 generic 矩陣違反三層定位,retire 符合 earn-existence(story-rules.md:46-48)。"
+    },
+    {
+     "id": "d25i0",
+     "dim": 25,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/SelectMenu/select-menu.stories.tsx:115",
+     "問題": "Clearable story 只展示 Select trigger 的 clearable 功能；SelectMenu 本身無此 API，且其 spec 明定 trigger/field state 由 Select、Combobox 等外層元件負責。Select 已有相同 canonical story，因此它未具象化 SelectMenu 原則，移除也不會降低 spec 理解。",
+     "建議": "退役此 story 並移除 principles 頁的對應連結；clearable 教學留在 Select，SelectMenu 展示只保留搜尋、多選、creatable、選項狀態等自身能力。",
+     "verdict": "VERIFIED",
+     "verifyReason": "屬實:Clearable story(select-menu.stories.tsx:104-118)實際 render `<Select clearable>`,SelectMenu 本身無 clearable API(select-menu.tsx 無此 prop),spec 明定 trigger/field state 由外層 Select/Combobox own(select-menu.spec.md:45,53,160),且 Select 已有同 canonical story(select.stories.tsx:148)。退役屬 story earn-existence 清理(story-rules.md「Earn-existence 2 test」),非 SSOT。"
+    },
+    {
+     "id": "d26i3",
+     "dim": 26,
+     "idx": 3,
+     "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:62; packages/design-system/src/components/PeoplePicker/people-picker.spec.md:28",
+     "問題": "controlled-only contract 被型別破壞：PeoplePickerProps 從 React.HTMLAttributes 繼承 defaultValue，consumer 可傳入假 uncontrolled API；runtime 又將其轉送後靜默忽略。",
+     "建議": "從 HTMLAttributes 明確 Omit defaultValue，並新增 type-level regression。",
+     "verdict": "VERIFIED",
+     "verifyReason": "people-picker.tsx:62 僅 `Omit<React.HTMLAttributes, 'onChange'>`,HTMLAttributes 含 defaultValue(node_modules/@types/react/index.d.ts:2907)→ 型別可傳、經 ...rest 轉送 trigger div 後靜默無效,違 people-picker.spec.md:28 controlled-only 宣告;DS 已有 Omit 'defaultValue' 先例(steps.tsx:166)。"
+    },
+    {
+     "id": "d68i11",
+     "dim": 68,
+     "idx": 11,
+     "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:345",
+     "問題": "emptyText 引導使用者輸入 email 邀請外部成員，但 PeoplePicker 沒有 creatable/invite 行為，故事承諾了不存在的操作路徑。",
+     "建議": "改成中性的無結果文案；邀請外部成員應由獨立且明確的 action 承接。",
+     "verdict": "VERIFIED",
+     "verifyReason": "anatomy:345 emptyText「試試輸入 email 邀請外部」承諾不存在的操作路徑;people-picker.spec.md:254 明文「無 creatable mode(人員不可建立)」且預設空狀態文案為中性「沒有符合的人員」。"
+    },
+    {
+     "id": "d9i19",
+     "dim": 9,
+     "idx": 19,
+     "fileLine": "packages/design-system/src/components/PeoplePicker/people-picker.tsx:213",
+     "問題": "PeoplePicker 的 view 分支未轉交 ref/rest props；裸顯示分支連 className 也遺失，違反 spec 的 root props 契約。",
+     "建議": "讓所有 view root 接收 ref、className 與 DOM-safe props，或採用穩定單一 root。",
+     "verdict": "VERIFIED",
+     "verifyReason": "view 分支屬實:裸顯示 :215-218 連 className 都沒套,D-path div :223-237 有 className 但無 ref/{...rest};readonly/disabled 分支 :244-250 有 ref+rest 對照成立,spec people-picker.spec.md:240-242 明載 root props 契約。同型修已有 canonical 先例(switch.tsx:209 view span 轉發),對齊即可。"
+    }
+   ]
+  },
+  {
+   "unit": 5,
+   "count": 9,
+   "items": [
+    {
+     "id": "d12i6",
+     "dim": 12,
+     "idx": 6,
+     "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:94",
+     "問題": "欄位標籤「未勾選範例」只描述測試狀態，不是業務資料。",
+     "建議": "改成「Email 通知」等具體設定，未勾選狀態由元件本身呈現。",
+     "verdict": "VERIFIED",
+     "verifyReason": "field.stories.tsx:94 FieldLabel=「未勾選範例」僅描述測試狀態,非業務欄位名(同組其他欄位如 :92「同意條款」均為真實欄位)。"
+    },
+    {
+     "id": "d12i7",
+     "dim": 12,
+     "idx": 7,
+     "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:156",
+     "問題": "水平對齊範例使用「短 label」「很長的 label 用來驗證」及 sm/md/lg size 作為欄位內容。",
+     "建議": "改用姓名、緊急聯絡人電話、帳單寄送地址等不同長度的真實欄位；尺寸放在外部標示。",
+     "verdict": "VERIFIED",
+     "verifyReason": "field.stories.tsx:156「短 label」、:168「這是一個會換行的很長的 label 用來驗證多行情境」、:181/185/189「sm size / md size / lg size」全為驗證用途文字當作可見欄位標籤。"
+    },
+    {
+     "id": "d12i8",
+     "dim": 12,
+     "idx": 8,
+     "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:283",
+     "問題": "實際欄位標籤顯示「檢視模式（sm/md/lg）」，將內部尺寸值混入產品文案。",
+     "建議": "欄位統一命名為「檢視模式」，尺寸資訊移至範例標題。",
+     "verdict": "VERIFIED",
+     "verifyReason": "field.stories.tsx:283/292/300 FieldLabel=「檢視模式(sm)/(md)/(lg)」,內部 size 值混入可見產品文案。"
+    },
+    {
+     "id": "d12i9",
+     "dim": 12,
+     "idx": 9,
+     "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:483",
+     "問題": "LabelWidth 範例把 80px、160px、240px、30% 直接當成欄位標籤，並搭配技術性輸入提示。",
+     "建議": "改用不同長度的真實欄位名稱，寬度數值放在元件外說明。",
+     "verdict": "PARTIAL",
+     "verifyReason": "真:483/487/491/495 FieldLabel=「80px/160px(預設常用)/240px(寬 label 欄)/30%(比例)」以寬度值當標籤;假:「技術性輸入提示」屬 placeholder= 屬性值,rubric 明列 DON'T flag(audit-prompts.md:392)。"
+    },
+    {
+     "id": "d12i10",
+     "dim": 12,
+     "idx": 10,
+     "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:534",
+     "問題": "停用 Slider 使用「已鎖定／不可調整的範例」，只描述元件狀態。",
+     "建議": "改成「儲存空間配額／由管理員設定」等合理的鎖定情境。",
+     "verdict": "VERIFIED",
+     "verifyReason": "field.stories.tsx:534 FieldLabel=「已鎖定」+ :536 FieldDescription=「不可調整的範例」,只描述元件 disabled 狀態,非業務情境(同 story 其他欄位「音量/價格區間」均真實)。"
+    },
+    {
+     "id": "d12i11",
+     "dim": 12,
+     "idx": 11,
+     "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:606",
+     "問題": "FieldDescription 向使用者顯示 Slider、NumberInput、h-field-md 等實作細節。",
+     "建議": "改為說明實際設定的效果與範圍；同步及高度規則移到元件外。",
+     "verdict": "VERIFIED",
+     "verifyReason": "field.stories.tsx:605-608 FieldDescription 向使用者顯示「Slider 跟 NumberInput 同步…兩個元件高度透過 `h-field-md` 對齊」,實作細節混入產品文案 slot。"
+    },
+    {
+     "id": "d12i12",
+     "dim": 12,
+     "idx": 12,
+     "fileLine": "packages/design-system/src/components/Field/field.stories.tsx:643",
+     "問題": "產品內說明文字要求讀者輸入特定值以觸發 submit 驗證，是測試指令。",
+     "建議": "改成「專案名稱不得與既有專案重複」等真實輔助文案，測試步驟另置於 Story 說明。",
+     "verdict": "VERIFIED",
+     "verifyReason": "field.stories.tsx:643 FieldDescription=「改成「產品路線圖 Q3」可觸發 submit 業務驗證(名稱重複)」,測試操作指令放在產品文案 slot 內。"
+    },
+    {
+     "id": "d24i7",
+     "dim": 24,
+     "idx": 7,
+     "fileLine": "packages/design-system/src/components/Field/field.principles.stories.tsx:144; packages/design-system/src/components/Field/field.anatomy.stories.tsx:20",
+     "問題": "ResponsibilityRule 與 Overview 使用相同欄位並重複 layout/context 責任界線。",
+     "建議": "退役 ResponsibilityRule，或改成未涵蓋的反例。",
+     "verdict": "VERIFIED",
+     "verifyReason": "屬實且逐字級重複:ResponsibilityRule(principles:153-164)與 anatomy Overview(anatomy:28-39)用完全相同的 電子郵件+FieldDescription/密碼+FieldError 組合,教學內容同為 layout/context 責任界線(anatomy:26 Desc + :45-58 責任邊界表 vs principles:150 note)。退役或改反例 = 清 duplicate,principles 檔仍有其他 core exports。"
+    },
+    {
+     "id": "d9i14",
+     "dim": 9,
+     "idx": 14,
+     "fileLine": "packages/design-system/src/components/Field/field.tsx:519",
+     "問題": "FieldGroup 的 gap 是純 className variant，卻以 ternary 管理，未使用 cva。",
+     "建議": "把 compact／normal／loose 收進 FieldGroup cva variants。",
+     "verdict": "VERIFIED",
+     "verifyReason": "field.tsx:519 gapClass 以巢狀 ternary 管理 compact/normal/loose 純 className variant,未用 cva;違 ui-development.md「cva 適用:className-only 差異 → cva」既有 canonical。機械 refactor 不動 API/視覺,AUTO。"
+    }
+   ]
+  },
+  {
+   "unit": 6,
+   "count": 8,
+   "items": [
+    {
+     "id": "d10i28",
+     "dim": 10,
+     "idx": 28,
+     "fileLine": "packages/design-system/src/components/Popover/popover.anatomy.stories.tsx:168,221,227; packages/design-system/src/components/Popover/popover.principles.stories.tsx:220; packages/design-system/src/components/Sheet/sheet.principles.stories.tsx:182",
+     "問題": "PopoverContent/Sheet surface 產生 role=dialog，但沒有 title、aria-label 或 aria-labelledby。",
+     "建議": "加入可視或 sr-only title 串接 aria-labelledby，或明確提供 aria-label。",
+     "verdict": "VERIFIED",
+     "verifyReason": "Radix Popover Content 渲染 role='dialog'(@radix-ui/react-popover dist/index.mjs:243),DS 已提供 PopoverTitle→aria-labelledby 自動接線與 aria-label passthrough(popover.tsx:57-84),但 cited 各 PopoverContent 皆無 PopoverTitle / aria-label / aria-labelledby → 無名 dialog。"
+    },
+    {
+     "id": "d12i13",
+     "dim": 12,
+     "idx": 13,
+     "fileLine": "packages/design-system/src/components/Popover/popover.principles.stories.tsx:260",
+     "問題": "Popover／Dialog 比較使用「Popover」「Header」「Body 區域」作為實際內容，只重述元件結構。",
+     "建議": "兩者改用同一真實任務，例如進階篩選，再於元件外解釋容器差異。",
+     "verdict": "VERIFIED",
+     "verifyReason": "popover.principles.stories.tsx:260/273 trigger=「Popover」「Dialog」,:263/276 title=「Header」,:264/277 body=「Body 區域」,元件結構名當可見內容,命中 rubric variant-name-as-label 禁則(audit-prompts.md:389)。"
+    },
+    {
+     "id": "d12i40",
+     "dim": 12,
+     "idx": 40,
+     "fileLine": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx:267",
+     "問題": "按鈕文案「分享選項（mobile 常用 bottom）」混入裝置與 direction 規格。",
+     "建議": "按鈕只顯示「分享」，規格關係移至外部說明。",
+     "verdict": "VERIFIED",
+     "verifyReason": "sheet.principles.stories.tsx:267 按鈕文案確為「分享選項(mobile 常用 bottom)」,將裝置與 direction 規格混入按鈕;規格語意已在 Rule note(:263)完整說明,按鈕收斂為「分享」即可。非 SSOT。"
+    },
+    {
+     "id": "d12i41",
+     "dim": 12,
+     "idx": 41,
+     "fileLine": "packages/design-system/src/components/Sheet/sheet.principles.stories.tsx:312",
+     "問題": "建立客戶流程的觸發器仍寫「標準結構範例」。",
+     "建議": "改為「建立新客戶」。",
+     "verdict": "VERIFIED",
+     "verifyReason": "sheet.principles.stories.tsx:312 觸發按鈕確為「標準結構範例」,而 Sheet 內容是真實建立客戶流程(:316「建立新客戶」),trigger 應對齊情境。非 SSOT 文案修正。"
+    },
+    {
+     "id": "d12i75",
+     "dim": 12,
+     "idx": 75,
+     "fileLine": "packages/design-system/src/components/Popover/popover.anatomy.stories.tsx:164",
+     "問題": "PlacementMatrix 的 trigger 與內容直接顯示 side、align 等 prop 值。",
+     "建議": "將 prop 值留在格外標題，Popover 本體統一使用真實操作內容。",
+     "verdict": "VERIFIED",
+     "verifyReason": "popover.anatomy.stories.tsx:166 trigger 可見文字 = `{side}/{align}`、:169 內容 = 「side=…, align=…」prop 值直出,命中 rubric variant-as-visible-label 類;與 part2 idx 46(tooltip.anatomy side 值當按鈕 child)同款判例。"
+    },
+    {
+     "id": "d68i13",
+     "dim": 68,
+     "idx": 13,
+     "fileLine": "packages/design-system/src/components/Popover/popover.principles.stories.tsx:220; packages/design-system/src/components/Popover/popover.anatomy.stories.tsx:168,221,227",
+     "問題": "多個可開啟的正向 PopoverContent 使用 role=dialog，卻沒有 PopoverTitle、aria-label 或其他 accessible name。",
+     "建議": "為所有 headerless 或 naked Popover 範例補穩定 aria-label，或渲染可存取的 PopoverTitle。",
+     "verdict": "VERIFIED",
+     "verifyReason": "4 處 PopoverContent 皆無 PopoverTitle 也無 aria-label(principles:220 篩選面板 / anatomy:168 PlacementMatrix / anatomy:221,227 SizeMatrix);popover.spec.md:175 明定「無 <PopoverTitle> 的 naked popover 需 consumer 自傳 aria-label,否則 role=dialog 無 accessible name」(popover.tsx:96-98 僅在有 title 註冊或 consumer 自傳時接線)。"
+    },
+    {
+     "id": "d7i15",
+     "dim": 7,
+     "idx": 15,
+     "fileLine": "packages/design-system/src/components/Popover/popover.spec.md:153",
+     "問題": "邊界段未交代 empty、loading、error、validation 與 disabled ownership，亦未指回已有 consumer-content 規則的 overlay owner。",
+     "建議": "明寫 shell 本身不擁有這些狀態；Empty、Skeleton、Alert 與 Field validation 由 PopoverBody consumer 負責並連回 owner。",
+     "verdict": "VERIFIED",
+     "verifyReason": "popover.spec.md:153-159 邊界案例僅列極長內容/viewport/嵌套/dark/density,無 empty/loading/error/validation/disabled ownership 明文,違反 spec-rules 邊界 canonical「不適用則明文,不沉默省略」(.claude/references/spec-rules.md:43);owner 規則已存在於 overlay-surface.spec.md:34(loading/error/empty 屬 consumer 內容層)但 Popover 未指回。補 pointer = AUTO。"
+    },
+    {
+     "id": "d7i16",
+     "dim": 7,
+     "idx": 16,
+     "fileLine": "packages/design-system/src/components/Popover/popover.spec.md:167",
+     "問題": "規格稱 autofocus 會落在 body 第一個互動元素，但實作 selector 漏掉 link、tabindex 與 contenteditable，這些內容會改為聚焦容器。",
+     "建議": "擴充 focusable selector，或縮窄文件保證並要求特殊內容覆寫 onOpenAutoFocus。",
+     "verdict": "VERIFIED",
+     "verifyReason": "spec:167 宣稱「焦點落在 body 第一個可互動元素」,但 popover.tsx:45-53 selector 只查 input/textarea/select/button,漏 a[href]/[tabindex]/[contenteditable],此類內容會 fallback 到 content.focus()(popover.tsx:54)。spec-vs-code 對齊修 = AUTO。"
+    }
+   ]
+  },
+  {
+   "unit": 7,
+   "count": 8,
+   "items": [
+    {
+     "id": "d10i29",
+     "dim": 10,
+     "idx": 29,
+     "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.principles.stories.tsx:156,158,159,160; packages/design-system/src/components/SegmentedControl/segmented-control.principles.stories.tsx:84,86,87,88; packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:46,48,49,52,55,210,212,213,214,289,291,292,295,298,315,317,318,319,320,342,344,345,346,347,348,349,350,351,363,365,366,367,368,369,370,371,372; packages/design-system/src/components/Tabs/tabs.principles.stories.tsx:116,120,121,122,189,191,192,201,204,205,206,215,217,218,236,238,239,240,249,251,252,253; packages/design-system/src/components/Tabs/tabs.stories.tsx:53,55,56,57,87,89,90,91,103,105,106,107,108,109,110,111,112,124,126,127,128,129,130,131,132,133,147,149,150,151",
+     "問題": "正向 Tabs demos 的 triggers 沒有同 value 的 TabsContent，aria-controls 因而指向不存在的 id；刻意錯誤示範已排除。",
+     "建議": "每個 trigger 補匹配 panel；純視覺矩陣則不要渲染成可互動 tab。",
+     "verdict": "VERIFIED",
+     "verifyReason": "Radix TabsTrigger 無條件輸出 aria-controls={contentId}(@radix-ui/react-tabs dist/index.mjs:114);breadcrumb.principles 與 segmented-control.principles 兩檔 TabsContent 計數 = 0,Tabs 三檔抽查 cited 行(stories:87-91/:103-112/:147-151、anatomy:46-55)皆為 triggers-only 無對應 panel → aria-controls 指向不存在 id。"
+    },
+    {
+     "id": "d12i25",
+     "dim": 12,
+     "idx": 25,
+     "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.anatomy.stories.tsx:345",
+     "問題": "Breadcrumb 項目顯示「Link」「Hover 我」「Current Page」及 token 狀態說明。",
+     "建議": "改用「專案／網站改版／活動紀錄」等真實路徑，狀態說明移到元件外。",
+     "verdict": "VERIFIED",
+     "verifyReason": "breadcrumb.anatomy.stories.tsx:345「Link(預設 fg-secondary)」、:349「Hover 我(→ primary-hover)」、:353「Current Page(foreground, 不可點)」把 token 狀態說明與測試指令當可見項目,屬實;同檔 :368-378 已示範真實路徑寫法可對照。"
+    },
+    {
+     "id": "d12i66",
+     "dim": 12,
+     "idx": 66,
+     "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.stories.tsx:193",
+     "問題": "麵包屑使用「Long Organization Name」作為截斷測試文字。",
+     "建議": "換成「亞太區企業解決方案事業群」等真實長名稱。",
+     "verdict": "VERIFIED",
+     "verifyReason": "breadcrumb.stories.tsx:193 首項 label 確為「Long Organization Name」自我描述 placeholder(同組 194-195 為半真實名);應換真實組織長名。"
+    },
+    {
+     "id": "d12i80",
+     "dim": 12,
+     "idx": 80,
+     "fileLine": "packages/design-system/src/components/Tabs/tabs.principles.stories.tsx:124",
+     "問題": "TabsContent 直接顯示「訂單頁的 toolbar、filters、table…」作為內容備忘。",
+     "建議": "換成具體訂單摘要或資料列。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tabs.principles.stories.tsx:124 TabsContent 可見內容確為「(訂單頁的 toolbar、filters、table…)」結構備忘文字,非真實訂單內容;與 part2 idx 49/50(header-canonical TabsContent 重述佔位)同款判例。"
+    },
+    {
+     "id": "d24i29",
+     "dim": 24,
+     "idx": 29,
+     "fileLine": "packages/design-system/src/components/Tabs/tabs.stories.tsx:82,144; packages/design-system/src/components/Tabs/tabs.anatomy.stories.tsx:14,307; packages/design-system/src/components/Tabs/tabs.principles.stories.tsx:228",
+     "問題": "AllWithStartIcon／Disabled 重複 trigger slot 原則與狀態矩陣。",
+     "建議": "退役兩個展示 story。",
+     "verdict": "VERIFIED",
+     "verifyReason": "AllWithStartIcon(stories:82-95)的「全 trigger 帶 startIcon」視覺已由 anatomy Overview slot 示範(anatomy:35-46 四 trigger 全帶 icon)與 principles TriggerSlots(principles:228-243 三 trigger 全帶 icon)覆蓋;Disabled(stories:144-155)重複 anatomy StateBehavior 的 disabled 列(anatomy:307-330)。retire AUTO;注意保留「全有全無」rule 註解語意(stories:84-85)搬至 principles。"
+    },
+    {
+     "id": "d7i18",
+     "dim": 7,
+     "idx": 18,
+     "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:233",
+     "問題": "作為 Field-related control，規格未交代 validation；固定選項且恆有一值雖可判定部分驗證不適用，但缺少明文邊界。",
+     "建議": "補充 invalid UI 由外層 Field／consumer 負責、元件無 invalid prop，並說明恆有一值時 required validation 不適用。",
+     "verdict": "VERIFIED",
+     "verifyReason": "全 spec 無 validation/invalid 邊界明文(grep 僅 :288 a11y 驗證段,非表單驗證),邊界案例段(:233 起)列 8 項皆無 validation ownership,違反 spec-rules canonical「不適用則明文『本元件無 X 狀態』」(.claude/references/spec-rules.md:43)。補一行明文 = AUTO。"
+    },
+    {
+     "id": "d8i5",
+     "dim": 8,
+     "idx": 5,
+     "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:65",
+     "問題": "此處重述與 Tabs 的多角度比較及 fallback，和 spec-rules 指定由 Tabs 單一擁有完整比較、近親只保留反向連結的規則衝突。",
+     "建議": "移除重複的深度比較，只保留本元件的不用情境及指向 Tabs 比較章節的反向連結。",
+     "verdict": "VERIFIED",
+     "verifyReason": "segmented-control.spec.md:67-73 重述 3 角度比較+Fallback,與 SSOT anchor tabs.spec.md:57-61 幾近逐句重複(且已現 drift:「結構角色」vs「角色」、fallback 措辭不同),違 .claude/references/spec-rules.md:25「被指方寫一行 pointer」+ :36「❌ 兩 spec 都寫完整對照」+ :28 Tabs owns。收斂為 pointer 不動 canonical 內容(留在 tabs.spec.md)= AUTO 清 duplicate。"
+    },
+    {
+     "id": "d8i6",
+     "dim": 8,
+     "idx": 6,
+     "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:272",
+     "問題": "元件可作選擇控件，但 Related 僅因尺寸連到 field-controls；未說明表單值、invalid、blur 驗證是 N/A、consumer-owned 或正式支援。",
+     "建議": "明確選定驗證契約；若不屬於原生表單控件，標註 consumer-owned，否則補 Field 與 form-validation 的標準接線。",
+     "verdict": "VERIFIED",
+     "verifyReason": "segmented-control.spec.md:272 Related 對 field-controls 僅提「size 繼承機制」;全檔 grep invalid/blur/表單值 0 hit,未表態驗證契約是 N/A、consumer-owned 或支援。補明文表態(radio 語意恆有值,invalid/blur 驗證 N/A 或 consumer-owned)= 誠實措辭 AUTO。"
+    }
+   ]
+  },
+  {
+   "unit": 8,
+   "count": 8,
+   "items": [
+    {
+     "id": "d12i14",
+     "dim": 12,
+     "idx": 14,
+     "fileLine": "packages/design-system/src/components/Steps/steps.anatomy.stories.tsx:254",
+     "問題": "步驟標籤使用「第一步／第二步／第三步」，屬抽象編號。",
+     "建議": "改為「填寫資料／確認訂單／完成付款」等真實流程。",
+     "verdict": "VERIFIED",
+     "verifyReason": "steps.anatomy.stories.tsx:254-256 StepLabel=「第一步/第二步/第三步」抽象編號;同檔 :270-276 CHECKOUT_STEPS 證明真實流程寫法已存在可套用。"
+    },
+    {
+     "id": "d12i15",
+     "dim": 12,
+     "idx": 15,
+     "fileLine": "packages/design-system/src/components/Steps/steps.anatomy.stories.tsx:424",
+     "問題": "步驟內容使用「簡短 label」「帶有描述的 label」「另一個 label」等文字長度佔位。",
+     "建議": "使用真實工作流程，並讓其中一個步驟自然帶有較長的業務說明。",
+     "verdict": "VERIFIED",
+     "verifyReason": "steps.anatomy.stories.tsx:424/426/429 StepLabel=「簡短 label/帶有描述的 label/另一個 label」,:427 description 亦為佈局 meta 說明,均為文字長度佔位而非真實流程。"
+    },
+    {
+     "id": "d12i42",
+     "dim": 12,
+     "idx": 42,
+     "fileLine": "packages/design-system/src/components/Steps/steps.principles.stories.tsx:131",
+     "問題": "StepDescription 顯示「此頁為 current + error」，直接使用狀態 jargon。",
+     "建議": "改成「付款資料驗證失敗，請重新確認」等可行動的業務錯誤。",
+     "verdict": "VERIFIED",
+     "verifyReason": "steps.principles.stories.tsx:131 StepDescription 確為「此頁為 current + error」,以內部 state jargon 當可見描述;周邊 StepLabel 已真實(基本資料/確認資料/付款)。改為業務錯誤訊息屬非 SSOT。"
+    },
+    {
+     "id": "d12i62",
+     "dim": 12,
+     "idx": 62,
+     "fileLine": "packages/design-system/src/components/Steps/steps.stories.tsx:75",
+     "問題": "成功畫面的按鈕顯示「重新開始 demo」。",
+     "建議": "依情境改成「再填一份申請」或「返回申請首頁」。",
+     "verdict": "VERIFIED",
+     "verifyReason": "steps.stories.tsx:74-76 成功畫面 Button 文字確為「重新開始 demo」,meta 測試措辭非真實產品文案;可改「再填一份申請」等情境文案。"
+    },
+    {
+     "id": "d14i9",
+     "dim": 14,
+     "idx": 9,
+     "fileLine": "packages/design-system/src/components/Steps/steps.tsx:307-311; packages/design-system/src/components/Steps/index.ts:5",
+     "問題": "私有注入欄位 `__isLast` 被公開的 `StepItemProps` 繼承並由 barrel 匯出，私有命名與公開 API 邊界互相矛盾。",
+     "建議": "讓 injected props 僅存在於 private implementation intersection，或透過 context/index 推導末項，不要出現在 exported props。",
+     "verdict": "VERIFIED",
+     "verifyReason": "steps.tsx:307-309 `StepItemInjectedProps { __isLast?: boolean }` 被 :311-314 公開 `StepItemProps` extends,index.ts:5 `export * from './steps'` barrel 匯出;私有注入欄位(:277 cloneElement 注入)洩入公開型別屬實,收斂為 internal intersection 屬型別衛生 refactor。"
+    },
+    {
+     "id": "d24i27",
+     "dim": 24,
+     "idx": 27,
+     "fileLine": "packages/design-system/src/components/Steps/steps.stories.tsx:153; packages/design-system/src/components/Steps/steps.principles.stories.tsx:145",
+     "問題": "FocusRingCombinations 重複 ring 與 completed／current／error 正交規則。",
+     "建議": "退役並將必要互動併入 canonical principles story。",
+     "verdict": "VERIFIED",
+     "verifyReason": "FocusRingCombinations(stories:153-202)與 principles RingIsFocusMarker(principles:145-176)同教「ring 是 focus marker、與 completed/current/error 正交」規則,前者僅多互動按鈕。規則教學屬 principles 層;同檔 AllStates 已 per Dim 46 retire 且明引「展示層應為典型使用情境,不是 trait grid」(stories:145-148),併入 principles 為 AUTO。"
+    },
+    {
+     "id": "d6i5",
+     "dim": 6,
+     "idx": 5,
+     "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:224-225",
+     "問題": "正文混入 `zero layout impact` 與精確雙層 box-shadow／像素字面值，屬結果措辭及 CSS 實作細節。",
+     "建議": "只保留「focus 外環不改變 bounding box，連接線幾何維持一致」的設計契約；精確 shadow 值移至 tsx、jsDoc 或測試。",
+     "verdict": "VERIFIED",
+     "verifyReason": "HEAD steps.spec.md:224 含「zero layout impact」結果措辭、:225 含精確雙層 box-shadow 字面值「0 0 0 2px var(--surface), 0 0 0 4px <ringColor>」,違 spec-rules.md:20「不描述視覺形狀/實作細節(『zero layout shift』類屬 story 不進 spec)」;保留設計契約、細節移 tsx 屬表達層整理。"
+    },
+    {
+     "id": "d72i4",
+     "dim": 72,
+     "idx": 4,
+     "fileLine": "packages/design-system/src/components/Steps/steps.tsx:311",
+     "問題": "公開 StepItemProps 包含內部注入用的 __isLast，consumer 可直接改變 connector 與末項間距，且內部控制欄位因此成為 root API。",
+     "建議": "從公開 StepItemProps 移除 __isLast，另以 private injected-props intersection 供 Steps 內部 clone/render 使用。",
+     "verdict": "VERIFIED",
+     "verifyReason": "export interface StepItemProps(steps.tsx:311-315)extends StepItemInjectedProps 讓內部注入的 __isLast(:307-309)進入公開型別;consumer 傳 __isLast 可直接改 connector 與末項間距(:371,:389)。Dunder 內部欄位移出公開型別屬機械 refactor(無合法 consumer 依賴),可 AUTO。"
+    }
+   ]
+  },
+  {
+   "unit": 9,
+   "count": 7,
+   "items": [
+    {
+     "id": "d10i1",
+     "dim": 10,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/Checkbox/checkbox-group.tsx:78",
+     "問題": "role=group 未串接 FieldLabel、描述與錯誤狀態，canonical Field 組合產生無名稱群組。",
+     "建議": "比照 RadioGroup 消費 Field context，接入 aria-labelledby、aria-describedby 與 aria-invalid。",
+     "verdict": "VERIFIED",
+     "verifyReason": "checkbox-group.tsx:73-88 role=group 無任何 aria-labelledby/describedby/invalid 接線,全檔不讀 Field context;對照 radio-group.tsx:164-166 確有同款接線可比照。"
+    },
+    {
+     "id": "d10i2",
+     "dim": 10,
+     "idx": 2,
+     "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:216",
+     "問題": "mode=view 只輸出 aria-hidden 圖示，布林值在 accessibility tree 中完全消失。",
+     "建議": "提供可讀的 true/false 靜態文字，或為語意容器建立本地化 accessible name。",
+     "verdict": "VERIFIED",
+     "verifyReason": "checkbox.tsx:214-221 view 分支回傳無 role/name 的 span,內容僅 BooleanValueIcon 而 boolean-value.tsx:38 Icon 帶 aria-hidden → 預設用法下布林值在 a11y tree 消失。"
+    },
+    {
+     "id": "d12i68",
+     "dim": 12,
+     "idx": 68,
+     "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:300",
+     "問題": "實際 Checkbox 標籤使用「Label text」。",
+     "建議": "改成「接收每週專案摘要」等具體設定及說明。",
+     "verdict": "VERIFIED",
+     "verifyReason": "checkbox.anatomy.stories.tsx:300 Inspector 預覽確用 label=\"Label text\" 佔位字串,命中 rubric placeholder 類。與 part2 idx 44(Tag Inspector 泛稱「Label」)同款判例。"
+    },
+    {
+     "id": "d26i0",
+     "dim": 26,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:215; packages/design-system/src/components/Checkbox/checkbox.tsx:232",
+     "問題": "V4：view 分支忽略 defaultChecked；Field-readonly 分支只重讀 checked ?? defaultChecked，切換 mode 時會丟失 uncontrolled Radix 的目前狀態。",
+     "建議": "在 wrapper 層建立共用 controllable checked state，讓 edit、view、readonly 消費同一 resolved 值並 compose onCheckedChange；補 mode-transition regression。",
+     "verdict": "VERIFIED",
+     "verifyReason": "checkbox.tsx:215 view 分支只讀 `checkedProp === true` 忽略 defaultChecked;:232 readonly 讀 `checkedProp ?? defaultCheckedProp` 且 wrapper 不攔 onCheckedChange(uncontrolled 狀態留在 Radix Root),切 mode 確回退初始值。checkbox.spec.md:239-242 明文支援 uncontrolled、field-controls.spec.md:352 已為 Input/Textarea codify uncontrolled resolved-value 模型 → 屬對齊既有 canonical 的 bug fix。"
+    },
+    {
+     "id": "d8i0",
+     "dim": 8,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:338",
+     "問題": "Checkbox 是表單控件，但「相關」只指向 field-controls，全文未定義驗證時機或連到 form-validation；`useFormValidation` 對 Checkbox 僅提供 `setFieldValue`，該路徑沒有 blur 驗證或編輯時清錯契約。",
+     "建議": "補上 checked 變更、blur、錯誤清除與 `Field invalid` 的標準接線；若刻意例外，明載限制並連到 form-validation。",
+     "verdict": "VERIFIED",
+     "verifyReason": "checkbox.spec.md 相關段(:331-338)確無 form-validation 連結、全文無驗證時機定義;use-form-validation.ts:35-36/:92-93 對 Checkbox 僅 setFieldValue,且 :267-268 只做 form.setValue+shouldDirty(無 blur 驗證/編輯清錯)。v1 邊界已誠實載於 form-validation.spec.md:89(Checkbox/Switch 用 setFieldValue 自接),故補 pointer + 明載限制即可 = doc 對齊既有 canonical。"
+    },
+    {
+     "id": "d8i1",
+     "dim": 8,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:196",
+     "問題": "States 未涵蓋 Loading，也未說明此同步選擇控件為何不適用 Loading。",
+     "建議": "明載 Loading 為 N/A；提交中的非同步狀態由表單或 Button 擁有，必要時僅將 Checkbox disabled。",
+     "verdict": "VERIFIED",
+     "verifyReason": "狀態表(checkbox.spec.md:198-233)僅 unchecked/checked/indeterminate/hover/disabled,全檔 grep loading 0 hit 亦無 N/A 明文,違 .claude/references/spec-rules.md:43「不適用則明文『本元件無 X 狀態』,不沉默省略」(Tag spec:249 有正例)。補 N/A 誠實措辭 = AUTO。"
+    },
+    {
+     "id": "d9i6",
+     "dim": 9,
+     "idx": 6,
+     "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:257",
+     "問題": "Checkbox 繼承 asChild／children，卻以固定 Indicator 覆蓋 consumer child；asChild 最終替換的是 Indicator，不是 consumer host。",
+     "建議": "從公開型別移除 asChild／children並文件化固定 anatomy，或另做真正的單一 Slot host。",
+     "verdict": "VERIFIED",
+     "verifyReason": "checkbox.tsx:83-84 CheckboxProps extends ComponentPropsWithoutRef<Root>(含 asChild/children),而 :256-287 Root 以固定 Indicator 為 JSX child → consumer children 被覆蓋、asChild 時 Slot host 錯置為 Indicator。屬失敗記憶索引已 codify 的 asChild bug class,型別收斂/文件化 AUTO。"
+    }
+   ]
+  },
+  {
+   "unit": 10,
+   "count": 13,
+   "items": [
+    {
+     "id": "d10i18",
+     "dim": 10,
+     "idx": 18,
+     "fileLine": "packages/design-system/src/components/TimePicker/time-picker.anatomy.stories.tsx:31,108,109,110,172,176,180,208,212,216,220,249",
+     "問題": "TimePicker 的 role=combobox 沒有 aria-label 或 aria-labelledby。",
+     "建議": "為 overview、size、precision 與 inspector 實例提供描述用途及狀態的名稱。",
+     "verdict": "VERIFIED",
+     "verifyReason": "所有 cited 行皆無 aria-label 且無 Field 包裹(含 Inspector args 無 aria-label,time-picker.anatomy.stories.tsx:233-241),trigger accname 僅靠 fieldCtx.labelId 或 consumer aria-label(time-picker.tsx:338-341)→ role=combobox 無名。同檔 ModeMatrix :191-196 已示範正確補法,且自家 A11y 說明 :264 明言「無 Field 時 consumer 需自帶 aria-label」。"
+    },
+    {
+     "id": "d12i20",
+     "dim": 12,
+     "idx": 20,
+     "fileLine": "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:108",
+     "問題": "欄位標籤「營業時段（兩個 TimePicker + →）」將元件組成與視覺符號混入產品文案。",
+     "建議": "標籤只保留「營業時段」，組成方式移到外部說明。",
+     "verdict": "VERIFIED",
+     "verifyReason": "time-picker.principles.stories.tsx:108 FieldLabel 確為「營業時段(兩個 TimePicker + →)」,元件組成與箭頭符號混入產品文案;story name(:102)已表達組合規則,label 可只留「營業時段」。"
+    },
+    {
+     "id": "d24i30",
+     "dim": 24,
+     "idx": 30,
+     "fileLine": "packages/design-system/src/components/TimePicker/time-picker.stories.tsx:103; packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:101",
+     "問題": "ShopBusinessHours 重複 10:00→22:00 雙 TimePicker range composition。",
+     "建議": "退役 ShopBusinessHours。",
+     "verdict": "VERIFIED",
+     "verifyReason": "ShopBusinessHours(stories:103-119)與 principles RuleRangeComposition(principles:101-117)near-identical:同值(10:00/22:00)、同結構(兩 TimePicker + → + Field 營業時段),僅 placeholder 差異。二擇一 retire 為 AUTO(無 LinkTo 依賴,grep 無反向引用)。"
+    },
+    {
+     "id": "d26i4",
+     "dim": 26,
+     "idx": 4,
+     "fileLine": "packages/design-system/src/components/TimePicker/time-picker.tsx:108; packages/design-system/src/components/TimePicker/time-picker.spec.md:34",
+     "問題": "spec 明定 controlled-only，但 TimePickerProps 仍從 React.HTMLAttributes 暴露 defaultValue；該值可通過型別卻不會初始化時間狀態。",
+     "建議": "在 Omit 清單加入 defaultValue，並補 type-level regression。",
+     "verdict": "VERIFIED",
+     "verifyReason": "time-picker.tsx:110-113 Omit 清單僅 'onChange'|'placeholder',defaultValue 仍從 HTMLAttributes 洩入型別(如 defaultValue=\"09:00\" 可通過 tsc)卻不初始化時間狀態,違 time-picker.spec.md:32-34「Controlled-only rationale(Dim 26)」宣告。"
+    },
+    {
+     "id": "d43i22",
+     "dim": 43,
+     "idx": 22,
+     "fileLine": "packages/design-system/src/components/TimePicker/time-picker.principles.stories.tsx:74",
+     "問題": "會議15分鐘間隔、雙TimePicker範圍與X清除三則 Rule 的理由未呈現在 Storybook；後兩則理由只存在原始碼註解，公開頁面只剩結論與範例。",
+     "建議": "把既有註解中的理由移入可見 Rule note或說明段落，並補上15分鐘間隔如何降低無效選項、符合排程粒度的原則。",
+     "verdict": "PARTIAL",
+     "verifyReason": "三則 Rule 的 render 輸出(:74-94/:101-117/:124-138)確實只有結論與範例、理由困在原始碼註解(:96-100/:119-123)未呈現於 Storybook 公開頁面——此部分為真;但 15 分鐘 Rule 的理由同樣存在註解 :23-27(非缺失),且 :86 標題帶「(會議排程無意義)」一句 rendered 簡短理由,「三則全無呈現」略過廣。"
+    },
+    {
+     "id": "d7i23",
+     "dim": 7,
+     "idx": 23,
+     "fileLine": "packages/design-system/src/components/TimePicker/time-picker.spec.md:216",
+     "問題": "規格只記錄 Field 內的 aria-labelledby；standalone TimePicker 沒有預設 aria-label，role=\"combobox\" 可成為無名稱控件。",
+     "建議": "要求 standalone 使用時傳 aria-label／aria-labelledby，或提供可靠 fallback，並用型別或 runtime 檢查落實。",
+     "verdict": "VERIFIED",
+     "verifyReason": "spec:216 僅記錄 Field 內 aria-labelledby 接線;time-picker.tsx:338-341 trigger role=combobox 的 aria-labelledby={fieldCtx?.labelId},standalone(無 fieldCtx)且 consumer 未傳 aria-label 時即無名稱控件,無預設 fallback。spec 補 standalone 要求 = a11y AUTO。"
+    },
+    {
+     "id": "d9i33",
+     "dim": 9,
+     "idx": 33,
+     "fileLine": "packages/design-system/src/components/TimePicker/time-picker.tsx:259",
+     "問題": "TimePicker view 分支未轉交 ref/rest props；readonly／disabled 雖 spread props仍漏 ref。",
+     "建議": "抽出跨 mode 共用的 root props/ref 接線，或建立穩定根節點。",
+     "verdict": "PARTIAL",
+     "verifyReason": "「view 分支未轉交 rest props」已於 HEAD 修掉(time-picker.tsx:260-270 2026-07-16 DA3 fix 補 {...props});仍為真的是 ref:forwardRef<HTMLDivElement>(:157)但 view(:265-282)與 readonly/disabled(:289-293)分支皆未接 ref。殘餘 ref 部分照 radio-group.tsx:114 同型 cast 轉發即可。"
+    },
+    {
+     "id": "d12i21",
+     "dim": 12,
+     "idx": 21,
+     "fileLine": "packages/design-system/src/components/AppShell/app-shell.anatomy.stories.tsx:37",
+     "問題": "側欄使用「Detail panel／Aside 內容」等容器術語，沒有可辨識的業務場景。",
+     "建議": "改成「訂單詳情」及訂單編號、客戶、付款狀態等內容。",
+     "verdict": "VERIFIED",
+     "verifyReason": "app-shell.anatomy.stories.tsx:37 AppShellAside title=\"Detail panel\"、:39 內文「Aside 內容(留白由使用此面板的內容自行管理)」皆為容器術語非業務場景,屬實。"
+    },
+    {
+     "id": "d12i22",
+     "dim": 12,
+     "idx": 22,
+     "fileLine": "packages/design-system/src/components/AppShell/app-shell.anatomy.stories.tsx:110",
+     "問題": "互動範例直接顯示「Toggle Aside demo」「Open/Close Aside」。",
+     "建議": "改成「顯示／隱藏訂單詳情」，快捷鍵與元件名稱另行標示。",
+     "verdict": "VERIFIED",
+     "verifyReason": "app-shell.anatomy.stories.tsx:110 標題「Toggle Aside demo」、:112 按鈕「{open ? 'Close' : 'Open'} Aside (cmd+.)」直接暴露元件名與 demo 措辭,屬實。"
+    },
+    {
+     "id": "d12i52",
+     "dim": 12,
+     "idx": 52,
+     "fileLine": "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx:67",
+     "問題": "可見準則使用 header-canonical、layoutSpace 規則 1B、spec.md 六條規則等內部代號。",
+     "建議": "直接說明 header 組成及不同內容容器的間距原則。",
+     "verdict": "VERIFIED",
+     "verifyReason": "app-shell.principles.stories.tsx:67-69 可見準則文字確含「header-canonical 派生」「layoutSpace 規則 1B」「layoutSpace.spec.md 6 條規則」內部代號,命中 dim-12 spec 代號禁項(audit-prompts.md:388)。"
+    },
+    {
+     "id": "d12i53",
+     "dim": 12,
+     "idx": 53,
+     "fileLine": "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx:134",
+     "問題": "「header-canonical 4.5」把內部文件章節號露在 Storybook。",
+     "建議": "直接說明頭像尺寸與左右留白規則；延伸資料改用可理解的連結。",
+     "verdict": "VERIFIED",
+     "verifyReason": "app-shell.principles.stories.tsx:134 可見文字確為「(header-canonical 4.5 chrome header avatar)」,內部文件章節號露出於 Storybook,屬 spec 代號違項。"
+    },
+    {
+     "id": "d43i0",
+     "dim": 43,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx:66",
+     "問題": "公開原則摻入 ReactNode 不機械強制、2026-06-10 拍板等治理紀錄，沒有說明 sidebar slot 為何必須使用 Sidebar。",
+     "建議": "移除日期與檢查機制，只保留使用 Sidebar 才能維持導覽行為與視覺一致性的理由。",
+     "verdict": "VERIFIED",
+     "verifyReason": "app-shell.principles.stories.tsx:66-67 確含「型別收 ReactNode 不機械強制,2026-06-10 拍板」治理紀錄,且該 bullet 只給禁令沒給設計理由(上方 :54-59 vs Sidebar 段也未解釋 slot 必傳 Sidebar 的原因)。移除日期/機制、補理由屬表達層清理,不動 canonical 語意。"
+    },
+    {
+     "id": "d43i1",
+     "dim": 43,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/AppShell/app-shell.principles.stories.tsx:86",
+     "問題": "核心選型規則密集混用 distinguisher、Header scope、local/global、multi-workspace、bar、app 等非必要英文，降低設計師與 PM 的可讀性。",
+     "建議": "改為繁中人話：唯一判準是標頭只服務目前頁面，還是服務整個產品；僅保留正式模式名稱。",
+     "verdict": "VERIFIED",
+     "verifyReason": "app-shell.principles.stories.tsx:86-99 確密集混用「distinguisher / Header scope / local / global / multi-workspace / bar / app」英文速記,違 reader-facing 中文人話紀律(story-rules.md「name field 必中文人話」精神 + feedback_propose_discipline 人話擴大)。人話化不改判準本身 → 表達層 AUTO。"
+    }
+   ]
+  },
+  {
+   "unit": 11,
+   "count": 12,
+   "items": [
+    {
+     "id": "d12i45",
+     "dim": 12,
+     "idx": 45,
+     "fileLine": "packages/design-system/src/components/Tooltip/tooltip.anatomy.stories.tsx:248",
+     "問題": "Tooltip 範例以「觸發器／提示文字」作為實際內容。",
+     "建議": "改用「付款狀態」及預計撥款日期等具體提示。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tooltip.anatomy.stories.tsx:248 觸發按鈕確為「觸發器」、:250 TooltipContent 為「提示文字」,以元件結構名當實際內容,命中 story-rules 佔位符禁則。非 SSOT 文案修正。"
+    },
+    {
+     "id": "d12i46",
+     "dim": 12,
+     "idx": 46,
+     "fileLine": "packages/design-system/src/components/Tooltip/tooltip.anatomy.stories.tsx:368",
+     "問題": "按鈕以 top/right/bottom/left 命名，Tooltip 只顯示「提示文字」。",
+     "建議": "按鈕改用真實操作；方位放在外部標籤，Tooltip 提供對應說明。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tooltip.anatomy.stories.tsx:368 按鈕 child 直接渲染 side 值(top/right/bottom/left)、:370 Tooltip 內容為「提示文字」皆屬實;且 :364 已有外部 mono 標籤 side=\"{s}\",按鈕重複顯示 prop 值為冗餘。非 SSOT。"
+    },
+    {
+     "id": "d12i63",
+     "dim": 12,
+     "idx": 63,
+     "fileLine": "packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx:195",
+     "問題": "使用「非常長的專案名稱會被截斷」描述測試目的，而非真實專案名稱。",
+     "建議": "改成「2026 亞洲市場品牌改版與官網重構」等合理長名稱。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tooltip.principles.stories.tsx:195,198 渲染內容確為「非常長的專案名稱會被截斷(顯示完整版)」自我描述測試句,非真實專案名。"
+    },
+    {
+     "id": "d12i84",
+     "dim": 12,
+     "idx": 84,
+     "fileLine": "packages/design-system/src/components/Tooltip/tooltip.stories.tsx:73",
+     "問題": "Tooltip trigger 顯示「長文字提示」，只描述範例形式。",
+     "建議": "改成「API 金鑰安全說明」或「查看安全提醒」等具體內容。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tooltip.stories.tsx:73 LongText 觸發按鈕可見文字確為「長文字提示」,僅描述範例形式;TooltipContent 本身已是真實 API key 安全說明(:76-77),僅 trigger 標籤需人話化。"
+    },
+    {
+     "id": "d7i24",
+     "dim": 7,
+     "idx": 24,
+     "fileLine": "packages/design-system/src/components/Tooltip/tooltip.spec.md:58",
+     "問題": "此規格同樣無條件保證 iconOnly Button 自動包 Tooltip，漏掉 Button asChild 不會包裝的正式例外。",
+     "建議": "將保證限定為 iconOnly 且非 asChild；明寫 asChild consumer 必須自行提供 accessible name 與 Tooltip。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tooltip.spec.md:58「Button iconOnly 已內建自動 tooltip,不需額外包」為無條件宣稱,但 button.tsx:241-243 明文 iconOnly+asChild 時內建 Tooltip wrapper 不啟動(Slot 不接受多 child),consumer 須自管。spec 對齊 code 既有例外 = AUTO(Button spec 同題已由 Claude 記錄,本條為 Tooltip spec 側)。"
+    },
+    {
+     "id": "d7i25",
+     "dim": 7,
+     "idx": 25,
+     "fileLine": "packages/design-system/src/components/Tooltip/tooltip.spec.md:88",
+     "問題": "邊界段未定義空 content；實作仍會渲染帶 padding 的空 role=\"tooltip\" 浮層。",
+     "建議": "明寫 content 為 null 或空字串時不掛 TooltipContent／Tooltip，trigger 原樣保留。",
+     "verdict": "VERIFIED",
+     "verifyReason": "spec 邊界狀態段(:88 起)僅列觸控/長文字/viewport 三項,無空 content 邊界;tooltip.tsx:30-49 TooltipContent 無條件渲染 px-3 py-2 殼(無 empty guard),children 空時仍出帶 padding 空浮層。補邊界明文/guard = AUTO。"
+    },
+    {
+     "id": "d12i60",
+     "dim": 12,
+     "idx": 60,
+     "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx:195",
+     "問題": "Props 表直接顯示內部治理代號「M24」。",
+     "建議": "改寫成完整的人話狀態優先原則。",
+     "verdict": "VERIFIED",
+     "verifyReason": "selection-item.anatomy.stories.tsx:195 props 表說明欄確露出治理代號「(M24)」;應改寫成人話狀態優先原則(disabled 覆蓋 muted)。"
+    },
+    {
+     "id": "d14i5",
+     "dim": 14,
+     "idx": 5,
+     "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.principles.stories.tsx:24,39,46; packages/design-system/src/components/SelectionControl/selection-item.spec.md:25",
+     "問題": "principles story 把概念群組／資料夾名 `SelectionControl` 當成實際 primitive 名；owner spec 已明定 primitive 為 `SelectionItem`。",
+     "建議": "元件本體與使用指引一律稱 `SelectionItem`；`SelectionControl` 僅保留作為群組、資料夾或 Storybook 分類名稱。",
+     "verdict": "VERIFIED",
+     "verifyReason": "principles story :24「適合 SelectionControl 的真實業務場景」:39:46「SelectionControl rich row(本 primitive)」把群組名當 primitive 名;spec.md:25 明定 SelectionControl 僅為資料夾/概念群組名、main primitive = selection-item.tsx(SelectionItem)。"
+    },
+    {
+     "id": "d24i22",
+     "dim": 24,
+     "idx": 22,
+     "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:67; packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:476",
+     "問題": "VerticalGroup 重複 sm／md／lg 直式群組矩陣。",
+     "建議": "退役 VerticalGroup。",
+     "verdict": "VERIFIED",
+     "verifyReason": "VerticalGroup 是 sm/md/lg 直式群組矩陣(stories:67-83),重複 anatomy SizeMatrix 視覺預覽(anatomy:531-546 同為三 size 直式群組含 description/disabled item),且違反同檔自家 rationale「展示層保留 typical real-product 情境」(stories:62-64)。同檔 States/Disabled 已 per Dim 24 retire(stories:62,97-100),收斂為單 size 真實情境或退役皆 AUTO。"
+    },
+    {
+     "id": "d26i2",
+     "dim": 26,
+     "idx": 2,
+     "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:108; packages/design-system/src/components/RadioGroup/radio-group.tsx:125",
+     "問題": "V4：view 與 Field-readonly 以 value ?? defaultValue 推導選項；uncontrolled 使用者在 edit 中變更後切換 mode，會回退 defaultValue。",
+     "建議": "在 RadioGroup wrapper 層持有 controllable value，Radix Root、view、readonly 共用 resolvedValue 並 compose onValueChange。",
+     "verdict": "VERIFIED",
+     "verifyReason": "radio-group.tsx:108/:125 view 與 readonly-in-Field 皆以 `value ?? defaultValue` 推導,而 uncontrolled 現值存在 Radix Root(:158-159 直傳 value/defaultValue、wrapper 未攔 onValueChange)→ edit 中變更後切 mode 確回退 defaultValue。"
+    },
+    {
+     "id": "d68i15",
+     "dim": 68,
+     "idx": 15,
+     "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:293,538,578,601,624; packages/design-system/src/components/RadioGroup/radio-group.principles.stories.tsx:101,113,147; packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:74,89; packages/design-system/src/components/SelectionControl/selection-item.stories.tsx:55",
+     "問題": "多組正向 RadioGroup 沒有可存取的 group name；部分雖有可見 caption，卻未透過 Field 或 ARIA 建立關聯。",
+     "建議": "使用 Field+FieldLabel 並正確接線，或為每個 radiogroup 提供具體 aria-label/aria-labelledby。",
+     "verdict": "VERIFIED",
+     "verifyReason": "全部 11 處 cited RadioGroup 皆 standalone 無 aria-label / Field 接線(radio-group.tsx:132-134 aria-labelledby 只在 fieldCtx 存在時掛),role=radiogroup 無 accessible name;radio-group.spec.md:100 禁止事項明列「❌ RadioGroup 沒有 group label」。部分處有可見 caption(stories:73 / selection-item:53)但未以 ARIA 關聯,與 finding 描述一致。"
+    },
+    {
+     "id": "d68i16",
+     "dim": 68,
+     "idx": 16,
+     "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.principles.stories.tsx:147",
+     "問題": "principles 把同意／不同意的二元 consent 當成 RadioGroup 正例，直接違反 RadioGroup 不承接 boolean agreement 的規範。",
+     "建議": "同意條款改用 Checkbox；即時開關設定使用 Switch，或把範例改成真正的多選一決策。",
+     "verdict": "VERIFIED",
+     "verifyReason": "principles:147-151 渲染「我同意/我不同意」二元 consent RadioGroup 且 Label 稱其「合法」;radio-group.spec.md:55 何時不用明定布林 on/off → Switch / 單個 Checkbox(「布林不需要選一個的心智模型」),story 自己的 note(:145)也說 yes/no 用 Checkbox 或 Switch,demo 與規範自相矛盾。"
+    }
+   ]
+  },
+  {
+   "unit": 12,
+   "count": 11,
+   "items": [
+    {
+     "id": "d24i9",
+     "dim": 24,
+     "idx": 9,
+     "fileLine": "packages/design-system/src/components/FileUpload/file-upload.stories.tsx:20; packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:160",
+     "問題": "ResumeUpload 重複 PDF／DOC／DOCX、5MB single-file dropzone，且未呈現續傳狀態。",
+     "建議": "退役 ResumeUpload。",
+     "verdict": "PARTIAL",
+     "verifyReason": "重複部分屬實:ResumeUpload(stories:20-33,accept .pdf,.doc,.docx + maxSize 5MB + 履歷 dropzone)與 principles MultipleRule 第一個 Rule(principles:168-175)近乎同款。但「未呈現續傳狀態」為誤讀 — Resume = 履歷(story name「單檔上傳」、title「上傳你的履歷」,stories:19,28),非「續傳」,該 story 從無續傳語意可言。"
+    },
+    {
+     "id": "d43i6",
+     "dim": 43,
+     "idx": 6,
+     "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:215",
+     "問題": "此處宣稱 FileUpload 只負責觸發選檔、清單一律由 consumer 渲染，但第256行又說 FileUpload 可透過 files prop 自管清單，兩則公開原則互相矛盾。",
+     "建議": "統一為雙路徑原則：可交由 files prop 管理，也可自行組合 FileItem；兩條路都不得重畫 FileItem 內部結構。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story:215 寫「FileUpload 只負責拖放偵測+觸發選檔,清單由 consumer 用 FileItem map 渲染」,但 :256 與 file-upload.tsx:97+174-187(`files` prop 內部 compose FileItem)證實 dual path — 兩則公開原則口徑矛盾。統一為雙路徑口徑 = doc 對齊 code,不動 API,AUTO。"
+    },
+    {
+     "id": "d43i7",
+     "dim": 43,
+     "idx": 7,
+     "fileLine": "packages/design-system/src/components/FileUpload/file-upload.principles.stories.tsx:256",
+     "問題": "公開 note 寫成帶日期的 changelog 與偽程式碼，混入 dual path、own list via、OR consumer、composing 等大量英文速記，不符合人話要求。",
+     "建議": "移除日期與維護紀錄，改用繁中說清兩種清單管理方式，只保留 files、FileItem 等必要 API 名。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story:256 確含「2026-04-24 設計準則更新」changelog 日期 + 「dual path / own list via / OR consumer / composing」大量英文速記,公開原則不該收維護紀錄(同 idx 0 pattern)。人話化重寫屬表達層,AUTO。"
+    },
+    {
+     "id": "d6i1",
+     "dim": 6,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/FileUpload/file-upload.spec.md:25,84,111,120-123",
+     "問題": "定位宣稱 FileUpload 不負責已上傳清單，後文與實作卻明定 `files` 會組合 FileItem 並渲染內建清單，職責文字互相衝突。",
+     "建議": "改成「FileUpload 不 own 單筆 FileItem 視覺，但可 orchestrate 內建清單；consumer 自組清單亦合法」。",
+     "verdict": "VERIFIED",
+     "verifyReason": "file-upload.spec.md:24 定位仍稱「不負責『已上傳檔案清單顯示』(那是 FileItem 的職責)」,但 :111 `files` prop 明定「傳入 → drop zone 下方渲染列表,每項經 FileItem」且 :120-123 dual-path canonical(2026-04-24)明認 FileUpload own 內建清單合法,職責文字互相衝突屬實;修法為措辭對齊既有 dual-path canonical,非動語意。"
+    },
+    {
+     "id": "d7i13",
+     "dim": 7,
+     "idx": 13,
+     "fileLine": "packages/design-system/src/components/FileUpload/file-upload.spec.md:149",
+     "問題": "accessible-name 規則只對預設 Empty 成立；官方支援任意 children 覆寫，icon／branding-only children 會使外層 role=\"button\" 沒有名稱。",
+     "建議": "要求自訂 children 含可見文字或 root aria-label，並加入型別契約或開發期警告。",
+     "verdict": "VERIFIED",
+     "verifyReason": "spec :149 宣稱 accessible name 來自預設 Empty 的 title+description(name-from-content),但 file-upload.tsx:87-88 children 可整個覆寫(tsx:343 children ?? Empty),icon-only children 使 role=\"button\" wrapper(tsx:255)無名稱屬實;root 已 spread props(tsx:321,extends HTMLAttributes :57)可收 aria-label,故修法為 doc 限定宣稱 + 補 consumer a11y 要求 = AUTO。"
+    },
+    {
+     "id": "d9i16",
+     "dim": 9,
+     "idx": 16,
+     "fileLine": "packages/design-system/src/components/FileUpload/file-upload.tsx:225",
+     "問題": "FileUpload 從 HTML div props 抽出 onClick，但 button variant 未呼叫 consumer handler，造成正式 variant 靜默丟失公開 DOM prop。",
+     "建議": "在 button variant compose consumer onClick 與開檔行為，並明確定義 props/ref 的 canonical host。",
+     "verdict": "VERIFIED",
+     "verifyReason": "file-upload.tsx:57 props 型別含 onClick、:128 destructure 抽出、:163-167 handleClick 只接在 dropzone variant(:260);button variant(:225)spread 的 props 已無 onClick 且內部 Button onClick(:246-248)只開檔不呼叫 consumer handler → 公開 DOM prop 靜默丟失。compose consumer onClick = bug fix,AUTO。"
+    },
+    {
+     "id": "d10i30",
+     "dim": 10,
+     "idx": 30,
+     "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:253,256",
+     "問題": "avatar Tag 的 img 沒有 alt；人名已存在於 Tag 文字中。",
+     "建議": "將圖片標為裝飾並加 alt 空字串，避免重複朗讀。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tag.principles.stories.tsx:253/:256 的 <img src=…pravatar… className=\"w-4 h-4 rounded-full\"> 皆無 alt 屬性,人名已在 Tag 文字(Ada Chen / Alice)→ 應補 alt=\"\" 標裝飾。"
+    },
+    {
+     "id": "d12i44",
+     "dim": 12,
+     "idx": 44,
+     "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:329",
+     "問題": "Inspector 中的實際 Tag 內容仍為泛稱「Label」。",
+     "建議": "使用「設計」「待審核」等真實標籤。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tag.anatomy.stories.tsx:329 Inspector 預覽的實際 Tag 內容確為泛稱「Label」;對照同層 Menu Inspector 已用真實內容(電子郵件通知),Tag 亦應可用真實標籤文字。非 SSOT。"
+    },
+    {
+     "id": "d43i19",
+     "dim": 43,
+     "idx": 19,
+     "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:240",
+     "問題": "圖示 note 只交代16px與繼承文字色的做法，沒有說明固定尺寸與同色各自解決什麼問題，屬結論式規格。",
+     "建議": "補充固定尺寸如何維持 Tag 前綴節奏，以及繼承文字色如何避免產生第二視覺焦點。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tag.principles.stories.tsx:240 note 僅「用 LucideIcon,Tag 統一 16px。icon 顏色繼承 Tag 文字色」兩句結論,無固定尺寸與同色各自解決什麼問題的理由,違反 story canonical「Rule-note 原則>結論」(story-writing skill / story-rules.md)。"
+    },
+    {
+     "id": "d43i20",
+     "dim": 43,
+     "idx": 20,
+     "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:250",
+     "問題": "頭像 note 只說多選 Combobox 使用 avatar加name，沒有解釋為何頭像仍須搭配名稱辨識，讀者無法類推到其他人員或組織標籤。",
+     "建議": "補充頭像只提供視覺辨識、名稱承載明確身份，兩者並用才能避免相似頭像或圖片失效造成誤認。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tag.principles.stories.tsx:250 note 僅「多選 Combobox 的已選成員用 avatar + name 組合」一句結論,未解釋頭像為何仍須搭配名稱辨識,讀者無法舉一反三,同違「原則>結論」canonical。"
+    },
+    {
+     "id": "d7i22",
+     "dim": 7,
+     "idx": 22,
+     "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:274",
+     "問題": "規格保證移除按鈕名稱包含 tagLabel，但 children 可為非文字或空值；實作只從 string children 取名，dismissLabel 又未寫入規格，會退化成多個同名「移除」按鈕。",
+     "建議": "文件化 dismissLabel，對非 string children 強制非空值，並禁止空 Tag。",
+     "verdict": "VERIFIED",
+     "verifyReason": "tag.spec.md:274 保證 aria-label=「移除 {tagLabel}」,但 tag.tsx:155 僅從 string children 取名、非 string 時空字串 fallback 純「移除」(tag.tsx:112),且 dismissLabel prop(tag.tsx:71-72)未寫入 spec(grep exit 1)。文件化 dismissLabel + 對齊 code = AUTO。"
+    }
+   ]
+  },
+  {
+   "unit": 13,
+   "count": 10,
+   "items": [
+    {
+     "id": "d10i32",
+     "dim": 10,
+     "idx": 32,
+     "fileLine": "packages/design-system/src/components/Rating/rating.anatomy.stories.tsx:184",
+     "問題": "Rating inspector 的互動輸入缺少 accessible name，axe aria-input-field-name 可重現。",
+     "建議": "提供描述評分用途的 aria-label 或 FieldLabel。",
+     "verdict": "VERIFIED",
+     "verifyReason": "Inspector 預設 mode='interactive'(rating.anatomy.stories.tsx:147),而 :191 aria-label={readOnly ? … : undefined} → 預設狀態下 standalone role=slider(rating.tsx:158)無 accessible name,違自家 rating.tsx:85-86「standalone 時必填」規範,axe aria-input-field-name 可重現。"
+    },
+    {
+     "id": "d24i23",
+     "dim": 24,
+     "idx": 23,
+     "fileLine": "packages/design-system/src/components/Rating/rating.stories.tsx:117; packages/design-system/src/components/Rating/rating.anatomy.stories.tsx:399",
+     "問題": "Disabled 是 StateBehavior disabled live case 的換文案版本。",
+     "建議": "退役 Disabled。",
+     "verdict": "VERIFIED",
+     "verifyReason": "Disabled(stories:117-133,value=4 disabled)確為 anatomy StateBehavior disabled live case(anatomy:470-479,value=4 disabled)換訂單文案版本。同 Family Checkbox/Switch/RadioGroup 已 retire 獨立 Disabled story per Dim 24(radio-group.stories.tsx:97-100 明文對齊),retire 為 AUTO。"
+    },
+    {
+     "id": "d43i17",
+     "dim": 43,
+     "idx": 17,
+     "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:80",
+     "問題": "note 把 readOnly 一律必填 aria-label 且必含評論數寫成絕對規則，但 spec/source 明定 Field 內可由 aria-labelledby 指向 FieldLabel；評論數也不是必要欄位，正例本身便未包含。",
+     "建議": "改成 standalone readOnly Rating 必須有可存取名稱；Field 內可沿用 FieldLabel。內容至少說明目前分數與滿分，評論數僅在畫面確實呈現時加入。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story :80 note 寫「readOnly Rating 的 aria-label 必填,描述幾星、共幾星、幾則評論」絕對規則,但 rating.spec.md:181 + rating.tsx:160-164 明定 Field 內由 aria-labelledby 自動指向 FieldLabel(免填),僅 standalone 必填;且 :83 正例 aria-label 本身無評論數,自證評論數非必要欄位。"
+    },
+    {
+     "id": "d43i18",
+     "dim": 43,
+     "idx": 18,
+     "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:263",
+     "問題": "Amazon、Yelp、Google、Shopify、Airbnb、Tripadvisor 全部用黃星是錯誤的全稱 claim；Tripadvisor 官方使用 bubble rating。[Tripadvisor 官方說明](https://www.tripadvisor.com/business/insights/precision-bubble-rating-update-faq)",
+     "建議": "保留本系統選擇黃色 rating token 的本地理由，但撤掉全部與世界級一致；若保留 benchmark，逐家核實後只陳述真實共通範圍。",
+     "verdict": "VERIFIED",
+     "verifyReason": "rating.principles.stories.tsx:263 確有「Amazon / Yelp / Google Reviews / Shopify / Airbnb / TripAdvisor 全部用黃星」無 cite 全稱斷言;Tripadvisor 官方採 bubble rating(圓點)非黃星,全稱 claim 為假,且違 M22 inline citation 要求。"
+    },
+    {
+     "id": "d7i17",
+     "dim": 7,
+     "idx": 17,
+     "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:39",
+     "問題": "近親分界把「熱門／Beta／新品」等文字分類導向 Badge，違反 Badge 僅用於 count／dot、文字分類使用 Tag 的 SSOT，且 Badge API 不接受此類文字內容。",
+     "建議": "改為導向 Tag，並同步修正同檔第 213 行的重複敘述。",
+     "verdict": "VERIFIED",
+     "verifyReason": "rating.spec.md:39 與 :213 把「熱門/Beta/新品」文字標記導向 Badge,違反 badge.spec.md:51/:55 SSOT(文字/版本/角色標記走 Tag,Badge 僅 count/dot 兩模式無文字承載,且 BadgeProps discriminated union 不接受文字)。對齊既有 canonical 改指向 Tag = AUTO。"
+    },
+    {
+     "id": "d12i3",
+     "dim": 12,
+     "idx": 3,
+     "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:130",
+     "問題": "Coachmark 顯示「試試新功能」「這是 Coachmark 的說明文字」及「Anchor」，無法辨識實際導覽功能。",
+     "建議": "改成具體功能導覽，例如 AI 摘要的用途、好處及「開啟 AI 助理」觸發器。",
+     "verdict": "VERIFIED",
+     "verifyReason": "coachmark.anatomy.stories.tsx:130-131 title=「試試新功能」+ description=「這是 Coachmark 的說明文字;多行內容會自動換行…」,:140 Button child=「Anchor」,均非可辨識的真實導覽情境。"
+    },
+    {
+     "id": "d12i4",
+     "dim": 12,
+     "idx": 4,
+     "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:274",
+     "問題": "單步範例把 CTA、step、Skip 等元件結構說明當成 Coachmark 內容。",
+     "建議": "改為使用者可理解的單一任務，例如「邀請團隊成員」與對應操作。",
+     "verdict": "VERIFIED",
+     "verifyReason": "coachmark.anatomy.stories.tsx:274 description=「單步 Coachmark,僅一個完成 CTA(知道了),無 step / Skip。」把元件結構說明當成可見內容,:280 anchor 亦顯示「Anchor」。"
+    },
+    {
+     "id": "d12i5",
+     "dim": 12,
+     "idx": 5,
+     "fileLine": "packages/design-system/src/components/Coachmark/coachmark.anatomy.stories.tsx:295",
+     "問題": "多步範例使用「Step N」及 current step、anchor、feature 等內部術語，沒有真實導覽流程。",
+     "建議": "以建立工作區、邀請成員、設定權限等連續步驟取代抽象代號。",
+     "verdict": "PARTIAL",
+     "verifyReason": "真:295 media label=`Step ${N}`、:306 Button=「Step N」、:297 description 含 consumer/current step/anchor/feature 術語;假:「沒有真實導覽流程」— :296 title 實為「步驟 N:建立 Workspace/邀請成員/建立專案」真實流程。"
+    },
+    {
+     "id": "d12i30",
+     "dim": 12,
+     "idx": 30,
+     "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:310",
+     "問題": "Coachmark 使用「AI Illustration」「illustration 傳達概念」「Anchor」等製作術語。",
+     "建議": "改成具體 AI 功能導覽、價值說明與真實觸發器。",
+     "verdict": "VERIFIED",
+     "verifyReason": "coachmark.principles.stories.tsx:310 media label=\"AI Illustration\"、:312 description=\"illustration 傳達概念,比純文字更快被理解\"、:317 觸發鈕「Anchor」皆為製作術語非真實導覽內容,屬實。"
+    },
+    {
+     "id": "d12i31",
+     "dim": 12,
+     "idx": 31,
+     "fileLine": "packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:336",
+     "問題": "範例以「簡潔」「簡潔的 description」「兩行說明」描述文案長度，而非真實功能。",
+     "建議": "使用同一具體功能的短版與長版導覽文案。",
+     "verdict": "VERIFIED",
+     "verifyReason": "coachmark.principles.stories.tsx:336 label=\"簡潔\"、:337 title=\"簡潔的 description\"、:338「兩行說明足以傳達核心價值…」以文案長度自述取代真實功能導覽,屬實(:343 另有「Anchor」觸發鈕)。"
+    }
+   ]
+  },
+  {
+   "unit": 14,
+   "count": 13,
+   "items": [
+    {
+     "id": "d62i0",
+     "dim": 62,
+     "idx": 0,
+     "fileLine": "scripts/setup-netlify-access.mjs:103-115",
+     "問題": "自動建站使用不支援的 `api --json`，且正常路徑只跑 `sites:create` + `link`；前者建立未連 Git remote 的空站，後者只連本機，push 不會觸發 continuous deployment。[Netlify CLI](https://cli.netlify.com/commands/sites/)",
+     "建議": "改用 `netlify init` 或 `sites:create --with-ci`，並 read-back 驗證 repository linkage 後才宣告完成。",
+     "verdict": "VERIFIED",
+     "verifyReason": "setup-netlify-access.mjs:110 確用 `netlify api listAccountsForUser --json`,實測 `netlify api --help` 只支援 --data/--list/--auth/--debug 無 --json;正常路徑 110-111 只跑 sites:create + link(不含 CI/repo 連結),與 :55「自動…連 repo」宣稱矛盾,push 不會觸發 CD。"
+    },
+    {
+     "id": "d62i1",
+     "dim": 62,
+     "idx": 1,
+     "fileLine": "scripts/setup-netlify-access.mjs:117-125; scripts/deploy-url.mjs:38-55",
+     "問題": "`.netlify/state.json` 只保證含 `siteId`，兩支程式卻把缺少的 `siteSlug` fallback 成 UUID，因而產生錯誤 dashboard、production 與 branch URL。[Netlify link 指引](https://docs.netlify.com/api-and-cli-guides/cli-guides/get-started-with-cli/)",
+     "建議": "link 後查詢 site metadata，使用真實 `name`、`ssl_url`、`admin_url`，不可把 site ID 當 DNS slug。",
+     "verdict": "VERIFIED",
+     "verifyReason": "setup-netlify-access.mjs:119 與 deploy-url.mjs:40 皆 `state.siteSlug || siteId` 把 UUID 當 slug fallback,`netlify link` 寫入的 state.json 只保證 siteId;缺 siteSlug 時 :124-125 / deploy-url.mjs:53-55 產出的 dashboard 與 netlify.app URL 皆錯。"
+    },
+    {
+     "id": "d62i2",
+     "dim": 62,
+     "idx": 2,
+     "fileLine": "netlify.toml:11; template/ds-product-template/netlify.toml:25; template/ds-product-template/CLAUDE.md:75-82; scripts/setup-netlify-access.mjs:164-170",
+     "問題": "文件宣稱所有 branch push 預設產生 preview、setup 會設定；實際只提示人工開啟，API 呼叫也只處理 PR preview。Netlify 預設不啟用 branch deploy，草稿分支預覽鏈會中斷。[Netlify Branch deploys](https://docs.netlify.com/deploy/deploy-types/branch-deploys/)",
+     "建議": "由 setup 真正啟用並驗證 Branch deploys=All，或列為必要人工斷點並刪除「預設啟用／setup 會設定」宣稱。",
+     "verdict": "VERIFIED",
+     "verifyReason": "netlify.toml:11 與 template netlify.toml:25 皆註解「Per-branch deploy previews 預設啟用」、CLAUDE.md:82 稱「setup:netlify 會設定」,但 script :164-170 只印 dashboard 步驟、API 呼叫僅設 skip_prs:false(PR preview);Netlify 官方 docs(WebFetch 驗證)明載 branch deploys 預設不啟用需手動開。"
+    },
+    {
+     "id": "d62i4",
+     "dim": 62,
+     "idx": 4,
+     "fileLine": "template/ds-product-template/CLAUDE.md:53-70",
+     "問題": "Access-control onboarding 與斷點清單未說明 `gh` 未安裝／未登入的處理；script 雖提示 `gh auth login`，但缺少 CLI 安裝 fallback，預先引導不完整。",
+     "建議": "補上 `gh` 缺失與未登入的中文處理，並區分 GitHub CLI auth 與 Netlify OAuth。",
+     "verdict": "VERIFIED",
+     "verifyReason": "CLAUDE.md:53-70 onboarding 引導與斷點清單(:61-68)全無 gh 未安裝/未登入處理;setup-netlify-access.mjs:63-76 只在未 login 時建議 `gh auth login`,gh CLI 不存在時無安裝 fallback(shOut 失敗回空字串同樣落入未 login 分支)。"
+    },
+    {
+     "id": "d62i5",
+     "dim": 62,
+     "idx": 5,
+     "fileLine": "scripts/setup-netlify-access.mjs:59",
+     "問題": "宣稱免費方案有 100GB bandwidth，這是 legacy 資訊；新帳號 Free 已採每月 300 credits，頻寬、production deploy 與 requests 都會消耗 credits。[Netlify pricing](https://www.netlify.com/pricing/)",
+     "建議": "改為現行 credit 制，或移除易漂移的硬編容量並指向官方 pricing。",
+     "verdict": "VERIFIED",
+     "verifyReason": "setup-netlify-access.mjs:59 硬編「100GB bandwidth」;WebFetch netlify.com/pricing 證實現行 Free 為 300 credits/月 credit 制(bandwidth 20 credits/GB、production deploy 15 credits),無固定 100GB 條目,屬易漂移 legacy 宣稱。"
+    },
+    {
+     "id": "d10i0",
+     "dim": 10,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/Carousel/carousel.tsx:216",
+     "問題": "視覺上未顯示的 slides 仍全部留在 accessibility tree，螢幕閱讀器會讀到畫面外內容。",
+     "建議": "依 Embla in-view 狀態同步管理 offscreen slides 的 aria-hidden/inert。",
+     "verdict": "VERIFIED",
+     "verifyReason": "carousel.tsx:208-227 CarouselItem 只有 role=group + aria-roledescription,全檔 grep aria-hidden/inert/inView 0 hit,offscreen slides 確實全留在 accessibility tree。"
+    },
+    {
+     "id": "d7i7",
+     "dim": 7,
+     "idx": 7,
+     "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:197",
+     "問題": "根容器在 capture 階段攔截所有後代方向鍵，未排除 input、textarea、select、contenteditable 或內嵌互動元件，會劫持游標與選值操作。",
+     "建議": "只處理 carousel controls 或非可編輯 target，並加入 editable-target guard。",
+     "verdict": "VERIFIED",
+     "verifyReason": "carousel.tsx:129-135 handleKeyDown 對方向鍵一律 preventDefault + 切張,掛在根容器 onKeyDownCapture(tsx:170),無 input/textarea/select/contenteditable 的 editable-target guard → slide 內嵌可編輯元件時游標操作被劫持屬實。補 guard = 行為 bug fix,不動視覺 SSOT。"
+    },
+    {
+     "id": "d7i8",
+     "dim": 7,
+     "idx": 8,
+     "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:255",
+     "問題": "邊界涵蓋 0／1 item，卻未定義 canonical 遠端圖片的 loading／error ownership；慢載或失敗時可能只顯示空白 slide。",
+     "建議": "明文委派 consumer 使用固定 AspectRatio、Skeleton 與 error fallback，並說明載入期間 controls／dots 的行為。",
+     "verdict": "VERIFIED",
+     "verifyReason": "邊界狀態段(:253-258)僅涵蓋單一 item/零 items/Autoplay/Dark mode,全檔 grep loading/Skeleton/error 0 hit,遠端圖片 loading/error ownership 未定義屬實。補「consumer own(AspectRatio+Skeleton+error fallback)」委派文檔沿用 Accordion(:115)/Breadcrumb 既有 delegation 慣例 = AUTO doc 補充。"
+    },
+    {
+     "id": "d8i3",
+     "dim": 8,
+     "idx": 3,
+     "fileLine": "packages/design-system/src/components/Carousel/carousel.spec.md:252",
+     "問題": "邊界案例涵蓋零項目、單項目及自動播放，卻未定義資料或媒體尚未載入時的責任歸屬。",
+     "建議": "明載 Carousel 無內建 loading；由 consumer 使用既有 Skeleton、AspectRatio 或媒體 placeholder，並說明載入期間是否保留既有內容。",
+     "verdict": "VERIFIED",
+     "verifyReason": "邊界狀態段(carousel.spec.md:254-257)僅涵蓋單一 item/零 items/Autoplay/dark mode;全檔 grep loading/載入/skeleton 僅 :267 Empty(零 items),無媒體載入責任歸屬。違 spec-rules 邊界案例覆蓋規則(loading 不適用需明文),補 consumer-owned N/A 註記 = AUTO。"
+    },
+    {
+     "id": "d10i15",
+     "dim": 10,
+     "idx": 15,
+     "fileLine": "packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:26,94,106,111,123,140,148,156,242,246,250,254,272,276; packages/design-system/src/components/Textarea/textarea.principles.stories.tsx:68,111,135,167; packages/design-system/src/components/Textarea/textarea.stories.tsx:23",
+     "問題": "Textarea demo，包括 readonly/disabled 狀態，沒有 accessible name。",
+     "建議": "包入 Field/FieldLabel，或為每個狀態 demo 補具體 aria-label。",
+     "verdict": "VERIFIED",
+     "verifyReason": "逐行抽驗 anatomy 14 處 + principles 4 處 + stories:23 全部為無 accessible name 的 Textarea(含 readonly/disabled 態),無 Field/FieldLabel 包裹也無 aria-label。"
+    },
+    {
+     "id": "d43i21",
+     "dim": 43,
+     "idx": 21,
+     "fileLine": "packages/design-system/src/components/Textarea/textarea.principles.stories.tsx:164",
+     "問題": "note 只舉送出按鈕放在 Textarea 下方的例子，沒有解釋為何操作按鈕不能放進多行輸入框。",
+     "建議": "補充框內操作會占用或遮擋多行閱讀、捲動與調整高度空間，並由 Field 外層承接操作配置。",
+     "verdict": "PARTIAL",
+     "verifyReason": "textarea.principles.stories.tsx:163-164 該則 note 確實只有結論(「送出按鈕放下方,不塞進框內」無理由);但同 story 前一則 :156-157 已解釋框內放置與多行閱讀的位置衝突且 TextareaProps 型別不接受 startIcon/endAction,理由非全然缺席,僅該則未承接。"
+    },
+    {
+     "id": "d8i10",
+     "dim": 8,
+     "idx": 10,
+     "fileLine": "packages/design-system/src/components/Textarea/textarea.spec.md:97",
+     "問題": "模式、驗證及無障礙已有定義，但沒有 Loading 狀態或明確 N/A，consumer 無從判斷非同步儲存／驗證應呈現在哪裡。",
+     "建議": "明載 Textarea 不提供 loading prop；非同步狀態應放在 FieldDescription、狀態訊息或父層進度元件。",
+     "verdict": "VERIFIED",
+     "verifyReason": "textarea.spec.md 全檔與 textarea.tsx grep loading 0 hit,邊界案例(:111-113)僅空值/極長/resize;field-controls.spec.md:112 loading canonical 只點名 Input/Combobox 支援、NumberInput 明文例外,Textarea 未表態 = 沉默省略。補 N/A 明文(非同步狀態由 form 層 isSubmitting/FieldDescription 呈現,form-validation.spec.md:86-89 已有 home)= AUTO。"
+    },
+    {
+     "id": "d9i32",
+     "dim": 9,
+     "idx": 32,
+     "fileLine": "packages/design-system/src/components/Textarea/textarea.tsx:242",
+     "問題": "Textarea 的 view／readonly-empty 顯示 div 未轉交 forwardRef 或剩餘 DOM props，切換 mode 後 data-*、事件與 ARIA 會失效。",
+     "建議": "為顯示 root 接上 DOM-safe props/ref，並調整 ref 型別或採用穩定 wrapper。",
+     "verdict": "VERIFIED",
+     "verifyReason": "textarea.tsx:242-258 view/readonly-empty 顯示 div 只掛 id/data-field-mode/aria-describedby/className,無 ref 轉發、無 {...props} spread — consumer data-*/事件/其餘 ARIA 靜默失效屬實。同型 view-branch 轉發已有 canonical 先例(switch.tsx:209 / radio-group.tsx:110-114 / time-picker.tsx 2026-07-16 修),對齊即可。"
+    }
+   ]
+  },
+  {
+   "unit": 15,
+   "count": 13,
+   "items": [
+    {
+     "id": "d12i0",
+     "dim": 12,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.stories.tsx:206",
+     "問題": "檔案描述直接顯示「對齊 spec 2.3」及 Frozen columns、row actions 等內部規格術語。",
+     "建議": "改成具體儀表板審閱說明；規格編號與實作術語移到文件註解。",
+     "verdict": "VERIFIED",
+     "verifyReason": "file-viewer.stories.tsx:205-206 description 確含「對齊 spec 2.3 節「Frozen columns + row actions」」,命中 dim-12 rubric「spec 代號」禁則(audit-prompts.md:388)。"
+    },
+    {
+     "id": "d12i57",
+     "dim": 12,
+     "idx": 57,
+     "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.anatomy.stories.tsx:713",
+     "問題": "尺寸表顯示「layoutSpace v6 規則 4」，將版本與內部規則編號露出。",
+     "建議": "直接說明內容區底部需較寬鬆留白的原因。",
+     "verdict": "VERIFIED",
+     "verifyReason": "file-viewer.anatomy.stories.tsx:713 尺寸表確顯示「layoutSpace v6 規則 4」內部版本+規則編號;可保留引述的規則內容(溯源)但去除易漂移的 v6/編號代號。"
+    },
+    {
+     "id": "d43i8",
+     "dim": 43,
+     "idx": 8,
+     "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.principles.stories.tsx:261",
+     "問題": "以 macOS、Windows、Web 的關閉按鈕都靠右支持排序並不正確，且第277行又承認 macOS 視窗關閉鈕在左，前後口徑矛盾。",
+     "建議": "移除 macOS 跨平台斷言，直接以本 DS 的影響力排序與 dismiss-rightmost canonical 說明。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story:261 宣稱 close 靠右是「macOS / Windows / Web 一致」跨平台慣例,但 :277 又寫 macOS 視窗 chrome 用左上(且 macOS 現行仍左上,非僅「舊」)— 前後口徑矛盾 + 錯誤 benchmark 斷言(M22)。移除錯誤類比、保留 DS 影響力排序 canonical 理由,AUTO。"
+    },
+    {
+     "id": "d9i18",
+     "dim": 9,
+     "idx": 18,
+     "fileLine": "packages/design-system/src/components/FileViewer/file-viewer.tsx:962",
+     "問題": "FileViewer 在固定 fullscreen className 之後 spread props；consumer className 會整組覆寫定位、層級與動畫類別。",
+     "建議": "先解構 className，再以 cn 合併 consumer 樣式與必要 shell 類別。",
+     "verdict": "VERIFIED",
+     "verifyReason": "file-viewer.tsx:764-778 destructure 未抽 className,:952 固定 fullscreen cn() 之後 :962 才 {...props} — consumer 傳 className 會整組覆寫 fixed inset-0/z-50/動畫類。修法 = 抽出 className 走 cn 合併,屬 bug fix 不動 API 語意。"
+    },
+    {
+     "id": "d10i17",
+     "dim": 10,
+     "idx": 17,
+     "fileLine": "packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:360,363,366,518,519,520,705,717; packages/design-system/src/components/LinkInput/link-input.principles.stories.tsx:76,90,110,120,146,171; packages/design-system/src/components/LinkInput/link-input.stories.tsx:32,48,63,82,99",
+     "問題": "部分 LinkInput 首次渲染即進入未命名 input；其餘按 Pencil 進入 edit branch 後同樣失去 accessible name。",
+     "建議": "所有 standalone LinkInput 傳 aria-label，或置於 Field/FieldLabel。",
+     "verdict": "VERIFIED",
+     "verifyReason": "逐行抽驗 anatomy 8 處(mode='edit' 直接渲染未命名 input)+ principles 6 處 + stories 5 處(view 起點按 Pencil 進 edit 後同樣無名)全部無 aria-label/FieldLabel。"
+    },
+    {
+     "id": "d8i4",
+     "dim": 8,
+     "idx": 4,
+     "fileLine": "packages/design-system/src/components/LinkInput/link-input.spec.md:111",
+     "問題": "狀態只委派 focus、invalid、disabled、readonly，沒有 Loading API，也未標註同步 URL 輸入不適用 Loading。",
+     "建議": "明載同步驗證時 Loading 為 N/A；遠端網址檢查應由 Field 或表單狀態呈現，若要內建則需補完整 spinner 與 `aria-busy` 契約。",
+     "verdict": "VERIFIED",
+     "verifyReason": "link-input.spec.md:115 明列僅委派 focus/invalid/disabled/readonly;全檔與 link-input.tsx grep loading 皆 0 hit。field-controls.spec.md:112 loading canonical 只點名 Input/Combobox 支援、NumberInput 明文不支援,LinkInput 未表態 = 沉默省略,補 N/A 明文 = AUTO。"
+    },
+    {
+     "id": "d9i17",
+     "dim": 9,
+     "idx": 17,
+     "fileLine": "packages/design-system/src/components/LinkInput/link-input.tsx:160",
+     "問題": "LinkInput 預設 view 分支未套用公開 className；同 mode 的有圖示分支卻會套用，形成分支不一致。",
+     "建議": "讓所有 view root 統一合併 className；若裸顯示有意限制 passthrough，需在 spec 明列。",
+     "verdict": "VERIFIED",
+     "verifyReason": "link-input.tsx:162-163 預設 view 裸 span 的 cn() 未合併公開 className,同 mode 的 showDisplayEndIcon 分支(:167)有合併 → 同檔分支不一致;Field 家族同款裸 view(date-picker.tsx:486-487 + date-picker.spec.md:287「className 各 mode 皆顯式接收」)canonical 皆合併 className,LinkInput 屬漏接 bug fix,AUTO。"
+    },
+    {
+     "id": "d12i1",
+     "dim": 12,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/Notice/notice.anatomy.stories.tsx:261",
+     "問題": "使用 Unicode 方框線在可見區域繪製尺寸藍圖，命中 visual-symbol／ASCII-art 禁則。",
+     "建議": "改用實際元件搭配尺寸標註或結構化表格。",
+     "verdict": "VERIFIED",
+     "verifyReason": "notice.anatomy.stories.tsx:261-271 以 <pre> 渲染 Unicode 方框線尺寸藍圖於可見區域,命中 rubric「Visual symbols / ASCII art」禁則(audit-prompts.md:387,rationale 明言 no legitimate use)。"
+    },
+    {
+     "id": "d12i2",
+     "dim": 12,
+     "idx": 2,
+     "fileLine": "packages/design-system/src/components/Notice/notice.anatomy.stories.tsx:464",
+     "問題": "Notice 內容使用「variant 名稱—標題文字」及「本例展示 subtle surface」等規格式佔位文案。",
+     "建議": "為各狀態撰寫具體通知，例如付款成功、同步中斷或權限不足；variant 標示放在元件外。",
+     "verdict": "VERIFIED",
+     "verifyReason": "notice.anatomy.stories.tsx:464 title=`${VARIANT_LABEL[v]} — 標題文字`、:465 description=「本例展示 subtle surface 上的 icon / text 對比。」,均為規格式佔位文案而非真實通知內容。"
+    },
+    {
+     "id": "d24i14",
+     "dim": 24,
+     "idx": 14,
+     "fileLine": "packages/design-system/src/components/Notice/notice.stories.tsx:95,143; packages/design-system/src/components/Notice/notice.anatomy.stories.tsx:74,373",
+     "問題": "DeploymentSuccess／InlineVariants 重複 Overview 與 VariantIconMap。",
+     "建議": "退役兩個展示 story。",
+     "verdict": "VERIFIED",
+     "verifyReason": "屬實:InlineVariants 第一項與 anatomy Overview 內容完全相同(「Audit log 僅限 Business 方案」+ 同款 endContent Button,anatomy:88-95 vs stories:148-152),五 variant 全掃 ≡ VariantIconMap 變體×icon×語意(anatomy:369-385);DeploymentSuccess 為同構單 variant 例。Notice 為 isInternal(notice.spec.md traits),category-templates.md 建議 internal 展示層僅 1 Default + ≤1 composition,退役反而趨近 canonical。"
+    },
+    {
+     "id": "d12i16",
+     "dim": 12,
+     "idx": 16,
+     "fileLine": "packages/design-system/src/components/Toast/toast.stories.tsx:127",
+     "問題": "觸發按鈕「斷線示範」是測試工具語言，不是真實操作。",
+     "建議": "改成「同步資料」或「重新連線」等可能觸發錯誤 Toast 的動作。",
+     "verdict": "VERIFIED",
+     "verifyReason": "toast.stories.tsx:127 觸發按鈕=「斷線示範」為測試工具語言(同列 :124-126「複製檔案/儲存專案/匯入資料」均為真實動作,唯此鈕不一致)。"
+    },
+    {
+     "id": "d12i81",
+     "dim": 12,
+     "idx": 81,
+     "fileLine": "packages/design-system/src/components/Toast/toast.principles.stories.tsx:159",
+     "問題": "觸發按鈕直接以 success、info、warning、error、neutral 等 variant 命名。",
+     "建議": "改成「儲存設定／複製連結／上傳大型檔案／重新付款／下載檔案」等動作。",
+     "verdict": "VERIFIED",
+     "verifyReason": "toast.principles.stories.tsx:159-162 觸發按鈕可見文字確為 variant 名「success/info/warning/error」、:170「neutral 範例」,命中 rubric variant-as-visible-label 類(toast payload 本身已真實:「已儲存」「已複製連結」等)。"
+    },
+    {
+     "id": "d12i82",
+     "dim": 12,
+     "idx": 82,
+     "fileLine": "packages/design-system/src/components/Toast/toast.principles.stories.tsx:186",
+     "問題": "按鈕顯示「預設 4000ms」及「較長 duration 10000ms」，把計時參數當成操作文案。",
+     "建議": "按鈕改成具體動作，duration 移至外部技術註解。",
+     "verdict": "VERIFIED",
+     "verifyReason": "toast.principles.stories.tsx:186 按鈕文字確為「預設 4000ms」、:203「較長 duration(有 description + action,預設 10000ms)」,把計時參數當可見操作文案;Rule title/note(:182/:190-192)已載同資訊,按鈕可改具體動作。"
+    }
+   ]
+  },
+  {
+   "unit": 16,
+   "count": 12,
+   "items": [
+    {
+     "id": "d12i26",
+     "dim": 12,
+     "idx": 26,
+     "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.principles.stories.tsx:225",
+     "問題": "原則頁直接顯示「範例省略」，屬未完成的 placeholder。",
+     "建議": "補上完整正反例，或移除沒有內容的規則區塊。",
+     "verdict": "VERIFIED",
+     "verifyReason": "bulk-action-bar.principles.stories.tsx:225 反例區塊可見文字確為「(範例省略)有 Alert 元件不用是浪費」,原則頁直接顯示未完成 placeholder,屬實。"
+    },
+    {
+     "id": "d24i2",
+     "dim": 24,
+     "idx": 2,
+     "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.stories.tsx:39; packages/design-system/src/components/BulkActionBar/bulk-action-bar.principles.stories.tsx:188",
+     "問題": "WithFilterHidden 與 HintBannerRule 重複 selection=3、hiddenByFilter=2 情境。",
+     "建議": "退役 WithFilterHidden。",
+     "verdict": "VERIFIED",
+     "verifyReason": "屬實:WithFilterHidden(stories:42-47 selection=3+hiddenByFilter=2)與 HintBannerRule 第三個 Rule(principles:232-238 同 selection 3 項+hiddenByFilter=2)同情境,principles 版還多教「inline 進 count 區不開 banner」規則。展示版無新增約束,退役 = 清 duplicate。"
+    },
+    {
+     "id": "d8i2",
+     "dim": 8,
+     "idx": 2,
+     "fileLine": "packages/design-system/src/components/BulkActionBar/bulk-action-bar.spec.md:147",
+     "問題": "操作由 consumer 透過 ReactNode 注入，但未定義批次操作進行時由誰承擔 loading、重複提交防護及選取列保留。",
+     "建議": "規定 action Button 擁有 loading/disabled，操作期間 ActionBar 保持可見並阻止重複觸發。",
+     "verdict": "VERIFIED",
+     "verifyReason": "bulk-action-bar.spec.md 全文無批次操作進行中的 loading/重複提交/選取保留契約(僅 a11y:187 講 disabled action 不藏);form-validation.spec.md:86 的 double-submit canonical 屬 form 層不覆蓋 batch action。補 consumer-owned 責任聲明(action Button 既有 loading/disabled API)= doc 對齊現況。"
+    },
+    {
+     "id": "d12i39",
+     "dim": 12,
+     "idx": 39,
+     "fileLine": "packages/design-system/src/components/Select/select.principles.stories.tsx:279",
+     "問題": "大型清單以「100 個 a/b/c…」描述選項，屬抽象且不真實的資料。",
+     "建議": "改用國家、機場、客戶或方案代碼等可辨識資料。",
+     "verdict": "PARTIAL",
+     "verifyReason": "select.principles.stories.tsx:279 note 文字確含「100 個 a/b/c 不需要搜尋」,但它是原則說明修辭而非選項資料——該 Rule(:277-282)未渲染任何大型清單,檔內實際渲染的選項資料用真實 SKU/分類(:255-257、:270 categoryOptions)。「大型清單以 a/b/c 描述選項屬不真實資料」的定性不準,惟 note 措辭可再具體化,屬非 SSOT 文案微調。"
+    },
+    {
+     "id": "d24i25",
+     "dim": 24,
+     "idx": 25,
+     "fileLine": "packages/design-system/src/components/Select/select.stories.tsx:101; packages/design-system/src/components/Select/select.anatomy.stories.tsx:588,684; packages/design-system/src/components/Select/select.principles.stories.tsx:156",
+     "問題": "DisplayMode 是 plain／tag × edit／readonly 既有矩陣的子集。",
+     "建議": "退役 DisplayMode。",
+     "verdict": "VERIFIED",
+     "verifyReason": "DisplayMode(stories:101-123,plain/tag × edit/readonly)是 anatomy ColorMatrix「text vs tag 模式色彩差異」表(anatomy:648-675,plain/tag × edit/readonly/disabled)的嚴格子集;plain vs tag 選用原則另由 principles DisplayModeRule(principles:156-190)承載。retire 符合 earn-existence + 同 Family 先例,AUTO。"
+    },
+    {
+     "id": "d9i26",
+     "dim": 9,
+     "idx": 26,
+     "fileLine": "packages/design-system/src/components/Select/select.tsx:505",
+     "問題": "Select 的非 edit 分支未把 ref、id、style、data-*、事件與 ARIA allowlist 轉交 ReadonlyDisplay，與檔內明載的跨路徑契約矛盾。",
+     "建議": "讓 ReadonlyDisplay 接收 rootProps/ref，或建立穩定 wrapper，只過濾真正不適用的 select 專屬屬性。",
+     "verdict": "VERIFIED",
+     "verifyReason": "select.tsx:505-506 非 edit 分支只傳 className 等展示 props 給 ReadonlyDisplay,ref/id/style/data-*/事件/aria allowlist 全丟;與檔內 :57-100 user 拍板的兩路徑契約(:64 id、:68 style、:75 data-*、:99 index signature)矛盾屬實。修 = 讓 code 兌現已核准契約,對齊即可。"
+    },
+    {
+     "id": "d12i72",
+     "dim": 12,
+     "idx": 72,
+     "fileLine": "packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx:907",
+     "問題": "架構說明使用 Unicode 線條、箭頭與符號拼成文字圖。",
+     "建議": "改用語意化 DOM 階層清單、表格或有序步驟。",
+     "verdict": "VERIFIED",
+     "verifyReason": "date-picker.anatomy.stories.tsx:906-916「架構」<pre> 確以 Unicode 箭頭/線條(← │ ▼)拼出結構文字圖,命中 rubric visual symbols/ASCII art 類;與 part0 idx 1(Notice anatomy Unicode 方框線)同款判例。"
+    },
+    {
+     "id": "d68i8",
+     "dim": 68,
+     "idx": 8,
+     "fileLine": "packages/design-system/src/components/DatePicker/date-picker.stories.tsx:266",
+     "問題": "回歸故事宣稱 range-middle 日期 hover 時應顯示 ring，但 DateGrid canonical 明定 selected/range-middle 必須抑制 hover ring。",
+     "建議": "改寫斷言為 range-middle 不顯示 hover ring，並把 hover-ring 示範移至未選取日期。",
+     "verdict": "VERIFIED",
+     "verifyReason": "L266 story description 斷言 range_middle hover 應「verify 藍色 1.5px ring 顯示」,但 date-grid.spec.md L119 已於 2026-07-05 修正為「range-middle…button hover ring 一併被 selected 的 ring-0 壓制」(明注舊句『hover ring 仍顯示』已改)。story 斷言對齊現行 canonical,AUTO。"
+    },
+    {
+     "id": "d9i11",
+     "dim": 9,
+     "idx": 11,
+     "fileLine": "packages/design-system/src/components/DatePicker/date-picker.tsx:490",
+     "問題": "showDisplayEndIcon 的 view root 未接 ref/rest props；readonly／disabled root 雖 spread props，仍遺失 ref，超出 spec 僅允許的預設裸 view 例外。",
+     "建議": "為非預設裸 view 的各 mode 建立一致 root ref/props 接線，必要時調整公開 ref 型別。",
+     "verdict": "VERIFIED",
+     "verifyReason": "date-picker.tsx:490-500 showDisplayEndIcon view root 只接 className(無 ref/rest);:507-511 readonly/disabled root spread props 但漏 ref(公開 ref 只掛 edit trigger :548);date-picker.spec.md:287 明文僅豁免「預設裸 view」不 spread props,showDisplayEndIcon 分支不在豁免內 = spec-code drift。對齊 spec 既有契約屬 bug fix AUTO(ref 型別若需擴另議)。"
+    },
+    {
+     "id": "d12i73",
+     "dim": 12,
+     "idx": 73,
+     "fileLine": "packages/design-system/src/components/DescriptionList/description-list.principles.stories.tsx:219",
+     "問題": "DescriptionItem 顯示「此 label 是 neutral-8」「此 value 是 neutral-9」，把色彩 token 當成業務資料。",
+     "建議": "改成「職稱／Senior Design Engineer」等真實欄位，token 說明移到元件外。",
+     "verdict": "VERIFIED",
+     "verifyReason": "description-list.principles.stories.tsx:219-221 DescriptionItem 確以「此 label 是 neutral-8(text-fg-secondary)」/「此 value 是 neutral-9(text-foreground)」把 token 名當可見業務資料;同檔 :204-207 已示範真實欄位寫法(姓名/職稱)。與 part2 idx 42(Steps「此頁為 current + error」)同款判例。"
+    },
+    {
+     "id": "d68i9",
+     "dim": 68,
+     "idx": 9,
+     "fileLine": "packages/design-system/src/components/DescriptionList/description-list.anatomy.stories.tsx:221",
+     "問題": "anatomy 把 value slot 說成可放任意 ReactNode，範圍超過 spec，會誤導 consumer 放入禁止的 Button 或 Input。",
+     "建議": "限定為展示或導覽型內容，例如 Tag、Badge、Link，並明示不可放操作型控制元件。",
+     "verdict": "VERIFIED",
+     "verifyReason": "anatomy L221-222 prose「value 可放任何 ReactNode…型別是寬鬆的 ReactNode」超出 spec 範圍:description-list.spec.md L167「❌ 不要在 dd 內嵌互動元件(Button/Input)」+ L197(2026-07-04 Q9 拍板:操作型禁止、展示/導覽型允許)。範例本身合規,僅 prose 措辭補限定,AUTO。"
+    },
+    {
+     "id": "d90i0",
+     "dim": 90,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/DescriptionList/description-list.principles.stories.tsx:81",
+     "問題": "正向範例將 section heading → DescriptionList 的 macro gap 硬寫為 mb-2；spec 明定此間距須消費 density-aware layout-space-tight，同元件其他 stories 也已使用該 token。",
+     "建議": "改為 mb-[var(--layout-space-tight)]，對齊 DescriptionList section-heading canonical。",
+     "verdict": "VERIFIED",
+     "verifyReason": "屬實:principles 正向範例 section heading 硬寫 mb-2(description-list.principles.stories.tsx:81),spec 明定 heading→first-item gap 必走 `mb-[var(--layout-space-tight)]`(description-list.spec.md:129-133),同元件 showcase stories 已用 token(description-list.stories.tsx:59,98)— 對齊既有 canonical 的 story 修正。"
+    }
+   ]
+  },
+  {
+   "unit": 17,
+   "count": 13,
+   "items": [
+    {
+     "id": "d14i3",
+     "dim": 14,
+     "idx": 3,
+     "fileLine": "packages/design-system/src/patterns/README.md:6,22,31; .claude/rules/ui-development.md:20; packages/design-system/src/hooks/use-overflow-items.ts:65,178",
+     "問題": "文件把 horizontal-overflow helper 稱為可呼叫的 `useOverflowItems` hook，但該 module 實際只匯出 `useScrollEdges` 與 `useOverflowIndices`，會引導使用者尋找不存在的 API。",
+     "建議": "文件改列實際兩個 hook；保留合規的 umbrella 檔名 `use-overflow-items.ts`。",
+     "verdict": "VERIFIED",
+     "verifyReason": "README.md:6,22,31 與 ui-development.md:20 均稱可呼叫的 `useOverflowItems` hook,但 use-overflow-items.ts 僅 export `useScrollEdges`(:65)與 `useOverflowIndices`(:178)及其型別,全庫 grep 無任何 useOverflowItems binding。"
+    },
+    {
+     "id": "d62i3",
+     "dim": 62,
+     "idx": 3,
+     "fileLine": "template/README.md:7-9; template/ds-product-template/README.md:15-21",
+     "問題": "文件把 private team repo 與免費 Netlify onboarding 寫成無條件成立，但 Free/Personal 不支援 organization-owned private repo 或 private-repo team Git contributors，該情境會卡在連 repo。[Netlify plan limits](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/credit-based-pricing-plans/)",
+     "建議": "明列免費路徑的 ownership／協作者限制；setup 偵測 remote owner 與 visibility，遇 organization-private 或多人 private workflow 時提供 Pro 或替代 hosting 引導。",
+     "verdict": "VERIFIED",
+     "verifyReason": "template/README.md:7-9 明寫「Repo = Private(team collaborators)+ Netlify 免費」為無條件路徑,README.md:15-21 onboarding 亦無任何 plan 限制警語;WebFetch Netlify credit-based plan docs 證實 Free 方案 private-repo Git contributors 與 organization-owned private repos 皆 Pro-only,該情境會卡住。"
+    },
+    {
+     "id": "d66i0",
+     "dim": 66,
+     "idx": 0,
+     "fileLine": ".github/workflows/release.yml:293,334; .github/workflows/ssot-sync-dispatch.yml:78; template/ds-product-template/README.md:21,80-85",
+     "問題": "三個 repository_dispatch 發送點都只指向中央 ajenchen/ds-product-template；「Use this template」建立的是獨立 repo，不會收到廣播，因此既有 consumer repo 無法取得承諾的即時同步。",
+     "建議": "以 GitHub App 或 consumer registry 逐 repo dispatch 並驗證版本 ack；否則撤回 fork 自動同步宣稱，明確改為 Dependabot／手動更新。",
+     "verdict": "VERIFIED",
+     "verifyReason": "三個 dispatch 點確實全 hardcode 指向 ajenchen/ds-product-template(release.yml:293、release.yml:334、ssot-sync-dispatch.yml:78),而 README.md:21 的「Use this template」建立獨立 repo 收不到 repository_dispatch,README.md:80-85 卻承諾「DS 任何 push main → fork repo 自動同步」。fork 端僅剩 dependabot.yml daily(template/ds-product-template/.github/dependabot.yml:9-10)非即時,宣稱與機制不符屬實。"
+    },
+    {
+     "id": "d24i1",
+     "dim": 24,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/Badge/badge.stories.tsx:21; packages/design-system/src/components/Badge/badge.anatomy.stories.tsx:126,489",
+     "問題": "Shape 重複個位數正圓、多位數膠囊與 99+ overflow。",
+     "建議": "退役 Shape；保留具獨立邊界的 Dot／MaxCount。",
+     "verdict": "VERIFIED",
+     "verifyReason": "Shape 三段(個位數正圓/多位數膠囊/max+ 溢出)全數被 anatomy Overview 規則(anatomy:134,146,157)與 SizeMatrix 預覽表(個位數/多位數/溢出 99+/Dot 真渲染,anatomy:546-565)覆蓋,溢出行另與同檔 MaxCount(stories:61)重複。退役屬清 duplicate,照 Avatar/Chip 先例補 @story-trait-rationale 即可(isMatrixHeavy ≥4 matrix 本就未滿足)。"
+    },
+    {
+     "id": "d68i2",
+     "dim": 68,
+     "idx": 2,
+     "fileLine": "packages/design-system/src/components/Badge/badge.anatomy.stories.tsx:256,443,563",
+     "問題": "Inspector、ColorMatrix、SizeMatrix 的純圓點 Badge 未提供 aria-label，違反狀態指示器的無障礙契約。",
+     "建議": "為每個 dot Badge 補上符合情境的狀態 aria-label。",
+     "verdict": "VERIFIED",
+     "verifyReason": "L256(Inspector)/L443(variant 矩陣)/L563(SizeMatrix)三處 <Badge dot> 均無 aria-label,violate badge.spec.md L334「Dot 模式…必須給 aria-label」。story a11y 補修,AUTO。"
+    },
+    {
+     "id": "d7i2",
+     "dim": 7,
+     "idx": 2,
+     "fileLine": "packages/design-system/src/components/Badge/badge.spec.md:325",
+     "問題": "A11y 段漏掉實作預設 role=\"status\"：Badge 會成為 polite live region，內容更新可能被主動播報。",
+     "建議": "補齊預設播報、明確 role 覆寫及隱藏時機；若要支援無 role，需同步修正目前 undefined 仍回退 status 的 API。",
+     "verdict": "VERIFIED",
+     "verifyReason": "badge.tsx:94 預設 `role={role ?? 'status'}`(= polite live region,計數變化可被播報),但 badge.spec.md「無障礙」段(:319-348)與全檔均無 role=\"status\" / live region 記載(grep 0 hit)。補文檔=doc 對齊 code;另 tsx:90 註解稱可傳 role={undefined} 移除,實際 `?? ` 仍回退 status,建議段所指 API 弱點亦真。"
+    },
+    {
+     "id": "d43i3",
+     "dim": 43,
+     "idx": 3,
+     "fileLine": "packages/design-system/src/components/Chart/chart.principles.stories.tsx:235",
+     "問題": "把 GitHub contribution graph 列為 Line chart 範例不正確；GitHub 官方描述它是 54 欄×8 列、逐格呈現每日資料的圖，不是折線圖。[GitHub 官方說明](https://github.blog/changelog/2023-03-02-accessibility-improvements-for-the-contribution-graph/)",
+     "建議": "換成真正的時間序列折線案例，例如 GitHub traffic views、issue 數量或 MRR 趨勢。",
+     "verdict": "VERIFIED",
+     "verifyReason": "chart.principles.stories.tsx:235 確把「GitHub 的 contribution graph」列為 Line 場景;該圖實為 53×7 逐日方格 heatmap 非折線圖,範例事實錯誤(違 mindset #4 範例真實性)。換成真時間序列案例屬範例修正,AUTO。"
+    },
+    {
+     "id": "d9i4",
+     "dim": 9,
+     "idx": 4,
+     "fileLine": "packages/design-system/src/components/Chart/chart.tsx:202",
+     "問題": "ChartTooltipContentProps 宣告完整 div props，但 root div 未 spread 剩餘屬性，data-*、ARIA、style 與事件會靜默失效。",
+     "建議": "分離 Recharts 專屬欄位後，將 DOM-safe rest props 轉交 root div。",
+     "verdict": "VERIFIED",
+     "verifyReason": "chart.tsx:140 ChartTooltipContentProps extends Omit<ComponentProps<'div'>,'color'> 宣告完整 div props,但 :162-178 destructure 無 rest、:202-210 root div 只接 ref/role/aria-live/className → 宣告的 data-*/style/事件靜默失效。讓 code 履行已宣告型別 contract = bug fix,AUTO。"
+    },
+    {
+     "id": "d9i5",
+     "dim": 9,
+     "idx": 5,
+     "fileLine": "packages/design-system/src/components/Chart/chart.tsx:305",
+     "問題": "ChartLegendContentProps 宣告完整 div props，但 root div 未 spread 剩餘屬性。",
+     "建議": "收集並轉交 DOM-safe rest props，保留元件自管的 legend 欄位。",
+     "verdict": "VERIFIED",
+     "verifyReason": "chart.tsx:292 ChartLegendContentProps extends React.ComponentProps<'div'>,但 :300 destructure 無 rest、:305-311 root div 只接 ref + className,宣告的 DOM props 全數丟失。同 idx 4 型別-實作 drift bug fix,AUTO。"
+    },
+    {
+     "id": "d10i3",
+     "dim": 10,
+     "idx": 3,
+     "fileLine": "packages/design-system/src/components/Command/command.tsx:123",
+     "問題": "CommandSeparator 保留 role=separator，卻被直接放入 role=listbox，造成 aria-required-children hard failure。",
+     "建議": "純視覺分隔線改為 role=presentation/none，或移出 listbox ownership。",
+     "verdict": "VERIFIED",
+     "verifyReason": "command.tsx:119-128 CommandSeparator 直包 cmdk Separator(rendered role=separator)未覆寫 role,而 cmdk List 為 role=listbox,separator 非 listbox 合法 owned child(aria-required-children)。"
+    },
+    {
+     "id": "d68i4",
+     "dim": 68,
+     "idx": 4,
+     "fileLine": "packages/design-system/src/components/Command/command.stories.tsx:155",
+     "問題": "InlineCommand 正向範例只有四個項目，仍使用可搜尋 Command，違反少於六項的短清單禁令。",
+     "建議": "維持四項時改用 DropdownMenu；若要示範 Command，改成至少六個真實且需要搜尋的項目。",
+     "verdict": "VERIFIED",
+     "verifyReason": "InlineCommand(L155-200)僅 4 個 CommandItem 配 CommandInput,violate command.spec.md L75「❌ 不在短選單(< 6 項)用 Command」+ L39 短清單→DropdownMenu;鄰近 story 已有同 dim 修正紀錄(L204 comment)但本 story 未修。story 修正,AUTO。"
+    },
+    {
+     "id": "d10i16",
+     "dim": 10,
+     "idx": 16,
+     "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:209,338,485,522,630,666,678,697,747; packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:134; packages/design-system/src/components/NumberInput/number-input.stories.tsx:62",
+     "問題": "edit-mode NumberInput 沒有程式化名稱；矩陣表頭不會自動成為 input accessible name。",
+     "建議": "補包含尺寸或狀態的 aria-label，或使用 FieldLabel。",
+     "verdict": "VERIFIED",
+     "verifyReason": "逐行抽驗 anatomy 9 處 + principles:134 + stories:62 全部 NumberInput 無 aria-label/FieldLabel;矩陣表頭文字未與 input 程式化關聯。"
+    },
+    {
+     "id": "d43i12",
+     "dim": 43,
+     "idx": 12,
+     "fileLine": "packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:66",
+     "問題": "標題宣稱 DataTable 不用 NumberInput，note 卻說 DataTable 會自動使用 NumberInput 的 view 模式，前後結論衝突；純文字 note 也直接露出 JSX。",
+     "建議": "收斂為不要在表格內手動放可編輯 NumberInput；DataTable 會自動用 view 模式格式化數值，因為儲存格主要用於展示與比較。",
+     "verdict": "VERIFIED",
+     "verifyReason": "number-input.principles.stories.tsx:65-66 標題「❌ 不用 NumberInput 做 DataTable 列表展示」與 note「DataTable 的 currency 欄位自動消費 <NumberInput mode='view'>」並存,字面互相衝突。純文字 note 也確實露出 JSX 字串 <NumberInput mode='view'>。"
+    }
+   ]
+  },
+  {
+   "unit": 18,
+   "count": 12,
+   "items": [
+    {
+     "id": "d12i23",
+     "dim": 12,
+     "idx": 23,
+     "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx:103",
+     "問題": "卡片使用「標題文字」及泛稱段落作為內容，屬明顯 placeholder。",
+     "建議": "換成具體文章、新聞或商品卡片的標題與摘要。",
+     "verdict": "VERIFIED",
+     "verifyReason": "aspect-ratio.principles.stories.tsx:103「標題文字」+ :104-106 自我描述段落(「內容長度不固定的段落,包 AspectRatio 會強制裁切…」)皆為佔位/後設文案,非真實內容,屬實。"
+    },
+    {
+     "id": "d12i24",
+     "dim": 12,
+     "idx": 24,
+     "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx:147",
+     "問題": "表單使用「表單標題」「這裡有一些說明文字」等抽象佔位文案。",
+     "建議": "改成「建立專案」及建立後效果的具體說明。",
+     "verdict": "VERIFIED",
+     "verifyReason": "aspect-ratio.principles.stories.tsx:147「表單標題」、:148「這裡有一些說明文字,長度不固定。」為抽象佔位文案,屬實。"
+    },
+    {
+     "id": "d12i54",
+     "dim": 12,
+     "idx": 54,
+     "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:80",
+     "問題": "四列內容使用「載入項目 1／2／3／4」，命中 Item-N placeholder。",
+     "建議": "改成 Q2 營收報表、客戶名單、庫存摘要、付款紀錄等真實資料。",
+     "verdict": "VERIFIED",
+     "verifyReason": "circular-progress.principles.stories.tsx:80 渲染內容確為「載入項目 {i + 1}」= Item-N placeholder(audit-prompts.md:384 明列禁項);反例示範亦應用真實資料名。"
+    },
+    {
+     "id": "d43i4",
+     "dim": 43,
+     "idx": 4,
+     "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:62",
+     "問題": "note 宣稱常駐旋轉會讓螢幕閱讀器持續收到 loading 通知，但實作無 label 時是 aria-hidden；CSS 旋轉也不會持續觸發朗讀。",
+     "建議": "改用正確理由：永久旋轉會錯誤傳達仍在處理並造成持續動態干擾；裝飾用途應改用一般 Icon。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story:62 宣稱常駐旋轉讓螢幕閱讀器「持續收到 loading 通知」,但 circular-progress.tsx:40+130 實作為無 label 時 aria-hidden、有 label 時 role=status(polite,內容不變不重複朗讀),CSS 旋轉不觸發朗讀 — note 理由與實作不符。改寫正確理由 = doc 對齊 code,AUTO。"
+    },
+    {
+     "id": "d12i83",
+     "dim": 12,
+     "idx": 83,
+     "fileLine": "packages/design-system/src/tokens/radius/radius.stories.tsx:50",
+     "問題": "實際 Button child 只顯示元件名稱「Button」，沒有操作目的。",
+     "建議": "改成「新增訂單」等真實動作；元件名稱保留在外部 caption。",
+     "verdict": "VERIFIED",
+     "verifyReason": "radius.stories.tsx:50 真 Button child 確為元件名「Button」(同段 :51-53 Input/Tag/Card 為 mock 標本),無操作目的文案;與 part1 idx 27(Button variant 名復述)同類判例,marginal 屬實。"
+    },
+    {
+     "id": "d8i16",
+     "dim": 8,
+     "idx": 16,
+     "fileLine": "packages/design-system/src/tokens/radius/radius.spec.md:126",
+     "問題": "規格結尾沒有 Related 或反向連結，雖引用多個 overlay consumer，卻無法導向 token-system、elevation 或 overlay-surface 等近親規格。",
+     "建議": "新增 Related 區段及對應反向連結，說清楚 radius 與 elevation、border、overlay surface 的責任邊界。",
+     "verdict": "VERIFIED",
+     "verifyReason": "radius.spec.md 全檔 126 行以 rationale 收尾,grep 無「相關/Related」section,無法導向 token-system/elevation/overlay-surface 近親規格屬實(spec-rules.md:15 要求相關 links 維度)。補反向連結 = doc completeness。"
+    },
+    {
+     "id": "d20i2",
+     "dim": 20,
+     "idx": 2,
+     "fileLine": "packages/design-system/src/components/Input/input.spec.md:153",
+     "問題": "`autoWidth` 行為表完整複寫 `inline-flex w-auto` 與 `field-sizing:content w-auto min-w-0` 的實作配方；這些 mechanics 已由 input.tsx 承載。",
+     "建議": "spec 只描述 wrapper 隨內容收縮、input 隨內容寬度變化及 fallback 行為，具體 utility 改指向 input.tsx。",
+     "verdict": "VERIFIED",
+     "verifyReason": "input.spec.md:157-160 autoWidth 行為表逐字複寫 `inline-flex w-auto` / `field-sizing:content w-auto min-w-0` 實作配方(input.tsx 已承載),違 spec-rules.md「spec 不描述實作細節」職責分離,屬實。"
+    },
+    {
+     "id": "d43i11",
+     "dim": 43,
+     "idx": 11,
+     "fileLine": "packages/design-system/src/components/Input/input.principles.stories.tsx:131",
+     "問題": "純文字 note 塞入原始 JSX，以及 Model A、naked variant、host cell 等內部黑話，不是可舉一反三的使用原則。",
+     "建議": "改成人話說明表格儲存格已有自己的版面，展示值應走 view 模式，避免 readonly 外殼增加視覺重量；實作機制留在 spec。",
+     "verdict": "VERIFIED",
+     "verifyReason": "input.principles.stories.tsx:131 note 確含 `<Input mode='view'>` 原始 JSX 與「Model A / naked variant / host cell」內部黑話,公開原則應人話說「儲存格展示值走 view 模式」而機制留 spec(feedback_propose_discipline 人話紀律)。表達層 AUTO。"
+    },
+    {
+     "id": "d24i8",
+     "dim": 24,
+     "idx": 8,
+     "fileLine": "packages/design-system/src/components/FileItem/file-item.stories.tsx:42,61; packages/design-system/src/components/FileItem/file-item.anatomy.stories.tsx:178,285; packages/design-system/src/components/FileItem/file-item.principles.stories.tsx:98,159",
+     "問題": "Rich／Compact 重複各 mode 的 uploading／completed／error generic grid。",
+     "建議": "退役兩個 generic story，保留具新行為的 consumer stories。",
+     "verdict": "VERIFIED",
+     "verifyReason": "屬實:Rich/Compact 的 mode × uploading/completed/error 網格已被 anatomy ModeMatrix(anatomy:183-200 rich+compact 各 status 列)與 StateBehavior 全狀態對照含 actions(anatomy:288-296)覆蓋,規則面 ≡ principles ModeRule(:98)+StatusProgressRule(:159)。展示層仍留 HoverSwap 等 consumer 行為 story,退役 generic grid = 清 duplicate。"
+    },
+    {
+     "id": "d33i4",
+     "dim": 33,
+     "idx": 4,
+     "fileLine": "packages/design-system/src/components/FileItem/file-item.anatomy.stories.tsx:224",
+     "問題": "Story 以「Mode 決定 density」合理化無 size prop；但 file-item.spec.md:22-24、50-66 定義 compact/rich 為資訊量與結構策略，且兩者皆為 scanning，混淆 mode、size、global density 三軸。",
+     "建議": "改用 information-richness／structure mode rationale，明確分開 mode、size 與 density。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story:224-228「Mode 決定 density…已覆蓋所有密度需求…Size tier 的區別在 mode 上已足夠表達」與 file-item.spec.md:24「兩者是資訊量不同的展示策略,不是同一結構的尺寸縮放」+ spec:55-66 兩 mode 皆 scanning 相牴觸,確混淆 mode/size/global density 三軸。修 story rationale 對齊 spec = AUTO。"
+    },
+    {
+     "id": "d43i15",
+     "dim": 43,
+     "idx": 15,
+     "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.principles.stories.tsx:166",
+     "問題": "Material Snackbar 固定344px並非正確 benchmark；官方明載中大型畫面應依較長文案水平伸縮，而且 Snackbar 也不是人員預覽卡的近親。[Material Snackbar](https://m2.material.io/components/snackbars/android)",
+     "建議": "保留避免切換人員時浮層左右跳動的本地理由；刪除錯誤類比，若需 benchmark 應改查同目的的 profile或hover card。",
+     "verdict": "VERIFIED",
+     "verifyReason": "profile-card.principles.stories.tsx:166 確有「對照 Material Snackbar 固定 344px」無 inline cite 斷言;Material 官方 344dp 是大螢幕最小寬(隨較長文案伸縮、上限 672dp),「固定」為誤引,且 Snackbar 與人員預覽卡非同目的近親(M22 violation)。"
+    },
+    {
+     "id": "d68i10",
+     "dim": 68,
+     "idx": 10,
+     "fileLine": "packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:455,458,461",
+     "問題": "SectionMatrix 正例使用兩個非 canonical 自訂 action，未消費 ProfileCardDefaultActions；spec 的手刻例外只涵蓋明示的 1-action 或 3-action 數量測試。",
+     "建議": "改用 ProfileCardDefaultActions；若要測 action 數量，須改成明確標示且符合例外範圍的數量矩陣。",
+     "verdict": "VERIFIED",
+     "verifyReason": "anatomy:455-464(實為 StateBehavior story,非 SectionMatrix,行號正確)用自訂「傳訊 primary + 加入團隊 tertiary」兩顆 action,未消費 ProfileCardDefaultActions;profile-card.spec.md:103 明定 canonical actions = Chat + Audio call,例外僅限明示的 single/3-action 數量展示,本例 2-action 且無明示不在例外內。"
+    }
+   ]
+  },
+  {
+   "unit": 19,
+   "count": 13,
+   "items": [
+    {
+     "id": "d68i19",
+     "dim": 68,
+     "idx": 19,
+     "fileLine": "packages/design-system/src/tokens/opacity/opacity.stories.tsx:10,54",
+     "問題": "故事絕對宣稱非 disabled 的透明度需求都走 alpha 色階，遺漏已 codify 的 DataTable refresh-loading 與 drag-source opacity-disabled 重用例外。",
+     "建議": "保留單一 opacity token 的主軸，但明列這兩個封閉例外，避免被理解成可任意擴張的通則。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story:10 與 :54 絕對宣稱「其他透明度需求走 alpha 色階,不另開 opacity token」,遺漏 opacity.spec.md:24 已 codify 的兩個 reuse 例外(DataTable 整表 refresh loading + drag source 半透,皆重用 --opacity-disabled 於非 disabled 情境,data-table.spec.md:189/:408)。"
+    },
+    {
+     "id": "d8i20",
+     "dim": 8,
+     "idx": 20,
+     "fileLine": "packages/design-system/src/tokens/opacity/opacity.spec.md:24",
+     "問題": "規格允許 DataTable refresh 與 Rating loading 重用 opacity，但 A11y 只涵蓋 disabled，未聲明 opacity 僅是視覺效果，不能取代 `aria-busy`、可存取進度或互動封鎖。",
+     "建議": "補上 loading 委派契約：消費元件負責 `aria-busy`、進度名稱、互動策略及既有內容保留；同步對齊 DataTable owner。",
+     "verdict": "VERIFIED",
+     "verifyReason": "opacity.spec.md:24 codify DataTable refresh loading reuse、:67 列 Rating「disabled / loading 整塊」,但 :61-63 A11y 段只講 disabled/aria-disabled,全檔無 aria-busy/進度/互動封鎖委派聲明屬實。補 loading 委派 pointer 即對齊 consumer 既有 canonical(rating.spec.md:137 已 own aria-busy)= doc completeness。"
+    },
+    {
+     "id": "d8i14",
+     "dim": 8,
+     "idx": 14,
+     "fileLine": "packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:81",
+     "問題": "規格聲稱 Modal／Dialog 尺寸調整可改用「Sheet 自帶 handle」，但現有 Sheet 規格、API 與 stories 都沒有 resize 或 drag handle 能力。",
+     "建議": "若意指固定尺寸替代方案，直接寫成固定尺寸 Sheet；真正可調整窗格應指向實際存在或明確標為未來規劃的 ResizeHandle／SplitPane。",
+     "verdict": "VERIFIED",
+     "verifyReason": "resize-handle.spec.md:81 稱「那是 <Sheet> 自帶 handle」,但 grep Sheet spec/tsx/stories 全無 resize/drag handle 能力(sheet.tsx 僅 :98 handleSheetOpenAutoFocus 同名巧合)。移除不實指引 = doc 對齊 code。"
+    },
+    {
+     "id": "d8i15",
+     "dim": 8,
+     "idx": 15,
+     "fileLine": "packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:20",
+     "問題": "只列出預計 consumer 名稱，沒有可導航的相關規格連結，也未交代 primitive 自身的 empty、loading、validation 是否為 N/A。",
+     "建議": "新增 DataTable、Sidebar、AppShell、Sheet 等實際相關連結，並明載這三種狀態由 consumer 擁有或對本 primitive 不適用。",
+     "verdict": "VERIFIED",
+     "verifyReason": "resize-handle.spec.md:20-24 消費者清單只列名無可導航連結,全檔 120 行 grep 無 Related/相關 section 亦無 empty/loading/validation N/A 聲明;spec-rules.md:15 的 7 維度含「相關 links / 空值 / 驗證 / Loading」。補 pointer 與 N/A 聲明 = doc completeness。"
+    },
+    {
+     "id": "d9i12",
+     "dim": 9,
+     "idx": 12,
+     "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:165",
+     "問題": "DropdownMenuContent 的 asChild 直接作用於 RowSizeProvider；Radix 注入的 ref、className、data-state 等會被 Provider 吃掉，consumer host 不會成為 Content root。",
+     "建議": "把 Provider 移到可替換 host 內側，確保 Content 的直接 child 是 consumer 單一元素；或移除 asChild 並記錄原因。",
+     "verdict": "VERIFIED",
+     "verifyReason": "dropdown-menu.tsx:123-124 props extends ComponentPropsWithoutRef<Content>(含 asChild)且 :163 spread,而 Content 直接 child = RowSizeProvider(:165)→ asChild 時 Slot clone Provider,Radix 注入的 ref/className/data-state 被非 DOM 的 Provider 吞掉。asChild bug class 修復/型別收斂 AUTO。"
+    },
+    {
+     "id": "d9i13",
+     "dim": 9,
+     "idx": 13,
+     "fileLine": "packages/design-system/src/components/DropdownMenu/dropdown-menu.tsx:195",
+     "問題": "DropdownMenuSubContent 同樣讓 asChild clone RowSizeProvider，導致 ref、樣式與 Radix data attributes 無法落到 DOM。",
+     "建議": "重排 Provider 與 Slot 層級，或從公開型別移除 asChild 並文件化。",
+     "verdict": "VERIFIED",
+     "verifyReason": "dropdown-menu.tsx:182-198 SubContent 同型:props 含繼承 asChild(:184)且 :193 spread,直接 child = RowSizeProvider(:195)→ asChild 時 ref/樣式/data attributes 無法落 DOM。同 idx 12,AUTO。"
+    },
+    {
+     "id": "d10i11",
+     "dim": 10,
+     "idx": 11,
+     "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:48,63",
+     "問題": "aria-label 被套到 Root，而非實際可聚焦的 Viewport，焦點所屬捲動區仍無名稱。",
+     "建議": "把 viewport ARIA props 轉傳至 Viewport，或提供專用 viewport label API。",
+     "verdict": "VERIFIED",
+     "verifyReason": "scroll-area.tsx:48-53 consumer props(含 aria-label)全 spread 到 Root;實際可聚焦的 Viewport(:63-68)只拿 tabIndex 與 className,無任何名稱轉傳機制。"
+    },
+    {
+     "id": "d24i11",
+     "dim": 24,
+     "idx": 11,
+     "fileLine": "packages/design-system/src/components/InlineEdit/inline-edit.stories.tsx:137,178; packages/design-system/src/components/InlineEdit/inline-edit.anatomy.stories.tsx:101; packages/design-system/src/components/InlineEdit/inline-edit.principles.stories.tsx:122",
+     "問題": "SelectTagField／MultilineDescription 重複既有 live state 與內容規則。",
+     "建議": "退役兩個展示 story。",
+     "verdict": "VERIFIED",
+     "verifyReason": "屬實:SelectTagField 的 Select mode=view display=tag 委派 ≡ anatomy StateBehavior「格式化(Tag)」live row(anatomy:101 起,同款 Select 組合),MultilineDescription ≡ StateBehavior「多行」row + principles ContentGuidelines「多行用 multiline」「別把格式化 Tag 自刻」卡(principles:122-140)。退役 = 清 duplicate,展示層仍留 VerticalFieldForm 等 composition。"
+    },
+    {
+     "id": "d24i17",
+     "dim": 24,
+     "idx": 17,
+     "fileLine": "packages/design-system/src/components/Pagination/pagination.stories.tsx:14; packages/design-system/src/components/Pagination/pagination.principles.stories.tsx:34",
+     "問題": "Default 與 UsageGuidance 完全重複 total=128 的 controlled Pagination。",
+     "建議": "退役 Default。",
+     "verdict": "VERIFIED",
+     "verifyReason": "兩者皆渲染 total=128 controlled Pagination(stories:14-27 vs principles:41-47),rendered 控件相同僅文案/初始頁不同,Default 無 principles LinkTo 依賴。退役 Default 不觸 R3 hook(anatomy 有 ColorMatrix,check_story_invariants.sh:304-306),且有 Slider Default retire per Dim 24 先例(slider.stories.tsx:15-16)。"
+    },
+    {
+     "id": "d33i0",
+     "dim": 33,
+     "idx": 0,
+     "fileLine": ".claude/rules/story-rules.md:34",
+     "問題": "Public/Internal 仍採已被 ui-development.md:14-26 明文淘汰的「預設視覺／直接渲染／是否被 wrapper」分類法；FieldControlGroup、ResizeHandle 等 public composition primitive 會被誤判。",
+     "建議": "刪除舊三 test，統一指向 intent-based public-API SSOT。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story-rules.md:34 仍用「有預設視覺/直接渲染有視覺/消費者都包 wrapper」三 test,而 ui-development.md:14+26 已於 2026-06-06 明文 retire 空 render 類判準並記載 FieldControlGroup/ResizeHandle 誤判 anchor。兩 rule 判準矛盾屬實,修法 = 對齊既有 intent-based SSOT(AUTO)。"
+    },
+    {
+     "id": "d38i0",
+     "dim": 38,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/patterns/action-bar/action-bar.spec.md:293",
+     "問題": "把 `gap-1` dense action container 誤稱為 item-anatomy story 的 inline-action 群先例；實際上 Button xs 群使用 gap-1，ItemInlineAction 群使用 canonical gap-2，形成錯誤例外暗示。",
+     "建議": "改稱 Button xs action-group 先例，並明示不適用 ItemInlineAction；ItemInlineAction siblings 維持 gap-2。",
+     "verdict": "VERIFIED",
+     "verifyReason": "屬實:action-bar.spec.md 分隔線幾何節(~:291)把 gap-1 dense 容器的 h-5 mx-1 稱「item-anatomy.stories.tsx inline-action 群先例」,實際該先例是 Button iconOnly 群(item-anatomy.stories.tsx:1565-1569 gap-1 + Separator h-5 mx-1;xs 群 :1590-1594 gap-1),ItemInlineAction 群用 canonical gap-2(:1598-1602)— 措辭誤標先例、幾何值本身無誤,改稱 Button action-group 先例即可(doc 對齊,不動 canonical 值)。"
+    },
+    {
+     "id": "d44i6",
+     "dim": 44,
+     "idx": 6,
+     "fileLine": "scripts/gen-design-system-barrel.mjs:238",
+     "問題": "Internal marker gate 只檢查單元內是否出現 `@internal` 文字；10 個 internal 單元的 62 個 exported symbols 均未取得 declaration-level JSDoc tag，因此 subpath IntelliSense 不會出現規則宣稱的 internal 警示。",
+     "建議": "改用 TypeScript AST 驗每個公開 declaration 的 `@internal` tag，或明確把 marker 降格為 module-only、撤回 IDE 警示宣稱。",
+     "verdict": "VERIFIED",
+     "verifyReason": "gen-design-system-barrel.mjs:238-247 `hasInternalMarker` 僅檢查 dir 內任一 tsx 含 `@internal` 字串(module-level text presence);實測 10 個 internal 單元的 marker 全是檔頭 file-level 註解(如 command.tsx:3 / boolean-value.tsx:1 行註解),exported declarations(粗估約 60 個 symbols)無 declaration-level JSDoc tag,IDE hover 不會顯示 ui-development.md 宣稱的 intellisense 警示。補 declaration-level tag + 強化 gate = 落實既有 canonical 的機械化對齊,不動 API/語意 → AUTO。"
+    },
+    {
+     "id": "d62i6",
+     "dim": 62,
+     "idx": 6,
+     "fileLine": "template/ds-product-template/netlify/edge-functions/basic-auth.ts:28-39",
+     "問題": "401 challenge 宣告 UTF-8，但程式直接把 `atob()` byte-string 與 Unicode env string 比較；非 ASCII 帳密會固定驗證失敗。",
+     "建議": "用 `TextDecoder` 將 Base64 bytes 解成 UTF-8 後比較，或在全部設定引導中明確限制並驗證 ASCII 帳密。",
+     "verdict": "VERIFIED",
+     "verifyReason": "basic-auth.ts:32 直接以 `atob()`(latin1 byte-string)比對 Deno.env 的 Unicode 字串,:39 卻宣告 charset=\"UTF-8\";非 ASCII 帳密經瀏覽器 UTF-8 編碼後永遠比對失敗固定 401。"
+    }
+   ]
+  },
+  {
+   "unit": 20,
+   "count": 13,
+   "items": [
+    {
+     "id": "d62i7",
+     "dim": 62,
+     "idx": 7,
+     "fileLine": "template/ds-product-template/docs/02-create-new-product.md:56",
+     "問題": "文件指稱 `netlify.toml:14` 是 `build.command`，實際 command 在第 13 行，第 14 行是 publish。",
+     "建議": "改引第 13 行，或移除脆弱固定行號、直接引用 `[build].command`。",
+     "verdict": "VERIFIED",
+     "verifyReason": "02-create-new-product.md:56 引用「netlify.toml:14 build.command」,實際 template/ds-product-template/netlify.toml:13 才是 command、:14 是 publish,行號引用錯一行。"
+    },
+    {
+     "id": "d66i1",
+     "dim": 66,
+     "idx": 1,
+     "fileLine": ".github/workflows/mirror-to-published-template.yml:100-110,184; template/ds-product-template/.github/workflows/sync-design-system.yml:104-114",
+     "問題": "Mirror 永久排除 .github/workflows，且無替代同步通道；live published receiver 已與 canonical 不同，仍缺完整 typecheck、import lint、全 app build 與 a11y gate，dispatch 實際打到 stale workflow。",
+     "建議": "用具 Workflows:write 權限的專用 token或 GitHub App 同步 workflows，並加入 canonical 與 published workflow hash 的 fail-closed gate。",
+     "verdict": "VERIFIED",
+     "verifyReason": "mirror-to-published-template.yml:110 rsync `--exclude='.github/workflows'` + :184 明註「已保留未動」,repo 內無任何替代 workflow 同步通道(僅 verify-published-deploy.mjs 健檢)。已實測 gh api 抓 live 受方 sync-design-system.yml 與 canonical diff:live 版停在舊「Verify build still pass」(只 build apps/template),缺 2026-07-14 加的 typecheck/lint:imports/全 build/a11y Full audit gate(canonical :108-114),dispatch 確實打到 stale workflow。"
+    },
+    {
+     "id": "d66i2",
+     "dim": 66,
+     "idx": 2,
+     "fileLine": ".github/workflows/composition-fidelity.yml:20-25; .github/workflows/mirror-to-published-template.yml:51-55",
+     "問題": "Composition fidelity 只在 DS push／PR／手動執行；Release 完成後的 mirror 或 receiver 更新不會觸發重跑，因此比較時可能仍是舊 consumer，無法證明已發布版本的最終 visual parity。",
+     "建議": "在 mirror 成功後回 dispatch 或用 workflow_run 觸發 parity，並鎖定 release SHA、npm 版本與更新後 consumer commit。",
+     "verdict": "VERIFIED",
+     "verifyReason": "composition-fidelity.yml:20-25 觸發僅 push main / pull_request / workflow_dispatch,無 workflow_run(Mirror)亦無 repository_dispatch;mirror(workflow_run on Release,mirror-to-published-template.yml:51-55)推 published repo 後不會回觸 DS repo 的 parity 重跑。DS push 觸發時 consumer checkout(composition-fidelity.yml:44-48)拿的是尚未被 mirror 更新的舊 consumer main,無法證明已發布版本最終 parity,屬實。"
+    },
+    {
+     "id": "d66i3",
+     "dim": 66,
+     "idx": 3,
+     "fileLine": "scripts/visual-assertions.json:219,297,357,381,421; scripts/visual-audit.mjs:463-469,676-684",
+     "問題": "113 個 scenario 中有 5 個缺 committed Ubuntu baseline：Alert/WithDescription、AspectRatio/ProductPhoto4x3、InlineEdit/States、Pagination/FullBar、Skeleton/DocumentLoading；fail-closed runner 使 visual-regression 現況持續失敗。",
+     "建議": "補齊 5 張 Ubuntu baseline，並新增 manifest PNG 集合與 baseline PNG 集合完全相等的 deterministic gate。",
+     "verdict": "VERIFIED",
+     "verifyReason": "實測 manifest 113 scenarios、snapshots-baseline/ 僅 108 PNG,set-compare 缺的正是 alert-with-description / aspectratio-product-photo-4-x-3 / inlineedit-states / pagination-full-bar / skeleton-document-loading 五張(無多餘檔)。visual-audit.mjs:463-468 baseline 缺失記 diff error + :676-684 totalDiffErrors 進 exit 1 gate(fail-closed),現況必紅,屬實。"
+    },
+    {
+     "id": "d66i4",
+     "dim": 66,
+     "idx": 4,
+     "fileLine": ".github/workflows/release.yml:309-310",
+     "問題": "PAT 指引寫成不存在的 fine-grained scope「repo:write」；repository_dispatch 的 fine-grained 權限應是目標 repo Contents:write，classic PAT 才使用 repo scope。",
+     "建議": "分開列明 fine-grained PAT 的 repository access＋Contents:Read and write，以及 classic PAT 的 repo scope。",
+     "verdict": "VERIFIED",
+     "verifyReason": "release.yml:310 寫「Fine-grained,scope: repo:write」— fine-grained PAT 無「repo:write」這種 scope(fine-grained 用 repository permissions 如 Contents: Read and write;repo 是 classic PAT scope),指引確實混淆兩制。同 repo mirror-to-published-template.yml:16 已正確寫「Contents: write」可為對照。"
+    },
+    {
+     "id": "d66i5",
+     "dim": 66,
+     "idx": 5,
+     "fileLine": ".github/workflows/release.yml:13-32; .github/workflows/mirror-to-published-template.yml:51-63",
+     "問題": "Mirror 對所有成功的 Release workflow_run 都啟動，未排除 repoint-latest／clear-latest 手動維護模式，可能對未發布 main SHA 執行無謂 mirror 或產生 registry poll 假紅。",
+     "建議": "限制 workflow_run.event 為 push，僅接受 tag release 主路徑。",
+     "verdict": "VERIFIED",
+     "verifyReason": "release.yml:13-32 workflow_dispatch 含 repoint-latest / clear-latest 維護模式,跑完 Release workflow 仍是 success;mirror-to-published-template.yml:51-54 workflow_run 觸發 + :63 job if 只查 `conclusion == 'success'`,未過濾 `workflow_run.event`,維護模式也會啟動 mirror。若 main 處於「已 bump 未 publish」窗口,workflow_run 路徑 5min poll 失敗即紅(:138-151),假紅風險屬實。"
+    },
+    {
+     "id": "d68i7",
+     "dim": 68,
+     "idx": 7,
+     "fileLine": "packages/design-system/src/components/DateGrid/date-grid.stories.tsx:31; packages/design-system/src/components/DateGrid/date-grid.principles.stories.tsx:55",
+     "問題": "共用 helper 直接以 p-4 或 p-2 容器包住已自帶內距的 DateGrid，形成規範明禁的雙層 padding。",
+     "建議": "移除 DateGrid 外層 padding；標題或說明需要留白時，只對那些相鄰元素配置間距。",
+     "verdict": "VERIFIED",
+     "verifyReason": "stories L31 Card helper `p-4` 容器與 principles L55 Demo helper `p-2` 容器均直接包住自帶 p-3 的 DateGrid(L62-70/L95-96 確認),violate date-grid.spec.md L170「❌ Consumer 不可外加 padding wrapper」(hook C.3 P0 級 canonical)。story helper 修正,AUTO。"
+    },
+    {
+     "id": "d68i12",
+     "dim": 68,
+     "idx": 12,
+     "fileLine": "packages/design-system/src/components/Separator/separator.stories.tsx:32,39,46",
+     "問題": "Separator 正向故事直接渲染 internal MenuItem 拼裝靜態設定列，超出 MenuItem owner-story 例外，也不是合法的 menu/listbox consumer 模式。",
+     "建議": "靜態內容改用正確的 public row primitive；真正的選單情境由 DropdownMenu 或 SelectMenu wrapper 擁有。",
+     "verdict": "VERIFIED",
+     "verifyReason": "separator.stories.tsx:32,39,46 直接渲染 3 個 MenuItem 拼靜態設定列;menu-item.spec.md:234 明定直接用 <MenuItem> ❌ 禁止、唯一例外 = MenuItem 自身 stories,Separator story 不在例外內(MenuItem frontmatter isInternal,menu-item.spec.md:9)。"
+    },
+    {
+     "id": "d68i17",
+     "dim": 68,
+     "idx": 17,
+     "fileLine": "packages/design-system/src/components/Sidebar/sidebar.stories.tsx:109",
+     "問題": "canonical UserFooter 正例沿用 md SidebarMenuButton 的 text-body，未達 spec 對 sidebar chrome 強制的 text-body-lg font-medium。",
+     "建議": "由 UserFooter 或其 owner wrapper 明確套用 canonical chrome typography，避免依賴 MenuButton 的一般項目預設值。",
+     "verdict": "VERIFIED",
+     "verifyReason": "stories:109 user name span 無 typography class,繼承 md SidebarMenuButton 的 text-body(item-anatomy.tsx:146 ROW_PADDING_BY_SIZE.md);sidebar.spec.md:261 明定 chrome header/footer 內所有 text element(含 user name)一律 text-body-lg font-medium,:133 更點名 UserFooter canonical 名字應 text-body-lg truncate。"
+    },
+    {
+     "id": "d68i18",
+     "dim": 68,
+     "idx": 18,
+     "fileLine": "packages/design-system/src/tokens/layoutSpace/layoutSpace.stories.tsx:67",
+     "問題": "故事把 layout-space-bottom 泛化為任何容器最底部的固定 48px，但 spec 僅允許它表示內容到 action buttons 的 commitment 留白；無 action 時須依容器角色分流。",
+     "建議": "改成 spec 的四分支規則：內容到 action 使用 bottom；無 action 的 bounded、unbounded、element 分別使用 loose、0、tight。",
+     "verdict": "VERIFIED",
+     "verifyReason": "story:67「容器最底部 → bottom(48 固定)」把 bottom 泛化為任何容器底部;layoutSpace.spec.md:114-121 + :200 明定 bottom 僅限「最後內容 → action buttons」(概念 A commitment 留白),無 action 時依角色分流 bounded→loose / unbounded→0 / element→tight。"
+    },
+    {
+     "id": "d7i9",
+     "dim": 7,
+     "idx": 9,
+     "fileLine": "packages/design-system/src/components/Chip/chip.spec.md:121",
+     "問題": "ChipGroup 未定義零選項邊界；實作會渲染空 ToggleGroup，與其他選擇元件以 Empty 取代空 group 的規則不一致。",
+     "建議": "補上 no-options 規則：不渲染空 group，由 consumer 顯示 Empty 或隱藏該 filter。",
+     "verdict": "VERIFIED",
+     "verifyReason": "chip.spec.md 無邊界狀態段(headings 全列無 zero-options 規則),chip.tsx:150-156 wrap 路徑無 children 仍渲染空 ToggleGroup Root 屬實;近親 carousel.spec.md:255「零 items 改用 <Empty> 不 render」有既定慣例可循。補 no-options 邊界文檔 = AUTO。"
+    },
+    {
+     "id": "d8i17",
+     "dim": 8,
+     "idx": 17,
+     "fileLine": "packages/design-system/src/tokens/token-system.spec.md:232",
+     "問題": "token umbrella 的 Related 漏掉 Motion，且未說明 empty、validation、loading 等 runtime 狀態由 consumer 擁有，以及各 token 家族分別承擔哪些無障礙預設。",
+     "建議": "補 Motion 連結，並集中聲明 runtime 狀態為 consumer-owned；列出 color contrast、reduced motion、target size、readability 等家族責任。",
+     "verdict": "VERIFIED",
+     "verifyReason": "token-system.spec.md:233-240「相關」列 color/uiSize/typography/elevation/layoutSpace 但漏 Motion(tokens/motion/motion.spec.md 存在,全檔 grep motion 0 hits),亦無 runtime 狀態 consumer-owned 與各 family a11y 責任聲明。補連結 + 聲明 = doc completeness。"
+    },
+    {
+     "id": "d9i15",
+     "dim": 9,
+     "idx": 15,
+     "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.tsx:84",
+     "問題": "FieldControlGroup 的 block 是純 className boolean variant，未由 cva 管理。",
+     "建議": "將 block 收斂為 cva boolean variant，統一 variant 型別與 class 組合。",
+     "verdict": "VERIFIED",
+     "verifyReason": "field-control-group.tsx:84 `block ? 'flex w-full' : 'inline-flex'` 為純 className boolean variant 以 ternary 管理,未收進 cva;同 idx 14 對齊 cva canonical 的 refactor,AUTO。"
+    }
+   ]
+  }
+ ],
+ "sweepUnits": [
+  {
+   "dim": 6,
+   "count": 4,
+   "items": [
+    {
+     "id": "d6i0",
+     "dim": 6,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:19,186,272,370,383,394,396,416; packages/design-system/src/components/Field/field.spec.md:24,209,357,419,421,431; packages/design-system/src/components/Input/input.spec.md:95,99; packages/design-system/src/components/NumberInput/number-input.spec.md:64,66,106,108,128; packages/design-system/src/components/Checkbox/checkbox.spec.md:249; packages/design-system/src/components/Switch/switch.spec.md:138; packages/design-system/src/components/Textarea/textarea.spec.md:30,111-112; packages/design-system/src/components/LinkInput/link-input.spec.md:88,111; packages/design-system/src/components/DatePicker/date-picker.spec.md:71,261,270,287,289,314,318; packages/design-system/src/components/TimePicker/time-picker.spec.md:108,202,275,277; packages/design-system/src/components/DataTable/data-table.spec.md:123,167,183,447; packages/design-system/src/components/PeoplePicker/people-picker.spec.md:256; packages/design-system/src/components/InlineEdit/inline-edit.spec.md:68,84; packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md:114; packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:161",
+     "問題": "FieldMode 的 `display`→`view` 更名仍有 15 份 spec 未同步；field-controls:394 更保留已淘汰的 `mode:'display'` 與零 padding 規則，直接牴觸同檔 65–67 的 Model A。",
+     "建議": "所有 FieldMode 語意統一改為 `view`，刪除舊 zero-chrome 契約；`Select.display`、`showDisplayEndIcon`、`PersonDisplay`、`fieldDisplayTextClass` 與 user-verbatim 等合法識別字不改。",
+     "verdict": "PARTIAL",
+     "verifyReason": "殘留部分為真:field.spec.md:24「display/readonly 純展示載體」、:357/:431「Display 規則」、field-controls.spec.md:19「DataTable Display 共用」、:272「display↔edit 像素對齊」、people-picker.spec.md:256「display 路徑」、element-anatomy.spec.md:114、inline-action.spec.md:161 仍用舊 display mode 語彙。但主打的 field-controls:394 `mode:'display'` 零 padding 段 HEAD 已改為 contract (c)/(d) Model A(field-controls.spec.md:394-396),且 input:95(## View)/checkbox:249/switch:138/date-picker/time-picker/data-table:167 等多數 cited 行已更名或屬合法識別字(A.3 批修 F1/F2 已落地,ledger 記錄)。"
+    },
+    {
+     "id": "d6i3",
+     "dim": 6,
+     "idx": 3,
+     "fileLine": "packages/design-system/src/components/AppShell/app-shell.spec.md:46-49,323; packages/design-system/src/components/Badge/badge.spec.md:52-55,352; packages/design-system/src/components/Button/button.spec.md:78-83,406; packages/design-system/src/components/Calendar/calendar.spec.md:62-75,205; packages/design-system/src/components/Chart/chart.spec.md:56-59,72-79,140; packages/design-system/src/components/Checkbox/checkbox.spec.md:67-70,320; packages/design-system/src/components/Chip/chip.spec.md:38-42,196; packages/design-system/src/components/Coachmark/coachmark.spec.md:52,69-74,190; packages/design-system/src/components/DataTable/data-table.spec.md:46-51,451; packages/design-system/src/components/DatePicker/date-picker.spec.md:71-76,275; packages/design-system/src/components/Dialog/dialog.spec.md:158-169; packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:44-47,199; packages/design-system/src/components/FileViewer/file-viewer.spec.md:71-75,348; packages/design-system/src/components/HoverCard/hover-card.spec.md:112,121; packages/design-system/src/components/InlineEdit/inline-edit.spec.md:96,98-99,143; packages/design-system/src/components/Input/input.spec.md:47-48,107; packages/design-system/src/components/LinkInput/link-input.spec.md:40-44,101; packages/design-system/src/components/Popover/popover.spec.md:114-115,126-145; packages/design-system/src/components/ProgressBar/progress-bar.spec.md:49,52-56,162,178-184; packages/design-system/src/components/Select/select.spec.md:113-115,301; packages/design-system/src/components/Sheet/sheet.spec.md:41-43,93; packages/design-system/src/components/Sidebar/sidebar.spec.md:65-69,637; packages/design-system/src/components/Skeleton/skeleton.spec.md:36-40,60; packages/design-system/src/components/Slider/slider.spec.md:58,60-61,235-251; packages/design-system/src/components/Steps/steps.spec.md:59-62,401-410; packages/design-system/src/components/Switch/switch.spec.md:48,50,193; packages/design-system/src/components/Tag/tag.spec.md:102-104,253,265; packages/design-system/src/components/Textarea/textarea.spec.md:50-52,117; packages/design-system/src/components/TimePicker/time-picker.spec.md:70-72,256-263; packages/design-system/src/components/Tooltip/tooltip.spec.md:51-52,94; packages/design-system/src/components/TreeView/tree-view.spec.md:51-55,355",
+     "問題": "31 份 spec 的禁止段未收編同檔「何時不用／常見誤解」已明列的核心用途誤用，常只列實作限制，違反「禁止事項列所有常見誤用」。",
+     "建議": "在禁止段補短版 ❌ 索引與替代元件，可指回既有詳細表格，不重複 rationale。",
+     "verdict": "VERIFIED",
+     "verifyReason": "canonical 確立於 .claude/rules/spec-rules.md:20「『禁止事項(❌)』列所有常見誤用」;抽驗 8 份(Badge:52-55 vs :352、Tooltip:51-52 vs :94-99、Button:78-83 vs :406、Input:47-48 vs :107、Sheet:41-43 vs :93、Checkbox:67-70 vs :320、Skeleton:36-40 vs :60、TreeView:51-55 vs :355)cited 行確為禁止段未收編的既列誤用,且 codex 多數精準排除已收編列(僅 Skeleton:38-39 輕微 over-cite),claim 成立;建議之 pointer 式補齊不違 anti-dup。"
+    },
+    {
+     "id": "d6i4",
+     "dim": 6,
+     "idx": 4,
+     "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:43-44,85; packages/design-system/src/components/Combobox/combobox.spec.md:66-67,150; packages/design-system/src/components/FileItem/file-item.spec.md:39,41-42,445; packages/design-system/src/components/NumberInput/number-input.spec.md:42-43,93; packages/design-system/src/components/Pagination/pagination.spec.md:45,49,112; packages/design-system/src/components/Rating/rating.spec.md:39-42,187; packages/design-system/src/components/Tabs/tabs.spec.md:48-49,237",
+     "問題": "另有 7 份 spec 的禁止段漏列較次要但已明文定義的邊界誤用。",
+     "建議": "以簡短 ❌ 或精確 section pointer 補齊，避免複製原段落。",
+     "verdict": "VERIFIED",
+     "verifyReason": "抽驗 7 份全部成立:Accordion:43-44(浮層收合/顯示更多)、NumberInput:42-43(DatePicker/Slider)、Pagination:45,49(無盡瀏覽/資料不足 2 頁)、Combobox:66-67(TreeView/Switch 群組)、FileItem:39,41-42(LinkInput/gallery/TreeView)、Tabs:48(兩態開關)皆未見於各自禁止段,且已收編列(如 Pagination:46-48、Combobox:64-65)被精準排除;僅 Rating:41(binary 已收編於 :187 段)輕微 over-cite,不推翻 per-file claim。"
+    },
+    {
+     "id": "d6i6",
+     "dim": 6,
+     "idx": 6,
+     "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:204; packages/design-system/src/components/Slider/slider.spec.md:243; packages/design-system/src/components/Steps/steps.spec.md:401; packages/design-system/src/tokens/density/density.spec.md:115; packages/design-system/src/tokens/token-system.spec.md:218; packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:308; packages/design-system/src/components/Carousel/carousel.spec.md:49,264; packages/design-system/src/components/Chip/chip.spec.md:149-178; packages/design-system/src/components/Tabs/tabs.spec.md:141-158; packages/design-system/src/components/SelectMenu/select-menu.spec.md:186; packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:41,78; packages/design-system/src/components/FileUpload/file-upload.spec.md:25,96,138; packages/design-system/src/components/Alert/alert.spec.md:181; packages/design-system/src/components/Field/form-validation.spec.md:118,126,138; packages/design-system/src/components/AppShell/app-shell.spec.md:168; packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:35; packages/design-system/src/tokens/uiSize/uiSize.spec.md:3",
+     "問題": "章節與用語存在平行詞彙：`Do / Don't`／`Anti-patterns`／`Notes` 對「禁止事項／備註」，一般 scroll 混用「捲動／滾動」，drag 混用「拖曳／拖拉」，另有同段「停用／禁用」、reader／user agency、`派别`、`ToolBar`、`UiSize` 等離群寫法。",
+     "建議": "統一繁中章節與詞彙：一般 scroll 用「捲動」、drag 用「拖曳」、actor 用「使用者」，並修為「派別／Toolbar／UI Size」；Do 內容歸「何時用」，Don't 歸「禁止事項」。",
+     "verdict": "VERIFIED",
+     "verifyReason": "逐點屬實:「## Do / Don't」(circular-progress:204/steps:401/slider:244)、「Anti-patterns」(density:115)+「反 pattern」(token-system:218)、「## Notes」(layoutSpace:308)、捲動/滾動混用(carousel:49 同一行雙寫、chip:149 vs :170、tabs:141 vs :158、select-menu:186)、拖曳/拖拉混用(resize-handle:41 vs :78、file-upload:24 vs :96)、停用/禁用同段(alert:181)、reader/user agency(form-validation:118,126,138)、「派别」(app-shell:168)、「ToolBar」(dropdown-menu:35)、「UiSize」(uiSize.spec.md:3)。統一詞彙屬表達層,對齊 AGENTS.md 語言一致性 + spec-rules.md:20 術語一致。"
+    }
+   ]
+  },
+  {
+   "dim": 10,
+   "count": 4,
+   "items": [
+    {
+     "id": "d10i14",
+     "dim": 10,
+     "idx": 14,
+     "fileLine": "packages/design-system/src/components/AppShell/app-shell.stories.tsx:98; packages/design-system/src/components/CircularProgress/circular-progress.anatomy.stories.tsx:139; packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:207,243; packages/design-system/src/components/CircularProgress/circular-progress.stories.tsx:63; packages/design-system/src/components/DataTable/data-table.stories.tsx:988,1750; packages/design-system/src/components/Dialog/dialog.principles.stories.tsx:86,87,215; packages/design-system/src/components/FieldControlGroup/field-control-group.stories.tsx:116,154; packages/design-system/src/components/Input/input.anatomy.stories.tsx:217,219,230,331,503,532,637,641,681,682,692,697,707,722,740,743; packages/design-system/src/components/Input/input.principles.stories.tsx:88,89,90,105,112,122,148,149,150,151,177,186,198,204,236; packages/design-system/src/components/Input/input.stories.tsx:61,83,95,104; packages/design-system/src/components/Textarea/textarea.principles.stories.tsx:143",
+     "問題": "這些 standalone Input demo 沒有 FieldLabel、aria-label 或 aria-labelledby；placeholder、value 與相鄰文字不構成程式化名稱。",
+     "建議": "使用 Field+FieldLabel；矩陣型 demo 則逐一提供包含用途或狀態的 aria-label。",
+     "verdict": "VERIFIED",
+     "verifyReason": "逐行抽驗全部引用行(app-shell:98 / circular-progress 4 處 / data-table.stories:988,1750 / dialog.principles:86,87,215 / field-control-group:116,154 / input.anatomy 16 處 / input.principles 15 處 / input.stories:61,83,95,104 / textarea.principles:143)皆為 standalone Input 無 FieldLabel/aria-label/aria-labelledby,僅 placeholder 或 defaultValue。"
+    },
+    {
+     "id": "d10i22",
+     "dim": 10,
+     "idx": 22,
+     "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:198,304,421,495,496,535,540; packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:432; packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx:86,249,441,453,470,474,541,547; packages/design-system/src/components/SelectionControl/selection-item.stories.tsx:76,82,88,93,116,122,128; packages/design-system/src/components/TreeView/tree-view.stories.tsx:105,108,109,115,118,119",
+     "問題": "孤立 checkbox/radio buttons 無 accessible name；部分 SelectionItem/TreeItem 的視覺 label 也沒有透過 id/htmlFor 與 control 關聯。",
+     "建議": "矩陣控制補 aria-label；複合項目以穩定 id/htmlFor 接線。",
+     "verdict": "VERIFIED",
+     "verifyReason": "cited 行全為裸 <Checkbox>/<RadioGroupItem> 無 aria-label(checkbox.tsx:241 accname 僅接 fieldCtx.labelId);SelectionItem stories 未傳 htmlFor(selection-item.stories.tsx grep 0 hit)故 label 未程式化關聯;TreeView stories consumer 自傳 checkbox 不走 tree-view.tsx:1293 auto-render 的 aria-hidden 路徑 → 無名可聚焦 checkbox。"
+    },
+    {
+     "id": "d10i25",
+     "dim": 10,
+     "idx": 25,
+     "fileLine": "packages/design-system/src/components/HoverCard/hover-card.anatomy.stories.tsx:34; packages/design-system/src/components/HoverCard/hover-card.principles.stories.tsx:100,122,155; packages/design-system/src/components/ProfileCard/profile-card.anatomy.stories.tsx:363; packages/design-system/src/components/Tooltip/tooltip.principles.stories.tsx:194; packages/design-system/src/components/Tooltip/tooltip.stories.tsx:52; packages/design-system/src/components/Input/input.principles.stories.tsx:121; packages/design-system/src/components/Input/input.stories.tsx:43",
+     "問題": "HoverCard/Tooltip asChild 使用無 href 的 a、span、div 或不可聚焦 Avatar；disabled Input 外包 div 也不可聚焦，因此鍵盤無法取得浮層內容或停用原因。",
+     "建議": "改用 button 或有 href 的 link；純文字 trigger 建立正確語意與 focus/keyboard，停用原因改用 FieldDescription 或獨立 help trigger。",
+     "verdict": "VERIFIED",
+     "verifyReason": "cited triggers 全為不可聚焦載體:裸 Avatar / 無 href 的 <a>(hover-card.principles:100)/ span(:122、tooltip.stories:52)/ div(tooltip.principles:194)/ disabled Input 外包 div(input.principles:119-121、input.stories:42-44)→ 鍵盤無法 focus trigger 開啟浮層。違自家 canonical:hover-card.spec.md:144「Trigger 的可聚焦性需 consumer 自補(tabIndex=0)」+ tooltip.spec.md:127/:132「Tab focus trigger 時顯示;鍵盤完整可操作」。"
+    },
+    {
+     "id": "d10i34",
+     "dim": 10,
+     "idx": 34,
+     "fileLine": "packages/design-system/src/components/Carousel/carousel.principles.stories.tsx:188; packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx:246,810,861; packages/design-system/src/components/Input/input.anatomy.stories.tsx:240; packages/design-system/src/components/Steps/steps.stories.tsx:299",
+     "問題": "這些實際產生 overflow 的 story regions 不可聚焦，鍵盤無法直接捲動；完整 axe 命中 scrollable-region-focusable。",
+     "建議": "為真正可捲動容器加入 tabIndex=0、可見 focus ring，必要時以 role=region 與 accessible name 說明內容。",
+     "verdict": "VERIFIED",
+     "verifyReason": "cited 各行皆為 overflow-x-auto 容器、無 tabIndex 且區內無可聚焦後代(table / pre / 純文字卡);carousel.principles:188 內容寬約 7×112px+間距 ≈ 856px > w-[480px] 容器,數學上必 overflow → scrollable-region-focusable 成立,其餘 props/token 表格為 codex axe 實測命中之同型 pattern。"
+    }
+   ]
+  },
+  {
+   "dim": 14,
+   "count": 7,
+   "items": [
+    {
+     "id": "d14i0",
+     "dim": 14,
+     "idx": 0,
+     "fileLine": "packages/design-system/src/components/Field/field-controls.spec.md:272; packages/design-system/src/components/Field/field.spec.md:24; packages/design-system/src/components/PeoplePicker/people-picker.spec.md:256; packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md:114; packages/design-system/src/patterns/element-anatomy/inline-action.spec.md:161,171; packages/design-system/src/components/Checkbox/checkbox.stories.tsx:16,27,29; packages/design-system/src/components/Combobox/combobox.stories.tsx:29,42-43; packages/design-system/src/components/DataTable/data-table.anatomy.stories.tsx:74,86,135,193,207,427,429,437; packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:135,145,150; packages/design-system/src/components/DataTable/data-table.stories.tsx:261,654; packages/design-system/src/components/DatePicker/date-picker.anatomy.stories.tsx:251,711,748,764; packages/design-system/src/components/DatePicker/date-picker.principles.stories.tsx:142,160,173; packages/design-system/src/components/DatePicker/date-picker.stories.tsx:79,318-319; packages/design-system/src/components/Field/field.anatomy.stories.tsx:76,152; packages/design-system/src/components/Input/input.anatomy.stories.tsx:214,337; packages/design-system/src/components/Input/input.stories.tsx:29-31; packages/design-system/src/components/LinkInput/link-input.anatomy.stories.tsx:268; packages/design-system/src/components/LinkInput/link-input.stories.tsx:103,122-123; packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:720; packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:101,165; packages/design-system/src/components/NumberInput/number-input.stories.tsx:21,34-35,97,136; packages/design-system/src/components/PeoplePicker/people-picker.anatomy.stories.tsx:81,100,139; packages/design-system/src/components/PeoplePicker/people-picker.stories.tsx:63,75; packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:18,33-34; packages/design-system/src/components/Select/select.anatomy.stories.tsx:325-326; packages/design-system/src/components/Select/select.stories.tsx:47-48; packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:41,81; packages/design-system/src/components/Switch/switch.principles.stories.tsx:119; packages/design-system/src/components/Switch/switch.stories.tsx:23,25; packages/design-system/src/components/Textarea/textarea.anatomy.stories.tsx:37,129,204,208; packages/design-system/src/components/TimePicker/time-picker.stories.tsx:30,41-42; packages/design-system/src/components/Field/field-wrapper.tsx:296,301; packages/design-system/src/components/DataTable/cell-registry.tsx:258,290,325,362,384,404,442; packages/design-system/src/components/DataTable/data-table.tsx:99,1554-1555,1664-1665; packages/design-system/src/components/Input/input.tsx:19,118,140,143,184; packages/design-system/src/components/Textarea/textarea.tsx:19,152,201,221,224; packages/design-system/src/components/NumberInput/number-input.tsx:48; packages/design-system/src/components/LinkInput/link-input.tsx:33,246",
+     "問題": "`FieldMode` 已定為 `edit|view|readonly|disabled`，但 5 份 spec、26 個 story 檔及多個實作識別字／註解仍沿用退役名稱 `display`，造成契約與教學詞彙分裂。合法的 Select `display` prop 與明文保留的相容名稱已排除。",
+     "建議": "僅在 FieldMode 語境將 `display` 統一為 `view`／「檢視」，並同步改名 `DisplayMode`、`isDisplayMode` 等內部識別字；保留無關的 CSS、Select prop 與相容 API 名稱。",
+     "verdict": "PARTIAL",
+     "verifyReason": "FieldMode='edit|view|readonly|disabled' 屬實(field-types.ts:21),但引用 105 處中 84 處 HEAD 已改為 view(Phase A A.3 批修,如 input.stories.tsx:31 / radio-group.stories.tsx:34 / select.stories.tsx:48);仍真的殘留約 20 處(people-picker.spec.md:256「display 路徑」/ element-anatomy.spec.md:114 / inline-action.spec.md:161,171 / number-input.principles.stories.tsx:101 / input.tsx:140 showDisplaySpan 識別字等),另 cell-registry.tsx:290 等為合法保留 prop 名 showDisplayEndIcon,finding 自稱已排除卻仍引用。"
+    },
+    {
+     "id": "d14i1",
+     "dim": 14,
+     "idx": 1,
+     "fileLine": "packages/design-system/src/components/Combobox/combobox.spec.md:38,49; packages/design-system/src/components/DataTable/data-table.spec.md:222; packages/design-system/src/components/DatePicker/date-picker.spec.md:43,54; packages/design-system/src/components/InlineEdit/inline-edit.spec.md:30; packages/design-system/src/components/LinkInput/link-input.spec.md:24; packages/design-system/src/components/NumberInput/number-input.spec.md:24; packages/design-system/src/components/PeoplePicker/people-picker.spec.md:28; packages/design-system/src/components/TimePicker/time-picker.spec.md:41,52",
+     "問題": "8 份 spec 將 controlled/uncontrolled helper 稱為不存在的 `useControllableState`，但 DS canonical 是 `use-controllable.ts` 匯出的 `useControllable`；DataTable 還誤述其他元件已使用前者。",
+     "建議": "全部改稱 `useControllable`，並按真實 consumer 修正 DataTable 的跨元件描述。",
+     "verdict": "VERIFIED",
+     "verifyReason": "12 處引用行全數仍寫 `useControllableState`,但 DS 實際 export 為 `useControllable`(use-controllable.ts:13);data-table.spec.md:222 宣稱「Field / Switch / Checkbox 已用」亦不實 — 真實 consumer 為 Input/Textarea/Select/SelectMenu/Pagination/FileViewer/DataTable(grep import 證實 Switch/Checkbox 未用)。"
+    },
+    {
+     "id": "d14i2",
+     "dim": 14,
+     "idx": 2,
+     "fileLine": "packages/design-system/src/components/Avatar/avatar.spec.md:123,132,148; packages/design-system/src/components/DropdownMenu/dropdown-menu.spec.md:118; packages/design-system/src/components/Empty/empty.spec.md:67; packages/design-system/src/components/Notice/notice.spec.md:59,67; packages/design-system/src/components/SelectMenu/select-menu.spec.md:73,150,205,212; packages/design-system/src/components/Sidebar/sidebar.spec.md:124,710; packages/design-system/src/components/Steps/steps.spec.md:66,78,89; packages/design-system/src/components/Tabs/tabs.spec.md:85,93,95,269; packages/design-system/src/components/TreeView/tree-view.spec.md:80,106,193,361; packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:66,166,585",
+     "問題": "10 份 spec、共 27 處仍把現行 `item-anatomy` pattern/module 稱為舊名 `item-layout`，其中 owner spec 甚至指向不存在的 module。",
+     "建議": "統一改為 `item-anatomy`；描述視覺結構時使用「row anatomy」，避免再把一般 item layout 概念寫成 module 名。",
+     "verdict": "VERIFIED",
+     "verifyReason": "27 處引用行全數命中舊名 `item-layout`(avatar.spec:123,132,148 / steps.spec:66,78,89 / tabs.spec:85,93,95,269 等),repo 內無任何 item-layout module/檔案(find 0 hit),owner spec item-anatomy.spec.md:585 甚至寫「從 item-layout module import」指向不存在的 module。"
+    },
+    {
+     "id": "d14i10",
+     "dim": 14,
+     "idx": 10,
+     "fileLine": "packages/design-system/src/components/DataTable/filter-operators.spec.md:259; packages/design-system/src/components/FileViewer/file-viewer.spec.md:267; packages/design-system/src/patterns/overlay-surface/overlay-surface.spec.md:120; packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:308; packages/design-system/src/components/Button/button.spec.md:105,130",
+     "問題": "spec 的章名或段落標籤仍使用非技術性的英文自然語句 `Sources`、`Why inline`、`When…`、`Notes`、`Members`，不符合 spec 繁中原則。",
+     "建議": "分別改為「來源」「為何採 inline」「當……時」「備註」「成員」；真正的 API、型別與技術專名維持英文。",
+     "verdict": "VERIFIED",
+     "verifyReason": "6 處全命中:「## Sources(M8 benchmark)」/「### Why inline」/「### When list 上方有…」/「## Notes」/「Members: **Button…**」均為英文自然語句章名/段落標籤,非技術專名,違 AGENTS.md「spec.md 繁中(技術術語保留英)」語言一致性原則。"
+    },
+    {
+     "id": "d14i11",
+     "dim": 14,
+     "idx": 11,
+     "fileLine": "packages/design-system/src/components/AppShell/app-shell.spec.md:168; packages/design-system/src/components/Carousel/carousel.spec.md:136; packages/design-system/src/components/Checkbox/checkbox.spec.md:247; packages/design-system/src/components/Chip/chip.spec.md:190; packages/design-system/src/components/Command/command.spec.md:170; packages/design-system/src/components/Empty/empty.spec.md:126; packages/design-system/src/components/Sidebar/sidebar.spec.md:699; packages/design-system/src/components/Skeleton/skeleton.spec.md:89; packages/design-system/src/components/Switch/switch.spec.md:136; packages/design-system/src/components/Textarea/textarea.spec.md:43; packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md:524; packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:31; packages/design-system/src/tokens/uiSize/uiSize.spec.md:85; packages/design-system/src/components/Coachmark/coachmark.principles.stories.tsx:74; packages/design-system/src/components/DataTable/data-table.principles.stories.tsx:90; packages/design-system/src/components/ProgressBar/progress-bar.anatomy.stories.tsx:283; packages/design-system/src/components/Sidebar/sidebar.principles.stories.tsx:166; packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:41; packages/design-system/src/tokens/uiSize/uiSize.stories.tsx:70",
+     "問題": "繁中內容殘留少數簡中／非 canonical 用詞：`派别`、`圖標`、`默認`、`菜單`、`文檔`、`用戶`、`字符`、`組件`，與 DS 壓倒性使用的繁中詞彙不一致。",
+     "建議": "統一為「派別、圖示、預設、選單、說明文件、使用者、字元、元件」，並建立可機械檢查的繁中詞彙表。",
+     "verdict": "VERIFIED",
+     "verifyReason": "19/19 引用行逐行機械驗證全命中(app-shell.spec:168 派别 / carousel.spec:136 圖標 / checkbox.spec:247 默認 / chip.spec:190 菜單 / empty.spec:126 文檔 / sidebar.spec:699 用戶 / textarea.spec:43 字符 / sidebar.principles:166 組件 等),確為簡中/非 canonical 用詞殘留。"
+    },
+    {
+     "id": "d14i12",
+     "dim": 14,
+     "idx": 12,
+     "fileLine": "packages/design-system/src/components/Accordion/accordion.spec.md:42,90,109; packages/design-system/src/components/DataTable/data-table.spec.md:387,389,391,428,433,437,439; packages/design-system/src/components/DateGrid/date-grid.spec.md:23; packages/design-system/src/components/FileUpload/file-upload.spec.md:96,139; packages/design-system/src/components/FileViewer/file-viewer.spec.md:65,295; packages/design-system/src/components/Sheet/sheet.spec.md:31; packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:242; packages/design-system/src/components/TimePicker/time-picker.spec.md:27; packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md:12,69,74,105,183,213,221; packages/design-system/src/components/Carousel/carousel.spec.md:49,264; packages/design-system/src/components/Chip/chip.spec.md:149,162,166-167; packages/design-system/src/components/Pagination/pagination.spec.md:45,55,110,116; packages/design-system/src/components/SelectMenu/select-menu.spec.md:186; packages/design-system/src/components/Tabs/tabs.spec.md:141,146; packages/design-system/src/components/Calendar/calendar.spec.md:34,39,208,229-230,235; packages/design-system/src/components/DataTable/data-table.spec.md:123; packages/design-system/src/components/Textarea/textarea.spec.md:73; packages/design-system/src/patterns/resize-handle/resize-handle.spec.md:78; packages/design-system/src/tokens/elevation/elevation.spec.md:21",
+     "問題": "同一概念跨元件混用「導航／導覽」「交互／互動」「滾動／捲動」「拖拉／拖拽／拖曳」；後者各組已有明顯 DS 多數詞，但少數 specs 與 stories 未跟隨。",
+     "建議": "將 navigation、interaction、scroll、drag 的繁中 canonical 分別定為「導覽、互動、捲動、拖曳」，再對 specs 與 stories 做定向替換。",
+     "verdict": "VERIFIED",
+     "verifyReason": "48/48 引用行全命中少數詞(導航/交互/滾動/拖拉/拖拽),且 DS-wide 計數證實多數詞成立:導覽 318 vs 導航 20、互動 668 vs 交互 17、捲動 264 vs 滾動 35、拖曳 87 vs 拖拽 3 + 拖拉 34,定向替換即對齊既有多數 canonical。"
+    },
+    {
+     "id": "d14i13",
+     "dim": 14,
+     "idx": 13,
+     "fileLine": "packages/design-system/src/components/Accordion/accordion.tsx:88; packages/design-system/src/components/DataTable/data-table.tsx:181; packages/design-system/src/components/Field/field-context.ts:12; packages/design-system/src/components/Select/select.tsx:18; packages/design-system/src/hooks/use-controllable.ts:4; packages/design-system/src/lib/drag-visual.ts:255; packages/design-system/src/lib/i18n/i18n-context.tsx:89; packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx:535; packages/design-system/src/patterns/header-canonical/chrome-header.tsx:18; packages/design-system/src/patterns/horizontal-overflow/horizontal-overflow.tsx:16; packages/design-system/src/tokens/elevation/overlay-geometry.ts:2; packages/design-system/src/tokens/motion/motion.ts:2",
+     "問題": "390/390 個 TS/TSX 經註解 AST 全掃後，有 157 個檔案在單一檔內混用完整中文與英文自然語句；pragma、URL、程式片段、identifier 與純技術標記均已排除。",
+     "建議": "每個檔案選定中文或英文作為 prose comment 語言並完整統一；技術識別字與引用內容維持原文。",
+     "verdict": "VERIFIED",
+     "verifyReason": "12 個樣本引用行全為英文自然語句 prose 註解,且所在檔案均含大量中文註解(accordion.tsx 141 CJK 字元 / drag-visual.ts 715 / i18n-context.tsx 174 / motion.ts 70),單檔中英夾雜屬實,違 AGENTS.md「單一檔案不中英夾雜」;157 檔總數為 codex AST 全掃宣稱,樣本抽驗一致無反證。"
+    }
+   ]
+  },
+  {
+   "dim": 44,
+   "count": 1,
+   "items": [
+    {
+     "id": "d44i0",
+     "dim": 44,
+     "idx": 0,
+     "fileLine": ".claude/skills/design-system-audit/references/audit-prompts.md:1141; .claude/rules/story-rules.md:34; packages/design-system/src/components/README.md:51; .claude/logs/audit-coverage-matrix.json:273",
+     "問題": "多個現行判準仍使用已退役的「預設視覺／裸 `<X>`／wrapper」三 test，README 另宣稱 internal 必住 `Internal/`；兩者皆違反 intent-based 與 in-place frontmatter canonical，會再次誤判公開 composition primitives。",
+     "建議": "全部改為指向 `ui-development.md` 的 public-API intent SSOT，並同步更新 coverage matrix 與 component-quality checklist。",
+     "verdict": "VERIFIED",
+     "verifyReason": "四處全屬實:audit-prompts.md:1137-1141 dim 44 rubric、story-rules.md:34、components/README.md:50-52(「無預設視覺,必被 wrapper 包」+ Internal/ 住所)、audit-coverage-matrix.json「44」mechanism 均仍用已退役三 test;ui-development.md「Public vs Internal canonical」明文 2026-06-06 retire 舊測試、唯一判準 = public-API intent,且 folder canonical = in-place frontmatter 主路徑(現行 10 個 internal 全走 frontmatter、Internal/ 無住戶)。修法為把 stale 判準文字對齊既有 SSOT,不動 canonical 語意 → AUTO。"
+    }
+   ]
+  }
+ ]
+}
