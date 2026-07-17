@@ -1,6 +1,6 @@
 {
- "totalClaims": 1245,
- "totalComponents": 56,
+ "totalClaims": 1273,
+ "totalComponents": 57,
  "units": [
   {
    "unit": 0,
@@ -87,114 +87,115 @@
   {
    "unit": 11,
    "components": [
-    "BulkActionBar",
-    "TreeView"
+    "Tag",
+    "BulkActionBar"
    ],
-   "claims": 54
+   "claims": 55
   },
   {
    "unit": 12,
    "components": [
-    "Field",
-    "Steps"
+    "TreeView",
+    "Field"
    ],
-   "claims": 51
+   "claims": 53
   },
   {
    "unit": 13,
    "components": [
-    "Chart",
-    "Input"
+    "Steps",
+    "Chart"
    ],
-   "claims": 48
+   "claims": 49
   },
   {
    "unit": 14,
    "components": [
+    "Input",
     "Badge",
-    "Toast",
-    "Button"
+    "Toast"
    ],
-   "claims": 68
+   "claims": 70
   },
   {
    "unit": 15,
    "components": [
+    "Button",
     "ProfileCard",
-    "ProgressBar",
-    "Select"
+    "ProgressBar"
    ],
    "claims": 66
   },
   {
    "unit": 16,
    "components": [
+    "Select",
     "Textarea",
-    "FileItem",
-    "Calendar"
+    "FileItem"
    ],
-   "claims": 63
+   "claims": 65
   },
   {
    "unit": 17,
    "components": [
+    "Calendar",
     "OverflowIndicator",
-    "SelectionControl",
-    "Switch"
+    "SelectionControl"
    ],
-   "claims": 58
+   "claims": 59
   },
   {
    "unit": 18,
    "components": [
+    "Switch",
     "Tabs",
-    "FileUpload",
-    "FieldControlGroup",
-    "Empty"
+    "FileUpload"
    ],
-   "claims": 70
+   "claims": 56
   },
   {
    "unit": 19,
    "components": [
+    "FieldControlGroup",
+    "Empty",
     "Breadcrumb",
-    "Notice",
-    "RadioGroup",
-    "Separator"
-   ],
-   "claims": 58
-  },
-  {
-   "unit": 20,
-   "components": [
-    "Sheet",
-    "CircularProgress",
-    "Command",
-    "Pagination",
-    "AspectRatio"
-   ],
-   "claims": 60
-  },
-  {
-   "unit": 21,
-   "components": [
-    "Chip",
-    "DescriptionList",
-    "Dialog",
-    "NumberInput",
-    "Checkbox",
-    "TimePicker"
+    "Notice"
    ],
    "claims": 63
   },
   {
+   "unit": 20,
+   "components": [
+    "RadioGroup",
+    "Separator",
+    "Sheet",
+    "CircularProgress",
+    "Command"
+   ],
+   "claims": 65
+  },
+  {
+   "unit": 21,
+   "components": [
+    "Pagination",
+    "AspectRatio",
+    "Chip",
+    "DescriptionList",
+    "Dialog",
+    "NumberInput"
+   ],
+   "claims": 67
+  },
+  {
    "unit": 22,
    "components": [
+    "Checkbox",
+    "TimePicker",
     "SegmentedControl",
     "Skeleton",
     "ScrollArea"
    ],
-   "claims": 23
+   "claims": 42
   }
  ]
 }
