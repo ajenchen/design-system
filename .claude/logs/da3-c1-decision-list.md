@@ -122,11 +122,11 @@ FieldControlGroup 的規格和範例用「Mode A/B/C」字母代號,沒有產品
 
 | # | 題目 | 定案 | 依據 |
 |---|------|------|------|
-| 1 | Tabs axe-critical | ✅ 照建議 A(移出+aria-owns) | user 授權 |
+| **1** | Tabs axe-critical | **需先實跑 axe 確認嚴重度**:更嚴重的 button-巢-button 已於 2026-07-05 修成 sibling 佈局(tabs.tsx 註解);codex「button 在 tablist 容器內=critical」是剩餘較輕問題,實作前先跑 axe 證明仍違規才修。方向仍是移出+aria-owns | **ground-truth 驗:2026-07-05 已修 nested-interactive,severity 待 axe 實證** |
 | 2 | asChild 全域收窄 | ✅ 照建議 A(Omit) | 對齊 Select 收窄先例 |
 | 3 | barrel @internal 收緊 | ✅ 照建議 A + handleSheetOpenAutoFocus 保持 internal | 對齊 2026-06-05 拍板 |
 | 4 | 有界數字型別 | ✅ 照建議 B(不鎖+dev-warn) | 世界級 4 家一致 |
-| 5 | 空 label a11y | ✅ 照建議 B+C(dev-warn+自動位置名+decorative) | user 授權 |
+| **5** | 空 label a11y | **範圍更正**:Avatar `alt: string` 已是**必填**(finding「型別允許省略」錯);真缺口只剩 `alt=""` 空字串 + Carousel 投影片無名。dev-warn 只針對空字串;Carousel 自動位置名成立 | **ground-truth 驗:Avatar alt 型別已 required(avatar.tsx:356),finding 框架部分錯** |
 | 6 | 批次 loading 契約 | ✅ 照建議 A(最小契約) | user 授權 |
 | 7 | controlled 完整性 | ✅ Steps 補控制 / AppShell 記 rationale | user 理解後授權 |
 | **8** | 10px a11y | **降級**:只加一句 spec 用途限制(僅 storybook 註解/法律細字用,正式元件禁用)= AUTO;無正式元件消費,不做大規範 | **user 質疑「哪裡用到」→ grep 證實零正式消費** |
@@ -145,3 +145,9 @@ FieldControlGroup 的規格和範例用「Mode A/B/C」字母代號,沒有產品
 | 21 | Mode A/B 改語意名 | ✅ 照建議 A(改名) | 對齊 FileItem 先例 |
 
 **淨變更 vs 原建議**:8 降級(理論題)、11 flip 成開放(功能已建好)、19 flip 成不上紅(開確認框)、18 確認。其餘照建議。
+
+
+---
+
+## ⚠️ 實作紀律(2026-07-17,user 質疑第 18 後 codify)
+**每條決策實作前必 ground-truth 驗**:對真實程式碼 + git 歷史查證 finding 說的「壞了/缺失」是否屬實、是否 intentional、是否已修過(如 Tabs 2026-07-05)、severity 是否需實跑工具(axe/pixel)確認。**禁照 codex finding 框架盲修**。已抓到框架有問題者:18(從沒壞)、1(已修 nested-interactive)、5(Avatar alt 已必填)。
