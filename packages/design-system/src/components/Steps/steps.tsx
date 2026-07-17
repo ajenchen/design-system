@@ -304,13 +304,15 @@ Steps.displayName = 'Steps'
 
 // ── StepItem ──────────────────────────────────────────────────────────────
 
+// Steps 內部 cloneElement 注入用的私有 props — 刻意「不」併入公開 StepItemProps:
+// dunder 內部欄位不進 root API(consumer 無合法理由手動控制末項 connector / 間距),
+// 也就不會被 barrel 匯出成公開型別。StepItem render body 以 intersection cast 內部讀取。
 interface StepItemInjectedProps {
   __isLast?: boolean
 }
 
 export interface StepItemProps
-  extends Omit<React.HTMLAttributes<HTMLLIElement>, 'value'>,
-    StepItemInjectedProps {
+  extends Omit<React.HTMLAttributes<HTMLLIElement>, 'value'> {
   value: string
   state?: 'error'
   disabled?: boolean
@@ -336,7 +338,10 @@ const stepItemVariants = cva('group/step-item outline-none', {
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const StepItem = React.forwardRef<HTMLLIElement, StepItemProps>(
-  ({ value, state: stateOverride, disabled = false, children, className, __isLast = false, ...props }, ref) => {
+  ({ value, state: stateOverride, disabled = false, children, className, ...restProps }, ref) => {
+    // __isLast 由 Steps root 經 cloneElement 私下注入(見 StepItemInjectedProps);以 intersection
+    // cast 從 rest 讀出後解構掉,確保 dunder 不落到 DOM li,也不必污染公開 StepItemProps。
+    const { __isLast = false, ...props } = restProps as typeof restProps & StepItemInjectedProps
     const steps = useStepsContext()
     const state = computeState(
       value,

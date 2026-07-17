@@ -342,19 +342,23 @@ export const StateBehavior: Story = {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink href="#">Link(預設 fg-secondary)</BreadcrumbLink>
+                <BreadcrumbLink href="#">團隊空間</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink href="#">Hover 我(→ primary-hover)</BreadcrumbLink>
+                <BreadcrumbLink href="#">設計系統</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Current Page(foreground, 不可點)</BreadcrumbPage>
+                <BreadcrumbPage>元件規格</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
+        <p className="text-footnote text-fg-muted mt-3">
+          「團隊空間」「設計系統」為可點連結(預設 fg-secondary,移上去 hover 轉 primary-hover);
+          末項「元件規格」為當前頁(foreground,不可點)。
+        </p>
       </div>
     </div>
   ),

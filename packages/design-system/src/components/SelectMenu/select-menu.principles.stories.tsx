@@ -32,7 +32,6 @@ export const UsageGuidance: Story = {
             <li><LinkTo kind="Design System/Internal/SelectMenu/展示" name="搜尋"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">數百人組織選負責人,輸入過濾(搜尋)</span></LinkTo></li>
             <li><LinkTo kind="Design System/Internal/SelectMenu/展示" name="多選"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">工單同時貼多個標籤(多選)</span></LinkTo></li>
             <li><LinkTo kind="Design System/Internal/SelectMenu/展示" name="多選 + 搜尋"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">大量標籤庫中過濾並複選(多選 + 搜尋)</span></LinkTo></li>
-            <li><LinkTo kind="Design System/Internal/SelectMenu/展示" name="可清除"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">篩選列一鍵清空已選條件(可清除)</span></LinkTo></li>
           </ul>
           <p className="text-fg-muted mt-3">判斷不確定時:對照 spec.md「何時用 / 何時不用」段;若仍不符,改用近親元件(見下方 vs 近親 段)。</p>
         </div>

@@ -245,9 +245,9 @@ const InspectorInner = () => {
           <div className="px-16 py-16 rounded-lg bg-canvas border border-divider flex items-center justify-center">
             <Tooltip defaultOpen>
               <TooltipTrigger asChild>
-                <Button variant="secondary" startIcon={Settings} size="sm">觸發器</Button>
+                <Button variant="secondary" startIcon={Settings} size="sm">欄位設定</Button>
               </TooltipTrigger>
-              <TooltipContent side={side}>提示文字</TooltipContent>
+              <TooltipContent side={side}>調整資料表的欄位顯示與排序</TooltipContent>
             </Tooltip>
           </div>
 
@@ -351,7 +351,15 @@ export const Inspector = {
 
 export const PlacementReference = {
   name: '方向與間距',
-  render: () => (
+  render: () => {
+    // 四方向以工具列常見操作示範,方位由外部 mono 標籤標示,Tooltip 提供對應說明。
+    const placementDemo: Record<SideKey, { label: string; tip: string }> = {
+      top: { label: '複製連結', tip: '複製此頁面的公開分享連結' },
+      right: { label: '封存專案', tip: '封存後移至封存區，隨時可還原' },
+      bottom: { label: '重新整理', tip: '重新載入最新資料' },
+      left: { label: '更多操作', tip: '檢視全部可用的操作' },
+    }
+    return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-1">
         <H3>四方向 Placement</H3>
@@ -365,9 +373,9 @@ export const PlacementReference = {
             <div className="px-8 py-8 rounded-lg bg-canvas border border-divider flex items-center justify-center w-full">
               <Tooltip defaultOpen>
                 <TooltipTrigger asChild>
-                  <Button variant="tertiary" size="sm">{s}</Button>
+                  <Button variant="tertiary" size="sm">{placementDemo[s].label}</Button>
                 </TooltipTrigger>
-                <TooltipContent side={s}>提示文字</TooltipContent>
+                <TooltipContent side={s}>{placementDemo[s].tip}</TooltipContent>
               </Tooltip>
             </div>
           </div>
@@ -397,7 +405,8 @@ export const PlacementReference = {
         <Desc>transform-origin 使用 --radix-tooltip-content-transform-origin，zoom 效果從觸發器方向展開。</Desc>
       </div>
     </div>
-  ),
+    )
+  },
 }
 
 // ── Accessibility ─────────────────────────────────────────────────────────

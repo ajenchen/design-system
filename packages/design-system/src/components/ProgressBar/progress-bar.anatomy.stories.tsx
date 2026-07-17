@@ -91,7 +91,7 @@ export const Overview = {
           {STATUSES.map((s) => (
             <div key={s} className="flex items-center gap-4">
               <div className="w-28 shrink-0">
-                <ProgressBar value={s === 'success' ? 100 : s === 'error' ? 60 : 45} status={s} />
+                <ProgressBar value={s === 'success' ? 100 : s === 'error' ? 60 : 45} status={s} aria-label={`${s} 狀態範例`} />
               </div>
               <span className="font-mono text-caption w-20 text-fg-secondary">{s}</span>
               <span className="text-caption text-fg-secondary">{STATUS_TOKEN[s].desc}</span>
@@ -193,6 +193,7 @@ const InspectorInner = () => {
             type="range" min={0} max={100} value={value}
             onChange={(e) => setValue(Number(e.target.value))}
             className="w-[240px]"
+            aria-label="調整進度值"
           />
           <span className="text-[11px] font-mono text-fg-secondary tabular-nums w-10">{value}%</span>
         </div>
@@ -203,7 +204,7 @@ const InspectorInner = () => {
         {/* Left: preview */}
         <div className="flex flex-col gap-5 min-w-[360px]">
           <div className="px-6 py-10 rounded-lg bg-canvas border border-divider">
-            <ProgressBar value={value} status={status} affix={affixNode} />
+            <ProgressBar value={value} status={status} affix={affixNode} aria-label="即時預覽進度" />
           </div>
 
           {/* Blueprint:顯示 track 高度 + fill 寬度 */}
@@ -317,7 +318,7 @@ export const ColorMatrix = {
                 <Td mono>{s}</Td>
                 <Td>
                   <div className="w-[180px]">
-                    <ProgressBar value={s === 'success' ? 100 : 60} status={s} />
+                    <ProgressBar value={s === 'success' ? 100 : 60} status={s} aria-label={`${s} 狀態色彩範例`} />
                   </div>
                 </Td>
                 <Td><TokenCell token="--secondary" /></Td>
@@ -336,9 +337,9 @@ export const ColorMatrix = {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">含 affix 預覽</span>
         <div className="flex flex-col gap-3 max-w-[420px]">
-          <ProgressBar value={42} status="inProgress" affix="value" />
-          <ProgressBar value={100} status="success" affix="status-icon" />
-          <ProgressBar value={68} status="error" affix="status-icon" />
+          <ProgressBar value={42} status="inProgress" affix="value" aria-label="進行中含百分比範例" />
+          <ProgressBar value={100} status="success" affix="status-icon" aria-label="完成含狀態圖示範例" />
+          <ProgressBar value={68} status="error" affix="status-icon" aria-label="失敗含狀態圖示範例" />
         </div>
       </div>
     </div>
@@ -368,7 +369,7 @@ export const AffixBehavior = {
             配額使用率、下載進度等需要精確數字時使用。
           </p>
           <div className="w-[360px]">
-            <ProgressBar value={45} status="inProgress" affix="value" />
+            <ProgressBar value={45} status="inProgress" affix="value" aria-label="含百分比的進度範例" />
           </div>
         </div>
 
@@ -381,9 +382,9 @@ export const AffixBehavior = {
             inProgress → 無 icon(inProgress 非終態)。
           </p>
           <div className="flex flex-col gap-2 w-[360px]">
-            <ProgressBar value={100} status="success" affix="status-icon" />
-            <ProgressBar value={72} status="error" affix="status-icon" />
-            <ProgressBar value={50} status="inProgress" affix="status-icon" />
+            <ProgressBar value={100} status="success" affix="status-icon" aria-label="完成狀態範例" />
+            <ProgressBar value={72} status="error" affix="status-icon" aria-label="失敗狀態範例" />
+            <ProgressBar value={50} status="inProgress" affix="status-icon" aria-label="進行中狀態範例" />
             <span className="text-footnote text-fg-muted">↑ inProgress 傳 status-icon 時不渲染 icon,且因無 affix 內容而 collapse 成純 bar(無 wrapper、無 gap,與不傳 affix 等價)</span>
           </div>
         </div>
@@ -398,7 +399,7 @@ export const AffixBehavior = {
             <ProgressBar
               value={42}
               status="inProgress"
-             
+              aria-label="可取消的進度範例"
               affix={
                 <Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消上傳" />
               }
@@ -406,7 +407,7 @@ export const AffixBehavior = {
             <ProgressBar
               value={66}
               status="inProgress"
-             
+              aria-label="含資料量的進度範例"
               affix={<span className="text-caption text-fg-muted tabular-nums shrink-0">1.3 / 2.0 MB</span>}
             />
           </div>
@@ -419,7 +420,7 @@ export const AffixBehavior = {
             不包 wrapper,ProgressBar 本身就是整個元件。適合 FileItem 的 compact mode(上方已有檔名文字)。
           </p>
           <div className="w-[360px]">
-            <ProgressBar value={55} status="inProgress" />
+            <ProgressBar value={55} status="inProgress" aria-label="純 bar 進度範例" />
           </div>
         </div>
       </div>

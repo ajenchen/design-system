@@ -23,7 +23,16 @@ const TooltipTrigger = TooltipPrimitive.Trigger
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, style, children, ...props }, ref) => (
+>(({ className, sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, style, children, ...props }, ref) => {
+  // 空內容不掛浮層:children 為 null / undefined / false / 空字串時不渲染帶 padding 的空
+  // role="tooltip" 殼(見 spec「邊界狀態」)。Tooltip 是資訊補救機制,無補充內容即不出現,
+  // trigger 由 TooltipTrigger 原樣保留。
+  const isEmptyContent =
+    children == null ||
+    children === false ||
+    (typeof children === 'string' && children.trim() === '')
+  if (isEmptyContent) return null
+  return (
   // collisionPadding default 8px:避免 tooltip 貼 viewport 邊(Radix avoidCollisions 預設 true 但 padding 0 會貼邊)
   // 消費 OVERLAY_COLLISION_PADDING overlay 家族 canonical(與 Popover 一致;HoverCard 特例 12 補 rounding)避免 viewport edge clipping
   <TooltipPrimitive.Portal>
@@ -48,7 +57,8 @@ const TooltipContent = React.forwardRef<
       <div data-theme="dark" className="contents">{children}</div>
     </TooltipPrimitive.Content>
   </TooltipPrimitive.Portal>
-))
+  )
+})
 TooltipContent.displayName = TooltipPrimitive.Content.displayName
 
 // Story auto-compile metadata — Phase 1 mechanical migration(2026-04-24)

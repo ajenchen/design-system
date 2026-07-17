@@ -276,7 +276,7 @@ export const SearchableRule: Story = {
 
       <Rule
         title="次要啟發:數量 > 50 幾乎必開(但仍看 label 性質)"
-        note="100 個 a/b/c 不需要搜尋(字母排序掃視快,手機原生 select 還有 type-to-jump 直達),5 個產品代碼需要搜尋。純數量 threshold 會誤判這兩端,詳見 spec"
+        note="100 個依字母排序的國家名不需要搜尋(自然語言掃視快,手機原生 select 還有 type-to-jump 直達),5 個產品代碼(SKU-4837)反而需要搜尋。純數量 threshold 會誤判這兩端,詳見 spec"
       >
         <Label>判斷優先序:label 性質 → 數量次要啟發</Label>
       </Rule>

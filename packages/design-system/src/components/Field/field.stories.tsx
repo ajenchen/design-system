@@ -91,7 +91,7 @@ export const StateCascade: Story = {
           <Field mode="readonly" className="w-44"><FieldLabel>負責人</FieldLabel><Input value="王小明" onChange={() => {}} /></Field>
           <Field mode="readonly" className="w-44"><FieldLabel>同意條款</FieldLabel><Checkbox checked /></Field>
           <Field mode="readonly" className="w-44"><FieldLabel>已啟用</FieldLabel><Switch checked /></Field>
-          <Field mode="readonly" className="w-44"><FieldLabel>未勾選範例</FieldLabel><Checkbox /></Field>
+          <Field mode="readonly" className="w-44"><FieldLabel>行銷電子報</FieldLabel><Checkbox /></Field>
           <Field mode="readonly" className="w-44"><FieldLabel>付款方式</FieldLabel><RadioGroup value="card"><RadioGroupItem value="card" label="信用卡" /><RadioGroupItem value="cash" label="貨到付款" /></RadioGroup></Field>
           <Field mode="readonly" className="w-44"><FieldLabel>滿意度</FieldLabel><Rating value={4} aria-label="滿意度" /></Field>
           <Field mode="readonly" className="w-44"><FieldLabel>完成度</FieldLabel><Slider defaultValue={[40]} aria-label="完成度" /></Field>
@@ -153,8 +153,8 @@ export const HorizontalLabelAlignment: Story = {
           這是 padding-top: calc((field-height - 1lh) / 2) 的基本情境。
         </p>
         <Field orientation="horizontal" labelWidth="160px">
-          <FieldLabel>短 label</FieldLabel>
-          <Input placeholder="input 中線應與 label 對齊" />
+          <FieldLabel>職稱</FieldLabel>
+          <Input placeholder="如:資深產品設計師" />
         </Field>
       </div>
 
@@ -165,8 +165,8 @@ export const HorizontalLabelAlignment: Story = {
           視覺上 label 從 input 中線往下延伸，而不是從 input 頂部開始。
         </p>
         <Field orientation="horizontal" labelWidth="160px">
-          <FieldLabel>這是一個會換行的很長的 label 用來驗證多行情境</FieldLabel>
-          <Input placeholder="input 中線應與 label 第一行對齊" />
+          <FieldLabel>緊急聯絡人手機(發生狀況時優先撥打)</FieldLabel>
+          <Input placeholder="如:0912-345-678" />
         </Field>
       </div>
 
@@ -177,18 +177,27 @@ export const HorizontalLabelAlignment: Story = {
           無需 JS 測量。
         </p>
         <div className="flex flex-col gap-3">
-          <Field orientation="horizontal" labelWidth="100px" size="sm">
-            <FieldLabel>sm size</FieldLabel>
-            <Input size="sm" placeholder="28px high" />
-          </Field>
-          <Field orientation="horizontal" labelWidth="100px" size="md">
-            <FieldLabel>md size</FieldLabel>
-            <Input size="md" placeholder="32px high" />
-          </Field>
-          <Field orientation="horizontal" labelWidth="100px" size="lg">
-            <FieldLabel>lg size</FieldLabel>
-            <Input size="lg" placeholder="36px high" />
-          </Field>
+          <div>
+            <div className="text-caption text-fg-muted mb-1">小尺寸 sm — 控件高 28px</div>
+            <Field orientation="horizontal" labelWidth="100px" size="sm">
+              <FieldLabel>電子郵件</FieldLabel>
+              <Input size="sm" placeholder="name@example.com" />
+            </Field>
+          </div>
+          <div>
+            <div className="text-caption text-fg-muted mb-1">中尺寸 md — 控件高 32px</div>
+            <Field orientation="horizontal" labelWidth="100px" size="md">
+              <FieldLabel>電子郵件</FieldLabel>
+              <Input size="md" placeholder="name@example.com" />
+            </Field>
+          </div>
+          <div>
+            <div className="text-caption text-fg-muted mb-1">大尺寸 lg — 控件高 36px</div>
+            <Field orientation="horizontal" labelWidth="100px" size="lg">
+              <FieldLabel>電子郵件</FieldLabel>
+              <Input size="lg" placeholder="name@example.com" />
+            </Field>
+          </div>
         </div>
       </div>
     </div>
@@ -279,31 +288,40 @@ export const SegmentedControlInField: Story = {
           整個欄位改尺寸時,分段控制器也會跟著一起縮放。
         </p>
         <FieldGroup>
-          <Field size="sm">
-            <FieldLabel>檢視模式（sm）</FieldLabel>
-            <SegmentedControl defaultValue="list">
-              <SegmentedControlItem value="list">清單</SegmentedControlItem>
-              <SegmentedControlItem value="board">看板</SegmentedControlItem>
-              <SegmentedControlItem value="calendar">行事曆</SegmentedControlItem>
-            </SegmentedControl>
-            <FieldDescription>切換內容呈現方式</FieldDescription>
-          </Field>
-          <Field size="md">
-            <FieldLabel>檢視模式（md）</FieldLabel>
-            <SegmentedControl defaultValue="list">
-              <SegmentedControlItem value="list">清單</SegmentedControlItem>
-              <SegmentedControlItem value="board">看板</SegmentedControlItem>
-              <SegmentedControlItem value="calendar">行事曆</SegmentedControlItem>
-            </SegmentedControl>
-          </Field>
-          <Field size="lg">
-            <FieldLabel>檢視模式（lg）</FieldLabel>
-            <SegmentedControl defaultValue="list">
-              <SegmentedControlItem value="list">清單</SegmentedControlItem>
-              <SegmentedControlItem value="board">看板</SegmentedControlItem>
-              <SegmentedControlItem value="calendar">行事曆</SegmentedControlItem>
-            </SegmentedControl>
-          </Field>
+          <div>
+            <div className="text-caption text-fg-muted mb-1">小尺寸 sm</div>
+            <Field size="sm">
+              <FieldLabel>檢視模式</FieldLabel>
+              <SegmentedControl defaultValue="list">
+                <SegmentedControlItem value="list">清單</SegmentedControlItem>
+                <SegmentedControlItem value="board">看板</SegmentedControlItem>
+                <SegmentedControlItem value="calendar">行事曆</SegmentedControlItem>
+              </SegmentedControl>
+              <FieldDescription>切換內容呈現方式</FieldDescription>
+            </Field>
+          </div>
+          <div>
+            <div className="text-caption text-fg-muted mb-1">中尺寸 md</div>
+            <Field size="md">
+              <FieldLabel>檢視模式</FieldLabel>
+              <SegmentedControl defaultValue="list">
+                <SegmentedControlItem value="list">清單</SegmentedControlItem>
+                <SegmentedControlItem value="board">看板</SegmentedControlItem>
+                <SegmentedControlItem value="calendar">行事曆</SegmentedControlItem>
+              </SegmentedControl>
+            </Field>
+          </div>
+          <div>
+            <div className="text-caption text-fg-muted mb-1">大尺寸 lg</div>
+            <Field size="lg">
+              <FieldLabel>檢視模式</FieldLabel>
+              <SegmentedControl defaultValue="list">
+                <SegmentedControlItem value="list">清單</SegmentedControlItem>
+                <SegmentedControlItem value="board">看板</SegmentedControlItem>
+                <SegmentedControlItem value="calendar">行事曆</SegmentedControlItem>
+              </SegmentedControl>
+            </Field>
+          </div>
         </FieldGroup>
       </div>
 
@@ -478,23 +496,35 @@ export const LabelWidth: Story = {
   name: '標籤寬度',
   render: () => (
     <div className="max-w-2xl flex flex-col gap-4">
-      <p className="text-caption text-fg-muted">labelWidth 支援任何 CSS length 值</p>
-      <Field orientation="horizontal" labelWidth="80px">
-        <FieldLabel>80px</FieldLabel>
-        <Input placeholder="short label column" />
-      </Field>
-      <Field orientation="horizontal" labelWidth="160px">
-        <FieldLabel>160px（預設常用）</FieldLabel>
-        <Input placeholder="typical settings form" />
-      </Field>
-      <Field orientation="horizontal" labelWidth="240px">
-        <FieldLabel>240px（寬 label 欄）</FieldLabel>
-        <Input placeholder="wide label column" />
-      </Field>
-      <Field orientation="horizontal" labelWidth="30%">
-        <FieldLabel>30%（比例）</FieldLabel>
-        <Input placeholder="percentage" />
-      </Field>
+      <p className="text-caption text-fg-muted">labelWidth 支援任何 CSS length 值(80px / 160px / 240px / 30% 等);同一表單依最長的 label 挑一個固定寬,讓控件起點對齊。</p>
+      <div>
+        <div className="text-caption text-fg-muted mb-1">labelWidth = 80px</div>
+        <Field orientation="horizontal" labelWidth="80px">
+          <FieldLabel>城市</FieldLabel>
+          <Input placeholder="如:台北市" />
+        </Field>
+      </div>
+      <div>
+        <div className="text-caption text-fg-muted mb-1">labelWidth = 160px(預設常用)</div>
+        <Field orientation="horizontal" labelWidth="160px">
+          <FieldLabel>公司統一編號</FieldLabel>
+          <Input placeholder="8 碼數字" />
+        </Field>
+      </div>
+      <div>
+        <div className="text-caption text-fg-muted mb-1">labelWidth = 240px(寬 label 欄)</div>
+        <Field orientation="horizontal" labelWidth="240px">
+          <FieldLabel>發票寄送電子郵件地址</FieldLabel>
+          <Input placeholder="billing@company.com" />
+        </Field>
+      </div>
+      <div>
+        <div className="text-caption text-fg-muted mb-1">labelWidth = 30%(比例)</div>
+        <Field orientation="horizontal" labelWidth="30%">
+          <FieldLabel>備註</FieldLabel>
+          <Input placeholder="選填" />
+        </Field>
+      </div>
     </div>
   ),
 }
@@ -531,9 +561,9 @@ export const WithSlider: Story = {
           </Field>
 
           <Field>
-            <FieldLabel>已鎖定</FieldLabel>
+            <FieldLabel>儲存空間配額</FieldLabel>
             <Slider defaultValue={[40]} disabled />
-            <FieldDescription>不可調整的範例</FieldDescription>
+            <FieldDescription>由系統管理員設定,無法自行調整</FieldDescription>
           </Field>
         </FieldGroup>
       </div>
@@ -602,9 +632,9 @@ export const SliderWithLiveNumberInput: Story = {
               max={200}
             />
           </div>
+          {/* Slider 與 NumberInput 透過 `h-field-md` 對齊高度——實作細節,不進使用者可見文案 */}
           <FieldDescription>
-            Slider 跟 NumberInput 同步——拖曳 slider 即時更新數字,改數字即時更新
-            slider。兩個元件高度透過 `h-field-md` 對齊。
+            拖曳滑桿或直接輸入數字都能即時調整縮放比例,範圍 0–200%。
           </FieldDescription>
         </Field>
       </div>
@@ -640,7 +670,7 @@ function UpdateProjectSettingsForm() {
         <Field required invalid={!!form.errors.name}>
           <FieldLabel>專案名稱</FieldLabel>
           <Input {...form.getInputProps('name')} />
-          <FieldDescription>改成「產品路線圖 Q3」可觸發 submit 業務驗證(名稱重複)</FieldDescription>
+          <FieldDescription>專案名稱不得與其他專案重複</FieldDescription>
           <FieldError>{form.errors.name}</FieldError>
         </Field>
         <Field required invalid={!!form.errors.ownerEmail}>
@@ -700,6 +730,7 @@ export const FormValidation: Story = {
         <p className="text-caption text-fg-muted max-w-80">
           按鈕沒改不亮;打字中不報錯(blur 才驗);已出錯欄位一編輯立即清 error;
           Escape 回復原值;空 submit / 格式錯 → anchor 到第一個錯誤欄位。
+          試著把名稱改成「產品路線圖 Q3」再儲存,會觸發「名稱重複」業務驗證。
         </p>
         <UpdateProjectSettingsForm />
       </div>

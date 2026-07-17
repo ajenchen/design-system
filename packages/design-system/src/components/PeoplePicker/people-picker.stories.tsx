@@ -100,7 +100,7 @@ const MultiPicker = () => {
     <div className="flex flex-col gap-6 max-w-xs">
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">edit（可互動,多選）</h3>
-        <PeoplePicker value={val} people={samplePeople} onChange={setVal} />
+        <PeoplePicker value={val} people={samplePeople} onChange={setVal} aria-label="專案協作者(edit multi demo)" />
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
@@ -120,7 +120,7 @@ const SizePicker = ({ size }: { size: 'sm' | 'md' | 'lg' }) => {
   const [val, setVal] = React.useState<PersonValue | null>(samplePeople[0])
   return (
     <div className="flex items-center gap-3">
-      <PeoplePicker size={size} value={val} people={samplePeople} onChange={(v) => setVal(v[0] ?? null)} className="max-w-xs" />
+      <PeoplePicker size={size} value={val} people={samplePeople} onChange={(v) => setVal(v[0] ?? null)} className="max-w-xs" aria-label={`負責人(size=${size})`} />
       <Button variant="primary" size={size}>送出</Button>
       <span className="text-caption text-fg-muted">size="{size}"</span>
     </div>

@@ -166,10 +166,10 @@ export const MultipleRule: Story = {
         note="每個欄位只收一份檔案時用預設 multiple=false。世界級對照:LinkedIn 履歷上傳、Instagram 大頭貼、Notion page cover——使用者心智模型是「這個位置放一個檔案」。"
       >
         <FileUpload
-          accept=".pdf,.doc,.docx"
-          maxSize={5_000_000}
-          title="上傳履歷"
-          description="PDF / Word,最大 5 MB"
+          accept="image/png,image/jpeg"
+          maxSize={2_000_000}
+          title="上傳大頭貼"
+          description="PNG / JPG,最大 2 MB"
           onUpload={noop}
         />
         <Label>↑ 多拖幾個只取第一個,符合 Ant Upload.Dragger / Polaris DropZone 慣例</Label>
@@ -212,7 +212,7 @@ export const DivisionOfLaborRule: Story = {
       <div>
         <Rule
           title="✅ FileUpload 觸發 + FileItem 顯示"
-          note="FileUpload 只負責「拖放偵測 + 觸發選檔」,已上傳檔案清單由 consumer 用 FileItem map 渲染——兩個元件各司其職,職責清楚。這正是 Notion / Slack / Figma 的附件 flow 做法。"
+          note="本範例走 consumer 自組清單:FileUpload 負責拖放偵測 + 觸發選檔,已上傳清單由 consumer 用 FileItem map 渲染。DS 同時支援第二條路——把清單交給 FileUpload 的 files prop 內建渲染(見下一則規則);兩條路都合法,差別只在觸發與清單狀態由誰持有,重點是都不重畫 FileItem 內部視覺。這正是 Notion / Slack / Figma 的附件 flow 做法。"
         >
           <FileUpload
             multiple
@@ -253,9 +253,9 @@ export const DivisionOfLaborRule: Story = {
 
         <Rule
           title="❌ 不在 FileUpload 裡自己重刻 FileItem primitives"
-          note="2026-04-24 設計準則更新:DS 提供 dual path — FileUpload 可 own list via `files` prop(內部 compose `<FileItem>`);OR consumer 自組 `{files.map(f => <FileItem ... />)}`。禁止的是「自畫 status icon / thumbnail / progress bar / row layout 等 FileItem primitives 視覺規格」。世界級(Material / Ant / Carbon)都 own list composing 自家 FileItem primitive。"
+          note="DS 提供兩條清單管理路徑:一是把清單交給 FileUpload 的 files prop,由它內部組合 FileItem 渲染;二是 consumer 自己用 files.map 逐項渲染 FileItem。兩條路都合法,真正禁止的是「自己重畫 FileItem 的內部視覺規格」——狀態圖示、縮圖比例、進度條、列排版都屬 FileItem 的 SSOT。世界級(Material / Ant / Carbon)也都是自己擁有清單、組合自家的 FileItem primitive,不另刻一套。"
         >
-          <Label warn>⚠️ 要顯示清單 → 傳 `files` prop(DS built-in)OR 自組 FileItem map;但不要自己重畫 FileItem 內部結構</Label>
+          <Label warn>⚠️ 要顯示清單 → 傳 `files` prop(內建)或自組 FileItem map;但不要自己重畫 FileItem 內部結構</Label>
         </Rule>
       </div>
     )

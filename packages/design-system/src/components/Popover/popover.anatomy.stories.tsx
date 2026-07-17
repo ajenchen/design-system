@@ -161,14 +161,17 @@ export const PlacementMatrix: Story = {
           {(['top', 'right', 'bottom', 'left'] as const).flatMap(side =>
             (['start', 'center', 'end'] as const).map(align => (
               <div key={`${side}-${align}`} className="flex items-center gap-3 border border-dashed border-divider rounded-md p-3">
+                {/* side/align 屬定位參數,標在格外 caption(非浮層可見內容);浮層本體用真實使用情境 */}
+                <span className="text-caption font-mono text-fg-muted shrink-0 whitespace-nowrap">{side} / {align}</span>
+                {/* @overlay-open-skip:12-cell 定位矩陣示範 side×align 落點,全部 defaultOpen 會讓 12 個浮層互相重疊;點擊逐格開啟即可觀察定位,開啟態視覺覆蓋於 Inspector(defaultOpen) */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="tertiary" size="sm" className="font-mono">{side}/{align}</Button>
+                    <Button variant="tertiary" size="sm">使用說明</Button>
                   </PopoverTrigger>
-                  <PopoverContent side={side} align={align}>
-                    <PopoverBody><div className="text-caption">side=<span className="font-mono">{side}</span>, align=<span className="font-mono">{align}</span></div></PopoverBody>
+                  {/* naked popover(無 PopoverTitle)→ 自傳 aria-label 讓 role="dialog" 有 accessible name */}
+                  <PopoverContent side={side} align={align} aria-label="使用說明">
+                    <PopoverBody><div className="text-caption text-fg-secondary">拖曳卡片可調整優先順序,變更會即時同步給協作者。</div></PopoverBody>
                   </PopoverContent>
-                  {/* each placement variant already wrapped in PopoverBody for consistent padding */}
                 </Popover>
               </div>
             ))
@@ -218,13 +221,13 @@ export const SizeMatrix: Story = {
           <div className="flex items-center gap-3 border border-dashed border-divider rounded-md p-3">
             <span className="text-caption font-mono w-20">w-72(預設)</span>
             <Popover><PopoverTrigger asChild><Button variant="tertiary" size="sm">開啟</Button></PopoverTrigger>
-              <PopoverContent><PopoverBody><div className="text-caption">預設寬度 w-72</div></PopoverBody></PopoverContent>
+              <PopoverContent aria-label="預設寬度示範"><PopoverBody><div className="text-caption">預設寬度 w-72</div></PopoverBody></PopoverContent>
             </Popover>
           </div>
           <div className="flex items-center gap-3 border border-dashed border-divider rounded-md p-3">
             <span className="text-caption font-mono w-20">w-96</span>
             <Popover><PopoverTrigger asChild><Button variant="tertiary" size="sm">開啟</Button></PopoverTrigger>
-              <PopoverContent className="w-96"><PopoverBody><div className="text-caption">自訂 w-96</div></PopoverBody></PopoverContent>
+              <PopoverContent className="w-96" aria-label="自訂寬度示範"><PopoverBody><div className="text-caption">自訂 w-96</div></PopoverBody></PopoverContent>
             </Popover>
           </div>
         </div>

@@ -73,7 +73,7 @@ const MultiSelectDemo = () => {
   return (
     <div className="flex flex-col gap-4 max-w-sm">
       <p className="text-caption text-fg-muted">Combobox — checkbox 多選，浮層不關閉</p>
-      <Combobox options={categoryOptions} value={value} onChange={setValue} />
+      <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="商品分類(SelectMenu multi-select demo)" />
     </div>
   )
 }
@@ -90,7 +90,7 @@ const MultiSearchDemo = () => {
   return (
     <div className="flex flex-col gap-4 max-w-sm">
       <p className="text-caption text-fg-muted">searchable — 浮層內搜尋框，關鍵字保留可連續勾選</p>
-      <Combobox options={countries} value={value} onChange={setValue} searchable />
+      <Combobox options={countries} value={value} onChange={setValue} searchable aria-label="國家(SelectMenu multi-select + search demo)" />
     </div>
   )
 }
@@ -100,23 +100,11 @@ export const MultiSearchable: StoryObj = {
   render: () => <MultiSearchDemo />,
 }
 
-// ── 可清除 ──
-
-const ClearableDemo = () => {
-  const [value, setValue] = useState<string>('in_stock')
-  return (
-    <div className="flex flex-col gap-4 max-w-xs">
-      <p className="text-caption text-fg-muted">clearable — 有值時右側出現清除按鈕</p>
-      <Select options={statusOptions} value={value} onChange={setValue} clearable />
-    </div>
-  )
-}
-
-export const Clearable: StoryObj = {
-  name: '可清除',
-  render: () => <ClearableDemo />,
-}
-
+// @story-trait-rationale: 原 Clearable(可清除)retired 2026-07-17(Dim 25 earn-existence)—
+//   該 story 實際 render `<Select clearable>`,clearable 是 Select trigger/field state 的 API(spec
+//   L45/L53/L160 明定 trigger state 由外層 Select/Combobox own,SelectMenu 本身無此 prop),
+//   且 Select.stories.tsx「可清除」已 own 此 canonical。SelectMenu 展示層只保留浮層自身能力
+//   (搜尋 / 多選 / creatable / 選項狀態),不重演 wrapper 的 field feature。principles 頁對應 LinkTo 同步移除。
 // @story-trait-rationale: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。
 // @story-trait-rationale: 原 States(edit/readonly/disabled/error 觸發器狀態)retired 2026-06-11 —
 //   trigger field state 由 Select.stories.tsx「四模式」owns(SelectMenu 是 internal popover surface,

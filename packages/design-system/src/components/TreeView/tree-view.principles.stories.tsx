@@ -78,9 +78,24 @@ export const UsageGuidance: Story = {
       <Section title="何時不用 + 替代方案">
         <Rule
           title='❌ 互斥展開(同時只開一個):用 Accordion type="single"'
-          note="TreeView 預設允許任意多個節點同時展開。若需要「選一個展開其他自動收」的互斥語意,用 Accordion(非 TreeView)"
+          note='TreeView 預設允許任意多個節點同時展開。平面設定分段若需要「展開一個、其他自動收合」的互斥語意,用 Accordion type="single"(非 TreeView)'
         >
-          <Label warn>(範例省略)TreeView 是多展開,Accordion 是單展開,語意不同</Label>
+          <div className="border border-border rounded-lg p-3 w-80">
+            <TreeView aria-label="帳號設定分段" selectionMode="none" defaultExpandedIds={['account', 'notify', 'privacy']}>
+              <TreeItem id="account" label="帳號設定">
+                <TreeItem id="account-email" label="電子郵件" />
+                <TreeItem id="account-password" label="密碼" />
+              </TreeItem>
+              <TreeItem id="notify" label="通知偏好">
+                <TreeItem id="notify-email" label="信件通知" />
+                <TreeItem id="notify-push" label="推播通知" />
+              </TreeItem>
+              <TreeItem id="privacy" label="隱私與安全">
+                <TreeItem id="privacy-2fa" label="兩步驟驗證" />
+              </TreeItem>
+            </TreeView>
+          </div>
+          <Label warn>↑ 三個設定分段在 TreeView 裡可同時展開;要「展開一個自動收其他」的互斥手風琴,用 Accordion type="single"</Label>
         </Rule>
       </Section>
 
@@ -101,10 +116,10 @@ export const UsageGuidance: Story = {
         </Rule>
 
         <Rule
-          title="❌ Sidebar 的簡單 2 層 nav:用 Sidebar 內建結構"
-          note="Sidebar 的 SidebarMenuSub 已處理「主項目 + 子項目」2 層結構。只有深度 ≥ 3 層或 user data 樹才用 TreeView"
+          title="❌ 純視覺分段(設計時可列舉的固定選單):用 SidebarGroup 不用 TreeView"
+          note="Sidebar 主選單只接受 1 層可列舉項目——設計時就固定死、不會 runtime 新增的分段,用 SidebarGroup 純視覺分段即可。真階層 user data(專案 / 子專案、部門樹,即使只有 2 層、未來會長)才用 TreeView(見 sidebar.spec.md「判斷規則」)"
         >
-          <Label warn>2 層 nav 用 Sidebar 的 Sub Menu 足夠,不需要 TreeView 的遞迴 overhead</Label>
+          <Label warn>固定分段用 SidebarGroup 就夠,不需要 TreeView 的遞迴 overhead;user data 樹則一律 TreeView</Label>
         </Rule>
       </Section>
     </div>
@@ -174,16 +189,34 @@ export const IndentRule: Story = {
         note="同層 siblings 有展開 icon、有的沒有 → label 不對齊。TreeView 自動給葉節點留 chevron 位置(透明 placeholder),consumer 不需介入"
       >
         <div className="border border-border rounded-lg p-3 w-80">
-          <TreeView defaultExpandedIds={['fa', 'sub']}>
-            <TreeItem id="fa" label="資料夾 A" icon={Folder}>
-              <TreeItem id="file-a" label="檔案 a.txt" icon={FileText} />
-              <TreeItem id="sub" label="子資料夾" icon={Folder}>
-                <TreeItem id="file-b" label="檔案 b.txt" icon={FileText} />
+          <TreeView aria-label="行銷素材資料夾樹" defaultExpandedIds={['assets', 'social']}>
+            <TreeItem id="assets" label="行銷素材" icon={Folder}>
+              <TreeItem id="hero" label="活動主視覺.png" icon={Image} />
+              <TreeItem id="social" label="社群貼文" icon={Folder}>
+                <TreeItem id="story" label="限動範本.psd" icon={FileText} />
               </TreeItem>
             </TreeItem>
           </TreeView>
         </div>
-        <Label>↑ 「檔案 a.txt」是葉,「子資料夾」可展開——兩者 label 依然垂直對齊</Label>
+        <Label>↑ 「活動主視覺.png」是葉,「社群貼文」可展開——兩者 label 依然垂直對齊</Label>
+      </Rule>
+
+      <Rule
+        title="❌ 混用有 icon / 無 icon 的節點"
+        note="Chevron 有自動佔位(leaf 也留等寬空白),但 icon 無自動佔位——同層有些節點傳 icon、有些沒傳,label 起點會直接錯開。要嘛全傳 icon,要嘛全不傳(見 spec「Icon 一致性原則」)"
+      >
+        <div className="border border-border rounded-lg p-3 w-80">
+          <TreeView aria-label="icon 混用反例檔案樹" defaultExpandedIds={['src', 'public']}>
+            <TreeItem id="src" label="src" icon={Folder}>
+              <TreeItem id="app" label="App.tsx" icon={FileText} />
+              <TreeItem id="readme" label="README.md" />
+            </TreeItem>
+            <TreeItem id="public" label="public">
+              <TreeItem id="favicon" label="favicon.ico" icon={Image} />
+            </TreeItem>
+          </TreeView>
+        </div>
+        <Label warn>↑ 「README.md」「public」沒傳 icon → label 起點比有 icon 的節點前移,視覺節奏錯開</Label>
       </Rule>
     </div>
   ),

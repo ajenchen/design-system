@@ -4,6 +4,7 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { DataTable } from './data-table'
+import { Empty } from '@/design-system/components/Empty/empty'
 import './column-types'
 
 const meta: Meta = {
@@ -189,7 +190,7 @@ export const VirtualScrollRule: Story = {
 
         <Rule
           title="固定 height 數字 — 大量資料(> 100 筆),啟用 virtualization"
-          note="傳固定高度時 TanStack Virtual 自動啟用——只渲染可見 rows。500 筆資料只渲染 ~20 rows,效能不受資料量影響"
+          note="傳固定高度時 TanStack Virtual 自動啟用——只渲染可見 rows。500 筆資料只渲染 ~20 rows,大幅降低列渲染成本。注意:排序 / 篩選 / 完整 row model 與記憶體成本仍隨資料量增長——超大量或遠端資料仍需分頁或 server-side 排序 / 篩選"
         >
           <DataTable columns={columns} data={bigData} height="400px" />
           <Label>↑ 500 筆資料,固定 400px 高度 → virtualizer 只渲染畫面中的 ~20 rows</Label>
@@ -218,10 +219,15 @@ export const EmptyStateRule: Story = {
       <div>
         <Rule
           title="✅ 無資料 → 消費 Empty primitive(跟系統統一)"
-          note="DataTable empty state 走共用 `Empty` 元件——保持跟 SelectMenu / Combobox / Page section 視覺一致。Consumer 不自訂,自動顯示標準空狀態"
+          note="DataTable empty state 走共用 `Empty` 元件——保持跟 SelectMenu / Combobox / Page section 視覺一致。「不自訂」指不手刻自家 empty 視覺,不是省略文案:正式產品應傳 `emptyState` 以業務語言說明「缺什麼資料 + 下一步」(對齊 Empty 文案準則);未傳時才落回抽象 fallback「沒有資料」"
         >
-          <DataTable columns={columns} data={[]} height="auto" />
-          <Label>↑ DataTable 內部自動消費 Empty primitive</Label>
+          <DataTable
+            columns={columns}
+            data={[]}
+            height="auto"
+            emptyState={<Empty title="尚無商品" description="點擊上方「新增商品」開始建立第一筆" />}
+          />
+          <Label>↑ 傳 `emptyState` 消費 Empty primitive,並以業務語言描述缺什麼資料</Label>
         </Rule>
 
         <Rule
@@ -248,7 +254,7 @@ export const NotSpreadsheetRule: Story = {
     <div>
       <Rule
         title="DataTable 預設不做公式計算、不做跨 cell 選取"
-        note="DataTable 的心智模型是「結構化資料展示」——每筆資料是一 row,每個屬性是一 column。預設不做:Excel 的公式、跨 cell range selection(Ctrl+drag)、cell clipboard paste、pivot、跨欄運算。**逃生門**:確需 Excel-like 編輯可 opt-in `spreadsheetMode` prop(Shift+click range + 方向鍵 cell 導覽 + cell editing;仍不做公式計算),對齊 spec.md L28。"
+        note="DataTable 的心智模型是「結構化資料展示」——每筆資料是一 row,每個屬性是一 column。預設不做:Excel 的公式、跨 cell range selection(Ctrl+drag)、cell clipboard paste、pivot、跨欄運算。**逃生門**:確需 Excel-like 編輯可 opt-in `spreadsheetMode` prop(Shift+click range + 方向鍵 cell 導覽 + cell editing;仍不做公式計算)——即使開啟 spreadsheetMode,DataTable 仍只是「可 range 選取 + 方向鍵導覽 + inline 編輯」的結構化資料表,不會變成有公式引擎的試算表。"
       >
         <Label>需要試算表能力 → 用專門 library(AG Grid Enterprise / Handsontable / Luckysheet),不往 DataTable 塞</Label>
       </Rule>

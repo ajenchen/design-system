@@ -22,6 +22,7 @@
 - `Checkbox/` — `checkbox.tsx` + `checkbox-group.tsx`(2026-04-21 CheckboxGroup merge 自 separate folder,對齊 standalone + group 世界級慣例)+ `boolean-display.tsx`(table cell 顯示)
 - `Menu/` — `menu-item.tsx`(家族預留位)
 - `SelectionControl/` — `selection-item.tsx`(Checkbox/Radio 共享的 row layout primitive home)
+- `PeoplePicker/` — `people-picker.tsx` + `person-display.tsx`(`PersonDisplay` / `MultiPersonDisplay` / `PersonAvatarTag`)+ `avatar-stack-overflow.ts` + `people-picker-helpers.ts`。**compound rationale**:全部共享 `PersonValue` 資料模型 + avatar 視覺規則,且 picker↔display 雙向消費(edit 選人 / view 渲染已選)。`PersonDisplay` 為**唯一現存 cross-component view primitive**(可脫離 picker 用於 DataTable cell / detail panel,見 `Field/field-controls.spec.md`「唯一現存 cross-component view primitive」),經 `PeoplePicker` root barrel + subpath 一併公開——與 `Checkbox/boolean-display.tsx`(table-cell 顯示 co-located)同型共居先例
 
 **判斷 compound vs 單獨 folder**:
 - 元件能**獨立 lifecycle / 獨立使用** → 各自獨立 folder(Button / Input / Select)

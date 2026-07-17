@@ -71,7 +71,7 @@ export const SizeAlignment: Story = {
       <div className="flex flex-col gap-4">
         {(['sm', 'md', 'lg'] as const).map(size => (
           <div key={size} className="flex items-center gap-3">
-            <Combobox size={size} options={categoryOptions} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" />
+            <Combobox size={size} options={categoryOptions} value={states[size][0]} onChange={states[size][1]} className="max-w-xs" aria-label={`商品分類(size=${size})`} />
             <Button variant="primary" size={size}>送出</Button>
             <span className="text-caption text-fg-muted">size="{size}"</span>
           </div>
@@ -81,37 +81,10 @@ export const SizeAlignment: Story = {
   },
 }
 
-/* ── 單行 vs 換行 ── */
-export const WrapModes: Story = {
-  name: '單行 vs 換行',
-  render: () => {
-    const init = ['electronics', 'food', 'lifestyle', 'clothing', 'furniture']
-    const [v1, setV1] = React.useState(init)
-    const [v2, setV2] = React.useState(init)
-    return (
-      <div className="flex flex-col gap-6 w-72">
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">單行（預設）</h3>
-          <p className="text-caption text-fg-muted mb-3">塞不下的自動收進 +N，hover 顯示隱藏項</p>
-          <Combobox options={categoryOptions} value={v1} onChange={setV1} />
-        </div>
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">單行 readonly</h3>
-          <Combobox mode="readonly" options={categoryOptions} value={init} />
-        </div>
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">換行（wrap）</h3>
-          <p className="text-caption text-fg-muted mb-3">高度隨內容長，badges 自動換行</p>
-          <Combobox options={categoryOptions} value={v2} onChange={setV2} wrap />
-        </div>
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">換行 readonly</h3>
-          <Combobox mode="readonly" options={categoryOptions} value={init} wrap />
-        </div>
-      </div>
-    )
-  },
-}
+// @story-trait-rationale: 原 WrapModes(單行 vs 換行)retired 2026-07-17(Dim 24 earn-existence)—
+//   單行/wrap × edit/readonly 矩陣已由 anatomy「狀態行為」(單行溢出 + readonly 溢出 + edit/readonly wrap)
+//   完整覆蓋機制,wrap 選擇原則由 principles「Wrap 模式選擇」(WrapRule)owns。展示層不重演矩陣(三層定位);
+//   principles 使用指引頁對應 LinkTo(單行 vs 換行)同步移除。
 
 /* ── 搜尋 ── */
 export const Searchable: Story = {

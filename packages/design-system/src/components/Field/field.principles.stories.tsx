@@ -4,7 +4,7 @@ import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Upload } from 'lucide-react'
-import { Field, FieldLabel, FieldDescription, FieldError, FieldGroup } from './field'
+import { Field, FieldLabel, FieldDescription, FieldGroup } from './field'
 import { Input } from '@/design-system/components/Input/input'
 import { Select } from '@/design-system/components/Select/select'
 import { Button } from '@/design-system/components/Button/button'
@@ -141,33 +141,10 @@ export const UsageGuidance: Story = {
   ),
 }
 
-export const ResponsibilityRule: Story = {
-  name: 'Field 只負責佈局,不管資料',
-  render: () => (
-    <div>
-      <Rule
-        title="Field 的職責 — Layout + Context,不擁有資料邏輯"
-        note="Field 只負責:label / control / description / error 的空間關係 + 把 mode / disabled / required / invalid / id 透過 context 傳給子元件。與資料相關的一切(格式化、驗證、readonly 呈現、DataTable cell 顯示)住在 Field Control 元件本身"
-      >
-        <div className="max-w-sm">
-          <FieldGroup>
-            <Field required>
-              <FieldLabel>電子郵件</FieldLabel>
-              <Input type="email" placeholder="name@example.com" />
-              <FieldDescription>我們不會公開您的電子郵件</FieldDescription>
-            </Field>
-            <Field invalid>
-              <FieldLabel>密碼</FieldLabel>
-              <Input type="password" />
-              <FieldError>密碼必須至少 8 個字元</FieldError>
-            </Field>
-          </FieldGroup>
-        </div>
-        <Label>↑ Field 管 layout + required 星號 + error 顯示,Input 管 type=email / 驗證邏輯</Label>
-      </Rule>
-    </div>
-  ),
-}
+// ResponsibilityRule retired 2026-07-17 per audit Dim 24 —— 與 anatomy Overview「子元件責任邊界」
+// 責任表 + 逐字相同的 電子郵件/密碼 範例重複;職責原則亦已由上方 UsageGuidance「❌ Field 試圖承載
+// 資料型別邏輯」涵蓋(earn-existence 2-test 皆 NO)。UsageGuidance 使 principles universal-core 仍 ≥ 2,
+// 無 LinkTo 引用此 story,退役零斷鏈。
 
 export const OrientationRule: Story = {
   name: '方向 選擇',

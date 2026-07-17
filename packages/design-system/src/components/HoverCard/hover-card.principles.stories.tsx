@@ -97,7 +97,12 @@ export const UsageGuidance: Story = {
         >
           <HoverCard>
             <HoverCardTrigger asChild>
-              <a className="text-primary underline cursor-pointer inline-flex items-center gap-1">
+              <a
+                href="https://help.acme.com/user-manual"
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline cursor-pointer inline-flex items-center gap-1"
+              >
                 使用者手冊 <ExternalLink size={12} />
               </a>
             </HoverCardTrigger>

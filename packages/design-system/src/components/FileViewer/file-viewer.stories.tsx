@@ -203,7 +203,7 @@ const figmaDesignFile: FileInfo[] = [
     mimeType: 'image/png',
     size: 2_840_000,
     description:
-      'Dashboard v2 最終設計稿 — 對齊 spec 2.3 節「Frozen columns + row actions」,可 zoom 看細節對齊。',
+      '營運儀表板 v2 最終設計稿 — 凍結欄與列操作已定案,可 zoom 檢視 spacing 與色彩細節。',
     metadata: {
       '設計師': 'Claire Wu',
       'Figma link': 'figma.com/file/xyz/Dashboard',

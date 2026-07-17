@@ -48,6 +48,9 @@ type ShapeKey = 'circle' | 'tag'
 const SIZES: SizeKey[] = ['sm', 'md', 'lg']
 const SHAPES: ShapeKey[] = ['circle', 'tag']
 
+// 真實隱藏項目池(reviewer / assignee 溢出情境;count 可調,超出池長度時循環)— 取代編號 placeholder
+const HIDDEN_REVIEWERS = ['林思妤', '陳柏宇', 'Aisha Khan', '黃冠霖', 'Diego Santos', '王品澄', 'Nadia Petrova', '張哲瑋']
+
 // font-size 依 shape 分流(re-verified 2026-07-04):circle shape 走元件內建 triggerText
 // map(overflow-indicator.tsx:28-32),tag shape 走 tagVariants({ size })(tag.tsx:40-44)。
 // circleText / tagText 兩欄分別對應,避免把 circle-only 字級當成兩 shape 通用。
@@ -209,9 +212,9 @@ function OverflowInspector() {
             <OverflowIndicator count={count} shape={shape} size={size}>
               <div className="flex flex-col gap-1 text-caption min-w-[140px]">
                 {Array.from({ length: Math.min(count, 8) }).map((_, i) => (
-                  <span key={i}>隱藏項目 {i + 1}</span>
+                  <span key={i}>{HIDDEN_REVIEWERS[i % HIDDEN_REVIEWERS.length]}</span>
                 ))}
-                {count > 8 && <span className="text-fg-muted">…及其他 {count - 8} 項</span>}
+                {count > 8 && <span className="text-fg-muted">…及其他 {count - 8} 位</span>}
               </div>
             </OverflowIndicator>
           </div>
@@ -291,6 +294,7 @@ function OverflowInspector() {
             value={count}
             onChange={(e) => setCount(parseInt(e.target.value, 10))}
             className="w-full"
+            aria-label="調整隱藏項目數量"
           />
           <div className="text-caption font-mono text-fg-secondary">count = {count}</div>
         </div>
@@ -545,7 +549,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"摘要:\n\n  ARIA / Pattern  :對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 pattern。\n\n  互動行為  :\n\n  +N trigger 是 keyboard-focusable 計數 span（tabIndex=0；不掛 role/aria-haspopup——無 activation 行為的宣告是對 AT 空承諾，2026-07-14 對齊 Avatar hoverCard canonical 拆除；2026-06-01 #13 由純 passive 改 focusable，修 WCAG 2.1.1 違反）。HoverCard 在 hover 或 trigger 取得 focus 時自動展開，沒有「按 Enter 開選單」的鍵盤指令，也沒有 click 切換。\n\n  Focus  :trigger 是 tab stop（focus-visible ring，鍵盤使用者可 focus 開啟 HoverCard 看溢出內容）；HoverCard 內展開的可互動內容（人員 tag / ProfileCard）由各自內容元件負責 focus 管理。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation；HoverCard 內容透過 hover 或 focus 自動顯示（非鍵盤指令觸發）。WCAG AA contrast ≥ 4.5:1（text）/ 3:1（UI）。"}</p>
+      <p className="whitespace-pre-line">{"摘要:\n\n  ARIA / Pattern  :對齊 [W3C ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/patterns/) 對應 pattern。\n\n  互動行為  :\n\n  +N trigger 是 keyboard-focusable 計數 span（tabIndex=0；不掛 role/aria-haspopup——無 activation 行為的宣告是對 AT 空承諾，2026-07-14 對齊 Avatar hoverCard canonical 拆除；2026-06-01 #13 由純 passive 改 focusable，修 WCAG 2.1.1 違反）。HoverCard 在 hover 或 trigger 取得 focus 時自動展開，沒有「按 Enter 開選單」的鍵盤指令，也沒有 click 切換。\n\n  Focus  :trigger 是 tab stop（focus-visible ring，鍵盤使用者可 focus 開啟 HoverCard 看溢出內容）；HoverCard 內展開的內容不接受鍵盤 focus——Radix 強制 content 內 tabbable node 為 tabindex=-1，鍵盤等效操作由主列可見項承擔，需鍵盤可操作的互動浮層改用 Popover（click 觸發）。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation；HoverCard 內容透過 hover 或 focus 自動顯示（非鍵盤指令觸發）。WCAG AA contrast ≥ 4.5:1（text）/ 3:1（UI）。"}</p>
     </div>
   ),
 }

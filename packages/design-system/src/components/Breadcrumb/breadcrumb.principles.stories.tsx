@@ -18,7 +18,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
-import { Tabs, TabsList, TabsTrigger } from '@/design-system/components/Tabs/tabs'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta = {
@@ -159,6 +159,9 @@ export const UsageGuidance: Story = {
               <TabsTrigger value="customers">顧客</TabsTrigger>
               <TabsTrigger value="products">產品</TabsTrigger>
             </TabsList>
+            <TabsContent value="orders" className="text-body text-fg-muted mt-2">訂單列表、篩選與批次出貨</TabsContent>
+            <TabsContent value="customers" className="text-body text-fg-muted mt-2">顧客名單、分群與生命週期價值</TabsContent>
+            <TabsContent value="products" className="text-body text-fg-muted mt-2">商品目錄、庫存與上下架狀態</TabsContent>
           </Tabs>
         </div>
       </Rule>

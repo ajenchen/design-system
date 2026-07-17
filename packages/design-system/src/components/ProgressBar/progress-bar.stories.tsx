@@ -37,6 +37,7 @@ const SectionDesc = ({ children }: { children: React.ReactNode }) => (
 // ── Default(基本範例) ──────────────────────────────────────────────────
 
 export const Default: Story = {
+  name: '預設',
   args: { value: 45, status: 'inProgress', affix: 'value' },
   render: (args) => (
     <div className="w-[360px]">
@@ -64,7 +65,7 @@ export const BatchTask: Story = {
           <span className="text-body-lg font-medium flex-1">匯入客戶名單</span>
           <span className="text-caption text-fg-muted tabular-nums">812 / 1,250 筆</span>
         </div>
-        <ProgressBar value={65} status="inProgress" affix="value" />
+        <ProgressBar value={65} status="inProgress" affix="value" aria-label="匯入客戶名單進度" />
         <p className="text-footnote text-fg-muted">
           處理中,請勿關閉此視窗。預計剩餘 28 秒。
         </p>
@@ -107,7 +108,12 @@ const quotaColumns: ColumnDef<QuotaRow>[] = [
     header: '配額使用率',
     meta: { width: 240 },
     cell: ({ row }) => (
-      <ProgressBar value={row.original.quota} status={row.original.status} affix="value" />
+      <ProgressBar
+        value={row.original.quota}
+        status={row.original.status}
+        affix="value"
+        aria-label={`${row.original.name} 配額使用率`}
+      />
     ),
   },
 ]

@@ -434,7 +434,7 @@ N/A(action trigger,無資料層)。
 
 ## A11y 預設
 
-**ARIA / Pattern**:預設渲染原生 `<button>`,自動繼承瀏覽器原生按鈕語意(button role / Enter / Space 觸發 / Tab 聚焦),無需額外 ARIA。`asChild` 時改用 Radix `Slot` 把 props 合併到 consumer child element(Slot 為純 prop-merger,a11y 仍由該 child 自負)。icon-only 模式傳入 `aria-label` 描述用途並自動包 Tooltip。`pressed` 定義時自動寫 `aria-pressed` + `data-state`。
+**ARIA / Pattern**:預設渲染原生 `<button>`,自動繼承瀏覽器原生按鈕語意(button role / Enter / Space 觸發 / Tab 聚焦),無需額外 ARIA。`asChild` 時改用 Radix `Slot` 把 props 合併到 consumer child element(Slot 為純 prop-merger,a11y 仍由該 child 自負)。icon-only 模式傳入 `aria-label` 描述用途;**僅在非 `asChild` 時**自動包 Tooltip(`asChild` 因 Radix Slot 單 child 限制不包,consumer 需自管 child 的 `aria-label` 與 Tooltip)。`pressed` 定義時自動寫 `aria-pressed` + `data-state`。
 
 **Focus**:鍵盤聚焦時(`focus-visible`)顯示 focus ring(`focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1`,以 box-shadow 實作並 `outline-none`);滑鼠點擊不觸發。Button 為單一互動元件,**不含** focus trap / focus restoration(那是 Dialog / 浮層的概念)。
 

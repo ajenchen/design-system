@@ -410,6 +410,7 @@ const InspectorInner = () => {
               value={value}
               onChange={setValue}
               placeholder="選擇分類"
+              aria-label="產品分類"
               className="w-72"
             />
           </div>
@@ -551,6 +552,7 @@ export const ColorMatrix = {
                         size="sm"
                         disabled={st === 'disabled'}
                         onChange={() => {}}
+                        aria-label={`產品分類(${st})`}
                       />
                       <TokenAnnotation colors={st === 'disabled' ? TOKEN_MAP.disabled.default : TOKEN_MAP.edit[st]} />
                     </td>
@@ -567,6 +569,7 @@ export const ColorMatrix = {
                         error={st !== 'disabled'}
                         disabled={st === 'disabled'}
                         onChange={() => {}}
+                        aria-label={`產品分類(錯誤態、${st})`}
                       />
                       <TokenAnnotation colors={st === 'disabled' ? TOKEN_MAP.disabled.default : ERROR_COLORS[st]} />
                     </td>
@@ -588,10 +591,10 @@ export const ColorMatrix = {
                   <tr key={m}>
                     <Td mono>{m}</Td>
                     <td className="p-3 border-b border-divider align-top min-w-[180px]">
-                      <Combobox mode={m} options={categoryOptions} value={['electronics', 'food']} size="sm" />
+                      <Combobox mode={m} options={categoryOptions} value={['electronics', 'food']} size="sm" aria-label={`產品分類(${m})`} />
                     </td>
                     <td className="p-3 border-b border-divider align-top min-w-[160px]">
-                      <Combobox mode={m} options={categoryOptions} value={[]} size="sm" />
+                      <Combobox mode={m} options={categoryOptions} value={[]} size="sm" aria-label={`產品分類(${m}、空值)`} />
                     </td>
                     <td className="p-3 border-b border-divider align-top min-w-[160px]">
                       <TokenAnnotation colors={TOKEN_MAP[m].default} />
@@ -726,7 +729,7 @@ export const SizeMatrix = {
         <div className="flex flex-col gap-3">
           {SIZES.map((sz) => (
             <div key={sz} className="flex items-center gap-3">
-              <Combobox size={sz} options={categoryOptions} value={['electronics', 'food']} onChange={() => {}} className="w-64" />
+              <Combobox size={sz} options={categoryOptions} value={['electronics', 'food']} onChange={() => {}} className="w-64" aria-label={`產品分類(size=${sz})`} />
               <span className="text-caption text-fg-secondary font-mono">size=&quot;{sz}&quot;</span>
             </div>
           ))}
@@ -778,6 +781,7 @@ export const StateBehavior = {
               options={categoryOptions}
               value={overflowV}
               onChange={setOverflowV}
+              aria-label="產品分類(單行溢出 +N 範例)"
             />
           </div>
           <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
@@ -814,6 +818,7 @@ export const StateBehavior = {
                   value={wrapV}
                   onChange={setWrapV}
                   wrap
+                  aria-label="產品分類(換行模式範例)"
                 />
               </div>
             </div>
@@ -846,6 +851,7 @@ export const StateBehavior = {
               onChange={setClearV}
               clearable
               className="w-64"
+              aria-label="產品分類(清除全部範例)"
             />
             <button
               type="button"
@@ -872,6 +878,7 @@ export const StateBehavior = {
               value={dismissV}
               onChange={setDismissV}
               className="w-72"
+              aria-label="產品分類(個別移除 Tag 範例)"
             />
             <button
               type="button"

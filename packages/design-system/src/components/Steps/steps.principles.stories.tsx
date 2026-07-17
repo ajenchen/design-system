@@ -128,7 +128,7 @@ export const ParentControlled: Story = {
             </StepItem>
             <StepItem value="payment">
               <StepLabel>付款</StepLabel>
-              <StepDescription>此頁為 current + error</StepDescription>
+              <StepDescription>信用卡授權失敗,請確認卡號與有效期限後重新付款</StepDescription>
             </StepItem>
             <StepItem value="done">
               <StepLabel>完成</StepLabel>

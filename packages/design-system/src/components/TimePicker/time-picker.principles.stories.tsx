@@ -74,64 +74,57 @@ export const UsageGuidance: Story = {
 export const RuleMinuteStepForMeetings: Story = {
   name: '會議時段用 15 分鐘間隔',
   render: () => (
-    <div className="flex gap-8">
-      <div className="flex flex-col gap-1.5">
-        <h3 className="text-caption font-medium text-foreground">✅ minuteStep=15</h3>
-        <Field>
-          <FieldLabel>專案週會時間</FieldLabel>
-          <TimePicker value="09:15" onChange={() => {}} minuteStep={15} />
-        </Field>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <h3 className="text-caption font-medium text-fg-muted">❌ 預設 minuteStep=1(會議排程無意義)</h3>
-        <Field>
-          <FieldLabel>專案週會時間</FieldLabel>
-          <TimePicker value="09:07" onChange={() => {}} />
-        </Field>
+    <div className="flex flex-col gap-4">
+      <p className="text-caption text-fg-secondary max-w-prose">
+        會議排程以 15 分鐘為粒度是世界級慣例(Google Calendar / Outlook / Notion Calendar
+        的時間選單預設都是 15)。用預設 minuteStep=1 會讓使用者困在挑「9:07 還是 9:08」,
+        失去會議排程的本質——這類情境一律設 minuteStep=15。
+      </p>
+      <div className="flex gap-8">
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-caption font-medium text-foreground">✅ minuteStep=15</h3>
+          <Field>
+            <FieldLabel>專案週會時間</FieldLabel>
+            <TimePicker value="09:15" onChange={() => {}} minuteStep={15} />
+          </Field>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-caption font-medium text-fg-muted">❌ 預設 minuteStep=1(會議排程無意義)</h3>
+          <Field>
+            <FieldLabel>專案週會時間</FieldLabel>
+            <TimePicker value="09:07" onChange={() => {}} />
+          </Field>
+        </div>
       </div>
     </div>
   ),
 }
 
-/**
- * Rule:Range 語意用兩個 TimePicker 組合
- * TimePicker MVP 不內建 Range(見 spec「為何無 Range」)——對齊 Ant composition 思路,
- * consumer 用兩個 TimePicker + arrow 達成營業時段 / 會議時段等 range 場景。
- */
-export const RuleRangeComposition: Story = {
-  name: '時間範圍用兩個 TimePicker 組合,不內建',
-  render: () => {
-    const [open, setOpen] = React.useState('10:00')
-    const [close, setClose] = React.useState('22:00')
-    return (
-      <Field>
-        <FieldLabel>營業時段(兩個 TimePicker + →)</FieldLabel>
-        <div className="flex items-center gap-2">
-          <TimePicker value={open} onChange={setOpen} />
-          <span className="text-fg-muted">→</span>
-          <TimePicker value={close} onChange={setClose} />
-        </div>
-      </Field>
-    )
-  },
-}
+// Dim 24 retire(2026-07-16):原 RuleRangeComposition(營業時段雙 TimePicker + →)與「展示」層
+// 的「店家營業時間」(ShopBusinessHours)near-identical(同值 10:00/22:00、同結構),且其規則
+// (TimePicker 不內建 Range,用兩個並列組合)已由本頁 UsageGuidance「何時不用」條目文字說明。
+// 重複範例退役;範圍組合的 live demo 見「展示 → 店家營業時間」(UsageGuidance 已 LinkTo 指向)。
 
 /**
  * 規則:清除用 X 行內動作,不要用文字按鈕
- * 設定 clearable 後,TimePicker 會自動在欄位尾端渲染一個 X 行內動作來清空值,
- * 點擊即清空。不要自己擺一顆「清除」文字按鈕——統一用 X 圖示符合全站慣例。
  */
 export const RuleClearNoLabelButton: Story = {
   name: '清除用 X 行內動作,不用文字按鈕',
   render: () => {
     const [t, setT] = React.useState<string>('14:30')
     return (
-      <div className="flex flex-col gap-1.5">
-        <h3 className="text-caption font-medium text-foreground">✅ clearable=true(自動渲染 X 行內動作)</h3>
-        <Field>
-          <FieldLabel>提醒時間</FieldLabel>
-          <TimePicker value={t} onChange={setT} clearable />
-        </Field>
+      <div className="flex flex-col gap-4">
+        <p className="text-caption text-fg-secondary max-w-prose">
+          設定 clearable 後,TimePicker 會自動在欄位尾端渲染一個 X 行內動作來清空值,點擊即清空。
+          不要自己擺一顆「清除」文字按鈕——全站統一用 X 圖示表達「移除已填內容」,與其他欄位的清除慣例一致。
+        </p>
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-caption font-medium text-foreground">✅ clearable=true(自動渲染 X 行內動作)</h3>
+          <Field>
+            <FieldLabel>提醒時間</FieldLabel>
+            <TimePicker value={t} onChange={setT} clearable />
+          </Field>
+        </div>
       </div>
     )
   },

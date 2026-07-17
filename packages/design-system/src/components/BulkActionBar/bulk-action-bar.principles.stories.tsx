@@ -222,7 +222,19 @@ export const HintBannerRule: Story = {
         title="❌ 自刻 hint banner / 用 contrast 底色 div"
         note="banner 是 Alert 的職責(自帶 a11y role / aria-live / 視覺一致性)。自刻會破壞跟其他 Alert 的視覺一致性,也漏 a11y"
       >
-        <Label warn>(範例省略)有 Alert 元件不用是浪費</Label>
+        <div className="border border-divider rounded-md overflow-hidden">
+          <div className="bg-info-subtle text-info-text px-loose py-tight text-footnote">
+            已選取本頁全部 50 個。點此選取全部 5370 個項目
+          </div>
+          <div className="border-t border-divider">
+            <BulkActionBar
+              selection={Array.from({ length: 50 }, (_, i) => `f-${i}`)}
+              actions={<Button variant="tertiary" size="md">下載</Button>}
+              onClear={() => {}}
+            />
+          </div>
+        </div>
+        <Label warn>↑ 手刻 div 當 banner:無 role=&quot;status&quot; / aria-live,SR 不會朗讀狀態變化;底色跟其他 Alert 不一致;「點此選取」是純文字非可操作連結</Label>
       </Rule>
 
       <Rule

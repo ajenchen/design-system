@@ -113,21 +113,7 @@ export const InField: Story = {
 }
 
 /* @story-trait-rationale: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。 */
-/* ── 停用狀態 ── */
-export const Disabled: Story = {
-  name: '停用狀態',
-  render: () => (
-    <div className="flex flex-col gap-4 w-[420px]">
-      <p className="text-caption text-fg-muted">
-        評分期限已過的舊訂單，Rating 顯示使用者當初給的分數但無法再修改。
-      </p>
-      <div className="flex items-center gap-3 p-3 border border-border rounded-md bg-surface">
-        <div className="flex-1">
-          <div className="text-body font-medium">訂單 #A-2025-11-03</div>
-          <div className="text-caption text-fg-muted mt-[var(--item-gap-label-desc-scanning)]">評分期限已過</div>
-        </div>
-        <Rating value={4} disabled aria-label="此訂單已完成評分 4 星，無法修改" />
-      </div>
-    </div>
-  ),
-}
+// @story-trait-rationale: Disabled retired per audit Dim 24 —
+//   disabled 覆蓋已由 anatomy.stories.tsx StateBehavior 的 disabled live case
+//   (value=4 disabled)owns;對齊 Checkbox / Switch / RadioGroup 同 Family
+//   已 retire 的獨立 Disabled story,不重複展示同一 state。

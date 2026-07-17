@@ -65,7 +65,7 @@ export const UsageGuidance: Story = {
         >
           <div className="flex items-center gap-3">
             <span className="text-body w-12">音量</span>
-            <Slider value={volume} onValueChange={setVolume} className="flex-1" />
+            <Slider value={volume} onValueChange={setVolume} aria-label="音量" className="flex-1" />
             <span className="text-caption text-fg-muted font-mono w-10">{volume[0]}%</span>
           </div>
         </Rule>
@@ -76,7 +76,7 @@ export const UsageGuidance: Story = {
         >
           <div className="flex items-center gap-3">
             <span className="text-body w-12">價格</span>
-            <Slider value={price} onValueChange={setPrice} min={0} max={10000} step={100} className="flex-1" />
+            <Slider value={price} onValueChange={setPrice} min={0} max={10000} step={100} aria-label="價格範圍" className="flex-1" />
             <span className="text-caption text-fg-muted font-mono w-24">${price[0]} - ${price[1]}</span>
           </div>
         </Rule>
@@ -87,7 +87,7 @@ export const UsageGuidance: Story = {
         >
           <div className="flex items-center gap-3">
             <span className="text-body w-12">大小</span>
-            <Slider defaultValue={[50]} step={50} min={0} max={100} className="flex-1" />
+            <Slider defaultValue={[50]} step={50} min={0} max={100} aria-label="大小" className="flex-1" />
             <span className="text-caption text-fg-muted font-mono w-10">中</span>
           </div>
           <Label warn>↑ 強制拖到 0 / 50 / 100 的 Slider = 反模式。改 SegmentedControl:</Label>
@@ -135,13 +135,13 @@ export const PositionAsStateRule: Story = {
         <div className="flex items-center gap-4">
           <div className="flex-1">
             <div className="text-caption text-fg-muted mb-1">Rest(primary)</div>
-            <Slider defaultValue={[60]} />
+            <Slider defaultValue={[60]} aria-label="亮度" />
           </div>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex-1">
             <div className="text-caption text-fg-muted mb-1">Disabled(灰階——位置/長度完全可辨)</div>
-            <Slider defaultValue={[60]} disabled />
+            <Slider defaultValue={[60]} disabled aria-label="亮度" />
           </div>
         </div>
         <Label>↑ 灰階後 thumb 位置(60%)+ range 填滿長度(0-60%)仍然清楚。不需要保留藍色</Label>
@@ -194,7 +194,7 @@ export const HoverUsesShadowRule: Story = {
       >
         <div>
           <div className="text-caption text-fg-muted mb-1">Hover thumb → 陰影 elevation-100</div>
-          <Slider defaultValue={[50]} />
+          <Slider defaultValue={[50]} aria-label="音量" />
         </div>
         <Label>↑ hover 時 thumb 加 elevation-100,不改底色。對齊 Material 3 / iOS / Linear 共識</Label>
       </Rule>

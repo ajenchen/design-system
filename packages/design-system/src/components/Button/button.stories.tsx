@@ -76,11 +76,11 @@ export const Default: Story = {
   name: '預設',
   render: () => (
     <div className="flex flex-wrap items-center gap-3">
-      <Button variant="primary">主要動作</Button>
-      <Button variant="secondary">次要動作</Button>
-      <Button variant="tertiary">第三動作</Button>
-      <Button variant="text">純文字</Button>
-      <Button variant="link">連結樣式</Button>
+      <Button variant="primary">送出申請</Button>
+      <Button variant="secondary">儲存草稿</Button>
+      <Button variant="tertiary">取消</Button>
+      <Button variant="text">重設表單</Button>
+      <Button variant="link">查看填寫說明</Button>
     </div>
   ),
 }
@@ -240,26 +240,20 @@ export const Loading: Story = {
     <div className="flex flex-col gap-6">
       {/* 行為對照 */}
       <div>
-        <p className="mb-2 text-caption text-fg-muted">行為對照：原始 → loading</p>
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <Button variant="primary" startIcon={Download}>匯出</Button>
-            <span className="text-caption text-fg-muted">→</span>
-            <Button variant="primary" startIcon={Download} loading>匯出中</Button>
-            <span className="text-caption text-fg-muted">startIcon 被 spinner 替換，位置不變</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="primary">儲存</Button>
-            <span className="text-caption text-fg-muted">→</span>
-            <Button variant="primary" loading>儲存中</Button>
-            <span className="text-caption text-fg-muted">spinner 出現在文字左側，按鈕略寬</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button size="sm" iconOnly startIcon={Download} aria-label="下載" />
-            <span className="text-caption text-fg-muted">→</span>
-            <Button size="sm" iconOnly startIcon={Download} loading aria-label="下載中" />
-            <span className="text-caption text-fg-muted">icon-only：spinner 替換 icon</span>
-          </div>
+        <p className="mb-2 text-caption text-fg-muted">行為對照：操作前與載入中</p>
+        <div className="grid grid-cols-[auto_auto_1fr] items-center gap-x-6 gap-y-3">
+          <span className="text-caption text-fg-muted">操作前</span>
+          <span className="text-caption text-fg-muted">載入中</span>
+          <span />
+          <Button variant="primary" startIcon={Download}>匯出</Button>
+          <Button variant="primary" startIcon={Download} loading>匯出中</Button>
+          <span className="text-caption text-fg-muted">startIcon 被 spinner 替換，位置不變</span>
+          <Button variant="primary">儲存</Button>
+          <Button variant="primary" loading>儲存中</Button>
+          <span className="text-caption text-fg-muted">spinner 出現在文字左側，按鈕略寬</span>
+          <Button size="sm" iconOnly startIcon={Download} aria-label="下載" />
+          <Button size="sm" iconOnly startIcon={Download} loading aria-label="下載中" />
+          <span className="text-caption text-fg-muted">icon-only：spinner 替換 icon</span>
         </div>
       </div>
 
@@ -325,8 +319,8 @@ export const HoverFocusState: Story = {
   tags: ['!autodocs'],
   render: () => (
     <div className="flex gap-4">
-      <Button variant="primary" data-testid="hover-target">Hover 我</Button>
-      <Button variant="primary" data-testid="focus-target">Focus 我</Button>
+      <Button variant="primary" data-testid="hover-target">查看帳單</Button>
+      <Button variant="primary" data-testid="focus-target">下載明細</Button>
     </div>
   ),
   play: async ({ canvasElement }) => {

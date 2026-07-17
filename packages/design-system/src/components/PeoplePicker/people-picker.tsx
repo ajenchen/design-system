@@ -59,7 +59,11 @@ export { PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS, getPeoplePickerTagWrapperClass }
 // 讓 consumer 可傳 `id` / `data-testid` / `onBlur` / `onFocus` / `aria-*` 等 HTML root props,
 // component 內部 `...rest` forward 到 trigger 容器(對齊 DS 既有 Combobox / Select 慣例)。
 // `onChange` 衝突走 Omit(本 component 用 PersonValue[] custom signature)。
-export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
+// 2026-07-17 Dim 26 修:`defaultValue` 一併 Omit — 本元件 controlled-only(spec「Controlled-only
+// rationale」),React.HTMLAttributes 內建的 `defaultValue` 若不 Omit 會讓 consumer 傳入假
+// uncontrolled API,runtime 經 `...rest` 靜默轉送 trigger div 後無效。Omit 本身即 type-level
+// regression(consumer 傳 defaultValue 直接 TS 編譯錯)。DS 先例 steps.tsx:166 同款 Omit。
+export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
   /** Field mode(edit / view / readonly / disabled),默認 inherit Field context 或 'edit' */
   mode?: FieldMode
   /** Field chrome variant(對齊 Select / Combobox)*/
@@ -212,17 +216,32 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   // 與 edit (Select / Combobox wrapped) 同 DOM 結構消除 cell view↔edit 像素偏移。
   if (resolvedMode === 'view') {
     if (!showDisplayEndIcon) {
-      if (isEmpty) return <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
-      return isMulti
-        ? <MultiPersonDisplay value={value as PersonValue[]} size={size} measured />
-        : <PersonDisplay value={value as PersonValue} size={size} />
+      // 2026-07-17 Dim 9 修:裸顯示分支原直接 return PersonDisplay/MultiPersonDisplay/span,
+      // 遺失 ref / className / DOM-safe rest props(違 spec「forwardRef + 單一 root」root props 契約,
+      // 與 readonly/disabled 分支不對稱)。補穩定 forwarding root:`w-full min-w-0` 保留
+      // PersonDisplay 既有 w-full truncate 寬度約束鏈(單人 fill + 多人 stack 左靠不變),
+      // 對齊 switch.tsx:209 view 分支轉發先例。
+      return (
+        <div ref={ref} className={cn('w-full min-w-0', className)} aria-label={ariaLabel} {...rest}>
+          {isEmpty
+            ? <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
+            : isMulti
+              ? <MultiPersonDisplay value={value as PersonValue[]} size={size} measured />
+              : <PersonDisplay value={value as PersonValue} size={size} />}
+        </div>
+      )
     }
     // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     return (
       <div
+        // 2026-07-17 Dim 9 修:D-path view root 補 ref / aria-label / {...rest} 轉發(原只套 className,
+        // 遺失 root props;對齊 readonly/disabled 分支與 spec root props 契約)。
+        ref={ref}
         className={cn(fieldWrapperStyles({ mode: 'view', variant: resolvedVariant, width, size }), className)}
         data-field-mode="view"
+        aria-label={ariaLabel}
+        {...rest}
       >
         <span className={cn('flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign)}>
           {isEmpty

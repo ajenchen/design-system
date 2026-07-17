@@ -232,6 +232,10 @@ Indeterminate 是由父層邏輯控制的狀態，Checkbox 本身不會自動進
 | disabled unchecked | transparent | bg-disabled | 無 |
 | disabled checked | transparent | bg-disabled | fg-disabled dot |
 
+### Loading（N/A）
+
+Checkbox / Radio **無 Loading 狀態**——選擇控件是同步 toggle,值隨 form submit 才套用(見「定位」),不承載非同步進度。提交進行中的 loading 狀態由**表單的 submit `Button` loading state** 擁有;提交期間若需鎖定選項,將 Checkbox 設 `disabled` 即可,不在控件本體加 spinner。（對齊 Switch spec「無 loading state」——async 進度不屬選擇控件本體。）
+
 ---
 
 ## Controlled / Uncontrolled API(M26)
@@ -251,6 +255,10 @@ Indeterminate 是由父層邏輯控制的狀態，Checkbox 本身不會自動進
 - `disabled` — 落到真 disabled chrome(`effectiveDisabled`,2026-06-12 修:mode='disabled' 直傳〔如 `<Field mode="disabled">` cascade〕與 `disabled` prop 等效,降色 + 不可 focus)。DataTable cell 無 disabled 態(已廢除);cell 非編輯態 = `view` 純展示。
 
 CheckboxGroup 是純 layout primitive — **不**持有 group-level selection state(無 `value` / `defaultValue` / `onValueChange`)。每個 `<Checkbox>` child 各自管自己的 `checked` / `defaultChecked` / `onCheckedChange`;CheckboxGroup 只透過 `CheckboxGroupContext` 告知 child「你在 group 裡」(保留各自 label)。
+
+### 表單驗證接線(useFormValidation v1 邊界)
+
+Checkbox 值走 `onCheckedChange`(非 value/onChange 型控件),接 `useFormValidation`(`../Field/form-validation.spec.md`)時用 **`setFieldValue` 自接、不經 `getInputProps`**。這是該 spec「v1 邊界」誠實記載的已知限制:**無自動 blur 驗證 / 邊改邊清 error**(該層 timing 只覆蓋 value/onChange 型控件)—— Checkbox 值變更後由 consumer 於 `setFieldValue` 後自行 re-validate,或隨 submit 全驗。**error 視覺不受此限制影響**:`Field invalid` context 是 engine-agnostic 的,紅框 + `FieldError` 照常呈現;`<Field>` 錯誤群組化見 field.spec.md。
 
 ---
 
@@ -336,6 +344,7 @@ Horizontal 需 `gap-4` 因 row 的 py 不擴散到左右。
 - `../RadioGroup/radio-group.spec.md` — Radio 的 group 容器 + 結構對稱 reciprocal
 - `../SelectionControl/selection-item.spec.md` — Checkbox / Radio 共用的 SelectionItem 佈局 primitive（本 spec 的 Clamp 政策為其 SSOT）
 - `../Field/field-controls.spec.md` — Field Control 共用規則
+- `../Field/form-validation.spec.md` — 表單驗證引擎;Checkbox 用 `setFieldValue` 自接的 v1 邊界見「Controlled / Uncontrolled API → 表單驗證接線」
 
 ## A11y 預設
 

@@ -251,9 +251,9 @@ export const SizeMatrix: Story = {
             <div key={size} className="border border-dashed border-divider rounded-md p-4">
               <div className="text-caption text-fg-muted mb-2 font-mono">size="{size}"</div>
               <Steps size={size} value="b" completedValues={['a']}>
-                <StepItem value="a"><StepLabel>第一步</StepLabel></StepItem>
-                <StepItem value="b"><StepLabel>第二步</StepLabel></StepItem>
-                <StepItem value="c"><StepLabel>第三步</StepLabel></StepItem>
+                <StepItem value="a"><StepLabel>填寫資料</StepLabel></StepItem>
+                <StepItem value="b"><StepLabel>確認訂單</StepLabel></StepItem>
+                <StepItem value="c"><StepLabel>完成付款</StepLabel></StepItem>
               </Steps>
             </div>
           ))}
@@ -421,12 +421,12 @@ export const IndentAlignment: Story = {
         <Desc>**刻意打破 item-layout 的 24px 閾值規則**——不管 indicator 尺寸、不管有無 description,一律 inline 對齊。Column rhythm 優先於「大 prefix 視覺重量平衡文字塊」。這是 Steps 跟其他 row primitive 的本質差異——Steps 是「一條有連接關係的進度路徑」,column rhythm 是元件本身。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
           <Steps orientation="vertical" value="b" completedValues={['a']}>
-            <StepItem value="a"><StepLabel>簡短 label</StepLabel></StepItem>
+            <StepItem value="a"><StepLabel>驗證電子信箱</StepLabel></StepItem>
             <StepItem value="b">
-              <StepLabel>帶有描述的 label</StepLabel>
-              <StepDescription>即使有多行 description,indicator 仍然對齊 label 第一行,保持 column rhythm</StepDescription>
+              <StepLabel>完善公司資料</StepLabel>
+              <StepDescription>填寫營業登記號碼、負責人身分與收款銀行帳戶,審核通過後才會開通金流收款功能</StepDescription>
             </StepItem>
-            <StepItem value="c"><StepLabel>另一個 label</StepLabel></StepItem>
+            <StepItem value="c"><StepLabel>啟用收款</StepLabel></StepItem>
           </Steps>
         </div>
         <p className="text-footnote text-fg-muted mt-3">業界共識:Apple HIG、Material 3、Linear、GitHub Actions 的 steps 都是 indicator 對齊 label 第一行</p>

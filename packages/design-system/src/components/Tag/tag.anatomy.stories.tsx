@@ -326,7 +326,7 @@ const InspectorInner = () => {
               onRemove={withDismiss ? () => {} : undefined}
               solid={solid}
             >
-              Label
+              設計
             </Tag>
           </div>
 

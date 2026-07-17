@@ -283,11 +283,11 @@ export const ColorMatrix: Story = {
           <H3>Hover + Selected 並存的實際渲染</H3>
           <Desc>以下 `Documents/Photos/beach.jpg` 為 selected row,可 hover 任一其他 row 觀察 neutral-hover。</Desc>
           <div className="border border-border rounded-lg p-4 max-w-md">
-            <TreeView selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
-              <TreeItem id="docs" label="Documents(hover 試試)" icon={Folder}>
+            <TreeView aria-label="色彩狀態範例檔案樹" selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
+              <TreeItem id="docs" label="Documents" icon={Folder}>
                 <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
                 <TreeItem id="photos" label="Photos" icon={Folder}>
-                  <TreeItem id="beach" label="beach.jpg(selected)" icon={Image} />
+                  <TreeItem id="beach" label="beach.jpg" icon={Image} />
                   <TreeItem id="trip" label="trip.jpg" icon={Image} />
                 </TreeItem>
               </TreeItem>
@@ -307,11 +307,11 @@ export const IndentMatrix: Story = {
         <H3>indentStep = chevronSize + gap-2</H3>
         <Desc>每層 indent 剛好是 chevron(16 / 20px)+ gap-2(8px)的距離——跟 item-layout 的 prefix-content gap 一致。讓 tree indent 視覺跟 item-layout 融為一體,不是獨立數字系統。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
-          <TreeView defaultExpandedIds={['l1', 'l2', 'l3']}>
-            <TreeItem id="l1" label="L1 (depth 0)" icon={Folder}>
-              <TreeItem id="l2" label="L2 (depth 1)" icon={Folder}>
-                <TreeItem id="l3" label="L3 (depth 2)" icon={Folder}>
-                  <TreeItem id="l4" label="L4 (depth 3)" icon={FileText} />
+          <TreeView aria-label="品牌資產資料夾樹" defaultExpandedIds={['brand', 'website', 'images']}>
+            <TreeItem id="brand" label="品牌資產" icon={Folder}>
+              <TreeItem id="website" label="網站" icon={Folder}>
+                <TreeItem id="images" label="圖片" icon={Folder}>
+                  <TreeItem id="hero" label="首頁橫幅.png" icon={Image} />
                 </TreeItem>
               </TreeItem>
             </TreeItem>
@@ -323,15 +323,17 @@ export const IndentMatrix: Story = {
         <H3>葉節點 chevron placeholder</H3>
         <Desc>同層有展開 icon、有的沒有 → label 不會對齊。TreeView 自動給葉節點留透明 chevron placeholder,label 永遠對齊 column。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
-          <TreeView defaultExpandedIds={['folder']}>
-            <TreeItem id="folder" label="Folder(可展開)" icon={Folder}>
-              <TreeItem id="leaf-1" label="Leaf 1(無 children)" icon={FileText} />
-              <TreeItem id="folder-2" label="Folder 2(可展開)" icon={Folder} />
-              <TreeItem id="leaf-3" label="Leaf 3(無 children)" icon={FileText} />
+          <TreeView aria-label="設計交付資料夾樹" defaultExpandedIds={['delivery']}>
+            <TreeItem id="delivery" label="設計交付" icon={Folder}>
+              <TreeItem id="spec" label="元件規格.pdf" icon={FileText} />
+              <TreeItem id="assets" label="切版素材" icon={Folder}>
+                <TreeItem id="icons" label="圖示集.svg" icon={Image} />
+              </TreeItem>
+              <TreeItem id="checklist" label="交付清單.md" icon={FileText} />
             </TreeItem>
           </TreeView>
         </div>
-        <p className="text-footnote text-fg-muted mt-3">↑ 葉 / 資料夾 label 左側對齊 — 不會因有無 chevron 位移</p>
+        <p className="text-footnote text-fg-muted mt-3">↑ 葉節點(元件規格.pdf / 交付清單.md)與可展開資料夾(切版素材)label 左側對齊 — 不因有無 chevron 位移</p>
       </div>
     </div>
   ),

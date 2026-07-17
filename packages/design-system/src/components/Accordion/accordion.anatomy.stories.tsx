@@ -33,19 +33,19 @@ export const Overview: Story = {
         <div className="border border-border rounded-lg p-4 max-w-[640px]">
           <Accordion type="single" collapsible defaultValue="anatomy">
             <AccordionItem value="anatomy">
-              <AccordionTrigger>AccordionTrigger(可點擊 header + chevron)</AccordionTrigger>
+              <AccordionTrigger>退款要多久才會入帳?</AccordionTrigger>
               <AccordionContent>
-                AccordionContent 區域——展開時顯示,收合時隱藏(animate-accordion-down / up)。
+                信用卡退款於 5–10 個工作天內退回原付款帳戶,實際入帳時間依發卡銀行作業而定。
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2">
-              <AccordionTrigger>下一個 AccordionItem</AccordionTrigger>
-              <AccordionContent>每個 Item(含最後一個)底部都有 border-b border-divider——divider 在 item 底緣,非僅 item 之間(shadcn 同款)。</AccordionContent>
+              <AccordionTrigger>退款會扣手續費嗎?</AccordionTrigger>
+              <AccordionContent>標準訂單退款不收手續費;跨境訂單的匯率價差由發卡機構認列,本平台不另收費。</AccordionContent>
             </AccordionItem>
           </Accordion>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          結構:<span className="font-mono">[trigger: label + chevron(16px, rotate 180deg when open)] / [content: pb-4 + text-fg-secondary]</span>
+          結構:<span className="font-mono">[trigger: label + chevron(16px, rotate 180deg when open)] / [content: pb-4 + text-fg-secondary]</span>。每個 AccordionItem(含最後一個)底緣皆有 <span className="font-mono">border-b border-divider</span>——divider 在 item 底緣而非僅 item 之間(shadcn 同款)。
         </p>
       </div>
 
@@ -440,16 +440,16 @@ export const StateBehavior: Story = {
         <div className="border border-border rounded-lg p-4 max-w-[640px]">
           <Accordion type="single" collapsible>
             <AccordionItem value="a">
-              <AccordionTrigger>可用區塊</AccordionTrigger>
-              <AccordionContent>正常展開。</AccordionContent>
+              <AccordionTrigger>個人資料</AccordionTrigger>
+              <AccordionContent>姓名、聯絡方式與頭像設定。</AccordionContent>
             </AccordionItem>
             <AccordionItem value="b" disabled>
-              <AccordionTrigger>已停用區塊(尚未開放)</AccordionTrigger>
-              <AccordionContent>點不開。</AccordionContent>
+              <AccordionTrigger>進階分析(升級 Pro 解鎖)</AccordionTrigger>
+              <AccordionContent>此區塊需 Pro 方案才可使用。</AccordionContent>
             </AccordionItem>
             <AccordionItem value="c">
-              <AccordionTrigger>另一個可用區塊</AccordionTrigger>
-              <AccordionContent>正常展開。</AccordionContent>
+              <AccordionTrigger>通知偏好</AccordionTrigger>
+              <AccordionContent>Email 每日摘要、@提及立即通知。</AccordionContent>
             </AccordionItem>
           </Accordion>
         </div>

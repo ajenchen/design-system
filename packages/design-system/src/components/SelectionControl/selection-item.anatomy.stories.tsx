@@ -192,7 +192,7 @@ export const Overview: Story = {
                 <Td mono>disabled</Td>
                 <Td mono>boolean</Td>
                 <Td mono>false</Td>
-                <Td>label / description / icon → text-fg-disabled(M24);label 另加 cursor-not-allowed</Td>
+                <Td>label / description / icon 全轉 text-fg-disabled（disabled 狀態優先於 muted 裝飾色）；label 另加 cursor-not-allowed</Td>
               </tr>
               <tr>
                 <Td mono>htmlFor</Td>

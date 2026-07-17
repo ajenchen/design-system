@@ -62,17 +62,11 @@ SegmentedControl 是**互斥多選一的 compact control**——從 2–5 個選
 
 ---
 
-## 與 Tabs 的分界（詳見 `../Tabs/tabs.spec.md`）
+## 與 Tabs 的分界
 
-兩者都能「切換下方顯示的內容」，分界不是「切 view vs 切 value」，而是三個角度：
+**完整判斷 SSOT 在 `../Tabs/tabs.spec.md` 的「Tabs 與 SegmentedControl 的分界」段落**（三角度判斷：規模 / 角色 / 值生命週期 + 灰色地帶對照表）——以該段為 single source of truth，此處不重複列舉、也不平行維護，避免漂移。
 
-1. **規模**：SegmentedControl 切換的是 **局部內容的變體**（一個 chart、一個 list、一段 form section）；Tabs 切換的是 **整塊 container**（可能有自己的 header / toolbar / 多個 section）
-2. **結構角色**：SegmentedControl 是 **control**（可跟 Button / Input 並排），Tabs 是 **container 的結構元件**（跨越父容器整行）
-3. **值生命週期**：SegmentedControl 的值常綁 form state / URL param / 會被持久化，Tabs 的切換通常不進表單狀態
-
-**Fallback**：跟 Input / Button 並排不違和 → SegmentedControl；必須佔一整行當 section header → Tabs。
-
-**完整灰色地帶對照表在 `tabs.spec.md` 的「Tabs 與 SegmentedControl 的分界」段落**——以該段為 single source of truth，此處不重複列舉。
+本元件視角的一句話界線：切「局部內容的變體」（單一 chart / list / form section，可跟 Button / Input 並排）用 SegmentedControl；切「整塊 container」（有自己的 header / toolbar / 多個 section、必須佔一整行當 section header）改用 Tabs。
 
 ---
 
@@ -240,6 +234,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 - **個別 item disabled**：Radix roving focus 跳過該 item（`focusable: !disabled`），方向鍵不停留；disabled item 不得是當前 value（contract，見「狀態 › disabled」）
 - **所有 item disabled**：整組無可聚焦 item，Radix roving focus 將 group 的 tab 停留點設為 `tabIndex=-1`，Tab 直接跳過
 - **disabled × fullWidth 並存**：兩者正交——fullWidth 只控寬度等分，disabled 只控互動與色彩，無交互規則
+- **表單驗證 / invalid**：SegmentedControl **恆有一值**（radio 語意），故「必填未選」的 required 驗證天然不適用；元件**無 `invalid` / `error` prop**，不渲染 error 邊框或 `aria-invalid`（它讀 Field context 的 `disabled` / `size`，但**不讀 `invalid`**，與 Input / Select 等可空控件不同）。值的業務合法性（是否落在允許選項）由 consumer 保證，需要 invalid 視覺提示時由外層 Field / consumer 承擔——屬 consumer-owned，非本元件狀態
 
 ---
 
@@ -269,7 +264,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 
 - `../Button/button.spec.md` — item 內部結構與 size 系統的來源
 - `../Tabs/tabs.spec.md` — container 切換 vs control 切換的判斷（完整分界 SSOT 在 Tabs spec「Tabs 與 SegmentedControl 的分界」段落）
-- `../Field/field-controls.spec.md` — SegmentedControl 作為 Field control 時的 size 繼承機制
+- `../Field/field-controls.spec.md` — SegmentedControl 作為 Field control 時的 `size` / `disabled` 繼承機制（透過 `useResolvedFieldSize` / `useResolvedFieldDisabled`）；**不**繼承 `invalid` 驗證軸——表單驗證契約見上「規模限制與邊界案例 › 表單驗證 / invalid」（恆有一值，required / invalid 為 N/A 或 consumer-owned）
 - `../Checkbox/checkbox.spec.md` — RadioGroup 共用規則（選項數量多或需要描述文字時的替代）
 
 ## A11y 預設

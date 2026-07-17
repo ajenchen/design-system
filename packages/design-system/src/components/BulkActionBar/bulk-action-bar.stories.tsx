@@ -35,26 +35,10 @@ export const Default: Story = {
   },
 }
 
-// Filter 模式:hidden 數量顯示在 count 區 inline
-export const WithFilterHidden: Story = {
-  name: '部分項目被篩選隱藏',
-  render: () => {
-    const [selection, setSelection] = useState<string[]>(['issue-1', 'issue-2', 'issue-3'])
-    return (
-      <BulkActionBar
-        selection={selection}
-        onClear={() => setSelection([])}
-        hiddenByFilter={2}
-        actions={
-          <>
-            <Button variant="tertiary" size="md" startIcon={Archive}>封存</Button>
-            <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
-          </>
-        }
-      />
-    )
-  },
-}
+// @story-trait-rationale: WithFilterHidden(selection=3 + hiddenByFilter=2)retired 2026-07-17 per audit Dim 24 —
+//   principles.stories.tsx HintBannerRule 第三 Rule 已用同情境(selection 3 + hiddenByFilter=2)且多教「filter hidden
+//   inline 進 count 區、不開 hint banner」規則;展示版無新增約束(earn-existence 2-test 雙 NO)→ retire。
+//   hiddenByFilter inline 呈現 canonical home = principles HintBannerRule。
 
 // Hint banner via Alert primitive(擴 dataset 提示)— 對齊 ref 圖
 // hint banner 唯一 trigger condition:本頁全選 + 還有 dataset 沒選到

@@ -169,6 +169,16 @@ interface BulkActionBarLabels {
 
 **Hint banner(擴 dataset 提示)不在本 API**:由 consumer 用 `<Alert variant="info" placement="fixed">` 配 ReactNode title 帶 inline link 自組,黏在 BulkActionBar 上方。Alert / Notice 的 `title` + `description` 已支援 ReactNode(2026-04-28)。
 
+### 批次操作進行中(loading / 防重複提交 / 選取保留)
+
+`actions` 由 consumer 注入 ReactNode,**批次操作的非同步生命週期由 consumer 擁有**(BulkActionBar 是 stateless 呈現層,不介入 action 執行):
+
+- **Loading**:非同步 action(批次刪除 / 匯出)進行中,對應 action Button 傳 `loading`(既有 API,spinner + 自動 disabled)——不在 bar 內另加全域 spinner
+- **防重複提交**:同一批次操作進行中,consumer 對該 action Button 設 `loading` / `disabled` 阻止連點觸發多次(語義同 `../Field/form-validation.spec.md` double-submit 防護,但 owner 在 consumer 而非 bar)
+- **選取保留**:操作進行中 `selection` 維持不變、bar 持續可見;**成功**後才由 consumer 清空 `selection`(觸發 bar 自動隱藏),**失敗**則保留選取讓 user 重試
+
+對齊 Polaris BulkActions(action `loading` 由 consumer 提供)/ Material DataGrid batch action 慣例。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+
 ### Extend dataset pattern(totalSelected)
 
 「本頁全選 → hint 點擊 → 擴選整個 dataset」2-step 後,consumer 把 `totalSelected` 設為 dataset 真總數,count 區改顯示該值(否則 fallback `selection.length`)——避免 Alert 顯「已選 5370」但 bar 仍顯「已選 50」的不同步(2026-05-13 ship)。對齊 Gmail / Linear / Notion 全選 dataset hint pattern。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->

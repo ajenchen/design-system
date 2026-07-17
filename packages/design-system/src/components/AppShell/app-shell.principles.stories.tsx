@@ -1,4 +1,4 @@
-// @benchmark-cited: Polaris / Material / Ant 共識 principles canonical(UsageGuidance integrated)
+// @benchmark-unverified-blanket: file-level retraction per M22 (d) — 產品架構參照(Linear / Notion / Figma / GitHub / Slack / Gmail 等)為 usage 觀察,非逐句 URL-cited;視為 unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
 import LinkTo from '@storybook/addon-links/react'
 
@@ -62,11 +62,11 @@ export const UsageGuidance: Story = {
       <section>
         <h2 className="text-h4 mb-2">Consumer 紀律</h2>
         <ul className="text-body space-y-1">
-          <li>❌ 禁:`&lt;AppShell&gt;` 內塞另一個 `&lt;AppShell&gt;`(整頁框架單例)</li>
-          <li>❌ 禁:`sidebar={'{'}&lt;div&gt;...&lt;/div&gt;{'}'}` → 應傳 `&lt;Sidebar&gt;` primitive(型別收 ReactNode 不機械強制,2026-06-10 拍板)</li>
-          <li>❌ 禁:`header={'{'}&lt;header&gt;raw&lt;/header&gt;{'}'}` → 應傳 `&lt;ChromeHeader&gt;` 或 header-canonical 派生(同上,不機械強制)</li>
-          <li>❌ 禁:`&lt;AppShell.Main&gt;` 強制 padding(違 layoutSpace 規則 1B)</li>
-          <li>✅ 必:Main 內容遵循既有 `layoutSpace.spec.md` 6 條規則(Page header / Card / DataTable / naked list 各按規則)</li>
+          <li>❌ 禁:`&lt;AppShell&gt;` 內塞另一個 `&lt;AppShell&gt;`(整頁框架只能有一個)</li>
+          <li>❌ 禁:`sidebar` 傳裸 `&lt;div&gt;` → 必傳 `&lt;Sidebar&gt;`,才能維持一致的展開／收合、行動裝置抽屜、鍵盤操作與視覺;傳其他容器雖然型別過得了,卻會失去這些導覽行為</li>
+          <li>❌ 禁:`header` 傳裸 `&lt;header&gt;` → 應傳 `&lt;ChromeHeader&gt;`(或沿用同一套標準標頭結構自訂),才能得到一致的標頭高度、內距與對齊</li>
+          <li>❌ 禁:硬性撐開 Main 區域的內距 → Main 本身不加留白,由內容自己決定(自帶邊框的卡片、資料表各自帶內距)</li>
+          <li>✅ 必:Main 內容的間距沿用既有版面間距原則——頁面標頭、卡片、資料表、純列表各按對應規則處理</li>
         </ul>
       </section>
     </div>
@@ -81,37 +81,37 @@ export const LayoutModeRule: Story = {
   render: () => (
     <div className="prose max-w-2xl space-y-6 px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
       <section>
-        <h2 className="text-h4 mb-2">唯一判準:Header scope</h2>
+        <h2 className="text-h4 mb-2">唯一判準:頂部標頭服務的範圍</h2>
         <p className="text-body mb-2">
-          唯一 distinguisher = <strong>Header scope 是 local 還是 global</strong>,
-          <em>不是</em> workspace 多寡(Notion / Gmail 都支援 multi-workspace,卻分屬不同派)。
-          問自己:頂部那條 bar 服務的是「當前這一頁」還是「整個 app」?
+          唯一的區分標準 = <strong>頂部標頭服務的是「目前這一頁」還是「整個產品」</strong>,
+          <em>不是</em>工作區(workspace)的數量多寡(Notion / Gmail 都支援多工作區,卻分屬不同派)。
+          問自己:頂部那條標頭列服務的是當前頁面,還是整個產品?
         </p>
         <ul className="text-body space-y-1">
           <li>
-            <strong>primary-sidebar</strong>:頂部是 <strong>local toolbar</strong> —
-            服務當前頁(breadcrumb / page-level actions / filter)。Sidebar 頂天立地,WorkspaceBrand 在 sidebar 頂。
+            <strong>primary-sidebar</strong>:頂部是<strong>服務當前頁的工具列</strong> —
+            放麵包屑、頁面層級操作、篩選。Sidebar 頂天立地,工作區品牌(`WorkspaceBrand`)放在 sidebar 頂。
             參考 Linear / Notion / Figma。
           </li>
           <li>
-            <strong>primary-header</strong>:多一條 <strong>global bar</strong> 橫跨頂部 —
-            服務整個 app(account / workspace switcher / 跨頁 search / notifications);local toolbar
-            <em>仍在</em> main col 頂,只是上面多了 global header。WorkspaceBrand 改放 globalHeader 左側。
+            <strong>primary-header</strong>:多一條<strong>橫跨頂部、服務整個產品的全域標頭</strong> —
+            放帳號、工作區切換、跨頁搜尋、通知;服務當前頁的工具列
+            <em>仍在</em>主欄頂部,只是上面多了這條全域標頭。工作區品牌改放全域標頭(`globalHeader`)左側。
             參考 GitHub / Slack / Gmail。完整組合見{' '}
             <LinkTo kind="Design System/Components/AppShell/展示" name="主標頭佈局 — 全域+本地兩層(GitHub/Gmail/Slack 派)"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">展示 → 主標頭佈局 — 全域+本地兩層</span></LinkTo>
           </li>
         </ul>
         <p className="text-caption text-fg-secondary mt-2">
-          兩 mode 是 product 角色表態——啟動時固定,不該在 runtime 切換。視覺對照圖見{' '}
+          兩種模式是產品的角色定位——啟動時就固定,不該在執行期切換。視覺對照圖見{' '}
           <LinkTo kind="Design System/Components/AppShell/設計規格" name="兩種布局模式對照圖"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">設計規格 → 兩種布局模式對照圖</span></LinkTo>
         </p>
       </section>
 
       <section>
-        <h2 className="text-h4 mb-2">常見誤解:global header 取代 local toolbar</h2>
+        <h2 className="text-h4 mb-2">常見誤解:全域標頭會取代當前頁工具列</h2>
         <p className="text-body">
-          錯。primary-header = primary-sidebar 的所有東西 + <strong>額外一條</strong> global header 在頂;
-          `header` slot(local toolbar)<strong>仍然存在</strong>。GitHub / Slack / Gmail 全部同時保有兩層,
+          錯。primary-header = primary-sidebar 的所有東西 + <strong>額外一條</strong>全域標頭在頂;
+          當前頁工具列(`header` slot)<strong>仍然存在</strong>。GitHub / Slack / Gmail 全部同時保有兩層,
           不是二選一。
         </p>
       </section>
@@ -129,9 +129,9 @@ export const LayoutModeRule: Story = {
         <h2 className="text-h4 mb-2">帳號入口(個人設定)跟著 mode 走(只能出現一次)</h2>
         <ul className="text-body space-y-1">
           <li>• <strong>primary-sidebar</strong>:帳號 / 個人設定放 Sidebar 底部(`&lt;SidebarFooter&gt;`)— Linear / Notion / Figma</li>
-          <li>• <strong>primary-header</strong>:帳號入口改放 globalHeader 右側 avatar(品牌左、帳號右,左右對稱),sidebar 不放 user footer — GitHub / Gmail / Slack 帳號一律在 global bar 右上</li>
+          <li>• <strong>primary-header</strong>:帳號入口改放 globalHeader 右側 avatar(品牌左、帳號右,左右對稱),sidebar 不放帳號頁尾 — GitHub / Gmail / Slack 帳號一律在全域標頭右上</li>
           <li>• 開「個人資料 / 設定 / 登出」帳號選單(`&lt;DropdownMenu&gt;`),<strong>不用 ProfileCard</strong>(ProfileCard 是看別人的人員卡,預設動作 Chat/通話用在自己身上不對)</li>
-          <li>• 帳號 avatar = 24px,跟左側品牌 avatar 同尺寸(header-canonical 4.5 chrome header avatar);右側邊距與品牌距分割線對稱</li>
+          <li>• 帳號 avatar = 24px,跟左側品牌 avatar 同尺寸(沿用標準標頭的頭像尺寸規範);右側邊距與品牌距分割線對稱</li>
           <li>❌ 禁:`primary-header` mode 同時在 globalHeader + sidebar footer 各放一份 = 入口混淆(帳號入口視覺 SSOT,只能出現一次)</li>
         </ul>
       </section>

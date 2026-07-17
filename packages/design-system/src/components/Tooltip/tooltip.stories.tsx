@@ -70,7 +70,7 @@ export const LongText: Story = {
     <Tooltip defaultOpen>
       <TooltipTrigger asChild>
         <Button variant="secondary" startIcon={Info}>
-          長文字提示
+          API 金鑰安全說明
         </Button>
       </TooltipTrigger>
       <TooltipContent>

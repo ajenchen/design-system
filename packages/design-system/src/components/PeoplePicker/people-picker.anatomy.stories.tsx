@@ -31,6 +31,7 @@ export const Overview: Story = {
             people={SAMPLE_PEOPLE}
             value={SAMPLE_PEOPLE[0]}
             onChange={() => {}}
+            aria-label="負責人"
           />
         </div>
       </div>
@@ -45,6 +46,7 @@ export const Overview: Story = {
               people={SAMPLE_PEOPLE}
               value={SAMPLE_PEOPLE[0]}
               onChange={() => {}}
+              aria-label="指派對象(單選 assignee 範例)"
             />
           </div>
           <div>
@@ -53,6 +55,7 @@ export const Overview: Story = {
               people={SAMPLE_PEOPLE}
               value={[SAMPLE_PEOPLE[0], SAMPLE_PEOPLE[1]]}
               onChange={() => {}}
+              aria-label="專案協作者(多選 reviewers 範例)"
             />
           </div>
         </div>
@@ -121,7 +124,7 @@ export const Inspector: Story = {
   },
   render: (args) => (
     <div className="max-w-md">
-      <PeoplePicker {...args} onChange={() => {}} />
+      <PeoplePicker {...args} onChange={() => {}} aria-label="負責人(Inspector 範例)" />
     </div>
   ),
 }
@@ -133,7 +136,7 @@ export const ModeMatrix: Story = {
       <div>
         <H3>edit(預設)</H3>
         <Desc>Field 樣式 + 展開觸發 Popover + Command 搜尋。</Desc>
-        <PeoplePicker people={SAMPLE_PEOPLE} value={SAMPLE_PEOPLE[0]} onChange={() => {}} />
+        <PeoplePicker people={SAMPLE_PEOPLE} value={SAMPLE_PEOPLE[0]} onChange={() => {}} aria-label="負責人(edit 模式範例)" />
       </div>
       <div>
         <H3>view</H3>
@@ -341,8 +344,8 @@ export const StateBehavior: Story = {
           people={SAMPLE_PEOPLE}
           value={null}
           onChange={() => {}}
-          searchPlaceholder="試試搜尋 xyz"
-          emptyText="找不到符合的組員 — 試試輸入 email 邀請外部"
+          searchPlaceholder="搜尋團隊成員…"
+          emptyText="找不到符合的組員"
         />
       </div>
 

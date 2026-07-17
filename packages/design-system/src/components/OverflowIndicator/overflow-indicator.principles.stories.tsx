@@ -43,7 +43,7 @@ export const UsageGuidance: Story = {
         <li><strong>OverflowIndicator(本元件)</strong>—項目數量已知且不多時,顯示前幾個、其餘折成 <code>+N</code>,hover 展開看完整清單</li>
         <li><strong>ScrollArea</strong>—項目數量未知或極多時,讓使用者捲動瀏覽全部</li>
       </ul>
-      <p className="text-fg-muted">判斷:項目數可數且少(≤ 100)→ OverflowIndicator;太多或未知數量 → ScrollArea。</p>
+      <p className="text-fg-muted">判斷:項目少量、已知、適合一次預覽 → OverflowIndicator;數量大、未知或需連續瀏覽 → ScrollArea。</p>
     </div>
     </div>
   ),
@@ -64,8 +64,10 @@ export const CompositionRules: Story = {
         <h4>Pattern 2 — 人員頭像疊合 +N</h4>
         <p>一群人只顯示前幾位、其餘折成 `+M`。目前由列表元件自行把頭像疊合再放上 OverflowIndicator(形狀用圓形對齊頭像);未來規劃中的 Avatar 群組元件會把這段組合收進去。對齊 Slack 工作區成員預覽 / Linear 團隊成員的做法。</p>
 
-        <h4>Pattern 3 — Tabs 等水平容器溢出</h4>
-        <p>水平容器(如 Tabs)寬度不夠 → 搭配水平溢出處理 + OverflowIndicator,把末端收合成 `+N`。對齊 Material 可捲動 Tabs + 自動溢出選單的做法。注意:Breadcrumb 中段收合**不用**本元件——DS canonical 是 BreadcrumbEllipsis + DropdownMenu(click 開選單,見 breadcrumb.spec.md),與本元件 hover 展開語義不同。</p>
+        <h4>Pattern 3 — PeoplePicker 人員選擇欄位 +N</h4>
+        <p>人員選擇欄位選了多位、單行放不下 → PeoplePicker(<code>PersonDisplay</code>)內部使用 OverflowIndicator(圓形對齊頭像),hover `+N` 展開完整名單。對齊 Linear 多指派人 / Jira watchers 的做法。</p>
+
+        <p className="text-fg-muted">水平容器(Tabs / 單行 chip 列)寬度不夠時<strong className="font-medium">不用本元件</strong>——DS canonical 是 <code>horizontal-overflow</code> 的 <code>OverflowMenuTriggerButton</code> + DropdownMenu(click 開選單,見 horizontal-overflow.spec.md);Breadcrumb 中段收合走 BreadcrumbEllipsis + DropdownMenu(見 breadcrumb.spec.md)。兩者皆 click 開選單,與本元件 hover 展開語義不同。</p>
 
         <p className="text-fg-muted">禁止:在頁面程式碼裡自己手刻 `+N` <code>&lt;span&gt;</code>(會失去 hover 展開浮層與一致的形狀樣式)— 一律使用 OverflowIndicator。</p>
       </div>

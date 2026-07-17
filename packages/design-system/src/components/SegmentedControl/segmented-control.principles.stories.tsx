@@ -6,7 +6,7 @@ import {
   List, LayoutGrid, Calendar,
 } from 'lucide-react'
 import { SegmentedControl, SegmentedControlItem } from './segmented-control'
-import { Tabs, TabsList, TabsTrigger } from '@/design-system/components/Tabs/tabs'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { Button } from '@/design-system/components/Button/button'
 import { Badge } from '@/design-system/components/Badge/badge'
 
@@ -87,6 +87,9 @@ export const UsageGuidance: Story = {
                 <TabsTrigger value="customers">顧客</TabsTrigger>
                 <TabsTrigger value="products">產品</TabsTrigger>
               </TabsList>
+              <TabsContent value="orders" className="text-body text-fg-muted mt-2">訂單列表、篩選與批次出貨（各自的 toolbar / table）</TabsContent>
+              <TabsContent value="customers" className="text-body text-fg-muted mt-2">顧客名單、分群與生命週期價值</TabsContent>
+              <TabsContent value="products" className="text-body text-fg-muted mt-2">商品目錄、庫存與上下架狀態</TabsContent>
             </Tabs>
           </div>
         </Rule>

@@ -189,13 +189,13 @@ export const NeedsTooltipRule: Story = {
         title="✅ 截斷文字用 tooltip 顯示完整內容(僅當實際被截斷時)"
         note="Tooltip 是資訊補救 — 文字被 truncate 時才顯示完整內容。沒被截斷就不該顯示 tooltip(避免過度互動)"
       >
-        <Tooltip>
+        <Tooltip defaultOpen>
           <TooltipTrigger asChild>
             <div className="w-32 truncate px-3 py-1 border border-border rounded-md cursor-default">
-              非常長的專案名稱會被截斷
+              2026 亞洲市場品牌改版與官網重構
             </div>
           </TooltipTrigger>
-          <TooltipContent>非常長的專案名稱會被截斷顯示完整版</TooltipContent>
+          <TooltipContent>2026 亞洲市場品牌改版與官網重構</TooltipContent>
         </Tooltip>
         <Label>↑ 模式示意（此靜態範例恆顯示；實務上應偵測文字真被截斷 `scrollWidth &gt; clientWidth` 時才掛 tooltip）</Label>
       </Rule>

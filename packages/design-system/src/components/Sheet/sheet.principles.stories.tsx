@@ -1,4 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+// @overlay-open-skip: 本檔為 usage-guidance(設計原則)story——每個 Rule 卡片以「關閉的 trigger 按鈕」並排比較 Sheet / Dialog / Popover 何時用;全部 defaultOpen 會讓多個 portal 疊在一起、視覺全毀。overlay 開啟狀態的視覺覆蓋由 sheet.stories.tsx(展示)+ sheet.anatomy.stories.tsx(Inspector defaultOpen)負責。
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -179,7 +180,8 @@ export const UsageGuidance: Story = {
           <PopoverTrigger asChild>
             <Button variant="tertiary" startIcon={Filter}>篩選</Button>
           </PopoverTrigger>
-          <PopoverContent align="start">
+          {/* naked popover(無 PopoverTitle)→ 自傳 aria-label 讓 role="dialog" 有 accessible name(popover.spec.md A11y) */}
+          <PopoverContent align="start" aria-label="依狀態篩選">
             <PopoverBody>
               <CheckboxGroup>
                 <Checkbox defaultChecked label="進行中" />
@@ -264,7 +266,7 @@ export const SidePropRule: Story = {
       >
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="tertiary">分享選項(mobile 常用 bottom)</Button>
+            <Button variant="tertiary">分享</Button>
           </SheetTrigger>
           <SheetContent side="bottom" className="max-w-full">
             <SheetHeader>
@@ -309,7 +311,7 @@ export const HeaderFooterStructureRule: Story = {
       >
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="tertiary">標準結構範例</Button>
+            <Button variant="tertiary">建立新客戶</Button>
           </SheetTrigger>
           <SheetContent side="right" className="flex flex-col sm:max-w-lg">
             <SheetHeader>

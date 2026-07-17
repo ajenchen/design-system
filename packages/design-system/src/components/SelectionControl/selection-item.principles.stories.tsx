@@ -9,7 +9,7 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-// ── WhenToUse — 何時使用 SelectionControl ──────────────────────
+// ── WhenToUse — 何時使用 SelectionItem ──────────────────────
 
 
 // ── UsageGuidance — 整合何時用 / 何時不用 / vs 近親(Polaris/Material/Ant 共識)
@@ -21,7 +21,7 @@ export const UsageGuidance: Story = {
     <div className="flex flex-col gap-12">
       {/* 何時用 — 原 WhenToUse */}
       <div className="prose prose-sm max-w-prose">
-      <p>適合 SelectionControl 的真實業務場景(點擊跳轉「展示」頁範例):</p>
+      <p>適合 SelectionItem 的真實業務場景(點擊跳轉「展示」頁範例):</p>
       <ul className="space-y-1">
         <li>
           <LinkTo kind="Design System/Internal/SelectionControl/展示" name="通知偏好"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">通知偏好</span></LinkTo>
@@ -36,14 +36,14 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Internal/SelectionControl/展示" name="前綴頭像"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">前綴頭像</span></LinkTo>
         </li>
       </ul>
-      <p className="text-fg-muted mt-3">判斷不確定時,參考下方「SelectionControl 與 Checkbox + Field 的差異」說明;若場景不符,改用對應的近親元件。</p>
+      <p className="text-fg-muted mt-3">判斷不確定時,參考下方「SelectionItem 與 Checkbox + Field 的差異」說明;若場景不符,改用對應的近親元件。</p>
     </div>
 
       {/* vs 近親 — VsCheckboxRule — 原 VsCheckboxRule */}
       <div className="prose prose-sm max-w-prose">
       <p>兩者表達 selectable state,但結構與場景不同:</p>
       <ul>
-        <li><strong>SelectionControl rich row(本 primitive,經 Checkbox / RadioGroup 消費)</strong>—大塊 row(含 icon / avatar / multi-line description),適合 settings / list-as-page;Notion/Slack idiom</li>
+        <li><strong>SelectionItem rich row(本 primitive,經 Checkbox / RadioGroup 消費)</strong>—大塊 row(含 icon / avatar / multi-line description),適合 settings / list-as-page;Notion/Slack idiom</li>
         <li><strong>Checkbox + Field</strong>—緊湊 form 欄位;適合 form group 多選</li>
       </ul>
       <p className="text-fg-muted">判斷:row 是 page content(讀取/設定)→ Checkbox / RadioGroup 的 rich-row 形態(內部消費 SelectionItem,不裸用 &lt;SelectionItem&gt;);row 是 form input(submit value)→ Checkbox + Field。</p>

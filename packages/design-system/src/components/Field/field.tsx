@@ -1,5 +1,6 @@
 // code-quality-allow: file-size — foundational composite(Field + FieldLabel + FieldDescription + FieldError + context + 8 layout variants),拆檔會讓 Field 家族互相 import 循環
 import * as React from 'react'
+import { cva } from 'class-variance-authority'
 import { Info as InfoIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
@@ -514,9 +515,22 @@ export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
   horizontalLabelWidth?: string
 }
 
+// gap variant 收進 cva(className-only 差異 → cva,per ui-development.md「cva 適用」);值仍走 Tailwind gap utility。
+const fieldGroupVariants = cva('flex flex-col min-w-0', {
+  variants: {
+    gap: {
+      compact: 'gap-3',
+      normal: 'gap-4',
+      loose: 'gap-6',
+    },
+  },
+  defaultVariants: {
+    gap: 'normal',
+  },
+})
+
 const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
   ({ className, gap = 'normal', horizontalLabelWidth, ...props }, ref) => {
-    const gapClass = gap === 'compact' ? 'gap-3' : gap === 'loose' ? 'gap-6' : 'gap-4'
     const groupCtxValue = React.useMemo(
       () => ({ horizontalLabelWidth }),
       [horizontalLabelWidth],
@@ -525,7 +539,7 @@ const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
       <FieldGroupContext.Provider value={groupCtxValue}>
         <div
           ref={ref}
-          className={cn('flex flex-col min-w-0', gapClass, className)}
+          className={cn(fieldGroupVariants({ gap }), className)}
           data-field-group=""
           {...props}
         />

@@ -126,6 +126,14 @@ export interface SelectMenuProps {
    */
   contentId?: string
 
+  /**
+   * 浮層 accessible name(2026-07-17 Dim 10 a11y 修)。Radix Popover 的 content 為
+   * `role="dialog"` 但無自動命名機制 → 無 aria-label 時 dialog 無 accessible name。
+   * 預設「選項清單」讓 SR 使用者知道浮層用途;consumer(Combobox / Select / PeoplePicker)
+   * 可傳更 contextual 的名(如欄位名)。SSOT 放此一處 → 全 SelectMenu consumer 受益。
+   */
+  'aria-label'?: string
+
   className?: string
 }
 
@@ -177,6 +185,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   renderLabel,
   onOpenAutoFocus,
   contentId,
+  'aria-label': ariaLabel = '選項清單', // i18n-allow: DS default; consumer override via aria-label prop
   className,
 }, _ref) {
   // ── State ──
@@ -307,6 +316,8 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
       <RowSizeProvider value={size}>
       <PopoverContent
         id={contentId}
+        // 2026-07-17 Dim 10 a11y 修:role="dialog" 浮層 accessible name(Radix Popover 無自動命名)
+        aria-label={ariaLabel}
         // w-auto override PopoverContent default w-72(rich-popover canonical)— SelectMenu 走「跟 trigger 同寬」
         // canonical(spec L72)。minWidth = max(trigger-width, 240px sensible-min)— 對齊 shadcn / Material / Ant
         // select dropdown 共識(2026-05-04 D1 verify SelectMenu spec implementation)。

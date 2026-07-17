@@ -222,7 +222,11 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
       <div ref={ref} className={cn('w-full', hasFiles && 'flex flex-col')}>
       {variant === 'button' ? (
         // ── button variant:緊湊觸發(form-friendly,省空間),click-only(無拖放區)──
-        <div className={className} {...props}>
+        // consumer onClick 在此 wrapper div 承載(type = MouseEvent<HTMLDivElement>,對齊 FileUploadProps
+        // extends HTMLAttributes<HTMLDivElement>)。Button 觸發開檔會冒泡至此 → 同時觸發 consumer handler。
+        // 2026-07-17 修:onClick 於 L128 destructure 後未再 compose,button variant 靜默丟失公開 DOM prop
+        // (dropzone variant 經 handleClick 的 onClick?.(e) 正確 compose,button variant 漏接)。
+        <div className={className} onClick={onClick} {...props}>
           <input
             ref={inputRef}
             type="file"

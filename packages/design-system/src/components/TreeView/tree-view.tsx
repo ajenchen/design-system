@@ -776,6 +776,23 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         isKeyboardRef.current = true
         if (!treeRef.current) return
 
+        // ── 互動 descendant 自理鍵盤(先於導覽 / 重排分支)──
+        // 公開 inlineActions / inlineActionsSlot 經 <ItemInlineAction> 渲染的原生 <button>
+        // (及 consumer slot 內的 link / field / role=button)是各自獨立的 tab stop(spec
+        // A11y「單一 tab stop」段)。其 Enter/Space/方向鍵應由該控件自理——若冒泡到容器
+        // handleKeyDown,下方 Enter/Space 分支的 e.preventDefault()+select() 會吃掉 button
+        // 原生啟動並誤選 tree node。虛擬焦點模型下 tree 導覽/重排只在事件來自容器本身時處理
+        // (DOM focus 停在 tree 容器;treeitem row / chevron / checkbox 皆 tabIndex=-1)。
+        const keyTarget = e.target as HTMLElement | null
+        if (keyTarget && keyTarget !== e.currentTarget) {
+          const interactive = keyTarget.closest<HTMLElement>(
+            'a[href], button, input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])'
+          )
+          // interactive === e.currentTarget:唯一可聚焦祖先是 tree 容器(tabIndex=0 單一 tab
+          // stop 進出點)→ 屬非互動 descendant,照常走 tree 導覽。
+          if (interactive && interactive !== e.currentTarget) return
+        }
+
         // ── 鍵盤重排:Cmd/Ctrl+Shift+方向鍵(2026-07-14 v1,詳 spec「鍵盤重排」)──
         // 必排在下方「無焦點時方向鍵先聚焦第一項」分支之前(該分支不分 modifier 攔 Arrow*);
         // 非 modifier 導覽路徑(下方 switch)完全不變。

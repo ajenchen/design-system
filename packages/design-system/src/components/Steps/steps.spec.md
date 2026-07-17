@@ -221,8 +221,8 @@ Per-item `state="error"` prop 存在但是 **escape hatch**,僅用在 inline JSX
 
 ### Outer ring 的關鍵設計
 
-- **Bounding box 固定**:box-shadow 不佔 layout(zero layout impact),focused / non-focused 的 indicator 佔用完全相同的寬高(md=24px,lg=32px,sm=24px hit area)
-- **Surface gap + ring 兩層 box-shadow 實作**:`0 0 0 2px var(--surface), 0 0 0 4px <ringColor>`——內圈先用 surface 色拉開 2px gap,外圈再疊 2px ring 色,形成「indicator 外有一圈帶間隙的環」(對齊 Polaris / shadcn focus-ring surface-gap idiom)
+- **Bounding box 固定**:focus 外環以 box-shadow 表達,不改變 indicator 的 bounding box——focused / non-focused 佔用完全相同的寬高(md=24px,lg=32px,sm=24px hit area)
+- **Surface gap + ring 兩層外環**:內圈先用 surface 色拉開一段 gap,外圈再疊 ring 色,形成「indicator 外有一圈帶間隙的環」——精確 gap / ring 寬度與 box-shadow 值見 steps.tsx `getOuterRingShadow`(對齊 Polaris / shadcn focus-ring surface-gap idiom)<!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 - **Ring 色由 state 決定**:`error` → `--error-hover`;non-linear `current` → `--border-hover`;其餘(含 linear current / completed / upcoming / reachable)→ `--info-hover`
 
 ### State × Focus 視覺矩陣(md/lg)

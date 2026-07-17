@@ -63,18 +63,33 @@ const dataWithNotes: Product[] = sampleData.map((p, i) => ({
     : 'Standard delivery.',
 }))
 
+// 真實商品名池（品名 × 規格版本組合，避免 "Product item N" 佔位符）
+const PRODUCT_NAMES: Record<string, string[]> = {
+  Electronics: ['Wireless Bluetooth Headphones', 'USB-C 7-in-1 Hub', 'Mechanical Keyboard', '4K Webcam', 'Portable SSD 1TB', '65W GaN Charger', 'Noise-Cancelling Earbuds', 'Ergonomic Wireless Mouse'],
+  Furniture: ['Ergonomic Office Chair', 'Standing Desk Converter', '5-Tier Bookshelf', 'Storage Cabinet', '3-Seat Fabric Sofa', 'Bedside Table', 'Coat Rack Stand', 'Adjustable Monitor Arm'],
+  Food: ['Organic Green Tea 100 Bags', 'Single-Origin Coffee Beans', 'Mixed Nuts Gift Box', 'Dark Chocolate Bar', 'Rolled Oats 1kg', 'Manuka Honey Jar', 'Herbal Tea Sampler', 'Cold-Pressed Olive Oil'],
+  Lifestyle: ['Stainless Steel Water Bottle', 'Scented Candle Set', 'Cordless Vacuum Cleaner', 'HEPA Air Purifier', 'Leather Notebook A5', 'Non-Slip Yoga Mat', 'Aroma Diffuser', 'Weighted Blanket'],
+}
+const PRODUCT_EDITIONS = ['Standard', 'Pro', 'Lite', 'Max', 'Mini', '2-Pack', 'Bundle', 'Refill']
+
 function generateLargeData(count: number): Product[] {
   const categories = ['Electronics', 'Furniture', 'Food', 'Lifestyle']
   const stocks = ['In stock', 'Low stock', 'Out of stock', 'Pre-order']
-  return Array.from({ length: count }, (_, i) => ({
-    sku: `PRD-${String(i + 1).padStart(4, '0')}`,
-    name: `Product item ${i + 1} — ${categories[i % 4]}`,
-    category: categories[i % 4],
-    stock: stocks[i % 4],
-    seller: SELLERS[i % SELLERS.length],
-    updatedAt: `2025/03/${String(1 + (i % 28)).padStart(2, '0')}`,
-    price: Math.round(100 + Math.random() * 9900),
-  }))
+  return Array.from({ length: count }, (_, i) => {
+    const category = categories[i % 4]
+    const names = PRODUCT_NAMES[category]
+    const baseName = names[i % names.length]
+    const edition = PRODUCT_EDITIONS[Math.floor(i / names.length) % PRODUCT_EDITIONS.length]
+    return {
+      sku: `PRD-${String(i + 1).padStart(4, '0')}`,
+      name: `${baseName} (${edition})`,
+      category,
+      stock: stocks[i % 4],
+      seller: SELLERS[i % SELLERS.length],
+      updatedAt: `2025/03/${String(1 + (i % 28)).padStart(2, '0')}`,
+      price: Math.round(100 + Math.random() * 9900),
+    }
+  })
 }
 
 // ── Column Definitions ───────────────────────────────────────────────────────
@@ -1603,6 +1618,9 @@ const ROADMAP_DATA: RoadmapItem[] = [
   { id: 'RDM-008', title: 'Dark mode 全站支援', status: 'in-progress', priority: 'P2', owner: SELLERS[1], reviewers: [SELLERS[0], SELLERS[3]], tags: ['frontend', 'design'], startDate: '2026-04-20', dueDate: '2026-06-10', progress: 75, spec: 'https://notion.so/dark-mode', hours: 90, standup: '10:00' },
 ]
 
+// 大量 roadmap row 衍生用的真實工作範疇後綴（避免 "(#N)" 佔位符計數）
+const ROADMAP_SCOPES = ['行動版', '桌面版', 'API 層', '後台管理', '資料遷移', '效能優化', '無障礙改善', '國際化', '監控告警', '權限控管']
+
 // Roadmap shared columns helper(主 demo + 5 stress stories 共用)
 function useRoadmapColumns() {
   const col = createColumnHelper<RoadmapItem>()
@@ -1666,13 +1684,13 @@ export const RoadmapAllInOne: Story = {
         const item: RoadmapItem = {
           ...base,
           id,
-          title: `${base.title} (#${i + 1})`,
+          title: `${base.title} — ${ROADMAP_SCOPES[i % ROADMAP_SCOPES.length]}`,
         }
         // 前 8 個 top row 補 sub-tasks(展示 nested row + drag canonical:top-level only)
         if (i < 8) {
           item.children = [
-            { ...base, id: `${id}-1`, title: `${base.title} 子任務 A`, progress: Math.min(100, base.progress + 10), hours: Math.max(0, Math.floor(base.hours / 3)) },
-            { ...base, id: `${id}-2`, title: `${base.title} 子任務 B`, progress: Math.max(0, base.progress - 10), hours: Math.max(0, Math.floor(base.hours / 4)) },
+            { ...base, id: `${id}-1`, title: `${base.title}：介面設計與前端實作`, progress: Math.min(100, base.progress + 10), hours: Math.max(0, Math.floor(base.hours / 3)) },
+            { ...base, id: `${id}-2`, title: `${base.title}：API 整合與 QA 驗收`, progress: Math.max(0, base.progress - 10), hours: Math.max(0, Math.floor(base.hours / 4)) },
           ]
         }
         arr.push(item)
@@ -1916,7 +1934,7 @@ export const RoadmapPerfBudget: Story = {
       for (let i = 0; i < 500; i++) {
         const base = ROADMAP_DATA[i % ROADMAP_DATA.length]
         const id = `RDM-${String(i + 100).padStart(3, '0')}`
-        arr.push({ ...base, id, title: `${base.title} (#${i + 1})` })
+        arr.push({ ...base, id, title: `${base.title} — ${ROADMAP_SCOPES[i % ROADMAP_SCOPES.length]}` })
       }
       return arr
     }, [])
@@ -1956,7 +1974,7 @@ const ORDER_ROWS: OrderRow[] = Array.from({ length: 128 }, (_, i) => ({
 const orderColumns: ColumnDef<OrderRow>[] = [
   { accessorKey: 'orderNo', header: '訂單編號' },
   { accessorKey: 'customer', header: '客戶' },
-  { accessorKey: 'amount', header: '金額', cell: ({ getValue }) => `$${(getValue() as number).toLocaleString()}` },
+  { accessorKey: 'amount', header: '金額', meta: { type: 'currency', prefix: '$' } },
   { accessorKey: 'placedAt', header: '成立日期' },
 ]
 

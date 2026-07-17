@@ -124,6 +124,6 @@ OverflowIndicator 是 **composite**(HoverCard trigger + tag-styled `+N` span + H
 
 **互動行為**:trigger 為 `+N` 計數 span,**keyboard-focusable**(`tabIndex=0`;**不掛 `role="button"` / `aria-haspopup`**——2026-07-14 對齊 Avatar hoverCard canonical 2026-07-06 拆除:trigger 無 activation 行為,宣告 button/haspopup 卻按 Enter 無反應 = 對 AT 空承諾),HoverCard 在 hover 或 trigger 取得 focus 時自動展開——無「按 Enter 開選單」的鍵盤指令,也沒有 click 切換。(2026-06-01 #13:原設計純 passive 不可聚焦 → 鍵盤使用者無法開啟 HoverCard 看溢出內容,違 WCAG 2.1.1;改 focusable)。**鍵盤限制**:HoverCard 內容(tag dismiss / nested ProfileCard)僅滑鼠可互動——Radix 把 content 內 tabbable node 設 `tabindex="-1"`(hover-card.spec.md「A11y 預設」),鍵盤等效操作由主列可見項承擔。
 
-**Focus**:trigger 是 tab stop(keyboard 可達 + focus-visible ring,讓鍵盤使用者也能 focus 開啟 HoverCard 看溢出內容);HoverCard 內展開的可互動內容(如人員 tag / ProfileCard)由各自的內容元件負責 focus 管理。
+**Focus**:trigger 是 tab stop(keyboard 可達 + focus-visible ring,讓鍵盤使用者也能 focus 開啟 HoverCard 看溢出內容);HoverCard 內展開的內容**不接受鍵盤 focus**——Radix 強制 content 內 tabbable node 為 `tabindex="-1"`(見上方「互動行為」鍵盤限制 + `hover-card.spec.md`「A11y 預設」),鍵盤等效操作由主列可見項承擔;需鍵盤可操作的互動浮層改用 Popover(click 觸發)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;HoverCard 內容透過 hover 或 focus 自動顯示(非鍵盤指令觸發)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。

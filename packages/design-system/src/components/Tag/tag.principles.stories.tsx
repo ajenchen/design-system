@@ -237,7 +237,7 @@ export const IconRule: Story = {
     <div>
       <Rule
         title="icon — 類別圖示(tag label 的視覺強化)"
-        note="用 LucideIcon,Tag 統一 16px。icon 顏色繼承 Tag 文字色(有色時跟色)"
+        note="用 LucideIcon,Tag 一律固定 16px、不隨 Tag 尺寸縮放——讓所有 Tag 的 icon 前綴維持相同節奏,一整排並排掃視時對齊不跳動。icon 顏色繼承 Tag 文字色(有色 variant 就跟該色),而不是自成一色:避免 icon 變成 Tag 內第二個視覺焦點,搶走 label 的主體性。"
       >
         <div className="flex items-center gap-2 flex-wrap">
           <Tag color="blue" icon={TagIcon}>Feature</Tag>
@@ -247,13 +247,13 @@ export const IconRule: Story = {
 
       <Rule
         title="avatar — 人員 / 組織類 Tag 前綴"
-        note="多選 Combobox 的已選成員用 avatar + name 組合"
+        note="多選 Combobox 的已選成員用 avatar + name 組合。avatar 只提供視覺辨識(一眼看到「是個人」),真正承載身份的是名字;兩者並用才能避免相似頭像、或圖片載入失敗時的誤認——所以 avatar Tag 一定要保留可見姓名,不能只放頭像。人員 / 組織標籤同理。"
       >
         <div className="flex items-center gap-2 flex-wrap">
-          <Tag color="neutral" avatar={<img src="https://i.pravatar.cc/40?img=1" className="w-4 h-4 rounded-full" />}>
+          <Tag color="neutral" avatar={<img src="https://i.pravatar.cc/40?img=1" alt="" className="w-4 h-4 rounded-full" />}>
             Ada Chen
           </Tag>
-          <Tag color="neutral" avatar={<img src="https://i.pravatar.cc/40?img=2" className="w-4 h-4 rounded-full" />}>
+          <Tag color="neutral" avatar={<img src="https://i.pravatar.cc/40?img=2" alt="" className="w-4 h-4 rounded-full" />}>
             Alice
           </Tag>
         </div>

@@ -2,6 +2,7 @@
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Slider } from './slider'
+import { NumberInput } from '@/design-system/components/NumberInput/number-input'
 
 const meta: Meta<typeof Slider> = {
   title: 'Design System/Components/Slider/展示',
@@ -21,19 +22,19 @@ type Story = StoryObj<typeof Slider>
 export const SizeAlignment: Story = {
   name: '容器尺寸對齊',
   render: () => (
-    <div className="w-[360px] flex flex-col gap-6">
+    <div className="w-[420px] flex flex-col gap-6">
       <p className="text-caption text-fg-secondary max-w-[480px]">
         三個 size 下 track 厚度與 thumb 直徑一致——只有容器外高跟著
-        `--field-height-*` 變。這讓 Slider 能在 Field 內跟 Input / Select /
-        NumberInput 並排對齊,同時保持自己的視覺身分不變。
+        `--field-height-*` 變。這讓 Slider 能在同一列跟 NumberInput 等 field
+        控件並排、field-height 完美對齊,同時保持自己的視覺身分不變。
       </p>
       {(['sm', 'md', 'lg'] as const).map(size => (
         <div key={size} className="flex flex-col gap-2">
-          <div className="text-caption text-fg-muted">
-            size = {size}(h-field-{size})
-          </div>
-          <div className="border border-dashed border-border rounded-md p-0">
-            <Slider size={size} defaultValue={[40]} />
+          <div className="text-caption text-fg-muted">size = {size}</div>
+          <div className="flex items-center gap-3">
+            <span className="text-body w-10 shrink-0">音量</span>
+            <Slider size={size} defaultValue={[40]} aria-label="音量" className="flex-1" />
+            <NumberInput size={size} value={40} onChange={() => {}} className="w-20 shrink-0" />
           </div>
         </div>
       ))}
@@ -46,20 +47,25 @@ export const SizeAlignment: Story = {
 export const MinMaxStep: Story = {
   name: '最小 / 最大 / 步階',
   render: () => {
-    const [value, setValue] = React.useState([32])
+    const [quality, setQuality] = React.useState([80])
     return (
       <div className="w-[360px] flex flex-col gap-4">
-        <div className="text-caption text-fg-muted">
-          min=0, max=100, step=4
+        <p className="text-caption text-fg-secondary">
+          匯出圖片品質——限制在 10–100% 之間,每次以 5% 為一階(min / max / step)
+        </p>
+        <div className="flex items-center gap-3">
+          <span className="text-body w-16 shrink-0">圖片品質</span>
+          <Slider
+            value={quality}
+            onValueChange={setQuality}
+            min={10}
+            max={100}
+            step={5}
+            aria-label="匯出圖片品質"
+            className="flex-1"
+          />
+          <span className="text-caption text-fg-muted font-mono w-10 shrink-0">{quality[0]}%</span>
         </div>
-        <Slider
-          value={value}
-          onValueChange={setValue}
-          min={0}
-          max={100}
-          step={4}
-        />
-        <p className="text-caption text-fg-secondary">Value: {value[0]}</p>
       </div>
     )
   },
@@ -74,24 +80,30 @@ export const MinMaxStep: Story = {
 export const OnCommit: Story = {
   name: '提交數值回呼',
   render: () => {
-    const [live, setLive] = React.useState([50])
-    const [committed, setCommitted] = React.useState([50])
+    const [preview, setPreview] = React.useState([3000])
+    const [applied, setApplied] = React.useState([3000])
     return (
       <div className="w-[360px] flex flex-col gap-4">
         <p className="text-caption text-fg-secondary">
-          拖曳時 live 跟著變,放開才更新 committed(適合昂貴操作如 API
-          query、圖片重繪)
+          價格上限篩選——拖曳時即時預覽,放開才送出查詢(適合昂貴操作如 API
+          query、重新載入結果)
         </p>
-        <Slider
-          value={live}
-          onValueChange={setLive}
-          onValueCommit={setCommitted}
-        />
+        <div className="flex items-center gap-3">
+          <span className="text-body w-12 shrink-0">價格</span>
+          <Slider
+            value={preview}
+            onValueChange={setPreview}
+            onValueCommit={setApplied}
+            min={0}
+            max={10000}
+            step={100}
+            aria-label="價格上限"
+            className="flex-1"
+          />
+        </div>
         <div className="flex flex-col gap-1 text-caption">
-          <span className="text-fg-secondary">Live: {live[0]}</span>
-          <span className="text-foreground font-medium">
-            Committed: {committed[0]}
-          </span>
+          <span className="text-fg-secondary">即時預覽:${preview[0]}</span>
+          <span className="text-foreground font-medium">已套用查詢:${applied[0]}</span>
         </div>
       </div>
     )

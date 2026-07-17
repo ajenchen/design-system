@@ -155,6 +155,7 @@ export function DataTableColumnVisibilityPanel({
           <Input
             size="md"
             placeholder="搜尋欄位…"
+            aria-label="搜尋欄位"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             startIcon={Search}

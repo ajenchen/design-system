@@ -109,7 +109,10 @@ export interface TimePickerProps
   extends TimeFormatOptions,
     Omit<
       React.HTMLAttributes<HTMLDivElement>,
-      'onChange' | 'placeholder'
+      // 'defaultValue' 明確排除:本元件 controlled-only(time-picker.spec.md「Controlled-only
+      // rationale」),不支援 uncontrolled 初始值 — 若不 Omit,HTMLAttributes 會讓 defaultValue
+      // 通過型別卻靜默無效(不初始化 draft),與 spec contract 矛盾。
+      'onChange' | 'placeholder' | 'defaultValue'
     > {
   mode?: FieldMode
   /** Field chrome variant. Default = context.variant ?? 'default'. Per-prop override. */
@@ -262,11 +265,12 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
       if (!showDisplayEndIcon) {
         // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
-        if (!value) return <span {...props} className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
-        return <span {...props} className={cn(fieldDisplayTextClass(size), 'truncate', className)}>{formatTime(value, { formatOptions, locale })}</span>
+        if (!value) return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
+        return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), 'truncate', className)}>{formatTime(value, { formatOptions, locale })}</span>
       }
       return (
         <div
+          ref={ref}
           {...props}
           className={cn(fieldWrapperStyles({ mode: 'view', variant, size }), className)}
           data-field-mode="view"
@@ -287,6 +291,9 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
     if (!isEditable) {
       return (
         <div
+          // 2026-07-16 DA3 fix:非-edit 分支補 ref 轉發(forwardRef<HTMLDivElement> 原本只有 edit
+          // 與 bare-span view 接 ref,readonly/disabled 及 endIcon-view div 靜默丟失 — 同 view props 漏接)。
+          ref={ref}
           className={cn(fieldWrapperStyles({ mode: resolvedMode, variant: variant, size }), className)}
           data-field-mode={resolvedMode}
           aria-disabled={resolvedMode === 'disabled' ? true : undefined}

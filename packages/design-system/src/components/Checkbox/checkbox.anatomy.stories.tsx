@@ -297,8 +297,8 @@ const InspectorInner = () => {
                 size={size}
                 checked={checkedState === 'checked' ? true : checkedState === 'indeterminate' ? 'indeterminate' : false}
                 disabled={interaction === 'disabled'}
-                label="Label text"
-                description={withDescription ? '次要說明文字,給使用者更多 context' : undefined}
+                label="接收每週專案摘要"
+                description={withDescription ? '每週一自動寄送專案進度與待辦事項摘要到你的信箱' : undefined}
               />
             ) : (
               <Checkbox
@@ -496,7 +496,7 @@ export const SizeMatrix = {
                   <Td><Checkbox size={sz} defaultChecked /></Td>
                   <Td>
                     {/* 公開 API:`<Checkbox label>` 內部自動包 SelectionItem + wire id/htmlFor(selection-item.spec.md 禁裸用) */}
-                    <Checkbox size={sz} defaultChecked label="Label text" />
+                    <Checkbox size={sz} defaultChecked label="接收通知" />
                   </Td>
                 </tr>
               ))}

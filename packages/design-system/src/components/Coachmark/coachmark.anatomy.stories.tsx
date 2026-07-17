@@ -126,9 +126,9 @@ export const Inspector: Story = {
             </div>
             <Coachmark
               open
-              image={hasImage ? <MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Sparkles} label="功能介紹" /> : undefined}
-              title="試試新功能"
-              description="這是 Coachmark 的說明文字;多行內容會自動換行並保持 leading 一致。"
+              image={hasImage ? <MediaGradient from="var(--color-indigo-6)" to="var(--color-purple-6)" icon={Sparkles} label="AI 續寫" /> : undefined}
+              title="讓 AI 幫你續寫草稿"
+              description="選取一段文字,AI 會依前後文續寫並保留你的語氣;不滿意可以一鍵重新產生。"
               step={hasStep ? { current: 2, total: 3 } : undefined}
               onPrev={hasPrev ? () => {} : undefined}
               onSkip={hasSkip ? () => {} : undefined}
@@ -137,7 +137,7 @@ export const Inspector: Story = {
               side="right"
               align="start"
             >
-              <Button variant="primary" size="sm" startIcon={Sparkles}>Anchor</Button>
+              <Button variant="primary" size="sm" startIcon={Sparkles}>AI 續寫</Button>
             </Coachmark>
           </div>
         </div>

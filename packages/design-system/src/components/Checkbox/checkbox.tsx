@@ -7,6 +7,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import type { FieldMode, FieldVariant } from "@/design-system/components/Field/field-types"
 import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldSize } from "@/design-system/components/Field/field-context"
+import { useControllable } from "@/design-system/hooks/use-controllable"
 import { fieldWrapperStyles } from "@/design-system/components/Field/field-wrapper"
 import { SelectionItem } from "@/design-system/components/SelectionControl/selection-item"
 import { BooleanValueIcon } from "@/design-system/components/SelectionControl/boolean-value"
@@ -80,8 +81,13 @@ const checkStrokeWidth: Record<string, number> = { sm: 3, md: 3, lg: 2.5 }
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
+// asChild / children 從公開型別 Omit(2026-07-17 d9i6):Checkbox 有**固定 anatomy** —
+// 內部恆渲染 Indicator(Check / Minus 兩子節點),非 Slot host。若保留 Radix `asChild`,
+// consumer 傳入的元素會被 Radix Slot `React.Children.only` 因多子節點在執行期拋錯(失敗記憶索引
+// 已 codify 此 asChild 多子節點 bug class);`children` 同理會被固定 Indicator 覆蓋。需自訂佈局
+// 請用 `label` / `description` / `icon` / `avatar` 一級 props(內部自動包 SelectionItem)。
 export interface CheckboxProps
-  extends React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>,
+  extends Omit<React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>, 'asChild' | 'children'>,
     VariantProps<typeof checkboxVariants> {
   /**
    * Inline label。提供時 Checkbox 自動透過 SelectionItem 包裝，
@@ -143,6 +149,13 @@ const Checkbox = React.forwardRef<
       mode,
       // chrome 對 Checkbox 主體無視覺影響(無 input wrapper)— 接收純為 prop 一致性;destructure 防 leak 到 DOM。
       variant: _chrome,
+      // controllable checked triplet(2026-07-17 d26i0):於 wrapper 層取出,交由 useControllable 持有
+      // resolved 值,供 edit / view / readonly 三分支共用。原本 view / readonly 分支各自讀 raw prop →
+      // uncontrolled(只傳 defaultChecked)在 edit 態 toggle 後切 mode 會丟失目前值(Radix 內部狀態
+      // wrapper 讀不到)。移出 props 後 edit 主路徑改由 checked={resolvedChecked} 受控(見下方 rootEl)。
+      checked: checkedProp,
+      defaultChecked: defaultCheckedProp,
+      onCheckedChange,
       id: idProp,
       ...props
     },
@@ -194,27 +207,65 @@ const Checkbox = React.forwardRef<
 
     // 2026-07-04 修:view / readonly-in-Field 分支的裸 span/div 原丟棄剩餘 props
     // (id/data-*/aria-*)且不轉發 forwardRef ref → consumer 的 aria-label 等靜默失效。
-    // 抽出 Radix 專屬 non-DOM props,其餘 DOM props 於兩分支 spread 轉發(與 Switch/
-    // RadioGroup 同修);edit 主路徑不受影響(rootEl 仍 spread 完整 props)。
+    // 抽出 Radix 專屬 form props(required/name/value 不可落到裸 span/div),其餘 DOM props 於兩分支
+    // spread 轉發(與 Switch/RadioGroup 同修);edit 主路徑不受影響(rootEl 仍 spread 完整 props)。
+    // (checked/defaultChecked/onCheckedChange 已於上方 top-level destructure 取出交 useControllable;
+    //  asChild/children 已從 CheckboxProps 型別 Omit — 固定 anatomy 非 Slot host,見型別註解。)
     const {
-      checked: checkedProp,
-      defaultChecked: defaultCheckedProp,
-      onCheckedChange: _onCheckedChange,
       required: _required,
       name: _name,
       value: _value,
-      asChild: _asChild,
-      children: _children,
       ...restDomProps
     } = props
+
+    // ── Resolved checked SSOT(controlled / uncontrolled dual-mode,2026-07-17 d26i0)──────────
+    // 對齊 Input / Textarea 既有 canonical(field-controls.spec.md「有值判定」:useControllable 內部
+    // resolved value + form.reset bridge)。修 view / readonly 分支原各自讀 raw prop 導致「uncontrolled
+    // 切 mode 丟失目前值」的 dual-mode 缺口。controlled(傳 checked)時 useControllable 純 passthrough,
+    // edit 行為 Δ=0。
+    const isControlled = checkedProp !== undefined
+    const [resolvedChecked, setResolvedChecked] = useControllable<boolean | 'indeterminate'>({
+      value: checkedProp,
+      defaultValue: defaultCheckedProp ?? false,
+    })
+
+    // form.reset() bridge(uncontrolled only):wrapper 取得 controllable 主導後,HTML 標準 reset 不發
+    // 變更事件 → 手動把 resolvedChecked 歸位 defaultChecked(對齊 input.tsx 同名 bridge)。keyed on
+    // resolvedMode:切回 edit 重掛 native Root 時 effect 重跑補掛 listener;view / readonly(Root
+    // unmount)時 innerRef 為 null → early return 不掛。
+    const innerRef = React.useRef<HTMLButtonElement | null>(null)
+    React.useEffect(() => {
+      if (isControlled) return
+      const form = innerRef.current?.form
+      if (!form) return
+      const handleReset = () => setResolvedChecked(defaultCheckedProp ?? false)
+      form.addEventListener('reset', handleReset)
+      return () => form.removeEventListener('reset', handleReset)
+    }, [isControlled, resolvedMode, defaultCheckedProp, setResolvedChecked])
+    // Merge refs(input.tsx setRef idiom):innerRef 供 reset bridge 取 form,同時轉發 forwardRef ref。
+    const setRef = React.useCallback((el: HTMLButtonElement | null) => {
+      innerRef.current = el
+      if (typeof ref === 'function') ref(el)
+      else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el
+    }, [ref])
 
     // ── mode='view'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
     // 純展示模式:無互動 primitive、渲染 Check / X icon(true=勾 / false=叉,中性 foreground 色)。
     // boolean 值展示符號 SSOT = SelectionControl/boolean-value.tsx(勾/叉 icon + 中性色 + M22 世界級對照)。取代 BooleanDisplay。
     if (resolvedMode === 'view') {
-      const isChecked = checkedProp === true
+      const isChecked = resolvedChecked === true
+      // a11y(2026-07-17 d10i2):BooleanValueIcon 帶 aria-hidden → 裸 span 在 a11y tree 無名,
+      // 布林值對螢幕閱讀器完全消失。給 view 容器 role="img" + aria-label 承載值語意(對齊 MUI X
+      // DataGrid boolean cell 的 icon role/label 世界級做法);consumer 若自帶 aria-label 則優先。
+      const viewAriaLabel = (restDomProps as { 'aria-label'?: string })['aria-label'] ?? (isChecked ? '是' : '否')
       return (
-        <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="inline-flex">
+        <span
+          {...restDomProps}
+          ref={ref as React.Ref<HTMLSpanElement>}
+          role="img"
+          aria-label={viewAriaLabel}
+          className="inline-flex"
+        >
           <BooleanValueIcon checked={isChecked} size={resolvedBoxSize} />
         </span>
       )
@@ -229,7 +280,7 @@ const Checkbox = React.forwardRef<
     // Scope:僅 Field 內且無 inline label(FieldLabel 接管 label 的表單欄位場景);
     // standalone readOnly(settings list / SelectionItem row)維持原樣鎖互動不變。
     if (effectiveReadOnly && insideField && effectiveLabel == null) {
-      const isChecked = (checkedProp ?? defaultCheckedProp) === true
+      const isChecked = resolvedChecked === true
       const boxSize = resolvedBoxSize
       return (
         <div
@@ -256,8 +307,17 @@ const Checkbox = React.forwardRef<
     const rootEl = (
       <CheckboxPrimitive.Root
         id={inputId}
-        ref={ref}
+        ref={setRef}
         disabled={effectiveDisabled}
+        // controllable checked SSOT(2026-07-17 d26i0):Root 受 wrapper resolvedChecked 主導,
+        // onCheckedChange 先同步 wrapper 內部 state 再 forward consumer → uncontrolled(只傳
+        // defaultChecked)toggle 後切 mode(view / readonly)仍保留目前值。controlled(傳 checked)
+        // 時 useControllable 純 passthrough,edit 行為 Δ=0。
+        checked={resolvedChecked}
+        onCheckedChange={(next) => {
+          setResolvedChecked(next)
+          onCheckedChange?.(next)
+        }}
         aria-readonly={effectiveReadOnly || undefined}
         data-readonly={effectiveReadOnly || undefined}
         tabIndex={effectiveReadOnly ? -1 : undefined}

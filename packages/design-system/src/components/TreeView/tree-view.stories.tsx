@@ -137,10 +137,10 @@ export const LongLabel: Story = {
       <div className="flex flex-col gap-2">
         <span className="text-caption font-medium text-fg-muted">預設 truncate</span>
         <div className="w-[220px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
-          <TreeView aria-label="truncate test" defaultExpandedIds={['proj']}>
-            <TreeItem id="proj" icon={Folder} label="這是一個很長的專案名稱會被截斷">
-              <TreeItem id="f1" icon={FileText} label="這是一個很長的檔案名稱也會被截斷.tsx" />
-              <TreeItem id="f2" icon={FileText} label="短檔名.ts" />
+          <TreeView aria-label="產品設計檔案樹（截斷）" defaultExpandedIds={['proj']}>
+            <TreeItem id="proj" icon={Folder} label="2026 產品品牌識別設計提案">
+              <TreeItem id="f1" icon={FileText} label="首頁主視覺設計稿-桌面版-v3.fig" />
+              <TreeItem id="f2" icon={FileText} label="logo.svg" />
             </TreeItem>
           </TreeView>
         </div>
@@ -148,10 +148,10 @@ export const LongLabel: Story = {
       <div className="flex flex-col gap-2">
         <span className="text-caption font-medium text-fg-muted">label 換行（移除 truncate）</span>
         <div className="w-[220px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
-          <TreeView aria-label="wrap test" defaultExpandedIds={['proj2']}>
-            <TreeItem id="proj2" icon={Folder} label={<span className="break-words whitespace-normal">這是一個很長的專案名稱會自然換行到下一行</span>}>
-              <TreeItem id="f3" icon={FileText} label={<span className="break-words whitespace-normal">這是一個很長的檔案名稱也會自然換行到下一行顯示完整內容.tsx</span>} />
-              <TreeItem id="f4" icon={FileText} label="短檔名.ts" />
+          <TreeView aria-label="產品設計檔案樹（換行）" defaultExpandedIds={['proj2']}>
+            <TreeItem id="proj2" icon={Folder} label={<span className="break-words whitespace-normal">2026 產品品牌識別設計提案完整版</span>}>
+              <TreeItem id="f3" icon={FileText} label={<span className="break-words whitespace-normal">首頁主視覺設計稿-桌面版與行動版對照-v3-最終定稿.fig</span>} />
+              <TreeItem id="f4" icon={FileText} label="logo.svg" />
             </TreeItem>
           </TreeView>
         </div>
@@ -263,38 +263,4 @@ export const DragAndDrop: Story = {
 }
 
 // @story-trait-rationale: AllSizes retired per F migration(2026-05-15)— anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。
-// ── Indent 結構對齊驗證 ─────────────────────────────────────────────────
-
-export const IndentAlignment: Story = {
-  name: '多層縮排結構',
-  render: () => (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h3 className="text-h6 font-semibold">indentStep = chevronSize + gap-2</h3>
-        <p className="text-caption text-fg-muted max-w-xl">
-          子 chevron 應對齊父 icon 的起始位置,子 icon 應對齊父 label 的起始位置。
-          這裡混合有 / 無 children 的 node 驗證 chevron placeholder 佔位(leaf 無條件留等寬空白);
-          icon 無自動佔位——無 icon 的 node(README.md / public)label 起點前移,屬「Icon 使用策略」
-          的混用反例,此處僅作 indent 結構驗證。
-        </p>
-      </div>
-      <div className="w-[300px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
-        <TreeView aria-label="專案檔案樹" defaultExpandedIds={['src', 'components', 'public']}>
-          <TreeItem id="src" icon={Folder} label="src">
-            <TreeItem id="app" icon={FileCode} label="App.tsx" />
-            <TreeItem id="readme" label="README.md" />
-          </TreeItem>
-          <TreeItem id="public" label="public">
-            <TreeItem id="favicon" icon={Image} label="favicon.ico" />
-          </TreeItem>
-          <TreeItem id="components" icon={Folder} label="components">
-            <TreeItem id="button" icon={Folder} label="Button">
-              <TreeItem id="button-tsx" icon={FileCode} label="Button.tsx" />
-              <TreeItem id="button-test" label="Button.test.tsx" />
-            </TreeItem>
-          </TreeItem>
-        </TreeView>
-      </div>
-    </div>
-  ),
-}
+// @story-trait-rationale: IndentAlignment retired per Dim 24 dedup(2026-07-17)— indentStep=chevronSize+gap-2 幾何三重重複(showcase / anatomy IndentMatrix / principles IndentRule)。geometry 歸 anatomy.stories.tsx IndentMatrix、縮排原則 + icon 混用反例(唯一在此的內容)已遷入 principles.stories.tsx IndentRule;showcase 層不重複教 geometry(同 AllSizes / States 退役先例)。

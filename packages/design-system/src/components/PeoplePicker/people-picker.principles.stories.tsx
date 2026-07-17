@@ -79,6 +79,7 @@ export const UsageGuidance: Story = {
               value={assignee}
               onChange={(v) => setAssignee(Array.isArray(v) ? v[0] : v)}
               people={team}
+              aria-label="task 負責人"
             />
           </div>
         </Rule>
@@ -115,6 +116,7 @@ export const UsageGuidance: Story = {
             ]}
             value={tags}
             onChange={setTags}
+            aria-label="技術 stack(多選 Combobox)"
           />
           <Label>↑ 技術 stack 是分類多選,不是人員,用 Combobox</Label>
         </Rule>
@@ -140,6 +142,7 @@ export const SingleVsMultiRule: Story = {
             value={assignee}
             onChange={(v) => setAssignee(Array.isArray(v) ? v[0] : v)}
             people={team}
+            aria-label="task 負責人(單選)"
           />
           <Label>↑ 指派 task：assignee 通常一人</Label>
         </Rule>
@@ -152,6 +155,7 @@ export const SingleVsMultiRule: Story = {
             value={reviewers}
             onChange={(v) => setReviewers(Array.isArray(v) ? v : [v])}
             people={team}
+            aria-label="PR reviewers(多選)"
           />
           <Label>↑ PR reviewers：可選多人,已選 {reviewers.length} 人</Label>
         </Rule>
@@ -177,7 +181,7 @@ export const EmptyStateRule: Story = {
         title="edit 模式 — 未選時顯示「請選擇人員」佔位提示"
         note="跟 Select / Combobox 的 placeholder 行為一致。不用半形連字號,因為 edit mode 是可操作的"
       >
-        <PeoplePicker value={null} onChange={() => {}} people={team} />
+        <PeoplePicker value={null} onChange={() => {}} people={team} aria-label="指派人員(空值 placeholder demo)" />
       </Rule>
 
       <Rule

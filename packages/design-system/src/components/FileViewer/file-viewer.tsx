@@ -775,6 +775,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
   allowDownload = true,
   onDownload,
   labels: labelsOverride,
+  className,
   ...props
 }, ref) {
   const labels = React.useMemo(

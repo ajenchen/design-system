@@ -1,9 +1,10 @@
 // @anatomy-rationale:
-//   SizeMatrix represented as RowHeightMatrix per row-density semantics —
-//     DataTable 的 size 主軸是 row-height tier(compact / cozy /
-//     comfortable),語意對應「掃描 vs 閱讀」資料密度;lg 同時連動字級放大
-//     (sm/md → text-body / lg → text-body-lg,對齊 Field,SSOT fieldDisplayTextClass)。命名沿用
-//     Linear / Notion / Airtable 業界共識(row density,非 component size)。
+//   SizeMatrix 以 RowHeightMatrix 呈現 —— DataTable 的 size(sm / md / lg)主要
+//     體現在 row height 這個結構決策上(spec.md「Size 不等於 density」:size 是
+//     這張表格「需要多緊湊」的結構決策,density 是全域使用者偏好,兩者不同軸,
+//     不套用 compact / cozy / comfortable 等外部密度命名)。lg 同時連動字級放大
+//     (sm/md → text-body / lg → text-body-lg,對齊 Field,SSOT fieldDisplayTextClass)。
+//     @benchmark-unverified: Linear / Notion / Airtable 的 row-density 控件僅為外部近似參照,非 DS 命名依據。
 //   StateBehavior covered by ColorMatrix「Row 狀態色彩」段(default / hover /
 //     selected / disabled)+ Features「排序」段。Row 互動是 row-level
 //     而非元件 level,集中於 Row 色彩展示更直觀。
@@ -463,7 +464,7 @@ export const EmptyState: Story = {
     return (
       <div>
         <H3>無資料時消費 Empty primitive</H3>
-        <Desc>DataTable 的 empty state 走共用 `Empty` 元件——保持跟其他空狀態(SelectMenu、Combobox、Page section)視覺一致。Consumer 不需自訂,自動顯示標準空狀態。</Desc>
+        <Desc>DataTable 的 empty state 走共用 `Empty` 元件——保持跟其他空狀態(SelectMenu、Combobox、Page section)視覺一致。未傳 `emptyState` 時顯示下方的標準 fallback;正式產品應傳 `emptyState` 以業務語言說明「缺什麼資料 + 下一步」,避免抽象的「沒有資料」(對齊 Empty 文案準則)。</Desc>
         <DataTable columns={columns} data={[]} height="auto" />
       </div>
     )

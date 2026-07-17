@@ -102,6 +102,23 @@ const VARIANT_DESC: Record<VariantKey, string> = {
   link: '外觀像連結的按鈕，不用於操作列',
 }
 
+// variant 名稱只放在左側 mono 標籤欄；按鈕本體用真實動作文案（禁 variant 名當 label）
+const VARIANT_LABEL: Record<VariantKey, string> = {
+  primary: '新增任務',
+  secondary: '儲存變更',
+  tertiary: '取消',
+  text: '略過此步',
+  link: '查看說明',
+}
+
+const DANGER_LABEL: Record<VariantKey, string> = {
+  primary: '刪除專案',
+  secondary: '移除成員',
+  tertiary: '清除紀錄',
+  text: '撤銷授權',
+  link: '刪除',
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Shared UI Components
 
@@ -224,7 +241,8 @@ export const Overview = {
         <div className="flex flex-col gap-2">
           {VARIANTS.map((v) => (
             <div key={v} className="flex items-center gap-4">
-              <div className="w-28 shrink-0"><Button variant={v} size="sm" startIcon={Plus}>{v}</Button></div>
+              <span className="w-16 shrink-0 text-[11px] font-mono text-fg-muted">{v}</span>
+              <div className="w-28 shrink-0"><Button variant={v} size="sm" startIcon={Plus}>{VARIANT_LABEL[v]}</Button></div>
               <span className="text-caption text-fg-secondary">{VARIANT_DESC[v]}</span>
             </div>
           ))}
@@ -232,7 +250,8 @@ export const Overview = {
             <span className="text-[11px] text-fg-muted font-medium">+ danger prop</span>
             {DANGER_VARIANTS.map((v) => (
               <div key={v} className="flex items-center gap-4">
-                <div className="w-28 shrink-0"><Button variant={v} danger size="sm" startIcon={Trash2}>{v}</Button></div>
+                <span className="w-16 shrink-0 text-[11px] font-mono text-fg-muted">{v}</span>
+                <div className="w-28 shrink-0"><Button variant={v} danger size="sm" startIcon={Trash2}>{DANGER_LABEL[v]}</Button></div>
                 <span className="text-caption text-fg-secondary">
                   {v === 'primary' ? '立即不可逆——點下去就執行' : v === 'secondary' ? '有警示意圖，後面還有確認' : '低強調的危險操作'}
                 </span>
@@ -503,7 +522,7 @@ export const ColorMatrix = {
                 <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{v}</td>
                 {STATES.map((st) => (
                   <td key={st} className="p-3 border-b border-divider align-top min-w-[160px]">
-                    <Button variant={v} size="sm" startIcon={Plus} disabled={st === 'disabled'}>{v}</Button>
+                    <Button variant={v} size="sm" startIcon={Plus} disabled={st === 'disabled'}>{VARIANT_LABEL[v]}</Button>
                     <TokenAnnotation colors={TOKEN_MAP[v][st]} />
                   </td>
                 ))}
@@ -523,7 +542,7 @@ export const ColorMatrix = {
                   <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top">{v} + danger</td>
                   {STATES.map((st) => (
                     <td key={st} className="p-3 border-b border-divider align-top min-w-[160px]">
-                      <Button variant={v} danger size="sm" startIcon={Trash2} disabled={st === 'disabled'}>{v}</Button>
+                      <Button variant={v} danger size="sm" startIcon={Trash2} disabled={st === 'disabled'}>{DANGER_LABEL[v]}</Button>
                       <TokenAnnotation colors={DANGER_MAP[v]![st]} />
                     </td>
                   ))}
@@ -612,10 +631,10 @@ export const SizeMatrix = {
                 <tr key={v}>
                   <Td mono>{v}</Td>
                   {SIZES.map((sz) => (
-                    <Td key={sz}><Button variant={v} size={sz} startIcon={Plus}>{v}</Button></Td>
+                    <Td key={sz}><Button variant={v} size={sz} startIcon={Plus}>{VARIANT_LABEL[v]}</Button></Td>
                   ))}
                   {SIZES.map((sz) => (
-                    <Td key={`io-${sz}`}><Button variant={v} size={sz} iconOnly startIcon={Plus} aria-label={v} /></Td>
+                    <Td key={`io-${sz}`}><Button variant={v} size={sz} iconOnly startIcon={Plus} aria-label={VARIANT_LABEL[v]} /></Td>
                   ))}
                 </tr>
               ))}
@@ -661,7 +680,7 @@ export const StateBehavior = {
         <div className="flex flex-wrap gap-3">
           {VARIANTS.map((v) => (
             <div key={v} className="flex flex-col items-center gap-1">
-              <Button variant={v} disabled startIcon={Plus}>{v}</Button>
+              <Button variant={v} disabled startIcon={Plus}>{VARIANT_LABEL[v]}</Button>
               <span className="text-[10px] text-fg-muted">{v}</span>
             </div>
           ))}

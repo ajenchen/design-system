@@ -269,27 +269,42 @@ export const ContentRule: Story = {
     <div>
       <Rule
         title='✅ 可放 — 文字說明、簡單表單欄位'
-        note='Accordion 適合承載閱讀性內容或輕量輸入(e.g. 進階選項的文字欄位)。'
+        note='Accordion 適合承載閱讀性內容或輕量輸入(e.g. 進階選項的文字欄位)。多段獨立設定各自收合(type="multiple"),不是單一 item——單一區塊該用 details(見「單一項目不用 Accordion」)。'
       >
-        <Accordion type='single' collapsible>
-          <AccordionItem value='form'>
-            <AccordionTrigger>進階選項</AccordionTrigger>
+        <Accordion type='multiple'>
+          <AccordionItem value='deploy'>
+            <AccordionTrigger>進階部署設定</AccordionTrigger>
             <AccordionContent>
               <div className='flex flex-col gap-3'>
                 <div className='flex flex-col gap-1'>
-                  <label className='text-body text-foreground'>專案識別碼</label>
+                  <label htmlFor='adv-project-id' className='text-body text-foreground'>專案識別碼</label>
                   <input
+                    id='adv-project-id'
                     className='h-field-md border border-border rounded-md px-3 text-body'
                     placeholder='例:Q2-RELEASE'
                   />
                 </div>
                 <div className='flex flex-col gap-1'>
-                  <label className='text-body text-foreground'>自訂網域</label>
+                  <label htmlFor='adv-custom-domain' className='text-body text-foreground'>自訂網域</label>
                   <input
+                    id='adv-custom-domain'
                     className='h-field-md border border-border rounded-md px-3 text-body'
                     placeholder='your-team.example.com'
                   />
                 </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value='seo'>
+            <AccordionTrigger>SEO 與中繼資料</AccordionTrigger>
+            <AccordionContent>
+              <div className='flex flex-col gap-1'>
+                <label htmlFor='adv-page-title' className='text-body text-foreground'>頁面標題</label>
+                <input
+                  id='adv-page-title'
+                  className='h-field-md border border-border rounded-md px-3 text-body'
+                  placeholder='顯示於瀏覽器分頁與搜尋結果'
+                />
               </div>
             </AccordionContent>
           </AccordionItem>

@@ -649,12 +649,33 @@ function DraggableHeaderCell({
     : dropIndicatorSide === 'after'
     ? dropIndicatorColumn.pseudoAfter
     : ''
+  // dnd-kit KeyboardSensor 的 activator = listeners.onKeyDown,掛在整個 header cell 上(column
+  // 無獨立 activator node,不像 row drag 的 button-only handle)。巢狀互動 descendant(more-menu
+  // 按鈕 / resize separator / 排序 chevron)的 Enter/Space 冒泡到此 → dnd-kit preventDefault 啟動
+  // 欄位拖曳,吃掉按鈕原生啟動。包一層 guard:事件來自互動 descendant(非 header cell 本身)時
+  // 交回原生,不啟動拖曳。對齊 dnd-kit「activator node 排除互動 descendant」idiom。
+  const rawListeners = draggable.listeners as Record<string, ((e: React.SyntheticEvent) => void) | undefined> | undefined
+  const guardedListeners: Record<string, unknown> | undefined = rawListeners
+    ? {
+        ...rawListeners,
+        onKeyDown: (e: React.KeyboardEvent) => {
+          const target = e.target as HTMLElement
+          if (
+            target !== e.currentTarget &&
+            target.closest('button, a, input, select, textarea, [role="menuitem"], [role="separator"]')
+          ) {
+            return
+          }
+          rawListeners.onKeyDown?.(e)
+        },
+      }
+    : rawListeners
   return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
     ref: setRefs,
     style: { ...(childProps.style ?? {}), ...dragStyle },
     'data-column-id': id,
     'data-column-locked': isLocked || undefined,
-    ...(disabled ? {} : { ...draggableAttrs, ...(draggable.listeners as unknown as Record<string, unknown>) }),
+    ...(disabled ? {} : { ...draggableAttrs, ...(guardedListeners ?? {}) }),
     // 2026-05-06 v14.9 cursor canonical(對齊 Notion / Jira):
     // **idle hover NOT 顯 cursor-grab** — header click 觸發 sort,grab cursor 會誤導 user 以為「點 = 拖」;
     // **drag activation 後**(isDragging=true,過 8px activationConstraint)才顯 cursor-grabbing。
@@ -1824,7 +1845,7 @@ function DataTableInner<TData>(
         } : undefined}
       >
         {/* Issue 9 cell error(2026-05-10):有 error → cell 內外結構切 flex-col,
-            上 row 渲既有 nested + content,下 row 渲 error message 14px text-error。
+            上 row 渲既有 nested + content,下 row 渲 error message `text-body text-error`。
             無 error 時走原 flex-row(backward-compat 0 layout shift)。 */}
         {hasCellError ? (
           <span className="flex flex-col self-stretch w-full min-w-0 gap-1">
@@ -2286,16 +2307,40 @@ function DataTableInner<TData>(
           const colOptIn = colMeta?.resizable !== false
           const isResizable = enableColumnResize && !isSystemColumn(colId) && colOptIn
           const isResizing = header.column.getIsResizing?.()
+          // 鍵盤 resize(WAI-ARIA window-splitter):方向鍵調整欄寬,公開目前值 + 下限。
+          // effectiveMinWidth 對齊 drag 路徑(resolveColumnSizing minSize),step 16px。
+          const effectiveMinWidth = header.column.columnDef.minSize ?? MIN_COLUMN_WIDTH
+          const currentWidth = Math.round(header.column.getSize())
+          const RESIZE_KEY_STEP = 16
           // H2: 不論 showDivider,只要 isResizable 就 render hot zone(panel boundary col 仍可拖)
           if (!showDivider && !isResizable) return null
           return (
             <span
               role={isResizable ? 'separator' : undefined}
               aria-orientation={isResizable ? 'vertical' : undefined}
-              aria-label={isResizable ? '拖曳調整欄寬' : undefined}
+              aria-label={isResizable ? '調整欄寬' : undefined}
+              // 鍵盤可操作 separator(WAI-ARIA window-splitter):focusable + 方向鍵調整 +
+              // 公開目前寬度 / 下限。aria-valuetext 給 SR px 值(避免無 valuemax 時被誤讀成百分比)。
+              tabIndex={isResizable ? 0 : undefined}
+              aria-valuenow={isResizable ? currentWidth : undefined}
+              aria-valuemin={isResizable ? effectiveMinWidth : undefined}
+              aria-valuetext={isResizable ? `${currentWidth}px` : undefined}
+              onKeyDown={isResizable ? (e: React.KeyboardEvent<HTMLSpanElement>) => {
+                let next: number | null = null
+                if (e.key === 'ArrowLeft') next = Math.max(effectiveMinWidth, currentWidth - RESIZE_KEY_STEP)
+                else if (e.key === 'ArrowRight') next = currentWidth + RESIZE_KEY_STEP
+                else if (e.key === 'Home') next = effectiveMinWidth
+                if (next == null) return
+                // stopPropagation:不讓方向鍵冒泡到 header 排序 / 欄位拖曳 keyboard listener。
+                e.preventDefault()
+                e.stopPropagation()
+                table.setColumnSizing((prev) => ({ ...prev, [colId]: next as number }))
+                // onColumnResize 由 columnSizing useEffect 自動 fire(非 drag 路徑不經 isResizingColumn)。
+              } : undefined}
               className={cn(
                 'group/resize absolute top-0 bottom-0 right-0 -mr-[3px] w-[7px]',
                 isResizable && 'cursor-col-resize select-none',
+                isResizable && 'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
               )}
               // 2026-05-12 fix v2(user 抓 R3 stopPropagation 沒生效):dnd-kit PointerSensor
               // 監聽 `pointerdown`,我前一輪只 stop `onMouseDown` → pointerdown 仍冒泡 →
@@ -2692,12 +2737,19 @@ function DataTableInner<TData>(
           // Center body 同時擁有 H + V scroll;maxHeight 限制讓 H scrollbar 落在 visible 底部
           data-datatable-hscroll
           data-datatable-panel="center"
+          // a11y(scrollable-region-focusable,對齊 DS ScrollArea Viewport canonical):唯讀表格
+          // 的可捲動 body 若無任何 focusable descendant,鍵盤使用者無法捲動。read-only 模式
+          // (非 enabled / spreadsheet)outer table 也不 focusable → 這裡補 tabIndex=0 + 具名 +
+          // inset focus ring,讓鍵盤可聚焦後方向鍵捲動;互動模式已由 outer table keyboard handler
+          // + focusable cells 覆蓋,不重複加 tab stop。
+          tabIndex={enabled || spreadsheetMode ? undefined : 0}
+          aria-label={enabled || spreadsheetMode ? undefined : '表格內容,可捲動'}
           // overflow-x/y: auto — 沒 overflow 就不顯 bar。wrapper minWidth 仍 trigger H 真 overflow。
           // **不**用 scrollbar-gutter: stable — 那會永遠保留 V 軸 15px 空間,
           // content fit 時看起來像「永遠有 V 捲軸」(Image #5 bug)。
           // trade-off:V scroll 出現時 body 內側少 15px,header 不縮 → 右端微 misalign,
           // 但 content fit 視覺乾淨優先(Mac 用戶 overlay scrollbar 不可見)。
-          className="flex-1 min-w-0 overflow-x-auto overflow-y-auto"
+          className="flex-1 min-w-0 overflow-x-auto overflow-y-auto focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
           // isFillHeight:用 JS 算的 px(bodyMaxHeight),bypass CSS % 在 flex 場景的不可靠 shrink。
           // 固定 px(300px etc):直接套 height。
           style={

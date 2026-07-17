@@ -89,7 +89,7 @@ export const VisualVariants: Story = {
         <div className="flex items-center gap-6">
           <HoverCard>
             <HoverCardTrigger asChild>
-              <Button variant="tertiary" size="sm">hover 看 Card</Button>
+              <Button variant="tertiary" size="sm">Ada Chen</Button>
             </HoverCardTrigger>
             <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-4 shadow-[var(--elevation-200)]">
               <div className="w-56">
@@ -108,11 +108,13 @@ export const VisualVariants: Story = {
         <div className="flex items-center gap-6">
           <HoverCard>
             <HoverCardTrigger asChild>
-              <Button variant="tertiary" size="sm">hover 看 Tooltip 樣式</Button>
+              <Button variant="tertiary" size="sm">+3 位協作者</Button>
             </HoverCardTrigger>
             <HoverCardContent className="bg-tooltip rounded-md px-3 py-2" data-theme="dark">
-              <div className="text-caption w-56">
-                深色樣式——常見於 OverflowIndicator 顯示溢出清單(+3 more 的 hover 展開)
+              <div className="text-caption w-56 flex flex-col gap-1">
+                <span>林思妤</span>
+                <span>陳柏宇</span>
+                <span>Aisha Khan</span>
               </div>
             </HoverCardContent>
           </HoverCard>

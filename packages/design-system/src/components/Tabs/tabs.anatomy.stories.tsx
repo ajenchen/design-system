@@ -54,6 +54,7 @@ export const Overview: Story = {
               </TabsTrigger>
               <TabsTrigger value="settings" startIcon={Settings}>設定</TabsTrigger>
             </TabsList>
+            <TabsContent value="files" className="text-body text-fg-secondary">專案文件與附件清單</TabsContent>
           </Tabs>
         </div>
       </div>
@@ -213,6 +214,7 @@ export const SizeMatrix: Story = {
                     <TabsTrigger value="b">成員</TabsTrigger>
                     <TabsTrigger value="c">設定</TabsTrigger>
                   </TabsList>
+                  <TabsContent value="a" className="text-body text-fg-secondary mt-2">專案的總覽資訊（KPI、最近活動）</TabsContent>
                 </Tabs>
               </div>
             </div>
@@ -297,6 +299,7 @@ export const ColorMatrix: Story = {
               </TabsTrigger>
               <TabsTrigger value="settings" startIcon={Settings}>設定</TabsTrigger>
             </TabsList>
+            <TabsContent value="members" className="text-body text-fg-secondary mt-2">成員名單（3 人待邀請）</TabsContent>
           </Tabs>
         </div>
       </div>
@@ -319,6 +322,7 @@ export const StateBehavior: Story = {
               <TabsTrigger value="notifications">通知</TabsTrigger>
               <TabsTrigger value="settings" disabled>設定</TabsTrigger>
             </TabsList>
+            <TabsContent value="overview" className="text-body text-fg-secondary mt-2">專案的總覽資訊（KPI、最近活動）</TabsContent>
           </Tabs>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
@@ -350,6 +354,7 @@ export const OverflowMatrix: Story = {
               <TabsTrigger value="g">計費</TabsTrigger>
               <TabsTrigger value="h">安全性</TabsTrigger>
             </TabsList>
+            <TabsContent value="a" className="text-body text-fg-secondary mt-2">工作區總覽（成員、方案、近期活動）</TabsContent>
           </Tabs>
         </div>
       </div>
@@ -371,6 +376,7 @@ export const OverflowMatrix: Story = {
               <TabsTrigger value="g">計費</TabsTrigger>
               <TabsTrigger value="h">安全性</TabsTrigger>
             </TabsList>
+            <TabsContent value="a" className="text-body text-fg-secondary mt-2">工作區總覽（成員、方案、近期活動）</TabsContent>
           </Tabs>
         </div>
       </div>

@@ -190,7 +190,7 @@ export const DeclarativeAutoCollapse: Story = {
           <Breadcrumb>
             <BreadcrumbList
               items={[
-                { label: 'Long Organization Name', href: '/org' },
+                { label: 'Global Platform Infrastructure Group', href: '/org' },
                 { label: 'Product Engineering Team', href: '/team' },
                 { label: 'Design System Component Refactor Sprint 23' },
               ]}

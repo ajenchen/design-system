@@ -76,8 +76,8 @@ export const UsageGuidance: Story = {
       {/* 何時不用 / 替代元件 — 原 WhenNotToUse */}
       <div>
       <Rule
-        title="❌ readOnly 不加 aria-label"
-        note="純視覺的星星螢幕閱讀器讀不出「4.7 分」。readOnly Rating 的 aria-label 必填，描述「幾星、共幾星、幾則評論」。"
+        title="❌ standalone readOnly 不給可存取名稱"
+        note="純視覺的星星螢幕閱讀器讀不出「4.7 分」。standalone readOnly Rating 必須有可存取名稱——傳 aria-label 描述目前分數與滿分（如「平均評分 4.5 星，共 5 星」）；包在 Field 內時由 aria-labelledby 自動指向 FieldLabel，免傳 aria-label。評論數只在畫面確實顯示時才加進描述。"
       >
         <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
           <Rating value={4.5} readOnly precision="half" size="md" aria-label="平均評分 4.5 星，共 5 星" />
@@ -260,7 +260,7 @@ export const YellowStarConvention: Story = {
     <div>
       <Rule
         title="黃星 = 世界級 convention，破壞 = 破壞使用者直覺"
-        note="Amazon / Yelp / Google Reviews / Shopify / Airbnb / TripAdvisor 全部用黃星。使用者的視覺記憶已經把「黃星 = 評分」綁定——換成品牌 primary 色（藍 / 綠 / 紫）會讓使用者多花一瞬間「這是什麼？」。這一瞬間就是設計 bug。"
+        note="黃 / 金色星是星級評分最通用的視覺慣例——Amazon 商品評分、Google 地點評分都用金黃星，使用者的視覺記憶早已把「黃星 = 評分」綁定。換成品牌 primary 色（藍 / 綠 / 紫）會讓使用者多花一瞬間「這是什麼？」，這一瞬間就是設計 bug。（少數平台改用自家色：Yelp 紅星、Tripadvisor 綠色圓點 bubble——但黃 / 金星仍是跨平台最通用的星級評分色。）"
       >
         <div className="flex flex-col gap-2">
           <Rating value={4.5} readOnly precision="half" size="lg" aria-label="標準黃星" />

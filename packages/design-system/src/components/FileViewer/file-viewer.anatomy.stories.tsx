@@ -710,7 +710,7 @@ export const SizeMatrix: Story = {
               <tr>
                 <Td>Body 垂直 padding</Td>
                 <Td mono>pt-[var(--layout-space-tight)] pb-[var(--layout-space-loose)]</Td>
-                <Td>非對稱:top tight / bottom loose(對齊 layoutSpace v6 規則 4「bounded region 容器底 = loose」)</Td>
+                <Td>非對稱:top tight / bottom loose(bounded region 容器底部留白較寬鬆,內容不貼底、捲動時收尾更透氣)</Td>
               </tr>
               <tr>
                 <Td>Section 間 gap</Td>

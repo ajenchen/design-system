@@ -157,6 +157,8 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 - **嵌套 Popover**:禁止(見「禁止事項」)。
 - **Dark mode**:殼走 semantic token 自動 adapt(見 `color.spec.md`)。
 - **Density**:layout-space 鎖 `md`(header / footer padding 精簡);ui-size 繼承 page(見「定位」段)。
+- **空內容 / loading / error / validation ownership**:Popover shell **不擁有**這些狀態——由 `PopoverBody` 內的 consumer 內容層負責:空狀態放 `<Empty>`、載入放 `<Skeleton>`、錯誤放 `<Alert>`、表單驗證放 `<Field>` 的 `FieldError`。structural pattern 的職責邊界 SSOT 見 `../../patterns/overlay-surface/overlay-surface.spec.md` SurfaceBody「邊界」段(loading / error / empty 屬 consumer 內容層)。
+- **disabled ownership**:Popover 容器無 disabled 態;trigger 的 disabled 由 trigger 元件自管(`<Button disabled>`),content 內控件各自的 disabled 由該控件負責(對應 `StateBehavior` story「職責邊界」段)。
 
 ---
 
@@ -164,7 +166,7 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 
 焦點 / 鍵盤 / ARIA 行為分兩層——**DS 覆寫**(改 Radix 預設)與 **Radix 內建**(沿用)：
 
-- **開啟焦點(DS 覆寫)**：DS 以 `onOpenAutoFocus` 覆寫 Radix 預設 autofocus(見 `popover.tsx` `handlePopoverOpenAutoFocus`),開啟時把焦點落在 body 第一個可互動元素。Radix 預設會先 focus 右上 close X,DS 覆寫以避免觸發 tooltip leak(對齊 Material / Polaris「open 時 focus 落首個有意義控制」)。**注意**:若移除此 default handler,行為會回退成 Radix 預設 focus close X
+- **開啟焦點(DS 覆寫)**：DS 以 `onOpenAutoFocus` 覆寫 Radix 預設 autofocus(見 `popover.tsx` `handlePopoverOpenAutoFocus`),開啟時把焦點落在 body 第一個**表單控件**(`input` / `textarea` / `select` / `button`,排除右上 close X);查無表單控件時退回 footer 按鈕,再無則落在 content 容器(`role="dialog"`)本身。Radix 預設會先 focus 右上 close X,DS 覆寫以避免觸發 tooltip leak(對齊 Material / Polaris「open 時 focus 落首個有意義控制」;selector 與 `dialog.tsx handleOpenAutoFocus` 同一套 DS canonical)。**注意**:(1) 若移除此 default handler,行為會回退成 Radix 預設 focus close X;(2) selector 只認表單控件——body 若只含 `a[href]` / `[tabindex]` / `contenteditable` 類可聚焦內容,焦點會落在 content 容器而非該內容,consumer 需自傳 `onOpenAutoFocus` 指定要聚焦的元素 <!-- @benchmark-unverified: Material / Polaris focus-on-open pattern per frontmatter benchmark list; DS canonical selector = dialog.tsx handleOpenAutoFocus -->
 - **關閉返回(Radix 內建)**：關閉時 focus return to trigger
 - **Esc 關閉(Radix 內建)**：按 Esc 自動關閉並返回焦點
 - **Focus trap(Radix 內建,僅 modal)**：`modal={true}` 時焦點鎖在 content 內

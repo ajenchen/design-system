@@ -112,7 +112,16 @@ Consumer 無需額外處理,保留 Radix `data-state` 屬性即可。
 
 ## 邊界狀態
 
-Empty state 由 consumer 處理(無 items 則不渲染);loading 狀態由 consumer 用 `<Skeleton />` 包;disabled state 詳 `../Field/field-controls.spec.md`;本元件無 density 概念,padding 固定為 `py-4 / pb-4`(不隨 density token 變動)。**垂直留白世界級對照(2026-06-12 source-verified)**:shadcn trigger `py-4`=16px(本 DS 基底,一字不差)/ Ant Collapse header 垂直 = paddingSM 12px / MUI Accordion = minHeight 48 + content margin 12px(expanded 64/20 漸進式)/ Carbon = min-height token 模型——業界垂直節奏值域 12-16px,16px 為舒適端上緣;item 數量無內建上限與虛擬捲動(全數 render),極長清單的收納(拆頁 / 搜尋)由 consumer 內容層處理。
+Empty state 由 consumer 處理(無 items 則不渲染);loading 狀態由 consumer 用 `<Skeleton />` 包;本元件無 density 概念,padding 固定為 `py-4 / pb-4`(不隨 density token 變動)。
+
+**Disabled**(Accordion 是 composite 家族,**非 Field 家族**——disabled 行為由 Radix Accordion 提供,不走 field-controls SSOT):
+
+- **Root `disabled`**:停用整個 accordion,所有 trigger 皆不可展開 / 聚焦。
+- **AccordionItem `disabled`**:停用單一 item——Radix 將 `disabled` 設在原生 `<button>` trigger 上,故該 trigger 鍵盤 Tab / ArrowUp/Down 會**略過**(原生 disabled 不可聚焦),點擊亦無反應;視覺上 trigger 文字 + chevron 切語義 `text-fg-disabled`(非降透明度,對齊 Button variant=text)。live 展示見 anatomy `StateBehavior` 的「disabled item」段。
+
+**固定 anatomy(不支援 `asChild`)**:`AccordionTrigger` 恆渲染 `children + ChevronDown` 兩個子節點,`AccordionContent` 恆以內層 `<div className="pb-4">` 包住 children——兩者的型別皆已 `Omit<..., 'asChild'>`,**不對外開放 `asChild`**。理由:傳入會讓 Radix Slot 觸發 `React.Children.only` runtime 錯(Trigger 多子節點),或 consumer 元素無法成為 Content host(只 clone 內層 div)。需替換 host 結構時改自組 Radix Accordion。
+
+**垂直留白世界級對照(2026-06-12 source-verified)**:shadcn trigger `py-4`=16px(本 DS 基底,一字不差;[ui.shadcn.com/docs/components/accordion](https://ui.shadcn.com/docs/components/accordion))/ Ant Collapse header 垂直 = paddingSM 12px([github.com/ant-design/ant-design](https://github.com/ant-design/ant-design/tree/master/components/collapse))/ MUI Accordion = minHeight 48 + content margin 12px(expanded 64/20 漸進式;[github.com/mui/material-ui](https://github.com/mui/material-ui/tree/master/packages/mui-material/src/Accordion))/ Carbon = min-height token 模型([github.com/carbon-design-system/carbon](https://github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/Accordion))——業界垂直節奏值域 12-16px,16px 為舒適端上緣;item 數量無內建上限與虛擬捲動(全數 render),極長清單的收納(拆頁 / 搜尋)由 consumer 內容層處理。
 
 ---
 

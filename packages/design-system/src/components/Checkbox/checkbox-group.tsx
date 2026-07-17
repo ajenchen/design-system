@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import { useFieldContext } from '@/design-system/components/Field/field-context'
 
 // ── CheckboxGroupContext ────────────────────────────────────────────────────
 // 讓內部 `<Checkbox>` 知道「我在 CheckboxGroup 裡」→ 即使 Field context 也存在,
@@ -71,21 +72,31 @@ export interface CheckboxGroupProps extends React.HTMLAttributes<HTMLDivElement>
 const CHECKBOX_GROUP_CTX_VALUE = { inGroup: true } as const
 
 const CheckboxGroup = React.forwardRef<HTMLDivElement, CheckboxGroupProps>(
-  ({ className, orientation = 'vertical', ...props }, ref) => (
-    <CheckboxGroupContext.Provider value={CHECKBOX_GROUP_CTX_VALUE}>
-      <div
-        ref={ref}
-        role="group"
-        className={cn(
-          // 垂直 CheckboxGroup:zero gap(間距由 SelectionItem py 獨家擁有,見 docblock canonical)
-          // 水平:短 label 並排需水平 gap-4(label 沒有 py 擴散,需要顯式 gap)
-          orientation === 'vertical' ? 'grid' : 'flex flex-wrap gap-4',
-          className
-        )}
-        {...props}
-      />
-    </CheckboxGroupContext.Provider>
-  )
+  ({ className, orientation = 'vertical', ...props }, ref) => {
+    // Field 整合 a11y(2026-07-17 d10i1):role="group" 的 <div> 無法被 <FieldLabel htmlFor> 命名 →
+    // 自讀 fieldCtx 接 aria-labelledby / aria-describedby / aria-invalid,讓群組在 accessibility tree
+    // 有名稱、描述與錯誤狀態(對齊 RadioGroup Root 的 fieldCtx 接線,radio-group.tsx L164-166)。
+    // standalone(無 Field)時皆 undefined,consumer 經 {...props} 傳的 aria-* 照舊生效(置於 spread 前故可被覆蓋)。
+    const fieldCtx = useFieldContext()
+    return (
+      <CheckboxGroupContext.Provider value={CHECKBOX_GROUP_CTX_VALUE}>
+        <div
+          ref={ref}
+          role="group"
+          aria-labelledby={fieldCtx?.labelId}
+          aria-describedby={fieldCtx?.descriptionId}
+          aria-invalid={fieldCtx?.invalid || undefined}
+          className={cn(
+            // 垂直 CheckboxGroup:zero gap(間距由 SelectionItem py 獨家擁有,見 docblock canonical)
+            // 水平:短 label 並排需水平 gap-4(label 沒有 py 擴散,需要顯式 gap)
+            orientation === 'vertical' ? 'grid' : 'flex flex-wrap gap-4',
+            className
+          )}
+          {...props}
+        />
+      </CheckboxGroupContext.Provider>
+    )
+  }
 )
 CheckboxGroup.displayName = 'CheckboxGroup'
 // Field layout declaration:block primitive(多項堆疊)——進入 <Field> 時

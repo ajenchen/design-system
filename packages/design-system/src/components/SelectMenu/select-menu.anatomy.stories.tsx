@@ -183,7 +183,7 @@ export const Overview: Story = {
                   <Td mono>creatable</Td>
                   <Td mono>boolean</Td>
                   <Td mono>false</Td>
-                  <Td>無結果時顯示「直接使用「xxx」」option(createLabel 可自訂文案)</Td>
+                  <Td>無結果時顯示「直接使用「法務審核」」option(createLabel 可自訂文案)</Td>
                 </tr>
                 <tr>
                   <Td mono>groups</Td>
@@ -275,30 +275,48 @@ function SelectMenuInspector() {
         </div>
 
         <div>
-          <H3>浮層藍圖</H3>
+          <H3>浮層結構</H3>
           <div className="border border-divider rounded-md p-4 bg-muted">
-            <pre className="text-footnote font-mono text-fg-secondary leading-relaxed whitespace-pre">
-{`size=${size}   multiple=${multiple}   searchable=${searchable}   creatable=${creatable}
-
-┌─ Popover (bg-surface-raised · elevation-200 · rounded-lg) ──────────┐
-│ ┌─ Command ────────────────────────────────────────────────────┐    │
-│ │${searchable ? ' ┌─ CommandInput ───────────────────────────────────────┐ │' : ''}
-│ │${searchable ? ' │ [🔍] 搜尋…                                           │ │' : ''}
-│ │${searchable ? ' │ min-h = field-height(${size}) + 8px / border-b              │ │' : ''}
-│ │${searchable ? ' └─────────────────────────────────────────────────────┘ │' : ''}
-│ │ ┌─ CommandList — fit content (empty min-h=field×3+16px) ─┐  │
-│ │ │ CommandGroup (p-0 py-2)                                 │  │
-│ │ │ ▸ MenuItem size=${size} [checkbox=${multiple}] label + desc       │  │
-│ │ │ ▸ MenuItem ...                                           │  │
-│ │ └─────────────────────────────────────────────────────────┘  │
-│ ${multiple ? '│ ┌─ MenuFooter (border-t) ─────────────────────────────────┐ │' : '│'}
-│ ${multiple ? '│ │ [☐] 全部                                                │ │' : '│'}
-│ ${multiple ? '│ └─────────────────────────────────────────────────────────┘ │' : '│'}
-│ └──────────────────────────────────────────────────────────────┘    │
-└──────────────────────────────────────────────────────────────────────┘
-
-RowSizeProvider value=${size} 傳遞到所有 item slot (MenuItem / ItemIcon / ItemAvatar 自動讀)`}
-            </pre>
+            <p className="text-caption text-fg-muted mb-3">
+              size={size} · multiple={String(multiple)} · searchable={String(searchable)} · creatable={String(creatable)}
+            </p>
+            <ul className="text-footnote text-fg-secondary space-y-1 [&_ul]:mt-1 [&_ul]:ml-3 [&_ul]:space-y-1 [&_ul]:border-l [&_ul]:border-divider [&_ul]:pl-3">
+              <li>
+                <span className="font-medium text-foreground">Popover</span> — bg-surface-raised · elevation-200 · rounded-lg
+                <ul>
+                  <li>
+                    <span className="font-medium text-foreground">Command</span> — cmdk root 容器
+                    <ul>
+                      {searchable && (
+                        <li>
+                          <span className="font-medium text-foreground">CommandInput</span> — 搜尋框,min-h = field-height({size}) + 8px,底部 border-b
+                        </li>
+                      )}
+                      <li>
+                        <span className="font-medium text-foreground">CommandList</span> — 依內容撐高(空狀態 min-h = field × 3 + 16px)
+                        <ul>
+                          <li>
+                            <span className="font-medium text-foreground">CommandGroup</span> — p-0 py-2
+                            <ul>
+                              <li>MenuItem — size={size}{multiple ? ' · checkbox' : ''} · label + description</li>
+                              <li>MenuItem — 後續選項…</li>
+                            </ul>
+                          </li>
+                        </ul>
+                      </li>
+                      {multiple && (
+                        <li>
+                          <span className="font-medium text-foreground">MenuFooter</span> — border-t · 全選列(全部)
+                        </li>
+                      )}
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+            <p className="text-caption text-fg-muted mt-3">
+              RowSizeProvider value={size} 傳遞到所有 item slot(MenuItem / ItemIcon / ItemAvatar 自動讀取)
+            </p>
           </div>
         </div>
       </div>
@@ -696,12 +714,12 @@ export const StateBehavior: Story = {
           <H3>搜尋 empty state</H3>
           <Desc>
             搜尋無結果時顯示 Empty primitive,以 flex items-center justify-center + minHeight 撐高並垂直水平置中。
-            Creatable 模式會額外顯示「建立 xxx」option。
+            Creatable 模式會額外顯示「建立『林采潔』」option。
           </Desc>
           <div className="flex items-center gap-4">
             <SelectMenu options={reviewerOptions} value="" onValueChange={() => {}} searchable>
               <Button variant="tertiary" size="md">
-                點擊後搜尋不存在的字(如 "zzz")
+                點擊後搜尋清單外的名字(如「林采潔」)
               </Button>
             </SelectMenu>
           </div>

@@ -70,18 +70,27 @@ const Slider = React.forwardRef<
   // 2026-06-10 a11y:Field 內 Slider thumb(role=slider)無 accessible name(deep-audit axe 抓 aria-input-field-name)
   // → 預設接 FieldLabel(aria-labelledby),consumer ariaLabel 優先。對齊 rating/time-picker labelId 接線。
   const fieldLabelId = useFieldContext()?.labelId
+  // Degenerate-input 硬化(2026-07 deep-audit d7i20 / d8i7):value / defaultValue 傳空陣列
+  // 時,Radix 無對應值 → thumb display:none,留下沒有可操作 thumb 的空軌道。正規化為 `[min]`
+  // (min 未傳時 Radix 預設 0),保證至少一個坐落在 min 的可操作 thumb —— 對齊 spec API
+  //「value / defaultValue 必為非空陣列」契約,且不影響任何有效輸入。
+  const minValue = (props as { min?: number }).min ?? 0
+  const safeValue =
+    Array.isArray(value) && value.length === 0 ? [minValue] : value
+  const safeDefaultValue =
+    Array.isArray(defaultValue) && defaultValue.length === 0 ? [minValue] : defaultValue
   // 推導要渲染幾個 thumb:controlled 用 value,uncontrolled 用 defaultValue,
   // 都沒有時 fallback 單 thumb(Radix 預設行為)
   const thumbCount =
-    (Array.isArray(value) && value.length) ||
-    (Array.isArray(defaultValue) && defaultValue.length) ||
+    (Array.isArray(safeValue) && safeValue.length) ||
+    (Array.isArray(safeDefaultValue) && safeDefaultValue.length) ||
     1
 
   return (
     <SliderPrimitive.Root
       ref={ref}
-      value={value}
-      defaultValue={defaultValue}
+      value={safeValue}
+      defaultValue={safeDefaultValue}
       className={cn(sliderRootVariants({ size }), fieldReadonly && 'pointer-events-none', className)}
       {...props}
       disabled={(props as { disabled?: boolean }).disabled || fieldDisabled}

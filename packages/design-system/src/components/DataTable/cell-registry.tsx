@@ -65,6 +65,10 @@ export interface CellComponentProps {
   meta: Record<string, any>
   mode: CellMode
   size: CellSize
+  /** 該 cell 的 accessible name(= 欄標題)。naked Field 控件在 cell 內無 FieldLabel,
+   *  漏此名 → editor 成無名控件(axe aria-input-field-name / select-name)。由 renderCellContent
+   *  從 columnDef.header 解析後注入。對齊 AG Grid / MUI X「editor aria-label = column headerName」。 */
+  ariaLabel?: string
   autoRowHeight: boolean
   /** 該 cell 是否可編。replaces 舊 `meta._editable` 私有 flag(Phase C M1 hack 移除)。 */
   isEditable?: boolean
@@ -114,7 +118,7 @@ const sizeForInput = (size: CellSize): CellSize => size
 
 // ── Cell Components ──────────────────────────────────────────────────────────
 
-function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel, onDraft }: CellComponentProps) {
+function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel, onDraft, ariaLabel }: CellComponentProps) {
   // 2026-05-14 I9 fix(per codex+Layer A 共識):meta.maxLines opt-in line-clamp。
   // view autoRow 用 Tailwind arbitrary line-clamp 支援 N rows;edit textarea field-sizing
   // 已 auto-grow to content,natural match clamp。
@@ -135,8 +139,8 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
     // 對齊 Field family size→font SSOT(field-wrapper.tsx:60-64)。漏傳 → fallback md → lg 表格
     // 字卡 14px 跟 Select/Date 等有傳 size 的 cell 不一致(2026-06-08 user 抓 frozen string 欄字偏小)。
     return autoRowHeight
-      ? <Textarea variant="naked" mode="view" value={v} size={size} className={clampClass} />
-      : <Input variant="naked" mode="view" value={v} size={size} />
+      ? <Textarea variant="naked" mode="view" value={v} size={size} className={clampClass} aria-label={ariaLabel} />
+      : <Input variant="naked" mode="view" value={v} size={size} aria-label={ariaLabel} />
   }
   if (autoRowHeight) {
     // 2026-05-14 I8 fix(per codex verdict + user 抓「edit cell shrink」):
@@ -151,6 +155,7 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
       <Textarea
         autoFocus
         variant="naked"
+        aria-label={ariaLabel}
         size={sizeForInput(size)}
         rows={estimateRows}
         defaultValue={v}
@@ -173,6 +178,7 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
     <Input
       autoFocus
       variant="naked"
+      aria-label={ariaLabel}
       size={sizeForInput(size)}
       defaultValue={v}
       onChange={(e) => onDraft?.(e.target.value)}
@@ -182,7 +188,7 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
   )
 }
 
-function NumberCell({ value, meta, mode, size, onCommit, onCancel, onDraft }: CellComponentProps) {
+function NumberCell({ value, meta, mode, size, onCommit, onCancel, onDraft, ariaLabel }: CellComponentProps) {
   // currency 透過 columnType-aware prefix:type='currency' → 預設 '$'(可 override)
   const isCurrency = meta?.type === 'currency'
   const prefix = isCurrency ? (meta?.prefix ?? '$') : meta?.prefix
@@ -196,6 +202,7 @@ function NumberCell({ value, meta, mode, size, onCommit, onCancel, onDraft }: Ce
       <NumberInput
         variant="naked"
         mode="view"
+        aria-label={ariaLabel}
         value={value as number | null}
         // size 必傳(同 StringCell)— currency/number cell 字級隨 DataTable size 變,對齊 Field SSOT。
         size={size}
@@ -215,6 +222,7 @@ function NumberCell({ value, meta, mode, size, onCommit, onCancel, onDraft }: Ce
     <NumberInput
       autoFocus
       variant="naked"
+      aria-label={ariaLabel}
       size={sizeForInput(size)}
       value={localValue}
       onChange={(v) => { setLocalValue(v); onDraft?.(v) }}

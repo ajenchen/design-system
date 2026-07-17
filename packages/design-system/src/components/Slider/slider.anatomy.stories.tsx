@@ -62,6 +62,7 @@ export const Inspector: Story = {
     docs: { description: { story: '右側 Controls 切 props 即時 render,取代 Figma inspect。調整 `min` / `max` / `step` / `defaultValue` 看值域行為,切 `size` 看容器高度 tier(track / thumb 視覺固定)。' } },
   },
   args: {
+    'aria-label': '音量',
     defaultValue: [60],
     min: 0,
     max: 100,
@@ -130,7 +131,7 @@ export const SizeMatrix: Story = {
           {(['sm', 'md', 'lg'] as const).map(size => (
             <div key={size} className="flex items-center gap-3 border border-dashed border-divider rounded-md p-3">
               <span className="text-caption text-fg-muted font-mono w-8">{size}</span>
-              <Slider size={size} defaultValue={[50]} className="flex-1" />
+              <Slider size={size} defaultValue={[50]} aria-label="音量" className="flex-1" />
             </div>
           ))}
         </div>
@@ -149,15 +150,15 @@ export const StateBehavior: Story = {
         <div className="flex flex-col gap-3">
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Default</div>
-            <Slider defaultValue={[50]} />
+            <Slider defaultValue={[50]} aria-label="音量" />
           </div>
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Disabled</div>
-            <Slider defaultValue={[50]} disabled />
+            <Slider defaultValue={[50]} disabled aria-label="音量" />
           </div>
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Range + Disabled</div>
-            <Slider defaultValue={[20, 80]} disabled />
+            <Slider defaultValue={[20, 80]} disabled aria-label="價格區間" />
           </div>
         </div>
       </div>

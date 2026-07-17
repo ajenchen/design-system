@@ -1,4 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+// @overlay-open-skip: 本檔為 usage-guidance(設計原則)story——每個 Rule 卡片以「關閉的 trigger 按鈕」並排比較 Popover / Dialog / DropdownMenu / Tooltip 何時用;全部 defaultOpen 會讓多個 portal 疊在一起、視覺全毀。overlay 開啟狀態的視覺覆蓋由 popover.stories.tsx(展示)+ popover.anatomy.stories.tsx(Inspector defaultOpen)負責。
 import React from 'react'
 import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -217,7 +218,8 @@ export const UsageGuidance: Story = {
           <PopoverTrigger asChild>
             <Button variant="tertiary" size="sm" startIcon={Filter}>篩選</Button>
           </PopoverTrigger>
-          <PopoverContent align="start">
+          {/* naked popover(無 PopoverTitle)→ 自傳 aria-label 讓 role="dialog" 有 accessible name(popover.spec.md A11y) */}
+          <PopoverContent align="start" aria-label="篩選任務">
             <PopoverBody>
               <CheckboxGroup>
                 <Checkbox defaultChecked label="我的任務" />
@@ -255,33 +257,52 @@ export const VisualAlignmentRule: Story = {
         title="Popover 與 Dialog 共用 overlay-surface 視覺語言"
         note="bg-surface-raised / border-border / rounded-lg / elevation-200 完全一致。Header / Body / Footer 內 padding 來自 overlay-surface pattern 主檔(px-loose py-tight)。差異:(1) Popover 是 non-modal 無 overlay 遮罩,(2) Popover 鎖 layout-space=md(header 精簡);Dialog 不鎖 layout-space,全繼承 page(md page → 16 / lg page → 24)。兩者 ui-size 都繼承 page"
       >
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="tertiary">Popover</Button>
-          </PopoverTrigger>
-          <PopoverContent align="start">
-            <PopoverHeader><PopoverTitle>Header</PopoverTitle></PopoverHeader>
-            <PopoverBody><p className="text-body">Body 區域</p></PopoverBody>
-            <PopoverFooter>
-              <Button variant="tertiary" size="sm">取消</Button>
-              <Button variant="primary" size="sm">套用</Button>
-            </PopoverFooter>
-          </PopoverContent>
-        </Popover>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="tertiary">Dialog</Button>
-          </DialogTrigger>
-          <DialogContent autoHeight maxWidth="360px">
-            <DialogHeader><DialogTitle>Header</DialogTitle></DialogHeader>
-            <DialogBody><p className="text-body">Body 區域</p></DialogBody>
-            <DialogFooter>
-              <Button variant="tertiary">取消</Button>
-              <Button variant="primary">套用</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        <Label>↑ 兩個浮層視覺語言一致,consumer 切換不會產生視覺斷層</Label>
+        {/* @overlay-open-skip:視覺語言比較卡片——同一「顯示欄位」內容分別以 Popover / Dialog 呈現,證明 chrome 視覺完全一致;trigger 刻意關閉並排(見檔頭 escape),開啟態覆蓋於展示 / anatomy */}
+        <div className="flex flex-col items-start gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="tertiary">顯示欄位</Button>
+            </PopoverTrigger>
+            <PopoverContent align="start">
+              <PopoverHeader><PopoverTitle>顯示欄位</PopoverTitle></PopoverHeader>
+              <PopoverBody>
+                <CheckboxGroup>
+                  <Checkbox defaultChecked label="狀態" />
+                  <Checkbox defaultChecked label="負責人" />
+                  <Checkbox label="到期日" />
+                </CheckboxGroup>
+              </PopoverBody>
+              <PopoverFooter>
+                <Button variant="tertiary" size="sm">重設</Button>
+                <Button variant="primary" size="sm">套用</Button>
+              </PopoverFooter>
+            </PopoverContent>
+          </Popover>
+          <Label>↑ 同一內容以 Popover 呈現(non-modal 輕量浮層)</Label>
+        </div>
+        <div className="flex flex-col items-start gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="tertiary">顯示欄位</Button>
+            </DialogTrigger>
+            <DialogContent autoHeight maxWidth="360px">
+              <DialogHeader><DialogTitle>顯示欄位</DialogTitle></DialogHeader>
+              <DialogBody>
+                <CheckboxGroup>
+                  <Checkbox defaultChecked label="狀態" />
+                  <Checkbox defaultChecked label="負責人" />
+                  <Checkbox label="到期日" />
+                </CheckboxGroup>
+              </DialogBody>
+              <DialogFooter>
+                <Button variant="tertiary">重設</Button>
+                <Button variant="primary">套用</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Label>↑ 同一內容以 Dialog 呈現(modal 阻斷背景)</Label>
+        </div>
+        <Label>↑ 容器不同、chrome 視覺語言完全一致,consumer 切換不會產生視覺斷層</Label>
       </Rule>
 
       <Rule

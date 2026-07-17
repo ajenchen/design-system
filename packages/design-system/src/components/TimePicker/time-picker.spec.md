@@ -214,6 +214,7 @@ N/A — TimePicker 是純同步輸入,無 async 狀態。
 ## A11y 預設
 
 - trigger `role="combobox"`,在 `<Field>` 內時以 `aria-labelledby` 指向 field label(`fieldCtx.labelId`)
+- **Standalone(無 `<Field>` 包裹)accessible name**:trigger 無預設 `aria-label`,`<Field>` 外使用時 consumer **必須**自帶 `aria-label` 或 `aria-labelledby`,否則 `role="combobox"` 成為無名稱控件(對齊 Select / Combobox / DatePicker 同家族 standalone 約定)。DS 不為 trigger 塞泛用 fallback name(如「時間」),避免遮蔽 consumer 的具體語意(如「會議開始時間」);Field 內則自動接線無需 consumer 介入。Panel 本體(Popover dialog)另有本 DS 提供的 `aria-label="選擇時間"`,與 trigger name 職責分離
 - Panel 開啟時 trigger `aria-expanded="true"` + `aria-haspopup="dialog"`
 - 每欄 `role="listbox"`(`aria-label` 為 `hours` / `minutes` / `seconds`),item `role="option" aria-selected`
 - Screen reader 經 trigger 的 label + 內層可見值文字朗讀目前選取時間(目前值以可見 `<span>` 呈現,無額外 `aria-valuetext`)

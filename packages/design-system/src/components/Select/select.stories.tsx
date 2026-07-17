@@ -97,30 +97,10 @@ export const HugWidth: Story = {
   },
 }
 
-/* ── 顯示模式 ── */
-export const DisplayMode: Story = {
-  name: '顯示模式',
-  render: () => {
-    const [textVal, setTextVal] = React.useState('in_stock')
-    const [tagVal, setTagVal] = React.useState('in_stock')
-    return (
-      <div className="flex flex-col gap-6 max-w-xs">
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">plain（預設）</h3>
-          <p className="text-caption text-fg-muted mb-2">純文字，readonly/disabled 跟 Input 一致</p>
-          <Select options={statusOptions} value={textVal} onChange={setTextVal} />
-          <div className="mt-2"><Select mode="readonly" options={statusOptions} value={textVal} /></div>
-        </div>
-        <div>
-          <h3 className="text-body font-bold text-foreground mb-2">tag</h3>
-          <p className="text-caption text-fg-muted mb-2">Tag 標籤 + 顏色(tagVariant),readonly/disabled 用 tagPadding</p>
-          <Select display="tag" options={statusOptions} value={tagVal} onChange={setTagVal} />
-          <div className="mt-2"><Select display="tag" mode="readonly" options={statusOptions} value={tagVal} /></div>
-        </div>
-      </div>
-    )
-  },
-}
+// @story-trait-rationale: DisplayMode(plain/tag × edit/readonly)retired 2026-07-17 per audit Dim 24 —
+//   為 anatomy.stories.tsx ColorMatrix(plain/tag × edit/readonly/disabled 完整矩陣)的嚴格子集;
+//   plain vs tag 的選用原則另由 principles.stories.tsx DisplayModeRule 承載。展示版無新增約束
+//   (earn-existence 2-test 雙 NO)→ retire。display 模式 canonical home = anatomy ColorMatrix + principles DisplayModeRule。
 
 /* ── 尺寸與 Button 對齊 ── */
 export const SizeAlignment: Story = {

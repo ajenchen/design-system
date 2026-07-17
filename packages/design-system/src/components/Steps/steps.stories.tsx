@@ -1,7 +1,6 @@
 // @story-trait-rationale: AllSizes retired 2026-05-15(anatomy SizeMatrix own size matrix);
 //   AllStates retired 2026-05-17 per audit Dim 46(anatomy StateBehavior own state matrix,
 //   manual trait grid 違 story-rules.md 三層定位「展示層 = 典型使用情境,不是 trait grid」)。
-//   Disabled state 由 FocusRingCombinations 內部展示(disabled + ring combo 正交)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Check } from 'lucide-react'
@@ -72,7 +71,7 @@ export const Default: Story = {
           </p>
           <div>
             <Button variant="secondary" onClick={reset}>
-              重新開始 demo
+              再填一份申請
             </Button>
           </div>
         </div>
@@ -146,60 +145,9 @@ export const Default: Story = {
 //   AllSizes retired 2026-05-15(anatomy SizeMatrix own);AllStates retired 2026-05-17
 //   per Dim 46 audit(anatomy StateBehavior 已 own state matrix,manual trait grid 違反
 //   story-rules.md 三層定位「展示層應為典型使用情境,不是 trait grid」)。
-
-// ── Focus marker 的正交示範 ─────────────────────────────────────────────
-// Ring 跟 content state 正交:任何 state + focused 都能組合
-
-export const FocusRingCombinations: Story = {
-  name: '聚焦環正交示範',
-  render: () => {
-    const [value, setValue] = React.useState('step-2')
-    return (
-      <div className="flex flex-col gap-4 w-[420px]">
-        <p className="text-caption text-fg-secondary">
-          點任何 step 看看 ring 如何獨立於底色——ring 表達「使用者在這步」,底色
-          表達「這步的狀態」。兩者正交。
-        </p>
-        <div className="flex gap-2">
-          {['step-1', 'step-2', 'step-3', 'step-4'].map(v => (
-            <Button
-              key={v}
-              size="sm"
-              variant={value === v ? 'primary' : 'secondary'}
-              onClick={() => setValue(v)}
-            >
-              value={v}
-            </Button>
-          ))}
-        </div>
-        <Steps
-          value={value}
-          onValueChange={setValue}
-          completedValues={['step-1', 'step-3']}
-          errorValues={['step-4']}
-          linear={false}
-        >
-          <StepItem value="step-1">
-            <StepLabel>Completed</StepLabel>
-            <StepDescription>藍底 ✓ + ring(若 focused)</StepDescription>
-          </StepItem>
-          <StepItem value="step-2">
-            <StepLabel>Current</StepLabel>
-            <StepDescription>中性底(bg-secondary)數字 + ring(若 focused)</StepDescription>
-          </StepItem>
-          <StepItem value="step-3">
-            <StepLabel>Completed</StepLabel>
-            <StepDescription>藍底 ✓ + ring(若 focused)</StepDescription>
-          </StepItem>
-          <StepItem value="step-4">
-            <StepLabel>Error</StepLabel>
-            <StepDescription>紅底 ✕ + 紅 ring(若 focused)</StepDescription>
-          </StepItem>
-        </Steps>
-      </div>
-    )
-  },
-}
+//   FocusRingCombinations retired 2026-07-17 per Dim 24 audit — ring⊥state 正交規則已由
+//   principles「規則:環是聚焦標記,不是選取」live own(completed+ring / error+ring 兩例);
+//   互動式聚焦移動於「預設」「非線性」既有 clickable steps 已可見,展示層不重複原則 grid。
 
 // ── Non-linear ──────────────────────────────────────────────────────────
 

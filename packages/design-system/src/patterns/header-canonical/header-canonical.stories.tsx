@@ -68,9 +68,13 @@ export const SingleRow = () => (
       <Separator orientation="vertical" className="h-6 mx-1" />
       <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
     </ChromeHeader>
-    <div className="p-6 text-body text-fg-secondary">文件預覽內容區…</div>
+    <div className="flex flex-col gap-2 p-6 text-body text-fg-secondary">
+      <p className="text-caption text-fg-muted">陳雅婷 更新於 2026/04/18 · 12 頁 · 2.4 MB</p>
+      <p>本季合併營收 NT$4.82 億,較上季成長 8.2%;毛利率維持 41%。附錄含各區域損益與現金流量表。</p>
+    </div>
   </Panel>
 )
+SingleRow.storyName = '單列(標題 + 動作列)'
 
 /** 2. withTabs — header 含分頁列(對標 FileViewer InfoPanel / 設定頁 header)。
  *  傳 tabsSlot 自動進 column 結構:row1 = 標題列、row2 = TabsList 全寬畫線。 */
@@ -92,17 +96,29 @@ export const WithTabs = () => (
         <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
       </ChromeHeader>
       <TabsContent value="overview">
-        <div className="p-6 text-body text-fg-secondary">「概覽」分頁內容…</div>
+        <div className="flex flex-col gap-1 p-6 text-body text-fg-secondary">
+          <p>負責人:林思妤 · 期程:2026/03–2026/06 · 狀態:設計中</p>
+          <p>將既有品牌識別全面翻新——logo、配色與元件庫,預計 Q2 上線。</p>
+        </div>
       </TabsContent>
       <TabsContent value="activity">
-        <div className="p-6 text-body text-fg-secondary">「活動」分頁內容…</div>
+        <div className="flex flex-col gap-1 p-6 text-body text-fg-secondary">
+          <p>陳柏宇 上傳了「新版 logo 提案 v3」· 2 小時前</p>
+          <p>林思妤 將狀態改為「設計中」· 昨天</p>
+          <p>Aisha Khan 留言:配色再往暖色調微調 · 3 天前</p>
+        </div>
       </TabsContent>
       <TabsContent value="files">
-        <div className="p-6 text-body text-fg-secondary">「檔案」分頁內容…</div>
+        <div className="flex flex-col gap-1 p-6 text-body text-fg-secondary">
+          <p>品牌識別規範_v3.pdf · 8.1 MB</p>
+          <p>logo 原始檔.ai · 24 MB</p>
+          <p>配色對照表.xlsx · 320 KB</p>
+        </div>
       </TabsContent>
     </Tabs>
   </Panel>
 )
+WithTabs.storyName = '含分頁列'
 
 /** Overview — header anatomy 兩型疊起來一次看完,每型上方標清「何時用 + 對標既有元件」。
  *  注:ChromeHeader 另有 `leadingRail` slot,但它專為「跟 sidebar 收合 icon 對齊」而生(寬 = sidebar 收合寬),
@@ -136,7 +152,16 @@ export const Overview = () => (
           <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">編輯專案設定</h2>
           <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
         </SurfaceHeader>
-        <div className="p-6 text-body text-fg-secondary">浮層內容區…(Dialog / Sheet / Popover body)</div>
+        <div className="flex flex-col gap-3 p-6 text-body text-fg-secondary">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-caption text-fg-muted">專案名稱</span>
+            <span className="text-foreground">Acme 品牌改版專案</span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-caption text-fg-muted">可見範圍</span>
+            <span className="text-foreground">團隊成員(12 人)</span>
+          </div>
+        </div>
       </div>
     </section>
     <section className="flex flex-col gap-2">
@@ -148,3 +173,4 @@ export const Overview = () => (
     </section>
   </div>
 )
+Overview.storyName = '總覽'

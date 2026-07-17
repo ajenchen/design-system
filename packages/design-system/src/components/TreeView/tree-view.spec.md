@@ -3,9 +3,9 @@ component: TreeView
 family: 1
 variants: {}
 sizes:
-  sm: { when: "緊湊清單(與 md 同視覺:text-body、indent 24;保留供密度語意)" }
+  sm: { when: "緊湊清單(與 md 同視覺,保留供密度語意)" }
   md: { when: "default 一般導覽樹" }   # ★ default
-  lg: { when: "touch / 大字級(text-body-lg、indent 28;row padding 由 --tree-px + field-height 公式)" }
+  lg: { when: "touch / 大字級" }
 traits:
   - hasInteractiveStates
   - isStructural
@@ -41,7 +41,7 @@ TreeView 本身只負責三件事:
 
 - **階層結構資料**：檔案管理器資料夾樹、部門組織架構、專案 / 子專案 / 任務、權限群組
 - **Sidebar 內的分層導覽**：workspace > channel > thread、product > category > item
-- **可展開收合的清單**：FAQ（但多個可同時展開,非 Accordion 互斥）、程式碼 tree、JSON viewer
+- **可展開收合的階層清單**：程式碼檔案樹、JSON viewer、DOM inspector（遞迴巢狀結構;平面章節如 FAQ / 設定分組屬 Accordion,見「何時不用」）
 - **任意多層**：從 1 層到 N 層深度都由同一個 TreeView 承載
 
 ## 何時不用
@@ -49,8 +49,8 @@ TreeView 本身只負責三件事:
 | 場景 | 改用 | 原因 |
 |------|------|------|
 | 平面資料（無階層）| `DataTable` / 自訂 list | TreeView 為階層而設計，沒 children 的平面用 list |
-| 同時只能展開一個（互斥）| `Accordion type="single"` | TreeView 允許任意多個展開,互斥模式語意不同 |
-| 簡單 2 層 nav（主分類 + 子分類）| `Sidebar` + SidebarMenuSubButton | 輕量 2 層用 Sidebar 的內建結構,不需遞迴 |
+| 平面章節折疊（FAQ / 設定分組,無階層）| `Accordion`（`type="single"` 互斥 / `type="multiple"` 多開）| TreeView 是遞迴階層 node;平面章節不論單開或多開都屬 Accordion 範疇（accordion.spec.md「何時用」列 FAQ 為主要用途）|
+| 純視覺分段 / 設計時可列舉的 1 層固定選單 | `SidebarGroup` / `SidebarMenu` | Sidebar 主選單只接受 1 層可列舉項目;任何真階層（深度 > 1、runtime 可新增、user data）一律 TreeView（見 sidebar.spec.md「判斷規則」）|
 | 選單式展開（點完就關）| `DropdownMenu` + sub-menu | DropdownMenu 的 sub menu 是 temporary,TreeView 是 persistent |
 | 階層選擇但需要搜尋 / 快速找 | 自訂 tree + search filter（未來 TreeView 可加 search prop）| 基本 TreeView 不含 search |
 
@@ -182,7 +182,7 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 
 | 元素 | Role | 屬性 |
 |---|---|---|
-| TreeView 容器 | `role="tree"` | `aria-label`,`aria-multiselectable`(多選時) |
+| TreeView 容器 | `role="tree"` | **`aria-label` 或 `aria-labelledby`(擇一必填 — accessible name)**,`aria-multiselectable`(多選時) |
 | TreeItem 外層 | `role="treeitem"` | `aria-expanded`(expandable 才有),`aria-selected`,`aria-level` |
 | TreeItem children 容器 | `role="group"` | — |
 
@@ -392,6 +392,8 @@ TreeView 真實展示需要**多層巢狀結構**才有意義(單節點無法體
 ## A11y 預設
 
 **ARIA / Pattern**:自建 ARIA tree(非沿用 Radix 預設)。容器 `role="tree"`(多選時加 `aria-multiselectable`),每個 node `role="treeitem"` + `aria-expanded`(expandable 才有)/ `aria-selected` / `aria-level`,皆由元件手動設定(`tree-view.tsx` TreeItem render)。Radix `collapsible` 僅用於 children 展開 / 收合的高度動畫,**不提供** tree 的 role / aria / 鍵盤導覽(Radix 沒有 Tree primitive,見「定位」段)。對齊 [WAI-ARIA TreeView pattern](https://www.w3.org/WAI/ARIA/apg/patterns/treeview/)。`aria-setsize` / `aria-posinset` **刻意省略**:APG 規定只有當節點未全數 render 進 DOM(lazy load)或 DOM 序 ≠ 閱讀序時才必需;本元件全可見節點皆在 DOM(`querySelectorAll('[role="treeitem"]:not([hidden])')`)且 DOM 序 = 閱讀序,故非必需。
+
+**Accessible name(必填契約)**:`role="tree"` 的名稱無法從子節點內容推導,consumer **必須**提供 `aria-label`(直接字串)或 `aria-labelledby`(指向可見標題的 id)其中之一——有可見標題時優先 `aria-labelledby`,無則用 `aria-label`。兩者皆缺 → 螢幕閱讀器只讀出「tree」無法辨識用途(WAI-ARIA APG 要求 `role="tree"` 具 accessible name)。`tree-view.tsx` 於 `process.env.NODE_ENV !== 'production'` 時 `console.warn` 提示,避免上線後才發現無名稱樹(對齊 Button / Tag 的 dev-only 誤用警告 idiom)。
 
 **Keyboard 行為**(自建 handler,`tree-view.tsx` handleKeyDown):
 

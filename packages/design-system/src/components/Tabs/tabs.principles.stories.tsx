@@ -121,7 +121,10 @@ export const UsageGuidance: Story = {
                 <TabsTrigger value="products">產品</TabsTrigger>
                 <TabsTrigger value="settings">設定</TabsTrigger>
               </TabsList>
-              <TabsContent value="orders" className="text-body text-fg-muted">(訂單頁的 toolbar、filters、table…)</TabsContent>
+              <TabsContent value="orders" className="text-body text-fg-muted">1,284 筆訂單 · 篩選「待出貨」· 批次列印出貨單</TabsContent>
+              <TabsContent value="customers" className="text-body text-fg-muted">顧客名單、分群標籤與生命週期價值</TabsContent>
+              <TabsContent value="products" className="text-body text-fg-muted">商品目錄、庫存與上下架狀態</TabsContent>
+              <TabsContent value="settings" className="text-body text-fg-muted">商店設定：金流、物流、稅率</TabsContent>
             </Tabs>
           </div>
           <div>
@@ -191,6 +194,7 @@ export const SizeSelection: Story = {
             <TabsTrigger value="a">一般</TabsTrigger>
             <TabsTrigger value="b">進階</TabsTrigger>
           </TabsList>
+          <TabsContent value="a" className="text-body text-fg-secondary mt-2">名稱、描述與可見範圍等一般設定</TabsContent>
         </Tabs>
       </Rule>
 
@@ -205,6 +209,7 @@ export const SizeSelection: Story = {
             <TabsTrigger value="b">成員</TabsTrigger>
             <TabsTrigger value="c" badge={<Badge count={3} />}>通知</TabsTrigger>
           </TabsList>
+          <TabsContent value="a" className="text-body text-fg-secondary mt-2">專案的總覽資訊（KPI、最近活動）</TabsContent>
         </Tabs>
       </Rule>
 
@@ -217,6 +222,7 @@ export const SizeSelection: Story = {
             <TabsTrigger value="a">產品</TabsTrigger>
             <TabsTrigger value="b">服務</TabsTrigger>
           </TabsList>
+          <TabsContent value="a" className="text-body text-fg-secondary mt-2">產品功能、方案與定價總覽</TabsContent>
         </Tabs>
       </Rule>
     </div>
@@ -231,7 +237,7 @@ export const TriggerSlots: Story = {
     <div>
       <Rule
         title="startIcon 描述 tab 的內容性質"
-        note="使用名詞性 icon(人像配「成員」、齒輪配「設定」、鈴鐺配「通知」)。不放動詞性 icon(Download、Trash2),tab 是視圖切換不是動作觸發"
+        note="使用名詞性 icon(人像配「成員」、齒輪配「設定」、鈴鐺配「通知」)。不放動詞性 icon(Download、Trash2),tab 是視圖切換不是動作觸發。同一組 tabs 內 startIcon 全有或全無、不混用(spec 禁止事項),下方三個 trigger 皆帶 icon 即為「全有」的 uniform 示範"
       >
         <Tabs defaultValue="a">
           <TabsList>
@@ -239,6 +245,7 @@ export const TriggerSlots: Story = {
             <TabsTrigger value="b" startIcon={Settings}>設定</TabsTrigger>
             <TabsTrigger value="c" startIcon={Bell}>通知</TabsTrigger>
           </TabsList>
+          <TabsContent value="a" className="text-body text-fg-secondary mt-2">成員名單與角色權限管理</TabsContent>
         </Tabs>
       </Rule>
 
@@ -252,6 +259,7 @@ export const TriggerSlots: Story = {
             <TabsTrigger value="unread" badge={<Badge count={12} />}>未讀</TabsTrigger>
             <TabsTrigger value="starred" badge={<Badge count={3} />}>星標</TabsTrigger>
           </TabsList>
+          <TabsContent value="inbox" className="text-body text-fg-secondary mt-2">收件匣的所有訊息（依時間排序）</TabsContent>
         </Tabs>
       </Rule>
     </div>

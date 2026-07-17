@@ -28,7 +28,7 @@ type Story = StoryObj<typeof TimePicker>
 
 export const Overview: Story = {
   name: '元件總覽',
-  render: () => <TimePicker value="09:00" onChange={() => {}} />,
+  render: () => <TimePicker value="09:00" onChange={() => {}} aria-label="時間選擇器總覽" />,
 }
 
 /**
@@ -105,9 +105,9 @@ export const ColorMatrix: Story = {
             </table>
           </div>
           <div className="flex gap-3 mt-3">
-            <TimePicker value="09:00" onChange={() => {}} />
-            <TimePicker value="09:00" onChange={() => {}} error />
-            <TimePicker value="09:00" onChange={() => {}} disabled />
+            <TimePicker value="09:00" onChange={() => {}} aria-label="時間欄位配色(預設)" />
+            <TimePicker value="09:00" onChange={() => {}} error aria-label="時間欄位配色(錯誤狀態)" />
+            <TimePicker value="09:00" onChange={() => {}} disabled aria-label="時間欄位配色(停用)" />
           </div>
         </div>
 
@@ -169,15 +169,15 @@ export const SizeMatrix: Story = {
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
         <span className="w-12 text-caption text-fg-muted">sm</span>
-        <TimePicker size="sm" value="09:00" onChange={() => {}} />
+        <TimePicker size="sm" value="09:00" onChange={() => {}} aria-label="小尺寸時間選擇器" />
       </div>
       <div className="flex items-center gap-3">
         <span className="w-12 text-caption text-fg-muted">md ★default</span>
-        <TimePicker size="md" value="09:00" onChange={() => {}} />
+        <TimePicker size="md" value="09:00" onChange={() => {}} aria-label="中尺寸時間選擇器" />
       </div>
       <div className="flex items-center gap-3">
         <span className="w-12 text-caption text-fg-muted">lg</span>
-        <TimePicker size="lg" value="09:00" onChange={() => {}} />
+        <TimePicker size="lg" value="09:00" onChange={() => {}} aria-label="大尺寸時間選擇器" />
       </div>
     </div>
   ),
@@ -205,15 +205,15 @@ export const PrecisionMatrix: Story = {
     <div className="flex flex-col gap-3 w-80">
       <div>
         <div className="text-caption text-fg-muted mb-1">兩欄(showSeconds=false,預設)</div>
-        <TimePicker value="09:00" onChange={() => {}} />
+        <TimePicker value="09:00" onChange={() => {}} aria-label="時分兩欄時間選擇器" />
       </div>
       <div>
         <div className="text-caption text-fg-muted mb-1">三欄(showSeconds=true)</div>
-        <TimePicker value="09:00:00" onChange={() => {}} showSeconds />
+        <TimePicker value="09:00:00" onChange={() => {}} showSeconds aria-label="時分秒三欄時間選擇器" />
       </div>
       <div>
         <div className="text-caption text-fg-muted mb-1">minuteStep=15(會議常用)</div>
-        <TimePicker value="09:00" onChange={() => {}} minuteStep={15} />
+        <TimePicker value="09:00" onChange={() => {}} minuteStep={15} aria-label="15 分鐘間隔時間選擇器" />
       </div>
       <div>
         <div className="text-caption text-fg-muted mb-1">disabledTime:0-5 點不可選</div>
@@ -221,6 +221,7 @@ export const PrecisionMatrix: Story = {
           value="09:00"
           onChange={() => {}}
           disabledTime={() => ({ disabledHours: [0, 1, 2, 3, 4, 5] })}
+          aria-label="限制可選時段的時間選擇器"
         />
       </div>
     </div>
@@ -246,7 +247,7 @@ export const Inspector: Story = {
   },
   render: (args) => {
     const [v, setV] = React.useState(args.value ?? '')
-    return <TimePicker {...args} value={v} onChange={setV} />
+    return <TimePicker {...args} value={v} onChange={setV} aria-label="時間選擇器檢閱器" />
   },
 }
 

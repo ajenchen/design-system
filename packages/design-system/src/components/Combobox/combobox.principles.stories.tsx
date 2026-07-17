@@ -63,9 +63,6 @@ export const UsageGuidance: Story = {
           <LinkTo kind="Design System/Components/Combobox/展示" name="三種尺寸"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">尺寸與 Button 對齊</span></LinkTo>
         </li>
         <li>
-          <LinkTo kind="Design System/Components/Combobox/展示" name="單行 vs 換行"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">單行 vs 換行</span></LinkTo>
-        </li>
-        <li>
           <LinkTo kind="Design System/Components/Combobox/展示" name="搜尋"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">搜尋</span></LinkTo>
         </li>
         <li>
@@ -81,14 +78,14 @@ export const UsageGuidance: Story = {
           title="Combobox 的 sweet spot — 多選 + 空間受限 + 選項數 6+"
           note="Tag / 分類 / 協作成員 / 通知訂閱。使用者快速加選、移除，label 自帶語意不需描述"
         >
-          <Combobox options={categoryOptions} value={tags} onChange={setTags} />
+          <Combobox options={categoryOptions} value={tags} onChange={setTags} aria-label="商品分類(多選 Tag 範例)" />
         </Rule>
 
         <Rule
           title="❌ 單選:用 Select"
           note="Combobox 永遠多選——單選塞進來使用者每次要手動先移除舊 Tag 再選新的，多餘的互動"
         >
-          <Combobox options={categoryOptions} value={['electronics']} onChange={() => {}} />
+          <Combobox options={categoryOptions} value={['electronics']} onChange={() => {}} aria-label="商品分類(單選反例——應改用 Select)" />
           <Label warn>↑ 只選一個 electronics → 應該用 Select，一次點擊完成切換</Label>
         </Rule>
 
@@ -104,6 +101,7 @@ export const UsageGuidance: Story = {
             ]}
             value={['terms']}
             onChange={() => {}}
+            aria-label="同意項目"
           />
           <Label warn>↑ 條款勾選是「完整閱讀後同意」→ 用 Checkbox stack 全露內容</Label>
         </Rule>
@@ -121,6 +119,7 @@ export const UsageGuidance: Story = {
             ]}
             value={['eng-fe']}
             onChange={() => {}}
+            aria-label="部門"
           />
           <Label warn>↑ 用縮排偽造階層 → 沒有展開收合、不能按父節點全選、破壞資料結構</Label>
         </Rule>
@@ -141,7 +140,7 @@ export const WrapRule: Story = {
           title="單行（預設）— Table cell、空間受限的 Form"
           note="固定高度，與 Input / Select 等欄位並排對齊。多於可見寬度的 Tag 以 +N 指示器代替，hover 可看完整清單"
         >
-          <Combobox options={categoryOptions} value={single} onChange={setSingle} />
+          <Combobox options={categoryOptions} value={single} onChange={setSingle} aria-label="商品分類(單行溢出範例)" />
           <Label>↑ 單行：高度固定，超出的 Tag → +N</Label>
         </Rule>
 
@@ -149,7 +148,7 @@ export const WrapRule: Story = {
           title="多行 wrap — 空間充裕的 Form"
           note="高度隨選中數量展開，每個 Tag 都完整可見。適合填答型表單——使用者一眼看到所有選項，不需 hover 溢出指示器"
         >
-          <Combobox wrap options={categoryOptions} value={wrapped} onChange={setWrapped} />
+          <Combobox wrap options={categoryOptions} value={wrapped} onChange={setWrapped} aria-label="商品分類(多行 wrap 範例)" />
           <Label>↑ 多行：完整展開，無溢出</Label>
         </Rule>
 
@@ -189,7 +188,7 @@ export const TagOperationRule: Story = {
           title="Tag 只能被「移除」，不能被「編輯」或「重排」"
           note="每個 Tag 右側的 X 是唯一被允許的互動——保持 Tag 的心智模型單純：它代表一個已選中的選項，要換就刪了重選"
         >
-          <Combobox options={categoryOptions} value={value} onChange={setValue} />
+          <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="商品分類(Tag 移除範例)" />
           <Label>↑ 點 Tag 的 X 移除；右側 clear all 一次清除；新增從 dropdown 選擇</Label>
         </Rule>
 
@@ -205,7 +204,7 @@ export const TagOperationRule: Story = {
           title="已選中的選項在下拉裡以打勾標示，再點一次即取消"
           note="桌機（預設）走自建浮層選單：已選項保留在清單中並以打勾呈現，再點一次即移除——避免使用者跨越下拉與 field 才能對照已選狀態。手機 / 觸控裝置改走原生 select，已選項則不重複出現在原生下拉"
         >
-          <Combobox options={categoryOptions} value={['electronics']} onChange={() => {}} />
+          <Combobox options={categoryOptions} value={['electronics']} onChange={() => {}} aria-label="商品分類(已選項打勾範例)" />
           <Label>↑ 打開 dropdown，Electronics 仍在清單裡並打勾，可再點一次取消</Label>
         </Rule>
       </div>
@@ -223,7 +222,7 @@ export const OverflowRule: Story = {
           title="+N 指示器是單行模式的必要元件"
           note="使用者必須知道「還有多少沒看到」——沒有 +N 的單行會誤導使用者以為選項已完整顯示。Hover 可看完整清單"
         >
-          <Combobox options={categoryOptions} value={value} onChange={setValue} />
+          <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="商品分類(+N 溢出指示範例)" />
           <Label>↑ 窄容器內多個 Tag，自動出現 +N</Label>
         </Rule>
 

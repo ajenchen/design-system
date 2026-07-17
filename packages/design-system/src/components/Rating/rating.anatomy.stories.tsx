@@ -188,7 +188,7 @@ const InspectorInner = () => {
               precision={precision}
               readOnly={readOnly}
               disabled={disabled}
-              aria-label={readOnly ? `平均評分 ${value} 星，共 5 星` : undefined}
+              aria-label={readOnly ? `平均評分 ${value} 星，共 5 星` : `為這次體驗評分，目前 ${value} 星，共 5 星`}
             />
           </div>
           <div className="text-caption text-fg-muted font-mono">

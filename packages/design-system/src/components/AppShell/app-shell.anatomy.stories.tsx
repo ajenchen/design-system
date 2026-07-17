@@ -34,9 +34,13 @@ export const Overview: Story = {
           sidebar={<AcmeSidebar />}
           header={<PageHeader title="Dashboard" />}
           aside={
-            <AppShellAside title="Detail panel" width={320}>
-              <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
-                <p className="text-body">Aside 內容(留白由使用此面板的內容自行管理)</p>
+            <AppShellAside title="訂單詳情" width={320}>
+              {/* 面板內容自帶留白(px/py),示範 aside slot 不強制內距、由內容自管 */}
+              <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] space-y-3 text-body">
+                <div className="flex justify-between"><span className="text-fg-muted">訂單編號</span><span className="font-medium">#SO-20481</span></div>
+                <div className="flex justify-between"><span className="text-fg-muted">客戶</span><span className="font-medium">陳怡君</span></div>
+                <div className="flex justify-between"><span className="text-fg-muted">付款狀態</span><span className="font-medium">已付款</span></div>
+                <div className="flex justify-between"><span className="text-fg-muted">金額</span><span className="font-medium">NT$ 12,800</span></div>
               </div>
             </AppShellAside>
           }
@@ -107,26 +111,28 @@ export const StateBehavior: Story = {
           header={
             <ChromeHeader className="bg-surface">
               <SidebarTrigger />
-              <h1 className="text-body-lg font-medium flex-1 truncate">Toggle Aside demo</h1>
+              <h1 className="text-body-lg font-medium flex-1 truncate">訂單 #SO-20481</h1>
               <Button size="sm" variant="primary" onClick={() => setOpen(!open)}>
-                {open ? 'Close' : 'Open'} Aside (cmd+.)
+                {open ? '隱藏訂單詳情' : '顯示訂單詳情'}
               </Button>
             </ChromeHeader>
           }
           aside={
-            <AppShellAside title="Detail panel" width={320}>
-              <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
-                <p className="text-body">Aside 內容</p>
+            <AppShellAside title="訂單詳情" width={320}>
+              <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] space-y-3 text-body">
+                <div className="flex justify-between"><span className="text-fg-muted">訂單編號</span><span className="font-medium">#SO-20481</span></div>
+                <div className="flex justify-between"><span className="text-fg-muted">客戶</span><span className="font-medium">陳怡君</span></div>
+                <div className="flex justify-between"><span className="text-fg-muted">付款狀態</span><span className="font-medium">已付款</span></div>
               </div>
             </AppShellAside>
           }
           asideOpen={open}
           onAsideOpenChange={setOpen}
         >
-          <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] text-body">
-            <p>Aside open:{String(open)}</p>
-            <p>Desktop ≥ 768px → inline standard mode(右側 panel,不蓋 mask)</p>
-            <p>Mobile &lt; 768px → modal mode(Sheet from right,蓋 mask)</p>
+          <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] text-body space-y-1">
+            <p>訂單詳情面板目前:{open ? '已展開' : '已收合'}(⌘. / Ctrl+. 可切換)</p>
+            <p className="text-fg-secondary">桌面 ≥ 768px:面板從右側並排展開,不蓋遮罩</p>
+            <p className="text-fg-secondary">行動裝置 &lt; 768px:面板以 Sheet 從右側滑出,蓋半透明遮罩</p>
           </div>
         </AppShell>
       </SidebarProvider>

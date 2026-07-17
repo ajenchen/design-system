@@ -37,7 +37,10 @@ AccordionItem.displayName = 'AccordionItem'
 
 const AccordionTrigger = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
+  // asChild 不對外開放:Trigger 固定渲染 children + ChevronDown 兩個子節點,傳 asChild
+  // 會讓 Radix Slot 觸發 React.Children.only runtime 錯(見 CLAUDE.md 失敗記憶索引
+  // 「asChild 分支內部仍渲染多 children」)。固定 anatomy 見 accordion.spec.md「邊界狀態」。
+  Omit<React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>, 'asChild'>
 >(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Header className="flex">
     <AccordionPrimitive.Trigger
@@ -70,7 +73,9 @@ AccordionTrigger.displayName = 'AccordionTrigger'
 
 const AccordionContent = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
+  // asChild 不對外開放:Content 固定以內層 <div className="pb-4"> 包住 children,傳 asChild
+  // 只會讓 Slot clone 該內層 div,consumer 元素無法成為 Content host(等同無效 API)。
+  Omit<React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>, 'asChild'>
 >(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Content
     ref={ref}
