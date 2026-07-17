@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils'
 import { Input } from '@/design-system/components/Input/input'
 import { Textarea } from '@/design-system/components/Textarea/textarea'
 import type { FieldSize } from '@/design-system/components/Field/field-context'
-import { useFieldContext, useResolvedFieldSize } from '@/design-system/components/Field/field-context'
+import { useFieldContext, useResolvedFieldSize, FieldSurfaceProvider } from '@/design-system/components/Field/field-context'
 import { fieldDisplayTextClass, fieldViewGeometry } from '@/design-system/components/Field/field-wrapper'
 import { makeEditSettleKeyHandler } from '@/design-system/components/Field/field-edit-keys'
 
@@ -170,6 +170,25 @@ function InlineEditImpl<T = string>(
     setEditing(false)
   }, [])
 
+  // ── Exit-on-blur SSOT(2026-07-17 root cause 修:blur 後 chrome 殘留)──────────────
+  // InlineEdit **保證**任何 edit 控件(預設 Input + 自訂 renderEdit 的 Select/DatePicker/Combobox…)
+  // blur 都回 view,**不靠** consumer 在 renderEdit 自接 onBlur(舊設計缺口:story Select 只接
+  //   onChange→commit,不選直接 blur → commit 從沒呼叫 → 卡 editing=true,edit chrome 殘留)。
+  // portal-aware:overlay 控件(Select/DatePicker)開的 Radix popper/listbox 是 portaled 出子樹,
+  //   焦點在其中時**不誤結算**(dropdown 操作中);真正離開(都不在 edit 子樹 + 不在本 edit 的 overlay)才 commit。
+  // rAF 延一拍讓焦點落定(Radix 關 popover 時焦點先回 trigger,避免 blur 瞬間誤判)。
+  const handleEditBlur = React.useCallback((e: React.FocusEvent<HTMLDivElement>) => {
+    const wrapper = e.currentTarget
+    requestAnimationFrame(() => {
+      if (finalizedRef.current) return
+      const active = document.activeElement
+      if (active && wrapper.contains(active)) return // 仍在 edit 子樹(如 trigger)
+      // 焦點在本 edit 開的 Radix overlay 內 → dropdown 操作中,不結算
+      if (active && active.closest('[data-radix-popper-content-wrapper],[data-radix-select-viewport],[role="listbox"],[role="dialog"]')) return
+      commit(false) // blur 離開 → 回 view(滑鼠路徑不搶焦)
+    })
+  }, [commit])
+
   // 鍵盤結算後把 focus 送回 view 按鈕(commit(true)/cancel);滑鼠 blur(commit(false))刻意不送回——
   //   對齊 inline-edit.spec.md「退出 edit 態(focus 分流)」:鍵盤結算焦點回 view 按鈕 + 藍框、
   //   滑鼠 blur 回純 view 不搶焦。focus-visible 保證只有鍵盤路徑顯藍框。
@@ -184,14 +203,17 @@ function InlineEditImpl<T = string>(
     value == null || (value as unknown) === '' || (Array.isArray(value) && value.length === 0)
   const Tag = as as React.ElementType
 
-  // 對齊盒(orientation-aware,Model A round16):
-  //   Field 內 vertical → `-mx-field-px` + `w-calc` 把整塊拉到欄左緣(值貼 label,= 檔頭 read-view 負邊距對照;
-  //     委派控件 view 的 px 被 -mx 抵消 → 落欄左緣)
-  //   Field 內 horizontal / **standalone(無 fieldCtx)** → 不用 -mx(純 `w-full`,值內縮 px = 對齊 sibling 控件)。
-  //   ⚠️ standalone 必 `w-full`:-mx 會把 hover 底色 + Pressable 拉出容器 12px(容器無 padding 時溢出);
-  //     -mx 語義是「對齊 Field label 左緣」,無 Field 時無對齊對象。read↔edit 零跳兩路皆成立(都內縮 px)。
+  // 對齊盒(orientation-aware,Model A;2026-07-17 移除 fieldCtx gate — root cause 修):
+  //   vertical(預設,含 standalone)→ `-mx-field-px` + `w-calc` 把整塊拉到欄左緣(值貼 label 左緣;
+  //     view 委派控件在 `surface='inline-edit'` 下 px 統一 field-px → 被 -mx 精準抵消 → 落 x=0 對齊 label)。
+  //   horizontal → 不用 -mx(純 `w-full`,值內縮 px = 對齊 sibling 控件)。
+  //   ⚠️ **移除舊 `fieldCtx &&` gate(root cause)**:standalone 預設 orientation='vertical'(:131),舊 gate 讓
+  //     standalone 掉到 `w-full` 無 -mx → 內容內縮 field-px 不對齊 label(圖一/圖二 bug)。spec Model A
+  //     (field-controls.spec.md:71「orientation-aware -mx / vertical 貼 label」)只依 orientation、不依 fieldCtx。
+  //     -mx bleed field-px 到容器 padding = 刻意(hover/edit 才顯真實邊界)→ consumer 放 ≥field-px padding 容器
+  //     (detail panel / card;stories 容器 layout-space-loose 16px > field-px 12px 天然吸收)。
   const alignBleed =
-    fieldCtx && orientation === 'vertical'
+    orientation === 'vertical'
       ? '-mx-[var(--field-px)] w-[calc(100%_+_2_*_var(--field-px))]'
       : 'w-full min-w-0'
 
@@ -234,7 +256,9 @@ function InlineEditImpl<T = string>(
     )
     const editNode = renderEdit ? renderEdit(editProps) : defaultEditNode
     return (
-      <div ref={ref} data-editing className={cn(alignBleed, className)}>
+      // onBlur(focusout,bubbles)承載 exit-on-blur SSOT:任何 edit 控件 blur 離開 → 回 view。
+      // edit 態**不套** surface='inline-edit'(完全繼承原 field,含 tagPadding — Jira 式,user 2026-07-17 拍板)。
+      <div ref={ref} data-editing className={cn(alignBleed, className)} onBlur={handleEditBlur}>
         {editNode}
       </div>
     )
@@ -242,8 +266,12 @@ function InlineEditImpl<T = string>(
 
   // view 態:外框只承載對齊盒 + (editable 時) hover bg + 鍵盤 focus 藍框;幾何由內容(委派控件 view / fieldViewGeometry)提供。
   const viewNode = renderRead ? (
-    // 格式化 view(consumer 傳 <Control mode="view"> 等)。控件 view×default 自帶 px/py/min-h + 內部間距。
-    <div className="flex w-full min-w-0">{renderRead(value)}</div>
+    // 格式化 view(consumer 傳 <Control mode="view"> 等)。**surface='inline-edit'**(2026-07-17)→ 委派控件
+    // view 態左 px 統一 `--field-px`(關掉 tagPadding / bare-span 0px / avatar inset),讓固定 `-mx-field-px`
+    // 精準抵消 → tag/avatar/值左緣落 label x=0。edit 態不套本 surface(完全繼承原 field,Jira 式)。
+    <FieldSurfaceProvider surface="inline-edit">
+      <div className="flex w-full min-w-0">{renderRead(value)}</div>
+    </FieldSurfaceProvider>
   ) : (
     <Tag
       data-empty={isEmpty}

@@ -17,8 +17,14 @@ export type FieldControlLayout = 'inline' | 'block'
  * - `'toolbar'`— Toolbar / Action bar inline Field(future,目前無 consumer)
  * - `'table-cell'`— DataTable cell-as-input substrate(取代 variant='naked' cell-detection
  *   heuristic;canonical metrics 由 surface 推導,不再 hardcode in Field consumer)
+ * - `'inline-edit'`(2026-07-17)— InlineEdit view 委派 surface。**唯一語義 = 委派控件 view 態
+ *   左 px 統一 `--field-px`(不繼承 tagPadding / avatar inset / bare-span 0px)**,讓 InlineEdit
+ *   固定 `-mx-[--field-px]` 對齊盒精準抵銷 → 值/tag/avatar 左緣落 label 左緣(x=0)。edit 態**不套**
+ *   本 surface(edit 完全繼承原 field,含 tagPadding — Jira 式)。對齊 Atlassian inline-edit
+ *   read-view「fixed negative margin + read=edit geometry by construction」。只 InlineEdit display
+ *   box 注入;DataTable cell(table-cell)/ 純表單(form)的 tagPadding + bare-span 完全不受影響。
  */
-type FieldSurface = 'form' | 'toolbar' | 'table-cell'
+type FieldSurface = 'form' | 'toolbar' | 'table-cell' | 'inline-edit'
 
 // ── Context ──
 export interface FieldContextValue {
