@@ -511,6 +511,7 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
 - `carousel.spec.md`
 - `circular-progress.spec.md`
 - `description-list.spec.md`
+- `filter-operators.spec.md`
 - `opacity.spec.md`
 - `pagination.spec.md`
 - `scroll-area.spec.md`

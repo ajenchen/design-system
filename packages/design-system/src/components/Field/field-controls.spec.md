@@ -424,11 +424,13 @@ col.accessor('status', {
 - `checkbox.spec.md`
 - `circular-progress.spec.md`
 - `combobox.spec.md`
+- `data-table.spec.md`
 - `date-picker.spec.md`
 - `element-anatomy.spec.md`
 - `field-control-group.spec.md`
 - `field.spec.md`
 - `form-validation.spec.md`
+- `inline-edit.spec.md`
 - `input.spec.md`
 - `item-anatomy.spec.md`
 - `link-input.spec.md`

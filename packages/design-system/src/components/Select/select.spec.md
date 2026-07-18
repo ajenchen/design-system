@@ -353,6 +353,7 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 
 - `checkbox.spec.md`
 - `combobox.spec.md`
+- `command.spec.md`
 - `people-picker.spec.md`
 - `radio-group.spec.md`
 - `select-menu.spec.md`

@@ -291,4 +291,5 @@ Tag 是**純視覺 indicator**(非互動 control,互動版本是 Chip),預設 AR
 
 - `avatar.spec.md`
 - `badge.spec.md`
+- `inline-action.spec.md`
 - `overflow-indicator.spec.md`

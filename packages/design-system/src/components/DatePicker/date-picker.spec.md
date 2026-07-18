@@ -333,6 +333,7 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 
 - `calendar.spec.md`
 - `date-grid.spec.md`
+- `header-canonical.spec.md`
 - `input.spec.md`
 - `number-input.spec.md`
 - `time-picker.spec.md`

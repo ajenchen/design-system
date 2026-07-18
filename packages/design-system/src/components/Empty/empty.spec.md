@@ -206,7 +206,6 @@ Empty 是 **pure layout primitive**(排列 icon / title / description / action �
 
 - `carousel.spec.md`
 - `circular-progress.spec.md`
-- `combobox.spec.md`
 - `command.spec.md`
 - `file-upload.spec.md`
 - `file-viewer.spec.md`

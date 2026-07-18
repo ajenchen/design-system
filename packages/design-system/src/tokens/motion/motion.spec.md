@@ -97,13 +97,6 @@ Hover delay token 是「hover 觸發 → 延遲 N ms → overlay 顯示」的延
 - `../../components/Tooltip/tooltip.spec.md`(consumer)
 - `../../components/HoverCard/hover-card.spec.md`(consumer)
 - `../../components/Avatar/avatar.spec.md`(consumer)
-
-## 被引用(auto-maintained,Dim 3 reciprocal audit)
-
-> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
-
-- `hover-card.spec.md`
-
 ## 進出場動畫 token(2026-07-11 加,user 拍板)
 
 Overlay(Tooltip/Popover/HoverCard/DropdownMenu/Dialog/Sheet/FileViewer)的 fade/zoom/slide 進出場動畫,值統一 token 化(原各元件硬寫 zoom-95/slide-2/duration-300 = M17 假 SSOT)。由 tw-animate-css(Tailwind v4,= shadcn 官方機制)的 `--tw-duration`/`--tw-ease` 變數綁定;共用 SSOT = `overlay-motion.ts`(overlayMotion/surfaceMotion)。
@@ -120,3 +113,9 @@ Overlay(Tooltip/Popover/HoverCard/DropdownMenu/Dialog/Sheet/FileViewer)的 fade/
 **幾何原型分層(正當差異,不強行抹平)**:輕量 popup = fade+zoom+slide-side(8px);模態置中 = fade+zoom+slide-center(Dialog/FileViewer);邊緣抽屜 = slide-edge 100%、正當無 zoom(Sheet)。統一的是**時長/曲線/reduced-motion 守衛**(motion-reduce:animate-none 全 7 浮層),非幾何原型(對齊 Material standard-vs-emphasized / Carbon productive-vs-expressive tier 分層)。
 
 **a11y**:prefers-reduced-motion 下 `motion-reduce:animate-none` 全 7 浮層統一關進出場動畫(overlay-motion SSOT 保證,無漏)。
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `hover-card.spec.md`

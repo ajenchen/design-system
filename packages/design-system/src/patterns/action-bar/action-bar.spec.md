@@ -472,3 +472,4 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 - `data-table.spec.md`
 - `file-viewer.spec.md`
 - `popover.spec.md`
+- `separator.spec.md`
