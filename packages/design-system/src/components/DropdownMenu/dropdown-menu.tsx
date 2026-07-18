@@ -122,14 +122,17 @@ const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
 
 // ── Content ──
 interface DropdownMenuContentProps
-  // asChild Omit(2026-07-18 決策2):Content 恆注入固定 <RowSizeProvider>(+ 選配 <ScrollArea>)
+  // asChild Omit(2026-07-18 決策2):Content 恆注入固定 <RowSizeProvider> + <ScrollArea>
   // wrapper 於 Portal 內 → <Content asChild> 會把 Content props slot-merge 到非-DOM Provider 上而壞。
   // children 保留(合法渲染於固定 wrapper 內)。
   extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>, 'asChild'> {
   size?: SizeKey
   /** 最小寬度（px），預設 `max(180px, 觸發元件寬度)`——窄 trigger 時吃 180px 地板 */
   minWidth?: number
-  /** 最大高度（px），超過時捲動 */
+  /**
+   * 最大高度（px）——**可選更低上限**。預設已 viewport-adaptive(夾到 trigger→視窗碰撞邊界的剩餘高度、
+   * 離窗 ≥8px、超過即捲動);傳 `maxHeight` 只在「想比視窗剩餘更矮」時用(取 `min(視窗剩餘, maxHeight)`)。
+   */
   maxHeight?: number
 }
 
@@ -158,24 +161,26 @@ const DropdownMenuContent = React.forwardRef<
       // close 後 programmatic refocus 在 Chromium 仍可 match `:focus-visible`(UA heuristic),
       // 但與 shadcn 官方 live demo 同流程 DOM 比對 IDENTICAL — Radix 生態一致接受此
       // tradeoff:APG keyboard focus-return 優先於 cosmetic ring。
-      className={cn(floatingLayerClass, !maxHeight && 'py-2', className)}
+      className={cn(floatingLayerClass, 'flex flex-col min-h-0', className)}
       style={{
         boxShadow: 'var(--elevation-200)',
         minWidth: minWidth ?? 'max(180px, var(--radix-dropdown-menu-trigger-width))',
-        maxHeight,
+        // 2026-07-18 viewport-adaptive max-h(對齊 HoverCard/Popover 既有 canonical):夾到「trigger 到
+        //   碰撞邊界(已內縮 collisionPadding=8px)的剩餘高度」→ 高選單不溢出視窗、離視窗邊 ≥8px、
+        //   短選單仍貼內容;consumer `maxHeight` 為**可選更低上限**(min 取小者)。inline style 非 class,
+        //   故動態 maxHeight 不觸 Tailwind 掃描陷阱。
+        maxHeight: maxHeight
+          ? `min(var(--radix-dropdown-menu-content-available-height, 100vh), ${maxHeight}px)`
+          : 'var(--radix-dropdown-menu-content-available-height, 100vh)',
       }}
       {...props}
     >
       <RowSizeProvider value={size}>
-        {maxHeight ? (
-          // 長選單用 ScrollArea 跨 OS 一致捲動(不吃寬度,macOS/Windows 視覺一致)
-          // py-2 移到內層,ScrollArea Viewport 才能 scroll 整個 padded 區
-          <ScrollArea className="max-h-[inherit]">
-            <div className="py-2">{children}</div>
-          </ScrollArea>
-        ) : (
-          children
-        )}
+        {/* body 恆在 flex-1 ScrollArea 內:超過 clamped 高度即跨-OS 一致捲動(不吃寬度);
+            短選單 flex-1 貼內容不塌(同 HoverCard/Popover/DataTable panel 已驗)。py-2 在內層,整 padded 區可捲。 */}
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="py-2">{children}</div>
+        </ScrollArea>
       </RowSizeProvider>
     </DropdownMenuPrimitive.Content>
   </DropdownMenuPrimitive.Portal>
