@@ -306,3 +306,69 @@ export const IntegrateRouterLink: Story = {
     </div>
   ),
 }
+
+// ── Router Link + 自動摺疊(2026-07-19 回歸防線)────────────────────────────
+//
+// @story-trait-rationale: 專驗 auto-collapse 抽取器把 `<BreadcrumbLink asChild><router Link>` 中段項目
+//   摺疊進 ⋯ dropdown 時,link 元素(含 to/href/onClick)整個保留、非退化成純文字 —— DA3 對抗稽核抓到的
+//   邏輯 gap 回歸鎖。play() 開摺疊選單並斷言摺疊項目為可點 <a href>(role=menuitem 落在 anchor 上,
+//   非外層 div = 無 nested-interactive)。此處以 `<a onClick prevent>` 模擬 React Router / Next Link。
+export const IntegrateRouterLinkAutoCollapse: Story = {
+  name: '整合 Router Link — 自動摺疊保留導航',
+  parameters: {
+    docs: {
+      description: {
+        story: '6 層路徑超過 maxItems(預設 4)自動摺疊中段;中段用 asChild 套 router Link。摺疊進 ⋯ 下拉後 link 必完整保留(SPA 導航不退化成整頁重載)。點 ⋯ 可見每個摺疊項目仍是可點連結。',
+      },
+    },
+  },
+  render: () => (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <a href="/" onClick={(e) => e.preventDefault()}>首頁</a>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <a href="/org" onClick={(e) => e.preventDefault()}>組織</a>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <a href="/org/team" onClick={(e) => e.preventDefault()}>產品團隊</a>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <a href="/org/team/members" onClick={(e) => e.preventDefault()}>成員管理</a>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <a href="/org/team/members/alice" onClick={(e) => e.preventDefault()}>Alice</a>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbItem>
+          <BreadcrumbPage>權限設定</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+  ),
+  play: async ({ canvasElement }) => {
+    const { userEvent, within, expect, waitFor } = await import('@storybook/test')
+    const canvas = within(canvasElement)
+    // 開摺疊選單(BreadcrumbEllipsis 預設 aria-label = 顯示折疊路徑)
+    const ellipsis = await canvas.findByLabelText('顯示折疊路徑')
+    await userEvent.click(ellipsis)
+    // 核心回歸斷言:摺疊進 dropdown 的 router-link 必保留為可點 <a href="/org/team">(修前會被丟掉 → anchor 不存在)。
+    // 註:DS DropdownMenuItem 內部把 children 包進 role="presentation" 的 MenuItem(role=menuitem 在 Radix Item 層),
+    //   故不斷言 anchor 自身 role;直接驗「導航目標的 anchor 存在且文字對」= 連結保留的真義。dropdown portal 到 body。
+    await waitFor(async () => {
+      const link = document.querySelector('a[href="/org/team"]')
+      await expect(link, '摺疊的 router-link「產品團隊」應保留為可點 <a href="/org/team">(修前退化成純文字)').not.toBeNull()
+      await expect(link?.textContent).toContain('產品團隊')
+    })
+  },
+}

@@ -51,7 +51,7 @@ export const TeamCalendar: Story = {
           defaultReferenceDate={now}
           events={events}
           onEventClick={(e) => alert(`點了事件:${e.title}`)}
-          onDateClick={(d) => console.log('點 date cell:', d)}
+          onDateClick={() => { /* demo:實際 app 在此開「當日新增事件」面板 */ }}
           onCreateEvent={() => alert('開啟新事件對話框')}
         />
       </div>

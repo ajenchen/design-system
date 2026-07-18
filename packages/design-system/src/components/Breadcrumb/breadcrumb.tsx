@@ -16,8 +16,9 @@ import {
 // ── TruncatedLabel ────────────────────────────────────────────────────────────
 // 同 `data-table.tsx TruncateCell` + `tag.tsx isTruncated` SSOT pattern
 // (shared ResizeObserver + scrollWidth > clientWidth → wrap Tooltip)。
-// **TODO** future:Rule-of-3 達 → 抽 `patterns/element-anatomy/truncated-text.tsx` 共用
-// (本 component / DataTable TruncateCell / Tag inner 三處同 idiom,符合 M30 SSOT 抽取門檻)。
+// 設計註記(非待辦):本 component / DataTable TruncateCell / Tag inner 三處同 truncate-tooltip idiom,
+// 已達 Rule-of-3;是否抽 `patterns/element-anatomy/truncated-text.tsx` 共用 primitive 屬 SSOT-affecting
+// 結構決策(新 pattern),留 user 拍板後再做,不在此自行抽取(避免無授權新增 pattern primitive)。
 
 type RoCallback = (entry: ResizeObserverEntry) => void
 let sharedRO: ResizeObserver | null = null
@@ -326,19 +327,30 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, BreadcrumbListProps>(
                 {collapsedItems.map((item, j) => {
                   // 2026-05-12 Round 4.5 fix(codex M31 Layer C 抓):consumer BreadcrumbItem children 常包
                   // `<BreadcrumbLink href>` = anchor button-like。直接放進 `<DropdownMenuItem>` 會 nested
-                  // interactive(menuitem within button violates HTML / a11y)。Fix:extract href + label,
-                  // 用 `asChild` 把 anchor 接到 menuitem 對齊 declarative path line 245 canonical pattern。
+                  // interactive(menuitem within button violates HTML / a11y)。Fix:把實際 link 元素接到
+                  // menuitem `asChild`,對齊 declarative path canonical pattern。
+                  // 2026-07-19 fix(DA3 對抗稽核抓):原只讀 `c.props.href` → `<BreadcrumbLink asChild>
+                  //   <RouterLink to=…>` 這種(BreadcrumbLink 無 href、RouterLink child 帶 `to`)摺疊後
+                  //   dropdown 失去導航目標。修:asChild 時**保留整個 link 子元素**(RouterLink/<Link to>/<a>,
+                  //   含 to/href/onClick/state 全 forward,前端路由不退化成整頁重載);純 href 才重建 <a>。
                   const innerChildren = (item.props as { children?: React.ReactNode }).children
-                  let href: string | undefined
-                  let label: React.ReactNode = innerChildren
+                  let menuChild: React.ReactNode | undefined  // 接進 menuitem(asChild)的實際 link 元素
+                  let label: React.ReactNode = innerChildren   // fallback:無 link 時的純內容
                   React.Children.forEach(innerChildren, (c) => {
-                    if (React.isValidElement<{ href?: string; children?: React.ReactNode }>(c)) {
-                      if (c.props.href) href = c.props.href
+                    if (!React.isValidElement<{ href?: string; asChild?: boolean; children?: React.ReactNode }>(c)) return
+                    if (c.props.asChild && React.isValidElement(c.props.children)) {
+                      // BreadcrumbLink asChild → 實際 link = 其 child(RouterLink / <Link to> / <a>),整個保留
+                      menuChild = c.props.children
+                      const grand = (c.props.children.props as { children?: React.ReactNode }).children
+                      if (grand != null) label = grand
+                    } else if (c.props.href != null) {
+                      // BreadcrumbLink href → 重建 <a href>(對齊原 canonical，避免 nested interactive)
+                      menuChild = <a href={c.props.href}>{c.props.children}</a>
                       if (c.props.children != null) label = c.props.children
                     }
                   })
-                  return href
-                    ? <DropdownMenuItem key={`collapsed-${j}`} asChild><a href={href}>{label}</a></DropdownMenuItem>
+                  return menuChild
+                    ? <DropdownMenuItem key={`collapsed-${j}`} asChild>{menuChild}</DropdownMenuItem>
                     : <DropdownMenuItem key={`collapsed-${j}`}>{label}</DropdownMenuItem>
                 })}
               </DropdownMenuContent>
