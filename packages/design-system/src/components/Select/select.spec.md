@@ -222,6 +222,14 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 純量化規則會誤判這兩端。label 性質是唯一可靠的主判準。
 
+### 建立新選項（`creatable`，2026-07-18 決策11）
+
+- `creatable` **需搭配 `searchable`**——搜尋字串非空且無完全同名既有選項時,dropdown 底部出現 create row(`Plus` icon + `createLabel`,預設「直接使用「{query}」」),點擊觸發 `onCreate(query)`。
+- **邏輯 / 顯示 / 互動 SSOT 住在 `SelectMenu`**(與 `Combobox.creatable` 同一底層):Select 的 trigger 內嵌搜尋 input 以**受控 `search`** 驅動 SelectMenu 的 create-row 顯隱(`SelectMenu.search` prop,選配受控;不傳 = 內部 uncontrolled,既有 consumer 零影響)。
+- `onCreate` 由 consumer 實作(通常:加進 options + 選取新值);create row 選取後 SelectMenu 清 search(受控時回呼 `onSearchChange`)。
+- **非 searchable 時無 create 通道**(沒有輸入處);`creatable` 單獨傳無效。
+- 何時用:label 是使用者自訂的自由文字集合(標籤 / 分類 / 專案名),清單非窮舉、允許擴充。何時不用:固定 enum(狀態 / 角色 / 國家)——不該讓使用者新增。
+
 ---
 
 ## 顯示模式（`display` prop）

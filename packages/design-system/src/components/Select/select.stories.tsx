@@ -172,6 +172,40 @@ export const Searchable: Story = {
   },
 }
 
+/* ── Creatable(搜尋 + 建立新選項）── */
+export const Creatable: Story = {
+  name: '建立新選項',
+  render: () => {
+    const [labels, setLabels] = React.useState([
+      { value: 'bug', label: 'Bug' },
+      { value: 'feature', label: 'Feature' },
+      { value: 'design', label: 'Design' },
+      { value: 'docs', label: 'Docs' },
+    ])
+    const [value, setValue] = React.useState<string>('')
+    return (
+      <div className="flex flex-col gap-4 max-w-xs">
+        <p className="text-caption text-fg-muted">
+          searchable + creatable — 搜尋不到既有標籤時,dropdown 底部出現「直接使用「…」」建立列,點擊即新增並選取
+        </p>
+        <Select
+          options={labels}
+          value={value}
+          onChange={setValue}
+          searchable
+          creatable
+          onCreate={(q) => {
+            const newLabel = { value: q.toLowerCase().replace(/\s+/g, '-'), label: q }
+            setLabels((prev) => [...prev, newLabel])
+            setValue(newLabel.value)
+          }}
+          placeholder="選擇或建立標籤…"
+        />
+      </div>
+    )
+  },
+}
+
 /* ── DataTable 整合 ── */
 export const InDataTable: Story = {
   name: 'DataTable 整合',

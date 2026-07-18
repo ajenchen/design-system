@@ -168,6 +168,16 @@ export interface SelectProps
    *  僅 Custom path(searchable dropdown)生效,Native path 無搜尋空狀態。
    *  對齊 MUI noOptionsText / Ant notFoundContent / Polaris emptyState 三家公開覆寫點共識。 */
   emptyText?: string
+  /**
+   * 可建立新選項(creatable,2026-07-18 決策11 user 拍板 forward 到 Select)。**需搭配 `searchable`**
+   * ——搜尋非空且無完全同名既有選項時,dropdown 顯 create row(Plus + `createLabel`)。
+   * 邏輯/顯示/互動 SSOT 住在 SelectMenu(Select 的 trigger 搜尋以受控 `search` 驅動 SelectMenu creatable
+   * 顯隱)。與 Combobox.creatable 同一底層。非 searchable 時無 create 通道(無輸入處)。 */
+  creatable?: boolean
+  /** 建立新選項 callback（收使用者輸入的搜尋字串）。 */
+  onCreate?: (value: string) => void
+  /** create row 的 label 格式，預設 '直接使用「{query}」'（forward SelectMenu SSOT）。 */
+  createLabel?: (query: string) => string
 }
 
 // ── Icon / size helpers ─────────────────────────────────────────────────────
@@ -475,7 +485,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     // 2026-07-08 A 案回歸修正:selectedItemRenderer 從丟棄名單移出 — Native path 的
     // ReadonlyDisplay(view/readonly/disabled)同樣消費值內容 renderer(contract (a) 4-mode
     // 共享,值內容不因 pointer type 而異);native <select> edit 路徑仍不消費(原生 option 無法客製 render)。
-    searchable: _searchable, groups: _groups, loading: _loading, minRows: _minRows, emptyText: _emptyText, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer,
+    searchable: _searchable, groups: _groups, loading: _loading, minRows: _minRows, emptyText: _emptyText, creatable: _creatable, onCreate: _onCreate, createLabel: _createLabel, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer,
     ...props }, ref) => {
     const fieldCtx = useFieldContext()
     const error = useResolvedFieldInvalid(errorProp)
@@ -573,7 +583,7 @@ NativeSelect.displayName = 'NativeSelect'
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode, variant: variantProp, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, minRows, emptyText, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, style: styleProp,
+  ({ mode, variant: variantProp, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, minRows, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, style: styleProp,
     // 2026-07-14 API 策展 D:mobile-only props(allowlist 註記)desktop 顯式丟棄 — div trigger 無原生
     // 對應,不 spread 進 DOM(對稱 NativeSelect 丟棄 custom-path-only props 的既有 pattern)
     autoFocus: _autoFocus, autoComplete: _autoComplete, ...rest }, ref) => {
@@ -821,6 +831,11 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         value={value ?? null}
         onValueChange={handleValueChange}
         searchable={false}
+        creatable={creatable}
+        onCreate={onCreate}
+        createLabel={createLabel}
+        search={searchable ? search : undefined}
+        onSearchChange={searchable ? setSearch : undefined}
         loading={loading}
         emptyText={emptyText}
         size={size}

@@ -81,6 +81,15 @@ export interface SelectMenuProps {
   onCreate?: (value: string) => void
   /** creatable 的 label 格式，預設 '直接使用「{query}」' */
   createLabel?: (query: string) => string
+  /**
+   * 受控搜尋字串(2026-07-18 決策11:讓 consumer 用**外部搜尋**(如 Select 的 trigger 內嵌 input)
+   * 驅動 creatable create-row 顯隱)。傳入 = 受控(SelectMenu 不自管 search、close 不 reset,由
+   * parent 負責);不傳 = 內部 uncontrolled(既有行為,零影響)。搭配 `searchable=false` +
+   * `creatable` 時,SelectMenu 不畫自己的 input,但 create-row 仍依此 search 顯示。
+   */
+  search?: string
+  /** 受控搜尋變更通知(選配;SelectMenu 內部無 input 時通常由 parent 單向驅動,不需此) */
+  onSearchChange?: (value: string) => void
 
   /** 觸發元件（asChild） */
   children: React.ReactNode
@@ -170,6 +179,8 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   creatable = false,
   onCreate,
   createLabel = (q) => `直接使用「${q}」`,
+  search: controlledSearch,
+  onSearchChange,
   children,
   searchPlaceholder = '搜尋…', // i18n-allow: DS default; consumer override via searchPlaceholder prop
   emptyText = '沒有符合的選項', // i18n-allow: DS default; consumer override via emptyText prop
@@ -198,7 +209,18 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     defaultValue: defaultOpen ?? false,
     onChange: controlledOnOpenChange,
   })
-  const [search, setSearch] = React.useState('')
+  // search:選配受控(決策11)。傳 `search` prop = 受控(parent 驅動,如 Select trigger input);
+  // 不傳 = 內部 uncontrolled(既有行為)。setSearch 同步內部 + 通知 onSearchChange。
+  const isSearchControlled = controlledSearch !== undefined
+  const [internalSearch, setInternalSearch] = React.useState('')
+  const search = isSearchControlled ? controlledSearch : internalSearch
+  const setSearch = React.useCallback(
+    (next: string) => {
+      if (!isSearchControlled) setInternalSearch(next)
+      onSearchChange?.(next)
+    },
+    [isSearchControlled, onSearchChange],
+  )
 
   // ── Value helpers ──
   const selectedValues = React.useMemo<string[]>(() => {
@@ -288,10 +310,10 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     return grouped
   }, [groups, options])
 
-  // ── Reset search on close ──
+  // ── Reset search on close(僅 uncontrolled;受控時由 parent 負責 reset)──
   React.useEffect(() => {
-    if (!open) setSearch('')
-  }, [open])
+    if (!open && !isSearchControlled) setInternalSearch('')
+  }, [open, isSearchControlled])
 
   // 2026-06-01 Select/Combobox #15(user 拍板 A):非搜尋時開選單把 focus 移到 cmdk-root,
   // 讓 cmdk 內建方向鍵 / Enter / Home / End 導覽生效。原 PopoverContent default autofocus 找 body
