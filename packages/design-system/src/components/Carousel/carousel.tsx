@@ -250,10 +250,15 @@ CarouselItem.displayName = 'CarouselItem'
 // opacity transition 控制(Button 本身不負責)。此 wrapper 存在僅為絕對定位 +
 // hover/focus 可見性,不再覆寫 Button 的視覺 token。
 
-type ArrowProps = {
-  className?: string
-  /** ARIA label. Override for i18n. Prev default: 「上一張」;Next default: 「下一張」 */
-  'aria-label'?: string
+// 2026-07-18 決策14(user 授權 B 案:開放完整 Button props + wrapperClassName):
+// 對齊 shadcn/Radix Carousel —— `className` 指**箭頭按鈕本身**(非定位 wrapper),
+// consumer 可換 variant/size、綁 analytics onClick、傳 data-* 等完整 Button props。
+// 定位層(絕對定位 + hover-only 顯示)的 className 走新 `wrapperClassName`。
+// **BREAKING**:`className` 語義由「定位 wrapper」改為「按鈕」(遷移:定位覆寫改傳 wrapperClassName)。
+// onClick/disabled 內部與 carousel 導覽 compose(scrollPrev/Next + 邊界 disable 保留,consumer 疊加)。
+type ArrowProps = Omit<React.ComponentPropsWithoutRef<typeof Button>, 'iconOnly'> & {
+  /** 定位層 wrapper 的 className(絕對定位 + hover-only 顯示層);箭頭按鈕樣式走 `className`。 */
+  wrapperClassName?: string
 }
 
 const arrowWrapperClass = cn(
@@ -266,7 +271,19 @@ const arrowWrapperClass = cn(
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CarouselPrevious = React.forwardRef<HTMLButtonElement, ArrowProps>(
-  ({ className, 'aria-label': ariaLabel = '上一張' /* i18n-allow: DS default; consumer override via aria-label prop */ }, ref) => {
+  (
+    {
+      className,
+      wrapperClassName,
+      onClick,
+      disabled,
+      variant = 'tertiary',
+      size = 'md',
+      'aria-label': ariaLabel = '上一張' /* i18n-allow: DS default; consumer override via aria-label prop */,
+      ...props
+    },
+    ref,
+  ) => {
     const { orientation, scrollPrev, canScrollPrev } = useCarousel()
     return (
       <div
@@ -275,22 +292,24 @@ const CarouselPrevious = React.forwardRef<HTMLButtonElement, ArrowProps>(
           orientation === 'horizontal'
             ? 'left-3 top-1/2 -translate-y-1/2'
             : 'top-3 left-1/2 -translate-x-1/2 rotate-90',
-          className,
+          wrapperClassName,
         )}
       >
         <Button
           ref={ref}
-          variant="tertiary"
-          size="md"
-          iconOnly
+          variant={variant}
+          size={size}
           startIcon={ChevronLeft}
           aria-label={ariaLabel}
-          disabled={!canScrollPrev}
-          onClick={scrollPrev}
+          {...props}
+          iconOnly
+          disabled={!canScrollPrev || disabled}
+          onClick={(e) => { scrollPrev(); onClick?.(e) }}
           // documented exception:視覺取向的 media carousel 箭頭用 rounded-full 圓形,
           // 優於 DS default rounded-md。對齊 Instagram / Airbnb / Notion / Apple Photos
           // 世界級慣例 — media carousel 箭頭圓形減少視覺方塊感壓迫內容。spec「箭頭視覺規格」有明示。
-          className="rounded-full"
+          // consumer className 疊加在後可覆寫(決策14)。
+          className={cn('rounded-full', className)}
         />
       </div>
     )
@@ -300,7 +319,19 @@ CarouselPrevious.displayName = 'CarouselPrevious'
 
 // code-quality-allow: long-function — 與 CarouselPrevious 結構對稱的 JSX-heavy arrow(方向/位置/邊界三態 className 組合),拆 helper 會破壞兩支對讀性
 const CarouselNext = React.forwardRef<HTMLButtonElement, ArrowProps>(
-  ({ className, 'aria-label': ariaLabel = '下一張' /* i18n-allow: DS default; consumer override via aria-label prop */ }, ref) => {
+  (
+    {
+      className,
+      wrapperClassName,
+      onClick,
+      disabled,
+      variant = 'tertiary',
+      size = 'md',
+      'aria-label': ariaLabel = '下一張' /* i18n-allow: DS default; consumer override via aria-label prop */,
+      ...props
+    },
+    ref,
+  ) => {
     const { orientation, scrollNext, canScrollNext } = useCarousel()
     return (
       <div
@@ -309,20 +340,21 @@ const CarouselNext = React.forwardRef<HTMLButtonElement, ArrowProps>(
           orientation === 'horizontal'
             ? 'right-3 top-1/2 -translate-y-1/2'
             : 'bottom-3 left-1/2 -translate-x-1/2 rotate-90',
-          className,
+          wrapperClassName,
         )}
       >
         <Button
           ref={ref}
-          variant="tertiary"
-          size="md"
-          iconOnly
+          variant={variant}
+          size={size}
           startIcon={ChevronRight}
           aria-label={ariaLabel}
-          disabled={!canScrollNext}
-          onClick={scrollNext}
-          // documented exception:同 Previous,媒體導向 carousel 箭頭圓形
-          className="rounded-full"
+          {...props}
+          iconOnly
+          disabled={!canScrollNext || disabled}
+          onClick={(e) => { scrollNext(); onClick?.(e) }}
+          // documented exception:同 Previous,媒體導向 carousel 箭頭圓形;consumer className 疊加可覆寫。
+          className={cn('rounded-full', className)}
         />
       </div>
     )
