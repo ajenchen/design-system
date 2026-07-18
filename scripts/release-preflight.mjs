@@ -115,6 +115,9 @@ run('build-storybook', 'npm run --silent build-storybook')
 // 累積把後續 probe 拖垮(false hang;非程式錯)。改為本機也分 8 shard 串跑(全 961 零抽樣、每 shard 重起
 // server + browser 即資源歸零 → 不再拖垮),對齊 CI smoke-shard matrix 本來就分片的作法。任一 shard 非 0 →
 // 整步 fail。每 shard 前清 port 殘留 server 避免 bind 衝突 false-fail。
+// ⚙️ GATE RETIRE 理由(governance-tamper R1 ratchet,baseline 52→51,同 commit 更新 preflight-gate-baseline.json):
+//   原獨立 `run('clear smoke port 8920', ...)` step 併入下方 shard 迴圈內(每 shard 前清 port,比原「跑前清一次」
+//   更正確)→ run() 呼叫數 -1。非移除防線:清 port 邏輯仍在(移進迴圈)、smoke 覆蓋零損失(全 961)。
 run('FULL storybook runtime smoke — 分 8 shard 串跑(全 961 story 零抽樣;每 shard 資源歸零防拖垮)',
   'for N in 1 2 3 4 5 6 7 8; do lsof -ti:8920 | xargs kill -9 2>/dev/null || true; node scripts/storybook-smoke-test.mjs --full --shard=$N/8 || exit 1; done')
 // InlineEdit 對齊 + blur exit pixel invariant(2026-07-17 root cause 修的機械鎖):委派控件 view 左緣落 label

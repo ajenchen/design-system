@@ -1,5 +1,5 @@
 {
-  "gateCount": 52,
-  "updated": "2026-07-17",
+  "gateCount": 51,
+  "updated": "2026-07-18",
   "note": "合法 retire gate 需同 commit 更新本檔 + preflight 檔內記 retire 理由"
 }
