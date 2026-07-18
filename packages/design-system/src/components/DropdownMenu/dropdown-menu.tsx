@@ -122,7 +122,10 @@ const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
 
 // ── Content ──
 interface DropdownMenuContentProps
-  extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> {
+  // asChild Omit(2026-07-18 決策2):Content 恆注入固定 <RowSizeProvider>(+ 選配 <ScrollArea>)
+  // wrapper 於 Portal 內 → <Content asChild> 會把 Content props slot-merge 到非-DOM Provider 上而壞。
+  // children 保留(合法渲染於固定 wrapper 內)。
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>, 'asChild'> {
   size?: SizeKey
   /** 最小寬度（px），預設 `max(180px, 觸發元件寬度)`——窄 trigger 時吃 180px 地板 */
   minWidth?: number
@@ -431,7 +434,11 @@ DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName
 // Radix handles checked state;checked 底色套在外層 Radix RadioItem 本身(parent-bg
 // pattern,詳下方 2026-05-31 #10 註解),內層 MenuItem 恆 !bg-transparent 讓它透出。
 interface DropdownMenuRadioItemProps
-  extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem> {
+  // children Omit + redeclare required(2026-07-18 決策2 一致性):對齊 sibling Item/SubTrigger/
+  // CheckboxItem — menu item 必有 label,children 為 required 非 Radix optional。RadioItem 恆渲染
+  // 固定 <MenuItem>{children}</MenuItem>,children 是合法 label(非 lie),此為 required 化一致性修。
+  extends Omit<React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>, 'children'> {
+  children: React.ReactNode
   /** Prefix icon(LucideIcon) */
   startIcon?: LucideIcon
   /** 次要說明文字 */

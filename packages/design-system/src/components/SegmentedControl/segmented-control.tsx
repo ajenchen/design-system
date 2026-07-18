@@ -218,7 +218,9 @@ const itemVariants = cva(
 // 但當 group iconOnly = true 時，每個 item 必須提供 startIcon + aria-label——
 // 這是語意契約，在 render 階段檢查並在 dev mode 發出警告（TS 層做不到這層檢查）。
 export interface SegmentedControlItemProps
-  extends React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> {
+  // asChild Omit(2026-07-18 決策2):item 固定渲染 [startIcon?, <span>{children}</span>, badge?]
+  // 多節點陣列 → Radix Slot React.Children.only 恆 crash。children(label)保留合法。對齊 Chip 收窄。
+  extends Omit<React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item>, 'asChild'> {
   /** 左側 icon（LucideIcon）。group iconOnly = true 時必填。 */
   startIcon?: LucideIcon
   /** 右側 suffix badge（通常是計數指示器）。group iconOnly = true 時會被忽略。 */

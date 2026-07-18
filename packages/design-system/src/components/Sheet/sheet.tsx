@@ -88,8 +88,11 @@ const sheetVariants = cva(
   }
 )
 
+// asChild Omit(2026-07-18 決策2):SheetContent 是固定 edge-anchored surface(overlay + sheetVariants
+// 定位/slide 動畫 + onOpenAutoFocus),恆渲染 {children}(consumer body 多節點)→ <Content asChild>
+// Radix Slot React.Children.only crash。children 保留(consumer body)。同 Dialog 收窄。
 interface SheetContentProps
-  extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
+  extends Omit<React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, 'asChild'>,
     VariantProps<typeof sheetVariants> {}
 
 // AutoFocus canonical(對齊 Dialog / Material / Polaris)— 見 dialog.tsx handleOpenAutoFocus 註解

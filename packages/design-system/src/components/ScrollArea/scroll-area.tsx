@@ -34,7 +34,9 @@ import { cn } from '@/lib/utils'
 
 const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
+  // asChild Omit(2026-07-18 決策2):Root 恆渲染固定三子節點(Viewport + ScrollBar + Corner)
+  // → <Root asChild> Radix Slot React.Children.only crash。children 保留(路由進固定 Viewport)。
+  Omit<React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>, 'asChild'> & {
     /** 2026-07-08(WM 戰役 R2):Radix Viewport 內建 wrapper `display:table; min-width:100%`
      *  讓垂直捲動容器內的 flex 多欄佈局以 max-content 佈局、突破 100% 寬(WM 兩欄 dialog
      *  右欄被裁 33px 實證)。垂直捲動場景 opt-in 此 prop 中和為 block/w-full(水平捲動

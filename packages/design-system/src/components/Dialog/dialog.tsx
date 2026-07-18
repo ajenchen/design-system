@@ -52,7 +52,10 @@ const DialogOverlay = React.forwardRef<
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
-interface DialogContentProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+// asChild Omit(2026-07-18 決策2):DialogContent 是固定 surface chrome(overlay + 定位 +
+// bg/rounded/shadow + onOpenAutoFocus),恆渲染 {children}(consumer body,通常 Header+Body+Footer
+// 多節點)→ <Content asChild> Radix Slot React.Children.only crash。children 保留(consumer body)。
+interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>, 'asChild'> {
   /** 最大寬度。預設 512px。傳 number 視為 px。 */
   maxWidth?: string | number
   /**

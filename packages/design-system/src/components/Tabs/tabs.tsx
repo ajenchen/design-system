@@ -449,7 +449,10 @@ const tabsTriggerVariants = cva(
 )
 
 interface TabsTriggerProps
-  extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> {
+  // asChild Omit(2026-07-18 決策2):Tab trigger 固定渲染 [startIcon?, <span>{children}</span>,
+  // suffix?] 多節點陣列 → Radix Slot 的 React.Children.only 恆 crash(每個 tab 都會)。
+  // children(label)保留合法;TabsRoot / TabsList 為真容器不收窄。
+  extends Omit<React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>, 'asChild'> {
   /** 左側 icon（LucideIcon） */
   startIcon?: LucideIcon
   /** 右側 badge（通常是計數指示器） */

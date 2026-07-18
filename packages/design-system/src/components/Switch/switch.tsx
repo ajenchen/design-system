@@ -96,7 +96,11 @@ const SPECS: Record<string, { thumb: number; check: number; checkStroke: number 
 }
 
 export interface SwitchProps
-  extends React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>,
+  // asChild / children 從公開型別 Omit(2026-07-18 決策2):Switch 固定 anatomy —
+  // 恆渲染 Thumb + BooleanValueIcon,非 Slot host;children 被固定 Thumb 靜默覆蓋,
+  // asChild(Radix Slot 單子節點)破壞 track/thumb 結構(CLAUDE.md 失敗記憶「asChild ? Slot」)。
+  // 對齊 Checkbox 同款收窄(sibling selection control)。
+  extends Omit<React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>, 'asChild' | 'children'>,
     VariantProps<typeof switchVariants> {
   /**
    * Inline label。提供時 Switch 自動包一個 <label> 並連結 htmlFor，
@@ -198,7 +202,9 @@ const Switch = React.forwardRef<
       asChild: _asChild,
       children: _children,
       ...restDomProps
-    } = props
+      // asChild/children 已從 SwitchProps 型別 Omit(見型別註解);此處 cast 保留 runtime strip
+      // (防 any-cast consumer 洩漏到 primitive),與 RadioGroup 同款防禦。
+    } = props as SwitchProps & { asChild?: boolean; children?: React.ReactNode }
 
     // ── mode='view'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
     // 純展示模式:無互動 toggle、渲染 Check / X icon。與 Checkbox view 對齊(同 boolean primitive,

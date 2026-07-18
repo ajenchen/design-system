@@ -23,7 +23,10 @@ import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/comp
 // ── RadioGroup ──────────────────────────────────────────────────────────────
 
 export interface RadioGroupProps
-  extends React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root> {
+  // asChild Omit(2026-07-18 決策2):RadioGroup 恆持有多個 radio item → <Root asChild> 的
+  // Radix Slot React.Children.only crash;view/readonly 模式更直接渲染固定 <div> 忽略之。
+  // children 保留(edit 容器內容 + view/readonly 走訪選中 label,見 body cast @line ~105)。
+  extends Omit<React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>, 'asChild'> {
   /**
    * Field mode(2026-05-05 Phase B3 align):
    *   edit     — 一般可互動 RadioGroup(預設)
@@ -223,7 +226,9 @@ const dotSize: Record<string, number> = { sm: 8, md: 8, lg: 10 }
 type RadioItemPrimitiveProps = React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>
 
 export interface RadioGroupItemProps
-  extends RadioItemPrimitiveProps,
+  // asChild / children Omit(2026-07-18 決策2):item 固定渲染 Indicator dot(<Circle/>)—
+  // children 被固定 Indicator 靜默覆蓋,asChild 破壞 radio 結構。對齊 Checkbox 收窄。label 走 `label` prop。
+  extends Omit<RadioItemPrimitiveProps, 'asChild' | 'children'>,
     VariantProps<typeof radioItemVariants> {
   /**
    * Inline label。提供時 RadioGroupItem 自動透過 SelectionItem 包裝，
