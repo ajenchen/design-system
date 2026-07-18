@@ -95,7 +95,7 @@ const FIELD_HEIGHT_TOKEN: Record<string, string> = {
   lg: 'var(--field-height-lg)',
 }
 
-/** CommandList 最小高度 = field-height × rows + 16px(CommandGroup py-2 上下 padding） */
+/** @internal — CommandList 最小高度 = field-height × rows + 16px(CommandGroup py-2 上下 padding);Command/Select 內部 helper,consumer 不直接 import。root barrel 排除(subpath 仍可用)。 */
 export function getMenuListMinHeight(size: string, rows: number = 3): string {
   const token = FIELD_HEIGHT_TOKEN[size] ?? FIELD_HEIGHT_TOKEN.md
   return `calc(${token} * ${rows} + 16px)`

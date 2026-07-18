@@ -165,6 +165,8 @@ FieldControlGroup 的規格和範例用「Mode A/B/C」字母代號,沒有產品
 - ✅ **7-AppShell controlled rationale**:app-shell.spec 加「Aside 開關控制刻意單向」段(initial 固定關閉,不加 defaultAsideOpen)
 - ⏳ **7-Steps controlled**:待加 expanded/onExpandedChange(code)/ 剩 2/3/4/5/11/12/14/16/17
 
+- ✅ **3 barrel @internal 符號級收緊**:generator 讀 `@internal` JSDoc tag → root front-door 排除(subpath 仍有)。ground-truth:11 符號收窄(7 value:ButtonGroupContext/floatingLayerClass/getMenuListMinHeight/handleSheetOpenAutoFocus/ItemInlineAction/ItemInlineActionButton/RowSizeProvider + 2 props type + 2 Field type channel);M10 exhaustive scan 多抓 ItemInlineAction(named-6 漏)。**精準判定**:JSDoc-tag-only,排除 `//` prose(實證 greedy 誤殺 Input/FieldVariant/Select）。handleSheetOpenAutoFocus 保持 internal(對齊 2026-06-05 拍板)。驗:tsc -b ✓ / build:lib ✓(無 TS4023)/ --check ✓ / 0 root-package consumer / 15/15 hook test。canonical:ui-development.md 補符號級 `@internal` 段。
+
 - ◑ **11-Select creatable**:ground-truth 發現 Select searchable=trigger 內嵌 input(SelectMenu searchable=false),creatable 需把 trigger 搜尋接進 SelectMenu creatable 顯隱(架構整合非 prop forward)。Combobox creatable 已覆蓋主場景;Select 這半留評估。
 
 - ✅ **16 ColumnVisibilityPanel** → 改走 B(保留 Fragment):ground-truth 發現 A 加 root 會破壞 PopoverHeader 邊緣 bleed(Fragment 刻意讓 PopoverHeader 當 PopoverContent 直接子);sibling 自刻 header 故可包 root、本 panel 用 primitive 不行。加註解記錄刻意,非缺陷。

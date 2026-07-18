@@ -558,6 +558,7 @@ ItemAvatar.displayName = "ItemAvatar"
 //
 // 接受任何 button props 並 spread(讓 Radix Slot 可以 merge onClick / data-state 等)
 
+/** @internal — internal ItemInlineActionButton 的 props;隨其元件同走 subpath,不進 root barrel front-door。 */
 export interface ItemInlineActionButtonProps
   extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   /** Lucide icon 元件 */
@@ -662,6 +663,7 @@ ItemInlineActionButton.displayName = "ItemInlineActionButton"
 // 需要接 Radix asChild(例如 collapsible trigger)時改用 `ItemInlineActionButton`,
 // 那層沒有 Tooltip 包裝,Root 就是 button,可直接塞進 Radix Slot。
 
+/** @internal — internal ItemInlineAction 的 props;隨其元件同走 subpath,不進 root barrel front-door。 */
 export interface ItemInlineActionProps {
   action: InlineActionConfig
   /** Size 覆寫(見 `ItemInlineActionButtonProps.size`)——Field Controls / Tag 必傳 */

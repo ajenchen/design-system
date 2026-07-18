@@ -228,6 +228,7 @@ const buttonVariants = cva(
 interface ButtonGroupContextValue {
   fullWidth?: boolean
 }
+/** @internal — ButtonGroup↔Button 私有 context(fullWidth 注入);consumer 不直接 import,經 <ButtonGroup> 消費。root barrel 排除(subpath 仍可 wrap 後用)。 */
 const ButtonGroupContext = React.createContext<ButtonGroupContextValue>({})
 
 type InternalVariant = VariantProps<typeof buttonVariants>['variant']

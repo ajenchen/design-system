@@ -40,6 +40,7 @@ import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
  */
 
 // ── Floating layer 共用樣式 ──
+/** @internal — menu 形浮層共用 class(DropdownMenu/SelectMenu/Command 內部);consumer 不 hand-craft menu surface,用元件本身。root barrel 排除(subpath 仍可 wrap 後用)。 */
 const floatingLayerClass = [
   'z-50 overflow-hidden rounded-lg border border-border bg-surface-raised',
   overlayMotion,

@@ -78,19 +78,38 @@ function resolveModule(fromFile, spec) {
   throw new Error(`[gen-barrel] ${fromFile}: 解析不到 '${spec}'(tried .tsx/.ts/index)`)
 }
 
-function mergeKind(map, name, kind, origin, ctxPath) {
+function mergeKind(map, name, kind, origin, ctxPath, internal = false) {
   const prev = map.get(name)
-  if (!prev) { map.set(name, { kind, origin }); return }
+  if (!prev) { map.set(name, { kind, origin, internal }); return }
   if (prev.origin !== origin) {
     // 同 module 內同名不同宣告(ES star-export ambiguity = 靜默雙消失)→ fail-loud 人工解
     throw new Error(`[gen-barrel] ${ctxPath}: '${name}' 在同 module 有兩個不同宣告來源(${prev.origin} vs ${origin})— ambiguous export,請解重名`)
   }
   // declaration merging(const X + type X 同宣告點)→ value 勝(value re-export 同時帶 type meaning)
   if (prev.kind !== 'value' && kind === 'value') prev.kind = 'value'
+  // @internal 旗標(同 binding):任一路徑標 internal 即 internal(保守;origin 相同保證是同宣告點)
+  if (internal) prev.internal = true
 }
 
 function hasExportModifier(node) {
   return (ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Export) !== 0
+}
+
+// @internal jsDoc marker 偵測(2026-07-18 決策3:root barrel front-door 排除 @internal-標記符號,
+// 對齊 TypeScript stripInternal / MUI @ignore / API-Extractor @internal release tag)。
+// **精準判定鐵律**(對抗 greedy 誤殺 public):`@internal` 必為 JSDoc 區塊(`/** */`)的 tag
+// (行首位置),**排除** `//` line-comment prose —— 否則 `FieldVariant` 這種「自身 doc 用 `//`
+// 提及兄弟符號 @internal」的 public 型別會被誤排除(2026-07-18 scan 實證 greedy 誤殺 Input/
+// FieldVariant/Select)。ts.getJSDocTags 對 @internal 回空(TS 視為 trivia),故走原始 comment range。
+function symbolHasInternalTag(txt,node) {
+  const ranges = ts.getLeadingCommentRanges(txt, node.pos) || []
+  for (const r of ranges) {
+    if (r.kind !== ts.SyntaxKind.MultiLineCommentTrivia) continue // 跳過 // line comment(prose 提及)
+    const c = txt.slice(r.pos, r.end)
+    if (!c.startsWith('/**')) continue // 僅 JSDoc /** */,非普通 /* */
+    if (/(^\/\*\*|\n)\s*\*?\s*@internal\b/.test(c)) return true // @internal 在 tag 位置(行首)
+  }
+  return false
 }
 
 /** Collect the full export surface of a module file. Returns Map<name, 'value'|'type'>. */
@@ -101,9 +120,10 @@ function collectModuleExports(absPath) {
   }
   inProgress.add(absPath)
 
+  const txt = fs.readFileSync(absPath, 'utf8')
   const src = ts.createSourceFile(
     absPath,
-    fs.readFileSync(absPath, 'utf8'),
+    txt,
     ts.ScriptTarget.Latest,
     /* setParentNodes */ false,
     absPath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
@@ -111,6 +131,8 @@ function collectModuleExports(absPath) {
 
   /** top-level 本地宣告 name → 'value'|'type'|'import'(供 `export { A }` 無 from 子句查 kind)*/
   const localDecls = new Map()
+  /** @internal-標記的本地宣告 name(供 `const X`(@internal)後 `export { X }` 轉出口帶旗標)*/
+  const localInternal = new Set()
   /** import 進來的名字 → 來源(供「import 後 export { A }」轉出口歸類,如 data-table-filter-panel)*/
   const importedFrom = new Map()
   const localMerge = (name, kind) => {
@@ -122,21 +144,27 @@ function collectModuleExports(absPath) {
 
   for (const stmt of src.statements) {
     if (ts.isVariableStatement(stmt)) {
+      const internal = symbolHasInternalTag(txt,stmt)
       for (const decl of stmt.declarationList.declarations) {
         if (!ts.isIdentifier(decl.name)) {
           if (hasExportModifier(stmt)) throw new Error(`[gen-barrel] ${absPath}: exported destructuring 宣告不支援`)
           continue
         }
         localMerge(decl.name.text, 'value')
-        if (hasExportModifier(stmt)) mergeKind(exportsMap, decl.name.text, 'value', `${absPath}#${decl.name.text}`, absPath)
+        if (internal) localInternal.add(decl.name.text)
+        if (hasExportModifier(stmt)) mergeKind(exportsMap, decl.name.text, 'value', `${absPath}#${decl.name.text}`, absPath, internal)
       }
     } else if (ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt) || ts.isEnumDeclaration(stmt)) {
       if (!stmt.name) continue // export default anonymous — root barrel 不收 default
+      const internal = symbolHasInternalTag(txt,stmt)
       localMerge(stmt.name.text, 'value')
-      if (hasExportModifier(stmt)) mergeKind(exportsMap, stmt.name.text, 'value', `${absPath}#${stmt.name.text}`, absPath)
+      if (internal) localInternal.add(stmt.name.text)
+      if (hasExportModifier(stmt)) mergeKind(exportsMap, stmt.name.text, 'value', `${absPath}#${stmt.name.text}`, absPath, internal)
     } else if (ts.isInterfaceDeclaration(stmt) || ts.isTypeAliasDeclaration(stmt)) {
+      const internal = symbolHasInternalTag(txt,stmt)
       localMerge(stmt.name.text, 'type')
-      if (hasExportModifier(stmt)) mergeKind(exportsMap, stmt.name.text, 'type', `${absPath}#${stmt.name.text}`, absPath)
+      if (internal) localInternal.add(stmt.name.text)
+      if (hasExportModifier(stmt)) mergeKind(exportsMap, stmt.name.text, 'type', `${absPath}#${stmt.name.text}`, absPath, internal)
     } else if (ts.isModuleDeclaration(stmt)) {
       if (hasExportModifier(stmt)) throw new Error(`[gen-barrel] ${absPath}: exported namespace 不支援(value/type 二義)`)
     } else if (ts.isImportDeclaration(stmt)) {
@@ -160,8 +188,8 @@ function collectModuleExports(absPath) {
         if (!ts.isStringLiteral(stmt.moduleSpecifier)) throw new Error(`[gen-barrel] ${absPath}: 非字面 module specifier`)
         const target = resolveModule(absPath, stmt.moduleSpecifier.text)
         if (!stmt.exportClause) {
-          // export * from './x' — 遞迴合併(origin 透傳,同 binding 不算 ambiguous)
-          for (const [name, entry] of collectModuleExports(target)) mergeKind(exportsMap, name, entry.kind, entry.origin, absPath)
+          // export * from './x' — 遞迴合併(origin + @internal 旗標透傳,同 binding 不算 ambiguous)
+          for (const [name, entry] of collectModuleExports(target)) mergeKind(exportsMap, name, entry.kind, entry.origin, absPath, entry.internal)
         } else if (ts.isNamedExports(stmt.exportClause)) {
           const targetExports = collectModuleExports(target)
           for (const el of stmt.exportClause.elements) {
@@ -170,7 +198,7 @@ function collectModuleExports(absPath) {
             const entry = targetExports.get(sourceName)
             if (!entry) throw new Error(`[gen-barrel] ${absPath}: re-export '${sourceName}' 在 ${target} 找不到`)
             const kind = (stmt.isTypeOnly || el.isTypeOnly) ? 'type' : entry.kind
-            mergeKind(exportsMap, exportedName, kind, entry.origin, absPath)
+            mergeKind(exportsMap, exportedName, kind, entry.origin, absPath, entry.internal)
           }
         } else {
           throw new Error(`[gen-barrel] ${absPath}: export * as ns 不支援`)
@@ -189,14 +217,14 @@ function collectModuleExports(absPath) {
             if (!imp) throw new Error(`[gen-barrel] ${absPath}: export { ${sourceName} } 是 default/namespace import 轉出口 — 不支援`)
             const entry = collectModuleExports(resolveModule(absPath, imp.spec)).get(imp.sourceName)
             if (!entry) throw new Error(`[gen-barrel] ${absPath}: export { ${sourceName} } 轉出口在 ${imp.spec} 找不到 '${imp.sourceName}'`)
-            mergeKind(exportsMap, exportedName, (typeOnly || imp.typeOnly) ? 'type' : entry.kind, entry.origin, absPath)
+            mergeKind(exportsMap, exportedName, (typeOnly || imp.typeOnly) ? 'type' : entry.kind, entry.origin, absPath, entry.internal)
             continue
           }
-          if (typeOnly) { mergeKind(exportsMap, exportedName, 'type', `${absPath}#${sourceName}`, absPath); continue }
+          if (typeOnly) { mergeKind(exportsMap, exportedName, 'type', `${absPath}#${sourceName}`, absPath, localInternal.has(sourceName)); continue }
           if (!localKind) {
             throw new Error(`[gen-barrel] ${absPath}: export { ${sourceName} } 無法歸類(未知本地宣告)— 補 walker 規則或改寫來源`)
           }
-          mergeKind(exportsMap, exportedName, localKind, `${absPath}#${sourceName}`, absPath)
+          mergeKind(exportsMap, exportedName, localKind, `${absPath}#${sourceName}`, absPath, localInternal.has(sourceName))
         }
       }
     } else if (ts.isExportAssignment(stmt)) {
@@ -262,6 +290,7 @@ function registerStarNames(entries, ownerLabel) {
 }
 
 const metaExcludedNames = []
+const internalMarkerExcluded = [] // 2026-07-18 決策3:@internal jsDoc 標記排除出 front-door 的符號
 
 /** named re-export 區塊(value + type 兩段;名單排序保 deterministic --check)*/
 function emitNamedReexports(indexAbsPath, fromSpecifier, ownerLabel, out) {
@@ -271,7 +300,10 @@ function emitNamedReexports(indexAbsPath, fromSpecifier, ownerLabel, out) {
   const all = collectModuleExports(indexAbsPath)
   const values = []
   const types = []
-  for (const [name, { kind, origin }] of all) {
+  for (const [name, { kind, origin, internal }] of all) {
+    // @internal jsDoc 標記(2026-07-18 決策3):subpath-only,不進 root front-door
+    // (對齊 TS stripInternal / MUI @ignore / API-Extractor;偵測見 hasInternalMarker 精準判定)。
+    if (internal) { internalMarkerExcluded.push(`${ownerLabel}:${name}`); continue }
     // /Internal$/ 慣例:internal-by-convention 型別通道(FieldVariantInternal 等)
     // subpath-only,不進 root front-door(2026-07-14 API 策展 E 配套;value/type 皆擋)
     if (/Internal$/.test(name)) continue
@@ -379,6 +411,10 @@ exports.push('// 下列 internal 元件/pattern 不在 root barrel front-door;�
 exports.push('// (@qijenchen/design-system/{components,patterns}/<Dir>),「包裝後 + 自行確認」才可用。')
 exports.push('// SSOT = 各自 spec.md frontmatter isInternal。改公開/內部請改 frontmatter 後重跑本 generator。')
 for (const x of internalExcluded.sort()) exports.push(`//   - ${x}`)
+if (internalMarkerExcluded.length) {
+  exports.push('// 另有 public 元件內個別標 @internal jsDoc 的符號亦排除 front-door(2026-07-18 決策3;subpath 仍有):')
+  for (const x of internalMarkerExcluded.sort()) exports.push(`//   - ${x}`)
+}
 
 exports.push('')
 exports.push('// ─── Tokens(JS mirrors — token SSOT 程式面)──────────────────────────────')
@@ -426,11 +462,12 @@ if (process.argv.includes('--check')) {
     console.error(`✗ dim-44 @internal marker 缺漏:${internalMissingMarker.join(', ')} — internal 單元 tsx 必帶 @internal jsDoc(ui-development.md Public vs Internal canonical)。修:在主 tsx 加 /** @internal — … */ file-header block(參照 horizontal-overflow.tsx)`)
     process.exit(1)
   }
-  console.log(`✓ root barrel 對齊(internal subpath-only:${internalExcluded.length} 排除 front-door;@internal marker ${internalExcluded.length}/${internalExcluded.length} 齊;*Meta 收窄:${metaExcludedNames.length} 個)`)
+  console.log(`✓ root barrel 對齊(internal dir subpath-only:${internalExcluded.length} 排除 front-door;@internal marker dir ${internalExcluded.length}/${internalExcluded.length} 齊;@internal 符號收窄:${internalMarkerExcluded.length} 個;*Meta 收窄:${metaExcludedNames.length} 個)`)
   process.exit(0)
 }
 
 fs.writeFileSync(target, generated)
 console.log('✓ generated', target, `with ${componentDirs.length} components / ${patternDirs.length} patterns / ${hooks.length} hooks / ${lib.length} lib`)
 console.log(`  ↳ internal(subpath-only,排除 root barrel): ${internalExcluded.length} → ${internalExcluded.join(', ')}`)
+console.log(`  ↳ @internal 符號收窄出 front-door(subpath 仍有): ${internalMarkerExcluded.length} → ${internalMarkerExcluded.join(', ')}`)
 console.log(`  ↳ *Meta 收窄出 front-door(subpath 仍有): ${metaExcludedNames.length} 個`)

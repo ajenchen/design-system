@@ -76,7 +76,6 @@ export {
   Button,
   ButtonDivider,
   ButtonGroup,
-  ButtonGroupContext,
   buttonVariants,
 } from './components/Button/index'
 export type {
@@ -228,7 +227,6 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-  floatingLayerClass,
 } from './components/DropdownMenu/index'
 export type {
   DropdownMenuItemProps,
@@ -246,7 +244,6 @@ export {
   FieldError,
   FieldGroup,
   FieldLabel,
-  getMenuListMinHeight,
   useFormValidation,
 } from './components/Field/index'
 export type {
@@ -417,7 +414,6 @@ export {
   SheetPortal,
   SheetTitle,
   SheetTrigger,
-  handleSheetOpenAutoFocus,
   sheetVariants,
 } from './components/Sheet/index'
 export {
@@ -548,13 +544,10 @@ export {
   ItemAvatar,
   ItemContent,
   ItemIcon,
-  ItemInlineAction,
-  ItemInlineActionButton,
   ItemLabel,
   ItemPrefix,
   ItemSuffix,
   ROW_PADDING_BY_SIZE,
-  RowSizeProvider,
   getUniformPrefixSlotStyle,
   itemPrefixAlignVariants,
   useRowSize,
@@ -564,8 +557,6 @@ export type {
   ItemAvatarProps,
   ItemContentProps,
   ItemIconProps,
-  ItemInlineActionButtonProps,
-  ItemInlineActionProps,
   ItemSuffixHoverGroup,
   ItemSuffixProps,
   RowSize,
@@ -598,6 +589,18 @@ export type {
 //   - components/SelectionControl
 //   - patterns/horizontal-overflow
 //   - patterns/overlay-surface
+// 另有 public 元件內個別標 @internal jsDoc 的符號亦排除 front-door(2026-07-18 決策3;subpath 仍有):
+//   - components/Button:ButtonGroupContext
+//   - components/DropdownMenu:floatingLayerClass
+//   - components/Field:FieldVariantInternal
+//   - components/Field:WithFieldVariantInternal
+//   - components/Field:getMenuListMinHeight
+//   - components/Sheet:handleSheetOpenAutoFocus
+//   - patterns/element-anatomy:ItemInlineAction
+//   - patterns/element-anatomy:ItemInlineActionButton
+//   - patterns/element-anatomy:ItemInlineActionButtonProps
+//   - patterns/element-anatomy:ItemInlineActionProps
+//   - patterns/element-anatomy:RowSizeProvider
 
 // ─── Tokens(JS mirrors — token SSOT 程式面)──────────────────────────────
 export * from './tokens/categorical-color'
