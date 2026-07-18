@@ -1,0 +1,141 @@
+{
+ "component": "BulkActionBar",
+ "claimsVerified": 208,
+ "falseClaims": [
+  {
+   "fileLine": "bulk-action-bar.tsx:45",
+   "宣稱": "批次 actions（consumer 提供 md Button，variant=tertiary 或 tertiary+danger；不用 primary）",
+   "真實code行為": "Button 的 danger 僅支援 primary、secondary、text；tertiary+danger 無 compound variant，仍呈現灰色 tertiary，開發模式另會警告。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:84",
+   "宣稱": "variant=tertiary（主）／tertiary danger（destructive）",
+   "真實code行為": "tertiary+danger 沒有 destructive 視覺。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:147",
+   "宣稱": "consumer 提供 md Button，variant=tertiary 或 tertiary+danger，不用 primary",
+   "真實code行為": "Button 明文不支援 tertiary+danger。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:197",
+   "宣稱": "tertiary（主）+ tertiary danger（destructive）",
+   "真實code行為": "後者仍呈現一般 tertiary。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:208",
+   "宣稱": "destructive 用 tertiary + danger",
+   "真實code行為": "Button canonical 與實作都禁止該組合；支援 danger 的 variant 是 primary、secondary、text。"
+  },
+  {
+   "fileLine": "bulk-action-bar.anatomy.stories.tsx:37",
+   "宣稱": "Action variant 採 tertiary（主）／tertiary danger（destructive）",
+   "真實code行為": "tertiary+danger 不會產生 danger 色彩；同檔示例也都呈現一般 tertiary。"
+  },
+  {
+   "fileLine": "bulk-action-bar.principles.stories.tsx:152",
+   "宣稱": "✅ 批次 action 用 tertiary，destructive 用 tertiary + danger",
+   "真實code行為": "這項正例使用 Button 不支援的組合。"
+  },
+  {
+   "fileLine": "bulk-action-bar.principles.stories.tsx:153",
+   "宣稱": "刪除這類危險操作也只加 danger 紅色，不升成 primary。",
+   "真實code行為": "在 tertiary 上加 danger 不會變紅。"
+  },
+  {
+   "fileLine": "bulk-action-bar.principles.stories.tsx:165",
+   "宣稱": "tertiary danger 破壞性",
+   "真實code行為": "實際呈現一般灰色 tertiary。"
+  },
+  {
+   "fileLine": "bulk-action-bar.stories.tsx:30,51,115",
+   "宣稱": "<Button variant=\"tertiary\" danger>刪除</Button> 被作為 destructive 正例",
+   "真實code行為": "三個展示中的刪除按鈕都沒有 danger 視覺。"
+  },
+  {
+   "fileLine": "bulk-action-bar.tsx:41",
+   "宣稱": "已選 ID，length === 0 時自動隱藏（回傳 null）",
+   "真實code行為": "selection 為空但 totalSelected 非零時仍會渲染。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:49",
+   "宣稱": "BulkActionBar 觸發條件為 selection.length > 0",
+   "真實code行為": "totalSelected 非零也會觸發。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:62",
+   "宣稱": "selection 為 0 顯示空 bar 佔位——否，回 null 完全不佔 layout",
+   "真實code行為": "totalSelected 非零是明確例外。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:119",
+   "宣稱": "{selection.length > 0 && <BulkActionBar selection={...} actions={...} />}",
+   "真實code行為": "此 canonical 外層 guard 會攔掉 selection=[]、totalSelected>0 的反向選取狀態。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:205",
+   "宣稱": "不在 selection.length === 0 仍佔 layout（必須完全藏）",
+   "真實code行為": "totalSelected 非零時會刻意保持顯示。"
+  },
+  {
+   "fileLine": "bulk-action-bar.principles.stories.tsx:75",
+   "宣稱": "BulkActionBar — selection-driven，length=0 自動藏",
+   "真實code行為": "遺漏 totalSelected 例外。"
+  },
+  {
+   "fileLine": "bulk-action-bar.principles.stories.tsx:88",
+   "宣稱": "selection > 0 浮現，= 0 完全藏",
+   "真實code行為": "selection=0、totalSelected>0 時不會隱藏。"
+  },
+  {
+   "fileLine": "bulk-action-bar.tsx:47",
+   "宣稱": "hiddenByFilter 顯示在 count 區 inline",
+   "真實code行為": "只有 hiddenByFilter > 0 才渲染；傳入 0 不顯示。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:85",
+   "宣稱": "hiddenByFilter prop 傳入時顯示 suffix",
+   "真實code行為": "真正門檻是嚴格大於 0。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:149",
+   "宣稱": "hiddenByFilter 顯示 inline 狀態",
+   "真實code行為": "文件未記載實作的 >0 條件。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:78",
+   "宣稱": "自然高度 56md / 68lg",
+   "真實code行為": "Root 是 auto-height，onClear/actions 均可省略且 actions 是任意 ReactNode；即使使用標準 md Button，1px border-top 也使外高為 57/69px。"
+  },
+  {
+   "fileLine": "bulk-action-bar.anatomy.stories.tsx:36",
+   "宣稱": "自然高度 56md / 68lg",
+   "真實code行為": "高度不是固定 invariant；標準 md Button 案例的外高也包含 1px 上邊框。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:217",
+   "宣稱": "高度由消費者所在 placement 決定（top 模式 = toolbar 高度；footer 模式 = footer 高度）",
+   "真實code行為": "元件沒有 placement prop、context 或條件分支；高度由 padding、border 與 children 決定。"
+  },
+  {
+   "fileLine": "bulk-action-bar.spec.md:219",
+   "宣稱": "高度繼承 placement 的 toolbar/footer 容器",
+   "真實code行為": "元件不會讀取或繼承 placement 尺寸契約。"
+  },
+  {
+   "fileLine": "bulk-action-bar.principles.stories.tsx:121",
+   "宣稱": "BulkActionBar 與 Toast 都浮在底部",
+   "真實code行為": "BulkActionBar 沒有 fixed、sticky、absolute 或 bottom positioning；位置完全由 consumer wrapper 決定。"
+  },
+  {
+   "fileLine": "bulk-action-bar.principles.stories.tsx:194",
+   "宣稱": "Alert 與 BulkActionBar 黏合後會共浮起",
+   "真實code行為": "Alert 的 placement=\"fixed\" 只改 rounded、border 與 padding；兩者仍在正常文件流，沒有浮動定位。"
+  },
+  {
+   "fileLine": "bulk-action-bar.stories.tsx:60",
+   "宣稱": "hint banner 唯一 trigger condition：本頁全選 + 還有 dataset 沒選到",
+   "真實code行為": "Story 只檢查 selection.length > 0；allSelected=true、dataset 已全選後 Alert 仍保持 mount。"
+  }
+ ]
+}

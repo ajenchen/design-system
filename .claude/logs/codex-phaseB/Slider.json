@@ -1,0 +1,166 @@
+{
+ "component": "Slider",
+ "claimsVerified": 360,
+ "falseClaims": [
+  {
+   "fileLine": "slider.tsx:16",
+   "宣稱": "Radix 原生支援多值並自動產生多個 thumb",
+   "真實code行為": "Radix 只管理多值狀態；thumb 數量由 wrapper 的 thumbCount + Array.from 手動渲染。"
+  },
+  {
+   "fileLine": "slider.tsx:17",
+   "宣稱": "Hover / active 只用 elevation，不用色變",
+   "真實code行為": "hover 同時改為 border-primary-hover，active 改為 border-primary-active。"
+  },
+  {
+   "fileLine": "slider.tsx:95-96",
+   "宣稱": "pointer-events-none + tabIndex=-1 可完全鎖住 readonly 互動",
+   "真實code行為": "只阻止指標與 Tab 進入；已聚焦或程式化聚焦的 thumb 仍會收到 Radix 鍵盤事件並改值。"
+  },
+  {
+   "fileLine": "slider.tsx:171-175",
+   "宣稱": "未傳 aria-label 時，undefined 會讓 Radix 提供 Minimum / Maximum 等標籤",
+   "真實code行為": "明確傳入的 aria-label={undefined} 在 Radix spread thumbProps 時覆寫 fallback；實際 multi-thumb DOM 沒有 generic aria-label。"
+  },
+  {
+   "fileLine": "slider.tsx:206-210",
+   "宣稱": "sliderMeta 的 bg token 清單已涵蓋元件消費",
+   "真實code行為": "disabled Range 另使用 bg-border，但 metadata 沒有列入。"
+  },
+  {
+   "fileLine": "slider.spec.md:104",
+   "宣稱": "Range 填滿色和 Thumb border 永遠使用同一 token",
+   "真實code行為": "只在 rest／disabled 相同；hover／focus／active 時 Thumb border 改色，Range 仍維持 primary。"
+  },
+  {
+   "fileLine": "slider.spec.md:141",
+   "宣稱": "Radix 會依 value/defaultValue 陣列長度自動渲染 thumb",
+   "真實code行為": "自動建立 thumb 是 DS wrapper 的實作，不是 Radix Root 行為。"
+  },
+  {
+   "fileLine": "slider.spec.md:172",
+   "宣稱": "Focus state 由鍵盤 Tab 聚焦觸發",
+   "真實code行為": "正常態傳入的 tabIndex={undefined} 覆寫 Radix tabIndex=0；thumb 不在 Tab sequence。"
+  },
+  {
+   "fileLine": "slider.spec.md:225",
+   "宣稱": "Field readonly 會鎖住互動",
+   "真實code行為": "readonly 沒有停用 Radix handlers；已聚焦或程式化聚焦時仍能用鍵盤改值。"
+  },
+  {
+   "fileLine": "slider.spec.md:231",
+   "宣稱": "Left / Right 固定為 - / + step",
+   "真實code行為": "公開的 dir 與 inverted 會反轉左右鍵方向；只在特定 LTR／inverted 組合成立。"
+  },
+  {
+   "fileLine": "slider.spec.md:232",
+   "宣稱": "Up / Down 在 vertical-inverted 時反轉",
+   "真實code行為": "SliderProps 已排除 orientation，DS 沒有受支援的 vertical mode。"
+  },
+  {
+   "fileLine": "slider.spec.md:235",
+   "宣稱": "Tab 可在 range mode 的多個 thumb 間切換焦點",
+   "真實code行為": "所有正常 thumb 均沒有 tabindex，Tab 會略過整個 Slider。"
+  },
+  {
+   "fileLine": "slider.spec.md:237",
+   "宣稱": "鍵盤操作無需額外實作，Radix 已全部處理",
+   "真實code行為": "wrapper 覆寫 Radix 的 tabIndex，並自行處理 thumb 數量與標籤；預設鍵盤入口已失效。"
+  },
+  {
+   "fileLine": "slider.spec.md:269",
+   "宣稱": "Inspector 可即時調整 defaultValue",
+   "真實code行為": "defaultValue 只初始化 uncontrolled state；Controls 更新不會重設值，story 也沒有 key/remount。"
+  },
+  {
+   "fileLine": "slider.spec.md:285",
+   "宣稱": "完整繼承 Radix 的 role、aria-* 與鍵盤導覽預設",
+   "真實code行為": "role 與數值 ARIA 保留，但 tabIndex 被覆寫，鍵盤導覽沒有保留。"
+  },
+  {
+   "fileLine": "slider.spec.md:287",
+   "宣稱": "本元件的 2+ thumb 可取得 Radix generic 語意標籤",
+   "真實code行為": "wrapper 傳入的 aria-label={undefined} 覆寫 Radix fallback，實際沒有 Minimum／Maximum 或 Value N of M。"
+  },
+  {
+   "fileLine": "slider.spec.md:289",
+   "宣稱": "上方列的是完整鍵盤對照",
+   "真實code行為": "漏列 Shift+Arrow = 10× step，也未交代 dir／inverted 反轉，且 Tab 行為與實作相反。"
+  },
+  {
+   "fileLine": "slider.spec.md:291",
+   "宣稱": "Radix 自管 focus / restoration，thumb 可由鍵盤聚焦",
+   "真實code行為": "Radix 只有聚焦被點擊／變更 thumb 的行為，沒有 focus trap 或返回外部焦點的 restoration；wrapper 又移除了 Tab 入口。"
+  },
+  {
+   "fileLine": "slider.spec.md:293",
+   "宣稱": "不用滑鼠、純鍵盤即可完整操作",
+   "真實code行為": "thumb 沒有 tabindex，純鍵盤使用者無法進入 Slider。"
+  },
+  {
+   "fileLine": "slider.anatomy.stories.tsx:27",
+   "宣稱": "Radix 傳多值後會自動渲染對應 thumb",
+   "真實code行為": "thumb 是 wrapper 依陣列長度手動渲染。"
+  },
+  {
+   "fileLine": "slider.anatomy.stories.tsx:40",
+   "宣稱": "value / defaultValue 的預設為「—」",
+   "真實code行為": "value 無預設，但 Radix defaultValue 預設為 [min]。"
+  },
+  {
+   "fileLine": "slider.anatomy.stories.tsx:47",
+   "宣稱": "minStepsBetweenThumbs 的預設為「—」",
+   "真實code行為": "Radix 明確預設為 0。"
+  },
+  {
+   "fileLine": "slider.anatomy.stories.tsx:62",
+   "宣稱": "Controls 可即時調整 defaultValue",
+   "真實code行為": "defaultValue 只在 uncontrolled state 初始化時讀取，args 更新不會改變現值。"
+  },
+  {
+   "fileLine": "slider.anatomy.stories.tsx:210",
+   "宣稱": "鍵盤行為全部由 Radix 原生處理",
+   "真實code行為": "wrapper 覆寫 tabIndex=0，令 Radix 鍵盤入口不可達。"
+  },
+  {
+   "fileLine": "slider.anatomy.stories.tsx:215",
+   "宣稱": "← / → 固定為 - / + step",
+   "真實code行為": "RTL 或 inverted 時方向會反轉。"
+  },
+  {
+   "fileLine": "slider.anatomy.stories.tsx:216",
+   "宣稱": "↑ / ↓ 在 vertical-inverted 時相反",
+   "真實code行為": "vertical 已從受支援的 Slider API 排除。"
+  },
+  {
+   "fileLine": "slider.anatomy.stories.tsx:219",
+   "宣稱": "Tab 可在多個 thumb 間切換焦點",
+   "真實code行為": "thumb 的 Radix tabIndex=0 被 undefined 覆寫，Tab 無法進入。"
+  },
+  {
+   "fileLine": "slider.anatomy.stories.tsx:235",
+   "宣稱": "role、aria-*、鍵盤導覽全由 primitive 提供；Tab 可聚焦且純鍵盤可完整操作",
+   "真實code行為": "wrapper 自行接 aria-label／aria-labelledby／aria-readonly，並覆寫 generic label 與 tabIndex；Tab 和純鍵盤操作失效。"
+  },
+  {
+   "fileLine": "slider.principles.stories.tsx:57",
+   "宣稱": "近親元件可見 Vs*Rule stories",
+   "真實code行為": "本檔沒有任何 Vs*Rule export。"
+  },
+  {
+   "fileLine": "slider.principles.stories.tsx:86",
+   "宣稱": "step=50 時必須精準拖到 0／50／100 對齊點",
+   "真實code行為": "Radix 使用 Math.round 將指標位置吸附到最近 step，不要求精準落在對齊點。"
+  },
+  {
+   "fileLine": "slider.principles.stories.tsx:228",
+   "宣稱": "Range 與 Thumb border 必須同色",
+   "真實code行為": "只在 rest／disabled 同色；hover／focus／active 時 Thumb border 改色而 Range 不變。"
+  },
+  {
+   "fileLine": "slider.stories.tsx:18",
+   "宣稱": "展示層保留 SizeAlignment／MinMaxStep／Disabled 等情境",
+   "真實code行為": "實際只有 SizeAlignment、MinMaxStep、OnCommit；Disabled 已退役。"
+  }
+ ]
+}

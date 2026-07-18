@@ -1,0 +1,101 @@
+{
+ "component": "Tabs",
+ "claimsVerified": 352,
+ "falseClaims": [
+  {
+   "fileLine": "tabs.tsx:28-29",
+   "宣稱": "Tabs 切 view（不是切 value）；切 value 用 SegmentedControl",
+   "真實code行為": "Tabs API 只處理通用的 value/defaultValue/onValueChange，無法區分 view 與 value；tabs.spec.md:55 也明訂此二分法過度簡化。"
+  },
+  {
+   "fileLine": "tabs.tsx:215-216",
+   "宣稱": "Menu 模式 = scroll 模式 + 額外的 quick-jump button",
+   "真實code行為": "MenuTabsList 不渲染 scroll 模式的 OverflowScrollArrow；它只有可橫捲 strip、fade mask 與 quick-jump menu。"
+  },
+  {
+   "fileLine": "tabs.tsx:217",
+   "宣稱": "scroll 模式有左右 always-visible arrows",
+   "真實code行為": "左箭頭僅在 canScroll && !atStart 時渲染，右箭頭僅在 canScroll && !atEnd 時渲染；位於邊界時只顯示可操作方向。"
+  },
+  {
+   "fileLine": "tabs.tsx:271",
+   "宣稱": "active menu item 使用 checked 標記，具有單選語意",
+   "真實code行為": "實作使用一般 DropdownMenuItem 的 selected 視覺樣式；底層仍是 role=menuitem，沒有 check indicator、menuitemradio 或 aria-checked。"
+  },
+  {
+   "fileLine": "tabs.tsx:414",
+   "宣稱": "Trigger 無水平 padding",
+   "真實code行為": "傳入 inlineAction 時，TabsTrigger 會設定 inline paddingRight，為 sibling action 預留空間。"
+  },
+  {
+   "fileLine": "tabs.spec.md:152",
+   "宣稱": "menu = scroll 模式 + 額外的 quick-jump navigator",
+   "真實code行為": "MenuTabsList 明確沒有 scroll 模式的左右箭頭，只保留 overflow-x-auto、fade mask 與 menu trigger。"
+  },
+  {
+   "fileLine": "tabs.spec.md:142,152,154",
+   "宣稱": "menu 模式所有 triggers 一直可見",
+   "真實code行為": "所有 triggers 仍 mounted 且可捲達，但 overflow-x-auto 會裁切 scrollport 外的內容；它們不會同時視覺可見。"
+  },
+  {
+   "fileLine": "tabs.spec.md:215",
+   "宣稱": "disabled 無底線",
+   "真實code行為": "Radix 的 selected 與 disabled 可同時成立；selected+disabled 仍有 data-state=active，且 CSS 沒有 disabled underline override，因此仍顯示 primary underline。"
+  },
+  {
+   "fileLine": "tabs.spec.md:233",
+   "宣稱": "size × variant matrix 已在 anatomy 完整呈現；density 由 size prop 表達",
+   "真實code行為": "Tabs 沒有獨立 visual variant，anatomy 也沒有 size×variant matrix；size 只選 sm/md/lg tier，density 則由獨立的 data-density/token override 控制。"
+  },
+  {
+   "fileLine": "tabs.spec.md:259",
+   "宣稱": "OverflowMatrix 呈現 scroll/menu/fade 三模式，三方案 side-by-side 比較",
+   "真實code行為": "fade 是效果而非 overflow mode；實際 enum 為 none/scroll/menu，而故事只縱向渲染 scroll 與 menu，沒有三方案 side-by-side。"
+  },
+  {
+   "fileLine": "tabs.spec.md:283",
+   "宣稱": "Tabs 無 focus trap，整組 tabs 為單一 tab stop",
+   "真實code行為": "只有裸 Radix tab triggers 是單一 roving stop；overflow menu、scroll arrows 與 inlineAction 會增加可聚焦按鈕。內建 overflow=\"menu\" 使用預設 modal=true 的 DropdownMenu，開啟時 Radix FocusScope 會 trap focus。"
+  },
+  {
+   "fileLine": "tabs.anatomy.stories.tsx:267-270",
+   "宣稱": "disabled 的 Underline 為空",
+   "真實code行為": "selected+disabled trigger 仍命中 data-[state=active]:after:bg-primary，因此保留底線。"
+  },
+  {
+   "fileLine": "tabs.anatomy.stories.tsx:286",
+   "宣稱": "active 文字色只作用於 trigger，不會傳遞到 Badge",
+   "真實code行為": "CSS color 會繼承至子樹；DS Badge 保持自身顏色是因為它另外設定 text token，不是因為 trigger color 被隔離。任意 badge ReactNode 仍可能繼承。"
+  },
+  {
+   "fileLine": "tabs.anatomy.stories.tsx:338",
+   "宣稱": "溢出時左右兩端出現 scroll arrow",
+   "真實code行為": "起點只有右箭頭、終點只有左箭頭；只有位於中段時兩端才可能同時出現。"
+  },
+  {
+   "fileLine": "tabs.anatomy.stories.tsx:127,358-359",
+   "宣稱": "menu 模式全部 tabs/triggers 一直可見",
+   "真實code行為": "全部仍渲染於水平捲動容器，但離開 scrollport 的 trigger 會被裁切，需捲動才可見。"
+  },
+  {
+   "fileLine": "tabs.anatomy.stories.tsx:402",
+   "宣稱": "Trigger 不加任何水平 padding，underline 剛好 fit label",
+   "真實code行為": "inlineAction 會加入 paddingRight；此外 ::after 的 left-0/right-0 橫跨整個 trigger button（含 icon、badge、suffix 與預留區），不只 label。"
+  },
+  {
+   "fileLine": "tabs.anatomy.stories.tsx:415",
+   "宣稱": "整組 tabs 是單一 tab stop，Tabs 不會困住焦點（無 focus trap）",
+   "真實code行為": "單一 roving stop 只適用 role=tab triggers；overflow controls 與 inlineAction 會增加 tab stops，modal DropdownMenu 開啟時也會啟用 focus trap。"
+  },
+  {
+   "fileLine": "tabs.stories.tsx:121",
+   "宣稱": "全 trigger 仍在捲動容器內可見",
+   "真實code行為": "全 trigger 仍 mounted，但窄容器會裁切 scrollport 外的 triggers。"
+  },
+  {
+   "fileLine": "tabs.stories.tsx:140-141",
+   "宣稱": "anatomy OverflowMatrix 擁有 none/scroll/menu side-by-side 對照",
+   "真實code行為": "OverflowMatrix 只有 scroll 與 menu，而且採縱向排列；沒有 none 或 side-by-side 三模式對照。"
+  }
+ ]
+}

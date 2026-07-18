@@ -1,0 +1,71 @@
+{
+ "component": "Separator",
+ "claimsVerified": 157,
+ "falseClaims": [
+  {
+   "fileLine": "separator.spec.md:89",
+   "宣稱": "orientation 是唯一變因，Inspector 無其他可調 prop",
+   "真實code行為": "另有 decorative、className、asChild 與完整 div props passthrough；orientation 並非唯一可調 prop。"
+  },
+  {
+   "fileLine": "separator.spec.md:89,94",
+   "宣稱": "TokenMatrix 已呈現 horizontal × vertical 對照",
+   "真實code行為": "TokenMatrix 只有 token 與使用決策表；orientation 對照實際位於 Overview。"
+  },
+  {
+   "fileLine": "separator.anatomy.stories.tsx:3-4,12-13",
+   "宣稱": "只有 orientation 與 decorative 兩個 prop",
+   "真實code行為": "元件繼承並轉傳 Radix Primitive 的完整 div props，包含 className、style、ARIA、tabIndex、事件 handlers 與 asChild。"
+  },
+  {
+   "fileLine": "separator.anatomy.stories.tsx:5-6,14-17",
+   "宣稱": "本檔僅有 Overview 與 TokenMatrix 兩個 stories",
+   "真實code行為": "同檔另 export Accessibility，實際共有 3 個 stories。"
+  },
+  {
+   "fileLine": "separator.spec.md:105; separator.anatomy.stories.tsx:122",
+   "宣稱": "Separator 永遠不取得 focus、沒有鍵盤行為",
+   "真實code行為": "預設 div 確實不可 tab-focus 且無內建 keyboard map；但 passthrough 允許 tabIndex、onKeyDown，asChild 也可渲染原生 button，因此不是絕對保證。沒有 focus trap。"
+  },
+  {
+   "fileLine": "separator.spec.md:103",
+   "宣稱": "decorative=false 時固定 render <div role=\"separator\">",
+   "真實code行為": "只有預設 asChild=false 時是 div；公開的 asChild 可改成其他原生元素，role 會套在該 child。"
+  },
+  {
+   "fileLine": "separator.principles.stories.tsx:69",
+   "宣稱": "可查看 Vs*Rule stories",
+   "真實code行為": "本檔只有 UsageGuidance 與 DecorativeSemanticRule，沒有任何 Vs*Rule export。"
+  },
+  {
+   "fileLine": "separator.principles.stories.tsx:104-118",
+   "宣稱": "範例展示 decorative=true、screen reader 跳過的分隔",
+   "真實code行為": "範例沒有 render DS Separator，而是 DropdownMenuSeparator；其 Radix Menu primitive 輸出 role=\"separator\"，不是 role=\"none\"。"
+  },
+  {
+   "fileLine": "separator.stories.tsx:79-103; separator.anatomy.stories.tsx:33-39",
+   "宣稱": "以預設 Separator 示範具名內容 section 之間的分隔",
+   "真實code行為": "預設 decorative=true 只輸出 role=\"none\"；同元件 spec/principles 明定真實跨 section 結構邊界應傳 decorative={false}。"
+  },
+  {
+   "fileLine": "separator.spec.md:104; separator.anatomy.stories.tsx:122",
+   "宣稱": "SidebarGroup／MenuGroup 的跨群組分隔是 semantic decorative={false}",
+   "真實code行為": "這些群組分隔實際由 CSS adjacent border／pseudo-element 產生，沒有 Separator DOM、role 或 decorative prop。"
+  },
+  {
+   "fileLine": "separator.spec.md:32",
+   "宣稱": "SidebarSeparator 用於 sidebar 群組間",
+   "真實code行為": "SidebarGroup 已自動產生相鄰群組分隔；手動加入 SidebarSeparator 會與既有分隔重複。"
+  },
+  {
+   "fileLine": "separator.spec.md:61; separator.anatomy.stories.tsx:91; separator.principles.stories.tsx:90",
+   "宣稱": "DataTable 格線／邊線使用 --border／border-border",
+   "真實code行為": "DataTable 的外框、row 與 cell grid canonical 使用 --divider／border-divider。"
+  },
+  {
+   "fileLine": "separator.spec.md:62",
+   "宣稱": "Tabs 底線基準使用 --border",
+   "真實code行為": "TabsList 實作使用 border-divider。"
+  }
+ ]
+}

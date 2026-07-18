@@ -1,0 +1,91 @@
+{
+ "component": "FieldControlGroup",
+ "claimsVerified": 238,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.tsx:26",
+   "宣稱": "z-index: default 2 / hover|focus|focus-within 3 / disabled 0",
+   "真實code行為": "只有 direct child 的原生 [disabled] 或含 [disabled] 後代者會降至 z-0；disabled desktop Select 是 data-field-mode=\"disabled\" 的 div，仍為 z-2。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.tsx:96",
+   "宣稱": "FCG 內 disabled cell border 用 --border-opaque",
+   "真實code行為": "override 只匹配 direct child 的 data-field-mode=\"disabled\"；Button 雖是明列支援 child，但沒有該 attribute，因此不套用 opaque border。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:71",
+   "宣稱": "disabled z-index: 0",
+   "真實code行為": "disabled Select 不命中 [disabled]／:has([disabled]) selector，仍為 z-2；同 spec 152–155 行也承認此覆蓋落差。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:77",
+   "宣稱": "Items align: items-stretch（同高）",
+   "真實code行為": "items-stretch 不會覆寫 controls 的固定 h-field-sm/md/lg；混用 size 仍不同高，spec:175 亦明文承認。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:111",
+   "宣稱": "Mode C（進 Popover，density 鎖 md）：children 自然吃 md",
+   "真實code行為": "Popover 現在只設 data-layout-space=\"md\"；ui-size 明確繼承 page，並未固定為 md。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:116",
+   "宣稱": "每個 Select/Input 自帶 aria-label",
+   "真實code行為": "Input 只 passthrough consumer 傳入的 aria-label；Select trigger 也只使用 consumer aria-label 或 Field 的 aria-labelledby，兩者都不自動產生一般欄位名稱。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:131-132",
+   "宣稱": "外加 className=\"w-[Xpx]\" 無法 override 內部 w-full，必用 !w-[Xpx]",
+   "真實code行為": "Select 將 className 放在 fieldWrapperStyles 之後交給 cn/tailwind-merge；後置 w-[Xpx] 會取代 w-full，不需要 important。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:139",
+   "宣稱": "hover（子）＝該 child border-hover",
+   "真實code行為": "這不是所有支援 child 的共同行為；例如 stories 使用的 primary Button hover 只改背景，text/link Button 也不改 border。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:141",
+   "宣稱": "disabled child 一律有 FCG-local border-opaque，且 z-index 0",
+   "真實code行為": "兩個 selector 覆蓋集合不同：Select 得 opaque border 但仍為 z-2；Button 降為 z-0 但不得 opaque border。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:144",
+   "宣稱": "FCG context 下，disabled child 強制 border-opaque",
+   "真實code行為": "只有 data-field-mode=\"disabled\" 的 Field-family wrapper 會命中；disabled Button 不命中。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.spec.md:157",
+   "宣稱": "--border 是 neutral-5＝15% alpha；--border-opaque 是 solid #D9D9D9",
+   "真實code行為": "這只符合 light theme；dark theme 的 --_na5 是 25%，opaque 值約為 #404040。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.anatomy.stories.tsx:4",
+   "宣稱": "無 interactive prop control（僅 children layout）→ Inspector N/A",
+   "真實code行為": "元件有可檢閱的 block?: boolean，會切換 inline-flex 與 flex w-full；另有公開但 no-op 的 size prop。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.anatomy.stories.tsx:40",
+   "宣稱": "z-index: default 2 / hover/focus 3 / disabled 0",
+   "真實code行為": "disabled Select 不符合降層 selector，仍維持 z-2。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.principles.stories.tsx:80",
+   "宣稱": "Scope: 多個 control（1 Field 內）",
+   "真實code行為": "FieldControlGroup 不要求 Field ancestor；同檔 Mode B 及 showcase 的 Search／Filter stories 都是 standalone 使用。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.principles.stories.tsx:83",
+   "宣稱": "語意: 複合 input（視覺一體）",
+   "真實code行為": "元件只是無 role、無 accessible name 的 div layout wrapper；只建立視覺接合，各 child 仍是獨立語意。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.principles.stories.tsx:108",
+   "宣稱": "Field label / description / error 對 group 整體生效",
+   "真實code行為": "FieldControlGroup 不消費 FieldContext，也沒有 group-level ARIA 接線；context 由各 descendant control 分別讀取，多個 child 還會重用同一 Field id。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/FieldControlGroup/field-control-group.stories.tsx:55",
+   "宣稱": "!w-[] important override Select 內 trigger w-full",
+   "真實code行為": "後傳的 w-[…] 經 cn/tailwind-merge 已會取代內建 w-full，important 並非必要。"
+  }
+ ]
+}

@@ -1,0 +1,61 @@
+{
+ "component": "Chip",
+ "claimsVerified": 313,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.spec.md:84",
+   "宣稱": "「移除這個 filter」已由「再點一次 deselect」承擔",
+   "真實code行為": "並非所有支援路徑都能 deselect：正式 single story 會丟棄空值；menu + single 也固定回傳原 chipValue。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.spec.md:186",
+   "宣稱": "點 menu item 會 toggle 選取",
+   "真實code行為": "multiple 才會新增／移除；single 無條件回傳 chipValue，點已選項不會 deselect。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.spec.md:188",
+   "宣稱": "roving tabindex 可以 focus 全部 chip",
+   "真實code行為": "Radix 對 disabled item 設定 focusable=false，方向鍵會跳過；全數 disabled 時沒有 group Tab stop。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.spec.md:188",
+   "宣稱": "Chip 路徑與 dropdown 路徑「兩條互動路徑同時可用」",
+   "真實code行為": "Dropdown trigger 受 canScroll 條件控制；內容未溢出時完全不渲染，只剩 Chip 路徑。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.spec.md:192",
+   "宣稱": "三種 layout 皆未實作 RTL 方向鏡像",
+   "真實code行為": "dir 會透傳 Radix Root，wrap 排列與左右鍵導覽會鏡像；未鏡像的是 scroll／menu 的 scrollLeft、fade mask 與實體 arrows。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.tsx:214",
+   "宣稱": "點 menu item = toggle selection + scrollIntoView",
+   "真實code行為": "single 模式不會 toggle off；缺少 controlled onValueChange 時更會直接 return，兩個動作都不執行。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.tsx:316",
+   "宣稱": "scrollIntoView 讓「剛選中的」chip 出現在中央",
+   "真實code行為": "multiple 模式取消選取時也一律執行 scrollIntoView，因此目標可能是剛被取消的 chip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.anatomy.stories.tsx:197",
+   "宣稱": "「左 default／中 selected／右 disabled」",
+   "真實code行為": "實際渲染 default、selected、disabled、selected + disabled 四欄，並非所述三欄位置。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.principles.stories.tsx:120-121",
+   "宣稱": "「再點一次 deselect 就是 dismiss」／移除 filter 由 toggle 承擔",
+   "真實code行為": "正式 SingleSelection story 忽略空值，single-menu 也永遠回傳同一 chipValue，故此行為並非普遍成立。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.principles.stories.tsx:186",
+   "宣稱": "「單行 + ⋯ 展開全部選項」",
+   "真實code行為": "實際 OverflowMenuTriggerButton 固定使用 ChevronDown，不是省略號 ⋯。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Chip/chip.principles.stories.tsx:201",
+   "宣稱": "「primary 底色同時染文字和線條」",
+   "真實code行為": "背景始終為 bg-surface；primary 僅套用於 border 與 text。"
+  }
+ ]
+}

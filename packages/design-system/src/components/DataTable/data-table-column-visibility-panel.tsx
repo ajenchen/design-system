@@ -130,19 +130,16 @@ export function DataTableColumnVisibilityPanel({
     onColumnOrderChange!(next)
   }
 
-  // 2026-07-18 決策16(2026-07-18 二次更正):**刻意回傳 Fragment**(不加 root div)——本 panel 消費
-  //   `<PopoverHeader>` / `<PopoverFooter>` primitive,DS 設計意圖是讓它們當 `<PopoverContent>` 的**直接子**
-  //   (Popover compound idiom,同 Dialog 的 `<DialogContent><DialogHeader/><Body/><Footer/>`;PopoverContent
-  //   是 flex-col、為它的 Header/Body/Footer 直接子提供堆疊佈局)。Fragment 讓三者成為 PopoverContent 直接子 =
-  //   對齊此 idiom。sibling FilterPanel/SortManager **自刻 header**(不用 primitive)故各自包 root div,是另一種
-  //   合法組合;把 root div 強加到 primitive-based panel 反而較不 idiomatic。
-  //   ⚠️ **更正先前不精確的理由**:先前註解稱「PopoverHeader 用 -mx 負邊距,包 root 會溢出破壞」——**不正確**。
-  //   實查 overlay-surface.tsx SurfaceHeader:用**正** `px-loose` + `border-b`,**無任何 -mx**;邊緣 bleed 來自
-  //   (a) PopoverContent 無內距 → header 在任何巢深都是滿寬、border-b 切齊邊;(b) PopoverContent `overflow-hidden
-  //   rounded-lg` 裁圓角。兩者**皆不要求直接子**——技術上一個滿寬無內距的 `flex flex-col` root div 不會破壞 header。
-  //   故保留 Fragment 是**idiom/一致性**選擇(非「會破壞」);且本 panel 用 fixed `max-h-72` ScrollArea(非 M25
-  //   viewport-aware flex chain)故 root 亦非必要;ref 需求為 0(consumer 走 PopoverContent 自身 ref)。此 Fragment
-  //   = 對齊 Popover primitive 組合契約,非缺陷。
+  // 2026-07-18 決策16(⚠️ 二次更正後仍有事實錯,三次修正中 — SSOT consistency 審查進行中):
+  //   回傳 Fragment:`<PopoverHeader>` + `ScrollArea max-h-72` + `<PopoverFooter>` 為 PopoverContent 直接子。
+  //   **前兩版理由都錯,在此明記以免再犯**:(1)「PopoverHeader 用 -mx 負邊距、包 root 會破壞」= 錯(SurfaceHeader
+  //   用正 px-loose + border-b,無 -mx);(2)「sibling FilterPanel/SortManager 自刻 header 不用 primitive」= **也錯**
+  //   —— 實查:FilterPanel/SortManager 一樣消費 `SurfaceHeader` + `SurfaceBody`(overlay-surface primitive),外包
+  //   `<div flex flex-col h-full>` root。三個 panel **都消費 header primitive,無人自刻**。
+  //   真正的差異 = **body/scroll 策略**:FilterPanel/SortManager 用 `SurfaceBody`(viewport-aware flex-1,故 root
+  //   必 forward flex-col h-full 的 M25 鏈);本 panel 用 fixed `ScrollArea max-h-72`(定高,無 flex 鏈需求)故 Fragment。
+  //   **此差異是否為 drift(該統一成 SurfaceBody viewport-aware)= SSOT consistency 待審**(multi-agent 稽核中);
+  //   結論定案後回填正確理由。ref 需求為 0(consumer 走 PopoverContent 自身 ref)。
   return (
     <>
       <PopoverHeader hideClose>

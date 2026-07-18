@@ -1,0 +1,116 @@
+{
+ "component": "Button",
+ "claimsVerified": 858,
+ "falseClaims": [
+  {
+   "fileLine": "button.tsx:2",
+   "宣稱": "檔案目前 528 行。",
+   "真實code行為": "實檔為 591 行；以 split-newline 計數為 592。"
+  },
+  {
+   "fileLine": "button.spec.md:116-124; button.anatomy.stories.tsx:256",
+   "宣稱": "xs 專屬於 icon-only toolbar utility。",
+   "真實code行為": "同 spec 另列 row-embedded／inline 用途，code 也允許有文字的 xs Button。"
+  },
+  {
+   "fileLine": "button.spec.md:200-201; button.anatomy.stories.tsx:253",
+   "宣稱": "danger 與 variant 正交、獨立套用紅色語意。",
+   "真實code行為": "danger compound 僅涵蓋 primary、secondary、text；tertiary、link 不變紅。secondary／text 配 pressed 時，pressed compound 亦會以 emphasis／neutral 色覆寫 danger 紅色。"
+  },
+  {
+   "fileLine": "button.tsx:400-406; button.spec.md:416; button.stories.tsx:27",
+   "宣稱": "不支援的 danger 組合會靜默渲染。",
+   "真實code行為": "development／Storybook 會執行 console.warn；只有 production 靜默。"
+  },
+  {
+   "fileLine": "button.anatomy.stories.tsx:197",
+   "宣稱": "iconOnly 模式只保留 startIcon。",
+   "真實code行為": "native branch 仍渲染 children、badge、endIcon，僅在開發環境警告；asChild branch 則不渲染 startIcon。"
+  },
+  {
+   "fileLine": "button.tsx:41,289,318-327; button.spec.md:232,262,270; button.anatomy.stories.tsx:197,217,261,435,592; button.stories.tsx:48",
+   "宣稱": "iconOnly 一律維持正方形。",
+   "真實code行為": "fullWidth 或 vertical ButtonGroup 會加入 w-full；與固定高度並存時 aspect-square 無法覆寫 definite width，Button 會展開成整列寬。"
+  },
+  {
+   "fileLine": "button.tsx:274,312,575-576; button.spec.md:307-313; button.anatomy.stories.tsx:257,262; button.stories.tsx:36,52",
+   "宣稱": "loading 一律顯示 spinner 取代 startIcon，並保留 badge／suffix。",
+   "真實code行為": "asChild branch 只渲染 consumer child，沒有 spinner、startIcon、badge 或 endIcon；僅加入 ARIA 與 click handler。"
+  },
+  {
+   "fileLine": "button.spec.md:313",
+   "宣稱": "loading 時保留 ChevronDown，表示下拉仍可展開。",
+   "真實code行為": "loading 同時禁用或 guard Button，當下無法展開下拉。"
+  },
+  {
+   "fileLine": "button.spec.md:300-302,307; button.anatomy.stories.tsx:707",
+   "宣稱": "disabled 一律使用原生 disabled，並移除品牌色回到 neutral。",
+   "真實code行為": "asChild 只有 aria-disabled；disabled:* 色彩規則不生效，variant、danger、pressed 色仍保留，也沒有原生 disabled。"
+  },
+  {
+   "fileLine": "button.tsx:494-509",
+   "宣稱": "asChild functional guard 可阻斷 disabled／loading 功能。",
+   "真實code行為": "Radix Slot 先執行 child onClick，再執行 Button guard；child side effect 已發生，其他 child-owned keyboard handlers 也未被阻斷。"
+  },
+  {
+   "fileLine": "button.tsx:29,256,425-433; button.spec.md:319,437; button.anatomy.stories.tsx:254,681; button.principles.stories.tsx:159",
+   "宣稱": "pressed 自動輸出 data-state=on/off。",
+   "真實code行為": "restProps 在 toggleAttrs 後 spread；Radix overlay 傳入的 data-state=open/closed 會覆寫 on/off，實作只能依賴 aria-pressed fallback。"
+  },
+  {
+   "fileLine": "button.principles.stories.tsx:158-165; button.stories.tsx:88-106; button.anatomy.stories.tsx:680-688",
+   "宣稱": "未按下範例是 binary toggle 的 off 狀態。",
+   "真實code行為": "範例省略 pressed={false}；pressed===undefined 不輸出 aria-pressed 或 data-state，因此只是一般 action button。"
+  },
+  {
+   "fileLine": "button.anatomy.stories.tsx:90-94,131,478,552",
+   "宣稱": "顯示的 28／32／36px 是會隨 density 解析的實際高度。",
+   "真實code行為": "文字值硬編為 md density；lg density 真值為 32／36／40px，顯示內容不會更新。"
+  },
+  {
+   "fileLine": "button.anatomy.stories.tsx:631",
+   "宣稱": "該區展示 Loading／Disabled／Checked。",
+   "真實code行為": "第三區實際是 pressed，Button 也沒有 checked prop。"
+  },
+  {
+   "fileLine": "button.principles.stories.tsx:63",
+   "宣稱": "比較範例位於 Vs*Rule stories。",
+   "真實code行為": "該檔沒有任何 Vs*Rule export。"
+  },
+  {
+   "fileLine": "button.stories.tsx:132-134",
+   "宣稱": "相關原則位於 startIconRule story。",
+   "真實code行為": "沒有 startIconRule；實際 export 名稱為 IconRule。"
+  },
+  {
+   "fileLine": "button.stories.tsx:2",
+   "宣稱": "Default scenario 由其他 stories 覆蓋。",
+   "真實code行為": "同檔已明確 export Default。"
+  },
+  {
+   "fileLine": "button.stories.tsx:75-84",
+   "宣稱": "名為「預設」的 story 展示 Button 預設值。",
+   "真實code行為": "所有 Button 都顯式傳入 variant；未展示 labeled Button 的 tertiary 預設或 icon-only 的 text 預設。"
+  },
+  {
+   "fileLine": "button.stories.tsx:357-359",
+   "宣稱": "focus Tooltip 需等待 Radix 約 700ms。",
+   "真實code行為": "Radix focus handler 會立即開啟 Tooltip；本地 500ms override 只影響 hover delay。"
+  },
+  {
+   "fileLine": "button.tsx:284; button.anatomy.stories.tsx:260",
+   "宣稱": "overlayBadge 只在 iconOnly=true 時生效。",
+   "真實code行為": "render 條件使用 resolvedIconOnly=iconOnly||dismiss；dismiss=true、iconOnly=false 仍會渲染 overlayBadge。"
+  },
+  {
+   "fileLine": "button.tsx:532; button.spec.md:276,437; button.anatomy.stories.tsx:197,217",
+   "宣稱": "iconOnly 的自動 Tooltip 是元件保證的行為。",
+   "真實code行為": "disabled／loading native button 具有 disabled:pointer-events-none 且不能 focus；TooltipTrigger 沒有額外 wrapper，因此沒有 pointer 或 focus 開啟路徑。"
+  },
+  {
+   "fileLine": "button.tsx:579-584",
+   "宣稱": "componentMeta token matrix 已與 cva 真實 class 對齊。",
+   "真實code行為": "cva 使用 border-border／--border，但 metadata 未列 border token。"
+  }
+ ]
+}

@@ -1,0 +1,86 @@
+{
+ "component": "Empty",
+ "claimsVerified": 121,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.tsx:11",
+   "宣稱": "預設只需 description。",
+   "真實code行為": "description?: string，沒有預設值；<Empty /> 會渲染空 div，且 codebase 正式支援只傳 icon 的 loading composition。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.spec.md:23",
+   "宣稱": "預設只有 description。",
+   "真實code行為": "所有內容 prop 預設皆為 undefined，元件不會自動產生 description。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.spec.md:49",
+   "宣稱": "Description ← 唯一必有。",
+   "真實code行為": "description 是 optional，渲染受 description && 控制；icon-only Empty 亦是正式支援用法。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.spec.md:59",
+   "宣稱": "Description 是唯一必有的 slot。",
+   "真實code行為": "description?: string，沒有型別或 runtime 必填限制。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.spec.md:102",
+   "宣稱": "description 是唯一必有 slot；全 slot 缺值屬 consumer 誤用。",
+   "真實code行為": "元件允許零 slot，且同一 spec 與 SelectMenu production code明文使用無 description 的 icon-only Empty。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.anatomy.stories.tsx:51",
+   "宣稱": "預設只有 description。",
+   "真實code行為": "元件沒有任何 slot 預設內容。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.anatomy.stories.tsx:70",
+   "宣稱": "description 必有（預設唯一 slot）。",
+   "真實code行為": "description optional；零 slot 與 icon-only 均可渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.anatomy.stories.tsx:86",
+   "宣稱": "description 的 Default 是「必填（預設唯一 slot）」。",
+   "真實code行為": "EmptyProps 宣告 description?: string，且未提供 default。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.anatomy.stories.tsx:86",
+   "宣稱": "description 使用 fg-secondary。",
+   "真實code行為": "disabled 時為 fg-disabled；有 title 或 action 才是 fg-secondary；description-only 時為 fg-muted。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.anatomy.stories.tsx:105",
+   "宣稱": "最少只需 description。",
+   "真實code行為": "元件可不傳 description；production loading composition 只傳 icon。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.anatomy.stories.tsx:123",
+   "宣稱": "description 是預設唯一 slot。",
+   "真實code行為": "元件本身預設零 slot；Inspector 的預設 args 也同時包含 icon、title、description。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.anatomy.stories.tsx:182",
+   "宣稱": "最少只要 description（預設唯一必填 slot）。",
+   "真實code行為": "description 並非 runtime 或 production usage 的最低必要 slot。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.anatomy.stories.tsx:255",
+   "宣稱": "title → description 配對固定為 title body-lg 16 + desc body 14。",
+   "真實code行為": "RowSizeContext=lg 時 description 會改為 body-lg 16；元件仍套用同一 reading-lg gap token。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.anatomy.stories.tsx:272",
+   "宣稱": "Consumer 包 Empty 進互動容器（Button / Card / Link）時 a11y 由容器決定。",
+   "真實code行為": "Empty 會原樣渲染 action；若外層與 action 都可互動，會形成巢狀互動控制，語意、focus 與鍵盤行為並非只由外層決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.principles.stories.tsx:159,193",
+   "宣稱": "Empty 必須提示下一步；即使 table 空狀態也至少應提示如何開始。",
+   "真實code行為": "action 是 optional；同一套 canonical 正面示範 Table 使用 <Empty description=\"還沒有訂單\" />，沒有下一步提示。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Empty/empty.stories.tsx:14",
+   "宣稱": "預設只需 description。",
+   "真實code行為": "元件沒有 description 預設值，也正式支援 icon-only composition。"
+  }
+ ]
+}

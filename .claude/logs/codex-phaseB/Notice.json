@@ -1,0 +1,81 @@
+{
+ "component": "Notice",
+ "claimsVerified": 275,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.tsx:26-27",
+   "宣稱": "Toast / Alert 是浮動通知。",
+   "真實code行為": "Toast 由 Sonner 浮動呈現；Alert 預設留在文件流內，placement=\"fixed\" 也沒有加入定位樣式。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.tsx:35-36",
+   "宣稱": "Notice / Alert / Toast 都是 ephemeral、px-4 py-3 固定且不隨 density。",
+   "真實code行為": "Notice 無生命週期，Alert 是 persistent controlled-only；Alert fixed 另以 --layout-space-loose 覆寫水平 padding，lg density 為 24px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.tsx:177-179",
+   "宣稱": "singleton MutationObserver 讓每次 theme swap 只做一次 DOM read。",
+   "真實code行為": "Observer 雖只有一個，但每個 subscriber 都會呼叫未快取的 getInverseTheme()，各自讀取 documentElement 的 data-theme。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.spec.md:88",
+   "宣稱": "Notice 不設 bg 和 text color。",
+   "真實code行為": "Notice 不設 surface bg/base foreground，但 description 會套 text-fg-secondary，dismiss Button 會套 text-fg-muted 與 hover:text-foreground。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.spec.md:125",
+   "宣稱": "Notice 本身不設 bg / text color，色彩完全由 consumer 控制。",
+   "真實code行為": "Consumer 控制 surface/theme boundary；description 與 dismiss 的 semantic tone 仍由 Notice 組合出的 primitive 決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.spec.md:133",
+   "宣稱": "內嵌 dismiss Button 在 disabled context 內會自動繼承 Button disabled 視覺。",
+   "真實code行為": "Notice 不讀取 DS disabled context，也不把 disabled 傳給 Button；只有外部原生 fieldset[disabled] 可能透過瀏覽器語意使其匹配 :disabled。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.spec.md:135",
+   "宣稱": "required title 可保證 layout 至少有一行 title 內容。",
+   "真實code行為": "title 型別是 ReactNode，可合法傳 null、false、undefined 或空字串；程式沒有 runtime 驗證。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.anatomy.stories.tsx:355",
+   "宣稱": "title font 固定為 text-body · reading 1.5 · font-medium。",
+   "真實code行為": "font-medium 僅在 description truthy 時套用；title-only 使用一般字重。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.anatomy.stories.tsx:380",
+   "宣稱": "每個 variant 都搭配固定 status icon。",
+   "真實code行為": "neutral 明確映射為 null，不渲染 status icon。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.anatomy.stories.tsx:486",
+   "宣稱": "Toast 通常不 dismiss，由計時器自動關閉。",
+   "真實code行為": "ToastInner 所有分支都傳 onDismiss；Notice 因此預設渲染手動關閉 X，與 Sonner timer 並存。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.anatomy.stories.tsx:564-568",
+   "宣稱": "dismiss Button 的 active icon color 是 --foreground。",
+   "真實code行為": "Button 只有 hover:text-foreground；未同時 hover 的鍵盤 active 仍是 text-fg-muted，僅背景切至 neutral-active。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.principles.stories.tsx:87",
+   "宣稱": "Toast 自動 4 秒消失。",
+   "真實code行為": "無 action 時預設 4000ms；有 action 時預設 10000ms。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.stories.tsx:195,205-210",
+   "宣稱": "Toast success 是 solid success surface。",
+   "真實code行為": "真實 Toast 將 success 與 neutral 歸入 inverse branch，使用 bg-surface-raised，而非 story 的 bg-success solid hue。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.stories.tsx:195",
+   "宣稱": "Toast 不可 dismiss。",
+   "真實code行為": "真實 Toast 一律傳入 onDismiss，因此預設顯示可手動關閉的 X。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Notice/notice.stories.tsx:203",
+   "宣稱": "Toast 不需要 dismiss 按鈕，關閉只由計時器控制。",
+   "真實code行為": "目前 Toast 同時提供 timer 與 dismiss X，且 ToastOptions 沒有 dismissible option 可停用 X。"
+  }
+ ]
+}

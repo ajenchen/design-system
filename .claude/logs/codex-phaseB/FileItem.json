@@ -1,0 +1,111 @@
+{
+ "component": "FileItem",
+ "claimsVerified": 598,
+ "falseClaims": [
+  {
+   "fileLine": "file-item.spec.md:75",
+   "宣稱": "Content ↔ ProgressBar gap 為 `gap-2`（8px），兩種 mode 一致，compact 由 `py-2 + absolute` 自然達成。",
+   "真實code行為": "rich 明確使用 `gap-2`；compact 的 2px bar 貼 `bottom-0`，會占用 8px bottom padding，content 到 bar 的可見間距實為約 6px。"
+  },
+  {
+   "fileLine": "file-item.spec.md:84",
+   "宣稱": "compact 的 absolute progress bar 與 content 約有 8px gap。",
+   "真實code行為": "2px bar 位於 8px bottom padding 內，實際可見 gap 約為 6px。"
+  },
+  {
+   "fileLine": "file-item.spec.md:110",
+   "宣稱": "無 progress bar 時，content 垂直置中對齊 avatar 中心。",
+   "真實code行為": "content column 只有 `minHeight:48`；多行 description 使內容高於 48px 時沒有可分配空間，row 又是 `items-start`，因此不會與 avatar 中心對齊。"
+  },
+  {
+   "fileLine": "file-item.spec.md:141",
+   "宣稱": "upload-manager rich 保留 `rounded-md` 供 thumbnail 切角。",
+   "真實code行為": "外層只有 `rounded-md`、沒有 `overflow-hidden`，不能裁切子層 thumbnail；Avatar 的切角由 Avatar 自身 radius 負責。"
+  },
+  {
+   "fileLine": "file-item.spec.md:422",
+   "宣稱": "keyboard user 可直接 Tab 到列內 explicit 操作按鈕取得等價能力。",
+   "真實code行為": "`actions`、`onDownload`、`onRetry` 均為 optional；onClick-only row 沒有 role、tabIndex、鍵盤 handler 或可聚焦子操作，鍵盤無法觸發等價 row action。"
+  },
+  {
+   "fileLine": "file-item.spec.md:423",
+   "宣稱": "status/error 由 progress bar 的 `role=\"progressbar\"` 與 description 文字傳達。",
+   "真實code行為": "status icon 為 `aria-hidden`；ProgressBar 只暴露檔名與數值，沒有 error/completed 語意；description 又是 optional 且非 live，無 description 的 error 對 SR 完全不可知。"
+  },
+  {
+   "fileLine": "file-item.tsx:24",
+   "宣稱": "有 bar 時，bar 底部對齊 avatar。",
+   "真實code行為": "只在 content 總高不超過 48px 時成立；多行 description 會撐高 content column，使 bar 落到 avatar 下方。"
+  },
+  {
+   "fileLine": "file-item.tsx:25",
+   "宣稱": "無 bar 時，文字垂直置中對齊 avatar。",
+   "真實code行為": "只在 content 短於 48px 時成立；多行 content 超過 minHeight 後，`justify-center` 無剩餘空間可分配，且 row 維持 top alignment。"
+  },
+  {
+   "fileLine": "file-item.tsx:27",
+   "宣稱": "不傳 status 即為無 bar、可點擊下載的已上傳檔案。",
+   "真實code行為": "不傳 status 只會移除 bar；clickability、cursor 與下載行為仍須另傳 `onClick` 或下載 handler。"
+  },
+  {
+   "fileLine": "file-item.tsx:225-226",
+   "宣稱": "FileItem row 含 inner interactive：hover-swap action button、ProgressBar、Avatar hoverCard trigger。",
+   "真實code行為": "ProgressBar 是被動指示器；此處 Avatar 沒傳 hoverCard；hover action 也只在特定 status 同時提供 handler 時存在，因此 row 不保證含 inner interactive。"
+  },
+  {
+   "fileLine": "file-item.tsx:229",
+   "宣稱": "鍵盤 user 可直接 Tab 到 inner primary action。",
+   "真實code行為": "所有 inner action props 都是 optional；合法的 onClick-only FileItem 沒有任何可 Tab 的 primary action。"
+  },
+  {
+   "fileLine": "file-item.anatomy.stories.tsx:22",
+   "宣稱": "FileItem 基於 item-layout pattern。",
+   "真實code行為": "實作消費的是 `element-anatomy/item-anatomy` 的 ItemContent、ItemPrefix、ItemSuffix；item-layout 是 stale 名稱。"
+  },
+  {
+   "fileLine": "file-item.anatomy.stories.tsx:244",
+   "宣稱": "rich 的 inline 4px bar 底部對齊 avatar。",
+   "真實code行為": "bar 高度確為 4px，但只有內容可容納在 48px minHeight 時底部對齊；多行 description 會讓 bar 下移。"
+  },
+  {
+   "fileLine": "file-item.anatomy.stories.tsx:340-341",
+   "宣稱": "鍵盤使用者直接 Tab 到列內操作按鈕。",
+   "真實code行為": "只有 consumer 提供 actions，或 completed/error 同時提供 onDownload/onRetry 時才存在按鈕；onClick-only FileItem 沒有鍵盤操作入口。"
+  },
+  {
+   "fileLine": "file-item.principles.stories.tsx:61",
+   "宣稱": "不符合時可參考 `Vs*Rule` stories。",
+   "真實code行為": "此檔只 export UsageGuidance、ModeRule、StatusProgressRule、ActionsRule，不存在任何 `Vs*Rule` story。"
+  },
+  {
+   "fileLine": "file-item.principles.stories.tsx:70",
+   "宣稱": "FileItem 只用於上傳流程。",
+   "真實code行為": "status 是 optional；未傳 status 時會渲染無進度條的靜態附件，並仍支援 onClick。"
+  },
+  {
+   "fileLine": "file-item.principles.stories.tsx:104",
+   "宣稱": "rich Avatar 顯示縮圖或檔案類型 icon。",
+   "真實code行為": "FileItem 沒有檔案類型解析或 icon mapping，只把 thumbnailSrc 與 name 傳給 Avatar；無圖片時 fallback 是檔名首字，不是檔案類型 icon。"
+  },
+  {
+   "fileLine": "file-item.principles.stories.tsx:178",
+   "宣稱": "completed 後檔案變可點擊下載。",
+   "真實code行為": "completed 只產生成功狀態與 100% bar；該 story 未傳 onClick 或 onDownload，實際不可點擊下載。"
+  },
+  {
+   "fileLine": "file-item.stories.tsx:1",
+   "宣稱": "Disabled state 由 `status=\"error\" / \"uploading\"` 體現。",
+   "真實code行為": "FileItem 沒有 disabled prop 或 disabled 行為；error/uploading 是 lifecycle status，不會禁用 row 或 actions。"
+  },
+  {
+   "fileLine": "file-item.stories.tsx:46",
+   "宣稱": "傳 onClick/onDownload 可讓整 row 點開。",
+   "真實code行為": "只有 onClick 掛在整列；onDownload 只建立 completed status slot 內的下載按鈕，並會 stopPropagation，不會讓整列可點。"
+  },
+  {
+   "fileLine": "file-item.stories.tsx:161-165",
+   "宣稱": "Clickable story 已拆成圖片整組 rich、文件整組 compact。",
+   "真實code行為": "rich 區實際包含 PDF 與 DOCX，沒有圖片 MIME；compact 區才是 CSV/JSON，故事分組宣稱與資料不符。"
+  }
+ ]
+}

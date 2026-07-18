@@ -1,0 +1,81 @@
+{
+ "component": "Breadcrumb",
+ "claimsVerified": 343,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:181-185",
+   "宣稱": "末位 spec（無 href）自動 BreadcrumbPage。",
+   "真實code行為": "只有一個 item 時，role 判斷先命中 root，最後渲染成無 href 的 BreadcrumbLink，沒有 aria-current=\"page\"。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:164-167,438-440; packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:111",
+   "宣稱": "startIcon 由 DS 依 Breadcrumb size 統一渲染與控制尺寸。",
+   "真實code行為": "只適用 BreadcrumbPage 與原生 <a> 分支；BreadcrumbLink asChild 分支完全忽略 StartIcon，改由 consumer 自管。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:387-390,394-395; packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:174-176,184; packages/design-system/src/components/Breadcrumb/breadcrumb.stories.tsx:185",
+   "宣稱": "root 先縮、middle 次之、current 最後才縮。",
+   "真實code行為": "flex-shrink 3/2/1 會依 flex base size 同時分配負空間，不是依序縮放；較寬的 current 仍可能比 root 縮掉更多寬度。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:185",
+   "宣稱": "各項都縮到 min-w-0 後啟動 truncate。",
+   "真實code行為": "root、middle、current 的 inline minWidth:'1.5rem' 會覆寫 min-w-0，實際下限是 24px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:189",
+   "宣稱": "每 BreadcrumbLink / BreadcrumbPage 內部都 wrap TruncatedLabel。",
+   "真實code行為": "兩者只在 children 是 string 時自動包裝；ReactNode、自訂結構及 asChild router link 會直接 pass-through，沒有內建 truncate detection 或 Tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:126; packages/design-system/src/components/Breadcrumb/breadcrumb.stories.tsx:2,110-111,188",
+   "宣稱": "BreadcrumbLink 有瀏覽器原生 :active 反饋，且 :active 由元件內部處理。",
+   "真實code行為": "BreadcrumbLink 只有 hover 與 focus-visible 樣式，沒有 active utility 或 handler；原生 anchor 雖進入 :active pseudo-state，作者層文字色使其沒有宣稱的可見反饋。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:261; packages/design-system/src/components/Breadcrumb/breadcrumb.anatomy.stories.tsx:455",
+   "宣稱": "Breadcrumb 無 focus trap。",
+   "真實code行為": "自動收合與互動 ellipsis 使用 Radix DropdownMenu；其預設 modal=true，開啟時設定 trapFocus=context.open，焦點會被限制在選單內直到關閉。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.anatomy.stories.tsx:455",
+   "宣稱": "a11y 行為來自原生 HTML 語意。",
+   "真實code行為": "只有基礎 nav/link 路徑如此；auto-collapse 的 menu role、roving focus、鍵盤操作與 modal focus 行為由 Radix DropdownMenu 管理。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.anatomy.stories.tsx:455",
+   "宣稱": "鍵盤完整可操作（無需滑鼠）。",
+   "真實code行為": "收合後的 href 項目經 DropdownMenuItem asChild 時，Radix 實際 clone 的是內層 MenuItem presentation div，anchor 留在 descendant；鍵盤選取會關閉 menu，但不會觸發該 anchor 導覽。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.spec.md:217",
+   "宣稱": "中段項無 href 仍輸出不可 focus 的 <a>。",
+   "真實code行為": "若該中段被 auto-collapse，會改成 DropdownMenuItem + <span>，成為可由 Radix roving focus 聚焦的 menuitem。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.anatomy.stories.tsx:69",
+   "宣稱": "BreadcrumbEllipsis 是可點擊展開的省略符。",
+   "真實code行為": "裸 BreadcrumbEllipsis 只有無 handler 的 ItemInlineActionButton；必須另包 DropdownMenuTrigger 才能展開。同檔第 442 行也承認裸用不會展開。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.principles.stories.tsx:279-280,298",
+   "宣稱": "六層路徑會溢出邊界，需橫向捲動才看得完。",
+   "真實code行為": "maxItems={99} 只停用 collapse，flex shrink、24px min-width 與文字 truncate 仍生效；此 max-w-sm 範例會縮排在容器內，不會產生宣稱的必要水平捲動。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.principles.stories.tsx:332-346",
+   "宣稱": "反例把按鈕塞進 Breadcrumb。",
+   "真實code行為": "JSX 在兩個 Button 前已關閉 </Breadcrumb>；按鈕其實是同一 flex row 的 siblings，正是文案建議的獨立 page-header/action placement。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:609-613",
+   "宣稱": "breadcrumbMeta.tokens.fg 僅消費 text-fg-muted、text-fg-secondary、text-foreground。",
+   "真實code行為": "BreadcrumbLink 同檔直接使用 text-primary-hover；token inventory 漏列實際 consumer。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Breadcrumb/breadcrumb.tsx:526",
+   "宣稱": "BreadcrumbSeparator 是 foundational composite long-function，拆分會複雜化 local state／ref／context binding。",
+   "真實code行為": "BreadcrumbSeparator 約 18 行、沒有 local state，只讀一次 size context；此 allow 註解是 stale copy-paste claim。"
+  }
+ ]
+}

@@ -1,0 +1,81 @@
+{
+ "component": "RadioGroup",
+ "claimsVerified": 499,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.tsx:152",
+   "宣稱": "readonly item 會渲染 `data-readonly` 並帶 `aria-readonly`。",
+   "真實code行為": "`aria-readonly` 只設於 RadioGroup Root；Item 僅以 `data-readonly`、`tabIndex=-1` 與 click guard 鎖定互動。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.spec.md:114",
+   "宣稱": "「RTL：未實作方向鏡像。」",
+   "真實code行為": "edit 路徑已轉發 `dir`，Radix 會輸出方向並在 RTL 反轉左右鍵；只有 view／Field-readonly 自訂分支未轉發，實際是部分支援。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.spec.md:111",
+   "宣稱": "「Field validation 在 required + null 時觸發 error。」",
+   "真實code行為": "RadioGroup 不會觸發或設定 Field error，只讀取既有 `fieldCtx.invalid`；`required` 僅轉交 Radix／原生 radio constraint。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.principles.stories.tsx:156",
+   "宣稱": "空值會「由 Field required 驗證引導選擇」。",
+   "真實code行為": "元件沒有將空值同步成 Field invalid/error；該行把 consumer／外部驗證責任宣稱成 RadioGroup 既有行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:1",
+   "宣稱": "「SizeMatrix auto-compile owns size showcase。」",
+   "真實code行為": "SizeMatrix 是手寫的 `SIZES.map` story，並非 auto-compiled；展示檔的 VerticalGroup 也重複遍歷 sm/md/lg。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:1",
+   "宣稱": "「Default scenario 由 WithLabel / HorizontalLayout 覆蓋。」",
+   "真實code行為": "本元件沒有 WithLabel 或 HorizontalLayout exports；現有 exports 是 Modes、VerticalGroup、Horizontal。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:62",
+   "宣稱": "「SizeMatrix owns size trait grid。」",
+   "真實code行為": "VerticalGroup 仍手動展示全部 sm/md/lg，size showcase 並未完全移交或由 SizeMatrix 獨占。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.stories.tsx:62",
+   "宣稱": "「StateBehavior owns state trait grid。」",
+   "真實code行為": "StateBehavior 只展示互斥與 disabled；default／hover／checked token matrix 實際由 ColorMatrix 承載。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:149",
+   "宣稱": "「圓形控件（indicator）。」",
+   "真實code行為": "圓形外圈是 `RadioGroupPrimitive.Item`（button、role=radio）；`Indicator` 是 checked 時才掛載的內圈 dot。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:161",
+   "宣稱": "RadioGroupItem anatomy 的兩個區塊都標為 `border`。",
+   "真實code行為": "Item 只有一個外圈 border；子結構是條件掛載的 Indicator 與 Circle dot，不存在第二個 border 區塊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:174",
+   "宣稱": "SelectionItem anatomy 的三個區塊都標為 `control`。",
+   "真實code行為": "實際語意結構是 control、label、description，並非三個 control。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:201",
+   "宣稱": "`id` 的預設值為「—」。",
+   "真實code行為": "未傳 `id` 時會由 `React.useId()` 自動產生，並接到 Item `id` 與 SelectionItem `htmlFor`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:213",
+   "宣稱": "Checkbox 與 Radio 的差異「只有形狀、指示器、語意」。",
+   "真實code行為": "Radio 另有必要的 RadioGroup Root、單選狀態、radiogroup role 與 roving-focus；同一故事的表格也另列「容器」差異。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:483",
+   "宣稱": "「sm 和 md 視覺相同，純粹是命名 mapping。」",
+   "真實code行為": "只有圓形 control 與 dot 尺寸相同；帶 label 時 sm/md 分別消費 `--field-height-sm`／`--field-height-md` 計算 SelectionItem padding，視覺高度不同。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/RadioGroup/radio-group.anatomy.stories.tsx:643",
+   "宣稱": "「RadioGroup 必須提供 value 或 defaultValue。」",
+   "真實code行為": "兩者皆為 optional；都未提供時 Radix 以 `null` 建立合法的空選取狀態。"
+  }
+ ]
+}

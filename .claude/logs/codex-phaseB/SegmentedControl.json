@@ -1,0 +1,46 @@
+{
+ "component": "SegmentedControl",
+ "claimsVerified": 352,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:105",
+   "宣稱": "Field 內自動讀 size + disabled，跟 Button 同機制。",
+   "真實code行為": "SegmentedControl 同時使用 size 與 disabled resolver；Button 只使用 useResolvedFieldSize，disabled 並未沿用相同機制。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:152-154; packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:201; packages/design-system/src/components/SegmentedControl/segmented-control.anatomy.stories.tsx:260",
+   "宣稱": "iconOnly item 會自然成為正方形。",
+   "真實code行為": "公開 API 允許 iconOnly 與 fullWidth 同時使用，此時 aspect-square 與 flex-1 同時生效；DOM 實測每項約 150×32px，並非正方形。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.tsx:308",
+   "宣稱": "lg size 的用途包含 prominent CTA。",
+   "真實code行為": "lg 只改變高度、字體與 icon size；SegmentedControl 仍是 value selector，spec 亦明定不是 action button，不能作為 CTA。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:57,178-179,236; packages/design-system/src/components/SegmentedControl/segmented-control.principles.stories.tsx:106,145,167,265",
+   "宣稱": "選項過多或容器狹窄時，label 會被截斷。",
+   "真實code行為": "元件沒有 overflow-hidden、truncate 或 ellipsis；實際為 whitespace-nowrap + overflow:visible，hug 模式向外增寬，狹窄 fullWidth 模式則文字溢出或重疊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.anatomy.stories.tsx:1-6; packages/design-system/src/components/SegmentedControl/segmented-control.spec.md:262",
+   "宣稱": "StateBehavior 已完整覆蓋 state 色彩。",
+   "真實code行為": "code 另有 selected:hover 的 text-primary-hover 與 border-primary-hover 行為，但 StateBehavior 表未列此狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.anatomy.stories.tsx:172",
+   "宣稱": "Disabled 的 Z-index 為「—」。",
+   "真實code行為": "selected + disabled 仍套用 z-10；該 story 的 disabled selected item 實測 z-index 為 10。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.principles.stories.tsx:68",
+   "宣稱": "切換會重載下方 chart 資料。",
+   "真實code行為": "story 只更新 period state，沒有 chart、資料載入或任何下游 consumer。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SegmentedControl/segmented-control.principles.stories.tsx:105,108",
+   "宣稱": "5 個以上／5+ 選項即超限。",
+   "真實code行為": "同檔與 spec 均定義 2–5 個 item 合法，只有超過 5 個才超限。"
+  }
+ ]
+}

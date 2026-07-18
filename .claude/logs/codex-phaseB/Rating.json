@@ -1,0 +1,161 @@
+{
+ "component": "Rating",
+ "claimsVerified": 265,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.tsx:28",
+   "宣稱": "precision='half' — 半星（0.5、1、1.5…5）",
+   "真實code行為": "顯示值未量化為 0.5；任意小數都依 fillRatio 比例渲染，例如 4.7 會填滿第五顆的 70%。只有鍵盤 step 是 0.5。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.tsx:42",
+   "宣稱": "--field-height-* 為 sm=28 / md=32 / lg=36",
+   "真實code行為": "這組 token 會隨 density 改值；28/32/36 僅是 md density，lg density 為 32/36/40。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.tsx:46-48,110-114",
+   "宣稱": "Standalone／無 Field context 時預設 xs",
+   "真實code行為": "useResolvedFieldSize 的順序是 explicit prop → FieldContext.size → FieldSurfaceSizeContext → xs；無 FieldContext 但有 surface-size provider 時不會落到 xs。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.tsx:84",
+   "宣稱": "readOnly（role=img）時 aria-label 必填",
+   "真實code行為": "Field 內的 readOnly Rating 會由 rating.tsx:164 的 aria-labelledby 指向 FieldLabel；只有 standalone readOnly 才需自行提供 accessible name。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.tsx:262",
+   "宣稱": "Half 分支為左半 filled／右半 empty",
+   "真實code行為": "filled 寬度是 sizePx * fillRatio；4.7 會是左 70% filled、右 30% empty，並非固定各半。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:33",
+   "宣稱": "平均分 4.7 使用 precision='half' 顯示半星",
+   "真實code行為": "4.7 會按 fillRatio=0.7 顯示 70% 的第五顆星，不是半星。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:56,77",
+   "宣稱": "未傳 size 且無 Field context／非 Field 內時預設 xs",
+   "真實code行為": "FieldSurfaceSizeContext 會在 xs fallback 前生效；無 FieldContext 不保證解析為 xs。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:62",
+   "宣稱": "readOnly 時 aria-label 必填",
+   "真實code行為": "Field 內可由 aria-labelledby 取得 FieldLabel 名稱；同 spec:181 也承認此時免填 aria-label。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:71-73,83",
+   "宣稱": "sm/md/lg container 高度固定為 28/32/36px",
+   "真實code行為": "h-field-sm/md/lg 是 density-aware token；lg density 下為 32/36/40px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:115",
+   "宣稱": "aria-invalid 透過 FieldContext 自動傳入",
+   "真實code行為": "Rating 未讀取 fieldCtx.invalid、未呼叫 useResolvedFieldInvalid，也未自行輸出 aria-invalid；只有 consumer 顯式傳入時才會經 ...props 出現。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:124",
+   "宣稱": "precision='half' 的顯示值為 0.5、1、1.5…5",
+   "真實code行為": "顯示值未做 0.5 quantization；任意小數會按實際比例裁切，4.7 顯示為四顆整星加 70% 星。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:135",
+   "宣稱": "readOnly 使用 role=img + aria-label（必填）",
+   "真實code行為": "role=img 屬實，但 Field 內由 aria-labelledby 提供名稱，aria-label 並非所有 readOnly 情境必填。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:160",
+   "宣稱": "Empty star 使用未填的輪廓色",
+   "真實code行為": "實作明確設定 stroke='none'，並以 var(--divider) 填滿整個星形；它是 solid fill，不是輪廓。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:191",
+   "宣稱": "readOnly 必填 aria-label",
+   "真實code行為": "禁則漏掉 Field 例外；Field 內 readOnly 由 aria-labelledby 指向 FieldLabel。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.spec.md:203",
+   "宣稱": "超界 value 時，鍵盤增減恆 clamp 0–max",
+   "真實code行為": "Right/Up 只限制上界，Left/Down 只限制下界；current=10、max=5 時 ArrowLeft 得 9，current=-2 時 ArrowRight 得 -1。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.anatomy.stories.tsx:43",
+   "宣稱": "precision=half 時用 overflow-hidden 裁出左半",
+   "真實code行為": "裁切寬度是 sizePx * fillRatio；只有尾數恰為 0.5 時才是左半，4.7 會裁成 70%。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.anatomy.stories.tsx:105",
+   "宣稱": "aria-label 在 readOnly 時必填",
+   "真實code行為": "Field 內 readOnly 可由 aria-labelledby 取得 accessible name，免填 aria-label。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.anatomy.stories.tsx:242",
+   "宣稱": "readOnly 一律必填 aria-label；只有 interactive 在 Field 內免填",
+   "真實code行為": "aria-labelledby 不因 readOnly 停用；Field 內所有模式均可指向 FieldLabel。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.anatomy.stories.tsx:351,384-385",
+   "宣稱": "Container 的 sm/md/lg 高度為 28/32/36px",
+   "真實code行為": "這只是 md-density snapshot；lg density 下 token 解析為 32/36/40px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.anatomy.stories.tsx:449",
+   "宣稱": "值超出 0～max 時自動 clamp",
+   "真實code行為": "視覺 fillRatio 會 clamp，但鍵盤 value 只做單側限制，從超界 controlled value 起步時仍可留在範圍外。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.anatomy.stories.tsx:495",
+   "宣稱": "readOnly 使用 role=img + aria-label（必填）",
+   "真實code行為": "Field 內 readOnly 使用 aria-labelledby 指向 FieldLabel，無須 aria-label；摘要漏寫 standalone 限定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:50",
+   "宣稱": "hover 預覽 + click 送出",
+   "真實code行為": "Rating click 只呼叫 setValue／onChange 更新本地評分，沒有任何 submit 行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:66",
+   "宣稱": "hover 預覽 + click 送出（interactive）",
+   "真實code行為": "連結的展示 story 只用 setRating 設值；送出 Button 也沒有 onClick，並未真的送出。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:70",
+   "宣稱": "包在 Field 內時，label + 驗證跟其他 Field 控制項一致",
+   "真實code行為": "連結的 InField story 未傳 Field invalid，Rating 也不消費 FieldContext.invalid；錯誤文字更在初始 rating=0 時立即顯示。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:80",
+   "宣稱": "readOnly Rating 的 aria-label 必填",
+   "真實code行為": "此規則只對 standalone 成立；Field 內由 aria-labelledby 提供 accessible name。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:98",
+   "宣稱": "binary like → Button + pressed",
+   "真實code行為": "緊鄰的 Button 未傳 pressed，也沒有 toggle state；實際是一般 icon-only action button。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:165",
+   "宣稱": "離散 tier：1 / 2 / 3 / 4 / 5（或 0.5 step）",
+   "真實code行為": "同一範例傳入 4.7，實作直接渲染 70% partial star，未量化成整數或 0.5 step。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:196",
+   "宣稱": "Like 應使用 Button iconOnly + pressed",
+   "真實code行為": "下方兩個 Button 都未傳 pressed，也沒有維護切換狀態，未示範所宣稱的 pattern。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:204",
+   "宣稱": "二元切換 → Button + pressed",
+   "真實code行為": "呈現的是沒有 pressed、aria-pressed 或切換 handler/state 的普通 icon buttons。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.principles.stories.tsx:250",
+   "宣稱": "precision='half' 時使用者要在 10 個刻度裡選",
+   "真實code行為": "defaultValue=0 時所有星都走整星分支，滑鼠只有 5 個整星 click zone；鍵盤另可到 0，因此也不是單純 10 個可達值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Rating/rating.stories.tsx:108",
+   "宣稱": "{rating === 0 && <FieldError>請至少給 1 星</FieldError>}",
+   "真實code行為": "初始 rating=0 時立刻顯示錯誤，且 Field 未設 invalid；這與 rating.spec.md:100-101 明訂的 blur + submit、禁止初始即時報錯相反。"
+  }
+ ]
+}

@@ -1,0 +1,176 @@
+{
+ "component": "LinkInput",
+ "claimsVerified": 323,
+ "falseClaims": [
+  {
+   "fileLine": "link-input.tsx:31",
+   "宣稱": "純展示 a tag，無 hover affordance。",
+   "真實code行為": "anchor 實際套用 hover:text-primary-hover 與 hover:underline。"
+  },
+  {
+   "fileLine": "link-input.tsx:62",
+   "宣稱": "mode='view' 時 chrome 無視覺意義（view 完全無 wrapper）。",
+   "真實code行為": "showDisplayEndIcon=true 時會渲染 fieldWrapperStyles wrapper，resolvedVariant 也會改變其幾何。"
+  },
+  {
+   "fileLine": "link-input.tsx:74",
+   "宣稱": "showDisplayEndIcon 決定是否包 Field naked wrapper。",
+   "真實code行為": "此 prop 只切換 wrapper 分支；variant 仍取 resolvedVariant，預設為 default。"
+  },
+  {
+   "fileLine": "link-input.tsx:77",
+   "宣稱": "與 cell edit（<Input naked>）同 DOM 結構。",
+   "真實code行為": "LinkInput view 為 div > span > anchor；Input naked edit 為 div > input，DOM 不同。"
+  },
+  {
+   "fileLine": "link-input.tsx:120",
+   "宣稱": "紅框與 aria 自此同源。",
+   "真實code行為": "合法 URL 的 link branch 可畫紅框，卻不渲染 aria-invalid；input branch 的 aria-invalid 亦可被最後 spread 的同名 prop 覆寫。"
+  },
+  {
+   "fileLine": "link-input.tsx:149",
+   "宣稱": "view 純展示無 hover affordance。",
+   "真實code行為": "view 仍使用帶 hover 改色與 underline 的 anchor。"
+  },
+  {
+   "fileLine": "link-input.tsx:154",
+   "宣稱": "showDisplayEndIcon=true 時 Field naked wrapper 包覆 anchor。",
+   "真實code行為": "實作傳入 resolvedVariant，沒有強制 naked。"
+  },
+  {
+   "fileLine": "link-input.tsx:155",
+   "宣稱": "與 <Input naked> 同 DOM 結構。",
+   "真實code行為": "LinkInput 內層是 span + anchor，不是 Input edit branch 的 input。"
+  },
+  {
+   "fileLine": "link-input.tsx:309",
+   "宣稱": "linkInputMeta.sizes = {}。",
+   "真實code行為": "元件實際支援 sm、md、lg，預設 md。"
+  },
+  {
+   "fileLine": "link-input.tsx:319",
+   "宣稱": "ring token 消費清單為空。",
+   "真實code行為": "readonly wrapper 經 fieldWrapperStyles 消費 ring-2、ring-ring 與 ring-offset-1。"
+  },
+  {
+   "fileLine": "link-input.spec.md:5",
+   "宣稱": "sizes: {}。",
+   "真實code行為": "公開 size surface 實際有 sm、md、lg，預設 md。"
+  },
+  {
+   "fileLine": "link-input.spec.md:43",
+   "宣稱": "LinkInput 不處理 display text 搭配。",
+   "真實code行為": "公開 label prop 可搭配 URL，自訂顯示文字並覆蓋 hostname；僅不提供 label 編輯。"
+  },
+  {
+   "fileLine": "link-input.spec.md:62",
+   "宣稱": "格式不合法時維持 error 邊框，直到格式正確。",
+   "真實code行為": "輸入任一字元便立即 setLocalError(false)，即使內容仍不合法。"
+  },
+  {
+   "fileLine": "link-input.spec.md:66",
+   "宣稱": "showDisplayEndIcon=true 會以 Field naked wrapper 包覆 anchor。",
+   "真實code行為": "該 prop 只開啟 wrapper branch；預設 variant 仍為 default。"
+  },
+  {
+   "fileLine": "link-input.spec.md:129",
+   "宣稱": "LinkInput 的 label 關聯與 invalid／description／error ARIA 由 native input 提供。",
+   "真實code行為": "只在 input branch 成立；合法 URL 狀態是 anchor + Pencil button，沒有 input、id 或相關 aria-*。"
+  },
+  {
+   "fileLine": "link-input.spec.md:138",
+   "宣稱": "focus 視覺由 border-primary 提供，滑鼠點入也亮藍框。",
+   "真實code行為": "僅 edit + error=false 使用藍框；error focus 保持 border-error，readonly 使用 ring-ring。"
+  },
+  {
+   "fileLine": "link-input.stories.tsx:63",
+   "宣稱": "輸入 URL（需含 https://）。",
+   "真實code行為": "http:// 與 https:// 都通過 isValidUrl。"
+  },
+  {
+   "fileLine": "link-input.principles.stories.tsx:146",
+   "宣稱": "輸入 URL（需含 https://）。",
+   "真實code行為": "http:// 同樣是合法 protocol。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:44",
+   "宣稱": "edit/link placeholder = --fg-muted。",
+   "真實code行為": "link state 不渲染 input 或 placeholder，只渲染 anchor 與 Pencil action。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:67",
+   "宣稱": "readonly/link placeholder = --fg-muted。",
+   "真實code行為": "readonly 無 placeholder；空值顯示「-」且使用 text-foreground。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:76",
+   "宣稱": "disabled/link placeholder = --fg-muted。",
+   "真實code行為": "disabled 無 placeholder；空值顯示「-」且使用 text-fg-disabled。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:95",
+   "宣稱": "sm height = 28px。",
+   "真實code行為": "h-field-sm 隨 density 變化：md 為 28px，lg 為 32px。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:96",
+   "宣稱": "md height = 32px。",
+   "真實code行為": "h-field-md 隨 density 變化：md 為 32px，lg 為 36px。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:97",
+   "宣稱": "lg height = 36px。",
+   "真實code行為": "h-field-lg 隨 density 變化：md 為 36px，lg 為 40px。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:262",
+   "宣稱": "error：紅色邊框 + aria-invalid。",
+   "真實code行為": "合法 URL 加 error 仍走 link branch；只有紅框與 data-error，沒有 aria-invalid。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:266",
+   "宣稱": "disabled 等同 mode=\"disabled\"。",
+   "真實code行為": "僅未傳顯式 mode 時成立；解析優先序是顯式 mode > disabled。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:268",
+   "宣稱": "showDisplayEndIcon 讓 view 改包 Field naked wrapper。",
+   "真實code行為": "分支沿用 resolvedVariant；預設仍是 default。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:342",
+   "宣稱": "readonly／disabled 只有 link 狀態。",
+   "真實code行為": "readonly 渲染 anchor；disabled 渲染不可點擊的 span，並非 link。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:413",
+   "宣稱": "實際寬度由內容決定。",
+   "真實code行為": "fieldWrapperStyles 預設 width=fill（w-full），寬度由容器決定。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:463",
+   "宣稱": "Focus = border-primary（1px）。",
+   "真實code行為": "只有 edit + error=false 如此；error 保持紅框，readonly 使用 ring，disabled 不可聚焦。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:745",
+   "宣稱": "元件整體以 native input 提供 label 關聯與 invalid／description／error ARIA。",
+   "真實code行為": "僅 input branch 有這些 DOM／ARIA；合法 URL 狀態是 anchor + button。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:745",
+   "宣稱": "Tab — focus 進輸入框。",
+   "真實code行為": "合法 URL 狀態下 Tab 依序聚焦 anchor 與 Pencil button；input 尚未掛載。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:745",
+   "宣稱": "字母鍵 — 輸入。",
+   "真實code行為": "僅 input branch 可輸入；link state 不會接受文字輸入。"
+  },
+  {
+   "fileLine": "link-input.anatomy.stories.tsx:745",
+   "宣稱": "focus 視覺由 focus-within:!border-primary 提供。",
+   "真實code行為": "error input 聚焦時維持 border-error；readonly 使用 ring-ring，並非一律 primary border。"
+  }
+ ]
+}

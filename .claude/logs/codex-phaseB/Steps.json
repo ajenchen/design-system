@@ -1,0 +1,131 @@
+{
+ "component": "Steps",
+ "claimsVerified": 471,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:4",
+   "宣稱": "variants: {}",
+   "真實code行為": "stepsRootVariants 定義 orientation，stepItemVariants 定義 orientation 與 size；metadata 並非沒有 variants。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:62",
+   "宣稱": "使用者可自由跳步（非線性流程）應改用 Tabs，跳步破壞 Steps mental model。",
+   "真實code行為": "Steps 正式公開 linear=false；isClickable 對所有非 disabled step 回傳 true，同一 spec:320 也稱 setting wizard、教學目錄適用，形成 spec-internal contradiction。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:171",
+   "宣稱": "Content state 跟 Focus 正交。",
+   "真實code行為": "content state 的 current 與 focused 都由 itemValue === value 推導；除 error/completed precedence 外，current 必然 focused，兩者並非獨立正交。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:202,212,220,264,268",
+   "宣稱": "value 驅動的 box-shadow ring 是 focus marker，並是 focus 的單一語意。",
+   "真實code行為": "ring 只追蹤 value；Tab 到另一個 header 而未啟用時，ring 留在舊 value。真正 DOM focus 由 header 的 focus-visible outline 呈現，因此 ring 是 active/value marker，不是實際 focus marker。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:306",
+   "宣稱": "藍色 connector 必須跟 completedValues 一對一對應。",
+   "真實code行為": "connector 依 item.state === completed 判斷；errorValues 或 per-item error override 優先於 completedValues，因此同值即使仍在 completedValues，connector 也會是灰色。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:326",
+   "宣稱": "點 completed step 時，Steps 觸發 onValueChange——僅此而已。",
+   "真實code行為": "expansion=\"multiple\" 時 activate 除 setValue/onValueChange 外，還會 toggleExpanded(value)。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:390",
+   "宣稱": "狀態集中在 parent，因此 completedValues 跟 item state 不可能互相矛盾。",
+   "真實code行為": "API 同時接受 completedValues、errorValues 與 StepItem state=\"error\"；它們可以衝突，computeState 只是用 override > error > completed precedence 解決。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:440",
+   "宣稱": "Dark mode 走 semantic token + Primary token 自動 adapt。",
+   "真實code行為": "Steps 未消費 primary token；實際使用 info、error、secondary、muted、foreground、surface、border 等 tokens。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:461",
+   "宣稱": "sr-only 是螢幕報讀器唯一狀態來源。",
+   "真實code行為": "元件另輸出 aria-current、aria-disabled、aria-expanded 與 aria-controls；至少 current 等狀態並非只由 sr-only 傳達。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:468",
+   "宣稱": "採 native button sequential Tab。",
+   "真實code行為": "header 是自訂 div role=\"button\" + tabIndex=0 + 自寫 Enter/Space handler，不是 native button。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.spec.md:470",
+   "宣稱": "focus management 由元件 own。",
+   "真實code行為": "元件沒有 focus()、roving index、focus trap 或 value 變更後的焦點移動；只設定 tabIndex、鍵盤啟用與 focus-visible 樣式，sequential focus movement 由瀏覽器管理。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.tsx:265",
+   "宣稱": "Interleave horizontal connectors between items。",
+   "真實code行為": "root 迴圈只 clone/wrap StepItem；connector 實際在 HorizontalLayout 內、屬於各 StepItem，同檔 284–285 行也明確否定 interleaving。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.tsx:357",
+   "宣稱": "永遠更新 focus(value)。",
+   "真實code行為": "activate 只呼叫 setValue(value)，沒有移動 DOM focus。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.tsx:870",
+   "宣稱": "Phase 2 fill needed: purpose descriptions + when rationale + world-class refs。",
+   "真實code行為": "stepsMeta.sizes 的 sm/md/lg 已各自具有 when rationale，因此此 TODO 至少該部分已過期。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.tsx:874",
+   "宣稱": "variants: {}",
+   "真實code行為": "同檔 cva 實際具有 orientation 與 size variants。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.tsx:881-884",
+   "宣稱": "tokens.bg 僅有 bg-info，tokens.ring 為空陣列。",
+   "真實code行為": "元件另消費 bg-border、--error、--secondary、--muted，以及 --surface、--info-hover、--error-hover、--border-hover、outline-ring；metadata token inventory 不完整。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.anatomy.stories.tsx:67",
+   "宣稱": "<StepLabel> children 必填。",
+   "真實code行為": "StepLabelProps 的 children 是 optional；StepItemLayout 允許 labelNode 為 null，沒有型別或 runtime 必填檢查。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.anatomy.stories.tsx:395",
+   "宣稱": "consumer 若要繼續流程，必須先解除 errorValues 再推進 current。",
+   "真實code行為": "errorValues 只影響 computeState 與視覺；setValue 不檢查 errorValues，controlled value 也能直接推進。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.anatomy.stories.tsx:445",
+   "宣稱": "focus management 由元件 own。",
+   "真實code行為": "元件沒有 programmatic focus management；實際採每個 clickable custom header 各自 tabIndex=0 的瀏覽器 sequential Tab。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.principles.stories.tsx:96,102",
+   "宣稱": "Steps 表達線性進度；使用者可自由跳步應改用 Tabs。",
+   "真實code行為": "Steps 的 linear=false 明確支援所有非 disabled step 自由跳轉。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.principles.stories.tsx:114",
+   "宣稱": "每個 step state 全由 Steps root 推導，絕不在 StepItem 各自宣告 state。",
+   "真實code行為": "StepItem 公開 state?: \"error\"，而且 computeState 第一優先採用該 per-item override。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.principles.stories.tsx:146,149-150",
+   "宣稱": "環是聚焦標記，且 ring 是唯一的 focus 表達。",
+   "真實code行為": "indicator ring 由 value 驅動；真正 DOM focus 另由 header 的 focus-visible outline 表達。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.principles.stories.tsx:265",
+   "宣稱": "點 completed step 只改 focus(value)。",
+   "真實code行為": "activate 更新的是 value，沒有呼叫 focus() 或移動 DOM focus。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.stories.tsx:4",
+   "宣稱": "Disabled state 由 FocusRingCombinations 內部展示。",
+   "真實code行為": "FocusRingCombinations 的 StepItem 均未傳 disabled，該 story 沒有展示 disabled state。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Steps/steps.stories.tsx:151,160-161",
+   "宣稱": "任何 content state 都能與 focused 組合，ring 與底色狀態完全正交。",
+   "真實code行為": "focused 與 current 都由同一 value 推導；focused 無法與 upcoming/reachable 組合，且真正 DOM focus 又由獨立 outline 呈現。"
+  }
+ ]
+}

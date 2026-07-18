@@ -1,0 +1,66 @@
+{
+ "component": "CircularProgress",
+ "claimsVerified": 267,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.tsx:40",
+   "宣稱": "「無 value → role=\"status\" + aria-label（如傳）或 aria-hidden（否則）」",
+   "真實code行為": "只有非空 `aria-label` 或視覺 `label` 存在時才設 `role=\"status\"`；兩者皆無時不設 role，僅設 `aria-hidden=true`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.tsx:21,63-67",
+   "宣稱": "`affix` 支援 `ReactNode` 客製內容。",
+   "真實code行為": "型別接受完整 `ReactNode`，runtime 卻只處理 React element、string、number；元素陣列、其他 iterable、ReactPortal 等合法 ReactNode 會被忽略，`affix={0}` 也會被 falsy gate 丟棄。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:84-85",
+   "宣稱": "公開 API 的 `affix?: 'value' | React.ReactNode` 可供 determinate 模式使用。",
+   "真實code行為": "實作只渲染 React element、string、number，沒有實現文件所承諾的完整 ReactNode surface。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.spec.md:91,143-145",
+   "宣稱": "`affix=\"status-icon\"` 是「不存在的 API／本 DS 無此選項」。",
+   "真實code行為": "`ReactNode` 型別包含任意 string，因此 TypeScript 接受此值；determinate 模式還會直接渲染文字 `status-icon`，並非不存在或被拒絕的選項。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.anatomy.stories.tsx:47",
+   "宣稱": "`strokeWidth` 動態公式是 `max(2, size/10)`。",
+   "真實code行為": "實作是 `Math.max(2, Math.round(size / 10))`；非整十尺寸會先四捨五入。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.anatomy.stories.tsx:50-52",
+   "宣稱": "Button、Input、Empty 等 context 會自動替 CircularProgress 縮放尺寸。",
+   "真實code行為": "CircularProgress 不偵測 context，未傳 `size` 時固定為 24；Empty 場景必須由 consumer 顯式傳入尺寸。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.anatomy.stories.tsx:72",
+   "宣稱": "Props 表教導 `affix` 支援 `'value' | ReactNode`。",
+   "真實code行為": "合法的元素陣列、iterable、ReactPortal 等 ReactNode 不會被實作渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.anatomy.stories.tsx:173",
+   "宣稱": "「本元件不可聚焦、無鍵盤互動」，聚焦與鍵盤行為只由外包容器決定。",
+   "真實code行為": "預設確實不在 tab order 且沒有內建鍵盤行為，但 props 繼承 `HTMLAttributes<HTMLSpanElement>` 並透傳；consumer 可直接傳 `tabIndex`、`onKeyDown`，使元件自身可聚焦並接收鍵盤事件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:62",
+   "宣稱": "反例中的無限旋轉裝飾會讓螢幕閱讀器持續收到 loading 通知。",
+   "真實code行為": "反例使用未傳 `label`／`aria-label` 的 `<CircularProgress />`；實作不設 role 且設 `aria-hidden=true`，不會發出 loading 通知。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:205",
+   "宣稱": "Input 的 `loading` prop 一律在 endAction 放入 16px CircularProgress。",
+   "真實code行為": "Input 依 field size 傳入 icon size：sm/md 為 16，lg 為 20；16px 不是所有 Input size 的固定行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.principles.stories.tsx:239-240",
+   "宣稱": "Button／Field endAction／Tag 內一律使用 16px，而且不能更大。",
+   "真實code行為": "同批 spec 與 anatomy 明定 sm/md=16、lg=20，lg Button／Field context 合法使用 20px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/CircularProgress/circular-progress.stories.tsx:34-37",
+   "宣稱": "Button、Input、Empty 都會依 context 的 iconSize 自動決定其他尺寸。",
+   "真實code行為": "Empty 不會改寫傳入的 CircularProgress；同檔 FullScreenOverlay 必須顯式傳 `size={48}`。"
+  }
+ ]
+}

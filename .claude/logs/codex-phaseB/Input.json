@@ -1,0 +1,126 @@
+{
+ "component": "Input",
+ "claimsVerified": 275,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:26",
+   "宣稱": "`naked` 是「完全無 chrome / 無 border / 無 focus ring」。",
+   "真實code行為": "edit×naked 實際套用 table-cell padding、border、hover border、focus-within primary border 與 error border。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:140",
+   "宣稱": "`FieldVariant` 型別含第二值 `'naked'`。",
+   "真實code行為": "公開 `FieldVariant` 只有 `'default'`；`'naked'` 僅存在於內部 `FieldVariantInternal`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:140",
+   "宣稱": "naked 會剝除 chrome，包含「無 padding」。",
+   "真實code行為": "edit×naked 明確套用 `--table-cell-px`／`--table-cell-py` padding。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:31",
+   "宣稱": "Error 正交於 mode，會呈現 border-error + aria-invalid。",
+   "真實code行為": "紅框只存在 edit mode；readonly native 分支僅保留 aria-invalid，view 與空值 readonly 的 span 分支兩者皆無。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:49",
+   "宣稱": "loading 會自動在 endAction slot 顯示 CircularProgress。",
+   "真實code行為": "mode='view' 與空值 readonly 在 spinner 分支前已 return，不會渲染 CircularProgress。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:50",
+   "宣稱": "loading 會宣告 aria-busy='true'。",
+   "真實code行為": "aria-busy 只設於 native-input wrapper；view 與空值 readonly 的 display-span wrapper 沒有該屬性。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:64-65",
+   "宣稱": "不支援 field-sizing 時，w-auto fallback 仍依 content／placeholder 撐寬。",
+   "真實code行為": "field-sizing 被忽略後，原生文字 input 的 width:auto 採 intrinsic/default size；min-w-0 只允許縮小，不會量測目前 value／placeholder。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.tsx:281",
+   "宣稱": "`inputMeta.tokens.ring` 為空陣列。",
+   "真實code行為": "readonly native-input 分支經 fieldWrapperStyles 使用 `ring-2 ring-ring ring-offset-1`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:105",
+   "宣稱": "loading 一律顯示 CircularProgress、aria-busy，且 input 維持可編輯。",
+   "真實code行為": "view／空值 readonly 不顯示 spinner 或 aria-busy；readonly／disabled native 分支也不可編輯。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:117",
+   "宣稱": "loading=true 時 endAction slot 一律切成 CircularProgress，input 仍可編輯。",
+   "真實code行為": "display-span 分支完全略過 loading；readonly／disabled 分支不具可編輯性。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:180",
+   "宣稱": "Input 採原生 input，並在其上提供所列 ARIA 關聯。",
+   "真實code行為": "mode='view' 與空值 readonly 渲染 div/span，且沒有轉送 aria-invalid、aria-required、aria-describedby、aria-errormessage 等 native props。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:184",
+   "宣稱": "Tab 會 focus Input。",
+   "真實code行為": "只適用 native-input 分支；view 與空值 readonly 的 div/span 不可 Tab 聚焦。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.spec.md:188",
+   "宣稱": "focus 視覺一律由 focus-within:border-primary 提供。",
+   "真實code行為": "edit 使用 primary border；readonly 使用 ring-ring；view 與空值 readonly 沒有 focus 行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:34",
+   "宣稱": "view mode 的 placeholder token 是 --fg-muted。",
+   "真實code行為": "view 永遠渲染 span，不存在 placeholder；空值顯示使用 text-foreground。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:37",
+   "宣稱": "readonly mode 的 placeholder token 是 --fg-muted。",
+   "真實code行為": "readonly 空值改渲染 span 與半形 '-'，使用 text-foreground；因此沒有可達的 readonly placeholder。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:252",
+   "宣稱": "loading 會顯示 CircularProgress、aria-busy，且 input 仍可編輯。",
+   "真實code行為": "view／空值 readonly 略過前兩者；readonly／disabled native 分支不可編輯。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:487",
+   "宣稱": "readonly 和 disabled 各只有一種視覺狀態。",
+   "真實code行為": "readonly 另有 focus-visible 的 ring-2/ring-ring/ring-offset-1 狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:523",
+   "宣稱": "readonly／disabled 是「單一視覺狀態」。",
+   "真實code行為": "readonly 的 rest 與 focus-visible ring 至少是兩種視覺狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:761",
+   "宣稱": "Input 採用原生 input 並提供所列 ARIA 行為。",
+   "真實code行為": "view 與空值 readonly 使用 div/span，且 display 分支不轉送這些 ARIA props。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:761",
+   "宣稱": "Tab 會聚焦到欄位，鍵盤完整可操作。",
+   "真實code行為": "該 keyboard map 只適用 native-input 分支；display-span 分支不可聚焦。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.anatomy.stories.tsx:761",
+   "宣稱": "聚焦提示由外層 focus-within border-primary 提供。",
+   "真實code行為": "readonly 使用 ring-ring，而 display-span 分支沒有聚焦提示。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.principles.stories.tsx:201-203",
+   "宣稱": "空值範例可「輸入後出現清除按鈕」。",
+   "真實code行為": "範例同時設定 readOnly；空值會直接變成 display span，placeholder 不顯示且無法輸入。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.principles.stories.tsx:207",
+   "宣稱": "正向範例的尾端操作會「清除搜尋」。",
+   "真實code行為": "onClick 是空函式，既不清除 defaultValue，也不讓按鈕消失。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Input/input.stories.tsx:31",
+   "宣稱": "mode='view' 範例可透過 aria-label 提供名稱。",
+   "真實code行為": "view 分支不 spread props；該 aria-label 不會出現在 DOM。"
+  }
+ ]
+}

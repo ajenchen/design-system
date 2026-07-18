@@ -1,0 +1,61 @@
+{
+ "component": "DescriptionList",
+ "claimsVerified": 235,
+ "falseClaims": [
+  {
+   "fileLine": "description-list.tsx:23-24",
+   "宣稱": "每個 item 下方加 `border-b border-divider`。",
+   "真實code行為": "divided 分支另有 `last:border-b-0`，最後一個 item 沒有底部分隔線。"
+  },
+  {
+   "fileLine": "description-list.tsx:27",
+   "宣稱": "`code L115 dd 消費` label-description gap token。",
+   "真實code行為": "L115 是註解；實際 `<dd>` 與 token 消費在 L117。"
+  },
+  {
+   "fileLine": "description-list.tsx:51-52",
+   "宣稱": "horizontal 模式下每個 item 下方加分隔線。",
+   "真實code行為": "最後一個 item 會被 `last:border-b-0` 移除分隔線。"
+  },
+  {
+   "fileLine": "description-list.spec.md:62",
+   "宣稱": "每個 item 下方加 `border-b border-divider`。",
+   "真實code行為": "只有相鄰 rows 之間有分隔線；最後一項無 border。相同 spec 的 L103 才正確記載 `last:border-b-0`。"
+  },
+  {
+   "fileLine": "description-list.anatomy.stories.tsx:4-6",
+   "宣稱": "DescriptionList 是「純 typography 元件」。",
+   "真實code行為": "它是 composite／isStructural 元件，包含 `cols`、`direction`、`divided` 與 grid/flex layout；只有色彩 surface 固定。"
+  },
+  {
+   "fileLine": "description-list.anatomy.stories.tsx:27",
+   "宣稱": "DescriptionList 是 CSS grid 容器，`cols` 控制欄數。",
+   "真實code行為": "僅 vertical 為 grid 並消費 `cols`；horizontal 改為 `flex flex-col` 且忽略 `cols`。"
+  },
+  {
+   "fileLine": "description-list.anatomy.stories.tsx:76",
+   "宣稱": "調整 `cols`／`direction`／`divided` 都是在看 CSS grid 配置變化。",
+   "真實code行為": "`direction` 會在 grid 與 flex 間切換；`divided` 只改 horizontal item 的 margin、padding、border，不改 grid。"
+  },
+  {
+   "fileLine": "description-list.anatomy.stories.tsx:86",
+   "宣稱": "horizontal divided 會在每個 item 下加 `border-b`。",
+   "真實code行為": "最後一個 item 的 border 會被 `last:border-b-0` 清除。"
+  },
+  {
+   "fileLine": "description-list.principles.stories.tsx:71",
+   "宣稱": "近親元件對照可見 `Vs*Rule` stories。",
+   "真實code行為": "本檔只 export `UsageGuidance`、`LayoutRule`、`LabelAlignmentRule`、`NoInteractionRule`，不存在任何 `Vs*Rule` story。"
+  },
+  {
+   "fileLine": "description-list.principles.stories.tsx:143",
+   "宣稱": "此 story 是「直式 vs 橫式」對照。",
+   "真實code行為": "`LayoutRule` 內所有 DescriptionList 都未傳 `direction=\"horizontal\"`，全部使用預設 vertical；實際只比較 `cols`。"
+  },
+  {
+   "fileLine": "description-list.stories.tsx:12",
+   "宣稱": "`cols` 控制欄數（1／2／3）。",
+   "真實code行為": "此敘述缺少 vertical 限定；horizontal 永遠是單欄 flex，`cols` 不生效。"
+  }
+ ]
+}

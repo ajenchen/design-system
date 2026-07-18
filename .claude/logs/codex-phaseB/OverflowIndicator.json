@@ -1,0 +1,106 @@
+{
+ "component": "OverflowIndicator",
+ "claimsVerified": 164,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:4",
+   "宣稱": "variants: {}",
+   "真實code行為": "元件存在 shape='circle' | 'tag'，預設 circle，並依 shape 渲染不同 trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:5",
+   "宣稱": "sizes: {}",
+   "真實code行為": "元件存在 sm/md/lg 三個 size，預設 md，且各自有實際樣式 mapping。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.tsx:156-158",
+   "宣稱": "variants: {}",
+   "真實code行為": "同檔 shape prop 與 render 分支明確實作 circle/tag；metadata 漏列真實 variant。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.tsx:159-161",
+   "宣稱": "sizes: {}",
+   "真實code行為": "同檔實作 sm/md/lg，並由 triggerSize、triggerText、tagVariants 消費；metadata 漏列全部 size。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.tsx:165",
+   "宣稱": "bg: ['bg-muted']",
+   "真實code行為": "circle 使用 bg-muted；tag 經 neutral tagVariants 使用 bg-secondary；HoverCardContent 另直接使用 bg-tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.tsx:167",
+   "宣稱": "ring: []",
+   "真實code行為": "circle 與 tag trigger 都套用 focus-visible:ring-ring。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:60-62",
+   "宣稱": "sm/md/lg Trigger 分別套用 h-5 min-w-5、h-6 min-w-6。",
+   "真實code行為": "只有 circle 分支消費 triggerSize 的 min-w-*；tag 分支只有 tagVariants 的 h-*、px-1 與 typography，沒有 min-w-*。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:58-60,227,447-458",
+   "宣稱": "兩種 shape 都是 min-width 同高，SizeMatrix 共用 min-w-5/min-w-6。",
+   "真實code行為": "該資訊只適用 circle；tag trigger 不套任何 min-w-*。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:46",
+   "宣稱": "滑鼠離開 trigger 即消失。",
+   "真實code行為": "DS Tooltip 沒有啟用 disableHoverableContent；Radix 預設建立 trigger 到 content 的 pointer grace area，游標移入 content 時不會立即關閉。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:109",
+   "宣稱": "需要 custom Portal 時，改用 HoverCard + Tag 自組。",
+   "真實code行為": "DS HoverCardContent 永遠自行包 Portal，且未 export Portal 或 container API；HoverCard + Tag 可取得 content ref，但無法建立 custom Portal。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:123",
+   "宣稱": "ARIA / Pattern 對齊 W3C ARIA Authoring Practices Guide 對應 pattern。",
+   "真實code行為": "trigger 是無 role 的 generic span，content 也沒有 role、aria-describedby、aria-controls 或 aria-haspopup 關聯；實作未形成 APG Tooltip 或 non-modal Dialog pattern。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:548",
+   "宣稱": "ARIA / Pattern：對齊 W3C ARIA Authoring Practices Guide 對應 pattern。",
+   "真實code行為": "實際 DOM 沒有 APG pattern 所需的 role 與 trigger-content ARIA 關聯；Radix HoverCard 只加入 data-state 與 hover/focus handlers。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:127",
+   "宣稱": "HoverCard 內展開的可互動內容由各自的內容元件負責 focus 管理。",
+   "真實code行為": "Radix HoverCard 會把 content 內所有 tabbable node設為 tabindex=\"-1\"；OverflowIndicator 沒有 focus transfer 或 focus trap，鍵盤焦點留在 trigger。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:548",
+   "宣稱": "HoverCard 內展開的可互動內容由各自內容元件負責 focus 管理。",
+   "真實code行為": "底層會移除 content descendants 的 tab stop，且沒有 focus-enter handoff；子內容無法自行提供一般鍵盤 focus 路徑。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:4-5",
+   "宣稱": "HoverCard content 走深色 tooltip，色彩繼承 tooltip token。",
+   "真實code行為": "實作只套 bg-tooltip；沒有 text-on-emphasis。data-theme=\"dark\" 只重定義變數、不設定 color，無前景 class 的 children 仍繼承外層已計算的文字色。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.spec.md:129",
+   "宣稱": "WCAG AA contrast ≥ 4.5:1(text) / 3:1(UI)。",
+   "真實code行為": "任意 children 的前景色未受約束；在 light theme 中，無前景 class 的內容會以外層深色文字疊在 dark bg-tooltip 上，code 無法成立此 blanket contrast 宣稱。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:548",
+   "宣稱": "WCAG AA contrast ≥ 4.5:1（text）/ 3:1（UI）。",
+   "真實code行為": "anatomy 多個 children 只有 typography class，沒有 tooltip 前景 token；元件也未提供配對文字色，因此不保證該對比。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.anatomy.stories.tsx:374",
+   "宣稱": "典型 consumer：PeoplePicker / Avatar Group +N。",
+   "真實code行為": "PeoplePicker 是現行 consumer；Avatar.Group 尚無實作，spec 明列為未來消費者。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.stories.tsx:37",
+   "宣稱": "由 Combobox / PeoplePicker / Avatar Group 等元件消費。",
+   "真實code行為": "現行 production consumer 只有 Combobox 與 PeoplePicker；Avatar.Group 尚不存在。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/OverflowIndicator/overflow-indicator.principles.stories.tsx:68",
+   "宣稱": "Tabs 寬度不足時搭配 OverflowIndicator，把末端收合成 +N。",
+   "真實code行為": "Tabs 實際消費 horizontal-overflow 的 OverflowMenuTriggerButton，透過 DropdownMenu 顯示全部 tabs；Tabs 沒有消費 OverflowIndicator。"
+  }
+ ]
+}

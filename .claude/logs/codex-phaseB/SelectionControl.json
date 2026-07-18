@@ -1,0 +1,101 @@
+{
+ "component": "SelectionControl",
+ "claimsVerified": 342,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/boolean-value.tsx:26",
+   "宣稱": "Checkbox / Switch 的 view + readonly 態、DataTable boolean cell 全消費 BooleanValueIcon。",
+   "真實code行為": "Checkbox／Switch 的 view 與 Field-specific readonly 分支會使用；standalone readOnly 仍渲染原 Radix control，並非所有 readonly 態都消費此 glyph。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.tsx:31",
+   "宣稱": "field-height token 變動時，本檔需手動同步。",
+   "真實code行為": "三個 size 均直接引用 var(--field-height-*），token 數值與 density override 會自動傳播；只有公式或 token 名稱改動才需同步。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.tsx:52-53",
+   "宣稱": "Avatar／Icon 尺寸來自 item-layout module 的 canonical 常數。",
+   "真實code行為": "實際 import 來源是 patterns/element-anatomy/item-anatomy；item-layout module/path 不存在。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.tsx:72",
+   "宣稱": "control 永遠包在 h-[1lh] 容器內並對齊第一行 label。",
+   "真實code行為": "avatar + description 的 block mode 會讓 control 改用 blockAlignClass，對齊整個 text block center。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.tsx:76",
+   "宣稱": "control 永遠 inline 對齊。",
+   "真實code行為": "avatar block mode 會把 control 與 avatar 一起切換為 block alignment。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.tsx:103-112",
+   "宣稱": "labelMaxLines 傳入數字便會截斷到該行數。",
+   "真實code行為": "lineClampClass 僅實作整數 1–6；0、負數、小數與 ≥7 均不截斷。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:43",
+   "宣稱": "直接使用 SelectionItem 會失去 Checkbox／Radio 的 ARIA state、keyboard 與 form integration。",
+   "真實code行為": "傳入 Checkbox／RadioGroupItem 時，其 Radix role、aria-checked、鍵盤行為與 hidden form input 仍存在；真正可能缺失的是未傳 htmlFor 時的 label 關聯。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:49",
+   "宣稱": "Checkbox 與 Radio 的視覺差異只有形狀及 check icon／filled dot。",
+   "真實code行為": "checked chrome 也不同：Checkbox 使用 primary 填色與 on-emphasis indicator；Radio 保留 surface，只改 primary border/text。Checkbox 另有 indeterminate state。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:51",
+   "宣稱": "SelectionItem 保證 Checkbox 與 Radio 的視覺／行為永遠一致。",
+   "真實code行為": "SelectionItem 只共用 row layout、padding、clamp 與文字狀態；control 視覺、ARIA、鍵盤及 state machine 仍由兩套 wrapper／Radix primitive 分別實作。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:95",
+   "宣稱": "SelectionItem 只處理 3-slot 與 padding，無獨立色彩或狀態。",
+   "真實code行為": "它也自行處理 foreground tokens、disabled 視覺與 aria-disabled、clamp、avatar 尺寸及 block alignment；第 98 行亦承認 disabled 是其視覺狀態。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:108",
+   "宣稱": "description 缺少時，layout 自動收斂為單行。",
+   "真實code行為": "缺 description 只會移除 p；label 使用 break-words 且預設不 clamp，長 label 仍可多行。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:122",
+   "宣稱": "SelectionItem 會渲染指向控件的 label，點文字即可觸發控件。",
+   "真實code行為": "htmlFor 是 optional，SelectionItem 不生成 id 或自動接線；只有 wrapper 傳入匹配 id 時成立。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.spec.md:129",
+   "宣稱": "Space 會由 Checkbox／Radio control 切換勾選狀態。",
+   "真實code行為": "Checkbox 可來回切換；Radix Radio 的 Space 只能選中 focused radio，不能取消已選中的 radio，且 RadioGroup 另有方向鍵 roving/select 行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx:204-213",
+   "宣稱": "labelMaxLines／descMaxLines 的任意 number 都代表 line-clamp 行數。",
+   "真實code行為": "僅整數 1–6 有對應 class；其他數值全部不截斷。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx:269",
+   "宣稱": "block=true 時 control 與 prefix 仍是 h-[1lh]。",
+   "真實code行為": "兩者都會改用 blockAlignClass，高度為 1lh + gap + description line-height。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx:568",
+   "宣稱": "SelectionItem 的 label 會自動連到 control id，點文字會操作控件。",
+   "真實code行為": "SelectionItem 僅原樣轉發 optional htmlFor；此 anatomy 檔所有裸用範例均未傳 htmlFor，因此 label 未與 Checkbox 關聯。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.anatomy.stories.tsx:568",
+   "宣稱": "Space 會切換 Checkbox／Radio 的勾選狀態。",
+   "真實code行為": "Checkbox 可 toggle；Radio 只能選中未選項，無法用 Space 取消已選項。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.stories.tsx:1",
+   "宣稱": "SelectionControl 是 isInternal primitive。",
+   "真實code行為": "SelectionControl/ 是概念群組名稱；真正的 internal primitive 與 export 是 SelectionItem。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/SelectionControl/selection-item.principles.stories.tsx:46",
+   "宣稱": "SelectionControl rich row 是本 primitive。",
+   "真實code行為": "rich-row layout primitive 是 SelectionItem；SelectionControl 不是元件或 primitive。"
+  }
+ ]
+}

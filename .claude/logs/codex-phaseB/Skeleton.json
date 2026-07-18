@@ -1,0 +1,46 @@
+{
+ "component": "Skeleton",
+ "claimsVerified": 122,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Skeleton/skeleton.spec.md:73",
+   "宣稱": "Skeleton 唯一變因是形狀，由 consumer 透過 className 決定",
+   "真實code行為": "元件預設注入 rounded-md，且 React.HTMLAttributes 的 style 會完整轉發，可直接設定 width、height、borderRadius；形狀不只由 className 決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Skeleton/skeleton.spec.md:74",
+   "宣稱": "Skeleton 底色固定為 bg-muted",
+   "真實code行為": "bg-muted 只是預設值；className 在 cn() 中後置合併，衝突背景 class 會覆寫它，inline style 也可改 backgroundColor。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Skeleton/skeleton.spec.md:75",
+   "宣稱": "尺寸完全由 consumer className 或 parent 決定",
+   "真實code行為": "無自訂 size prop 為真，但 passthrough 的 style 可直接設定 root width／height，因此尺寸來源不只 className 或 parent。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Skeleton/skeleton.spec.md:88",
+   "宣稱": "Skeleton 永遠 non-interactive，無鍵盤行為",
+   "真實code行為": "預設 div 確實無內建鍵盤行為，但 tabIndex、role、onKeyDown、onFocus 等原生 props 均會轉發，可使 root 可聚焦並處理鍵盤事件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Skeleton/skeleton.spec.md:89",
+   "宣稱": "honor prefers-reduced-motion 即滿足 WCAG 2.2.2",
+   "真實code行為": "code 只在使用者已啟用 reduced-motion 時套用 animate-none；元件沒有一般性的 pause／stop／hide 機制，不能據此無條件證成 WCAG 2.2.2。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Skeleton/skeleton.anatomy.stories.tsx:4",
+   "宣稱": "形狀／尺寸完全由 consumer 的 className 決定",
+   "真實code行為": "元件已有預設 rounded-md，且 passthrough style 可直接改尺寸與圓角，因此不是完全由 className 決定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Skeleton/skeleton.anatomy.stories.tsx:14-15",
+   "宣稱": "形狀／尺寸完全由 className 決定；底色固定用 bg-muted",
+   "真實code行為": "style 可改 width、height、borderRadius 與 backgroundColor；後置 className 也能覆寫 bg-muted，所以兩者都只是預設／建議，並非 code 保證。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Skeleton/skeleton.anatomy.stories.tsx:44",
+   "宣稱": "尺寸／形狀完全由 className（Tailwind utilities）決定",
+   "真實code行為": "React.HTMLAttributes 的 style 會傳到 root，元件本身也提供預設 rounded-md；className 並非唯一決定來源。"
+  }
+ ]
+}

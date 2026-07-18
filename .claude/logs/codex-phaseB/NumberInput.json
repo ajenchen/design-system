@@ -1,0 +1,61 @@
+{
+ "component": "NumberInput",
+ "claimsVerified": 160,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.tsx:68",
+   "宣稱": "同時傳入 endSlot 時，endSlot 優先、endAction 被忽略。",
+   "真實code行為": "number-input.tsx:191-196 使用 endSlot 的 truthiness 判斷；合法 ReactNode 0 會落入 endAction 分支，並非一律由 endSlot 優先。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:258",
+   "宣稱": "endSlot 與 endAction 同時傳時，endSlot 優先。",
+   "真實code行為": "實作以 endSlot ? ... : endAction ? ... 判斷；endSlot={0} 等 falsy ReactNode 不會取得優先權。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:71",
+   "宣稱": "View 的 null／undefined 一律顯示半形 -。",
+   "真實code行為": "NumberInput 委派 useFieldEmptyDisplay()；editable table-cell 的 view 空值回傳空字串，只有 standalone／不可編輯 cell 等情境顯示 -。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.spec.md:108",
+   "宣稱": "View／readonly mode 的空值渲染半形 -。",
+   "真實code行為": "readonly 成立，但 editable table-cell 的 view mode 渲染空字串，不是 -。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:725",
+   "宣稱": "value=null 時，readonly／view 顯示 -（hyphen, foreground）。",
+   "真實code行為": "view 的結果取決於 Field surface；editable table-cell 顯示空字串，並非一律為 -。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.stories.tsx:35",
+   "宣稱": "mode=\"view\" 範例傳入 aria-label，暗示 rendered view 會取得該標籤。",
+   "真實code行為": "非 edit mode 在 number-input.tsx:125-143 提前回傳 div＋span，沒有 spread props；aria-label 被丟棄。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.stories.tsx:39",
+   "宣稱": "mode=\"readonly\" 範例傳入 aria-label，暗示 rendered readonly 值會取得該標籤。",
+   "真實code行為": "readonly 分支只渲染 div＋span，aria-label 未轉發到任何元素。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.stories.tsx:43",
+   "宣稱": "mode=\"disabled\" 範例傳入 aria-label，暗示 rendered disabled 值會取得該標籤。",
+   "真實code行為": "disabled 分支只渲染 div＋span，aria-label 未轉發到任何元素。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:429",
+   "宣稱": "Inspector 的 edit Focus token 固定為 border-primary。",
+   "真實code行為": "Inspector 可同時開啟 error；此時 fieldWrapperStyles 的 error compound 強制 focus-within:border-error，焦點仍為紅框而非 primary。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.anatomy.stories.tsx:428",
+   "宣稱": "非 edit mode 的 border-transparent resolved value 為 none。",
+   "真實code行為": "view／readonly／disabled default chrome 都使用 border border-transparent，實際是 1px solid transparent，不是 border:none。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/NumberInput/number-input.principles.stories.tsx:144",
+   "宣稱": "DataTable 的 price／stock 欄會讓小數點縱向對齊。",
+   "真實code行為": "DataTable 僅套用 justify-end／text-right，沒有 decimal anchor、tabular-nums 或小數點對齊演算法；只能保證右緣對齊。"
+  }
+ ]
+}

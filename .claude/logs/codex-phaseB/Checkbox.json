@@ -1,0 +1,56 @@
+{
+ "component": "Checkbox",
+ "claimsVerified": 342,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:129-131",
+   "宣稱": "公開 ref 型別固定為 HTMLButtonElement。",
+   "真實code行為": "edit 是 button，但 view 與 Field-readonly 分別把 ref 轉給 span 與 div（checkbox.tsx:217,237），型別與 runtime element 不一致。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:195-198",
+   "宣稱": "view／Field-readonly 已轉發 id、data-*、aria-*、ref 等其餘 DOM props。",
+   "真實code行為": "id 在 checkbox.tsx:146 已抽成 idProp，未進 restDomProps，也未重掛到兩個 early-return；view 同時遺失 className。只有 data-*、aria-*、ref 確實轉發。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:216",
+   "宣稱": "defaultChecked 型別為 boolean。",
+   "真實code行為": "Radix 1.3.3 的公開型別是 boolean | 'indeterminate'；只有預設狀態 false 正確。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:221",
+   "宣稱": "value 型別為 string。",
+   "真實code行為": "Radix 公開型別實際為 string | number | readonly string[]。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.anatomy.stories.tsx:221",
+   "宣稱": "value 沒有預設值。",
+   "真實code行為": "Radix Provider runtime 預設 value='on'。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:241",
+   "宣稱": "Uncontrolled 模式由 DOM 自管。",
+   "真實code行為": "Root 是 custom button role=checkbox，狀態由 React useControllableState 管理；隱藏的 native input 只鏡射狀態供 form submission 與事件 bubbling。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:243",
+   "宣稱": "Field readonly 顯示 readonly 灰框 + ✓/—。",
+   "真實code行為": "目前實作使用 BooleanValueIcon 的 Check/X；同 spec:249-250 也寫勾/叉，形成 spec-internal 矛盾。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.stories.tsx:29",
+   "宣稱": "view 不暴露獨立 aria-label。",
+   "真實code行為": "view span 會 spread restDomProps，因此 consumer 傳入的 aria-label 會進 DOM，Chromium AX tree 會暴露具 accessible name 的 generic node。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.tsx:179",
+   "宣稱": "group child 強制使用唯一的 generatedId。",
+   "真實code行為": "checkbox.tsx:182 實際採 idProp ?? generatedId；consumer id 優先，並非強制 generatedId，也不保證唯一。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Checkbox/checkbox.spec.md:288",
+   "宣稱": "每個 group Checkbox 的 id 都由 useId 生成。",
+   "真實code行為": "只有未提供 idProp 時才使用 generatedId；顯式 id 會覆蓋。"
+  }
+ ]
+}

@@ -1,0 +1,66 @@
+{
+ "component": "Pagination",
+ "claimsVerified": 264,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.tsx:8",
+   "宣稱": "DOM 骨架:shadcn Pagination(nav > ul > li + aria-current=\"page\")",
+   "真實code行為": "<ul> 並非 <nav> 的直接子元素；基本形態為 nav > div > ul > li，完整形態為 nav > span + div > ul > li。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.tsx:249",
+   "宣稱": "頁碼列是 chrome 級導覽不隨 Field 密度縮放",
+   "真實code行為": "Button sm 使用 h-field-sm，頁碼與 ellipsis 也直接使用 --field-height-sm；lg density 會把尺寸由 28px 改為 32px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.spec.md:23",
+   "宣稱": "允許直接跳到任一頁",
+   "真實code行為": "摺疊後只有首尾與當前頁鄰近格位可點；ellipsis 不可互動且沒有 quick-jumper，無法直接跳到隱藏頁。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.spec.md:104",
+   "宣稱": "頁碼列維持可互動或由 consumer disable",
+   "真實code行為": "Pagination 沒有全域 disabled prop，也不會把 disabled 傳給內部按鈕或 Select；只有首尾邊界箭頭會被停用。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.spec.md:134",
+   "宣稱": "頁碼列是 chrome 級導覽,不隨 Field 密度縮放",
+   "真實code行為": "固定 sm 只代表沒有公開 size 軸；其 h-field-sm、--field-height-sm 與 layout-space token 仍會隨 density 改變。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.anatomy.stories.tsx:2",
+   "宣稱": "chrome 級導覽不隨密度縮放",
+   "真實code行為": "Button sm 與頁碼最小寬度都消費 density-aware 的 --field-height-sm，lg density 下會放大。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.anatomy.stories.tsx:30",
+   "宣稱": "nav[aria-label=\"Pagination\"] > ul > li(shadcn 骨架)",
+   "真實code行為": "實際 DOM 在 nav 與 ul 之間固定存在操作群 div。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.anatomy.stories.tsx:62",
+   "宣稱": "數字鈕四態的 token 對照。default / hover / disabled 全數繼承 Button text variant",
+   "真實code行為": "數字頁碼按鈕從未接收 disabled；disabled 只套用於第一頁與最後一頁的箭頭按鈕。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.anatomy.stories.tsx:73",
+   "宣稱": "<TokenCell token=\"--fg\" display=\"text-foreground\" />",
+   "真實code行為": "--fg 並不存在；Button text 的實際 token 是 --foreground，TokenCell 會產生無法解析的 var(--fg) swatch。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.anatomy.stories.tsx:79",
+   "宣稱": "<TokenCell token=\"--fg\" display=\"text-foreground\" />",
+   "真實code行為": "--fg 並不存在；hover 文字仍由 text-foreground 對應的 --foreground 提供。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.anatomy.stories.tsx:138",
+   "宣稱": "純鍵盤可完成翻頁與跳頁",
+   "真實code行為": "該 Accessibility story 傳入受控 page={3} 與空的 onPageChange；Enter/Space 雖會觸發 callback，頁面永遠不會改變。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Pagination/pagination.principles.stories.tsx:73",
+   "宣稱": "頁碼可任意跳",
+   "真實code行為": "只能非線性跳到目前已渲染的頁碼；摺疊後的隱藏頁沒有可操作入口。"
+  }
+ ]
+}

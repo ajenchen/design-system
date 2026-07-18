@@ -1,0 +1,101 @@
+{
+ "component": "Switch",
+ "claimsVerified": 404,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:89-90",
+   "宣稱": "「3.5 → 3 sm/md：effective render 差 0.08px。」",
+   "真實code行為": "Lucide 使用 24-unit viewBox；size=12 時 strokeWidth 3.5 與 3 分別渲染約 1.75px、1.5px，差 0.25px，不是 0.08px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:102-104",
+   "宣稱": "「提供 label 時 Switch 自動包一個 <label> 並連結 htmlFor；Field context 內才忽略。」",
+   "真實code行為": "standalone mode=\"view\" 於 switch.tsx:215-220 提前回傳 <span>，同樣忽略 label，沒有 <label> 或 htmlFor。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:103",
+   "宣稱": "「label 套用 text-body。」",
+   "真實code行為": "只有 sm/md 使用 text-body；lg 在 switch.tsx:327-329 使用 text-body-lg。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:108-110",
+   "宣稱": "「description 套用 text-body / text-fg-secondary 樣式。」",
+   "真實code行為": "description 有 text-fg-secondary，但沒有 text-body utility；字級由 inline fontSize: var(--font-body-size) 設定。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:125",
+   "宣稱": "「readonly — standalone 同 readOnly prop。」",
+   "真實code行為": "有 label 時兩者不完全等效：cursor 判斷使用原始 readOnly；mode=\"readonly\" 得到 cursor-pointer，readOnly prop 得到 cursor-default。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:175-181",
+   "宣稱": "「在 horizontal Field 內自動齊右；一律 switch 齊右。」",
+   "真實code行為": "ml-auto 只套在互動 Radix Root；mode=\"view\" 與 Field-readonly 分支提前 return，均未套用 alignRightInField。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:187-190",
+   "宣稱": "「view / readonly-in-Field 分支轉發 id/data-*/aria-* 與 ref。」",
+   "真實code行為": "data-*、aria-*、ref 有轉發，但 id 已先解構成 idProp，兩個提前回傳分支也未設定 id={inputId}，因此 id 仍被丟棄。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:203-208",
+   "宣稱": "「wrapper mirror 讓 uncontrolled internalChecked 追蹤 edit toggle，edit / view / readonly 共用同一 current value。」",
+   "真實code行為": "setInternalChecked 從未呼叫；Radix 僅在自身 Root 維護 uncontrolled state。view 讀停在初始值的 currentChecked，Field-readonly 又另讀 checkedProp ?? defaultCheckedProp；切換 mode 會回退。typecheck:stories 亦報 TS6133。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.tsx:370-371",
+   "宣稱": "「cva 只有 unchecked/checked/disabled/readonly/focus-visible。」",
+   "真實code行為": "switch.tsx:69-70 另有 unchecked-hover 與 checked-hover 規則，列舉漏掉 hover。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:146-152",
+   "宣稱": "「Switch 可透過 label / description 直接渲染緊鄰文字；Field context 內才自動忽略。」",
+   "真實code行為": "standalone mode=\"view\" 也在 label wrapper 前提前回傳，label 與 description 均不渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:156",
+   "宣稱": "「在 <Field orientation=\"horizontal\"> 內 Switch 自動 ml-auto，不需要 consumer 傳 className。」",
+   "真實code行為": "mode=\"view\" 與 Field-readonly 分支未消費 alignRightInField，因此這兩種模式不會自動齊右。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.spec.md:205",
+   "宣稱": "「狀態色完全內嵌在 StateBehavior story，ColorMatrix 只會重複。」",
+   "真實code行為": "StateBehavior 未呈現 spec:78／code:69-70 的 bg-border-hover、bg-primary-hover hover 狀態色，因此並未完全涵蓋。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:3-7",
+   "宣稱": "「色彩 token 矩陣已由 StateBehavior 對照涵蓋。」",
+   "真實code行為": "StateBehavior 表未列 unchecked/checked hover 的 bg-border-hover、bg-primary-hover，涵蓋宣稱不成立。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:45",
+   "宣稱": "「label：inline label，Field context 內會被忽略。」",
+   "真實code行為": "standalone mode=\"view\" 也會忽略 label。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:46",
+   "宣稱": "「description：與 label 搭配的 inline description。」",
+   "真實code行為": "standalone mode=\"view\" 即使同時提供 label 與 description，也不渲染 description。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:65",
+   "宣稱": "「在 Controls 面板切換 size / checked / disabled / readOnly / label，立即查看狀態。」",
+   "真實code行為": "Inspector 沒有 checked arg/control，只有 defaultChecked；Radix 僅用 defaultChecked 初始化 uncontrolled state，Controls rerender 不會即時同步目前 checked 值。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:91",
+   "宣稱": "「label control 是 inline label；留空才只渲染 switch 本體。」",
+   "真實code行為": "mode=\"view\" 即使 label 非空仍只回傳 glyph span。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.anatomy.stories.tsx:92",
+   "宣稱": "「description control 是需搭配 label 的 inline description。」",
+   "真實code行為": "mode=\"view\" 即使 description 與 label 同時存在仍不渲染。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Switch/switch.stories.tsx:25",
+   "宣稱": "「view 不暴露獨立 aria-label。」",
+   "真實code行為": "SwitchProps 接受 aria-label，restDomProps 會將它轉發至 view 的 <span>。該 span 仍缺 role=\"switch\" / aria-checked，因此沒有完整 Switch 語意。"
+  }
+ ]
+}

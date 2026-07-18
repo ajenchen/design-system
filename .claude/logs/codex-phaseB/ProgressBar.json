@@ -1,0 +1,116 @@
+{
+ "component": "ProgressBar",
+ "claimsVerified": 304,
+ "falseClaims": [
+  {
+   "fileLine": "progress-bar.tsx:65-71",
+   "宣稱": "height 不是 consumer API，consumer 一律使用預設 4px。",
+   "真實code行為": "公開匯出的 ProgressBarProps 包含 height?: number；任何 consumer 都可傳任意高度，沒有 internal-only 型別或 runtime 限制。"
+  },
+  {
+   "fileLine": "progress-bar.spec.md:101-114",
+   "宣稱": "ProgressBarProps 的公開 surface 只有 value、status、affix、height。",
+   "真實code行為": "真實 interface 繼承 Radix Root props，另公開 max、getValueLabel、asChild、children、style、ARIA、tabIndex、focus 與事件 props；後置 spread 還能覆寫 max 與 style。"
+  },
+  {
+   "fileLine": "progress-bar.spec.md:106-107",
+   "宣稱": "任意 ReactNode 都可作為 affix。",
+   "真實code行為": "runtime 只接受 ReactElement、string、number；array／Iterable、ReactPortal 會被忽略，0 與空字串也會被 falsy 判斷當成無 affix。"
+  },
+  {
+   "fileLine": "progress-bar.spec.md:109-113",
+   "宣稱": "height 非 consumer API，僅供 FileItem compact mode 內部使用。",
+   "真實code行為": "height 是公開 exported prop，沒有 FileItem 身分檢查；外部 consumer 可直接傳入。"
+  },
+  {
+   "fileLine": "progress-bar.spec.md:129",
+   "宣稱": "track 固定 4px。",
+   "真實code行為": "4px 只是預設值；height prop 或後置透傳的 style 都可覆寫高度。"
+  },
+  {
+   "fileLine": "progress-bar.spec.md:188",
+   "宣稱": "ProgressBar 不接受互動事件。",
+   "真實code行為": "元件繼承並轉發 onClick、onKeyDown、tabIndex、focus handlers 等 DOM props。預設無鍵盤行為或 focus trap，但 consumer 可使其可聚焦、可互動。"
+  },
+  {
+   "fileLine": "progress-bar.spec.md:201",
+   "宣稱": "aria-valuemax 固定為 100。",
+   "真實code行為": "公開繼承的 max 可覆寫 100；例如 max={200} 會輸出 aria-valuemax=\"200\"，並讓 Radix 以 200 計算 aria-valuetext。"
+  },
+  {
+   "fileLine": "progress-bar.spec.md:210",
+   "宣稱": "status 色彩依 value 狀態切換，status icon 是 icon-on-complete 邏輯。",
+   "真實code行為": "fill 與 icon 完全由獨立 status prop 驅動；value=100 搭預設 status 仍無完成 icon，status=\"success\" 搭任意 value 都會顯示勾選 icon。"
+  },
+  {
+   "fileLine": "progress-bar.spec.md:220",
+   "宣稱": "FileItem 內部消費 ProgressBar 的 4px 單一高度。",
+   "真實code行為": "FileItem rich mode 使用預設 4px，但 compact mode 明確傳入 height={2}。"
+  },
+  {
+   "fileLine": "progress-bar.anatomy.stories.tsx:3",
+   "宣稱": "Track 高度固定 4px。",
+   "真實code行為": "4px 是 public canonical／預設值；FileItem compact mode 實際使用 2px，height 與 style 也可覆寫。"
+  },
+  {
+   "fileLine": "progress-bar.anatomy.stories.tsx:24",
+   "宣稱": "Types & Data 與 progress-bar.tsx 的 cva 對應表一致。",
+   "真實code行為": "progress-bar.tsx 完全沒有 cva；狀態由常數映射與函式參數預設管理。"
+  },
+  {
+   "fileLine": "progress-bar.anatomy.stories.tsx:60",
+   "宣稱": "無 affix 的 Anatomy track 以 6px 描繪元件。",
+   "真實code行為": "ProgressBar 預設 track 是 4px；圖中未說明放大比例卻使用 height: 6。"
+  },
+  {
+   "fileLine": "progress-bar.anatomy.stories.tsx:73",
+   "宣稱": "含 affix 的 Anatomy track 以 6px 描繪元件。",
+   "真實code行為": "ProgressBar 預設 track 是 4px；第二張 anatomy 圖同樣錯畫成 6px。"
+  },
+  {
+   "fileLine": "progress-bar.anatomy.stories.tsx:166",
+   "宣稱": "trackHeightPx=4 是固定元件高度。",
+   "真實code行為": "只有 Inspector 本地 blueprint 固定為 4；真實元件可由 height 或 style 改寫。"
+  },
+  {
+   "fileLine": "progress-bar.anatomy.stories.tsx:247",
+   "宣稱": "高度 4px，固定。",
+   "真實code行為": "4px 僅為預設；公開 height prop 與 style 均可覆寫。"
+  },
+  {
+   "fileLine": "progress-bar.anatomy.stories.tsx:283",
+   "宣稱": "藍圖標示元件固定的 track 高度 4px。",
+   "真實code行為": "藍圖自身固定為 4px，但真實元件高度並不固定。"
+  },
+  {
+   "fileLine": "progress-bar.anatomy.stories.tsx:308",
+   "宣稱": "整個預覽欄為 value=60。",
+   "真實code行為": "success row 實際傳入 value={100}；只有 inProgress 與 error row 使用 60。"
+  },
+  {
+   "fileLine": "progress-bar.anatomy.stories.tsx:358",
+   "宣稱": "右側附加可傳任意 ReactNode，並自動取得 affix wrapper。",
+   "真實code行為": "array／Iterable、Portal、boolean、0、空字串等合法 ReactNode 不會取得宣稱的 wrapper。"
+  },
+  {
+   "fileLine": "progress-bar.anatomy.stories.tsx:437",
+   "宣稱": "Radix Progress.Root 自動提供固定的 aria-valuemax={100}。",
+   "真實code行為": "100 只是預設；透傳的 max prop 可改變實際 aria-valuemax 與 aria-valuetext。"
+  },
+  {
+   "fileLine": "progress-bar.principles.stories.tsx:278-279",
+   "宣稱": "Enum 涵蓋不了的客製需求都可使用 ReactNode affix。",
+   "真實code行為": "runtime 只渲染 ReactElement、string、number；完整 ReactNode surface 並未被支援。"
+  },
+  {
+   "fileLine": "progress-bar.principles.stories.tsx:292",
+   "宣稱": "上傳中附取消按鈕，使用者可中斷。",
+   "真實code行為": "範例 Button 沒有 onClick 或任何取消 callback；可以聚焦、點擊，但無法中斷上傳。"
+  },
+  {
+   "fileLine": "progress-bar.stories.tsx:43",
+   "宣稱": "aria-label 永遠為「進度 45%」。",
+   "真實code行為": "Storybook control 可改變 value，但 aria-label 仍固定 45%；Radix 同時更新 aria-valuenow／aria-valuetext，造成互相矛盾的無障礙資訊。"
+  }
+ ]
+}

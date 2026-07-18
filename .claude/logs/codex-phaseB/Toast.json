@@ -1,0 +1,121 @@
+{
+ "component": "Toast",
+ "claimsVerified": 174,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.tsx:86",
+   "宣稱": "計時器僅在 hover、pointer 按住或 ⌥T hotkey 時暫停。",
+   "真實code行為": "Sonner 2.0.7 在 document hidden 時也會暫停計時。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.tsx:96",
+   "宣稱": "SonnerToaster 不轉發 ref。",
+   "真實code行為": "SonnerToaster 本身會把 ref 轉發到外層 section；是 DS wrapper 收到 _ref 後未往下傳。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.tsx:97",
+   "宣稱": "viewport 是以 position:fixed 覆蓋畫面的 section。",
+   "真實code行為": "section 是 aria-live wrapper；真正 position:fixed 的 viewport 是內層 ol[data-sonner-toaster]。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.spec.md:47",
+   "宣稱": "Undo 使用 sonner action 模式。",
+   "真實code行為": "DS 使用 sonnerToast.custom；action 由 ToastInner 自行渲染成 DS Button，未使用 Sonner native action。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.spec.md:84",
+   "宣稱": "consumer 可自訂 action 互動元素並提供 aria-label。",
+   "真實code行為": "action API 只接受 {label:string,onClick:()=>void}，無自訂元素或 aria-label 欄位；可見 label 本身提供 accessible name。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.spec.md:85",
+   "宣稱": "expanded / interacting 只由 mouse / pointer 事件設定。",
+   "真實code行為": "expanded 也會由 Alt/Option+T hotkey及 Sonner expand 路徑設定；同句後段已自行反證此宣稱。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.spec.md:85",
+   "宣稱": "⌥T 聚焦並展開 stack 後，焦點離開即恢復倒數。",
+   "真實code行為": "ol 的 onBlur 只還原先前焦點，未 setExpanded(false)；倒數仍暫停，直到 Escape、mouse leave、drag end 或其他收合路徑。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.spec.md:131",
+   "宣稱": "Toast 固定 360px 寬。",
+   "真實code行為": "桌面為 360px；≤600px 時 Sonner CSS 以較高 specificity 改為 viewport-relative 寬度。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.spec.md:133",
+   "宣稱": "Sonner default toast 固定寬度。",
+   "真實code行為": "Sonner 桌面預設為 356px，但 mobile breakpoint 會改為 calc(100% - 2 × mobileOffset)。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.spec.md:138",
+   "宣稱": "Toast 是固定 360px 的單一 canonical width。",
+   "真實code行為": "mobile breakpoint 會覆寫為 viewport-relative 寬度，並非所有 viewport 都是 360px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.spec.md:151",
+   "宣稱": "外層 section 是 position:fixed 的 viewport region。",
+   "真實code行為": "section 僅承載 live-region 屬性；其子層 ol[data-sonner-toaster] 才是 fixed viewport。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.spec.md:159",
+   "宣稱": "consumer 可在 async 動作中 disable action button。",
+   "真實code行為": "DS action schema 與 ToastInner 均沒有 disabled 或任意 Button props 的轉發路徑。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.spec.md:160",
+   "宣稱": "toast.promise 使用 loadingText，並自動切成本 Toast 的 success/error variant。",
+   "真實code行為": "Sonner 欄位名是 loading，沒有 loadingText；DS 匯出的 toast 也沒有 .promise，直接使用 Sonner promise 會繞過 ToastInner、Notice 與 DS variant/theme mapping。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.spec.md:163",
+   "宣稱": "實際寬度固定為 360px。",
+   "真實code行為": "density 不改寬度，但 mobile breakpoint 會使實際寬度不再是 360px。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx:5",
+   "宣稱": "Toast 本身無尺寸決策。",
+   "真實code行為": "Toast 自己在 Toaster 的 toastOptions 設定 w-[360px]；spec 亦稱其為元件級 canonical 寬度。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx:218",
+   "宣稱": "生命週期具體數值來自 main.tsx 的 Toaster Provider props。",
+   "真實code行為": "4000/10000ms 由 DS toast() 決定；400ms、45px、0.11 與 visibleToasts=3 來自 Sonner 內部常數或預設。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx:225",
+   "宣稱": "自動關閉會 fade-out 並向右滑出。",
+   "真實code行為": "非 swipe 關閉依 y-position 垂直退出；預設 bottom-right 向下，top positions 向上。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx:236",
+   "宣稱": "bottom-right 堆疊時舊 toast 往下縮到後層。",
+   "真實code行為": "最新 toast 是 index 0 前景；舊 toast 以負 Y 位移向上堆疊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx:244",
+   "宣稱": "新 toast 會推下前一則。",
+   "真實code行為": "預設 bottom-right 會把舊 toast 往上位移。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx:253",
+   "宣稱": "新 toast 推下舊 toast。",
+   "真實code行為": "預設 bottom-right 的舊 toast 實際向上堆疊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx:237",
+   "宣稱": "Hover 任一 toast 時會展開全部。",
+   "真實code行為": "index ≥ visibleToasts 的項目仍為 data-visible=false；預設最多只展開最近三則可見 toast。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx:253",
+   "宣稱": "四則範例 Hover 後會全部展開。",
+   "真實code行為": "第四則仍因 visibleToasts=3 而隱藏。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Toast/toast.anatomy.stories.tsx:320",
+   "宣稱": "consumer 可自訂 action 互動元素並提供 aria-label。",
+   "真實code行為": "ToastOptions.action 只接受文字 label 與 onClick，不接受自訂元素或 aria-label。"
+  }
+ ]
+}

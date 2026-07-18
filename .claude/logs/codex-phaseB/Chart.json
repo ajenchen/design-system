@@ -1,0 +1,126 @@
+{
+ "component": "Chart",
+ "claimsVerified": 150,
+ "falseClaims": [
+  {
+   "fileLine": "chart.tsx:140",
+   "宣稱": "ChartTooltipContentProps 支援原生 div props。",
+   "真實code行為": "實作未收集或 spread 其餘 props；style、data-*、額外 ARIA 與 event props 會被吞掉。"
+  },
+  {
+   "fileLine": "chart.tsx:292",
+   "宣稱": "ChartLegendContentProps 支援原生 div props。",
+   "真實code行為": "實作只取已知 props，未 spread 其餘原生 div props。"
+  },
+  {
+   "fileLine": "chart.tsx:9",
+   "宣稱": "所有 tooltip / legend / grid / axis 視覺改用本 DS token。",
+   "真實code行為": "grid / axis 有 token 覆寫；ChartTooltip 與 ChartLegend 是 Recharts alias，只有顯式傳入 ChartTooltipContent / ChartLegendContent 才使用 DS token。"
+  },
+  {
+   "fileLine": "chart.tsx:69",
+   "宣稱": "外包 AspectRatio 時，其 padding-bottom 會蓋過 ChartContainer 的 aspect-video。",
+   "真實code行為": "ChartContainer 仍保留 aspect-video 且沒有 h-full；外層比例不會移除子層的 16:9 aspect-ratio。"
+  },
+  {
+   "fileLine": "chart.spec.md:20",
+   "宣稱": "tooltip、legend、grid、axis 的視覺全改用本 DS token。",
+   "真實code行為": "Tooltip / Legend alias 的預設內容仍使用 Recharts 視覺；token 化取決於 consumer 顯式指定 DS Content。"
+  },
+  {
+   "fileLine": "chart.spec.md:26",
+   "宣稱": "AspectRatio 的 padding-bottom 高度會蓋過 ChartContainer 的 aspect-video。",
+   "真實code行為": "文件所示包法不會覆寫 ChartContainer 自身的 aspect-video。"
+  },
+  {
+   "fileLine": "chart.spec.md:40",
+   "宣稱": "AspectRatio 包法留有特殊 ratio 的覆寫門路。",
+   "真實code行為": "現有範例未覆寫 ChartContainer 自身 aspect-ratio，也未令其填滿外層高度，比例仍是 16:9。"
+  },
+  {
+   "fileLine": "chart.spec.md:94",
+   "宣稱": "ChartContainer 自動把每個 key 注入 --color-{key}。",
+   "真實code行為": "ChartStyle 只注入具有 color 或 theme 屬性的 entry；兩者皆缺的 key 會被過濾。"
+  },
+  {
+   "fileLine": "chart.spec.md:134",
+   "宣稱": "Tooltip / Legend 無 payload 時不渲染且不留空殼。",
+   "真實code行為": "自訂 Content 會 return null，但 Recharts Tooltip 仍留下 hidden wrapper，Legend 對空陣列仍會建立空 wrapper。"
+  },
+  {
+   "fileLine": "chart.spec.md:136",
+   "宣稱": "RTL 由 Recharts engine 處理。",
+   "真實code行為": "Recharts 3.8.1 不依 DOM dir 自動鏡射；方向取決於 layout / axis.reversed，consumer 仍須顯式配置。"
+  },
+  {
+   "fileLine": "chart.spec.md:154",
+   "宣稱": "Inspector 讓同一份 ChartConfig 在 bar / line / area / pie 間切換。",
+   "真實code行為": "pie 使用 subscriptionConfig；其餘類型使用 visitorConfig，並非同一份 config。"
+  },
+  {
+   "fileLine": "chart.spec.md:155",
+   "宣稱": "高度可由 consumer 包 AspectRatio 覆寫。",
+   "真實code行為": "單純包覆 AspectRatio 不會覆寫 ChartContainer 的 aspect-video。"
+  },
+  {
+   "fileLine": "chart.spec.md:156",
+   "宣稱": "Chart 本身沒有 focus 或 active 互動狀態。",
+   "真實code行為": "accessibilityLayer 預設啟用；SVG 具有 tabIndex=0、role=application，focus 會啟用 tooltip，方向鍵會更新 active index。"
+  },
+  {
+   "fileLine": "chart.spec.md:166",
+   "宣稱": "所有 --chart-* 都是 light=step-6、dark=step-5。",
+   "真實code行為": "同一 spec 的類別色表已列出 --chart-4 light mode 使用 yellow-7。"
+  },
+  {
+   "fileLine": "chart.anatomy.stories.tsx:3-5",
+   "宣稱": "資料密度由 --chart-1..5 限制。",
+   "真實code行為": "ChartConfig 接受任意數量的 key 與任意 CSS color；ChartStyle 沒有數量限制。"
+  },
+  {
+   "fileLine": "chart.anatomy.stories.tsx:6-8",
+   "宣稱": "legend toggle 由 Recharts 內建處理，且 Inspector 已涵蓋。",
+   "真實code行為": "Recharts Legend 不會自動 toggle series；ChartLegendContent 無 click / keyboard handler，Inspector 也只切換 tooltip indicator 外觀。"
+  },
+  {
+   "fileLine": "chart.anatomy.stories.tsx:119",
+   "宣稱": "Pie 範例的 ChartConfig.key 與資料 dataKey 對齊。",
+   "真實code行為": "config keys 是 free / pro / team / enterprise，Pie dataKey 是 users；真正對齊的是 nameKey='tier' 的資料值。"
+  },
+  {
+   "fileLine": "chart.anatomy.stories.tsx:157",
+   "宣稱": "所有 Inspector 圖表類型使用同一份 desktop / mobile ChartConfig。",
+   "真實code行為": "pie 分支改用 subscriptionConfig 與另一份資料。"
+  },
+  {
+   "fileLine": "chart.anatomy.stories.tsx:259",
+   "宣稱": "所有非資料視覺都透過本 DS token 控制。",
+   "真實code行為": "未指定 DS Content 時，Tooltip / Legend 仍渲染 Recharts 預設視覺。"
+  },
+  {
+   "fileLine": "chart.anatomy.stories.tsx:286",
+   "宣稱": "ChartConfig entry 為 { label, color | theme, icon? }。",
+   "真實code行為": "label 是 optional；color 分支亦為 optional，因此 entry 可同時沒有 label、color、theme。"
+  },
+  {
+   "fileLine": "chart.anatomy.stories.tsx:307",
+   "宣稱": "Pie / Donut 無法用方向鍵逐片導覽。",
+   "真實code行為": "Recharts 3.8.1 以 displayed-data index 處理左右鍵，Pie 並提供每個 sector 的 getPosition(index)，可逐片切換 active tooltip。"
+  },
+  {
+   "fileLine": "chart.principles.stories.tsx:323",
+   "宣稱": "只定義五色便強制不超過 5 類別。",
+   "真實code行為": "五色只是內建 palette；ChartConfig / ChartStyle 沒有 key-count 驗證或截斷。"
+  },
+  {
+   "fileLine": "chart.principles.stories.tsx:428",
+   "宣稱": "無數值軸的 Pie / Donut 無法逐片導覽。",
+   "真實code行為": "Pie 已透過資料索引、sector tooltip position 與 accessibility keyboard middleware 支援左右鍵逐片導覽。"
+  },
+  {
+   "fileLine": "chart.stories.tsx:33",
+   "宣稱": "tooltip / legend / grid / axis 全改用本 DS token。",
+   "真實code行為": "Tooltip / Legend 的 alias 預設內容仍屬 Recharts；必須顯式傳入 DS Content 才成立。"
+  }
+ ]
+}

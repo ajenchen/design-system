@@ -1,0 +1,146 @@
+{
+ "component": "Tag",
+ "claimsVerified": 375,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:19",
+   "宣稱": "固定 `max-w-40`（160px）。",
+   "真實code行為": "寬度由 `maxWidth` 與 `--combobox-tag-area-inline-size` 動態決定；`unbounded` 另有不設上限的路徑。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:54",
+   "宣稱": "只有 yellow、amber、orange、lime 使用深色文字。",
+   "真實code行為": "turquoise 也使用 `text-on-emphasis-dark`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:73",
+   "宣稱": "只有 yellow、amber、orange、lime 使用深色文字。",
+   "真實code行為": "實際 solid tone 還包含使用深色文字的 turquoise。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:254-255",
+   "宣稱": "Tag 沒有互動 state，唯一互動是 dismiss。",
+   "真實code行為": "內容截斷時，Tag root 會取得 `tabIndex=0`、focus-visible ring，且 focus 會開啟 Tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:256",
+   "宣稱": "states 只有 `default`。",
+   "真實code行為": "截斷模式另有 focus-visible、Tooltip open／closed 等可觀察 state。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.tsx:264",
+   "宣稱": "focus ring token 為空。",
+   "真實code行為": "截斷 Tag 使用 `ring-ring`、ring-2 與 ring-offset focus 樣式。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:53",
+   "宣稱": "`lg` 適合 touch target 或 prominent CTA。",
+   "真實code行為": "`lg` 是 `md` 的 24px alias；Tag root 是被動 indicator，並非 CTA，也未提供更大的 touch target。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:71",
+   "宣稱": "Tag 是 styled `<span>`。",
+   "真實code行為": "root 實際渲染為 `<div>`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:138",
+   "宣稱": "深色前景 tone 只有 yellow、amber、orange、lime。",
+   "真實code行為": "turquoise 也使用深色前景。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:162",
+   "宣稱": "turquoise solid 使用白色文字。",
+   "真實code行為": "turquoise solid 使用 `text-on-emphasis-dark`。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:167",
+   "宣稱": "Solid Tag 可按 large／bold text 的 3:1 門檻判定。",
+   "真實code行為": "Tag 是 12px/500 或 14px/400，未達 WCAG large／bold text 條件。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:167",
+   "宣稱": "亮背景／深色文字 bucket 只有四個 tone。",
+   "真實code行為": "該 bucket 實際有五個 tone，另含 turquoise。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:223",
+   "宣稱": "其餘 solid hues 全部使用白色文字。",
+   "真實code行為": "turquoise 使用深色文字。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:265",
+   "宣稱": "Tag 不接受 focus，唯一互動入口是 remove button。",
+   "真實code行為": "截斷 Tag root 可進入 Tab 順序，具有 focus ring，focus 也會開啟 Tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:273",
+   "宣稱": "prefix icon 能協助螢幕閱讀器理解 context。",
+   "真實code行為": "prefix icon 設為 `aria-hidden`，不會進入 accessible name 或提供 SR context。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:274",
+   "宣稱": "可移除 Tag 一律產生「移除 {tagLabel}」。",
+   "真實code行為": "只有字串 children 或明確 `dismissLabel` 才能帶入標籤；非字串 children 未提供 label 時只會得到「移除」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.spec.md:277",
+   "宣稱": "文字對比符合 WCAG AA ≥ 4.5:1。",
+   "真實code行為": "solid green 的既有明示對比為 2.47:1，而 Tag 文字也不符合 large-text 例外。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:3-6",
+   "宣稱": "Tag 沒有 focus 行為，StateBehavior 已涵蓋完整狀態。",
+   "真實code行為": "截斷 root 具有 focus／Tooltip state，而該 story 未涵蓋這條行為。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:228",
+   "宣稱": "neutral 與 12 hues 全部直接消費 primitive token。",
+   "真實code行為": "neutral 使用 semantic `secondary`／`foreground`；只有彩色 hues 走 categorical primitive。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:252",
+   "宣稱": "只有 yellow、amber、orange、lime 使用深色文字，其餘使用白色。",
+   "真實code行為": "turquoise 也使用深色文字。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:441",
+   "宣稱": "Tag 是非互動元件。",
+   "真實code行為": "截斷 Tag 是可 focus 的 Tooltip trigger；removable Tag 也包含原生 button。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:441",
+   "宣稱": "step-7 在 dark mode 不會反轉。",
+   "真實code行為": "dark theme 會重寫 step-7 計算方向：light mode 採 darkening，dark mode 採 lightening。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:441",
+   "宣稱": "亮背景／深色文字只有 yellow、amber、orange、lime。",
+   "真實code行為": "turquoise 同樣屬於深色文字 bucket。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:531",
+   "宣稱": "dismiss hover／active 直接使用 primitive token。",
+   "真實code行為": "實際由 `CAT_INTERACT` 對應至可感知 dark mode 的 semantic hover／active tokens。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:661",
+   "宣稱": "靜態 Tag 沒有 keyboard／focus 行為。",
+   "真實code行為": "內容截斷時，即使沒有 `onRemove`，Tag 仍會取得 `tabIndex=0`、focus ring，並以 focus 開啟 Tooltip。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.anatomy.stories.tsx:661",
+   "宣稱": "`onRemove` 一律提供「移除 {label}」。",
+   "真實code行為": "非字串 children 且未提供 `dismissLabel` 時，accessible label 只有「移除」。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:149",
+   "宣稱": "Subtle 永遠是淺背景搭配深色文字。",
+   "真實code行為": "dark theme 會解析為深色、低權重背景搭配淺色文字。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/Tag/tag.principles.stories.tsx:162",
+   "宣稱": "Solid 是深色背景搭配白色文字。",
+   "真實code行為": "yellow、amber、orange、lime、turquoise 使用深色文字；neutral 前景也會隨 theme 反轉。"
+  }
+ ]
+}

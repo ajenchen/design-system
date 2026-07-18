@@ -1,0 +1,41 @@
+{
+ "component": "ScrollArea",
+ "claimsVerified": 134,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.tsx:20",
+   "宣稱": "捲動時浮現（hover / scroll 自動顯示）。",
+   "真實code行為": "Radix 預設 type=\"hover\"，只監聽 pointerenter/pointerleave；純鍵盤或程式捲動不會顯示，type=\"scroll\" 才監聽 scroll。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.spec.md:36",
+   "宣稱": "捲動時浮出（hover / scroll 自動顯示）。",
+   "真實code行為": "預設 hover mode 不監聽 scroll；必須明確傳 type=\"scroll\" 才會因捲動顯示。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.spec.md:108",
+   "宣稱": "有具體語意時，consumer 應提供 aria-label 補足 Viewport 的 accessible name。",
+   "真實code行為": "公開 props 全部傳至 Root；Viewport 沒有 ARIA props passthrough，因此 aria-label 不會命名實際 focus/scroll target。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.spec.md:123",
+   "宣稱": "scrollbar visible / hidden 由 Radix 依 overflow 自動偵測，非 consumer 或元件 prop 可控。",
+   "真實code行為": "Root passthrough 暴露 type、scrollHideDelay；Radix 依 hover、scroll、auto、always 切換顯示邏輯，ScrollBar 亦 passthrough forceMount，顯隱可由 consumer 控制。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.anatomy.stories.tsx:304",
+   "宣稱": "type=\"hover\" 時 scrollbar 會淡入。",
+   "真實code行為": "Radix Presence 只 mount/unmount；DS 僅有 transition-colors，沒有 opacity、animation 或 data-state 淡入樣式。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.anatomy.stories.tsx:423",
+   "宣稱": "游標進入容器時 scrollbar 淡入。",
+   "真實code行為": "pointerenter 只觸發 Presence mount，scrollbar 直接出現；scrollHideDelay 僅延遲離開後的 unmount。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/ScrollArea/scroll-area.anatomy.stories.tsx:448",
+   "宣稱": "consumer 提供 aria-label 即可補足 Viewport 的 accessible name。",
+   "真實code行為": "aria-label、aria-labelledby 與 role 均未轉送到 Viewport，只會落在 Root，無法命名 focusable Viewport。"
+  }
+ ]
+}

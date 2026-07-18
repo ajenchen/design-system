@@ -1,0 +1,116 @@
+{
+ "component": "Textarea",
+ "claimsVerified": 312,
+ "falseClaims": [
+  {
+   "fileLine": "textarea.tsx:18",
+   "宣稱": "readonly 呈現保留邊框與 padding，只改底色",
+   "真實code行為": "readonly 還會把可見邊框改為 transparent，並加入 focus ring，不是只改底色（textarea.tsx:92-99）。"
+  },
+  {
+   "fileLine": "textarea.tsx:85",
+   "宣稱": "多行 read↔edit 零跳（view 與 edit 同一顆 Textarea、py-2 天生一致）",
+   "真實code行為": "view 渲染不受 rows 約束的內容高度 div；edit 渲染 rows-sized textarea，無法保證切換時高度零跳（textarea.tsx:242-266）。"
+  },
+  {
+   "fileLine": "textarea.tsx:97",
+   "宣稱": "focus-visible 僅鍵盤聚焦顯示、滑鼠點擊不觸發",
+   "真實code行為": "原生 textarea 與 readonly textarea 經滑鼠點擊也會匹配 :focus-visible；Chromium、Firefox 實測 mouse 與 Tab 皆為 true。"
+  },
+  {
+   "fileLine": "textarea.tsx:158",
+   "宣稱": "`naked` — 完全無 chrome，host cell 提供 border + focus frame",
+   "真實code行為": "edit×naked 自身仍套用 border、hover border 與 focus border（textarea.tsx:115-129）。"
+  },
+  {
+   "fileLine": "textarea.tsx:161",
+   "宣稱": "Error 狀態（正交於 mode）。border-error + aria-invalid。",
+   "真實code行為": "border-error 僅套用 edit mode；view 分支渲染 div，既無 error border 也無 aria-invalid，因此 error 行為並未正交於 mode（textarea.tsx:106-110,242-258）。"
+  },
+  {
+   "fileLine": "textarea.tsx:165",
+   "宣稱": "autoFocus + aria 完整覆蓋",
+   "真實code行為": "view／空 readonly 的 div 分支不轉發 autoFocus、aria-invalid、aria-required、aria-errormessage 或其餘 native props（textarea.tsx:242-258）。"
+  },
+  {
+   "fileLine": "textarea.tsx:307-308",
+   "宣稱": "naked chrome 為 focus-visible（鍵盤限定）",
+   "真實code行為": "naked 仍是原生 textarea；滑鼠聚焦同樣會匹配 :focus-visible，並非鍵盤限定（textarea.tsx:129）。"
+  },
+  {
+   "fileLine": "textarea.tsx:313",
+   "宣稱": "`ring: []`",
+   "真實code行為": "readonly 實際消費 focus-visible:ring-ring（textarea.tsx:98）。"
+  },
+  {
+   "fileLine": "textarea.spec.md:74",
+   "宣稱": "naked 僅 edit/view 兩 mode，一律 `!resize-none` 並以 `!h-full` 撐滿 cell",
+   "真實code行為": "mode 與 variant 是獨立 props，沒有 discriminated union 或 runtime guard；readonly/disabled×naked 仍可渲染，且因無 matching compound 會保留 base resize-y，也不取得 !h-full（textarea.tsx:49-59,115-160,276）。"
+  },
+  {
+   "fileLine": "textarea.spec.md:99",
+   "宣稱": "三 mode 的色彩 / 互動 / aria 規則 Textarea 全部對齊",
+   "真實code行為": "code 明確定義四個 mode：edit、view、readonly、disabled（textarea.tsx:49-54）。"
+  },
+  {
+   "fileLine": "textarea.spec.md:103",
+   "宣稱": "Textarea 是 thin wrapper 直接 forward native `value` / `defaultValue` / `onChange` triplet",
+   "真實code行為": "三者沒有原樣直傳：defaultValue 只初始化 useControllable，DOM 收到 value={resolved}，onChange 先更新內部狀態再轉發，另有 form.reset bridge（textarea.tsx:176-234,266,280-284）。"
+  },
+  {
+   "fileLine": "textarea.spec.md:107",
+   "宣稱": "readonly/disabled×naked 死格 2026-07-16 移除",
+   "真實code行為": "僅移除對應 compound styles；API 與 runtime 沒有阻止這兩種組合（textarea.tsx:137-160,267-276）。"
+  },
+  {
+   "fileLine": "textarea.spec.md:146",
+   "宣稱": "`aria-describedby`（description / error 文字）",
+   "真實code行為": "aria-describedby 只接 descriptionId；錯誤文字使用 aria-errormessage 關聯（textarea.tsx:197-199,269-272）。"
+  },
+  {
+   "fileLine": "textarea.spec.md:154",
+   "宣稱": "naked 僅鍵盤聚焦亮；readonly ring 鍵盤限定",
+   "真實code行為": "兩者都只依賴原生 textarea 的 :focus-visible；Chromium、Firefox 實測滑鼠點擊與 Tab 均會匹配。"
+  },
+  {
+   "fileLine": "textarea.anatomy.stories.tsx:41",
+   "宣稱": "error 視覺（border-error + aria-invalid）",
+   "真實code行為": "此組合只在 edit/native mode 成立；view 沒有兩者，readonly/disabled 只有 aria-invalid、沒有 error border（textarea.tsx:106-110,242-272）。"
+  },
+  {
+   "fileLine": "textarea.anatomy.stories.tsx:42",
+   "宣稱": "`...props` spread 到 native textarea",
+   "真實code行為": "只在 native 分支 spread；view 與空 readonly 提前回傳 div，多數 native props/events 不會透傳（textarea.tsx:242-279）。"
+  },
+  {
+   "fileLine": "textarea.anatomy.stories.tsx:88",
+   "宣稱": "error 視覺（border-error + aria-invalid）",
+   "真實code行為": "Inspector 可切換非 edit mode，但 border-error 僅存在於 edit；view 也沒有 aria-invalid（textarea.tsx:106-110,242-258）。"
+  },
+  {
+   "fileLine": "textarea.anatomy.stories.tsx:237",
+   "宣稱": "所有色彩狀態並排",
+   "真實code行為": "該區只渲染 edit-default、readonly、disabled、error 四項，缺 edit-focus 與 view（textarea.anatomy.stories.tsx:240-255）。"
+  },
+  {
+   "fileLine": "textarea.anatomy.stories.tsx:238",
+   "宣稱": "直接對照五種 state 的視覺差異",
+   "真實code行為": "緊接的 JSX 只有四種 state（textarea.anatomy.stories.tsx:240-255）。"
+  },
+  {
+   "fileLine": "textarea.anatomy.stories.tsx:283",
+   "宣稱": "永遠 `resize-y`",
+   "真實code行為": "edit/view×naked 明確以 !resize-none 覆蓋 resize-y（textarea.tsx:119,136）。"
+  },
+  {
+   "fileLine": "textarea.anatomy.stories.tsx:301",
+   "宣稱": "aria-invalid / aria-describedby 連到對應的錯誤與說明文字",
+   "真實code行為": "aria-invalid 只標示 invalid；aria-describedby 只連 description，錯誤內容由 aria-errormessage 關聯（textarea.tsx:197-199,269-272）。"
+  },
+  {
+   "fileLine": "textarea.anatomy.stories.tsx:301",
+   "宣稱": "聚焦時邊框換成主色",
+   "真實code行為": "只有 default edit 且非 error 時成立；error 聚焦維持 error border，readonly 顯示 ring 且邊框透明，disabled/view 不可聚焦（textarea.tsx:81,98,106-110）。"
+  }
+ ]
+}

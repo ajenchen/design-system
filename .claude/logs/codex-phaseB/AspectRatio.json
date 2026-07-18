@@ -1,0 +1,61 @@
+{
+ "component": "AspectRatio",
+ "claimsVerified": 166,
+ "falseClaims": [
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.spec.md:17",
+   "宣稱": "確保內部 children 永遠保持指定 ratio",
+   "真實code行為": "Radix 只鎖定容器比例；consumer child 不會自動縮放、填滿或套用 object-fit，仍須自行設定尺寸與 fit。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.spec.md:21",
+   "宣稱": "只暴露 `ratio` 數值 + children",
+   "真實code行為": "AspectRatioProps 繼承 Radix Primitive.div 的完整 props，還包含 asChild、className、style、DOM attributes/events，並支援 forwarded ref。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.anatomy.stories.tsx:16",
+   "宣稱": "結構僅:container 鎖 ratio + children 填滿",
+   "真實code行為": "Radix 只讓內層 Primitive.div 以 absolute inset 填滿比例盒；consumer 傳入的 children 不會自動填滿。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.anatomy.stories.tsx:37",
+   "宣稱": "內層 children 填滿",
+   "真實code行為": "children 保持自身尺寸；同句後述的 `w-full h-full object-cover` 才會讓媒體填滿。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.anatomy.stories.tsx:63",
+   "宣稱": "Radix Slot pattern——把 ratio 行為合併到 children 元素(不常用)",
+   "真實code行為": "ratio 的 padding-bottom 仍由外層 wrapper div 承擔；asChild 只把 absolute-fill 內層的 props 與 style 合併到 consumer child。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx:84",
+   "宣稱": "輪播 / 產品列表各張圖原始比例不一",
+   "真實code行為": "該 product-grid 的三張圖全部呼叫 `<Img ratio={1}>`，請求尺寸皆為 800×800，原始比例並未不同。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx:93",
+   "宣稱": "原圖比例不同,AspectRatio + object-cover 強制對齊成 1/1",
+   "真實code行為": "三張示範圖原本就是 800×800，故事只展示 1/1 圖置於 1/1 容器，沒有呈現不同原始比例被對齊。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx:105",
+   "宣稱": "包 AspectRatio 會強制裁切",
+   "真實code行為": "AspectRatio 不設定 overflow clipping；過高內容預設會溢出，只有 consumer 額外加入 `overflow-hidden` 才會裁切。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx:143",
+   "宣稱": "會強制裁切",
+   "真實code行為": "該範例沒有 `overflow-hidden`；過高內容會溢出而非被元件強制裁切，較短內容才會留下空白。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx:157",
+   "宣稱": "外層比例與內層比例衝突時,結果無法預測",
+   "真實code行為": "Radix 的 padding-bottom 計算具確定性；內層維持自身比例，超出部分依外層 overflow 規則顯示或裁切。"
+  },
+  {
+   "fileLine": "packages/design-system/src/components/AspectRatio/aspect-ratio.principles.stories.tsx:163",
+   "宣稱": "內層 1/1 被外層 16/9 壓縮",
+   "真實code行為": "內層仍維持 1/1；外層的 `overflow-hidden` 只是裁掉超出 16/9 可視區的部分，沒有壓縮比例。"
+  }
+ ]
+}
