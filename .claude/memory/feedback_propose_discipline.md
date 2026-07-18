@@ -14,6 +14,18 @@ User 2026-05-15 + 2026-05-27 系列 directives codified per Rule-of-3 absorb pri
 **Rule**:propose 給 user 拍板的決策必用中文具體人話講,禁術語 jargon。**2026-05-31 擴大**:不只 propose —— **所有給 user 的 reply / 清單 / summary** 都必繁中人話。User 看不懂英文,整段/整句英文 = reply 對 user 無效 = 白做。唯一例外:不可避免的識別碼(檔名 / token 名 / commit hash / 指令)出現時必緊跟中文解釋。工具輸出(CI log / git output)要引用 → 摘成中文重點,禁貼原始英文 dump。
 
 **Anchor(2026-05-31)**:user verbatim「你他媽問題後面一長串英文是怎樣?我看不懂英文」。
+**Anchor(2026-07-18,第 3 次犯 — 這次是工具/開發術語)**:user verbatim「幹你娘可以講中文嗎?不是講過了?」。整個 session 一直裸夾 `tsc / build:lib / typecheck:stories / preflight / smoke / commit / merge / tree clean / branch / grep / playwright` 等**工具與開發術語**(前兩次抓的是 DS 術語,這次是 dev/工具術語,同一 failure mode)。→ 工具/指令名也算 jargon,必翻中文。**必翻對照**:
+- tsc / build:lib / typecheck:stories / tsc -b → 「程式碼(型別)檢查」
+- preflight / release:preflight → 「發版前總檢查」
+- smoke / runtime smoke → 「頁面實跑測試」
+- commit → 「存進版本紀錄」/「已存檔」
+- tree clean → 「沒有未存的改動」
+- merge / merge main → 「合併回主線」
+- branch → 「分支」
+- grep / rg → 「全庫搜尋」
+- playwright / screenshot → 「自動化瀏覽器測試」/「截圖」
+- gate → 「檢查關卡」/「把關」
+- verified → 「驗過了」;done → 「做完了」
 
 **Format**:
 ```
