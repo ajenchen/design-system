@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
  * value (dd): text-body (14px) text-foreground (neutral-9)
  * 兩者都是 14px × 1.5 行高——層級靠色彩區分，不靠字體大小。
  *
- * ── direction（2026-04-20 新增）──
+ * ── orientation（2026-04-20 新增）──
  * vertical（預設）：label 在上 / value 在下，適合長 value（地址、bio、說明段落）、
  *                   form-like 資訊展示
  * horizontal     ：label 左 / value 右對齊，適合短 value 的 metadata 列
@@ -30,15 +30,15 @@ import { cn } from '@/lib/utils'
  * divided horizontal 模式：每 item py-[var(--layout-space-tight)]（cell-like row 高度）
  */
 
-export type DescriptionDirection = 'vertical' | 'horizontal'
+export type DescriptionListOrientation = 'vertical' | 'horizontal'
 
 interface DescriptionContextValue {
-  direction: DescriptionDirection
+  orientation: DescriptionListOrientation
   divided: boolean
 }
 
 const DescriptionContext = React.createContext<DescriptionContextValue>({
-  direction: 'vertical',
+  orientation: 'vertical',
   divided: false,
 })
 
@@ -46,7 +46,7 @@ export interface DescriptionListProps extends React.HTMLAttributes<HTMLDListElem
   /** grid 欄數（vertical 才生效；horizontal 永遠單欄），預設 1 */
   cols?: 1 | 2 | 3
   /** 項目排列方向，預設 vertical（label 在上 / value 在下） */
-  direction?: DescriptionDirection
+  orientation?: DescriptionListOrientation
   /**
    * horizontal 模式下每個 item 下方加分隔線以對齊 rows。預設 false。
    * 短列表（< 4 rows）不需要；檔案 metadata 等長列表、key 長度不一時建議開。
@@ -61,10 +61,10 @@ const colsClass: Record<number, string> = {
 }
 
 const DescriptionList = React.forwardRef<HTMLDListElement, DescriptionListProps>(
-  ({ cols = 1, direction = 'vertical', divided = false, className, ...props }, ref) => {
-    const isHorizontal = direction === 'horizontal'
+  ({ cols = 1, orientation = 'vertical', divided = false, className, ...props }, ref) => {
+    const isHorizontal = orientation === 'horizontal'
     // Memoize provider value(2026-04-22 D3 perf audit):避免每 render 重建 2-field object
-    const ctxValue = React.useMemo(() => ({ direction, divided }), [direction, divided])
+    const ctxValue = React.useMemo(() => ({ orientation, divided }), [orientation, divided])
     return (
       <DescriptionContext.Provider value={ctxValue}>
         <dl
@@ -90,8 +90,8 @@ export interface DescriptionItemProps extends React.HTMLAttributes<HTMLDivElemen
 
 const DescriptionItem = React.forwardRef<HTMLDivElement, DescriptionItemProps>(
   ({ label, children, className, ...props }, ref) => {
-    const { direction, divided } = React.useContext(DescriptionContext)
-    if (direction === 'horizontal') {
+    const { orientation, divided } = React.useContext(DescriptionContext)
+    if (orientation === 'horizontal') {
       return (
         <div
           ref={ref}

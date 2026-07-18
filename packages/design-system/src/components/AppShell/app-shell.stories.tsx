@@ -225,7 +225,7 @@ function IssueDetail({ issue }: { issue: Issue | null }) {
           <Tag size="sm" color={PRIORITY_COLOR[issue.priority]}>{issue.priority}</Tag>
         </div>
       </div>
-      <DescriptionList direction="horizontal" divided>
+      <DescriptionList orientation="horizontal" divided>
         <DescriptionItem label="Assignee">{issue.assignee}</DescriptionItem>
         <DescriptionItem label="Due">{issue.due}</DescriptionItem>
       </DescriptionList>

@@ -1146,7 +1146,7 @@ export const WithBulkActions: Story = {
               <BulkActionBar
                 selection={visibleSelectedIds}
                 totalSelected={selectedCount}
-                onClear={() => setSelection({ mode: 'include', ids: [] })}
+                onClearSelection={() => setSelection({ mode: 'include', ids: [] })}
                 actions={
                   <>
                     <Button variant="tertiary" size="md" startIcon={Download}>下載</Button>
@@ -1877,7 +1877,7 @@ export const RoadmapAllInOne: Story = {
         {selection.length > 0 && (
           <BulkActionBar
             selection={selection}
-            onClear={() => setSelection([])}
+            onClearSelection={() => setSelection([])}
             actions={
               <>
                 <Button variant="tertiary" size="md" startIcon={Download}>匯出</Button>

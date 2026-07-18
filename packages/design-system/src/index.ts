@@ -191,8 +191,8 @@ export {
   DescriptionList,
 } from './components/DescriptionList/index'
 export type {
-  DescriptionDirection,
   DescriptionItemProps,
+  DescriptionListOrientation,
   DescriptionListProps,
 } from './components/DescriptionList/index'
 export {

@@ -41,7 +41,7 @@ export interface BulkActionBarProps extends React.HTMLAttributes<HTMLDivElement>
   /** 已選 ID,length === 0 時自動隱藏(回傳 null) */
   selection: readonly string[]
   /** Clear 觸發,user 點 X icon 或 Esc(consumer 在 page-level 監聽) */
-  onClear?: () => void
+  onClearSelection?: () => void
   /** 批次 actions(consumer 提供 md Button,variant=tertiary 或 tertiary+danger;不用 primary) */
   actions?: React.ReactNode
   /** Filter 模式:hidden 數量,顯示在 count 區 inline「已選 {N} 項 · {M} 個被 filter 隱藏」 */
@@ -77,7 +77,7 @@ export interface BulkActionBarProps extends React.HTMLAttributes<HTMLDivElement>
 
 const BulkActionBar = React.forwardRef<HTMLDivElement, BulkActionBarProps>(
   function BulkActionBar(
-    { selection, onClear, actions, hiddenByFilter, totalSelected, labels: labelsOverride, className, ...props },
+    { selection, onClearSelection, actions, hiddenByFilter, totalSelected, labels: labelsOverride, className, ...props },
     ref
   ) {
     const labels: BulkActionBarLabels = React.useMemo(
@@ -109,7 +109,7 @@ const BulkActionBar = React.forwardRef<HTMLDivElement, BulkActionBarProps>(
         {/* X close — md dismiss(2026-05-04 spec update:default placement = footer variant,
             visual weight 對齊 Dialog footer commitment buttons md;same-row consistency 維持)
             未來若有 top-toolbar variant(覆蓋 sm-density toolbar)→ 該 variant override sm */}
-        {onClear && (
+        {onClearSelection && (
           <Button
             variant="text"
             size="md"
@@ -117,7 +117,7 @@ const BulkActionBar = React.forwardRef<HTMLDivElement, BulkActionBarProps>(
             dismiss
             startIcon={X}
             aria-label={labels.clear}
-            onClick={onClear}
+            onClick={onClearSelection}
           />
         )}
 

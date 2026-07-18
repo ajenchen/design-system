@@ -83,7 +83,7 @@ benchmark:
 
 - **`actions`**:consumer 提供 **md** Buttons(size rationale 見「Size canonical」);**一律 `variant=tertiary`**(含 destructive — `Trash` 等 icon + label 已辨識危險)— **不用 primary、destructive 不上 danger 紅填色**(2026-07-17 user 拍板:批次刪除鈕點下去是**開確認 dialog**非直接刪,紅色強調留給 dialog 內確認最終不可逆 action;對齊 UX Movement / GitLab Pajamas「紅留給不可逆最終確認」+ button.spec.md「Inline destructive 不用高強調」)
 - **count 區**:`已選 {N} 項`(內建)+ inline filter hidden status `· {M} 個被 filter 隱藏`(`hiddenByFilter` prop 傳入時)
-- **clear**:`<Button iconOnly size=md variant=text dismiss />`(內建,觸發 `onClear`)
+- **clear**:`<Button iconOnly size=md variant=text dismiss />`(內建,觸發 `onClearSelection`)
 
 #### Size canonical(2026-05-04 升 SSOT)
 
@@ -143,7 +143,7 @@ interface BulkActionBarProps extends React.HTMLAttributes<HTMLDivElement> {
   /** 已選 ID;length === 0 且無 totalSelected 時自動隱藏(回 null,完整判準見「Extend dataset pattern」) */
   selection: readonly string[]
   /** Clear 觸發,user 點 X icon(consumer 在 page-level 監聽 Esc 觸發) */
-  onClear?: () => void
+  onClearSelection?: () => void
   /** 批次 actions(consumer 提供 md Button,variant=tertiary 或 tertiary+danger,不用 primary) */
   actions?: React.ReactNode
   /** Filter 模式:hidden 數量,顯示在 count 區 inline 「已選 {N} 項 · {M} 個被 filter 隱藏」 */
@@ -193,7 +193,7 @@ interface BulkActionBarLabels {
 - count 文字用 `aria-live="polite"` + `aria-atomic="true"`(selection 變更時 SR 整句重讀「已選 3 項」)
 - Clear button:`aria-label="清除選取"`
 - Hint banner 用 `role="status"` + `aria-live="polite"`(state 切換時通知)
-- 鍵盤:Esc → `onClear()`(consumer 應監聽 page-level keydown 觸發);Tab 序按 DOM 順序 = clear(X)→ actions(count 是純文字 span,非互動元素 → 不參與 Tab)
+- 鍵盤:Esc → `onClearSelection()`(consumer 應監聽 page-level keydown 觸發);Tab 序按 DOM 順序 = clear(X)→ actions(count 是純文字 span,非互動元素 → 不參與 Tab)
 - Disabled action(無權限等)用 Button `disabled` + tooltip 解釋,**不藏 action**(避免 user 困惑)
 
 ---

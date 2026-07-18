@@ -89,14 +89,14 @@ export const DetailPanel: Story = {
   ),
 }
 
-/* ── Horizontal direction(label 左 / value 右,divided=false)──────── */
+/* ── Horizontal orientation(label 左 / value 右,divided=false)──────── */
 export const Horizontal: Story = {
   name: '水平佈局',
   render: () => (
     <div className="border border-border rounded-lg p-[var(--layout-space-loose)] max-w-md">
       {/* title 到第一個 item 的間距 = item 之間間距(Gestalt proximity canonical,見 spec) */}
       <div className="text-body font-medium mb-[var(--layout-space-tight)]">檔案資訊</div>
-      <DescriptionList direction="horizontal">
+      <DescriptionList orientation="horizontal">
         <DescriptionItem label="檔名">Q1-roadmap.pdf</DescriptionItem>
         <DescriptionItem label="類型">application/pdf</DescriptionItem>
         <DescriptionItem label="大小">2.4 MB</DescriptionItem>
@@ -107,7 +107,7 @@ export const Horizontal: Story = {
 }
 
 // @story-trait-rationale: HorizontalDivided retired 2026-05-17 per audit Dim 24/25 strict re-run —
-//   違 story-rules.md L42「同 affordance 內 prop variations 用 Controls 不另開」。Horizontal direction
+//   違 story-rules.md L42「同 affordance 內 prop variations 用 Controls 不另開」。Horizontal orientation
 //   已展示;divided 是單一 prop toggle,anatomy Inspector 已 expose Controls (L85-86)。
 //   原本內容 archive 於 git history(若要看 divided 視覺,進 anatomy Inspector 開 divided=true)。
 //   2026-06-12:刪除 zombie export _RETIRED_HorizontalDivided,對齊 DS-wide comment-only 退役慣例(deep-audit dim25)。

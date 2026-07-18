@@ -351,7 +351,7 @@ export const OrderRule: Story = {
         note="使用者眼睛最先掃到最上方，最希望被點擊的動作放第一個。所有按鈕撐滿容器寬度"
       >
         <div className="w-[200px]">
-          <ButtonGroup direction="vertical">
+          <ButtonGroup orientation="vertical">
             <Button variant="primary">確認送出</Button>
             <Button variant="tertiary">取消</Button>
           </ButtonGroup>

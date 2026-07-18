@@ -5,7 +5,7 @@
 //     foreground(value),無 variant × state 色彩矩陣。色彩 token 已於
 //     Overview「Typography(閱讀模式)」段列出。
 //   SizeMatrix N/A — 不提供 size prop;大小固定 text-body(14px reading mode),
-//     由 layout(cols / direction / divided)而非 size 決定差異。ColsMatrix 已
+//     由 layout(cols / orientation / divided)而非 size 決定差異。ColsMatrix 已
 //     涵蓋 layout 變化。
 import type { Meta, StoryObj } from '@storybook/react'
 import { DescriptionList, DescriptionItem } from './description-list'
@@ -73,16 +73,16 @@ export const Overview: Story = {
 export const Inspector: Story = {
   name: '元件檢閱器',
   parameters: {
-    docs: { description: { story: '右側 Controls 切 props 即時 render,取代 Figma inspect。調整 `cols` / `direction` / `divided` 看 CSS grid 配置變化。' } },
+    docs: { description: { story: '右側 Controls 切 props 即時 render,取代 Figma inspect。調整 `cols` / `orientation` / `divided` 看 CSS grid 配置變化。' } },
   },
   args: {
     cols: 2,
-    direction: 'vertical',
+    orientation: 'vertical',
     divided: false,
   },
   argTypes: {
     cols: { control: 'radio', options: [1, 2, 3] },
-    direction: { control: 'radio', options: ['vertical', 'horizontal'] },
+    orientation: { control: 'radio', options: ['vertical', 'horizontal'] },
     divided: { control: 'boolean', description: 'horizontal 模式下,每個 item 下加 border-b 對齊 rows(長列表建議開)' },
   },
   render: (args) => (

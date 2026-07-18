@@ -46,7 +46,7 @@ export const Overview: Story = {
                 <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
               </>
             }
-            onClear={() => {}}
+            onClearSelection={() => {}}
           />
         </div>
       </section>
@@ -87,7 +87,7 @@ export const Overview: Story = {
             <BulkActionBar
               selection={Array.from({ length: 50 }, (_, i) => `f-${i}`)}
               actions={<Button variant="tertiary" size="md" startIcon={Download}>下載</Button>}
-              onClear={() => {}}
+              onClearSelection={() => {}}
             />
           </div>
         </div>
@@ -115,7 +115,7 @@ function SelectionStateDemo() {
               <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
             </>
           }
-          onClear={() => setCount(0)}
+          onClearSelection={() => setCount(0)}
         />
         {count === 0 && <span className="text-caption text-fg-muted italic px-3 py-2 inline-block">↑ count=0 → BulkActionBar 不渲染</span>}
       </div>
@@ -162,7 +162,7 @@ function InspectorInner() {
               <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
             </>
           }
-          onClear={() => setSelectionCount(0)}
+          onClearSelection={() => setSelectionCount(0)}
         />
         {selectionCount === 0 && <span className="text-caption text-fg-muted italic px-3 py-2 inline-block">selection=0 → 不渲染</span>}
       </div>
@@ -196,7 +196,7 @@ export const Accessibility: Story = {
       <section>
         <H3>鍵盤(預期 consumer 在 page 層級監聽)</H3>
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
-          <li><kbd>Esc</kbd> → 觸發 <code>onClear()</code>(consumer 在 page-level keydown 監聽)</li>
+          <li><kbd>Esc</kbd> → 觸發 <code>onClearSelection()</code>(consumer 在 page-level keydown 監聽)</li>
           <li>Tab 序:close → actions(count 是純文字 / aria 朗讀對象,非 tab stop)</li>
           <li>Hint CTA 是 <code>{`<button>`}</code>,鍵盤可達</li>
         </ul>
@@ -216,7 +216,7 @@ export const Accessibility: Story = {
                 <Button variant="tertiary" size="md" startIcon={Trash2} danger disabled>刪除(無權限)</Button>
               </>
             }
-            onClear={() => {}}
+            onClearSelection={() => {}}
           />
         </div>
       </section>

@@ -83,7 +83,7 @@ export const UsageGuidance: Story = {
                 <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
               </>
             }
-            onClear={() => {}}
+            onClearSelection={() => {}}
           />
           <Label>↑ selection {`>`} 0 浮現,= 0 完全藏</Label>
         </Rule>
@@ -160,7 +160,7 @@ export const ActionVariantRule: Story = {
               <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
             </>
           }
-          onClear={() => {}}
+          onClearSelection={() => {}}
         />
         <Label>↑ tertiary 主 / tertiary danger 破壞性</Label>
       </Rule>
@@ -177,7 +177,7 @@ export const ActionVariantRule: Story = {
               <Button variant="primary" size="md" startIcon={Trash2} danger>刪除</Button>
             </>
           }
-          onClear={() => {}}
+          onClearSelection={() => {}}
         />
         <Label warn>↑ 兩顆都 primary → 視覺重量過高,跟 page Submit 競爭</Label>
       </Rule>
@@ -211,7 +211,7 @@ export const HintBannerRule: Story = {
             <BulkActionBar
               selection={Array.from({ length: 50 }, (_, i) => `f-${i}`)}
               actions={<Button variant="tertiary" size="md">下載</Button>}
-              onClear={() => {}}
+              onClearSelection={() => {}}
             />
           </div>
         </div>
@@ -230,7 +230,7 @@ export const HintBannerRule: Story = {
             <BulkActionBar
               selection={Array.from({ length: 50 }, (_, i) => `f-${i}`)}
               actions={<Button variant="tertiary" size="md">下載</Button>}
-              onClear={() => {}}
+              onClearSelection={() => {}}
             />
           </div>
         </div>
@@ -245,7 +245,7 @@ export const HintBannerRule: Story = {
           selection={['a', 'b', 'c']}
           hiddenByFilter={2}
           actions={<Button variant="tertiary" size="md" startIcon={Archive}>封存</Button>}
-          onClear={() => {}}
+          onClearSelection={() => {}}
         />
         <Label>↑ count 文字 inline:「已選 3 項 · 2 個被 filter 隱藏」</Label>
       </Rule>

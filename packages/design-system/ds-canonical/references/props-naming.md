@@ -12,8 +12,9 @@
 | `onDismiss` | **通知被忽略** — 暫時訊息被關,不影響流程 | Alert / Notice / Toast / Coachmark | Polaris `Toast.onDismiss` / iOS `dismiss()` |
 | `onRemove` | **從集合移除 item** — parent collection 狀態變化 | PeoplePicker / Combobox multi-select tag / Tag(in list) | Material `Chip.onDelete` / React Aria `onRemove` |
 | `onClear` | **欄位內容清空** — value 設 empty,元件不關 | Input / Select / Combobox / DatePicker clear | Ant `allowClear` + `onClear` / Polaris `clearButton` |
+| `onClearSelection` | **清空多選集合** — 取消所有勾選項(非清欄位內容)| BulkActionBar | Polaris `ResourceList` bulk clear / Material DataGrid `onRowSelectionModelChange([])` |
 
-**禁止**:用同一名 cover 多語意(`onClose` 同時表達 Tag 的 `onRemove`)。spec 寫 callback 時必明示哪一類。
+**禁止**:用同一名 cover 多語意(`onClose` 同時表達 Tag 的 `onRemove`;`onClear` 同時表達「清欄位」與「清勾選」→ 後者必用 `onClearSelection`,2026-07-18 決策12)。spec 寫 callback 時必明示哪一類。
 
 ## Badge 類 prop 名 canonical(按放置,不按「是 badge」籠統命名)
 

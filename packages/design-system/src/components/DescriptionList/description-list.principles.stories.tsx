@@ -197,7 +197,7 @@ export const LabelAlignmentRule: Story = {
     <div>
       <Rule
         title="本系統採 stacked(label 在上、value 在下)— label 左對齊"
-        note="對齊 Atlassian / Shopify Polaris / Stripe 慣例——label 與 value 垂直堆疊,兩者都左對齊。閱讀節奏由上往下、由左往右,不需視線左右跳動。這是 vertical(預設)模式的結構;label 左 / value 右的 metadata 列改用既有 `direction=&quot;horizontal&quot;` prop(見 spec「Direction」段)"
+        note="對齊 Atlassian / Shopify Polaris / Stripe 慣例——label 與 value 垂直堆疊,兩者都左對齊。閱讀節奏由上往下、由左往右,不需視線左右跳動。這是 vertical(預設)模式的結構;label 左 / value 右的 metadata 列改用既有 `orientation=&quot;horizontal&quot;` prop(見 spec「Direction」段)"
       >
         <Frame className="max-w-md">
           <DescriptionList cols={2}>
@@ -225,7 +225,7 @@ export const LabelAlignmentRule: Story = {
 
       <Rule
         title="❌ 不要自己用 flex 改 horizontal layout"
-        note="手刻 flex 模擬 label 左 / value 右 → 失去 dl/dt/dd 語意,且多欄配置下 grid 對齊錯亂。有此需求 → 用既有 `direction=&quot;horizontal&quot;` prop(dl/dt/dd 語意完整保留,見 showcase「水平佈局」story),不要自組 layout"
+        note="手刻 flex 模擬 label 左 / value 右 → 失去 dl/dt/dd 語意,且多欄配置下 grid 對齊錯亂。有此需求 → 用既有 `orientation=&quot;horizontal&quot;` prop(dl/dt/dd 語意完整保留,見 showcase「水平佈局」story),不要自組 layout"
       >
         <Frame className="max-w-md">
           <div className="flex justify-between py-1">

@@ -23,14 +23,14 @@ import { ButtonGroupContext } from './button'
  * </ButtonGroup>
  *
  * // 垂直排列（fullWidth 自動套用）
- * <ButtonGroup direction="vertical">
+ * <ButtonGroup orientation="vertical">
  *   <Button variant="primary">確認</Button>
  *   <Button variant="tertiary">取消</Button>
  * </ButtonGroup>
  */
 interface ButtonGroupProps extends React.HTMLAttributes<HTMLDivElement> {
   /** 排列方向，預設 horizontal */
-  direction?: 'horizontal' | 'vertical'
+  orientation?: 'horizontal' | 'vertical'
   /** 水平對齊，預設 start */
   align?: 'start' | 'center' | 'end'
 }
@@ -40,8 +40,8 @@ const BUTTON_GROUP_CTX_VERTICAL = { fullWidth: true } as const
 const BUTTON_GROUP_CTX_HORIZONTAL = { fullWidth: false } as const
 
 const ButtonGroup = React.forwardRef<HTMLDivElement, ButtonGroupProps>(
-  ({ direction = 'horizontal', align = 'start', className, children, ...props }, ref) => {
-    const isVertical = direction === 'vertical'
+  ({ orientation = 'horizontal', align = 'start', className, children, ...props }, ref) => {
+    const isVertical = orientation === 'vertical'
 
     return (
       <ButtonGroupContext.Provider value={isVertical ? BUTTON_GROUP_CTX_VERTICAL : BUTTON_GROUP_CTX_HORIZONTAL}>

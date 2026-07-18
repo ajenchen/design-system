@@ -21,7 +21,7 @@ export const Default: Story = {
     return (
       <BulkActionBar
         selection={selection}
-        onClear={() => setSelection([])}
+        onClearSelection={() => setSelection([])}
         actions={
           <>
             <Button variant="tertiary" size="md" startIcon={Archive}>封存</Button>
@@ -92,7 +92,7 @@ export const WithExtendDatasetHint: Story = {
         <BulkActionBar
           selection={selection}
           totalSelected={allSelected ? TOTAL : undefined}
-          onClear={() => { setSelection([]); setAllSelected(false) }}
+          onClearSelection={() => { setSelection([]); setAllSelected(false) }}
           actions={
             <>
               <Button variant="tertiary" size="md" startIcon={Download}>下載</Button>

@@ -530,13 +530,13 @@ const InfoPanel = React.memo(function InfoPanel({
         {/* 檔案資訊 — 用 DS DescriptionList horizontal + divided(Google Drive /
             Notion file info panel 模式):
             - section header 用 FieldLabel 同款 typography 保視覺一致
-            - DescriptionList direction="horizontal" divided 提供 row 下底線
+            - DescriptionList orientation="horizontal" divided 提供 row 下底線
               對齊格線,key 長度不一也易讀
             - 不再手刻 dl/dt/dd — canonical 由 DS primitive own */}
         {/* heading → first-item gap = item → item gap(Gestalt proximity,見 description-list.spec.md) */}
         <div className="flex flex-col gap-[var(--layout-space-tight)]">
           <span className="text-body font-normal text-foreground">{labels.fileInfoHeading}</span>
-          <DescriptionList direction="horizontal" divided>
+          <DescriptionList orientation="horizontal" divided>
             <DescriptionItem label="檔名">{file.name}</DescriptionItem>
             <DescriptionItem label="類型">{file.mimeType || '-'}</DescriptionItem>
             {sizeText && (
