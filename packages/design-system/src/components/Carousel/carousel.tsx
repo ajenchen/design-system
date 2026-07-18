@@ -187,8 +187,12 @@ Carousel.displayName = 'Carousel'
 const CarouselContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
+>(({ className, children, ...props }, ref) => {
   const { carouselRef, orientation } = useCarousel()
+  // 2026-07-18 決策5:注入 slide index/total 給 CarouselItem 自動產生「第 N 張,共 M 張」a11y 位置名
+  //   (WAI-ARIA APG carousel「N of M」https://www.w3.org/WAI/ARIA/apg/patterns/carousel/)。count 取
+  //   React.Children.count(可靠,不依賴 embla init 後的 scrollSnaps)。
+  const total = React.Children.count(children)
   return (
     <div ref={carouselRef} className="overflow-hidden">
       <div
@@ -199,31 +203,46 @@ const CarouselContent = React.forwardRef<
           className,
         )}
         {...props}
-      />
+      >
+        {React.Children.map(children, (child, index) =>
+          React.isValidElement(child)
+            ? React.cloneElement(child as React.ReactElement<CarouselItemInternalProps>, { _slideIndex: index, _slideTotal: total })
+            : child,
+        )}
+      </div>
     </div>
   )
 })
 CarouselContent.displayName = 'CarouselContent'
 
-const CarouselItem = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
-  const { orientation } = useCarousel()
-  return (
-    <div
-      ref={ref}
-      role="group"
-      aria-roledescription="slide"
-      className={cn(
-        'min-w-0 shrink-0 grow-0 basis-full',
-        orientation === 'horizontal' ? 'pl-4' : 'pt-4',
-        className,
-      )}
-      {...props}
-    />
-  )
-})
+interface CarouselItemInternalProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** @internal CarouselContent 注入 —— 用於自動 slide 位置名。 */
+  _slideIndex?: number
+  _slideTotal?: number
+}
+
+const CarouselItem = React.forwardRef<HTMLDivElement, CarouselItemInternalProps>(
+  ({ className, _slideIndex, _slideTotal, 'aria-label': ariaLabel, ...props }, ref) => {
+    const { orientation } = useCarousel()
+    // 無 consumer aria-label 時自動位置名(第 N 張,共 M 張);consumer 傳 aria-label 優先(可自訂內容名)。
+    const autoLabel =
+      ariaLabel ?? (_slideIndex != null && _slideTotal != null ? `第 ${_slideIndex + 1} 張,共 ${_slideTotal} 張` : undefined)
+    return (
+      <div
+        ref={ref}
+        role="group"
+        aria-roledescription="slide"
+        aria-label={autoLabel}
+        className={cn(
+          'min-w-0 shrink-0 grow-0 basis-full',
+          orientation === 'horizontal' ? 'pl-4' : 'pt-4',
+          className,
+        )}
+        {...props}
+      />
+    )
+  },
+)
 CarouselItem.displayName = 'CarouselItem'
 
 // ── Arrow buttons(hover 才顯示)────────────────────────────────────────────

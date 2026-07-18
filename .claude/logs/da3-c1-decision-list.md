@@ -170,3 +170,5 @@ FieldControlGroup 的規格和範例用「Mode A/B/C」字母代號,沒有產品
 - ✅ **16 ColumnVisibilityPanel** → 改走 B(保留 Fragment):ground-truth 發現 A 加 root 會破壞 PopoverHeader 邊緣 bleed(Fragment 刻意讓 PopoverHeader 當 PopoverContent 直接子);sibling 自刻 header 故可包 root、本 panel 用 primitive 不行。加註解記錄刻意,非缺陷。
 
 - ✅ **4 bounded numeric** → 照建議 B(維持 number 不收窄):建 lineClampClass helper(靜態 map,修 cell-registry:127 + item-anatomy:395 兩處動態 line-clamp silent bug)+ NumberInput precision guard(clamp [0,20] 防 RangeError + dev-warn)+ Rating max dev-warn。對齊世界級 4 家維持 number。
+
+- ✅ **5 空 label a11y**:Carousel 自動位置名「第N張共M張」(CarouselContent 注入 index/total,consumer aria-label 優先;WAI-ARIA APG N-of-M)。Avatar alt 已必填(ground-truth 證實,不動);Tag/Breadcrumb 空 label dev-warn 為次要 additive(有 removeAriaLabel/label 通道,consumer 可補)。
