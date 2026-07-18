@@ -130,6 +130,12 @@ export function DataTableColumnVisibilityPanel({
     onColumnOrderChange!(next)
   }
 
+  // 2026-07-18 決策16:**刻意回傳 Fragment**(不加 root div)——本 panel 消費 `<PopoverHeader>` primitive,
+  //   它需當 `PopoverContent` 的**直接子**才能邊緣 bleed(負邊距貼滿浮層寬 + border-b 切齊邊)。包一層 root div
+  //   會讓 PopoverHeader 的 -mx 相對 div content-box 溢出、破壞 header。與 sibling FilterPanel/SortManager 不同:
+  //   那兩者**自刻 header**(不用 PopoverHeader primitive)故可包 root。本 panel 用 fixed `max-h-72` ScrollArea
+  //   (非 M25 viewport-aware flex chain),亦無需 `flex flex-col h-full` root。需 DOM ref 的 consumer 用外層
+  //   `<PopoverContent>` 自身的 ref(無真實 consumer 需求)。此 Fragment = 對齊 PopoverHeader 契約,非缺陷。
   return (
     <>
       <PopoverHeader hideClose>

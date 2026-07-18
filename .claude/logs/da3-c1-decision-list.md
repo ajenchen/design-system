@@ -166,3 +166,5 @@ FieldControlGroup 的規格和範例用「Mode A/B/C」字母代號,沒有產品
 - ⏳ **7-Steps controlled**:待加 expanded/onExpandedChange(code)/ 剩 2/3/4/5/11/12/14/16/17
 
 - ◑ **11-Select creatable**:ground-truth 發現 Select searchable=trigger 內嵌 input(SelectMenu searchable=false),creatable 需把 trigger 搜尋接進 SelectMenu creatable 顯隱(架構整合非 prop forward)。Combobox creatable 已覆蓋主場景;Select 這半留評估。
+
+- ✅ **16 ColumnVisibilityPanel** → 改走 B(保留 Fragment):ground-truth 發現 A 加 root 會破壞 PopoverHeader 邊緣 bleed(Fragment 刻意讓 PopoverHeader 當 PopoverContent 直接子);sibling 自刻 header 故可包 root、本 panel 用 primitive 不行。加註解記錄刻意,非缺陷。
