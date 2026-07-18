@@ -27,8 +27,20 @@ function formatNumber(
 ): string {
   if (value == null) return ''
   const { precision, prefix = '', suffix = '', locale = 'en-US' } = options
-  const formatted = precision != null
-    ? value.toLocaleString(locale, { minimumFractionDigits: precision, maximumFractionDigits: precision })
+  // 2026-07-18 決策4:precision guard —— 負數/小數/超界進 Intl.NumberFormat 會 RangeError(crash)。
+  //   clamp 回合法 Intl 範圍 [0,20](spec canonical ≤6);超界 dev-warn。維持 number 型別(對齊世界級 4 家)。
+  let safePrecision = precision
+  if (precision != null) {
+    const rounded = Math.round(precision)
+    if (rounded !== precision || precision < 0 || precision > 6) {
+      if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
+        console.warn(`[DS] NumberInput precision ${precision} 超出 canonical 範圍 0-6(或非整數)→ clamp。請傳 0-6 整數。`)
+      }
+    }
+    safePrecision = Math.min(20, Math.max(0, rounded))
+  }
+  const formatted = safePrecision != null
+    ? value.toLocaleString(locale, { minimumFractionDigits: safePrecision, maximumFractionDigits: safePrecision })
     : value.toLocaleString(locale)
   return `${prefix}${formatted}${suffix}`
 }

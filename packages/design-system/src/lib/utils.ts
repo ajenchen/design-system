@@ -92,3 +92,22 @@ const twMerge = extendTailwindMerge({
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+// ── line-clamp 安全對照(2026-07-18 決策4)────────────────────────────────────
+// 動態 `line-clamp-${n}` / `line-clamp-[${n}]` = Tailwind 掃不到具體值 → silent 失效(失敗記憶索引:
+//   「Tailwind v4 動態 class」陷阱)。此 map 全靜態字串 → Tailwind 可掃。canonical 上限 1-6(spec maxLines/
+//   descriptionClamp ≤6);超界值 dev-warn + clamp 回 6(不 crash、不靜默失效)。null/0/undefined → 不 clamp。
+const LINE_CLAMP: Record<number, string> = {
+  1: 'line-clamp-1', 2: 'line-clamp-2', 3: 'line-clamp-3',
+  4: 'line-clamp-4', 5: 'line-clamp-5', 6: 'line-clamp-6',
+}
+export function lineClampClass(n: number | undefined | null): string | undefined {
+  if (n == null || n <= 0) return undefined
+  const rounded = Math.round(n)
+  if (rounded !== n || n > 6) {
+    if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
+      console.warn(`[DS] line-clamp 值 ${n} 超出 canonical 範圍 1-6(或非整數)→ clamp 回 6。請傳 1-6 整數。`)
+    }
+  }
+  return LINE_CLAMP[Math.min(6, Math.max(1, rounded))]
+}

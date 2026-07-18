@@ -112,6 +112,10 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
     //   - Standalone(無 Field context) → default `xs`(24px,對齊 Avatar / Tag sm / iOS HIG standalone)
     // consumer 可傳 size 顯式 override。世界級對照:Material Rating standalone 24dp、
     // Ant Rate in Form 跟 Form.itemSize,standalone 24px。
+    // 2026-07-18 決策4:max dev-warn(spec canonical ≤7;維持 number 型別不收窄,對齊 MUI Rating.max)。
+    if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production' && (max > 7 || max < 1 || Math.round(max) !== max)) {
+      console.warn(`[DS] Rating max ${max} 超出 canonical 範圍 1-7(或非整數)。建議 ≤7 顆星(對齊世界級 review-stars)。`)
+    }
     const fieldCtx = useFieldContext()  // 保留:aria-labelledby 用 fieldCtx.labelId
     // 2026-06-08 SSOT:<Field disabled> cascade(原 isInteractive 只看 local disabled prop)
     const disabled = useResolvedFieldDisabled(disabledProp)

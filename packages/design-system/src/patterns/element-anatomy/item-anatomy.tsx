@@ -3,7 +3,7 @@
 import * as React from "react"
 import type { LucideIcon } from "lucide-react"
 import { cva } from "class-variance-authority"
-import { cn } from "@/lib/utils"
+import { cn, lineClampClass } from "@/lib/utils"
 import { Avatar, type AvatarProps } from "@/design-system/components/Avatar/avatar"
 import {
   Tooltip,
@@ -392,7 +392,7 @@ export const ItemContent = React.forwardRef<HTMLDivElement, ItemContentProps>(
           ? "text-[length:var(--font-body-size)]"
           : ""
 
-    const clampClass = descriptionClamp ? `line-clamp-${descriptionClamp}` : ""
+    const clampClass = lineClampClass(descriptionClamp) ?? ""
 
     return (
       <div

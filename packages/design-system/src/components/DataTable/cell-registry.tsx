@@ -19,7 +19,7 @@
 import * as React from 'react'
 import type { ComponentType } from 'react'
 import { Pencil } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, lineClampClass } from '@/lib/utils'
 import type { ColumnType } from './column-types'
 import { Input as InputPublic } from '@/design-system/components/Input/input'
 import { Textarea as TextareaPublic } from '@/design-system/components/Textarea/textarea'
@@ -124,7 +124,7 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
   // 已 auto-grow to content,natural match clamp。
   // 2026-05-16 Round 5 audit Dim 27 fix:narrow type 取代 `as any` cast。
   const maxLines: number | undefined = (meta as { maxLines?: number } | undefined)?.maxLines
-  const clampClass = maxLines && autoRowHeight ? `line-clamp-[${maxLines}]` : undefined
+  const clampClass = autoRowHeight ? lineClampClass(maxLines) : undefined
   // string type canonical(2026-05-05 v2 user 校正:input space ≥ display space):
   //   - autoRowHeight: Textarea(view + edit)— view wrap text 撐高 row,edit textarea
   //     多行輸入、`!h-full` 填 cell。對齊 Notion long-text cell canonical。
