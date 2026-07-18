@@ -5,7 +5,8 @@
 - ✅ 全 gate 綠:tsc/typecheck:stories/content-quality/story-quality/compile-stories 62 aligned/invariants 39/39/6 hooks bash -n
 
 ### A.3 殘項(додати額度後收尾;abort 時從此接續)
-F3 剩(spot-check 證實未做):
+> ✅ **2026-07-18 RECONCILE:本段下列 F3/F2/F4/F5 殘項全數已於 A.3 收尾第二波(commit 5c28dfbe 等)落地並隨 beta.86 發版。** spot-驗證坐實(date-picker/link-input `export const View`、rating.spec Tag、Steps controlled 等);工作 log 未逐條翻 [x],以權威收官檔 `da3-c1-final-report.md` 為準。下列打勾框保留為歷史軌跡。
+F3 剩(原記「spot-check 證實未做」→ 已全 ship,見上 RECONCILE):
 - [ ] TimePicker view 分支 spread props(照 switch.tsx restDomProps 同型)+ M10 掃其他控件 view 分支
 - [ ] color.spec.md:275 --on-emphasis 白名單刪 turquoise
 - [ ] select.tsx :144/:157/:3/:381 display docblock → view;RadioGroup tsx :16/:30/:277;Switch tsx docblock;boolean-value :1/:26

@@ -70,6 +70,6 @@
 
 ## 出貨狀態(2026-07-18 收官完成)
 
-1. ✅ **Full preflight 全綠** — `RELEASE PREFLIGHT PASS @ aedef767 version=0.1.0-beta.86`(52 gates + 分批 smoke 全 961 story 零抽樣)。收官這輪根治本機 smoke 拖垮:release-preflight.mjs smoke 步驟改分 8 shard 串跑(對齊 CI smoke-shard matrix,gate baseline 52→51 合法 retire 已記審計軌跡)。
+1. ✅ **Full preflight 全綠** — `RELEASE PREFLIGHT PASS @ aedef767 version=0.1.0-beta.86`(51 個 run() 關卡 + 5-manifest 一致性等步驟 + 分批 smoke 全 961 story 零抽樣;pass-marker 記 gatesPassed=52 為含非-run 步驟的 stepNum,run() 基準 51)。收官這輪根治本機 smoke 拖垮:release-preflight.mjs smoke 步驟改分 8 shard 串跑(對齊 CI smoke-shard matrix,gate baseline 52→51 合法 retire 已記審計軌跡)。
 2. ✅ **合 main + 發版** — user「就合」trigger → 快轉合併 `a520fa32..aedef767`(published = 驗過的 commit 一模一樣)→ tag `v0.1.0-beta.86` → Release workflow 全綠含 Publish to npm + Repoint latest → **npm view 實測上架 0.1.0-beta.86**(非只看 CI 綠)。遠端/本地分支已清、main 對齊。
 3. ◑ **PNG #128 殘項(獨立軌,非本戰役範圍)** — 主體 done;殘 ◑(per-rule mutation test / rollback test / pnpm·ignore-scripts clean-install — 低優先或非官方支援)+ ❌(Codex cloud / Windows — **物理上需該環境才測得了**,單人 macOS 測不到,其軌道文件已誠實標 Uncertified/Unsupported)。屬獨立基建工程,另輪處理。
