@@ -54,7 +54,7 @@ export const Overview: Story = {
         <Desc>items 之間垂直間距走 `--layout-space-tight` token(density-aware)——切 density 自動適配,避免硬寫 px / py-N 脫鉤 token;label → value(同 item 內)走 `--item-gap-label-desc-reading`(2px,見下表 row 1)。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
-            <thead><tr><Th>Direction</Th><Th>位置</Th><Th>Value</Th><Th>Rationale</Th></tr></thead>
+            <thead><tr><Th>Orientation</Th><Th>位置</Th><Th>Value</Th><Th>Rationale</Th></tr></thead>
             <tbody>
               <tr><Td mono>vertical</Td><Td>label → value(同 item 內)</Td><Td mono>--item-gap-label-desc-reading(2px)</Td><Td>極小間距,視覺上 label 與 value 緊密配對(dt body + dd body → reading token)</Td></tr>
               <tr><Td mono>vertical</Td><Td>items 之間垂直 gap</Td><Td mono>gap-y-[var(--layout-space-tight)]</Td><Td>density-aware;Gestalt proximity 群組</Td></tr>

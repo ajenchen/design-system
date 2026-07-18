@@ -74,7 +74,10 @@ for (const f of walk(COMPONENTS)) {
 
   // ── Check 2(全 components 掃):散落直讀 fieldCtx.size / .mode / .disabled(該走 resolver hook)──
   for (const rawLine of raw.split('\n')) {
-    const c = rawLine.replace(/\/\/.*$/, '')
+    // 剝 `//` 行註解 + 單行 `/* */` block/JSDoc 註解 —— 本 gate 只查「code 直讀 fieldCtx.size」,
+    // 註解裡描述性提及 fieldCtx.size(如 InlineEdit JSDoc 說明 resolver fallback 行為)非違規。
+    // (2026-07-18:原僅剝 `//`,漏 `/** … */` 單行 JSDoc → InlineEdit:84 誤報;補剝 block 註解修根。)
+    const c = rawLine.replace(/\/\*.*?\*\//g, '').replace(/\/\/.*$/, '')
     if (/fieldCtx\??\.size/.test(c)) { scatteredSize.push(`${rel}: ${rawLine.trim().slice(0, 80)}`); }
     if (/fieldCtx\??\.(mode|disabled)\b/.test(c)) { scatteredCascade.push(`${rel}: ${rawLine.trim().slice(0, 80)}`); }
   }

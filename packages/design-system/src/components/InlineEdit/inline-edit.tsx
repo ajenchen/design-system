@@ -81,7 +81,7 @@ export interface InlineEditProps<T = string> {
   label?: string
   /** 空值時 view 態顯示的提示文字(fg-muted) */
   placeholder?: string
-  /** 尺寸 —— view 態最小高度 + 預設 Input 尺寸(不傳則接 fieldCtx.size,standalone fallback sm) */
+  /** 尺寸 —— view 態最小高度 + 預設 Input 尺寸(不傳則經 useResolvedFieldSize 接 Field size cascade,standalone fallback sm) */
   size?: FieldSize
   /** view 態語意標籤(標題場景傳 'h1'/'h2' 維持文件大綱;預設 'span') */
   as?: ReadTag

@@ -293,6 +293,25 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     },
     ref
   ) => {
+    // ── Accessible name dev-warn(2026-07-18:兌現 spec「Accessible name 必填契約」段承諾 —
+    //    原 spec 宣稱有此 console.warn 但 code 缺,spec-code drift;補上使兩者一致)──
+    //    role="tree" 名稱無法從子節點推導,缺 aria-label / aria-labelledby → SR 只讀「tree」。
+    //    對齊 Button / Tag 的 dev-only 誤用警告 idiom;production 不觸發。
+    const ariaLabel = props['aria-label']
+    const ariaLabelledby = props['aria-labelledby']
+    React.useEffect(() => {
+      if (
+        process.env.NODE_ENV !== 'production' &&
+        ariaLabel == null &&
+        ariaLabelledby == null
+      ) {
+        console.warn(
+          '[DS] TreeView:role="tree" 缺 accessible name — 請傳 aria-label(直接字串)或 aria-labelledby(指向可見標題 id)其一。' +
+            '兩者皆缺時螢幕閱讀器只讀出「tree」無法辨識用途(WAI-ARIA APG 要求 role="tree" 具 accessible name)。',
+        )
+      }
+    }, [ariaLabel, ariaLabelledby])
+
     // ── Expand state(受控 / 非受控) ──
     const [internalExpanded, setInternalExpanded] = React.useState(
       () => new Set(defaultExpandedIds)

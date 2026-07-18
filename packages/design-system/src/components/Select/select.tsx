@@ -632,8 +632,11 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     const selectedLabel = selectedOpt?.label ?? value ?? ''
     const SelectedIcon = selectedOpt?.icon
     // ── 過濾選項 ──
-    const filteredOptions = searchable && search
-      ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+    // 2026-07-18:filter 用 trim 過的 search,對齊 SelectMenu creatable 的 `search.trim()` create-row 判定 —
+    //   否則尾隨空白(如 "Bug ")會讓 filter 漏掉完全同名選項、SelectMenu 卻誤判「無同名」提議重複建立。
+    const trimmedSearch = search.trim()
+    const filteredOptions = searchable && trimmedSearch
+      ? options.filter(o => o.label.toLowerCase().includes(trimmedSearch.toLowerCase()))
       : options
     // ── 轉換 SelectOption → SelectMenuOption(必在 early return 前) ──
     // Issue 4(2026-05-10):forward avatar / description / disabled SSOT(per SelectMenuOption schema)。

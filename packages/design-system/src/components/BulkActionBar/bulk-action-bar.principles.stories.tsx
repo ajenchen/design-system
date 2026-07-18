@@ -223,7 +223,7 @@ export const HintBannerRule: Story = {
         note="banner 是 Alert 的職責(自帶 a11y role / aria-live / 視覺一致性)。自刻會破壞跟其他 Alert 的視覺一致性,也漏 a11y"
       >
         <div className="border border-divider rounded-md overflow-hidden">
-          <div className="bg-info-subtle text-info-text px-loose py-tight text-footnote">
+          <div className="bg-info-subtle text-info-text px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] text-footnote">
             已選取本頁全部 50 個。點此選取全部 5370 個項目
           </div>
           <div className="border-t border-divider">

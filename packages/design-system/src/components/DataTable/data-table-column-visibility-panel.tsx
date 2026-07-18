@@ -130,12 +130,19 @@ export function DataTableColumnVisibilityPanel({
     onColumnOrderChange!(next)
   }
 
-  // 2026-07-18 決策16:**刻意回傳 Fragment**(不加 root div)——本 panel 消費 `<PopoverHeader>` primitive,
-  //   它需當 `PopoverContent` 的**直接子**才能邊緣 bleed(負邊距貼滿浮層寬 + border-b 切齊邊)。包一層 root div
-  //   會讓 PopoverHeader 的 -mx 相對 div content-box 溢出、破壞 header。與 sibling FilterPanel/SortManager 不同:
-  //   那兩者**自刻 header**(不用 PopoverHeader primitive)故可包 root。本 panel 用 fixed `max-h-72` ScrollArea
-  //   (非 M25 viewport-aware flex chain),亦無需 `flex flex-col h-full` root。需 DOM ref 的 consumer 用外層
-  //   `<PopoverContent>` 自身的 ref(無真實 consumer 需求)。此 Fragment = 對齊 PopoverHeader 契約,非缺陷。
+  // 2026-07-18 決策16(2026-07-18 二次更正):**刻意回傳 Fragment**(不加 root div)——本 panel 消費
+  //   `<PopoverHeader>` / `<PopoverFooter>` primitive,DS 設計意圖是讓它們當 `<PopoverContent>` 的**直接子**
+  //   (Popover compound idiom,同 Dialog 的 `<DialogContent><DialogHeader/><Body/><Footer/>`;PopoverContent
+  //   是 flex-col、為它的 Header/Body/Footer 直接子提供堆疊佈局)。Fragment 讓三者成為 PopoverContent 直接子 =
+  //   對齊此 idiom。sibling FilterPanel/SortManager **自刻 header**(不用 primitive)故各自包 root div,是另一種
+  //   合法組合;把 root div 強加到 primitive-based panel 反而較不 idiomatic。
+  //   ⚠️ **更正先前不精確的理由**:先前註解稱「PopoverHeader 用 -mx 負邊距,包 root 會溢出破壞」——**不正確**。
+  //   實查 overlay-surface.tsx SurfaceHeader:用**正** `px-loose` + `border-b`,**無任何 -mx**;邊緣 bleed 來自
+  //   (a) PopoverContent 無內距 → header 在任何巢深都是滿寬、border-b 切齊邊;(b) PopoverContent `overflow-hidden
+  //   rounded-lg` 裁圓角。兩者**皆不要求直接子**——技術上一個滿寬無內距的 `flex flex-col` root div 不會破壞 header。
+  //   故保留 Fragment 是**idiom/一致性**選擇(非「會破壞」);且本 panel 用 fixed `max-h-72` ScrollArea(非 M25
+  //   viewport-aware flex chain)故 root 亦非必要;ref 需求為 0(consumer 走 PopoverContent 自身 ref)。此 Fragment
+  //   = 對齊 Popover primitive 組合契約,非缺陷。
   return (
     <>
       <PopoverHeader hideClose>

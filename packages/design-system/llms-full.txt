@@ -1,6 +1,6 @@
 # @qijenchen/design-system — 完整設計參考(llms-full)
 
-> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.85。
+> 全 component / pattern 的 variants / sizes / 禁止事項。build-time 從 spec.md frontmatter 生成,禁手改。v0.1.0-beta.86。
 
 # Components
 
@@ -418,9 +418,9 @@ Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/TreeView/
 
 ### Sizes
-- **sm**: 緊湊清單(與 md 同視覺:text-body、indent 24;保留供密度語意)
+- **sm**: 緊湊清單(與 md 同視覺,保留供密度語意)
 - **md**: default 一般導覽樹
-- **lg**: touch / 大字級(text-body-lg、px-4 py-2、indent 28)
+- **lg**: touch / 大字級
 
 # Patterns
 
