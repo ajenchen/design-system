@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-07-16T14:25:30.274Z"
+    "generatedAt": "2026-07-18T07:19:29.965Z"
   },
   "components": {
     "accordion": {
@@ -190,7 +190,6 @@
       "tiers": {
         "展示": [
           "design-system-components-bulkactionbar-展示--default",
-          "design-system-components-bulkactionbar-展示--with-filter-hidden",
           "design-system-components-bulkactionbar-展示--with-extend-dataset-hint",
           "design-system-components-bulkactionbar-展示--empty-selection-hidden"
         ],
@@ -419,7 +418,6 @@
         "展示": [
           "design-system-components-combobox-展示--modes",
           "design-system-components-combobox-展示--size-alignment",
-          "design-system-components-combobox-展示--wrap-modes",
           "design-system-components-combobox-展示--searchable",
           "design-system-components-combobox-展示--in-data-table"
         ],
@@ -731,7 +729,6 @@
         ],
         "設計原則": [
           "design-system-components-field-設計原則--usage-guidance",
-          "design-system-components-field-設計原則--responsibility-rule",
           "design-system-components-field-設計原則--orientation-rule",
           "design-system-components-field-設計原則--not-for-form-actions-rule"
         ]
@@ -1039,7 +1036,6 @@
         "展示": [
           "design-system-internal-overflowindicator-展示--combobox-tag-overflow",
           "design-system-internal-overflowindicator-展示--avatar-stack-overflow",
-          "design-system-internal-overflowindicator-展示--breadcrumb-collapse",
           "design-system-internal-overflowindicator-展示--table-row-assignees"
         ],
         "設計規格": [
@@ -1207,8 +1203,7 @@
         "展示": [
           "design-system-components-rating-展示--read-only-product-rating",
           "design-system-components-rating-展示--interactive-review",
-          "design-system-components-rating-展示--in-field",
-          "design-system-components-rating-展示--disabled"
+          "design-system-components-rating-展示--in-field"
         ],
         "設計規格": [
           "design-system-components-rating-設計規格--overview",
@@ -1282,7 +1277,6 @@
         "展示": [
           "design-system-components-select-展示--modes",
           "design-system-components-select-展示--hug-width",
-          "design-system-components-select-展示--display-mode",
           "design-system-components-select-展示--size-alignment",
           "design-system-components-select-展示--clearable",
           "design-system-components-select-展示--searchable",
@@ -1313,7 +1307,6 @@
           "design-system-internal-selectmenu-展示--searchable",
           "design-system-internal-selectmenu-展示--multi-select",
           "design-system-internal-selectmenu-展示--multi-searchable",
-          "design-system-internal-selectmenu-展示--clearable",
           "design-system-internal-selectmenu-展示--option-states"
         ],
         "設計規格": [
@@ -1487,7 +1480,6 @@
       "tiers": {
         "展示": [
           "design-system-components-steps-展示--default",
-          "design-system-components-steps-展示--focus-ring-combinations",
           "design-system-components-steps-展示--non-linear",
           "design-system-components-steps-展示--horizontal",
           "design-system-components-steps-展示--multiple-expansion"
@@ -1542,10 +1534,8 @@
         "展示": [
           "design-system-components-tabs-展示--default",
           "design-system-components-tabs-展示--with-suffix",
-          "design-system-components-tabs-展示--all-with-start-icon",
           "design-system-components-tabs-展示--overflow-scroll",
-          "design-system-components-tabs-展示--overflow-menu",
-          "design-system-components-tabs-展示--disabled"
+          "design-system-components-tabs-展示--overflow-menu"
         ],
         "設計規格": [
           "design-system-components-tabs-設計規格--overview",
@@ -1640,7 +1630,6 @@
         "設計原則": [
           "design-system-components-timepicker-設計原則--usage-guidance",
           "design-system-components-timepicker-設計原則--rule-minute-step-for-meetings",
-          "design-system-components-timepicker-設計原則--rule-range-composition",
           "design-system-components-timepicker-設計原則--rule-clear-no-label-button"
         ]
       },
@@ -1699,8 +1688,7 @@
           "design-system-components-treeview-展示--stepper",
           "design-system-components-treeview-展示--with-checkbox",
           "design-system-components-treeview-展示--long-label",
-          "design-system-components-treeview-展示--drag-and-drop",
-          "design-system-components-treeview-展示--indent-alignment"
+          "design-system-components-treeview-展示--drag-and-drop"
         ],
         "設計規格": [
           "design-system-components-treeview-設計規格--overview",
@@ -1723,5 +1711,5 @@
     }
   },
   "totalComponents": 64,
-  "totalStories": 928
+  "totalStories": 916
 }

@@ -86,7 +86,9 @@ TabsContent ← 對應被選中的 trigger
 - `startIcon` 描述 tab 的內容性質（人像 icon 配「成員」、齒輪 icon 配「設定」）
 - `badge` 傳達該 tab 底下的待處理計數（「通知 3」「成員 12」）
 - `endIcon` **純視覺 indicator only**（方向 / 狀態 — ChevronDown 暗示「展開後看到子內容」、Pin / Star 狀態徽記）。**不拼 click 行為** — 點到 endIcon 跟點到 tab body 同效果（切 tab）
-- `inlineAction`（2026-05-21 加）拆分 click target：點到 inlineAction 走它自己的 handler 不切 tab；典型如「『更多 ▾』tab 後綴點開 overflow dropdown 不切 tab」（split-click pattern,對齊 GitHub「Code ▾」/ Linear "Triage..." menu / Atlassian split-tab 共識）。DOM 上 inlineAction 是 trigger 的 **sibling**（絕對定位在 trigger 以 paddingRight 預留的區域,同 SidebarMenuButton suffixNode canonical）,**非巢狀 button** — Radix trigger 是原生 `<button>`,巢 button 為 HTML 不合法 + axe nested-interactive（2026-07-05 D4 修）
+- `inlineAction`（2026-05-21 加）拆分 click target：點到 inlineAction 走它自己的 handler 不切 tab；典型如「『更多 ▾』tab 後綴點開 overflow dropdown 不切 tab」（split-click pattern,對齊 GitHub「Code ▾」/ Linear "Triage..." menu / Atlassian split-tab 共識）。**DOM 結構(2026-07-18 決策1 axe 正規修)**:inlineAction **portal 到 `TabsList` 的 overlay 層(`role=tablist` 之外的 sibling div)**,以 trigger 的量測座標(viewport-relative,涵蓋 none/scroll/menu)定位在 trigger 右緣預留的 paddingRight 區。**為什麼不放 tablist 內**:`role=tablist` 只能擁有 `role=tab`(ARIA required-children);inlineAction(`button[aria-haspopup]`)DOM-在 tablist 內 = axe critical(2026-07-18 實測確認),故 portal 出去。trigger 本身仍在 tablist 內(Radix roving focus 要求 trigger 為 List React 子代)。**演進史**:2026-07-05 先修 button-巢-button(nested-interactive serious,改 sibling 佈局);2026-07-18 再修 button-在-tablist(required-children critical,改 portal overlay)。**代價(user 2026-07-18 拍板接受)**:鍵盤 Tab 序 = 全部 tab 之後才到 action(action 現為 overlay 內獨立 tab stop)。click 天然分流(action portal 出 trigger 子樹,不冒泡)。<!-- @benchmark-unverified: axe aria-required-children rule 實測(.claude/logs/a11y-audit.json);split-click pattern 對照未逐一 URL cite -->
+
+  **⚠️ ARIA required-children 鐵律(泛化,防同類 regression)**:任何 composite widget 容器(`role=tablist` / `listbox` / `menu` / `radiogroup` / `tree`)只能擁有其 required child role;要在容器「格子」旁塞獨立互動 element(action / dropdown trigger)時,**必 portal 出容器 DOM 子樹 + 量測定位**(aria-owns 不可行:axe required-children 計 DOM-owned 子代,不因 aria-owns 排除)。對齊 W3C ARIA APG composite-widget owned-elements 規範。
 
 ### 對標對象與故意的偏離
 
@@ -282,7 +284,8 @@ Tabs anatomy 採 DS 標準結構 + 元件特有矩陣:
 
 **Focus**:Tabs 為內嵌導覽,不困住焦點(無 focus trap);Radix `tabs` primitive 以 roving tabindex 管理 tab 之間的鍵盤移動(整組 tabs 為單一 tab stop)。選中 tab 與 TabsContent 各有 focus-visible 焦點框(`ring-2 ring-ring` per design-system focus-visible canonical)。
 
-**驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
+**驗證**:Tabs 元件**自身結構** axe 0 critical(nested-interactive + aria-required-children 皆已修,2026-07-18 實測 `.claude/logs/a11y-audit.json`);鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
+**已知非-Tabs-結構例外(誠實標註,非本元件缺陷)**:(a) `aria-controls` 指向未掛載的 inactive `TabsContent` = Radix 內建行為(inactive panel 預設 unmount → IDREF 懸空,axe `aria-valid-attr-value` flag);要消除需 `forceMount` 全 panel(有 perf 取捨,屬另案)。(b) story 內 demo 內容的 color-contrast / DataTable 巢狀(appshell story)非 Tabs 元件 own — 屬各自 owner。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

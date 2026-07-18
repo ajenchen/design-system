@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // code-quality-allow: file-size — foundational composite(Tabs + overflow scroll mode + dropdown switcher + inline action slot)在單一 wrapper SSOT 內,拆分會破壞 a11y / focus management chain。當前 ~578 < cap 800。
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { cva } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
@@ -54,6 +55,15 @@ interface TabsContextValue {
   size: TabsSize
 }
 const TabsContext = React.createContext<TabsContextValue>({ size: 'md' })
+
+// ── Inline-action overlay context(2026-07-18 決策1,axe aria-required-children 正規修)──
+// role=tablist 只能擁有 role=tab;per-tab inlineAction(如「更多 ▾」dropdown)若 DOM-在 tablist 內
+// = critical 違規(axe 實測確認)。Radix 要求 trigger 為 TabsList 的 React 子代(roving focus
+// context),故 trigger 必 DOM-在 tablist 內;唯一正規解 = 把 action **portal 出 tablist** 到一個
+// sibling overlay 層,以 trigger 的量測座標定位(涵蓋 3 種 overflow 模式,viewport-relative)。
+// aria-owns 不可行:axe required-children 計 DOM-owned 子代,不因 aria-owns 排除。
+// 代價(user 2026-07-18 接受):鍵盤 Tab 序 = 全部 tab 後才到 action(action 現為 overlay 內獨立 tab stop)。
+const TabsActionOverlayContext = React.createContext<HTMLDivElement | null>(null)
 
 // ── Root ──
 // Wrap Radix Tabs 以支援 value/onValueChange 的 context pass-through
@@ -170,27 +180,26 @@ const TabsList = React.forwardRef<
   TabsListProps
 >(({ className, size = 'sm', overflow = 'none', children, ...props }, ref) => {
   const tabsSizeContext = React.useMemo(() => ({ size }), [size])
+  // Overlay 層(決策1):per-tab inlineAction 由 TabsTrigger portal 到此,DOM-在 tablist 外,
+  // 以量測座標定位在對應 tab 之上。pointer-events-none(action span 自帶 auto);z 疊在 tab 之上。
+  const [overlayEl, setOverlayEl] = React.useState<HTMLDivElement | null>(null)
+
+  let listNode: React.ReactNode
   if (overflow === 'scroll') {
-    return (
-      <TabsContext.Provider value={tabsSizeContext}>
-        <ScrollTabsList ref={ref} className={className} {...props}>
-          {children}
-        </ScrollTabsList>
-      </TabsContext.Provider>
+    listNode = (
+      <ScrollTabsList ref={ref} className={className} {...props}>
+        {children}
+      </ScrollTabsList>
     )
-  }
-  if (overflow === 'menu') {
-    return (
-      <TabsContext.Provider value={tabsSizeContext}>
-        <MenuTabsList ref={ref} className={className} {...props}>
-          {children}
-        </MenuTabsList>
-      </TabsContext.Provider>
+  } else if (overflow === 'menu') {
+    listNode = (
+      <MenuTabsList ref={ref} className={className} {...props}>
+        {children}
+      </MenuTabsList>
     )
-  }
-  // none（預設）
-  return (
-    <TabsContext.Provider value={tabsSizeContext}>
+  } else {
+    // none（預設）
+    listNode = (
       <TabsPrimitive.List
         ref={ref}
         className={cn(TABS_LIST_BASE, 'w-full', className)}
@@ -198,6 +207,18 @@ const TabsList = React.forwardRef<
       >
         {children}
       </TabsPrimitive.List>
+    )
+  }
+
+  return (
+    <TabsContext.Provider value={tabsSizeContext}>
+      <TabsActionOverlayContext.Provider value={overlayEl}>
+        <div className="relative">
+          {listNode}
+          {/* inline-action overlay:sibling of tablist(非其 DOM 子代)→ 修 axe aria-required-children */}
+          <div ref={setOverlayEl} className="pointer-events-none absolute inset-0 z-10" />
+        </div>
+      </TabsActionOverlayContext.Provider>
     </TabsContext.Provider>
   )
 })
@@ -484,23 +505,56 @@ const TabsTrigger = React.forwardRef<
   TabsTriggerProps
 >(({ className, startIcon: StartIcon, badge, endIcon: EndIcon, inlineAction, children, ...props }, ref) => {
   const { size } = React.useContext(TabsContext)
+  const overlayEl = React.useContext(TabsActionOverlayContext)
   // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
   const hasSuffix = badge != null || EndIcon !== undefined
-  // 2026-07-05 D4 修(deep-audit「Tabs:inlineAction slot 造成 button 巢 button」):
-  // Radix TabsTrigger render 原生 <button>,inlineAction(ItemInlineActionButton)也是原生
-  // <button> — 巢狀 interactive = HTML 不合法 + axe nested-interactive(serious)+ tab 的
-  // accessible name 混入 action 內容。改 sibling 佈局(同 SidebarMenuButton suffixNode
-  // canonical,sidebar.tsx):wrapper span(relative)內 trigger + 絕對定位 action;trigger 以
-  // paddingRight 預留 action 空間 — icon 寬 + 原 gap(有 badge/endIcon 時 4px = suffix 內
-  // gap-1;僅 action 時 8px = slot 間 gap-2),幾何與巢狀版一致。click 天然分流(action 不在
-  // trigger 子樹,不冒泡),原 stopPropagation 五連發不再需要。
+  // inlineAction 幾何:trigger 以 paddingRight 預留 action 空間 — icon 寬 + 原 gap(有 badge/endIcon
+  // 時 4px = suffix 內 gap-1;僅 action 時 8px = slot 間 gap-2)。2026-07-05 修 button-巢-button
+  // (sibling 佈局);2026-07-18 決策1 再進化:action 不再是 tablist DOM 內的 sibling(axe
+  // aria-required-children critical),改 portal 到 TabsList 的 overlay 層(tablist 外),以量測座標
+  // 定位在 trigger 右緣。trigger 仍在 tablist 內(Radix roving focus 要求)。
   const hasAction = inlineAction != null
   const actionPaddingRight = hasAction ? iconSize + (hasSuffix ? 4 : 8) : undefined
 
+  // 量測 trigger 位置(viewport-relative,涵蓋 none/scroll/menu 三模式),同步 overlay 內 action 座標。
+  const triggerElRef = React.useRef<HTMLButtonElement | null>(null)
+  const setTriggerRef = React.useCallback(
+    (el: HTMLButtonElement | null) => {
+      triggerElRef.current = el
+      if (typeof ref === 'function') ref(el)
+      else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el
+    },
+    [ref],
+  )
+  const [actionPos, setActionPos] = React.useState<{ left: number; top: number; height: number } | null>(null)
+
+  React.useLayoutEffect(() => {
+    if (!hasAction || !overlayEl) return
+    const el = triggerElRef.current
+    if (!el) return
+    const compute = () => {
+      const t = triggerElRef.current?.getBoundingClientRect()
+      const o = overlayEl.getBoundingClientRect()
+      if (!t) return
+      setActionPos({ left: t.right - o.left, top: t.top - o.top, height: t.height })
+    }
+    compute()
+    const ro = new ResizeObserver(compute)
+    ro.observe(el)
+    ro.observe(overlayEl)
+    window.addEventListener('resize', compute)
+    window.addEventListener('scroll', compute, true) // capture:含 scroll-mode 捲動容器內部捲動
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', compute)
+      window.removeEventListener('scroll', compute, true)
+    }
+  }, [hasAction, overlayEl])
+
   const trigger = (
     <TabsPrimitive.Trigger
-      ref={ref}
+      ref={setTriggerRef}
       className={cn(tabsTriggerVariants({ size }), className)}
       style={hasAction ? { paddingRight: actionPaddingRight } : undefined}
       {...props}
@@ -519,14 +573,22 @@ const TabsTrigger = React.forwardRef<
   if (!hasAction) return trigger
 
   return (
-    // sibling 佈局 wrapper:span(relative)內 trigger + 絕對定位 action。
-    // Radix roving focus 用 collection context 收 trigger,不要求 trigger 是 List 直接子層。
-    <span className="relative inline-flex">
+    <>
       {trigger}
-      <span className="absolute top-1/2 -translate-y-1/2 right-0 inline-flex items-center">
-        {inlineAction}
-      </span>
-    </span>
+      {overlayEl &&
+        actionPos &&
+        createPortal(
+          // action portal 到 overlay(tablist 外);left=trigger.right + `-translate-x-full` → action
+          // 右緣對齊 trigger 右緣;top/height + items-center → 垂直置中(同原 right-0 + top-1/2 幾何)。
+          <span
+            className="pointer-events-auto absolute inline-flex -translate-x-full items-center"
+            style={{ left: actionPos.left, top: actionPos.top, height: actionPos.height }}
+          >
+            {inlineAction}
+          </span>,
+          overlayEl,
+        )}
+    </>
   )
 })
 TabsTrigger.displayName = 'TabsTrigger'
