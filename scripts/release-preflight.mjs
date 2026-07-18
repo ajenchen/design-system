@@ -110,9 +110,13 @@ run('build-storybook', 'npm run --silent build-storybook')
 // FULL story runtime smoke == release.yml smoke-shard job(被 `needs:` 硬 gate)。這是唯一能攔
 // SizeMatrix 那類 {var}-undefined / runtime crash 的 gate;build-storybook 是 compile-time、dogfood
 // 只 render 2 個 component,都攔不到。漏此道 = preflight marker 綠但 CI smoke 仍會紅(2026-06-02 audit
-// iceberg)。本機不分 shard 串跑全 947(CI 才分 4)。先清 port 殘留 server 避免 bind 衝突 false-fail。
-run('clear smoke port 8920', 'lsof -ti:8920 | xargs kill -9 2>/dev/null || true')
-run('FULL storybook runtime smoke(947 story)', 'node scripts/storybook-smoke-test.mjs --full')
+// iceberg)。
+// 2026-07-18 root-cause fix:本機原「單次串跑全 961」在 ~60 story 後 python http.server + chromium 資源
+// 累積把後續 probe 拖垮(false hang;非程式錯)。改為本機也分 8 shard 串跑(全 961 零抽樣、每 shard 重起
+// server + browser 即資源歸零 → 不再拖垮),對齊 CI smoke-shard matrix 本來就分片的作法。任一 shard 非 0 →
+// 整步 fail。每 shard 前清 port 殘留 server 避免 bind 衝突 false-fail。
+run('FULL storybook runtime smoke — 分 8 shard 串跑(全 961 story 零抽樣;每 shard 資源歸零防拖垮)',
+  'for N in 1 2 3 4 5 6 7 8; do lsof -ti:8920 | xargs kill -9 2>/dev/null || true; node scripts/storybook-smoke-test.mjs --full --shard=$N/8 || exit 1; done')
 // InlineEdit 對齊 + blur exit pixel invariant(2026-07-17 root cause 修的機械鎖):委派控件 view 左緣落 label
 // x=0(Δ≤1.5px)+ 點 Status 進 edit→blur→editing=0 回 display 無殘留。需 storybook-static(build 後才跑)。
 run('InlineEdit 對齊 + blur exit pixel invariant', 'node scripts/probe-inline-edit-align.mjs')
