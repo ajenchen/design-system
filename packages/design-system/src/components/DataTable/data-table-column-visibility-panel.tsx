@@ -27,8 +27,7 @@ import { Eye, EyeOff, Lock, GripVertical, Search, RotateCcw, X as XIcon } from '
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { Input } from '@/design-system/components/Input/input'
-import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
-import { PopoverHeader, PopoverFooter, PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
+import { PopoverHeader, PopoverBody, PopoverFooter, PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ItemPrefix, ItemLabel, ItemInlineActionButton, ROW_PADDING_BY_SIZE } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { cn } from '@/lib/utils'
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
@@ -130,18 +129,19 @@ export function DataTableColumnVisibilityPanel({
     onColumnOrderChange!(next)
   }
 
-  // 2026-07-18 決策16(⚠️ 二次更正後仍有事實錯,三次修正中 — SSOT consistency 審查進行中):
-  //   回傳 Fragment:`<PopoverHeader>` + `ScrollArea max-h-72` + `<PopoverFooter>` 為 PopoverContent 直接子。
-  //   **前兩版理由都錯,在此明記以免再犯**:(1)「PopoverHeader 用 -mx 負邊距、包 root 會破壞」= 錯(SurfaceHeader
-  //   用正 px-loose + border-b,無 -mx);(2)「sibling FilterPanel/SortManager 自刻 header 不用 primitive」= **也錯**
-  //   —— 實查:FilterPanel/SortManager 一樣消費 `SurfaceHeader` + `SurfaceBody`(overlay-surface primitive),外包
-  //   `<div flex flex-col h-full>` root。三個 panel **都消費 header primitive,無人自刻**。
-  //   真正的差異 = **body/scroll 策略**:FilterPanel/SortManager 用 `SurfaceBody`(viewport-aware flex-1,故 root
-  //   必 forward flex-col h-full 的 M25 鏈);本 panel 用 fixed `ScrollArea max-h-72`(定高,無 flex 鏈需求)故 Fragment。
-  //   **此差異是否為 drift(該統一成 SurfaceBody viewport-aware)= SSOT consistency 待審**(multi-agent 稽核中);
-  //   結論定案後回填正確理由。ref 需求為 0(consumer 走 PopoverContent 自身 ref)。
+  // 2026-07-18 決策16 錯誤史(明記以免再犯):原本這個 panel 是 Fragment + fixed `ScrollArea max-h-72`,
+  //   與 sibling FilterPanel/SortManager(root-div + viewport-aware SurfaceBody)不一致。我給過**兩個都錯**
+  //   的辯護理由 —— (1)「PopoverHeader 用 -mx 負邊距、包 root 會破壞」= 錯(SurfaceHeader 用正 px-loose+border-b,
+  //   無 -mx);(2)「sibling 自刻 header 不用 primitive」= 錯(三 panel 皆消費 SurfaceHeader/PopoverHeader primitive)。
+  //   真正差異只是 body/scroll 策略。multi-agent SSOT consistency 稽核定案:**是 drift,該統一**(fixed 288px cap
+  //   在高螢幕多欄下劣於 sibling 的 viewport-adaptive;且是唯一不能當 template 複製的 panel)。故下方已改成 canonical shape。
   return (
-    <>
+    // 決策16 定案(2026-07-18,SSOT consistency 稽核後):對齊 sibling FilterPanel/SortManager 的
+    //   overlay-surface canonical shape —— root `<div flex flex-col h-full min-h-0>`(M25 viewport-aware
+    //   scroll chain)+ viewport-adaptive `PopoverBody`(取代原 fixed `ScrollArea max-h-72`)。三個
+    //   DataTable state-panel 收斂成同一形狀,body 隨視窗高度自適應(高螢幕多欄不再硬卡 288px)。
+    //   寬度仍由 consumer 的 `<PopoverContent w-72>` 提供(panel root w-full 撐滿)。
+    <div className="flex flex-col h-full min-h-0 w-full">
       <PopoverHeader hideClose>
         <div className="flex items-center gap-1 w-full min-w-0">
           <PopoverTitle className="flex-1">欄位顯示</PopoverTitle>
@@ -161,7 +161,7 @@ export function DataTableColumnVisibilityPanel({
         </div>
       </PopoverHeader>
       {searchable && (
-        <div className="px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)]">
+        <div className="shrink-0 px-[var(--layout-space-loose)] pt-[var(--layout-space-tight)]">
           <Input
             size="md"
             placeholder="搜尋欄位…"
@@ -172,7 +172,9 @@ export function DataTableColumnVisibilityPanel({
           />
         </div>
       )}
-      <ScrollArea className="max-h-72">
+      {/* viewport-adaptive body(List-as-region idiom:PopoverBody !px-0 !py-0 撤 chrome padding,
+          內層 py-2 給垂直呼吸、row 自帶 px-loose 水平 padding)。取代原 fixed ScrollArea max-h-72。 */}
+      <PopoverBody className="!px-0 !py-0">
         <div className="py-2 flex flex-col" style={{ '--item-prefix-slot': '16px' } as React.CSSProperties}>
           {dndEnabled ? (
             <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -207,13 +209,13 @@ export function DataTableColumnVisibilityPanel({
             ))
           )}
         </div>
-      </ScrollArea>
+      </PopoverBody>
       <PopoverFooter className="justify-start">
         <Button variant="tertiary" size="sm" onClick={handleBulkToggle}>
           {allVisible ? '全部隱藏' : '顯示全部'}
         </Button>
       </PopoverFooter>
-    </>
+    </div>
   )
 }
 
