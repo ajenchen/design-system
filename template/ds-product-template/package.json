@@ -21,8 +21,8 @@
     "sync-all": "node scripts/sync-all.mjs"
   },
   "dependencies": {
-    "@qijenchen/design-system": "^0.1.0-beta.87",
-    "@qijenchen/storybook-config": "^0.1.0-beta.87",
+    "@qijenchen/design-system": "^0.1.0-beta.88",
+    "@qijenchen/storybook-config": "^0.1.0-beta.88",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
