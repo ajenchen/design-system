@@ -665,7 +665,7 @@ async function main() {
   console.log(`\n[visual-audit] 完成`)
   console.log(`  Contrast violations: ${totalContrastViolations}`)
   console.log(`  Geometry violations: ${totalGeometryViolations}`)
-  if (!NO_A11Y) console.log(`  A11y violations (WCAG 2.1 AA): ${totalA11yViolations}`)
+  if (!NO_A11Y) console.log(`  A11y violations (WCAG 2.1 AA): ${totalA11yViolations}  [advisory — 權威 a11y gate = a11y-and-size.yml(baseline-diff)]`)
   if (!NO_DIFF) console.log(`  Baseline diff budget breached: ${totalDiffBudgetBreached} (threshold ${PIXEL_DIFF_PCT_BUDGET}%)`)
   console.log(`  Render errors(story 404 / error display): ${totalRenderErrors}`)
   if (!NO_DIFF) console.log(`  Diff errors(baseline missing / dimension mismatch): ${totalDiffErrors}`)
@@ -674,10 +674,14 @@ async function main() {
   console.log(`\n[Layer B:invoke /visual-audit 讀 snapshots/ 做 AI 設計合理性判斷]`)
 
   // 2026-07-14 dim-66:render / diff error 進 exit gate(fail-closed;原本 404 story 假綠)
+  // 2026-07-19:a11y 移出 exit gate 改 advisory —— 權威 a11y gate = a11y-and-size.yml(axe --gate,有
+  //   2026-06 起的 baseline-diff:只擋新增/增量 regression,吸收 story-demo contrast + Radix-structural
+  //   aria-required-children 等既有債)。visual-audit 無 a11y baseline → 對「開著的 overlay demo / Radix
+  //   role=grid 巢狀」等 accepted 違規硬 gate = 與 a11y-and-size 不一致的重複 fail。本 workflow 聚焦 pixel
+  //   diff;a11y 仍計數輸出供參,但不再重複把關(避免兩 gate 哲學打架)。
   process.exit(
     totalContrastViolations > 0 ||
       totalGeometryViolations > 0 ||
-      totalA11yViolations > 0 ||
       totalDiffBudgetBreached > 0 ||
       totalRenderErrors > 0 ||
       totalDiffErrors > 0

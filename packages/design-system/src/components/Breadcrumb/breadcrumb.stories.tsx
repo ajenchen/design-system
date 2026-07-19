@@ -370,5 +370,8 @@ export const IntegrateRouterLinkAutoCollapse: Story = {
       await expect(link, '摺疊的 router-link「產品團隊」應保留為可點 <a href="/org/team">(修前退化成純文字)').not.toBeNull()
       await expect(link?.textContent).toContain('產品團隊')
     })
+    // 收尾關摺疊選單:Radix DropdownMenu(modal)開著時對背景 nav 上 aria-hidden,背景麵包屑連結
+    // 仍 focusable → axe aria-hidden-focus。斷言已驗完,按 Escape 還原(選單開只為跑斷言,關掉無損展示)。
+    await userEvent.keyboard('{Escape}')
   },
 }

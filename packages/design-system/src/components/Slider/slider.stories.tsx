@@ -34,7 +34,7 @@ export const SizeAlignment: Story = {
           <div className="flex items-center gap-3">
             <span className="text-body w-10 shrink-0">音量</span>
             <Slider size={size} defaultValue={[40]} aria-label="音量" className="flex-1" />
-            <NumberInput size={size} value={40} onChange={() => {}} className="w-20 shrink-0" />
+            <NumberInput size={size} value={40} onChange={() => {}} aria-label="音量數值" className="w-20 shrink-0" />
           </div>
         </div>
       ))}
