@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 
-// ── TruncatedLabel ── 2026-07-19:truncate+tooltip 引擎 + presentation 已抽成 SSOT primitive
+// ── TruncatedText ── 2026-07-19:truncate+tooltip 引擎 + presentation 已抽成 SSOT primitive
 // `patterns/element-anatomy/truncated-text`(`<TruncatedText>` 消費 `useTruncated` hook)。本檔改為
 // 消費 `<TruncatedText display="block" tooltip={fullText}>`,原 file-local shared RO + TruncatedLabel 已移除。
 
@@ -146,7 +146,7 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, BreadcrumbListProps>(
     const declarativeContent = React.useMemo(() => {
       if (!items) return null
       // 2026-07-04 修:非字串 label 的 key 原用 Math.random() → 每次 render 新 key 造成
-      // BreadcrumbItem unmount/remount(重置 TruncatedLabel ResizeObserver 與 state)→ 改 stable idx key
+      // BreadcrumbItem unmount/remount(重置 TruncatedText ResizeObserver 與 state)→ 改 stable idx key
       const renderItem = (spec: BreadcrumbItemSpec, role: 'root' | 'middle' | 'current', idx: number) => (
         <BreadcrumbItem key={`${role}-${typeof spec.label === 'string' ? spec.label : idx}`} role={role}>
           {role === 'current'
@@ -342,7 +342,7 @@ BreadcrumbList.displayName = 'BreadcrumbList'
  * 設計回應 user 兩 challenges:
  *   (a) Root 也 truncate(shrink:3,不是 shrink-0)
  *   (b) 不用 fixed max-width — flex-shrink hierarchy 容器寬時自然展開不浪費空間,
- *       窄時按優先級縮 + TruncatedLabel 內部 CSS truncate + tooltip。
+ *       窄時按優先級縮 + TruncatedText 內部 CSS truncate + tooltip。
  */
 interface BreadcrumbItemProps extends React.ComponentPropsWithoutRef<'li'> {
   role?: 'root' | 'middle' | 'current' | 'ellipsis'
@@ -396,7 +396,7 @@ const BreadcrumbLink = React.forwardRef<HTMLAnchorElement, BreadcrumbLinkProps>(
   ({ asChild, className, children, startIcon: StartIcon, ...props }, ref) => {
     const { size } = React.useContext(BreadcrumbContext)
     // 2026-05-12 fix(user 抓 image 2 Deep story 麵包屑沒符合 single-line + truncate canonical):
-    // 純文字 children → auto-wrap TruncatedLabel(canonical「single-line + ellipsis + tooltip
+    // 純文字 children → auto-wrap TruncatedText(canonical「single-line + ellipsis + tooltip
     // on truncate」per spec.md / Polaris breadcrumb)。Non-string children(consumer 自訂 icon+text
     // 結構)→ pass-through 不 force-wrap(consumer own truncate)。
     const wrappedChildren = typeof children === 'string'
@@ -446,7 +446,7 @@ interface BreadcrumbPageProps extends React.ComponentPropsWithoutRef<'span'> {
 const BreadcrumbPage = React.forwardRef<HTMLSpanElement, BreadcrumbPageProps>(
   ({ className, children, startIcon: StartIcon, ...props }, ref) => {
     const { size } = React.useContext(BreadcrumbContext)
-    // 2026-05-12 fix(同 BreadcrumbLink):純文字 children → auto-wrap TruncatedLabel。
+    // 2026-05-12 fix(同 BreadcrumbLink):純文字 children → auto-wrap TruncatedText。
     const wrappedChildren = typeof children === 'string'
       ? <TruncatedText display="block" tooltip={children}>{children}</TruncatedText>
       : children

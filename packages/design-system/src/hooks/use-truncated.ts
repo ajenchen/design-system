@@ -1,8 +1,9 @@
 import * as React from 'react'
 
 // ── useTruncated — 單行文字截斷偵測引擎(SSOT)─────────────────────────────────
-// 收斂 Breadcrumb TruncatedLabel / DataTable TruncateCell / Tag 三處**逐字重複**的
-// module-level shared ResizeObserver 引擎 + isTruncated 狀態機為唯一 owner(M17 SSOT)。
+// 收斂 Breadcrumb TruncatedLabel / DataTable TruncateCell(兩處 module-level shared ResizeObserver 引擎
+// **逐字重複**,僅變數名不同)+ Tag(原 per-instance `new ResizeObserver`)三處的截斷偵測 + isTruncated
+// 狀態機為唯一 owner(M17 SSOT);Tag 亦收斂進共用 shared RO,行為等價。
 //
 // 世界級對照(M8):MUI/MUI-X 官方無第一方 primitive,社群共識 = 「hook 量測 scrollWidth>clientWidth
 //   + ref + 以 Tooltip `open` prop 條件控制」(issue #37211);此 hook 即該低階量測層,

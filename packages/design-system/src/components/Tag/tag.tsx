@@ -208,10 +208,14 @@ function TagInner(
     </div>
   )
 
-  if (!isTruncated) return tag
-
+  // 永遠 wrap Tooltip、以 open 控制可見(對齊 truncated-text.spec.md:49「永遠 wrap」+ :55「❌ 條件 wrap」canonical
+  // + useTruncated 家族;tooltip.principles.stories.tsx:190「沒被截斷就不該顯示 tooltip」由 open={false} 機械保證)。
+  // 未截斷 open={false} → tooltip 靜默(TooltipTrigger asChild 只把 handler/data-state 合併到 tag div,零多餘 DOM、
+  // 視覺與裸 tag 等價,pixel-identical)。always-wrap 保 tag div 生命週期穩定 → isTruncated false→true 不 remount:
+  // 先前條件-wrap(未截斷回裸 tag / 截斷才 wrap)切換 JSX 樹會 remount tag div,但 useTruncated deps=[children] 未變
+  // → effect 不重跑重新 observe 新 div → shared RO 卡在舊 detached div → isTruncated 卡 true(未截斷仍顯示 tooltip)。
   return (
-    <Tooltip>
+    <Tooltip open={isTruncated ? undefined : false}>
       <TooltipTrigger asChild>{tag}</TooltipTrigger>
       <TooltipContent>{children}</TooltipContent>
     </Tooltip>

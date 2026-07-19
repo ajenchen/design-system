@@ -404,7 +404,7 @@ function columnSizeStyle(
 const SYSTEM_COL_IDS = new Set([SELECT_COL_ID, '__drag__', '__actions__'])
 const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
 
-// ── TruncateCell ── 2026-07-19:truncate+tooltip 引擎 + presentation 已抽成 SSOT primitive
+// ── TruncatedText ── 2026-07-19:truncate+tooltip 引擎 + presentation 已抽成 SSOT primitive
 // `patterns/element-anatomy/truncated-text`(`<TruncatedText>` 消費 `useTruncated` hook)。原 file-local
 // shared RO(2026-04-22 D3 perf audit 的「全 DS 共用單一 RO」特性由 hook 承接)+ TruncateCell 已移除,
 // 改用 `<TruncatedText tooltip={children} className={...}>`(display 預設 inline,保 cell baseline)。
@@ -1473,10 +1473,10 @@ function DataTableInner<TData>(
     const meta = cell.column.columnDef.meta
     const colType = meta?.type as ColumnType | undefined
     const wrap = autoRowHeight && meta?.wrap === true
-    // 已知 compound 欄位(Tag / PersonDisplay / LinkInput 等自帶 layout)直接 bypass TruncateCell,
+    // 已知 compound 欄位(Tag / PersonDisplay / LinkInput 等自帶 layout)直接 bypass TruncatedText,
     // 因為 `truncate` 的 inline baseline context 會破壞自訂 layout 的垂直對齊。
     // 2026-05-09 D-path:date / time 加入(showDisplayEndIcon → Field naked-view 需 full width 才能
-    //   右對齊 ItemSuffix。TruncateCell 的 `<span truncate min-w-0>` block-display 會 collapse Field
+    //   右對齊 ItemSuffix。TruncatedText 的 `<span truncate min-w-0>` block-display 會 collapse Field
     //   to content size,讓 Calendar / Clock icon 緊貼 value text 而非右邊緣)。
     const isKnownCompound = colType === 'select' || colType === 'multiSelect' || colType === 'person' || colType === 'multiPerson' || colType === 'url' || colType === 'date' || colType === 'time'
     const rowId = cell.row.id
@@ -1517,8 +1517,8 @@ function DataTableInner<TData>(
       content = flexRender(cell.column.columnDef.cell, cell.getContext())
     }
     // Consumer 自訂 cell(無 colType)若回傳 React element,視為 compound — consumer 自己處理
-    // 對齊與截斷。回傳 primitive(string / number)才走 TruncateCell。
-    // 理由:TruncateCell 的 `span.truncate` 強制 white-space:nowrap + inline baseline,
+    // 對齊與截斷。回傳 primitive(string / number)才走 TruncatedText。
+    // 理由:TruncatedText 的 `span.truncate` 強制 white-space:nowrap + inline baseline,
     // 對 inline-flex / icon+text 自訂結構會拉歪(見 circular-progress sync table 案例)。
     // **edit mode bypass**(2026-05-05 v9 Bug 2 修):editing cell 內部是 Field 控件
     // (Input/Textarea/Select etc.)自管 layout + 替代元素(textarea)不該被包進 inline span
@@ -1752,7 +1752,7 @@ function DataTableInner<TData>(
           //   - **沒有** cell 自己 box-shadow ring — focus / hover / open ring 由 Field naked 自帶
           //     state machine 提供(對齊 user「狀態樣式取決於原輸入框」reminder)
           // 字級隨 size:sm/md text-body / lg text-body-lg(fieldDisplayTextClass),對齊 Field family
-          // size→font SSOT。此為非-Field content(consumer 自訂 cell / TruncateCell 純文字)的 fallback 字級;
+          // size→font SSOT。此為非-Field content(consumer 自訂 cell / TruncatedText 純文字)的 fallback 字級;
           // typed cell 各自的 Field 控件已自帶 size→font(cell-registry 傳 size)。
           'group/cell flex text-foreground font-normal shrink-0 relative self-stretch',
           fieldDisplayTextClass(size),

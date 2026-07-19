@@ -50,7 +50,11 @@
 
 ## ✅ 實作完成(2026-07-16,Model A 全落地 + 對抗稽核 + pixel probe)
 
-**6 commit(working branch `2026-07-15-inlineedit-storybook-remediation`,未 push;等 Netlify preview user gate)**:
+> ✅ **2026-07-19 RECONCILE:本投入早已 ship 上主線並發版。** 下述 6 commit(c3c1a09f/37aa63c4/63f5c71e/952033c4/
+> ff82fcdc/b2049e0a)`git merge-base --is-ancestor` 全 IN main;working branch 已刪;後續已隨 beta.86→…→beta.89
+> 連續發版。下文「未 push / 等 user push trigger / beta.86 未 release」等措辭為當時 working-branch 階段快照,**現皆已完成**,以本 RECONCILE 為準。
+
+**6 commit(working branch `2026-07-15-inlineedit-storybook-remediation`,當時未 push;現已全 IN main)**:
 c3c1a09f 更名+Model A cva+InlineEdit委派+cell disabled廢除 / 37aa63c4 storybook 治理機械化+三層補齊 /
 63f5c71e spec view mode / 952033c4 對抗 loose ends+pixel probe / ff82fcdc 對抗 F1/F2/F3 / b2049e0a 治理閘進 preflight。
 
