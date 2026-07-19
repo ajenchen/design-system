@@ -601,6 +601,8 @@ export type {
 //   - patterns/element-anatomy:ItemInlineActionButtonProps
 //   - patterns/element-anatomy:ItemInlineActionProps
 //   - patterns/element-anatomy:RowSizeProvider
+//   - patterns/element-anatomy:TruncatedText
+//   - patterns/element-anatomy:TruncatedTextProps
 
 // ─── Tokens(JS mirrors — token SSOT 程式面)──────────────────────────────
 export * from './tokens/categorical-color'
@@ -614,6 +616,7 @@ export * from './hooks/use-controllable'
 export * from './hooks/use-is-narrow-viewport'
 export * from './hooks/use-is-touch-device'
 export * from './hooks/use-overflow-items'
+export * from './hooks/use-truncated'
 
 // ─── Lib utilities ────────────────────────────────────────────────────────
 export * from './lib/drag-visual'

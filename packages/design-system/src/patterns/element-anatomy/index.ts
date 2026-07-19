@@ -3,3 +3,4 @@
 //   import { ... } from '@qijenchen/design-system/{components,patterns}/<Dir>'
 // Regenerate: node scripts/gen-component-indexes.mjs
 export * from './item-anatomy'
+export * from './truncated-text'

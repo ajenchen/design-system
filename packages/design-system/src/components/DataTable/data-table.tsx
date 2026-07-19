@@ -45,6 +45,7 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier } from '@/design-system/lib/drag-visual'
 import { nakedCellEditableDisplayHover, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
@@ -403,50 +404,11 @@ function columnSizeStyle(
 const SYSTEM_COL_IDS = new Set([SELECT_COL_ID, '__drag__', '__actions__'])
 const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
 
-// ── TruncateCell ─────────────────────────────────────────────────────────────
-// Shared ResizeObserver(2026-04-22 D3 perf audit):從 per-cell RO 改為全 DS 共用一個 RO
-// dispatch 到 per-element callback。10 col × 100 row = 1 RO(before:1000 RO)。
-// 跨 OS 一致的 RO 行為;element 卸載時 cleanup。
-
-type RoCallback = (entry: ResizeObserverEntry) => void
-let sharedResizeObserver: ResizeObserver | null = null
-const roCallbacks = new WeakMap<Element, RoCallback>()
-
-function getSharedRO(): ResizeObserver {
-  if (sharedResizeObserver) return sharedResizeObserver
-  sharedResizeObserver = new ResizeObserver((entries) => {
-    entries.forEach((entry) => {
-      const cb = roCallbacks.get(entry.target)
-      if (cb) cb(entry)
-    })
-  })
-  return sharedResizeObserver
-}
-
-function observeShared(el: Element, cb: RoCallback): () => void {
-  const obs = getSharedRO()
-  roCallbacks.set(el, cb)
-  obs.observe(el)
-  return () => {
-    roCallbacks.delete(el)
-    obs.unobserve(el)
-  }
-}
-
-function TruncateCell({ children, className }: { children: React.ReactNode; className?: string }) {
-  const ref = React.useRef<HTMLSpanElement>(null)
-  const [isTruncated, setIsTruncated] = React.useState(false)
-  React.useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const check = () => setIsTruncated(el.scrollWidth > el.clientWidth)
-    check()
-    return observeShared(el, check)
-  }, [])
-  const span = <span ref={ref} className={cn('truncate min-w-0', className)}>{children}</span>
-  if (!isTruncated) return span
-  return <Tooltip><TooltipTrigger asChild>{span}</TooltipTrigger><TooltipContent>{children}</TooltipContent></Tooltip>
-}
+// ── TruncateCell ── 2026-07-19:truncate+tooltip 引擎 + presentation 已抽成 SSOT primitive
+// `patterns/element-anatomy/truncated-text`(`<TruncatedText>` 消費 `useTruncated` hook)。原 file-local
+// shared RO(2026-04-22 D3 perf audit 的「全 DS 共用單一 RO」特性由 hook 承接)+ TruncateCell 已移除,
+// 改用 `<TruncatedText tooltip={children} className={...}>`(display 預設 inline,保 cell baseline)。
+// compound 欄位仍在 renderCellContent bypass(見下)—— 只 primitive string/number 走 TruncatedText。
 
 // ── L4 Row Drag: SortableRowContext(v15 Path B;2026-07-14 JSDoc 對齊實作)──────
 // 每 region(left / center / right)各 mount 一次 SortableRowProvider,依 role 分流(v15.4 split):
@@ -1565,7 +1527,7 @@ function DataTableInner<TData>(
     return isEditingThisCell ? content
       : wrap ? <span className="break-words min-w-0">{content}</span>
       : (isKnownCompound || isConsumerCompound) ? content
-      : <TruncateCell>{content}</TruncateCell>
+      : <TruncatedText>{content}</TruncatedText>
   }
 
   // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
@@ -2216,9 +2178,9 @@ function DataTableInner<TData>(
             canSort && 'focus-visible:ring-2 focus-visible:ring-ring rounded-md',
           )}
         >
-          <TruncateCell className={cn('min-w-0', align === 'right' && 'text-right', align === 'center' && 'text-center')}>
+          <TruncatedText className={cn('min-w-0', align === 'right' && 'text-right', align === 'center' && 'text-center')}>
             {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-          </TruncateCell>
+          </TruncatedText>
           {canSort && sortDir && !isMultiSort && (
             // 2026-05-18 改 per user 拍板「DataTable sort 跟 row size 變」+「做完」approval:
             // 原固定 14 違反 uiSize.spec.md Icon Tier(sm/md→16, lg→20)。改 ICON_SIZE[size]

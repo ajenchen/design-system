@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/design-system/components/Tooltip/tooltip"
+import { useTruncated } from "@/design-system/hooks/use-truncated"
 import { ItemInlineActionButton } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { CAT_SUBTLE, CAT_SOLID, CAT_INTERACT } from "@/design-system/tokens/categorical-color"
 
@@ -129,16 +130,16 @@ function TagInner(
   forwardedRef: React.ForwardedRef<HTMLDivElement>,
 ) {
   const solidClass = solid ? SOLID_CLASSES[color ?? 'neutral'] : undefined
-  const ownRef = React.useRef<HTMLDivElement | null>(null)
-  const [isTruncated, setIsTruncated] = React.useState(false)
-
-  React.useLayoutEffect(() => {
-    const el = ownRef.current
-    if (!el) return
-    const ctx = getMeasureCtx()
-    const check = () => {
+  // 截斷偵測用 SSOT 引擎 `useTruncated`(patterns/element-anatomy 的 hook)。Tag 走**變異型**:
+  //   - measure = Canvas measureText(flex 內 scrollWidth 不可靠,line 20)：observe root、量測內層
+  //     `[data-tag-text]` span(trigger≠量測元素);回 undefined = 無法量測時保留前一 state。
+  //   - timing='layoutEffect'(避免 paint flash)/ deps=[children](children 變重量)/ recheckAfterPaint=false
+  //     (Tag 原本即無 rAF/timeout 二次量)—— 三處變異全走 options,行為零漂移。
+  const { ref: ownRef, isTruncated } = useTruncated<HTMLDivElement>({
+    measure: (el) => {
       const textSpan = el.querySelector('[data-tag-text]')
-      if (!textSpan || !ctx) return
+      const ctx = getMeasureCtx()
+      if (!textSpan || !ctx) return undefined
       const text = textSpan.textContent || ''
       const cs = getComputedStyle(textSpan)
       ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
@@ -146,13 +147,12 @@ function TagInner(
       const padL = parseFloat(cs.paddingLeft) || 0
       const padR = parseFloat(cs.paddingRight) || 0
       const needed = textWidth + padL + padR
-      setIsTruncated(needed > (textSpan as HTMLElement).clientWidth + 1)
-    }
-    check()
-    const obs = new ResizeObserver(check)
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [children])
+      return needed > (textSpan as HTMLElement).clientWidth + 1
+    },
+    deps: [children],
+    timing: 'layoutEffect',
+    recheckAfterPaint: false,
+  })
 
   const label = typeof children === 'string' ? children : ''
 

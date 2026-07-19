@@ -5,7 +5,7 @@ import { Slot } from '@radix-ui/react-slot'
 import { ChevronRight, MoreHorizontal, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -13,71 +13,9 @@ import {
   DropdownMenuItem,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 
-// ── TruncatedLabel ────────────────────────────────────────────────────────────
-// 同 `data-table.tsx TruncateCell` + `tag.tsx isTruncated` SSOT pattern
-// (shared ResizeObserver + scrollWidth > clientWidth → wrap Tooltip)。
-// 設計註記(非待辦):本 component / DataTable TruncateCell / Tag inner 三處同 truncate-tooltip idiom,
-// 已達 Rule-of-3;是否抽 `patterns/element-anatomy/truncated-text.tsx` 共用 primitive 屬 SSOT-affecting
-// 結構決策(新 pattern),留 user 拍板後再做,不在此自行抽取(避免無授權新增 pattern primitive)。
-
-type RoCallback = (entry: ResizeObserverEntry) => void
-let sharedRO: ResizeObserver | null = null
-const sharedROCallbacks = new WeakMap<Element, RoCallback>()
-function getSharedRO(): ResizeObserver {
-  if (sharedRO) return sharedRO
-  sharedRO = new ResizeObserver((entries) => {
-    entries.forEach((e) => {
-      const cb = sharedROCallbacks.get(e.target)
-      if (cb) cb(e)
-    })
-  })
-  return sharedRO
-}
-function observeShared(el: Element, cb: RoCallback): () => void {
-  const obs = getSharedRO()
-  sharedROCallbacks.set(el, cb)
-  obs.observe(el)
-  return () => { sharedROCallbacks.delete(el); obs.unobserve(el) }
-}
-
-function TruncatedLabel({ children, fullText }: { children: React.ReactNode; fullText?: string }) {
-  const ref = React.useRef<HTMLSpanElement>(null)
-  const [isTruncated, setIsTruncated] = React.useState(false)
-  React.useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const check = () => setIsTruncated(el.scrollWidth > el.clientWidth)
-    check()
-    // 2026-05-11 fix:首幀 layout 未完成 / 字型 async load → scrollWidth=clientWidth 假陰性。
-    // RAF + 短延遲再驗一次,捕獲字型 / 容器尺寸後變(對齊 TruncateCell / Tag SSOT pattern)。
-    const raf = requestAnimationFrame(check)
-    const t = setTimeout(check, 100)
-    const cleanup = observeShared(el, check)
-    return () => {
-      cancelAnimationFrame(raf)
-      clearTimeout(t)
-      cleanup()
-    }
-  }, [])
-  // Tooltip canonical:per `tooltip.principles.stories.tsx:190`「Tooltip 是資訊補救 — 文字被
-  // truncate 時才顯示完整內容。沒被截斷就不該顯示 tooltip」
-  //
-  // 2026-05-11 fix(playwright tooltip-on-truncate 卡 hover 沒 tooltip):
-  // 原本 isTruncated=false 直接 return 裸 span / true 才 wrap Tooltip → JSX 樹結構改變
-  // → React 把 span unmount + remount(因為 wrapper component 變),ref 換到新 span,
-  // useEffect [] 不重跑(同 component instance)→ 觀察的 DOM 跟實際 DOM 對不上。
-  // Fix:**永遠 wrap Tooltip**(同 DOM 節點生命週期);`open` 由 isTruncated 控制 —
-  // 沒被 truncate 就 force `open={false}`,有 truncate 就 `undefined`(uncontrolled,
-  // hover 走 Radix default behavior)。對齊 canonical「沒被截斷就不該 tooltip」。
-  return (
-    <Tooltip open={isTruncated ? undefined : false}>
-      <TooltipTrigger asChild>
-        <span ref={ref} className="truncate min-w-0 block">{children}</span>
-      </TooltipTrigger>
-      <TooltipContent>{fullText ?? children}</TooltipContent>
-    </Tooltip>
-  )
-}
+// ── TruncatedLabel ── 2026-07-19:truncate+tooltip 引擎 + presentation 已抽成 SSOT primitive
+// `patterns/element-anatomy/truncated-text`(`<TruncatedText>` 消費 `useTruncated` hook)。本檔改為
+// 消費 `<TruncatedText display="block" tooltip={fullText}>`,原 file-local shared RO + TruncatedLabel 已移除。
 
 /**
  * Breadcrumb — 顯示當前頁面在階層中的位置
@@ -213,10 +151,10 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, BreadcrumbListProps>(
         <BreadcrumbItem key={`${role}-${typeof spec.label === 'string' ? spec.label : idx}`} role={role}>
           {role === 'current'
             ? <BreadcrumbPage startIcon={spec.startIcon}>
-                <TruncatedLabel fullText={typeof spec.label === 'string' ? spec.label : undefined}>{spec.label}</TruncatedLabel>
+                <TruncatedText display="block" tooltip={typeof spec.label === 'string' ? spec.label : undefined}>{spec.label}</TruncatedText>
               </BreadcrumbPage>
             : <BreadcrumbLink href={spec.href} asChild={spec.asChild} startIcon={spec.startIcon}>
-                <TruncatedLabel fullText={typeof spec.label === 'string' ? spec.label : undefined}>{spec.label}</TruncatedLabel>
+                <TruncatedText display="block" tooltip={typeof spec.label === 'string' ? spec.label : undefined}>{spec.label}</TruncatedText>
               </BreadcrumbLink>
           }
         </BreadcrumbItem>
@@ -462,7 +400,7 @@ const BreadcrumbLink = React.forwardRef<HTMLAnchorElement, BreadcrumbLinkProps>(
     // on truncate」per spec.md / Polaris breadcrumb)。Non-string children(consumer 自訂 icon+text
     // 結構)→ pass-through 不 force-wrap(consumer own truncate)。
     const wrappedChildren = typeof children === 'string'
-      ? <TruncatedLabel fullText={children}>{children}</TruncatedLabel>
+      ? <TruncatedText display="block" tooltip={children}>{children}</TruncatedText>
       : children
     const sharedClassName = cn(
       'inline-flex items-center gap-2',
@@ -510,7 +448,7 @@ const BreadcrumbPage = React.forwardRef<HTMLSpanElement, BreadcrumbPageProps>(
     const { size } = React.useContext(BreadcrumbContext)
     // 2026-05-12 fix(同 BreadcrumbLink):純文字 children → auto-wrap TruncatedLabel。
     const wrappedChildren = typeof children === 'string'
-      ? <TruncatedLabel fullText={children}>{children}</TruncatedLabel>
+      ? <TruncatedText display="block" tooltip={children}>{children}</TruncatedText>
       : children
     return (
       <span
