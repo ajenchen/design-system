@@ -1,9 +1,9 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-07-19T07:01:13.786Z",
+    "generatedAt": "2026-07-19T10:07:57.882Z",
     "stories": 962,
-    "fingerprints": 851
+    "fingerprints": 852
   },
   "fingerprints": {
     "apps-template-composition-fidelity-replica--icon-only-replica|color-contrast": 3,
@@ -285,6 +285,7 @@
     "design-system-components-datepicker-展示--show-time-range|color-contrast": 2,
     "design-system-components-datepicker-展示--show-time|color-contrast": 3,
     "design-system-components-datepicker-展示--size-alignment|color-contrast": 3,
+    "design-system-components-datepicker-展示--typed-input|aria-valid-attr-value": 2,
     "design-system-components-datepicker-展示--view|color-contrast": 4,
     "design-system-components-datepicker-展示--with-error|color-contrast": 2,
     "design-system-components-datepicker-設計原則--calendar-rule|color-contrast": 4,

@@ -541,16 +541,9 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       commitDraft(now)
     }
 
-    // typeable 模式外層 div 用 PopoverAnchor(僅定位,不注入 trigger a11y);非 typeable 用 PopoverTrigger
-    // (div 即 combobox 觸發)。修 dim-10 遺留的 axe aria-valid-attr-value(critical):PopoverTrigger 對
-    // typeable div 注入 aria-controls 指向「closed 時 unmount 的 popover content id」,而 typeable 已剝
-    // aria-expanded → axe「collapsed control 可缺 controlled 元素」豁免失效 → 判 aria-controls 值不合法。
-    // typeable 開啟走 controlled setOpen(Calendar icon click / input ArrowDown),不需 div 的 trigger onClick,
-    // 故改 anchor 零行為損失;combobox 語意全在內層 <input>(APG editable-combobox,見下方 :588)。
-    const TriggerOrAnchor = typeable ? PopoverAnchor : PopoverTrigger
     return (
       <Popover open={open} onOpenChange={setOpen}>
-        <TriggerOrAnchor asChild>
+        <PopoverTrigger asChild>
           <div
             ref={ref}
             // a11y(2026-07-14 dim-10 修):typeable 模式 combobox 語意(name / state / 鍵盤)
@@ -650,7 +643,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               <CalendarIcon size={iconSize} className="text-fg-muted" aria-hidden />
             </ItemSuffix>
           </div>
-        </TriggerOrAnchor>
+        </PopoverTrigger>
         <PopoverContent
           className="w-auto p-0"
           align="start"

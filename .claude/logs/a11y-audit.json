@@ -1,5 +1,5 @@
 {
-  "ts": "2026-07-19T06:30:47.556Z",
+  "ts": "2026-07-19T08:55:36.474Z",
   "total": 962,
   "violationsByStory": {
     "design-system-components-accordion-設計規格--overview": [
@@ -2328,6 +2328,14 @@
         "impact": "serious",
         "help": "Elements must meet minimum color contrast ratio thresholds",
         "nodes": 1
+      }
+    ],
+    "design-system-components-datepicker-展示--typed-input": [
+      {
+        "id": "aria-valid-attr-value",
+        "impact": "critical",
+        "help": "ARIA attributes must conform to valid values",
+        "nodes": 2
       }
     ],
     "design-system-components-datepicker-展示--clearable": [
@@ -6564,7 +6572,7 @@
     ]
   },
   "summary": {
-    "totalViolations": 5434,
+    "totalViolations": 5436,
     "byRule": {
       "color-contrast": 5118,
       "aria-required-children": 69,
@@ -6572,15 +6580,15 @@
       "scrollable-region-focusable": 8,
       "button-name": 82,
       "aria-progressbar-name": 21,
+      "aria-valid-attr-value": 4,
       "aria-hidden-focus": 3,
       "label": 83,
       "aria-input-field-name": 5,
       "role-img-alt": 1,
-      "aria-prohibited-attr": 6,
-      "aria-valid-attr-value": 2
+      "aria-prohibited-attr": 6
     },
     "bySeverity": {
-      "critical": 272,
+      "critical": 274,
       "serious": 5162,
       "moderate": 0,
       "minor": 0
