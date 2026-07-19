@@ -7,7 +7,7 @@ metadata:
   originSessionId: 3fb5856b-7b97-40a4-afa1-5db311326bea
 ---
 
-WM(work-management)ds問題.pdf 46 findings 根因戰役。交接 SSOT = `work-management/docs/2026-07-08-ds-alignment-handoff.md`;對帳 `node docs/ds-alignment/verify.mjs`。**2026-07-14 收官**:beta.84 已發版 + WM lockfile 真綠(見文末「2026-07-14 發版收官」段);2026-07-10 re-audit 3 OPEN 已全收(見 `## 2026-07-10 收官 session`);**WM main 已 push(4e83402,2026-07-15,零殘項)**。
+WM(work-management)ds問題.pdf 46 findings 根因戰役。交接 SSOT = `work-management/docs/2026-07-08-ds-alignment-handoff.md`;對帳 `node docs/ds-alignment/verify.mjs`(WM repo 腳本,本 DS repo 不存在)。**2026-07-14 收官**:beta.84 已發版 + WM lockfile 真綠(見文末「2026-07-14 發版收官」段);2026-07-10 re-audit 3 OPEN 已全收(見 `## 2026-07-10 收官 session`);**WM main 已 push(4e83402,2026-07-15,零殘項)**。
 
 - **DS branch `2026-07-08-wm-rootcause-fixes`**(pushed):R2 export 斷鏈修 + R4 防線(幻覺 token/偽表格/表單簽名/R8R9 fork override/escape repo-ratchet/eslint-plugin)+ R3 拍板 spec 批(pane-header 判準/inline-create idle/計數 suffix/分隔線幾何)+ **Field width=fill/hug 軸**(4 控件鋪線;Input/LinkInput/NumberInput VariantProps 排除 width 避 TS2320)+ **indicator A 案**(cell view 態零恆顯 icon,6/6 benchmark;cell-registry 停傳 showDisplayEndIcon,prop 留 opt-in;推翻 2026-05-10/06-26 兩次拍板,RFC 已追記)。**已發版 beta.84(2026-07-14,見文末段)**。
 - **WM branch `2026-07-08-ds-alignment`**(pushed,6 commits):Wave-1/2/3a/3b 全落地 — FilterPanel/欄面板/CAT_SOLID/useFormValidation×8/composer 歸左欄+獨立捲/count space-between/divider 幾何/SectionHeader/metadata 全 hug/Status 三處統一 select column/幻覺 utility 清零。**beta.84 已接上:lockfile bump + verify 13/13 真綠(2026-07-14,見文末段)**。
@@ -30,7 +30,7 @@ WM(work-management)ds問題.pdf 46 findings 根因戰役。交接 SSOT = `work-m
 
 ## 2026-07-14 發版收官
 
-**beta.84 已發版**(npm `latest` + `beta` dist-tag 皆 = 0.1.0-beta.84;deep-audit 戰役 367 material 修復同車,DS commit `9b7234bd` + internal 型別通道補完 `b7466895`)。**WM 已接上**:lockfile bump beta.82→beta.84 + **CellSelect 包裝落地**(naked 合法化包裝,WM commit `2979dc9`)→ `verify.mjs` **13/13 真綠對 published DS**(07-10 抓的「本機 --no-save tarball 假綠」問題根治;tsc 過)。**WM main 已收官(2026-07-15)**:squash merge + push(`4e83402`,tsc 0 + verify 13/13 真綠後推,branch 已砍)。戰役零殘項;deep-audit baton ledger 標 CAMPAIGN CLOSED。DS 端後續 beta.85(internal 型別通道)已發版,WM 下次 bump 可換用 DS `WithFieldVariantInternal` 型別取代 CellSelect 本地 widen(optional)。
+**beta.84 已發版**(npm `latest` + `beta` dist-tag 皆 = 0.1.0-beta.84;deep-audit 戰役 367 material 修復同車,DS commit `9b7234bd` + internal 型別通道補完 `b7466895`)。**WM 已接上**:lockfile bump beta.82→beta.84 + **CellSelect 包裝落地**(naked 合法化包裝,WM commit `2979dc9`)→ `verify.mjs`(WM repo 腳本,本 DS repo 不存在) **13/13 真綠對 published DS**(07-10 抓的「本機 --no-save tarball 假綠」問題根治;tsc 過)。**WM main 已收官(2026-07-15)**:squash merge + push(`4e83402`,tsc 0 + verify 13/13 真綠後推,branch 已砍)。戰役零殘項;deep-audit baton ledger 標 CAMPAIGN CLOSED。DS 端後續 beta.85(internal 型別通道)已發版,WM 下次 bump 可換用 DS `WithFieldVariantInternal` 型別取代 CellSelect 本地 widen(optional)。
 
 **2026-07-10 治理覆蓋 matrix(user「未來 consumer 是否被治理?」)**:41-agent workflow 逐 class 驗 — 20 class 僅 3 MECHANICAL_CONSUMER + 1 DS_API_FIXED,**14 DOC_ONLY + 1 UNGOVERNED = user 質疑成立**。已落地:MenuItem `startContent`(佔位=startIcon 同容器 SSOT)+ WM 左 rail 改包 MenuItem + r3 nav-row 簽名(31/31 test)+ 2 stale 治理描述修。**收官計畫 SSOT → `.claude/planning/2026-07-10-consumer-coverage-remediation.md`**(批次 A r3 簽名 ×14 / B eslint 發佈 + 兩欄 dialog 拍板 / C 常設閘 dim 91 failure-class registry);完整證據 → `.claude/logs/failure-class-coverage-matrix.json`。系統性:r2/r3 `<DS\.` 綁定 = named-import 全繞過,需除鏽。
 

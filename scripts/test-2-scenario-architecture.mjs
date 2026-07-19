@@ -267,12 +267,17 @@ if (missingSections.length === 0) {
   fail_test('S1', 'Scenario SSOT file missing sections', missingSections.join(','))
 }
 
-// S2: CLAUDE.md task nav row pointer to SSOT
+// S2: governance bootstrap task-nav row pointer to SSOT
+// PNG 架構(commit d88ceac2):治理核心 = AGENTS.md(provider-neutral;Codex 原生 discovery),
+// CLAUDE.md = `@AGENTS.md` import 薄殼(Claude 經 @import 全載)。任務導航表(含 scenario SSOT
+// pointer)住在 AGENTS.md;故 pointer 命中 AGENTS.md 或 CLAUDE.md 任一皆算 bootstrap 有指。
+const POINTER = '.claude/references/scenario-definition.md'
+const agentsMd = readFile('AGENTS.md')
 const claudeMdRoot = readFile('CLAUDE.md')
-if (claudeMdRoot?.includes('.claude/references/scenario-definition.md')) {
-  pass_test('S2', `CLAUDE.md task nav row points to scenario-definition.md SSOT`)
+if (agentsMd?.includes(POINTER) || claudeMdRoot?.includes(POINTER)) {
+  pass_test('S2', `governance bootstrap(AGENTS.md/CLAUDE.md)task nav row points to scenario-definition.md SSOT`)
 } else {
-  fail_test('S2', 'CLAUDE.md missing pointer to scenario SSOT')
+  fail_test('S2', 'governance bootstrap(AGENTS.md/CLAUDE.md)missing pointer to scenario SSOT')
 }
 
 // Cleanup
