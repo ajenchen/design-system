@@ -68,6 +68,11 @@ run('governance-counters', 'node scripts/sync-governance-counters.mjs --check')
 run('failure-class coverage(dim 91,每類病根必有防線)', 'node scripts/audit-failure-class-coverage.mjs --check')
 run('hook-test coverage(BLOCKER hook 必有 test 檔)', 'node scripts/audit-hook-test-coverage.mjs --check')
 run('gate meta-test coverage(checker gate 必有 meta-test;ratchet 只擋新洞)', 'node scripts/audit-gate-meta-test-coverage.mjs --check')
+// §8 執行層:實跑全部 gate meta-test(inject 真違規 → 斷言 gate exit≠0 → restore),自證每支 gate 偵測活性。
+// coverage 只驗檔存在;本步驗「meta-test 真跑得過」,防某 gate 偵測邏輯被改壞卻靜默 exit 0。
+run('gate meta-tests 實跑(§8:每支 gate inject-真違規偵測活性自證)', 'node scripts/run-gate-meta-tests.mjs')
+// PNG §14-17/§31:published package 無 consumer-install lifecycle script → --ignore-scripts / 離線安裝恆等普通安裝
+run('clean-install-safety(§14-17/§31:published package 無 preinstall/install/postinstall)', 'node scripts/check-clean-install-safety.mjs --check')
 run('gen-figma-make-artifacts', 'node scripts/gen-figma-make-artifacts.mjs --check')
 run('root barrel internal-exclusion(dim-72)', 'node scripts/gen-design-system-barrel.mjs --check')
 run('plugin-structure-validate', 'node scripts/plugin-structure-validate.mjs')

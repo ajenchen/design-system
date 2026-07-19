@@ -1,36 +1,17 @@
 {
-  "_note": "gate meta-test debt baseline(ratchet;逐支補後移除)",
+  "_note": "gate meta-test debt baseline(ratchet;逐支補後移除)。2026-07-19:28 支 gate 補齊 meta-test(§8 per-rule mutation),debt 31→5。剩 5 支各有結構性理由(debtReasons),非可省的普通 debt;由 run-gate-meta-tests.mjs 實跑其餘全部。",
   "knownDebt": [
     "audit-a11y.mjs",
     "audit-consumer-a11y.mjs",
-    "audit-content-quality.mjs",
     "audit-coverage-matrix.mjs",
-    "audit-data-table-row-mode-ssot.mjs",
-    "audit-failure-class-coverage.mjs",
-    "audit-hook-quality.mjs",
-    "audit-hook-test-coverage.mjs",
-    "audit-layout-family-frontmatter.mjs",
-    "audit-motion-delay-invariants.mjs",
-    "audit-orphan-tokens.mjs",
-    "audit-preflight.mjs",
-    "audit-spec-deadlinks.mjs",
-    "audit-story-quality.mjs",
-    "categorical-color-invariants.mjs",
-    "category-classification-invariant.mjs",
     "check-bundle-size.mjs",
-    "check-codex-freshness.mjs",
-    "check-dangling-infra-ref.mjs",
-    "check-field-cascade-resolve.mjs",
-    "check-plugin-installed.mjs",
-    "check-skill-deadref.mjs",
-    "check-src-republish.mjs",
-    "check-story-linkto-targets.mjs",
-    "checkbox-group-handcraft-invariant.mjs",
-    "data-table-invariants.mjs",
-    "item-content-leading-coherence.mjs",
-    "layout-space-story-coherence.mjs",
-    "layout-space-utility-invariant.mjs",
-    "naming-structure-invariant.mjs",
-    "status-color-invariant.mjs"
-  ]
+    "check-codex-freshness.mjs"
+  ],
+  "debtReasons": {
+    "audit-a11y.mjs": "需 full build-storybook + playwright/chromium/axe render 全 918 stories(~28min/run);meta-test 的 baseline+inject+restore = 3× render 不切實際。真驗證 = a11y-and-size.yml CI(audit-a11y --gate)每次 main push + 每日 cron 端到端實跑。",
+    "audit-consumer-a11y.mjs": "同 audit-a11y:playwright+chromium+axe render consumer app;render 成本使 meta-test 不切實際。真驗證 = CI 端到端。",
+    "audit-coverage-matrix.mjs": "引 build-storybook 產 coverage matrix,需 built storybook-static;meta-test 需整套重建不切實際。真驗證 = release:preflight 的 audit:coverage-matrix gate 每次 release 實跑。",
+    "check-bundle-size.mjs": "需 production build(dist)才能量真實 bundle size;無 build 時 baseline 即非 PASS,不符 meta-test baseline-PASS→inject 模型。真驗證 = a11y-and-size.yml size-limit job(build 後跑)。",
+    "check-codex-freshness.mjs": "環境性 gate:查外部 npm registry latest + 本機 codex CLI 安裝態,baseline 非確定性。非固定 fixture gate → meta-test 模型不適用。真驗證 = 操作性(B.0 freshness 閘 + codex-run-guarded)。"
+  }
 }
