@@ -1071,12 +1071,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:e682c899016a0330d6c331931a826fe9e4696754d21d1727dfe7099d247c7a90",
+      "hash": "sha256:54e4139ac81fde56bfdbe787a07daad4fac576196b444a39b2b2b0ae02c6aff4",
       "id": "exact-fleet-reconcile-cli",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/bin/reconcile-github.mjs",
-      "size": 271123,
+      "size": 271987,
       "type": "file"
     },
     {
@@ -2068,7 +2068,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 12,
-      "hash": "sha256:7e88b22475f002a49d07f7f927222d20a71cd3a70408a12bb89163f3d501196e",
+      "hash": "sha256:4b663eeda01605d645a7f5fb2c53c20f411969253a1e19720792e0a839fb6279",
       "id": "governance-control-plane-clis",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2101,7 +2101,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 63,
-      "hash": "sha256:05f0570b916227ccf17bcf0ebcb3e45c31b4d92e2265792857d99569288e5fd9",
+      "hash": "sha256:5d927dc8a51e2eb99fe1fdfb53b4b6b0ba701d6d8e7ac33507c987e72467f7cf",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",

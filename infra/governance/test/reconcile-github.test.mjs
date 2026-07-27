@@ -640,7 +640,13 @@ class AuthorityBootstrapReadbackClient {
     }
     if (method === 'POST' && path === '/repos/ajenchen/design-system/rulesets') {
       const id = ++this.nextId
-      this.rulesets.set(String(id), { id, ...structuredClone(body) })
+      const normalizedBody = structuredClone(body)
+      for (const rule of normalizedBody.rules ?? []) {
+        if (rule.type !== 'pull_request') continue
+        rule.parameters.required_reviewers = []
+        rule.parameters.allowed_merge_methods = ['merge', 'squash', 'rebase']
+      }
+      this.rulesets.set(String(id), { id, ...normalizedBody })
       return { id }
     }
     const ruleset = path.match(/^\/repos\/ajenchen\/design-system\/rulesets\/(\d+)$/)
@@ -648,7 +654,13 @@ class AuthorityBootstrapReadbackClient {
       return structuredClone(this.rulesets.get(ruleset[1]) ?? (options.allow404 ? null : undefined))
     }
     if (method === 'PUT' && ruleset) {
-      this.rulesets.set(ruleset[1], { id: Number(ruleset[1]), ...structuredClone(body) })
+      const normalizedBody = structuredClone(body)
+      for (const rule of normalizedBody.rules ?? []) {
+        if (rule.type !== 'pull_request') continue
+        rule.parameters.required_reviewers = []
+        rule.parameters.allowed_merge_methods = ['merge', 'squash', 'rebase']
+      }
+      this.rulesets.set(ruleset[1], { id: Number(ruleset[1]), ...normalizedBody })
       return { id: Number(ruleset[1]) }
     }
     if (method === 'DELETE' && ruleset) {

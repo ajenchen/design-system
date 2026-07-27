@@ -10,7 +10,7 @@
   "contractDigest": "sha256:61744e19d9556130e6e4a66171d9746afd26679b1144f48034cdf5a380afb538",
   "files": [
     {
-      "hash": "sha256:9686df25bc10484facb17a78e5c9072d349d2a104b6a3360aa3d2883d36ded5f",
+      "hash": "sha256:c15886696214259f53b29849860d1458dd35d1a37437e41eef4404ff0fd88b71",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 71702,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:3e46ad32e5f01c350fb517adbf9305da9827a44e7651a32ba9edd4f246273ee8",
+      "hash": "sha256:846988b54d295fcf0227a0e062bec51d867e6143aa0df972a63555e6dd846956",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 163165,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:5ddd2cf8eebca4db04189d1f49b8a4a94ceebf4b7edded86c268e9fc8a940fca",
+  "inputDigest": "sha256:1e02625c99e2bb8546d0c0dadd23fbc910974a9fe9b7eae3483ea87d8b07779e",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:03c93424d3ca777c2522f1d23489b162153fc9f30e172bd0404a02eef9efc285",
+  "snapshotDigest": "sha256:2cc1e17138f099fffc129462344c633305ecf705282439c2de44b2942531ad8f",
   "sources": [
     {
       "hash": "sha256:21ed724d44f7e31d012ce610522863a8afb0c86680591df6a0a8ec21da87669c",
@@ -1583,12 +1583,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:e682c899016a0330d6c331931a826fe9e4696754d21d1727dfe7099d247c7a90",
+      "hash": "sha256:54e4139ac81fde56bfdbe787a07daad4fac576196b444a39b2b2b0ae02c6aff4",
       "id": "exact-fleet-reconcile-cli",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/bin/reconcile-github.mjs",
-      "size": 271123,
+      "size": 271987,
       "type": "file"
     },
     {
@@ -2580,7 +2580,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 12,
-      "hash": "sha256:7e88b22475f002a49d07f7f927222d20a71cd3a70408a12bb89163f3d501196e",
+      "hash": "sha256:4b663eeda01605d645a7f5fb2c53c20f411969253a1e19720792e0a839fb6279",
       "id": "governance-control-plane-clis",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2613,7 +2613,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 63,
-      "hash": "sha256:05f0570b916227ccf17bcf0ebcb3e45c31b4d92e2265792857d99569288e5fd9",
+      "hash": "sha256:5d927dc8a51e2eb99fe1fdfb53b4b6b0ba701d6d8e7ac33507c987e72467f7cf",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",

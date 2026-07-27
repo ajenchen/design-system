@@ -703,6 +703,22 @@ function sortRules(rules) {
     if (rule.type === 'required_status_checks' && Array.isArray(rule.parameters?.required_status_checks)) {
       rule.parameters.required_status_checks.sort((a, b) => compareUtf8Bytes(a.context, b.context))
     }
+    if (rule.type === 'pull_request' && rule.parameters) {
+      if (Object.hasOwn(rule.parameters, 'required_reviewers')) {
+        invariant(Array.isArray(rule.parameters.required_reviewers)
+          && rule.parameters.required_reviewers.length === 0,
+        'GitHub pull-request ruleset synthesized non-empty required reviewers')
+        delete rule.parameters.required_reviewers
+      }
+      if (Object.hasOwn(rule.parameters, 'allowed_merge_methods')) {
+        const methods = rule.parameters.allowed_merge_methods
+        invariant(Array.isArray(methods)
+          && new Set(methods).size === methods.length
+          && deepEqual([...methods].sort(compareUtf8Bytes), ['merge', 'rebase', 'squash']),
+        'GitHub pull-request ruleset synthesized an unexpected merge-method closure')
+        delete rule.parameters.allowed_merge_methods
+      }
+    }
     return rule
   }).sort((a, b) => compareUtf8Bytes(`${a.type}:${stableStringify(a, 0)}`, `${b.type}:${stableStringify(b, 0)}`))
 }
