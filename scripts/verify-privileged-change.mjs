@@ -21,7 +21,7 @@ import {
   resolveExternalActivationProfile,
 } from '../infra/governance/lib/external-activation.mjs'
 import {
-  loadGovernanceBuildGraph,
+  loadGovernanceBuildGraphSemanticDefinition,
   pathMatches as buildGraphPathMatches,
   stageSourceMatches,
 } from './governance-build-graph.mjs'
@@ -592,7 +592,9 @@ export async function prepareControlPlaneGenesisChallenge({
     candidateHeadSha,
     candidateHeadTree,
   })), 'control-plane genesis changed paths do not equal the complete base-to-candidate Git tree diff')
-  const graph = loadGovernanceBuildGraph({ repoRoot: candidateRoot })
+  const graph = loadGovernanceBuildGraphSemanticDefinition({
+    repoRoot: candidateRoot,
+  })
   const stage = graph.stages.find(candidate => candidate.id === 'control-plane')
   invariant(stage, 'canonical build graph has no control-plane stage')
   const withinControlPlaneClosure = path => stageSourceMatches(stage, path)

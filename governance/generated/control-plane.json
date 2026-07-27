@@ -2038,12 +2038,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:d839de402155c6e2b03101bcd937312b2deaf16325d1bfce449087f4666a3715",
+      "hash": "sha256:1d1df3caa1831c232eccafa6be478abcf5e85d6e66197c088110795e4ae7da5d",
       "id": "governance-build-graph-runner",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/governance-build-graph.mjs",
-      "size": 47850,
+      "size": 48577,
       "type": "file"
     },
     {
@@ -2056,12 +2056,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:2a75f8cb919f1ba0f3ed9a13341d341e74b879a7ba1ce0659b1e581c63cd9ed8",
+      "hash": "sha256:1442cac3c8897bb23ae42c26984def9a2b009d872d40ee3e2ef1cd15c0ed3714",
       "id": "governance-build-graph-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-governance-build-graph.mjs",
-      "size": 76021,
+      "size": 76241,
       "type": "file"
     },
     {
@@ -2985,12 +2985,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:8a44b56fed33be04dd88b32a6fc0f7c449c2d38a219e494dfad21c0963f1eb12",
+      "hash": "sha256:87154e4b20270f0e07f821142929b2c0fac63726ca3b5f473f2940ef7fe85155",
       "id": "privileged-change-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/verify-privileged-change.mjs",
-      "size": 48217,
+      "size": 48260,
       "type": "file"
     },
     {
@@ -3708,7 +3708,7 @@
         "scripts/generated/"
       ],
       "files": 373,
-      "hash": "sha256:5bdb01885cc36372a65bffebf75d9595c26efc88ea97b7dedaf7d7de7dddfe7d",
+      "hash": "sha256:483dba8e8cdc94d918bcba29e1fd3ccdb49457f0dd1d06935ff262ddf4c09065",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

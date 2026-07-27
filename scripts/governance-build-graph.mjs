@@ -554,7 +554,7 @@ export function resolveDeepAuditRubricPaths({ repoRoot = ROOT, inventory } = {})
   return selected
 }
 
-export function loadGovernanceBuildGraph({ repoRoot = ROOT, providerRegistry = null } = {}) {
+function resolveGovernanceBuildGraph({ repoRoot = ROOT, providerRegistry = null } = {}) {
   const root = canonicalRepositoryRoot(resolve(repoRoot))
   const documents = loadBuildGraphDocuments(root)
   if (providerRegistry) {
@@ -568,6 +568,25 @@ export function loadGovernanceBuildGraph({ repoRoot = ROOT, providerRegistry = n
   validateRuntimeEntrypointExactSources(stages)
   validateRuntimeEntrypointClosure(stages, { repoRoot: root })
   validateGovernanceInfrastructureClosure(stages, governanceInfrastructureFiles(root))
+  return {
+    root,
+    documents,
+    graph: { schemaVersion: documents.graph.schemaVersion, stages },
+  }
+}
+
+// The one-time control-plane genesis verifier must classify the proposed Git
+// tree with the candidate graph while the trusted base can still contain
+// legacy protected-root shapes. It receives only the fully schema/topology/
+// runtime-validated semantic graph; ordinary generation and checks continue
+// through loadGovernanceBuildGraph and its complete live filesystem guard.
+export function loadGovernanceBuildGraphSemanticDefinition(options = {}) {
+  return resolveGovernanceBuildGraph(options).graph
+}
+
+export function loadGovernanceBuildGraph(options = {}) {
+  const { root, documents, graph } = resolveGovernanceBuildGraph(options)
+  const { stages } = graph
   loadAndValidateProtectedRootClassification({
     root,
     inventoryPath: PROTECTED_ROOT_INVENTORY,
@@ -576,7 +595,7 @@ export function loadGovernanceBuildGraph({ repoRoot = ROOT, providerRegistry = n
     providerRegistry: documents.providers,
     allowedCanonicalOutputOverlaps: [...new Set(stages.flatMap((stage) => stage.sourceOutputOverlaps || []))],
   })
-  return { schemaVersion: documents.graph.schemaVersion, stages }
+  return graph
 }
 
 export function validateStageTopology(stages) {

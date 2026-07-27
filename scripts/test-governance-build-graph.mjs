@@ -15,6 +15,7 @@ import {
   affectedStages,
   graphSeedTargets,
   loadGovernanceBuildGraph,
+  loadGovernanceBuildGraphSemanticDefinition,
   missingForkTemplateExactSources,
   productProviderOutputs,
   resolveDeepAuditRubricPaths,
@@ -47,6 +48,11 @@ import { buildProviderRuntimeValidator } from './gen-provider-runtime-validator.
 
 const graph = loadGovernanceBuildGraph()
 const root = fileURLToPath(new URL('..', import.meta.url))
+assert.deepEqual(
+  loadGovernanceBuildGraphSemanticDefinition(),
+  graph,
+  'semantic graph definition and fully protected live graph must agree on a current repository',
+)
 
 // The compiled standalone validator must be byte-identical when the same
 // canonical source is generated from an isolated transaction workspace whose
