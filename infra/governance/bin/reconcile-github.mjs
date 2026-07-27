@@ -808,7 +808,12 @@ function classifyWorkflowRun(response, slug, runId) {
   return 'repository-workflow'
 }
 
-function fetchCompleteCollection(client, path, { select, label, totalCount = value => value?.total_count }) {
+function fetchCompleteCollection(client, path, {
+  select,
+  label,
+  totalCount = value => value?.total_count,
+  identity = item => (item?.id === undefined ? `name:${item?.name}` : `id:${item.id}`),
+}) {
   const collected = []
   const identities = new Set()
   let expectedTotal = null
@@ -822,9 +827,11 @@ function fetchCompleteCollection(client, path, { select, label, totalCount = val
       else invariant(declaredTotal === expectedTotal, `${label} total_count changed during pagination`)
     }
     for (const item of items) {
-      const identity = item?.id === undefined ? `name:${item?.name}` : `id:${item.id}`
-      invariant(identity !== 'name:undefined' && !identities.has(identity), `${label} pagination returned a missing or duplicate identity ${identity}`)
-      identities.add(identity)
+      const itemIdentity = identity(item)
+      invariant(typeof itemIdentity === 'string' && itemIdentity.length > 0
+        && itemIdentity !== 'name:undefined' && !identities.has(itemIdentity),
+      `${label} pagination returned a missing or duplicate identity ${itemIdentity}`)
+      identities.add(itemIdentity)
       collected.push(item)
     }
     if (items.length < 100) {
@@ -1592,6 +1599,11 @@ function verifyLiveControlPlaneGenesisReceipt(client, receipt, {
     `/repos/${challenge.repository}/pulls/${challenge.pullRequest}/files?per_page=100`, {
       select: value => value,
       totalCount: () => null,
+      identity: file => (
+        typeof file?.filename === 'string' && file.filename.length > 0
+          ? `filename:${file.filename}`
+          : ''
+      ),
       label: `control-plane genesis PR files for ${challenge.repository}#${challenge.pullRequest}`,
     })
   const changedPaths = files.map((file, index) => {
