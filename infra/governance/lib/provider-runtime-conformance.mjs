@@ -662,7 +662,7 @@ export function validateRuntimeProfile(profile, {
       checkIds.add(check.id)
       checkDrivers.add(check.driver)
     }
-    if (provider.id === 'claude') {
+    if (provider.id === 'claude' && provider.executionMode === 'local-probe') {
       const capabilityRegistry = readJson(resolve(
         GOVERNANCE_ROOT,
         'providers/review-capability-registry.json',

@@ -40,7 +40,7 @@
     "buildGraphPath": "scripts/governance-build-graph.json",
     "buildGraphSchemaPath": "scripts/schemas/governance-build-graph.schema.json",
     "stageId": "control-plane",
-    "sourceResolver": "governance-manifest",
+    "sourceResolvers": ["governance-manifest", "root-provider-views"],
     "controlPlaneLockPath": "governance/control-plane.lock.json",
     "controlPlaneLockSchemaPath": "packages/governance/canonical/schemas/lock.schema.json"
   },

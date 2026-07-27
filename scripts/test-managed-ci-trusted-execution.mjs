@@ -227,10 +227,13 @@ test('canonical managed execution remains atomically inactive but all trust cont
     item => item.includes('not bound to an immutable executorSourceCommit/executorSourceTree'),
   ))
   assert.equal(state.activationTrustBundle.buildGraph.stageId, 'control-plane')
-  assert.equal(state.activationTrustBundle.buildGraph.sourceResolver, 'governance-manifest')
+  assert.deepEqual(
+    state.activationTrustBundle.buildGraph.sourceResolvers,
+    ['governance-manifest', 'root-provider-views'],
+  )
   assert.equal(state.trust.receiptPolicy.issuerRole, 'completion-attestor')
-  assert.equal(state.trust.receiptPolicy.allowedKeyIds.length, 0)
-  assert.equal(state.trust.policyActive, false)
+  assert.deepEqual(state.trust.receiptPolicy.allowedKeyIds, ['owner-governance-2026-464784a3db60'])
+  assert.equal(state.trust.policyActive, true)
   assert.equal(state.executorSupplyChain.controlPlane.files.length, 6)
   assert.match(state.executorSupplyChain.controlPlane.digest, /^[a-f0-9]{64}$/)
   assert.deepEqual(state.executorSupplyChain.policy.builder.privilegeSeparation, {
@@ -1468,7 +1471,7 @@ test('plan and authority schemas reject permission, isolation, activation, and n
     value => { value.executionClasses[2].isolation.hostSocketMounted = true },
     value => { value.activation.executionClasses['model-broker'].imageDigest = `sha256:${'a'.repeat(64)}` },
     value => { value.activation.repositoryId = '42' },
-    value => { value.activationTrustBundle.sourceResolver = 'provider-contract' },
+    value => { value.activationTrustBundle.sourceResolvers = ['provider-contract', 'root-provider-views'] },
   ]
   for (const poison of planPoisons) {
     const value = structuredClone(state.plan)

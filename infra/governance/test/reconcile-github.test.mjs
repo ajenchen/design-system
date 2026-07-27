@@ -37,6 +37,7 @@ import {
   stageActionTransaction,
   transactionJournalActivationDigestExpectations,
   validateActionTransactionClass,
+  validateAuthorityBootstrapBoundary,
   validateAuthorityBootstrapDurableReplayReceipt,
   validateAuthorityBootstrapJournal,
   validateTransactionJournal as reconcileValidateTransactionJournal,
@@ -268,6 +269,23 @@ activationDesired.integrations.governanceCheckApp.id = 1001
 activationDesired.integrations.governanceWriterApp.id = 1002
 const mutationBoundaryContract = readJson(resolve(dirname(fileURLToPath(import.meta.url)), '../providers/github-mutation-boundary-contract.json'))
 const authorityStagedRolloutPlan = readJson(resolve(dirname(fileURLToPath(import.meta.url)), '../staged-rollout-plan.json'))
+
+test('authority bootstrap accepts only the canonical profile-specific phase positions', () => {
+  const productionBoundary = structuredClone(authorityStagedRolloutPlan.bootstrapBoundary.githubPolicyConvergence)
+  assert.equal(productionBoundary.position, 'after-candidate-freeze-before-protected-pr')
+  assert.equal(validateAuthorityBootstrapBoundary(productionBoundary), productionBoundary)
+
+  const maximumAssuranceBoundary = structuredClone(productionBoundary)
+  maximumAssuranceBoundary.position = 'before-candidate-freeze'
+  assert.equal(validateAuthorityBootstrapBoundary(maximumAssuranceBoundary), maximumAssuranceBoundary)
+
+  const substitutedBoundary = structuredClone(productionBoundary)
+  substitutedBoundary.position = 'after-protected-pr'
+  assert.throws(
+    () => validateAuthorityBootstrapBoundary(substitutedBoundary),
+    /authority policy bootstrap boundary identity is invalid/,
+  )
+})
 const authorityActivationRings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
 const authorityPolicyDigest = sha256(readFileSync(resolve(REPO_ROOT, 'AGENTS.md')))
 const AUTHORITY_HEAD = '6'.repeat(40)

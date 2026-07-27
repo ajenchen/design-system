@@ -1275,7 +1275,7 @@ export function validateAuthorityBootstrapBoundary(boundary) {
     && stableStringify(Object.keys(boundary).sort(), 0) === stableStringify(expectedKeys.sort(), 0),
   'authority policy bootstrap boundary has an invalid or open shape')
   invariant(boundary.kind === 'authority-github-policy-bootstrap-convergence-v1'
-    && boundary.position === 'before-candidate-freeze'
+    && ['after-candidate-freeze-before-protected-pr', 'before-candidate-freeze'].includes(boundary.position)
     && boundary.transactionClass === AUTHORITY_BOOTSTRAP_TRANSACTION_CLASS,
   'authority policy bootstrap boundary identity is invalid')
   invariant(boundary.repositoryId === 'design-system'

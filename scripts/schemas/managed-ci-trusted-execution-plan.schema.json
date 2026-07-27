@@ -59,13 +59,22 @@
     },
     "activationTrustBundle": {
       "type": "object", "additionalProperties": false,
-      "required": ["manifestPath", "buildGraphPath", "buildGraphSchemaPath", "stageId", "sourceResolver", "controlPlaneLockPath", "controlPlaneLockSchemaPath"],
+      "required": ["manifestPath", "buildGraphPath", "buildGraphSchemaPath", "stageId", "sourceResolvers", "controlPlaneLockPath", "controlPlaneLockSchemaPath"],
       "properties": {
         "manifestPath": {"const": "packages/governance/canonical/manifest.json"},
         "buildGraphPath": {"const": "scripts/governance-build-graph.json"},
         "buildGraphSchemaPath": {"const": "scripts/schemas/governance-build-graph.schema.json"},
         "stageId": {"const": "control-plane"},
-        "sourceResolver": {"const": "governance-manifest"},
+        "sourceResolvers": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {"const": "governance-manifest"},
+            {"const": "root-provider-views"}
+          ],
+          "items": false
+        },
         "controlPlaneLockPath": {"const": "governance/control-plane.lock.json"},
         "controlPlaneLockSchemaPath": {"const": "packages/governance/canonical/schemas/lock.schema.json"}
       }

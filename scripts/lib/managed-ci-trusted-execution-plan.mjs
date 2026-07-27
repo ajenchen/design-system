@@ -491,7 +491,7 @@ function semanticPlanChecks(plan) {
     buildGraphPath: 'scripts/governance-build-graph.json',
     buildGraphSchemaPath: 'scripts/schemas/governance-build-graph.schema.json',
     stageId: 'control-plane',
-    sourceResolver: 'governance-manifest',
+    sourceResolvers: ['governance-manifest', 'root-provider-views'],
     controlPlaneLockPath: 'governance/control-plane.lock.json',
     controlPlaneLockSchemaPath: 'packages/governance/canonical/schemas/lock.schema.json',
   }, 'managed CI activation trust bundle')
@@ -3901,7 +3901,7 @@ function unboundActivationTrustBindings(bundle) {
       blobSha: null,
       mode: null,
       stageId: bundle.stageId,
-      sourceResolver: bundle.sourceResolver,
+      sourceResolvers: structuredClone(bundle.sourceResolvers),
     },
   }
   const result = {
@@ -3997,7 +3997,7 @@ function activationTrustBindings(repoRoot, bundle, sourceIdentity, {
   const graphStages = graphRead.value.stages.filter(stage => stage.id === bundle.stageId)
   if (graphStages.length !== 1) fail(`activation trust build graph does not contain exactly one stage:${bundle.stageId}`)
   const graphStage = graphStages[0]
-  exactValue(graphStage.sourceResolvers, [bundle.sourceResolver], 'activation trust build-graph manifest resolver closure')
+  exactValue(graphStage.sourceResolvers, bundle.sourceResolvers, 'activation trust build-graph manifest resolver closure')
   if (!graphStage.outputs.includes(`${manifest.outputDirectory}/`) || !graphStage.outputs.includes(bundle.controlPlaneLockPath)) {
     fail('activation trust build-graph stage does not own the canonical control-plane outputs')
   }
@@ -4238,7 +4238,7 @@ function activationTrustBindings(repoRoot, bundle, sourceIdentity, {
       blobSha: graphIdentity.blobSha,
       mode: graphIdentity.mode,
       stageId: graphStage.id,
-      sourceResolver: bundle.sourceResolver,
+      sourceResolvers: structuredClone(bundle.sourceResolvers),
     },
   }
   const bindingDigest = managedCiSha256(managedCiStableStringify(binding))
