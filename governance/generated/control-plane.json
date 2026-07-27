@@ -1071,12 +1071,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4adf7d300c74009bb4832a78fc869b1c7f584f7ca05bc5081068aa77164574e5",
+      "hash": "sha256:e682c899016a0330d6c331931a826fe9e4696754d21d1727dfe7099d247c7a90",
       "id": "exact-fleet-reconcile-cli",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/bin/reconcile-github.mjs",
-      "size": 270881,
+      "size": 271123,
       "type": "file"
     },
     {
@@ -2068,7 +2068,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 12,
-      "hash": "sha256:b9a316d96d939c17f778bf74c4b9cca19a0f11d88be60b44695d0783abb9cb82",
+      "hash": "sha256:7e88b22475f002a49d07f7f927222d20a71cd3a70408a12bb89163f3d501196e",
       "id": "governance-control-plane-clis",
       "mode": "0755",
       "ownerRepo": "design-system",

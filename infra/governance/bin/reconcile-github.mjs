@@ -1626,11 +1626,15 @@ function verifyLiveControlPlaneGenesisReceipt(client, receipt, {
   const matches = comments.filter(comment => String(comment?.id) === receipt.authorization.commentId)
   invariant(matches.length === 1, 'control-plane genesis authorization comment is missing or duplicated')
   const comment = matches[0]
+  const commentCreatedAt = new Date(comment.created_at)
+  const commentUpdatedAt = new Date(comment.updated_at)
   invariant(comment.author_association === 'OWNER'
     && comment.user?.login === receipt.authorization.ownerLogin
     && comment.user?.login === challenge.repository.split('/')[0]
-    && comment.created_at === receipt.authorization.createdAt
-    && comment.updated_at === comment.created_at
+    && Number.isFinite(commentCreatedAt.getTime())
+    && Number.isFinite(commentUpdatedAt.getTime())
+    && commentCreatedAt.toISOString() === receipt.authorization.createdAt
+    && commentUpdatedAt.getTime() === commentCreatedAt.getTime()
     && sha256(comment.body ?? '') === receipt.authorization.commentDigest,
   'control-plane genesis authorization comment provenance or immutable bytes differ')
   const marker = 'DS-GOVERNANCE-CONTROL-PLANE-GENESIS-V1 '
