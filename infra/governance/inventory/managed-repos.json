@@ -1,0 +1,153 @@
+{
+  "$schema": "../schemas/managed-repos.schema.json",
+  "schemaVersion": 1,
+  "authority": "ajenchen/design-system@infra/governance",
+  "fleetScope": {
+    "coverage": "registered-opt-in-inventory",
+    "enrollment": "reviewed-registration-only",
+    "unregisteredDescendants": "not-covered"
+  },
+  "workflowIdentitySources": {
+    "design-system-authority": {"repositoryId": "design-system"},
+    "product-consumer": {"repositoryId": "ds-product-template"},
+    "published-template": {"repositoryId": "ds-product-template"}
+  },
+  "certificationCanaries": {
+    "authority": {"repositoryId": "design-system"},
+    "template-mirror": {"repositoryId": "ds-product-template"},
+    "product-consumer": {"repositoryId": "work-management"}
+  },
+  "repositories": [
+    {
+      "id": "design-system",
+      "github": "ajenchen/design-system",
+      "role": "authority",
+      "visibility": "public",
+      "defaultBranch": "main",
+      "desiredProfile": "design-system-authority",
+      "releaseRing": "ring-0-authority",
+      "ownershipPolicy": "authority-repository",
+      "localPathFromGovernanceRoot": "../..",
+      "providerSurfacesRequired": ["codex/codex-cli/local", "codex/codex-desktop/local", "codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/local", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"],
+      "publishes": ["@qijenchen/design-system", "@qijenchen/storybook-config", "@qijenchen/governance"]
+    },
+    {
+      "id": "ds-product-template",
+      "github": "ajenchen/ds-product-template",
+      "role": "template-mirror",
+      "visibility": "public",
+      "defaultBranch": "main",
+      "desiredProfile": "published-template",
+      "releaseRing": "ring-1-template-canary",
+      "ownershipPolicy": "published-template-mirror",
+      "upgradeProtocolProfile": "new-snapshot-v2",
+      "mirrorSourcePathFromGovernanceRoot": "../../template/ds-product-template",
+      "providerSurfacesRequired": ["codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"],
+      "consumes": ["@qijenchen/design-system", "@qijenchen/storybook-config"]
+    },
+    {
+      "id": "work-management",
+      "github": "ajenchen/work-management",
+      "role": "product-consumer",
+      "visibility": "private",
+      "defaultBranch": "main",
+      "desiredProfile": "product-consumer",
+      "releaseRing": "ring-2-product-canary",
+      "ownershipPolicy": "product-consumer",
+      "upgradeProtocolProfile": "legacy-bootstrap-v2",
+      "localPathFromGovernanceRoot": "../../../work-management",
+      "providerSurfacesRequired": ["codex/codex-cli/local", "codex/codex-desktop/local", "codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/local", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"],
+      "consumes": ["@qijenchen/design-system", "@qijenchen/storybook-config"]
+    }
+  ],
+  "ownershipPolicies": {
+    "authority-repository": {
+      "defaultMode": "authority",
+      "rules": [
+        {"pattern": "infra/governance/**", "mode": "authority", "owner": "governance-maintainers"},
+        {"pattern": ".github/CODEOWNERS", "mode": "authority", "owner": "governance-maintainers"}
+      ]
+    },
+    "published-template-mirror": {
+      "defaultMode": "generated",
+      "rules": [
+        {"pattern": ".github/workflows/**", "mode": "generated", "owner": "design-system-governance"},
+        {"pattern": ".github/dependabot.yml", "mode": "generated", "owner": "design-system-governance"}
+      ]
+    },
+    "product-consumer": {
+      "defaultMode": "consumer-owned",
+      "rules": [
+        {"pattern": ".claude/skills/**", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".agents/skills/**", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".codex/hooks.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/lock.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/lock.schema.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/consumer-governance.md", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".github/workflows/audit.yml", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".github/workflows/governance-anchor.yml", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".github/workflows/sync-design-system.yml", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".npmrc", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".devcontainer/devcontainer-lock.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".devcontainer/devcontainer.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".devcontainer/onboard-banner.sh", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".devcontainer/post-create.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/provider-cli-toolchain.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/provider-cli-toolchain.package-lock.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/schemas/issuer-registry.schema.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/schemas/visual-baseline-review-policy.schema.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/trust/issuers.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/visual-baseline-review-policy.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "schemas/provider-cli-toolchain.schema.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/audit-consumer-a11y.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/check-plugin-installed.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/consumer-source-harness.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/governance-anchor-preflight.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/governance-check.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lint-ds-internal-imports.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lib/a11y-static-server.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lib/canonical-path-containment.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lib/closed-tool-execution.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lib/consumer-control-plane-policy.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lib/provider-lifecycle.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lib/governance-dependency-bootstrap.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lib/verified-exact-npm-runtime.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lib/worktree-fingerprint.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lib/workspace-post-create.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/product-template-scaffold-lock.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/refresh-fork-launchers.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/release-bom-contract.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/schemas/product-template-scaffold-lock.schema.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/schemas/release-bom.schema.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/schemas/upgrade-evidence-receipt.schema.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/setup-governance.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/setup-provider-cli-toolchain.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/setup-workspace.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/workflow-static-validation.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/sync-all.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/verify-upgrade-evidence.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/verify-upgrade-provenance.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/verify-consumer-css-entry.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "AGENTS.md", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "CLAUDE.md", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".claude/settings.json", "mode": "three-way", "owner": "shared-governance-and-product"},
+        {"pattern": "governance/bin/approval-evidence.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/bin/authority-decision-evidence.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/bin/canonical-order.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/bin/fork-governance-dispatcher.sh", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/bin/format-provider-hook-output.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/bin/independent-review.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/bin/inject_fork_governance_preamble.sh", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/bin/normalize-provider-event.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/bin/product-hook-dispatch-runtime.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/bin/provider-hook-normalization.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/bin/provider-hook-output-transport.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "governance/overlay.md", "mode": "consumer-owned", "owner": "product-team"},
+        {"pattern": "package.json", "mode": "three-way", "owner": "shared-release-engineering"},
+        {"pattern": "package-lock.json", "mode": "three-way", "owner": "shared-release-engineering"},
+        {"pattern": "npm-shrinkwrap.json", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "apps/**", "mode": "consumer-owned", "owner": "product-team"}
+      ]
+    }
+  }
+}

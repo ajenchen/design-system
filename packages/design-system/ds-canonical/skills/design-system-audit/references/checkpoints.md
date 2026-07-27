@@ -1,12 +1,16 @@
-# Checkpoints — 什麼時候 MUST 停下來問
+# Checkpoints — authority-classified audit decisions
 
-這些是 skill 執行過程中**不可略過**的 user 決策點。past 執行失敗都因為我自行決定了該問的事。
+只有真正未解的產品／UI／UX SSOT 取捨才是 user 決策點。治理、架構、security、
+release、provider、migration、環境修復與其他工程決策依 canonical Standing
+Authorization 自主處理；milestone、triage、review 與外部寫入都不是 approval
+checkpoint。以下各 checkpoint 皆受此 authority classifier 約束。
 
 ---
 
-## Checkpoint 1 — 稽核完畢後的 Triage（每次 run 都會觸發）
+## Checkpoint 1 — 稽核完畢後的 Triage receipt（每次 run 都會觸發）
 
-稽核結果出來後，**先不修**，先把findings 分類呈現：
+稽核結果出來後先分類並保存 evidence；P0/P1 與所有工程 P2 依 frozen scope
+連續 remediation，只有產品／UI／UX P2H 才 batch-at-end 請 user 決定：
 
 **格式範本**：
 ```
@@ -25,66 +29,68 @@ P1（批次修 + review）: M 項
 - Anatomy 缺 section: D 處
 - a11y aria-label 缺失: E 處
 
-P2（MUST ASK）: K 項
-1. [findings 1 scope 爭議] — 選項 A / B / C
+P2H（產品／UI／UX SSOT 真取捨）: K 項
+1. [finding 1 的 user-visible trade-off] — 選項 A / B / C
 2. [findings 2]
 
-建議順序:
-1. 先修 P0（獨立 commit）
-2. 再修 P1（每類一個 commit）
-3. P2 逐項討論再決定
-
-要從哪一項開始?
+執行:
+1. P0/P1/工程 P2E 依 Standing Authorization 自主修復與驗證
+2. P2H 只在證據收斂後仍有真實產品選擇時批次提出
 ```
 
 **絕對不可**：
-- ❌ 跳過 triage 直接開始修 P1/P2
-- ❌ 把 P2 當 P1 mechanical 執行
+- ❌ 跳過 triage evidence
+- ❌ 把 P2H 當工程 P2E 執行
 - ❌ 僅報總數不提供 file:line 讓 user 掃
+- ❌ 用 triage receipt 要求 user 核准工程執行順序
 
 ---
 
-## Checkpoint 2 — 稽核發現 CLAUDE.md 沒覆蓋的 pattern
+## Checkpoint 2 — 稽核發現 canonical rules 沒覆蓋的 pattern
 
-若某個 audit 找到的違規不符合現有 CLAUDE.md 任何規則（= 新 pattern，非現有規則下的違反），必須 pause：
+若新 pattern 會新增產品／UI／UX semantics，且存在多個可行 user-visible 方向，才
+pause。若只是補足 engineering invariant、security、test、provider、release 或
+governance coverage，agent 依 evidence 自主選定 canonical owner、寫入並生成 adapters：
 
 **觸發情境**：
-- a11y audit 發現 7 個元件無 focus-visible，但 CLAUDE.md 沒明訂 focus ring 規則
+- a11y audit 發現 7 個元件無 focus-visible，但 canonical rule/spec 沒明訂 focus ring 規則
 - Token audit 發現一個新 color 硬寫模式反覆出現
 - shadcn passthrough 發現 `displayName` 以外另一種 anti-pattern
 
 **格式範本**：
 ```
-🔔 Audit 發現 CLAUDE.md 未覆蓋的 pattern:
+🔔 Audit 發現 canonical rules 未覆蓋的 pattern:
 
 Pattern: [描述]
 頻率: 出現在 X 個元件
 Root cause (推測): [判斷 why 發生]
 
-建議新增到 CLAUDE.md 的規則:
+建議新增到 canonical owner 的規則:
 「[draft]」
 
 放哪一節 (按「規則分層」判斷):
-- 若跨元件 → `.claude/rules/ui-development.md` / `.claude/rules/spec-rules.md` / `.claude/rules/story-rules.md`
+- 若跨元件 → `packages/design-system/ds-canonical/rules/ui-development.md` / `spec-rules.md` / `story-rules.md`
 - 若技術陷阱 → # 失敗記憶索引 + 根原位置 section
 - 若純風格 → # 命名與語言一致性
 
-你決定:
-(a) 採用此 draft，我同步寫進 CLAUDE.md
+若屬 P2H，你決定:
+(a) 採用此 draft，我寫進上述 canonical owner，之後由 adapter 重建 provider view
 (b) 修改措辭: ...
 (c) 不新增,遇到再 case-by-case 處理
 ```
 
 **絕對不可**：
-- ❌ 直接寫新規則進 CLAUDE.md
+- ❌ 直接寫新規則進任何 generated provider instruction/view
 - ❌ 忽視 pattern 只修個別違規
-- ❌ 半途改 mindset 條目（最高層級規則不可未經討論就加）
+- ❌ 把純工程新 invariant 冒充 user 產品決策
 
 ---
 
-## Checkpoint 3 — 分類模糊（Internal vs Components / SSOT ownership）
+## Checkpoint 3 — 產品語意分類模糊（Internal vs Components）
 
-稽核可能發現邊界元件，classification 不明：
+只有 classification 會改變 public product／UI semantics 且 precedent 無法唯一收斂時
+才詢問。Canonical file ownership、pointer、generator 與其他工程 SSOT ownership
+由 agent 自主收斂：
 
 **觸發情境**：
 - 新元件的 Storybook title 應該放 `Components/` 還是 `Internal/`？
@@ -98,14 +104,14 @@ Root cause (推測): [判斷 why 發生]
 問題: [element / rule / token 是 A 還是 B?]
 
 判斷依據:
-- CLAUDE.md「{判斷 test 的位置}」第 X 題: [...]
+- Canonical rule/reference「{判斷 test 的位置}」第 X 題: [...]
 - 相似 precedent: [已分類的類似案例]
 
 兩個選項的 trade-off:
 選 A (...) → 優: [...] 缺: [...]
 選 B (...) → 優: [...] 缺: [...]
 
-我傾向 B 因為 [...], 但需要你確認。
+我傾向 B 因為 [...]。此選擇會改變 user-visible semantics，需要你決定。
 ```
 
 **絕對不可**：
@@ -115,9 +121,10 @@ Root cause (推測): [判斷 why 發生]
 
 ---
 
-## Checkpoint 4 — Cross-cutting refactor（影響 > 10 檔）
+## Checkpoint 4 — Cross-cutting engineering refactor receipt（影響 > 10 檔）
 
-若修復涉及大量檔案的 mechanical 改動：
+若修復涉及大量檔案的 mechanical 改動，agent 自行決定 batching、commit topology、
+rollback 與驗證。這是可審查的 execution receipt，不是 human approval gate：
 
 **觸發情境**：
 - Helper function extraction 影響 41 個 anatomy files
@@ -135,24 +142,23 @@ Root cause (推測): [判斷 why 發生]
 - [風險 2]
 回復難度: [rebase 難度]
 
-執行方式:
-(a) 一次 commit 全改（快但難 review）
-(b) 分 N 個 commit 依 feature cluster 分批（慢但可 cherry-pick）
-(c) 不做,留 tech debt,下次針對性處理
-
-我傾向 (b) / 分 [clusters] 執行。你同意嗎?
+執行方式:[agent 選定的唯一方案與依據]
+Rollback:[具體 recovery]
+Verification:[focused + affected Harness]
 ```
 
 **絕對不可**：
 - ❌ 直接跑 mechanical find-replace 不 preview
-- ❌ 一個 commit 塞 41 個 file
-- ❌ 改完才告訴 user
+- ❌ 無 recovery／verification 就做大範圍改動
+- ❌ 要求 user 替 agent 選 commit 或 migration 策略
 
 ---
 
-## Checkpoint 5 — 環境 / 建置問題
+## Checkpoint 5 — 環境 / 建置工程處理
 
-稽核過程若遇環境問題（node_modules 壞、storybook 啟動失敗、tsc 報不相關錯），**不要嘗試修環境**：
+稽核過程若遇環境問題（node_modules 壞、storybook 啟動失敗、tsc 報不相關錯），
+先證明因果與 scope，再以 least-privilege、可回復方式自主修復或隔離；只有
+login/MFA/OAuth/owner/billing、缺 secret reference 或額外付費才形成 human action：
 
 **格式範本**：
 ```
@@ -161,22 +167,24 @@ Root cause (推測): [判斷 why 發生]
 現象: [描述]
 影響: 我無法 [verify X]
 是否本 audit 引入的?  確認不是 (理由: git log / file touch 證實)
-建議:
-- 現在不碰環境，稽核照常進行
-- 環境問題交給你 / 下個 session 處理
-- 本 audit 的 tsc --noEmit 可以跑，用它當 correctness guard
+處理:
+- 可在 frozen scope 內修復 → 自主修復後重跑受影響 checks
+- 與 scope 無關 → 保留 evidence，使用仍可信的替代 guard，不擴張 scope
+- 平台不可代理 → 只列唯一必要 human action，完成後自行 readback
 ```
 
 **絕對不可**：
-- ❌ 重 install node_modules
-- ❌ 改 vite / storybook 設定試圖修
+- ❌ 未證明 root cause 就破壞性重裝
 - ❌ 編輯無關檔案「順便修」
+- ❌ 把可自行處理的環境工程工作轉交 user
 
 ---
 
 ## Checkpoint 6 — 發現 spec 與 code 衝突
 
-稽核若發現 spec.md 與 .tsx 描述的行為不同：
+先用 owner、history、tests、runtime evidence 與產品 requirement 判定。若證據可唯一
+判斷為 spec drift 或 code bug，agent 自主修正；只有兩者代表不同 user-visible
+產品／UI／UX方向且無法由 evidence 收斂時才詢問：
 
 **格式範本**：
 ```
@@ -192,18 +200,19 @@ Code 實際: [行為 + line M]
 - 若 Code 和 Spec 都錯：需討論正確做法
 
 我的判斷: [分析]
-等你確認哪個是 canonical 再動手。
+若仍為 P2H: [兩個 user-visible 選項與唯一建議]
 ```
 
 **絕對不可**：
-- ❌ 默默選一個修
+- ❌ 無 evidence 憑直覺選一個修
 - ❌ 改 code 前未讀 git log 看是否刻意改動
+- ❌ 已可由 canonical evidence 收斂仍要求 user 做工程判斷
 
 ---
 
 ## Checkpoint 7 — 「先不管」vs tech debt 語意區分（user directive）
 
-User 不同用語表達「現在不做」,語意差別明顯,處理方式不同。**本 checkpoint 是 Skill 層 SSOT**(對話 protocol 屬 skill,非 CLAUDE.md 層):
+User 不同用語表達「現在不做」,語意差別明顯,處理方式不同。**本 checkpoint 是 canonical Skill 層 SSOT**(對話 protocol 屬 skill,非 shared bootstrap 層):
 
 ### 語意對照表
 

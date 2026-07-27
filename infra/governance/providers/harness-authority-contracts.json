@@ -1,0 +1,1250 @@
+{
+  "$schema": "../schemas/harness-authority-contracts.schema.json",
+  "schemaVersion": 2,
+  "kind": "provider-neutral-governance-harness-authority-contracts",
+  "closurePolicy": "every-registry-claim-is-bound-to-exact-manifest-sources-and-executed-test-owners",
+  "sharedAuthorityClosures": [
+    {
+      "id": "closed-tool-execution",
+      "kind": "canonical-byte-exact-shared-runtime",
+      "canonicalSourceId": "exact-closed-tool-execution-library",
+      "adapter": {
+        "sourceId": "exact-closed-tool-execution-authority-adapter",
+        "contract": "single-static-re-export",
+        "moduleSpecifier": "../../packages/governance/src/closed-tool-execution.mjs"
+      },
+      "directProjections": [
+        {
+          "id": "fork-common-runtime",
+          "path": "packages/design-system/ds-canonical/fork/common/closed-tool-execution.mjs",
+          "builderSourceId": "exact-fork-governance-builder",
+          "comparison": "canonical-byte-exact"
+        },
+        {
+          "id": "fork-consumer-runtime",
+          "path": "packages/design-system/ds-canonical/fork/consumer/lib/closed-tool-execution.mjs",
+          "builderSourceId": "exact-fork-governance-builder",
+          "comparison": "canonical-byte-exact"
+        }
+      ],
+      "managedFileProjection": {
+        "id": "fork-consumer-managed-runtime",
+        "destination": "scripts/lib/closed-tool-execution.mjs",
+        "artifactRoot": "packages/design-system/ds-canonical/fork/consumer/managed-files",
+        "builderSourceId": "exact-fork-governance-builder",
+        "comparison": "canonical-byte-exact"
+      },
+      "externalMirrorProjection": {
+        "builderSourceId": "exact-published-template-mirror-builder",
+        "policySourceId": "exact-published-template-mirror-policy",
+        "destination": "scripts/lib/closed-tool-execution.mjs",
+        "comparison": "canonical-byte-exact"
+      },
+      "packageDelivery": {
+        "manifestSourceId": "governance-package-contract",
+        "packageName": "@qijenchen/governance",
+        "filesRoot": "src",
+        "exportSubpath": "./closed-tool-execution",
+        "exportTarget": "./src/closed-tool-execution.mjs",
+        "archiveBuilderSourceId": "release-bom-builder",
+        "archiveEntry": "package/src/closed-tool-execution.mjs",
+        "packExecutionOwner": {"kind": "test-path", "path": "scripts/test-release-bom.mjs"}
+      },
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "infra/governance/test/harness-registry.test.mjs"},
+        {"kind": "test-path", "path": "scripts/test-consumer-governance.mjs"},
+        {"kind": "test-path", "path": "scripts/test-fork-governance.mjs"},
+        {"kind": "test-path", "path": "scripts/test-product-template-scaffold-lock.mjs"},
+        {"kind": "test-path", "path": "scripts/test-release-bom.mjs"}
+      ],
+      "claims": {
+        "proves": [
+          "One canonical closed-tool runtime is byte-exact across the fork corpus, product template, authenticated managed-file artifact and npm package, while the authority-side root remains a single static re-export.",
+          "The published-template mirror mapping and npm archive required-entry check are bound to executed Harness owners rather than inferred from source presence."
+        ],
+        "doesNotProve": [
+          "A local byte-exact projection proves neither that an external published-template repository has accepted the mirror nor that an npm registry release is active."
+        ]
+      }
+    }
+  ],
+  "entries": [
+    {
+      "entryId": "fresh-install-and-setup",
+      "domain": "install",
+      "authoritySourceIds": [
+        "governance-root-script-registry",
+        "governance-infrastructure-runbook",
+        "exact-governance-setup-cli",
+        "exact-provider-cli-package-content-proposer",
+        "exact-provider-cli-proposal-verifier-fixture",
+        "exact-provider-cli-toolchain-setup",
+        "exact-workspace-setup",
+        "provider-cli-toolchain-authority",
+        "provider-cli-toolchain-exact-lock",
+        "exact-provider-cli-package-content-proposal-schema",
+        "provider-cli-toolchain-schema",
+        "exact-product-template-scaffold-lock",
+        "product-template-package-contract"
+      ],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "scripts/test-setup-governance.mjs"},
+        {"kind": "test-path", "path": "scripts/test-propose-provider-cli-package-content.mjs"},
+        {"kind": "test-path", "path": "scripts/test-setup-provider-cli-toolchain.mjs"},
+        {"kind": "test-path", "path": "scripts/test-setup-workspace.mjs"},
+        {"kind": "test-path", "path": "scripts/test-verified-exact-npm-runtime.mjs"},
+        {"kind": "test-path", "path": "scripts/test-product-template-scaffold-lock.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "fresh-install-and-setup.proves.01",
+          "entryId": "fresh-install-and-setup",
+          "domain": "install",
+          "kind": "proves",
+          "text": "The template, local checkout, hosted setup documentation and devcontainer use setup:all as one closed entrypoint for role governance plus repository-provisioned peer CLIs.",
+          "sourceIds": ["governance-root-script-registry", "governance-infrastructure-runbook", "exact-governance-setup-cli", "exact-workspace-setup", "product-template-package-contract"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-setup-governance.mjs"}, {"kind": "test-path", "path": "scripts/test-setup-workspace.mjs"}]
+        },
+        {
+          "claimId": "fresh-install-and-setup.proves.02",
+          "entryId": "fresh-install-and-setup",
+          "domain": "install",
+          "kind": "proves",
+          "text": "Installed governance runs from an exact lockfile-bound npm runtime instead of an ambient package copy.",
+          "sourceIds": ["governance-root-script-registry", "exact-governance-setup-cli", "provider-cli-toolchain-exact-lock"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-verified-exact-npm-runtime.mjs"}]
+        },
+        {
+          "claimId": "fresh-install-and-setup.proves.03",
+          "entryId": "fresh-install-and-setup",
+          "domain": "install",
+          "kind": "proves",
+          "text": "Claude Code and Codex peer CLIs are materialized atomically from one complete SRI-bound transitive lock and reject unsupported Linux libc, poisoned shims and version drift.",
+          "sourceIds": ["exact-provider-cli-toolchain-setup", "provider-cli-toolchain-authority", "provider-cli-toolchain-exact-lock", "provider-cli-toolchain-schema"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-setup-provider-cli-toolchain.mjs"}]
+        },
+        {
+          "claimId": "fresh-install-and-setup.proves.04",
+          "entryId": "fresh-install-and-setup",
+          "domain": "install",
+          "kind": "proves",
+          "text": "Provider CLI package-content updates are derived by a deterministic proposal-only flow that downloads the shared resolver's active closure sequentially, delegates authority/lock/plan validation plus SRI and strict tar parsing to the installation SSOT, binds direct derivation-source hashes and the exact input-to-proposed manifest transition, supports independent zero-write pre/post-state verification that refetches and rederives every exact artifact, and has no direct apply mode.",
+          "sourceIds": ["exact-provider-cli-package-content-proposer", "exact-provider-cli-proposal-verifier-fixture", "exact-provider-cli-toolchain-setup", "provider-cli-toolchain-authority", "provider-cli-toolchain-exact-lock", "exact-provider-cli-package-content-proposal-schema"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-propose-provider-cli-package-content.mjs"}]
+        },
+        {
+          "claimId": "fresh-install-and-setup.proves.05",
+          "entryId": "fresh-install-and-setup",
+          "domain": "install",
+          "kind": "proves",
+          "text": "Static product-template scaffold bytes are closed by the published scaffold lock.",
+          "sourceIds": ["exact-product-template-scaffold-lock", "product-template-package-contract"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-product-template-scaffold-lock.mjs"}]
+        },
+        {
+          "claimId": "fresh-install-and-setup.does-not-prove.01",
+          "entryId": "fresh-install-and-setup",
+          "domain": "install",
+          "kind": "does-not-prove",
+          "text": "A specific cloud vendor image, secret provisioner or provider CLI is externally certified.",
+          "sourceIds": ["governance-infrastructure-runbook", "provider-cli-toolchain-authority"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-setup-governance.mjs"}]
+        },
+        {
+          "claimId": "fresh-install-and-setup.does-not-prove.02",
+          "entryId": "fresh-install-and-setup",
+          "domain": "install",
+          "kind": "does-not-prove",
+          "text": "An npm or GitHub release exists until immutable external readback succeeds.",
+          "sourceIds": ["governance-root-script-registry", "governance-infrastructure-runbook"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-setup-governance.mjs"}]
+        }
+      ]
+    },
+    {
+      "entryId": "consumer-transactional-upgrade",
+      "domain": "upgrade",
+      "authoritySourceIds": [
+        "exact-fork-governance-builder",
+        "exact-published-template-mirror-builder",
+        "governance-runtime-dependency-closure-library",
+        "consumer-control-plane-policy-library",
+        "exact-provider-cli-toolchain-setup",
+        "exact-sync-all",
+        "exact-upgrade-evidence-verifier",
+        "provider-cli-toolchain-authority",
+        "provider-cli-toolchain-exact-lock",
+        "provider-cli-toolchain-schema",
+        "consumer-upgrade-protocol",
+        "consumer-upgrade-protocol-schema",
+        "consumer-control-plane-cli",
+        "consumer-bootstrap-library",
+        "consumer-upgrade-protocol-library",
+        "consumer-control-plane-baseline-receipt-schema",
+        "consumer-control-plane-update-plan-schema",
+        "consumer-control-plane-update-snapshot-verification-schema",
+        "consumer-control-plane-update-readback-schema",
+        "consumer-control-plane-update-readback-verification-schema",
+        "consumer-control-plane-update-acceptance-proposal-schema",
+        "consumer-bootstrap-plan-schema",
+        "consumer-bootstrap-snapshot-verification-schema",
+        "consumer-bootstrap-readback-verification-schema",
+        "consumer-bootstrap-promotion-proposal-schema",
+        "consumer-fanout-review-schema",
+        "consumer-fanout-dispatch-evidence-schema",
+        "consumer-bootstrap-managed-repos-schema",
+        "consumer-managed-repos-inventory",
+        "managed-host-release-binding",
+        "exact-codemod-library",
+        "exact-codemod-cli",
+        "exact-safe-filesystem-library",
+        "design-system-package-contract"
+      ],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "scripts/test-sync-all-transaction.mjs"},
+        {"kind": "test-path", "path": "scripts/test-verify-upgrade-evidence.mjs"},
+        {"kind": "test-path", "path": "scripts/test-design-system-codemod.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/consumerctl.test.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "consumer-transactional-upgrade.proves.01",
+          "entryId": "consumer-transactional-upgrade",
+          "domain": "upgrade",
+          "kind": "proves",
+          "text": "Ordinary consumer upgrade is transactional and validates authenticated governance evidence.",
+          "sourceIds": ["exact-fork-governance-builder", "exact-published-template-mirror-builder", "governance-runtime-dependency-closure-library", "consumer-control-plane-policy-library", "exact-sync-all", "exact-upgrade-evidence-verifier", "consumer-upgrade-protocol", "consumer-upgrade-protocol-schema", "consumer-control-plane-cli", "consumer-upgrade-protocol-library", "exact-safe-filesystem-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-sync-all-transaction.mjs"}, {"kind": "test-path", "path": "scripts/test-verify-upgrade-evidence.mjs"}, {"kind": "test-path", "path": "infra/governance/test/consumerctl.test.mjs"}]
+        },
+        {
+          "claimId": "consumer-transactional-upgrade.proves.02",
+          "entryId": "consumer-transactional-upgrade",
+          "domain": "upgrade",
+          "kind": "proves",
+          "text": "The protected-base writer statically materializes the exact content-authorized provider CLI runtime in its disposable candidate without executing provider bytes, re-verifies the copied candidate and live replacement with the already-loaded protected-base verifier, reports certification separately, and rolls back the complete node_modules predecessor on failure or interruption.",
+          "sourceIds": ["exact-provider-cli-toolchain-setup", "exact-sync-all", "provider-cli-toolchain-authority", "provider-cli-toolchain-exact-lock", "provider-cli-toolchain-schema", "exact-safe-filesystem-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-sync-all-transaction.mjs"}]
+        },
+        {
+          "claimId": "consumer-transactional-upgrade.proves.03",
+          "entryId": "consumer-transactional-upgrade",
+          "domain": "upgrade",
+          "kind": "proves",
+          "text": "Bootstrap, plan and readback paths fail closed when protected-base provenance is absent or forged.",
+          "sourceIds": ["consumer-control-plane-cli", "consumer-bootstrap-library", "consumer-control-plane-baseline-receipt-schema", "consumer-control-plane-update-plan-schema", "consumer-control-plane-update-snapshot-verification-schema", "consumer-control-plane-update-readback-schema", "consumer-control-plane-update-readback-verification-schema", "consumer-control-plane-update-acceptance-proposal-schema", "consumer-bootstrap-plan-schema", "consumer-bootstrap-snapshot-verification-schema", "consumer-bootstrap-readback-verification-schema", "consumer-bootstrap-promotion-proposal-schema", "consumer-fanout-review-schema", "consumer-fanout-dispatch-evidence-schema", "consumer-bootstrap-managed-repos-schema", "consumer-managed-repos-inventory", "managed-host-release-binding"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/consumerctl.test.mjs"}]
+        },
+        {
+          "claimId": "consumer-transactional-upgrade.proves.04",
+          "entryId": "consumer-transactional-upgrade",
+          "domain": "upgrade",
+          "kind": "proves",
+          "text": "Pathname-visible concurrent edits are revalidated at publication and recovery boundaries and fail closed instead of being silently overwritten.",
+          "sourceIds": ["exact-sync-all", "consumer-upgrade-protocol-library", "exact-safe-filesystem-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-sync-all-transaction.mjs"}]
+        },
+        {
+          "claimId": "consumer-transactional-upgrade.proves.05",
+          "entryId": "consumer-transactional-upgrade",
+          "domain": "upgrade",
+          "kind": "proves",
+          "text": "The beta.84 package-shipped codemod changes only TypeScript AST bindings proven to originate from the design-system API, binds its exact parser and source inventory, is idempotent, and rejects ambiguity, dynamic field modes, DataTable meta.disabled, stale modes, links, lock contention, and partial publication.",
+          "sourceIds": ["exact-codemod-library", "exact-codemod-cli", "exact-safe-filesystem-library", "design-system-package-contract"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-design-system-codemod.mjs"}]
+        },
+        {
+          "claimId": "consumer-transactional-upgrade.does-not-prove.01",
+          "entryId": "consumer-transactional-upgrade",
+          "domain": "upgrade",
+          "kind": "does-not-prove",
+          "text": "A real consumer repository has merged the reviewed upgrade PR.",
+          "sourceIds": ["exact-upgrade-evidence-verifier", "consumer-managed-repos-inventory"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-verify-upgrade-evidence.mjs"}]
+        },
+        {
+          "claimId": "consumer-transactional-upgrade.does-not-prove.02",
+          "entryId": "consumer-transactional-upgrade",
+          "domain": "upgrade",
+          "kind": "does-not-prove",
+          "text": "GitHub required checks or App identities are externally active.",
+          "sourceIds": ["consumer-managed-repos-inventory", "managed-host-release-binding"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/consumerctl.test.mjs"}]
+        },
+        {
+          "claimId": "consumer-transactional-upgrade.does-not-prove.03",
+          "entryId": "consumer-transactional-upgrade",
+          "domain": "upgrade",
+          "kind": "does-not-prove",
+          "text": "Zero-data-loss against an arbitrary non-cooperative writer that retains an old open file descriptor and writes after pathname replacement.",
+          "sourceIds": ["exact-sync-all", "exact-safe-filesystem-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-sync-all-transaction.mjs"}]
+        },
+        {
+          "claimId": "consumer-transactional-upgrade.does-not-prove.04",
+          "entryId": "consumer-transactional-upgrade",
+          "domain": "upgrade",
+          "kind": "does-not-prove",
+          "text": "The codemod does not infer semantic replacements for unresolved wrappers or DataTable meta.disabled, prove storage power-loss durability, or prove that an external consumer applied its reviewed proposal.",
+          "sourceIds": ["exact-codemod-library", "exact-codemod-cli", "design-system-package-contract"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-design-system-codemod.mjs"}]
+        }
+      ]
+    },
+    {
+      "entryId": "rollback-and-recovery",
+      "domain": "rollback",
+      "authoritySourceIds": ["staged-rollout-plan", "exact-fleet-reconcile-cli", "staged-rollout-library"],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "scripts/test-sync-all-transaction.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/staged-rollout.test.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "rollback-and-recovery.proves.01",
+          "entryId": "rollback-and-recovery",
+          "domain": "rollback",
+          "kind": "proves",
+          "text": "Local upgrade rollback restores authenticated before-images byte-for-byte.",
+          "sourceIds": ["staged-rollout-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-sync-all-transaction.mjs"}]
+        },
+        {
+          "claimId": "rollback-and-recovery.proves.02",
+          "entryId": "rollback-and-recovery",
+          "domain": "rollback",
+          "kind": "proves",
+          "text": "Fleet rollback requires a previous-good immutable release, fresh authorization and remote-state re-observation.",
+          "sourceIds": ["staged-rollout-plan", "exact-fleet-reconcile-cli", "staged-rollout-library"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/staged-rollout.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"}]
+        },
+        {
+          "claimId": "rollback-and-recovery.proves.03",
+          "entryId": "rollback-and-recovery",
+          "domain": "rollback",
+          "kind": "proves",
+          "text": "Partial external mutation is recorded as possible partial state and never mislabeled as automatic rollback.",
+          "sourceIds": ["exact-fleet-reconcile-cli", "staged-rollout-library"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"}]
+        },
+        {
+          "claimId": "rollback-and-recovery.does-not-prove.01",
+          "entryId": "rollback-and-recovery",
+          "domain": "rollback",
+          "kind": "does-not-prove",
+          "text": "A live GitHub rollback drill or off-host recovery objective has completed.",
+          "sourceIds": ["staged-rollout-plan", "exact-fleet-reconcile-cli"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"}]
+        },
+        {
+          "claimId": "rollback-and-recovery.does-not-prove.02",
+          "entryId": "rollback-and-recovery",
+          "domain": "rollback",
+          "kind": "does-not-prove",
+          "text": "Irreversible external provider actions have a safe inverse.",
+          "sourceIds": ["staged-rollout-library"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/staged-rollout.test.mjs"}]
+        }
+      ]
+    },
+    {
+      "entryId": "process-crash-boundary",
+      "domain": "process-crash",
+      "authoritySourceIds": ["exact-sync-all", "gate-meta-test-runner", "exact-disposable-repository-snapshot-library"],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "scripts/test-sync-all-transaction.mjs"},
+        {"kind": "test-path", "path": "scripts/test-run-gate-meta-tests-isolation.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "process-crash-boundary.proves.01",
+          "entryId": "process-crash-boundary",
+          "domain": "process-crash",
+          "kind": "proves",
+          "text": "Process-crash recovery can use a dead-process journal to restore authenticated upgrade sources, provider surfaces and node_modules exactly.",
+          "sourceIds": ["exact-sync-all"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-sync-all-transaction.mjs"}]
+        },
+        {
+          "claimId": "process-crash-boundary.proves.02",
+          "entryId": "process-crash-boundary",
+          "domain": "process-crash",
+          "kind": "proves",
+          "text": "A killed mutation probe remains inside a disposable repository/runtime snapshot and leaves the caller fingerprint unchanged.",
+          "sourceIds": ["gate-meta-test-runner", "exact-disposable-repository-snapshot-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-run-gate-meta-tests-isolation.mjs"}]
+        },
+        {
+          "claimId": "process-crash-boundary.proves.03",
+          "entryId": "process-crash-boundary",
+          "domain": "process-crash",
+          "kind": "proves",
+          "text": "Pathname-visible concurrent edits are revalidated and fail closed before recovery or publication can replace them.",
+          "sourceIds": ["exact-sync-all", "exact-disposable-repository-snapshot-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-sync-all-transaction.mjs"}]
+        },
+        {
+          "claimId": "process-crash-boundary.does-not-prove.01",
+          "entryId": "process-crash-boundary",
+          "domain": "process-crash",
+          "kind": "does-not-prove",
+          "text": "Filesystem or storage power-loss durability, because the harness claims only process-crash recovery.",
+          "sourceIds": ["exact-sync-all"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-sync-all-transaction.mjs"}]
+        },
+        {
+          "claimId": "process-crash-boundary.does-not-prove.02",
+          "entryId": "process-crash-boundary",
+          "domain": "process-crash",
+          "kind": "does-not-prove",
+          "text": "Containment of arbitrary network or operating-system writes outside the declared disposable runtime.",
+          "sourceIds": ["exact-disposable-repository-snapshot-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-run-gate-meta-tests-isolation.mjs"}]
+        },
+        {
+          "claimId": "process-crash-boundary.does-not-prove.03",
+          "entryId": "process-crash-boundary",
+          "domain": "process-crash",
+          "kind": "does-not-prove",
+          "text": "Zero-data-loss against an arbitrary non-cooperative writer that retains an old open file descriptor and writes after pathname replacement.",
+          "sourceIds": ["exact-sync-all"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-sync-all-transaction.mjs"}]
+        }
+      ]
+    },
+    {
+      "entryId": "provider-lifecycle-onboarding",
+      "domain": "provider-lifecycle",
+      "authoritySourceIds": ["exact-provider-registry", "provider-lifecycle-validator", "exact-fork-launcher-refresher"],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "scripts/test-provider-lifecycle.mjs"},
+        {"kind": "test-path", "path": "scripts/test-future-provider-fork-surface.mjs"},
+        {"kind": "test-path", "path": "packages/governance/test/provider-parity.test.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "provider-lifecycle-onboarding.proves.01",
+          "entryId": "provider-lifecycle-onboarding",
+          "domain": "provider-lifecycle",
+          "kind": "proves",
+          "text": "A new provider must join the canonical registry, compatibility inventory, generated surfaces and certification ledger coherently.",
+          "sourceIds": ["exact-provider-registry", "provider-lifecycle-validator", "exact-fork-launcher-refresher"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-provider-lifecycle.mjs"}, {"kind": "test-path", "path": "scripts/test-future-provider-fork-surface.mjs"}, {"kind": "test-path", "path": "packages/governance/test/provider-parity.test.mjs"}]
+        },
+        {
+          "claimId": "provider-lifecycle-onboarding.proves.02",
+          "entryId": "provider-lifecycle-onboarding",
+          "domain": "provider-lifecycle",
+          "kind": "proves",
+          "text": "Unknown or partial providers fail ADAPTER-BLOCKED instead of inheriting Claude or Codex semantics.",
+          "sourceIds": ["exact-provider-registry", "provider-lifecycle-validator"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-future-provider-fork-surface.mjs"}, {"kind": "test-path", "path": "packages/governance/test/provider-parity.test.mjs"}]
+        },
+        {
+          "claimId": "provider-lifecycle-onboarding.proves.03",
+          "entryId": "provider-lifecycle-onboarding",
+          "domain": "provider-lifecycle",
+          "kind": "proves",
+          "text": "Reserved provider namespaces and lifecycle transition capabilities reject forged or broadened changes.",
+          "sourceIds": ["provider-lifecycle-validator", "exact-fork-launcher-refresher"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-provider-lifecycle.mjs"}]
+        },
+        {
+          "claimId": "provider-lifecycle-onboarding.does-not-prove.01",
+          "entryId": "provider-lifecycle-onboarding",
+          "domain": "provider-lifecycle",
+          "kind": "does-not-prove",
+          "text": "A future provider runtime is usable before its own adapter and target-bound certification evidence exist.",
+          "sourceIds": ["exact-provider-registry"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-future-provider-fork-surface.mjs"}]
+        }
+      ]
+    },
+    {
+      "entryId": "cloud-portability-profile",
+      "domain": "cloud",
+      "authoritySourceIds": [
+        "governance-root-script-registry",
+        "workspace-lockfile",
+        "npm-release-policy",
+        "exact-verified-npm-runtime-library",
+        "exact-governance-dependency-bootstrap-library",
+        "exact-worktree-fingerprint-library",
+        "exact-workspace-post-create-library",
+        "provider-compatibility-matrix",
+        "provider-role-surface-policy",
+        "provider-role-surface-policy-schema",
+        "provider-role-surface-policy-library",
+        "consumer-managed-repos-inventory",
+        "managed-host-release-binding",
+        "governance-harness-registry",
+        "governance-harness-source-inventory",
+        "governance-harness-runner-cli",
+        "governance-playwright-runtime-library",
+        "governance-playwright-setup-cli",
+        "governance-authority-setup-cli",
+        "exact-provider-cli-toolchain-setup",
+        "exact-workspace-setup",
+        "provider-cli-toolchain-authority",
+        "provider-cli-toolchain-exact-lock",
+        "provider-surface-certifications",
+        "exact-devcontainer-config",
+        "exact-devcontainer-post-create",
+        "exact-template-devcontainer-config",
+        "exact-template-devcontainer-lock"
+      ],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "scripts/test-setup-governance.mjs"},
+        {"kind": "test-path", "path": "scripts/test-setup-provider-cli-toolchain.mjs"},
+        {"kind": "test-path", "path": "scripts/test-setup-workspace.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/authority-setup.test.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/provider-surface.test.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "cloud-portability-profile.proves.01",
+          "entryId": "cloud-portability-profile",
+          "domain": "cloud",
+          "kind": "proves",
+          "text": "Local fixtures verify that one committed DS-author setup command ignores user-home npm and Playwright authority, uses the lock-verified exact npm dependency phase, provisions exact Chromium, and resolves the same canonical hard gates before directly executing all registered Harnesses.",
+          "sourceIds": ["governance-root-script-registry", "workspace-lockfile", "npm-release-policy", "exact-verified-npm-runtime-library", "exact-governance-dependency-bootstrap-library", "exact-worktree-fingerprint-library", "exact-workspace-post-create-library", "governance-harness-registry", "governance-harness-source-inventory", "governance-harness-runner-cli", "governance-playwright-runtime-library", "governance-playwright-setup-cli", "governance-authority-setup-cli", "exact-workspace-setup"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-setup-governance.mjs"}, {"kind": "test-path", "path": "scripts/test-setup-workspace.mjs"}, {"kind": "test-path", "path": "infra/governance/test/authority-setup.test.mjs"}]
+        },
+        {
+          "claimId": "cloud-portability-profile.proves.02",
+          "entryId": "cloud-portability-profile",
+          "domain": "cloud",
+          "kind": "proves",
+          "text": "Specialized DS-author GitHub Actions jobs reuse the exact dependency phase without falsely claiming that dependency setup alone is governance certification.",
+          "sourceIds": ["governance-root-script-registry", "workspace-lockfile", "exact-governance-dependency-bootstrap-library", "governance-authority-setup-cli"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/authority-setup.test.mjs"}]
+        },
+        {
+          "claimId": "cloud-portability-profile.proves.03",
+          "entryId": "cloud-portability-profile",
+          "domain": "cloud",
+          "kind": "proves",
+          "text": "Provider-native hooks are feedback-only and may vary by cloud environment without weakening deterministic or CI enforcement.",
+          "sourceIds": ["provider-compatibility-matrix", "provider-role-surface-policy", "provider-role-surface-policy-schema", "provider-role-surface-policy-library"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/provider-surface.test.mjs"}]
+        },
+        {
+          "claimId": "cloud-portability-profile.proves.04",
+          "entryId": "cloud-portability-profile",
+          "domain": "cloud",
+          "kind": "proves",
+          "text": "Repository-provisioned peer CLIs use the same lock on supported local, devcontainer and glibc cloud hosts without claiming control of the vendor-managed host process.",
+          "sourceIds": ["provider-compatibility-matrix", "exact-provider-cli-toolchain-setup", "provider-cli-toolchain-authority", "provider-cli-toolchain-exact-lock"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-setup-provider-cli-toolchain.mjs"}]
+        },
+        {
+          "claimId": "cloud-portability-profile.proves.05",
+          "entryId": "cloud-portability-profile",
+          "domain": "cloud",
+          "kind": "proves",
+          "text": "Cloud and remote certification records stay not-certified without target-bound external evidence.",
+          "sourceIds": ["consumer-managed-repos-inventory", "managed-host-release-binding", "provider-surface-certifications"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/provider-surface.test.mjs"}]
+        },
+        {
+          "claimId": "cloud-portability-profile.does-not-prove.01",
+          "entryId": "cloud-portability-profile",
+          "domain": "cloud",
+          "kind": "does-not-prove",
+          "text": "A cloud provider actually honored the committed setup or devcontainer configuration; only target-bound external readback can prove that.",
+          "sourceIds": ["exact-devcontainer-config", "exact-devcontainer-post-create", "exact-template-devcontainer-config", "exact-template-devcontainer-lock"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/authority-setup.test.mjs"}]
+        },
+        {
+          "claimId": "cloud-portability-profile.does-not-prove.02",
+          "entryId": "cloud-portability-profile",
+          "domain": "cloud",
+          "kind": "does-not-prove",
+          "text": "Codex Cloud, Claude Code Cloud, Codespaces or any other vendor image has passed a real fresh-clone run.",
+          "sourceIds": ["provider-compatibility-matrix", "exact-devcontainer-config", "exact-template-devcontainer-config"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/authority-setup.test.mjs"}]
+        },
+        {
+          "claimId": "cloud-portability-profile.does-not-prove.03",
+          "entryId": "cloud-portability-profile",
+          "domain": "cloud",
+          "kind": "does-not-prove",
+          "text": "Secrets, network access, provider authentication or managed-host policy are present.",
+          "sourceIds": ["provider-compatibility-matrix", "provider-role-surface-policy", "provider-surface-certifications"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/provider-surface.test.mjs"}]
+        }
+      ]
+    },
+    {
+      "entryId": "product-template-role-boundary",
+      "domain": "template-consumer",
+      "authoritySourceIds": [
+        "exact-fork-governance-classification",
+        "exact-story-invariants-fork-override",
+        "exact-fork-governance-builder",
+        "exact-provider-projection-contract-library",
+        "exact-product-template-scaffold-lock",
+        "exact-provider-registry",
+        "canonical-product-templates",
+        "product-template-package-contract"
+      ],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "scripts/test-fork-governance.mjs"},
+        {"kind": "test-path", "path": "scripts/test-fork-story-invariants-override.mjs"},
+        {"kind": "test-path", "path": "scripts/test-consumer-governance.mjs"},
+        {"kind": "test-path", "path": "scripts/test-consumer-source-harness.mjs"},
+        {"kind": "test-path", "path": "scripts/test-product-template-scaffold-lock.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "product-template-role-boundary.proves.01",
+          "entryId": "product-template-role-boundary",
+          "domain": "template-consumer",
+          "kind": "proves",
+          "text": "Product consumers receive the provider-neutral product role, generated provider projections and protected source harness.",
+          "sourceIds": ["exact-fork-governance-classification", "exact-fork-governance-builder", "exact-provider-projection-contract-library", "exact-product-template-scaffold-lock", "exact-provider-registry", "canonical-product-templates"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-fork-governance.mjs"}, {"kind": "test-path", "path": "scripts/test-consumer-governance.mjs"}, {"kind": "test-path", "path": "scripts/test-consumer-source-harness.mjs"}]
+        },
+        {
+          "claimId": "product-template-role-boundary.proves.02",
+          "entryId": "product-template-role-boundary",
+          "domain": "template-consumer",
+          "kind": "proves",
+          "text": "Claude and Codex product skill inventories are symmetric.",
+          "sourceIds": ["exact-provider-registry", "exact-provider-projection-contract-library", "canonical-product-templates"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-fork-governance.mjs"}]
+        },
+        {
+          "claimId": "product-template-role-boundary.proves.03",
+          "entryId": "product-template-role-boundary",
+          "domain": "template-consumer",
+          "kind": "proves",
+          "text": "DS-author-only workflows, release commands, audit authority and source-writing skills remain excluded from product consumers.",
+          "sourceIds": ["exact-fork-governance-classification", "exact-story-invariants-fork-override", "exact-fork-governance-builder", "canonical-product-templates", "product-template-package-contract"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-fork-story-invariants-override.mjs"}, {"kind": "test-path", "path": "scripts/test-consumer-governance.mjs"}]
+        },
+        {
+          "claimId": "product-template-role-boundary.does-not-prove.01",
+          "entryId": "product-template-role-boundary",
+          "domain": "template-consumer",
+          "kind": "does-not-prove",
+          "text": "A consumer may publish or mutate Design System canonical source.",
+          "sourceIds": ["exact-fork-governance-classification", "exact-fork-governance-builder"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-consumer-governance.mjs"}]
+        },
+        {
+          "claimId": "product-template-role-boundary.does-not-prove.02",
+          "entryId": "product-template-role-boundary",
+          "domain": "template-consumer",
+          "kind": "does-not-prove",
+          "text": "The template mirror or WM canary has adopted an unreleased candidate.",
+          "sourceIds": ["exact-product-template-scaffold-lock", "product-template-package-contract"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-product-template-scaffold-lock.mjs"}]
+        }
+      ]
+    },
+    {
+      "entryId": "provider-adaptive-independent-review",
+      "domain": "second-opinion",
+      "authoritySourceIds": [
+        "provider-skill-semantics",
+        "exact-provider-registry",
+        "provider-review-binding-library",
+        "provider-compatibility-matrix",
+        "provider-surface-certifications",
+        "deep-audit-model-evidence-plan",
+        "deep-audit-model-evidence-plan-schema",
+        "deep-audit-model-evidence-broker",
+        "deep-audit-model-evidence-broker-schema",
+        "deep-audit-model-result-schema",
+        "model-invocation-profiles",
+        "model-invocation-profiles-schema",
+        "review-capability-registry",
+        "review-capability-registry-schema",
+        "review-capability-certifications",
+        "review-capability-certifications-schema",
+        "model-release-registry",
+        "model-release-registry-schema",
+        "model-release-documentation-assertion-schema",
+        "deep-audit-model-broker-shard-result-schema",
+        "deep-audit-model-broker-transcript-schema",
+        "deep-audit-evidence-contract",
+        "deep-audit-review-archive-library",
+        "deep-audit-model-api-transport",
+        "deep-audit-model-broker-transcript-library",
+        "deep-audit-model-evidence-plan-library",
+        "deep-audit-model-evidence-broker-library",
+        "component-dependency-source-inventory",
+        "component-claim-inventory",
+        "deep-audit-model-access-receipt-library",
+        "deep-audit-model-audit-contract-library",
+        "model-release-registry-library",
+        "managed-ci-model-release-authority-library",
+        "deep-audit-model-runner",
+        "exact-independent-review-skill",
+        "exact-deep-audit-skill",
+        "product-independent-review-launcher"
+      ],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "infra/governance/test/provider-surface.test.mjs"},
+        {"kind": "test-path", "path": "scripts/test-deep-audit-evidence-schema-parity.mjs"},
+        {"kind": "test-path", "path": "scripts/test-deep-audit-review-archive.mjs"},
+        {"kind": "test-path", "path": "scripts/test-model-deep-audit-safety.mjs"},
+        {"kind": "test-path", "path": "scripts/test-model-evidence-broker-hardening.mjs"},
+        {"kind": "test-path", "path": "scripts/test-provider-neutral-review-core.mjs"},
+        {"kind": "test-path", "path": "scripts/test-provider-review-binding.mjs"},
+        {"kind": "test-path", "path": "scripts/test-review-capability-selection.mjs"},
+        {"kind": "test-path", "path": "scripts/test-codex-run-guarded.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "provider-adaptive-independent-review.proves.01",
+          "entryId": "provider-adaptive-independent-review",
+          "domain": "second-opinion",
+          "kind": "proves",
+          "text": "Deep audit binds explicit author identity to a provider-neutral highest-certified independent-review policy; the selected reviewer provider is distinct from both the author and current provider; source freeze may remain REVIEW-BLOCKED without inventing a peer/model, while prepare and dispatch require an exact distinct provider/profile/model selection receipt.",
+          "sourceIds": ["provider-skill-semantics", "exact-provider-registry", "provider-review-binding-library", "review-capability-registry", "review-capability-registry-schema", "review-capability-certifications", "review-capability-certifications-schema", "model-invocation-profiles", "model-invocation-profiles-schema", "model-release-registry", "model-release-registry-schema", "model-release-documentation-assertion-schema"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-provider-review-binding.mjs"}, {"kind": "test-path", "path": "scripts/test-review-capability-selection.mjs"}, {"kind": "test-path", "path": "scripts/test-codex-run-guarded.mjs"}]
+        },
+        {
+          "claimId": "provider-adaptive-independent-review.proves.02",
+          "entryId": "provider-adaptive-independent-review",
+          "domain": "second-opinion",
+          "kind": "proves",
+          "text": "The existing canonical broker protocol prepares ordered content-addressed request envelopes, verifies exact carrier and result closure, persists a cycle-safe immutable portable review bundle plus exact All-Harness receipt archive, and reduces the complete registered 26-judgment plus 64-component task graph without sampling; managed execution reuses the same canonical completion core as a deployment wrapper.",
+          "sourceIds": ["deep-audit-model-evidence-plan", "deep-audit-model-evidence-plan-schema", "deep-audit-model-evidence-broker", "deep-audit-model-evidence-broker-schema", "deep-audit-model-result-schema", "deep-audit-model-broker-shard-result-schema", "deep-audit-model-broker-transcript-schema", "deep-audit-evidence-contract", "deep-audit-review-archive-library", "deep-audit-model-api-transport", "deep-audit-model-broker-transcript-library", "deep-audit-model-evidence-plan-library", "deep-audit-model-evidence-broker-library", "component-dependency-source-inventory", "component-claim-inventory", "deep-audit-model-access-receipt-library", "deep-audit-model-audit-contract-library", "deep-audit-model-runner"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-deep-audit-review-archive.mjs"}, {"kind": "test-path", "path": "scripts/test-model-evidence-broker-hardening.mjs"}, {"kind": "test-path", "path": "scripts/test-provider-neutral-review-core.mjs"}, {"kind": "test-path", "path": "scripts/test-model-deep-audit-safety.mjs"}]
+        },
+        {
+          "claimId": "provider-adaptive-independent-review.proves.03",
+          "entryId": "provider-adaptive-independent-review",
+          "domain": "second-opinion",
+          "kind": "proves",
+          "text": "Registered providers resolve the highest policy-eligible certified capability through the provider, capability, certification, invocation and model-release registries; model-backed deep-audit evidence is separately bound to exact selected provider/profile/model authority rather than inferred from the review binding; the same portable content-addressed exchange core accepts either a subscription-entitlement or managed route wrapper without changing canonical semantics.",
+          "sourceIds": ["exact-provider-registry", "provider-review-binding-library", "provider-compatibility-matrix", "review-capability-registry", "review-capability-certifications", "model-invocation-profiles", "model-release-registry", "model-release-registry-library", "deep-audit-evidence-contract", "deep-audit-model-broker-transcript-library", "deep-audit-model-runner", "exact-deep-audit-skill"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/provider-surface.test.mjs"}, {"kind": "test-path", "path": "scripts/test-review-capability-selection.mjs"}, {"kind": "test-path", "path": "scripts/test-provider-neutral-review-core.mjs"}]
+        },
+        {
+          "claimId": "provider-adaptive-independent-review.proves.04",
+          "entryId": "provider-adaptive-independent-review",
+          "domain": "second-opinion",
+          "kind": "proves",
+          "text": "Product consumers receive a separate read-only independent-review workflow without DS-author, release, deep-audit-remediation or mutation authority.",
+          "sourceIds": ["provider-skill-semantics", "exact-independent-review-skill", "product-independent-review-launcher"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/provider-surface.test.mjs"}]
+        },
+        {
+          "claimId": "provider-adaptive-independent-review.proves.05",
+          "entryId": "provider-adaptive-independent-review",
+          "domain": "second-opinion",
+          "kind": "proves",
+          "text": "Unknown providers and author/peer collisions fail REVIEW-BLOCKED or ADAPTER-BLOCKED.",
+          "sourceIds": ["exact-provider-registry", "provider-review-binding-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-provider-review-binding.mjs"}]
+        },
+        {
+          "claimId": "provider-adaptive-independent-review.does-not-prove.01",
+          "entryId": "provider-adaptive-independent-review",
+          "domain": "second-opinion",
+          "kind": "does-not-prove",
+          "text": "A second opinion occurred unless immutable, read-only peer evidence from a separate execution context is present.",
+          "sourceIds": ["provider-review-binding-library", "deep-audit-evidence-contract", "deep-audit-model-runner"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-model-deep-audit-safety.mjs"}, {"kind": "test-path", "path": "scripts/test-deep-audit-evidence-schema-parity.mjs"}]
+        },
+        {
+          "claimId": "provider-adaptive-independent-review.does-not-prove.02",
+          "entryId": "provider-adaptive-independent-review",
+          "domain": "second-opinion",
+          "kind": "does-not-prove",
+          "text": "One provider reviewing itself is independent review.",
+          "sourceIds": ["provider-review-binding-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-provider-review-binding.mjs"}]
+        },
+        {
+          "claimId": "provider-adaptive-independent-review.does-not-prove.03",
+          "entryId": "provider-adaptive-independent-review",
+          "domain": "second-opinion",
+          "kind": "does-not-prove",
+          "text": "A provider/model is live or promotion-eligible without current signed model-release authority, managed-broker execution evidence and target-bound runtime certification.",
+          "sourceIds": ["provider-surface-certifications", "model-invocation-profiles", "model-release-registry", "managed-ci-model-release-authority-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-model-deep-audit-safety.mjs"}]
+        }
+      ]
+    },
+    {
+      "entryId": "published-template-mirror",
+      "domain": "mirror",
+      "authoritySourceIds": [
+        "exact-mirror-workflow",
+        "exact-published-template-mirror-builder",
+        "exact-template-package-lock-generator",
+        "exact-github-actions-artifact-identity-library",
+        "exact-mirror-run-artifact-identity",
+        "exact-published-template-mirror-policy",
+        "exact-product-template-scaffold-lock",
+        "exact-release-finalizer-mirror-handoff",
+        "exact-mirror-evidence-verifier",
+        "exact-mirror-release-verifier",
+        "exact-upgrade-provenance-verifier"
+      ],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "scripts/test-verify-mirror-evidence.mjs"},
+        {"kind": "test-path", "path": "scripts/test-verify-mirror-release.mjs"},
+        {"kind": "test-path", "path": "scripts/test-mirror-run-artifact-identity.mjs"},
+        {"kind": "test-path", "path": "scripts/test-product-template-scaffold-lock.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "published-template-mirror.proves.01",
+          "entryId": "published-template-mirror",
+          "domain": "mirror",
+          "kind": "proves",
+          "text": "Mirror evidence binds one completed finalizer run/attempt, its immutable signed release, exact BOM/scaffold bytes, provider-derived managed surfaces and the final tree digest.",
+          "sourceIds": ["exact-mirror-workflow", "exact-published-template-mirror-builder", "exact-template-package-lock-generator", "exact-github-actions-artifact-identity-library", "exact-mirror-run-artifact-identity", "exact-published-template-mirror-policy", "exact-product-template-scaffold-lock", "exact-release-finalizer-mirror-handoff", "exact-mirror-evidence-verifier", "exact-mirror-release-verifier", "exact-upgrade-provenance-verifier"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-verify-mirror-evidence.mjs"}, {"kind": "test-path", "path": "scripts/test-verify-mirror-release.mjs"}, {"kind": "test-path", "path": "scripts/test-mirror-run-artifact-identity.mjs"}, {"kind": "test-path", "path": "scripts/test-product-template-scaffold-lock.mjs"}]
+        },
+        {
+          "claimId": "published-template-mirror.proves.02",
+          "entryId": "published-template-mirror",
+          "domain": "mirror",
+          "kind": "proves",
+          "text": "The fresh writer re-resolves the finalizer handoff and same-run artifact ID/digest before credentials; unregistered provider siblings, forged artifacts and stale release identities fail closed.",
+          "sourceIds": ["exact-mirror-workflow", "exact-github-actions-artifact-identity-library", "exact-mirror-run-artifact-identity", "exact-release-finalizer-mirror-handoff", "exact-mirror-evidence-verifier", "exact-mirror-release-verifier"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-verify-mirror-evidence.mjs"}, {"kind": "test-path", "path": "scripts/test-mirror-run-artifact-identity.mjs"}]
+        },
+        {
+          "claimId": "published-template-mirror.does-not-prove.01",
+          "entryId": "published-template-mirror",
+          "domain": "mirror",
+          "kind": "does-not-prove",
+          "text": "The remote template repository was updated until Writer App mutation and independent readback complete.",
+          "sourceIds": ["exact-mirror-workflow", "exact-published-template-mirror-policy", "exact-mirror-evidence-verifier"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-verify-mirror-evidence.mjs"}]
+        },
+        {
+          "claimId": "published-template-mirror.does-not-prove.02",
+          "entryId": "published-template-mirror",
+          "domain": "mirror",
+          "kind": "does-not-prove",
+          "text": "A local mirror fixture is an immutable GitHub Release.",
+          "sourceIds": ["exact-mirror-release-verifier", "exact-upgrade-provenance-verifier"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-verify-mirror-release.mjs"}]
+        }
+      ]
+    },
+    {
+      "entryId": "release-supply-chain",
+      "domain": "release",
+      "authoritySourceIds": [
+        "release-workflow",
+        "release-finalizer-workflow",
+        "exact-github-actions-artifact-identity-library",
+        "release-bom-contract",
+        "exact-release-finalizer-mirror-handoff",
+        "release-stage-run-identity",
+        "exact-upgrade-provenance-verifier",
+        "exact-candidate-dependency-installer",
+        "release-trust-preflight-verifier",
+        "release-tag-authorization-policy"
+      ],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "scripts/test-release-bom.mjs"},
+        {"kind": "test-path", "path": "scripts/test-release-finalizer-mirror-handoff.mjs"},
+        {"kind": "test-path", "path": "scripts/test-install-candidate-dependencies.mjs"},
+        {"kind": "test-path", "path": "scripts/test-workflow-security.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/release-trust-preflight.test.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/signed-release-tag.test.mjs"},
+        {"kind": "test-path", "path": "scripts/test-check-src-republish.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "release-supply-chain.proves.01",
+          "entryId": "release-supply-chain",
+          "domain": "release",
+          "kind": "proves",
+          "text": "Release BOM, tag authorization, workflow identity and finalization receipts are closed and digest-bound.",
+          "sourceIds": ["release-workflow", "release-finalizer-workflow", "exact-github-actions-artifact-identity-library", "release-bom-contract", "exact-release-finalizer-mirror-handoff", "release-stage-run-identity", "exact-upgrade-provenance-verifier", "exact-candidate-dependency-installer", "release-trust-preflight-verifier", "release-tag-authorization-policy"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-release-bom.mjs"}, {"kind": "test-path", "path": "scripts/test-release-finalizer-mirror-handoff.mjs"}, {"kind": "test-path", "path": "scripts/test-install-candidate-dependencies.mjs"}, {"kind": "test-path", "path": "scripts/test-workflow-security.mjs"}, {"kind": "test-path", "path": "infra/governance/test/release-trust-preflight.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/signed-release-tag.test.mjs"}, {"kind": "test-path", "path": "scripts/test-check-src-republish.mjs"}]
+        },
+        {
+          "claimId": "release-supply-chain.proves.02",
+          "entryId": "release-supply-chain",
+          "domain": "release",
+          "kind": "proves",
+          "text": "Candidate bytes cannot self-certify trusted execution or bypass protected-main identity.",
+          "sourceIds": ["release-workflow", "exact-upgrade-provenance-verifier", "exact-candidate-dependency-installer", "release-trust-preflight-verifier", "release-tag-authorization-policy"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-install-candidate-dependencies.mjs"}, {"kind": "test-path", "path": "infra/governance/test/release-trust-preflight.test.mjs"}, {"kind": "test-path", "path": "scripts/test-check-src-republish.mjs"}]
+        },
+        {
+          "claimId": "release-supply-chain.does-not-prove.01",
+          "entryId": "release-supply-chain",
+          "domain": "release",
+          "kind": "does-not-prove",
+          "text": "npm packages, GitHub tags or immutable releases exist before live provider readback.",
+          "sourceIds": ["release-workflow", "release-finalizer-workflow", "exact-release-finalizer-mirror-handoff", "exact-upgrade-provenance-verifier"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-release-finalizer-mirror-handoff.mjs"}, {"kind": "test-path", "path": "infra/governance/test/signed-release-tag.test.mjs"}]
+        },
+        {
+          "claimId": "release-supply-chain.does-not-prove.02",
+          "entryId": "release-supply-chain",
+          "domain": "release",
+          "kind": "does-not-prove",
+          "text": "Empty or pending issuer policies authorize a release.",
+          "sourceIds": ["release-trust-preflight-verifier", "release-tag-authorization-policy"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/release-trust-preflight.test.mjs"}]
+        }
+      ]
+    },
+    {
+      "entryId": "fleet-plan-and-reconcile",
+      "domain": "fleet",
+      "authoritySourceIds": [
+        "exact-fork-governance-builder",
+        "governance-runtime-dependency-closure-library",
+        "consumer-control-plane-policy-library",
+        "consumer-upgrade-protocol",
+        "consumer-upgrade-protocol-schema",
+        "consumer-control-plane-cli",
+        "exact-fleet-reconcile-cli",
+        "exact-fleet-reconcile-mirror-library",
+        "exact-github-desired-state",
+        "consumer-managed-repos-inventory",
+        "consumer-bootstrap-library",
+        "consumer-upgrade-protocol-library",
+        "exact-model-validation-library",
+        "managed-host-release-binding",
+        "consumer-control-plane-baseline-receipt-schema",
+        "consumer-control-plane-update-plan-schema",
+        "consumer-control-plane-update-snapshot-verification-schema",
+        "consumer-control-plane-update-readback-schema",
+        "consumer-control-plane-update-readback-verification-schema",
+        "consumer-control-plane-update-acceptance-proposal-schema",
+        "consumer-bootstrap-plan-schema",
+        "consumer-bootstrap-snapshot-verification-schema",
+        "consumer-bootstrap-readback-verification-schema",
+        "consumer-bootstrap-promotion-proposal-schema",
+        "consumer-fanout-review-schema",
+        "consumer-fanout-dispatch-evidence-schema",
+        "consumer-bootstrap-managed-repos-schema",
+        "exact-fleet-reconcile-journal-schema",
+        "exact-fleet-reconcile-bootstrap-transaction-schema",
+        "exact-fleet-reconcile-bootstrap-replay-receipt-schema",
+        "exact-github-desired-schema",
+        "staged-rollout-library",
+        "staged-rollout-plan"
+      ],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "infra/governance/test/consumerctl.test.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/rollout-state-machine.test.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/staged-rollout.test.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "fleet-plan-and-reconcile.proves.01",
+          "entryId": "fleet-plan-and-reconcile",
+          "domain": "fleet",
+          "kind": "proves",
+          "text": "Fleet planning respects repository roles, release rings, waves, evidence predicates and least-privilege mutation boundaries.",
+          "sourceIds": ["exact-fork-governance-builder", "governance-runtime-dependency-closure-library", "consumer-control-plane-policy-library", "consumer-upgrade-protocol", "consumer-upgrade-protocol-schema", "consumer-control-plane-cli", "exact-fleet-reconcile-cli", "exact-fleet-reconcile-mirror-library", "exact-github-desired-state", "consumer-managed-repos-inventory", "consumer-bootstrap-library", "consumer-upgrade-protocol-library", "exact-model-validation-library", "managed-host-release-binding", "consumer-bootstrap-managed-repos-schema", "exact-github-desired-schema", "staged-rollout-plan"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/consumerctl.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/rollout-state-machine.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/staged-rollout.test.mjs"}]
+        },
+        {
+          "claimId": "fleet-plan-and-reconcile.proves.02",
+          "entryId": "fleet-plan-and-reconcile",
+          "domain": "fleet",
+          "kind": "proves",
+          "text": "Fleet check and apply require a bounded exact-quorum, canonical-order, externally signed independent-review receipt whose canonical plan bytes and every governance input are reloaded and CAS-checked with monotonic live time immediately before dispatch.",
+          "sourceIds": ["consumer-control-plane-cli", "exact-fleet-reconcile-cli", "consumer-control-plane-baseline-receipt-schema", "consumer-control-plane-update-plan-schema", "consumer-control-plane-update-snapshot-verification-schema", "consumer-control-plane-update-readback-schema", "consumer-control-plane-update-readback-verification-schema", "consumer-control-plane-update-acceptance-proposal-schema", "consumer-bootstrap-plan-schema", "consumer-bootstrap-snapshot-verification-schema", "consumer-bootstrap-readback-verification-schema", "consumer-bootstrap-promotion-proposal-schema", "consumer-fanout-review-schema"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/consumerctl.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"}]
+        },
+        {
+          "claimId": "fleet-plan-and-reconcile.proves.03",
+          "entryId": "fleet-plan-and-reconcile",
+          "domain": "fleet",
+          "kind": "proves",
+          "text": "Fleet dispatch evidence has a closed bounded schema and never converts accepted-but-unread requests into a completion claim.",
+          "sourceIds": ["exact-fleet-reconcile-cli", "consumer-fanout-dispatch-evidence-schema", "exact-fleet-reconcile-journal-schema"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"}]
+        },
+        {
+          "claimId": "fleet-plan-and-reconcile.proves.04",
+          "entryId": "fleet-plan-and-reconcile",
+          "domain": "fleet",
+          "kind": "proves",
+          "text": "Authority-policy bootstrap journals remain local non-promotion evidence; candidate freeze accepts them only after exact ordered event replay through the canonical signed mirror protocol, independent head verification, canonical activation binding, and content-addressed readback.",
+          "sourceIds": ["exact-fleet-reconcile-cli", "exact-fleet-reconcile-mirror-library", "exact-fleet-reconcile-bootstrap-transaction-schema", "exact-fleet-reconcile-bootstrap-replay-receipt-schema", "staged-rollout-library", "staged-rollout-plan"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/staged-rollout.test.mjs"}]
+        },
+        {
+          "claimId": "fleet-plan-and-reconcile.proves.05",
+          "entryId": "fleet-plan-and-reconcile",
+          "domain": "fleet",
+          "kind": "proves",
+          "text": "Unknown external state, stale receipts and incomplete certification block rollout instead of becoming a green default.",
+          "sourceIds": ["exact-fleet-reconcile-cli", "exact-model-validation-library", "managed-host-release-binding", "consumer-control-plane-update-readback-verification-schema", "staged-rollout-plan"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/rollout-state-machine.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/staged-rollout.test.mjs"}]
+        },
+        {
+          "claimId": "fleet-plan-and-reconcile.does-not-prove.01",
+          "entryId": "fleet-plan-and-reconcile",
+          "domain": "fleet",
+          "kind": "does-not-prove",
+          "text": "Any GitHub repository, App, ruleset, environment or off-host journal is active without signed live readback.",
+          "sourceIds": ["exact-github-desired-state", "consumer-managed-repos-inventory", "managed-host-release-binding", "exact-fleet-reconcile-journal-schema", "exact-github-desired-schema"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/staged-rollout.test.mjs"}]
+        }
+      ]
+    },
+    {
+      "entryId": "evidence-provenance-and-parity",
+      "domain": "evidence",
+      "authoritySourceIds": [
+        "deep-audit-evidence-contract",
+        "deep-audit-ci-evidence-pipeline",
+        "deep-audit-ci-live-observer",
+        "deep-audit-ci-observation-schema",
+        "exact-governance-common-library",
+        "exact-model-validation-library",
+        "exact-provider-runtime-conformance-library",
+        "exact-runtime-certification-library",
+        "exact-repository-subject-proof-library",
+        "exact-external-surface-evidence-library",
+        "external-operator-library",
+        "exact-runtime-conformance-cli",
+        "external-operator-cli",
+        "exact-runtime-promotion-cli",
+        "model-invocation-profiles",
+        "provider-runtime-conformance-profile",
+        "provider-role-surface-policy",
+        "consumer-managed-repos-inventory",
+        "issuer-registry",
+        "visual-baseline-review-policy",
+        "provider-surface-certifications-schema",
+        "external-surface-import-receipt-schema",
+        "external-runtime-certification-proposal-schema",
+        "provider-review-capability-certification-proposal-schema",
+        "external-ledger-transaction-handoff-schema",
+        "external-activation-signing-request-schema",
+        "external-activation-signature-bundle-schema",
+        "external-activation-proposal-schema",
+        "external-operator-block-result-schema",
+        "provider-role-surface-policy-schema",
+        "consumer-bootstrap-managed-repos-schema",
+        "issuer-registry-schema",
+        "exact-runtime-conformance-evidence-schema",
+        "provider-runtime-conformance-profile-schema",
+        "exact-external-surface-evidence-schema",
+        "visual-baseline-review-policy-schema",
+        "exact-visual-baseline-library",
+        "exact-visual-baseline-cli",
+        "exact-safe-filesystem-library",
+        "exact-fork-governance-builder",
+        "governance-runtime-dependency-closure-library",
+        "external-ledger-writer-workflow",
+        "external-ledger-writer-library",
+        "external-ledger-writer-cli",
+        "external-ledger-writer-dispatch-schema",
+        "external-ledger-writer-plan-schema",
+        "external-ledger-writer-artifact-identity-schema",
+        "external-ledger-writer-receipt-schema",
+        "governance-anchor-workflow",
+        "governance-anchor-preflight",
+        "privileged-change-verifier",
+        "agent-bootstrap",
+        "canonical-hook-approval-evidence-helper",
+        "authority-decision-evidence-library",
+        "exact-provider-registry",
+        "provider-hook-runner",
+        "provider-adapter-generator"
+      ],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "scripts/test-governance-runtime-evidence.mjs"},
+        {"kind": "test-path", "path": "scripts/test-deep-audit-evidence-schema-parity.mjs"},
+        {"kind": "test-path", "path": "scripts/test-visual-baseline-review.mjs"},
+        {"kind": "test-path", "path": "scripts/test-governance-anchor-preflight.mjs"},
+        {"kind": "test-path", "path": "scripts/test-workflow-security.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/external-surface-evidence.test.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/external-operator.test.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/external-ledger-writer.test.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/model-validation.test.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/provider-runtime-conformance.test.mjs"},
+        {"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"},
+        {"kind": "test-path", "path": "scripts/test-produce-ci-enforced-evidence.mjs"},
+        {"kind": "test-path", "path": "scripts/test-authority-decision-evidence.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "evidence-provenance-and-parity.proves.01",
+          "entryId": "evidence-provenance-and-parity",
+          "domain": "evidence",
+          "kind": "proves",
+          "text": "Deterministic, hook, model, CI and provider-runtime evidence share closed schema and immutable subject bindings; a role-selected canary subject is proven by exact object/ancestry/change-set readback without recursive self-certification.",
+          "sourceIds": ["deep-audit-evidence-contract", "deep-audit-ci-evidence-pipeline", "deep-audit-ci-live-observer", "deep-audit-ci-observation-schema", "exact-governance-common-library", "exact-model-validation-library", "exact-provider-runtime-conformance-library", "exact-runtime-certification-library", "exact-repository-subject-proof-library", "exact-external-surface-evidence-library", "external-operator-library", "exact-runtime-conformance-cli", "external-operator-cli", "model-invocation-profiles", "provider-runtime-conformance-profile", "provider-surface-certifications-schema", "external-surface-import-receipt-schema", "exact-runtime-conformance-evidence-schema", "provider-runtime-conformance-profile-schema", "exact-external-surface-evidence-schema"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-governance-runtime-evidence.mjs"}, {"kind": "test-path", "path": "scripts/test-deep-audit-evidence-schema-parity.mjs"}, {"kind": "test-path", "path": "infra/governance/test/external-surface-evidence.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/external-operator.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/model-validation.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/provider-runtime-conformance.test.mjs"}, {"kind": "test-path", "path": "scripts/test-produce-ci-enforced-evidence.mjs"}]
+        },
+        {
+          "claimId": "evidence-provenance-and-parity.proves.02",
+          "entryId": "evidence-provenance-and-parity",
+          "domain": "evidence",
+          "kind": "proves",
+          "text": "Local or unsigned evidence cannot be relabeled as managed or certified evidence.",
+          "sourceIds": ["exact-runtime-certification-library", "exact-runtime-promotion-cli", "issuer-registry", "external-runtime-certification-proposal-schema", "provider-review-capability-certification-proposal-schema", "external-ledger-transaction-handoff-schema", "external-activation-signing-request-schema", "external-activation-signature-bundle-schema", "external-activation-proposal-schema", "external-operator-block-result-schema", "issuer-registry-schema"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/external-operator.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/provider-runtime-conformance.test.mjs"}]
+        },
+        {
+          "claimId": "evidence-provenance-and-parity.proves.03",
+          "entryId": "evidence-provenance-and-parity",
+          "domain": "evidence",
+          "kind": "proves",
+          "text": "Visual-baseline proposals bind the governed Git origin and HEAD commit/tree, fully decoded CRC-valid PNG candidate/baseline inventories, file modes, explicit non-placeholder per-image statements, trust-policy bytes and exact review rows; unsigned approval, cross-repository replay, arbitrary callbacks, policy/issuer/image substitution, links, contention and partial publication fail closed.",
+          "sourceIds": ["issuer-registry", "visual-baseline-review-policy", "issuer-registry-schema", "visual-baseline-review-policy-schema", "exact-visual-baseline-library", "exact-visual-baseline-cli", "exact-safe-filesystem-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-visual-baseline-review.mjs"}]
+        },
+        {
+          "claimId": "evidence-provenance-and-parity.proves.04",
+          "entryId": "evidence-provenance-and-parity",
+          "domain": "evidence",
+          "kind": "proves",
+          "text": "The same role-portable trust-policy bytes resolve under authority and BOM-managed consumer governance roots; this tool version rejects every managed-broker activation attempt until canonical signed broker/model-authority receipt validators are reused.",
+          "sourceIds": ["provider-role-surface-policy", "consumer-managed-repos-inventory", "provider-role-surface-policy-schema", "consumer-bootstrap-managed-repos-schema", "exact-fork-governance-builder", "governance-runtime-dependency-closure-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-visual-baseline-review.mjs"}, {"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"}]
+        },
+        {
+          "claimId": "evidence-provenance-and-parity.proves.05",
+          "entryId": "evidence-provenance-and-parity",
+          "domain": "evidence",
+          "kind": "proves",
+          "text": "Reviewed certification and activation handoffs are serialized into exact protected-default one-parent pull requests: runtime certification atomically adds its content-addressed evidence plus ledger, provider review certification atomically adds the exact runtime and review-capability evidence plus both ledgers, activation changes only its ledger, and same-run artifact/App identity, expiring base CAS, exact tree/commit/PR readback, mutually exclusive protected-base routing and merge-gate replay fail closed.",
+          "sourceIds": ["provider-review-capability-certification-proposal-schema", "external-ledger-transaction-handoff-schema", "external-ledger-writer-workflow", "external-ledger-writer-library", "external-ledger-writer-cli", "external-ledger-writer-dispatch-schema", "external-ledger-writer-plan-schema", "external-ledger-writer-artifact-identity-schema", "external-ledger-writer-receipt-schema", "governance-anchor-workflow", "governance-anchor-preflight", "privileged-change-verifier"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/external-ledger-writer.test.mjs"}, {"kind": "test-path", "path": "scripts/test-governance-anchor-preflight.mjs"}, {"kind": "test-path", "path": "scripts/test-workflow-security.mjs"}]
+        },
+        {
+          "claimId": "evidence-provenance-and-parity.proves.06",
+          "entryId": "evidence-provenance-and-parity",
+          "domain": "evidence",
+          "kind": "proves",
+          "text": "Canonical Decision Authority remains one AGENTS.md SSOT; deterministic content-addressed receipts bind its exact policy, classifier, provider registry, provider/surface/session/target/operation scope and shared root/fork adapters. Operation-only Standing Authorization accepts only closed governance-action targets whose exact operation digest matches, while UI/UX, human-only, destructive/bypass, malformed, stale, replayed, substituted, tampered and unknown-provider evidence fails closed across local, cloud, remote and CI structural surfaces without claiming runtime certification.",
+          "sourceIds": ["agent-bootstrap", "canonical-hook-approval-evidence-helper", "authority-decision-evidence-library", "exact-provider-registry", "provider-hook-runner", "provider-adapter-generator", "exact-fork-governance-builder"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-authority-decision-evidence.mjs"}]
+        },
+        {
+          "claimId": "evidence-provenance-and-parity.does-not-prove.01",
+          "entryId": "evidence-provenance-and-parity",
+          "domain": "evidence",
+          "kind": "does-not-prove",
+          "text": "An external signer, managed executor or provider runtime is certified while its ledger remains pending.",
+          "sourceIds": ["exact-runtime-certification-library", "exact-runtime-promotion-cli", "issuer-registry", "external-ledger-transaction-handoff-schema", "external-activation-proposal-schema"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/external-operator.test.mjs"}, {"kind": "test-path", "path": "infra/governance/test/provider-runtime-conformance.test.mjs"}]
+        },
+        {
+          "claimId": "evidence-provenance-and-parity.does-not-prove.02",
+          "entryId": "evidence-provenance-and-parity",
+          "domain": "evidence",
+          "kind": "does-not-prove",
+          "text": "The human signature proves an allowlisted authorized approval, not independence between the proposal author audit label and the human actor.",
+          "sourceIds": ["issuer-registry", "visual-baseline-review-policy", "issuer-registry-schema", "visual-baseline-review-policy-schema"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-visual-baseline-review.mjs"}]
+        },
+        {
+          "claimId": "evidence-provenance-and-parity.does-not-prove.03",
+          "entryId": "evidence-provenance-and-parity",
+          "domain": "evidence",
+          "kind": "does-not-prove",
+          "text": "The canonical visual-review policy is currently not activated; local fixtures do not prove a live human issuer, managed broker, external readback, malicious-repository-owner resistance, parent-directory-swap resistance, storage power-loss durability, npm installer lifecycle, or adoption by an external consumer.",
+          "sourceIds": ["consumer-managed-repos-inventory", "issuer-registry", "visual-baseline-review-policy", "visual-baseline-review-policy-schema", "exact-visual-baseline-library", "exact-visual-baseline-cli", "exact-safe-filesystem-library", "exact-fork-governance-builder", "governance-runtime-dependency-closure-library"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-visual-baseline-review.mjs"}, {"kind": "test-path", "path": "infra/governance/test/reconcile-github.test.mjs"}]
+        },
+        {
+          "claimId": "evidence-provenance-and-parity.does-not-prove.04",
+          "entryId": "evidence-provenance-and-parity",
+          "domain": "evidence",
+          "kind": "does-not-prove",
+          "text": "A transient workflow artifact, writer receipt, local fixture or open pull request proves neither protected-main merge nor live external activation/certification; durable authority still requires protected Git and merged-ledger readback.",
+          "sourceIds": ["external-ledger-writer-workflow", "external-ledger-writer-receipt-schema", "governance-anchor-workflow"],
+          "executionOwners": [{"kind": "test-path", "path": "infra/governance/test/external-ledger-writer.test.mjs"}, {"kind": "test-path", "path": "scripts/test-governance-anchor-preflight.mjs"}]
+        }
+      ]
+    },
+    {
+      "entryId": "fake-green-ratchet",
+      "domain": "fake-green",
+      "authoritySourceIds": [
+        "exact-gate-meta-test-auditor",
+        "exact-gate-meta-test-baseline",
+        "gate-meta-test-runner",
+        "gate-meta-test-exclusions",
+        "exact-canonical-hook-suite"
+      ],
+      "executedTestOwners": [
+        {"kind": "test-path", "path": "scripts/test-run-gate-meta-tests-isolation.mjs"},
+        {"kind": "test-path", "path": "scripts/test-gate-meta-test-exclusion-inventory.mjs"}
+      ],
+      "claims": [
+        {
+          "claimId": "fake-green-ratchet.proves.01",
+          "entryId": "fake-green-ratchet",
+          "domain": "fake-green",
+          "kind": "proves",
+          "text": "New checker gates cannot silently appear without a paired meta-test or reviewed ratchet debt.",
+          "sourceIds": ["exact-gate-meta-test-auditor", "exact-gate-meta-test-baseline", "gate-meta-test-exclusions"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-gate-meta-test-exclusion-inventory.mjs"}]
+        },
+        {
+          "claimId": "fake-green-ratchet.proves.02",
+          "entryId": "fake-green-ratchet",
+          "domain": "fake-green",
+          "kind": "proves",
+          "text": "Gate meta-tests execute in a disposable snapshot whose caller bytes, modes, types and Git state are fingerprinted before and after.",
+          "sourceIds": ["gate-meta-test-runner"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-run-gate-meta-tests-isolation.mjs"}]
+        },
+        {
+          "claimId": "fake-green-ratchet.proves.03",
+          "entryId": "fake-green-ratchet",
+          "domain": "fake-green",
+          "kind": "proves",
+          "text": "Every discovered checker gate executes a paired mutation test; former browser, build, registry and model gaps use closed fixtures while retaining their live E2E or external-readback owners.",
+          "sourceIds": ["exact-gate-meta-test-auditor", "gate-meta-test-exclusions"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-gate-meta-test-exclusion-inventory.mjs"}]
+        },
+        {
+          "claimId": "fake-green-ratchet.proves.04",
+          "entryId": "fake-green-ratchet",
+          "domain": "fake-green",
+          "kind": "proves",
+          "text": "The canonical hook behavioral suite executes the DS-canonical run-all.sh exactly once under one aggregate deadline; generated .claude hook tests are checked only by canonical-to-mirror digest parity and are never executed as a second suite.",
+          "sourceIds": ["exact-canonical-hook-suite"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-run-gate-meta-tests-isolation.mjs"}]
+        },
+        {
+          "claimId": "fake-green-ratchet.does-not-prove.01",
+          "entryId": "fake-green-ratchet",
+          "domain": "fake-green",
+          "kind": "does-not-prove",
+          "text": "The presence of a paired test file alone proves the quality of its mutation assertion.",
+          "sourceIds": ["exact-gate-meta-test-auditor", "exact-gate-meta-test-baseline"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-gate-meta-test-exclusion-inventory.mjs"}]
+        },
+        {
+          "claimId": "fake-green-ratchet.does-not-prove.02",
+          "entryId": "fake-green-ratchet",
+          "domain": "fake-green",
+          "kind": "does-not-prove",
+          "text": "Fixture-backed paired mutation coverage does not certify live browser, registry, model, CI or managed-host execution.",
+          "sourceIds": ["exact-gate-meta-test-auditor", "gate-meta-test-exclusions"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-gate-meta-test-exclusion-inventory.mjs"}]
+        },
+        {
+          "claimId": "fake-green-ratchet.does-not-prove.03",
+          "entryId": "fake-green-ratchet",
+          "domain": "fake-green",
+          "kind": "does-not-prove",
+          "text": "Generated-mirror digest parity is not a second behavioral execution and cannot substitute for the canonical hook suite result.",
+          "sourceIds": ["exact-canonical-hook-suite"],
+          "executionOwners": [{"kind": "test-path", "path": "scripts/test-run-gate-meta-tests-isolation.mjs"}]
+        }
+      ]
+    }
+  ]
+}

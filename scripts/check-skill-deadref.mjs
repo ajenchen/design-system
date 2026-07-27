@@ -11,20 +11,30 @@
 //            (section rename/remove 時把舊名加進此 list = 機械擋未來 drift;比 fuzzy heading-exist 精準。)
 // Usage: node scripts/check-skill-deadref.mjs [--check]
 import { readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 
-const ROOT = process.cwd()
+const rootIndex = process.argv.indexOf('--root')
+if (rootIndex !== -1 && !process.argv[rootIndex + 1]) {
+  console.error('usage: check-skill-deadref.mjs [--check] [--root <repo>]')
+  process.exit(2)
+}
+const ROOT = rootIndex === -1 ? process.cwd() : resolve(process.argv[rootIndex + 1])
 const CHECK = process.argv.includes('--check')
-const SCAN_DIRS = ['.claude/skills', '.claude/rules', '.claude/references', '.claude/commands']
-const EXCLUDE = /ds-canonical|\/planning\/|\/scratch\/|\/retired\/|\/tmp\/|node_modules/
+const SCAN_DIRS = [
+  'packages/design-system/ds-canonical/skills',
+  'packages/design-system/ds-canonical/rules',
+  'packages/design-system/ds-canonical/references',
+  'packages/design-system/ds-canonical/commands',
+]
+const EXCLUDE = /\/planning\/|\/scratch\/|\/retired\/|\/tmp\/|node_modules/
 
 // 已移除/改名的 CLAUDE.md section(2026-05-30 codify)。renamed/removed 時 append 此 list。
 const REMOVED_SECTIONS = [
   { dead: '資訊治理 canonical', now: '# 治理 canonical' },
   { dead: '資訊治理', now: '# 治理 canonical' },
   { dead: 'Consistency Audit 原則', now: '# 稽核 canonical「Consistency 類稽核」' },
-  { dead: '同 flex 列互動 slot 幾何鐵律', now: '.claude/references/ui-dev-rules.md「同 flex 列的互動 slot 幾何鐵律」' },
-  { dead: '同 flex 列的互動 slot 幾何鐵律', now: '.claude/references/ui-dev-rules.md(CLAUDE.md 已無此段)' },
+  { dead: '同 flex 列互動 slot 幾何鐵律', now: 'packages/design-system/ds-canonical/references/ui-dev-rules.md「同 flex 列的互動 slot 幾何鐵律」' },
+  { dead: '同 flex 列的互動 slot 幾何鐵律', now: 'packages/design-system/ds-canonical/references/ui-dev-rules.md(CLAUDE.md 已無此段)' },
 ]
 const LINENUM_RE = /CLAUDE\.md\s*(?:line|L)\s*\d+/gi
 

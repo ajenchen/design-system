@@ -1,7 +1,8 @@
 #!/bin/bash
 # Tests for check_dim_count_drift.sh(audit dim count SSOT drift P1 soft warn)
 #
-# Hook 規則:Edit/Write/MultiEdit + 目標 file 是 chain skill / meta-patterns / CLAUDE.md /
+# Hook 規則:Edit/Write/MultiEdit + 目標 file 是 chain skill / meta-patterns / AGENTS.md /
+# provider import shell /
 # skill SKILL.md / skill references → 偵測 `\b[1-9][0-9]+[ -]?(dim|audit dim|audit dimension)`
 # 形 hardcode → stderr soft warn (exit 0)。
 # Skip:design-system-audit/SKILL.md(SSOT)/ design-system-audit/references/* / out-of-scope path /
@@ -62,31 +63,35 @@ expect_warn() {
 echo "=== check_dim_count_drift tests ==="
 
 # 1. non Edit/Write tool → skip
-run_hook "Read" "/repo/.claude/rules/meta-patterns.md" "53 dim hardcode"
+run_hook "Read" "/repo/packages/design-system/ds-canonical/rules/meta-patterns.md" "53 dim hardcode"
 expect_pass_silent "1. non Edit/Write → skip"
 
 # 2. SSOT itself (design-system-audit/SKILL.md) → skip
-run_hook "Edit" "/repo/.claude/skills/design-system-audit/SKILL.md" "53 audit dimensions covers all"
+run_hook "Edit" "/repo/packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md" "53 audit dimensions covers all"
 expect_pass_silent "2. SSOT file path → skip"
 
 # 3. Out-of-scope file (random tsx) → skip
 run_hook "Edit" "/repo/packages/design-system/src/foo.tsx" "53 dim hardcode"
 expect_pass_silent "3. out-of-scope path → skip"
 
-# 4. CLAUDE.md with hardcoded `53 dim` → warn
+# 4. Shared AGENTS.md with hardcoded `53 dim` → warn
+run_hook "Edit" "/repo/AGENTS.md" "現有 53 dim 覆蓋全部"
+expect_warn "4. AGENTS.md + 53 dim hardcode → warn" "AUDIT DIM COUNT DRIFT"
+
+# 4b. Provider import shell remains covered too.
 run_hook "Edit" "/repo/CLAUDE.md" "現有 53 dim 覆蓋全部"
-expect_warn "4. CLAUDE.md + 53 dim hardcode → warn" "AUDIT DIM COUNT DRIFT"
+expect_warn "4b. provider import shell + 53 dim hardcode → warn" "AUDIT DIM COUNT DRIFT"
 
 # 5. meta-patterns.md with `46 audit dimensions` → warn
-run_hook "Write" "/repo/.claude/rules/meta-patterns.md" "鏈到 46 audit dimensions"
+run_hook "Write" "/repo/packages/design-system/ds-canonical/rules/meta-patterns.md" "鏈到 46 audit dimensions"
 expect_warn "5. meta-patterns + 46 audit dimensions → warn" "AUDIT DIM COUNT DRIFT"
 
 # 6. Allowed context (line contains 'SSOT') → silent
-run_hook "Edit" "/repo/.claude/skills/foo/SKILL.md" "53 dim SSOT 在 design-system-audit"
+run_hook "Edit" "/repo/packages/design-system/ds-canonical/skills/foo/SKILL.md" "53 dim SSOT 在 design-system-audit"
 expect_pass_silent "6. line contains SSOT → allowed silent"
 
 # 7. Allowed context (line contains '禁') → silent
-run_hook "Edit" "/repo/.claude/skills/foo/SKILL.md" "禁 hardcode 53 dim 形式的數字"
+run_hook "Edit" "/repo/packages/design-system/ds-canonical/skills/foo/SKILL.md" "禁 hardcode 53 dim 形式的數字"
 expect_pass_silent "7. line contains 禁 → allowed silent"
 
 echo ""

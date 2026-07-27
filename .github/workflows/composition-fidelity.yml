@@ -1,22 +1,8 @@
-name: Composition Fidelity (DS canonical vs PW consumer visual diff)
+name: Composition Fidelity (DS canonical vs product pilot)
 
-# 2026-05-27 ship per user 「mechanical 機制讓未來所有 DS components 在
-# ds-product-template 渲染必跟 DS canonical 一致 可被驗證(byte-identity 不夠,visual diff)」
-#
-# 機制:
-# 1. Checkout DS + PW(via gh CLI or remote ref)
-# 2. Build DS storybook-static
-# 3. Build PW storybook-static
-# 4. Run `scripts/composition-fidelity-visual-diff.mjs`(v2 with G1-G5 fixes)
-# 5. Fail-on-drift > per-mapping threshold
-#
-# 對齊 Chromatic / Percy / shadcn-ui registry visual snapshot CI canonical.
-#
-# Trigger:DS push main(SSOT bump 觸發 PR repo dispatch fires composition diff)
-#         OR PR to main in this DS repo(防 ship 破 consumer 的 DS canonical 改動)
-#
-# Skip:commit msg / PR title 含「[skip-composition-fidelity]」(emergency only)
-
+# The product pilot lives in apps/template and is built from the same reviewed
+# commit as the DS. This avoids executing mutable code from another repository
+# in a privileged DS workflow and validates changes before they are mirrored.
 on:
   push:
     branches: [main]
@@ -26,132 +12,69 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
+
+defaults:
+  run:
+    shell: bash -eo pipefail {0}
 
 jobs:
   composition-fidelity:
     name: Composition Fidelity Diff
-    if: "!contains(github.event.head_commit.message, '[skip-composition-fidelity]') && !contains(github.event.pull_request.title, '[skip-composition-fidelity]')"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
-
     steps:
-      - name: Checkout DS
-        uses: actions/checkout@v4
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          path: design-system
+          persist-credentials: false
 
-      - name: Checkout consumer (ds-product-template)
-        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          repository: ajenchen/ds-product-template
-          path: ds-product-template
-          # If private, gh PAT — for public template, none needed.
-          # token: ${{ secrets.PW_REPO_PAT }}
+          node-version: '24.14.0'
+          cache: npm
 
-      # 2026-06-11 deep-audit R2 #6:identity diff 是明確 opt-in(composition-fidelity.md 層 3)—
-      # diff script 對 0 個 @composition-fidelity-mode mapping 必 vacuous exit 0,卻仍先花 ~30 min
-      # dual storybook build。便宜 pre-step(秒級 grep,regex 對齊 composition-fidelity-visual-diff.mjs:118)
-      # 0 命中 → skip 全部重步驟;有命中 → full gate 照跑。Marker SSOT 在 consumer story 檔
-      # (DS repo apps/template 經 mirror-to-published-template 傳播到 ds-product-template)。
-      - name: Detect identity opt-in markers (cheap pre-step)
-        id: optin
-        working-directory: ds-product-template
+      - name: Install and audit with the lock-verified npm runtime
+        run: npm run --silent setup:dependencies
+
+      - name: Install Playwright Chromium explicitly
+        run: npm run --silent setup:playwright -- --with-deps
+
+      - name: Require at least one non-vacuous fidelity mapping
         run: |
-          count=$({ grep -rE --include='*.tsx' --include='*.ts' \
-            --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=storybook-static \
-            '@composition-fidelity-mode:[[:space:]]*(pixel|shell-only|structural)' . || true; } | wc -l | tr -d ' ')
-          echo "count=$count" >> "$GITHUB_OUTPUT"
-          if [ "$count" = "0" ]; then
-            echo "::notice::0 個 @composition-fidelity-mode opt-in marker in consumer — skip dual storybook build(diff script 對 0 mapping 必 exit 0;conformance 由靜態 hook 防線保證,見 .claude/references/composition-fidelity.md 層 2)"
-          else
-            echo "Found $count opt-in marker line(s) — full identity diff gate will run."
+          if ! grep -R -E --include='*.tsx' --include='*.ts' \
+            '@composition-fidelity-mode:[[:space:]]*(pixel|shell-only|structural)' apps/template/src; then
+            echo '❌ product pilot has no composition-fidelity mapping; refusing a vacuous required check.'
+            exit 1
           fi
 
-      - uses: actions/setup-node@v4
-        if: steps.optin.outputs.count != '0'
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: |
-            design-system/package-lock.json
-            ds-product-template/package-lock.json
-
-      - name: Install DS deps
-        if: steps.optin.outputs.count != '0'
-        working-directory: design-system
-        run: npm ci --legacy-peer-deps
-
-      - name: Install PW deps
-        if: steps.optin.outputs.count != '0'
-        working-directory: ds-product-template
-        run: npm ci --legacy-peer-deps
-
-      - name: Install Playwright chromium (DS)
-        if: steps.optin.outputs.count != '0'
-        working-directory: design-system
-        run: npx playwright install --with-deps chromium
-
-      # 2026-06-02 fix:build-storybook 前必先 build:lib(chain: DS build → DS dts → storybook-config build)。
-      # 漏這步 → storybook-config preview.tsx 的 `import @qijenchen/design-system` tsc 找不到型別 → TS2307,
-      # 此 workflow 整天連紅(不擋發版,但污染 main CI 信號)。對齊 release.yml / ci.yml 已 proven 的 build 順序。
-      - name: Build DS lib(型別宣告 — storybook-config tsc 需 @qijenchen/design-system)
-        if: steps.optin.outputs.count != '0'
-        working-directory: design-system
+      - name: Build DS library and shared Storybook configuration
         run: npm run build:lib
 
-      - name: Build DS storybook-static
-        if: steps.optin.outputs.count != '0'
-        working-directory: design-system
+      - name: Build canonical and product-pilot stories from this commit
         run: npm run build-storybook
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Build PW storybook-static
-        if: steps.optin.outputs.count != '0'
-        working-directory: ds-product-template
-        run: npm run build-storybook
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-
-      - name: Run composition-fidelity diff
-        if: steps.optin.outputs.count != '0'
-        working-directory: design-system
+      - name: Compare product pilot with DS canonical
         run: |
           node scripts/composition-fidelity-visual-diff.mjs \
             --ds-static=storybook-static \
-            --consumer-static=../ds-product-template/storybook-static \
-            --consumer-root=../ds-product-template \
-            --threshold-pct=0.5 \
-            --out=.claude/snapshots/composition-fidelity
+            --consumer-static=storybook-static \
+            --consumer-root=apps/template \
+            --require-mappings \
+            --threshold-pct=0.5
 
       - name: Upload diff artifacts on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: composition-fidelity-artifacts
           path: |
-            design-system/.claude/snapshots/composition-fidelity/baseline/
-            design-system/.claude/snapshots/composition-fidelity/consumer/
-            design-system/.claude/snapshots/composition-fidelity/diff/
-            design-system/.claude/snapshots/composition-fidelity/report.json
+            .git/governance-runtime/evidence/visual/composition-fidelity/baseline/
+            .git/governance-runtime/evidence/visual/composition-fidelity/consumer/
+            .git/governance-runtime/evidence/visual/composition-fidelity/diff/
+            .git/governance-runtime/evidence/visual/composition-fidelity/report.json
+          if-no-files-found: warn
+          include-hidden-files: true
           retention-days: 14
-
-      - name: Comment PR with drift summary
-        if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs')
-            const reportPath = 'design-system/.claude/snapshots/composition-fidelity/report.json'
-            if (!fs.existsSync(reportPath)) return
-            const report = JSON.parse(fs.readFileSync(reportPath, 'utf-8'))
-            // status 真值來自 script result.status(overallStatus):PASS / DOM_FAIL / PIXEL_FAIL / BOTH_FAIL(無裸 'FAIL')+ SIZE_MISMATCH / TIMEOUT。
-            // 2026-06-03 修:原 filter 找 'FAIL' 抓不到 DOM_FAIL/PIXEL_FAIL/BOTH_FAIL → drift 時 job 紅但 PR comment 空白。
-            const fails = (report.results || []).filter(r => ['DOM_FAIL', 'PIXEL_FAIL', 'BOTH_FAIL', 'SIZE_MISMATCH', 'TIMEOUT'].includes(r.status))
-            if (fails.length === 0) return
-            // 2026-06-03 修:diffPct 巢狀在 r.pixel.diffPct(非頂層)+ 生效 threshold 在 r.pixel.threshold(r.threshold 是 marker 值常 null)
-            // → 原讀 r.diffPct/r.threshold 讓每行永遠顯示 '—%'。TIMEOUT/SIZE_MISMATCH 無 pixel 物件 → ?. 優雅退 fallback。
-            const rows = fails.map(r => `| \`${r.consumerStoryId}\` | \`${r.baselineStoryId}\` | ${r.status} | ${r.pixel?.diffPct ?? '—'}% | ${r.pixel?.threshold ?? r.threshold ?? report.threshold ?? '—'}% |`).join('\n')
-            const body = `## ⚠️ Composition fidelity drift detected (${fails.length} mapping(s))\n\n| Consumer story | DS baseline | Status | Diff % | Threshold |\n|---|---|---|---|---|\n${rows}\n\n**Action**:download \`composition-fidelity-artifacts\` from this run to view baseline/consumer/diff PNGs. Fix consumer composition (or update threshold if intentional via \`@composition-fidelity-threshold: <pct>\` marker).`
-            github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body })

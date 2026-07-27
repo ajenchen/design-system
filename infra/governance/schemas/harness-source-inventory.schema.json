@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance-harness-source-inventory-v2.json",
+  "title": "Provider-neutral governance Harness source inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "kind",
+    "roots",
+    "executionBoundary",
+    "authorityContract",
+    "gateMetaExclusions",
+    "generatedMirrors",
+    "canonicalHookStaticHelpers",
+    "reviewedDisabled",
+    "staticExecutionFixtures",
+    "suites",
+    "pairedMeta",
+    "direct",
+    "externalExclusions",
+    "nonGovernance"
+  ],
+  "properties": {
+    "$schema": {"const": "../schemas/harness-source-inventory.schema.json"},
+    "schemaVersion": {"const": 2},
+    "kind": {"const": "provider-neutral-governance-harness-source-inventory"},
+    "roots": {
+      "const": [
+        "infra/governance/test/**/*.test.mjs",
+        "packages/governance/test/**/*.test.mjs",
+        "scripts/**/test-*.mjs",
+        "packages/design-system/ds-canonical/hooks/tests/**/test_*.sh{,.broken}",
+        ".claude/hooks/tests/**/test_*.sh{,.broken}"
+      ]
+    },
+    "executionBoundary": {
+      "const": "Committed test-source plus registered static-execution-fixture closure with structured argv, exact fixture digests, stripped credentials, isolated HOME/TMP and bounded process groups; entrypoint and registered Node fixture AST review is defense-in-depth, not arbitrary imported-dependency containment; this is not an OS sandbox and does not certify containment against arbitrary concurrent worktree or external writes."
+    },
+    "authorityContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "schemaPath", "closurePolicy"],
+      "properties": {
+        "path": {"const": "infra/governance/providers/harness-authority-contracts.json"},
+        "schemaPath": {"const": "infra/governance/schemas/harness-authority-contracts.schema.json"},
+        "closurePolicy": {"const": "claim-contract-and-schema-are-static-all-harness-receipt-inputs"}
+      }
+    },
+    "gateMetaExclusions": {"$ref": "#/$defs/gateDigestBinding"},
+    "generatedMirrors": {
+      "type": "array",
+      "description": "Digest-bound generated test mirrors are source identities, not additional execution owners.",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {"$ref": "#/$defs/generatedMirrorBinding"}
+    },
+    "canonicalHookStaticHelpers": {
+      "type": "object",
+      "description": "All committed canonical .mjs hook helpers, including behavioral-test helpers, are root-closed, exact-digest inputs with explicit shell consumers. Active canonical shell call sites forbid Node dynamic flags and stdin source.",
+      "additionalProperties": false,
+      "required": ["root", "policy", "entries"],
+      "properties": {
+        "root": {"const": "packages/design-system/ds-canonical/hooks"},
+        "policy": {"const": "all-active-mjs-exact-digest-and-consumer-bound;shell-dynamic-node-code-forbidden;generated-test-helper-mirror-bound"},
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/canonicalHookStaticHelper"}
+        }
+      }
+    },
+    "reviewedDisabled": {
+      "type": "array",
+      "description": "Digest-bound, owner-assigned and expiring debt for discovered canonical test_*.sh.broken sources. Empty is preferred; undeclared, stale or expired debt fails closed.",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/reviewedDisabledEntry"}
+    },
+    "staticExecutionFixtures": {
+      "type": "object",
+      "description": "Root-closed, exact-digest executable fixtures used transitively by reviewed Harness sources. Node fixtures receive the same AST review as entrypoints; Bash fixtures may invoke only static Node files.",
+      "additionalProperties": false,
+      "required": ["root", "policy", "entries"],
+      "properties": {
+        "root": {"const": "scripts/test-fixtures/transitive-execution"},
+        "policy": {"const": "all-files-exact-digest-and-consumer-bound;node-ast-reviewed;shell-dynamic-node-code-forbidden"},
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/staticExecutionFixture"}
+        }
+      }
+    },
+    "suites": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/suite"}
+    },
+    "pairedMeta": {
+      "type": "object",
+      "description": "Canonical isolated meta-test owner. A member may also appear in direct when the registry intentionally owns an additional exact leaf command.",
+      "additionalProperties": false,
+      "required": ["command", "members"],
+      "properties": {
+        "command": {"const": ["node", "scripts/run-gate-meta-tests.mjs"]},
+        "members": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/repoPath"}
+        }
+      }
+    },
+    "direct": {
+      "type": "array",
+      "description": "All and only discovered source leaves named by registry commands. Direct may overlap pairedMeta, but no suite or exclusion role.",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/repoPath"}
+    },
+    "externalExclusions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/repoPath"}
+    },
+    "nonGovernance": {"$ref": "#/$defs/nonGovernanceDigestBinding"}
+  },
+  "$defs": {
+    "repoPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "gateDigestBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"const": "scripts/gate-meta-test-exclusions.json"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "nonGovernanceDigestBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"const": "infra/governance/providers/harness-non-governance-exclusions.json"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "generatedMirrorBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "canonicalRoot", "mirrorRoot", "include", "treeSha256"],
+      "properties": {
+        "id": {"const": "claude-hook-behavioral-tests"},
+        "canonicalRoot": {"const": "packages/design-system/ds-canonical/hooks/tests"},
+        "mirrorRoot": {"const": ".claude/hooks/tests"},
+        "include": {"const": ["run-all.sh", "**/*.mjs", "**/test_*.sh", "**/test_*.sh.broken"]},
+        "treeSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "reviewedDisabledEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "owner", "reason", "expiresOn", "remediation"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^packages/design-system/ds-canonical/hooks/tests/test_[A-Za-z0-9._-]+\\.sh\\.broken$"
+        },
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "owner": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "reason": {"type": "string", "minLength": 40},
+        "expiresOn": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+        "remediation": {"type": "string", "minLength": 40}
+      }
+    },
+    "staticExecutionFixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "kind", "consumers"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^scripts/test-fixtures/transitive-execution/[A-Za-z0-9._/-]+$"
+        },
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "kind": {"enum": ["node", "bash"]},
+        "consumers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/repoPath"}
+        }
+      }
+    },
+    "canonicalHookStaticHelper": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "consumers"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^packages/design-system/ds-canonical/hooks/(?!retired/)[A-Za-z0-9._/-]+\\.mjs$"
+        },
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "consumers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^packages/design-system/ds-canonical/hooks/(?!retired/)[A-Za-z0-9._/-]+\\.sh$"
+          }
+        }
+      }
+    },
+    "suite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "memberTimeoutMs", "totalTimeoutMs", "execution", "members"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "memberTimeoutMs": {"type": "integer", "minimum": 1000, "maximum": 3600000},
+        "totalTimeoutMs": {"type": "integer", "minimum": 1000, "maximum": 21600000},
+        "execution": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind"],
+              "properties": {"kind": {"const": "members"}}
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "command"],
+              "properties": {
+                "kind": {"const": "aggregate"},
+                "command": {"const": ["bash", "packages/design-system/ds-canonical/hooks/tests/run-all.sh"]}
+              }
+            }
+          ]
+        },
+        "members": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/repoPath"}
+        }
+      }
+    }
+  }
+}

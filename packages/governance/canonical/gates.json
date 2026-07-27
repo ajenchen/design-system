@@ -1,0 +1,42 @@
+{
+  "$schema": "./schemas/gates.schema.json",
+  "schemaVersion": 1,
+  "gates": [
+    {
+      "id": "snapshot-integrity",
+      "command": "qijenchen-governance check --hooks-off",
+      "hard": true,
+      "hookIndependent": true
+    },
+    {
+      "id": "contract-doctor",
+      "command": "qijenchen-governance doctor --hooks-off",
+      "hard": true,
+      "hookIndependent": true
+    },
+    {
+      "id": "provider-parity",
+      "command": "node --test test/provider-parity.test.mjs",
+      "hard": true,
+      "hookIndependent": true
+    },
+    {
+      "id": "hook-independent-ci",
+      "command": "qijenchen-governance check --hooks-off",
+      "hard": true,
+      "hookIndependent": true
+    },
+    {
+      "id": "artifact-attestation",
+      "command": "qijenchen-governance attest",
+      "hard": true,
+      "hookIndependent": true
+    },
+    {
+      "id": "safe-upgrade",
+      "command": "qijenchen-governance upgrade plan",
+      "hard": true,
+      "hookIndependent": true
+    }
+  ]
+}

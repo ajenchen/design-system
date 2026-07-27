@@ -9,62 +9,76 @@
 //   必有 `scripts/test-<basename>.mjs` meta-test。
 // 豁免(明寫):gen-*(generator,--check 驗 drift = 自帶 self-check)/ test-*(本身是 test)/
 //   sync-*(sync 工具)/ 純 helper。
-// Ratchet:現存 debt 列 KNOWN_DEBT baseline(不 block,tracked);**新增** checker gate 無 meta-test → exit 1
-//   (防新洞;debt 逐支補後從 baseline 移除)。對齊 Polaris migrator ratchet。
+// Ratchet:checker inventory 與 paired mutation test 必須維持零 debt。新 gate 或移除 test 皆立即 fail closed；
+//   baseline 僅固定「空 debt」政策，不是新增豁免的通道。
 //
 // 用法:node scripts/audit-gate-meta-test-coverage.mjs [--check]
 
-import { readdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { discoverCheckerGates, discoverGateMetaTestPairs } from './lib/gate-meta-test-inventory.mjs'
 
 const SCRIPTS = dirname(fileURLToPath(import.meta.url))
 const BASELINE = join(SCRIPTS, 'audit-gate-meta-test-coverage.baseline.json')
 const CHECK = process.argv.includes('--check')
 const WRITE_BASELINE = process.argv.includes('--write-baseline')
 
-// checker gate 命名慣例(fail-closed 語意)
-const isChecker = (f) =>
-  /^(audit|check)-.*\.mjs$/.test(f) ||
-  /-invariant\.mjs$/.test(f) ||
-  /-coherence\.mjs$/.test(f) ||
-  /-invariants\.mjs$/.test(f)
-// 豁免:generator / test / sync / 本 gate 自己
-const isExempt = (f) =>
-  /^gen-/.test(f) || /^test-/.test(f) || /^sync-/.test(f) ||
-  /\.baseline\.json$/.test(f) || f === 'audit-gate-meta-test-coverage.mjs'
-
-const metaTestFor = (f) => `test-${f}`.replace(/\.mjs$/, '.mjs') // scripts/test-<name>.mjs
-const hasMetaTest = (f) => existsSync(join(SCRIPTS, `test-${f}`))
-
-const allFiles = readdirSync(SCRIPTS).filter((f) => f.endsWith('.mjs'))
-const gates = allFiles.filter((f) => isChecker(f) && !isExempt(f))
-const missing = gates.filter((f) => !hasMetaTest(f))
+const gates = discoverCheckerGates(join(SCRIPTS, '..'))
+const pairedStems = new Set(discoverGateMetaTestPairs(join(SCRIPTS, '..')).map(({ stem }) => stem))
+const missing = gates.filter((f) => !pairedStems.has(f.replace(/\.mjs$/, '')))
 
 if (WRITE_BASELINE) {
-  writeFileSync(BASELINE, JSON.stringify({ _note: 'gate meta-test debt baseline(ratchet;逐支補後移除)', knownDebt: missing.sort() }, null, 2) + '\n')
-  console.log(`✅ baseline 寫入 ${missing.length} 個 known debt`)
+  if (missing.length > 0) {
+    console.error(`❌ zero-debt policy 禁止把 ${missing.length} 個 checker gap 寫成 baseline 豁免`)
+    process.exit(1)
+  }
+  writeFileSync(BASELINE, `${JSON.stringify({
+    _note: 'Gate mutation coverage is discovery-derived and zero-debt; this file may never whitelist a missing pair.',
+    knownDebt: [],
+    debtReasons: {},
+  }, null, 2)}\n`)
+  console.log('✅ zero-debt baseline 已重建')
   process.exit(0)
 }
 
-const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')).knownDebt || [] : []
+const baselineDocument = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : {}
+const baseline = Array.isArray(baselineDocument.knownDebt) ? baselineDocument.knownDebt : []
+const debtReasons = baselineDocument.debtReasons && typeof baselineDocument.debtReasons === 'object'
+  ? baselineDocument.debtReasons
+  : {}
 const newGaps = missing.filter((f) => !baseline.includes(f))
+const staleDebt = baseline.filter((f) => !missing.includes(f))
+const duplicateDebt = baseline.filter((f, index) => baseline.indexOf(f) !== index)
+const missingReasons = baseline.filter((f) => typeof debtReasons[f] !== 'string' || !debtReasons[f].trim())
+const extraReasons = Object.keys(debtReasons).filter((f) => !baseline.includes(f))
+const baselineProblems = [
+  ...baseline.map((f) => `zero-debt baseline may not whitelist:${f}`),
+  ...staleDebt.map((f) => `stale known debt:${f}`),
+  ...duplicateDebt.map((f) => `duplicate known debt:${f}`),
+  ...missingReasons.map((f) => `known debt lacks reason:${f}`),
+  ...extraReasons.map((f) => `reason has no known debt:${f}`),
+]
 const covered = gates.length - missing.length
 
 console.log(`=== Gate meta-test coverage ===`)
-console.log(`checker gate: ${gates.length} / 有 meta-test: ${covered} / 缺: ${missing.length}(known debt ${baseline.length} + 新洞 ${newGaps.length})`)
+console.log(`checker gate: ${gates.length} / 有 meta-test: ${covered} / 缺: ${missing.length}(zero-debt baseline ${baseline.length})`)
 if (missing.length) {
-  console.log(`\nknown debt(tracked,逐支補):`)
+  console.log(`\n❌ zero-debt policy 下不可存在的 checker gaps:`)
   missing.filter((f) => baseline.includes(f)).forEach((f) => console.log(`  - ${f} → 需 scripts/test-${f}`))
 }
 if (newGaps.length) {
   console.log(`\n🚨 新 checker gate 無 meta-test(必補):`)
   newGaps.forEach((f) => console.log(`  - ${f} → 需 scripts/test-${f}(注入違規→確認 exit≠0→revert)`))
 }
+if (baselineProblems.length) {
+  console.log(`\n🚨 baseline 與實際 coverage 不一致:`)
+  baselineProblems.forEach((problem) => console.log(`  - ${problem}`))
+}
 
-if (CHECK && newGaps.length) {
-  console.error(`\n❌ ${newGaps.length} 個新 checker gate 缺 meta-test → 補 test-<name>.mjs 或加進 baseline(需理由)`)
+if (CHECK && (newGaps.length || baselineProblems.length)) {
+  console.error(`\n❌ gate meta-test coverage inventory 未閉合:new gaps ${newGaps.length},baseline problems ${baselineProblems.length}`)
   process.exit(1)
 }
-console.log(newGaps.length ? '' : '\n✅ 無新洞(known debt ratchet 中)')
+console.log(newGaps.length || baselineProblems.length ? '' : '\n✅ discovery-derived paired mutation coverage 全數閉合，zero debt')
 process.exit(0)

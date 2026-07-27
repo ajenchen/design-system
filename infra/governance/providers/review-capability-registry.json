@@ -1,0 +1,272 @@
+{
+  "$schema": "../schemas/review-capability-registry.schema.json",
+  "schemaVersion": 1,
+  "kind": "provider-neutral-review-capability-registry",
+  "selectionSemantics": "exact-candidates-only-capability-values-require-separate-certification",
+  "providerCapabilityPrecedence": {
+    "claude": [
+      {
+        "modelReleaseId": "claude/claude-fable-5",
+        "capabilityRank": 600,
+        "assuranceTier": "maximum",
+        "reasoningTier": "maximum",
+        "computeTier": "maximum",
+        "exchangeBudget": {
+          "maxInputBytes": 16777216,
+          "maxOutputBytes": 1048576,
+          "maxPayloadBytes": 17825792
+        }
+      },
+      {
+        "modelReleaseId": "claude/claude-opus-5",
+        "capabilityRank": 500,
+        "assuranceTier": "maximum",
+        "reasoningTier": "maximum",
+        "computeTier": "maximum",
+        "exchangeBudget": {
+          "maxInputBytes": 16777216,
+          "maxOutputBytes": 1048576,
+          "maxPayloadBytes": 17825792
+        }
+      },
+      {
+        "modelReleaseId": "claude/claude-opus-4-8",
+        "capabilityRank": 400,
+        "assuranceTier": "maximum",
+        "reasoningTier": "maximum",
+        "computeTier": "maximum",
+        "exchangeBudget": {
+          "maxInputBytes": 16777216,
+          "maxOutputBytes": 1048576,
+          "maxPayloadBytes": 17825792
+        }
+      },
+      {
+        "modelReleaseId": "claude/claude-sonnet-5",
+        "capabilityRank": 300,
+        "assuranceTier": "maximum",
+        "reasoningTier": "high",
+        "computeTier": "maximum",
+        "exchangeBudget": {
+          "maxInputBytes": 16777216,
+          "maxOutputBytes": 1048576,
+          "maxPayloadBytes": 17825792
+        }
+      },
+      {
+        "modelReleaseId": "claude/claude-sonnet-4-5-20250929",
+        "capabilityRank": 200,
+        "assuranceTier": "high",
+        "reasoningTier": "high",
+        "computeTier": "high",
+        "exchangeBudget": {
+          "maxInputBytes": 16777216,
+          "maxOutputBytes": 1048576,
+          "maxPayloadBytes": 17825792
+        }
+      },
+      {
+        "modelReleaseId": "claude/claude-haiku-4-5-20251001",
+        "capabilityRank": 100,
+        "assuranceTier": "standard",
+        "reasoningTier": "standard",
+        "computeTier": "standard",
+        "exchangeBudget": {
+          "maxInputBytes": 16777216,
+          "maxOutputBytes": 1048576,
+          "maxPayloadBytes": 17825792
+        }
+      }
+    ],
+    "codex": [
+      {
+        "modelReleaseId": "codex/gpt-5.6-sol",
+        "capabilityRank": 300,
+        "assuranceTier": "maximum",
+        "reasoningTier": "maximum",
+        "computeTier": "maximum",
+        "exchangeBudget": {
+          "maxInputBytes": 16777216,
+          "maxOutputBytes": 1048576,
+          "maxPayloadBytes": 17825792
+        }
+      },
+      {
+        "modelReleaseId": "codex/gpt-5.6-luna",
+        "capabilityRank": 200,
+        "assuranceTier": "high",
+        "reasoningTier": "high",
+        "computeTier": "high",
+        "exchangeBudget": {
+          "maxInputBytes": 16777216,
+          "maxOutputBytes": 1048576,
+          "maxPayloadBytes": 17825792
+        }
+      },
+      {
+        "modelReleaseId": "codex/gpt-5.6-terra",
+        "capabilityRank": 100,
+        "assuranceTier": "standard",
+        "reasoningTier": "standard",
+        "computeTier": "standard",
+        "exchangeBudget": {
+          "maxInputBytes": 16777216,
+          "maxOutputBytes": 1048576,
+          "maxPayloadBytes": 17825792
+        }
+      }
+    ]
+  },
+  "reviewProfiles": [
+    {
+      "id": "claude-managed-api-fable-5",
+      "providerId": "claude",
+      "routeClass": "managed-api",
+      "invocationProfileId": "claude",
+      "entitlementId": null,
+      "modelReleaseId": "claude/claude-fable-5",
+      "requestModelId": "claude-fable-5",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "claude-managed-api-haiku-4-5",
+      "providerId": "claude",
+      "routeClass": "managed-api",
+      "invocationProfileId": "claude",
+      "entitlementId": null,
+      "modelReleaseId": "claude/claude-haiku-4-5-20251001",
+      "requestModelId": "claude-haiku-4-5-20251001",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "claude-managed-api-opus-4-8",
+      "providerId": "claude",
+      "routeClass": "managed-api",
+      "invocationProfileId": "claude",
+      "entitlementId": null,
+      "modelReleaseId": "claude/claude-opus-4-8",
+      "requestModelId": "claude-opus-4-8",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "claude-managed-api-opus-5",
+      "providerId": "claude",
+      "routeClass": "managed-api",
+      "invocationProfileId": "claude",
+      "entitlementId": null,
+      "modelReleaseId": "claude/claude-opus-5",
+      "requestModelId": "claude-opus-5",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "claude-managed-api-sonnet-4-5",
+      "providerId": "claude",
+      "routeClass": "managed-api",
+      "invocationProfileId": "claude",
+      "entitlementId": null,
+      "modelReleaseId": "claude/claude-sonnet-4-5-20250929",
+      "requestModelId": "claude-sonnet-4-5-20250929",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "claude-managed-api-sonnet-5",
+      "providerId": "claude",
+      "routeClass": "managed-api",
+      "invocationProfileId": "claude",
+      "entitlementId": null,
+      "modelReleaseId": "claude/claude-sonnet-5",
+      "requestModelId": "claude-sonnet-5",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "claude-max-code-fable-5",
+      "providerId": "claude",
+      "routeClass": "subscription-entitlement",
+      "invocationProfileId": "claude-max-code",
+      "entitlementId": "claude-max",
+      "modelReleaseId": "claude/claude-fable-5",
+      "requestModelId": "claude-fable-5",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "claude-max-code-haiku-4-5",
+      "providerId": "claude",
+      "routeClass": "subscription-entitlement",
+      "invocationProfileId": "claude-max-code",
+      "entitlementId": "claude-max",
+      "modelReleaseId": "claude/claude-haiku-4-5-20251001",
+      "requestModelId": "claude-haiku-4-5-20251001",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "claude-max-code-opus-4-8",
+      "providerId": "claude",
+      "routeClass": "subscription-entitlement",
+      "invocationProfileId": "claude-max-code",
+      "entitlementId": "claude-max",
+      "modelReleaseId": "claude/claude-opus-4-8",
+      "requestModelId": "claude-opus-4-8",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "claude-max-code-opus-5",
+      "providerId": "claude",
+      "routeClass": "subscription-entitlement",
+      "invocationProfileId": "claude-max-code",
+      "entitlementId": "claude-max",
+      "modelReleaseId": "claude/claude-opus-5",
+      "requestModelId": "claude-opus-5",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "claude-max-code-sonnet-4-5",
+      "providerId": "claude",
+      "routeClass": "subscription-entitlement",
+      "invocationProfileId": "claude-max-code",
+      "entitlementId": "claude-max",
+      "modelReleaseId": "claude/claude-sonnet-4-5-20250929",
+      "requestModelId": "claude-sonnet-4-5-20250929",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "claude-max-code-sonnet-5",
+      "providerId": "claude",
+      "routeClass": "subscription-entitlement",
+      "invocationProfileId": "claude-max-code",
+      "entitlementId": "claude-max",
+      "modelReleaseId": "claude/claude-sonnet-5",
+      "requestModelId": "claude-sonnet-5",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "codex-managed-api-luna",
+      "providerId": "codex",
+      "routeClass": "managed-api",
+      "invocationProfileId": "codex",
+      "entitlementId": null,
+      "modelReleaseId": "codex/gpt-5.6-luna",
+      "requestModelId": "gpt-5.6-luna",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "codex-managed-api-sol",
+      "providerId": "codex",
+      "routeClass": "managed-api",
+      "invocationProfileId": "codex",
+      "entitlementId": null,
+      "modelReleaseId": "codex/gpt-5.6-sol",
+      "requestModelId": "gpt-5.6-sol",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    },
+    {
+      "id": "codex-managed-api-terra",
+      "providerId": "codex",
+      "routeClass": "managed-api",
+      "invocationProfileId": "codex",
+      "entitlementId": null,
+      "modelReleaseId": "codex/gpt-5.6-terra",
+      "requestModelId": "gpt-5.6-terra",
+      "modelIdentityPolicy": "exact-model-release-response-match-no-mutable-alias"
+    }
+  ]
+}

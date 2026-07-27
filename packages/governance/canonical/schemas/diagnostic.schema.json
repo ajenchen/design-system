@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance-diagnostic.schema.json",
+  "title": "Governance diagnostic result",
+  "type": "object",
+  "required": ["schemaVersion", "command", "outcome", "diagnostics"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "command": { "type": "string", "minLength": 1 },
+    "outcome": { "enum": ["PASS", "FAIL", "PLAN", "APPLIED"] },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ruleId", "severity", "evidence", "outcome", "message"],
+        "properties": {
+          "ruleId": { "type": "string", "pattern": "^GOV-[A-Z0-9-]+$" },
+          "severity": { "enum": ["critical", "major", "minor", "info"] },
+          "evidence": {
+            "type": "object",
+            "required": ["kind", "path"],
+            "properties": {
+              "kind": { "type": "string" },
+              "path": { "type": "string" }
+            },
+            "additionalProperties": true
+          },
+          "outcome": { "enum": ["PASS", "FAIL", "BLOCK", "ERROR", "PLAN", "APPLIED"] },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "data": {}
+  },
+  "additionalProperties": false
+}

@@ -1,25 +1,27 @@
 ---
 name: story-auto-compile-migrate
-description: Batch-migrate design system components to Story Auto-Compile Phase 1+2 structure (tsx `componentMeta` export + spec.md YAML frontmatter). Mechanical steps auto (parse cva → generate componentMeta / infer sizes from cva / extract 禁止事項 from spec). Judgment fills (world-class 對照 / when descriptions) go to checkpoint for user/AI sign-off. Invoke via /story-auto-compile-migrate when user says「migrate 元件到 auto-compile / phase 4 migration / 把 X 元件加 componentMeta」OR auto-chained by /design-system-audit Dim 23 when un-migrated components found.
+description: Batch-migrate design system components to Story Auto-Compile Phase 1+2 structure (tsx `componentMeta` export + spec.md YAML frontmatter). Mechanical steps auto (parse cva → generate componentMeta / infer sizes from cva / extract 禁止事項 from spec). Judgment fills use existing canonical evidence plus the highest certified capability and independent review; only a genuine product/UI/UX SSOT tradeoff stops. Invoke via /story-auto-compile-migrate when user says「migrate 元件到 auto-compile / phase 4 migration / 把 X 元件加 componentMeta」OR auto-chained by /design-system-audit Dim 23 when un-migrated components found.
 ---
+
+<!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/story-auto-compile-migrate/SKILL.md; provider: claude; do not edit this adapter view. -->
 
 # Story Auto-Compile Migrate — 批次將元件移到 Phase 1+2 結構
 
-**目的**:把全部元件從 hand-written stories 遷到 auto-compile-able 結構(tsx `componentMeta` export + spec YAML frontmatter)。分「mechanical auto」+「judgment checkpoint」兩層。元件總數 Phase 0 動態計(`ls -d packages/design-system/src/components/*/ | wc -l`,當前 62),禁 hardcode。
+**目的**:把全部元件從 hand-written stories 遷到 auto-compile-able 結構(tsx `componentMeta` export + spec YAML frontmatter)。分「mechanical auto」+「evidence-bound judgment」兩層。元件總數 Phase 0 動態計(`ls -d packages/design-system/src/components/*/ | wc -l`,當前 62),禁 hardcode。
 
 **不含**:不改元件實作(cva / tsx logic 不動);不產 stories(compile-stories 負責)。只加 metadata。
 
 ## When to run
 
 - User 明言「migrate X 元件 / 批次 migrate / phase 4 migration」
-- `/design-system-audit --deep` Dim 23 發現未 migrated 元件 + user 在 Checkpoint 1 sign-off
+- `/design-system-audit --deep` Dim 23 發現未 migrated 元件後自動 chain
 - 新建元件 via `/new-component` 時 Phase X 自動跑(未來延伸)
 
 ## Non-goals
 
 - 不改 cva variants / defaults(變體結構不動)
 - 不動 stories.tsx 實作
-- 不填 judgment 欄位(world-class / when)— 只擺 TODO placeholder,跑 Phase 2 checkpoint
+- Phase 1 不憑空填 judgment 欄位(world-class / when)；Phase 2 必以 owning spec、primary-source benchmark 與 independent review補齊，不留 TODO
 
 ---
 
@@ -82,20 +84,19 @@ related:
 
 Phase 1 output:N 元件成功 mechanical migrated / M 元件遇特殊 cva 邏輯需 Phase 2 手動 mapping。
 
-### ⚠️ Checkpoint 1 — 批量 sign-off
+### Phase 1.5 — Batch evidence receipt
 
-Present user:
+記錄並回報:
 ```
 Phase 1 完成:
 - ✅ {N} 元件 mechanical migrated(componentMeta + frontmatter placeholders in,compile --check passed)
 - ⚠️ {M} 元件 needs manual cva mapping(列出 + 原因)
 - TODO: {N+M} 元件 frontmatter 的 variants[].when / world-class[] / sizes[].when / related[] 是 judgment 欄位,Phase 2 填
 
-Proceed Phase 2 judgment fill?(scope big)
-OR commit Phase 1 先(mechanical only)讓後續 session 漸進 fill?
+Authority:ENGINEERING-AUTO；直接進 Phase 2。只有填值會創造新的產品／UI／UX SSOT 語意且仍有真取捨才列 human-only decision。
 ```
 
-### Phase 2 — Judgment fill(STOP per component)
+### Phase 2 — Judgment fill(AUTO, evidence-bound)
 
 對每個 migrated 元件:
 - `variants[].when` — 從 spec 現有「variants」section 或近親元件同名 variant 抄
@@ -103,7 +104,7 @@ OR commit Phase 1 先(mechanical only)讓後續 session 漸進 fill?
 - `sizes[].when` — 從 spec size table 抄
 - `related.近親` — grep SSOT reciprocal pointers
 
-每元件過 Checkpoint(user 可快速看 frontmatter diff,approve 或 reject 單題)。
+每元件過 owning-spec、benchmark、cross-field consistency 與 compile check；工程 mapping 自主收斂。若現有 SSOT 無法回答且選擇會改產品／UI／UX語意，集中成一次 human-only decision，不逐元件詢問。
 
 ### Phase 3 — Verify + commit
 
@@ -126,17 +127,19 @@ Commit 每批 5-10 元件一個(不一次全推,好 review)。
 
 ---
 
-## Checkpoints(禁止跳)
+## Authority gates(禁止跳 evidence，不設 blanket sign-off)
 
-### ⚠️ Checkpoint 1 — Phase 1 batch sign-off
+### Gate 1 — Phase 1 batch evidence
 
-### ⚠️ Checkpoint 2 — Phase 2 judgment 單題 sign-off(per element × per field)
+確認 keys、source citations、input digest 與 rollback；receipt 不停止 execution。
 
-可 user 批准「全預設套 AI 推斷」模式加速,但每批後 stop 檢查 5-10 element 產出。
+### Gate 2 — Phase 2 judgment(per element × per field)
 
-### ⚠️ Checkpoint 3 — 特殊 cva 遇到 mechanical 無法 map
+禁止無證據套預設。每批後 agent review 5-10 element 產出；全部元件仍須 complete-bytes／protocol coverage，不取樣判全域完成。
 
-STOP 提議 user:(a) 修 cva 對齊標準形;(b) componentMeta 特殊寫法;(c) 跳過該元件到下一個。
+### Gate 3 — 特殊 cva 遇到 mechanical 無法 map
+
+Agent 依 public contract、owning spec、consumer evidence與 rollback 自行選出唯一工程方案；若方案會改 public component 的產品／UI／UX語意且存在真取捨才 STOP，否則不可把(a)修 cva／(b)metadata 特例／(c)skip 的工程選擇丟給 user。
 
 ---
 
@@ -149,11 +152,11 @@ STOP 提議 user:(a) 修 cva 對齊標準形;(b) componentMeta 特殊寫法;(c) 
 | Judgment fill | 本 skill Phase 2(CP 2) |
 | Drift detection(已 migrated)| hook `post_edit_dispatcher.sh` → `lib/_story_compile_drift.sh`(原 check_story_compile_drift.sh folded)+ Dim 23 |
 
-**Chain**:user 說「ds 完整 audit」→ `/design-system-audit --deep` Phase 1 跑 Dim 23 → 發現 N 未 migrated → CP 1 提報 user → user sign-off → Phase 3 auto-chain 本 skill → mechanical migrate + judgment CP → 全 migrated + 0 drift。
+**Chain**:user 說「ds 完整 audit」→ `/design-system-audit --deep` Phase 1 跑 Dim 23 → 發現 N 未 migrated → 自動 chain 本 skill → mechanical migrate + evidence-bound judgment → 全 migrated + 0 drift；中途 report 只是 receipt。
 
 ## References
 
-- `.claude/planning/story-auto-compile.md` — 完整 4-phase plan
+- repository-approved planning artifact — 完整 4-phase plan
 - `scripts/compile-stories.mjs` — compile + verify
-- `.claude/skills/story-writing/references/anatomy-standard.md` — 6-story canonical
-- `.claude/skills/new-component/SKILL.md` — 新建元件流程(本 skill 為已建元件 migration)
+- `packages/design-system/ds-canonical/skills/story-writing/references/anatomy-standard.md` — 6-story canonical
+- `packages/design-system/ds-canonical/skills/new-component/SKILL.md` — 新建元件流程(本 skill 為已建元件 migration)

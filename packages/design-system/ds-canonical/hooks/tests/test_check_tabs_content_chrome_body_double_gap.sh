@@ -4,13 +4,13 @@
 # 注意:本 hook 是 PostToolUse「讀完整檔」型(防 partial-edit 盲區)→ 測試必寫真實 temp 檔,
 # 且路徑必須匹配 scope regex(packages/design-system/src/ 或 /apps/)。
 set -uo pipefail
-cd "$(dirname "$0")/../../.."
-HOOK=".claude/hooks/check_tabs_content_chrome_body_double_gap.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOOK="$SCRIPT_DIR/../check_tabs_content_chrome_body_double_gap.sh"
 PASS=0; FAIL=0; FAILED_TESTS=""
 
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 mkdir -p "$TMP_DIR/.claude/logs"
 
 # scope 內的真實 temp 檔路徑(hook 讀 disk)

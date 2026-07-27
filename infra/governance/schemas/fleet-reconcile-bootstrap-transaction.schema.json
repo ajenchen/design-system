@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/fleet-reconcile-bootstrap-transaction-v1.json",
+  "title": "Fail-closed authority GitHub policy bootstrap transaction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "transactionClass",
+    "durabilityClass",
+    "offHostMirrored",
+    "promotionEligible",
+    "managedEvidence",
+    "transactionId",
+    "plan",
+    "planDigest",
+    "state",
+    "startedAt",
+    "rollbackAttempted",
+    "recoveryInstruction",
+    "actions",
+    "rollbackPlan",
+    "rollbackPlanDigest",
+    "authorizationEnvelopeDigest",
+    "events",
+    "eventHeadDigest",
+    "offHostReceipts"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "github-authority-policy-bootstrap-transaction"},
+    "transactionClass": {"const": "authority-policy-bootstrap"},
+    "durabilityClass": {"const": "bootstrap-local-recoverable"},
+    "offHostMirrored": {"const": false},
+    "promotionEligible": {"const": false},
+    "managedEvidence": {"const": false},
+    "transactionId": {"type": "string", "pattern": "^github-reconcile-[0-9]+-[a-f0-9]{12}$"},
+    "plan": {"$ref": "#/$defs/plan"},
+    "planDigest": {"$ref": "#/$defs/sha256"},
+    "state": {
+      "enum": [
+        "prepared",
+        "applying",
+        "verified",
+        "failed-partial-state-possible",
+        "recovery-observed",
+        "manual-recovery-required",
+        "rolling-back",
+        "rolled-back-verified",
+        "rollback-blocked"
+      ]
+    },
+    "startedAt": {"type": "string", "format": "date-time"},
+    "completedAt": {"type": "string", "format": "date-time"},
+    "failedAt": {"type": "string", "format": "date-time"},
+    "error": {"type": "string", "minLength": 1},
+    "rollbackAttempted": {"type": "boolean"},
+    "recoveryInstruction": {"type": "string", "minLength": 1},
+    "actions": {
+      "type": "array",
+      "minItems": 0,
+      "items": {"$ref": "https://qijenchen.dev/schemas/fleet-reconcile-journal-v6.json#/$defs/action"}
+    },
+    "rollbackPlan": {
+      "type": "array",
+      "minItems": 0,
+      "items": {"$ref": "https://qijenchen.dev/schemas/fleet-reconcile-journal-v6.json#/$defs/rollbackStep"}
+    },
+    "rollbackPlanDigest": {"$ref": "#/$defs/sha256"},
+    "authorizationEnvelopeDigest": {"$ref": "#/$defs/sha256"},
+    "recoveredAt": {"type": "string", "format": "date-time"},
+    "recoveryFailures": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "rollbackAuthorizationEventHeadDigest": {"$ref": "#/$defs/sha256"},
+    "rollbackStartedAt": {"type": "string", "format": "date-time"},
+    "rollbackCompletedAt": {"type": "string", "format": "date-time"},
+    "rollbackBlockers": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "https://qijenchen.dev/schemas/fleet-reconcile-journal-v6.json#/$defs/event"}
+    },
+    "eventHeadDigest": {"$ref": "#/$defs/sha256"},
+    "offHostReceipts": {"const": []}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "gitOid": {"type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"},
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transactionClass",
+        "repositoryId",
+        "repository",
+        "defaultBranch",
+        "profile",
+        "actionsWorkflowPermissions",
+        "rulesets",
+        "environments",
+        "requiredChecks",
+        "immutableReleases",
+        "releaseMutationAllowed",
+        "staleResourceDeletionAllowed"
+      ],
+      "properties": {
+        "transactionClass": {"const": "authority-policy-bootstrap"},
+        "repositoryId": {"const": "design-system"},
+        "repository": {"const": "ajenchen/design-system"},
+        "defaultBranch": {"const": "main"},
+        "profile": {"const": "design-system-authority"},
+        "actionsWorkflowPermissions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["default_workflow_permissions", "can_approve_pull_request_reviews"],
+          "properties": {
+            "default_workflow_permissions": {"enum": ["read", "write"]},
+            "can_approve_pull_request_reviews": {"type": "boolean"}
+          }
+        },
+        "rulesets": {"type": "array", "minItems": 2, "maxItems": 2},
+        "environments": {"type": "array", "minItems": 2, "maxItems": 2},
+        "requiredChecks": {"const": []},
+        "immutableReleases": {"const": false},
+        "releaseMutationAllowed": {"const": false},
+        "staleResourceDeletionAllowed": {"const": false}
+      }
+    },
+    "challenge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "repository",
+        "pullRequest",
+        "baseSha",
+        "baseTree",
+        "candidateHeadSha",
+        "candidateHeadTree",
+        "changedPaths",
+        "changedPathsDigest",
+        "controlPlaneClosureDigest",
+        "controlPlaneStageDigest",
+        "buildGraphDigest",
+        "manifestDigest",
+        "inventoryDigest",
+        "desiredDigest",
+        "controlPlaneLockDigest",
+        "issuerRegistryDigest"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "control-plane-genesis-challenge"},
+        "repository": {"const": "ajenchen/design-system"},
+        "pullRequest": {"type": "integer", "minimum": 1},
+        "baseSha": {"$ref": "#/$defs/gitOid"},
+        "baseTree": {"$ref": "#/$defs/gitOid"},
+        "candidateHeadSha": {"$ref": "#/$defs/gitOid"},
+        "candidateHeadTree": {"$ref": "#/$defs/gitOid"},
+        "changedPaths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "changedPathsDigest": {"$ref": "#/$defs/sha256"},
+        "controlPlaneClosureDigest": {"$ref": "#/$defs/sha256"},
+        "controlPlaneStageDigest": {"$ref": "#/$defs/sha256"},
+        "buildGraphDigest": {"$ref": "#/$defs/sha256"},
+        "manifestDigest": {"$ref": "#/$defs/sha256"},
+        "inventoryDigest": {"$ref": "#/$defs/sha256"},
+        "desiredDigest": {"$ref": "#/$defs/sha256"},
+        "controlPlaneLockDigest": {"$ref": "#/$defs/sha256"},
+        "issuerRegistryDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "genesisReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "challenge",
+        "challengeDigest",
+        "authorization",
+        "verifiedAt",
+        "receiptDigest"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "control-plane-genesis-verification"},
+        "challenge": {"$ref": "#/$defs/challenge"},
+        "challengeDigest": {"$ref": "#/$defs/sha256"},
+        "authorization": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "commentId", "commentDigest", "ownerLogin", "createdAt"],
+          "properties": {
+            "kind": {"const": "github-owner-comment"},
+            "commentId": {"type": "string", "pattern": "^[1-9][0-9]*$"},
+            "commentDigest": {"$ref": "#/$defs/sha256"},
+            "ownerLogin": {"const": "ajenchen"},
+            "createdAt": {"type": "string", "format": "date-time"}
+          }
+        },
+        "verifiedAt": {"type": "string", "format": "date-time"},
+        "receiptDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "transactionClass",
+        "mode",
+        "readOnly",
+        "promotionEligible",
+        "managedEvidence",
+        "repositoryId",
+        "repository",
+        "defaultBranch",
+        "defaultBranchHeadSha",
+        "defaultBranchTreeSha",
+        "inventoryDigest",
+        "desiredDigest",
+        "stagedRolloutPlanDigest",
+        "bootstrapBoundaryDigest",
+        "authorityPolicyDigest",
+        "projection",
+        "projectionDigest",
+        "genesisReceipt",
+        "genesisReceiptDigest",
+        "genesisReadbackTrust",
+        "genesisReadbackDigest",
+        "observedStateDigest",
+        "conflicts",
+        "actions",
+        "actionsDigest",
+        "rollbackPlan",
+        "rollbackPlanDigest",
+        "planDigest"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "github-authority-policy-bootstrap-plan"},
+        "transactionClass": {"const": "authority-policy-bootstrap"},
+        "mode": {"const": "plan"},
+        "readOnly": {"const": true},
+        "promotionEligible": {"const": false},
+        "managedEvidence": {"const": false},
+        "repositoryId": {"const": "design-system"},
+        "repository": {"const": "ajenchen/design-system"},
+        "defaultBranch": {"const": "main"},
+        "defaultBranchHeadSha": {"$ref": "#/$defs/gitOid"},
+        "defaultBranchTreeSha": {"$ref": "#/$defs/gitOid"},
+        "inventoryDigest": {"$ref": "#/$defs/sha256"},
+        "desiredDigest": {"$ref": "#/$defs/sha256"},
+        "stagedRolloutPlanDigest": {"$ref": "#/$defs/sha256"},
+        "bootstrapBoundaryDigest": {"$ref": "#/$defs/sha256"},
+        "authorityPolicyDigest": {"$ref": "#/$defs/sha256"},
+        "projection": {"$ref": "#/$defs/projection"},
+        "projectionDigest": {"$ref": "#/$defs/sha256"},
+        "genesisReceipt": {"$ref": "#/$defs/genesisReceipt"},
+        "genesisReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "genesisReadbackTrust": {"enum": ["github-live", "fixture-untrusted"]},
+        "genesisReadbackDigest": {"$ref": "#/$defs/sha256"},
+        "observedStateDigest": {"$ref": "#/$defs/sha256"},
+        "conflicts": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "actions": {
+          "type": "array",
+          "minItems": 0,
+          "items": {"$ref": "https://qijenchen.dev/schemas/fleet-reconcile-journal-v6.json#/$defs/action"}
+        },
+        "actionsDigest": {"$ref": "#/$defs/sha256"},
+        "rollbackPlan": {
+          "type": "array",
+          "minItems": 0,
+          "items": {"$ref": "https://qijenchen.dev/schemas/fleet-reconcile-journal-v6.json#/$defs/rollbackStep"}
+        },
+        "rollbackPlanDigest": {"$ref": "#/$defs/sha256"},
+        "planDigest": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "reviewed-provider-documentation-assertion",
+  "providerId": "codex",
+  "sourceUrl": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+  "observedAt": "2026-07-21T00:00:00.000Z",
+  "assertions": [
+    "OpenAI lists gpt-5.6-sol in the model page's snapshots section and separately identifies gpt-5.6 as an alias.",
+    "OpenAI describes snapshots as identifiers used to lock model performance and behavior to a specific version."
+  ],
+  "weightArtifactAvailable": false
+}

@@ -167,7 +167,29 @@ function compileOne(componentName) {
   lines.push(`- **設計原則**(${lowerKebab}.principles.stories.tsx)— do/don't + 情境選擇`)
   lines.push('\n=== END AUTO-COMPILED ===')
 
-  return { component: componentName, ok: true, output: lines.join('\n') }
+  const output = lines.join('\n')
+  // Dim 45 is a structural generator check, not merely a spec/tsx key diff.
+  // Validate every generated variant/size row plus the mandatory accessibility
+  // and reciprocal navigation sections before --check may report alignment.
+  const structuralErrors = []
+  for (const key of specVariants) {
+    if (!output.includes(`| \`${key}\` |`)) structuralErrors.push(`generated Variants row missing:${key}`)
+  }
+  for (const key of tsxSizes) {
+    if (!output.includes(`| \`${key}\` |`)) structuralErrors.push(`generated Sizes row missing:${key}`)
+  }
+  for (const required of [
+    '## 6. 無障礙與鍵盤(Accessibility & Keyboard)',
+    '## See also(三層 stories 互聯)',
+    `${lowerKebab}.stories.tsx`,
+    `${lowerKebab}.anatomy.stories.tsx`,
+    `${lowerKebab}.principles.stories.tsx`,
+  ]) {
+    if (!output.includes(required)) structuralErrors.push(`generated structural section missing:${required}`)
+  }
+  if (structuralErrors.length) return { component: componentName, drift: true, errors: structuralErrors }
+
+  return { component: componentName, ok: true, output }
 }
 
 // ─── Main ────────────────────────────────────────
@@ -181,7 +203,14 @@ const skipped = results.filter(r => r.skipped)
 const ok = results.filter(r => r.ok)
 
 if (isCheck) {
-  // --check mode:drift detection only,no output
+  // A zero-migration tree would otherwise make both Dim 23 and Dim 45 pass
+  // vacuously. Skipped components stay visible as migration debt; the deep-
+  // audit runner additionally refuses to issue completion receipts while any
+  // skipped count is non-zero.
+  if (ok.length === 0) {
+    console.error(`❌ 0 component(s) compiled; ${skipped.length} skipped. Refusing vacuous canonical-drift coverage.`)
+    process.exit(1)
+  }
   if (drifts.length > 0) {
     console.error(`❌ ${drifts.length} component(s) with spec/tsx canonical drift:\n`)
     drifts.forEach(d => {

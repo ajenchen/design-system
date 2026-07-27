@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 2,
+  "certifications": [
+    {
+      "id": "fixture-ci-product-v1",
+      "provider": "ci",
+      "runtimeKind": "github-actions",
+      "providerVersion": "github-actions-fixture",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "github-actions",
+      "repositoryRole": "product-consumer",
+      "status": "certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions-fixture", "pathClass": "contains-space", "status": "certified", "limitations": []}
+      ],
+      "certifiedAt": "2026-01-01T00:00:00Z",
+      "expiresAt": "2099-01-01T00:00:00Z",
+      "checks": [
+        {"id": "fixture-hard-gate", "status": "pass", "evidence": {"kind": "command-output", "reference": "node --test infra/governance/test/reconcile-github.test.mjs"}}
+      ],
+      "limitations": []
+    },
+    {
+      "id": "fixture-codex-cli-product-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-cli",
+      "providerVersion": "0.144.6",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "local",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-native-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["Fixture runtime evidence is intentionally absent."]}
+      ],
+      "checks": [{"id": "fixture-runtime", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "fixture product role-surface closure"}}],
+      "limitations": ["Fixture runtime evidence is intentionally absent."]
+    },
+    {
+      "id": "fixture-codex-desktop-product-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-desktop",
+      "providerVersion": "desktop-unrecorded",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "local",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "desktop-unrecorded", "pathClass": "contains-space", "status": "not-certified", "limitations": ["Fixture desktop evidence is intentionally absent."]}
+      ],
+      "checks": [{"id": "fixture-runtime", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "fixture product role-surface closure"}}],
+      "limitations": ["Fixture desktop evidence is intentionally absent."]
+    },
+    {
+      "id": "fixture-codex-remote-product-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-desktop",
+      "providerVersion": "0.144.6",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "remote-control",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-remote-host-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "remote-host", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["Fixture remote-control evidence is intentionally absent."]}
+      ],
+      "checks": [{"id": "fixture-runtime", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "fixture product role-surface closure"}}],
+      "limitations": ["Fixture remote-control evidence is intentionally absent."]
+    },
+    {
+      "id": "fixture-codex-cloud-product-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-cloud",
+      "providerVersion": "0.144.6",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "cloud",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-cloud-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "cloud-hosted", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["Fixture cloud evidence is intentionally absent."]}
+      ],
+      "checks": [{"id": "fixture-runtime", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "fixture product role-surface closure"}}],
+      "limitations": ["Fixture cloud evidence is intentionally absent."]
+    },
+    {
+      "id": "fixture-claude-cli-product-v1",
+      "provider": "claude-code",
+      "runtimeKind": "claude-code-cli",
+      "providerVersion": "2.1.215",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "local",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-native-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["Fixture runtime evidence is intentionally absent."]}
+      ],
+      "checks": [{"id": "fixture-runtime", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "fixture product role-surface closure"}}],
+      "limitations": ["Fixture runtime evidence is intentionally absent."]
+    },
+    {
+      "id": "fixture-claude-remote-product-v1",
+      "provider": "claude-code",
+      "runtimeKind": "claude-code-cli",
+      "providerVersion": "2.1.215",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "remote-control",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-remote-host-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "remote-host", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["Fixture remote-control evidence is intentionally absent."]}
+      ],
+      "checks": [{"id": "fixture-runtime", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "fixture product role-surface closure"}}],
+      "limitations": ["Fixture remote-control evidence is intentionally absent."]
+    },
+    {
+      "id": "fixture-claude-cloud-product-v1",
+      "provider": "claude-code",
+      "runtimeKind": "claude-code-cloud",
+      "providerVersion": "2.1.215",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "cloud",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-cloud-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "cloud-hosted", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["Fixture cloud evidence is intentionally absent."]}
+      ],
+      "checks": [{"id": "fixture-runtime", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "fixture product role-surface closure"}}],
+      "limitations": ["Fixture cloud evidence is intentionally absent."]
+    }
+  ]
+}

@@ -79,7 +79,7 @@ benchmark scan 時,每個 reference 後加 mini object map:
 
 列出核心名詞。**原則**:
 - 2-7 個 objects 最理想(>7 通常是合併機會)
-- 命名三重 test(CLAUDE.md):既有設計語言 / 世界級 idiom / 跨元件認知衝突
+- 命名三重 test(shared governance):既有設計語言 / 世界級 idiom / 跨元件認知衝突
 - 若 benchmark 發現 Linear 叫 "Issue"、Jira 叫 "Ticket"、我們叫什麼?根據自身業務 + 目標 user 慣用語 pick one,整個 skill 延伸統一用此命名
 
 ```markdown

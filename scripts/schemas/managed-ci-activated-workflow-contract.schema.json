@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/managed-ci-activated-workflow-contract-v2.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "imageDigestTokens", "authority", "sandbox", "frozenSubject"],
+  "properties": {
+    "$schema": {"const": "schemas/managed-ci-activated-workflow-contract.schema.json"},
+    "schemaVersion": {"const": 2},
+    "kind": {"const": "managed-ci-activated-workflow-contract"},
+    "imageDigestTokens": {
+      "const": {
+        "{{image:dependency-acquisition}}": "dependency-acquisition",
+        "{{image:deterministic-hook-audit}}": "deterministic-hook-audit",
+        "{{image:model-broker}}": "model-broker",
+        "{{image:github-observer}}": "github-observer"
+      }
+    },
+    "authority": {
+      "const": {
+        "client": "/opt/qijenchen/managed-ci-authority/bin/managed-ci-authority-client",
+        "freezeEnvironment": "managed-ci-freeze-authority-v1",
+        "sandboxEnvironment": "managed-ci-sandbox-authority-v1",
+        "finalizerEnvironment": "managed-ci-receipt-finalizer-v1",
+        "audience": "qijenchen-managed-deep-audit-authority-v1"
+      }
+    },
+    "sandbox": {
+      "const": {
+        "launcher": "/opt/qijenchen/managed-ci-host/bin/sandbox-launch",
+        "policy": "/opt/qijenchen/managed-ci-host/policies/managed-ci-executor-supply-chain.json",
+        "candidateIdTokenPermission": "none",
+        "candidateCredentials": "none",
+        "candidateProcessBoundary": "private-hidepid2",
+        "secretAndSignerBoundary": "external-authority-only"
+      }
+    },
+    "frozenSubject": {
+      "const": {
+        "kind": "managed-ci-frozen-subject-v1",
+        "artifactNameTemplate": "managed-ci-frozen-subject-${{ github.run_id }}-${{ github.run_attempt }}",
+        "downloadPath": ".managed-ci/frozen-subject",
+        "sameArtifactRequiredForAllClasses": true,
+        "recomputeSha256ForAllClasses": true
+      }
+    }
+  }
+}

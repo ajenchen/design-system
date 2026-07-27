@@ -1,0 +1,711 @@
+{
+  "$schema": "../schemas/github-desired.schema.json",
+  "checkRunClockSkewSeconds": 120,
+  "checkRunMaxAgeMinutes": 1440,
+  "integrations": {
+    "githubActions": {
+      "capability": "ci",
+      "id": 15368,
+      "operationMode": "github-native",
+      "required": true,
+      "slug": "github-actions"
+    },
+    "governanceCheckApp": {
+      "capability": "check-only",
+      "externalTrustAnchor": true,
+      "id": 4402758,
+      "operationMode": "base-trusted-isolated-workflow",
+      "permissions": {
+        "checks": "write"
+      },
+      "repositorySelection": "selected",
+      "required": true,
+      "secretPrefix": "GOVERNANCE_CHECK_APP",
+      "slug": "qijenchen-governance-check"
+    },
+    "governanceWriterApp": {
+      "capability": "writer",
+      "externalTrustAnchor": false,
+      "id": 4402767,
+      "operationMode": "github-actions-environment",
+      "permissions": {
+        "contents": "write",
+        "pullRequests": "write",
+        "workflows": "write"
+      },
+      "repositorySelection": "selected",
+      "required": true,
+      "secretPrefix": "GOVERNANCE_WRITER_APP",
+      "slug": "qijenchen-governance-writer"
+    }
+  },
+  "managedEnvironmentNames": [
+    "npm-release",
+    "release-finalize",
+    "governance-check-verdict",
+    "governance-mirror",
+    "governance-upgrade",
+    "governance-external-ledger"
+  ],
+  "managedRulesetPrefix": "fleet/",
+  "profiles": {
+    "design-system-authority": {
+      "actionsWorkflowPermissions": {
+        "can_approve_pull_request_reviews": true,
+        "default_workflow_permissions": "read"
+      },
+      "environments": [
+        {
+          "credentialIntegration": "governanceCheckApp",
+          "deploymentBranchPolicy": {
+            "customBranchPolicies": false,
+            "protectedBranches": true
+          },
+          "name": "governance-check-verdict",
+          "preventSelfReview": false,
+          "reviewers": [],
+          "rollout": "always",
+          "waitTimer": 0,
+          "workflow": ".github/workflows/governance-anchor.yml",
+          "workflowIdentity": {
+            "contentSha256": "c0443eb26977add3968acbe5644f503268c909f27f75b696cc08a5220c8466a8",
+            "gitBlobSha": "935a7207c7bfbe7d5b15103b7c84906a7373b46a",
+            "semanticSha256": "cb67605db728c8d4c029ede0ef4850e0f7884817a6b78d61361fa9b4cf2e24b1",
+            "semanticVersion": 2
+          }
+        },
+        {
+          "deploymentBranchPolicy": {
+            "customBranchPolicies": false,
+            "protectedBranches": true
+          },
+          "name": "npm-release",
+          "preventSelfReview": false,
+          "reviewers": [],
+          "rollout": "on-promotion",
+          "waitTimer": 0,
+          "workflow": ".github/workflows/release.yml",
+          "workflowIdentity": {
+            "contentSha256": "f30754cd5cb2d37c5fda18d3f2f579fcd8b9280ad9163cf72b8f49083c0fa762",
+            "gitBlobSha": "8a8b79fc473279cc900136776e023a9bbfcf2e02",
+            "semanticSha256": "4ddf484f5b8ae7477a9d2884177a98e4dd3584c3914a2fff5d985921fbe8470d",
+            "semanticVersion": 2
+          }
+        },
+        {
+          "deploymentBranchPolicy": {
+            "customBranchPolicies": false,
+            "protectedBranches": true
+          },
+          "name": "release-finalize",
+          "preventSelfReview": false,
+          "reviewers": [],
+          "rollout": "on-promotion",
+          "waitTimer": 0,
+          "workflow": ".github/workflows/release-finalize.yml",
+          "workflowIdentity": {
+            "contentSha256": "bd9e48a8930896ed15afd3c3f60e0448947ed8220bf7c197a73d389ab1c48b3e",
+            "gitBlobSha": "6b9162029c8a191a2171b940a0887b0051ee06f9",
+            "semanticSha256": "da3247f9d20deec3f697e6b6927996d0245603f262a4b8a8907cd24aa2c59c4f",
+            "semanticVersion": 2
+          }
+        },
+        {
+          "credentialIntegration": "governanceWriterApp",
+          "deploymentBranchPolicy": {
+            "customBranchPolicies": false,
+            "protectedBranches": true
+          },
+          "name": "governance-mirror",
+          "preventSelfReview": false,
+          "reviewers": [],
+          "rollout": "on-promotion",
+          "waitTimer": 0,
+          "workflow": ".github/workflows/mirror-to-published-template.yml",
+          "workflowIdentity": {
+            "contentSha256": "895308c4ace1ca94125b9ca7908351badbb6d3e21a080230d1a241ad94adb2cf",
+            "gitBlobSha": "9aa87bb50e4d69ae678c735a961daa1ba2cb90a1",
+            "semanticSha256": "571e85a5dc18aafdc750a573ee241a84b798ae840e5b5c5faa2f5f071469786b",
+            "semanticVersion": 2
+          }
+        },
+        {
+          "credentialIntegration": "governanceWriterApp",
+          "deploymentBranchPolicy": {
+            "customBranchPolicies": false,
+            "protectedBranches": true
+          },
+          "name": "governance-external-ledger",
+          "preventSelfReview": false,
+          "reviewers": [],
+          "rollout": "always",
+          "waitTimer": 0,
+          "workflow": ".github/workflows/external-ledger-writer.yml",
+          "workflowIdentity": {
+            "contentSha256": "db2dc5b3349a6162d4596c885fb154a9af80db8bd248c9a0da96b9c1472b7bbb",
+            "gitBlobSha": "91c7acd44e7e9d371dee2de22a9f62e57289afa5",
+            "semanticSha256": "a4699700b5ffea396862189162c8d9be4e8f87441484527b8a951d1d060e3878",
+            "semanticVersion": 2
+          }
+        }
+      ],
+      "immutableReleases": true,
+      "requiredChecks": [
+        {
+          "baseTrusted": true,
+          "context": "Immutable consumer snapshot",
+          "forbidCandidateControlledSkip": true,
+          "integration": "governanceCheckApp",
+          "requireUnconditionalPullRequest": true,
+          "requiredEvents": [
+            "pull_request_target"
+          ],
+          "trustSource": "protected-base-workflow",
+          "workflow": ".github/workflows/governance-anchor.yml",
+          "workflowIdentity": {
+            "contentSha256": "c0443eb26977add3968acbe5644f503268c909f27f75b696cc08a5220c8466a8",
+            "gitBlobSha": "935a7207c7bfbe7d5b15103b7c84906a7373b46a",
+            "semanticSha256": "cb67605db728c8d4c029ede0ef4850e0f7884817a6b78d61361fa9b4cf2e24b1",
+            "semanticVersion": 2
+          }
+        },
+        {
+          "context": "Verify(tsc + tests + compile + build)",
+          "forbidCandidateControlledSkip": true,
+          "integration": "githubActions",
+          "requireUnconditionalPullRequest": true,
+          "requiredEvents": [
+            "pull_request"
+          ],
+          "trustSource": "repository-workflow",
+          "workflow": ".github/workflows/ci.yml",
+          "workflowIdentity": {
+            "contentSha256": "895cc03bfaeeb6d2292cf324203590ffa870eb220dee8b59d94544780d3be0ce",
+            "gitBlobSha": "5c8d15650977aae1b6923768eee8370c80cd4610",
+            "semanticSha256": "b2726cdff968c4623447f52d600f368c7b8f9e0cdbc5774c6b3999e89ccc6b30",
+            "semanticVersion": 2
+          }
+        },
+        {
+          "context": "a11y(axe-core WCAG 2A+AA, Dim 49)",
+          "forbidCandidateControlledSkip": true,
+          "integration": "githubActions",
+          "requireUnconditionalPullRequest": true,
+          "requiredEvents": [
+            "pull_request"
+          ],
+          "trustSource": "repository-workflow",
+          "workflow": ".github/workflows/a11y-and-size.yml",
+          "workflowIdentity": {
+            "contentSha256": "1b36b6e4aca53bf1aad9896b4f8d938f9265477a98909f2188a44ce9329b2eaa",
+            "gitBlobSha": "b8b256054d169392bae5d39bce202f2c1c398dc9",
+            "semanticSha256": "1adaaffed0ac70a56cf3865a70f787e4117bc1b42ea7492866999a9b6125444e",
+            "semanticVersion": 2
+          }
+        },
+        {
+          "context": "Bundle size budget(Dim 50)",
+          "forbidCandidateControlledSkip": true,
+          "integration": "githubActions",
+          "requireUnconditionalPullRequest": true,
+          "requiredEvents": [
+            "pull_request"
+          ],
+          "trustSource": "repository-workflow",
+          "workflow": ".github/workflows/a11y-and-size.yml",
+          "workflowIdentity": {
+            "contentSha256": "1b36b6e4aca53bf1aad9896b4f8d938f9265477a98909f2188a44ce9329b2eaa",
+            "gitBlobSha": "b8b256054d169392bae5d39bce202f2c1c398dc9",
+            "semanticSha256": "1adaaffed0ac70a56cf3865a70f787e4117bc1b42ea7492866999a9b6125444e",
+            "semanticVersion": 2
+          }
+        },
+        {
+          "context": "Visual Regression Diff(curated scenarios pixel match)",
+          "forbidCandidateControlledSkip": true,
+          "integration": "githubActions",
+          "requireUnconditionalPullRequest": true,
+          "requiredEvents": [
+            "pull_request"
+          ],
+          "trustSource": "repository-workflow",
+          "workflow": ".github/workflows/visual-regression.yml",
+          "workflowIdentity": {
+            "contentSha256": "c157f39c1f7a1181824ba6895578bc698ec0ee71949c0ba8767a7256ad861eba",
+            "gitBlobSha": "cb7aad2ac8900f91b3645edc39dea54f012085dd",
+            "semanticSha256": "822e4ca009b97f940d8122b9237b9b24a9a0e2537d6a021d1c875f40c60cc150",
+            "semanticVersion": 2
+          }
+        },
+        {
+          "context": "Composition Fidelity Diff",
+          "forbidCandidateControlledSkip": true,
+          "integration": "githubActions",
+          "requireUnconditionalPullRequest": true,
+          "requiredEvents": [
+            "pull_request"
+          ],
+          "trustSource": "repository-workflow",
+          "workflow": ".github/workflows/composition-fidelity.yml",
+          "workflowIdentity": {
+            "contentSha256": "03ea047ebf5b943c0adf8b3f36e9ac441bcf795896ae22ea145e50945d4c449f",
+            "gitBlobSha": "1a0982858811bba9a8c402724c39154c08bfb68a",
+            "semanticSha256": "6c8e5bc18e2b17b5da47df074b5ea92bac2f73a1d05f1f5c93a7dc1d9fbc2390",
+            "semanticVersion": 2
+          }
+        },
+        {
+          "context": "Packaging integrity(dims 84/85/86/88 light checks)",
+          "forbidCandidateControlledSkip": true,
+          "integration": "githubActions",
+          "requireUnconditionalPullRequest": true,
+          "requiredEvents": [
+            "pull_request"
+          ],
+          "trustSource": "repository-workflow",
+          "workflow": ".github/workflows/packaging-canary.yml",
+          "workflowIdentity": {
+            "contentSha256": "3a5b0aed88bd7d0440d3aa1ddd5659cbd03587c82358d954840e13b524a1a354",
+            "gitBlobSha": "eb68e1350e960e5d9cbdc4bf7e5af8a0d5de5b21",
+            "semanticSha256": "5afd5b865b0ae55e28cd8767125b691e53d2a1541db5cad38777f07c6ee2fd00",
+            "semanticVersion": 2
+          }
+        }
+      ],
+      "rulesets": [
+        {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "~DEFAULT_BRANCH"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "name": "fleet/base-integrity",
+          "rollout": "always",
+          "rules": [
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "non_fast_forward"
+            },
+            {
+              "type": "required_linear_history"
+            }
+          ],
+          "target": "branch"
+        },
+        {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "~DEFAULT_BRANCH"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "name": "fleet/verified-main",
+          "rollout": "on-promotion",
+          "rules": [
+            {
+              "parameters": {
+                "dismiss_stale_reviews_on_push": false,
+                "require_code_owner_review": false,
+                "require_last_push_approval": false,
+                "required_approving_review_count": 0,
+                "required_review_thread_resolution": true
+              },
+              "type": "pull_request"
+            },
+            {
+              "parameters": {
+                "fromProfile": true,
+                "strict_required_status_checks_policy": true
+              },
+              "type": "required_status_checks"
+            }
+          ],
+          "target": "branch"
+        },
+        {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "refs/tags/v*"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "name": "fleet/immutable-release-tags",
+          "rollout": "on-promotion",
+          "rules": [
+            {
+              "type": "update"
+            },
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "required_signatures"
+            }
+          ],
+          "target": "tag"
+        }
+      ],
+      "tagPolicy": {
+        "allowCreation": true,
+        "pattern": "v*",
+        "requireSourceAncestry": true,
+        "requireVerifiedSource": true,
+        "sourceBranch": "main",
+        "sourceWorkflow": ".github/workflows/release.yml",
+        "sourceWorkflowIdentity": {
+          "contentSha256": "f30754cd5cb2d37c5fda18d3f2f579fcd8b9280ad9163cf72b8f49083c0fa762",
+          "gitBlobSha": "8a8b79fc473279cc900136776e023a9bbfcf2e02",
+          "semanticSha256": "4ddf484f5b8ae7477a9d2884177a98e4dd3584c3914a2fff5d985921fbe8470d",
+          "semanticVersion": 2
+        }
+      }
+    },
+    "product-consumer": {
+      "actionsWorkflowPermissions": {
+        "can_approve_pull_request_reviews": false,
+        "default_workflow_permissions": "read"
+      },
+      "environments": [
+        {
+          "credentialIntegration": "governanceCheckApp",
+          "deploymentBranchPolicy": {
+            "customBranchPolicies": false,
+            "protectedBranches": true
+          },
+          "name": "governance-check-verdict",
+          "preventSelfReview": false,
+          "reviewers": [],
+          "rollout": "always",
+          "waitTimer": 0,
+          "workflow": ".github/workflows/governance-anchor.yml",
+          "workflowIdentity": {
+            "contentSha256": "20e7b7db426b10326842917b075e42f70630ac8271ef42165b05a684c2fc9315",
+            "gitBlobSha": "d231af7c3cb28f97cb92dbb521518f83890ef055",
+            "semanticSha256": "dddaa3befae0f798a7631d5da636984c117f4a63486957763030ef9979dea77c",
+            "semanticVersion": 2
+          }
+        },
+        {
+          "credentialIntegration": "governanceWriterApp",
+          "deploymentBranchPolicy": {
+            "customBranchPolicies": false,
+            "protectedBranches": true
+          },
+          "name": "governance-upgrade",
+          "preventSelfReview": false,
+          "reviewers": [],
+          "rollout": "on-promotion",
+          "waitTimer": 0,
+          "workflow": ".github/workflows/sync-design-system.yml",
+          "workflowIdentity": {
+            "contentSha256": "f25e4d348daf1d98a0c8d0d9c1546d6b8340683ba59ed22aeb0f001378000483",
+            "gitBlobSha": "5a8c53bfbed2bb98a30e87e5b550bafff33038b3",
+            "semanticSha256": "3d3dcdb1eb28af25fc3255320a72a64189dec9fcd9df9eb2ea66d1c4d42a07ee",
+            "semanticVersion": 2
+          }
+        }
+      ],
+      "immutableReleases": false,
+      "requiredChecks": [
+        {
+          "baseTrusted": true,
+          "context": "Immutable consumer snapshot",
+          "forbidCandidateControlledSkip": true,
+          "integration": "governanceCheckApp",
+          "requireUnconditionalPullRequest": true,
+          "requiredEvents": [
+            "pull_request_target"
+          ],
+          "trustSource": "protected-base-workflow",
+          "workflow": ".github/workflows/governance-anchor.yml",
+          "workflowIdentity": {
+            "contentSha256": "20e7b7db426b10326842917b075e42f70630ac8271ef42165b05a684c2fc9315",
+            "gitBlobSha": "d231af7c3cb28f97cb92dbb521518f83890ef055",
+            "semanticSha256": "dddaa3befae0f798a7631d5da636984c117f4a63486957763030ef9979dea77c",
+            "semanticVersion": 2
+          }
+        }
+      ],
+      "rulesets": [
+        {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "~DEFAULT_BRANCH"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "name": "fleet/base-integrity",
+          "rollout": "always",
+          "rules": [
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "non_fast_forward"
+            },
+            {
+              "type": "required_linear_history"
+            }
+          ],
+          "target": "branch"
+        },
+        {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "~DEFAULT_BRANCH"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "name": "fleet/verified-main",
+          "rollout": "on-promotion",
+          "rules": [
+            {
+              "parameters": {
+                "dismiss_stale_reviews_on_push": false,
+                "require_code_owner_review": false,
+                "require_last_push_approval": false,
+                "required_approving_review_count": 0,
+                "required_review_thread_resolution": true
+              },
+              "type": "pull_request"
+            },
+            {
+              "parameters": {
+                "fromProfile": true,
+                "strict_required_status_checks_policy": true
+              },
+              "type": "required_status_checks"
+            }
+          ],
+          "target": "branch"
+        },
+        {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "refs/tags/v*"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "name": "fleet/immutable-release-tags",
+          "rollout": "on-promotion",
+          "rules": [
+            {
+              "type": "creation"
+            },
+            {
+              "type": "update"
+            },
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "required_signatures"
+            }
+          ],
+          "target": "tag"
+        }
+      ],
+      "tagPolicy": {
+        "allowCreation": false,
+        "pattern": "v*",
+        "requireSourceAncestry": true,
+        "requireVerifiedSource": true,
+        "sourceBranch": "main"
+      }
+    },
+    "published-template": {
+      "actionsWorkflowPermissions": {
+        "can_approve_pull_request_reviews": false,
+        "default_workflow_permissions": "read"
+      },
+      "environments": [
+        {
+          "credentialIntegration": "governanceCheckApp",
+          "deploymentBranchPolicy": {
+            "customBranchPolicies": false,
+            "protectedBranches": true
+          },
+          "name": "governance-check-verdict",
+          "preventSelfReview": false,
+          "reviewers": [],
+          "rollout": "always",
+          "waitTimer": 0,
+          "workflow": ".github/workflows/governance-anchor.yml",
+          "workflowIdentity": {
+            "contentSha256": "20e7b7db426b10326842917b075e42f70630ac8271ef42165b05a684c2fc9315",
+            "gitBlobSha": "d231af7c3cb28f97cb92dbb521518f83890ef055",
+            "semanticSha256": "dddaa3befae0f798a7631d5da636984c117f4a63486957763030ef9979dea77c",
+            "semanticVersion": 2
+          }
+        },
+        {
+          "credentialIntegration": "governanceWriterApp",
+          "deploymentBranchPolicy": {
+            "customBranchPolicies": false,
+            "protectedBranches": true
+          },
+          "name": "governance-upgrade",
+          "preventSelfReview": false,
+          "reviewers": [],
+          "rollout": "on-promotion",
+          "waitTimer": 0,
+          "workflow": ".github/workflows/sync-design-system.yml",
+          "workflowIdentity": {
+            "contentSha256": "f25e4d348daf1d98a0c8d0d9c1546d6b8340683ba59ed22aeb0f001378000483",
+            "gitBlobSha": "5a8c53bfbed2bb98a30e87e5b550bafff33038b3",
+            "semanticSha256": "3d3dcdb1eb28af25fc3255320a72a64189dec9fcd9df9eb2ea66d1c4d42a07ee",
+            "semanticVersion": 2
+          }
+        }
+      ],
+      "immutableReleases": false,
+      "requiredChecks": [
+        {
+          "baseTrusted": true,
+          "context": "Immutable consumer snapshot",
+          "forbidCandidateControlledSkip": true,
+          "integration": "governanceCheckApp",
+          "requireUnconditionalPullRequest": true,
+          "requiredEvents": [
+            "pull_request_target"
+          ],
+          "trustSource": "protected-base-workflow",
+          "workflow": ".github/workflows/governance-anchor.yml",
+          "workflowIdentity": {
+            "contentSha256": "20e7b7db426b10326842917b075e42f70630ac8271ef42165b05a684c2fc9315",
+            "gitBlobSha": "d231af7c3cb28f97cb92dbb521518f83890ef055",
+            "semanticSha256": "dddaa3befae0f798a7631d5da636984c117f4a63486957763030ef9979dea77c",
+            "semanticVersion": 2
+          }
+        }
+      ],
+      "rulesets": [
+        {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "~DEFAULT_BRANCH"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "name": "fleet/base-integrity",
+          "rollout": "always",
+          "rules": [
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "non_fast_forward"
+            },
+            {
+              "type": "required_linear_history"
+            }
+          ],
+          "target": "branch"
+        },
+        {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "~DEFAULT_BRANCH"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "name": "fleet/verified-main",
+          "rollout": "on-promotion",
+          "rules": [
+            {
+              "parameters": {
+                "dismiss_stale_reviews_on_push": false,
+                "require_code_owner_review": false,
+                "require_last_push_approval": false,
+                "required_approving_review_count": 0,
+                "required_review_thread_resolution": true
+              },
+              "type": "pull_request"
+            },
+            {
+              "parameters": {
+                "fromProfile": true,
+                "strict_required_status_checks_policy": true
+              },
+              "type": "required_status_checks"
+            }
+          ],
+          "target": "branch"
+        },
+        {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "refs/tags/v*"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "name": "fleet/immutable-release-tags",
+          "rollout": "on-promotion",
+          "rules": [
+            {
+              "type": "creation"
+            },
+            {
+              "type": "update"
+            },
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "required_signatures"
+            }
+          ],
+          "target": "tag"
+        }
+      ],
+      "tagPolicy": {
+        "allowCreation": false,
+        "pattern": "v*",
+        "requireSourceAncestry": true,
+        "requireVerifiedSource": true,
+        "sourceBranch": "main"
+      }
+    }
+  },
+  "schemaVersion": 1,
+  "staleManagedPolicy": "delete-after-preflight"
+}

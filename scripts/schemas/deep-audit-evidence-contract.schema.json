@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/deep-audit-evidence-contract.schema.json",
+  "title": "Deep-audit immutable run and evidence envelope contract",
+  "oneOf": [
+    {"$ref": "#/$defs/runManifest"},
+    {"$ref": "#/$defs/historicalRunManifest"},
+    {"$ref": "#/$defs/activePointer"},
+    {"$ref": "#/$defs/evidenceEnvelope"}
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "gitOid": {"type": "string", "pattern": "^[a-f0-9]{40,64}$"},
+    "runId": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+    "providerId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "safePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\u0000\\\\]+$"},
+    "nonEmpty": {"type": "string", "minLength": 1},
+    "isoTime": {"type": "string", "format": "date-time"},
+    "severity": {"enum": ["blocking", "material", "marginal"]},
+    "inventoryRow": {
+      "type": "object", "additionalProperties": false, "required": ["path", "kind", "mode", "bytes", "sha256"],
+      "properties": {"path": {"$ref": "#/$defs/safePath"}, "kind": {"enum": ["file", "symlink", "missing"]}, "mode": {"enum": ["100644", "100755", "120000", "160000"]}, "bytes": {"type": "integer", "minimum": 0}, "sha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "runtimeCertification": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["certificationId", "certificationStatus", "providerId", "runtimeProviderId", "runtimeKind", "surface", "repositoryRole", "targetId", "targetDigest", "certifiedAt", "expiresAt", "recordDigest", "artifactSha256", "evidenceDigest", "reference"],
+      "properties": {
+        "certificationId": {"$ref": "#/$defs/nonEmpty"}, "certificationStatus": {"enum": ["certified", "conditional"]}, "providerId": {"$ref": "#/$defs/providerId"}, "runtimeProviderId": {"$ref": "#/$defs/providerId"}, "runtimeKind": {"$ref": "#/$defs/nonEmpty"}, "surface": {"$ref": "#/$defs/providerId"}, "repositoryRole": {"const": "authority"}, "targetId": {"$ref": "#/$defs/nonEmpty"}, "targetDigest": {"$ref": "#/$defs/sha256"}, "certifiedAt": {"$ref": "#/$defs/isoTime"}, "expiresAt": {"$ref": "#/$defs/isoTime"}, "recordDigest": {"$ref": "#/$defs/sha256"}, "artifactSha256": {"$ref": "#/$defs/sha256"}, "evidenceDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}, "reference": {"type": "string", "pattern": "^infra/governance/evidence/(?:provider-runtime|external-runtime)/[a-f0-9]{64}\\.json$"}
+      }
+    },
+    "manifestProvider": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "displayName", "providerKind", "runtimeIdentity", "runtimeSurface", "runtimeProfileId", "reviewTransport", "reviewSkill", "reviewPeerId", "certificationContract", "reviewBindingDigest", "registryRecordDigest", "runtimeCertification"],
+      "properties": {"id": {"$ref": "#/$defs/providerId"}, "displayName": {"$ref": "#/$defs/nonEmpty"}, "providerKind": {"const": "concrete-runtime"}, "runtimeIdentity": {"$ref": "#/$defs/providerId"}, "runtimeSurface": {"$ref": "#/$defs/providerId"}, "runtimeProfileId": {"$ref": "#/$defs/providerId"}, "reviewTransport": {"$ref": "#/$defs/nonEmpty"}, "reviewSkill": {"const": "deep-audit-cross-codex"}, "reviewPeerId": {"oneOf": [{"$ref": "#/$defs/providerId"}, {"type": "null"}]}, "certificationContract": {"const": "exact-provider-runtime-surface-role-target-v1"}, "reviewBindingDigest": {"$ref": "#/$defs/sha256"}, "registryRecordDigest": {"$ref": "#/$defs/sha256"}, "runtimeCertification": {"$ref": "#/$defs/runtimeCertification"}}
+    },
+    "historicalRunManifest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "contractVersion", "evidenceKind", "runId", "createdAt", "head", "tree", "indexDigest", "inventoryDigest", "rubricDigest", "worktreeFingerprint", "authorProvider", "providerIdentityDigest", "providers", "inventory", "rubricPaths", "components"],
+      "properties": {
+        "schemaVersion": {"const": 3}, "contractVersion": {"const": 1}, "evidenceKind": {"const": "deep-audit-run-manifest"}, "runId": {"$ref": "#/$defs/runId"}, "createdAt": {"$ref": "#/$defs/isoTime"}, "head": {"$ref": "#/$defs/gitOid"}, "tree": {"$ref": "#/$defs/gitOid"}, "indexDigest": {"$ref": "#/$defs/sha256"}, "inventoryDigest": {"$ref": "#/$defs/sha256"}, "rubricDigest": {"$ref": "#/$defs/sha256"}, "worktreeFingerprint": {"$ref": "#/$defs/sha256"}, "authorProvider": {"$ref": "#/$defs/providerId"}, "providerIdentityDigest": {"$ref": "#/$defs/sha256"},
+        "providers": {"type": "object", "additionalProperties": false, "required": ["self", "peer"], "properties": {"self": {"$ref": "#/$defs/manifestProvider"}, "peer": {"$ref": "#/$defs/manifestProvider"}}},
+        "inventory": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/inventoryRow"}},
+        "rubricPaths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}},
+        "components": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["name", "paths", "digest"], "properties": {"name": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$"}, "paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}}, "digest": {"$ref": "#/$defs/sha256"}}}}
+      }
+    },
+    "reviewSelection": {
+      "oneOf": [
+        {"$ref": "#/$defs/selectedReviewSelection"},
+        {"$ref": "#/$defs/blockedReviewSelection"}
+      ]
+    },
+    "reviewSelectionBaseProperties": {
+      "type": "object"
+    },
+    "entitlementAvailabilityRecord": {
+      "type": "object", "additionalProperties": false,
+      "required": ["providerId", "invocationProfileId", "entitlementId", "source", "status", "observedAt", "expiresAt", "runtimeProviderId", "runtimeProfileId", "runtimeKind", "runtimeSurface", "repositoryRole", "target", "targetDigest", "runtimeCertificationId", "runtimeCertificationDigest", "runtimeEvidenceDigest", "adapterReadbackDigest", "evidence"],
+      "properties": {
+        "providerId": {"$ref": "#/$defs/providerId"}, "invocationProfileId": {"$ref": "#/$defs/providerId"}, "entitlementId": {"$ref": "#/$defs/providerId"}, "source": {"const": "verified-provider-adapter-readback"}, "status": {"const": "available"}, "observedAt": {"$ref": "#/$defs/isoTime"}, "expiresAt": {"$ref": "#/$defs/isoTime"}, "runtimeProviderId": {"$ref": "#/$defs/providerId"}, "runtimeProfileId": {"$ref": "#/$defs/providerId"}, "runtimeKind": {"$ref": "#/$defs/providerId"}, "runtimeSurface": {"$ref": "#/$defs/providerId"}, "repositoryRole": {"$ref": "#/$defs/providerId"},
+        "target": {"type": "object", "additionalProperties": false, "required": ["id", "operatingSystem", "platform", "arch", "executionEnvironment", "distributionVersion", "pathClass"], "properties": {"id": {"$ref": "#/$defs/providerId"}, "operatingSystem": {"$ref": "#/$defs/nonEmpty"}, "platform": {"$ref": "#/$defs/nonEmpty"}, "arch": {"$ref": "#/$defs/nonEmpty"}, "executionEnvironment": {"$ref": "#/$defs/nonEmpty"}, "distributionVersion": {"$ref": "#/$defs/nonEmpty"}, "pathClass": {"$ref": "#/$defs/nonEmpty"}}},
+        "targetDigest": {"$ref": "#/$defs/sha256"}, "runtimeCertificationId": {"$ref": "#/$defs/providerId"}, "runtimeCertificationDigest": {"$ref": "#/$defs/sha256"}, "runtimeEvidenceDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}, "adapterReadbackDigest": {"$ref": "#/$defs/sha256"},
+        "evidence": {"type": "object", "additionalProperties": false, "required": ["reference", "sha256"], "properties": {"reference": {"$ref": "#/$defs/nonEmpty"}, "sha256": {"$ref": "#/$defs/sha256"}}}
+      }
+    },
+    "selectedReviewSelection": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "skill", "authorProviderId", "selfProviderId", "selectionPolicy", "reviewClass", "requiredAssuranceTier", "requiredReasoningTier", "requiredComputeTier", "requiredEntitlementId", "entitlementAvailability", "entitlementAvailabilityDigest", "selected", "bindingDigest", "selectionPolicyDigest", "providerRegistryDigest", "capabilityRegistryDigest", "capabilityCertificationLedgerDigest", "invocationRegistryDigest", "modelReleaseRegistryDigest", "selectedProviderRecordDigest", "selectedProfileDigest", "selectedInvocationProfileDigest", "selectedModelReleaseDigest", "selectedCapabilityCertificationDigest", "selectionDigest"],
+      "properties": {
+        "schemaVersion": {"const": 1}, "kind": {"const": "provider-review-capability-selection"}, "skill": {"const": "deep-audit-cross-codex"}, "authorProviderId": {"$ref": "#/$defs/providerId"}, "selfProviderId": {"$ref": "#/$defs/providerId"}, "selectionPolicy": {"type": "string", "pattern": "^[a-z][a-z0-9-]*-v[1-9][0-9]*$"}, "reviewClass": {"$ref": "#/$defs/providerId"}, "requiredAssuranceTier": {"enum": ["standard", "high", "maximum"]}, "requiredReasoningTier": {"enum": ["standard", "high", "maximum"]}, "requiredComputeTier": {"enum": ["standard", "high", "maximum"]}, "requiredEntitlementId": {"oneOf": [{"$ref": "#/$defs/providerId"}, {"type": "null"}]}, "entitlementAvailability": {"type": "array", "items": {"$ref": "#/$defs/entitlementAvailabilityRecord"}}, "entitlementAvailabilityDigest": {"$ref": "#/$defs/sha256"},
+        "selected": {
+          "type": "object", "additionalProperties": false,
+          "required": ["providerId", "reviewProfileId", "invocationProfileId", "routeClass", "entitlementId", "modelReleaseId", "requestModelId", "assuranceTier", "reasoningTier", "computeTier", "capabilityCertificationId", "capabilityCertificationExpiresAt", "capabilityEvidenceDigest"],
+          "properties": {"providerId": {"$ref": "#/$defs/providerId"}, "reviewProfileId": {"$ref": "#/$defs/providerId"}, "invocationProfileId": {"$ref": "#/$defs/providerId"}, "routeClass": {"enum": ["managed-api", "subscription-entitlement"]}, "entitlementId": {"oneOf": [{"$ref": "#/$defs/providerId"}, {"type": "null"}]}, "modelReleaseId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*/[A-Za-z0-9][A-Za-z0-9._:-]*$"}, "requestModelId": {"$ref": "#/$defs/nonEmpty"}, "assuranceTier": {"enum": ["standard", "high", "maximum"]}, "reasoningTier": {"enum": ["standard", "high", "maximum"]}, "computeTier": {"enum": ["standard", "high", "maximum"]}, "capabilityCertificationId": {"$ref": "#/$defs/providerId"}, "capabilityCertificationExpiresAt": {"$ref": "#/$defs/isoTime"}, "capabilityEvidenceDigest": {"$ref": "#/$defs/sha256"}}
+        },
+        "bindingDigest": {"$ref": "#/$defs/sha256"}, "selectionPolicyDigest": {"$ref": "#/$defs/sha256"}, "providerRegistryDigest": {"$ref": "#/$defs/sha256"}, "capabilityRegistryDigest": {"$ref": "#/$defs/sha256"}, "capabilityCertificationLedgerDigest": {"$ref": "#/$defs/sha256"}, "invocationRegistryDigest": {"$ref": "#/$defs/sha256"}, "modelReleaseRegistryDigest": {"$ref": "#/$defs/sha256"}, "selectedProviderRecordDigest": {"$ref": "#/$defs/sha256"}, "selectedProfileDigest": {"$ref": "#/$defs/sha256"}, "selectedInvocationProfileDigest": {"$ref": "#/$defs/sha256"}, "selectedModelReleaseDigest": {"$ref": "#/$defs/sha256"}, "selectedCapabilityCertificationDigest": {"$ref": "#/$defs/sha256"}, "selectionDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "blockedReviewSelection": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "selectionStatus", "selectionReasonCode", "skill", "authorProviderId", "selfProviderId", "selectionPolicy", "reviewClass", "requiredAssuranceTier", "requiredReasoningTier", "requiredComputeTier", "requiredEntitlementId", "entitlementAvailability", "entitlementAvailabilityDigest", "bindingDigest", "selectionPolicyDigest", "providerRegistryDigest", "capabilityRegistryDigest", "capabilityCertificationLedgerDigest", "invocationRegistryDigest", "modelReleaseRegistryDigest", "selectionDigest"],
+      "properties": {
+        "schemaVersion": {"const": 1}, "kind": {"const": "provider-review-capability-selection-blocked"}, "selectionStatus": {"const": "REVIEW-BLOCKED"}, "selectionReasonCode": {"enum": ["REVIEW_CAPABILITY_UNAVAILABLE", "REVIEW_ENTITLEMENT_UNAVAILABLE"]}, "skill": {"const": "deep-audit-cross-codex"}, "authorProviderId": {"$ref": "#/$defs/providerId"}, "selfProviderId": {"$ref": "#/$defs/providerId"}, "selectionPolicy": {"type": "string", "pattern": "^[a-z][a-z0-9-]*-v[1-9][0-9]*$"}, "reviewClass": {"$ref": "#/$defs/providerId"}, "requiredAssuranceTier": {"enum": ["standard", "high", "maximum"]}, "requiredReasoningTier": {"enum": ["standard", "high", "maximum"]}, "requiredComputeTier": {"enum": ["standard", "high", "maximum"]}, "requiredEntitlementId": {"oneOf": [{"$ref": "#/$defs/providerId"}, {"type": "null"}]}, "entitlementAvailability": {"type": "array", "items": {"$ref": "#/$defs/entitlementAvailabilityRecord"}}, "entitlementAvailabilityDigest": {"$ref": "#/$defs/sha256"}, "bindingDigest": {"$ref": "#/$defs/sha256"}, "selectionPolicyDigest": {"$ref": "#/$defs/sha256"}, "providerRegistryDigest": {"$ref": "#/$defs/sha256"}, "capabilityRegistryDigest": {"$ref": "#/$defs/sha256"}, "capabilityCertificationLedgerDigest": {"$ref": "#/$defs/sha256"}, "invocationRegistryDigest": {"$ref": "#/$defs/sha256"}, "modelReleaseRegistryDigest": {"$ref": "#/$defs/sha256"}, "selectionDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "runManifest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "contractVersion", "evidenceKind", "runId", "createdAt", "head", "tree", "indexDigest", "inventoryDigest", "rubricDigest", "worktreeFingerprint", "authorProvider", "providerIdentityDigest", "providers", "reviewSelection", "inventory", "rubricPaths", "components"],
+      "properties": {
+        "schemaVersion": {"const": 4}, "contractVersion": {"const": 1}, "evidenceKind": {"const": "deep-audit-run-manifest"}, "runId": {"$ref": "#/$defs/runId"}, "createdAt": {"$ref": "#/$defs/isoTime"}, "head": {"$ref": "#/$defs/gitOid"}, "tree": {"$ref": "#/$defs/gitOid"}, "indexDigest": {"$ref": "#/$defs/sha256"}, "inventoryDigest": {"$ref": "#/$defs/sha256"}, "rubricDigest": {"$ref": "#/$defs/sha256"}, "worktreeFingerprint": {"$ref": "#/$defs/sha256"}, "authorProvider": {"$ref": "#/$defs/providerId"}, "providerIdentityDigest": {"$ref": "#/$defs/sha256"},
+        "providers": {"type": "object", "additionalProperties": false, "required": ["self", "peer"], "properties": {"self": {"$ref": "#/$defs/manifestProvider"}, "peer": {"oneOf": [{"$ref": "#/$defs/manifestProvider"}, {"type": "null"}]}}},
+        "reviewSelection": {"$ref": "#/$defs/reviewSelection"},
+        "inventory": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/inventoryRow"}},
+        "rubricPaths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}},
+        "components": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["name", "paths", "digest"], "properties": {"name": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$"}, "paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}}, "digest": {"$ref": "#/$defs/sha256"}}}}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "reviewSelection": {
+                "type": "object",
+                "properties": {"kind": {"const": "provider-review-capability-selection-blocked"}},
+                "required": ["kind"]
+              }
+            },
+            "required": ["reviewSelection"]
+          },
+          "then": {
+            "properties": {
+              "providers": {
+                "type": "object",
+                "properties": {
+                  "self": {"type": "object", "properties": {"reviewPeerId": {"type": "null"}}},
+                  "peer": {"type": "null"}
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "providers": {
+                "type": "object",
+                "properties": {
+                  "self": {"type": "object", "properties": {"reviewPeerId": {"$ref": "#/$defs/providerId"}}},
+                  "peer": {"$ref": "#/$defs/manifestProvider"}
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "activePointer": {
+      "type": "object", "additionalProperties": false, "required": ["schemaVersion", "evidenceKind", "runId", "manifestSha256"],
+      "properties": {"schemaVersion": {"const": 1}, "evidenceKind": {"const": "deep-audit-active-run"}, "runId": {"$ref": "#/$defs/runId"}, "manifestSha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "genericProducer": {
+      "type": "object", "additionalProperties": false, "required": ["providerId", "runtime", "runtimeSurface", "runtimeProfileId", "model", "transport", "runtimeCertificationDigest"],
+      "properties": {"providerId": {"const": "generic"}, "runtime": {"const": "deterministic-script"}, "runtimeSurface": {"const": "local"}, "runtimeProfileId": {"type": "null"}, "model": {"const": "none"}, "transport": {"const": "local-process"}, "runtimeCertificationDigest": {"type": "null"}}
+    },
+    "concreteProducer": {
+      "type": "object", "additionalProperties": false, "required": ["providerId", "runtime", "runtimeSurface", "runtimeProfileId", "model", "transport", "runtimeCertificationDigest"],
+      "properties": {"providerId": {"allOf": [{"$ref": "#/$defs/providerId"}, {"not": {"const": "generic"}}]}, "runtime": {"$ref": "#/$defs/providerId"}, "runtimeSurface": {"$ref": "#/$defs/providerId"}, "runtimeProfileId": {"$ref": "#/$defs/providerId"}, "model": {"$ref": "#/$defs/nonEmpty"}, "transport": {"$ref": "#/$defs/nonEmpty"}, "runtimeCertificationDigest": {"$ref": "#/$defs/sha256"}}
+    },
+    "producerAny": {"oneOf": [{"$ref": "#/$defs/genericProducer"}, {"$ref": "#/$defs/concreteProducer"}]},
+    "command": {
+      "type": "object", "additionalProperties": false, "required": ["argv", "cwd", "exitCode", "startedAt", "finishedAt"],
+      "properties": {"argv": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}}, "cwd": {"const": "."}, "exitCode": {"type": "integer"}, "startedAt": {"$ref": "#/$defs/isoTime"}, "finishedAt": {"$ref": "#/$defs/isoTime"}}
+    },
+    "environment": {
+      "type": "object", "additionalProperties": false, "required": ["nodeVersion", "npmVersion", "platform", "arch", "lockfilePath", "lockfileSha256"],
+      "properties": {"nodeVersion": {"type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"}, "npmVersion": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"}, "platform": {"$ref": "#/$defs/nonEmpty"}, "arch": {"$ref": "#/$defs/nonEmpty"}, "lockfilePath": {"const": "package-lock.json"}, "lockfileSha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "coverage": {
+      "type": "object", "additionalProperties": false, "required": ["inventoryPaths", "inventoryDigest", "filesScanned"],
+      "properties": {"inventoryPaths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}}, "inventoryDigest": {"$ref": "#/$defs/sha256"}, "filesScanned": {"type": "integer", "minimum": 1}}
+    },
+    "localSandbox": {
+      "type": "object", "additionalProperties": false,
+      "required": ["materialization", "manifestVerificationBeforeDigest", "manifestVerificationAfterDigest", "callerFingerprintBeforeDigest", "callerFingerprintAfterDigest", "dependencyViewBeforeDigest", "dependencyViewAfterDigest", "dependencyLockfileSha256", "installedLockfileSha256", "installedDependencyIdentityDigest", "dependencyProvenance", "dependencyTrust", "executionIsolation", "containmentBackend", "externalWriteContainment", "cleanup"],
+      "properties": {
+        "materialization": {"const": "inode-independent-copy-on-write-or-byte-copy"}, "manifestVerificationBeforeDigest": {"$ref": "#/$defs/sha256"}, "manifestVerificationAfterDigest": {"$ref": "#/$defs/sha256"}, "callerFingerprintBeforeDigest": {"$ref": "#/$defs/sha256"}, "callerFingerprintAfterDigest": {"$ref": "#/$defs/sha256"}, "dependencyViewBeforeDigest": {"$ref": "#/$defs/sha256"}, "dependencyViewAfterDigest": {"$ref": "#/$defs/sha256"}, "dependencyLockfileSha256": {"$ref": "#/$defs/sha256"}, "installedLockfileSha256": {"$ref": "#/$defs/sha256"}, "installedDependencyIdentityDigest": {"$ref": "#/$defs/sha256"}, "dependencyProvenance": {"const": "caller-node-modules-copy"}, "dependencyTrust": {"const": "untrusted-local-copy"}, "executionIsolation": {"const": "disposable-repository-copy"}, "containmentBackend": {"const": "none"}, "externalWriteContainment": {"const": "unverified"}, "cleanup": {"const": true}
+      }
+    },
+    "managedSandbox": {"$ref": "https://qijenchen.dev/schemas/managed-ci-sandbox-receipt-v1.json"},
+    "sandbox": {"oneOf": [{"$ref": "#/$defs/localSandbox"}, {"$ref": "#/$defs/managedSandbox"}]},
+    "generatedOutputReceipt": {
+      "type": "object", "additionalProperties": false, "required": ["declaredRoots", "beforeDigest", "afterDigest", "changedPaths"],
+      "properties": {"declaredRoots": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}}, "beforeDigest": {"$ref": "#/$defs/sha256"}, "afterDigest": {"$ref": "#/$defs/sha256"}, "changedPaths": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}}}
+    },
+    "deterministicCommand": {
+      "type": "object", "additionalProperties": false, "required": ["argv", "exitCode", "startedAt", "finishedAt", "stdoutSha256", "stderrSha256", "stdoutTail", "stderrTail", "generatedOutputReceipt"],
+      "properties": {"argv": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}}, "exitCode": {"type": "integer"}, "startedAt": {"$ref": "#/$defs/isoTime"}, "finishedAt": {"$ref": "#/$defs/isoTime"}, "stdoutSha256": {"$ref": "#/$defs/sha256"}, "stderrSha256": {"$ref": "#/$defs/sha256"}, "stdoutTail": {"type": "string"}, "stderrTail": {"type": "string"}, "generatedOutputReceipt": {"$ref": "#/$defs/generatedOutputReceipt"}}
+    },
+    "deterministicPayload": {
+      "type": "object", "additionalProperties": false, "required": ["dim", "name", "planDigest", "capabilities", "commandIds", "commands", "findings", "summary", "sandboxReceipt"],
+      "properties": {"dim": {"type": "integer", "minimum": 1, "maximum": 91}, "name": {"$ref": "#/$defs/nonEmpty"}, "planDigest": {"$ref": "#/$defs/sha256"}, "capabilities": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}}, "commandIds": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}}, "commands": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/deterministicCommand"}}, "findings": {"type": "array"}, "summary": {"$ref": "#/$defs/nonEmpty"}, "sandboxReceipt": {"$ref": "#/$defs/sandbox"}}
+    },
+    "judgmentFinding": {
+      "type": "object", "additionalProperties": false, "required": ["path", "line", "severity", "rule", "problem", "recommendation"],
+      "properties": {"path": {"$ref": "#/$defs/safePath"}, "line": {"type": "integer", "minimum": 1}, "severity": {"$ref": "#/$defs/severity"}, "rule": {"$ref": "#/$defs/nonEmpty"}, "problem": {"$ref": "#/$defs/nonEmpty"}, "recommendation": {"$ref": "#/$defs/nonEmpty"}}
+    },
+    "falseClaim": {
+      "type": "object", "additionalProperties": false, "required": ["claimId", "path", "line", "severity", "claim", "actual", "recommendation"],
+      "properties": {"claimId": {"$ref": "#/$defs/sha256"}, "path": {"$ref": "#/$defs/safePath"}, "line": {"type": "integer", "minimum": 1}, "severity": {"$ref": "#/$defs/severity"}, "claim": {"$ref": "#/$defs/nonEmpty"}, "actual": {"$ref": "#/$defs/nonEmpty"}, "recommendation": {"$ref": "#/$defs/nonEmpty"}}
+    },
+    "legacyTransportReceipt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["promptSha256", "promptBytes", "responseSha256", "responseBytes", "providerRunId", "sessionId", "coverageInventoryDigest", "transcriptReference", "transcriptSha256", "transcriptBytes", "invocationProfileDigest", "resultSchemaSha256"],
+      "properties": {"promptSha256": {"$ref": "#/$defs/sha256"}, "promptBytes": {"type": "integer", "minimum": 1}, "responseSha256": {"$ref": "#/$defs/sha256"}, "responseBytes": {"type": "integer", "minimum": 1}, "providerRunId": {"$ref": "#/$defs/nonEmpty"}, "sessionId": {"$ref": "#/$defs/nonEmpty"}, "coverageInventoryDigest": {"$ref": "#/$defs/sha256"}, "transcriptReference": {"type": "string", "pattern": "^(?:judgment|component-a1b)/[a-z][a-z0-9-]*/_transcripts/[a-f0-9]{64}\\.json$"}, "transcriptSha256": {"$ref": "#/$defs/sha256"}, "transcriptBytes": {"type": "integer", "minimum": 1}, "invocationProfileDigest": {"$ref": "#/$defs/sha256"}, "resultSchemaSha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "modelAccessReceipt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "status", "traceFormat", "traceSha256", "traceBytes", "coverageInventoryDigest", "contentAccessPaths", "missingPaths", "outsideCoveragePaths", "forbiddenToolUses", "nonContentToolUseCount"],
+      "properties": {"schemaVersion": {"const": 1}, "status": {"enum": ["verified", "coverage-unverified"]}, "traceFormat": {"enum": ["claude-stream-json", "codex-jsonl-unverifiable", "unavailable"]}, "traceSha256": {"$ref": "#/$defs/sha256"}, "traceBytes": {"type": "integer", "minimum": 1}, "coverageInventoryDigest": {"$ref": "#/$defs/sha256"}, "contentAccessPaths": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}}, "missingPaths": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}}, "outsideCoveragePaths": {"type": "array", "maxItems": 0}, "forbiddenToolUses": {"type": "array", "maxItems": 0}, "nonContentToolUseCount": {"type": "integer", "minimum": 0}}
+    },
+    "modelInvocationWindow": {
+      "type": "object", "additionalProperties": false, "required": ["startedAt", "finishedAt"],
+      "properties": {"startedAt": {"type": "string", "format": "date-time"}, "finishedAt": {"type": "string", "format": "date-time"}}
+    },
+    "modelExchangeInvocationObservation": {
+      "type": "object", "additionalProperties": false, "required": ["shardId", "providerRunId", "responseSha256", "observedAt"],
+      "properties": {"shardId": {"$ref": "#/$defs/sha256"}, "providerRunId": {"$ref": "#/$defs/nonEmpty"}, "responseSha256": {"$ref": "#/$defs/sha256"}, "observedAt": {"type": "string", "format": "date-time"}}
+    },
+    "brokerReceipt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "transportMode", "coverageInventoryDigest", "transcriptReference", "transcriptSha256", "transcriptBytes", "brokerPlanDigest", "invocationRegistryDigest", "brokerProfileDigest", "selectedProfileDigest", "modelIdentityPolicyDigest", "requestModelId", "observedResponseModelId", "modelReleaseId", "modelReleaseBindingDigest", "modelReleaseRegistryDigest", "modelReleaseAuthorityBindingDigest", "effectivePromotionBindingDigest", "modelReleaseValidFrom", "modelReleaseValidUntil", "providerInvocationWindow", "exchangeInvocationObservations", "modelAuthorityReceiptDigest", "modelAuthorityReadbackDigest", "modelAuthorityRevocationRegistryDigest", "modelAuthorityRevocationReadbackDigest", "modelAuthorityAuditReadbackDigest", "modelAuthorityReplayLedgerReceiptDigest", "providerInvocationWindowDigest", "exchangeInvocationObservationsDigest", "modelAuthorityPolicyDigest", "modelAuthorityBindingSchemaDigest", "modelAuthorityIssuerRegistryDigest", "resultSchemaSha256", "shardSetDigest", "shardCount", "reductionDigest", "managedAttestationDigest"],
+      "properties": {"schemaVersion": {"const": 1}, "transportMode": {"const": "managed-no-tools-api-shards-v1"}, "coverageInventoryDigest": {"$ref": "#/$defs/sha256"}, "transcriptReference": {"type": "string", "pattern": "^(?:judgment|component-a1b)/[a-z][a-z0-9-]*/_transcripts/[a-f0-9]{64}\\.json$"}, "transcriptSha256": {"$ref": "#/$defs/sha256"}, "transcriptBytes": {"type": "integer", "minimum": 1}, "brokerPlanDigest": {"$ref": "#/$defs/sha256"}, "invocationRegistryDigest": {"$ref": "#/$defs/sha256"}, "brokerProfileDigest": {"$ref": "#/$defs/sha256"}, "selectedProfileDigest": {"$ref": "#/$defs/sha256"}, "modelIdentityPolicyDigest": {"$ref": "#/$defs/sha256"}, "requestModelId": {"$ref": "#/$defs/nonEmpty"}, "observedResponseModelId": {"$ref": "#/$defs/nonEmpty"}, "modelReleaseId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*/[A-Za-z0-9][A-Za-z0-9._:-]*$"}, "modelReleaseBindingDigest": {"$ref": "#/$defs/sha256"}, "modelReleaseRegistryDigest": {"$ref": "#/$defs/sha256"}, "modelReleaseAuthorityBindingDigest": {"$ref": "#/$defs/sha256"}, "effectivePromotionBindingDigest": {"$ref": "#/$defs/sha256"}, "modelReleaseValidFrom": {"type": "string", "format": "date-time"}, "modelReleaseValidUntil": {"type": "string", "format": "date-time"}, "providerInvocationWindow": {"$ref": "#/$defs/modelInvocationWindow"}, "exchangeInvocationObservations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/modelExchangeInvocationObservation"}}, "modelAuthorityReceiptDigest": {"$ref": "#/$defs/sha256"}, "modelAuthorityReadbackDigest": {"$ref": "#/$defs/sha256"}, "modelAuthorityRevocationRegistryDigest": {"$ref": "#/$defs/sha256"}, "modelAuthorityRevocationReadbackDigest": {"$ref": "#/$defs/sha256"}, "modelAuthorityAuditReadbackDigest": {"$ref": "#/$defs/sha256"}, "modelAuthorityReplayLedgerReceiptDigest": {"$ref": "#/$defs/sha256"}, "providerInvocationWindowDigest": {"$ref": "#/$defs/sha256"}, "exchangeInvocationObservationsDigest": {"$ref": "#/$defs/sha256"}, "modelAuthorityPolicyDigest": {"$ref": "#/$defs/sha256"}, "modelAuthorityBindingSchemaDigest": {"$ref": "#/$defs/sha256"}, "modelAuthorityIssuerRegistryDigest": {"$ref": "#/$defs/sha256"}, "resultSchemaSha256": {"$ref": "#/$defs/sha256"}, "shardSetDigest": {"$ref": "#/$defs/sha256"}, "shardCount": {"type": "integer", "minimum": 1}, "reductionDigest": {"$ref": "#/$defs/sha256"}, "managedAttestationDigest": {"$ref": "#/$defs/sha256"}}
+    },
+    "legacyJudgmentPayload": {
+      "type": "object", "additionalProperties": false, "required": ["dim", "findings", "transportReceipt", "accessReceipt", "sandboxReceipt"],
+      "properties": {"dim": {"type": "integer", "minimum": 1, "maximum": 91}, "findings": {"type": "array", "items": {"$ref": "#/$defs/judgmentFinding"}}, "transportReceipt": {"$ref": "#/$defs/legacyTransportReceipt"}, "accessReceipt": {"$ref": "#/$defs/modelAccessReceipt"}, "sandboxReceipt": {"$ref": "#/$defs/localSandbox"}}
+    },
+    "managedJudgmentPayload": {
+      "type": "object", "additionalProperties": false, "required": ["dim", "findings", "brokerReceipt", "sandboxReceipt"],
+      "properties": {"dim": {"type": "integer", "minimum": 1, "maximum": 91}, "findings": {"type": "array", "items": {"$ref": "#/$defs/judgmentFinding"}}, "brokerReceipt": {"$ref": "#/$defs/brokerReceipt"}, "sandboxReceipt": {"$ref": "#/$defs/managedSandbox"}}
+    },
+    "judgmentPayload": {"oneOf": [{"$ref": "#/$defs/legacyJudgmentPayload"}, {"$ref": "#/$defs/managedJudgmentPayload"}]},
+    "claimReceipt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "status", "claimInventoryDigest", "claimCount", "verdictDigest", "verifiedCount", "falseCount", "unverifiableCount", "supportingSourceSetDigest", "supportingSourceCount", "dependencySourceFindingsDigest", "dependencySourceFindingCount"],
+      "properties": {"schemaVersion": {"const": 1}, "status": {"enum": ["verified", "unverifiable"]}, "claimInventoryDigest": {"$ref": "#/$defs/sha256"}, "claimCount": {"type": "integer", "minimum": 1}, "verdictDigest": {"$ref": "#/$defs/sha256"}, "verifiedCount": {"type": "integer", "minimum": 0}, "falseCount": {"type": "integer", "minimum": 0}, "unverifiableCount": {"type": "integer", "minimum": 0}, "supportingSourceSetDigest": {"$ref": "#/$defs/sha256"}, "supportingSourceCount": {"type": "integer", "minimum": 1}, "dependencySourceFindingsDigest": {"$ref": "#/$defs/sha256"}, "dependencySourceFindingCount": {"type": "integer", "minimum": 0}}
+    },
+    "legacyA1bPayload": {
+      "type": "object", "additionalProperties": false, "required": ["component", "claimsVerified", "falseClaims", "transportReceipt", "accessReceipt", "claimReceipt", "sandboxReceipt"],
+      "properties": {"component": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$"}, "claimsVerified": {"type": "integer", "minimum": 1}, "falseClaims": {"type": "array", "items": {"$ref": "#/$defs/falseClaim"}}, "transportReceipt": {"$ref": "#/$defs/legacyTransportReceipt"}, "accessReceipt": {"$ref": "#/$defs/modelAccessReceipt"}, "claimReceipt": {"$ref": "#/$defs/claimReceipt"}, "sandboxReceipt": {"$ref": "#/$defs/localSandbox"}}
+    },
+    "managedA1bPayload": {
+      "type": "object", "additionalProperties": false, "required": ["component", "claimsVerified", "falseClaims", "brokerReceipt", "claimReceipt", "sandboxReceipt"],
+      "properties": {"component": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$"}, "claimsVerified": {"type": "integer", "minimum": 1}, "falseClaims": {"type": "array", "items": {"$ref": "#/$defs/falseClaim"}}, "brokerReceipt": {"$ref": "#/$defs/brokerReceipt"}, "claimReceipt": {"$ref": "#/$defs/claimReceipt"}, "sandboxReceipt": {"$ref": "#/$defs/managedSandbox"}}
+    },
+    "a1bPayload": {"oneOf": [{"$ref": "#/$defs/legacyA1bPayload"}, {"$ref": "#/$defs/managedA1bPayload"}]},
+    "hookTest": {"type": "object", "additionalProperties": false, "required": ["test", "observed"], "properties": {"test": {"$ref": "#/$defs/nonEmpty"}, "observed": {"const": true}}},
+    "hookInvocation": {
+      "type": "object", "additionalProperties": false, "required": ["path", "hook", "event", "tool", "exitCode", "outcome", "stdoutBytes", "stdoutSha256", "stderrBytes", "stderrSha256"],
+      "properties": {"path": {"$ref": "#/$defs/safePath"}, "hook": {"$ref": "#/$defs/nonEmpty"}, "event": {"$ref": "#/$defs/nonEmpty"}, "tool": {"$ref": "#/$defs/nonEmpty"}, "exitCode": {"type": "integer"}, "outcome": {"enum": ["clean", "warning", "blocking"]}, "stdoutBytes": {"type": "integer", "minimum": 0}, "stdoutSha256": {"$ref": "#/$defs/sha256"}, "stderrBytes": {"type": "integer", "minimum": 0}, "stderrSha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "hookFinding": {
+      "type": "object", "additionalProperties": false, "required": ["path", "hook", "event", "tool", "exitCode", "outcome", "stdoutBytes", "stdoutSha256", "stderrBytes", "stderrSha256", "stdoutExcerpt", "stderrExcerpt"],
+      "properties": {"path": {"$ref": "#/$defs/safePath"}, "hook": {"$ref": "#/$defs/nonEmpty"}, "event": {"$ref": "#/$defs/nonEmpty"}, "tool": {"$ref": "#/$defs/nonEmpty"}, "exitCode": {"type": "integer"}, "outcome": {"enum": ["clean", "warning", "blocking"]}, "stdoutBytes": {"type": "integer", "minimum": 0}, "stdoutSha256": {"$ref": "#/$defs/sha256"}, "stderrBytes": {"type": "integer", "minimum": 0}, "stderrSha256": {"$ref": "#/$defs/sha256"}, "stdoutExcerpt": {"type": "string"}, "stderrExcerpt": {"type": "string"}}
+    },
+    "focusedContract": {"type": "object", "additionalProperties": false, "required": ["contract", "hook", "event", "tool", "test", "observed"], "properties": {"contract": {"$ref": "#/$defs/nonEmpty"}, "hook": {"$ref": "#/$defs/nonEmpty"}, "event": {"$ref": "#/$defs/nonEmpty"}, "tool": {"type": "string"}, "test": {"$ref": "#/$defs/nonEmpty"}, "observed": {"const": true}}},
+    "hookPayload": {
+      "type": "object", "additionalProperties": false, "required": ["dim", "capability", "enforcementSuiteReceipt", "replayReceipt", "sandboxReceipt"],
+      "properties": {
+        "dim": {"type": "integer", "minimum": 1, "maximum": 91}, "capability": {"$ref": "#/$defs/nonEmpty"},
+        "enforcementSuiteReceipt": {"type": "object", "additionalProperties": false, "required": ["planSha256", "commandSha256", "stdoutSha256", "stderrSha256", "sandboxBeforeSha256", "sandboxAfterSha256", "sandboxVerificationDigest", "tests", "suitePassed"], "properties": {"planSha256": {"$ref": "#/$defs/sha256"}, "commandSha256": {"$ref": "#/$defs/sha256"}, "stdoutSha256": {"$ref": "#/$defs/sha256"}, "stderrSha256": {"$ref": "#/$defs/sha256"}, "sandboxBeforeSha256": {"$ref": "#/$defs/sha256"}, "sandboxAfterSha256": {"$ref": "#/$defs/sha256"}, "sandboxVerificationDigest": {"$ref": "#/$defs/sha256"}, "tests": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/hookTest"}}, "suitePassed": {"const": true}}},
+        "replayReceipt": {"type": "object", "additionalProperties": false, "required": ["planSha256", "inventoryDigest", "filesScanned", "invocationCount", "warningCount", "blockingCount", "sandboxBeforeSha256", "sandboxAfterSha256", "sandboxVerificationDigest", "findings", "invocations", "focusedContracts", "complete"], "properties": {"planSha256": {"$ref": "#/$defs/sha256"}, "inventoryDigest": {"$ref": "#/$defs/sha256"}, "filesScanned": {"type": "integer", "minimum": 1}, "invocationCount": {"type": "integer", "minimum": 0}, "warningCount": {"type": "integer", "minimum": 0}, "blockingCount": {"type": "integer", "minimum": 0}, "sandboxBeforeSha256": {"$ref": "#/$defs/sha256"}, "sandboxAfterSha256": {"$ref": "#/$defs/sha256"}, "sandboxVerificationDigest": {"$ref": "#/$defs/sha256"}, "findings": {"type": "array", "items": {"$ref": "#/$defs/hookFinding"}}, "invocations": {"type": "array", "items": {"$ref": "#/$defs/hookInvocation"}}, "focusedContracts": {"type": "array", "items": {"$ref": "#/$defs/focusedContract"}}, "complete": {"const": true}}},
+        "sandboxReceipt": {"$ref": "#/$defs/sandbox"}
+      }
+    },
+    "ciSubject": {"type": "object", "additionalProperties": false, "required": ["repository", "workflow", "checkName", "runId", "head", "tree"], "properties": {"repository": {"$ref": "#/$defs/nonEmpty"}, "workflow": {"$ref": "#/$defs/nonEmpty"}, "checkName": {"$ref": "#/$defs/nonEmpty"}, "runId": {"$ref": "#/$defs/nonEmpty"}, "head": {"$ref": "#/$defs/gitOid"}, "tree": {"$ref": "#/$defs/gitOid"}}},
+    "ciAttestationDimension": {"type": "object", "additionalProperties": false, "required": ["dim", "capability", "repository", "workflow", "checkName", "runId", "runAttempt", "head", "tree", "workflowIdentityDigest"], "properties": {"dim": {"type": "integer", "minimum": 1, "maximum": 91}, "capability": {"$ref": "#/$defs/nonEmpty"}, "repository": {"$ref": "#/$defs/nonEmpty"}, "workflow": {"$ref": "#/$defs/nonEmpty"}, "checkName": {"$ref": "#/$defs/nonEmpty"}, "runId": {"$ref": "#/$defs/nonEmpty"}, "runAttempt": {"type": "integer", "minimum": 1}, "head": {"$ref": "#/$defs/gitOid"}, "tree": {"$ref": "#/$defs/gitOid"}, "workflowIdentityDigest": {"$ref": "#/$defs/sha256"}}},
+    "ciAttestationBinding": {"type": "object", "additionalProperties": false, "required": ["contract", "observationSha256", "nonce", "issuerRegistryDigest", "apiReadbackDigest", "observedAt", "expiresAt", "runBinding", "dimension"], "properties": {"contract": {"const": "ci-enforced-observation-attestation-v1"}, "observationSha256": {"$ref": "#/$defs/sha256"}, "nonce": {"$ref": "#/$defs/runId"}, "issuerRegistryDigest": {"$ref": "#/$defs/sha256"}, "apiReadbackDigest": {"$ref": "#/$defs/sha256"}, "observedAt": {"$ref": "#/$defs/isoTime"}, "expiresAt": {"$ref": "#/$defs/isoTime"}, "runBinding": {"$ref": "https://qijenchen.dev/schemas/ci-evidence-observation-v1.json#/$defs/payload/properties/runBinding"}, "dimension": {"$ref": "#/$defs/ciAttestationDimension"}}},
+    "ciSignature": {"type": "object", "additionalProperties": false, "required": ["issuerKeyId", "observationPayloadSha256", "observationSignature", "receiptPayloadSha256", "receiptSignature"], "properties": {"issuerKeyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"}, "observationPayloadSha256": {"$ref": "#/$defs/sha256"}, "observationSignature": {"type": "string", "pattern": "^[A-Za-z0-9_-]{86}$"}, "receiptPayloadSha256": {"$ref": "#/$defs/sha256"}, "receiptSignature": {"type": "string", "pattern": "^[A-Za-z0-9_-]{86}$"}}},
+    "ciTrustReceipt": {
+      "type": "object", "additionalProperties": false, "required": ["contract", "subject", "observation", "observationPayload", "attestation"],
+      "properties": {
+        "contract": {"const": "signed-github-check-observation-v1"}, "subject": {"$ref": "#/$defs/ciSubject"},
+        "observation": {"type": "object", "additionalProperties": false, "required": ["status", "conclusion", "observedAt", "apiPayloadSha256"], "properties": {"status": {"const": "completed"}, "conclusion": {"const": "success"}, "observedAt": {"$ref": "#/$defs/isoTime"}, "apiPayloadSha256": {"$ref": "#/$defs/sha256"}}},
+        "observationPayload": {"$ref": "https://qijenchen.dev/schemas/ci-evidence-observation-v1.json#/$defs/payload"},
+        "attestation": {"type": "object", "additionalProperties": false, "required": ["binding", "signatures"], "properties": {"binding": {"$ref": "#/$defs/ciAttestationBinding"}, "signatures": {"type": "array", "minItems": 1, "maxItems": 5, "items": {"$ref": "#/$defs/ciSignature"}}}}
+      }
+    },
+    "ciPayload": {"type": "object", "additionalProperties": false, "required": ["dim", "capability", "receipt"], "properties": {"dim": {"type": "integer", "minimum": 1, "maximum": 91}, "capability": {"$ref": "#/$defs/nonEmpty"}, "receipt": {"$ref": "#/$defs/ciTrustReceipt"}}},
+    "evidenceEnvelope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "contractVersion", "evidenceKind", "runId", "manifestSha256", "head", "tree", "inventoryDigest", "rubricDigest", "worktreeBefore", "worktreeAfter", "producer", "command", "environment", "coverage", "payload"],
+      "properties": {
+        "schemaVersion": {"const": 1}, "contractVersion": {"const": 1}, "evidenceKind": {"enum": ["deep-audit-deterministic", "deep-audit-judgment", "deep-audit-hook-residue", "deep-audit-ci-enforced", "deep-audit-component-a1b"]}, "runId": {"$ref": "#/$defs/runId"}, "manifestSha256": {"$ref": "#/$defs/sha256"}, "head": {"$ref": "#/$defs/gitOid"}, "tree": {"$ref": "#/$defs/gitOid"}, "inventoryDigest": {"$ref": "#/$defs/sha256"}, "rubricDigest": {"$ref": "#/$defs/sha256"}, "worktreeBefore": {"$ref": "#/$defs/sha256"}, "worktreeAfter": {"$ref": "#/$defs/sha256"}, "producer": {"$ref": "#/$defs/producerAny"}, "command": {"$ref": "#/$defs/command"}, "environment": {"$ref": "#/$defs/environment"}, "coverage": {"$ref": "#/$defs/coverage"}, "payload": {}
+      },
+      "allOf": [
+        {"if": {"properties": {"evidenceKind": {"const": "deep-audit-deterministic"}}, "required": ["evidenceKind"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/deterministicPayload"}}}},
+        {"if": {"properties": {"evidenceKind": {"const": "deep-audit-judgment"}}, "required": ["evidenceKind"]}, "then": {"properties": {"producer": {"$ref": "#/$defs/concreteProducer"}, "payload": {"$ref": "#/$defs/judgmentPayload"}}}},
+        {"if": {"properties": {"evidenceKind": {"const": "deep-audit-hook-residue"}}, "required": ["evidenceKind"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/hookPayload"}}}},
+        {"if": {"properties": {"evidenceKind": {"const": "deep-audit-ci-enforced"}}, "required": ["evidenceKind"]}, "then": {"properties": {"payload": {"$ref": "#/$defs/ciPayload"}}}},
+        {"if": {"properties": {"evidenceKind": {"const": "deep-audit-component-a1b"}}, "required": ["evidenceKind"]}, "then": {"properties": {"producer": {"$ref": "#/$defs/concreteProducer"}, "payload": {"$ref": "#/$defs/a1bPayload"}}}}
+      ]
+    }
+  }
+}

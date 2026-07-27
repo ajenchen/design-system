@@ -1,0 +1,266 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/provider-cli-package-content-proposal-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "kind",
+    "proposalOnly",
+    "authority",
+    "derivation",
+    "manifestTransition",
+    "activePackageCount",
+    "proposedPackageContentSha256",
+    "proposedPackageContent",
+    "reviewApplyHandoff"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://qijenchen.dev/schemas/provider-cli-package-content-proposal-v1.json"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "provider-cli-package-content-proposal"
+    },
+    "proposalOnly": {
+      "const": true
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "manifestPath",
+        "lockPath",
+        "lockSha256"
+      ],
+      "properties": {
+        "manifestPath": {
+          "const": "infra/governance/providers/provider-cli-toolchain.json"
+        },
+        "lockPath": {
+          "const": "infra/governance/providers/provider-cli-toolchain.package-lock.json"
+        },
+        "lockSha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "derivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "modePolicy",
+        "digestDomain",
+        "proposer",
+        "parserSetup",
+        "proposalSchema"
+      ],
+      "properties": {
+        "protocol": {
+          "const": "npm-ustar-package-tree-v1"
+        },
+        "modePolicy": {
+          "const": "excluded-portable-content-only"
+        },
+        "digestDomain": {
+          "const": "qijenchen-provider-cli-package-content-v1"
+        },
+        "proposer": {
+          "$ref": "#/$defs/proposerSource"
+        },
+        "parserSetup": {
+          "$ref": "#/$defs/parserSetupSource"
+        },
+        "proposalSchema": {
+          "$ref": "#/$defs/proposalSchemaSource"
+        }
+      }
+    },
+    "manifestTransition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inputManifestSha256",
+        "proposedManifestSha256"
+      ],
+      "properties": {
+        "inputManifestSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "proposedManifestSha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "activePackageCount": {
+      "const": 10
+    },
+    "proposedPackageContentSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "proposedPackageContent": {
+      "$ref": "#/$defs/packageContent"
+    },
+    "reviewApplyHandoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "writesAuthority",
+        "directApplySupported",
+        "targetPath",
+        "reviewInstruction",
+        "applyInstruction"
+      ],
+      "properties": {
+        "status": {
+          "const": "independent-review-required"
+        },
+        "writesAuthority": {
+          "const": false
+        },
+        "directApplySupported": {
+          "const": false
+        },
+        "targetPath": {
+          "const": "infra/governance/providers/provider-cli-toolchain.json"
+        },
+        "reviewInstruction": {
+          "const": "Verify the proposal schema, derivation source hashes, exact authority transition, active package plan and package-content digest before approving any authority edit."
+        },
+        "applyInstruction": {
+          "const": "After independent review, replace only the canonical manifest packageContent in a protected DS PR, then use the canonical governance graph to regenerate and check projections."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "proposerSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "const": "scripts/propose-provider-cli-package-content.mjs"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "parserSetupSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "const": "scripts/setup-provider-cli-toolchain.mjs"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "proposalSchemaSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "const": "infra/governance/schemas/provider-cli-package-content-proposal.schema.json"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "packageContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "modePolicy",
+        "packages"
+      ],
+      "properties": {
+        "protocol": {
+          "const": "npm-ustar-package-tree-v1"
+        },
+        "modePolicy": {
+          "const": "excluded-portable-content-only"
+        },
+        "packages": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/packageContentRow"
+          }
+        }
+      }
+    },
+    "packageContentRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lockPath",
+        "platforms",
+        "treeSha256",
+        "fileCount",
+        "totalBytes"
+      ],
+      "properties": {
+        "lockPath": {
+          "type": "string",
+          "pattern": "^node_modules/@[a-z0-9-]+/[a-z0-9-]+$"
+        },
+        "platforms": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "darwin-arm64",
+              "darwin-x64",
+              "linux-arm64",
+              "linux-x64"
+            ]
+          }
+        },
+        "treeSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "fileCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "totalBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1073741824
+        }
+      }
+    }
+  }
+}

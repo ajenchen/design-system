@@ -1,0 +1,261 @@
+{
+  "$schema": "schemas/managed-ci-trusted-execution-plan.schema.json",
+  "schemaVersion": 2,
+  "kind": "managed-ci-trusted-execution-plan",
+  "workflow": {
+    "repository": "ajenchen/design-system",
+    "path": ".github/workflows/deep-audit-managed.yml",
+    "ref": "refs/heads/main",
+    "event": "workflow_dispatch",
+    "runnerEnvironment": "self-hosted",
+    "runnerLabels": ["self-hosted", "linux", "x64", "qijenchen-managed-ci-v1"],
+    "requireProtectedMain": true,
+    "runAttemptRequired": true,
+    "definitionTreeInput": "workflowDefinitionTree",
+    "subjectInputs": {
+      "commit": "subjectCommit",
+      "tree": "subjectTree",
+      "manifestSha256": "manifestSha256",
+      "runId": "subjectRunId"
+    }
+  },
+  "activatedWorkflowContract": {
+    "path": "scripts/managed-ci-activated-workflow-contract.json",
+    "schemaPath": "scripts/schemas/managed-ci-activated-workflow-contract.schema.json"
+  },
+  "oidcBrokerPolicy": {
+    "path": "infra/governance/providers/managed-ci-oidc-broker-policy.json",
+    "schemaPath": "infra/governance/schemas/managed-ci-oidc-broker-policy.schema.json"
+  },
+  "executorSupplyChainPolicy": {
+    "path": "infra/governance/providers/managed-ci-executor-supply-chain.json",
+    "schemaPath": "infra/governance/schemas/managed-ci-executor-supply-chain.schema.json"
+  },
+  "trustedAuthorityPolicy": {
+    "path": "infra/governance/providers/managed-ci-trusted-authority-policy.json",
+    "schemaPath": "infra/governance/schemas/managed-ci-trusted-authority-policy.schema.json"
+  },
+  "activationTrustBundle": {
+    "manifestPath": "packages/governance/canonical/manifest.json",
+    "buildGraphPath": "scripts/governance-build-graph.json",
+    "buildGraphSchemaPath": "scripts/schemas/governance-build-graph.schema.json",
+    "stageId": "control-plane",
+    "sourceResolver": "governance-manifest",
+    "controlPlaneLockPath": "governance/control-plane.lock.json",
+    "controlPlaneLockSchemaPath": "packages/governance/canonical/schemas/lock.schema.json"
+  },
+  "executionClasses": [
+    {
+      "id": "dependency-acquisition",
+      "job": "dependency-acquisition",
+      "evidenceKinds": ["dependency-bundle"],
+      "profilePaths": [".npmrc", "package-lock.json"],
+      "network": {"mode": "tls-host-allowlist", "allowedHosts": ["registry.npmjs.org"], "tlsRequired": true},
+      "filesystem": {"repository": "read-only", "rootFilesystem": "ephemeral-write", "declaredOutputRootsOnly": true},
+      "isolation": {"backend": "externally-managed-rootless-podman-sandbox", "rootless": true, "runAsUser": 65532, "runAsGroup": 65532, "noNewPrivileges": true, "capabilities": [], "hostSocketMounted": false, "secretMountPolicy": "none", "tmpfsRoots": ["/tmp"], "writableRootPolicy": "tmpfs-and-declared-output-roots"},
+      "permissions": {"actions": "none", "artifact-metadata": "none", "attestations": "none", "checks": "none", "code-quality": "none", "contents": "read", "deployments": "none", "discussions": "none", "id-token": "none", "issues": "none", "models": "none", "packages": "none", "pages": "none", "pull-requests": "none", "security-events": "none", "statuses": "none", "vulnerability-alerts": "none"},
+      "secretMode": "none",
+      "inputMode": "frozen-repository",
+      "install": {
+        "command": ["npm", "ci", "--legacy-peer-deps", "--ignore-scripts", "--registry=https://registry.npmjs.org/"],
+        "lockfile": "package-lock.json",
+        "installedLockfile": "node_modules/.package-lock.json",
+        "lifecycleScripts": false,
+        "requireLockfileSri": true,
+        "output": "content-addressed-dependency-bundle"
+      }
+    },
+    {
+      "id": "deterministic-hook-audit",
+      "job": "deterministic-hook-audit",
+      "evidenceKinds": ["deep-audit-deterministic", "deep-audit-hook-residue"],
+      "profilePaths": ["scripts/deep-audit-deterministic-plan.json", "infra/governance/hook-evidence-plan.json"],
+      "network": {"mode": "none", "allowedHosts": [], "tlsRequired": true},
+      "filesystem": {"repository": "read-only", "rootFilesystem": "read-only", "declaredOutputRootsOnly": true},
+      "isolation": {"backend": "externally-managed-rootless-podman-sandbox", "rootless": true, "runAsUser": 65532, "runAsGroup": 65532, "noNewPrivileges": true, "capabilities": [], "hostSocketMounted": false, "secretMountPolicy": "none", "tmpfsRoots": ["/tmp"], "writableRootPolicy": "tmpfs-and-declared-output-roots"},
+      "permissions": {"actions": "none", "artifact-metadata": "none", "attestations": "none", "checks": "none", "code-quality": "none", "contents": "read", "deployments": "none", "discussions": "none", "id-token": "none", "issues": "none", "models": "none", "packages": "none", "pages": "none", "pull-requests": "none", "security-events": "none", "statuses": "none", "vulnerability-alerts": "none"},
+      "secretMode": "none",
+      "inputMode": "verified-dependency-bundle"
+    },
+    {
+      "id": "model-broker",
+      "job": "model-broker",
+      "evidenceKinds": ["deep-audit-judgment", "deep-audit-component-a1b"],
+      "profilePaths": ["infra/governance/model-evidence-broker.json", "infra/governance/model-evidence-plan.json", "infra/governance/providers/model-invocation-profiles.json"],
+      "network": {"mode": "provider-selected-tls-host-allowlist", "allowedHosts": [], "tlsRequired": true},
+      "providerEgressRegistry": {"path": "infra/governance/providers/model-invocation-profiles.json", "providerField": "providerId", "hostsField": "egressAllowedHosts", "selection": "exactly-one"},
+      "filesystem": {"repository": "not-mounted", "rootFilesystem": "read-only", "declaredOutputRootsOnly": true},
+      "isolation": {"backend": "externally-managed-rootless-podman-sandbox", "rootless": true, "runAsUser": 65532, "runAsGroup": 65532, "noNewPrivileges": true, "capabilities": [], "hostSocketMounted": false, "secretMountPolicy": "external-proxy-no-secret-in-candidate", "tmpfsRoots": ["/tmp"], "writableRootPolicy": "tmpfs-and-declared-output-roots"},
+      "permissions": {"actions": "none", "artifact-metadata": "none", "attestations": "none", "checks": "none", "code-quality": "none", "contents": "read", "deployments": "none", "discussions": "none", "id-token": "none", "issues": "none", "models": "none", "packages": "none", "pages": "none", "pull-requests": "none", "security-events": "none", "statuses": "none", "vulnerability-alerts": "none"},
+      "secretMode": "external-authority-model-egress-proxy",
+      "inputMode": "bounded-content-addressed-signed-shards",
+      "selectedProviderRequired": true
+    },
+    {
+      "id": "github-observer",
+      "job": "github-observer",
+      "evidenceKinds": ["deep-audit-ci-enforced"],
+      "profilePaths": ["scripts/ci-evidence-plan.json", "infra/governance/external-activation-policy.json"],
+      "network": {"mode": "tls-host-allowlist", "allowedHosts": ["api.github.com"], "tlsRequired": true},
+      "filesystem": {"repository": "read-only", "rootFilesystem": "read-only", "declaredOutputRootsOnly": true},
+      "isolation": {"backend": "externally-managed-rootless-podman-sandbox", "rootless": true, "runAsUser": 65532, "runAsGroup": 65532, "noNewPrivileges": true, "capabilities": [], "hostSocketMounted": false, "secretMountPolicy": "external-proxy-no-secret-in-candidate", "tmpfsRoots": ["/tmp"], "writableRootPolicy": "tmpfs-and-declared-output-roots"},
+      "permissions": {"actions": "read", "artifact-metadata": "none", "attestations": "none", "checks": "read", "code-quality": "none", "contents": "read", "deployments": "none", "discussions": "none", "id-token": "none", "issues": "none", "models": "none", "packages": "none", "pages": "none", "pull-requests": "read", "security-events": "none", "statuses": "none", "vulnerability-alerts": "none"},
+      "secretMode": "external-authority-github-api-proxy",
+      "inputMode": "canonical-read-only-api"
+    }
+  ],
+  "observation": {
+    "maxAgeSeconds": 3600,
+    "clockSkewSeconds": 120,
+    "noncePattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+    "oidcIssuer": "https://token.actions.githubusercontent.com",
+    "oidcAudience": "qijenchen-managed-deep-audit-authority-v1"
+  },
+  "trust": {
+    "issuerRegistryPath": "infra/governance/trust/issuers.json",
+    "issuerPolicyPath": "infra/governance/release-rings.json",
+    "issuerPolicyPointer": "attestationPolicy",
+    "runtimeEvidencePolicyPath": "infra/governance/providers/runtime-conformance.json",
+    "issuerRole": "completion-attestor",
+    "allowedKeyIdsField": "allowedKeyIds",
+    "quorumField": "completionAttestationQuorum",
+    "maxTtlMinutesField": "maxCompletionTtlMinutes",
+    "clockSkewSecondsField": "clockSkewSeconds",
+    "replay": {
+      "ledger": "external-atomic-ttl-replay-ledger",
+      "minimumRetentionSeconds": 31536120
+    },
+    "retention": {
+      "minimumSeconds": 31536000,
+      "authority": "offline-evidence-archive-compliance-object-lock"
+    }
+  },
+  "activation": {
+    "workflowIdentity": null,
+    "repositoryId": null,
+    "repositoryOwnerId": null,
+    "executorSourceCommit": null,
+    "executorSourceTree": null,
+    "builderWorkflowSha": null,
+    "executorBuildRunId": null,
+    "executorBuildRunAttempt": null,
+    "imageSetArtifactId": null,
+    "imageSetArtifactDigest": null,
+    "imageSetManifestSha256": null,
+    "imageSetInventorySha256": null,
+    "imageSetInventoryEntryCount": null,
+    "imageSetArtifactRetentionDays": null,
+    "verifiedAt": null,
+    "trustedAuthorityAttestationDigest": null,
+    "hostSandboxAttestationDigest": null,
+    "receiptSignerTrustReadbackDigest": null,
+    "offlineEvidenceArchive": {
+      "locator": null,
+      "digest": null,
+      "size": null,
+      "format": null,
+      "inventoryDigest": null,
+      "objectVersionId": null,
+      "retentionMode": null,
+      "retentionUntil": null,
+      "writerPrincipal": null,
+      "verifierPrincipal": null,
+      "readbackDigest": null
+    },
+    "executionClasses": {
+      "dependency-acquisition": {
+        "imageDigest": null,
+        "runtimeSourceSha256": null,
+        "runtimeInventoryDigest": null,
+        "contextArchiveDigest": null,
+        "sbomDigest": null,
+        "slsaProvenanceDigest": null,
+        "handoffPredicateDigest": null,
+        "evidenceSetDigest": null,
+        "provenanceBundleDigest": null,
+        "provenanceAttestationId": null,
+        "provenanceAttestationUrl": null,
+        "provenanceRecordReadbackDigest": null,
+        "sbomBundleDigest": null,
+        "sbomAttestationId": null,
+        "sbomAttestationUrl": null,
+        "sbomRecordReadbackDigest": null,
+        "handoffBundleDigest": null,
+        "handoffAttestationId": null,
+        "handoffAttestationUrl": null,
+        "handoffRecordReadbackDigest": null,
+        "registryReadbackDigest": null
+      },
+      "deterministic-hook-audit": {
+        "imageDigest": null,
+        "runtimeSourceSha256": null,
+        "runtimeInventoryDigest": null,
+        "contextArchiveDigest": null,
+        "sbomDigest": null,
+        "slsaProvenanceDigest": null,
+        "handoffPredicateDigest": null,
+        "evidenceSetDigest": null,
+        "provenanceBundleDigest": null,
+        "provenanceAttestationId": null,
+        "provenanceAttestationUrl": null,
+        "provenanceRecordReadbackDigest": null,
+        "sbomBundleDigest": null,
+        "sbomAttestationId": null,
+        "sbomAttestationUrl": null,
+        "sbomRecordReadbackDigest": null,
+        "handoffBundleDigest": null,
+        "handoffAttestationId": null,
+        "handoffAttestationUrl": null,
+        "handoffRecordReadbackDigest": null,
+        "registryReadbackDigest": null
+      },
+      "model-broker": {
+        "imageDigest": null,
+        "runtimeSourceSha256": null,
+        "runtimeInventoryDigest": null,
+        "contextArchiveDigest": null,
+        "sbomDigest": null,
+        "slsaProvenanceDigest": null,
+        "handoffPredicateDigest": null,
+        "evidenceSetDigest": null,
+        "provenanceBundleDigest": null,
+        "provenanceAttestationId": null,
+        "provenanceAttestationUrl": null,
+        "provenanceRecordReadbackDigest": null,
+        "sbomBundleDigest": null,
+        "sbomAttestationId": null,
+        "sbomAttestationUrl": null,
+        "sbomRecordReadbackDigest": null,
+        "handoffBundleDigest": null,
+        "handoffAttestationId": null,
+        "handoffAttestationUrl": null,
+        "handoffRecordReadbackDigest": null,
+        "registryReadbackDigest": null
+      },
+      "github-observer": {
+        "imageDigest": null,
+        "runtimeSourceSha256": null,
+        "runtimeInventoryDigest": null,
+        "contextArchiveDigest": null,
+        "sbomDigest": null,
+        "slsaProvenanceDigest": null,
+        "handoffPredicateDigest": null,
+        "evidenceSetDigest": null,
+        "provenanceBundleDigest": null,
+        "provenanceAttestationId": null,
+        "provenanceAttestationUrl": null,
+        "provenanceRecordReadbackDigest": null,
+        "sbomBundleDigest": null,
+        "sbomAttestationId": null,
+        "sbomAttestationUrl": null,
+        "sbomRecordReadbackDigest": null,
+        "handoffBundleDigest": null,
+        "handoffAttestationId": null,
+        "handoffAttestationUrl": null,
+        "handoffRecordReadbackDigest": null,
+        "registryReadbackDigest": null
+      }
+    },
+    "verificationReceipt": null
+  }
+}

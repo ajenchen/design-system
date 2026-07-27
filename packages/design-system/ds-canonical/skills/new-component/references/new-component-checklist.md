@@ -13,11 +13,12 @@
 - [ ] `ls packages/design-system/src/components/` 確認名字無衝突
 - [ ] grep CLAUDE.md `# 失敗記憶索引` 查同類歷史 bug
 
-## Checkpoint 1 — 定位 Proposal
+## Positioning evidence / conditional P2H checkpoint
 
 - [ ] 元件名通過「命名三重 test」(既有語言 / 世界級 idiom / 跨元件無衝突,見 CLAUDE.md `# 命名與語言一致性`)
-- [ ] 報 user:元件名 / 近親 / 世界級對照 / positioning 一句話
-- [ ] User 點頭
+- [ ] 記錄元件名 / 近親 / 世界級對照 / positioning 一句話
+- [ ] 若既有 SSOT 或 user 明確 requirement 已唯一決定，記 receipt 後自主接續
+- [ ] 只有多個可行 public component/UI semantics 仍並存時，取得 exact target-bound P2H decision
 
 ## Phase 2 — Layout Family 判定
 
@@ -36,14 +37,14 @@
 - [ ] 相關 / SSOT pointer(互相 link,ownership 明確)
 - [ ] 空值呈現 / 驗證時機(若不適用寫明文「本元件無 X」)
 - [ ] Loading / 無障礙(若不適用寫明文)
-- [ ] **Checkpoint 2**:spec 寫完停下報 user,lock in positioning
+- [ ] spec 寫完重驗 positioning；唯一答案記 receipt 後接續，真正 P2H 取捨才停下
 
 ## Phase 4 — tsx
 
 - [ ] 結構 shadcn + forwardRef + cva + VariantProps + cn()
-- [ ] cva 適用正確(見 `.claude/references/cva-patterns.md`;style prop / 結構性 variant 不硬塞 cva)
+- [ ] cva 適用正確(見 `packages/design-system/ds-canonical/references/cva-patterns.md`;style prop / 結構性 variant 不硬塞 cva)
 - [ ] Props 命名按「是什麼」不按「在哪裡」(startIcon / endIcon / avatar / onDismiss / onClose / onClear / onRemove)
-- [ ] callback 命名分層正確(`.claude/rules/ui-development.md`「元件 Props 命名」 的 canonical)
+- [ ] callback 命名分層正確(`packages/design-system/ds-canonical/rules/ui-development.md`「元件 Props 命名」 的 canonical)
 - [ ] Token 消費三層分層(chrome/layout-space / 元件內/Tailwind p-N / 精確幾何/calc)
 - [ ] Icon size 三層分層(row 走 RowSizeContext / Button 走 Button mapping / 一次性 inline size={n} 對齊 uiSize)
 - [ ] 無 shadcn compat alias(bg-popover 等)

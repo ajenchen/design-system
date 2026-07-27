@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance/manifest-v3.json",
+  "title": "Governance canonical manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "defaultRole", "outputDirectory", "lockFile", "registries", "artifactSchemas", "skillParityContracts", "sources"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 3 },
+    "id": { "type": "string", "minLength": 1 },
+    "defaultRole": { "type": "string", "minLength": 1 },
+    "outputDirectory": { "$ref": "#/$defs/repositoryPath" },
+    "lockFile": { "$ref": "#/$defs/repositoryPath" },
+    "registries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rules", "roles", "providers", "gates"],
+      "properties": {
+        "rules": { "$ref": "#/$defs/repositoryPath" },
+        "roles": { "$ref": "#/$defs/repositoryPath" },
+        "providers": { "$ref": "#/$defs/repositoryPath" },
+        "gates": { "$ref": "#/$defs/repositoryPath" }
+      }
+    },
+    "artifactSchemas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["diagnostic", "lock", "attestation", "upgradePlan"],
+      "properties": {
+        "diagnostic": { "$ref": "#/$defs/repositoryPath" },
+        "lock": { "$ref": "#/$defs/repositoryPath" },
+        "attestation": { "$ref": "#/$defs/repositoryPath" },
+        "upgradePlan": { "$ref": "#/$defs/repositoryPath" }
+      }
+    },
+    "skillParityContracts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "sourceDirectory", "targetSelection", "compare", "required"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "sourceDirectory": { "$ref": "#/$defs/repositoryPath" },
+          "targetSelection": { "const": "all-generated-skill-views" },
+          "compare": { "enum": ["names", "content", "content-and-mode"] },
+          "projection": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["module", "export", "files"],
+            "properties": {
+              "module": { "$ref": "#/$defs/repositoryPath" },
+              "export": { "type": "string", "minLength": 1 },
+              "files": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+            }
+          },
+          "required": { "type": "boolean" }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "ownerRepo", "path", "required"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "ownerRepo": { "type": "string", "minLength": 1 },
+          "path": { "$ref": "#/$defs/repositoryPath" },
+          "excludes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "allOf": [
+                { "$ref": "#/$defs/repositoryPath" },
+                { "type": "string", "pattern": "/$" }
+              ]
+            }
+          },
+          "carrierProjection": {
+            "enum": [
+              "external-activation-state-v1",
+              "provider-certification-state-v1",
+              "review-capability-certification-state-v1"
+            ]
+          },
+          "required": { "type": "boolean" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "type": "string", "pattern": "^(?:/|[A-Za-z]:|.*(?:^|/)\\.\\.(?:/|$))" }
+    }
+  }
+}

@@ -9,15 +9,14 @@
 // 注入標的 = ProfileCard(乾淨 target:有 <ItemContent>、無 leading-compact、無 mode="scanning"),
 // 在一個真 className 加 `leading-compact` → 觸發 gate ACTUAL detection(ItemContent + leading-compact
 // + 無 mode="scanning" = violation)。還原後必回 PASS。
-import { execSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 
-const run = (cmd) => { try { execSync(cmd, { stdio: 'pipe' }); return 0 } catch (e) { return e.status ?? 1 } }
-const GATE = 'node scripts/item-content-leading-coherence.mjs'
+const run = () => spawnSync(process.execPath, ['--', 'scripts/item-content-leading-coherence.mjs'], { stdio: 'pipe' }).status ?? 1
 let ok = true
 
 // 1) 現況必 PASS
-if (run(GATE) !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL(repo 已有真違規,請先修 ItemContent leading-coherence)'); process.exit(1) }
+if (run() !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL(repo 已有真違規,請先修 ItemContent leading-coherence)'); process.exit(1) }
 console.log('✓ baseline PASS')
 
 // 2) 注入違規 → 必 FAIL → 還原
@@ -29,7 +28,7 @@ const anchor = 'flex items-start gap-3 px-4 py-3'
 if (!orig.includes(anchor)) { console.error('✗ 注入 anchor 不存在,test 需更新 anchor:' + anchor); process.exit(1) }
 try {
   writeFileSync(target, orig.replace(anchor, anchor + ' leading-compact'))
-  const code = run(GATE)
+  const code = run()
   if (code === 0) { console.error('✗ 注入違規後 gate 未 FAIL(detection 失效)'); ok = false }
   else console.log('✓ 注入違規被抓(exit ' + code + ')')
 } finally {
@@ -37,7 +36,7 @@ try {
 }
 
 // 3) 還原後必 PASS
-if (run(GATE) !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
+if (run() !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
 console.log('✓ 還原後 PASS')
 
 console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')

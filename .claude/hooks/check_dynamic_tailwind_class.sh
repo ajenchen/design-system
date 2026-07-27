@@ -15,10 +15,17 @@
 #   value `[...${...}]`)不在此列(那是值,不是 class 名;且 CSS var 真存在,fail-loud 不同機制)。
 # Escape:`// @dynamic-tailwind-allow: <理由>` per-line。
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
+  exit 70
+}
 set -euo pipefail
-INPUT=$(cat)
-fp=$(printf '%s' "$INPUT" | python3 -c "import sys,json;print(json.load(sys.stdin).get('tool_input',{}).get('file_path',''))" 2>/dev/null || true)
-content=$(printf '%s' "$INPUT" | python3 -c "import sys,json;d=json.load(sys.stdin).get('tool_input',{});print(d.get('content') or d.get('new_string') or '')" 2>/dev/null || true)
+governance_hook_load_input
+governance_hook_require_commands grep sed
+fp=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""') \
+  || governance_hook_integrity_fail 'dynamic Tailwind path extraction failed'
+content=$(printf '%s' "$INPUT" | jq -r '.tool_input.content // .tool_input.new_string // ""') \
+  || governance_hook_integrity_fail 'dynamic Tailwind content extraction failed'
 [ -z "$fp" ] && exit 0
 case "$fp" in
   *packages/design-system/src/*.tsx|*packages/design-system/src/*.ts|*apps/*/src/*.tsx|*apps/*/src/*.ts) ;;
@@ -29,9 +36,12 @@ esac
 # 抓:backtick 字串內、Tailwind 尺寸/間距 utility 前綴 + 之後含 `${` 讓 class 名不完整。
 #   e.g. `h-table-row-${size}` / `h-${x}` / `min-h-${y}` / `w-col-${i}` / `gap-${g}` / `py-${p}`
 # 排除:`[` 之後(arbitrary value,如 `h-[var(--x-${y})]`)、`var(` 內。
-hits=$(printf '%s' "$content" | grep -nE '`[^`]*\b(h|w|min-h|max-h|min-w|max-w|size|gap|space-[xy]|p[xytblr]?|m[xytblr]?)-[a-z0-9-]*\$\{' 2>/dev/null \
-  | grep -vE '@dynamic-tailwind-allow' \
-  | grep -vE '\[[^]]*\$\{|var\(' || true)
+governance_hook_grep_capture hits_candidates 'dynamic Tailwind matcher failed' "$content" -nE \
+  '`[^`]*\b(h|w|min-h|max-h|min-w|max-w|size|gap|space-[xy]|p[xytblr]?|m[xytblr]?)-[a-z0-9-]*\$\{'
+governance_hook_grep_capture hits_unescaped 'dynamic Tailwind escape filter failed' \
+  "$hits_candidates" -vE '@dynamic-tailwind-allow'
+governance_hook_grep_capture hits 'dynamic Tailwind arbitrary-value filter failed' \
+  "$hits_unescaped" -vE '\[[^]]*\$\{|var\('
 
 if [ -n "$hits" ]; then
   echo "🚨 BLOCKER: 動態 Tailwind class(class 名含 \${...} 插值)— Tailwind 靜態掃描看不到 → 靜默不生成規則" >&2

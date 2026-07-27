@@ -1,0 +1,7 @@
+{
+  "event": "PreToolUse",
+  "tool": "apply_patch",
+  "tool_input": {
+    "command": "*** Begin Patch\n*** Update File: governance/generated/control-plane.json\n@@\n-{\"old\":true}\n+{\"old\":false}\n*** End Patch"
+  }
+}

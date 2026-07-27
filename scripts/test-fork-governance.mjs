@@ -10,15 +10,43 @@
 //
 // 用法:node scripts/test-fork-governance.mjs   (CI / preflight 跑;非 0 = fail)
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, copyFileSync, readdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, copyFileSync, readdirSync, lstatSync, readlinkSync, symlinkSync, cpSync, mkdtempSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { join, dirname } from 'node:path'
-import { execSync, spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { refreshLaunchers } from './refresh-fork-launchers.mjs'
+import {
+  authorizeDisposableProviderRefreshTransaction,
+  refreshLaunchers,
+  validateInstalledForkCorpus,
+  validateInstalledProviderTransition,
+} from './refresh-fork-launchers.mjs'
+import { buildProviderHookLaunchArgv } from './lib/provider-hook-output-transport.mjs'
+import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const FORK_HOOKS = join(ROOT, 'packages/design-system/ds-canonical/fork/hooks')
-const FIX = '/tmp/ds-fork-fixture'
+const CANONICAL_UTILITY_REGISTRY = join(ROOT, 'packages/design-system/src/tokens/utility-registry.json')
+const CANONICAL_STORY_REGISTRY = join(
+  ROOT,
+  'packages/design-system/ds-canonical/references/story-baseline-registry.json',
+)
+const TEST_ROOT = mkdtempSync(join(tmpdir(), 'ds-fork-governance-'))
+try {
+const RUNTIME_TEMP = join(TEST_ROOT, 'runtime')
+const FIX = join(TEST_ROOT, 'fixture')
+const FIX_CORPUS = join(FIX, 'private-fork-corpus')
+const FULL = join(TEST_ROOT, 'full')
+const SKEL = join(TEST_ROOT, 'skeleton')
+mkdirSync(RUNTIME_TEMP)
+
+const childEnvironment = (overrides = {}) => ({
+  ...process.env,
+  TMPDIR: RUNTIME_TEMP,
+  NODE_COMPILE_CACHE: join(RUNTIME_TEMP, 'node-compile-cache'),
+  ...overrides,
+})
 
 // ── 合成 fork 佈局 ──
 function buildFixture() {
@@ -27,9 +55,13 @@ function buildFixture() {
   const dsSpecDir = join(FIX, 'node_modules/@qijenchen/design-system/src')
   mkdirSync(join(dsSpecDir, 'tokens'), { recursive: true })
   mkdirSync(join(dsSpecDir, 'components/CircularProgress'), { recursive: true })
-  // 帶上真實 token registry(opacity hook SHIP_REWRITTEN 後讀這個路徑)
-  const realReg = join(ROOT, 'packages/design-system/src/tokens/utility-registry.json')
-  if (existsSync(realReg)) copyFileSync(realReg, join(dsSpecDir, 'tokens/utility-registry.json'))
+  mkdirSync(join(FIX_CORPUS, 'references'), { recursive: true })
+  // Direct hook probes receive an explicit mini corpus matching the authenticated runtime snapshot.
+  // The installed package copy is only consumer application material; governance must never treat
+  // that mutable dependency view as the authority or rediscover this repository through git.
+  copyFileSync(CANONICAL_UTILITY_REGISTRY, join(dsSpecDir, 'tokens/utility-registry.json'))
+  copyFileSync(CANONICAL_UTILITY_REGISTRY, join(FIX_CORPUS, 'references/utility-registry.json'))
+  copyFileSync(CANONICAL_STORY_REGISTRY, join(FIX_CORPUS, 'references/story-baseline-registry.json'))
   writeFileSync(join(dsSpecDir, 'components/CircularProgress/circular-progress.spec.md'), '# CircularProgress\nsize 預設 24\n')
   writeFileSync(join(FIX, 'apps/demo/src/App.tsx'), 'export const App = () => <div>x</div>\n')
 }
@@ -40,10 +72,17 @@ function runHook(hookFile, toolName, filePath, content) {
   const payload = JSON.stringify({ tool_name: toolName, tool_input: { file_path: filePath, content, new_string: content } })
   // 依副檔名選 interpreter,對齊 dispatcher(用 bash 跑 .py 會 syntax-error exit 2 = false-block;
   // harness 若也用 bash 跑 .py 就會 false-green 漏掉 dispatcher 的同 bug,故必對齊)。
-  const interp = hookFile.endsWith('.py') ? 'python3' : 'bash'
-  const r = spawnSync(interp, [join(FORK_HOOKS, hookFile)], {
-    input: payload, encoding: 'utf8', cwd: FIX, env: { ...process.env, CLAUDE_PROJECT_DIR: FIX },
+  const env = childEnvironment({
+    GOVERNANCE_CORPUS_ROOT: FIX_CORPUS,
+    GOVERNANCE_PROJECT_DIR: FIX,
+    GOVERNANCE_PROVIDER: 'generic',
   })
+  delete env.CLAUDE_PROJECT_DIR
+  const args = ['--', join(FORK_HOOKS, hookFile)]
+  const options = { input: payload, encoding: 'utf8', cwd: FIX, env }
+  const r = hookFile.endsWith('.py')
+    ? spawnSync('python3', args, options)
+    : spawnSync('bash', args, options)
   if (r.error) return { exit: 127, stderr: String(r.error.message || r.error) }
   return { exit: r.status == null ? 127 : r.status, stderr: (r.stderr || '') + (r.stdout || '') }
 }
@@ -74,9 +113,9 @@ const CASES = [
     clean: 'math notation: var(--elevation-N) N∈{100,200}' },
 ]
 
-buildFixture()
-let fail = 0
-const results = []
+  buildFixture()
+  let fail = 0
+  const results = []
 
 // 1) 高風險案例:enforce 行為
 for (const c of CASES) {
@@ -91,10 +130,26 @@ for (const c of CASES) {
     const reacted = v.exit === 2 || v.stderr.trim().length > 0
     const passedClean = cl.exit === 0 && cl.stderr.trim().length === 0
     if (!reacted) { verdict = `❌ FALSE-GREEN: 違規樣本靜默放行(exit=${v.exit}, 無 stderr)`; fail++ }
-    else if (!passedClean) { verdict = `⚠️ clean 樣本未乾淨放行(exit=${cl.exit}) — 檢查` ; /* not hard fail */ }
+    else if (!passedClean) {
+      verdict = `❌ FALSE-POSITIVE: clean 樣本未乾淨放行(exit=${cl.exit}, stderr=${JSON.stringify(cl.stderr.trim())})`
+      fail++
+    }
     else verdict = `✅ enforce (violation→exit ${v.exit}/stderr / clean→pass)`
   }
   results.push(`  ${c.hook}: ${verdict}`)
+}
+
+// block_prototype_imports reads the post-edit file from disk. Prove the shipped fork hook covers
+// the real consumer layout (`apps/<app>/src/**`), not only the legacy root `src/**` layout.
+{
+  const appPath = join(FIX, A)
+  const original = readFileSync(appPath, 'utf8')
+  writeFileSync(appPath, "import { Proto } from './explorations/prototype'\nexport const App = () => <Proto />\n")
+  const violation = runHook('block_prototype_imports.py', 'Write', A, '')
+  writeFileSync(appPath, original)
+  if (violation.exit !== 2 || !violation.stderr.includes('Blocked')) {
+    results.push(`  block_prototype_imports.py(apps/*/src): ❌ FALSE-GREEN(exit=${violation.exit})`); fail++
+  } else results.push('  block_prototype_imports.py(apps/*/src): ✅ real consumer production import blocked')
 }
 
 // 2) 全 15 hook crash 檢查(語法 + 不得 127)
@@ -102,60 +157,163 @@ const allHooks = readdirSync(FORK_HOOKS).filter((f) => f.endsWith('.sh') || f.en
 const crashed = []
 for (const h of allHooks) {
   if (h.endsWith('.sh')) {
-    try { execSync(`bash -n '${join(FORK_HOOKS, h)}'`, { stdio: 'pipe' }) }
+    try { execFileSync('bash', ['-n', '--', join(FORK_HOOKS, h)], { stdio: 'pipe' }) }
     catch (e) { crashed.push(`${h}: syntax error`); fail++ }
   }
   if (h.endsWith('.py')) {
-    try { execSync(`python3 -m py_compile '${join(FORK_HOOKS, h)}'`, { stdio: 'pipe' }) }
+    try {
+      execFileSync('python3', ['-m', 'py_compile', join(FORK_HOOKS, h)], {
+        stdio: 'pipe',
+        env: childEnvironment({ PYTHONPYCACHEPREFIX: join(RUNTIME_TEMP, 'python-cache') }),
+      })
+    }
     catch (e) { crashed.push(`${h}: python syntax error`); fail++ }
   }
-  // 跑一次 generic CLEAN apps edit:不得 127(crash)且不得 2(false-block 乾淨檔)。
-  // exit 2 on clean = B1 那類「dispatcher 用 bash 跑 .py 誤 exit 2 brick 編輯」的源頭,必擋。
+  // 跑一次 generic CLEAN apps edit:任何非 0 都是 crash 或 false-block。
+  // Warning-only hook 仍必須 exit 0；這能防止 exit 1/3/其他錯誤碼被假當成放行。
   const r = runHook(h, 'Write', A, 'export const X=()=><div>x</div>')
-  if (r.exit === 127) { crashed.push(`${h}: exit 127 (missing dep/file)`); fail++ }
-  if (r.exit === 2) { crashed.push(`${h}: exit 2 on CLEAN file = false-block(會誤擋乾淨編輯)`); fail++ }
+  if (r.exit !== 0) { crashed.push(`${h}: exit ${r.exit} on CLEAN file = crash/false-block`); fail++ }
 }
 
 // 3) committed 模板治理流程(#6 codex C3:測 dispatcher/bootstrap/injection,不只 fork hook 本體)
-// 合成「完整 fork」:committed template .claude/hooks + npm fork corpus,跑 3 個 committed 啟動器。
-const TPL_HOOKS = join(ROOT, 'template/ds-product-template/.claude/hooks')
-const FULL = '/tmp/ds-fork-full'
+// 合成「完整 fork」:committed provider-neutral governance/bin + npm fork corpus,跑 shared 啟動器。
+const TPL_LAUNCHERS = join(ROOT, 'template/ds-product-template/governance/bin')
 const flowResults = []
 function buildFullFixture() {
   if (existsSync(FULL)) rmSync(FULL, { recursive: true, force: true })
   mkdirSync(join(FULL, 'apps/demo/src'), { recursive: true })
-  mkdirSync(join(FULL, '.claude/hooks'), { recursive: true })
+  mkdirSync(join(FULL, 'governance/bin'), { recursive: true })
+  execFileSync('git', ['init', '-q'], { cwd: FULL, stdio: 'pipe' })
   const npmFork = join(FULL, 'node_modules/@qijenchen/design-system/ds-canonical/fork')
-  mkdirSync(npmFork, { recursive: true })
+  mkdirSync(dirname(npmFork), { recursive: true })
   // committed 啟動器
-  for (const h of readdirSync(TPL_HOOKS).filter((f) => f.endsWith('.sh'))) copyFileSync(join(TPL_HOOKS, h), join(FULL, '.claude/hooks', h))
-  // npm fork corpus(hooks + manifest + preamble)
-  execSync(`cp -R '${join(ROOT, 'packages/design-system/ds-canonical/fork')}/.' '${npmFork}/'`)
+  for (const h of readdirSync(TPL_LAUNCHERS).filter((f) => f.endsWith('.sh') || f.endsWith('.mjs'))) copyFileSync(join(TPL_LAUNCHERS, h), join(FULL, 'governance/bin', h))
+  // npm fork corpus(hooks + manifest + provider/common instruction artifacts)
+  cpSync(join(ROOT, 'packages/design-system/ds-canonical/fork'), npmFork, { recursive: true })
+  mkdirSync(join(FULL, 'node_modules/@qijenchen/design-system/src/tokens'), { recursive: true })
+  copyFileSync(
+    join(ROOT, 'packages/design-system/src/tokens/utility-registry.json'),
+    join(FULL, 'node_modules/@qijenchen/design-system/src/tokens/utility-registry.json'),
+  )
+  // Day-0 committed bootstrap + immutable governance lock. SessionStart 只驗證，絕不建立它們。
+  copyFileSync(join(ROOT, 'template/ds-product-template/AGENTS.md'), join(FULL, 'AGENTS.md'))
+  mkdirSync(join(FULL, 'governance'), { recursive: true })
+  writeFileSync(join(FULL, 'governance/lock.json'), '{"schemaVersion":1,"governanceVersion":"fixture"}\n')
+  writeFileSync(join(FULL, 'node_modules/@qijenchen/design-system/package.json'), '{"name":"@qijenchen/design-system","version":"0.0.0-fixture"}\n')
   writeFileSync(join(FULL, 'apps/demo/src/App.tsx'), 'export const App = () => <div>x</div>\n')
 }
-function runTpl(hookFile, payload) {
-  const r = spawnSync('bash', [join(FULL, '.claude/hooks', hookFile)], { input: payload, encoding: 'utf8', cwd: FULL, env: { ...process.env, CLAUDE_PROJECT_DIR: FULL } })
+function runTpl(hookFile, payload, extraEnv = {}) {
+  const r = spawnSync('bash', ['--', join(FULL, 'governance/bin', hookFile)], {
+    input: payload,
+    encoding: 'utf8',
+    cwd: FULL,
+    env: childEnvironment({ CLAUDE_PROJECT_DIR: FULL, ...extraEnv }),
+  })
   return { exit: r.status == null ? 127 : r.status, out: (r.stdout || ''), err: (r.stderr || '') }
 }
+
+// SessionStart 的核心契約是 zero-workspace-mutation。比較完整樹狀內容、mode 與 symlink target，
+// 防止未來又偷偷恢復 npm install / launcher refresh / lockfile rewrite。
+function fixtureSnapshot(root) {
+  const rows = []
+  function walk(abs, rel = '') {
+    for (const entry of readdirSync(abs, { withFileTypes: true }).sort((a, b) => compareUtf8Bytes(a.name, b.name))) {
+      const path = join(abs, entry.name)
+      const key = rel ? `${rel}/${entry.name}` : entry.name
+      const st = lstatSync(path)
+      if (entry.isDirectory()) {
+        rows.push(['dir', key, st.mode & 0o777])
+        walk(path, key)
+      } else if (entry.isSymbolicLink()) {
+        rows.push(['link', key, st.mode & 0o777, readlinkSync(path)])
+      } else {
+        rows.push(['file', key, st.mode & 0o777, createHash('sha256').update(readFileSync(path)).digest('hex')])
+      }
+    }
+  }
+  walk(root)
+  return JSON.stringify(rows)
+}
 buildFullFixture()
-// injection:preamble 在 → 輸出 valid additionalContext 含設計紀律
+// injection:輸出短狀態，且完整工作區 byte-for-byte 不變。
 {
+  const before = fixtureSnapshot(FULL)
   const r = runTpl('inject_fork_governance_preamble.sh', '{"hook_event_name":"SessionStart"}')
+  const after = fixtureSnapshot(FULL)
   let ok = false
-  try { const j = JSON.parse(r.out); ok = (j.hookSpecificOutput.additionalContext || '').includes('item-anatomy') } catch (e) { ok = false }
-  if (!ok) { flowResults.push('  inject_preamble: ❌ 未輸出含 item-anatomy 的 valid additionalContext'); fail++ }
-  else flowResults.push('  inject_preamble: ✅ 注入 valid additionalContext(含設計紀律)')
+  try {
+    const j = JSON.parse(r.out)
+    const context = j.hookSpecificOutput.additionalContext || ''
+    ok = context.includes('committed AGENTS.md') && context.includes('唯讀驗證')
+  } catch (e) { ok = false }
+  if (!ok) { flowResults.push('  inject_verify_only: ❌ 未輸出 committed AGENTS.md + 唯讀驗證狀態'); fail++ }
+  else if (before !== after) { flowResults.push('  inject_verify_only: ❌ SessionStart 改寫了工作區'); fail++ }
+  else flowResults.push('  inject_verify_only: ✅ valid status + zero workspace mutation')
+
+  const neutral = runTpl('inject_fork_governance_preamble.sh', '{"event":"SessionStart"}', {
+    CLAUDE_PROJECT_DIR: '', GOVERNANCE_PROJECT_DIR: FULL, GOVERNANCE_PROVIDER: 'codex',
+  })
+  if (neutral.exit !== 0 || !neutral.out.includes('systemMessage')) {
+    flowResults.push(`  inject neutral root: ❌ Codex/future adapter root 未生效(exit=${neutral.exit})`); fail++
+  } else flowResults.push('  inject neutral root: ✅ GOVERNANCE_PROJECT_DIR works without Claude env')
 }
 // dispatcher:PostToolUse 違規(手刻 table)→ 轉發 exit 2
 {
-  const v = runTpl('fork-governance-dispatcher.sh', JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: 'apps/demo/src/App.tsx', new_string: 'export const X=()=><table><thead><th>a</th></thead></table>' } }))
+  const v = runTpl('fork-governance-dispatcher.sh', JSON.stringify({
+    hook_event_name: 'PostToolUse',
+    tool_name: 'Write',
+    tool_input: {
+      file_path: 'apps/demo/src/App.tsx',
+      content: 'export const X=()=><table><thead><th>a</th></thead></table>',
+    },
+  }))
   if (v.exit !== 2) { flowResults.push(`  dispatcher(PostToolUse 違規): ❌ 未轉發攔截(exit=${v.exit})`); fail++ }
   else flowResults.push('  dispatcher(PostToolUse 違規): ✅ 轉發 exit 2')
 }
+// Provider adapter parity:true Codex event/tool/patch fields must normalize into exactly the same
+// canonical predicate corpus as Claude. This locks the prior false-green where apply_patch exited 0.
+{
+  const violation = 'export const X=()=><div className="gap-13 mt-7">x</div>'
+  const claude = runTpl('fork-governance-dispatcher.sh', JSON.stringify({
+    hook_event_name: 'PostToolUse', tool_name: 'Write',
+    tool_input: { file_path: 'apps/demo/src/App.tsx', content: violation },
+  }), { GOVERNANCE_PROVIDER: 'claude' })
+  const codex = runTpl('fork-governance-dispatcher.sh', JSON.stringify({
+    event: 'PostToolUse', tool: 'apply_patch',
+    tool_input: {
+      command: `*** Begin Patch\n*** Update File: apps/demo/src/App.tsx\n@@\n-export const App = () => <div>x</div>\n+${violation}\n*** End Patch`,
+    },
+  }), { GOVERNANCE_PROVIDER: 'codex' })
+  const codexClean = runTpl('fork-governance-dispatcher.sh', JSON.stringify({
+    event: 'PostToolUse', tool: 'apply_patch',
+    tool_input: {
+      command: '*** Begin Patch\n*** Update File: apps/demo/src/App.tsx\n@@\n-export const App = () => <div>x</div>\n+export const Clean = () => null\n*** End Patch',
+    },
+  }), { GOVERNANCE_PROVIDER: 'codex' })
+  if (claude.exit !== 2 || codex.exit !== 2 || codexClean.exit !== 0) {
+    flowResults.push(`  provider normalization parity: ❌ Claude=${claude.exit} Codex=${codex.exit} Codex-clean=${codexClean.exit}; clean-stderr=${JSON.stringify(codexClean.err.trim())}`); fail++
+  } else flowResults.push('  provider normalization parity: ✅ Claude Write = Codex apply_patch; both block, clean passes')
+}
+// An undeclared provider has no normalization/environment contract and must not silently reuse one.
+{
+  const unknown = runTpl('fork-governance-dispatcher.sh', JSON.stringify({
+    event: 'PostToolUse', operation: 'write_file', path: 'apps/demo/src/Clean.tsx', content: 'clean',
+  }), { GOVERNANCE_PROVIDER: 'undeclared-provider' })
+  if (unknown.exit !== 70 || !unknown.err.includes('GOVERNANCE_INTEGRITY:ADAPTER_UNKNOWN:undeclared-provider')) {
+    flowResults.push(`  unknown provider fail-closed: ❌ exit=${unknown.exit}`); fail++
+  } else flowResults.push('  unknown provider fail-closed: ✅ integrity-class machine-readable adapter rejection')
+}
 // dispatcher:PostToolUse CLEAN 檔 → 必 exit 0(B1 回歸鎖:用 bash 跑 .py hook 會 syntax-error exit 2 → 誤擋所有乾淨編輯 = brick)
 {
-  const c = runTpl('fork-governance-dispatcher.sh', JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: 'apps/demo/src/Clean.tsx', new_string: 'export const Clean = () => null' } }))
-  if (c.exit !== 0) { flowResults.push(`  dispatcher(PostToolUse CLEAN 檔): ❌ exit ${c.exit}(應 0;B1 brick 回歸 = 用 bash 跑 .py)`); fail++ }
+  const c = runTpl('fork-governance-dispatcher.sh', JSON.stringify({
+    hook_event_name: 'PostToolUse',
+    tool_name: 'Write',
+    tool_input: {
+      file_path: 'apps/demo/src/App.tsx',
+      content: 'export const Clean = () => null',
+    },
+  }))
+  if (c.exit !== 0) { flowResults.push(`  dispatcher(PostToolUse CLEAN 檔): ❌ exit ${c.exit}(應 0;B1 brick 回歸 = 用 bash 跑 .py); stderr=${JSON.stringify(c.err.trim())}`); fail++ }
   else flowResults.push('  dispatcher(PostToolUse CLEAN 檔): ✅ exit 0 不誤擋乾淨編輯')
 }
 // dispatcher:PostToolUse Bash git-push → exit 0(deploy-url 修:matcher 補 Bash 後,dispatcher 會在 git push 跑;
@@ -171,34 +329,83 @@ buildFullFixture()
   const v = runTpl('fork-governance-dispatcher.sh', JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: 'Write', tool_input: { file_path: 'apps/demo/src/App.tsx', new_string: 'x' } }))
   if (v.exit !== 0) { flowResults.push(`  dispatcher(manifest 缺): ❌ brick(exit=${v.exit},應 0)`); fail++ }
   else flowResults.push('  dispatcher(manifest 缺): ✅ exit 0 不 brick')
-  // inject(SessionStart init,已併入 bootstrap install)在「本體缺 + 無 package.json」→ exit 0 fail-open(不 brick、不嘗試 install)
-  rmSync(join(FULL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/preamble.md'), { force: true })
+  // committed bootstrap 缺失時只報 degraded；不得自動安裝或修補工作區。
+  copyFileSync(join(ROOT, 'packages/design-system/ds-canonical/fork/manifest.json'), join(FULL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/manifest.json'))
+  rmSync(join(FULL, 'AGENTS.md'), { force: true })
+  const before = fixtureSnapshot(FULL)
   const b = runTpl('inject_fork_governance_preamble.sh', '{"hook_event_name":"SessionStart"}')
+  const after = fixtureSnapshot(FULL)
   if (b.exit !== 0) { flowResults.push(`  inject(本體缺 fail-open): ❌ exit ${b.exit}(應 0)`); fail++ }
-  else flowResults.push('  inject(本體缺 fail-open): ✅ exit 0 不 brick(notice;install+inject 已 sequential 合一,消除並行 race)')
+  else if (!b.err.includes('GOVERNANCE-BOOTSTRAP-MISSING')) { flowResults.push('  inject(bootstrap 缺): ❌ 未輸出可機器辨識 degraded code'); fail++ }
+  else if (before !== after) { flowResults.push('  inject(bootstrap 缺): ❌ 自動改寫了工作區'); fail++ }
+  else flowResults.push('  inject(bootstrap 缺): ✅ exit 0 + degraded notice + zero workspace mutation')
 }
 
 // 4) sync-all 接線骨架刷新(refresh-fork-launchers:idempotent + 不 clobber user hook + opt-out)
 // 既有 fork 的「接線層完全同步」命脈。模擬既有 fork(有 user 自有 hook + 舊 launcher 註冊)+ npm-current launchers。
 const skelResults = []
-const SKEL = '/tmp/ds-fork-skel'
 function buildSkelFixture(withOptOut) {
   if (existsSync(SKEL)) rmSync(SKEL, { recursive: true, force: true })
   mkdirSync(join(SKEL, '.claude/hooks'), { recursive: true })
+  const executionRuntime = JSON.parse(readFileSync(join(ROOT, 'packages/design-system/ds-canonical/fork/manifest.json'), 'utf8')).consumer.executionRuntime
+  const fixturePackage = {
+    name: 'ds-fork-skel',
+    private: true,
+    scripts: { build: 'vite build' },
+    devDependencies: { npm: executionRuntime.exactNpmVersion },
+    engines: { node: `>=${executionRuntime.minimumNodeVersion}` },
+  }
+  writeFileSync(join(SKEL, 'package.json'), `${JSON.stringify(fixturePackage, null, 2)}\n`)
+  writeFileSync(join(SKEL, 'package-lock.json'), `${JSON.stringify({
+    name: fixturePackage.name,
+    lockfileVersion: 3,
+    requires: true,
+    packages: {
+      '': {
+        name: fixturePackage.name,
+        devDependencies: fixturePackage.devDependencies,
+        engines: fixturePackage.engines,
+      },
+      'node_modules/npm': {
+        version: executionRuntime.exactNpmVersion,
+        resolved: `https://registry.npmjs.org/npm/-/npm-${executionRuntime.exactNpmVersion}.tgz`,
+        integrity: 'sha512-A3eSBeF7eSqCa3kuXymOstWCI9uLMcNxZY7glJosUTnvLJMsV9w6V8Ikirx08w6ch5bYT6BbUsQmJMyEkCfdDA==',
+        dev: true,
+        bin: { npm: 'bin/npm-cli.js' },
+      },
+    },
+  }, null, 2)}\n`)
   if (withOptOut) { mkdirSync(join(SKEL, '.github'), { recursive: true }); writeFileSync(join(SKEL, '.github/no-governance-sync'), '') }
   const npmFork = join(SKEL, 'node_modules/@qijenchen/design-system/ds-canonical/fork')
-  const npmLaunchers = join(npmFork, 'launchers')
-  mkdirSync(npmLaunchers, { recursive: true })
-  execSync(`cp -R '${join(ROOT, 'packages/design-system/ds-canonical/fork/launchers')}/.' '${npmLaunchers}/'`)
-  // 2026-06-18:帶 fork skills + manifest(測 skill 送達 / clobber scope）
-  execSync(`cp -R '${join(ROOT, 'packages/design-system/ds-canonical/fork/skills')}' '${npmFork}/'`)
-  copyFileSync(join(ROOT, 'packages/design-system/ds-canonical/fork/manifest.json'), join(npmFork, 'manifest.json'))
-  // PNG P2.4b:帶 codex surface corpus(AGENTS.md + codex/,測 4h 送達 / marker 政策 / dry-run)
-  copyFileSync(join(ROOT, 'packages/design-system/ds-canonical/fork/AGENTS.md'), join(npmFork, 'AGENTS.md'))
-  execSync(`cp -R '${join(ROOT, 'packages/design-system/ds-canonical/fork/codex')}' '${npmFork}/'`)
+  const installedDsRoot = join(SKEL, 'node_modules/@qijenchen/design-system')
+  mkdirSync(installedDsRoot, { recursive: true })
+  copyFileSync(join(ROOT, 'packages/design-system/package.json'), join(installedDsRoot, 'package.json'))
+  // Refresh now authenticates the complete installed corpus before its first write. Copy the exact
+  // packed layout so this fixture cannot accidentally test a weaker, hand-picked subset.
+  cpSync(join(ROOT, 'packages/design-system/ds-canonical/fork'), npmFork, { recursive: true })
+  mkdirSync(join(installedDsRoot, 'src/tokens'), { recursive: true })
+  copyFileSync(
+    join(ROOT, 'packages/design-system/src/tokens/utility-registry.json'),
+    join(installedDsRoot, 'src/tokens/utility-registry.json'),
+  )
   // 既有 fork settings:user 自有「非治理」hook + 一個「舊版 launcher 註冊」(模擬 pre-update,測去重)
   writeFileSync(join(SKEL, '.claude/settings.json'), JSON.stringify({
     defaultMode: 'auto',
+    permissions: {
+      allow: [
+        'Bash(npm install)',
+        'Bash(npm ci)',
+        'Bash(npm run *)',
+        'Bash(npx *)',
+        'Bash(git *)',
+        'Bash(my-consumer-owned-safe-tool *)',
+      ],
+      ask: [
+        'Bash(git push *)',
+        'Bash(npm publish *)',
+        'Bash(my-consumer-owned-sensitive-tool *)',
+      ],
+    },
     hooks: {
       SessionStart: [{ hooks: [{ type: 'command', command: 'bash my-own-hook.sh' }, { type: 'command', command: 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/inject_fork_governance_preamble.sh"' }] }],
       // PostToolUse:user 自有 lint + 一個「含啟動器名為子字串但不是啟動器」的 hook(adversarial FINDING 2b 不得誤刪)
@@ -206,31 +413,77 @@ function buildSkelFixture(withOptOut) {
     },
   }, null, 2))
 }
+function authorizedRefresh(projectDir, opts = {}) {
+  // A dry run and an explicit repository opt-out cannot mutate provider surfaces, so neither
+  // needs a durable journal capability. Every real refresh below proves the same trust chain
+  // used by sync-all: installed BOM/corpus -> lifecycle transition -> durable journal snapshot.
+  if (opts.dryRun || existsSync(join(projectDir, '.github/no-governance-sync'))) {
+    return refreshLaunchers(projectDir, opts)
+  }
+  const verifiedCorpus = validateInstalledForkCorpus(projectDir)
+  const providerTransition = validateInstalledProviderTransition(verifiedCorpus, verifiedCorpus)
+  const transactionCapability = authorizeDisposableProviderRefreshTransaction({
+    projectDir,
+    verifiedCorpus,
+    providerTransition,
+  })
+  return refreshLaunchers(projectDir, {
+    ...opts,
+    verifiedCorpus,
+    providerTransition,
+    transactionCapability,
+  })
+}
 // 4a 正常刷新
 buildSkelFixture(false)
-const r1 = refreshLaunchers(SKEL)
+const r1 = authorizedRefresh(SKEL)
 {
-  const launchersCopied = r1.copied?.length === 2 && existsSync(join(SKEL, '.claude/hooks/fork-governance-dispatcher.sh'))
+  const installedNpmFork = join(SKEL, 'node_modules/@qijenchen/design-system/ds-canonical/fork')
+  const installedForkManifest = JSON.parse(readFileSync(
+    join(installedNpmFork, 'manifest.json'),
+    'utf8',
+  ))
+  const expectedLaunchers = installedForkManifest.launchers
+  const launchersCopied = JSON.stringify(r1.copied) === JSON.stringify(expectedLaunchers)
+    && expectedLaunchers.every((launcher) => existsSync(join(SKEL, installedForkManifest.consumer.launcherDestination, launcher)))
   const s = JSON.parse(readFileSync(join(SKEL, '.claude/settings.json'), 'utf8'))
   const cmds = JSON.stringify(s.hooks)
   const hasAllLaunchers = ['fork-governance-dispatcher.sh', 'inject_fork_governance_preamble.sh'].every((l) => cmds.includes(l))
-  const events4 = ['SessionStart', 'PreToolUse', 'PostToolUse', 'UserPromptSubmit'].every((ev) => s.hooks[ev])
+  const events5 = ['SessionStart', 'PreToolUse', 'PostToolUse', 'Stop', 'UserPromptSubmit'].every((ev) => s.hooks[ev])
   const userHookKept = cmds.includes('my-own-hook.sh') && cmds.includes('user-lint.sh')
   const substringHookKept = cmds.includes('my-fork-governance-dispatcher.sh.bak') // FINDING 2b:子字串碰撞不得誤刪
   const noDupInject = (cmds.match(/\/inject_fork_governance_preamble\.sh/g) || []).length === 1
-  const permUnioned = (s.permissions?.allow || []).length >= 5
-  if (!launchersCopied) { skelResults.push('  refresh: ❌ 啟動器未全 copy(應 2 個:dispatcher + inject)'); fail++ }
-  else if (!hasAllLaunchers || !events4) { skelResults.push('  refresh: ❌ settings 缺啟動器註冊 / 缺 4-event'); fail++ }
+  const retiredUnsafeAllows = ['Bash(npm install)', 'Bash(npm ci)', 'Bash(npm run *)', 'Bash(npx *)', 'Bash(git *)']
+  const retiredUnsafeAllowsGone = retiredUnsafeAllows.every((rule) => !(s.permissions?.allow || []).includes(rule))
+  const canonicalClaudeConfig = JSON.parse(readFileSync(
+    join(installedNpmFork, installedForkManifest.providerSurfaces.claude.hookArtifact),
+    'utf8',
+  ))
+  const consumerSafeAllowKept = (s.permissions?.allow || []).includes('Bash(my-consumer-owned-safe-tool *)')
+  const staleConsumerAsksRetired = [
+    'Bash(git push *)',
+    'Bash(npm publish *)',
+    'Bash(my-consumer-owned-sensitive-tool *)',
+  ].every((rule) => !(s.permissions?.ask || []).includes(rule))
+  const canonicalAskApplied =
+    JSON.stringify(s.permissions?.ask || []) === JSON.stringify(canonicalClaudeConfig.permissions?.ask || [])
+  const unsafeModesDisabled = s.disableAutoMode === canonicalClaudeConfig.disableAutoMode
+    && s.permissions?.defaultMode === canonicalClaudeConfig.permissions?.defaultMode
+    && s.permissions?.disableBypassPermissionsMode === canonicalClaudeConfig.permissions?.disableBypassPermissionsMode
+    && !Object.hasOwn(s.permissions || {}, 'disableAutoMode')
+    && !Object.hasOwn(s, 'defaultMode')
+  if (!launchersCopied) { skelResults.push(`  refresh: ❌ 啟動器未依 authenticated manifest 全量 copy(expected=${expectedLaunchers.length}, actual=${r1.copied?.length ?? 0})`); fail++ }
+  else if (!hasAllLaunchers || !events5) { skelResults.push('  refresh: ❌ settings 缺啟動器註冊 / 缺 5-event'); fail++ }
   else if (!userHookKept) { skelResults.push('  refresh: ❌ clobber 了 user 自有非治理 hook'); fail++ }
   else if (!substringHookKept) { skelResults.push('  refresh: ❌ 子字串碰撞 hook 被誤刪(FINDING 2b 回歸)'); fail++ }
   else if (!noDupInject) { skelResults.push('  refresh: ❌ 舊 launcher 註冊沒去重(inject 重複)'); fail++ }
-  else if (!permUnioned) { skelResults.push('  refresh: ❌ permissions.allow 未 union'); fail++ }
-  else skelResults.push('  refresh: ✅ 啟動器 copy(2)+ 4-event 註冊 + user hook 保留 + 子字串不誤刪 + 去重 + perm union')
+  else if (!retiredUnsafeAllowsGone || !consumerSafeAllowKept || !staleConsumerAsksRetired || !canonicalAskApplied || !unsafeModesDisabled) { skelResults.push('  refresh: ❌ unsafe allow/ask 退役 / consumer safe allow 保留 / canonical ask / safe mode 不完整'); fail++ }
+  else skelResults.push(`  refresh: ✅ authenticated launcher inventory copy(${expectedLaunchers.length})+ 5-event 註冊 + user hook/safe allow 保留 + 子字串不誤刪 + 去重 + stale engineering ask 退役 + canonical ask/safe-mode 強制`)
 }
 // 4b idempotent
 {
   const before = readFileSync(join(SKEL, '.claude/settings.json'), 'utf8')
-  refreshLaunchers(SKEL)
+  authorizedRefresh(SKEL)
   const after = readFileSync(join(SKEL, '.claude/settings.json'), 'utf8')
   if (before !== after) { skelResults.push('  idempotent: ❌ 第二次刷新改了 settings(非冪等 → 重跑會疊加)'); fail++ }
   else skelResults.push('  idempotent: ✅ 重跑 settings 完全一致')
@@ -238,7 +491,7 @@ const r1 = refreshLaunchers(SKEL)
 // 4c opt-out
 {
   buildSkelFixture(true)
-  const r = refreshLaunchers(SKEL)
+  const r = authorizedRefresh(SKEL)
   if (!r.skipped) { skelResults.push('  opt-out: ❌ 有 .github/no-governance-sync 仍刷新(應 skip)'); fail++ }
   else skelResults.push(`  opt-out: ✅ skip(${r.skipped})`)
 }
@@ -247,25 +500,33 @@ const r1 = refreshLaunchers(SKEL)
   buildSkelFixture(false)
   writeFileSync(join(SKEL, '.claude/settings.json'), '{\n  // fork user 自己加的註解\n  "defaultMode": "auto",\n  "hooks": {} /* block 註解 */\n}')
   let r, threw = false
-  try { r = refreshLaunchers(SKEL) } catch (e) { threw = true }
+  try { r = authorizedRefresh(SKEL) } catch (e) { threw = true }
   const s = (!threw && r?.settingsMerged) ? JSON.parse(readFileSync(join(SKEL, '.claude/settings.json'), 'utf8')) : null
   const hasLauncher = s && JSON.stringify(s.hooks).includes('inject_fork_governance_preamble.sh')
   if (threw || !hasLauncher) { skelResults.push(`  JSONC settings: ❌ // 註解的 settings 沒容忍/沒 merge(threw=${threw})`); fail++ }
   else skelResults.push('  JSONC settings: ✅ // + block 註解容忍 + merge 成功')
 }
-// 4e obsolete plugin-era hook 移除(BLOCKER run-3 回歸鎖:既有 fork 的 block_production_edit_without_plugin 必被移除,否則 C-prime 拿掉 plugin 後它 exit 2 brick 所有編輯)
+// 4e obsolete plugin-era registration 移除(BLOCKER run-3 回歸鎖:舊 blocker 不得再被執行)。
+// 不刪同名檔:consumer 可能已自行修改；只移除 BOM/corpus-bound 的 exact registration。
 {
   buildSkelFixture(false)
   writeFileSync(join(SKEL, '.claude/hooks/block_production_edit_without_plugin.sh'), '#!/bin/bash\nexit 2\n')
   writeFileSync(join(SKEL, '.claude/settings.json'), JSON.stringify({
-    hooks: { PreToolUse: [{ matcher: 'Edit|Write', hooks: [{ type: 'command', command: 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/block_production_edit_without_plugin.sh"' }] }] },
+    hooks: { PreToolUse: [{ matcher: 'Edit|Write', hooks: [
+      { type: 'command', command: 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/block_production_edit_without_plugin.sh"' },
+      { type: 'command', command: 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/my-block_production_edit_without_plugin.sh.bak"' },
+    ] }] },
   }, null, 2))
-  const r = refreshLaunchers(SKEL)
-  const fileGone = !existsSync(join(SKEL, '.claude/hooks/block_production_edit_without_plugin.sh'))
+  const r = authorizedRefresh(SKEL)
+  const fileKept = existsSync(join(SKEL, '.claude/hooks/block_production_edit_without_plugin.sh'))
   const s = JSON.parse(readFileSync(join(SKEL, '.claude/settings.json'), 'utf8'))
-  const regGone = !JSON.stringify(s.hooks).includes('block_production_edit_without_plugin')
-  if (!fileGone || !regGone) { skelResults.push(`  obsolete 移除: ❌ block_production_edit 殘留(file 在=${!fileGone}/reg 在=${!regGone})`); fail++ }
-  else skelResults.push(`  obsolete 移除: ✅ block_production_edit 從 disk + settings 清掉(防 brick;removed=${(r.removed || []).join(',')})`)
+  const serializedHooks = JSON.stringify(s.hooks)
+  const exactRegistrationGone = !serializedHooks.includes('/block_production_edit_without_plugin.sh"')
+  const substringHookKept = serializedHooks.includes('my-block_production_edit_without_plugin.sh.bak')
+  const reported = (r.removed || []).includes('claude-plugin-bootstrap-blocker')
+  if (!fileKept || !exactRegistrationGone || !substringHookKept || !reported) {
+    skelResults.push(`  obsolete registration: ❌ fileKept=${fileKept}/exactGone=${exactRegistrationGone}/substringKept=${substringHookKept}/reported=${reported}`); fail++
+  } else skelResults.push('  obsolete registration: ✅ 舊 blocker 停用；相似 user hook + 同名檔保留；migration 可稽核')
 }
 // 4f skill 送達(2026-06-18:C-prime 補 skill 送達 → fork 可叫用 /prototype;根治 root cause)
 {
@@ -273,36 +534,41 @@ const r1 = refreshLaunchers(SKEL)
   // user 自有非治理 skill(不得被 clobber)
   mkdirSync(join(SKEL, '.claude/skills/my-team-skill'), { recursive: true })
   writeFileSync(join(SKEL, '.claude/skills/my-team-skill/SKILL.md'), '---\nname: my-team-skill\n---\nmine')
-  const r = refreshLaunchers(SKEL)
+  const r = authorizedRefresh(SKEL)
   const protoPath = join(SKEL, '.claude/skills/prototype/SKILL.md')
   const protoThere = existsSync(protoPath)
   const fmValid = protoThere && /^---[\s\S]*?\bname:\s*prototype\b[\s\S]*?^---/m.test(readFileSync(protoPath, 'utf8'))
-  const tenSkills = (r.skills || []).length === 10 && (r.skills || []).includes('prototype')
+  const forkManifest = JSON.parse(readFileSync(join(SKEL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/manifest.json'), 'utf8'))
+  const claudeSurface = forkManifest.providerSurfaces.claude
+  const expectedClaudeSkillPaths = claudeSurface.skills.map((name) => `${claudeSurface.skillDestination}/${name}`)
+  const reportedClaudeSkills = (r.providers?.claude?.installed || []).filter((path) => path.startsWith(`${claudeSurface.skillDestination}/`))
+  const allSkillsReported = JSON.stringify(reportedClaudeSkills.sort()) === JSON.stringify(expectedClaudeSkillPaths.sort())
+  const expectedSummarySkills = [...new Set(Object.values(forkManifest.providerSurfaces).flatMap((surface) => surface.skills || []))].sort()
+  const skillSummaryReported = JSON.stringify((r.skills || []).sort()) === JSON.stringify(expectedSummarySkills)
   const noDropSkill = !existsSync(join(SKEL, '.claude/skills/design-system-audit')) // DROP 的 DS-internal 不得誤送
   const userSkillKept = existsSync(join(SKEL, '.claude/skills/my-team-skill/SKILL.md'))
   // clobber proof:竄改治理 skill → 再 refresh → 還原
   writeFileSync(protoPath, 'tampered')
-  refreshLaunchers(SKEL)
+  authorizedRefresh(SKEL)
   const reverted = existsSync(protoPath) && readFileSync(protoPath, 'utf8') !== 'tampered'
   // idempotent:第二次 refresh skill byte 不變
-  const b = readFileSync(protoPath, 'utf8'); refreshLaunchers(SKEL); const idem = readFileSync(protoPath, 'utf8') === b
+  const b = readFileSync(protoPath, 'utf8'); authorizedRefresh(SKEL); const idem = readFileSync(protoPath, 'utf8') === b
   if (!protoThere) { skelResults.push('  skill 送達: ❌ /prototype 未複製進 .claude/skills/'); fail++ }
   else if (!fmValid) { skelResults.push('  skill 送達: ❌ prototype SKILL.md frontmatter name 不合法(Claude Code 會靜默不載)'); fail++ }
-  else if (!tenSkills) { skelResults.push(`  skill 送達: ❌ 應送 10 skill 含 prototype(實得 ${(r.skills || []).length})`); fail++ }
+  else if (!allSkillsReported || !skillSummaryReported) { skelResults.push(`  skill 送達: ❌ manifest 宣告 ${expectedClaudeSkillPaths.length} 個，provider report 實得 ${reportedClaudeSkills.length}，union summary=${skillSummaryReported}`); fail++ }
   else if (!noDropSkill) { skelResults.push('  skill 送達: ❌ DROP 的 DS-internal skill(design-system-audit)被誤送'); fail++ }
   else if (!userSkillKept) { skelResults.push('  skill 送達: ❌ clobber 了 user 自有 skill(my-team-skill)'); fail++ }
   else if (!reverted) { skelResults.push('  skill 送達: ❌ 竄改的治理 skill 沒被還原(clobber 失效)'); fail++ }
   else if (!idem) { skelResults.push('  skill 送達: ❌ 重跑 skill 內容變動(非冪等)'); fail++ }
-  else skelResults.push('  skill 送達: ✅ /prototype 等 10 skill 送達 + frontmatter 合法 + 無 DROP 誤送 + user skill 保留 + clobber 還原 + 冪等')
+  else skelResults.push(`  skill 送達: ✅ /prototype 等 ${expectedClaudeSkillPaths.length} skill 由 provider manifest 完整送達 + frontmatter 合法 + 無 DROP 誤送 + user skill 保留 + clobber 還原 + 冪等`)
 }
 // 4g committed scaffold == generated(drift lock:stale scaffold → CI 紅,同 ds-canonical/fork 一致)
 {
-  const genSkills = join(ROOT, 'packages/design-system/ds-canonical/fork/skills')
+  const genSkills = join(ROOT, 'packages/design-system/ds-canonical/fork/providers/claude/skills')
   const scaffoldSkills = join(ROOT, 'template/ds-product-template/.claude/skills')
-  let drift = false
-  try { execSync(`diff -r '${genSkills}' '${scaffoldSkills}'`, { stdio: 'pipe' }) } catch { drift = true }
-  if (drift) { skelResults.push('  scaffold drift: ❌ template/.claude/skills ≠ ds-canonical/fork/skills(重跑 build-fork-governance + commit)'); fail++ }
-  else skelResults.push('  scaffold drift: ✅ committed scaffold == 生成物(byte-equal)')
+  const drift = fixtureSnapshot(genSkills) !== fixtureSnapshot(scaffoldSkills)
+  if (drift) { skelResults.push('  scaffold drift: ❌ template/.claude/skills ≠ fork/providers/claude/skills(重跑 build-fork-governance + commit)'); fail++ }
+  else skelResults.push('  scaffold drift: ✅ committed Claude scaffold == provider projection(byte-equal)')
 }
 // 4h codex surface 送達(PNG P2.4b:sync-all 把 AGENTS.md / .codex/hooks.json / .agents/skills 裝進既有 fork root)
 {
@@ -310,85 +576,244 @@ const r1 = refreshLaunchers(SKEL)
   // user 自有 .agents skill(治理名以外,不得被 clobber)
   mkdirSync(join(SKEL, '.agents/skills/my-own-review'), { recursive: true })
   writeFileSync(join(SKEL, '.agents/skills/my-own-review/SKILL.md'), 'mine')
-  const r = refreshLaunchers(SKEL)
+  mkdirSync(join(SKEL, 'governance'), { recursive: true })
+  writeFileSync(join(SKEL, 'governance/overlay.md'), '# Product-owned policy\n')
+  const r = authorizedRefresh(SKEL)
   const agentsMd = join(SKEL, 'AGENTS.md')
   const codexHooks = join(SKEL, '.codex/hooks.json')
-  const irSkill = join(SKEL, '.agents/skills/independent-review/SKILL.md')
+  const codexPrototypeSkill = join(SKEL, '.agents/skills/prototype/SKILL.md')
+  const governanceLock = join(SKEL, 'governance/lock.json')
+  const governanceCheck = join(SKEL, 'scripts/governance-check.mjs')
+  const forkManifest = JSON.parse(readFileSync(join(SKEL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/manifest.json'), 'utf8'))
+  const codexSurface = forkManifest.providerSurfaces.codex
+  const expectedCodex = [codexSurface.hookDestination, ...codexSurface.skills.map((name) => `${codexSurface.skillDestination}/${name}`)]
   const corpusAgents = readFileSync(join(SKEL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/AGENTS.md'), 'utf8')
-  const created = existsSync(agentsMd) && existsSync(codexHooks) && existsSync(irSkill)
-  const reported = (r.codex || []).length === 3
+  const created = existsSync(agentsMd) && existsSync(codexHooks) && existsSync(codexPrototypeSkill) && existsSync(governanceLock) && existsSync(governanceCheck) &&
+    codexSurface.skills.every((name) => existsSync(join(SKEL, `${codexSurface.skillDestination}/${name}/SKILL.md`)))
+  const reported = expectedCodex.length === (r.providers?.codex?.installed || []).length && expectedCodex.every((path) => (r.providers?.codex?.installed || []).includes(path))
+  const codexPrototype = readFileSync(join(SKEL, '.agents/skills/prototype/SKILL.md'), 'utf8')
+  const claudePrototype = readFileSync(join(SKEL, '.claude/skills/prototype/SKILL.md'), 'utf8')
+  const stripProjectionProvenance = (body) => body.replace(
+    /<!-- _generated: canonical provider skill projection; source:[^>]*; provider:[^>]*; do not edit this adapter view\. -->\r?\n/g,
+    '',
+  )
+  const sharedSkillParity = stripProjectionProvenance(codexPrototype) === stripProjectionProvenance(claudePrototype) &&
+    /provider: codex;/.test(codexPrototype) && /provider: claude;/.test(claudePrototype)
+  const governanceReported = JSON.stringify((r.governance || []).sort()) === JSON.stringify(['AGENTS.md', 'governance/lock.json', 'governance/lock.schema.json', 'scripts/governance-check.mjs'])
+  const corpusGovernanceLock = readFileSync(join(SKEL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/lock.json'), 'utf8')
+  const corpusGovernanceCheck = readFileSync(join(SKEL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-check.mjs'), 'utf8')
+  writeFileSync(governanceLock, '{"tampered":true}\n')
+  writeFileSync(governanceCheck, 'tampered\n')
+  authorizedRefresh(SKEL)
+  const governanceReverted = readFileSync(governanceLock, 'utf8') === corpusGovernanceLock &&
+    readFileSync(governanceCheck, 'utf8') === corpusGovernanceCheck
   const userAgentsSkillKept = readFileSync(join(SKEL, '.agents/skills/my-own-review/SKILL.md'), 'utf8') === 'mine'
   // clobber proof:竄改 generated AGENTS.md(留 marker)→ 再 refresh → 還原 byte-equal corpus
   writeFileSync(agentsMd, '> stale generated by build-fork-governance.mjs\ntampered')
-  refreshLaunchers(SKEL)
+  authorizedRefresh(SKEL)
   const reverted = readFileSync(agentsMd, 'utf8') === corpusAgents
-  // consumer-owned(無 marker:cli-init stub / user 手寫)→ 不 clobber + codexSkipped 回報
+  // AGENTS.md 是 BOM-bound governance authority，無論 marker 都必須 clobber；product 只可放 overlay。
   writeFileSync(agentsMd, '# My own agents doc\n')
-  const r2 = refreshLaunchers(SKEL)
-  const ownKept = readFileSync(agentsMd, 'utf8') === '# My own agents doc\n'
-  const skipReported = (r2.codexSkipped || []).some((x) => x.includes('AGENTS.md'))
+  const r2 = authorizedRefresh(SKEL)
+  const unmanagedAgentsClobbered = readFileSync(agentsMd, 'utf8') === corpusAgents
+  const managedAgentsReported = (r2.governance || []).includes('AGENTS.md')
+  const overlayKept = readFileSync(join(SKEL, 'governance/overlay.md'), 'utf8') === '# Product-owned policy\n'
   // 還原 generated 後:冪等(重跑三檔 byte 不變)
   writeFileSync(agentsMd, corpusAgents)
-  const b1 = readFileSync(agentsMd, 'utf8'); const b2 = readFileSync(codexHooks, 'utf8'); const b3 = readFileSync(irSkill, 'utf8')
-  refreshLaunchers(SKEL)
-  const idem = readFileSync(agentsMd, 'utf8') === b1 && readFileSync(codexHooks, 'utf8') === b2 && readFileSync(irSkill, 'utf8') === b3
+  const b1 = readFileSync(agentsMd, 'utf8'); const b2 = readFileSync(codexHooks, 'utf8'); const b3 = readFileSync(codexPrototypeSkill, 'utf8')
+  authorizedRefresh(SKEL)
+  const idem = readFileSync(agentsMd, 'utf8') === b1 && readFileSync(codexHooks, 'utf8') === b2 && readFileSync(codexPrototypeSkill, 'utf8') === b3
   // dry-run(§15):刪 .codex → dryRun 報 would-install 但 disk 不寫
   rmSync(join(SKEL, '.codex'), { recursive: true, force: true })
-  const rd = refreshLaunchers(SKEL, { dryRun: true })
+  const rd = authorizedRefresh(SKEL, { dryRun: true })
   const dryOk = (rd.codex || []).includes('.codex/hooks.json') && !existsSync(codexHooks) && rd.dryRun === true
   if (!created || !reported) { skelResults.push(`  codex 送達: ❌ AGENTS.md/.codex/.agents 未全裝(created=${created} / reported=${(r.codex || []).join(',')})`); fail++ }
+  else if (!sharedSkillParity) { skelResults.push('  codex 送達: ❌ prototype provider views 未保留同一 semantic body + 獨立 provenance'); fail++ }
   else if (!userAgentsSkillKept) { skelResults.push('  codex 送達: ❌ clobber 了 user 自有 .agents/skills(my-own-review)'); fail++ }
   else if (!reverted) { skelResults.push('  codex 送達: ❌ 竄改的 generated AGENTS.md 沒被還原(clobber 失效)'); fail++ }
-  else if (!ownKept || !skipReported) { skelResults.push(`  codex 送達: ❌ consumer-owned AGENTS.md 被動了(kept=${ownKept})或沒回報 skip(${skipReported})`); fail++ }
+  else if (!unmanagedAgentsClobbered || !managedAgentsReported || !overlayKept) { skelResults.push(`  codex 送達: ❌ immutable AGENTS/overlay 邊界失效(clobbered=${unmanagedAgentsClobbered} / reported=${managedAgentsReported} / overlay=${overlayKept})`); fail++ }
   else if (!idem) { skelResults.push('  codex 送達: ❌ 重跑內容變動(非冪等)'); fail++ }
   else if (!dryOk) { skelResults.push(`  codex 送達: ❌ dry-run 失契(codex=${(rd.codex || []).join(',')} / 寫了檔=${existsSync(codexHooks)})`); fail++ }
-  else skelResults.push('  codex 送達: ✅ 三件套裝進 fork root + user .agents 保留 + 竄改還原 + consumer-owned 不碰 + 冪等 + dry-run 只算不寫')
+  else skelResults.push(`  codex 送達: ✅ bootstrap + ${codexSurface.skills.length} skills + immutable BOM 全裝；Claude/Codex parity + tamper restore + dry-run`)
 }
 
-// 5) codex surface(PNG P2.4:AGENTS.md / codex/hooks.json / independent-review 投影「真生效」斷言)
+// An attacker-controlled parent symlink must never redirect a managed copy outside the consumer.
+// Exercise both the earliest provider surface and a later managed workflow destination.
+for (const targetName of ['governance', '.claude', '.github']) {
+  buildSkelFixture(false)
+  const external = join(TEST_ROOT, `symlink-external-${targetName.replace(/^\./, '')}`)
+  mkdirSync(external, { recursive: true })
+  const canary = join(external, 'DO-NOT-TOUCH.txt')
+  writeFileSync(canary, 'external canary')
+  rmSync(join(SKEL, targetName), { recursive: true, force: true })
+  symlinkSync(external, join(SKEL, targetName))
+  let rejected = false
+  try { authorizedRefresh(SKEL) } catch (error) { rejected = /symlink/.test(String(error?.message || error)) }
+  const externalNames = readdirSync(external).sort()
+  if (!rejected || readFileSync(canary, 'utf8') !== 'external canary' || externalNames.join(',') !== 'DO-NOT-TOUCH.txt') {
+    skelResults.push(`  symlink containment(${targetName}): ❌ 未在 external mutation 前 fail closed`); fail++
+  } else skelResults.push(`  symlink containment(${targetName}): ✅ parent symlink rejected; external canary unchanged`)
+  rmSync(join(SKEL, targetName), { force: true })
+  rmSync(external, { recursive: true, force: true })
+}
+
+// 5) codex surface(PNG P2.4:AGENTS.md / codex/hooks.json / product-role skill parity)
 const codexResults = []
 {
   const FORK_OUT = join(ROOT, 'packages/design-system/ds-canonical/fork')
-  const NM_PREFIX = 'node_modules/@qijenchen/design-system/ds-canonical/fork/hooks/'
-  // 5a fork AGENTS.md:存在 + fork-context banner + rules pointer 已 node_modules 化(死指標 = 投影失敗)
+  // 5a fork AGENTS.md:存在 + true product-role authority + installed canonical pointers;
+  // DS-author-only release/preflight/local-tool instructions must never leak into consumers.
   const agentsPath = join(FORK_OUT, 'AGENTS.md')
   if (!existsSync(agentsPath)) { codexResults.push('  codex AGENTS.md: ❌ fork/AGENTS.md 不存在'); fail++ }
   else {
     const a = readFileSync(agentsPath, 'utf8')
-    const banner = a.includes('FORK PRODUCT')
-    const rewritten = a.includes('node_modules/@qijenchen/design-system/ds-canonical/rules/meta-patterns.md')
-    if (!banner || !rewritten) { codexResults.push(`  codex AGENTS.md: ❌ banner=${banner} / rules-path node_modules 化=${rewritten}`); fail++ }
-    else codexResults.push('  codex AGENTS.md: ✅ fork-context banner + pointer node_modules 化')
+    const productRole = a.includes('Product consumer AI governance') && a.includes('npm run governance:check')
+    const installedPointers = a.includes('node_modules/@qijenchen/design-system/src/')
+    const authorLeak = /release:preflight|npm publish|scripts\/codex-run-guarded\.mjs|check_file_size_budget\.sh|sync-governance-counters\.mjs/.test(a)
+    const rootAgents = readFileSync(join(ROOT, 'AGENTS.md'), 'utf8')
+    const authorityStart = '<!-- canonical-decision-authority:start -->'
+    const authorityEnd = '<!-- canonical-decision-authority:end -->'
+    const startOffset = rootAgents.indexOf(authorityStart)
+    const endOffset = rootAgents.indexOf(authorityEnd)
+    const authorityProjection = startOffset >= 0 && endOffset > startOffset
+      ? rootAgents.slice(startOffset, endOffset + authorityEnd.length)
+      : ''
+    const productRoleSource = readFileSync(join(ROOT, 'scripts/fork-role-sources/AGENTS.product.md'), 'utf8')
+    const projectionBound = authorityProjection.length > 0
+      && rootAgents.lastIndexOf(authorityStart) === startOffset
+      && rootAgents.lastIndexOf(authorityEnd) === endOffset
+      && (a.split(authorityProjection).length - 1) === 1
+      && (productRoleSource.split('<!-- canonical-decision-authority:inject -->').length - 1) === 1
+      && !a.includes('<!-- canonical-decision-authority:inject -->')
+    const corpusLock = JSON.parse(readFileSync(join(FORK_OUT, 'governance.lock'), 'utf8'))
+    const instructionLock = corpusLock.entries.find((entry) => entry.file === 'common/instruction.md')
+    const projectionProvenance = instructionLock?.source ===
+      'scripts/fork-role-sources/AGENTS.product.md + AGENTS.md#canonical-decision-authority'
+    if (!productRole || !installedPointers || authorLeak || !projectionBound || !projectionProvenance) {
+      codexResults.push(`  codex AGENTS.md: ❌ product=${productRole} / installed=${installedPointers} / authorLeak=${authorLeak} / authorityProjection=${projectionBound} / provenance=${projectionProvenance}`); fail++
+    } else codexResults.push('  codex AGENTS.md: ✅ product-role content + exact root Decision Authority projection + installed pointers + zero DS-author command leakage')
   }
   // 5b template committed AGENTS.md == fork/AGENTS.md(byte-equal;stale scaffold → 紅)
   const tplAgents = join(ROOT, 'template/ds-product-template/AGENTS.md')
   if (!existsSync(tplAgents) || readFileSync(tplAgents, 'utf8') !== readFileSync(agentsPath, 'utf8')) {
     codexResults.push('  template AGENTS.md: ❌ 缺檔或 ≠ fork/AGENTS.md(重跑 build-fork-governance + commit)'); fail++
   } else codexResults.push('  template AGENTS.md: ✅ committed scaffold == 生成物(byte-equal)')
-  // 5c codex/hooks.json:可 parse + 每 command 指向 npm fork hooks 且 hook 實檔存在(死指標 = codex 靜默無治理)
+  // 5c codex/hooks.json:可 parse + event wiring 與 Claude settings 同源 + 每 command 指向
+  // provider-neutral shared adapter。兩 provider 因而進同一 dispatcher/manifest/corpus，不維護第二份 rule mapping。
   const hj = join(FORK_OUT, 'codex/hooks.json')
   if (!existsSync(hj)) { codexResults.push('  codex hooks.json: ❌ fork/codex/hooks.json 不存在'); fail++ }
   else {
     let parsed = null
     try { parsed = JSON.parse(readFileSync(hj, 'utf8')) } catch { /* parse fail ↓ */ }
     const cmds = parsed ? Object.values(parsed.hooks || {}).flatMap((groups) => groups.flatMap((g) => (g.hooks || []).map((h) => h.command || ''))) : []
-    const badPath = cmds.filter((c) => !c.includes(NM_PREFIX) || !existsSync(join(FORK_OUT, 'hooks', (c.split(NM_PREFIX)[1] || '').replace(/"$/, ''))))
+    const tplSettings = JSON.parse(readFileSync(join(ROOT, 'template/ds-product-template/.claude/settings.json'), 'utf8'))
+    const expectedEvents = Object.keys(tplSettings.hooks || {}).sort()
+    const actualEvents = Object.keys(parsed?.hooks || {}).sort()
+    const launcherNames = cmds.map((c) => c.match(/governance\/bin\/([a-z0-9_-]+\.sh)/)?.[1]).filter(Boolean)
+    const badPath = launcherNames.filter((name) => !existsSync(join(ROOT, 'template/ds-product-template/governance/bin', name)))
+    const rootPinned = cmds.every((command) => {
+      const launcher = command.match(/governance\/bin\/([a-z0-9_-]+\.sh) codex$/)?.[1]
+      if (!launcher) return false
+      const expected = buildProviderHookLaunchArgv([
+        '/bin/bash',
+        '--',
+        `governance/bin/${launcher}`,
+        'codex',
+      ]).join(' ')
+      return command === expected
+        && !/\$\(|bash\s+-lc|GOVERNANCE_PROJECT_DIR=|GOVERNANCE_PROVIDER=/.test(command)
+    })
+    const sameEvents = JSON.stringify(expectedEvents) === JSON.stringify(actualEvents)
+    const manifestLaunchers = JSON.parse(readFileSync(join(FORK_OUT, 'manifest.json'), 'utf8')).codex.hooksJson || []
+    const sameLaunchers = JSON.stringify([...new Set(launcherNames)].sort()) === JSON.stringify([...manifestLaunchers].sort())
     if (!parsed) { codexResults.push('  codex hooks.json: ❌ JSON parse fail'); fail++ }
-    else if (!cmds.length || badPath.length) { codexResults.push(`  codex hooks.json: ❌ command ${cmds.length} 條 / 死指標 ${badPath.length} 條`); fail++ }
-    else codexResults.push(`  codex hooks.json: ✅ parse + ${cmds.length} command 全指向存在的 npm fork hook`)
+    else if (!cmds.length || launcherNames.length !== cmds.length || badPath.length || !rootPinned || !sameEvents || !sameLaunchers) {
+      codexResults.push(`  codex hooks.json: ❌ commands=${cmds.length} / unresolved=${badPath.length} / structured-relative=${rootPinned} / events=${sameEvents} / manifest=${sameLaunchers}`); fail++
+    } else codexResults.push(`  codex hooks.json: ✅ ${actualEvents.length} events → fixed env-clean command / zero shell interpolation → governance/bin 的 ${manifestLaunchers.length} shared thin adapters`)
   }
-  // 5d independent-review skill:frontmatter 合法 + rubric path 已 node_modules 化且 rubric 實檔在 shipped mirror
-  const ir = join(FORK_OUT, 'codex/agents/skills/independent-review/SKILL.md')
-  if (!existsSync(ir)) { codexResults.push('  independent-review: ❌ SKILL.md 不存在'); fail++ }
-  else {
-    const s = readFileSync(ir, 'utf8')
-    const fm = /^---[\s\S]*?\bname:\s*independent-review\b[\s\S]*?^---/m.test(s)
-    const rubricRel = 'skills/design-system-audit/references/audit-prompts.md'
-    const rubricRewritten = s.includes(`node_modules/@qijenchen/design-system/ds-canonical/${rubricRel}`)
-    const rubricShipped = existsSync(join(ROOT, 'packages/design-system/ds-canonical', rubricRel))
-    if (!fm || !rubricRewritten || !rubricShipped) { codexResults.push(`  independent-review: ❌ frontmatter=${fm} / rubric node_modules 化=${rubricRewritten} / rubric shipped=${rubricShipped}`); fail++ }
-    else codexResults.push('  independent-review: ✅ frontmatter 合法 + rubric 指向 shipped mirror 實檔')
-  }
+  // 5d Product-role skill inventory must be provider-symmetric. The product-safe reviewer is
+  // present for both providers while the DS-author canonical reviewer stays excluded.
+  const codexIndependent = join(FORK_OUT, 'providers/codex/skills/independent-review/SKILL.md')
+  const claudeIndependent = join(FORK_OUT, 'providers/claude/skills/independent-review/SKILL.md')
+  const canonicalReviewers = [
+    join(FORK_OUT, 'providers/codex/skills/canonical-reviewer/SKILL.md'),
+    join(FORK_OUT, 'providers/claude/skills/canonical-reviewer/SKILL.md'),
+  ]
+  const surfaceManifest = JSON.parse(readFileSync(join(FORK_OUT, 'manifest.json'), 'utf8')).providerSurfaces
+  const claudeProductSkills = surfaceManifest.claude.skills || []
+  const codexProductSkills = surfaceManifest.codex.skills || []
+  const symmetricProductSkills = JSON.stringify(claudeProductSkills) === JSON.stringify(codexProductSkills)
+  const productReviewerPresent = existsSync(codexIndependent) && existsSync(claudeIndependent)
+  const authorReviewerAbsent = canonicalReviewers.every((path) => !existsSync(path))
+  const reviewerRoleSafe = productReviewerPresent
+    && [codexIndependent, claudeIndependent].every((path) => {
+      const body = readFileSync(path, 'utf8')
+      return body.includes('targetCertificationContract: exact-provider-runtime-surface-role-target-v1')
+        && body.includes('reviewMutation: read-only')
+        && body.includes('never acquire DS-author, release, or mutation authority')
+    })
+  if (!reviewerRoleSafe || !authorReviewerAbsent || !symmetricProductSkills) {
+    codexResults.push(`  product skill role boundary: ❌ product-review=${productReviewerPresent}/${reviewerRoleSafe} / author-review-absent=${authorReviewerAbsent} / provider parity=${symmetricProductSkills}`); fail++
+  } else codexResults.push('  product skill role boundary: ✅ Claude/Codex independent-review parity; read-only/certified-target contract; DS-author reviewer excluded')
+  // Product-role rewriting must not treat a `.sh` substring inside a hostname
+  // as a shell-hook reference. This previously changed
+  // `polaris.shopify.com` into `the installed immutable governance
+  // checkeropify.com` in every Claude/Codex product skill projection.
+  const benchmarkCopies = [
+    join(FORK_OUT, 'skills/prototype/references/benchmark-sources.md'),
+    join(FORK_OUT, 'providers/claude/skills/prototype/references/benchmark-sources.md'),
+    join(FORK_OUT, 'providers/codex/skills/prototype/references/benchmark-sources.md'),
+    join(ROOT, 'template/ds-product-template/.claude/skills/prototype/references/benchmark-sources.md'),
+    join(ROOT, 'template/ds-product-template/.agents/skills/prototype/references/benchmark-sources.md'),
+  ]
+  const hostnamePreserved = benchmarkCopies.every((path) => existsSync(path)
+    && readFileSync(path, 'utf8').includes('polaris.shopify.com')
+    && !readFileSync(path, 'utf8').includes('checkeropify.com'))
+  if (!hostnamePreserved) { codexResults.push('  skill prose integrity: ❌ product projection corrupted a non-hook hostname'); fail++ }
+  else codexResults.push('  skill prose integrity: ✅ hook rewriting preserves ordinary hostnames across shared/Claude/Codex views')
+}
+
+// 6) Retire-Claude dependency closure. Removing the entire Claude discovery/runtime surface must
+// not remove any byte or path needed by Codex. This is stronger than checking config strings: the
+// post-retirement Codex dispatcher must still execute the shared corpus and block a real violation.
+{
+  buildSkelFixture(false)
+  mkdirSync(join(SKEL, 'apps/demo/src'), { recursive: true })
+  writeFileSync(join(SKEL, 'apps/demo/src/App.tsx'), 'export const App = () => null\n')
+  execFileSync('git', ['init', '-q'], { cwd: SKEL, stdio: 'pipe' })
+  authorizedRefresh(SKEL)
+  const forkManifest = JSON.parse(readFileSync(join(SKEL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/manifest.json'), 'utf8'))
+  const codexConfig = JSON.parse(readFileSync(join(SKEL, '.codex/hooks.json'), 'utf8'))
+  const commands = Object.values(codexConfig.hooks || {}).flatMap((groups) => groups.flatMap((group) => (group.hooks || []).map((hook) => hook.command || '')))
+  const launcherDestination = forkManifest.consumer.launcherDestination
+  const sharedOwnedByProvider = Object.entries(forkManifest.providerSurfaces).some(([, surface]) =>
+    (surface.managedSurfaces || []).some((managed) => managed.path === launcherDestination || managed.path.startsWith(`${launcherDestination}/`)))
+  const codexDependsOnClaude = commands.some((command) => command.includes('/.claude/'))
+  const neutralLauncherCommands = new Set((forkManifest.codex.hooksJson || []).map((name) =>
+    buildProviderHookLaunchArgv(['/bin/bash', '--', `${launcherDestination}/${name}`, 'codex']).join(' ')))
+  const codexUsesNeutral = commands.length > 0 && commands.every((command) => neutralLauncherCommands.has(command))
+  rmSync(join(SKEL, '.claude'), { recursive: true, force: true })
+  const runCodex = (payload) => spawnSync('bash', ['--', join(SKEL, launcherDestination, 'fork-governance-dispatcher.sh')], {
+    input: JSON.stringify(payload), encoding: 'utf8', cwd: SKEL,
+    env: childEnvironment({ GOVERNANCE_PROVIDER: 'codex', GOVERNANCE_PROJECT_DIR: SKEL }),
+  })
+  const clean = runCodex({
+    event: 'PostToolUse',
+    tool: 'apply_patch',
+    tool_input: {
+      command: '*** Begin Patch\n*** Update File: apps/demo/src/App.tsx\n@@\n-export const App = () => null\n+export const Clean = () => null\n*** End Patch',
+    },
+  })
+  const violation = runCodex({
+    event: 'PostToolUse', tool: 'apply_patch',
+    tool_input: {
+      command: '*** Begin Patch\n*** Update File: apps/demo/src/App.tsx\n@@\n-export const App = () => null\n+export const X=()=><table><thead><th>a</th></thead></table>\n*** End Patch',
+    },
+  })
+  const claudeStillAbsent = !existsSync(join(SKEL, '.claude'))
+  if (sharedOwnedByProvider || codexDependsOnClaude || !codexUsesNeutral || clean.status !== 0 || violation.status !== 2 || !claudeStillAbsent) {
+    codexResults.push(`  retire-Claude closure: ❌ sharedOwned=${sharedOwnedByProvider}/claudeDependency=${codexDependsOnClaude}/neutral=${codexUsesNeutral}/clean=${clean.status}/violation=${violation.status}/claudeAbsent=${claudeStillAbsent}; clean-stderr=${JSON.stringify((clean.stderr || '').trim())}`); fail++
+  } else codexResults.push('  retire-Claude closure: ✅ 刪除整個 .claude 後，Codex 仍由 governance/bin 執行同一 corpus（clean pass / violation block）')
 }
 
 console.log('=== 假 fork 測試 harness 結果 ===')
@@ -398,8 +823,11 @@ console.log('\n=== committed 模板治理流程(dispatcher/bootstrap/injection)=
 console.log(flowResults.join('\n'))
 console.log('\n=== 接線骨架刷新(sync-all refresh-fork-launchers:idempotent / 不 clobber / opt-out)===')
 console.log(skelResults.join('\n'))
-console.log('\n=== codex surface(PNG P2.4:AGENTS.md / hooks.json / independent-review)===')
+console.log('\n=== codex surface(PNG P2.4:AGENTS.md / hooks.json / product-role skill parity)===')
 console.log(codexResults.join('\n'))
 console.log(`\ncrash 檢查(${allHooks.length} hook):${crashed.length ? '\n  ' + crashed.join('\n  ') : '✅ 無 syntax error / 無 exit-127'}`)
 console.log(`\n${fail === 0 ? '✅ FORK-GOVERNANCE HARNESS PASS — 無 false-green / 無 brick / 無 crash' : `❌ ${fail} 項 fail(見上）`}`)
-process.exit(fail === 0 ? 0 : 1)
+if (fail !== 0) process.exitCode = 1
+} finally {
+  rmSync(TEST_ROOT, { recursive: true, force: true })
+}

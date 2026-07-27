@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/waiver.schema.json",
+  "title": "Time-bounded governance waiver ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "waivers"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schemaVersion": {"const": 1},
+    "waivers": {"type": "array", "items": {"$ref": "#/$defs/waiver"}}
+  },
+  "$defs": {
+    "waiver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scope", "reason", "risk", "owner", "approvedBy", "issuedAt", "expiresAt", "status", "compensatingControls", "evidence"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^WV-[0-9]{4}-[0-9]{3,}$"},
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository", "controlType", "controlId"],
+          "properties": {
+            "repository": {"type": "string", "minLength": 1},
+            "controlType": {"enum": ["ruleset", "required-check", "environment", "provider-surface", "ownership", "compatibility"]},
+            "controlId": {"type": "string", "minLength": 1}
+          }
+        },
+        "reason": {"type": "string", "minLength": 20},
+        "risk": {"enum": ["low", "medium", "high", "critical"]},
+        "owner": {"type": "string", "minLength": 1},
+        "approvedBy": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "issuedAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "status": {"enum": ["active", "expired", "revoked", "closed"]},
+        "ticket": {"type": "string"},
+        "compensatingControls": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    }
+  }
+}

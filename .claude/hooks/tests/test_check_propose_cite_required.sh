@@ -36,9 +36,9 @@ FAILED_TESTS=""
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-# Override CLAUDE_PROJECT_DIR so _log-fire.sh writes its per-hook fire log into
+# Override GOVERNANCE_PROJECT_DIR so _log-fire.sh writes its per-hook fire log into
 # TMP_DIR(避免污染 repo .claude/logs/)。
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 mkdir -p "$TMP_DIR/.claude/logs"
 
 # Build a transcript JSONL whose last assistant text line carries $reply.

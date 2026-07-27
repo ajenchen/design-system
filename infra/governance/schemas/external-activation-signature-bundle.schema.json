@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/external-activation-signature-bundle-v1.schema.json",
+  "title": "Externally produced activation signatures",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "requestDigest", "signatures"],
+  "properties": {
+    "$schema": {"const": "../schemas/external-activation-signature-bundle.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "external-activation-signature-bundle"},
+    "requestDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "signatures": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["signerKeyId", "subject", "signature"],
+        "properties": {
+          "signerKeyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+          "subject": {"type": "string", "minLength": 1, "maxLength": 512},
+          "signature": {"type": "string", "pattern": "^[A-Za-z0-9_-]{86}$"}
+        }
+      }
+    }
+  }
+}

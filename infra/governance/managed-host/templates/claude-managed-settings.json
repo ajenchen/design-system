@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "minimumVersion": "__CLAUDE_MINIMUM_VERSION__",
+  "requiredMinimumVersion": "__CLAUDE_MINIMUM_VERSION__",
+  "forceRemoteSettingsRefresh": true,
+  "parentSettingsBehavior": "first-wins",
+  "allowManagedHooksOnly": true,
+  "strictPluginOnlyCustomization": true,
+  "disableSideloadFlags": true,
+  "enabledPlugins": {
+    "design-system@qijenchen-ds": true
+  },
+  "strictKnownMarketplaces": [
+    {
+      "source": "github",
+      "repo": "ajenchen/design-system",
+      "ref": "__DS_RELEASE_TAG__"
+    }
+  ],
+  "extraKnownMarketplaces": {
+    "qijenchen-ds": {
+      "source": {
+        "source": "github",
+        "repo": "ajenchen/design-system",
+        "ref": "__DS_RELEASE_TAG__"
+      }
+    }
+  },
+  "allowManagedMcpServersOnly": true,
+  "allowedMcpServers": [],
+  "deniedMcpServers": [],
+  "disableClaudeAiConnectors": true,
+  "allowManagedPermissionRulesOnly": true,
+  "permissionPolicy": "packages/design-system/ds-canonical/adapters/claude-settings-base.json",
+  "permissions": {
+    "allow": [],
+    "defaultMode": "default",
+    "deny": []
+  },
+  "sandbox": {
+    "network": {
+      "allowManagedDomainsOnly": true
+    }
+  }
+}

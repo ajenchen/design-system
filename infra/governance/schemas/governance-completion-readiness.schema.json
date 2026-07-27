@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance-completion-readiness.schema.json",
+  "title": "Read-only governance completion readiness report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "scope", "status", "ready", "localReady", "externalActivationRequired", "checkedAt", "summary", "checks"],
+  "properties": {
+    "schemaVersion": {"const": 2},
+    "kind": {"const": "governance-completion-readiness"},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestedClaim", "qualifiedClaim", "inventoryDigest", "registeredRepositoryCount", "unregisteredDescendants", "globalDescendantsObserved", "globalCompletionClaimEligible"],
+      "properties": {
+        "requestedClaim": {"type": "string", "minLength": 1},
+        "qualifiedClaim": {"const": "registered-opt-in-inventory"},
+        "inventoryDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "registeredRepositoryCount": {"type": "integer", "minimum": 1},
+        "unregisteredDescendants": {"const": "not-covered"},
+        "globalDescendantsObserved": {"const": false},
+        "globalCompletionClaimEligible": {"const": false}
+      }
+    },
+    "status": {"enum": ["ready", "local-remediation-required", "external-activation-required", "local-and-external-remediation-required"]},
+    "ready": {"type": "boolean"},
+    "localReady": {"type": "boolean"},
+    "externalActivationRequired": {"type": "boolean"},
+    "checkedAt": {"type": "string", "format": "date-time"},
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "passing", "localFailures", "externalFailures"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 1},
+        "passing": {"type": "integer", "minimum": 0},
+        "localFailures": {"type": "integer", "minimum": 0},
+        "externalFailures": {"type": "integer", "minimum": 0}
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "category", "pass", "summary", "evidence"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+          "category": {"enum": ["local", "external"]},
+          "pass": {"type": "boolean"},
+          "summary": {"type": "string", "minLength": 1},
+          "evidence": {"type": "object"}
+        }
+      }
+    }
+  }
+}

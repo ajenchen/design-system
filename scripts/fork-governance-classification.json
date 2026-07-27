@@ -1,116 +1,112 @@
 {
   "_meta": {
-    "purpose": "C-prime 統一 fork-governance 分類 SSOT(涵蓋『全部』治理 home,非只 hooks)。build-fork-governance.mjs 消費此檔生成 fork corpus;--check 驗證『.claude/ 下每個 home + 每個 artifact + 根 CLAUDE.md 每段』都被明確分類(ship/rewrite/drop),漏分類=FAIL → 未來 DS 治理增刪改被機械逼著分類+生成+同步(C3 future-SSOT 保證)。",
-    "source": "gap-audit workflow wzo6oy8x1(rules/references/skills/commands/CLAUDE.md per-home verdict)+ fork-hook-classification.json(hooks)+ codex eval b1l5r8uvn(補 agents/memory/planning/runtime-dirs + CLAUDE.md sections)+ Claude 2026-06-17 組裝",
-    "consensus": "Claude + codex 比稿共識:架構方向對(committed-config-first 多軌),此分類擴到全 home 是 C1/C3 成立的前提",
-    "buckets": "SHIP_AS_IS / SHIP_REWRITTEN / DROP / REPLACE(沿用 hook 四桶語意)+ EMBED(CLAUDE.md 段落直接寫進 fork 根 CLAUDE.md)+ INJECT(經注入 hook 灌 npm-current 內容)",
+    "purpose": "Product-role fork classification SSOT for canonical skills, commands, provider-only agents, and the separately classified hook surface. Product instructions, provider adapters, launcher inventories, rules, and references have their own registry-declared canonical owners and are not reclassified here.",
+    "source": "The legacy all-home gap audit was retired when the provider-neutral product instruction and registry-driven materializers became authoritative. Historical per-home prose is provenance only and is intentionally absent from this executable classification.",
+    "authority": "packages/design-system/ds-canonical/** + scripts/fork-role-sources/** + packages/governance/canonical/providers.json；generated .claude/.agents/.codex views are materializer outputs only",
+    "buckets": "SHIP_AS_IS / SHIP_REWRITTEN / DROP；hook-specific REPLACE semantics live only in scripts/fork-hook-classification.json",
     "delivery_mechanisms": {
-      "hook": "committed settings.json dispatcher → 跑 npm fork-corpus hook body(web 已證 fire)",
-      "inject": "committed SessionStart/UserPromptSubmit hook 讀 npm-current preamble + additionalContext 注入(已證機制)",
-      "skill": "⚠️ NON-auto:Claude Code 只從 .claude/skills/plugin 載入、不認 node_modules,且專案級 enabledPlugins 被官方靜默忽略(#62174)→ skills slash command 非 C-prime 自動送達。要 slash command 需 committed .claude/skills shim 或裝 plugin。治理核心(preamble 注入 + dispatcher hooks)不靠 skills。",
-      "embed": "蒸餾後直接寫進 fork 根 CLAUDE.md(always-load,可靠)",
-      "npm_read": "fork preamble/spec 本體在 node_modules,AI on-demand Read(npm-current)"
+      "hook": "scripts/fork-hook-classification.json classifies canonical hooks；the immutable npm corpus and committed provider configs execute the resulting subset",
+      "instruction": "scripts/fork-role-sources/AGENTS.product.md owns product-role content and receives the exact Decision Authority block from root AGENTS.md；consumer AGENTS.md/CLAUDE.md/provider instruction files are generated views",
+      "skill": "the generator projects one classified canonical skill tree into every enabled registry-declared provider skill view；exact-version upgrade materializes and recursively verifies it",
+      "launcher": "packages/design-system/ds-canonical/templates/product-provider-wiring.json plus packages/governance/canonical/providers.json own launcher/config inventory；this file does not duplicate it",
+      "canonical_read": "product agents read exact installed public specs/tokens and any skill-declared canonical reference on demand；no generated full-text preamble exists"
     }
   },
-
+  "historicalProvenance": {
+    "status": "retired-non-authority",
+    "retiredHomes": [
+      "rules",
+      "references",
+      "claudeMd_sections",
+      "memory",
+      "planning",
+      "runtime_dirs"
+    ],
+    "replacementOwners": {
+      "productInstruction": "scripts/fork-role-sources/AGENTS.product.md + root AGENTS.md canonical Decision Authority projection",
+      "providerAndLauncherInventory": "packages/governance/canonical/providers.json + packages/design-system/ds-canonical/templates/product-provider-wiring.json",
+      "canonicalRulesAndReferences": "packages/design-system/ds-canonical/{rules,references}",
+      "consumerLeakBoundary": "scripts/published-template-mirror-policy.json"
+    }
+  },
   "homes": {
     "hooks": {
-      "verdict": "已分類於 scripts/fork-hook-classification.json(SHIP_AS_IS 9 / SHIP_REWRITTEN 4 / REPLACE 1 / DROP 39)。注意:hooks 已從 53→57,需 re-run 分類補新 4 個(--check 會抓)。",
-      "delivery": "hook",
-      "ref": "scripts/fork-hook-classification.json",
-      "TODO": "re-classify 補新增 hook(check_* 新檔)"
+      "verdict": "Every canonical hook is classified exactly once by the dedicated closed hook classification; coverage checks reject missing and ghost entries.",
+      "delivery": "immutable corpus + registry-declared provider adapter",
+      "ref": "scripts/fork-hook-classification.json"
     },
-
-    "rules": {
-      "verdict": "per gap-audit:6 檔",
-      "delivery": "inject(經 preamble + UserPromptSubmit 注入,非 path-scoped auto-load〔#38487 Write 不載入〕)",
-      "items": [
-        { "name": "meta-patterns.md", "bucket": "SHIP_AS_IS", "via": "embed-essentials+inject", "reason": "31 M-rules 多數 fork-relevant(M1 消費 SSOT / M23 DS canonical 優先 / M3 portal / M10 / M11);精煉要點 embed 進 fork CLAUDE.md + 完整經注入" },
-        { "name": "ui-development.md", "bucket": "SHIP_REWRITTEN", "via": "inject", "reason": "冰山主體:建 UI checklist(item-anatomy/ChromeHeader/overlay/Tailwind 5/Token 4/Props/public-internal)。改寫 packages/design-system/src→node_modules;DS-author 段(shadcn add/新 token)drop" },
-        { "name": "story-rules.md", "bucket": "SHIP_REWRITTEN", "via": "inject", "reason": "fork 寫 product stories(Apps/<app>/ namespace + composition fidelity 先讀官方 baseline);三層 anatomy/principles drop" },
-        { "name": "self-verify.md", "bucket": "SHIP_REWRITTEN", "via": "inject", "reason": "fork-relevant:tsc -b/visual probe/claim-verify/改一處看三處;DS-only:build:lib dts/data-table-invariants.mjs/spec trigger drop" },
-        { "name": "spec-rules.md", "bucket": "DROP", "reason": "建 DS 元件 spec 撰寫紀律;fork 是 consumer 不建 DS 元件/不寫 component spec.md" },
-        { "name": "README.md", "bucket": "DROP", "reason": "DS-author rules home charter" }
-      ]
-    },
-
-    "references": {
-      "verdict": "per gap-audit:18 檔,6 fork-relevant",
-      "delivery": "embed-pointer + npm_read(高頻者經 preamble 帶 pointer 指 node_modules)",
-      "items": [
-        { "name": "build-ui-canonicals.md", "bucket": "SHIP_AS_IS", "via": "inject", "reason": "item-anatomy 漏接 root:❌手刻→✅用DS 對照表 + 8 layout primitive。寫任何 .tsx 該預載" },
-        { "name": "ssot-consultation.md", "bucket": "SHIP_REWRITTEN", "via": "inject", "reason": "消費 SSOT 總入口 + 新 tsx 開頭模板;ls packages/design-system/src→node_modules,清 retired hook 段" },
-        { "name": "ui-dev-rules.md", "bucket": "SHIP_AS_IS", "via": "npm_read", "reason": "flex slot 幾何/Padding 3 層/Icon size 3 類,fork 寫 .tsx 通用" },
-        { "name": "naming-conventions.md", "bucket": "SHIP_AS_IS", "via": "npm_read", "reason": "命名慣例 + 禁止清單,fork 命名通用" },
-        { "name": "tailwind-gotchas.md", "bucket": "SHIP_AS_IS", "via": "npm_read", "reason": "Tailwind v4 var()/tailwind-merge/shadcn alias,fork 同套會踩" },
-        { "name": "props-naming.md", "bucket": "SHIP_AS_IS", "via": "npm_read", "reason": "onClose/onDismiss 分層 + icon canonical,fork 自寫元件用" },
-        { "name": "cva-patterns.md", "bucket": "SHIP_AS_IS", "via": "npm_read", "reason": "cva 適用/例外,fork 寫 className 變體元件用(低頻 pointer)" },
-        { "name": "composition-fidelity.md", "bucket": "SHIP_REWRITTEN", "via": "npm_read", "reason": "fork 視角短版(為何標 marker/禁硬寫 token);DS-side CF gate workflow 路徑 drop" },
-        { "name": "scenario-definition.md", "bucket": "SHIP_AS_IS", "via": "npm_read", "reason": "fork 需知 Scenario B 禁忌(禁 import src/dist)+ E2E(pointer 即可)" },
-        { "name": "DROP-group", "bucket": "DROP", "names": ["spec-rules.md", "drag-canonical.md", "ssot-index.md", "structural-token-retention.md", "item-anatomy-recipe.md", "audit-coverage-vs-24-checklist.md", "README.md"], "reason": "DS-author 工具:spec 撰寫/DS drag audit/internal interface owner map/token retire 防呆/建新 row primitive 7 步(≠消費)/audit dim/charter。fork 無 DS source/不維護 DS audit" }
-      ]
-    },
-
     "skills": {
-      "verdict": "per gap-audit:23 skill,9 fork-relevant。⚠️ 2026-06-17 修:enabledPlugins 自動浮出是 false claim(#62174 靜默忽略 + 不認 node_modules)→ skills 非 C-prime 自動送達;治理核心不靠 skills(preamble + hooks 涵蓋)。fork 要 slash command 需 committed .claude/skills shim 或 plugin。",
-      "delivery": "NON-auto(見 _meta.delivery_mechanisms.skill);要 slash command → committed .claude/skills shim 或 plugin",
+      "verdict": "Product-relevant skills are generated once from canonical skill owners into every enabled provider view; exact upgrades verify recursive path/type/mode/hash parity.",
+      "delivery": "registry-declared generated provider skill views",
       "items": [
-        { "names": ["prototype", "product-ui-audit", "delivery-handoff", "ux-audit", "performance-audit", "visual-audit", "bug-fix-rhythm", "scan-similar-bugs", "propose-options"], "bucket": "SHIP_AS_IS", "reason": "fork 做產品 workflow(部分 mechanical layer 如 npm run visual-audit 在 fork 降級 Layer B AI judgement)" },
-        { "name": "code-quality-audit", "bucket": "SHIP_REWRITTEN", "reason": "通用 clean-code 但 executor scripts/code-quality-audit.mjs 未 ship → shim 改 AI 手動 grep 或 ship 進 npm bin" },
-        { "names": ["new-component", "component-quality-gate", "design-system-audit", "story-writing", "story-auto-compile-migrate", "knowledge-prune", "governance-health", "codify-corrections", "codify-principle", "ensure-canonical", "codex-collab", "deep-audit-cross-codex"], "bucket": "DROP", "reason": "hard-gate 在 packages/design-system/src 存在 / 寫 DS source / 跑 DS-repo-only script / 維護 DS governance,fork 無對象" }
+        {
+          "names": [
+            "prototype",
+            "product-ui-audit",
+            "delivery-handoff",
+            "ux-audit",
+            "performance-audit",
+            "visual-audit",
+            "bug-fix-rhythm",
+            "scan-similar-bugs",
+            "propose-options",
+            "independent-review"
+          ],
+          "bucket": "SHIP_AS_IS",
+          "reason": "Product workflows; independent-review is read-only, requires a distinct certified peer, and has no DS-author/release/mutation authority."
+        },
+        {
+          "name": "code-quality-audit",
+          "bucket": "SHIP_REWRITTEN",
+          "reason": "The reusable product rubric ships while DS-author-only executor pointers are rewritten to provider-neutral product checks."
+        },
+        {
+          "names": [
+            "new-component",
+            "component-quality-gate",
+            "design-system-audit",
+            "story-writing",
+            "story-auto-compile-migrate",
+            "knowledge-prune",
+            "governance-health",
+            "canonical-reviewer",
+            "governance-status",
+            "codify-corrections",
+            "codify-principle",
+            "ensure-canonical",
+            "codex-collab",
+            "deep-audit-cross-codex"
+          ],
+          "bucket": "DROP",
+          "reason": "These workflows author DS source, maintain DS governance, or operate the DS release/audit authority and therefore cannot enter the product-consumer role."
+        }
       ]
     },
-
     "commands": {
-      "verdict": "per gap-audit:2 檔全 DROP",
-      "delivery": "n/a",
-      "items": [{ "names": ["gov-status.md", "README.md"], "bucket": "DROP", "reason": "gov-status 掃 DS source + 數 .claude/ 作者產物 + 跑 compile-stories(fork 全 MISSING);README 是 charter" }]
-    },
-
-    "claudeMd_sections": {
-      "verdict": "根 CLAUDE.md 14 段,per gap-audit",
-      "delivery": "embed(fork-relevant 段精煉直接寫進 fork 根 CLAUDE.md;不靠 @import)",
+      "verdict": "The legacy command home has no active product command.",
+      "delivery": "none",
       "items": [
-        { "name": "6 條 mindset", "bucket": "EMBED", "reason": "改寫 fork 版:對標世界級/優先消費 @qijenchen primitive/grep node_modules src/真實業務範例/不確定先讀 spec" },
-        { "name": "SSOT 消費 canonical", "bucket": "EMBED", "reason": "寫 UI 前查 SSOT 對照=user 怒點直接對應;pointer node_modules ssot-consultation" },
-        { "name": "命名一致性 / 4-Family Layout / 自主執行 / 遇不確定協議", "bucket": "EMBED", "reason": "fork 寫 .tsx 通用(命名撞 DS/挑對 primitive/propose-before-edit/grep→讀spec→問);路徑全改 node_modules" },
-        { "name": "失敗記憶索引(runtime 類)", "bucket": "INJECT", "reason": "Tailwind/React runtime 陷阱經 ui-development 注入;build/release 類 drop" },
-        { "name": "稽核 canonical / 任務導航表 / 元件完成", "bucket": "EMBED", "reason": "fork 版:stakeholder 產出過 /product-ui-audit;導航導向 node_modules src stories+ssot-consultation;比稿隔離保留" },
-        { "names": ["治理 canonical(8-home/行數預算/Rule-of-3)", "Git solo-work canonical", "Path-scoped rules 清單", "專案 Stack(已在 fork 模板)"], "bucket": "DROP", "reason": "DS-author 維護 governance / 發版鏈(fork 套用會災難)/ path-scoped 機制(fork 改用注入)/ stack 模板已有。確保 fork CLAUDE.md 是另寫的不靠 @import 整份 DS CLAUDE.md(免吃進這些)" }
+        {
+          "names": [
+            "README.md"
+          ],
+          "bucket": "DROP",
+          "reason": "Legacy command-home charter; active workflows are provider-neutral Agent Skills."
+        }
       ]
     },
-
     "agents": {
-      "verdict": "codex C1 補:2 檔(canonical-reviewer.md + README)",
-      "delivery": "n/a",
-      "items": [{ "names": ["canonical-reviewer.md", "README.md"], "bucket": "DROP", "reason": "canonical-reviewer 只在編 DS governance file(CLAUDE.md/spec/SKILL/hook)時 fire,fork 不編 DS governance;且 .claude/agents/README charter 標 0 active residents。未來 fork 若需 product-code reviewer 是新建非搬運" }]
-    },
-
-    "memory": {
-      "verdict": "codex C1 補:21 檔",
-      "delivery": "n/a",
-      "items": [{ "bucket": "DROP", "reason": "user-specific / session-specific 跨 session 狀態,by design 不 distribute(plugin.json intentional_omissions 已明示)" }]
-    },
-
-    "planning": {
-      "verdict": "codex C1 補:26 檔",
-      "delivery": "n/a",
-      "items": [{ "bucket": "DROP", "reason": "DS-author plan doc / RFC / spec 草稿 SSOT,fork 不維護 DS 規劃" }]
-    },
-
-    "runtime_dirs": {
-      "verdict": "codex C1 補 + mirror leak-scan 已擋:logs/benchmarks/scratch/snapshots/snapshots-baseline/tmp/tracker/baselines",
-      "delivery": "n/a",
-      "items": [{ "names": ["logs", "benchmarks", "scratch", "snapshots", "snapshots-baseline", "tmp", "tracker", "baselines"], "bucket": "DROP", "reason": "DS-author runtime / audit / fire-log 產物,絕不外洩(mirror secret/source leak-scan 已硬擋;此處明確記錄避免日後問『漏了沒』)" }]
-    },
-
-    "launchers": {
-      "verdict": "C-prime 接線骨架(3 個 thin 啟動器 + settings.json hooks 區塊)。原為 fork committed-only(不隨 npm),導致『接線層』DS 改動後 user fork 不自動同步(2026-06-17 user 抓:完全同步不偏移未達成)。改為隨 npm ship 進 ds-canonical/fork/launchers/ → sync-all 從 node_modules idempotent 刷新既有 fork 的骨架,達成接線層也完全同步。",
-      "delivery": "npm_read + sync-all refresh(scripts/refresh-fork-launchers.mjs:copy 啟動器 + idempotent merge settings hooks,帶 .github/no-governance-sync opt-out)",
-      "source_ssot": "template/ds-product-template/.claude/{hooks,settings.json}",
+      "verdict": "Provider-only DS-author agent adapters never enter the consumer role.",
+      "delivery": "none",
       "items": [
-        { "names": ["fork-governance-dispatcher.sh", "inject_fork_governance_preamble.sh"], "bucket": "SHIP_AS_IS", "via": "launchers", "reason": "極穩定 thin 啟動器(fork committed);隨 npm ship 供 sync-all 刷新 → 既有 fork 一鍵 adopt/同步骨架,無需手動 git-checkout upstream。inject = SessionStart install-if-missing + 注入(2026-06-17 併入原 check_governance_bootstrap,消除 3-hook 並行 race);dispatcher = Pre/Post/UserPromptSubmit 機械強制。" },
-        { "name": "settings-hooks.json", "bucket": "SHIP_AS_IS", "via": "launchers", "reason": "settings.json 的 hooks 區塊 + governance permissions(從 template settings.json 抽);sync-all idempotent merge 進 fork settings(strip 舊 launcher 註冊 + append canonical + union permissions.allow),不 clobber user 自有非治理 hook" }
+        {
+          "names": [
+            "canonical-reviewer.md",
+            "README.md"
+          ],
+          "bucket": "DROP",
+          "reason": "The canonical reviewer is a DS-author isolation adapter; product review uses the separate read-only independent-review rubric."
+        }
       ]
     }
   }

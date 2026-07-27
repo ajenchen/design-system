@@ -1,11 +1,14 @@
 {
+  "$schema": "./story-baseline-registry.schema.json",
+  "schemaVersion": 1,
   "_meta": {
     "purpose": "Anti-drift registry for stories wrap既有 primitive(Sidebar / ChromeHeader / DataTable / Dialog / Sheet / Popover)— machine-readable canonical archetype。Hook `check_story_invariants.sh R8` reads this(not grep spec.md / not憑 Claude judgment)to enforce nearest same-purpose canonical usage(per codex Layer B D4 2026-05-20)。新增 primitive entry 必先寫 baseline + helper list + antiPatterns regex + buttonCanonical。",
-    "owner": ".claude/references/story-baseline-registry.json",
+    "owner": "packages/design-system/ds-canonical/references/story-baseline-registry.json",
     "consumed_by": [
-      ".claude/hooks/check_story_invariants.sh#R8(story_archetype_registry)",
-      ".claude/skills/story-writing/SKILL.md#Phase-0.0(load registry + read baseline + produce diff table)"
+      "packages/design-system/ds-canonical/hooks/check_story_invariants.sh#R8(story_archetype_registry)",
+      "packages/design-system/ds-canonical/skills/story-writing/SKILL.md#Phase-0.0(load registry + read baseline + produce diff table)"
     ],
+    "provider_view_policy": ".claude/.agents/.codex projections are generated discovery adapters only; they are never registry owners or edit targets.",
     "rollout": "ship as warn mode first;確認 zero existing violation → 升 P0 BLOCKER"
   },
   "components": {
@@ -38,9 +41,9 @@
         },
         {
           "id": "sidebar-footer-two-line",
-          "regex": "<SidebarFooter[^>]*>.{0,400}(text-xs|leading-tight)",
+          "regex": "<SidebarFooter[^>]*>.{0,255}(text-xs|leading-tight)",
           "severity": "block",
-          "rationale": "SidebarFooter user 區必單行(名字 only;職稱/email 等身份資訊歸 ItemAvatar hoverCard 的 ProfileCard,sidebar.stories.tsx UserFooter canonical)。shadcn nav-user 的「name + email text-xs 兩行」是強 LLM 先驗,且 text-xs 違反 chrome typography canonical(sidebar.spec『chrome 內 text 一律 text-body-lg』);400 字元窗限制 greediness"
+          "rationale": "SidebarFooter user 區必單行(名字 only;職稱/email 等身份資訊歸 ItemAvatar hoverCard 的 ProfileCard,sidebar.stories.tsx UserFooter canonical)。shadcn nav-user 的「name + email text-xs 兩行」是強 LLM 先驗,且 text-xs 違反 chrome typography canonical(sidebar.spec『chrome 內 text 一律 text-body-lg』);255 字元窗符合 POSIX ERE RE_DUP_MAX 並限制 greediness"
         }
       ]
     },

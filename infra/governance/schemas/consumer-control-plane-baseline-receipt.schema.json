@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/consumer-control-plane-baseline-receipt-v1.schema.json",
+  "title": "Externally observed signed baseline for the first recurring consumer control-plane update",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema", "schemaVersion", "kind", "repositoryId", "repository",
+    "baseGitCommit", "baseGitTree", "baseSnapshotTreeSha256",
+    "baselineCandidateReleaseSha256", "baselineReleaseBomSha256",
+    "baselineConsumerLockSha256", "baselineForkCorpusLockSha256",
+    "baselineTemplateStaticTreeSha256", "observedAt", "issuerRegistryDigest",
+    "quorum", "nonce", "issuedAt", "expiresAt", "signatures"
+  ],
+  "properties": {
+    "$schema": {"const": "https://qijenchen.dev/schemas/consumer-control-plane-baseline-receipt-v1.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "consumer-control-plane-baseline-observer-receipt"},
+    "repositoryId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+    "baseGitCommit": {"$ref": "#/$defs/gitOid"},
+    "baseGitTree": {"$ref": "#/$defs/gitOid"},
+    "baseSnapshotTreeSha256": {"$ref": "#/$defs/sha256"},
+    "baselineCandidateReleaseSha256": {"$ref": "#/$defs/sha256"},
+    "baselineReleaseBomSha256": {"$ref": "#/$defs/sha256"},
+    "baselineConsumerLockSha256": {"$ref": "#/$defs/sha256"},
+    "baselineForkCorpusLockSha256": {"$ref": "#/$defs/sha256"},
+    "baselineTemplateStaticTreeSha256": {"$ref": "#/$defs/sha256"},
+    "observedAt": {"type": "string", "minLength": 1},
+    "issuerRegistryDigest": {"$ref": "#/$defs/sha256"},
+    "quorum": {"type": "integer", "minimum": 1, "maximum": 5},
+    "nonce": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{16,128}$"},
+    "issuedAt": {"type": "string", "minLength": 1},
+    "expiresAt": {"type": "string", "minLength": 1},
+    "signatures": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {"$ref": "#/$defs/signature"}
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "gitOid": {"type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"},
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signerKeyId", "subject", "signature"],
+      "properties": {
+        "signerKeyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+        "subject": {"type": "string", "minLength": 1, "maxLength": 512},
+        "signature": {"type": "string", "pattern": "^[A-Za-z0-9_-]{86}$"}
+      }
+    }
+  }
+}

@@ -4,16 +4,16 @@
  *
  * ── Layer 分工 ──
  * Layer A(本 script,mechanical)
- *   1. 截圖每個關鍵 story(預設 1x PNG,`--retina` opt-in debug;snapshots/*.png)
+ *   1. 截圖每個關鍵 story(預設 1x PNG,`--retina` opt-in debug;neutral runtime evidence)
  *   2. WCAG 對比度掃描:每個 story 找可見文字 / icon 和底色對比,flag AA 不過(< 4.5:1 for text)
  *   3. 幾何 assertion(引擎支援 equalHeight / padding4Sided 等 type;⚠️ 現況誠實標註 2026-07-14:
  *      `scripts/visual-assertions.json` 的 111 個 scenario 目前全部只有 id+file、0 個定義
  *      `assertions` 陣列 → geometryViolations 恆空。該 manifest 現階段實質是「截圖場景清單」;
  *      幾何 invariant(如 toolbar slot 等高 / 四邊 padding 對稱)要生效須在 scenario 補 assertions 欄位)
- *   4. 產出 snapshots/report.json:{ snapshots: [...], contrastViolations: [...], geometryViolations: [...] }
+ *   4. 產出 <absolute-git-dir>/governance-runtime/evidence/visual/visual-audit/report.json
  *
  * Layer B(`/visual-audit` skill,AI judgement)
- *   讀 snapshots/ PNG 做「設計合理性」判斷(箭頭不壓文字 / Badge 位置合理 / typography 選對 level)——
+ *   讀 neutral runtime PNG 做「設計合理性」判斷(箭頭不壓文字 / Badge 位置合理 / typography 選對 level)——
  *   這類 pattern recognition mechanical 做不到。
  *
  * ── Scope(對齊 CLAUDE.md 稽核三級 policy)──
@@ -36,16 +36,25 @@ import { chromium } from 'playwright'
 import { AxeBuilder } from '@axe-core/playwright'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
-import { mkdir, writeFile, readFile } from 'node:fs/promises'
+import { writeFile, readFile } from 'node:fs/promises'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn, execSync } from 'node:child_process'
+import {
+  ensureRuntimeEvidenceDirectory,
+  prepareRuntimeEvidenceFile,
+  resolveRuntimeEvidencePath,
+} from './lib/governance-runtime-evidence.mjs'
+import {
+  ensureVisualBaselineDirectory,
+  prepareVisualBaselineFile,
+  resolveVisualBaselinePath,
+} from './lib/governance-visual-baselines.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = join(__dirname, '..')
-const OUT_DIR = join(PROJECT_ROOT, 'snapshots')
-const BASELINE_DIR = join(PROJECT_ROOT, 'snapshots-baseline')
+const OUT_DIR = ensureRuntimeEvidenceDirectory({ repoRoot: PROJECT_ROOT, relativePath: 'visual/visual-audit' })
 const ASSERTIONS_PATH = join(PROJECT_ROOT, 'scripts/visual-assertions.json')
 const STORYBOOK_URL = 'http://localhost:6006'
 const PIXEL_DIFF_THRESHOLD = 0.1 // pixelmatch threshold (0=strict, 1=loose)
@@ -106,7 +115,7 @@ try {
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 async function ensureOutDir() {
-  if (!existsSync(OUT_DIR)) await mkdir(OUT_DIR, { recursive: true })
+  ensureRuntimeEvidenceDirectory({ repoRoot: PROJECT_ROOT, relativePath: 'visual/visual-audit' })
 }
 
 async function waitForStorybook(url, maxWaitMs = 120_000) {
@@ -394,7 +403,11 @@ async function auditScenario(browser, scenario, opts = {}) {
       return { id: scenario.id ?? scenario.url, file: scenario.file, error: `Storybook error display: ${errorMsg.slice(0, 200)}` }
     }
 
-    const screenshotPath = join(OUT_DIR, scenario.file)
+    const screenshotPath = prepareRuntimeEvidenceFile({
+      repoRoot: PROJECT_ROOT,
+      explicitRoot: OUT_DIR,
+      relativePath: scenario.file,
+    })
     await page.screenshot({ path: screenshotPath, fullPage: false })
 
     const contrast = await scanContrast(page)
@@ -436,7 +449,11 @@ async function auditScenario(browser, scenario, opts = {}) {
     // ── pixel diff vs baseline(if baseline exists)──
     let diff = null
     if (!opts.noDiff) {
-      const baselinePath = join(BASELINE_DIR, scenario.file)
+      const baselinePath = resolveVisualBaselinePath({
+        repoRoot: PROJECT_ROOT,
+        collection: 'curated',
+        childPath: scenario.file,
+      })
       if (existsSync(baselinePath)) {
         try {
           const current = PNG.sync.read(readFileSync(screenshotPath))
@@ -464,8 +481,8 @@ async function auditScenario(browser, scenario, opts = {}) {
         // 2026-07-14 dim-66 修:baseline 缺失原本 silent skip(diff 恆 null → 該 scenario 永遠
         // 沒有 regression 防線卻照樣綠燈)。改 fail-closed:計入 diff error;--update-baseline
         // 模式豁免(該模式本來就是在生 baseline)。補 baseline 走 visual-regression.yml 檔頭流程
-        // (workflow_dispatch → 下載 ubuntu 渲染 artifact → commit 進 snapshots-baseline/)。
-        diff = { error: `baseline missing(snapshots-baseline/${scenario.file})` }
+        // (workflow_dispatch → 下載 ubuntu 渲染 artifact → commit 進 neutral baseline authority)。
+        diff = { error: `baseline missing(infra/governance/baseline/visual/curated/${scenario.file})` }
       }
     }
 
@@ -554,14 +571,60 @@ function filterScenarios(allScenarios) {
   return allScenarios
 }
 
+let storybookProc = null
+let browser = null
+
+function signalStorybookProcessGroup(child, signal) {
+  if (!child?.pid) return
+  if (process.platform !== 'win32') {
+    try {
+      process.kill(-child.pid, signal)
+      return
+    } catch {}
+  }
+  try {
+    child.kill(signal)
+  } catch {}
+}
+
+async function stopStorybook() {
+  const child = storybookProc
+  storybookProc = null
+  if (!child || child.exitCode !== null || child.signalCode !== null) return
+  await new Promise((resolveStop) => {
+    let settled = false
+    let forceKillTimer = null
+    let cleanupDeadline = null
+    const finish = () => {
+      if (settled) return
+      settled = true
+      child.off('close', finish)
+      if (forceKillTimer) clearTimeout(forceKillTimer)
+      if (cleanupDeadline) clearTimeout(cleanupDeadline)
+      resolveStop()
+    }
+    child.once('close', finish)
+    signalStorybookProcessGroup(child, 'SIGTERM')
+    forceKillTimer = setTimeout(() => signalStorybookProcessGroup(child, 'SIGKILL'), 1_000)
+    cleanupDeadline = setTimeout(finish, 3_000)
+    if (child.exitCode !== null || child.signalCode !== null) finish()
+  })
+}
+
+async function closeBrowser() {
+  const instance = browser
+  browser = null
+  if (instance) await instance.close()
+}
+
 async function main() {
   await ensureOutDir()
 
-  let storybookProc = null
   if (AUTO_START) {
     console.log('[visual-audit] 啟動 storybook...')
     storybookProc = spawn('npm', ['run', 'storybook', '--', '--ci', '--quiet'], {
       cwd: PROJECT_ROOT,
+      detached: process.platform !== 'win32',
       stdio: ['ignore', 'pipe', 'pipe'],
     })
     storybookProc.stdout.on('data', () => {})
@@ -570,15 +633,17 @@ async function main() {
     const ready = await waitForStorybook(STORYBOOK_URL, 180_000)
     if (!ready) {
       console.error('[visual-audit] storybook 120s 未就緒')
-      storybookProc.kill()
-      process.exit(1)
+      await stopStorybook()
+      process.exitCode = 1
+      return
     }
     console.log('[visual-audit] storybook 就緒')
   } else {
     const ready = await waitForStorybook(STORYBOOK_URL, 5_000)
     if (!ready) {
       console.error(`[visual-audit] storybook 未跑(${STORYBOOK_URL})。加 --auto-start 或先 npm run storybook`)
-      process.exit(1)
+      process.exitCode = 1
+      return
     }
   }
 
@@ -586,12 +651,12 @@ async function main() {
   const scopedScenarios = filterScenarios(ASSERTIONS.scenarios)
   if (scopedScenarios.length === 0) {
     console.log('[visual-audit] 0 scenario 符合 scope,跳過(exit 0)')
-    if (storybookProc) storybookProc.kill()
-    process.exit(0)
+    await stopStorybook()
+    return
   }
   console.log(`[visual-audit] scope=${URLS ? 'urls' : SCOPE},跑 ${scopedScenarios.length} scenario`)
 
-  const browser = await chromium.launch({ headless: !HEADED })
+  browser = await chromium.launch({ headless: !HEADED })
   const results = []
   let totalContrastViolations = 0
   let totalGeometryViolations = 0
@@ -632,23 +697,25 @@ async function main() {
     }
   }
 
-  await browser.close()
+  await closeBrowser()
 
   // ── Update baseline if requested ──
   if (UPDATE_BASELINE) {
     const { copyFile } = await import('node:fs/promises')
-    if (!existsSync(BASELINE_DIR)) await mkdir(BASELINE_DIR, { recursive: true })
+    ensureVisualBaselineDirectory({ repoRoot: PROJECT_ROOT, collection: 'curated' })
     let copied = 0
     for (const r of results) {
       if (r.file && !r.error) {
-        await copyFile(join(OUT_DIR, r.file), join(BASELINE_DIR, r.file))
+        const source = resolveRuntimeEvidencePath({ repoRoot: PROJECT_ROOT, explicitRoot: OUT_DIR, relativePath: r.file })
+        const destination = prepareVisualBaselineFile({ repoRoot: PROJECT_ROOT, collection: 'curated', childPath: r.file })
+        await copyFile(source, destination)
         copied++
       }
     }
-    console.log(`[visual-audit] Baseline updated(${copied} files copied to snapshots-baseline/)`)
+    console.log(`[visual-audit] Baseline updated(${copied} files copied to neutral governance baseline authority)`)
   }
 
-  if (storybookProc) storybookProc.kill()
+  await stopStorybook()
 
   const report = {
     generatedAt: new Date().toISOString(),
@@ -660,7 +727,8 @@ async function main() {
     totalDiffErrors,
     scenarios: results,
   }
-  await writeFile(join(OUT_DIR, 'report.json'), JSON.stringify(report, null, 2))
+  const reportPath = prepareRuntimeEvidenceFile({ repoRoot: PROJECT_ROOT, explicitRoot: OUT_DIR, relativePath: 'report.json' })
+  await writeFile(reportPath, JSON.stringify(report, null, 2))
 
   console.log(`\n[visual-audit] 完成`)
   console.log(`  Contrast violations: ${totalContrastViolations}`)
@@ -669,9 +737,9 @@ async function main() {
   if (!NO_DIFF) console.log(`  Baseline diff budget breached: ${totalDiffBudgetBreached} (threshold ${PIXEL_DIFF_PCT_BUDGET}%)`)
   console.log(`  Render errors(story 404 / error display): ${totalRenderErrors}`)
   if (!NO_DIFF) console.log(`  Diff errors(baseline missing / dimension mismatch): ${totalDiffErrors}`)
-  console.log(`  Report: ${join(OUT_DIR, 'report.json')}`)
+  console.log(`  Report: ${reportPath}`)
   console.log(`  Screenshots: ${OUT_DIR}/*.png`)
-  console.log(`\n[Layer B:invoke /visual-audit 讀 snapshots/ 做 AI 設計合理性判斷]`)
+  console.log(`\n[Layer B:invoke /visual-audit 讀 ${OUT_DIR}/ 做 AI 設計合理性判斷]`)
 
   // 2026-07-14 dim-66:render / diff error 進 exit gate(fail-closed;原本 404 story 假綠)
   // 2026-07-19:a11y 移出 exit gate 改 advisory —— 權威 a11y gate = a11y-and-size.yml(axe --gate,有
@@ -679,18 +747,20 @@ async function main() {
   //   aria-required-children 等既有債)。visual-audit 無 a11y baseline → 對「開著的 overlay demo / Radix
   //   role=grid 巢狀」等 accepted 違規硬 gate = 與 a11y-and-size 不一致的重複 fail。本 workflow 聚焦 pixel
   //   diff;a11y 仍計數輸出供參,但不再重複把關(避免兩 gate 哲學打架)。
-  process.exit(
-    totalContrastViolations > 0 ||
-      totalGeometryViolations > 0 ||
-      totalDiffBudgetBreached > 0 ||
-      totalRenderErrors > 0 ||
-      totalDiffErrors > 0
-      ? 1
-      : 0,
-  )
+  process.exitCode = totalContrastViolations > 0 ||
+    totalGeometryViolations > 0 ||
+    totalDiffBudgetBreached > 0 ||
+    totalRenderErrors > 0 ||
+    totalDiffErrors > 0
+    ? 1
+    : 0
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
+  try {
+    await closeBrowser()
+  } catch {}
+  await stopStorybook()
   console.error(err)
-  process.exit(1)
+  process.exitCode = 1
 })

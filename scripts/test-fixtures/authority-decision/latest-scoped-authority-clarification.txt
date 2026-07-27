@@ -1,0 +1,84 @@
+確認並補充 canonical authority semantics：
+
+我仍明確保留所有 UI／UX、產品設計及其 SSOT 異動的最終決策權。
+
+你目前獲授權修正的是 authority classifier 的跨 clause／跨段錯誤拼接，不是移除或弱化 UI／UX human-decision gate。
+
+請嚴格維持以下權限邊界：
+
+1. 必須由我明確拍板的事項
+
+任何會改變使用者可感知結果、產品語意或 canonical UI／UX SSOT 的決策，包括但不限於：
+
+- UI／UX design intent
+- component behavior／contract
+- interaction pattern
+- information architecture
+- visual hierarchy
+- design tokens 的設計語意
+- layout、spacing、color、typography 的產品性決策
+- user-facing status、flow、navigation
+- content／copy semantics
+- accessibility behavior 或產品取捨
+- 在多個合理設計方案中選擇其中一個
+- 新增、刪除或改變任何 canonical design rule
+
+上述事項不得因 general engineering delegation、Standing Authorization 或跨段文字而被推定為已授權。
+
+2. 已委派給 AI 的工程事項
+
+在不改變已核准 UI／UX 語意的前提下，可自動執行：
+
+- 實作已核准的 UI／UX 決策
+- 純技術 refactor
+- bug fix，但不得改變產品行為
+- tests、Harness、generation、adapters
+- SSOT 已核准內容的機械式投影與同步
+- setup、sync、CI、release、rollback
+- infrastructure、governance、receipts、manifests
+- 非使用者可感知的效能、安全性與可靠性改善
+
+3. 邊界判定
+
+若工程修改：
+
+- 會產生任何 user-visible semantic change
+- 需要在多個設計方案中做選擇
+- 無法確認是否保持原 UI／UX intent
+- 會修改 canonical UI／UX SSOT
+- 同時包含 engineering 與 UI-choice 語意
+
+則 UI／UX 部分必須 fail closed，等待我的明確決策；不受影響的純工程部分仍可繼續，不得因 UI gate 而 blanket-block 所有工程工作。
+
+4. Classifier 修正要求
+
+請將 authority 判定限制在同一個明確 clause／同一個授權命題內，不得將不同段落中的：
+
+「UI 決策仍屬人類」
+
+與
+
+「工程決策已委派」
+
+拼接成 blanket allow 或 blanket deny。
+
+同一則訊息必須允許產生 scoped／partial delegation：
+
+- UI／UX decision scope：human-only
+- engineering execution scope：delegated
+
+5. 必要測試
+
+請新增或確認以下對等測試：
+
+- 同一訊息同時包含 UI human-only 與 engineering delegated，兩者均被正確保留
+- engineering delegation 不得授權 UI／UX decision
+- UI／UX human gate 不得阻止無關的工程執行
+- 跨段、跨 clause 不得錯誤拼接
+- ambiguous UI impact 必須 fail closed
+- 已核准 SSOT 的機械式 generation／sync 不需再次要求 UI 決策
+- receipt 必須明確列出 allowed scopes、human-only scopes 與 denied／ambiguous scopes
+
+完成後請輸出修正前後的 classifier result、focused tests、authority receipt readback，以及證明 canonical UI／UX human-decision gate 沒有被削弱的證據。
+
+除此之外維持目前固定 Scope 與既有進度，繼續執行，不要重新 Discovery 或重做已完成工作。

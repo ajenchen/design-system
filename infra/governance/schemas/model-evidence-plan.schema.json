@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/model-evidence-plan-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "evidenceKind", "matrixSource", "judgment", "componentA1b", "reviewGraph", "promptContract"],
+  "properties": {
+    "$schema": { "const": "schemas/model-evidence-plan.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "evidenceKind": { "const": "deep-audit-model-evidence-plan" },
+    "matrixSource": { "const": "scripts/audit-coverage-matrix.mjs" },
+    "judgment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coveragePolicy", "dimensions"],
+      "properties": {
+        "coveragePolicy": { "const": "all-design-system-and-rubric" },
+        "dimensions": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["dim", "ruleId"],
+            "properties": {
+              "dim": { "type": "integer", "minimum": 1, "maximum": 91 },
+              "ruleId": { "type": "string", "pattern": "^DS-DIM-[0-9]{3}$" }
+            }
+          }
+        }
+      }
+    },
+    "componentA1b": {
+      "type": "object", "additionalProperties": false,
+      "required": ["componentSource", "coveragePolicy"],
+      "properties": {
+        "componentSource": { "const": "active-run-manifest-components" },
+        "coveragePolicy": { "const": "exact-component-inventory" }
+      }
+    },
+    "reviewGraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coverageUnit", "rawCorpusDisposition", "unknownApplicability", "modelWork", "sharedEvidence", "dependencyClosure", "synthesis"],
+      "properties": {
+        "coverageUnit": { "const": "deterministic-applicability-cell-v1" },
+        "rawCorpusDisposition": { "const": "complete-applicable-not-applicable-unknown-ledger" },
+        "unknownApplicability": { "const": "fail-closed" },
+        "modelWork": { "const": "judgment-claim-and-shared-review-cells-no-zero-claim-calls" },
+        "sharedEvidence": { "const": "content-addressed-deduplicated-review-cells" },
+        "dependencyClosure": { "const": "frozen-reachable-or-conservative-fail-closed" },
+        "synthesis": { "const": "content-addressed-deterministic-hierarchical-all-cells-before-task-and-run-verdict" }
+      }
+    },
+    "promptContract": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sampling", "coverageAssertion", "findingLocation", "sourceEcho", "emptyResultPolicy"],
+      "properties": {
+        "sampling": { "const": "forbidden" },
+        "coverageAssertion": { "const": "exact-inventory-list-and-digest" },
+        "findingLocation": { "const": "repository-relative-path-and-positive-line" },
+        "sourceEcho": { "const": "forbidden" },
+        "emptyResultPolicy": { "const": "explicit-covered-clean-result-only" }
+      }
+    }
+  }
+}

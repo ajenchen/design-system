@@ -1,20 +1,20 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "qijenchen-ds",
-  "description": "qijenchen Design System marketplace — distribute DS governance plugin to product workspaces",
+  "description": "qijenchen Design System marketplace — authority/DS-author convenience adapter; product workspaces use the authenticated package snapshot",
   "owner": {
     "name": "qijenchen"
   },
   "metadata": {
-    "version": "0.1.0-beta.93",
+    "version": "0.1.0-beta.95",
     "pluginRoot": "."
   },
   "plugins": [
     {
       "name": "design-system",
       "source": "./",
-      "description": "World-class DS governance — 22 skills + 56 hooks + 5 path-scoped rules + CLAUDE.md instructions + 31 active M-rules + 91 audit dims. Consumers enable once and inherit all canonical (codex collab discipline, knowledge-prune cadence, M14 5-layer pipeline, M22 benchmark cite, M29 anchor preflight, etc.)。",
-      "version": "0.1.0-beta.93",
+      "description": "Generated authority/DS-author Claude Code skills and full-corpus hook-feedback adapter for authority-only endpoint assignment. Its hook guard no-ops in non-authority targets, but plugin discovery remains endpoint-wide; products must not receive this profile and instead use their authenticated package snapshot, immutable lock, generated adapters, and protected provider-neutral hard gates.",
+      "version": "0.1.0-beta.95",
       "author": {
         "name": "qijenchen"
       },

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance/rules-v1.json",
+  "title": "Governance rule registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "rules"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ruleId", "severity", "source", "appliesToRoles", "match", "blocking", "providerCoverage", "gateIds"],
+        "properties": {
+          "ruleId": { "type": "string", "pattern": "^GOV-[A-Z]+-[0-9]{3}$" },
+          "severity": { "enum": ["critical", "major", "minor", "info"] },
+          "source": { "type": "string", "minLength": 1 },
+          "appliesToRoles": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "match": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind"],
+            "properties": {
+              "kind": { "enum": ["protected-generated-path", "registry-invariant"] },
+              "pathTemplate": { "type": "string" }
+            }
+          },
+          "blocking": { "type": "boolean" },
+          "providerCoverage": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["*"],
+            "properties": {
+              "*": { "enum": ["native", "adapter", "hard-gate", "unsupported"] }
+            }
+          },
+          "gateIds": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

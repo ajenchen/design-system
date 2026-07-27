@@ -1,0 +1,42 @@
+{
+  "name": "@qijenchen/governance",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ajenchen/design-system.git"
+  },
+  "version": "0.1.0-beta.95",
+  "description": "Provider-neutral DS-author control plane for deterministic snapshots, adapters, checks, and evidence manifests.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "bin",
+    "canonical",
+    "src",
+    "README.md"
+  ],
+  "bin": {
+    "qijenchen-governance": "./bin/governance.mjs",
+    "qijenchen-governance-generate": "./bin/generate.mjs",
+    "qijenchen-governance-check": "./bin/check.mjs",
+    "qijenchen-governance-doctor": "./bin/doctor.mjs",
+    "qijenchen-governance-hook": "./bin/hook.mjs",
+    "qijenchen-governance-attest": "./bin/attest.mjs",
+    "qijenchen-governance-upgrade": "./bin/upgrade.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs",
+    "./closed-tool-execution": "./src/closed-tool-execution.mjs",
+    "./hook": "./src/hook-api.mjs",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  }
+}

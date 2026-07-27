@@ -11,7 +11,7 @@
 #     3. GitHub Pages(.github/workflows/*.yml 含 pages action)— DS repo
 #   → output URL list inject into AI context(下個 reply 必看到)
 #
-# 為何走 Hook(per CLAUDE.md governance 8-home L7 Hook 自動化):
+# 為何走 Hook(per shared governance 8-home L7 Hook 自動化):
 #   - 不靠 AI 記得「每次推完都要 echo URL」(會忘記 — 本 session user 抓「你他媽到底做得怎樣」)
 #   - 不靠 user 每次問「部署到哪?」(無聊重複)
 #   - Hook 機械保證每 push 必觸發,跨 session / 跨 fork user 自動受惠
@@ -21,15 +21,27 @@
 #   - Netlify dashboard-linked (netlify.toml + branch deploys) → 用 git remote 推導 site name
 #   - GitHub Pages (.github/workflows/*.yml 含 pages.yml OR ci.yml deploy-pages) → 推導 GH Pages URL
 #
-# 對齊:.claude/skills/codex-collab/SKILL.md PostToolUse pattern + check_fork_user_plugin_install.sh detection pattern
+# 對齊:canonical codex-collab skill PostToolUse pattern + check_fork_user_plugin_install.sh detection pattern
 
-source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+HOOK_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd -P)" || {
+  printf 'GOVERNANCE_INTEGRITY: deploy URL hook directory is unavailable\n' >&2
+  exit 70
+}
+source "$HOOK_DIR/lib/_hook_integrity.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: canonical hook integrity helper is unavailable\n' >&2
+  exit 70
+}
+source "$HOOK_DIR/_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -uo pipefail
-INPUT=$(cat 2>/dev/null || echo "{}")
-EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // ""' 2>/dev/null)
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null)
-CMD=$(echo "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null)
+governance_hook_load_input
+governance_hook_require_commands grep git sed awk cut tail
+EVENT=$(printf '%s' "$INPUT" | jq -r '.hook_event_name // ""') \
+  || governance_hook_integrity_fail 'deploy URL event could not be decoded'
+TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""') \
+  || governance_hook_integrity_fail 'deploy URL tool name could not be decoded'
+CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // ""') \
+  || governance_hook_integrity_fail 'deploy URL command could not be decoded'
 
 # Scope:PostToolUse Bash 且 cmd 含 git push to remote(main / branch)
 [ "$EVENT" != "PostToolUse" ] && exit 0
@@ -43,12 +55,51 @@ CMD=$(echo "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null)
 _ENVP='([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+)*'
 _GITPRE='git[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+|-[A-Za-z][^[:space:]]*[[:space:]]+)*push'
 _PUSHFLAGS='([[:space:]]+-{1,2}[A-Za-z][^[:space:]]*)*'
-if ! echo "$CMD" | grep -qE "(^|[;&|(])[[:space:]]*${_ENVP}${_GITPRE}${_PUSHFLAGS}[[:space:]]+origin\b"; then
+if ! grep -qE "(^|[;&|(])[[:space:]]*${_ENVP}${_GITPRE}${_PUSHFLAGS}[[:space:]]+origin\b" <<<"$CMD"; then
   exit 0
 fi
 
+ACTIVE_PROVIDER="${GOVERNANCE_PROVIDER:-${GOVERNANCE_SELF_PROVIDER:-}}"
+provider_contract_available() {
+  printf '%s' "$ACTIVE_PROVIDER" | grep -qE '^[a-z][a-z0-9-]*$' || return 1
+
+  # A product hook may trust adapter bytes only when they are byte-for-byte the provider record in
+  # the immutable manifest beside this shipped hook. An arbitrary direct-hook environment cannot
+  # invent a provider/adapter; the verified dispatcher is what selects and exports this exact row.
+  local hook_dir installed_manifest expected_adapter supplied_adapter
+  hook_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P)" || return 1
+  installed_manifest="$hook_dir/../manifest.json"
+  if [ -f "$installed_manifest" ] && [ ! -L "$installed_manifest" ]; then
+    [ -n "${GOVERNANCE_PROVIDER_ADAPTER_JSON:-}" ] || return 1
+    expected_adapter=$(jq -ce --arg provider "$ACTIVE_PROVIDER" '
+      .providerAdapters[$provider]
+      | select(
+      type == "object"
+      and .schemaVersion == 1
+      and (.capabilities | type == "object")
+      and (.normalization | type == "object")
+      and (.contextOutputTransport | type == "string" and length > 0)
+      and (.stopDecisionTransport | type == "string" and length > 0)
+      )
+    ' "$installed_manifest" 2>/dev/null) || return 1
+    supplied_adapter=$(printf '%s' "$GOVERNANCE_PROVIDER_ADAPTER_JSON" | jq -ce '.' 2>/dev/null) || return 1
+    [ "$supplied_adapter" = "$expected_adapter" ]
+    return
+  fi
+
+  # DS-author hooks and direct hermetic tests run through the canonical registry resolver. Load it
+  # only for a real push: unrelated file edits/Bash commands must remain a strict no-op even when a
+  # provider has no native hook surface or the optional deploy relay is unavailable.
+  source "$(dirname "$0")/lib/_provider_paths.sh" 2>/dev/null || return 1
+  governance_provider_string_field instructionEntry >/dev/null 2>&1
+}
+provider_contract_available || {
+  governance_hook_integrity_fail \
+    "deploy URL provider contract is unavailable:${ACTIVE_PROVIDER:-<missing>}"
+}
+
 # Skip if push --delete (branch cleanup, not deploy)
-if echo "$CMD" | grep -qE 'push\s+origin\s+--delete'; then
+if grep -qE 'push\s+origin\s+--delete' <<<"$CMD"; then
   exit 0
 fi
 
@@ -56,7 +107,7 @@ CWD=$(pwd)
 # 2026-06-07 fix:偵測「真實 working dir」作 deploy-target 偵測根,跨 repo push 不吐「錯 repo」URL
 # (anchor:syncing ds-product-template 時吐成 DS 站台 URL)。優先 `git -C <dir>`;否則命令鏈中
 # 「最後一個 cd」(= push 時 effective cwd,**非第一個**;`echo x && cd /other && git push` 必用 /other)。
-_GITC=$(echo "$CMD" | grep -oE 'git[[:space:]]+-C[[:space:]]+[^[:space:]]+' | head -1 | sed -E 's/.*-C[[:space:]]+//; s/^"//; s/"$//')
+_GITC=$(grep -m 1 -oE 'git[[:space:]]+-C[[:space:]]+[^[:space:]]+' <<<"$CMD" | sed -n '1p' | sed -E 's/.*-C[[:space:]]+//; s/^"//; s/"$//')
 _LASTCD=$(echo "$CMD" | grep -oE '(^|[;&|(])[[:space:]]*cd[[:space:]]+[^;&|]+' | tail -1 | sed -E 's/.*cd[[:space:]]+//; s/[[:space:]]+$//; s/^"//; s/"$//')
 for _d in "$_GITC" "$_LASTCD"; do
   if [ -n "$_d" ] && [ -d "$_d" ] && git -C "$_d" rev-parse --git-dir >/dev/null 2>&1; then CWD="$_d"; break; fi
@@ -67,8 +118,8 @@ URLS_FOUND=""
 # 當 branch → 推導 `--quiet--site` 404(此前 5 道 guard 都沒擋到,因 `--quiet` 全是合法 git ref 字元)。
 # 隔出 push 段(到下個 command 分隔 ; & | 為止)後,取 origin 後第一個 token。
 # PUSH_SEG 用同一 env/-C/flag-tolerant prefix 隔出 push 段(到下個分隔 ; & | 為止),再取 origin 後第一 token
-PUSH_SEG=$(echo "$CMD" | grep -oE "(^|[;&|(])[[:space:]]*${_ENVP}${_GITPRE}[^;&|]*" | head -1)
-BRANCH=$(echo "$PUSH_SEG" | grep -oE 'origin[[:space:]]+[^[:space:]]+' | head -1 | awk '{print $2}')
+PUSH_SEG=$(grep -m 1 -oE "(^|[;&|(])[[:space:]]*${_ENVP}${_GITPRE}[^;&|]*" <<<"$CMD" | sed -n '1p')
+BRANCH=$(grep -m 1 -oE 'origin[[:space:]]+[^[:space:]]+' <<<"$PUSH_SEG" | sed -n '1p' | awk '{print $2}')
 # origin 後第一個 token 是 flag(`git push origin --force` = 無顯式 branch)→ 清空走 current-branch fallback
 case "$BRANCH" in -*) BRANCH="" ;; esac
 # 2026-06-06 fix:refspec `src:dst` → 取 dst(`HEAD:main` → `main`),否則推導出 `HEAD:main--site` 404 URL
@@ -86,10 +137,10 @@ fi
 # 2026-06-06 fix:BRANCH 含非法 git ref 字元(" ' 空白 \ 等)→ 此命令只是「字串裡含 git push origin」
 # (測試迴圈 / 文件 / echo),非真推送 → skip,避免把 `main"` 等垃圾推導成 404 URL 注入 context。
 # git ref 合法字元集 ⊂ [A-Za-z0-9._/-];非此集 = 必為解析噪音(root guard,涵蓋 refspec/tag 之外的雜訊)。
-if [ -n "$BRANCH" ] && ! echo "$BRANCH" | grep -qE '^[A-Za-z0-9._/-]+$'; then exit 0; fi
+if [ -n "$BRANCH" ] && ! grep -qE '^[A-Za-z0-9._/-]+$' <<<"$BRANCH"; then exit 0; fi
 # 2026-06-06 fix:tag push(`v1.2.3` 等)不產 branch-preview / production deploy → skip,
 # 否則把 tag 名當 branch 推導出 `v0.1.0-beta.56--site` 404 URL(release tag push 每次都誤吐)
-if echo "$BRANCH" | grep -qE '^v[0-9]'; then exit 0; fi
+if grep -qE '^v[0-9]' <<<"$BRANCH"; then exit 0; fi
 if [ -n "$BRANCH" ] && git -C "$CWD" rev-parse --verify --quiet "refs/tags/$BRANCH" >/dev/null 2>&1; then exit 0; fi
 # 2026-06-07 fix:仍空(bare `git push origin` / detached HEAD / 解析不出)→ 取 current branch(value-based);
 # 仍空 → 無法產生合法 URL(會變 `https://--site` malformed)→ skip,不亂猜 main。
@@ -111,7 +162,9 @@ verify_url() {
 # 用 Storybook hallmark patterns(sb-manager / sb-addons / @storybook/core title)
 is_storybook_deploy() {
   local url="$1"
-  curl -s --max-time 5 -L "$url" 2>/dev/null | grep -qE "sb-manager|sb-addons|@storybook/core|storybook-static"
+  local body
+  body=$(curl -s --max-time 5 -L "$url" 2>/dev/null) || return 1
+  grep -qE "sb-manager|sb-addons|@storybook/core|storybook-static" <<<"$body"
 }
 
 # Detection 1:Netlify CLI-linked(.netlify/state.json + scripts/deploy-url.mjs)
@@ -139,14 +192,41 @@ if [ -z "$URLS_FOUND" ] && [ -f "$CWD/netlify.toml" ]; then
   OWNER_REPO=$(echo "$GH_REMOTE" | sed -E 's|.*github\.com[:/]([^/]+/[^/.]+)(\.git)?$|\1|')
   OWNER=$(echo "$OWNER_REPO" | cut -d/ -f1)
 
+  deploy_preferences_file() {
+    local candidate="${GOVERNANCE_DEPLOY_TARGETS_FILE:-}" config_home="${XDG_CONFIG_HOME:-}"
+    if [ -n "$candidate" ] && [ -f "$candidate" ] && [ ! -L "$candidate" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+    [ -z "$config_home" ] && [ -n "${HOME:-}" ] && config_home="$HOME/.config"
+    if [ -n "$config_home" ]; then
+      candidate="$config_home/qijenchen-governance/deploy-targets.json"
+      if [ -f "$candidate" ] && [ ! -L "$candidate" ]; then
+        printf '%s\n' "$candidate"
+        return 0
+      fi
+    fi
+    # Claude's old preference location is a compatibility input for Claude only. A Codex or
+    # future-provider invocation must be invariant to arbitrary bytes under ~/.claude.
+    if [ "$ACTIVE_PROVIDER" = "claude" ] && [ -n "${HOME:-}" ]; then
+      candidate="$HOME/.claude/local/deploy-targets.json"
+      if [ -f "$candidate" ] && [ ! -L "$candidate" ]; then
+        printf '%s\n' "$candidate"
+        return 0
+      fi
+    fi
+    return 1
+  }
+
   # v5 multi-candidate strategy(Netlify naming conventions in order of likelihood):
-  # 1. ~/.claude/local/deploy-targets.json overrides(per-user known URLs)— win all
+  # 1. provider-neutral preference(explicit env > XDG config;Claude-only legacy fallback)— win all
   # 2. <owner>-<package.json.name>.netlify.app(setup-netlify script convention,per scripts/setup-netlify-access.mjs `${ghUser}-${repoName}` formula)
   # 3. <owner>-<repo-from-remote>.netlify.app(Netlify Import default,fork users without setup script)
   # 4. <repo-from-remote>.netlify.app(simple,rare)
   USER_OVERRIDE=""
-  if [ -f "$HOME/.claude/local/deploy-targets.json" ]; then
-    USER_OVERRIDE=$(jq -r --arg key "$OWNER_REPO" '.[$key] // ""' "$HOME/.claude/local/deploy-targets.json" 2>/dev/null)
+  DEPLOY_PREFERENCES="$(deploy_preferences_file 2>/dev/null || true)"
+  if [ -n "$DEPLOY_PREFERENCES" ]; then
+    USER_OVERRIDE=$(jq -r --arg key "$OWNER_REPO" '.[$key] // ""' "$DEPLOY_PREFERENCES" 2>/dev/null)
   fi
   # Read package.json.name for setup-script convention
   PKG_NAME=""
@@ -188,7 +268,7 @@ if [ -z "$URLS_FOUND" ] && [ -f "$CWD/netlify.toml" ]; then
     if [ -n "$REAL_URL" ]; then
       URLS_FOUND="${URLS_FOUND}🚀 Netlify PRODUCTION(${BRANCH}): ${REAL_URL}  ${REAL_NOTE}\n"
     else
-      URLS_FOUND="${URLS_FOUND}🚀 Netlify PRODUCTION URL 未驗 — tried: ${CANDIDATES// /, }\n   ⚠️ 全 404。需要 user 手動 share dashboard URL,OR 創 \$HOME/.claude/local/deploy-targets.json:\n   {\"${OWNER_REPO}\": \"https://<actual-site>.netlify.app\"}\n"
+      URLS_FOUND="${URLS_FOUND}🚀 Netlify PRODUCTION URL 未驗 — tried: ${CANDIDATES// /, }\n   ⚠️ 全 404。需要 user 手動 share dashboard URL,OR 創 ${XDG_CONFIG_HOME:-$HOME/.config}/qijenchen-governance/deploy-targets.json(也可設 GOVERNANCE_DEPLOY_TARGETS_FILE):\n   {\"${OWNER_REPO}\": \"https://<actual-site>.netlify.app\"}\n"
     fi
   else
     # Branch preview:always use `<branch>--<sitename>` pattern,but sitename unknown unless USER_OVERRIDE
@@ -213,7 +293,7 @@ if [ -z "$URLS_FOUND" ] && [ -f "$CWD/netlify.toml" ]; then
         URLS_FOUND="${URLS_FOUND}🔍 Netlify PREVIEW 推導: ${CANDIDATE}  ⚠️ 未命中(preview 未啟 / build pending / 此 branch 未啟 branch-deploy — 查 Netlify Dashboard Deploys)\n"
       fi
     else
-      URLS_FOUND="${URLS_FOUND}🔍 Netlify PREVIEW(${BRANCH}) — sitename 未知;設 \$HOME/.claude/local/deploy-targets.json 後 hook 可推 preview URL\n"
+      URLS_FOUND="${URLS_FOUND}🔍 Netlify PREVIEW(${BRANCH}) — sitename 未知;設 ${XDG_CONFIG_HOME:-$HOME/.config}/qijenchen-governance/deploy-targets.json(或 GOVERNANCE_DEPLOY_TARGETS_FILE)後 hook 可推 preview URL\n"
     fi
   fi
 fi
@@ -243,8 +323,11 @@ fi
 # Inject into AI context
 # 2026-05-29 ROOT-CAUSE FIX:PostToolUse hook 的純 stdout **不會**注入 AI context(只進 transcript)→
 # 原 `printf` 輸出讓 AI 看不到 URL → AI 每次 push 都沒 relay 給 user(user verbatim「部署完都沒給我 url」)。
-# 必須輸出 JSON `hookSpecificOutput.additionalContext` 才會真注入 AI context。
+# 必須輸出 neutral governance context,再由 adapter 轉成 provider-native transport。
 MSG=$(printf '%b' "🚀 Deploy URLs auto-detected — RELAY 給 user(per user 2026-05-26「完成部署都自動回吐連結」+ 2026-05-27「不管 repo」):\n${URLS_FOUND}\n(AI:必須把上面 URL 貼給 user,不可省略)")
-jq -n --arg ctx "$MSG" '{hookSpecificOutput:{hookEventName:"PostToolUse",additionalContext:$ctx}}'
+CONTEXT=$(jq -nc --arg ctx "$MSG" \
+  '{governanceContext:{hookEventName:"PostToolUse",message:$ctx}}') \
+  || governance_hook_integrity_fail 'deploy URL governance context could not be encoded'
+printf '%s\n' "$CONTEXT"
 
 exit 0

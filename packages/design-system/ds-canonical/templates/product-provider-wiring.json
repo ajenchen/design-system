@@ -1,0 +1,80 @@
+{
+  "$schema": "./product-provider-wiring.schema.json",
+  "schemaVersion": 7,
+  "launcherDirectory": "governance/bin",
+  "executionRuntime": {
+    "schemaVersion": 2,
+    "engine": "node-posix-toolchain-v2",
+    "minimumNodeVersion": "22.12.0",
+    "exactNpmVersion": "11.18.0",
+    "supportedHostPlatforms": [
+      "darwin",
+      "linux"
+    ],
+    "nativeWindowsPolicy": "unsupported-fail-closed",
+    "windowsCompatibilityEnvironments": [
+      "devcontainer-linux",
+      "wsl2-linux"
+    ],
+    "requiredExecutables": [
+      "bash",
+      "git",
+      "jq",
+      "node",
+      "python3"
+    ],
+    "requiredPathClasses": [
+      "plain",
+      "space-containing"
+    ]
+  },
+  "requiredPackageScripts": [
+    "audit:a11y",
+    "governance:check",
+    "lint:imports",
+    "setup:all",
+    "setup:governance",
+    "setup:provider-cli",
+    "sync-all"
+  ],
+  "settings": {
+    "comment": "Provider-neutral committed adapter. Engineering external writes, package installation, and publication are standing-delegated when canonical preflight, least privilege, evidence, rollback, and readback gates pass; raw destructive or bypass commands remain denied. Only platform-enforced login/MFA/OAuth, missing credential references, plan-external spend, legal/account/organization commitments, and genuine product/UI/UX SSOT choices require human action. Native hooks accelerate feedback while provider-neutral checks and protected CI remain authoritative.",
+    "permissionPolicy": "packages/design-system/ds-canonical/adapters/claude-settings-base.json",
+    "permissions": {
+      "allow": [],
+      "defaultMode": "default"
+    },
+    "retiredPermissionAllow": [
+      "Bash(npm install)",
+      "Bash(npm ci)",
+      "Bash(npm run *)",
+      "Bash(npx *)",
+      "Bash(git *)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      { "matcher": "", "launcher": "inject_fork_governance_preamble.sh" }
+    ],
+    "PreToolUse": [
+      { "matcher": "Edit|Write|MultiEdit", "launcher": "fork-governance-dispatcher.sh" }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write|MultiEdit|Bash", "launcher": "fork-governance-dispatcher.sh" }
+    ],
+    "Stop": [
+      { "matcher": "", "launcher": "fork-governance-dispatcher.sh" }
+    ],
+    "UserPromptSubmit": [
+      { "matcher": "", "launcher": "fork-governance-dispatcher.sh" }
+    ]
+  },
+  "retiredHookRegistrations": [
+    {
+      "id": "claude-plugin-bootstrap-blocker",
+      "path": ".claude/hooks/block_production_edit_without_plugin.sh",
+      "provider": "claude",
+      "reasonCode": "PLUGIN_FIRST_BOOTSTRAP_RETIRED"
+    }
+  ]
+}

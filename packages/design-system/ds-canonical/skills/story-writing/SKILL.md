@@ -1,11 +1,11 @@
 ---
 name: story-writing
-description: Guide for writing Storybook stories (.stories.tsx / .principles.stories.tsx / .anatomy.stories.tsx) with world-class example quality. Enforces real-product scenarios, 「人」+「舉一反三」tests, Rule-note 原則>結論, and anatomy 6-story structure(含 A11y,2026-04-24). Invoke when user says「寫 story」「新增範例」「補 anatomy」「principles story」or is about to create/edit any `.stories.tsx` file in design-system.
+description: Guide for writing Storybook stories (.stories.tsx / .principles.stories.tsx / .anatomy.stories.tsx) with world-class example quality. Enforces real-product scenarios, 「人」+「舉一反三」tests, Rule-note 原則優先於結論, and anatomy 6-story structure(含 A11y,2026-04-24). Invoke when user says「寫 story」「新增範例」「補 anatomy」「principles story」or is about to create/edit any `.stories.tsx` file in design-system.
 ---
 
 # Story Writing
 
-Purpose: Storybook 是公開文件,範例 = 設計系統品質。本 skill 把「怎麼挑範例 / 怎麼寫 anatomy / 三方連動怎麼不漂移」集中成 invoke-time playbook,CLAUDE.md 只留最高準則 + 禁止清單。
+Purpose: Storybook 是公開文件,範例 = 設計系統品質。本 skill 把「怎麼挑範例 / 怎麼寫 anatomy / 三方連動怎麼不漂移」集中成 invoke-time playbook,shared governance 只留最高準則 + 禁止清單。
 
 ## When to run
 
@@ -15,17 +15,17 @@ Purpose: Storybook 是公開文件,範例 = 設計系統品質。本 skill 把�
 
 ## Preconditions
 
-- 讀過 `.claude/rules/story-rules.md`(三層定位 + title 命名 + 範例最高準則)
+- 讀過 `packages/design-system/ds-canonical/rules/story-rules.md`(三層定位 + title 命名 + 範例最高準則)
 - 該元件的 `.spec.md` 已存在且本 session 已讀(stories 必須反映 spec,不發明新規則)
 - 若寫 anatomy:元件 `.tsx` 的 cva 定義已看過(TOKEN_MAP / SIZE_SPECS 必須與 code 一致)
 
 ## Workflow
 
-### Phase 0.0 — Registry-driven baseline grep(2026-05-20 升級 per codex Layer B D4)
+### Phase 0.0 — Registry-driven baseline grep(2026-05-20 升級 per independent review Layer B D4)
 
 **MUST 在 Phase 0 / 0.5 / 1+ 之前先跑**:
 
-1. **Load registry**:Read `.claude/references/story-baseline-registry.json`。檔內列每個 primitive(Sidebar / DataTable / ChromeHeader / etc.)的:
+1. **Load registry**:Read `packages/design-system/ds-canonical/references/story-baseline-registry.json`。檔內列每個 primitive(Sidebar / DataTable / ChromeHeader / etc.)的:
    - `baseline`:production-grade canonical story path#StoryName
    - `requiredHelpers`:必 import 的 helper list(WorkspaceBrand / MAIN_NAV / etc.)
    - `antiPatterns`:regex + severity(block / warn)+ rationale
@@ -41,7 +41,7 @@ Purpose: Storybook 是公開文件,範例 = 設計系統品質。本 skill 把�
 
 ### Phase 0.5 — 展示層拆分原則 mapping(展示 stories 必走)
 
-對 `{name}.stories.tsx`(展示)層,寫前必走 4 步(對齊 `.claude/references/ssot-consultation.md`「5-step pre-check」— 若寫 stories 時消費其他元件 tsx,該層也適用):
+對 `{name}.stories.tsx`(展示)層,寫前必走 4 步(對齊 `packages/design-system/ds-canonical/references/ssot-consultation.md`「5-step pre-check」— 若寫 stories 時消費其他元件 tsx,該層也適用):
 
 1. **對 category**(see `references/category-templates.md`)— 元件屬 A-G 哪 category,suggested core stories 是什麼?
 2. **讀 spec.md** 列該元件 distinct rules(每 variant / prop / state 一條)+ 對照 category core list 補缺
@@ -51,7 +51,7 @@ Purpose: Storybook 是公開文件,範例 = 設計系統品質。本 skill 把�
    - AllVariants / AllSizes 對照各 1
    - Compound 有 new constraint(prop 名變 + 必某 affordance)→ 必分(`OverlayBadgeOnIconOnly`)
    - 真實業務情境 → 1 場景 1 故事
-4. **present mapping** 給 user sign-off(若走 skill);user 拍板才寫;反 pattern 在 step 3 即可避免
+4. **authority classify + apply**:mapping 若只是把既有 spec/code mechanically 投影成 story，依 Standing Authorization AUTO 寫入；只有 mapping 會新增或改變產品／UI／UX SSOT，且證據收斂後仍有真實選擇／取捨，才將 exact target-bound decision batch 給 user。反 pattern 在 step 3 即可避免。
 
 Hook `check_story_invariants.sh` R2 slot_split write-time block 同源反 pattern。Audit `/design-system-audit` Dim 28 後驗。
 
@@ -82,7 +82,7 @@ Hook `check_story_invariants.sh` R2 slot_split write-time block 同源反 patter
 
 **參考 `references/anatomy-standard.md`**——每個元件 anatomy 必備 **6 件套**(`export const Overview / Inspector / ColorMatrix / SizeMatrix / StateBehavior / Accessibility`,一字不差;Accessibility 第 6 章 2026-04-24+ 對齊 Material / Polaris / Atlassian) + Inspect 面板規格 + token-first 原則 + 值溯源完整性。
 
-**偏離 canonical 規則**(CLAUDE.md `# 稽核 canonical`「Consistency 類稽核必 Phase 0 全掃再判」;偏離需 rationale 由 design-system-audit Dim 13 enforce):
+**偏離 canonical 規則**(shared governance `# 稽核 canonical`「Consistency 類稽核必 Phase 0 全掃再判」;偏離需 rationale 由 design-system-audit Dim 13 enforce):
 - 追加第 7+ 個元件特有 story → OK,免 rationale
 - 取代 6-canonical 中某個 → **必須在元件 spec.md 寫 rationale**
 - 同概念改名(如 `VisualTokens` 取代 `ColorMatrix`) → **禁止**
@@ -102,7 +102,7 @@ Checkpoint: 寫完後必驗:
 - spec 新加 rule → principles stories 必有對應 do/don't 範例
 - 元件改 variant/size → anatomy TOKEN_MAP / SIZE_SPECS 同步
 
-**STOP 條件**:若三方(code / spec / story)任一有矛盾且原因不清楚 → 停下問 user,不默默改一邊。
+**STOP 條件**:若三方(code / spec / story)任一有矛盾且原因不清楚 → 先以 canonical owner、repo evidence、tests 與 independent review 分類。可唯一推導的工程 drift 自主修復；只有涉及產品／UI／UX SSOT 真取捨才交 user；仍無法分類則 fail closed，不默默選邊。
 
 ### Phase 5 — 自我檢查 checklist
 
@@ -117,6 +117,6 @@ Checkpoint: 寫完後必驗:
 
 ## 相關
 
-- `.claude/rules/story-rules.md`:三層定位 + title 命名(high-level signal)
-- CLAUDE.md `# 失敗記憶索引` → 三方漂移:SegmentedControl cva defaultVariants bug
-- M3 mindset #3「改一處看三處」:三方連動改靠 mindset(`.claude/hooks/retired/pre_edit_spec_check.sh` retired;`check_sync_update.sh` 亦 retired/未實作)
+- `packages/design-system/ds-canonical/rules/story-rules.md`:三層定位 + title 命名(high-level signal)
+- shared governance `# 失敗記憶索引` → 三方漂移:SegmentedControl cva defaultVariants bug
+- M3 mindset #3「改一處看三處」:三方連動改靠 mindset(retired canonical `pre_edit_spec_check.sh`;`check_sync_update.sh` 亦 retired/未實作)

@@ -22,7 +22,7 @@ run_hook() {
   local file_path="$1" content="$2" tool="${3:-Write}"
   local payload
   payload=$(jq -n --arg tool "$tool" --arg fp "$file_path" --arg c "$content" \
-    '{tool_name: $tool, tool_input: {file_path: $fp, content: $c}}')
+    '{hook_event_name:"PreToolUse", tool_name: $tool, tool_input: {file_path: $fp, content: $c}}')
   STDOUT=$(mktemp); STDERR=$(mktemp)
   set +e
   printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
@@ -32,12 +32,51 @@ run_hook() {
   rm -f "$STDOUT" "$STDERR"
 }
 
+run_raw() {
+  local payload="$1"
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT"); STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+
+is_exact_context() {
+  local needle="$1" compact
+  compact=$(printf '%s' "$STDOUT_TEXT" | jq -c . 2>/dev/null) || return 1
+  [ "$STDOUT_TEXT" = "$compact" ] || return 1
+  printf '%s' "$STDOUT_TEXT" | jq -se --arg needle "$needle" '
+    length == 1
+    and (.[0] | type == "object" and (keys | sort) == ["governanceContext"])
+    and (.[0].governanceContext |
+      type == "object"
+      and (keys | sort) == ["hookEventName", "message"]
+      and .hookEventName == "PreToolUse"
+      and (.message | type == "string" and length > 0 and contains($needle)))
+  ' >/dev/null
+}
+
 expect_exit() {
   local name="$1" expect="$2" needle="${3:-}"
-  if [ "$EXIT" = "$expect" ] && { [ -z "$needle" ] || echo "$STDERR_TEXT" | grep -qF "$needle"; }; then
+  local ok=1
+  if [ "$expect" = "0" ] && [ -n "$needle" ]; then
+    [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] && is_exact_context "$needle" && ok=0
+  elif [ "$expect" = "0" ]; then
+    [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ] && ok=0
+  elif [ "$expect" = "2" ]; then
+    [ "$EXIT" = "2" ] && [ -z "$STDOUT_TEXT" ] \
+      && { [ -z "$needle" ] || echo "$STDERR_TEXT" | grep -qF "$needle"; } && ok=0
+  elif [ "$expect" = "70" ]; then
+    [ "$EXIT" = "70" ] && [ -z "$STDOUT_TEXT" ] \
+      && { [ -z "$needle" ] || echo "$STDERR_TEXT" | grep -qF "$needle"; } && ok=0
+  fi
+  if [ "$ok" = "0" ]; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
     echo "  FAIL  $name (expected exit $expect${needle:+ + needle '$needle'}, got exit $EXIT)"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
@@ -83,7 +122,7 @@ expect_exit "A.1.4 SSOT host skip → pass" 0
 echo ""
 echo "=== A.2 FieldControlGroup wrapper direct child ==="
 
-# 5. <FieldControlGroup> 內 <div wrapper> → WARN(exit 1)
+# 5. <FieldControlGroup> 內 <div wrapper> → governance context(exit 0)
 run_hook "/r/packages/design-system/src/components/Filter/filter.tsx" '
 function F() { return (
   <FieldControlGroup>
@@ -93,7 +132,7 @@ function F() { return (
   </FieldControlGroup>
 )}
 '
-expect_exit "A.2.1 FCG with div wrapper → WARN" 1 "FieldControlGroup wrapper"
+expect_exit "A.2.1 FCG with div wrapper → governance context" 0 "FieldControlGroup wrapper"
 
 # 6. <FieldControlGroup> 直接 child 沒 wrapper → pass
 run_hook "/r/packages/design-system/src/components/Filter/filter.tsx" '
@@ -146,25 +185,17 @@ expect_exit "A.3.4 textarea SSOT skip → pass" 0
 echo ""
 echo "=== A.4 disabled placeholder color ==="
 
-# 12. placeholder:text-fg-muted no override → exit 0 with stderr warn
+# 12. placeholder:text-fg-muted no override → exit 0 governance context
 run_hook "/r/packages/design-system/src/components/Custom/custom.tsx" '
 const cls = "placeholder:text-fg-muted"
 '
-# A.4 是 P1 stderr,exit 0 — verify stderr 有 warn 訊息但不 fail
-if [ "$EXIT" = "0" ] && echo "$STDERR_TEXT" | grep -q "disabled placeholder color"; then
-  echo "  PASS  A.4.1 placeholder:text-fg-muted no override → stderr warn, exit 0"
-  PASS=$((PASS+1))
-else
-  echo "  FAIL  A.4.1 (expected exit 0 + stderr 'disabled placeholder color', got exit $EXIT)"
-  echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
-  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - A.4.1"
-fi
+expect_exit "A.4.1 placeholder:text-fg-muted no override → governance context" 0 "disabled placeholder color"
 
 # 13. placeholder + disabled override → pass(stderr 不該 fire)
 run_hook "/r/packages/design-system/src/components/Custom/custom.tsx" '
 const cls = "placeholder:text-fg-muted disabled:placeholder:text-fg-disabled"
 '
-if [ "$EXIT" = "0" ] && ! echo "$STDERR_TEXT" | grep -q "disabled placeholder color"; then
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then
   echo "  PASS  A.4.2 placeholder + disabled override → silent pass"
   PASS=$((PASS+1))
 else
@@ -177,7 +208,7 @@ run_hook "/r/packages/design-system/src/components/Custom/custom.tsx" '
 // @disabled-color-allow: caption text intentionally muted across modes
 const cls = "placeholder:text-fg-muted"
 '
-if [ "$EXIT" = "0" ] && ! echo "$STDERR_TEXT" | grep -q "disabled placeholder color"; then
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then
   echo "  PASS  A.4.3 allowlist → silent pass"
   PASS=$((PASS+1))
 else
@@ -218,6 +249,31 @@ expect_exit "S.1 non-tsx → skip" 0
 # 16. read tool → skip
 run_hook "/r/packages/design-system/src/components/Foo.tsx" 'irrelevant' Read
 expect_exit "S.2 non-edit tool → skip" 0
+
+echo ""
+echo "=== Output contract ==="
+
+run_hook "/r/packages/design-system/src/components/Filter/filter.tsx" '
+const cls = "placeholder:text-fg-muted"
+function F() { return (
+  <FieldControlGroup>
+    <div><FilterValuePicker /></div>
+  </FieldControlGroup>
+)}
+'
+if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] \
+  && is_exact_context "FieldControlGroup wrapper" \
+  && printf '%s' "$STDOUT_TEXT" | jq -e \
+    '.governanceContext.message | contains("disabled placeholder color")' >/dev/null; then
+  echo "  PASS  O.1 A.2+A.4 warnings → one exact PreToolUse context"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL  O.1 warning aggregation contract"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - O.1 warning aggregation"
+fi
+
+run_raw '{'
+expect_exit "O.2 malformed input → stderr-only integrity failure" 70 "GOVERNANCE_INTEGRITY:"
 
 echo ""
 echo "═══ Results: $PASS PASS, $FAIL FAIL ═══"

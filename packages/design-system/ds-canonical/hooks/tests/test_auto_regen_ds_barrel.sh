@@ -2,7 +2,8 @@
 # Tests for auto_regen_ds_barrel.sh(2026-05-25 SSOT auto-sync invariant)
 #
 # Hook 規則(PostToolUse Write|Edit|MultiEdit,reads tool_input.file_path):
-#   - 這是 auto-fix-up hook,**不是 BLOCKER**:任何情況都 exit 0,從不 deny/block。
+#   - 這是 auto-fix-up hook,不是 policy BLOCKER；成功/no-op exit 0。
+#   - generator/config/tool fault 則以 GOVENANCE_INTEGRITY + exit 70 fail closed。
 #   - "Fire"(positive)= 在 stdout emit JSON additionalContext(hookSpecificOutput),
 #     發生條件:file_path 在 packages/design-system/src/(components|patterns|hooks|lib)/
 #     且非 stories/spec/test,且 gen-design-system-barrel.mjs 輸出含 'generated' / 'with N components'。
@@ -12,9 +13,9 @@
 #       (c) file_path 是 .stories/.spec/.test/.spec.md
 #       (d) barrel 腳本沒印 'generated' 關鍵字
 #
-# Determinism:CLAUDE_PROJECT_DIR 指向 TMP_DIR,內含 **stub** gen scripts,
+# Determinism:GOVERNANCE_PROJECT_DIR 指向 TMP_DIR,內含 **stub** gen scripts,
 #   控制 barrel 是否印 'generated' + 不污染 real repo barrel 檔案。Hook 在 line 38-39
-#   會 cd 進 CLAUDE_PROJECT_DIR 再 `node scripts/...`。
+#   會 cd 進 GOVERNANCE_PROJECT_DIR 再 `node scripts/...`。
 
 set -u
 
@@ -50,9 +51,26 @@ write_barrel_without_generated() {
 console.log("nothing changed; up to date");
 EOF
 }
+write_index_failure() {
+  cat > "$TMP_DIR/scripts/gen-component-indexes.mjs" <<'EOF'
+console.error("fixture index failure");
+process.exit(9);
+EOF
+}
+write_index_success() {
+  cat > "$TMP_DIR/scripts/gen-component-indexes.mjs" <<'EOF'
+console.log("component indexes regenerated");
+EOF
+}
+write_barrel_failure() {
+  cat > "$TMP_DIR/scripts/gen-design-system-barrel.mjs" <<'EOF'
+console.error("fixture barrel failure");
+process.exit(11);
+EOF
+}
 write_barrel_with_generated
 
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 
 # --- run-hook helper:pipe JSON into hook via stdin -------------------------
 run_hook() {
@@ -90,6 +108,20 @@ expect_silent() {
   else
     echo "  FAIL  $name (expected SILENT: exit 0 + no stdout, got exit=$EXIT, stdout=$([ -n "$STDOUT_TEXT" ] && echo non-empty || echo empty))"
     echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+  fi
+}
+
+expect_integrity() {
+  local name="$1"; local needle="$2"
+  if [ "$EXIT" = "70" ] && [ -z "$STDOUT_TEXT" ] \
+    && echo "$STDERR_TEXT" | grep -qF "GOVERNANCE_INTEGRITY:" \
+    && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (expected integrity exit 70 + '$needle', got exit=$EXIT)"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+    echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
 }
@@ -169,6 +201,18 @@ write_barrel_without_generated
 run_hook "packages/design-system/src/components/Badge/badge.tsx"
 expect_silent "15. in-scope tsx, barrel no 'generated' output → silent (emission gate)"
 write_barrel_with_generated  # restore for any later cases
+
+# 16. Component-index generator failure is infrastructure failure,not fake success.
+write_index_failure
+run_hook "packages/design-system/src/components/Badge/badge.tsx"
+expect_integrity "16. component-index generator nonzero → integrity 70" "component-index generator failed"
+write_index_success
+
+# 17. Barrel generator failure is infrastructure failure,not fake success.
+write_barrel_failure
+run_hook "packages/design-system/src/components/Badge/badge.tsx"
+expect_integrity "17. barrel generator nonzero → integrity 70" "barrel generator failed"
+write_barrel_with_generated
 
 echo ""
 echo "=== Summary ==="

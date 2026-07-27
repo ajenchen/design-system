@@ -2,7 +2,8 @@
 set -uo pipefail
 # PreToolUse Edit/Write: enforce audit dim count SSOT integrity.
 #
-# SSOT: `.claude/skills/design-system-audit/SKILL.md` `## The N audit dimensions` 段。
+# SSOT: `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md`
+# `## The N audit dimensions` 段。
 # 任何 chain it 的 skill / spec / rule / hook 禁 hardcode 具體 dim 數字
 # (e.g. `46 dim` / `53 dim` / `53-dim` / `53 audit dimensions`)— 用「全 dim」/
 # 「Group A-P」/「per design-system-audit SSOT」表達。
@@ -34,7 +35,7 @@ esac
 
 # Only check files that potentially chain audit dim list
 case "$FILE_PATH" in
-  */deep-audit-cross-codex/*|*/rules/meta-patterns.md|*/CLAUDE.md|*/skills/*/SKILL.md|*/skills/*/references/*) ;;
+  */deep-audit-cross-codex/*|*/rules/meta-patterns.md|*/AGENTS.md|*/CLAUDE.md|*/skills/*/SKILL.md|*/skills/*/references/*) ;;
   *) exit 0 ;;
 esac
 
@@ -44,7 +45,7 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '
   ([.tool_input.edits[]? | .new_string] | join("\n"))
 ' 2>/dev/null || echo "")
 
-[ -z "${NEW_CONTENT//[[:space:]]/}" ] && exit 0
+grep -q '[^[:space:]]' <<<"$NEW_CONTENT" || exit 0
 
 # Detect hardcoded numeric dim count
 # Patterns: "53 dim" / "53-dim" / "53 audit dim" / "53 audit dimensions" / "46 dim" / "46-dim"
@@ -62,7 +63,7 @@ if [ -n "$HARDCODE_HITS" ]; then
     printf '⚠️ AUDIT DIM COUNT DRIFT(P1 soft):\n' >&2
     printf '   File: %s\n' "$FILE_PATH" >&2
     printf '   偵測到 hardcoded audit dim count:\n%s\n' "$VIOLATION_LINES" >&2
-    printf '\n  SSOT: `.claude/skills/design-system-audit/SKILL.md` `## The N audit dimensions`\n' >&2
+    printf '\n  SSOT: `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` `## The N audit dimensions`\n' >&2
     printf '  修法: 改用「全 dim」/「Group A-P」/「per design-system-audit SSOT」表達\n' >&2
     printf '       而非寫死「53 dim / 46 dim」等具體數字。\n' >&2
     printf '  Why: chain skill 自動繼承 SSOT 變動,避免 design-system-audit 升 54 dim 時下游漂移。\n' >&2

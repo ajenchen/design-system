@@ -2,7 +2,7 @@
 
 **此檔是 D6「設計原則自檢」的唯一執行 SSOT**。所有 audit skill(design-system-audit / component-quality-gate / prototype / product-ui-audit)的 D6 phase 都 chain 本檔,不重複寫邏輯。
 
-對齊 CLAUDE.md `# 稽核 canonical`(內含「Audit-vs-execute 分權」inline rule)。
+對齊 `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` 的 canonical audit taxonomy 與 Audit-vs-execute 分權。
 
 ---
 
@@ -18,15 +18,15 @@
 
 ## D6 5 子維(含 scan mode 分類)
 
-**關鍵**:5 子維依「單 item 檢」vs「跨 item 比對」vs「predicate 自測」分三類。跨 item 比對的**必走 Phase 0 全掃再判**(對齊 CLAUDE.md `# 稽核 canonical`「一致性類稽核必先全掃再判」),否則無法檢出矛盾 / 不一致。
+**關鍵**:5 子維依「單 item 檢」vs「跨 item 比對」vs「predicate 自測」分三類。跨 item 比對的**必走 Phase 0 全掃再判**(對齊 canonical design-system-audit「一致性類稽核必先全掃再判」),否則無法檢出矛盾 / 不一致。
 
 | # | 子維 | Scan mode | 掃什麼 | 怎麼掃 |
 |---|------|-----------|-------|-------|
 | **D6a** | **合理性** | **per-item**(單 spec 可判)| 每條 canonical 是否世界級對照支持?有明文 rationale? | 讀 spec 找「為什麼」prose + 對照 Polaris / Material / Atlassian / Ant / Apple HIG;孤立 rule 無對照 = flag |
 | **D6b** | **一致性** | **cross-inventory**(必全掃)| 同概念跨 spec / 跨元件表達 / 術語是否一致? | 必先全掃建 inventory(見下 Phase 0)→ 比對 |
-| **D6c** | **無矛盾** | **cross-inventory**(必全掃)| spec↔spec / CLAUDE.md↔spec / canonical 聲明衝突 | 必先全掃 canonical concept index(見下 Phase 0)→ 比對 |
-| **D6d** | **完整性** | **per-item + reference**(per spec 但要比 scope default canonical)| 原則有無覆蓋 applicable state / scope / edge case? | 單 spec 檢 + 對照 Rule B scope defaults(CLAUDE.md)|
-| **D6e** | **Predicate 自測**(**new 2026-04-22**) | **predicate-internal**(對含 decision tree + example 表的 spec)| Membership drift / cap 違反 / example × world-class / empty category | 對齊 CLAUDE.md Meta-Pattern M9;4 題 coherence check(見下 D6e scan) |
+| **D6c** | **無矛盾** | **cross-inventory**(必全掃)| spec↔spec / canonical rules↔spec / canonical 聲明衝突 | 必先全掃 canonical concept index(見下 Phase 0)→ 比對 |
+| **D6d** | **完整性** | **per-item + reference**(per spec 但要比 scope default canonical)| 原則有無覆蓋 applicable state / scope / edge case? | 單 spec 檢 + 對照 `rules/spec-rules.md` Rule B scope defaults|
+| **D6e** | **Predicate 自測**(**new 2026-04-22**) | **predicate-internal**(對含 decision tree + example 表的 spec)| Membership drift / cap 違反 / example × world-class / empty category | 對齊 `rules/meta-patterns.md` M9;4 題 coherence check(見下 D6e scan) |
 
 ## Phase 0 — 全掃再判(cross-inventory 子維硬規則)
 
@@ -44,7 +44,7 @@
 
 ### Phase 0b — 建 canonical concept inventory(for D6c)
 ```
-1. 列 CLAUDE.md + patterns/*/spec.md 所有「canonical」宣告的 concept
+1. 列 `packages/design-system/ds-canonical/{rules,references}/` + patterns/*/spec.md 所有「canonical」宣告的 concept
    (dismiss canonical / overlay padding canonical / icon size canonical 等)
 2. 對每個 concept,grep 所有 spec 宣告該 concept 的段落
    建 {concept: [{spec_path, line, prose, rule}]}
@@ -89,24 +89,27 @@ D6b / D6c 跑前 inline grep 建 concept matrix(本檔上方 Phase 0 已展開�
 
 | Finding 類型 | 動作 | 為何 STOP |
 |--------------|------|----------|
-| spec 聲明的原則世界級對照有疑 | **STOP 提議** | 改 substantive 需 user 拍板 |
-| 跨 spec 矛盾 **兩邊都有 rationale** | **STOP 提議(擇一當 canonical)** | 哪個對?需仲裁 |
-| 新增 canonical rule / 刪現有 canonical rule | **STOP 提議** | canonical scope 動 |
-| 命名決策(新 prop value / 新術語)| **STOP 提議** | 命名三 test 後仍需拍板 |
-| 原則 scope 擴充 / 收緊 | **STOP 提議** | governance 動 |
-| 擴 SSOT 納入新 branch(例:Inline Action「colored host」新分支) | **STOP 提議** | canonical 擴張 — 2026-04-21 Inline Action icon 案例屬此 |
-| Rationale 存在但疑似過時(實作已改但 rationale 沒跟) | **STOP 提議** | 是該撤 rationale 還是 revert 實作?需判斷 |
+| spec 聲明的原則世界級對照有疑 | **CLASSIFY** | 有唯一證據答案則 P2E auto；會改產品/UI/UX meaning 且有真取捨才 P2H |
+| 跨 spec 矛盾 **兩邊都有 rationale** | **CLASSIFY** | evidence 可收斂則 P2E auto；兩個可行 user-visible semantics 才 P2H |
+| 新增／刪除 governance canonical rule | **AUTO(P2E)** | 工程治理 policy 由 agent 依 evidence/hard gates 決策 |
+| 命名決策(新 prop value / 新術語)| **CLASSIFY** | public component semantics 真取捨為 P2H；機械命名/治理為 P2E |
+| 工程治理 scope 擴充 / 收緊 | **AUTO(P2E)** | 依 frozen scope、least privilege、tests 與 independent review |
+| 擴產品/UI/UX SSOT 新 branch | **STOP(P2H)** | user-visible canonical 真取捨 — 2026-04-21 Inline Action icon 案例屬此 |
+| Rationale 疑似過時 | **CLASSIFY** | evidence 唯一則 P2E auto；兩個 user-visible outcomes 才 P2H |
 
 ### 核心公式
 
 ```
-動 canonical 的 substantive meaning → STOP(提議,等 user sign-off)
+動工程／治理 canonical substantive meaning → P2E AUTO
+動產品／UI／UX canonical 且存在真取捨 → P2H STOP(exact target-bound decision)
 對齊 canonical / 表達統一 / 補 pointer → AUTO(直接修)
 ```
 
 **判斷 substantive 的 keyword**:
 - 「canonical」「聲明」「必須」「統一規則」「SSOT」「rationale」「為什麼」「不允許」「禁止」
-- 出現在 spec prose 且動到的 edit 觸及這些關鍵字 → 觸發 STOP
+- 出現在 spec prose 且動到的 edit 觸及這些關鍵字 → 觸發 **CLASSIFY**；evidence
+  已唯一決定的工程／治理修正是 P2E AUTO，只有會改變產品／UI／UX SSOT 且仍有真取捨
+  才 P2H STOP。關鍵字本身不是 human gate。
 
 ---
 
@@ -133,7 +136,8 @@ D6b / D6c 跑前 inline grep 建 concept matrix(本檔上方 Phase 0 已展開�
    - grep 所有 `variant:` / `size:` / `mode:` 在 .tsx
    - 建立 {literal: [components]} 表
    - 同字跨元件 → 驗語義一致(命名三 test #3)
-   - 語義不一致 → STOP 提議(命名決策)
+   - 語義不一致 → CLASSIFY；機械／治理命名由 evidence 收斂(P2E AUTO)，只有不同
+     public semantics 導向不同 UI／UX outcomes 才 P2H
 
 3. 術語一致性
    - 常見 drift:dismiss vs close vs dismiss vs onDismiss / onClose
@@ -143,11 +147,11 @@ D6b / D6c 跑前 inline grep 建 concept matrix(本檔上方 Phase 0 已展開�
 ### D6c 無矛盾 scan(AI 讀 spec pairs)
 
 ```
-1. 建「canonical concept index」(從 CLAUDE.md + patterns/*/spec.md)
+1. 建「canonical concept index」(從 `packages/design-system/ds-canonical/{rules,references}/` + patterns/*/spec.md)
 2. 對每個 canonical concept,grep 所有 spec 聲明該 concept 的段落
 3. 比對:
    - 同 concept 兩 spec 聲明**不同**規定 → P0 矛盾(修其一或擴 SSOT)
-   - 同 concept 某 spec 靜默違反 CLAUDE.md rule → P0 矛盾
+   - 同 concept 某 spec 靜默違反 canonical rule → P0 矛盾
    - 某 spec rationale 跟 tsx 實作不符 → P1 矛盾(spec 過時或 tsx 錯)
 4. 每個 P0 矛盾 flag 前驗是否為 documented deviation(rationale 存在 → deviation ✓)
 ```
@@ -163,11 +167,11 @@ D6b / D6c 跑前 inline grep 建 concept matrix(本檔上方 Phase 0 已展開�
    - density(non-scope-default)
    - icon-only rule(interactive 元件)
    - a11y 預設
-   
+
 2. 缺且無 scope default pointer → flag(可能 AUTO 補 pointer or STOP 補 prose)
 ```
 
-### D6e Predicate coherence scan(對齊 CLAUDE.md Meta-Pattern M9)
+### D6e Predicate coherence scan(對齊 canonical Meta-Pattern M9)
 
 針對含 **decision tree + example 表 / real case 表 / category 分類** 的 spec
 (item-anatomy.spec.md 的 Predicate、button.spec.md 的 variant 選擇、field-controls.spec.md
@@ -192,7 +196,8 @@ D6b / D6c 跑前 inline grep 建 concept matrix(本檔上方 Phase 0 已展開�
    - 我方選擇跟世界級 3 家中過半不同 → flag(可能對或可能錯)
      → 查 spec 有無 rationale 解釋為何不同
      → 有 rationale = deviation ✓
-     → 無 rationale = P1 應補 rationale(AUTO 加 pointer),或提議 revise(STOP)
+     → 無 rationale = P1 應補 rationale(AUTO 加 pointer)；若 benchmark 證據唯一則
+       P2E 自主 revise，只有真產品／UI／UX outcomes 取捨才 P2H
 
 4. Empty category check:
    - Decision tree 所有 category 都要有 ≥1 example
@@ -202,7 +207,7 @@ D6b / D6c 跑前 inline grep 建 concept matrix(本檔上方 Phase 0 已展開�
 **Phase 0 要求**:D6e 必先 grep 專案所有 `.spec.md` 找 decision tree / real case 表 /
 category 分類,建 inventory 再逐個跑 4 題。不是隨機挑。
 
-**世界級 benchmark source**(從 memory 或 CLAUDE.md M8 列表):Polaris / Material / Atlassian /
+**世界級 benchmark source**(從 governance memory 或 `packages/design-system/ds-canonical/rules/meta-patterns.md` M8 列表):Polaris / Material / Atlassian /
 Ant Design / Carbon / Apple HIG / VS Code / Figma。對每個 example,至少查 3 家的對應
 實作名 / API / spec 段落。
 
@@ -219,7 +224,7 @@ Ant Design / Carbon / Apple HIG / VS Code / Figma。對每個 example,至少查 
   - 例:Button 5 variant 選擇 predicate 需 per-variant world-class mapping(不只 L74 整體「Material / Polaris 共識」兜底)
   - flag 時區分「predicate 粒度 vs benchmark 粒度」不匹配 = P1 補 pointer
 - **Overlay autoFocus canonical**(2026-04-22 新增)— Portal overlay 元件需檢 autoFocus 行為是否對齊 DS-wide canonical(body first interactive,不是 chrome close X)。詳見下方「Overlay autoFocus canonical」section。
-- **Binary strict rule 震盪 FP**(2026-04-22 新增,CLAUDE.md M12):visual preference 類 rule 被寫成「必 X」或「禁 Y」時,**先驗 ≥3 世界級 DS 一致**再 flag;找得到 counter-example = variance 不是 canonical,這是 AI 最常陷的 FP。
+- **Binary strict rule 震盪 FP**(2026-04-22 新增,canonical M12):visual preference 類 rule 被寫成「必 X」或「禁 Y」時,**先驗 ≥3 世界級 DS 一致**再 flag;找得到 counter-example = variance 不是 canonical,這是 AI 最常陷的 FP。
   - 例:「hover bg 必 flush 容器內邊」— Material / Polaris / Linear list row 多 flush 但非 must,Material Bottom Sheet / Polaris card-in-modal 允許 inset → 不該寫成 strict rule
   - 例:「chrome close X 必 size=sm」— Dialog / Sheet sm,但 Popover 因輕量浮層用 xs 合法 → 必 per-component context 判
   - **判斷公式**:strict rule 寫完前自問「我能想出一個 legal 的反例嗎?」→ 能 → relax 成「canonical 偏好 + variance 允許」,不寫 strict
@@ -229,7 +234,7 @@ Ant Design / Carbon / Apple HIG / VS Code / Figma。對每個 example,至少查 
     - Root invariant:「content 必在 bg 內有 padding」(content-vs-bg relationship,是 invariant)
     - 這兩 layer 的規則彼此 orthogonal:bg 邊可以 flush 也可以 inset,**content-inside-bg padding 跟 bg 邊位置無關**,但都必要
   - **AI 必自己跑此 check,不該靠 user 提醒**:rule 寫「必 / 禁」的瞬間就要觸發 M12 self-check。user 提醒第 3 次還沒 trigger = meta-loop 完全 bypass,違反「自我升級機制」
-- **Markdown 表格 row 計數 FP**(2026-04-22 audit session 發現)— sub-agent 跑 CLAUDE.md 一致性 audit(Dim 15 count drift)時,若表格中間有**空行分隔**(`| **M11** | ... |` 後接空行再接 `| **M12** | ... |`),agent 可能只算到第一段 rows。實際上 markdown table 中的 blank line 是 **visual spacing**(渲染後仍是同一 table)或**table 終止**(根據 parser)— 兩種都可能被誤判。Mitigation:agent 計數前 prefer `grep -c "^| \*\*M[0-9]"` 機械式計數,不靠 visual scan。本 FP 只影響 count 報告準度,不影響 fix 結果(因 user / 主 AI 會 double-check)
+- **Markdown 表格 row 計數 FP**(2026-04-22 audit session 發現)— sub-agent 跑 canonical meta-pattern 一致性 audit(Dim 15 count drift)時,若表格中間有**空行分隔**(`| **M11** | ... |` 後接空行再接 `| **M12** | ... |`),agent 可能只算到第一段 rows。實際上 markdown table 中的 blank line 是 **visual spacing**或**table 終止**(根據 parser)— 兩種都可能被誤判。Mitigation:agent 計數前 prefer `grep -c "^| \*\*M[0-9]" packages/design-system/ds-canonical/rules/meta-patterns.md` 機械式計數,不靠 visual scan。
 - **Dim 2 SSOT dead link 只檢 heading anchor 不檢 bare file path**(2026-04-22 audit session 漏掉)— element-anatomy.spec.md dead pointer `packages/design-system/src/ELEMENT-ANATOMY.md` 從未存在,但 agent 未 flag 因為 Dim 2 regex `\.spec\.md「」` 只抓 heading-anchor pointers。裸 file-path reference 落在檢測外。**已擴 Dim 2 prompt**(見 audit-prompts.md)增加 Part B(file path existence)+ Part C(spec self-placement drift)。本 FP 類別:**doc-structural drift**(doc 寫在 impl 前,impl 換方向後 doc 未更新),audit 應對 `README.md` home governance claim vs 實際 spec 位置交叉驗證
 
 ---
@@ -256,8 +261,8 @@ Ant Design / Carbon / Apple HIG / VS Code / Figma。對每個 example,至少查 
 ### D6d 完整性(AUTO)
 - ...
 
-## 提議討論(STOP,等 user sign-off)
-### 跨 canonical 矛盾需仲裁
+## P2H 提議討論(只有產品／UI／UX SSOT 真取捨才 STOP)
+### 跨產品／UI／UX canonical 矛盾需仲裁
 1. **{Concept}**:spec A 說 {X}(line),spec B 說 {Y}(line)
    - 選項 A:修 A 對齊 B,因為 {reason}
    - 選項 B:修 B 對齊 A,因為 {reason}
@@ -273,7 +278,7 @@ Ant Design / Carbon / Apple HIG / VS Code / Figma。對每個 example,至少查 
 
 ## Self-improvement capture(每次 audit 結束寫)
 - 新發現的 FP pattern:{描述},回填到 audit-prompts.md
-- 新確立的 meta-pattern:{描述},回填到 CLAUDE.md Meta-Pattern 預警
+- 新確立的 meta-pattern:{描述},回填到 `packages/design-system/ds-canonical/rules/meta-patterns.md`
 - 修完的矛盾:{list},回填到 memory `project_audit_progress`
 ```
 
@@ -295,8 +300,8 @@ Ant Design / Carbon / Apple HIG / VS Code / Figma。對每個 example,至少查 
 ### Meta-lesson(AI 自我提醒)
 
 - **寫新 protocol / skill / rule 時,必反向自檢:**
-  - CLAUDE.md 既有 Meta-Principle(M1-M6)/ Mindset / Scope 預設 / 分權 canonical 有哪條適用?
-  - 若新 protocol 是 consistency-class audit → **必走 Phase 0 全掃再判**(CLAUDE.md「一致性類稽核必先全掃再判」)
+  - `packages/design-system/ds-canonical/` 既有 Meta-Principle(M1-M6)/ Scope 預設 / 分權 canonical 有哪條適用?
+  - 若新 protocol 是 consistency-class audit → **必走 Phase 0 全掃再判**(canonical design-system-audit「一致性類稽核必先全掃再判」)
   - 若新 protocol 是 audit skill → **必加 Self-improvement capture** Phase F step
   - **歷史**:2026-04-21 第一版 principle-audit-protocol.md 寫完未套「Phase 0 全掃」到 D6b/D6c,被 user 抓到「這也是跟一致性有關」才補。Meta-pattern:**新規則寫完,先跟既有原則 cross-check 再送出**。
 
@@ -368,11 +373,11 @@ skill 不再重複 scan 方法 / 判斷表。
 
 ## 本 protocol 自己也是活文件
 
-每次 audit 結束,main agent 自動回填 4 類學習(對齊 CLAUDE.md `# 治理 canonical` → Audit skill Phase F 節):
+每次 audit 結束,main agent 自動回填 4 類學習(對齊 canonical Audit skill Phase F 節):
 
 1. 新 FP → 加到上方「常見 FP 記憶」
-2. 新 meta-pattern → 提議加到 CLAUDE.md `# Meta-Pattern 預警`
+2. 新 meta-pattern → 提議加到 `packages/design-system/ds-canonical/rules/meta-patterns.md`
 3. 新 canonical SSOT 擴張 → 提議加到對應 pattern spec
-4. User 糾正 → memory `feedback_*.md`
+4. User 糾正 → `governance/memory/feedback_*.md`
 
 無新 learning 必寫 "無新 pattern"(不省略,確保 step 被執行)。

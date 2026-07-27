@@ -7,23 +7,51 @@
 // rule appears in canonical without matching audit category → inject warn.
 //
 // Sources scanned:
-//   - CLAUDE.md(M-rows + 「禁止」/「必須」/「應」keyword statements)
-//   - .claude/skills/story-writing/references/{category-templates,anatomy-standard,example-selection}.md
-//   - .claude/skills/design-system-audit/references/audit-prompts.md
+//   - provider registry 宣告的 shared instruction entry(目前為 AGENTS.md)
+//   - canonical skill root 下 story-writing/references/
+// Generated provider homes are deliberately not authority inputs.
 //
 // Heuristic:rule has「禁止 X」/「必須 Y」/「不該 Z」/「Must / Required / Forbidden」
 // → check if audit-content-quality.mjs 含 detection pattern matching keyword。
 
 import { readFileSync, existsSync } from 'node:fs';
+import { isAbsolute, relative, resolve } from 'node:path';
 
+const ROOT = resolve(process.env.GOVERNANCE_PROJECT_DIR || process.cwd());
+const CORPUS_ROOT = resolve(process.env.GOVERNANCE_CORPUS_ROOT || ROOT);
+const REGISTRY_FILE = resolve(
+  CORPUS_ROOT,
+  process.env.GOVERNANCE_PROVIDER_REGISTRY || 'packages/governance/canonical/providers.json',
+);
+
+const repositoryPath = (value, label) => {
+  if (typeof value !== 'string' || !value || isAbsolute(value) || value.split(/[\\/]/).some((part) => part === '..' || part === '.')) {
+    throw new Error(`${label} is not a safe repository-relative path`);
+  }
+  return value.replaceAll('\\', '/');
+};
+
+if (!existsSync(REGISTRY_FILE)) throw new Error(`canonical provider registry missing:${REGISTRY_FILE}`);
+const registry = JSON.parse(readFileSync(REGISTRY_FILE, 'utf8'));
+const canonicalSkillRoot = repositoryPath(registry.canonical?.roots?.skills, 'canonical skill root');
+const sharedInstructionEntries = [...new Set((registry.providers || [])
+  .map((provider) => provider.sharedInstructionEntry)
+  .filter(Boolean)
+  .map((entry) => repositoryPath(entry, 'shared instruction entry')))];
+if (sharedInstructionEntries.length === 0) throw new Error('canonical provider registry has no shared instruction entry');
+
+const source = (base, file) => ({
+  file: resolve(base, file),
+  label: relative(ROOT, resolve(base, file)).replaceAll('\\', '/'),
+});
 const SOURCES = [
-  'CLAUDE.md',
-  '.claude/skills/story-writing/references/category-templates.md',
-  '.claude/skills/story-writing/references/anatomy-standard.md',
-  '.claude/skills/story-writing/references/example-selection.md',
+  ...sharedInstructionEntries.map((entry) => source(ROOT, entry)),
+  source(CORPUS_ROOT, `${canonicalSkillRoot}/story-writing/references/category-templates.md`),
+  source(CORPUS_ROOT, `${canonicalSkillRoot}/story-writing/references/anatomy-standard.md`),
+  source(CORPUS_ROOT, `${canonicalSkillRoot}/story-writing/references/example-selection.md`),
 ];
 
-const AUDIT_FILE = 'scripts/audit-content-quality.mjs';
+const AUDIT_FILE = resolve(ROOT, 'scripts/audit-content-quality.mjs');
 
 // Rule extraction patterns
 const RULE_PATTERNS = [
@@ -37,8 +65,8 @@ const RULE_PATTERNS = [
 
 const rules = [];
 for (const src of SOURCES) {
-  if (!existsSync(src)) continue;
-  const content = readFileSync(src, 'utf-8');
+  if (!existsSync(src.file)) continue;
+  const content = readFileSync(src.file, 'utf-8');
   // Skip code blocks
   const stripped = content.replace(/```[\s\S]*?```/g, '');
   for (const { re, type } of RULE_PATTERNS) {
@@ -50,7 +78,7 @@ for (const src of SOURCES) {
       // Find line number
       const upTo = stripped.slice(0, m.index);
       const line = upTo.split('\n').length;
-      rules.push({ source: src, line, type, rule: rule.slice(0, 80) });
+      rules.push({ source: src.label, line, type, rule: rule.slice(0, 80) });
     }
   }
 }

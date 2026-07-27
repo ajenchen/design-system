@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance-build-graph-v5.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "stages"],
+  "properties": {
+    "$schema": { "const": "./schemas/governance-build-graph.schema.json" },
+    "schemaVersion": { "const": 5 },
+    "stages": {
+      "type": "array",
+      "minItems": 6,
+      "contains": {
+        "type": "object",
+        "required": ["auditScope"],
+        "properties": { "auditScope": { "const": "deep-audit-rubric" } }
+      },
+      "minContains": 1,
+      "maxContains": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "auditScope", "generate", "check", "runtimeEntrypoints", "sources", "sourceResolvers", "sourceExcludes", "outputs", "outputResolvers", "sourceOutputOverlaps"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "auditScope": { "enum": ["none", "deep-audit-rubric"] },
+          "generate": { "$ref": "#/$defs/command" },
+          "check": { "$ref": "#/$defs/command" },
+          "runtimeEntrypoints": { "$ref": "#/$defs/paths" },
+          "sources": { "$ref": "#/$defs/paths" },
+          "sourceResolvers": { "type": "array", "uniqueItems": true, "items": { "enum": ["provider-contract", "governance-manifest", "product-provider-local-state", "root-provider-views"] } },
+          "sourceExcludes": { "$ref": "#/$defs/paths" },
+          "outputs": { "$ref": "#/$defs/paths" },
+          "outputResolvers": { "type": "array", "uniqueItems": true, "items": { "enum": ["root-provider-views", "product-provider-views", "plugin-alias-views"] } },
+          "sourceOutputOverlaps": { "$ref": "#/$defs/paths" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "command": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 1 } },
+    "paths": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Za-z0-9_.@/-]+$" } }
+  }
+}

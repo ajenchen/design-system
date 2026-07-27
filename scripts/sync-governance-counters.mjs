@@ -8,12 +8,12 @@
  * audits & docs to reference instead of hardcoded N values.
  *
  * Counts:
- *   - hooks:     `.claude/hooks/{*.sh,*.py}` excluding retired/tests/_internal
- *   - mRules:    `.claude/rules/meta-patterns.md` table rows + `## M<N>` headings
- *   - auditDims: `.claude/skills/design-system-audit/SKILL.md` numbered table rows
+ *   - hooks:     canonical `ds-canonical/hooks/{*.sh,*.py}` excluding retired/tests/_internal
+ *   - mRules:    canonical `ds-canonical/rules/meta-patterns.md` table rows + `## M<N>` headings
+ *   - auditDims: canonical `ds-canonical/skills/design-system-audit/SKILL.md` numbered table rows
  *   - traits:    `*.spec.md` frontmatter `traits:` enumeration
  *
- * Output: `.claude/logs/governance-counters.json`
+ * Output: `generated/governance/governance-counters.json`
  *
  * Usage:
  *   node scripts/sync-governance-counters.mjs            # write log + console
@@ -24,6 +24,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { globSync } from 'node:fs'
+import { load as loadYaml } from 'js-yaml'
 
 const ROOT = process.cwd()
 const CHECK = process.argv.includes('--check')
@@ -32,14 +33,15 @@ const QUIET = process.argv.includes('--quiet')
 // ── Counts ───────────────────────────────────────────────────────────
 
 // 1) Hooks(對齊 session_start_governance_check.sh:168-170 邏輯)
-const hookFiles = globSync('.claude/hooks/**/*.{sh,py}', { cwd: ROOT })
+const CANONICAL = 'packages/design-system/ds-canonical'
+const hookFiles = globSync(`${CANONICAL}/hooks/**/*.{sh,py}`, { cwd: ROOT })
   .filter(f => !f.includes('/retired/'))
   .filter(f => !f.includes('/tests/'))
   .filter(f => !path.basename(f).startsWith('_'))
 const hookCount = hookFiles.length
 
 // 2) M-rules(支援 table-row + heading 兩種,對齊 audit-preflight.mjs P0-2 fix)
-const metaPath = path.join(ROOT, '.claude/rules/meta-patterns.md')
+const metaPath = path.join(ROOT, CANONICAL, 'rules/meta-patterns.md')
 const metaContent = fs.existsSync(metaPath) ? fs.readFileSync(metaPath, 'utf-8') : ''
 const mRuleSet = new Set()
 for (const m of metaContent.matchAll(/\|\s*\*\*M(\d+)\*\*\s*\|/g)) mRuleSet.add(parseInt(m[1]))
@@ -48,7 +50,7 @@ const mRules = [...mRuleSet].sort((a, b) => a - b)
 const mRuleCount = mRules.length
 
 // 3) Audit dims(讀 SKILL.md `## The N audit dimensions` table,grep numbered rows)
-const skillPath = path.join(ROOT, '.claude/skills/design-system-audit/SKILL.md')
+const skillPath = path.join(ROOT, CANONICAL, 'skills/design-system-audit/SKILL.md')
 const skillContent = fs.existsSync(skillPath) ? fs.readFileSync(skillPath, 'utf-8') : ''
 const dimRows = [...skillContent.matchAll(/^\|\s*(\d+)\s*\|\s*\*\*([^*]+)\*\*/gm)]
 const dimNums = dimRows.map(m => parseInt(m[1]))
@@ -74,7 +76,7 @@ const traitCount = traitSet.size
 const drifts = []
 
 // session_start_governance_check.sh:173 hard cap
-const sessStartPath = path.join(ROOT, '.claude/hooks/session_start_governance_check.sh')
+const sessStartPath = path.join(ROOT, CANONICAL, 'hooks/session_start_governance_check.sh')
 if (fs.existsSync(sessStartPath)) {
   const c = fs.readFileSync(sessStartPath, 'utf-8')
   const m = c.match(/HOOK_COUNT"\s*-gt\s*(\d+)/)
@@ -127,11 +129,11 @@ for (const m of sessStartContent.matchAll(/(\d+)\s+active\s+M-rules/g)) {
 // SSOT pattern:`N active M-rules` 或 `N M-rules`(loose match,排 historical / planning / scratch / tmp)
 const mRuleTextFiles = [
   'CLAUDE.md',
-  '.claude/rules/README.md',
-  '.claude/rules/meta-patterns.md',
-  '.claude/skills/codex-collab/references/brief-template.md',
-  '.claude/skills/deep-audit-cross-codex/references/phase-a-workflow.md',
-  '.claude/skills/deep-audit-cross-codex/references/phase-b-codex-brief.md',
+  `${CANONICAL}/rules/README.md`,
+  `${CANONICAL}/rules/meta-patterns.md`,
+  `${CANONICAL}/skills/codex-collab/references/brief-template.md`,
+  `${CANONICAL}/skills/deep-audit-cross-codex/references/phase-a-workflow.md`,
+  `${CANONICAL}/skills/deep-audit-cross-codex/references/phase-b-codex-brief.md`,
   '.claude-plugin/plugin.json',
   '.claude-plugin/marketplace.json',
 ]
@@ -149,13 +151,13 @@ for (const rel of mRuleTextFiles) {
 }
 
 // 2026-05-23:npm scope leftover detection(qijenchen SSOT — your-org 應 0 references)
-const scopeCheckRoots = ['packages', 'template', '.claude', '.claude-plugin', '.github', 'scripts']
+const scopeCheckRoots = ['packages', 'template', '.claude-plugin', '.github', 'scripts']
 const scopeLeftovers = []
 for (const root of scopeCheckRoots) {
   if (!fs.existsSync(path.join(ROOT, root))) continue
   const files = globSync(`${root}/**/*.{json,md,ts,tsx,mjs,yml,yaml}`, { cwd: ROOT })
   for (const f of files) {
-    if (f.includes('node_modules/') || f.includes('storybook-static/') || f.includes('/dist/') || f.includes('.claude/planning/') || f.includes('.claude/scratch/') || f.includes('.claude/tmp/')) continue
+    if (f.includes('node_modules/') || f.includes('storybook-static/') || f.includes('/dist/') || f.includes('governance/planning/') || f.includes('.claude/scratch/') || f.includes('.claude/tmp/')) continue
     if (f === 'scripts/sync-governance-counters.mjs') continue // self-skip drift detector references
     if (f.includes('.claude/logs/')) continue // self-skip log output (contains drift report text)
     const c = fs.readFileSync(path.join(ROOT, f), 'utf-8')
@@ -211,14 +213,14 @@ if (fs.existsSync(dsPkgPath) && fs.existsSync(sbPkgPath)) {
 // 原 detector 只查特定 hardcoded 點(session_start / CLAUDE.md header)→ 漏 plugin.json / marketplace /
 // brief-template / fork CLAUDE.md 的「82 audit dims」drift(本 session 踩過)。改全掃 curated live-count 檔。
 // SSOT = 上面算出的 computed count;任一 hardcoded 不符 → drift → --check fail-closed。新增 live-count 檔加進 list。
-const skillDirs = globSync('.claude/skills/*/', { cwd: ROOT }).filter(d => !path.basename(d.replace(/\/+$/, '')).startsWith('_'))
+const skillDirs = globSync(`${CANONICAL}/skills/*/`, { cwd: ROOT }).filter(d => !path.basename(d.replace(/\/+$/, '')).startsWith('_'))
 const skillCount = skillDirs.length
 
 const liveCountFiles = [
   'CLAUDE.md',
   'packages/design-system/CLAUDE.md',
-  '.claude/skills/design-system-audit/SKILL.md',
-  '.claude/skills/codex-collab/references/brief-template.md',
+  `${CANONICAL}/skills/design-system-audit/SKILL.md`,
+  `${CANONICAL}/skills/codex-collab/references/brief-template.md`,
   '.claude-plugin/plugin.json',
   '.claude-plugin/marketplace.json',
   'scripts/check-plugin-installed.mjs',
@@ -248,30 +250,38 @@ for (const rel of liveCountFiles) {
   }
 }
 
-// ── 2026-05-30 mirror ALLOWLIST ↔ workflow trigger paths sync ──
-// per user「該 SSOT 就 SSOT」+ mirror-to-published-template.yml「此 list 必與 ALLOWLIST 同步」註解機械化:
-// ALLOWLIST 加 entry 但忘了加 workflow trigger path → 該 path 改動不 fire mirror → published stale。
+// ── Immutable-release-only mirror trigger contract ──
+// Raw push mirroring can publish an unfinalized commit and make DS source self-certifying. Every
+// allowlisted source change instead rides the next signed immutable release; only its completed
+// finalizer (or a closed run-id/attempt retry) may activate the privileged mirror workflow.
 const mirrorSrcPath = path.join(ROOT, 'scripts/build-published-template-mirror.mjs')
 const mirrorWfPath = path.join(ROOT, '.github/workflows/mirror-to-published-template.yml')
 if (fs.existsSync(mirrorSrcPath) && fs.existsSync(mirrorWfPath)) {
   const src = fs.readFileSync(mirrorSrcPath, 'utf-8')
   const wf = fs.readFileSync(mirrorWfPath, 'utf-8')
   const am = src.match(/const ALLOWLIST = \[([\s\S]*?)\n\]/)
-  if (am) {
-    const entries = [...am[1].matchAll(/'([^']+)'/g)].map(x => x[1])
-    for (const e of entries) {
-      const top = e.split('/').slice(0, 2).join('/')
-      if (!wf.includes(e) && !wf.includes(top + '/**') && !wf.includes(top)) {
-        drifts.push(`mirror ALLOWLIST "${e}" 不在 mirror-to-published-template.yml trigger paths(漏 → mirror 不 fire → published stale)`)
-      }
+  if (!am || [...am[1].matchAll(/'([^']+)'/g)].length === 0) {
+    drifts.push('mirror ALLOWLIST 缺失或為空，無法產生封閉的 immutable-release mirror')
+  }
+  try {
+    const parsed = loadYaml(wf)
+    const releaseOnly = parsed?.on?.push === undefined
+      && parsed?.on?.workflow_dispatch === undefined
+      && JSON.stringify(parsed?.on?.workflow_run?.workflows) === JSON.stringify(['Finalize staged release'])
+      && JSON.stringify(parsed?.on?.workflow_run?.types) === JSON.stringify(['completed'])
+      && JSON.stringify(parsed?.on?.repository_dispatch?.types) === JSON.stringify(['mirror-template-request'])
+    if (!releaseOnly) {
+      drifts.push('mirror workflow 必須只接受 completed Finalize staged release 或封閉 repository_dispatch；raw push/workflow_dispatch 禁止')
     }
+  } catch (error) {
+    drifts.push(`mirror workflow YAML 無法解析:${error.message}`)
   }
 }
 
 // ── Output ───────────────────────────────────────────────────────────
 
 const report = {
-  ts: new Date().toISOString(),
+  schemaVersion: 1,
   counts: {
     hooks: hookCount,
     mRules: mRuleCount,
@@ -286,19 +296,26 @@ const report = {
   drifts,
 }
 
-const logsDir = path.join(ROOT, '.claude/logs')
-if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true })
-const outPath = path.join(logsDir, 'governance-counters.json')
-// 2026-06-06 idempotent write:內容(排除 ts)無變則沿用既有 ts,避免此檔每次 session-start run
-// 都換 ts 讓 git tree 永遠 dirty(cosmetic churn,no consumer 讀 ts 判 staleness — 已 grep 確認)。
-const serialize = (r) => JSON.stringify({ ...r, ts: undefined }, null, 2)
+const outputDir = path.join(ROOT, 'generated/governance')
+const outPath = path.join(outputDir, 'governance-counters.json')
+const serialize = (r) => `${JSON.stringify(r, null, 2)}\n`
+let existing = null
 if (fs.existsSync(outPath)) {
   try {
-    const existing = JSON.parse(fs.readFileSync(outPath, 'utf8'))
-    if (serialize(existing) === serialize(report) && existing.ts) report.ts = existing.ts
-  } catch { /* corrupt existing → 正常重寫 */ }
+    existing = JSON.parse(fs.readFileSync(outPath, 'utf8'))
+  } catch {
+    if (CHECK) drifts.push('governance-counters.json 非法 JSON；--check 不會自動重寫')
+  }
+} else if (CHECK) {
+  drifts.push('governance-counters.json 缺失；請明示執行 npm run sync-counters 後提交')
 }
-fs.writeFileSync(outPath, JSON.stringify(report, null, 2))
+if (CHECK && existing && serialize(existing) !== serialize(report)) {
+  drifts.push('governance-counters.json 與即時計數不一致；--check 僅比較、不修改，請明示執行 npm run sync-counters')
+}
+if (!CHECK) {
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true })
+  fs.writeFileSync(outPath, serialize(report))
+}
 
 if (!QUIET || drifts.length) {
   console.log('=== Governance Counters ===')

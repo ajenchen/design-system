@@ -8,16 +8,13 @@ on:
   # 允許手動 trigger,讓 working branch 也能在 merge 前跑 verify + scrollbar probe
   workflow_dispatch:
 
-# GitHub Pages 部署所需 permission(只 main push 才用,PR 不影響)
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# 同時間只允許 1 個 Pages deploy(避免 race)
+# Keep verification concurrency independent from privileged Pages deployment.
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 # 2026-06-04 SSOT 假綠根治:所有 run: step 一律 bash -eo pipefail。
 # GitHub Actions 預設 bash -e 但「無 pipefail」→ `cmd 2>&1 | tail` 的 pipe exit = tail = 0,
@@ -30,28 +27,28 @@ defaults:
 jobs:
   verify:
     name: Verify(tsc + tests + compile + build)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # 2026-06-08 fix(Pages 永遠不更新根治):輸出「Pages artifact 是否已成功 build+upload」。讓 deploy job
-    # 只依賴「build 成功」而非「整個 Verify 綠」—— 否則一個「非關鍵 doc-check(死連結 / spec-deadlink 等)」
-    # 失敗就永久擋住整個 storybook 部署(發生 N 次的根因:doc-check drift → Verify fail → deploy skip)。
-    outputs:
-      pages_ready: ${{ steps.pages_mark.outputs.ready }}
-
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          # Match local dev container (node 22). Node 20 had compile-stories
-          # exit 1 mismatch vs local pass — likely vm.runInNewContext / yaml
-          # lib parse difference. Pin to 22 to align.
-          node-version: 22
+          # Match the exact reviewed cloud/consumer runtime; do not float on a
+          # moving major-version alias.
+          node-version: '24.14.0'
           cache: npm
 
-      - name: Install
-        run: npm ci
+      - name: Install and audit with the lock-verified npm runtime
+        run: npm run --silent setup:dependencies
+
+      - name: Install Playwright Chromium explicitly(no lifecycle scripts)
+        run: npm run --silent setup:playwright -- --with-deps
 
       - name: Build DS lib + storybook-config dist(required for tsc + Storybook)
         # 2026-05-26 fix(per user 「DS repo netlify failed 那麼多次」+ CI fail diagnose):
@@ -81,7 +78,7 @@ jobs:
       - name: tsc -b(0 errors required + 印 errors 出來)
         # 2026-05-26 fix:`2>&1 | grep -q` 把 errors silent 掉,無法 diagnose CI 真實 fail。改 print 完整 errors。
         run: |
-          OUTPUT=$(npx tsc -b 2>&1)
+          OUTPUT=$(npx --no-install tsc -b 2>&1)
           if echo "$OUTPUT" | grep -q "error TS"; then
             echo "❌ tsc errors found:"
             echo "$OUTPUT"
@@ -126,8 +123,21 @@ jobs:
 
       - name: Fork-governance corpus + harness(C-prime PR-gate;原只在 release/canary → 加 PR-gate defense-in-depth)
         run: |
-          node scripts/build-fork-governance.mjs --check
+          npm run --silent test:governance-harnesses
+          npm run --silent audit:workflow-security
+          npm run --silent governance:workflow-identities:check
+          npm run --silent test:workflow-security
+          npm run --silent test:governance-anchor
+          npm run --silent test:privileged-change-authorization
+          npm run --silent test:consumer-source-harness
+          npm run --silent test:writer-evidence
+          npm -w @qijenchen/governance test
+          npm run --silent test:governance-fleet
+          node scripts/governance-build-graph.mjs --check
+          npm run --silent test:governance-portability-safety
           node scripts/test-fork-governance.mjs
+          node scripts/test-consumer-governance.mjs
+          node scripts/test-sync-all-transaction.mjs
 
       - name: Story compile-drift check
         run: |
@@ -179,23 +189,11 @@ jobs:
 
       - name: Upload scrollbar probe artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: scrollbar-probe-linux
           path: tmp/scrollbar-probe/
           if-no-files-found: warn
-
-      - name: Upload Pages artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: storybook-static
-
-      # 2026-06-08:標記「Pages artifact 已成功 build+upload」→ deploy job 據此判斷可部署(decouple from doc-checks)。
-      - name: Mark Pages artifact ready
-        id: pages_mark
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Vite build
         run: npm run build 2>&1 | tail -10
@@ -277,21 +275,3 @@ jobs:
           done
           if [ "$fail" -eq 1 ]; then exit 1; fi
           echo "✅ all files under cap"
-
-  deploy-storybook:
-    # Storybook → GitHub Pages(`https://ajenchen.github.io/design-system/`)
-    # 只 push main 才 deploy(PR 不動 production Pages)
-    name: Deploy Storybook to GitHub Pages
-    # 2026-06-08 fix:依賴「Pages artifact 已 build」(needs.verify.outputs.pages_ready)而非「整個 Verify 綠」。
-    # always() → Verify 因「非關鍵 doc-check」失敗時 deploy 仍跑;但 build 早期失敗(無 artifact)時
-    # pages_ready 為空 → deploy 乾淨 skip(絕不部署 build 壞掉的)。根治「死連結卡住 storybook 永不更新」。
-    if: ${{ always() && needs.verify.outputs.pages_ready == 'true' }}
-    needs: verify
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4

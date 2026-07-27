@@ -22,10 +22,76 @@ set -uo pipefail
 # 修法:reuse semantic utility / token reference / var() bracket(詳 utility-registry.json `rationale_path`)。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+source "$(dirname "$0")/lib/_provider_paths.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: token registry provider resolver unavailable\n' >&2
+  exit 70
+}
+source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
+  exit 70
+}
 
-INPUT=$(cat)
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""')
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
+_HOOK_CONTEXT_EVENT="PreToolUse"
+_HOOK_OUTPUT_CAPTURE=$(mktemp "${TMPDIR:-/tmp}/check-opacity-token-usage.XXXXXX") || {
+  printf 'GOVERNANCE_INTEGRITY: token registry output capture unavailable\n' >&2
+  exit 70
+}
+exec 3>&1 4>&2
+exec >"$_HOOK_OUTPUT_CAPTURE" 2>&1
+
+_finalize_hook_output() {
+  _hook_rc=$?
+  trap - EXIT
+  exec 1>&3 2>&4
+  _hook_output=$(cat "$_HOOK_OUTPUT_CAPTURE" 2>/dev/null || true)
+  rm -f "$_HOOK_OUTPUT_CAPTURE" 2>/dev/null || true
+
+  case "$_hook_rc" in
+    0)
+      [ -z "$_hook_output" ] && exit 0
+      if ! jq -cn \
+        --arg event "$_HOOK_CONTEXT_EVENT" \
+        --arg message "$_hook_output" \
+        '{governanceContext:{hookEventName:$event,message:$message}}'; then
+        printf 'GOVERNANCE_INTEGRITY: token registry warning envelope encoding failed\n' >&2
+        exit 70
+      fi
+      exit 0
+      ;;
+    2)
+      if grep -q 'GOVERNANCE_INTEGRITY:' <<<"$_hook_output"; then
+        printf '%s\n' "$_hook_output" >&2
+        exit 70
+      elif [ -n "$_hook_output" ]; then
+        printf '%s\n' "$_hook_output" >&2
+      else
+        printf 'token registry hook blocked without diagnostic\n' >&2
+      fi
+      exit 2
+      ;;
+    70)
+      if [ -n "$_hook_output" ]; then
+        printf '%s\n' "$_hook_output" >&2
+      else
+        printf 'GOVERNANCE_INTEGRITY: token registry failed without diagnostic\n' >&2
+      fi
+      exit 70
+      ;;
+    *)
+      printf 'GOVERNANCE_INTEGRITY: token registry undefined exit code %s\n' "$_hook_rc" >&2
+      [ -n "$_hook_output" ] && printf '%s\n' "$_hook_output" >&2
+      exit 70
+      ;;
+  esac
+}
+trap _finalize_hook_output EXIT
+
+governance_hook_load_input
+governance_hook_require_commands grep python3 sed
+TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'token registry tool extraction failed'
+FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'token registry path extraction failed'
 
 case "$TOOL" in
   Edit|Write|MultiEdit) ;;
@@ -44,114 +110,173 @@ case "$FILE_PATH" in
   *tokens/opacity/*|*tokens/typography/*|*tokens/radius/*|*tokens/elevation/*|*tokens/color/*) exit 0 ;;
 esac
 
-NEW_CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // .tool_input.new_string // ""')
+NEW_CONTENT=$(printf '%s' "$INPUT" | jq -r '.tool_input.content // .tool_input.new_string // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'token registry content extraction failed'
 [ -z "$NEW_CONTENT" ] && exit 0
 # Per-line escape(2026-07-07 方向 2 升 P0 配套):行內含 `@token-registry-ok: <rationale>` 豁免該行
-NEW_CONTENT=$(printf '%s
-' "$NEW_CONTENT" | grep -v '@token-registry-ok:' || true)
+governance_hook_grep_capture NEW_CONTENT_FILTERED 'token registry escape filter failed' \
+  "$NEW_CONTENT" -v '@token-registry-ok:'
+NEW_CONTENT="$NEW_CONTENT_FILTERED"
 [ -z "$NEW_CONTENT" ] && exit 0
 
-# Resolve registry path(absolute via $CLAUDE_PROJECT_DIR or relative fallback)
-REGISTRY="${CLAUDE_PROJECT_DIR:-}/packages/design-system/src/tokens/utility-registry.json"
-if [ ! -f "$REGISTRY" ]; then
-  # Fallback: try relative from hook dir
-  REGISTRY="$(dirname "$0")/../../packages/design-system/src/tokens/utility-registry.json"
+# The registry is corpus-owned SSOT. The project resolver is still required to validate the active
+# provider project boundary; no hook-relative or opacity-only fallback may silently weaken policy.
+CORPUS_ROOT=$(governance_corpus_root 2>/dev/null) \
+  || governance_hook_integrity_fail 'token registry corpus root could not be resolved'
+PROJECT_ROOT=$(governance_project_root 2>/dev/null) \
+  || governance_hook_integrity_fail 'token registry project root could not be resolved'
+REGISTRY="$CORPUS_ROOT/packages/design-system/src/tokens/utility-registry.json"
+if [ -L "$REGISTRY" ] || [ ! -f "$REGISTRY" ] || [ ! -r "$REGISTRY" ]; then
+  governance_hook_integrity_fail "canonical utility registry is unavailable or unsafe:${REGISTRY}"
 fi
-if [ ! -f "$REGISTRY" ]; then
-  # 沒 registry → fall back 到原 opacity-only logic(避免 hook 啞掉)
-  HITS=$(echo "$NEW_CONTENT" | grep -oE "opacity-[0-9]+" | grep -vE "^opacity-(0|100)$" | sort -u || true)
-  if [ -n "$HITS" ]; then
-    echo "" >&2
-    echo "⚠️  M23 violation(opacity tier;registry 不可用,fallback mode):" >&2
-    echo "$HITS" | sed 's/^/     /' >&2
-    echo "" >&2
-    echo "   reuse opacity-disabled / alpha 色階。詳 tokens/opacity/opacity.spec.md" >&2
-  fi
-  exit 0
+# `_meta.owner` is the canonical identity of the source record, not its projected install path.
+# Keep the two path segments separate so the fork path projection rewrites REGISTRY above without
+# rewriting this identity assertion.
+CANONICAL_REGISTRY_OWNER='packages/design-system'"/src/tokens/utility-registry.json"
+# The registry carries both the token lists and the executable matcher inventory. The hook only
+# implements one bounded engine; it never repeats aliases in shell regexes. Adding a token to an
+# authenticated list therefore changes enforcement immediately, while schema/build closure rejects
+# a new list that was not deliberately wired to either block or warn behavior.
+SCAN_RESULT=$(python3 - "$REGISTRY" "$CANONICAL_REGISTRY_OWNER" 3<<<"$NEW_CONTENT" <<'PY'
+import json
+import os
+import re
+import sys
+
+registry_path = sys.argv[1]
+expected_owner = sys.argv[2]
+content = os.fdopen(3, encoding="utf-8").read()
+with open(registry_path, encoding="utf-8") as source:
+    registry = json.load(source)
+
+if (
+    not isinstance(registry, dict)
+    or registry.get("schemaVersion") != 1
+    or registry.get("_meta", {}).get("owner") != expected_owner
+    or not isinstance(registry.get("_meta", {}).get("provider_view_policy"), str)
+    or registry.get("enforcement", {}).get("schemaVersion") != 1
+    or registry.get("enforcement", {}).get("engine") != "utility-registry-rules-v1"
+):
+    raise ValueError("registry identity is invalid")
+
+expected_pointers = {
+    "block": {
+        "/typography/block/size_raw",
+        "/typography/block/weight_raw",
+        "/typography/block/tracking_raw",
+        "/radius/block/out_of_range",
+        "/radius/block/ambiguous_default",
+        "/radius/block/arbitrary_value",
+        "/opacity/block/numeric_tier",
+        "/elevation/block/tailwind_size",
+        "/shadcn_alias/block/color_alias",
+        "/primitive_color_as_utility/block/primitive_class",
+    },
+    "warn": {
+        "/spacing/warn/micro_gap",
+        "/sizing/warn/fraction",
+    },
+}
+
+def pointer_value(pointer):
+    if not isinstance(pointer, str) or not pointer.startswith("/") or "~" in pointer:
+        raise ValueError("unsafe registry pointer")
+    value = registry
+    for segment in pointer[1:].split("/"):
+        if not segment or not isinstance(value, dict) or segment not in value:
+            raise ValueError("unresolved registry pointer")
+        value = value[segment]
+    return value
+
+def token_list(pointer):
+    value = pointer_value(pointer)
+    if (
+        not isinstance(value, list)
+        or not value
+        or any(not isinstance(token, str) or not token or any(ord(char) < 32 or ord(char) == 127 for char in token) for token in value)
+        or len(set(value)) != len(value)
+    ):
+        raise ValueError("invalid registry token list")
+    return value
+
+result = {"block": [], "warn": []}
+seen_ids = set()
+for level in ("block", "warn"):
+    rules = registry["enforcement"].get(level)
+    if not isinstance(rules, list) or not rules:
+        raise ValueError("missing enforcement rules")
+    actual_pointers = set()
+    for rule in rules:
+        if not isinstance(rule, dict):
+            raise ValueError("invalid enforcement rule")
+        identifier = rule.get("id")
+        label = rule.get("label")
+        if (
+            not isinstance(identifier, str)
+            or not re.fullmatch(r"[a-z][a-z0-9-]*", identifier)
+            or identifier in seen_ids
+            or not isinstance(label, str)
+            or not label
+            or any(ord(char) < 32 or ord(char) == 127 for char in label)
+        ):
+            raise ValueError("invalid enforcement rule identity")
+        seen_ids.add(identifier)
+
+        if "tokenListPointer" in rule:
+            if set(rule) != {"id", "label", "tokenListPointer"}:
+                raise ValueError("open token-list enforcement rule")
+            pointer = rule["tokenListPointer"]
+            if pointer in actual_pointers:
+                raise ValueError("duplicate token-list enforcement rule")
+            actual_pointers.add(pointer)
+            tokens = token_list(pointer)
+            matcher = re.compile(
+                r"(?<![A-Za-z0-9_-])(?:" + "|".join(re.escape(token) for token in sorted(tokens, key=len, reverse=True)) + r")(?![A-Za-z0-9_-])"
+            )
+            hits = {match.group(0) for match in matcher.finditer(content)}
+        else:
+            allowed_keys = {"id", "label", "pattern", "excludeTokenListPointer"}
+            if set(rule) - allowed_keys or not {"id", "label", "pattern"}.issubset(rule):
+                raise ValueError("open pattern enforcement rule")
+            pattern = rule["pattern"]
+            if not isinstance(pattern, str) or not pattern:
+                raise ValueError("empty enforcement pattern")
+            matcher = re.compile(pattern)
+            excluded = set(token_list(rule["excludeTokenListPointer"])) if "excludeTokenListPointer" in rule else set()
+            hits = {match.group(0) for match in matcher.finditer(content) if match.group(0) not in excluded}
+
+        if hits:
+            result[level].append({
+                "id": identifier,
+                "label": label,
+                "hits": sorted(hits),
+            })
+    if actual_pointers != expected_pointers[level]:
+        raise ValueError("registry token lists are outside exact behavioral closure")
+
+print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
+PY
+) || governance_hook_integrity_fail "canonical utility registry scan failed:${REGISTRY}"
+if ! jq -e '
+  type == "object"
+  and (keys | sort) == ["block", "warn"]
+  and all(.block[], .warn[];
+    type == "object"
+    and (keys | sort) == ["hits", "id", "label"]
+    and (.id | type == "string" and length > 0)
+    and (.label | type == "string" and length > 0)
+    and (.hits | type == "array" and length > 0 and all(.[]; type == "string" and length > 0))
+  )
+' <<<"$SCAN_RESULT" >/dev/null 2>&1; then
+  governance_hook_integrity_fail 'canonical utility registry scan emitted an invalid result'
 fi
 
-# Aggregate violations across all categories
-VIOLATIONS=""
-
-# 1) Opacity numeric tier(opacity-5..95,除 0/100/disabled)
-HITS_OPACITY=$(echo "$NEW_CONTENT" | grep -oE "\bopacity-[0-9]+\b" | grep -vE "^opacity-(0|100)$" | sort -u || true)
-if [ -n "$HITS_OPACITY" ]; then
-  VIOLATIONS="${VIOLATIONS}\n   [opacity] $(echo "$HITS_OPACITY" | tr '\n' ' ')"
-fi
-
-# 2) Typography raw size(text-xs..9xl)— skip semantic text-h*/text-body/text-caption/text-helper/text-label
-HITS_TEXT=$(echo "$NEW_CONTENT" | grep -oE "\btext-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)\b" | sort -u || true)
-if [ -n "$HITS_TEXT" ]; then
-  VIOLATIONS="${VIOLATIONS}\n   [typography size] $(echo "$HITS_TEXT" | tr '\n' ' ')"
-fi
-
-# 3) Typography raw weight
-HITS_FONT=$(echo "$NEW_CONTENT" | grep -oE "\bfont-(thin|extralight|light|semibold|extrabold|black)\b" | sort -u || true)
-if [ -n "$HITS_FONT" ]; then
-  VIOLATIONS="${VIOLATIONS}\n   [typography weight] $(echo "$HITS_FONT" | tr '\n' ' ')"
-fi
-
-# 4) Leading numeric(leading-N where N is digit;skip leading-compact/normal/none/tight/snug/relaxed/loose)
-HITS_LEADING=$(echo "$NEW_CONTENT" | grep -oE "\bleading-[0-9]+\b" | sort -u || true)
-if [ -n "$HITS_LEADING" ]; then
-  VIOLATIONS="${VIOLATIONS}\n   [leading numeric] $(echo "$HITS_LEADING" | tr '\n' ' ')"
-fi
-
-# 5) Tracking raw(skip tracking-shortcut canonical token)
-HITS_TRACKING=$(echo "$NEW_CONTENT" | grep -oE "\btracking-(tighter|tight|wide|wider|widest)\b" | sort -u || true)
-if [ -n "$HITS_TRACKING" ]; then
-  VIOLATIONS="${VIOLATIONS}\n   [tracking raw] $(echo "$HITS_TRACKING" | tr '\n' ' ')"
-fi
-
-# 6) Radius out-of-range
-HITS_RADIUS=$(echo "$NEW_CONTENT" | grep -oE "\brounded-(xl|2xl|3xl)\b" | sort -u || true)
-if [ -n "$HITS_RADIUS" ]; then
-  VIOLATIONS="${VIOLATIONS}\n   [radius out-of-range] $(echo "$HITS_RADIUS" | tr '\n' ' ')"
-fi
-
-# 6b) Radius arbitrary bracket(2026-07-04 dim 47 補洞:registry block arbitrary_value 但 hook 從沒偵測)
-#     rounded-[6px] / rounded-[var(--radius-md)] / rounded-t-[...] 皆 block;
-#     唯一例外 rounded-[inherit](registry radius.allow,passthrough 非 radius 值,anchor scroll-area.tsx Viewport)
-HITS_RADIUS_ARB=$(echo "$NEW_CONTENT" | grep -oE "\brounded(-(t|b|l|r|tl|tr|bl|br|s|e|ss|se|es|ee))?-\[[^]]+\]" | grep -v "rounded-\[inherit\]" | sort -u || true)
-if [ -n "$HITS_RADIUS_ARB" ]; then
-  VIOLATIONS="${VIOLATIONS}\n   [radius arbitrary] $(echo "$HITS_RADIUS_ARB" | tr '\n' ' ')"
-fi
-
-# 7) Shadow Tailwind size(shadow-sm/md/lg/xl/2xl/inner — DS 用 shadow-[var(--elevation-N)] N∈{100,200})
-HITS_SHADOW=$(echo "$NEW_CONTENT" | grep -oE "\bshadow-(sm|md|lg|xl|2xl|inner)\b" | sort -u || true)
-if [ -n "$HITS_SHADOW" ]; then
-  VIOLATIONS="${VIOLATIONS}\n   [elevation size] $(echo "$HITS_SHADOW" | tr '\n' ' ')"
-fi
-
-# 8) Shadcn compat alias(bg-popover / text-muted-foreground 等)
-HITS_SHADCN=$(echo "$NEW_CONTENT" | grep -oE "\b(bg-popover|text-popover-foreground|text-muted-foreground|bg-accent|text-accent-foreground|bg-destructive|bg-background|text-background|border-input)\b" | sort -u || true)
-if [ -n "$HITS_SHADCN" ]; then
-  VIOLATIONS="${VIOLATIONS}\n   [shadcn alias] $(echo "$HITS_SHADCN" | tr '\n' ' ')"
-fi
-
-# 9) Primitive 色名作 utility(bg-neutral-N / text-blue-N 等)
-HITS_PRIMITIVE=$(echo "$NEW_CONTENT" | grep -oE "\b(bg|text|border)-(neutral|blue|red|green|yellow|orange|purple|pink|cyan|teal|deep-orange|deep-purple|light-blue|light-green|lime|amber|indigo|brown|gray)-[0-9]+\b" | sort -u || true)
-if [ -n "$HITS_PRIMITIVE" ]; then
-  VIOLATIONS="${VIOLATIONS}\n   [primitive color as utility] $(echo "$HITS_PRIMITIVE" | tr '\n' ' ')"
-fi
-
-# 10) 幻覺 semantic state 尾綴(2026-07-10 批次 A C1:WM hover:bg-neutral-hovered ×3 檔 silent no-op 實證。
-#     真尾綴只有 -hover/-active/-selected(+ selected-hover/selected-active);過去式/-pressed 全幻覺,
-#     Tailwind 靜默不生成 → hover 無效果、build 不報錯)
-HITS_PHANTOM_STATE=$(echo "$NEW_CONTENT" | grep -oE "\b(hover:|active:|focus:)?(bg|text|border|ring)-[a-z][a-z-]*-(hovered|actived|focussed|pressed)\b" | sort -u || true)
-if [ -n "$HITS_PHANTOM_STATE" ]; then
-  VIOLATIONS="${VIOLATIONS}\n   [phantom state suffix(silent no-op)] $(echo "$HITS_PHANTOM_STATE" | tr '\n' ' ')"
-fi
-
-# 11) micro gap(<4px)+ registry fraction width(#71 2026-07-11 接線)——
-#     registry micro_gap / fraction 的 rationale 明寫「flag for human review」(非硬禁)→ 走
-#     SOFT WARN 非 block(避免誤殺 Calendar/Chart/FileViewer/Carousel 等 4 個既有合法 micro-gap 用途)。
-#     fraction 用 registry 明列 14 條(w-1/3.. 不含 w-1/2 = 合法留白),避免廣捕 w-N/M 誤殺。
-HITS_MICROGAP=$(echo "$NEW_CONTENT" | grep -oE "\bgap-(px|0\.5|1\.5)\b" | sort -u || true)
-HITS_FRACTION=$(echo "$NEW_CONTENT" | grep -oE "\bw-(1/3|2/3|1/4|3/4|1/5|2/5|3/5|4/5|1/6|5/6|1/12|5/12|7/12|11/12)\b" | sort -u || true)
-SOFT_NOTES=""
-[ -n "$HITS_MICROGAP" ] && SOFT_NOTES="${SOFT_NOTES}\n   [micro gap <4px] $(echo "$HITS_MICROGAP" | tr '\n' ' ')"
-[ -n "$HITS_FRACTION" ] && SOFT_NOTES="${SOFT_NOTES}\n   [fraction width] $(echo "$HITS_FRACTION" | tr '\n' ' ')"
+VIOLATIONS=$(jq -r '.block[] | "   [\(.label)] \(.hits | join(" "))"' <<<"$SCAN_RESULT" 2>/dev/null) \
+  || governance_hook_integrity_fail 'canonical utility block result could not be decoded'
+SOFT_NOTES=$(jq -r '.warn[] | "   [\(.label)] \(.hits | join(" "))"' <<<"$SCAN_RESULT" 2>/dev/null) \
+  || governance_hook_integrity_fail 'canonical utility warning result could not be decoded'
+[ -n "$VIOLATIONS" ] && VIOLATIONS=$'\n'"$VIOLATIONS"
+[ -n "$SOFT_NOTES" ] && SOFT_NOTES=$'\n'"$SOFT_NOTES"
 
 if [ -n "$VIOLATIONS" ]; then
   cat >&2 <<'EOF_HEAD'

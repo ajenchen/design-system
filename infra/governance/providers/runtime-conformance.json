@@ -1,0 +1,314 @@
+{
+  "$schema": "../schemas/runtime-conformance-profile.schema.json",
+  "schemaVersion": 4,
+  "evidenceOutput": "runtime/provider-runtime-conformance.json",
+  "timeoutMs": 45000,
+  "maxOutputBytes": 1048576,
+  "maxEvidenceAgeSeconds": 86400,
+  "issuerRegistryDigest": "278cb1935e3b85376fd841b9180d20d47f57fb7dbfc76971e908736e76f0d305",
+  "allowedKeyIds": [
+    "runtime-evidence-2026-11f51ddad406"
+  ],
+  "requiredIssuerQuorum": 1,
+  "platformPolicy": {
+    "nativeWindows": "unsupported",
+    "windowsLinuxExecutionEnvironments": ["wsl2", "devcontainer"],
+    "pathClasses": ["no-space", "contains-space"]
+  },
+  "providers": [
+    {
+      "id": "claude",
+      "adapterProviderId": "claude",
+      "runtimeKind": "claude-code-cli",
+      "certificationSurface": "local",
+      "executionMode": "local-probe",
+      "evidenceKind": "provider-runtime-conformance",
+      "surfacePolicy": {"kind": "local-probe"},
+      "executable": "claude",
+      "distributionVersionAuthority": {"kind": "provider-cli-toolchain", "path": "infra/governance/providers/provider-cli-toolchain.json", "providerId": "claude-code"},
+      "versionArguments": ["--version"],
+      "certificationTargets": [
+        {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "no-space"},
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "contains-space"},
+        {"id": "linux-linux-x64-native-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "no-space"},
+        {"id": "linux-linux-x64-native-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "contains-space"},
+        {"id": "linux-linux-x64-wsl2-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "2.1.215", "pathClass": "no-space"},
+        {"id": "linux-linux-x64-wsl2-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "2.1.215", "pathClass": "contains-space"},
+        {"id": "linux-linux-x64-devcontainer-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "2.1.215", "pathClass": "no-space"},
+        {"id": "linux-linux-x64-devcontainer-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "2.1.215", "pathClass": "contains-space"}
+      ],
+      "checks": [
+        {
+          "id": "subscription-entitlement-readback",
+          "driver": "claude-entitlement-readback",
+          "requiresModel": false,
+          "certificationImpact": "capability-only"
+        },
+        {
+          "id": "review-capability-claude-max-code-fable-5",
+          "driver": "claude-review-capability-probe",
+          "requiresModel": true,
+          "certificationImpact": "capability-only",
+          "reviewProfileId": "claude-max-code-fable-5"
+        },
+        {
+          "id": "review-capability-claude-max-code-opus-5",
+          "driver": "claude-review-capability-probe",
+          "requiresModel": true,
+          "certificationImpact": "capability-only",
+          "reviewProfileId": "claude-max-code-opus-5"
+        },
+        {
+          "id": "review-capability-claude-max-code-opus-4-8",
+          "driver": "claude-review-capability-probe",
+          "requiresModel": true,
+          "certificationImpact": "capability-only",
+          "reviewProfileId": "claude-max-code-opus-4-8"
+        },
+        {
+          "id": "review-capability-claude-max-code-sonnet-5",
+          "driver": "claude-review-capability-probe",
+          "requiresModel": true,
+          "certificationImpact": "capability-only",
+          "reviewProfileId": "claude-max-code-sonnet-5"
+        },
+        {
+          "id": "review-capability-claude-max-code-sonnet-4-5",
+          "driver": "claude-review-capability-probe",
+          "requiresModel": true,
+          "certificationImpact": "capability-only",
+          "reviewProfileId": "claude-max-code-sonnet-4-5"
+        },
+        {
+          "id": "review-capability-claude-max-code-haiku-4-5",
+          "driver": "claude-review-capability-probe",
+          "requiresModel": true,
+          "certificationImpact": "capability-only",
+          "reviewProfileId": "claude-max-code-haiku-4-5"
+        },
+        {
+          "id": "project-instructions-skill-context-fork",
+          "driver": "claude-context-fork",
+          "requiresModel": true
+        },
+        {
+          "id": "native-pretooluse-block",
+          "driver": "claude-native-block",
+          "requiresModel": true
+        },
+        {
+          "id": "generated-provider-adapter-block",
+          "driver": "generated-provider-adapter-block",
+          "requiresModel": false
+        },
+        {
+          "id": "canonical-runner-pass-silence",
+          "driver": "provider-hook-runner-pass",
+          "requiresModel": false
+        },
+        {
+          "id": "canonical-runner-block-exit-stderr",
+          "driver": "provider-hook-runner-block",
+          "requiresModel": false
+        },
+        {
+          "id": "canonical-runner-context-translation",
+          "driver": "provider-hook-runner-context",
+          "requiresModel": false
+        },
+        {
+          "id": "canonical-runner-stop-translation",
+          "driver": "provider-hook-runner-stop",
+          "requiresModel": false
+        }
+      ]
+    },
+    {
+      "id": "codex",
+      "adapterProviderId": "codex",
+      "runtimeKind": "codex-cli",
+      "certificationSurface": "local",
+      "executionMode": "local-probe",
+      "evidenceKind": "provider-runtime-conformance",
+      "surfacePolicy": {"kind": "local-probe"},
+      "executable": "codex",
+      "distributionVersionAuthority": {"kind": "provider-cli-toolchain", "path": "infra/governance/providers/provider-cli-toolchain.json", "providerId": "codex"},
+      "versionArguments": ["--version"],
+      "certificationTargets": [
+        {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "no-space"},
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "contains-space"},
+        {"id": "linux-linux-x64-native-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "no-space"},
+        {"id": "linux-linux-x64-native-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "contains-space"},
+        {"id": "linux-linux-x64-wsl2-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "0.144.6", "pathClass": "no-space"},
+        {"id": "linux-linux-x64-wsl2-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "0.144.6", "pathClass": "contains-space"},
+        {"id": "linux-linux-x64-devcontainer-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "0.144.6", "pathClass": "no-space"},
+        {"id": "linux-linux-x64-devcontainer-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "0.144.6", "pathClass": "contains-space"}
+      ],
+      "checks": [
+        {
+          "id": "project-instructions-skill-discovery",
+          "driver": "codex-debug-discovery",
+          "requiresModel": false
+        },
+        {
+          "id": "native-apply-patch-block-and-bash-post-observation",
+          "driver": "codex-native-hook-lifecycle",
+          "requiresModel": true
+        },
+        {
+          "id": "generated-provider-adapter-block",
+          "driver": "generated-provider-adapter-block",
+          "requiresModel": false
+        },
+        {
+          "id": "canonical-runner-pass-silence",
+          "driver": "provider-hook-runner-pass",
+          "requiresModel": false
+        },
+        {
+          "id": "canonical-runner-block-exit-stderr",
+          "driver": "provider-hook-runner-block",
+          "requiresModel": false
+        },
+        {
+          "id": "canonical-runner-context-translation",
+          "driver": "provider-hook-runner-context",
+          "requiresModel": false
+        },
+        {
+          "id": "canonical-runner-stop-translation",
+          "driver": "provider-hook-runner-stop",
+          "requiresModel": false
+        }
+      ]
+    },
+    {
+      "id": "codex-desktop-local",
+      "adapterProviderId": "codex",
+      "runtimeKind": "codex-desktop",
+      "certificationSurface": "local",
+      "executionMode": "external-attested",
+      "evidenceKind": "external-runtime-surface-conformance",
+      "surfacePolicy": {"kind": "inventory-repository-readback"},
+      "executable": null,
+      "distributionVersionAuthority": {"kind": "external-runtime-identity", "authority": "openai-signed-desktop-release", "productId": "com.openai.codex", "version": "26.721.30844"},
+      "versionArguments": [],
+      "certificationTargets": [
+        {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "26.721.30844", "pathClass": "no-space"},
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "26.721.30844", "pathClass": "contains-space"}
+      ],
+      "checks": [
+        {"id": "desktop-distribution-identity", "driver": "external-distribution-identity", "requiresModel": false},
+        {"id": "desktop-hard-gate-receipt", "driver": "external-hard-gate-receipt", "requiresModel": false},
+        {"id": "desktop-runtime-session-binding", "driver": "external-runtime-session-binding", "requiresModel": false}
+      ]
+    },
+    {
+      "id": "codex-desktop-remote",
+      "adapterProviderId": "codex",
+      "runtimeKind": "codex-desktop",
+      "certificationSurface": "remote-control",
+      "executionMode": "external-attested",
+      "evidenceKind": "external-runtime-surface-conformance",
+      "surfacePolicy": {"kind": "inventory-repository-readback"},
+      "executable": null,
+      "distributionVersionAuthority": {"kind": "external-runtime-identity", "authority": "openai-signed-desktop-release", "productId": "com.openai.codex", "version": "26.513.31313"},
+      "versionArguments": [],
+      "certificationTargets": [
+        {"id": "macos-darwin-arm64-remote-host-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "remote-host", "distributionVersion": "26.513.31313", "pathClass": "contains-space"}
+      ],
+      "checks": [
+        {"id": "remote-distribution-identity", "driver": "external-distribution-identity", "requiresModel": false},
+        {"id": "remote-hard-gate-receipt", "driver": "external-hard-gate-receipt", "requiresModel": false},
+        {"id": "remote-runtime-session-binding", "driver": "external-runtime-session-binding", "requiresModel": false}
+      ]
+    },
+    {
+      "id": "codex-cloud",
+      "adapterProviderId": "codex",
+      "runtimeKind": "codex-cloud",
+      "certificationSurface": "cloud",
+      "executionMode": "external-attested",
+      "evidenceKind": "external-runtime-surface-conformance",
+      "surfacePolicy": {"kind": "inventory-repository-readback"},
+      "executable": null,
+      "distributionVersionAuthority": {"kind": "external-runtime-identity", "authority": "openai-managed-runtime-release", "productId": "codex-cloud", "version": "0.144.6"},
+      "versionArguments": [],
+      "certificationTargets": [
+        {"id": "linux-linux-x64-cloud-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "cloud-hosted", "distributionVersion": "0.144.6", "pathClass": "contains-space"}
+      ],
+      "checks": [
+        {"id": "cloud-distribution-identity", "driver": "external-distribution-identity", "requiresModel": false},
+        {"id": "cloud-hard-gate-receipt", "driver": "external-hard-gate-receipt", "requiresModel": false},
+        {"id": "cloud-runtime-session-binding", "driver": "external-runtime-session-binding", "requiresModel": false}
+      ]
+    },
+    {
+      "id": "claude-code-cloud",
+      "adapterProviderId": "claude",
+      "runtimeKind": "claude-code-cloud",
+      "certificationSurface": "cloud",
+      "executionMode": "external-attested",
+      "evidenceKind": "external-runtime-surface-conformance",
+      "surfacePolicy": {"kind": "inventory-repository-readback"},
+      "executable": null,
+      "distributionVersionAuthority": {"kind": "external-runtime-identity", "authority": "anthropic-managed-runtime-release", "productId": "claude-code-cloud", "version": "2.1.215"},
+      "versionArguments": [],
+      "certificationTargets": [
+        {"id": "linux-linux-x64-cloud-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "cloud-hosted", "distributionVersion": "2.1.215", "pathClass": "contains-space"}
+      ],
+      "checks": [
+        {"id": "cloud-distribution-identity", "driver": "external-distribution-identity", "requiresModel": false},
+        {"id": "cloud-hard-gate-receipt", "driver": "external-hard-gate-receipt", "requiresModel": false},
+        {"id": "cloud-runtime-session-binding", "driver": "external-runtime-session-binding", "requiresModel": false}
+      ]
+    },
+    {
+      "id": "claude-code-cli-remote",
+      "adapterProviderId": "claude",
+      "runtimeKind": "claude-code-cli",
+      "certificationSurface": "remote-control",
+      "executionMode": "external-attested",
+      "evidenceKind": "external-runtime-surface-conformance",
+      "surfacePolicy": {"kind": "inventory-repository-readback"},
+      "executable": null,
+      "distributionVersionAuthority": {"kind": "external-runtime-identity", "authority": "anthropic-cli-release-attestation", "productId": "claude-code-cli", "version": "2.1.215"},
+      "versionArguments": [],
+      "certificationTargets": [
+        {"id": "macos-darwin-arm64-remote-host-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "remote-host", "distributionVersion": "2.1.215", "pathClass": "contains-space"}
+      ],
+      "checks": [
+        {"id": "remote-distribution-identity", "driver": "external-distribution-identity", "requiresModel": false},
+        {"id": "remote-hard-gate-receipt", "driver": "external-hard-gate-receipt", "requiresModel": false},
+        {"id": "remote-runtime-session-binding", "driver": "external-runtime-session-binding", "requiresModel": false}
+      ]
+    },
+    {
+      "id": "github-actions-hosted",
+      "adapterProviderId": null,
+      "runtimeKind": "github-actions",
+      "certificationSurface": "github-actions",
+      "executionMode": "external-attested",
+      "evidenceKind": "external-runtime-surface-conformance",
+      "surfacePolicy": {
+        "kind": "github-protected-workflow-readback",
+        "artifactName": "external-runtime-surface-evidence",
+        "requiredCheckTrustSource": "protected-base-workflow",
+        "requiredRulesetName": "fleet/verified-main",
+        "protectedRef": "default-branch"
+      },
+      "executable": null,
+      "distributionVersionAuthority": {"kind": "external-runtime-identity", "authority": "github-oidc-runner-attestation", "productId": "github-actions-hosted-runner", "version": "github-actions"},
+      "versionArguments": [],
+      "certificationTargets": [
+        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions", "pathClass": "contains-space"}
+      ],
+      "checks": [
+        {"id": "github-distribution-identity", "driver": "external-distribution-identity", "requiresModel": false},
+        {"id": "github-hard-gate-receipt", "driver": "external-hard-gate-receipt", "requiresModel": false},
+        {"id": "github-workflow-run-binding", "driver": "github-workflow-run-binding", "requiresModel": false},
+        {"id": "github-ruleset-readback", "driver": "github-ruleset-readback", "requiresModel": false}
+      ]
+    }
+  ]
+}

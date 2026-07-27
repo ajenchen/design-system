@@ -1,0 +1,85 @@
+name: Deploy Storybook
+
+# workflow_run loads this file from the protected default branch. PR and manual
+# workflow copies can never acquire Pages or OIDC authority.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-pages:
+    name: Rebuild verified main for Pages
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      source_sha: ${{ steps.source.outputs.sha }}
+    steps:
+      - name: Checkout exact successful CI source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prove source is still current protected main
+        id: source
+        run: |
+          set -euo pipefail
+          /usr/bin/git fetch --force --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          source_sha="$(/usr/bin/git rev-parse HEAD^{commit})"
+          main_sha="$(/usr/bin/git rev-parse refs/remotes/origin/main^{commit})"
+          test "$source_sha" = "${{ github.event.workflow_run.head_sha }}"
+          test "$source_sha" = "$main_sha" || {
+            echo "stale Pages deployment source $source_sha; current main is $main_sha"
+            exit 1
+          }
+          echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install and audit with the lock-verified npm runtime
+        run: npm run --silent setup:dependencies
+
+      - name: Rebuild exact Storybook
+        run: |
+          npm run build:lib
+          npm run build-storybook
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: storybook-static
+
+  deploy-pages:
+    name: Deploy Storybook to GitHub Pages
+    needs: build-pages
+    if: needs.build-pages.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy exact rebuilt artifact
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

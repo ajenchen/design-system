@@ -17,31 +17,42 @@
 # Scope: consumer storybook + DS canonical anatomy/principles stories.
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 
-INPUT=$(cat 2>/dev/null || echo "{}")
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null)
+governance_hook_load_input
+governance_hook_require_commands grep sed sort
+TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'overlay-open tool extraction failed'
 
 case "${TOOL:-}" in
   Edit|Write|MultiEdit) ;;
   *) exit 0 ;;
 esac
 
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
-if ! echo "$FILE" | grep -qE '\.stories\.tsx$'; then exit 0; fi
+FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'overlay-open path extraction failed'
+if ! governance_hook_grep_q 'overlay-open scope matcher failed' "$FILE" -qE '\.stories\.tsx$'; then exit 0; fi
 
-CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // ""' 2>/dev/null)
+CONTENT=$(printf '%s' "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'overlay-open content extraction failed'
 [ -z "$CONTENT" ] && exit 0
 
 # File-level escape
-if echo "$CONTENT" | grep -q '@overlay-open-skip:'; then exit 0; fi
+if governance_hook_grep_q 'overlay-open skip matcher failed' "$CONTENT" -q '@overlay-open-skip:'; then exit 0; fi
 # HoverCard documented exception (per codex 2026-05-27)
-if echo "$CONTENT" | grep -q '@story-trait-allow:.*missing-opensnapshot'; then exit 0; fi
+if governance_hook_grep_q 'overlay-open trait escape matcher failed' "$CONTENT" -q '@story-trait-allow:.*missing-opensnapshot'; then exit 0; fi
 
 # Detect overlay primitive usage
 OVERLAY_PRIMITIVES='Tooltip|Popover|Dialog|Sheet|DropdownMenu|HoverCard'
-USED=$(echo "$CONTENT" | grep -oE "<(DS\.)?($OVERLAY_PRIMITIVES)Trigger\b" | sort -u)
+governance_hook_grep_capture USED_UNSORTED 'overlay-open primitive matcher failed' \
+  "$CONTENT" -oE "<(DS\.)?($OVERLAY_PRIMITIVES)Trigger\b"
+USED=$(sort -u <<< "$USED_UNSORTED" 2>/dev/null) \
+  || governance_hook_integrity_fail 'overlay-open primitive sorter failed'
 
 if [ -z "$USED" ]; then exit 0; fi
 
@@ -60,12 +71,19 @@ if [ -z "$USED" ]; then exit 0; fi
 #   單獨抽出偵測,排除三個「關閉字面值」open={false|null|undefined}(空白容忍);identifier/negation
 #   /true 仍認(如 open={showMenu} / open={!collapsed} / open={true})。
 HAS_OPEN=""
-if echo "$CONTENT" | grep -qE 'defaultOpen|<[A-Za-z][^<>]*[[:space:]]open([[:space:]>]|$)|^[[:space:]]*open[[:space:]]*$|play:\s*async|play\(.*click'; then
+if governance_hook_grep_q 'overlay-open mechanism matcher failed' "$CONTENT" -qE \
+  'defaultOpen|<[A-Za-z][^<>]*[[:space:]]open([[:space:]>]|$)|^[[:space:]]*open[[:space:]]*$|play:\s*async|play\(.*click'; then
   HAS_OPEN="found"
 fi
 # controlled open={<expr>}:認任意 identifier / negation / true,但排除關閉字面值 false|null|undefined
-if [ -z "$HAS_OPEN" ] && echo "$CONTENT" | grep -oE 'open=\{[^}]*\}' | grep -qvE '^open=\{[[:space:]]*(false|null|undefined)[[:space:]]*\}$'; then
-  HAS_OPEN="found"
+if [ -z "$HAS_OPEN" ]; then
+  governance_hook_grep_capture CONTROLLED_CANDIDATES 'overlay-open controlled-state matcher failed' \
+    "$CONTENT" -oE 'open=\{[^}]*\}'
+  governance_hook_grep_capture CONTROLLED_OPEN 'overlay-open closed-state filter failed' \
+    "$CONTROLLED_CANDIDATES" -vE '^open=\{[[:space:]]*(false|null|undefined)[[:space:]]*\}$'
+  if [ -n "$CONTROLLED_OPEN" ]; then
+    HAS_OPEN="found"
+  fi
 fi
 
 if [ -z "$HAS_OPEN" ]; then

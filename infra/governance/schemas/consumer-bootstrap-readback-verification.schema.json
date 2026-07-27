@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/consumer-bootstrap-readback-verification-v1.schema.json",
+  "title": "Independent consumer bootstrap readback verification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema", "schemaVersion", "kind", "readOnly", "mutationAuthorized", "candidateCodeExecuted",
+    "repositoryId", "inventorySha256", "candidateReleaseSha256", "releaseBomSha256", "protocolId",
+    "protocolSpecificationSha256", "protocolSchemaSha256", "protocolImplementationSha256",
+    "bootstrapImplementationSha256", "bootstrapPlanSchemaSha256",
+    "bootstrapSnapshotVerificationSchemaSha256", "bootstrapReadbackVerificationSchemaSha256",
+    "bootstrapPromotionProposalSchemaSha256", "managedReposSchemaSha256",
+    "planDigest", "snapshotVerificationDigest",
+    "materializedSnapshotTreeSha256", "requiredChecksDigest", "acceptedBootstrapReadbackSha256",
+    "verificationDigest"
+  ],
+  "properties": {
+    "$schema": {"const": "https://qijenchen.dev/schemas/consumer-bootstrap-readback-verification-v1.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "consumer-bootstrap-independent-readback-verification"},
+    "readOnly": {"const": true},
+    "mutationAuthorized": {"const": false},
+    "candidateCodeExecuted": {"const": false},
+    "repositoryId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "inventorySha256": {"$ref": "#/$defs/sha256"},
+    "candidateReleaseSha256": {"$ref": "#/$defs/sha256"},
+    "releaseBomSha256": {"$ref": "#/$defs/sha256"},
+    "protocolId": {"const": "protected-base-reconstruction-v2"},
+    "protocolSpecificationSha256": {"$ref": "#/$defs/sha256"},
+    "protocolSchemaSha256": {"$ref": "#/$defs/sha256"},
+    "protocolImplementationSha256": {"$ref": "#/$defs/sha256"},
+    "bootstrapImplementationSha256": {"$ref": "#/$defs/sha256"},
+    "bootstrapPlanSchemaSha256": {"$ref": "#/$defs/sha256"},
+    "bootstrapSnapshotVerificationSchemaSha256": {"$ref": "#/$defs/sha256"},
+    "bootstrapReadbackVerificationSchemaSha256": {"$ref": "#/$defs/sha256"},
+    "bootstrapPromotionProposalSchemaSha256": {"$ref": "#/$defs/sha256"},
+    "managedReposSchemaSha256": {"$ref": "#/$defs/sha256"},
+    "planDigest": {"$ref": "#/$defs/sha256"},
+    "snapshotVerificationDigest": {"$ref": "#/$defs/sha256"},
+    "materializedSnapshotTreeSha256": {"$ref": "#/$defs/sha256"},
+    "requiredChecksDigest": {"$ref": "#/$defs/sha256"},
+    "acceptedBootstrapReadbackSha256": {"$ref": "#/$defs/sha256"},
+    "verificationDigest": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

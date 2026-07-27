@@ -1,6 +1,6 @@
 # 元件 Props 命名 — 詳細對照表
 
-`.claude/rules/ui-development.md`「元件 Props 命名」的詳細展開(callback / Badge / icon canonical)。
+Canonical `packages/design-system/ds-canonical/rules/ui-development.md`「元件 Props 命名」的詳細展開(callback / Badge / icon canonical)。
 
 ## 關閉 / 移除類 callback canonical(按語意分層,不合併)
 

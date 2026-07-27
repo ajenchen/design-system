@@ -15,9 +15,10 @@
 - Dialog / Modal 無 DialogTitle
 - 非 button 綁 onClick(a11y 破壞)
 - 巢狀浮層 / 巢狀 Modal(HTML invalid 或 UX 破壞)
-- .claude/references/ui-dev-rules.md「同 flex 列互動 slot 幾何鐵律」違反
+- `packages/design-system/ds-canonical/references/ui-dev-rules.md`「同 flex 列互動 slot 幾何鐵律」違反
 
-**處理**: AI 可直接修(surgical fix),commit 時 user 一併 review。
+**處理**: AI 可直接修(surgical fix)，由 protected PR、hard gates 與 external readback
+完成 engineering review；不另建立 user engineering-decision gate。
 
 ### P1 — 批次修 + review
 
@@ -31,9 +32,10 @@
 - native overflow 未用 ScrollArea(跨 OS 跑版潛在風險)
 - 硬寫 aspect-* class 未用 AspectRatio
 
-**處理**: 批次 fix,每 Dim 一個 commit,由 user review。
+**處理**: 批次 fix,每 Dim 一個可驗證 change set；依 Standing Authorization 自主
+完成，review 是 evidence gate 而非 user engineering-decision gate。
 
-### P2 — 需討論
+### P2 — 先分 P2E / P2H
 
 scope / 設計決策 / 業務判斷:
 
@@ -43,7 +45,11 @@ scope / 設計決策 / 業務判斷:
 - 歷史 code 風格差異(rename / refactor 決策)
 - TODO 留白(規格未定)
 
-**處理**: 不自動修,由 user 逐項決策。
+**處理**:
+- **P2E**:engineering/governance/refactor/a11y/performance 或既有 SSOT 唯一落地，依
+  evidence + independent review + hard gates 自主修。
+- **P2H**:只有會改變產品／UI／UX SSOT 且證據收斂後仍存在真實取捨，才由 user
+  逐項做 exact target-bound decision。
 
 ---
 
@@ -85,7 +91,7 @@ scope / 設計決策 / 業務判斷:
 
 {以 Dim 分組,per-Dim table}
 
-### P2(需討論 2 項)
+### P2H(產品／UI／UX SSOT 真取捨 2 項)
 
 | # | Dim | File:Line | Finding | 為何需討論 |
 |---|-----|-----------|---------|---------|
@@ -101,21 +107,22 @@ scope / 設計決策 / 業務判斷:
 3. Component(Dim 3,1 項)
 4. Mindset(Dim 4,3 項)
 
-**最後討論 P2**(stakeholder 共同決策)。
+**最後只討論 P2H**(stakeholder 產品決策)；P2E 已自主完成。
 
 ## Next
 
-等待 user Checkpoint 決策:
-- (a) AI 直接修 P0,batch 修 P1,P2 逐項討論
-- (b) 全部 findings 先給 user 自己看,AI 等候指令
-- (c) 只修 P0,其他 park 到下個 sprint
+P0/P1/P2E 已依 frozen scope 自主處理。若存在 P2H，只列:
+- exact target
+- 已驗證 evidence
+- 唯一仍無法由既有 SSOT 推導的產品／UI／UX tradeoff
+- agent 的唯一建議與各 outcome
 ```
 
 ---
 
-## Triage Checkpoint 範本
+## Triage evidence receipt 範本
 
-audit 完,**不可**直接開始修。先 triage 問 user:
+audit 完先分類；P0/P1/P2E 直接依 Standing Authorization 接續，只有 P2H 問 user:
 
 ```
 🔍 Product UI Audit Report
@@ -125,34 +132,31 @@ Total findings: {N}
 
 P0(必修,無爭議){N0 個} — token 違反 / a11y 必要缺 / 幾何鐵律違反
 P1(批次修 + review){N1 個} — layout primitive 消費 / placeholder 文案 / Button 堆疊
-P2(需討論){N2 個} — scope / 設計決策 / 業務判斷
+P2E(自主修){N2E 個} — engineering/governance/refactor
+P2H(需產品決策){N2H 個} — 產品／UI／UX SSOT 真取捨
 
 建議順序:
-1. 先修 P0(1 commit,surgical fix)
-2. 再批次修 P1(每 Dim 一個 commit,共 {N_dims} commits)
-3. P2 逐項討論
-
-你要:
-(a) 按建議順序執行(我開始修 P0)
-(b) 先讓我完整看 findings 再決定
-(c) 跳過 P2,只修 P0+P1
-(d) 縮窄 scope 到 {sub-folder}
+1. 修 P0
+2. 批次修 P1/P2E
+3. 驗證並附 receipt
+4. 若 N2H > 0，一次列出 P2H 的唯一建議與 exact decision
 ```
 
-絕對不可:AI 自行決定修哪些,必過 triage。
+絕對不可:把 severity 當 authority、把 P2E 轉交 user，或在未確認 P2H 前修改產品／
+UI／UX SSOT。
 
 ---
 
 ## 合法例外聲明範本
 
-若 audit hit 被判定為合法例外(per CLAUDE.md 或 spec documented),在 report 中明文標示:
+若 audit hit 被判定為合法例外(per shared governance 或 spec documented),在 report 中明文標示:
 
 ```markdown
 ### Documented exceptions(非 findings,供參考)
 
 | File:Line | Pattern | 例外理由 |
 |-----------|---------|---------|
-| Avatar.tsx:46 | `text: '#fff'` | cva 適用範圍例外(style prop 驅動 object map),per CLAUDE.md `cva 適用範圍` |
+| Avatar.tsx:46 | `text: '#fff'` | cva 適用範圍例外(style prop 驅動 object map),per shared governance `cva 適用範圍` |
 | Rating.spec.md:73 | `bg-warning` 黃星 | 世界級 convention(Amazon / Yelp / Google),documented |
 ```
 

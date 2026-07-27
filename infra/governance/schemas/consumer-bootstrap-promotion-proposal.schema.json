@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/consumer-bootstrap-promotion-proposal-v1.schema.json",
+  "title": "Closed no-mutation consumer bootstrap inventory promotion proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema", "schemaVersion", "kind", "mode", "readOnly", "mutationAuthorized", "repositoryId",
+    "before", "binding", "proposedInventory", "proposedInventorySha256", "reviewRequirements", "proposalDigest"
+  ],
+  "properties": {
+    "$schema": {"const": "https://qijenchen.dev/schemas/consumer-bootstrap-promotion-proposal-v1.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "consumer-bootstrap-inventory-promotion-proposal"},
+    "mode": {"const": "closed-no-mutation-proposal"},
+    "readOnly": {"const": true},
+    "mutationAuthorized": {"const": false},
+    "repositoryId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "before": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inventorySha256", "upgradeProtocolProfile", "acceptedBootstrapReadbackSha256"],
+      "properties": {
+        "inventorySha256": {"$ref": "#/$defs/sha256"},
+        "upgradeProtocolProfile": {"const": "legacy-bootstrap-v2"},
+        "acceptedBootstrapReadbackSha256": {"type": "null"}
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acceptedBootstrapReadbackSha256", "independentReadbackVerificationDigest", "planDigest",
+        "materializedSnapshotTreeSha256", "candidateReleaseSha256", "releaseBomSha256", "protocolId"
+      ],
+      "properties": {
+        "acceptedBootstrapReadbackSha256": {"$ref": "#/$defs/sha256"},
+        "independentReadbackVerificationDigest": {"$ref": "#/$defs/sha256"},
+        "planDigest": {"$ref": "#/$defs/sha256"},
+        "materializedSnapshotTreeSha256": {"$ref": "#/$defs/sha256"},
+        "candidateReleaseSha256": {"$ref": "#/$defs/sha256"},
+        "releaseBomSha256": {"$ref": "#/$defs/sha256"},
+        "protocolId": {"const": "protected-base-reconstruction-v2"}
+      }
+    },
+    "proposedInventory": {"$ref": "https://qijenchen.dev/schemas/managed-repos.schema.json"},
+    "proposedInventorySha256": {"$ref": "#/$defs/sha256"},
+    "reviewRequirements": {
+      "const": ["review-full-snapshot-diff", "verify-independent-readback", "merge-protected-inventory-pr"]
+    },
+    "proposalDigest": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

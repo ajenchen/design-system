@@ -1,0 +1,333 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/ci-evidence-observation-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "payloadSha256", "payload"],
+  "properties": {
+    "$schema": {"const": "schemas/ci-evidence-observation.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "ci-enforced-content-addressed-observation"},
+    "payloadSha256": {"$ref": "#/$defs/sha256"},
+    "payload": {"$ref": "#/$defs/payload"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "gitOid": {"type": "string", "pattern": "^[a-f0-9]{40}(?:[a-f0-9]{24})?$"},
+    "positiveId": {"type": "string", "pattern": "^[1-9][0-9]*$"},
+    "isoTime": {"type": "string", "format": "date-time"},
+    "repo": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+    "repoPath": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_@./-]+$"},
+    "runId": {"anyOf": [{"$ref": "#/$defs/positiveId"}, {"type": "integer", "minimum": 1}]},
+    "workflowRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "runAttempt", "path", "event", "headBranch", "headSha", "status", "conclusion"],
+      "properties": {
+        "id": {"$ref": "#/$defs/positiveId"},
+        "runAttempt": {"type": "integer", "minimum": 1},
+        "path": {"$ref": "#/$defs/repoPath"},
+        "event": {"type": "string", "minLength": 1, "maxLength": 80},
+        "headBranch": {"type": "string", "minLength": 1, "maxLength": 256},
+        "headSha": {"$ref": "#/$defs/gitOid"},
+        "status": {"const": "completed"},
+        "conclusion": {"const": "success"}
+      }
+    },
+    "checkRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "app", "head_sha", "external_id", "details_url", "status", "conclusion", "completed_at", "workflowRun"],
+      "properties": {
+        "id": {"$ref": "#/$defs/runId"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 256},
+        "app": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "slug"],
+          "properties": {
+            "id": {"type": "integer", "minimum": 1},
+            "slug": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"}
+          }
+        },
+        "head_sha": {"$ref": "#/$defs/gitOid"},
+        "external_id": {"type": ["string", "null"], "maxLength": 2048},
+        "details_url": {"type": "string", "format": "uri", "pattern": "^https://github\\.com/"},
+        "status": {"const": "completed"},
+        "conclusion": {"const": "success"},
+        "completed_at": {"$ref": "#/$defs/isoTime"},
+        "workflowRun": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "path", "head_sha", "event", "status", "conclusion"],
+              "properties": {
+                "id": {"$ref": "#/$defs/runId"},
+                "path": {"$ref": "#/$defs/repoPath"},
+                "head_sha": {"$ref": "#/$defs/gitOid"},
+                "event": {"type": "string", "minLength": 1, "maxLength": 80},
+                "status": {"const": "completed"},
+                "conclusion": {"const": "success"}
+              }
+            }
+          ]
+        }
+      }
+    },
+    "reconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repoId", "github", "ring", "defaultBranchHeadSha", "observedStateDigest", "requiredChecks", "conflicts", "actions", "deferredActions"],
+      "properties": {
+        "repoId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "github": {"$ref": "#/$defs/repo"},
+        "ring": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "defaultBranchHeadSha": {"$ref": "#/$defs/gitOid"},
+        "observedStateDigest": {"$ref": "#/$defs/sha256"},
+        "requiredChecks": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "conflicts": {"type": "array", "maxItems": 0},
+        "actions": {"type": "array", "maxItems": 0},
+        "deferredActions": {"type": "array", "maxItems": 0}
+      }
+    },
+    "repositorySubjectProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subjectCommit", "subjectTree", "carrierCommit", "carrierTree", "relationship",
+        "changedFiles", "changedFilesSha256", "changedPaths", "changedPathsSha256",
+        "objectReadbackSha256", "ancestryReadbackSha256"
+      ],
+      "properties": {
+        "subjectCommit": {"$ref": "#/$defs/gitOid"},
+        "subjectTree": {"$ref": "#/$defs/gitOid"},
+        "carrierCommit": {"$ref": "#/$defs/gitOid"},
+        "carrierTree": {"$ref": "#/$defs/gitOid"},
+        "relationship": {"enum": ["self", "ancestor"]},
+        "changedFiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "status"],
+            "properties": {
+              "path": {"$ref": "#/$defs/repoPath"},
+              "status": {"enum": ["added", "modified", "removed"]}
+            }
+          },
+          "uniqueItems": true,
+          "maxItems": 299
+        },
+        "changedFilesSha256": {"$ref": "#/$defs/sha256"},
+        "changedPaths": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/repoPath"},
+          "uniqueItems": true,
+          "maxItems": 299
+        },
+        "changedPathsSha256": {"$ref": "#/$defs/sha256"},
+        "objectReadbackSha256": {"$ref": "#/$defs/sha256"},
+        "ancestryReadbackSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "repositoryCertificationIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gitCommit", "gitTree", "subjectProofs"],
+      "properties": {
+        "gitCommit": {"$ref": "#/$defs/gitOid"},
+        "gitTree": {"$ref": "#/$defs/gitOid"},
+        "subjectProofs": {
+          "type": "object",
+          "propertyNames": {"$ref": "#/$defs/gitOid"},
+          "additionalProperties": {"$ref": "#/$defs/repositorySubjectProof"}
+        }
+      }
+    },
+    "repositoryReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repositoryId", "repository", "role", "remoteTree", "certificationIdentity", "observed", "observedSha256", "reconciliation"],
+      "properties": {
+        "repositoryId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "repository": {"$ref": "#/$defs/repo"},
+        "role": {"enum": ["authority", "template-mirror", "product-consumer"]},
+        "remoteTree": {"$ref": "#/$defs/gitOid"},
+        "certificationIdentity": {"$ref": "#/$defs/repositoryCertificationIdentity"},
+        "observed": {
+          "$comment": "The existing reconcile-github validators own and close this API snapshot shape.",
+          "type": "object"
+        },
+        "observedSha256": {"$ref": "#/$defs/sha256"},
+        "reconciliation": {"$ref": "#/$defs/reconciliation"}
+      }
+    },
+    "canonicalModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "path", "sha256"],
+      "properties": {
+        "name": {"enum": ["inventory", "desired", "rings", "certifications", "compatibility", "issuers", "waivers", "runtimeProfile", "externalActivationRequirements", "externalActivationPolicy", "githubMutationBoundaryContract", "releaseTagAuthorizationPolicy"]},
+        "path": {"$ref": "#/$defs/repoPath"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "pullRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "state", "mergedAt", "mergeCommitSha", "baseRef", "baseSha", "headSha", "authorLogin"],
+      "properties": {
+        "number": {"type": "integer", "minimum": 1},
+        "state": {"const": "closed"},
+        "mergedAt": {"$ref": "#/$defs/isoTime"},
+        "mergeCommitSha": {"$ref": "#/$defs/gitOid"},
+        "baseRef": {"type": "string", "minLength": 1, "maxLength": 256},
+        "baseSha": {"$ref": "#/$defs/gitOid"},
+        "headSha": {"$ref": "#/$defs/gitOid"},
+        "authorLogin": {"type": "string", "minLength": 1, "maxLength": 256}
+      }
+    },
+    "consumerCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "run"],
+      "properties": {
+        "id": {"enum": ["audit", "visual"]},
+        "run": {"$ref": "#/$defs/checkRun"}
+      }
+    },
+    "propagation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repositoryId", "repository", "role", "version", "remoteHead", "remoteTree", "packageJson", "packageLock", "sourcePullRequest", "sourceWorkflowRun", "auditWorkflow", "checks"],
+      "properties": {
+        "repositoryId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "repository": {"$ref": "#/$defs/repo"},
+        "role": {"enum": ["template-mirror", "product-consumer"]},
+        "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$"},
+        "remoteHead": {"$ref": "#/$defs/gitOid"},
+        "remoteTree": {"$ref": "#/$defs/gitOid"},
+        "packageJson": {"type": "object"},
+        "packageLock": {"type": "object"},
+        "sourcePullRequest": {"$ref": "#/$defs/pullRequest"},
+        "sourceWorkflowRun": {"$ref": "#/$defs/workflowRun"},
+        "auditWorkflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "refHead", "content", "declaredBlobSha"],
+          "properties": {
+            "path": {"const": ".github/workflows/audit.yml"},
+            "refHead": {"$ref": "#/$defs/gitOid"},
+            "content": {"type": "string", "minLength": 1, "maxLength": 1048576},
+            "declaredBlobSha": {"type": "string", "pattern": "^[a-f0-9]{40}$"}
+          }
+        },
+        "checks": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/consumerCheck"}
+        }
+      }
+    },
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dim", "capability", "repository", "workflow", "checkName", "runId", "head", "tree", "status", "conclusion"],
+      "properties": {
+        "dim": {"enum": [64, 66]},
+        "capability": {"enum": ["protected-release-propagation", "cross-repo-visual-parity"]},
+        "repository": {"$ref": "#/$defs/repo"},
+        "workflow": {"enum": [".github/workflows/release.yml", ".github/workflows/mirror-to-published-template.yml"]},
+        "checkName": {"enum": ["Protected release propagation", "Cross-repo visual parity"]},
+        "runId": {"$ref": "#/$defs/positiveId"},
+        "head": {"$ref": "#/$defs/gitOid"},
+        "tree": {"$ref": "#/$defs/gitOid"},
+        "status": {"const": "completed"},
+        "conclusion": {"const": "success"}
+      }
+    },
+    "authorityTransition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourcePullRequest", "candidateHeadTree", "mergeCommitTree", "requiredChecks"],
+      "properties": {
+        "sourcePullRequest": {"$ref": "#/$defs/pullRequest"},
+        "candidateHeadTree": {"$ref": "#/$defs/gitOid"},
+        "mergeCommitTree": {"$ref": "#/$defs/gitOid"},
+        "requiredChecks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {"$ref": "#/$defs/checkRun"}
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidateRelease", "authorityTransition", "verifiedReleaseEvidence", "verifiedReleaseEvidenceDigest", "trustPreflightEvidence", "trustPreflightDigest", "stageWorkflowRun", "mirrorWorkflowRun"],
+      "properties": {
+        "candidateRelease": {"type": "object"},
+        "authorityTransition": {"$ref": "#/$defs/authorityTransition"},
+        "verifiedReleaseEvidence": {"type": "object"},
+        "verifiedReleaseEvidenceDigest": {"$ref": "#/$defs/sha256"},
+        "trustPreflightEvidence": {"type": "object"},
+        "trustPreflightDigest": {"$ref": "#/$defs/sha256"},
+        "stageWorkflowRun": {"$ref": "#/$defs/workflowRun"},
+        "mirrorWorkflowRun": {"$ref": "#/$defs/workflowRun"}
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "planDigest", "nonce", "observedAt", "expiresAt", "runBinding", "canonicalModels", "repositories", "release", "propagation", "dimensions", "apiReadbackDigest"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "ci-enforced-observation-payload"},
+        "planDigest": {"$ref": "#/$defs/sha256"},
+        "nonce": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+        "observedAt": {"$ref": "#/$defs/isoTime"},
+        "expiresAt": {"$ref": "#/$defs/isoTime"},
+        "runBinding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["runId", "manifestSha256", "repository", "head", "tree"],
+          "properties": {
+            "runId": {"type": "string", "minLength": 1, "maxLength": 256},
+            "manifestSha256": {"$ref": "#/$defs/sha256"},
+            "repository": {"$ref": "#/$defs/repo"},
+            "head": {"$ref": "#/$defs/gitOid"},
+            "tree": {"$ref": "#/$defs/gitOid"}
+          }
+        },
+        "canonicalModels": {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "items": {"$ref": "#/$defs/canonicalModel"}
+        },
+        "repositories": {
+          "type": "array",
+          "minItems": 3,
+          "items": {"$ref": "#/$defs/repositoryReadback"}
+        },
+        "release": {"$ref": "#/$defs/release"},
+        "propagation": {
+          "type": "array",
+          "minItems": 2,
+          "items": {"$ref": "#/$defs/propagation"}
+        },
+        "dimensions": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/dimension"}
+        },
+        "apiReadbackDigest": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

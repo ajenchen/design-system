@@ -1,20 +1,19 @@
 {
   "_meta": {
-    "purpose": "C-prime fork-mode governance corpus 分類 SSOT。build-fork-governance.mjs 消費此檔生成 ds-canonical/fork/。--check 若有任何 .claude/hooks/*.{sh,py} 未分類則 FAIL(防漏接新 hook)。",
-    "source": "workflow wf_4070529c-5af critic agent(讀全 53 hook + inventory 對抗分類)+ Claude 組裝 2026-06-16",
-    "total": 57,
+    "purpose": "C-prime fork-mode governance corpus 分類 SSOT。build-fork-governance.mjs 消費此檔，從 packages/design-system/ds-canonical/hooks 生成 ds-canonical/fork/。--check 若任何 canonical hook *.{sh,py} 未分類則 FAIL(防漏接新 hook)。",
+    "source": "legacy workflow wf_4070529c-5af critic agent 的 inventory 對抗分類 + 2026-06-16 組裝；現役 hook inventory authority = packages/design-system/ds-canonical/hooks",
+    "authority": "packages/design-system/ds-canonical/hooks/**；fork corpus 與 provider hook homes 皆為 generated/materialized outputs",
+    "total": 60,
     "tally": {
       "SHIP_AS_IS": 12,
-      "SHIP_REWRITTEN": 5,
+      "SHIP_REWRITTEN": 6,
       "REPLACE": 1,
-      "DROP": 39
+      "DROP": 41
     },
-    "known_coverage_gaps": [
-      "post_edit_dispatcher 的 _code_quality fork-relevant 檢查改判 DROP 後無 standalone 涵蓋 → 待 promote 成 standalone fork hook(harness 驗證後加)。_overlay_handcraft 的 header 手刻由 R9 涵蓋(2026-07-08);其 Check 2.5 raw-row 型中 menu-item family(hover+selected 成對)由 r3 nav-row 簽名涵蓋(2026-07-10),其餘 raw-row 型仍 gap;layout-space 由 check_layout_space_magic_numbers 涵蓋。"
-    ],
+    "known_coverage_gaps": [],
     "buckets_def": {
       "SHIP_AS_IS": "已 fork-aware(scope apps/** 或 layout-agnostic,DS 內部路徑乾淨 exit 0)→ 原樣 ship 進 fork settings。註(2026-06-18):build emit() 對【所有】bucket(含 SHIP_AS_IS)套一個 universal display-path 改寫 `#*/my-project/`→`$CLAUDE_PROJECT_DIR`(純 soft-warn 訊息路徑顯示、不動 exit/BLOCKER 邏輯)→ SHIP_AS_IS 行為語意仍 verbatim,只 display path 適配 fork",
-      "SHIP_REWRITTEN": "fork 有價值但寫死 DS 路徑/資料 → 機械改寫(packages/design-system/src→node_modules/@qijenchen/design-system/src;.claude/{logs,memory} 讀取加 [ -d ]||exit 0 guard)",
+      "SHIP_REWRITTEN": "fork 有價值但含 DS-repo-only 或 legacy provider-local 路徑 → 機械改寫(packages/design-system/src→exact npm corpus；runtime evidence→Git-owned neutral evidence root)。禁止用 existence guard 保留 provider home 作 optional read authority",
       "REPLACE": "意圖對 fork 重要但現形式有害(hard-block apps/** = 鎖死)→ 換 quality-positive soft inject(exit 0)",
       "DROP": "DS-author-only,fork 無意義(governance/audit/codex/solo-dev/component-SSOT 維護)→ 不註冊進 fork settings"
     },
@@ -72,9 +71,14 @@
   ],
   "SHIP_REWRITTEN": [
     {
+      "hook": "check_consumer_code_quality.sh",
+      "transform": "canonical utility registry runtime lookup → runner-authenticated fork corpus references/utility-registry.json；canonical owner identity 保持 packages/design-system/src/tokens/utility-registry.json",
+      "reason": "standalone provider-neutral hard gate:consumer any/file-size/raw-row/overlay/chrome/AppShell primary-header invariants；alias policy只讀 runner-authenticated corpus registry，不從 consumer node_modules shadow；可由 native hooks 與 hooks-off CI 同一份 corpus 執行。"
+    },
+    {
       "hook": "check_opacity_token_usage.sh",
-      "transform": "registry path packages/design-system/src/tokens/utility-registry.json + ../../packages fallback → node_modules/@qijenchen/design-system/src/tokens/utility-registry.json(ships in package)",
-      "reason": "fire on apps/** 但 DS registry 在 fork 不存在 → 退化成 ~10% opacity-only 模式 = false-green。repoint 後恢復全 9 category enforcement。"
+      "transform": "canonical registry runtime lookup → runner-authenticated fork corpus references/utility-registry.json；canonical owner identity 保持 packages/design-system/src/tokens/utility-registry.json",
+      "reason": "fire on apps/**；registry 的封閉 schema + enforcement rule inventory 驅動所有明列 block/warn token 與 pattern，不在 shell 複製 alias；鎖入 fork governance.lock 後維持 exact behavior closure 與 SSOT provenance。"
     },
     {
       "hook": "check_escape_marker_abuse.sh",
@@ -88,23 +92,33 @@
     },
     {
       "hook": "inject_deploy_url_after_push.sh",
-      "transform": "確認 deploy-URL 推導邏輯不依賴 DS-internal path(generic Netlify/git remote 推導)",
+      "transform": "deploy-URL 推導不依賴 DS-internal path；非 Bash/非真 push 先 no-op，真 push 優先消費 dispatcher 從 installed manifest 驗證後注入的 GOVERNANCE_PROVIDER_ADAPTER_JSON，只有 DS-author/direct 執行才 fallback canonical provider registry",
       "reason": "每次 push 吐 deploy URL,fork 一樣需要(scenario-definition fork dim 63)。"
     },
     {
       "hook": "check_story_invariants.sh",
-      "transform": "override 檔 scripts/fork-hook-overrides/check_story_invariants.sh:只 ship R8(registry antiPatterns simplified-mock 攔截,registry 讀 corpus ../../references/ 相對路徑 + node_modules fallback)+ R9(手刻 overlay/chrome header 簽名 BLOCKER);scope 擴 apps/**/*.tsx + *.stories.tsx;其餘 8 條 DS-author 撰寫紀律 rule 不 ship。",
-      "reason": "2026-07-08 WM 戰役 R4:preamble M23(d) 明文承諾 R8/R9 機械強制,原判 DROP = doc-vs-corpus drift(承諾防線沒 ship)。WM detail modal 手刻 header 實證 fork 需要此防線。"
+      "transform": "override 檔 scripts/fork-hook-overrides/check_story_invariants.sh:只 ship R8(registry antiPatterns simplified-mock 攔截，registry 只讀 runner-authenticated corpus references，禁止 hook-relative/node_modules fallback)+ R9(手刻 overlay/chrome header 簽名 BLOCKER);scope 擴 apps/**/*.tsx + *.stories.tsx;其餘 8 條 DS-author 撰寫紀律 rule 不 ship。",
+      "reason": "2026-07-08 WM 戰役 R4 驗證 product instruction 的 consume-before-inventing/nearest-canonical 原則必須有 R8/R9 機械防線；原判 DROP 會造成 instruction-vs-corpus drift。WM detail modal 手刻 header 實證 fork 需要此防線。"
     }
   ],
   "REPLACE": [
     {
       "hook": "check_substantive_edit_approval_preflight.sh",
       "replaceWith": "check_fork_product_quality.sh — apps/** 的 PreToolUse 改成 quality-positive soft inject(exit 0):提醒『改 X 元件前先讀 DS spec/story』+ 跑 primitive-misuse 提示;絕不 exit 2、絕不 approval gate。DS-internal packages/design-system/src branch 不進 fork(那是 DS-author 用)。",
+      "replacementRuntimeContract": {
+        "runtime": "bash",
+        "outputMode": "governance-context",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
+      },
       "reason": "PRIMARY BRICK:原 hook hard-block(exit 2)所有 apps/** edit(近 5 msg 無 approval keyword 時)→ fork 使用者連寫產品 code 都被擋死。"
     }
   ],
   "DROP": [
+    {
+      "hook": "governance_control_plane.sh",
+      "reason": "DS-author generated control-plane artifact guard;products receive the immutable fork consumer checker/BOM instead."
+    },
     {
       "hook": "_log-fire.sh",
       "reason": "sourced helper 非 standalone hook;僅當被 ship 的 hook source 時隨行。"
@@ -159,7 +173,7 @@
     },
     {
       "hook": "check_main_branch_workbench.sh",
-      "reason": "DS-author solo-dev git workflow(1 chat=1 branch);可能 brick fork user 在 main 編輯 → 不 ship。"
+      "reason": "DS-author protected-main workflow；consumer 用各 repo ruleset/CI，不把 DS remote policy 硬編進 fork。"
     },
     {
       "hook": "check_naming_and_abstraction.sh",
@@ -190,10 +204,6 @@
       "reason": "其工作是 nag fork user 裝 DS plugin + curl GitHub 版本 = plugin-health nag(C-prime 退役 plugin 必經路)。"
     },
     {
-      "hook": "check_post_main_ssot_propagate.sh",
-      "reason": "DS-author push main 後 SSOT 發版鏈。"
-    },
-    {
       "hook": "check_propose_discipline.sh",
       "reason": "DS-author 中文人話 propose + cite 紀律。"
     },
@@ -211,7 +221,7 @@
     },
     {
       "hook": "check_solo_workflow.sh",
-      "reason": "DS-author solo-work git(no PR / 1 branch / push trigger)。"
+      "reason": "DS-author one-branch/one-PR + protected-main + required checks/readback + release-attestation workflow；工程 merge 依 Standing Authorization 自主執行。"
     },
     {
       "hook": "check_spec_class_drift.sh",
@@ -227,7 +237,7 @@
     },
     {
       "hook": "chrome_header_dispatcher.sh",
-      "reason": "fan-out 4 個 ChromeHeader header-canonical DS-author invariant(含 _app_shell_primary_header_consistency lib,beta.73 加 responsive 豁免)。注(2026-06-18 beta.74 audit):fork 端 primary-header 一致性『機械』enforcement 暫不送 = 刻意 defer,非 beta.73 回歸;responsive 品牌/帳號 pattern 由 app-shell.spec.md canonical + AcmeSidebar demo + preamble 注入指引 fork。要 fork 也機械擋,需另案把 chrome-header 家族 enforcement fork-relevant 化(scope 較大)。"
+      "reason": "fan-out 4 個 ChromeHeader header-canonical DS-author invariant(含 _app_shell_primary_header_consistency lib,beta.73 加 responsive 豁免)。注(2026-06-18 beta.74 audit):fork 端 primary-header 一致性『機械』enforcement 暫不送 = 刻意 defer,非 beta.73 回歸；responsive 品牌/帳號 pattern 由 product instruction 的 nearest-shipped-spec 原則、app-shell.spec.md canonical 與 AcmeSidebar demo 指引。要 fork 也機械擋,需另案把 chrome-header 家族 enforcement fork-relevant 化(scope 較大)。"
     },
     {
       "hook": "enforce_home_charter.sh",
@@ -247,7 +257,7 @@
     },
     {
       "hook": "session_start_governance_check.sh",
-      "reason": "DS-author session-start governance/prune 檢查(讀 .claude/logs|benchmarks|memory)。"
+      "reason": "DS-author session-start governance/prune 檢查(讀 provider-neutral runtime state|benchmarks|committed memory)。"
     },
     {
       "hook": "stop_passive_logging.sh",
@@ -255,7 +265,15 @@
     },
     {
       "hook": "stop_self_audit.sh",
-      "reason": "DS-author claim-verify/codex/solo-dev/completeness gate(讀 .claude/logs)= 全 DS-author-only。"
+      "reason": "DS-author claim-verify/cross-provider/solo-dev/completeness gate(讀 neutral evidence root)= 全 DS-author-only。"
+    },
+    {
+      "hook": "stop_audit_content_quality.sh",
+      "reason": "DS-author Stop context hook；執行 repository-only scripts/audit-content-quality.mjs，consumer corpus 不擁有該執行檔，ship 後只會 false-green 或鎖死。Consumer 品質由 immutable governance-check 與自身 CI gate 覆蓋。"
+    },
+    {
+      "hook": "stop_extract_canonical_rules.sh",
+      "reason": "DS-author canonical 編輯回饋 hook；執行 repository-only scripts/extract-canonical-rules.mjs，產品 repo 不可擁有或重建這個 canonical authoring authority。"
     },
     {
       "hook": "check_ssot_header_declaration.sh",

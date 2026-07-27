@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/provider-hook-coverage-v2.json",
+  "title": "Generated provider native-hook coverage evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "generated", "policy", "providers"],
+  "properties": {
+    "$schema": { "const": "../../../governance/canonical/schemas/provider-hook-coverage.schema.json" },
+    "schemaVersion": { "const": 2 },
+    "generated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generator", "canonicalHookRegistry", "providerRegistry", "inputSha256"],
+      "properties": {
+        "generator": { "const": "scripts/gen-codex-adapter.mjs" },
+        "canonicalHookRegistry": { "$ref": "#/$defs/repositoryPath" },
+        "providerRegistry": { "const": "packages/governance/canonical/providers.json" },
+        "inputSha256": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["hookRegistrations", "providerRegistry", "coverageSchema"],
+          "properties": {
+            "hookRegistrations": { "$ref": "#/$defs/sha256" },
+            "providerRegistry": { "$ref": "#/$defs/sha256" },
+            "coverageSchema": { "$ref": "#/$defs/sha256" }
+          }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nativeProjectionIsFeedbackOnly", "nativeProjectionIsSecurityBoundary", "ciEquivalenceRequiresHookSpecificEvidence", "absenceOfProvenFallbackOutcome"],
+      "properties": {
+        "nativeProjectionIsFeedbackOnly": { "const": true },
+        "nativeProjectionIsSecurityBoundary": { "const": false },
+        "ciEquivalenceRequiresHookSpecificEvidence": { "const": true },
+        "absenceOfProvenFallbackOutcome": { "const": "not-certified" }
+      }
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/providerCoverage" }
+    }
+  },
+  "$defs": {
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "^(?:/|[A-Za-z]:|.*(?:^|/)\\.\\.(?:/|$))" }
+    },
+    "sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "stringArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "hookBase": {
+      "type": "object",
+      "properties": {
+        "event": { "type": "string", "minLength": 1 },
+        "canonicalMatcher": { "type": "string" },
+        "hook": { "type": "string", "minLength": 1 },
+        "kind": { "const": "hook" },
+        "runtime": { "type": "string", "minLength": 1 },
+        "outputMode": { "enum": ["diagnostic", "blocking", "governance-context", "governance-decision", "governance-context-or-block"] },
+        "inputContract": { "enum": ["event-v1", "proposed-text-v1"] },
+        "transcriptRequirement": { "enum": ["none", "optional", "stable-required"] },
+        "requirements": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "projectedHook": {
+      "allOf": [
+        { "$ref": "#/$defs/hookBase" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["event", "nativeEvent", "canonicalMatcher", "hook", "kind", "runtime", "outputMode", "inputContract", "transcriptRequirement", "requirements", "projectedMatcher", "nativeCoverage", "certificationImpact"],
+          "properties": {
+            "event": { "type": "string", "minLength": 1 },
+            "nativeEvent": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.:@/-]*$" },
+            "canonicalMatcher": { "type": "string" },
+            "hook": { "type": "string", "minLength": 1 },
+            "kind": { "const": "hook" },
+            "runtime": { "type": "string", "minLength": 1 },
+            "outputMode": { "enum": ["diagnostic", "blocking", "governance-context", "governance-decision", "governance-context-or-block"] },
+            "inputContract": { "enum": ["event-v1", "proposed-text-v1"] },
+            "transcriptRequirement": { "enum": ["none", "optional", "stable-required"] },
+            "requirements": { "$ref": "#/$defs/stringArray" },
+            "projectedMatcher": { "type": "string" },
+            "nativeCoverage": { "const": "projected" },
+            "certificationImpact": { "const": "runtime-certification-required" }
+          }
+        }
+      ]
+    },
+    "authoritativeFallback": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": { "const": "none" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "authority", "runner", "prepareArgv", "verifyArgv", "evidence", "detail"],
+          "properties": {
+            "status": { "const": "declared" },
+            "authority": { "$ref": "#/$defs/repositoryPath" },
+            "runner": { "const": "scripts/run-provider-hook.mjs" },
+            "prepareArgv": {
+              "const": ["--authority-decision", "prepare"]
+            },
+            "verifyArgv": {
+              "const": ["--authority-decision", "verify"]
+            },
+            "evidence": { "$ref": "#/$defs/repositoryPath" },
+            "detail": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "excludedHook": {
+      "allOf": [
+        { "$ref": "#/$defs/hookBase" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["event", "canonicalMatcher", "hook", "kind", "runtime", "outputMode", "inputContract", "transcriptRequirement", "requirements", "nativeCoverage", "reasonCode", "detail", "certificationImpact", "authoritativeFallback"],
+          "properties": {
+            "event": { "type": "string", "minLength": 1 },
+            "canonicalMatcher": { "type": "string" },
+            "hook": { "type": "string", "minLength": 1 },
+            "kind": { "const": "hook" },
+            "runtime": { "type": "string", "minLength": 1 },
+            "outputMode": { "enum": ["diagnostic", "blocking", "governance-context", "governance-decision", "governance-context-or-block"] },
+            "inputContract": { "enum": ["event-v1", "proposed-text-v1"] },
+            "transcriptRequirement": { "enum": ["none", "optional", "stable-required"] },
+            "requirements": { "$ref": "#/$defs/stringArray" },
+            "nativeCoverage": { "const": "gap" },
+            "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+            "detail": { "type": "string", "minLength": 1 },
+            "certificationImpact": { "const": "not-certified" },
+            "authoritativeFallback": { "$ref": "#/$defs/authoritativeFallback" }
+          }
+        }
+      ]
+    },
+    "providerCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "nativeHooksDeclared", "hookEnforcement", "projectionStatus", "certificationClaim", "canonicalRegistrationCount", "projectedCount", "excludedCount", "projected", "excluded"],
+      "properties": {
+        "provider": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "nativeHooksDeclared": { "type": "boolean" },
+        "hookEnforcement": { "enum": ["native-feedback-plus-ci", "ci-only"] },
+        "projectionStatus": { "enum": ["complete-projection", "partial-projection", "unavailable"] },
+        "certificationClaim": { "const": "projection-only-not-runtime-certified" },
+        "canonicalRegistrationCount": { "type": "integer", "minimum": 1 },
+        "projectedCount": { "type": "integer", "minimum": 0 },
+        "excludedCount": { "type": "integer", "minimum": 0 },
+        "projected": { "type": "array", "items": { "$ref": "#/$defs/projectedHook" } },
+        "excluded": { "type": "array", "items": { "$ref": "#/$defs/excludedHook" } }
+      }
+    }
+  }
+}

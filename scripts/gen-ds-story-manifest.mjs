@@ -61,7 +61,7 @@ const manifest = {
     purpose: 'DS canonical story id SSOT for consumer visual diff and baseline validation',
     canonicalSource: 'M31 codex synthesis 2026-05-27 dual-track',
     consumedBy: [
-      '.claude/hooks/check_consumer_story_baseline.sh',
+      'packages/design-system/ds-canonical/hooks/check_consumer_app_invariants.sh#r2_story_baseline',
       'scripts/composition-fidelity-visual-diff.mjs',
       'product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)',
     ],

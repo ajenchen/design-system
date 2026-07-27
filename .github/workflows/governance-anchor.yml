@@ -1,0 +1,188 @@
+name: Authority governance anchor
+
+# This protected-base workflow is the non-spoofable authority producer for the
+# App-pinned "Immutable consumer snapshot" context in the DS repository. The
+# candidate is untrusted data and never executes on the fresh verdict runner.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  verify-candidate:
+    name: Verify authority candidate without credentials
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout protected base verifier
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted
+          persist-credentials: false
+
+      - name: Checkout candidate as untrusted data
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
+          fetch-depth: 2
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+
+      - name: Install protected-base verifier dependencies without lifecycle execution
+        working-directory: trusted
+        env:
+          NPM_CONFIG_USERCONFIG: /dev/null
+          NPM_CONFIG_GLOBALCONFIG: /dev/null
+        run: npm run --silent setup:dependencies
+
+      - name: Fetch authenticated bootstrap comments as untrusted evidence
+        if: ${{ !startsWith(github.event.pull_request.head.ref, 'governance/external-ledger/') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          /usr/bin/mkdir -m 700 "$RUNNER_TEMP/gh-home"
+          /usr/bin/env -i \
+            PATH=/usr/bin:/bin \
+            HOME="$RUNNER_TEMP/gh-home" \
+            GH_TOKEN="$GH_TOKEN" \
+            GH_PROMPT_DISABLED=1 \
+            /usr/bin/gh api --paginate --slurp \
+              "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments?per_page=100" \
+              > "$RUNNER_TEMP/bootstrap-comments.json"
+
+      - name: Recognize only an exact signed external-ledger carrier transaction
+        if: startsWith(github.event.pull_request.head.ref, 'governance/external-ledger/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_STATE: ${{ github.event.pull_request.state }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          MAINTAINER_CAN_MODIFY: ${{ github.event.pull_request.maintainer_can_modify }}
+        run: |
+          set -euo pipefail
+          /usr/bin/mkdir -p -m 700 "$RUNNER_TEMP/gh-home"
+          PR_JSON=$(
+            /usr/bin/env -i \
+              PATH=/usr/bin:/bin \
+              HOME="$RUNNER_TEMP/gh-home" \
+              GH_TOKEN="$GH_TOKEN" \
+              GH_PROMPT_DISABLED=1 \
+              /usr/bin/gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER"
+          )
+          PR_TITLE=$(/usr/bin/jq -er '.title | strings' <<<"$PR_JSON")
+          PR_BODY=$(/usr/bin/jq -er '(.body // "") | strings' <<<"$PR_JSON")
+          unset GH_TOKEN PR_JSON
+          node trusted/infra/governance/bin/external-ledger-writer.mjs verify-pr-head
+            --trusted-root "$GITHUB_WORKSPACE/trusted" \
+            --candidate-root "$GITHUB_WORKSPACE/candidate" \
+            --repository "$GITHUB_REPOSITORY" \
+            --base-sha "$BASE_SHA" \
+            --base-ref "$BASE_REF" \
+            --head-sha "$HEAD_SHA" \
+            --head-ref "$HEAD_REF" \
+            --head-repository "$HEAD_REPOSITORY" \
+            --pr-author "$PR_AUTHOR" \
+            --pr-author-type "$PR_AUTHOR_TYPE" \
+            --pr-number "$PR_NUMBER" \
+            --pr-state "$PR_STATE" \
+            --pr-draft "$PR_DRAFT" \
+            --pr-title "$PR_TITLE" \
+            --pr-body "$PR_BODY" \
+            --maintainer-can-modify "$MAINTAINER_CAN_MODIFY"
+
+      - name: Require independent authorization for all other privileged closure changes
+        if: ${{ !startsWith(github.event.pull_request.head.ref, 'governance/external-ledger/') }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: >-
+          node trusted/scripts/verify-privileged-change.mjs
+          --trusted trusted
+          --candidate candidate
+          --repository "$GITHUB_REPOSITORY"
+          --base-sha "$BASE_SHA"
+          --candidate-head-sha "$HEAD_SHA"
+          --pull-request "$PR_NUMBER"
+          --bootstrap-comments "$RUNNER_TEMP/bootstrap-comments.json"
+
+      - name: Install and audit candidate with the protected-base lock-bound npm runtime
+        run: node trusted/scripts/install-candidate-dependencies.mjs --candidate candidate
+
+      - name: Execute protected-base governance policy against candidate data
+        run: |
+          node trusted/packages/governance/bin/governance.mjs check --repo candidate --role ds-author --hooks-off
+          node trusted/scripts/audit-workflow-security.mjs --root candidate
+
+  publish-app-verdict:
+    name: Publish Governance App verdict
+    if: always()
+    needs: verify-candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment:
+      name: governance-check-verdict
+    steps:
+      - name: Mint check-only Governance App token on a fresh runner
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        with:
+          app-id: ${{ secrets.GOVERNANCE_CHECK_APP_ID }}
+          private-key: ${{ secrets.GOVERNANCE_CHECK_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-checks: write
+
+      - name: Publish App-pinned aggregate verdict
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          DETAILS_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          VERIFY_RESULT: ${{ needs.verify-candidate.result }}
+        run: |
+          set -euo pipefail
+          if [ "$VERIFY_RESULT" = success ]; then
+            CONCLUSION=success
+            SUMMARY='Protected-base governance policy passed against the authority candidate.'
+          else
+            CONCLUSION=failure
+            SUMMARY="Protected-base authority verification ended with: $VERIFY_RESULT"
+          fi
+          /usr/bin/mkdir -m 700 "$RUNNER_TEMP/gh-home"
+          /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/jq -n \
+            --arg name 'Immutable consumer snapshot' \
+            --arg head_sha "$HEAD_SHA" \
+            --arg external_id "governance-check-v1|$WORKFLOW_REF|$WORKFLOW_SHA|$HEAD_SHA|$RUN_ID|$RUN_ATTEMPT" \
+            --arg details_url "$DETAILS_URL" \
+            --arg conclusion "$CONCLUSION" \
+            --arg summary "$SUMMARY" \
+            '{name:$name,head_sha:$head_sha,external_id:$external_id,details_url:$details_url,status:"completed",conclusion:$conclusion,output:{title:$name,summary:$summary}}' \
+            | /usr/bin/env -i \
+                PATH=/usr/bin:/bin \
+                HOME="$RUNNER_TEMP/gh-home" \
+                GH_TOKEN="$GH_TOKEN" \
+                GH_PROMPT_DISABLED=1 \
+                /usr/bin/gh api --method POST "repos/$GITHUB_REPOSITORY/check-runs" --input -

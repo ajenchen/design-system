@@ -1,0 +1,183 @@
+{
+  "$schema": "../schemas/managed-host-assurance.schema.json",
+  "schemaVersion": 2,
+  "id": "qijenchen-managed-host-assurance",
+  "scope": {
+    "portableRepoBaseline": {
+      "authorityPaths": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "packages/governance/canonical/manifest.json",
+        "packages/design-system/ds-canonical",
+        "infra/governance/providers/compatibility-matrix.json"
+      ],
+      "assurance": "portable-functional-baseline",
+      "securityBoundary": false,
+      "managedHostEquivalent": false
+    },
+    "managedHostExclusive": {
+      "assurance": "endpoint-admin-enforced-covered-controls",
+      "coveredControlBoundary": "only-enforcementControls-listed-per-provider",
+      "winningEffectiveStateRequired": true,
+      "localFileAloneIsProof": false,
+      "unknownStateFailsClosed": true,
+      "externalActivationRequired": true,
+      "certificationRequiresSignedEndpointAttestation": true,
+      "applicableRepositoryRoles": ["authority"],
+      "repositoryIdentity": "ajenchen/design-system",
+      "endpointAssignment": "authority-only-no-mixed-role",
+      "claudeTransportProfileId": "claude-authority-full",
+      "doesNotCertify": [
+        "unlisted-provider-settings-or-capabilities",
+        "preexisting-plugin-files-or-marketplaces-are-removed",
+        "plugin-skill-discovery-outside-the-bound-hook-corpus",
+        "model-compliance-with-instructions",
+        "cloud-or-remote-runtimes-not-bound-to-the-attested-host"
+      ]
+    }
+  },
+  "readbackTrust": {
+    "algorithm": "ed25519",
+    "canonicalization": "stable-json-v1",
+    "maxTtlSeconds": 900,
+    "clockSkewSeconds": 60,
+    "nonceMinBytes": 16,
+    "replayCacheRequiredForCertification": true,
+    "hostIdentityRequired": true,
+    "trustedEndpointKeys": []
+  },
+  "activationProtocol": {
+    "firstLaunchBootstrapRequired": true,
+    "freshProcessRequired": true,
+    "readbackAfterBootstrapRequired": true,
+    "claude": {
+      "marketplaceRegistration": "extraKnownMarketplaces-managed-bootstrap",
+      "pluginActivation": "managed-enabledPlugins",
+      "remoteFetchFailure": "forceRemoteSettingsRefresh-exits",
+      "providerStatusReadbackAloneIsCompleteProof": false
+    },
+    "codex": {
+      "requirementsBootstrap": "supported-system-cloud-or-mdm-channel",
+      "bundleDelivery": "endpoint-management-before-client-launch",
+      "cloudCacheFailureWithoutValidIdentityMatch": "client-load-error",
+      "configRequirementsReadAloneIsCompleteProof": false
+    }
+  },
+  "providerRegistryBinding": {
+    "path": "infra/governance/providers/compatibility-matrix.json",
+    "providersPointer": "/providers",
+    "outOfScopeProviders": [
+      {"id": "ci", "reason": "non-interactive executor governed by required checks and workflows"}
+    ],
+    "unregisteredProviderOutcome": "fail"
+  },
+  "releaseBinding": {
+    "path": "infra/governance/release-rings.json",
+    "candidatePointer": "/candidateRelease",
+    "sourceCommitField": "sourceCommit",
+    "sourceTreeField": "sourceTree",
+    "versionField": "version",
+    "tagPrefix": "v",
+    "packageName": "@qijenchen/design-system",
+    "packageFields": ["name", "version", "integrity"],
+    "marketplaceManifest": ".claude-plugin/marketplace.json",
+    "pluginManifest": ".claude-plugin/plugin.json",
+    "pluginFullId": "design-system@qijenchen-ds",
+    "sourceRepository": "ajenchen/design-system",
+    "missingCandidateOutcome": "external-activation-required"
+  },
+  "providers": [
+    {
+      "id": "claude-code",
+      "adapter": "claude-managed-settings-v2",
+      "compatibilityMinimumVersionPointer": "/providers/claude-code/minimumVersion",
+      "assuranceMode": "managed-covered-controls",
+      "effectiveState": {
+        "acceptedReadbackSources": ["endpoint-management-composed-effective", "provider-status-effective"],
+        "sourceCapabilities": {
+          "endpoint-management-composed-effective": ["*"],
+          "provider-status-effective": []
+        },
+        "requireWinningSourceIdentity": true,
+        "localFileDiscoveryIsAuthoritative": false,
+        "unobservableControlOutcome": "unknown"
+      },
+      "systemPaths": {
+        "darwin": "/Library/Application Support/ClaudeCode/managed-settings.json",
+        "linux": "/etc/claude-code/managed-settings.json",
+        "win32": "C:\\Program Files\\ClaudeCode\\managed-settings.json"
+      },
+      "policyTemplates": {
+        "darwin": "infra/governance/managed-host/templates/claude-managed-settings.json",
+        "linux": "infra/governance/managed-host/templates/claude-managed-settings.json",
+        "win32": "infra/governance/managed-host/templates/claude-managed-settings.json"
+      },
+      "enforcementControls": [
+        "required-minimum-version",
+        "authority-endpoint-assignment",
+        "allow-managed-hooks-only",
+        "force-enabled-exact-plugin",
+        "strict-plugin-only-customization",
+        "strict-known-marketplace-exact-tag",
+        "managed-marketplace-first-launch-bootstrap",
+        "disable-sideload-flags",
+        "managed-mcp-only-empty-allowlist",
+        "managed-permission-rules-only",
+        "disable-bypass-permissions",
+        "strict-bash-sandbox",
+        "force-remote-settings-refresh"
+      ],
+      "equivalentHookDelivery": {
+        "mode": "force-enabled-release-tagged-plugin-with-installed-inventory",
+        "canonicalSource": "packages/design-system/ds-canonical/hooks",
+        "externalActivationRequired": true
+      },
+      "artifactContract": null
+    },
+    {
+      "id": "codex",
+      "adapter": "codex-requirements-v2",
+      "compatibilityMinimumVersionPointer": "/providers/codex/minimumVersion",
+      "assuranceMode": "managed-covered-controls",
+      "effectiveState": {
+        "acceptedReadbackSources": ["configRequirements/read", "endpoint-management-composed-effective"],
+        "sourceCapabilities": {
+          "configRequirements/read": [],
+          "endpoint-management-composed-effective": ["*"]
+        },
+        "requireWinningSourceIdentity": true,
+        "localFileDiscoveryIsAuthoritative": false,
+        "unobservableControlOutcome": "unknown"
+      },
+      "systemPaths": {
+        "darwin": "/etc/codex/requirements.toml",
+        "linux": "/etc/codex/requirements.toml",
+        "win32": "%ProgramData%\\OpenAI\\Codex\\requirements.toml"
+      },
+      "policyTemplates": {
+        "darwin": "infra/governance/managed-host/templates/codex-requirements.unix.toml",
+        "linux": "infra/governance/managed-host/templates/codex-requirements.unix.toml",
+        "win32": "infra/governance/managed-host/templates/codex-requirements.windows.toml"
+      },
+      "enforcementControls": [
+        "authority-endpoint-assignment",
+        "allow-managed-hooks-only",
+        "hooks-feature-pinned-on",
+        "absolute-managed-hook-bundle",
+        "absolute-pinned-runtime",
+        "permission-profile-allowlist",
+        "approval-policy-allowlist",
+        "empty-mcp-allowlist",
+        "plugin-feature-pinned-off",
+        "remote-plugin-feature-pinned-off",
+        "marketplace-add-install-refresh-exact-tag"
+      ],
+      "equivalentHookDelivery": {
+        "mode": "deterministic-absolute-managed-bundle",
+        "canonicalSource": "packages/design-system/ds-canonical/hooks",
+        "externalActivationRequired": true
+      },
+      "artifactContract": "infra/governance/managed-host/codex-hook-bundle-contract.json"
+    }
+  ]
+}

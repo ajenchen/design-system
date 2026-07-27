@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/role-surface-policy.schema.json",
+  "title": "Provider-neutral repository-role surface policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "roles"],
+  "properties": {
+    "$schema": {"const": "../schemas/role-surface-policy.schema.json"},
+    "schemaVersion": {"const": 3},
+    "kind": {"const": "provider-neutral-role-surface-policy"},
+    "roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "template-mirror", "product-consumer"],
+      "properties": {
+        "authority": {"$ref": "#/$defs/rolePolicy"},
+        "template-mirror": {"$ref": "#/$defs/rolePolicy"},
+        "product-consumer": {"$ref": "#/$defs/rolePolicy"}
+      }
+    }
+  },
+  "$defs": {
+    "rolePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["certificationCarrierPolicy", "coverageExclusions", "providerTransportProfiles", "requiredSurfaces"],
+      "properties": {
+        "certificationCarrierPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["relationship", "allowedChangedPaths"],
+          "properties": {
+            "relationship": {"enum": ["exact-subject", "ledger-carrier-descendant"]},
+            "allowedChangedPaths": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "coverageExclusions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["providers", "surfaces"],
+          "properties": {
+            "providers": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {"$ref": "#/$defs/providerExclusion"}
+            },
+            "surfaces": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {"$ref": "#/$defs/surfaceExclusion"}
+            }
+          }
+        },
+        "providerTransportProfiles": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["claude"],
+          "properties": {
+            "claude": {
+              "oneOf": [
+                {"const": "claude-authority-full"},
+                {"type": "null"}
+              ]
+            }
+          }
+        },
+        "requiredSurfaces": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/surfaceRequirement"}
+        }
+      }
+    },
+    "providerExclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "reasonCode", "detail"],
+      "properties": {
+        "provider": {"$ref": "#/$defs/providerId"},
+        "reasonCode": {"const": "provider-not-applicable-to-role"},
+        "detail": {"$ref": "#/$defs/exclusionDetail"}
+      }
+    },
+    "surfaceExclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement", "reasonCode", "detail"],
+      "properties": {
+        "requirement": {"$ref": "#/$defs/surfaceRequirement"},
+        "reasonCode": {"const": "surface-not-applicable-to-role"},
+        "detail": {"$ref": "#/$defs/exclusionDetail"}
+      }
+    },
+    "providerId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "surfaceRequirement": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*/[a-z][a-z0-9-]*/[a-z][a-z0-9-]*$"
+    },
+    "exclusionDetail": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 1000,
+      "pattern": "^\\S(?:.|\\n)*\\S$"
+    }
+  }
+}

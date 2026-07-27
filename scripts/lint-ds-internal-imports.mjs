@@ -11,11 +11,12 @@
 //
 // Pre-commit guard / CI check. Exits 1 on violation.
 
-import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, dirname } from 'node:path'
+import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
+import { join, dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
+const SCRIPT_PATH = fileURLToPath(import.meta.url)
+const DEFAULT_REPO_ROOT = join(dirname(SCRIPT_PATH), '..')
 const SCAN_DIRS = ['apps', 'packages']
 const FORBIDDEN_PATTERNS = [
   /@qijenchen\/design-system\/src\//,
@@ -33,31 +34,51 @@ function walk(dir) {
   return out
 }
 
-const violations = []
-for (const top of SCAN_DIRS) {
-  const root = join(REPO_ROOT, top)
-  try { statSync(root) } catch { continue }
-  for (const file of walk(root)) {
-    const content = readFileSync(file, 'utf8')
-    for (const pattern of FORBIDDEN_PATTERNS) {
-      if (pattern.test(content)) {
-        violations.push({ file: file.replace(REPO_ROOT + '/', ''), pattern: pattern.source })
+export function findDsInternalImportViolations(repoRoot = DEFAULT_REPO_ROOT) {
+  repoRoot = resolve(repoRoot)
+  const violations = []
+  for (const top of SCAN_DIRS) {
+    const root = join(repoRoot, top)
+    try { statSync(root) } catch { continue }
+    for (const file of walk(root)) {
+      const content = readFileSync(file, 'utf8')
+      for (const pattern of FORBIDDEN_PATTERNS) {
+        if (pattern.test(content)) {
+          violations.push({ file: relative(repoRoot, file).replaceAll('\\', '/'), pattern: pattern.source })
+        }
       }
     }
   }
+  return violations
 }
 
-if (violations.length > 0) {
-  console.error(`✗ ${violations.length} DS internal import violation(s):`)
-  for (const v of violations) {
-    console.error(`  ${v.file} — matches ${v.pattern}`)
+function parseRepoArgument(args) {
+  if (args.length === 0) return DEFAULT_REPO_ROOT
+  if (args.length === 2 && args[0] === '--repo' && args[1]) return args[1]
+  throw new Error('usage: lint-ds-internal-imports.mjs [--repo <candidate>]')
+}
+
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(SCRIPT_PATH)) {
+  let violations
+  try {
+    violations = findDsInternalImportViolations(parseRepoArgument(process.argv.slice(2)))
+  } catch (error) {
+    console.error(error.message)
+    process.exit(2)
   }
-  console.error(``)
-  console.error(`Rule: consumer apps must use public DS API only:`)
-  console.error(`  ✓ import { Button } from '@qijenchen/design-system'`)
-  console.error(`  ✓ import '@qijenchen/design-system/styles/tokens'`)
-  console.error(`  ✗ import { ... } from '@qijenchen/design-system/src/...'(internal source)`)
-  process.exit(1)
-}
 
-console.log(`✓ 0 DS internal import violations across apps/ + packages/`)
+  if (violations.length > 0) {
+    console.error(`✗ ${violations.length} DS internal import violation(s):`)
+    for (const v of violations) {
+      console.error(`  ${v.file} — matches ${v.pattern}`)
+    }
+    console.error(``)
+    console.error(`Rule: consumer apps must use public DS API only:`)
+    console.error(`  ✓ import { Button } from '@qijenchen/design-system'`)
+    console.error(`  ✓ import '@qijenchen/design-system/styles/tokens'`)
+    console.error(`  ✗ import { ... } from '@qijenchen/design-system/src/...'(internal source)`)
+    process.exit(1)
+  }
+
+  console.log(`✓ 0 DS internal import violations across apps/ + packages/`)
+}

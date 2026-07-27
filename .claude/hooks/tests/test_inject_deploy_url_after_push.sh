@@ -9,6 +9,7 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$SCRIPT_DIR/../inject_deploy_url_after_push.sh"
 [ -f "$HOOK" ] || { echo "FATAL: hook not found"; exit 1; }
+PROJECT_ROOT=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)
 
 PASS=0; FAIL=0; FAILED=""
 
@@ -32,7 +33,11 @@ teardown() { rm -rf "$TMP"; }
 run_hook() {
   local cmd="$1" ev="${2:-PostToolUse}" tool="${3:-Bash}" json
   json=$(printf '{"hook_event_name":"%s","tool_name":"%s","tool_input":{"command":"%s"}}' "$ev" "$tool" "$cmd")
-  STDOUT=$( cd "$TMP" && HOME="$TMP/home" CLAUDE_PROJECT_DIR="$TMP" bash "$HOOK" <<<"$json" 2>&1 )
+  STDOUT=$( cd "$TMP" && HOME="$TMP/home" XDG_CONFIG_HOME="$TMP/home/.config" \
+    GOVERNANCE_PROJECT_DIR="$TMP" GOVERNANCE_PROVIDER="${TEST_PROVIDER:-codex}" \
+    GOVERNANCE_CORPUS_ROOT="${TEST_CORPUS:-$PROJECT_ROOT}" \
+    GOVERNANCE_PROVIDER_REGISTRY="${TEST_REGISTRY:-packages/governance/canonical/providers.json}" \
+    GOVERNANCE_READ_ONLY=1 bash "$HOOK" <<<"$json" 2>&1 )
   EXIT=$?
 }
 
@@ -165,7 +170,7 @@ rm -rf "$TMP3"
 
 # 19. detached HEAD `git push origin HEAD` → branch 解析空 → skip(不吐 https://--site malformed)
 TMP4=$(mktemp -d); mkrepo "$TMP4" m netlify; ( cd "$TMP4" && git checkout -q --detach 2>/dev/null )
-STDOUT=$( cd "$TMP4" && HOME="$TMP4/home" CLAUDE_PROJECT_DIR="$TMP4" bash "$HOOK" <<<'{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}' 2>&1 ); EXIT=$?
+STDOUT=$( cd "$TMP4" && HOME="$TMP4/home" XDG_CONFIG_HOME="$TMP4/home/.config" GOVERNANCE_PROJECT_DIR="$TMP4" GOVERNANCE_PROVIDER=codex GOVERNANCE_READ_ONLY=1 bash "$HOOK" <<<'{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"git push origin HEAD"}}' 2>&1 ); EXIT=$?
 if [ "$EXIT" = 0 ] && ! injected && ! echo "$STDOUT" | grep -qE -- '--site|\(\)'; then echo "  PASS  19 detached HEAD → skip (no malformed URL)"; PASS=$((PASS+1)); else echo "  FAIL  19 (exit=$EXIT out=${STDOUT:0:140})"; FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - 19"; fi
 rm -rf "$TMP4"
 
@@ -178,6 +183,84 @@ rm -rf "$TMP5"
 # 21. refspec full-ref `HEAD:refs/heads/main` → 取 main,不洩漏 refs/heads
 run_hook "git push origin HEAD:refs/heads/main"
 check "21 refspec refs/heads → no refs/heads leak" fire 'no_refsheads'
+
+# 22. Poisoned Claude HOME must not affect Codex. Add a remote only for preference-key tests.
+(cd "$TMP" && git remote add origin git@github.com:owner/repo.git)
+mkdir -p "$TMP/home/.claude/local"
+printf '{"owner/repo":"https://poison-claude-home.netlify.app"}\n' > "$TMP/home/.claude/local/deploy-targets.json"
+TEST_PROVIDER=codex run_hook "git push origin feature-test"
+if [ "$EXIT" = 0 ] && injected && ! echo "$STDOUT" | grep -q 'poison-claude-home' && echo "$STDOUT" | grep -q 'sitename 未知'; then
+  echo "  PASS  22 Codex ignores poisoned ~/.claude deploy preference"; PASS=$((PASS+1))
+else
+  echo "  FAIL  22 Codex consumed Claude HOME (out=${STDOUT:0:180})"; FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - 22"
+fi
+
+# 23. Neutral XDG preference outranks provider-specific legacy compatibility input.
+mkdir -p "$TMP/home/.config/qijenchen-governance"
+printf '{"owner/repo":"https://neutral-site.netlify.app"}\n' > "$TMP/home/.config/qijenchen-governance/deploy-targets.json"
+TEST_PROVIDER=codex run_hook "git push origin feature-test"
+if [ "$EXIT" = 0 ] && injected && echo "$STDOUT" | grep -q 'neutral-site' && ! echo "$STDOUT" | grep -q 'poison-claude-home'; then
+  echo "  PASS  23 neutral XDG deploy preference is provider-independent and preferred"; PASS=$((PASS+1))
+else
+  echo "  FAIL  23 neutral preference not used (out=${STDOUT:0:180})"; FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - 23"
+fi
+
+# 24. A future provider is registry data only and uses the same neutral preference layer.
+mkdir -p "$TMP/future-corpus"
+cat > "$TMP/future-corpus/providers.json" <<'EOF'
+{"providers":[{"id":"orion","instructionEntry":"ORION.md"}]}
+EOF
+TEST_PROVIDER=orion TEST_CORPUS="$TMP/future-corpus" TEST_REGISTRY=providers.json \
+  run_hook "git push origin feature-test"
+if [ "$EXIT" = 0 ] && injected && echo "$STDOUT" | grep -q 'neutral-site' && ! echo "$STDOUT" | grep -q 'poison-claude-home'; then
+  echo "  PASS  24 future provider uses registry + neutral deploy preference only"; PASS=$((PASS+1))
+else
+  echo "  FAIL  24 future provider deploy preferences (out=${STDOUT:0:180})"; FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - 24"
+fi
+
+# 25. A real push with an unregistered provider is an adapter/config integrity fault,not policy.
+TEST_PROVIDER=absent TEST_CORPUS="$TMP/future-corpus" TEST_REGISTRY=providers.json \
+  run_hook "git push origin feature-test"
+if [ "$EXIT" = 70 ] && echo "$STDOUT" | grep -qF "GOVERNANCE_INTEGRITY:" && ! injected; then
+  echo "  PASS  25 unregistered provider → integrity 70"; PASS=$((PASS+1))
+else
+  echo "  FAIL  25 expected provider integrity 70 (exit=$EXIT out=${STDOUT:0:180})"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - 25"
+fi
+
+# 26. Content sniff must read a hallmark-first response larger than a pipe buffer without
+# curl→grep -q early-close inversion. The fake HEAD request returns 200; the body starts with
+# Storybook evidence and then exceeds 256 KiB.
+(cd "$TMP" && git branch -m main)
+mkdir -p "$TMP/fake-bin"
+cat >"$TMP/fake-bin/curl" <<'EOF'
+#!/bin/bash
+case " $* " in
+  *" -I "*) printf '200' ;;
+  *)
+    printf 'sb-manager\n'
+    awk 'BEGIN { for (i = 0; i < 300000; i++) printf "x" }'
+    ;;
+esac
+EOF
+chmod +x "$TMP/fake-bin/curl"
+OLD_PATH="$PATH"
+PATH="$TMP/fake-bin:$PATH"
+TEST_PROVIDER=codex
+TEST_CORPUS="$PROJECT_ROOT"
+TEST_REGISTRY=packages/governance/canonical/providers.json
+run_hook "git push origin main"
+PATH="$OLD_PATH"
+if [ "$EXIT" = 0 ] \
+  && injected \
+  && echo "$STDOUT" | grep -qF 'verified 200 + Storybook content' \
+  && ! echo "$STDOUT" | grep -qF '內容非 Storybook' \
+  && ! echo "$STDOUT" | grep -qiE 'broken pipe|GOVERNANCE_INTEGRITY:'; then
+  echo "  PASS  26 >256KiB hallmark-first deploy body remains Storybook-positive"; PASS=$((PASS+1))
+else
+  echo "  FAIL  26 large deploy body classification (exit=$EXIT out=${STDOUT:0:180})"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - 26"
+fi
 
 teardown
 

@@ -1,0 +1,253 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance-harness-authority-contracts-v2.json",
+  "title": "Provider-neutral governance Harness claim authority contracts",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "closurePolicy", "sharedAuthorityClosures", "entries"],
+  "properties": {
+    "$schema": {"const": "../schemas/harness-authority-contracts.schema.json"},
+    "schemaVersion": {"const": 2},
+    "kind": {"const": "provider-neutral-governance-harness-authority-contracts"},
+    "closurePolicy": {"const": "every-registry-claim-is-bound-to-exact-manifest-sources-and-executed-test-owners"},
+    "sharedAuthorityClosures": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/sharedAuthorityClosure"}
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 13,
+      "items": {"$ref": "#/$defs/entry"}
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "domain": {
+      "oneOf": [
+        {
+          "enum": [
+            "install",
+            "upgrade",
+            "rollback",
+            "process-crash",
+            "provider-lifecycle",
+            "cloud",
+            "template-consumer",
+            "second-opinion",
+            "mirror",
+            "release",
+            "fleet",
+            "evidence",
+            "fake-green"
+          ]
+        },
+        {"type": "string", "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*$"}
+      ]
+    },
+    "repoPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "executionOwner": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "path"],
+          "properties": {
+            "kind": {"const": "test-path"},
+            "path": {"$ref": "#/$defs/repoPath"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "stageId"],
+          "properties": {
+            "kind": {"const": "graph-stage"},
+            "stageId": {"$ref": "#/$defs/identifier"}
+          }
+        }
+      ]
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimId", "entryId", "domain", "kind", "text", "sourceIds", "executionOwners"],
+      "properties": {
+        "claimId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*\\.(?:proves|does-not-prove)\\.[0-9]{2}$"
+        },
+        "entryId": {"$ref": "#/$defs/identifier"},
+        "domain": {"$ref": "#/$defs/domain"},
+        "kind": {"enum": ["proves", "does-not-prove"]},
+        "text": {"type": "string", "minLength": 20},
+        "sourceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/identifier"}
+        },
+        "executionOwners": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/executionOwner"}
+        }
+      }
+    },
+    "sharedAuthorityProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "builderSourceId", "comparison"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "path": {"$ref": "#/$defs/repoPath"},
+        "builderSourceId": {"$ref": "#/$defs/identifier"},
+        "comparison": {"const": "canonical-byte-exact"}
+      }
+    },
+    "sharedAuthorityClosure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "canonicalSourceId",
+        "adapter",
+        "directProjections",
+        "managedFileProjection",
+        "externalMirrorProjection",
+        "packageDelivery",
+        "executedTestOwners",
+        "claims"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "kind": {"const": "canonical-byte-exact-shared-runtime"},
+        "canonicalSourceId": {"$ref": "#/$defs/identifier"},
+        "adapter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sourceId", "contract", "moduleSpecifier"],
+          "properties": {
+            "sourceId": {"$ref": "#/$defs/identifier"},
+            "contract": {"const": "single-static-re-export"},
+            "moduleSpecifier": {"type": "string", "pattern": "^\\.\\./\\.\\./packages/governance/src/[a-z0-9-]+\\.mjs$"}
+          }
+        },
+        "directProjections": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/sharedAuthorityProjection"}
+        },
+        "managedFileProjection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "destination", "artifactRoot", "builderSourceId", "comparison"],
+          "properties": {
+            "id": {"$ref": "#/$defs/identifier"},
+            "destination": {"$ref": "#/$defs/repoPath"},
+            "artifactRoot": {"$ref": "#/$defs/repoPath"},
+            "builderSourceId": {"$ref": "#/$defs/identifier"},
+            "comparison": {"const": "canonical-byte-exact"}
+          }
+        },
+        "externalMirrorProjection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["builderSourceId", "policySourceId", "destination", "comparison"],
+          "properties": {
+            "builderSourceId": {"$ref": "#/$defs/identifier"},
+            "policySourceId": {"$ref": "#/$defs/identifier"},
+            "destination": {"$ref": "#/$defs/repoPath"},
+            "comparison": {"const": "canonical-byte-exact"}
+          }
+        },
+        "packageDelivery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "manifestSourceId",
+            "packageName",
+            "filesRoot",
+            "exportSubpath",
+            "exportTarget",
+            "archiveBuilderSourceId",
+            "archiveEntry",
+            "packExecutionOwner"
+          ],
+          "properties": {
+            "manifestSourceId": {"$ref": "#/$defs/identifier"},
+            "packageName": {"const": "@qijenchen/governance"},
+            "filesRoot": {"$ref": "#/$defs/repoPath"},
+            "exportSubpath": {"type": "string", "pattern": "^\\./[a-z0-9-]+$"},
+            "exportTarget": {"type": "string", "pattern": "^\\./src/[a-z0-9-]+\\.mjs$"},
+            "archiveBuilderSourceId": {"$ref": "#/$defs/identifier"},
+            "archiveEntry": {"type": "string", "pattern": "^package/src/[a-z0-9-]+\\.mjs$"},
+            "packExecutionOwner": {"$ref": "#/$defs/executionOwner"}
+          }
+        },
+        "executedTestOwners": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/executionOwner"}
+        },
+        "claims": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["proves", "doesNotProve"],
+          "properties": {
+            "proves": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 20}
+            },
+            "doesNotProve": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 20}
+            }
+          }
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entryId", "domain", "authoritySourceIds", "executedTestOwners", "claims"],
+      "properties": {
+        "entryId": {"$ref": "#/$defs/identifier"},
+        "domain": {"$ref": "#/$defs/domain"},
+        "authoritySourceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/identifier"}
+        },
+        "executedTestOwners": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/executionOwner"}
+        },
+        "claims": {
+          "type": "array",
+          "minItems": 2,
+          "items": {"$ref": "#/$defs/claim"}
+        }
+      }
+    }
+  }
+}

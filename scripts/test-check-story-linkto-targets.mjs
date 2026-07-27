@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 // meta-test for check-story-linkto-targets — 注入 stale <LinkTo name> → gate 必 exit 1 → 還原(PNG P4.3 gate-meta-test 家族)
-import { execSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 
-const run = (cmd) => { try { execSync(cmd, { stdio: 'pipe' }); return 0 } catch (e) { return e.status ?? 1 } }
-const GATE = 'node scripts/check-story-linkto-targets.mjs --check'
+const run = () => spawnSync(process.execPath, ['--', 'scripts/check-story-linkto-targets.mjs', '--check'], { stdio: 'pipe' }).status ?? 1
 let ok = true
 
 // 1) 現況必 PASS
-if (run(GATE) !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL(repo 有真 stale LinkTo,換乾淨 target)'); process.exit(1) }
+if (run() !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL(repo 有真 stale LinkTo,換乾淨 target)'); process.exit(1) }
 
 // 2) 注入違規 → 必 FAIL → 還原
 //    gate 驗每個 <LinkTo kind name> 的 name 命中該 kind(title)底下某 story name。
@@ -19,7 +18,7 @@ const NEEDLE = 'name="會議時段"'
 if (!orig.includes(NEEDLE)) { console.error(`✗ 找不到注入錨點 ${NEEDLE}(target 檔內容已變,換錨點)`); process.exit(1) }
 try {
   writeFileSync(target, orig.replace(NEEDLE, 'name="__META_TEST_NONEXISTENT_STORY__"'))
-  const code = run(GATE)
+  const code = run()
   if (code === 0) { console.error('✗ 注入 stale LinkTo 後 gate 未 FAIL(detection 失效)'); ok = false }
   else console.log('✓ 注入 stale LinkTo name 被抓(exit ' + code + ')')
 } finally {
@@ -27,6 +26,6 @@ try {
 }
 
 // 3) 還原後必 PASS
-if (run(GATE) !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
+if (run() !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
 console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')
 process.exit(ok ? 0 : 1)

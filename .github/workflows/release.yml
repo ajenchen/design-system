@@ -1,108 +1,250 @@
-# 2026-05-22 Phase 4 team-distribution-roadmap:GitHub Actions release pipeline
-#
-# Trigger:push tag `v*` → publish to npm + GitHub Release + plugin host
-# Per roadmap acceptance:Mock `v0.1.0-beta.1` tag → CI 自動跑完 publish 到 internal registry
-#
-# 對齊 changesets/changesets GitHub repo + Vercel `pkg.pr.new` pre-release model
 name: Release
 
-on:
-  push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
-    inputs:
-      releaseType:
-        description: 'Release type'
-        required: false
-        default: 'beta'
-        type: choice
-        options:
-          - beta
-          - next
-          - stable
-      action:
-        description: 'Action to run(release = normal publish trigger via tag push;repoint-latest = point `latest` dist-tag to current `@beta` version so consumers without @beta suffix get usable build;clear-latest = unpoint latest entirely,strict semver pre-release hygiene before v1.0.0)'
-        required: true
-        default: 'release'
-        type: choice
-        options:
-          - release
-          - repoint-latest
-          - clear-latest
+# External one-time trust binding for every package:
+# GitHub ajenchen/design-system + workflow release.yml + environment npm-release,
+# with only `npm stage publish` allowed. Direct OIDC publication must stay disabled.
+# Native staging cannot create a package, so a new package first needs one lower,
+# non-consumed interactive 2FA bootstrap before stage-only trust is enabled.
 
-# 2026-06-02 防「同一 tag 重複觸發 / 重試」的多 run 並行搶發 npm → 序列化(同 group 一次只跑一個,
-# 後到的排隊等前一個發完;配套下方 publish step 的冪等 guard → 後到 run 看到版本已存在就 skip 綠燈,
-# 不再 E403 跳紅）。cancel-in-progress: false = 絕不中途砍正在發版的 run。
+on:
+  # repository_dispatch always loads this privileged workflow from protected
+  # default. A pushed tag is data only and can never supply its own workflow.
+  repository_dispatch:
+    types: [stage-protected-release]
+
+permissions: {}
+
+# The payload tag must resolve to the current protected-main HEAD before any
+# untrusted code, OIDC, attestation, or npm authority is used.
 concurrency:
-  group: release-${{ github.ref }}
+  group: ${{ github.repository }}-release
   cancel-in-progress: false
 
+env:
+  RELEASE_TAG: ${{ github.event.client_payload.tag }}
+  RELEASE_DISPATCH_TAG: ${{ github.event.client_payload.tag }}
+
 jobs:
+  resolve-release-request:
+    name: Bind dispatch request to current protected main
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.identity.outputs.tag }}
+      release_commit: ${{ steps.identity.outputs.commit }}
+      release_tree: ${{ steps.identity.outputs.tree }}
+    steps:
+      - name: Checkout protected default workflow source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve exact tag and reject stale or off-main dispatch
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="$RELEASE_TAG"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|next|rc)\.[0-9]+)?$ ]] || {
+            echo "release dispatch requires vX.Y.Z or vX.Y.Z-(beta|next|rc).N"
+            exit 1
+          }
+          /usr/bin/git fetch --force --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          /usr/bin/git fetch --force --no-tags origin "refs/tags/$tag:refs/tags/$tag"
+          main_commit="$(/usr/bin/git rev-parse refs/remotes/origin/main^{commit})"
+          event_commit="$(/usr/bin/git rev-parse "$GITHUB_SHA^{commit}")"
+          tag_commit="$(/usr/bin/git rev-parse "refs/tags/$tag^{commit}")"
+          test "$event_commit" = "$main_commit" || {
+            echo "stale dispatch workflow source: event $event_commit, current main $main_commit"
+            exit 1
+          }
+          test "$tag_commit" = "$main_commit" || {
+            echo "release tag $tag points to $tag_commit, not current protected main $main_commit"
+            exit 1
+          }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "commit=$tag_commit" >> "$GITHUB_OUTPUT"
+          echo "tree=$(/usr/bin/git rev-parse "$tag_commit^{tree}")" >> "$GITHUB_OUTPUT"
+
+  trust-preflight:
+    name: Read-only GitHub release trust preflight
+    needs: resolve-release-request
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      deployments: read
+    outputs:
+      evidence_digest: ${{ steps.resolve_trust.outputs.evidence_digest }}
+      evidence_file_sha256: ${{ steps.resolve_trust.outputs.evidence_file_sha256 }}
+      authorization_digest: ${{ steps.resolve_trust.outputs.authorization_digest }}
+      tag_object: ${{ steps.resolve_trust.outputs.tag_object }}
+      artifact_digest: ${{ steps.retain_trust.outputs.artifact-digest }}
+    steps:
+      - name: Checkout exact protected release commit without stored credentials
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ needs.resolve-release-request.outputs.release_commit }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up verification-only Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.14.0'
+          package-manager-cache: false
+
+      - name: Install the locked read-only verifier dependencies
+        run: npm run --silent setup:dependencies
+
+      - name: Resolve actual GitHub trust state before any privileged job can start
+        id: resolve_trust
+        env:
+          # A separately provisioned fine-grained read-only token may be needed
+          # for ruleset/environment/secret-metadata/immutable-release readback.
+          # Missing observation permission is a hard failure, never a bypass.
+          GH_TOKEN: ${{ secrets.RELEASE_TRUST_PREFLIGHT_TOKEN || github.token }}
+        run: >-
+          node scripts/release-trust-preflight.mjs
+          --repository "$GITHUB_REPOSITORY"
+          --release-tag "${{ needs.resolve-release-request.outputs.tag }}"
+          --release-commit "${{ needs.resolve-release-request.outputs.release_commit }}"
+          --release-tree "${{ needs.resolve-release-request.outputs.release_tree }}"
+          --run-id "$GITHUB_RUN_ID"
+          --run-attempt "$GITHUB_RUN_ATTEMPT"
+          --event "$GITHUB_EVENT_PATH"
+          --output "$RUNNER_TEMP/release-trust/release-trust-preflight.json"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Retain attempt-unique trust evidence
+        id: retain_trust
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-trust-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-trust/release-trust-preflight.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
   smoke-shard:
-    name: Storybook FULL smoke shard ${{ matrix.shard }}/4
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'release')
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    name: Storybook full smoke ${{ matrix.shard }}/4
+    needs: resolve-release-request
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
     strategy:
-      fail-fast: false  # 一 shard fail 不擋其他 shard,看完整 fail picture
+      fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout exact protected release commit
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
-          node-version: 22
-          cache: 'npm'
-      - name: Install
-        run: npm ci
-      - name: Install Playwright chromium
-        run: npx playwright install --with-deps chromium
-      - name: Build DS lib + storybook-config dist(chained correct order)
-        # 2026-05-26 fix:storybook-config 需 DS dist/ 先 build(preview.tsx import @qijenchen/design-system types)
-        # `build:lib` script chain DS build → DS dts → storybook-config build,順序保證 type resolution OK
-        run: npm run build:lib
-      - name: Build Storybook
-        run: npm run build-storybook
-      - name: Run smoke shard ${{ matrix.shard }}/4(FULL 947 stories sharded)
+          ref: ${{ needs.resolve-release-request.outputs.release_commit }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.14.0'
+          package-manager-cache: false
+
+      - name: Install dependencies with the lock-bound npm runtime
+        run: node scripts/setup-authority-governance.mjs --dependencies-only
+
+      - name: Install Playwright Chromium
+        run: npm run --silent setup:playwright -- --with-deps
+
+      - name: Build library and Storybook
+        run: |
+          npm run --silent build:lib
+          npm run --silent build-storybook
+
+      - name: Run every Storybook story in shard ${{ matrix.shard }}/4
         run: node scripts/storybook-smoke-test.mjs --full --shard=${{ matrix.shard }}/4
 
-  release:
-    name: Release packages
-    needs: smoke-shard  # 4 shards 全綠才 release(per user「全盤驗證」directive)
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'release')
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+  build-release-evidence:
+    name: Build and verify exact release evidence(no publish authority)
+    needs: [resolve-release-request, smoke-shard]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
     permissions:
-      contents: write
-      packages: write
-      id-token: write
+      contents: read
+    outputs:
+      release_commit: ${{ steps.release-identity.outputs.commit }}
+      release_tree: ${{ steps.release-identity.outputs.tree }}
+      release_set_sha256: ${{ steps.release_set.outputs.sha256 }}
+      actions_artifact_digest: ${{ steps.retain_evidence.outputs.artifact-digest }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout exact protected release commit
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
+          ref: ${{ needs.resolve-release-request.outputs.release_commit }}
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
+      - name: Fetch protected main ref
+        env:
+          PATH: /usr/bin:/bin
+        run: git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
 
-      - name: Install
-        run: npm ci
-
-      - name: Build DS lib + storybook-config dist(required for tsc audit + Storybook + publish)
-        # 2026-05-26 移到 Audit gates 之前:`tsc -b` 需 DS dist/index.d.ts 才能 resolve `@qijenchen/design-system`
-        # `.storybook/main.ts` 需 storybook-config dist/addons-preset.d.ts 才能 resolve `@qijenchen/storybook-config/preset`
-        # build:lib script chain DS build → DS dts → storybook-config build,順序保證 type resolution OK
-        run: npm run build:lib
-
-      - name: Audit gates(must PASS before publish)
-        # 2026-06-04 SSOT 對齊:補 typecheck:stories + story-quality:check + ds-canonical drift —— 原 release.yml
-        # Audit gates 漏這 3 道,但 release-preflight.mjs 有(兩者應 1:1,否則「沒跑 preflight 直接 push tag」會漏掉)。
-        # 此 step 為直接指令(無 pipe)→ bash -e errexit 任一非 0 即停,不需 pipefail。
+      - name: Resolve immutable release identity
+        id: release-identity
+        shell: bash
+        env:
+          PATH: /usr/bin:/bin
         run: |
-          npx tsc -b
+          set -euo pipefail
+          commit="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
+          tree="$(git rev-parse "${commit}^{tree}")"
+          echo "commit=${commit}" >> "$GITHUB_OUTPUT"
+          echo "tree=${tree}" >> "$GITHUB_OUTPUT"
+
+      - name: Fail closed unless the tag is still current protected main
+        shell: bash
+        env:
+          PATH: /usr/bin:/bin
+        run: |
+          set -euo pipefail
+          test "${{ steps.release-identity.outputs.commit }}" = "$(git rev-parse refs/remotes/origin/main^{commit})"
+
+      - name: Set up Node and npm registry
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.14.0'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Install dependencies with the lock-bound npm runtime
+        run: |
+          node scripts/setup-authority-governance.mjs --verify-runtime
+          node scripts/setup-authority-governance.mjs --dependencies-only
+
+      - name: Build publishable workspaces
+        run: npm run --silent build:lib
+
+      - name: Provision exact Playwright Chromium runtime for isolated Harnesses
+        run: npm run --silent setup:playwright -- --with-deps
+
+      - name: Deterministic governance and product gates
+        run: |
+          npm run --silent test:governance-harnesses
+          npm run --silent audit:workflow-security
+          npm run --silent governance:workflow-identities:check
+          npm run --silent test:workflow-security
+          npm run --silent test:governance-anchor
+          npm run --silent test:privileged-change-authorization
+          npm run --silent test:consumer-source-harness
+          npm run --silent test:writer-evidence
+          npx --no-install tsc -b
           npm run --silent typecheck:stories
           node scripts/audit-orphan-tokens.mjs --check
           node scripts/categorical-color-invariants.mjs
@@ -116,9 +258,14 @@ jobs:
           node scripts/gen-figma-make-artifacts.mjs --check
           node scripts/plugin-structure-validate.mjs
           npm run --silent story-quality:check
-          node scripts/sync-ds-canonical.mjs --check
-          node scripts/build-fork-governance.mjs --check
+          npm run --silent test:governance-control-plane
+          npm run --silent test:governance-fleet
+          node scripts/governance-build-graph.mjs --check
+          npm run --silent test:governance-portability-safety
           node scripts/test-fork-governance.mjs
+          npm run --silent test:consumer-governance
+          npm run --silent test:sync-all-transaction
+          npm run --silent test:release-supply-chain
           node scripts/check-src-republish.mjs --check
           node scripts/sync-template-canonical-app.mjs --check
           node scripts/gen-llms-txt.mjs --check
@@ -128,273 +275,347 @@ jobs:
           node scripts/checkbox-group-handcraft-invariant.mjs
           node scripts/layout-space-story-coherence.mjs
           node scripts/overlay-density-lock-placement.mjs
-          # 2026-06-16 root-cause gate(== ci.yml「Build apps/template」+ release-preflight.mjs):apps/template 是
-          # React19 workspace,root tsc -b references 不含它 → receiver-only `JSX.Element` TS2503 假綠 ship
-          # (bde81e7e 2026-06-12 anchor)。subshell 跑 receiver 同款 build,cwd 不外洩。
           ( cd apps/template && npm run build )
 
-      - name: Build Storybook
-        run: npm run build-storybook
-
-      - name: Pack dry-run + verify dist/ included
-        run: |
-          cd packages/design-system
-          npm pack --dry-run 2>&1 | tee /tmp/pack.log
-          # 強制驗 dist/components/Button/index.js 在 pack 中 — 補位 beta.1-4 silently
-          # 漏 dist/ 的 retro-fix(fix 2026-05-25)
-          if ! grep -q "dist/components/Button" /tmp/pack.log; then
-            echo "❌ dist/components/Button/ not in pack — lib build broken"
-            exit 1
-          fi
-          if ! grep -q "dist/index.js" /tmp/pack.log; then
-            echo "❌ dist/index.js not in pack"
-            exit 1
-          fi
-          cd ../storybook-config
-          npm pack --dry-run
-
-      - name: Dogfood pre-publish verify(fresh consumer install + vite build)
-        # 2026-05-25 Phase 4.11 加 — beta.1-10 連 ship 多次「裝完才發現少 transitive peer」
-        # bug(lucide-react / react-is 等)。release audit gates 沒 catch,只有 Netlify
-        # consumer build 才炸。此 script simulate fresh consumer install + vite build,
-        # 提前 catch missing peer dep / 壞 exports 等 packaging bug。
-        # Fail = block publish(per user verbatim「不要再耍白痴,確保自己驗證到成功」)。
+      - name: Fresh-consumer packaging dogfood
         run: node scripts/dogfood-prepublish-verify.mjs
 
-      # Storybook FULL smoke moved to parallel `smoke-shard` matrix job(2026-05-26)。
-      # Per user 永久 directive「不要抽樣要全盤驗證」— 947-story full sweep 走 4-shard
-      # GitHub matrix parallel(每 shard ~237 stories × ~3-5 min ≈ wall time 5-7 min),
-      # `release` job gate on `needs: [smoke-shard]` block publish unless all 4 shards 全綠。
-      # 對齊 Jest / Playwright / Vitest `--shard=N/M` canonical(industry standard)。
-
-      # Claude plugin marketplace distribution(Phase 7 — 2026-05-23 ship per real Anthropic spec)
-      # Distribution model:**GitHub-direct**(不走 Anthropic public marketplace)
-      #   - Consumers add this repo as marketplace:`/plugin marketplace add github:qijenchen/design-system`
-      #   - Plugin install:`/plugin install design-system@qijenchen-ds`
-      #   - Version pinning:tag v0.x.x → marketplace.json + plugin.json `version` field bumped manually pre-tag
-      #     OR omit version → commit SHA used(per Anthropic plugin spec auto-versioning)
-      # No CLI publish step needed for GitHub-direct — GitHub repo IS the marketplace.
-      # Anthropic-marketplace submission(future):manual via claude.ai/settings/plugins/submit
-      #
-      # 2026-07-14 dim-66 修:本 BLOCKER 原排在 npm publish / dist-tag repoint / GitHub Release /
-      # consumer dispatch **之後** — 繞過本機 preflight 直接推錯 tag 時,會先產生不可逆發布才紅燈。
-      # Gate 必須在所有 publish 動作之前(fail-closed before irreversible side effects)。
-      - name: Verify plugin manifest version sync(BLOCKER - 2026-05-25 Phase 4.12 upgrade)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Pack the release archives exactly once
+        shell: bash
         run: |
-          # Per user 2026-05-25「不要有偏移的情況,包括所有檔案包括所有 plugin 都是」
-          # 升 warning → error:tag push 前 package.json / plugin.json / marketplace.json
-          # 版本必對齊 = 防 npm 跟 plugin 永遠同步。
-          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          DS_VERSION=$(jq -r '.version' packages/design-system/package.json)
-          SB_VERSION=$(jq -r '.version' packages/storybook-config/package.json)
-          PLUGIN_VERSION=$(jq -r '.version' .claude-plugin/plugin.json)
-          MARKETPLACE_META_VERSION=$(jq -r '.metadata.version' .claude-plugin/marketplace.json)
-          MARKETPLACE_PLUGIN_VERSION=$(jq -r '.plugins[] | select(.name=="design-system") | .version // empty' .claude-plugin/marketplace.json)
+          set -euo pipefail
+          mkdir -p release-artifacts
+          node scripts/run-verified-npm.mjs -- pack ./packages/design-system --pack-destination release-artifacts --json --ignore-scripts
+          node scripts/run-verified-npm.mjs -- pack ./packages/storybook-config --pack-destination release-artifacts --json --ignore-scripts
+          node scripts/run-verified-npm.mjs -- pack ./packages/governance --pack-destination release-artifacts --json --ignore-scripts
 
-          echo "Tag:                $TAG_VERSION"
-          echo "design-system:      $DS_VERSION"
-          echo "storybook-config:   $SB_VERSION"
-          echo "plugin.json:        $PLUGIN_VERSION"
-          echo "marketplace.meta:   $MARKETPLACE_META_VERSION"
-          echo "marketplace.plugin: $MARKETPLACE_PLUGIN_VERSION"
-
-          fail=0
-          for label_ver in "design-system:$DS_VERSION" "storybook-config:$SB_VERSION" "plugin.json:$PLUGIN_VERSION" "marketplace.meta:$MARKETPLACE_META_VERSION" "marketplace.plugin:$MARKETPLACE_PLUGIN_VERSION"; do
-            label="${label_ver%%:*}"
-            ver="${label_ver##*:}"
-            if [ "$ver" != "$TAG_VERSION" ]; then
-              echo "::error::$label version($ver)≠ tag($TAG_VERSION)— version drift detected"
-              fail=1
-            fi
-          done
-
-          if [ "$fail" -eq 1 ]; then
-            echo "::error::Pre-tag must sync ALL 5 versions: design-system + storybook-config + plugin.json + marketplace.metadata + marketplace.plugins[design-system]"
-            echo "::error::Re-run: scripts/bump-version.mjs(future)or manual sed all 5 files before tag push."
-            exit 1
-          fi
-          echo "✓ all versions in sync with tag $TAG_VERSION"
-
-      - name: Publish to npm
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Generate deterministic release SBOM
+        shell: bash
         run: |
-          # Determine dist-tag from tag(v1.0.0 → latest;v1.0.0-beta.1 → beta;v1.0.0-next.1 → next)
-          TAG_NAME="${GITHUB_REF#refs/tags/v}"
-          if [[ "$TAG_NAME" == *"-beta"* ]]; then DIST_TAG=beta;
-          elif [[ "$TAG_NAME" == *"-next"* ]]; then DIST_TAG=next;
-          else DIST_TAG=latest; fi
-          echo "Publishing with dist-tag: $DIST_TAG"
+          set -euo pipefail
+          node scripts/run-verified-npm.mjs -- sbom --workspaces --package-lock-only --sbom-format=cyclonedx > "$RUNNER_TEMP/release.sbom.raw.json"
+          /usr/bin/jq 'del(.serialNumber, .metadata.timestamp)' "$RUNNER_TEMP/release.sbom.raw.json" > release-artifacts/release.sbom.cdx.json
 
-          # 冪等 publish:發版前先查該版本是否已在 npm。已存在 → skip + 綠燈(重複觸發 / 重試 run
-          # 不再撞 E403「cannot publish over previously published version」跳假紅);不存在 → 才 publish。
-          # Root cause(2026-06-02):同一 tag GitHub 會重複觸發多 run(beta.43=4 / beta.45=3 / beta.46=2),
-          # 舊 step 無 guard → 第二個必 E403 紅。配合上方 concurrency 序列化 → 後到 run 必看到已發 → skip。
-          publish_if_new() {
-            local pkg="$1" ver
-            ver=$(node -p "require('./package.json').version")
-            if npm view "${pkg}@${ver}" version >/dev/null 2>&1; then
-              echo "⏭  ${pkg}@${ver} 已發佈 → skip(冪等,非錯誤）"
-            else
-              echo "📦 publishing ${pkg}@${ver} --tag $DIST_TAG"
-              npm publish --access public --tag "$DIST_TAG"
-            fi
-          }
-
-          cd packages/design-system
-          publish_if_new "@qijenchen/design-system"
-          cd ../storybook-config
-          publish_if_new "@qijenchen/storybook-config"
-
-      # 2026-05-29 RC3 fix(codex dual-track 共識):pre-1.0 beta-only 套件,`latest` 必自動跟最新 beta。
-      # 否則 latest 停在舊版 → consumer sync-design-system `npm update`(target latest)+ 裸 `npm i` 拿舊版
-      # → 修正(如 beta.34 React #31 fix)送不到 fork repo → 部署仍壞。Anchor:beta.34 latest 卡 beta.33。
-      - name: Repoint latest → this beta(防 latest/beta 分岔)
-        if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-beta')
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Lock every published product-template scaffold path and mode
+        shell: bash
         run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
-          npm dist-tag add @qijenchen/design-system@"$VERSION" latest
-          npm dist-tag add @qijenchen/storybook-config@"$VERSION" latest
-          echo "✅ latest dist-tag → $VERSION(consumer npm update / 裸 npm i 即拿最新 beta)"
+          set -euo pipefail
+          node scripts/build-published-template-mirror.mjs --out="$RUNNER_TEMP/release-product-template"
+          node scripts/product-template-scaffold-lock.mjs \
+            --root "$RUNNER_TEMP/release-product-template" \
+            --output "$GITHUB_WORKSPACE/release-artifacts/product-template-scaffold.lock.json" \
+            --version "${RELEASE_TAG#v}"
 
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+      - name: Build release BOM from the exact archives
+        run: >-
+          node scripts/build-release-bom.mjs
+          --repo "$GITHUB_WORKSPACE"
+          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          --output "$GITHUB_WORKSPACE/release-artifacts/release-bom.json"
+          --tag "$RELEASE_TAG"
+          --git-head "${{ steps.release-identity.outputs.commit }}"
+          --git-tree "${{ steps.release-identity.outputs.tree }}"
+          --repository "$GITHUB_REPOSITORY"
+          --main-ref refs/remotes/origin/main
+          --require-sbom
+          --require-clean
+          --require-release-ref
+          --allow-repository-dispatch
+
+      - name: Canonical read-only release verification
+        run: >-
+          npm run --silent release:verify --
+          --repo "$GITHUB_WORKSPACE"
+          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          --bom "$GITHUB_WORKSPACE/release-artifacts/release-bom.json"
+          --tag "$RELEASE_TAG"
+          --git-head "${{ steps.release-identity.outputs.commit }}"
+          --git-tree "${{ steps.release-identity.outputs.tree }}"
+          --repository "$GITHUB_REPOSITORY"
+          --main-ref refs/remotes/origin/main
+          --require-sbom
+          --require-clean
+          --require-release-ref
+          --allow-repository-dispatch
+
+      - name: Bind the exact six-file release set to a job output
+        id: release_set
+        run: >-
+          node scripts/release-set.mjs
+          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Retain the exact release evidence
+        id: retain_evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          generate_release_notes: true
-          prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-next') }}
+          name: release-${{ github.event.client_payload.tag }}
+          path: release-artifacts/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
 
-      # 2026-05-27 Q3 — Immediate cross-repo sync(per user 2026-05-27 codex collab Q3):
-      # Renovate weekly 不夠 → DS publish 後 repository_dispatch immediate trigger ds-product-template
-      # → fork user 24h 內收到 new beta auto-PR(非 weekly cron)
-      - name: Dispatch ds-product-template sync(immediate cross-repo propagation)
-        # 2026-06-11 R2:移除 `|| secrets.GITHUB_TOKEN` 假 fallback —— GITHUB_TOKEN 對 cross-repo
-        # dispatch 必 403(repo-scoped),fallback 形同虛設且掩蓋未設 secret 的真相。改:secret 未設
-        # 即明確 ::warning:: skip(receiver 對雙 event 已 concurrency dedup;另一路 CROSS_REPO_TOKEN
-        # job 與 Dependabot daily 為 fallback)。
-        if: startsWith(github.ref, 'refs/tags/v') && success()
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN }}
-          # 2026-07-14:ref_name 不直接 ${{ }} 內插進 run script(GitHub 官方 script-injection
-          # anti-pattern;tag 名允許 $ ( ) ; 等 shell metacharacters)。改走 env var 安全展開。
-          REF_NAME: ${{ github.ref_name }}
-        run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "::warning::PRODUCT_WORKSPACE_DISPATCH_TOKEN 未設 — skip ds-published dispatch(CROSS_REPO_TOKEN job / Dependabot daily 仍 fallback)"
-            exit 0
-          fi
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "Dispatching ds-published event to ds-product-template, version=$VERSION"
-          gh api repos/ajenchen/ds-product-template/dispatches \
-            -f "event_type=ds-published" \
-            -f "client_payload[version]=$VERSION" \
-            -f "client_payload[tag]=$REF_NAME" \
-            || echo "::warning::ds-published dispatch failed(token 權限?)— fork user 仍有 Dependabot daily fallback"
-
-      # (Verify plugin manifest version sync BLOCKER 已前移至 Publish 之前 — 2026-07-14 dim-66
-      #  gate-ordering 修,見上方 step;fail-closed 必須先於不可逆 publish/dispatch side effects。)
-
-  notify-consumers:
-    # 2026-05-25 Phase 4.13 — Cross-repo immediate SSOT sync(per user 永久 directive
-    # 「任何 ds repo 增刪改,package 該同步的都應該自動自主同步,不需要耳提面命」)
-    # DS publish 成功後立即 dispatch `design-system-published` event 給 ds-product-template,
-    # ds-product-template 自己的 sync-design-system.yml workflow 接收 event → 自動 npm update + commit + push
-    # → Netlify auto-rebuild。免 Dependabot 24h daily 延遲,真即時同步。
-    #
-    # Pre-req:user 需 GitHub Settings → Secrets → Actions 加 `CROSS_REPO_TOKEN` PAT
-    #   (https://github.com/settings/tokens → Fine-grained,scope: repo:write to ajenchen/ds-product-template)
-    # 沒設此 secret 此 job 會 skip(if guard)+ Dependabot daily 仍 fallback。
-    name: Notify ds-product-template(immediate sync)
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    needs: release
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
+  attest-release:
+    name: Attest exact release set(no npm or repository write authority)
+    needs: [resolve-release-request, trust-preflight, build-release-evidence]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     steps:
-      - name: Skip if CROSS_REPO_TOKEN not set
-        id: check
-        env:
-          TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
-        run: |
-          if [ -z "$TOKEN" ]; then
-            echo "::warning::CROSS_REPO_TOKEN secret not set — skip immediate sync(Dependabot daily fallback still works)"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Dispatch design-system-published event to ds-product-template
-        if: steps.check.outputs.skip == 'false'
-        uses: peter-evans/repository-dispatch@v3
+      - name: Checkout exact protected release commit without stored credentials
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
-          token: ${{ secrets.CROSS_REPO_TOKEN }}
-          repository: ajenchen/ds-product-template
-          event-type: design-system-published
-          client-payload: |
-            {
-              "version": "${{ github.ref_name }}",
-              "tag": "${{ github.ref }}",
-              "commit": "${{ github.sha }}"
-            }
+          ref: ${{ needs.resolve-release-request.outputs.release_commit }}
+          fetch-depth: 0
+          persist-credentials: false
 
-  repoint-latest-tag:
-    name: Repoint latest dist-tag → current @beta
-    if: github.event_name == 'workflow_dispatch' && inputs.action == 'repoint-latest'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/setup-node@v4
+      - name: Download attempt-unique release trust evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          node-version: 22
+          name: release-trust-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-trust
+
+      - name: Rebind release trust before attestation authority is exercised
+        run: >-
+          node scripts/release-trust-preflight.mjs
+          --verify "$RUNNER_TEMP/release-trust/release-trust-preflight.json"
+          --expected-digest "${{ needs.trust-preflight.outputs.evidence_digest }}"
+          --repository "$GITHUB_REPOSITORY"
+          --release-tag "${{ needs.resolve-release-request.outputs.tag }}"
+          --release-commit "${{ needs.resolve-release-request.outputs.release_commit }}"
+          --release-tree "${{ needs.resolve-release-request.outputs.release_tree }}"
+          --run-id "$GITHUB_RUN_ID"
+          --run-attempt "$GITHUB_RUN_ATTEMPT"
+
+      - name: Fetch protected main ref
+        run: /usr/bin/git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+
+      - name: Set up verification-only Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.14.0'
+          package-manager-cache: false
+
+      - name: Download evidence produced by the unprivileged job
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-${{ github.event.client_payload.tag }}
+          path: release-artifacts
+
+      - name: Fail closed on artifact substitution
+        run: >-
+          node scripts/release-set.mjs
+          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          --expected "${{ needs.build-release-evidence.outputs.release_set_sha256 }}"
+
+      - name: Re-verify exact BOM before attestation
+        run: >-
+          node scripts/build-release-bom.mjs --verify
+          --repo "$GITHUB_WORKSPACE"
+          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          --bom "$GITHUB_WORKSPACE/release-artifacts/release-bom.json"
+          --tag "$RELEASE_TAG"
+          --git-head "${{ needs.build-release-evidence.outputs.release_commit }}"
+          --git-tree "${{ needs.build-release-evidence.outputs.release_tree }}"
+          --repository "$GITHUB_REPOSITORY"
+          --main-ref refs/remotes/origin/main
+          --require-sbom
+          --require-clean
+          --require-release-ref
+          --allow-repository-dispatch
+
+      - name: Recheck remote tag through GitHub API immediately before attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          node scripts/release-remote-tag.mjs
+          --repository "$GITHUB_REPOSITORY"
+          --tag "$RELEASE_TAG"
+          --expected "${{ needs.build-release-evidence.outputs.release_commit }}"
+          --expected-object "${{ needs.trust-preflight.outputs.tag_object }}"
+          --token-env GH_TOKEN
+
+      - name: Attest release provenance
+        id: provenance
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-path: |
+            release-artifacts/*.tgz
+            release-artifacts/release-bom.json
+            release-artifacts/release.sbom.cdx.json
+            release-artifacts/product-template-scaffold.lock.json
+
+      - name: Recheck the same verified annotated tag immediately before SBOM attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          node scripts/release-remote-tag.mjs
+          --repository "$GITHUB_REPOSITORY"
+          --tag "$RELEASE_TAG"
+          --expected "${{ needs.build-release-evidence.outputs.release_commit }}"
+          --expected-object "${{ needs.trust-preflight.outputs.tag_object }}"
+          --token-env GH_TOKEN
+
+      - name: Attest release SBOM
+        id: sbom-attestation
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-path: release-artifacts/*.tgz
+          sbom-path: release-artifacts/release.sbom.cdx.json
+
+  stage-npm:
+    name: Stage npm train(OIDC stage-only; no repository write authority)
+    needs: [resolve-release-request, trust-preflight, build-release-evidence, attest-release]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout exact protected release commit without stored credentials
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ needs.resolve-release-request.outputs.release_commit }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download attempt-unique release trust evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-trust-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-trust
+
+      - name: Rebind release trust before npm authority is exercised
+        run: >-
+          node scripts/release-trust-preflight.mjs
+          --verify "$RUNNER_TEMP/release-trust/release-trust-preflight.json"
+          --expected-digest "${{ needs.trust-preflight.outputs.evidence_digest }}"
+          --repository "$GITHUB_REPOSITORY"
+          --release-tag "${{ needs.resolve-release-request.outputs.tag }}"
+          --release-commit "${{ needs.resolve-release-request.outputs.release_commit }}"
+          --release-tree "${{ needs.resolve-release-request.outputs.release_tree }}"
+          --run-id "$GITHUB_RUN_ID"
+          --run-attempt "$GITHUB_RUN_ATTEMPT"
+
+      - name: Fetch protected main ref
+        run: /usr/bin/git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+
+      - name: Set up stage-only Node and npm registry
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.14.0'
           registry-url: 'https://registry.npmjs.org'
-      - name: Repoint latest → current @beta for both packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          # Why:beta.1 第一次 publish 時 npm 自動把 `latest` = beta.1,之後 `--tag beta` 只
-          # 更新 beta 不動 latest。consumer 跑 `npm install @qijenchen/design-system`(無
-          # @beta 後綴)會拉到 stale beta.X(可能 missing dist/ 等問題)。
-          # 此 action auto-detect 兩 package 當前 @beta 版本,把 `latest` 重指過去 — Figma
-          # Make / 任何 consumer 沒加 suffix 也能拉到最新可用 build。
-          # Sustainable design: 每次 beta release 後 user 從 GitHub Actions UI run 一次即可
-          #   (不在 tag-push job 自動跑,避免「latest = pre-release」semver 違紀)。
-          #   未來 v1.0.0 stable release tag(無 -beta suffix)會自動把 latest = stable,
-          #   屆時此 action 可 retire 或改為 emergency tool.
-          for pkg in "@qijenchen/design-system" "@qijenchen/storybook-config"; do
-            beta_ver=$(npm view "$pkg" dist-tags.beta 2>/dev/null)
-            if [ -z "$beta_ver" ] || [ "$beta_ver" = "undefined" ]; then
-              echo "::warning::$pkg has no @beta tag,skipping"
-              continue
-            fi
-            echo "==> $pkg: repointing latest → $beta_ver"
-            npm dist-tag add "$pkg@$beta_ver" latest
-          done
-          echo "---after repoint---"
-          npm view @qijenchen/design-system dist-tags
-          npm view @qijenchen/storybook-config dist-tags
+          package-manager-cache: false
 
-  clear-latest-tag:
-    name: Clear latest dist-tag(strict semver pre-release hygiene)
-    if: github.event_name == 'workflow_dispatch' && inputs.action == 'clear-latest'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/setup-node@v4
+      - name: Verify the committed stage-only npm authority
+        run: node scripts/setup-authority-governance.mjs --verify-runtime
+
+      - name: Download exact release evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          node-version: 22
-          registry-url: 'https://registry.npmjs.org'
-      - name: Remove latest tag from both packages
+          name: release-${{ github.event.client_payload.tag }}
+          path: release-artifacts
+
+      - name: Fail closed on artifact substitution
+        run: >-
+          node scripts/release-set.mjs
+          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          --expected "${{ needs.build-release-evidence.outputs.release_set_sha256 }}"
+
+      - name: Re-verify exact BOM before npm authority is used
+        run: >-
+          node scripts/build-release-bom.mjs --verify
+          --repo "$GITHUB_WORKSPACE"
+          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          --bom "$GITHUB_WORKSPACE/release-artifacts/release-bom.json"
+          --tag "$RELEASE_TAG"
+          --git-head "${{ needs.build-release-evidence.outputs.release_commit }}"
+          --git-tree "${{ needs.build-release-evidence.outputs.release_tree }}"
+          --repository "$GITHUB_REPOSITORY"
+          --main-ref refs/remotes/origin/main
+          --require-sbom
+          --require-clean
+          --require-release-ref
+          --allow-repository-dispatch
+
+      - name: Recheck remote tag through GitHub API immediately before staging
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          node scripts/release-remote-tag.mjs
+          --repository "$GITHUB_REPOSITORY"
+          --tag "$RELEASE_TAG"
+          --expected "${{ needs.build-release-evidence.outputs.release_commit }}"
+          --expected-object "${{ needs.trust-preflight.outputs.tag_object }}"
+          --token-env GH_TOKEN
+
+      - name: Native-stage each exact archive and atomically record every stageId
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          node scripts/release-npm-publish.mjs
+          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          --bom "$GITHUB_WORKSPACE/release-artifacts/release-bom.json"
+          --repository "$GITHUB_REPOSITORY"
+          --tag "$RELEASE_TAG"
+          --git-head "${{ needs.build-release-evidence.outputs.release_commit }}"
+          --tag-object "${{ needs.trust-preflight.outputs.tag_object }}"
+          --github-token-env GH_TOKEN
+          --authorization-digest "${{ needs.trust-preflight.outputs.authorization_digest }}"
+          --release-trust-evidence-digest "${{ needs.trust-preflight.outputs.evidence_digest }}"
+          --release-trust-evidence-file-sha256 "${{ needs.trust-preflight.outputs.evidence_file_sha256 }}"
+          --trust-artifact-name "release-trust-${{ github.run_id }}-${{ github.run_attempt }}"
+          --trust-artifact-digest "${{ needs.trust-preflight.outputs.artifact_digest }}"
+          --trust-run-id "$GITHUB_RUN_ID"
+          --trust-run-attempt "$GITHUB_RUN_ATTEMPT"
+          --receipt "$GITHUB_WORKSPACE/stage-evidence/npm-stage-receipt.json"
+
+      - name: Record durable receipt digest for the platform-interactive npm handoff
+        if: always()
+        id: stage_receipt
+        shell: bash
+        env:
+          PATH: /usr/bin:/bin
         run: |
-          # Strict semver pre-release canonical: `latest` 不該存在 until v1.0.0 stable。
-          # 此 action 把 latest 完全 unpoint → consumer `npm install <pkg>`(無 @beta)會
-          # 失敗 with 明確 ERESOLVE error,強制 consumer 寫 `@beta`。
-          npm dist-tag rm @qijenchen/design-system latest || echo "(已無 latest)"
-          npm dist-tag rm @qijenchen/storybook-config latest || echo "(已無 latest)"
-          echo "---after cleanup---"
-          npm view @qijenchen/design-system dist-tags
-          npm view @qijenchen/storybook-config dist-tags
+          set -euo pipefail
+          if [[ -f stage-evidence/npm-stage-receipt.json ]]; then
+            digest="$(sha256sum stage-evidence/npm-stage-receipt.json | awk '{print $1}')"
+            echo "sha256=${digest}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Always retain the durable stage receipt(including ambiguous failures)
+        if: always()
+        id: stage_evidence_upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: npm-stage-${{ github.event.client_payload.tag }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: stage-evidence/npm-stage-receipt.json
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
+
+      - name: Publish the digest-bound npm platform-action handoff
+        if: always() && steps.stage_receipt.outputs.sha256 != '' && steps.stage_evidence_upload.outputs.artifact-digest != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## npm native-stage handoff"
+            echo ""
+            echo "Receipt SHA-256: \`${{ steps.stage_receipt.outputs.sha256 }}\`"
+            echo "Stage artifact SHA-256: \`${{ steps.stage_evidence_upload.outputs.artifact-digest }}\`"
+            echo "Release-set SHA-256: \`${{ needs.build-release-evidence.outputs.release_set_sha256 }}\`"
+            echo "Release authorization SHA-256: \`${{ needs.trust-preflight.outputs.authorization_digest }}\`"
+            echo "Release trust evidence semantic SHA-256: \`${{ needs.trust-preflight.outputs.evidence_digest }}\`"
+            echo "Release trust evidence exact-file SHA-256: \`${{ needs.trust-preflight.outputs.evidence_file_sha256 }}\`"
+            echo "Release trust artifact: \`release-trust-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}\`"
+            echo "Release trust artifact SHA-256: \`${{ needs.trust-preflight.outputs.artifact_digest }}\`"
+            echo "Staging run ID / attempt: \`${GITHUB_RUN_ID}\` / \`${GITHUB_RUN_ATTEMPT}\`"
+            echo ""
+            echo "Account-holder action only: use the retained receipt with the canonical release-npm-approve helper to complete npm login/2FA for each recorded stageId. No engineering decision is requested."
+          } >> "$GITHUB_STEP_SUMMARY"

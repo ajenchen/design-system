@@ -7,7 +7,7 @@
 // 若 SKILL.md 新加 Dim 57(or retire 既有 dim)→ dispatch 漂移漏抓。Per M14 auto-integrate pipeline,
 // 需 mechanical auto-pickup from SKILL.md SSOT,no hardcoded list anywhere except SKILL.md。
 //
-// **Output**:JSON to stdout(or `.claude/logs/audit-dims-dispatch.json`)
+// **Output**:JSON to stdout(or Git-owned `governance-runtime/evidence/deep-audit/dispatch.json`)
 // { generated: ts, total: N, groups: { A: [...], B: [...], ... }, heavyDims: [12, 24, 25, ...] }
 //
 // **Consumer**:
@@ -17,10 +17,11 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
+import { prepareRuntimeEvidenceFile, resolveRuntimeEvidencePath } from './lib/governance-runtime-evidence.mjs'
 
 const ROOT = process.cwd()
-const SKILL_MD = path.join(ROOT, '.claude/skills/design-system-audit/SKILL.md')
-const OUT_FILE = path.join(ROOT, '.claude/logs/audit-dims-dispatch.json')
+const SKILL_MD = path.join(ROOT, 'packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md')
+const OUT_FILE = resolveRuntimeEvidencePath({ repoRoot: ROOT, relativePath: 'deep-audit/dispatch.json' })
 
 const content = fs.readFileSync(SKILL_MD, 'utf8')
 
@@ -87,7 +88,7 @@ const antiSampleContract = `
 
 const output = {
   generated: new Date().toISOString(),
-  ssotSource: '.claude/skills/design-system-audit/SKILL.md',
+  ssotSource: 'packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md',
   total: dims.length,
   groups,
   dims,
@@ -128,7 +129,7 @@ const argv = process.argv.slice(2)
 // 2026-05-30 codex Phase B P1:write 原本無條件在 argv parse 前 → read-only env 跑 `--check` 先炸 EPERM,
 // break 文件化的 codex self-confirm path(deep-audit-cross-codex/references/phase-b-codex-brief.md)。
 if (!argv.includes('--check')) {
-  fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true })
+  prepareRuntimeEvidenceFile({ repoRoot: ROOT, relativePath: 'deep-audit/dispatch.json' })
   // 2026-06-06 idempotent write:內容(排除 generated)無變則沿用既有時戳,避免每次跑 churn git tree
   const __serializeDisp = (o) => JSON.stringify({ ...o, generated: undefined }, null, 2)
   if (fs.existsSync(OUT_FILE)) {
@@ -147,7 +148,7 @@ if (argv.includes('--summary') || argv.includes('-s')) {
   for (const b of output.dispatchPlan.suggestedBatches) {
     console.log(`  Batch ${b.range}(${b.count} dims,Groups ${b.groupSpan},heavy: ${b.heavyDimsInBatch.join(',') || 'none'})`)
   }
-  console.log(`\nFull plan written to: .claude/logs/audit-dims-dispatch.json`)
+  console.log(`\nFull plan written to: ${OUT_FILE}`)
 } else if (argv.includes('--check')) {
   // CI mode:exit 1 if any dim missing group OR count drift vs governance-counters
   const ungrouped = dims.filter((d) => !d.group)

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/external-ledger-writer-dispatch-v1.schema.json",
+  "title": "Protected-default dispatch for exactly one reviewed external-ledger handoff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_type", "client_payload"],
+  "properties": {
+    "event_type": {"const": "external-ledger-write-request"},
+    "client_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "$schema",
+        "schemaVersion",
+        "kind",
+        "repository",
+        "expectedBaseCommit",
+        "handoffDigest",
+        "handoffSha256",
+        "handoffGzipSha256",
+        "handoffGzipBase64",
+        "dispatchDigest"
+      ],
+      "properties": {
+        "$schema": {"const": "../schemas/external-ledger-writer-dispatch.schema.json"},
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "external-ledger-writer-dispatch"},
+        "repository": {"$ref": "#/$defs/repository"},
+        "expectedBaseCommit": {"$ref": "#/$defs/gitOid"},
+        "handoffDigest": {"$ref": "#/$defs/sha256"},
+        "handoffSha256": {"$ref": "#/$defs/sha256"},
+        "handoffGzipSha256": {"$ref": "#/$defs/sha256"},
+        "handoffGzipBase64": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 51200,
+          "pattern": "^[A-Za-z0-9+/]+={0,2}$"
+        },
+        "dispatchDigest": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "gitOid": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"}
+  }
+}

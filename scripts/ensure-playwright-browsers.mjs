@@ -1,120 +1,105 @@
 #!/usr/bin/env node
-/**
- * ensure-playwright-browsers — 裝完 node_modules 後自動確保 Chromium binary 已下載。
- * postinstall 呼叫,idempotent(已存在則 skip)。
- *
- * 為什麼放 postinstall:
- *   Playwright npm package 只裝 lib,chromium binary 需另走 `playwright install chromium`。
- *   沒這步 `npm run visual-audit` 會報「Executable doesn't exist」。
- *   postinstall 自動處理,developer `npm install` 一次就 ready。
- *
- * 跳過條件:
- *   - CI 環境且 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1(用戶自管)
- *   - 無 playwright(尚未裝 devDep,第一次 npm install 可能在 postinstall 就執行,但 playwright 已 resolved)
- *
- * Sandbox fallback(2026-05-01 加,offline / restricted 環境):
- *   若 cache 有 chromium 但版本不符 Playwright lib 期待版本(常見:envs 有舊 cache + lib 升級),
- *   嘗試 symlink 既有 binary 到期待路徑,避免重新 download(sandbox 沒網路時 download 會 403)。
- */
 
-import { existsSync, mkdirSync, symlinkSync, readdirSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
-import { createRequire } from 'node:module'
-import os from 'node:os'
-import { join } from 'node:path'
+import { lstatSync, realpathSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
 
-if (process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD === '1') {
-  console.log('[ensure-playwright-browsers] SKIP via env var')
-  process.exit(0)
-}
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const BLOCKED_PLAYWRIGHT_ENVIRONMENT = /^(?:PLAYWRIGHT_BROWSERS_PATH|PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT|PLAYWRIGHT_DOWNLOAD_HOST|PLAYWRIGHT_CHROMIUM_DOWNLOAD_HOST|PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD|PLAYWRIGHT_HOST_PLATFORM_OVERRIDE|NODE_OPTIONS|NODE_PATH|LD_PRELOAD|DYLD_.*)$/
+const SMOKE_ENVIRONMENT = /^(?:HOME|USERPROFILE|LOCALAPPDATA|PATH|SystemRoot|SYSTEMROOT|WINDIR|TMPDIR|TMP|TEMP|LANG|LC_ALL)$/
+const BROWSER_SMOKE_TIMEOUT_MS = 15_000
 
-const require_ = createRequire(import.meta.url)
-let playwrightPkg
-try {
-  playwrightPkg = require_('playwright/package.json')
-} catch {
-  // playwright 還沒裝好(第一次 `npm install` 時 postinstall 可能比 devDep link 早?安全起見 exit 0)
-  console.log('[ensure-playwright-browsers] playwright not yet installed — skipping')
-  process.exit(0)
-}
-
-// Chromium cache path — Playwright 1.x default
-// macOS: ~/Library/Caches/ms-playwright/chromium-*
-// Linux: ~/.cache/ms-playwright/chromium-*(本機)/  /opt/pw-browsers/chromium-*(sandbox)
-// Win:   %USERPROFILE%\AppData\Local\ms-playwright\chromium-*
-const cacheDir =
-  process.env.PLAYWRIGHT_BROWSERS_PATH ||
-  (process.platform === 'darwin'
-    ? join(os.homedir(), 'Library/Caches/ms-playwright')
-    : process.platform === 'win32'
-      ? join(process.env.LOCALAPPDATA || '', 'ms-playwright')
-      : existsSync('/opt/pw-browsers') // sandbox env first
-        ? '/opt/pw-browsers'
-        : join(os.homedir(), '.cache/ms-playwright'))
-
-// 取 Playwright lib 期待的 chromium-headless-shell 版本(從 package.json browsers 欄位 OR fallback 1217)
-// Playwright lib 內部硬編 BUILD 號;簡化策略:讀 cache 找出最新版,期待版 = 跟 lib 版本對應
-// 若 lib v1.59 對應 build 1217,但 cache 只有 1194,需 symlink 1217 → 1194 才能 launch。
-function detectExpectedBuild() {
-  // Playwright stores per-browser build IDs in playwright-core/browsers.json
-  // (路徑不在 package.json exports,直接 fs.readFileSync 繞過 resolver)
-  try {
-    const corePkgPath = require_.resolve('playwright-core/package.json')
-    const browsersJsonPath = join(corePkgPath, '..', 'browsers.json')
-    if (!existsSync(browsersJsonPath)) return null
-    const browsersJson = JSON.parse(readFileSync(browsersJsonPath, 'utf8'))
-    const headlessShell = browsersJson.browsers?.find?.((b) => b.name === 'chromium-headless-shell')
-    if (headlessShell?.revision) return headlessShell.revision
-  } catch {}
-  return null
-}
-
-if (existsSync(cacheDir)) {
-  const entries = readdirSync(cacheDir).filter((n) => n.startsWith('chromium'))
-  if (entries.length > 0) {
-    // 嘗試 sandbox fallback symlink — 若期待版 binary 缺,但有舊版 binary,symlink 救援
-    const expected = detectExpectedBuild()
-    if (expected) {
-      const expectedHeadlessDir = join(cacheDir, `chromium_headless_shell-${expected}`, 'chrome-headless-shell-linux64')
-      const expectedHeadlessBin = join(expectedHeadlessDir, 'chrome-headless-shell')
-      if (!existsSync(expectedHeadlessBin)) {
-        // 找 cache 內**任一**現有 headless_shell binary
-        const fallbackDirs = entries
-          .filter((n) => n.startsWith('chromium_headless_shell-'))
-          .map((n) => ({ name: n, build: parseInt(n.split('-')[1] || '0', 10) }))
-          .sort((a, b) => b.build - a.build) // newest first
-        for (const f of fallbackDirs) {
-          // Layout v1(舊):chrome-linux/headless_shell
-          // Layout v2(新):chrome-headless-shell-linux64/chrome-headless-shell
-          const v1 = join(cacheDir, f.name, 'chrome-linux', 'headless_shell')
-          const v2 = join(cacheDir, f.name, 'chrome-headless-shell-linux64', 'chrome-headless-shell')
-          const realBin = existsSync(v2) ? v2 : (existsSync(v1) ? v1 : null)
-          if (realBin) {
-            try {
-              mkdirSync(expectedHeadlessDir, { recursive: true })
-              symlinkSync(realBin, expectedHeadlessBin)
-              console.log(`[ensure-playwright-browsers] OK (symlink fallback: expected v${expected} → cache v${f.build})`)
-              process.exit(0)
-            } catch (err) {
-              // permission or already exists race — fall through
-              if (err?.code === 'EEXIST' && existsSync(expectedHeadlessBin)) {
-                console.log(`[ensure-playwright-browsers] OK (existing symlink for v${expected})`)
-                process.exit(0)
-              }
-              console.warn(`[ensure-playwright-browsers] symlink fallback failed:`, err?.message)
-              break
-            }
-          }
-        }
-      }
+export function verifyPlaywrightBrowserReadback({
+  root,
+  runtime,
+  environment = process.env,
+  runner = spawnSync,
+} = {}) {
+  if (!runtime || typeof runtime !== 'object') throw new Error('Playwright setup blocked:resolved runtime is required for browser readback')
+  if (!/^\d+(?:\.\d+){3}$/.test(runtime.browserVersion ?? '')) {
+    throw new Error('Playwright setup blocked:resolved Chromium version is invalid')
+  }
+  const expectedVersion = new RegExp(`(?:^|[^0-9.])${runtime.browserVersion.replaceAll('.', '\\.')}([^0-9.]|$)`)
+  const smokeEnvironment = Object.fromEntries(Object.entries(environment).filter(([name]) => SMOKE_ENVIRONMENT.test(name)))
+  for (const [label, executablePath] of [
+    ['Chromium', runtime.chromiumExecutablePath],
+    ['Chromium headless-shell', runtime.headlessShellExecutablePath],
+  ]) {
+    if (typeof executablePath !== 'string' || executablePath.length === 0) {
+      throw new Error(`Playwright setup blocked:${label} executable path is missing`)
     }
-    console.log(`[ensure-playwright-browsers] OK (${entries.length} chromium variant in cache)`)
-    process.exit(0)
+    const result = runner(executablePath, ['--version'], {
+      cwd: root,
+      env: smokeEnvironment,
+      shell: false,
+      encoding: 'utf8',
+      timeout: BROWSER_SMOKE_TIMEOUT_MS,
+      maxBuffer: 1024 * 1024,
+      windowsHide: true,
+    })
+    if (result.error) {
+      throw new Error(`Playwright setup blocked:${label} version readback failed:${result.error.message}`, { cause: result.error })
+    }
+    if (result.status !== 0) {
+      throw new Error(`Playwright setup blocked:${label} version readback exited ${result.signal || result.status || 'without a status'}`)
+    }
+    const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`
+    if (!expectedVersion.test(output)) {
+      throw new Error(`Playwright setup blocked:${label} version readback does not match ${runtime.browserVersion}`)
+    }
+  }
+  return runtime
+}
+
+export function ensurePlaywrightBrowsers({
+  root: requestedRoot = ROOT,
+  args = [],
+  environment = process.env,
+  runner = spawnSync,
+  resolver = resolveProvisionedPlaywrightRuntime,
+} = {}) {
+  if (args.some((arg) => arg !== '--with-deps') || new Set(args).size !== args.length) {
+    throw new Error('Usage: node scripts/ensure-playwright-browsers.mjs [--with-deps]')
+  }
+  const root = realpathSync(resolve(requestedRoot))
+  const setupEnvironment = {
+    ...Object.fromEntries(Object.entries(environment).filter(([name]) => !BLOCKED_PLAYWRIGHT_ENVIRONMENT.test(name))),
+    PLAYWRIGHT_BROWSERS_PATH: '0',
+  }
+  const currentRuntime = () => resolver({ repoRoot: root, environment: setupEnvironment })
+  let runtime = currentRuntime()
+  if (!runtime || args.includes('--with-deps')) {
+    const cli = join(root, 'node_modules', 'playwright', 'cli.js')
+    const cliInfo = lstatSync(cli)
+    if (!cliInfo.isFile() || cliInfo.isSymbolicLink() || cliInfo.nlink !== 1 || realpathSync(cli) !== cli) {
+      throw new Error('Playwright setup blocked:installed lock-resolved CLI is not one regular no-link file')
+    }
+    const installArgs = [cli, 'install', ...(args.includes('--with-deps') ? ['--with-deps'] : []), 'chromium']
+    const result = runner(process.execPath, installArgs, {
+      cwd: root,
+      env: setupEnvironment,
+      shell: false,
+      stdio: 'inherit',
+    })
+    if (result.error) throw result.error
+    if (result.status !== 0) {
+      throw new Error(`Playwright setup failed:${result.signal || result.status || 'unknown error'}`)
+    }
+    runtime = currentRuntime()
+  }
+
+  if (!runtime) throw new Error('Playwright setup completed without an exact-revision browser readback')
+  return verifyPlaywrightBrowserReadback({ root, runtime, environment: setupEnvironment, runner })
+}
+
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
+  try {
+    const runtime = ensurePlaywrightBrowsers({ args: process.argv.slice(2) })
+    console.log(`[setup:playwright] exact runtime ready: Playwright ${runtime.playwrightVersion}, Chromium ${runtime.browserVersion} (revision ${runtime.chromiumRevision})`)
+  } catch (error) {
+    console.error(error.message)
+    process.exit(error.message.startsWith('Usage:') ? 2 : 1)
   }
 }
-
-console.log(`[ensure-playwright-browsers] 下載 chromium(playwright v${playwrightPkg.version})...`)
-const res = spawnSync('npx', ['playwright', 'install', 'chromium'], {
-  stdio: 'inherit',
-})
-process.exit(res.status ?? 1)

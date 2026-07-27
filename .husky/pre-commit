@@ -1,25 +1,9 @@
 #!/usr/bin/env sh
-# Auto-sync memory: harness user-local → repo `.claude/memory/`
-# Why: avoid drift between two memory locations(see CLAUDE.md「Memory」row + memory README)
-node scripts/sync-memory.mjs
-git add .claude/memory/
-
-# 2026-06-02 ROOT-CAUSE fix(beta.43/45 連環 push 失敗 = 手動同步副本必漏):commit 邊界自動消 drift。
-# release:preflight 是「push tag 前 CATCH drift」(detect-and-block);此 pre-commit 是更上游的
-# 「commit 時 ELIMINATE drift」(at-source)→ drift 根本到不了 push tag。條件式(僅相關檔改才跑)避免變慢。
-CHANGED_DS_VERSION=$(git diff --cached --name-only | grep -E "^packages/design-system/package\.json$" || true)
-if [ -n "$CHANGED_DS_VERSION" ]; then
-  echo "→ design-system version 改動 → 自動同步全 5 manifest(sync-version-to-all-manifests)"
-  node scripts/sync-version-to-all-manifests.mjs
-  git add packages/storybook-config/package.json .claude-plugin/plugin.json .claude-plugin/marketplace.json
-fi
-
-CHANGED_CANONICAL=$(git diff --cached --name-only | grep -E "^(\.claude/|CLAUDE\.md$)" || true)
-if [ -n "$CHANGED_CANONICAL" ]; then
-  echo "→ .claude/** 或 CLAUDE.md 改動 → 自動同步 ds-canonical mirror(sync-ds-canonical)"
-  node scripts/sync-ds-canonical.mjs
-  git add packages/design-system/ds-canonical/ packages/design-system/CLAUDE.md
-fi
+# One validated build graph owns source closure, generator order, managed outputs and staging for
+# release-version surfaces, provider adapters, fork/template views, and governance/generated +
+# control-plane.lock. Its unstaged-source guard runs before every generator, so a partially staged
+# canonical package version can never be propagated from the working tree into the index.
+node scripts/governance-build-graph.mjs --precommit || exit 1
 
 # 2026-05-06 v14.3 L3 防線:DataTable invariants 必過(width/edit-stability/Field-fills-cell)
 # 只在 data-table.tsx / cell-registry.tsx / column-types.ts 改動時跑(避免每 commit 都跑慢)

@@ -1,0 +1,354 @@
+{
+  "$schema": "./schemas/provider-skill-semantics.schema.json",
+  "schemaVersion": 3,
+  "policy": {
+    "unknownProviderOutcome": "ADAPTER-BLOCKED",
+    "unclassifiedSkillOutcome": "ADAPTER-BLOCKED",
+    "semanticLeakOutcome": "ADAPTER-BLOCKED",
+    "independence": "different-provider-required",
+    "reviewIsolation": "separate-context-required",
+    "reviewMutation": "read-only",
+    "reviewWorkspace": "immutable-snapshot-or-enforced-tool-deny",
+    "mutationDetection": "before-after-worktree-fingerprint",
+    "missingEvidenceOutcome": "REVIEW-BLOCKED"
+  },
+  "semanticScan": {
+    "include": ["SKILL.md", "references/**", "scripts/**"],
+    "copiedTextPolicy": "scan-all-copied-text",
+    "binaryPolicy": "assets-only-no-semantic-classification",
+    "leakKinds": ["provider-identity", "provider-surface-path", "provider-native-tool", "provider-native-env", "provider-transport"]
+  },
+  "bindingProfiles": {
+    "cross-provider-review-v1": {
+      "requiredCapabilities": ["distinct-peer-provider", "separate-context", "read-only-review", "artifact-digests"],
+      "providers": {
+        "claude": {
+          "status": "compatible",
+          "strategy": "provider-thin-driver",
+          "evidenceSource": "packages/governance/canonical/providers.json#claude.skillBindings"
+        },
+        "codex": {
+          "status": "compatible",
+          "strategy": "provider-thin-driver",
+          "evidenceSource": "packages/governance/canonical/providers.json#codex.skillBindings"
+        }
+      },
+      "unboundProvider": {
+        "status": "excluded",
+        "reasonCode": "INDEPENDENT_REVIEW_BINDING_NOT_CERTIFIED",
+        "detail": "A future provider must declare peer identity, isolation, read-only enforcement, transport, and artifact evidence before projection."
+      }
+    },
+    "repository-legacy-surfaces-v1": {
+      "requiredCapabilities": ["repository-generated-surfaces", "canonical-path-resolution", "normalized-governance-environment", "registered-worker-transport"],
+      "providers": {
+        "claude": {
+          "status": "compatible",
+          "strategy": "generated-binding-header",
+          "evidenceSource": "packages/governance/canonical/providers.json#claude",
+          "resolutions": {
+            "provider-identity": "Treat historical provider names as provenance labels, never as the current runtime identity.",
+            "provider-surface-path": "Resolve legacy repository paths through generated views while treating ds-canonical as the semantic owner.",
+            "provider-native-tool": "Map native-tool wording to the registered provider capability; fail closed when the capability is unavailable.",
+            "provider-native-env": "Map legacy environment names to the canonical GOVERNANCE_* contract at the adapter boundary.",
+            "provider-transport": "Use only the registered transport binding and retain provider/context identity evidence."
+          }
+        },
+        "codex": {
+          "status": "compatible",
+          "strategy": "generated-binding-header",
+          "evidenceSource": "packages/governance/canonical/providers.json#codex",
+          "resolutions": {
+            "provider-identity": "Treat historical provider names as provenance labels, never as the current runtime identity.",
+            "provider-surface-path": "Resolve legacy repository paths through generated views while treating ds-canonical as the semantic owner.",
+            "provider-native-tool": "Map native-tool wording to the registered provider capability; fail closed when the capability is unavailable.",
+            "provider-native-env": "Use the canonical GOVERNANCE_* contract; legacy names are adapter-edge evidence only.",
+            "provider-transport": "Use only the registered transport binding and retain provider/context identity evidence."
+          }
+        }
+      },
+      "unboundProvider": {
+        "status": "excluded",
+        "reasonCode": "LEGACY_ASSUMPTION_BINDING_NOT_CERTIFIED",
+        "detail": "Byte copying a skill with legacy assumptions is not compatibility; every detected assumption requires a provider-specific resolution."
+      }
+    }
+  },
+  "skills": [
+    {
+      "name": "bug-fix-rhythm",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/bug-fix-rhythm/SKILL.md",
+      "classification": "provider-bound",
+      "projection": "provider-bound-copy",
+      "bindingProfile": "repository-legacy-surfaces-v1",
+      "description": "Batch fixes, verify claims at runtime, and complete one exhaustive end-of-batch regression scan.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": ["provider-identity", "provider-surface-path"],
+      "assumptionFindingCount": 6,
+      "assumptionFingerprint": "sha256:b5e2cfe4a41bdd25605847b0d40fa92db96c4abf604decb830cb218b19ae38d9"
+    },
+    {
+      "name": "canonical-reviewer",
+      "workflowId": "canonical-read-only-review",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/canonical-reviewer/SKILL.md",
+      "classification": "provider-bound",
+      "projection": "provider-thin-driver",
+      "bindingProfile": "cross-provider-review-v1",
+      "mode": "canonical-read-only-review",
+      "description": "Review governance changes in an isolated read-only context with explicit author identity, complete canonical evidence, and mutation detection.",
+      "requiredReferences": ["packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md"],
+      "declaredIdentifiers": [],
+      "allowedAssumptions": [],
+      "requiresIndependentPeer": true,
+      "requiresAuthorProvider": true,
+      "reviewOnly": true
+    },
+    {
+      "name": "code-quality-audit",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/code-quality-audit/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Audit code quality, dead exports, file/function size, cycles, unsafe types, and magic values.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "codex-collab",
+      "workflowId": "cross-provider-collaboration",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/codex-collab/SKILL.md",
+      "classification": "provider-bound",
+      "projection": "provider-thin-driver",
+      "bindingProfile": "cross-provider-review-v1",
+      "mode": "cross-provider-collaboration",
+      "description": "Coordinate an evidence-complete primary analysis with a genuinely independent peer provider, then verify and synthesize both results.",
+      "declaredIdentifiers": ["codex-collab"],
+      "allowedAssumptions": [],
+      "requiresIndependentPeer": true,
+      "requiresAuthorProvider": false,
+      "reviewOnly": false
+    },
+    {
+      "name": "codify-corrections",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/codify-corrections/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Cluster captured user corrections and route approved learning to the correct canonical owner.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "codify-principle",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/codify-principle/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Turn an approved design principle into canonical text, enforcement, audit coverage, scaffolding, and learning artifacts.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "component-quality-gate",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/component-quality-gate/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Run the pre-merge specification, code, stories, and shipping gate for a design-system component.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "deep-audit-cross-codex",
+      "workflowId": "cross-provider-deep-audit",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/deep-audit-cross-codex/SKILL.md",
+      "classification": "provider-bound",
+      "projection": "provider-thin-driver",
+      "bindingProfile": "cross-provider-review-v1",
+      "mode": "cross-provider-deep-audit",
+      "description": "Run two isolated, no-sample audits against the same inventory and rubric, reconcile disagreements, and retain complete coverage evidence.",
+      "declaredIdentifiers": ["deep-audit-cross-codex"],
+      "allowedAssumptions": [],
+      "requiresIndependentPeer": true,
+      "requiresAuthorProvider": true,
+      "reviewOnly": false
+    },
+    {
+      "name": "delivery-handoff",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/delivery-handoff/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Create a stakeholder-ready delivery handoff for a confirmed final product or feature.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "design-system-audit",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md",
+      "classification": "provider-bound",
+      "projection": "provider-bound-copy",
+      "bindingProfile": "repository-legacy-surfaces-v1",
+      "description": "Run the complete design-system audit rubric with evidence, checkpoints, and deterministic verification.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": ["provider-identity", "provider-surface-path", "provider-transport"],
+      "assumptionFindingCount": 47,
+      "assumptionFingerprint": "sha256:81ad8cbfdaf441b4c5395ae9aa66477d77a7c787bc8a00a1d5edf26468f7da3f"
+    },
+    {
+      "name": "ensure-canonical",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/ensure-canonical/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Plan and implement defense-in-depth for an approved invariant without creating another semantic owner.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "governance-health",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/governance-health/SKILL.md",
+      "classification": "provider-bound",
+      "projection": "provider-bound-copy",
+      "bindingProfile": "repository-legacy-surfaces-v1",
+      "description": "Run a metric-driven governance health scan for dead hooks, stale knowledge, corrections, and rule candidates.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": ["provider-identity", "provider-surface-path"],
+      "assumptionFindingCount": 8,
+      "assumptionFingerprint": "sha256:a8f39a89fd53396d274780e6b5b4636a34dc496153fd21ce18d0bafb198ece52"
+    },
+    {
+      "name": "governance-status",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/governance-status/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Report governance health, adapter drift, provider parity, and generated-surface freshness.",
+      "declaredIdentifiers": ["scripts/gen-codex-adapter.mjs"],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "independent-review",
+      "workflowId": "independent-product-review",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/independent-review/SKILL.md",
+      "classification": "provider-bound",
+      "projection": "provider-thin-driver",
+      "bindingProfile": "cross-provider-review-v1",
+      "mode": "independent-product-review",
+      "description": "Obtain an evidence-bound, read-only second opinion on product-consumer changes from a distinct certified peer provider without acquiring DS-author authority.",
+      "requiredReferences": ["packages/design-system/ds-canonical/skills/independent-review/references/evidence-contract.md"],
+      "declaredIdentifiers": [],
+      "allowedAssumptions": [],
+      "requiresIndependentPeer": true,
+      "requiresAuthorProvider": true,
+      "reviewOnly": true
+    },
+    {
+      "name": "knowledge-prune",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/knowledge-prune/SKILL.md",
+      "classification": "provider-bound",
+      "projection": "provider-bound-copy",
+      "bindingProfile": "repository-legacy-surfaces-v1",
+      "description": "Prune duplicate, stale, contradictory, and over-concrete governance knowledge while preserving SSOT.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": ["provider-identity", "provider-surface-path"],
+      "assumptionFindingCount": 20,
+      "assumptionFingerprint": "sha256:b6d2f15093f874c95f57f621efc8ae45cba0c71f375adc949aad9daa5ba84145"
+    },
+    {
+      "name": "new-component",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/new-component/SKILL.md",
+      "classification": "provider-bound",
+      "projection": "provider-bound-copy",
+      "bindingProfile": "repository-legacy-surfaces-v1",
+      "description": "Build a new design-system component through specification, implementation, stories, and quality gates.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": ["provider-identity", "provider-surface-path"],
+      "assumptionFindingCount": 27,
+      "assumptionFingerprint": "sha256:71f78a9d04cc05968e8d305f9324ae0b225a117cae65d521a625a6026e7b332d"
+    },
+    {
+      "name": "performance-audit",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/performance-audit/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Audit rendering, memoization, effects, context churn, and bundle-size impact.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "product-ui-audit",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/product-ui-audit/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Audit consumer UI for design-system usage, geometry, accessibility, and product-quality discipline.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "propose-options",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/propose-options/SKILL.md",
+      "classification": "provider-bound",
+      "projection": "provider-bound-copy",
+      "bindingProfile": "repository-legacy-surfaces-v1",
+      "description": "Verify evidence, benchmarks, SSOT, and downstream effects before presenting options.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": ["provider-identity", "provider-surface-path"],
+      "assumptionFindingCount": 6,
+      "assumptionFingerprint": "sha256:fc1fe71bd891a774d11183a0f72e67565e1a635560f0db11e8738d5596795561"
+    },
+    {
+      "name": "prototype",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/prototype/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Build and compare evidence-backed UI prototypes through a structured product and design-system workflow.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "scan-similar-bugs",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/scan-similar-bugs/SKILL.md",
+      "classification": "provider-bound",
+      "projection": "provider-bound-copy",
+      "bindingProfile": "repository-legacy-surfaces-v1",
+      "description": "Extract a fixed bug's root pattern and exhaustively scan the applicable repository scope for recurrence.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": ["provider-identity", "provider-surface-path"],
+      "assumptionFindingCount": 2,
+      "assumptionFingerprint": "sha256:69580682e9ebafb279438e8b2aaae9aa4dba1b18dbc490aa971e281f0f0e27c7"
+    },
+    {
+      "name": "story-auto-compile-migrate",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/story-auto-compile-migrate/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Migrate component stories to the registry-driven auto-compile structure with judgment checkpoints.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "story-writing",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/story-writing/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Write realistic, canonical, accessible, and drift-resistant Storybook stories.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "ux-audit",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/ux-audit/SKILL.md",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
+      "description": "Audit keyboard, focus, ARIA, motion, interaction, and state behavior.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": []
+    },
+    {
+      "name": "visual-audit",
+      "sourceWorkflow": "packages/design-system/ds-canonical/skills/visual-audit/SKILL.md",
+      "classification": "provider-bound",
+      "projection": "provider-bound-copy",
+      "bindingProfile": "repository-legacy-surfaces-v1",
+      "description": "Run screenshot-grounded pixel and geometry review without guessing from code alone.",
+      "declaredIdentifiers": [],
+      "allowedAssumptions": ["provider-identity", "provider-surface-path"],
+      "assumptionFindingCount": 6,
+      "assumptionFingerprint": "sha256:e2819ca2bba6ac91c44d3c1a362e3515197ff305fa08bd6155413e4ce209d949"
+    }
+  ]
+}

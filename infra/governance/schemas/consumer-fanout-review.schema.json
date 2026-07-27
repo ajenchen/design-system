@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/consumer-fanout-review-v1.schema.json",
+  "title": "Canonical independent consumer fleet fanout review request and receipt",
+  "oneOf": [
+    {"$ref": "#/$defs/signingRequest"},
+    {"$ref": "#/$defs/reviewReceipt"}
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion", "kind", "decision", "planDigest", "planCanonicalSha256",
+        "planCanonicalBase64", "inventorySha256", "releaseRingsSha256",
+        "candidateReleaseDigest", "runtimeIdentitySnapshotDigest", "issuerRegistryDigest",
+        "issuedAt", "expiresAt"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "consumer-fleet-fanout-independent-review"},
+        "decision": {"enum": ["approved", "rejected"]},
+        "planDigest": {"$ref": "#/$defs/sha256"},
+        "planCanonicalSha256": {"$ref": "#/$defs/sha256"},
+        "planCanonicalBase64": {"type": "string", "minLength": 4, "maxLength": 2796204, "pattern": "^[A-Za-z0-9+/]+={0,2}$"},
+        "inventorySha256": {"$ref": "#/$defs/sha256"},
+        "releaseRingsSha256": {"$ref": "#/$defs/sha256"},
+        "candidateReleaseDigest": {"$ref": "#/$defs/sha256"},
+        "runtimeIdentitySnapshotDigest": {"$ref": "#/$defs/sha256"},
+        "issuerRegistryDigest": {"$ref": "#/$defs/sha256"},
+        "issuedAt": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"},
+        "expiresAt": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"}
+      }
+    },
+    "shared": {
+      "type": "object",
+      "properties": {
+        "$schema": {"const": "https://qijenchen.dev/schemas/consumer-fanout-review-v1.schema.json"},
+        "schemaVersion": {"const": 1},
+        "algorithm": {"const": "ed25519"},
+        "signatureDomain": {"const": "consumer-fleet-fanout-independent-review-v1"},
+        "requiredRole": {"const": "completion-attestor"},
+        "requiredQuorum": {"type": "integer", "minimum": 1, "maximum": 5},
+        "claims": {"$ref": "#/$defs/claims"},
+        "signingPayloadSha256": {"$ref": "#/$defs/sha256"},
+        "requestDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signerKeyId", "subject", "signature"],
+      "properties": {
+        "signerKeyId": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+        "subject": {"type": "string", "minLength": 1, "maxLength": 512},
+        "signature": {"type": "string", "minLength": 86, "maxLength": 86, "pattern": "^[A-Za-z0-9_-]{86}$"}
+      }
+    },
+    "signingRequest": {
+      "allOf": [
+        {"$ref": "#/$defs/shared"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "$schema", "schemaVersion", "kind", "readOnly", "mutationAuthorized",
+            "algorithm", "signatureDomain", "requiredRole", "requiredQuorum", "claims",
+            "signingPayloadBase64", "signingPayloadSha256", "requestDigest"
+          ],
+          "properties": {
+            "$schema": true,
+            "schemaVersion": true,
+            "kind": {"const": "consumer-fleet-fanout-review-signing-request"},
+            "readOnly": {"const": true},
+            "mutationAuthorized": {"const": false},
+            "algorithm": true,
+            "signatureDomain": true,
+            "requiredRole": true,
+            "requiredQuorum": true,
+            "claims": true,
+            "signingPayloadBase64": {"type": "string", "minLength": 4, "maxLength": 5592408, "pattern": "^[A-Za-z0-9+/]+={0,2}$"},
+            "signingPayloadSha256": true,
+            "requestDigest": true
+          }
+        }
+      ]
+    },
+    "reviewReceipt": {
+      "allOf": [
+        {"$ref": "#/$defs/shared"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "$schema", "schemaVersion", "kind", "algorithm", "signatureDomain",
+            "requiredRole", "requiredQuorum", "claims", "signingPayloadSha256",
+            "requestDigest", "signatures", "receiptDigest"
+          ],
+          "properties": {
+            "$schema": true,
+            "schemaVersion": true,
+            "kind": {"const": "consumer-fleet-fanout-review-receipt"},
+            "algorithm": true,
+            "signatureDomain": true,
+            "requiredRole": true,
+            "requiredQuorum": true,
+            "claims": true,
+            "signingPayloadSha256": true,
+            "requestDigest": true,
+            "signatures": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 5,
+              "uniqueItems": true,
+              "items": {"$ref": "#/$defs/signature"}
+            },
+            "receiptDigest": {"$ref": "#/$defs/sha256"}
+          }
+        }
+      ]
+    }
+  }
+}

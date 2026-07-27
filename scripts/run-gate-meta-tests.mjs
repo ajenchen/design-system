@@ -1,94 +1,157 @@
 #!/usr/bin/env node
 /**
- * run-gate-meta-tests.mjs — 實跑全部 gate meta-test(PNG §8 per-rule mutation 的執行層)。
+ * Execute gate mutation tests in a disposable repository snapshot.
  *
- * 為何存在:`audit-gate-meta-test-coverage.mjs` 只驗「meta-test 檔存在」(coverage),
- *   但檔存在 ≠ 有跑。若沒有 runner 實跑,meta-test 就是 coverage theater(裝飾),
- *   無法真的抓「某 gate 的偵測邏輯被改壞(還能 exit 0 卻不再抓違規)」的 regression。
- *   本 runner 逐支跑 `scripts/test-<gate>.mjs`(每支 inject 真違規 → 斷言 gate exit≠0 → restore),
- *   任一支失敗 = 該 gate 的偵測活性 regression → 整體 exit 1(preflight 阻擋)。
- *
- * 排除(EXCLUDE):render/build/network/env-性 gate 的 meta-test(baseline 非確定或需重建,
- *   由 CI 端到端兜底,見 audit-gate-meta-test-coverage.baseline.json debtReasons):
- *   audit-a11y / audit-consumer-a11y / audit-coverage-matrix / check-bundle-size / check-codex-freshness /
- *   check-branch-protection(查 GitHub API)/ codex-run-guarded(呼叫外部 codex)/ agents-bootstrap(重)。
- *
- * 安全:每支 meta-test 自身 finally-restore;本 runner 另在全跑後斷言 git 工作樹無殘留 source 變更,
- *   若有(某支 restore 失敗)→ 立即 exit 1 大聲報,不讓壞 restore 靜默 ship。
- *
- * 用法:node scripts/run-gate-meta-tests.mjs [--check]
+ * The snapshot preserves HEAD, the caller index (including staged bytes),
+ * current working-tree bytes/types/modes and untracked non-ignored artifacts.
+ * Ignored data is never traversed or copied: Git's frozen tracked + untracked
+ * non-ignored inventory is the only worktree read authority.
+ * Installed dependencies are copied into the snapshot with copy-on-write when
+ * the filesystem supports it (portable byte-copy fallback; never hard links).
+ * Workspace-package symlinks consequently resolve back into snapshot packages,
+ * never the caller. Every mutation, failed restore, or crashed child therefore
+ * dies with the disposable repository. This is mutation detection and cleanup,
+ * not an OS sandbox and not proof that external writes were contained.
  */
-import { readdirSync, existsSync } from 'node:fs'
-import { execSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
+import {
+  existsSync,
+  realpathSync,
+} from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { dirname, join, basename } from 'node:path'
+import {
+  createDisposableRepositorySnapshot,
+  captureFrozenRepositoryManifest,
+  diffRepositoryFingerprints,
+  disposableSnapshotEnvironment,
+  fingerprintCallerRepository,
+  removeDisposableRepositorySnapshot,
+  verifyDisposableSnapshotToolProfile,
+} from './lib/disposable-repository-snapshot.mjs'
+import { createGateMetaTestInventory } from './lib/gate-meta-test-inventory.mjs'
 
-const SCRIPTS = dirname(fileURLToPath(import.meta.url))
-const ROOT = join(SCRIPTS, '..')
+export { createDisposableRepositorySnapshot, fingerprintCallerRepository }
 
-// 併發鎖:meta-test 對 source 檔做 inject→restore,同時跑兩份會互相踩 restore(race)→ 假失敗 + 殘留。
-// 用 PID lockfile 拒併發;PID 已死 = stale,清掉續跑。退出時移除自己的鎖。
-import { writeFileSync as _wf, readFileSync as _rf, existsSync as _ex, unlinkSync as _ul } from 'node:fs'
-import { tmpdir } from 'node:os'
-const LOCK = join(tmpdir(), 'run-gate-meta-tests.lock')
-if (_ex(LOCK)) {
-  const held = parseInt(_rf(LOCK, 'utf8').trim(), 10)
-  let alive = false
-  try { process.kill(held, 0); alive = true } catch { alive = false }
-  if (alive) { console.error(`❌ 另一個 run-gate-meta-tests 正在跑(PID ${held})— 併發會踩 restore。等它跑完再跑。`); process.exit(1) }
-  _ul(LOCK) // stale
+const SCRIPT_PATH = fileURLToPath(import.meta.url)
+const DEFAULT_ROOT = realpathSync(resolve(dirname(SCRIPT_PATH), '..'))
+
+function fail(message) {
+  throw new Error(`gate meta-test snapshot blocked:${message}`)
 }
-_wf(LOCK, String(process.pid))
-process.on('exit', () => { try { if (_ex(LOCK) && _rf(LOCK, 'utf8').trim() === String(process.pid)) _ul(LOCK) } catch {} })
 
-// meta-test baseline 非確定 / 需 render|build|network → 由 CI 端到端兜底,不在本 runner。
-const EXCLUDE = new Set([
-  'audit-a11y', 'audit-consumer-a11y', 'audit-coverage-matrix', 'check-bundle-size', 'check-codex-freshness',
-  'check-branch-protection', 'codex-run-guarded', 'agents-bootstrap',
-  // check-src-republish 的 meta-test 依賴「version 未 bump」前提(注入 src 改動 → 期待『改 src 卻沒 bump』違規)。
-  // 但本 runner 在 preflight 是 **bump 之後** 才跑 → 版本已 bump → gate 正確判『src 改 + 已 bump = OK』無違規
-  // → meta-test 的「注入必被抓」斷言失敗。故排除本 runner;check-src-republish gate 本身仍在 preflight line 94 直跑,
-  // meta-test 檔存在(coverage 滿足)且在未 bump 狀態(CI 一般 commit)可獨立跑綠。
-  'check-src-republish',
-])
+function command(commandName, args, options = {}) {
+  const result = spawnSync(commandName, args, {
+    cwd: options.cwd,
+    env: options.env,
+    encoding: 'utf8',
+    stdio: options.stdio ?? ['ignore', 'pipe', 'pipe'],
+    timeout: options.timeout,
+    maxBuffer: 32 * 1024 * 1024,
+  })
+  if (options.allowFailure) return result
+  if (result.status !== 0) {
+    const detail = `${result.stderr || result.stdout || result.error?.message || result.signal || 'unknown failure'}`.trim()
+    fail(`${commandName} ${args.join(' ')} failed:${detail.slice(-2000)}`)
+  }
+  return result
+}
 
-// 收集所有 test-<stem>.mjs 且對應 gate scripts/<stem>.mjs 存在、且 stem 不在 EXCLUDE。
-const metaTests = readdirSync(SCRIPTS)
-  .filter((f) => /^test-.+\.mjs$/.test(f))
-  .map((f) => ({ file: f, stem: f.replace(/^test-/, '').replace(/\.mjs$/, '') }))
-  .filter(({ stem }) => existsSync(join(SCRIPTS, `${stem}.mjs`)) && !EXCLUDE.has(stem))
-  .sort((a, b) => a.file.localeCompare(b.file))
+export function collectGateMetaTestInventory(root, options = {}) {
+  return createGateMetaTestInventory({ root, ...options })
+}
 
-const cleanTree = () => execSync('git status --porcelain packages .claude/references .claude/skills .claude/rules', { cwd: ROOT, encoding: 'utf8' }).trim()
-const before = cleanTree()
+export function collectGateMetaTests(root, options = {}) {
+  return collectGateMetaTestInventory(root, options).runnable
+}
 
-let pass = 0
-const failed = []
-for (const { file, stem } of metaTests) {
+
+export function runGateMetaTests({
+  root = DEFAULT_ROOT,
+  dependencyRoot = root,
+  exclusionDocument,
+  timeoutMs = Number(process.env.GATE_META_TEST_TIMEOUT_MS || 15 * 60 * 1000),
+} = {}) {
+  const callerRoot = realpathSync(resolve(root))
+  const before = fingerprintCallerRepository(callerRoot)
+  const manifest = captureFrozenRepositoryManifest(callerRoot)
+  let snapshot
+  let result
   try {
-    execSync(`node ${JSON.stringify(join(SCRIPTS, file))}`, { cwd: ROOT, stdio: 'pipe' })
-    pass++
-  } catch (e) {
-    failed.push({ stem, code: e.status ?? 1 })
+    snapshot = createDisposableRepositorySnapshot({ root: callerRoot, dependencyRoot, manifest })
+    const inventory = collectGateMetaTestInventory(snapshot.snapshotRoot, { exclusionDocument })
+    const environment = disposableSnapshotEnvironment(snapshot)
+    let pass = 0
+    const failed = []
+    for (const { file, stem } of inventory.runnable) {
+      verifyDisposableSnapshotToolProfile(snapshot)
+      const child = command(process.execPath, [join(snapshot.snapshotRoot, 'scripts', file)], {
+        cwd: snapshot.snapshotRoot,
+        env: environment,
+        allowFailure: true,
+        timeout: timeoutMs,
+      })
+      verifyDisposableSnapshotToolProfile(snapshot)
+      if (child.status === 0) pass += 1
+      else failed.push({
+        stem,
+        code: child.status ?? child.signal ?? child.error?.code ?? 'unknown',
+        detail: `${child.stderr || child.stdout || child.error?.message || ''}`.trim().split('\n').slice(-8).join('\n'),
+      })
+    }
+    result = {
+      pass,
+      total: inventory.runnable.length,
+      discoverable: inventory.discoverable.length,
+      ran: pass + failed.length,
+      failed,
+      excluded: inventory.excluded.map(({ stem, executionClass }) => ({ stem, executionClass })),
+      excludedByClass: Object.fromEntries(
+        Object.entries(inventory.excludedByClass).map(([name, entries]) => [name, entries.map(({ stem }) => stem)]),
+      ),
+      snapshotRoot: snapshot.snapshotRoot,
+      snapshotParent: snapshot.parent,
+    }
+  } finally {
+    removeDisposableRepositorySnapshot(snapshot)
+  }
+  const after = fingerprintCallerRepository(callerRoot)
+  const callerDrift = diffRepositoryFingerprints(before, after)
+  return { ...result, callerDrift, cleaned: snapshot ? !existsSync(snapshot.parent) : true }
+}
+
+function printResult(result) {
+  const excluded = Object.entries(result.excludedByClass)
+    .map(([name, stems]) => `${name}:${stems.length}[${stems.join(',')}]`)
+    .join(',')
+  console.log(`gate meta-tests(snapshot): discoverable=${result.discoverable} ran=${result.ran} pass=${result.pass} excluded-by-class={${excluded}}`)
+  if (result.callerDrift.length) {
+    console.error('❌ caller repository changed while disposable meta-tests ran:')
+    result.callerDrift.slice(0, 100).forEach((path) => console.error(`   - ${path}`))
+  }
+  if (result.failed.length) {
+    console.error(`❌ ${result.failed.length} gate meta-test(s) failed in the disposable snapshot:`)
+    for (const failure of result.failed) {
+      console.error(`   - test-${failure.stem}.mjs(${failure.code})`)
+      if (failure.detail) console.error(failure.detail.split('\n').map((line) => `       ${line}`).join('\n'))
+    }
+  }
+  if (!result.cleaned) console.error('❌ disposable repository cleanup failed')
+}
+
+const IS_MAIN = (() => {
+  if (!process.argv[1]) return false
+  try { return realpathSync(process.argv[1]) === realpathSync(SCRIPT_PATH) } catch { return false }
+})()
+
+if (IS_MAIN) {
+  try {
+    const result = runGateMetaTests()
+    printResult(result)
+    if (result.failed.length || result.callerDrift.length || !result.cleaned) process.exit(1)
+    console.log('✅ all gate mutation tests passed in an isolated repository; caller stayed byte/mode/type identical')
+  } catch (error) {
+    console.error(`❌ ${error.message}`)
+    process.exit(1)
   }
 }
-
-// 安全 backstop:比對 source dirs 的 modified-path 集合(非 raw string,避免 Google Drive FS 寫入延遲
-// 造成的假陽性 + 正確處理 preflight 前已有的未 commit 變更)。再讀一次讓 git/FS settle。
-const pathSet = (s) => new Set(s.split('\n').filter(Boolean).map((l) => l.slice(3)))
-const beforeSet = pathSet(before)
-let newlyDirty = [...pathSet(cleanTree())].filter((p) => !beforeSet.has(p))
-if (newlyDirty.length) newlyDirty = [...pathSet(cleanTree())].filter((p) => !beforeSet.has(p)) // re-read(FS lag)
-console.log(`gate meta-tests: ${pass}/${metaTests.length} PASS(EXCLUDE ${EXCLUDE.size} render/env-性,CI 端到端兜底)`)
-
-if (newlyDirty.length) {
-  console.error('❌ meta-test 跑完後工作樹有新增未還原 source 變更(某支 restore 失敗)— 立即檢查:')
-  console.error(newlyDirty.map((p) => `   - ${p}`).join('\n'))
-  process.exit(1)
-}
-if (failed.length) {
-  console.error(`❌ ${failed.length} 支 gate meta-test 失敗(該 gate 偵測活性 regression):`)
-  failed.forEach((f) => console.error(`   - test-${f.stem}.mjs(exit ${f.code})`))
-  process.exit(1)
-}
-console.log('✅ 全部 gate meta-test PASS — 每支 gate 的 inject-真違規偵測活性已自證')

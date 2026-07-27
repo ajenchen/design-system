@@ -1,7 +1,7 @@
 #!/bin/bash
 # Runner: executes all test_*.sh in this directory, aggregates results.
 #
-# Usage: bash .claude/hooks/tests/run-all.sh
+# Usage: bash packages/design-system/ds-canonical/hooks/tests/run-all.sh
 #        npm run hooks:test(via package.json wrapper)
 #
 # Exit: 0 if all pass, 1 if any test suite fails.
@@ -9,9 +9,19 @@
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Export CLAUDE_PROJECT_DIR so _log-fire.sh doesn't create stray .claude/ dirs
-# when hooks are invoked from the test runner(different cwd than real runtime)
-export CLAUDE_PROJECT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+# Hook tests are behavioral verification, never a telemetry-producing native session. Use the real
+# git root for path semantics and make the entire replay byte-for-byte read-only.
+export GOVERNANCE_PROJECT_DIR="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
+export GOVERNANCE_READ_ONLY=1
+# A test suite owns its fixture Git runtime and transcript/replay mode. Never
+# let a caller session's bindings shadow the temporary repositories or the
+# explicit runtime mode selected by an individual behavioral test below.
+unset GOVERNANCE_RUNTIME_ROOT GOVERNANCE_STATE_DIR \
+  GOVERNANCE_STATIC_REPLAY GOVERNANCE_TRANSCRIPT_PATH \
+  GOVERNANCE_TRANSCRIPT_CONTRACT TRANSCRIPT_PATH \
+  GOVERNANCE_PROVIDER GOVERNANCE_SELF_PROVIDER \
+  GOVERNANCE_WRITE_STATE_TRUST GOVERNANCE_PROVIDER_ADAPTER_JSON
+export GOVERNANCE_TELEMETRY_OPT_IN=0
 cd "$SCRIPT_DIR" || exit 1
 
 TOTAL_SUITES=0
@@ -65,8 +75,9 @@ echo "  Total hooks:  ${TOTAL_COUNT}"
 echo "  With tests:   ${TESTED_COUNT}"
 echo "  Without:      ${UNTESTED_COUNT}"
 if [ "${UNTESTED_COUNT}" -gt 0 ] 2>/dev/null; then
-  echo "  (未覆蓋 list — 漸進式補齊,不 block)"
+  echo "  (active hook 無 behavioral test — fail closed)"
   printf '%s\n' "$UNTESTED" | sed 's/^/    - /' | head -20
+  FAILED_SUITES="${FAILED_SUITES}\n  - active-hook-test-closure(${UNTESTED_COUNT} untested)"
 fi
 
 if [ -n "$FAILED_SUITES" ]; then

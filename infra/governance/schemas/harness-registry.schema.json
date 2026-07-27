@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance-harness-registry-v2.json",
+  "title": "Provider-neutral governance Harness registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "requiredDomains", "domainTaxonomy", "authorityContract", "sharedAuthorityPolicy", "sourceInventory", "runner", "entries", "metaTestCoverage"],
+  "properties": {
+    "$schema": {"const": "../schemas/harness-registry.schema.json"},
+    "schemaVersion": {"const": 2},
+    "kind": {"const": "provider-neutral-governance-harness-registry"},
+    "requiredDomains": {
+      "type": "array",
+      "minItems": 13,
+      "maxItems": 13,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/coreDomain"}
+    },
+    "domainTaxonomy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "mandatoryCoreBinding", "extensionDomainPattern", "extensionPolicy"],
+      "properties": {
+        "version": {"const": "1.0.0"},
+        "mandatoryCoreBinding": {"const": "requiredDomains-is-ordered-minimum"},
+        "extensionDomainPattern": {"const": "^x-[a-z0-9]+(?:-[a-z0-9]+)*$"},
+        "extensionPolicy": {"const": "append-only-unique-extension-entry-never-replaces-reorders-or-dilutes-core"}
+      }
+    },
+    "authorityContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "schemaPath", "schemaVersion", "kind", "sha256", "schemaSha256", "projectionPolicy"],
+      "properties": {
+        "path": {"const": "infra/governance/providers/harness-authority-contracts.json"},
+        "schemaPath": {"const": "infra/governance/schemas/harness-authority-contracts.schema.json"},
+        "schemaVersion": {"const": 2},
+        "kind": {"const": "provider-neutral-governance-harness-authority-contracts"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "schemaSha256": {"$ref": "#/$defs/sha256"},
+        "projectionPolicy": {"const": "registry-authority-and-claim-fields-are-exact-derived-projections"}
+      }
+    },
+    "sharedAuthorityPolicy": {
+      "const": "shared-closures-live-once-in-the-authority-contract-and-are-not-duplicated-across-domain-authority-paths"
+    },
+    "sourceInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "schemaVersion", "kind", "sha256", "closurePolicy"],
+      "properties": {
+        "path": {"const": "infra/governance/providers/harness-source-inventory.json"},
+        "schemaVersion": {"const": 2},
+        "kind": {"const": "provider-neutral-governance-harness-source-inventory"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "closurePolicy": {"const": "every-discovered-source-exactly-one-execution-or-reviewed-exclusion"}
+      }
+    },
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "command", "npmScript", "npmScriptCommand", "defaultTimeoutMs", "failureMode", "deduplication", "credentialPolicy", "certificationPolicy", "timeoutOverrides", "requiredConsumers"],
+      "properties": {
+        "id": {"const": "all-registered-local-harnesses"},
+        "command": {"const": ["node", "infra/governance/bin/run-harnesses.mjs"]},
+        "npmScript": {"const": "test:governance-harnesses"},
+        "npmScriptCommand": {"const": "node infra/governance/bin/run-harnesses.mjs"},
+        "defaultTimeoutMs": {"type": "integer", "minimum": 1000, "maximum": 900000},
+        "failureMode": {"const": "run-all"},
+        "deduplication": {"const": "first-registered-argv"},
+        "credentialPolicy": {"const": "strip-external-credentials"},
+        "certificationPolicy": {"const": "preserve-registry-claims-never-certify-external"},
+        "timeoutOverrides": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["command", "timeoutMs"],
+            "properties": {
+              "command": {"$ref": "#/$defs/harnessCommand"},
+              "timeoutMs": {"type": "integer", "minimum": 1000, "maximum": 21600000}
+            }
+          }
+        },
+        "requiredConsumers": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "invocationKind", "argv"],
+            "properties": {
+              "path": {"enum": [".github/workflows/ci.yml", ".github/workflows/release.yml", "scripts/release-preflight.mjs", ".devcontainer/post-create.mjs"]},
+              "invocationKind": {"enum": ["yaml-run-line", "js-reviewed-shell-wrapper", "js-authority-setup-wrapper"]},
+              "argv": {"$ref": "#/$defs/consumerCommand"}
+            }
+          }
+        }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 13,
+      "items": {"$ref": "#/$defs/entry"}
+    },
+    "metaTestCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coverageKind", "inventoryCommand", "isolatedRunnerCommand", "isolationTestPath", "baselinePath", "requiredOutcome", "statement"],
+      "properties": {
+        "coverageKind": {"const": "discovered-paired-mutation-zero-debt-ratchet"},
+        "inventoryCommand": {"const": ["node", "scripts/audit-gate-meta-test-coverage.mjs", "--check"]},
+        "isolatedRunnerCommand": {"const": ["node", "scripts/run-gate-meta-tests.mjs"]},
+        "isolationTestPath": {"const": "scripts/test-run-gate-meta-tests-isolation.mjs"},
+        "baselinePath": {"const": "scripts/audit-gate-meta-test-coverage.baseline.json"},
+        "requiredOutcome": {"const": "all-discovered-checker-gates-covered-zero-debt"},
+        "statement": {"const": "Every discovered checker gate has one canonical paired mutation execution owner; live browser, registry, model, CI and managed-host owners remain required for external certification."}
+      }
+    }
+  },
+  "$defs": {
+    "coreDomain": {
+      "enum": ["install", "upgrade", "rollback", "process-crash", "provider-lifecycle", "cloud", "template-consumer", "second-opinion", "mirror", "release", "fleet", "evidence", "fake-green"]
+    },
+    "domain": {
+      "oneOf": [
+        {"$ref": "#/$defs/coreDomain"},
+        {"type": "string", "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*$"}
+      ]
+    },
+    "repoPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "harnessCommand": {
+      "oneOf": [
+        {"const": ["node", "scripts/run-gate-meta-tests.mjs"]},
+        {"const": ["node", "scripts/audit-gate-meta-test-coverage.mjs", "--check"]},
+        {
+          "type": "array",
+          "prefixItems": [
+            {"const": "node"},
+            {"const": "infra/governance/bin/run-harness-suite.mjs"},
+            {"const": "--suite"},
+            {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            {"const": "node"},
+            {"const": "--test"},
+            {"type": "string", "pattern": "^(?:infra/governance/test|packages/governance/test)/[A-Za-z0-9._-]+\\.test\\.mjs$"}
+          ],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            {"const": "node"},
+            {"type": "string", "pattern": "^scripts/test-[A-Za-z0-9._-]+\\.mjs$"}
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      ]
+    },
+    "consumerCommand": {
+      "oneOf": [
+        {"const": ["npm", "run", "--silent", "test:governance-harnesses"]},
+        {"const": ["node", ".devcontainer/post-create.mjs"]}
+      ]
+    },
+    "nonEmptyStrings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": ["domain"],
+            "properties": {"domain": {"type": "string", "pattern": "^x-"}}
+          },
+          "then": {
+            "required": ["id"],
+            "properties": {"id": {"type": "string", "pattern": "^extension-[a-z0-9]+(?:-[a-z0-9]+)*$"}}
+          }
+        }
+      ],
+      "required": ["id", "domain", "commands", "testPaths", "authorityPaths", "executionClass", "certificationClaim", "proves", "doesNotProve"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "domain": {"$ref": "#/$defs/domain"},
+        "commands": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/harnessCommand"}
+        },
+        "testPaths": {"$ref": "#/$defs/nonEmptyPaths"},
+        "authorityPaths": {"$ref": "#/$defs/nonEmptyPaths"},
+        "executionClass": {"enum": ["deterministic-local", "fixture-integration", "external-readback-required"]},
+        "certificationClaim": {"enum": ["local-harness-only", "not-certified", "external-readback-required"]},
+        "proves": {"$ref": "#/$defs/nonEmptyStrings"},
+        "doesNotProve": {"$ref": "#/$defs/nonEmptyStrings"}
+      }
+    },
+    "nonEmptyPaths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/repoPath"}
+    }
+  }
+}

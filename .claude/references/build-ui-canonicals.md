@@ -1,6 +1,6 @@
-# 建立 UI 前的 DS canonical 對照(從 CLAUDE.md 拆出的完整對照)
+# 建立 UI 前的 DS canonical 對照(historical provenance:從 provider-specific generated adapter CLAUDE.md 拆出)
 
-本檔是 `.claude/rules/ui-development.md`「建立 UI 前必讀」的**完整對照表**。Rule 主章只留「超級規則 + 自我檢查腳本」,遇到具體情境要查對照時讀本檔。
+本檔是 canonical `packages/design-system/ds-canonical/rules/ui-development.md`「建立 UI 前必讀」的**完整對照表**。Rule 主章只留「超級規則 + 自我檢查腳本」,遇到具體情境要查對照時讀本檔。
 
 ---
 
@@ -50,7 +50,7 @@
 | **固定長寬比容器(防 CLS 坍塌,多張圖統一 ratio)** | `components/AspectRatio/` | Coachmark media / Carousel item image / Card thumbnail / Chart container(override default 16:9) |
 | Field wrapper（border + padding + startIcon + endAction 結構) | `components/Field/field-wrapper.tsx` + `field-controls.spec.md` | 所有單行可編輯欄位元件 |
 
-### 自我檢查腳本(.claude/rules/ui-development.md「建立 UI 前必讀」保留這節的精簡版,完整對照在本檔上表)
+### 自我檢查腳本(`rules/ui-development.md`「建立 UI 前必讀」保留這節的精簡版,完整對照在本檔上表)
 
 - 新元件有 icon+text 垂直堆疊? → 用 `<Empty>`,不自己畫 icon + title + desc
 - 新元件有橫向 row 結構(prefix/content/suffix)? → 用 `element-anatomy/item-anatomy` 的 `<MenuItem>` + slot components(`<ItemIcon>` / `<ItemAvatar>` / `<ItemLabel>` / `<ItemSuffix>` / `<ItemInlineAction>`)

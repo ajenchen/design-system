@@ -21,6 +21,10 @@
 # All 4 functions are exit 0(non-blocking),safe to chain in single dispatcher。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+source "$(dirname "$0")/lib/_provider_paths.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY:PASSIVE_LOGGING_PROVIDER_RESOLVER_UNAVAILABLE\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 
@@ -28,8 +32,64 @@ INPUT=$(cat 2>/dev/null || echo "{}")
 TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "unknown"' 2>/dev/null)
 
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+PROJECT_DIR="${GOVERNANCE_PROJECT_DIR:-$(pwd)}"
 cd "$PROJECT_DIR" 2>/dev/null || exit 0
+STATE_DIR="$(governance_prepare_runtime_state_dir 2>/dev/null)" || exit 0
+
+runtime_file() {
+  governance_runtime_file_path "$1" "$STATE_DIR" 2>/dev/null
+}
+
+INSTRUCTION_ENTRY="$(governance_provider_string_field instructionEntry 2>/dev/null)" || {
+  printf 'GOVERNANCE_INTEGRITY:PASSIVE_LOGGING_INSTRUCTION_ENTRY_UNAVAILABLE\n' >&2
+  exit 70
+}
+SHARED_INSTRUCTION_ENTRY="$(governance_provider_string_field sharedInstructionEntry 2>/dev/null)" || {
+  printf 'GOVERNANCE_INTEGRITY:PASSIVE_LOGGING_SHARED_INSTRUCTION_ENTRY_UNAVAILABLE\n' >&2
+  exit 70
+}
+CANONICAL_HOOK_ROOT="$(governance_canonical_root hooks 2>/dev/null)" || {
+  printf 'GOVERNANCE_INTEGRITY:PASSIVE_LOGGING_HOOK_ROOT_UNAVAILABLE\n' >&2
+  exit 70
+}
+CANONICAL_SKILL_ROOT="$(governance_canonical_root skills 2>/dev/null)" || {
+  printf 'GOVERNANCE_INTEGRITY:PASSIVE_LOGGING_SKILL_ROOT_UNAVAILABLE\n' >&2
+  exit 70
+}
+PROVIDER_SKILL_REL="$(governance_provider_string_field skillDirectory 2>/dev/null)" || {
+  printf 'GOVERNANCE_INTEGRITY:PASSIVE_LOGGING_SKILL_DIRECTORY_UNAVAILABLE\n' >&2
+  exit 70
+}
+CANONICAL_MANAGED_ROOTS=()
+for key in hooks skills contextForkAgents commands rules references; do
+  root="$(governance_canonical_relative_root "$key" 2>/dev/null)" || {
+    printf 'GOVERNANCE_INTEGRITY:PASSIVE_LOGGING_CANONICAL_ROOT_UNAVAILABLE:%s\n' "$key" >&2
+    exit 70
+  }
+  CANONICAL_MANAGED_ROOTS+=("$root")
+done
+PROVIDER_MANAGED_ROOTS=()
+MANAGED_ROOTS="$(governance_provider_managed_roots 2>/dev/null)" || {
+  printf 'GOVERNANCE_INTEGRITY:PASSIVE_LOGGING_MANAGED_ROOTS_UNAVAILABLE\n' >&2
+  exit 70
+}
+while IFS= read -r root; do
+  [ -n "$root" ] && PROVIDER_MANAGED_ROOTS+=("$root")
+done <<< "$MANAGED_ROOTS"
+
+is_governance_change() {
+  local changed="${1#./}" root
+  case "$changed" in
+    "$INSTRUCTION_ENTRY"|"$SHARED_INSTRUCTION_ENTRY"|governance/memory/*.md|*.spec.md) return 0 ;;
+  esac
+  for root in "${CANONICAL_MANAGED_ROOTS[@]}"; do
+    governance_path_is_under "$changed" "$root" && return 0
+  done
+  for root in "${PROVIDER_MANAGED_ROOTS[@]}"; do
+    governance_path_is_under "$changed" "$root" && return 0
+  done
+  return 1
+}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # R1 — tsc sanity(原 lib/stop_tsc_sanity.sh):若 turn 動 .ts/.tsx → tsc -b log
@@ -42,23 +102,24 @@ rule_tsc_sanity() {
   touched=$(tail -200 "$TRANSCRIPT_PATH" 2>/dev/null \
     | jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="tool_use") | select(.name=="Edit" or .name=="Write" or .name=="MultiEdit") | .input.file_path // empty' 2>/dev/null \
     | grep -E '\.(ts|tsx)$' \
-    | head -1 || echo "")
+    | awk 'NR == 1 { first = $0 } END { if (first != "") print first }' || echo "")
 
   [ -z "$touched" ] && return 0
 
   local tsc_output error_lines error_count sample
-  tsc_output=$(timeout 60 npx tsc -b 2>&1 || true)
+  tsc_output=$(timeout 60 npx tsc -b --noEmit --pretty false 2>&1 || true)
   error_lines=$(echo "$tsc_output" | grep "error TS" || true)
   error_count=$(echo "$error_lines" | grep -c "error TS" || true)
   error_count=${error_count:-0}
 
   if [ "$error_count" -gt 0 ]; then
-    sample=$(echo "$error_lines" | head -3)
-    mkdir -p .claude/logs 2>/dev/null
+    local tsc_log
+    tsc_log="$(runtime_file tsc-errors.jsonl)" || return 0
+    sample=$(sed -n '1,3p' <<<"$error_lines")
     printf '{"ts":"%s","tsc_errors":%s,"sample":%s}\n' \
       "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$error_count" \
       "$(echo "$sample" | jq -Rs .)" \
-      >> .claude/logs/tsc-errors.jsonl 2>/dev/null || true
+      >> "$tsc_log" 2>/dev/null || true
   fi
 }
 
@@ -69,17 +130,17 @@ rule_harvest_corrections() {
   [ -z "$TRANSCRIPT_PATH" ] && return 0
   [ -f "$TRANSCRIPT_PATH" ] || return 0
 
-  local log_dir log_file
-  log_dir="$PROJECT_DIR/.claude/logs"
-  log_file="$log_dir/user-corrections.jsonl"
-  mkdir -p "$log_dir"
+  local log_dir log_file archive_file tmp_file
+  log_dir="$STATE_DIR"
+  log_file="$(runtime_file user-corrections.jsonl)" || return 0
 
   # Rotate if > 1 MB
   if [ -f "$log_file" ]; then
     local size
     size=$(wc -c < "$log_file" | tr -d ' ')
     if [ "$size" -gt 1048576 ]; then
-      mv "$log_file" "${log_file}.$(date +%Y%m)"
+      archive_file="$(runtime_file "user-corrections.jsonl.$(date +%Y%m)")" || return 0
+      mv "$log_file" "$archive_file"
     fi
   fi
 
@@ -88,18 +149,19 @@ rule_harvest_corrections() {
   corrections=$(tail -500 "$TRANSCRIPT_PATH" 2>/dev/null \
     | jq -r 'select(.type=="user") | .message.content? // empty | if type=="string" then . else (.[]? | select(.type=="text") | .text) end' 2>/dev/null \
     | grep -E '不是|不對|錯了|應該|糾正|為什麼沒|先不管|之後再|別再|不要' \
-    | head -5 || true)
+    | awk 'NR <= 5' || true)
 
   [ -z "$corrections" ] && return 0
 
   # Dedup by session
   if [ -f "$log_file" ]; then
-    grep -v "\"session\":\"$SESSION_ID\"" "$log_file" > "$log_file.tmp" 2>/dev/null || true
-    [ -f "$log_file.tmp" ] && mv -f "$log_file.tmp" "$log_file"
+    tmp_file="$(runtime_file user-corrections.jsonl.tmp)" || return 0
+    grep -v "\"session\":\"$SESSION_ID\"" "$log_file" > "$tmp_file" 2>/dev/null || true
+    [ -f "$tmp_file" ] && mv -f "$tmp_file" "$log_file"
   fi
 
   count=$(echo "$corrections" | wc -l | tr -d ' ')
-  escaped=$(echo "$corrections" | head -2 | jq -Rs .)
+  escaped=$(sed -n '1,2p' <<<"$corrections" | jq -Rs .)
   printf '{"ts":"%s","session":"%s","count":%s,"sample":%s}\n' \
     "$timestamp" "$SESSION_ID" "$count" "$escaped" >> "$log_file"
 }
@@ -109,8 +171,7 @@ rule_harvest_corrections() {
 # ─────────────────────────────────────────────────────────────────────────────
 rule_capture_metrics() {
   local snapshot_file
-  snapshot_file="$PROJECT_DIR/.claude/logs/metric-snapshots.jsonl"
-  mkdir -p "$(dirname "$snapshot_file")"
+  snapshot_file="$(runtime_file metric-snapshots.jsonl)" || return 0
 
   # 24h dedup
   if [ -f "$snapshot_file" ]; then
@@ -125,15 +186,17 @@ rule_capture_metrics() {
   fi
 
   # Capture metrics
-  local claude_md_lines=0
-  [ -f CLAUDE.md ] && claude_md_lines=$(wc -l < CLAUDE.md | tr -d ' ')
+  local instruction_lines=0 entry seen=""
+  for entry in "$INSTRUCTION_ENTRY" "$SHARED_INSTRUCTION_ENTRY"; do
+    case "$entry" in ""|/*|*..*) continue ;; esac
+    case "|$seen|" in *"|$entry|"*) continue ;; esac
+    seen="${seen:+$seen|}$entry"
+    [ -f "$entry" ] && instruction_lines=$((instruction_lines + $(wc -l < "$entry" | tr -d ' ')))
+  done
 
-  local harness_memory_dir repo_memory_dir memory_dir memory_entries=0
-  harness_memory_dir="$HOME/.claude/projects/-Users-chenqiren-Library-CloudStorage-GoogleDrive-qijenchen-gmail-com--------my-project/memory"
-  repo_memory_dir=".claude/memory"
-  if [ -d "$harness_memory_dir" ]; then
-    memory_dir="$harness_memory_dir"
-  elif [ -d "$repo_memory_dir" ]; then
+  local repo_memory_dir memory_dir memory_entries=0
+  repo_memory_dir="governance/memory"
+  if [ -d "$repo_memory_dir" ]; then
     memory_dir="$repo_memory_dir"
   else
     memory_dir=""
@@ -142,20 +205,23 @@ rule_capture_metrics() {
     memory_entries=$(find "$memory_dir" -maxdepth 1 -name '*.md' -not -name 'MEMORY.md' -not -name 'README.md' 2>/dev/null | wc -l | tr -d ' ' || echo 0)
   fi
 
-  local hooks_total=0
-  if [ -d .claude/hooks ]; then
-    hooks_total=$(find .claude/hooks -maxdepth 1 -type f \( -name '*.sh' -o -name '*.py' \) 2>/dev/null \
+  local hooks_total=0 hooks_dir="$CANONICAL_HOOK_ROOT"
+  if printf '%s' "${GOVERNANCE_REGISTERED_HOOK_COUNT:-}" | grep -qE '^[0-9]+$'; then
+    hooks_total="$GOVERNANCE_REGISTERED_HOOK_COUNT"
+  elif [ -d "$hooks_dir" ]; then
+    hooks_total=$(find "$hooks_dir" -maxdepth 1 -type f \( -name '*.sh' -o -name '*.py' \) 2>/dev/null \
       | grep -vE '(_log-fire\.sh)' | wc -l | tr -d ' ' || echo 0)
   fi
 
-  local skills_total=0
-  if [ -d .claude/skills ]; then
-    skills_total=$(find .claude/skills -maxdepth 1 -type d 2>/dev/null | tail -n +2 | wc -l | tr -d ' ' || echo 0)
+  local skills_total=0 skill_dir="$PROJECT_DIR/$PROVIDER_SKILL_REL"
+  [ -d "$skill_dir" ] || skill_dir="$CANONICAL_SKILL_ROOT"
+  if [ -d "$skill_dir" ]; then
+    skills_total=$(find "$skill_dir" -maxdepth 1 -type d 2>/dev/null | tail -n +2 | wc -l | tr -d ' ' || echo 0)
   fi
 
   local tested=0
-  if [ -d .claude/hooks/tests ]; then
-    tested=$(find .claude/hooks/tests -maxdepth 1 -name 'test_*.sh' 2>/dev/null | wc -l | tr -d ' ' || echo 0)
+  if [ -d "$hooks_dir/tests" ]; then
+    tested=$(find "$hooks_dir/tests" -maxdepth 1 -name 'test_*.sh' 2>/dev/null | wc -l | tr -d ' ' || echo 0)
   fi
   # Defensive: strip non-digit chars (multiline / fallback "0\n0" from pipefail edge case)
   hooks_total="${hooks_total//[^0-9]/}"
@@ -173,18 +239,18 @@ rule_capture_metrics() {
   fi
 
   local corrections_log corrections=0
-  corrections_log="$PROJECT_DIR/.claude/logs/user-corrections.jsonl"
+  corrections_log="$(runtime_file user-corrections.jsonl)" || return 0
   [ -f "$corrections_log" ] && corrections=$(wc -l < "$corrections_log" | tr -d ' ')
 
   local timestamp snapshot
   timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   snapshot=$(jq -nc \
-    --arg ts "$timestamp" --arg tag "auto-daily" --arg sv "v2" \
-    --argjson cml "$claude_md_lines" --argjson me "$memory_entries" \
+    --arg ts "$timestamp" --arg tag "auto-daily" --arg sv "v3" \
+    --argjson il "$instruction_lines" --argjson me "$memory_entries" \
     --argjson ht "$hooks_total" --argjson st "$skills_total" \
     --argjson uh "$untested" --argjson lpd "$last_prune_days" \
     --argjson c "$corrections" \
-    '{ts:$ts, schema_version:$sv, tag:$tag, claude_md_lines:$cml, memory_entries:$me, hooks_total:$ht, skills_total:$st, untested_hooks:$uh, last_prune_days_ago:$lpd, corrections_pending:$c}')
+    '{ts:$ts, schema_version:$sv, tag:$tag, instruction_lines:$il, memory_entries:$me, hooks_total:$ht, skills_total:$st, untested_hooks:$uh, last_prune_days_ago:$lpd, corrections_pending:$c}')
 
   echo "$snapshot" >> "$snapshot_file"
 }
@@ -195,7 +261,7 @@ rule_capture_metrics() {
 rule_governance_drift() {
   local head_now head_prev_file head_prev commits_made gov_edited
   head_now=$(git rev-parse HEAD 2>/dev/null || echo "")
-  head_prev_file="$PROJECT_DIR/.claude/logs/.stop-drift-last-head"
+  head_prev_file="$(runtime_file .stop-drift-last-head)" || return 0
   head_prev=""
   [ -f "$head_prev_file" ] && head_prev=$(cat "$head_prev_file" 2>/dev/null || echo "")
 
@@ -205,9 +271,12 @@ rule_governance_drift() {
   fi
 
   gov_edited="false"
-  if git diff --name-only HEAD 2>/dev/null | grep -qE '^(CLAUDE\.md|.*\.spec\.md|.*\.skill\.md|.*SKILL\.md|.claude/.*\.sh|.claude/.*\.py)$'; then
-    gov_edited="true"
-  fi
+  while IFS= read -r changed; do
+    if is_governance_change "$changed"; then
+      gov_edited="true"
+      break
+    fi
+  done < <(git diff --name-only HEAD 2>/dev/null)
 
   echo "$head_now" > "$head_prev_file" 2>/dev/null || true
 
@@ -215,17 +284,20 @@ rule_governance_drift() {
     return 0
   fi
 
-  local warnings="" L
-  if [ -f CLAUDE.md ]; then
-    L=$(wc -l < CLAUDE.md | tr -d ' ')
+  local warnings="" L entry seen=""
+  for entry in "$INSTRUCTION_ENTRY" "$SHARED_INSTRUCTION_ENTRY"; do
+    case "|$seen|" in *"|$entry|"*) continue ;; esac
+    seen="${seen:+$seen|}$entry"
+    [ -f "$entry" ] || continue
+    L=$(wc -l < "$entry" | tr -d ' ')
     if [ "$L" -gt 800 ]; then
-      warnings="${warnings}\n  • CLAUDE.md ${L} lines(over 800 cap → /knowledge-prune REQUIRED)"
+      warnings="${warnings}\n  • $entry ${L} lines(over 800 cap → /knowledge-prune REQUIRED)"
     elif [ "$L" -gt 600 ]; then
-      warnings="${warnings}\n  • CLAUDE.md ${L} lines(over 600 strong-warn)"
+      warnings="${warnings}\n  • $entry ${L} lines(over 600 strong-warn)"
     elif [ "$L" -gt 500 ]; then
-      warnings="${warnings}\n  • CLAUDE.md ${L} lines(approaching 600)"
+      warnings="${warnings}\n  • $entry ${L} lines(approaching 600)"
     fi
-  fi
+  done
 
   for f in packages/design-system/src/tokens/color/color.spec.md \
            packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md \
@@ -236,7 +308,7 @@ rule_governance_drift() {
     local cap
     case "$f" in
       */item-anatomy.spec.md) cap=1200 ;;
-      # 2026-05-22 prune codify per CLAUDE.md「foundational SSOT 例外 ≤ 800-1200」range(SSOT sync with stop_self_audit.sh:99-102)
+      # 2026-05-22 prune codify per shared bootstrap「foundational SSOT 例外 ≤ 800-1200」range
       */color/color.spec.md) cap=1000 ;;
       *) cap=800 ;;
     esac
@@ -247,7 +319,7 @@ rule_governance_drift() {
 
   if [ "$gov_edited" = "true" ]; then
     local tsc_errors
-    tsc_errors=$(npx tsc -b 2>&1 | grep -c "error TS" 2>/dev/null | head -1 | tr -d '[:space:]' || echo 0)
+    tsc_errors=$(npx tsc -b --noEmit --pretty false 2>&1 | grep -c "error TS" 2>/dev/null | tr -d '[:space:]' || echo 0)
     tsc_errors=${tsc_errors:-0}
     if [ "$tsc_errors" -gt 0 ] 2>/dev/null; then
       warnings="${warnings}\n  • tsc -b reports ${tsc_errors} errors(governance edit broke types)"
@@ -256,21 +328,24 @@ rule_governance_drift() {
 
   [ -z "$warnings" ] && return 0
 
-  mkdir -p "$PROJECT_DIR/.claude/logs" 2>/dev/null
+  local drift_log
+  drift_log="$(runtime_file governance-drift.jsonl)" || return 0
   printf '{"ts":"%s","warnings":%s}\n' \
     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     "$(printf '%b' "$warnings" | jq -Rs .)" \
-    >> "$PROJECT_DIR/.claude/logs/governance-drift.jsonl" 2>/dev/null || true
+    >> "$drift_log" 2>/dev/null || true
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # R5 — infra best-practice score(原 stop_meta_self_audit.sh,2026-05-13 fold)
 #   per-Stop scripts/score-infra-best-practice.mjs(8 dim,0-100)
-#   regression / dim < 80 → log warning to .claude/logs/score-history.jsonl
-#   silent log only(Stop hooks JSON schema 不接受 additionalContext)
+#   regression / dim < 80 → log warning to provider-neutral runtime state
+#   silent log only(no provider-native context transport)
 # ─────────────────────────────────────────────────────────────────────────────
 rule_infra_best_practice_score() {
-  local log_file="$PROJECT_DIR/.claude/logs/infra-best-practice-score.jsonl"
+  local log_file score_history_file
+  log_file="$(runtime_file infra-best-practice-score.jsonl)" || return 0
+  score_history_file="$(runtime_file score-history.jsonl)" || return 0
   local score_output current_score prev_score=0 warnings="" drop low_dims
 
   score_output=$(node scripts/score-infra-best-practice.mjs --json 2>/dev/null)
@@ -280,7 +355,7 @@ rule_infra_best_practice_score() {
   [ "$current_score" = "0" ] && return 0
 
   if [ -f "$log_file" ]; then
-    prev_score=$(tail -2 "$log_file" | head -1 | jq -r '.finalScore // 0' 2>/dev/null || echo 0)
+    prev_score=$(tail -2 "$log_file" | sed -n '1p' | jq -r '.finalScore // 0' 2>/dev/null || echo 0)
   fi
 
   # Trigger 1: regression(score dropped ≥ 5)
@@ -304,12 +379,11 @@ rule_infra_best_practice_score() {
 
   [ -z "$warnings" ] && return 0
 
-  mkdir -p "$PROJECT_DIR/.claude/logs" 2>/dev/null
   printf '{"ts":"%s","score":%s,"prev":%s,"warnings":%s}\n' \
     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     "$current_score" "$prev_score" \
     "$(printf '%b' "$warnings" | jq -Rs .)" \
-    >> "$PROJECT_DIR/.claude/logs/score-history.jsonl" 2>/dev/null || true
+    >> "$score_history_file" 2>/dev/null || true
 }
 
 # ─── Run rules sequentially(all non-blocking,exit 0)──

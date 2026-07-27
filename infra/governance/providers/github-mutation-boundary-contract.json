@@ -1,0 +1,181 @@
+{
+  "$schema": "../schemas/github-mutation-boundary-contract.schema.json",
+  "schemaVersion": 1,
+  "kind": "github-mutation-boundary-contract-v1",
+  "githubApiVersion": "2022-11-28",
+  "canonicalization": {
+    "canonicalJson": "stable-json",
+    "hashAlgorithm": "sha256",
+    "collectionSortKey": "id",
+    "collectionSortOrder": "numeric-ascending"
+  },
+  "scope": {
+    "source": {
+      "repository": "ajenchen/design-system",
+      "environment": "governance-mirror"
+    },
+    "target": {
+      "repository": "ajenchen/ds-product-template",
+      "environment": null
+    }
+  },
+  "fullRulesetProjection": {
+    "observerAuthority": "independently-administered-ruleset-write-observer",
+    "fields": [
+      "id",
+      "name",
+      "target",
+      "source_type",
+      "source",
+      "enforcement",
+      "created_at",
+      "updated_at",
+      "node_id",
+      "conditions",
+      "rules",
+      "bypass_actors"
+    ],
+    "excludedFields": [
+      "current_user_can_bypass",
+      "_links"
+    ],
+    "bypassActorsField": "bypass_actors",
+    "requiredBypassActors": [],
+    "emptyBypassActorsDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "publicRulesetProjection": {
+    "runtimePermission": "metadata:read",
+    "fields": [
+      "id",
+      "name",
+      "target",
+      "source_type",
+      "source",
+      "enforcement",
+      "created_at",
+      "updated_at",
+      "node_id",
+      "conditions",
+      "rules"
+    ],
+    "excludedFields": [
+      "bypass_actors",
+      "current_user_can_bypass",
+      "_links"
+    ],
+    "freshnessFields": [
+      "created_at",
+      "updated_at"
+    ],
+    "mayReadBypassActors": false,
+    "mayClaimBypassAbsence": false
+  },
+  "normalizedRulesetProjection": {
+    "fields": [
+      "name",
+      "target",
+      "enforcement",
+      "conditions",
+      "bypass_actors",
+      "rules"
+    ],
+    "requiredCheckFields": [
+      "context",
+      "integration"
+    ],
+    "flattenedRequiredCheckFields": [
+      "ruleset",
+      "context",
+      "integration"
+    ],
+    "integrationIdentity": "slug",
+    "managedRulesetPrefix": "fleet/",
+    "managedNameSet": "exact",
+    "parentRulesets": "forbidden",
+    "unmanagedRulesets": "included-in-snapshot-excluded-from-desired-conformance",
+    "rulesetSort": "name-codepoint-ascending",
+    "ruleSort": "type-then-stable-json-codepoint-ascending",
+    "requiredCheckSort": "context-then-integration-codepoint-ascending",
+    "flattenedRequiredCheckSort": "ruleset-then-context-then-integration-codepoint-ascending"
+  },
+  "environmentPolicyProjection": {
+    "fields": [
+      "name",
+      "deploymentBranchPolicy",
+      "waitTimer",
+      "preventSelfReview",
+      "reviewers"
+    ],
+    "absentValue": null,
+    "absentValueDigest": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+  },
+  "freshnessPolicy": {
+    "maximumObservationAgeSeconds": 3600,
+    "minimumRemainingValiditySeconds": 300,
+    "scopes": {
+      "source": {
+        "directRuntimeRead": [
+          "publicRulesetProjectionDigest",
+          "repositoryIdentityDefaultBranchDigest",
+          "environmentPolicyDigest"
+        ],
+        "runtimeLiveBoundViaSignedProjection": [
+          "normalizedRulesetsDigest",
+          "requiredChecksDigest"
+        ],
+        "contractBound": [
+          "projectionContractDigest"
+        ],
+        "signedUnexpired": [
+          "fullRulesetsDigest",
+          "bypassActorsDigest",
+          "actionsWorkflowPermissionsDigest"
+        ]
+      },
+      "target": {
+        "directRuntimeRead": [
+          "publicRulesetProjectionDigest",
+          "repositoryIdentityDefaultBranchDigest"
+        ],
+        "runtimeLiveBoundViaSignedProjection": [
+          "normalizedRulesetsDigest",
+          "requiredChecksDigest"
+        ],
+        "contractBound": [
+          "projectionContractDigest",
+          "environmentPolicyDigest"
+        ],
+        "signedUnexpired": [
+          "fullRulesetsDigest",
+          "bypassActorsDigest",
+          "actionsWorkflowPermissionsDigest"
+        ]
+      }
+    }
+  },
+  "credentialBoundary": {
+    "observerCredentialNamespace": "independent-observer-proxy",
+    "forbiddenNamespaces": [
+      "github-actions",
+      "model",
+      "candidate"
+    ],
+    "exportedArtifact": "signed-claim-output-only"
+  },
+  "desiredBindings": {
+    "source": {
+      "normalizedRulesetsDigest": "f9262f2cb75405a81d684159cc9ad9666fd19da423f0279ee703c5472d29ad2f",
+      "requiredChecksDigest": "45b0defc77bdbfa38af281d96fcd0661aae01ba9f4549ab1c4302d19ab41baed",
+      "actionsWorkflowPermissionsDigest": "e4eea28a28f0c12dc5a441d5d6451c4bc7f3f72ed8f0b717c6cb5502e825965d",
+      "repositoryIdentityDefaultBranchDigest": "3b806606e9e410c78bbaccf83bb7d49cca20ec2e1e3f03381fb7e4afb8119317",
+      "environmentPolicyDigest": "64fff20d282ee11a4ff7e1bcd61293215740447966cbd8bd7d576e2295987001"
+    },
+    "target": {
+      "normalizedRulesetsDigest": "0c326b005563b4dfe2656d990654079fe5f2e1bdeb0cbe304c8aee9c991113ff",
+      "requiredChecksDigest": "236d91a90eeb763ba288ab6873fe719e41803d19c91ccf25819a189570659e7a",
+      "actionsWorkflowPermissionsDigest": "fb00f7e1aab4200684b287b484155d5521381f4593552beed4bbb5f9b1622ede",
+      "repositoryIdentityDefaultBranchDigest": "2087807701cc56c0ed1e3b2316f8aa496541424b792473ab3b4ae17c12e7eae6",
+      "environmentPolicyDigest": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    }
+  }
+}

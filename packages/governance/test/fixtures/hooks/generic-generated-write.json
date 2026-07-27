@@ -1,0 +1,5 @@
+{
+  "event": "before_write",
+  "tool": "apply_patch",
+  "diff": "--- a/governance/generated/control-plane.json\n+++ b/governance/generated/control-plane.json\n@@ -1 +1 @@\n-{\"old\":true}\n+{\"old\":false}"
+}

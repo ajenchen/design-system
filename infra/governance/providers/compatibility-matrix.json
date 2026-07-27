@@ -1,0 +1,139 @@
+{
+  "$schema": "../schemas/compatibility-matrix.schema.json",
+  "schemaVersion": 2,
+  "adapterRegistry": {
+    "path": "packages/governance/canonical/providers.json",
+    "schemaVersion": 9,
+    "unregisteredProviderOutcome": "fail"
+  },
+  "commonContract": {
+    "mcpTransports": ["stdio", "streamable-http"],
+    "hardGateContracts": {
+      "authority": {
+        "contractId": "provider-neutral-governance-harness-v2",
+        "registryPath": "infra/governance/providers/harness-registry.json",
+        "registrySchemaVersion": 2,
+        "registryKind": "provider-neutral-governance-harness-registry",
+        "registrySha256": "ece83262791cf44751c653e847d23f97dc972e33486e04adb73459d92a2c03fc",
+        "runnerCommand": ["node", "infra/governance/bin/run-harnesses.mjs"]
+      },
+      "consumer": {
+        "contractId": "provider-neutral-product-consumer-gate-v1",
+        "packageName": "@qijenchen/design-system",
+        "sourcePath": "packages/design-system/ds-canonical/fork/consumer/governance-check.mjs",
+        "installedPath": "node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-check.mjs",
+        "runnerCommand": ["node", "node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-check.mjs", "--repo", ".", "--hooks-off"],
+        "deliveryBinding": "exact-package-version-plus-fork-governance-lock"
+      }
+    },
+    "roleHardGateContracts": {
+      "authority": "#/commonContract/hardGateContracts/authority",
+      "template-mirror": "#/commonContract/hardGateContracts/consumer",
+      "product-consumer": "#/commonContract/hardGateContracts/consumer"
+    },
+    "nonPortable": ["hook payloads", "hook decision outputs", "plugin manifests", "home-directory state", "provider memory"]
+  },
+  "providers": {
+    "codex": {
+      "adapterProviderId": "codex",
+      "runtimeKinds": {
+        "codex-cli": {"runtimeProfilesBySurface": {"local": "codex"}, "runtimeEvidenceRequired": true},
+        "codex-desktop": {"runtimeProfilesBySurface": {"local": "codex-desktop-local", "remote-control": "codex-desktop-remote"}, "runtimeEvidenceRequired": true},
+        "codex-cloud": {"runtimeProfilesBySurface": {"cloud": "codex-cloud"}, "runtimeEvidenceRequired": true}
+      },
+      "minimumVersion": "0.144.6"
+    },
+    "claude-code": {
+      "adapterProviderId": "claude",
+      "runtimeKinds": {
+        "claude-code-cli": {"runtimeProfilesBySurface": {"local": "claude", "remote-control": "claude-code-cli-remote"}, "runtimeEvidenceRequired": true},
+        "claude-code-cloud": {"runtimeProfilesBySurface": {"cloud": "claude-code-cloud"}, "runtimeEvidenceRequired": true}
+      },
+      "minimumVersion": "2.1.215"
+    },
+    "ci": {
+      "adapterProviderId": null,
+      "runtimeKinds": {
+        "github-actions": {"runtimeProfilesBySurface": {"github-actions": "github-actions-hosted"}, "runtimeEvidenceRequired": true}
+      },
+      "minimumVersion": "github-actions"
+    }
+  },
+  "surfaces": {
+    "local": {
+      "execution": "host",
+      "repoConfigTravels": true,
+      "userConfigTravels": true,
+      "hostMustRemainOnline": false,
+      "hardGateContract": {"pointer": "#/commonContract/roleHardGateContracts"},
+      "nativeHookPolicy": "provider-capability-feedback-only",
+      "certificationPolicy": "target-bound-evidence-required"
+    },
+    "remote-control": {
+      "execution": "host",
+      "repoConfigTravels": true,
+      "userConfigTravels": true,
+      "hostMustRemainOnline": true,
+      "hardGateContract": {"pointer": "#/commonContract/roleHardGateContracts"},
+      "nativeHookPolicy": "provider-capability-feedback-only",
+      "certificationPolicy": "target-bound-evidence-required"
+    },
+    "cloud": {
+      "execution": "fresh-container",
+      "repoConfigTravels": true,
+      "userConfigTravels": false,
+      "hostMustRemainOnline": false,
+      "hardGateContract": {"pointer": "#/commonContract/roleHardGateContracts"},
+      "nativeHookPolicy": "environment-dependent-feedback-only",
+      "certificationPolicy": "target-bound-evidence-required"
+    },
+    "github-actions": {
+      "execution": "fresh-runner",
+      "repoConfigTravels": true,
+      "userConfigTravels": false,
+      "hostMustRemainOnline": false,
+      "hardGateContract": {"pointer": "#/commonContract/roleHardGateContracts"},
+      "nativeHookPolicy": "not-applicable",
+      "certificationPolicy": "target-bound-evidence-required"
+    }
+  },
+  "upgradeCompatibility": {
+    "governanceProtocol": "protected-base-reconstruction-v2",
+    "packages": {
+      "@qijenchen/design-system": {
+        "minimumVersion": "0.1.0-beta.84",
+        "acceptedSpecPatterns": ["^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?(?:\\+[0-9A-Za-z][0-9A-Za-z.-]*)?$"]
+      },
+      "@qijenchen/storybook-config": {
+        "minimumVersion": "0.1.0-beta.82",
+        "acceptedSpecPatterns": ["^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?(?:\\+[0-9A-Za-z][0-9A-Za-z.-]*)?$"]
+      }
+    },
+    "knownIncompatibilities": [
+      {
+        "id": "legacy-consumer-self-update-cannot-bootstrap-v2",
+        "appliesToRoles": ["product-consumer"],
+        "severity": "blocker",
+        "resolution": "Use consumerctl plan-bootstrap for a read-only full-snapshot plan, then a separately reviewed protected PR and independent consumer-governance-bootstrap-readback-v1. The legacy updater may not execute or certify this transition; ordinary sync-all starts only after DS inventory enters reviewed-bootstrap-established-v2 and binds the accepted readback SHA-256."
+      },
+      {
+        "id": "governance-app-integration-unresolved",
+        "appliesToRoles": ["template-mirror", "product-consumer"],
+        "severity": "blocker",
+        "resolution": "Install two distinct GitHub Apps: a Checks-write-only Governance Check App as the immutable trust anchor and a Contents/Pull-requests-write-only Governance Writer App for reviewed mutation PRs. Record both distinct integration IDs and observe a successful Immutable consumer snapshot check from the Check App before apply."
+      },
+      {
+        "id": "codex-vs-claude-hook-schema",
+        "appliesToRoles": ["authority", "template-mirror", "product-consumer"],
+        "severity": "blocker",
+        "resolution": "Keep a neutral command-hook core and contract-tested provider adapters; never copy raw payload/output formats."
+      },
+      {
+        "id": "cloud-does-not-inherit-user-home",
+        "appliesToRoles": ["template-mirror", "product-consumer"],
+        "severity": "high",
+        "resolution": "Commit every required rule/skill/config and provision secrets separately."
+      }
+    ]
+  }
+}

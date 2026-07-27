@@ -2,15 +2,15 @@
 # Pattern invariants unified hook(2026-05-08 cluster C consolidation)
 #
 # Merges 4 PreToolUse hooks(原各檔已 retire,合併入此):
-#   C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain,P1 WARN stderr)
-#   C.2 inline-action canonical gap(原 check_inline_action_canonical_gap,P1 WARN stderr)
+#   C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain,P1 WARN context)
+#   C.2 inline-action canonical gap(原 check_inline_action_canonical_gap,P1 WARN context)
 #   C.3 primitive wrapper padding(原 check_primitive_wrapper_padding,P0 BLOCK exit 2)
 #   C.4 row slot handcraft(原 check_row_slot_handcraft,P0 BLOCK exit 2)
 #
 # Why merge:皆 element-anatomy / overlay-surface SSOT 消費紀律 invariant,共用 INPUT
 # parsing + tsx filter,散裝是 M17 + Anthropic ≤ 15 hook best-practice 偏離。
 #
-# Exit precedence:BLOCK(2)> WARN-stderr(0)。每 rule 獨立 fire,worst 勝。
+# Output precedence:BLOCK(2,stderr)> WARN(0,單一 governanceContext)> silent(0)。
 #
 # Per-rule allowlist:
 #   C.1: `// @scroll-chain-allow: <reason>`(any line)
@@ -22,7 +22,66 @@ source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -uo pipefail
 
+_HOOK_CONTEXT_EVENT="PreToolUse"
+_HOOK_OUTPUT_CAPTURE=$(mktemp "${TMPDIR:-/tmp}/check-pattern-invariants.XXXXXX") || {
+  printf 'GOVERNANCE_INTEGRITY: pattern invariants output capture unavailable\n' >&2
+  exit 70
+}
+exec 3>&1 4>&2
+exec >"$_HOOK_OUTPUT_CAPTURE" 2>&1
+
+_finalize_hook_output() {
+  _hook_rc=$?
+  trap - EXIT
+  exec 1>&3 2>&4
+  _hook_output=$(cat "$_HOOK_OUTPUT_CAPTURE" 2>/dev/null || true)
+  rm -f "$_HOOK_OUTPUT_CAPTURE" 2>/dev/null || true
+
+  case "$_hook_rc" in
+    0)
+      [ -z "$_hook_output" ] && exit 0
+      if ! jq -cn \
+        --arg event "$_HOOK_CONTEXT_EVENT" \
+        --arg message "$_hook_output" \
+        '{governanceContext:{hookEventName:$event,message:$message}}'; then
+        printf 'GOVERNANCE_INTEGRITY: pattern invariants warning envelope encoding failed\n' >&2
+        exit 70
+      fi
+      exit 0
+      ;;
+    2)
+      if grep -q 'GOVERNANCE_INTEGRITY:' <<<"$_hook_output"; then
+        printf '%s\n' "$_hook_output" >&2
+        exit 70
+      elif [ -n "$_hook_output" ]; then
+        printf '%s\n' "$_hook_output" >&2
+      else
+        printf 'pattern invariants hook blocked without diagnostic\n' >&2
+      fi
+      exit 2
+      ;;
+    70)
+      if [ -n "$_hook_output" ]; then
+        printf '%s\n' "$_hook_output" >&2
+      else
+        printf 'GOVERNANCE_INTEGRITY: pattern invariants failed without diagnostic\n' >&2
+      fi
+      exit 70
+      ;;
+    *)
+      printf 'GOVERNANCE_INTEGRITY: pattern invariants undefined exit code %s\n' "$_hook_rc" >&2
+      [ -n "$_hook_output" ] && printf '%s\n' "$_hook_output" >&2
+      exit 70
+      ;;
+  esac
+}
+trap _finalize_hook_output EXIT
+
 INPUT=$(cat)
+if ! printf '%s' "$INPUT" | jq -e 'type == "object"' >/dev/null 2>&1; then
+  printf 'GOVERNANCE_INTEGRITY: pattern invariants invalid input envelope\n' >&2
+  exit 70
+fi
 TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""')
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
 
@@ -42,14 +101,14 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '
   ([.tool_input.edits[]? | .new_string] | join("\n"))
 ' 2>/dev/null || echo "")
 
-[ -z "${NEW_CONTENT//[[:space:]]/}" ] && exit 0
+grep -q '[^[:space:]]' <<<"$NEW_CONTENT" || exit 0
 
 WORST=0
 record_worst() { local lvl=$1; [ "$lvl" -gt "$WORST" ] && WORST=$lvl; }
 
-# ── C.1 overlay panel scroll chain(P1 WARN stderr only)──────────────────────
-if ! echo "$NEW_CONTENT" | grep -q '@scroll-chain-allow' \
-   && echo "$NEW_CONTENT" | grep -q '<SurfaceBody'; then
+# ── C.1 overlay panel scroll chain(P1 WARN context)──────────────────────────
+if ! grep -q '@scroll-chain-allow' <<<"$NEW_CONTENT" \
+   && grep -q '<SurfaceBody' <<<"$NEW_CONTENT"; then
   SUSPECT_C1=$(printf '%s' "$NEW_CONTENT" | awk '
     /^[[:space:]]*<div[[:space:]]/ {
       line = $0
@@ -84,15 +143,15 @@ EOF
   fi
 fi
 
-# ── C.2 inline-action canonical gap(P1 WARN stderr only)─────────────────────
+# ── C.2 inline-action canonical gap(P1 WARN context)─────────────────────────
 case "$FILE_PATH" in
   *components/*.tsx|*patterns/*.tsx)
     case "$FILE_PATH" in
       */item-anatomy.tsx|*.stories.tsx|*.test.*) ;; # SSOT/test skip
       *)
-        if ! echo "$NEW_CONTENT" | grep -q '@inline-action-gap-allow' \
-           && echo "$NEW_CONTENT" | grep -qE '<ItemInlineAction(Button)?\b|DropdownMenuTrigger.*ItemInlineAction'; then
-          WRONG_GAP=$(echo "$NEW_CONTENT" | grep -nE 'className=.*\bgap-(1|3|4|5|6|8|10|12)\b' | head -3 || true)
+        if ! grep -q '@inline-action-gap-allow' <<<"$NEW_CONTENT" \
+           && grep -qE '<ItemInlineAction(Button)?\b|DropdownMenuTrigger.*ItemInlineAction' <<<"$NEW_CONTENT"; then
+          WRONG_GAP=$(grep -m 3 -nE 'className=.*\bgap-(1|3|4|5|6|8|10|12)\b' <<<"$NEW_CONTENT" || true)
           if [ -n "$WRONG_GAP" ]; then
             cat >&2 <<EOF
 
@@ -119,10 +178,10 @@ esac
 # File-level allowlist:檔頭前 5 行
 ALLOW_C3=0
 FIRST_LINES_NEW=$(printf '%s\n' "$NEW_CONTENT" | sed -n '1,5p')
-echo "$FIRST_LINES_NEW" | grep -qE '//[[:space:]]*@primitive-padding-allow:' && ALLOW_C3=1
+grep -qE '//[[:space:]]*@primitive-padding-allow:' <<<"$FIRST_LINES_NEW" && ALLOW_C3=1
 if [ -f "$FILE_PATH" ] && [ "$ALLOW_C3" = "0" ]; then
   ON_DISK_FIRST=$(sed -n '1,5p' "$FILE_PATH" 2>/dev/null || true)
-  echo "$ON_DISK_FIRST" | grep -qE '//[[:space:]]*@primitive-padding-allow:' && ALLOW_C3=1
+  grep -qE '//[[:space:]]*@primitive-padding-allow:' <<<"$ON_DISK_FIRST" && ALLOW_C3=1
 fi
 if [ "$ALLOW_C3" = "0" ]; then
   PRIMITIVES_REGEX='DateGrid|Calendar|Surface|SurfaceHeader|SurfaceBody|SurfaceFooter'
@@ -167,7 +226,7 @@ case "$FILE_PATH" in
       *)
         # 2026-05-30(dim 39 M7/M34 fix):order-INDEPENDENT — extract className attrs,require ALL 4 tokens
         # present(natural Tailwind 序 `flex items-center gap-2 shrink-0 h-[1lh]` 之前漏抓)。BSD/GNU grep 通用。
-        if ! echo "$NEW_CONTENT" | grep -q '@row-slot-handcraft-allow' \
+        if ! grep -q '@row-slot-handcraft-allow' <<<"$NEW_CONTENT" \
            && echo "$NEW_CONTENT" | grep -oE 'class(Name)?="[^"]*"' | grep -F 'h-[1lh]' | grep -F 'shrink-0' | grep -F 'flex' | grep -F 'items-center' >/dev/null 2>&1; then
           cat >&2 <<EOF
 

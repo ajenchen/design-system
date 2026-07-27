@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/provider-skill-semantics-v3.json",
+  "title": "Provider-neutral skill workflow semantics",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "policy", "semanticScan", "bindingProfiles", "skills"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 3 },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unknownProviderOutcome", "unclassifiedSkillOutcome", "semanticLeakOutcome", "independence", "reviewIsolation", "reviewMutation", "reviewWorkspace", "mutationDetection", "missingEvidenceOutcome"],
+      "properties": {
+        "unknownProviderOutcome": { "const": "ADAPTER-BLOCKED" },
+        "unclassifiedSkillOutcome": { "const": "ADAPTER-BLOCKED" },
+        "semanticLeakOutcome": { "const": "ADAPTER-BLOCKED" },
+        "independence": { "const": "different-provider-required" },
+        "reviewIsolation": { "const": "separate-context-required" },
+        "reviewMutation": { "const": "read-only" },
+        "reviewWorkspace": { "const": "immutable-snapshot-or-enforced-tool-deny" },
+        "mutationDetection": { "const": "before-after-worktree-fingerprint" },
+        "missingEvidenceOutcome": { "const": "REVIEW-BLOCKED" }
+      }
+    },
+    "semanticScan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["include", "copiedTextPolicy", "binaryPolicy", "leakKinds"],
+      "properties": {
+        "include": { "const": ["SKILL.md", "references/**", "scripts/**"] },
+        "copiedTextPolicy": { "const": "scan-all-copied-text" },
+        "binaryPolicy": { "const": "assets-only-no-semantic-classification" },
+        "leakKinds": { "const": ["provider-identity", "provider-surface-path", "provider-native-tool", "provider-native-env", "provider-transport"] }
+      }
+    },
+    "bindingProfiles": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]*$" },
+      "additionalProperties": { "$ref": "#/$defs/bindingProfile" }
+    },
+    "skills": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/skill" }
+    }
+  },
+  "$defs": {
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^packages/design-system/ds-canonical/skills/",
+      "not": { "pattern": "^(?:/|[A-Za-z]:|.*(?:^|/)\\.\\.(?:/|$))" }
+    },
+    "assumptionKind": {
+      "enum": ["provider-identity", "provider-surface-path", "provider-native-tool", "provider-native-env", "provider-transport"]
+    },
+    "compatibleBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "strategy", "evidenceSource"],
+      "properties": {
+        "status": { "const": "compatible" },
+        "strategy": { "enum": ["provider-thin-driver", "generated-binding-header"] },
+        "evidenceSource": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "resolutions": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/assumptionKind" },
+          "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 512 }
+        }
+      }
+    },
+    "excludedBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reasonCode", "detail"],
+      "properties": {
+        "status": { "const": "excluded" },
+        "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "detail": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    },
+    "bindingProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requiredCapabilities", "providers", "unboundProvider"],
+      "properties": {
+        "requiredCapabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+        },
+        "providers": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^[a-z][a-z0-9-]*$" },
+          "additionalProperties": { "oneOf": [{ "$ref": "#/$defs/compatibleBinding" }, { "$ref": "#/$defs/excludedBinding" }] }
+        },
+        "unboundProvider": { "$ref": "#/$defs/excludedBinding" }
+      }
+    },
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "sourceWorkflow", "classification", "projection", "description", "declaredIdentifiers", "allowedAssumptions"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "workflowId": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "sourceWorkflow": { "$ref": "#/$defs/repositoryPath" },
+        "classification": { "enum": ["provider-neutral", "provider-bound"] },
+        "projection": { "enum": ["provider-copy", "provider-bound-copy", "provider-thin-driver"] },
+        "bindingProfile": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "mode": { "enum": ["cross-provider-collaboration", "cross-provider-deep-audit", "canonical-read-only-review", "independent-product-review"] },
+        "description": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "requiredReferences": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/repositoryPath" } },
+        "declaredIdentifiers": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 256 } },
+        "allowedAssumptions": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/assumptionKind" } },
+        "assumptionFindingCount": { "type": "integer", "minimum": 1 },
+        "assumptionFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "requiresIndependentPeer": { "type": "boolean" },
+        "requiresAuthorProvider": { "type": "boolean" },
+        "reviewOnly": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "classification": { "const": "provider-neutral" } }, "required": ["classification"] },
+          "then": {
+            "properties": { "projection": { "const": "provider-copy" }, "allowedAssumptions": { "type": "array", "maxItems": 0 }, "bindingProfile": false }
+          },
+          "else": { "properties": { "bindingProfile": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" } }, "required": ["bindingProfile"] }
+        },
+        {
+          "if": { "properties": { "projection": { "const": "provider-thin-driver" } }, "required": ["projection"] },
+          "then": {
+            "properties": {
+              "workflowId": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "mode": { "enum": ["cross-provider-collaboration", "cross-provider-deep-audit", "canonical-read-only-review", "independent-product-review"] },
+              "requiresIndependentPeer": { "type": "boolean" },
+              "requiresAuthorProvider": { "type": "boolean" },
+              "reviewOnly": { "type": "boolean" }
+            },
+            "required": ["workflowId", "mode", "requiresIndependentPeer", "requiresAuthorProvider", "reviewOnly"]
+          }
+        },
+        {
+          "if": { "properties": { "projection": { "const": "provider-bound-copy" } }, "required": ["projection"] },
+          "then": {
+            "properties": {
+              "assumptionFindingCount": { "type": "integer", "minimum": 1 },
+              "assumptionFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+            },
+            "required": ["assumptionFindingCount", "assumptionFingerprint"]
+          }
+        }
+      ]
+    }
+  }
+}

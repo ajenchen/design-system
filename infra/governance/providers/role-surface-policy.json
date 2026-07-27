@@ -1,0 +1,95 @@
+{
+  "$schema": "../schemas/role-surface-policy.schema.json",
+  "schemaVersion": 3,
+  "kind": "provider-neutral-role-surface-policy",
+  "roles": {
+    "authority": {
+      "certificationCarrierPolicy": {
+        "relationship": "ledger-carrier-descendant",
+        "allowedChangedPaths": [
+          "infra/governance/evidence/external-runtime/**",
+          "infra/governance/evidence/provider-runtime/**",
+          "infra/governance/evidence/review-capability/**",
+          "infra/governance/providers/certifications.json",
+          "infra/governance/providers/review-capability-certifications.json"
+        ]
+      },
+      "coverageExclusions": {
+        "providers": [],
+        "surfaces": []
+      },
+      "providerTransportProfiles": {
+        "claude": "claude-authority-full"
+      },
+      "requiredSurfaces": [
+        "codex/codex-cli/local",
+        "codex/codex-desktop/local",
+        "codex/codex-desktop/remote-control",
+        "codex/codex-cloud/cloud",
+        "claude-code/claude-code-cli/local",
+        "claude-code/claude-code-cli/remote-control",
+        "claude-code/claude-code-cloud/cloud",
+        "ci/github-actions/github-actions"
+      ]
+    },
+    "template-mirror": {
+      "certificationCarrierPolicy": {
+        "relationship": "exact-subject",
+        "allowedChangedPaths": []
+      },
+      "coverageExclusions": {
+        "providers": [],
+        "surfaces": [
+          {
+            "requirement": "claude-code/claude-code-cli/local",
+            "reasonCode": "surface-not-applicable-to-role",
+            "detail": "Template mirrors are distribution artifacts; role-bound local execution is certified on authority and product-consumer repositories."
+          },
+          {
+            "requirement": "codex/codex-cli/local",
+            "reasonCode": "surface-not-applicable-to-role",
+            "detail": "Template mirrors are distribution artifacts; role-bound local execution is certified on authority and product-consumer repositories."
+          },
+          {
+            "requirement": "codex/codex-desktop/local",
+            "reasonCode": "surface-not-applicable-to-role",
+            "detail": "Template mirrors are distribution artifacts; role-bound local execution is certified on authority and product-consumer repositories."
+          }
+        ]
+      },
+      "providerTransportProfiles": {
+        "claude": null
+      },
+      "requiredSurfaces": [
+        "codex/codex-desktop/remote-control",
+        "codex/codex-cloud/cloud",
+        "claude-code/claude-code-cli/remote-control",
+        "claude-code/claude-code-cloud/cloud",
+        "ci/github-actions/github-actions"
+      ]
+    },
+    "product-consumer": {
+      "certificationCarrierPolicy": {
+        "relationship": "exact-subject",
+        "allowedChangedPaths": []
+      },
+      "coverageExclusions": {
+        "providers": [],
+        "surfaces": []
+      },
+      "providerTransportProfiles": {
+        "claude": null
+      },
+      "requiredSurfaces": [
+        "codex/codex-cli/local",
+        "codex/codex-desktop/local",
+        "codex/codex-desktop/remote-control",
+        "codex/codex-cloud/cloud",
+        "claude-code/claude-code-cli/local",
+        "claude-code/claude-code-cli/remote-control",
+        "claude-code/claude-code-cloud/cloud",
+        "ci/github-actions/github-actions"
+      ]
+    }
+  }
+}

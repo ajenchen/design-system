@@ -14,19 +14,57 @@ run_hook() {
   STDOUT=$(mktemp); STDERR=$(mktemp)
   set +e
   jq -n --arg fp "$file_path" --arg c "$content" \
-    '{tool_name:"Write", tool_input:{file_path:$fp, content:$c}}' \
+    '{hook_event_name:"PreToolUse", tool_name:"Write", tool_input:{file_path:$fp, content:$c}}' \
     | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
   EXIT=$?
   set -e
-  STDERR_TEXT=$(cat "$STDERR"); rm -f "$STDOUT" "$STDERR"
+  STDOUT_TEXT=$(cat "$STDOUT"); STDERR_TEXT=$(cat "$STDERR"); rm -f "$STDOUT" "$STDERR"
+}
+
+run_raw() {
+  local payload="$1"
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT"); STDERR_TEXT=$(cat "$STDERR"); rm -f "$STDOUT" "$STDERR"
+}
+
+is_exact_context() {
+  local needle="$1" compact
+  compact=$(printf '%s' "$STDOUT_TEXT" | jq -c . 2>/dev/null) || return 1
+  [ "$STDOUT_TEXT" = "$compact" ] || return 1
+  printf '%s' "$STDOUT_TEXT" | jq -se --arg needle "$needle" '
+    length == 1
+    and (.[0] | type == "object" and (keys | sort) == ["governanceContext"])
+    and (.[0].governanceContext |
+      type == "object"
+      and (keys | sort) == ["hookEventName", "message"]
+      and .hookEventName == "PreToolUse"
+      and (.message | type == "string" and length > 0 and contains($needle)))
+  ' >/dev/null
 }
 
 expect_exit() {
   local name="$1" expect="$2" needle="${3:-}"
-  if [ "$EXIT" = "$expect" ] && { [ -z "$needle" ] || echo "$STDERR_TEXT" | grep -qF "$needle"; }; then
+  local ok=1
+  if [ "$expect" = "0" ] && [ -n "$needle" ]; then
+    [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] && is_exact_context "$needle" && ok=0
+  elif [ "$expect" = "0" ]; then
+    [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ] && ok=0
+  elif [ "$expect" = "2" ]; then
+    [ "$EXIT" = "2" ] && [ -z "$STDOUT_TEXT" ] \
+      && { [ -z "$needle" ] || echo "$STDERR_TEXT" | grep -qF "$needle"; } && ok=0
+  elif [ "$expect" = "70" ]; then
+    [ "$EXIT" = "70" ] && [ -z "$STDOUT_TEXT" ] \
+      && { [ -z "$needle" ] || echo "$STDERR_TEXT" | grep -qF "$needle"; } && ok=0
+  fi
+  if [ "$ok" = "0" ]; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
     echo "  FAIL  $name (expected exit $expect${needle:+ + needle '$needle'}, got exit $EXIT)"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
@@ -34,7 +72,7 @@ expect_exit() {
 
 echo "=== C.1 overlay panel scroll chain ==="
 
-# 1. SurfaceBody + wrapper without flex flex-col h-full → WARN stderr (exit 0)
+# 1. SurfaceBody + wrapper without flex flex-col h-full → governance context(exit 0)
 run_hook "/r/src/app/foo.tsx" '
 function Panel() {
   return (
@@ -45,7 +83,7 @@ function Panel() {
   )
 }
 '
-expect_exit "C.1.1 SurfaceBody w/o flex chain → WARN stderr" 0 "overlay scroll chain"
+expect_exit "C.1.1 SurfaceBody w/o flex chain → governance context" 0 "overlay scroll chain"
 
 # 2. SurfaceBody + correct flex chain → silent
 run_hook "/r/src/app/foo.tsx" '
@@ -69,7 +107,7 @@ expect_exit "C.1.3 allowlist → silent" 0 ""
 echo ""
 echo "=== C.2 inline-action canonical gap ==="
 
-# 4. components/ ItemInlineAction + gap-3 → WARN stderr
+# 4. components/ ItemInlineAction + gap-3 → governance context
 run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
 <div className="flex gap-3"><ItemInlineAction /></div>
 '
@@ -141,6 +179,30 @@ run_hook "/r/packages/design-system/src/components/Edge/edge.tsx" '
 function F() { return <span className="h-[1lh] shrink-0 flex items-center"><Icon/></span> }
 '
 expect_exit "C.4.4 row slot allowlist → silent" 0 ""
+
+echo ""
+echo "=== Output contract ==="
+
+# Multiple independent warnings must be aggregated into one exact envelope.
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+<div className="w-[640px] gap-3">
+  <ItemInlineAction />
+  <SurfaceBody>content</SurfaceBody>
+</div>
+'
+if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] \
+  && is_exact_context "overlay scroll chain" \
+  && printf '%s' "$STDOUT_TEXT" | jq -e \
+    '.governanceContext.message | contains("inline-action gap")' >/dev/null; then
+  echo "  PASS  O.1 two warnings → one exact PreToolUse context"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL  O.1 warning aggregation contract"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - O.1 warning aggregation"
+fi
+
+run_raw '{'
+expect_exit "O.2 malformed input → stderr-only integrity failure" 70 "GOVERNANCE_INTEGRITY:"
 
 echo ""
 echo "═══ Results: $PASS PASS, $FAIL FAIL ═══"

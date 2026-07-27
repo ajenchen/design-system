@@ -43,16 +43,16 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '
   ([.tool_input.edits[]? | .new_string] | join("\n"))
 ' 2>/dev/null || echo "")
 
-[ -z "${NEW_CONTENT//[[:space:]]/}" ] && exit 0
+grep -q '[^[:space:]]' <<<"$NEW_CONTENT" || exit 0
 
 # File-level allowlist
 FIRST_LINES=$(printf '%s\n' "$NEW_CONTENT" | sed -n '1,5p')
-if echo "$FIRST_LINES" | grep -qE '@benchmark-citation-allow:|@benchmark-unverified-blanket:'; then
+if grep -qE '@benchmark-citation-allow:|@benchmark-unverified-blanket:' <<<"$FIRST_LINES"; then
   exit 0
 fi
 if [ -f "$FILE_PATH" ]; then
   ON_DISK_FIRST=$(sed -n '1,5p' "$FILE_PATH" 2>/dev/null || true)
-  if echo "$ON_DISK_FIRST" | grep -qE '@benchmark-citation-allow:|@benchmark-unverified-blanket:'; then
+  if grep -qE '@benchmark-citation-allow:|@benchmark-unverified-blanket:' <<<"$ON_DISK_FIRST"; then
     exit 0
   fi
 fi

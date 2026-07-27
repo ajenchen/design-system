@@ -1,0 +1,20 @@
+{
+  "$schema": "./schemas/visual-baseline-review-policy.schema.json",
+  "schemaVersion": 1,
+  "kind": "visual-baseline-review-trust-policy",
+  "status": "not-activated",
+  "issuerRegistryPath": "trust/issuers.json",
+  "issuerRegistrySha256": "3604a93ed2062aabb1970e2a1975cfa06bd9db41344c6021c046eae47a7feb5a",
+  "human": {
+    "status": "not-activated",
+    "allowedKeyIds": []
+  },
+  "managedBroker": {
+    "status": "not-activated",
+    "allowedKeyIds": [],
+    "activationEvidencePath": null,
+    "activationEvidenceSha256": null,
+    "modelAuthorityPolicyDigest": null,
+    "brokerPolicyDigest": null
+  }
+}

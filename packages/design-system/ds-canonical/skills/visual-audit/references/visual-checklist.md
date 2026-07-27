@@ -5,7 +5,7 @@
 **通用量測原則**:
 - 用 image reading 取 screenshot 像素座標(左上為原點 0,0;單位 px)
 - 同一面向的 4 個量測點必須用「同一張 screenshot 的同一縮放比例」;混不同 screenshot 比例會誤判
-- 容器寬度 / viewport / density / theme 必先向 user 確認(SKILL.md Preconditions 項 3)
+- 容器寬度 / viewport / density / theme 必綁定同一 Layer-A capture manifest；不得靠猜測，也不得把可由 registry/capture 解析的工程工作轉問 user
 - 合格標準若為 token → 對照「該元件 spec 宣告的 token 值」或 `tokens/*/` primitive;不是「看起來接近就算對」
 - **容差規範**:px 量測允許 ±1px(螢幕截圖 sub-pixel rounding);ratio 允許 ±5%;明文標「精確」的項目(如對稱)不給容差
 
@@ -54,13 +54,13 @@
 
 **FAIL 範例**:DatePicker 箭頭按鈕 top=12px 但最後一排日期 bottom=4px → 差異 8px 違反上下對稱
 
-**對應規則**:該元件 spec.md + `.claude/rules/ui-development.md`「建立 UI 前必讀」 layout-space token
+**對應規則**:該元件 spec.md + `packages/design-system/ds-canonical/rules/ui-development.md`「建立 UI 前必讀」 layout-space token
 
 ---
 
 ## 3. 水平 gap 實際值 == gap token 宣告值(hover bg 不可吃掉)
 
-**Canonical source**: .claude/references/ui-dev-rules.md `# 同 flex 列的互動 slot 幾何鐵律`(gap 鐵律)
+**Canonical source**:`packages/design-system/ds-canonical/references/ui-dev-rules.md` `# 同 flex 列的互動 slot 幾何鐵律`(gap 鐵律)
 
 **怎麼量**:
 1. 量同一 flex row 相鄰兩 interactive slot 的 **box 邊** 之間距離(不是「視覺中心距離」,是右邊 slot 左緣 - 左邊 slot 右緣)
@@ -70,11 +70,11 @@
 
 **合格標準**:
 - default + hover 兩態的 gap 都 == 宣告值(±1px) → PASS
-- hover 狀態 gap 被 bg overflow 吃掉 → FAIL(違反 .claude/references/ui-dev-rules.md「同 flex 列幾何鐵律」)
+- hover 狀態 gap 被 bg overflow 吃掉 → FAIL(違反 `packages/design-system/ds-canonical/references/ui-dev-rules.md`「同 flex 列幾何鐵律」)
 
 **FAIL 範例**:FileItem 2026-04-19 bug,Button hover-bg 24px 超出 16px box,`gap-2`(8px)實際剩 ~4px
 
-**對應規則**:`.claude/rules/ui-development.md` → `# 同 flex 列的互動 slot 幾何鐵律`(必讀)
+**對應規則**:`packages/design-system/ds-canonical/rules/ui-development.md` → `# 同 flex 列的互動 slot 幾何鐵律`(必讀)
 
 ---
 
@@ -98,7 +98,7 @@
 
 **FAIL 範例**:Carousel prev/next 箭頭覆蓋 carousel item content;Badge 疊 Button 距離離譜用硬寫 px
 
-**對應規則**:對應元件 spec;`.claude/rules/ui-development.md`「元件 Props 命名」「常用 icon canonical」(若箭頭用錯 icon);`.claude/rules/ui-development.md`「建立 UI 前必讀」 overlay-surface pattern
+**對應規則**:對應元件 spec;`packages/design-system/ds-canonical/rules/ui-development.md`「元件 Props 命名」「常用 icon canonical」(若箭頭用錯 icon);同檔「建立 UI 前必讀」 overlay-surface pattern
 
 ---
 
@@ -136,7 +136,7 @@
 
 **FAIL 範例**:5 個 MenuItem 有 4 個 gap=8px,1 個 gap=12px(consumer 手動加了 `gap-3`)
 
-**對應規則**:`item-anatomy.spec.md`;`.claude/rules/ui-development.md`「新增數值前必須先查既有 pattern」
+**對應規則**:`item-anatomy.spec.md`;`packages/design-system/ds-canonical/rules/ui-development.md`「新增數值前必須先查既有 pattern」
 
 ---
 
@@ -175,13 +175,13 @@
 
 **FAIL 範例**:Input(size=md, 36px)+ Button(size=md, 36px)+ Select(誤用 size=sm, 28px)→ Select 偏低 8px
 
-**對應規則**:`uiSize.spec.md` field-height family;`.claude/rules/ui-development.md`「建立 UI 前必讀」 → uiSize token
+**對應規則**:`uiSize.spec.md` field-height family;`packages/design-system/ds-canonical/rules/ui-development.md`「建立 UI 前必讀」 → uiSize token
 
 ---
 
 ## 9. 跨 OS 一致 scrollbar
 
-**Canonical source**: `.claude/rules/ui-development.md`「建立 UI 前必讀」 「overflow 使用三規則」;`components/ScrollArea/`
+**Canonical source**:`packages/design-system/ds-canonical/rules/ui-development.md`「建立 UI 前必讀」 「overflow 使用三規則」;`components/ScrollArea/`
 
 **怎麼量**:
 1. 找 screenshot 內的 scrollable area
@@ -197,7 +197,7 @@
 
 **FAIL 範例**:DataTable 水平捲動用 native overflow-x-auto → Windows user 看到 15px scrollbar 吃 cell 寬度
 
-**對應規則**:`.claude/rules/ui-development.md`「建立 UI 前必讀」 → overflow 使用三規則
+**對應規則**:`packages/design-system/ds-canonical/rules/ui-development.md`「建立 UI 前必讀」 → overflow 使用三規則
 
 ---
 
@@ -241,7 +241,7 @@
 
 **FAIL 範例**:Popover 在 dark mode 下 shadow 消失(用了 `shadow-md` 硬寫);FileViewer 工具列在 light theme 變白(dark-mode override 失效)
 
-**對應規則**:`color.spec.md`;`.claude/rules/ui-development.md`「Tailwind 5 條核心」「shadow 一律用 `--elevation-*` token」;元件 spec 的 dark mode 段
+**對應規則**:`color.spec.md`;`packages/design-system/ds-canonical/rules/ui-development.md`「Tailwind 5 條核心」「shadow 一律用 `--elevation-*` token」;元件 spec 的 dark mode 段
 
 ---
 
@@ -292,6 +292,6 @@
 ## 補充:如何處理「checklist 沒涵蓋但視覺上怪」的情況
 
 - 記為 `額外觀察`,附 screenshot 座標 + 描述(1-2 句)
-- 交 user 決定是否升級為 checklist 項目
+- 依 shared governance authority classifier 路由：純機械 coverage／治理補強由 P2E 自動處理；只有改變產品／UI／UX SSOT 且仍有真取捨才交 P2H 決定是否升級
 - **不直接寫成 FAIL**(checklist 是 SSOT,擴項需正式流程)
 - 若同類觀察累積 3+ 次跨元件出現 → 建議升級為第 14 項 checklist 並更新本 reference

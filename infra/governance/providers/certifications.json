@@ -1,0 +1,403 @@
+{
+  "$schema": "../schemas/provider-surface-certification.schema.json",
+  "schemaVersion": 2,
+  "certifications": [
+    {
+      "id": "codex-cli-local-governance-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-cli",
+      "providerVersion": "0.144.6",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "local",
+      "repositoryRole": "authority",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "no-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact binds this exact macOS/arm64/native/no-space target."]},
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact binds this exact macOS/arm64/native/space-path target."]},
+        {"id": "linux-linux-x64-native-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "no-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact binds this exact Linux/x64/native/no-space target."]},
+        {"id": "linux-linux-x64-native-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact binds this exact Linux/x64/native/space-path target."]},
+        {"id": "linux-linux-x64-wsl2-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "0.144.6", "pathClass": "no-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact binds this exact Linux/x64/WSL2/no-space target."]},
+        {"id": "linux-linux-x64-wsl2-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact binds this exact Linux/x64/WSL2/space-path target."]},
+        {"id": "linux-linux-x64-devcontainer-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "0.144.6", "pathClass": "no-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact binds this exact Linux/x64/devcontainer-or-Codespaces/no-space target."]},
+        {"id": "linux-linux-x64-devcontainer-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact binds this exact Linux/x64/devcontainer-or-Codespaces/space-path target."]},
+        {"id": "windows-win32-x64-native", "operatingSystem": "windows", "platform": "win32", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "not-applicable", "pathClass": "contains-space", "status": "unsupported", "limitations": ["Native Windows is outside the runtime profile; use a Linux WSL2 or devcontainer execution environment instead."]}
+      ],
+      "checks": [
+        {"id": "full-skill-projection", "status": "pass", "evidence": {"kind": "command-output", "reference": "node --test infra/governance/test/provider-surface.test.mjs"}}
+      ],
+      "limitations": ["Executable conformance fixture and artifact digest have not yet been recorded."]
+    },
+    {
+      "id": "codex-desktop-local-governance-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-desktop",
+      "providerVersion": "26.721.30844",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "local",
+      "repositoryRole": "authority",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "26.721.30844", "pathClass": "no-space", "status": "not-certified", "limitations": ["The active desktop version and no-space target are declared, but no signed app-bundle distribution identity, exact authority repository readback, hard-gate receipt, and runtime session evidence are recorded."]},
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "26.721.30844", "pathClass": "contains-space", "status": "not-certified", "limitations": ["The active desktop version is declared, but no signed evidence binds a contains-space authority repository session to this exact target."]},
+        {"id": "windows-win32-x64-native", "operatingSystem": "windows", "platform": "win32", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "not-applicable", "pathClass": "contains-space", "status": "unsupported", "limitations": ["Native Windows desktop execution is not represented by the Linux WSL2/devcontainer certification targets."]}
+      ],
+      "checks": [
+        {"id": "desktop-runtime-conformance", "status": "not-tested", "evidence": {"kind": "manual-review", "reference": "Codex desktop app local runtime evidence has not been recorded; Codex CLI evidence is not reusable."}}
+      ],
+      "limitations": ["Desktop app lifecycle, project trust, hooks and skill discovery require their own executable evidence."]
+    },
+    {
+      "id": "claude-local-governance-v1",
+      "provider": "claude-code",
+      "runtimeKind": "claude-code-cli",
+      "providerVersion": "2.1.215",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "local",
+      "repositoryRole": "authority",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "no-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact closes every model-backed check for this exact macOS/arm64/native/no-space target."]},
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact closes every model-backed check for this exact target."]},
+        {"id": "linux-linux-x64-native-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "no-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact closes every model-backed check for this exact Linux/x64/native/no-space target."]},
+        {"id": "linux-linux-x64-native-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact closes every model-backed check for this exact Linux/x64/native/space-path target."]},
+        {"id": "linux-linux-x64-wsl2-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "2.1.215", "pathClass": "no-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact closes every model-backed check for this exact Linux/x64/WSL2/no-space target."]},
+        {"id": "linux-linux-x64-wsl2-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact closes every model-backed check for this exact Linux/x64/WSL2/space-path target."]},
+        {"id": "linux-linux-x64-devcontainer-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "2.1.215", "pathClass": "no-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact closes every model-backed check for this exact Linux/x64/devcontainer-or-Codespaces/no-space target."]},
+        {"id": "linux-linux-x64-devcontainer-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed runtime-conformance artifact closes every model-backed check for this exact Linux/x64/devcontainer-or-Codespaces/space-path target."]},
+        {"id": "windows-win32-x64-native", "operatingSystem": "windows", "platform": "win32", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "not-applicable", "pathClass": "contains-space", "status": "unsupported", "limitations": ["Native Windows is outside the runtime profile; use a Linux WSL2 or devcontainer execution environment instead."]}
+      ],
+      "checks": [
+        {"id": "native-skill-inventory-covered-by-codex", "status": "pass", "evidence": {"kind": "command-output", "reference": "25 canonical skills project through registry-bound Claude and Codex views; runtime certification remains separate"}},
+        {"id": "provider-wiring-contract", "status": "pass", "evidence": {"kind": "command-output", "reference": "@qijenchen/governance provider wiring and native hook parity tests"}}
+      ],
+      "limitations": ["Project agent discovery passed, but direct --agent startup did not preload the declared skill in Claude Code 2.1.215; the context:fork skill-injection path and native hook invocation still require executable passing evidence."]
+    },
+    {
+      "id": "codex-cloud-governance-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-cloud",
+      "providerVersion": "0.144.6",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "cloud",
+      "repositoryRole": "authority",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-cloud-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "cloud-hosted", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No fresh-clone Codex Cloud artifact binds the authority role, exact Linux/x64/cloud-hosted/space-path target, distribution version, and authority hard gate."]}
+      ],
+      "checks": [
+        {"id": "authority-cloud-hard-gate", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "No Codex Cloud authority-role run of the exact provider-neutral governance Harness has been recorded."}}
+      ],
+      "limitations": ["Authority-role Codex Cloud execution remains blocked until target-bound external runtime evidence is recorded."]
+    },
+    {
+      "id": "claude-cloud-governance-v1",
+      "provider": "claude-code",
+      "runtimeKind": "claude-code-cloud",
+      "providerVersion": "2.1.215",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "cloud",
+      "repositoryRole": "authority",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-cloud-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "cloud-hosted", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No fresh-clone Claude Code Cloud artifact binds the authority role, exact Linux/x64/cloud-hosted/space-path target, distribution version, and authority hard gate."]}
+      ],
+      "checks": [
+        {"id": "authority-cloud-hard-gate", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "No Claude Code Cloud authority-role run of the exact provider-neutral governance Harness has been recorded."}}
+      ],
+      "limitations": ["Authority-role Claude Code Cloud execution remains blocked until target-bound external runtime evidence is recorded."]
+    },
+    {
+      "id": "codex-cloud-template-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-cloud",
+      "providerVersion": "0.144.6",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "cloud",
+      "repositoryRole": "template-mirror",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-cloud-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "cloud-hosted", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No fresh-clone cloud artifact binds the Linux/x64/cloud-hosted/space-path target and distribution version."]}
+      ],
+      "checks": [
+        {"id": "classified-consumer-skill-projection", "status": "pass", "evidence": {"kind": "command-output", "reference": "11 role-classified consumer skills project symmetrically to Claude and Codex; independent-review is read-only while DS-author-only reviewer workflows remain excluded"}}
+      ],
+      "limitations": ["Fresh-clone/cloud bootstrap evidence has not yet been recorded."]
+    },
+    {
+      "id": "claude-cloud-template-v1",
+      "provider": "claude-code",
+      "runtimeKind": "claude-code-cloud",
+      "providerVersion": "2.1.215",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "cloud",
+      "repositoryRole": "template-mirror",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-cloud-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "cloud-hosted", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No fresh-clone cloud artifact binds the Linux/x64/cloud-hosted/space-path target and distribution version."]}
+      ],
+      "checks": [
+        {"id": "native-consumer-skill-inventory-covered-by-codex", "status": "pass", "evidence": {"kind": "command-output", "reference": "node --test infra/governance/test/provider-surface.test.mjs"}}
+      ],
+      "limitations": ["Fresh-clone/cloud bootstrap evidence has not yet been recorded."]
+    },
+    {
+      "id": "github-actions-hard-gate-v1",
+      "provider": "ci",
+      "runtimeKind": "github-actions",
+      "providerVersion": "github-actions",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "github-actions",
+      "repositoryRole": "authority",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions", "pathClass": "contains-space", "status": "not-certified", "limitations": ["The observed checks are not enforced by a ruleset for this exact Linux/x64 runner target."]}
+      ],
+      "checks": [
+        {"id": "deterministic-checks-observed", "status": "pass", "evidence": {"kind": "github-check-runs", "reference": "baseline/2026-07-20.github.json"}},
+        {"id": "ruleset-required-checks", "status": "fail", "evidence": {"kind": "github-api", "reference": "baseline shows no rulesets and no branch protection"}}
+      ],
+      "limitations": ["Checks exist but GitHub does not yet require them before updating main."]
+    },
+    {
+      "id": "github-actions-template-v1",
+      "provider": "ci",
+      "runtimeKind": "github-actions",
+      "providerVersion": "github-actions",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "github-actions",
+      "repositoryRole": "template-mirror",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No required-check ruleset binds the template mirror on this exact Linux/x64 runner target."]}
+      ],
+      "checks": [
+        {"id": "template-audit-observed", "status": "pass", "evidence": {"kind": "github-check-runs", "reference": "baseline/2026-07-20.github.json"}},
+        {"id": "immutable-anchor-required", "status": "fail", "evidence": {"kind": "github-api", "reference": "baseline shows no ruleset requiring the Governance Check App check"}}
+      ],
+      "limitations": ["The published template has not yet adopted the base-trusted anchor and required-check ruleset."]
+    },
+    {
+      "id": "codex-cli-local-product-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-cli",
+      "providerVersion": "0.144.6",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "local",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact macOS/arm64/native/no-space target."]},
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed WM snapshot has produced signed evidence for this exact target."]},
+        {"id": "linux-linux-x64-native-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/native/no-space target."]},
+        {"id": "linux-linux-x64-native-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/native/space-path target."]},
+        {"id": "linux-linux-x64-wsl2-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "0.144.6", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/WSL2/no-space target."]},
+        {"id": "linux-linux-x64-wsl2-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/WSL2/space-path target."]},
+        {"id": "linux-linux-x64-devcontainer-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "0.144.6", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/devcontainer-or-Codespaces/no-space target."]},
+        {"id": "linux-linux-x64-devcontainer-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/devcontainer-or-Codespaces/space-path target."]},
+        {"id": "windows-win32-x64-native", "operatingSystem": "windows", "platform": "win32", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "not-applicable", "pathClass": "contains-space", "status": "unsupported", "limitations": ["Native Windows is unsupported; Windows consumers must run the Linux target through WSL2 or devcontainer."]}
+      ],
+      "checks": [
+        {"id": "wm-clean-snapshot-canary", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "A committed WM exact-snapshot upgrade and clean-worktree rerun are still required."}}
+      ],
+      "limitations": ["The real WM checkout is intentionally unchanged and still contains pre-existing skill edits."]
+    },
+    {
+      "id": "codex-desktop-local-product-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-desktop",
+      "providerVersion": "26.721.30844",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "local",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "26.721.30844", "pathClass": "no-space", "status": "not-certified", "limitations": ["The active desktop version and no-space target are declared, but no signed app-bundle distribution identity and exact product-consumer session evidence are recorded."]},
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "26.721.30844", "pathClass": "contains-space", "status": "not-certified", "limitations": ["The active desktop version is declared, but no signed product-consumer session evidence binds this exact contains-space target."]},
+        {"id": "windows-win32-x64-native", "operatingSystem": "windows", "platform": "win32", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "not-applicable", "pathClass": "contains-space", "status": "unsupported", "limitations": ["Native Windows desktop execution has no declared runtime target or evidence."]}
+      ],
+      "checks": [
+        {"id": "desktop-wm-runtime-conformance", "status": "not-tested", "evidence": {"kind": "manual-review", "reference": "No Codex desktop app local run against the exact WM snapshot has been recorded."}}
+      ],
+      "limitations": ["Codex CLI local evidence cannot certify the desktop app distribution."]
+    },
+    {
+      "id": "codex-remote-control-product-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-desktop",
+      "providerVersion": "26.513.31313",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "remote-control",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-remote-host-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "remote-host", "distributionVersion": "26.513.31313", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed desktop distribution identity and real device-to-host run bind the remote session to this host platform, version and path class."]}
+      ],
+      "checks": [
+        {"id": "remote-control-session-conformance", "status": "not-tested", "evidence": {"kind": "manual-review", "reference": "No device-to-host remote-control conformance run has been recorded."}}
+      ],
+      "limitations": ["Host availability, trust state, and exact consumer snapshot must be observed in a real remote session."]
+    },
+    {
+      "id": "claude-local-product-v1",
+      "provider": "claude-code",
+      "runtimeKind": "claude-code-cli",
+      "providerVersion": "2.1.215",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "local",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-native-no-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact macOS/arm64/native/no-space target."]},
+        {"id": "macos-darwin-arm64-native-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed WM snapshot has produced signed evidence for this exact target."]},
+        {"id": "linux-linux-x64-native-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/native/no-space target."]},
+        {"id": "linux-linux-x64-native-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/native/space-path target."]},
+        {"id": "linux-linux-x64-wsl2-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "2.1.215", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/WSL2/no-space target."]},
+        {"id": "linux-linux-x64-wsl2-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "wsl2", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/WSL2/space-path target."]},
+        {"id": "linux-linux-x64-devcontainer-no-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "2.1.215", "pathClass": "no-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/devcontainer-or-Codespaces/no-space target."]},
+        {"id": "linux-linux-x64-devcontainer-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "devcontainer", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/devcontainer-or-Codespaces/space-path target."]},
+        {"id": "windows-win32-x64-native", "operatingSystem": "windows", "platform": "win32", "arch": "x64", "executionEnvironment": "native", "distributionVersion": "not-applicable", "pathClass": "contains-space", "status": "unsupported", "limitations": ["Native Windows is unsupported; Windows consumers must run the Linux target through WSL2 or devcontainer."]}
+      ],
+      "checks": [
+        {"id": "wm-clean-snapshot-canary", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "A committed WM exact-snapshot upgrade and clean-worktree rerun are still required."}}
+      ],
+      "limitations": ["Native hook wiring is tested in isolation, but the real WM checkout has not adopted the immutable snapshot."]
+    },
+    {
+      "id": "claude-remote-control-product-v1",
+      "provider": "claude-code",
+      "runtimeKind": "claude-code-cli",
+      "providerVersion": "2.1.215",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "remote-control",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-remote-host-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "remote-host", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No real phone-to-host run binds the remote session to this host platform, distribution version and path class."]}
+      ],
+      "checks": [
+        {"id": "remote-control-session-conformance", "status": "not-tested", "evidence": {"kind": "manual-review", "reference": "No phone-to-host remote-control conformance run has been recorded."}}
+      ],
+      "limitations": ["The host-online and device approval path is an external runtime condition, not a repository guarantee."]
+    },
+    {
+      "id": "codex-cloud-product-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-cloud",
+      "providerVersion": "0.144.6",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "cloud",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-cloud-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "cloud-hosted", "distributionVersion": "0.144.6", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No fresh-clone product-consumer artifact binds Codex Cloud to the exact installed consumer hard gate on this Linux/x64/cloud-hosted/space-path target."]}
+      ],
+      "checks": [
+        {"id": "product-cloud-installed-hard-gate", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "No Codex Cloud product-consumer run has recorded setup, installed hard-gate, and exact snapshot evidence."}}
+      ],
+      "limitations": ["Product-consumer Codex Cloud execution remains blocked until target-bound fresh-clone evidence is recorded."]
+    },
+    {
+      "id": "claude-cloud-product-v1",
+      "provider": "claude-code",
+      "runtimeKind": "claude-code-cloud",
+      "providerVersion": "2.1.215",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "cloud",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-cloud-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "cloud-hosted", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No fresh-clone product-consumer artifact binds Claude Code Cloud to the exact installed consumer hard gate on this Linux/x64/cloud-hosted/space-path target."]}
+      ],
+      "checks": [
+        {"id": "product-cloud-installed-hard-gate", "status": "not-tested", "evidence": {"kind": "command-output", "reference": "No Claude Code Cloud product-consumer run has recorded setup, installed hard-gate, and exact snapshot evidence."}}
+      ],
+      "limitations": ["Product-consumer Claude Code Cloud execution remains blocked until target-bound fresh-clone evidence is recorded."]
+    },
+    {
+      "id": "github-actions-product-v1",
+      "provider": "ci",
+      "runtimeKind": "github-actions",
+      "providerVersion": "github-actions",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "github-actions",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions", "pathClass": "contains-space", "status": "not-certified", "limitations": ["WM audit is red and no immutable required-check anchor certifies this exact Linux/x64 runner target."]}
+      ],
+      "checks": [
+        {"id": "wm-audit-observed", "status": "fail", "evidence": {"kind": "github-check-runs", "reference": "baseline/2026-07-20.github.json"}},
+        {"id": "immutable-anchor-required", "status": "fail", "evidence": {"kind": "github-api", "reference": "baseline shows no ruleset requiring the Governance Check App check"}}
+      ],
+      "limitations": ["WM audit is red and the base-trusted immutable consumer check is not installed or required."]
+    },
+    {
+      "id": "codex-remote-control-governance-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-desktop",
+      "providerVersion": "26.513.31313",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "remote-control",
+      "repositoryRole": "authority",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-remote-host-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "remote-host", "distributionVersion": "26.513.31313", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed Codex desktop distribution, device-to-host session, exact authority repository readback, and authority hard-gate receipt are bound into one fresh artifact."]}
+      ],
+      "checks": [
+        {"id": "authority-remote-control-session", "status": "not-tested", "evidence": {"kind": "manual-review", "reference": "No real Codex desktop remote-control run against the exact design-system authority commit has been recorded."}}
+      ],
+      "limitations": ["Authority remote control remains fail-closed until signed target-bound external evidence is recorded."]
+    },
+    {
+      "id": "claude-remote-control-governance-v1",
+      "provider": "claude-code",
+      "runtimeKind": "claude-code-cli",
+      "providerVersion": "2.1.215",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "remote-control",
+      "repositoryRole": "authority",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-remote-host-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "remote-host", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed Claude Code distribution, device-to-host session, exact authority repository readback, and authority hard-gate receipt are bound into one fresh artifact."]}
+      ],
+      "checks": [
+        {"id": "authority-remote-control-session", "status": "not-tested", "evidence": {"kind": "manual-review", "reference": "No real Claude Code remote-control run against the exact design-system authority commit has been recorded."}}
+      ],
+      "limitations": ["Authority remote control remains fail-closed until signed target-bound external evidence is recorded."]
+    },
+    {
+      "id": "codex-remote-control-template-v1",
+      "provider": "codex",
+      "runtimeKind": "codex-desktop",
+      "providerVersion": "26.513.31313",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "remote-control",
+      "repositoryRole": "template-mirror",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-remote-host-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "remote-host", "distributionVersion": "26.513.31313", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed Codex desktop distribution, device-to-host session, exact template repository readback, and consumer hard-gate receipt are bound into one fresh artifact."]}
+      ],
+      "checks": [
+        {"id": "template-remote-control-session", "status": "not-tested", "evidence": {"kind": "manual-review", "reference": "No real Codex desktop remote-control run against the exact published-template commit has been recorded."}}
+      ],
+      "limitations": ["Template remote control remains fail-closed until signed target-bound external evidence is recorded."]
+    },
+    {
+      "id": "claude-remote-control-template-v1",
+      "provider": "claude-code",
+      "runtimeKind": "claude-code-cli",
+      "providerVersion": "2.1.215",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "remote-control",
+      "repositoryRole": "template-mirror",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "macos-darwin-arm64-remote-host-space", "operatingSystem": "macos", "platform": "darwin", "arch": "arm64", "executionEnvironment": "remote-host", "distributionVersion": "2.1.215", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No signed Claude Code distribution, device-to-host session, exact template repository readback, and consumer hard-gate receipt are bound into one fresh artifact."]}
+      ],
+      "checks": [
+        {"id": "template-remote-control-session", "status": "not-tested", "evidence": {"kind": "manual-review", "reference": "No real Claude Code remote-control run against the exact published-template commit has been recorded."}}
+      ],
+      "limitations": ["Template remote control remains fail-closed until signed target-bound external evidence is recorded."]
+    }
+  ]
+}

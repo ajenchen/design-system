@@ -1,7 +1,7 @@
 #!/bin/bash
 # check_propose_plain_chinese.sh — Stop hook: scan AI 本 turn reply 含「要 user 決策」pattern 但用 jargon 違 propose-in-plain-chinese canonical。
 #
-# 對應 SSOT:.claude/memory/feedback_propose_discipline.md
+# 對應 SSOT:governance/memory/feedback_propose_discipline.md
 #         + CLAUDE.md `# 自主執行 canonical`「SSOT-UI/UX 中文具體人話」明文
 #
 # User 原話 2026-05-15:「已經跟你說過任何要我決策的東西請講具體人話,為何又跟智障一樣講人聽不懂的話呢?」

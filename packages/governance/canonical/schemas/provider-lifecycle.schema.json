@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance/provider-lifecycle-v1.json",
+  "title": "Append-only provider lifecycle ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "immutableHead", "snapshots"],
+  "properties": {
+    "$schema": { "const": "./schemas/provider-lifecycle.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "provider-lifecycle-ledger" },
+    "immutableHead": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["releaseVersion", "snapshotSha256", "providerInventorySha256"],
+      "properties": {
+        "releaseVersion": { "$ref": "#/$defs/semver" },
+        "snapshotSha256": { "$ref": "#/$defs/sha256" },
+        "providerInventorySha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "snapshots": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/snapshot" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "semver": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?(?:\\+[0-9A-Za-z][0-9A-Za-z.-]*)?$"
+    },
+    "discovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerRootNames", "instructionNames", "instructionOverrideNames", "configPaths", "pluginRootNames"],
+      "properties": {
+        "providerRootNames": { "$ref": "#/$defs/stringArray" },
+        "instructionNames": { "$ref": "#/$defs/stringArray" },
+        "instructionOverrideNames": { "$ref": "#/$defs/stringArray" },
+        "configPaths": { "$ref": "#/$defs/stringArray" },
+        "pluginRootNames": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "stringArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    },
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["file", "tree"] }
+      }
+    },
+    "retiredSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["file", "tree"] },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "discovery", "surfaces"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "discovery": { "$ref": "#/$defs/discovery" },
+        "surfaces": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/surface" } }
+      }
+    },
+    "retirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "replacementProviderId", "retiredInVersion", "reasonCode", "discovery", "surfaces"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "replacementProviderId": { "type": ["string", "null"] },
+        "retiredInVersion": { "$ref": "#/$defs/semver" },
+        "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "discovery": { "$ref": "#/$defs/discovery" },
+        "surfaces": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/retiredSurface" } },
+        "transfers": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/surface" } }
+      },
+      "allOf": [
+        {
+          "anyOf": [
+            { "properties": { "surfaces": { "type": "array", "minItems": 1 } } },
+            {
+              "required": ["transfers"],
+              "properties": { "transfers": { "type": "array", "minItems": 1 } }
+            }
+          ]
+        },
+        {
+          "if": {
+            "properties": { "replacementProviderId": { "type": "null" } },
+            "required": ["replacementProviderId"]
+          },
+          "then": { "properties": { "transfers": false } }
+        }
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["releaseVersion", "previousSnapshotSha256", "providers", "retiredProviders"],
+      "properties": {
+        "releaseVersion": { "$ref": "#/$defs/semver" },
+        "previousSnapshotSha256": {
+          "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "providers": { "type": "array", "items": { "$ref": "#/$defs/provider" } },
+        "retiredProviders": { "type": "array", "items": { "$ref": "#/$defs/retirement" } }
+      }
+    }
+  }
+}

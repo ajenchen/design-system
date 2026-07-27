@@ -264,7 +264,8 @@ function isInternalDir(dirPath, dirKebab) {
 const internalExcluded = []
 
 // dim-44 marker gate(2026-06-11 R2 #28):internal 單元 tsx 必帶 `@internal` jsDoc marker
-// (per `.claude/rules/ui-development.md`「export jsDoc 加 @internal marker(IDE intellisense 警示 end-user)」)。
+// (per canonical `packages/design-system/ds-canonical/rules/ui-development.md`
+// 「export jsDoc 加 @internal marker(IDE intellisense 警示 end-user)」)。
 // 偵測:internal dir 內所有非 stories / 非 `_` 前綴 .tsx 至少一檔含 `@internal` → pass;
 // 全缺 → 記入 internalMissingMarker,--check 時 fail(release:preflight 防 regression)。
 const internalMissingMarker = []

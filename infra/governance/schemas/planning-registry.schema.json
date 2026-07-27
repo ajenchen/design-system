@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/planning-registry-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "documents"],
+  "properties": {
+    "$schema": { "const": "../../infra/governance/schemas/planning-registry.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "documents": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "status", "executable", "reason"],
+        "properties": {
+          "path": { "type": "string", "pattern": "^governance/planning/[^/]+\\.(?:md|json)$" },
+          "status": { "enum": ["active", "awaiting-approval", "reference", "completed", "rejected", "superseded"] },
+          "executable": { "type": "boolean" },
+          "reason": { "type": "string", "minLength": 8 }
+        }
+      }
+    }
+  }
+}

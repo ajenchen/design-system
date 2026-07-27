@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/external-runtime-certification-proposal-v1.schema.json",
+  "title": "Reviewed external runtime certification candidate proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "applicationMode", "authorizationStatus", "externalMutationAuthorized", "ledger", "models", "evidence", "evidenceArtifact", "certification", "requiredChangedPaths", "ledgerAfter", "proposalDigest"],
+  "properties": {
+    "$schema": {"const": "../schemas/external-runtime-certification-proposal.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "external-runtime-certification-review-proposal"},
+    "applicationMode": {"const": "local-candidate-preparation-only"},
+    "authorizationStatus": {"const": "external-runtime-attestation-verified"},
+    "externalMutationAuthorized": {"const": false},
+    "ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "beforeSha256", "afterSha256"],
+      "properties": {
+        "path": {"const": "infra/governance/providers/certifications.json"},
+        "beforeSha256": {"$ref": "#/$defs/sha256"},
+        "afterSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "models": {"$ref": "#/$defs/certificationModels"},
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "artifactSha256", "evidenceDigest", "profileId", "runId", "targetId", "validUntil"],
+      "properties": {
+        "reference": {"type": "string", "pattern": "^infra/governance/evidence/external-runtime/[a-f0-9]{64}\\.json$"},
+        "artifactSha256": {"$ref": "#/$defs/sha256"},
+        "evidenceDigest": {"$ref": "#/$defs/prefixedSha256"},
+        "profileId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "runId": {"type": "string", "format": "uuid"},
+        "targetId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "validUntil": {"type": "string", "format": "date-time"}
+      }
+    },
+    "evidenceArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "canonicalBase64"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^infra/governance/evidence/external-runtime/[a-f0-9]{64}\\.json$"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "canonicalBase64": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5592408,
+          "pattern": "^[A-Za-z0-9+/]+={0,2}$"
+        }
+      }
+    },
+    "certification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "targetId", "certifiedAt", "expiresAt", "recordSha256"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "targetId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "certifiedAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "recordSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "requiredChangedPaths": {
+      "type": "array",
+      "prefixItems": [
+        {"type": "string", "pattern": "^infra/governance/evidence/external-runtime/[a-f0-9]{64}\\.json$"},
+        {"const": "infra/governance/providers/certifications.json"}
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true
+    },
+    "ledgerAfter": {"$ref": "https://qijenchen.dev/schemas/provider-surface-certification-v2.schema.json"},
+    "proposalDigest": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "prefixedSha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "certificationModels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inventorySha256", "desiredSha256", "compatibilityMatrixSha256", "runtimeProfileSha256", "roleSurfacePolicySha256", "issuerRegistrySha256"],
+      "properties": {
+        "inventorySha256": {"$ref": "#/$defs/sha256"},
+        "desiredSha256": {"$ref": "#/$defs/sha256"},
+        "compatibilityMatrixSha256": {"$ref": "#/$defs/sha256"},
+        "runtimeProfileSha256": {"$ref": "#/$defs/sha256"},
+        "roleSurfacePolicySha256": {"$ref": "#/$defs/sha256"},
+        "issuerRegistrySha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

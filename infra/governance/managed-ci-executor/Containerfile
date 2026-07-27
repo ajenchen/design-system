@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+# The exact linux/amd64 manifest for node:24.14.0-bookworm-slim is an immutable SLSA material.
+FROM docker.io/library/node@sha256:4bd6219054c8bebcd26a66bfd8ca0bd6e1024b4b97474c59bb7ee3bbcbef4fe8 AS runtime
+
+ARG EXECUTION_CLASS
+LABEL org.opencontainers.image.source="https://github.com/ajenchen/design-system"
+LABEL dev.qijenchen.managed-ci.execution-class="${EXECUTION_CLASS}"
+
+COPY --chmod=0555 runtime/managed-ci-runtime.mjs /opt/qijenchen/managed-ci/bin/managed-ci-runtime
+RUN set -eu; \
+    for binary in validate-provenance run-class; do \
+      cp /opt/qijenchen/managed-ci/bin/managed-ci-runtime "/opt/qijenchen/managed-ci/bin/${binary}"; \
+      chmod 0555 "/opt/qijenchen/managed-ci/bin/${binary}"; \
+    done
+
+ENV NODE_ENV=production \
+    HOME=/tmp/managed-ci-home \
+    PATH=/opt/qijenchen/managed-ci/bin:/usr/local/bin:/usr/bin:/bin
+USER 65532:65532
+WORKDIR /workspace
+ENTRYPOINT ["/opt/qijenchen/managed-ci/bin/run-class"]

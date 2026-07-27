@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/privileged-change-authorization-v1.json",
+  "title": "Privileged executable-closure authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "repository", "baseSha", "candidateHeadSha", "changedPaths", "contentDigest", "issuerRegistryDigest", "issuedAt", "expiresAt", "signerKeyId", "subject", "signature", "coSignatures"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "privileged-change-authorization"},
+    "repository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+    "baseSha": {"type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"},
+    "candidateHeadSha": {"type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"},
+    "changedPaths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "contentDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "issuerRegistryDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "issuedAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "signerKeyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+    "subject": {"type": "string", "minLength": 1},
+    "signature": {"type": "string", "minLength": 1},
+    "coSignatures": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["signerKeyId", "subject", "signature"],
+        "properties": {
+          "signerKeyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+          "subject": {"type": "string", "minLength": 1},
+          "signature": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

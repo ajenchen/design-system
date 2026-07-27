@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/provider-surface-certification-v2.schema.json",
+  "title": "Provider surface certification ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "certifications"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schemaVersion": {"const": 2},
+    "certifications": {"type": "array", "items": {"$ref": "#/$defs/certification"}}
+  },
+  "$defs": {
+    "certification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "provider", "runtimeKind", "providerVersion", "adapterVersion", "surface", "repositoryRole", "status", "platformMatrix", "checks", "limitations"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "provider": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "runtimeKind": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "providerVersion": {"type": "string", "minLength": 1},
+        "adapterVersion": {"type": "string", "minLength": 1},
+        "surface": {"enum": ["local", "remote-control", "cloud", "github-actions"]},
+        "repositoryRole": {"enum": ["authority", "template-mirror", "product-consumer"]},
+        "status": {"enum": ["certified", "conditional", "not-certified", "expired", "not-applicable"]},
+        "platformMatrix": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/platformTarget"}},
+        "certifiedAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "runtimeEvidence": {"$ref": "#/$defs/runtimeEvidence"},
+        "checks": {"type": "array", "items": {"$ref": "#/$defs/check"}},
+        "limitations": {"type": "array", "items": {"type": "string"}}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "certified"}}},
+          "then": {
+            "properties": {
+              "certifiedAt": {"type": "string", "format": "date-time"},
+              "expiresAt": {"type": "string", "format": "date-time"},
+              "checks": {"type": "array", "minItems": 1}
+            }
+          }
+        }
+      ]
+    },
+    "runtimeEvidence": {
+      "oneOf": [
+        {"$ref": "#/$defs/localRuntimeEvidence"},
+        {"$ref": "#/$defs/externalRuntimeEvidence"}
+      ]
+    },
+    "localRuntimeEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "artifactSha256", "evidenceDigest", "providerId", "runId", "scope", "targetId", "targetDigest", "operatingSystem", "platform", "arch", "executionEnvironment", "distributionVersion", "pathClass", "distributionDigest", "gitCommit", "gitTree", "profileDigest", "harnessDigest", "hardGateContractDigest"],
+      "properties": {
+        "reference": {"type": "string", "pattern": "^infra/governance/evidence/provider-runtime/[a-f0-9]{64}\\.json$"},
+        "artifactSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "evidenceDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "providerId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "runId": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+        "scope": {"enum": ["local-fleet", "provider"]},
+        "targetId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "targetDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "operatingSystem": {"enum": ["macos", "linux"]},
+        "platform": {"enum": ["darwin", "linux"]},
+        "arch": {"enum": ["arm64", "x64"]},
+        "executionEnvironment": {"enum": ["native", "wsl2", "devcontainer"]},
+        "distributionVersion": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"},
+        "pathClass": {"enum": ["no-space", "contains-space"]},
+        "distributionDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "gitCommit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "gitTree": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "profileDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "harnessDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "hardGateContractDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+      }
+    },
+    "externalRuntimeEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidenceKind", "reference", "artifactSha256", "evidenceDigest", "profileId", "runId", "targetId", "targetDigest", "repositoryId", "repository", "repositoryRole", "repositoryReadbackSha256", "operatingSystem", "platform", "arch", "executionEnvironment", "distributionVersion", "pathClass", "distributionDigest", "gitCommit", "gitTree", "profileDigest", "harnessDigest", "hardGateContractDigest"],
+      "properties": {
+        "evidenceKind": {"const": "external-runtime-surface-conformance"},
+        "reference": {"type": "string", "pattern": "^infra/governance/evidence/external-runtime/[a-f0-9]{64}\\.json$"},
+        "artifactSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "evidenceDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "profileId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "runId": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+        "targetId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "targetDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "repositoryId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "repositoryRole": {"enum": ["authority", "template-mirror", "product-consumer"]},
+        "repositoryReadbackSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "operatingSystem": {"enum": ["macos", "linux"]},
+        "platform": {"enum": ["darwin", "linux"]},
+        "arch": {"enum": ["arm64", "x64"]},
+        "executionEnvironment": {"enum": ["native", "remote-host", "cloud-hosted", "github-hosted-runner"]},
+        "distributionVersion": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+        "pathClass": {"enum": ["no-space", "contains-space"]},
+        "distributionDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "gitCommit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "gitTree": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "profileDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "harnessDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "hardGateContractDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+      }
+    },
+    "platformTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "operatingSystem", "platform", "arch", "executionEnvironment", "distributionVersion", "pathClass", "status", "limitations"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "operatingSystem": {"enum": ["macos", "linux", "windows"]},
+        "platform": {"enum": ["darwin", "linux", "win32"]},
+        "arch": {"enum": ["arm64", "x64"]},
+        "executionEnvironment": {"enum": ["native", "wsl2", "devcontainer", "cloud-hosted", "github-hosted-runner", "remote-host"]},
+        "distributionVersion": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+        "pathClass": {"enum": ["no-space", "contains-space"]},
+        "status": {"enum": ["certified", "not-certified", "unsupported"]},
+        "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "certifiedAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "runtimeEvidence": {"$ref": "#/$defs/runtimeEvidence"}
+      },
+      "oneOf": [
+        {"type": "object", "properties": {"operatingSystem": {"const": "macos"}, "platform": {"const": "darwin"}, "executionEnvironment": {"enum": ["native", "remote-host"]}}},
+        {"type": "object", "properties": {"operatingSystem": {"const": "linux"}, "platform": {"const": "linux"}, "executionEnvironment": {"enum": ["native", "wsl2", "devcontainer", "cloud-hosted", "github-hosted-runner", "remote-host"]}}},
+        {"type": "object", "properties": {"operatingSystem": {"const": "windows"}, "platform": {"const": "win32"}, "executionEnvironment": {"const": "native"}, "distributionVersion": {"const": "not-applicable"}, "status": {"const": "unsupported"}}}
+      ]
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "evidence"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "status": {"enum": ["pass", "fail", "not-tested", "not-applicable"]},
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "reference"],
+          "properties": {
+            "kind": {"enum": ["command-output", "artifact-digest", "github-check-runs", "github-api", "manual-review"]},
+            "reference": {"type": "string", "minLength": 1},
+            "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+          },
+          "allOf": [
+            {
+              "if": {"properties": {"kind": {"const": "artifact-digest"}}},
+              "then": {
+                "required": ["sha256"],
+                "properties": {"sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

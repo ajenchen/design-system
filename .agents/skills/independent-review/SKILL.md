@@ -1,33 +1,43 @@
 ---
 name: independent-review
-description: Independent second-opinion review of changes authored by another AI provider(如 Claude)。Use when asked to review, audit, or give a second opinion on a diff, branch, or component change in this repo.
+description: "Obtain an evidence-bound, read-only second opinion on product-consumer changes from a distinct certified peer provider without acquiring DS-author authority."
 ---
 
-<!-- _generated: scripts/gen-codex-adapter.mjs(PNG P2.3)。禁手改 — release:preflight `gen-codex-adapter --check` 驗 drift;改內容改生成器後重生 `node scripts/gen-codex-adapter.mjs`。 -->
+<!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/independent-review/SKILL.md + packages/governance/canonical/providers.json; do not edit this provider view. -->
 
-# Independent second-opinion review(codex-side driver)
+# independent-review — Codex adapter
 
-**任務**:review「另一個 provider(通常 Claude)所著的變更」— 你是 reviewer,不是 author。Canonical 概念 = `AGENTS.md`「Independent second opinion」段(author provider ≠ reviewer provider;同一份判準 SSOT;fail-closed)。
+Read and follow the complete provider-neutral workflow at `packages/design-system/ds-canonical/skills/independent-review/SKILL.md`. This file only resolves the provider binding; it must not redefine workflow meaning.
 
-## 判準(禁自建規範)
+## Resolved binding
 
-- **唯一 rubric SSOT** = `.claude/skills/design-system-audit/references/audit-prompts.md`(per-dim 判準;Claude 深稽核用同一份)。**禁**以你自己的 best-practice 直覺取代:rubric 沒寫的不構成 finding,rubric 有寫的不可跳過。
-- rule-ID 對照:`.claude/logs/audit-coverage-matrix.json`(DS-DIM-001..091)。
+- `currentProvider: codex`
+- `reviewSelectionPolicy: highest-certified-independent-review-v1`
+- `reviewClass: tier-0-governance`
+- `independentPeerProvider: selected-and-frozen-at-review-prepare-time`
+- `transport: content-addressed-model-broker-exchange-v1`
+- `targetCertificationContract: exact-provider-runtime-surface-role-target-v1`
+- `sameProviderPeer: invalid`
+- `authorProviderRequired: true`
+- `authorProviderMustEqualCurrentProvider: true`
+- `independentReviewerMustDifferFromAuthor: true`
+- `reviewIsolation: separate-context-required`
+- `reviewMutation: read-only`
+- `reviewWorkspace: immutable-snapshot-or-enforced-tool-deny`
+- `mutationDetection: before-after-worktree-fingerprint`
+- `missingEvidenceOutcome: REVIEW-BLOCKED`
+- `compatibilityEvidence: packages/governance/canonical/providers.json#codex.skillBindings`
 
-## 流程
+## Required canonical references
 
-1. 讀 `AGENTS.md` + 上述 rubric(applicable dims 全讀,**禁抽樣**)。
-2. 取得受審變更:brief 指定的 diff / branch / 檔案清單;無指定 → `git diff main...HEAD` + 變更檔全文。
-3. 逐 applicable dim 套 rubric 驗證(claim-vs-code:讀真實 source,不信註解 / 文件宣稱)。
-4. 只輸出 findings + 證據;可附修法建議,**不得**直接改檔(review-only)。
+- `packages/design-system/ds-canonical/skills/independent-review/references/evidence-contract.md`
 
-## 輸出格式(每 finding)
 
-- `rule-ID`(DS-DIM-NNN 或 rubric 段落)/ `severity`(Critical / Major / Minor)/ `evidence`(file:line + 引文)/ `resolution`(建議修法一行)。
-- 無 finding 的 applicable dim 也要列:`DS-DIM-NNN: PASS(驗證方式一行)`。
-- 結尾記錄 reviewer 的 provider / model / version(如 codex CLI 版本 + model 名)。
+## Adapter execution
 
-## Fail-closed(禁靜默降級)
+1. Require the author provider to be codex and resolve only a distinct reviewer through highest-certified-independent-review-v1/tier-0-governance.
+2. Verify an exact certified provider/runtime/surface/product-consumer target before claiming an independent second opinion.
+3. Freeze and digest the product scope, dispatch without author conclusions, and require a separate read-only context.
+4. Validate broker/transport evidence and before/after worktree fingerprints; emit findings only and never acquire DS-author, release, or mutation authority.
 
-- rubric 檔讀不到 / diff 取不到 / 無法完成全部 applicable dims → 回 `REVIEW-BLOCKED: <原因>`,**禁**輸出部分結果並宣稱 compliant。
-- **禁**同一 agent 假扮另一 provider 的審查(self-review ≠ independent second opinion)。
+Unavailable transport, same-provider execution, missing identity/evidence, incomplete coverage, absent isolation, or worktree drift is `REVIEW-BLOCKED`, never PASS.

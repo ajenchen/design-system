@@ -12,40 +12,58 @@ run() {
   local fp="$1"; local content="$2"
   local payload=$(jq -n --arg fp "$fp" --arg c "$content" \
     '{hook_event_name:"PreToolUse",tool_name:"Write",tool_input:{file_path:$fp,content:$c}}')
-  STDERR=$(mktemp)
-  printf '%s' "$payload" | bash "$HOOK" 2>"$STDERR" >/dev/null
-  STDERR_TEXT=$(cat "$STDERR"); rm -f "$STDERR"
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT"); STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+
+is_exact_context() {
+  local needle="$1" compact
+  compact=$(printf '%s' "$STDOUT_TEXT" | jq -c . 2>/dev/null) || return 1
+  [ "$STDOUT_TEXT" = "$compact" ] || return 1
+  printf '%s' "$STDOUT_TEXT" | jq -se --arg needle "$needle" '
+    length == 1
+    and (.[0] | type == "object" and (keys | sort) == ["governanceContext"])
+    and (.[0].governanceContext |
+      (keys | sort) == ["hookEventName", "message"]
+      and .hookEventName == "PreToolUse"
+      and (.message | type == "string" and length > 0 and contains($needle)))
+  ' >/dev/null
 }
 
 # Test 1:ColumnDef + size:<number> 無 meta.width → warn
 echo "Test 1: ColumnDef size:280 → warn"
 CONTENT='const columns: ColumnDef[] = [{ accessorKey: "name", size: 280 }]'
 run "/path/columns.tsx" "$CONTENT"
-if echo "$STDERR_TEXT" | grep -q "M23(c)"; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL: no warn"; FAIL=$((FAIL+1)); fi
+if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] && is_exact_context "M23(c)"; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL: no exact context"; FAIL=$((FAIL+1)); fi
 
 # Test 2:ColumnDef + meta.width → silent
 echo "Test 2: ColumnDef meta.width → silent"
 CONTENT='const columns: ColumnDef[] = [{ accessorKey: "name", meta: { width: "md" } }]'
 run "/path/columns.tsx" "$CONTENT"
-if [ -z "$STDERR_TEXT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL"; FAIL=$((FAIL+1)); fi
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL"; FAIL=$((FAIL+1)); fi
 
 # Test 3:mixed(size + meta.width) → silent(transition state allowed)
 echo "Test 3: mixed size + meta.width → silent"
 CONTENT='const columns: ColumnDef[] = [{ size: 280, meta: { width: "md" } }]'
 run "/path/columns.tsx" "$CONTENT"
-if [ -z "$STDERR_TEXT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL"; FAIL=$((FAIL+1)); fi
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL"; FAIL=$((FAIL+1)); fi
 
 # Test 4:non-DataTable context skip
 echo "Test 4: non-DataTable context skip"
 CONTENT='const x = { size: 280 }'
 run "/path/unrelated.tsx" "$CONTENT"
-if [ -z "$STDERR_TEXT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL"; FAIL=$((FAIL+1)); fi
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL"; FAIL=$((FAIL+1)); fi
 
 # Test 5:stories.tsx skip
 echo "Test 5: stories.tsx skip"
 CONTENT='const columns: ColumnDef[] = [{ size: 280 }]'
 run "/path/foo.stories.tsx" "$CONTENT"
-if [ -z "$STDERR_TEXT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL"; FAIL=$((FAIL+1)); fi
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL"; FAIL=$((FAIL+1)); fi
 
 echo ""
 echo "════ Results: $PASS PASS, $FAIL FAIL ════"

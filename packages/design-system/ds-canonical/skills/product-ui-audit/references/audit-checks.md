@@ -36,7 +36,7 @@ grep -nE '\[--[a-z][a-z0-9-]*\]' {target} | grep -v '\[&'
 grep -nE '#[0-9a-fA-F]{3,8}\b|rgb\(|rgba\(|hsl\(|hsla\(' {target}
 ```
 
-**Severity**: P0。**Exception**: `#fff` 在 Avatar / Tag 白字變體是 documented cva exception(object map 非 cva,per CLAUDE.md `cva 適用範圍`);anatomy inspector chrome 顏色 highlight(`bg: 'rgba(...)'` in `.anatomy.stories.tsx`)。**Fix**: 改 semantic token(`var(--primary)` / `bg-primary` 等)。
+**Severity**: P0。**Exception**: `#fff` 在 Avatar / Tag 白字變體是 documented cva exception(object map 非 cva,per shared governance `cva 適用範圍`);anatomy inspector chrome 顏色 highlight(`bg: 'rgba(...)'` in `.anatomy.stories.tsx`)。**Fix**: 改 semantic token(`var(--primary)` / `bg-primary` 等)。
 
 ### Check 1.5: 硬寫 px 當應用 token
 
@@ -176,7 +176,10 @@ grep -nE '(Option [A-E]|按鈕[一二三四五]|Rule [A-E]|Variant [A-E]|Placeho
 grep -nE '(TODO:\s*待確認|TODO:\s*decide|FIXME|XXX)' {target}
 ```
 
-**Severity**: P2(必討論)。**Fix**: 若是規格未定應 surface 給 user 決策,不在 code 留模糊 TODO。
+**Severity**:先依 authority classifier 分流。工程 debt、測試缺口、既有 SSOT 落地或可由
+repo evidence 唯一推導的留白 = P2E，自主修復／移除並驗證；只有 TODO 真正代表未決的
+產品／UI／UX SSOT 選擇，且 evidence 收斂後仍有取捨，才是 P2H 並 surface exact target。
+不得把所有 TODO/FIXME/XXX 一律當 user decision。
 
 ### Check 4.3: cva defaultVariants 三方漂移(M3)
 
@@ -192,7 +195,7 @@ grep -nE '(TODO:\s*待確認|TODO:\s*decide|FIXME|XXX)' {target}
 
 例: FileItem `status slot(16px)` + `delete Button sm(28px)` = 不一致 → hover-bg 吃 gap。
 
-**Severity**: P0(世界級 DS 鐵律違反,違反 .claude/references/ui-dev-rules.md「同 flex 列的互動 slot 幾何鐵律」)。
+**Severity**: P0(世界級 DS 鐵律違反,違反 `packages/design-system/ds-canonical/references/ui-dev-rules.md`「同 flex 列的互動 slot 幾何鐵律」)。
 
 ### Check 5.2: 自造 typography tier
 
@@ -236,7 +239,7 @@ grep -nE '<(div|span)[^>]*onClick='
 
 ## 合法例外(documented)
 
-以下 hit 不是 bug,由既有 spec / CLAUDE.md 記錄為合理例外:
+以下 hit 不是 bug,由既有 spec / shared governance 記錄為合理例外:
 
 - **Avatar 白字**(`text: '#fff'`): cva 適用範圍例外(style prop 驅動用 object map 而非 cva),per `cva 適用範圍` 章節。
 - **Anatomy inspector chrome**(`bg: 'rgba(...)'` in `.anatomy.stories.tsx`): dev-tool highlight 非 consumer UI token。

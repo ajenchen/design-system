@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 2,
+  "certifications": [
+    {
+      "id": "forged-ci-product-v1",
+      "provider": "ci",
+      "runtimeKind": "github-actions",
+      "providerVersion": "github-actions-fixture",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "github-actions",
+      "repositoryRole": "product-consumer",
+      "status": "certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions-fixture", "pathClass": "contains-space", "status": "certified", "limitations": []}
+      ],
+      "certifiedAt": "2026-01-01T00:00:00Z",
+      "expiresAt": "2099-01-01T00:00:00Z",
+      "checks": [
+        {"id": "required-hard-gate", "status": "fail", "evidence": {"kind": "github-check-runs", "reference": "fixture shows the required check failed"}}
+      ],
+      "limitations": []
+    }
+  ]
+}

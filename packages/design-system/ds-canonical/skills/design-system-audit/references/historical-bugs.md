@@ -1,6 +1,6 @@
 # Bug Classes This Skill Prevents
 
-Curated from the `# 失敗記憶索引` in CLAUDE.md plus audit runs. Each entry names the bug class, how it originally slipped in, and which audit catches it.
+Curated from canonical governance history plus audit runs. Each entry names the bug class, how it originally slipped in, and which audit catches it.
 
 ---
 
@@ -68,7 +68,7 @@ Curated from the `# 失敗記憶索引` in CLAUDE.md plus audit runs. Each entry
 
 **Caught by**: Audit 5 (Figma-test).
 
-**Why it recurs**: Authors want to be thorough. But CLAUDE.md explicitly forbids — anatomy reflects *current* density (re-rendered on density switch); dual columns are noise. Token name is enough.
+**Why it recurs**: Authors want to be thorough. But canonical anatomy rules explicitly forbid — anatomy reflects *current* density (re-rendered on density switch); dual columns are noise. Token name is enough.
 
 ---
 
@@ -76,7 +76,7 @@ Curated from the `# 失敗記憶索引` in CLAUDE.md plus audit runs. Each entry
 
 **First seen**: HoverCard originally under `Components/` (behavior primitive, no default visual) — should be `Internal/`.
 
-**Caught by**: CLAUDE.md has a 3-question test; audits cross-check.
+**Caught by**:`packages/design-system/ds-canonical/references/naming-conventions.md` has a 3-question test; audits cross-check.
 
 **Why it recurs**: Name bias — HoverCard *sounds* like a public component. Always go by behavior (has default visuals? rendered directly anywhere?) not name.
 
@@ -127,7 +127,7 @@ Curated from the `# 失敗記憶索引` in CLAUDE.md plus audit runs. Each entry
 | Audit | Primary bug class | Secondary |
 |-------|-------------------|-----------|
 | 14. 命名一致性 | Folder/file case mismatch | H1 heading drift |
-| 15. CLAUDE.md 自身一致性 | Internal contradictions | Dead internal references |
+| 15. Canonical governance + generated projection 一致性 | Internal contradictions | Dead internal references |
 
 ### Group F — Architecture compliance (P1, session-learned)
 | Audit | Primary bug class | Secondary |
@@ -140,7 +140,7 @@ Curated from the `# 失敗記憶索引` in CLAUDE.md plus audit runs. Each entry
 
 ## Meta-Pattern layered index (2026-04-21 rebuild)
 
-After the 2026-04-21 governance rebuild, each historical bug maps to one of the 6 Meta-Patterns in CLAUDE.md `# Meta-Pattern 預警`. The index below is the canonical mapping; specific bug classes are kept below as historical context, but future bugs should be classified into a Meta-Pattern first.
+After the 2026-04-21 governance rebuild, each historical bug maps to one of the Meta-Patterns in `packages/design-system/ds-canonical/rules/meta-patterns.md`. The index below is the canonical mapping; specific bug classes are kept below as historical context, but future bugs should be classified into a Meta-Pattern first.
 
 ### M1 — 視覺決策前必消費 SSOT
 
@@ -184,9 +184,9 @@ After the 2026-04-21 governance rebuild, each historical bug maps to one of the 
 
 ---
 
-## Meta-Pattern M1-M17 origins(2026-04-24 搬自 CLAUDE.md 3rd column)
+## Meta-Pattern M1-M17 origins(2026-04-24 搬自舊 provider bootstrap 3rd column)
 
-Each Meta-Principle 起源於具體 bug 類型。CLAUDE.md M-row 第 3 欄壓到 ≤80 字,完整歷史在這。
+Each Meta-Principle 起源於具體 bug 類型。Canonical `rules/meta-patterns.md` M-row 第 3 欄壓到 ≤80 字,完整歷史在這。
 
 ### M1 — 視覺決策前必消費 SSOT
 自發明 `variant="bare"` / Sheet 表單 gap 沒用 layout-space token / Header 高度沒用 `--chrome-header-height` / Row 沒用 item-anatomy / Toolbar 按鈕群 gap 不對齊 action-bar canonical。2026-04-22 dismiss Button/Inline Action 分界後走 item-anatomy「Predicate」SSOT。
@@ -228,7 +228,7 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 2026-04-22 hover bg 震盪 4 次 + avatar-NameCard migration 拖延:user 說「我說所有」明示 DS-wide,但 AI 第一次只改 2 處 dialog stories,15+ 處放 tech debt 留到下次。user 第 2 次提起才完成。根因:AI「做完」標準太鬆(視 user 明示為「提醒」而非「canonical 聲明」)。
 
 ### M14 — 對話結論 AUTO integrate pipeline
-2026-04-22 本 session 每個 canonical(chrome-header / dismiss 分家 / avatar hoverCard / popover 14px)都是 user 提醒才整合,AI 只做 code 改動但忘記 spec / CLAUDE.md / memory / hook 同步。根因:AI「做完」的標準只含 code,缺「整合多層」的 procedural rule。M14 若存在,每次 code change 後自動觸發 pipeline,不等 user 第 2 次問。
+2026-04-22 本 session 每個 canonical(chrome-header / dismiss 分家 / avatar hoverCard / popover 14px)都是 user 提醒才整合,AI 只做 code 改動但忘記 spec / canonical rules / governance memory / hook 同步。根因:AI「做完」的標準只含 code,缺「整合多層」的 procedural rule。M14 若存在,每次 code change 後自動觸發 pipeline,不等 user 第 2 次問。
 
 ### M15 — Product UI flow 必須 visual-audit coverable
 2026-04-22 Sheet / FileViewer 過去只有 trigger button stories,visual-audit 跑 `--scope=component:Sheet` 只截到 trigger 未 open state,被 user 點破「能抓到點擊打開的 modal 嗎?」才補 OpenSnapshot。若 M15 存在,新元件建立時就該有 OpenSnapshot。

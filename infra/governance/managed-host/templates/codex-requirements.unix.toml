@@ -1,0 +1,56 @@
+allow_managed_hooks_only = true
+allowed_approval_policies = ["never", "on-request"]
+default_permissions = ":workspace"
+
+[allowed_permission_profiles]
+":read-only" = true
+":workspace" = true
+
+[features]
+hooks = true
+plugins = false
+remote_plugin = false
+
+[hooks]
+managed_dir = "/opt/qijenchen/governance/__DS_RELEASE_SOURCE_COMMIT__"
+windows_managed_dir = 'C:\Program Files\Qijenchen\Governance\__DS_RELEASE_SOURCE_COMMIT__'
+
+[[hooks.PreToolUse]]
+matcher = ".*"
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "__CODEX_NODE_RUNTIME__ /opt/qijenchen/governance/__DS_RELEASE_SOURCE_COMMIT__/managed-hook-dispatcher.mjs --event PreToolUse --shell __CODEX_SHELL_RUNTIME__ --python __CODEX_PYTHON_RUNTIME__"
+
+[[hooks.PostToolUse]]
+matcher = ".*"
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = "__CODEX_NODE_RUNTIME__ /opt/qijenchen/governance/__DS_RELEASE_SOURCE_COMMIT__/managed-hook-dispatcher.mjs --event PostToolUse --shell __CODEX_SHELL_RUNTIME__ --python __CODEX_PYTHON_RUNTIME__"
+
+[[hooks.SessionStart]]
+matcher = ".*"
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = "__CODEX_NODE_RUNTIME__ /opt/qijenchen/governance/__DS_RELEASE_SOURCE_COMMIT__/managed-hook-dispatcher.mjs --event SessionStart --shell __CODEX_SHELL_RUNTIME__ --python __CODEX_PYTHON_RUNTIME__"
+
+[[hooks.UserPromptSubmit]]
+matcher = ".*"
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = "__CODEX_NODE_RUNTIME__ /opt/qijenchen/governance/__DS_RELEASE_SOURCE_COMMIT__/managed-hook-dispatcher.mjs --event UserPromptSubmit --shell __CODEX_SHELL_RUNTIME__ --python __CODEX_PYTHON_RUNTIME__"
+
+[[hooks.Stop]]
+matcher = ".*"
+[[hooks.Stop.hooks]]
+type = "command"
+command = "__CODEX_NODE_RUNTIME__ /opt/qijenchen/governance/__DS_RELEASE_SOURCE_COMMIT__/managed-hook-dispatcher.mjs --event Stop --shell __CODEX_SHELL_RUNTIME__ --python __CODEX_PYTHON_RUNTIME__"
+
+[mcp_servers]
+
+[marketplaces]
+restrict_to_allowed_sources = true
+
+[marketplaces.allowed_sources.qijenchen-ds]
+source = "git"
+url = "https://github.com/ajenchen/design-system.git"
+ref = "__DS_RELEASE_TAG__"

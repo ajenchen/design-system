@@ -1,0 +1,694 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/github-desired.schema.json",
+  "title": "Desired GitHub repository controls",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "managedRulesetPrefix", "staleManagedPolicy", "checkRunMaxAgeMinutes", "checkRunClockSkewSeconds", "integrations", "managedEnvironmentNames", "profiles"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schemaVersion": {"const": 1},
+    "managedRulesetPrefix": {"const": "fleet/"},
+    "staleManagedPolicy": {"const": "delete-after-preflight"},
+    "checkRunMaxAgeMinutes": {"type": "integer", "minimum": 1, "maximum": 10080},
+    "checkRunClockSkewSeconds": {"type": "integer", "minimum": 0, "maximum": 300},
+    "integrations": {
+      "type": "object",
+      "minProperties": 3,
+      "maxProperties": 3,
+      "additionalProperties": false,
+      "required": ["githubActions", "governanceCheckApp", "governanceWriterApp"],
+      "properties": {
+        "githubActions": {"$ref": "#/$defs/githubActionsIntegration"},
+        "governanceCheckApp": {"$ref": "#/$defs/governanceCheckAppIntegration"},
+        "governanceWriterApp": {"$ref": "#/$defs/governanceWriterAppIntegration"}
+      }
+    },
+    "managedEnvironmentNames": {
+      "const": [
+        "npm-release",
+        "release-finalize",
+        "governance-check-verdict",
+        "governance-mirror",
+        "governance-upgrade",
+        "governance-external-ledger"
+      ]
+    },
+    "profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "design-system-authority": {"$ref": "#/$defs/authorityProfile"},
+        "published-template": {"$ref": "#/$defs/consumerProfile"},
+        "product-consumer": {"$ref": "#/$defs/consumerProfile"}
+      }
+    }
+  },
+  "$defs": {
+    "githubActionsIntegration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "slug", "required", "capability", "operationMode"],
+      "properties": {
+        "id": {"const": 15368},
+        "slug": {"const": "github-actions"},
+        "required": {"const": true},
+        "capability": {"const": "ci"},
+        "operationMode": {"const": "github-native"}
+      }
+    },
+    "governanceCheckAppIntegration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "slug", "required", "externalTrustAnchor", "capability", "operationMode", "repositorySelection", "permissions", "secretPrefix"],
+      "properties": {
+        "id": {"type": ["integer", "null"], "minimum": 1},
+        "slug": {"const": "qijenchen-governance-check"},
+        "required": {"const": true},
+        "externalTrustAnchor": {"const": true},
+        "capability": {"const": "check-only"},
+        "operationMode": {"const": "base-trusted-isolated-workflow"},
+        "repositorySelection": {"const": "selected"},
+        "permissions": {"$ref": "#/$defs/checkAppPermissions"},
+        "secretPrefix": {"const": "GOVERNANCE_CHECK_APP"}
+      }
+    },
+    "governanceWriterAppIntegration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "slug", "required", "externalTrustAnchor", "capability", "operationMode", "repositorySelection", "permissions", "secretPrefix"],
+      "properties": {
+        "id": {"type": ["integer", "null"], "minimum": 1},
+        "slug": {"const": "qijenchen-governance-writer"},
+        "required": {"const": true},
+        "externalTrustAnchor": {"const": false},
+        "capability": {"const": "writer"},
+        "operationMode": {"const": "github-actions-environment"},
+        "repositorySelection": {"const": "selected"},
+        "permissions": {"$ref": "#/$defs/writerAppPermissions"},
+        "secretPrefix": {"const": "GOVERNANCE_WRITER_APP"}
+      }
+    },
+    "checkAppPermissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checks"],
+      "properties": {"checks": {"const": "write"}}
+    },
+    "writerAppPermissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contents", "pullRequests", "workflows"],
+      "properties": {
+        "contents": {"const": "write"},
+        "pullRequests": {"const": "write"},
+        "workflows": {"const": "write"}
+      }
+    },
+    "rollout": {"enum": ["always", "on-promotion"]},
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actionsWorkflowPermissions", "immutableReleases", "requiredChecks", "rulesets", "tagPolicy", "environments"],
+      "properties": {
+        "actionsWorkflowPermissions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["default_workflow_permissions", "can_approve_pull_request_reviews"],
+          "properties": {
+            "default_workflow_permissions": {"const": "read"},
+            "can_approve_pull_request_reviews": {"type": "boolean"}
+          }
+        },
+        "immutableReleases": {"type": "boolean"},
+        "requiredChecks": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/requiredCheck"}},
+        "rulesets": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"$ref": "#/$defs/ruleset"}},
+        "tagPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pattern", "sourceBranch", "allowCreation", "requireSourceAncestry", "requireVerifiedSource"],
+          "properties": {
+            "pattern": {"const": "v*"},
+            "sourceBranch": {"const": "main"},
+            "allowCreation": {"type": "boolean"},
+            "requireSourceAncestry": {"const": true},
+            "requireVerifiedSource": {"const": true},
+            "sourceWorkflow": {"type": "string", "pattern": "^\\.github/workflows/.+\\.ya?ml$"},
+            "sourceWorkflowIdentity": {"$ref": "#/$defs/workflowIdentity"}
+          },
+          "allOf": [{
+            "if": {
+              "properties": {"sourceWorkflow": {}},
+              "required": ["sourceWorkflow"]
+            },
+            "then": {
+              "properties": {"sourceWorkflowIdentity": {}},
+              "required": ["sourceWorkflowIdentity"]
+            }
+          }]
+        },
+        "environments": {"type": "array", "items": {"$ref": "#/$defs/environment"}}
+      }
+    },
+    "authorityProfile": {
+      "allOf": [
+        {"$ref": "#/$defs/profile"},
+        {
+          "type": "object",
+          "properties": {
+            "actionsWorkflowPermissions": {
+              "type": "object",
+              "properties": {
+                "default_workflow_permissions": {"const": "read"},
+                "can_approve_pull_request_reviews": {"const": true}
+              }
+            },
+            "immutableReleases": {"const": true},
+            "requiredChecks": {
+              "type": "array",
+              "minItems": 7,
+              "allOf": [
+                {"$ref": "#/$defs/containsImmutableConsumerSnapshotCheck"},
+                {"$ref": "#/$defs/containsAuthorityVerifyCheck"},
+                {"$ref": "#/$defs/containsAuthorityA11yCheck"},
+                {"$ref": "#/$defs/containsAuthorityBundleSizeCheck"},
+                {"$ref": "#/$defs/containsAuthorityVisualRegressionCheck"},
+                {"$ref": "#/$defs/containsAuthorityCompositionFidelityCheck"},
+                {"$ref": "#/$defs/containsAuthorityPackagingCheck"}
+              ]
+            },
+            "tagPolicy": {
+              "type": "object",
+              "required": ["sourceWorkflow", "sourceWorkflowIdentity"],
+              "properties": {
+                "allowCreation": {"const": true},
+                "sourceWorkflow": {"const": ".github/workflows/release.yml"},
+                "sourceWorkflowIdentity": {}
+              }
+            },
+            "environments": {
+              "type": "array",
+              "minItems": 5,
+              "maxItems": 5,
+              "allOf": [
+                {"$ref": "#/$defs/containsGovernanceCheckVerdictEnvironment"},
+                {"$ref": "#/$defs/containsNpmReleaseEnvironment"},
+                {"$ref": "#/$defs/containsReleaseFinalizeEnvironment"},
+                {"$ref": "#/$defs/containsGovernanceMirrorEnvironment"},
+                {"$ref": "#/$defs/containsGovernanceExternalLedgerEnvironment"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "consumerProfile": {
+      "allOf": [
+        {"$ref": "#/$defs/profile"},
+        {
+          "type": "object",
+          "properties": {
+            "actionsWorkflowPermissions": {
+              "type": "object",
+              "properties": {
+                "default_workflow_permissions": {"const": "read"},
+                "can_approve_pull_request_reviews": {"const": false}
+              }
+            },
+            "immutableReleases": {"const": false},
+            "requiredChecks": {
+              "type": "array",
+              "minItems": 1,
+              "allOf": [{"$ref": "#/$defs/containsImmutableConsumerSnapshotCheck"}]
+            },
+            "tagPolicy": {
+              "type": "object",
+              "properties": {"allowCreation": {"const": false}},
+              "not": {
+                "anyOf": [
+                  {
+                    "properties": {"sourceWorkflow": {}},
+                    "required": ["sourceWorkflow"]
+                  },
+                  {
+                    "properties": {"sourceWorkflowIdentity": {}},
+                    "required": ["sourceWorkflowIdentity"]
+                  }
+                ]
+              }
+            },
+            "environments": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "allOf": [
+                {"$ref": "#/$defs/containsGovernanceCheckVerdictEnvironment"},
+                {"$ref": "#/$defs/containsGovernanceUpgradeEnvironment"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "containsImmutableConsumerSnapshotCheck": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "required": ["context", "integration", "trustSource", "workflow", "requiredEvents", "baseTrusted"],
+        "properties": {
+          "context": {"const": "Immutable consumer snapshot"},
+          "integration": {"const": "governanceCheckApp"},
+          "trustSource": {"const": "protected-base-workflow"},
+          "workflow": {"const": ".github/workflows/governance-anchor.yml"},
+          "requiredEvents": {"const": ["pull_request_target"]},
+          "baseTrusted": {"const": true}
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsAuthorityVerifyCheck": {
+      "type": "array",
+      "contains": {"$ref": "#/$defs/authorityVerifyCheckIdentity"},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsAuthorityA11yCheck": {
+      "type": "array",
+      "contains": {"$ref": "#/$defs/authorityA11yCheckIdentity"},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsAuthorityBundleSizeCheck": {
+      "type": "array",
+      "contains": {"$ref": "#/$defs/authorityBundleSizeCheckIdentity"},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsAuthorityVisualRegressionCheck": {
+      "type": "array",
+      "contains": {"$ref": "#/$defs/authorityVisualRegressionCheckIdentity"},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsAuthorityCompositionFidelityCheck": {
+      "type": "array",
+      "contains": {"$ref": "#/$defs/authorityCompositionFidelityCheckIdentity"},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsAuthorityPackagingCheck": {
+      "type": "array",
+      "contains": {"$ref": "#/$defs/authorityPackagingCheckIdentity"},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "authorityVerifyCheckIdentity": {
+      "type": "object",
+      "required": ["context", "integration", "trustSource", "workflow", "requiredEvents"],
+      "properties": {
+        "context": {"const": "Verify(tsc + tests + compile + build)"},
+        "integration": {"const": "githubActions"},
+        "trustSource": {"const": "repository-workflow"},
+        "workflow": {"const": ".github/workflows/ci.yml"},
+        "requiredEvents": {"const": ["pull_request"]}
+      }
+    },
+    "authorityA11yCheckIdentity": {
+      "type": "object",
+      "required": ["context", "integration", "trustSource", "workflow", "requiredEvents"],
+      "properties": {
+        "context": {"const": "a11y(axe-core WCAG 2A+AA, Dim 49)"},
+        "integration": {"const": "githubActions"},
+        "trustSource": {"const": "repository-workflow"},
+        "workflow": {"const": ".github/workflows/a11y-and-size.yml"},
+        "requiredEvents": {"const": ["pull_request"]}
+      }
+    },
+    "authorityBundleSizeCheckIdentity": {
+      "type": "object",
+      "required": ["context", "integration", "trustSource", "workflow", "requiredEvents"],
+      "properties": {
+        "context": {"const": "Bundle size budget(Dim 50)"},
+        "integration": {"const": "githubActions"},
+        "trustSource": {"const": "repository-workflow"},
+        "workflow": {"const": ".github/workflows/a11y-and-size.yml"},
+        "requiredEvents": {"const": ["pull_request"]}
+      }
+    },
+    "authorityVisualRegressionCheckIdentity": {
+      "type": "object",
+      "required": ["context", "integration", "trustSource", "workflow", "requiredEvents"],
+      "properties": {
+        "context": {"const": "Visual Regression Diff(curated scenarios pixel match)"},
+        "integration": {"const": "githubActions"},
+        "trustSource": {"const": "repository-workflow"},
+        "workflow": {"const": ".github/workflows/visual-regression.yml"},
+        "requiredEvents": {"const": ["pull_request"]}
+      }
+    },
+    "authorityCompositionFidelityCheckIdentity": {
+      "type": "object",
+      "required": ["context", "integration", "trustSource", "workflow", "requiredEvents"],
+      "properties": {
+        "context": {"const": "Composition Fidelity Diff"},
+        "integration": {"const": "githubActions"},
+        "trustSource": {"const": "repository-workflow"},
+        "workflow": {"const": ".github/workflows/composition-fidelity.yml"},
+        "requiredEvents": {"const": ["pull_request"]}
+      }
+    },
+    "authorityPackagingCheckIdentity": {
+      "type": "object",
+      "required": ["context", "integration", "trustSource", "workflow", "requiredEvents"],
+      "properties": {
+        "context": {"const": "Packaging integrity(dims 84/85/86/88 light checks)"},
+        "integration": {"const": "githubActions"},
+        "trustSource": {"const": "repository-workflow"},
+        "workflow": {"const": ".github/workflows/packaging-canary.yml"},
+        "requiredEvents": {"const": ["pull_request"]}
+      }
+    },
+    "containsGovernanceCheckVerdictEnvironment": {
+      "type": "array",
+      "contains": {"$ref": "#/$defs/governanceCheckVerdictEnvironmentIdentity"},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsNpmReleaseEnvironment": {
+      "type": "array",
+      "contains": {"$ref": "#/$defs/npmReleaseEnvironmentIdentity"},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsReleaseFinalizeEnvironment": {
+      "type": "array",
+      "contains": {"$ref": "#/$defs/releaseFinalizeEnvironmentIdentity"},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsGovernanceMirrorEnvironment": {
+      "type": "array",
+      "contains": {"$ref": "#/$defs/governanceMirrorEnvironmentIdentity"},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsGovernanceUpgradeEnvironment": {
+      "type": "array",
+      "contains": {"$ref": "#/$defs/governanceUpgradeEnvironmentIdentity"},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsGovernanceExternalLedgerEnvironment": {
+      "type": "array",
+      "contains": {"$ref": "#/$defs/governanceExternalLedgerEnvironmentIdentity"},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "governanceCheckVerdictEnvironmentIdentity": {
+      "type": "object",
+      "required": ["name", "workflow", "credentialIntegration", "rollout", "waitTimer", "preventSelfReview", "reviewers", "deploymentBranchPolicy"],
+      "properties": {
+        "name": {"const": "governance-check-verdict"},
+        "workflow": {"const": ".github/workflows/governance-anchor.yml"},
+        "credentialIntegration": {"const": "governanceCheckApp"},
+        "rollout": {"const": "always"},
+        "waitTimer": {"const": 0},
+        "preventSelfReview": {"const": false},
+        "reviewers": {"const": []},
+        "deploymentBranchPolicy": {"const": {"protectedBranches": true, "customBranchPolicies": false}}
+      }
+    },
+    "npmReleaseEnvironmentIdentity": {
+      "type": "object",
+      "required": ["name", "workflow", "rollout", "waitTimer", "preventSelfReview", "reviewers", "deploymentBranchPolicy"],
+      "properties": {
+        "name": {"const": "npm-release"},
+        "workflow": {"const": ".github/workflows/release.yml"},
+        "rollout": {"const": "on-promotion"},
+        "waitTimer": {"const": 0},
+        "preventSelfReview": {"const": false},
+        "reviewers": {"const": []},
+        "deploymentBranchPolicy": {"const": {"protectedBranches": true, "customBranchPolicies": false}}
+      },
+      "not": {
+        "anyOf": [
+          {
+            "properties": {"credentialIntegration": {}},
+            "required": ["credentialIntegration"]
+          },
+          {
+            "properties": {"independentReviewRequired": {}},
+            "required": ["independentReviewRequired"]
+          }
+        ]
+      }
+    },
+    "releaseFinalizeEnvironmentIdentity": {
+      "type": "object",
+      "required": ["name", "workflow", "rollout", "waitTimer", "preventSelfReview", "reviewers", "deploymentBranchPolicy"],
+      "properties": {
+        "name": {"const": "release-finalize"},
+        "workflow": {"const": ".github/workflows/release-finalize.yml"},
+        "rollout": {"const": "on-promotion"},
+        "waitTimer": {"const": 0},
+        "preventSelfReview": {"const": false},
+        "reviewers": {"const": []},
+        "deploymentBranchPolicy": {"const": {"protectedBranches": true, "customBranchPolicies": false}}
+      },
+      "not": {
+        "anyOf": [
+          {
+            "properties": {"credentialIntegration": {}},
+            "required": ["credentialIntegration"]
+          },
+          {
+            "properties": {"independentReviewRequired": {}},
+            "required": ["independentReviewRequired"]
+          }
+        ]
+      }
+    },
+    "governanceMirrorEnvironmentIdentity": {
+      "type": "object",
+      "required": ["name", "workflow", "credentialIntegration", "rollout", "waitTimer", "preventSelfReview", "reviewers", "deploymentBranchPolicy"],
+      "properties": {
+        "name": {"const": "governance-mirror"},
+        "workflow": {"const": ".github/workflows/mirror-to-published-template.yml"},
+        "credentialIntegration": {"const": "governanceWriterApp"},
+        "rollout": {"const": "on-promotion"},
+        "waitTimer": {"const": 0},
+        "preventSelfReview": {"const": false},
+        "reviewers": {"const": []},
+        "deploymentBranchPolicy": {"const": {"protectedBranches": true, "customBranchPolicies": false}}
+      }
+    },
+    "governanceUpgradeEnvironmentIdentity": {
+      "type": "object",
+      "required": ["name", "workflow", "credentialIntegration", "rollout", "waitTimer", "preventSelfReview", "reviewers", "deploymentBranchPolicy"],
+      "properties": {
+        "name": {"const": "governance-upgrade"},
+        "workflow": {"const": ".github/workflows/sync-design-system.yml"},
+        "credentialIntegration": {"const": "governanceWriterApp"},
+        "rollout": {"const": "on-promotion"},
+        "waitTimer": {"const": 0},
+        "preventSelfReview": {"const": false},
+        "reviewers": {"const": []},
+        "deploymentBranchPolicy": {"const": {"protectedBranches": true, "customBranchPolicies": false}}
+      }
+    },
+    "governanceExternalLedgerEnvironmentIdentity": {
+      "type": "object",
+      "required": ["name", "workflow", "credentialIntegration", "rollout", "waitTimer", "preventSelfReview", "reviewers", "deploymentBranchPolicy"],
+      "properties": {
+        "name": {"const": "governance-external-ledger"},
+        "workflow": {"const": ".github/workflows/external-ledger-writer.yml"},
+        "credentialIntegration": {"const": "governanceWriterApp"},
+        "rollout": {"const": "always"},
+        "waitTimer": {"const": 0},
+        "preventSelfReview": {"const": false},
+        "reviewers": {"const": []},
+        "deploymentBranchPolicy": {"const": {"protectedBranches": true, "customBranchPolicies": false}}
+      }
+    },
+    "requiredCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["context", "integration", "trustSource", "requiredEvents", "forbidCandidateControlledSkip", "requireUnconditionalPullRequest"],
+      "properties": {
+        "context": {"type": "string", "minLength": 1},
+        "integration": {"type": "string", "minLength": 1},
+        "trustSource": {"enum": ["repository-workflow", "protected-base-workflow", "external-github-app"]},
+        "workflow": {"type": "string", "pattern": "^\\.github/workflows/.+\\.ya?ml$"},
+        "workflowIdentity": {"$ref": "#/$defs/workflowIdentity"},
+        "requiredEvents": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["pull_request", "pull_request_target"]}},
+        "forbidCandidateControlledSkip": {"const": true},
+        "requireUnconditionalPullRequest": {"const": true},
+        "baseTrusted": {"type": "boolean"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"trustSource": {"const": "repository-workflow"}}},
+          "then": {
+            "properties": {
+              "workflow": {},
+              "workflowIdentity": {}
+            },
+            "required": ["workflow", "workflowIdentity"]
+          }
+        },
+        {
+          "if": {"properties": {"trustSource": {"const": "external-github-app"}}},
+          "then": {"required": ["baseTrusted"], "properties": {"baseTrusted": {"const": true}}}
+        },
+        {
+          "if": {"properties": {"trustSource": {"const": "protected-base-workflow"}}},
+          "then": {
+            "required": ["workflow", "workflowIdentity", "baseTrusted"],
+            "properties": {
+              "workflow": {},
+              "workflowIdentity": {},
+              "baseTrusted": {"const": true}
+            }
+          }
+        }
+      ]
+    },
+    "ruleset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "target", "rollout", "enforcement", "conditions", "bypass_actors", "rules"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "target": {"enum": ["branch", "tag"]},
+        "rollout": {"$ref": "#/$defs/rollout"},
+        "enforcement": {"const": "active"},
+        "conditions": {"$ref": "#/$defs/refNameCondition"},
+        "bypass_actors": {"type": "array", "maxItems": 0},
+        "rules": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/rulesetRule"}}
+      }
+    },
+    "refNameCondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref_name"],
+      "properties": {
+        "ref_name": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["include", "exclude"],
+          "properties": {
+            "include": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "exclude": {
+              "type": "array",
+              "maxItems": 0
+            }
+          }
+        }
+      }
+    },
+    "rulesetRule": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "enum": [
+                "creation",
+                "deletion",
+                "non_fast_forward",
+                "required_linear_history",
+                "required_signatures",
+                "update"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "parameters"],
+          "properties": {
+            "type": {"const": "pull_request"},
+            "parameters": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "dismiss_stale_reviews_on_push",
+                "require_code_owner_review",
+                "require_last_push_approval",
+                "required_approving_review_count",
+                "required_review_thread_resolution"
+              ],
+              "properties": {
+                "dismiss_stale_reviews_on_push": {"const": false},
+                "require_code_owner_review": {"const": false},
+                "require_last_push_approval": {"const": false},
+                "required_approving_review_count": {"const": 0},
+                "required_review_thread_resolution": {"const": true}
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "parameters"],
+          "properties": {
+            "type": {"const": "required_status_checks"},
+            "parameters": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["fromProfile", "strict_required_status_checks_policy"],
+              "properties": {
+                "fromProfile": {"const": true},
+                "strict_required_status_checks_policy": {"const": true}
+              }
+            }
+          }
+        }
+      ]
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "workflow", "workflowIdentity", "rollout", "waitTimer", "preventSelfReview", "reviewers", "deploymentBranchPolicy"],
+      "properties": {
+        "name": {"enum": ["npm-release", "release-finalize", "governance-check-verdict", "governance-mirror", "governance-upgrade", "governance-external-ledger"]},
+        "workflow": {"type": "string", "pattern": "^\\.github/workflows/.+\\.ya?ml$"},
+        "workflowIdentity": {"$ref": "#/$defs/workflowIdentity"},
+        "credentialIntegration": {"type": "string", "minLength": 1},
+        "rollout": {"$ref": "#/$defs/rollout"},
+        "waitTimer": {"type": "integer", "minimum": 0, "maximum": 43200},
+        "preventSelfReview": {"type": "boolean"},
+        "independentReviewRequired": {"type": "boolean"},
+        "reviewers": {"type": "array", "items": {"type": "object"}},
+        "deploymentBranchPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["protectedBranches", "customBranchPolicies"],
+          "properties": {"protectedBranches": {"type": "boolean"}, "customBranchPolicies": {"type": "boolean"}}
+        }
+      }
+    },
+    "workflowIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contentSha256", "gitBlobSha", "semanticSha256"],
+      "properties": {
+        "contentSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "gitBlobSha": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "semanticSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "semanticVersion": {"type": "integer", "enum": [1, 2]}
+      }
+    }
+  }
+}

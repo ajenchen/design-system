@@ -2,7 +2,7 @@
 /**
  * composition-fidelity-visual-diff.mjs
  *
- * Composition fidelity(2026-05-27 初版 / 2026-06-02 conformance-model 修正,SSOT: .claude/references/composition-fidelity.md)
+ * Composition fidelity(2026-05-27 初版 / 2026-06-02 conformance-model 修正,SSOT: packages/design-system/ds-canonical/references/composition-fidelity.md)
  * Consumer 對 DS 用法正確性「主要由靜態 conformance 驗」(對齊 Polaris/Atlassian/Carbon lint);本 script 的 pixel/DOM
  * identity diff 是「明確 opt-in」(只比標 @composition-fidelity-mode 的 mapping,用於忠實複製 replica / same-story 回歸)。
  * 單獨 @story-baseline = conformance 意圖,不做 identity diff。禁拿產品範本(內容刻意不同)pixel 比 DS showcase(反 pattern)。
@@ -13,7 +13,7 @@
  *   node scripts/composition-fidelity-visual-diff.mjs \
  *     --ds-static=packages/design-system/storybook-static \
  *     --consumer-static=/path/to/product-workspace/storybook-static \
- *     --out=.claude/snapshots/composition-fidelity \
+ *     --out=visual/composition-fidelity-custom \
  *     --threshold-pct=0.5
  *
  * Or against live servers:
@@ -28,9 +28,14 @@ import { chromium } from 'playwright'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
 import http from 'node:http'
-import { mkdirSync, existsSync, readFileSync, statSync, writeFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, statSync, writeFileSync, readdirSync } from 'node:fs'
 import { join, dirname, extname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  ensureRuntimeEvidenceDirectory,
+  ensureRuntimeEvidenceRoot,
+  prepareRuntimeEvidenceFile,
+} from './lib/governance-runtime-evidence.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -45,17 +50,21 @@ const args = Object.fromEntries(process.argv.slice(2).map(a => {
 // G4 0.5% pixel threshold too lax → per-mapping @composition-fidelity-threshold: override
 // G5 no viewport/theme/density normalize → force common before screenshot
 const THRESHOLD_PCT = Number(args['threshold-pct'] ?? 0.5)
-const OUT = args.out || join(ROOT, '.claude/snapshots/composition-fidelity')
+// Runtime screenshots/reports are mutable evidence, never provider discovery state.
+// A custom --out remains supported only when it stays below the Git-owned evidence root.
+const OUT = args.out
+  ? ensureRuntimeEvidenceRoot({ repoRoot: ROOT, explicitRoot: args.out })
+  : ensureRuntimeEvidenceDirectory({ repoRoot: ROOT, relativePath: 'visual/composition-fidelity' })
 const CONSUMER_ROOT = args['consumer-root'] || '/tmp/product-workspace'
 const VIEWPORT_W = Number(args['viewport-w'] ?? 1280)
 const VIEWPORT_H = Number(args['viewport-h'] ?? 720)
 const FORCE_THEME = args['force-theme'] ?? 'light'
 const FORCE_DENSITY = args['force-density'] ?? 'md'
 
-mkdirSync(OUT, { recursive: true })
-mkdirSync(join(OUT, 'baseline'), { recursive: true })
-mkdirSync(join(OUT, 'consumer'), { recursive: true })
-mkdirSync(join(OUT, 'diff'), { recursive: true })
+for (const relativePath of ['baseline', 'consumer', 'diff']) {
+  ensureRuntimeEvidenceDirectory({ repoRoot: ROOT, explicitRoot: OUT, relativePath })
+}
+const evidenceFile = (relativePath) => prepareRuntimeEvidenceFile({ repoRoot: ROOT, explicitRoot: OUT, relativePath })
 
 // ── 1. Walk consumer source tree for @story-baseline markers ──
 // G3 fix: glob *.stories.tsx + *.tsx + App.tsx (per-line, not just first match)
@@ -104,6 +113,8 @@ const dsStaticArg = args['ds-static'] || join(ROOT, 'storybook-static')
 const dsIndex = loadStorybookIndex(dsStaticArg)
 
 const mapping = []
+const invalidMappingMarkers = []
+let modeMarkerCount = 0
 const sources = walkSources(CONSUMER_ROOT)
 for (const file of sources) {
   const src = readFileSync(file, 'utf-8')
@@ -116,7 +127,7 @@ for (const file of sources) {
     const tm = lines[i].match(/@composition-fidelity-threshold:\s*([\d.]+)/)
     if (tm) currentThreshold = Number(tm[1])
     const mm = lines[i].match(/@composition-fidelity-mode:\s*(pixel|shell-only|structural)/)
-    if (mm) currentMode = mm[1]
+    if (mm) { currentMode = mm[1]; modeMarkerCount += 1 }
     const ms = lines[i].match(/@composition-fidelity-mask:\s*(.+)/)
     if (ms) currentMaskSelector = ms[1].trim()
     const bm = lines[i].match(/@story-baseline:\s*([^\n\r]+)/)
@@ -127,7 +138,10 @@ for (const file of sources) {
     //   @qijenchen/design-system/components/Button/button.stories.tsx#Default
     //   @qijenchen/design-system/patterns/header-canonical/...
     const pathMatch = baselineRef.match(/(components|patterns|tokens)\/([A-Za-z][a-zA-Z0-9-]+)\/[^#]+#(\w+)/)
-    if (!pathMatch) continue
+    if (!pathMatch) {
+      if (currentMode !== null) invalidMappingMarkers.push(`${relative(CONSUMER_ROOT, file)}:${i + 1}: invalid @story-baseline ${baselineRef}`)
+      continue
+    }
     const tier = pathMatch[1]  // components / patterns / tokens
     const componentLower = pathMatch[2].toLowerCase().replace(/-/g, '')
     const exportName = pathMatch[3]
@@ -182,6 +196,17 @@ for (const file of sources) {
 //   (用於忠實複製 replica / same-story 跨版本回歸)。對內容刻意不同的 template 不再 false-positive。
 const conformanceOnly = mapping.filter((m) => m.mode === null)
 const identityMappings = mapping.filter((m) => m.mode !== null)
+const requireMappings = args['require-mappings'] === true || args['require-mappings'] === 'true'
+
+if (requireMappings && invalidMappingMarkers.length) {
+  console.error('❌ Invalid composition-fidelity mapping marker(s):')
+  invalidMappingMarkers.forEach((item) => console.error(`   - ${item}`))
+  process.exit(2)
+}
+if (requireMappings && (modeMarkerCount === 0 || identityMappings.length === 0)) {
+  console.error(`❌ Required composition-fidelity gate is vacuous(mode markers=${modeMarkerCount}, executable mappings=${identityMappings.length}).`)
+  process.exit(2)
+}
 
 if (conformanceOnly.length) {
   console.log(`ℹ️  ${conformanceOnly.length} 個 @story-baseline = conformance-only(無 @composition-fidelity-mode)→ 由靜態 conformance hook 驗,不做 pixel/DOM identity diff:`)
@@ -367,13 +392,13 @@ for (const m of identityMappings) {
     await page.waitForTimeout(800)
     baselineDom = await domSignature(page)  // v4 dual-track: capture DOM BEFORE mask injection
     baselineBuf = await snapshot(page)
-    writeFileSync(join(OUT, 'baseline', `${fileSafe}.png`), baselineBuf)
+    writeFileSync(evidenceFile(`baseline/${fileSafe}.png`), baselineBuf)
 
     await page.goto(`${consumerUrl}/iframe.html?id=${encodeURIComponent(m.consumerStoryId)}&viewMode=story&globals=theme:${FORCE_THEME};density:${FORCE_DENSITY}`, { waitUntil: 'domcontentloaded', timeout: 20_000 })
     await page.waitForTimeout(800)
     consumerDom = await domSignature(page)  // v4 dual-track
     consumerBuf = await snapshot(page)
-    writeFileSync(join(OUT, 'consumer', `${fileSafe}.png`), consumerBuf)
+    writeFileSync(evidenceFile(`consumer/${fileSafe}.png`), consumerBuf)
   } catch (e) {
     results.push({ ...m, status: 'TIMEOUT', error: e.message.slice(0, 200) })
     failCount++
@@ -396,7 +421,7 @@ for (const m of identityMappings) {
   // G4 fix: per-mapping threshold + perceptual threshold for typography regions
   const pmThreshold = m.perceptual ? 0.2 : 0.1  // 0.2 = more lenient for anti-aliased text
   const diffPx = pixelmatch(png1.data, png2.data, diff.data, width, height, { threshold: pmThreshold, includeAA: false })
-  writeFileSync(join(OUT, 'diff', `${fileSafe}.png`), PNG.sync.write(diff))
+  writeFileSync(evidenceFile(`diff/${fileSafe}.png`), PNG.sync.write(diff))
 
   const totalPx = width * height
   const diffPct = (diffPx / totalPx) * 100
@@ -428,7 +453,7 @@ for (const m of identityMappings) {
       sample: dd.sample,
       threshold: domThreshold,
     }
-    writeFileSync(join(OUT, 'diff', `${fileSafe}.dom.json`), JSON.stringify({ baselineDom, consumerDom, diff: dd }, null, 2))
+    writeFileSync(evidenceFile(`diff/${fileSafe}.dom.json`), JSON.stringify({ baselineDom, consumerDom, diff: dd }, null, 2))
   }
 
   // Overall verdict: UNION fail (any layer fail = overall fail), per AI-self-audit-unreliable canonical
@@ -453,10 +478,11 @@ dsServer?.close()
 consumerServer?.close()
 
 const report = { generatedAt: new Date().toISOString(), threshold: THRESHOLD_PCT, mapping: identityMappings, conformanceOnly, results, summary: { total: results.length, fail: failCount, pass: results.length - failCount } }
-writeFileSync(join(OUT, 'report.json'), JSON.stringify(report, null, 2))
+const reportPath = evidenceFile('report.json')
+writeFileSync(reportPath, JSON.stringify(report, null, 2))
 
 console.log('\n=== Composition fidelity report ===')
 console.log(JSON.stringify(report.summary, null, 2))
-console.log(`Full report: ${join(OUT, 'report.json')}`)
+console.log(`Full report: ${reportPath}`)
 
 process.exit(failCount === 0 ? 0 : 1)

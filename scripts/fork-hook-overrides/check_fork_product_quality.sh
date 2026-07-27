@@ -20,12 +20,7 @@ FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
 echo "$FILE" | grep -qE '(^|/)apps/.+\.(tsx|ts|css)$' || exit 0
 echo "$FILE" | grep -qE 'node_modules/|packages/design-system/' && exit 0
 
-# 一個 session 只提示一次(避免每次 edit 都吵)
-MARK="${TMPDIR:-/tmp}/.ds-fork-quality-hinted-${CLAUDE_SESSION_ID:-session}"
-[ -f "$MARK" ] && exit 0
-: > "$MARK" 2>/dev/null || true
-
-cat >&2 << 'EOF'
+MESSAGE=$(cat << 'EOF'
 💡 DS 產品開發提示(soft,不阻擋):你正在編輯產品 code(apps/**)。
    為確保世界級且一致的產出,改動前請:
    - 優先消費既有 DS 元件(import from "@qijenchen/design-system"),勿手刻 raw HTML / 重造已有元件
@@ -33,4 +28,11 @@ cat >&2 << 'EOF'
    - 用 design token(間距/色值/字級/圓角/陰影),勿硬寫
    (其餘 fork 治理 hook 會機械把關 primitive 誤用 / 硬寫間距 / opacity token 等)
 EOF
+)
+jq -nc --arg message "$MESSAGE" '{
+  governanceContext: {
+    hookEventName: "PreToolUse",
+    message: $message
+  }
+}'
 exit 0

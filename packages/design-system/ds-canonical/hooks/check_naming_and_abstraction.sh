@@ -38,9 +38,10 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '
   ([.tool_input.edits[]? | .new_string] | join("\n"))
 ' 2>/dev/null || echo "")
 
-[ -z "${NEW_CONTENT//[[:space:]]/}" ] && exit 0
+grep -q '[^[:space:]]' <<<"$NEW_CONTENT" || exit 0
 
 WORST=0
+CONTEXT_MESSAGE=""
 record_worst() { local lvl=$1; [ "$lvl" -gt "$WORST" ] && WORST=$lvl; }
 
 # ── D.1 premature abstraction(Write only,新元件 BLOCK)──────────────────────
@@ -63,7 +64,8 @@ if [ "$TOOL" = "Write" ]; then
         done
         if [ -n "$SUFFIX" ]; then
           # Allowlist:檔頭 10 行內 rationale comment
-          if ! echo "$NEW_CONTENT" | head -10 | grep -qE '//\s*@separate-component-rationale:|^\s*#?\s*@separate-component-rationale:'; then
+          FIRST_TEN=$(sed -n '1,10p' <<<"$NEW_CONTENT")
+          if ! grep -qE '//\s*@separate-component-rationale:|^\s*#?\s*@separate-component-rationale:' <<<"$FIRST_TEN"; then
             cat >&2 <<EOF
 
 ┄┄┄ D.1 check_naming_and_abstraction — premature abstraction BLOCKER ┄┄┄
@@ -95,9 +97,9 @@ fi
 # ── D.2 internal namespace consistency(stories sibling check,BLOCK)──────────
 case "$FILE_PATH" in
   *.stories.tsx)
-    NEW_NS=$(printf '%s' "$NEW_CONTENT" | grep -oE "title:[[:space:]]*['\"]Design System/(Components|Internal)/" | head -1 | grep -oE "(Components|Internal)" || true)
+    NEW_NS=$(grep -m 1 -oE "title:[[:space:]]*['\"]Design System/(Components|Internal)/" <<<"$NEW_CONTENT" | grep -oE "(Components|Internal)" || true)
     if [ -z "$NEW_NS" ] && [ -f "$FILE_PATH" ]; then
-      NEW_NS=$(grep -oE "title:[[:space:]]*['\"]Design System/(Components|Internal)/" "$FILE_PATH" 2>/dev/null | head -1 | grep -oE "(Components|Internal)" || true)
+      NEW_NS=$(grep -m 1 -oE "title:[[:space:]]*['\"]Design System/(Components|Internal)/" "$FILE_PATH" 2>/dev/null | grep -oE "(Components|Internal)" || true)
     fi
     if [ -n "$NEW_NS" ]; then
       DIR=$(dirname "$FILE_PATH")
@@ -105,7 +107,7 @@ case "$FILE_PATH" in
       while IFS= read -r SIB; do
         [ "$SIB" = "$FILE_PATH" ] && continue
         [ -f "$SIB" ] || continue
-        SIB_NS=$(grep -oE "title:[[:space:]]*['\"]Design System/(Components|Internal)/" "$SIB" 2>/dev/null | head -1 | grep -oE "(Components|Internal)" || true)
+        SIB_NS=$(grep -m 1 -oE "title:[[:space:]]*['\"]Design System/(Components|Internal)/" "$SIB" 2>/dev/null | grep -oE "(Components|Internal)" || true)
         if [ -n "$SIB_NS" ] && [ "$SIB_NS" != "$NEW_NS" ]; then
           INCONSISTENT="${INCONSISTENT}  - ${SIB} → ${SIB_NS}"$'\n'
         fi
@@ -120,7 +122,7 @@ Sibling stories 不一致:
 ${INCONSISTENT}
 3 stories(展示 / anatomy / principles)title namespace 必全 Components/ 或全 Internal/。
 
-決策:跑 CLAUDE.md「Internal vs Components 3-test」→ 把全 3 檔統一。
+決策:跑 packages/design-system/ds-canonical/rules/story-rules.md「Internal vs Components 三 test」→ 把全 3 檔統一。
 
 EOF
         record_worst 2
@@ -135,10 +137,10 @@ case "$FILE_PATH" in
     case "$FILE_PATH" in
       */components/Tag/*|*/components/Avatar/*|*/components/Chart/*|*/tokens/*) ;; # codified primitive-consumer skip
       *)
-        if ! echo "$NEW_CONTENT" | grep -q 'primitive-color-allow-blanket'; then
+        if ! grep -q 'primitive-color-allow-blanket' <<<"$NEW_CONTENT"; then
           VIOLATIONS_D3=$(printf '%s' "$NEW_CONTENT" | grep -nE 'var\(--color-[a-z][a-z-]*-[0-9]{1,2}(-opaque)?\)' | grep -v 'primitive-color-allow' || true)
           if [ -n "$VIOLATIONS_D3" ]; then
-            cat >&2 <<EOF
+            CONTEXT_MESSAGE=$(cat <<EOF
 
 ┄┄┄ D.3 check_naming_and_abstraction — primitive color var WARN ┄┄┄
 
@@ -155,6 +157,7 @@ ${VIOLATIONS_D3}
 詳 tokens/color/color.spec.md「架構流派定位」+「Primitive 色票與 Tag / Avatar 的消費」。
 
 EOF
+)
           fi
         fi
         ;;
@@ -162,4 +165,12 @@ EOF
     ;;
 esac
 
-exit $WORST
+if [ "$WORST" -ge 2 ]; then
+  [ -n "$CONTEXT_MESSAGE" ] && printf '%s\n' "$CONTEXT_MESSAGE" >&2
+  exit 2
+fi
+if [ -n "$CONTEXT_MESSAGE" ]; then
+  jq -nc --arg ctx "$CONTEXT_MESSAGE" \
+    '{governanceContext:{hookEventName:"PreToolUse",message:$ctx}}'
+fi
+exit 0

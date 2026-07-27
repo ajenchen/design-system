@@ -29,7 +29,8 @@ esac
 [ ! -f "$FILE_PATH" ] && exit 0
 
 # Allowlist
-head -3 "$FILE_PATH" | grep -qE '//[[:space:]]*@pixel-quantified-allow:' && exit 0
+FILE_HEAD3=$(sed -n '1,3p' "$FILE_PATH")
+grep -qE '//[[:space:]]*@pixel-quantified-allow:' <<<"$FILE_HEAD3" && exit 0
 
 # Count getAttribute calls vs getBoundingClientRect / offsetTop / offsetHeight calls
 # 2026-05-23 bug fix:`grep -c ... 2>/dev/null || echo 0` 當 zero match 時 grep exit 1 + fallback echo,
@@ -49,6 +50,6 @@ ${FILE_PATH}:
     加 numeric pixel measurement(rect.top / .left / .height)真實 verify 視覺,
     或檔首加 // @pixel-quantified-allow: <reason>(structural-only audit 例如 schema check)。"
   jq -n --arg ctx "$CTX" '{
-    hookSpecificOutput: { hookEventName: "PostToolUse", additionalContext: $ctx }
+    governanceContext: { hookEventName: "PostToolUse", message: $ctx }
   }'
 fi

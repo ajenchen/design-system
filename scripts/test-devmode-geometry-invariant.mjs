@@ -1,136 +1,139 @@
 #!/usr/bin/env node
-/**
- * test-devmode-geometry-invariant — Storybook addon Top 3 #1(2026-05-12 codex Q1)
- *
- * 跨 DPR matrix(1 / 1.25 / 2)assertion:**overlay outline rect ≈ target rect within 1 CSS px**。
- * 對齊 Chrome DevTools cross-platform regression coverage canonical(Material X DataGrid visual
- * regression / AG Grid playwright pixel snapshot)。
- *
- * 跑法:
- *   1. `npm run build-storybook`(若未 build)
- *   2. `node scripts/test-devmode-geometry-invariant.mjs`
- *
- * Exit:0 = all DPR pass within 1 px;1 = any DPR fail。
- */
 
-import { chromium } from 'playwright'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { existsSync } from 'node:fs'
+import { build } from 'esbuild'
+import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const ROOT = join(__dirname, '..')
-const STATIC = join(ROOT, 'storybook-static')
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
+const CANONICAL_UTILS = join(ROOT, 'packages/storybook-config/addons/ds-devmode/utils')
+const LEGACY_LOCAL_ADDON = join(ROOT, '.storybook/addons/ds-devmode')
+const STORYBOOK_MAIN = join(ROOT, '.storybook/main.ts')
+const SHARED_ADDONS_PRESET = join(ROOT, 'packages/storybook-config/addons-preset.ts')
+const OVERLAY_SOURCE = join(CANONICAL_UTILS, 'overlay.ts')
+const DIAGNOSTIC_SOURCE = join(CANONICAL_UTILS, 'geometry-diagnostic.ts')
+const DPRS = [1, 1.25, 2]
+const TOLERANCE_PX = 1
 
-if (!existsSync(STATIC)) {
-  console.error('[geometry-invariant] storybook-static missing — run `npm run build-storybook` first')
-  process.exit(2)
+if (existsSync(LEGACY_LOCAL_ADDON)) {
+  throw new Error('[geometry-invariant] legacy repo-local ds-devmode addon must be absent')
+}
+const storybookMain = readFileSync(STORYBOOK_MAIN, 'utf8')
+const sharedAddonSpreads = storybookMain.match(/\.\.\.sharedAddons\b/g) ?? []
+if (sharedAddonSpreads.length !== 1) {
+  throw new Error(`[geometry-invariant] DS Storybook must consume the shared addon preset exactly once; found ${sharedAddonSpreads.length}`)
+}
+if (storybookMain.includes('./addons/ds-devmode/preset')) {
+  throw new Error('[geometry-invariant] DS Storybook must not register a repo-local ds-devmode preset')
+}
+const directCanonicalRegistrations = storybookMain.match(
+  /['"]@qijenchen\/storybook-config\/addons\/ds-devmode\/preset['"]/g,
+) ?? []
+if (directCanonicalRegistrations.length !== 0) {
+  throw new Error(`[geometry-invariant] DS Storybook must not duplicate the canonical ds-devmode registration outside sharedAddons; found ${directCanonicalRegistrations.length}`)
+}
+const sharedAddonsPreset = readFileSync(SHARED_ADDONS_PRESET, 'utf8')
+const canonicalPresetRegistrations = sharedAddonsPreset.match(
+  /['"]@qijenchen\/storybook-config\/addons\/ds-devmode\/preset['"]/g,
+) ?? []
+if (canonicalPresetRegistrations.length !== 1) {
+  throw new Error(`[geometry-invariant] shared preset must register canonical ds-devmode exactly once; found ${canonicalPresetRegistrations.length}`)
 }
 
-// Target story:取一個簡單已知 Button 元件 — addon hover/pin 時 overlay 必對齊。
-const STORY_ID = 'design-system-components-button-展示--variants'
-const TARGET_SELECTOR = 'button'  // 取 iframe 內第一個 button
+const runtime = resolveProvisionedPlaywrightRuntime({ repoRoot: ROOT, environment: process.env })
+if (!runtime) throw new Error('[geometry-invariant] exact Playwright Chromium runtime missing; run `npm run setup:playwright`')
+process.env.PLAYWRIGHT_BROWSERS_PATH = runtime.environmentValue
+const { chromium } = await import('playwright')
 
-const DPRS = [1, 1.25, 2]
-const TOLERANCE_PX = 1  // codex verdict canonical
+const bundle = await build({
+  bundle: true,
+  format: 'iife',
+  platform: 'browser',
+  target: 'es2022',
+  write: false,
+  stdin: {
+    contents: `
+      import { drawOverlay } from ${JSON.stringify(OVERLAY_SOURCE)}
+      import { installGeometryDiagnosticGlobal } from ${JSON.stringify(DIAGNOSTIC_SOURCE)}
+      window.__dsGeometryHarness = { drawOverlay, installGeometryDiagnosticGlobal }
+    `,
+    resolveDir: ROOT,
+    sourcefile: 'devmode-geometry-authority-entry.ts',
+    loader: 'ts',
+  },
+})
+if (bundle.outputFiles.length !== 1) throw new Error('[geometry-invariant] authority bundle output is not closed')
+const authorityBundle = bundle.outputFiles[0].text
 
 let totalFail = 0
 const results = []
+const browser = await chromium.launch({ headless: true })
+try {
+  for (const dpr of DPRS) {
+    const context = await browser.newContext({ deviceScaleFactor: dpr, viewport: { width: 1280, height: 720 } })
+    try {
+      const page = await context.newPage()
+      await page.setContent(`<!doctype html>
+        <html><head><style>
+          html, body { margin: 0; transform: none; zoom: normal; }
+          body { min-height: 720px; }
+          #fixture { position: relative; width: 640px; height: 360px; padding: 24px; border: 1px solid #ccd2d8; }
+          #target { position: absolute; left: 137px; top: 83px; width: 173px; height: 47px; padding: 8px 16px; border: 1px solid #65727f; }
+        </style></head><body><main id="fixture"><button id="target">Geometry target</button></main></body></html>`)
+      await page.addScriptTag({ content: authorityBundle })
+      const diagnostic = await page.evaluate(() => {
+        const harness = window.__dsGeometryHarness
+        const target = document.querySelector('#target')
+        if (!harness || !target) return { error: 'authority harness or target missing' }
+        harness.installGeometryDiagnosticGlobal()
+        harness.drawOverlay({ element: target, mode: 'live', label: 'Geometry target' })
+        return window.__ds_devmode_diagnostic?.('#target') ?? { error: 'geometry diagnostic not installed' }
+      })
+      results.push({ dpr, diagnostic })
 
-for (const dpr of DPRS) {
-  const browser = await chromium.launch({ headless: true })
-  const ctx = await browser.newContext({ deviceScaleFactor: dpr, viewport: { width: 1280, height: 720 } })
-  const page = await ctx.newPage()
-
-  const url = `file://${STATIC}/iframe.html?id=${STORY_ID}&viewMode=story`
-  await page.goto(url, { waitUntil: 'load' })
-  await page.waitForTimeout(300)  // allow addon side-effect + overlay install
-
-  // 2026-05-13 R7 v2(per codex V3 critical fixes):
-  //   v1 bugs:
-  //   (a) addon listen `mouseover` 不是 `mouseenter` → dispatch 錯 event type 不 trigger handler
-  //   (b) default mode='off' → test 必先 toggle 到 'live' mode 才會 paint overlay
-  //   (c) silent pass on no overlay → 改 hard fail(否則 matrix can pass without exercising overlay)
-  //   (d) diagnostic 量 overlay root 不是 outline child → 已在 geometry-diagnostic.ts v2 fix
-  //
-  // v2 Mechanism:
-  //   1. Toggle live mode via addon channel:`window.__STORYBOOK_ADDONS_CHANNEL__.emit('storybook/ds-devmode/toggle', 'live')`
-  //   2. dispatchEvent `mouseover`(對齊 preview.ts:250 listener)
-  //   3. Wait 200ms allow rAF + emit + drawOverlay
-  await page.evaluate((selector) => {
-    // Toggle live mode — Storybook addon channel pattern
-    // (channel global available in iframe via __STORYBOOK_ADDONS_CHANNEL__ if Storybook 7+)
-    const ch = window.__STORYBOOK_ADDONS_CHANNEL__
-    if (ch?.emit) ch.emit('storybook/ds-devmode/toggle', 'live')
-
-    const el = document.querySelector(selector)
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const centerX = rect.left + rect.width / 2
-    const centerY = rect.top + rect.height / 2
-    // codex V3 fix:dispatch `mouseover`(addon listener)+ bubbles required for document-level capture
-    el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, clientX: centerX, clientY: centerY }))
-  }, TARGET_SELECTOR)
-  await page.waitForTimeout(250)  // allow rAF + addon emit + drawOverlay paint cycle
-
-  const diagnostic = await page.evaluate((selector) => {
-    if (!window.__ds_devmode_diagnostic) return { error: 'addon diagnostic not installed' }
-    return window.__ds_devmode_diagnostic(selector)
-  }, TARGET_SELECTOR)
-
-  results.push({ dpr, diagnostic })
-
-  // Assert:html/body 無異常 transform / zoom(should be 'none' / 'normal')
-  let fail = 0
-  if (diagnostic && !diagnostic.error) {
-    const htmlTransform = diagnostic.documentElement?.transform
-    const bodyTransform = diagnostic.body?.transform
-    if (htmlTransform && htmlTransform !== 'none') {
-      console.warn(`[DPR ${dpr}] html.transform = "${htmlTransform}" (expected "none")`)
-      fail++
-    }
-    if (bodyTransform && bodyTransform !== 'none') {
-      console.warn(`[DPR ${dpr}] body.transform = "${bodyTransform}" (expected "none")`)
-      fail++
-    }
-    // R7 補完:assert overlay rect ≈ target rect within TOLERANCE_PX(1 CSS px)。
-    // 對齊 Material X DataGrid visual regression test + AG Grid playwright pixel snapshot canonical。
-    if (diagnostic.deltaTopLeft) {
-      const d = diagnostic.deltaTopLeft
-      if (d.top > TOLERANCE_PX || d.left > TOLERANCE_PX || d.width > TOLERANCE_PX || d.height > TOLERANCE_PX) {
-        console.warn(`[DPR ${dpr}] overlay alignment FAIL: top=${d.top}px left=${d.left}px width=${d.width}px height=${d.height}px (tolerance ${TOLERANCE_PX}px)`)
-        fail++
+      let fail = 0
+      if (diagnostic && !diagnostic.error) {
+        if (diagnostic.devicePixelRatio !== dpr) {
+          console.warn(`[DPR ${dpr}] observed devicePixelRatio=${diagnostic.devicePixelRatio}`)
+          fail++
+        }
+        for (const [label, transform] of [
+          ['html', diagnostic.documentElement?.transform],
+          ['body', diagnostic.body?.transform],
+        ]) {
+          if (transform && transform !== 'none') {
+            console.warn(`[DPR ${dpr}] ${label}.transform="${transform}" (expected "none")`)
+            fail++
+          }
+        }
+        const delta = diagnostic.deltaTopLeft
+        if (!delta || diagnostic.overlayRoot == null || diagnostic.target == null) {
+          console.error(`[DPR ${dpr}] overlay geometry was not exercised`)
+          fail++
+        } else if (Object.values(delta).some((value) => value > TOLERANCE_PX)) {
+          console.warn(`[DPR ${dpr}] overlay alignment FAIL: top=${delta.top}px left=${delta.left}px width=${delta.width}px height=${delta.height}px`)
+          fail++
+        } else {
+          console.log(`[DPR ${dpr}] overlay alignment OK: delta(top=${delta.top}, left=${delta.left}, w=${delta.width}, h=${delta.height}) ≤ ${TOLERANCE_PX}px`)
+        }
       } else {
-        console.log(`[DPR ${dpr}] overlay alignment OK: delta(top=${d.top}, left=${d.left}, w=${d.width}, h=${d.height}) ≤ ${TOLERANCE_PX}px`)
+        console.error(`[DPR ${dpr}] diagnostic error:${diagnostic?.error ?? String(diagnostic)}`)
+        fail++
       }
-    } else if (diagnostic.overlayRoot == null) {
-      // 2026-05-13 codex V3 fix:overlay 沒 paint = R7 test 整個 invariant 沒 exercise → FAIL
-      // (前 v1 silent warn → matrix can pass without verifying overlay geometry)
-      console.error(`[DPR ${dpr}] overlay not painted after live-mode toggle + mouseover dispatch — R7 invariant NOT exercised`)
-      fail++
+      totalFail += fail
+    } finally {
+      await context.close()
     }
-  } else {
-    console.error(`[DPR ${dpr}] diagnostic error:`, diagnostic?.error ?? diagnostic)
-    fail++
   }
-
-  totalFail += fail
+} finally {
   await browser.close()
 }
 
 console.log('\n=== Geometry Diagnostic Matrix ===')
-for (const r of results) {
-  if (r.diagnostic?.error) {
-    console.log(`DPR ${r.dpr}: ERROR ${r.diagnostic.error}`)
-  } else {
-    const d = r.diagnostic
-    console.log(`DPR ${r.dpr}: innerW=${d.innerWidth} clientW=${d.clientWidth} scrollbarGutter=${d.scrollbarGutterWidth} htmlTransform="${d.documentElement.transform}" bodyTransform="${d.body.transform}"`)
-  }
+for (const { dpr, diagnostic } of results) {
+  if (diagnostic?.error) console.log(`DPR ${dpr}: ERROR ${diagnostic.error}`)
+  else console.log(`DPR ${dpr}: innerW=${diagnostic.innerWidth} clientW=${diagnostic.clientWidth} scrollbarGutter=${diagnostic.scrollbarGutterWidth}`)
 }
-
-if (totalFail > 0) {
-  console.error(`\n[geometry-invariant] FAIL: ${totalFail} anomalies across ${DPRS.length} DPRs`)
-  process.exit(1)
-}
-console.log('\n[geometry-invariant] PASS: all DPR clean, no html/body transform anomaly')
-process.exit(0)
+if (totalFail > 0) throw new Error(`[geometry-invariant] ${totalFail} anomalies across ${DPRS.length} DPRs`)
+console.log('\n[geometry-invariant] PASS: canonical overlay geometry is aligned across the DPR matrix')

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/release-tag-authorization-v2.json",
+  "title": "Profile-bound quorum-signed exact release-tag authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "repository", "tag", "tagObject", "commit", "tree", "issuerRegistryDigest", "policyDigest", "externalActivationPolicyDigest", "authorizationProfileId", "authorizationProfileDigest", "releaseAuthorization", "issuedAt", "expiresAt", "nonce", "authorizationDigest", "signatures"],
+  "properties": {
+    "schemaVersion": {"const": 2},
+    "kind": {"const": "release-tag-authorization"},
+    "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+    "tag": {"type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+(?:-(?:beta|next|rc)\\.[0-9]+)?$"},
+    "tagObject": {"$ref": "#/$defs/sha1"},
+    "commit": {"$ref": "#/$defs/sha1"},
+    "tree": {"$ref": "#/$defs/sha1"},
+    "issuerRegistryDigest": {"$ref": "#/$defs/sha256"},
+    "policyDigest": {"$ref": "#/$defs/sha256"},
+    "externalActivationPolicyDigest": {"$ref": "#/$defs/sha256"},
+    "authorizationProfileId": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]+$"},
+    "authorizationProfileDigest": {"$ref": "#/$defs/sha256"},
+    "releaseAuthorization": {"$ref": "#/$defs/releaseAuthorization"},
+    "issuedAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "nonce": {"type": "string", "pattern": "^[A-Za-z0-9_-]{32,128}$"},
+    "authorizationDigest": {"$ref": "#/$defs/sha256"},
+    "signatures": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["signerKeyId", "subject", "signature"],
+        "properties": {
+          "signerKeyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+          "subject": {"type": "string", "minLength": 1},
+          "signature": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha1": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "releaseAuthorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimumSignerQuorum", "maximumSignerQuorum"],
+      "properties": {
+        "minimumSignerQuorum": {"type": "integer", "minimum": 1, "maximum": 5},
+        "maximumSignerQuorum": {"type": "integer", "minimum": 1, "maximum": 5}
+      }
+    }
+  }
+}

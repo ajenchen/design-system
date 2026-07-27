@@ -113,7 +113,9 @@ flowchart TD
   Confirm -->|取消| Review
 ```
 
-AI 根據 code(route / onClick / navigation)auto-generate,user review 後微調。
+AI 根據 code(route / onClick / navigation)auto-generate，並以 source/readback 驗證。
+若 flow 可由既有 requirement 與實作唯一重建，直接修正 evidence drift；只有仍存在會改變
+產品／UI／UX SSOT 的真實 flow 取捨才 P2H。
 
 ### Phase 3 — Per-screen spec sheet
 
@@ -171,9 +173,9 @@ Storybook title: `Features/{FeatureName}/Handoff`
 
 此 page 就是「Figma-like 的 inspectable 交付」— stakeholder 打開就看到全景。
 
-### ⚠️ Checkpoint — User review handoff package
+### Checkpoint — Handoff evidence/readback receipt
 
-Phase 4 產出後 pause,讓 user review:
+Phase 4 產出後記錄並驗證:
 
 ```
 📦 Handoff Package Ready
@@ -191,12 +193,16 @@ Export formats:
 - Storybook URL: {link}
 - Markdown(可 export PDF): {path}
 
-請 review:
-(a) 通過,準備 share 給 {audience}
-(b) 需要修改: ...
-(c) 還缺 ... 補齊
-(d) Audience 換人,調整語氣 / 深度
+Readback:
+- requirement／source coverage: {complete / findings}
+- links／screens／states／a11y evidence: {verified / findings}
+- audience binding: {source / exact requirement}
 ```
+
+可由 requirement、source、tests 與既有 audience 唯一判定的 finding 由 agent 自主修正並
+繼續。只有 handoff 揭露新的產品／UI／UX outcomes 取捨，或對外分享會構成無法從既有
+requirement 推導的 business commitment，才停在 shared governance 定義的 human-only
+boundary；handoff milestone 本身不是 user engineering-approval gate。
 
 ---
 

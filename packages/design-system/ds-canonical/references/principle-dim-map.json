@@ -1,7 +1,11 @@
 {
   "_meta": {
     "purpose": "Explicit semantic mapping: principle (M-rule / trait / hook) → audit dim cover",
-    "ssot": ".claude/memory/feedback_audit_preflight_全盤查.md + design-system-audit/SKILL.md",
+    "ssot": "packages/design-system/ds-canonical/references/principle-dim-map.json",
+    "governedBy": [
+      "governance/memory/feedback_audit_discipline_full_sweep_deterministic_preflight.md",
+      "packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md"
+    ],
     "updated": "2026-07-16",
     "version": "1.0",
     "_principle": "禁 heuristic match;每原則必 explicit dim list。新原則加入必同 commit 加 entry,違 = hook BLOCK"
@@ -427,7 +431,7 @@
     },
     "main_branch_workbench": {
       "dims": [],
-      "note": "2026-05-17 ship(Solo-work canonical infra,M28 sub-rule):PreToolUse Edit/Write 偵測 current branch=main + edit production code(packages/design-system/src/src/app/src/explorations)+ 近 5 條 user msg 無 branch-trigger keyword → BLOCKER。補 R1(2nd branch)R2(PR)R3(push main)沒抓的「main-as-workbench」case。起因 user verbatim 2026-05-17「不是只有我說 push 到 main 才真的會 push 到 main 嗎」,本 session AI 整個 deep audit 都在 main 上 edit。escape:doc-only(spec.md) / CLAUDE_BYPASS_MAIN_WORKBENCH=1"
+      "note": "M28 protected-main feedback gate:PreToolUse Edit/Write 對 repo 內任何檔案偵測 current branch=main/master 即 BLOCKER；文件/治理也無 direct-main 豁免。Claude/Codex tool 欄位正規化，task branch 才放行。CLAUDE_BYPASS_MAIN_WORKBENCH=1 僅 recovery，本地 override 不能繞 GitHub ruleset。"
     },
     "dim_count_drift": {
       "dims": [],
@@ -470,6 +474,14 @@
         82
       ],
       "note": "2026-07-03 entry add per audit-preflight gap:consumer app DS 使用紀律 write-time ×4;audit-time dim 69-71(no-catalog/@story-baseline/primitive misuse)+ 82(app story title)"
+    },
+    "consumer_code_quality": {
+      "dims": [
+        27,
+        56,
+        71
+      ],
+      "note": "Provider-neutral consumer source gate:any/file-size 由 dim 27 code-quality 對應；AppShell primary-header chain 由 dim 56；overlay/menu-row primitive misuse 由 dim 71。"
     },
     "ds_anchor_preflight": {
       "dims": [
@@ -516,12 +528,6 @@
         58
       ],
       "note": "2026-07-03 entry add per audit-preflight gap:dim 58 plugin install enforcement 直接對應"
-    },
-    "post_main_ssot_propagate": {
-      "dims": [
-        64
-      ],
-      "note": "2026-07-03 entry add per audit-preflight gap:dim 64 post-main-push SSOT propagation 直接對應"
     },
     "propose_discipline": {
       "dims": [],
@@ -590,7 +596,7 @@
     },
     "53": {
       "name": "Code-to-spec reverse drift check",
-      "ssot": ".claude/skills/design-system-audit/SKILL.md Group P",
+      "ssot": "packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md Group P",
       "hook": "spec_class_drift",
       "note": "新加(2026-05-17):反向 grep tsx hardcoded class → 對應 spec.md 是否仍寫舊值。Phase 1 漏抓 FileViewer h-14 spec drift 升 dim,對齊 Layer A own Phase 0 全掃 + codex 共識"
     }

@@ -14,7 +14,7 @@ description: Performance audit for design-system components and product UI. Chec
 
 本 skill 作為稽核 6 維度的 **D3 元件效能** canonical home。
 
-## 觸發時機(對齊 CLAUDE.md 稽核 canonical)
+## 觸發時機(對齊 shared governance 稽核 canonical)
 
 | 情境 | 模式 | 本 skill 跑什麼 |
 |------|------|----------------|
@@ -68,7 +68,7 @@ description: Performance audit for design-system components and product UI. Chec
 - `npx vite build --report`(vite bundle visualizer)
 - **bundle-size gate(已落地 2026-07-07)**:`npm run check:bundle-size`(budget SSOT = `packages/design-system/bundle-budget.json`,total + top-8 entry 各 +10% headroom;release-preflight 內建必跑;蓄意增大 → `--init` 更新 budget + commit 說明)
 
-### Phase F — Report(必 STOP,對齊分權 canonical)
+### Phase F — Report and route
 
 產出:
 
@@ -85,13 +85,16 @@ description: Performance audit for design-system components and product UI. Chec
 - 位置: {file:line}
 - 現況: {render count / bundle contribution}
 - 建議: {具體修法}
-- 是 canonical 修實作(auto),還是原則待討論(STOP)?
+- 是工程／治理修實作(P2E auto)，還是產品／UI／UX SSOT 真取捨(P2H)?
 
-## 提議討論(待 user sign-off)
-- {若發現 canonical 本身有問題,列於此,不自改}
+## Authority classification
+- P2E:{工程／治理 finding，交 canonical owner 自主修復}
+- P2H:{只有真正產品／UI／UX SSOT 取捨才列 exact target-bound decision}
 ```
 
-**STOP 點**:report 寫完**不自動修**。分權對齊 CLAUDE.md `# 稽核 canonical`(內含「Audit-vs-execute 分權」inline rule)。
+本 skill 保持 read-only，report 是 evidence receipt；caller／canonical owner 對 P2E 直接接續
+修復與驗證，不把 read-only skill boundary 誤當 user checkpoint。只有 P2H 或
+shared-governance human-only boundary 才停止。
 
 ## Non-goals
 
@@ -101,7 +104,7 @@ description: Performance audit for design-system components and product UI. Chec
 
 ## 相關
 
-- `.claude/skills/design-system-audit/SKILL.md` — 全 dim 統籌(per design-system-audit SSOT);本 skill 是 D3 補位
-- `.claude/skills/visual-audit/SKILL.md` — pixel 層(D5)
-- `.claude/skills/ux-audit/SKILL.md` — UX 行為層(D4)
-- `.claude/skills/component-quality-gate/SKILL.md` — Phase 4.5 進階模式 chain 本 skill
+- `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` — 全 dim 統籌(per design-system-audit SSOT);本 skill 是 D3 補位
+- `packages/design-system/ds-canonical/skills/visual-audit/SKILL.md` — pixel 層(D5)
+- `packages/design-system/ds-canonical/skills/ux-audit/SKILL.md` — UX 行為層(D4)
+- `packages/design-system/ds-canonical/skills/component-quality-gate/SKILL.md` — Phase 4.5 進階模式 chain 本 skill

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "reviewed-provider-documentation-assertion",
+  "providerId": "claude",
+  "sourceUrl": "https://platform.claude.com/docs/en/about-claude/models/overview?cc61befa_page=2",
+  "observedAt": "2026-07-27T00:00:00.000Z",
+  "assertions": [
+    "Anthropic documents claude-fable-5 as its highest-capability model for the most demanding reasoning and long-horizon agentic work.",
+    "Anthropic documents claude-opus-5 as an exact pinned model ID for advanced complex analysis and coding.",
+    "Documentation establishes candidate identity and provider-local precedence only; exact account availability and promotion eligibility still require a governed runtime model-usage probe."
+  ],
+  "weightArtifactAvailable": false
+}

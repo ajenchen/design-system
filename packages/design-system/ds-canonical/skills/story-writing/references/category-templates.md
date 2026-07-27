@@ -2,7 +2,7 @@
 
 世界級 DS(Polaris / Material / Atlassian / Ant / Carbon / Storybook 官方)的 Storybook story 結構**不是** category-based prescription(「button-likes 必有 5 stories」),是**trait-based**——元件依自身能力宣告 traits,required stories 由 trait 衍生。本 doc 是本 DS canonical typology v2,取代 v1 7-category。
 
-對應 `.claude/rules/story-rules.md`「拆分原則」+ M8 world-class benchmark。
+對應 `packages/design-system/ds-canonical/rules/story-rules.md`「拆分原則」+ M8 world-class benchmark。
 
 ## 為什麼 v2 trait-based(取代 v1 category-based)
 
@@ -85,7 +85,8 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 
 - **多 trait 元件**(e.g. Button = `hasVariants` + `hasSizes` + `hasInteractiveStates`)→ 各 trait required 都有
 - **Family 跨界**(Field control 同時 isInputLike + hasInteractiveStates)→ Union of all traits
-- **新 trait 提議**:跑 M8(≥ 3 家 DS benchmark)+ Checkpoint user sign-off,不孤立發明
+- **新 trait 提議**:跑 M8(≥ 3 家 DS benchmark)；若仍涉及 public component/UI
+  semantics 真取捨才進 exact P2H checkpoint，工程 metadata／治理調整則 P2E AUTO。
 
 ## Typology 演進規則(對齊 user mandate「除非調整標準」)
 
@@ -93,12 +94,12 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 
 1. 提案 invoke `/ensure-canonical` skill(M19 trigger)
 2. 跑 M8 benchmark(≥ 3 家 DS)
-3. Checkpoint sign-off
+3. 依 authority classifier 處理:P2E 自主決策；只有產品／UI／UX SSOT 真取捨才 exact P2H sign-off
 4. 落地 5-layer pipeline(typology + hook + audit + scaffold + memory)
 
 ## Cross-link
 
-- `.claude/rules/story-rules.md`「拆分原則」— canonical 上游 one-liner
+- `packages/design-system/ds-canonical/rules/story-rules.md`「拆分原則」— canonical 上游 one-liner
 - `/story-writing` SKILL.md Phase 0 — write-time mapping
 - Hook `check_story_invariants.sh` R3 category — pre-write enforcement(攔不符 trait core)
 - `/design-system-audit` Dim 29 — periodic verify
@@ -171,4 +172,3 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 - **Hook** `check_canonical_propagation.sh` E.1 principles:PreToolUse 攔不符 ≥ 2 universal core
 - **Audit Dim 30**:periodic verify
 - **`/new-component` Phase 5.3**:scaffold 4 universal stories template
-

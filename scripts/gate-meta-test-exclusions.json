@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "entries": [
+    {
+      "stem": "check-src-republish",
+      "executionClass": "deterministic-isolated",
+      "portabilityPolicy": "required",
+      "harness": "scripts/test-check-src-republish.mjs",
+      "fallback": null,
+      "executionOwner": {
+        "kind": "harness-registry",
+        "path": "infra/governance/providers/harness-registry.json",
+        "command": ["node", "scripts/test-check-src-republish.mjs"]
+      },
+      "reason": "The harness requires a pre-version-bump Git fixture, while release preflight may invoke the auto-runner after a version bump; its explicit portability owner runs the isolated fixture in the correct lifecycle state."
+    },
+    {
+      "stem": "codex-run-guarded",
+      "executionClass": "deterministic-isolated",
+      "portabilityPolicy": "required",
+      "harness": "scripts/test-codex-run-guarded.mjs",
+      "fallback": null,
+      "executionOwner": {
+        "kind": "harness-registry",
+        "path": "infra/governance/providers/harness-registry.json",
+        "command": ["node", "scripts/test-codex-run-guarded.mjs"]
+      },
+      "reason": "The portability suite explicitly owns this classifier-only regression so it cannot be confused with or expanded into the guarded entrypoint's external provider mode."
+    }
+  ]
+}

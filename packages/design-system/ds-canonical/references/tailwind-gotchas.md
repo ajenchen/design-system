@@ -1,6 +1,6 @@
-# Tailwind 使用完整陷阱對照(從 CLAUDE.md 拆出)
+# Tailwind 使用完整陷阱對照(historical provenance:從 provider-specific generated adapter CLAUDE.md 拆出)
 
-`.claude/rules/ui-development.md`「Tailwind 5 條核心」段保留最精要 rules 和一行 bug anchor;完整範例、完整禁止清單、每條 bug 的詳細歷史在本檔。
+Canonical `packages/design-system/ds-canonical/rules/ui-development.md`「Tailwind 5 條核心」段保留最精要 rules 和一行 bug anchor;完整範例、完整禁止清單、每條 bug 的詳細歷史在本檔。
 
 ---
 

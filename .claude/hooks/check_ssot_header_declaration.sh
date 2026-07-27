@@ -1,7 +1,7 @@
 #!/bin/bash
 # check_ssot_header_declaration.sh — 新建 production tsx 必帶「── 消費的 SSOT ──」宣告段
 # (2026-07-07 治理進化方向 3 洞 a:原 check_ssot_consultation.sh 2026-05-XX retired 後,
-#  CLAUDE.md「# SSOT 消費 canonical」+ ssot-consultation.md:30-51 強制的檔頭宣告段
+#  canonical `rules/self-verify.md` + `references/ssot-consultation.md` 強制的檔頭宣告段
 #  **無任何機械驗證** — 內部盤點實證。本 hook = 精簡復活版,只驗「新檔有無宣告段」,
 #  不驗宣告品質(品質靠 audit dim 5 + dim 54 + M18/M29)。)
 #
@@ -32,16 +32,17 @@ esac
 [ -f "$FILE_PATH" ] && exit 0
 
 CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // ""')
-[ -z "${CONTENT//[[:space:]]/}" ] && exit 0
+grep -q '[^[:space:]]' <<<"$CONTENT" || exit 0
 
 # 宣告段或 escape 任一存在 → 過
-if echo "$CONTENT" | grep -q "消費的 SSOT"; then exit 0; fi
-if echo "$CONTENT" | grep -q "@ssot-header-exempt:"; then exit 0; fi
+if grep -q "消費的 SSOT" <<<"$CONTENT"; then exit 0; fi
+if grep -q "@ssot-header-exempt:" <<<"$CONTENT"; then exit 0; fi
 
 cat >&2 <<'EOF'
 🚨 [P0 BLOCKER] 新建 production tsx 缺「── 消費的 SSOT ──」檔頭宣告段
 
-CLAUDE.md「# SSOT 消費 canonical」+ .claude/references/ssot-consultation.md:30-51 強制:
+packages/design-system/ds-canonical/rules/self-verify.md +
+packages/design-system/ds-canonical/references/ssot-consultation.md 強制:
 新元件 tsx 開頭必列本檔消費的 components / patterns / tokens / spec(沒列 = 自創 = mindset #2 違規)。
 
 修法 — 2 選 1:

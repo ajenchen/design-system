@@ -1,0 +1,54 @@
+{
+  "$schema": "schemas/privileged-trust-roots.schema.json",
+  "schemaVersion": 2,
+  "repository": "ajenchen/design-system",
+  "algorithm": "ed25519",
+  "externalActivationPolicyDigest": "5c9cfa18608b5e22d6a064a26113fa7b2ccd5a8708dc201f9b3509f4ebb1973e",
+  "authorizationProfileId": "PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM",
+  "authorizationProfileDigest": "a73ea5201176f5c9555738079ffb34673c0a3cd976cc7f72415c4eec4fb38472",
+  "maxAuthorizationTtlMinutes": 60,
+  "clockSkewSeconds": 120,
+  "authorizationDirectory": "governance/authorizations",
+  "issuerRegistryDigest": "278cb1935e3b85376fd841b9180d20d47f57fb7dbfc76971e908736e76f0d305",
+  "allowedKeyIds": [
+    "owner-governance-2026-464784a3db60"
+  ],
+  "trustRootQuorum": 1,
+  "bootstrap": {
+    "schemaVersion": 1,
+    "enabled": false,
+    "ownerLogins": ["ajenchen"],
+    "nonce": "ds-governance-trust-root-bootstrap-v1",
+    "maxCommentTtlMinutes": 30
+  },
+  "protectedPaths": [
+    ".changeset/config.json",
+    ".claude-plugin/marketplace.json",
+    ".claude-plugin/plugin.json",
+    ".github/CODEOWNERS",
+    ".gitignore",
+    ".npmrc",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "docs/npm-native-staged-release.md",
+    "package-lock.json",
+    "package.json",
+    "packages/design-system/package.json",
+    "packages/storybook-config/package.json",
+    "template/ds-product-template/package.json"
+  ],
+  "protectedPrefixes": [
+    ".devcontainer/",
+    ".github/",
+    ".husky/",
+    "generated/governance/",
+    "governance/",
+    "infra/governance/",
+    "packages/design-system/ds-canonical/",
+    "packages/design-system/tools/",
+    "packages/governance/",
+    "scripts/",
+    "template/ds-product-template/.devcontainer/",
+    "template/ds-product-template/.github/workflows/"
+  ]
+}

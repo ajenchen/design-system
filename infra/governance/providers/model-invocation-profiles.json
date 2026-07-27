@@ -1,0 +1,283 @@
+{
+  "$schema": "../schemas/model-invocation-profiles.schema.json",
+  "schemaVersion": 1,
+  "evidenceKind": "model-invocation-profile-registry",
+  "profiles": {
+    "claude": {
+      "providerId": "claude",
+      "mode": "broker-content-only",
+      "transportKind": "provider-https-json-api",
+      "repositoryAccess": "forbidden",
+      "toolAccess": "none-tools-field-omitted",
+      "workingDirectory": "not-applicable-repository-unmounted",
+      "modelIdentity": {
+        "policy": "closed-model-release-registry-response-exact-match",
+        "allowedModelReleaseIds": ["claude/claude-fable-5", "claude/claude-haiku-4-5-20251001", "claude/claude-opus-4-8", "claude/claude-opus-5", "claude/claude-sonnet-4-5-20250929", "claude/claude-sonnet-5"],
+        "responseModelPointer": "/model"
+      },
+      "endpoint": {"scheme": "https", "host": "api.anthropic.com", "path": "/v1/messages", "method": "POST", "redirectPolicy": "error"},
+      "credential": {"mode": "managed-oidc-secret-broker", "header": "x-api-key", "scheme": "none"},
+      "staticHeaders": [{"name": "anthropic-version", "value": "2023-06-01"}],
+      "request": {
+        "modelPointer": "/model",
+        "instructionPointer": "/system",
+        "dataPointer": "/messages/0/content",
+        "resultSchemaPointer": "/output_config/format/schema",
+        "toolsPolicy": "field-omitted",
+        "stream": false,
+        "bodyTopLevelFields": ["max_tokens", "messages", "model", "output_config", "system"],
+        "fixedFields": [
+          {"pointer": "/max_tokens", "canonicalJson": "8192", "purpose": "output-token-limit"},
+          {"pointer": "/messages/0/role", "canonicalJson": "\"user\"", "purpose": "user-message-role"},
+          {"pointer": "/output_config/format/type", "canonicalJson": "\"json_schema\"", "purpose": "structured-output-type"}
+        ]
+      },
+      "response": {
+        "runIdPointer": "/id",
+        "requiredTerminalPredicates": [
+          {"pointer": "/stop_reason", "canonicalJson": "\"end_turn\""},
+          {"pointer": "/stop_sequence", "canonicalJson": "null"},
+          {"pointer": "/type", "canonicalJson": "\"message\""}
+        ],
+        "selection": [
+          {"collectionPointer": "/content", "predicatePointer": "/type", "predicateValue": "text"}
+        ],
+        "valuePointer": "/text",
+        "uniqueness": "exactly-one-per-level",
+        "resultEncoding": "json-string"
+      },
+      "timeoutSeconds": 7200,
+      "egressAllowedHosts": ["api.anthropic.com"]
+    },
+    "codex": {
+      "providerId": "codex",
+      "mode": "broker-content-only",
+      "transportKind": "provider-https-json-api",
+      "repositoryAccess": "forbidden",
+      "toolAccess": "none-tools-field-omitted",
+      "workingDirectory": "not-applicable-repository-unmounted",
+      "modelIdentity": {
+        "policy": "closed-model-release-registry-response-exact-match",
+        "allowedModelReleaseIds": ["codex/gpt-5.6-luna", "codex/gpt-5.6-sol", "codex/gpt-5.6-terra"],
+        "responseModelPointer": "/model"
+      },
+      "endpoint": {"scheme": "https", "host": "api.openai.com", "path": "/v1/responses", "method": "POST", "redirectPolicy": "error"},
+      "credential": {"mode": "managed-oidc-secret-broker", "header": "authorization", "scheme": "bearer"},
+      "staticHeaders": [],
+      "request": {
+        "modelPointer": "/model",
+        "instructionPointer": "/instructions",
+        "dataPointer": "/input",
+        "resultSchemaPointer": "/text/format/schema",
+        "toolsPolicy": "field-omitted",
+        "stream": false,
+        "bodyTopLevelFields": ["input", "instructions", "model", "store", "text"],
+        "fixedFields": [
+          {"pointer": "/store", "canonicalJson": "false", "purpose": "persistence-disabled"},
+          {"pointer": "/text/format/name", "canonicalJson": "\"deep_audit_shard_result\"", "purpose": "structured-output-name"},
+          {"pointer": "/text/format/strict", "canonicalJson": "true", "purpose": "structured-output-strict"},
+          {"pointer": "/text/format/type", "canonicalJson": "\"json_schema\"", "purpose": "structured-output-type"}
+        ]
+      },
+      "response": {
+        "runIdPointer": "/id",
+        "requiredTerminalPredicates": [
+          {"pointer": "/error", "canonicalJson": "null"},
+          {"pointer": "/incomplete_details", "canonicalJson": "null"},
+          {"pointer": "/status", "canonicalJson": "\"completed\""}
+        ],
+        "selection": [
+          {"collectionPointer": "/output", "predicatePointer": "/type", "predicateValue": "message"},
+          {"collectionPointer": "/content", "predicatePointer": "/type", "predicateValue": "output_text"}
+        ],
+        "valuePointer": "/text",
+        "uniqueness": "exactly-one-per-level",
+        "resultEncoding": "json-string"
+      },
+      "timeoutSeconds": 7200,
+      "egressAllowedHosts": ["api.openai.com"]
+    }
+  },
+  "externalEntitlementProfiles": {
+    "claude-max-code": {
+      "providerId": "claude",
+      "mode": "external-subscription-entitlement",
+      "routeClass": "subscription-entitlement",
+      "entitlementId": "claude-max",
+      "repositoryAccess": "forbidden-direct-review-bundle-only",
+      "toolAccess": "none",
+      "workingDirectory": "not-applicable-content-addressed-exchange",
+      "modelIdentity": {
+        "policy": "closed-model-release-registry-response-exact-match",
+        "allowedModelReleaseIds": ["claude/claude-fable-5", "claude/claude-haiku-4-5-20251001", "claude/claude-opus-4-8", "claude/claude-opus-5", "claude/claude-sonnet-4-5-20250929", "claude/claude-sonnet-5"]
+      },
+      "availabilityPolicy": "exact-certified-entitlement-readback-required",
+      "runtimeCertification": "required-not-source-certified",
+      "availabilityEvidence": {
+        "kind": "certified-runtime-evidence-assertion-v1",
+        "compatibilityProviderId": "claude-code",
+        "runtimeProviderId": "claude",
+        "runtimeProfileId": "claude",
+        "runtimeKind": "claude-code-cli",
+        "surface": "local",
+        "repositoryRole": "authority",
+        "providerEvidenceId": "claude",
+        "checkId": "subscription-entitlement-readback",
+        "assertionId": "claude-max-entitlement-available"
+      },
+      "deploymentAdapter": {
+        "schemaVersion": 1,
+        "kind": "first-party-subscription-cli-content-exchange-v1",
+        "executable": "claude",
+        "authentication": "first-party-subscription-account",
+        "authStatusArguments": [
+          "auth",
+          "status",
+          "--json"
+        ],
+        "versionArguments": [
+          "--version"
+        ],
+        "authReadback": {
+          "loggedInPointer": "/loggedIn",
+          "loggedInCanonicalJson": "true",
+          "authMethodPointer": "/authMethod",
+          "authMethodCanonicalJson": "\"claude.ai\"",
+          "entitlementPointer": "/subscriptionType",
+          "entitlementCanonicalJson": "\"max\""
+        },
+        "promptTransport": "stdin",
+        "resultTransport": "stdout-json-structured-output",
+        "arguments": [
+          "-p",
+          "--model",
+          "{model}",
+          "--effort",
+          "{effort}",
+          "--permission-mode",
+          "plan",
+          "--tools",
+          "{emptyTools}",
+          "--disallowedTools",
+          "Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch,Read,Grep,Glob,Task",
+          "--no-session-persistence",
+          "--output-format",
+          "json",
+          "--json-schema",
+          "{resultSchemaJson}",
+          "--system-prompt",
+          "{systemPrompt}",
+          "--strict-mcp-config",
+          "--mcp-config",
+          "{emptyMcpConfig}",
+          "--safe-mode",
+          "--no-chrome",
+          "--disable-slash-commands",
+          "--prompt-suggestions",
+          "false"
+        ],
+        "providerRunIdPointer": "/session_id",
+        "resultPointer": "/structured_output",
+        "terminalPredicates": [
+          {
+            "pointer": "/type",
+            "canonicalJson": "\"result\""
+          },
+          {
+            "pointer": "/subtype",
+            "canonicalJson": "\"success\""
+          },
+          {
+            "pointer": "/is_error",
+            "canonicalJson": "false"
+          }
+        ],
+        "observedModelPolicy": "exactly-one-model-usage-key-equals-requested-model",
+        "modelUsagePointer": "/modelUsage",
+        "repositoryIsolation": "private-empty-working-directory-no-repository-mount",
+        "environmentPolicy": "closed-first-party-subscription-no-api-credentials",
+        "sessionPersistence": "disabled",
+        "fallbackPolicy": "forbidden",
+        "effortByComputeTier": {
+          "standard": "medium",
+          "high": "high",
+          "maximum": "max"
+        },
+        "timeoutSeconds": 7200
+      },
+      "costFallbackPolicy": "forbidden",
+      "responseSelector": {
+        "schemaVersion": 1,
+        "kind": "provider-review-result-response-selector",
+        "carrierShape": "content-addressed-provider-review-result-v1",
+        "responseModelPointer": "/observedModelId",
+        "runIdPointer": "/providerRunId",
+        "requiredTerminalPredicates": [
+          {
+            "pointer": "/status",
+            "canonicalJson": "\"completed\""
+          }
+        ],
+        "selection": [
+          {
+            "collectionPointer": "/outputs",
+            "predicatePointer": "/kind",
+            "predicateValue": "structured-review-result"
+          }
+        ],
+        "valuePointer": "/canonicalJson",
+        "uniqueness": "exactly-one-per-level",
+        "resultEncoding": "json-string"
+      }
+    }
+  },
+  "legacyUntrustedProfiles": {
+    "claude": {
+      "providerId": "claude",
+      "mode": "legacy-untrusted-local",
+      "repositoryAccess": "read-only-disposable-snapshot",
+      "toolAccess": "read-grep-glob",
+      "workingDirectory": "disposable-snapshot",
+      "executable": "claude",
+      "timeoutSeconds": 7200,
+      "promptTransport": "stdin",
+      "resultTransport": "stdout-stream-json-structured-output",
+      "arguments": [
+        "-p", "--model", "{model}", "--permission-mode", "plan",
+        "--tools", "Read,Grep,Glob", "--allowedTools", "Read,Grep,Glob",
+        "--disallowedTools", "Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch",
+        "--no-session-persistence", "--verbose", "--output-format", "stream-json", "--json-schema", "{resultSchemaJson}",
+        "--session-id", "{sessionId}", "--strict-mcp-config", "--mcp-config", "{emptyMcpConfig}",
+        "--safe-mode", "--no-chrome", "--disable-slash-commands"
+      ],
+      "runIdPointer": "/session_id",
+      "resultPointer": "/structured_output",
+      "egressAllowedHosts": ["api.anthropic.com"]
+    },
+    "codex": {
+      "providerId": "codex",
+      "mode": "legacy-untrusted-local",
+      "repositoryAccess": "read-only-disposable-snapshot",
+      "toolAccess": "read-grep-glob",
+      "workingDirectory": "disposable-snapshot",
+      "executable": "codex",
+      "timeoutSeconds": 7200,
+      "promptTransport": "stdin",
+      "resultTransport": "output-file-json-plus-stdout-jsonl",
+      "arguments": [
+        "exec", "--sandbox", "read-only", "--ephemeral", "--strict-config", "--ignore-user-config",
+        "--output-schema", "{resultSchemaPath}", "--output-last-message", "{resultOutputPath}",
+        "--json", "--model", "{model}", "--cd", "{snapshotRoot}", "-"
+      ],
+      "runIdPointer": "/thread_id",
+      "resultPointer": "/",
+      "egressAllowedHosts": ["api.openai.com"]
+    }
+  },
+  "forbiddenArguments": [
+    "--dangerously-bypass-approvals-and-sandbox",
+    "--dangerously-bypass-hook-trust",
+    "--dangerously-skip-permissions",
+    "--allow-dangerously-skip-permissions"
+  ]
+}

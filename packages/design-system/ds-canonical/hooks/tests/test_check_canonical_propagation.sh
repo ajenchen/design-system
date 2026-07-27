@@ -14,19 +14,57 @@ run_hook() {
   STDOUT=$(mktemp); STDERR=$(mktemp)
   set +e
   jq -n --arg tool "$tool" --arg fp "$file_path" --arg c "$content" \
-    '{tool_name:$tool, tool_input:{file_path:$fp, content:$c}}' \
+    '{hook_event_name:"PreToolUse", tool_name:$tool, tool_input:{file_path:$fp, content:$c}}' \
     | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
   EXIT=$?
   set -e
-  STDERR_TEXT=$(cat "$STDERR"); rm -f "$STDOUT" "$STDERR"
+  STDOUT_TEXT=$(cat "$STDOUT"); STDERR_TEXT=$(cat "$STDERR"); rm -f "$STDOUT" "$STDERR"
+}
+
+run_raw() {
+  local payload="$1"
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT"); STDERR_TEXT=$(cat "$STDERR"); rm -f "$STDOUT" "$STDERR"
+}
+
+is_exact_context() {
+  local needle="$1" compact
+  compact=$(printf '%s' "$STDOUT_TEXT" | jq -c . 2>/dev/null) || return 1
+  [ "$STDOUT_TEXT" = "$compact" ] || return 1
+  printf '%s' "$STDOUT_TEXT" | jq -se --arg needle "$needle" '
+    length == 1
+    and (.[0] | type == "object" and (keys | sort) == ["governanceContext"])
+    and (.[0].governanceContext |
+      type == "object"
+      and (keys | sort) == ["hookEventName", "message"]
+      and .hookEventName == "PreToolUse"
+      and (.message | type == "string" and length > 0 and contains($needle)))
+  ' >/dev/null
 }
 
 expect_exit() {
   local name="$1" expect="$2" needle="${3:-}"
-  if [ "$EXIT" = "$expect" ] && { [ -z "$needle" ] || echo "$STDERR_TEXT" | grep -qF "$needle"; }; then
+  local ok=1
+  if [ "$expect" = "0" ] && [ -n "$needle" ]; then
+    [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] && is_exact_context "$needle" && ok=0
+  elif [ "$expect" = "0" ]; then
+    [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ] && ok=0
+  elif [ "$expect" = "2" ]; then
+    [ "$EXIT" = "2" ] && [ -z "$STDOUT_TEXT" ] \
+      && { [ -z "$needle" ] || echo "$STDERR_TEXT" | grep -qF "$needle"; } && ok=0
+  elif [ "$expect" = "70" ]; then
+    [ "$EXIT" = "70" ] && [ -z "$STDOUT_TEXT" ] \
+      && { [ -z "$needle" ] || echo "$STDERR_TEXT" | grep -qF "$needle"; } && ok=0
+  fi
+  if [ "$ok" = "0" ]; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
     echo "  FAIL  $name (expected exit $expect${needle:+ + needle '$needle'}, got exit $EXIT)"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
@@ -106,12 +144,12 @@ expect_exit "E.2.4 no L3 import → silent" 0 ""
 echo ""
 echo "=== E.3 spec-impl default alignment ==="
 
-# 10. spec.md with 「預設」keyword → WARN stderr
+# 10. spec.md with 「預設」keyword → governance context
 run_hook "/r/packages/design-system/src/components/Foo/foo.spec.md" '
 ## Width
 預設 = trigger-width(同 popover anchor 寬)
 ' Write
-expect_exit "E.3.1 預設 keyword → WARN stderr" 0 "spec-impl default"
+expect_exit "E.3.1 預設 keyword → governance context" 0 "spec-impl default"
 
 # 11. spec.md without default keyword → silent
 run_hook "/r/packages/design-system/src/components/Foo/foo.spec.md" '
@@ -126,6 +164,19 @@ run_hook "/r/packages/design-system/src/components/Foo/foo.spec.md" '// @spec-im
 預設 = trigger-width
 ' Write
 expect_exit "E.3.3 spec allowlist → silent" 0 ""
+
+echo ""
+echo "=== Output contract ==="
+
+# Quotes/newlines in warning data must remain one safely encoded compact JSON document.
+run_hook '/r/packages/design-system/src/components/Foo/"quoted".spec.md' '
+## "Quoted default"
+預設 = "trigger-width"
+' Write
+expect_exit "O.1 adversarial quotes/newlines → exact encoded context" 0 "spec-impl default"
+
+run_raw '{'
+expect_exit "O.2 malformed input → stderr-only integrity failure" 70 "GOVERNANCE_INTEGRITY:"
 
 echo ""
 echo "═══ Results: $PASS PASS, $FAIL FAIL ═══"

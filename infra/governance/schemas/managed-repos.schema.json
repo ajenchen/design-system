@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/managed-repos.schema.json",
+  "title": "Managed repository inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "authority", "fleetScope", "workflowIdentitySources", "certificationCanaries", "repositories", "ownershipPolicies"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schemaVersion": {"const": 1},
+    "authority": {"type": "string", "minLength": 1},
+    "fleetScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coverage", "enrollment", "unregisteredDescendants"],
+      "properties": {
+        "coverage": {"const": "registered-opt-in-inventory"},
+        "enrollment": {"const": "reviewed-registration-only"},
+        "unregisteredDescendants": {"const": "not-covered"}
+      }
+    },
+    "workflowIdentitySources": {
+      "type": "object",
+      "minProperties": 3,
+      "maxProperties": 3,
+      "additionalProperties": false,
+      "required": ["design-system-authority", "product-consumer", "published-template"],
+      "properties": {
+        "design-system-authority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repositoryId"],
+          "properties": {"repositoryId": {"const": "design-system"}}
+        },
+        "product-consumer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repositoryId"],
+          "properties": {"repositoryId": {"const": "ds-product-template"}}
+        },
+        "published-template": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repositoryId"],
+          "properties": {"repositoryId": {"const": "ds-product-template"}}
+        }
+      }
+    },
+    "certificationCanaries": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "authority": {"$ref": "#/$defs/certificationCanary"},
+        "template-mirror": {"$ref": "#/$defs/certificationCanary"},
+        "product-consumer": {"$ref": "#/$defs/certificationCanary"}
+      }
+    },
+    "repositories": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/repository"}
+    },
+    "ownershipPolicies": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "authority-repository": {"$ref": "#/$defs/ownershipPolicy"},
+        "published-template-mirror": {"$ref": "#/$defs/ownershipPolicy"},
+        "product-consumer": {"$ref": "#/$defs/ownershipPolicy"}
+      }
+    }
+  },
+  "$defs": {
+    "certificationCanary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repositoryId"],
+      "properties": {
+        "repositoryId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"}
+      }
+    },
+    "ownershipMode": {
+      "enum": ["authority", "generated", "upstream-managed", "three-way", "consumer-owned"]
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "github", "role", "visibility", "defaultBranch", "desiredProfile", "releaseRing", "ownershipPolicy", "providerSurfacesRequired"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "github": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "role": {"enum": ["authority", "template-mirror", "product-consumer"]},
+        "visibility": {"enum": ["public", "private", "internal"]},
+        "defaultBranch": {"const": "main"},
+        "desiredProfile": {"type": "string", "minLength": 1},
+        "releaseRing": {"type": "string", "minLength": 1},
+        "ownershipPolicy": {"type": "string", "minLength": 1},
+        "upgradeProtocolProfile": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "acceptedBootstrapReadbackSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "acceptedControlPlaneUpdate": {"$ref": "#/$defs/acceptedControlPlaneUpdate"},
+        "localPathFromGovernanceRoot": {"type": "string"},
+        "mirrorSourcePathFromGovernanceRoot": {"type": "string"},
+        "providerSurfacesRequired": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*/[a-z][a-z0-9-]*/[a-z][a-z0-9-]*$"}
+        },
+        "publishes": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "consumes": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+      },
+      "oneOf": [
+        {
+          "properties": {"localPathFromGovernanceRoot": {"type": "string"}},
+          "required": ["localPathFromGovernanceRoot"]
+        },
+        {
+          "properties": {"mirrorSourcePathFromGovernanceRoot": {"type": "string"}},
+          "required": ["mirrorSourcePathFromGovernanceRoot"]
+        }
+      ],
+      "allOf": [
+        {
+          "if": {"properties": {"role": {"const": "authority"}}, "required": ["role"]},
+          "then": {
+            "properties": {
+              "id": {"const": "design-system"},
+              "github": {"const": "ajenchen/design-system"},
+              "desiredProfile": {"const": "design-system-authority"},
+              "ownershipPolicy": {"const": "authority-repository"},
+              "localPathFromGovernanceRoot": {"type": "string", "minLength": 1},
+              "publishes": {"const": ["@qijenchen/design-system", "@qijenchen/storybook-config", "@qijenchen/governance"]}
+            },
+            "required": ["localPathFromGovernanceRoot", "publishes"],
+            "not": {
+              "anyOf": [
+                {
+                  "properties": {"mirrorSourcePathFromGovernanceRoot": {}},
+                  "required": ["mirrorSourcePathFromGovernanceRoot"]
+                },
+                {
+                  "properties": {"consumes": {}},
+                  "required": ["consumes"]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {"properties": {"role": {"const": "template-mirror"}}, "required": ["role"]},
+          "then": {
+            "properties": {
+              "id": {"const": "ds-product-template"},
+              "github": {"const": "ajenchen/ds-product-template"},
+              "desiredProfile": {"const": "published-template"},
+              "ownershipPolicy": {"const": "published-template-mirror"},
+              "mirrorSourcePathFromGovernanceRoot": {"type": "string", "minLength": 1},
+              "consumes": {"const": ["@qijenchen/design-system", "@qijenchen/storybook-config"]},
+              "upgradeProtocolProfile": {"enum": ["new-snapshot-v2", "new-snapshot-control-plane-established-v2"]}
+            },
+            "required": ["mirrorSourcePathFromGovernanceRoot", "consumes"],
+            "not": {
+              "anyOf": [
+                {
+                  "properties": {"localPathFromGovernanceRoot": {}},
+                  "required": ["localPathFromGovernanceRoot"]
+                },
+                {
+                  "properties": {"publishes": {}},
+                  "required": ["publishes"]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {"properties": {"role": {"const": "product-consumer"}}, "required": ["role"]},
+          "then": {
+            "properties": {
+              "desiredProfile": {"const": "product-consumer"},
+              "ownershipPolicy": {"const": "product-consumer"},
+              "localPathFromGovernanceRoot": {"type": "string", "minLength": 1},
+              "consumes": {"const": ["@qijenchen/design-system", "@qijenchen/storybook-config"]}
+            },
+            "required": ["localPathFromGovernanceRoot", "consumes"],
+            "not": {
+              "anyOf": [
+                {
+                  "properties": {"mirrorSourcePathFromGovernanceRoot": {}},
+                  "required": ["mirrorSourcePathFromGovernanceRoot"]
+                },
+                {
+                  "properties": {"publishes": {}},
+                  "required": ["publishes"]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {"properties": {"role": {"enum": ["template-mirror", "product-consumer"]}}, "required": ["role"]},
+          "then": {
+            "properties": {"upgradeProtocolProfile": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"}},
+            "required": ["upgradeProtocolProfile"]
+          },
+          "else": {
+            "allOf": [
+              {
+                "not": {
+                  "properties": {"upgradeProtocolProfile": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"}},
+                  "required": ["upgradeProtocolProfile"]
+                }
+              },
+              {
+                "not": {
+                  "properties": {"acceptedBootstrapReadbackSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}},
+                  "required": ["acceptedBootstrapReadbackSha256"]
+                }
+              },
+              {
+                "not": {
+                  "properties": {"acceptedControlPlaneUpdate": {"$ref": "#/$defs/acceptedControlPlaneUpdate"}},
+                  "required": ["acceptedControlPlaneUpdate"]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "id": {"const": "work-management"},
+              "role": {"const": "product-consumer"}
+            },
+            "required": ["id", "role"]
+          },
+          "then": {
+            "properties": {
+              "upgradeProtocolProfile": {
+                "enum": [
+                  "legacy-bootstrap-v2",
+                  "reviewed-bootstrap-established-v2",
+                  "reviewed-bootstrap-control-plane-established-v2"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"upgradeProtocolProfile": {"enum": ["reviewed-bootstrap-established-v2", "reviewed-bootstrap-control-plane-established-v2"]}},
+            "required": ["upgradeProtocolProfile"]
+          },
+          "then": {
+            "properties": {"acceptedBootstrapReadbackSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}},
+            "required": ["acceptedBootstrapReadbackSha256"]
+          },
+          "else": {
+            "not": {
+              "properties": {"acceptedBootstrapReadbackSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}},
+              "required": ["acceptedBootstrapReadbackSha256"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"acceptedControlPlaneUpdate": {"$ref": "#/$defs/acceptedControlPlaneUpdate"}},
+            "required": ["acceptedControlPlaneUpdate"]
+          },
+          "then": {
+            "properties": {
+              "role": {"enum": ["template-mirror", "product-consumer"]},
+              "upgradeProtocolProfile": {"enum": ["new-snapshot-control-plane-established-v2", "reviewed-bootstrap-control-plane-established-v2"]}
+            },
+            "required": ["role", "upgradeProtocolProfile"]
+          },
+          "else": {
+            "not": {
+              "properties": {
+                "upgradeProtocolProfile": {"enum": ["new-snapshot-control-plane-established-v2", "reviewed-bootstrap-control-plane-established-v2"]}
+              },
+              "required": ["upgradeProtocolProfile"]
+            }
+          }
+        }
+      ]
+    },
+    "acceptedControlPlaneUpdate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence", "readbackSha256", "predecessorReadbackSha256",
+        "candidateReleaseSha256", "version", "baselineEvidenceSha256",
+        "baseSnapshotTreeSha256", "incomingSnapshotTreeSha256",
+        "materializedSnapshotTreeSha256", "candidateCorpusReceiptSha256",
+        "mergeCommitSha", "mergeTreeSha", "issuerRegistryDigest"
+      ],
+      "properties": {
+        "sequence": {"type": "integer", "minimum": 1},
+        "readbackSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "predecessorReadbackSha256": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+          ]
+        },
+        "candidateReleaseSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$"},
+        "baselineEvidenceSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "baseSnapshotTreeSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "incomingSnapshotTreeSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "materializedSnapshotTreeSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "candidateCorpusReceiptSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "mergeCommitSha": {"type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"},
+        "mergeTreeSha": {"type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"},
+        "issuerRegistryDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"sequence": {"const": 1}}, "required": ["sequence"]},
+          "then": {"properties": {"predecessorReadbackSha256": {"type": "null"}}},
+          "else": {"properties": {"predecessorReadbackSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}}
+        }
+      ]
+    },
+    "ownershipPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaultMode", "rules"],
+      "properties": {
+        "defaultMode": {"$ref": "#/$defs/ownershipMode"},
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["pattern", "mode", "owner"],
+            "properties": {
+              "pattern": {"type": "string", "minLength": 1},
+              "mode": {"$ref": "#/$defs/ownershipMode"},
+              "owner": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/compatibility-matrix.schema.json",
+  "title": "Provider and package compatibility matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "adapterRegistry", "commonContract", "providers", "surfaces", "upgradeCompatibility"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schemaVersion": {"const": 2},
+    "adapterRegistry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "schemaVersion", "unregisteredProviderOutcome"],
+      "properties": {
+        "path": {"const": "packages/governance/canonical/providers.json"},
+        "schemaVersion": {"const": 9},
+        "unregisteredProviderOutcome": {"const": "fail"}
+      }
+    },
+    "commonContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mcpTransports", "hardGateContracts", "roleHardGateContracts", "nonPortable"],
+      "properties": {
+        "mcpTransports": {"$ref": "#/$defs/nonEmptyStrings"},
+        "hardGateContracts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authority", "consumer"],
+          "properties": {
+            "authority": {"$ref": "#/$defs/authorityHardGate"},
+            "consumer": {"$ref": "#/$defs/consumerHardGate"}
+          }
+        },
+        "roleHardGateContracts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authority", "template-mirror", "product-consumer"],
+          "properties": {
+            "authority": {"const": "#/commonContract/hardGateContracts/authority"},
+            "template-mirror": {"const": "#/commonContract/hardGateContracts/consumer"},
+            "product-consumer": {"const": "#/commonContract/hardGateContracts/consumer"}
+          }
+        },
+        "nonPortable": {"$ref": "#/$defs/nonEmptyStrings"}
+      }
+    },
+    "providers": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^[a-z][a-z0-9-]*$"},
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["adapterProviderId", "runtimeKinds", "minimumVersion"],
+        "properties": {
+          "adapterProviderId": {
+            "type": ["string", "null"],
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "runtimeKinds": {
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": {"pattern": "^[a-z][a-z0-9-]*$"},
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["runtimeProfilesBySurface", "runtimeEvidenceRequired"],
+              "properties": {
+                "runtimeProfilesBySurface": {
+                  "type": "object",
+                  "minProperties": 1,
+                  "propertyNames": {"enum": ["local", "remote-control", "cloud", "github-actions"]},
+                  "additionalProperties": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}
+                },
+                "runtimeEvidenceRequired": {"type": "boolean"}
+              }
+            }
+          },
+          "minimumVersion": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "surfaces": {
+      "type": "object",
+      "required": ["local", "remote-control", "cloud", "github-actions"],
+      "properties": {
+        "local": {"$ref": "#/$defs/surface"},
+        "remote-control": {"$ref": "#/$defs/surface"},
+        "cloud": {"$ref": "#/$defs/surface"},
+        "github-actions": {"$ref": "#/$defs/surface"}
+      },
+      "additionalProperties": false
+    },
+    "upgradeCompatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["governanceProtocol", "packages", "knownIncompatibilities"],
+      "properties": {
+        "governanceProtocol": {"const": "protected-base-reconstruction-v2"},
+        "packages": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["minimumVersion", "acceptedSpecPatterns"],
+            "properties": {
+              "minimumVersion": {"type": "string"},
+              "acceptedSpecPatterns": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+            }
+          }
+        },
+        "knownIncompatibilities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "appliesToRoles", "severity", "resolution"],
+            "properties": {
+              "id": {"type": "string"},
+              "appliesToRoles": {"type": "array", "items": {"enum": ["authority", "template-mirror", "product-consumer"]}},
+              "severity": {"enum": ["low", "medium", "high", "blocker"]},
+              "resolution": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "authorityHardGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractId", "registryPath", "registrySchemaVersion", "registryKind", "registrySha256", "runnerCommand"],
+      "properties": {
+        "contractId": {"const": "provider-neutral-governance-harness-v2"},
+        "registryPath": {"const": "infra/governance/providers/harness-registry.json"},
+        "registrySchemaVersion": {"const": 2},
+        "registryKind": {"const": "provider-neutral-governance-harness-registry"},
+        "registrySha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "runnerCommand": {"const": ["node", "infra/governance/bin/run-harnesses.mjs"]}
+      }
+    },
+    "consumerHardGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractId", "packageName", "sourcePath", "installedPath", "runnerCommand", "deliveryBinding"],
+      "properties": {
+        "contractId": {"const": "provider-neutral-product-consumer-gate-v1"},
+        "packageName": {"const": "@qijenchen/design-system"},
+        "sourcePath": {"const": "packages/design-system/ds-canonical/fork/consumer/governance-check.mjs"},
+        "installedPath": {"const": "node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-check.mjs"},
+        "runnerCommand": {"const": ["node", "node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-check.mjs", "--repo", ".", "--hooks-off"]},
+        "deliveryBinding": {"const": "exact-package-version-plus-fork-governance-lock"}
+      }
+    },
+    "nonEmptyStrings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["execution", "repoConfigTravels", "userConfigTravels", "hostMustRemainOnline", "hardGateContract", "nativeHookPolicy", "certificationPolicy"],
+      "properties": {
+        "execution": {"enum": ["host", "fresh-container", "fresh-runner"]},
+        "repoConfigTravels": {"type": "boolean"},
+        "userConfigTravels": {"type": "boolean"},
+        "hostMustRemainOnline": {"type": "boolean"},
+        "hardGateContract": {
+          "const": {"pointer": "#/commonContract/roleHardGateContracts"}
+        },
+        "nativeHookPolicy": {"enum": ["provider-capability-feedback-only", "environment-dependent-feedback-only", "not-applicable"]},
+        "certificationPolicy": {"const": "target-bound-evidence-required"}
+      }
+    }
+  }
+}

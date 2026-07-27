@@ -1,0 +1,5 @@
+**
+!.dockerignore
+!Containerfile
+!runtime/
+!runtime/managed-ci-runtime.mjs

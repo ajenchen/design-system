@@ -1,227 +1,318 @@
 #!/usr/bin/env node
-// scripts/setup-netlify-access.mjs — fork-and-go Netlify setup automation
-//
-// 2026-06-05 二修:免費 access control = Netlify Edge Function 自做 HTTP Basic Auth,不是 _headers / dashboard Password。
-//
-// Why Identity not used(注意:Identity 未 deprecated — 2025-02 曾公告,2026-02-19 官方撤回,仍 supported):
-//   - Identity 是完整 signup/login 系統(要自己接 login UI widget),對「上個簡單密碼」是 overkill
-//   - `netlify api provisionSiteIdentity` 在新 site 已不穩定 / 不可用
-//
-// Free-tier 真實可用 access control(2026-06-05 官方 docs + support forum 三重證實):
-//   - Netlify Dashboard 的「Password protection」**與** `_headers` 的 Basic-Auth header **都是 Pro 方案專屬**
-//     ($20/mo);free-tier 兩個都沒有(按下去會被要求升級付費 — 這就是 fork user 卡住的原因)。
-//     (官方限制頁也載明 `_headers` 的 basic-auth header 不會套用到 edge function。)
-//   - 免費要擋陌生人 → Netlify Edge Function 自己做 HTTP Basic Auth(讀 Authorization → 比對 → 回 401,
-//     瀏覽器原生帳密彈窗)。Edge Functions 免費方案可用、`.netlify.app` 預設網址直接生效、無需自訂網域。
-//   - 本 template 已內建:`netlify/edge-functions/basic-auth.ts` 從 Netlify env var `STORYBOOK_BASIC_AUTH`
-//     (格式 "user:pass",多組空格分隔)讀帳密比對;netlify.toml 已 wire [[edge_functions]] path="/*"。
-//     未設 env var = no-op 公開放行。密碼只存 Netlify 後台 env var(public repo 不能 commit 明文)。
-//
-// What's automated:
-//   1. Install Netlify CLI(若未裝)
-//   2. `gh auth status` pre-check
-//   3. `netlify login`(瀏覽器 OAuth)
-//   4. Auto `netlify sites:create` + `netlify link`(non-interactive)
-//
-// What's NOT automatable(Netlify CLI 不提供 edge-function Basic Auth 的 one-shot setup;走 dashboard 設 env var):
-//   5. 設 STORYBOOK_BASIC_AUTH env var — script 印 dashboard URL + step-by-step,user 加一條 env var(30 秒)
-//   6. 分享 帳密 給 stakeholder — team Slack / DM 私訊
-//
-// Usage:
-//   npm run setup:netlify
-//   npm run setup:netlify -- --skip-prompts   # CI / 老手:跳過 confirmation prompt
 
-import { execSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import readline from 'node:readline/promises'
-import { stdin, stdout } from 'node:process'
+// Netlify onboarding is deliberately Dashboard-only while the reviewed CLI candidate is blocked.
+// This executable is the enforcement SSOT copied into every published product template: it never
+// downloads, installs, invokes, logs in through, or mutates state with Netlify CLI.
 
-const rl = readline.createInterface({ input: stdin, output: stdout })
+import { createHash } from 'node:crypto'
+import { lstatSync, readFileSync, realpathSync } from 'node:fs'
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-function sh(cmd, opts = {}) {
-  return execSync(cmd, { stdio: 'inherit', encoding: 'utf8', ...opts })
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const ERROR_PREFIX = 'NETLIFY-MANUAL-SETUP-001'
+const STORYBOOK_ACCESS_POLICY = 'fail-closed-v1'
+const STORYBOOK_AUTH_MISCONFIGURED_STATUS = 503
+const STORYBOOK_AUTH_REQUIRED_STATUS = 401
+export const STORYBOOK_BASIC_AUTH_SOURCE_SHA256 = 'f01afcb94634c7a08c65d0e8a69990797c2d3b565bf225b37955cac53d778b68'
+export const NETLIFY_MANUAL_REQUIRED_EXIT_CODE = 2
+
+export const NETLIFY_CLI_INSTALLATION_BLOCKER = Object.freeze({
+  schemaVersion: 1,
+  code: 'NETLIFY-CLI-AUTO-INSTALL-BLOCKED-001',
+  status: 'blocked',
+  assessedPackage: 'netlify-cli@26.2.0',
+  assessedAt: '2026-07-22',
+  highSeverityFindings: 5,
+  decision: 'dashboard-manual-only',
+  setupComplete: false,
+  reenableCriteria: Object.freeze([
+    'reviewed exact version and immutable package lock',
+    'canonical registry artifacts with integrity verification',
+    'install scripts disabled plus signature verification',
+    'zero high-severity audit findings',
+    'direct regression tests and reviewed propagation',
+  ]),
+})
+
+export const NETLIFY_DASHBOARD_URL = 'https://app.netlify.com/'
+export const NETLIFY_OFFICIAL_GUIDES = Object.freeze({
+  branchDeploys: 'https://docs.netlify.com/deploy/deploy-types/branch-deploys/',
+  environmentVariables: 'https://docs.netlify.com/build/environment-variables/get-started/',
+  importRepository: 'https://docs.netlify.com/start/quickstarts/deploy-from-repository/',
+})
+
+function invariant(condition, message) {
+  if (!condition) throw new Error(`${ERROR_PREFIX}:${message}`)
 }
 
-function shOut(cmd) {
-  try { return execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim() } catch { return '' }
+function containedPath(root, path, label) {
+  invariant(typeof path === 'string' && path.length > 0 && !isAbsolute(path) && !path.includes('\\'), `${label} is invalid`)
+  const absolute = resolve(root, path)
+  const rel = relative(root, absolute)
+  invariant(rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel), `${label} escapes the repository`)
+  return absolute
 }
 
-const args = new Set(process.argv.slice(2))
-const skipPrompts = args.has('--skip-prompts')
-
-console.log('🔒 Netlify access control setup(免費方案 = Edge Function Basic Auth,讀 STORYBOOK_BASIC_AUTH env var)')
-console.log('')
-console.log('━━━ 流程概覽 ━━━')
-console.log('  自動: CLI install + gh check + OAuth login + site 建 + 連本機(link)')
-console.log('  手動: 開 dashboard URL → Environment variables 加 STORYBOOK_BASIC_AUTH = user:password(30 秒)')
-console.log('       + 連 GitHub repo(Git 持續部署)+ 開 Branch deploys(草稿預覽)— 詳下方步驟')
-console.log('  分享: 把 site URL + 帳密 私訊 stakeholder')
-console.log('')
-console.log('Netlify = 免費 deploy 平台(免費方案採每月 credit 額度制,詳 https://www.netlify.com/pricing/;0 maintenance)')
-console.log('因為 fork 本 repo 必有 GitHub 帳號,Netlify 走 GitHub OAuth 自動建 account(<5 秒)')
-console.log('')
-
-// Step 0: gh CLI pre-check(區分「未安裝」與「已裝但未登入」;GitHub CLI auth ≠ Netlify OAuth,兩者各自獨立)
-const ghInstalled = !!shOut('which gh')
-const ghOut = ghInstalled ? shOut('gh auth status 2>&1') : ''
-if (!ghInstalled) {
-  console.log('⚠️ 未偵測到 GitHub CLI(`gh`)— 後續步驟需用它讀 GitHub 帳號並連 fork repo。')
-  console.log('  先安裝:macOS `brew install gh` / Windows `winget install GitHub.cli` / 其他見 https://cli.github.com')
-  console.log('  裝好後跑:gh auth login(瀏覽器 OAuth,1 分鐘),再重跑本 setup。')
-  if (!skipPrompts) {
-    const proceed = await rl.question('  仍要繼續(略過 gh 相關自動化)?(y/N)> ')
-    if (!/^y/i.test(proceed)) { console.log('Aborted by user'); rl.close(); process.exit(1) }
-  }
-} else if (ghOut.includes('Logged in')) {
-  const userMatch = ghOut.match(/account\s+(\S+)/)
-  const ghUser = userMatch ? userMatch[1] : '(unknown)'
-  console.log(`✓ GitHub CLI 已 login(account: ${ghUser})`)
-} else {
-  console.log('⚠️ GitHub CLI 已安裝但未 login(影響後續 Netlify 連 fork repo)')
-  console.log('  建議先跑:gh auth login(瀏覽器 OAuth,1 分鐘)')
-  console.log('  註:這是 GitHub CLI 授權,與稍後的 `netlify login`(Netlify OAuth)是兩件不同的登入。')
-  if (!skipPrompts) {
-    const proceed = await rl.question('  繼續 setup?(y/N)> ')
-    if (!/^y/i.test(proceed)) { console.log('Aborted by user'); rl.close(); process.exit(1) }
-  }
-}
-console.log('')
-
-// Step 1: Netlify CLI(robust: global → npx fallback for locked-down env like Codespaces / sandbox / non-sudo Mac)
-let netlifyCmd = 'netlify'
-if (!shOut('which netlify')) {
-  console.log('▶ Installing Netlify CLI globally...')
+function readOptionalRegularFile(root, path, label) {
+  const absolute = containedPath(root, path, label)
+  let info
   try {
-    sh('npm install -g netlify-cli')
-  } catch (e) {
-    console.log('  ⚠️ Global install failed(無 sudo / 鎖權限環境 — Codespaces 非 root user / 本地 macOS root-owned /usr/local 等)')
-    console.log('  Fall back to `npx -y netlify-cli`(首次稍慢,後續 cache)')
-    netlifyCmd = 'npx -y netlify-cli'
+    info = lstatSync(absolute)
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null
+    throw error
+  }
+  invariant(info.isFile() && !info.isSymbolicLink() && info.nlink === 1, `${label} must be one regular no-link file`)
+  invariant(realpathSync(absolute) === absolute, `${label} must not traverse a symbolic-link alias`)
+  return readFileSync(absolute, 'utf8')
+}
+
+function safeJson(text, label) {
+  if (text === null) return null
+  try {
+    const value = JSON.parse(text)
+    invariant(value && typeof value === 'object' && !Array.isArray(value), `${label} must be one JSON object`)
+    return value
+  } catch (error) {
+    if (String(error?.message || '').startsWith(`${ERROR_PREFIX}:`)) throw error
+    throw new Error(`${ERROR_PREFIX}:${label} is invalid JSON:${error.message}`, { cause: error })
   }
 }
-console.log(`✓ Netlify CLI available(via "${netlifyCmd}")`)
-console.log('')
 
-// Step 2: Login
-const whoami = shOut(`${netlifyCmd} status --json`)
-if (!whoami.includes('"User"') && !whoami.includes('"name"')) {
-  console.log('▶ Login to Netlify(browser 自動開啟,Codespaces 內走 VS Code port forward;點「Continue with GitHub」→ Authorize)...')
-  sh(`${netlifyCmd} login`)
+function safeNetlifySiteName(value) {
+  return typeof value === 'string' && /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(value) ? value : ''
 }
-console.log('✓ Netlify logged in')
-console.log('')
 
-// Step 3: Link site(auto-create with predictable name)
-if (!existsSync('.netlify/state.json')) {
-  const repoName = JSON.parse(readFileSync('package.json', 'utf8')).name || 'ds-product-template'
-  const ghUser = shOut('gh api user --jq .login') || 'user'
-  const autoSiteName = `${ghUser}-${repoName}`.toLowerCase().replace(/[^a-z0-9-]/g, '-')
-  console.log(`▶ Auto-create Netlify site "${autoSiteName}" + link this repo...`)
+function safeNetlifyUrl(value, { dashboard = false } = {}) {
   try {
-    // 註:`netlify api <method>` 預設就輸出 JSON,無 `--json` flag(加了會被當未知參數)。
-    sh(`${netlifyCmd} sites:create --name="${autoSiteName}" --account-slug=$(${netlifyCmd} api listAccountsForUser 2>/dev/null | jq -r '.[0].slug // "personal"' 2>/dev/null || echo personal)`)
-    sh(`${netlifyCmd} link --name=${autoSiteName}`)
+    const url = new URL(value)
+    if (url.protocol !== 'https:' || url.username || url.password || url.port || url.search || url.hash) return ''
+    if (dashboard) return url.hostname === 'app.netlify.com' ? url.href.replace(/\/$/, '') : ''
+    return url.hostname === 'netlify.app' || url.hostname.endsWith('.netlify.app') ? url.href.replace(/\/$/, '') : ''
   } catch {
-    console.log('⚠️ Auto-create failed(site name 可能已存在)。Fall back to interactive netlify init...')
-    sh(`${netlifyCmd} init`)
+    return ''
   }
 }
-const state = JSON.parse(readFileSync('.netlify/state.json', 'utf8'))
-const siteId = state.siteId
 
-// Resolve 真實 site metadata via API —— `.netlify/state.json` 只保證含 siteId,不含可當 DNS
-// subdomain 的 name。禁把 site UUID 當 slug(會產生錯誤 dashboard / production / branch URL)。
-const siteMeta = JSON.parse(shOut(`${netlifyCmd} api getSite --data '{"site_id":"${siteId}"}'`) || '{}')
-const siteName = siteMeta.name || state.siteSlug || ''
-const siteUrl = siteMeta.ssl_url || siteMeta.url || (siteName ? `https://${siteName}.netlify.app` : '')
-const adminUrl = siteMeta.admin_url || (siteName ? `https://app.netlify.com/projects/${siteName}` : '')
-const repoUrl = siteMeta?.build_settings?.repo_url || ''
-
-if (!siteName) {
-  console.log('⚠️ 無法從 Netlify API 取得 site name(subdomain)—— 請到 dashboard 確認 site 建立成功後再重跑本 setup。')
+function stripTomlComment(line) {
+  let quote = ''
+  let escaped = false
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index]
+    if (quote === '"') {
+      if (escaped) escaped = false
+      else if (character === '\\') escaped = true
+      else if (character === '"') quote = ''
+      continue
+    }
+    if (quote === "'") {
+      if (character === "'") quote = ''
+      continue
+    }
+    if (character === '"' || character === "'") {
+      quote = character
+      continue
+    }
+    if (character === '#') return line.slice(0, index)
+  }
+  return line
 }
 
-// 持久化真實 subdomain 供 deploy-url.mjs 讀(否則它拿 state.json 只有 siteId → 把 UUID 當 subdomain)。
-// `.netlify/` 已 gitignore(per-machine state),此 cache 不進 repo。
-try {
-  writeFileSync('.netlify/deploy-meta.json', JSON.stringify({ siteName, siteUrl, adminUrl }, null, 2))
-} catch { /* best-effort cache */ }
-
-// Read-back:`sites:create` + `link` 只建站 + 連本機資料夾,不會自動接上 GitHub 持續部署
-// (push → auto build 需 site 連 repo)。驗證 repository linkage 後才據實宣告。
-if (repoUrl) {
-  console.log(`✓ Git 持續部署已連結(${repoUrl})—— push 會自動觸發 build`)
-} else {
-  console.log('⚠️ 此 site 尚未連 GitHub repo —— push **不會**自動觸發部署(continuous deployment)。')
-  console.log('   要 push 自動部署,擇一:')
-  console.log('   • Netlify dashboard → Site configuration → Build & deploy → Link repository')
-  console.log('   • 或改跑 `netlify init`(互動式,會設定 Git 持續部署)')
+function parseClosedTomlString(value) {
+  if (/^'[^'\r\n]*'$/.test(value)) return value.slice(1, -1)
+  if (!/^"(?:[^"\\\r\n]|\\["\\/bfnrt])*"$/.test(value)) return null
+  try {
+    const parsed = JSON.parse(value)
+    return typeof parsed === 'string' ? parsed : null
+  } catch {
+    return null
+  }
 }
-console.log(`✓ Linked site: ${siteName || siteId}`)
-console.log('')
 
-// Step 4: Print dashboard URL + env-var Basic Auth guidance(免費 — Edge Function netlify/edge-functions/basic-auth.ts)
-const dashboardUrl = `${adminUrl || `https://app.netlify.com/projects/${siteName || siteId}`}/configuration/env`
+function inspectNetlifyToml(source) {
+  if (source === null) return Object.freeze({ buildPresent: false, edgeFunctionWired: false })
+  let activeTable = null
+  let lastEdgeDeclaration = null
+  let buildPresent = false
+  const edgeDeclarations = []
+  for (const rawLine of source.split(/\r?\n/)) {
+    const line = stripTomlComment(rawLine).trim()
+    if (!line) continue
+    const arrayHeader = line.match(/^\[\[([A-Za-z0-9_.-]+)\]\]$/)
+    if (arrayHeader) {
+      activeTable = arrayHeader[1] === 'edge_functions'
+        ? { fields: new Map(), invalid: false }
+        : null
+      lastEdgeDeclaration = activeTable
+      if (activeTable) edgeDeclarations.push(activeTable)
+      continue
+    }
+    const tableHeader = line.match(/^\[([A-Za-z0-9_.-]+)\]$/)
+    if (tableHeader) {
+      buildPresent ||= tableHeader[1] === 'build'
+      if (lastEdgeDeclaration && tableHeader[1].startsWith('edge_functions.')) {
+        lastEdgeDeclaration.invalid = true
+      }
+      lastEdgeDeclaration = null
+      activeTable = null
+      continue
+    }
+    if (!activeTable) continue
+    const assignment = line.match(/^([A-Za-z][A-Za-z0-9_-]*)\s*=\s*(.+)$/)
+    if (!assignment || activeTable.fields.has(assignment?.[1])) {
+      activeTable.invalid = true
+      continue
+    }
+    const value = parseClosedTomlString(assignment[2].trim())
+    if (value === null) {
+      activeTable.invalid = true
+      continue
+    }
+    activeTable.fields.set(assignment[1], value)
+  }
+  const basicAuthDeclarations = edgeDeclarations.filter(declaration => declaration.fields.get('function') === 'basic-auth')
+  const edgeFunctionWired = basicAuthDeclarations.length === 1
+    && !basicAuthDeclarations[0].invalid
+    && basicAuthDeclarations[0].fields.size === 2
+    && basicAuthDeclarations[0].fields.get('path') === '/*'
+  return Object.freeze({ buildPresent, edgeFunctionWired })
+}
 
-console.log('━━━ 🔒 免費密碼保護設定(30 秒,設一條 env var)━━━')
-console.log('')
-console.log('免費方案的擋人方法 = Netlify Edge Function 自做 HTTP Basic Auth(Edge Functions 所有方案含 free 都可用)。')
-console.log('本 template 已內建(netlify/edge-functions/basic-auth.ts,netlify.toml 已 wire [[edge_functions]] path="/*"),')
-console.log('你只需在 Netlify 後台加一條 env var,deploy 後站台自動跳帳密彈窗。')
-console.log('(Netlify 內建密碼〔Dashboard「Password protection」與 _headers Basic-Auth〕都是 Pro 專屬 $20/mo,')
-console.log(' 免費用不到 — 且 _headers basic-auth 也不套用到 edge function,故改用下面這招。)')
-console.log('')
-console.log(`  Step 1. 開啟 dashboard → Environment variables:`)
-console.log(`          ${dashboardUrl}`)
-console.log('')
-console.log('  Step 2. Add a variable:')
-console.log('          • Key:   STORYBOOK_BASIC_AUTH')
-console.log('          • Value: user:password(自取帳密;多組空格分隔 "alice:pw1 bob:pw2")')
-console.log('          • Save')
-console.log('')
-console.log('  Step 3. 觸發一次 deploy(push main 或 Netlify「Trigger deploy」)→ 站台自動上密碼。')
-console.log('')
-console.log('  Step 4. 把以下兩條私訊 stakeholder(Slack / team chat / DM):')
-console.log(`          • Site URL: ${siteUrl}`)
-console.log('          • 帳密:    <你剛才設的 user:password>')
-console.log('')
-console.log('進階(非必須,要更好體驗才升級):')
-console.log('  • Pro Password Protection $20/mo — dashboard 開關,美化密碼頁、可只擋 deploy preview 放行 production')
-console.log('  • Cloudflare Access(免費 50 user 真 SSO)— 需自架 Cloudflare proxy 在 Netlify 前面')
-console.log('')
+function inspectBasicAuthPolicy(source) {
+  const present = source !== null
+  const sourceSha256 = present ? createHash('sha256').update(source).digest('hex') : ''
+  const failClosed = present && sourceSha256 === STORYBOOK_BASIC_AUTH_SOURCE_SHA256
+  return Object.freeze({ failClosed, policyVersion: failClosed ? STORYBOOK_ACCESS_POLICY : '', present })
+}
 
-if (!skipPrompts) {
-  const done = await rl.question('已在 Netlify 設好 STORYBOOK_BASIC_AUTH env var?(y/N)> ')
-  if (!/^y/i.test(done)) {
-    console.log('⚠️ 未設 env var = 站台公開(任何人有 URL 即可看)。回 dashboard 加 STORYBOOK_BASIC_AUTH 再 deploy。')
+export function inspectNetlifyManualSetup(rootPath = ROOT) {
+  const root = realpathSync(resolve(rootPath))
+  invariant(lstatSync(root).isDirectory(), 'repository root must be one real directory')
+  const packageJson = safeJson(readOptionalRegularFile(root, 'package.json', 'package.json'), 'package.json')
+  const netlifyToml = readOptionalRegularFile(root, 'netlify.toml', 'netlify.toml')
+  const edgeFunction = readOptionalRegularFile(root, 'netlify/edge-functions/basic-auth.ts', 'Basic Auth edge function')
+  const state = safeJson(readOptionalRegularFile(root, '.netlify/state.json', 'legacy Netlify state'), 'legacy Netlify state')
+  const metadata = safeJson(readOptionalRegularFile(root, '.netlify/deploy-meta.json', 'legacy Netlify metadata'), 'legacy Netlify metadata')
+  const netlifyConfiguration = inspectNetlifyToml(netlifyToml)
+  const siteName = safeNetlifySiteName(metadata?.siteName) || safeNetlifySiteName(state?.siteSlug)
+  const siteUrl = safeNetlifyUrl(metadata?.siteUrl) || (siteName ? `https://${siteName}.netlify.app` : '')
+  const projectUrl = safeNetlifyUrl(metadata?.adminUrl, { dashboard: true })
+  const basicAuthPolicy = inspectBasicAuthPolicy(edgeFunction)
+
+  const checks = Object.freeze({
+    basicAuthEdgeFunctionPresent: basicAuthPolicy.present,
+    basicAuthFailClosed: basicAuthPolicy.failClosed,
+    edgeFunctionWired: netlifyConfiguration.edgeFunctionWired,
+    netlifyConfigurationPresent: netlifyConfiguration.buildPresent,
+    packageManifestPresent: packageJson !== null,
+  })
+  const issues = []
+  if (!checks.packageManifestPresent) issues.push('package.json is missing')
+  if (!checks.netlifyConfigurationPresent) issues.push('netlify.toml with [build] is missing')
+  if (!checks.basicAuthEdgeFunctionPresent || !checks.edgeFunctionWired) {
+    issues.push('Basic Auth edge function file and netlify.toml wiring are incomplete')
+  }
+  if (checks.basicAuthEdgeFunctionPresent && !checks.basicAuthFailClosed) {
+    issues.push(`Basic Auth edge function does not implement ${STORYBOOK_ACCESS_POLICY}`)
+  }
+
+  return Object.freeze({
+    schemaVersion: 1,
+    kind: 'netlify-manual-setup-diagnostic',
+    status: 'manual-required',
+    setupComplete: false,
+    exitCode: NETLIFY_MANUAL_REQUIRED_EXIT_CODE,
+    blocker: NETLIFY_CLI_INSTALLATION_BLOCKER,
+    automatedCommandsExecuted: Object.freeze([]),
+    checks,
+    issues: Object.freeze(issues),
+    accessControl: Object.freeze({
+      policyVersion: basicAuthPolicy.policyVersion,
+      misconfiguredStatus: STORYBOOK_AUTH_MISCONFIGURED_STATUS,
+      unauthenticatedStatus: STORYBOOK_AUTH_REQUIRED_STATUS,
+      credentialConfigurationVerified: false,
+      liveReadbackVerified: false,
+      sharingAllowed: false,
+    }),
+    repository: Object.freeze({ name: typeof packageJson?.name === 'string' ? packageJson.name : '', root }),
+    discoveredSite: Object.freeze({ projectUrl, siteName, siteUrl }),
+    dashboard: Object.freeze({ projectUrl: projectUrl || NETLIFY_DASHBOARD_URL, projects: NETLIFY_DASHBOARD_URL }),
+    officialGuides: NETLIFY_OFFICIAL_GUIDES,
+  })
+}
+
+export function renderNetlifyManualSetup(diagnostic) {
+  const authReady = diagnostic.checks.edgeFunctionWired
+    && diagnostic.checks.basicAuthEdgeFunctionPresent
+    && diagnostic.checks.basicAuthFailClosed
+  const lines = [
+    `⛔ ${diagnostic.blocker.code}: Netlify CLI 自動安裝與執行已封鎖`,
+    '',
+    `已審查的 ${diagnostic.blocker.assessedPackage} lock audit 仍有 ${diagnostic.blocker.highSeverityFindings} 個 high-severity findings。`,
+    '本指令不會下載、安裝、呼叫或登入 Netlify CLI，也不會寫入 repo 或 Netlify 狀態。',
+    '以下 Dashboard 流程在地端、Codespaces 與其他 cloud agent 環境都相同：',
+    '',
+    `1. 開啟 ${diagnostic.dashboard.projects}`,
+    '2. Add new project → Import an existing project → GitHub，授權後選擇目前 repo。',
+    '3. 確認 Netlify 讀到 repo root 的 netlify.toml，再按 Publish。',
+  ]
+  if (authReady) {
+    lines.push(
+      '4. Project configuration → Environment variables → Add a variable：',
+      '   Key: STORYBOOK_BASIC_AUTH',
+      '   Value: user:password（帳號／密碼皆不可空白或含空格；帳密只存 Netlify，絕對不 commit）',
+    )
   } else {
-    console.log('✅ env var 設好,下次 deploy 站台自動上密碼')
+    lines.push('4. ⚠️ 本 checkout 未同時具備 Basic Auth edge function 與 netlify.toml wiring；不可宣稱站台已受密碼保護。')
+  }
+  lines.push(
+    '5. Project configuration → Build & deploy → Continuous Deployment → Branches and deploy contexts → Branch deploys: All。',
+    '6. Deploy 後必做 live readback：無 Authorization 的無痕請求必回 401 + WWW-Authenticate，正確帳密必能讀到 Storybook。',
+    '   若回 503，代表 STORYBOOK_BASIC_AUTH 缺失或格式錯誤；修正並重新 deploy，絕對不可分享該站台。',
+    '7. 只有上述匿名／正確帳密兩項 live readback 都通過，才可從 Dashboard 的 Deploys 分享真實 production/preview URL。',
+    '',
+    `Official import guide: ${diagnostic.officialGuides.importRepository}`,
+    `Official environment-variable guide: ${diagnostic.officialGuides.environmentVariables}`,
+    `Official branch-deploy guide: ${diagnostic.officialGuides.branchDeploys}`,
+    '',
+    '狀態：MANUAL ACTION REQUIRED（尚未驗證 Netlify 端 env 與 live readback，因此以 exit 2 fail-closed）',
+  )
+  if (diagnostic.discoveredSite.projectUrl || diagnostic.discoveredSite.siteUrl) {
+    lines.push('', '唯讀找到的舊有本機 metadata（仍需 Dashboard 確認）：')
+    if (diagnostic.discoveredSite.projectUrl) lines.push(`  Project: ${diagnostic.discoveredSite.projectUrl}`)
+    if (diagnostic.discoveredSite.siteUrl) lines.push(`  Site: ${diagnostic.discoveredSite.siteUrl}`)
+  }
+  if (diagnostic.issues.length > 0) lines.push('', ...diagnostic.issues.map(issue => `⚠️ ${issue}`))
+  return `${lines.join('\n')}\n`
+}
+
+function isMain() {
+  try {
+    return Boolean(process.argv[1]) && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+  } catch {
+    return false
   }
 }
-console.log('')
 
-console.log('━━━ 🚦 啟用草稿預覽(branch deploys — 給「預覽 → 確認 → 上線」流程)━━━')
-console.log('  ⚠️ Netlify **預設不啟用** branch deploys(官方預設只部署 production branch),本 setup 也**不會**自動開;')
-console.log('     要 Netlify 給每個分支獨立預覽網址,需人工在 dashboard 開一次(這是必要人工斷點):')
-console.log(`     ${`${adminUrl || `https://app.netlify.com/projects/${siteName || siteId}`}/configuration/deploys#branches-and-deploy-contexts`}`)
-console.log('     → Branch deploys → 選「Deploy all branches」(1 個開關)')
-console.log(`  開了之後:AI 推草稿分支 → 自動產生 https://<branch>--${siteName || '<site-name>'}.netlify.app 預覽網址(治理 hook 自動吐連結)。`)
-// best-effort:僅能把 deploy previews(PR-based)打開(updateSite skip_prs);branch deploys「全開」Netlify 無可靠公開 API,靠上面 dashboard 人工開
-try { execSync(`${netlifyCmd} api updateSite --data '{"site_id":"${siteId}","build_settings":{"skip_prs":false}}' 2>/dev/null`, { stdio: 'pipe' }); console.log('  ✓ deploy previews(PR-based 預覽)已試開') } catch { /* API 不保證,dashboard 為準 */ }
-console.log('  (未開 branch deploys 也行 → 用 main 的密碼保護站當團隊預覽:push main,團隊在唯一網址看、外人被密碼擋。)')
-console.log('')
-console.log('━━━ 後續驗證 ━━━')
-console.log(`  1. push main(或 Trigger deploy)後 2-3 min,Netlify Dashboard 看 ${siteUrl} 部署狀態`)
-console.log('  2. 試開 site URL(無痕視窗)→ 應該見瀏覽器原生帳密彈窗')
-console.log('  3. 輸入剛才設的 user:password → 看 storybook')
-console.log('')
-console.log('━━━ Defense-in-depth(已 ship in netlify.toml)━━━')
-console.log('  • X-Robots-Tag: noindex — Google 不收錄 URL')
-console.log('  • X-Frame-Options: SAMEORIGIN — 防 iframe 嵌入')
-console.log('  • Referrer-Policy: strict-origin-when-cross-origin')
-console.log('  ⚠️ Header 只防 SEO + iframe 嵌入,**真擋陌生人靠 Edge Function Basic Auth 那層(讀 env var)**')
-console.log('')
-
-console.log('✅ Setup complete!')
-
-rl.close()
+if (isMain()) {
+  const args = process.argv.slice(2)
+  const allowed = new Set(['--check', '--json', '--skip-prompts'])
+  if (args.includes('--help')) {
+    console.log('Usage: node scripts/setup-netlify-access.mjs [--check] [--json]')
+    console.log('Prints the fail-closed Dashboard/manual setup diagnostic; it never installs or invokes Netlify CLI.')
+  } else if (args.some(arg => !allowed.has(arg)) || new Set(args).size !== args.length) {
+    console.error(`${ERROR_PREFIX}:unsupported or duplicate argument`)
+    process.exitCode = 64
+  } else {
+    try {
+      const diagnostic = inspectNetlifyManualSetup(process.cwd())
+      if (args.includes('--json')) console.log(JSON.stringify(diagnostic, null, 2))
+      else process.stdout.write(renderNetlifyManualSetup(diagnostic))
+      process.exitCode = diagnostic.exitCode
+    } catch (error) {
+      console.error(error.message)
+      process.exitCode = 1
+    }
+  }
+}

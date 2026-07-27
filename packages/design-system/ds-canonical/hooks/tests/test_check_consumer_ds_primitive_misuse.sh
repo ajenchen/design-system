@@ -37,10 +37,10 @@ PASS=0
 FAIL=0
 FAILED_TESTS=""
 
-# Override CLAUDE_PROJECT_DIR so _log-fire.sh 寫進 TMP_DIR,不污染 repo .claude/logs/
+# Override GOVERNANCE_PROJECT_DIR so _log-fire.sh 寫進 TMP_DIR,不污染 repo .claude/logs/
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 mkdir -p "$TMP_DIR/.claude/logs"
 
 # 真實契約:Claude Code 傳 absolute path。Consumer app prod tsx / story tsx 各一條 base。

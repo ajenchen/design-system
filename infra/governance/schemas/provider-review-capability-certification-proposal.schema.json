@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/provider-review-capability-certification-proposal-v1.schema.json",
+  "title": "Atomic provider runtime and review capability certification proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "kind",
+    "applicationMode",
+    "authorizationStatus",
+    "externalMutationAuthorized",
+    "ledgers",
+    "models",
+    "runtime",
+    "reviewCapability",
+    "evidenceArtifacts",
+    "requiredChangedPaths",
+    "ledgerAfters",
+    "proposalDigest"
+  ],
+  "properties": {
+    "$schema": {"const": "../schemas/provider-review-capability-certification-proposal.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "provider-review-capability-certification-review-proposal"},
+    "applicationMode": {"const": "local-candidate-preparation-only"},
+    "authorizationStatus": {"const": "signed-runtime-and-capability-transition-verified"},
+    "externalMutationAuthorized": {"const": false},
+    "ledgers": {
+      "type": "array",
+      "prefixItems": [
+        {"$ref": "#/$defs/providerLedger"},
+        {"$ref": "#/$defs/reviewLedger"}
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "models": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inventorySha256",
+        "desiredSha256",
+        "compatibilityMatrixSha256",
+        "runtimeProfileSha256",
+        "roleSurfacePolicySha256",
+        "issuerRegistrySha256",
+        "providerRegistrySha256",
+        "reviewCapabilityRegistrySha256",
+        "modelInvocationProfilesSha256",
+        "modelReleaseRegistrySha256"
+      ],
+      "properties": {
+        "inventorySha256": {"$ref": "#/$defs/sha256"},
+        "desiredSha256": {"$ref": "#/$defs/sha256"},
+        "compatibilityMatrixSha256": {"$ref": "#/$defs/sha256"},
+        "runtimeProfileSha256": {"$ref": "#/$defs/sha256"},
+        "roleSurfacePolicySha256": {"$ref": "#/$defs/sha256"},
+        "issuerRegistrySha256": {"$ref": "#/$defs/sha256"},
+        "providerRegistrySha256": {"$ref": "#/$defs/sha256"},
+        "reviewCapabilityRegistrySha256": {"$ref": "#/$defs/sha256"},
+        "modelInvocationProfilesSha256": {"$ref": "#/$defs/sha256"},
+        "modelReleaseRegistrySha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "certificationId",
+        "targetId",
+        "recordSha256",
+        "evidenceDigest",
+        "validUntil"
+      ],
+      "properties": {
+        "certificationId": {"$ref": "#/$defs/id"},
+        "targetId": {"$ref": "#/$defs/id"},
+        "recordSha256": {"$ref": "#/$defs/sha256"},
+        "evidenceDigest": {"$ref": "#/$defs/prefixedSha256"},
+        "validUntil": {"type": "string", "format": "date-time"}
+      }
+    },
+    "reviewCapability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "certificationId",
+        "reviewProfileId",
+        "recordSha256",
+        "evidenceDigest",
+        "expiresAt",
+        "runtimeCertificationId",
+        "runtimeCertificationSha256"
+      ],
+      "properties": {
+        "certificationId": {"$ref": "#/$defs/id"},
+        "reviewProfileId": {"$ref": "#/$defs/id"},
+        "recordSha256": {"$ref": "#/$defs/sha256"},
+        "evidenceDigest": {"$ref": "#/$defs/sha256"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "runtimeCertificationId": {"$ref": "#/$defs/id"},
+        "runtimeCertificationSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "evidenceArtifacts": {
+      "type": "array",
+      "prefixItems": [
+        {"$ref": "#/$defs/providerRuntimeArtifact"},
+        {"$ref": "#/$defs/reviewCapabilityArtifact"}
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "requiredChangedPaths": {
+      "type": "array",
+      "prefixItems": [
+        {"type": "string", "pattern": "^infra/governance/evidence/provider-runtime/[a-f0-9]{64}\\.json$"},
+        {"const": "infra/governance/providers/certifications.json"},
+        {"type": "string", "pattern": "^infra/governance/evidence/review-capability/[a-f0-9]{64}\\.json$"},
+        {"const": "infra/governance/providers/review-capability-certifications.json"}
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true
+    },
+    "ledgerAfters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerCertifications", "reviewCapabilityCertifications"],
+      "properties": {
+        "providerCertifications": {
+          "$ref": "https://qijenchen.dev/schemas/provider-surface-certification-v2.schema.json"
+        },
+        "reviewCapabilityCertifications": {
+          "$ref": "https://qijenchen.dev/schemas/governance/review-capability-certifications-v1.json"
+        }
+      }
+    },
+    "proposalDigest": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "prefixedSha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "beforeSha256", "afterSha256"],
+      "properties": {
+        "path": {"type": "string"},
+        "beforeSha256": {"$ref": "#/$defs/sha256"},
+        "afterSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "providerLedger": {
+      "allOf": [
+        {"$ref": "#/$defs/ledger"},
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "infra/governance/providers/certifications.json"
+            }
+          }
+        }
+      ]
+    },
+    "reviewLedger": {
+      "allOf": [
+        {"$ref": "#/$defs/ledger"},
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "infra/governance/providers/review-capability-certifications.json"
+            }
+          }
+        }
+      ]
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "canonicalBase64"],
+      "properties": {
+        "path": {"type": "string"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "canonicalBase64": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5592408,
+          "pattern": "^[A-Za-z0-9+/]+={0,2}$"
+        }
+      }
+    },
+    "providerRuntimeArtifact": {
+      "allOf": [
+        {"$ref": "#/$defs/artifact"},
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^infra/governance/evidence/provider-runtime/[a-f0-9]{64}\\.json$"
+            }
+          }
+        }
+      ]
+    },
+    "reviewCapabilityArtifact": {
+      "allOf": [
+        {"$ref": "#/$defs/artifact"},
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^infra/governance/evidence/review-capability/[a-f0-9]{64}\\.json$"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

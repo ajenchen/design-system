@@ -63,26 +63,26 @@ expect_warn() {
 echo "=== check_propose_pre_grep_verify tests ==="
 
 # 1. Planning doc with propose keyword + no cite → warn
-run_hook "/repo/.claude/planning/refactor-X.md" '# Plan
+run_hook "/repo/governance/planning/refactor-X.md" '# Plan
 我推 A:改 5 個元件加 SurfaceBody。請拍板回 A/B/C。
 '
 expect_warn "1. planning propose no cite → warn" "PRE-ASK SELF-VERIFY GAP"
 
 # 2. Planning doc with propose + cite (file path in backticks) → silent
-run_hook "/repo/.claude/planning/refactor-Y.md" '# Plan
+run_hook "/repo/governance/planning/refactor-Y.md" '# Plan
 基於 `packages/design-system/src/components/Sheet/sheet.tsx` 已 work fine,
 我推 A:不動 Sheet。等你拍板回 A 或 B。
 '
 expect_pass_silent "2. planning propose with file path cite → silent"
 
 # 3. Planning doc with propose + file:line cite → silent
-run_hook "/repo/.claude/planning/refactor-Z.md" '# Plan
+run_hook "/repo/governance/planning/refactor-Z.md" '# Plan
 依 `combobox.tsx:42` 既有 pattern,等你拍板回 A 或 B。
 '
 expect_pass_silent "3. planning propose with file:line cite → silent"
 
 # 4. @propose-pre-verified marker in head → silent skip
-run_hook "/repo/.claude/planning/refactor-W.md" '<!-- @propose-pre-verified -->
+run_hook "/repo/governance/planning/refactor-W.md" '<!-- @propose-pre-verified -->
 # Plan
 我推 A,請拍板回 A/B/C。Already verified DS-wide.
 '
@@ -95,7 +95,7 @@ const x = "請拍板";
 expect_pass_silent "5. non-planning file path → silent skip"
 
 # 6. Planning doc without propose keyword → silent
-run_hook "/repo/.claude/planning/notes.md" '# Notes
+run_hook "/repo/governance/planning/notes.md" '# Notes
 今天的 task list:
 - 寫 hook test
 - 跑 audit

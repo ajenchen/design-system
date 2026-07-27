@@ -1,41 +1,171 @@
 #!/usr/bin/env node
-// meta-test for check-src-republish — 注入已知違規 → gate 必 exit 1 → 還原(PNG P4.3 gate-meta-test 家族)
+// Meta-test for check-src-republish.mjs.
 //
-// 這個 gate 的偵測機制 = `git diff <baselineTag> HEAD` 比對 npm publish surface(非工作區檔案),
-// 條件 = ship-relevant diff 非空 **且** package.json 版本 === npm latest(沒 bump)→ exit 1。
-// 所以注入手法必須動 git HEAD(暫時 commit 一個 ship-relevant src 檔),不能只寫工作區檔案。
-// 版本刻意不 bump → 觸發「surface 改了但沒 republish → consumer 拿 stale code」BLOCK。
-import { execSync } from 'node:child_process'
-import { existsSync, rmSync, writeFileSync } from 'node:fs'
+// Safety invariant: the probe repository is always an isolated mkdtemp fixture.
+// This test must never stage, commit, clean, or reset the caller's repository.
 
-const run = (cmd) => { try { execSync(cmd, { stdio: 'pipe' }); return 0 } catch (e) { return e.status ?? 1 } }
-const git = (cmd) => execSync(`git ${cmd}`, { stdio: 'pipe', encoding: 'utf8' }).trim()
-const GATE = 'node scripts/check-src-republish.mjs --check'
-let ok = true
+import { execFileSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { runRepublishGate } from './check-src-republish.mjs'
 
-// 1) 現況必 PASS(baseline)
-if (run(GATE) !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL(repo 可能已有真違規 → 換乾淨 target)'); process.exit(1) }
-console.log('✓ baseline PASS')
+const HERE = dirname(fileURLToPath(import.meta.url))
+const CALLER_ROOT = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+  cwd: HERE,
+  encoding: 'utf8',
+  stdio: ['ignore', 'pipe', 'pipe'],
+}).trim()
+const CHECKER = join(HERE, 'check-src-republish.mjs')
 
-// 2) 注入違規:暫時 commit 一個 ship-relevant src 檔(改 publish surface)但不 bump 版本 → 必 FAIL → 還原
-const ORIG = git('rev-parse HEAD')
-const PROBE = 'packages/design-system/src/__republish_meta_probe__.tsx'
-try {
-  writeFileSync(PROBE, 'export const __republishMetaProbe = 1\n')
-  git(`add ${PROBE}`)
-  git('commit --no-verify -q -m "temp: republish meta-test probe (auto-reverted)"')
-  const code = run(GATE)
-  if (code === 0) { console.error('✗ 注入 ship-relevant commit 後 gate 未 FAIL(detection 失效或環境降級)'); ok = false }
-  else console.log('✓ 注入違規被抓(exit ' + code + ')')
-} finally {
-  // 還原:硬 reset 回原 HEAD(丟掉 temp commit + 其帶入的 probe 檔),再清工作區殘留
-  try { git(`reset --hard ${ORIG} -q`) } catch (e) { console.error('⚠️  git reset 還原失敗:' + e.message) }
-  if (existsSync(PROBE)) rmSync(PROBE)
+const callerFingerprint = () => ({
+  head: execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: CALLER_ROOT,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim(),
+  status: execFileSync('git', ['status', '--porcelain=v1', '-z', '--untracked-files=all'], {
+    cwd: CALLER_ROOT,
+    encoding: 'buffer',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).toString('base64'),
+})
+
+const before = callerFingerprint()
+const fixture = mkdtempSync(join(tmpdir(), 'ds-republish-meta-'))
+const fixturePackage = join(fixture, 'packages', 'design-system', 'package.json')
+const fixtureSource = join(fixture, 'packages', 'design-system', 'src', 'index.ts')
+const fixtureProbe = join(fixture, 'packages', 'design-system', 'src', '__republish_meta_probe__.tsx')
+
+const git = (...args) => execFileSync('git', args, {
+  cwd: fixture,
+  encoding: 'utf8',
+  stdio: ['ignore', 'pipe', 'pipe'],
+}).trim()
+
+let publishedCommit = null
+const gate = async ({
+  baselineCommitResolver = () => publishedCommit,
+  publishedVersionResolver = async () => '1.2.3',
+} = {}) => {
+  try {
+    const result = await runRepublishGate({
+      baselineCommitResolver,
+      publishedVersionResolver,
+      repoRoot: fixture,
+    })
+    return { result, status: 0 }
+  } catch (error) {
+    return { error, status: 1 }
+  }
 }
 
-// 3) 還原後必 PASS
-if (run(GATE) !== 0) { console.error('✗ 還原後應 PASS(HEAD 未乾淨回復?)'); process.exit(1) }
-console.log('✓ restore PASS')
+const packageJson = (version) => `${JSON.stringify({
+  name: '@qijenchen/design-system',
+  version,
+  files: ['src/**/*.ts', 'src/**/*.tsx'],
+}, null, 2)}\n`
+
+let ok = true
+try {
+  mkdirSync(dirname(fixtureSource), { recursive: true })
+  writeFileSync(fixturePackage, packageJson('1.2.3'))
+  writeFileSync(fixtureSource, 'export const baseline = true\n')
+
+  git('init', '-q')
+  git('config', 'user.name', 'Republish Meta Test')
+  git('config', 'user.email', 'republish-meta-test@example.invalid')
+  git('add', '--', 'packages/design-system/package.json', 'packages/design-system/src/index.ts')
+  git('commit', '--no-verify', '-q', '-m', 'fixture: published baseline')
+  git('tag', 'v1.2.3')
+  publishedCommit = git('rev-parse', 'v1.2.3^{commit}')
+
+  const originalPath = process.env.PATH
+  const originalNodeOptions = process.env.NODE_OPTIONS
+  process.env.PATH = '/republish-test-poison-path'
+  process.env.NODE_OPTIONS = '--import=/republish-test-poison-import.mjs'
+  const baseline = await gate()
+  if (originalPath === undefined) delete process.env.PATH
+  else process.env.PATH = originalPath
+  if (originalNodeOptions === undefined) delete process.env.NODE_OPTIONS
+  else process.env.NODE_OPTIONS = originalNodeOptions
+  if (baseline.status !== 0) {
+    console.error('✗ isolated baseline should pass')
+    console.error(baseline.error?.message)
+    ok = false
+  } else {
+    console.log('✓ isolated baseline PASS with poisoned PATH/NODE_OPTIONS ignored')
+  }
+
+  const unavailableRegistry = await gate({
+    publishedVersionResolver: async () => { throw new Error('fixture registry unavailable') },
+  })
+  if (unavailableRegistry.status === 0) {
+    console.error('✗ unavailable published baseline transport failed open')
+    ok = false
+  } else {
+    console.log('✓ unavailable published baseline transport blocked')
+  }
+  const unavailableTag = await gate({
+    baselineCommitResolver: () => { throw new Error('fixture remote tag unavailable') },
+  })
+  if (unavailableTag.status === 0) {
+    console.error('✗ unavailable published baseline tag failed open')
+    ok = false
+  } else {
+    console.log('✓ unavailable published baseline tag blocked')
+  }
+
+  writeFileSync(fixtureProbe, 'export const __republishMetaProbe = 1\n')
+  git('add', '--', 'packages/design-system/src/__republish_meta_probe__.tsx')
+  git('commit', '--no-verify', '-q', '-m', 'fixture: unversioned publish-surface change')
+  const violation = await gate()
+  if (violation.status === 0) {
+    console.error('✗ unversioned publish-surface commit was not blocked')
+    ok = false
+  } else {
+    console.log(`✓ isolated violation blocked (exit ${violation.status})`)
+  }
+
+  writeFileSync(fixturePackage, packageJson('1.2.2'))
+  const downgrade = await gate()
+  if (downgrade.status === 0) {
+    console.error('✗ downgraded publish-surface change was not blocked')
+    ok = false
+  } else {
+    console.log('✓ isolated downgrade blocked')
+  }
+
+  writeFileSync(fixturePackage, packageJson('1.2.4'))
+  git('add', '--', 'packages/design-system/package.json')
+  git('commit', '--no-verify', '-q', '-m', 'fixture: bump package version')
+  const bumped = await gate()
+  if (bumped.status !== 0) {
+    console.error('✗ version-bumped publish-surface change should pass')
+    console.error(bumped.error?.message)
+    ok = false
+  } else {
+    console.log('✓ isolated version bump PASS')
+  }
+} finally {
+  rmSync(fixture, { recursive: true, force: true })
+}
+
+const after = callerFingerprint()
+if (after.head !== before.head || after.status !== before.status) {
+  console.error('✗ safety invariant failed: caller repository changed during isolated meta-test')
+  ok = false
+} else {
+  console.log('✓ caller repository remained byte-for-byte unchanged at HEAD/status boundary')
+}
+
+// The copied checker must remain exactly the source under test; this read also
+// fails loudly if future refactors move it without updating the fixture.
+if (readFileSync(CHECKER).length === 0) {
+  console.error('✗ checker source is unexpectedly empty')
+  ok = false
+}
 
 console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')
 process.exit(ok ? 0 : 1)

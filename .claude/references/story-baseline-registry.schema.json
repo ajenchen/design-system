@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/design-system/story-baseline-registry-v1.json",
+  "title": "Consumer story archetype registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "_meta", "components"],
+  "properties": {
+    "$schema": { "const": "./story-baseline-registry.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "_meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "purpose",
+        "owner",
+        "consumed_by",
+        "provider_view_policy",
+        "rollout"
+      ],
+      "properties": {
+        "purpose": { "$ref": "#/$defs/nonEmptyString" },
+        "owner": {
+          "const": "packages/design-system/ds-canonical/references/story-baseline-registry.json"
+        },
+        "consumed_by": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/canonicalReference" }
+        },
+        "provider_view_policy": { "$ref": "#/$defs/nonEmptyString" },
+        "rollout": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Sidebar", "DataTable", "ChromeHeader"],
+      "properties": {
+        "Sidebar": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["baseline", "requiredHelpers", "antiPatterns"],
+          "properties": {
+            "baseline": { "$ref": "#/$defs/canonicalReference" },
+            "requiredHelpers": { "$ref": "#/$defs/nameArray" },
+            "antiPatterns": { "$ref": "#/$defs/antiPatterns" }
+          }
+        },
+        "DataTable": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["baseline", "toolbar", "antiPatterns"],
+          "properties": {
+            "baseline": { "$ref": "#/$defs/canonicalReference" },
+            "toolbar": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "requiredHelpers",
+                "filterPanel",
+                "sortManager",
+                "buttonCanonical"
+              ],
+              "properties": {
+                "requiredHelpers": { "$ref": "#/$defs/nameArray" },
+                "filterPanel": { "$ref": "#/$defs/name" },
+                "sortManager": { "$ref": "#/$defs/name" },
+                "buttonCanonical": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "variant",
+                    "size",
+                    "iconOnly",
+                    "pressed",
+                    "rationale"
+                  ],
+                  "properties": {
+                    "variant": { "const": "text" },
+                    "size": { "const": "sm" },
+                    "iconOnly": { "const": true },
+                    "pressed": { "$ref": "#/$defs/nonEmptyString" },
+                    "rationale": { "$ref": "#/$defs/nonEmptyString" }
+                  }
+                }
+              }
+            },
+            "antiPatterns": { "$ref": "#/$defs/antiPatterns" }
+          }
+        },
+        "ChromeHeader": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["baseline", "requiredStructure", "antiPatterns"],
+          "properties": {
+            "baseline": { "$ref": "#/$defs/canonicalReference" },
+            "requiredStructure": { "$ref": "#/$defs/nonEmptyString" },
+            "antiPatterns": { "$ref": "#/$defs/antiPatterns" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+    },
+    "canonicalReference": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!\\.claude(?:/|$)|\\.agents(?:/|$)|\\.codex(?:/|$))(?!/)(?!.*(?:^|/)\\.\\.?/)(?!.*\\\\)[^\\u0000-\\u001F\\u007F]+$"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+    },
+    "nameArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/name" }
+    },
+    "antiPatterns": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/antiPattern" }
+    },
+    "antiPattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "regex", "severity", "rationale"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "regex": { "$ref": "#/$defs/nonEmptyString" },
+        "unlessRegex": { "$ref": "#/$defs/nonEmptyString" },
+        "severity": { "enum": ["block", "warn"] },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    }
+  }
+}

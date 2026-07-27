@@ -1,10 +1,9 @@
 #!/bin/bash
-# SSOT approval keyword regex(M17 + M34,2026-05-18 codify per audit GAP 6)
+# Legacy command/merge trigger regex(M17 + M34,2026-05-18).
 #
-# Used by:
-#   - check_substantive_edit_approval_preflight.sh(pre-flight Edit/Write production)
-#   - stop_self_audit.sh Mechanism 4(post-flight codex-design ship verify)
-#   - check_solo_workflow.sh R3(push main trigger detect)
+# This compatibility helper is not decision evidence and must never authorize UI/UX work.
+# Preflight and stop audit share the canonical target-bound decision parser; generic
+# phrases below are only legacy workflow command signals.
 #
 # Background:GAP 6 audit(2026-05-18) found approval regex duplicated 3 places + drift:
 # preflight 已加 `#[N] A` numbered directive + 照建議 / 照共識 reference-style
@@ -29,5 +28,5 @@ export APPROVAL_KEYWORD_RE='(同意|採用|採納|拍板|可以|改成|改為|�
 # Helper:check input string contains approval keyword
 # Usage: if has_approval "$user_msg"; then ...
 has_approval() {
-  echo "$1" | grep -qE "$APPROVAL_KEYWORD_RE"
+  grep -qE "$APPROVAL_KEYWORD_RE" <<<"$1"
 }

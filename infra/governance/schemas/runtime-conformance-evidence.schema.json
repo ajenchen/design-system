@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/runtime-conformance-evidence-v4.json",
+  "title": "Provider runtime conformance evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "scope", "status", "run", "subject", "safety", "providers", "attestation", "evidenceDigest"],
+  "properties": {
+    "schemaVersion": {"const": 4},
+    "kind": {"const": "provider-runtime-conformance"},
+    "scope": {"enum": ["local-fleet", "provider"]},
+    "status": {"enum": ["pass", "fail"]},
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runId", "generatedAt", "validUntil", "operatingSystem", "platform", "arch", "executionEnvironment", "pathClass", "hostDigest"],
+      "properties": {
+        "runId": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+        "generatedAt": {"type": "string", "format": "date-time"},
+        "validUntil": {"type": "string", "format": "date-time"},
+        "operatingSystem": {"enum": ["macos", "linux"]},
+        "platform": {"enum": ["darwin", "linux"]},
+        "arch": {"enum": ["arm64", "x64"]},
+        "executionEnvironment": {"enum": ["native", "wsl2", "devcontainer"]},
+        "pathClass": {"enum": ["no-space", "contains-space"]},
+        "hostDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "operatingSystem": {"const": "macos"},
+            "platform": {"const": "darwin"},
+            "executionEnvironment": {"const": "native"}
+          }
+        },
+        {
+          "properties": {
+            "operatingSystem": {"const": "linux"},
+            "platform": {"const": "linux"},
+            "executionEnvironment": {"enum": ["native", "wsl2", "devcontainer"]}
+          }
+        }
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gitHead", "gitTree", "worktreeDirty", "contractDigest", "contractValid", "contractBlockingDiagnosticIds", "registeredProviderIds", "profileDigest", "harnessDigest"],
+      "properties": {
+        "gitHead": {"type": ["string", "null"]},
+        "gitTree": {"type": ["string", "null"]},
+        "worktreeDirty": {"type": ["boolean", "null"]},
+        "contractDigest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "contractValid": {"type": "boolean"},
+        "contractBlockingDiagnosticIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "registeredProviderIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "profileDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "harnessDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["isolatedTemporaryFixtures", "temporaryCredentialHandling", "processEnvironmentPolicy", "providerExecutableAuthority", "realRepositorySourceWrites", "remoteMutations", "certificationLedgerWrites", "rawEnvironmentRecorded", "rawProviderOutputRecorded"],
+      "properties": {
+        "isolatedTemporaryFixtures": {"const": true},
+        "temporaryCredentialHandling": {"enum": ["no-ambient-credentials-passed", "claude-auth-status-read-only-home-reference", "claude-local-account-reference-bounded-probes-v1", "codex-auth-copy-if-available-0700-deleted-after-probe", "claude-local-account-and-codex-auth-copy-bounded-probes-v1", "nonproduction-test-seam-no-credential-claim"]},
+        "processEnvironmentPolicy": {"enum": ["closed-explicit-allowlist-v1", "nonproduction-test-seam-no-environment-claim"]},
+        "providerExecutableAuthority": {"enum": ["repo-content-v2-certification-v1", "nonproduction-test-seam-no-provider-authority-claim"]},
+        "realRepositorySourceWrites": {"const": false},
+        "remoteMutations": {"const": false},
+        "certificationLedgerWrites": {"const": false},
+        "rawEnvironmentRecorded": {"const": false},
+        "rawProviderOutputRecorded": {"const": false}
+      }
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "targetBinding", "tool", "checks"],
+        "properties": {
+          "id": {"type": "string"},
+          "status": {"enum": ["pass", "fail"]},
+          "targetBinding": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "digest"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+              "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+            }
+          },
+          "tool": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["executable", "version", "status", "command", "distribution"],
+            "properties": {
+              "executable": {"type": "string"},
+              "version": {"type": ["string", "null"]},
+              "status": {"enum": ["pass", "fail"]},
+              "command": {"$ref": "#/$defs/command"},
+              "distribution": {"$ref": "#/$defs/distribution"}
+            }
+          },
+          "checks": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/check"}}
+        }
+      }
+    },
+    "attestation": {"$ref": "#/$defs/attestation"},
+    "evidenceDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"scope": {"const": "provider"}}, "required": ["scope"]},
+      "then": {"properties": {"providers": {"type": "array", "maxItems": 1}}}
+    }
+  ],
+  "$defs": {
+    "distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandName", "resolutionStatus", "pathDigest", "contentDigest", "targetPathDigest", "targetContentDigest", "authorityDigest", "lockDigest", "activePackageContentDigest", "packageContentProtocol", "toolchainPlatform", "distributionVersion", "platform", "arch"],
+      "properties": {
+        "commandName": {"type": "string"},
+        "resolutionStatus": {"enum": ["pass", "fail"]},
+        "pathDigest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "contentDigest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "targetPathDigest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "targetContentDigest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "authorityDigest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "lockDigest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "activePackageContentDigest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "packageContentProtocol": {"type": ["string", "null"], "enum": ["npm-ustar-package-tree-v1", null]},
+        "toolchainPlatform": {"type": ["string", "null"], "pattern": "^(?:darwin|linux)-(?:arm64|x64)$"},
+        "distributionVersion": {"type": ["string", "null"], "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"},
+        "platform": {"type": "string"},
+        "arch": {"type": "string"}
+      }
+    },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "status", "issuerId", "issuerRegistryDigest", "algorithm", "evidenceDigest", "runId", "signature", "coSignatures"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "provider-runtime-evidence-attestation"},
+        "status": {"enum": ["pending", "verified"]},
+        "issuerId": {"type": ["string", "null"], "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+        "issuerRegistryDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "algorithm": {"const": "ed25519"},
+        "evidenceDigest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "runId": {"type": "string"},
+        "signature": {"type": ["string", "null"]},
+        "coSignatures": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["issuerId", "signature"],
+            "properties": {
+              "issuerId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+              "signature": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executable", "arguments", "cwd", "stdin", "environmentNames"],
+      "properties": {
+        "executable": {"type": "string"},
+        "arguments": {"type": "array", "items": {"type": "string"}},
+        "cwd": {"enum": ["<fixture>", "<repo>"]},
+        "stdin": {"enum": ["none", "sha256"]},
+        "stdinSha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "environmentNames": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["CODEX_HOME", "GOVERNANCE_PROJECT_DIR", "GOVERNANCE_PROVIDER", "GOVERNANCE_READ_ONLY", "HOME", "USER"]
+          }
+        }
+      }
+    },
+    "assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "pass"],
+      "properties": {
+        "id": {"type": "string"},
+        "pass": {"type": "boolean"}
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "driver", "certificationImpact", "status", "command", "result"],
+      "properties": {
+        "id": {"type": "string"},
+        "driver": {"type": "string"},
+        "certificationImpact": {"enum": ["required", "capability-only"]},
+        "status": {"enum": ["pass", "fail"]},
+        "command": {"$ref": "#/$defs/command"},
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["exitCode", "timedOut", "outputExceeded", "assertions"],
+          "properties": {
+            "exitCode": {"type": ["integer", "null"]},
+            "timedOut": {"type": "boolean"},
+            "outputExceeded": {"type": "boolean"},
+            "assertions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/assertion"}}
+          }
+        }
+      }
+    }
+  }
+}

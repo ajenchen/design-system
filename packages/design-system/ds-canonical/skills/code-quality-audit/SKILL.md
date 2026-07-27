@@ -36,16 +36,20 @@ Scope:**tsx / ts code hygiene**,跟 design canonical 正交。
 1. Run `node scripts/code-quality-audit.mjs [--scope=<scope>]`
 2. Triage findings into P0 / P1 / P2
 3. Auto-fix trivial(unused imports,trivial `any` casts with obvious type)
-4. STOP for user decision on:
-   - File-size P0(大 component architectural split)
-   - Circular dep(需設計層面重組)
-   - 無法 auto-type 的 `any`(需 design judgment 訂 proper type)
+4. 依 shared governance 的 Decision Authority classifier 分類並處理:
+   - File-size P0 的 component architectural split、circular-dependency 重組、proper type
+     與 long-function remediation 都是工程決策，依 Standing Authorization 自主完成並驗證。
+   - 只有修法會改變 public component semantics、產品 workflow、interaction 或其他產品／
+     UI／UX SSOT，且證據收斂後仍有真實取捨時，才停下取得 exact target-bound decision。
+   - 無法分類時 fail closed 並補 source/evidence/independent review；不得用泛用 user
+     approval 代替工程判斷。
 
 ## 禁止
 
 - 禁 silent 吞 `any`(必加 `// any-allow: {rationale}`)
-- 禁把 dead export 直接刪(可能是 planned API surface);flag → user 決策
-- 禁把 long function 硬拆(拆錯比爆長還糟);只提議,user sign-off
+- Dead export 若只是 implementation residue，依 usage/public-surface evidence 自主移除；若會
+  改變 public component semantics，依 authority classifier 判定是否存在真正 UI/UX 取捨。
+- Long function 依 tests、public API 與行為不變證據自主重構；禁無證據硬拆。
 
 ## Integration points
 
@@ -59,5 +63,5 @@ Scope:**tsx / ts code hygiene**,跟 design canonical 正交。
 ## References
 
 - `scripts/code-quality-audit.mjs` — 實作
-- `.claude/hooks/lib/_code_quality.sh`(經 `post_edit_dispatcher.sh` chain)— per-edit lite check
+- `packages/design-system/ds-canonical/hooks/lib/_code_quality.sh`(經 canonical post-edit dispatcher chain)— per-edit lite check
 - 相關:token 防線 `lib/_token_hygiene.sh` + `check_opacity_token_usage.sh`(正交 — token 紀律 vs code 紀律)

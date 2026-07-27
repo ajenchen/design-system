@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/managed-host-assurance-evidence-v2.json",
+  "title": "Read-only managed-host assurance evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "generatedAt", "platform", "expectedHostIdentity", "modelDigests", "scope", "releaseBinding", "providers", "overallStatus", "certification", "evidenceDigest"],
+  "properties": {
+    "schemaVersion": {"const": 2}, "kind": {"const": "managed-host-assurance-evidence"},
+    "generatedAt": {"type": "string", "format": "date-time"}, "platform": {"enum": ["darwin", "linux", "win32"]},
+    "expectedHostIdentity": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/hostIdentity"}]},
+    "modelDigests": {
+      "type": "object", "additionalProperties": false, "required": ["desired", "compatibility", "releaseRings", "codexHookBundleContract"],
+      "properties": {"desired": {"$ref": "#/$defs/sha256"}, "compatibility": {"$ref": "#/$defs/sha256"}, "releaseRings": {"$ref": "#/$defs/sha256"}, "codexHookBundleContract": {"$ref": "#/$defs/sha256"}}
+    },
+    "scope": {
+      "type": "object", "additionalProperties": false, "required": ["portableRepoBaseline", "managedHostExclusive"],
+      "properties": {"portableRepoBaseline": {"const": "declared-not-managed-host-proof"}, "managedHostExclusive": {"const": "only-listed-controls-with-effective-readback-and-equivalent-hook-delivery"}}
+    },
+    "releaseBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "tag", "sourceCommit", "sourceTree", "candidateDigest", "packageVersion", "packageIntegrity", "reason"],
+      "properties": {
+        "status": {"enum": ["ready", "missing", "invalid"]}, "tag": {"type": ["string", "null"]},
+        "sourceCommit": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/sha1"}]}, "sourceTree": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/sha1"}]},
+        "candidateDigest": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]},
+        "packageVersion": {"type": ["string", "null"]}, "packageIntegrity": {"type": ["string", "null"]}, "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "providers": {
+      "type": "array", "minItems": 2,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "status", "minimumVersion", "systemPolicyPath", "localPolicyDiscovered", "localPolicyPathSafety", "effectiveReadback", "attestation", "policy", "filesystemTrust", "hookDelivery", "observedControls", "unknownControls", "reasons"],
+        "properties": {
+          "id": {"enum": ["claude-code", "codex"]}, "status": {"enum": ["pass", "fail", "unknown"]},
+          "minimumVersion": {"type": "string", "minLength": 1}, "systemPolicyPath": {"type": "string", "minLength": 1},
+          "localPolicyDiscovered": {"type": "boolean"}, "localPolicyPathSafety": {"enum": ["safe-regular-file", "missing", "unsafe"]},
+          "effectiveReadback": {"enum": ["verified", "verified-replay-unchecked", "missing", "untrusted-local-only", "invalid"]},
+          "attestation": {"enum": ["verified", "replay-unchecked", "missing", "invalid"]},
+          "policy": {"enum": ["match", "mismatch", "not-evaluable"]}, "filesystemTrust": {"enum": ["verified", "missing", "mismatch", "not-evaluable"]}, "hookDelivery": {"enum": ["match", "mismatch", "not-evaluable"]},
+          "observedControls": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "unknownControls": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "reasons": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "overallStatus": {"enum": ["external-activation-required", "aligned-unattested", "certified", "fail"]},
+    "certification": {
+      "type": "object", "additionalProperties": false, "required": ["status", "reason"],
+      "properties": {"status": {"enum": ["certified", "not-certified"]}, "reason": {"type": "string", "minLength": 1}}
+    },
+    "evidenceDigest": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha1": {"type": "string", "pattern": "^[a-f0-9]{40}$"}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "hostIdentity": {
+      "type": "object", "additionalProperties": false, "required": ["hostId", "endpointId", "platform", "deviceIdentitySha256"],
+      "properties": {"hostId": {"type": "string", "minLength": 1}, "endpointId": {"type": "string", "minLength": 1}, "platform": {"enum": ["darwin", "linux", "win32"]}, "deviceIdentitySha256": {"$ref": "#/$defs/sha256"}}
+    }
+  }
+}

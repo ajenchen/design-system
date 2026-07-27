@@ -3,15 +3,15 @@ set -uo pipefail
 # UserPromptSubmit hook: 把上 turn Stop hook 累積的 warnings inject 到 next turn additionalContext.
 #
 # 修補 known issue:Stop hook silent-log 沒 inject → AI 看不到 self-audit warnings → reactive 模式持續。
-# 對齊 CLAUDE.md M14 / M20「auto-inject corrective prompt」原意。
+# 對齊 canonical meta-patterns M14 / M20「auto-inject corrective prompt」原意。
 #
 # Reads:
-#   .claude/logs/self-audit-warnings.jsonl(stop_self_audit 寫入,behavioral check)
-#   .claude/logs/score-history.jsonl(stop_meta_self_audit 寫入,infra-score regression)
-#   .claude/logs/audit-post-report-validator.jsonl(check_audit_post_report_validator 寫入,
-#                                                  prune-chain-trigger signal — 補 2026-05-17 directive)
+#   $GOVERNANCE_STATE_DIR/self-audit-warnings.jsonl(stop_self_audit 寫入,behavioral check)
+#   $GOVERNANCE_STATE_DIR/score-history.jsonl(stop_meta_self_audit 寫入,infra-score regression)
+#   $GOVERNANCE_STATE_DIR/audit-post-report-validator.jsonl(check_audit_post_report_validator 寫入,
+#                                                           prune-chain-trigger signal)
 # State:
-#   .claude/logs/last-inject-ts.txt — 上次 inject 的 timestamp
+#   $GOVERNANCE_STATE_DIR/last-inject-ts.txt — 上次 inject 的 timestamp
 #
 # Logic:
 #   1. 讀 LAST_TS,撈兩個 log 中 ts > LAST_TS 的條目
@@ -22,10 +22,14 @@ source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -uo pipefail
 
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+PROJECT_DIR="${GOVERNANCE_PROJECT_DIR:-$(pwd)}"
 cd "$PROJECT_DIR" || exit 0
+STATE_DIR="$(governance_prepare_runtime_state_dir 2>/dev/null)" || exit 0
 
-LAST_TS_FILE=".claude/logs/last-inject-ts.txt"
+LAST_TS_FILE="$(governance_runtime_file_path last-inject-ts.txt "$STATE_DIR" 2>/dev/null)" || exit 0
+BEHAVIORAL_LOG="$(governance_runtime_file_path self-audit-warnings.jsonl "$STATE_DIR" 2>/dev/null)" || exit 0
+SCORE_LOG="$(governance_runtime_file_path score-history.jsonl "$STATE_DIR" 2>/dev/null)" || exit 0
+AUDIT_VALIDATOR_LOG="$(governance_runtime_file_path audit-post-report-validator.jsonl "$STATE_DIR" 2>/dev/null)" || exit 0
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 # Default LAST_TS: 30 分鐘前(防呆 — session cutoff,老 warning 自動 expire 避免 echo)
 # 之前 24h 太寬,session 跨 hour 仍 inject 老 warning。30m sliding window 讓 fresh
@@ -54,7 +58,7 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
   LAST_USER=$(tail -50 "$TRANSCRIPT_PATH" 2>/dev/null | \
     jq -r 'select(.message.role=="user") | .message.content // empty | if type=="string" then . else (.[]? | .text // empty) end' 2>/dev/null | tail -3)
   ACK_RE='(收到|知道了|了解|acknowledged|ok 撤回|不用再 inject|停止 inject|skip warning|不要再警告)'
-  if echo "$LAST_USER" | grep -qiE "$ACK_RE"; then
+  if grep -qiE "$ACK_RE" <<<"$LAST_USER"; then
     ACK_DETECTED=1
   fi
 fi
@@ -109,13 +113,13 @@ PRUNE_CHAIN_TRIGGER=0
 PRUNE_CHAIN_REASONS=""
 
 # ── Read behavioral warnings since LAST_TS ─────────────────────────────────
-if [ -f .claude/logs/self-audit-warnings.jsonl ]; then
-  WARNINGS_BEHAVIORAL=$(extract_warnings_dedup < .claude/logs/self-audit-warnings.jsonl)
+if [ -f "$BEHAVIORAL_LOG" ]; then
+  WARNINGS_BEHAVIORAL=$(extract_warnings_dedup < "$BEHAVIORAL_LOG")
 fi
 
 # ── Read infra-score warnings since LAST_TS ─────────────────────────────────
-if [ -f .claude/logs/score-history.jsonl ]; then
-  WARNINGS_SCORE=$(extract_warnings_dedup < .claude/logs/score-history.jsonl)
+if [ -f "$SCORE_LOG" ]; then
+  WARNINGS_SCORE=$(extract_warnings_dedup < "$SCORE_LOG")
   # Latest score(取 file 最後一行 ts > cutoff 的)
   LATEST_SCORE=$(awk -v cutoff="$LAST_TS" '
     {
@@ -129,7 +133,7 @@ if [ -f .claude/logs/score-history.jsonl ]; then
       }
     }
     END { print last_s }
-  ' .claude/logs/score-history.jsonl)
+  ' "$SCORE_LOG")
 fi
 
 # ── Read prune-chain-trigger signal(2026-05-27 v2 ship per user directive)──
@@ -137,7 +141,7 @@ fi
 # completes with retire candidates(audit-prompts coverage < 100% OR @benchmark-
 # unverified-blanket > 0 OR design-system-audit Phase 4.5 9-trigger conditions met).
 # Without this handler the signal is half-shipped — emitted but no one listens.
-if [ -f .claude/logs/audit-post-report-validator.jsonl ]; then
+if [ -f "$AUDIT_VALIDATOR_LOG" ]; then
   PRUNE_SIGNAL=$(awk -v cutoff="$LAST_TS" '
     {
       if (match($0, /"ts":"[^"]+"/)) {
@@ -154,7 +158,7 @@ if [ -f .claude/logs/audit-post-report-validator.jsonl ]; then
         }
       }
     }
-  ' .claude/logs/audit-post-report-validator.jsonl 2>/dev/null | tail -1)
+  ' "$AUDIT_VALIDATOR_LOG" 2>/dev/null | tail -1)
   if [ -n "$PRUNE_SIGNAL" ]; then
     PRUNE_CHAIN_TRIGGER=1
     PRUNE_CHAIN_REASONS="$PRUNE_SIGNAL"
@@ -162,7 +166,6 @@ if [ -f .claude/logs/audit-post-report-validator.jsonl ]; then
 fi
 
 # Update LAST_TS regardless(若 inject 失敗,下 turn 會重看到 — 但 jq 出錯就靜默)
-mkdir -p .claude/logs 2>/dev/null
 echo "$NOW" > "$LAST_TS_FILE"
 
 # Silent exit if nothing accumulated
@@ -194,18 +197,18 @@ fi
 
 # ── 偵測 directive 觸發類型,加 explicit 指示 ─────────────────────────────
 DIRECTIVE=""
-if echo "${WARNINGS_BEHAVIORAL}${WARNINGS_SCORE}" | grep -q "trigger-phrase 累計"; then
+if grep -q "trigger-phrase 累計" <<<"${WARNINGS_BEHAVIORAL}${WARNINGS_SCORE}"; then
   DIRECTIVE="${DIRECTIVE}
 🚨 **DIRECTIVE — M19 trigger phrase auto-pipeline 啟動**:
   當 user 反覆問「確保 / 一定 / 不會 / 是否能 / 永遠 / 是否符合原則」之類問題時(本 case 已累計多次),你**必須立刻 invoke \`/ensure-canonical\` skill** 跑 5-layer pipeline,不可只給 verbal 答覆 / 不可只 quote score / 不可只「下次承諾」。
   不確定主題 → 就用最近 user 提到的關鍵字當 ensure-canonical args。"
 fi
-if echo "${WARNINGS_BEHAVIORAL}${WARNINGS_SCORE}" | grep -q "Topic.*repeated"; then
+if grep -q "Topic.*repeated" <<<"${WARNINGS_BEHAVIORAL}${WARNINGS_SCORE}"; then
   DIRECTIVE="${DIRECTIVE}
 🚨 **DIRECTIVE — M10 proactive exhaustive scan**:
   Topic 重複表示 prior turns 落地不徹底。**必須 grep DS-wide 同 pattern 批量修**(不只 user 點到的那個 case),否則持續 reactive。"
 fi
-if echo "${WARNINGS_BEHAVIORAL}${WARNINGS_SCORE}" | grep -q "Claim-verify gap"; then
+if grep -q "Claim-verify gap" <<<"${WARNINGS_BEHAVIORAL}${WARNINGS_SCORE}"; then
   DIRECTIVE="${DIRECTIVE}
 🚨 **DIRECTIVE — Claim-verify gap**:
   你說 done / verified / 通過 但本 turn 沒跑 \`tsc -b\` / hook test / score script。**現在立刻跑驗證**或在回答中明撤回 claim。"
@@ -234,14 +237,14 @@ CTX_LEN=${#ADDITIONAL_CONTEXT}
 if [ "$CTX_LEN" -gt "$MAX_LEN" ]; then
   ADDITIONAL_CONTEXT="${ADDITIONAL_CONTEXT:0:$MAX_LEN}
 
-[truncated — 原 ${CTX_LEN}B,顯示前 ${MAX_LEN}B。如要看全文 grep .claude/logs/self-audit-warnings.jsonl + score-history.jsonl]"
+[truncated — 原 ${CTX_LEN}B,顯示前 ${MAX_LEN}B。如要看全文請查看 provider-neutral governance runtime state 中的 self-audit-warnings.jsonl + score-history.jsonl]"
 fi
 
-# Output JSON for Claude Code to inject
+# Output provider-neutral JSON; the boundary adapter selects the native transport.
 jq -n --arg ctx "$ADDITIONAL_CONTEXT" '{
-  hookSpecificOutput: {
+  governanceContext: {
     hookEventName: "UserPromptSubmit",
-    additionalContext: $ctx
+    message: $ctx
   }
 }'
 

@@ -28,7 +28,7 @@ case "$FILE_PATH" in
   */.claude/skills/*/SKILL.md)          SCOPE="new skill" ;;
   */.claude/skills/*/references/*.md)   SCOPE="skill reference doc" ;;
   */.claude/hooks/*.sh|*/.claude/hooks/*.py)  SCOPE="new hook" ;;
-  */.claude/planning/*.md)              SCOPE="planning doc" ;;
+  */governance/planning/*.md)              SCOPE="planning doc" ;;
   *) exit 0 ;;
 esac
 

@@ -10,7 +10,7 @@
 #   BLOCK exit 2 if title prefix ≠ `Apps/<APP_NAME>/`。
 #   Skip(exit 0): non-edit tool / out-of-scope path / empty content /
 #     `@app-story-title-skip:` escape / no `title:` field。
-# SSOT: .claude/rules/story-rules.md「Title 命名 2-namespace canonical」
+# SSOT: packages/design-system/ds-canonical/rules/story-rules.md「Title 命名 2-namespace canonical」
 
 set -u
 
@@ -29,7 +29,7 @@ FAILED_TESTS=""
 # Isolate any state-file writes (hook sources _log-fire.sh which may log)
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 mkdir -p "$TMP_DIR/.claude/logs"
 
 # run_hook <tool_name> <file_path> <content> [content_field]

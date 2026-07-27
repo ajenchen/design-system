@@ -9,11 +9,11 @@
 #   Detect: Python multiline regex — `<SidebarHeader...>...</SidebarHeader>` block
 #           內含 `<ItemAvatar\b` → BLOCKER(exit 2,2026-05-31 folded-hook-audit 升 0→2)
 #   IMPORTANT: 偵測到 drift = **exit 2**(真 block;SSOT canonical per feedback_ssot_mechanical_p0_not_p1)。
-#              positive case 斷言 = stderr needle + exit 2(env escape CLAUDE_BYPASS_CHROME_HEADER_AVATAR 兜)。
+#              positive case 斷言 = stderr needle + exit 2(env escape GOVERNANCE_BYPASS_CHROME_HEADER_AVATAR 兜)。
 #   Allow:  SidebarFooter 內 ItemAvatar(footer 是 row context)→ silent
 #           raw <Avatar size={24}> in header → silent
 #           <ItemAvatarGroup>(word-boundary near-miss,非 banned ItemAvatar)→ silent
-#   Bypass: CLAUDE_BYPASS_CHROME_HEADER_AVATAR=1 → silent(audit-logged)
+#   Bypass: GOVERNANCE_BYPASS_CHROME_HEADER_AVATAR=1 → silent(audit-logged)
 #
 # M34 broad-vs-narrow symmetry:
 #   - over-narrow guard(positive):real violation(Header+ItemAvatar,多種 tool/field)必 fire
@@ -36,12 +36,12 @@ FAILED_TESTS=""
 # TMP_DIR override so any bypass-log write lands here, not in repo .claude/logs/
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 mkdir -p "$TMP_DIR/.claude/logs"
 
 # run_hook <content> [file_path] [tool_name] [field] [bypass]
 #   field: "content"(default) | "new_string"
-#   bypass: "1" to set CLAUDE_BYPASS_CHROME_HEADER_AVATAR=1
+#   bypass: "1" to set GOVERNANCE_BYPASS_CHROME_HEADER_AVATAR=1
 run_hook() {
   local content="$1"
   local file_path="${2:-/repo/my-project/apps/template/src/AppShell.tsx}"
@@ -60,7 +60,7 @@ run_hook() {
   stdout=$(mktemp); stderr=$(mktemp)
   set +e
   if [ "$bypass" = "1" ]; then
-    printf '%s' "$payload" | CLAUDE_BYPASS_CHROME_HEADER_AVATAR=1 bash "$HOOK" >"$stdout" 2>"$stderr"
+    printf '%s' "$payload" | GOVERNANCE_BYPASS_CHROME_HEADER_AVATAR=1 bash "$HOOK" >"$stdout" 2>"$stderr"
   else
     printf '%s' "$payload" | bash "$HOOK" >"$stdout" 2>"$stderr"
   fi
@@ -186,7 +186,7 @@ expect_silent "15. innocuous tsx (no SidebarHeader) → silent"
 
 # 16. Bypass env var → silent even on real violation
 run_hook "$HEADER_DRIFT" "/repo/my-project/apps/template/src/AppShell.tsx" "Write" "content" "1"
-expect_silent "16. CLAUDE_BYPASS_CHROME_HEADER_AVATAR=1 → silent"
+expect_silent "16. GOVERNANCE_BYPASS_CHROME_HEADER_AVATAR=1 → silent"
 
 echo ""
 echo "=== Summary ==="

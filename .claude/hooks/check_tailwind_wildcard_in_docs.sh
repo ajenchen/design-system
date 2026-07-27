@@ -15,40 +15,47 @@
 # Exit 2 BLOCKER + cite this anchor。Escape:`@tailwind-wildcard-allow:` comment。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 
-INPUT=$(cat 2>/dev/null || echo "{}")
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null)
+governance_hook_load_input
+governance_hook_require_commands grep sed sort
+TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'Tailwind wildcard tool extraction failed'
 
 case "${TOOL:-}" in
   Edit|Write|MultiEdit) ;;
   *) exit 0 ;;
 esac
 
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
+FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'Tailwind wildcard path extraction failed'
 # Self-exemption:本 hook help-text 合法含 anti-pattern literal 作為文件範例(且 .sh 不被 Tailwind
 # vite plugin 掃,無 build 風險)→ 不掃自己,避免 self-trigger false-positive(2026-05-30 test-surfaced)。
 case "$FILE" in */check_tailwind_wildcard_in_docs.sh) exit 0 ;; esac
-# 2026-06-11 R2 held-item #13:.claude/{tmp,logs} 歷史 artifact(codex brief / reply、audit findings
-# json、preflight log)非 Tailwind 掃描對象 — src/globals.css 用 explicit positive @source(只掃 src/ +
-# packages/{design-system,storybook-config} + .storybook/)且 `@source not "**/.claude/**"`;盤上 12 檔
-# 已含 antiPattern 而 build 連續綠(至 beta.61)= 零 build 風險實證。掃描對象路徑(src/packages/docs)
-# 保護不變。
-case "$FILE" in */.claude/tmp/*|*/.claude/logs/*|.claude/tmp/*|.claude/logs/*) exit 0 ;; esac
+# Provider runtime artifacts no longer live inside the checkout. Do not add provider-specific path
+# exemptions here: a future provider receives the same Tailwind protection without hook changes.
 # Only check files Tailwind v4 might scan
-if ! echo "$FILE" | grep -qE '\.(md|spec\.md|sh|ts|tsx|css|json)$'; then exit 0; fi
+if ! governance_hook_grep_q 'Tailwind wildcard scope matcher failed' "$FILE" -qE '\.(md|spec\.md|sh|ts|tsx|css|json)$'; then exit 0; fi
 
-CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // ""' 2>/dev/null)
+CONTENT=$(printf '%s' "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'Tailwind wildcard content extraction failed'
 [ -z "$CONTENT" ] && exit 0
 
 # Escape clause
-if echo "$CONTENT" | grep -qE '@tailwind-wildcard-allow:'; then exit 0; fi
+if governance_hook_grep_q 'Tailwind wildcard escape matcher failed' "$CONTENT" -qE '@tailwind-wildcard-allow:'; then exit 0; fi
 
 # Detect anti-patterns(class form with wildcard / slash enumeration in CSS var)
 # 2026-05-30 fix(test-surfaced M34 over-narrow):slash-segment 改 repeatable,
 # 否則漏多段斜線列舉形式(beta.27 anchor 的 N-段 enum,hook header 列為必擋 anti-pattern)。
-ANTI_PATTERNS=$(echo "$CONTENT" | grep -oE 'var\(--[a-z][a-z0-9-]*([\*/]+[a-z0-9-]*)+\)' | sort -u)
+governance_hook_grep_capture ANTI_PATTERNS_UNSORTED 'Tailwind wildcard matcher failed' \
+  "$CONTENT" -oE 'var\(--[a-z][a-z0-9-]*([\*/]+[a-z0-9-]*)+\)'
+ANTI_PATTERNS=$(sort -u <<< "$ANTI_PATTERNS_UNSORTED" 2>/dev/null) \
+  || governance_hook_integrity_fail 'Tailwind wildcard sorter failed'
 
 if [ -n "$ANTI_PATTERNS" ]; then
   cat >&2 << EOF

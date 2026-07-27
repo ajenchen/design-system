@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/model-deep-audit-result-v1.json",
+  "oneOf": [
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "evidenceKind", "dim", "coverage", "findings", "summary"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "evidenceKind": { "const": "deep-audit-judgment-result" },
+        "dim": { "type": "integer", "minimum": 1, "maximum": 91 },
+        "coverage": { "$ref": "#/$defs/coverage" },
+        "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 4000 }
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "evidenceKind", "component", "coverage", "claimsVerified", "claimVerdicts", "falseClaims", "summary"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "evidenceKind": { "const": "deep-audit-component-a1b-result" },
+        "component": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" },
+        "coverage": { "$ref": "#/$defs/coverage" },
+        "claimsVerified": { "type": "integer", "minimum": 1 },
+        "claimVerdicts": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["claimId", "status"],
+            "properties": {
+              "claimId": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+              "status": { "enum": ["verified", "false", "unverifiable"] }
+            }
+          }
+        },
+        "falseClaims": { "type": "array", "items": { "$ref": "#/$defs/falseClaim" } },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 4000 }
+      }
+    }
+  ],
+  "$defs": {
+    "coverage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["inventoryDigest", "filesScanned"],
+      "properties": {
+        "inventoryDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "filesScanned": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "finding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "line", "severity", "rule", "problem", "recommendation"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "line": { "type": "integer", "minimum": 1 },
+        "severity": { "enum": ["blocking", "material", "marginal"] },
+        "rule": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "problem": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "recommendation": { "type": "string", "minLength": 1, "maxLength": 4000 }
+      }
+    },
+    "falseClaim": {
+      "type": "object", "additionalProperties": false,
+      "required": ["claimId", "path", "line", "severity", "claim", "actual", "recommendation"],
+      "properties": {
+        "claimId": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "path": { "type": "string", "minLength": 1 },
+        "line": { "type": "integer", "minimum": 1 },
+        "severity": { "enum": ["blocking", "material", "marginal"] },
+        "claim": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "actual": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "recommendation": { "type": "string", "minLength": 1, "maxLength": 4000 }
+      }
+    }
+  }
+}

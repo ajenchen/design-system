@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/managed-ci-oidc-broker-policy-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "workflowIdentity", "token", "brokerRequest", "receiptSigning", "brokers"],
+  "properties": {
+    "$schema": {"const": "../schemas/managed-ci-oidc-broker-policy.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "managed-ci-oidc-broker-policy"},
+    "workflowIdentity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["repository", "workflow", "workflowPath", "workflowRef", "eventName", "ref", "refType", "runnerEnvironment"],
+      "properties": {
+        "repository": {"const": "ajenchen/design-system"},
+        "workflow": {"const": "Managed deep-audit trusted execution"},
+        "workflowPath": {"const": ".github/workflows/deep-audit-managed.yml"},
+        "workflowRef": {"const": "ajenchen/design-system/.github/workflows/deep-audit-managed.yml@refs/heads/main"},
+        "eventName": {"const": "workflow_dispatch"},
+        "ref": {"const": "refs/heads/main"},
+        "refType": {"const": "branch"},
+        "runnerEnvironment": {"const": "self-hosted"}
+      }
+    },
+    "token": {
+      "type": "object", "additionalProperties": false,
+      "required": ["issuer", "audience", "requiredClaims", "immutableSubject", "temporal", "replay"],
+      "properties": {
+        "issuer": {"const": "https://token.actions.githubusercontent.com"},
+        "audience": {"const": "qijenchen-managed-deep-audit-authority-v1"},
+        "requiredClaims": {
+          "type": "array", "minItems": 21, "maxItems": 21, "uniqueItems": true,
+          "prefixItems": [
+            {"const": "iss"}, {"const": "aud"}, {"const": "sub"}, {"const": "jti"}, {"const": "iat"},
+            {"const": "nbf"}, {"const": "exp"}, {"const": "repository"}, {"const": "repository_id"},
+            {"const": "repository_owner_id"}, {"const": "event_name"}, {"const": "ref"}, {"const": "ref_type"},
+            {"const": "sha"}, {"const": "run_id"}, {"const": "run_attempt"}, {"const": "runner_environment"},
+            {"const": "workflow"}, {"const": "workflow_ref"}, {"const": "workflow_sha"}, {"const": "environment"}
+          ],
+          "items": false
+        },
+        "immutableSubject": {
+          "type": "object", "additionalProperties": false,
+          "required": ["required", "template", "repositoryIdPointer", "repositoryOwnerIdPointer", "allowedEnvironments"],
+          "properties": {
+            "required": {"const": true},
+            "template": {"const": "repo:ajenchen@{repositoryOwnerId}/design-system@{repositoryId}:environment:{environment}"},
+            "repositoryIdPointer": {"const": "/activation/repositoryId"},
+            "repositoryOwnerIdPointer": {"const": "/activation/repositoryOwnerId"},
+            "allowedEnvironments": {"type": "array", "prefixItems": [{"const": "managed-ci-sandbox-authority-v1"}, {"const": "managed-ci-receipt-finalizer-v1"}], "items": false, "minItems": 2, "maxItems": 2}
+          }
+        },
+        "temporal": {
+          "type": "object", "additionalProperties": false, "required": ["maxAgeSeconds", "clockSkewSeconds"],
+          "properties": {"maxAgeSeconds": {"const": 3600}, "clockSkewSeconds": {"const": 120}}
+        },
+        "replay": {
+          "type": "object", "additionalProperties": false, "required": ["jtiRequired", "exactlyOnce", "ledger", "retentionSeconds"],
+          "properties": {
+            "jtiRequired": {"const": true}, "exactlyOnce": {"const": true},
+            "ledger": {"const": "external-atomic-ttl-replay-ledger"}, "retentionSeconds": {"const": 3720}
+          }
+        }
+      }
+    },
+    "brokerRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requiredFields", "classBinding", "dispatchBinding", "digestAlgorithm"],
+      "properties": {
+        "requiredFields": {
+          "type": "array", "minItems": 42, "maxItems": 42, "uniqueItems": true,
+          "prefixItems": [
+            {"const": "authorityEnvironment"}, {"const": "authorityPurpose"}, {"const": "executionClass"}, {"const": "workflowDefinitionRef"},
+            {"const": "workflowDefinitionCommit"}, {"const": "workflowDefinitionTree"}, {"const": "workflowRunId"}, {"const": "runAttempt"},
+            {"const": "subjectCommit"}, {"const": "subjectTree"}, {"const": "manifestSha256"},
+            {"const": "subjectRunId"}, {"const": "frozenSubjectArtifactName"}, {"const": "frozenSubjectArtifactId"}, {"const": "frozenSubjectArtifactLocator"},
+            {"const": "frozenSubjectArtifactSha256"}, {"const": "frozenSubjectArtifactSize"}, {"const": "frozenSubjectLineageDigest"},
+            {"const": "requestModelId"}, {"const": "observedResponseModelId"}, {"const": "modelReleaseId"}, {"const": "modelReleaseBindingDigest"},
+            {"const": "modelReleaseRegistryDigest"}, {"const": "modelIdentityPolicyDigest"}, {"const": "modelAuthorityReceiptDigest"},
+            {"const": "modelAuthorityReadbackDigest"}, {"const": "modelAuthorityRevocationRegistryDigest"},
+            {"const": "modelAuthorityRevocationReadbackDigest"}, {"const": "modelAuthorityAuditReadbackDigest"},
+            {"const": "modelReleaseValidFrom"}, {"const": "modelReleaseValidUntil"},
+            {"const": "providerInvocationWindowDigest"}, {"const": "exchangeInvocationObservationsDigest"},
+            {"const": "workflowDispatchInputsDigest"}, {"const": "provenanceBindingDigest"},
+            {"const": "activationTrustBundleDigest"}, {"const": "governanceManifestDigest"}, {"const": "controlPlaneLockDigest"},
+            {"const": "controlPlaneContractDigest"}, {"const": "controlPlaneInputDigest"}, {"const": "controlPlaneSnapshotDigest"},
+            {"const": "controlPlaneManifestId"}
+          ],
+          "items": false
+        },
+        "classBinding": {"const": "trusted-environment-authority-binds-execution-class"},
+        "dispatchBinding": {"const": "authority-frozen-subject-artifact-and-full-provenance-digest"},
+        "digestAlgorithm": {"const": "sha256-canonical-json"}
+      }
+    },
+    "receiptSigning": {
+      "type": "object", "additionalProperties": false,
+      "required": ["authorityPolicyPath", "serviceId", "tenantId", "endpointHost", "keyIdentity", "certificateIdentity", "signatureAlgorithm", "allowedEnvironment", "payloadSchemaPath", "payloadDomainSeparator", "classes", "issuerRole", "privateKeyInImage", "candidateCallable", "oidcProjectionRequired", "independentAuditReadbackRequired"],
+      "properties": {
+        "authorityPolicyPath": {"const": "infra/governance/providers/managed-ci-trusted-authority-policy.json"},
+        "serviceId": {"const": "qijenchen-managed-ci-receipt-signer-v1"},
+        "tenantId": {"const": "ajenchen-design-system"},
+        "endpointHost": {"const": "managed-ci-signer.qijenchen.dev"},
+        "keyIdentity": {"const": "qijenchen-managed-ci-receipt-signer-v1"},
+        "certificateIdentity": {"const": "spiffe://qijenchen.dev/managed-ci/receipt-signer"},
+        "signatureAlgorithm": {"const": "Ed25519"},
+        "allowedEnvironment": {"const": "managed-ci-receipt-finalizer-v1"},
+        "payloadSchemaPath": {"const": "scripts/schemas/managed-ci-finalized-receipt.schema.json"},
+        "payloadDomainSeparator": {"const": "qijenchen:managed-ci:receipt:v1"},
+        "classes": {"type": "array", "prefixItems": [{"const": "dependency-acquisition"}, {"const": "deterministic-hook-audit"}, {"const": "model-broker"}, {"const": "github-observer"}], "items": false, "minItems": 4, "maxItems": 4},
+        "issuerRole": {"const": "runtime-evidence-issuer"}, "privateKeyInImage": {"const": false}, "candidateCallable": {"const": false}, "oidcProjectionRequired": {"const": true}, "independentAuditReadbackRequired": {"const": true}
+      }
+    },
+    "brokers": {
+      "type": "object", "additionalProperties": false, "required": ["model-broker", "github-observer"],
+      "properties": {
+        "model-broker": {"$ref": "#/$defs/modelBroker"},
+        "github-observer": {"$ref": "#/$defs/githubBroker"}
+      }
+    }
+  },
+  "$defs": {
+    "modelBroker": {
+      "type": "object", "additionalProperties": false, "required": ["brokerId", "serviceId", "endpointHost", "operationPath", "invocationMode", "allowedEnvironment", "credentialPurpose", "outputMode", "providerRegistry", "candidateCallable", "credentialEntersCandidateNamespace"],
+      "properties": {
+        "brokerId": {"const": "model-secret-broker"}, "serviceId": {"const": "qijenchen-managed-ci-model-egress-authority-v1"},
+        "endpointHost": {"const": "managed-ci-authority.qijenchen.dev"}, "operationPath": {"const": "/v1/authorize-model-egress-session"},
+        "invocationMode": {"const": "external-mtls-service-operation"}, "allowedEnvironment": {"const": "managed-ci-sandbox-authority-v1"},
+        "credentialPurpose": {"const": "selected-model-provider-api-secret"}, "outputMode": {"const": "brokered-ephemeral-readonly"},
+        "providerRegistry": {"const": "infra/governance/providers/model-invocation-profiles.json"},
+        "candidateCallable": {"const": false}, "credentialEntersCandidateNamespace": {"const": false}
+      }
+    },
+    "githubBroker": {
+      "type": "object", "additionalProperties": false, "required": ["brokerId", "serviceId", "endpointHost", "operationPath", "invocationMode", "allowedEnvironment", "credentialPurpose", "outputMode", "permissions", "candidateCallable", "credentialEntersCandidateNamespace"],
+      "properties": {
+        "brokerId": {"const": "github-readonly-token-broker"}, "serviceId": {"const": "qijenchen-managed-ci-github-read-authority-v1"},
+        "endpointHost": {"const": "managed-ci-authority.qijenchen.dev"}, "operationPath": {"const": "/v1/authorize-github-read-session"},
+        "invocationMode": {"const": "external-mtls-service-operation"}, "allowedEnvironment": {"const": "managed-ci-sandbox-authority-v1"},
+        "credentialPurpose": {"const": "github-api-read-only-token"}, "outputMode": {"const": "brokered-ephemeral-readonly"},
+        "permissions": {"type": "array", "prefixItems": [{"const": "actions:read"}, {"const": "checks:read"}, {"const": "contents:read"}, {"const": "metadata:read"}, {"const": "pull_requests:read"}], "items": false, "minItems": 5, "maxItems": 5},
+        "candidateCallable": {"const": false}, "credentialEntersCandidateNamespace": {"const": false}
+      }
+    }
+  }
+}

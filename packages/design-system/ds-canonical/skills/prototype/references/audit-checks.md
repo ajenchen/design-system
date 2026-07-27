@@ -1,6 +1,6 @@
 # Phase 3.5 Self-audit checklist(/prototype 用)
 
-對齊 CLAUDE.md `# 稽核 canonical` M6(stakeholder-visible 產出 → 強制進階模式)。比稿本質是「給 stakeholder 選視覺方向」,6 維任一沒 audit 好就 present = 比稿品質失準。
+對齊 shared governance `# 稽核 canonical` M6(stakeholder-visible 產出 → 強制進階模式)。比稿本質是「給 stakeholder 選視覺方向」,6 維任一沒 audit 好就 present = 比稿品質失準。
 
 ## 6 維對應 skill
 
@@ -21,8 +21,8 @@
 3. Chain `/performance-audit`(D3)scope 到 exploration
 4. Chain `/ux-audit`(D4)scope 到 exploration
 5. Chain `/visual-audit`(D5 Layer B AI judgement)讀 `snapshots/*.png`
-6. **D6 真 scan**:chain `.claude/skills/design-system-audit/references/principle-audit-protocol.md` 對 exploration code 跑 4 子維;依判斷公式 auto / STOP
-7. **Self-improvement capture**(強制 Phase F step,見 CLAUDE.md `# 治理 canonical`)
+6. **D6 真 scan**:chain `packages/design-system/ds-canonical/skills/design-system-audit/references/principle-audit-protocol.md` 對 exploration code 跑 4 子維;依判斷公式 auto / STOP
+7. **Self-improvement capture**(強制 Phase F step,見 shared governance `# 治理 canonical`)
 
 ## Gate 規則(嚴格)
 
@@ -32,6 +32,7 @@
 | D5 Layer A violation(contrast AA 不過 / geometry assertion fail) | 必修(視同 P0) |
 | D3 / D4 高 impact finding(render 爆 / keyboard 不通 / ARIA 缺) | 必修 |
 | D5 Layer B 明顯設計問題 | 必修 OR notes.md 明文 rationale |
-| D6 canonical 疑點 | 不 block,列 STOP 區等 user sign-off |
-| Code P1 > 3 筆 | 建議修,user 可決定先 present 或先修 |
+| D6 engineering/governance canonical 疑點 | P2E，依 evidence + hard gates 自主修 |
+| D6 產品／UI／UX SSOT 真取捨 | P2H，列 exact target-bound STOP |
+| Code P1 > 3 筆 | 工程 blast radius，批次自主修並驗證 |
 | 無 P0 + Layer A 乾淨 + D3/D4 無高 impact | 可進 Phase 4 |

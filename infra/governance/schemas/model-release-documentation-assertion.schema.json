@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/model-release-documentation-assertion-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "evidenceKind", "providerId", "sourceUrl", "observedAt", "assertions", "weightArtifactAvailable"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "evidenceKind": {"const": "reviewed-provider-documentation-assertion"},
+    "providerId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "sourceUrl": {"type": "string", "format": "uri", "pattern": "^https://"},
+    "observedAt": {"type": "string", "format": "date-time"},
+    "assertions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "weightArtifactAvailable": {"const": false}
+  }
+}
