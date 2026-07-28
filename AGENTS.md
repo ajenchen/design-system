@@ -121,7 +121,7 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 | **Tailwind 出怪事** | canonical `rules/ui-development.md`「Tailwind 5 條核心」+ `# 失敗記憶索引` |
 | **Stakeholder 產出 / 稽核** | `# 稽核 canonical` |
 | **User 糾正後** | `# 治理 canonical`(home 判斷) |
-| **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | 先由 `packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` 依 `packages/governance/canonical/providers.json` 選擇已綁定且與 author 不同的 peer；產品第二意見 → `/independent-review`；重大 governance/release/DS no-sample 審查 → `/deep-audit-cross-codex`(舊 discovery 名稱，provider-neutral workflow)；合成仍守 M31 evidence/cite/verify，不從名稱推斷 peer |
+| **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | `# Independent second opinion`(選 peer、workflow、fail-closed 全在該章) |
 | **PR merge 後 / session start branch 健檢** | `# Git solo-work canonical` |
 
 **找不到** → 進 `# 遇不確定時的協議`；產品／UI／UX SSOT 真取捨不自決，純工程由最高 certified capability 依證據自決並驗證。
@@ -203,9 +203,10 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 | shadcn compat alias 回流 | dark mode 不聯動 |
 | `asChild ? Slot : Native` 內部 JSX 仍渲染多 children | React.Children.only runtime fail;asChild 分支 render 只傳 consumer child |
 | `tsc -b` 不 emit declaration | TS4023 漏抓;型別 surface 改動必 `npm run build:lib` |
-| 工具 flag 沉默陷阱:`rsync -a` 等長同秒靜默跳過(必 `--checksum`)/ `rg` 黏寫 `-rn` 的 `-r`=replace 輸出假字串 | 寫後斷言 + flag 分開寫 |
+| 工具靜默陷阱:`rsync -a` 等長同秒跳過(必 `--checksum`)/ `rg` 黏寫 `-rn` 的 `-r`=replace / `V=$(mktemp -d)` 失敗回空 → `cd "" && pwd -P`=cwd → `trap rm -rf` 刪掉 cwd | 寫後斷言 + flag 分開寫 + mktemp 後必 `[ -n ]`&`[ -d ]` 守衛 |
 | DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 |
 | storybook-smoke 驗舊 build = 假綠 | smoke script 已加 stale-build guard |
+| `V=$(mktemp -d)` 失敗回空字串,`cd "" && pwd -P` 在 bash 解析成**當前目錄** → `trap 'rm -rf "$V"'` 刪掉 cwd | mktemp 後必 `[ -n ]`+`[ -d ]` 硬守衛才可正規化;2026-07-28 刪光 99 檔 hook corpus anchor |
 
 新 bug → 歸 Meta-Pattern OR 本表 1 行;> 10 條 = 漏寫,評估 meta-merge 既有 M-rule。
 

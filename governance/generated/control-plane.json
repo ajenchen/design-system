@@ -9,12 +9,12 @@
   },
   "canonicalSources": [
     {
-      "hash": "sha256:21ed724d44f7e31d012ce610522863a8afb0c86680591df6a0a8ec21da87669c",
+      "hash": "sha256:9d9bcd381c060751680eec29c37bd3bc36bae69a269a9fba52fcbcf8d743e7a3",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 23343,
+      "size": 23322,
       "type": "file"
     },
     {
@@ -3066,12 +3066,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:dba560c12ab7bf263ef1553223170494e4a97a89eabd855d9471900284544723",
+      "hash": "sha256:835f9bf30c0274f77662765fd53cd1a6947c1730ec562adcfd4507a4a321132e",
       "id": "product-shared-instruction",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/fork-role-sources/AGENTS.product.md",
-      "size": 6741,
+      "size": 6441,
       "type": "file"
     },
     {
@@ -3827,7 +3827,7 @@
         "scripts/generated/"
       ],
       "files": 376,
-      "hash": "sha256:e08ee825ebf54d57240f24eb69483e28bc6fe9e6d5b6b2d63b2fc1a8b8769bfc",
+      "hash": "sha256:b3bd411a0f40207b9fb748edd80944e4151b86b9d98b9967e15252819eec6cc4",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

@@ -9,14 +9,11 @@
 - This repository builds a product with exact versions of `@qijenchen/design-system` and
   `@qijenchen/storybook-config`; it does not author or publish those packages.
 - The deterministic local authority is the exact installed hooks-off checker:
-  `npm run governance:check`. Merge enforcement is non-bypassable only after protected pull-request
-  CI executes that checker directly as a required check and external readback confirms the protection.
-- Native Claude/Codex hooks are fast feedback only. Hookless operation must load these locked
-  instructions and is judged by the same hooks-off checker when it runs, but the repository must not
-  claim full governance until the protected required check and its external enforcement readback are
-  active.
-- Generated hook commands scrub inherited startup injection before repository launchers; the
-  already-running provider host remains an external trust boundary, so hooks never replace protected CI.
+  `npm run governance:check`. Merge enforcement comes from protected `main` requiring it as a check.
+- Native Claude/Codex hooks are fast feedback only; hookless operation is judged by the same
+  hooks-off checker. Generated hook commands scrub inherited startup injection before repository
+  launchers, and the running provider host stays an external trust boundary, so hooks never
+  replace protected CI.
 - Run `npm run setup:all` in every fresh local checkout and hosted setup/cache-refresh lifecycle. It
   installs the committed lock, verifies signatures, and runs the exact checker; SessionStart only verifies.
 - `governance/lock.json`, managed provider adapters, and managed skills are generated upstream.

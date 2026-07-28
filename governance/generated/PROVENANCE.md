@@ -12,7 +12,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 
 | ID | Owner path | Digest |
 |---|---|---|
-| agent-bootstrap | `AGENTS.md` | `sha256:21ed724d44f7e31d012ce610522863a8afb0c86680591df6a0a8ec21da87669c` |
+| agent-bootstrap | `AGENTS.md` | `sha256:9d9bcd381c060751680eec29c37bd3bc36bae69a269a9fba52fcbcf8d743e7a3` |
 | audit-coverage-matrix-source | `scripts/audit-coverage-matrix.mjs` | `sha256:f921b954d3c7fa9be1422ce80d9f593a5ccde8428968265389cba5969193d708` |
 | audit-rubric | `packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md` | `sha256:4a1140172b541247eef594323266d545fed906ed953425521f8927a82160ee06` |
 | authority-decision-evidence-library | `packages/governance/src/authority-decision-evidence.mjs` | `sha256:6bf0a2394ad9df7dc3117b17a175c1e14bb16073b11dbd6ff11b4e6a94800781` |
@@ -346,7 +346,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | privileged-trust-root-schema | `infra/governance/schemas/privileged-trust-roots.schema.json` | `sha256:dba5fde0c21a8435d051f773c4a7030c3eef59a97b98ec92bd3b4bc66c8171d4` |
 | product-independent-review-launcher | `packages/design-system/ds-canonical/templates/product-launchers/independent-review.mjs` | `sha256:94a6c891efccf389dbc5cf9f6505b8b85bfc759fe500e81589d934fbf16dc9cc` |
 | product-seed-package-contract | `apps/template/package.json` | `sha256:efacb0ff0812e1809d39b113cd8c63495590a9df33b46eb6f5fd278816a1808e` |
-| product-shared-instruction | `scripts/fork-role-sources/AGENTS.product.md` | `sha256:dba560c12ab7bf263ef1553223170494e4a97a89eabd855d9471900284544723` |
+| product-shared-instruction | `scripts/fork-role-sources/AGENTS.product.md` | `sha256:835f9bf30c0274f77662765fd53cd1a6947c1730ec562adcfd4507a4a321132e` |
 | product-template-audit-workflow | `template/ds-product-template/.github/workflows/audit.yml` | `sha256:66bcee0a60de93a992131b92c20d1e397297fa109a2fe8c72dbfd62ebbbe9680` |
 | product-template-documentation | `template/ds-product-template/docs` | `sha256:d3ea59c64bb48c16f90ff2ceaf6e317d7ff10ead8bc04762e783ee6f2239e107` |
 | product-template-governance-anchor-workflow | `template/ds-product-template/.github/workflows/governance-anchor.yml` | `sha256:3e280e67fd72886b0686a6d296947ee3270b4899e9914c1e3a9c61c951dcc2ee` |
@@ -429,7 +429,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:904a597d499958492c9dea0141f965bebb9d5838da129fe67a8db6ec731baeb6` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:168a4b773d93f4cadb132545b65d2baa1c4c4d6b924ddcb3ac19c2a057b606e4` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:6d487221cc6838c8d4cbcc5ecaaa9cc79eaa70114641ef18e09243f2e86eebec` |
-| repository-automation-corpus | `scripts` | `sha256:e08ee825ebf54d57240f24eb69483e28bc6fe9e6d5b6b2d63b2fc1a8b8769bfc` |
+| repository-automation-corpus | `scripts` | `sha256:b3bd411a0f40207b9fb748edd80944e4151b86b9d98b9967e15252819eec6cc4` |
 | repository-ignore-boundary | `.gitignore` | `sha256:8a7ce326c91a0696697109af370ad4b12db0856d12f857d270da8dba95f1aec7` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
